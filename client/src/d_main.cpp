@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -57,7 +57,7 @@
 #include "minilzo.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"
 #include "s_sound.h"
@@ -78,6 +78,7 @@
 #include "wi_stuff.h"
 #include "st_stuff.h"
 #include "am_map.h"
+#include "c_effect.h"
 #include "p_setup.h"
 #include "r_local.h"
 #include "r_sky.h"
@@ -216,7 +217,6 @@ void D_PostEvent (const event_t* ev)
 void D_Display (void)
 {
 	BOOL wipe;
-    static  int			borderdrawcount;
 
 	if (nodrawers)
 		return; 				// for comparative timing / profiling
@@ -245,8 +245,6 @@ void D_Display (void)
 		st_scale.Callback ();
 		// Refresh the console.
 		C_NewModeAdjust ();
-		// denis - redraw border
-		borderdrawcount = 3;
 	}
 
 	// change the view size if needed
@@ -254,7 +252,6 @@ void D_Display (void)
 	{
 		R_ExecuteSetViewSize ();
 		setmodeneeded = false;
-		borderdrawcount = 3;
 	}
 
 	I_BeginUpdate ();
@@ -271,7 +268,6 @@ void D_Display (void)
 		wipe = true;
 		wipe_StartScreen ();
 		wipegamestate = gamestate;
-		borderdrawcount = 3;
 	}
 	else
 	{
@@ -292,20 +288,8 @@ void D_Display (void)
 			if (!gametic)
 				break;
 
-
 			// denis - freshen the borders (ffs..)
-			if (menuactive || ConsoleState != c_up || headsupactive || automapactive)
-				borderdrawcount = 3;
-			if(consoleplayer().camera)
-				if (((Actions[ACTION_SHOWSCORES]) ||
-					consoleplayer().camera->health <= 0))
-				borderdrawcount = 3;
-
-			if (borderdrawcount)
-			{
-				R_DrawViewBorder ();    // erase old menu stuff
-				borderdrawcount--;
-			}
+			R_DrawViewBorder ();    // erase old menu stuff
 
 			if (viewactive)
 				R_RenderPlayerView (&displayplayer());
@@ -450,7 +434,8 @@ void D_DoomLoop (void)
 				CL_RequestConnectInfo();
 
 			// [RH] Use the consoleplayer's camera to update sounds
-			S_UpdateSounds (listenplayer().mo);	// move positional sounds
+			S_UpdateSounds (listenplayer().camera);	// move positional sounds
+			S_UpdateMusic();	// play another chunk of music
 
 			// Update display, next frame, with current state.
 			D_Display ();
@@ -635,7 +620,7 @@ void D_DoAdvanceDemo (void)
 //
 // D_Close
 //
-void D_Close (void)
+void STACK_ARGS D_Close (void)
 {
 	if(page)
 	{
@@ -769,7 +754,13 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 	} while(FindNextFile(hFind, &FindFileData));
 
 	dwError = GetLastError();
-	if(dwError != ERROR_NO_MORE_FILES)
+	
+	// Note: As documented, FindNextFile sets ERROR_NO_MORE_FILES as the error 
+	// code, but when this function "fails" it does not set it we have to assume 
+	// that it completed successfully (this is actually  bad practice, because 
+    // it says in the docs that it does not set ERROR_SUCCESS, even though 
+    // GetLastError returns 0) WTF DO WE DO?!
+	if(dwError != ERROR_SUCCESS && dwError != ERROR_NO_MORE_FILES)
 		Printf (PRINT_HIGH, "FindNextFile failed. GetLastError: %d\n", dwError);
 
 	FindClose(hFind);
@@ -1311,6 +1302,7 @@ std::vector<size_t> D_DoomWadReboot(
 	if(gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
 
+	AM_Stop();
 	S_Stop();
 
 	DThinker::DestroyAllThinkers();
@@ -1385,7 +1377,10 @@ std::vector<size_t> D_DoomWadReboot(
 
     UndoDehPatch();
 
-	D_InitStrings ();
+	// [RH] Initialize localizable strings.
+	GStrings.ResetStrings ();
+	GStrings.Compact ();
+
 	D_DoDefDehackedPatch(patch_files);
 
 	//gotconback = false;
@@ -1399,10 +1394,12 @@ std::vector<size_t> D_DoomWadReboot(
 
 	G_SetLevelStrings ();
 	G_ParseMapInfo ();
+	G_ParseMusInfo ();
 	S_ParseSndInfo();
 
 	M_Init();
 	R_Init();
+	P_InitEffects();	// [ML] Do this here so we don't have to put particle crap in server
 	P_Init();
 
 	S_Init (snd_sfxvolume, snd_musicvolume);
@@ -1431,6 +1428,7 @@ void D_DoomMain (void)
 	M_ClearRandom();
 
 	gamestate = GS_STARTUP;
+	SetLanguageIDs ();
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
@@ -1440,7 +1438,7 @@ void D_DoomMain (void)
 
 	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
 
-	M_LoadDefaults ();			// load before initing other systems
+	M_LoadDefaults ();					// load before initing other systems
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
 
 	iwad = Args.CheckValue("-iwad");
@@ -1452,8 +1450,12 @@ void D_DoomMain (void)
 
 	wadhashes = W_InitMultipleFiles (wadfiles);
 
+	// [RH] Initialize localizable strings.
+	GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.Compact ();
+
 	// [RH] Initialize configurable strings.
-	D_InitStrings ();
+	//D_InitStrings ();
 	D_DoDefDehackedPatch ();
 
 	// [RH] Moved these up here so that we can do most of our
@@ -1467,11 +1469,11 @@ void D_DoomMain (void)
 	cvar_t::EnableCallbacks ();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
-	if (STARTUP1[0])	Printf (PRINT_HIGH, "%s\n", STARTUP1);
-	if (STARTUP2[0])	Printf (PRINT_HIGH, "%s\n", STARTUP2);
-	if (STARTUP3[0])	Printf (PRINT_HIGH, "%s\n", STARTUP3);
-	if (STARTUP4[0])	Printf (PRINT_HIGH, "%s\n", STARTUP4);
-	if (STARTUP5[0])	Printf (PRINT_HIGH, "%s\n", STARTUP5);
+	if (GStrings(STARTUP1)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP1));
+	if (GStrings(STARTUP2)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP2));
+	if (GStrings(STARTUP3)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP3));
+	if (GStrings(STARTUP4)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP4));
+	if (GStrings(STARTUP5)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP5));
 
 	// Nomonsters
 	sv_nomonsters = Args.CheckParm("-nomonsters");
@@ -1493,19 +1495,6 @@ void D_DoomMain (void)
 		autostart = true;
 		demorecordfile = Args.GetArg (p+1);
 	}
-
-	p = Args.CheckParm("-netrecord");
-	if (p)
-	{
-		std::string demoname;
-		if (Args.GetArg(p + 1))
-			demoname = Args.GetArg(p + 1);
-		else
-			demoname = "demo";
-
-		CL_NetDemoRecord(demoname);
-	}
-
 
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
@@ -1559,7 +1548,7 @@ void D_DoomMain (void)
 		autostart = true;
 	}
 	if (devparm)
-		Printf (PRINT_HIGH, "%s", Strings[0].builtin);        // D_DEVSTR
+		Printf (PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
 
 	// [RH] Now that all text strings are set up,
 	// insert them into the level and cluster data.
@@ -1567,6 +1556,9 @@ void D_DoomMain (void)
 
 	// [RH] Parse through all loaded mapinfo lumps
 	G_ParseMapInfo ();
+	
+	// [ML] Parse musinfo lump
+	G_ParseMusInfo ();
 
 	// [RH] Parse any SNDINFO lumps
 	S_ParseSndInfo();
@@ -1587,6 +1579,7 @@ void D_DoomMain (void)
 	R_Init ();
 
 	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
+	P_InitEffects();	// [ML] Do this here so we don't have to put particle crap in server
 	P_Init ();
 
 	Printf (PRINT_HIGH, "S_Init: Setting up sound.\n");
@@ -1681,8 +1674,6 @@ void D_DoomMain (void)
 	p = Args.CheckParm ("+demotest");
 	if (p && p < Args.NumArgs()-1)
 	{
-		void	G_DoPlayDemo (bool justStreamInput = false);
-		void	G_Ticker (void);
 		demotest = 1;
 		defdemoname = Args.GetArg (p+1);
 		G_DoPlayDemo();

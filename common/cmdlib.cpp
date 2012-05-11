@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sstream>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -37,6 +38,7 @@
 #include "i_system.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <map>
 
 #include "m_alloc.h"
 
@@ -207,9 +209,9 @@ BOOL IsNum (char *str)
 	return result;
 }
 
-// [Russell] Returns 0 if strings are the same, optional parameter for case 
+// [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
-int StdStringCompare(const std::string &s1, const std::string &s2, 
+int StdStringCompare(const std::string &s1, const std::string &s2,
     bool CIS = false)
 {
 	// Convert to upper case
@@ -254,25 +256,173 @@ size_t StdStringRFind(const std::string& haystack, const std::string& needle,
     return StdStringFind(haystack, needle, pos, n, CIS, true);
 }
 
+static std::string& StdStringToLowerBase(std::string& lower)
+{
+	std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+	return lower;
+}
+
 std::string StdStringToLower(const std::string& str)
 {
-    std::string lower(str);
+	std::string lower(str);
+	return StdStringToLowerBase(lower);
+}
 
-    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+std::string StdStringToLower(const char* str)
+{
+	std::string lower(str);
+	return StdStringToLowerBase(lower);
+}
 
-    return lower;
+static std::string& StdStringToUpperBase(std::string& upper)
+{
+	std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+    return upper;
 }
 
 std::string StdStringToUpper(const std::string& str)
 {
-    std::string upper(str);
+	std::string upper(str);
+	return StdStringToUpperBase(upper);
+}
 
-    std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+std::string StdStringToUpper(const char* str)
+{
+	std::string upper(str);
+	return StdStringToUpperBase(upper);
+}
 
-    return upper;
+// [AM] Convert an argc/argv into a vector of strings.
+std::vector<std::string> VectorArgs(size_t argc, char **argv) {
+	std::vector<std::string> arguments(argc - 1);
+	for (unsigned i = 1;i < argc;i++) {
+		arguments[i - 1] = argv[i];
+	}
+	return arguments;
+}
+
+// [AM] Return a joined string based on a vector of strings
+std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue) {
+	std::ostringstream result;
+	for (std::vector<std::string>::const_iterator it = pieces.begin();
+		 it != pieces.end();++it) {
+		result << *it;
+		if (it != (pieces.end() - 1)) {
+			result << glue;
+		}
+	}
+	return result.str();
+}
+
+// [SL] Reimplement std::isspace 
+static int _isspace(int c)
+{
+	return (c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\f' || c == '\r');
+}
+
+// Trim whitespace from the start of a string
+std::string &TrimStringStart(std::string &s)
+{
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(_isspace))));
+	return s;
+}
+ 
+// Trim whitespace from the end of a string
+std::string &TrimStringEnd(std::string &s)
+{
+	s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(_isspace))).base(), s.end());
+	return s;
+}
+ 
+// Trim whitespace from the start and end of a string
+std::string &TrimString(std::string &s)
+{
+	return TrimStringStart(TrimStringEnd(s));
+}
+
+//==========================================================================
+//
+// CheckWildcards
+//
+// [RH] Checks if text matches the wildcard pattern using ? or *
+//
+//==========================================================================
+bool CheckWildcards (const char *pattern, const char *text)
+{
+	if (pattern == NULL || text == NULL)
+		return true;
+
+	while (*pattern)
+	{
+		if (*pattern == '*')
+		{
+			char stop = tolower (*++pattern);
+			while (*text && tolower(*text) != stop)
+			{
+				text++;
+			}
+			if (*text && tolower(*text) == stop)
+			{
+				if (CheckWildcards (pattern, text++))
+				{
+					return true;
+				}
+				pattern--;
+			}
+		}
+		else if (*pattern == '?' || tolower(*pattern) == tolower(*text))
+		{
+			pattern++;
+			text++;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return (*pattern | *text) == 0;
+}
+
+class ReplacedStringTracker
+{
+	typedef std::map<const char *, bool> replacedStrings_t;
+	typedef replacedStrings_t:: iterator iterator;
+	replacedStrings_t rs;
+
+public:
+
+	void erase(const char *p)
+	{
+		iterator i = rs.find(p);
+		if(i != rs.end())
+		{
+			delete [] const_cast<char*>(i->first);
+			rs.erase(i);
+		}
+	}
+	void add(const char *p)
+	{
+		rs[p] = 1;
+	}
+
+	ReplacedStringTracker() : rs() {}
+	~ReplacedStringTracker()
+	{
+		for(iterator i = rs.begin(); i != rs.end(); ++i)
+			delete[] const_cast<char*>(i->first);
+	}
+}rst;
+
+void ReplaceString (const char **ptr, const char *str)
+{
+	if (*ptr)
+	{
+		if (*ptr == str)
+			return;
+		rst.erase(*ptr);
+	}
+	*ptr = copystring (str);
+	rst.add(*ptr);
 }
 
 VERSION_CONTROL (cmdlib_cpp, "$Id$")
-
-
-

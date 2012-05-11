@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2005 by Simon Howard
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -198,7 +198,7 @@ int mem_fseek(MEMFILE *stream, signed long position, mem_rel_t whence)
 			return -1;
 	}
 
-	if (newpos < stream->buflen)
+	if (newpos <= stream->buflen)
 	{
 		stream->position = newpos;
 		return 0;

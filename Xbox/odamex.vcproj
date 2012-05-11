@@ -326,16 +326,28 @@
 				RelativePath="..\client\src\cl_demo.cpp">
 			</File>
 			<File
+				RelativePath="..\client\src\cl_download.cpp">
+			</File>
+			<File
 				RelativePath="..\client\src\cl_main.cpp">
 			</File>
 			<File
+				RelativePath="..\client\src\cl_maplist.cpp">
+			</File>
+			<File
 				RelativePath="..\client\src\cl_mobj.cpp">
+			</File>
+			<File
+				RelativePath="..\client\src\cl_netgraph.cpp">
 			</File>
 			<File
 				RelativePath="..\client\src\cl_pred.cpp">
 			</File>
 			<File
 				RelativePath="..\client\src\cl_stubs.cpp">
+			</File>
+			<File
+				RelativePath="..\client\src\cl_vote.cpp">
 			</File>
 			<File
 				RelativePath="..\client\src\d_main.cpp">
@@ -359,6 +371,12 @@
 				RelativePath="..\client\src\g_level.cpp">
 			</File>
 			<File
+				RelativePath="..\client\src\hu_drawers.cpp">
+			</File>
+			<File
+				RelativePath="..\client\src\hu_elements.cpp">
+			</File>
+			<File
 				RelativePath="..\client\src\hu_stuff.cpp">
 			</File>
 			<File
@@ -369,6 +387,9 @@
 			</File>
 			<File
 				RelativePath="..\client\src\m_options.cpp">
+			</File>
+			<File
+				RelativePath="..\client\src\p_effect.cpp">
 			</File>
 			<File
 				RelativePath="..\client\src\r_bsp.cpp">
@@ -436,7 +457,22 @@
 				RelativePath="..\client\src\cl_demo.h">
 			</File>
 			<File
+				RelativePath="..\client\src\cl_download.h">
+			</File>
+			<File
 				RelativePath="..\client\src\cl_main.h">
+			</File>
+			<File
+				RelativePath="..\client\src\cl_maplist.h">
+			</File>
+			<File
+				RelativePath="..\client\src\cl_netgraph.h">
+			</File>
+			<File
+				RelativePath="..\client\src\cl_pch.h">
+			</File>
+			<File
+				RelativePath="..\client\src\cl_vote.h">
 			</File>
 			<File
 				RelativePath="..\client\src\f_finale.h">
@@ -445,13 +481,16 @@
 				RelativePath="..\client\src\f_wipe.h">
 			</File>
 			<File
+				RelativePath="..\client\src\hu_drawers.h">
+			</File>
+			<File
+				RelativePath="..\client\src\hu_elements.h">
+			</File>
+			<File
 				RelativePath="..\client\src\hu_stuff.h">
 			</File>
 			<File
 				RelativePath="..\client\src\m_menu.h">
-			</File>
-			<File
-				RelativePath="..\client\src\s_sndseq.h">
 			</File>
 			<File
 				RelativePath="..\client\src\st_lib.h">
@@ -486,6 +525,30 @@
 			</File>
 			<File
 				RelativePath="..\common\c_dispatch.h">
+			</File>
+			<File
+				RelativePath="..\common\c_effect.cpp">
+			</File>
+			<File
+				RelativePath="..\common\c_effect.h">
+			</File>
+			<File
+				RelativePath="..\common\c_level.cpp">
+			</File>
+			<File
+				RelativePath="..\common\c_level.h">
+			</File>
+			<File
+				RelativePath="..\common\c_maplist.h">
+			</File>
+			<File
+				RelativePath="..\common\c_pch.h">
+			</File>
+			<File
+				RelativePath="..\common\c_vote.cpp">
+			</File>
+			<File
+				RelativePath="..\common\c_vote.h">
 			</File>
 			<File
 				RelativePath="..\common\cmdlib.cpp">
@@ -560,12 +623,6 @@
 				RelativePath="..\common\dsectoreffect.h">
 			</File>
 			<File
-				RelativePath="..\common\dstrings.cpp">
-			</File>
-			<File
-				RelativePath="..\common\dstrings.h">
-			</File>
-			<File
 				RelativePath="..\common\dthinker.cpp">
 			</File>
 			<File
@@ -591,6 +648,9 @@
 			</File>
 			<File
 				RelativePath="..\common\gi.h">
+			</File>
+			<File
+				RelativePath="..\common\gstrings.h">
 			</File>
 			<File
 				RelativePath="..\common\huffman.cpp">
@@ -767,6 +827,12 @@
 				RelativePath="..\common\p_sight.cpp">
 			</File>
 			<File
+				RelativePath="..\common\p_snapshot.cpp">
+			</File>
+			<File
+				RelativePath="..\common\p_snapshot.h">
+			</File>
+			<File
 				RelativePath="..\common\p_spec.cpp">
 			</File>
 			<File
@@ -866,6 +932,15 @@
 				RelativePath="..\common\stats.h">
 			</File>
 			<File
+				RelativePath="..\common\stringenums.h">
+			</File>
+			<File
+				RelativePath="..\common\stringtable.cpp">
+			</File>
+			<File
+				RelativePath="..\common\stringtable.h">
+			</File>
+			<File
 				RelativePath="..\common\szp.h">
 			</File>
 			<File
@@ -912,6 +987,9 @@
 			Name="SDL Files"
 			Filter="">
 			<File
+				RelativePath="..\client\sdl\afxres.h">
+			</File>
+			<File
 				RelativePath="..\client\sdl\hardware.cpp">
 			</File>
 			<File
@@ -927,10 +1005,22 @@
 				RelativePath="..\client\sdl\i_main.cpp">
 			</File>
 			<File
+				RelativePath="..\client\sdl\i_midi.cpp">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_midi.h">
+			</File>
+			<File
 				RelativePath="..\client\sdl\i_music.cpp">
 			</File>
 			<File
 				RelativePath="..\client\sdl\i_music.h">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_musicsystem.cpp">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_musicsystem.h">
 			</File>
 			<File
 				RelativePath="..\client\sdl\i_sdlvideo.cpp">

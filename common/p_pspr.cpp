@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,10 +23,12 @@
 //-----------------------------------------------------------------------------
 
 #include <stdlib.h>
+#include <map>
 
 #include "doomdef.h"
 #include "d_event.h"
 
+#include "cmdlib.h"
 #include "c_cvars.h"
 
 #include "m_random.h"
@@ -41,23 +43,148 @@
 
 #define LOWERSPEED				FRACUNIT*6
 #define RAISESPEED				FRACUNIT*6
-
 #define WEAPONBOTTOM			128*FRACUNIT
 #define WEAPONTOP				32*FRACUNIT
 
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(sv_allownobob)
-EXTERN_CVAR(cl_nobob)
+EXTERN_CVAR(sv_allowmovebob)
+EXTERN_CVAR(sv_allowpwo)
+
+CVAR_FUNC_IMPL(cl_movebob)
+{
+	if (var > 1.0f)
+		var.Set(1.0f);
+	if (var < 0.0f)
+		var.Set(0.0f);
+}
+
+const char *weaponnames[] =
+{
+	"Fist",
+	"Pistol",
+	"Shotgun",
+	"Chaingun",
+	"Rocket Launcher",
+	"Plasma Gun",
+	"BFG9000",
+	"Chainsaw",
+	"Super Shotgun",
+	"Chainsaw"
+};
+
+// [SL] 2011-11-14 - Maintain what the vertical position of the weapon sprite
+// would be for each player if full movebob were enabled.  This allows the
+// timing of changing weapons to remain in sync with vanilla Doom. The map's
+// key is the player's id, with the value being psp->sy.
+std::map<byte, fixed_t> weapon_ypos;
+
+void P_SetWeaponPreference(player_t *player, int slot, weapontype_t weapon)
+{
+	weapontype_t *prefs = player->userinfo.weapon_prefs;
+
+	if (weapon < 0 || weapon >= NUMWEAPONS)
+		return;
+
+	Printf(PRINT_HIGH, "DEBUG: Setting weapon slot %d to weapon %d\n", slot, weapon);
+
+	// search weapon list for the slot that already has this weapon
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		if (prefs[i] == weapon && slot != (int)i)
+		{
+			// swap this with slot's old value
+			Printf(PRINT_HIGH, "prefs[slot] (%d) = %d, prefs[i] (%d) = %d\n", slot, prefs[slot], i, prefs[i]);
+			prefs[i] = prefs[slot];
+			break;
+		}
+	}
+
+	prefs[slot] = weapon;
+	Printf(PRINT_HIGH, "prefs[slot] (%d) = %d\n", slot, prefs[slot]);
+}
+
+
+//
+// P_CalculateBobXPosition
+//
+// Determines the horizontal position of the weapon sprite on the screen.
+// Weapon bobbing is scaled by the scale parameter, where scale is a
+// percentage between 0 and 1.
+//
+int P_CalculateBobXPosition(player_t *player, float scale)
+{
+	if (!player)
+		return FRACUNIT;
+
+	if (scale < 0.0f)
+		scale = 0.0f;
+	if (scale > 1.0f)
+		scale = 1.0f;
+
+	angle_t angle = (128*level.time)&FINEMASK;
+	
+	fixed_t bobamount = FixedMul(player->bob, finecosine[angle]);
+	fixed_t scaledbob = FixedMul(bobamount, scale * FRACUNIT);
+	return FRACUNIT + scaledbob;
+}
+
+//
+// P_CalculateBobYPosition
+//
+// Determines the vertical position of the weapon sprite on the screen.
+// Weapon bobbing is scaled by the scale parameter, where scale is a
+// percentage between 0 and 1.
+//
+static int P_CalculateBobYPosition(player_t *player, float scale)
+{
+	if (!player)
+		return WEAPONTOP;
+	
+	if (scale < 0.0f)
+		scale = 0.0f;
+	if (scale > 1.0f)
+		scale = 1.0f;
+
+	angle_t angle = (128*level.time) & FINEMASK;
+	angle &= FINEANGLES/2-1;
+	
+	fixed_t bobamount = FixedMul(player->bob, finesine[angle]);
+	fixed_t scaledbob = FixedMul(bobamount, scale * FRACUNIT);
+
+	return WEAPONTOP + scaledbob;
+}
+
+
+//
+// A_BobWeapon
+//
+// Bobs the player's weapon sprite based on movement.  The bobbing amount
+// is scaled according to the player's preference.  To maintain sync with
+// servers and vanilla demos, we also save what the vertical position of
+// the sprite would be if the player used unscaled bobbing.
+static void P_BobWeapon(player_t *player)
+{
+	if (!player)
+		return;
+
+	float scale_amount = 1.0f;
+	
+	if ((clientside && sv_allowmovebob) || (clientside && serverside))
+		scale_amount = cl_movebob;
+	
+	struct pspdef_s *psp = &player->psprites[player->psprnum];
+	psp->sx = P_CalculateBobXPosition(player, scale_amount);
+	psp->sy = P_CalculateBobYPosition(player, scale_amount);
+
+	weapon_ypos[player->id] = P_CalculateBobYPosition(player, 1.0f);
+}
+
 
 //
 // P_SetPsprite
 //
-void
-P_SetPsprite
-( player_t*	player,
-  int		position,
-  statenum_t	stnum )
+void P_SetPsprite(player_t* player, int position, statenum_t stnum)
 {
 	pspdef_t*	psp;
 	state_t*	state;
@@ -86,6 +213,7 @@ P_SetPsprite
 			// coordinate set
 			psp->sx = state->misc1 << FRACBITS;
 			psp->sy = state->misc2 << FRACBITS;
+			weapon_ypos[player->id] = psp->sy;
 		}
 
 		// Call action routine.
@@ -132,9 +260,158 @@ void P_BringUpWeapon (player_t *player)
 
 	player->pendingweapon = wp_nochange;
 	player->psprites[ps_weapon].sy = WEAPONBOTTOM;
+	weapon_ypos[player->id] = WEAPONBOTTOM;
 
 	P_SetPsprite (player, ps_weapon, newstate);
 }
+
+//
+// P_EnoughAmmo
+//
+// Returns true if the player has enough ammo to switch to the specified
+// weapon.  Note that this emulates vanilla Doom bugs relating to the amount
+// of ammo needed to switch to the BFG and SSG if switching == true.
+//
+bool P_EnoughAmmo(player_t *player, weapontype_t weapon, bool switching = false)
+{
+	ammotype_t		ammo = weaponinfo[weapon].ammo;
+	int				count = 1;	// default amount of ammo for most weapons
+
+    // Minimal amount for one shot varies.
+    if (weapon == wp_bfg)
+        count = deh.BFGCells;
+	else if (weapon == wp_supershotgun)
+		count = 2;
+
+	// Vanilla Doom requires > 40 cells to switch to BFG and > 2 shells to
+	// switch to SSG when current weapon is out of ammo due to a bug. 
+	if (switching && (weapon == wp_bfg || weapon == wp_supershotgun))
+		count++;
+
+    // Some do not need ammunition anyway.
+    // Return if current ammunition sufficient.
+    if (ammo == am_noammo || player->ammo[ammo] >= count)
+        return true;
+
+	return false;
+}
+
+//
+// P_SwitchWeapon
+//
+// Changes to the player's most preferred weapon based on availibilty and ammo.
+// Note that this emulates vanilla Doom bugs relating to the amount of ammo 
+// needed to switch to the BFG and SSG.
+//
+void P_SwitchWeapon(player_t *player)
+{
+	const weapontype_t *prefs;
+
+	if ((multiplayer && !sv_allowpwo) || demoplayback || demorecording)
+		prefs = default_weaponprefs;
+	else
+		prefs = player->userinfo.weapon_prefs;
+
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		weapontype_t weapon = prefs[i];
+		if (player->weaponowned[weapon] &&
+			P_EnoughAmmo(player, weapon, true) &&
+			weapon != player->readyweapon)
+		{
+			// Switch to this weapon
+			player->pendingweapon = weapon;
+			// Now set appropriate weapon overlay.
+			P_SetPsprite (player, ps_weapon,
+				  weaponinfo[player->readyweapon].downstate);
+
+			return;
+		}
+	}
+}
+
+//
+// P_GetNextWeapon
+//
+// Returns the weapon that comes after the player's current weapon.
+// If forward is true, the next higher numbered weapon is chosen.  If forward
+// is false, the next lower numbered weapon is chosen.
+//
+weapontype_t P_GetNextWeapon(player_t *player, bool forward)
+{
+	gitem_t *item;
+
+	if (player->pendingweapon != wp_nochange)
+		item = FindItem(weaponnames[player->pendingweapon]);
+	else
+		item = FindItem(weaponnames[player->readyweapon]);
+
+	if (!item)
+		return wp_nochange;
+
+	int selected_weapon = ITEM_INDEX(item);
+
+	for (int i = 1; i <= num_items; i++)
+	{
+		int index;
+		if (forward)
+			index = (selected_weapon + i) % num_items;
+		else	// traverse backwards
+			index = (selected_weapon + num_items - i) % num_items;
+
+		if (!(itemlist[index].flags & IT_WEAPON))
+			continue;
+		if (!player->weaponowned[itemlist[index].offset])
+			continue;
+		if (!player->ammo[weaponinfo[itemlist[index].offset].ammo])
+			continue;
+		if (itemlist[index].offset == wp_plasma && gamemode == shareware)
+			continue;
+		if (itemlist[index].offset == wp_bfg && gamemode == shareware)
+			continue;
+		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial)
+			continue;
+		return (weapontype_t)itemlist[index].offset;
+	}
+	
+	return wp_nochange;
+}
+
+//
+// P_CheckSwitchWeapon
+//
+// Returns true if the player's current weapon should be switched
+// to the one indicated by weapon, based on the player's preference.
+// Called by P_GiveWeapon when a player touches a weapon mapthing.
+//
+bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
+{
+	// Always switch - vanilla Doom behavior
+	if ((multiplayer && !sv_allowpwo) || 
+		player->userinfo.switchweapon == WPSW_ALWAYS ||
+		demoplayback || demorecording)
+	{
+		return true;
+	}
+
+	// Never switch - player has to manually change themselves
+	if (player->userinfo.switchweapon == WPSW_NEVER)
+		return false;
+
+	// Use player's preferred weapon ordering
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		if (player->userinfo.weapon_prefs[i] == player->readyweapon)
+			return false;	// current weapon is preferable
+		else if (player->userinfo.weapon_prefs[i] == weapon)
+			return true;	// this other weapon would be preferable
+	}
+
+	// Somehow the player's weapon_preference choices are screwed up.
+	// Change anyway.
+	return true;  
+}
+
 
 //
 // P_CheckAmmo
@@ -143,80 +420,11 @@ void P_BringUpWeapon (player_t *player)
 //
 BOOL P_CheckAmmo (player_t *player)
 {
-	ammotype_t			ammo;
-	int 				count;
-
-	ammo = weaponinfo[player->readyweapon].ammo;
-
-	// Minimal amount for one shot varies.
-	if (player->readyweapon == wp_bfg)
-		count = deh.BFGCells;
-	else if (player->readyweapon == wp_supershotgun)
-		count = 2;		// Double barrel.
-	else
-		count = 1;		// Regular.
-
-	// Some do not need ammunition anyway.
-	// Return if current ammunition sufficient.
-	if (ammo == am_noammo || player->ammo[ammo] >= count)
+	if (P_EnoughAmmo(player, player->readyweapon))
 		return true;
-
-	// Out of ammo, pick a weapon to change to.
-	// Preferences are set here.
-	do
-	{
-		if (player->weaponowned[wp_plasma]
-			&& player->ammo[am_cell])
-		{
-			player->pendingweapon = wp_plasma;
-		}
-		else if (player->weaponowned[wp_supershotgun]
-				 && player->ammo[am_shell]>2)
-		{
-			player->pendingweapon = wp_supershotgun;
-		}
-		else if (player->weaponowned[wp_chaingun]
-				 && player->ammo[am_clip])
-		{
-			player->pendingweapon = wp_chaingun;
-		}
-		else if (player->weaponowned[wp_shotgun]
-				 && player->ammo[am_shell])
-		{
-			player->pendingweapon = wp_shotgun;
-		}
-		else if (player->ammo[am_clip])
-		{
-			player->pendingweapon = wp_pistol;
-		}
-		else if (player->weaponowned[wp_chainsaw])
-		{
-			player->pendingweapon = wp_chainsaw;
-		}
-		else if (player->weaponowned[wp_missile]
-				 && player->ammo[am_misl])
-		{
-			player->pendingweapon = wp_missile;
-		}
-		else if (player->weaponowned[wp_bfg]
-				 && player->ammo[am_cell]>40)
-		{
-			player->pendingweapon = wp_bfg;
-		}
-		else
-		{
-			// If everything fails.
-			player->pendingweapon = wp_fist;
-		}
-
-	} while (player->pendingweapon == wp_nochange);
-
-
-	// Now set appropriate weapon overlay.
-	P_SetPsprite (player,
-				  ps_weapon,
-				  weaponinfo[player->readyweapon].downstate);
-
+	
+	// no enough ammo with the current weapon, choose another one
+	P_SwitchWeapon(player);
 	return false;
 }
 
@@ -258,12 +466,20 @@ void P_FireWeapon (player_t *player)
 	if (!P_CheckAmmo (player))
 		return;
 
+	// [tm512] Send the client the weapon they just fired so
+	// that they can fix any weapon desyncs that they get - apr 14 2012
+	if (serverside && !clientside)
+	{
+		MSG_WriteMarker (&player->client.reliablebuf, svc_fireweapon);
+		MSG_WriteByte (&player->client.reliablebuf, player->readyweapon);
+		MSG_WriteLong (&player->client.reliablebuf, player->tic);
+	}
+
 	P_SetMobjState (player->mo, S_PLAY_ATK1);
 	newstate = weaponinfo[player->readyweapon].atkstate;
 	P_SetPsprite (player, ps_weapon, newstate);
 	P_NoiseAlert (player->mo, player->mo);
 }
-
 
 
 //
@@ -272,11 +488,8 @@ void P_FireWeapon (player_t *player)
 //
 void P_DropWeapon (player_t *player)
 {
-	P_SetPsprite (player,
-				  ps_weapon,
-				  weaponinfo[player->readyweapon].downstate);
+	P_SetPsprite (player, ps_weapon, weaponinfo[player->readyweapon].downstate);
 }
-
 
 
 //
@@ -286,12 +499,9 @@ void P_DropWeapon (player_t *player)
 // Follows after getting weapon up,
 // or after previous attack/fire sequence.
 //
-void
-A_WeaponReady
-(AActor *mo)
+void A_WeaponReady(AActor *mo)
 {
 	statenum_t	newstate;
-	int 		angle;
 
     player_t *player = mo->player;
     struct pspdef_s *psp = &player->psprites[player->psprnum];
@@ -337,15 +547,7 @@ A_WeaponReady
 		player->attackdown = false;
 
 	// bob the weapon based on movement speed
-	if (((demoplayback || demorecording) && democlassic) ||
-		(!multiplayer && !cl_nobob) || 
-		(multiplayer && (!sv_allownobob || !cl_nobob))) 
-	{
-		angle = (128*level.time)&FINEMASK;
-		psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angle]);
-		angle &= FINEANGLES/2-1;
-		psp->sy = WEAPONTOP + FixedMul (player->bob, finesine[angle]);
-	}
+	P_BobWeapon(player);
 }
 
 //
@@ -401,15 +603,17 @@ A_Lower
     struct pspdef_s *psp = &player->psprites[player->psprnum];
 
 	psp->sy += LOWERSPEED;
+	weapon_ypos[player->id] += LOWERSPEED;
 
-	// Is already down.
-	if (psp->sy < WEAPONBOTTOM )
+	// Not yet lowered to the bottom
+	if (weapon_ypos[player->id] < WEAPONBOTTOM)
 		return;
 
 	// Player is dead.
 	if (player->playerstate == PST_DEAD)
 	{
 		psp->sy = WEAPONBOTTOM;
+		weapon_ypos[player->id] = WEAPONBOTTOM;
 
 		// don't bring weapon back up
 		return;
@@ -444,11 +648,13 @@ A_Raise
     struct pspdef_s *psp = &player->psprites[player->psprnum];
 
 	psp->sy -= RAISESPEED;
+	weapon_ypos[player->id] -= RAISESPEED;
 
-	if (psp->sy > WEAPONTOP )
+	if (weapon_ypos[player->id] > WEAPONTOP)
 		return;
 
 	psp->sy = WEAPONTOP;
+	weapon_ypos[player->id] = WEAPONTOP;
 
 	// The weapon has been raised all the way,
 	//	so change to the ready state.
@@ -631,6 +837,65 @@ void A_FirePlasma (AActor *mo)
 		P_SpawnPlayerMissile (player->mo, MT_PLASMA);
 }
 
+//
+// [RH] A_FireRailgun
+//
+static int RailOffset;
+
+void A_FireRailgun (AActor *mo)
+{
+	int damage;
+	
+    player_t *player = mo->player;
+
+	if (player->ammo[weaponinfo[player->readyweapon].ammo] < 10) 
+	{
+		int ammo = player->ammo[weaponinfo[player->readyweapon].ammo];
+		player->ammo[weaponinfo[player->readyweapon].ammo] = 0;
+		player->ammo[weaponinfo[player->readyweapon].ammo] = ammo;
+		return;
+	}
+
+	if (!sv_infiniteammo)
+		player->ammo[weaponinfo[player->readyweapon].ammo] -= 10;
+
+	P_SetPsprite (player,
+				  ps_flash,
+				  (statenum_t)(weaponinfo[player->readyweapon].flashstate+(P_Random (player->mo)&1)));
+
+	if (sv_gametype > 0)
+		damage = 100;
+	else
+		damage = 150;
+
+	// [SL] 2012-04-18 - Move players and sectors back to their positions when
+	// this player hit the fire button clientside.
+	Unlag::getInstance().reconcile(player->id);
+
+	P_RailAttack (player->mo, damage, RailOffset);
+
+	// [SL] 2012-04-18 - Restore players and sectors to their current position
+	// according to the server.
+	Unlag::getInstance().restore(player->id);
+
+	RailOffset = 0;
+}
+
+void A_FireRailgunRight (AActor *mo)
+{
+	RailOffset = 10;
+	A_FireRailgun (mo);
+}
+
+void A_FireRailgunLeft (AActor *mo)
+{
+	RailOffset = -10;
+	A_FireRailgun (mo);
+}
+
+void A_RailWait (AActor *mo)
+{
+}
 
 //
 // P_BulletSlope
@@ -871,14 +1136,15 @@ void A_BFGSpray (AActor *mo)
 	if(!serverside)
 		return;
 
-	// note: mo->target is the player who fired the BFG
-	if (!mo->target || !mo->target->player)
+	// note: mo->target is the AActor of the player who fired the BFG
+	if (!mo->target)
 		return;
 
 	// [SL] 2011-07-12 - Move players and sectors back to their positions when
 	// this player hit the fire button clientside.
 	player_t *player = mo->target->player;	// player who fired BFG
-	Unlag::getInstance().reconcile(player->id);
+	if (player)
+		Unlag::getInstance().reconcile(player->id);
 
 	// offset angles from its attack angle
 	for (i=0 ; i<40 ; i++)
@@ -895,7 +1161,7 @@ void A_BFGSpray (AActor *mo)
 		fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
 		// [SL] 2011-07-12 - In unlagged games, spawn BFG tracers at the 
 		// opponent's current position, not at their reconciled position
-		if (linetarget->player)
+		if (player && linetarget->player)
 		{
 			Unlag::getInstance().getReconciliationOffset(   player->id,
 															linetarget->player->id,
@@ -916,7 +1182,8 @@ void A_BFGSpray (AActor *mo)
 
 	// [SL] 2011-07-12 - Restore players and sectors to their current position
 	// according to the server.
-	Unlag::getInstance().restore(player->id);
+	if (player)
+		Unlag::getInstance().restore(player->id);
 }
 
 
@@ -929,7 +1196,6 @@ void A_BFGsound (AActor *mo)
     
 	A_FireSound(player, "weapons/bfgf");
 }
-
 
 
 //
@@ -948,9 +1214,6 @@ void P_SetupPsprites (player_t* player)
 	player->pendingweapon = player->readyweapon;
 	P_BringUpWeapon (player);
 }
-
-
-
 
 //
 // P_MovePsprites
@@ -1006,6 +1269,28 @@ void A_CloseShotgun2 (AActor *mo)
     
 	A_FireSound(player, "weapons/sshotc");
 	A_ReFire(mo);
+}
+
+
+//
+// A_ForceWeaponFire
+//
+// Immediately changes a players weapon to a new weapon and new animation state
+// 
+void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic)
+{
+	if (!mo || !mo->player)
+		return;
+		
+	player_t *player = mo->player;
+	
+	player->weaponowned[weapon] = true;
+	player->readyweapon = weapon;
+	P_SetPsprite(player, ps_weapon, weaponinfo[player->readyweapon].atkstate);
+	player->psprites[player->psprnum].sy = WEAPONTOP;
+		
+	while (tic++ < gametic)
+		P_MovePsprites(player);
 }
 
 FArchive &operator<< (FArchive &arc, pspdef_t &def)

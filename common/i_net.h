@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -115,6 +115,11 @@ enum svc_t
     svc_midprint,
 	svc_svgametic,			// [SL] 2011-05-11 - [byte]
 	svc_timeleft,
+	svc_inttimeleft,		// [ML] For intermission timer
+	svc_mobjtranslation,	// [SL] 2011-09-11 - [byte]
+	svc_fullupdatedone,		// [SL] Inform client the full update is over
+	svc_railtrail,			// [SL] Draw railgun trail and play sound
+	svc_readystate,			// [AM] Broadcast ready state to client
 
 	// for co-op
 	svc_mobjstate = 70,
@@ -130,8 +135,13 @@ enum svc_t
 	// netdemos - NullPoint
 	svc_netdemocap = 100,
 	svc_netdemostop = 101,
-	svc_netdemosnapshot = 102,
-	
+	svc_netdemoloadsnap = 102,
+
+	svc_vote_update = 150, // [AM] - Send the latest voting state to the client.
+	svc_maplist = 155, // [AM] - Return a maplist status.
+	svc_maplist_update = 156, // [AM] - Send the entire maplist to the client in chunks.
+	svc_maplist_index = 157, // [AM] - Send the current and next map index to the client.
+
 	// for compressed packets
 	svc_compressed = 200,
 
@@ -162,6 +172,12 @@ enum clc_t
 	clc_kill,				// denis - suicide
 	clc_cheat,				// denis - god, pumpkins, etc
     clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc)
+	clc_callvote,			// [AM] - Calling a vote
+	clc_vote,				// [AM] - Casting a vote
+	clc_maplist,			// [AM] - Maplist status request.
+	clc_maplist_update,     // [AM] - Request the entire maplist from the server.
+	clc_getplayerinfo,
+	clc_ready,				// [AM] Toggle ready state.
 
 	// for when launcher packets go astray
 	clc_launcher_challenge = 212,

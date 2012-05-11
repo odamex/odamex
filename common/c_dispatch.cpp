@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -560,7 +560,8 @@ DConsoleCommand::~DConsoleCommand ()
 }
 
 DConsoleAlias::DConsoleAlias (const char *name, const char *command)
-	: DConsoleCommand (name),  state_lock(false), m_Command(command)
+	:	DConsoleCommand(StdStringToLower(name).c_str()),  state_lock(false),
+		m_Command(command)
 {
 }
 
@@ -855,7 +856,7 @@ BEGIN_COMMAND (stoplog)
 }
 END_COMMAND (stoplog)
 
-BOOL P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always);
 
 BEGIN_COMMAND (puke)

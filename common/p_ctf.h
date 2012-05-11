@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,14 +54,14 @@ struct flagdata
 	AActor::AActorPtr actor;
 
 	// Integer representation of WHO has each flag (player id)
-	size_t flagger;
+	byte flagger;
 	int	pickup_time;
 
 	// Flag locations
 	int x, y, z;
 
 	// Flag Timout Counters
-	size_t timeout;
+	int timeout;
 
 	// True when a flag has been dropped
 	flag_state_t state;
@@ -117,6 +117,9 @@ mapthing2_t *CTF_SelectTeamPlaySpot(player_t &player, int selections);
 extern flagdata CTFdata[NUMFLAGS];
 extern int TEAMpoints[NUMFLAGS];
 extern const char *team_names[NUMTEAMS+2];
+
+FArchive &operator<< (FArchive &arc, flagdata &flag);
+FArchive &operator>> (FArchive &arc, flagdata &flag);
 
 //	Colors
 #define	BLUECOLOR		200

@@ -343,6 +343,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\common\p_effect.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\common\p_inter.h"
 					>
 				</File>
@@ -588,6 +592,10 @@
 				</File>
 				<File
 					RelativePath="..\..\common\p_doors.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\common\p_effect.cpp"
 					>
 				</File>
 				<File
@@ -857,6 +865,10 @@
 			</File>
 			<File
 				RelativePath="..\src\m_misc.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\p_effect.cpp"
 				>
 			</File>
 			<File

@@ -16,6 +16,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Os" />
+					<Add option="-fno-inline" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
@@ -25,7 +26,7 @@
 					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32" />
 				</Linker>
 				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_PLAT" value="msw" />
@@ -42,6 +43,7 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
+					<Add option="-fno-inline" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
@@ -50,7 +52,7 @@
 					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32" />
 				</Linker>
 				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_CFG" value="" />
@@ -239,6 +241,7 @@
 					<Add option="/Od" />
 					<Add option="/W2" />
 					<Add option="/Zc:forScope" />
+					<Add option="/Zi" />
 					<Add option="/Zi /D_DEBUG" />
 					<Add option="/DWINVER=0x0400" />
 					<Add option="/DwxUSE_GUI=1" />
@@ -288,7 +291,7 @@
 					<Add directory=".\res" />
 				</Linker>
 				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
 				</ExtraCommands>
 				<Environment>
@@ -337,6 +340,33 @@
 			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 			<Add directory=".\res" />
 		</Linker>
+		<Unit filename="..\odalpapi\net_error.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_error.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_io.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_io.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_packet.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_packet.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_utils.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_utils.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\typedefs.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
 		<Unit filename="res\icons.xrc" />
 		<Unit filename="res\odalaunch.rc">
 			<Option compilerVar="WINDRES" />
@@ -409,37 +439,19 @@
 			<Option target="Mac Release" />
 			<Option target="Mac Debug" />
 		</Unit>
-		<Unit filename="..\odalpapi\net_error.cpp">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_error.h">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_io.cpp">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_io.h">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_packet.cpp">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_packet.h">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_utils.cpp">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_utils.h">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\typedefs.h">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />
 			<debugger />
+			<DoxyBlocks>
+				<comment_style block="0" line="0" />
+				<doxyfile_project />
+				<doxyfile_build />
+				<doxyfile_warnings />
+				<doxyfile_output />
+				<doxyfile_dot />
+				<general />
+			</DoxyBlocks>
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

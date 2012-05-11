@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,13 +51,7 @@ extern int headsupactive;
 
 class player_s;
 void HU_DrawScores (player_s *me);
-
-// GhostlyDeath -- Target Names Stuff
-/*EXTERN_CVAR(hud_targetnames)
-EXTERN_CVAR(hud_targetdead)
-EXTERN_CVAR(hud_targetenemies)
-EXTERN_CVAR(hud_targetallies)*/
-
+void HU_DisplayTimer (int x, int y, bool scale = true);
 #endif
 
 

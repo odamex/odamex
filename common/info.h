@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -201,8 +201,8 @@ typedef enum
 
 } spritenum_t;
 
-inline FArchive &operator<< (FArchive &arc, spritenum_t i) { return arc << (WORD)i; }
-inline FArchive &operator>> (FArchive &arc, spritenum_t &i) { return arc >> (WORD &)i; }
+inline FArchive &operator<< (FArchive &arc, spritenum_t i) { DWORD out; out = i; return arc << out; }
+inline FArchive &operator>> (FArchive &arc, spritenum_t &i) { DWORD in; arc >> in; i = (spritenum_t)in; return arc; }
 
 typedef enum
 {
@@ -1226,8 +1226,8 @@ typedef enum
 	NUMSTATES
 } statenum_t;
 
-inline FArchive &operator<< (FArchive &arc, statenum_t i) { return arc << (WORD)i; }
-inline FArchive &operator>> (FArchive &arc, statenum_t &i) { return arc >> (WORD &)i; }
+inline FArchive &operator<< (FArchive &arc, statenum_t i) { DWORD out; out = i; return arc << out; }
+inline FArchive &operator>> (FArchive &arc, statenum_t &i) { DWORD in; arc >> in; i = (statenum_t)in; return arc; }
 
 typedef struct
 {
@@ -1446,13 +1446,14 @@ typedef enum {
 	MT_BRIDGE16,
 	MT_BRIDGE8,
 	MT_ZDOOMBRIDGE,
+	MT_MUSICCHANGE,
 	
 	NUMMOBJTYPES
 
 } mobjtype_t;
 
-inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { return arc << (WORD)i; }
-inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { return arc >> (WORD &)i; }
+inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { DWORD out; out = i; return arc << out; }
+inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { DWORD in; arc >> in; i = (mobjtype_t)in; return arc; }
 
 typedef struct
 {

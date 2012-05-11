@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id: r_draw.h 1837 2010-09-02 04:21:09Z spleen $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -73,6 +73,8 @@ extern void (*R_DrawTranslatedColumn)(void);
 // No Sepctre effect needed.
 extern void (*R_DrawSpan)(void);
 
+extern void (*R_DrawSlopeSpan)(void);
+
 // [RH] Span blit into an interleaved intermediate buffer
 extern void (*R_DrawColumnHoriz)(void);
 void R_DrawMaskedColumnHoriz (column_t *column);
@@ -135,6 +137,7 @@ void	R_DrawFuzzColumnP_C (void);
 void	R_DrawTranslucentColumnP_C (void);
 void	R_DrawTranslatedColumnP_C (void);
 void	R_DrawSpanP_C (void);
+void	R_DrawSlopeSpanIdealP_C (void);
 
 void	R_DrawColumnD_C (void);
 void	R_DrawFuzzColumnD_C (void);
@@ -152,6 +155,7 @@ extern "C" void	R_DrawFuzzColumnP_ASM (void);
 void	R_DrawTranslucentColumnP_C (void);
 void	R_DrawTranslatedColumnP_C (void);
 extern "C" void	R_DrawSpanP_ASM (void);
+void	R_DrawSlopeSpanIdealP_C (void);		// [SL] NO ASM version yet
 
 void	R_DrawColumnD_C (void);
 void	R_DrawFuzzColumnD_C (void);
@@ -187,10 +191,38 @@ extern "C" byte*			ds_source;
 
 extern "C" int				ds_color;		// [RH] For flat color (no texturing)
 
+// [SL] 2012-03-19 - For sloped planes
+extern "C" double			ds_iu;
+extern "C" double			ds_iv;
+extern "C" double			ds_iustep;
+extern "C" double			ds_ivstep;
+extern "C" double			ds_id;
+extern "C" double			ds_idstep;
+extern "C" byte				*slopelighting[MAXWIDTH];
+
 extern byte*			translationtables;
 extern byte*			dc_translation;
 
 extern fixed_t dc_translevel;
+
+enum
+{
+	TRANSLATION_Shaded,
+	TRANSLATION_Players,
+	TRANSLATION_PlayersExtra,
+	TRANSLATION_Standard,
+	TRANSLATION_LevelScripted,
+	TRANSLATION_Decals,
+
+	NUM_TRANSLATION_TABLES
+};
+
+extern byte*			dc_translation;
+
+#define TRANSLATION(a,b)	(((a)<<8)|(b))
+
+const int MAX_ACS_TRANSLATIONS = 32;
+
 
 
 // [RH] Double view pixels by detail mode

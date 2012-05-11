@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -169,6 +169,12 @@ int main(int argc, char *argv[])
                     LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;                
             }
         }
+#endif
+
+#ifdef LINUX
+		// [SL] 2011-12-21 - Ensure we're getting raw DGA mouse input from X11,
+		// bypassing X11's mouse acceleration
+		putenv("SDL_VIDEO_X11_DGAMOUSE=1");
 #endif
 
 		if (SDL_Init (SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)

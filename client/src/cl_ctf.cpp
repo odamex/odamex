@@ -3,10 +3,11 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License // as published by the Free Software Foundation; either version 2
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -26,7 +27,9 @@
 #include	"z_zone.h"
 #include	"v_video.h"
 #include	"p_local.h"
+#include	"p_inter.h"
 #include	"p_ctf.h"
+#include	"p_mobj.h"
 #include    "st_stuff.h"
 
 flagdata CTFdata[NUMFLAGS];
@@ -115,7 +118,11 @@ void CL_CTFEvent (void)
 		case SCORE_FIRSTGRAB:
 		case SCORE_MANUALRETURN:
 			if(validplayer(player))
+			{
 				CTF_CarryFlag(player, flag);
+				if (player.id == displayplayer().id)
+					player.bonuscount = BONUSADD;
+			}
 			break;
 
 		case SCORE_CAPTURE:
@@ -205,14 +212,10 @@ void CTF_CarryFlag (player_t &player, flag_t flag)
 	CTFdata[flag].flagger = player.id;
 	CTFdata[flag].state = flag_carried;
 
-	// spawn visible flags on other players
-	if(&player != &consoleplayer())
-	{
-		AActor *actor = new AActor(0, 0, 0, flag_table[flag][flag_carried]);
-		CTFdata[flag].actor = actor->ptr();
+	AActor *actor = new AActor(0, 0, 0, flag_table[flag][flag_carried]);
+	CTFdata[flag].actor = actor->ptr();
 
-		CTF_MoveFlags();
-	}
+	CTF_MoveFlags();
 }
 
 //
@@ -229,36 +232,31 @@ void CTF_MoveFlags ()
 			player_t &player = idplayer(CTFdata[i].flagger);
 			AActor *flag = CTFdata[i].actor;
 
-			if(!player.mo || &player == &displayplayer())
+			if (!validplayer(player) || !player.mo)
 			{
-				flag->UnlinkFromWorld ();
-				return;
+				// [SL] 2012-12-13 - Remove a flag if it's being carried but
+				// there's not a valid player carrying it (should not happen)
+				CTFdata[i].flagger = 0;
+				CTFdata[i].state = flag_home;
+				if(CTFdata[i].actor)
+					CTFdata[i].actor->Destroy();
+				continue;
 			}
-
-			extern fixed_t tmfloorz;
-			extern fixed_t tmceilingz;
 
 			unsigned an = player.mo->angle >> ANGLETOFINESHIFT;
 			fixed_t x = (player.mo->x + FixedMul (-2*FRACUNIT, finecosine[an]));
 			fixed_t y = (player.mo->y + FixedMul (-2*FRACUNIT, finesine[an]));
 
-			P_CheckPosition (player.mo, player.mo->x, player.mo->y);
-			flag->UnlinkFromWorld ();
-
-			flag->x = x;
-			flag->y = y;
-			flag->z = player.mo->z;
-			flag->floorz = tmfloorz;
-			flag->ceilingz = tmceilingz;
-
-			flag->LinkToWorld ();
+			CL_MoveThing(flag, x, y, player.mo->z);
 		}
 	}
 }
 
 void TintScreen(int color)
 {
-	if (screenblocks < 11)
+	// draw border around the screen excluding the status bar
+	// NOTE: status bar is not currently drawn when spectating
+	if (screenblocks < 11 && !consoleplayer().spectator)
 	{
 			screen->Clear (0,
 						   0,
@@ -284,6 +282,8 @@ void TintScreen(int color)
 						   screen->height - ST_HEIGHT,
 						   color);
 	}
+
+	// if there's no status bar, draw border around the full screen
 	else
 	{
 			screen->Clear (0,
@@ -327,6 +327,23 @@ void CTF_RunTics (void)
 
 	// Move the physical clientside flag sprites
 	CTF_MoveFlags();
+
+	// Don't draw the flag the display player is carrying as it blocks the view.
+	for (size_t flag = 0; flag < NUMFLAGS; flag++)
+	{
+		if (!CTFdata[flag].actor)
+			continue;
+
+		if (CTFdata[flag].flagger == displayplayer().id && 
+			CTFdata[flag].state == flag_carried)
+		{
+			CTFdata[flag].actor->flags2 |= MF2_DONTDRAW;
+		}
+		else
+		{
+			CTFdata[flag].actor->flags2 &= ~MF2_DONTDRAW;
+		}
+	}
 }
 
 //
@@ -341,11 +358,11 @@ void CTF_DrawHud (void)
 	if(sv_gametype != GM_CTF)
 		return;
 
-	player_t &co = consoleplayer();
+	player_t &player = displayplayer();
 	for(size_t i = 0; i < NUMFLAGS; i++)
 	{
 		hasflags[i] = false;
-		if(CTFdata[i].state == flag_carried && CTFdata[i].flagger == co.id)
+		if(CTFdata[i].state == flag_carried && CTFdata[i].flagger == player.id)
 		{
 			hasflag = true;
 			hasflags[i] = true;
@@ -378,12 +395,49 @@ void CTF_DrawHud (void)
 		else if (hasflags[1])
 			TintScreen(BestColor (DefaultPalette->basecolors, 255,
 				(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
-		else if (hasflags[2])
-			TintScreen(BestColor (DefaultPalette->basecolors, 255,
-				255, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
 	}
 }
 
+FArchive &operator<< (FArchive &arc, flagdata &flag)
+{
+	int netid = flag.actor ? flag.actor->netid : 0;
+	
+	arc << flag.flaglocated
+		<< netid
+		<< flag.flagger
+		<< flag.pickup_time
+		<< flag.x << flag.y << flag.z
+		<< flag.timeout
+		<< static_cast<byte>(flag.state)
+		<< flag.sb_tick;
+		
+	arc << 0;
+
+	return arc;
+}
+
+FArchive &operator>> (FArchive &arc, flagdata &flag)
+{
+	int netid;
+	byte state;
+	int dummy;
+	
+	arc >> flag.flaglocated
+		>> netid
+		>> flag.flagger
+		>> flag.pickup_time
+		>> flag.x >> flag.y >> flag.z
+		>> flag.timeout
+		>> state
+		>> flag.sb_tick;
+		
+	arc >> dummy;
+	
+	flag.state = static_cast<flag_state_t>(state);
+	flag.actor = AActor::AActorPtr();
+
+	return arc;
+}
 
 VERSION_CONTROL (cl_ctf_cpp, "$Id$")
 

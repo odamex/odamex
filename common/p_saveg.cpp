@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -85,6 +85,14 @@ void P_SerializeWorld (FArchive &arc)
 		{
 			arc << sec->floorheight
 				<< sec->ceilingheight
+				<< sec->floorplane.a
+				<< sec->floorplane.b
+				<< sec->floorplane.c
+				<< sec->floorplane.d
+				<< sec->ceilingplane.a
+				<< sec->ceilingplane.b
+				<< sec->ceilingplane.c
+				<< sec->ceilingplane.d
 				<< sec->floorpic
 				<< sec->ceilingpic
 				<< sec->lightlevel
@@ -156,6 +164,14 @@ void P_SerializeWorld (FArchive &arc)
 
 			arc >> sec->floorheight
 				>> sec->ceilingheight
+				>> sec->floorplane.a
+				>> sec->floorplane.b
+				>> sec->floorplane.c
+				>> sec->floorplane.d
+				>> sec->ceilingplane.a
+				>> sec->ceilingplane.b
+				>> sec->ceilingplane.c
+				>> sec->ceilingplane.d
 				>> sec->floorpic
 				>> sec->ceilingpic
 				>> sec->lightlevel
@@ -196,6 +212,11 @@ void P_SerializeWorld (FArchive &arc)
 			arc >> sec->alwaysfake
 				>> sec->waterzone
 				>> sec->MoreFlags;
+
+			sec->floorplane.invc = FixedDiv(FRACUNIT, sec->floorplane.c);
+			sec->floorplane.sector = sec;
+			sec->ceilingplane.invc = FixedDiv(FRACUNIT, sec->ceilingplane.c);
+			sec->ceilingplane.sector = sec;
 		}
 
 		// do lines

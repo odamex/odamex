@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -227,8 +227,9 @@ fixed_t opentop;
 fixed_t openbottom;
 fixed_t openrange;
 fixed_t lowfloor;
+sector_t *openbottomsec;
 
-void P_LineOpening (const line_t *linedef)
+void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx, fixed_t refy)
 {
 	sector_t *front, *back;
 	fixed_t fc, ff, bc, bf;
@@ -242,28 +243,64 @@ void P_LineOpening (const line_t *linedef)
 
 	front = linedef->frontsector;
 	back = linedef->backsector;
-	
-	fc = front->ceilingheight;
-	ff = front->floorheight;
-	bc = back->ceilingheight;
-	bf = back->floorheight;
 
-	opentop = fc < bc ? fc : bc;
+	fc = P_CeilingHeight(x, y, front);
+	ff = P_FloorHeight(x, y, front);
+	bc = P_CeilingHeight(x, y, back);
+	bf = P_FloorHeight(x, y, back);
 
-	if (front->floorheight > back->floorheight)
+	opentop = MIN(fc, bc);
+
+	bool usefront;
+
+	// [RH] fudge a bit for actors that are moving across lines
+	// bordering a slope/non-slope that meet on the floor. Note
+	// that imprecisions in the plane equation mean there is a
+	// good chance that even if a slope and non-slope look like
+	// they line up, they won't be perfectly aligned.
+	if (refx == MINFIXED ||	abs(ff - bf) > 256)
+		usefront = (ff > bf);
+	else
 	{
-		openbottom = front->floorheight;
-		lowfloor = back->floorheight;
+		if (P_IsPlaneLevel(&front->floorplane))
+			usefront = true;
+		else if (P_IsPlaneLevel(&back->floorplane))
+			usefront = false;
+		else
+			usefront = !P_PointOnLineSide(refx, refy, linedef);
+	}
+
+	if (usefront)
+	{
+		openbottom = ff;
+		lowfloor = bf;
+		openbottomsec = front;
 	}
 	else
 	{
-		openbottom = back->floorheight;
-		lowfloor = front->floorheight;
+		openbottom = bf;
+		lowfloor = ff;
+		openbottomsec = back;
 	}
 
 	openrange = opentop - openbottom;
 }
 
+//
+// P_LineOpeningIntercept
+//
+// [SL] 2012-02-08 - Calculates where the intercept crosses the line and calls
+// P_LineOpening() to obtain the correct values for opentop, openbottom, and
+// openrange on lines bordering sloping sectors.
+//
+void P_LineOpeningIntercept(const line_t *line, const intercept_t *in)
+{
+	
+	fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
+	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);	
+	
+	P_LineOpening(line, crossx, crossy);
+}
 
 //
 // THING POSITION SETTING
@@ -921,7 +958,6 @@ angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y)
 
 	return 0;
 }
-
 
 VERSION_CONTROL (p_maputl_cpp, "$Id$")
 

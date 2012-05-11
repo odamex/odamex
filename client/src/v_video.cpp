@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -52,7 +52,6 @@
 #include "m_swap.h"
 #include "m_menu.h"
 
-#include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
 
@@ -70,6 +69,7 @@ int DisplayWidth, DisplayHeight, DisplayBits;
 unsigned int Col2RGB8[65][256];
 byte RGB32k[32][32][32];
 
+void I_FlushInput();
 
 // [RH] The framebuffer is no longer a mere byte array.
 // There's also only one, not four.
@@ -240,8 +240,14 @@ void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
 }
 
 
-void DCanvas::Dim () const
+void DCanvas::Dim(int x1, int y1, int w, int h) const
 {
+	if (!buffer)
+		return;
+
+	if (x1 < 0 || x1 + w > width || y1 < 0 || y1 + h > height)
+		return;
+
 	if (ui_dimamount < 0)
 		ui_dimamount.Set (0.0f);
 	else if (ui_dimamount > 1)
@@ -252,33 +258,50 @@ void DCanvas::Dim () const
 
 	if (is8bit())
 	{
-		unsigned int *bg2rgb;
-		unsigned int fg;
-		int gap;
-		byte *spot;
+		int bg;
 		int x, y;
 
-		{
-			unsigned int *fg2rgb;
-			fixed_t amount;
+		fixed_t amount = (fixed_t)(ui_dimamount * 64);
+		unsigned int *fg2rgb = Col2RGB8[amount];
+		unsigned int *bg2rgb = Col2RGB8[64-amount];
+		unsigned int fg = 
+				fg2rgb[V_GetColorFromString(DefaultPalette->basecolors, ui_dimcolor.cstring())];
+		
+		byte *dest = buffer + y1 * pitch + x1;
+		int gap = pitch - w;
 
-			amount = (fixed_t)(ui_dimamount * 64);
-			fg2rgb = Col2RGB8[amount];
-			bg2rgb = Col2RGB8[64-amount];
-			fg = fg2rgb[V_GetColorFromString (DefaultPalette->basecolors, ui_dimcolor.cstring())];
-		}
+		int xcount = w / 4;
+		int xcount_remainder = w % 4;
 
-		spot = buffer;
-		gap = pitch - width;
-		for (y = 0; y < height; y++)
+		for (y = h; y > 0; y--)
 		{
-			for (x = 0; x < width; x++)
+			for (x = xcount; x > 0; x--)
 			{
-				unsigned int bg = bg2rgb[*spot];
+				// Unroll the loop for a speed improvement
+				bg = bg2rgb[*dest];
 				bg = (fg+bg) | 0x1f07c1f;
-				*spot++ = RGB32k[0][0][bg&(bg>>15)];
+				*dest++ = RGB32k[0][0][bg&(bg>>15)];
+
+				bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest++ = RGB32k[0][0][bg&(bg>>15)];
+
+				bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest++ = RGB32k[0][0][bg&(bg>>15)];
+
+				bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest++ = RGB32k[0][0][bg&(bg>>15)];
 			}
-			spot += gap;
+			for (x = xcount_remainder; x > 0; x--)
+			{
+				// account for widths that aren't multiples of 4
+				bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest++ = RGB32k[0][0][bg&(bg>>15)];
+			}
+			dest += gap;
 		}
 	}
 	else
@@ -292,9 +315,9 @@ void DCanvas::Dim () const
 		if (ui_dimamount == 1.0)
 		{
 			fill = (fill >> 2) & 0x3f3f3f;
-			for (y = 0; y < height; y++)
+			for (y = y1; y < y1 + h; y++)
 			{
-				for (x = 0; x < width; x++)
+				for (x = x1; x < x1 + w; x++)
 				{
 					line[x] = (line[x] - ((line[x] >> 2) & 0x3f3f3f)) + fill;
 				}
@@ -304,9 +327,9 @@ void DCanvas::Dim () const
 		else if (ui_dimamount == 2.0)
 		{
 			fill = (fill >> 1) & 0x7f7f7f;
-			for (y = 0; y < height; y++)
+			for (y = y1; y < y1 + h; y++)
 			{
-				for (x = 0; x < width; x++)
+				for (x = x1; x < x1 + w; x++)
 				{
 					line[x] = ((line[x] >> 1) & 0x7f7f7f) + fill;
 				}
@@ -316,9 +339,9 @@ void DCanvas::Dim () const
 		else if (ui_dimamount == 3.0)
 		{
 			fill = fill - ((fill >> 2) & 0x3f3f3f);
-			for (y = 0; y < height; y++)
+			for (y = y1; y < y1 + h; y++)
 			{
-				for (x = 0; x < width; x++)
+				for (x = x1; x < x1 + w; x++)
 				{
 					line[x] = ((line[x] >> 2) & 0x3f3f3f) + fill;
 				}
@@ -531,6 +554,9 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 
 	R_InitColumnDrawers (screen->is8bit());
 	R_MultiresInit ();
+
+	// [SL] 2011-11-30 - Prevent the player's view angle from moving
+	I_FlushInput();
 
 //	M_RefreshModesList (); // [Toke - crap]
 

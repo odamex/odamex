@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -18,7 +18,7 @@
 // DESCRIPTION:
 //	Error handling
 //
-// AUTHORS: 
+// AUTHORS:
 //  Russell Rice (russell at odamex dot net)
 //  Michael Wood (mwoodj at knology dot net)
 //
@@ -27,11 +27,15 @@
 #ifndef __NET_ERROR_H__
 #define __NET_ERROR_H__
 
-void _ReportError(const char *file, int line, const char *func, 
+namespace odalpapi {
+
+void _ReportError(const char *file, int line, const char *func,
     const char *fmt, ...);
-#define ReportError(...) \
+#define NET_ReportError(...) \
     _ReportError(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 
 #define REPERR_NO_ARGS ""
+
+} // namespace
 
 #endif // __NET_ERROR_H__

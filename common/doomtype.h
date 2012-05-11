@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -129,6 +129,9 @@ typedef enum {false, true} dboolean;
 #define MINLONG			((long)0x8000000000000000)
 #endif
 #endif
+
+#define MINFIXED		(signed)(0x80000000)
+#define MAXFIXED		(signed)(0x7fffffff)
 
 typedef unsigned char		BYTE;
 typedef signed char			SBYTE;

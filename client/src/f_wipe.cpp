@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,7 @@
 #include "doomdef.h"
 #include "f_wipe.h"
 #include "c_cvars.h"
+#include "i_music.h"
 
 //
 //		SCREEN WIPE PACKAGE
@@ -475,6 +476,10 @@ int wipe_ScreenWipe (int ticks)
 	};
 	int rc;
 
+	// [SL] 2011-12-31 - Continue to play music during screenwipe so
+	// notes do not hang
+	I_UpdateMusic();
+	
 	if (Currentr_wipetype == wipe_None)
 		return true;
 

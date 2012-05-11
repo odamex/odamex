@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,6 +38,7 @@ typedef enum {
 	Polyobj_MoveTimes8 = 6,
 	Polyobj_DoorSwing = 7,
 	Polyobj_DoorSlide = 8,
+	Line_Horizon = 9,
 	Door_Close = 10,
 	Door_Open = 11,
 	Door_Raise = 12,
@@ -126,6 +127,8 @@ typedef enum {
 
 	Line_SetIdentification = 121,
 
+    ThrustThingZ = 128,
+
 	UsePuzzleItem = 129,
 
 	Thing_Activate = 130,
@@ -142,6 +145,7 @@ typedef enum {
 	Sector_ChangeSound = 140,
 
 // [RH] Begin new specials for ZDoom
+	Plane_Align = 181,
 	Line_AlignCeiling = 183,
 	Line_AlignFloor = 184,
 
@@ -275,6 +279,10 @@ typedef enum {
 	dSector_DoorRaiseIn5Mins = 78,
 	dDamage_SuperHellslime = 80,
 	dLight_FireFlicker = 81,
+	dDamage_LavaWimpy = 82,
+	dDamage_LavaHefty = 83,
+	dScroll_EastLavaDamage = 84,
+
 
 	Light_IndoorLightning2 = 198,
 	Light_IndoorLightning1 = 199,
@@ -330,6 +338,9 @@ extern lnSpecFunc LineSpecials[256];
 BOOL EV_CeilingCrushStop (int tag);
 int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed);
 void EV_StopPlat (int tag);
+
+bool P_LineSpecialMovesSector(line_s *line);
+bool P_CanActivateSpecials(line_s *line);
 
 extern int TeleportSide;
 

@@ -4,7 +4,7 @@
 // $Id: doomdef.h 1166 2008-10-07 22:42:10Z Nes $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -61,40 +61,40 @@
 #define KEY_LCTRL				0x132
 #define KEY_LALT				0x134
 
-#define KEY_RSHIFT         KEY_LSHIFT
-#define KEY_RCTRL				KEY_LCTRL
-#define KEY_RALT				KEY_LALT
+#define KEY_RSHIFT         0x12F
+#define KEY_RCTRL				0x131	
+#define KEY_RALT				0x133	
 
 #define KEY_INS 				0x115
 #define KEY_DEL 				0x7F
 #define KEY_END 				0x117
 #define KEY_HOME				0x116
 #define KEY_PGUP				0x118
-#define KEY_PGDN				0x119
+#define KEY_PGDN			0x119
 
 // new keys:
 
 #define KEY_CAPSLOCK    (0x80+0x3a)
 #define KEY_SCRLCK      (0x80+0x46)
 
-#define KEYP_0          0
-#define KEYP_1          KEY_END
-#define KEYP_2          KEY_DOWNARROW
-#define KEYP_3          KEY_PGDN
-#define KEYP_4          KEY_LEFTARROW
-#define KEYP_5          '5'
-#define KEYP_6          KEY_RIGHTARROW
-#define KEYP_7          KEY_HOME
-#define KEYP_8          KEY_UPARROW
-#define KEYP_9          KEY_PGUP
+#define KEYP_0          0x100
+#define KEYP_1          0x101
+#define KEYP_2          0x102
+#define KEYP_3          0x103
+#define KEYP_4          0x104
+#define KEYP_5          0x105
+#define KEYP_6          0x106
+#define KEYP_7          0x107
+#define KEYP_8          0x108
+#define KEYP_9          0x109
 
-#define KEYP_DIVIDE     '/'
-#define KEYP_PLUS       '+'
-#define KEYP_MINUS      '-'
-#define KEYP_MULTIPLY   '*'
-#define KEYP_PERIOD     0
-#define KEYP_EQUALS     KEY_EQUALS
-#define KEYP_ENTER      KEY_ENTER
+#define KEYP_DIVIDE     0x10B
+#define KEYP_PLUS       0x10E
+#define KEYP_MINUS      0x10D
+#define KEYP_MULTIPLY   0x10C
+#define KEYP_PERIOD     0x10A
+#define KEYP_EQUALS     0x110
+#define KEYP_ENTER      0x10F
 
 // Joystick and mouse buttons are now sent
 // in ev_keyup and ev_keydown instead of

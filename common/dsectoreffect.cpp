@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,9 +24,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "p_local.h"
 #include "dsectoreffect.h"
 
-#include "p_local.h"
+
 
 IMPLEMENT_SERIAL (DSectorEffect, DThinker)
 
@@ -50,7 +51,7 @@ void DSectorEffect::Destroy ()
 		if (m_Sector->lightingdata == this)
 			m_Sector->lightingdata = NULL;
 	}
-	
+
 	Super::Destroy();
 }
 
@@ -129,8 +130,6 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 {
 	bool	 	flag;
 	fixed_t 	lastpos;
-	fixed_t		destheight;	//jff 02/04/98 used to keep floors/ceilings
-							// from moving thru each other
 
 	switch (floorOrCeiling)
 	{
@@ -140,14 +139,14 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 		{
 		case -1:
 			// DOWN
-			if (m_Sector->floorheight - speed < dest)
+			lastpos = P_FloorHeight(m_Sector);
+			if (lastpos - speed < dest)
 			{
-				lastpos = m_Sector->floorheight;
-				m_Sector->floorheight = dest;
+				P_ChangeFloorHeight(m_Sector, dest - lastpos);
 				flag = P_ChangeSector (m_Sector, crush);
 				if (flag == true)
 				{
-					m_Sector->floorheight = lastpos;
+					P_ChangeFloorHeight(m_Sector, lastpos - dest);
 					P_ChangeSector (m_Sector, crush);
 					//return crushed;
 				}
@@ -155,47 +154,42 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 			}
 			else
 			{
-				lastpos = m_Sector->floorheight;
-				m_Sector->floorheight -= speed;
+				P_ChangeFloorHeight(m_Sector, -speed);
 				flag = P_ChangeSector (m_Sector, crush);
 				if (flag == true)
 				{
-					m_Sector->floorheight = lastpos;
+					P_ChangeFloorHeight(m_Sector, speed);	// should be lastpos
 					P_ChangeSector (m_Sector, crush);
 					return crushed;
 				}
 			}
 			break;
-												
+
 		case 1:
 			// UP
-			// jff 02/04/98 keep floor from moving thru ceilings
-			destheight = (dest < m_Sector->ceilingheight) ? dest : m_Sector->ceilingheight;
-			destheight = dest; // denis - fix coopuv30.lmp
-			if (m_Sector->floorheight + speed > destheight)
+			lastpos = P_FloorHeight(m_Sector);
+
+			if (lastpos + speed > dest)
 			{
-				lastpos = m_Sector->floorheight;
-				m_Sector->floorheight = destheight;
+				P_ChangeFloorHeight(m_Sector, dest - lastpos);
 				flag = P_ChangeSector (m_Sector, crush);
 				if (flag == true)
 				{
-					m_Sector->floorheight = lastpos;
+					P_ChangeFloorHeight(m_Sector, lastpos - dest);
 					P_ChangeSector (m_Sector, crush);
-					//return crushed;
 				}
 				return pastdest;
 			}
 			else
 			{
 				// COULD GET CRUSHED
-				lastpos = m_Sector->floorheight;
-				m_Sector->floorheight += speed;
+				P_ChangeFloorHeight(m_Sector, speed);
 				flag = P_ChangeSector (m_Sector, crush);
 				if (flag == true)
 				{
 					if (crush)
 						return crushed;
-					m_Sector->floorheight = lastpos;
+					P_ChangeFloorHeight(m_Sector, -speed);
 					P_ChangeSector (m_Sector, crush);
 					return crushed;
 				}
@@ -203,73 +197,69 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 			break;
 		}
 		break;
-																		
+
 	  case 1:
 		// CEILING
 		switch(direction)
 		{
 		case -1:
 			// DOWN
-			// jff 02/04/98 keep ceiling from moving thru floors
-			destheight = (dest > m_Sector->floorheight) ? dest : m_Sector->floorheight;
-			destheight = dest; // denis - fix coopuv30.lmp
-			if (m_Sector->ceilingheight - speed < destheight)
+			lastpos = P_CeilingHeight(m_Sector);
+
+			if (lastpos - speed < dest)
 			{
-				lastpos = m_Sector->ceilingheight;
-				m_Sector->ceilingheight = destheight;
+				P_SetCeilingHeight(m_Sector, dest);
 				flag = P_ChangeSector (m_Sector, crush);
 
 				if (flag == true)
 				{
-					m_Sector->ceilingheight = lastpos;
+					P_SetCeilingHeight(m_Sector, lastpos);
 					P_ChangeSector (m_Sector, crush);
-					//return crushed;
 				}
 				return pastdest;
 			}
 			else
 			{
 				// COULD GET CRUSHED
-				lastpos = m_Sector->ceilingheight;
-				m_Sector->ceilingheight -= speed;
+				P_SetCeilingHeight(m_Sector, lastpos - speed);
 				flag = P_ChangeSector (m_Sector, crush);
 
 				if (flag == true)
 				{
 					if (crush)
 						return crushed;
-					m_Sector->ceilingheight = lastpos;
+
+					P_SetCeilingHeight(m_Sector, lastpos); 
 					P_ChangeSector (m_Sector, crush);
 					return crushed;
 				}
 			}
 			break;
-												
+
 		case 1:
 			// UP
-			if (m_Sector->ceilingheight + speed > dest)
+			lastpos = P_CeilingHeight(m_Sector);
+
+			if (lastpos + speed > dest)
 			{
-				lastpos = m_Sector->ceilingheight;
-				m_Sector->ceilingheight = dest;
+				P_SetCeilingHeight(m_Sector, dest);
 				flag = P_ChangeSector (m_Sector, crush);
 				if (flag == true)
 				{
-					m_Sector->ceilingheight = lastpos;
+					P_SetCeilingHeight(m_Sector, lastpos);
 					P_ChangeSector (m_Sector, crush);
-					//return crushed;
 				}
 				return pastdest;
 			}
 			else
 			{
-				lastpos = m_Sector->ceilingheight;
-				m_Sector->ceilingheight += speed;
+				P_SetCeilingHeight(m_Sector, lastpos + speed);
 				flag = P_ChangeSector (m_Sector, crush);
 // UNUSED
 #if 0
 				if (flag == true)
 				{
-					m_Sector->ceilingheight = lastpos;
+					P_ChangeCeilingHeight(m_Sector, -speed);
 					P_ChangeSector (m_Sector, crush);
 					return crushed;
 				}
@@ -278,7 +268,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 			break;
 		}
 		break;
-				
+
 	}
 	return ok;
 }

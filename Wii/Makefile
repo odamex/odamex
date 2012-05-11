@@ -19,7 +19,7 @@ TARGET		:=	odamex
 BUILD		:=	build
 SOURCES		:=	../common ../client/src ../client/sdl ./
 DATA		:=	data
-INCLUDES	:=  ../common ../client/src ../client/sdl ./
+INCLUDES	:=	../common ../client/src ../client/sdl ./
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -88,13 +88,14 @@ export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
 export INCLUDE	:=	$(foreach dir,$(INCLUDES), -iquote $(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 					-I$(CURDIR)/$(BUILD) \
+					-I$(PORTLIB_INC) \
 					-I$(LIBOGC_INC) -I$(LIBOGC_INC)/SDL -I$(LIBOGC_INC)/include/freetype2
 
 #---------------------------------------------------------------------------------
 # build a list of library paths
 #---------------------------------------------------------------------------------
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib) \
-					-L$(LIBOGC_LIB)
+					-L$(LIBOGC_LIB) -L$(PORTLIB_LIB)
 
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
 .PHONY: $(BUILD) clean

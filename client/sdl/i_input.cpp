@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,18 +24,16 @@
 // SoM 12-24-05: yeah... I'm programming on christmas eve.
 // Removed all the DirectX crap.
 
+#include <stdlib.h>
 #include <list>
+#include <sstream>
+
 #ifdef WIN32
 #define _WIN32_WINNT 0x0400
 #define WIN32_LEAN_AND_MEAN
 #ifndef _XBOX
 #include <windows.h>
 #endif // !_XBOX
-#ifdef _MSC_VER
-#ifndef snprintf
-#define snprintf _snprintf
-#endif // !snprintf
-#endif // MSC_VER
 #endif // WIN32
 
 #include <SDL.h>
@@ -94,6 +92,8 @@ static std::list<JoystickEvent_t*> JoyEventList;
 EXTERN_CVAR (mouse_acceleration)
 EXTERN_CVAR (mouse_threshold)
 
+EXTERN_CVAR (mouse_type)
+
 // joek - sort mouse grab issue
 static BOOL mousegrabbed = false;
 
@@ -119,6 +119,13 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 	return CallNextHookEx( g_hKeyboardHook, nCode, wParam, lParam );
 }
 #endif
+
+void I_FlushInput()
+{
+	// eat all pending input from outside the game
+	SDL_Event ev;
+	while (SDL_PollEvent(&ev));
+}
 
 static bool MouseShouldBeGrabbed()
 {
@@ -191,10 +198,8 @@ static void UpdateGrab(void)
 		// Warp the mouse back to the middle of the screen
 		if(screen)
 			SDL_WarpMouse(screen->width/ 2, screen->height / 2);
-		
-		// eat all pending input from outside the game
-		SDL_Event ev;
-		while (SDL_PollEvent(&ev));
+	
+		I_FlushInput();	
 	}
 	else if (!grab && mousegrabbed)
 	{
@@ -244,7 +249,7 @@ static int RegisterJoystickEvent(SDL_Event *ev, int value)
 
 	if(ev->type == SDL_JOYHATMOTION)
 	{
-		if(JoyEventList.size())
+		if(!JoyEventList.empty())
 		{
 			std::list<JoystickEvent_t*>::iterator i;
 
@@ -292,7 +297,7 @@ void UpdateJoystickEvents()
 	std::list<JoystickEvent_t*>::iterator i;
 	event_t    event;
 
-	if(!JoyEventList.size())
+	if(JoyEventList.empty())
 		return;
 
 	i = JoyEventList.begin();
@@ -312,7 +317,7 @@ void UpdateJoystickEvents()
 			}
 			else
 			{
-				i++;
+				++i;
 				continue;
 			}
 
@@ -337,7 +342,7 @@ void UpdateJoystickEvents()
 				continue;
 			}
 		}
-		i++;
+		++i;
 	}
 }
 
@@ -578,13 +583,14 @@ void I_GetEvent (void)
          {
              if (!vid_fullscreen)
              {            	
-                char Command[64];
+                std::stringstream Command;
                 
                 mousegrabbed = false;
-                
-                snprintf(Command, sizeof(Command), "vid_setmode %d %d", ev.resize.w, ev.resize.h);
 
-                AddCommandString(Command);
+                Command << "vid_setmode " << ev.resize.w << " " << ev.resize.h 
+                    << std::endl;
+
+                AddCommandString(Command.str().c_str());
 
                 vid_defwidth.Set((float)ev.resize.w);
 				vid_defheight.Set((float)ev.resize.h);
@@ -656,8 +662,8 @@ void I_GetEvent (void)
 			{
 				break;
 			}
-            mouseevent.data2 += AccelerateMouse(ev.motion.xrel);
-            mouseevent.data3 -= AccelerateMouse(ev.motion.yrel);
+           	mouseevent.data2 += AccelerateMouse(ev.motion.xrel);
+           	mouseevent.data3 -= AccelerateMouse(ev.motion.yrel);
             sendmouseevent = 1;
          break;
 
@@ -719,10 +725,10 @@ void I_GetEvent (void)
 			// [Xyltol 07/21/2011] - Add support for MOUSE4 and MOUSE5 (back thumb and front thumb on most mice)
 			else if(ev.button.button == SDL_BUTTON_X1){//back thumb
 				event.data1 = KEY_MOUSE4;
-				mbuttons &= 8;
+				mbuttons &= ~8;
 			}else if(ev.button.button == SDL_BUTTON_X2){//front thumb
 				event.data1 = KEY_MOUSE5;
-				mbuttons &= 16;
+				mbuttons &= ~16;
 			}
             else if(ev.button.button == SDL_BUTTON_WHEELUP)
                event.data1 = KEY_MWHEELUP;

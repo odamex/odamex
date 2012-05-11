@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,12 +44,12 @@
 #include "typedefs.h"
 
 /**
- * agOdalaunch namespace.
+ * odalpapi namespace.
  *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * All code for the odamex launcher api is contained within the odalpapi
  * namespace.
  */
-//namespace agOdalaunch {
+namespace odalpapi {
 
 #ifndef _WIN32
 typedef int SOCKET;
@@ -124,7 +124,8 @@ public:
 	bool CanWrite(const size_t &);
 
 	// Reset Buffer
-	void ResetBuffer() { m_BufferPos = 0; }
+	inline void ResetBuffer() { m_BufferPos = 0; }
+	inline void ResetSize() { m_BufferSize = 0; }
 
 	// Clear buffer
 	void ClearBuffer();
@@ -159,6 +160,6 @@ private:
 	uint64_t m_SendPing, m_ReceivePing;
 };
 
-//} // namespace
+} // namespace
 
 #endif

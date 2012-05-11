@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -106,6 +106,6 @@ void STACK_ARGS I_ShutdownHardware ();
 
 // [RH] M_ScreenShot now accepts a filename parameter.
 //		Pass a NULL to get the original behavior.
-void I_ScreenShot (const char *filename);
+void I_ScreenShot(std::string filename);
 
 #endif	// __HARDWARE_H__

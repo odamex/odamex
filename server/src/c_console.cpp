@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,7 @@
 
 #include "m_alloc.h"
 #include "version.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "g_game.h"
 #include "c_console.h"
 #include "c_cvars.h"
@@ -181,7 +181,7 @@ char *TimeStamp()
             sprintf (stamp,
                      "[%.2d/%.2d/%.2d %.2d:%.2d:%.2d]",
                      lt->tm_mday,
-                     lt->tm_mon,
+                     lt->tm_mon + 1,	// localtime returns 0-based month
                      lt->tm_year + 1900,
                      lt->tm_hour,
                      lt->tm_min,

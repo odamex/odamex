@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,10 +30,10 @@
 class LstOdaSrvDetails : public wxListCtrl
 {
     public:
-        LstOdaSrvDetails() { };
+        LstOdaSrvDetails();
         virtual ~LstOdaSrvDetails() { };
         
-        void LoadDetailsFromServer(Server &);
+        void LoadDetailsFromServer(odalpapi::Server &);
         
         //wxEvent *Clone(void);
     protected:
@@ -41,10 +41,16 @@ class LstOdaSrvDetails : public wxListCtrl
 
         void InsertLine(const wxString &Name, const wxString &Value);
         void InsertHeader(const wxString &Name, 
-                          const wxColor *NameColor,
-                          const wxColor *NameBGColor);
+                          wxColor NameColor = wxNullColour,
+                          wxColor NameBGColor = wxNullColour);
         
         wxColour BGItemAlternator;
+        
+        wxColour ItemShade;
+        wxColour BgColor;
+        
+        wxColour Header;
+        wxColour HeaderText;
         
         DECLARE_DYNAMIC_CLASS(LstOdaSrvDetails)
 };

@@ -3,7 +3,6 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="server" />
-		<Option pch_mode="0" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Win Release (GCC)">
@@ -18,6 +17,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -46,6 +46,7 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -274,9 +275,12 @@
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-DNOASM" />
+			<Add option="-D_WIN32_WINNT=0x0500" />
+			<Add option="-DJSON_IS_AMALGAMATION" />
 			<Add directory="." />
 			<Add directory="..\src" />
 			<Add directory="..\..\common" />
+			<Add directory="..\..\jsoncpp" />
 		</Compiler>
 		<Unit filename="..\..\common\actor.h" />
 		<Unit filename="..\..\common\c_console.h" />
@@ -285,7 +289,14 @@
 		<Unit filename="..\..\common\c_cvars.h" />
 		<Unit filename="..\..\common\c_dispatch.cpp" />
 		<Unit filename="..\..\common\c_dispatch.h" />
+		<Unit filename="..\..\common\c_effect.cpp" />
+		<Unit filename="..\..\common\c_effect.h" />
+		<Unit filename="..\..\common\c_level.cpp" />
+		<Unit filename="..\..\common\c_level.h" />
+		<Unit filename="..\..\common\c_maplist.h" />
 		<Unit filename="..\..\common\c_pch.h" />
+		<Unit filename="..\..\common\c_vote.cpp" />
+		<Unit filename="..\..\common\c_vote.h" />
 		<Unit filename="..\..\common\cmdlib.cpp" />
 		<Unit filename="..\..\common\cmdlib.h" />
 		<Unit filename="..\..\common\d_dehacked.cpp" />
@@ -310,8 +321,6 @@
 		<Unit filename="..\..\common\doomtype.h" />
 		<Unit filename="..\..\common\dsectoreffect.cpp" />
 		<Unit filename="..\..\common\dsectoreffect.h" />
-		<Unit filename="..\..\common\dstrings.cpp" />
-		<Unit filename="..\..\common\dstrings.h" />
 		<Unit filename="..\..\common\dthinker.cpp" />
 		<Unit filename="..\..\common\dthinker.h" />
 		<Unit filename="..\..\common\errors.h" />
@@ -321,6 +330,7 @@
 		<Unit filename="..\..\common\g_level.h" />
 		<Unit filename="..\..\common\gi.cpp" />
 		<Unit filename="..\..\common\gi.h" />
+		<Unit filename="..\..\common\gstrings.h" />
 		<Unit filename="..\..\common\huffman.cpp" />
 		<Unit filename="..\..\common\huffman.h" />
 		<Unit filename="..\..\common\i_net.cpp" />
@@ -379,6 +389,8 @@
 		<Unit filename="..\..\common\p_setup.cpp" />
 		<Unit filename="..\..\common\p_setup.h" />
 		<Unit filename="..\..\common\p_sight.cpp" />
+		<Unit filename="..\..\common\p_snapshot.cpp" />
+		<Unit filename="..\..\common\p_snapshot.h" />
 		<Unit filename="..\..\common\p_spec.cpp" />
 		<Unit filename="..\..\common\p_spec.h" />
 		<Unit filename="..\..\common\p_switch.cpp" />
@@ -411,6 +423,9 @@
 		<Unit filename="..\..\common\st_stuff.h" />
 		<Unit filename="..\..\common\stats.cpp" />
 		<Unit filename="..\..\common\stats.h" />
+		<Unit filename="..\..\common\stringenums.h" />
+		<Unit filename="..\..\common\stringtable.cpp" />
+		<Unit filename="..\..\common\stringtable.h" />
 		<Unit filename="..\..\common\szp.h" />
 		<Unit filename="..\..\common\tables.cpp" />
 		<Unit filename="..\..\common\tables.h" />
@@ -425,6 +440,9 @@
 		<Unit filename="..\..\common\w_wad.h" />
 		<Unit filename="..\..\common\z_zone.cpp" />
 		<Unit filename="..\..\common\z_zone.h" />
+		<Unit filename="..\..\jsoncpp\json\json-forwards.h" />
+		<Unit filename="..\..\jsoncpp\json\json.h" />
+		<Unit filename="..\..\jsoncpp\jsoncpp.cpp" />
 		<Unit filename="..\src\c_console.cpp" />
 		<Unit filename="..\src\d_main.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />
@@ -443,6 +461,8 @@
 		<Unit filename="..\src\sv_cvarlist.cpp" />
 		<Unit filename="..\src\sv_main.cpp" />
 		<Unit filename="..\src\sv_main.h" />
+		<Unit filename="..\src\sv_maplist.cpp" />
+		<Unit filename="..\src\sv_maplist.h" />
 		<Unit filename="..\src\sv_master.cpp" />
 		<Unit filename="..\src\sv_master.h" />
 		<Unit filename="..\src\sv_mobj.cpp" />
@@ -450,12 +470,16 @@
 			<Option compile="1" />
 			<Option weight="0" />
 		</Unit>
+		<Unit filename="..\src\sv_pickup.cpp" />
+		<Unit filename="..\src\sv_pickup.h" />
 		<Unit filename="..\src\sv_rproto.cpp" />
 		<Unit filename="..\src\sv_sqp.cpp" />
 		<Unit filename="..\src\sv_sqp.h" />
 		<Unit filename="..\src\sv_sqpold.cpp" />
 		<Unit filename="..\src\sv_sqpold.h" />
 		<Unit filename="..\src\sv_stubs.cpp" />
+		<Unit filename="..\src\sv_vote.cpp" />
+		<Unit filename="..\src\sv_vote.h" />
 		<Unit filename="..\src\v_palette.cpp" />
 		<Unit filename="resource.h">
 			<Option target="Win Release (GCC)" />

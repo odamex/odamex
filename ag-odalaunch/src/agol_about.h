@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -70,6 +70,8 @@ private:
 	AG_Button    *CreateOKButton(void *parent);
 
 	void          OnOK(AG_Event *event);
+	void          OnLicensePrechg(AG_Event *event);
+	void          OnLicensePostchg(AG_Event *event);
 
 	AG_Window    *AboutDialog;
 	AG_Box       *TopBox;
@@ -78,6 +80,8 @@ private:
 	AG_Button    *OKButton;
 
 	EventHandler *CloseEventHandler;
+
+	int           LicenseCursorPos;
 };
 
 } // namespace

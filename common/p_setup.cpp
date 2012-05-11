@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,8 +26,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <set>
 
 #include "m_alloc.h"
+#include "vectors.h"
 #include "m_argv.h"
 #include "z_zone.h"
 #include "m_swap.h"
@@ -37,6 +39,7 @@
 #include "w_wad.h"
 #include "doomdef.h"
 #include "p_local.h"
+#include "p_acs.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "p_lnspec.h"
@@ -51,6 +54,11 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position);
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
 void P_TranslateTeleportThings (void);
 int	P_TranslateSectorSpecial (int);
+
+static void P_SetupLevelFloorPlane(sector_t *sector);
+static void P_SetupLevelCeilingPlane(sector_t *sector);
+static void P_SetupSlopes();
+void P_InvertPlane(plane_t *plane);
 
 extern unsigned int R_OldBlend;
 
@@ -304,6 +312,11 @@ void P_LoadSegs (int lump)
 			li->backsector = 0;
 			ldef->flags &= ~ML_TWOSIDED;
 		}
+		
+		// [SL] 2012-01-25 - Calculate and store the seg's length
+		float dx = li->v2->x - li->v1->x;
+		float dy = li->v2->y - li->v1->y;
+		li->length = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
 	}
 
 	Z_Free (data);
@@ -407,6 +420,12 @@ void P_LoadSectors (int lump)
 		// killough 4/11/98 sector used to get ceiling lighting:
 		ss->ceilinglightsec = NULL;
 
+		// [SL] 2012-01-17 - init the sector's floor and ceiling planes
+		// as level planes (constant value of z for all points)
+		// Slopes will be setup later
+		P_SetupLevelFloorPlane(ss);
+		P_SetupLevelCeilingPlane(ss);
+		
 		ss->gravity = 1.0f;	// [RH] Default sector gravity of 1.0
 
 		// [RH] Sectors default to white light with the default fade.
@@ -1159,10 +1178,22 @@ void P_CreateBlockMap()
 	blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * (4+NBlocks+linetotal), PU_LEVEL, 0);
 
 	// blockmap header
-	blockmaplump[0] = bmaporgx = xorg << FRACBITS;
-	blockmaplump[1] = bmaporgy = yorg << FRACBITS;
-	blockmaplump[2] = bmapwidth  = ncols;
-	blockmaplump[3] = bmapheight = nrows;
+	//
+	// Rjy: P_CreateBlockMap should not initialise bmaporg{x,y} as P_LoadBlockMap
+	// does so again, resulting in their being left-shifted by FRACBITS twice.
+	//
+	// Thus any map having its blockmap built by the engine would have its
+	// origin at (0,0) regardless of where the walls and monsters actually are,
+	// breaking all collision detection.
+	//
+	// Instead have P_CreateBlockMap create blockmaplump only, so that both
+	// clauses of the conditional in P_LoadBlockMap have the same effect, and
+	// bmap* are only initialised from blockmaplump[0..3] once in the latter.
+	//
+	blockmaplump[0] = xorg;
+	blockmaplump[1] = yorg;
+	blockmaplump[2] = ncols;
+	blockmaplump[3] = nrows;
 
 	// offsets to lists and block lists
 	for (i = 0; i < NBlocks; i++)
@@ -1201,7 +1232,7 @@ void P_LoadBlockMap (int lump)
 {
 	int count;
 
-	if (Args.CheckParm("-blockmap") || (count = W_LumpLength(lump)/2) >= 0x10000)
+	if (Args.CheckParm("-blockmap") || (count = W_LumpLength(lump)/2) >= 0x10000 || count < 4) 
 		P_CreateBlockMap();
 	else
 	{
@@ -1337,30 +1368,17 @@ void P_GroupLines (void)
 //
 // [RH] P_LoadBehavior
 //
-static int STACK_ARGS sortscripts (const void *a, const void *b)
-{
-	return ((*(int *)a)%1000 - (*(int *)b)%1000);
-}
-
 void P_LoadBehavior (int lumpnum)
 {
 	byte *behavior = (byte *)W_CacheLumpNum (lumpnum, PU_LEVEL);
 
-	if (behavior[0] != 'A' || behavior[1] != 'C' ||
-		behavior[2] != 'S' || behavior[3] != 0)
+	level.behavior = new FBehavior (behavior, lumpinfo[lumpnum].size);
+
+	if (!level.behavior->IsGood ())
 	{
-		Z_Free (behavior);
-		return;
+		delete level.behavior;
+		level.behavior = NULL;
 	}
-
-	level.behavior = behavior;
-	level.scripts = (int *)(behavior + ((int *)behavior)[1]);
-	level.strings = &level.scripts[level.scripts[0]*3+1];
-
-	// Make sure scripts are listed in order (to make finding them quicker)
-	qsort (&level.scripts[1], level.scripts[0], 3*sizeof(int), sortscripts);
-
-	DPrintf ("Loaded %d scripts, %d strings\n", level.scripts[0], level.strings[0]);
 }
 
 //
@@ -1411,7 +1429,7 @@ void P_SetupLevel (char *lumpname, int position)
 	{
 		for (i = 0; i < players.size(); i++)
 		{
-			players[i].killcount = players[i].secretcount 
+			players[i].killcount = players[i].secretcount
 				= players[i].itemcount = 0;
 		}
 	}
@@ -1427,7 +1445,7 @@ void P_SetupLevel (char *lumpname, int position)
 
 	// [RH] clear out the mid-screen message
 	C_MidPrint (NULL);
-	
+
 	PolyBlockMap = NULL;
 
 	DThinker::DestroyAllThinkers ();
@@ -1445,9 +1463,21 @@ void P_SetupLevel (char *lumpname, int position)
 	HasBehavior = W_CheckLumpName (lumpnum+ML_BEHAVIOR, "BEHAVIOR");
 	//oldshootactivation = !HasBehavior;
 
+	// note: most of this ordering is important
+
+	// [RH] Load in the BEHAVIOR lump
+	if (level.behavior != NULL)
+	{
+		delete level.behavior;
+		level.behavior = NULL;
+	}
+	if (HasBehavior)
+	{
+		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
+	}
+
     level.time = 0;
 
-	// note: most of this ordering is important
 	P_LoadVertexes (lumpnum+ML_VERTEXES);
 	P_LoadSectors (lumpnum+ML_SECTORS);
 	P_LoadSideDefs (lumpnum+ML_SIDEDEFS);
@@ -1465,7 +1495,7 @@ void P_SetupLevel (char *lumpname, int position)
 	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
 	{
 		// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
-		// If it's too short, the reject table should be ignored when 
+		// If it's too short, the reject table should be ignored when
 		// calling P_CheckSight
 		if (W_LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
 		{
@@ -1474,7 +1504,8 @@ void P_SetupLevel (char *lumpname, int position)
 		}
 	}
 	P_GroupLines ();
-	
+	P_SetupSlopes();
+
     po_NumPolyobjs = 0;
 
 	P_AllocStarts();
@@ -1486,14 +1517,8 @@ void P_SetupLevel (char *lumpname, int position)
 
 	if (!HasBehavior)
 		P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
-    
-    PO_Init ();
 
-	// [RH] Load in the BEHAVIOR lump
-	level.behavior = NULL;
-	level.scripts = level.strings = NULL;
-	if (HasBehavior)
-		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
+    PO_Init ();
 
     if (serverside)
     {
@@ -1554,6 +1579,187 @@ CVAR_FUNC_IMPL (sv_timelimit)
 	level.timeleft = var * TICRATE * 60;
 }
 
+CVAR_FUNC_IMPL (sv_intermissionlimit)
+{
+	if (var < 0)
+		var.Set(0.0f);
+
+	// intermissionleft is transmitted as a short so cap the sv_timelimit at the maximum
+	// for timeleft, which is 9.1 hours
+	if (var > MAXSHORT)
+		var.Set(MAXSHORT);
+
+	level.inttimeleft = (var < 1 ? DEFINTSECS : var);
+}
+
+
+static void P_SetupLevelFloorPlane(sector_t *sector)
+{
+	if (!sector)
+		return;
+	
+	sector->floorplane.a = sector->floorplane.b = 0;
+	sector->floorplane.c = sector->floorplane.invc = FRACUNIT;
+	sector->floorplane.d = -sector->floorheight;
+	sector->floorplane.texx = sector->floorplane.texy = 0;
+	sector->floorplane.sector = sector;
+}
+
+static void P_SetupLevelCeilingPlane(sector_t *sector)
+{
+	if (!sector)
+		return;
+	
+	sector->ceilingplane.a = sector->ceilingplane.b = 0;
+	sector->ceilingplane.c = sector->ceilingplane.invc = -FRACUNIT;
+	sector->ceilingplane.d = sector->ceilingheight;
+	sector->ceilingplane.texx = sector->ceilingplane.texy = 0;
+	sector->ceilingplane.sector = sector;
+}
+
+//
+// P_SetupPlane()
+//
+// Takes a line with the special property Plane_Align and its facing sector
+// and calculates the planar equation for the slope formed by the floor or
+// ceiling of this sector.  The equation coefficients are stored in a plane_t
+// structure and saved either to the sector's ceilingplan or floorplane.
+//
+void P_SetupPlane(sector_t *refsector, line_t *refline, bool floor)
+{
+	if (!refsector || !refline || !refline->backsector)
+		return;
+
+	float refv1x = FIXED2FLOAT(refline->v1->x);
+	float refv1y = FIXED2FLOAT(refline->v1->y);
+
+	float refdx = FIXED2FLOAT(refline->dx);
+	float refdy = FIXED2FLOAT(refline->dy);
+	
+	vertex_t *farthest_vertex = NULL;
+	float farthest_distance = 0.0f;
+
+	// Find the vertex comprising the sector that is farthest from the
+	// slope's reference line
+	for (int linenum = 0; linenum < refsector->linecount; linenum++)
+	{
+		line_t *line = refsector->lines[linenum];
+		if (!line)
+			continue;
+		
+		// Calculate distance from vertex 1 of this line
+		float dist = abs((refv1y - FIXED2FLOAT(line->v1->y)) * refdx -
+						 (refv1x - FIXED2FLOAT(line->v1->x)) * refdy);
+		if (dist > farthest_distance)
+		{
+			farthest_distance = dist;
+			farthest_vertex = line->v1;
+		}
+	
+		// Calculate distance from vertex 2 of this line
+		dist = abs((refv1y - FIXED2FLOAT(line->v2->y)) * refdx -
+				   (refv1x - FIXED2FLOAT(line->v2->x)) * refdy);
+		if (dist > farthest_distance)
+		{
+			farthest_distance = dist;
+			farthest_vertex = line->v2;
+		}	
+	}
+	
+	if (farthest_distance <= 0.0f)
+		return;
+
+	sector_t *align_sector = (refsector == refline->frontsector) ?
+		refline->backsector : refline->frontsector;
+
+	// Now we have three points, which can define a plane:
+	// The two vertices making up refline and farthest_vertex
+	
+	float z1 = floor ? 
+		FIXED2FLOAT(align_sector->floorheight) : 
+		FIXED2FLOAT(align_sector->ceilingheight);
+	
+	float z2 = floor ?
+		FIXED2FLOAT(refsector->floorheight) :
+		FIXED2FLOAT(refsector->ceilingheight);
+	
+	// bail if the plane is perfectly level
+	if (z1 == z2)
+		return;
+
+	v3double_t p1, p2, p3;
+	M_SetVec3(&p1, FIXED2FLOAT(refline->v1->x), FIXED2FLOAT(refline->v1->y), z1);
+	M_SetVec3(&p2, FIXED2FLOAT(refline->v2->x), FIXED2FLOAT(refline->v2->y), z1);
+	M_SetVec3(&p3, FIXED2FLOAT(farthest_vertex->x), FIXED2FLOAT(farthest_vertex->y), z2);
+
+	// Define the plane by drawing two vectors originating from
+	// point p2:  the vector from p2 to p1 and from p2 to p3
+	// Then take the crossproduct of those vectors to get the normal vector
+	// for the plane, which provides the planar equation's coefficients
+	v3double_t vector1, vector2;
+	M_SubVec3(&vector1, &p1, &p2);
+	M_SubVec3(&vector2, &p3, &p2);
+
+	v3double_t normal;
+	M_CrossProductVec3(&normal, &vector1, &vector2);
+	M_NormalizeVec3(&normal, &normal);
+	
+	plane_t *plane = floor ? &refsector->floorplane : &refsector->ceilingplane;
+	plane->a = FLOAT2FIXED(normal.x);
+	plane->b = FLOAT2FIXED(normal.y);
+	plane->c = FLOAT2FIXED(normal.z);
+	plane->invc = FLOAT2FIXED(1.0f / normal.z);
+	plane->d = -FLOAT2FIXED(M_DotProductVec3(&normal, &p1));
+
+	// Flip inverted normals
+	if ((floor && normal.z < 0.0f) || (!floor && normal.z > 0.0f))
+		P_InvertPlane(plane);
+
+	// determine the point that can be used for aligning wall textures
+	// we use the point on the plane that has the same Z value as
+	// ceilingheight/floorheight
+	plane->texx = refline->v1->x;
+	plane->texy = refline->v1->y;
+
+	if ((floor && refsector->floorheight != align_sector->floorheight) ||
+	   (!floor && refsector->ceilingheight != align_sector->ceilingheight))
+	{
+		plane->texx = farthest_vertex->x;
+		plane->texy = farthest_vertex->y;
+	}
+}
+
+
+static void P_SetupSlopes()
+{
+	for (int i = 0; i < numlines; i++)
+	{
+		line_t *line = &lines[i];
+
+		if (line->special == Plane_Align)
+		{
+			line->special = 0;
+			line->id = line->args[2];
+			
+			// Floor plane?
+			int align_side = line->args[0] & 3;
+			if (align_side == 1)
+				P_SetupPlane(line->frontsector, line, true);
+			else if (align_side == 2)
+				P_SetupPlane(line->backsector, line, true);
+				
+			// Ceiling plane?
+			align_side = line->args[1] & 3;
+			if (align_side == 0)
+				align_side = (line->args[0] >> 2) & 3;
+			
+			if (align_side == 1)
+				P_SetupPlane(line->frontsector, line, false);
+			else if (align_side == 2)
+				P_SetupPlane(line->backsector, line, false);
+		}
+	}
+}
 
 
 VERSION_CONTROL (p_setup_cpp, "$Id$")

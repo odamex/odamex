@@ -4,7 +4,7 @@
 // $Id: p_unlag.cpp $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -48,6 +48,34 @@ void SV_SendDestroyActor(AActor *mo);
 #endif	// _UNLAG_DEBUG_
 
 EXTERN_CVAR(sv_unlag)
+
+Unlag::SectorHistoryRecord::SectorHistoryRecord()
+	:	sector(NULL), history_size(0),
+		history_ceilingheight(), history_floorheight(),
+		backup_ceilingheight(0), backup_floorheight(0)
+{
+}
+
+Unlag::SectorHistoryRecord::SectorHistoryRecord(sector_t *sec)
+	: 	sector(sec), history_size(Unlag::MAX_HISTORY_TICS),
+		history_ceilingheight(), history_floorheight(),
+		backup_ceilingheight(0), backup_floorheight(0)
+{
+	if (!sector)
+		return;
+
+	fixed_t ceilingheight = P_CeilingHeight(sector);
+	fixed_t floorheight = P_FloorHeight(sector);
+
+	for (size_t i = 0; i < history_size; i++)
+	{
+		history_ceilingheight[i] = ceilingheight;
+		history_floorheight[i] = floorheight;
+	}
+
+	backup_ceilingheight = ceilingheight;
+	backup_floorheight = floorheight;
+}
 
 //
 // Unlag::getInstance
@@ -106,8 +134,8 @@ void Unlag::movePlayer(player_t *player, fixed_t x, fixed_t y, fixed_t z)
 void Unlag::moveSector(sector_t *sector, fixed_t ceilingheight, 
 					   fixed_t floorheight)
 {
-	sector->ceilingheight = ceilingheight;
-	sector->floorheight = floorheight;
+	P_SetCeilingHeight(sector, ceilingheight);
+	P_SetFloorHeight(sector, floorheight);
 }
 
 
@@ -208,8 +236,8 @@ void Unlag::reconcileSectorPositions(size_t ticsago)
 		{
 			// record the player's current position, which hasn't yet
 			// been saved to the history arrays
-			sector_history[i].backup_ceilingheight = sector->ceilingheight;
-			sector_history[i].backup_floorheight = sector->floorheight;
+			sector_history[i].backup_ceilingheight = P_CeilingHeight(sector);
+			sector_history[i].backup_floorheight = P_FloorHeight(sector);
 
 			size_t cur = (sector_history[i].history_size - 1 - ticsago) 
 						  % Unlag::MAX_HISTORY_TICS;
@@ -300,8 +328,8 @@ void Unlag::recordSectorPositions()
 
 		size_t cur = sector_history[i].history_size++ 
 					 % Unlag::MAX_HISTORY_TICS;
-		sector_history[i].history_ceilingheight[cur] = sector->ceilingheight;
-		sector_history[i].history_floorheight[cur] = sector->floorheight;
+		sector_history[i].history_ceilingheight[cur] = P_CeilingHeight(sector);
+		sector_history[i].history_floorheight[cur] = P_FloorHeight(sector);
 	}
 }
 
@@ -399,21 +427,7 @@ void Unlag::registerSector(sector_t *sector)
 			return;
 	}
 
-	sector_history.push_back(SectorHistoryRecord());
-	size_t new_index = sector_history.size() - 1;
-	sector_history[new_index].sector = sector;
-
-	// sector.moveable is not set until the sector is triggered to move
-	// so fill the history buffers with the sector's initial heights
-	sector_history[new_index].history_size = Unlag::MAX_HISTORY_TICS;
-
-	for (size_t i = 0; i < Unlag::MAX_HISTORY_TICS; i++)
-	{
-		sector_history[new_index].history_ceilingheight[i]
-			= sector->ceilingheight;
-		sector_history[new_index].history_floorheight[i]
-			= sector->floorheight;
-	}
+	sector_history.push_back(SectorHistoryRecord(sector));
 }
 
 
@@ -604,13 +618,16 @@ void Unlag::debugReconciliation(byte shooter_id)
 			fixed_t x = player_history[i].history_x[cur];
 			fixed_t y = player_history[i].history_y[cur];
 			
-			angle_t angle = P_PointToAngle (shooter->mo->x,	shooter->mo->y, x, y);
-			if (abs(angle - shooter->mo->angle) < 3 * FRACUNIT)
+			angle_t angle = P_PointToAngle(shooter->mo->x,	shooter->mo->y, x, y);
+			angle_t deltaangle = 	angle - shooter->mo->angle < ANG180 ?
+									angle - shooter->mo->angle :
+									shooter->mo->angle - angle;
+
+			if (deltaangle < 3 * FRACUNIT)
 			{
 				DPrintf("Unlag (%03d): would have hit player %d at gametic %d (%d tics ago)\n",
 						gametic & 0xFF, player_history[i].player->id, (gametic - n) & 0xFF, n);
 			}
-			
 		}
 	}
 }

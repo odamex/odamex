@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
 //-----------------------------------------------------------------------------
 
 #include "doomdef.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "d_main.h"
@@ -49,6 +49,7 @@
 #include "c_bind.h"
 
 #include "gi.h"
+#include "m_memio.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -630,7 +631,7 @@ void M_ReadSaveStrings(void)
 		handle = fopen (name.c_str(), "rb");
 		if (handle == NULL)
 		{
-			strcpy (&savegamestrings[i][0], EMPTYSTRING);
+			strcpy (&savegamestrings[i][0], GStrings(EMPTYSTRING));
 			LoadMenu[i].status = 0;
 		}
 		else
@@ -778,7 +779,7 @@ void M_SaveGame (int choice)
 
 	if (!usergame)
 	{
-		M_StartMessage(SAVEDEAD,NULL,false);
+		M_StartMessage(GStrings(SAVEDEAD),NULL,false);
 		M_ClearMenus ();
 		return;
 	}
@@ -834,7 +835,7 @@ void M_QuickSave(void)
 		quickSaveSlot = -2; 	// means to pick a slot now
 		return;
 	}
-	sprintf (tempstring, QSPROMPT, savegamestrings[quickSaveSlot]);
+	sprintf (tempstring, GStrings(QSPROMPT), savegamestrings[quickSaveSlot]);
 	M_StartMessage (tempstring, M_QuickSaveResponse, true);
 }
 
@@ -869,7 +870,7 @@ void M_QuickLoad(void)
 		M_LoadGame (0);
 		return;
 	}
-	sprintf(tempstring,QLPROMPT,savegamestrings[quickSaveSlot]);
+	sprintf(tempstring,GStrings(QLPROMPT),savegamestrings[quickSaveSlot]);
 	M_StartMessage(tempstring,M_QuickLoadResponse,true);
 }
 
@@ -1002,7 +1003,7 @@ void M_ChooseSkill(int choice)
 {
 	if (choice == nightmare)
 	{
-		M_StartMessage(NIGHTMARE,M_VerifyNightmare,true);
+		M_StartMessage(GStrings(NIGHTMARE),M_VerifyNightmare,true);
 		return;
 	}
 
@@ -1013,7 +1014,7 @@ void M_Episode (int choice)
 {
 	if ((gameinfo.flags & GI_SHAREWARE) && choice)
 	{
-		M_StartMessage(SWSTRING,NULL,false);
+		M_StartMessage(GStrings(SWSTRING),NULL,false);
 		//M_SetupNextMenu(&ReadDef1);
 		M_ClearMenus ();
 		return;
@@ -1089,7 +1090,7 @@ void M_EndGame(int choice)
 		return;
 	}
 
-	M_StartMessage((multiplayer ? NETEND : ENDGAME), M_EndGameResponse, true);
+	M_StartMessage(GStrings(multiplayer ? NETEND : ENDGAME), M_EndGameResponse, true);
 }
 
 //
@@ -1109,8 +1110,8 @@ void M_QuitResponse(int ch)
 	{
 		if (gameinfo.quitSounds)
 		{
-			S_Sound (CHAN_INTERFACE, gameinfo.quitSounds[(gametic>>2)&7],
-				1, ATTN_SURROUND);
+			S_Sound(CHAN_INTERFACE,
+					gameinfo.quitSounds[(gametic>>2)&7], 1, ATTN_NONE);
 			I_WaitVBL (105);
 		}
 	}
@@ -1122,14 +1123,12 @@ void M_QuitResponse(int ch)
 
 void M_QuitDOOM (int choice)
 {
-  // We pick index 0 which is language sensitive,
-  //  or one at random, between 1 and maximum number.
-  if (language != english )
-	sprintf(endstring,"%s\n\n%s", endmsg[0], DOSY );
-  else
-	sprintf(endstring,"%s\n\n%s", endmsg[ (gametic%(NUM_QUITMESSAGES-2))+1 ], DOSY);
+	// We pick index 0 which is language sensitive,
+	//  or one at random, between 1 and maximum number.
+	sprintf (endstring, "%s\n\n%s",
+		GStrings(QUITMSG + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
 
-  M_StartMessage(endstring,M_QuitResponse,true);
+	M_StartMessage(endstring,M_QuitResponse,true);
 }
 
 
@@ -1549,7 +1548,7 @@ static void M_EditPlayerName (int choice)
 
 	saveSlot = 0;
 	strcpy(saveOldString,savegamestrings[0]);
-	if (!strcmp(savegamestrings[0],EMPTYSTRING))
+	if (!strcmp(savegamestrings[0],GStrings(EMPTYSTRING)))
 		savegamestrings[0][0] = 0;
 	saveCharIndex = strlen(savegamestrings[0]);
 }
@@ -1762,6 +1761,8 @@ bool M_Responder (event_t* ev)
 	  case KEY_LEFTARROW:
 	  case KEY_HAT2:
 	  case KEY_RIGHTARROW:
+	  case KEYP_4:
+	  case KEYP_6:
 		if(repeatKey == ch)
 			repeatCount++;
 		else
@@ -1800,6 +1801,7 @@ bool M_Responder (event_t* ev)
 
 		  case KEY_JOY1:
 		  case KEY_ENTER:
+		  case KEYP_ENTER:
 			genStringEnter = 0;
 			M_ClearMenus ();
 			if (savegamestrings[saveSlot][0])
@@ -1883,6 +1885,7 @@ bool M_Responder (event_t* ev)
 	{
 	  case KEY_HAT3:
 	  case KEY_DOWNARROW:
+	  case KEYP_2:
 		do
 		{
 			if (itemOn+1 > currentMenu->numitems-1)
@@ -1900,6 +1903,7 @@ bool M_Responder (event_t* ev)
 
 	  case KEY_HAT1:
 	  case KEY_UPARROW:
+	  case KEYP_8:
 		do
 		{
 			if (!itemOn)
@@ -1917,6 +1921,7 @@ bool M_Responder (event_t* ev)
 
 	  case KEY_HAT4:
 	  case KEY_LEFTARROW:
+	  case KEYP_4:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
 		{
@@ -1927,6 +1932,7 @@ bool M_Responder (event_t* ev)
 
 	  case KEY_HAT2:
 	  case KEY_RIGHTARROW:
+	  case KEYP_6:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
 		{
@@ -1937,6 +1943,7 @@ bool M_Responder (event_t* ev)
 
 	  case KEY_JOY1:
 	  case KEY_ENTER:
+	  case KEYP_ENTER:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status)
 		{
@@ -2206,6 +2213,27 @@ void M_Init (void)
 	for (i = 0; i < 255; i++)
 		FireRemap[i] = BestColor (DefaultPalette->basecolors, i, 0, 0, DefaultPalette->numcolors);
 }
+
+//
+// M_FindCvarInMenu
+//
+// Takes an array of menu items and returns the index in the array of the
+// menu item containing that cvar.  Returns MAXINT if not found.
+//
+size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
+{
+	if (menu)
+	{
+    	for (size_t i = 0; i < length; i++)
+    	{
+        	if (menu[i].a.cvar == &cvar)
+            	return i;
+    	}
+	}
+
+    return MAXINT;    // indicate not found
+}
+
 
 VERSION_CONTROL (m_menu_cpp, "$Id$")
 

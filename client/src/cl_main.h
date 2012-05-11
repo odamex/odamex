@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,8 @@
 #include "i_net.h"
 #include "d_ticcmd.h"
 #include "r_defs.h"
+#include "cl_demo.h"
+#include <string>
 
 extern netadr_t  serveraddr;
 extern BOOL      connected;
@@ -37,6 +39,8 @@ extern bool      noservermsgs;
 extern int       last_received;
 
 extern buf_t     net_buffer;
+
+extern NetDemo	netdemo;
 
 #define MAXSAVETICS 70
 extern ticcmd_t localcmds[MAXSAVETICS];
@@ -137,8 +141,13 @@ void CL_ReadPacketHeader(void);
 void CL_SendCmd(void);
 void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
-void CL_PredictMove (void);
+void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
 bool CL_Connect(void);
+
+bool CL_SectorIsPredicting(sector_t *sector);
+
+std::string M_ExpandTokens(const std::string &str);
+
 #endif
 

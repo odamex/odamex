@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@
 #include "m_swap.h"
 #include "minilzo.h"
 #include "cmdlib.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "i_system.h"
 #include "c_cvars.h"
 #include "d_player.h"
@@ -43,9 +43,13 @@
 #define SWAP_WORD(x)
 #define SWAP_DWORD(x)
 #define SWAP_QWORD(x)
+#define SWAP_SIZE(x,y)
 #else
 #define SWAP_WORD(x)		{ x = (((x)<<8) | ((x)>>8)); }
 #define SWAP_DWORD(x)		{ x = (((x)>>24) | (((x)>>8)&0xff00) | ((x)<<8)&0xff0000 | ((x)<<24)); }
+// Swap any kind of data based on size - x = pointer to data, y = number of bytes
+#define SWAP_SIZE(x, y)		{ std::reverse((unsigned char*)x, (unsigned char*)x+(size_t)y); }
+
 #if 0
 #define SWAP_QWORD(x)		{ x = (((x)>>56) | (((x)>>40)&(0xff<<8)) | (((x)>>24)&(0xff<<16)) | (((x)>>8)&(0xff<<24)) |\
 								   (((x)<<8)&(QWORD)0xff00000000) | (((x)<<24)&(QWORD)0xff0000000000) | (((x)<<40)&(QWORD)0xff000000000000) | ((x)<<56))); }
@@ -241,8 +245,6 @@ FFile &FLZOFile::Seek (int pos, ESeekPos ofs)
 	return *this;
 }
 
-EXTERN_CVAR (filecompression)
-
 void FLZOFile::Implode ()
 {
 	lzo_uint outlen;
@@ -252,7 +254,7 @@ void FLZOFile::Implode ()
 	byte *oldbuf = m_Buffer;
 	int r;
 
-	if (filecompression && !m_NoCompress)
+	if (!m_NoCompress)
 	{
 		compressed = new lzo_byte[OUT_LEN(len)];
 		wrkmem = new lzo_byte[LZO1X_1_MEM_COMPRESS];
@@ -322,8 +324,12 @@ void FLZOFile::Explode ()
 		{
 			memcpy (expand, m_Buffer + 8, expandsize);
 		}
+
 		if (FreeOnExplode ())
-			M_Free(m_Buffer);
+		{
+			M_Free(m_Buffer);			
+		}
+
 		m_Buffer = expand;
 		m_BufferSize = expandsize;
 	}
@@ -468,6 +474,25 @@ bool FLZOMemFile::IsOpen () const
 	return !!m_Buffer;
 }
 
+size_t FLZOMemFile::Length() const
+{
+	return m_BufferSize + 8;
+}
+
+void FLZOMemFile::WriteToBuffer(void *buf, size_t length) const
+{
+	length = length < (m_BufferSize + 8) ? length : (m_BufferSize + 8);
+	
+	if (m_ImplodedBuffer)
+	{
+		memcpy(buf, m_ImplodedBuffer, length);
+	}
+	else
+	{
+		memcpy(buf, m_Buffer, length);
+	}
+}
+
 //============================================
 //
 // FArchive
@@ -513,7 +538,9 @@ FArchive::~FArchive ()
     m_TypeMap = NULL;
     
 	if (m_ObjectMap)
-		M_Free(m_ObjectMap);
+	{
+		M_Free(m_ObjectMap);	
+	}
 }
 
 void FArchive::Write (const void *mem, unsigned int len)
@@ -654,6 +681,7 @@ FArchive &FArchive::operator>> (QWORD &w)
 
 FArchive &FArchive::operator<< (float w)
 {
+	SWAP_SIZE(&w, sizeof(float));
 	Write (&w, sizeof(float));
 	return *this;
 }
@@ -661,11 +689,13 @@ FArchive &FArchive::operator<< (float w)
 FArchive &FArchive::operator>> (float &w)
 {
 	Read (&w, sizeof(float));
+	SWAP_SIZE(&w, sizeof(float));
 	return *this;
 }
 
 FArchive &FArchive::operator<< (double w)
 {
+	SWAP_SIZE(&w, sizeof(double));
 	Write (&w, sizeof(double));
 	return *this;
 }
@@ -673,6 +703,7 @@ FArchive &FArchive::operator<< (double w)
 FArchive &FArchive::operator>> (double &w)
 {
 	Read (&w, sizeof(double));
+	SWAP_SIZE(&w, sizeof(double));
 	return *this;
 }
 

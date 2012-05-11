@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,8 +32,11 @@
 #include "c_dispatch.h"
 #include "c_bind.h"
 #include "g_level.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "hu_stuff.h"
+#include "cl_demo.h"
+
+extern NetDemo netdemo;
 
 /* Most of these bindings are equivalent
  * to the original DOOM's keymappings.
@@ -103,7 +106,12 @@ char DefBindings[] =
 	"bind t messagemode; "
 	"bind \\ +showscores; "				// <- Another new command
 	"bind f11 bumpgamma; "
-	"bind f12 spynext";
+	"bind f12 spynext; "
+	"bind pgup vote_yes; "				// <- New for voting
+	"bind pgdn vote_no; "				// <- New for voting
+	"bind home ready; "
+	"bind end spectate; "
+	"bind m changeteams ";
 
 
 // SoM: ok... I hate randy heit I have no idea how to translate between ascii codes to these
@@ -147,7 +155,7 @@ const char *KeyNames[NUM_KEYS] = {
    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // F8 - FF
 // :: End world keycodes
   "kp0",   "kp1",   "kp2",   "kp3",   "kp4",   "kp5",   "kp6",   "kp7", // 0100 - 0107
-  "kp8",   "kp9",   "kp.",   "kp/",   "kp*",   "kp-",   "kp+", "enter", // 0108 - 010F
+  "kp8",   "kp9",   "kp.",   "kp/",   "kp*",   "kp-",   "kp+", "kpenter", // 0108 - 010F
   "kp=","uparrow","downarrow","rightarrow","leftarrow","ins","home","end", // 0110 - 0117
  "pgup",  "pgdn",    "f1",    "f2",    "f3",    "f4",    "f5",    "f6", // 0118 - 011F
    "f7",    "f8",    "f9",   "f10",   "f11",   "f12",   "f13",   "f14", // 0120 - 0127
@@ -185,6 +193,7 @@ const char *KeyNames[NUM_KEYS] = {
 
 static std::string Bindings[NUM_KEYS];
 static std::string DoubleBindings[NUM_KEYS];
+static std::string NetDemoBindings[NUM_KEYS];
 static int DClickTime[NUM_KEYS];
 static byte DClicked[(NUM_KEYS+7)/8];
 
@@ -259,7 +268,7 @@ BEGIN_COMMAND (bind)
 		}
 	} else {
 		Printf (PRINT_HIGH, "Current key bindings:\n");
-		
+
 		for (i = 0; i < NUM_KEYS; i++) {
 			if (Bindings[i].length())
 				Printf (PRINT_HIGH, "%s \"%s\"\n", KeyName (i), Bindings[i].c_str());
@@ -306,7 +315,7 @@ BEGIN_COMMAND (doublebind)
 	else
 	{
 		Printf (PRINT_HIGH, "Current key doublebindings:\n");
-		
+
 		for (i = 0; i < NUM_KEYS; i++)
 		{
 			if (DoubleBindings[i].length())
@@ -321,6 +330,46 @@ BEGIN_COMMAND (binddefaults)
 	AddCommandString (DefBindings);
 }
 END_COMMAND (binddefaults)
+
+//
+// C_DoNetDemoKey
+//
+// [SL] 2012-03-29 - Handles the hard-coded key bindings used during
+// NetDemo playback.  Returns false if the key pressed is not
+// bound to any netdemo command.
+//
+bool C_DoNetDemoKey (event_t *ev)
+{
+	if (!netdemo.isPlaying() && !netdemo.isPaused())
+		return false;
+
+	static bool initialized = false;
+
+	if (!initialized)
+	{
+		NetDemoBindings[GetKeyFromName("leftarrow")]	= "netrew";
+		NetDemoBindings[GetKeyFromName("rightarrow")]	= "netff";
+		NetDemoBindings[GetKeyFromName("uparrow")]		= "netprevmap";
+		NetDemoBindings[GetKeyFromName("downarrow")]	= "netnextmap";
+		NetDemoBindings[GetKeyFromName("space")]		= "netpause";
+
+		initialized = true;
+	}
+
+	if (ev->type != ev_keydown && ev->type != ev_keyup)
+		return false;
+
+	std::string *binding = &NetDemoBindings[ev->data1];
+	
+	// nothing bound to this key specific to netdemos?
+	if (binding->empty())
+		return false;
+
+	if (ev->type == ev_keydown)
+		AddCommandString(binding->c_str());
+
+	return true;
+}
 
 BOOL C_DoKey (event_t *ev)
 {

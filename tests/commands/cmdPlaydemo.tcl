@@ -22,6 +22,7 @@ proc main {} {
  for {set i 0} {$i < 6} {incr i} {
   gets $clientout
  }
+ expect $clientout {You got the shotgun!} 0
  expect $clientout {You got the chaingun!} 0
 }
 

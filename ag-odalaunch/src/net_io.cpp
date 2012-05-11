@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -208,7 +208,7 @@ int32_t BufferedSocket::SendData(const int32_t &Timeout)
 
 	m_BufferSize = m_BufferPos;
 
-	if(m_BufferSize <= 0)
+	if(m_BufferSize == 0)
 		return 0;
 
 	if (CreateSocket() == false)
@@ -238,7 +238,6 @@ int32_t BufferedSocket::SendData(const int32_t &Timeout)
 
 int32_t BufferedSocket::GetData(const int32_t &Timeout)
 {
-	int32_t          res;
 	fd_set           readfds;
 	struct timeval   tv;
 	bool             DestroyMe = false;
@@ -250,6 +249,8 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	// Wait for read with timeout
 	if(Timeout >= 0)
 	{
+		int32_t res;
+
 		FD_ZERO(&readfds);
 		FD_SET(m_Socket, &readfds);
 		tv.tv_sec = Timeout / 1000;
@@ -281,7 +282,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	m_BufferSize = recv(m_Socket, (char *)m_SocketBuffer, MAX_PAYLOAD, 0);
 
 	// -1 = Error; 0 = Closed Connection
-	if(m_BufferSize <= 0)
+	if(m_BufferSize == 0)
 	{
 #ifdef _WIN32
 		ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));

@@ -4,7 +4,7 @@
 // $Id: sv_mobj.cpp 1832 2010-09-01 23:59:33Z mike $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,11 +38,10 @@
 #include "sv_main.h"
 #include "p_ctf.h"
 #include "g_game.h"
+#include "p_acs.h"
 
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_maxplayers)
-
-bool unnatural_level_progression;
 
 void G_PlayerReborn(player_t &player);
 void CTF_RememberFlagPos(mapthing2_t *mthing);
@@ -70,7 +69,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	if(!p->ingame())
 		return;
 
-	if (p->playerstate == PST_REBORN)
+	if (p->playerstate == PST_REBORN || p->playerstate == PST_ENTER)
 		G_PlayerReborn (*p);
 
 	AActor *mobj = new AActor (mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
@@ -99,6 +98,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	p->extralight = 0;
 	p->fixedcolormap = 0;
 	p->viewheight = VIEWHEIGHT;
+	p->xviewshift = 0;
 	p->attacker = AActor::AActorPtr();
 
 	// Set up some special spectator stuff
@@ -127,6 +127,19 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	{
 		// [RH] If someone is in the way, kill them
 		P_TeleportMove (mobj, mobj->x, mobj->y, mobj->z, true);
+
+        // [BC] Do script stuff
+        if (level.behavior != NULL)
+        {
+            if (p->playerstate == PST_ENTER)
+            {
+                level.behavior->StartTypedScripts (SCRIPT_Enter, p->mo);
+            }
+            else if (p->playerstate == PST_REBORN)
+            {
+                level.behavior->StartTypedScripts (SCRIPT_Respawn, p->mo);
+            }
+        }
 
 		// send new objects
 		SV_SpawnMobj(mobj);

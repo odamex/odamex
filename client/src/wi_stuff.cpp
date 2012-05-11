@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -898,14 +898,14 @@ void WI_updateNetgameStats (void)
 			if (dofrags)
 				cnt_frags_c[i] = WI_fragSum (players[i]);
 		}
-		S_Sound (CHAN_VOICE, "weapons/rocklx", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
 		ng_state = 10;
 	}
 
 	if (ng_state == 2)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -924,14 +924,14 @@ void WI_updateNetgameStats (void)
 		
 		if (!stillticking)
 		{
-			S_Sound (CHAN_VOICE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
 	else if (ng_state == 4)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -948,14 +948,14 @@ void WI_updateNetgameStats (void)
 		}
 		if (!stillticking)
 		{
-			S_Sound (CHAN_VOICE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
 	else if (ng_state == 6)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -974,14 +974,14 @@ void WI_updateNetgameStats (void)
 		
 		if (!stillticking)
 		{
-			S_Sound (CHAN_VOICE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
 			ng_state += 1 + 2*!dofrags;
 		}
 	}
 	else if (ng_state == 8)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -1000,7 +1000,7 @@ void WI_updateNetgameStats (void)
 		
 		if (!stillticking)
 		{
-			S_Sound (CHAN_VOICE, "player/male/death1", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "player/male/death1", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
@@ -1008,7 +1008,7 @@ void WI_updateNetgameStats (void)
 	{
 		if (acceleratestage)
 		{
-			S_Sound (CHAN_VOICE, "weapons/shotgr", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
 			if ( gamemode == commercial )
 				WI_initNoState();
 			else
@@ -1059,8 +1059,10 @@ void WI_drawNetgameStats(void)
 
 		x = NG_STATSX;
 		// [RH] Only use one graphic for the face backgrounds
-		//V_ColorMap = translationtables + i * 256;
-		screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
+		V_ColorMap = translationtables + i * 256;
+        screen->DrawTranslatedPatchClean (p, x - p->width(), y);
+		// classic face background colour
+		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
 
 		if (i == me)
 			screen->DrawPatchClean (star, x-p->width(), y);
@@ -1104,7 +1106,7 @@ void WI_updateStats(void)
 	cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
 	cnt_time = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
 	cnt_par = wminfo.partime / TICRATE;
-	S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
 	sp_state = 10;
     }
 
@@ -1113,12 +1115,12 @@ void WI_updateStats(void)
 	cnt_kills += 2;
 
 	if (!(bcnt&3))
-	    S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
 	if (!wminfo.maxkills || cnt_kills >= (level.killed_monsters * 100) / wminfo.maxkills)
 	{
 	    cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
-	    S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
+	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
 	    sp_state++;
 	}
     }
@@ -1127,12 +1129,12 @@ void WI_updateStats(void)
 	cnt_items += 2;
 
 	if (!(bcnt&3))
-	    S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
 	if (!wminfo.maxitems || cnt_items >= (level.found_items * 100) / wminfo.maxitems)
 	{
 	    cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
-	    S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
+	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
 	    sp_state++;
 	}
     }
@@ -1141,12 +1143,12 @@ void WI_updateStats(void)
 	cnt_secret += 2;
 
 	if (!(bcnt&3))
-	    S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
 	if (!wminfo.maxsecret || cnt_secret >= (level.found_secrets * 100) / wminfo.maxsecret)
 	{
 	    cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
-	    S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
+	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
 	    sp_state++;
 	}
     }
@@ -1154,7 +1156,7 @@ void WI_updateStats(void)
     else if (sp_state == 8)
     {
 	if (!(bcnt&3))
-	    S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
 	cnt_time += 3;
 
@@ -1169,7 +1171,7 @@ void WI_updateStats(void)
 
 	    if (cnt_time >= level.time / TICRATE)
 	    {
-		S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
 		sp_state++;
 	    }
 	}
@@ -1178,7 +1180,7 @@ void WI_updateStats(void)
     {
 	if (acceleratestage)
 	{
-	    S_Sound (CHAN_VOICE, "weapons/shotgr", 1, ATTN_NONE);
+	    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
 
 	    if (gamemode == commercial)
 		WI_initNoState();

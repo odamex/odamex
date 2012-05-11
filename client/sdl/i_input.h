@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,6 +25,10 @@
 #define __I_INPUT_H__
 
 #include "doomtype.h"
+
+#define MOUSE_DOOM 0
+#define MOUSE_ODAMEX 1
+#define MOUSE_ZDOOM_DI 2
 
 extern int KeyRepeatRate;
 extern int KeyRepeatDelay;

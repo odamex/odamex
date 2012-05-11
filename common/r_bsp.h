@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,7 +46,7 @@ EXTERN_CVAR (r_drawflat)		// [RH] Don't texture segs?
 void R_ClearClipSegs (void);
 void R_ClearDrawSegs (void);
 void R_RenderBSPNode (int bspnum);
-int R_DoorClosed(void);	// killough 1/17/98
+bool R_DoorClosed(void);	// killough 1/17/98
 
 // killough 4/13/98: fake floors/ceilings for deep water / fake ceilings:
 sector_t *R_FakeFlat(sector_t *, sector_t *, int *, int *, BOOL);

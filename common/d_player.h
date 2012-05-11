@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id: d_player.h 1870 2010-09-06 21:00:47Z mike $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -50,6 +50,8 @@
 #include "i_net.h"
 #include "huffman.h"
 
+#include "p_snapshot.h"
+
 //
 // Player states.
 //
@@ -74,10 +76,14 @@ typedef enum
 	PST_DEAD,
 
 	// Ready to restart/respawn???
-	PST_REBORN,		
-	
+	PST_REBORN,
+
 	// These are cleaned up at the end of a frame
-	PST_DISCONNECT
+	PST_DISCONNECT,
+
+    // [BC] Entered the game
+	PST_ENTER
+
 } playerstate_t;
 
 
@@ -118,12 +124,13 @@ public:
 	{
 		return playerstate == PST_LIVE ||
 				playerstate == PST_DEAD ||
-				playerstate == PST_REBORN;
+				playerstate == PST_REBORN ||
+				playerstate == PST_ENTER;
 	}
 
 	// player identifier on server
 	byte		id;
-	
+
 	// current player state, see playerstate_t
 	byte		playerstate;
 
@@ -134,7 +141,7 @@ public:
 
 	// [RH] who is this?
 	userinfo_t	userinfo;
-	
+
 	// FOV in degrees
 	float		fov;
 	// Focal origin above r.z
@@ -171,7 +178,7 @@ public:
     // Is wp_nochange if not changing.
 	weapontype_t	pendingweapon;
 	weapontype_t	readyweapon;
-	
+
 	bool		weaponowned[NUMWEAPONS];
 	int			ammo[NUMAMMO];
 	int			maxammo[NUMAMMO];
@@ -185,7 +192,7 @@ public:
 
 	// Refired shots are less accurate.
 	short		refire;
-	
+
 	// For screen flashing (red or bright).
 	int			damagecount, bonuscount;
 
@@ -196,35 +203,44 @@ public:
 	int			extralight;
 										// Current PLAYPAL, ???
 	int			fixedcolormap;			//  can be set to REDCOLORMAP for pain, etc.
-	
+
 	int			xviewshift;				// [RH] view shift (for earthquakes)
 
 	int         psprnum;
 	pspdef_t	psprites[NUMPSPRITES];	// Overlay view sprites (gun, etc).
-	
+
 	int			jumpTics;				// delay the next jump for a moment
 
 	int			respawn_time;			// [RH] delay respawning until this tic
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
-	
+
 	AActor::AActorPtr camera;			// [RH] Whose eyes this player sees through
 
 	int			air_finished;			// [RH] Time when you start drowning
 
 	int			GameTime;				// [Dash|RD] Length of time that this client has been in the game.
-	time_t	JoinTime;					// [Dash|RD] Time this client joined.
+	time_t		JoinTime;				// [Dash|RD] Time this client joined.
     int         ping;                   // [Fly] guess what :)
 	int         last_received;
 
-	fixed_t     real_origin[3];       // coordinates and velocity which
-	fixed_t     real_velocity[3];     // a client got from the server
-	int         tic;                  // and that was on tic "tic"
+	int         tic;                  // gametic last update for player was received
+	
+	PlayerSnapshotManager snapshots;	// Previous player positions
 
-    bool		spectator;			// [GhostlyDeath] spectating?
-    int			joinafterspectatortime; // Nes - Join after spectator time.
-    
+	bool spectator;             // [GhostlyDeath] spectating?
+	int joinafterspectatortime; // Nes - Join after spectator time.
+	int timeout_callvote;       // [AM] Tic when a vote last finished.
+	int timeout_vote;           // [AM] Tic when a player last voted.
+
+	bool ready;                 // [AM] Player is ready.
+	int timeout_ready;          // [AM] Tic when a player last toggled his ready state.
+
     int			prefcolor;			// Nes - Preferred color. Server only.
-    
+	float		BlendR;		        // [RH] Final blending values
+	float		BlendG;
+	float		BlendB;
+	float		BlendA;
+
     // For flood protection
     struct LastMessage_s
     {
@@ -234,15 +250,15 @@ public:
 
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
-	
+
 	// denis - client structure is here now for a 1:1
 	struct client_t
 	{
 		netadr_t    address;
-		
+
 		buf_t       netbuf;
 		buf_t       reliablebuf;
-		
+
 		// protocol version supported by the client
 		short		version;
 		short		majorversion;	// GhostlyDeath -- Major
@@ -264,7 +280,7 @@ public:
 		int			last_received;	// for timeouts
 
 		int			lastcmdtic, lastclientcmdtic;
-		
+
 		std::string	digest;			// randomly generated string that the client must use for any hashes it sends back
 		bool        allow_rcon;     // allow remote admin
 		bool		displaydisconnect; // display disconnect message when disconnecting
@@ -276,11 +292,11 @@ public:
 		public:
 			std::string name;
 			unsigned int next_offset;
-			
+
 			download_t() : name(""), next_offset(0) {}
 			download_t(const download_t& other) : name(other.name), next_offset(other.next_offset) {}
 		}download;
-		
+
 		client_t()
 		{
 			// GhostlyDeath -- Initialize to Zero
@@ -303,7 +319,8 @@ public:
 			last_received = 0;
 			lastcmdtic = 0;
 			lastclientcmdtic = 0;
-			
+
+
 			// GhostlyDeath -- done with the {}
 			netbuf = MAX_UDP_PACKET;
 			reliablebuf = MAX_UDP_PACKET;
@@ -345,178 +362,12 @@ public:
 
 	struct ticcmd_t netcmds[BACKUPTICS];
 
-	player_s()
-	{
-		size_t i;
-
-		// GhostlyDeath -- Initialize EVERYTHING
-		id = 0;
-		playerstate = PST_LIVE;
-		mo = AActor::AActorPtr();
-		memset(&cmd, 0, sizeof(ticcmd_t));
-		fov = 90.0;
-		viewz = 0 << FRACBITS;
-		viewheight = 0 << FRACBITS;
-		deltaviewheight = 0 << FRACBITS;
-		bob = 0 << FRACBITS;
-		health = 0;
-		armorpoints = 0;
-		armortype = 0;
-		for (i = 0; i < NUMPOWERS; i++)
-			powers[i] = 0;
-		for (i = 0; i < NUMCARDS; i++)
-			cards[i] = false;
-		backpack = false;
-		points = 0;
-		for (i = 0; i < NUMFLAGS; i++)
-			flags[i] = false;
-		fragcount = 0;
-		deathcount = 0;
-		killcount = 0;
-		pendingweapon = wp_nochange;
-		readyweapon = wp_nochange;
-		for (i = 0; i < NUMWEAPONS; i++)
-			weaponowned[i] = false;
-		for (i = 0; i < NUMAMMO; i++)
-		{
-			ammo[i] = 0;
-			maxammo[i] = 0;
-		}
-		attackdown = 0;
-		usedown = 0;
-		cheats = 0;
-		refire = 0;
-		damagecount = 0;
-		bonuscount = 0;
-		attacker = AActor::AActorPtr();
-		extralight = 0;
-		fixedcolormap = 0;
-		memset(psprites, 0, sizeof(pspdef_t) * NUMPSPRITES);
-		jumpTics = 0;
-		respawn_time = 0;
-		for (i = 0; i < 3; i++)
-		{
-			oldvelocity[i] = 0 << FRACBITS;
-			real_origin[i] = 0 << FRACBITS;
-			real_velocity[i] = 0 << FRACBITS;
-		}
-		camera = AActor::AActorPtr();
-		air_finished = 0;
-		GameTime = 0;
-		ping = 0;
-		last_received = 0;
-		tic = 0;
-		spectator = false;
-
-		joinafterspectatortime = level.time - TICRATE*5;
-		prefcolor = 0;
-		
-		LastMessage.Time = 0;
-		LastMessage.Message = "";
-	}
-
-	player_s &operator =(const player_s &other)
-	{
-		size_t i;
-
-		id = other.id;
-		playerstate = other.playerstate;
-		mo = other.mo;
-		cmd = other.cmd;
-		userinfo = other.userinfo;
-		fov = other.fov;
-		viewz = other.viewz;
-		viewheight = other.viewheight;
-		deltaviewheight = other.deltaviewheight;
-		bob = other.bob;
-
-		health = other.health;
-		armorpoints = other.armorpoints;
-		armortype = other.armortype;
-
-		for(i = 0; i < NUMPOWERS; i++)
-			powers[i] = other.powers[i];
-
-		for(i = 0; i < NUMCARDS; i++)
-			cards[i] = other.cards[i];
-
-		for(i = 0; i < NUMFLAGS; i++)
-			flags[i] = other.flags[i];
-
-		points = other.points;
-		backpack = other.backpack;
-
-		fragcount = other.fragcount;
-		deathcount = other.deathcount;
-		killcount = other.killcount;
-
-		pendingweapon = other.pendingweapon;
-		readyweapon = other.readyweapon;
-
-		for(i = 0; i < NUMWEAPONS; i++)
-			weaponowned[i] = other.weaponowned[i];
-		for(i = 0; i < NUMAMMO; i++)
-			ammo[i] = other.ammo[i];
-		for(i = 0; i < NUMAMMO; i++)
-			maxammo[i] = other.maxammo[i];
-		
-		attackdown = other.attackdown;
-		usedown = other.usedown;
-
-		cheats = other.cheats;
-
-		refire = other.refire;
-    
-		damagecount = other.damagecount;
-		bonuscount = other.bonuscount;
-
-		attacker = other.attacker;
-
-		extralight = other.extralight;
-		fixedcolormap = other.fixedcolormap;
-
-		for(i = 0; i < NUMPSPRITES; i++)
-			psprites[i] = other.psprites[i];
-        
-        jumpTics = other.jumpTics;
-		
-		respawn_time = other.respawn_time;
-
-		oldvelocity[0] = other.oldvelocity[0];
-		oldvelocity[1] = other.oldvelocity[1];
-		oldvelocity[2] = other.oldvelocity[2];
-
-		camera = other.camera;
-		air_finished = other.air_finished;
-		
-		JoinTime = other.JoinTime;
-		GameTime = other.GameTime;
-		ping = other.ping;
-
-		last_received = other.last_received;
-
-		for(i = 0; i < 3; i++)
-		{
-			real_origin[i] = other.real_origin[i];
-			real_velocity[i] = other.real_velocity[i];
-		}
-
-		tic = other.tic;
-		spectator = other.spectator;
-		joinafterspectatortime = other.joinafterspectatortime;
-		
-		prefcolor = other.prefcolor;
+	player_s();
+	player_s &operator =(const player_s &other);
 	
-		for(i = 0; i < BACKUPTICS; i++)
-			netcmds[i] = other.netcmds[i];
-		
-        LastMessage.Time = other.LastMessage.Time;
-		LastMessage.Message = other.LastMessage.Message;
-		
-		client = other.client;
+	~player_s();
 
-		return *this;
-	}
+
 };
 
 typedef player_s player_t;
@@ -529,7 +380,7 @@ extern std::vector<player_t> players;
 player_t		&consoleplayer();
 player_t		&displayplayer();
 player_t		&listenplayer();
-player_t		&idplayer(size_t id);
+player_t		&idplayer(byte id);
 bool			validplayer(player_t &ref);
 
 extern byte consoleplayer_id;
@@ -542,7 +393,7 @@ extern byte displayplayer_id;
 typedef struct wbplayerstruct_s
 {
 	BOOL		in;			// whether the player is in game
-	
+
 	// Player stats, kills, collected items etc.
 	int			skills;
 	int			sitems;
@@ -562,7 +413,7 @@ typedef struct wbstartstruct_s
 
 	char		lname0[9];
 	char		lname1[9];
-	
+
 	int			maxkills;
 	int			maxitems;
 	int			maxsecret;
@@ -570,13 +421,12 @@ typedef struct wbstartstruct_s
 
 	// the par time
 	int			partime;
-	
+
 	// index of this player in game
-	unsigned	pnum;	
+	unsigned	pnum;
 
 	std::vector<wbplayerstruct_s> plyr;
 } wbstartstruct_t;
-
 
 #endif // __D_PLAYER_H__
 

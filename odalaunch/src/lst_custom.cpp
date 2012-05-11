@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,9 +24,12 @@
 
 #include "lst_custom.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListCtrl)
+#include <wx/settings.h>
+#include <wx/defs.h>
 
-BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListCtrl)
+IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListView)
+
+BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListView)
      EVT_LIST_COL_CLICK(-1, wxAdvancedListCtrl::OnHeaderColumnButtonClick)
      EVT_WINDOW_CREATE(wxAdvancedListCtrl::OnCreateControl)
 END_EVENT_TABLE()
@@ -38,7 +41,7 @@ static int ImageList_SortArrowDown = -1;
 // Sorting arrow XPM images
 static const char *SortArrowAscending[] =
 {
-    "16 15 3 1",
+    "16 16 3 1",
     "  c None",
     "0 c #808080",
     "1 c #FFFFFF",
@@ -57,12 +60,13 @@ static const char *SortArrowAscending[] =
     "                ",
     "                ",
     "                ",
+    "                ",
     "                "
 };
 
 static const char *SortArrowDescending[] =
 {
-    "16 15 3 1",
+    "16 16 3 1",
     "  c None",
     "0 c #808080",
     "1 c #FFFFFF",
@@ -81,16 +85,23 @@ static const char *SortArrowDescending[] =
     "                ",
     "                ",
     "                ",
+    "                ",
     "                "
 };
 
-void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
+wxAdvancedListCtrl::wxAdvancedListCtrl()
 {
     SortOrder = 0; 
     SortCol = 0; 
 
-    ItemShade.Set(wxUint8(245), wxUint8(245), wxUint8(245));
+    m_SpecialColumn = -1;
+}
 
+void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
+{
+    ItemShade = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+    BgColor = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
+    
     // Set up the image list.
     AddImageSmall(wxNullImage);
 }
@@ -100,8 +111,7 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 {
     if (GetImageList(wxIMAGE_LIST_SMALL) == NULL)
     {
-        // Art provider images are 16x15, WTF?! Kept for compatibility :'(
-        wxImageList *ImageList = new wxImageList(16, 15, true);
+        wxImageList *ImageList = new wxImageList(16, 16, true);
         AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
         
         // Add our sort icons by default.
@@ -420,10 +430,44 @@ void wxAdvancedListCtrl::Sort(wxInt32 Column, wxInt32 Order, wxInt32 Lowest, wxI
         Sort(Column, Order, LowSection, Highest);
 }
 
+
+// Numerical sort function for special columns
+int wxCALLBACK wxListCompareFunction(wxIntPtr item1, wxIntPtr item2, 
+        wxIntPtr sortData)
+{
+    if (sortData == 1)
+    {
+        if (item1 < item2)
+            return -1;
+        else if (item1 > item2)
+            return 1;
+        else 
+            return 0;
+    }
+    else
+    {
+        if (item2 < item1)
+            return -1;
+        else if (item2 > item1)
+            return 1;
+        else 
+            return 0;
+    }
+}
+
 void wxAdvancedListCtrl::Sort()
 {
     SetSortArrow(SortCol, SortOrder);
+    
+    if (SortCol == m_SpecialColumn)
+    {
+        SortItems(wxListCompareFunction, SortOrder);
 
+        ColourList();
+
+        return;
+    }
+#if 0
     // prime 'er up
     long item = GetNextItem(-1);
       
@@ -433,7 +477,7 @@ void wxAdvancedListCtrl::Sort()
  
         item = GetNextItem(item);
     }
-
+#endif
     // sort the list by column
     Sort(SortCol, SortOrder);
 }
@@ -455,13 +499,9 @@ void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
 
 void wxAdvancedListCtrl::ResetSortArrows(void)
 {
-    wxListItem li;
-    li.SetMask(wxLIST_MASK_IMAGE);    
-    li.SetImage(-1);
-
     for (wxInt32 i = 0; i < GetColumnCount(); ++i)
     {
-        SetColumn(i, li);        
+        ClearColumnImage(i);
     }
 }
 
@@ -470,11 +510,7 @@ void wxAdvancedListCtrl::SetSortArrow(wxInt32 Column, wxInt32 ArrowState)
     // nuke any previously set sort arrows
     ResetSortArrows();
 
-    wxListItem li;
-    li.SetMask(wxLIST_MASK_IMAGE);
-    li.SetImage(ArrowState);
-
-    SetColumn(SortCol, li);
+    SetColumnImage(SortCol, ArrowState);
 }
 
 void wxAdvancedListCtrl::ColourListItem(wxListItem &info)
@@ -494,7 +530,7 @@ void wxAdvancedListCtrl::ColourListItem(wxListItem &info)
     if (SwapColour)
         col = ItemShade;
     else
-        col = *wxWHITE;
+        col = BgColor;
 
     SwapColour = !SwapColour;
 
@@ -515,7 +551,9 @@ void wxAdvancedListCtrl::ColourListItem(long item)
 void wxAdvancedListCtrl::ColourList()
 {      
     for (long i = 0; i < GetItemCount(); ++i)
+    {
         ColourListItem(i);
+    }
 }
 
 // Our variation of InsertItem, so we can do magical things!
@@ -524,7 +562,7 @@ long wxAdvancedListCtrl::ALCInsertItem(const wxString &Text)
     wxListItem ListItem;
     
     ListItem.m_itemId = InsertItem(GetItemCount(), Text, -1);
-   
+
     ColourListItem(ListItem.m_itemId);
 
     SetItem(ListItem);

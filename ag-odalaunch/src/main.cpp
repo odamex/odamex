@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,14 +42,14 @@ using namespace std;
 
 namespace agOdalaunch {
 
-int AGOL_InitVideo(const char *drivers, const int width, const int height)
+int AGOL_InitVideo(const string& drivers, const int width, const int height)
 {
 	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
 
-	if(!drivers || strncmp(drivers, "sdl", 3))
+	if(!drivers.size() || drivers.compare(0, 3, "sdl"))
 	{
 		/* Initialize Agar-GUI. */
-		if (AG_InitGraphics(drivers) == -1) 
+		if (AG_InitGraphics(drivers.c_str()) == -1) 
 		{
 			cerr << AG_GetError() << endl;
 			return -1;
@@ -59,7 +59,7 @@ int AGOL_InitVideo(const char *drivers, const int width, const int height)
 	}
 	else // Alternative initialization. This will only initialize single-window display.
 	{
-		if(drivers && !strcmp(drivers, "sdlfb"))
+		if(drivers.size() && drivers == "sdlfb")
 		{
 			if (AG_InitVideo(width, height, 32, AG_VIDEO_SDL | AG_VIDEO_RESIZABLE) == -1) 
 			{
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 #endif
 {
 	AGOL_MainWindow *mainWindow;
-	char            *drivers = NULL;
+	string           drivers;
 	char            *optArg;
 	int              c;
 	int              width, height;
@@ -140,17 +140,13 @@ int main(int argc, char *argv[])
 #endif
 
 	// Check if a video driver is specified in the config file
-	if(!drivers)
+	if(!drivers.size())
 	{
-		string cfgDriver;
+		GuiConfig::Read("VideoDriver", drivers);
 
-		GuiConfig::Read("VideoDriver", cfgDriver);
-
-		if(cfgDriver.size())
-			drivers = strdup(cfgDriver.c_str());
 #ifdef _XBOX
-		else
-			drivers = strdup("sdlfb");
+		if(!drivers.size())
+			drivers = "sdlfb";
 #endif
 	}
 

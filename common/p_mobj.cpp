@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,7 @@
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "c_effect.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "v_video.h"
@@ -60,6 +61,7 @@ EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(sv_teamspawns)
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(co_fixweaponimpacts)
+EXTERN_CVAR(co_allowdropoff)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -67,6 +69,10 @@ int             iquehead;
 int             iquetail;
 
 NetIDHandler ServerNetID;
+
+// denis - fast netid lookup
+typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
+netid_map_t actor_by_netid;
 
 IMPLEMENT_SERIAL(AActor, DThinker)
 
@@ -96,14 +102,15 @@ void MapThing::Serialize (FArchive &arc)
 AActor::AActor () :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
-    floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
+    floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0),
+    momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
     flags(0), flags2(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
     visdir(0), reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), onground(0),
+    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
     tid(0)
 {
+	memset(args, 0, sizeof(args));
 	self.init(this);
 }
 
@@ -112,20 +119,21 @@ AActor::AActor (const AActor &other) :
     angle(other.angle), sprite(other.sprite), frame(other.frame),
     pitch(other.pitch), roll(other.roll), effects(other.effects),
     bnext(other.bnext), bprev(other.bprev), subsector(other.subsector),
-    floorz(other.floorz), ceilingz(other.ceilingz), radius(other.radius),
-    height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
-    validcount(other.validcount), type(other.type), info(other.info),
-    tics(other.tics), state(other.state), flags(other.flags), flags2(other.flags2),
-    special1(other.special1), special2(other.special2),
-    health(other.health), movedir(other.movedir), movecount(other.movecount),
-    visdir(other.visdir), reactiontime(other.reactiontime),
+    floorz(other.floorz), ceilingz(other.ceilingz), dropoffz(other.dropoffz),
+    floorsector(other.floorsector),	radius(other.radius), height(other.height), momx(other.momx),
+	momy(other.momy), momz(other.momz), validcount(other.validcount),
+	type(other.type), info(other.info), tics(other.tics), state(other.state),
+	flags(other.flags), flags2(other.flags2), special1(other.special1),
+	special2(other.special2), health(other.health), movedir(other.movedir),
+	movecount(other.movecount), visdir(other.visdir), reactiontime(other.reactiontime),
     threshold(other.threshold), player(other.player), lastlook(other.lastlook),
     special(other.special),inext(other.inext), iprev(other.iprev), translation(other.translation),
-    translucency(other.translucency), waterlevel(other.waterlevel),
+    translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
     onground(other.onground), touching_sectorlist(other.touching_sectorlist),
     deadtic(other.deadtic), oldframe(other.oldframe),
     rndindex(other.rndindex), netid(other.netid), tid(other.tid)
 {
+	memcpy(args, other.args, sizeof(args));
 	self.init(this);
 }
 
@@ -147,6 +155,8 @@ AActor &AActor::operator= (const AActor &other)
     subsector = other.subsector;
     floorz = other.floorz;
     ceilingz = other.ceilingz;
+	dropoffz = other.dropoffz;
+	floorsector = other.floorsector;
     radius = other.radius;
     height = other.height;
     momx = other.momx;
@@ -174,6 +184,7 @@ AActor &AActor::operator= (const AActor &other)
     translation = other.translation;
     translucency = other.translucency;
     waterlevel = other.waterlevel;
+	gear = other.gear;
     onground = other.onground;
     touching_sectorlist = other.touching_sectorlist;
     deadtic = other.deadtic;
@@ -182,6 +193,7 @@ AActor &AActor::operator= (const AActor &other)
     netid = other.netid;
     tid = other.tid;
     special = other.special;
+    memcpy(args, other.args, sizeof(args));
 
 	return *this;
 }
@@ -195,11 +207,11 @@ AActor &AActor::operator= (const AActor &other)
 AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
-    floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
+    floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0), momx(0), momy(0), momz(0),
     validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), flags2(0),
     special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-    reactiontime(0), threshold(0), player(NULL), lastlook(0), inext(NULL),
-    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), onground(0),
+    reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
+    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
     tid(0)
 {
@@ -250,9 +262,11 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	if(!subsector)
 		return;
 
-	floorz = subsector->sector->floorheight;
-	ceilingz = subsector->sector->ceilingheight;
-
+	floorz = P_FloorHeight(this);
+	ceilingz = P_CeilingHeight(this);
+	dropoffz = floorz;
+	floorsector = subsector->sector;
+	
 	if (iz == ONFLOORZ)
 	{
 		z = floorz;
@@ -269,6 +283,8 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	{
 		z = iz;
 	}
+	
+	memset(args, 0, sizeof(args));
 }
 
 //
@@ -287,6 +303,58 @@ void P_AnimationTick(AActor *mo)
 	}
 }
 
+//
+// P_ClearAllNetIds
+//
+void P_ClearAllNetIds()
+{
+	actor_by_netid.clear();
+}
+
+//
+// P_FindThingById
+// denis - fast netid lookup
+//
+AActor* P_FindThingById(size_t id)
+{
+	netid_map_t::iterator i = actor_by_netid.find(id);
+
+	if(i == actor_by_netid.end())
+		return AActor::AActorPtr();
+	else
+		return i->second;
+}
+
+//
+// P_SetThingId
+//
+void P_SetThingId(AActor *mo, size_t newnetid)
+{
+	mo->netid = newnetid;
+	actor_by_netid[newnetid] = mo->ptr();
+}
+
+
+//
+// P_ClearId
+//
+void P_ClearId(size_t id)
+{
+    AActor *mo = P_FindThingById(id);
+
+	if(!mo)
+		return;
+		
+	if(mo->player)
+	{
+		if(mo->player->mo == mo)
+			mo->player->mo = AActor::AActorPtr();
+
+		mo->player = NULL;
+	}
+
+	mo->Destroy();
+}
 
 //
 // P_RemoveMobj
@@ -331,15 +399,227 @@ void AActor::Destroy ()
 	Super::Destroy ();
 }
 
+//
+// P_CalculateMinMom
+//
+// Determines the value for mo->momz that will cause the player to grunt when
+// landing.
+//
+// [SL] Factored out of P_MoveActor for reuse and changed to fixed-point math
+// for consistency purposes.
+//
+fixed_t P_CalculateMinMom(AActor *mo)
+{
+	fixed_t levelgravity, sectorgravity;
+
+	if (co_zdoomphys)
+	{
+		levelgravity = FixedDiv(FLOAT2FIXED(level.gravity), 100 << FRACBITS);
+		sectorgravity = FLOAT2FIXED(mo->subsector->sector->gravity);
+	}
+	else
+	{
+		levelgravity = GRAVITY * 8;
+		sectorgravity = FLOAT2FIXED(mo->subsector->sector->gravity);
+	}
+
+	return -FixedMul(levelgravity, sectorgravity);
+}
+
+//
+// P_MoveActor
+//
+// Tries to move an actor based on its momentum while performing
+// clipping against other actors and walls.
+//
+// [SL] 2012-03-10 - Factored out from AActor::RunThink() to allow other
+// functions to utilize the movement clipping code.
+//
+void P_MoveActor(AActor *mo)
+{
+	if (!mo || !mo->subsector)
+		return;
+	
+	AActor *onmo = NULL;
+    fixed_t minmom;
+	
+	// [RH] If standing on a steep slope, fall down it
+	if (!(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) && mo->momz <= 0 &&
+		mo->floorz == mo->z && mo->floorsector && 
+		mo->floorsector->floorplane.c < STEEPSLOPE &&
+		P_FloorHeight(mo->x, mo->y, mo->floorsector) <= mo->floorz)
+	{
+		const msecnode_t *node;
+		bool dopush = true;
+
+		if (mo->floorsector->floorplane.c > STEEPSLOPE*2/3)
+		{
+			for (node = mo->touching_sectorlist; node; node = node->m_tnext)
+			{
+				const sector_t *sec = node->m_sector;
+				if (sec->floorplane.c >= STEEPSLOPE)
+				{
+					if (P_FloorHeight(mo->x, mo->y, sec) >= mo->z - 24*FRACUNIT)
+					{
+						dopush = false;
+						break;
+					}
+				}
+			}
+		}
+		if (dopush)
+		{
+			mo->momx += mo->floorsector->floorplane.a;
+			mo->momy += mo->floorsector->floorplane.b;
+		}
+	}
+
+	// Handle X and Y momemtums
+    BlockingMobj = NULL;
+	if (mo->momx || mo->momy || (mo->flags & MF_SKULLFLY))
+	{
+		P_XYMovement(mo);
+
+		if (mo->ObjectFlags & OF_MassDestruction)
+			return;		// actor was destroyed
+	}
+
+	if (mo->flags2 & MF2_FLOATBOB)
+	{ // Floating item bobbing motion (special1 is height)
+		mo->z = mo->floorz + mo->special1;
+	}
+	if ((mo->z != mo->floorz) || mo->momz || BlockingMobj)
+	{
+	    // Handle Z momentum and gravity
+		if (co_realactorheight && (mo->flags2 & MF2_PASSMOBJ))
+		{
+		    if (!(onmo = P_CheckOnmobj(mo)))
+			{
+				P_ZMovement(mo);
+				if (mo->player && mo->flags2 & MF2_ONMOBJ)
+				{
+					mo->flags2 &= ~MF2_ONMOBJ;
+				}
+			}
+			else
+			{
+			    if (mo->player)
+				{
+					minmom = P_CalculateMinMom(mo);
+
+					if (mo->momz < minmom && !(mo->flags2&MF2_FLY))
+						PlayerLandedOnThing(mo, onmo);
+				}
+				if (onmo->z + onmo->height - mo->z <= 24 * FRACUNIT)
+				{
+					if (mo->player)
+					{
+						mo->player->viewheight -= onmo->z + onmo->height - mo->z;
+						mo->player->deltaviewheight =
+							(VIEWHEIGHT - mo->player->viewheight)>>3;
+					}
+					mo->z = onmo->z + onmo->height;
+				}
+
+				mo->flags2 |= MF2_ONMOBJ;
+				mo->momz = 0;
+			}
+		}
+	    else
+	    {
+            P_ZMovement(mo);
+	    }
+		
+        if (mo->ObjectFlags & OF_MassDestruction)
+            return;		// actor was destroyed
+	}
+
+	if (mo->subsector)
+	{
+		//byte lastwaterlevel = waterlevel;
+		mo->waterlevel = 0;
+		if (mo->subsector->sector->waterzone)
+			mo->waterlevel = 3;
+			
+		sector_t *hsec = mo->subsector->sector->heightsec;
+		if (hsec && hsec->waterzone && !mo->subsector->sector->waterzone)
+		{
+			if (mo->z < hsec->floorheight)
+			{
+				fixed_t floorheight = P_FloorHeight(mo->x, mo->y, hsec);
+				if (mo->z < floorheight)
+				{
+					mo->waterlevel = 1;
+					if (mo->z + mo->height/2 < floorheight)
+					{
+						mo->waterlevel = 2;
+						if (mo->z + mo->height <= floorheight)
+							mo->waterlevel = 3;
+					}
+				}
+				else if (mo->z + mo->height > P_CeilingHeight(mo->x, mo->y, hsec))
+				{
+					mo->waterlevel = 3;
+				}
+			}
+			else if (mo->z + mo->height > hsec->ceilingheight)
+			{
+				mo->waterlevel = 3;
+			}
+		}
+	}
+	
+	// killough 9/12/98: objects fall off ledges if they are hanging off
+	// slightly push off of ledge if hanging more than halfway off
+	// [RH] Be more restrictive to avoid pushing monsters/players down steps	
+	if (!(mo->flags & MF_NOGRAVITY) && !(mo->flags2 & MF2_FLOATBOB) && (mo->z > mo->dropoffz) &&
+		 (mo->health <= 0 || (mo->flags & MF_COUNTKILL && mo->z - mo->dropoffz > 24*FRACUNIT)) &&
+		  co_allowdropoff)	
+	{
+		P_ApplyTorque(mo);   // Apply torque
+	}
+	else
+	{
+		mo->flags &= ~MF_FALLING;
+		mo->gear = 0;           // Reset torque
+	}
+}
+
+
+//
+// P_TestActorMovement
+//
+// [SL] 2012-03-10 - Performs collision testing to see if an actor can move
+// to (tryx, tryy, tryz).  (destx, desty, destz) is the location the actor
+// would be moved to with wall and actor collsion taken into account.
+//
+void P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
+						fixed_t &destx, fixed_t &desty, fixed_t &destz)
+{
+	// backup the actor's position/state
+	ActorSnapshot backup(gametic, mo);
+	
+	mo->momx = tryx - mo->x;
+	mo->momy = tryy - mo->y;
+	mo->momz = tryz - mo->z;
+
+	// Perform collision testing
+	P_MoveActor(mo);
+
+	// the position the actor would move to
+	destx = mo->x;
+	desty = mo->y;
+	destz = mo->z;
+
+	// restore the actor's position/state
+	backup.toActor(mo);
+}
 
 //
 // P_MobjThinker
 //
 void AActor::RunThink ()
 {
-    AActor *onmo;
-    fixed_t minmom;
-
 	if(!subsector)
 		return;
 
@@ -384,97 +664,7 @@ void AActor::RunThink ()
 		}
 	}
 
-	// Handle X and Y momemtums
-    BlockingMobj = NULL;
-	if (momx || momy || (flags & MF_SKULLFLY))
-	{
-		P_XYMovement (this);
-
-		if (ObjectFlags & OF_MassDestruction)
-			return;		// actor was destroyed
-	}
-
-	if (flags2 & MF2_FLOATBOB)
-	{ // Floating item bobbing motion (special1 is height)
-		z = floorz + special1;
-	}
-	else if ((z != floorz) || momz || BlockingMobj)
-	{
-	    // Handle Z momentum and gravity
-		if (co_realactorheight && (flags2 & MF2_PASSMOBJ))
-		{
-		    if (!(onmo = P_CheckOnmobj (this)))
-			{
-				P_ZMovement (this);
-				if (player && flags2 & MF2_ONMOBJ)
-				{
-					flags2 &= ~MF2_ONMOBJ;
-				}
-			}
-			else
-			{
-			    if (player)
-				{
-					minmom = (co_zdoomphys ? (fixed_t)(level.gravity * subsector->sector->gravity * -655.36f) :
-											 (fixed_t)(GRAVITY*subsector->sector->gravity*-8));
-
-					if (momz < minmom && !(flags2&MF2_FLY))
-					{
-						PlayerLandedOnThing (this, onmo);
-					}
-				}
-				if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
-				{
-					if (player)
-					{
-						player->viewheight -= onmo->z + onmo->height - z;
-						player->deltaviewheight =
-							(VIEWHEIGHT - player->viewheight)>>3;
-					}
-					z = onmo->z + onmo->height;
-				}
-
-				flags2 |= MF2_ONMOBJ;
-				momz = 0;
-			}
-		}
-	    else
-	    {
-            P_ZMovement (this);
-	    }
-
-        if (ObjectFlags & OF_MassDestruction)
-            return;		// actor was destroyed
-	}
-
-	if(subsector)
-	{
-		//byte lastwaterlevel = waterlevel;
-		waterlevel = 0;
-		if (subsector->sector->waterzone)
-			waterlevel = 3;
-		sector_t *hsec;
-		if ( (hsec = subsector->sector->heightsec) )
-		{
-			if (hsec->waterzone && !subsector->sector->waterzone)
-			{
-				if (z < hsec->floorheight)
-				{
-					waterlevel = 1;
-					if (z + height/2 < hsec->floorheight)
-					{
-						waterlevel = 2;
-						if (z + height <= hsec->floorheight)
-							waterlevel = 3;
-					}
-				}
-				else if (z + height > hsec->ceilingheight)
-				{
-					waterlevel = 3;
-				}
-			}
-		}
-	}
+	P_MoveActor(this);
 
 	if(predicting)
 		return;
@@ -518,23 +708,25 @@ void AActor::Serialize (FArchive &arc)
 	if (arc.IsStoring ())
 	{
 		int playerid = player ? player->id : 0;
-		arc << x
+		arc << netid
+			<< x
 			<< y
 			<< z
 			<< pitch
 			<< angle
 			<< roll
-			<< (int)sprite
+			<< sprite
 			<< frame
 			<< effects
 			<< floorz
 			<< ceilingz
+			<< dropoffz
 			<< radius
 			<< height
 			<< momx
 			<< momy
 			<< momz
-			<< (int)type
+			<< type
 			<< tics
 			<< state
 			<< flags
@@ -562,7 +754,8 @@ void AActor::Serialize (FArchive &arc)
 			/*<< goal ? goal->netid : 0*/
 			<< (unsigned)0
 			<< translucency
-			<< waterlevel;
+			<< waterlevel
+			<< gear;
 
 		if (translation)
 			arc << (DWORD)(translation - translationtables);
@@ -574,23 +767,27 @@ void AActor::Serialize (FArchive &arc)
 	{
 		unsigned dummy;
 		unsigned playerid;
-		arc >> x
+		int newnetid;
+
+		arc >> newnetid
+			>> x
 			>> y
 			>> z
 			>> pitch
 			>> angle
 			>> roll
-			>> (int&)sprite
+			>> sprite
 			>> frame
 			>> effects
 			>> floorz
 			>> ceilingz
+			>> dropoffz
 			>> radius
 			>> height
 			>> momx
 			>> momy
 			>> momz
-			>> (int&)type
+			>> type
 			>> tics
 			>> state
 			>> flags
@@ -618,7 +815,10 @@ void AActor::Serialize (FArchive &arc)
 			/*>> goal->netid*/
 			>> dummy
 			>> translucency
-			>> waterlevel;
+			>> waterlevel
+			>> gear;
+
+		P_SetThingId(this, newnetid);
 
 		DWORD trans;
 		arc >> trans;
@@ -633,7 +833,10 @@ void AActor::Serialize (FArchive &arc)
 			I_Error("Unknown sprite in saved game");
 		info = &mobjinfo[type];
 		touching_sectorlist = NULL;
+
 		LinkToWorld ();
+		floorsector = subsector->sector;
+
 		AddToHash ();
 		if(playerid && validplayer(idplayer(playerid)))
 		{
@@ -711,14 +914,14 @@ bool P_SetMobjState(AActor *mobj, statenum_t state)
 //
 void P_XYMovement(AActor *mo)
 {
-//	angle_t angle;
 	fixed_t ptryx, ptryy;
 	player_t *player = NULL;
 	fixed_t xmove, ymove;
+	bool walkplane;
 	fixed_t maxmove;
 	static const int windTab[3] = {2048*5, 2048*10, 2048*25};
 
-	if (!mo->subsector)
+	if (!mo || !mo->subsector)
 		return;
 
 	if (!mo->momx && !mo->momy)
@@ -766,6 +969,9 @@ void P_XYMovement(AActor *mo)
 
 	maxmove /= 2;
 
+	// [RH] Adjust player movement on sloped floors
+	walkplane = P_CheckSlopeWalk (mo, xmove, ymove);
+	
 	do
 	{
 		if ((xmove > maxmove || ymove > maxmove)
@@ -784,7 +990,7 @@ void P_XYMovement(AActor *mo)
 		}
 
 		// killough 3/15/98: Allow objects to drop off
-		if (!P_TryMove (mo, ptryx, ptryy, true))
+		if (!P_TryMove (mo, ptryx, ptryy, true, walkplane))
 		{
 			// blocked move
             if (mo->flags2 & MF2_SLIDE)
@@ -799,26 +1005,39 @@ void P_XYMovement(AActor *mo)
 					{
 						mo->momz = WATER_JUMP_SPEED;
 					}
+					
 					P_SlideMove (mo);
 				}
 				else
 				{ // slide against mobj
-					if (P_TryMove (mo, mo->x, ptryy, true))
-					{
+					
+					// try sliding in the x direction
+					fixed_t tx = 0, ty = ptryy - mo->y;
+					walkplane = P_CheckSlopeWalk(mo, tx, ty);
+					if (P_TryMove(mo, mo->x, ptryy, true, walkplane))
 						mo->momx = 0;
-					}
-					else if (P_TryMove (mo, ptryx, mo->y, true))
-					{
-						mo->momy = 0;
-					}
 					else
 					{
-						mo->momx = mo->momy = 0;
+						// try sliding n the y direction
+						tx = ptryx - mo->x, ty = 0;
+						walkplane = P_CheckSlopeWalk (mo, tx, ty);
+						if (P_TryMove(mo, ptryx, mo->y, true, walkplane))
+							mo->momy = 0;
+						else
+							mo->momx = mo->momy = 0;
 					}
 				}
 			}
 			else if (mo->flags & MF_MISSILE)
 			{
+				// [SL] 2012-01-25 - Don't explode missiles on horizon line
+				if (BlockingLine && BlockingLine->special == Line_Horizon &&
+					co_fixweaponimpacts)
+				{
+					mo->Destroy();
+					return;
+				}
+
 				// explode a missile
 				if (ceilingline &&
 					ceilingline->backsector &&
@@ -835,7 +1054,7 @@ void P_XYMovement(AActor *mo)
 					// instead of exploding.
 
 					if (!co_fixweaponimpacts ||
-						mo->z > ceilingline->backsector->ceilingheight)
+						mo->z > P_CeilingHeight(mo->x, mo->y, ceilingline->backsector))
 					{	
 						mo->Destroy ();
 						return;
@@ -853,7 +1072,7 @@ void P_XYMovement(AActor *mo)
 		}
 	} while (xmove || ymove);
 
-    // slow down
+	// slow down
 	if (player && player->mo == mo && player->cheats & CF_NOMOMENTUM)
 	{
 		// debug option for no sliding at all
@@ -862,9 +1081,9 @@ void P_XYMovement(AActor *mo)
 	}
 
 	if (mo->flags & (MF_MISSILE | MF_SKULLFLY))
-    {
+	{
 		return; 	// no friction for missiles ever
-    }
+	}
 
 	// [ML] From ZDoom 1.23...
 	if (mo->z > mo->floorz && !(mo->flags2 & MF2_ONMOBJ) &&
@@ -891,7 +1110,7 @@ void P_XYMovement(AActor *mo)
 		if (mo->momx > FRACUNIT/4 || mo->momx < -FRACUNIT/4
 			|| mo->momy > FRACUNIT/4 || mo->momy < -FRACUNIT/4)
 		{
-			if (mo->floorz != mo->subsector->sector->floorheight)
+			if (mo->floorz > P_FloorHeight(mo))
 				return;
 		}
 	}
@@ -943,28 +1162,27 @@ void P_XYMovement(AActor *mo)
 //
 void P_ZMovement(AActor *mo)
 {
-   fixed_t	dist;
-   fixed_t	delta;
+	fixed_t	dist;
+	fixed_t	delta;
 
-    // check for smooth step up
-   if (mo->player && mo->z < mo->floorz)
-   {
-	  mo->player->viewheight -= mo->floorz-mo->z;
+	// check for smooth step up
+	if (mo->player && mo->z < mo->floorz)
+	{
+		mo->player->viewheight -= mo->floorz-mo->z;
 
-	  mo->player->deltaviewheight
-			= (VIEWHEIGHT - mo->player->viewheight)>>3;
-   }
+		mo->player->deltaviewheight	= (VIEWHEIGHT - mo->player->viewheight)>>3;
+	}
 
-// apply gravity (if in zdoomland)
-   if (co_zdoomphys && (mo->z > mo->floorz && !(mo->flags & MF_NOGRAVITY)))
-   {
+	// apply gravity (if in zdoomland)
+	if (co_zdoomphys && (mo->z > mo->floorz && !(mo->flags & MF_NOGRAVITY)))
+	{
 		fixed_t startmomz = mo->momz;
 
-		if (!mo->waterlevel || mo->flags & MF_CORPSE || (mo->player &&
-			!(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove)))
+		if (!mo->waterlevel || mo->flags & MF_CORPSE ||
+			(mo->player && !(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove)))
 		{
 			mo->momz -= (fixed_t)(level.gravity * mo->subsector->sector->gravity *
-				(mo->flags2 & MF2_LOGRAV ? 10.24 : 81.92));
+						(mo->flags2 & MF2_LOGRAV ? 10.24 : 81.92));
 		}
 		if (mo->waterlevel > 1)
 		{
@@ -977,33 +1195,33 @@ void P_ZMovement(AActor *mo)
 			else
 			{
 				mo->momz = startmomz + ((mo->momz - startmomz) >>
-					(mo->waterlevel == 1 ? WATER_SINK_SMALL_FACTOR : WATER_SINK_FACTOR));
+						   (mo->waterlevel == 1 ? WATER_SINK_SMALL_FACTOR : WATER_SINK_FACTOR));
 			}
 		}
-   }
-    // adjust height
-    // GhostlyDeath <Jun, 4 2008> -- Floating monsters shouldn't adjust to spectator height
-   mo->z += mo->momz;
+	}
+	
+	// adjust height
+	mo->z += mo->momz;
+	
+	// GhostlyDeath <Jun, 4 2008> -- Floating monsters shouldn't adjust to spectator height
 
-   if ( mo->flags & MF_FLOAT
-        && mo->target && !(mo->target->player && mo->target->player->spectator))
-   {
-	// float down towards target if too close
-      if ( !(mo->flags & MF_SKULLFLY)
-             && !(mo->flags & MF_INFLOAT) )
-      {
-         dist = P_AproxDistance (mo->x - mo->target->x,
-                                 mo->y - mo->target->y);
+	if (mo->flags & MF_FLOAT && mo->target &&
+	  !(mo->target->player && mo->target->player->spectator))
+	{
+		// float down towards target if too close
+		if ( !(mo->flags & MF_SKULLFLY) && !(mo->flags & MF_INFLOAT) )
+		{
+			dist = P_AproxDistance(mo->x - mo->target->x, mo->y - mo->target->y);
 
-		delta =(mo->target->z + (mo->height>>1)) - mo->z;
+			delta = (mo->target->z + (mo->height>>1)) - mo->z;
 
-         if (delta<0 && dist < -(delta*3) )
-            mo->z -= FLOATSPEED;
-         else if (delta>0 && dist < (delta*3) )
-            mo->z += FLOATSPEED;
-      }
-
-   }
+			if (delta<0 && dist < -(delta*3))
+				mo->z -= FLOATSPEED;
+			else if (delta>0 && dist < (delta*3) )
+				mo->z += FLOATSPEED;
+		}
+	}
+	
 	if (mo->player && (mo->flags2 & MF2_FLY) && (mo->z > mo->floorz))
 	{
 		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
@@ -1015,114 +1233,99 @@ void P_ZMovement(AActor *mo)
 		mo->momz = FixedMul (mo->momz, mo->subsector->sector->friction);
 	}
 
-    // clip movement
-   if (mo->z <= mo->floorz)
-   {
-	// hit the floor
+	// clip movement
+	if (mo->z <= mo->floorz)
+	{
+		// hit the floor
 
-	// Note (id):
-	//  somebody left this after the setting momz to 0,
-	//  kinda useless there.
-      //
-	// cph - This was the a bug in the linuxdoom-1.10 source which
-	//  caused it not to sync Doom 2 v1.9 demos. Someone
-	//  added the above comment and moved up the following code. So
-	//  demos would desync in close lost soul fights.
-	// Note that this only applies to original Doom 1 or Doom2 demos - not
-	//  Final Doom and Ultimate Doom.  So we test demo_compatibility *and*
-	//  gamemission. (Note we assume that Doom1 is always Ult Doom, which
-	//  seems to hold for most published demos.)
-      //
-        //  fraggle - cph got the logic here slightly wrong.  There are three
-        //  versions of Doom 1.9:
-      //
-        //  * The version used in registered doom 1.9 + doom2 - no bounce
-        //  * The version used in ultimate doom - has bounce
-        //  * The version used in final doom - has bounce
-      //
-        // So we need to check that this is either retail or commercial
-        // (but not doom2)
+		// Note (id):
+		//  somebody left this after the setting momz to 0,
+		//  kinda useless there.
+		//
+		// cph - This was the a bug in the linuxdoom-1.10 source which
+		//  caused it not to sync Doom 2 v1.9 demos. Someone
+		//  added the above comment and moved up the following code. So
+		//  demos would desync in close lost soul fights.
+		// Note that this only applies to original Doom 1 or Doom2 demos - not
+		//  Final Doom and Ultimate Doom.  So we test demo_compatibility *and*
+		//  gamemission. (Note we assume that Doom1 is always Ult Doom, which
+		//  seems to hold for most published demos.)
+		//
+		//  fraggle - cph got the logic here slightly wrong.  There are three
+		//  versions of Doom 1.9:
+		//
+		//  * The version used in registered doom 1.9 + doom2 - no bounce
+		//  * The version used in ultimate doom - has bounce
+		//  * The version used in final doom - has bounce
+		//
+		// So we need to check that this is either retail or commercial
+		// (but not doom2)
 
-      int correct_lost_soul_bounce = co_zdoomphys || (gamemode == retail) ||
+		int correct_lost_soul_bounce = co_zdoomphys || (gamemode == retail) ||
                                      ((gamemode == commercial
-                                     && (gamemission == pack_tnt ||
-                                         gamemission == pack_plut)));
+                                     && (gamemission == pack_tnt || gamemission == pack_plut)));
 
-      if (correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
-      {
-	    // the skull slammed into something
-        mo->momz = -mo->momz;
-      }
+		if (correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
+		{
+			// the skull slammed into something
+			mo->momz = -mo->momz;
+		}
+		
 		mo->z = mo->floorz;
-      if (mo->momz < 0)
-      {
-		 
-         if (mo->player)
-         {
-         	bool momsquat = false;
-
-			if (co_zdoomphys)
+		
+		if (mo->momz < 0)
+		{
+			if (mo->player)
 			{
-				float minmom = level.gravity * mo->subsector->sector->gravity * -655.36f;
-				float mom = (float)mo->momz;
+				bool momsquat = false;
 
-				if (mom < minmom)
+				fixed_t minmom = P_CalculateMinMom(mo);
+				if (mo->momz < minmom)
 					momsquat = true;
-			}
-			else
-			{
-				fixed_t minmom = (fixed_t)(GRAVITY*mo->subsector->sector->gravity*-8);
-				fixed_t mom = mo->momz;
+			
 
-				if (mom < minmom)
-					momsquat = true;
-			}
-
-             mo->player->jumpTics = 7;	// delay any jumping for a short while
-             if (momsquat && !(mo->player->spectator) && !(mo->flags2 & MF2_FLY))
-             {
-                // Squat down.
-                // Decrease viewheight for a moment
-                // after hitting the ground (hard),
-                // and utter appropriate sound.
-
-				if (clientside && !predicting)
+				mo->player->jumpTics = 7;	// delay any jumping for a short while
+				if (momsquat && !(mo->player->spectator) && !(mo->flags2 & MF2_FLY))
+				{
+					// Squat down.
+					// Decrease viewheight for a moment
+					// after hitting the ground (hard),
+					// and utter appropriate sound.
 					PlayerLandedOnThing(mo, NULL);
-            }
-         }
+				}
+			}
 
-          mo->momz = 0;
-      }
-      //mo->z = mo->floorz;
+			mo->momz = 0;
+		}
 
+		// cph 2001/05/26 -
+		// See lost soul bouncing comment above. We need this here for bug
+		// compatibility with original Doom2 v1.9 - if a soul is charging and
+		// hit by a raising floor this incorrectly reverses its Y momentum.
+		//
 
-	// cph 2001/05/26 -
-	// See lost soul bouncing comment above. We need this here for bug
-	// compatibility with original Doom2 v1.9 - if a soul is charging and
-	// hit by a raising floor this incorrectly reverses its Y momentum.
-      //
+		if (!correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
+			mo->momz = -mo->momz;
 
-      if (!correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
-         mo->momz = -mo->momz;
-
-      if ( (mo->flags & MF_MISSILE)
-            && !(mo->flags & MF_NOCLIP) )
-      {
-		// [SL] 2011-06-02 - Only server should control explosions
-		if (serverside)
-			P_ExplodeMissile (mo);
-         return;
-      }
-   }
-   else
-   {
+		if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
+		{
+			// [SL] 2011-06-02 - Only server should control explosions
+			if (serverside)
+				P_ExplodeMissile (mo);
+			return;
+		}
+	}
+	else
+	{
+		// actor is above the floor
+		
 		// apply gravity (if standard or boom)
 		if (!co_zdoomphys)
 		{
 			fixed_t startmomz = mo->momz;
 
 			if (!mo->waterlevel || (mo->player &&
-				!(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove)))
+			   !(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove)))
 			{
 				if (mo->flags2 & MF2_LOGRAV)
 				{
@@ -1138,66 +1341,66 @@ void P_ZMovement(AActor *mo)
 					else
 						mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity);
 				}
+				
 				if (mo->waterlevel > 1)
 				{
 					fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
 
 					if (mo->momz < sinkspeed)
-					{
 						mo->momz = (startmomz < sinkspeed) ? startmomz : sinkspeed;
-					}
 					else
-					{
 						mo->momz = startmomz + ((mo->momz - startmomz) >>
 							(mo->waterlevel == 1 ? WATER_SINK_SMALL_FACTOR : WATER_SINK_FACTOR));
-					}
 				}
 			}
 		}
-   }
+	}
 
-   if (mo->z + mo->height > mo->ceilingz)
-   {
+	if (mo->z + mo->height > mo->ceilingz)
+	{
 		// hit the ceiling
 		if (mo->flags2 & MF2_FLOORBOUNCE)
 		{
 			// reverse momentum here for ceiling bounce
 			mo->momz = FixedMul (mo->momz, (fixed_t)(-0.75*FRACUNIT));
 			if (mo->info->seesound)
-			{
-				S_Sound (mo, CHAN_BODY, mo->info->seesound, 1, ATTN_IDLE);
-			}
+				S_Sound(mo, CHAN_BODY, mo->info->seesound, 1, ATTN_IDLE);
+
 			return;
 		}
+		
 		if (mo->momz > 0)
 			mo->momz = 0;
 
 		mo->z = mo->ceilingz - mo->height;
 
 		if (mo->flags & MF_SKULLFLY)
-		{	// the skull slammed into something
+		{
+			// the skull slammed into something
 			mo->momz = -mo->momz;
 		}
 
 		if (mo->flags & MF_MISSILE && !(mo->flags & MF_NOCLIP))
 		{
-			if (((HasBehavior || co_fixweaponimpacts) && 
-				mo->subsector->sector->ceilingpic == skyflatnum))
+			if ((HasBehavior || co_fixweaponimpacts) && 
+				 mo->subsector->sector->ceilingpic == skyflatnum)
 			{
 				mo->Destroy ();
 				return;
 			}
+			
 			// [SL] 2011-06-02 - Only server should control explosions
 			if (serverside)
 				P_ExplodeMissile (mo);
 			return;
 		}
 	}
+	
 	/*  [ML] 7/13/11: This isn't going to be used just yet - no need...
 	if (mo->subsector->sector->heightsec != NULL && mo->subsector->sector->SecActTarget != NULL)
 	{
 		sector_t *hs = mo->subsector->sector->heightsec;
-		fixed_t waterz = hs->floorheight;
+		fixed_t waterz = P_FloorHeight(mo->x, mo->y, hs);
 		fixed_t newz;
 		fixed_t viewheight;
 
@@ -1243,27 +1446,30 @@ void P_ZMovement(AActor *mo)
 //
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 {
+	if ((clientside && predicting) || (mo->player && mo->player->spectator))
+		return;
+
 	mo->player->deltaviewheight = mo->momz>>3;
 	
+	// The server sends the sound to us for other players
+	if (mo->player->id != consoleplayer_id && !serverside)
+		return;
+
 	if (co_zdoomphys)
 	{
 		// [SL] 2011-06-16 - ZDoom Oomphiness
 		if (mo->health > 0)
 		{
 			if (mo->momz < (fixed_t)(level.gravity * mo->subsector->sector->gravity * -983.04f))
-			{
-				S_Sound (mo, CHAN_VOICE, "*grunt1", 1, ATTN_NORM);
-			}
-			if (onmobj != NULL)
-			{
-				S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
-			}
+				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
+
+			UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
 		}
 	}
 	else
 	{
 		// [SL] 2011-06-16 - Vanilla Doom Oomphiness
-		S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+		UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
 	}
 //	mo->player->centering = true;
 }
@@ -1292,7 +1498,7 @@ void P_NightmareRespawn (AActor *mobj)
 	mo = new AActor(
         mobj->x,
         mobj->y,
-        mobj->subsector->sector->floorheight,
+        P_FloorHeight(mobj),
         MT_TFOG
     );
 	// initiate teleport sound
@@ -1303,7 +1509,7 @@ void P_NightmareRespawn (AActor *mobj)
     ss = R_PointInSubsector (x,y);
 
 	// spawn a teleport fog at the new spot
-    mo = new AActor (x, y, ss->sector->floorheight , MT_TFOG);
+    mo = new AActor (x, y,  P_FloorHeight(x, y, ss->sector), MT_TFOG);
     if (clientside)
         S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 
@@ -1478,7 +1684,7 @@ AActor *AActor::FindGoal (const AActor *actor, int tid, int kind)
 //
 // P_SpawnPuff
 //
-void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
+void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 {
     if (!serverside)
         return;
@@ -1504,7 +1710,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
 //
 // P_SpawnBlood
 //
-void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
+void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage)
 {
 	// denis - not clientside
 	if(!serverside)
@@ -1699,18 +1905,18 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 	if (co_zdoomphys)
 	{
-		vec3_t velocity;
+		v3float_t velocity;
 		float speed = FIXED2FLOAT (th->info->speed);
 
-		velocity[0] = FIXED2FLOAT (finecosine[an>>ANGLETOFINESHIFT]);
-		velocity[1] = FIXED2FLOAT (finesine[an>>ANGLETOFINESHIFT]);
-		velocity[2] = FIXED2FLOAT (slope);
+		velocity.x = FIXED2FLOAT (finecosine[an>>ANGLETOFINESHIFT]);
+		velocity.y = FIXED2FLOAT (finesine[an>>ANGLETOFINESHIFT]);
+		velocity.z = FIXED2FLOAT (slope);
 
-		VectorNormalize (velocity);
+		M_NormalizeVec3f(&velocity, &velocity);
 
-		th->momx = FLOAT2FIXED (velocity[0] * speed);
-		th->momy = FLOAT2FIXED (velocity[1] * speed);
-		th->momz = FLOAT2FIXED (velocity[2] * speed);
+		th->momx = FLOAT2FIXED (velocity.x * speed);
+		th->momy = FLOAT2FIXED (velocity.y * speed);
+		th->momz = FLOAT2FIXED (velocity.z * speed);
 	}
 	else
 	{
@@ -1734,8 +1940,7 @@ void P_RespawnSpecials (void)
 	fixed_t 			y;
 	fixed_t 			z;
 
-	subsector_t*			ss;
-	AActor* 						mo;
+	AActor* 			mo;
 	mapthing2_t* 		mthing;
 
 	int 				i;
@@ -1782,7 +1987,6 @@ void P_RespawnSpecials (void)
 		z = ONFLOORZ;
 
 	// spawn a teleport fog at the new spot
-	ss = R_PointInSubsector (x, y);
 	mo = new AActor (x, y, z, MT_IFOG);
 	SV_SpawnMobj(mo);
     if (clientside)
@@ -1865,7 +2069,7 @@ void P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move)
 //
 void P_SpawnMapThing (mapthing2_t *mthing, int position)
 {
-	int i;
+	int i = -1;
 	int bit;
 	AActor *mobj;
 	fixed_t x, y, z;
@@ -1880,8 +2084,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 
 	// count deathmatch start positions
-	if (mthing->type == 11 || ((mthing->type == 5080 || mthing->type == 5081 || mthing->type == 5082))
-		&& !sv_teamspawns)
+	if (mthing->type == 11 || (!sv_teamspawns && mthing->type >= 5080 && mthing->type <= 5082))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
 		if (deathmatch_p >= &deathmatchstarts[10] && (demoplayback || demorecording) && democlassic)
@@ -1986,7 +2189,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	if (sv_gametype != GM_COOP)
+	if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
 	{
 		if (!(mthing->flags & MTF_DEATHMATCH))
 			return;
@@ -2050,13 +2253,24 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		mthing->type = 14065;
 		i = MT_AMBIENT;
 	}
+
+	// [ML] Determine if it is a musicchanger thing, and if so,
+	//		map it to MT_MUSICCHANGE with the proper parameter.
+	if (mthing->type >= 14101 && mthing->type <= 14164)
+	{
+		mthing->args[0] = mthing->type - 14100;
+		mthing->type = 14165;
+		i = MT_MUSICCHANGE;
+	}
+
 	// [RH] Check if it's a particle fountain
-	else if (mthing->type >= 9027 && mthing->type <= 9033)
+	if (mthing->type >= 9027 && mthing->type <= 9033)
 	{
 		mthing->args[0] = mthing->type - 9026;
 		i = MT_FOUNTAIN;
 	}
-	else
+
+	if (i == -1)	// we have to search for the type
 	{
 		// find which type to spawn
 		for (i = 0; i < NUMMOBJTYPES; i++)
@@ -2064,7 +2278,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 				break;
 	}
 
-	if (i >= NUMMOBJTYPES)
+	if (i >= NUMMOBJTYPES || i < 0)
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
 		Printf (PRINT_HIGH, "Unknown type %i at (%i, %i)\n",
@@ -2163,8 +2377,15 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		S_ActivateAmbient (mobj, mobj->args[0]);
 
 	// [RH] If a fountain and not dormant, start it
-//	if (i == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))
-//		mobj->effects = mobj->args[0] << FX_FOUNTAINSHIFT;
+	if (i == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))
+		mobj->effects = mobj->args[0] << FX_FOUNTAINSHIFT;
+
+	// [SL] ZDoom Custom Bridge Things
+	if (i == MT_ZDOOMBRIDGE)
+	{
+		mobj->radius = mobj->args[0] << FRACBITS;
+		mobj->height = mobj->args[1] << FRACBITS;
+	}
 
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);

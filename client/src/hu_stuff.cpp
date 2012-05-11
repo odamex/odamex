@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,6 +22,7 @@
 //-----------------------------------------------------------------------------
 
 #include <algorithm>
+#include <sstream>
 
 #include "doomdef.h"
 #include "z_zone.h"
@@ -31,7 +32,7 @@
 #include "s_sound.h"
 #include "doomstat.h"
 #include "st_stuff.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "c_cvars.h"
@@ -41,6 +42,10 @@
 #include "p_ctf.h"
 #include "i_video.h"
 #include "i_input.h"
+#include "cl_netgraph.h"
+
+#include "hu_drawers.h"
+#include "hu_elements.h"
 
 #define QUEUESIZE		128
 #define HU_INPUTX		0
@@ -56,12 +61,17 @@
 #define DMBORDER		20
 
 DCanvas *odacanvas = NULL;
-extern	DCanvas *screen;
+extern DCanvas *screen;
+extern byte *Ranges;
 
-EXTERN_CVAR (con_scaletext)
+EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_scorelimit)
+EXTERN_CVAR (cl_netgraph)
+
+int V_TextScaleXAmount();
+int V_TextScaleYAmount();
 
 // Chat
 void HU_Init (void);
@@ -69,6 +79,7 @@ void HU_Drawer (void);
 BOOL HU_Responder (event_t *ev);
 
 patch_t *hu_font[HU_FONTSIZE];
+patch_t* sbline;
 
 void HU_DrawScores (player_t *plyr);
 void HU_ConsoleScores (player_t *plyr);
@@ -81,12 +92,14 @@ void HU_TeamScores2 (player_t *player);
 
 extern bool HasBehavior;
 extern inline int V_StringWidth (const char *str);
-
+size_t P_NumPlayersInGame();
 static void ShoveChatStr (std::string str, byte who);
 
 static std::string input_text;
 int headsupactive;
 BOOL altdown;
+
+NetGraph netgraph(10, 100);
 
 EXTERN_CVAR (chatmacro0)
 EXTERN_CVAR (chatmacro1)
@@ -134,6 +147,9 @@ void HU_Init (void)
 		sprintf (buffer, tplate, j++ - sub);
 		hu_font[i] = W_CachePatch(buffer, PU_STATIC);
 	}
+
+	// Load the status bar line
+	sbline = W_CachePatch("SBLINE", PU_STATIC);
 }
 
 //
@@ -217,10 +233,6 @@ BOOL HU_Responder (event_t *ev)
 	return false;
 }
 
-EXTERN_CVAR (screenblocks)
-
-EXTERN_CVAR (hud_targetnames)
-
 CVAR_FUNC_IMPL(hud_targetcount)
 {
 	if (var < 0)
@@ -230,215 +242,6 @@ CVAR_FUNC_IMPL(hud_targetcount)
 		var.Set((float)64);
 }
 
-EXTERN_CVAR (sv_allowtargetnames)
-
-// GhostlyDeath -- From Strawberry-Doom
-#include <math.h>
-int MobjToMobjDistance(AActor *a, AActor *b)
-{
-	double x1, x2;
-	double y1, y2;
-	double z1, z2;
-
-	if (a && b)
-	{
-		x1 = a->x >> FRACBITS;
-		x2 = b->x >> FRACBITS;
-		y1 = a->y >> FRACBITS;
-		y2 = b->y >> FRACBITS;
-		z1 = a->z >> FRACBITS;
-		z2 = b->z >> FRACBITS;
-
-		return (int)sqrt(
-			pow(x2 - x1, 2) +
-			pow(y2 - y1, 2) +
-			pow(z2 - z1, 2)
-			);
-	}
-
-	return 0;
-}
-
-// GhostlyDeath -- structure for sorting
-typedef struct
-{
-	player_t* PlayPtr;
-	int Distance;
-	int Color;
-} TargetInfo_t;
-
-// GhostlyDeath -- Move this into it's own function!
-void HU_DrawTargetNames(void)
-{
-	int ProposedColor = CR_GREY;
-	int TargetX = 0;
-	int TargetY = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
-	std::vector<TargetInfo_t> Targets;
-	size_t i;
-
-	if(!displayplayer().mo)
-		return;
-
-	// TargetY is a special case because we don't want to go crazy over the status bar
-	if (screenblocks <= 10 && !consoleplayer().spectator)
-		TargetY -= ST_HEIGHT;
-	else if (consoleplayer().spectator)
-		TargetY -= ((hu_font[0]->height() + 4) * CleanYfac);	// Don't get in the Join messages way!
-
-	// Sometimes the "Other person's name" will get blocked
-	if (&(consoleplayer()) != &(displayplayer()))
-		TargetY -= ((hu_font[0]->height() + 4) * CleanYfac);
-
-	for (i = 0; i < players.size(); i++)
-	{
-		/* Check Various things */
-		// Spectator?
-		if (players[i].spectator)
-			continue;
-
-		// Don't get the display player!
-		if (&(players[i]) == &(displayplayer()))
-			continue;
-
-		/* Now if they are visible... */
-		if (players[i].mo && players[i].mo->health > 0)
-		{
-			// If they are beyond 512 units, ignore
-			if (MobjToMobjDistance(displayplayer().mo, players[i].mo) > 512)
-				continue;
-
-			// Check to see if the other player is visible
-			if (HasBehavior)
-			{
-                if (!P_CheckSightEdges2(displayplayer().mo, players[i].mo, 0.0))
-                    continue;
-			}
-			else
-			{
-                if (!P_CheckSightEdges(displayplayer().mo, players[i].mo, 0.0))
-                    continue;
-			}
-
-			// GhostlyDeath -- Don't draw dead enemies
-			if (!consoleplayer().spectator &&
-				(players[i].mo->health <= 0))
-			{
-				if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-				{
-					if ((players[i].userinfo.team != displayplayer().userinfo.team) ||
-						(displayplayer().userinfo.team == TEAM_NONE) ||
-						(players[i].userinfo.team == TEAM_NONE))
-							continue;
-				}
-				else
-				{
-					if (sv_gametype != GM_COOP)
-						continue;
-				}
-			}
-
-			/* Now we need to figure out if they are infront of us */
-			// Taken from r_things.cpp and I have no clue what it does
-			fixed_t tr_x, tr_y, gxt, gyt, tx, tz, xscale;
-			extern fixed_t FocalLengthX;
-
-			// transform the origin point
-			tr_x = players[i].mo->x - viewx;
-			tr_y = players[i].mo->y - viewy;
-
-			gxt = FixedMul (tr_x,viewcos);
-			gyt = -FixedMul (tr_y,viewsin);
-
-			tz = gxt-gyt;
-
-			// thing is behind view plane?
-			if (tz < (FRACUNIT*4))
-				continue;
-
-			xscale = FixedDiv (FocalLengthX, tz);
-
-			gxt = -FixedMul (tr_x, viewsin);
-			gyt = FixedMul (tr_y, viewcos);
-			tx = -(gyt+gxt);
-
-			// too far off the side?
-			if (abs(tx)>(tz>>1))
-				continue;
-
-			// Are we a friend or foe or are we a spectator ourself?
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-			{
-				switch (players[i].userinfo.team)
-				{
-					case TEAM_BLUE: ProposedColor = CR_BLUE; break;
-					case TEAM_RED: ProposedColor = CR_RED; break;
-					default: ProposedColor = CR_GREY; break;
-				}
-			}
-			else
-			{
-				if (consoleplayer().spectator)
-					ProposedColor = CR_GREY;	// Gray as noone is a friend nor foe
-				else
-				{
-					if (sv_gametype != GM_COOP)
-						ProposedColor = CR_RED;
-					else
-						ProposedColor = CR_GREEN;
-				}
-			}
-
-			// Ok, make the temporary player info then add it
-			TargetInfo_t Tmp = {&players[i], MobjToMobjDistance(displayplayer().mo, players[i].mo), ProposedColor};
-			Targets.push_back(Tmp);
-		}
-	}
-
-	// GhostlyDeath -- Now Sort (hopefully I got my selection sort working!)
-	for (i = 0; i < Targets.size(); i++)
-	{
-		for (size_t j = i + 1; j < Targets.size(); j++)
-		{
-			if (Targets[j].Distance < Targets[i].Distance)
-			{
-				player_t* PlayPtr = Targets[i].PlayPtr;
-				int Distance = Targets[i].Distance;
-				int Color = Targets[i].Color;
-				Targets[i].PlayPtr = Targets[j].PlayPtr;
-				Targets[i].Distance = Targets[j].Distance;
-				Targets[i].Color = Targets[j].Color;
-				Targets[j].PlayPtr = PlayPtr;
-				Targets[j].Distance = Distance;
-				Targets[j].Color = Color;
-			}
-		}
-	}
-
-	// GhostlyDeath -- Now Draw
-	for (i = 0; (i < Targets.size()) && (i < hud_targetcount); i++)
-	{
-		// So "You" (or not) is centered
-		if (Targets[i].PlayPtr == &(consoleplayer()))
-			TargetX = (screen->width - V_StringWidth ("You")*CleanXfac) >> 1;
-		else
-			TargetX = (screen->width - V_StringWidth (Targets[i].PlayPtr->userinfo.netname)*CleanXfac) >> 1;
-
-		// Draw the Player's name or You! (Personally, I like the You part - GhostlyDeath)
-		if (Targets[i].PlayPtr->mo->health > 0)
-			screen->DrawTextClean(Targets[i].Color,
-				TargetX,
-				TargetY,
-				(Targets[i].PlayPtr == &(consoleplayer()) ? "You" : Targets[i].PlayPtr->userinfo.netname));
-		else
-			screen->DrawTextCleanLuc(Targets[i].Color,
-				TargetX,
-				TargetY,
-				(Targets[i].PlayPtr == &(consoleplayer()) ? "You" : Targets[i].PlayPtr->userinfo.netname));
-
-		TargetY -= ((hu_font[0]->height() + 1) * CleanYfac);
-	}
-}
-
 EXTERN_CVAR (sv_maxplayers)
 
 //
@@ -446,73 +249,45 @@ EXTERN_CVAR (sv_maxplayers)
 //
 void HU_Drawer (void)
 {
-
-	// Draw "Press USE to join" as the bottom layer.
-	if ((&consoleplayer())->spectator && (level.time / TICRATE)%2 && gamestate != GS_INTERMISSION)
+	// Set up text scaling
+	int scaledxfac = CleanXfac, scaledyfac = CleanYfac;
+	if (hud_scaletext)
 	{
-		setsizeneeded = true;
-		int YPos = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
-
-		if (&consoleplayer() != &displayplayer())
-			YPos -= ((hu_font[0]->height() + 4) * CleanYfac);
-
-		size_t num_players = 0;
-
-        for (size_t i = 0; i < players.size(); ++i)
-		{
-            if (!players[i].spectator && players[i].playerstate != PST_CONTACT && players[i].playerstate != PST_DOWNLOAD)
-                ++num_players;
-        }
-
-		// GhostlyDeath -- X Pos from the F12 coop spy thingy
-		if (num_players == sv_maxplayers)
-		{
-            screen->DrawTextClean (CR_GREY,
-                (screen->width - V_StringWidth ("Game is full")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac),
-                YPos, "Game is full");
-		}
-		else
-		{
-            screen->DrawTextClean (CR_GREEN,
-                (screen->width - V_StringWidth ("Press USE to join")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac),
-                YPos, "Press USE to join");
-		}
-	}
-
-	/* GhostlyDeath -- Cheap Target Names */
-	if ((gamestate == GS_LEVEL)						// Must be Playing, allow specs to target always
-		&& ((!consoleplayer().spectator && sv_allowtargetnames && hud_targetnames) ||
-		 (consoleplayer().spectator && hud_targetnames))
-		 )
-	{
-		HU_DrawTargetNames();
+		scaledxfac = V_TextScaleXAmount();
+		scaledyfac = V_TextScaleYAmount();
 	}
 
 	if (headsupactive)
 	{
 		static const char *prompt;
-		int i, x, c, scalex, y, promptwidth;
+		int i, x, c, y, promptwidth;
 
-		if (con_scaletext)
-		{
-			scalex = CleanXfac;
-			y = (!viewactive ? -30 : -10) * CleanYfac;
-		}
-		else
-		{
-			scalex = 1;
-			y = (!viewactive ? -30 : -10);
-		}
+		// Determine what Y height to display the chat prompt at.
+		// * screen->height is the "actual" screen height.
+		// * realviewheight is how big the view is, taking into account the
+		//   status bar and current "screen size".
+		// * viewactive is false if you have a fullscreen automap or
+		//   intermission on-screen.
+		// * ST_Y is the current Y height of the status bar.
 
-		y += (screen->height == realviewheight && viewactive) ? screen->height : ST_Y;
+		if (!viewactive && gamestate != GS_INTERMISSION) {
+			// Fullscreen automap is visible
+			y = ST_Y - (20 * scaledyfac);
+		} else if (viewactive && screen->height != realviewheight) {
+			// Status bar is visible
+			y = ST_Y - (10 * scaledyfac);
+		} else {
+			// Must be fullscreen HUD or intermission
+			y = screen->height - (10 * scaledyfac);
+		}
 
 		if (headsupactive == 2)
 			prompt = "Say (TEAM): ";
 		else if (headsupactive == 1)
 			prompt = "Say: ";
 
-		promptwidth = V_StringWidth (prompt) * scalex;
-		x = hu_font['_' - HU_FONTSTART]->width() * scalex * 2 + promptwidth;
+		promptwidth = V_StringWidth (prompt) * scaledxfac;
+		x = hu_font['_' - HU_FONTSTART]->width() * scaledxfac * 2 + promptwidth;
 
 		// figure out if the text is wider than the screen->
 		// if so, only draw the right-most portion of it.
@@ -521,11 +296,11 @@ void HU_Drawer (void)
 			c = toupper(input_text[i] & 0x7f) - HU_FONTSTART;
 			if (c < 0 || c >= HU_FONTSIZE)
 			{
-				x += 4 * scalex;
+				x += 4 * scaledxfac;
 			}
 			else
 			{
-				x += hu_font[c]->width() * scalex;
+				x += hu_font[c]->width() * scaledxfac;
 			}
 		}
 
@@ -537,26 +312,18 @@ void HU_Drawer (void)
 		// draw the prompt, text, and cursor
 		std::string show_text = input_text;
 		show_text += '_';
-		if (con_scaletext)
-		{
-			screen->DrawTextClean (CR_RED, 0, y, prompt);
-			screen->DrawTextClean (CR_GREY, promptwidth, y, show_text.c_str() + i);
-		}
-		else
-		{
-			screen->DrawText (CR_RED, 0, y, prompt);
-			screen->DrawText (CR_GREY, promptwidth, y, show_text.c_str() + i);
-		}
+		screen->DrawTextStretched (	CR_RED, 0, y, prompt,
+									scaledxfac, scaledyfac);
+		screen->DrawTextStretched (	CR_GREY, promptwidth, y, show_text.c_str() + i,
+									scaledxfac, scaledyfac);
 	}
 
-	if(multiplayer && consoleplayer().camera && !(demoplayback && democlassic))
-    {
-        if (((Actions[ACTION_SHOWSCORES]) ||
-             ((consoleplayer().camera->health <= 0 && !(&consoleplayer())->spectator) && gamestate != GS_INTERMISSION)))
-        {
-            HU_DrawScores (&consoleplayer());
-        }
-    }
+	if (multiplayer && consoleplayer().camera && !(demoplayback && democlassic)) {
+		if ((Actions[ACTION_SHOWSCORES] && gamestate != GS_INTERMISSION) ||
+		    (displayplayer().health <= 0 && !displayplayer().spectator && gamestate != GS_INTERMISSION)) {
+			HU_DrawScores(&displayplayer());
+		}
+	}
 
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
 	// denis - moved to hu_stuff and uncommented
@@ -568,6 +335,9 @@ void HU_Drawer (void)
 		// SoM: Not here.
 		//screen->Dim ();
 	}
+
+	if (cl_netgraph)
+		netgraph.draw();
 }
 
 static void ShoveChatStr (std::string str, byte who)
@@ -643,1008 +413,909 @@ static bool STACK_ARGS compare_player_points (const player_t *arg1, const player
 	return arg2->points < arg1->points;
 }
 
-EXTERN_CVAR (hud_usehighresboard)
+EXTERN_CVAR(hud_scalescoreboard)
 
-//
-// [Toke - Scores] HU_DrawScores
-// Decides which scoreboard to draw
-//
-void HU_DrawScores (player_t *player)
-{
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
-		if (hud_usehighresboard)
-		{
-			if (screen->width > (CTFBOARDWIDTH * 2)) // If board will fit
-				HU_TeamScores2 (player);
-			else
-				HU_TeamScores1 (player);
-		}
-		else
-			HU_TeamScores1 (player);
+EXTERN_CVAR(sv_gametype)
+EXTERN_CVAR(sv_maxplayers)
+EXTERN_CVAR(sv_hostname)
+
+namespace hud {
+
+// [AM] Draw scoreboard header
+void drawHeader(player_t *player, int y) {
+	int color;
+	std::ostringstream buffer;
+	std::string str;
+
+	// Center
+	if (sv_gametype == GM_COOP) {
+		str = "COOPERATIVE";
+	} else if (sv_gametype == GM_DM && sv_maxplayers == 2) {
+		str = "DUEL";
+	} else if (sv_gametype == GM_DM) {
+		str = "DEATHMATCH";
+	} else if (sv_gametype == GM_TEAMDM) {
+		str = "TEAM DEATHMATCH";
+	} else if (sv_gametype == GM_CTF) {
+		str = "CAPTURE THE FLAG";
 	}
-	else
-	{
-		if (hud_usehighresboard && screen->width != 320)
-			HU_DMScores2 (player);
-		else
-			HU_DMScores1 (player);
+
+	hud::DrawText(0, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_CENTER, hud::Y_TOP,
+	              str.c_str(), CR_GOLD, true);
+
+	brokenlines_t *hostname = V_BreakLines(192, sv_hostname.cstring());
+	hud::DrawText(0, y + 8, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_CENTER, hud::Y_TOP,
+	              hostname[0].string, CR_GREY, true);
+	hud::DrawText(0, y + 16, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_CENTER, hud::Y_TOP,
+	              hostname[1].string, CR_GREY, true);
+	V_FreeBrokenLines(hostname);
+
+	// Left
+	hud::DrawText(-236, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_LEFT, hud::Y_TOP,
+	              "CLIENTS: ", CR_GREY, true);
+	hud::DrawText(-236 + V_StringWidth("CLIENTS: "), y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_LEFT, hud::Y_TOP,
+	              hud::ClientsSplit().c_str(), CR_GREEN, true);
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+		hud::DrawText(-236, y + 8, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_LEFT, hud::Y_TOP,
+		              "BLUE PLAYERS: ", CR_GREY, true);
+		hud::DrawText(-236 + V_StringWidth("BLUE PLAYERS: "), y + 8, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_LEFT, hud::Y_TOP,
+		              TeamPlayers(color, TEAM_BLUE).c_str(), CR_GREEN, true);
+		hud::DrawText(-236, y + 16, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_LEFT, hud::Y_TOP,
+		              "RED PLAYERS: ", CR_GREY, true);
+		hud::DrawText(-236 + V_StringWidth("RED PLAYERS: "), y + 16, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_LEFT, hud::Y_TOP,
+		              TeamPlayers(color, TEAM_RED).c_str(), CR_GREEN, true);
+	} else {
+		hud::DrawText(-236, y + 8, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_LEFT, hud::Y_TOP,
+		              "PLAYERS: ", CR_GREY, true);
+		hud::DrawText(-236 + V_StringWidth("PLAYERS: "), y + 8, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_LEFT, hud::Y_TOP,
+		              hud::PlayersSplit().c_str(), CR_GREEN, true);
 	}
-}
 
-void HU_DisplayTimer(int x, int y, bool scale = true)
-{
-	int timeleft, hours, minutes, seconds;
-	char str[80];
-
-	if (sv_gametype != GM_COOP && level.timeleft && gamestate == GS_LEVEL)
-	{
-		timeleft = level.timeleft;
-
-		if (timeleft < 0)
-			timeleft = 0;
-
-		hours = timeleft / (TICRATE * 3600);
-		timeleft -= hours * TICRATE * 3600;
-		minutes = timeleft / (TICRATE * 60);
-		timeleft -= minutes * TICRATE * 60;
-		seconds = timeleft / TICRATE;
-
-		if (hours)
-			sprintf (str, "Level ends in %02d:%02d:%02d", hours, minutes, seconds);
-		else
-			sprintf (str, "Level ends in %02d:%02d", minutes, seconds);
-
-		if (scale)
-			screen->DrawTextClean (CR_GREY, x, y, str);
-		else
-			screen->DrawText (CR_GREY, x, y, str);
+	// Right
+	std::string timer, fraglimit, scorelimit;
+	if (gamestate == GS_INTERMISSION) {
+		timer = hud::IntermissionTimer();
+	} else {
+		timer = hud::Timer(color);
 	}
-}
+	if (timer.empty()) {
+		timer = "N/A";
+	}
+	buffer.clear();
+	if (sv_fraglimit.asInt() == 0) {
+		buffer.str("N/A");
+	} else {
+		buffer.str("");
+		buffer << sv_fraglimit.asInt();
+	}
+	fraglimit = buffer.str();
+	buffer.clear();
+	if (sv_scorelimit.asInt() == 0) {
+		buffer.str("N/A");
+	} else {
+		buffer.str("");
+		buffer << sv_scorelimit.asInt();
+	}
+	scorelimit = buffer.str();
 
-//
-// [Toke - Scores] HU_DMScores1
-//	Draws low-res DM scores
-//
-void HU_DMScores1 (player_t *player)
-{
-	char str[80];
-	std::vector<player_t *> sortedplayers(players.size());
-	int y;
-	unsigned int k, i;
+	int rw = V_StringWidth("00:00");
+	if (sv_timelimit.asInt() == 0 && gamestate != GS_INTERMISSION) {
+		rw = V_StringWidth("N/A");
+	} else if (timer.size() > 5) {
+		rw = V_StringWidth("00:00:00");
+	}
+	if (V_StringWidth(fraglimit.c_str()) > rw) {
+		rw = V_StringWidth(fraglimit.c_str());
+	}
+	if (V_StringWidth(scorelimit.c_str()) > rw) {
+		rw = V_StringWidth(scorelimit.c_str());
+	}
 
-	if (player->camera->player)
-		player = player->camera->player;
+	hud::DrawText(236 - rw, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_LEFT, hud::Y_TOP,
+	              timer.c_str(), CR_GREEN, true);
+	hud::DrawText(236 - rw, y + 8, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_LEFT, hud::Y_TOP,
+	              fraglimit.c_str(), CR_GREEN, true);
+	hud::DrawText(236 - rw, y + 16, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_LEFT, hud::Y_TOP,
+	              scorelimit.c_str(), CR_GREEN, true);
 
-	// Player list sorting
-	for (k = 0; k < sortedplayers.size(); k++)
-		sortedplayers[k] = &players[k];
+	hud::DrawText(236 - rw, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_RIGHT, hud::Y_TOP,
+	              "TIME LEFT: ", CR_GREY, true);
+	hud::DrawText(236 - rw, y + 8, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_RIGHT, hud::Y_TOP,
+	              "FRAGLIMIT: ", CR_GREY, true);
+	hud::DrawText(236 - rw, y + 16, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_RIGHT, hud::Y_TOP,
+	              "SCORELIMIT: ", CR_GREY, true);
 
-	if(sv_gametype != GM_COOP)
-		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
-	else
-		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
-
-	y = 34 * CleanYfac;
-
-	// Scoreboard Identify
-	// Dan - Tells which current game mode is being played
-	if (sv_gametype != GM_COOP)
-		screen->DrawTextClean (CR_GOLD,120 * CleanXfac,4 * CleanYfac,"Deathmatch");
-	else
-		screen->DrawTextClean (CR_GOLD,120 * CleanXfac,4 * CleanYfac,"Cooperative");
-
-	//	Timelimit display
-	HU_DisplayTimer(screen->width/2 - 126/2*CleanXfac, y - 20 * CleanYfac);
-
-	//	Header display
-	screen->DrawTextClean (CR_GREY,	16	* CleanXfac,	25	* CleanYfac, "NAME");
-
-	if(sv_gametype != GM_COOP)
-		screen->DrawTextClean (CR_GREY,	146	* CleanXfac,	25	* CleanYfac, "FRAG");
-	else
-		screen->DrawTextClean (CR_GREY,	146	* CleanXfac,	25	* CleanYfac, "KILL");
-
-	if(sv_gametype != GM_COOP)
-		screen->DrawTextClean (CR_GREY,	192	* CleanXfac,	25	* CleanYfac, "F/D");
-	else
-        	screen->DrawTextClean (CR_GREY,	192	* CleanXfac,	25	* CleanYfac, "K/D");
-
-	screen->DrawTextClean (CR_GREY,	221	* CleanXfac,	25	* CleanYfac, "DTH");
-
-	screen->DrawTextClean (CR_GREY,	252	* CleanXfac,	25	* CleanYfac, "PING");
-
-	screen->DrawTextClean (CR_GREY,	287	* CleanXfac,	25	* CleanYfac, "TIME");
-
-	//	Variable display
-	for (i = 0; ((i < sortedplayers.size()) && (y < ST_Y - 12 * CleanYfac)); i++)
-	{
-		int color = sortedplayers[i]->userinfo.color;
-
-		if (sortedplayers[i]->ingame())
-		{
-			if (screen->is8bit())		// Finds the best solid color based on a players color
-				color = BestColor (DefaultPalette->basecolors, RPART(color), GPART(color), BPART(color), DefaultPalette->numcolors);
-
-			// Display Color
-			if (!sortedplayers[i]->spectator && sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD)
-				screen->Clear ((5 * CleanXfac), y, (13 * CleanXfac), y + hu_font[0]->height() * CleanYfac, color);
-
-			// Display Frags or Kills if coop
-			if(sv_gametype != GM_COOP)
-				sprintf (str, "%d", sortedplayers[i]->fragcount);
-			else
-				sprintf (str, "%d", sortedplayers[i]->killcount);
-			screen->DrawTextClean (sortedplayers[i] == player ? CR_GREEN : CR_BRICK, (177 - V_StringWidth (str)) * CleanXfac, y, str);
-
-			// Display Frags/Deaths or Kills/Deaths ratio
-			if(sv_gametype != GM_COOP)
-			{
-				if (sortedplayers[i]->fragcount <= 0) // Displays a 0.0 when frags are 0 or negative
-					sprintf (str, "0.0"); // [deathz0r] Buggy? [anarkavre] just explicitly print as string
-				else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0) // [deathz0r] Do not divide by zero
-					sprintf (str, "%4.1f", (float)sortedplayers[i]->fragcount); // [anarkavre] dividing by 1 will just end up fragcount
-				else
-					sprintf (str, "%4.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
-			}
-			else
-			{
-				if (sortedplayers[i]->killcount == 0) // [deathz0r] Displays a 0.0 when kills are 0
-					sprintf (str, "0.0"); // Buggy?
-				else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0) // [deathz0r] Do not divide by zero
-					sprintf (str, "%4.1f", (float)sortedplayers[i]->killcount);
-				else
-					sprintf (str, "%4.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
-			}
-			screen->DrawTextClean (sortedplayers[i] == player ? CR_GREEN : CR_BRICK, (214 - V_StringWidth (str)) * CleanXfac, y, str);
-
-			// Display Deaths
-			sprintf (str, "%d", sortedplayers[i]->deathcount);
-			screen->DrawTextClean (sortedplayers[i] == player ? CR_GREEN : CR_BRICK, (244 - V_StringWidth (str)) * CleanXfac, y, str);
-
-			// Display Ping
-			if (sortedplayers[i]->ping < 0 || sortedplayers[i]->ping > 999)
-				sprintf(str, "###");
-			else
-				sprintf (str, "%d", sortedplayers[i]->ping);
-			screen->DrawTextClean (sortedplayers[i] == player ? CR_GREEN : CR_BRICK, (279 - V_StringWidth (str)) * CleanXfac, y, str);
-
-			// Display Time
-			sprintf (str, "%d", sortedplayers[i]->GameTime / 60);
-			screen->DrawTextClean (sortedplayers[i] == player ? CR_GREEN : CR_BRICK, (315 - V_StringWidth (str)) * CleanXfac, y, str);
-
-			// Display Name
-			strcpy (str, sortedplayers[i]->userinfo.netname);
-
-			if (sortedplayers[i] != player)
-				color = (demoplayback && sortedplayers[i] == &consoleplayer()) ? CR_GOLD : CR_GREY;
-
-			else
-				color = CR_GREEN;
-
-			screen->DrawTextClean (color, 16 * CleanXfac, y, str);
-
-			y += 8 * CleanYfac;
-		}
+	// Line
+	for (short xi = -236 + 1;xi < 236;xi += 2) {
+		hud::DrawTranslatedPatch(xi, y + 24, hud_scalescoreboard,
+		                         hud::X_CENTER, hud::Y_MIDDLE,
+		                         hud::X_CENTER, hud::Y_TOP,
+		                         sbline, Ranges + CR_GREY * 256, true);
 	}
 }
 
-//
-// [Toke - Scores] HU_DMScores2
-// Draws high-res DM scores
-//
-void HU_DMScores2 (player_t *player)
-{
-	char str[80];
-	std::vector<player_t *> sortedplayers(players.size());
-	unsigned int i, j, listsize;
+// [AM] Draw scores for teamless gametypes.
+void drawScores(player_t *player, int y, byte extra_rows) {
+	std::string str;
 
-	// Board location
-	int y = 21;
+	// Colum headers
+	hud::DrawText(-227, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_LEFT, hud::Y_TOP,
+	              "Name", CR_GREY, true);
+	if (sv_gametype != GM_COOP) {
+		hud::DrawText(44, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "FRG", CR_GREY, true);
+		hud::DrawText(92, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "DTH", CR_GREY, true);
+		hud::DrawText(140, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "K/D", CR_GREY, true);
+	} else {
+		hud::DrawText(92, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "KIL", CR_GREY, true);
+		hud::DrawText(140, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "DTH", CR_GREY, true);
+	}
+	hud::DrawText(188, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_RIGHT, hud::Y_TOP,
+	              "MIN", CR_GREY, true);
+	hud::DrawText(236, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_RIGHT, hud::Y_TOP,
+	              "PNG", CR_GREY, true);
 
-	int marginx = (screen->width  - DMBOARDWIDTH) / 2;
-	int marginy = (screen->height - DMBOARDHEIGHT) / 2;
-
-	int locx = marginx;
-	int locy = marginy / 2;
-
-	if (player->camera->player)
-		player = player->camera->player;
-
-	// Player list sorting
-	for (j = 0; j < sortedplayers.size(); j++)
-		sortedplayers[j] = &players[j];
-
-	if(sv_gametype != GM_COOP)
-		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
-	else
-		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
-
-    listsize = sortedplayers.size();
-
-	// Background effect
-	OdamexEffect (locx - DMBORDER,
-                  locy - DMBORDER,
-				  locx + DMBOARDWIDTH  + DMBORDER,
-				  locy + DMBOARDHEIGHT + (listsize*10) + DMBORDER);
-
-	//	Timelimit display
-	HU_DisplayTimer(locx + 225,locy - DMBORDER+8,false);
-
-	// Scoreboard Identify
-    // Dan - Tells which current game mode is being played
-    if (sv_gametype != GM_COOP)
-        screen->DrawText (CR_GOLD,locx + 135,locy + 0,"Deathmatch");
-    else
-        screen->DrawText (CR_GOLD,locx + 150,locy + 0,"Cooperative");
-
-	// Player scores header
-	screen->DrawText	  (CR_GREY	,locx + 8		,locy + 0	,"PLAYERS:"		);
-	sprintf (str, "%d", (unsigned int)sortedplayers.size());
-	screen->DrawText	  (CR_GREEN	,locx + 68		,locy + 0	,	str	);
-
-	// Fraglimit
-	if (sv_gametype != GM_COOP)
-	{
-		screen->DrawText	  (CR_GREY	,locx + 266		,locy + 0	,"FRAGLIMIT:"	);
-		sprintf (str, "%d", sv_fraglimit.asInt());
-		screen->DrawText	  (CR_GREEN	,locx + 336		,locy + 0	,	str	);
+	// Line
+	for (short xi = -236 + 1;xi < 236;xi += 2) {
+		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
+		                         hud::X_CENTER, hud::Y_MIDDLE,
+		                         hud::X_CENTER, hud::Y_TOP,
+		                         sbline, Ranges + CR_GREY * 256, true);
 	}
 
-	screen->Clear (locx + 8,
-				   locy + 8,
-				   locx + 368,
-				   locy + 10,
-				   4);
-
-	screen->DrawText	  (CR_GREY	,locx + 8		,locy + 11	,"NAME"			);
-	if(sv_gametype != GM_COOP)
-	{
-		screen->DrawText	  (CR_GREY	,locx + 130		,locy + 11	,"FRAGS"		);
-		screen->DrawText	  (CR_GREY	,locx + 179		,locy + 11	,"FRG/DTH"		);
+	// Ingame Players
+	byte limit = extra_rows + 4;
+	hud::EAPlayerColors(-236, y + 11, 7, 7, hud_scalescoreboard,
+	                    hud::X_CENTER, hud::Y_MIDDLE,
+	                    hud::X_LEFT, hud::Y_TOP,
+	                    1, limit);
+	hud::EAPlayerNames(-227, y + 11, hud_scalescoreboard,
+	                   hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_LEFT, hud::Y_TOP,
+	                   1, limit, true);
+	if (sv_gametype != GM_COOP) {
+		hud::EAPlayerFrags(44, y + 11, hud_scalescoreboard,
+		                   hud::X_CENTER, hud::Y_MIDDLE,
+		                   hud::X_RIGHT, hud::Y_TOP,
+		                   1, limit, true);
+		hud::EAPlayerDeaths(92, y + 11, hud_scalescoreboard,
+		                   hud::X_CENTER, hud::Y_MIDDLE,
+		                   hud::X_RIGHT, hud::Y_TOP,
+		                   1, limit, true);
+		hud::EAPlayerKD(140, y + 11, hud_scalescoreboard,
+		                hud::X_CENTER, hud::Y_MIDDLE,
+		                hud::X_RIGHT, hud::Y_TOP,
+		                1, limit, true);
+	} else {
+		hud::EAPlayerKills(92, y + 11, hud_scalescoreboard,
+		                   hud::X_CENTER, hud::Y_MIDDLE,
+		                   hud::X_RIGHT, hud::Y_TOP,
+		                   1, limit, true);
+		hud::EAPlayerDeaths(140, y + 11, hud_scalescoreboard,
+		                   hud::X_CENTER, hud::Y_MIDDLE,
+		                   hud::X_RIGHT, hud::Y_TOP,
+		                   1, limit, true);
 	}
-	else
-	{
-		screen->DrawText	  (CR_GREY	,locx + 130		,locy + 11	,"KILLS"		);
-		screen->DrawText	  (CR_GREY	,locx + 175		,locy + 11	,"KILL/DTH"		);
-	}
-	screen->DrawText	  (CR_GREY	,locx + 244		,locy + 11	,"DEATHS"		);
-	screen->DrawText	  (CR_GREY	,locx + 301		,locy + 11	,"PING"			);
-	screen->DrawText	  (CR_GREY	,locx + 339		,locy + 11	,"TIME"			);
+	hud::EAPlayerTimes(188, y + 11, hud_scalescoreboard,
+	                   hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_RIGHT, hud::Y_TOP,
+	                   1, limit, true);
+	hud::EAPlayerPings(236, y + 11, hud_scalescoreboard,
+	                   hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_RIGHT, hud::Y_TOP,
+	                   1, limit, true);
+}
 
-	//	Draw player info
-	for (i = 0; i < listsize && y < ST_Y - 12 * CleanYfac; i++)
-	{
-		int color = sortedplayers[i]->userinfo.color;
+// [AM] Draw scores for team gametypes.
+void drawTeamScores(player_t *player, int y, byte extra_rows) {
+	int color;
+	std::ostringstream buffer;
+	std::string str;
+	static short tx[2] = {-236, 4};
 
-		if (!sortedplayers[i]->ingame())
-			continue;
-		// Define text color
-		if (sortedplayers[i] != player)
-			color = CR_BRICK;
-		else
-			color = CR_GREEN;
-
-
-
-		int blob = sortedplayers[i]->userinfo.color;
-
-
-		blob = BestColor (DefaultPalette->basecolors,
-						  RPART(blob),
-						  GPART(blob),
-						  BPART(blob),
-						  DefaultPalette->numcolors);
-
-		if (!sortedplayers[i]->spectator && sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD)
-			screen->Clear (locx,
-						   locy + y,
-						   locx + 7,
-						   locy + y + 7,
-						   blob);
-
-
-		// NAME
-		strcpy (str, sortedplayers[i]->userinfo.netname);
-		screen->DrawText	  (color	,locx + 8							,locy + y	,	str	);
-
-		// [deathz0r] FRAG for deathmatch, KILLS for coop
-		if(sv_gametype != GM_COOP)
-			sprintf (str, "%d", sortedplayers[i]->fragcount);
-		else
-			sprintf (str, "%d", sortedplayers[i]->killcount);
-		screen->DrawText	  (color	,locx + (166 - V_StringWidth (str))	,locy + y	,	str	);
-
-		// [deathz0r] FRAGS/DEATHS (dm) or KILLS/DEATHS (coop) RATIO
-		if(sv_gametype != GM_COOP)
-		{
-			if (sortedplayers[i]->fragcount <= 0) // Displays a 0.0 when frags are 0 or negative
-				sprintf (str, "0.0"); // [deathz0r] Buggy? [anarkavre] just explicitly print as string
-			else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0) // [deathz0r] Do not divide by zero
-				sprintf (str, "%5.1f", (float)sortedplayers[i]->fragcount); // [anarkavre] dividing by 1 will just end up fragcount
-			else
-				sprintf (str, "%5.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
+	for (byte i = 0;i < 2;i++) {
+		// Column headers
+		hud::DrawText(tx[i] + 9, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_LEFT, hud::Y_TOP,
+		              "Name", CR_GREY, true);
+		if (sv_gametype == GM_CTF) {
+			hud::DrawText(tx[i] + 168, y, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              "PTS", CR_GREY, true);
+			hud::DrawText(tx[i] + 200, y, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              "FRG", CR_GREY, true);
+		} else {
+			hud::DrawText(tx[i] + 164, y, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              "FRG", CR_GREY, true);
+			hud::DrawText(tx[i] + 200, y, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              "K/D", CR_GREY, true);
 		}
-		else
-		{
-			if (sortedplayers[i]->killcount == 0) // [deathz0r] Displays a 0.0 when kills are 0
-				sprintf (str, "0.0"); // Buggy?
-			else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0) // [deathz0r] Do not divide by zero
-				sprintf (str, "%5.1f", (float)sortedplayers[i]->killcount);
-			else
-				sprintf (str, "%5.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
+		hud::DrawText(tx[i] + 232, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "PNG", CR_GREY, true);
+
+		// Line
+		if (i == TEAM_BLUE) {
+			color = CR_BLUE;
+		} else {
+			color = CR_RED;
 		}
-		screen->DrawText	  (color	,locx + (231 - V_StringWidth (str))	,locy + y	,	str	);
 
-		// DEATHS
-		sprintf (str, "%d", sortedplayers[i]->deathcount);
-		screen->DrawText	  (color	,locx + (281 - V_StringWidth (str))	,locy + y	,	str	);
+		for (short xi = tx[i];xi < tx[i] + 232;xi += 2) {
+			hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
+			                         hud::X_CENTER, hud::Y_MIDDLE,
+			                         hud::X_LEFT, hud::Y_TOP,
+			                         sbline, Ranges + color * 256, true);
+			hud::DrawTranslatedPatch(xi, y + 19, hud_scalescoreboard,
+			                         hud::X_CENTER, hud::Y_MIDDLE,
+			                         hud::X_LEFT, hud::Y_TOP,
+			                         sbline, Ranges + color * 256, true);
+		}
 
-		// PING
-		if (sortedplayers[i]->ping < 0 || sortedplayers[i]->ping > 999)
-			sprintf(str, "###");
-		else
-			sprintf (str, "%d", sortedplayers[i]->ping);
-		screen->DrawText	  (color	,locx + (326 - V_StringWidth (str))	,locy + y	,	str	);
+		// Team Info
+		str = hud::TeamName(color, i);
+		hud::DrawText(tx[i] + 9, y + 11, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_LEFT, hud::Y_TOP,
+		              str.c_str(), color, true);
+		if (sv_gametype == GM_CTF) {
+			hud::DrawText(tx[i] + 168, y + 11, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              hud::TeamPoints(color, i).c_str(), color, true);
+			str = hud::TeamFrags(color, i);
+			hud::DrawText(tx[i] + 200, y + 11, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              str.c_str(), color, true);
+		} else {
+			hud::DrawText(tx[i] + 164, y + 11, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              hud::TeamPoints(color, i).c_str(), color, true);
+			str = hud::TeamKD(color, i);
+			hud::DrawText(tx[i] + 200, y + 11, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              str.c_str(), color, true);
+		}
+		str = hud::TeamPing(color, i);
+		hud::DrawText(tx[i] + 232, y + 11, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              str.c_str(), color, true);
 
-		// TIME
-		sprintf (str, "%d", (sortedplayers[i]->GameTime / 60));
-		screen->DrawText	  (color	,locx + (368 - V_StringWidth (str))	,locy + y	,	str	);
-
-		y += 10;
+		// Ingame Players
+		byte limit = extra_rows + 4;
+		hud::EATeamPlayerColors(tx[i], y + 22, 7, 7, hud_scalescoreboard,
+		                        hud::X_CENTER, hud::Y_MIDDLE,
+		                        hud::X_LEFT, hud::Y_TOP,
+		                        1, limit, i);
+		hud::EATeamPlayerNames(tx[i] + 9, y + 22, hud_scalescoreboard,
+		                       hud::X_CENTER, hud::Y_MIDDLE,
+		                       hud::X_LEFT, hud::Y_TOP,
+		                       1, limit, i, true);
+		if (sv_gametype == GM_CTF) {
+			hud::EATeamPlayerPoints(tx[i] + 168, y + 22, hud_scalescoreboard,
+			                        hud::X_CENTER, hud::Y_MIDDLE,
+			                        hud::X_RIGHT, hud::Y_TOP,
+			                        1, limit, i, true);
+			hud::EATeamPlayerFrags(tx[i] + 200, y + 22, hud_scalescoreboard,
+			                       hud::X_CENTER, hud::Y_MIDDLE,
+			                       hud::X_RIGHT, hud::Y_TOP,
+			                       1, limit, i, true);
+		} else {
+			hud::EATeamPlayerFrags(tx[i] + 164, y + 22, hud_scalescoreboard,
+			                       hud::X_CENTER, hud::Y_MIDDLE,
+			                       hud::X_RIGHT, hud::Y_TOP,
+			                       1, limit, i, true);
+			hud::EATeamPlayerKD(tx[i] + 200, y + 22, hud_scalescoreboard,
+			                    hud::X_CENTER, hud::Y_MIDDLE,
+			                    hud::X_RIGHT, hud::Y_TOP,
+			                    1, limit, i, true);
+		}
+		hud::EATeamPlayerPings(tx[i] + 232, y + 22, hud_scalescoreboard,
+		                       hud::X_CENTER, hud::Y_MIDDLE,
+		                       hud::X_RIGHT, hud::Y_TOP,
+		                       1, limit, i, true);
 	}
 }
 
-//
-// [Toke - CTF - Scores] HU_TeamScores1
-// Draws low-res CTF scores
-//
-void HU_TeamScores1 (player_t *player)
-{
-	int resfix;
+// [AM] Draw spectators.
+void drawSpectators(player_t *player, int y, byte extra_rows) {
+	static short tx[3] = {-236, -79, 78};
 
-	char str[80];
-	char frags[80];
-	char ping[80];
-	char points[80];
-	char deaths[80];
-
-	std::vector<player_t *> sortedplayers(players.size());
-	int x, y, maxwidth, margin;
-
-	size_t i, j;
-
-	int bluey;
-	int redy;
-
-	int bcount = 0;
-	int rcount = 0;
-
-	int bfrags = 0;
-	int rfrags = 0;
-
-	int bpings = 0;
-	int rpings = 0;
-
-	int bpavg = 0;
-	int rpavg = 0;
-
-	int bfavg = 0;
-	int rfavg = 0;
-
-	int rpoints = 0;
-	int bpoints = 0;
-
-	if (player->camera->player)
-		player = player->camera->player;
-
-	for (j = 0; j < sortedplayers.size(); j++)
-		sortedplayers[j] = &players[j];
-
-	std::sort(sortedplayers.begin(), sortedplayers.end(), sv_gametype == GM_CTF ? compare_player_points : compare_player_frags);
-
-	maxwidth = 60;
-
-	x = (screen->width >> 1) - (((maxwidth + 32 + 32 + 16) * CleanXfac) >> 1);
-	margin = x + 40 * CleanXfac;
-
-	resfix = screen->height / 200;
-
-	x = (screen->width >> 1) - (((maxwidth + 32 + 32 + 16) * CleanXfac) >> 1);
-	margin = x + 40 * CleanXfac;
-
-	y     = 78 * resfix;
-
-	bluey = 26 * CleanYfac;
-
-	redy  = 98 * CleanYfac;
-
-	// Scoreboard Identify
-	// Dan - Tells which current game mode is being played
-	if (sv_gametype == GM_CTF)
-		screen->DrawTextClean (CR_GOLD,100 * CleanXfac,0 * CleanYfac,"Capture The Flag");
-
-	//	Timelimit display
-	HU_DisplayTimer(screen->width/2 - 126/2*CleanXfac, 8 * CleanYfac);
-
-	// Draw team stats header
-	screen->DrawTextClean	  (CR_GREY	,	243	* CleanXfac	,	26	* CleanYfac	,	"SCORE:"	);
-	if(sv_gametype == GM_CTF)
-	{
-		screen->DrawTextClean	  (CR_GREY	,	247	* CleanXfac	,	34	* CleanYfac	,	"TOTAL"		);
-		screen->DrawTextClean	  (CR_GREY	,	250	* CleanXfac	,	42	* CleanYfac	,	"FRAG:"		);
-		screen->DrawTextClean	  (CR_GREY	,	246	* CleanXfac	,	50	* CleanYfac	,	"POINT:"	);
-		screen->DrawTextClean	  (CR_GREY	,	247	* CleanXfac	,	66	* CleanYfac	,	"AVERAGE"	);
-		screen->DrawTextClean	  (CR_GREY	,	254	* CleanXfac	,	74	* CleanYfac	,	"PING:"		);
-	}
-	else
-	{
-		screen->DrawTextClean	  (CR_GREY	,	247	* CleanXfac	,	34	* CleanYfac	,	"AVERAGE"	);
-		screen->DrawTextClean	  (CR_GREY	,	250	* CleanXfac	,	42	* CleanYfac	,	"FRAG:"		);
-		screen->DrawTextClean	  (CR_GREY	,	254	* CleanXfac	,	50	* CleanYfac	,	"PING:"		);
-	}
-	screen->DrawTextClean	  (CR_GREY	,	243	* CleanXfac	,	98	* CleanYfac	,	"SCORE:"	);
-	if(sv_gametype == GM_CTF)
-	{
-		screen->DrawTextClean	  (CR_GREY	,	247	* CleanXfac	,	106	* CleanYfac	,	"TOTAL"		);
-		screen->DrawTextClean	  (CR_GREY	,	250	* CleanXfac	,	114	* CleanYfac	,	"FRAG:"		);
-		screen->DrawTextClean	  (CR_GREY	,	246	* CleanXfac	,	122	* CleanYfac	,	"POINT:"	);
-		screen->DrawTextClean	  (CR_GREY	,	247	* CleanXfac	,	138	* CleanYfac	,	"AVERAGE"	);
-		screen->DrawTextClean	  (CR_GREY	,	254	* CleanXfac	,	146	* CleanYfac	,	"PING:"		);
-	}
-	else
-	{
-		screen->DrawTextClean	  (CR_GREY	,	247	* CleanXfac	,	106	* CleanYfac	,	"AVERAGE"	);
-		screen->DrawTextClean	  (CR_GREY	,	250	* CleanXfac	,	114	* CleanYfac	,	"FRAG:"		);
-		screen->DrawTextClean	  (CR_GREY	,	254	* CleanXfac	,	122	* CleanYfac	,	"PING:"		);
+	// Line
+	for (short xi = -236 + 1;xi < 236;xi += 2) {
+		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard,
+		                         hud::X_CENTER, hud::Y_MIDDLE,
+		                         hud::X_CENTER, hud::Y_TOP,
+		                         sbline, Ranges + CR_GREY * 256, true);
 	}
 
-	// Player scores header
-	screen->DrawTextClean	  (CR_GREY	,	10	* CleanXfac	,	18	* CleanYfac	,	"NAME"		);
+	byte specs = hud::CountSpectators();
+	byte skip = 0;
+	byte limit;
+	for (byte i = 0;i < 3;i++) {
+		limit = (specs + 2 - i) / 3;
+		if (extra_rows + 1 < limit) {
+			limit = extra_rows + 1;
+		}
+		hud::EASpectatorNames(tx[i], y + 3, hud_scalescoreboard,
+		                      hud::X_CENTER, hud::Y_MIDDLE,
+		                      hud::X_LEFT, hud::Y_TOP,
+		                      1, skip, limit, true);
+		hud::EASpectatorPings(tx[i] + 124, y + 3, hud_scalescoreboard,
+		                      hud::X_CENTER, hud::Y_MIDDLE,
+		                      hud::X_LEFT, hud::Y_TOP,
+		                      1, skip, limit, true);
+		skip += limit;
+	}
+}
+
+// [AM] Draw the scoreboard
+void Scoreboard(player_t *player) {
+	// Calculate height
+	int height, y;
+	byte extra_spec_rows = 0;
+	byte extra_player_rows = 0;
+
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+		height = 99;
+
+		// Team scoreboard was designed for 4 players on a team.  If
+		// there are more, increase the height.
+		byte blue = hud::CountTeamPlayers(TEAM_BLUE);
+		byte red = hud::CountTeamPlayers(TEAM_RED);
+		if (blue > 4 || red > 4) {
+			extra_player_rows += (blue > red) ? (blue - 4) : (red - 4);
+		}
+	} else {
+		height = 88;
+
+		// Normal scoreboard was designed for 4 players.  If there are
+		// more, increase the height.
+		byte players = P_NumPlayersInGame();
+		if (players > 4) {
+			extra_player_rows += players - 4;
+		}
+	}
+
+	// If there are more than 3 spectators, increase the height.
+	byte specs = hud::CountSpectators();
+	if (specs > 3) {
+		extra_spec_rows += ((specs + 2) / 3) - 1;
+	}
+
+	height += (extra_player_rows + extra_spec_rows) * 8;
+
+	// 368 is our max height.
+	while (height > 368) {
+		// We have too many rows.  Start removing extra spectator rows
+		// to make the scoreboard fit.
+		if (extra_spec_rows == 0) {
+			break;
+		}
+		extra_spec_rows -= 1;
+		height -= 8;
+	}
+
+	while (height > 368) {
+		// We still have too many rows.  Start removing extra player
+		// rows to make the scoreboard fit.
+		if (extra_player_rows == 0) {
+			break;
+		}
+		extra_player_rows -= 1;
+		height -= 8;
+	}
+
+	// Starting Y position, measured from the center up.
+	y = -(height / 2);
+	if (y > -96) {
+		// Scoreboard starts slightly off-center, then grows to be centered.
+		// -96 makes it even with where the default lowres TDM begins.
+		// For the record, the lowres DM scoreboard begins at -54.
+		y = -96;
+	}
+
+	// Dim the background
+	hud::Dim(0, y, 480, height, hud_scalescoreboard,
+	         hud::X_CENTER, hud::Y_MIDDLE,
+	         hud::X_CENTER, hud::Y_TOP);
+
+	hud::drawHeader(player, y + 4);
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+		hud::drawTeamScores(player, y + 31, extra_player_rows);
+	} else {
+		hud::drawScores(player, y + 31, extra_player_rows);
+	}
+	hud::drawSpectators(player, y + (height - 14 - (extra_spec_rows * 8)),
+	                    extra_spec_rows);
+}
+
+// [AM] Draw the low-resolution scoreboard header.
+void drawLowHeader(player_t *player, int y) {
+	std::string str;
+
+	// Center
+	if (sv_gametype == GM_COOP) {
+		str = "COOPERATIVE";
+	} else if (sv_gametype == GM_DM && sv_maxplayers == 2) {
+		str = "DUEL";
+	} else if (sv_gametype == GM_DM) {
+		str = "DEATHMATCH";
+	} else if (sv_gametype == GM_TEAMDM) {
+		str = "TEAM DEATHMATCH";
+	} else if (sv_gametype == GM_CTF) {
+		str = "CAPTURE THE FLAG";
+	}
+
+	hud::DrawText(0, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_CENTER, hud::Y_TOP,
+	              str.c_str(), CR_GOLD, true);
+
+	// Line
+	for (short xi = -146 + 1;xi < 146;xi += 2) {
+		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
+		                         hud::X_CENTER, hud::Y_MIDDLE,
+		                         hud::X_CENTER, hud::Y_TOP,
+		                         sbline, Ranges + CR_GREY * 256, true);
+	}
+}
+
+// [AM] Draw low-resolution teamless gametype scores.
+void drawLowScores(player_t *player, int y, byte extra_rows) {
+	std::string str;
+
+	// Colum headers
+	hud::DrawText(-137, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_LEFT, hud::Y_TOP,
+	              "Name", CR_GREY, true);
+	if (sv_gametype != GM_COOP) {
+		hud::DrawText(22, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "FRG", CR_GREY, true);
+		hud::DrawText(50, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "DTH", CR_GREY, true);
+		hud::DrawText(90, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "K/D", CR_GREY, true);
+	} else {
+		hud::DrawText(62, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "KIL", CR_GREY, true);
+		hud::DrawText(90, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "DTH", CR_GREY, true);
+	}
+	hud::DrawText(118, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_RIGHT, hud::Y_TOP,
+	              "MIN", CR_GREY, true);
+	hud::DrawText(146, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_RIGHT, hud::Y_TOP,
+	              "PNG", CR_GREY, true);
+
+	// Line
+	for (short xi = -146 + 1;xi < 146;xi += 2) {
+		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
+		                         hud::X_CENTER, hud::Y_MIDDLE,
+		                         hud::X_CENTER, hud::Y_TOP,
+		                         sbline, Ranges + CR_GREY * 256, true);
+	}
+
+	// Ingame Players
+	byte limit = extra_rows + 4;
+	hud::EAPlayerColors(-146, y + 11, 7, 7, hud_scalescoreboard,
+	                    hud::X_CENTER, hud::Y_MIDDLE,
+	                    hud::X_LEFT, hud::Y_TOP,
+	                    1, limit);
+	hud::EAPlayerNames(-137, y + 11, hud_scalescoreboard,
+	                   hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_LEFT, hud::Y_TOP,
+	                   1, limit, true);
+	if (sv_gametype != GM_COOP) {
+		// NOTE: If we ever get true kill counts, we don't have
+		//       enough room on this scoreboard to show frags, kills,
+		//       deaths and K/D.
+		hud::EAPlayerFrags(22, y + 11, hud_scalescoreboard,
+		                   hud::X_CENTER, hud::Y_MIDDLE,
+		                   hud::X_RIGHT, hud::Y_TOP,
+		                   1, limit, true);
+		hud::EAPlayerDeaths(50, y + 11, hud_scalescoreboard,
+		                   hud::X_CENTER, hud::Y_MIDDLE,
+		                   hud::X_RIGHT, hud::Y_TOP,
+		                   1, limit, true);
+		hud::EAPlayerKD(90, y + 11, hud_scalescoreboard,
+		                hud::X_CENTER, hud::Y_MIDDLE,
+		                hud::X_RIGHT, hud::Y_TOP,
+		                1, limit, true);
+	} else {
+		hud::EAPlayerKills(62, y + 11, hud_scalescoreboard,
+		                   hud::X_CENTER, hud::Y_MIDDLE,
+		                   hud::X_RIGHT, hud::Y_TOP,
+		                   1, limit, true);
+		hud::EAPlayerDeaths(90, y + 11, hud_scalescoreboard,
+		                   hud::X_CENTER, hud::Y_MIDDLE,
+		                   hud::X_RIGHT, hud::Y_TOP,
+		                   1, limit, true);
+	}
+	hud::EAPlayerTimes(118, y + 11, hud_scalescoreboard,
+	                   hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_RIGHT, hud::Y_TOP,
+	                   1, limit, true);
+	hud::EAPlayerPings(146, y + 11, hud_scalescoreboard,
+	                   hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_RIGHT, hud::Y_TOP,
+	                   1, limit, true);
+}
+
+// [AM] Draw low-resolution team gametype scores.
+void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
+	int color;
+	std::string str;
+
+	// Column headers
+	hud::DrawText(-137, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_LEFT, hud::Y_TOP,
+	              "Name", CR_GREY, true);
 	if (sv_gametype == GM_CTF) {
-        screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	18	* CleanYfac	,	"POINT"		);
-        screen->DrawTextClean	  (CR_GREY	,	171	* CleanXfac	,	18	* CleanYfac	,	"FRAG"		);
+		hud::DrawText(34, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "PPL", CR_GREY, true);
+		hud::DrawText(62, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "PTS", CR_GREY, true);
+		hud::DrawText(90, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "FRG", CR_GREY, true);
 	} else {
-        screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	18	* CleanYfac	,	"FRAG"		);
-        screen->DrawTextClean	  (CR_GREY	,	165	* CleanXfac	,	18	* CleanYfac	,	"DEATH"		);
+		hud::DrawText(22, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "PPL", CR_GREY, true);
+		hud::DrawText(50, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "FRG", CR_GREY, true);
+		hud::DrawText(90, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "K/D", CR_GREY, true);
 	}
-	screen->DrawTextClean	  (CR_GREY	,	210	* CleanXfac	,	18	* CleanYfac	,	"PING"		);
+	hud::DrawText(118, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_RIGHT, hud::Y_TOP,
+	              "MIN", CR_GREY, true);
+	hud::DrawText(146, y, hud_scalescoreboard,
+	              hud::X_CENTER, hud::Y_MIDDLE,
+	              hud::X_RIGHT, hud::Y_TOP,
+	              "PNG", CR_GREY, true);
 
-	screen->DrawTextClean	  (CR_GREY	,	10	* CleanXfac	,	90	* CleanYfac	,	"NAME"		);
-	if (sv_gametype == GM_CTF) {
-        screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	90	* CleanYfac	,	"POINT"		);
-        screen->DrawTextClean	  (CR_GREY	,	171	* CleanXfac	,	90	* CleanYfac	,	"FRAG"		);
-	} else {
-        screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	90	* CleanYfac	,	"FRAG"		);
-        screen->DrawTextClean	  (CR_GREY	,	165	* CleanXfac	,	90	* CleanYfac	,	"DEATH"		);
+	// Since we are doing blue-over-red scores, we need to measure how
+	// far down we want to start for the red team.
+	byte blue_size = hud::CountTeamPlayers(TEAM_BLUE);
+	if (blue_size < 4) {
+		blue_size = 4;
+	} else if (blue_size > extra_rows + 4) {
+		blue_size = extra_rows + 4;
 	}
-	screen->DrawTextClean	  (CR_GREY	,	210	* CleanXfac	,	90	* CleanYfac	,	"PING"		);
+	short ty[2] = {8, (blue_size * 8) + 22};
 
-	for (i = 0; i < sortedplayers.size(); i++)
-	{
-		int colorblue;
-		int colorred;
-
-		if (sortedplayers[i]->ingame())
-		{
-			sprintf (frags, "%d", sortedplayers[i]->fragcount);
-
-			if (sv_gametype == GM_CTF)
-			sprintf (points, "%d", sortedplayers[i]->points);
-			else
-			sprintf (deaths, "%d", sortedplayers[i]->deathcount);
-
-			if (sortedplayers[i]->ping < 0 || sortedplayers[i]->ping > 999)
-				sprintf(ping, "###");
-			else
-           		sprintf (ping, "%d", (sortedplayers[i]->ping));
-
-			strcpy (str, sortedplayers[i]->userinfo.netname);
-
-			if (sortedplayers[i] != player)
-				colorblue = (demoplayback && sortedplayers[i] == &consoleplayer()) ? CR_GOLD : CR_BLUE;
-
-			else
-				colorblue = CR_GOLD;
-
-			if (sortedplayers[i] != player)
-				colorred = (demoplayback && sortedplayers[i] == &consoleplayer()) ? CR_GOLD : CR_RED;
-
-			else
-				colorred = CR_GOLD;
-
-			if (sortedplayers[i]->userinfo.team == TEAM_BLUE)
-			{
-				int blob = sortedplayers[i]->userinfo.color;
-				blob = BestColor (DefaultPalette->basecolors,
-								  RPART(blob),
-								  GPART(blob),
-								  BPART(blob),
-								  DefaultPalette->numcolors);
-
-				if (!sortedplayers[i]->spectator && sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD)
-					screen->Clear (1, bluey, (7 * CleanXfac), bluey + (7 * CleanYfac), blob);
-
-				screen->DrawTextClean (colorblue	,	10	* CleanXfac,			bluey			,			str				);
-				if (sv_gametype == GM_CTF) {
-                    screen->DrawTextClean (colorblue	,	128	* CleanXfac,			bluey			,			points			);
-                    screen->DrawTextClean (colorblue	,	171	* CleanXfac,			bluey			,			frags			);
-				} else {
-                    screen->DrawTextClean (colorblue	,	128	* CleanXfac,			bluey			,			frags			);
-                    screen->DrawTextClean (colorblue	,	165	* CleanXfac,			bluey			,			deaths			);
-				}
-				screen->DrawTextClean (colorblue	,	210	* CleanXfac,			bluey			,			ping			);
-
-				bfrags = bfrags + sortedplayers[i]->fragcount;
-				bpings = bpings + sortedplayers[i]->ping;
-				bpoints = bpoints + sortedplayers[i]->points;
-
-				// Total blue frags and points
-				if(sv_gametype == GM_CTF)
-				{
-					sprintf (str, "%d", bfrags);
-					screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	42	* CleanYfac	,	str	);
-
-					sprintf (str, "%d", bpoints);
-					screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	50	* CleanYfac	,	str	);
-				}
-
-				bluey += 8 * CleanYfac;
-
-				bcount++;
-			}
-
-			if (sortedplayers[i]->userinfo.team == TEAM_RED)
-			{
-				int blob = sortedplayers[i]->userinfo.color;
-				blob = BestColor (DefaultPalette->basecolors,
-								  RPART(blob),
-								  GPART(blob),
-								  BPART(blob),
-								  DefaultPalette->numcolors);
-
-				if (!sortedplayers[i]->spectator)
-					screen->Clear (1, redy, (7 * CleanXfac), redy + (7 * CleanYfac), blob);
-
-				screen->DrawTextClean (colorred 	,	10	* CleanXfac,			redy			,			str				);
-				if (sv_gametype == GM_CTF) {
-                    screen->DrawTextClean (colorred 	,	128	* CleanXfac,			redy			,			points			);
-                    screen->DrawTextClean (colorred 	,	171	* CleanXfac,			redy			,			frags			);
-				} else {
-                    screen->DrawTextClean (colorred 	,	128	* CleanXfac,			redy			,			frags			);
-                    screen->DrawTextClean (colorred 	,	165	* CleanXfac,			redy			,			deaths			);
-				}
-				screen->DrawTextClean (colorred 	,	210	* CleanXfac,			redy			,			ping			);
-
-				rfrags = rfrags + sortedplayers[i]->fragcount;
-				rpings = rpings + sortedplayers[i]->ping;
-				rpoints = rpoints + sortedplayers[i]->points;
-
-				// Total red frags and points
-				if(sv_gametype == GM_CTF)
-				{
-					sprintf (str, "%d", rfrags);
-					screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	114	* CleanYfac	,	str	);
-
-					sprintf (str, "%d", rpoints);
-					screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	122	* CleanYfac	,	str	);
-				}
-
-				redy += 8 * CleanYfac;
-
-				rcount++;
-			}
-		}
-	}
-
-	// Blue team score
-	sprintf (str, "%d", TEAMpoints[TEAM_BLUE]);
-	screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	26	* CleanYfac	,	str	);
-
-	// Red team score
-	sprintf (str, "%d", TEAMpoints[TEAM_RED]);
-	screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	98	* CleanYfac	,	str	);
-
-
-	if (bcount)
-	{
-		// Calculate averages
-		bfavg = (int)(bfrags / bcount);
-		bpavg = (int)(bpings / bcount);
-
-		if(sv_gametype == GM_CTF)
-		{
-			// Average blue ping
-			if (bpavg < 0 || bpavg > 999)
-				sprintf(str, "###");
-			else
-				sprintf (str, "%d", bpavg);
-			screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	74	* CleanYfac	,	str	);
-		}
-		else
-		{
-			// Average blue frags
-			sprintf (str, "%d", bfavg);
-			screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	42	* CleanYfac	,	str	);
-
-			// Average blue ping
-			if (bpavg < 0 || bpavg > 999)
-				sprintf(str, "###");
-			else
-				sprintf (str, "%d", bpavg);
-			screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	50	* CleanYfac	,	str	);
+	for (byte i = 0;i < 2;i++) {
+		// Line
+		if (i == TEAM_BLUE) {
+			color = CR_BLUE;
+		} else {
+			color = CR_RED;
 		}
 
-	}
-
-	if (rcount)
-	{
-		// Calculate averages
-		rfavg = (int)(rfrags / rcount);
-		rpavg = (int)(rpings / rcount);
-
-		if(sv_gametype == GM_CTF)
-		{
-			// Average red ping
-			if (rpavg < 0 || rpavg > 999)
-				sprintf(str, "###");
-			else
-				sprintf (str, "%d", rpavg);
-			screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	146	* CleanYfac	,	str	);
+		for (short xi = -146 + 1;xi < 146;xi += 2) {
+			hud::DrawTranslatedPatch(xi, y + ty[i], hud_scalescoreboard,
+			                         hud::X_CENTER, hud::Y_MIDDLE,
+			                         hud::X_CENTER, hud::Y_TOP,
+			                         sbline, Ranges + color * 256, true);
+			hud::DrawTranslatedPatch(xi, y + ty[i] + 11, hud_scalescoreboard,
+			                         hud::X_CENTER, hud::Y_MIDDLE,
+			                         hud::X_CENTER, hud::Y_TOP,
+			                         sbline, Ranges + color * 256, true);
 		}
 
-		else
-		{
-			// Average red frags
-			sprintf (str, "%d", rfavg);
-			screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	114	* CleanYfac	,	str	);
-
-			// Average red ping
-			if (rpavg < 0 || rpavg > 999)
-				sprintf(str, "###");
-			else
-				sprintf (str, "%d", rpavg);
-			screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	122	* CleanYfac	,	str	);
+		// Team Info
+		str = hud::TeamName(color, i);
+		hud::DrawText(-137, y + ty[i] + 3, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_LEFT, hud::Y_TOP,
+		              str.c_str(), color, true);
+		if (sv_gametype == GM_CTF) {
+			hud::DrawText(34, y + ty[i] + 3, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              TeamPlayers(color, i).c_str(), color, true);
+			hud::DrawText(62, y + ty[i] + 3, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              hud::TeamPoints(color, i).c_str(), color, true);
+			str = hud::TeamFrags(color, i);
+			hud::DrawText(90 , y + ty[i] + 3, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              str.c_str(), color, true);
+		} else {
+			hud::DrawText(22, y + ty[i] + 3, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              TeamPlayers(color, i).c_str(), color, true);
+			hud::DrawText(50, y + ty[i] + 3, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              hud::TeamPoints(color, i).c_str(), color, true);
+			str = hud::TeamKD(color, i);
+			hud::DrawText(90, y + ty[i] + 3, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              str.c_str(), color, true);
 		}
+		str = hud::TeamPing(color, i);
+		hud::DrawText(146, y + ty[i] + 3, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              str.c_str(), color, true);
+
+		// Ingame Players
+		byte limit = extra_rows + 4;
+		hud::EATeamPlayerColors(-146, y + ty[i] + 14, 7, 7, hud_scalescoreboard,
+		                        hud::X_CENTER, hud::Y_MIDDLE,
+		                        hud::X_LEFT, hud::Y_TOP,
+		                        1, limit, i);
+		hud::EATeamPlayerNames(-137, y + ty[i] + 14, hud_scalescoreboard,
+		                       hud::X_CENTER, hud::Y_MIDDLE,
+		                       hud::X_LEFT, hud::Y_TOP,
+		                       1, limit, i, true);
+		if (sv_gametype == GM_CTF) {
+			hud::EATeamPlayerPoints(62, y + ty[i] + 14, hud_scalescoreboard,
+			                        hud::X_CENTER, hud::Y_MIDDLE,
+			                        hud::X_RIGHT, hud::Y_TOP,
+			                        1, limit, i, true);
+			hud::EATeamPlayerFrags(90, y + ty[i] + 14, hud_scalescoreboard,
+			                       hud::X_CENTER, hud::Y_MIDDLE,
+			                       hud::X_RIGHT, hud::Y_TOP,
+			                       1, limit, i, true);
+		} else {
+			hud::EATeamPlayerFrags(50, y + ty[i] + 14, hud_scalescoreboard,
+			                       hud::X_CENTER, hud::Y_MIDDLE,
+			                       hud::X_RIGHT, hud::Y_TOP,
+			                       1, limit, i, true);
+			hud::EATeamPlayerKD(90, y + ty[i] + 14, hud_scalescoreboard,
+			                    hud::X_CENTER, hud::Y_MIDDLE,
+			                    hud::X_RIGHT, hud::Y_TOP,
+			                    1, limit, i, true);
+		}
+		hud::EATeamPlayerTimes(118, y + ty[i] + 14, hud_scalescoreboard,
+		                       hud::X_CENTER, hud::Y_MIDDLE,
+		                       hud::X_RIGHT, hud::Y_TOP,
+		                       1, limit, i, true);
+		hud::EATeamPlayerPings(146, y + ty[i] + 14, hud_scalescoreboard,
+		                       hud::X_CENTER, hud::Y_MIDDLE,
+		                       hud::X_RIGHT, hud::Y_TOP,
+		                       1, limit, i, true);
 	}
 }
 
-//
-// [Toke - CTF - Scores] HU_TeamScores2
-// Draws High-res CTF scores
-//
-void HU_TeamScores2 (player_t *player)
-{
-	char str[80];
-	unsigned int listsize;
+// [AM] Draw low-resolution spectators.
+void drawLowSpectators(player_t *player, int y, byte extra_rows) {
+	static short tx[2] = {-146, 1};
 
-	std::vector<player_t *> sortedplayers(players.size());
-
-	size_t i, j;
-
-	int bcount = 0;
-	int rcount = 0;
-
-	int bfrags = 0;
-	int rfrags = 0;
-
-	int bpings = 0;
-	int rpings = 0;
-
-	int bpavg = 0;
-	int rpavg = 0;
-
-	int bfavg = 0;
-	int rfavg = 0;
-
-	int bpoints = 0;
-	int rpoints = 0;
-
-	if (player->camera->player)
-		player = player->camera->player;
-
-	for (j = 0; j < sortedplayers.size(); j++)
-	{
-		sortedplayers[j] = &players[j];
-
-        if (sortedplayers[j]->userinfo.team == TEAM_BLUE)
-            bcount++;
-
-        if (sortedplayers[j]->userinfo.team == TEAM_RED)
-            rcount++;
+	// Line
+	for (short xi = -146 + 1;xi < 146;xi += 2) {
+		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard,
+		                         hud::X_CENTER, hud::Y_MIDDLE,
+		                         hud::X_CENTER, hud::Y_TOP,
+		                         sbline, Ranges + CR_GREY * 256, true);
 	}
 
-	std::sort(sortedplayers.begin(), sortedplayers.end(), sv_gametype == GM_CTF ? compare_player_points : compare_player_frags);
+	byte specs = hud::CountSpectators();
+	byte limit;
+	byte skip = 0;
+	for (byte i = 0;i < 2;i++) {
+		limit = (specs + 1 - i) / 2;
+		if (extra_rows + 1 < limit) {
+			limit = extra_rows + 1;
+		}
+		hud::EASpectatorNames(tx[i], y + 3, hud_scalescoreboard,
+		                      hud::X_CENTER, hud::Y_MIDDLE,
+		                      hud::X_LEFT, hud::Y_TOP,
+		                      1, skip, limit, true);
+		hud::EASpectatorPings(tx[i] + 121, y + 3, hud_scalescoreboard,
+		                      hud::X_CENTER, hud::Y_MIDDLE,
+		                      hud::X_LEFT, hud::Y_TOP,
+		                      1, skip, limit, true);
+		skip += limit;
+	}
+}
 
-	listsize = (rcount > bcount ? rcount : bcount);
+// [AM] Draw the low-resolution scoreboard.
+void LowScoreboard(player_t *player) {
+	int height, y;
+	byte extra_spec_rows = 0;
+	byte extra_player_rows = 0;
 
-	// Board locations
-	int marginx = (screen->width - (CTFBOARDWIDTH * 2)) / 4;
-	int marginy = (screen->height - CTFBOARDHEIGHT) / 4;
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+		height = 129;
 
-	int redy = 40;
-
-	int bluey = 40;
-
-	int blocx = marginx;
-	int blocy = marginy;
-
-	int rlocx = (marginx * 3) + CTFBOARDWIDTH;
-	int rlocy = marginy;
-
-
-	//int glocx
-	//int glocy
-
-	// Background effect
-	OdamexEffect (blocx - TEAMPLAYBORDER,
-				  blocy - TEAMPLAYBORDER,
-				  rlocx + CTFBOARDWIDTH  + TEAMPLAYBORDER,
-				  rlocy + CTFBOARDHEIGHT + (listsize*10) + TEAMPLAYBORDER);
-
-	//	Timelimit display
-	HU_DisplayTimer(rlocx + 90,rlocy - TEAMPLAYBORDER+4,false);
-
-	// Player scores header
-	// Blue Bar
-	screen->Clear (blocx + 8,
-				   blocy + 24,
-				   blocx + 235,
-				   blocy + 30,
-				   200);
-
-	// Red Bar
-	screen->Clear (rlocx + 8,
-				   rlocy + 24,
-				   rlocx + 235,
-				   rlocy + 30,
-				   176);
-
-	// Scoreboard Identify
-	// Dan - Tells which current game mode is being played
-    if (sv_gametype == GM_CTF)
-    {
-        strcpy(str, "Capture The Flag");
-        screen->DrawText (CR_GOLD,(screen->width/2)-(V_StringWidth(str)/2),blocy + 0,str);
-    }
-
-	// BLUE
-	screen->DrawText	  (CR_GREY	,blocx + 8	,blocy + 16	,"SCORE:"			);
-	if(sv_gametype == GM_CTF)
-		screen->DrawText	  (CR_GREY	,blocx + 115	,blocy + 0	,"TOTAL FRAGS:"		);
-	screen->DrawText	  (CR_GREY	,blocx + 111	,blocy + 8	,"AVERAGE PING:"		);
-	if(sv_gametype != GM_CTF)
-		screen->DrawText	  (CR_GREY	,blocx + 100	,rlocy + 16	,"AVERAGE FRAGS:"	);
-	else
-		screen->DrawText	  (CR_GREY	,blocx + 111	,rlocy + 16	,"TOTAL POINTS:"	);
-
-	screen->DrawText	  (CR_GREY	,blocx + 8	,blocy + 32	,"NAME"				);
-	if(sv_gametype == GM_CTF) {
-        screen->DrawText	  (CR_GREY	,blocx + 126	,blocy + 32	,"POINT"			);
-        screen->DrawText	  (CR_GREY	,blocx + 169	,blocy + 32	,"FRAG"				);
+		// Team scoreboard was designed for 4 players on a team.  If
+		// there are more (per team), increase the height.
+		byte blue = hud::CountTeamPlayers(TEAM_BLUE);
+		byte red = hud::CountTeamPlayers(TEAM_RED);
+		if (blue > 4) {
+			extra_player_rows += blue - 4;
+		}
+		if (red > 4) {
+			extra_player_rows += red - 4;
+		}
 	} else {
-        screen->DrawText	  (CR_GREY	,blocx + 126	,blocy + 32	,"FRAG"			);
-        screen->DrawText	  (CR_GREY	,blocx + 163	,blocy + 32	,"DEATH"				);
-	}
-	screen->DrawText	  (CR_GREY	,blocx + 208	,blocy + 32	,"PING"				);
+		height = 72;
 
-
-	// RED
-	screen->DrawText	  (CR_GREY	,rlocx + 8		,rlocy + 16	,"SCORE:"		);
-	if(sv_gametype == GM_CTF)
-		screen->DrawText	  (CR_GREY	,rlocx + 115	,rlocy + 0	,"TOTAL FRAGS:"		);
-	screen->DrawText	  (CR_GREY	,rlocx + 111	,rlocy + 8	,"AVERAGE PING:"		);
-	if(sv_gametype != GM_CTF)
-		screen->DrawText	  (CR_GREY	,rlocx + 100	,rlocy + 16	,"AVERAGE FRAGS:"	);
-	else
-		screen->DrawText	  (CR_GREY	,rlocx + 111	,rlocy + 16	,"TOTAL POINTS:"	);
-
-	screen->DrawText	  (CR_GREY	,rlocx + 8		,rlocy + 32	,"NAME"			);
-	if(sv_gametype == GM_CTF) {
-        screen->DrawText	  (CR_GREY	,rlocx + 126	,rlocy + 32	,"POINT"			);
-        screen->DrawText	  (CR_GREY	,rlocx + 169	,rlocy + 32	,"FRAG"				);
-	} else {
-        screen->DrawText	  (CR_GREY	,rlocx + 126	,rlocy + 32	,"FRAG"			);
-        screen->DrawText	  (CR_GREY	,rlocx + 163	,rlocy + 32	,"DEATH"				);
-	}
-	screen->DrawText	  (CR_GREY	,rlocx + 208	,rlocy + 32	,"PING"				);
-
-
-	// Blue team score
-	sprintf (str, "%d", TEAMpoints[TEAM_BLUE]);
-	screen->DrawText	  (CR_BLUE	,blocx + 52	,blocy + 16	,	str	);
-
-	// Red team score
-	sprintf (str, "%d", TEAMpoints[TEAM_RED]);
-	screen->DrawText	  (CR_RED	,rlocx + 52	,rlocy + 16	,	str	);
-
-	for (i = 0; i < sortedplayers.size(); i++)
-	{
-		int colorgrey;
-		int colorblue;
-		int colorred;
-
-		if (sortedplayers[i]->ingame())
-		{
-			// GREY
-			if (sortedplayers[i] != player)
-				colorgrey = (demoplayback && sortedplayers[i] == &consoleplayer()) ? CR_GOLD : CR_GREY;
-			else
-				colorgrey = CR_GOLD;
-
-			// BLUE
-			if (sortedplayers[i] != player)
-				colorblue = (demoplayback && sortedplayers[i] == &consoleplayer()) ? CR_GOLD : CR_BLUE;
-			else
-				colorblue = CR_GOLD;
-
-			// RED
-			if (sortedplayers[i] != player)
-				colorred = (demoplayback && sortedplayers[i] == &consoleplayer()) ? CR_GOLD : CR_RED;
-			else
-				colorred = CR_GOLD;
-
-			if (sortedplayers[i]->userinfo.team == TEAM_BLUE)
-			{
-				int blob = sortedplayers[i]->userinfo.color;
-
-				blob = BestColor (DefaultPalette->basecolors,
-								  RPART(blob),
-								  GPART(blob),
-								  BPART(blob),
-								  DefaultPalette->numcolors);
-
-				if (!sortedplayers[i]->spectator && sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD)
-					screen->Clear (blocx,
-								   blocy + bluey,
-								   blocx + 7,
-								   blocy + bluey + 7,
-								   blob);
-
-				//	Draw BLUE team player info
-
-				// NAME
-				strcpy (str, sortedplayers[i]->userinfo.netname);
-				screen->DrawText	  (colorgrey	,blocx + 8		,blocy + bluey	,	str	);
-
-				if (sv_gametype == GM_CTF) {
-                    // POINTS
-                    sprintf (str, "%d", sortedplayers[i]->points);
-                    screen->DrawText	  (colorblue	,blocx + 126	,blocy + bluey	,	str	);
-
-                    // FRAGS
-                    sprintf (str, "%d", sortedplayers[i]->fragcount);
-                    screen->DrawText	  (colorgrey	,blocx + 169	,blocy + bluey	,	str	);
-                } else {
-                    // FRAGS
-                    sprintf (str, "%d", sortedplayers[i]->fragcount);
-                    screen->DrawText	  (colorblue	,blocx + 126	,blocy + bluey	,	str	);
-
-                    // DEATHS
-                    sprintf (str, "%d", sortedplayers[i]->deathcount);
-                    screen->DrawText	  (colorgrey	,blocx + 163	,blocy + bluey	,	str	);
-                }
-
-				// PING
-				sprintf (str, "%d", (sortedplayers[i]->ping));
-				screen->DrawText	  (colorgrey	,blocx + 208	,blocy + bluey	,	str	);
-
-				bfrags = bfrags + sortedplayers[i]->fragcount;
-				bpings = bpings + sortedplayers[i]->ping;
-				if(sv_gametype == GM_CTF)
-					bpoints = bpoints + sortedplayers[i]->points;
-
-				// TOTAL FRAGS (ctf only)
-				if(sv_gametype == GM_CTF)
-				{
-					sprintf (str, "%d", bfrags);
-					screen->DrawText	  (CR_BLUE	,blocx + 203		,blocy + 0	,	str			);
-				}
-
-				bluey += 10;
-
-				//bcount++;
-			}
-
-			if (sortedplayers[i]->userinfo.team == TEAM_RED)
-			{
-
-				int blob = sortedplayers[i]->userinfo.color;
-
-				blob = BestColor (DefaultPalette->basecolors,
-								  RPART(blob),
-								  GPART(blob),
-								  BPART(blob),
-								  DefaultPalette->numcolors);
-
-				if (!sortedplayers[i]->spectator)
-					screen->Clear (rlocx,
-								   rlocy + redy,
-								   rlocx + 7,
-								   rlocy + redy + 7,
-								   blob);
-
-				//	Draw RED team player info
-
-				// NAME
-				strcpy (str, sortedplayers[i]->userinfo.netname);
-				screen->DrawText	  (colorgrey	,rlocx + 8		,rlocy + redy	,	str	);
-
-				if (sv_gametype == GM_CTF) {
-                    // POINTS
-                    sprintf (str, "%d", sortedplayers[i]->points);
-                    screen->DrawText	  (colorred	,rlocx + 126	,rlocy + redy	,	str	);
-
-                    // FRAGS
-                    sprintf (str, "%d", sortedplayers[i]->fragcount);
-                    screen->DrawText	  (colorgrey	,rlocx + 169	,rlocy + redy	,	str	);
-				} else {
-                    // FRAGS
-                    sprintf (str, "%d", sortedplayers[i]->fragcount);
-                    screen->DrawText	  (colorred	,rlocx + 126	,rlocy + redy	,	str	);
-
-                    // DEATHS
-                    sprintf (str, "%d", sortedplayers[i]->deathcount);
-                    screen->DrawText	  (colorgrey	,rlocx + 163	,rlocy + redy	,	str	);
-				}
-
-				// PING
-				sprintf (str, "%d", (sortedplayers[i]->ping));
-				screen->DrawText	  (colorgrey	,rlocx + 208	,rlocy + redy	,	str	);
-
-				rfrags = rfrags + sortedplayers[i]->fragcount;
-				rpings = rpings + sortedplayers[i]->ping;
-				if(sv_gametype == GM_CTF)
-					rpoints = rpoints + sortedplayers[i]->points;
-
-				// TOTAL FRAGS (ctf only)
-				if(sv_gametype == GM_CTF)
-				{
-					sprintf (str, "%d", rfrags);
-					screen->DrawText	  (CR_RED	,rlocx + 203		,rlocy + 0	,	str			);
-				}
-
-				redy += 10;
-
-				//rcount++;
-			}
+		// Normal scoreboard was designed for 4 players.  If there are
+		// more, increase the height.
+		byte players = P_NumPlayersInGame();
+		if (players > 4) {
+			extra_player_rows += players - 4;
 		}
 	}
-	// [deathz0r] Todo - Move these so that they always display even if no players exist on team
-	if (bcount)
-	{
-		bfavg = (int)(bfrags / bcount);
-		bpavg = (int)(bpings / bcount);
 
-		if (bpavg < 0 || bpavg > 999)
-			sprintf(str, "###");
-		else
-			sprintf (str, "%d", bpavg);
-		screen->DrawText	  (CR_BLUE	,blocx + 203		,blocy + 8	,	str			);
-
-		if(sv_gametype != GM_CTF)
-			sprintf (str, "%d", bfavg);
-		else
-			sprintf (str, "%d", bpoints);
-		screen->DrawText	  (CR_BLUE	,blocx + 203		,blocy + 16	,	str			);
+	// If there are more than 2 spectators, increase the height.
+	byte specs = hud::CountSpectators();
+	if (specs > 2) {
+		extra_spec_rows += ((specs + 1) / 2) - 1;
 	}
 
-	if (rcount)
-	{
-		rfavg = (int)(rfrags / rcount);
-		rpavg = (int)(rpings / rcount);
+	height += (extra_player_rows + extra_spec_rows) * 8;
 
-		if (rpavg < 0 || rpavg > 999)
-			sprintf(str, "###");
-		else
-			sprintf (str, "%d", rpavg);
-		screen->DrawText	  (CR_RED	,rlocx + 203		,rlocy + 8	,	str			);
+	// 180 is our max height.
+	while (height > 180) {
+		// We have too many rows.  Start removing extra spectator rows
+		// to make the scoreboard fit.
+		if (extra_spec_rows == 0) {
+			break;
+		}
+		extra_spec_rows -= 1;
+		height -= 8;
+	}
 
-		if(sv_gametype != GM_CTF)
-			sprintf (str, "%d", rfavg);
-		else
-			sprintf (str, "%d", rpoints);
-		screen->DrawText	  (CR_RED	,rlocx + 203		,rlocy + 16	,	str			);
+	while (height > 180) {
+		// We still have too many rows.  Start removing extra player
+		// rows to make the scoreboard fit.
+		if (extra_player_rows == 0) {
+			break;
+		}
+		extra_player_rows -= 1;
+		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+			// Removing one player row sometimes means removing two
+			// lines on the low resolution team scoreboard.
+			if (extra_player_rows + 4 < hud::CountTeamPlayers(TEAM_BLUE)) {
+				height -= 8;
+			}
+			if (extra_player_rows + 4 < hud::CountTeamPlayers(TEAM_RED)) {
+				height -= 8;
+			}
+		} else {
+			height -= 8;
+		}
+	}
+
+	// Starting Y position, measured from the center up.
+	y = -(height / 2);
+	if (y > -64) {
+		// Scoreboard starts slightly off-center, then grows to be centered.
+		// -96 makes it even with where the default lowres TDM begins.
+		// For the record, the lowres DM scoreboard begins at -54.
+		y = -64;
+	}
+
+	// Dim the background.
+	hud::Dim(0, y, 300, height, hud_scalescoreboard,
+	         hud::X_CENTER, hud::Y_MIDDLE,
+	         hud::X_CENTER, hud::Y_TOP);
+
+	hud::drawLowHeader(player, y + 4);
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+		hud::drawLowTeamScores(player, y + 15,
+		                       extra_player_rows);
+	} else {
+		hud::drawLowScores(player, y + 15,
+		                   extra_player_rows);
+	}
+	hud::drawLowSpectators(player, y + (height - 14 - (extra_spec_rows * 8)),
+	                       extra_spec_rows);
+}
+
+}
+
+void HU_DrawScores(player_t *player) {
+	// We need at least 480 scaled horizontal units for our "high resolution"
+	// scoreboard to fit.
+	if (hud::XSize(hud_scalescoreboard) >= 480) {
+		hud::Scoreboard(player);
+	} else {
+		hud::LowScoreboard(player);
 	}
 }
 
@@ -1654,31 +1325,13 @@ void HU_TeamScores2 (player_t *player)
 //
 void OdamexEffect (int xa, int ya, int xb, int yb)
 {
-	static int odawidth, odaheight;
-	static DCanvas *odacanvas = NULL;
-
-	if (odawidth != xb - xa || odaheight != yb - ya)
-	{
-		if (odacanvas)
-		{
-			I_FreeScreen(odacanvas);
-			odacanvas = NULL;
-		}
-	}
-
-	odawidth  = xb - xa;
-	odaheight = yb - ya;
-
 	if (xa < 0 || ya < 0 || xb > screen->width || yb > screen->height)
 		return;
 
-	if (!odacanvas)
-		odacanvas = I_AllocateScreen((xb - xa), (yb - ya), 8);
-
-	screen->CopyRect(xa, ya, (xb - xa), (yb - ya), 0, 0, odacanvas);
-	odacanvas->Dim ();
-	odacanvas->Blit(0, 0, (xb - xa), (yb - ya), screen, xa, ya, (xb - xa), (yb - ya));
+	screen->Dim(xa, ya, xb - xa, yb - ya);
 }
+
+
 
 //
 // HU_ConsoleScores

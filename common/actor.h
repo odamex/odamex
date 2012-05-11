@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -96,7 +96,7 @@
 // things, but nothing can run into a missile).
 // Each block in the grid is 128*128 units, and knows about
 // every line_t that it contains a piece of, and every
-// interactable actor that has its origin contained.  
+// interactable actor that has its origin contained.
 //
 // A valid actor is an actor that has the proper subsector_t
 // filled in for its xy coordinates and is linked into the
@@ -110,6 +110,53 @@
 //
 // Any questions?
 //
+
+//
+// [SL] 2012-04-30 - A bit field to store a bool value for every player.
+// 
+class PlayerBitField
+{
+public:
+	PlayerBitField() { clear(); }
+	
+	void clear()
+	{
+		memset(bitfield, 0, sizeof(bitfield));
+	}
+
+	void set(byte id)
+	{
+		int bytenum = id >> 3;
+		int bitnum = id & bytemask;
+	
+		bitfield[bytenum] |= (1 << bitnum);
+	}
+	
+	void unset(byte id)
+	{
+		int bytenum = id >> 3;
+		int bitnum = id & bytemask;
+	
+		bitfield[bytenum] &= ~(1 << bitnum);
+	}
+	
+	bool get(byte id) const
+	{
+		int bytenum = id >> 3;
+		int bitnum = id & bytemask;	
+	
+		return (bitfield[bytenum] & (1 << bitnum));
+	}
+	
+private:
+	static const int bytesize = 8*sizeof(byte);
+	static const int bytemask = bytesize - 1;
+	
+	// Hacky way of getting ceil() at compile-time
+	static const size_t fieldsize = (MAXPLAYERS + bytemask) / bytesize;
+	
+	byte	bitfield[fieldsize];
+};
 
 //
 // Misc. mobj flags
@@ -152,17 +199,17 @@ typedef enum
 
 	MF_SKULLFLY		= 0x01000000,	// skull in flight
 	MF_NOTDMATCH	= 0x02000000,	// don't spawn in death match (key cards)
-	
+
     // Player sprites in multiplayer modes are modified
     //  using an internal color lookup table for re-indexing.
     // If 0x4 0x8 or 0xc, use a translation table for player colormaps
     MF_TRANSLATION	= 0xc000000,
-    
-	MF_UNMORPHED	= 0x10000000,	// [RH] Actor is the unmorphed version of something else	
-	MF_FALLING		= 0x20000000,	
+
+	MF_UNMORPHED	= 0x10000000,	// [RH] Actor is the unmorphed version of something else
+	MF_FALLING		= 0x20000000,
     MF_SPECTATOR	= 0x40000000,	// GhostlyDeath -- thing is/was a spectator and can't be seen!
 	MF_ICECORPSE	= 0x80000000,	// a frozen corpse (for blasting) [RH] was 0x800000
-	
+
 // --- mobj.flags2 ---
 
 	MF2_LOGRAV			= 0x00000001,	// alternate gravity setting
@@ -197,14 +244,14 @@ typedef enum
 	MF2_MCROSS			= 0x00800000,	// can activate monster cross lines
 	MF2_PCROSS			= 0x01000000,	// can activate projectile cross lines
 	MF2_CANTLEAVEFLOORPIC = 0x02000000,	// stay within a certain floor type
-	MF2_NONSHOOTABLE	= 0x04000000,	// mobj is totally non-shootable, 
+	MF2_NONSHOOTABLE	= 0x04000000,	// mobj is totally non-shootable,
 										// but still considered solid
 	MF2_INVULNERABLE	= 0x08000000,	// mobj is invulnerable
 	MF2_DORMANT			= 0x10000000,	// thing is dormant
 	MF2_ICEDAMAGE		= 0x20000000,	// does ice damage
 	MF2_SEEKERMISSILE	= 0x40000000,	// is a seeker (for reflection)
-	MF2_REFLECTIVE		= 0x80000000	// reflects missiles	
-	
+	MF2_REFLECTIVE		= 0x80000000	// reflects missiles
+
 } mobjflag_t;
 
 #define MF_TRANSSHIFT	0x1A
@@ -214,6 +261,10 @@ typedef enum
 #define TRANSLUC50			(FRACUNIT/2)
 #define TRANSLUC66			((FRACUNIT*2)/3)
 #define TRANSLUC75			((FRACUNIT*3)/4)
+
+// killough 11/98: For torque simulation:
+#define OVERDRIVE 6
+#define MAXGEAR (OVERDRIVE+16)
 
 // Map Object definition.
 class AActor : public DThinker
@@ -227,9 +278,9 @@ class AActor : public DThinker
 		AActorPtr ptr;
 
 		public:
-		
+
 		AActorPtrCounted() {}
-		
+
 		AActorPtr &operator= (AActorPtr other)
 		{
 			if(ptr)
@@ -239,7 +290,7 @@ class AActor : public DThinker
 			ptr = other;
 			return ptr;
 		}
-		
+
 		AActorPtr &operator= (AActorPtrCounted other)
 		{
 			if(ptr)
@@ -255,7 +306,7 @@ class AActor : public DThinker
 			if(ptr)
 				ptr->refCount--;
 		}
-		
+
 		operator AActorPtr()
 		{
 			return ptr;
@@ -274,7 +325,7 @@ class AActor : public DThinker
 			return ptr;
 		}
 	};
-	
+
 public:
 	AActor ();
 	AActor (const AActor &other);
@@ -289,7 +340,7 @@ public:
     fixed_t		x;
     fixed_t		y;
     fixed_t		z;
-	
+
 	AActor			*snext, **sprev;	// links in sector (if needed)
 
     //More drawing info: to determine current sprite.
@@ -297,30 +348,32 @@ public:
     spritenum_t		sprite;	// used to find patch_t and flip value
     int			frame;	// might be ORed with FF_FULLBRIGHT
 	fixed_t		pitch, roll;
-	
+
 	DWORD			effects;			// [RH] see p_effect.h
 
     // Interaction info, by BLOCKMAP.
     // Links in blocks (if needed).
 	AActor			*bnext, **bprev;
 	struct subsector_s		*subsector;
-	
+
     // The closest interval over all contacted Sectors.
     fixed_t		floorz;
     fixed_t		ceilingz;
+	fixed_t		dropoffz;
+	struct sector_s		*floorsector;
 
     // For movement checking.
     fixed_t		radius;
-    fixed_t		height;	
+    fixed_t		height;
 
     // Momentums, used to update position.
     fixed_t		momx;
     fixed_t		momy;
     fixed_t		momz;
-	
+
     // If == validcount, already checked.
     int			validcount;
-	
+
 	mobjtype_t		type;
     mobjinfo_t*		info;	// &mobjinfo[mobj->type]
     int				tics;	// state tic counter
@@ -328,7 +381,7 @@ public:
 	int				flags;
 	int				flags2;	// Heretic flags
 	int				special1;		// Special info
-	int				special2;		// Special info	
+	int				special2;		// Special info
 	int 			health;
 
     // Movement direction, movement generation (zig-zagging).
@@ -340,41 +393,43 @@ public:
     // also the originator for missiles.
 	AActorPtr		target;
 	AActorPtr		lastenemy;		// Last known enemy -- killogh 2/15/98
-	
+
     // Reaction time: if non 0, don't attack yet.
     // Used by player to freeze a bit after teleporting.
-    int				reactiontime;   
-	
+    int				reactiontime;
+
     // If >0, the target will be chased
     // no matter what (even if shot)
     int			threshold;
-	
+
     // Additional info record for player avatars only.
     // Only valid if type == MT_PLAYER
 	player_s*	player;
-	
+
     // Player number last looked for.
-    unsigned int	lastlook;	
-	
+    unsigned int	lastlook;
+
     // For nightmare respawn.
-    mapthing2_t		spawnpoint;	
-	
+    mapthing2_t		spawnpoint;
+
 	// Thing being chased/attacked for tracers.
 	AActorPtr		tracer;
 	byte			special;		// special
-	byte			args[5];		// special arguments	
-	
+	byte			args[5];		// special arguments
+
 	AActor			*inext, *iprev;	// Links to other mobjs in same bucket
 
 	// denis - playerids of players to whom this object has been sent
-	std::vector<size_t>	players_aware;
+	// [SL] changed to use a bitfield instead of a vector for O(1) lookups
+	PlayerBitField	players_aware;
 
 	AActorPtr		goal;			// Monster's goal if not chasing anything
 	byte			*translation;	// Translation table (or NULL)
 	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
 	byte			waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
-	
-	fixed_t         onground;		// NES - Fixes infinite jumping bug like a charm.
+	SWORD			gear;			// killough 11/98: used in torque simulation
+
+	bool			onground;		// NES - Fixes infinite jumping bug like a charm.
 
 	// a linked list of sectors where this object appears
 	struct msecnode_s	*touching_sectorlist;				// phares 3/14/98
@@ -394,19 +449,65 @@ public:
 	static AActor *FindGoal (const AActor *first, int tid, int kind);
 
 	int             netid;          // every object has its own netid
-	short			tid;			// thing identifier		
+	short			tid;			// thing identifier
 
 private:
 	static AActor *TIDHash[128];
 	static inline int TIDHASH (int key) { return key & 127; }
 
+	friend class FActorIterator;
+
 public:
 	void LinkToWorld ();
 	void UnlinkFromWorld ();
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
-	
+
 	AActorPtr ptr(){ return AActorPtr(self); }
 };
+
+
+class FActorIterator
+{
+public:
+	FActorIterator (int i) : base (NULL), id (i)
+	{
+	}
+	AActor *Next ()
+	{
+		if (id == 0)
+			return NULL;
+		if (!base)
+			base = AActor::TIDHash[id & 127];
+		else
+			base = base->inext;
+
+		while (base && base->tid != id)
+			base = base->inext;
+
+		return base;
+	}
+private:
+	AActor *base;
+	int id;
+};
+
+
+template<class T>
+class TActorIterator : public FActorIterator
+{
+public:
+	TActorIterator (int id) : FActorIterator (id) {}
+	T *Next ()
+	{
+		AActor *actor;
+		do
+		{
+			actor = FActorIterator::Next ();
+		} while (actor && !actor->IsKindOf (RUNTIME_CLASS(T)));
+		return static_cast<T *>(actor);
+	}
+};
+
 
 #endif
 

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,6 +27,8 @@ void *QueryThread::Entry()
 {   
     wxCommandEvent newEvent(wxEVT_THREAD_WORKER_SIGNAL, wxID_ANY );
     
+    m_QueryServer->SetRetries(m_Retries);
+
     newEvent.SetId(m_QueryServer->Query(m_ServerTimeout));
     newEvent.SetInt(m_ServerIndex);
     wxPostEvent(m_EventHandler, newEvent);

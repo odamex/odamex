@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -146,6 +146,7 @@ typedef struct menu_s {
 	menuitem_t	   *items;
 	int				scrolltop;
 	int				scrollpos;	
+	void			(*refreshfunc)();	// Callback func for M_OptResponder
 } menu_t;
 
 typedef struct value_s {
@@ -203,5 +204,7 @@ extern int		CurrentItem;
 
 extern short	 itemOn;
 extern oldmenu_t *currentMenu;
+
+size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);
 
 #endif

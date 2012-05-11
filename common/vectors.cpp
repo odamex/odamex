@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,6 +21,10 @@
 //	Vector math routines which I took from Quake2's source since they
 //	make more sense than the way Doom does things. :-)
 //
+// [SL] 2012-02-18 - Reworked all of the functions to be more uniform with
+// the ordering of parameters, based in part on m_vectors.cpp from Eternity
+// Engine.  Also changed from using an array of floats as the underlying type
+// to using a struct.
 //-----------------------------------------------------------------------------
 
 
@@ -38,232 +42,488 @@
 
 #define DEG2RAD( a ) ( a * M_PI ) / 180.0F
 
+// factor for converting from floating-point to fixed-point
+static const double fixedfac = double(FRACUNIT);
+static const float fixedfacf = float(FRACUNIT);
+// factor for converting from fixed-point to floating-point
+// precalculate so that we can use multiplcation when converting (faster)
+static const double invfixedfac = 1.0 / fixedfac;
+static const float invfixedfacf = 1.0f / fixedfacf;
 
-// [RH] Convert a thing's position into a vec3_t
-void VectorPosition (const AActor *thing, vec3_t out)
+//
+// M_SetVec3f
+//
+// Sets the components of dest to the values of the parameters x, y, z
+//
+void M_SetVec3f(v3float_t *dest, float x, float y, float z)
 {
-	out[0] = (float)thing->x / 65536.0f;
-	out[1] = (float)thing->y / 65536.0f;
-	out[2] = (float)thing->z / 65536.0f;
+	dest->x = x;
+	dest->y = y;
+	dest->z = z;
 }
 
-void FixedAngleToVector (angle_t an, int pitch, vec3_t v)
+void M_SetVec3f(v3float_t *dest, fixed_t x, fixed_t y, fixed_t z)
 {
-	an >>= ANGLETOFINESHIFT;
-	v[0] = ((float)finecosine[an]) / 65536.0f;
-	v[1] = ((float)finesine[an]) / 65536.0f;
-	v[2] = ((float)finetangent[FINEANGLES/4-(pitch>>ANGLETOFINESHIFT)]) / 65536.0f;
-	VectorNormalize (v);
+	dest->x = float(x) * invfixedfacf;
+	dest->y = float(y) * invfixedfacf;
+	dest->z = float(z) * invfixedfacf;
+}		
+
+void M_SetVec3(v3double_t *dest, double x, double y, double z)
+{
+	dest->x = x;
+	dest->y = y;
+	dest->z = z;
 }
 
-// Taken from Q2
-vec_t VectorLength (const vec3_t v)
+void M_SetVec3(v3double_t *dest, fixed_t x, fixed_t y, fixed_t z)
 {
-	float	length;
+	dest->x = double(x) * invfixedfac;
+	dest->y = double(y) * invfixedfac;	
+	dest->z = double(z) * invfixedfac;
+}
+
+void M_SetVec2Fixed(v2fixed_t *dest, double x, double y)
+{
+	dest->x = (fixed_t)(x * fixedfac);
+	dest->y = (fixed_t)(y * fixedfac);
+}
+
+void M_SetVec2Fixed(v2fixed_t *dest, fixed_t x, fixed_t y)
+{
+	dest->x = x;
+	dest->y = y;
+}
+
+void M_SetVec3Fixed(v3fixed_t *dest, double x, double y, double z)
+{
+	dest->x = (fixed_t)(x * fixedfac);
+	dest->y = (fixed_t)(y * fixedfac);
+	dest->z = (fixed_t)(z * fixedfac);	
+}
+
+void M_SetVec3Fixed(v3fixed_t *dest, fixed_t x, fixed_t y, fixed_t z)
+{
+	dest->x = x;
+	dest->y = y;
+	dest->z = z;
+}
+
+
+//
+// M_ConvertVec3FixedToVec3f
+//
+// Converts the component values of src to floats and stores
+// in dest
+//
+void M_ConvertVec3FixedToVec3f(v3float_t *dest, const v3fixed_t *src)
+{
+	M_SetVec3f(dest, src->x, src->y, src->z);
+}
+
+void M_ConvertVec3FixedToVec3(v3double_t *dest, const v3fixed_t *src)
+{
+	M_SetVec3(dest, src->x, src->y, src->z);
+}
+
+void M_ConvertVec3fToVec3Fixed(v3fixed_t *dest, const v3float_t *src)
+{
+	M_SetVec3Fixed(dest, double(src->x), double(src->y), double(src->z));
+}
+
+void M_ConvertVec3ToVec3Fixed(v3fixed_t *dest, const v3double_t *src)
+{
+	M_SetVec3Fixed(dest, src->x, src->y, src->z);
+}
+
+
+//
+// M_IsZeroVec3f
+//
+// Returns true if the v is the zero or null vector (all components are 0)
+//
+bool M_IsZeroVec3f(const v3float_t *v)
+{
+	return fabs(v->x) == 0.0f && fabs(v->y) == 0.0f && fabs(v->z) == 0.0f;
+}
+
+bool M_IsZeroVec3(const v3double_t *v)
+{
+	return fabs(v->x) == 0.0 && fabs(v->y) == 0.0 && fabs(v->z) == 0.0;
+}
+
+bool M_IsZeroVec2Fixed(const v2fixed_t *v)
+{
+	return v->x == 0 && v->y == 0;
+}
+
+bool M_IsZeroVec3Fixed(const v3fixed_t *v)
+{
+	return v->x == 0 && v->y == 0 && v->z == 0;
+}
+
+
+//
+// M_ZeroVec3f
+//
+// Sets all components of v to 0
+//
+void M_ZeroVec3f(v3float_t *v)
+{
+	v->x = v->y = v->z = 0.0f;
+}
+
+void M_ZeroVec3(v3double_t *v)
+{
+	v->x = v->y = v->z = 0.0;
+}
+
+void M_ZeroVec2Fixed(v2fixed_t *v)
+{
+	v->x = v->y = 0;
+}
+
+void M_ZeroVec3Fixed(v3fixed_t *v)
+{
+	v->x = v->y = v->z = 0;
+}
+
+
+//
+// M_AddVec3f
+//
+// Adds v2 to v1 stores in dest
+//
+void M_AddVec3f(v3float_t *dest, const v3float_t *v1, const v3float_t *v2)
+{
+	dest->x = v1->x + v2->x;
+	dest->y = v1->y + v2->y;
+	dest->z = v1->z + v2->z;
+}
+
+
+void M_AddVec3(v3double_t *dest, const v3double_t *v1, const v3double_t *v2)
+{
+	dest->x = v1->x + v2->x;
+	dest->y = v1->y + v2->y;
+	dest->z = v1->z + v2->z;
+}
+
+void M_AddVec2Fixed(v2fixed_t *dest, const v2fixed_t *v1, const v2fixed_t *v2)
+{
+	dest->x = v1->x + v2->x;
+	dest->y = v1->y + v2->y;
+}
+
+void M_AddVec3Fixed(v3fixed_t *dest, const v3fixed_t *v1, const v3fixed_t *v2)
+{
+	dest->x = v1->x + v2->x;
+	dest->y = v1->y + v2->y;
+	dest->z = v1->z + v2->z;
+}
+
+
+// 
+// M_SubVec3f
+//
+// Subtracts v2 from v1 stores in dest
+//
+void M_SubVec3f(v3float_t *dest, const v3float_t *v1, const v3float_t *v2)
+{
+	dest->x = v1->x - v2->x;
+	dest->y = v1->y - v2->y;
+	dest->z = v1->z - v2->z;
+}
+
+void M_SubVec3(v3double_t *dest, const v3double_t *v1, const v3double_t *v2)
+{
+	dest->x = v1->x - v2->x;
+	dest->y = v1->y - v2->y;
+	dest->z = v1->z - v2->z;
+}
+
+void M_SubVec2Fixed(v2fixed_t *dest, const v2fixed_t *v1, const v2fixed_t *v2)
+{
+	dest->x = v1->x - v2->x;
+	dest->y = v1->y - v2->y;
+}
+
+void M_SubVec3Fixed(v3fixed_t *dest, const v3fixed_t *v1, const v3fixed_t *v2)
+{
+	dest->x = v1->x - v2->x;
+	dest->y = v1->y - v2->y;
+	dest->z = v1->z - v2->z;
+}
+
+
+//
+// M_LengthVec3f
+//
+// Returns the length of a given vector (relative to the origin).  Taken from
+// Quake 2, added by CG.
+//
+float M_LengthVec3f(const v3float_t *v)
+{
+	return sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
+}
+
+double M_LengthVec3(const v3double_t *v)
+{
+	return sqrt(v->x * v->x + v->y * v->y + v->z * v->z);
+}
+
+fixed_t M_LengthVec2Fixed(const v2fixed_t *v)
+{
+	float fx = float(v->x);
+	float fy = float(v->y);	
 	
-	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
-	length = (float) sqrt (length);		// FIXME
-
-	return length;
+	return (fixed_t)sqrtf(fx * fx + fy * fy);
 }
 
-void VectorMA (const vec3_t a, float scale, const vec3_t b, vec3_t out)
+fixed_t M_LengthVec3Fixed(const v3fixed_t *v)
 {
-	out[0] = a[0] + scale * b[0];
-	out[1] = a[1] + scale * b[1];
-	out[2] = a[2] + scale * b[2];
+	float fx = float(v->x);
+	float fy = float(v->y);	
+	float fz = float(v->z);
+	
+	return (fixed_t)sqrtf(fx * fx + fy * fy + fz * fz);
 }
 
-void VectorScale (const vec3_t v, float scale, vec3_t out)
+
+//
+// M_ScaleVec3f
+//
+// Multiplies each element in the vector by scalar value a
+// and stores in dest
+//
+void M_ScaleVec3f(v3float_t *dest, const v3float_t *v1, float a)
 {
-	out[0] = v[0] * scale;
-	out[1] = v[1] * scale;
-	out[2] = v[2] * scale;
+	dest->x = v1->x * a;
+	dest->y = v1->y * a;
+	dest->z = v1->z * a;
 }
 
-void VectorScale2 (vec3_t v, float scale)
+void M_ScaleVec3(v3double_t *dest, const v3double_t *v1, double a)
 {
-	v[0] = v[0] * scale;
-	v[1] = v[1] * scale;
-	v[2] = v[2] * scale;
+	dest->x = v1->x * a;
+	dest->y = v1->y * a;
+	dest->z = v1->z * a;
 }
 
-int VectorCompare (const vec3_t v1, const vec3_t v2)
+void M_ScaleVec2Fixed(v2fixed_t *dest, const v2fixed_t *v1, fixed_t a)
 {
-	if (v1[0] != v2[0] || v1[1] != v2[1] || v1[2] != v2[2])
-		return 0;
-			
-	return 1;
+	dest->x = FixedMul(v1->x, a);
+	dest->y = FixedMul(v1->y, a);
 }
 
-vec_t VectorNormalize (vec3_t v)
+void M_ScaleVec3Fixed(v3fixed_t *dest, const v3fixed_t *v1, fixed_t a)
 {
-	float length, ilength;
+	dest->x = FixedMul(v1->x, a);
+	dest->y = FixedMul(v1->y, a);
+	dest->z = FixedMul(v1->z, a);
+}
 
-	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
-	length = (float)sqrt (length);		// FIXME
 
-	if (length)
+// 
+// M_DotVec3f
+//
+// Returns the dot product of v1 and v2
+//
+float M_DotProductVec3f(const v3float_t *v1, const v3float_t *v2)
+{
+	return (v1->x * v2->x) + (v1->y * v2->y) + (v1->z * v2->z);
+}
+
+double M_DotProductVec3(const v3double_t *v1, const v3double_t *v2)
+{
+	return (v1->x * v2->x) + (v1->y * v2->y) + (v1->z * v2->z);
+}
+
+
+//
+// M_CrossProduct3f
+//
+// Gets the cross product of v1 and v2 and stores in dest 
+//
+void M_CrossProductVec3f(v3float_t *dest, const v3float_t *v1, const v3float_t *v2)
+{
+	dest->x = (v1->y * v2->z) - (v1->z * v2->y);
+	dest->y = (v1->z * v2->x) - (v1->x * v2->z);
+	dest->z = (v1->x * v2->y) - (v1->y * v2->x);
+}
+
+void M_CrossProductVec3(v3double_t *dest, const v3double_t *v1, const v3double_t *v2)
+{
+	dest->x = (v1->y * v2->z) - (v1->z * v2->y);
+	dest->y = (v1->z * v2->x) - (v1->x * v2->z);
+	dest->z = (v1->x * v2->y) - (v1->y * v2->x);
+}
+
+
+//
+// M_NormalizeVec3f
+//
+// Scales v so that its length is 1.0 and stores in dest 
+//
+void M_NormalizeVec3f(v3float_t *dest, const v3float_t *v)
+{
+	float length = M_LengthVec3f(v);
+	
+	if (length > 0.0f)
+		M_ScaleVec3f(dest, v, 1.0f / length);
+}
+
+void M_NormalizeVec3(v3double_t *dest, const v3double_t *v)
+{
+	double length = M_LengthVec3(v);
+	
+	if (length > 0.0)
+		M_ScaleVec3(dest, v, 1.0 / length);
+}
+
+
+//
+// M_ActorToVec3f
+//
+// Stores thing's position in the vector dest
+//
+void M_ActorPositionToVec3f(v3float_t *dest, const AActor *thing)
+{
+	dest->x = float(thing->x) * invfixedfacf;
+	dest->y = float(thing->y) * invfixedfacf;
+	dest->z = float(thing->z) * invfixedfacf;
+}
+
+void M_ActorPositionToVec3(v3double_t *dest, const AActor *thing)
+{
+	dest->x = double(thing->x) * invfixedfac;
+	dest->y = double(thing->y) * invfixedfac;
+	dest->z = double(thing->z) * invfixedfac;
+}
+
+void M_ActorPositionToVec2Fixed(v2fixed_t *dest, const AActor *thing)
+{
+	dest->x = thing->x;
+	dest->y = thing->y;
+}
+
+void M_ActorPositionToVec3Fixed(v3fixed_t *dest, const AActor *thing)
+{
+	dest->x = thing->x;
+	dest->y = thing->y;
+	dest->z = thing->z;
+}
+
+
+//
+// M_ActorMomentumToVec3f
+//
+// Stores thing's momentum in the vector dest
+//
+void M_ActorMomentumToVec3f(v3float_t *dest, const AActor *thing)
+{
+	dest->x = float(thing->momx) * invfixedfacf;
+	dest->y = float(thing->momy) * invfixedfacf;
+	dest->z = float(thing->momz) * invfixedfacf;
+}
+
+void M_ActorMomentumToVec3f(v3double_t *dest, const AActor *thing)
+{
+	dest->x = double(thing->momx) * invfixedfac;
+	dest->y = double(thing->momy) * invfixedfac;
+	dest->z = double(thing->momz) * invfixedfac;
+}
+
+void M_ActorMomentumToVec2Fixed(v2fixed_t *dest, const AActor *thing)
+{
+	dest->x = thing->momx;
+	dest->y = thing->momy;
+}
+
+void M_ActorMomentumToVec3Fixed(v3fixed_t *dest, const AActor *thing)
+{
+	dest->x = thing->momx;
+	dest->y = thing->momy;
+	dest->z = thing->momz;
+}
+
+
+//
+// M_AngleToVec3f
+//
+// Calculates the normalized direction vector from ang and pitch
+//
+void M_AngleToVec3f(v3float_t *dest, angle_t ang, int pitch)
+{
+	dest->x = float(finecosine[ang >> ANGLETOFINESHIFT]);
+	dest->y = float(finesine[ang >> ANGLETOFINESHIFT]);
+	dest->z = float(finetangent[FINEANGLES/4 - (pitch >> ANGLETOFINESHIFT)]);
+	M_NormalizeVec3f(dest, dest);
+}
+	
+void M_AngleToVec3(v3double_t *dest, angle_t ang, int pitch)
+{
+	dest->x = double(finecosine[ang >> ANGLETOFINESHIFT]);
+	dest->y = double(finesine[ang >> ANGLETOFINESHIFT]) ;
+	dest->z = double(finetangent[FINEANGLES/4 - (pitch >> ANGLETOFINESHIFT)]);
+	M_NormalizeVec3(dest, dest);
+}
+
+	
+//
+// M_ProjectPointOnPlane
+//
+// 
+//
+void M_ProjectPointOnPlane(v3double_t *dest, const v3double_t *p, const v3double_t *normal)
+{
+	if (M_IsZeroVec3(normal))
 	{
-		ilength = 1/length;
-		v[0] *= ilength;
-		v[1] *= ilength;
-		v[2] *= ilength;
+		// Assume that a normal of zero length is bad input and bail
+		M_ZeroVec3(dest);
+		return;
 	}
-		
-	return length;
+	
+	double inv_denom = 1.0 / M_DotProductVec3(normal, normal);
+	double d = M_DotProductVec3(normal, p) * inv_denom;
 
+	v3double_t n;
+	M_ScaleVec3(&n, normal, inv_denom * d);
+	M_SubVec3(dest, p, &n);
 }
-
-vec_t VectorNormalize2 (const vec3_t v, vec3_t out)
+	
+//
+// M_PerpendicularVec3
+//
+// Assumes that src is a normalized vector
+//
+void M_PerpendicularVec3(v3double_t *dest, const v3double_t *src)
 {
-	float length, ilength;
-
-	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
-	length = (float)sqrt (length);		// FIXME
-
-	if (length)
+	// find the smallest component of the vector src
+	v3double_t tempvec;
+	double minelem = src->x;
+	double *mincomponent = &(tempvec.x);
+	if (abs(src->y) < minelem)
 	{
-		ilength = 1/length;
-		out[0] = v[0]*ilength;
-		out[1] = v[1]*ilength;
-		out[2] = v[2]*ilength;
+		minelem = abs(src->y);
+		mincomponent = &(tempvec.y);
 	}
-		
-	return length;
-
-}
-
-void CrossProduct (const vec3_t v1, const vec3_t v2, vec3_t cross)
-{
-	cross[0] = v1[1]*v2[2] - v1[2]*v2[1];
-	cross[1] = v1[2]*v2[0] - v1[0]*v2[2];
-	cross[2] = v1[0]*v2[1] - v1[1]*v2[0];
-}
-
-#ifdef _MSC_VER
-#pragma optimize( "", off )
-#endif
-
-void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, float degrees )
-{
-	float	m[3][3];
-	float	im[3][3];
-	float	zrot[3][3];
-	float	tmpmat[3][3];
-	float	rot[3][3];
-	int	i;
-	vec3_t vr, vup, vf;
-
-	vf[0] = dir[0];
-	vf[1] = dir[1];
-	vf[2] = dir[2];
-
-	PerpendicularVector( vr, dir );
-	CrossProduct( vr, vf, vup );
-
-	m[0][0] = vr[0];
-	m[1][0] = vr[1];
-	m[2][0] = vr[2];
-
-	m[0][1] = vup[0];
-	m[1][1] = vup[1];
-	m[2][1] = vup[2];
-
-	m[0][2] = vf[0];
-	m[1][2] = vf[1];
-	m[2][2] = vf[2];
-
-	memcpy( im, m, sizeof( im ) );
-
-	im[0][1] = m[1][0];
-	im[0][2] = m[2][0];
-	im[1][0] = m[0][1];
-	im[1][2] = m[2][1];
-	im[2][0] = m[0][2];
-	im[2][1] = m[1][2];
-
-	memset( zrot, 0, sizeof( zrot ) );
-	zrot[0][0] = zrot[1][1] = zrot[2][2] = 1.0F;
-
-	zrot[0][0] = (float)cos( DEG2RAD( degrees ) );
-	zrot[0][1] = (float)sin( DEG2RAD( degrees ) );
-	zrot[1][0] = (float)-sin( DEG2RAD( degrees ) );
-	zrot[1][1] = (float)cos( DEG2RAD( degrees ) );
-
-	R_ConcatRotations( m, zrot, tmpmat );
-	R_ConcatRotations( tmpmat, im, rot );
-
-	for ( i = 0; i < 3; i++ )
+	if (abs(src->z) < minelem)
 	{
-		dst[i] = rot[i][0] * point[0] + rot[i][1] * point[1] + rot[i][2] * point[2];
+		minelem = abs(src->z);
+		mincomponent = &(tempvec.z);
 	}
-}
+	
+	// make tempvec the identity vector along the axis of the smallest component
+	M_ZeroVec3(&tempvec);
+	*mincomponent = 1.0;
+	
+	M_ProjectPointOnPlane(dest, &tempvec, src);
+	M_NormalizeVec3(dest, dest);
+}	
 
-#ifdef _MSC_VER
-#pragma optimize( "", on )
-#endif
 
-void ProjectPointOnPlane (vec3_t dst, const vec3_t p, const vec3_t normal)
-{
-	float d;
-	vec3_t n;
-	float inv_denom;
-
-	inv_denom = 1.0F / DotProduct( normal, normal );
-
-	d = DotProduct( normal, p ) * inv_denom;
-
-	n[0] = normal[0] * inv_denom;
-	n[1] = normal[1] * inv_denom;
-	n[2] = normal[2] * inv_denom;
-
-	dst[0] = p[0] - d * n[0];
-	dst[1] = p[1] - d * n[1];
-	dst[2] = p[2] - d * n[2];
-}
-
-/*
-** assumes "src" is normalized
-*/
-void PerpendicularVector (vec3_t dst, const vec3_t src)
-{
-	int	pos;
-	int i;
-	float minelem = 1.0F;
-	vec3_t tempvec;
-
-	/*
-	** find the smallest magnitude axially aligned vector
-	*/
-	for ( pos = 0, i = 0; i < 3; i++ )
-	{
-		if ( fabs( src[i] ) < minelem )
-		{
-			pos = i;
-			minelem = (float)fabs( src[i] );
-		}
-	}
-	tempvec[0] = tempvec[1] = tempvec[2] = 0.0F;
-	tempvec[pos] = 1.0F;
-
-	/*
-	** project the point onto the plane defined by src
-	*/
-	ProjectPointOnPlane( dst, tempvec, src );
-
-	/*
-	** normalize the result
-	*/
-	VectorNormalize( dst );
-}
-
-/*
-================
-R_ConcatRotations
-================
-*/
-void R_ConcatRotations (const float in1[3][3], const float in2[3][3], float out[3][3])
+static void M_ConcatRotations(double out[3][3], const double in1[3][3], const double in2[3][3])
 {
 	out[0][0] = in1[0][0] * in2[0][0] + in1[0][1] * in2[1][0] +
 				in1[0][2] * in2[2][0];
@@ -283,6 +543,109 @@ void R_ConcatRotations (const float in1[3][3], const float in2[3][3], float out[
 				in1[2][2] * in2[2][1];
 	out[2][2] = in1[2][0] * in2[0][2] + in1[2][1] * in2[1][2] +
 				in1[2][2] * in2[2][2];
+}
+
+#ifdef _MSC_VER
+#pragma optimize( "", off )
+#endif
+	
+void M_RotatePointAroundVector(v3double_t *dest, const v3double_t *dir, const v3double_t *point, float degrees)
+{
+
+	double	m[3][3], im[3][3], zrot[3][3], tmpmat[3][3], rot[3][3];
+	v3double_t vr, vup, vf;
+
+	vf.x = dir->x;
+	vf.y = dir->y;
+	vf.z = dir->z;
+
+	M_PerpendicularVec3(&vr, dir);
+	M_CrossProductVec3(&vup, &vr, &vf);
+
+	m[0][0] = vr.x;
+	m[1][0] = vr.y;
+	m[2][0] = vr.z;
+
+	m[0][1] = vup.x;
+	m[1][1] = vup.y;
+	m[2][1] = vup.z;
+
+	m[0][2] = vf.x;
+	m[1][2] = vf.y;
+	m[2][2] = vf.z;
+
+	memcpy( im, m, sizeof( im ) );
+
+	im[0][1] = m[1][0];
+	im[0][2] = m[2][0];
+	im[1][0] = m[0][1];
+	im[1][2] = m[2][1];
+	im[2][0] = m[0][2];
+	im[2][1] = m[1][2];
+
+	memset( zrot, 0, sizeof( zrot ) );
+	zrot[0][0] = zrot[1][1] = zrot[2][2] = 1.0;
+
+	zrot[0][0] = (float)cos( DEG2RAD( degrees ) );
+	zrot[0][1] = (float)sin( DEG2RAD( degrees ) );
+	zrot[1][0] = (float)-sin( DEG2RAD( degrees ) );
+	zrot[1][1] = (float)cos( DEG2RAD( degrees ) );
+
+	M_ConcatRotations(tmpmat, m, zrot);
+	M_ConcatRotations(rot, tmpmat, im);
+
+	dest->x = rot[0][0] * point->x + rot[0][1] * point->y + rot[0][2] * point->z;
+	dest->y = rot[1][0] * point->x + rot[1][1] * point->y + rot[1][2] * point->z;
+	dest->z = rot[2][0] * point->x + rot[2][1] * point->y + rot[2][2] * point->z;
+}
+
+#ifdef _MSC_VER
+#pragma optimize( "", on )
+#endif
+
+
+extern fixed_t viewx, viewy, viewz;
+extern angle_t viewangle;
+// 
+// M_TranslateVec3f
+//
+// Translates the given vector (in doom's coordinate system) to the camera
+// space (in right-handed coordinate system) This function is used for slopes.
+// 
+void M_TranslateVec3f(v3float_t *vec)
+{
+   float tx, ty, tz;
+   
+   angle_t ang = (angle_t)(-(int)viewangle);
+   float viewcos = finecosine[ang >> ANGLETOFINESHIFT] / 65536.f;
+   float viewsin = finesine[ang >> ANGLETOFINESHIFT] / 65536.f;   
+   
+   tx = vec->x - viewx / 65536.f;
+   ty = viewz / 65536.f - vec->y;
+   tz = vec->z - viewy / 65536.f;
+
+   // Just like wall projection.
+   vec->x = (tx * viewcos) - (tz * viewsin);
+   vec->z = (tz * viewcos) + (tx * viewsin);
+   vec->y = ty;
+}
+
+void M_TranslateVec3 (v3double_t *vec)
+{
+   double tx, ty, tz;
+
+   double ang = -(viewangle * PI / ANG180) + PI/2;
+   double viewcos = cos(ang);
+   double viewsin = sin(ang);
+   
+   tx = vec->x - viewx / 65536.0;
+   ty = viewz / 65536.0 - vec->y;
+   tz = vec->z - viewy / 65536.0;
+
+   // Just like wall projection.
+   vec->x = (tx * viewcos) - (tz * viewsin);
+   vec->z = (tz * viewcos) + (tx * viewsin);
+   vec->y = ty;
 }
 
 

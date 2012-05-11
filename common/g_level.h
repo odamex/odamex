@@ -4,7 +4,7 @@
 // $Id: g_level.h 1859 2010-09-05 21:54:58Z mike $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,8 +29,12 @@
 #include "doomdef.h"
 #include "m_fixed.h"
 
-#define NUM_MAPVARS				32
-#define NUM_WORLDVARS			64
+#include <string>
+#include <vector>
+
+#define NUM_MAPVARS				128
+#define NUM_WORLDVARS			256
+#define NUM_GLOBALVARS			64
 
 #define LEVEL_NOINTERMISSION	0x00000001
 #define	LEVEL_DOUBLESKY			0x00000004
@@ -63,6 +67,7 @@
 #define LEVEL_VISITED			0x80000000		// Used for intermission map
 
 struct acsdefered_s;
+class FBehavior;
 
 struct level_info_s {
 	char		mapname[9];
@@ -99,11 +104,12 @@ struct level_pwad_info_s
 	struct acsdefered_s *defered;
 
 	// level_pwad_info_s				[ML] 5/11/06 Removed sky scrolling/sky2
+	char		skypic2[9];
 	DWORD		fadeto;
 	char		fadetable[8];
 	DWORD		outsidefog;
 	float		gravity;
-	float		aircontrol;	
+	float		aircontrol;
 };
 typedef struct level_pwad_info_s level_pwad_info_t;
 
@@ -113,6 +119,7 @@ struct level_locals_s {
 	int			starttime;
 	int			partime;
 	int			timeleft;
+	unsigned int	inttimeleft;
 
 	level_info_t *info;
 	int			cluster;
@@ -129,6 +136,7 @@ struct level_locals_s {
 
 	char		music[8];
 	char		skypic[8];
+	char		skypic2[8];
 
 	int			total_secrets;
 	int			found_secrets;
@@ -138,16 +146,14 @@ struct level_locals_s {
 
 	int			total_monsters;
 	int			killed_monsters;
-	
+
 	float		gravity;
 	fixed_t		aircontrol;
-	fixed_t		airfriction;	
-	
+	fixed_t		airfriction;
+
 	// The following are all used for ACS scripting
-	byte		*behavior;
-	int			*scripts;
-	int			*strings;
-	SDWORD		vars[NUM_MAPVARS];	
+	FBehavior	*behavior;
+	SDWORD		vars[NUM_MAPVARS];
 };
 typedef struct level_locals_s level_locals_t;
 
@@ -169,13 +175,16 @@ extern level_locals_t level;
 extern level_info_t LevelInfos[];
 extern cluster_info_t ClusterInfos[];
 
-extern int WorldVars[NUM_WORLDVARS];
+extern int ACS_WorldVars[NUM_WORLDVARS];
+extern int ACS_GlobalVars[NUM_GLOBALVARS];
 
 extern BOOL savegamerestore;
 extern BOOL HexenHack;		// Semi-Hexen-compatibility mode
 
 void G_InitNew (const char *mapname);
 void G_ChangeMap (void);
+void G_ChangeMap (size_t index);
+void G_RestartMap (void);
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,
@@ -200,10 +209,13 @@ level_info_t *FindLevelByNum (int num);
 char *CalcMapName (int episode, int level);
 
 void G_ParseMapInfo (void);
+void G_ParseMusInfo (void);
 
 void G_ClearSnapshots (void);
 void G_SnapshotLevel (void);
 void G_UnSnapshotLevel (bool keepPlayers);
 void G_SerializeSnapshots (FArchive &arc);
+
+void cmd_maplist(const std::vector<std::string> &arguments, std::vector<std::string> &response);
 
 #endif //__G_LEVEL_H__

@@ -4,7 +4,7 @@
 // $Id: r_main.h 1856 2010-09-05 03:14:13Z ladna $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,7 +44,8 @@ extern int				viewheight;
 extern int				viewwindowx;
 extern int				viewwindowy;
 
-
+extern bool				r_fakingunderwater;
+extern bool				r_underwater;
 
 extern int				centerx;
 extern "C" int			centery;
@@ -113,6 +114,7 @@ extern void				(*transcolfunc) (void);
 extern void				(*tlatedlucentcolfunc) (void);
 // No shadow effects on floors.
 extern void 			(*spanfunc) (void);
+extern void				(*spanslopefunc) (void);
 
 // [RH] Function pointers for the horizontal column drawers.
 extern void (*hcolfunc_pre) (void);
@@ -153,6 +155,8 @@ R_PointToDist
 
 fixed_t R_ScaleFromGlobalAngle (angle_t visangle);
 
+void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty);
+
 subsector_t*
 R_PointInSubsector
 ( fixed_t	x,
@@ -179,7 +183,7 @@ void R_RenderPlayerView (player_t *player);
 void R_Init (void);
 
 // Called by exit code.
-void R_Shutdown (void);
+void STACK_ARGS R_Shutdown (void);
 
 // Called by M_Responder.
 void R_SetViewSize (int blocks);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,6 +27,10 @@
 #include "doomdef.h"
 #include "d_player.h"
 
+// Unnatural Level Progression.  True if we've used 'map' or another command
+// to switch to a specific map out of order, otherwise false.
+bool unnatural_level_progression;
+
 void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...) {}
 
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
@@ -48,6 +52,7 @@ void SV_UpdateFrags(player_t &player) {}
 void SV_ActorTarget(AActor *actor) {}
 void SV_SendDestroyActor(AActor *mo) {}
 void SV_ExplodeMissile(AActor *mo) {}
+void SV_SendPlayerInfo(player_t &player) {}
 void SV_PreservePlayer(player_t &player) {}
 			
 void CTF_RememberFlagPos(mapthing2_t *mthing) {}

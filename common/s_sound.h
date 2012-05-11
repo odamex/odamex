@@ -4,7 +4,7 @@
 // $Id: s_sound.h 1857 2010-09-05 13:14:01Z spleen $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -121,7 +121,6 @@ void S_LoopedSoundID (fixed_t *pt, int channel, int sfxid, float volume, int att
 #define ATTN_NORM				1
 #define ATTN_IDLE				2
 #define ATTN_STATIC				3	// diminish very rapidly with distance
-#define ATTN_SURROUND			4	// like ATTN_NONE, but plays in surround sound
 
 // Stops a sound emanating from one of an entity's channels
 void S_StopSound (AActor *ent, int channel);
@@ -156,6 +155,7 @@ void S_ResumeSound (void);
 // Updates music & sounds
 //
 void S_UpdateSounds (void *listener);
+void S_UpdateMusic();
 
 void S_SetMusicVolume (float volume);
 void S_SetSfxVolume (float volume);
