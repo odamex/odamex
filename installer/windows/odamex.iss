@@ -21,6 +21,10 @@ VersionInfoProductVersion=0.6.0
 AlwaysShowDirOnReadyPage=true
 ChangesEnvironment=true
 AppID={{2E517BBB-916F-4AB6-80E0-D4A292513F7A}
+PrivilegesRequired=none
+ShowLanguageDialog=auto
+UninstallDisplayIcon={app}\odamex.exe
+VersionInfoCompany=Odamex
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
