@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,6 +35,8 @@
 struct ticcmd_t
 {
 	usercmd_t	ucmd;
+	int			tic;	// the client's tic when this cmd was sent
+	byte		svgametic;	// from the clc_svgametic sent along with this cmd
 /*
 	char		forwardmove;	// *2048 for move
 	char		sidemove;		// *2048 for move

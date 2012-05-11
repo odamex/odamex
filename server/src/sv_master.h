@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,8 +41,5 @@ bool SV_RemoveMaster (const char *masterip);
 void SV_UpdateMasterServers(void);
 void SV_UpdateMaster(void);
 void SV_ArchiveMasters(FILE *fp);
-
-void SV_SendServerInfo ();
-bool SV_IsValidToken(DWORD token);
 
 #endif

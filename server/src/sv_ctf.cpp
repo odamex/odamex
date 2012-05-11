@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,15 +24,15 @@
 
 #include "sv_main.h"
 #include "m_random.h"
-#include "sv_ctf.h"
+#include "p_ctf.h"
 #include "s_sound.h"
 #include "i_system.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
 
-EXTERN_CVAR (teamsinplay)
-
+EXTERN_CVAR (sv_teamsinplay)
+EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (ctf_manualreturn)
 EXTERN_CVAR (ctf_flagathometoscore)
 EXTERN_CVAR (ctf_flagtimeout)
@@ -44,14 +44,12 @@ int TEAMpoints[NUMFLAGS];
 static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 {
 	{MT_BFLG, MT_BDWN, MT_BCAR},
-	{MT_RFLG, MT_RDWN, MT_RCAR},
-	{MT_GFLG, MT_GDWN, MT_GCAR}
+	{MT_RFLG, MT_RDWN, MT_RCAR}
 };
 
-char *team_names[NUMTEAMS + 2] =
+const char *team_names[NUMTEAMS + 2] =
 {
-	"BLUE", "RED", "GOLD",
-	"", ""
+	"BLUE", "RED", "", ""
 };
 
 static int ctf_points[NUM_CTF_SCORE] =
@@ -211,7 +209,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 	CTF_SpawnFlag(f);
 
 	// checks to see if a team won a game
-	if(TEAMpoints[player.userinfo.team] >= scorelimit && scorelimit != 0)
+	if(TEAMpoints[player.userinfo.team] >= sv_scorelimit && sv_scorelimit != 0)
 	{
 		SV_BroadcastPrintf (PRINT_HIGH, "%s team wins!\n", team_names[player.userinfo.team]);
 		G_ExitLevel (0, 1);
@@ -264,7 +262,7 @@ void SV_SocketTouch (player_t &player, flag_t f)
 		CTFdata[f].flagger = 0;
 		SV_FlagReturn(player, f);
 	}
-	
+
 	// Scoring with enemy flag.
 	for(size_t i = 0; i < NUMFLAGS; i++)
 		if(player.userinfo.team == (team_t)f && player.userinfo.team != (team_t)i &&
@@ -305,7 +303,7 @@ void CTF_RunTics (void)
 
 		if(data->state != flag_dropped)
 			continue;
-		
+
 		if (!ctf_flagtimeout)
 			continue;
 
@@ -354,7 +352,7 @@ void CTF_SpawnDroppedFlag (flag_t f, int x, int y, int z)
 
 	data->actor = flag->ptr();
 	data->state = flag_dropped;
-	data->timeout = ctf_flagtimeout;
+	data->timeout = (size_t)(ctf_flagtimeout * TICRATE);
 	data->flagger = 0;
 }
 
@@ -390,7 +388,7 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 	data->x = mthing->x << FRACBITS;
 	data->y = mthing->y << FRACBITS;
 	data->z = mthing->z << FRACBITS;
-	
+
 	data->flaglocated = true;
 }
 
@@ -404,9 +402,9 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
     {
         case TEAM_BLUE:
         {
-            if (gametype != GM_CTF && teamsinplay < 1)
+            if (sv_gametype != GM_CTF && sv_teamsinplay < 1)
                 break;
-            
+
             for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
             {
                 size_t i = M_Random () % selections;
@@ -417,12 +415,12 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
             }
         }
         break;
-        
+
         case TEAM_RED:
         {
-            if (gametype != GM_CTF && teamsinplay < 2)
+            if (sv_gametype != GM_CTF && sv_teamsinplay < 2)
                 break;
-                
+
             for (size_t j = 0; j < MaxRedTeamStarts; ++j)
             {
                 size_t i = M_Random () % selections;
@@ -433,42 +431,23 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
             }
 		}
 		break;
-		
-        case TEAM_GOLD:
-        {
-            if (gametype != GM_CTF && teamsinplay < 3)
-                break;
-            
-            for (size_t j = 0; j < MaxGoldTeamStarts; ++j)
-            {
-                size_t i = M_Random () % selections;
-                if (G_CheckSpot (player, &goldteamstarts[i]) )
-                {
-                    return &goldteamstarts[i];
-                }
-            }
-        }
-        break;
-        
+
         default:
         {
-            
+
         }
         break;
     }
 
-	if (gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF) {
 		if (MaxBlueTeamStarts) return &blueteamstarts[0];
 		else if (MaxRedTeamStarts) return &redteamstarts[0];
 	} else {
-		if (teamsinplay >= 1 && MaxBlueTeamStarts)
+		if (sv_teamsinplay >= 1 && MaxBlueTeamStarts)
 			return &blueteamstarts[0];
-		else 
-		if (teamsinplay >= 2 && MaxRedTeamStarts)
-			return &redteamstarts[0];
 		else
-		if (teamsinplay >= 3 && MaxGoldTeamStarts)
-			return &goldteamstarts[0];
+		if (sv_teamsinplay >= 2 && MaxRedTeamStarts)
+			return &redteamstarts[0];
 	}
 
 	return NULL;
@@ -504,6 +483,16 @@ void CTF_Sound (flag_t f, flag_score_t event)
 	}
 }
 
+
+FArchive &operator<< (FArchive &arc, flagdata &flag)
+{
+	return arc;
+}
+
+FArchive &operator>> (FArchive &arc, flagdata &flag)
+{
+	return arc;
+}
 
 VERSION_CONTROL (sv_ctf_cpp, "$Id$")
 

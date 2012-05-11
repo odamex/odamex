@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,6 +42,9 @@
 #include "gi.h"
 #include "cl_main.h"
 #include "m_argv.h"
+#include "cl_demo.h"
+
+extern NetDemo netdemo;
 
 extern byte		*demo_p;		// [RH] Special "ticcmds" get recorded in demos
 
@@ -59,7 +63,7 @@ int 			lastnettic;
 int 			skiptics;
 int 			ticdup; 		
 
-bool stepmode = false;
+bool step_mode = false;
 
 void D_ProcessEvents (void); 
 void G_BuildTiccmd (ticcmd_t *cmd); 
@@ -89,7 +93,7 @@ void D_CheckNetGame (void)
 
     ticdup = 1;
 
-    stepmode = Args.CheckParm ("-stepmode");
+    step_mode = Args.CheckParm ("-stepmode");
 }
 
 
@@ -118,6 +122,8 @@ void TryStepTics(QWORD tics)
 		M_Ticker ();
 		G_Ticker ();
 		gametic++;
+		if (netdemo.isPlaying() && !netdemo.isPaused())
+			netdemo.ticker();
 	}
 	
 	DObject::EndFrame ();
@@ -152,7 +158,7 @@ void TryRunTics (void)
 	}
 	
 	// run the realtics tics
-	if(!stepmode)
+	if(!step_mode)
 		TryStepTics(realtics);
 	else
 	{

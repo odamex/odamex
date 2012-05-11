@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,6 +38,7 @@ int CleanXfac, CleanYfac;
 // [RH] Virtual screen sizes as perpetuated by V_DrawPatchClean()
 int CleanWidth, CleanHeight;
 
+EXTERN_CVAR(hud_transparency)
 
 // The current set of column drawers (set in V_SetResolution)
 DCanvas::vdrawfunc *DCanvas::m_Drawfuncs;
@@ -119,15 +121,16 @@ void DCanvas::DrawPatchSP (const byte *source, byte *dest, int count, int pitch,
 }
 
 
-// Translucent patch drawers (always 50%)
+// Translucent patch drawers (always 50%) [ML] 3/2/10: Not anymore!
 void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int pitch)
 {
 	unsigned int *fg2rgb, *bg2rgb;
 
 	{
-		fixed_t fglevel, bglevel;
+		fixed_t fglevel, bglevel, translevel;
 
-		fglevel = 0x8000 & ~0x3ff;
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
 		bg2rgb = Col2RGB8[bglevel>>10];
@@ -152,9 +155,10 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 	int c = 0;
 
 	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = 0x8000 & ~0x3ff;
+		fixed_t fglevel, bglevel, translevel;
+		
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
 		bg2rgb = Col2RGB8[bglevel>>10];
@@ -205,9 +209,10 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 	byte *colormap = V_ColorMap;
 
 	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = 0x8000 & ~0x3ff;
+		fixed_t fglevel, bglevel, translevel;
+		
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
 		bg2rgb = Col2RGB8[bglevel>>10];
@@ -233,9 +238,10 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 	byte *colormap = V_ColorMap;
 
 	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = 0x8000 & ~0x3ff;
+		fixed_t fglevel, bglevel, translevel;
+		
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
 		bg2rgb = Col2RGB8[bglevel>>10];
@@ -283,9 +289,10 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 
 	{
 		unsigned int *fg2rgb;
-		fixed_t fglevel, bglevel;
-
-		fglevel = 0x8000 & ~0x3ff;
+		fixed_t fglevel, bglevel, translevel;
+		
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
 		bg2rgb = Col2RGB8[bglevel>>10];
@@ -528,17 +535,6 @@ void DCanvas::DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x0, i
 		DrawWrapper (drawer, patch, x0, y0);
 		return;
 	}
-
-	/*if (destwidth == width && destheight == height && // denis - this was a crappy hack that interfered with client/server code partitioning
-		patch->width() == 320 && patch->height() == 200
-		&& drawer == EWrapper_Normal)
-	{
-		// Special case: Drawing a full-screen patch, so use
-		// F_DrawPatchCol in f_finale.c, since it's faster.
-		for (w = 0; w < 320; w++)
-			F_DrawPatchCol (w, patch, w, this);
-		return;
-	}*/
 
 	xinc = (patch->width() << 16) / destwidth;
 	yinc = (patch->height() << 16) / destheight;
@@ -808,45 +804,6 @@ void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
 		src += pitch;
 		dest += _width;
 	}
-}
-
-// [ML] 11/4/06: Moved here from v_video.cpp
-/*
-===============
-BestColor
-(borrowed from Quake2 source: utils3/qdata/images.c)
-===============
-*/
-byte BestColor (const DWORD *palette, const int r, const int g, const int b, const int numcolors)
-{
-	int		i;
-	int		dr, dg, db;
-	int		bestdistortion, distortion;
-	int		bestcolor;
-
-//
-// let any color go to 0 as a last resort
-//
-	bestdistortion = 256*256*4;
-	bestcolor = 0;
-
-	for (i = 0; i < numcolors; i++)
-	{
-		dr = r - RPART(palette[i]);
-		dg = g - GPART(palette[i]);
-		db = b - BPART(palette[i]);
-		distortion = dr*dr + dg*dg + db*db;
-		if (distortion < bestdistortion)
-		{
-			if (!distortion)
-				return i;		// perfect match
-
-			bestdistortion = distortion;
-			bestcolor = i;
-		}
-	}
-
-	return bestcolor;
 }
 
 int V_GetColorFromString (const DWORD *palette, const char *cstr)

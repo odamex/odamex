@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,10 +33,11 @@
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "d_items.h"
+#include "c_level.h"
 #include "g_level.h"
 #include "m_cheat.h"
 #include "cmdlib.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "m_alloc.h"
 #include "m_misc.h"
 #include "w_wad.h"
@@ -153,7 +154,7 @@ static short codepconv[448] = {  1,    2,   3,   4,    6,   9,  10,   11,  12,  
 static bool BackedUpData = false;
 // This is the original data before it gets replaced by a patch.
 static const char *OrgSprNames[NUMSPRITES];
-static actionf_t OrgActionPtrs[NUMSTATES];
+static actionf_p1 OrgActionPtrs[NUMSTATES];
 
 // Sound equivalences. When a patch tries to change a sound,
 // use these sound names.
@@ -266,32 +267,37 @@ static const char *SoundMap[] = {
 	"skeleton/active",
 	"skeleton/sight",
 	"skeleton/attack",
-	"misc/chat"
+	"misc/chat",
+	"misc/teamchat"
 };
 
 // Functions used in a .bex [CODEPTR] chunk
-void A_Light0(player_s*, pspdef_t*);
-void A_WeaponReady(player_s*, pspdef_t*);
-void A_Lower(player_s*, pspdef_t*);
-void A_Raise(player_s*, pspdef_t*);
-void A_Punch(player_s*, pspdef_t*);
-void A_ReFire(player_s*, pspdef_t*);
-void A_FirePistol(player_s*, pspdef_t*);
-void A_Light1(player_s*, pspdef_t*);
-void A_FireShotgun(player_s*, pspdef_t*);
-void A_Light2(player_s*, pspdef_t*);
-void A_FireShotgun2(player_s*, pspdef_t*);
-void A_CheckReload(player_s*, pspdef_t*);
-void A_OpenShotgun2(player_s*, pspdef_t*);
-void A_LoadShotgun2(player_s*, pspdef_t*);
-void A_CloseShotgun2(player_s*, pspdef_t*);
-void A_FireCGun(player_s*, pspdef_t*);
-void A_GunFlash(player_s*, pspdef_t*);
-void A_FireMissile(player_s*, pspdef_t*);
-void A_Saw(player_s*, pspdef_t*);
-void A_FirePlasma(player_s*, pspdef_t*);
-void A_BFGsound(player_s*, pspdef_t*);
-void A_FireBFG(player_s*, pspdef_t*);
+void A_FireRailgun(AActor *);
+void A_FireRailgunLeft(AActor *);
+void A_FireRailgunRight(AActor *);
+void A_RailWait(AActor *);
+void A_Light0(AActor *);
+void A_WeaponReady(AActor *);
+void A_Lower(AActor *);
+void A_Raise(AActor *);
+void A_Punch(AActor *);
+void A_ReFire(AActor *);
+void A_FirePistol(AActor *);
+void A_Light1(AActor *);
+void A_FireShotgun(AActor *);
+void A_Light2(AActor *);
+void A_FireShotgun2(AActor *);
+void A_CheckReload(AActor *);
+void A_OpenShotgun2(AActor *);
+void A_LoadShotgun2(AActor *);
+void A_CloseShotgun2(AActor *);
+void A_FireCGun(AActor *);
+void A_GunFlash(AActor *);
+void A_FireMissile(AActor *);
+void A_Saw(AActor *);
+void A_FirePlasma(AActor *);
+void A_BFGsound(AActor *);
+void A_FireBFG(AActor *);
 void A_BFGSpray(AActor*);
 void A_Explode(AActor*);
 void A_Pain(AActor*);
@@ -344,89 +350,95 @@ void A_BrainSpit(AActor*);
 void A_SpawnSound(AActor*);
 void A_SpawnFly(AActor*);
 void A_BrainExplode(AActor*);
+void A_MonsterRail(AActor*);
 
 struct CodePtr {
 	const char *name;
-	actionf_t func;
+	actionf_p1 func;
 };
 
 static const struct CodePtr CodePtrs[] = {
-	{ "NULL",			{(void *)NULL} },
-	{ "Light0",			{(void *)A_Light0} },
-	{ "WeaponReady",	{(void *)A_WeaponReady} },
-	{ "Lower",			{(void *)A_Lower} },
-	{ "Raise",			{(void *)A_Raise} },
-	{ "Punch",			{(void *)A_Punch} },
-	{ "ReFire",			{(void *)A_ReFire} },
-	{ "FirePistol",		{(void *)A_FirePistol} },
-	{ "Light1",			{(void *)A_Light1} },
-	{ "FireShotgun",	{(void *)A_FireShotgun} },
-	{ "Light2",			{(void *)A_Light2} },
-	{ "FireShotgun2",	{(void *)A_FireShotgun2} },
-	{ "CheckReload",	{(void *)A_CheckReload} },
-	{ "OpenShotgun2",	{(void *)A_OpenShotgun2} },
-	{ "LoadShotgun2",	{(void *)A_LoadShotgun2} },
-	{ "CloseShotgun2",	{(void *)A_CloseShotgun2} },
-	{ "FireCGun",		{(void *)A_FireCGun} },
-	{ "GunFlash",		{(void *)A_GunFlash} },
-	{ "FireMissile",	{(void *)A_FireMissile} },
-	{ "Saw",			{(void *)A_Saw} },
-	{ "FirePlasma",		{(void *)A_FirePlasma} },
-	{ "BFGsound",		{(void *)A_BFGsound} },
-	{ "FireBFG",		{(void *)A_FireBFG} },
-	{ "BFGSpray",		{(void *)A_BFGSpray} },
-	{ "Explode",		{(void *)A_Explode} },
-	{ "Pain",			{(void *)A_Pain} },
-	{ "PlayerScream",	{(void *)A_PlayerScream} },
-	{ "Fall",			{(void *)A_Fall} },
-	{ "XScream",		{(void *)A_XScream} },
-	{ "Look",			{(void *)A_Look} },
-	{ "Chase",			{(void *)A_Chase} },
-	{ "FaceTarget",		{(void *)A_FaceTarget} },
-	{ "PosAttack",		{(void *)A_PosAttack} },
-	{ "Scream",			{(void *)A_Scream} },
-	{ "SPosAttack",		{(void *)A_SPosAttack} },
-	{ "VileChase",		{(void *)A_VileChase} },
-	{ "VileStart",		{(void *)A_VileStart} },
-	{ "VileTarget",		{(void *)A_VileTarget} },
-	{ "VileAttack",		{(void *)A_VileAttack} },
-	{ "StartFire",		{(void *)A_StartFire} },
-	{ "Fire",			{(void *)A_Fire} },
-	{ "FireCrackle",	{(void *)A_FireCrackle} },
-	{ "Tracer",			{(void *)A_Tracer} },
-	{ "SkelWhoosh",		{(void *)A_SkelWhoosh} },
-	{ "SkelFist",		{(void *)A_SkelFist} },
-	{ "SkelMissile",	{(void *)A_SkelMissile} },
-	{ "FatRaise",		{(void *)A_FatRaise} },
-	{ "FatAttack1",		{(void *)A_FatAttack1} },
-	{ "FatAttack2",		{(void *)A_FatAttack2} },
-	{ "FatAttack3",		{(void *)A_FatAttack3} },
-	{ "BossDeath",		{(void *)A_BossDeath} },
-	{ "CPosAttack",		{(void *)A_CPosAttack} },
-	{ "CPosRefire",		{(void *)A_CPosRefire} },
-	{ "TroopAttack",	{(void *)A_TroopAttack} },
-	{ "SargAttack",		{(void *)A_SargAttack} },
-	{ "HeadAttack",		{(void *)A_HeadAttack} },
-	{ "BruisAttack",	{(void *)A_BruisAttack} },
-	{ "SkullAttack",	{(void *)A_SkullAttack} },
-	{ "Metal",			{(void *)A_Metal} },
-	{ "SpidRefire",		{(void *)A_SpidRefire} },
-	{ "BabyMetal",		{(void *)A_BabyMetal} },
-	{ "BspiAttack",		{(void *)A_BspiAttack} },
-	{ "Hoof",			{(void *)A_Hoof} },
-	{ "CyberAttack",	{(void *)A_CyberAttack} },
-	{ "PainAttack",		{(void *)A_PainAttack} },
-	{ "PainDie",		{(void *)A_PainDie} },
-	{ "KeenDie",		{(void *)A_KeenDie} },
-	{ "BrainPain",		{(void *)A_BrainPain} },
-	{ "BrainScream",	{(void *)A_BrainScream} },
-	{ "BrainDie",		{(void *)A_BrainDie} },
-	{ "BrainAwake",		{(void *)A_BrainAwake} },
-	{ "BrainSpit",		{(void *)A_BrainSpit} },
-	{ "SpawnSound",		{(void *)A_SpawnSound} },
-	{ "SpawnFly",		{(void *)A_SpawnFly} },
-	{ "BrainExplode",	{(void *)A_BrainExplode} },
-	{ NULL, {NULL} }
+	{ "NULL",			NULL },
+	{ "MonsterRail",	A_MonsterRail },
+	{ "FireRailgun",	A_FireRailgun },
+	{ "FireRailgunLeft", A_FireRailgunLeft },
+	{ "FireRailgunRight",A_FireRailgunRight },
+	{ "RailWait",		A_RailWait },	
+	{ "Light0",			A_Light0 },
+	{ "WeaponReady",	A_WeaponReady },
+	{ "Lower",			A_Lower },
+	{ "Raise",			A_Raise },
+	{ "Punch",			A_Punch },
+	{ "ReFire",			A_ReFire },
+	{ "FirePistol",		A_FirePistol },
+	{ "Light1",			A_Light1 },
+	{ "FireShotgun",	A_FireShotgun },
+	{ "Light2",			A_Light2 },
+	{ "FireShotgun2",	A_FireShotgun2 },
+	{ "CheckReload",	A_CheckReload },
+	{ "OpenShotgun2",	A_OpenShotgun2 },
+	{ "LoadShotgun2",	A_LoadShotgun2 },
+	{ "CloseShotgun2",	A_CloseShotgun2 },
+	{ "FireCGun",		A_FireCGun },
+	{ "GunFlash",		A_GunFlash },
+	{ "FireMissile",	A_FireMissile },
+	{ "Saw",			A_Saw },
+	{ "FirePlasma",		A_FirePlasma },
+	{ "BFGsound",		A_BFGsound },
+	{ "FireBFG",		A_FireBFG },
+	{ "BFGSpray",		A_BFGSpray },
+	{ "Explode",		A_Explode },
+	{ "Pain",			A_Pain },
+	{ "PlayerScream",	A_PlayerScream },
+	{ "Fall",			A_Fall },
+	{ "XScream",		A_XScream },
+	{ "Look",			A_Look },
+	{ "Chase",			A_Chase },
+	{ "FaceTarget",		A_FaceTarget },
+	{ "PosAttack",		A_PosAttack },
+	{ "Scream",			A_Scream },
+	{ "SPosAttack",		A_SPosAttack },
+	{ "VileChase",		A_VileChase },
+	{ "VileStart",		A_VileStart },
+	{ "VileTarget",		A_VileTarget },
+	{ "VileAttack",		A_VileAttack },
+	{ "StartFire",		A_StartFire },
+	{ "Fire",			A_Fire },
+	{ "FireCrackle",	A_FireCrackle },
+	{ "Tracer",			A_Tracer },
+	{ "SkelWhoosh",		A_SkelWhoosh },
+	{ "SkelFist",		A_SkelFist },
+	{ "SkelMissile",	A_SkelMissile },
+	{ "FatRaise",		A_FatRaise },
+	{ "FatAttack1",		A_FatAttack1 },
+	{ "FatAttack2",		A_FatAttack2 },
+	{ "FatAttack3",		A_FatAttack3 },
+	{ "BossDeath",		A_BossDeath },
+	{ "CPosAttack",		A_CPosAttack },
+	{ "CPosRefire",		A_CPosRefire },
+	{ "TroopAttack",	A_TroopAttack },
+	{ "SargAttack",		A_SargAttack },
+	{ "HeadAttack",		A_HeadAttack },
+	{ "BruisAttack",	A_BruisAttack },
+	{ "SkullAttack",	A_SkullAttack },
+	{ "Metal",			A_Metal },
+	{ "SpidRefire",		A_SpidRefire },
+	{ "BabyMetal",		A_BabyMetal },
+	{ "BspiAttack",		A_BspiAttack },
+	{ "Hoof",			A_Hoof },
+	{ "CyberAttack",	A_CyberAttack },
+	{ "PainAttack",		A_PainAttack },
+	{ "PainDie",		A_PainDie },
+	{ "KeenDie",		A_KeenDie },
+	{ "BrainPain",		A_BrainPain },
+	{ "BrainScream",	A_BrainScream },
+	{ "BrainDie",		A_BrainDie },
+	{ "BrainAwake",		A_BrainAwake },
+	{ "BrainSpit",		A_BrainSpit },
+	{ "SpawnSound",		A_SpawnSound },
+	{ "SpawnFly",		A_SpawnFly },
+	{ "BrainExplode",	A_BrainExplode },
+	{ NULL, NULL }
 };
 
 struct Key {
@@ -546,6 +558,9 @@ static BOOL ReadChars (char **stuff, int size);
 static char *igets (void);
 static int GetLine (void);
 
+static int filelen = 0;	// Be quiet, gcc
+
+#define IS_AT_PATCH_SIZE (((PatchPt - 1) - PatchFile) == filelen)
 
 static int HandleMode (const char *mode, int num)
 {
@@ -780,6 +795,9 @@ static char *igets (void)
 {
 	char *line;
 
+	if(!PatchPt || IS_AT_PATCH_SIZE)
+		return NULL;
+
 	if (*PatchPt == '\0')
 		return NULL;
 
@@ -923,7 +941,7 @@ static int PatchThing (int thingy)
 		{31, 0, "RESERVED"},
 
 		// Names for flags2
-/*		{ 0, 1, "LOGRAV"},
+		{ 0, 1, "LOGRAV"},
 		{ 1, 1, "WINDTHRUST"},
 		{ 2, 1, "FLOORBOUNCE"},
 		{ 3, 1, "BLASTED"},
@@ -954,7 +972,7 @@ static int PatchThing (int thingy)
 		{28, 1, "DORMANT"},
 		{29, 1, "ICEDAMAGE"},
 		{30, 1, "SEEKERMISSILE"},
-		{31, 1, "REFLECTIVE"}*/
+		{31, 1, "REFLECTIVE"}
 	};
 	int result;
 	mobjinfo_t *info, dummy;
@@ -1038,12 +1056,19 @@ static int PatchThing (int thingy)
 					if (info->flags & 0x60000000)
 						info->translucency = (info->flags & 0x60000000) >> 15;
 				}
+				if (v2changed)
+					info->flags2 = value2;
 			}
 			else DPrintf (unknown_str, Line1, "Thing", thingNum);
 		} else if (!stricmp (Line1, "Height")) {
 			hadHeight = true;
 		}
 	}
+	
+	// [ML] Set a thing's "real world height" to what's being offered here,
+	// so it's consistent from the patch
+	if (hadHeight && thingNum < sizeof(OrgHeights))
+		info->cdheight = info->height;
 
 	if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
 		info->height = OrgHeights[thingNum] * FRACUNIT;
@@ -1416,10 +1441,10 @@ static int PatchCodePtrs (int dummy)
 					i++;
 
 				if (CodePtrs[i].name) {
-					states[frame].action.acp1 = CodePtrs[i].func.acp1;
+					states[frame].action = CodePtrs[i].func;
 					DPrintf ("Frame %d set to %s\n", frame, CodePtrs[i].name);
 				} else {
-					states[frame].action.acp1 = NULL;
+					states[frame].action = NULL;
 					DPrintf ("Unknown code pointer: %s\n", com_token);
 				}
 			}
@@ -1438,120 +1463,98 @@ static int PatchText (int oldSize)
 	int result;
 	int i;
 
-	temp = COM_Parse (Line2);		// Skip old size, since we already have it
-	if (!COM_Parse (temp)) {
-		DPrintf ("Text chunk is missing size of new string.\n");
+	// Skip old size, since we already know it
+	temp = Line2;
+	while (*temp > ' ')
+		temp++;
+	while (*temp && *temp <= ' ')
+		temp++;
+
+	if (*temp == 0)
+	{
+		Printf (PRINT_HIGH,"Text chunk is missing size of new string.\n");
 		return 2;
 	}
-	newSize = atoi (com_token);
+	newSize = atoi (temp);
 
 	oldStr = new char[oldSize + 1];
 	newStr = new char[newSize + 1];
 
-	if (!oldStr || !newStr) {
-		DPrintf ("Out of memory.\n");
+	if (!oldStr || !newStr)
+	{
+		Printf (PRINT_HIGH,"Out of memory.\n");
 		goto donewithtext;
 	}
 
 	good = ReadChars (&oldStr, oldSize);
 	good += ReadChars (&newStr, newSize);
 
-	if (!good) {
+	if (!good)
+	{
 		delete[] newStr;
 		delete[] oldStr;
-		DPrintf ("Unexpected end-of-file.\n");
+		Printf (PRINT_HIGH,"Unexpected end-of-file.\n");
 		return 0;
 	}
 
-	if (includenotext) {
-		DPrintf ("Skipping text chunk in included patch.\n");
+	if (includenotext)
+	{
+		Printf (PRINT_HIGH,"Skipping text chunk in included patch.\n");
 		goto donewithtext;
 	}
 
 	DPrintf ("Searching for text:\n%s\n", oldStr);
 	good = false;
 
+    // Search through sprite names
+    for (i = 0; i < NUMSPRITES; i++) {
+        if (!strcmp (sprnames[i], oldStr)) {
+            sprnames[i] = copystring (newStr);
+            good = true;
+            // See above.
+        }
+    }
 
-	// Search through sfx names
-#if 0
-	for (i = 0; i < NUMSFX; i++) {
-		if (S_sfx[i].name) {
-			if (!strcmp (S_sfx[i].name, oldStr)) {
-				S_sfx[i].name = copystring (newStr);
-				good = true;
-				// Yes, we really need to check them all. A sound patch could
-				// have created two sounds that point to the same name, and
-				// stopping at the first would miss the change to the second.
-			}
-		}
-	}
-	if (good)
-		goto donewithtext;
-#endif
-
-
-	// Search through sprite names
-	for (i = 0; i < NUMSPRITES; i++) {
-		if (!strcmp (sprnames[i], oldStr)) {
-			sprnames[i] = copystring (newStr);
-			good = true;
-			// See above.
-		}
-	}
-
-	if (good)
-		goto donewithtext;
-
+    if (good)
+        goto donewithtext;
 
 	// Search through music names.
-	// This is something of an even bigger hack
-	// since I changed the way music is handled.
-
-	// Music names are never >6 chars
 	if (oldSize < 7)
-	{
-        level_info_t *info = LevelInfos;
-		char MusicLumpName[9] = { 0 };
-
-		sprintf (MusicLumpName, "d_%s", oldStr);
+	{		// Music names are never >6 chars
+		char musname[9];
+		level_info_t *info = LevelInfos;
+		sprintf (musname, "d_%s", oldStr);
 
 		while (info->level_name)
 		{
-			if (!strnicmp (info->music, MusicLumpName, 8))
+			if (stricmp (info->music, musname) == 0)
 			{
 				good = true;
-				sprintf (MusicLumpName, "d_%s", newStr);
-				strncpy (info->music, MusicLumpName, 8);
+				strcpy (info->music, musname);
 			}
-
 			info++;
 		}
 	}
 
 	if (good)
 		goto donewithtext;
-
-
+	
 	// Search through most other texts
-	i = 0;
-	while(Strings[i].name)
+	i = GStrings.MatchString (oldStr);
+	if (i != -1)
 	{
-		if (!stricmp (Strings[i].builtin, oldStr)) {
-			ReplaceString (&Strings[i].string, newStr);
-			Strings[i].type = str_patched;
-			good = true;
-			break;
-		}
-
-		i++;
+		GStrings.SetString (i, newStr);
+		good = true;
 	}
 
 	if (!good)
 		DPrintf ("   (Unmatched)\n");
 
 donewithtext:
-    delete[] newStr;
-	delete[] oldStr;
+	if (newStr)
+		delete[] newStr;
+	if (oldStr)
+		delete[] oldStr;
 
 	// Fetch next identifier for main loop
 	while ((result = GetLine ()) == 1)
@@ -1571,35 +1574,59 @@ static int PatchStrings (int dummy)
 	if (!holdstring)
 		holdstring = (char *)Malloc (maxstrlen);
 
-	while ((result = GetLine()) == 1) {
+	while ((result = GetLine()) == 1)
+	{
 		int i;
 
 		*holdstring = '\0';
-		do {
-			while (maxstrlen < strlen (holdstring) + strlen (Line2)) {
+		do
+		{
+			while (maxstrlen < strlen (holdstring) + strlen (Line2) + 8)
+			{
 				maxstrlen += 128;
 				holdstring = (char *)Realloc (holdstring, maxstrlen);
 			}
 			strcat (holdstring, skipwhite (Line2));
 			stripwhite (holdstring);
-			if (holdstring[strlen(holdstring)-1] == '\\') {
+			if (holdstring[strlen(holdstring)-1] == '\\')
+			{
 				holdstring[strlen(holdstring)-1] = '\0';
 				Line2 = igets ();
 			} else
 				Line2 = NULL;
 		} while (Line2 && *Line2);
 
-		i = 0;
-		while(Strings[i].name)
-			if (!stricmp (Strings[i++].name, Line1))
-				break;
+		i = GStrings.FindString (Line1);
 
-		if (!Strings[i].name) {
-			DPrintf ("Unknown string: %s\n", Line1);
-		} else {
+		if (i == -1)
+		{
+			Printf (PRINT_HIGH,"Unknown string: %s\n", Line1);
+		}
+		else
+		{
 			ReplaceSpecialChars (holdstring);
-			ReplaceString (&Strings[i].string, copystring (holdstring));
-			Strings[i].type = str_patched;
+			if ((i >= OB_SUICIDE && i <= OB_DEFAULT &&
+				strstr (holdstring, "%o") == NULL) ||
+				(i >= OB_FRIENDLY1 && i <= OB_FRIENDLY4 &&
+				strstr (holdstring, "%k") == NULL))
+			{
+				int len = strlen (holdstring);
+				memmove (holdstring+3, holdstring, len);
+				holdstring[0] = '%';
+				holdstring[1] = i <= OB_DEFAULT ? 'o' : 'k';
+				holdstring[2] = ' ';
+				holdstring[3+len] = '.';
+				holdstring[4+len] = 0;
+				if (i >= OB_MPFIST && i <= OB_RAILGUN)
+				{
+					char *spot = strstr (holdstring, "%s");
+					if (spot != NULL)
+					{
+						spot[1] = 'k';
+					}
+				}
+			}
+			GStrings.SetString (i, holdstring);
 			DPrintf ("%s set to:\n%s\n", Line1, holdstring);
 		}
 	}
@@ -1654,7 +1681,6 @@ endinclude:
 bool DoDehPatch (const char *patchfile, BOOL autoloading)
 {
 	int cont;
-	int filelen = 0;	// Be quiet, gcc
 	int lump;
 	std::string file;
 

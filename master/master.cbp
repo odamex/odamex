@@ -19,6 +19,7 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-fexceptions" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_CONSOLE" />
 					<Add option="-D_MBCS" />
@@ -42,6 +43,7 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_DEBUG" />
 					<Add option="-D_CONSOLE" />
@@ -131,7 +133,6 @@
 					<Add option="-D_MBCS" />
 				</Compiler>
 				<Linker>
-					<Add library="wsock32" />
 					<Add library="wsock32" />
 				</Linker>
 			</Target>
@@ -228,6 +229,7 @@
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
 		</Compiler>
+		<Unit filename="..\common\version.h" />
 		<Unit filename="i_net.cpp" />
 		<Unit filename="i_net.h" />
 		<Unit filename="main.cpp" />

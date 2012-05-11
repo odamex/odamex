@@ -1,9 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,7 +18,7 @@
 //
 // DESCRIPTION:
 //   Menu widget stuff, episode selection and such.
-//    
+//
 //-----------------------------------------------------------------------------
 
 
@@ -26,6 +27,11 @@
 
 #include "d_event.h"
 #include "c_cvars.h"
+
+// Some defines...
+#define LINEHEIGHT	16
+#define SKULLXOFF	-32
+#define NUM_MENU_ITEMS(m)	(sizeof(m)/sizeof(m[0]))
 
 //
 // MENUS
@@ -81,6 +87,7 @@ void M_RefreshModesList ();
 typedef enum {
 	whitetext,
 	redtext,
+	bricktext,
 	more,
 	slider,
 	discrete,
@@ -89,6 +96,8 @@ typedef enum {
 	screenres,
 	bitflag,
 	listelement,
+	joyactive,
+	joyaxis,
 	nochoice
 } itemtype;
 
@@ -135,6 +144,9 @@ typedef struct menu_s {
 	int				numitems;
 	int				indent;
 	menuitem_t	   *items;
+	int				scrolltop;
+	int				scrollpos;	
+	void			(*refreshfunc)();	// Callback func for M_OptResponder
 } menu_t;
 
 typedef struct value_s {
@@ -146,16 +158,16 @@ typedef struct
 {
 	// -1 = no cursor here, 1 = ok, 2 = arrows ok
 	short		status;
-	
+
 	char		name[10];
-	
+
 	// choice = menu item #.
 	// if status = 2,
 	//	 choice=0:leftarrow,1:rightarrow
 	void		(*routine)(int choice);
-	
+
 	// hotkey in menu
-	char		alphaKey;						
+	char		alphaKey;
 } oldmenuitem_t;
 
 typedef struct oldmenu_s
@@ -181,6 +193,8 @@ typedef struct
 extern value_t YesNo[2];
 extern value_t NoYes[2];
 extern value_t OnOff[2];
+extern value_t OffOn[2];
+extern value_t OnOffAuto[3];
 
 extern menustack_t MenuStack[16];
 extern int MenuStackDepth;
@@ -191,7 +205,6 @@ extern int		CurrentItem;
 extern short	 itemOn;
 extern oldmenu_t *currentMenu;
 
+size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);
+
 #endif
-
-
-

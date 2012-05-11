@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,11 +26,12 @@
 
 #include "m_alloc.h"
 #include "version.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "g_game.h"
 #include "c_console.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
+#include "c_bind.h"
 #include "hu_stuff.h"
 #include "i_system.h"
 #include "i_video.h"
@@ -44,19 +45,20 @@
 #include "r_draw.h"
 #include "st_stuff.h"
 #include "s_sound.h"
+#include "s_sndseq.h"
 #include "doomstat.h"
 #include "gi.h"
 
 #include <string>
 #include <vector>
+#include <algorithm>
+
+std::string DownloadStr;
 
 static void C_TabComplete (void);
 static BOOL TabbedLast;		// Last key pressed was tab
 
 static DCanvas *conback;
-
-static DCanvas *altconback = NULL;      // SoM: this will be used for dimming the console screen
-static BOOL    altinfullscreen = false; // SoM: set to true to use altconback instead of conback
 
 extern int KeyRepeatRate, KeyRepeatDelay;
 
@@ -64,11 +66,12 @@ extern int		gametic;
 extern BOOL		automapactive;	// in AM_map.c
 extern BOOL		advancedemo;
 
-int			ConRows, ConCols, PhysRows;
-char		*Lines, *Last = NULL;
+unsigned int	ConRows, ConCols, PhysRows;
+unsigned char	*Lines, *Last = NULL;
 BOOL		vidactive = false, gotconback = false;
 BOOL		cursoron = false;
-int			SkipRows, ConBottom, ConScroll, RowAdjust;
+int			SkipRows, ConBottom;
+unsigned int	RowAdjust;
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
 char		VersionString[8];
@@ -80,6 +83,7 @@ BOOL		KeysCtrl;
 
 static bool midprinting;
 
+#define CONSOLEBUFFER 512
 
 #define SCROLLUP 1
 #define SCROLLDN 2
@@ -113,7 +117,16 @@ static int HistSize;
 #define NUMNOTIFIES 4
 
 EXTERN_CVAR (con_notifytime)
-EXTERN_CVAR (con_scaletext)
+CVAR_FUNC_IMPL (hud_scaletext)
+{
+	if (var < 1.0f)
+		var.Set(1.0f);
+	if (var > 4.0f)
+		var.Set(4.0f);
+}
+
+int V_TextScaleXAmount();
+int V_TextScaleYAmount();
 
 static struct NotifyText
 {
@@ -130,8 +143,7 @@ static void setmsgcolor (int index, const char *color);
 
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
 
-
-cvar_t msglevel ("msg", "0", CVAR_ARCHIVE);
+cvar_t msglevel ("msg", "0", "", CVARTYPE_STRING, CVAR_ARCHIVE);
 
 CVAR_FUNC_IMPL (msg0color)
 {
@@ -167,45 +179,39 @@ CVAR_FUNC_IMPL (msgmidcolor)
 //       scrolling up. Otherwise, any new messages will
 //       automatically pull the console back to the bottom.
 //
-// conscrlock 0 = All new lines bring scroll to the bottom.
-// conscrlock 1 = Only input commands bring scroll to the bottom.
-// conscrlock 2 = Nothing brings scroll to the bottom.
-EXTERN_CVAR (conscrlock)
+// con_scrlock 0 = All new lines bring scroll to the bottom.
+// con_scrlock 1 = Only input commands bring scroll to the bottom.
+// con_scrlock 2 = Nothing brings scroll to the bottom.
+EXTERN_CVAR (con_scrlock)
 
-static void maybedrawnow (void)
+//
+// C_Close
+//
+void STACK_ARGS C_Close()
 {
-/*	if (vidactive &&
-		((gameaction != ga_nothing && ConsoleState == c_down)
-		|| gamestate == GS_STARTUP))
+	if(conback)
 	{
-		static size_t lastprinttime = 0;
-		size_t nowtime = I_GetTime();
-
-		if (nowtime - lastprinttime > 1)
-		{
-			I_BeginUpdate ();
-			C_DrawConsole ();
-			I_FinishUpdate ();
-			lastprinttime = nowtime;
-		}
-	}*/
+		I_FreeScreen(conback);
+		conback = NULL;
+	}
 }
 
+//
+// C_InitConsole
+//
 void C_InitConsole (int width, int height, BOOL ingame)
 {
 	int row;
-	char *zap;
-	char *old;
+	unsigned char *zap;
+	unsigned char *old;
 	int cols, rows;
+
+	bool firstTime = true;
+	if(firstTime)
+		atterm (C_Close);
 
 	if ( (vidactive = ingame) )
 	{
-      // SoM: Init the console's secondary buffer. This will be used to dim the screen in game
-      // and to store the disconnect screenshot
-      delete altconback;
-
-      altconback = I_AllocateScreen(width, height, 8);
-
 		if (!gotconback)
 		{
 			BOOL stylize = false;
@@ -213,32 +219,39 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			patch_t *bg;
 			int num;
 
-			num = W_CheckNumForName ("ODAMEX");
+			num = W_CheckNumForName ("CONBACK");
+			//num2 = W_CheckNumForName ("M_DOOM");
 			if (num == -1)
 			{
 				stylize = true;
-				num = W_GetNumForName ("ODAMEX");
+				num = W_GetNumForName ("CONBACK");
 				isRaw = gameinfo.flags & GI_PAGESARERAW;
 			}
 
 			bg = W_CachePatch (num);
+			//gg = W_CachePatch (num2);
 
+			delete conback;
 			if (isRaw)
 				conback = I_AllocateScreen (320, 200, 8);
 			else
-				conback = I_AllocateScreen (bg->width(), bg->height(), 8);
+				conback = I_AllocateScreen (screen->width, screen->height, 8);
 
 			conback->Lock ();
 
 			if (isRaw)
 				conback->DrawBlock (0, 0, 320, 200, (byte *)bg);
 			else
-				conback->DrawPatch (bg, 0, 0);
+				conback->DrawPatch (bg, (screen->width/2)-(bg->width()/2), (screen->height/2)-(bg->height()/2));
+				//conback->DrawPatch (gg, ((screen->width/2)-(gg->width()/2))+3*CleanXfac, ((screen->height/2)-(gg->height()/2)) + 15*CleanYfac);
 
 			if (stylize)
 			{
-				byte *fadetable = (byte *)W_CacheLumpName ("COLORMAP", PU_CACHE), f, *v, *i;
 				int x, y;
+				byte f = 0, *v = NULL, *i = NULL;
+				byte *fadetable;
+
+				fadetable = (byte *)W_CacheLumpName ("COLORMAP", PU_CACHE);
 
 				for (y = 0; y < conback->height; y++)
 				{
@@ -264,6 +277,10 @@ void C_InitConsole (int width, int height, BOOL ingame)
 								v = fadetable + (30 - x) * 256;
 							else if (x > 312)
 								v = fadetable + (x - 289) * 256;
+
+							if (v == NULL)
+                                I_FatalError("COuld not stylize the console\n");
+
 							*i = v[*i];
 							i++;
 						}
@@ -284,22 +301,21 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	}
 
 	cols = ConCols;
-	rows = ConRows;
+	rows = CONSOLEBUFFER;
 
 	ConCols = width / 8 - 2;
 	PhysRows = height / 8;
-	ConRows = PhysRows * 10;
 
 	old = Lines;
-	Lines = (char *)Malloc (ConRows * (ConCols + 2) + 1);
+	Lines = (unsigned char *)Malloc (CONSOLEBUFFER * (ConCols + 2) + 1);
 
-	for (row = 0, zap = Lines; row < ConRows; row++, zap += ConCols + 2)
+	for (row = 0, zap = Lines; row < CONSOLEBUFFER; row++, zap += ConCols + 2)
 	{
 		zap[0] = 0;
 		zap[1] = 0;
 	}
 
-	Last = Lines + (ConRows - 1) * (ConCols + 2);
+	Last = Lines + (CONSOLEBUFFER - 1) * (ConCols + 2);
 
 	if (old)
 	{
@@ -369,10 +385,7 @@ void C_AddNotifyString (int printlevel, const char *source)
 		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
 		return;
 
-	if (con_scaletext)
-		width = DisplayWidth / CleanXfac;
-	else
-		width = DisplayWidth;
+	width = DisplayWidth / V_TextScaleXAmount();
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
 	{
@@ -393,7 +406,7 @@ void C_AddNotifyString (int printlevel, const char *source)
 		if (addtype == NEWLINE)
 			memmove (&NotifyStrings[0], &NotifyStrings[1], sizeof(struct NotifyText) * (NUMNOTIFIES-1));
 		strcpy ((char *)NotifyStrings[NUMNOTIFIES-1].text, lines[i].string);
-		NotifyStrings[NUMNOTIFIES-1].timeout = gametic + (int)(con_notifytime * TICRATE);
+		NotifyStrings[NUMNOTIFIES-1].timeout = gametic + (con_notifytime.asInt() * TICRATE);
 		NotifyStrings[NUMNOTIFIES-1].printlevel = printlevel;
 		addtype = NEWLINE;
 	}
@@ -420,8 +433,8 @@ void C_AddNotifyString (int printlevel, const char *source)
 int PrintString (int printlevel, const char *outline)
 {
 	const char *cp, *newcp;
-	static int xp = 0;
-	int newxp;
+	static unsigned int xp = 0;
+	unsigned int newxp;
 	int mask;
 	BOOL scroll;
 
@@ -469,7 +482,7 @@ int PrintString (int printlevel, const char *outline)
 				{
 					Last[0] = 1;
 				}
-				memmove (Lines, Lines + (ConCols + 2), (ConCols + 2) * (ConRows - 1));
+				memmove (Lines, Lines + (ConCols + 2), (ConCols + 2) * (CONSOLEBUFFER - 1));
 				Last[0] = 0;
 				Last[1] = 0;
 				newxp = 0;
@@ -503,7 +516,7 @@ int PrintString (int printlevel, const char *outline)
 			{
 				SkipRows = 1;
 
-				if (conscrlock > 0 && RowAdjust != 0)
+				if (con_scrlock > 0 && RowAdjust != 0)
 					RowAdjust++;
 				else
 					RowAdjust = 0;
@@ -525,8 +538,6 @@ int PrintString (int printlevel, const char *outline)
 	}
 
 	printxormask = 0;
-
-	maybedrawnow ();
 
 	return strlen (outline);
 }
@@ -565,6 +576,18 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 			LOG << outlinelog;
 			LOG.flush();
 		}
+
+		// Up the row buffer for the console.
+		// This is incremented here so that any time we
+		// print something we know about it.  This feels pretty hacky!
+
+		// We need to know if there were any new lines being printed
+		// in our string.
+
+		int newLineCount = std::count(outline, outline + strlen(outline),'\n');
+
+		if (ConRows < CONSOLEBUFFER)
+			ConRows+=(newLineCount > 1 ? newLineCount+1 : 1);
 	}
 
 	return PrintString (printlevel, outline);
@@ -649,7 +672,8 @@ void C_Ticker (void)
 		switch (ScrollState)
 		{
 			case SCROLLUP:
-				RowAdjust++;
+				if (RowAdjust < ConRows - SkipRows - ConBottom/8)
+					RowAdjust++;
 				break;
 
 			case SCROLLDN:
@@ -706,9 +730,9 @@ void C_Ticker (void)
 			}
 		}
 
-		if (SkipRows + RowAdjust + (ConBottom/8) + 1 > ConRows)
+		if (SkipRows + RowAdjust + (ConBottom/8) + 1 > CONSOLEBUFFER)
 		{
-			RowAdjust = ConRows - SkipRows - ConBottom;
+			RowAdjust = CONSOLEBUFFER - SkipRows - ConBottom;
 		}
 	}
 
@@ -743,16 +767,9 @@ static void C_DrawNotifyText (void)
 			else
 				color = PrintColors[NotifyStrings[i].printlevel];
 
-			if (con_scaletext)
-			{
-				screen->DrawTextClean (color, 0, line, NotifyStrings[i].text);
-				line += 8 * CleanYfac;
-			}
-			else
-			{
-				screen->DrawText (color, 0, line, NotifyStrings[i].text);
-				line += 8;
-			}
+			screen->DrawTextStretched (color, 0, line, NotifyStrings[i].text,
+										V_TextScaleXAmount(), V_TextScaleYAmount());
+			line += 8 * V_TextScaleYAmount();
 		}
 	}
 }
@@ -762,20 +779,17 @@ void C_InitTicker (const char *label, unsigned int max)
 	TickerMax = max;
 	TickerLabel = label;
 	TickerAt = 0;
-	maybedrawnow ();
 }
 
 void C_SetTicker (unsigned int at)
 {
 	TickerAt = at > TickerMax ? TickerMax : at;
-	maybedrawnow ();
 }
 
 void C_DrawConsole (void)
 {
-	char *zap;
+	unsigned char *zap;
 	int lines, left, offset;
-	static int oldbottom = 0;
 
 	left = 8;
 	lines = (ConBottom-12)/8;
@@ -784,8 +798,6 @@ void C_DrawConsole (void)
 	else
 		offset = -12;
 	zap = Last - (SkipRows + RowAdjust) * (ConCols + 2);
-
-	oldbottom = ConBottom;
 
 	if (ConsoleState == c_up)
 	{
@@ -798,32 +810,30 @@ void C_DrawConsole (void)
 
 		visheight = ConBottom;
 
-      if(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
-      {
-         altinfullscreen = false;
-         screen->CopyRect(0, 0, screen->width, visheight, 0, 0, altconback);
-         altconback->Dim();
-         altconback->CopyRect(0, 0, screen->width, visheight, 0, 0, screen);
-      }
-      else
-      {
-         if(altinfullscreen)
-         {
-            altconback->Blit (0, 0, altconback->width, altconback->height,
-                           screen, 0, 0, screen->width, visheight);
-         }
-         else
-         {
-            conback->Blit (0, 0, conback->width, conback->height,
-                           screen, 0, 0, screen->width, screen->height);
-         }
-      }
+		if(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+		{
+			screen->Dim(0, 0, screen->width, visheight);
+		}
+		else
+		{
+			conback->Blit (0, 0, conback->width, conback->height,
+						screen, 0, 0, screen->width, screen->height);
+		}
 
 		if (ConBottom >= 12)
 		{
 			screen->PrintStr (screen->width - 8 - strlen(VersionString) * 8,
 						ConBottom - 12,
 						VersionString, strlen (VersionString));
+
+            // Download progress bar hack
+            if (gamestate == GS_DOWNLOAD)
+            {
+                screen->PrintStr (left + 2,
+						ConBottom - 10,
+						DownloadStr.c_str(), DownloadStr.length());
+            }
+
 			if (TickerMax)
 			{
 				char tickstr[256];
@@ -859,7 +869,7 @@ void C_DrawConsole (void)
 	{
 		for (; lines > 1; lines--)
 		{
-			screen->PrintStr (left, offset + lines * 8, &zap[2], zap[1]);
+			screen->PrintStr (left, offset + lines * 8, (char*)&zap[2], zap[1]);
 			zap -= ConCols + 2;
 		}
 		if (ConBottom >= 20)
@@ -884,7 +894,7 @@ void C_DrawConsole (void)
 
 				// Indicate that the view has been scrolled up (10)
 				// and if we can scroll no further (12)
-				c = (SkipRows + RowAdjust + ConBottom/8 != ConRows) ? 10 : 12;
+				c = (SkipRows + RowAdjust + ConBottom/8 < ConRows) ? 10 : 12;
 				screen->PrintStr (0, ConBottom - 28, &c, 1);
 			}
 		}
@@ -912,7 +922,7 @@ void C_FullConsole (void)
 		gamestate = GS_FULLCONSOLE;
 		level.music[0] = '\0';
 		S_Start ();
-// 		SN_StopAllSequences ();
+ 		SN_StopAllSequences ();
 		V_SetBlend (0,0,0,0);
 		I_PauseMouse ();
 	} else
@@ -945,7 +955,9 @@ void C_ToggleConsole (void)
 
 void C_HideConsole (void)
 {
-//	if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP)
+    // [Russell] - Prevent console from going up when downloading files or
+    // connecting
+    if (gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
 	{
 		ConsoleState = c_up;
 		ConBottom = 0;
@@ -961,10 +973,7 @@ void C_HideConsole (void)
 // Setup the server disconnect effect.
 void C_ServerDisconnectEffect(void)
 {
-   screen->Blit(0, 0, screen->width, screen->height, altconback, 0, 0, altconback->width, altconback->height);
-
-   altconback->Dim();
-   altinfullscreen = true;
+   screen->Dim(0, 0, screen->width, screen->height);
 }
 
 
@@ -981,7 +990,7 @@ static void makestartposgood (void)
 	{ // Start of visible line is beyond end of line
 		n = curs - ConCols + 2;
 	}
-	if ((curs - pos) >= ConCols - 2)
+	if ((int)(curs - pos) >= (int)(ConCols - 2))
 	{ // The cursor is beyond the visible part of the line
 		n = curs - ConCols + 2;
 	}
@@ -996,20 +1005,31 @@ static void makestartposgood (void)
 
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 {
+	const char *cmd = C_GetBinding (ev->data1);
+
 	switch (ev->data1)
 	{
 	case KEY_TAB:
 		// Try to do tab-completion
 		C_TabComplete ();
 		break;
+#ifdef _XBOX
+	case KEY_JOY7: // Left Trigger
+#endif
 	case KEY_PGUP:
-		if (KeysShifted)
-			// Move to top of console buffer
-			RowAdjust = ConRows - SkipRows - ConBottom/8;
-		else
-			// Start scrolling console buffer up
-			ScrollState = SCROLLUP;
+		if ((int)(ConRows) > (int)(ConBottom/8))
+		{
+			if (KeysShifted)
+				// Move to top of console buffer
+				RowAdjust = ConRows - SkipRows - ConBottom/8;
+			else
+				// Start scrolling console buffer up
+				ScrollState = SCROLLUP;
+		}
 		break;
+#ifdef _XBOX
+	case KEY_JOY8: // Right Trigger
+#endif
 	case KEY_PGDN:
 		if (KeysShifted)
 			// Move to bottom of console buffer
@@ -1130,7 +1150,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		if (HistPos)
 		{
 			strcpy ((char *)&buffer[2], HistPos->String);
-			buffer[0] = buffer[1] = strlen ((char *)&buffer[2]);
+			buffer[0] = buffer[1] = (BYTE)strlen ((char *)&buffer[2]);
 			buffer[len+4] = 0;
 			makestartposgood();
 		}
@@ -1145,7 +1165,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			HistPos = HistPos->Newer;
 
 			strcpy ((char *)&buffer[2], HistPos->String);
-			buffer[0] = buffer[1] = strlen ((char *)&buffer[2]);
+			buffer[0] = buffer[1] = (BYTE)strlen ((char *)&buffer[2]);
 		}
 		else
 		{
@@ -1199,8 +1219,8 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			// Execute command line (ENTER)
 			buffer[2 + buffer[0]] = 0;
 
-			if (conscrlock == 1) // NES - If conscrlock = 1, send console scroll to bottom.
-				RowAdjust = 0;   // conscrlock = 0 does it automatically.
+			if (con_scrlock == 1) // NES - If con_scrlock = 1, send console scroll to bottom.
+				RowAdjust = 0;   // con_scrlock = 0 does it automatically.
 
 			if (HistHead && stricmp (HistHead->String, (char *)&buffer[2]) == 0)
 			{
@@ -1245,7 +1265,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			AddCommandString ((char *)&buffer[2]);
 			TabbedLast = false;
 		}
-		else if (ev->data2 == '`' || ev->data1 == KEY_ESCAPE)
+		else if (ev->data1 == KEY_ESCAPE || (cmd && !strcmp(cmd, "toggleconsole")))
 		{
 			// Close console, clear command line, but if we're in the
 			// fullscreen console mode, there's nothing to fall back on
@@ -1253,8 +1273,13 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			if (gamestate == GS_FULLCONSOLE || gamestate == GS_CONNECTING || gamestate == GS_DOWNLOAD)
 			{
 				C_HideConsole();
-				gamestate = GS_DEMOSCREEN;
-				if (ev->data2 == '`')
+
+                // [Russell] Don't enable toggling of console when downloading
+                // or connecting, it creates screen artifacts
+                if (gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
+                    gamestate = GS_DEMOSCREEN;
+
+				if (cmd && !strcmp(cmd, "toggleconsole"))
 					return true;
 				return false;
 			}
@@ -1362,6 +1387,10 @@ BOOL C_Responder (event_t *ev)
 
 		switch (ev->data1)
 		{
+#ifdef _XBOX
+		case KEY_JOY7: // Left Trigger
+		case KEY_JOY8: // Right Trigger
+#endif
 		case KEY_PGUP:
 		case KEY_PGDN:
 			ScrollState = SCROLLNO;
@@ -1434,11 +1463,11 @@ END_COMMAND (history)
 BEGIN_COMMAND (clear)
 {
 	int i;
-	char *row = Lines;
+	unsigned char *row = Lines;
 
 	RowAdjust = 0;
 	C_FlushDisplay ();
-	for (i = 0; i < ConRows; i++, row += ConCols + 2)
+	for (i = 0; i < CONSOLEBUFFER; i++, row += ConCols + 2)
 		row[1] = 0;
 }
 END_COMMAND (clear)
@@ -1466,9 +1495,12 @@ static brokenlines_t *MidMsg = NULL;
 static int MidTicker = 0, MidLines;
 EXTERN_CVAR (con_midtime)
 
-void C_MidPrint (const char *msg, player_t *p)
+void C_MidPrint (const char *msg, player_t *p, int msgtime)
 {
-	int i;
+	unsigned int i;
+
+    if (!msgtime)
+        msgtime = con_midtime.asInt();
 
 	if (MidMsg)
 		V_FreeBrokenLines (MidMsg);
@@ -1476,23 +1508,33 @@ void C_MidPrint (const char *msg, player_t *p)
 	if (msg)
 	{
 		midprinting = true;
-		//Printf (PRINT_HIGH,
-		//	"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-		//	"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n%s\n"
-		//	"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-		//	"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n", msg);
-		Printf (PRINT_HIGH, "%s\n", msg);
+
+        // [Russell] - convert textual "\n" into the binary representation for
+        // line breaking
+    	std::string str = msg;
+
+		for (size_t pos = str.find("\\n"); pos != std::string::npos; pos = str.find("\\n", pos))
+		{
+			str[pos] = '\n';
+			str.erase(pos+1, 1);
+		}
+
+		char *newmsg = strdup(str.c_str());
+
+		Printf (PRINT_HIGH, "%s\n", newmsg);
 		midprinting = false;
 
-		if ( (MidMsg = V_BreakLines (con_scaletext ? screen->width / CleanXfac : screen->width, (byte *)msg)) )
+		if ( (MidMsg = V_BreakLines(screen->width / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
-			MidTicker = (int)(con_midtime * TICRATE) + gametic;
+			MidTicker = (int)(msgtime * TICRATE) + gametic;
 
 			for (i = 0; MidMsg[i].width != -1; i++)
 				;
 
 			MidLines = i;
 		}
+
+		free(newmsg);
 	}
 	else
 		MidMsg = NULL;
@@ -1504,34 +1546,16 @@ void C_DrawMid (void)
 	{
 		int i, line, x, y, xscale, yscale;
 
-		if (con_scaletext)
-		{
-			xscale = CleanXfac;
-			yscale = CleanYfac;
-		}
-		else
-		{
-			xscale = yscale = 1;
-		}
+		xscale = V_TextScaleXAmount();
+		yscale = V_TextScaleYAmount();
 
 		y = 8 * yscale;
 		x = screen->width >> 1;
 		for (i = 0, line = (ST_Y * 3) / 8 - MidLines * 4 * yscale; i < MidLines; i++, line += y)
 		{
-			if (con_scaletext)
-			{
-				screen->DrawTextClean (PrintColors[PRINTLEVELS],
+			screen->DrawTextStretched (PrintColors[PRINTLEVELS],
 					x - (MidMsg[i].width >> 1) * xscale,
-					line,
-					(byte *)MidMsg[i].string);
-			}
-			else
-			{
-				screen->DrawText (PrintColors[PRINTLEVELS],
-					x - (MidMsg[i].width >> 1) * xscale,
-					line,
-					(byte *)MidMsg[i].string);
-			}
+					line, (byte *)MidMsg[i].string, xscale, yscale);
 		}
 
 		if (gametic >= MidTicker)
@@ -1543,14 +1567,14 @@ void C_DrawMid (void)
 }
 
 // denis - moved secret discovery message to this function
-EXTERN_CVAR (revealsecrets)
+EXTERN_CVAR (hud_revealsecrets)
 void C_RevealSecret()
 {
-	if(!revealsecrets || gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for revealsecrets
+	if(!hud_revealsecrets || sv_gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for hud_revealsecrets
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint ("A secret is revealed!");
-	S_Sound (consoleplayer().mo, CHAN_AUTO, "misc/secret", 1, ATTN_NORM);
+	S_Sound (CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
 }
 
 /****** Tab completion code ******/
@@ -1564,7 +1588,7 @@ tabcommand_map_t &TabCommands()
 
 void C_AddTabCommand (const char *name)
 {
-	tabcommand_map_t::iterator i = TabCommands().find(name);
+	tabcommand_map_t::iterator i = TabCommands().find(StdStringToLower(name));
 
 	if(i != TabCommands().end())
 		TabCommands()[name]++;
@@ -1574,7 +1598,7 @@ void C_AddTabCommand (const char *name)
 
 void C_RemoveTabCommand (const char *name)
 {
-	tabcommand_map_t::iterator i = TabCommands().find(name);
+	tabcommand_map_t::iterator i = TabCommands().find(StdStringToLower(name));
 
 	if(i != TabCommands().end())
 		if(!--i->second)
@@ -1598,7 +1622,7 @@ static void C_TabComplete (void)
 	}
 
 	// Find next near match
-	std::string TabPos = std::string((char *)(CmdLine + TabStart), CmdLine[0] - TabStart + 2);
+	std::string TabPos = StdStringToLower(std::string((char *)(CmdLine + TabStart), CmdLine[0] - TabStart + 2));
 	tabcommand_map_t::iterator i = TabCommands().lower_bound(TabPos);
 
 	// Does this near match fail to actually match what the user typed in?
@@ -1611,17 +1635,10 @@ static void C_TabComplete (void)
 
 	// Found a valid replacement
 	strcpy ((char *)(CmdLine + TabStart), i->first.c_str());
-	CmdLine[0] = CmdLine[1] = strlen ((char *)(CmdLine + 2)) + 1;
+	CmdLine[0] = CmdLine[1] = (BYTE)strlen ((char *)(CmdLine + 2)) + 1;
 	CmdLine[CmdLine[0] + 1] = ' ';
 
 	makestartposgood ();
 }
 
-
-
-
-
 VERSION_CONTROL (c_console_cpp, "$Id$")
-
-
-

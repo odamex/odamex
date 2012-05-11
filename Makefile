@@ -128,6 +128,12 @@ TEXTSCREEN_HEADERS = $(wildcard $(TEXTSCREEN_DIR)/*.h)
 TEXTSCREEN_SOURCES = $(wildcard $(TEXTSCREEN_DIR)/*.cpp)
 TEXTSCREEN_OBJS = $(patsubst $(TEXTSCREEN_DIR)/%.cpp,$(OBJDIR)/$(TEXTSCREEN_DIR)/%.o,$(TEXTSCREEN_SOURCES))
 
+# JsonCpp 
+JSONCPP_DIR = jsoncpp
+JSONCPP_HEADERS = $(wildcard $(JSONCPP_DIR)/*.h)
+JSONCPP_SOURCES = $(wildcard $(JSONCPP_DIR)/*.cpp)
+JSONCPP_OBJS = $(patsubst $(JSONCPP_DIR)/%.cpp,$(OBJDIR)/$(JSONCPP_DIR)/%.o,$(JSONCPP_SOURCES))
+
 # Common
 COMMON_DIR = common
 COMMON_HEADERS = $(wildcard $(COMMON_DIR)/*.h)
@@ -142,7 +148,7 @@ SERVER_HEADERS = $(wildcard $(SERVER_DIR)/*.h)
 SERVER_SOURCES = $(wildcard $(SERVER_DIR)/*.cpp)
 SERVER_OBJS = $(patsubst $(SERVER_DIR)/%.cpp,$(OBJDIR)/$(SERVER_DIR)/%.o,$(SERVER_SOURCES))
 SERVER_TARGET = $(BINDIR)/odasrv
-SERVER_CFLAGS = -I../server/src -Iserver/src
+SERVER_CFLAGS = -I../server/src -Iserver/src -Ijsoncpp -DJSON_IS_AMALGAMATION
 SERVER_LFLAGS =
 
 # Client
@@ -156,7 +162,7 @@ CLIENT_LFLAGS =
 
 # Master
 MASTER_DIR = master
-MASTER_HEADERS = master/i_net.h
+MASTER_HEADERS = master/i_net.h common/version.h
 MASTER_SOURCES = master/i_net.cpp master/main.cpp
 MASTER_OBJS = $(patsubst $(MASTER_DIR)/%.cpp,$(OBJDIR)/$(MASTER_DIR)/%.o,$(MASTER_SOURCES))
 MASTER_TARGET = $(BINDIR)/odamaster
@@ -220,6 +226,11 @@ $(OBJDIR)/$(TEXTSCREEN_DIR)/%.o: $(TEXTSCREEN_DIR)/%.cpp $(TEXTSCREEN_HEADERS) $
 	@$(MKDIR) $(dir $@)
 	$(CC) $(CFLAGS) $(CLIENT_CFLAGS) -c $< -o $@
 
+# JsonCpp
+$(OBJDIR)/$(JSONCPP_DIR)/%.o: $(JSONCPP_DIR)/%.cpp $(JSONCPP_HEADERS) $(COMMON_HEADERS)
+	@$(MKDIR) $(dir $@)
+	$(CC) $(CFLAGS) $(SERVER_CFLAGS) -c $< -o $@
+
 # Common for server
 $(OBJDIR)/$(COMMON_DIR)/server_%.o: $(COMMON_DIR)/%.cpp $(COMMON_HEADERS) $(SERVER_HEADERS)
 	@$(MKDIR) $(dir $@)
@@ -247,10 +258,10 @@ endif
 
 # Server
 server: $(SERVER_TARGET)
-$(SERVER_TARGET): $(COMMON_OBJS_SERVER) $(SERVER_OBJS)
-	$(LD) $(SERVER_OBJS) $(COMMON_OBJS_SERVER) $(SERVER_LFLAGS) $(LFLAGS) -o $(SERVER_TARGET)
+$(SERVER_TARGET): $(JSONCPP_OBJS) $(COMMON_OBJS_SERVER) $(SERVER_OBJS)
+	$(LD) $(SERVER_OBJS) $(JSONCPP_OBJS) $(COMMON_OBJS_SERVER) $(SERVER_LFLAGS) $(LFLAGS) -o $(SERVER_TARGET)
 
-$(OBJDIR)/$(SERVER_DIR)/%.o: $(SERVER_DIR)/%.cpp $(SERVER_HEADERS) $(COMMON_HEADERS)
+$(OBJDIR)/$(SERVER_DIR)/%.o: $(SERVER_DIR)/%.cpp $(SERVER_HEADERS) $(COMMON_HEADERS) $(JSONCPP_HEADERS)
 	@$(MKDIR) $(dir $@)
 	$(CC) $(CFLAGS) $(SERVER_CFLAGS) -c $< -o $@
 

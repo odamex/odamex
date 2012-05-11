@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,6 +40,10 @@
 
 #include "doomdef.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 #define NUM_CHANNELS 16
 
 static int mixer_freq;
@@ -46,7 +51,7 @@ static Uint16 mixer_format;
 static int mixer_channels;
 
 static bool sound_initialized = false;
-static char channel_in_use[NUM_CHANNELS];
+static bool channel_in_use[NUM_CHANNELS];
 static int nextchannel = 0;
 
 EXTERN_CVAR (snd_crossover)
@@ -266,7 +271,7 @@ void I_SetSfxVolume (float volume)
 // Pitching (that is, increased speed of playback)
 //  is set, but currently not used by mixing.
 //
-int I_StartSound (int id, int vol, int sep, int pitch, bool loop)
+int I_StartSound (int id, float vol, int sep, int pitch, bool loop)
 {
 	if(!sound_initialized)
 		return 0;
@@ -288,7 +293,7 @@ int I_StartSound (int id, int vol, int sep, int pitch, bool loop)
 			fprintf(stderr, "No free sound channels left.\n");
 			return -1;
 		}
-        } while (channel_in_use[channel] != -1);
+	} while (channel_in_use[channel]);
 
 	nextchannel = channel;
 
@@ -296,7 +301,7 @@ int I_StartSound (int id, int vol, int sep, int pitch, bool loop)
 
 	Mix_PlayChannelTimed(channel, chunk, loop ? -1 : 0, -1);
 
-	channel_in_use[channel] = 1;
+	channel_in_use[channel] = true;
 
 	// set seperation, etc.
 	I_UpdateSoundParams(channel, vol, sep, pitch);
@@ -310,7 +315,7 @@ void I_StopSound (int handle)
 	if(!sound_initialized)
 		return;
 
-	channel_in_use[handle] = -1;
+	channel_in_use[handle] = false;
 
 	Mix_HaltChannel(handle);
 }
@@ -432,9 +437,10 @@ void I_InitSound (void)
 
 	I_InitMusic();
 
-        // Half of fix for stopping wrong sound, these need to be -1
-        // to be regarded as empty (they'd be initialised to something weird)
-    memset(channel_in_use, -1, sizeof(channel_in_use));
+	// Half of fix for stopping wrong sound, these need to be false
+	// to be regarded as empty (they'd be initialised to something weird)
+	for (int i = 0; i < NUM_CHANNELS; i++)
+		channel_in_use[i] = false;
 }
 
 void STACK_ARGS I_ShutdownSound (void)

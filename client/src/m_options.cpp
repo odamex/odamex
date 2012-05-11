@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,16 +28,19 @@
 
 
 #include "doomdef.h"
-#include "dstrings.h"
+#include "gstrings.h"
+#include "minilzo.h"
 
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
+#include "cmdlib.h"
 
 #include "d_main.h"
 
 #include "i_system.h"
 #include "i_video.h"
+#include "i_input.h"
 #include "z_zone.h"
 #include "v_video.h"
 #include "v_text.h"
@@ -55,6 +58,7 @@
 #include "m_memio.h"
 
 #include "s_sound.h"
+#include "i_musicsystem.h"
 
 #include "doomstat.h"
 
@@ -63,20 +67,15 @@
 // Data.
 #include "m_menu.h"
 
+#define MENUBOXWIDTH	236
+#define MENUBOXHEIGHT	200
+#define TEAMPLAYBORDER	4
+
 //
 // defaulted values
 //
-//CVAR (mouse_sensitivity, "1.0", CVAR_ARCHIVE)
-//CVAR (cont_preset,			"0",	CVAR_ARCHIVE)
-EXTERN_CVAR (dynres_state)
-EXTERN_CVAR (dynresval)
-//CVAR (mouse_preset,			"0",	CVAR_ARCHIVE)
-EXTERN_CVAR (mouse_sensitivity)
-EXTERN_CVAR (mouse_type)
-EXTERN_CVAR (novert)
-
 // [ML] 09/4/06: Show secret revealed message, 0 = off, 1 = on
-EXTERN_CVAR (revealsecrets)
+EXTERN_CVAR (hud_revealsecrets)
 
 // Show messages has default, 0 = off, 1 = on
 EXTERN_CVAR (show_messages)
@@ -90,18 +89,83 @@ EXTERN_CVAR (cl_run)
 EXTERN_CVAR (invertmouse)
 EXTERN_CVAR (lookspring)
 EXTERN_CVAR (lookstrafe)
-EXTERN_CVAR (crosshair)
+EXTERN_CVAR (hud_crosshair)
+EXTERN_CVAR (hud_crosshairhealth)
+EXTERN_CVAR (hud_crosshairscale)
 EXTERN_CVAR (cl_mouselook)
-EXTERN_CVAR (cl_autoaim)
+EXTERN_CVAR (r_detail)
+EXTERN_CVAR (language)
+
+// [Ralphis - Menu] Compatibility Menu
+EXTERN_CVAR (co_level8soundfeature)
+EXTERN_CVAR (hud_targetnames)
+EXTERN_CVAR (hud_scale)
+EXTERN_CVAR (hud_scalescoreboard)
+EXTERN_CVAR (hud_timer)
+EXTERN_CVAR (hud_transparency)
+EXTERN_CVAR (hud_revealsecrets)
+EXTERN_CVAR (r_showendoom)
+EXTERN_CVAR (co_allowdropoff)
+EXTERN_CVAR (co_realactorheight)
+EXTERN_CVAR (co_boomlinecheck)
+EXTERN_CVAR (wi_newintermission)
+EXTERN_CVAR (co_zdoomphys)
+EXTERN_CVAR (co_zdoomswitches)
+EXTERN_CVAR (co_fixweaponimpacts)
+EXTERN_CVAR (co_zdoomsoundcurve)
+EXTERN_CVAR (cl_deathcam)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
+EXTERN_CVAR (mouse_type)
+EXTERN_CVAR (mouse_sensitivity)
 EXTERN_CVAR (m_pitch)
+EXTERN_CVAR (novert)
 EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
-EXTERN_CVAR (displaymouse)
 EXTERN_CVAR (mouse_acceleration)
 EXTERN_CVAR (mouse_threshold)
+
+// [Ralphis - Menu] Sound Menu
+EXTERN_CVAR (snd_musicsystem)
+EXTERN_CVAR (snd_musicvolume)
+EXTERN_CVAR (snd_announcervolume)
+EXTERN_CVAR (snd_sfxvolume)
+EXTERN_CVAR (snd_crossover)
+EXTERN_CVAR (cl_connectalert)
+EXTERN_CVAR (cl_disconnectalert)
+
+// Joystick menu -- Hyper_Eye
+void JoystickSetup (void);
+EXTERN_CVAR (use_joystick)
+EXTERN_CVAR (joy_active)
+EXTERN_CVAR (joy_forwardaxis)
+EXTERN_CVAR (joy_strafeaxis)
+EXTERN_CVAR (joy_turnaxis)
+EXTERN_CVAR (joy_lookaxis)
+EXTERN_CVAR (joy_sensitivity)
+EXTERN_CVAR (joy_invert)
+EXTERN_CVAR (joy_freelook)
+
+// Network Options
+EXTERN_CVAR (rate)
+EXTERN_CVAR (cl_unlag)
+EXTERN_CVAR (cl_updaterate)
+EXTERN_CVAR (cl_interp)
+EXTERN_CVAR (cl_predictpickup)
+EXTERN_CVAR (cl_predictsectors)
+
+// Weapon Preferences
+EXTERN_CVAR (cl_switchweapon)
+EXTERN_CVAR (cl_weaponpref1)
+EXTERN_CVAR (cl_weaponpref2)
+EXTERN_CVAR (cl_weaponpref3)
+EXTERN_CVAR (cl_weaponpref4)
+EXTERN_CVAR (cl_weaponpref5)
+EXTERN_CVAR (cl_weaponpref6)
+EXTERN_CVAR (cl_weaponpref7)
+EXTERN_CVAR (cl_weaponpref8)
+EXTERN_CVAR (cl_weaponpref9)
 
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
@@ -110,7 +174,9 @@ void M_StartControlPanel(void);
 int  M_StringHeight(char *string);
 void M_ClearMenus (void);
 
-
+static bool CanScrollUp;
+static bool CanScrollDown;
+static int VisBottom;
 
 value_t YesNo[2] = {
 	{ 0.0, "No" },
@@ -127,11 +193,31 @@ value_t OnOff[2] = {
 	{ 1.0, "On" }
 };
 
+value_t OffOn[2] = {
+	{ 0.0, "On" },
+	{ 1.0, "Off" }
+};
+
+value_t OnOffAuto[3] = {
+	{ 0.0, "Off" },
+	{ 1.0, "On" },
+	{ 2.0, "Auto" }
+};
+
+static value_t DoomOrOdamex[2] =
+{
+	{ 0.0, "Doom" },
+	{ 1.0, "Odamex" }
+};
+
 menu_t  *CurrentMenu;
 int		CurrentItem;
 static BOOL	WaitingForKey;
-static const char	   *OldMessage;
-static itemtype OldType;
+static BOOL	WaitingForAxis;
+static const char	   *OldContMessage;
+static itemtype OldContType;
+static const char	   *OldAxisMessage;
+static itemtype OldAxisType;
 
 /*=======================================
  *
@@ -142,32 +228,38 @@ static itemtype OldType;
 static void PlayerSetup (void);
 static void CustomizeControls (void);
 static void VideoOptions (void);
+static void SoundOptions (void);
+static void CompatOptions (void);
+static void NetworkOptions (void);
+static void WeaponOptions (void);
+static void GoToConsole (void);
 static void GoToConsole (void);
 void Reset2Defaults (void);
 void Reset2Saved (void);
-
-EXTERN_CVAR (snd_musicvolume)
 
 static void SetVidMode (void);
 
 static menuitem_t OptionItems[] =
 {
-	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
-	{ more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
-	{ more,		"Mouse Setup" ,			{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
-	{ more,		"Go to console",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)GoToConsole} },
-	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VideoOptions} },
-	{ more,		"Set video mode",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SetVidMode} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ slider,	"Music volume", 		{&snd_musicvolume},		{0.0}, {1.0},	{0.1}, {NULL} },
-	{ slider,	"Sound volume",			{&snd_sfxvolume},		{0.0}, {1.0},	{0.1}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Lookspring",			{&lookspring},			{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ discrete, "Lookstrafe",			{&lookstrafe},			{2.0}, {0.0},	{0.0}, {OnOff} },
+    { more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
+	{ more,		"Weapon Preferences",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)WeaponOptions} },
+ 	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
+	{ more,		"Mouse Options" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
+	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
+ 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+ 	{ more,		"Compatibility Options",{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CompatOptions} },
+	{ more,		"Network Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)NetworkOptions} },
+	{ more,		"Sound Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SoundOptions} },
+ 	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VideoOptions} },
+	{ more,		"Set Video Mode",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SetVidMode} },
+    { redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,		"Go To Console",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)GoToConsole} },
+    { redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete,	"Always Run",			{&cl_run},				{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Defaults} },
-	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} }
+ 	{ discrete, "Lookspring",			{&lookspring},			{2.0}, {0.0},	{0.0}, {OnOff} },
+ 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+ 	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Defaults} },
+ 	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} }
 };
 
 menu_t OptionMenu = {
@@ -176,9 +268,105 @@ menu_t OptionMenu = {
 	STACKARRAY_LENGTH(OptionItems),
 	177,
 	OptionItems,
+	0,
+	0,
+	NULL
 };
 
-
+/*=======================================
+ *
+ * Controls Menu
+ *
+ *=======================================*/
+ 
+static menuitem_t ControlsItems[] = {
+#ifdef _XBOX
+	{ whitetext,"A to change, START to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+#else
+	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+#endif
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
+	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
+	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
+	{ control,	"Strafe right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveright"} },
+	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
+	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
+	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
+	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
+	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
+	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
+	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
+	{ control,	"Toggle Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglemap"} },
+	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
+	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Weapons",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Fist/Chainsaw",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 1"} },
+	{ control,	"Pistol",       		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 2"} },
+	{ control,	"Shotgun/SSG",  		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 3"} },
+	{ control,	"Chaingun",     		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 4"} },
+	{ control,	"Rocket Launcher",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 5"} },
+	{ control,	"Plasma Rifle",   		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 6"} },
+	{ control,	"BFG",          		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 7"} },
+	{ control,	"Chainsaw",     		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 8"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
+	{ control,	"Fly / Swim down",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+movedown"} },
+	{ control,	"Toggle flying",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"fly"} },
+	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookup"} },
+	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookdown"} },
+	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"centerview"} },
+	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
+	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
+	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
+	{ control,	"Ready",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"ready"} },
+	{ control,	"Change teams",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"changeteams"} },
+	{ control,	"Spectate",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spectate"} },
+	{ control,	"Coop Spy",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spynext"} },
+	{ control,	"Show Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
+	{ control,	"Vote Yes", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_yes"} },
+	{ control,	"Vote No", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_no"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,  "Main menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_main"} },
+	{ control,	"Help menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_help"} },
+	{ control,	"Save menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_save"} },
+	{ control,	"Load menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_load"} },
+	{ control,	"Options menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_options"} },
+	{ control,	"Display options",	    {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_display"} },	
+	{ control,	"Player setup menu",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_player"} },
+	{ control,	"Configure controls",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_keys"} },
+	{ control,	"Change resolution",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_video"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+    { control,	"Increase screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizeup"} },		
+	{ control,	"Reduce screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizedown"} },	
+	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },
+	{ control,	"Screenshot",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"screenshot"} },
+	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} },
+	{ control,  "End current game",     {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_endgame"} },
+	{ control,  "Quit Odamex",	        {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_quit"} }
+};
+ 
+menu_t ControlsMenu = {
+	"M_CONTRO",
+	3,
+	STACKARRAY_LENGTH(ControlsItems),
+	0,
+	ControlsItems,
+	2,
+	0,
+	NULL
+};
 
 // -------------------------------------------------------
 //
@@ -186,31 +374,103 @@ menu_t OptionMenu = {
 //
 // -------------------------------------------------------
 
-static value_t MouseBases[] =
-{
-	{ 0.0, "Standard" },
-	{ 1.0, "ZDoom" },
+static value_t MouseType[] = {
+	{ MOUSE_DOOM,		"Doom"},
+	{ MOUSE_ZDOOM_DI,	"ZDoom"}
 };
+
+static int previous_mouse_type;
+void M_ResetMouseValues();
 
 static menuitem_t MouseItems[] =
 {
-
-	{ slider	,	"Sensitivity" 							, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}						},
-	{ slider    ,   "Acceleration"                          , {&mouse_acceleration},{0.0},      {10.0},     {0.5},      {NULL}                      },
-	{ slider    ,   "Threshold"                             , {&mouse_threshold},   {0.0},      {20.0},     {1.0},      {NULL}                      },
-	{ slider	,	"Dynamic Resolution"					, {&dynresval},			{1.001},	{1.232},	{0.003},	{NULL}						},
-	{ slider	,	"Freelook speed"						, {&m_pitch},			{0.0},		{1.85},		{0.025},	{NULL}						},
-	{ slider	,	"Strafe speed"							, {&m_side},			{0.0},		{18.5},		{0.25},		{NULL}						},
-	{ slider	,	"Y axis"								, {&m_forward},			{0.0},		{18.5},		{0.25},		{NULL}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ discrete	,	"Use Dynamic Resolution"				, {&dynres_state},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Show Mouse Values"						, {&displaymouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Always FreeLook"						, {&cl_mouselook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Invert Mouse"							, {&invertmouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{MouseBases}				},
-	{ discrete	,	"NoVert"								, {&novert},			{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ discrete,	"Mouse Type"					, {&mouse_type},		{2.0},	{0.0},		{0.0},		{MouseType}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ slider,	"Overall Sensitivity" 			, {&mouse_sensitivity},	{0.0},	{77.0},		{1.0},		{NULL}},
+	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.0},	{1.0},		{0.025},	{NULL}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ discrete,	"Invert Mouse"					, {&invertmouse},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ discrete,	"Horizontal Movement"			, {&lookstrafe},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ discrete,	"Vertical Movement"				, {&novert},			{2.0},	{0.0},		{0.0},		{OffOn}},
+	{ slider,	"Horizontal Movement Speed"		, {&m_side},			{0.0},	{15},		{0.5},		{NULL}},
+	{ slider,	"Vertical Movement Speed"		, {&m_forward},			{0.0},	{15},		{0.5},		{NULL}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ slider,	"Mouse Acceleration"			, {&mouse_acceleration},{0.0},	{10.0},		{0.5},		{NULL}},
+	{ slider,	"Mouse Threshold"				, {&mouse_threshold},	{0.0},	{20.0},		{1.0},		{NULL}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ more,		"Reset mouse to defaults"		, {NULL},				{0.0},	{0.0},		{0.0},		{(value_t *)M_ResetMouseValues}},
 };
+
+void G_ConvertMouseSettings(int old_type, int new_type);
+
+static void M_UpdateMouseOptions()
+{
+	const static size_t menu_length = STACKARRAY_LENGTH(MouseItems);
+	const static size_t mouse_sens_index = M_FindCvarInMenu(mouse_sensitivity, MouseItems, menu_length); 
+	const static size_t mouse_pitch_index = M_FindCvarInMenu(m_pitch, MouseItems, menu_length); 
+	const static size_t mouse_accel_index = M_FindCvarInMenu(mouse_acceleration, MouseItems, menu_length);
+	const static size_t mouse_thresh_index = M_FindCvarInMenu(mouse_threshold, MouseItems, menu_length);
+
+	static menuitem_t doom_sens_menuitem = MouseItems[mouse_sens_index];
+	static menuitem_t doom_pitch_menuitem =	MouseItems[mouse_pitch_index];
+	static menuitem_t doom_accel_menuitem = MouseItems[mouse_accel_index];
+	static menuitem_t doom_thresh_menuitem = MouseItems[mouse_thresh_index];
+
+	static menuitem_t zdoom_sens_menuitem =
+		{ slider	,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.25},		{2.5},		{0.1},		{NULL}};
+	static menuitem_t zdoom_pitch_menuitem =
+		{ slider	,	"Freelook Sensitivity"			, {&m_pitch},			{0.25},		{2.5},		{0.1},		{NULL}};
+	static menuitem_t zdoom_accel_menuitem =
+		{ redtext	,	" "								, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}};
+	static menuitem_t zdoom_thresh_menuitem =
+		{ redtext	,	" "								, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}};
+
+	if (mouse_type == MOUSE_ZDOOM_DI)
+	{
+		if (mouse_sens_index < menu_length)
+			memcpy(&MouseItems[mouse_sens_index], &zdoom_sens_menuitem, sizeof(menuitem_t));
+		if (mouse_pitch_index < menu_length)
+			memcpy(&MouseItems[mouse_pitch_index], &zdoom_pitch_menuitem, sizeof(menuitem_t));
+		if (mouse_accel_index < menu_length)
+			memcpy(&MouseItems[mouse_accel_index], &zdoom_accel_menuitem, sizeof(menuitem_t));
+		if (mouse_thresh_index < menu_length)
+			memcpy(&MouseItems[mouse_thresh_index], &zdoom_thresh_menuitem, sizeof(menuitem_t));
+	}
+	else
+	{
+		if (mouse_sens_index < menu_length)
+			memcpy(&MouseItems[mouse_sens_index], &doom_sens_menuitem, sizeof(menuitem_t));
+		if (mouse_pitch_index < menu_length)
+			memcpy(&MouseItems[mouse_pitch_index], &doom_pitch_menuitem, sizeof(menuitem_t));
+		if (mouse_accel_index < menu_length)
+			memcpy(&MouseItems[mouse_accel_index], &doom_accel_menuitem, sizeof(menuitem_t));
+		if (mouse_thresh_index < menu_length)
+			memcpy(&MouseItems[mouse_thresh_index], &doom_thresh_menuitem, sizeof(menuitem_t));
+	}
+
+	G_ConvertMouseSettings(previous_mouse_type, mouse_type);
+	previous_mouse_type = mouse_type;
+}
+
+void M_ResetMouseValues()
+{
+	mouse_type.RestoreDefault();
+	mouse_sensitivity.RestoreDefault();
+	m_pitch.RestoreDefault();
+	cl_mouselook.RestoreDefault();
+	invertmouse.RestoreDefault();	
+	lookstrafe.RestoreDefault();
+	novert.RestoreDefault();
+	m_side.RestoreDefault();
+	m_forward.RestoreDefault();
+	mouse_acceleration.RestoreDefault();
+	mouse_threshold.RestoreDefault();
+
+	previous_mouse_type = mouse_type;
+	M_UpdateMouseOptions();
+}
 
 menu_t MouseMenu = {
     "M_MOUSET",
@@ -218,50 +478,272 @@ menu_t MouseMenu = {
     STACKARRAY_LENGTH(MouseItems),
     177,
     MouseItems,
+	0,
+	0,
+	&M_UpdateMouseOptions
 };
-
-
-
 
 
 /*=======================================
  *
- * Controls Menu
+ * Joystick Menu
  *
  *=======================================*/
 
-static menuitem_t ControlsItems[] = {
-	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Attack",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
-	{ control,	"Next Weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },	// Was already here
-	{ control,	"Previous Weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },	// TIJ
-	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
-	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
-	{ control,	"Walk forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
-	{ control,	"Backpedal",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
-	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
-	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
-	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
-	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
-	{ control,	"Strafe right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveright"} },
-	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
-	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookup"} },
-	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookdown"} },
-	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"centerview"} },
-	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
-	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
-	{ control,	"Toggle automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglemap"} },
-	{ control,	"View Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
-	{ control,	"Console",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} }
+static menuitem_t JoystickItems[] =
+{
+	{ discrete	,	"Use Joystick"							, {&use_joystick},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ joyactive	,	"Active Joystick"						, {&joy_active},		{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ discrete	,	"Always FreeLook"						, {&joy_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ discrete	,	"Invert Look Axis"						, {&joy_invert},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ whitetext	,	"Press ENTER to change"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
+	{ joyaxis	,	"Walk Analog Axis"						, {&joy_forwardaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ joyaxis	,	"Strafe Analog Axis"					, {&joy_strafeaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ joyaxis	,	"Turn Analog Axis"						, {&joy_turnaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ joyaxis	,	"Look Analog Axis"						, {&joy_lookaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
 };
 
-menu_t ControlsMenu = {
-	"M_CONTRO",
-	1,
-	STACKARRAY_LENGTH(ControlsItems),
+menu_t JoystickMenu = {
+    "M_JOYSTK",
+    0,
+    STACKARRAY_LENGTH(JoystickItems),
+    177,
+    JoystickItems,
 	0,
-	ControlsItems,
+	0,
+	NULL
 };
+
+ /*=======================================
+  *
+  * Sound Menu [Ralphis]
+  *
+  *=======================================*/
+
+static value_t MusSys[] = {
+	{ MS_SDLMIXER,	"SDL Mixer"},
+	#ifdef OSX
+	{ MS_AUDIOUNIT,	"AudioUnit"},
+	#endif	// OSX
+	#ifdef PORTMIDI
+	{ MS_PORTMIDI,	"PortMidi"},
+	#endif	// PORTMIDI
+	{ MS_NONE,		"No Music"}
+};
+
+static int num_mussys = STACKARRAY_LENGTH(MusSys);
+
+static menuitem_t SoundItems[] = {
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
+	{ bricktext ,   "Sound Levels"                      , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ slider    ,	"Music Volume"                      , {&snd_musicvolume},	{0.0},      	{1.0},	    {0.1},      {NULL} },
+	{ slider    ,	"Sound Volume"                      , {&snd_sfxvolume},		{0.0},      	{1.0},	    {0.1},      {NULL} },
+	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.1},      {NULL} },
+	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },	
+	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
+	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ bricktext ,   "Multiplayer Options"               , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ discrete  ,   "Player Connect Alert"              , {&cl_connectalert},	{2.0},			{0.0},		{0.0},		{OnOff} },
+	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} }	
+ };
+ 
+menu_t SoundMenu = {
+	"M_SOUND",
+	2,
+	STACKARRAY_LENGTH(SoundItems),
+	177,
+	SoundItems,
+	0,
+	0,
+	NULL
+};
+
+
+/*=======================================
+ *
+ * Compatibility Options Menu
+ *
+ *=======================================*/
+static menuitem_t CompatItems[] = {
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },   
+	{ bricktext,				"Enhanced Interaction"		, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },     
+	{ discrete  ,	"Things are actual height"              , {&co_realactorheight},{2.0},      {0.0},	    {0.0},      {OnOff} },		
+	{ discrete  ,	"Items drop off ledges"                 , {&co_allowdropoff},	{2.0},      {0.0},	    {0.0},      {OnOff} },
+	{ discrete	,	"Correct Weapon Impacts"				, {&co_fixweaponimpacts},{2.0},		{0.0},		{0.0},		{OnOff} },	
+	{ discrete	,	"Follow killer when dead"				, {&cl_deathcam},		{2.0},		{0.0},		{0.0},		{OnOff} },	
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },  
+	{ bricktext,				"BOOM Compatibility"		, {NULL},				{0.0}, 		{0.0},		{0.0}, 		{NULL} },     
+	{ discrete  ,	"Use Line Extra Checks"    				, {&co_boomlinecheck},	{2.0},      {0.0},	    {0.0},      {OnOff} },
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },  	
+	{ bricktext,				"ZDOOM Compatibility"		, {NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },     
+	{ discrete	,	"Use ZDoom physics"						, {&co_zdoomphys},		{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete	,	"Positional switch sounds"				, {&co_zdoomswitches},	{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete	,	"Extended Sound Curve"					, {&co_zdoomsoundcurve},{2.0},		{0.0},		{0.0},		{OnOff} },	
+ };
+
+menu_t CompatMenu = {
+	"M_COMPAT",
+	2,
+	STACKARRAY_LENGTH(CompatItems),
+	177,
+	CompatItems,
+	0,
+	0,
+	NULL,
+};
+
+
+/*=======================================
+ *
+ * Network Options Menu
+ *
+ *=======================================*/
+
+static value_t BandwidthLevels[] = {
+	{ 7.0,			"56kbps" },
+	{ 200.0,		"1.5Mbps" },
+	{ 375.0,		"3.0Mbps" },
+	{ 750.0,		"6.0Mbps" }
+};
+
+static value_t UpdateRate[] = {
+	{ 1.0,			"Every tic" },
+	{ 2.0,			"Every 2nd tic" },
+	{ 3.0,			"Every 3rd tic" }
+};
+
+static menuitem_t NetworkItems[] = {
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
+	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Bandwidth",					{&rate},			{4.0},		{0.0},		{0.0},		{BandwidthLevels} },
+	{ discrete,		"Position update freq",			{&cl_updaterate},	{3.0},		{0.0},		{0.0},		{UpdateRate} },
+	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
+	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete,		"Predict weapon pickups",		{&cl_predictpickup},{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete,		"Predict sectors",				{&cl_predictsectors},{2.0},		{0.0},		{0.0},		{OnOff} },
+};
+
+menu_t NetworkMenu = {
+	"M_NETWRK",
+	2,
+	STACKARRAY_LENGTH(NetworkItems),
+	177,
+	NetworkItems,
+	0,
+	0,
+	NULL
+};
+
+
+/*=======================================
+ *
+ * Weapon Preferences Menu
+ *
+ *=======================================*/
+
+static value_t WeapSwitch[] = {
+	{ 0.0,			"Never" },
+	{ 1.0,			"Always" },
+	{ 2.0,			"By Preference" }
+};
+
+extern const char *weaponnames[];
+
+static const cvar_t* weaponcvars[] = {
+	&cl_weaponpref1, &cl_weaponpref2, &cl_weaponpref3, &cl_weaponpref4, &cl_weaponpref5,
+	&cl_weaponpref6, &cl_weaponpref7, &cl_weaponpref8, &cl_weaponpref9 };
+
+static value_t WeapChoice1[NUMWEAPONS];
+static value_t WeapChoice2[NUMWEAPONS-1];
+static value_t WeapChoice3[NUMWEAPONS-2];
+static value_t WeapChoice4[NUMWEAPONS-3];
+static value_t WeapChoice5[NUMWEAPONS-4];
+static value_t WeapChoice6[NUMWEAPONS-5];
+static value_t WeapChoice7[NUMWEAPONS-6];
+static value_t WeapChoice8[NUMWEAPONS-7];
+static value_t WeapChoice9[NUMWEAPONS-8];
+
+static value_t *WeapChoices[] = {
+	WeapChoice1, WeapChoice2, WeapChoice3, WeapChoice4, WeapChoice5,
+	WeapChoice6, WeapChoice7, WeapChoice8, WeapChoice9 };
+
+static menuitem_t WeaponItems[] = {
+	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },	
+	{ bricktext,	"Configure Weapon Preferences",	{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Switch on pickup",				{&cl_switchweapon},	{3.0},		{0.0},		{0.0},		{WeapSwitch} },
+	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },	
+	{ bricktext,	"Weapon Preference Order",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Preference #1",				{&cl_weaponpref1},	{9.0},		{0.0},		{0.0},		{WeapChoice1} },
+	{ discrete,		"Preference #2",				{&cl_weaponpref2},	{8.0},		{0.0},		{0.0},		{WeapChoice2} },
+	{ discrete,		"Preference #3",				{&cl_weaponpref3},	{7.0},		{0.0},		{0.0},		{WeapChoice3} },
+	{ discrete,		"Preference #4",				{&cl_weaponpref4},	{6.0},		{0.0},		{0.0},		{WeapChoice4} },
+	{ discrete,		"Preference #5",				{&cl_weaponpref5},	{5.0},		{0.0},		{0.0},		{WeapChoice5} },
+	{ discrete,		"Preference #6",				{&cl_weaponpref6},	{4.0},		{0.0},		{0.0},		{WeapChoice6} },
+	{ discrete,		"Preference #7",				{&cl_weaponpref7},	{3.0},		{0.0},		{0.0},		{WeapChoice7} },
+	{ discrete,		"Preference #8",				{&cl_weaponpref8},	{2.0},		{0.0},		{0.0},		{WeapChoice8} },
+	{ discrete,		"Preference #9",				{&cl_weaponpref9},	{1.0},		{0.0},		{0.0},		{WeapChoice9} }
+};
+
+//
+// M_UpdateWeaponOptions()
+//
+// Chooses the possible options for each of the weapon preference slots.
+// Slot 1 allows 9 possible choices, Slot 2 allows 8 choices with the choice
+// in Slot 1 excluded, and Slot 3 allows 7 choices with the choices in Slots 1
+// and Slot 2 excluded, etc.
+//
+static void M_UpdateWeaponOptions()
+{
+	weapontype_t pool[NUMWEAPONS] = {
+		wp_fist, wp_chainsaw, wp_pistol, wp_shotgun, wp_supershotgun,
+		wp_chaingun, wp_missile, wp_plasma, wp_bfg };
+
+	for (int slot = 0; slot < NUMWEAPONS; slot++)
+	{
+		value_t *cur_weapchoice = WeapChoices[slot];
+
+		// Compile the possible weapon options for the slot
+		for (int i = 0; i < NUMWEAPONS - slot; i++)
+		{
+			int weapon_num = pool[slot + i];
+			cur_weapchoice[i].value = float(weapon_num);
+			cur_weapchoice[i].name = weaponnames[weapon_num];
+		}
+
+		weapontype_t slotweapon =
+			static_cast<weapontype_t>(weaponcvars[slot]->asInt());
+
+		// Move the slot's weapon to the front of the remaining pool
+		for (int poolcur = slot + 1; poolcur < NUMWEAPONS; poolcur++)
+		{
+			if (pool[poolcur] == slotweapon)
+			{
+				// move the weapons over to make room at the front of the pool
+				for (int j = poolcur; j > slot; j--)
+					pool[j] = pool[j-1];
+				pool[slot] = slotweapon;
+				break;
+			}
+		}
+	}
+}
+
+menu_t WeaponMenu = {
+	"M_WEAPON",
+	2,
+	STACKARRAY_LENGTH(WeaponItems),
+	177,
+	WeaponItems,
+	0,
+	0,
+	&M_UpdateWeaponOptions
+};
+
 
 /*=======================================
  *
@@ -269,18 +751,26 @@ menu_t ControlsMenu = {
  *
  *=======================================*/
 static void StartMessagesMenu (void);
+static void StartAutomapMenu (void);
 void ResetCustomColors (void);
 
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
-EXTERN_CVAR (st_scale)
+EXTERN_CVAR (am_ovshare)
+EXTERN_CVAR (am_showmonsters)
+EXTERN_CVAR (am_showsecrets)
+EXTERN_CVAR (am_showtime)
+EXTERN_CVAR (am_classicmapstring)
 EXTERN_CVAR (am_usecustomcolors)
+EXTERN_CVAR (st_scale)
 EXTERN_CVAR (r_stretchsky)
-EXTERN_CVAR (wipetype)
+EXTERN_CVAR (r_skypalette)
+EXTERN_CVAR (r_wipetype)
 EXTERN_CVAR (screenblocks)
-EXTERN_CVAR (dimamount)
-EXTERN_CVAR (usehighresboard)
-EXTERN_CVAR (show_endoom)
+EXTERN_CVAR (ui_dimamount)
+EXTERN_CVAR (r_showendoom)
+EXTERN_CVAR (r_painintensity)
+EXTERN_CVAR (cl_movebob)
 
 static value_t Crosshairs[] =
 {
@@ -350,27 +840,33 @@ CVAR_FUNC_IMPL (ui_transblue)
 }
 
 static menuitem_t VideoItems[] = {
-	{ more,		"Messages",				{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)StartMessagesMenu} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ slider,	"Screen size",			{&screenblocks},	   	{3.0}, {12.0},	{1.0}, {NULL} },
-	{ slider,	"Brightness",			{&gammalevel},			{1.0}, {5.0},	{1.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ slider,   "UI Transperancy",      {&dimamount},           {0.0}, {1.0},   {0.1}, {NULL} },
-	{ slider,   "UI Trans Red",         {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
-	{ slider,   "UI Trans Green",       {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
-	{ slider,   "UI Trans Blue",        {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete,	"Crosshair",			{&crosshair},		   	{9.0}, {0.0},	{0.0}, {Crosshairs} },
-	{ discrete, "Stretch short skies",	{&r_stretchsky},	   	{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ discrete, "Stretch status bar",	{&st_scale},			{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ discrete, "Screen wipe style",	{&wipetype},			{4.0}, {0.0},	{0.0}, {Wipes} },
-	{ discrete, "Show DOS Ending Screen",	{&show_endoom},			{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ discrete, "Use high-res scoreboard",	{&usehighresboard},			{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0}, {Overlays} },
-	{ discrete, "Standard map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0}, {NoYes} },
-	{ more,     "Reset custom map colors", {NULL},              {0.0}, {0.0},   {0.0}, {(value_t *)ResetCustomColors} }
+	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartMessagesMenu} },
+	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
+	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
+	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
+	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {5.0},	{1.0},  {NULL} },
+	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },	
+	{ slider,	"Movement bobbing",			{&cl_movebob},			{0.0}, {1.0},	{0.1},	{NULL} },
+	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },	
+	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },	
+	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},  {NULL} },
+	{ discrete, "HUD Timer Visibility",     {&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
+	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
+	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Crosshair health",			{&hud_crosshairhealth},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Multiplayer Intermissions",{&wi_newintermission}, {2.0}, {0.0},	{0.0},  {DoomOrOdamex} },	
+	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
+	{ slider,   "UI Background Red",        {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
+	{ slider,   "UI Background Green",      {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
+	{ slider,   "UI Background Blue",       {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
+	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },	
+	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
+	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
+	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
+    { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
 };
 
 menu_t VideoMenu = {
@@ -379,6 +875,9 @@ menu_t VideoMenu = {
 	STACKARRAY_LENGTH(VideoItems),
 	0,
 	VideoItems,
+	3,
+	0,
+	NULL
 };
 
 /*=======================================
@@ -386,7 +885,7 @@ menu_t VideoMenu = {
  * Messages Menu
  *
  *=======================================*/
-EXTERN_CVAR (con_scaletext)
+EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (msg0color)
 EXTERN_CVAR (msg1color)
 EXTERN_CVAR (msg2color)
@@ -404,7 +903,11 @@ static value_t TextColors[] =
 	{ 4.0, "brown" },
 	{ 5.0, "gold" },
 	{ 6.0, "red" },
-	{ 7.0, "blue" }
+	{ 7.0, "blue" },
+	{ 8.0, "orange" },
+	{ 9.0, "white" },
+//	[SL] remove yellow until the color translation can be fixed
+//	{ 10.0, "yellow" }
 };
 
 static value_t MessageLevels[] = {
@@ -413,19 +916,28 @@ static value_t MessageLevels[] = {
 	{ 2.0, "Critical Messages" }
 };
 
+// TODO: Put all language info in one array, auto detect what's in the lump?
+static value_t Languages[] = {
+	{ 0.0, "Auto" },
+	{ 1.0, "English" },
+	{ 2.0, "French" },
+	{ 3.0, "Italian" }
+};
+
 static menuitem_t MessagesItems[] = {
-	{ discrete,	"Scale text in high res", {&con_scaletext},		{2.0}, {0.0}, 	{0.0}, {OnOff} },
+	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
 	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
-	{ discrete, "Reveal Secrets",       {&revealsecrets},       {2.0}, {0.0},   {0.0}, {OnOff} },
+	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },	
+    { discrete,	"Show player target names",	{&hud_targetnames},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ whitetext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Obituaries",			{&msg1color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Chat Messages",		{&msg3color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Team Messages",		{&msg4color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Centered Messages",	{&msgmidcolor},			{8.0}, {0.0},	{0.0}, {TextColors} }
+	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Obituaries",			{&msg1color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Chat Messages",		{&msg3color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Team Messages",		{&msg4color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Centered Messages",	{&msgmidcolor},			{10.0}, {0.0},	{0.0}, {TextColors} }
 };
 
 menu_t MessagesMenu = {
@@ -434,6 +946,46 @@ menu_t MessagesMenu = {
 	STACKARRAY_LENGTH(MessagesItems),
 	0,
 	MessagesItems,
+	0,
+	0,
+	NULL
+};
+
+/*=======================================
+ *
+ * Automap Menu
+ *
+ *=======================================*/
+ 
+static value_t ClassicMapStringTypes[] = {
+	{ 0.0, "Odamex" },
+	{ 1.0, "Classic" }
+};
+
+static menuitem_t AutomapItems[] = {
+	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0},  {Overlays} },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+    { discrete, "Show monster count",	{&am_showmonsters},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Show secrets count",	{&am_showsecrets},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Show map timer", 	    {&am_showtime}, 	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Map name style",       {&am_classicmapstring},	{2.0}, {0.0},	{0.0},  {ClassicMapStringTypes} },
+        
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ bricktext, "Automap Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },	
+	{ discrete, "Custom map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ more,     "Reset custom map colors",  {NULL},             {0.0}, {0.0},   {0.0},  {(value_t *)ResetCustomColors} },
+};
+
+menu_t AutomapMenu = {
+	"M_MESS",
+	0,
+	STACKARRAY_LENGTH(AutomapItems),
+	0,
+	AutomapItems,
+	0,
+	0,
+	NULL
 };
 
 
@@ -458,19 +1010,37 @@ EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
 
-static cvar_t DummyDepthCvar (NULL, NULL, 0);
+static cvar_t DummyDepthCvar (NULL, NULL, "", CVARTYPE_NONE, 0);
 
+EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
 
 static value_t Depths[22];
 
+#ifdef _XBOX
+static char VMEnterText[] = "Press A to set mode";
+static char VMTestText[] = "Press X to test mode for 5 seconds";
+#else
 static char VMEnterText[] = "Press ENTER to set mode";
 static char VMTestText[] = "Press T to test mode for 5 seconds";
+#endif
+
+static value_t DetailModes[] = {
+	{ 0.0, "Normal" },
+	{ 1.0, "Double Horizontal" },
+	{ 2.0, "Double Vertical" },
+	{ 3.0, "Double Horiz & Vert" }
+};
+
 
 static menuitem_t ModesItems[] = {
 	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Fullscreen",			{&vid_fullscreen},			{2.0}, {0.0},	{0.0}, {YesNo} },
+	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
+#ifdef _XBOX
+	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
+#else
+	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
+#endif
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -499,24 +1069,27 @@ menu_t ModesMenu = {
 	STACKARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,
+	0,
+	0,
+	NULL
 };
 
 static cvar_t *flagsvar;
 
-EXTERN_CVAR(dimcolor)
+EXTERN_CVAR(ui_dimcolor)
 
 // [Russell] - Modified to send new colours
 static void M_SendUINewColor (int red, int green, int blue)
 {
 	char command[24];
 
-	sprintf (command, "dimcolor \"%02x %02x %02x\"", red, green, blue);
+	sprintf (command, "ui_dimcolor \"%02x %02x %02x\"", red, green, blue);
 	AddCommandString (command);
 }
 
 static void M_SlideUIRed (int val)
 {
-	int color = V_GetColorFromString(NULL, dimcolor.cstring());
+	int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
 	int red = val;
 
 	M_SendUINewColor (red, GPART(color), BPART(color));
@@ -524,7 +1097,7 @@ static void M_SlideUIRed (int val)
 
 static void M_SlideUIGreen (int val)
 {
-    int color = V_GetColorFromString(NULL, dimcolor.cstring());
+    int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
 	int green = val;
 
 	M_SendUINewColor (RPART(color), green, BPART(color));
@@ -532,7 +1105,7 @@ static void M_SlideUIGreen (int val)
 
 static void M_SlideUIBlue (int val)
 {
-    int color = V_GetColorFromString(NULL, dimcolor.cstring());
+    int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
 	int blue = val;
 
 	M_SendUINewColor (RPART(color), GPART(color), blue);
@@ -587,12 +1160,12 @@ void M_ChangeMessages (void)
 {
 	if (show_messages)
 	{
-		Printf (128, "%s\n", MSGOFF);
+		Printf (128, "%s\n", GStrings(MSGOFF));
 		show_messages.Set (0.0f);
 	}
 	else
 	{
-		Printf (128, "%s\n", MSGON);
+		Printf (128, "%s\n", GStrings(MSGON));
 		show_messages.Set (1.0f);
 	}
 }
@@ -612,14 +1185,14 @@ void M_SizeDisplay (float diff)
 BEGIN_COMMAND (sizedown)
 {
 	M_SizeDisplay (-1.0);
-	S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 }
 END_COMMAND (sizedown)
 
 BEGIN_COMMAND (sizeup)
 {
 	M_SizeDisplay(1.0);
-	S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 }
 END_COMMAND (sizeup)
 
@@ -643,7 +1216,9 @@ void M_SwitchMenu (menu_t *menu)
 	MenuStack[MenuStackDepth].isNewStyle = true;
 	MenuStack[MenuStackDepth].drawSkull = false;
 	MenuStackDepth++;
-
+	
+	CanScrollUp = false;
+	CanScrollDown = false;
 	CurrentMenu = menu;
 	CurrentItem = menu->lastOn;
 
@@ -710,20 +1285,69 @@ int M_FindCurVal (float cur, value_t *values, int numvals)
 void M_OptDrawer (void)
 {
 	int color;
-	int y, width, i, x;
-	int valx = 0, valy = 0;
+	int y, width, i, x, ytop;
+	int x1,y1,x2,y2;
+	int theight = 0;
 	menuitem_t *item;
 	patch_t *title;
+	
+	x1 = (screen->width / 2)-(160*CleanXfac);
+	y1 = (screen->height / 2)-(100*CleanYfac);
+	
+    x2 = (screen->width / 2)+(160*CleanXfac);
+	y2 = (screen->height / 2)+(100*CleanYfac);
+	
+	// Background effect
+	OdamexEffect(x1,y1,x2,y2);
 
 	title = W_CachePatch (CurrentMenu->title);
-
 	screen->DrawPatchClean (title, 160-title->width()/2, 10);
 
-	for (i = 0, y = 15 + title->height(); i < CurrentMenu->numitems; i++, y += 8)	// TIJ
+	y = 15 + title->height();
+	ytop = y + CurrentMenu->scrolltop * 8;
+
+	for (i = 0; i < CurrentMenu->numitems && y <= 192 - theight; i++, y += 8)	// TIJ
 	{
+		if (i == CurrentMenu->scrolltop)
+			i += CurrentMenu->scrollpos;
+				
 		item = CurrentMenu->items + i;
 
-		if (item->type != screenres)
+		if (item->type == screenres)
+		{
+			const char *str = NULL;
+
+			for (x = 0; x < 3; x++)
+			{
+				switch (x)
+				{
+				case 0:
+					str = item->b.res1;
+					break;
+				case 1:
+					str = item->c.res2;
+					break;
+				case 2:
+					str = item->d.res3;
+					break;
+				}
+				if (str)
+				{
+					if (x == item->e.highlight)
+						color = CR_GREY;
+					else
+						color = CR_RED;
+
+					screen->DrawTextCleanMove (color, 104 * x + 20, y, str);
+				}
+			}
+
+			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey)) || WaitingForAxis || testingmode))
+			{
+				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
+			}
+		}
+		else
 		{
 			width = V_StringWidth (item->label);
 			switch (item->type)
@@ -743,6 +1367,11 @@ void M_OptDrawer (void)
 				color = CR_GREY;
 				break;
 
+			case bricktext:
+				x = 160 - width / 2;
+				color = CR_BRICK;
+				break;
+
 			case listelement:
 				x = CurrentMenu->indent + 14;
 				color = CR_RED;
@@ -754,12 +1383,6 @@ void M_OptDrawer (void)
 				break;
 			}
 			screen->DrawTextCleanMove (color, x, y, item->label);
-
-			if (!i)
-			{
-				valx = x;
-				valy = y;
-			}
 
 			switch (item->type)
 			{
@@ -792,7 +1415,7 @@ void M_OptDrawer (void)
 				break;
 
 			case slider:
-				M_DrawSlider (CurrentMenu->indent + 14, y, item->b.min, item->c.max, item->a.cvar->value());
+				M_DrawSlider (CurrentMenu->indent + 8, y, item->b.min, item->c.max, item->a.cvar->value());
 				break;
 
 			case control:
@@ -821,81 +1444,125 @@ void M_OptDrawer (void)
 			}
 			break;
 
+			case joyactive:
+			{
+				int         numjoy;
+				std::string joyname;
+
+				numjoy = I_GetJoystickCount();
+
+				if((int)item->a.cvar->value() > numjoy)
+					item->a.cvar->Set(0.0);
+
+				if(!numjoy)
+					joyname = "No device detected";
+				else
+				{
+					joyname = item->a.cvar->cstring();
+					joyname += ": " + I_GetJoystickNameFromIndex((int)item->a.cvar->value());
+				}
+
+				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
+			}
+			break;
+
+			case joyaxis:
+			{
+				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, item->a.cvar->cstring());
+			}
+			break;
+
 			default:
 				break;
 			}
 
-			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey))
+			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
 				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y);
 			}
 		}
-		else
-		{
-			const char *str = NULL;
-
-			for (x = 0; x < 3; x++)
-			{
-				switch (x)
-				{
-				case 0:
-					str = item->b.res1;
-					break;
-				case 1:
-					str = item->c.res2;
-					break;
-				case 2:
-					str = item->d.res3;
-					break;
-				}
-				if (str)
-				{
-					if (x == item->e.highlight)
-						color = CR_GREY;
-					else
-						color = CR_RED;
-
-					screen->DrawTextCleanMove (color, 104 * x + 20, y, str);
-				}
-			}
-
-			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey)) || testingmode))
-			{
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
-			}
-
-		}
 	}
+	
+	VisBottom = i - 1;
+	CanScrollUp = (CurrentMenu->scrollpos != 0);
+	CanScrollDown = (i < CurrentMenu->numitems);
 
-	if (CurrentMenu == &MouseMenu) // [Toke] print mouse values to the screen
-	{
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 0,  mouse_sensitivity.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 8,  mouse_acceleration.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 16, mouse_threshold.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 24, dynresval.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 32, m_pitch.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 40, m_side.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 48, m_forward.cstring());
-	}
+	if (CanScrollUp)
+		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
+
+	if (CanScrollDown)
+		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, 190);
 }
 
 void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
+	const char *cmd = C_GetBinding(ch);
 
 	item = CurrentMenu->items + CurrentItem;
 
+	// Waiting on a key press for control binding
 	if (WaitingForKey)
 	{
-		if (ch != KEY_ESCAPE)
+		if(ev->type == ev_keydown)
 		{
-			C_ChangeBinding (item->e.command, ch);
-			M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
+#ifdef _XBOX
+			if (ch != KEY_ESCAPE && ch != KEY_JOY9)
+#else
+			if (ch != KEY_ESCAPE)
+#endif
+			{
+				C_ChangeBinding (item->e.command, ch);
+				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
+			}
+			WaitingForKey = false;
+			CurrentMenu->items[0].label = OldContMessage;
+			CurrentMenu->items[0].type = OldContType;
+			return;
 		}
-		WaitingForKey = false;
-		CurrentMenu->items[0].label = OldMessage;
-		CurrentMenu->items[0].type = OldType;
+	}
+
+	// Waiting on an analog axis motion for setting analog control
+	if (WaitingForAxis)
+	{
+		if(ev->type == ev_keydown)
+		{
+			if(ch == KEY_ESCAPE)
+			{
+				WaitingForAxis = false;
+				CurrentMenu->items[8].label = OldAxisMessage;
+				CurrentMenu->items[8].type = OldAxisType;
+			}
+		}
+		else if (ev->type == ev_joystick)
+		{
+			if(ev->data1 == 0) // Analog Motion
+			{
+				// Require the control to be activated to at least the half-way point
+				// to make sure we get the one that is intended -- Hyper_Eye
+				if( (ev->data3 > (SHRT_MAX / 2)) || (ev->data3 < (SHRT_MIN / 2)) )
+				{
+					if( (ev->data2 == (int)joy_forwardaxis) && 
+							strcmp(joy_forwardaxis.name(), item->a.cvar->name()) )
+						joy_forwardaxis.Set(item->a.cvar->value());
+					else if( (ev->data2 == (int)joy_strafeaxis) && 
+							strcmp(joy_strafeaxis.name(), item->a.cvar->name()) )
+						joy_strafeaxis.Set(item->a.cvar->value());
+					else if( (ev->data2 == (int)joy_turnaxis) && 
+							strcmp(joy_turnaxis.name(), item->a.cvar->name()) )
+						joy_turnaxis.Set(item->a.cvar->value());
+					else if( (ev->data2 == (int)joy_lookaxis) && 
+							strcmp(joy_lookaxis.name(), item->a.cvar->name()) )
+						joy_lookaxis.Set(item->a.cvar->value());
+
+					item->a.cvar->Set(ev->data2);
+					WaitingForAxis = false;
+					CurrentMenu->items[8].label = OldAxisMessage;
+					CurrentMenu->items[8].type = OldAxisType;
+				}
+			}
+		}
 		return;
 	}
 
@@ -911,8 +1578,19 @@ void M_OptResponder (event_t *ev)
 			return;
 	}
 
+	if(cmd)
+	{
+		// Respond to the main menu binding
+		if(!strcmp(cmd, "menu_main"))
+		{
+			M_ClearMenus();
+			return;
+		}
+	}
+
 	switch (ch)
 	{
+		case KEY_HAT3:
 		case KEY_DOWNARROW:
 			{
 				int modecol;
@@ -929,20 +1607,31 @@ void M_OptResponder (event_t *ev)
 
 				do
 				{
-					if (++CurrentItem == CurrentMenu->numitems)
+					CurrentItem++;
+					if (CanScrollDown && CurrentItem == VisBottom)
+					{
+						CurrentMenu->scrollpos++;
+						VisBottom++;
+					}
+					if (CurrentItem == CurrentMenu->numitems)
+					{
+						CurrentMenu->scrollpos = 0;
 						CurrentItem = 0;
+					}
 				} while (CurrentMenu->items[CurrentItem].type == redtext ||
 						 CurrentMenu->items[CurrentItem].type == whitetext ||
+						 CurrentMenu->items[CurrentItem].type == bricktext ||
 						 (CurrentMenu->items[CurrentItem].type == screenres &&
 						  !CurrentMenu->items[CurrentItem].b.res1));
 
 				if (CurrentMenu->items[CurrentItem].type == screenres)
 					CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-				S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 			break;
 
+		case KEY_HAT1:
 		case KEY_UPARROW:
 			{
 				int modecol;
@@ -959,20 +1648,78 @@ void M_OptResponder (event_t *ev)
 
 				do
 				{
-					if (--CurrentItem < 0)
+					CurrentItem--;
+					if (CanScrollUp &&
+						CurrentItem == CurrentMenu->scrolltop + CurrentMenu->scrollpos)
+					{
+						CurrentMenu->scrollpos--;
+					}
+					if (CurrentItem < 0)
+					{
+						CurrentMenu->scrollpos = MAX (0,CurrentMenu->numitems - 22 + CurrentMenu->scrolltop);
 						CurrentItem = CurrentMenu->numitems - 1;
+					}
 				} while (CurrentMenu->items[CurrentItem].type == redtext ||
 						 CurrentMenu->items[CurrentItem].type == whitetext ||
+						 CurrentMenu->items[CurrentItem].type == bricktext ||
 						 (CurrentMenu->items[CurrentItem].type == screenres &&
 						  !CurrentMenu->items[CurrentItem].b.res1));
 
 				if (CurrentMenu->items[CurrentItem].type == screenres)
 					CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-				S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			}
+			break;
+			
+		case KEY_PGUP:
+			{
+				if (CanScrollUp)
+				{
+					CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+					if (CurrentMenu->scrollpos < 0)
+					{
+						CurrentMenu->scrollpos = 0;
+					}
+					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
+					while (CurrentMenu->items[CurrentItem].type == redtext ||
+						   CurrentMenu->items[CurrentItem].type == whitetext ||
+						   CurrentMenu->items[CurrentItem].type == bricktext ||
+						   (CurrentMenu->items[CurrentItem].type == screenres &&
+							!CurrentMenu->items[CurrentItem].b.res1))
+					{
+						++CurrentItem;
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				}
 			}
 			break;
 
+		case KEY_PGDN:
+			{
+				if (CanScrollDown)
+				{
+					int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+					CurrentMenu->scrollpos += pagesize;
+					if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
+					{
+						CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
+					}
+					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
+					while (CurrentMenu->items[CurrentItem].type == redtext ||
+						   CurrentMenu->items[CurrentItem].type == whitetext ||
+						   CurrentMenu->items[CurrentItem].type == bricktext ||
+						   (CurrentMenu->items[CurrentItem].type == screenres &&
+							!CurrentMenu->items[CurrentItem].b.res1))
+					{
+						++CurrentItem;
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				}
+			}
+			break;
+		
+		case KEY_HAT4:
 		case KEY_LEFTARROW:
 			switch (item->type)
 			{
@@ -988,7 +1735,7 @@ void M_OptResponder (event_t *ev)
 						else
 							item->a.cvar->Set (newval);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case discrete:
@@ -1008,7 +1755,7 @@ void M_OptResponder (event_t *ev)
 						if (item->e.values == Depths)
 							BuildModesList (screen->width, screen->height, DisplayBits);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case screenres:
@@ -1032,7 +1779,21 @@ void M_OptResponder (event_t *ev)
 							item->a.selmode = col;
 						}
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+					break;
+
+				case joyactive:
+					{
+						int         numjoy;
+
+						numjoy = I_GetJoystickCount();
+
+						if((int)item->a.cvar->value() > numjoy)
+							item->a.cvar->Set(0.0);
+						else if((int)item->a.cvar->value() > 0)
+							item->a.cvar->Set(item->a.cvar->value() - 1);
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				default:
@@ -1040,6 +1801,7 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+		case KEY_HAT2:
 		case KEY_RIGHTARROW:
 			switch (item->type)
 			{
@@ -1055,7 +1817,7 @@ void M_OptResponder (event_t *ev)
 						else
 							item->a.cvar->Set (newval);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case discrete:
@@ -1075,7 +1837,7 @@ void M_OptResponder (event_t *ev)
 						if (item->e.values == Depths)
 							BuildModesList (screen->width, screen->height, DisplayBits);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case screenres:
@@ -1102,7 +1864,22 @@ void M_OptResponder (event_t *ev)
 							item->a.selmode = col;
 						}
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+					break;
+
+				case joyactive:
+					{
+						int         numjoy;
+
+						numjoy = I_GetJoystickCount();
+
+						if((int)item->a.cvar->value() >= numjoy)
+							item->a.cvar->Set(0.0);
+						else if((int)item->a.cvar->value() < (numjoy - 1))
+							item->a.cvar->Set(item->a.cvar->value() + 1);
+
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				default:
@@ -1110,6 +1887,9 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+#ifdef _XBOX
+		case KEY_JOY9: // Start button
+#endif
 		case KEY_BACKSPACE:
 			if (item->type == control)
 			{
@@ -1118,6 +1898,7 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+		case KEY_JOY1:
 		case KEY_ENTER:
 			if (CurrentMenu == &ModesMenu)
 			{
@@ -1128,7 +1909,7 @@ void M_OptResponder (event_t *ev)
 				}
 				NewBits = BitTranslate[(int)DummyDepthCvar];
 				setmodeneeded = true;
-				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				vid_defwidth.Set ((float)NewWidth);
 				vid_defheight.Set ((float)NewHeight);
 				vid_defbits.Set ((float)NewBits);
@@ -1137,7 +1918,7 @@ void M_OptResponder (event_t *ev)
 			else if (item->type == more && item->e.mfunc)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				item->e.mfunc();
 			}
 			else if (item->type == discrete || item->type == cdiscrete)
@@ -1156,34 +1937,47 @@ void M_OptResponder (event_t *ev)
 				if (item->e.values == Depths)
 					BuildModesList (screen->width, screen->height, DisplayBits);
 
-				S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
 			else if (item->type == control)
 			{
 				WaitingForKey = true;
-				OldMessage = CurrentMenu->items[0].label;
-				OldType = CurrentMenu->items[0].type;
+				OldContMessage = CurrentMenu->items[0].label;
+				OldContType = CurrentMenu->items[0].type;
 				CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
 				CurrentMenu->items[0].type = redtext;
 			}
 			else if (item->type == listelement)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				item->e.lfunc (CurrentItem);
+			}
+			else if (item->type == joyaxis)
+			{
+				WaitingForAxis = true;
+				OldAxisMessage = CurrentMenu->items[8].label;
+				OldAxisType = CurrentMenu->items[8].type;
+				CurrentMenu->items[8].label = "Activate desired analog axis or ESC to cancel";
+				CurrentMenu->items[8].type = redtext;
 			}
 			else if (item->type == screenres)
 			{
 			}
 			break;
 
+		case KEY_JOY2:
 		case KEY_ESCAPE:
 			CurrentMenu->lastOn = CurrentItem;
 			M_PopMenuStack ();
 			break;
 
 		default:
+#ifdef _XBOX
+			if (ev->data2 == 't' || ev->data2 == KEY_JOY3)
+#else
 			if (ev->data2 == 't')
+#endif
 			{
 				// Test selected resolution
 				if (CurrentMenu == &ModesMenu)
@@ -1200,12 +1994,15 @@ void M_OptResponder (event_t *ev)
 					NewBits = BitTranslate[(int)DummyDepthCvar];
 					setmodeneeded = true;
 					testingmode = I_GetTime() + 5 * TICRATE;
-					S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 					SetModesMenu (NewWidth, NewHeight, NewBits);
 				}
 			}
 			break;
 	}
+
+	if (CurrentMenu->refreshfunc)
+		(*CurrentMenu->refreshfunc)();
 }
 
 static void GoToConsole (void)
@@ -1241,6 +2038,11 @@ static void StartMessagesMenu (void)
 	M_SwitchMenu (&MessagesMenu);
 }
 
+static void StartAutomapMenu (void)
+{
+	M_SwitchMenu (&AutomapMenu);
+}
+
 void ResetCustomColors (void)
 {
 	AddCommandString ("resetcustomcolors");
@@ -1248,7 +2050,14 @@ void ResetCustomColors (void)
 
 void MouseSetup (void) // [Toke] for mouse menu
 {
+	previous_mouse_type = mouse_type;
+	M_UpdateMouseOptions();
 	M_SwitchMenu (&MouseMenu);
+}
+
+void JoystickSetup (void)
+{
+	M_SwitchMenu (&JoystickMenu);
 }
 
 static void CustomizeControls (void)
@@ -1269,7 +2078,7 @@ static void PlayerSetup (void)
 BEGIN_COMMAND (menu_keys)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	CustomizeControls();
 }
@@ -1280,10 +2089,30 @@ static void VideoOptions (void)
 	M_SwitchMenu (&VideoMenu);
 }
 
+void SoundOptions (void) // [Ralphis] for sound menu
+{
+	M_SwitchMenu (&SoundMenu);
+}
+
+void CompatOptions (void) // [Ralphis] for compatibility menu
+{
+	M_SwitchMenu (&CompatMenu);
+}
+
+void NetworkOptions (void)
+{
+	M_SwitchMenu (&NetworkMenu);
+}
+
+void WeaponOptions (void)
+{
+	M_SwitchMenu (&WeaponMenu);
+}
+
 BEGIN_COMMAND (menu_display)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	M_SwitchMenu (&VideoMenu);
 }
@@ -1440,12 +2269,11 @@ static void SetVidMode (void)
 BEGIN_COMMAND (menu_video)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	SetVidMode ();
 }
 END_COMMAND (menu_video)
-
 
 VERSION_CONTROL (m_options_cpp, "$Id$")
 

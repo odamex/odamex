@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,16 +24,34 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "stringtable.h"
 #include "doomstat.h"
 #include "c_cvars.h"
+#include "i_system.h"
+#include "p_acs.h"
 
+// Localizable strings
+FStringTable	GStrings;
 
 // Game Mode - identify IWAD as shareware, retail etc.
 GameMode_t		gamemode = undetermined;
 GameMission_t	gamemission = doom;
 
 // Language.
-Language_t		language = english;
+BEGIN_CUSTOM_CVAR (language, "0", "", CVARTYPE_INT, CVAR_ARCHIVE)
+{
+	SetLanguageIDs ();
+	if (level.behavior != NULL)
+	{
+		level.behavior->PrepLocale (LanguageIDs[0], LanguageIDs[1],
+			LanguageIDs[2], LanguageIDs[3]);
+	}
+
+	GStrings.ReloadStrings ();
+	GStrings.Compact ();
+	G_SetLevelStrings ();
+}
+END_CUSTOM_CVAR (language)
 
 // Set if homebrew PWAD stuff has been added.
 BOOL			modifiedgame;

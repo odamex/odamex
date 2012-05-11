@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -183,27 +184,25 @@ typedef enum
 	SPR_GIB7,
 	// [RH] Dummy for unknown mapthing
 	SPR_UNKN,
-	
+		
 	//	[Toke - CTF]
 	SPR_BSOK,
 	SPR_RSOK,
-	SPR_GSOK, // Remove me in 0.5
 	SPR_BFLG,
 	SPR_RFLG,
-	SPR_GFLG, // Remove me in 0.5
 	SPR_BDWN,
 	SPR_RDWN,
-	SPR_GDWN, // Remove me in 0.5
 	SPR_BCAR,
 	SPR_RCAR,
-	SPR_GCAR, // Remove me in 0.5
-
+	
+	SPR_TLGL,
+	
 	NUMSPRITES
 
 } spritenum_t;
 
-inline FArchive &operator<< (FArchive &arc, spritenum_t i) { return arc << (WORD)i; }
-inline FArchive &operator>> (FArchive &arc, spritenum_t &i) { return arc >> (WORD &)i; }
+inline FArchive &operator<< (FArchive &arc, spritenum_t i) { DWORD out; out = i; return arc << out; }
+inline FArchive &operator>> (FArchive &arc, spritenum_t &i) { DWORD in; arc >> in; i = (spritenum_t)in; return arc; }
 
 typedef enum
 {
@@ -1192,7 +1191,6 @@ typedef enum
 
 	S_BSOK,	// Blue Flag
 	S_RSOK,	// Red Flag
-	S_GSOK,	// Gold Flag // Remove me in 0.5
 
 	// -----[ BLUE Flag Animation ]-------
 	S_BFLG,
@@ -1214,37 +1212,29 @@ typedef enum
 	S_RFLG7,
 	S_RFLG8,
 
-	// -----[ GOLD Flag Animation ]-------
-	S_GFLG,
-	S_GFLG2,
-	S_GFLG3,
-	S_GFLG4,
-	S_GFLG5,
-	S_GFLG6,
-	S_GFLG7,
-	S_GFLG8,
-
 	// -----------------------------------
 	S_BDWN,	// Blue Flag
 	S_RDWN,	// Red Flag
-	S_GDWN,	// Gold Flag
 	S_BCAR,	// Blue Flag
 	S_RCAR,	// Red Flag
-	S_GCAR,	// Gold Flag
 	// -----------------------------------
-
+	S_BRIDGE1,
+	S_BRIDGE2,
+	S_BRIDGE3,
+	S_BRIDGE4,
+	S_BRIDGE5,	
 	NUMSTATES
 } statenum_t;
 
-inline FArchive &operator<< (FArchive &arc, statenum_t i) { return arc << (WORD)i; }
-inline FArchive &operator>> (FArchive &arc, statenum_t &i) { return arc >> (WORD &)i; }
+inline FArchive &operator<< (FArchive &arc, statenum_t i) { DWORD out; out = i; return arc << out; }
+inline FArchive &operator>> (FArchive &arc, statenum_t &i) { DWORD in; arc >> in; i = (statenum_t)in; return arc; }
 
 typedef struct
 {
 	spritenum_t	sprite;
 	int			frame;
 	int			tics;
-	actionf_t 	action;
+	actionf_p1 	action;
 	statenum_t	nextstate;
 	int			misc1, misc2;
 /*
@@ -1434,7 +1424,6 @@ typedef enum {
 	MT_SPARK,		// Throws out sparks when activated
 	MT_FOUNTAIN,	// Just a container for a particle fountain
 	MT_NODE,		//Added by MC:
-	MT_BOTTRACE,
 	MT_WATERZONE,
 	MT_SECRETTRIGGER,
 
@@ -1442,24 +1431,29 @@ typedef enum {
 	//	[Toke - CTF]
 	MT_BSOK,
 	MT_RSOK,
-	MT_GSOK, // Remove me in 0.5
 	MT_BFLG,
 	MT_RFLG,
-	MT_GFLG, // Remove me in 0.5
 	MT_BDWN,
 	MT_RDWN,
-	MT_GDWN, // Remove me in 0.5
 	MT_BCAR,
 	MT_RCAR,
-	MT_GCAR, // Remove me in 0.5
 	// -----------------------------------
-
+	
+	MT_BRIDGE,	
+	MT_MAPSPOT,
+	MT_MAPSPOTGRAVITY,
+	MT_BRIDGE32,
+	MT_BRIDGE16,
+	MT_BRIDGE8,
+	MT_ZDOOMBRIDGE,
+	MT_MUSICCHANGE,
+	
 	NUMMOBJTYPES
 
 } mobjtype_t;
 
-inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { return arc << (WORD)i; }
-inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { return arc >> (WORD &)i; }
+inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { DWORD out; out = i; return arc << out; }
+inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { DWORD in; arc >> in; i = (mobjtype_t)in; return arc; }
 
 typedef struct
 {
@@ -1481,10 +1475,12 @@ typedef struct
 	int speed;
 	int radius;
 	int height;
+	int cdheight;
 	int mass;
 	int damage;
 	const char *activesound;	// [RH] not int
 	int flags;
+	int flags2;	
 	statenum_t raisestate;
 	int translucency;
 	const char *name;

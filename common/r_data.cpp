@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,18 +22,6 @@
 //		generation of lookups, caching, retrieval by name.
 //
 //-----------------------------------------------------------------------------
-
-
-// On the Alpha, accessing the shorts directly if they aren't aligned on a
-// 4-byte boundary causes unaligned access warnings. Why it does this it at
-// all and only while initing the textures is beyond me.
-
-
-#ifdef ALPHA
-#define SAFESHORT(s)	((short)(((byte *)&(s))[0] + ((byte *)&(s))[1] * 256))
-#else
-#define SAFESHORT(s)	SHORT(s)
-#endif
 
 #include "i_system.h"
 #include "z_zone.h"
@@ -57,6 +45,7 @@
 #include "v_video.h"
 
 #include <ctype.h>
+#include <cstddef>
 
 #include <algorithm>
 
@@ -66,44 +55,7 @@
 // is stored in vertical runs of opaque pixels (posts).
 // A column is composed of zero or more posts,
 // a patch or sprite is composed of zero or more columns.
-// 
-
-// A single patch from a texture definition,
-//	basically a rectangular area within
-//	the texture rectangle.
-typedef struct
-{
-	// Block origin (always UL),
-	// which has already accounted
-	// for the internal origin of the patch.
-	int 		originx;		
-	int 		originy;
-	int 		patch;
-} texpatch_t;
-
-
-// A maptexturedef_t describes a rectangular texture,
-//	which is composed of one or more mappatch_t structures
-//	that arrange graphic patches.
-typedef struct
-{
-	// Keep name for switch changing, etc.
-	char		name[9];
-	short		width;
-	short		height;
-
-	// [RH] Use a hash table similar to the one now used
-	//		in w_wad.c, thus speeding up level loads.
-	//		(possibly quite considerably for larger levels)
-	int			index;
-	int			next;
-	
-	// All the patches[patchcount]
-	//	are drawn back to front into the cached texture.
-	short		patchcount;
-	texpatch_t	patches[1];
-	
-} texture_t;
+//
 
 
 
@@ -120,13 +72,18 @@ texture_t** 	textures;
 
 
 int*			texturewidthmask;
-static byte*	textureheightmask;		// [RH] Tutti-Frutti fix
+byte*			textureheightmask;		// [RH] Tutti-Frutti fix
+
 // needed for texture pegging
 fixed_t*		textureheight;
 static int*		texturecompositesize;
  short** 	texturecolumnlump;
 static unsigned **texturecolumnofs;	// killough 4/9/98: make 32-bit
 static byte**	texturecomposite;
+byte*			texturescalex;			// [RH] Texture scales
+byte*			texturescaley;
+byte*			texturetype2;			// [RH] Texture uses 2 bytes for column lengths
+byte*			textureheightlog2;		// [RH] Tutti-Frutti fix (from ZDoom 1.23)
 
 // for global animation
 bool*			flatwarp;
@@ -135,6 +92,9 @@ int*			flatwarpedwhen;
 int*			flattranslation;
 
 int*			texturetranslation;
+
+// [RH] Tutti-Frutti fix
+unsigned int	dc_mask;
 
 
 //
@@ -273,7 +233,6 @@ void R_GenerateComposite (int texnum)
 static void R_GenerateLookup(int texnum, int *const errors)
 {
 	const texture_t *texture = textures[texnum];
-	const bool nottall = texture->height < 256;
 
 	// Composited texture not created yet.
 
@@ -287,46 +246,50 @@ static void R_GenerateLookup(int texnum, int *const errors)
 		unsigned short patches, posts;
 	} *count = (cs *)Calloc (sizeof *count, texture->width);
 
+	int i = texture->patchcount;
+	const texpatch_t *patch = texture->patches;
+
+	// [RH] Some wads (I forget which!) have single-patch textures 256
+	// pixels tall that have patch lengths recorded as 0. I can't think of
+	// any good reason for them to do this, and since I didn't make note
+	// of which wad made me hack in support for them, the hack is gone
+	// because I've added support for DeePsea's real tall patches.
+	while (--i >= 0)
 	{
-		int i = texture->patchcount;
-		const texpatch_t *patch = texture->patches;
+		int pat = patch->patch;
+		const patch_t *realpatch = W_CachePatch (pat);
+		int x1 = patch++->originx, x2 = x1 + realpatch->width(), x = x1;
+		const int *cofs = realpatch->columnofs-x1;
 
-		while (--i >= 0)
+		if (x2 > texture->width)
+			x2 = texture->width;
+		if (x1 < 0)
+			x = 0;
+		for (; x < x2; x++)
 		{
-			int pat = patch->patch;
-			const patch_t *realpatch = W_CachePatch (pat);
-			int x1 = patch++->originx, x2 = x1 + realpatch->width(), x = x1;
-			const int *cofs = realpatch->columnofs-x1;
+			// killough 4/9/98: keep a count of the number of posts in column,
+			// to fix Medusa bug while allowing for transparent multipatches.
 
-			if (x2 > texture->width)
-				x2 = texture->width;
-			if (x1 < 0)
-				x = 0;
-			for ( ; x<x2 ; x++)
+			const column_t *col = (column_t*)((byte*)realpatch + LONG(cofs[x]));
+			for (;col->topdelta != 0xff; count[x].posts++)
 			{
-				// killough 4/9/98: keep a count of the number of posts in column,
-				// to fix Medusa bug while allowing for transparent multipatches.
-				const column_t *col = (column_t*)((byte*)realpatch+LONG(cofs[x]));
-
-				for (;col->topdelta != 0xff; count[x].posts++)
+				col = (column_t *)((byte *)col + col->length + 4);
+				
+				// denis - prevent a crash when col goes out of range
+				unsigned int n = (const byte *)col - (const byte *)realpatch;
+				if (n >= W_LumpLength(pat))
 				{
-					col = (column_t *)((byte *) col + (col->length || nottall ? col->length : 256) + 4);
+					if (texture->height < 256) // bigger textures are assumed to have a single post anyway
+						Printf(PRINT_HIGH, "R_GenerateLookup warning: post truncated for texture %d\n", texnum);
 
-					// denis - prevent a crash when col goes out of range
-					unsigned int n = (const byte *)col - (const byte *)realpatch;
-					if(n >= W_LumpLength(pat))
-					{
-						if(texture->height < 256) // bigger textures are assumed to have a single post anyway
-							Printf(PRINT_HIGH, "R_GenerateLookup warning: post truncated for texture %d\n", texnum);
-						
-						count[x].posts--;
-						break;
-					}
-				}
-				count[x].patches++;
-				collump[x] = pat;
-				colofs[x] = LONG(cofs[x])+3;
+					count[x].posts--;
+					break;
+				}				
+				
 			}
+			count[x].patches++;
+			collump[x] = pat;
+			colofs[x] = LONG(cofs[x])+3;
 		}
 	}
 
@@ -337,19 +300,36 @@ static void R_GenerateLookup(int texnum, int *const errors)
 
 	texturecomposite[texnum] = 0;
 
-	{
-		int x = texture->width;
-		int height = texture->height;
-		int csize = 0;
+	int x = texture->width;
+	int height = texture->height;
+	int csize = 0;
 
+	while (--x >= 0)
+	{
+		if (!count[x].patches)				// killough 4/9/98
+		{
+			Printf (PRINT_HIGH, "\nR_GenerateLookup: Column %d is without a patch in texture %.8s",
+					x, texture->name);
+					++*errors;
+		}
+	}		
+
+	if (texture->patchcount > 1 || texture->height > 254)
+	{
+		// [RH] Always create a composite texture for multipatch textures
+		// or tall textures in order to keep things simpler.	
+		texturetype2[texnum] = 1;
+		x = texture->width;
+		csize = 0;
 		while (--x >= 0)
 		{
 			if (!count[x].patches)				// killough 4/9/98
 			{
-				Printf (PRINT_HIGH, "R_GenerateLookup: Column %d is without a patch in texture %.8s\n", x, texture->name);
-				++*errors; // denis - todo - commented this line before to allow freedoom 0.4.0 doom2.wad to work
+				Printf (PRINT_HIGH, "\nR_GenerateLookup: Column %d is without a patch in texture %.8s",
+						x, texture->name);
+						++*errors;
 			}
-			if (count[x].patches > 1) 			// killough 4/9/98
+			else
 			{
 				// killough 1/25/98, 4/9/98:
 				//
@@ -361,14 +341,20 @@ static void R_GenerateLookup(int texnum, int *const errors)
 				// require, and it's bounded above by this limit.
 
 				collump[x] = -1;				// mark lump as multipatched
-				colofs[x] = csize + 3;			// three header bytes in a column
-				csize += 4*count[x].posts+1;	// 1 stop byte plus 4 bytes per post
+				colofs[x] = csize + 4;			// four header bytes in a column
+				csize += 4*count[x].posts+2+height;	// 2 stop bytes plus 4 bytes per post
 			}
-			csize += height;					// height bytes of texture data
 		}
-		texturecompositesize[texnum] = csize;
 	}
-	free(count);								// killough 4/9/98
+	else
+	{
+		texturetype2[texnum] = 0;	
+		csize = x*height;
+	}
+	
+	texturecompositesize[texnum] = csize;
+
+	M_Free(count);								// killough 4/9/98
 }
 
 //
@@ -385,8 +371,8 @@ R_GetColumn
 	col &= texturewidthmask[tex];
 	lump = texturecolumnlump[tex][col];
 	ofs = texturecolumnofs[tex][col];
-	dc_mask = textureheightmask[tex];		// [RH] Tutti-Frutti fix
-	
+	dc_mask = textureheightmask[tex];	
+
 	if (lump > 0)
 		return (byte *)W_CacheLumpNum(lump,PU_CACHE)+ofs;
 
@@ -417,9 +403,9 @@ void R_InitTextures (void)
 	int*				maptex;
 	int*				maptex2;
 	int*				maptex1;
-	
+
 	int*				patchlookup;
-	
+
 	int 				totalwidth;
 	int					nummappatches;
 	int 				offset;
@@ -432,7 +418,7 @@ void R_InitTextures (void)
 
 	int					errors = 0;
 
-	
+
 	// Load the patch names from pnames.lmp.
 	{
 		char *names = (char *)W_CacheLumpName ("PNAMES", PU_STATIC);
@@ -440,7 +426,7 @@ void R_InitTextures (void)
 
 		nummappatches = LONG ( *((int *)names) );
 		patchlookup = new int[nummappatches];
-	
+
 		for (i = 0; i < nummappatches; i++)
 		{
 			patchlookup[i] = W_CheckNumForName (name_p + i*8);
@@ -459,7 +445,7 @@ void R_InitTextures (void)
 		}
 		Z_Free (names);
 	}
-	
+
 	// Load the map texture definitions from textures.lmp.
 	// The data is contained in one or two lumps,
 	//	TEXTURE1 for shareware, plus TEXTURE2 for commercial.
@@ -467,7 +453,7 @@ void R_InitTextures (void)
 	numtextures1 = LONG(*maptex);
 	maxoff = W_LumpLength (W_GetNumForName ("TEXTURE1"));
 	directory = maptex+1;
-		
+
 	if (W_CheckNumForName ("TEXTURE2") != -1)
 	{
 		maptex2 = (int *)W_CacheLumpName ("TEXTURE2", PU_STATIC);
@@ -497,7 +483,11 @@ void R_InitTextures (void)
 	delete[] texturewidthmask;
 	delete[] textureheightmask;
 	delete[] textureheight;
-	
+	delete[] texturescalex;
+	delete[] texturescaley;
+	delete[] texturetype2;
+	delete[] textureheightlog2;
+
 	numtextures = numtextures1 + numtextures2;
 
 	textures = new texture_t *[numtextures];
@@ -508,7 +498,13 @@ void R_InitTextures (void)
 	texturewidthmask = new int[numtextures];
 	textureheightmask = new byte[numtextures];
 	textureheight = new fixed_t[numtextures];
+	texturescalex = new byte[numtextures];
+	texturescaley = new byte[numtextures];
+	texturetype2 = new byte[numtextures];
+	textureheightlog2 = new byte[numtextures];
 
+	memset (texturetype2, 0, numtextures);
+	
 	totalwidth = 0;
 
 	for (i = 0; i < numtextures; i++, directory++)
@@ -525,7 +521,7 @@ void R_InitTextures (void)
 
 		if (offset > maxoff)
 			I_FatalError ("R_InitTextures: bad texture directory");
-		
+
 		mtexture = (maptexture_t *) ( (byte *)maptex + offset);
 
 		texture = textures[i] = (texture_t *)
@@ -539,7 +535,7 @@ void R_InitTextures (void)
 
 		strncpy (texture->name, mtexture->name, 9); // denis - todo string limit?
 		std::transform(texture->name, texture->name + strlen(texture->name), texture->name, toupper);
-		
+
 		mpatch = &mtexture->patches[0];
 		patch = &texture->patches[0];
 
@@ -557,21 +553,31 @@ void R_InitTextures (void)
 		texturecolumnlump[i] = new short[texture->width];
 		texturecolumnofs[i] = new unsigned int[texture->width];
 
-		j = 1;
-		while (j*2 <= texture->width)
-			j<<=1;
-
+		for (j = 1; j*2 <= texture->width; j <<= 1)
+			;
 		texturewidthmask[i] = j-1;
-		textureheight[i] = texture->height<<FRACBITS;
 
 		// [RH] Tutti-Frutti fix
 		// Sorry, only power-of-2 tall textures are actually fixed.
+		// For performance reasons, I have no intention of changing this.
+		for (j = 0; (1<<j) < texture->height; ++j)
+			;
+		textureheightlog2[i] = j;
+		textureheight[i] = texture->height << FRACBITS;
+
 		j = 1;
 		while (j < texture->height)
 			j <<= 1;
 
 		textureheightmask[i] = j-1;
-				
+			
+		// [RH] Special for beta 29: Values of 0 will use the tx/ty cvars
+		// to determine scaling instead of defaulting to 8. I will likely
+		// remove this once I finish the betas, because by then, users
+		// should be able to actually create scaled textures.
+		texturescalex[i] = mtexture->scalex ? mtexture->scalex : 0;
+		texturescaley[i] = mtexture->scaley ? mtexture->scaley : 0;		
+
 		totalwidth += texture->width;
 	}
 	delete[] patchlookup;
@@ -579,7 +585,7 @@ void R_InitTextures (void)
 	Z_Free (maptex1);
 	if (maptex2)
 		Z_Free (maptex2);
-	
+
 	if (errors)
 		I_FatalError ("%d errors in R_InitTextures.", errors);
 
@@ -597,19 +603,19 @@ void R_InitTextures (void)
 		textures[j]->index = i;
 	}
 
-	// Precalculate whatever possible.	
+	// Precalculate whatever possible.
 	for (i = 0; i < numtextures; i++)
 		R_GenerateLookup (i, &errors);
 
 //	if (errors)
 //		I_FatalError ("%d errors encountered during texture generation.", errors);
-	
+
 	// Create translation table for global animation.
 
 	delete[] texturetranslation;
 
 	texturetranslation = new int[numtextures+1];
-	
+
 	for (i = 0; i < numtextures; i++)
 		texturetranslation[i] = i;
 }
@@ -622,20 +628,20 @@ void R_InitTextures (void)
 void R_InitFlats (void)
 {
 	int i;
-		
+
 	firstflat = W_GetNumForName ("F_START") + 1;
 	lastflat = W_GetNumForName ("F_END") - 1;
-	
+
 	if(firstflat >= lastflat)
 		I_Error("no flats");
-	
+
 	numflats = lastflat - firstflat + 1;
-				
+
 	delete[] flattranslation;
 
 	// Create translation table for global animation.
 	flattranslation = new int[numflats+1];
-	
+
 	for (i = 0; i < numflats; i++)
 		flattranslation[i] = i;
 
@@ -721,7 +727,7 @@ void R_InitColormaps (void)
 
 		numfakecmaps = lastfakecmap - firstfakecmap;
 	}
-	
+
 	realcolormaps = (byte *)Z_Malloc (256*(NUMCOLORMAPS+1)*numfakecmaps+255,PU_STATIC,0);
 	realcolormaps = (byte *)(((ptrdiff_t)realcolormaps + 255) & ~255);
 	fakecmaps = (FakeCmap *)Z_Malloc (sizeof(*fakecmaps) * numfakecmaps, PU_STATIC, 0);
@@ -750,7 +756,7 @@ void R_InitColormaps (void)
 					r = RPART(pal->basecolors[*map]);
 					g = GPART(pal->basecolors[*map]);
 					b = BPART(pal->basecolors[*map]);
-	
+
 					W_GetLumpName (fakecmaps[j].name, i);
 					for (k = 1; k < 256; k++) {
 						r = (r + RPART(pal->basecolors[map[k]])) >> 1;
@@ -784,7 +790,7 @@ int R_ColormapNumForName (const char *name)
 
 unsigned int R_BlendForColormap (int map)
 {
-	return APART(map) ? map : 
+	return APART(map) ? map :
 		   (unsigned)map < numfakecmaps ? fakecmaps[map].blend : 0;
 }
 
@@ -800,6 +806,9 @@ void R_InitData (void)
 	R_InitTextures ();
 	R_InitFlats ();
 	R_InitSpriteLumps ();
+
+	// haleyjd 01/28/10: also initialize tantoangle_acc table
+	Table_InitTanToAngle ();
 }
 
 
@@ -837,21 +846,21 @@ int R_FlatNumForName (const char* name)
 //
 int R_CheckTextureNumForName (const char *name)
 {
-	char uname[9];
+	unsigned char uname[9];
 	int  i;
 
 	// "NoTexture" marker.
-	if (name[0] == '-') 		
+	if (name[0] == '-')
 		return 0;
 
 	// [RH] Use a hash table instead of linear search
-	strncpy (uname, name, 9); // denis - todo - string limit?
+	strncpy ((char *)uname, name, 9); // denis - todo - string limit?
 	std::transform(uname, uname + sizeof(uname), uname, toupper);
 
 	i = textures[/*W_LumpNameHash (uname) % (unsigned) numtextures*/0]->index; // denis - todo - replace with map<>
 
 	while (i != -1) {
-		if (!strncmp (textures[i]->name, uname, 8))
+		if (!strncmp (textures[i]->name, (char *)uname, 8))
 			break;
 		i = textures[i]->next;
 	}
@@ -869,7 +878,7 @@ int R_CheckTextureNumForName (const char *name)
 int R_TextureNumForName (const char *name)
 {
 	int i;
-		
+
 	i = R_CheckTextureNumForName (name);
 
 	if (i==-1) {
@@ -907,17 +916,17 @@ void R_PrecacheLevel (void)
 
 		hitlist = new byte[(numtextures > size) ? numtextures : size];
 	}
-	
+
 	// Precache flats.
 	memset (hitlist, 0, numflats);
 
 	for (i = numsectors - 1; i >= 0; i--)
 		hitlist[sectors[i].floorpic] = hitlist[sectors[i].ceilingpic] = 1;
-		
+
 	for (i = numflats - 1; i >= 0; i--)
 		if (hitlist[i])
 			W_CacheLumpNum (firstflat + i, PU_CACHE);
-	
+
 	// Precache textures.
 	memset (hitlist, 0, numtextures);
 
@@ -938,7 +947,8 @@ void R_PrecacheLevel (void)
 	// [RH] Possibly two sky textures now.
 	// [ML] 5/11/06 - Not anymore!
 
-	hitlist[skytexture] = 1;
+	hitlist[sky1texture] = 1;
+	hitlist[sky2texture] = 1;
 
 	for (i = numtextures - 1; i >= 0; i--)
 	{
@@ -954,7 +964,7 @@ void R_PrecacheLevel (void)
 
 	// Precache sprites.
 	memset (hitlist, 0, numsprites);
-		
+
 	{
 		AActor *actor;
 		TThinkerIterator<AActor> iterator;
@@ -971,6 +981,61 @@ void R_PrecacheLevel (void)
 
 	delete[] hitlist;
 }
+
+// Utility function,
+//	called by R_PointToAngle.
+unsigned int SlopeDiv (unsigned int num, unsigned int den)
+{
+	unsigned int ans;
+
+	if (den < 512)
+		return SLOPERANGE;
+
+	ans = (num << 3) / (den >> 8);
+
+	return ans <= SLOPERANGE ? ans : SLOPERANGE;
+}
+
+// [ML] 11/4/06: Moved here from v_video.cpp
+// [ML] 12/6/11: Moved from v_draw.cpp, not sure where to put it now...
+/*
+===============
+BestColor
+(borrowed from Quake2 source: utils3/qdata/images.c)
+===============
+*/
+byte BestColor (const DWORD *palette, const int r, const int g, const int b, const int numcolors)
+{
+	int		i;
+	int		dr, dg, db;
+	int		bestdistortion, distortion;
+	int		bestcolor;
+
+//
+// let any color go to 0 as a last resort
+//
+	bestdistortion = 256*256*4;
+	bestcolor = 0;
+
+	for (i = 0; i < numcolors; i++)
+	{
+		dr = r - RPART(palette[i]);
+		dg = g - GPART(palette[i]);
+		db = b - BPART(palette[i]);
+		distortion = dr*dr + dg*dg + db*db;
+		if (distortion < bestdistortion)
+		{
+			if (!distortion)
+				return i;		// perfect match
+
+			bestdistortion = distortion;
+			bestcolor = i;
+		}
+	}
+
+	return bestcolor;
+}
+
 
 VERSION_CONTROL (r_data_cpp, "$Id$")
 

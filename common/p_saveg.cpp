@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,6 +36,7 @@
 #include "r_state.h"
 #include "m_random.h"
 #include "p_saveg.h"
+#include "p_acs.h"
 #include "v_palette.h"
 
 //
@@ -83,6 +85,14 @@ void P_SerializeWorld (FArchive &arc)
 		{
 			arc << sec->floorheight
 				<< sec->ceilingheight
+				<< sec->floorplane.a
+				<< sec->floorplane.b
+				<< sec->floorplane.c
+				<< sec->floorplane.d
+				<< sec->ceilingplane.a
+				<< sec->ceilingplane.b
+				<< sec->ceilingplane.c
+				<< sec->ceilingplane.d
 				<< sec->floorpic
 				<< sec->ceilingpic
 				<< sec->lightlevel
@@ -116,7 +126,8 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec->ceilingcolormap->color
 				<< sec->ceilingcolormap->fade
 				<< sec->alwaysfake
-				<< sec->waterzone;
+				<< sec->waterzone
+				<< sec->MoreFlags;
 		}
 
 		// do lines
@@ -153,6 +164,14 @@ void P_SerializeWorld (FArchive &arc)
 
 			arc >> sec->floorheight
 				>> sec->ceilingheight
+				>> sec->floorplane.a
+				>> sec->floorplane.b
+				>> sec->floorplane.c
+				>> sec->floorplane.d
+				>> sec->ceilingplane.a
+				>> sec->ceilingplane.b
+				>> sec->ceilingplane.c
+				>> sec->ceilingplane.d
 				>> sec->floorpic
 				>> sec->ceilingpic
 				>> sec->lightlevel
@@ -191,7 +210,13 @@ void P_SerializeWorld (FArchive &arc)
 				RPART(color), GPART(color), BPART(color),
 				RPART(fade), GPART(fade), BPART(fade));
 			arc >> sec->alwaysfake
-				>> sec->waterzone;
+				>> sec->waterzone
+				>> sec->MoreFlags;
+
+			sec->floorplane.invc = FixedDiv(FRACUNIT, sec->floorplane.c);
+			sec->floorplane.sector = sec;
+			sec->ceilingplane.invc = FixedDiv(FRACUNIT, sec->ceilingplane.c);
+			sec->ceilingplane.sector = sec;
 		}
 
 		// do lines
@@ -236,6 +261,57 @@ void P_SerializeSounds (FArchive &arc)
 	// denis - todo
 }
 
+//
+// ArchivePolyobjs
+//
+#define ASEG_POLYOBJS	104
+
+void P_SerializePolyobjs (FArchive &arc)
+{
+	int i;
+	polyobj_t *po;
+
+	if (arc.IsStoring ())
+	{
+		arc << (int)ASEG_POLYOBJS << po_NumPolyobjs;
+		for(i = 0, po = polyobjs; i < po_NumPolyobjs; i++, po++)
+		{
+			arc << po->tag << po->angle << po->startSpot[0] <<
+				po->startSpot[1] << po->startSpot[2];
+  		}
+	}
+	else
+	{
+		int data;
+		angle_t angle;
+		fixed_t deltaX, deltaY, deltaZ;
+
+		arc >> data;
+		if (data != ASEG_POLYOBJS)
+			I_Error ("Polyobject marker missing");
+
+		arc >> data;
+		if (data != po_NumPolyobjs)
+		{
+			I_Error ("UnarchivePolyobjs: Bad polyobj count");
+		}
+		for (i = 0, po = polyobjs; i < po_NumPolyobjs; i++, po++)
+		{
+			arc >> data;
+			if (data != po->tag)
+			{
+				I_Error ("UnarchivePolyobjs: Invalid polyobj tag");
+			}
+			arc >> angle;
+			PO_RotatePolyobj (po->tag, angle);
+			arc >> deltaX >> deltaY >> deltaZ;
+			deltaX -= po->startSpot[0];
+			deltaY -= po->startSpot[1];
+			deltaZ -= po->startSpot[2];
+			PO_MovePolyobj (po->tag, deltaX, deltaY);
+		}
+	}
+}
 
 VERSION_CONTROL (p_saveg_cpp, "$Id$")
 

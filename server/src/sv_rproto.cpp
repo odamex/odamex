@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,7 +32,10 @@
 #include "huffman.h"
 #include "i_net.h"
 
-EXTERN_CVAR (networkcompression)
+QWORD I_MSTime (void);
+
+EXTERN_CVAR (sv_networkcompression)
+EXTERN_CVAR (log_packetdebug)
 
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
 buf_t sendd(MAX_UDP_PACKET);
@@ -40,6 +43,9 @@ buf_t sendd(MAX_UDP_PACKET);
 //
 // SV_CompressPacket
 //
+// [Russell] - reason this was failing is because of huffman routines, so just
+// use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
+// if 0'd sections
 void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 {
 	if(plain.maxsize() < send.maxsize())
@@ -52,7 +58,7 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 	byte method = 0;
 
 	int need_gap = 2; // for svc_compressed and method, below
-	
+#if 0
 	if(MSG_CompressAdaptive(cl->compressor.get_codec(), send, reserved, need_gap))
 	{
 		reserved += need_gap;
@@ -63,21 +69,22 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 		if(cl->compressor.get_codec_id())
 			method |= adaptive_select_mask;
 	}
-
-	printf("SV_CompressPacket stage 2: %x %d\n", (int)method, (int)send.size());
+#endif
+	DPrintf("SV_CompressPacket stage 2: %x %d\n", (int)method, (int)send.size());
 
 	if(MSG_CompressMinilzo(send, reserved, need_gap))
 		method |= minilzo_mask;
 
 	if((method & adaptive_mask) || (method & minilzo_mask))
 	{
+#if 0
 		if(cl->compressor.packet_sent(cl->sequence - 1, plain.ptr() + sizeof(int), plain.size() - sizeof(int)))
 			method |= adaptive_record_mask;
-		
+#endif
 		send.ptr()[sizeof(int)] = svc_compressed;
 		send.ptr()[sizeof(int) + 1] = method;
 	}
-	printf("SV_CompressPacket %x %d\n", (int)method, (int)send.size());
+	DPrintf("SV_CompressPacket %x %d\n", (int)method, (int)send.size());
 
 }
 
@@ -100,6 +107,10 @@ bool SV_SendPacket(player_t &pl)
 	else
 		if (cl->netbuf.overflowed)
 			SZ_Clear(&cl->netbuf);
+
+	// [SL] 2012-05-04 - Don't send empty packets - they still have overhead
+	if (cl->reliablebuf.cursize + cl->netbuf.cursize == 0)
+		return true;
 
 	sendd.clear();
 
@@ -137,7 +148,8 @@ bool SV_SendPacket(player_t &pl)
 	if (gametic % 35)
 	    bps = (int)((double)( (cl->unreliable_bps + cl->reliable_bps) * TICRATE)/(double)(gametic%35));
 
-    if (bps < cl->rate)
+    if (bps < cl->rate*1000)
+
 	  if (cl->netbuf.cursize && (sendd.maxsize() - sendd.cursize > cl->netbuf.cursize) )
 	  {
          SZ_Write (&sendd, cl->netbuf.data, cl->netbuf.cursize);
@@ -148,8 +160,14 @@ bool SV_SendPacket(player_t &pl)
 	SZ_Clear(&cl->reliablebuf);
 	
 	// compress the packet, but not the sequence id
-	if(networkcompression && sendd.size() > sizeof(int))
+	if(sv_networkcompression && sendd.size() > sizeof(int))
 		SV_CompressPacket(sendd, sizeof(int), cl);
+
+	if (log_packetdebug)
+	{
+		Printf(PRINT_HIGH, "ply %03u, pkt %06u, size %04u, tic %07u, time %011u\n",
+			   pl.id, cl->sequence - 1, sendd.cursize, gametic, I_MSTime());
+	}
 
 	NET_SendPacket(sendd, cl->address);
 
@@ -186,7 +204,7 @@ void SV_AcknowledgePacket(player_t &player)
 			if  (needfullupdate)
 			{
 				// do full update
-				Printf(PRINT_HIGH, "need full update\n");
+				DPrintf("need full update\n");
 				cl->last_sequence = sequence;
 				return;
 			}
@@ -201,10 +219,13 @@ void SV_AcknowledgePacket(player_t &player)
 			if (cl->reliablebuf.overflowed)
 			{
 				// do full update
-				Printf(PRINT_HIGH, "need full update\n");
+				DPrintf("reliablebuf overflowed, need full update\n");
 				cl->last_sequence = sequence;
 				return;
 			}
+
+			if (cl->reliablebuf.cursize > 600)
+				SV_SendPacket(player);
 
 		}
 	}

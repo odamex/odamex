@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
 // AUTHORS: 
 //  John Corrado
 //  Russell Rice (russell at odamex dot net)
-//  Michael Wood (mwoodj at knology dot net)
+//  Michael Wood (mwoodj at huntsvegas dot org)
 //
 //-----------------------------------------------------------------------------
 
@@ -35,14 +35,20 @@
 
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
+#include <wx/sysopt.h>
 
-
+using namespace odalpapi;
 
 IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {   
-    if (InitializeSocketAPI() == false)
+#ifdef __WXMAC__
+    // The native listctrl on Mac is problematic for us so always use the generic listctrl
+    wxSystemOptions::SetOption(wxMAC_ALWAYS_USE_GENERIC_LISTCTRL, true);
+#endif
+
+    if (BufferedSocket::InitializeSocketAPI() == false)
         return false;
     
     ::wxInitAllImageHandlers();
@@ -52,9 +58,9 @@ bool Application::OnInit()
     // load resources
     InitXmlResource();
 
-    // create main window and show it
+    // create main window, get size dimensions and show it
     MAIN_DIALOG = new dlgMain(0L);
-    
+   
     if (MAIN_DIALOG) 
         MAIN_DIALOG->Show();
         
@@ -65,7 +71,7 @@ bool Application::OnInit()
 
 wxInt32 Application::OnExit()
 {
-    ShutdownSocketAPI();
+    BufferedSocket::ShutdownSocketAPI();
     
     return 0;
 }

@@ -1,9 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -17,7 +18,7 @@
 // DESCRIPTION:
 //	Lookup tables.
 //	Do not try to look them up :-).
-//	In the order of appearance: 
+//	In the order of appearance:
 //
 //	int finetangent[4096]	- Tangens LUT.
 //	 Should work with BAM fairly well (12 of 16bit,
@@ -25,11 +26,11 @@
 //
 //	int finesine[10240]		- Sine lookup.
 //	 Guess what, serves as cosine, too.
-//	 Remarkable thing is, how to use BAMs with this? 
+//	 Remarkable thing is, how to use BAMs with this?
 //
 //	int tantoangle[2049]	- ArcTan LUT,
-//	  maps tan(angle) to angle fast. Gotta search.	
-//    
+//	  maps tan(angle) to angle fast. Gotta search.
+//
 //-----------------------------------------------------------------------------
 
 
@@ -37,7 +38,7 @@
 #define __TABLES_H__
 
 #include "m_fixed.h"
-		
+
 #define PI				3.141592657
 
 #define FINEANGLES		8192
@@ -48,14 +49,14 @@
 #define ANGLETOFINESHIFT		19
 
 // Effective size is 10240.
-extern	fixed_t 		finesine[5*FINEANGLES/4];
+extern	const fixed_t 		finesine[5*FINEANGLES/4];
 
 // Re-use data, is just PI/2 phase shift.
-extern	fixed_t*		finecosine;
+extern const fixed_t*		finecosine;
 
 
 // Effective size is 4096.
-extern fixed_t			finetangent[FINEANGLES/2];
+extern const fixed_t		finetangent[FINEANGLES/2];
 
 // Binary Angle Measument, BAM.
 #define ANG45			0x20000000
@@ -63,6 +64,8 @@ extern fixed_t			finetangent[FINEANGLES/2];
 #define ANG180			0x80000000
 #define ANG270			0xc0000000
 #define ANG(n)			((ANG45/45)*(n))
+
+#define ANG360  0xffffffff
 
 #define SLOPERANGE		2048
 #define SLOPEBITS		11
@@ -72,24 +75,17 @@ typedef DWORD			angle_t;
 
 
 // Effective size is 2049;
-// The +1 size is to handle the case when x==y
-//	without additional checking.
-extern angle_t			tantoangle[SLOPERANGE+1];
+// The +1 size is to handle the case when x==y without additional checking.
+// [ML] 2/2/10: Updated with R_PointToAngle2 changes (from EE)
+extern const angle_t tantoangle[2049];
+extern angle_t tantoangle_acc[2049];
+
+extern const angle_t *p_tantoangle;
+
+void Table_InitTanToAngle(void);
+void Table_SetTanToAngle(int version);
 
 
-// Utility function,
-//	called by R_PointToAngle.
-inline int SlopeDiv (unsigned int num, unsigned den)
-{
-	unsigned int ans;
-
-	if (den < 512)
-		return SLOPERANGE;
-
-	ans = (num << 3) / (den >> 8);
-
-	return ans <= SLOPERANGE ? ans : SLOPERANGE;
-}
 
 #endif // __TABLES_H__
 

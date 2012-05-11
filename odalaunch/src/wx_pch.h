@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,7 +41,19 @@
 #endif
 
 #ifdef USE_PCH
-	// put here all your rarely-changing header files
+    #include "net_error.h"
+    #include "net_io.h"
+    #include "net_packet.h"
+    #include "net_utils.h"
+    #include "typedefs.h"
+    
+    #include "lst_custom.h"
+    #include "main.h"
+    #include "md5.h"
+    #include "query_thread.h"
+    #include "resource.h"
+    
+    #include "dlg_about.h"
 #endif // USE_PCH
 
 #endif // WX_PCH_H_INCLUDED

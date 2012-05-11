@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -516,19 +517,6 @@ gitem_t itemlist[] = {
 		0,
 		"Red Flag"
 	},
-
-
-	{ // Remove me in 0.5
-		"gold_flag", // Remove me in 0.5
-		NULL, // Remove me in 0.5
-		NULL, // Remove me in 0.5
-		IT_FLAG, // Remove me in 0.5
-		it_goldflag, // Remove me in 0.5
-		0, // Remove me in 0.5
-		"Gold Flag" // Remove me in 0.5
-	}, // Remove me in 0.5
-	// ---------------------------------------------------------------------------------------------------------
-
 
 	// end of list marker
 	{

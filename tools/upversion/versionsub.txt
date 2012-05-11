@@ -1,0 +1,80 @@
+# Example variables
+#   $version = "0.5.3";
+#   $version_short = "53";
+#   $version_commas = "0,5,3,0";
+#	$copyright_years = "2006-2011"
+#   $copyright = "Copyright © 2005-2011 The Odamex Team";
+#   $savesig = "ODAMEXSAVE053   ";
+#   $release_date = "June 18th, 2011";
+
+[ag-odalaunch/src/net_packet.h]
+s|(\s*#define\s+VERSION\s+\(0\*256\+)\d+(\))|$1$version_short$2|
+
+[odalpapi/net_packet.h]
+s|(\s*#define\s+VERSION\s+\(0\*256\+)\d+(\))|$1$version_short$2|
+
+[ag-odalaunch/res/Info.plist]
+s|(\s*<key>CFBundleVersion</key>\s*\n*\s*<string>)\d*\.?\d*\.?\d*(</string>)|$1$version$2|
+s|(\s*<key>CFBundleShortVersionString</key>\s*\n*\s*<string>)\d*\.?\d*\.?\d*(</string>)|$1$version$2|
+s|(\s*<key>CFBundleLongVersionString</key>\s*\n*\s*<string>)\d*\.?\d*\.?\d*(</string>)|$1$version$2|
+s|(\s*<key>CFBundleGetInfoString</key>\s*\n*\s*<string>)[^<]*(</string>)|$1$copyright$2|
+s|(\s*<key>NSHumanReadableCopyright</key>\s*\n*\s*<string>)[^<]*(</string>)|$1$copyright$2|
+
+[odalaunch/src/dlg_about.cpp]
+s|(\s*#define\s_ODA_COPYRIGHT_\s+")[^"]*("\s*)|$1$copyright2$2|
+
+[odalaunch/res/gui_project.fbp]
+s|(\s*<property name="label">)Copyright[^<]*(</property>)|$1$copyright2$2|
+
+[odalaunch/res/Info.plist]
+s|(\s*<key>CFBundleVersion</key>\s*\n*\s*<string>)\d*\.?\d*\.?\d*(</string>)|$1$version$2|
+s|(\s*<key>CFBundleShortVersionString</key>\s*\n*\s*<string>)\d*\.?\d*\.?\d*(</string>)|$1$version$2|
+s|(\s*<key>CFBundleLongVersionString</key>\s*\n*\s*<string>)\d*\.?\d*\.?\d*(</string>)|$1$version$2|
+s|(\s*<key>CFBundleGetInfoString</key>\s*\n*\s*<string>)[^<]*(</string>)|$1$copyright$2|
+s|(\s*<key>NSHumanReadableCopyright</key>\s*\n*\s*<string>)[^<]*(</string>)|$1$copyright$2|
+
+[common/version.h]
+s|(\s*#define\s*CONFIGVERSIONSTR\s*")\d*(")|$1$version_short$2|
+s|(\s*#define\s*GAMEVER\s*\(0\*256\+)\d+(\))|$1$version_short$2|
+s|(\s*#define\s*DOTVERSIONSTR\s*")\d*\.?\d*\.?\d*(")|$1$version$2|
+s|(\s*#define\s*COPYRIGHTSTR\s*")[^"]*(")|$1$copyright2$2|
+s|(\s*#define\s*SAVESIG\s*")[^"]*(")|$1$savesig$2|
+
+[README]
+s|(\s*Odamex v)\d*\.?\d*\.?\d*(\s*README)|$1$version$2|
+s|(\s*Revision date: )[^\n]*(\n)|$1$release_date$2|
+
+[Xbox/README.Xbox]
+s|(\s*Odamex v)\d*\.?\d*\.?\d*(\s*for Xbox)|$1$version$2|
+s|(\s*Revision date: )[^\n]*(\n)|$1$release_date$2|
+
+[odalaunch/res/odalaunch.rc]
+s|(\s*FILEVERSION\s*)\d*,?\d*,?\d*,?\d*,?|$1$version_commas|
+s|(\s*PRODUCTVERSION\s*)\d*,?\d*,?\d*,?\d*,?|$1$version_commas|
+s|(\s*VALUE\s*"FileVersion",\s*")\d*\.?\d*\.?\d*(\\0")|$1$version$2|
+s|(\s*VALUE\s*"LegalCopyright",\s*")[^\\]*(\\0")|$1$copyright$2|
+s|(\s*VALUE\s*"ProductVersion",\s*")\d*\.?\d*\.?\d*(\\0")|$1$version$2|
+
+[client/sdl/client.rc]
+s|(\s*FILEVERSION\s*)\d*,?\d*,?\d*,?\d*,?|$1$version_commas|
+s|(\s*PRODUCTVERSION\s*)\d*,?\d*,?\d*,?\d*,?|$1$version_commas|
+s|(\s*VALUE\s*"FileVersion",\s*")\d*\.?\d*\.?\d*(\\0")|$1$version$2|
+s|(\s*VALUE\s*"LegalCopyright",\s*")[^\\]*(\\0")|$1$copyright$2|
+s|(\s*VALUE\s*"ProductVersion",\s*")\d*\.?\d*\.?\d*(\\0")|$1$version$2|
+
+[server/win32/server.rc]
+s|(\s*FILEVERSION\s*)\d*,?\d*,?\d*,?\d*,?|$1$version_commas|
+s|(\s*PRODUCTVERSION\s*)\d*,?\d*,?\d*,?\d*,?|$1$version_commas|
+s|(\s*VALUE\s*"FileVersion",\s*")\d*\.?\d*\.?\d*(\\0")|$1$version$2|
+s|(\s*VALUE\s*"LegalCopyright",\s*")[^\\]*(\\0")|$1$copyright$2|
+s|(\s*VALUE\s*"ProductVersion",\s*")\d*\.?\d*\.?\d*(\\0")|$1$version$2|
+
+[installer/windows/odamex.iss]
+s|(AppVerName=Odamex\s*)\d*\.?\d*\.?\d*|$1$version|
+s|(OutputBaseFilename=odamex-win32-)\d*\.?\d*\.?\d*|$1$version|
+s|(VersionInfoProductVersion=)\d*\.?\d*\.?\d*|$1$version|
+
+[CMakeLists.txt]
+s|(PROJECT_VERSION\s*)\d*\.\d*\.*\d*|$1$version|
+s|(PROJECT_COPYRIGHT\s*")\d\d\d\d\s*-\s*\d\d\d\d|$1$copyright_years|
+

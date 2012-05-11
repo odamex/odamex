@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,8 +24,11 @@
 #ifndef DLG_MAIN_H
 #define DLG_MAIN_H
 
-#include "lst_custom.h"
+#include "lst_players.h"
+#include "lst_servers.h"
+#include "lst_srvdetails.h"
 
+#include "dlg_about.h"
 #include "dlg_config.h"
 #include "dlg_servers.h"
 #include "frm_odaget.h"
@@ -50,6 +53,23 @@ DECLARE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL, -1)
 DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1)
 END_DECLARE_EVENT_TYPES()
 
+typedef enum
+{
+     _oda_iav_MIN = 0         // Minimum range
+    
+    ,_oda_iav_SUCCESS         // Address is valid
+    ,_oda_iav_FAILURE         // Unknown error 
+    
+    ,_oda_iav_emptystr        // Empty address parameter
+    ,_oda_iav_interr          // Internal error (regex comp error, bad regex)
+    ,_oda_iav_colerr          // Bad or nonexistant substring after colon
+    
+    ,_oda_iav_NUMERR          // Number of errors (incl min range)
+    
+    ,_oda_iav_MAX             // Maximum range
+} _oda_iav_err_t;
+
+
 class dlgMain : public wxFrame, wxThreadHelper
 {
 	public:
@@ -57,8 +77,9 @@ class dlgMain : public wxFrame, wxThreadHelper
 		dlgMain(wxWindow* parent,wxWindowID id = -1);
 		virtual ~dlgMain();
 		
-        Server          *QServer;
-        MasterServer    *MServer;
+        odalpapi::Server         NullServer;
+        odalpapi::Server        *QServer;
+        odalpapi::MasterServer   MServer;
         
         launchercfg_t launchercfg_s;
 	protected:
@@ -82,23 +103,30 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnServerListClick(wxListEvent& event);
 		void OnServerListDoubleClick(wxListEvent& event);
-		void OnServerListRightClick(wxListEvent& event);
-		
-		void OnComboSelectMaster(wxCommandEvent& event);
 		
 		void OnShow(wxShowEvent &event);
 		void OnClose(wxCloseEvent &event);
+		void OnWindowCreate(wxWindowCreateEvent &event);
 		
 		void OnExit(wxCommandEvent& event);
 		
 		wxInt32 FindServer(wxString);
 		wxInt32 FindServerInList(wxString);
+		wxInt32 GetSelectedServerListIndex();
+		wxInt32 GetSelectedServerArrayIndex();
+
+		_oda_iav_err_t IsAddressValid(wxString, wxString &, long &);
 		
-		wxAdvancedListCtrl *m_LstCtrlServers;
-		wxAdvancedListCtrl *m_LstCtrlPlayers;
+		void LaunchGame(const wxString &Address, const wxString &ODX_Path, 
+            const wxString &waddirs, const wxString &Password = wxT(""));
+		
+		LstOdaServerList *m_LstCtrlServers;
+		LstOdaPlayerList *m_LstCtrlPlayers;
+        LstOdaSrvDetails *m_LstOdaSrvDetails;
         
         dlgConfig *config_dlg;
         dlgServers *server_dlg;
+        dlgAbout *AboutDialog;
         frmOdaGet *OdaGet;
         
 		wxInt32 TotalPlayers;
@@ -161,6 +189,8 @@ class dlgMain : public wxFrame, wxThreadHelper
             ,mtrs_server_singletimeout
             
             ,mtrs_server_noservers // There are no servers to query!
+
+            ,mtrs_servers_querydone // Query of all servers complete
             
             ,mtrs_max
         } mtrs_t;
@@ -190,6 +220,19 @@ class dlgMain : public wxFrame, wxThreadHelper
         } wtrs_struct_t;
         
         wtrs_struct_t wtrs_Result;
+
+        // Posts a message from the main thread to the monitor thread
+        bool MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index = -1, 
+            wxInt32 ListIndex = -1);
+
+        // Posts a message from a secondary thread to the main thread
+        void MonThrPostEvent(wxEventType EventType, int win_id, mtrs_t Signal, 
+            wxInt32 Index, wxInt32 ListIndex);
+        
+        // Various functions for communicating with masters and servers
+        bool MonThrGetMasterList();
+        void MonThrGetServerList();
+        void MonThrGetSingleServer();
         
         void OnMonitorSignal(wxCommandEvent&);
         void OnWorkerSignal(wxCommandEvent&);

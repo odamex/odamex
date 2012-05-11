@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,7 +41,7 @@
 #include "st_stuff.h"
 #include "cl_main.h"
 
-#include "cl_ctf.h"
+#include "p_ctf.h"
 
 
 EXTERN_CVAR (cl_autoaim)
@@ -50,6 +50,23 @@ EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_team)
+EXTERN_CVAR (cl_unlag)
+EXTERN_CVAR (cl_updaterate)
+EXTERN_CVAR (cl_switchweapon)
+EXTERN_CVAR (cl_weaponpref1)
+EXTERN_CVAR (cl_weaponpref2)
+EXTERN_CVAR (cl_weaponpref3)
+EXTERN_CVAR (cl_weaponpref4)
+EXTERN_CVAR (cl_weaponpref5)
+EXTERN_CVAR (cl_weaponpref6)
+EXTERN_CVAR (cl_weaponpref7)
+EXTERN_CVAR (cl_weaponpref8)
+EXTERN_CVAR (cl_weaponpref9)
+
+void CL_RefreshWeaponPreferenceCvars();
+void CL_PrepareWeaponPreferenceUserInfo();
+void P_SetWeaponPreference(player_t *player, int slot, weapontype_t weapon);
+void CL_SetWeaponPreferenceCvar(int slot, weapontype_t weapon);
 
 enum
 {
@@ -58,7 +75,8 @@ enum
 	INFO_Color,
 	INFO_Skin,
 	INFO_Team,
-	INFO_Gender
+	INFO_Gender,
+    INFO_Unlag
 };
 
 
@@ -84,40 +102,64 @@ team_t D_TeamByName (const char *team)
 	else if (!stricmp (team, "red"))
 		return TEAM_RED;
 
-	else if (!stricmp (team, "gold"))
-		return TEAM_GOLD;
-
 	else return TEAM_NONE;
-
 }
 
-void D_SetupUserInfo (void)
+void D_SetupUserInfo(void)
 {
+	userinfo_t *coninfo = &consoleplayer().userinfo;
+
+	// Save the previous weapon preferences
+	weapontype_t backup_weapon_prefs[NUMWEAPONS];
+	memcpy(backup_weapon_prefs, coninfo->weapon_prefs, sizeof(backup_weapon_prefs));
+
+	memset (&consoleplayer().userinfo, 0, sizeof(userinfo_t));
+	
+	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
+	coninfo->team			= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
+	coninfo->color			= V_GetColorFromString (NULL, cl_color.cstring());
+	coninfo->skin			= R_FindSkin (cl_skin.cstring());
+	coninfo->gender			= D_GenderByName (cl_gender.cstring());
+	coninfo->aimdist		= (fixed_t)(cl_autoaim * 16384.0);
+	coninfo->unlag			= cl_unlag;
+	coninfo->update_rate	= cl_updaterate;
+	coninfo->switchweapon	= (weaponswitch_t)cl_switchweapon.asInt();
+
+	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
+	CL_PrepareWeaponPreferenceUserInfo();
+
+	// Find which weapon preference slot was changed
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		if (backup_weapon_prefs[i] != coninfo->weapon_prefs[i])
+		{
+			// slot i was changed
+			weapontype_t oldweapon = backup_weapon_prefs[i];
+			weapontype_t newweapon = coninfo->weapon_prefs[i];
+			
+			// swap the weapon in slot i with whatever slot already has newweapon
+			for (size_t j = 0; j < NUMWEAPONS; j++)
+			{
+				if (coninfo->weapon_prefs[j] == newweapon &&  j != i)
+				{
+					coninfo->weapon_prefs[j] = oldweapon;
+					CL_SetWeaponPreferenceCvar(j, oldweapon);
+					break;
+				}
+			}
+
+			break;
+		}
+	}
 }
 
 void D_UserInfoChanged (cvar_t *cvar)
 {
-//	if (gamestate != GS_STARTUP)
-//		D_SetupUserInfo();
+	if (gamestate != GS_STARTUP && !connected)
+		D_SetupUserInfo();
 
 	if (connected)
 		CL_SendUserInfo();
-}
-
-void D_SendServerInfoChange (const cvar_t *cvar, const char *value)
-{
-}
-
-void D_DoServerInfoChange (byte **stream)
-{
-}
-
-void D_WriteUserInfoStrings (int i, byte **stream, bool compact)
-{
-}
-
-void D_ReadUserInfoStrings (int i, byte **stream, bool update)
-{
 }
 
 FArchive &operator<< (FArchive &arc, userinfo_t &info)
@@ -125,17 +167,28 @@ FArchive &operator<< (FArchive &arc, userinfo_t &info)
 	arc.Write (&info.netname, sizeof(info.netname));
 	arc.Write (&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Write (&info.gender, sizeof(info.gender));
-	arc << info.aimdist << info.color << info.skin << 0;
+	arc << info.aimdist << info.color << info.skin << info.unlag
+		<< info.update_rate << (byte)info.switchweapon;
+	arc.Write (&info.weapon_prefs, sizeof(info.weapon_prefs));
+ 	arc << 0;
+
 	return arc;
 }
 
 FArchive &operator>> (FArchive &arc, userinfo_t &info)
 {
+	int dummy;
+	byte switchweapon;
+
 	arc.Read (&info.netname, sizeof(info.netname));
 	arc.Read (&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Read (&info.gender, sizeof(info.gender));
-	int neverswitch;
-	arc >> info.aimdist >> info.color >> info.skin >> neverswitch;
+	arc >> info.aimdist >> info.color >> info.skin >> info.unlag
+		>> info.update_rate >> switchweapon;
+	info.switchweapon = (weaponswitch_t)switchweapon;
+	arc.Read (&info.weapon_prefs, sizeof(info.weapon_prefs));
+	arc >> dummy;
+
 	return arc;
 }
 

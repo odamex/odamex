@@ -1,9 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,7 +30,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "p_local.h"
-
+#include "r_data.h"
 
 // State.
 #include "r_state.h"
@@ -226,10 +227,12 @@ fixed_t opentop;
 fixed_t openbottom;
 fixed_t openrange;
 fixed_t lowfloor;
+sector_t *openbottomsec;
 
-void P_LineOpening (const line_t *linedef)
+void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx, fixed_t refy)
 {
 	sector_t *front, *back;
+	fixed_t fc, ff, bc, bf;
 
 	if (linedef->sidenum[1] == -1)
 	{
@@ -241,24 +244,63 @@ void P_LineOpening (const line_t *linedef)
 	front = linedef->frontsector;
 	back = linedef->backsector;
 
-	opentop = (front->ceilingheight < back->ceilingheight) ?
-		front->ceilingheight :
-		back->ceilingheight;
+	fc = P_CeilingHeight(x, y, front);
+	ff = P_FloorHeight(x, y, front);
+	bc = P_CeilingHeight(x, y, back);
+	bf = P_FloorHeight(x, y, back);
 
-	if (front->floorheight > back->floorheight)
+	opentop = MIN(fc, bc);
+
+	bool usefront;
+
+	// [RH] fudge a bit for actors that are moving across lines
+	// bordering a slope/non-slope that meet on the floor. Note
+	// that imprecisions in the plane equation mean there is a
+	// good chance that even if a slope and non-slope look like
+	// they line up, they won't be perfectly aligned.
+	if (refx == MINFIXED ||	abs(ff - bf) > 256)
+		usefront = (ff > bf);
+	else
 	{
-		openbottom = front->floorheight;
-		lowfloor = back->floorheight;
+		if (P_IsPlaneLevel(&front->floorplane))
+			usefront = true;
+		else if (P_IsPlaneLevel(&back->floorplane))
+			usefront = false;
+		else
+			usefront = !P_PointOnLineSide(refx, refy, linedef);
+	}
+
+	if (usefront)
+	{
+		openbottom = ff;
+		lowfloor = bf;
+		openbottomsec = front;
 	}
 	else
 	{
-		openbottom = back->floorheight;
-		lowfloor = front->floorheight;
+		openbottom = bf;
+		lowfloor = ff;
+		openbottomsec = back;
 	}
 
 	openrange = opentop - openbottom;
 }
 
+//
+// P_LineOpeningIntercept
+//
+// [SL] 2012-02-08 - Calculates where the intercept crosses the line and calls
+// P_LineOpening() to obtain the correct values for opentop, openbottom, and
+// openrange on lines bordering sloping sectors.
+//
+void P_LineOpeningIntercept(const line_t *line, const intercept_t *in)
+{
+	
+	fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
+	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);	
+	
+	P_LineOpening(line, crossx, crossy);
+}
 
 //
 // THING POSITION SETTING
@@ -278,7 +320,7 @@ void AActor::UnlinkFromWorld ()
 
 	if(!subsector)
 		return;
-		
+
 	if (!(flags & MF_NOSECTOR))
 	{
 		// invisible things don't need to be in sector list
@@ -423,6 +465,7 @@ void AActor::SetOrigin (fixed_t ix, fixed_t iy, fixed_t iz)
 // to P_BlockLinesIterator, then make one or more calls
 // to it.
 //
+extern polyblock_t **PolyBlockMap;
 
 BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 {
@@ -431,6 +474,37 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 
 	int offset = *(blockmap + (bmapwidth*y + x));
 	int *list = blockmaplump + offset;
+	
+	/* [RH] Polyobj stuff from Hexen --> */
+	polyblock_t *polyLink;
+
+	offset = y*bmapwidth + x;
+	if (PolyBlockMap)
+	{
+		polyLink = PolyBlockMap[offset];
+		
+		while (polyLink)
+		{
+			if (polyLink->polyobj && polyLink->polyobj->validcount != validcount)
+			{
+				int i;
+				seg_t **tempSeg = polyLink->polyobj->segs;
+				polyLink->polyobj->validcount = validcount;
+
+				for (i = polyLink->polyobj->numsegs; i; i--, tempSeg++)
+				{
+					if ((*tempSeg)->linedef->validcount != validcount)
+					{
+						(*tempSeg)->linedef->validcount = validcount;
+						if (!func ((*tempSeg)->linedef))
+							return false;
+					}
+				}
+			}
+			polyLink = polyLink->next;
+		}
+	}
+	/* <-- Polyobj stuff from Hexen */	
 
 	// [RH] Get past starting 0 (from BOOM)
 	// denis - not so fast, this breaks doom1.wad 1.9 demo1
@@ -439,15 +513,15 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 	for (; *list != -1; list++)
 	{
 		line_t *ld = &lines[*list];
-		
+
 		if (ld->validcount != validcount) {
 			ld->validcount = validcount;
-			
+
 			if ( !func(ld) )
 				return false;
 		}
 	}
-	
+
 	return true;		// everything was checked
 }
 
@@ -455,7 +529,7 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 //
 // P_BlockThingsIterator
 //
-BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*))
+BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*), AActor *actor)
 {
 	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
 		return true;
@@ -463,12 +537,12 @@ BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*))
 	{
 		AActor *mobj;
 
-		for (mobj = blocklinks[y*bmapwidth+x] ;
+		for (mobj = (actor != NULL ? actor : blocklinks[y*bmapwidth+x]) ;
 			 mobj ;
 			 mobj = mobj->bnext)
 		{
-				if (!func (mobj))
-					return false;
+			if (!func (mobj))
+				return false;
 		}
 	}
 	return true;
@@ -542,7 +616,7 @@ BOOL PIT_AddLineIntercepts (line_t *ld)
 	intercept.isaline = true;
 	intercept.d.line = ld;
 	intercepts.Push(intercept);
-	
+
 	return true;		// continue
 }
 
@@ -640,18 +714,6 @@ BOOL P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 		if (dist > maxfrac)
 			return true;		// checked everything in range
 
-#if 0  // UNUSED
-	{
-
-		// don't check these yet, there may be others inserted
-		in = scan = intercepts;
-		for ( scan = 0 ; scan<intercepts.Size() ; scan++)
-			if (intercepts[scan].frac > maxfrac)
-				*in++ = *scan;
-		intercepts.Resize(scan);
-		return false;
-	}
-#endif
 
 		if ( !func (in) )
 			return false;		// don't bother going farther
@@ -698,7 +760,7 @@ BOOL P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 	earlyout = flags & PT_EARLYOUT;
 
 	validcount++;
-	
+
 	intercepts.Clear();
 
 	if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
@@ -803,6 +865,98 @@ BOOL P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 	}
 	// go through the sorted list
 	return P_TraverseIntercepts ( trav, FRACUNIT );
+}
+
+//
+// P_PointToAngle
+//
+// To get a global angle from cartesian coordinates,
+//  the coordinates are flipped until they are in
+//  the first octant of the coordinate system, then
+//  the y (<=x) is scaled and divided by x to get a
+//  tangent (slope) value which is looked up in the
+//  tantoangle[] table. The +1 size of tantoangle[]
+//  is to handle the case when x==y without additional
+//  checking.
+//
+// killough 5/2/98: reformatted, cleaned up
+// haleyjd 01/28/10: restored to Vanilla and made some modifications;
+//                   added P_ version for use by gamecode.
+//
+angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y)
+{
+	x -= xo;
+	y -= yo;
+
+	if((x | y) == 0)
+		return 0;
+
+	if(x >= 0)
+	{
+		if (y >= 0)
+		{
+			if(x > y)
+			{
+				// octant 0
+				return p_tantoangle[SlopeDiv(y, x)];
+			}
+			else
+			{
+				// octant 1
+				return ANG90 - 1 - p_tantoangle[SlopeDiv(x, y)];
+			}
+		}
+		else
+		{
+			y = -y;
+
+			if(x > y)
+			{
+				// octant 8
+				return 0 - p_tantoangle[SlopeDiv(y, x)];
+			}
+			else
+			{
+				// octant 7
+				return ANG270 + p_tantoangle[SlopeDiv(x, y)];
+			}
+		}
+	}
+	else
+	{
+		x = -x;
+
+		if(y >= 0)
+		{
+			if(x > y)
+			{
+				// octant 3
+				return ANG180 - 1 - p_tantoangle[SlopeDiv(y, x)];
+			}
+			else
+			{
+				// octant 2
+				return ANG90 + p_tantoangle[SlopeDiv(x, y)];
+			}
+		}
+		else
+		{
+			y = -y;
+
+			if(x > y)
+			{
+				// octant 4
+				return ANG180 + p_tantoangle[SlopeDiv(y, x)];
+			}
+			else
+			{
+				// octant 5
+				return ANG270 - 1 - p_tantoangle[SlopeDiv(x, y)];
+			}
+		}
+	}
+
+	return 0;
 }
 
 VERSION_CONTROL (p_maputl_cpp, "$Id$")

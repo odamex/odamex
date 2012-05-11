@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,8 +32,11 @@
 #include "c_dispatch.h"
 #include "c_bind.h"
 #include "g_level.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "hu_stuff.h"
+#include "cl_demo.h"
+
+extern NetDemo netdemo;
 
 /* Most of these bindings are equivalent
  * to the original DOOM's keymappings.
@@ -47,11 +50,12 @@ char DefBindings[] =
 	"bind 5 \"impulse 5\"; "
 	"bind 6 \"impulse 6\"; "
 	"bind 7 \"impulse 7\"; "
+	"bind 8 \"impulse 8\"; "
 	"bind - sizedown; "
 	"bind = sizeup; "
-	"bind ctrl +attack; "
-	"bind alt +strafe; "
-	"bind shift +speed; "
+	"bind leftctrl +attack; "
+	"bind leftalt +strafe; "
+	"bind leftshift +speed; "
 	"bind space +use; "
 	"bind rightarrow +right; "
 	"bind leftarrow +left; "
@@ -59,14 +63,32 @@ char DefBindings[] =
 	"bind downarrow +back; "
 	"bind , +moveleft; "
 	"bind . +moveright; "
+#ifdef _XBOX // Alternative defaults for Xbox
+	"bind hat1right messagemode2; "
+	"bind hat1left spynext; "
+	"bind hat1up messagemode; "
+	"bind hat1down \"impulse 3\"; "
+	"bind joy1 +use; "
+	"bind joy2 weapnext; "
+	"bind joy3 +jump; "
+	"bind joy4 weapprev; "
+	"bind joy5 togglemap; "
+	"bind joy6 +showscores; "
+	"bind joy7 +speed; "
+	"bind joy8 +attack; "
+	"bind joy10 toggleconsole; "
+	"bind joy12 centerview; "
+#else
 	"bind mouse1 +attack; "
 	"bind mouse2 +strafe; "
 	"bind mouse3 +forward; "
-	"bind mouse4 +speed; "				// <- So is this
+	"bind mouse4 +jump; "				// <- So is this <- change to jump
+	"bind mouse5 +speed; "				// <- new for +speed
 	"bind joy1 +attack; "
 	"bind joy2 +strafe; "
 	"bind joy3 +speed; "
 	"bind joy4 +use; "
+#endif
 	"bind capslock \"toggle cl_run\"; "	// <- This too
 	"bind f1 menu_help; "
 	"bind f2 menu_save; "
@@ -84,7 +106,12 @@ char DefBindings[] =
 	"bind t messagemode; "
 	"bind \\ +showscores; "				// <- Another new command
 	"bind f11 bumpgamma; "
-	"bind f12 spynext";
+	"bind f12 spynext; "
+	"bind pgup vote_yes; "				// <- New for voting
+	"bind pgdn vote_no; "				// <- New for voting
+	"bind home ready; "
+	"bind end spectate; "
+	"bind m changeteams ";
 
 
 // SoM: ok... I hate randy heit I have no idea how to translate between ascii codes to these
@@ -128,18 +155,18 @@ const char *KeyNames[NUM_KEYS] = {
    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // F8 - FF
 // :: End world keycodes
   "kp0",   "kp1",   "kp2",   "kp3",   "kp4",   "kp5",   "kp6",   "kp7", // 0100 - 0107
-  "kp8",   "kp9",   "kp.",   "kp/",   "kp*",   "kp-",   "kp+", "enter", // 0108 - 010F
+  "kp8",   "kp9",   "kp.",   "kp/",   "kp*",   "kp-",   "kp+", "kpenter", // 0108 - 010F
   "kp=","uparrow","downarrow","rightarrow","leftarrow","ins","home","end", // 0110 - 0117
  "pgup",  "pgdn",    "f1",    "f2",    "f3",    "f4",    "f5",    "f6", // 0118 - 011F
    "f7",    "f8",    "f9",   "f10",   "f11",   "f12",   "f13",   "f14", // 0120 - 0127
-  "f15",    NULL,    NULL,    NULL,"numlock","capslock","scroll", NULL, // 0128 - 012F
-"shift",    NULL,  "ctrl",    NULL,   "alt",    NULL,    NULL,  "lwin", // 0130 - 0137
+  "f15",    NULL,    NULL,    NULL,"numlock","capslock","scroll", "rightshift", // 0128 - 012F
+"leftshift", "rightctrl", "leftctrl", "rightalt", "leftalt",    NULL,    NULL,  "lwin", // 0130 - 0137
  "rwin",    NULL,    NULL,  "help", "print", "sysrq", "break",    NULL,  // 0138 - 013F
    NULL,    NULL,    NULL,    // 0140 - 0142
 
 	// non-keyboard buttons that can be bound
-   // 0143 - 0146
-	"mouse1",	"mouse2",	"mouse3",	"mouse4",		// 4 mouse buttons
+   // 0143 - 0146 & 0173
+	"mouse1",	"mouse2",	"mouse3",	"mouse4",			// 5 mouse buttons
    // 0147 - 014A
    "mwheelup",	"mwheeldown",NULL,		NULL,			// the wheel and some extra space
    // 014B - 014E
@@ -157,11 +184,16 @@ const char *KeyNames[NUM_KEYS] = {
    // 0163 - 0166
 	"joy25",	"joy26",	"joy27",	"joy28",
    // 0167 - 016A
-	"joy29",	"joy30",	"joy31",	"joy32"
+	"joy29",	"joy30",	"joy31",	"joy32",
+  // 016B - 016E
+	"hat1up",	"hat1right","hat1down",	"hat1left",
+  // 016F - 0172
+	"hat2up",	"hat2right","hat2down",	"hat2left", "mouse5"
 };
 
 static std::string Bindings[NUM_KEYS];
 static std::string DoubleBindings[NUM_KEYS];
+static std::string NetDemoBindings[NUM_KEYS];
 static int DClickTime[NUM_KEYS];
 static byte DClicked[(NUM_KEYS+7)/8];
 
@@ -236,7 +268,7 @@ BEGIN_COMMAND (bind)
 		}
 	} else {
 		Printf (PRINT_HIGH, "Current key bindings:\n");
-		
+
 		for (i = 0; i < NUM_KEYS; i++) {
 			if (Bindings[i].length())
 				Printf (PRINT_HIGH, "%s \"%s\"\n", KeyName (i), Bindings[i].c_str());
@@ -283,7 +315,7 @@ BEGIN_COMMAND (doublebind)
 	else
 	{
 		Printf (PRINT_HIGH, "Current key doublebindings:\n");
-		
+
 		for (i = 0; i < NUM_KEYS; i++)
 		{
 			if (DoubleBindings[i].length())
@@ -298,6 +330,46 @@ BEGIN_COMMAND (binddefaults)
 	AddCommandString (DefBindings);
 }
 END_COMMAND (binddefaults)
+
+//
+// C_DoNetDemoKey
+//
+// [SL] 2012-03-29 - Handles the hard-coded key bindings used during
+// NetDemo playback.  Returns false if the key pressed is not
+// bound to any netdemo command.
+//
+bool C_DoNetDemoKey (event_t *ev)
+{
+	if (!netdemo.isPlaying() && !netdemo.isPaused())
+		return false;
+
+	static bool initialized = false;
+
+	if (!initialized)
+	{
+		NetDemoBindings[GetKeyFromName("leftarrow")]	= "netrew";
+		NetDemoBindings[GetKeyFromName("rightarrow")]	= "netff";
+		NetDemoBindings[GetKeyFromName("uparrow")]		= "netprevmap";
+		NetDemoBindings[GetKeyFromName("downarrow")]	= "netnextmap";
+		NetDemoBindings[GetKeyFromName("space")]		= "netpause";
+
+		initialized = true;
+	}
+
+	if (ev->type != ev_keydown && ev->type != ev_keyup)
+		return false;
+
+	std::string *binding = &NetDemoBindings[ev->data1];
+	
+	// nothing bound to this key specific to netdemos?
+	if (binding->empty())
+		return false;
+
+	if (ev->type == ev_keydown)
+		AddCommandString(binding->c_str());
+
+	return true;
+}
 
 BOOL C_DoKey (event_t *ev)
 {

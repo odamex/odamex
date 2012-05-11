@@ -24,6 +24,15 @@
 #include "w_wad.h"
 #include "z_zone.h"
 
+// Palette indices.
+// For damage/bonus red-/gold-shifts
+#define STARTREDPALS		1
+#define STARTBONUSPALS		9
+#define NUMREDPALS			8
+#define NUMBONUSPALS		4
+// Radiation suit, green shift.
+#define RADIATIONPAL		13
+
 class glpatch_t
 {
 public:

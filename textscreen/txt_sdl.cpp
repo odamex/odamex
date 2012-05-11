@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // Copyright(C) 2005,2006 Simon Howard
@@ -71,7 +71,7 @@ static txt_font_t *font;
 
 #ifndef TANGO
 
-static SDL_Color ega_colors[] =
+static SDL_Color ega_colors[] = 
 {
     {0x00, 0x00, 0x00, 0x00},          // 0: Black
     {0x00, 0x00, 0xa8, 0x00},          // 1: Blue
@@ -97,7 +97,7 @@ static SDL_Color ega_colors[] =
 // http://tango.freedesktop.org/ also
 // http://uwstopia.nl/blog/2006/07/tango-terminal
 
-static SDL_Color ega_colors[] =
+static SDL_Color ega_colors[] = 
 {
     {0x2e, 0x34, 0x36, 0x00},          // 0: Black
     {0x34, 0x65, 0xa4, 0x00},          // 1: Blue
@@ -119,6 +119,22 @@ static SDL_Color ega_colors[] =
 
 #endif
 
+static txt_font_t *FontForName(char *name)
+{
+    if (!strcmp(name, "small"))
+    {
+        return &small_font;
+    }
+    else if (!strcmp(name, "normal"))
+    {
+        return &main_font;
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
 //
 // Select the font to use, based on screen resolution
 //
@@ -129,9 +145,22 @@ static SDL_Color ega_colors[] =
 static void ChooseFont(void)
 {
     SDL_Rect **modes;
+    char *env;
     int i;
 
-    font = &main_font;
+    // Allow normal selection to be overridden from an environment variable:
+
+    env = getenv("TEXTSCREEN_FONT");
+
+    if (env != NULL)
+    {
+        font = FontForName(env);
+
+        if (font != NULL)
+        {
+            return;
+        }
+    }
 
     // Check all modes
 
@@ -139,6 +168,8 @@ static void ChooseFont(void)
 
     // If in doubt and we can't get a list, always prefer to
     // fall back to the normal font:
+
+    font = &main_font;
 
     if (modes == NULL || modes == (SDL_Rect **) -1 || *modes == NULL)
     {
@@ -239,7 +270,7 @@ static inline void UpdateCharacter(int x, int y)
 
     p = &font->data[character * font->h];
 
-    s = ((unsigned char *) screen->pixels)
+    s = ((unsigned char *) screen->pixels) 
           + (y * font->h * screen->pitch) + (x * font->w);
 
     for (y1=0; y1<font->h; ++y1)
@@ -352,10 +383,6 @@ static int TranslateKey(SDL_keysym *sym)
         case SDLK_DELETE:      return KEY_DEL;
 
         case SDLK_PAUSE:       return KEY_PAUSE;
-
-#if !SDL_VERSION_ATLEAST(1, 3, 0)
-        case SDLK_EQUALS:      return KEY_EQUALS;
-#endif
 
         case SDLK_LSHIFT:
         case SDLK_RSHIFT:
@@ -587,7 +614,7 @@ int TXT_ScreenHasBlinkingChars(void)
 
     for (y=0; y<TXT_SCREEN_H; ++y)
     {
-        for (x=0; x<TXT_SCREEN_W; ++x)
+        for (x=0; x<TXT_SCREEN_W; ++x) 
         {
             p = &screendata[(y * TXT_SCREEN_W + x) * 2];
 
@@ -605,7 +632,7 @@ int TXT_ScreenHasBlinkingChars(void)
     return 0;
 }
 
-// Sleeps until an event is received, the screen needs to be redrawn,
+// Sleeps until an event is received, the screen needs to be redrawn, 
 // or until timeout expires (if timeout != 0)
 
 void TXT_Sleep(int timeout)
@@ -618,9 +645,9 @@ void TXT_Sleep(int timeout)
 
         time_to_next_blink = BLINK_PERIOD - (SDL_GetTicks() % BLINK_PERIOD);
 
-        // There are blinking characters on the screen, so we
+        // There are blinking characters on the screen, so we 
         // must time out after a while
-
+       
         if (timeout == 0 || timeout > time_to_next_blink)
         {
             // Add one so it is always positive

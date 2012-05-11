@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,6 +39,8 @@
 #include "doomstat.h"
 #include "m_alloc.h"
 #include "d_player.h"
+#include "r_defs.h"
+#include "i_system.h"
 
 IMPLEMENT_CLASS (DConsoleCommand, DObject)
 IMPLEMENT_CLASS (DConsoleAlias, DConsoleCommand)
@@ -159,10 +161,8 @@ void C_DoCommand (const char *cmd)
 		if (check != -1)
 			Actions[check] = 0;
 
-		if (check == ACTION_MLOOK && lookspring)
-		{
+		if ((check == ACTION_LOOKDOWN || check == ACTION_LOOKUP || check == ACTION_MLOOK) && lookspring)
 			AddCommandString ("centerview");
-		}
 	}
 
 	// Check if this is a normal command
@@ -198,15 +198,15 @@ void C_DoCommand (const char *cmd)
 		// Checking for matching commands follows this search order:
 		//	1. Check the Commands map
 		//	2. Check the CVars list
-		command_map_t::iterator c = Commands().find(argv[0]);
+		command_map_t::iterator c = Commands().find(StdStringToLower(argv[0]));
 
 		if (c != Commands().end())
 		{
 			com = c->second;
 
 			if(!safemode
-			|| strcmp(argv[0], "if")==0
-			|| strcmp(argv[0], "exec")==0)
+			|| stricmp(argv[0], "if")==0
+			|| stricmp(argv[0], "exec")==0)
 			{
 				com->argc = argc;
 				com->argv = argv;
@@ -560,7 +560,8 @@ DConsoleCommand::~DConsoleCommand ()
 }
 
 DConsoleAlias::DConsoleAlias (const char *name, const char *command)
-	: DConsoleCommand (name),  state_lock(false), m_Command(command)
+	:	DConsoleCommand(StdStringToLower(name).c_str()),  state_lock(false),
+		m_Command(command)
 {
 }
 
@@ -580,7 +581,10 @@ void DConsoleAlias::Run()
 		if (argc > 1)
         {
             for (size_t i = 1; i < argc; i++)
+            {
+                m_CommandParam += " ";
                 m_CommandParam += argv[i];
+            }
         }
 
         AddCommandString (m_CommandParam.c_str());
@@ -649,7 +653,7 @@ static int DumpHash (BOOL aliases)
 {
 	int count = 0;
 
-	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; i++)
+	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; ++i)
 	{
 		DConsoleCommand *cmd = i->second;
 
@@ -673,7 +677,7 @@ void DConsoleAlias::Archive (FILE *f)
 
 void DConsoleAlias::C_ArchiveAliases (FILE *f)
 {
-	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; i++)
+	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; ++i)
 	{
 		DConsoleCommand *alias = i->second;
 
@@ -691,7 +695,7 @@ BEGIN_COMMAND (alias)
 	}
 	else
 	{
-		command_map_t::iterator i = Commands().find(argv[1]);
+		command_map_t::iterator i = Commands().find(StdStringToLower(argv[1]));
 
 		if(i != Commands().end())
 		{
@@ -851,6 +855,38 @@ BEGIN_COMMAND (stoplog)
 	}
 }
 END_COMMAND (stoplog)
+
+bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+					int arg0, int arg1, int arg2, int always);
+
+BEGIN_COMMAND (puke)
+{
+	if (argc < 2 || argc > 5) {
+		Printf (PRINT_HIGH, " puke <script> [arg1] [arg2] [arg3]\n");
+	} else {
+		int script = atoi (argv[1]);
+		int arg0=0, arg1=0, arg2=0;
+
+		if (argc > 2) {
+			arg0 = atoi (argv[2]);
+			if (argc > 3) {
+				arg1 = atoi (argv[3]);
+				if (argc > 4) {
+					arg2 = atoi (argv[4]);
+				}
+			}
+		}
+		P_StartScript (m_Instigator, NULL, script, level.mapname, 0, arg0, arg1, arg2, false);
+	}
+}
+END_COMMAND (puke)
+
+BEGIN_COMMAND (error)
+{
+	std::string text = BuildString (argc - 1, (const char **)(argv + 1));
+	I_Error (text.c_str());
+}
+END_COMMAND (error)
 
 VERSION_CONTROL (c_dispatch_cpp, "$Id$")
 

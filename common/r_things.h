@@ -1,9 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +35,8 @@ struct particle_s {
 	byte	size;
 	byte	fade;
 	int		color;
-	int		next;
+	WORD	next;
+	WORD	nextinsubsector;
 };
 typedef struct particle_s particle_t;
 
@@ -42,12 +44,15 @@ extern int	NumParticles;
 extern int	ActiveParticles;
 extern int	InactiveParticles;
 extern particle_t *Particles;
+extern TArray<WORD>     ParticlesInSubsec;
+
+const WORD NO_PARTICLE = 0xffff;
 
 #ifdef _MSC_VER
 __inline particle_t *NewParticle (void)
 {
 	particle_t *result = NULL;
-	if (InactiveParticles != -1) {
+	if (InactiveParticles != NO_PARTICLE) {
 		result = Particles + InactiveParticles;
 		InactiveParticles = result->next;
 		result->next = ActiveParticles;
@@ -61,8 +66,8 @@ particle_t *NewParticle (void);
 void R_InitParticles (void);
 void R_ClearParticles (void);
 void R_DrawParticle (vissprite_t *, int, int);
-void R_ProjectParticle (particle_t *);
-
+void R_ProjectParticle (particle_t *, const sector_t* sector, int fakeside);
+void R_FindParticleSubsectors();
 
 extern int MaxVisSprites;
 
@@ -72,18 +77,18 @@ extern vissprite_t		vsprsortedhead;
 
 // Constant arrays used for psprite clipping
 //	and initializing clipping.
-extern short			*negonearray;
-extern short			*screenheightarray;
+extern int			*negonearray;
+extern int			*screenheightarray;
 
 // vars for R_DrawMaskedColumn
-extern short*			mfloorclip;
-extern short*			mceilingclip;
-extern fixed_t			spryscale;
-extern fixed_t			sprtopscreen;
+extern int*			mfloorclip;
+extern int*			mceilingclip;
+extern fixed_t		spryscale;
+extern fixed_t		sprtopscreen;
 
-extern fixed_t			pspritexscale;
-extern fixed_t			pspriteyscale;
-extern fixed_t			pspritexiscale;
+extern fixed_t		pspritexscale;
+extern fixed_t		pspriteyscale;
+extern fixed_t		pspritexiscale;
 
 
 void R_DrawMaskedColumn (column_t* column);
@@ -91,7 +96,7 @@ void R_DrawMaskedColumn (column_t* column);
 
 void R_CacheSprite (spritedef_t *sprite);
 void R_SortVisSprites (void);
-void R_AddSprites (sector_t *sec, int lightlevel);
+void R_AddSprites (sector_t *sec, int lightlevel, int fakeside);
 void R_AddPSprites (void);
 void R_DrawSprites (void);
 void R_InitSprites (const char** namelist);

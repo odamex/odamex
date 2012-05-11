@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,6 +32,7 @@
 #include "w_wad.h"
 
 #include "r_local.h"
+#include "p_local.h"
 
 #include "c_console.h"
 #include "c_cvars.h"
@@ -43,8 +45,9 @@
 #include "cmdlib.h"
 #include "s_sound.h"
 
-extern fixed_t FocalLengthX, FocalLengthY;
+#include "qsort.h"
 
+extern fixed_t FocalLengthX, FocalLengthY;
 
 #define MINZ							(FRACUNIT*4)
 #define BASEYCENTER 					(100)
@@ -55,8 +58,10 @@ extern fixed_t FocalLengthX, FocalLengthY;
 static int crosshair_lump;
 
 static void R_InitCrosshair();
+static byte crosshair_trans[256];
 
-CVAR_FUNC_IMPL (crosshair)
+EXTERN_CVAR (hud_crosshairhealth)
+CVAR_FUNC_IMPL (hud_crosshair)
 {
 	R_InitCrosshair();
 }
@@ -76,16 +81,17 @@ int*			spritelights;
 
 // constant arrays
 //	used for psprite clipping and initializing clipping
-short			*negonearray;
-short			*screenheightarray;
+int			*negonearray;
+int			*screenheightarray;
 
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	MAXINT
 
 EXTERN_CVAR (r_drawplayersprites)
+EXTERN_CVAR (r_particles)
 
-EXTERN_CVAR (crosshairdim)
-EXTERN_CVAR (crosshairscale) 
+EXTERN_CVAR (hud_crosshairdim)
+EXTERN_CVAR (hud_crosshairscale) 
 
 //
 // INITIALIZATION FUNCTIONS
@@ -104,6 +110,12 @@ static const char*		spritename;
 playerskin_t	*skins;
 size_t			numskins;
 
+// [RH] particle globals
+extern int				NumParticles;
+extern int				ActiveParticles;
+extern int				InactiveParticles;
+extern particle_t		*Particles;
+TArray<WORD>			ParticlesInSubsec;
 
 void R_CacheSprite (spritedef_t *sprite)
 {
@@ -504,7 +516,7 @@ END_COMMAND (skins)
 
 static void R_InitCrosshair()
 {
-	int xhairnum = (int)crosshair;
+	int xhairnum = (int)hud_crosshair;
 
 	if (xhairnum)
 	{
@@ -524,6 +536,11 @@ static void R_InitCrosshair()
 		if(xhair != -1)
 			crosshair_lump = xhair;
 	}
+
+	// set up translation table for the crosshair's color
+	// initialize to default colors
+	for (size_t i = 0; i < 256; i++)
+		crosshair_trans[i] = i;
 }
 
 //
@@ -627,8 +644,8 @@ vissprite_t *R_NewVisSprite (void)
 // Masked means: partly transparent, i.e. stored
 //	in posts/runs of opaque pixels.
 //
-short*			mfloorclip;
-short*			mceilingclip;
+int*			mfloorclip;
+int*			mceilingclip;
 
 fixed_t 		spryscale;
 fixed_t 		sprtopscreen;
@@ -665,7 +682,6 @@ void R_DrawMaskedColumn (column_t *column)
 	}
 }
 
-
 //
 // R_DrawVisSprite
 //	mfloorclip and mceilingclip should also be set.
@@ -684,10 +700,10 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	if (vis->mobjflags & MF_SPECTATOR)
 		return;
 
-	if (vis->patch == -1)
+	if (vis->patch == NO_PARTICLE)
 	{ // [RH] It's a particle
-//		R_DrawParticle (vis, x1, x2);
-//		return;
+		R_DrawParticle (vis, x1, x2);
+		return;
 	}
 
 	patch = W_CachePatch (vis->patch);
@@ -865,7 +881,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 // R_ProjectSprite
 // Generates a vissprite for a thing if it might be visible.
 //
-void R_ProjectSprite (AActor *thing)
+void R_ProjectSprite (AActor *thing, int fakeside)
 {
 	fixed_t 			tr_x;
 	fixed_t 			tr_y;
@@ -874,6 +890,7 @@ void R_ProjectSprite (AActor *thing)
 	fixed_t 			gyt;
 
 	fixed_t				gzt;				// killough 3/27/98
+	fixed_t				gzb;
 	fixed_t 			tx;
 	fixed_t 			tz;
 
@@ -898,7 +915,7 @@ void R_ProjectSprite (AActor *thing)
 
 	sector_t*			heightsec;			// killough 3/27/98
 
-	if (thing->translucency == 0)
+	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0)
 		return;
 
         // GhostlyDeath -- Don't draw yourself if you are spectating
@@ -975,11 +992,12 @@ void R_ProjectSprite (AActor *thing)
 	tx += sprframe->width[rot];	// [RH] Moved out of spritewidth[]
 	x2 = ((centerxfrac + FixedMul (tx,xscale)) >> FRACBITS) - 1;
 
-	// off the left side
-	if (x2 < 0)
+	// off the left side or too small?
+	if (x2 < 0 || x2 < x1)
 		return;
 
 	gzt = thing->z + sprframe->topoffset[rot];	// [RH] Moved out of spritetopoffset[]
+	gzb = thing->z;
 
 	// killough 4/9/98: clip things which are out of view due to height
 // [RH] This doesn't work too well with freelook
@@ -992,19 +1010,29 @@ void R_ProjectSprite (AActor *thing)
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
 
 	heightsec = thing->subsector->sector->heightsec;
-
+	
+	if (heightsec != NULL && heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
+		heightsec = NULL;
+	
 	if (heightsec)	// only clip things which are in special sectors
 	{
-		sector_t *phs = camera->subsector->sector->heightsec;
-		if (phs && viewz < phs->floorheight ?
-			thing->z >= heightsec->floorheight :
-			gzt < heightsec->floorheight)
-		  return;
-		if (phs && viewz > phs->ceilingheight ?
-			gzt < heightsec->ceilingheight &&
-			viewz >= heightsec->ceilingheight :
-			thing->z >= heightsec->ceilingheight)
-		  return;
+		if (fakeside == FAKED_AboveCeiling)
+		{
+			if (gzt < P_CeilingHeight(thing->x, thing->y, heightsec))
+				return;
+		}
+		else if (fakeside == FAKED_BelowFloor)
+		{
+			if (gzb >= P_FloorHeight(thing->x, thing->y, heightsec))
+				return;
+		}
+		else
+		{
+			if (gzt < P_FloorHeight(thing->x, thing->y, heightsec))
+				return;
+			if (gzb >= P_CeilingHeight(thing->x, thing->y, heightsec))
+				return;
+		}
 	}
 
 	// store information in a vissprite
@@ -1018,7 +1046,7 @@ void R_ProjectSprite (AActor *thing)
 	vis->yscale = FixedDiv (FocalLengthY, tz);
 	vis->gx = thing->x;
 	vis->gy = thing->y;
-	vis->gz = thing->z;
+	vis->gz = gzb;
 	vis->gzt = gzt;		// killough 3/27/98
 	vis->texturemid = gzt - viewz;
 	vis->x1 = x1 < 0 ? 0 : x1;
@@ -1026,6 +1054,7 @@ void R_ProjectSprite (AActor *thing)
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
 	vis->depth = tz;
+	vis->FakeFlat = fakeside;
 	iscale = FixedDiv (tz, FocalLengthX);
 
 	if (flip)
@@ -1076,7 +1105,7 @@ void R_ProjectSprite (AActor *thing)
 // During BSP traversal, this adds sprites by sector.
 //
 // killough 9/18/98: add lightlevel as parameter, fixing underwater lighting
-void R_AddSprites (sector_t *sec, int lightlevel)
+void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 {
 	AActor *thing;
 	int 	lightnum;
@@ -1103,7 +1132,7 @@ void R_AddSprites (sector_t *sec, int lightlevel)
 	// Handle all things in sector.
 	for (thing = sec->thinglist ; thing ; thing = thing->snext)
 	{
-		R_ProjectSprite (thing);
+		R_ProjectSprite (thing, fakeside);
 	}
 }
 
@@ -1224,6 +1253,10 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 		vis->mobjflags = MF_SHADOW;
 	}
 
+	// Don't display the weapon sprite if using spynext or spectating
+	if (displayplayer().id != consoleplayer().id || consoleplayer().spectator)
+		return;
+
 	R_DrawVisSprite (vis, vis->x1, vis->x2);
 }
 
@@ -1312,10 +1345,7 @@ static struct vissort_s {
 static int		spritesortersize = 0;
 static int		vsprcount;
 
-static int STACK_ARGS sv_compare (const void *arg1, const void *arg2)
-{
-	return ((struct vissort_s *)arg2)->depth - ((struct vissort_s *)arg1)->depth;
-}
+#define cmp_sprites(a, b) (b->depth < a->depth)
 
 void R_SortVisSprites (void)
 {
@@ -1338,13 +1368,13 @@ void R_SortVisSprites (void)
 		spritesorter[i].depth = vissprites[i].depth;
 	}
 
-	qsort (spritesorter, vsprcount, sizeof (struct vissort_s), sv_compare);
+    QSORT(vissort_s, spritesorter, vsprcount, cmp_sprites);
 }
 
 
 // [RH] Allocated in R_MultiresInit() to
 // SCREENWIDTH entries each.
-short *r_dsclipbot, *r_dscliptop;
+int *r_dsclipbot, *r_dscliptop;
 
 // [RH] The original code used -2 to indicate that a sprite was not clipped.
 //		With ZDoom's freelook, it's possible that the rendering process
@@ -1373,8 +1403,6 @@ void R_DrawSprite (vissprite_t *spr)
 	// Modified by Lee Killough:
 	// (pointer check was originally nonportable
 	// and buggy, by going past LEFT end of array):
-
-	//		for (ds=ds_p-1 ; ds >= drawsegs ; ds--)    old buggy code
 
 	for (ds = ds_p ; ds-- > drawsegs ; )  // new -- killough
 	{
@@ -1431,44 +1459,50 @@ void R_DrawSprite (vissprite_t *spr)
 	// Clip the sprite against deep water and/or fake ceilings.
 	// killough 4/9/98: optimize by adding mh
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
+	// [RH] rewrote this to be based on which part of the sector is really visible
 
-	if (spr->heightsec)	// only things in specially marked sectors
+	if (spr->heightsec &&
+		!(spr->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
-		fixed_t h,mh;
-		sector_t *phs = camera->subsector->sector->heightsec;
-		if ((mh = spr->heightsec->floorheight) > spr->gz &&
-			(h = centeryfrac - FixedMul(mh-=viewz, spr->yscale)) >= 0 &&
-			(h >>= FRACBITS) < viewheight)
+		// only things in specially marked sectors
+		if (spr->FakeFlat != FAKED_AboveCeiling)
 		{
-			if (mh <= 0 || (phs && viewz > phs->floorheight))
-			{						// clip bottom
-				for (x=spr->x1 ; x<=spr->x2 ; x++)
-					if (r_dsclipbot[x] == NOT_CLIPPED || h < r_dsclipbot[x])
-						r_dsclipbot[x] = h;
-			}
-			else
-			{						// clip top
+			fixed_t h = P_FloorHeight(spr->gx, spr->gy, spr->heightsec);
+			h = (centeryfrac - FixedMul(h - viewz, spr->yscale)) >> FRACBITS;
+
+			if (spr->FakeFlat == FAKED_BelowFloor)
+			{
+				// seen below floor: clip top
 				for (x=spr->x1 ; x<=spr->x2 ; x++)
 					if (r_dscliptop[x] == NOT_CLIPPED || h > r_dscliptop[x])
-						r_dscliptop[x] = h;
+						r_dscliptop[x] = MIN<short> (h, viewheight);
+			}
+			else
+			{
+				// seen in the middle: clip bottom
+				for (x=spr->x1 ; x<=spr->x2 ; x++)
+					if (r_dsclipbot[x] == NOT_CLIPPED || h < r_dsclipbot[x])
+						r_dsclipbot[x] = MAX<short> (0, h);
 			}
 		}
-
-		if ((mh = spr->heightsec->ceilingheight) < spr->gzt &&
-			(h = centeryfrac - FixedMul(mh-viewz, spr->yscale)) >= 0 &&
-			(h >>= FRACBITS) < viewheight)
+		if (spr->FakeFlat != FAKED_BelowFloor)
 		{
-			if (phs && viewz >= phs->ceilingheight)
-			{						// clip bottom
+			fixed_t h = P_CeilingHeight(spr->gx, spr->gy, spr->heightsec);
+			h = (centeryfrac - FixedMul(h - viewz, spr->yscale)) >> FRACBITS;
+
+			if (spr->FakeFlat == FAKED_AboveCeiling)
+			{
+				// seen above ceiling: clip bottom
 				for (x=spr->x1 ; x<=spr->x2 ; x++)
 					if (r_dsclipbot[x] == NOT_CLIPPED || h < r_dsclipbot[x])
-						r_dsclipbot[x] = h;
+						r_dsclipbot[x] = MAX<short> (0, h);
 			}
 			else
-			{						// clip top
+			{
+				// seen in the middle: clip top
 				for (x=spr->x1 ; x<=spr->x2 ; x++)
 					if (r_dscliptop[x] == NOT_CLIPPED || h > r_dscliptop[x])
-						r_dscliptop[x] = h;
+						r_dscliptop[x] = MIN<short> (h, viewheight);
 			}
 		}
 	}
@@ -1479,10 +1513,10 @@ void R_DrawSprite (vissprite_t *spr)
 	// check for unclipped columns
 	for (x = spr->x1 ; x<=spr->x2 ; x++)
 	{
-		if (r_dsclipbot[x] == NOT_CLIPPED)
-			r_dsclipbot[x] = (short)viewheight;
+		if (r_dsclipbot[x] == NOT_CLIPPED || r_dsclipbot[x] > (int)viewheight)
+			r_dsclipbot[x] = (int)viewheight;
 
-		if (r_dscliptop[x] == NOT_CLIPPED)
+		if (r_dscliptop[x] == NOT_CLIPPED || r_dscliptop[x] < 0)
 			r_dscliptop[x] = -1;
 	}
 
@@ -1490,6 +1524,8 @@ void R_DrawSprite (vissprite_t *spr)
 	mceilingclip = r_dscliptop;
 	R_DrawVisSprite (spr, spr->x1, spr->x2);
 }
+
+
 
 static void R_DrawCrosshair (void)
 {
@@ -1508,22 +1544,41 @@ static void R_DrawCrosshair (void)
 	if (camera->player && camera->player->spectator)
 		return;
 
-	if(crosshair && crosshair_lump)
+	if(hud_crosshair && crosshair_lump)
 	{
-		if (crosshairdim && crosshairscale)
-			screen->DrawLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
+		static const byte crosshair_color = 0xB0;
+		if (hud_crosshairhealth)
+		{
+			byte health_colors[4] = { 0xB0, 0xDF, 0xE7, 0x77 }; 
+
+			if (camera->health > 75)
+				crosshair_trans[crosshair_color] = health_colors[3];
+			else if (camera->health > 50)
+				crosshair_trans[crosshair_color] = health_colors[2];
+			else if (camera->health > 25)
+				crosshair_trans[crosshair_color] = health_colors[1];
+			else
+				crosshair_trans[crosshair_color] = health_colors[0];
+		}
+		else
+			crosshair_trans[crosshair_color] = crosshair_color;	// no trans
+
+		V_ColorMap = crosshair_trans;
+
+		if (hud_crosshairdim && hud_crosshairscale)
+			screen->DrawTranslatedLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
-        else if (crosshairscale)
-			screen->DrawPatchCleanNoMove (W_CachePatch (crosshair_lump),
+        else if (hud_crosshairscale)
+			screen->DrawTranslatedPatchCleanNoMove (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
-        else if (crosshairdim)
-			screen->DrawLucentPatch (W_CachePatch (crosshair_lump),
+        else if (hud_crosshairdim)
+			screen->DrawTranslatedLucentPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
 		else
-			screen->DrawPatch (W_CachePatch (crosshair_lump),
+			screen->DrawTranslatedPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
 	}
@@ -1570,6 +1625,278 @@ void R_DrawMasked (void)
 	}
 }
 
+void R_InitParticles (void)
+{
+	const char *i;
+
+	if ((i = Args.CheckValue ("-numparticles")))
+		NumParticles = atoi (i);
+	if (NumParticles == 0)
+		NumParticles = 4000;
+	else if (NumParticles < 100)
+		NumParticles = 100;
+
+	if(Particles)
+		delete[] Particles;
+
+	Particles = new particle_t[NumParticles * sizeof(particle_t)];
+	R_ClearParticles ();
+}
+
+void R_ClearParticles (void)
+{
+	int i;
+
+	memset (Particles, 0, NumParticles * sizeof(particle_t));
+	ActiveParticles = NO_PARTICLE;
+	InactiveParticles = 0;
+	for (i = 0; i < NumParticles-1; i++)
+		Particles[i].next = i + 1;
+	
+	Particles[i].next = NO_PARTICLE;
+}
+
+void R_FindParticleSubsectors ()
+{
+	if (ParticlesInSubsec.Size() < (size_t)numsubsectors)
+		ParticlesInSubsec.Reserve(numsubsectors - ParticlesInSubsec.Size());
+
+	// fill the buffer with NO_PARTICLE
+	for (int i = 0; i < numsubsectors; i++)
+		ParticlesInSubsec[i] = NO_PARTICLE;
+
+	if (!r_particles)
+		return;
+	
+	for (int i = ActiveParticles; i != NO_PARTICLE; i = Particles[i].next)
+	{
+		subsector_t *ssec = R_PointInSubsector(Particles[i].x, Particles[i].y);
+		int ssnum = ssec - subsectors;	
+		
+		Particles[i].nextinsubsector = ParticlesInSubsec[ssnum];
+		ParticlesInSubsec[ssnum] = i;	
+	}
+}
+
+void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakeside)
+{
+	fixed_t 			tr_x;
+	fixed_t 			tr_y;
+	fixed_t 			gxt;
+	fixed_t 			gyt;
+	fixed_t				gzt;				// killough 3/27/98
+	fixed_t				gzb;
+	fixed_t 			tx;
+	fixed_t 			tz;
+	fixed_t 			xscale;
+	int 				x1;
+	int 				x2;
+	vissprite_t*		vis;
+	sector_t*			heightsec = NULL;	// killough 3/27/98
+		
+	// transform the origin point
+	tr_x = particle->x - viewx;
+	tr_y = particle->y - viewy;
+		
+	gxt = FixedMul (tr_x, viewcos); 
+	gyt = -FixedMul (tr_y, viewsin);
+	
+	tz = gxt - gyt; 
+
+	// particle is behind view plane?
+	if (tz < MINZ)
+		return;
+	
+	xscale = FixedDiv (FocalLengthX, tz);
+		
+	gxt = -FixedMul (tr_x, viewsin); 
+	gyt = FixedMul (tr_y, viewcos); 
+	tx = -(gyt+gxt); 
+
+	// too far off the side?
+	if (abs(tx)>(tz<<2))
+		return;
+	
+	// calculate edges of the shape
+	x1 = (centerxfrac + FixedMul (tx,xscale)) >> FRACBITS;
+
+	// off the right side?
+	if (x1 >= viewwidth)
+		return;
+	
+	x2 = ((centerxfrac + FixedMul (tx+particle->size*(FRACUNIT/4),xscale)) >> FRACBITS);
+
+	// off the left side
+	if (x2 < 0)
+		return;
+
+	gzt = particle->z+1;
+	gzb = particle->z;
+
+	// killough 3/27/98: exclude things totally separated
+	// from the viewer, by either water or fake ceilings
+	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
+
+	heightsec = sector->heightsec;
+	if (particle->z < P_FloorHeight(particle->x, particle->y, sector) ||
+		particle->z > P_CeilingHeight(particle->x, particle->y, sector))
+		return;
+
+	if (heightsec)	// only clip particles which are in special sectors
+	{
+		if (fakeside == FAKED_AboveCeiling)
+		{
+			if (gzt < P_CeilingHeight(particle->x, particle->y, heightsec))
+				return;
+		}
+		else if (fakeside == FAKED_BelowFloor)
+		{
+			if (gzb >= P_FloorHeight(particle->x, particle->y, heightsec))
+				return;
+		}
+		else
+		{
+			if (gzt < P_FloorHeight(particle->x, particle->y, heightsec))
+				return;
+			if (gzb >= P_CeilingHeight(particle->x, particle->y, heightsec))
+				return;
+		}
+	}
+
+	// store information in a vissprite
+	vis = R_NewVisSprite ();
+	vis->heightsec = heightsec;
+	vis->xscale = xscale;
+	vis->yscale = FixedMul (xscale, yaspectmul);
+	vis->depth = tz;
+	vis->gx = particle->x;
+	vis->gy = particle->y;
+	vis->gz = gzb;
+	vis->gzt = gzt;
+	vis->texturemid = FixedMul (yaspectmul, vis->gzt - viewz);
+	vis->x1 = x1 < 0 ? 0 : x1;
+	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+	vis->translation = NULL;
+	vis->startfrac = particle->color;
+	vis->patch = NO_PARTICLE;
+	vis->mobjflags = particle->trans;
+	vis->FakeFlat = fakeside;
+
+	if (fixedcolormap)
+	{
+		vis->colormap = fixedcolormap;
+	}
+	else if (sector)
+	{
+		byte *map;
+
+		if (sector->heightsec == NULL)
+			map = sector->floorcolormap->maps;
+		else
+		{
+			if (particle->z <= P_FloorHeight(particle->x, particle->y, sector->heightsec) ||
+				particle->z > P_CeilingHeight(particle->x, particle->y, sector->heightsec))
+
+				map = sector->heightsec->floorcolormap->maps;
+			else
+				map = sector->floorcolormap->maps;
+		}
+
+		if (fixedlightlev)
+		{
+			vis->colormap = map + fixedlightlev;
+		}
+		else
+		{
+			int index = (vis->yscale*lightscalexmul)>>(LIGHTSCALESHIFT-1);
+			int lightnum = (sector->lightlevel >> LIGHTSEGSHIFT)
+					+ (foggy ? 0 : extralight);
+
+			if (lightnum < 0)
+				lightnum = 0;
+			else if (lightnum >= LIGHTLEVELS)
+				lightnum = LIGHTLEVELS-1;
+			if (index >= MAXLIGHTSCALE) 
+				index = MAXLIGHTSCALE-1;
+
+			vis->colormap = scalelight[lightnum][index] + map;
+		}
+	}
+	else
+	{
+		vis->colormap = realcolormaps;
+	}
+}
+
+void R_DrawParticle (vissprite_t *vis, int x1, int x2)
+{
+	byte color = vis->colormap[vis->startfrac];
+	int yl = (centeryfrac - FixedMul(vis->texturemid, vis->xscale) + FRACUNIT - 1) >> FRACBITS;
+	int yh;
+	x1 = vis->x1;
+	x2 = vis->x2;
+
+	if (x1 < 0)
+		x1 = 0;
+	if (x2 < x1)
+		x2 = x1;
+	if (x2 >= viewwidth)
+		x2 = viewwidth - 1;
+
+	yh = yl + (((x2 - x1)<<detailxshift)>>detailyshift);
+
+	// Don't bother clipping each individual column
+	if (yh >= mfloorclip[x1])
+		yh = mfloorclip[x1]-1;
+	if (yl <= mceilingclip[x1])
+		yl = mceilingclip[x1]+1;
+	if (yh >= mfloorclip[x2])
+		yh = mfloorclip[x2]-1;
+	if (yl <= mceilingclip[x2])
+		yl = mceilingclip[x2]+1;
+
+	// vis->mobjflags holds translucency level (0-255)
+	{
+		unsigned int *bg2rgb;
+		int countbase = x2 - x1 + 1;
+		int ycount;
+		int colsize = ds_colsize;
+		int spacing;
+		byte *dest;
+		unsigned int fg;
+
+		ycount = yh - yl;
+		if (ycount < 0)
+			return;
+		ycount++;
+
+		{
+			fixed_t fglevel, bglevel;
+			unsigned int *fg2rgb;
+
+			fglevel = ((vis->mobjflags + 1) << 8) & ~0x3ff;
+			bglevel = FRACUNIT-fglevel;
+			fg2rgb = Col2RGB8[fglevel>>10];
+			bg2rgb = Col2RGB8[bglevel>>10];
+			fg = fg2rgb[color];
+		}
+
+		spacing = screen->pitch - (countbase << detailxshift);
+		dest = ylookup[yl] + columnofs[x1];
+
+		do
+		{
+			int count = countbase;
+			do
+			{
+				unsigned int bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest = RGB32k[0][0][bg & (bg>>15)];
+				dest += colsize;
+			} while (--count);
+			dest += spacing;
+		} while (--ycount);
+	}
+}
+
 VERSION_CONTROL (r_things_cpp, "$Id$")
-
-

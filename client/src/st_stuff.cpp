@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,14 +42,15 @@
 #include "v_video.h"
 #include "v_text.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "version.h"
 #include "cl_main.h"
 #include "gi.h"
+#include "cl_demo.h"
 
-#include "cl_ctf.h"
+#include "p_ctf.h"
 
 /* Reimplement old way of doing red/gold colors, from Chocolate Doom - ML */
 
@@ -67,8 +69,18 @@ bool		st_firsttime;
 // lump number for PLAYPAL
 static int		lu_palette;
 
-
 EXTERN_CVAR (idmypos)
+EXTERN_CVAR (sv_allowredscreen)
+EXTERN_CVAR (hud_fullhudtype)
+
+CVAR_FUNC_IMPL (r_painintensity)
+{
+	if (var < 0.f)
+		var.Set (0.f);
+	if (var > 1.f)
+		var.Set (1.f);
+}
+
 CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
 {
 	if (var)
@@ -114,6 +126,7 @@ BOOL DrawNewSpecHUD;	// [Nes] Draw the new spectator HUD?
 // functions in st_new.c
 void ST_initNew (void);
 void ST_unloadNew (void);
+void ST_voteDraw (int y);
 void ST_newDraw (void);
 void ST_newDrawCTF (void);
 
@@ -121,6 +134,7 @@ void ST_newDrawCTF (void);
 int BaseBlendR, BaseBlendG, BaseBlendB;
 float BaseBlendA;
 
+extern bool simulated_connection;
 
 //
 // STATUS BAR DATA
@@ -496,10 +510,10 @@ void ST_refreshBackground(void)
 
 		BG->DrawPatch (sbar, 0, 0);
 
-		if (gametype == GM_CTF) {
+		if (sv_gametype == GM_CTF) {
 			BG->DrawPatch (flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
 			BG->DrawPatch (flagbox, ST_FLGBOXX, ST_FLGBOXY);
-		} else if (gametype == GM_COOP)
+		} else if (sv_gametype == GM_COOP)
 			BG->DrawPatch (armsbg, ST_ARMSBGX, ST_ARMSBGY);
 
 		if (multiplayer)
@@ -523,20 +537,25 @@ void ST_refreshBackground(void)
 }
 
 
-EXTERN_CVAR (allowcheats)
+EXTERN_CVAR (sv_allowcheats)
 
 // Checks whether cheats are enabled or not, returns true if they're NOT enabled
 // and false if they ARE enabled (stupid huh? not my work [Russell])
 BOOL CheckCheatmode (void)
 {
+	// [SL] 2012-04-04 - Don't allow cheat codes to be entered while playing
+	// back a netdemo
+	if (simulated_connection)
+		return true;
+
 	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
 	// are disabled
-	if (skill == sk_nightmare && !multiplayer)
+	if (sv_skill == sk_nightmare && !multiplayer)
         return true;
 
-	if ((multiplayer || gametype != GM_COOP) && !allowcheats)
+	if ((multiplayer || sv_gametype != GM_COOP) && !sv_allowcheats)
 	{
-		Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
+		Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
 		return true;
 	}
 	else
@@ -702,7 +721,7 @@ bool ST_Responder (event_t *ev)
             if (CheckCheatmode ())
                 return false;
 
-            Printf (PRINT_HIGH, "%s\n", STSTR_BEHOLD);
+            Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_BEHOLD));
 
         }
 
@@ -787,7 +806,7 @@ END_COMMAND (god)
 
 BEGIN_COMMAND (notarget)
 {
-	if (CheckCheatmode ())
+	if (CheckCheatmode () || connected)
 		return;
 
 	consoleplayer().cheats ^= CF_NOTARGET;
@@ -885,7 +904,7 @@ BEGIN_COMMAND (idmus)
 				map = CalcMapName (0, l);
 			else
 			{
-				Printf (PRINT_HIGH, "%s\n", STSTR_NOMUS);
+				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
 				return;
 			}
 		}
@@ -899,10 +918,10 @@ BEGIN_COMMAND (idmus)
 			if (info->music[0])
 			{
 				S_ChangeMusic (std::string(info->music, 8), 1);
-				Printf (PRINT_HIGH, "%s\n", STSTR_MUS);
+				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
 			}
 		} else
-			Printf (PRINT_HIGH, "%s\n", STSTR_NOMUS);
+			Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
 	}
 }
 END_COMMAND (idmus)
@@ -927,18 +946,13 @@ END_COMMAND (give)
 
 BEGIN_COMMAND (fov)
 {
-	if(!connected || !m_Instigator || !m_Instigator->player)
-	{
-		Printf (PRINT_HIGH, "cannot change fov: not in game\n");
+	if (CheckCheatmode () || !m_Instigator)
 		return;
-	}
 
 	if (argc != 2)
 		Printf (PRINT_HIGH, "fov is %g\n", m_Instigator->player->fov);
-	else if (allowcheats)
+	else
 		m_Instigator->player->fov = atof (argv[1]);
-    else
-        Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (fov)
 
@@ -1206,18 +1220,18 @@ void ST_updateWidgets(void)
 	ST_updateFaceWidget();
 
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && gametype == GM_COOP;
+	st_armson = st_statusbaron && sv_gametype == GM_COOP;
 
 	// used by w_frags widget
-	st_fragson = gametype != GM_COOP && st_statusbaron;
+	st_fragson = sv_gametype != GM_COOP && st_statusbaron;
 
 	//	[Toke - CTF]
-	if (gametype == GM_CTF)
+	if (sv_gametype == GM_CTF)
 		st_fragscount = TEAMpoints[plyr->userinfo.team]; // denis - todo - scoring for ctf
 	else
 		st_fragscount = plyr->fragcount;	// [RH] Just use cumulative total
 
-	if (gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF) {
 		switch(CTFdata[it_blueflag].state)
 		{
 			case flag_home:
@@ -1277,67 +1291,162 @@ void ST_Ticker (void)
 	st_oldhealth = consoleplayer().health;
 }
 
-int st_palette = 0;
+/*
+=============
+SV_AddBlend
+[RH] This is from Q2.
+=============
+*/
+void SV_AddBlend (float r, float g, float b, float a, float *v_blend)
+{
+	float a2, a3;
 
+	if (a <= 0)
+		return;
+	a2 = v_blend[3] + (1-v_blend[3])*a;	// new total alpha
+	a3 = v_blend[3]/a2;		// fraction of color from old
+
+	v_blend[0] = v_blend[0]*a3 + r*(1-a3);
+	v_blend[1] = v_blend[1]*a3 + g*(1-a3);
+	v_blend[2] = v_blend[2]*a3 + b*(1-a3);
+	v_blend[3] = a2;
+}
+
+// [RH] Amount of red flash for up to 114 damage points. Calculated by hand
+//		using a logarithmic scale and my trusty HP48G.
+static byte damageToAlpha[114] = {
+	  0,   8,  16,  23,  30,  36,  42,  47,  53,  58,  62,  67,  71,  75,  79,
+	 83,  87,  90,  94,  97, 100, 103, 107, 109, 112, 115, 118, 120, 123, 125,
+	128, 130, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157,
+	159, 160, 162, 164, 165, 167, 169, 170, 172, 173, 175, 176, 178, 179, 181,
+	182, 183, 185, 186, 187, 189, 190, 191, 192, 194, 195, 196, 197, 198, 200,
+	201, 202, 203, 204, 205, 206, 207, 209, 210, 211, 212, 213, 214, 215, 216,
+	217, 218, 219, 220, 221, 221, 222, 223, 224, 225, 226, 227, 228, 229, 229,
+	230, 231, 232, 233, 234, 235, 235, 236, 237
+};
+
+static float st_zdpalette[4];
+int st_palette = 0;
 /* Original redscreen palette method - replaces ZDoom method - ML       */
 void ST_doPaletteStuff(void)
 {
-
-    int		palette;
-    byte*	pal;
-    int		cnt;
-    int		bzc;
-
+	int		palette;
+	byte*	pal;
+	float	cnt;
+	int		bzc;
+	float 	blend[4];
 	player_t *plyr = &consoleplayer();
 
-    cnt = plyr->damagecount;
+	blend[0] = blend[1] = blend[2] = blend[3] = 0;
 
-    if (plyr->powers[pw_strength])
-    {
-	// slowly fade the berzerk out
-        bzc = 12 - (plyr->powers[pw_strength]>>6);
+	SV_AddBlend (BaseBlendR / 255.0f, BaseBlendG / 255.0f, BaseBlendB / 255.0f, BaseBlendA, blend);
 
-        if (bzc > cnt)
-            cnt = bzc;
-    }
+	if (!r_underwater && memcmp (blend, st_zdpalette, sizeof(blend))) {
+		memcpy (st_zdpalette, blend, sizeof(blend));
+		V_SetBlend ((int)(blend[0] * 255.0f), (int)(blend[1] * 255.0f),
+					(int)(blend[2] * 255.0f), (int)(blend[3] * 256.0f));
+	}
 
-    if (cnt)
-    {
-        palette = (cnt+7)>>3;
+	if (r_underwater)
+	{
+		palette = 0;
 
-		if (gamemode == retail_chex)
-			palette = RADIATIONPAL;
-		else {
-			if (palette >= NUMREDPALS)
-				palette = NUMREDPALS-1;
-
-			palette += STARTREDPALS;
+		if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
+			SV_AddBlend (0.0f, 1.0f, 0.0f, 0.125f, blend);
+		if (plyr->bonuscount) {
+			cnt = (float)(plyr->bonuscount << 3);
+			SV_AddBlend (0.8431f, 0.7294f, 0.2706f, cnt > 128 ? 0.5f : cnt / 255.0f, blend);
 		}
-    }
 
-    else if (plyr->bonuscount)
-    {
-        palette = (plyr->bonuscount+7)>>3;
+		if (plyr->damagecount < 114)
+			cnt = damageToAlpha[(int)(plyr->damagecount*r_painintensity)];
+		else
+			cnt = damageToAlpha[(int)(113*r_painintensity)];
 
-        if (palette >= NUMBONUSPALS)
-            palette = NUMBONUSPALS-1;
+		if (plyr->powers[pw_strength])
+		{
+			// slowly fade the berzerk out
+			int bzc = 128 - ((plyr->powers[pw_strength]>>3) & (~0x1f));
 
-        palette += STARTBONUSPALS;
-    }
+			if (bzc > cnt)
+				cnt = bzc;
+		}
 
-    else if ( plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
-        palette = RADIATIONPAL;
+		if (cnt)
+		{
+			if (cnt > 237)
+				cnt = 237;
 
-    else
-        palette = 0;
+			SV_AddBlend (1.0f, 0.0f, 0.0f, cnt / 255.0f, blend);
+		}
+	}
+	else
+	{
+		cnt = (float)plyr->damagecount;
+		if (!multiplayer || sv_allowredscreen)
+			cnt *= r_painintensity;
 
-    if (palette != st_palette)
-    {
-        st_palette = palette;
-        pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
+		if (plyr->powers[pw_strength])
+		{
+		// slowly fade the berzerk out
+			bzc = 12 - (plyr->powers[pw_strength]>>6);
 
-        I_SetOldPalette (pal);
-    }
+			if (bzc > cnt)
+				cnt = bzc;
+		}
+
+		if (cnt)
+		{
+			palette = ((int)cnt+7)>>3;
+
+			if (gamemode == retail_chex)
+				palette = RADIATIONPAL;
+			else {
+				if (palette >= NUMREDPALS)
+					palette = NUMREDPALS-1;
+
+				palette += STARTREDPALS;
+
+				if (palette < 0)
+					palette = 0;
+			}
+		}
+		else if (plyr->bonuscount)
+		{
+			palette = (plyr->bonuscount+7)>>3;
+
+			if (palette >= NUMBONUSPALS)
+				palette = NUMBONUSPALS-1;
+
+			palette += STARTBONUSPALS;
+		}
+
+		else if ( plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
+			palette = RADIATIONPAL;
+
+		else
+			palette = 0;
+	}
+
+	// Don't do palette effects if using spynext in a netdemo
+	if (&(displayplayer()) != plyr && netdemo.isPlaying())
+		palette = 0;
+
+	if (palette != st_palette)
+	{
+		st_palette = palette;
+		pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
+
+		I_SetOldPalette (pal);
+	}
+
+	SV_AddBlend (plyr->BlendR, plyr->BlendG, plyr->BlendB, plyr->BlendA, blend);
+
+    if (memcmp (blend, st_zdpalette, sizeof(blend)))
+        memcpy (st_zdpalette, blend, sizeof(blend));
+
+	V_SetBlend ((int)(blend[0] * 255.0f), (int)(blend[1] * 255.0f),
+				(int)(blend[2] * 255.0f), (int)(blend[3] * 256.0f));
 
 }
 
@@ -1346,10 +1455,10 @@ void ST_drawWidgets(bool refresh)
 	int i;
 
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && gametype == GM_COOP;
+	st_armson = st_statusbaron && sv_gametype == GM_COOP;
 
 	// used by w_frags widget
-	st_fragson = gametype != GM_COOP && st_statusbaron;
+	st_fragson = sv_gametype != GM_COOP && st_statusbaron;
 
 	STlib_updateNum (&w_ready, refresh);
 
@@ -1367,13 +1476,13 @@ void ST_drawWidgets(bool refresh)
 
 	STlib_updateMultIcon (&w_faces, refresh);
 
-	if (gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
+	if (sv_gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
 		for (i = 0; i < 3; i++)
 			STlib_updateMultIcon (&w_keyboxes[i], refresh);
 
 	STlib_updateNum (&w_frags, refresh);
 
-	if (gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF) {
 		STlib_updateBinIcon (&w_flagboxblu, refresh);
 		STlib_updateBinIcon (&w_flagboxred, refresh);
 	}
@@ -1408,10 +1517,15 @@ void ST_Drawer (void)
 
 	if ((realviewheight == screen->height && viewactive) || (&consoleplayer())->spectator)
 	{
-		if (DrawNewHUD)
-			ST_newDraw ();
-		else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
-			ST_newDrawCTF();
+		if (DrawNewHUD) {
+			if (hud_fullhudtype >= 1) {
+				hud::OdamexHUD();
+			} else {
+				hud::ZDoomHUD();
+			}
+		} else if (DrawNewSpecHUD) {
+			hud::SpectatorHUD();
+		}
 		st_firsttime = true;
 	}
 	else
@@ -1430,13 +1544,12 @@ void ST_Drawer (void)
 
 		stnumscreen->Unlock ();
 		stbarscreen->Unlock ();
+
+		hud::DoomHUD();
 	}
 
-
-	if (viewheight <= ST_Y)
-		ST_nameDraw (ST_Y - 11 * CleanYfac);
-	else
-		ST_nameDraw (screen->height - 11 * CleanYfac);
+	// [AM] Voting HUD!
+	ST_voteDraw(11 * CleanYfac);
 
 	// Do red-/gold-shifts from damage/items
 	ST_doPaletteStuff();
@@ -1444,10 +1557,10 @@ void ST_Drawer (void)
 	// [RH] Hey, it's somewhere to put the idmypos stuff!
 	if (idmypos)
 		Printf (PRINT_HIGH, "ang=%d;x,y,z=(%d,%d,%d)\n",
-				consoleplayer().camera->angle/FRACUNIT,
-				consoleplayer().camera->x/FRACUNIT,
-				consoleplayer().camera->y/FRACUNIT,
-				consoleplayer().camera->z/FRACUNIT);
+				displayplayer().camera->angle/FRACUNIT,
+				displayplayer().camera->x/FRACUNIT,
+				displayplayer().camera->y/FRACUNIT,
+				displayplayer().camera->z/FRACUNIT);
 }
 
 static patch_t *LoadFaceGraphic (char *name, int namespc)
@@ -1651,8 +1764,8 @@ void ST_initData(void)
 	st_cursoron = false;
 
 	st_faceindex = 0;
-	//memset (st_palette, 255, sizeof(st_palette));
 	st_palette = -1;
+	memset (st_zdpalette, 255, sizeof(st_zdpalette));
 
 	st_oldhealth = -1;
 

@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,6 +80,7 @@ void (*R_DrawFuzzColumn)(void);
 void (*R_DrawTranslucentColumn)(void);
 void (*R_DrawTranslatedColumn)(void);
 void (*R_DrawSpan)(void);
+void (*R_DrawSlopeSpan)(void);
 void (*rt_map4cols)(int,int,int);
 
 
@@ -100,9 +102,6 @@ int				dc_color;				// [RH] Color for column filler
 
 // first pixel in a column (possibly virtual) 
 byte*			dc_source;				
-
-// [RH] Tutti-Frutti fix
-unsigned int	dc_mask;
 
 // just for profiling 
 int 			dccount;
@@ -635,6 +634,15 @@ byte*					ds_source;
 
 // just for profiling
 int 					dscount;
+
+// [SL] 2012-03-19 - For sloped planes
+double					ds_iu;
+double					ds_iv;
+double					ds_iustep;
+double					ds_ivstep;
+double					ds_id;
+double					ds_idstep;
+byte					*slopelighting[MAXWIDTH];
 }
 
 //
@@ -704,10 +712,178 @@ void R_FillSpan (void)
 //		dscount++;
 #endif
 
-	memset (ylookup[ds_y] + columnofs[ds_x1], ds_color, ds_x2 - ds_x1 + 1);
+	memset (ylookup[ds_y] + columnofs[ds_x1], ds_color, (ds_x2 - ds_x1 + 1) * ds_colsize);
 }
 
 
+//
+// R_DrawSlopeSpan
+//
+// Texture maps a sloped surface using affine texturemapping for each row of
+// the span.  Not as pretty as a perfect texturemapping but should be much
+// faster.
+//
+// Based on R_DrawSlope_8_64 from Eternity Engine, written by SoM/Quasar
+//
+#define SPANJUMP 16
+#define INTERPSTEP (0.0625f)
+
+void R_DrawSlopeSpanP_C(void)
+{
+	int count = ds_x2 - ds_x1 + 1;
+	if (count <= 0)
+		return;
+		
+#ifdef RANGECHECK 
+	if (ds_x2 < ds_x1
+		|| ds_x1<0
+		|| ds_x2>=screen->width
+		|| ds_y>screen->height)
+	{
+		I_Error ("R_DrawSlopeSpan: %i to %i at %i",
+				 ds_x1,ds_x2,ds_y);
+	}
+#endif
+
+	double iu = ds_iu, iv = ds_iv;
+	double ius = ds_iustep, ivs = ds_ivstep;
+	double id = ds_id, ids = ds_idstep;
+	
+	// framebuffer	
+	byte *dest = ylookup[ds_y] + columnofs[ds_x1];
+	
+	// texture data
+	byte *src = (byte *)ds_source;
+
+	int colsize = ds_colsize;
+	lighttable_t* colormap;
+	int ltindex = 0;		// index into the lighting table
+
+   while(count >= SPANJUMP)
+   {
+      double ustart, uend;
+      double vstart, vend;
+      double mulstart, mulend;
+      unsigned int ustep, vstep, ufrac, vfrac;
+      int incount;
+
+      mulstart = 65536.0f / id;
+      id += ids * SPANJUMP;
+      mulend = 65536.0f / id;
+
+      ufrac = (int)(ustart = iu * mulstart);
+      vfrac = (int)(vstart = iv * mulstart);
+      iu += ius * SPANJUMP;
+      iv += ivs * SPANJUMP;
+      uend = iu * mulend;
+      vend = iv * mulend;
+
+      ustep = (int)((uend - ustart) * INTERPSTEP);
+      vstep = (int)((vend - vstart) * INTERPSTEP);
+
+      incount = SPANJUMP;
+      while(incount--)
+      {
+         colormap = slopelighting[ltindex++];
+         *dest = colormap[src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]];
+         dest += colsize;
+         ufrac += ustep;
+         vfrac += vstep;
+      }
+
+      count -= SPANJUMP;
+   }
+   if (count > 0)
+   {
+      double ustart, uend;
+      double vstart, vend;
+      double mulstart, mulend;
+      unsigned int ustep, vstep, ufrac, vfrac;
+      int incount;
+
+      mulstart = 65536.0f / id;
+      id += ids * count;
+      mulend = 65536.0f / id;
+
+      ufrac = (int)(ustart = iu * mulstart);
+      vfrac = (int)(vstart = iv * mulstart);
+      iu += ius * count;
+      iv += ivs * count;
+      uend = iu * mulend;
+      vend = iv * mulend;
+
+      ustep = (int)((uend - ustart) / count);
+      vstep = (int)((vend - vstart) / count);
+
+      incount = count;
+      while(incount--)
+      {
+         colormap = slopelighting[ltindex++];
+         *dest = colormap[src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]];
+         dest += colsize;
+         ufrac += ustep;
+         vfrac += vstep;
+      }
+   }
+}
+
+//
+// R_DrawSlopeSpanIdeal
+//
+// Texture maps a sloped surface using an ideal method of texturemapping.
+// This is likely slower than desired and therefore useful mostly as
+// a reference only.
+//
+// Based on R_DrawSlope_8_64 from Eternity Engine, written by SoM/Quasar
+//
+void R_DrawSlopeSpanIdealP_C(void)
+{
+	int count = ds_x2 - ds_x1 + 1;
+	if (count <= 0)
+		return;
+		
+#ifdef RANGECHECK 
+	if (ds_x2 < ds_x1
+		|| ds_x1<0
+		|| ds_x2>=screen->width
+		|| ds_y>screen->height)
+	{
+		I_Error ("R_DrawSlopeSpan: %i to %i at %i",
+				 ds_x1,ds_x2,ds_y);
+	}
+#endif
+
+	double iu = ds_iu, iv = ds_iv;
+	double ius = ds_iustep, ivs = ds_ivstep;
+	double id = ds_id, ids = ds_idstep;
+	
+	// framebuffer	
+	byte *dest = ylookup[ds_y] + columnofs[ds_x1];
+	
+	// texture data
+	byte *src = (byte *)ds_source;
+
+	int colsize = ds_colsize;
+	lighttable_t* colormap;
+	int ltindex = 0;		// index into the lighting table
+
+	do
+	{
+		float mul = 1.0f / id;
+
+		int u = (int)(iu * mul);
+		int v = (int)(iv * mul);
+		unsigned texl = (v & 63) * 64 + (u & 63);
+
+		colormap = slopelighting[ltindex++];
+		*dest = colormap[src[texl]];
+		dest += colsize;
+
+		iu += ius;
+		iv += ivs;
+		id += ids;	
+	} while (--count);
+}
 
 /****************************************/
 /*										*/
@@ -974,7 +1150,7 @@ static byte *translationtablesmem = NULL;
 
 void R_InitTranslationTables (void)
 {
-	static const char ranges[11][8] = {
+	static const char ranges[23][8] = {
 		"CRBRICK",
 		"CRTAN",
 		"CRGRAY",
@@ -984,14 +1160,25 @@ void R_InitTranslationTables (void)
 		"CRRED",
 		"CRBLUE2",
 		{ 'C','R','O','R','A','N','G','E' },
+		"CRGRAY", // "White"
 		{ 'C','R','Y','E','L','L','O','W' },
-		"CRBLUE"
+		"CRRED", // "Untranslated"
+		"CRGRAY", // "Black"
+		"CRBLUE",
+		"CRTAN", // "Cream"
+		"CRGREEN", // "Olive"
+		"CRGREEN", // "Dark Green"
+		"CRRED", // "Dark Red"
+		"CRBROWN", // "Dark Brown"
+		"CRRED", // "Purple"
+		"CRGRAY", // "Dark Gray"
+		"CRBLUE" // "Cyan"
 	};
 	int i;
 	
     R_FreeTranslationTables();
 	
-	translationtablesmem = new byte[256*(MAXPLAYERS+3+11)+255]; // denis - fixme - magic numbers?
+	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?
 
 	// [Toke - fix13]
 	// denis - cleaned this up somewhat
@@ -1018,7 +1205,7 @@ void R_InitTranslationTables (void)
 	}
 
 	Ranges = translationtables + (MAXPLAYERS+3)*256;
-	for (i = 0; i < 11; i++)
+	for (i = 0; i < 22; i++)
 		W_ReadLump (W_GetNumForName (ranges[i]), Ranges + 256 * i);
 
 }
@@ -1312,6 +1499,7 @@ void R_InitColumnDrawers (BOOL is8bit)
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP_C;
 		R_DrawSpan				= R_DrawSpanP_C;
 		rt_map4cols				= rt_map4cols_c;
+		R_DrawSlopeSpan			= R_DrawSlopeSpanP_C;
 #endif
 	} else {
 #ifdef USEASM
@@ -1328,6 +1516,10 @@ void R_InitColumnDrawers (BOOL is8bit)
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD_C;
 #endif
 		R_DrawSpan				= R_DrawSpanD;
+		
+		// [SL] 2012-03-30 - TODO: A 32bit color version of R_DrawSlopeSpan
+		// will be needed if > 8bit color is supported again.
+		R_DrawSlopeSpan			= R_DrawSlopeSpanP_C;
 	}
 }
 

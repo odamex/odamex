@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,10 +28,14 @@
 
 #include "version.h"
 
+#ifdef GEKKO
+#include <gctypes.h>
+#endif
+
 #ifndef __BYTEBOOL__
 #define __BYTEBOOL__
 // [RH] Some windows includes already define this
-#if !defined(_WINDEF_) && !defined(__wtypes_h__)
+#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
 typedef int BOOL;
 #endif
 #ifndef __cplusplus
@@ -38,6 +43,12 @@ typedef int BOOL;
 #define true (1)
 #endif
 typedef unsigned char byte;
+#endif
+
+#ifdef __cplusplus
+typedef bool dboolean;
+#else
+typedef enum {false, true} dboolean;
 #endif
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)
@@ -49,7 +60,9 @@ typedef unsigned char byte;
 // Predefined with some OS.
 #ifndef UNIX
 #ifndef _MSC_VER
+#ifndef GEKKO
 #include <values.h>
+#endif
 #endif
 #endif
 
@@ -59,6 +72,19 @@ typedef unsigned char byte;
 
 #ifdef OSF1
 #define __int64 long
+#endif
+
+#if (defined _XBOX || defined _MSC_VER)
+	typedef signed   __int8   int8_t;
+	typedef signed   __int16  int16_t;
+	typedef signed   __int32  int32_t;
+	typedef unsigned __int8   uint8_t;
+	typedef unsigned __int16  uint16_t;
+	typedef unsigned __int32  uint32_t;
+	typedef signed   __int64  int64_t;
+	typedef unsigned __int64  uint64_t;
+#else
+	#include <stdint.h>
 #endif
 
 #ifdef UNIX
@@ -104,6 +130,9 @@ typedef unsigned char byte;
 #endif
 #endif
 
+#define MINFIXED		(signed)(0x80000000)
+#define MAXFIXED		(signed)(0x7fffffff)
+
 typedef unsigned char		BYTE;
 typedef signed char			SBYTE;
 
@@ -134,7 +163,13 @@ typedef DWORD				BITFIELD;
 #endif
 #endif
 
-
+#ifdef _WIN32
+#define PATHSEP "\\"
+#define PATHSEPCHAR '\\'
+#else
+#define PATHSEP "/"
+#define PATHSEPCHAR '/'
+#endif
 
 // [RH] This gets used all over; define it here:
 int STACK_ARGS Printf (int printlevel, const char *, ...);
@@ -158,6 +193,59 @@ extern std::ifstream CON;
 #define	PRINT_CHAT			3		// chat messages
 #define PRINT_TEAMCHAT		4		// chat messages from a teammate
 
+
+//==========================================================================
+//
+// MIN
+//
+// Returns the minimum of a and b.
+//==========================================================================
+
+#ifdef MIN
+#undef MIN
 #endif
+template<class T>
+inline
+const T MIN (const T a, const T b)
+{
+	return a < b ? a : b;
+}
+
+//==========================================================================
+//
+// MAX
+//
+// Returns the maximum of a and b.
+//==========================================================================
+
+#ifdef MAX
+#undef MAX
+#endif
+template<class T>
+inline
+const T MAX (const T a, const T b)
+{
+	return a > b ? a : b;
+}
 
 
+
+
+//==========================================================================
+//
+// clamp
+//
+// Clamps in to the range [min,max].
+//==========================================================================
+#ifdef clamp
+#undef clamp
+#endif
+template<class T>
+inline
+T clamp (const T in, const T min, const T max)
+{
+	return in <= min ? min : in >= max ? max : in;
+}
+
+
+#endif

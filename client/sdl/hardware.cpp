@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,6 +24,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <sstream>
+#include <string>
+
 #include "hardware.h"
 #undef MINCHAR
 #undef MAXCHAR
@@ -37,10 +40,13 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "m_argv.h"
+#include "m_misc.h"
 #include "i_sdlvideo.h"
 #include "m_fileio.h"
 #include "g_game.h"
 #include "i_glvideo.h"
+
+bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 extern constate_e ConsoleState;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
@@ -57,6 +63,7 @@ static IVideo *Video;
 EXTERN_CVAR (vid_fps)
 EXTERN_CVAR (vid_ticker)
 EXTERN_CVAR (vid_fullscreen)
+EXTERN_CVAR (vid_overscan)
 
 CVAR_FUNC_IMPL (vid_winscale)
 {
@@ -74,10 +81,21 @@ CVAR_FUNC_IMPL (vid_winscale)
 	}
 }
 
+CVAR_FUNC_IMPL (vid_overscan)
+{
+	if(var > 1.0)
+		var = 1.0;
+
+	if (Video)
+		Video->SetOverscan(var);
+}
+
 void STACK_ARGS I_ShutdownHardware ()
 {
 	if (Video)
 		delete Video, Video = NULL;
+		
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
 void I_InitHardware ()
@@ -103,6 +121,11 @@ void I_InitHardware ()
 	atterm (I_ShutdownHardware);
 
 	Video->SetWindowedScale (vid_winscale);
+}
+
+bool I_HardwareInitialized()
+{
+	return (Video != NULL);
 }
 
 /** Remaining code is common to Win32 and Linux **/
@@ -184,9 +207,26 @@ void I_SetPalette (DWORD *pal)
 
 
 // Set the window caption
+void I_SetWindowCaption(const std::string& caption)
+{
+	// [Russell] - A basic version string that will eventually get replaced
+	//             better than "Odamex SDL Alpha Build 001" or something :P    
+	std::ostringstream title;
+
+	title << "Odamex - " << DOTVERSIONSTR;
+		
+	if(caption.size())
+	{
+		title << " " << caption;
+	}
+
+	// [Russell] - Update window caption with name
+	SDL_WM_SetCaption (title.str().c_str(), title.str().c_str());
+}
+
 void I_SetWindowCaption(void)
 {
-
+	I_SetWindowCaption("");
 }
 
 // Set the window icon
@@ -195,109 +235,67 @@ void I_SetWindowIcon(void)
 
 }
 
-// Find a free filename that isn't taken
-static BOOL FindFreeName (char *lbmname, const char *extension)
-{
-	int i;
-
-	for (i=0 ; i<=9999 ; i++)
-	{
-		sprintf (lbmname, "DOOM%04d.%s", i, extension);
-		if (!M_FileExists (lbmname))
-			break;		// file doesn't exist
-	}
-	if (i==10000)
-		return false;
-	else
-		return true;
-}
-
 extern DWORD IndexedPalette[256];
+EXTERN_CVAR(cl_screenshotname)
 
 /*
     Dump a screenshot as a bitmap (BMP) file
 */
-void I_ScreenShot (const char *filename)
+void I_ScreenShot(std::string filename)
 {
-	byte *linear;
-	char  autoname[32];
-	char *lbmname;
+	SDL_Surface *surface;
+	SDL_Color colors[256];
+	DWORD *pal;
 
-	// find a file name to save it to
-	if (!filename || !strlen(filename))
-	{
-		lbmname = autoname;
-		if (!FindFreeName (lbmname, "bmp\0bmp" + (screen->is8bit() << 2)))
-		{
-			Printf (PRINT_HIGH, "M_ScreenShot: Delete some screenshots\n");
-			return;
-		}
-		filename = autoname;
+	// If no filename was passed, use the screenshot format variable.
+	if (filename.empty()) {
+		filename = cl_screenshotname.cstring();
 	}
 
-	if (screen->is8bit())
-	{
-		// munge planar buffer to linear
-		linear = new byte[screen->width * screen->height];
-		I_ReadScreen (linear);
+	// Expand tokens
+	filename = M_ExpandTokens(filename).c_str();
 
-        // [Russell] - Spit out a bitmap file
-
-        // check endianess
-        #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-            Uint32 rmask = 0xff000000;
-            Uint32 gmask = 0x00ff0000;
-            Uint32 bmask = 0x0000ff00;
-            Uint32 amask = 0x000000ff;
-        #else
-            Uint32 rmask = 0x000000ff;
-            Uint32 gmask = 0x0000ff00;
-            Uint32 bmask = 0x00ff0000;
-            Uint32 amask = 0xff000000;
-        #endif
-
-		SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(linear, screen->width, screen->height, 8, screen->width * 1, rmask,gmask,bmask,amask);
-
-		SDL_Color colors[256];
-
-		// stolen from the WritePCXfile function, write palette data into SDL_Color
-		DWORD *pal;
-
-		pal = IndexedPalette;
-
-		for (int i = 0; i < 256; i+=1, pal++)
-            {
-                colors[i].r = RPART(*pal);
-                colors[i].g = GPART(*pal);
-                colors[i].b = BPART(*pal);
-                colors[i].unused = 0;
-            }
-
-        // set the palette
-        SDL_SetColors(surface, colors, 0, 256);
-
-		// save the bmp file
-		if (SDL_SaveBMP(surface, filename) == -1)
-        {
-            Printf (PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
-
-            SDL_FreeSurface(surface);
-            delete[] linear;
-            return;
-        }
-/*		WritePCXfile (filename, linear,
-					  screen->width, screen->height,
-					  IndexedPalette);*/
-
-        SDL_FreeSurface(surface);
-		delete[] linear;
+	// If the file already exists, append numbers.
+	if (!M_FindFreeName(filename, "bmp")) {
+		Printf(PRINT_HIGH, "I_ScreenShot: Delete some screenshots\n");
+		return;
 	}
-	else
-	{
-		// save the tga file
-		//I_WriteTGAfile (filename, &screen);
+
+	// Create an SDL_Surface object from our screen buffer
+	screen->Lock();
+
+	surface = SDL_CreateRGBSurfaceFrom(screen->buffer, screen->width,
+									   screen->height, 8, screen->pitch,
+									   0, 0, 0, 0);
+
+	screen->Unlock();
+
+	if (surface == NULL) {
+		Printf(PRINT_HIGH, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
+		return;
 	}
-	Printf (PRINT_HIGH, "screen shot taken: %s\n", filename);
+
+	// Set up the palette for our screen shot
+	pal = IndexedPalette;
+
+	for (int i = 0;i < 256;i += 1, pal++) {
+		colors[i].r = RPART(*pal);
+		colors[i].g = GPART(*pal);
+		colors[i].b = BPART(*pal);
+		colors[i].unused = 0;
+	}
+
+	SDL_SetColors(surface, colors, 0, 256);
+
+	// save the bmp file
+	if(SDL_SaveBMP(surface, filename.c_str()) == -1) {
+		Printf(PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
+		SDL_FreeSurface(surface);
+		return;
+	}
+
+	SDL_FreeSurface(surface);
+	Printf(PRINT_HIGH, "Screenshot taken: %s\n", filename.c_str());
 }
 
 BEGIN_COMMAND (screenshot)
@@ -308,6 +306,14 @@ BEGIN_COMMAND (screenshot)
 		G_ScreenShot (argv[1]);
 }
 END_COMMAND (screenshot)
+
+CVAR_FUNC_IMPL (cl_screenshotname)
+{
+	// No empty format strings allowed.
+	if (strlen(var.cstring()) == 0) {
+		var.RestoreDefault();
+	}
+}
 
 //
 // I_SetOldPalette - Just for the red screen for now I guess
@@ -320,6 +326,11 @@ void I_SetOldPalette (byte *doompalette)
 EDisplayType I_DisplayType ()
 {
 	return Video->GetDisplayType ();
+}
+
+bool I_SetOverscan (float scale)
+{
+	return Video->SetOverscan (scale);
 }
 
 void I_SetMode (int &width, int &height, int &bits)
@@ -403,6 +414,14 @@ void I_ClosestResolution (int *width, int *height, int bits)
 			return;
 		}
 	}
+}
+
+bool I_CheckVideoDriver (const char *name)
+{
+	if(!name)
+		return false;
+
+	return (std::string(name) == Video->GetVideoDriverName());
 }
 
 void I_StartModeIterator (int bits)
@@ -555,9 +574,13 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 // to run without actual video output (e.g. script-controlled demo testing)
 EDisplayType IVideo::GetDisplayType () { return DISPLAY_Both; }
 
+std::string IVideo::GetVideoDriverName () { return ""; }
+
 bool IVideo::FullscreenChanged (bool fs) { return true; }
 void IVideo::SetWindowedScale (float scale) {}
 bool IVideo::CanBlit () { return true; }
+
+bool IVideo::SetOverscan (float scale) { return true; }
 
 bool IVideo::SetMode (int width, int height, int bits, bool fs) { return true; }
 void IVideo::SetPalette (DWORD *palette) {}

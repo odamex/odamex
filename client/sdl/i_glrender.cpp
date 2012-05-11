@@ -43,10 +43,40 @@ using namespace std;
 #include "z_zone.h"
 #include "w_wad.h"
 #include "r_bsp.h"
+#include "c_cvars.h"
 
 #define FLAT_WIDTH 64
 
-CVAR(opengl, "1", 0)
+CVAR(opengl, "1", "opengl renderer experimental", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+typedef float vec_t;
+typedef float vec3_t[3];
+
+vec_t VectorNormalize (vec3_t v)
+{
+        float length, ilength;
+
+        length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+        length = (float)sqrt (length);          // FIXME
+
+        if (length)
+        {
+                ilength = 1/length;
+                v[0] *= ilength;
+                v[1] *= ilength;
+                v[2] *= ilength;
+        }
+                
+        return length;
+
+}
+
+void VectorScale (const vec3_t v, float scale, vec3_t out)
+{       out[1] = v[1] * scale;
+        out[0] = v[0] * scale;
+        out[1] = v[1] * scale;
+        out[2] = v[2] * scale;
+}
 
 bool R_CheckBBox (fixed_t *bspcoord);
 void R_ClearPlanes ();
@@ -278,45 +308,6 @@ glpatch_t &get_glflat(size_t useflatnum)
 
 	return it->second;
 }
-
-
-// A single patch from a texture definition,
-//	basically a rectangular area within
-//	the texture rectangle.
-typedef struct
-{
-	// Block origin (always UL),
-	// which has already accounted
-	// for the internal origin of the patch.
-	int 		originx;
-	int 		originy;
-	int 		patch;
-} texpatch_t;
-
-// A maptexturedef_t describes a rectangular texture,
-//	which is composed of one or more mappatch_t structures
-//	that arrange graphic patches.
-typedef struct
-{
-	// Keep name for switch changing, etc.
-	char		name[9];
-	short		width;
-	short		height;
-
-	// [RH] Use a hash table similar to the one now used
-	//		in w_wad.c, thus speeding up level loads.
-	//		(possibly quite considerably for larger levels)
-	int			index;
-	int			next;
-
-	// All the patches[patchcount]
-	//	are drawn back to front into the cached texture.
-	short		patchcount;
-	texpatch_t	patches[1];
-
-} texture_t;
-
-
 
 extern texture_t	**textures;
 extern unsigned		**texturecolumnofs;	// killough 4/9/98: make 32-bit
@@ -1181,8 +1172,8 @@ void DrawSky()
 	glColor4f(1,1,1,1);
 
 //	int lump = W_CheckNumForName("F_SKY1");
-	extern int skytexture;
-	int lump = skytexture;
+	extern int sky1texture;
+	int lump = sky1texture;
 	patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
 	glpatch_t &glp = get_glcomposite(lump);
 	glBindTexture(GL_TEXTURE_2D, glp.texture);

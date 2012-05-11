@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62)
-// Copyright (C) 2006-2009 by The Odamex Team
+// Copyright (C) 2006-2012 by The Odamex Team
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,7 +54,7 @@
 using namespace std;
 
 #define MAX_SERVERS					1024
-#define MAX_SERVERS_PER_IP			16
+#define MAX_SERVERS_PER_IP			64
 #define MAX_SERVER_AGE				5000
 #define MAX_UNVERIFIED_SERVER_AGE	1000
 
@@ -81,7 +81,7 @@ typedef struct server
 	unsigned int key_sent;
 	bool pinged, verified;
 
-	server() : players(0), maxplayers(0), gametype(0), skill(0), teamplay(0), ctfmode(0), pinged(0), verified(0) {}
+	server() : age(0), players(0), maxplayers(0), gametype(0), skill(0), teamplay(0), ctfmode(0), key_sent(0), pinged(0), verified(0) { memset(&addr, 0, sizeof(addr)); }
 
 } SServer;
 
@@ -233,7 +233,7 @@ void ageServers(void)
 			{
 				printf("Remote server timed out: %s, ", NET_AdrToString((*itr).addr));
 				if(ping_itr == itr)
-					ping_itr++;
+					++ping_itr;
 				itr = servers.erase(itr);
 				printf("%d total\n", (int)servers.size());
 			}
@@ -246,7 +246,7 @@ void ageServers(void)
 			{
 				printf("Remote server timed out: %s, ", NET_AdrToString((*itr).addr));
 				if(ping_itr == itr)
-					ping_itr++;
+					++ping_itr;
 				itr = servers.erase(itr);
 				printf("%d total\n", (int)servers.size());
 			}
@@ -284,7 +284,7 @@ void dumpServersToFile(const char *file = "./latest")
 	{
 		if(!(*itr).verified)
 		{
-			itr++;
+			++itr;
 			continue;
 		}
 
@@ -310,7 +310,7 @@ void dumpServersToFile(const char *file = "./latest")
 		fprintf(fp, "%d: %s | 0 | %s | %d/%d | %s | %s | %s\n", i, (*itr).hostname.c_str(), (*itr).map.c_str(), (*itr).players, (*itr).maxplayers, str_wads.c_str(), detectgametype.c_str(), NET_AdrToString((*itr).addr, true));
 
 		i++;
-		itr++;
+		++itr;
 	}
 
     fclose(fp);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,9 +29,27 @@
 #include "g_level.h"
 #include "s_sound.h"
 
+extern bool predicting;
+
+void P_SetPillarDestroy(DPillar *pillar)
+{
+	if (!pillar)
+		return;
+
+	pillar->m_Status = DPillar::destroy;
+	
+	if (clientside && pillar->m_Sector)
+	{
+		pillar->m_Sector->ceilingdata = NULL;
+		pillar->m_Sector->floordata = NULL;		
+		pillar->Destroy();
+	}
+}
+
 IMPLEMENT_SERIAL (DPillar, DMover)
 
-DPillar::DPillar ()
+DPillar::DPillar () :
+	m_Status(init)
 {
 }
 
@@ -41,6 +59,7 @@ void DPillar::Serialize (FArchive &arc)
 	if (arc.IsStoring ())
 	{
 		arc << m_Type
+			<< m_Status
 			<< m_FloorSpeed
 			<< m_CeilingSpeed
 			<< m_FloorTarget
@@ -50,12 +69,24 @@ void DPillar::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type
+			>> m_Status
 			>> m_FloorSpeed
 			>> m_CeilingSpeed
 			>> m_FloorTarget
 			>> m_CeilingTarget
 			>> m_Crush;
 	}
+}
+
+void DPillar::PlayPillarSound()
+{
+	if (predicting || !m_Sector)
+		return;
+	
+	if (m_Status == init)
+		S_Sound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+	else if (m_Status == finished)
+		S_StopSound(m_Sector->soundorg);
 }
 
 void DPillar::RunThink ()
@@ -75,18 +106,22 @@ void DPillar::RunThink ()
 
 	if (r == pastdest && s == pastdest)
 	{
-		S_StopSound (m_Sector->soundorg);
-		Destroy ();
+		m_Status = finished;
+		PlayPillarSound();
+		P_SetPillarDestroy(this);
 	}
 }
 
 DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 				  fixed_t height, fixed_t height2, bool crush)
-	: DMover (sector)
+	: DMover (sector), m_Status(init)
 {
 	fixed_t	ceilingdist, floordist;
 
 	sector->floordata = sector->ceilingdata = this;
+
+	fixed_t floorheight = P_FloorHeight(sector);
+	fixed_t ceilingheight = P_CeilingHeight(sector);
 
 	m_Type = type;
 	m_Crush = crush;
@@ -97,16 +132,15 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 		if (height == 0)
 		{
 			m_FloorTarget = m_CeilingTarget =
-				(sector->ceilingheight - sector->floorheight) / 2 + sector->floorheight;
-			floordist = m_FloorTarget - sector->floorheight;
+				 (ceilingheight - floorheight) / 2 + floorheight;
+			floordist = m_FloorTarget - floorheight;
 		}
 		else
 		{
-			m_FloorTarget = m_CeilingTarget =
-				sector->floorheight + height;
+			m_FloorTarget = m_CeilingTarget = floorheight + height;
 			floordist = height;
 		}
-		ceilingdist = sector->ceilingheight - m_CeilingTarget;
+		ceilingdist = ceilingheight - m_CeilingTarget;
 	}
 	else
 	{
@@ -115,21 +149,21 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 		if (height == 0)
 		{
 			m_FloorTarget = P_FindLowestFloorSurrounding (sector);
-			floordist = sector->floorheight - m_FloorTarget;
+			floordist = floorheight - m_FloorTarget;
 		}
 		else
 		{
 			floordist = height;
-			m_FloorTarget = sector->floorheight - height;
+			m_FloorTarget = floorheight - height;
 		}
 		if (height2 == 0)
 		{
 			m_CeilingTarget = P_FindHighestCeilingSurrounding (sector);
-			ceilingdist = m_CeilingTarget - sector->ceilingheight;
+			ceilingdist = m_CeilingTarget - ceilingheight;
 		}
 		else
 		{
-			m_CeilingTarget = sector->ceilingheight + height2;
+			m_CeilingTarget = ceilingheight + height2;
 			ceilingdist = height2;
 		}
 	}
@@ -148,7 +182,7 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 		m_FloorSpeed = FixedDiv (FixedMul (speed, floordist), ceilingdist);
 	}
 
-	S_Sound (sector->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+	PlayPillarSound();
 }
 
 BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
@@ -160,18 +194,21 @@ BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
 		sector_t *sec = &sectors[secnum];
+		fixed_t floorheight = P_FloorHeight(sec);
+		fixed_t ceilingheight = P_CeilingHeight(sec);
 
 		if (sec->floordata || sec->ceilingdata)
 			continue;
 
-		if (type == DPillar::pillarBuild && sec->floorheight == sec->ceilingheight)
+		if (type == DPillar::pillarBuild && floorheight == ceilingheight)
 			continue;
 
-		if (type == DPillar::pillarOpen && sec->floorheight != sec->ceilingheight)
+		if (type == DPillar::pillarOpen && floorheight != ceilingheight)
 			continue;
 
 		rtn = true;
 		new DPillar (sec, type, speed, height, height2, crush);
+		P_AddMovingCeiling(sec);
 	}
 	return rtn;
 }

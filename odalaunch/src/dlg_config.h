@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,15 +25,6 @@
 #ifndef DLG_CONFIG_H
 #define DLG_CONFIG_H
 
-// configuration file structure
-struct launchercfg_t
-{
-    bool     get_list_on_start;
-    bool     show_blocked_servers;
-    wxString    wad_paths;
-    wxString    odamex_directory;
-};
-
 #include <wx/dialog.h>
 #include <wx/intl.h>
 #include <wx/settings.h>
@@ -46,6 +37,8 @@ struct launchercfg_t
 #include <wx/sizer.h>
 #include <wx/textctrl.h>
 #include <wx/filepicker.h>
+#include <wx/spinctrl.h>
+#include <wx/statbmp.h>
 
 // config file value names
 #define GETLISTONSTART      "GET_LIST_ON_START"
@@ -55,12 +48,23 @@ struct launchercfg_t
 #define EXTRACMDLINEARGS    "ExtraCommandLineArguments"
 #define MASTERTIMEOUT       "MasterTimeout"
 #define SERVERTIMEOUT       "ServerTimeout"
+#define USEBROADCAST        "UseBroadcast"
+#define RETRYCOUNT          "RetryCount"
 
 #ifdef __WXMSW__
 #define PATH_DELIMITER ';'
 #else
 #define PATH_DELIMITER ':'
 #endif
+
+// configuration file structure
+struct launchercfg_t
+{
+    bool     get_list_on_start;
+    bool     show_blocked_servers;
+    wxString    wad_paths;
+    wxString    odamex_directory;
+};
 
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
@@ -97,25 +101,36 @@ class dlgConfig: public wxDialog
         void OnChooseOdamexPath(wxFileDirPickerEvent &event);
         
         void OnTextChange(wxCommandEvent &event);
+
+        void OnSpinValChange(wxSpinEvent &event);
         
         wxCheckBox *m_ChkCtrlGetListOnStart;
         wxCheckBox *m_ChkCtrlShowBlockedServers;
+        wxCheckBox *m_ChkCtrlEnableBroadcasts;
 
         wxListBox *m_LstCtrlWadDirectories;
 
-        wxDirPickerCtrl *m_DirCtrlChooseWadDir;
-
         wxDirPickerCtrl *m_DirCtrlChooseOdamexPath;
 
-        wxTextCtrl *m_TxtCtrlMasterTimeout;
-        wxTextCtrl *m_TxtCtrlServerTimeout;
+        wxSpinCtrl *m_SpnCtrlMasterTimeout;
+        wxSpinCtrl *m_SpnCtrlServerTimeout;
+        wxSpinCtrl *m_SpnCtrlRetry;
         wxTextCtrl *m_TxtCtrlExtraCmdLineArgs;
+
+        wxSpinCtrl *m_SpnCtrlPQGood;
+        wxSpinCtrl *m_SpnCtrlPQPlayable;
+        wxSpinCtrl *m_SpnCtrlPQLaggy;
+
+        wxStaticBitmap *m_StcBmpPQGood;
+        wxStaticBitmap *m_StcBmpPQPlayable;
+        wxStaticBitmap *m_StcBmpPQLaggy;
+        wxStaticBitmap *m_StcBmpPQBad;
 
         wxFileConfig ConfigInfo;
 
         launchercfg_t *cfg_file;
         
-        wxInt32 UserChangedSetting;
+        bool UserChangedSetting;
 
 	private:
 

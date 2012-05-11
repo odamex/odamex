@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -81,7 +82,7 @@ static const unsigned char rndtable[256] = {
 
 unsigned char rndindex, prndindex;
 
-extern bool stepmode;
+extern bool step_mode;
 
 //
 // denis - Every actor has a random number generator so they can be sync'ed
@@ -89,15 +90,31 @@ extern bool stepmode;
 //
 int P_Random (AActor *actor)
 {
-	if(!actor || demoplayback || demorecording || stepmode)
+	if(!actor || demoplayback || demorecording || step_mode)
 		return P_Random ();
 
 	return (rndtable[++actor->rndindex]);
 }
 
+int P_RandomDiff (AActor *actor)
+{
+	int a = P_Random (actor);
+	int b = P_Random (actor);
+
+	return a - b;
+}
+
 int P_Random ()
 {
 	return (rndtable[++prndindex]);
+}
+
+int P_RandomDiff ()
+{
+	int a = P_Random ();
+	int b = P_Random ();
+
+	return a - b;
 }
 
 int M_Random()

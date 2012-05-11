@@ -28,6 +28,8 @@ proc main {} {
  # check that client is reconnected
  wait 5
  for {set i 0} {$i < 8} {incr i} { gets $clientout }
+ expect $clientout {Currently loaded WADs match server checksum} 0
+ expect $clientout {} 0
  expect $clientout {challenging 127.0.0.1:10599} 0
  expect $clientout {} 0
  expect $clientout {=================================} 0

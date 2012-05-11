@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,7 +27,6 @@
 
 #include "doomtype.h"
 #include "v_video.h"
-#include "v_text.h"
 #include "st_stuff.h"
 #include "c_dispatch.h"
 #include "m_swap.h"

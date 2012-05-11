@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -57,8 +58,8 @@
 #include <sstream>
 #include <algorithm>
 #include <vector>
+#include <iostream>
 #include <iomanip>
-
 
 
 //
@@ -80,41 +81,52 @@ typedef struct
 } gamewadinfo_t;
 
 #if _MSC_VER <= 1200	// GhostlyDeath -- Work on VC6
-static gamewadinfo_t doomwadnames[8];
+static gamewadinfo_t doomwadnames[11];
 bool WasVC6Inited = false;
 
 void W_VC6Init(void)
 {
 	if (!WasVC6Inited)
 	{
-		// DOOM
-		doomwadnames[0].name = "DOOM.WAD";
-		doomwadnames[0].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
-		doomwadnames[0].hash[1] = "1CD63C5DDFF1BF8CE844237F580E9CF3";
+		// DOOM2F
+		doomwadnames[0].name = "DOOM2F.WAD";
 
 		// DOOM2
 		doomwadnames[1].name = "DOOM2.WAD";
 		doomwadnames[1].hash[0] = "25E1459CA71D321525F84628F45CA8CD";
 
-		// DOOM2F
-		doomwadnames[2].name = "DOOM2F.WAD";
-
-		// DOOMU
-		doomwadnames[3].name = "DOOMU.WAD";
-		doomwadnames[3].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
-
 		// PLUTONIA
-		doomwadnames[4].name = "PLUTONIA.WAD";
-		doomwadnames[4].hash[0] = "75C8CF89566741FA9D22447604053BD7";
+		doomwadnames[2].name = "PLUTONIA.WAD";
+		doomwadnames[2].hash[0] = "75C8CF89566741FA9D22447604053BD7";
 
 		// TNT
-		doomwadnames[5].name = "TNT.WAD";
-		doomwadnames[5].hash[0] = "4E158D9953C79CCF97BD0663244CC6B6";
+		doomwadnames[3].name = "TNT.WAD";
+		doomwadnames[3].hash[0] = "4E158D9953C79CCF97BD0663244CC6B6";
 
+		// DOOMU
+		doomwadnames[4].name = "DOOMU.WAD";
+		doomwadnames[4].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
+			    
+		// DOOM
+		doomwadnames[5].name = "DOOM.WAD";
+		doomwadnames[5].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
+		doomwadnames[5].hash[1] = "1CD63C5DDFF1BF8CE844237F580E9CF3";
+
+		// DOOM SHAREWARE
+		doomwadnames[6].name = "DOOM1.WAD";
+		doomwadnames[6].hash[0] = "F0CEFCA49926D00903CF57551D901ABE";
+
+		// FREEDOOM
+		doomwadnames[7].name = "FREEDOOM.WAD";
+		
+		// FREEDM
+		doomwadnames[8].name = "FREEDM.WAD";
+				
 		// CHEX
-		doomwadnames[6].name = "CHEX.WAD";
-		doomwadnames[6].hash[0] = "25485721882b050afa96a56e5758dd52";
+		doomwadnames[9].name = "CHEX.WAD";
+		doomwadnames[9].hash[0] = "25485721882b050afa96a56e5758dd52";
 
+		
 		WasVC6Inited = true;
 	}
 }
@@ -125,12 +137,15 @@ void W_VC6Init(void)
 // Valid IWAD file names
 static const gamewadinfo_t doomwadnames[] =
 {
-    { "DOOM.WAD", { "C4FE9FD920207691A9F493668E0A2083", "1CD63C5DDFF1BF8CE844237F580E9CF3" } },
-    { "DOOM2.WAD", { "25E1459CA71D321525F84628F45CA8CD" } },
     { "DOOM2F.WAD", { "" } },
-    { "DOOMU.WAD", { "C4FE9FD920207691A9F493668E0A2083" } },
+    { "DOOM2.WAD", { "25E1459CA71D321525F84628F45CA8CD" } },
     { "PLUTONIA.WAD", { "75C8CF89566741FA9D22447604053BD7" } },
     { "TNT.WAD", { "4E158D9953C79CCF97BD0663244CC6B6" } },
+    { "DOOMU.WAD", { "C4FE9FD920207691A9F493668E0A2083" } },
+    { "DOOM.WAD", { "C4FE9FD920207691A9F493668E0A2083", "1CD63C5DDFF1BF8CE844237F580E9CF3" } },
+    { "DOOM1.WAD", { "F0CEFCA49926D00903CF57551D901ABE" } },
+    { "FREEDOOM.WAD", { "" } },
+    { "FREEDM.WAD", { "" } },    
     { "CHEX.WAD", { "25485721882b050afa96a56e5758dd52" } },
     { "", { "" } }
 };
@@ -159,8 +174,8 @@ BOOL W_IsIWAD(std::string filename, std::string hash)
     if (!hash.empty())
         std::transform(hash.begin(), hash.end(), hash.begin(), toupper);
 
-    // Just get the file name
-    M_ExtractFileName(filename, name);
+    // Just get the base name
+    M_ExtractFileBase(filename, name);
 
     // find our match if there is one
     for (DWORD i = 0; !doomwadnames[i].name.empty(); i++)
@@ -179,12 +194,29 @@ BOOL W_IsIWAD(std::string filename, std::string hash)
                 return true;
         }
 
-        if ((filename == doomwadnames[i].name) || (filename == basename))
+        if ((filename == doomwadnames[i].name) || (name == basename))
             return true;
     }
 
     return false;
 }
+
+
+//
+// uppercoppy
+//
+// [RH] Copy up to 8 chars, upper-casing them in the process
+//
+void uppercopy (char *to, const char *from)
+{
+	int i;
+
+	for (i = 0; i < 8 && from[i]; i++)
+		to[i] = toupper (from[i]);
+	for (; i < 8; i++)
+		to[i] = 0;
+}
+
 
 // denis - Standard MD5SUM
 std::string W_MD5(std::string filename)
@@ -309,6 +341,9 @@ std::string W_AddFile (std::string filename)
 		lump_p->position = LONG(fileinfo->filepos);
 		lump_p->size = LONG(fileinfo->size);
 		strncpy (lump_p->name, fileinfo->name, 8);
+
+		// W_CheckNumForName needs all lump names in upper case
+		std::transform(lump_p->name, lump_p->name+8, lump_p->name, toupper);
 	}
 
 	return W_MD5(filename);
@@ -665,6 +700,18 @@ unsigned W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest,
 	else filelen = 0;
 
 	return read;
+}
+
+
+//
+// W_CheckLumpName
+//
+bool W_CheckLumpName (unsigned lump, const char *name)
+{
+	if (lump >= numlumps)
+		return false;
+
+	return !strnicmp (lumpinfo[lump].name, name, 8);
 }
 
 //

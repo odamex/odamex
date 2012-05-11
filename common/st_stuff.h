@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -59,15 +60,27 @@ void ST_Init (void);
 // Draw the HUD (only if old status bar is not drawn)
 void ST_newDraw (void);
 
-// Draw the CTF HUD (separated for spectator)
-void ST_newDrawCTF (void);
-
-// Draws name of player currently in control of the status bar
-void ST_nameDraw (int y);
-
 // Called on init and whenever player's skin changes
 void ST_loadGraphics (void);
 
+// [ML] HUDified status bar
+void ST_drawStatusBar (void);
+
+namespace hud {
+
+// [ML] New Odamex fullscreen HUD
+void OdamexHUD(void);
+
+// [AM] Spectator HUD
+void SpectatorHUD(void);
+
+// [AM] Original ZDoom HUD
+void ZDoomHUD(void);
+
+// [AM] HUD drawn with the Doom Status Bar.
+void DoomHUD(void);
+
+}
 
 // States for status bar code.
 typedef enum

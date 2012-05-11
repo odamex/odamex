@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -37,6 +38,8 @@
 #include "r_data.h"
 
 extern int CleanWidth, CleanHeight, CleanXfac, CleanYfac;
+
+extern BOOL    gotconback;
 
 extern int DisplayWidth, DisplayHeight, DisplayBits;
 
@@ -92,8 +95,8 @@ public:
 	// Reads a linear block of pixels into the view buffer.
 	void GetBlock (int x, int y, int width, int height, byte *dest) const;
 
-	// Darken the entire canvas
-	void Dim () const;
+	// Darken a rectangle of th canvas
+	void Dim (int x, int y, int width, int height) const;
 
 	// Fill an area with a 64x64 flat texture
 	void FlatFill (int left, int top, int right, int bottom, const byte *src) const;
@@ -120,12 +123,16 @@ public:
 	inline void DrawTextClean (int normalcolor, int x, int y, const byte *string) const;		// Does not adjust x and y
 	inline void DrawTextCleanLuc (int normalcolor, int x, int y, const byte *string) const;		// ditto
 	inline void DrawTextCleanMove (int normalcolor, int x, int y, const byte *string) const;	// This one does
+	inline void DrawTextStretched (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
+	inline void DrawTextStretchedLuc (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
 
 	inline void DrawText (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextLuc (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextClean (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextCleanLuc (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextCleanMove (int normalcolor, int x, int y, const char *string) const;
+	inline void DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
+	inline void DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
 
 	// Patch drawing functions
 	void DrawPatchFlipped (const patch_t *patch, int x, int y) const;
@@ -175,6 +182,7 @@ public:
 protected:
 	void TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
 	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
+	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
 
 	void DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
 	void DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y, int destwidth, int destheight) const;
@@ -245,6 +253,15 @@ inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const byt
 		(y - 100) * CleanYfac + height / 2,
 		string);
 }
+inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const
+{
+	TextSWrapper (EWrapper_Translated, normalcolor, x, y, string, scalex, scaley);
+}
+
+inline void DCanvas::DrawTextStretchedLuc (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const
+{
+	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, string, scalex, scaley);
+}
 
 inline void DCanvas::DrawText (int normalcolor, int x, int y, const char *string) const
 {
@@ -268,6 +285,14 @@ inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const cha
 		(x - 160) * CleanXfac + width / 2,
 		(y - 100) * CleanYfac + height / 2,
 		(const byte *)string);
+}
+inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
+{
+	TextSWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string, scalex, scaley);
+}
+inline void DCanvas::DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
+{
+	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, (const byte *)string, scalex, scaley);
 }
 
 inline void DCanvas::DrawPatch (const patch_t *patch, int x, int y) const

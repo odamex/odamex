@@ -284,7 +284,10 @@ brain/spawn			dsfirxpl
 //---------------------------------------------------------------------------
 
 world/barrelx			dsbarexp
-
+world/quake			dsquake
+world/spark1			spark1
+world/spark2			spark2
+world/spark3			spark3
 
 //
 //
@@ -319,6 +322,7 @@ misc/i_pkup			dsitemup
 misc/spawn			dsitmbk
 misc/chat			dsradio		// Doom 2 chat sound
 misc/chat2			dstink		// Chat sound for everything else
+misc/teamchat			dsradio2	// Team chat sound
 
 switches/normbutn		dsswtchn
 switches/exitbutn		dsswtchx

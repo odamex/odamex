@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,8 +28,17 @@
 #include "doomtype.h"
 
 typedef enum {
-    //  Removed 11/3/06 by ML - No more polyobjects! (1-9)
-
+    // Removed 11/3/06 by ML - No more polyobjects! (1-9)
+    // [ML] 9/9/10 - They're back baby!
+    Polyobj_StartLine = 1,
+	Polyobj_RotateLeft = 2,
+	Polyobj_RotateRight = 3,
+	Polyobj_Move = 4,
+	Polyobj_ExplicitLine = 5,
+	Polyobj_MoveTimes8 = 6,
+	Polyobj_DoorSwing = 7,
+	Polyobj_DoorSlide = 8,
+	Line_Horizon = 9,
 	Door_Close = 10,
 	Door_Open = 11,
 	Door_Raise = 12,
@@ -86,7 +95,15 @@ typedef enum {
 
 	Teleport_NewMap = 74,
 	Teleport_EndGame = 75,
+	ACS_Execute = 80,
+	ACS_Suspend = 81,
+	ACS_Terminate = 82,
+	ACS_LockedExecute = 83,
 
+	Polyobj_OR_RotateLeft = 90,
+	Polyobj_OR_RotateRight = 91,
+	Polyobj_OR_Move = 92,
+	Polyobj_OR_MoveTimes8 = 93,
 	Pillar_BuildAndCrush = 94,
 
 	FloorAndCeiling_LowerByValue = 95,
@@ -106,7 +123,11 @@ typedef enum {
 	Light_Flicker = 115,
 	Light_Strobe = 116,
 
+	Radius_Quake = 120,	// Earthquake
+
 	Line_SetIdentification = 121,
+
+    ThrustThingZ = 128,
 
 	UsePuzzleItem = 129,
 
@@ -124,6 +145,7 @@ typedef enum {
 	Sector_ChangeSound = 140,
 
 // [RH] Begin new specials for ZDoom
+	Plane_Align = 181,
 	Line_AlignCeiling = 183,
 	Line_AlignFloor = 184,
 
@@ -180,7 +202,7 @@ typedef enum {
 	Scroll_Floor = 223,
 	Scroll_Ceiling = 224,
 	Scroll_Texture_Offsets = 225,
-
+    ACS_ExecuteAlways = 226,
 	PointPush_SetForce = 227,
 
 	Plat_RaiseAndStayTx0 = 228,
@@ -257,6 +279,10 @@ typedef enum {
 	dSector_DoorRaiseIn5Mins = 78,
 	dDamage_SuperHellslime = 80,
 	dLight_FireFlicker = 81,
+	dDamage_LavaWimpy = 82,
+	dDamage_LavaHefty = 83,
+	dScroll_EastLavaDamage = 84,
+
 
 	Light_IndoorLightning2 = 198,
 	Light_IndoorLightning1 = 199,
@@ -300,7 +326,12 @@ struct line_s;
 class AActor;
 
 typedef BOOL (*lnSpecFunc)(struct line_s	*line,
-						   class AActor		*activator);
+						   class AActor		*activator,
+						   int				arg1,
+						   int				arg2,
+						   int				arg3,
+						   int				arg4,
+						   int				arg5);
 
 extern lnSpecFunc LineSpecials[256];
 
@@ -308,6 +339,10 @@ BOOL EV_CeilingCrushStop (int tag);
 int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed);
 void EV_StopPlat (int tag);
 
+bool P_LineSpecialMovesSector(line_s *line);
+bool P_CanActivateSpecials(line_s *line);
+
+extern int TeleportSide;
 
 #endif //__P_LNSPEC_H__
 

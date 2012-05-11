@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +29,9 @@
 #include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
+#include "i_net.h"
+
+#include "p_snapshot.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -39,11 +43,89 @@
 // 16 pixels of bob
 #define MAXBOB			0x100000
 
-EXTERN_CVAR (allowjump)
+EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
+EXTERN_CVAR (co_zdoomphys)
+EXTERN_CVAR (cl_deathcam)
+EXTERN_CVAR (sv_forcerespawn)
 
-extern bool predicting, stepmode;
+extern bool predicting, step_mode;
+
+static player_t nullplayer;		// used to indicate 'player not found' when searching
+EXTERN_CVAR (cl_movebob)
+
+player_t &idplayer(byte id)
+{
+	static size_t translation[MAXPLAYERS];
+
+	if (id >= MAXPLAYERS)
+ 		return nullplayer;
+
+	// attempt a quick cached resolution
+ 	size_t tid = translation[id];
+	if (tid < players.size() && players[tid].id == id)
+ 		return players[tid];
+
+ 	// full search
+	for(size_t i = 0; i < players.size(); i++)
+ 	{
+		// cache any ids we come across while searching for the correct player
+		translation[players[i].id] = i;
+		if (players[i].id == id)
+ 			return players[i];
+	}
+
+	return nullplayer;
+}
+
+bool validplayer(player_t &ref)
+{
+	if (&ref == &nullplayer)
+		return false;
+
+	if (players.empty())
+		return false;
+
+	return true;
+}
+
+//
+// P_NumPlayersInGame()
+//
+// Returns the number of players who are active in the current game.  This does
+// not include spectators or downloaders.
+//
+size_t P_NumPlayersInGame()
+{
+	size_t num_players = 0;
+
+	for (size_t i = 0; i < players.size(); ++i)
+	{
+		if (!players[i].spectator && players[i].ingame())
+			++num_players;
+	}
+
+	return num_players;
+}
+
+//
+// P_ClearTiccmdMovement
+//
+// Removes any movement or turning from a ticcmd
+// 
+void P_ClearTiccmdMovement(ticcmd_t *cmd)
+{
+	if (!cmd)
+		return;
+
+	cmd->ucmd.pitch = 0;
+	cmd->ucmd.yaw = 0;
+	cmd->ucmd.roll = 0;
+	cmd->ucmd.forwardmove = 0;
+	cmd->ucmd.sidemove = 0;
+	cmd->ucmd.upmove = 0;
+}
 
 //
 // P_Thrust
@@ -61,7 +143,7 @@ void P_ForwardThrust (player_t *player, angle_t angle, fixed_t move)
 {
 	angle >>= ANGLETOFINESHIFT;
 
-	if ((player->mo->waterlevel)
+	if ((player->mo->waterlevel || (player->mo->flags2 & MF2_FLY))
 		&& player->mo->pitch != 0)
 	{
 		angle_t pitch = (angle_t)player->mo->pitch >> ANGLETOFINESHIFT;
@@ -94,18 +176,22 @@ void P_CalcHeight (player_t *player)
 	// it causes bobbing jerkiness when the player moves from ice to non-ice,
 	// and vice-versa.
 
-	if (!player->spectator)
-		if (serverside || !predicting)
-		{
-			player->bob = FixedMul (player->mo->momx, player->mo->momx)
-						+ FixedMul (player->mo->momy, player->mo->momy);
-			player->bob >>= 2;
+	if ((player->mo->flags2 & MF2_FLY) && !player->mo->onground)
+	{
+		player->bob = FRACUNIT / 2;
+	}
 
-			if (player->bob > MAXBOB)
-				player->bob = MAXBOB;
-		}
+	if ((serverside || !predicting) && !player->spectator)
+	{
+		player->bob = FixedMul (player->mo->momx, player->mo->momx)
+					+ FixedMul (player->mo->momy, player->mo->momy);
+		player->bob >>= 2;
 
-    if ((player->cheats & CF_NOMOMENTUM) || !player->mo->onground)
+		if (player->bob > MAXBOB)
+			player->bob = MAXBOB;
+	}
+
+    if (player->cheats & CF_NOMOMENTUM || (!co_zdoomphys && !player->mo->onground))
 	{
 		player->viewz = player->mo->z + VIEWHEIGHT;
 
@@ -145,10 +231,14 @@ void P_CalcHeight (player_t *player)
 				player->deltaviewheight = 1;
 		}
 	}
+
+	bob *= cl_movebob;
 	player->viewz = player->mo->z + player->viewheight + bob;
 
 	if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
 		player->viewz = player->mo->ceilingz-4*FRACUNIT;
+	if (player->viewz < player->mo->floorz + 4*FRACUNIT)
+		player->viewz = player->mo->floorz + 4*FRACUNIT;
 }
 
 //
@@ -193,6 +283,12 @@ void P_PlayerLookUpDown (player_t *p)
 	}
 }
 
+CVAR_FUNC_IMPL (sv_aircontrol)
+{
+	level.aircontrol = (fixed_t)((float)var * 65536.f);
+	G_AirControlChanged ();
+}
+
 //
 // P_MovePlayer
 //
@@ -200,6 +296,12 @@ void P_MovePlayer (player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 	AActor *mo = player->mo;
+
+	mo->onground = (mo->z <= mo->floorz) || (mo->flags2 & MF2_ONMOBJ);
+
+	// [RH] Don't let frozen players move
+	if (player->cheats & CF_FROZEN)
+		return;
 
 	// Move around.
 	// Reactiontime is used to prevent movement
@@ -210,43 +312,54 @@ void P_MovePlayer (player_t *player)
 		return;
 	}
 
-	// [RH] check for swim/jump
-	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
+	if (co_zdoomphys)
 	{
-		if (player->mo->waterlevel >= 2)
+		if (cmd->ucmd.upmove &&
+			(player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY))
 		{
-			player->mo->momz = 4*FRACUNIT;
-		}
-		else if (allowjump && player->mo->onground && !player->mo->momz)
-		{
-			player->mo->momz += 7*FRACUNIT;
-
-			if(!player->spectator)
-				S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
+			player->mo->momz = cmd->ucmd.upmove << 8;
 		}
 	}
-
-	if (cmd->ucmd.upmove &&
-		(player->mo->waterlevel >= 2))
+	else
 	{
-		player->mo->momz = cmd->ucmd.upmove << 8;
+		if (cmd->ucmd.upmove == -32768)
+		{ // Only land if in the air
+			if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
+			{
+				player->mo->flags2 &= ~MF2_FLY;
+				player->mo->flags &= ~MF_NOGRAVITY;
+			}
+		}
+		else if (cmd->ucmd.upmove != 0)
+		{
+			if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
+			{
+				player->mo->momz = cmd->ucmd.upmove << 8;
+			}
+			else if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
+			{
+				player->mo->flags2 |= MF2_FLY;
+				player->mo->flags |= MF_NOGRAVITY;
+				if (player->mo->momz <= -39*FRACUNIT)
+				{ // Stop falling scream
+					S_StopSound (player->mo, CHAN_VOICE);
+				}
+			}
+			else if (cmd->ucmd.upmove > 0)
+			{
+				//P_PlayerUseArtifact (player, arti_fly);
+			}
+		}
 	}
 
 	// Look left/right
-	if(clientside || stepmode)
+	if(clientside || step_mode)
 	{
 		mo->angle += cmd->ucmd.yaw << 16;
 
 		// Look up/down stuff
 		P_PlayerLookUpDown(player);
 	}
-
-	// GhostlyDeath <Jun, 4 2008> -- Treat spectators as on the ground
-	mo->onground = ((mo->z <= mo->floorz) || (mo->player && mo->player->spectator));
-
-	// [RH] Don't let frozen players move
-	if (player->cheats & CF_FROZEN)
-		return;
 
 	// killough 10/98:
 	//
@@ -263,16 +376,26 @@ void P_MovePlayer (player_t *player)
 
 		movefactor = P_GetMoveFactor (mo, &friction);
 		bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
-		if (!mo->onground && !mo->waterlevel)
+		if (!mo->onground && !(mo->flags2 & MF2_FLY) && !mo->waterlevel)
 		{
 			// [RH] allow very limited movement if not on ground.
-			movefactor >>= 8;
-			bobfactor >>= 8;
+			if (co_zdoomphys)
+			{
+				movefactor = FixedMul (movefactor, level.aircontrol);
+				bobfactor = FixedMul (bobfactor, level.aircontrol);
+			}
+			else
+			{
+				movefactor >>= 8;
+				bobfactor >>= 8;
+			}
 		}
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
 
-		if(mo->onground)
+		// [ML] Check for these conditions unless advanced physics is on
+		if(co_zdoomphys ||
+			(!co_zdoomphys && (mo->onground || (mo->flags2 & MF2_FLY) || mo->waterlevel)))
 		{
 			if (forwardmove)
 			{
@@ -286,14 +409,91 @@ void P_MovePlayer (player_t *player)
 
 		if (mo->state == &states[S_PLAY])
 		{
-			P_SetMobjState (player->mo, S_PLAY_RUN1); // denis - fixme - this function might destoy player->mo without setting it to 0
+			// denis - fixme - this function might destoy player->mo without setting it to 0
+			P_SetMobjState (player->mo, S_PLAY_RUN1); 
+		}
+
+		if (player->cheats & CF_REVERTPLEASE)
+		{
+			player->cheats &= ~CF_REVERTPLEASE;
+			player->camera = player->mo;
 		}
 	}
-
-	if (player->cheats & CF_REVERTPLEASE)
+	
+	// [RH] check for jump
+	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
 	{
-		player->cheats &= ~CF_REVERTPLEASE;
-		player->camera = player->mo;
+		if (player->mo->waterlevel >= 2)
+		{
+			player->mo->momz = 4*FRACUNIT;
+		}
+		else if (player->mo->flags2 & MF2_FLY)
+		{
+			player->mo->momz = 3*FRACUNIT;
+		}		
+		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
+		{
+			player->mo->momz += 8*FRACUNIT;
+			if(!player->spectator)
+				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
+				
+            player->mo->flags2 &= ~MF2_ONMOBJ;
+            player->jumpTics = 18;				
+		}
+	}
+}
+
+// [RH] (Adapted from Q2)
+// P_FallingDamage
+//
+void P_FallingDamage (AActor *ent)
+{
+	float	delta;
+	int		damage;
+
+	if (!ent->player)
+		return;		// not a player
+
+	if (ent->flags & MF_NOCLIP)
+		return;
+
+	if ((ent->player->oldvelocity[2] < 0)
+		&& (ent->momz > ent->player->oldvelocity[2])
+		&& (!(ent->flags2 & MF2_ONMOBJ)
+			|| !(ent->z <= ent->floorz)))
+	{
+		delta = (float)ent->player->oldvelocity[2];
+	}
+	else
+	{
+		if (!(ent->flags2 & MF2_ONMOBJ))
+			return;
+		delta = (float)(ent->momz - ent->player->oldvelocity[2]);
+	}
+	delta = delta*delta * 2.03904313e-11f;
+
+	if (delta < 1)
+		return;
+
+	if (delta < 15)
+	{
+		//ent->s.event = EV_FOOTSTEP;
+		return;
+	}
+
+	if (delta > 30)
+	{
+		damage = (int)((delta-30)/2);
+		if (damage < 1)
+			damage = 1;
+
+		if (0)
+			P_DamageMobj (ent, NULL, NULL, damage, MOD_FALLING);
+	}
+	else
+	{
+		//ent->s.event = EV_FALLSHORT;
+		return;
 	}
 }
 
@@ -306,8 +506,7 @@ void P_MovePlayer (player_t *player)
 
 void P_DeathThink (player_t *player)
 {
-	angle_t 			angle;
-	angle_t 			delta;
+	bool reduce_redness = true;
 
 	P_MovePsprites (player);
 	player->mo->onground = (player->mo->z <= player->mo->floorz);
@@ -322,48 +521,46 @@ void P_DeathThink (player_t *player)
 	player->deltaviewheight = 0;
 	P_CalcHeight (player);
 
-	if(!serverside)
+	// adjust the player's view to follow its attacker
+	if (cl_deathcam && clientside &&
+		player->attacker && player->attacker != player->mo)
 	{
-		if (player->damagecount && !predicting)
-			player->damagecount--;
+		angle_t angle = P_PointToAngle (player->mo->x,
+								 		player->mo->y,
+								 		player->attacker->x,
+								 		player->attacker->y);
 
-		return;
-	}
-
-	if (player->attacker && player->attacker != player->mo)
-	{
-		angle = R_PointToAngle2 (player->mo->x,
-								 player->mo->y,
-								 player->attacker->x,
-								 player->attacker->y);
-
-		delta = angle - player->mo->angle;
+		angle_t delta = angle - player->mo->angle;
 
 		if (delta < ANG5 || delta > (unsigned)-ANG5)
-		{
-			// Looking at killer,
-			//	so fade damage flash down.
 			player->mo->angle = angle;
-
-			if (player->damagecount)
-				player->damagecount--;
-		}
-		else if (delta < ANG180)
-			player->mo->angle += ANG5;
 		else
-			player->mo->angle -= ANG5;
+		{
+			if (delta < ANG180)
+				player->mo->angle += ANG5;
+			else
+				player->mo->angle -= ANG5;
+
+			// not yet looking at killer so keep the red tinting
+			reduce_redness = false;
+		}
 	}
-	else if (player->damagecount)
+
+	if (player->damagecount && reduce_redness && !predicting)
 		player->damagecount--;
 
 	if(serverside)
 	{
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
 		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE
-								 || (!clientside && level.time >= player->respawn_time))) // forced respawn
+			|| (!clientside && sv_forcerespawn && level.time >= player->respawn_time)))
+		{
 			player->playerstate = PST_REBORN;
+		}
 	}
 }
+
+void SV_SendPlayerInfo(player_t &);
 
 //
 // P_PlayerThink
@@ -373,16 +570,30 @@ void P_PlayerThink (player_t *player)
 	ticcmd_t *cmd;
 	weapontype_t newweapon;
 
-	// [RH] Error out if player doesn't have an mobj, but just make
-	//		it a warning if the player trying to spawn is a bot
-	if (!player->mo)
+	// [SL] 2011-10-31 - Thinker called before the client has received a message
+	// to spawn a mobj from the server.  Just bail from this function and
+	// hope the client receives the spawn message at a later time.
+	if (!player->mo && clientside && multiplayer)
+	{
+		DPrintf("Warning: P_PlayerThink called for player %s without a valid Actor.\n",
+				player->userinfo.netname);
+		return;
+	}
+	else if (!player->mo)
 		I_Error ("No player %d start\n", player->id);
+
+	player->xviewshift = 0;		// [RH] Make sure view is in right place
 
 	// fixme: do this in the cheat code
 	if (player->cheats & CF_NOCLIP)
 		player->mo->flags |= MF_NOCLIP;
 	else
 		player->mo->flags &= ~MF_NOCLIP;
+
+	if (player->cheats & CF_FLY)
+		player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;
+	else
+		player->mo->flags &= ~MF_NOGRAVITY, player->mo->flags2 &= ~MF2_FLY;
 
 	// chain saw run forward
 	cmd = &player->cmd;
@@ -394,20 +605,23 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
 
+	if (player->jumpTics)
+		player->jumpTics--;
+		
+	if (player->playerstate == PST_DEAD)
+	{
+		P_DeathThink(player);
+		return;
+	}
+
 	if(serverside)
 	{
-		if (player->playerstate == PST_DEAD)
-		{
-			P_DeathThink (player);
-			return;
-		}
-
 		P_MovePlayer (player);
 
 		P_CalcHeight (player);
 	}
 
-	if (player->mo->subsector->sector->special || player->mo->subsector->sector->damage)
+	if (player->mo->subsector && (player->mo->subsector->sector->special || player->mo->subsector->sector->damage))
 		P_PlayerInSpecialSector (player);
 
 	// Check for weapon change.
@@ -539,6 +753,7 @@ void player_s::Serialize (FArchive &arc)
 	{ // saving to archive
 		arc << id
 			<< playerstate
+			<< spectator
 			<< cmd
 			<< userinfo
 			<< viewz
@@ -557,11 +772,16 @@ void player_s::Serialize (FArchive &arc)
 			<< cheats
 			<< refire
 			<< killcount
+			<< itemcount
+			<< secretcount
 			<< damagecount
 			<< bonuscount
+			<< points
 			/*<< attacker->netid*/
 			<< extralight
 			<< fixedcolormap
+			<< xviewshift
+			<< jumpTics
 			<< respawn_time
 			<< air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
@@ -583,8 +803,9 @@ void player_s::Serialize (FArchive &arc)
 
 		arc >> id
 			>> playerstate
+			>> spectator
 			>> cmd
-			>> dummyuserinfo // Q: Would it be better to restore the userinfo from the archive?
+			>> userinfo // Q: Would it be better to restore the userinfo from the archive?
 			>> viewz
 			>> viewheight
 			>> deltaviewheight
@@ -601,11 +822,16 @@ void player_s::Serialize (FArchive &arc)
 			>> cheats
 			>> refire
 			>> killcount
+			>> itemcount
+			>> secretcount
 			>> damagecount
 			>> bonuscount
+			>> points
 			/*>> attacker->netid*/
 			>> extralight
 			>> fixedcolormap
+			>> xviewshift
+			>> jumpTics
 			>> respawn_time
 			>> air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
@@ -623,9 +849,204 @@ void player_s::Serialize (FArchive &arc)
 
 		camera = mo;
 
-		if (&consoleplayer() != this)
-			userinfo = dummyuserinfo;
+//		if (&consoleplayer() != this)
+//			userinfo = dummyuserinfo;
 	}
+}
+
+player_s::player_s()
+{
+	size_t i;
+
+	// GhostlyDeath -- Initialize EVERYTHING
+	id = 0;
+	playerstate = PST_LIVE;
+	mo = AActor::AActorPtr();
+	memset(&cmd, 0, sizeof(ticcmd_t));
+	fov = 90.0;
+	viewz = 0 << FRACBITS;
+	viewheight = 0 << FRACBITS;
+	deltaviewheight = 0 << FRACBITS;
+	bob = 0 << FRACBITS;
+	health = 0;
+	armorpoints = 0;
+	armortype = 0;
+	for (i = 0; i < NUMPOWERS; i++)
+		powers[i] = 0;
+	for (i = 0; i < NUMCARDS; i++)
+		cards[i] = false;
+	backpack = false;
+	points = 0;
+	for (i = 0; i < NUMFLAGS; i++)
+		flags[i] = false;
+	fragcount = 0;
+	deathcount = 0;
+	killcount = 0;
+	pendingweapon = wp_nochange;
+	readyweapon = wp_nochange;
+	for (i = 0; i < NUMWEAPONS; i++)
+		weaponowned[i] = false;
+	for (i = 0; i < NUMAMMO; i++)
+	{
+		ammo[i] = 0;
+		maxammo[i] = 0;
+	}
+	attackdown = 0;
+	usedown = 0;
+	cheats = 0;
+	refire = 0;
+	damagecount = 0;
+	bonuscount = 0;
+	attacker = AActor::AActorPtr();
+	extralight = 0;
+	fixedcolormap = 0;
+	xviewshift = 0;
+	memset(psprites, 0, sizeof(pspdef_t) * NUMPSPRITES);
+	jumpTics = 0;
+	respawn_time = 0;
+	memset(oldvelocity, 0, sizeof(oldvelocity));
+	camera = AActor::AActorPtr();
+	air_finished = 0;
+	GameTime = 0;
+	ping = 0;
+	last_received = 0;
+	tic = 0;
+	spectator = false;
+
+	joinafterspectatortime = level.time - TICRATE*5;
+	timeout_callvote = 0;
+	timeout_vote = 0;
+
+	ready = false;
+	timeout_ready = 0;
+
+	prefcolor = 0;
+
+	LastMessage.Time = 0;
+	LastMessage.Message = "";
+
+	BlendR = 0;
+	BlendG = 0;
+	BlendB = 0;
+	BlendA = 0;
+	
+	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
+}
+
+player_s &player_s::operator =(const player_s &other)
+{
+	size_t i;
+
+	id = other.id;
+	playerstate = other.playerstate;
+	mo = other.mo;
+	cmd = other.cmd;
+	cmds = other.cmds;
+	userinfo = other.userinfo;
+	fov = other.fov;
+	viewz = other.viewz;
+	viewheight = other.viewheight;
+	deltaviewheight = other.deltaviewheight;
+	bob = other.bob;
+
+	health = other.health;
+	armorpoints = other.armorpoints;
+	armortype = other.armortype;
+
+	for(i = 0; i < NUMPOWERS; i++)
+		powers[i] = other.powers[i];
+
+	for(i = 0; i < NUMCARDS; i++)
+		cards[i] = other.cards[i];
+
+	for(i = 0; i < NUMFLAGS; i++)
+		flags[i] = other.flags[i];
+
+	points = other.points;
+	backpack = other.backpack;
+
+	fragcount = other.fragcount;
+	deathcount = other.deathcount;
+	killcount = other.killcount;
+
+	pendingweapon = other.pendingweapon;
+	readyweapon = other.readyweapon;
+
+	for(i = 0; i < NUMWEAPONS; i++)
+		weaponowned[i] = other.weaponowned[i];
+	for(i = 0; i < NUMAMMO; i++)
+		ammo[i] = other.ammo[i];
+	for(i = 0; i < NUMAMMO; i++)
+		maxammo[i] = other.maxammo[i];
+
+	attackdown = other.attackdown;
+	usedown = other.usedown;
+
+	cheats = other.cheats;
+
+	refire = other.refire;
+
+	damagecount = other.damagecount;
+	bonuscount = other.bonuscount;
+
+	attacker = other.attacker;
+
+	extralight = other.extralight;
+	fixedcolormap = other.fixedcolormap;
+
+	xviewshift = other.xviewshift;
+
+	for(i = 0; i < NUMPSPRITES; i++)
+		psprites[i] = other.psprites[i];
+
+    jumpTics = other.jumpTics;
+
+	respawn_time = other.respawn_time;
+
+	memcpy(oldvelocity, other.oldvelocity, sizeof(oldvelocity));
+
+	camera = other.camera;
+	air_finished = other.air_finished;
+
+	JoinTime = other.JoinTime;
+	GameTime = other.GameTime;
+	ping = other.ping;
+
+	last_received = other.last_received;
+
+	tic = other.tic;
+	spectator = other.spectator;
+	joinafterspectatortime = other.joinafterspectatortime;
+	timeout_callvote = other.timeout_callvote;
+	timeout_vote = other.timeout_vote;
+
+	ready = other.ready;
+	timeout_ready = other.timeout_ready;
+
+	prefcolor = other.prefcolor;
+
+	for(i = 0; i < BACKUPTICS; i++)
+		netcmds[i] = other.netcmds[i];
+
+    LastMessage.Time = other.LastMessage.Time;
+	LastMessage.Message = other.LastMessage.Message;
+
+	BlendR = other.BlendR;
+	BlendG = other.BlendG;
+	BlendB = other.BlendB;
+	BlendA = other.BlendA;
+
+	client = other.client;
+
+	snapshots = other.snapshots;
+	
+	to_spawn = other.to_spawn;
+
+	return *this;
+}
+
+player_s::~player_s()
+{
 }
 
 VERSION_CONTROL (p_user_cpp, "$Id$")

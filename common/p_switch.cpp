@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,6 +36,8 @@
 #include "z_zone.h"
 #include "w_wad.h"
 #include "gi.h"
+
+EXTERN_CVAR(co_zdoomswitches)
 
 //
 // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE
@@ -235,11 +238,24 @@ P_ChangeSwitchTexture
 		if (texture)
 		{
 			// [RH] The original code played the sound at buttonlist->soundorg,
-			//		which wasn't necessarily anywhere near the switch if it was
-			//		facing a big sector.
+			//		which wasn't necessarily anywhere near the switch if 
+			//		it was facing a big sector.
 			fixed_t x = line->v1->x + (line->dx >> 1);
 			fixed_t y = line->v1->y + (line->dy >> 1);
-			S_Sound (x, y, CHAN_VOICE, sound, 1, ATTN_STATIC);
+
+			if (co_zdoomswitches)
+			{
+				// [SL] 2011-05-27 - Play at a normal volume in the center
+				// of the switch's linedef 
+				S_Sound (x, y, CHAN_BODY, sound, 1, ATTN_NORM);
+			}
+			else
+			{
+				// [SL] 2011-05-16 - Reverted the code to play the sound at full
+				// volume anywhere on the map to emulate vanilla doom behavior
+				S_Sound (CHAN_BODY, sound, 1, ATTN_NONE);
+			}
+				
 			*texture = (short)switchlist[i^1];
 			if (useAgain)
 				P_StartButton (line, where, switchlist[i], BUTTONTIME, x, y);
@@ -305,8 +321,21 @@ void DActiveButton::RunThink ()
 		default:
 			break;
 		}
-		
-		S_Sound (m_X, m_Y, CHAN_VOICE, "switches/normbutn", 1, ATTN_STATIC);
+	
+		if (co_zdoomswitches)
+		{
+			// [SL] 2011-05-27 - Play at a normal volume in the center of the
+			//  switch's linedef
+			fixed_t x = m_Line->v1->x + (m_Line->dx >> 1);
+			fixed_t y = m_Line->v1->y + (m_Line->dy >> 1);
+			S_Sound (x, y, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);			
+		}
+		else
+		{
+			// [SL] 2011-05-16 - Changed to play the switch resetting sound at the
+			// map location 0,0 to emulate the bug in vanilla doom
+			S_Sound (0, 0, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);
+		}
 		Destroy ();
 	}
 }

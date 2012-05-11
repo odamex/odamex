@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -52,7 +53,8 @@
 
 extern int MaxDrawSegs;
 
-
+#define MAXWIDTH				2048
+#define MAXHEIGHT				1536
 
 
 
@@ -74,6 +76,7 @@ typedef struct vertex_s vertex_t;
 
 // Forward of LineDefs, for Sectors.
 struct line_s;
+struct sector_s;
 
 class player_s;
 
@@ -81,6 +84,44 @@ class player_s;
 // The SECTORS record, at runtime.
 // Stores things/mobjs.
 //
+
+// Ceiling/floor flags
+enum
+{
+	SECF_ABSLIGHTING	= 1		// floor/ceiling light is absolute, not relative
+};
+
+// Misc sector flags
+enum
+{
+	SECF_SILENT			= 1,	// actors in sector make no noise
+	SECF_FAKEFLOORONLY	= 2,	// when used as heightsec in R_FakeFlat, only copies floor
+	SECF_CLIPFAKEPLANES = 4,	// as a heightsec, clip planes to target sector's planes
+	SECF_NOFAKELIGHT	= 8,	// heightsec does not change lighting
+	SECF_IGNOREHEIGHTSEC= 16	// heightsec is only for triggering sector actions
+};
+
+enum
+{
+	FAKED_Center,
+	FAKED_BelowFloor,
+	FAKED_AboveCeiling
+};
+
+//
+// Plane
+//
+// Stores the coefficients for the variable that defines a plane (sloping sector)
+struct plane_s
+{
+	// Planes are defined by the equation ax + by + cz + d = 0
+	fixed_t		a, b, c, d;
+	fixed_t		invc;		// pre-calculated 1/c, used to solve for z value
+	fixed_t		texx, texy;
+	sector_s	*sector;
+};
+typedef struct plane_s plane_t;
+
 struct dyncolormap_s;
 
 class DSectorEffect;
@@ -113,7 +154,7 @@ struct sector_s
 	
     // list of mobjs in sector
 	AActor* 	thinglist;
-	
+	int			seqType;		// this sector's sound sequence	
 	int sky;
 
 	// killough 8/28/98: friction is a sector property, not an mobj property.
@@ -174,6 +215,17 @@ struct sector_s
 
 	bool alwaysfake;	// [RH] Always apply heightsec modifications?
 	byte waterzone;		// [RH] Sector is underwater?
+	WORD MoreFlags;		// [RH] Misc sector flags
+
+	// [RH] Action specials for sectors. Like Skull Tag, but more
+	// flexible in a Bloody way. SecActTarget forms a list of actors
+	// joined by their tracer fields. When a potential sector action
+	// occurs, SecActTarget's TriggerAction method is called.
+	// [ML] Not yet...
+	// ASectorAction *SecActTarget;
+
+	// [SL] 2012-01-16 - planes for sloping ceilings/floors
+	plane_t floorplane, ceilingplane;
 };
 typedef struct sector_s sector_t;
 
@@ -309,9 +361,36 @@ struct seg_s
 	// Could be retrieved from linedef, too.
 	sector_t*	frontsector;
 	sector_t*	backsector;		// NULL for one-sided lines
+	
+	fixed_t		length;
 
 };
 typedef struct seg_s seg_t;
+
+// ===== Polyobj data =====
+typedef struct FPolyObj
+{
+	int			numsegs;
+	seg_t		**segs;
+	fixed_t		startSpot[3];
+	vertex_t	*originalPts;	// used as the base for the rotations
+	vertex_t	*prevPts; 		// use to restore the old point values
+	angle_t		angle;
+	int			tag;			// reference tag assigned in HereticEd
+	int			bbox[4];
+	int			validcount;
+	BOOL		crush; 			// should the polyobj attempt to crush mobjs?
+	int			seqType;
+	fixed_t		size;			// polyobj size (area of POLY_AREAUNIT == size of FRACUNIT)
+	DThinker	*specialdata;	// pointer to a thinker, if the poly is moving
+} polyobj_t;
+
+typedef struct polyblock_s
+{
+	polyobj_t *polyobj;
+	struct polyblock_s *prev;
+	struct polyblock_s *next;
+} polyblock_t;
 
 //
 // A SubSector.
@@ -325,6 +404,7 @@ typedef struct subsector_s
 	sector_t	*sector;
 	short		numlines;
 	short		firstline;
+	polyobj_t	    *poly;
 } subsector_t;
 
 //
@@ -386,9 +466,14 @@ struct drawseg_s
     
     // Pointers to lists for sprite clipping,
     //  all three adjusted so [x1] is first value.
-    short*		sprtopclip;		
-    short*		sprbottomclip;	
-    short*		maskedtexturecol;
+    int*		sprtopclip;		
+    int*		sprbottomclip;	
+    int*		maskedtexturecol;
+    
+    fixed_t		topclipstart;
+    fixed_t		topclipstep;
+    fixed_t		bottomclipstart;
+    fixed_t		bottomclipstep;
 };
 typedef struct drawseg_s drawseg_t;
 
@@ -455,6 +540,7 @@ struct vissprite_s
 	byte			*translation;	// [RH] for translation;
 	sector_t		*heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
 	fixed_t			translucency;
+	BYTE			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
 };
 typedef struct vissprite_s vissprite_t;
 
@@ -525,7 +611,8 @@ struct visplane_s
 {
 	struct visplane_s *next;		// Next visplane in hash chain -- killough
 
-	fixed_t		height;
+	plane_t		secplane;
+
 	int			picnum;
 	int			lightlevel;
 	fixed_t		xoffs, yoffs;		// killough 2/28/98: Support scrolling flats
@@ -536,9 +623,9 @@ struct visplane_s
 	fixed_t		xscale, yscale;		// [RH] Support flat scaling
 	angle_t		angle;				// [RH] Support flat rotation
 
-	unsigned short *bottom;			// [RH] bottom and top arrays are dynamically
-	unsigned short pad;				//		allocated immediately after the
-	unsigned short top[3];			//		visplane.
+	unsigned int *bottom;			// [RH] bottom and top arrays are dynamically
+	unsigned int pad;				//		allocated immediately after the
+	unsigned int top[3];			//		visplane.
 };
 typedef struct visplane_s visplane_t;
 

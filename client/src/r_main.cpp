@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,6 +26,7 @@
 #include "m_alloc.h"
 #include <stdlib.h>
 #include <math.h>
+#include <limits.h>
 #include "doomdef.h"
 #include "d_net.h"
 #include "doomstat.h"
@@ -39,6 +41,7 @@
 #include "stats.h"
 #include "z_zone.h"
 #include "i_video.h"
+#include "vectors.h"
 
 #define DISTMAP			2
 
@@ -50,13 +53,14 @@ extern int *walllights;
 extern BOOL DrawNewHUD;
 extern BOOL DrawNewSpecHUD;
 extern dyncolormap_t NormalLight;
+extern bool r_fakingunderwater;
 
 EXTERN_CVAR (r_viewsize)
 
-
+static float	LastFOV = 90.0f;
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
-int 			viewangleoffset;
+int 			viewangleoffset = 0;
 
 // increment every time a check is made
 int 			validcount = 1;
@@ -105,7 +109,7 @@ int 			viewangletox[FINEANGLES/2];
 // from clipangle to -clipangle.
 angle_t 		*xtoviewangle;
 
-fixed_t			*finecosine = &finesine[FINEANGLES/4];
+const fixed_t	*finecosine = &finesine[FINEANGLES/4];
 
 int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 int				scalelightfixed[MAXLIGHTSCALE];
@@ -135,6 +139,7 @@ void (*lucentcolfunc) (void);
 void (*transcolfunc) (void);
 void (*tlatedlucentcolfunc) (void);
 void (*spanfunc) (void);
+void (*spanslopefunc) (void);
 
 void (*hcolfunc_pre) (void);
 void (*hcolfunc_post1) (int hx, int sx, int yl, int yh);
@@ -142,7 +147,7 @@ void (*hcolfunc_post2) (int hx, int sx, int yl, int yh);
 void (*hcolfunc_post4) (int sx, int yl, int yh);
 
 static int lastcenteryfrac;
-static int FieldOfView = 2048;	// Fineangles in the SCREENWIDTH wide window
+int FieldOfView = 2048;	// Fineangles in the SCREENWIDTH wide window
 
 //
 //
@@ -204,6 +209,7 @@ int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
 	return FixedMul (y, ldx >> FRACBITS) >= FixedMul (ldy >> FRACBITS, x);
 }
 
+#define R_P2ATHRESHOLD (INT_MAX / 4)
 //
 // R_PointToAngle
 //
@@ -213,20 +219,88 @@ int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
 // value which is looked up in the tantoangle[] table.
 //
 
-angle_t R_PointToAngle2 (fixed_t x1, fixed_t y1, fixed_t x, fixed_t y)
+angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
 {
-  return (y -= y1, (x -= x1) || y) ?
-    x >= 0 ?
-      y >= 0 ?
-        (x > y) ? tantoangle[SlopeDiv(y,x)] :						// octant 0
-                ANG90-1-tantoangle[SlopeDiv(x,y)] :					// octant 1
-        x > (y = -y) ? (angle_t)-(SDWORD)tantoangle[SlopeDiv(y,x)] :	// octant 8
-                       ANG270+tantoangle[SlopeDiv(x,y)] :			// octant 7
-      y >= 0 ? (x = -x) > y ? ANG180-1-tantoangle[SlopeDiv(y,x)] :	// octant 3
-                            ANG90 + tantoangle[SlopeDiv(x,y)] :		// octant 2
-        (x = -x) > (y = -y) ? ANG180+tantoangle[SlopeDiv(y,x)] :	// octant 4
-                              ANG270-1-tantoangle[SlopeDiv(x,y)] :	// octant 5
-    0;
+	x -= viewx;
+	y -= viewy;
+
+	if((x | y) == 0)
+		return 0;
+
+	if(x < R_P2ATHRESHOLD && x > -R_P2ATHRESHOLD &&
+		y < R_P2ATHRESHOLD && y > -R_P2ATHRESHOLD)
+	{
+		if(x >= 0)
+		{
+			if (y >= 0)
+			{
+				if(x > y)
+				{
+					// octant 0
+					return tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 1
+					return ANG90 - 1 - tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+			else // y < 0
+			{
+				y = -y;
+
+				if(x > y)
+				{
+					// octant 8
+					return 0 - tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 7
+					return ANG270 + tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+		}
+		else // x < 0
+		{
+			x = -x;
+
+			if(y >= 0)
+			{
+				if(x > y)
+				{
+					// octant 3
+					return ANG180 - 1 - tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 2
+					return ANG90 + tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+			else // y < 0
+			{
+				y = -y;
+
+				if(x > y)
+				{
+					// octant 4
+					return ANG180 + tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 5
+					return ANG270 - 1 - tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+		}
+	}
+	else
+	{
+      return (angle_t)(atan2((double)y, (double)x) * (ANG180 / PI));
+	}
+
+   return 0;
 }
 
 //
@@ -243,6 +317,7 @@ R_PointToAngle
 //
 // R_InitPointToAngle
 //
+/*
 void R_InitPointToAngle (void)
 {
 	int i;
@@ -256,6 +331,7 @@ void R_InitPointToAngle (void)
 		tantoangle[i] = (angle_t)(0xffffffff*f);
 	}
 }
+*/
 
 //
 // R_PointToDist
@@ -339,12 +415,94 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 	return scale;
 }
 
+
+
+void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
+{
+	int index = ang >> ANGLETOFINESHIFT;
+	
+	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
+	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
+}
+
+//
+// R_ColumnToPointOnSeg
+//
+// Sets the x and y parameters to their respective values at the point
+// where line intersects with a ray drawn through the column on the screen
+// projection.  Uses parametric line equations to find the point of intercept.
+//
+void R_ColumnToPointOnSeg(int column, line_t *line, fixed_t &x, fixed_t &y)
+{
+	// Transform the end points of the seg in relation to the camera position
+	fixed_t dx1 = line->v1->x - viewx;
+	fixed_t dy1 = line->v1->y - viewy;
+	fixed_t dx2 = line->v2->x - viewx;
+	fixed_t dy2 = line->v2->y - viewy;
+
+	// Rotate the end points by viewangle
+	angle_t rotation_ang1 = (angle_t)(-(int)viewangle);
+	fixed_t x1, y1, x2, y2;
+	R_RotatePoint(dx1, dy1, rotation_ang1, x1, y1);
+	R_RotatePoint(dx2, dy2, rotation_ang1, x2, y2);
+
+	// (fx1, fy1) and (fx2, fy2) are the end points for the lineseg
+	float fx1 = FIXED2FLOAT(x1), fx2 = FIXED2FLOAT(x2);
+	float fy1 = FIXED2FLOAT(y1), fy2 = FIXED2FLOAT(y2);
+
+	// (fx3, fy3) and (fx4, fy4) are two points on a line from the origin
+	// through the screen column
+	angle_t ang = xtoviewangle[column];
+	float fx3 = 0.0f, fx4 = FIXED2FLOAT(finecosine[ang >> ANGLETOFINESHIFT]);
+	float fy3 = 0.0f, fy4 = FIXED2FLOAT(finesine[ang >> ANGLETOFINESHIFT]);
+
+	// (xint, yint) is the point where the line from the viewpoint intersects
+	// the lineseg
+	fixed_t xint, yint;
+
+	float tnum = (fx4 - fx3) * (fy1 - fy3) - (fy4 - fy3) * (fx1 - fx3);
+	float tden = (fy4 - fy3) * (fx2 - fx1) - (fx4 - fx3) * (fy2 - fy1);
+
+	if (fabs(tden) > 0.0f)
+	{
+		float t = tnum / tden;
+
+		xint = FLOAT2FIXED(fx1 + t * (fx2 - fx1));
+		yint = FLOAT2FIXED(fy1 + t * (fy2 - fy1));
+	}
+	else
+	{
+		// the lineseg and the line from viewpoint are parallel
+		// just give the closest endpoint of the lineseg
+		float dist1 = sqrtf(fx1 * fx1 + fy1 * fy1);
+		float dist2 = sqrtf(fx2 * fx2 + fy2 * fy2);
+		if (dist1 <= dist2)
+		{
+			xint = FLOAT2FIXED(fx1);
+			yint = FLOAT2FIXED(fy1);
+		}
+		else
+		{
+			xint = FLOAT2FIXED(fx2);
+			yint = FLOAT2FIXED(fy2);
+		}
+	}
+
+	// rotate (x, y) back by +viewangle to translate back to camera space
+	angle_t rotation_ang2 = viewangle;
+	R_RotatePoint(xint, yint, rotation_ang2, x, y);
+	x += viewx;
+	y += viewy;
+} 
+
 //
 //
 // R_InitTables
 //
 //
-
+#if 0
+// [Russell] - Calling this function can desync demos (tnt demo1 msvc being a
+// prime example)
 void R_InitTables (void)
 {
 	int i;
@@ -366,7 +524,7 @@ void R_InitTables (void)
 		finesine[i] = (fixed_t)(FRACUNIT * sin (a));
 	}
 }
-
+#endif
 
 //
 //
@@ -445,19 +603,30 @@ void R_InitTextureMapping (void)
 
 void R_SetFOV (float fov)
 {
-	static float lastfov = 90.0f;
-	if (fov != lastfov)
-	{
-		if (fov < 1)
-			fov = 1;
-		else if (fov > 179)
-			fov = 179;
-		if (fov == lastfov)
-			return;
-		lastfov = fov;
-		FieldOfView = (int)(fov * (float)FINEANGLES / 360.0f);
-		setsizeneeded = true;
-	}
+	if (fov == LastFOV)
+		return;
+
+	if (fov < 1)
+		fov = 1;
+	else if (fov > 179)
+		fov = 179;
+
+	LastFOV = fov;
+	FieldOfView = (int)(fov * (float)FINEANGLES / 360.0f);
+	setsizeneeded = true;
+}
+
+//
+//
+// R_GetFOV
+//
+// Returns the current field of view in degrees
+//
+//
+
+float R_GetFOV (void)
+{
+	return LastFOV;
 }
 
 //
@@ -639,6 +808,7 @@ void R_ExecuteSetViewSize (void)
 	transcolfunc = R_DrawTranslatedColumn;
 	tlatedlucentcolfunc = R_DrawTlatedLucentColumn;
 	spanfunc = R_DrawSpan;
+	spanslopefunc = R_DrawSlopeSpan;
 
 	// [RH] Horizontal column drawers
 	hcolfunc_pre = R_DrawColumnHoriz;
@@ -659,7 +829,7 @@ void R_ExecuteSetViewSize (void)
 
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
-		screenheightarray[i] = (short)viewheight;
+		screenheightarray[i] = (int)viewheight;
 
 	// planes
 	for (i = 0; i < viewwidth; i++)
@@ -738,8 +908,8 @@ EXTERN_CVAR (r_columnmethod)
 void R_Init (void)
 {
 	R_InitData ();
-	R_InitPointToAngle ();
-	R_InitTables ();
+	//R_InitPointToAngle ();
+//	R_InitTables ();
 	// viewwidth / viewheight are set by the defaults
 
 	R_SetViewSize ((int)screenblocks);
@@ -747,11 +917,13 @@ void R_Init (void)
 	R_InitLightTables ();
 	R_InitTranslationTables ();
 
+	R_InitParticles ();	// [RH] Setup particle engine
+
 	framecount = 0;
 }
 
 // R_Shutdown
-void R_Shutdown (void)
+void STACK_ARGS R_Shutdown (void)
 {
     R_FreeTranslationTables();
 }
@@ -815,6 +987,16 @@ void R_SetupFrame (player_t *player)
 	}
 
 	viewangle = camera->angle + viewangleoffset;
+
+	if (camera->player && camera->player->xviewshift && !paused)
+	{
+		int intensity = camera->player->xviewshift;
+		viewx += ((M_Random() % (intensity<<2))
+					-(intensity<<1))<<FRACBITS;
+		viewy += ((M_Random()%(intensity<<2))
+					-(intensity<<1))<<FRACBITS;
+	}
+
 	extralight = camera == player->mo ? player->extralight : 0;
 
 	viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
@@ -823,11 +1005,13 @@ void R_SetupFrame (player_t *player)
 	// killough 3/20/98, 4/4/98: select colormap based on player status
 	// [RH] Can also select a blend
 
-	if (camera->subsector->sector->heightsec)
+	if (camera->subsector->sector->heightsec &&
+		!(camera->subsector->sector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
 		const sector_t *s = camera->subsector->sector->heightsec;
-		newblend = viewz < s->floorheight ? s->bottommap : viewz > s->ceilingheight ?
-				   s->topmap : s->midmap;
+		newblend = viewz < P_FloorHeight(viewx, viewy, s) ? s->bottommap : 
+					viewz > P_CeilingHeight(viewx, viewy, s) ? s->topmap : s->midmap;
+
 		if (!screen->is8bit())
 			newblend = R_BlendForColormap (newblend);
 		else if (APART(newblend) == 0 && newblend >= numfakecmaps)
@@ -900,7 +1084,7 @@ void R_SetupFrame (player_t *player)
 		{
 			int e;
 
-			if (i & (FRACUNIT-1) == 0)	// Unlikely, but possible
+			if (i & ((FRACUNIT-1) == 0))	// Unlikely, but possible
 			{
 				i >>= FRACBITS;
 				if (abs (i) < viewheight)
@@ -1014,6 +1198,7 @@ void R_RenderPlayerView (player_t *player)
 		hcolfunc_post4 = rt_copy4cols;
 		colfunc = R_FillColumnP;
 		spanfunc = R_FillSpan;
+		spanslopefunc = R_FillSpan;
 	}
 	else
 	{
@@ -1022,25 +1207,33 @@ void R_RenderPlayerView (player_t *player)
 		hcolfunc_post1 = rt_map1col;
 		hcolfunc_post2 = rt_map2cols;
 		hcolfunc_post4 = rt_map4cols;
+		spanfunc = R_DrawSpan;
+		spanslopefunc = R_DrawSlopeSpan;
 	}
 
+	// [RH] Hack to make windows into underwater areas possible
+	r_fakingunderwater = false;
+
+	// [RH] Setup particles for this frame
+	R_FindParticleSubsectors();
+
+    // [Russell] - From zdoom 1.22 source, added camera pointer check
 	// Never draw the player unless in chasecam mode
-	if(camera)
-	if (camera->player && !(player->cheats & CF_CHASECAM))
+	if (camera && camera->player && !(player->cheats & CF_CHASECAM))
 	{
+		camera->flags2 |= MF2_DONTDRAW;
 		R_RenderBSPNode (numnodes - 1);
+		camera->flags2 &= ~MF2_DONTDRAW;
 	}
 	else
 		R_RenderBSPNode (numnodes-1);	// The head node is the last node output.
 
 	R_DrawPlanes ();
 
-	spanfunc = R_DrawSpan;
-
 	R_DrawMasked ();
 
 	// [RH] Apply detail mode doubling
-	//R_DetailDouble ();
+	R_DetailDouble ();
 }
 
 //
@@ -1056,7 +1249,7 @@ void R_MultiresInit (void)
 	int i;
 
 	// in r_things.c
-	extern short *r_dscliptop, *r_dsclipbot;
+	extern int *r_dscliptop, *r_dsclipbot;
 	// in r_draw.c
 	extern byte **ylookup;
 	extern int *columnofs;
@@ -1069,30 +1262,30 @@ void R_MultiresInit (void)
     M_Free(negonearray);
     M_Free(screenheightarray);
     M_Free(xtoviewangle);
-    
+
 	ylookup = (byte **)M_Malloc (screen->height * sizeof(byte *));
 	columnofs = (int *)M_Malloc (screen->width * sizeof(int));
-	r_dscliptop = (short *)M_Malloc (screen->width * sizeof(short));
-	r_dsclipbot = (short *)M_Malloc (screen->width * sizeof(short));
-	
+	r_dscliptop = (int *)M_Malloc (screen->width * sizeof(int));
+	r_dsclipbot = (int *)M_Malloc (screen->width * sizeof(int));
+
 	// Moved from R_InitSprites()
-	negonearray = (short *)M_Malloc (sizeof(short) * screen->width);
+	negonearray = (int *)M_Malloc (sizeof(int) * screen->width);
 
 	// These get set in R_ExecuteSetViewSize()
-	screenheightarray = (short *)M_Malloc (sizeof(short) * screen->width);
+	screenheightarray = (int *)M_Malloc (sizeof(int) * screen->width);
 	xtoviewangle = (angle_t *)M_Malloc (sizeof(angle_t) * (screen->width + 1));
-	
+
 	// GhostlyDeath -- Clean up the buffers
 	memset(ylookup, 0, screen->height * sizeof(byte*));
 	memset(columnofs, 0, screen->width * sizeof(int));
-	memset(r_dscliptop, 0, screen->width * sizeof(short));
-	memset(r_dsclipbot, 0, screen->width * sizeof(short));
+	memset(r_dscliptop, 0, screen->width * sizeof(int));
+	memset(r_dsclipbot, 0, screen->width * sizeof(int));
 
 	for(i = 0; i < screen->width; i++)
 	{
 		negonearray[i] = -1;
 	}
-    memset(screenheightarray, 0, screen->width * sizeof(short));
+    memset(screenheightarray, 0, screen->width * sizeof(int));
     memset(xtoviewangle, 0, screen->width * sizeof(angle_t) + 1);
 
 	R_InitFuzzTable ();

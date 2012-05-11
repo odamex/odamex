@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,9 +35,16 @@
 #include <io.h>
 #include <direct.h>
 #include <process.h>
+#ifndef NOMINMAX
 #define NOMINMAX
-#include <windows.h>
 #endif
+#ifdef _XBOX
+#include <xtl.h>
+#else
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif // !_XBOX
+#endif // WIN32
 
 #ifdef UNIX
 #define HAVE_PWD_H
@@ -80,11 +88,21 @@
 #include "c_dispatch.h"
 #include "cl_main.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
+#ifdef GEKKO
+#include "i_wii.h"
+#endif
+
+#ifndef GCONSOLE // I will add this back later -- Hyper_Eye
 #include "txt_main.h"
 #define ENDOOM_W 80
 #define ENDOOM_H 25
+#endif // _XBOX
 
-EXTERN_CVAR (show_endoom)
+EXTERN_CVAR (r_showendoom)
 
 QWORD (*I_GetTime) (void);
 QWORD (*I_WaitForTic) (QWORD);
@@ -97,11 +115,17 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-size_t def_heapsize = 32;
+#ifdef _XBOX
+size_t def_heapsize = 16;
+#else
+size_t def_heapsize = 128;
+#endif
 const size_t min_heapsize = 8;
 
 // The size we got back from I_ZoneBase in megabytes
 size_t got_heapsize = 0;
+
+DWORD LanguageIDs[4];
 
 //
 // I_MegabytesToBytes
@@ -232,6 +256,71 @@ void I_WaitVBL (int count)
 	SDL_Delay (1000 * count / 70);
 }
 
+//
+// SubsetLanguageIDs
+//
+#if defined WIN32 && !defined _XBOX
+static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
+{
+	char buf[8];
+	LCID langid;
+	char *idp;
+
+	if (!GetLocaleInfo (id, type, buf, 8))
+		return;
+	langid = MAKELCID (strtoul(buf, NULL, 16), SORT_DEFAULT);
+	if (!GetLocaleInfo (langid, LOCALE_SABBREVLANGNAME, buf, 8))
+		return;
+	idp = (char *)(&LanguageIDs[idx]);
+	memset (idp, 0, 4);
+	idp[0] = tolower(buf[0]);
+	idp[1] = tolower(buf[1]);
+	idp[2] = tolower(buf[2]);
+	idp[3] = 0;
+}
+#endif
+
+//
+// SetLanguageIDs
+//
+static const char *langids[] = {
+	"auto",
+	"enu",
+	"fr",
+	"it"
+};
+
+EXTERN_CVAR (language)
+void SetLanguageIDs ()
+{
+	unsigned int langid = language.asInt();
+
+	if (langid == 0 || langid > 3)
+	{
+    #if defined WIN32 && !defined _XBOX
+		memset (LanguageIDs, 0, sizeof(LanguageIDs));
+		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
+		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
+		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
+		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
+    #else
+        langid = 1;     // Default to US English on non-windows systems
+    #endif
+	}
+	else
+	{
+		DWORD lang = 0;
+		const char *langtag = langids[langid];
+
+		((BYTE *)&lang)[0] = (langtag)[0];
+		((BYTE *)&lang)[1] = (langtag)[1];
+		((BYTE *)&lang)[2] = (langtag)[2];
+		LanguageIDs[0] = lang;
+		LanguageIDs[1] = lang;
+		LanguageIDs[2] = lang;
+		LanguageIDs[3] = lang;
+	}
+}
 
 //
 // I_Init
@@ -261,7 +350,7 @@ std::string I_GetCWD ()
 	return ret;
 }
 
-#ifdef UNIX
+#if defined(UNIX) && !defined(GEKKO)
 std::string I_GetHomeDir(std::string user = "")
 {
 	const char *envhome = getenv("HOME");
@@ -280,8 +369,8 @@ std::string I_GetHomeDir(std::string user = "")
 			I_FatalError ("Please set your HOME variable");
 	}
 
-	if(home[home.length() - 1] != '/')
-		home += "/";
+	if(home[home.length() - 1] != PATHSEPCHAR)
+		home += PATHSEP;
 
 	return home;
 }
@@ -289,11 +378,11 @@ std::string I_GetHomeDir(std::string user = "")
 
 std::string I_GetUserFileName (const char *file)
 {
-#ifdef UNIX
+#if defined(UNIX) && !defined(GEKKO)
 	std::string path = I_GetHomeDir();
 
-	if(path[path.length() - 1] != '/')
-		path += "/";
+	if(path[path.length() - 1] != PATHSEPCHAR)
+		path += PATHSEP;
 
 	path += ".odamex";
 
@@ -314,25 +403,30 @@ std::string I_GetUserFileName (const char *file)
 		}
 	}
 
-	path += "/";
+	path += PATHSEP;
 	path += file;
-#endif
+#elif defined(_XBOX)
+	std::string path = "T:";
 
-#ifdef WIN32
+	path += PATHSEP;
+	path += file;
+#else
 	std::string path = I_GetBinaryDir();
 
-	if(path[path.length() - 1] != '/')
-		path += "/";
+	if(path[path.length() - 1] != PATHSEPCHAR)
+		path += PATHSEP;
 
 	path += file;
 #endif
+
+	FixPathSeparator(path);
 
 	return path;
 }
 
 void I_ExpandHomeDir (std::string &path)
 {
-#ifdef UNIX
+#if defined(UNIX) && !defined(GEKKO)
 	if(!path.length())
 		return;
 
@@ -341,7 +435,7 @@ void I_ExpandHomeDir (std::string &path)
 
 	std::string user;
 
-	size_t slash_pos = path.find_first_of('/');
+	size_t slash_pos = path.find_first_of(PATHSEPCHAR);
 	size_t end_pos = path.length();
 
 	if(slash_pos == std::string::npos)
@@ -361,7 +455,12 @@ std::string I_GetBinaryDir()
 {
 	std::string ret;
 
-#ifdef WIN32
+#ifdef _XBOX
+	// D:\ always corresponds to the binary path whether running from DVD or HDD.
+	ret = "D:\\";
+#elif defined GEKKO
+	ret = "sd:/";
+#elif defined WIN32
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
 	ret = tmp;
@@ -388,8 +487,8 @@ std::string I_GetBinaryDir()
 				if(!segment.length())
 					continue;
 
-				if(segment[segment.length() - 1] != '/')
-					segment += "/";
+				if(segment[segment.length() - 1] != PATHSEPCHAR)
+					segment += PATHSEP;
 				segment += Args[0];
 
 				if(realpath(segment.c_str(), realp))
@@ -404,7 +503,8 @@ std::string I_GetBinaryDir()
 
 	FixPathSeparator(ret);
 
-	size_t slash = ret.find_last_of('/');
+	size_t slash = ret.find_last_of(PATHSEPCHAR);
+
 	if(slash == std::string::npos)
 		return "";
 	else
@@ -421,6 +521,7 @@ void I_FinishClockCalibration ()
 
 void I_Endoom(void)
 {
+#ifndef GCONSOLE // I will return to this -- Hyper_Eye
 	unsigned char *endoom_data;
 	unsigned char *screendata;
 	int y;
@@ -431,6 +532,9 @@ void I_Endoom(void)
 	// Set up text mode screen
 
 	TXT_Init();
+
+    I_SetWindowCaption();
+    I_SetWindowIcon();
 
 	// Write the data to the screen memory
 
@@ -451,7 +555,7 @@ void I_Endoom(void)
 	{
 		TXT_UpdateScreen();
 
-		if (TXT_GetChar() >= 0)
+		if (TXT_GetChar() > 0)
             break;
 
         TXT_Sleep(0);
@@ -460,6 +564,7 @@ void I_Endoom(void)
 	// Shut down text mode screen
 
 	TXT_Shutdown();
+#endif // Hyper_Eye
 }
 
 //
@@ -477,7 +582,11 @@ void STACK_ARGS I_Quit (void)
 
 	M_SaveDefaults();
 
-	if (show_endoom && !Args.CheckParm ("-novideo"))
+	//I_ShutdownHardware();
+
+    CloseNetwork();
+
+	if (r_showendoom && !Args.CheckParm ("-novideo"))
 		I_Endoom();
 }
 
@@ -488,6 +597,8 @@ void STACK_ARGS I_Quit (void)
 BOOL gameisdead;
 
 #define MAX_ERRORTEXT	1024
+
+void STACK_ARGS call_terms (void);
 
 void STACK_ARGS I_FatalError (const char *error, ...)
 {
@@ -510,6 +621,9 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 	if (!has_exited)	// If it hasn't exited yet, exit now -- killough
 	{
 		has_exited = 1;	// Prevent infinitely recursive exits -- killough
+
+		call_terms();
+
 		exit(-1);
 	}
 }
@@ -607,7 +721,7 @@ std::string I_GetClipboardText (void)
 		if(!bytes_left)
 		{
 			XDestroyWindow(dis, WindowEvents);
-			Printf(PRINT_HIGH, "I_GetClipboardText: Len was: %d", len);
+			DPrintf("I_GetClipboardText: Len was: %d", len);
 			XUnlockDisplay(dis);
 			XCloseDisplay(dis);
 			return "";
@@ -634,7 +748,7 @@ std::string I_GetClipboardText (void)
 	return ret;
 #endif
 
-#ifdef WIN32
+#if defined WIN32 && !defined _XBOX
 	std::string ret;
 
 	if(!IsClipboardFormatAvailable(CF_TEXT))
@@ -652,7 +766,7 @@ std::string I_GetClipboardText (void)
 	}
 
 	const char *cData = reinterpret_cast<const char *>(GlobalLock(hClipboardData));
-	u_int uiSize = static_cast<u_int>(GlobalSize(hClipboardData));
+	SIZE_T uiSize = static_cast<SIZE_T>(GlobalSize(hClipboardData));
 
 	if(cData && uiSize)
 	{
@@ -822,7 +936,7 @@ std::string I_ConsoleInput (void)
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    if (!select(1, &fdr, NULL, NULL, &tv))
+    if (select(1, &fdr, NULL, NULL, &tv) <= 0)
         return "";
 
     len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead

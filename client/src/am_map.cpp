@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,7 +37,7 @@
 #include "m_cheat.h"
 #include "i_system.h"
 #include "c_dispatch.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 
 // Needs access to LFB.
 #include "v_video.h"
@@ -50,7 +51,7 @@ extern patch_t *hu_font[];
 #include "r_state.h"
 
 // Data.
-#include "dstrings.h"
+#include "gstrings.h"
 
 #include "am_map.h"
 
@@ -676,6 +677,11 @@ void AM_Stop (void)
 {
 	static event_t st_notify = { ev_keyup, AM_MSGEXITED, 0, 0 };
 
+    if (!automapactive)
+    {
+        return;
+    }
+
 	AM_unloadPics ();
 	automapactive = false;
 	ST_Responder (&st_notify);
@@ -756,7 +762,6 @@ END_COMMAND (togglemap)
 BOOL AM_Responder (event_t *ev)
 {
 	int rc;
-	static int cheatstate = 0;
 	static int bigstate = 0;
 
 	rc = false;
@@ -816,26 +821,25 @@ BOOL AM_Responder (event_t *ev)
 			case AM_FOLLOWKEY:
 				followplayer = !followplayer;
 				f_oldloc.x = MAXINT;
-				Printf (PRINT_HIGH, "%s\n", followplayer ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF);
+				Printf (PRINT_HIGH, "%s\n", followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
 				break;
 			case AM_GRIDKEY:
 				grid = !grid;
-				Printf (PRINT_HIGH, "%s\n", grid ? AMSTR_GRIDON : AMSTR_GRIDOFF);
+				Printf (PRINT_HIGH, "%s\n", grid ? GStrings(AMSTR_GRIDON) : GStrings(AMSTR_GRIDOFF));
 				break;
 			case AM_MARKKEY:
-				Printf (PRINT_HIGH, "%s %d\n", AMSTR_MARKEDSPOT, markpointnum);
+				Printf (PRINT_HIGH, "%s %d\n",  GStrings(AMSTR_MARKEDSPOT), markpointnum);
 				AM_addMark();
 				break;
 			case AM_CLEARMARKKEY:
 				AM_clearMarks();
-				Printf (PRINT_HIGH, "%s\n", AMSTR_MARKSCLEARED);
+				Printf (PRINT_HIGH, "%s\n", GStrings(AMSTR_MARKSCLEARED));
 				break;
 			default:
-				cheatstate=0;
 				rc = false;
 			}
 		}
-		if (gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data2))
+		if (sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data2))
 		{
 			rc = true;	// [RH] Eat last keypress of cheat sequence
 			cheating = (cheating+1) % 3;
@@ -1250,7 +1254,7 @@ void AM_drawWalls(void)
                 (((am_usecustomcolors || viewactive) &&
                 lines[i].special != Exit_Normal &&
                 lines[i].special != Exit_Secret) ||
-                !am_usecustomcolors && !viewactive))
+                (!am_usecustomcolors && !viewactive)))
             {
 				AM_drawMline(&l, WallColor);
 			}
@@ -1453,8 +1457,8 @@ void AM_drawPlayers(void)
 		mpoint_t pt;
 
 		if (!players[i].ingame() || !p->mo ||
-			(((gametype == GM_DM && p != &conplayer) ||
-			((gametype == GM_TEAMDM || gametype == GM_CTF) && p->userinfo.team != conplayer.userinfo.team))
+			(((sv_gametype == GM_DM && p != &conplayer) ||
+			((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && p->userinfo.team != conplayer.userinfo.team))
 			&& !demoplayback && !(conplayer.spectator)) || p->spectator)
 		{
 			continue;
@@ -1605,7 +1609,7 @@ void AM_Drawer (void)
 		height = (hu_font[0]->height() + 1) * CleanYfac;
 		OV_Y = screen->height - ((32 * screen->height) / 200);
 
-		if (gametype == GM_COOP)
+		if (sv_gametype == GM_COOP)
 		{
 			if (am_showmonsters)
 			{
@@ -1648,7 +1652,7 @@ void AM_Drawer (void)
                 epsub = level.cluster - 1;
             }
 
-            sprintf (line, Strings[i+level.levelnum-epsub].string);
+            sprintf (line, GStrings(i+level.levelnum-epsub));
             if (viewactive && screenblocks == 11)
                 FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
             else if (viewactive && screenblocks == 12)

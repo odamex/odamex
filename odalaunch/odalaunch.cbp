@@ -5,7 +5,7 @@
 		<Option title="launcher" />
 		<Option default_target="Debug" />
 		<Option compiler="gcc" />
-		<Option virtualFolders="dialogs\;network\;" />
+		<Option virtualFolders="dialogs\;odalpapi\;" />
 		<Build>
 			<Target title="Win Release (GCC)">
 				<Option platforms="Windows;" />
@@ -16,6 +16,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Os" />
+					<Add option="-fno-inline" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
@@ -25,7 +26,7 @@
 					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32" />
 				</Linker>
 				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_PLAT" value="msw" />
@@ -36,11 +37,13 @@
 				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\gcc\debug" />
-				<Option type="0" />
+				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
+					<Add option="-fno-inline" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
@@ -49,11 +52,11 @@
 					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32" />
 				</Linker>
 				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_PLAT" value="msw" />
 					<Variable name="WX_CFG" value="" />
+					<Variable name="WX_PLAT" value="msw" />
 				</Environment>
 			</Target>
 			<Target title="Unix Release">
@@ -91,8 +94,8 @@
 					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_PLAT" value="unix" />
 					<Variable name="WX_CFG" value="" />
+					<Variable name="WX_PLAT" value="unix" />
 				</Environment>
 			</Target>
 			<Target title="Mac Release">
@@ -130,8 +133,8 @@
 					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_PLAT" value="unix" />
 					<Variable name="WX_CFG" value="" />
+					<Variable name="WX_PLAT" value="unix" />
 				</Environment>
 			</Target>
 			<Target title="Win Release (VC)">
@@ -195,7 +198,8 @@
 					<Add library="ole32.lib" />
 					<Add library="oleaut32.lib" />
 					<Add library="rpcrt4.lib" />
-					<Add library="ws2_32.lib" />
+					<Add library="wsock32.lib" />
+					<Add library="winspool.lib" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 					<Add directory=".\res" />
@@ -205,10 +209,10 @@
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_VER" value="28" />
+					<Variable name="WX_CFG" value="" />
 					<Variable name="WX_LIB" value="lib" />
 					<Variable name="WX_PLAT" value="msw" />
-					<Variable name="WX_CFG" value="" />
+					<Variable name="WX_VER" value="28" />
 				</Environment>
 			</Target>
 			<Target title="Win Debug (VC)">
@@ -216,8 +220,9 @@
 				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\vc\debug" />
-				<Option type="0" />
+				<Option type="1" />
 				<Option compiler="msvc8" />
+				<Option use_console_runner="0" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Option projectIncludeDirsRelation="1" />
@@ -236,6 +241,7 @@
 					<Add option="/Od" />
 					<Add option="/W2" />
 					<Add option="/Zc:forScope" />
+					<Add option="/Zi" />
 					<Add option="/Zi /D_DEBUG" />
 					<Add option="/DWINVER=0x0400" />
 					<Add option="/DwxUSE_GUI=1" />
@@ -278,26 +284,27 @@
 					<Add library="ole32.lib" />
 					<Add library="oleaut32.lib" />
 					<Add library="rpcrt4.lib" />
-					<Add library="ws2_32.lib" />
+					<Add library="wsock32.lib" />
+					<Add library="winspool.lib" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 					<Add directory=".\res" />
 				</Linker>
 				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_VER" value="28" />
+					<Variable name="WX_CFG" value="d" />
 					<Variable name="WX_LIB" value="lib" />
 					<Variable name="WX_PLAT" value="msw" />
-					<Variable name="WX_CFG" value="d" />
+					<Variable name="WX_VER" value="28" />
 				</Environment>
 			</Target>
 			<Environment>
-				<Variable name="WX_VER" value="28" />
-				<Variable name="WX_LIB" value="lib" />
 				<Variable name="WX_CFG" value="" />
+				<Variable name="WX_LIB" value="lib" />
+				<Variable name="WX_VER" value="28" />
 			</Environment>
 		</Build>
 		<VirtualTargets>
@@ -321,6 +328,7 @@
 			<Add directory="$(#WX)\contrib\include" />
 			<Add directory=".\src" />
 			<Add directory=".\res" />
+			<Add directory="..\odalpapi" />
 		</Compiler>
 		<ResourceCompiler>
 			<Add directory="$(#WX.include)" />
@@ -332,6 +340,33 @@
 			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 			<Add directory=".\res" />
 		</Linker>
+		<Unit filename="..\odalpapi\net_error.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_error.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_io.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_io.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_packet.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_packet.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_utils.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_utils.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\typedefs.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
 		<Unit filename="res\icons.xrc" />
 		<Unit filename="res\odalaunch.rc">
 			<Option compilerVar="WINDRES" />
@@ -348,6 +383,12 @@
 		</Unit>
 		<Unit filename="res\xrc_resource.h" />
 		<Unit filename="res\xrc_resource.xrc" />
+		<Unit filename="src\dlg_about.cpp">
+			<Option virtualFolder="dialogs\" />
+		</Unit>
+		<Unit filename="src\dlg_about.h">
+			<Option virtualFolder="dialogs\" />
+		</Unit>
 		<Unit filename="src\dlg_config.cpp">
 			<Option virtualFolder="dialogs\" />
 		</Unit>
@@ -374,26 +415,20 @@
 		</Unit>
 		<Unit filename="src\lst_custom.cpp" />
 		<Unit filename="src\lst_custom.h" />
+		<Unit filename="src\lst_players.cpp" />
+		<Unit filename="src\lst_players.h" />
+		<Unit filename="src\lst_servers.cpp" />
+		<Unit filename="src\lst_servers.h" />
+		<Unit filename="src\lst_srvdetails.cpp" />
+		<Unit filename="src\lst_srvdetails.h" />
 		<Unit filename="src\main.cpp" />
 		<Unit filename="src\main.h" />
-		<Unit filename="src\misc.cpp">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="src\misc.h" />
-		<Unit filename="src\net_io.cpp">
-			<Option virtualFolder="network\" />
-		</Unit>
-		<Unit filename="src\net_io.h">
-			<Option virtualFolder="network\" />
-		</Unit>
-		<Unit filename="src\net_packet.cpp">
-			<Option virtualFolder="network\" />
-		</Unit>
-		<Unit filename="src\net_packet.h">
-			<Option virtualFolder="network\" />
-		</Unit>
+		<Unit filename="src\md5.cpp" />
+		<Unit filename="src\md5.h" />
 		<Unit filename="src\query_thread.cpp" />
 		<Unit filename="src\query_thread.h" />
+		<Unit filename="src\str_utils.cpp" />
+		<Unit filename="src\str_utils.h" />
 		<Unit filename="src\wx_pch.h">
 			<Option compile="1" />
 			<Option weight="0" />
@@ -408,6 +443,15 @@
 			<code_completion />
 			<envvars />
 			<debugger />
+			<DoxyBlocks>
+				<comment_style block="0" line="0" />
+				<doxyfile_project />
+				<doxyfile_build />
+				<doxyfile_warnings />
+				<doxyfile_output />
+				<doxyfile_dot />
+				<general />
+			</DoxyBlocks>
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

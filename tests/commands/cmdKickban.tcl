@@ -34,6 +34,7 @@ proc main {} {
  expect $clientout {} 0
 
  # should fail to reconnect
+ clear
  client "reconnect"
  expect $serverout {127.0.0.1:10501 is trying to connect...}
  expect $serverout {127.0.0.1:10501 is banned and unable to join! (reason: be gone)}

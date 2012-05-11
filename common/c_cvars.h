@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -57,24 +57,44 @@ CVARS (console variables)
 #define CVAR_SERVERARCHIVE 4096 // [Nes] Server version of CVAR_ARCHIVE
 #define CVAR_CLIENTARCHIVE 8192 // [Nes] Client version of CVAR_ARCHIVE
 
+// Hints for network code optimization
+typedef enum
+{
+     CVARTYPE_NONE = 0 // Used for no sends
+    
+    ,CVARTYPE_BOOL
+    ,CVARTYPE_BYTE
+    ,CVARTYPE_WORD
+    ,CVARTYPE_INT
+    ,CVARTYPE_FLOAT
+    ,CVARTYPE_STRING
+    
+    ,CVARTYPE_MAX = 255
+} cvartype_t;
 
 class cvar_t
 {
 public:
-	cvar_t (const char *name, const char *def, DWORD flags);
-	cvar_t (const char *name, const char *def, DWORD flags, void (*callback)(cvar_t &));
+	cvar_t (const char *name, const char *def, const char *help, cvartype_t, DWORD flags);
+	cvar_t (const char *name, const char *def, const char *help, cvartype_t, DWORD flags, void (*callback)(cvar_t &));
 	virtual ~cvar_t ();
 
 	const char *cstring() const {return m_String.c_str(); }
 	const char *name() const { return m_Name.c_str(); }
+	const char *helptext() const {return m_HelpText.c_str(); }
 	const char *latched() const { return m_LatchedString.c_str(); }
 	float value() const { return m_Value; }
 	operator float () const { return m_Value; }
 	unsigned int flags() const { return m_Flags; }
 
+	// return m_Value as an int, rounded to the nearest integer because
+	// casting truncates instead of rounding
+	int asInt() const { return static_cast<int>(m_Value >= 0.0f ? m_Value + 0.5f : m_Value - 0.5f); }
+
 	inline void Callback () { if (m_Callback) m_Callback (*this); }
 
 	void SetDefault (const char *value);
+	void RestoreDefault ();
 	void Set (const char *value);
 	void Set (float value);
 	void ForceSet (const char *value);
@@ -120,6 +140,7 @@ public:
 	static cvar_t *cvar_set (const char *var_name, const char *value);
 	static cvar_t *cvar_forceset (const char *var_name, const char *value);
 
+    // list all console variables
 	static void cvarlist();
 
 	cvar_t &operator = (float other) { ForceSet(other); return *this; }
@@ -131,11 +152,15 @@ private:
 
 	cvar_t (const cvar_t &var) {}
 
-	void InitSelf (const char *name, const char *def, DWORD flags, void (*callback)(cvar_t &));
+	void InitSelf (const char *name, const char *def, const char *help, cvartype_t, DWORD flags, void (*callback)(cvar_t &));
 	void (*m_Callback)(cvar_t &);
 	cvar_t *m_Next;
 
+    cvartype_t m_Type;
+
 	std::string m_Name, m_String;
+	std::string m_HelpText;
+
 	float m_Value;
 
 	std::string m_LatchedString, m_Default;
@@ -154,21 +179,26 @@ cvar_t* GetFirstCvar(void);
 // to save more, bump this up.
 #define MAX_DEMOCVARS 32
 
-#define BEGIN_CUSTOM_CVAR(name,def,flags) \
+#define BEGIN_CUSTOM_CVAR(name,def,help,type,flags) \
 	static void cvarfunc_##name(cvar_t &); \
-	cvar_t name (#name, def, flags, cvarfunc_##name); \
+	cvar_t name (#name, def, help, type, flags, cvarfunc_##name); \
 	static void cvarfunc_##name(cvar_t &var)
 
 #define END_CUSTOM_CVAR(name)
 
-#define CVAR(name,def,flags) \
-	cvar_t name (#name, def, flags);
+#define CUSTOM_CVAR(type,name,def,help,t,flags) \
+	static void cvarfunc_##name(F##type##CVar &); \
+	F##type##CVar name (#name, def, help, t, flags, cvarfunc_##name); \
+	static void cvarfunc_##name(F##type##CVar &self)
+
+#define CVAR(name,def,help,type,flags) \
+	cvar_t name (#name, def, help, type, flags);
 
 #define EXTERN_CVAR(name) extern cvar_t name;
 
-#define CVAR_FUNC_DECL(name,def,flags) \
+#define CVAR_FUNC_DECL(name,def,help,type,flags) \
     extern void cvarfunc_##name(cvar_t &); \
-    cvar_t name (#name, def, flags, cvarfunc_##name);
+    cvar_t name (#name, def, help, type, flags, cvarfunc_##name);
 
 #define CVAR_FUNC_IMPL(name) \
     EXTERN_CVAR(name) \

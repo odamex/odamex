@@ -8,7 +8,7 @@ proc main {} {
  global server client serverout clientout
 
  # set defaults
- server "globalspectatorchat 1"
+ server "sv_globalspectatorchat 1"
  server "map 1"
  client "print_stdout 1"
  client "cl_name Player"

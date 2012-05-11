@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@
 #include "v_text.h"
 #include "w_wad.h"
 #include "s_sound.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "doomstat.h"
 #include "r_state.h"
 #include "hu_stuff.h"
@@ -287,23 +287,23 @@ extern	gamestate_t 	wipegamestate;
 void F_StartCast (void)
 {
 	// [RH] Set the names for the cast
-	castorder[0].name = CC_ZOMBIE;
-	castorder[1].name = CC_SHOTGUN;
-	castorder[2].name = CC_HEAVY;
-	castorder[3].name = CC_IMP;
-	castorder[4].name = CC_DEMON;
-	castorder[5].name = CC_LOST;
-	castorder[6].name = CC_CACO;
-	castorder[7].name = CC_HELL;
-	castorder[8].name = CC_BARON;
-	castorder[9].name = CC_ARACH;
-	castorder[10].name = CC_PAIN;
-	castorder[11].name = CC_REVEN;
-	castorder[12].name = CC_MANCU;
-	castorder[13].name = CC_ARCH;
-	castorder[14].name = CC_SPIDER;
-	castorder[15].name = CC_CYBER;
-	castorder[16].name = CC_HERO;
+	castorder[0].name = GStrings(CC_ZOMBIE);
+	castorder[1].name = GStrings(CC_SHOTGUN);
+	castorder[2].name = GStrings(CC_HEAVY);
+	castorder[3].name = GStrings(CC_IMP);
+	castorder[4].name = GStrings(CC_DEMON);
+	castorder[5].name = GStrings(CC_LOST);
+	castorder[6].name = GStrings(CC_CACO);
+	castorder[7].name = GStrings(CC_HELL);
+	castorder[8].name = GStrings(CC_BARON);
+	castorder[9].name = GStrings(CC_ARACH);
+	castorder[10].name = GStrings(CC_PAIN);
+	castorder[11].name = GStrings(CC_REVEN);
+	castorder[12].name = GStrings(CC_MANCU);
+	castorder[13].name = GStrings(CC_ARCH);
+	castorder[14].name = GStrings(CC_SPIDER);
+	castorder[15].name = GStrings(CC_CYBER);
+	castorder[16].name = GStrings(CC_HERO);
 
 	wipegamestate = GS_FORCEWIPE;
 	castnum = 0;
@@ -444,8 +444,6 @@ void F_CastTicker (void)
 
 BOOL F_CastResponder (event_t* ev)
 {
-	int attn;
-
 	if (ev->type != ev_keydown)
 		return false;
 
@@ -459,15 +457,6 @@ BOOL F_CastResponder (event_t* ev)
 	castframes = 0;
 	castattacking = false;
 	if (mobjinfo[castorder[castnum].type].deathsound) {
-		switch (castorder[castnum].type) {
-			case MT_CYBORG:
-			case MT_SPIDER:
-				attn = ATTN_SURROUND;
-				break;
-			default:
-				attn = ATTN_NONE;
-				break;
-		}
 		if (castorder[castnum].type == MT_PLAYER) {
 			static const char sndtemplate[] = "player/%s/death1";
 			static const char *genders[] = { "male", "female", "cyborg" };
@@ -484,7 +473,7 @@ BOOL F_CastResponder (event_t* ev)
 			}
 			S_SoundID (CHAN_VOICE, sndnum, 1, ATTN_NONE);
 		} else
-			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].deathsound, 1, attn);
+			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].deathsound, 1, ATTN_NONE);
 	}
 
 	return true;

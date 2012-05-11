@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,11 +31,11 @@
 #include <wx/image.h>
 #include <wx/imaglist.h>
 
-class wxAdvancedListCtrl : public wxListCtrl
+class wxAdvancedListCtrl : public wxListView
 {      
     public:
-        wxAdvancedListCtrl() { };
-        ~wxAdvancedListCtrl() { };
+        wxAdvancedListCtrl();
+        virtual ~wxAdvancedListCtrl() { };
         
         void SetSortColumnAndOrder(wxInt32 &Column, wxInt32 &Order)
         {
@@ -51,11 +51,15 @@ class wxAdvancedListCtrl : public wxListCtrl
             Order = SortOrder;
         }
 
+        void SetSortColumnIsSpecial(const wxInt32 &Column)
+        {
+            m_SpecialColumn = Column;
+        }
+
         void Sort();
                 
-        void AddImageSmall(wxImage Image);
-        void SetColumnImage(wxListItem &li, wxInt32 ImageIndex);
-        long ALCInsertItem(wxListItem &info);
+        int AddImageSmall(wxImage Image);
+        long ALCInsertItem(const wxString &Text = wxT(""));
         
         wxEvent *Clone(void);
 
@@ -77,7 +81,10 @@ class wxAdvancedListCtrl : public wxListCtrl
         wxInt32 SortCol;
 
         wxColour ItemShade;
+        wxColour BgColor;
 
+        wxInt32 m_SpecialColumn;
+        
     protected:               
         DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
         DECLARE_EVENT_TABLE()

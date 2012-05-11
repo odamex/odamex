@@ -1,9 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,7 +44,7 @@ extern void P_CalcHeight (player_t *player);
 // TELEPORTATION
 //
 // [RH] Changed to look for a destination by ThingID
-BOOL EV_Teleport (int tid, AActor *thing)
+BOOL EV_Teleport (int tid, int side, AActor *thing)
 {
 	AActor *m;
 	unsigned	an;
@@ -52,11 +53,14 @@ BOOL EV_Teleport (int tid, AActor *thing)
 	fixed_t 	oldz;
 	player_t	*player;
 
-	// don't teleport missiles
-	// Don't teleport if hit back of line,
-	//	so you can get out of teleporter.
-	if ((thing->flags & MF_MISSILE))
-		return 0;
+    // don't teleport missiles
+    if (thing->flags & MF_MISSILE)
+		return false;		
+
+    // Don't teleport if hit back of line,
+    //  so you can get out of teleporter.
+    if (side == 1)		
+		return false;	
 
 	// [RH] Find destination based on it's TID rather than
 	//		the sector containing it. Also allow for destinations
@@ -74,9 +78,17 @@ BOOL EV_Teleport (int tid, AActor *thing)
 	oldy = thing->y;
 	oldz = thing->z;
 
-	if (!P_TeleportMove (thing, m->x, m->y,
-			m->type == MT_TELEPORTMAN ? m->subsector->sector->floorheight : m->z, false))
+	fixed_t destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
+
+	if (!P_TeleportMove (thing, m->x, m->y, destz, false))
 		return false;
+
+    // fraggle: this was changed in final doom, 
+    // problem between normal doom2 1.9 and final doom
+    // Note that although chex.exe is based on Final Doom,
+    // it does not have this quirk.
+    if (gamemission < pack_tnt || gamemission == chex)
+		    thing->z = thing->floorz;
 
 	if (player)
 		player->viewz = thing->z + thing->player->viewheight;
@@ -100,13 +112,102 @@ BOOL EV_Teleport (int tid, AActor *thing)
 	return true;
 }
 
+// [ML] Original vanilla-style EV_Teleport, based on code from chocolate doom
+BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
+{
+	AActor *m;
+	unsigned	an;
+	int		i;
+	int		tag;
+	fixed_t 	oldx;
+	fixed_t 	oldy;
+	fixed_t 	oldz;
+	player_t	*player;
+	sector_t*	sector;
+	TThinkerIterator<AActor> iterator;
+
+    // don't teleport missiles
+    if (thing->flags & MF_MISSILE)
+		return false;
+
+    // Don't teleport if hit back of line,
+    //  so you can get out of teleporter.
+    if (side == 1)		
+		return false;	
+
+	tag = line->id;
+	// Yeah, cycle through all of them...
+	for (i = 0; i < numsectors; i++)
+	{
+		if (sectors[ i ].tag == tag )
+		{
+			while ( (m = iterator.Next ()) )
+			{
+				// not a teleportman
+				if (m->type != MT_TELEPORTMAN)
+					continue;
+				
+				sector = m->subsector->sector;
+				// wrong sector
+				if (sector-sectors != i )
+					continue;
+									
+				// killough 5/12/98: exclude voodoo dolls:
+				player = thing->player;
+				if (player && player->mo != thing)
+					player = NULL;
+
+				oldx = thing->x;
+				oldy = thing->y;
+				oldz = thing->z;
+
+				fixed_t destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
+
+				if (!P_TeleportMove (thing, m->x, m->y, destz, false))
+					return false;
+
+				// fraggle: this was changed in final doom, 
+				// problem between normal doom2 1.9 and final doom
+				// Note that although chex.exe is based on Final Doom,
+				// it does not have this quirk.
+				if (gamemission < pack_tnt || gamemission == chex)
+						thing->z = thing->floorz;
+
+				if (player)
+					player->viewz = thing->z + thing->player->viewheight;
+
+				// spawn teleport fog at source and destination
+				if(serverside && !(player && player->spectator))
+				{
+					S_Sound (new AActor (oldx, oldy, oldz, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+					an = m->angle >> ANGLETOFINESHIFT;
+					// emit sound at new spot
+					S_Sound (new AActor (m->x+20*finecosine[an], m->y+20*finesine[an], thing->z, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+				}
+
+				// don't move for a bit
+				if (player && !player->spectator)
+					thing->reactiontime = 18;
+
+				thing->momx = thing->momy = thing->momz = 0;
+				thing->angle = m->angle;
+
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+
 //
 // Silent TELEPORTATION, by Lee Killough
 // Primarily for rooms-over-rooms etc.
 // [RH] Changed to find destination by tid rather than sector
 //
 
-BOOL EV_SilentTeleport (int tid, line_t *line, AActor *thing)
+BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing)
 {
 	AActor    *m;
 
@@ -130,7 +231,7 @@ BOOL EV_SilentTeleport (int tid, line_t *line, AActor *thing)
 	// teleporter linedef causes thing to exit in the direction
 	// indicated by the exit thing.
 	angle_t angle =
-		R_PointToAngle2(0, 0, line->dx, line->dy) - m->angle + ANG90;
+		P_PointToAngle(0, 0, line->dx, line->dy) - m->angle + ANG90;
 
 	// Sine, cosine of angle adjustment
 	fixed_t s = finesine[angle>>ANGLETOFINESHIFT];
@@ -184,7 +285,7 @@ BOOL EV_SilentTeleport (int tid, line_t *line, AActor *thing)
 #define FUDGEFACTOR 10
 
 // [RH] Modified to support different source and destination ids.
-BOOL EV_SilentLineTeleport (line_t *line, AActor *thing, int id,
+BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 							BOOL reverse)
 {
 	int i;
@@ -205,8 +306,8 @@ BOOL EV_SilentLineTeleport (line_t *line, AActor *thing, int id,
 			// orientation and momentum. Rotate 180 degrees, and flip
 			// the position across the exit linedef, if reversed.
 			angle_t angle = (reverse ? pos = FRACUNIT-pos, 0 : ANG180) +
-				R_PointToAngle2(0, 0, l->dx, l->dy) -
-				R_PointToAngle2(0, 0, line->dx, line->dy);
+				P_PointToAngle(0, 0, l->dx, l->dy) -
+				P_PointToAngle(0, 0, line->dx, line->dy);
 
 			// Interpolate position across the exit linedef
 			fixed_t x = l->v2->x - FixedMul(pos, l->dx);
@@ -225,13 +326,11 @@ BOOL EV_SilentLineTeleport (line_t *line, AActor *thing, int id,
 			player_t *player = thing->player && thing->player->mo == thing ?
 				thing->player : NULL;
 
-			// Whether walking towards first side of exit linedef steps down
-			int stepdown =
-				l->frontsector->floorheight < l->backsector->floorheight;
-
 			// Height of thing above ground
-			fixed_t z = thing->z - thing->floorz;
-
+			fixed_t z = thing->z -
+						P_FloorHeight(thing->x, thing->y, sides[line->sidenum[1]].sector) +
+						P_FloorHeight(x, y, sides[l->sidenum[0]].sector);		
+	
 			// Side to exit the linedef on positionally.
 			//
 			// Notes:
@@ -254,21 +353,20 @@ BOOL EV_SilentLineTeleport (line_t *line, AActor *thing, int id,
 			// Exiting on side 1 slightly improves player viewing
 			// when going down a step on a non-reversed teleporter.
 
-			int side = reverse || (player && stepdown);
+			int side = reverse;
 
 			// Make sure we are on correct side of exit linedef.
 			while (P_PointOnLineSide(x, y, l) != side && --fudge>=0)
 				if (abs(l->dx) > abs(l->dy))
-					y -= l->dx < 0 != side ? -1 : 1;
+					y -= ((l->dx < 0) != side ? -1 : 1);
 				else
-					x += l->dy < 0 != side ? -1 : 1;
+					x += ((l->dy < 0) != side ? -1 : 1);
 
 			// Attempt to teleport, aborting if blocked
 			// Adjust z position to be same height above ground as before.
 			// Ground level at the exit is measured as the higher of the
 			// two floor heights at the exit linedef.
-			if (!P_TeleportMove (thing, x, y,
-								 z + sides[l->sidenum[stepdown]].sector->floorheight, false))
+			if (!P_TeleportMove (thing, x, y, z, false))
 				return false;
 
 			// Rotate thing's orientation according to difference in linedef angles

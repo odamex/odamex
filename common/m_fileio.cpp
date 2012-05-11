@@ -1,9 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -49,7 +50,7 @@ SDWORD M_FileLength (FILE *f)
         FileSize = ftell (f);
         fseek (f, CurrentPosition, SEEK_SET);
     }
-    
+
 	return FileSize;
 }
 
@@ -77,7 +78,7 @@ BOOL M_WriteFile(std::string filename, void *source, QWORD length)
 {
     FILE *handle;
     QWORD count;
-	
+
     handle = fopen(filename.c_str(), "wb");
 
     if (handle == NULL)
@@ -88,13 +89,13 @@ BOOL M_WriteFile(std::string filename, void *source, QWORD length)
 
     count = fwrite(source, 1, length, handle);
     fclose(handle);
-	
+
 	if (count != length)
 	{
 		Printf(PRINT_HIGH, "Failed while writing to file %s\n", filename.c_str());
 		return false;
 	}
-		
+
     return true;
 }
 
@@ -109,9 +110,9 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
     FILE *handle;
     QWORD count, length;
     BYTE *buf;
-	
+
     handle = fopen(filename.c_str(), "rb");
-    
+
 	if (handle == NULL)
 	{
 		Printf(PRINT_HIGH, "Could not open file %s for reading\n", filename.c_str());
@@ -119,17 +120,17 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 	}
 
     length = M_FileLength(handle);
-    
+
     buf = (BYTE *)Z_Malloc (length, PU_STATIC, NULL);
     count = fread(buf, 1, length, handle);
     fclose (handle);
-	
+
     if (count != length)
 	{
 		Printf(PRINT_HIGH, "Failed while reading from file %s\n", filename.c_str());
 		return false;
 	}
-		
+
     *buffer = buf;
     return length;
 }
@@ -144,8 +145,8 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_needed)
 {
     FixPathSeparator(filename);
-    
-    size_t l = filename.find_last_of('/');
+
+    size_t l = filename.find_last_of(PATHSEPCHAR);
 	if(l == filename.length())
 		return false;
 
@@ -156,10 +157,10 @@ BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_ne
     if (if_needed)
     {
         size_t dot = filename.find_last_of('.');
-        
+
         if (dot == std::string::npos)
             filename.append(extension);
-            
+
         return true;
     }
 
@@ -176,10 +177,10 @@ void M_ExtractFilePath (std::string filename, std::string &dest)
 {
     FixPathSeparator(filename);
 
-	size_t l = filename.find_last_of('/');
+	size_t l = filename.find_last_of(PATHSEPCHAR);
 	if(l == std::string::npos)
 		l = filename.length();
-		
+
     if(l < filename.length())
         dest = filename.substr(0, l);
 }
@@ -193,19 +194,19 @@ void M_ExtractFilePath (std::string filename, std::string &dest)
 BOOL M_ExtractFileExtension (std::string filename, std::string &dest)
 {
     QWORD last_dot = 0;
-    
+
     if (&dest == NULL || !filename.length())
         return false;
-    
+
     // find the last dot, iterating backwards
     last_dot = filename.find_last_of('.', filename.length());
-    
+
     if (last_dot == std::string::npos)
         return false;
-    
+
     // extract extension without leading dot
     dest = filename.substr(last_dot + 1, filename.length());
-    
+
     // fun in the sun
     return true;
 }
@@ -225,7 +226,7 @@ void M_ExtractFileBase (std::string filename, std::string &dest)
 {
     FixPathSeparator(filename);
 
-	size_t l = filename.find_last_of('/');
+	size_t l = filename.find_last_of(PATHSEPCHAR);
 	if(l == std::string::npos)
 		l = 0;
 	else
@@ -246,15 +247,21 @@ void M_ExtractFileBase (std::string filename, std::string &dest)
 void M_ExtractFileName (std::string filename, std::string &dest)
 {
     FixPathSeparator(filename);
-    
-	size_t l = filename.find_last_of('/');
+
+	size_t l = filename.find_last_of(PATHSEPCHAR);
 	if(l == std::string::npos)
 		l = 0;
 	else
 		l++;
-		
+
     if(l < filename.length())
         dest = filename.substr(l, filename.length());
+}
+
+std::string M_ExtractFileName(const std::string filename) {
+	std::string result;
+	M_ExtractFileName(filename, result);
+	return result;
 }
 
 VERSION_CONTROL (m_fileio_cpp, "$Id$")

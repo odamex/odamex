@@ -1,9 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,7 +37,9 @@
 #include <io.h>
 #include <process.h>
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 #include <mmsystem.h>
 #include <DIRECT.H> // SoM: I don't know HOW this has been overlooked until now...
@@ -51,6 +54,7 @@
 #include <sys/time.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <limits.h>
 
 #endif
 
@@ -86,11 +90,13 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-size_t def_heapsize = 32;
+size_t def_heapsize = 64;
 const size_t min_heapsize = 8;
 
 // The size we got back from I_ZoneBase in megabytes
 size_t got_heapsize = 0;
+
+DWORD LanguageIDs[4];
 
 //
 // I_MegabytesToBytes
@@ -109,7 +115,7 @@ size_t I_BytesToMegabytes (size_t Bytes)
 {
 	if (!Bytes)
         return 0;
-        
+
     return (Bytes/1024/1024);
 }
 
@@ -130,7 +136,7 @@ void *I_ZoneBase (size_t *size)
 
     if (def_heapsize < min_heapsize)
         def_heapsize = min_heapsize;
-        
+
     // Set the size
 	*size = I_MegabytesToBytes(def_heapsize);
 
@@ -138,13 +144,13 @@ void *I_ZoneBase (size_t *size)
 	while ((zone == NULL) && (*size >= I_MegabytesToBytes(min_heapsize)))
 	{
 	    zone = malloc (*size);
-	    
+
 	    if (zone != NULL)
             break;
-            
+
         *size -= I_MegabytesToBytes(1);
 	}
-	
+
     // Our heap size we received
     got_heapsize = I_BytesToMegabytes(*size);
 
@@ -201,9 +207,9 @@ QWORD I_MSTime (void)
 {
 	struct timeval tv;
 	struct timezone tz;
-	
+
 	gettimeofday(&tv, &tz);
-	
+
 	static QWORD basetime = 0;
 	static QWORD last = 0;
 	QWORD now = (QWORD)(tv.tv_sec)*1000 + (QWORD)(tv.tv_usec)/1000;
@@ -236,9 +242,9 @@ QWORD I_GetTimePolled (void)
 QWORD I_WaitForTicPolled (QWORD prevtic)
 {
     QWORD time;
-	
+
     while ((time = I_GetTimePolled()) <= prevtic)I_Yield();
-    
+
     return time;
 }
 
@@ -263,11 +269,78 @@ void I_WaitVBL (int count)
 }
 
 //
+// SubsetLanguageIDs
+//
+#ifdef WIN32
+static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
+{
+	char buf[8];
+	LCID langid;
+	char *idp;
+
+	if (!GetLocaleInfo (id, type, buf, 8))
+		return;
+	langid = MAKELCID (strtoul(buf, NULL, 16), SORT_DEFAULT);
+	if (!GetLocaleInfo (langid, LOCALE_SABBREVLANGNAME, buf, 8))
+		return;
+	idp = (char *)(&LanguageIDs[idx]);
+	memset (idp, 0, 4);
+	idp[0] = tolower(buf[0]);
+	idp[1] = tolower(buf[1]);
+	idp[2] = tolower(buf[2]);
+	idp[3] = 0;
+}
+#endif
+
+//
+// SetLanguageIDs
+//
+static const char *langids[] = {
+	"auto",
+	"enu",
+	"fr",
+	"it"
+};
+
+EXTERN_CVAR (language)
+
+void SetLanguageIDs ()
+{
+	unsigned int langid = language.asInt();
+
+	if (langid == 0 || langid > 3)
+	{
+    #ifdef WIN32
+		memset (LanguageIDs, 0, sizeof(LanguageIDs));
+		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
+		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
+		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
+		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
+    #else
+        langid = 1;     // Default to US English on non-windows systems
+    #endif
+	}
+	else
+	{
+		DWORD lang = 0;
+		const char *langtag = langids[langid];
+
+		((BYTE *)&lang)[0] = (langtag)[0];
+		((BYTE *)&lang)[1] = (langtag)[1];
+		((BYTE *)&lang)[2] = (langtag)[2];
+		LanguageIDs[0] = lang;
+		LanguageIDs[1] = lang;
+		LanguageIDs[2] = lang;
+		LanguageIDs[3] = lang;
+	}
+}
+
+//
 // I_Init
 //
 void I_Init (void)
 {
-	I_GetTime = I_GetTimePolled; 
+	I_GetTime = I_GetTimePolled;
 	I_WaitForTic = I_WaitForTicPolled;
 }
 
@@ -275,7 +348,7 @@ std::string I_GetCWD()
 {
 	char tmp[4096] = {0};
 	std::string ret = "./";
-	
+
 	const char *cwd = getcwd(tmp, sizeof(tmp));
 	if(cwd)
 		ret = cwd;
@@ -290,7 +363,7 @@ std::string I_GetHomeDir(std::string user = "")
 {
 	const char *envhome = getenv("HOME");
 	std::string home = envhome ? envhome : "";
-	
+
 	if (!home.length())
 	{
 #ifdef HAVE_PWD_H
@@ -299,13 +372,13 @@ std::string I_GetHomeDir(std::string user = "")
 		if(p && p->pw_dir)
 			home = p->pw_dir;
 #endif
-		
+
 		if (!home.length())
 			I_FatalError ("Please set your HOME variable");
 	}
-	
-	if(home[home.length() - 1] != '/')
-		home += "/";
+
+	if(home[home.length() - 1] != PATHSEPCHAR)
+		home += PATHSEP;
 
 	return home;
 }
@@ -316,8 +389,8 @@ std::string I_GetUserFileName (const char *file)
 #ifdef UNIX
 	std::string path = I_GetHomeDir();
 
-	if(path[path.length() - 1] != '/')
-		path += "/";
+	if(path[path.length() - 1] != PATHSEPCHAR)
+		path += PATHSEP;
 
 	path += ".odamex";
 
@@ -338,16 +411,16 @@ std::string I_GetUserFileName (const char *file)
 		}
 	}
 
-	path += "/";
+	path += PATHSEP;
 	path += file;
 #endif
 
 #ifdef WIN32
 	std::string path = I_GetBinaryDir();
 
-	if(path[path.length() - 1] != '/')
-		path += "/";
-	
+	if(path[path.length() - 1] != PATHSEPCHAR)
+		path += PATHSEP;
+
 	path += file;
 #endif
 
@@ -359,15 +432,15 @@ void I_ExpandHomeDir (std::string &path)
 #ifdef UNIX
 	if(!path.length())
 		return;
-		
+
 	if(path[0] != '~')
 		return;
-		
+
 	std::string user;
 
-	size_t slash_pos = path.find_first_of('/');
+	size_t slash_pos = path.find_first_of(PATHSEPCHAR);
 	size_t end_pos = path.length();
-	
+
 	if(slash_pos == std::string::npos)
 		slash_pos = end_pos;
 
@@ -376,7 +449,7 @@ void I_ExpandHomeDir (std::string &path)
 
 	if(slash_pos != end_pos)
 		slash_pos++;
-	
+
 	path = I_GetHomeDir(user) + path.substr(slash_pos, end_pos - slash_pos);
 #endif
 }
@@ -412,8 +485,8 @@ std::string I_GetBinaryDir()
 				if(!segment.length())
 					continue;
 
-				if(segment[segment.length() - 1] != '/')
-					segment += "/";
+				if(segment[segment.length() - 1] != PATHSEPCHAR)
+					segment += PATHSEP;
 				segment += Args[0];
 
 				if(realpath(segment.c_str(), realp))
@@ -428,7 +501,7 @@ std::string I_GetBinaryDir()
 
 	FixPathSeparator(ret);
 
-	size_t slash = ret.find_last_of('/');
+	size_t slash = ret.find_last_of(PATHSEPCHAR);
 	if(slash == std::string::npos)
 		return "";
 	else
@@ -455,7 +528,7 @@ void STACK_ARGS I_Quit (void)
 
     G_ClearSnapshots ();
     SV_SendDisconnectSignal();
-    
+
     CloseNetwork ();
 }
 
@@ -466,6 +539,8 @@ void STACK_ARGS I_Quit (void)
 BOOL gameisdead;
 
 #define MAX_ERRORTEXT	1024
+
+void STACK_ARGS call_terms (void);
 
 void STACK_ARGS I_FatalError (const char *error, ...)
 {
@@ -490,8 +565,11 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 
     if (!has_exited)    // If it hasn't exited yet, exit now -- killough
     {
-                has_exited = 1; // Prevent infinitely recursive exits -- killough
-                exit(-1);
+        has_exited = 1; // Prevent infinitely recursive exits -- killough
+
+        call_terms();
+
+        exit(-1);
     }
 }
 
@@ -557,12 +635,17 @@ int I_FindAttr (findstate_t *fileinfo)
 // I_ConsoleInput
 //
 #ifdef WIN32
+int ShutdownNow();
+
 std::string I_ConsoleInput (void)
 {
 	// denis - todo - implement this properly!!!
     static char     text[1024] = {0};
     static char     buffer[1024] = {0};
     unsigned int    len = strlen(buffer);
+
+    if (ShutdownNow())
+        return "quit";
 
 	while(kbhit() && len < sizeof(text))
 	{
@@ -590,7 +673,7 @@ std::string I_ConsoleInput (void)
 		fflush(stdout);
 	}
 
-	if(len && buffer[len - 1] == '\n' || buffer[len - 1] == '\r')
+	if(len && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r'))
 	{
 		// echo newline back to user
 		char ch = '\n';
@@ -615,7 +698,7 @@ std::string I_ConsoleInput (void)
 	std::string ret;
     static char     text[1024] = {0};
     int             len;
-	
+
     fd_set fdr;
     FD_ZERO(&fdr);
     FD_SET(0, &fdr);
@@ -623,9 +706,9 @@ std::string I_ConsoleInput (void)
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    if (!select(1, &fdr, NULL, NULL, &tv))
+    if (select(1, &fdr, NULL, NULL, &tv) <= 0)
         return "";
-	
+
     len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
 
     if (len < 1)
@@ -637,7 +720,7 @@ std::string I_ConsoleInput (void)
 	{
 		if(text[len-1] == '\n' || text[len-1] == '\r')
 			text[len-1] = 0; // rip off the /n and terminate
-		
+
 		ret = text;
 		memset(text, 0, sizeof(text));
 		return ret;

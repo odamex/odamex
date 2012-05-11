@@ -1,9 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,6 +27,7 @@
 #include "m_alloc.h"
 #include <stdlib.h>
 #include <math.h>
+#include <limits.h>
 #include "doomdef.h"
 #include "d_net.h"
 #include "doomstat.h"
@@ -44,6 +46,10 @@ void R_SpanInitData ();
 
 extern int *walllights;
 extern dyncolormap_t NormalLight;
+
+// [Russell] - Server expects these to exist
+// [Russell] - Doesn't get used serverside
+byte *translationtables;
 
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
@@ -96,7 +102,7 @@ int 			viewangletox[FINEANGLES/2];
 // from clipangle to -clipangle.
 angle_t 		*xtoviewangle;
 
-fixed_t			*finecosine = &finesine[FINEANGLES/4];
+const fixed_t	*finecosine = &finesine[FINEANGLES/4];
 
 int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 int				scalelightfixed[MAXLIGHTSCALE];
@@ -106,7 +112,7 @@ int				lightscalexmul;	// [RH] used to keep hires modes dark enough
 int				lightscaleymul;
 
 // bumped light from gun blasts
-int			extralight;			
+int			extralight;
 
 // [RH] ignore extralight and fullbright
 BOOL		foggy;
@@ -178,16 +184,17 @@ int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
 
 	if (!ldy)
 		return y <= ly ? ldx < 0 : ldx > 0;
-  
+
 	x -= lx;
 	y -= ly;
-      
+
 	// Try to quickly decide by looking at sign bits.
 	if ((ldy ^ ldx ^ x ^ y) < 0)
 		return (ldy ^ x) < 0;          // (left is negative)
 	return FixedMul (y, ldx >> FRACBITS) >= FixedMul (ldy >> FRACBITS, x);
 }
 
+#define R_P2ATHRESHOLD (INT_MAX / 4)
 //
 // R_PointToAngle
 //
@@ -197,20 +204,88 @@ int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
 // value which is looked up in the tantoangle[] table.
 //
 
-angle_t R_PointToAngle2 (fixed_t x1, fixed_t y1, fixed_t x, fixed_t y)
-{		
-  return (y -= y1, (x -= x1) || y) ?
-    x >= 0 ?
-      y >= 0 ? 
-        (x > y) ? tantoangle[SlopeDiv(y,x)] :						// octant 0 
-                ANG90-1-tantoangle[SlopeDiv(x,y)] :					// octant 1
-        x > (y = -y) ? (angle_t)-(SDWORD)tantoangle[SlopeDiv(y,x)] :	// octant 8
-                       ANG270+tantoangle[SlopeDiv(x,y)] :			// octant 7
-      y >= 0 ? (x = -x) > y ? ANG180-1-tantoangle[SlopeDiv(y,x)] :	// octant 3
-                            ANG90 + tantoangle[SlopeDiv(x,y)] :		// octant 2
-        (x = -x) > (y = -y) ? ANG180+tantoangle[SlopeDiv(y,x)] :	// octant 4
-                              ANG270-1-tantoangle[SlopeDiv(x,y)] :	// octant 5
-    0;
+angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
+{
+	x -= viewx;
+	y -= viewy;
+
+	if((x | y) == 0)
+		return 0;
+
+	if(x < R_P2ATHRESHOLD && x > -R_P2ATHRESHOLD &&
+		y < R_P2ATHRESHOLD && y > -R_P2ATHRESHOLD)
+	{
+		if(x >= 0)
+		{
+			if (y >= 0)
+			{
+				if(x > y)
+				{
+					// octant 0
+					return tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 1
+					return ANG90 - 1 - tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+			else // y < 0
+			{
+				y = -y;
+
+				if(x > y)
+				{
+					// octant 8
+					return 0 - tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 7
+					return ANG270 + tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+		}
+		else // x < 0
+		{
+			x = -x;
+
+			if(y >= 0)
+			{
+				if(x > y)
+				{
+					// octant 3
+					return ANG180 - 1 - tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 2
+					return ANG90 + tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+			else // y < 0
+			{
+				y = -y;
+
+				if(x > y)
+				{
+					// octant 4
+					return ANG180 + tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 5
+					return ANG270 - 1 - tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+		}
+	}
+	else
+	{
+      return (angle_t)(atan2((double)y, (double)x) * (ANG180 / PI));
+	}
+
+   return 0;
 }
 
 //
@@ -220,13 +295,14 @@ angle_t
 R_PointToAngle
 ( fixed_t	x,
   fixed_t	y )
-{	
+{
     return R_PointToAngle2 (viewx, viewy, x, y);
 }
 
 //
 // R_InitPointToAngle
 //
+/*
 void R_InitPointToAngle (void)
 {
 	int i;
@@ -240,13 +316,14 @@ void R_InitPointToAngle (void)
 		tantoangle[i] = (angle_t)(0xffffffff*f);
 	}
 }
+*/
 
 //
 //
 // R_InitTables
 //
 //
-
+#if 0
 void R_InitTables (void)
 {
 	int i;
@@ -268,6 +345,7 @@ void R_InitTables (void)
 		finesine[i] = (fixed_t)(FRACUNIT * sin (a));
 	}
 }
+#endif
 
 //
 //
@@ -278,8 +356,8 @@ void R_InitTables (void)
 void R_Init (void)
 {
 	R_InitData ();
-	R_InitPointToAngle ();
-	R_InitTables ();
+	//R_InitPointToAngle ();
+	//R_InitTables ();
 
 	framecount = 0;
 }

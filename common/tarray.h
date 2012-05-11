@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -85,6 +85,43 @@ public:
 	{
 		Count = 0;
 	}
+	// Grow Array to be large enough to hold amount more entries without
+	// further growing.
+	void Grow (size_t amount)
+	{
+		if (Count + amount > Most)
+		{
+			const size_t choicea = Count + amount;
+			const size_t choiceb = Most + Most/2;
+			Most = (choicea > choiceb ? choicea : choiceb);
+			Array = (T *)Realloc (Array, sizeof(T)*Most);
+		}
+	}
+	// Resize Array so that it has exactly amount entries in use.
+	void Resize (size_t amount)
+	{
+		if (Count < amount)
+		{
+			Grow (amount - Count);
+		}
+		else if (Count > amount)
+		{
+			Count = amount;
+		}
+	}
+	// Reserves amount entries at the end of the array, but does nothing
+	// with them.
+	size_t Reserve (size_t amount)
+	{	
+		if (Count + amount > Most)
+		{
+			Grow (amount);
+		}
+		size_t place = Count;
+		Count += amount;
+		return place;
+	}
+
 private:
 	T *Array;
 	size_t Most;
