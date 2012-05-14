@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,6 +33,7 @@
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "d_items.h"
+#include "c_level.h"
 #include "g_level.h"
 #include "m_cheat.h"
 #include "cmdlib.h"
@@ -557,6 +558,9 @@ static BOOL ReadChars (char **stuff, int size);
 static char *igets (void);
 static int GetLine (void);
 
+static int filelen = 0;	// Be quiet, gcc
+
+#define IS_AT_PATCH_SIZE (((PatchPt - 1) - PatchFile) == filelen)
 
 static int HandleMode (const char *mode, int num)
 {
@@ -791,7 +795,7 @@ static char *igets (void)
 {
 	char *line;
 
-	if(!PatchPt)
+	if(!PatchPt || IS_AT_PATCH_SIZE)
 		return NULL;
 
 	if (*PatchPt == '\0')
@@ -1060,6 +1064,11 @@ static int PatchThing (int thingy)
 			hadHeight = true;
 		}
 	}
+	
+	// [ML] Set a thing's "real world height" to what's being offered here,
+	// so it's consistent from the patch
+	if (hadHeight && thingNum < sizeof(OrgHeights))
+		info->cdheight = info->height;
 
 	if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
 		info->height = OrgHeights[thingNum] * FRACUNIT;
@@ -1672,7 +1681,6 @@ endinclude:
 bool DoDehPatch (const char *patchfile, BOOL autoloading)
 {
 	int cont;
-	int filelen = 0;	// Be quiet, gcc
 	int lump;
 	std::string file;
 

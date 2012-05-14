@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,7 +28,29 @@
 #ifndef __P_SPEC__
 #define __P_SPEC__
 
+#include <list>
 #include "dsectoreffect.h"
+
+typedef struct movingsector_s
+{
+	movingsector_s() :
+		sector(NULL), moving_ceiling(false), moving_floor(false)
+	{}
+	
+	sector_t	*sector;
+	bool		moving_ceiling;
+	bool		moving_floor;
+} movingsector_t;
+
+extern std::list<movingsector_t> movingsectors;
+
+std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
+void P_AddMovingCeiling(sector_t *sector);
+void P_AddMovingFloor(sector_t *sector);
+void P_RemoveMovingCeiling(sector_t *sector);
+void P_RemoveMovingFloor(sector_t *sector);
+bool P_MovingCeilingCompleted(sector_t *sector);
+bool P_MovingFloorCompleted(sector_t *sector);
 
 //jff 2/23/98 identify the special classes that can share sectors
 
@@ -222,14 +244,14 @@ inline sector_t *getNextSector (line_t *line, sector_t *sec)
 fixed_t	P_FindLowestFloorSurrounding (sector_t *sec);
 fixed_t	P_FindHighestFloorSurrounding (sector_t *sec);
 
-fixed_t	P_FindNextHighestFloor (sector_t *sec, int currentheight);
-fixed_t P_FindNextLowestFloor (sector_t* sec, int currentheight);
+fixed_t	P_FindNextHighestFloor (sector_t *sec);
+fixed_t P_FindNextLowestFloor (sector_t* sec);
 
 fixed_t	P_FindLowestCeilingSurrounding (sector_t *sec);		// jff 2/04/98
 fixed_t	P_FindHighestCeilingSurrounding (sector_t *sec);	// jff 2/04/98
 
-fixed_t P_FindNextLowestCeiling (sector_t *sec, int currentheight);		// jff 2/04/98
-fixed_t P_FindNextHighestCeiling (sector_t *sec, int currentheight);	// jff 2/04/98
+fixed_t P_FindNextLowestCeiling (sector_t *sec);		// jff 2/04/98
+fixed_t P_FindNextHighestCeiling (sector_t *sec);	// jff 2/04/98
 
 fixed_t P_FindShortestTextureAround (int secnum);	// jff 2/04/98
 fixed_t P_FindShortestUpperAround (int secnum);		// jff 2/04/98
@@ -452,7 +474,11 @@ public:
 	void SetState(byte state, int count) { m_Status = (EPlatState)state; m_Count = count; }
 	void GetState(byte &state, int &count) { state = (byte)m_Status; count = m_Count; }
 
-	DPlat (sector_t *sector);
+	DPlat(sector_t *sector);
+	DPlat(sector_t *sector, DPlat::EPlatType type, fixed_t height, int speed, int delay, fixed_t lip);
+	friend void P_SetPlatDestroy(DPlat *plat);
+	
+	void PlayPlatSound ();
 
 	fixed_t 	m_Speed;
 	fixed_t 	m_Low;
@@ -464,22 +490,19 @@ public:
 	bool 		m_Crush;
 	int 		m_Tag;
 	EPlatType	m_Type;
+	fixed_t		m_Height;
+	fixed_t		m_Lip;
 
-	// [SL] 2011-06-09 - The most recent sound played by this plat
-	// Used to prevent repetition of sounds due to client predicition
-	EPlatState	m_CurrentSound;
 protected:
 
-	void PlayPlatSound ();
 	void Reactivate ();
 	void Stop ();
 
-	bool m_PlayedSound[state_size];
 private:
 	DPlat ();
 
 	friend BOOL	EV_DoPlat (int tag, line_t *line, EPlatType type,
-						   int height, int speed, int delay, int lip, int change);
+						   fixed_t height, int speed, int delay, fixed_t lip, int change);
 	friend void EV_StopPlat (int tag);
 	friend void P_ActivateInStasis (int tag);
 };
@@ -510,6 +533,14 @@ class DPillar : public DMover
 {
 	DECLARE_SERIAL (DPillar, DMover)
 public:
+	enum EPillarState
+	{
+		init = 0,
+		finished,
+		destroy,
+		state_size
+	};
+	
 	enum EPillar
 	{
 		pillarBuild,
@@ -521,8 +552,10 @@ public:
 
 	DPillar (sector_t *sector, EPillar type, fixed_t speed, fixed_t height,
 			 fixed_t height2, bool crush);
-
+	friend void P_SetPillarDestroy(DPillar *pillar);	
+	
 	void RunThink ();
+	void PlayPillarSound();
 
 	EPillar		m_Type;
 	fixed_t		m_FloorSpeed;
@@ -530,6 +563,8 @@ public:
 	fixed_t		m_FloorTarget;
 	fixed_t		m_CeilingTarget;
 	bool		m_Crush;
+	
+	EPillarState m_Status;
 
 };
 
@@ -540,6 +575,14 @@ inline FArchive &operator<< (FArchive &arc, DPillar::EPillar type)
 inline FArchive &operator>> (FArchive &arc, DPillar::EPillar &out)
 {
 	BYTE in; arc >> in; out = (DPillar::EPillar)in; return arc;
+}
+inline FArchive &operator<< (FArchive &arc, DPillar::EPillarState state)
+{
+	return arc << (BYTE)state;
+}
+inline FArchive &operator>> (FArchive &arc, DPillar::EPillarState &out)
+{
+	BYTE in; arc >> in; out = (DPillar::EPillarState)in; return arc;
 }
 
 BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
@@ -563,7 +606,7 @@ public:
 		doorCloseWaitOpen
 	};
 
-	enum EVlDoorState
+	enum EDoorState
 	{
 		init = 0,
 		opening,
@@ -579,14 +622,14 @@ public:
 	// DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
     DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
 
+	friend void P_SetDoorDestroy(DDoor *door);
+	
 	void RunThink ();
+	void PlayDoorSound();	
 
 	EVlDoor		m_Type;
 	fixed_t 	m_TopHeight;
 	fixed_t 	m_Speed;
-
-	// 1 = up, 0 = waiting at top, -1 = down
-	int 		m_Direction;
 
 	// tics to wait at the top
 	int 		m_TopWait;
@@ -594,21 +637,16 @@ public:
 	// when it reaches 0, start going down
 	int 		m_TopCountdown;
 
-	EVlDoorState	m_Status;
-	// [SL] 2011-06-09 - The most recent sound played by this plat
-	// Used to prevent repetition of sounds due to client predicition
-	EVlDoorState	m_CurrentSound;
+	EDoorState	m_Status;
 
     line_t      *m_Line;
-protected:
-	void PlayDoorSound ();
 
+protected:
 	friend BOOL	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
 	friend void P_SpawnDoorCloseIn30 (sector_t *sec);
 	friend void P_SpawnDoorRaiseIn5Mins (sector_t *sec);
 
-	bool m_PlayedSound[state_size];
 private:
 	DDoor ();
 
@@ -622,13 +660,13 @@ inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoor &out)
 {
 	BYTE in; arc >> in; out = (DDoor::EVlDoor)in; return arc;
 }
-inline FArchive &operator<< (FArchive &arc, DDoor::EVlDoorState state)
+inline FArchive &operator<< (FArchive &arc, DDoor::EDoorState state)
 {
 	return arc << (BYTE)state;
 }
-inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoorState &out)
+inline FArchive &operator>> (FArchive &arc, DDoor::EDoorState &out)
 {
-	BYTE in; arc >> in; out = (DDoor::EVlDoorState)in; return arc;
+	BYTE in; arc >> in; out = (DDoor::EDoorState)in; return arc;
 }
 
 //
@@ -640,6 +678,17 @@ class DCeiling : public DMovingCeiling
 {
 	DECLARE_SERIAL (DCeiling, DMovingCeiling)
 public:
+	enum ECeilingState
+	{
+		init = 0,
+		up,
+		down,
+		waiting,
+		finished,
+		destroy,
+		state_size
+	};
+	
 	enum ECeiling
 	{
 		ceilLowerByValue,
@@ -672,9 +721,11 @@ public:
 
 	DCeiling (sector_t *sec);
 	DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent);
-
+	friend void P_SetCeilingDestroy(DCeiling *ceiling);
+	
 	void RunThink ();
-
+	void PlayCeilingSound();	
+	
 	ECeiling	m_Type;
 	fixed_t 	m_BottomHeight;
 	fixed_t 	m_TopHeight;
@@ -692,9 +743,11 @@ public:
 	// ID
 	int 		m_Tag;
 	int 		m_OldDirection;
+	
+	ECeilingState m_Status;
+	
 protected:
 
-	void PlayCeilingSound ();
 
 private:
 	DCeiling ();
@@ -714,6 +767,14 @@ inline FArchive &operator>> (FArchive &arc, DCeiling::ECeiling &type)
 {
 	BYTE in; arc >> in; type = (DCeiling::ECeiling)in; return arc;
 }
+inline FArchive &operator<< (FArchive &arc, DCeiling::ECeilingState state)
+{
+	return arc << (BYTE)state;
+}
+inline FArchive &operator>> (FArchive &arc, DCeiling::ECeilingState &out)
+{
+	BYTE in; arc >> in; out = (DCeiling::ECeilingState)in; return arc;
+}
 
 
 //
@@ -724,6 +785,17 @@ class DFloor : public DMovingFloor
 {
 	DECLARE_SERIAL (DFloor, DMovingFloor)
 public:
+	enum EFloorState
+	{
+		init = 0,
+		up,
+		down,
+		waiting,
+		finished,
+		destroy,
+		state_size
+	};
+	
 	enum EFloor
 	{
 		floorLowerToLowest,
@@ -769,11 +841,16 @@ public:
 		buildDown
 	};
 
-	DFloor (sector_t *sec);
-
+	DFloor(sector_t *sec);
+	DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line, fixed_t speed,
+		   fixed_t height, bool crush, int change);
+	friend void P_SetFloorDestroy(DFloor *floor);
+		
 	void RunThink ();
+	void PlayFloorSound();	
 
 	EFloor	 	m_Type;
+	EFloorState	m_Status;
 	bool 		m_Crush;
 	int 		m_Direction;
 	short 		m_NewSpecial;
@@ -788,11 +865,12 @@ public:
 	int			m_PauseTime;
 	int			m_StepTime;
 	int			m_PerStepTime;
+	
+	fixed_t		m_Height;
+	line_t		*m_Line;
+	int			m_Change;
 
 protected:
-
-	void StartFloorSound ();
-
 	friend BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 		fixed_t stairsize, fixed_t speed, int delay, int reset, int igntxt,
 		int usespecials);
@@ -811,11 +889,27 @@ inline FArchive &operator>> (FArchive &arc, DFloor::EFloor &type)
 {
 	BYTE in; arc >> in; type = (DFloor::EFloor)in; return arc;
 }
+inline FArchive &operator<< (FArchive &arc, DFloor::EFloorState state)
+{
+	return arc << (BYTE)state;
+}
+inline FArchive &operator>> (FArchive &arc, DFloor::EFloorState &out)
+{
+	BYTE in; arc >> in; out = (DFloor::EFloorState)in; return arc;
+}
 
 class DElevator : public DMover
 {
 	DECLARE_SERIAL (DElevator, DMover)
 public:
+	enum EElevatorState
+	{
+		init = 0,
+		finished,
+		destroy,
+		state_size
+	};
+
 	enum EElevator
 	{
 		elevateUp,
@@ -827,18 +921,20 @@ public:
 	};
 
 	DElevator (sector_t *sec);
+	friend void P_SetElevatorDestroy(DElevator *elevator);	
 
 	void RunThink ();
+	void PlayElevatorSound();
 
 	EElevator	m_Type;
 	int			m_Direction;
 	fixed_t		m_FloorDestHeight;
 	fixed_t		m_CeilingDestHeight;
 	fixed_t		m_Speed;
-
+	
+	EElevatorState m_Status;
+	
 protected:
-	void StartFloorSound ();
-
 	friend BOOL EV_DoElevator (line_t *line, DElevator::EElevator type, fixed_t speed,
 		fixed_t height, int tag);
 private:
@@ -852,6 +948,14 @@ inline FArchive &operator<< (FArchive &arc, DElevator::EElevator type)
 inline FArchive &operator>> (FArchive &arc, DElevator::EElevator &out)
 {
 	BYTE in; arc >> in; out = (DElevator::EElevator)in; return arc;
+}
+inline FArchive &operator<< (FArchive &arc, DElevator::EElevatorState state)
+{
+	return arc << (BYTE)state;
+}
+inline FArchive &operator>> (FArchive &arc, DElevator::EElevatorState &out)
+{
+	BYTE in; arc >> in; out = (DElevator::EElevatorState)in; return arc;
 }
 
 //jff 3/15/98 pure texture/type change for better generalized support

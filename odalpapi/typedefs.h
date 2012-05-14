@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,12 +27,12 @@
 #define _TYPEDEFS_H
 
 /**
- * agOdalaunch namespace.
+ * odalpapi namespace.
  *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * All code for the odamex launcher protocol api is contained within the odalpapi
  * namespace.
  */
-//namespace agOdalaunch {
+namespace odalpapi {
 
 #ifdef _MSC_VER
 	typedef signed   __int8   int8_t;
@@ -51,6 +51,6 @@
 	#endif
 #endif
 
-//} // namespace
+} // namespace
 
 #endif

@@ -1,4 +1,4 @@
-/* $Id: testigddescparse.c,v 1.2 2009/12/03 13:50:06 nanard Exp $ */
+/* $Id: testigddescparse.c,v 1.3 2012/03/05 19:42:47 nanard Exp $ */
 /* Project : miniupnp
  * http://miniupnp.free.fr/
  * Author : Thomas Bernard
@@ -25,7 +25,7 @@ int test_igd_desc_parse(char * buffer, int len)
 	parser.data = &igd;
 	parser.starteltfunc = IGDstartelt;
 	parser.endeltfunc = IGDendelt;
-	parser.datafunc = IGDdata; 
+	parser.datafunc = IGDdata;
 	parsexml(&parser);
 	printIGD(&igd);
 	GetUPNPUrls(&urls, &igd, "http://fake/desc/url/file.xml");

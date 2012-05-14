@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -49,7 +49,9 @@ bool S_MusicIsWave(byte* data, size_t length);
 //
 //	MUSIC I/O
 //
-void I_InitMusic(void);
+EXTERN_CVAR(snd_musicsystem)
+
+void I_InitMusic(MusicSystemType musicsystem_type = (MusicSystemType)snd_musicsystem.asInt());
 void STACK_ARGS I_ShutdownMusic(void);
 // Volume.
 void I_SetMusicVolume (float volume);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -85,8 +85,8 @@ class DConsoleAlias : public DConsoleCommand
 public:
 	DConsoleAlias (const char *name, const char *command);
 	virtual ~DConsoleAlias ();
-	void Run ();
-	bool IsAlias () { return true; }
+	virtual void Run ();
+	virtual bool IsAlias () { return true; }
 	void PrintAlias () { Printf (PRINT_HIGH, "%s : %s\n", m_Name.c_str(), m_Command.c_str()); }
 	void Archive (FILE *f);
 

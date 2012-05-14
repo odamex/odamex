@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -556,29 +556,28 @@ DACSThinker::~DACSThinker ()
 
 void DACSThinker::Serialize (FArchive &arc)
 {
-	Super::Serialize (arc);
-	arc << Scripts << LastScript;
 	if (arc.IsStoring ())
 	{
-		WORD i;
-		for (i = 0; i < 1000; i++)
+		arc << Scripts << LastScript;
+		for (int i = 0; i < 1000; i++)
 		{
 			if (RunningScripts[i])
-				arc << RunningScripts[i] << i;
+				arc << RunningScripts[i] << (WORD)i;
 		}
-		DLevelScript *nil = NULL;
-		arc << nil;
+		arc << (DLevelScript *)NULL;
 	}
 	else
 	{
+		arc >> Scripts >> LastScript;
+
 		WORD scriptnum;
-		DLevelScript *script = NULL;
-		arc << script;
+		DLevelScript *script;
+		arc >> script;
 		while (script)
 		{
-			arc << scriptnum;
+			arc >> scriptnum;
 			RunningScripts[scriptnum] = script;
-			arc << script;
+			arc >> script;
 		}
 	}
 }
@@ -648,10 +647,23 @@ DFlashFader::~DFlashFader ()
 void DFlashFader::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
-	arc << TotalTics << StartTic << ForWho;
-	for (int i = 1; i >= 0; --i)
-		for (int j = 3; j >= 0; --j)
-			arc << Blends[i][j];
+
+	if (arc.IsStoring ())
+	{
+		arc << TotalTics << StartTic << ForWho;
+	
+		for (int i = 1; i >= 0; --i)
+			for (int j = 3; j >= 0; --j)
+				arc << Blends[i][j];			
+	}
+	else
+	{
+		arc >> TotalTics >> StartTic >> ForWho;
+
+		for (int i = 1; i >= 0; --i)
+			for (int j = 3; j >= 0; --j)
+				arc >> Blends[i][j];		
+	}
 }
 
 void DFlashFader::RunThink ()
@@ -732,19 +744,19 @@ DPlaneWatcher::DPlaneWatcher (AActor *it, line_t *line, int lineSide, bool ceili
 	secnum = P_FindSectorFromTag (tag, -1);
 	if (secnum >= 0)
 	{
-		fixed_t plane;
-
 		Sector = &sectors[secnum];
 		if (bCeiling)
 		{
-			plane = Sector->ceilingheight;
+			LastD = Sector->ceilingplane.d;
+			P_ChangeCeilingHeight(Sector, height << FRACBITS);
+			WatchD = Sector->ceilingplane.d;
 		}
 		else
 		{
-			plane = Sector->floorheight;
+			LastD = Sector->floorplane.d;
+			P_ChangeFloorHeight(Sector, height << FRACBITS);
+			WatchD = Sector->floorplane.d;
 		}
-		LastD = plane;
-		WatchD = plane - (height << FRACBITS);
 	}
 	else
 	{
@@ -757,9 +769,18 @@ void DPlaneWatcher::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
 
-	arc << Special << Arg0 << Arg1 << Arg2 << Arg3 << Arg4
-		<< Sector << bCeiling << WatchD << LastD << Activator
-		<< Line << LineSide << bCeiling;
+	if (arc.IsStoring ())
+	{
+		arc << Special << Arg0 << Arg1 << Arg2 << Arg3 << Arg4
+			<< Sector << bCeiling << WatchD << LastD << Activator
+			<< Line << LineSide << bCeiling;
+	}
+	else
+	{
+		arc >> Special >> Arg0 >> Arg1 >> Arg2 >> Arg3 >> Arg4
+			>> Sector >> bCeiling >> WatchD >> LastD >> Activator
+			>> Line >> LineSide >> bCeiling;	
+	}
 }
 
 void DPlaneWatcher::RunThink ()
@@ -774,11 +795,11 @@ void DPlaneWatcher::RunThink ()
 
 	if (bCeiling)
 	{
-		newd = Sector->ceilingheight;
+		newd = Sector->ceilingplane.d;
 	}
 	else
 	{
-		newd = Sector->floorheight;
+		newd = Sector->floorplane.d;
 	}
 
 	if ((LastD < WatchD && newd >= WatchD) ||
@@ -808,25 +829,39 @@ void DLevelScript::Serialize (FArchive &arc)
 	DWORD i;
 
 	Super::Serialize (arc);
-	arc << next << prev
-		<< script
-		<< sp
-		<< state
-		<< statedata
-		<< activator
-		<< activationline
-		<< lineSide;
-	for (i = 0; i < LOCAL_SIZE; i++)
-		arc << localvars[i];
 
 	if (arc.IsStoring ())
 	{
-		i = level.behavior->PC2Ofs (pc);
+		arc << next << prev
+			<< script
+			<< sp
+			<< state
+			<< statedata
+			<< activator
+			<< activationline
+			<< lineSide;
+			
+		for (i = 0; i < LOCAL_SIZE; i++)
+			arc << localvars[i];
+
+		i = level.behavior->PC2Ofs(pc);
 		arc << i;
 	}
 	else
 	{
-		arc << i;
+		arc >> next >> prev
+			>> script
+			>> sp
+			>> state
+			>> statedata
+			>> activator
+			>> activationline
+			>> lineSide;
+			
+		for (i = 0; i < LOCAL_SIZE; i++)
+			arc >> localvars[i];	
+	
+		arc >> i;
 		pc = level.behavior->Ofs2PC (i);
 	}
 }
@@ -842,6 +877,8 @@ DLevelScript::DLevelScript ()
 void DLevelScript::Unlink ()
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
 
 	if (controller->LastScript == this)
 		controller->LastScript = prev;
@@ -856,6 +893,8 @@ void DLevelScript::Unlink ()
 void DLevelScript::Link ()
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
 
 	next = controller->Scripts;
 	if (controller->Scripts)
@@ -869,6 +908,8 @@ void DLevelScript::Link ()
 void DLevelScript::PutLast ()
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
 
 	if (controller->LastScript == this)
 		return;
@@ -891,6 +932,8 @@ void DLevelScript::PutLast ()
 void DLevelScript::PutFirst ()
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
 
 	if (controller->Scripts == this)
 		return;
@@ -1039,7 +1082,7 @@ void DLevelScript::DoFadeRange (int r1, int g1, int b1, int a1,
 	player_t *viewer;
 	float ftime = (float)time / 65536.f;
 	bool fadingFrom = a1 >= 0;
-	float fr1, fg1, fb1, fa1;
+	float fr1 = 0.f, fg1 = 0.f, fb1 = 0.f, fa1 = 0.f;
 	float fr2, fg2, fb2, fa2;
 	size_t i;
 
@@ -1116,10 +1159,12 @@ inline int getbyte (int *&pc)
 void DLevelScript::RunScript ()
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
+
     TeleportSide = lineSide;
     int *locals = localvars;
     ScriptFunction *activeFunction = NULL;
-    BYTE *translation = 0;
 
 	switch (state)
 	{
@@ -2673,6 +2718,9 @@ void DLevelScript::RunScript ()
 	if (state == SCRIPT_PleaseRemove)
 	{
 		Unlink ();
+		if (!controller)
+			return;
+
 		if (controller->RunningScripts[script] == this)
 			controller->RunningScripts[script] = NULL;
 		this->Destroy ();
@@ -2736,6 +2784,8 @@ DLevelScript::DLevelScript (AActor *who, line_t *where, int num, int *code, int 
 static void SetScriptState (int script, DLevelScript::EScriptState state)
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
 
 	if (controller->RunningScripts[script])
 		controller->RunningScripts[script]->SetState (state);
@@ -2924,43 +2974,36 @@ void strbin (char *str)
 	*str = 0;
 }
 
-FArchive &operator<< (FArchive &arc, acsdefered_s *&defertop)
+FArchive &operator<< (FArchive &arc, acsdefered_s *defer)
 {
-	BYTE more;
-
-	if (arc.IsStoring ())
+	while (defer)
 	{
-		acsdefered_s *defer = defertop;
-		more = 1;
-		while (defer)
-		{
-			BYTE type;
-			arc << more;
-			type = (BYTE)defer->type;
-			arc << type << defer->script << defer->playernum
-				<< defer->arg0 << defer->arg1 << defer->arg2;
-			defer = defer->next;
-		}
-		more = 0;
-		arc << more;
+		arc << (BYTE)1;
+		arc << (BYTE)defer->type << defer->script
+			<< defer->arg0 << defer->arg1 << defer->arg2;
+		defer = defer->next;
 	}
-	else
-	{
-		acsdefered_s **defer = &defertop;
+	arc << (BYTE)0;
+	return arc;
+}
 
-		arc << more;
-		while (more)
-		{
-			*defer = new acsdefered_s;
-			arc << more;
-			(*defer)->type = (acsdefered_s::EType)more;
-			arc << (*defer)->script << (*defer)->playernum
-				<< (*defer)->arg0 << (*defer)->arg1 << (*defer)->arg2;
-			defer = &((*defer)->next);
-			arc << more;
-		}
-		*defer = NULL;
+FArchive &operator>> (FArchive &arc, acsdefered_s* &defertop)
+{
+	acsdefered_s **defer = &defertop;
+	BYTE inbyte;
+
+	arc >> inbyte;
+	while (inbyte)
+	{
+		*defer = new acsdefered_s;
+		arc >> inbyte;
+		(*defer)->type = (acsdefered_s::EType)inbyte;
+		arc >> (*defer)->script
+			>> (*defer)->arg0 >> (*defer)->arg1 >> (*defer)->arg2;
+		defer = &((*defer)->next);
+		arc >> inbyte;
 	}
+	*defer = NULL;
 	return arc;
 }
 

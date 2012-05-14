@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1059,8 +1059,10 @@ void WI_drawNetgameStats(void)
 
 		x = NG_STATSX;
 		// [RH] Only use one graphic for the face backgrounds
-		//V_ColorMap = translationtables + i * 256;
-		screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
+		V_ColorMap = translationtables + i * 256;
+        screen->DrawTranslatedPatchClean (p, x - p->width(), y);
+		// classic face background colour
+		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
 
 		if (i == me)
 			screen->DrawPatchClean (star, x-p->width(), y);

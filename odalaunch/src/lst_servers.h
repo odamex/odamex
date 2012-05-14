@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,6 +26,21 @@
 #include "net_packet.h"
 #include "lst_custom.h"
 
+typedef enum
+{
+    serverlist_field_attr
+    ,serverlist_field_name
+    ,serverlist_field_ping
+    ,serverlist_field_players
+    ,serverlist_field_wads
+    ,serverlist_field_map
+    ,serverlist_field_type
+    ,serverlist_field_iwad
+    ,serverlist_field_address
+    
+    ,max_serverlist_fields
+} serverlist_fields_t;
+
 class LstOdaServerList : public wxAdvancedListCtrl
 {
     public:
@@ -33,7 +48,7 @@ class LstOdaServerList : public wxAdvancedListCtrl
         virtual ~LstOdaServerList();
 
         void SetupServerListColumns();
-        void AddServerToList(const Server &s, wxInt32 index, bool insert = true);
+        void AddServerToList(const odalpapi::Server &s, wxInt32 index, bool insert = true);
 
     protected:
         

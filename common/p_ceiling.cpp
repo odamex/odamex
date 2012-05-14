@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,9 +31,25 @@
 #include "doomstat.h"
 #include "r_state.h"
 
+extern bool predicting;
+
 //
 // CEILINGS
 //
+
+void P_SetCeilingDestroy(DCeiling *ceiling)
+{
+	if (!ceiling)
+		return;
+
+	ceiling->m_Status = DCeiling::destroy;
+	
+	if (clientside && ceiling->m_Sector)
+	{
+		ceiling->m_Sector->ceilingdata = NULL;
+		ceiling->Destroy();
+	}
+}
 
 IMPLEMENT_SERIAL (DCeiling, DMovingCeiling)
 
@@ -47,6 +63,7 @@ void DCeiling::Serialize (FArchive &arc)
 	if (arc.IsStoring ())
 	{
 		arc << m_Type
+			<< m_Status
 			<< m_BottomHeight
 			<< m_TopHeight
 			<< m_Speed
@@ -63,6 +80,7 @@ void DCeiling::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type
+			>> m_Status
 			>> m_BottomHeight
 			>> m_TopHeight
 			>> m_Speed
@@ -80,6 +98,9 @@ void DCeiling::Serialize (FArchive &arc)
 
 void DCeiling::PlayCeilingSound ()
 {
+	if (predicting || !m_Sector)
+		return;
+	
 	if (m_Sector->seqType >= 0)
 	{
 		SN_StartSequence (m_Sector, m_Sector->seqType, SEQ_PLATFORM);
@@ -192,12 +213,12 @@ void DCeiling::RunThink ()
 }
 
 DCeiling::DCeiling (sector_t *sec)
-	: DMovingCeiling (sec)
+	: DMovingCeiling (sec), m_Status(init)
 {
 }
 
 DCeiling::DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent)
-	: DMovingCeiling (sec)
+	: DMovingCeiling (sec), m_Status(init)
 {
 	m_Crush = false;
 	m_Speed = m_Speed1 = speed1;
@@ -272,18 +293,22 @@ manual_ceiling:
 		if (sec->ceilingdata)
 			continue;
 
+		fixed_t ceilingheight = P_CeilingHeight(sec);
+		fixed_t floorheight = P_FloorHeight(sec);
+
 		// new door thinker
 		rtn = 1;
 		ceiling = new DCeiling (sec, speed, speed2, silent);
+		P_AddMovingCeiling(sec);
 
 		switch (type)
 		{
 		case DCeiling::ceilCrushAndRaise:
 		case DCeiling::ceilCrushRaiseAndStay:
-			ceiling->m_TopHeight = sec->ceilingheight;
+			ceiling->m_TopHeight = ceilingheight;
 		case DCeiling::ceilLowerAndCrush:
 			ceiling->m_Crush = crush;
-			targheight = ceiling->m_BottomHeight = sec->floorheight + 8*FRACUNIT;
+			targheight = ceiling->m_BottomHeight = floorheight + 8*FRACUNIT;
 			ceiling->m_Direction = -1;
 			break;
 
@@ -293,18 +318,18 @@ manual_ceiling:
 			break;
 
 		case DCeiling::ceilLowerByValue:
-			targheight = ceiling->m_BottomHeight = sec->ceilingheight - height;
+			targheight = ceiling->m_BottomHeight = ceilingheight - height;
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilRaiseByValue:
-			targheight = ceiling->m_TopHeight = sec->ceilingheight + height;
+			targheight = ceiling->m_TopHeight = ceilingheight + height;
 			ceiling->m_Direction = 1;
 			break;
 
 		case DCeiling::ceilMoveToValue:
 			{
-			  int diff = height - sec->ceilingheight;
+			  int diff = height - ceilingheight;
 
 			  if (diff < 0) {
 				  targheight = ceiling->m_BottomHeight = height;
@@ -327,26 +352,24 @@ manual_ceiling:
 			break;
 
 		case DCeiling::ceilLowerInstant:
-			targheight = ceiling->m_BottomHeight = sec->ceilingheight - height;
+			targheight = ceiling->m_BottomHeight = P_CeilingHeight(sec) - height;
 			ceiling->m_Direction = -1;
 			ceiling->m_Speed = height;
 			break;
 
 		case DCeiling::ceilRaiseInstant:
-			targheight = ceiling->m_TopHeight = sec->ceilingheight + height;
+			targheight = ceiling->m_TopHeight = ceilingheight + height;
 			ceiling->m_Direction = 1;
 			ceiling->m_Speed = height;
 			break;
 
 		case DCeiling::ceilLowerToNearest:
-			targheight = ceiling->m_BottomHeight =
-				P_FindNextLowestCeiling (sec, sec->ceilingheight);
+			targheight = ceiling->m_BottomHeight = P_FindNextLowestCeiling(sec);
 			ceiling->m_Direction = 1;
 			break;
 
 		case DCeiling::ceilRaiseToNearest:
-			targheight = ceiling->m_TopHeight =
-				P_FindNextHighestCeiling (sec, sec->ceilingheight);
+			targheight = ceiling->m_TopHeight = P_FindNextHighestCeiling(sec);
 			ceiling->m_Direction = 1;
 			break;
 
@@ -361,12 +384,12 @@ manual_ceiling:
 			break;
 
 		case DCeiling::ceilLowerToFloor:
-			targheight = ceiling->m_BottomHeight = sec->floorheight;
+			targheight = ceiling->m_BottomHeight = floorheight;
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilRaiseToFloor:
-			targheight = ceiling->m_TopHeight = sec->floorheight;
+			targheight = ceiling->m_TopHeight = floorheight;
 			ceiling->m_Direction = 1;
 			break;
 
@@ -377,13 +400,13 @@ manual_ceiling:
 
 		case DCeiling::ceilLowerByTexture:
 			targheight = ceiling->m_BottomHeight =
-				sec->ceilingheight - P_FindShortestUpperAround (secnum);
+				ceilingheight - P_FindShortestUpperAround (secnum);
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilRaiseByTexture:
 			targheight = ceiling->m_TopHeight =
-				sec->ceilingheight + P_FindShortestUpperAround (secnum);
+				ceilingheight + P_FindShortestUpperAround (secnum);
 			ceiling->m_Direction = 1;
 			break;
 

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -49,6 +49,7 @@
 #define MASTERTIMEOUT       "MasterTimeout"
 #define SERVERTIMEOUT       "ServerTimeout"
 #define USEBROADCAST        "UseBroadcast"
+#define RETRYCOUNT          "RetryCount"
 
 #ifdef __WXMSW__
 #define PATH_DELIMITER ';'
@@ -109,12 +110,11 @@ class dlgConfig: public wxDialog
 
         wxListBox *m_LstCtrlWadDirectories;
 
-        wxDirPickerCtrl *m_DirCtrlChooseWadDir;
-
         wxDirPickerCtrl *m_DirCtrlChooseOdamexPath;
 
         wxSpinCtrl *m_SpnCtrlMasterTimeout;
         wxSpinCtrl *m_SpnCtrlServerTimeout;
+        wxSpinCtrl *m_SpnCtrlRetry;
         wxTextCtrl *m_TxtCtrlExtraCmdLineArgs;
 
         wxSpinCtrl *m_SpnCtrlPQGood;

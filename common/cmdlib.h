@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,8 +25,9 @@
 #ifndef __CMDLIB__
 #define __CMDLIB__
 
-#include <string>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)     // MIPS
@@ -72,6 +73,11 @@ std::string StdStringToLower(const char*);
 std::string StdStringToUpper(const std::string&);
 std::string StdStringToUpper(const char*);
 
+std::string &TrimString(std::string &s);
+std::string &TrimStringStart(std::string &s);
+std::string &TrimStringEnd(std::string &s);
+
+
 char	*COM_Parse (char *data);
 
 extern	char	com_token[8192];
@@ -83,10 +89,9 @@ void	CRC_Init(unsigned short *crcvalue);
 void	CRC_ProcessByte(unsigned short *crcvalue, byte data);
 unsigned short CRC_Value(unsigned short crcvalue);
 
+std::vector<std::string> VectorArgs(size_t argc, char **argv);
+std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue = "");
+bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (const char **ptr, const char *str);
 
-
 #endif
-
-
-

@@ -1,4 +1,4 @@
-/* $Id: wingenminiupnpcstrings.c,v 1.2 2011/01/11 15:31:13 nanard Exp $ */
+/* $Id: wingenminiupnpcstrings.c,v 1.3 2012/03/05 19:42:48 nanard Exp $ */
 /* Project: miniupnp
  * http://miniupnp.free.fr/ or http://miniupnp.tuxfamily.org/
  * Author: Thomas Bernard
@@ -26,7 +26,7 @@ int main(int argc, char * * argv) {
      dwBuildNumber :
        The build number of the operating system.
      dwPlatformId
-       The operating system platform. This member can be the following value. 
+       The operating system platform. This member can be the following value.
      szCSDVersion
        A null-terminated string, such as "Service Pack 3", that indicates the
        latest Service Pack installed on the system. If no Service Pack has

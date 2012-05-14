@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -58,11 +58,11 @@ static const struct ColorList {
 	{&grey3,	50,  50,  50 },
 	{&grey4,	210, 210, 210},
 	{&grey5,	128, 128, 128},
-	{&red,		255, 0,   0  },  
-	{&green,	0,   200, 0  },  
+	{&red,		255, 0,   0  },
+	{&green,	0,   200, 0  },
 	{&blue,		0,   0,   255},
-	{&yellow,	255, 255, 0  },  
-	{&black,	0,   0,   0  },  
+	{&yellow,	255, 255, 0  },
+	{&black,	0,   0,   0  },
 	{&red1,		255, 127, 127},
 	{&green1,	127, 255, 127},
 	{&blue1,	127, 127, 255},
@@ -97,6 +97,9 @@ void P_InitEffects (void)
 
 void P_DrawSplash (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, int kind)
 {
+	if (!clientside)
+		return;
+
 	int color1, color2;
 
 	switch (kind) {
@@ -188,8 +191,11 @@ void P_DrawSplash2 (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, i
 // inlined with VC++
 particle_t *NewParticle (void)
 {
+	if (!clientside)
+		return NULL;
+
 	particle_t *result = NULL;
-	if (InactiveParticles != -1)
+	if (InactiveParticles != NO_PARTICLE)
 	{
 		result = Particles + InactiveParticles;
 		InactiveParticles = result->next;
@@ -202,6 +208,9 @@ particle_t *NewParticle (void)
 
 static void MakeFountain (AActor *actor, int color1, int color2)
 {
+	if (!clientside)
+		return;
+
 	particle_t *particle;
 
 	if (!(level.time & 1))
@@ -238,6 +247,9 @@ static void MakeFountain (AActor *actor, int color1, int color2)
 //
 particle_t *JitterParticle (int ttl)
 {
+	if (!clientside)
+		return NULL;
+
 	particle_t *particle = NewParticle ();
 
 	if (particle) {
@@ -265,6 +277,9 @@ particle_t *JitterParticle (int ttl)
 //
 void P_RunEffects (void)
 {
+	if (!clientside)
+		return;
+
 	//int pnum = 0;/* = (consoleplayer().camera->subsector->sector - sectors) * numsectors*/;
 	AActor *actor;
 	TThinkerIterator<AActor> iterator;
@@ -285,6 +300,9 @@ void P_RunEffects (void)
 
 void P_RunEffect (AActor *actor, int effects)
 {
+	if (!actor || !clientside)
+		return;
+
 	angle_t moveangle = R_PointToAngle2(0,0,actor->momx,actor->momy);
 	particle_t *particle;
 
@@ -345,7 +363,7 @@ void P_RunEffect (AActor *actor, int effects)
 	if (effects & FX_FOUNTAINMASK) {
 		// Particle fountain
 
-		static const int *fountainColors[16] = 
+		static const int *fountainColors[16] =
 			{ &black,	&black,
 			  &red,		&red1,
 			  &green,	&green1,
@@ -362,12 +380,15 @@ void P_RunEffect (AActor *actor, int effects)
 
 void P_ThinkParticles (void)
 {
+	if (!clientside)
+		return;
+
 	int i;
 	particle_t *particle, *prev;
 
 	i = ActiveParticles;
 	prev = NULL;
-	while (i != -1) {
+	while (i != NO_PARTICLE) {
 		byte oldtrans;
 
 		particle = Particles + i;
@@ -395,129 +416,129 @@ void P_ThinkParticles (void)
 }
 
 
-void P_DrawRailTrail (vec3_t start, vec3_t end)
+void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 {
-	float length;
-	int steps, i;
-	float deg;
-	vec3_t step, dir, pos, extend;
-
-	VectorSubtract (end, start, dir);
-	length = VectorLength (dir);
-	steps = (int)(length*0.3333f);
-
-	if (length) {
-		// The railgun's sound is a special case. It gets played from the
-		// point on the slug's trail that is closest to the hearing player.
-		AActor *mo = consoleplayer().camera;
-		vec3_t point;
-		float r;
-		float dirz;
-
-		length = 1 / length;
-
-		if (abs(mo->x - FLOAT2FIXED(start[0])) < 20 * FRACUNIT
-			&& (mo->y - FLOAT2FIXED(start[1])) < 20 * FRACUNIT)
-		{ // This player (probably) fired the railgun
-			S_Sound (mo, CHAN_WEAPON, "weapons/railgf", 1, ATTN_NORM);
-		}
-		else
-		{
-			// Only consider sound in 2D (for now, anyway)
-			r = ((start[1] - FIXED2FLOAT(mo->y)) * (-dir[1]) -
-					(start[0] - FIXED2FLOAT(mo->x)) * (dir[0])) * length * length;
-
-			dirz = dir[2];
-			dir[2] = 0;
-			VectorMA (start, r, dir, point);
-			dir[2] = dirz;
-
-			S_Sound (FLOAT2FIXED(point[0]), FLOAT2FIXED(point[1]),
-				CHAN_WEAPON, "weapons/railgf", 1, ATTN_NORM);
-		}
-	} else {
-		// line is 0 length, so nothing to do
+	if (!clientside)
 		return;
+
+	v3double_t step, dir, pos, extend, point;
+
+	M_SubVec3(&dir, &end, &start);
+
+	double length = M_LengthVec3(&dir);
+	int steps = (int)(length*0.3333);
+
+	if (!length)	// line is 0 length, so nothing to do
+		return;
+
+	// The railgun's sound is a special case. It gets played from the
+	// point on the slug's trail that is closest to the hearing player.
+	AActor *mo = consoleplayer().camera;
+
+	double ilength = 1.0 / length;
+
+	if (abs(mo->x - FLOAT2FIXED(start.x)) < 20 * FRACUNIT &&
+		abs(mo->y - FLOAT2FIXED(start.y)) < 20 * FRACUNIT)
+	{
+		// This player (probably) fired the railgun
+		S_Sound (mo, CHAN_WEAPON, "weapons/railgf", 1, ATTN_NORM);
+	}
+	else
+	{
+		// Only consider sound in 2D (for now, anyway)
+		double r = ((start.y - FIXED2FLOAT(mo->y)) * (-dir.y) -
+				(start.x - FIXED2FLOAT(mo->x)) * (dir.x)) * ilength * ilength;
+
+		M_ScaleVec3(&point, &dir, r);
+		M_AddVec3(&point, &start, &point);
+		point.z = start.z;
+
+		S_Sound (FLOAT2FIXED(point.x), FLOAT2FIXED(point.y),
+			CHAN_WEAPON, "weapons/railgf", 1, ATTN_NORM);
 	}
 
-	if (clientside)
-	{
-		VectorScale2 (dir, length);
-		PerpendicularVector (extend, dir);
-		VectorScale2 (extend, 3);
-		VectorScale (dir, 3, step);
+	if (!clientside)
+		return;
 
-		VectorCopy (start, pos);
-		deg = 270;
-		for (i = steps; i; i--) {
-			particle_t *p = NewParticle ();
-			vec3_t tempvec;
+	M_ScaleVec3(&dir, &dir, ilength);
+	M_PerpendicularVec3(&extend, &dir);
+	M_ScaleVec3(&extend, &extend, 3.0);
+	M_ScaleVec3(&step, &dir, 3.0);
 
-			if (!p)
-				return;
+	pos = start;
 
-			p->trans = 255;
-			p->ttl = 35;
-			p->fade = FADEFROMTTL(35);
-			p->size = 3;
+	float deg = 270.0f;
+	for (int i = steps; i; i--) {
+		particle_t *p = NewParticle ();
 
-			RotatePointAroundVector (tempvec, dir, extend, deg);
-			p->velx = FLOAT2FIXED(tempvec[0])>>4;
-			p->vely = FLOAT2FIXED(tempvec[1])>>4;
-			p->velz = FLOAT2FIXED(tempvec[2])>>4;
-			VectorAdd (tempvec, pos, tempvec);
-			deg += 14;
-			if (deg >= 360)
-				deg -= 360;
-			p->x = FLOAT2FIXED(tempvec[0]);
-			p->y = FLOAT2FIXED(tempvec[1]);
-			p->z = FLOAT2FIXED(tempvec[2]);
-			VectorAdd (pos, step, pos);
+		if (!p)
+			return;
 
-			{
-				int rand = M_Random();
+		p->trans = 255;
+		p->ttl = 35;
+		p->fade = FADEFROMTTL(35);
+		p->size = 3;
 
-				if (rand < 155)
-					p->color = rblue2;
-				else if (rand < 188)
-					p->color = rblue1;
-				else if (rand < 222)
-					p->color = rblue3;
-				else
-					p->color = rblue4;
-			}
-		}
+		v3double_t tempvec;
+		M_RotatePointAroundVector(&tempvec, &dir, &extend, deg);
 
-		VectorCopy (start, pos);
-		for (i = steps; i; i--) {
-			particle_t *p = JitterParticle (33);
+		p->velx = FLOAT2FIXED(tempvec.x)>>4;
+		p->vely = FLOAT2FIXED(tempvec.y)>>4;
+		p->velz = FLOAT2FIXED(tempvec.z)>>4;
+		M_AddVec3(&tempvec, &tempvec, &pos);
+		deg += 14;
+		if (deg >= 360)
+			deg -= 360;
+		p->x = FLOAT2FIXED(tempvec.x);
+		p->y = FLOAT2FIXED(tempvec.y);
+		p->z = FLOAT2FIXED(tempvec.z);
+		M_AddVec3(&pos, &pos, &step);
 
-			if (!p)
-				return;
+		int rand = M_Random();
 
-			p->size = 2;
-			p->x = FLOAT2FIXED(pos[0]);
-			p->y = FLOAT2FIXED(pos[1]);
-			p->z = FLOAT2FIXED(pos[2]);
-			p->accz -= FRACUNIT/4096;
-			VectorAdd (pos, step, pos);
-			{
-				int rand = M_Random();
+		if (rand < 155)
+			p->color = rblue2;
+		else if (rand < 188)
+			p->color = rblue1;
+		else if (rand < 222)
+			p->color = rblue3;
+		else
+			p->color = rblue4;
+	}
 
-				if (rand < 85)
-					p->color = grey4;
-				else if (rand < 170)
-					p->color = grey2;
-				else
-					p->color = grey1;
-			}
-			p->color = white;
-		}		
+	pos = start;
+
+	for (int i = steps; i; i--) {
+		particle_t *p = JitterParticle (33);
+
+		if (!p)
+			return;
+
+		p->size = 2;
+		p->x = FLOAT2FIXED(pos.x);
+		p->y = FLOAT2FIXED(pos.y);
+		p->z = FLOAT2FIXED(pos.z);
+		p->accz -= FRACUNIT/4096;
+		M_AddVec3(&pos, &pos, &step);
+
+		int rand = M_Random();
+
+		if (rand < 85)
+			p->color = orange;
+		else if (rand < 170)
+			p->color = grey2;
+		else
+			p->color = yorange;
+
+		p->color = yellow;
 	}
 }
 
 void P_DisconnectEffect (AActor *actor)
 {
+	if (!actor || !clientside)
+		return;
+
 	int i;
 
 	for (i = 64; i; i--) {

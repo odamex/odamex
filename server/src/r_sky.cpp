@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,7 +31,7 @@
 
 // [ML] 5/11/06 - Remove sky2
 int 		skyflatnum;
-int 		sky1texture;
+int 		sky1texture, sky2texture;
 
 fixed_t		sky1pos=0,		sky1speed=0;
 

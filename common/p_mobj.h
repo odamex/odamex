@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,33 +44,38 @@
 //
 //-----------------------------------------------------------------------------
 
+// [SL] 2012-04-04 
+// Modified to use a std::queue, popping from the front of the queue to assign
+// new netids and pushing newly freed netids on the back of the queue.  This is
+// to avoid reassigning a recently freed netid to a different actor.  Otherwise
+// clients can get confused when packets are dropped.
+
+#include "i_system.h"
+#include <queue>
+
 #define MAX_NETID 0xFFFF
 
 class NetIDHandler
 {
 	private:
 
-	int *allocation;
-
 	size_t NumAllocated;
-	size_t NumUsed;
-
+	std::queue<int> free_ids;
 	const size_t ChunkSize;
 
 	public:
 
-	NetIDHandler(size_t chunk_size = 256)
-		: allocation(0), NumAllocated(0), NumUsed(0), ChunkSize(chunk_size)
+	NetIDHandler(size_t chunk_size = 512)
+		: NumAllocated(0), ChunkSize(chunk_size)
 	{}
 
 	~NetIDHandler()
 	{
-		M_Free(allocation);
 	}
 
 	int ObtainNetID()
 	{
-		if(NumUsed >= NumAllocated)
+		if (free_ids.empty())
 		{
 			if(NumAllocated >= MAX_NETID - 1)
 				I_Error("Exceeded maximum number of netids");
@@ -81,25 +86,31 @@ class NetIDHandler
 			if(NumAllocated >= MAX_NETID - 1)
 				NumAllocated = MAX_NETID - 1;
 
-			allocation = (int *)Realloc(allocation, NumAllocated*sizeof(int));
-
-			for(size_t i = OldAllocated; i < NumAllocated; i++)
-				allocation[i] = i + 1;
+			for (size_t i = OldAllocated + 1; i <= NumAllocated; i++)
+				free_ids.push(i);
 		}
 
-		return allocation[NumUsed++];
+		int netid = free_ids.front();
+		free_ids.pop();
+	
+		return netid;
 	}
 
 	void ReleaseNetID(int NetID)
 	{
-		if(!NumUsed || !NetID)
+		if (!NetID || NetID > (int)NumAllocated)
 			I_Error("Released a non-existant netid %d", NetID);
 
-		allocation[--NumUsed] = NetID;
+		free_ids.push(NetID);
 	}
 };
 
 extern NetIDHandler ServerNetID;
+
+void P_ClearAllNetIds();
+AActor* P_FindThingById(size_t id);
+void P_SetThingId(AActor *mo, size_t newnetid);
+void P_ClearId(size_t id);
 
 bool P_SetMobjState(AActor *mobj, statenum_t state);
 void P_XYMovement(AActor *mo);

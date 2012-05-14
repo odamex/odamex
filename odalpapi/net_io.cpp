@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,9 +37,11 @@
 #include "net_utils.h"
 #include "net_error.h"
 
-//namespace agOdalaunch {
+
+namespace odalpapi {
 
 #ifndef _WIN32
+#include <unistd.h>
 #define closesocket close
 const int INVALID_SOCKET = -1;
 #endif
@@ -50,9 +52,13 @@ BufferedSocket::BufferedSocket() :	m_BadRead(false), m_BadWrite(false),
 									m_Socket(0), m_SendPing(0), m_ReceivePing(0)
 {
     m_Broadcast = false;
-	m_SocketBuffer = NULL;
 	memset(&m_RemoteAddress, 0, sizeof(struct sockaddr_in));
-	ClearBuffer();
+	
+	m_SocketBuffer = new byte[MAX_PAYLOAD];
+
+	if(m_SocketBuffer == NULL)
+		NET_ReportError("Failed to allocate m_SocketBuffer!");
+
 }
 
 BufferedSocket::~BufferedSocket()
@@ -232,9 +238,6 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	bool             DestroyMe = false;
     socklen_t        fromlen;
 
-	// clear it
-	ClearBuffer();
-
 	// Wait for read with timeout
 	if(Timeout >= 0)
 	{
@@ -255,7 +258,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 		m_SendPing = 0;
 		m_ReceivePing = 0;
 
-		return 0;
+		return -1;
 	}
 
     fromlen = sizeof(m_RemoteAddress);
@@ -271,10 +274,13 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 		m_SendPing = 0;
 		m_ReceivePing = 0;
 
-		return 0;
+		return -2;
 	}
 
     m_BufferSize = BytesReceived;
+
+	// Reset buffers position
+	ResetBuffer();
 
 	// apply the receive ping
 	m_ReceivePing = GetMillisNow();
@@ -291,7 +297,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	m_ReceivePing = 0;
 
 
-	return 0;
+	return -3;
 }
 
 bool BufferedSocket::ReadString(string &str)
@@ -682,16 +688,8 @@ bool BufferedSocket::CanWrite(const size_t &Bytes)
 
 void BufferedSocket::ClearBuffer()
 {
-	delete m_SocketBuffer;
-
-	m_SocketBuffer = new byte[MAX_PAYLOAD];
-
-	if(m_SocketBuffer == NULL)
-		NET_ReportError("Failed to allocate m_SocketBuffer!");
-
-	m_BufferSize = 0;
-
-	ResetBuffer();
+    m_BufferSize = 0;
+    m_BufferPos = 0;
 }
 
-//} // namespace
+} // namespace

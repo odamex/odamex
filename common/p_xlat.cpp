@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -429,6 +429,44 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 		for (i = 0; i < 5; i++)
 			ld->args[i] = SpecialTranslation[special].args[i] == TAG ? tag :
 						  SpecialTranslation[special].args[i];
+	}
+	else if (special >= 340 && special <= 347)
+	{
+		// [SL] 2012-01-30 - convert to ZDoom Plane_Align special for
+		// sloping sectors
+		ld->special = Plane_Align;
+		ld->flags = flags;
+		ld->id = tag;
+		memset(ld->args, 0, sizeof(ld->args));
+		
+		switch (special)
+		{
+		case 340:		// Slope the Floor in front of the line
+			ld->args[0] = 1;
+			break;
+		case 341:		// Slope the Ceiling in front of the line
+			ld->args[1] = 1;
+			break;
+		case 342:		// Slope the Floor+Ceiling in front of the line
+			ld->args[0] = ld->args[1] = 1;
+			break;
+		case 343:		// Slope the Floor behind the line
+			ld->args[0] = 2;
+			break;
+		case 344:		// Slope the Ceiling behind the line
+			ld->args[1] = 2;
+			break;
+		case 345:		// Slope the Floor+Ceiling behind the line
+			ld->args[0] = ld->args[1] = 2;
+			break;
+		case 346:		// Slope the Floor behind+Ceiling in front of the line
+			ld->args[0] = 2;
+			ld->args[1] = 1;
+			break;
+		case 347:		// Slope the Floor in front+Ceiling behind the line
+			ld->args[0] = 1;
+			ld->args[1] = 2;
+		}
 	}
 	else if (special <= GenCrusherBase)
 	{

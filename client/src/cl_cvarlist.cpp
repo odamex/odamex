@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,6 +23,7 @@
 
 #include "c_cvars.h"
 #include "s_sound.h"
+#include "i_music.h"
 #include "d_netinf.h"
 
 // Automap
@@ -150,13 +151,14 @@ CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are sp
 
 CVAR_FUNC_DECL (cl_autoaim,	"5000", "", CVARTYPE_INT,		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-// [SL] 2011-05-11 - Client opt-in/out for serverside unlagging
+// Netcode Settings
+// --------------
+
 CVAR (cl_unlag,				"1", "client opt-in/out for server unlagging", CVARTYPE_BOOL,		CVAR_USERINFO | CVAR_ARCHIVE)
-
-// [SL] 2011-09-01 - Server will send svc_moveplayer updates every N tics
-CVAR_FUNC_DECL (cl_updaterate, "2",	"Update players every N tics", CVARTYPE_BYTE,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR (cl_prednudge,			"0.15", "", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (cl_updaterate, "1",	"Update players every N tics", CVARTYPE_BYTE,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (cl_interp,	"1", "Interpolate enemy player positions", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (cl_prednudge,	"0.30", "Smooth out the collisions", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_netgraph,				"0", "Show a graph of network related statistics", CVARTYPE_BOOL, CVAR_NULL)
 
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
 	CVAR (cl_name,		"Xbox Player", "", CVARTYPE_STRING,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -198,19 +200,27 @@ CVAR (idmypos, "0", "Shows current player position on map",	CVARTYPE_BOOL, CVAR_
 
 // Heads up display
 // ----------------
-
+CVAR (hud_crosshairdim, "0", "Crosshair transparency",
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR (hud_crosshairscale, "0", "Crosshair scaling",
+      CVARTYPE_WORD, CVAR_ARCHIVE)
+CVAR (hud_crosshairhealth, "0", "Color of crosshair represents health level",
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR (hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n// 1: New Odamex HUD",
+      CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (hud_revealsecrets, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (hud_transparency, "0.5", "",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (hud_scale, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR_FUNC_DECL (hud_scaletext, "2", "Scale notify text at high resolutions",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (hud_targetnames, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (hud_usehighresboard, "1", "",	CVARTYPE_BOOL,	CVAR_ARCHIVE)
-CVAR (hud_fullhudtype, "0","The fullscreen hud to display: 0=zdoom,1=odamex", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR (hud_crosshairdim, "0", "Crosshair transparency",	CVARTYPE_BOOL, CVAR_ARCHIVE)      // Crosshair transparency
-CVAR (hud_crosshairscale, "0", "Crosshair scaling",	CVARTYPE_WORD, CVAR_ARCHIVE)    // Crosshair scaling
-CVAR (hud_crosshairhealth, "0", "Color of crosshair represents health level",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR_FUNC_DECL (hud_targetcount, "2", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)  // Show target counts
+CVAR (hud_scale, "0", "HUD scaling", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR (hud_scalescoreboard, "0", "Scoreboard scaling", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (hud_scaletext, "2", "Scaling multiplier for chat and midprint",
+                CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (hud_targetcount, "2", "Number of players to reveal",
+                CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (hud_targetnames, "1", "Show names of players you're aiming at",
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR (hud_timer, "1", "Show the HUD timer", CVARTYPE_BOOL,
+      CVAR_ARCHIVE)
+CVAR (hud_transparency, "0.5", "HUD transparency",	CVARTYPE_FLOAT,
+      CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                       // A
@@ -242,6 +252,7 @@ CVAR (chatmacro0, "No", "",	CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE
 
 CVAR_FUNC_DECL (snd_sfxvolume, "0.5", "Sound volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)      // Sound volume
 CVAR_FUNC_DECL (snd_musicvolume, "0.5", "Music volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // Music volume
+CVAR_FUNC_DECL (snd_announcervolume, "0.5", "Announcer volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // CTF announcer volume
 CVAR (snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_ARCHIVE)                                         // Stereo switch
 CVAR (snd_samplerate, "22050", "Samplerate",	CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)             // Sample rate
 CVAR (snd_timeout, "0", "",	CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)					// Clean up finished sounds
@@ -251,7 +262,36 @@ BEGIN_CUSTOM_CVAR (snd_channels, "12", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NO
 	S_Init (snd_sfxvolume, snd_musicvolume);
 }
 END_CUSTOM_CVAR (snd_channels)
-CVAR_FUNC_DECL (snd_musicsystem, "1", "Music subsystem preference",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+//
+// C_GetDefaultMuiscSystem()
+//
+// Allows the default value for snd_musicsystem to change depending on
+// compile-time factors (eg, OS)
+//
+static char *C_GetDefaultMusicSystem()
+{
+	static char str[4];
+	
+	MusicSystemType defaultmusicsystem = MS_SDLMIXER;
+	#ifdef OSX
+	defaultmusicsystem = MS_AUDIOUNIT;
+	#endif
+
+	#if defined WIN32 && !defined _XBOX
+	defaultmusicsystem = MS_PORTMIDI;
+	#endif
+
+	// don't overflow str
+	if (int(defaultmusicsystem) > 999 || int(defaultmusicsystem) < 0)
+		defaultmusicsystem = MS_NONE;
+
+	sprintf(str, "%i", defaultmusicsystem);
+	return str;
+}
+
+CVAR_FUNC_DECL (snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
+		CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (snd_musicdevice, "", "Music output device for the chosen music subsystem", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Status bar
@@ -322,5 +362,20 @@ CVAR (vid_ticker, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
 CVAR_FUNC_DECL (vid_winscale, "1.0", "",	CVARTYPE_FLOAT, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Overscan
 CVAR_FUNC_DECL (vid_overscan, "1.0", "Overscan",	CVARTYPE_FLOAT, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+// Netdemo format string
+CVAR_FUNC_DECL (cl_netdemoname, "Odamex_%g_%d_%t_%w_%m",
+				"Default netdemo name.  Parses the following tokens:\n// %d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// %n: player name\n// %g: gametype\n// %w: WAD file loaded; either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
+				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+// Screenshot format string
+CVAR_FUNC_DECL (cl_screenshotname, "Odamex_%g_%d_%t",
+				"Default screenshot name.  Parses the following tokens:\n// %d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// %n: player name\n// %g: gametype\n// %w: WAD file loaded; either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
+				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+// Record netdemos automatically
+CVAR (cl_autorecord, "0", "Automatically record netdemos", CVARTYPE_BOOL, CVAR_ARCHIVE)
+// Splits netdemos at the start of everymap
+CVAR (cl_splitnetdemos, "0", "Create separate netdemos for each map", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 VERSION_CONTROL (cl_cvarlist_cpp, "$Id$")

@@ -16,6 +16,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Os" />
+					<Add option="-fno-inline" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
@@ -42,6 +43,7 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
+					<Add option="-fno-inline" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
@@ -338,6 +340,33 @@
 			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 			<Add directory=".\res" />
 		</Linker>
+		<Unit filename="..\odalpapi\net_error.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_error.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_io.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_io.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_packet.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_packet.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_utils.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_utils.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\typedefs.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
 		<Unit filename="res\icons.xrc" />
 		<Unit filename="res\odalaunch.rc">
 			<Option compilerVar="WINDRES" />
@@ -409,33 +438,6 @@
 			<Option target="Unix Debug" />
 			<Option target="Mac Release" />
 			<Option target="Mac Debug" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_error.cpp">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_error.h">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_io.cpp">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_io.h">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_packet.cpp">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_packet.h">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_utils.cpp">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\net_utils.h">
-			<Option virtualFolder="odalpapi\" />
-		</Unit>
-		<Unit filename="..\odalpapi\typedefs.h">
-			<Option virtualFolder="odalpapi\" />
 		</Unit>
 		<Extensions>
 			<code_completion />

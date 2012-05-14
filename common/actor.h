@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -112,6 +112,53 @@
 //
 
 //
+// [SL] 2012-04-30 - A bit field to store a bool value for every player.
+// 
+class PlayerBitField
+{
+public:
+	PlayerBitField() { clear(); }
+	
+	void clear()
+	{
+		memset(bitfield, 0, sizeof(bitfield));
+	}
+
+	void set(byte id)
+	{
+		int bytenum = id >> 3;
+		int bitnum = id & bytemask;
+	
+		bitfield[bytenum] |= (1 << bitnum);
+	}
+	
+	void unset(byte id)
+	{
+		int bytenum = id >> 3;
+		int bitnum = id & bytemask;
+	
+		bitfield[bytenum] &= ~(1 << bitnum);
+	}
+	
+	bool get(byte id) const
+	{
+		int bytenum = id >> 3;
+		int bitnum = id & bytemask;	
+	
+		return (bitfield[bytenum] & (1 << bitnum));
+	}
+	
+private:
+	static const int bytesize = 8*sizeof(byte);
+	static const int bytemask = bytesize - 1;
+	
+	// Hacky way of getting ceil() at compile-time
+	static const size_t fieldsize = (MAXPLAYERS + bytemask) / bytesize;
+	
+	byte	bitfield[fieldsize];
+};
+
+//
 // Misc. mobj flags
 //
 typedef enum
@@ -215,6 +262,10 @@ typedef enum
 #define TRANSLUC66			((FRACUNIT*2)/3)
 #define TRANSLUC75			((FRACUNIT*3)/4)
 
+// killough 11/98: For torque simulation:
+#define OVERDRIVE 6
+#define MAXGEAR (OVERDRIVE+16)
+
 // Map Object definition.
 class AActor : public DThinker
 {
@@ -308,6 +359,8 @@ public:
     // The closest interval over all contacted Sectors.
     fixed_t		floorz;
     fixed_t		ceilingz;
+	fixed_t		dropoffz;
+	struct sector_s		*floorsector;
 
     // For movement checking.
     fixed_t		radius;
@@ -367,14 +420,16 @@ public:
 	AActor			*inext, *iprev;	// Links to other mobjs in same bucket
 
 	// denis - playerids of players to whom this object has been sent
-	std::vector<size_t>	players_aware;
+	// [SL] changed to use a bitfield instead of a vector for O(1) lookups
+	PlayerBitField	players_aware;
 
 	AActorPtr		goal;			// Monster's goal if not chasing anything
 	byte			*translation;	// Translation table (or NULL)
 	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
 	byte			waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
+	SWORD			gear;			// killough 11/98: used in torque simulation
 
-	fixed_t         onground;		// NES - Fixes infinite jumping bug like a charm.
+	bool			onground;		// NES - Fixes infinite jumping bug like a charm.
 
 	// a linked list of sectors where this object appears
 	struct msecnode_s	*touching_sectorlist;				// phares 3/14/98

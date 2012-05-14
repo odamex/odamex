@@ -3,7 +3,7 @@
 //
 // $Id: i_midi.h 1788 2010-08-24 04:42:57Z russellrice $
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -140,7 +140,7 @@ class MidiSysexEvent : public MidiEvent
 {
 public:
 	MidiSysexEvent(unsigned int time, byte* data, size_t length) :
-		MidiEvent(time, MIDI_EVENT_CONTROLLER), mData(NULL), mLength(length)
+		MidiEvent(time, MIDI_EVENT_SYSEX), mData(NULL), mLength(length)
 	{
 		if (mLength)
 		{

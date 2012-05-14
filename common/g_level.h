@@ -4,7 +4,7 @@
 // $Id: g_level.h 1859 2010-09-05 21:54:58Z mike $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,9 @@
 #include "doomtype.h"
 #include "doomdef.h"
 #include "m_fixed.h"
+
+#include <string>
+#include <vector>
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256
@@ -101,6 +104,7 @@ struct level_pwad_info_s
 	struct acsdefered_s *defered;
 
 	// level_pwad_info_s				[ML] 5/11/06 Removed sky scrolling/sky2
+	char		skypic2[9];
 	DWORD		fadeto;
 	char		fadetable[8];
 	DWORD		outsidefog;
@@ -132,6 +136,7 @@ struct level_locals_s {
 
 	char		music[8];
 	char		skypic[8];
+	char		skypic2[8];
 
 	int			total_secrets;
 	int			found_secrets;
@@ -178,6 +183,8 @@ extern BOOL HexenHack;		// Semi-Hexen-compatibility mode
 
 void G_InitNew (const char *mapname);
 void G_ChangeMap (void);
+void G_ChangeMap (size_t index);
+void G_RestartMap (void);
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,
@@ -208,5 +215,7 @@ void G_ClearSnapshots (void);
 void G_SnapshotLevel (void);
 void G_UnSnapshotLevel (bool keepPlayers);
 void G_SerializeSnapshots (FArchive &arc);
+
+void cmd_maplist(const std::vector<std::string> &arguments, std::vector<std::string> &response);
 
 #endif //__G_LEVEL_H__

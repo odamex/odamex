@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sstream>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -291,6 +292,96 @@ std::string StdStringToUpper(const char* str)
 	return StdStringToUpperBase(upper);
 }
 
+// [AM] Convert an argc/argv into a vector of strings.
+std::vector<std::string> VectorArgs(size_t argc, char **argv) {
+	std::vector<std::string> arguments(argc - 1);
+	for (unsigned i = 1;i < argc;i++) {
+		arguments[i - 1] = argv[i];
+	}
+	return arguments;
+}
+
+// [AM] Return a joined string based on a vector of strings
+std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue) {
+	std::ostringstream result;
+	for (std::vector<std::string>::const_iterator it = pieces.begin();
+		 it != pieces.end();++it) {
+		result << *it;
+		if (it != (pieces.end() - 1)) {
+			result << glue;
+		}
+	}
+	return result.str();
+}
+
+// [SL] Reimplement std::isspace 
+static int _isspace(int c)
+{
+	return (c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\f' || c == '\r');
+}
+
+// Trim whitespace from the start of a string
+std::string &TrimStringStart(std::string &s)
+{
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(_isspace))));
+	return s;
+}
+ 
+// Trim whitespace from the end of a string
+std::string &TrimStringEnd(std::string &s)
+{
+	s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(_isspace))).base(), s.end());
+	return s;
+}
+ 
+// Trim whitespace from the start and end of a string
+std::string &TrimString(std::string &s)
+{
+	return TrimStringStart(TrimStringEnd(s));
+}
+
+//==========================================================================
+//
+// CheckWildcards
+//
+// [RH] Checks if text matches the wildcard pattern using ? or *
+//
+//==========================================================================
+bool CheckWildcards (const char *pattern, const char *text)
+{
+	if (pattern == NULL || text == NULL)
+		return true;
+
+	while (*pattern)
+	{
+		if (*pattern == '*')
+		{
+			char stop = tolower (*++pattern);
+			while (*text && tolower(*text) != stop)
+			{
+				text++;
+			}
+			if (*text && tolower(*text) == stop)
+			{
+				if (CheckWildcards (pattern, text++))
+				{
+					return true;
+				}
+				pattern--;
+			}
+		}
+		else if (*pattern == '?' || tolower(*pattern) == tolower(*text))
+		{
+			pattern++;
+			text++;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return (*pattern | *text) == 0;
+}
 
 class ReplacedStringTracker
 {
@@ -321,7 +412,6 @@ public:
 			delete[] const_cast<char*>(i->first);
 	}
 }rst;
-
 
 void ReplaceString (const char **ptr, const char *str)
 {

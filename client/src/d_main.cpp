@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -217,7 +217,6 @@ void D_PostEvent (const event_t* ev)
 void D_Display (void)
 {
 	BOOL wipe;
-    static  int			borderdrawcount;
 
 	if (nodrawers)
 		return; 				// for comparative timing / profiling
@@ -246,8 +245,6 @@ void D_Display (void)
 		st_scale.Callback ();
 		// Refresh the console.
 		C_NewModeAdjust ();
-		// denis - redraw border
-		borderdrawcount = 3;
 	}
 
 	// change the view size if needed
@@ -255,7 +252,6 @@ void D_Display (void)
 	{
 		R_ExecuteSetViewSize ();
 		setmodeneeded = false;
-		borderdrawcount = 3;
 	}
 
 	I_BeginUpdate ();
@@ -272,7 +268,6 @@ void D_Display (void)
 		wipe = true;
 		wipe_StartScreen ();
 		wipegamestate = gamestate;
-		borderdrawcount = 3;
 	}
 	else
 	{
@@ -293,20 +288,8 @@ void D_Display (void)
 			if (!gametic)
 				break;
 
-
 			// denis - freshen the borders (ffs..)
-			if (menuactive || ConsoleState != c_up || headsupactive || automapactive)
-				borderdrawcount = 3;
-			if(consoleplayer().camera)
-				if (((Actions[ACTION_SHOWSCORES]) ||
-					consoleplayer().camera->health <= 0))
-				borderdrawcount = 3;
-
-			if (borderdrawcount)
-			{
-				R_DrawViewBorder ();    // erase old menu stuff
-				borderdrawcount--;
-			}
+			R_DrawViewBorder ();    // erase old menu stuff
 
 			if (viewactive)
 				R_RenderPlayerView (&displayplayer());
@@ -637,7 +620,7 @@ void D_DoAdvanceDemo (void)
 //
 // D_Close
 //
-void D_Close (void)
+void STACK_ARGS D_Close (void)
 {
 	if(page)
 	{
@@ -771,7 +754,13 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 	} while(FindNextFile(hFind, &FindFileData));
 
 	dwError = GetLastError();
-	if(dwError != ERROR_NO_MORE_FILES)
+	
+	// Note: As documented, FindNextFile sets ERROR_NO_MORE_FILES as the error 
+	// code, but when this function "fails" it does not set it we have to assume 
+	// that it completed successfully (this is actually  bad practice, because 
+    // it says in the docs that it does not set ERROR_SUCCESS, even though 
+    // GetLastError returns 0) WTF DO WE DO?!
+	if(dwError != ERROR_SUCCESS && dwError != ERROR_NO_MORE_FILES)
 		Printf (PRINT_HIGH, "FindNextFile failed. GetLastError: %d\n", dwError);
 
 	FindClose(hFind);
@@ -1313,6 +1302,7 @@ std::vector<size_t> D_DoomWadReboot(
 	if(gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
 
+	AM_Stop();
 	S_Stop();
 
 	DThinker::DestroyAllThinkers();
@@ -1388,10 +1378,9 @@ std::vector<size_t> D_DoomWadReboot(
     UndoDehPatch();
 
 	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.ResetStrings ();
 	GStrings.Compact ();
 
-	//D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);
 
 	//gotconback = false;
@@ -1506,19 +1495,6 @@ void D_DoomMain (void)
 		autostart = true;
 		demorecordfile = Args.GetArg (p+1);
 	}
-
-	p = Args.CheckParm("-netrecord");
-	if (p)
-	{
-		std::string demoname;
-		if (Args.GetArg(p + 1))
-			demoname = Args.GetArg(p + 1);
-		else
-			demoname = "demo";
-
-		CL_NetDemoRecord(demoname);
-	}
-
 
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
@@ -1698,8 +1674,6 @@ void D_DoomMain (void)
 	p = Args.CheckParm ("+demotest");
 	if (p && p < Args.NumArgs()-1)
 	{
-		void	G_DoPlayDemo (bool justStreamInput = false);
-		void	G_Ticker (void);
 		demotest = 1;
 		defdemoname = Args.GetArg (p+1);
 		G_DoPlayDemo();
