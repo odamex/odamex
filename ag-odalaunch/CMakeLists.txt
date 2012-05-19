@@ -12,8 +12,7 @@ find_package(LibAgar)
 if(LibAgar_FOUND)
   include_directories(${LibAgar_INCLUDE_DIRS})
   add_definitions(${LibAgar_DEFINITIONS})
-else()
-  message(WARNING "Agar libraries not found, ag-odalaunch target not generated.")
+  message("-- Agar libraries found, ag-odalaunch target generated.")
 endif()
 
 # AG-Odalaunch target
