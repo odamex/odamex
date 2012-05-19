@@ -16,15 +16,8 @@ else()
   message(WARNING "Agar libraries not found, ag-odalaunch target not generated.")
 endif()
 
-find_package(SDL_image)
-if(SDLIMAGE_FOUND)
-  include_directories(${SDLIMAGE_INCLUDE_DIR})
-else()
-  message(WARNING "SDL_image not found, ag-odalaunch target not generated.")
-endif()
-
 # AG-Odalaunch target
-if(LibAgar_FOUND AND SDLIMAGE_FOUND)
+if(LibAgar_FOUND)
   add_custom_command(
     TARGET ag-odalaunch
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/res
@@ -32,7 +25,7 @@ if(LibAgar_FOUND AND SDLIMAGE_FOUND)
   add_executable(ag-odalaunch MACOSX_BUNDLE WIN32
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
   )
-  target_link_libraries(ag-odalaunch ${LibAgar_LIBRARIES} ${SDLIMAGE_LIBRARY})
+  target_link_libraries(ag-odalaunch ${LibAgar_LIBRARIES})
 
   set(MACOSX_BUNDLE_BUNDLE_NAME AG-OdaLaunch)
   set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")

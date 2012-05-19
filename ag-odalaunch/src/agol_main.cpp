@@ -31,8 +31,6 @@
 #include <agar/core.h>
 #include <agar/gui.h>
 
-#include <SDL_image.h>
-
 #include "agol_main.h"
 #include "agol_settings.h"
 #include "agol_solo.h"
@@ -134,30 +132,27 @@ AGOL_MainWindow::~AGOL_MainWindow()
 
 void AGOL_MainWindow::LoadResources()
 {
-	SDL_Surface *sf;
+	AG_DataSource *pngdata;
 
 	// Red Bullet
-	sf = IMG_Load_RW(SDL_RWFromConstMem(bullet_red16x15, sizeof(bullet_red16x15)), 1);
-	if(sf)
+	if((pngdata = AG_OpenConstCore(bullet_red16x15, sizeof(bullet_red16x15))) != NULL)
 	{
-		BulletRed = AG_SurfaceFromSDL(sf);
-		free(sf);
+		BulletRed = AG_ReadSurfaceFromPNG(pngdata);
+		AG_CloseDataSource(pngdata);
 	}
 
 	// Blue Bullet
-	sf = IMG_Load_RW(SDL_RWFromConstMem(bullet_blue16x15, sizeof(bullet_blue16x15)), 1);
-	if(sf)
+	if((pngdata = AG_OpenConstCore(bullet_blue16x15, sizeof(bullet_blue16x15))) != NULL)
 	{
-		BulletBlue = AG_SurfaceFromSDL(sf);
-		free(sf);
+		BulletBlue = AG_ReadSurfaceFromPNG(pngdata);
+		AG_CloseDataSource(pngdata);
 	}
 
 	// Spectator Icon
-	sf = IMG_Load_RW(SDL_RWFromConstMem(spectatorico, sizeof(spectatorico)), 1);
-	if(sf)
+	if((pngdata = AG_OpenConstCore(spectatorico, sizeof(spectatorico))) != NULL)
 	{
-		SpectatorIcon = AG_SurfaceFromSDL(sf);
-		free(sf);
+		SpectatorIcon = AG_ReadSurfaceFromPNG(pngdata);
+		AG_CloseDataSource(pngdata);
 	}
 }
 
@@ -414,22 +409,24 @@ AG_Button *AGOL_MainWindow::CreateButton(void *parent, const char *label,
                                          const unsigned char *icon, int iconsize, 
                                          EVENT_FUNC_PTR handler)
 {
-	AG_Button   *button;
-	SDL_Surface *sf;
+	AG_Button     *button;
+	AG_DataSource *icondata;
 
 	button = AG_ButtonNewFn(parent, 0, label, EventReceiver, "%p", RegisterEventHandler(handler));
 
 	AG_SetEvent(button, "button-mouseoverlap", EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnMouseOverWidget));
 
-	sf = IMG_Load_RW(SDL_RWFromConstMem(icon, iconsize), 1);
-	if(sf)
+
+	if((icondata = AG_OpenConstCore(icon, iconsize)) != NULL)
 	{
-		AG_ButtonSurface(button, AG_SurfaceFromSDL(sf));
-		free(sf);
+		AG_ButtonSurface(button, AG_ReadSurfaceFromPNG(icondata));
+		AG_CloseDataSource(icondata);
 	}
 	else
-		cerr << "Failed to load icon: " << IMG_GetError() << endl;
+	{
+		cerr << "Failed to load icon: " << AG_GetError() << endl;
+	}
 
 	return button;
 }

@@ -35,6 +35,7 @@
 #include "event_handler.h"
 #include "oda_thread.h"
 #include "net_packet.h"
+#include "typedefs.h"
 
 /**
  * agOdalaunch namespace.

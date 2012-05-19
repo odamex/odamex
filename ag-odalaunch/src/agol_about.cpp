@@ -28,8 +28,6 @@
 #include <agar/core.h>
 #include <agar/gui.h>
 
-#include <SDL_image.h>
-
 #include "agol_about.h"
 #include "net_packet.h"
 #include "icons.h"
@@ -78,15 +76,18 @@ AG_Box *AGOL_About::CreateTopBox(void *parent)
 	AG_Box         *tbox;
 	AG_Box         *box;
 	AG_Label       *label;
-	SDL_Surface    *sf;
+	AG_DataSource  *pngdata;
 	AG_AgarVersion  agv;
 
 	tbox = AG_BoxNewHoriz(parent, 0);
 
 	box = AG_BoxNewHoriz(tbox, 0);
-	sf = IMG_Load_RW(SDL_RWFromConstMem(icon_odalaunch_96, sizeof(icon_odalaunch_96)), 1);
-	if(sf)
-		AG_PixmapFromSurface(box, AG_PIXMAP_EXPAND, AG_SurfaceFromSDL(sf));
+
+	if((pngdata = AG_OpenConstCore(icon_odalaunch_96, sizeof(icon_odalaunch_96))) != NULL)
+	{
+		AG_PixmapFromSurface(box, AG_PIXMAP_EXPAND, AG_ReadSurfaceFromPNG(pngdata));
+		AG_CloseDataSource(pngdata);
+	}
 
 	box = AG_BoxNewVert(tbox, 0);
 	label = AG_LabelNewS(box, AG_LABEL_HFILL, "The Odamex Launcher");
