@@ -27,6 +27,7 @@
 #include <wx/fileconf.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/clipbrd.h>
+#include <wx/dataobj.h>
 
 using namespace odalpapi;
 
