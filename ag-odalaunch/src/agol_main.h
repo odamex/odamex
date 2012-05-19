@@ -153,6 +153,7 @@ private:
 	void           StopServerListPoll();
 
 	// Interface Creation Functions
+	void           LoadResources();
 	AG_Menu       *CreateMainMenu(void *parent);
 	ODA_ButtonBox *CreateMainButtonBox(void *parent);
 	AG_Pane       *CreateMainListPane(void *parent);
@@ -206,6 +207,10 @@ private:
 
 	bool                      StartupQuery;
 	bool                      WindowExited;
+
+	AG_Surface               *BulletRed;
+	AG_Surface               *BulletBlue;
+	AG_Surface               *SpectatorIcon;
 };
 
 } // namespace

@@ -56,13 +56,16 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 	SoloGameDialog(NULL), CloseSoloGameHandler(NULL),
 	AboutDialog(NULL), CloseAboutHandler(NULL),
 	ManualDialog(NULL), CloseManualHandler(NULL),
-	QServer(NULL), WindowExited(false)
+	QServer(NULL), WindowExited(false),
+	BulletRed(NULL), BulletBlue(NULL), SpectatorIcon(NULL)
 {
 	// Create the Agar window. If we are using a single-window display driver (sdlfb, sdlgl) 
 	// make the window plain (no window decorations). No flags for multi-window drivers (glx, wgl)
 	MainWindow = AG_WindowNewNamedS(agDriverSw ? AG_WINDOW_PLAIN : 0, "MainWindow");
 	AG_WindowSetGeometryAligned(MainWindow, AG_WINDOW_MC, width, height);
 	AG_WindowSetCaptionS(MainWindow, "The Odamex Launcher");
+
+	LoadResources();
 
 	// Create the components of the main window
 	MainMenu = CreateMainMenu(MainWindow);
@@ -120,6 +123,42 @@ AGOL_MainWindow::~AGOL_MainWindow()
 
 	delete MainStatusbar;
 	delete MainButtonBox;
+
+	if(BulletRed)
+		free(BulletRed);
+	if(BulletBlue)
+		free(BulletBlue);
+	if(SpectatorIcon)
+		free(SpectatorIcon);
+}
+
+void AGOL_MainWindow::LoadResources()
+{
+	SDL_Surface *sf;
+
+	// Red Bullet
+	sf = IMG_Load_RW(SDL_RWFromConstMem(bullet_red16x15, sizeof(bullet_red16x15)), 1);
+	if(sf)
+	{
+		BulletRed = AG_SurfaceFromSDL(sf);
+		free(sf);
+	}
+
+	// Blue Bullet
+	sf = IMG_Load_RW(SDL_RWFromConstMem(bullet_blue16x15, sizeof(bullet_blue16x15)), 1);
+	if(sf)
+	{
+		BulletBlue = AG_SurfaceFromSDL(sf);
+		free(sf);
+	}
+
+	// Spectator Icon
+	sf = IMG_Load_RW(SDL_RWFromConstMem(spectatorico, sizeof(spectatorico)), 1);
+	if(sf)
+	{
+		SpectatorIcon = AG_SurfaceFromSDL(sf);
+		free(sf);
+	}
 }
 
 AG_Menu *AGOL_MainWindow::CreateMainMenu(void *parent)
@@ -296,12 +335,14 @@ AG_Table *AGOL_MainWindow::CreatePlayerList(void *parent)
 
 	AG_WidgetSetFocusable(list, 0);
 
+	AG_TableAddCol(list, "", "19px", NULL);
 	AG_TableAddCol(list, "Player Name", "175px", NULL);
 	AG_TableAddCol(list, "Ping", "<  Ping  >", NULL);
 	AG_TableAddCol(list, "Time", "<  Time  >", NULL);
 	AG_TableAddCol(list, "Frags", "<  Frags  >", NULL);
 	AG_TableAddCol(list, "Kill Count", "<  Kill Count  >", NULL);
 	AG_TableAddCol(list, "Death Count", "<  Death Count  >", NULL);
+	AG_TableAddCol(list, "", "19px", NULL);
 
 	return list;
 }
@@ -383,7 +424,10 @@ AG_Button *AGOL_MainWindow::CreateButton(void *parent, const char *label,
 
 	sf = IMG_Load_RW(SDL_RWFromConstMem(icon, iconsize), 1);
 	if(sf)
+	{
 		AG_ButtonSurface(button, AG_SurfaceFromSDL(sf));
+		free(sf);
+	}
 	else
 		cerr << "Failed to load icon: " << IMG_GetError() << endl;
 
@@ -540,17 +584,55 @@ void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
 	{
 		for(size_t i = 0; i < QServer[serverNdx].Info.Players.size(); i++)
 		{
+			AG_Pixmap *team = NULL;
+			AG_Pixmap *spec = NULL;
+
 			string name = " ";
 	
 			if(QServer[serverNdx].Info.Players[i].Name.size())
 				name = QServer[serverNdx].Info.Players[i].Name;
 
-			AG_TableAddRow(PlayerList, "%s:%u:%u:%i:%u:%u", name.c_str(), 
+			// Team pixmap
+			if(QServer[serverNdx].Info.GameType == GT_TeamDeathmatch || 
+			   QServer[serverNdx].Info.GameType == GT_CaptureTheFlag)
+			{
+				switch(QServer[serverNdx].Info.Players[i].Team == 0)
+				{
+					case 0:
+						team = AG_PixmapFromSurfaceCopy(NULL, 0, BulletRed);
+						break;
+					case 1:
+						team = AG_PixmapFromSurfaceCopy(NULL, 0, BulletBlue);
+						break;
+					default:
+						break;
+				}
+			}
+
+			// No team - create an empty pixmap
+			if(!team)
+			{
+				team = AG_PixmapNew(NULL, 0, 16, 16);
+			}
+
+			// Spectator pixmap
+			if(QServer[serverNdx].Info.Players[i].Spectator)
+			{
+				spec = AG_PixmapFromSurfaceCopy(NULL, 0, SpectatorIcon);
+			}
+			else
+			{
+				spec = AG_PixmapNew(NULL, 0, 16, 16);
+			}
+
+			AG_TableAddRow(PlayerList, "%[W]:%s:%u:%u:%i:%u:%u:%[W]",
+			                     spec, name.c_str(), 
 			                     QServer[serverNdx].Info.Players[i].Ping,
 			                     QServer[serverNdx].Info.Players[i].Time,
 			                     QServer[serverNdx].Info.Players[i].Frags,
 			                     QServer[serverNdx].Info.Players[i].Kills,
-			                     QServer[serverNdx].Info.Players[i].Deaths);
+			                     QServer[serverNdx].Info.Players[i].Deaths,
+			                     team);
 		}
 	}
 
