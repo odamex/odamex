@@ -6,9 +6,9 @@
 		<title>The Odamex Launcher</title>
 		<centered>1</centered>
 		<aui_managed>0</aui_managed>
-		<object class="wxMenuBar">
-			<label></label>
-			<object class="wxMenu">
+		<object class="wxMenuBar" name="8">
+			<label>8</label>
+			<object class="wxMenu" name="1">
 				<label>File</label>
 				<object class="wxMenuItem" name="wxID_PREFERENCES">
 					<label>Settings</label>
@@ -20,7 +20,7 @@
 					<help>Exit the launcher</help>
 				</object>
 			</object>
-			<object class="wxMenu">
+			<object class="wxMenu" name="6">
 				<label>Action</label>
 				<object class="wxMenuItem" name="Id_MnuItmLaunch">
 					<label>Connect</label>
@@ -44,7 +44,7 @@
 					<help>Get a new list of servers</help>
 				</object>
 			</object>
-			<object class="wxMenu">
+			<object class="wxMenu" name="2">
 				<label>Tools</label>
 				<object class="wxMenu">
 					<label>OdaGet</label>
@@ -60,7 +60,7 @@
 					</object>
 				</object>
 			</object>
-			<object class="wxMenu">
+			<object class="wxMenu" name="3">
 				<label>Advanced</label>
 				<object class="wxMenuItem" name="Id_MnuItmManualConnect">
 					<label>Manual Connect</label>
@@ -71,7 +71,7 @@
 					<help>Set-up Custom Servers</help>
 				</object>
 			</object>
-			<object class="wxMenu">
+			<object class="wxMenu" name="4">
 				<label>Help</label>
 				<object class="wxMenuItem" name="Id_MnuItmVisitWebsite">
 					<label>Website</label>
@@ -1126,7 +1126,7 @@
 											<flag>wxALIGN_CENTER|wxALL</flag>
 											<border>5</border>
 											<object class="wxStaticText" name="Id_StcTxtCopyright">
-												<label>Copyright (C) 2006-2012 by The Odamex Team.</label>
+												<label>Copyright (C) 2006-2012 The Odamex Team</label>
 												<wrap>-1</wrap>
 											</object>
 										</object>
@@ -1266,6 +1266,13 @@
 					</object>
 				</object>
 			</object>
+		</object>
+	</object>
+	<object class="wxMenu" name="Id_mnuServersPopup">
+		<label>Action</label>
+		<object class="wxMenuItem" name="Id_mnuServersCopyAddress">
+			<label>Copy Server Address</label>
+			<help>Copies the selected servers address</help>
 		</object>
 	</object>
 </resource>

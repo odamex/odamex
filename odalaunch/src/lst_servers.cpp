@@ -26,10 +26,17 @@
 
 #include <wx/fileconf.h>
 #include <wx/xrc/xmlres.h>
+#include <wx/clipbrd.h>
 
 using namespace odalpapi;
 
 IMPLEMENT_DYNAMIC_CLASS(LstOdaServerList, wxAdvancedListCtrl)
+
+BEGIN_EVENT_TABLE(LstOdaServerList, wxAdvancedListCtrl)
+    EVT_CONTEXT_MENU(LstOdaServerList::OnOpenContextMenu)
+
+    EVT_MENU(XRCID("Id_mnuServersCopyAddress"), LstOdaServerList::OnCopyAddress)
+END_EVENT_TABLE()
 
 /* XPM */
 static const char *padlock_xpm[] = 
@@ -215,6 +222,43 @@ static int ImageList_PingGreen = -1;
 static int ImageList_PingOrange = -1;
 static int ImageList_PingRed = -1;
 static int ImageList_PingGray = -1;
+
+LstOdaServerList::LstOdaServerList()
+{
+     m_mnuPopup = wxXmlResource::Get()->LoadMenu(wxT("Id_mnuServersPopup"));
+}
+
+void LstOdaServerList::OnCopyAddress(wxCommandEvent& event)
+{
+    wxListItem li;
+    long item = -1;
+
+    li.m_mask = wxLIST_MASK_TEXT;
+    li.m_itemId = GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);;
+
+    if (li.m_itemId == -1)
+        return;
+
+    li.m_col = (int)serverlist_field_address;
+
+    GetItem(li);
+
+    if (wxTheClipboard->Open())
+    {
+        wxTheClipboard->SetData( new wxTextDataObject(li.m_text) );
+        wxTheClipboard->Close();
+    }   
+}
+
+void LstOdaServerList::OnOpenContextMenu(wxContextMenuEvent& event)
+{
+    wxPoint MousePosition = event.GetPosition();
+
+    if (MousePosition == wxDefaultPosition)
+        MousePosition = wxGetMousePosition();
+
+    PopupMenu(m_mnuPopup, ScreenToClient(MousePosition));
+}
 
 void LstOdaServerList::SetupServerListColumns()
 {
