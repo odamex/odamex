@@ -598,7 +598,7 @@ void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
 			if(QServer[serverNdx].Info.GameType == GT_TeamDeathmatch || 
 			   QServer[serverNdx].Info.GameType == GT_CaptureTheFlag)
 			{
-				switch(QServer[serverNdx].Info.Players[i].Team == 0)
+				switch(QServer[serverNdx].Info.Players[i].Team)
 				{
 					case 0:
 						team = AG_PixmapFromSurfaceCopy(NULL, 0, BulletRed);
