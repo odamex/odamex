@@ -63,6 +63,7 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 	AG_WindowSetGeometryAligned(MainWindow, AG_WINDOW_MC, width, height);
 	AG_WindowSetCaptionS(MainWindow, "The Odamex Launcher");
 
+	// Load interface resources
 	LoadResources();
 
 	// Create the components of the main window
@@ -79,6 +80,10 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 	// within the single window space.
 	if(agDriverSw)
 		AG_WindowMaximize(MainWindow);
+
+	// Add the show event
+	AG_AddEvent(MainWindow, "window-shown", EventReceiver, "%p", 
+		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnShow));
 
 	// Set the window close action
 	AG_WindowSetCloseAction(MainWindow, AG_WINDOW_DETACH);
@@ -331,12 +336,12 @@ AG_Table *AGOL_MainWindow::CreatePlayerList(void *parent)
 	AG_WidgetSetFocusable(list, 0);
 
 	AG_TableAddCol(list, "", "19px", NULL);
-	AG_TableAddCol(list, "Player Name", "175px", NULL);
+	AG_TableAddCol(list, "Player Name", "150px", NULL);
 	AG_TableAddCol(list, "Ping", "<  Ping  >", NULL);
 	AG_TableAddCol(list, "Time", "<  Time  >", NULL);
 	AG_TableAddCol(list, "Frags", "<  Frags  >", NULL);
-	AG_TableAddCol(list, "Kill Count", "<  Kill Count  >", NULL);
-	AG_TableAddCol(list, "Death Count", "<  Death Count  >", NULL);
+	AG_TableAddCol(list, "Kills", "<  Kills >", NULL);
+	AG_TableAddCol(list, "Deaths", "<  Deaths >", NULL);
 	AG_TableAddCol(list, "", "19px", NULL);
 
 	return list;
@@ -725,6 +730,8 @@ void AGOL_MainWindow::UpdateServInfoList(int serverNdx)
 	}
 	
 	QServer[serverNdx].Unlock();
+
+	AutoSizeTableColumn(ServInfoList, 0);
 }
 
 void AGOL_MainWindow::UpdateQueriedLabelTotal(int total)
@@ -793,6 +800,57 @@ void AGOL_MainWindow::StartServerListPoll()
 void AGOL_MainWindow::StopServerListPoll()
 {
 	AG_TableSetPollInterval(ServerList, 0);
+}
+
+// This begs for a custom table widget
+void AGOL_MainWindow::AutoSizeTableColumn(AG_Table *table, int col)
+{
+	int maxpx = 0;
+
+	if(table->n <= col)
+	{
+		return;
+	}
+
+	for(int row = 0; row < table->m; ++row)
+	{
+		AG_TableCell *cell = AG_TableGetCell(table, row, col);
+
+		switch(cell->type)
+		{
+			case AG_CELL_STRING:
+			{
+				if(cell && cell->data.s)
+				{
+					int txtsize;
+			
+					AG_TextSize(cell->data.s, &txtsize, NULL);
+
+					if(txtsize > maxpx)
+					{
+						maxpx = txtsize;
+					}
+				}
+				break;
+			}
+			default:
+				break;
+		}
+	}
+
+	AG_ObjectLock(table);
+
+	if(maxpx > table->wColDefault)
+	{
+		table->cols[0].w = maxpx + 2;
+	}
+	else
+	{
+		table->cols[0].w = table->wColDefault;
+	}
+
+	AG_ObjectUnlock(table);
+	AG_WidgetUpdate(table);
 }
 
 //*************************//
@@ -876,6 +934,11 @@ void AGOL_MainWindow::OnCloseManualDialog(AG_Event *event)
 
 	delete ManualDialog;
 	ManualDialog = NULL;
+}
+
+void AGOL_MainWindow::OnShow(AG_Event *event)
+{
+	AG_TableSetDefaultColWidth(ServInfoList, ServInfoList->cols[0].w);
 }
 
 void AGOL_MainWindow::OnExit(AG_Event *event)

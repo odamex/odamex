@@ -117,6 +117,7 @@ private:
 	void OnCloseSoloGameDialog(AG_Event *event);
 	void OnManualConnect(AG_Event *event);
 	void OnCloseManualDialog(AG_Event *event);
+	void OnShow(AG_Event *event);
 	void OnExit(AG_Event *event);
 	void OnLaunch(AG_Event *event);
 	void OnRefreshSelected(AG_Event *event);
@@ -152,6 +153,7 @@ private:
 	void           SetServerListRowCellFlags(int row);
 	void           StartServerListPoll();
 	void           StopServerListPoll();
+	void           AutoSizeTableColumn(AG_Table *table, int col);
 
 	// Interface Creation Functions
 	void           LoadResources();
