@@ -107,7 +107,7 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 	StopServerListPoll();
 
 	// If query master on start is configured post the event.
-	GuiConfig::Read("MasterOnStart", reinterpret_cast<uint8_t&>(StartupQuery));
+	GuiConfig::Read("MasterOnStart", StartupQuery);
 	if(StartupQuery)
 		AG_PostEvent(MainWindow, MainButtonBox->mlist, "button-pushed", NULL);
 
@@ -1105,6 +1105,7 @@ void AGOL_MainWindow::OnMouseOverWidget(AG_Event *event)
 void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 {
 	size_t serverCount;
+	bool   showBlocked;
 
 	// If we can't immediately get a lock on the
 	// master server don't update the list this tick.
@@ -1127,6 +1128,8 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 		return;
 	}
 
+	GuiConfig::Read("ShowBlockedServers", showBlocked);
+	
 	for(size_t i = 0; i < serverCount; ++i)
 	{
 		AG_Surface    *(*padlockFn)(void*,int,int) = NullSurfFn;
@@ -1147,15 +1150,18 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 
 		sAddr = QServer[i].GetAddress();
 
-		if(!QServer[i].GetPing())
+		if(!QServer[i].GetPing() || !QServer[i].Info.MaxClients)
 		{
 			QServer[i].Unlock();
 
-			// Display just the address for unqueried or unreachable servers
-			row = AG_TableAddRow(ServerList, "%[FS]::::::::%s", padlockFn, sAddr.c_str());
+			if(showBlocked)
+			{
+				// Display just the address for unqueried or unreachable servers
+				row = AG_TableAddRow(ServerList, "%[FS]::::::::%s", padlockFn, sAddr.c_str());
 
-			// Set the cell flags
-			SetServerListRowCellFlags(row);
+				// Set the cell flags
+				SetServerListRowCellFlags(row);
+			}
 
 			continue;
 		}

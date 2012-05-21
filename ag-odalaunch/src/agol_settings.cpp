@@ -93,7 +93,7 @@ ODA_SrvOptionsBox *AGOL_Settings::CreateSrvOptionsBox(void *parent)
 	obox->showBlockedCheck = AG_CheckboxNewInt(obox->optionsBox, 0, 
 			"Show blocked servers", &ShowBlocked);
 
-	// Read the options. If they are not set they will be 0.
+	// Read the options. If they are not set they will be disabled.
 	GuiConfig::Read("MasterOnStart", MasterOnStart);
 	GuiConfig::Read("ShowBlockedServers", ShowBlocked);
 
@@ -564,8 +564,11 @@ void AGOL_Settings::DirectorySelectorCancel(AG_Event *event)
 
 void AGOL_Settings::SaveServerOptions()
 {
-	GuiConfig::Write("MasterOnStart", MasterOnStart);
-	GuiConfig::Write("ShowBlockedServers", ShowBlocked);
+	bool mos = MasterOnStart;
+	bool sb = ShowBlocked;
+
+	GuiConfig::Write("MasterOnStart", mos);
+	GuiConfig::Write("ShowBlockedServers", sb);
 	GuiConfig::Write("MasterTimeout", MasterTimeout);
 	GuiConfig::Write("ServerTimeout", ServerTimeout);
 }
@@ -579,7 +582,7 @@ void AGOL_Settings::SaveGuiOptions()
 		driver = GuiOptionsBox->driverCombo->button->lbl->text;
 
 		if(driver && strlen(driver) > 0)
-			GuiConfig::Write("VideoDriver", driver);
+			GuiConfig::Write("VideoDriver", string(driver));
 
 		if(string(driver) != string(agDriverOps->name))
 			AG_TextMsgS(AG_MSG_INFO, "The selected video driver will be\n"
@@ -590,7 +593,7 @@ void AGOL_Settings::SaveGuiOptions()
 void AGOL_Settings::SaveOdamexPath()
 {
 	if(OdamexPathLabel->text && strlen(OdamexPathLabel->text) > 0)
-		GuiConfig::Write("OdamexPath", OdamexPathLabel->text);
+		GuiConfig::Write("OdamexPath", string(OdamexPathLabel->text));
 	else
 		GuiConfig::Unset("OdamexPath");
 }

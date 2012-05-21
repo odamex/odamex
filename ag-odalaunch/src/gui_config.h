@@ -83,6 +83,18 @@ public:
 	static bool Write(const std::string &option, const std::string &value);
 
 	/**
+	Write a configuration option with a boolean value.
+
+	This method writes an option to the configuration with a boolean
+	value.
+
+	@param option The name of the option to set.
+	@param value A boolean value.
+	@return True if an error occurred, False if successful.
+	*/
+	static bool Write(const std::string &option, const bool &value);
+
+	/**
 	Write a configuration option with an 8-bit signed integer value.
 
 	This method writes an option to the configuration with an 8-bit signed
@@ -188,6 +200,18 @@ public:
 	@return True if an error occurred, False if successful.
 	*/
 	static bool Read(const std::string &option, std::string &value);
+
+	/**
+	Read a configuration option with a boolean value.
+
+	This method reads an option from the configuration with a boolean
+	value.
+
+	@param option The name of the option to read.
+	@param value A boolean to read the value into.
+	@return True if an error occurred, False if successful.
+	*/
+	static bool Read(const std::string &option, bool &value);
 
 	/**
 	Read a configuration option with an 8-bit signed integer value.

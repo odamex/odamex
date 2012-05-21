@@ -56,6 +56,17 @@ bool GuiConfig::Write(const string &option, const string &value)
 	return false;
 }
 
+bool GuiConfig::Write(const std::string &option, const bool &value)
+{
+	if(!option.size())
+		return true;
+
+	if(AG_SetUint8(agConfig, option.c_str(), value) == NULL)
+		return true;
+
+	return false;
+}
+
 bool GuiConfig::Write(const string &option, const int8_t &value)
 {
 	if(!option.size())
@@ -157,6 +168,16 @@ bool GuiConfig::Read(const string &option, string &value)
 	value = str;
 
 	free(str);
+
+	return false;
+}
+
+bool GuiConfig::Read(const std::string &option, bool &value)
+{
+	if(!option.size())
+		return true;
+
+	value = AG_GetUint8(agConfig, option.c_str());
 
 	return false;
 }
