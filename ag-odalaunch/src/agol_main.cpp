@@ -27,6 +27,7 @@
 #include <string>
 #include <algorithm>
 #include <sstream>
+#include <memory>
 
 #include <agar/core.h>
 #include <agar/gui.h>
@@ -49,11 +50,12 @@ using namespace std;
 
 namespace agOdalaunch {
 
-AG_Surface *AGOL_MainWindow::BulletRed = NULL;
-AG_Surface *AGOL_MainWindow::BulletBlue = NULL;
-AG_Surface *AGOL_MainWindow::SpectatorIcon = NULL;
-AG_Surface *AGOL_MainWindow::PadlockIcon = NULL;
-AG_Surface *AGOL_MainWindow::NullSurface = NULL;
+// Static Resources
+AG_SurfacePtr AGOL_MainWindow::BulletRed;
+AG_SurfacePtr AGOL_MainWindow::BulletBlue;
+AG_SurfacePtr AGOL_MainWindow::SpectatorIcon;
+AG_SurfacePtr AGOL_MainWindow::PadlockIcon;
+AG_SurfacePtr AGOL_MainWindow::NullSurface;
 
 AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 	SettingsDialog(NULL), CloseSettingsHandler(NULL),
@@ -131,13 +133,6 @@ AGOL_MainWindow::~AGOL_MainWindow()
 
 	delete MainStatusbar;
 	delete MainButtonBox;
-
-	if(BulletRed)
-		free(BulletRed);
-	if(BulletBlue)
-		free(BulletBlue);
-	if(SpectatorIcon)
-		free(SpectatorIcon);
 }
 
 void AGOL_MainWindow::LoadResources()
@@ -145,48 +140,48 @@ void AGOL_MainWindow::LoadResources()
 	AG_DataSource *pngdata;
 
 	// Red Bullet
-	if(!BulletRed)
+	if(!BulletRed.get())
 	{
 		if((pngdata = AG_OpenConstCore(bullet_red15x15, sizeof(bullet_red15x15))) != NULL)
 		{
-			BulletRed = AG_ReadSurfaceFromPNG(pngdata);
+			BulletRed = AG_SurfacePtr(AG_ReadSurfaceFromPNG(pngdata));
 			AG_CloseDataSource(pngdata);
 		}
 	}
 
 	// Blue Bullet
-	if(!BulletBlue)
+	if(!BulletBlue.get())
 	{
 		if((pngdata = AG_OpenConstCore(bullet_blue15x15, sizeof(bullet_blue15x15))) != NULL)
 		{
-			BulletBlue = AG_ReadSurfaceFromPNG(pngdata);
+			BulletBlue = AG_SurfacePtr(AG_ReadSurfaceFromPNG(pngdata));
 			AG_CloseDataSource(pngdata);
 		}
 	}
 
 	// Spectator Icon
-	if(!SpectatorIcon)
+	if(!SpectatorIcon.get())
 	{
 		if((pngdata = AG_OpenConstCore(spectatorico, sizeof(spectatorico))) != NULL)
 		{
-			SpectatorIcon = AG_ReadSurfaceFromPNG(pngdata);
+			SpectatorIcon = AG_SurfacePtr(AG_ReadSurfaceFromPNG(pngdata));
 			AG_CloseDataSource(pngdata);
 		}
 	}
 
 	// Padlock Icon
-	if(!PadlockIcon)
+	if(!PadlockIcon.get())
 	{
 		if((pngdata = AG_OpenConstCore(padlockico, sizeof(padlockico))) != NULL)
 		{
-			PadlockIcon = AG_ReadSurfaceFromPNG(pngdata);
+			PadlockIcon = AG_SurfacePtr(AG_ReadSurfaceFromPNG(pngdata));
 			AG_CloseDataSource(pngdata);
 		}
 	}
 
-	if(!NullSurface)
+	if(!NullSurface.get())
 	{
-		NullSurface = AG_SurfaceEmpty();
+		NullSurface = AG_SurfacePtr(AG_SurfaceEmpty());
 	}
 }
 
@@ -1538,27 +1533,27 @@ int AGOL_MainWindow::CellCompare(const void *p1, const void *p2)
 
 AG_Surface *AGOL_MainWindow::BulletRedSurfFn(void *tbl, int x, int y)
 {
-	return BulletRed;
+	return BulletRed.get();
 }
 
 AG_Surface *AGOL_MainWindow::BulletBlueSurfFn(void *tbl, int x, int y)
 {
-	return BulletBlue;
+	return BulletBlue.get();
 }
 
 AG_Surface *AGOL_MainWindow::SpectatorIconSurfFn(void *tbl, int x, int y)
 {
-	return SpectatorIcon;
+	return SpectatorIcon.get();
 }
 
 AG_Surface *AGOL_MainWindow::PadlockIconSurfFn(void *tbl, int x, int y)
 {
-	return PadlockIcon;
+	return PadlockIcon.get();
 }
 
 AG_Surface *AGOL_MainWindow::NullSurfFn(void *tbl, int x, int y)
 {
-	return NullSurface;
+	return NullSurface.get();
 }
 
 } // namespace

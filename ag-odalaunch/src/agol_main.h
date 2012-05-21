@@ -27,6 +27,7 @@
 #define _AGOL_MAIN_H
 
 #include <vector>
+#include <memory>
 
 #include "agol_settings.h"
 #include "agol_solo.h"
@@ -217,11 +218,12 @@ private:
 	bool                      StartupQuery;
 	bool                      WindowExited;
 
-	static AG_Surface        *BulletRed;
-	static AG_Surface        *BulletBlue;
-	static AG_Surface        *SpectatorIcon;
-	static AG_Surface        *PadlockIcon;
-	static AG_Surface        *NullSurface;
+	// Static Resources
+	static AG_SurfacePtr BulletRed;
+	static AG_SurfacePtr BulletBlue;
+	static AG_SurfacePtr SpectatorIcon;
+	static AG_SurfacePtr PadlockIcon;
+	static AG_SurfacePtr NullSurface;
 };
 
 } // namespace
