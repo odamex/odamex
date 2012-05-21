@@ -95,7 +95,7 @@ int*			texturetranslation;
 
 // [RH] Tutti-Frutti fix
 unsigned int	dc_mask;
-
+fixed_t			dc_textureheight;
 
 //
 // MAPTEXTURE_T CACHING
@@ -371,7 +371,8 @@ R_GetColumn
 	col &= texturewidthmask[tex];
 	lump = texturecolumnlump[tex][col];
 	ofs = texturecolumnofs[tex][col];
-	dc_mask = textureheightmask[tex];	
+	dc_mask = textureheightmask[tex];
+	dc_textureheight = textureheight[tex];
 
 	if (lump > 0)
 		return (byte *)W_CacheLumpNum(lump,PU_CACHE)+ofs;
