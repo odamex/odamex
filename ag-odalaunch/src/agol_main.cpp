@@ -49,13 +49,18 @@ using namespace std;
 
 namespace agOdalaunch {
 
+AG_Surface *AGOL_MainWindow::BulletRed = NULL;
+AG_Surface *AGOL_MainWindow::BulletBlue = NULL;
+AG_Surface *AGOL_MainWindow::SpectatorIcon = NULL;
+AG_Surface *AGOL_MainWindow::PadlockIcon = NULL;
+AG_Surface *AGOL_MainWindow::NullSurface = NULL;
+
 AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 	SettingsDialog(NULL), CloseSettingsHandler(NULL),
 	SoloGameDialog(NULL), CloseSoloGameHandler(NULL),
 	AboutDialog(NULL), CloseAboutHandler(NULL),
 	ManualDialog(NULL), CloseManualHandler(NULL),
-	QServer(NULL), WindowExited(false),
-	BulletRed(NULL), BulletBlue(NULL), SpectatorIcon(NULL)
+	QServer(NULL), WindowExited(false)
 {
 	// Create the Agar window. If we are using a single-window display driver (sdlfb, sdlgl) 
 	// make the window plain (no window decorations). No flags for multi-window drivers (glx, wgl)
@@ -140,24 +145,48 @@ void AGOL_MainWindow::LoadResources()
 	AG_DataSource *pngdata;
 
 	// Red Bullet
-	if((pngdata = AG_OpenConstCore(bullet_red16x15, sizeof(bullet_red16x15))) != NULL)
+	if(!BulletRed)
 	{
-		BulletRed = AG_ReadSurfaceFromPNG(pngdata);
-		AG_CloseDataSource(pngdata);
+		if((pngdata = AG_OpenConstCore(bullet_red15x15, sizeof(bullet_red15x15))) != NULL)
+		{
+			BulletRed = AG_ReadSurfaceFromPNG(pngdata);
+			AG_CloseDataSource(pngdata);
+		}
 	}
 
 	// Blue Bullet
-	if((pngdata = AG_OpenConstCore(bullet_blue16x15, sizeof(bullet_blue16x15))) != NULL)
+	if(!BulletBlue)
 	{
-		BulletBlue = AG_ReadSurfaceFromPNG(pngdata);
-		AG_CloseDataSource(pngdata);
+		if((pngdata = AG_OpenConstCore(bullet_blue15x15, sizeof(bullet_blue15x15))) != NULL)
+		{
+			BulletBlue = AG_ReadSurfaceFromPNG(pngdata);
+			AG_CloseDataSource(pngdata);
+		}
 	}
 
 	// Spectator Icon
-	if((pngdata = AG_OpenConstCore(spectatorico, sizeof(spectatorico))) != NULL)
+	if(!SpectatorIcon)
 	{
-		SpectatorIcon = AG_ReadSurfaceFromPNG(pngdata);
-		AG_CloseDataSource(pngdata);
+		if((pngdata = AG_OpenConstCore(spectatorico, sizeof(spectatorico))) != NULL)
+		{
+			SpectatorIcon = AG_ReadSurfaceFromPNG(pngdata);
+			AG_CloseDataSource(pngdata);
+		}
+	}
+
+	// Padlock Icon
+	if(!PadlockIcon)
+	{
+		if((pngdata = AG_OpenConstCore(padlockico, sizeof(padlockico))) != NULL)
+		{
+			PadlockIcon = AG_ReadSurfaceFromPNG(pngdata);
+			AG_CloseDataSource(pngdata);
+		}
+	}
+
+	if(!NullSurface)
+	{
+		NullSurface = AG_SurfaceEmpty();
 	}
 }
 
@@ -315,6 +344,7 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 		colSzSpec[i] << colW[i] << "px";
 	}
 
+	AG_TableAddCol(list, "", "18px", &AGOL_MainWindow::CellCompare);
 	AG_TableAddCol(list, "Server Name", colSzSpec[0].str().c_str(), NULL);
 	AG_TableAddCol(list, "Ping", colSzSpec[1].str().c_str(), NULL);
 	AG_TableAddCol(list, "Players", colSzSpec[2].str().c_str(), &AGOL_MainWindow::CellCompare);
@@ -323,6 +353,10 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 	AG_TableAddCol(list, "Type", colSzSpec[5].str().c_str(), NULL);
 	AG_TableAddCol(list, "Game IWAD", colSzSpec[6].str().c_str(), NULL);
 	AG_TableAddCol(list, "Address : Port", colSzSpec[7].str().c_str(), NULL);
+
+	// Add an update event that we can schedule without enabling polling
+	AG_SetEvent(list, "update-items", EventReceiver, "%p", 
+			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::UpdateServerList));
 
 	return list;
 }
@@ -335,14 +369,14 @@ AG_Table *AGOL_MainWindow::CreatePlayerList(void *parent)
 
 	AG_WidgetSetFocusable(list, 0);
 
-	AG_TableAddCol(list, "", "19px", NULL);
+	AG_TableAddCol(list, "", "18px", &AGOL_MainWindow::CellCompare);
 	AG_TableAddCol(list, "Player Name", "150px", NULL);
 	AG_TableAddCol(list, "Ping", "<  Ping  >", NULL);
 	AG_TableAddCol(list, "Time", "<  Time  >", NULL);
 	AG_TableAddCol(list, "Frags", "<  Frags  >", NULL);
 	AG_TableAddCol(list, "Kills", "<  Kills >", NULL);
 	AG_TableAddCol(list, "Deaths", "<  Deaths >", NULL);
-	AG_TableAddCol(list, "", "19px", NULL);
+	AG_TableAddCol(list, "", "18px", &AGOL_MainWindow::CellCompare);
 
 	return list;
 }
@@ -495,7 +529,7 @@ string AGOL_MainWindow::GetAddrFromServerListRow(int row)
 {
 	AG_TableCell *cell = NULL;
 
-	cell = AG_TableGetCell(ServerList, row, 7);
+	cell = AG_TableGetCell(ServerList, row, ServerList->n-1);
 
 	// Row has no address field data
 	if(!cell || !cell->data.s)
@@ -586,10 +620,9 @@ void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
 	{
 		for(size_t i = 0; i < QServer[serverNdx].Info.Players.size(); i++)
 		{
-			AG_Pixmap *team = NULL;
-			AG_Pixmap *spec = NULL;
-
-			string name = " ";
+			AG_Surface *(*teamFn)(void*,int,int) = NullSurfFn;
+			AG_Surface *(*specFn)(void*,int,int) = NullSurfFn;
+			string      name = " ";
 	
 			if(QServer[serverNdx].Info.Players[i].Name.size())
 				name = QServer[serverNdx].Info.Players[i].Name;
@@ -601,40 +634,30 @@ void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
 				switch(QServer[serverNdx].Info.Players[i].Team)
 				{
 					case 0:
-						team = AG_PixmapFromSurfaceCopy(NULL, 0, BulletRed);
+						teamFn = BulletRedSurfFn;
 						break;
 					case 1:
-						team = AG_PixmapFromSurfaceCopy(NULL, 0, BulletBlue);
+						teamFn = BulletBlueSurfFn;
 						break;
 					default:
 						break;
 				}
 			}
 
-			// No team - create an empty pixmap
-			if(!team)
-			{
-				team = AG_PixmapNew(NULL, 0, 16, 16);
-			}
-
 			// Spectator pixmap
 			if(QServer[serverNdx].Info.Players[i].Spectator)
 			{
-				spec = AG_PixmapFromSurfaceCopy(NULL, 0, SpectatorIcon);
-			}
-			else
-			{
-				spec = AG_PixmapNew(NULL, 0, 16, 16);
+				specFn = SpectatorIconSurfFn;
 			}
 
-			AG_TableAddRow(PlayerList, "%[W]:%s:%u:%u:%i:%u:%u:%[W]",
-			                     spec, name.c_str(), 
+			AG_TableAddRow(PlayerList, "%[FS]:%s:%u:%u:%i:%u:%u:%[FS]",
+			                     specFn, name.c_str(), 
 			                     QServer[serverNdx].Info.Players[i].Ping,
 			                     QServer[serverNdx].Info.Players[i].Time,
 			                     QServer[serverNdx].Info.Players[i].Frags,
 			                     QServer[serverNdx].Info.Players[i].Kills,
 			                     QServer[serverNdx].Info.Players[i].Deaths,
-			                     team);
+			                     teamFn);
 		}
 	}
 
@@ -997,7 +1020,7 @@ void AGOL_MainWindow::OnRefreshSelected(AG_Event *event)
 
 	QuerySingleServer(&QServer[ndx]);
 
-	UpdateServerList(NULL);
+	AG_SchedEvent(MainWindow, ServerList, 0, "update-items", NULL);
 	UpdatePlayerList(ndx);
 	UpdateServInfoList(ndx);
 }
@@ -1104,17 +1127,18 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 		return;
 	}
 
-	for(size_t i = 0; i < serverCount; i++)
+	for(size_t i = 0; i < serverCount; ++i)
 	{
-		ostringstream plyrCnt;
-		string        name = " ";
-		string        iwad = " ";
-		string        sAddr = " "; 
-		string        map;
-		string        pwads;
-		string        gametype;
-		size_t        wadCnt = 0;
-		int           row;
+		AG_Surface    *(*padlockFn)(void*,int,int) = NullSurfFn;
+		ostringstream  plyrCnt;
+		string         name = " ";
+		string         iwad = " ";
+		string         sAddr = " "; 
+		string         map;
+		string         pwads;
+		string         gametype;
+		size_t         wadCnt = 0;
+		int            row;
 		
 		// If we can't immediately get a lock on this server
 		// move on to the next one.
@@ -1128,7 +1152,7 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 			QServer[i].Unlock();
 
 			// Display just the address for unqueried or unreachable servers
-			row = AG_TableAddRow(ServerList, ":::::::%s", sAddr.c_str());
+			row = AG_TableAddRow(ServerList, "%[FS]::::::::%s", padlockFn, sAddr.c_str());
 
 			// Set the cell flags
 			SetServerListRowCellFlags(row);
@@ -1191,9 +1215,15 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 				gametype = "Unknown";
 		}
 
-		row = AG_TableAddRow(ServerList, "%s:%u:%s:%s:%s:%s:%s:%s", name.c_str(), QServer[i].GetPing(), 
-		                                             plyrCnt.str().c_str(), pwads.c_str(), map.c_str(), 
-		                                                 gametype.c_str(), iwad.c_str(), sAddr.c_str());
+		if(QServer[i].Info.PasswordHash.size())
+		{
+			padlockFn = PadlockIconSurfFn;
+		}
+
+		row = AG_TableAddRow(ServerList, "%[FS]:%s:%u:%s:%s:%s:%s:%s:%s", padlockFn, name.c_str(),
+		                                             QServer[i].GetPing(), plyrCnt.str().c_str(),
+		                                             pwads.c_str(), map.c_str(), gametype.c_str(),
+		                                             iwad.c_str(), sAddr.c_str());
 
 		// Set the cell flags
 		SetServerListRowCellFlags(row);
@@ -1225,11 +1255,11 @@ void AGOL_MainWindow::SaveWidgetStates(AG_Event *event)
 	GuiConfig::Write("MainWindow-Height", MainWindow->r.h);
 
 	// Save server list column sizes
-	for(int i = 0; i < ServerList->n; i++)
+	for(int i = 1; i < ServerList->n; i++)
 	{
 		ostringstream colOption;
 
-		colOption << "SrvListColW_" << i;
+		colOption << "SrvListColW_" << i - 1;
 		GuiConfig::Write(colOption.str(), ServerList->cols[i].w);
 	}
 }
@@ -1393,7 +1423,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	StopServerListPoll();
 
 	// Issue a final update in case polling disabled before the final servers could be updated
-	UpdateServerList(NULL);
+	AG_SchedEvent(MainWindow, ServerList, 0, "update-items", NULL);
 
 	selectedNdx = GetSelectedServerArrayIndex();
 
@@ -1458,9 +1488,68 @@ int AGOL_MainWindow::CellCompare(const void *p1, const void *p2)
 
 			return c1_plyrtot - c2_plyrtot;
 		}
+		case AG_CELL_FN_SU_NODUP:
+		{
+			int compval[2] = {-1, -1};
+
+			if(!c1->fnSu)
+				return -1;
+
+			if(!c2->fnSu)
+				return 1;
+
+			if(c1->fnSu == BulletBlueSurfFn ||
+			   c1->fnSu == SpectatorIconSurfFn ||
+			   c1->fnSu == PadlockIconSurfFn)
+			{
+				compval[0] = 0;
+			}
+			else if(c1->fnSu == BulletRedSurfFn)
+			{
+				compval[0] = 1;
+			}
+				
+			if(c2->fnSu == BulletBlueSurfFn ||
+			   c2->fnSu == SpectatorIconSurfFn ||
+			   c2->fnSu == PadlockIconSurfFn)
+			{
+				compval[1] = 0;
+			}
+			else if(c2->fnSu == BulletRedSurfFn)
+			{
+				compval[1] = 1;
+			}
+
+			return compval[0] - compval[1];
+		}
 		default:
 			return 1;
 	}
+}
+
+AG_Surface *AGOL_MainWindow::BulletRedSurfFn(void *tbl, int x, int y)
+{
+	return BulletRed;
+}
+
+AG_Surface *AGOL_MainWindow::BulletBlueSurfFn(void *tbl, int x, int y)
+{
+	return BulletBlue;
+}
+
+AG_Surface *AGOL_MainWindow::SpectatorIconSurfFn(void *tbl, int x, int y)
+{
+	return SpectatorIcon;
+}
+
+AG_Surface *AGOL_MainWindow::PadlockIconSurfFn(void *tbl, int x, int y)
+{
+	return PadlockIcon;
+}
+
+AG_Surface *AGOL_MainWindow::NullSurfFn(void *tbl, int x, int y)
+{
+	return NullSurface;
 }
 
 } // namespace

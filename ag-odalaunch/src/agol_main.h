@@ -180,6 +180,12 @@ private:
 	static bool CvarCompare(const Cvar_t &a, const Cvar_t &b);
 	static int  CellCompare(const void *p1, const void *p2);
 
+	static AG_Surface        *BulletRedSurfFn(void *tbl, int x, int y);
+	static AG_Surface        *BulletBlueSurfFn(void *tbl, int x, int y);
+	static AG_Surface        *SpectatorIconSurfFn(void *tbl, int x, int y);
+	static AG_Surface        *PadlockIconSurfFn(void *tbl, int x, int y);
+	static AG_Surface        *NullSurfFn(void *tbl, int x, int y);
+
 	// Interface Components
 	AG_Window                *MainWindow;
 	AG_Menu                  *MainMenu;
@@ -211,9 +217,11 @@ private:
 	bool                      StartupQuery;
 	bool                      WindowExited;
 
-	AG_Surface               *BulletRed;
-	AG_Surface               *BulletBlue;
-	AG_Surface               *SpectatorIcon;
+	static AG_Surface        *BulletRed;
+	static AG_Surface        *BulletBlue;
+	static AG_Surface        *SpectatorIcon;
+	static AG_Surface        *PadlockIcon;
+	static AG_Surface        *NullSurface;
 };
 
 } // namespace
