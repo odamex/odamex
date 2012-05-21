@@ -897,6 +897,9 @@ void AGOL_MainWindow::OnCloseSettingsDialog(AG_Event *event)
 
 	delete SettingsDialog;
 	SettingsDialog = NULL;
+
+	// Update the server list in case the "show blocked servers" option changed.
+	AG_SchedEvent(MainWindow, ServerList, 0, "update-items", NULL);
 }
 
 void AGOL_MainWindow::OnAbout(AG_Event *event)
