@@ -1423,7 +1423,7 @@ bool P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove)
 		if (plane->c < STEEPSLOPE)
 		{
 			// Can't climb up slopes of ~45 degrees or more
-			if (actor->flags & MF_NOCLIP)
+			if (actor->flags & MF_NOCLIP || (actor->player && actor->player->spectator))
 				return true;
 			else
 			{

@@ -444,7 +444,8 @@ void P_MoveActor(AActor *mo)
     fixed_t minmom;
 	
 	// [RH] If standing on a steep slope, fall down it
-	if (!(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) && mo->momz <= 0 &&
+	if (!(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) && 
+		!(mo->player && mo->player->spectator) && mo->momz <= 0 &&
 		mo->floorz == mo->z && mo->floorsector && 
 		mo->floorsector->floorplane.c < STEEPSLOPE &&
 		P_FloorHeight(mo->x, mo->y, mo->floorsector) <= mo->floorz)
