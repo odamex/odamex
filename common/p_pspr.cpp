@@ -79,32 +79,6 @@ const char *weaponnames[] =
 // key is the player's id, with the value being psp->sy.
 std::map<byte, fixed_t> weapon_ypos;
 
-void P_SetWeaponPreference(player_t *player, int slot, weapontype_t weapon)
-{
-	weapontype_t *prefs = player->userinfo.weapon_prefs;
-
-	if (weapon < 0 || weapon >= NUMWEAPONS)
-		return;
-
-	Printf(PRINT_HIGH, "DEBUG: Setting weapon slot %d to weapon %d\n", slot, weapon);
-
-	// search weapon list for the slot that already has this weapon
-	for (size_t i = 0; i < NUMWEAPONS; i++)
-	{
-		if (prefs[i] == weapon && slot != (int)i)
-		{
-			// swap this with slot's old value
-			Printf(PRINT_HIGH, "prefs[slot] (%d) = %d, prefs[i] (%d) = %d\n", slot, prefs[slot], i, prefs[i]);
-			prefs[i] = prefs[slot];
-			break;
-		}
-	}
-
-	prefs[slot] = weapon;
-	Printf(PRINT_HIGH, "prefs[slot] (%d) = %d\n", slot, prefs[slot]);
-}
-
-
 //
 // P_CalculateBobXPosition
 //
@@ -453,7 +427,7 @@ static void DecreaseAmmo(player_t *player, int amount)
 				player->maxammo[ammonum - NUMAMMO] -= amount;
 			}
 		}
-	}
+	}	
 }
 
 //

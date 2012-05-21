@@ -164,6 +164,7 @@ EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
 EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
 EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
 EXTERN_CVAR (m_filter)
+EXTERN_CVAR (cl_predictpickup)
 
 CVAR_FUNC_IMPL(cl_mouselook)
 {
@@ -505,9 +506,12 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 
 	// [SL] 2012-03-31 - Let the server know when the client is predicting a
 	// weapon change due to a weapon pickup
-	if (!cmd->ucmd.impulse && !(cmd->ucmd.buttons & BT_CHANGE) &&
-		consoleplayer().pendingweapon != wp_nochange)
-		cmd->ucmd.impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
+	if (!serverside && cl_predictpickup)
+	{
+		if (!cmd->ucmd.impulse && !(cmd->ucmd.buttons & BT_CHANGE) &&
+			consoleplayer().pendingweapon != wp_nochange)
+			cmd->ucmd.impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
+	}
 
 	if (strafe || lookstrafe)
 		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);

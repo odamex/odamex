@@ -65,7 +65,6 @@ EXTERN_CVAR (cl_weaponpref9)
 
 void CL_RefreshWeaponPreferenceCvars();
 void CL_PrepareWeaponPreferenceUserInfo();
-void P_SetWeaponPreference(player_t *player, int slot, weapontype_t weapon);
 void CL_SetWeaponPreferenceCvar(int slot, weapontype_t weapon);
 
 enum
