@@ -870,8 +870,8 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 						{
 							if (thingblocker == NULL ||	BlockingMobj->z > thingblocker->z)
 								thingblocker = BlockingMobj;
-
-							robin = BlockingMobj->bnext;
+							
+							robin = BlockingMobj->bmapnode.Next(bx, by);
 							BlockingMobj = NULL;
 						}
 						else if (thing->player &&
@@ -886,7 +886,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 							// Nothing is blocking us, but this actor potentially could
 							// if there is something else to step on.
 							fakedblocker = BlockingMobj;
-							robin = BlockingMobj->bnext;
+							robin = BlockingMobj->bmapnode.Next(bx, by);
 							BlockingMobj = NULL;
 						}
 						else

@@ -1057,7 +1057,7 @@ static BOOL CheckMobjBlocking (seg_t *seg, polyobj_t *po)
 	{
 		for (i = left; i <= right; i++)
 		{
-			for (mobj = blocklinks[j+i]; mobj; mobj = mobj->bnext)
+			for (mobj = blocklinks[j+i]; mobj; mobj = mobj->bmapnode.Next(i, j/bmapwidth))
 			{
 				if (mobj->flags&MF_SOLID || mobj->player)
 				{

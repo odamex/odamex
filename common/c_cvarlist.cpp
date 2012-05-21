@@ -147,6 +147,10 @@ CVAR (co_boomlinecheck, "0", "additional checks are made on two-sided lines, all
 CVAR (co_level8soundfeature, "0", "Enable/disable the \"level 8 full sound at far distances\" feature", 
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+// Fix the blockmap collision bug
+CVAR (co_blockmapfix, "0", "Fix the blockmap collision bug",
+      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 // Enable/disable zdoom-based gravity and physics interactions
 CVAR (co_zdoomphys, "0", "Enable/disable zdoom-based gravity and physics interactions", 
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)

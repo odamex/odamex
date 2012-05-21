@@ -35,6 +35,125 @@
 // State.
 #include "r_state.h"
 
+EXTERN_CVAR (co_blockmapfix)
+
+AActor::ActorBlockMapListNode::ActorBlockMapListNode(AActor *mo) :
+	actor(mo)
+{
+	clear();
+}
+
+void AActor::ActorBlockMapListNode::Link()
+{
+	int left    = (actor->x - actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
+	int right   = (actor->x + actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
+	int top     = (actor->y - actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
+	int bottom  = (actor->y + actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
+
+	if (!co_blockmapfix)
+	{
+		// originally Doom only used the block containing the center point
+		// of the actor even if the actor overlapped into other blocks
+		top = bottom = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
+		left = right = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
+	}
+
+	originx = left;
+	originy = top;
+	blockcntx = right - left + 1;
+	blockcnty = bottom - top + 1;
+	
+	if (left >= 0 && right < bmapwidth && top >= 0 && bottom < bmapheight)
+	{
+		// [SL] 2012-05-15 - Add the actor to the blocklinks list for all of the
+		// blockmaps it overlaps, not just the blockmap for the actor's center point.
+		for (int bmy = top; bmy <= bottom; bmy++)
+		{
+			for (int bmx = left; bmx <= right; bmx++)
+			{
+				// killough 8/11/98: simpler scheme using pointer-to-pointer prev
+				// pointers, allows head nodes to be treated like everything else
+
+				AActor **headptr = &blocklinks[bmy * bmapwidth + bmx];
+				AActor *headactor = *headptr;
+
+				size_t thisidx = getIndex(bmx, bmy);
+				
+		        if ((next[thisidx] = headactor))
+		        {
+		        	size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
+					headactor->bmapnode.prev[nextidx] = &next[thisidx];
+				}
+				
+		        prev[thisidx] = headptr;
+		        *headptr = actor;
+			}
+		}
+	}
+	else
+	{
+		clear();
+	}
+}
+
+void AActor::ActorBlockMapListNode::Unlink()
+{
+	for (int bmy = originy; bmy < originy + blockcnty; bmy++)
+	{
+		for (int bmx = originx; bmx < originx + blockcntx; bmx++)
+		{
+			// killough 8/11/98: simpler scheme using pointers-to-pointers for prev
+			// pointers, allows head node pointers to be treated like everything else
+			//
+			// Also more robust, since it doesn't depend on current position for
+			// unlinking. Old method required computing head node based on position
+			// at time of unlinking, assuming it was the same position as during
+			// linking.
+
+			size_t thisidx = getIndex(bmx, bmy);
+			
+			AActor *nextactor = next[thisidx];
+			AActor **prevactor = prev[thisidx];
+			
+			if (prevactor && (*prevactor = nextactor))
+			{
+				size_t nextidx = nextactor->bmapnode.getIndex(bmx, bmy);
+				nextactor->bmapnode.prev[nextidx] = prevactor;
+			}
+		}
+	}
+}
+
+AActor* AActor::ActorBlockMapListNode::Next(int bmx, int bmy)
+{
+	if (bmx < 0 || bmx >= bmapwidth || bmy < 0 || bmy >= bmapheight)
+		return NULL;
+
+	return next[getIndex(bmx, bmy)];
+}
+
+void AActor::ActorBlockMapListNode::clear()
+{
+	originx = originy = 0;
+	blockcntx = blockcnty = 0;
+	memset(prev, 0, sizeof(prev));
+	memset(next, 0, sizeof(next));
+}
+
+size_t AActor::ActorBlockMapListNode::getIndex(int bmx, int bmy)
+{
+	if (!co_blockmapfix)
+		return 0;
+
+	// range check
+	if (bmx < originx || bmx > originx + blockcntx - 1 ||
+		bmy < originy || bmy > originy + blockcnty - 1)
+		return 0;
+		
+	return (bmy - originy) * BLOCKSX + bmx - originx;
+}
+
+
 //
 // P_AproxDistance
 // Gives an estimation of distance (not exact)
@@ -306,7 +425,6 @@ void P_LineOpeningIntercept(const line_t *line, const intercept_t *in)
 // THING POSITION SETTING
 //
 
-
 //
 // P_UnsetThingPosition
 // Unlinks a thing from block map and sectors.
@@ -352,17 +470,7 @@ void AActor::UnlinkFromWorld ()
 
 	if ( !(flags & MF_NOBLOCKMAP) )
 	{
-		// killough 8/11/98: simpler scheme using pointers-to-pointers for prev
-		// pointers, allows head node pointers to be treated like everything else
-		//
-		// Also more robust, since it doesn't depend on current position for
-		// unlinking. Old method required computing head node based on position
-		// at time of unlinking, assuming it was the same position as during
-		// linking.
-
-		AActor *_bnext, **_bprev = bprev;
-		if (_bprev && (*_bprev = _bnext = bnext))	// unlink from block map
-			_bnext->bprev = _bprev;
+		bmapnode.Unlink();
 	}
 
 	subsector = NULL;
@@ -412,29 +520,10 @@ void AActor::LinkToWorld ()
 		sector_list = NULL;		// clear for next time
     }
 
-
 	// link into blockmap
 	if ( !(flags & MF_NOBLOCKMAP) )
 	{
-		// insert things don't need to be in blockmap
-		int blockx = (x - bmaporgx)>>MAPBLOCKSHIFT;
-		int blocky = (y - bmaporgy)>>MAPBLOCKSHIFT;
-
-		if (blockx >= 0 && blockx < bmapwidth && blocky >= 0 && blocky < bmapheight)
-        {
-			// killough 8/11/98: simpler scheme using pointer-to-pointer prev
-			// pointers, allows head nodes to be treated like everything else
-
-			AActor **link = &blocklinks[blocky*bmapwidth+blockx];
-			AActor *_bnext = *link;
-
-			if ((bnext = _bnext))
-				_bnext->bprev = &bnext;
-			bprev = link;
-			*link = this;
-		}
-		else		// thing is off the map
-			bnext = NULL, bprev = NULL;
+		bmapnode.Link();
 	}
 }
 
@@ -534,15 +623,14 @@ BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*), AActor *actor)
 	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
 		return true;
 	else
-	{
-		AActor *mobj;
+ 	{
+		AActor *mobj = (actor != NULL ? actor : blocklinks[y*bmapwidth+x]);
+		while (mobj)
+ 		{
+ 			if (!func (mobj))
+ 				return false;
 
-		for (mobj = (actor != NULL ? actor : blocklinks[y*bmapwidth+x]) ;
-			 mobj ;
-			 mobj = mobj->bnext)
-		{
-			if (!func (mobj))
-				return false;
+			mobj = mobj->bmapnode.Next(x, y);
 		}
 	}
 	return true;

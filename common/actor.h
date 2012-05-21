@@ -353,7 +353,6 @@ public:
 
     // Interaction info, by BLOCKMAP.
     // Links in blocks (if needed).
-	AActor			*bnext, **bprev;
 	struct subsector_s		*subsector;
 
     // The closest interval over all contacted Sectors.
@@ -460,9 +459,50 @@ private:
 public:
 	void LinkToWorld ();
 	void UnlinkFromWorld ();
+
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
 
 	AActorPtr ptr(){ return AActorPtr(self); }
+	
+	//
+	// ActorBlockMapListNode
+	//
+	// [SL] A container for the linked list nodes for all of the mapblocks that
+	// an actor can be standing in.  Vanilla Doom only considered an actor to
+	// be in the mapblock where its center was located, even if it was
+	// overlapping other blocks.
+	//
+	class ActorBlockMapListNode
+	{
+	public:
+		ActorBlockMapListNode(AActor *mo);
+		void Link();
+		void Unlink();
+		AActor* Next(int bmx, int bmy);
+
+	private:
+		void clear();
+		size_t getIndex(int bmx, int bmy);
+		
+		static const size_t BLOCKSX = 3;
+		static const size_t BLOCKSY = 3;
+
+		AActor		*actor;
+			
+		// the top-left blockmap the actor is in
+		int			originx;
+		int			originy;
+		// the number of blocks the actor occupies
+		int			blockcntx;
+		int			blockcnty;
+
+		// the next and previous actors in each of the possible blockmaps
+		// this actor can inhabit
+		AActor		*next[BLOCKSX * BLOCKSY];
+		AActor		**prev[BLOCKSX * BLOCKSY];
+	};
+	
+	ActorBlockMapListNode bmapnode;
 };
 
 
