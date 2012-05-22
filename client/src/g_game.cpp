@@ -312,8 +312,28 @@ BEGIN_COMMAND (pause)
 }
 END_COMMAND (pause)
 
-static int turntick;
+BEGIN_COMMAND (turnspeeds)
+{
+	if (argc == 1)
+	{
+		Printf (PRINT_HIGH, "Current turn speeds: %ld %ld %ld\n",
+				angleturn[0], angleturn[1], angleturn[2]);
+	}
+	else
+	{
+		size_t i;
+		for (i = 1; i <= 3 && i < argc; i++)
+			angleturn[i-1] = atoi (argv[i]);
 
+		if (i <= 2)
+			angleturn[1] = angleturn[0] * 2;
+		if (i <= 3)
+			angleturn[2] = angleturn[0] / 2;
+	}
+}
+END_COMMAND (turnspeeds)
+
+static int turntick;
 BEGIN_COMMAND (turn180)
 {
 	turntick = TURN180_TICKS;
