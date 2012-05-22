@@ -262,56 +262,62 @@ void C_DoCommand (const char *cmd)
 	}
 }
 
-void AddCommandString (std::string cmd, bool onlycvars)
+void AddCommandString(const std::string &str, bool onlycvars)
 {
-	char *brkpt;
-	int more;
-
-	if (!cmd.length())
+	size_t totallen = str.length();
+	if (!totallen)
 		return;
 
-	char *allocated = new char[cmd.length() + 1]; // denis - fixme - this ugly fix is required because in some places, the function is called with a string that must not be modified, eg AddCommandString("hello"); - please rewrite - should have a const parameter
-	char *copy = allocated;
-	memcpy(copy, cmd.c_str(), cmd.length() + 1);
+	// pointers to the start and end of the current substring in str.c_str()
+	const char *cstart = str.c_str();
+	const char *cend;
 
-	while (*copy)
+	// stores a copy of the current substring
+	char *command = new char[totallen + 1];
+
+	while (*cstart)
 	{
-		brkpt = copy;
-		while (*brkpt != ';' && *brkpt != '\0')
+		const char *cp = cstart;
+
+		while (*cp != ';' && *cp != '\0')
 		{
-			if (*brkpt == '\"')
+			// ignore ';' if it is inside a pair of quotes
+			if (*cp == '\"')
 			{
-				brkpt++;
-				while (*brkpt != '\"' && *brkpt != '\0')
-					brkpt++;
+				cp++;
+				while (*cp != '\"' && *cp != '\0')
+					cp++;
 			}
-			brkpt++;
-		}
-		if (*brkpt == ';')
-		{
-			*brkpt = '\0';
-			more = 1;
-		}
-		else
-		{
-			more = 0;
+			cp++;
 		}
 
 		safemode |= onlycvars;
 
-		C_DoCommand (copy);
+		cend = cp - 1;
 
-		if(onlycvars)
+		// remove leading and trailing whitespace
+		while (*cstart == ' ')
+			cstart++;
+		while (*cend == ' ')
+			cend--;
+
+		size_t clength = cend - cstart + 1;
+		memcpy(command, cstart, clength);
+		command[clength] = '\0';
+
+		C_DoCommand(command);
+
+		if (onlycvars)
 			safemode = false;
 
-		if (more)
-		{
-			*brkpt = ';';
-		}
-		copy = brkpt + more;
+		// are there more commands following this one?
+		if (*cp == ';')
+			cstart = cp + 1;
+		else
+			cstart = cp;
 	}
 
-	delete[] allocated;
+	delete[] command;
 }
 
 #define MAX_EXEC_DEPTH 32

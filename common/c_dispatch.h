@@ -36,7 +36,7 @@ void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 
 // add commands to the console as if they were typed in
 // for map changing, etc
-void AddCommandString (std::string cmd, bool onlycvar = false);
+void AddCommandString (const std::string &cmd, bool onlycvar = false);
 
 // parse a command string
 const char *ParseString (const char *data);
