@@ -3610,10 +3610,8 @@ void SV_ProcessPlayerCmd(player_t &player)
 		player.cmd.ucmd.use			= ucmd->use;
 		player.tic 					= player.cmds.front().tic;
 		
-		if (ucmd->buttons & BT_ATTACK)
-		{
-			Unlag::getInstance().setRoundtripDelay(player.id, player.cmds.front().svgametic);
-		}
+		// Set the latency amount for Unlagging
+		Unlag::getInstance().setRoundtripDelay(player.id, player.cmds.front().svgametic);
 
 		// Apply this ticcmd using the game logic
 		if (!sv_speedhackfix && gamestate == GS_LEVEL)
