@@ -6,4 +6,6 @@
     <object class="wxBitmap" name="bullet_red">bullet_red-16x15.png</object>
     <object class="wxBitmap" name="bullet_gray">bullet_gray-16x15.png</object>
     <object class="wxBitmap" name="bullet_blue">bullet_blue-16x15.png</object>
+    <object class="wxBitmap" name="locked_server">locked_server.png</object>
+    <object class="wxBitmap" name="spectator">spectator.png</object>
 </resource>
