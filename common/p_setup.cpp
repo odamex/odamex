@@ -540,6 +540,8 @@ void P_LoadThings2 (int lump, int position)
 	mapthing2_t *mt = (mapthing2_t *)data;
 	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
 
+	playerstarts.clear();
+
 	for ( ; mt < lastmt; mt++)
 	{
 		// [RH] At this point, monsters unique to Doom II were weeded out
