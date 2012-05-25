@@ -1092,6 +1092,10 @@ void CL_SetupUserInfo(void)
 	if (p->id == displayplayer_id && !consoleplayer().spectator && teamgame && !teammate)
 		displayplayer_id = consoleplayer_id;
 
+	// [SL] 2012-05-24 - Were we spectating a teammate before we changed teams?
+	if (teamgame && p->id == consoleplayer_id && p->userinfo.team != displayplayer().userinfo.team)
+		displayplayer_id = consoleplayer_id;
+
 	extern bool st_firsttime;
 	st_firsttime = true;
 }
