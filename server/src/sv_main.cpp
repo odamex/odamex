@@ -1197,6 +1197,12 @@ void SV_SendUserInfo (player_t &player, client_t* cl)
 	MSG_WriteShort	(&cl->reliablebuf, time(NULL) - p->JoinTime);
 }
 
+void SV_BroadcastUserInfo(player_t &player)
+{
+	for (size_t i = 0; i < players.size(); i++)
+		SV_SendUserInfo(player, &(players[i].client));
+}
+
 //
 //	SV_SetupUserInfo
 //
@@ -1303,12 +1309,6 @@ void SV_SetupUserInfo (player_t &player)
 			SV_BroadcastPrintf(PRINT_HIGH, "%s switched to the %s team.\n",
 				new_netname.c_str(), team_names[new_team]);
 		}
-	}
-
-	// inform all players of new player info
-	for (size_t i = 0; i < players.size(); i++)
-	{
-		SV_SendUserInfo (player, &clients[i]);
 	}
 
 	// [SL] 2011-12-02 - Player can update all preferences again in 5 seconds
@@ -2328,11 +2328,15 @@ void SV_ConnectClient (void)
 	if(!SV_IsValidToken(MSG_ReadLong()))
 		return;
 
+	Printf (PRINT_HIGH, "%s is trying to connect...\n", NET_AdrToString (net_from));
+
 	// find an open slot
 	n = SV_GetFreeClient ();
 
 	if (n == -1)  // a server is full
 	{
+		Printf(PRINT_HIGH, "%s disconnected (server full).\n", NET_AdrToString (net_from));
+
 		static buf_t smallbuf(16);
 
 		MSG_WriteLong (&smallbuf, 0);
@@ -2342,8 +2346,6 @@ void SV_ConnectClient (void)
 
 		return;
 	}
-
-	Printf (PRINT_HIGH, "%s is trying to connect...\n", NET_AdrToString (net_from));
 
 	cl = &clients[n];
 
@@ -2355,6 +2357,8 @@ void SV_ConnectClient (void)
 	cl->lastcmdtic       = 0;
 	cl->lastclientcmdtic = 0;
 	cl->allow_rcon       = false;
+
+	cl->displaydisconnect = false;
 
 	// generate a random string
 	std::stringstream ss;
@@ -2389,11 +2393,33 @@ void SV_ConnectClient (void)
 		return;
 	}
 
+	// get client userinfo
+	MSG_ReadByte();  // clc_userinfo
+	SV_SetupUserInfo(players[n]); 
+
+	// get rate value
+	SV_SetClientRate(*cl, MSG_ReadLong());
+
 	if (SV_BanCheck(cl, n))
 	{
 		SV_DropClient(players[n]);
 		return;
 	}
+
+    std::string passhash = MSG_ReadString();
+    if (strlen(join_password.cstring()) && MD5SUM(join_password.cstring()) != passhash)
+    {
+		Printf(PRINT_HIGH, "%s disconnected (password failed).\n", NET_AdrToString(net_from));
+
+        MSG_WriteMarker(&cl->reliablebuf, svc_print);
+        MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
+        MSG_WriteString (&cl->reliablebuf,
+                         "Server is passworded, no password specified or bad password\n");
+
+        SV_SendPacket(players[n]);
+        SV_DropClient(players[n]);
+        return;
+    }
 
 	// send consoleplayer number
 	MSG_WriteMarker (&cl->reliablebuf, svc_consoleplayer);
@@ -2402,35 +2428,14 @@ void SV_ConnectClient (void)
 
     SV_SendPacket(players[n]);
 
-	// get client userinfo
-	MSG_ReadByte ();  // clc_userinfo
-	SV_SetupUserInfo (players[n]); // send it to other players
-
-	// get rate value
-	SV_SetClientRate(*cl, MSG_ReadLong());
-
-    std::string passhash = MSG_ReadString();
-
-    if (strlen(join_password.cstring()) && MD5SUM(join_password.cstring()) != passhash)
-    {
-        MSG_WriteMarker(&cl->reliablebuf, svc_print);
-        MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
-        MSG_WriteString (&cl->reliablebuf,
-                         "Server is passworded, no password specified or bad password\n");
-
-        SV_SendPacket(players[n]);
-
-        SV_DropClient(players[n]);
-
-        return;
-    }
-
 	// [Toke] send server settings
 	SV_SendServerSettings (cl);
 
 	cl->download.name = "";
 	if(connection_type == 1)
 	{
+		SV_BroadcastPrintf (PRINT_HIGH, "%s has connected (downloading).\n", players[n].userinfo.netname);
+
 		players[n].playerstate = PST_DOWNLOAD;
 		for (j = 0; j < players.size(); j++)
 		{
@@ -2457,6 +2462,9 @@ void SV_ConnectClient (void)
 #endif
 	else
 		players[n].playerstate = PST_REBORN;
+
+	cl->displaydisconnect = true;
+	SV_BroadcastUserInfo(players[n]);
 
 	players[n].fragcount	= 0;
 	players[n].killcount	= 0;
@@ -4239,6 +4247,7 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_userinfo:
 			SV_SetupUserInfo(player);
+			SV_BroadcastUserInfo(player);
 			break;
 
 		case clc_getplayerinfo:
