@@ -53,7 +53,7 @@
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
 #define VERSION (0*256+60)
-#define PROTOCOL_VERSION 1
+#define PROTOCOL_VERSION 2
 
 #define TAG_ID 0xAD0
 
@@ -92,6 +92,7 @@ struct Team_t
 struct Player_t
 {
 	std::string Name;
+	uint32_t    Colour;
 	int16_t     Frags;
 	uint16_t    Ping;
 	uint8_t     Team;

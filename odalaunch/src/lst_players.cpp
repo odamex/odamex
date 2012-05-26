@@ -238,6 +238,17 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
         
         SetItem(li);
         
+        wxUint32 PlayerColour = s.Info.Players[i].Colour;
+        wxUint8 PC_Red = 0, PC_Green = 0, PC_Blue = 0;
+
+        PC_Red = ((PlayerColour >> 16) & 0x00FFFFFF);
+        PC_Green = ((PlayerColour >> 8) & 0x0000FFFF);
+        PC_Blue = (PlayerColour & 0x000000FF);
+
+        li.SetTextColour(wxColour(PC_Red, PC_Green, PC_Blue));
+
+        SetItem(li);
+
         if (s.Info.GameType == GT_TeamDeathmatch || 
             s.Info.GameType == GT_CaptureTheFlag)
 		{
