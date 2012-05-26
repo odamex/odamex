@@ -219,11 +219,11 @@ private:
 	bool                      WindowExited;
 
 	// Static Resources
-	static AG_SurfacePtr BulletRed;
-	static AG_SurfacePtr BulletBlue;
-	static AG_SurfacePtr SpectatorIcon;
-	static AG_SurfacePtr PadlockIcon;
-	static AG_SurfacePtr NullSurface;
+	static AG_SurfacePtr      BulletRed;
+	static AG_SurfacePtr      BulletBlue;
+	static AG_SurfacePtr      SpectatorIcon;
+	static AG_SurfacePtr      PadlockIcon;
+	static AG_SurfacePtr      NullSurface;
 };
 
 } // namespace

@@ -162,7 +162,7 @@ void AGOL_MainWindow::LoadResources()
 	// Spectator Icon
 	if(!SpectatorIcon.get())
 	{
-		if((pngdata = AG_OpenConstCore(spectatorico, sizeof(spectatorico))) != NULL)
+		if((pngdata = AG_OpenConstCore(spectator, sizeof(spectator))) != NULL)
 		{
 			SpectatorIcon = AG_SurfacePtr(AG_ReadSurfaceFromPNG(pngdata));
 			AG_CloseDataSource(pngdata);
@@ -172,7 +172,7 @@ void AGOL_MainWindow::LoadResources()
 	// Padlock Icon
 	if(!PadlockIcon.get())
 	{
-		if((pngdata = AG_OpenConstCore(padlockico, sizeof(padlockico))) != NULL)
+		if((pngdata = AG_OpenConstCore(locked_server, sizeof(locked_server))) != NULL)
 		{
 			PadlockIcon = AG_SurfacePtr(AG_ReadSurfaceFromPNG(pngdata));
 			AG_CloseDataSource(pngdata);
