@@ -36,6 +36,9 @@
     extern byte CPUFamily, CPUModel, CPUStepping;
 }*/
 
+void I_BeginRead (void);
+void I_EndRead (void);
+
 // Index values into the LanguageIDs array
 enum
 {
