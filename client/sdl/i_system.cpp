@@ -127,6 +127,9 @@ size_t got_heapsize = 0;
 
 DWORD LanguageIDs[4];
 
+// Endoom screen is showing
+bool in_endoom = false;
+
 //
 // I_MegabytesToBytes
 //
@@ -195,6 +198,16 @@ void *I_ZoneBase (size_t *size)
 
 void I_BeginRead(void)
 {
+    patch_t *diskpatch = W_CachePatch("STDISK");
+
+    if (!screen || !diskpatch || in_endoom)
+        return;
+
+    screen->Lock();
+
+    screen->DrawPatch(diskpatch, (screen->width - 16), (screen->height - 16));
+
+    screen->Unlock();
 }
 
 void I_EndRead(void)
@@ -527,6 +540,9 @@ void I_Endoom(void)
 	int y;
 	int indent;
 
+    // Hack to stop crash with disk icon
+    in_endoom = true;
+
 	endoom_data = (unsigned char *)W_CacheLumpName("ENDOOM", PU_STATIC);
 
 	// Set up text mode screen
@@ -564,6 +580,8 @@ void I_Endoom(void)
 	// Shut down text mode screen
 
 	TXT_Shutdown();
+
+	in_endoom = false;
 #endif // Hyper_Eye
 }
 

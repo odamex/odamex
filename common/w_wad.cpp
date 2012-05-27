@@ -667,11 +667,15 @@ W_ReadLump
 
 	l = lumpinfo + lump;
 
+    I_BeginRead();
+
 	fseek (l->handle, l->position, SEEK_SET);
 	c = fread (dest, l->size, 1, l->handle);
 
 	if (feof(l->handle))
 		I_Error ("W_ReadLump: only read %i of %i on lump %i", c, l->size, lump);
+
+    I_EndRead();
 }
 
 //
