@@ -36,9 +36,6 @@
     extern byte CPUFamily, CPUModel, CPUStepping;
 }*/
 
-void I_BeginRead (void);
-void I_EndRead (void);
-
 // Index values into the LanguageIDs array
 enum
 {
@@ -49,6 +46,9 @@ enum
 };
 extern DWORD LanguageIDs[4];
 extern void SetLanguageIDs ();
+
+void I_BeginRead (void);
+void I_EndRead (void);
 
 // Called by DoomMain.
 void I_Init (void);
