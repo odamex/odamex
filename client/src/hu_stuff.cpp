@@ -446,14 +446,13 @@ void drawHeader(player_t *player, int y) {
 	              str.c_str(), CR_GOLD, true);
 
 	brokenlines_t *hostname = V_BreakLines(192, sv_hostname.cstring());
-	hud::DrawText(0, y + 8, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_CENTER, hud::Y_TOP,
-	              hostname[0].string, CR_GREY, true);
-	hud::DrawText(0, y + 16, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_CENTER, hud::Y_TOP,
-	              hostname[1].string, CR_GREY, true);
+	for (size_t i = 0; i < 2 && hostname[i].width > 0; i++)
+	{
+		hud::DrawText(0, y + 8 * (i + 1), hud_scalescoreboard,
+					  hud::X_CENTER, hud::Y_MIDDLE,
+					  hud::X_CENTER, hud::Y_TOP,
+					  hostname[i].string, CR_GREY, true);
+	}
 	V_FreeBrokenLines(hostname);
 
 	// Left
