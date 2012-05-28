@@ -117,6 +117,13 @@ fixed_t			dc_textureheight;
 void R_DrawColumnInCache (const column_t *patch, byte *cache,
 						  int originy, int cacheheight, byte *marks)
 {
+	if (patch->topdelta == 0xff)
+	{
+		// [SL] - No patch in this column - fill in and mark as a masked column
+		memset(cache, 0, cacheheight);
+		memset(marks, 0xff, cacheheight);
+	}
+
 	while (patch->topdelta != 0xff)
 	{
 		int count = patch->length;
@@ -304,17 +311,18 @@ static void R_GenerateLookup(int texnum, int *const errors)
 	int height = texture->height;
 	int csize = 0;
 
-	while (--x >= 0)
-	{
-		if (!count[x].patches)				// killough 4/9/98
-		{
-			Printf (PRINT_HIGH, "\nR_GenerateLookup: Column %d is without a patch in texture %.8s",
-					x, texture->name);
-					++*errors;
-		}
-	}		
+	bool multipatch = (texture->patchcount > 1 || texture->height > 254);
 
-	if (texture->patchcount > 1 || texture->height > 254)
+	// [SL] Check for columns without patches - these should be handled as
+	// multi-patched textures so we can fill in the empty columns with
+	// masked columns
+	while (--x >= 0 && !multipatch)
+	{
+		if (!count[x].patches)
+			multipatch = true;
+	}
+
+	if (multipatch)
 	{
 		// [RH] Always create a composite texture for multipatch textures
 		// or tall textures in order to keep things simpler.	
@@ -323,27 +331,18 @@ static void R_GenerateLookup(int texnum, int *const errors)
 		csize = 0;
 		while (--x >= 0)
 		{
-			if (!count[x].patches)				// killough 4/9/98
-			{
-				Printf (PRINT_HIGH, "\nR_GenerateLookup: Column %d is without a patch in texture %.8s",
-						x, texture->name);
-						++*errors;
-			}
-			else
-			{
-				// killough 1/25/98, 4/9/98:
-				//
-				// Fix Medusa bug, by adding room for column header
-				// and trailer bytes for each post in merged column.
-				// For now, just allocate conservatively 4 bytes
-				// per post per patch per column, since we don't
-				// yet know how many posts the merged column will
-				// require, and it's bounded above by this limit.
+			// killough 1/25/98, 4/9/98:
+			//
+			// Fix Medusa bug, by adding room for column header
+			// and trailer bytes for each post in merged column.
+			// For now, just allocate conservatively 4 bytes
+			// per post per patch per column, since we don't
+			// yet know how many posts the merged column will
+			// require, and it's bounded above by this limit.
 
-				collump[x] = -1;				// mark lump as multipatched
-				colofs[x] = csize + 4;			// four header bytes in a column
-				csize += 4*count[x].posts+2+height;	// 2 stop bytes plus 4 bytes per post
-			}
+			collump[x] = -1;				// mark lump as multipatched
+			colofs[x] = csize + 4;			// four header bytes in a column
+			csize += 4*count[x].posts+2+height;	// 2 stop bytes plus 4 bytes per post
 		}
 	}
 	else
