@@ -4760,6 +4760,12 @@ BEGIN_COMMAND (playerlist)
 }
 END_COMMAND (playerlist)
 
+BEGIN_COMMAND (players)
+{
+	AddCommandString("playerlist");
+}
+END_COMMAND (players)
+
 void OnChangedSwitchTexture (line_t *line, int useAgain)
 {
 	int l;
