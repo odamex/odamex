@@ -117,52 +117,52 @@
 				<label>Connect</label>
 				<tooltip>Connect to the selected server</tooltip>
 				<longhelp>Connect to the selected server</longhelp>
-				<bitmap>.\icons\btnlaunch.png</bitmap>
+				<bitmap>./icons/btnlaunch.png</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmRunOffline">
 				<label>Run Odamex</label>
 				<tooltip>Runs the Odamex Client without connecting to a server</tooltip>
 				<longhelp>Runs the Odamex Client without connecting to a server</longhelp>
-				<bitmap>.\icons\btnqlaunch.png</bitmap>
+				<bitmap>./icons/btnqlaunch.png</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="Id_MnuItmRefreshServer">
 				<label>Refresh Server</label>
 				<tooltip>Refresh the selected server</tooltip>
 				<longhelp>Refresh the selected server</longhelp>
-				<bitmap>.\icons\btnrefresh.png</bitmap>
+				<bitmap>./icons/btnrefresh.png</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmRefreshAll">
 				<label>Refresh All</label>
 				<tooltip>Refresh all servers currently displayed</tooltip>
 				<longhelp>Refresh all servers currently displayed</longhelp>
-				<bitmap>.\icons\btnrefresha.png</bitmap>
+				<bitmap>./icons/btnrefresha.png</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmGetList">
 				<label>Get List</label>
 				<tooltip>Get a new list of servers</tooltip>
 				<longhelp>Get a new list of servers</longhelp>
-				<bitmap>.\icons\btngetlist.png</bitmap>
+				<bitmap>./icons/btngetlist.png</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="wxID_PREFERENCES">
 				<label>Settings</label>
 				<tooltip>Configure the launcher</tooltip>
 				<longhelp>Configure the launcher</longhelp>
-				<bitmap>.\icons\btnprefs.png</bitmap>
+				<bitmap>./icons/btnprefs.png</bitmap>
 			</object>
 			<object class="tool" name="wxID_ABOUT">
 				<label>About</label>
 				<tooltip>About the Odamex Launcher</tooltip>
 				<longhelp>About the Odamex Launcher</longhelp>
-				<bitmap>.\icons\btnabout.png</bitmap>
+				<bitmap>./icons/btnabout.png</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="wxID_EXIT">
 				<label>Exit</label>
 				<tooltip>Exit the launcher</tooltip>
 				<longhelp>Exit the launcher</longhelp>
-				<bitmap>.\icons\btnexit.png</bitmap>
+				<bitmap>./icons/btnexit.png</bitmap>
 			</object>
 		</object>
 		<object class="wxPanel">
@@ -464,7 +464,7 @@
 																		<border>5</border>
 																		<object class="wxStaticBitmap" name="Id_StcBmpPQGood">
 																			<tooltip>Green is good</tooltip>
-																			<bitmap>.\icons\bullet_green.png</bitmap>
+																			<bitmap>./icons/bullet_green.png</bitmap>
 																		</object>
 																	</object>
 																	<object class="sizeritem">
@@ -493,7 +493,7 @@
 																		<border>5</border>
 																		<object class="wxStaticBitmap" name="Id_StcBmpPQPlayable">
 																			<tooltip>Orange is playable</tooltip>
-																			<bitmap>.\icons\bullet_orange.png</bitmap>
+																			<bitmap>./icons/bullet_orange.png</bitmap>
 																		</object>
 																	</object>
 																	<object class="sizeritem">
@@ -522,7 +522,7 @@
 																		<border>5</border>
 																		<object class="wxStaticBitmap" name="Id_StcBmpPQLaggy">
 																			<tooltip>Red means server is laggy</tooltip>
-																			<bitmap>.\icons\bullet_red.png</bitmap>
+																			<bitmap>./icons/bullet_red.png</bitmap>
 																		</object>
 																	</object>
 																	<object class="sizeritem">
@@ -551,7 +551,7 @@
 																		<border>5</border>
 																		<object class="wxStaticBitmap" name="Id_StcBmpPQBad">
 																			<tooltip>Gray possibly means unplayable</tooltip>
-																			<bitmap>.\icons\bullet_gray.png</bitmap>
+																			<bitmap>./icons/bullet_gray.png</bitmap>
 																		</object>
 																	</object>
 																	<object class="sizeritem">

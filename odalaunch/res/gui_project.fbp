@@ -513,7 +513,7 @@
                 <event name="OnSize"></event>
                 <event name="OnUpdateUI"></event>
                 <object class="tool" expanded="0">
-                    <property name="bitmap">Load From File; .\icons\btnlaunch.png</property>
+                    <property name="bitmap">Load From File; ./icons/btnlaunch.png</property>
                     <property name="context_menu">0</property>
                     <property name="id">ID_MNULAUNCH</property>
                     <property name="kind">wxITEM_NORMAL</property>
@@ -534,7 +534,7 @@
                     <event name="OnUpdateUI"></event>
                 </object>
                 <object class="tool" expanded="0">
-                    <property name="bitmap">Load From File; .\icons\btnqlaunch.png</property>
+                    <property name="bitmap">Load From File; ./icons/btnqlaunch.png</property>
                     <property name="context_menu">0</property>
                     <property name="id">wxID_ANY</property>
                     <property name="kind">wxITEM_NORMAL</property>
@@ -558,7 +558,7 @@
                     <property name="permission">protected</property>
                 </object>
                 <object class="tool" expanded="0">
-                    <property name="bitmap">Load From File; .\icons\btnrefresh.png</property>
+                    <property name="bitmap">Load From File; ./icons/btnrefresh.png</property>
                     <property name="context_menu">0</property>
                     <property name="id">ID_MNUREFRESHSERVER</property>
                     <property name="kind">wxITEM_NORMAL</property>
@@ -579,7 +579,7 @@
                     <event name="OnUpdateUI"></event>
                 </object>
                 <object class="tool" expanded="0">
-                    <property name="bitmap">Load From File; .\icons\btnrefresha.png</property>
+                    <property name="bitmap">Load From File; ./icons/btnrefresha.png</property>
                     <property name="context_menu">0</property>
                     <property name="id">ID_MNUREFRESHALL</property>
                     <property name="kind">wxITEM_NORMAL</property>
@@ -600,7 +600,7 @@
                     <event name="OnUpdateUI"></event>
                 </object>
                 <object class="tool" expanded="0">
-                    <property name="bitmap">Load From File; .\icons\btngetlist.png</property>
+                    <property name="bitmap">Load From File; ./icons/btngetlist.png</property>
                     <property name="context_menu">0</property>
                     <property name="id">ID_MNUGETLIST</property>
                     <property name="kind">wxITEM_NORMAL</property>
@@ -624,7 +624,7 @@
                     <property name="permission">protected</property>
                 </object>
                 <object class="tool" expanded="0">
-                    <property name="bitmap">Load From File; .\icons\btnprefs.png</property>
+                    <property name="bitmap">Load From File; ./icons/btnprefs.png</property>
                     <property name="context_menu">0</property>
                     <property name="id">ID_MNUSETTINGS</property>
                     <property name="kind">wxITEM_NORMAL</property>
@@ -645,7 +645,7 @@
                     <event name="OnUpdateUI"></event>
                 </object>
                 <object class="tool" expanded="0">
-                    <property name="bitmap">Load From File; .\icons\btnabout.png</property>
+                    <property name="bitmap">Load From File; ./icons/btnabout.png</property>
                     <property name="context_menu">0</property>
                     <property name="id">ID_MNUABOUT</property>
                     <property name="kind">wxITEM_NORMAL</property>
@@ -669,7 +669,7 @@
                     <property name="permission">protected</property>
                 </object>
                 <object class="tool" expanded="0">
-                    <property name="bitmap">Load From File; .\icons\btnexit.png</property>
+                    <property name="bitmap">Load From File; ./icons/btnexit.png</property>
                     <property name="context_menu">0</property>
                     <property name="id">wxID_EXIT</property>
                     <property name="kind">wxITEM_NORMAL</property>
@@ -3048,7 +3048,7 @@
                                                                                 <property name="aui_row"></property>
                                                                                 <property name="best_size"></property>
                                                                                 <property name="bg"></property>
-                                                                                <property name="bitmap">Load From File; .\icons\bullet_green.png</property>
+                                                                                <property name="bitmap">Load From File; ./icons/bullet_green.png</property>
                                                                                 <property name="caption"></property>
                                                                                 <property name="caption_visible">1</property>
                                                                                 <property name="center_pane">0</property>
@@ -3227,7 +3227,7 @@
                                                                                 <property name="aui_row"></property>
                                                                                 <property name="best_size"></property>
                                                                                 <property name="bg"></property>
-                                                                                <property name="bitmap">Load From File; .\icons\bullet_orange.png</property>
+                                                                                <property name="bitmap">Load From File; ./icons/bullet_orange.png</property>
                                                                                 <property name="caption"></property>
                                                                                 <property name="caption_visible">1</property>
                                                                                 <property name="center_pane">0</property>
@@ -3406,7 +3406,7 @@
                                                                                 <property name="aui_row"></property>
                                                                                 <property name="best_size"></property>
                                                                                 <property name="bg"></property>
-                                                                                <property name="bitmap">Load From File; .\icons\bullet_red.png</property>
+                                                                                <property name="bitmap">Load From File; ./icons/bullet_red.png</property>
                                                                                 <property name="caption"></property>
                                                                                 <property name="caption_visible">1</property>
                                                                                 <property name="center_pane">0</property>
@@ -3585,7 +3585,7 @@
                                                                                 <property name="aui_row"></property>
                                                                                 <property name="best_size"></property>
                                                                                 <property name="bg"></property>
-                                                                                <property name="bitmap">Load From File; .\icons\bullet_gray.png</property>
+                                                                                <property name="bitmap">Load From File; ./icons/bullet_gray.png</property>
                                                                                 <property name="caption"></property>
                                                                                 <property name="caption_visible">1</property>
                                                                                 <property name="center_pane">0</property>
