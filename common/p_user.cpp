@@ -294,6 +294,9 @@ CVAR_FUNC_IMPL (sv_aircontrol)
 //
 void P_MovePlayer (player_t *player)
 {
+	if (!player || !player->mo || player->playerstate == PST_DEAD)
+		return;
+
 	ticcmd_t *cmd = &player->cmd;
 	AActor *mo = player->mo;
 
@@ -421,6 +424,9 @@ void P_MovePlayer (player_t *player)
 	}
 	
 	// [RH] check for jump
+	if (player->jumpTics)
+		player->jumpTics--;
+		
 	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
 	{
 		if (player->mo->waterlevel >= 2)
@@ -605,21 +611,14 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
 
-	if (player->jumpTics)
-		player->jumpTics--;
-		
 	if (player->playerstate == PST_DEAD)
 	{
 		P_DeathThink(player);
 		return;
 	}
 
-	if(serverside)
-	{
-		P_MovePlayer (player);
-
-		P_CalcHeight (player);
-	}
+	P_MovePlayer (player);
+	P_CalcHeight (player);
 
 	if (player->mo->subsector && (player->mo->subsector->sector->special || player->mo->subsector->sector->damage))
 		P_PlayerInSpecialSector (player);

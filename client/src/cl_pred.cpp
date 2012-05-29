@@ -242,13 +242,10 @@ static void CL_PredictLocalPlayer(int predtic)
 	// Restore the angle, viewheight, etc for the player
 	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
 
-	if (player->playerstate != PST_DEAD)
-		P_MovePlayer(player);
-		
 	if (!predicting)
 		P_PlayerThink(player);
-		
-	P_CalcHeight(player);	
+	else
+		P_MovePlayer(player);
 	
 	player->mo->RunThink();
 }
