@@ -2179,8 +2179,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (clientside && sv_gametype == GM_COOP &&
-			(validplayer(p) && p.ingame()))
+		if (clientside && sv_gametype == GM_COOP && (validplayer(p) && p.ingame()))
 		{
 			P_SpawnPlayer (p, mthing);
 			return;
@@ -2189,20 +2188,20 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
+	// Filter mapthings based on the gamemode
+	if (!multiplayer)
+	{
+		if (!(mthing->flags & MTF_SINGLE))
+			return;
+	}
+	else if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM) 
 	{
 		if (!(mthing->flags & MTF_DEATHMATCH))
 			return;
 	}
-	else if (multiplayer)
+	else if (sv_gametype == GM_COOP)
 	{
 		if (!(mthing->flags & MTF_COOPERATIVE))
-			return;
-	}
-
-	if (!multiplayer)
-	{
-		if (!(mthing->flags & MTF_SINGLE))
 			return;
 	}
 
