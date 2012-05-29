@@ -2434,19 +2434,22 @@ void SV_ConnectClient (void)
 	cl->download.name = "";
 	if(connection_type == 1)
 	{
-		SV_BroadcastPrintf (PRINT_HIGH, "%s has connected (downloading).\n", players[n].userinfo.netname);
-
-		players[n].playerstate = PST_DOWNLOAD;
-		for (j = 0; j < players.size(); j++)
+		if (sv_waddownload)
 		{
-			if ((unsigned)n == j)
-				continue;
+			SV_BroadcastPrintf (PRINT_HIGH, "%s has connected (downloading).\n", players[n].userinfo.netname);
 
-			// [SL] 2011-07-30 - Other players should treat downloaders
-			// as spectators
-			MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
-			MSG_WriteByte (&(players[j].client.reliablebuf), players[n].id);
-			MSG_WriteByte (&(players[j].client.reliablebuf), true);
+			players[n].playerstate = PST_DOWNLOAD;
+			for (j = 0; j < players.size(); j++)
+			{
+				if ((unsigned)n == j)
+					continue;
+
+				// [SL] 2011-07-30 - Other players should treat downloaders
+				// as spectators
+				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+				MSG_WriteByte (&(players[j].client.reliablebuf), players[n].id);
+				MSG_WriteByte (&(players[j].client.reliablebuf), true);
+			}
 		}
 
 		return;
@@ -4176,6 +4179,9 @@ void SV_WantWad(player_t &player)
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
 		MSG_WriteString (&cl->reliablebuf, "Server: Downloading is disabled\n");
+
+		cl->displaydisconnect = false;
+		Printf (PRINT_HIGH, "%s disconnected (downloading is disabled).", NET_AdrToString(net_from));
 		SV_DropClient(player);
 		return;
 	}
