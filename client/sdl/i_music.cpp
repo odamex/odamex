@@ -184,12 +184,6 @@ void I_SetMusicVolume (float volume)
 
 void I_InitMusic(MusicSystemType musicsystem_type)
 {
-	#if defined(UNIX) && !defined(OSX)
-	struct stat buf;
-	if(stat("/etc/timidity.cfg", &buf) && stat("/etc/timidity/timidity.cfg", &buf))
-		Args.AppendArg("-nomusic");
-	#endif
-
 	I_ShutdownMusic();
 	I_ResetMidiVolume();
 
