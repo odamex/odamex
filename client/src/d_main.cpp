@@ -1614,6 +1614,14 @@ void D_DoomMain (void)
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
     //gamestate = GS_FULLCONSOLE;
 
+	// [SL] allow the user to pass the name of a netdemo as the first argument.
+	// This allows easy launching of netdemos from Windows Explorer or other GUIs.
+	
+	// [Xyltol]
+	std::string demoarg = Args.GetArg(1);
+	if (demoarg.find(".odd"))
+		CL_NetDemoPlay(demoarg);
+	
 	p = Args.CheckParm("-netplay");
 	if (p)
 	{
