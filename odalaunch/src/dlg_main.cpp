@@ -40,6 +40,7 @@
 #include <wx/iconbndl.h>
 #include <wx/regex.h>
 #include <wx/process.h>
+#include <wx/toolbar.h>
 #include <wx/xrc/xmlres.h>
 
 #ifdef __WXMSW__
