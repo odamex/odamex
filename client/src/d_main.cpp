@@ -1618,10 +1618,13 @@ void D_DoomMain (void)
 	// This allows easy launching of netdemos from Windows Explorer or other GUIs.
 	
 	// [Xyltol]
-	std::string demoarg = Args.GetArg(1);
-	if (demoarg.find(".odd"))
-		CL_NetDemoPlay(demoarg);
-	
+	if (Args.GetArg(1))
+	{
+		std::string demoarg = Args.GetArg(1);
+		if (demoarg.find(".odd"))
+			CL_NetDemoPlay(demoarg);
+	}
+
 	p = Args.CheckParm("-netplay");
 	if (p)
 	{
