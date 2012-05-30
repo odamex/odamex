@@ -210,7 +210,6 @@ static void CL_PredictSpectator()
 		
 	predicting = true;
 	
-	P_MovePlayer(player);
 	P_PlayerThink(player);
 	P_CalcHeight(player);
 	
