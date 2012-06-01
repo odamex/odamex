@@ -44,4 +44,9 @@ add_subdirectory(client)
 add_subdirectory(server)
 add_subdirectory(master)
 add_subdirectory(odalaunch)
-add_subdirectory(ag-odalaunch)
+
+# Disable the ag-odalaunch target completely: -DNO_AG-ODALAUNCH_TARGET
+# This is only really useful when setting up a universal build.
+if(NOT NO_AG-ODALAUNCH_TARGET)
+  add_subdirectory(ag-odalaunch)
+endif()
