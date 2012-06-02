@@ -117,13 +117,6 @@ fixed_t			dc_textureheight;
 void R_DrawColumnInCache (const column_t *patch, byte *cache,
 						  int originy, int cacheheight, byte *marks)
 {
-	if (patch->topdelta == 0xff)
-	{
-		// [SL] - No patch in this column - fill in and mark as a masked column
-		memset(cache, 0, cacheheight);
-		memset(marks, 0xff, cacheheight);
-	}
-
 	while (patch->topdelta != 0xff)
 	{
 		int count = patch->length;
