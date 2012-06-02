@@ -101,6 +101,9 @@ unsigned int *V_Palette;
 // Normal patch drawers
 void DCanvas::DrawPatchP (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	do
 	{
 		*dest = *source++;
@@ -110,6 +113,9 @@ void DCanvas::DrawPatchP (const byte *source, byte *dest, int count, int pitch)
 
 void DCanvas::DrawPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
+	if (count <= 0)
+		return;
+
 	int c = 0;
 
 	do
@@ -124,6 +130,9 @@ void DCanvas::DrawPatchSP (const byte *source, byte *dest, int count, int pitch,
 // Translucent patch drawers (always 50%) [ML] 3/2/10: Not anymore!
 void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	unsigned int *fg2rgb, *bg2rgb;
 
 	{
@@ -151,6 +160,9 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 
 void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
+	if (count <= 0)
+		return;
+
 	unsigned int *fg2rgb, *bg2rgb;
 	int c = 0;
 
@@ -182,6 +194,9 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 // Translated patch drawers
 void DCanvas::DrawTranslatedPatchP (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	do
 	{
 		*dest = V_ColorMap[*source++];
@@ -191,6 +206,9 @@ void DCanvas::DrawTranslatedPatchP (const byte *source, byte *dest, int count, i
 
 void DCanvas::DrawTranslatedPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
+	if (count <= 0)
+		return;
+
 	int c = 0;
 
 	do
@@ -205,6 +223,9 @@ void DCanvas::DrawTranslatedPatchSP (const byte *source, byte *dest, int count, 
 // Translated, translucent patch drawers
 void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	unsigned int *fg2rgb, *bg2rgb;
 	byte *colormap = V_ColorMap;
 
@@ -233,6 +254,9 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 
 void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
+	if (count <= 0)
+		return;
+
 	int c = 0;
 	unsigned int *fg2rgb, *bg2rgb;
 	byte *colormap = V_ColorMap;
@@ -268,6 +292,9 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 // care about the patch's actual contents, just it's outline.
 void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	byte fill = (byte)V_ColorFill;
 
 	do
@@ -284,6 +311,9 @@ void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int 
 // care about the patch's actual contents, just it's outline.
 void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	unsigned int *bg2rgb;
 	unsigned int fg;
 
@@ -319,6 +349,9 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 // Normal patch drawers
 void DCanvas::DrawPatchD (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	do
 	{
 		*((unsigned int *)dest) = V_Palette[*source++];
@@ -328,6 +361,9 @@ void DCanvas::DrawPatchD (const byte *source, byte *dest, int count, int pitch)
 
 void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
+	if (count <= 0)
+		return;
+
 	int c = 0;
 
 	do
@@ -342,6 +378,9 @@ void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch,
 // Translucent patch drawers (always 50%)
 void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	do
 	{
 		*((unsigned int *)dest) = ((V_Palette[*source++] & 0xfefefe) >> 1) +
@@ -352,6 +391,9 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 
 void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
+	if (count <= 0)
+		return;
+
 	int c = 0;
 
 	do
@@ -367,6 +409,9 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 // Translated patch drawers
 void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	do
 	{
 		*((unsigned int *)dest) = V_Palette[V_ColorMap[*source++]];
@@ -376,6 +421,9 @@ void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, i
 
 void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
+	if (count <= 0)
+		return;
+
 	int c = 0;
 
 	do
@@ -390,6 +438,9 @@ void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, 
 // Translated, translucent patch drawers
 void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	do
 	{
 		*((unsigned int *)dest) = ((V_Palette[V_ColorMap[*source++]] & 0xfefefe) >> 1) +
@@ -400,6 +451,9 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 
 void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
+	if (count <= 0)
+		return;
+
 	int c = 0;
 
 	do
@@ -418,6 +472,9 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 // care about the patch's actual contents, just it's outline.
 void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	do
 	{
 		*((int *)dest) = V_ColorFill;
@@ -432,6 +489,9 @@ void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int 
 // care about the patch's actual contents, just it's outline.
 void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, int pitch)
 {
+	if (count <= 0)
+		return;
+
 	int fill = (V_ColorFill & 0xfefefe) >> 1;
 
 	do
