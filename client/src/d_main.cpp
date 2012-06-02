@@ -1621,7 +1621,7 @@ void D_DoomMain (void)
 	if (Args.GetArg(1))
 	{
 		std::string demoarg = Args.GetArg(1);
-		if (demoarg.find(".odd"))
+		if (demoarg.find(".odd") != std::string::npos)
 			CL_NetDemoPlay(demoarg);
 	}
 
