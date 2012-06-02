@@ -41,6 +41,7 @@ EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_timelimit)
 
 EXTERN_CVAR(sv_vote_majority)
+EXTERN_CVAR(sv_vote_countabs)
 EXTERN_CVAR(sv_vote_timelimit)
 EXTERN_CVAR(sv_vote_timeout)
 
@@ -567,10 +568,21 @@ vote_result_t Vote::check(void) {
 		return VOTE_NO;
 	}
 
-	// If we've run out of time with an undecided vote, the result is no.
+	// If we've run out of time with an undecided vote, we need a result now.
 	if (this->get_countdown() <= 0) {
-		return VOTE_NO;
+		if (sv_vote_countabs) {
+			// Since the vote didn't already pass and all vote calculations
+			// up to now take absent voters into account, we know it failed.
+			return VOTE_NO;
+		} else {
+			// This last calculation does not take absent voters into account.
+			if (yes >= this->calc_yes(true)) {
+				return VOTE_YES;
+			}
+			return VOTE_NO;
+		}
 	}
+
 	return VOTE_UNDEC;
 }
 
@@ -594,9 +606,18 @@ size_t Vote::count_yes(void) {
 	return count;
 }
 
-// Calculate the number of players needed for the vote to pass.
-size_t Vote::calc_yes(void) {
-	float f_calc = this->tally.size() * sv_vote_majority;
+// Calculate the number of players needed for the vote to pass.  Pass true
+// for the first param if you don't want to count absent voters.
+size_t Vote::calc_yes(const bool noabs) {
+	size_t size;
+
+	if (noabs) {
+		size = this->count_yes() + this->count_no();
+	} else {
+		size = this->tally.size();
+	}
+
+	float f_calc = size * sv_vote_majority;
 	size_t i_calc = (int)floor(f_calc + 0.5f);
 	if (f_calc > i_calc - vote_epsilon && f_calc < i_calc + vote_epsilon) {
 		return i_calc + 1;

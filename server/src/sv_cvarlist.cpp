@@ -168,6 +168,9 @@ CVAR (sv_ticbuffer, "1", "Buffer controller input from players experiencing sudd
 // Vote settings
 // =============
 
+// Enable or disable counting absnet voters as "no" if a vote is undecided.
+CVAR (sv_vote_countabs, "1", "Count absent voters as 'no' if the vote timer runs out.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 // A percentage of players needed to pass a vote.
 CVAR (sv_vote_majority, "0.5", "Ratio of yes votes needed for vote to pass.",
 	  CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
