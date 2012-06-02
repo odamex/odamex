@@ -198,16 +198,23 @@ void *I_ZoneBase (size_t *size)
 
 void I_BeginRead(void)
 {
-    patch_t *diskpatch = W_CachePatch("STDISK");
+	patch_t *diskpatch = W_CachePatch("STDISK");
 
-    if (!screen || !diskpatch || in_endoom)
-        return;
+	if (!screen || !diskpatch || in_endoom)
+		return;
 
-    screen->Lock();
+	screen->Lock();
 
-    screen->DrawPatch(diskpatch, (screen->width - 16), (screen->height - 16));
+	int scale = MIN(CleanXfac, CleanYfac);
+	int w = diskpatch->width() * scale;
+	int h = diskpatch->height() * scale;
+	// offset x and y for the lower right corner of the screen
+	int ofsx = screen->width - w + (scale * diskpatch->leftoffset());
+	int ofsy = screen->height - h + (scale * diskpatch->topoffset());
 
-    screen->Unlock();
+	screen->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
+
+	screen->Unlock();
 }
 
 void I_EndRead(void)
