@@ -1041,7 +1041,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 	int        sfx_id;
 	client_t  *cl;
 
-	if(!mo->player)
+	if (!mo || !mo->player)
 		return;
 
 	player_t &pl = *mo->player;
@@ -1061,24 +1061,12 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
         cl = &clients[i];
 
-		int x = 0, y = 0;
-		byte vol = 0;
-
-		if(mo)
-		{
-			x = mo->x;
-			y = mo->y;
-
-			vol = SV_PlayerHearingLoss(players[i], x, y);
-		}
+		byte vol = SV_PlayerHearingLoss(players[i], mo->x, mo->y);
 
 		MSG_WriteMarker (&cl->netbuf, svc_startsound);
-        if (mo == NULL)
-            MSG_WriteShort (&cl->netbuf, 0);
-        else
-            MSG_WriteShort (&cl->netbuf, mo->netid);
-		MSG_WriteLong (&cl->netbuf, x);
-		MSG_WriteLong (&cl->netbuf, y);
+		MSG_WriteShort (&cl->netbuf, mo->netid);
+		MSG_WriteLong (&cl->netbuf, mo->x);
+		MSG_WriteLong (&cl->netbuf, mo->y);
 		MSG_WriteByte (&cl->netbuf, channel);
 		MSG_WriteByte (&cl->netbuf, sfx_id);
 		MSG_WriteByte (&cl->netbuf, attenuation);
