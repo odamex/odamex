@@ -2204,6 +2204,15 @@ void G_DoPlayDemo (bool justStreamInput)
 		sv_nomonsters = *demo_p++;
 		byte who = *demo_p++;
 
+		// comatibility
+		sv_freelook = "0";
+		sv_allowjump = "0";
+		co_realactorheight = "0";
+		co_zdoomphys = "0";
+		co_allowdropoff = "0";
+		co_fixweaponimpacts = "0";
+		co_blockmapfix = "0";
+
 		if(!justStreamInput)
 			players.clear();
 
@@ -2272,15 +2281,6 @@ void G_DoPlayDemo (bool justStreamInput)
     		usergame = false;
 		}
 		demoplayback = true;
-
-		// comatibility
-		sv_freelook = "0";
-		sv_allowjump = "0";
-		co_realactorheight = "0";
-		co_zdoomphys = "0";
-		co_allowdropoff = "0";
-		co_fixweaponimpacts = "0";
-		co_blockmapfix = "0";
 
 		return;
 	} else {
