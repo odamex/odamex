@@ -91,6 +91,8 @@ void P_DropWeapon (player_t* player);
 void P_ClearTiccmdMovement(ticcmd_t *cmd);
 void P_FallingDamage (AActor *ent);
 void P_PlayerThink (player_t *player);
+bool P_AreTeammates(player_t &a, player_t &b);
+bool P_CanSpy(player_t &viewer, player_t &other);
 
 //
 // P_MOBJ

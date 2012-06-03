@@ -566,6 +566,25 @@ void P_DeathThink (player_t *player)
 	}
 }
 
+bool P_AreTeammates(player_t &a, player_t &b)
+{
+	// not your own teammate (at least for friendly fire, etc)
+	if (a.id == b.id)
+		return false;
+
+	return (sv_gametype == GM_COOP) ||
+		  ((a.userinfo.team == b.userinfo.team) &&
+		   (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF));
+}
+
+bool P_CanSpy(player_t &viewer, player_t &other)
+{
+	if (other.spectator || !other.mo)
+		return false;
+
+	return (viewer.spectator || P_AreTeammates(viewer, other) || demoplayback);
+}
+
 void SV_SendPlayerInfo(player_t &);
 
 //

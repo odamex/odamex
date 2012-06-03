@@ -357,43 +357,6 @@ BEGIN_COMMAND (weapprev)
 }
 END_COMMAND (weapprev)
 
-BEGIN_COMMAND (spynext)
-{
-	extern bool st_firsttime;
-
-	size_t curr;
-	size_t s = players.size();
-	for(curr = 0; curr < s; curr++)
-		if(players[curr].id == displayplayer().id)
-			break;
-
-	for(size_t i = 1; i < s; i++)
-	{
-		curr = (curr+1)%s;
-
-		if(!players[curr].mo)
-			continue;
-
-		if(demoplayback)
-		{
-			consoleplayer_id = players[curr].id;
-			displayplayer_id = players[curr].id;
-			st_firsttime = true;
-			break;
-		}
-		else if (consoleplayer().spectator ||
-			 sv_gametype == GM_COOP ||
-			 (sv_gametype != GM_DM &&
-				players[curr].userinfo.team == consoleplayer().userinfo.team) || 
-				(netdemo.isPlaying() || netdemo.isPaused()))
-		{
-			displayplayer_id = players[curr].id;
-			break;
-		}
-	}
-}
-END_COMMAND (spynext)
-
 extern constate_e ConsoleState;
 
 //

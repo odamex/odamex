@@ -445,15 +445,83 @@ void CL_ConnectClient(void)
 }
 
 //
+// CL_CheckDisplayPlayer
+//
+// Perfoms validation on the value of displayplayer_id based on the current
+// game state and status of the consoleplayer.
+//
+void CL_CheckDisplayPlayer()
+{
+	byte newid = 0;
+
+	if (!validplayer(displayplayer()) || !displayplayer().mo)
+		newid = consoleplayer_id;
+
+	if (!(P_CanSpy(consoleplayer(), displayplayer()) ||
+		  netdemo.isPlaying() || netdemo.isPaused()))
+		newid = consoleplayer_id;
+
+	if (newid)
+		displayplayer_id = newid;
+}
+
+//
+// CL_SpyCycle
+//
+// Cycles through the point-of-view of players in the game.  Checks
+// are made to ensure only spectators can view enemy players.
+//
+void CL_SpyCycle(bool forward)
+{
+	int direction = forward ? 1 : -1;
+    extern bool st_firsttime;
+
+    // make sure players[0] is valid
+    if (players.empty())
+        return;
+
+    if (!validplayer(displayplayer()))
+    {
+        CL_CheckDisplayPlayer();
+        return;
+    }
+
+	// get the index of the displayplayer in the players[] vector
+    size_t curr = &displayplayer() - &players[0];
+    size_t numplayers = players.size();
+
+    for (size_t i = 1; i < numplayers; i++)
+    {
+        curr = (curr + direction) % numplayers;
+        player_t &player = players[curr];
+
+        if (P_CanSpy(consoleplayer(), player) || player.id == consoleplayer_id ||
+            demoplayback || netdemo.isPlaying() || netdemo.isPaused())
+        {
+            if (!player.mo)
+                continue;
+
+            displayplayer_id = player.id;
+            CL_CheckDisplayPlayer();
+
+            if (demoplayback)
+            {
+                consoleplayer_id = player.id;
+                st_firsttime = true;
+            }
+
+            return;
+        }
+    }
+}
+
+
+//
 // CL_DisconnectClient
 //
 void CL_DisconnectClient(void)
 {
 	player_t &player = idplayer(MSG_ReadByte());
-
-	// if this was our displayplayer, update camera
-	if(&player == &displayplayer())
-		displayplayer_id = consoleplayer_id;
 
 	if(player.mo)
 	{
@@ -482,6 +550,9 @@ void CL_DisconnectClient(void)
 		if(players[i].mo)
 			players[i].mo->player = &players[i];
 	}
+
+	// if this was our displayplayer, update camera
+	CL_CheckDisplayPlayer();
 }
 
 /////// CONSOLE COMMANDS ///////
@@ -781,6 +852,18 @@ BEGIN_COMMAND (join)
 	MSG_WriteByte(&net_buffer, false);
 }
 END_COMMAND (join)
+
+BEGIN_COMMAND (spynext)
+{
+	CL_SpyCycle(true);
+}
+END_COMMAND (spynext)
+
+BEGIN_COMMAND (spyprev)
+{
+	CL_SpyCycle(false);
+}
+END_COMMAND (spyprev)
 
 void STACK_ARGS call_terms (void);
 
@@ -1086,15 +1169,8 @@ void CL_SetupUserInfo(void)
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?
-	bool teammate = p->userinfo.team == consoleplayer().userinfo.team;
-	bool teamgame = (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF);
-
-	if (p->id == displayplayer_id && !consoleplayer().spectator && teamgame && !teammate)
-		displayplayer_id = consoleplayer_id;
-
 	// [SL] 2012-05-24 - Were we spectating a teammate before we changed teams?
-	if (teamgame && p->id == consoleplayer_id && p->userinfo.team != displayplayer().userinfo.team)
-		displayplayer_id = consoleplayer_id;
+	CL_CheckDisplayPlayer();
 
 	extern bool st_firsttime;
 	st_firsttime = true;
@@ -2930,8 +3006,7 @@ void CL_Spectate()
 	}
 
 	// GhostlyDeath -- If the player matches our display player...
-	if (&player == &displayplayer())
-		displayplayer_id = consoleplayer_id;
+	CL_CheckDisplayPlayer();
 }
 
 void CL_ReadyState() {
