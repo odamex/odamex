@@ -843,6 +843,9 @@ void SV_CheckTimeouts (void)
 void SV_RemoveDisconnectedPlayer(player_t &player)
 {
     int player_id = player.id;
+	
+	if (!validplayer(player))
+		return;
 
 	// remove player awareness from all actors
 	AActor *mo;
@@ -863,14 +866,12 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 	Unlag::getInstance().unregisterPlayer(player_id);
 
 	// remove this player from the global players vector
-	for (size_t i=0; i<players.size(); i++)
+	if (!players.empty())
 	{
-		if (players[i].id == player_id)
-		{
-			players.erase(players.begin() + i);
-			free_player_ids.push(player_id);
-			break;
-		}
+		size_t index = &player - &players[0];
+
+		players.erase(players.begin() + index);
+		free_player_ids.push(player_id);
 	}
 
 	// update tracking cvar

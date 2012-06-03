@@ -522,6 +522,8 @@ void CL_SpyCycle(bool forward)
 void CL_DisconnectClient(void)
 {
 	player_t &player = idplayer(MSG_ReadByte());
+	if (players.empty() || !validplayer(player))
+		return;
 
 	if(player.mo)
 	{
@@ -529,23 +531,13 @@ void CL_DisconnectClient(void)
 		player.mo->Destroy();		
 	}
 
-	size_t i;
-
-	for(i = 0; i < players.size(); i++)
-	{
-		if(&players[i] == &player)
-		{
-			// GhostlyDeath <August 1, 2008> -- Play disconnect sound
-			// GhostlyDeath <August 6, 2008> -- Only if they really are inside
-			if (cl_disconnectalert && &player != &consoleplayer())
-				S_Sound (CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
-			players.erase(players.begin() + i);
-			break;
-		}
-	}
+	size_t index = &player - &players[0];
+	if (cl_disconnectalert && &player != &consoleplayer())
+		S_Sound (CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
+	players.erase(players.begin() + index);
 
 	// repair mo after player pointers are reset
-	for(i = 0; i < players.size(); i++)
+	for(size_t i = 0; i < players.size(); i++)
 	{
 		if(players[i].mo)
 			players[i].mo->player = &players[i];
