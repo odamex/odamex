@@ -122,7 +122,7 @@ bool SV_AddMaster(const char *masterip)
 	
 	if(m.masteraddr.ip[0] == 0 && m.masteraddr.ip[1] == 0 && m.masteraddr.ip[2] == 0 && m.masteraddr.ip[3] == 0)
 	{
-		Printf(PRINT_MEDIUM, "Failed to resolve master server: %s, not added", m.masterip.c_str(), NET_AdrToString(m.masteraddr));
+		Printf(PRINT_MEDIUM, "Failed to resolve master server: %s, not added", m.masterip.c_str());
 		return false;
 	}
 	else
