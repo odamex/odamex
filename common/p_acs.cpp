@@ -2341,6 +2341,7 @@ void DLevelScript::RunScript ()
 				}
 				sp -= 7;
 			}
+			break;
 
 		case PCD_THINGSOUND:
 			lookup = level.behavior->LookupString (STACK(2));
