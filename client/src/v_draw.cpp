@@ -590,6 +590,10 @@ void DCanvas::DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x0, i
 
 	int			xinc, yinc, col, w, ymul, xmul;
 
+	if (!patch || patch->width() <= 0 || patch->height() <= 0 ||
+		destwidth <= 0 || destheight <= 0)
+		return;
+
 	if (destwidth == patch->width() && destheight == patch->height())
 	{
 		DrawWrapper (drawer, patch, x0, y0);
@@ -745,6 +749,10 @@ void DCanvas::DrawPatchFlipped (const patch_t *patch, int x0, int y0) const
 	y0 = (height * y0) / 200;
 	destwidth = (width * patch->width()) / 320;
 	destheight = (height * patch->height()) / 200;
+
+	if (!patch || patch->width() <= 0 || patch->height() <= 0 ||
+		destwidth <= 0 || destheight <= 0)
+		return;
 
 	xinc = (patch->width() << 16) / destwidth;
 	yinc = (patch->height() << 16) / destheight;
