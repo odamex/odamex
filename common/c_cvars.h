@@ -100,6 +100,8 @@ public:
 	void ForceSet (const char *value);
 	void ForceSet (float value);
 
+	static void Transfer(const char *fromname, const char *toname);
+
 	static void EnableNoSet ();		// enable the honoring of CVAR_NOSET
 	static void EnableCallbacks ();
 

@@ -210,6 +210,32 @@ void cvar_t::RestoreDefault ()
 	m_Flags |= CVAR_ISDEFAULT;
 }
 
+//
+// cvar_t::Transfer
+//
+// Copies the value from one cvar to another and then removes the source cvar
+//
+void cvar_t::Transfer(const char *fromname, const char *toname)
+{
+	cvar_t *from, *to, *dummy;
+
+	from = FindCVar(fromname, &dummy);
+	to = FindCVar(toname, &dummy);
+
+	if (from && to)
+	{
+		to->ForceSet(from->m_Value);
+		to->ForceSet(from->m_String.c_str());
+
+		// remove the old cvar
+		cvar_t *cur = ad.GetCVars();
+		while (cur->m_Next != from)
+			cur = cur->m_Next;
+
+		cur->m_Next = from->m_Next;
+	}
+}
+
 cvar_t *cvar_t::cvar_set (const char *var_name, const char *val)
 {
 	cvar_t *var, *dummy;
