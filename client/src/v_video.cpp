@@ -582,7 +582,21 @@ BOOL V_SetResolution (int width, int height, int bits)
 	}
 
 	if ((int)(autoadjust_video_settings)) {
-		I_ClosestResolution (&width, &height, bits);
+		if (vid_fullscreen) {
+			// Fullscreen needs to check for a valid resolution.
+			I_ClosestResolution(&width, &height, bits);
+		} else {
+			// Windowed mode needs to have a check to make sure we don't
+			// make a window tinier than Doom's default, otherwise bad
+			// things might happen.
+			if (width < 320) {
+				width = 320;
+			}
+			if (height < 200) {
+				height = 200;
+			}
+		}
+
 		if (!I_CheckResolution (width, height, bits)) {				// Try specified resolution
 			if (!I_CheckResolution (oldwidth, oldheight, oldbits)) {// Try previous resolution (if any)
 		   		return false;
