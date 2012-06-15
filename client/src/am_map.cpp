@@ -55,6 +55,8 @@ extern patch_t *hu_font[];
 
 #include "am_map.h"
 
+int CL_GetPlayerColor(player_t*);
+
 static int Background, YourColor, WallColor, TSWallColor,
 		   FDWallColor, CDWallColor, ThingColor,
 		   SecretWallColor, GridColor, XHairColor,
@@ -1474,12 +1476,14 @@ void AM_drawPlayers(void)
 				case 3: color = V_GetColorFromString (palette, "C0 00 00"); break;
 				default: break;
 			}
-		} else
+		} else {
+			int playercolor = CL_GetPlayerColor(p);
 			color = BestColor (DefaultPalette->basecolors,
-							   RPART(p->userinfo.color),
-							   GPART(p->userinfo.color),
-							   BPART(p->userinfo.color),
+							   RPART(playercolor),
+							   GPART(playercolor),
+							   BPART(playercolor),
 							   DefaultPalette->numcolors);
+		}
 
 		pt.x = p->mo->x;
 		pt.y = p->mo->y;

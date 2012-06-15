@@ -320,6 +320,12 @@ CVAR (r_particles, "1","Draw particles",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
 CVAR_FUNC_DECL (r_stretchsky, "2", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Invulnerability sphere changes the palette of the sky
 CVAR (r_skypalette, "0", "Invulnerability sphere changes the palette of the sky",	CVARTYPE_BOOL, CVAR_ARCHIVE)
+// Enemy sprite coloring
+CVAR_FUNC_DECL (r_forceenemycolor, "0", "Changes the color of all enemies to the specified color", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR_FUNC_DECL (r_enemycolor, "40 cf 00", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Teammate sprite coloring
+CVAR_FUNC_DECL (r_forceteamcolor, "0", "Changes the color of all teammates to the specified color", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR_FUNC_DECL (r_teamcolor, "40 cf 00", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 #ifdef _XBOX // The burn wipe works better in 720p
 CVAR (r_wipetype, "2", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)

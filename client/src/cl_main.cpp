@@ -161,6 +161,83 @@ CVAR_FUNC_IMPL (cl_updaterate)
 		var.Set(3.0f);
 }
 
+// [SL] Force enemies to have the specified color
+EXTERN_CVAR (r_forceenemycolor)
+EXTERN_CVAR (r_forceteamcolor)
+static int enemycolor = 0, teamcolor = 0;
+
+int CL_GetPlayerColor(player_t *player)
+{
+	if (!player)
+		return 0;
+
+	if (sv_gametype == GM_COOP)
+	{
+		if (r_forceteamcolor && player->id != consoleplayer_id)
+			return teamcolor;
+	}
+	else if (sv_gametype == GM_DM)
+	{
+		if (r_forceenemycolor && player->id != consoleplayer_id)
+			return enemycolor;
+	}
+	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player))
+			return enemycolor;
+		if (r_forceteamcolor &&
+			(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
+			return teamcolor;
+
+		// Adjust the shade of color for team games
+		int red = RPART(player->userinfo.color);
+		int green = GPART(player->userinfo.color);
+		int blue = BPART(player->userinfo.color);
+
+		int intensity = MAX(MAX(red, green), blue);
+
+		if (player->userinfo.team == TEAM_BLUE)
+			return (0x7F + intensity / 2);
+		if (player->userinfo.team == TEAM_RED)
+			return (0x7F + intensity / 2) << 16;
+	}
+
+	return player->userinfo.color;
+}
+
+static void CL_RebuildAllPlayerTranslations()
+{
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		int color = CL_GetPlayerColor(&players[i]);
+		R_BuildPlayerTranslation(players[i].id, color);
+	}
+}
+
+CVAR_FUNC_IMPL (r_enemycolor)
+{
+	// cache the color whenever the user changes it
+	enemycolor = V_GetColorFromString(NULL, var.cstring());
+	CL_RebuildAllPlayerTranslations();
+}
+
+CVAR_FUNC_IMPL (r_teamcolor)
+{
+	// cache the color whenever the user changes it
+	teamcolor = V_GetColorFromString(NULL, var.cstring());
+	CL_RebuildAllPlayerTranslations();
+}
+
+CVAR_FUNC_IMPL (r_forceenemycolor)
+{
+	CL_RebuildAllPlayerTranslations();
+}
+
+CVAR_FUNC_IMPL (r_forceteamcolor)
+{
+	CL_RebuildAllPlayerTranslations();
+}
+
 EXTERN_CVAR (cl_weaponpref1)
 EXTERN_CVAR (cl_weaponpref2)
 EXTERN_CVAR (cl_weaponpref3)
@@ -1104,7 +1181,6 @@ void CL_SendUserInfo(void)
 	}
 }
 
-
 //
 // CL_FindPlayer
 //
@@ -1151,8 +1227,6 @@ void CL_SetupUserInfo(void)
 
 	p->GameTime			= MSG_ReadShort();
 
-	R_BuildPlayerTranslation (p->id, p->userinfo.color);
-
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
 
@@ -1163,6 +1237,9 @@ void CL_SetupUserInfo(void)
 	// to the other team?
 	// [SL] 2012-05-24 - Were we spectating a teammate before we changed teams?
 	CL_CheckDisplayPlayer();
+
+	int color = CL_GetPlayerColor(p);
+	R_BuildPlayerTranslation (p->id, color);
 
 	extern bool st_firsttime;
 	st_firsttime = true;

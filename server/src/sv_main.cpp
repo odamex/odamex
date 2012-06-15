@@ -1336,19 +1336,6 @@ void SV_CheckTeam (player_t &player)
 	if (sv_gametype != GM_CTF && 
 			(player.userinfo.team < 0 || player.userinfo.team >= sv_teamsinplay))
 		SV_ForceSetTeam (player, SV_GoodTeam ());
-
-	// Force colors
-	switch (player.userinfo.team)
-	{
-		case TEAM_BLUE:
-			player.userinfo.color = (0x000000FF);
-			break;
-		case TEAM_RED:
-			player.userinfo.color = (0x00FF0000);
-			break;
-		default:
-			break;
-	}
 }
 
 //

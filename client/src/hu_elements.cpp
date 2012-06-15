@@ -37,6 +37,7 @@
 #include "v_video.h"
 
 size_t P_NumPlayersInGame(void);
+int CL_GetPlayerColor(player_t*);
 
 extern NetDemo netdemo;
 extern bool HasBehavior;
@@ -617,10 +618,11 @@ void EAPlayerColors(int x, int y,
 
 		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player)) {
+			int playercolor = CL_GetPlayerColor(player);
 			int color = BestColor(DefaultPalette->basecolors,
-			                      RPART(player->userinfo.color),
-			                      GPART(player->userinfo.color),
-			                      BPART(player->userinfo.color),
+			                      RPART(playercolor),
+			                      GPART(playercolor),
+			                      BPART(playercolor),
 			                      DefaultPalette->numcolors);
 
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
@@ -647,10 +649,11 @@ void EATeamPlayerColors(int x, int y,
 
 		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
+			int playercolor = CL_GetPlayerColor(player);
 			int color = BestColor(DefaultPalette->basecolors,
-			                      RPART(player->userinfo.color),
-			                      GPART(player->userinfo.color),
-			                      BPART(player->userinfo.color),
+			                      RPART(playercolor),
+			                      GPART(playercolor),
+			                      BPART(playercolor),
 			                      DefaultPalette->numcolors);
 
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
