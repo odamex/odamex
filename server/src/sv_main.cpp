@@ -4029,7 +4029,7 @@ void SV_RConLogout (player_t &player)
 
 	if (cl->allow_rcon)
 	{
-		Printf(PRINT_HIGH, "rcon logout from %s", NET_AdrToString(cl->address));
+		Printf(PRINT_HIGH, "rcon logout from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
 		cl->allow_rcon = false;
 	}
 }
@@ -4053,10 +4053,11 @@ void SV_RConPassword (player_t &player)
 	if (!password.empty() && MD5SUM(password + cl->digest) == challenge)
 	{
 		cl->allow_rcon = true;
-		Printf(PRINT_HIGH, "rcon login from %s", NET_AdrToString(cl->address));
+		Printf(PRINT_HIGH, "rcon login from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
 	}
 	else
 	{
+		Printf(PRINT_HIGH, "rcon login failure from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
 		MSG_WriteString (&cl->reliablebuf, "Bad password\n");
@@ -4290,7 +4291,11 @@ void SV_ParseCommands(player_t &player)
 				const char *str = MSG_ReadString();
 
 				if (player.client.allow_rcon)
+				{
+					Printf(PRINT_HIGH, "rcon command from %s - %s -> %s",
+							player.userinfo.netname, NET_AdrToString(net_from), str);
 					AddCommandString (str);
+				}
 			}
 			break;
 
