@@ -1625,13 +1625,32 @@ void CL_UpdatePlayer()
 	fixed_t x = MSG_ReadLong();
 	fixed_t y = MSG_ReadLong();
 	fixed_t z = MSG_ReadLong();
-	angle_t angle = MSG_ReadLong();
+
+	angle_t angle = 0, pitch = 0;
+
+	// [SL] 2012-06-15 - Netdemo compatibility with 0.6.0 and prior
+	if (gameversion <= 60)
+	{
+		angle = MSG_ReadLong();
+	}
+	else
+	{
+		angle = MSG_ReadShort() << FRACBITS;
+		pitch = MSG_ReadShort() << FRACBITS;
+	}
+
 	int frame = MSG_ReadByte();
 	fixed_t momx = MSG_ReadLong();
 	fixed_t momy = MSG_ReadLong();
 	fixed_t momz = MSG_ReadLong();
 
-	int invisibility = MSG_ReadLong();
+	int invisibility = 0;
+	
+	// [SL] 2012-06-15 - Netdemo compatibility with 0.6.0 and prior
+	if (gameversion <= 60)
+		invisibility = MSG_ReadLong();
+	else
+		invisibility = MSG_ReadByte();
 
 	if	(!validplayer(*p) || !p->mo)
 		return;
@@ -1646,13 +1665,9 @@ void CL_UpdatePlayer()
     // [Russell] - hack, read and set invisibility flag
     p->powers[pw_invisibility] = invisibility;
     if (p->powers[pw_invisibility])
-    {
         p->mo->flags |= MF_SHADOW;
-    }
     else
-    {
         p->mo->flags &= ~MF_SHADOW;
-    }
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
@@ -1677,6 +1692,7 @@ void CL_UpdatePlayer()
 	newsnap.setMomY(momy);
 	newsnap.setMomZ(momz);
 	newsnap.setAngle(angle);
+	newsnap.setPitch(pitch);
 	newsnap.setFrame(frame);
 
 	// Mark the snapshot as continuous unless the player just teleported

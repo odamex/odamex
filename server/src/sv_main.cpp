@@ -3453,7 +3453,17 @@ void SV_WriteCommands(void)
 				MSG_WriteLong(&cl->netbuf, players[j].mo->x);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->y);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->z);
-				MSG_WriteLong(&cl->netbuf, players[j].mo->angle);
+
+				if (GAMEVER > 60)
+				{
+					MSG_WriteShort(&cl->netbuf, players[j].mo->angle >> FRACBITS);
+					MSG_WriteShort(&cl->netbuf, players[j].mo->pitch >> FRACBITS);
+				}
+				else
+				{
+					MSG_WriteLong(&cl->netbuf, players[j].mo->angle);
+				}
+
 				if (players[j].mo->frame == 32773)
 					MSG_WriteByte(&cl->netbuf, PLAYER_FULLBRIGHTFRAME);
 				else
@@ -3467,7 +3477,10 @@ void SV_WriteCommands(void)
 				// [Russell] - hack, tell the client about the partial
 				// invisibility power of another player.. (cheaters can disable
 				// this but its all we have for now)
-				MSG_WriteLong(&cl->netbuf, players[j].powers[pw_invisibility]);
+				if (GAMEVER > 60)
+					MSG_WriteByte(&cl->netbuf, players[j].powers[pw_invisibility]);
+				else
+					MSG_WriteLong(&cl->netbuf, players[j].powers[pw_invisibility]);
 			}
 		}
 
