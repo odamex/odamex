@@ -194,12 +194,12 @@ int CL_GetPlayerColor(player_t *player)
 		int green = GPART(player->userinfo.color);
 		int blue = BPART(player->userinfo.color);
 
-		int intensity = MAX(MAX(red, green), blue);
+		int intensity = MAX(MAX(red, green), blue) / 3;
 
 		if (player->userinfo.team == TEAM_BLUE)
-			return (0x7F + intensity / 2);
+			return (0xAA + intensity);
 		if (player->userinfo.team == TEAM_RED)
-			return (0x7F + intensity / 2) << 16;
+			return (0xAA + intensity) << 16;
 	}
 
 	return player->userinfo.color;
