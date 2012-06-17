@@ -922,6 +922,24 @@ BEGIN_COMMAND (join)
 }
 END_COMMAND (join)
 
+BEGIN_COMMAND (flagnext)
+{
+	if (sv_gametype == GM_CTF && (consoleplayer().spectator || netdemo.isPlaying()))
+	{
+		for (int i = 0; i < NUMTEAMS; i++)
+		{
+			byte id = CTFdata[i].flagger;
+			if (id != 0 && displayplayer_id != id)
+			{
+				displayplayer_id = id;
+				CL_CheckDisplayPlayer();
+				return;
+			}
+		}
+	}
+}
+END_COMMAND (flagnext)
+
 BEGIN_COMMAND (spynext)
 {
 	CL_SpyCycle(true);
@@ -933,6 +951,21 @@ BEGIN_COMMAND (spyprev)
 	CL_SpyCycle(false);
 }
 END_COMMAND (spyprev)
+
+BEGIN_COMMAND (spy)
+{
+	byte id = consoleplayer_id;
+
+	if (argc > 1)
+		id = atoi(argv[1]);
+
+	displayplayer_id = id;
+	CL_CheckDisplayPlayer();
+
+	if (displayplayer_id != id)
+		Printf(PRINT_HIGH, "Unable to spy player id %i!\n", id);
+}
+END_COMMAND (spy)
 
 void STACK_ARGS call_terms (void);
 
