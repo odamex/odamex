@@ -1203,7 +1203,7 @@ void EATargets(int x, int y, const float scale,
 
 			// FIXME: This bit of code is way too generous with the target
 			//        names, needs to be narrower angle. [AM]
-			fixed_t tr_x, tr_y, gxt, gyt, tx, tz, xscale;
+			fixed_t tr_x, tr_y, gxt, gyt, tx, tz;
 
 			// transform the origin point
 			tr_x = players[i].mo->x - viewx;
@@ -1217,10 +1217,6 @@ void EATargets(int x, int y, const float scale,
 			// thing is behind view plane?
 			if (tz < (FRACUNIT*4))
 				continue;
-
-			// [AM] For some reason this is throwing an
-			//      'unused variable' warning for me.  Why?
-			xscale = FixedDiv (FocalLengthX, tz);
 
 			gxt = -FixedMul (tr_x, viewsin);
 			gyt = FixedMul (tr_y, viewcos);
