@@ -596,6 +596,30 @@ static void R_DrawSky (visplane_t *pl)
 }
 
 //
+// R_MakeSpans
+//
+
+void R_MakeSpans(visplane_t *pl, void(*spanfunc)(int, int, int))
+{
+	for (int x = pl->minx; x <= pl->maxx + 1; x++)
+	{
+		unsigned int t1 = pl->top[x-1];
+		unsigned int b1 = pl->bottom[x-1];
+		unsigned int t2 = pl->top[x];
+		unsigned int b2 = pl->bottom[x];
+		
+		for (; t1 < t2 && t1 <= b1; t1++)
+			spanfunc(t1, spanstart[t1], x-1);
+		for (; b1 > b2 && b1 >= t1; b1--)
+			spanfunc(b1, spanstart[b1], x-1);
+		while (t2 < t1 && t2 <= b2)
+			spanstart[t2++] = x;
+		while (b2 > b1 && b2 >= t2)
+			spanstart[b2--] = x;
+	}
+}
+
+//
 // R_DrawSlopedPlane
 //
 // Calculates the vectors a, b, & c, which are used to texture map a sloped
@@ -673,26 +697,7 @@ void R_DrawSlopedPlane(visplane_t *pl)
 
 	basecolormap = pl->colormap;	// [RH] set basecolormap
    
-	pl->top[pl->maxx+1] = 0xffffffffu;
-	pl->top[pl->minx-1] = 0xffffffffu;
-
-	// Make spans
-	for (int x = pl->minx; x <= pl->maxx + 1; x++)
-	{
-		unsigned int t1 = pl->top[x-1];
-		unsigned int b1 = pl->bottom[x-1];
-		unsigned int t2 = pl->top[x];
-		unsigned int b2 = pl->bottom[x];
-		
-		for (; t1 < t2 && t1 <= b1; t1++)
-			R_MapSlopedPlane (t1, spanstart[t1], x-1);
-		for (; b1 > b2 && b1 >= t1; b1--)
-			R_MapSlopedPlane (b1, spanstart[b1] ,x-1);
-		while (t2 < t1 && t2 <= b2)
-			spanstart[t2++] = x;
-		while (b2 > b1 && b2 >= t2)
-			spanstart[b2--] = x;
-	}
+	R_MakeSpans(pl, R_MapSlopedPlane);
 }
 
 void R_DrawLevelPlane(visplane_t *pl)
@@ -728,26 +733,7 @@ void R_DrawLevelPlane(visplane_t *pl)
 
 	planezlight = zlight[light];
 
-	pl->top[pl->maxx+1] = 0xffffffffu;
-	pl->top[pl->minx-1] = 0xffffffffu;
-
-	// Make Spans
-	for (int x = pl->minx; x <= pl->maxx + 1; x++)
-	{
-		unsigned int t1 = pl->top[x-1];
-		unsigned int b1 = pl->bottom[x-1];
-		unsigned int t2 = pl->top[x];
-		unsigned int b2 = pl->bottom[x];
-		
-		for (; t1 < t2 && t1 <= b1; t1++)
-			R_MapLevelPlane (t1, spanstart[t1], x-1);
-		for (; b1 > b2 && b1 >= t1; b1--)
-			R_MapLevelPlane (b1, spanstart[b1] ,x-1);
-		while (t2 < t1 && t2 <= b2)
-			spanstart[t2++] = x;
-		while (b2 > b1 && b2 >= t2)
-			spanstart[b2--] = x;
-	}
+	R_MakeSpans(pl, R_MapLevelPlane);
 }
 
 
@@ -895,6 +881,9 @@ void R_DrawPlanes (void)
 				if (ds_source != ds_cursource)
 					R_SetSpanSource_ASM (ds_source);
 #endif
+
+				pl->top[pl->maxx+1] = 0xffffffffu;
+				pl->top[pl->minx-1] = 0xffffffffu;
 
 				if (P_IsPlaneLevel(&pl->secplane))
 					R_DrawLevelPlane(pl);
