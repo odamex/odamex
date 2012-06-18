@@ -3378,6 +3378,20 @@ fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane)
 	return -FixedMul(plane->invc, FixedMul(plane->a, x) + FixedMul(plane->b, y) + plane->d);
 }
 
+double P_PlaneZ(double x, double y, const plane_t *plane)
+{
+	if (!plane)
+		return MAXINT / 65536.0;
+
+	static const double m = 1.0 / (65536.0 * 65536.0);
+
+	// Is the plane level?  (Z value is constant for entire plane)
+	if (P_IsPlaneLevel(plane))
+		return -double(plane->c) * plane->d * m;
+
+	return -(plane->a * x + plane->b * y + plane->d) / plane->c;
+}
+
 
 //
 // P_FloorHeight()

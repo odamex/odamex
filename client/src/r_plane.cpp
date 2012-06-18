@@ -621,19 +621,19 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	// map coordinate (0, 0, planez(0,0)) but texture offset and rotation get applied
 	p.x = -yoffsf * cosang - xoffsf * sinang;
 	p.z = -yoffsf * sinang + xoffsf * cosang;
-	p.y = FIXED2FLOAT(P_PlaneZ(FLOAT2FIXED(p.x), FLOAT2FIXED(p.z), &pl->secplane));
+	p.y = P_PlaneZ(p.x, p.z, &pl->secplane);
 
 	// Point t is the point along the plane (texwidth, 0, planez(texwidth, 0)) with texture
 	// offset and rotation applied
 	t.x = p.x - scaledflatwidth * sinang;
 	t.z = p.z + scaledflatwidth * cosang;
-	t.y = FIXED2FLOAT(P_PlaneZ(FLOAT2FIXED(t.x), FLOAT2FIXED(t.z), &pl->secplane));
+	t.y = P_PlaneZ(t.x, t.z, &pl->secplane);
 
 	// Point s is the point along the plane (0, texheight, planez(0, texheight)) with texture
 	// offset and rotation applied
 	s.x = p.x + scaledflatheight * cosang;
 	s.z = p.z + scaledflatheight * sinang;
-	s.y = FIXED2FLOAT(P_PlaneZ(FLOAT2FIXED(s.x), FLOAT2FIXED(s.z), &pl->secplane));
+	s.y = P_PlaneZ(s.x, s.z, &pl->secplane);
 	
 	// Translate the points to their position relative to viewx, viewy and
 	// rotate them based on viewangle

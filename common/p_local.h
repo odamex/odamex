@@ -245,6 +245,7 @@ void	P_ApplyTorque(AActor *mo);
 void	P_CopySector(sector_t *dest, sector_t *src);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
+double P_PlaneZ(double x, double y, const plane_t *plane);
 fixed_t P_FloorHeight(fixed_t x, fixed_t y, const sector_t *sec = NULL);
 fixed_t P_FloorHeight(const AActor *mo);
 fixed_t P_FloorHeight(const sector_t *sector);
