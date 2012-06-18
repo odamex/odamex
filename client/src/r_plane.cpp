@@ -666,9 +666,10 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	
 	// Translate the points to their position relative to viewx, viewy and
 	// rotate them based on viewangle
-	M_TranslateVec3(&p);
-	M_TranslateVec3(&t);
-	M_TranslateVec3(&s);
+	angle_t rotation = (angle_t)(-(int)viewangle + ANG90);
+	M_TranslateVec3(&p, &viewpos, rotation);
+	M_TranslateVec3(&t, &viewpos, rotation);
+	M_TranslateVec3(&s, &viewpos, rotation);
 	
 	// Create direction vector m from point p to point t, and n from point p to point s
 	M_SubVec3(&m, &t, &p);
