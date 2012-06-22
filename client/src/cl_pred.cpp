@@ -43,6 +43,7 @@
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictsectors)
+EXTERN_CVAR (cl_predictlocalplayer)
 
 extern NetGraph netgraph;
 
@@ -241,11 +242,22 @@ static void CL_PredictLocalPlayer(int predtic)
 	// Restore the angle, viewheight, etc for the player
 	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
 
+	if (!cl_predictlocalplayer)
+	{
+		if (predtic == gametic)
+		{
+			P_PlayerThink(player);
+			player->mo->RunThink();
+		}
+
+		return;
+	}
+
 	if (!predicting)
 		P_PlayerThink(player);
 	else
 		P_MovePlayer(player);
-	
+
 	player->mo->RunThink();
 }
 
@@ -308,43 +320,47 @@ void CL_PredictWorld(void)
 	PlayerSnapshot snap = p->snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
-	while (++predtic < gametic)
+	if (cl_predictlocalplayer)
 	{
-		if (cl_predictsectors)
-			CL_PredictSectors(predtic);
-		CL_PredictLocalPlayer(predtic);
-	}
-
-	// If the player didn't just spawn or teleport, nudge the player from
-	// his position last tic to this new corrected position.  This smooths the
-	// view when there's a misprediction.
-	if (snap.isContinuous())
-	{
-		PlayerSnapshot correctedprevsnap(p->tic, p);
-
-		// Did we predict correctly?
-		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
-					   (correctedprevsnap.getY() == prevsnap.getY()) &&
-					   (correctedprevsnap.getZ() == prevsnap.getZ());
-
-		if (!correct)
+		while (++predtic < gametic)
 		{
-			// Update the netgraph concerning our prediction's error
-			netgraph.setMisprediction(true);
+			if (cl_predictsectors)
+				CL_PredictSectors(predtic);
+			CL_PredictLocalPlayer(predtic);  
+		}
 
-			// Lerp from the our previous position to the correct position
-			PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);	
-			lerpedsnap.toPlayer(p);
+		// If the player didn't just spawn or teleport, nudge the player from
+		// his position last tic to this new corrected position.  This smooths the
+		// view when there's a misprediction.
+		if (snap.isContinuous())
+		{
+			PlayerSnapshot correctedprevsnap(p->tic, p);
+
+			// Did we predict correctly?
+			bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
+						   (correctedprevsnap.getY() == prevsnap.getY()) &&
+						   (correctedprevsnap.getZ() == prevsnap.getZ());
+
+			if (!correct)
+			{
+				// Update the netgraph concerning our prediction's error
+				netgraph.setMisprediction(true);
+
+				// Lerp from the our previous position to the correct position
+				PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);	
+				lerpedsnap.toPlayer(p);
 			
-			// [SL] 2012-04-26 - Snap directly to the corrected position in
-			// the z direction.  This prevents players from floating above
-			// lifts when the lift height is mispredicted.
-			p->mo->z = correctedprevsnap.getZ();
+				// [SL] 2012-04-26 - Snap directly to the corrected position in
+				// the z direction.  This prevents players from floating above
+				// lifts when the lift height is mispredicted.
+				p->mo->z = correctedprevsnap.getZ();
+			}
 		}
 	}
 
 	predicting = false;
 
+	// Run thinkers for current gametic
 	if (cl_predictsectors)
 		CL_PredictSectors(gametic);		
 	CL_PredictLocalPlayer(gametic);
