@@ -77,6 +77,9 @@ CVAR_FUNC_DECL (sv_maxclients, "4", "Maximum clients that can connect to a serve
 // Maximum number of players that can join the game, the rest are spectators
 CVAR_FUNC_DECL (sv_maxplayers,	"4", "Maximum players that can join the game, the rest are spectators",
       CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+// Maximum number of players that can be on a team
+CVAR_FUNC_DECL (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team",
+      CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Clients can only join if they specify a password
 CVAR_FUNC_DECL (join_password, "", "Clients can connect if they have this password",
       CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)

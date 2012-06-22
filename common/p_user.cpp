@@ -109,6 +109,22 @@ size_t P_NumPlayersInGame()
 	return num_players;
 }
 
+// P_NumPlayersOnTeam()
+//
+// Returns the number of active players on a team.  No specs or downloaders.
+size_t P_NumPlayersOnTeam(team_t team)
+{
+	size_t num_players = 0;
+
+	for (size_t i = 0;i < players.size();++i)
+	{
+		if (!players[i].spectator && players[i].ingame() &&
+		    players[i].userinfo.team == team)
+			++num_players;
+	}
+	return num_players;
+}
+
 //
 // P_ClearTiccmdMovement
 //

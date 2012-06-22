@@ -47,6 +47,7 @@ EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_gametype)
 EXTERN_CVAR (sv_maxclients)
 EXTERN_CVAR (sv_maxplayers)
+EXTERN_CVAR (sv_maxplayersperteam)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_timelimit)
 
@@ -54,6 +55,7 @@ EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (sv_allowtargetnames)
 
 size_t P_NumPlayersInGame();
+size_t P_NumPlayersOnTeam(team_t team);
 
 // GhostlyDeath -- From Strawberry-Doom
 // [AM] This doesn't belong here.
@@ -172,11 +174,26 @@ int teamTextColor(byte team) {
 
 // Return a "help" string.
 std::string HelpText() {
-	if (P_NumPlayersInGame() < sv_maxplayers) {
-		return "Press USE to join";
+	if (P_NumPlayersInGame() >= sv_maxplayers)
+	{
+		return "Game is full";
 	}
 
-	return "Game is full";
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		size_t min_players = MAXPLAYERS;
+		for (byte i = 0;i < NUMTEAMS;i++)
+		{
+			size_t players = P_NumPlayersOnTeam((team_t)i);
+			if (players < min_players)
+				min_players = players;
+		}
+		if (min_players >= sv_maxplayersperteam) {
+			return "Game is full";
+		}
+	}
+
+	return "Press USE to join";
 }
 
 // Return a string that contains the name of the player being spectated,

@@ -177,6 +177,38 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 	}
 }
 
+// [AM] - Force extras on a team to become spectators.
+CVAR_FUNC_IMPL (sv_maxplayersperteam)
+{
+	if (var == 0)
+		return;
+
+	if (var < 0)
+		var.Set((float)0);
+
+	if (var > MAXPLAYERS)
+		var.Set(MAXPLAYERS);
+
+	for (int i = 0;i < NUMTEAMS;i++)
+	{
+		int normalcount = 0;
+		for (size_t j = 0; j < players.size(); j++)
+		{
+			if (players[j].userinfo.team == i && players[j].ingame() &&
+			    !players[j].spectator)
+			{
+				normalcount++;
+
+				if (normalcount > var)
+				{
+					SV_SetPlayerSpec(players[j], true);
+					SV_PlayerPrintf(j, PRINT_HIGH, "Active player limit reduced. You are now a spectator!\n");
+				}
+			}
+		}
+	}
+}
+
 EXTERN_CVAR (sv_allowcheats)
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_timelimit)
@@ -290,6 +322,7 @@ void SV_ServerSettingChange (void);
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 bool P_CheckSightEdges (const AActor* t1, const AActor* t2, float radius_boost = 0.0);
 bool P_CheckSightEdges2 (const AActor* t1, const AActor* t2, float radius_boost = 0.0);
+size_t P_NumPlayersOnTeam(team_t team);
 
 void SV_WinCheck (void);
 
@@ -1346,40 +1379,31 @@ void SV_CheckTeam (player_t &player)
 team_t SV_GoodTeam (void)
 {
 	int teamcount = NUMTEAMS;
-	if (sv_gametype != GM_CTF && 
-			sv_teamsinplay >= 0 && sv_teamsinplay <= NUMTEAMS)
+	if (sv_gametype != GM_CTF && sv_teamsinplay >= 0 &&
+	    sv_teamsinplay <= NUMTEAMS)
 		teamcount = sv_teamsinplay;
 
 	if (teamcount == 0)
 	{
 		I_Error ("Teamplay is set and no teams are enabled!\n");
 		return TEAM_NONE;
-	}	
-
-	int *teamsizes = new int[teamcount];
-	memset(teamsizes, 0, sizeof(teamsizes));
-
-	// Determine the number of active players on each team
-	for (size_t i = 0; i < players.size(); i++)
-	{
-		if (players[i].ingame() && !players[i].spectator && 
-				players[i].userinfo.team >= 0 && players[i].userinfo.team < teamcount)
-			teamsizes[players[i].userinfo.team]++;
 	}
 
 	// Find the smallest team
-	int smallest_team_size = MAXPLAYERS;
+	size_t smallest_team_size = MAXPLAYERS;
 	team_t smallest_team = (team_t)0;
-	for (int i = 0; i < teamcount; i++)
+	for (int i = 0;i < teamcount;i++)
 	{
-		if (teamsizes[i] < smallest_team_size)
+		size_t team_size = P_NumPlayersOnTeam((team_t)i);
+		if (team_size < smallest_team_size)
 		{
-			smallest_team_size = teamsizes[i];
+			smallest_team_size = team_size;
 			smallest_team = (team_t)i;
 		}
 	}
 
-    delete[] teamsizes;
+	if (smallest_team_size >= sv_maxplayersperteam)
+		return TEAM_NONE;
 
 	return smallest_team;
 }
@@ -3822,6 +3846,20 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 			// Too many players.
 			if (!(NumPlayers < sv_maxplayers)) {
 				return;
+			}
+
+			// Check to make sure we're not exceeding sv_maxplayersperteam.
+			if (sv_maxplayersperteam && (sv_gametype == GM_TEAMDM ||
+			                             sv_gametype == GM_CTF))
+			{
+				if (P_NumPlayersOnTeam(player.userinfo.team) >= sv_maxplayersperteam)
+				{
+					if (SV_GoodTeam() == TEAM_NONE)
+						return;
+
+					SV_ForceSetTeam(player, SV_GoodTeam());
+					SV_CheckTeam(player);
+				}
 			}
 
 			// [SL] 2011-09-01 - Clear any previous SV_MidPrint (sv_motd for example)
