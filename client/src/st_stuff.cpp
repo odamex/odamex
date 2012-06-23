@@ -71,6 +71,7 @@ static int		lu_palette;
 
 EXTERN_CVAR (idmypos)
 EXTERN_CVAR (sv_allowredscreen)
+EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (hud_fullhudtype)
 
 CVAR_FUNC_IMPL (r_painintensity)
@@ -81,33 +82,40 @@ CVAR_FUNC_IMPL (r_painintensity)
 		var.Set (1.f);
 }
 
-CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
+void ST_AdjustStatusBarScale(bool scale)
 {
-	if (var)
+	if (scale)
 	{
 		// Stretch status bar to fill width of screen
-
 		ST_WIDTH = screen->width;
    		ST_HEIGHT = (32 * screen->height) / 200;
 	}
 	else
 	{
 		// Do not stretch status bar
-
 		ST_WIDTH = 320;
 		ST_HEIGHT = 32;
 	}
 
-	if (!(&consoleplayer())->spectator) {
-		ST_X = (screen->width-ST_WIDTH)/2;
-		ST_Y = screen->height - ST_HEIGHT;
-	} else {
+	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
+	{
 		ST_X = 0;
 		ST_Y = screen->height;
+	}
+	else
+	{
+		ST_X = (screen->width-ST_WIDTH)/2;
+		ST_Y = screen->height - ST_HEIGHT;
 	}
 
 	setsizeneeded = true;
 	st_firsttime = true;
+}
+
+
+CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
+{
+	ST_AdjustStatusBarScale(var);
 }
 
 // [RH] Needed when status bar scale changes
@@ -118,10 +126,6 @@ extern BOOL automapactive;
 DCanvas *stbarscreen;
 // [RH] Active status bar
 DCanvas *stnumscreen;
-
-BOOL DrawNewHUD;		// [RH] Draw the new HUD?
-BOOL DrawNewSpecHUD;	// [Nes] Draw the new spectator HUD?
-
 
 // functions in st_new.c
 void ST_initNew (void);
@@ -521,10 +525,10 @@ void ST_refreshBackground(void)
 			if (!demoplayback || !democlassic) {
 				// [RH] Always draw faceback with the player's color
 				//		using a translation rather than a different patch.
-				V_ColorMap = translationtables + (consoleplayer().id) * 256;
+				V_ColorMap = translationtables + (displayplayer_id) * 256;
 				BG->DrawTranslatedPatch (faceback, ST_FX, ST_FY);
 			} else {
-				BG->DrawPatch (faceclassic[consoleplayer().id-1], ST_FX, ST_FY);
+				BG->DrawPatch (faceclassic[displayplayer_id-1], ST_FX, ST_FY);
 			}
 		}
 
@@ -963,7 +967,7 @@ int ST_calcPainOffset(void)
 	static int	lastcalc;
 	static int	oldhealth = -1;
 
-	health = consoleplayer().health;
+	health = displayplayer().health;
 
 	if(health < -1)
 		health = -1;
@@ -995,7 +999,7 @@ void ST_updateFaceWidget(void)
 	static int	priority = 0;
 	BOOL	 	doevilgrin;
 
-	player_t *plyr = &consoleplayer();
+	player_t *plyr = &displayplayer();
 
 	if (priority < 10)
 	{
@@ -1163,7 +1167,7 @@ void ST_updateWidgets(void)
 	static int	largeammo = 1994; // means "n/a"
 	int 		i;
 
-	player_t *plyr = &consoleplayer();
+	player_t *plyr = &displayplayer();
 
 	// must redirect the pointer if the ready weapon has changed.
 	//	if (w_ready.data != plyr->readyweapon)
@@ -1288,7 +1292,7 @@ void ST_Ticker (void)
 {
 	st_randomnumber = M_Random();
 	ST_updateWidgets();
-	st_oldhealth = consoleplayer().health;
+	st_oldhealth = displayplayer().health;
 }
 
 /*
@@ -1335,7 +1339,7 @@ void ST_doPaletteStuff(void)
 	float	cnt;
 	int		bzc;
 	float 	blend[4];
-	player_t *plyr = &consoleplayer();
+	player_t *plyr = &displayplayer();
 
 	blend[0] = blend[1] = blend[2] = blend[3] = 0;
 
@@ -1428,10 +1432,6 @@ void ST_doPaletteStuff(void)
 			palette = 0;
 	}
 
-	// Don't do palette effects if using spynext in a netdemo
-	if (&(displayplayer()) != plyr && netdemo.isPlaying())
-		palette = 0;
-
 	if (palette != st_palette)
 	{
 		st_palette = palette;
@@ -1515,17 +1515,19 @@ void ST_Drawer (void)
 	if (noisedebug)
 		S_NoiseDebug ();
 
-	if ((realviewheight == screen->height && viewactive) || (&consoleplayer())->spectator)
+	if (screenblocks == 12)
 	{
-		if (DrawNewHUD) {
-			if (hud_fullhudtype >= 1) {
-				hud::OdamexHUD();
-			} else {
-				hud::ZDoomHUD();
-			}
-		} else if (DrawNewSpecHUD) {
+		// [SL] no HUD
+	}
+	else if (screenblocks == 11)
+	{
+		if (consoleplayer().spectator && (displayplayer_id == consoleplayer_id))
 			hud::SpectatorHUD();
-		}
+		else if (hud_fullhudtype >= 1)
+			hud::OdamexHUD();
+		else
+			hud::ZDoomHUD();
+
 		st_firsttime = true;
 	}
 	else
@@ -1586,7 +1588,7 @@ void ST_loadGraphics(void)
 	int facenum;
 	char namebuf[9];
 
-	player_t *plyr = &consoleplayer();
+	player_t *plyr = &displayplayer();
 
 	namebuf[8] = 0;
 	if (plyr)
@@ -1770,7 +1772,7 @@ void ST_initData(void)
 	st_oldhealth = -1;
 
 	for (i=0;i<NUMWEAPONS;i++)
-		oldweaponsowned[i] = consoleplayer().weaponowned[i];
+		oldweaponsowned[i] = displayplayer().weaponowned[i];
 
 	for (i=0;i<3;i++)
 		keyboxes[i] = -1;

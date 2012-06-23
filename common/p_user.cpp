@@ -945,6 +945,7 @@ player_s::player_s()
 	ping = 0;
 	last_received = 0;
 	tic = 0;
+	spying = id;
 	spectator = false;
 
 	joinafterspectatortime = level.time - TICRATE*5;
@@ -1049,6 +1050,7 @@ player_s &player_s::operator =(const player_s &other)
 	last_received = other.last_received;
 
 	tic = other.tic;
+	spying = other.spying;
 	spectator = other.spectator;
 	joinafterspectatortime = other.joinafterspectatortime;
 	timeout_callvote = other.timeout_callvote;

@@ -317,6 +317,7 @@ EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (cl_autorecord)
 EXTERN_CVAR (cl_splitnetdemos)
+EXTERN_CVAR (st_scale)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -352,6 +353,8 @@ team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 void AM_Stop();
+
+void ST_AdjustStatusBarScale(bool scale);
 
 //
 // CL_CalculateWorldIndexSync
@@ -529,6 +532,7 @@ void CL_ConnectClient(void)
 //
 void CL_CheckDisplayPlayer()
 {
+	static byte previd = consoleplayer_id;
 	byte newid = 0;
 
 	if (!validplayer(displayplayer()) || !displayplayer().mo)
@@ -538,8 +542,21 @@ void CL_CheckDisplayPlayer()
 		  netdemo.isPlaying() || netdemo.isPaused()))
 		newid = consoleplayer_id;
 
+	if (displayplayer_id != previd)
+		newid = displayplayer_id;
+
 	if (newid)
+	{
+		// Request information about this player from the server
+		// (weapons, ammo, health, etc)
+		MSG_WriteMarker(&net_buffer, clc_spy);
+		MSG_WriteByte(&net_buffer, newid);
 		displayplayer_id = newid;
+
+		ST_AdjustStatusBarScale(st_scale);
+	}
+
+	previd = newid;
 }
 
 //
@@ -1811,6 +1828,52 @@ void CL_UpdatePlayer()
 	CL_ClearPlayerJustTeleported(p);
 	
 	p->snapshots.addSnapshot(newsnap);
+}
+
+BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
+
+void CL_UpdatePlayerState(void)
+{
+	byte id				= MSG_ReadByte();
+	short health		= MSG_ReadShort();
+	byte armortype		= MSG_ReadByte();
+	short armorpoints	= MSG_ReadShort();
+
+	weapontype_t weap	= static_cast<weapontype_t>(MSG_ReadByte());
+
+	short ammo[NUMAMMO];
+	for (int i = 0; i < NUMAMMO; i++)
+		ammo[i] = MSG_ReadShort();
+
+	statenum_t stnum[NUMPSPRITES];
+	for (int i = 0; i < NUMPSPRITES; i++)
+	{
+		int n = MSG_ReadByte();
+		if (n == 0xFF)
+			stnum[i] = S_NULL;
+		else
+			stnum[i] = static_cast<statenum_t>(n);
+	}
+		
+	player_t &player = idplayer(id);
+	if (!validplayer(player) || !player.mo)
+		return;
+
+	player.health = player.mo->health = health;
+	player.armortype = armortype;
+	player.armorpoints = armorpoints;
+
+	player.readyweapon = weap;
+	player.pendingweapon = wp_nochange;
+
+	if (!player.weaponowned[weap])
+		P_GiveWeapon(&player, weap, false);
+	
+	for (int i = 0; i < NUMAMMO; i++)
+		player.ammo[i] = ammo[i];
+
+	for (int i = 0; i < NUMPSPRITES; i++)
+		P_SetPsprite(&player, i, stnum[i]);
 }
 
 ticcmd_t localcmds[MAXSAVETICS];
@@ -3113,8 +3176,6 @@ void CL_Spectate()
 	if (&player == &consoleplayer()) {
 		st_scale.Callback (); // refresh status bar size
 		if (player.spectator) {
-			for (int i=0 ; i<NUMPSPRITES ; i++) // remove all weapon sprites
-				(&player)->psprites[i].state = NULL;
 			player.playerstate = PST_LIVE; // resurrect dead spectators
 			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
 			player.deltaviewheight = 1000 << FRACBITS;
@@ -3151,6 +3212,7 @@ void CL_InitCommands(void)
 	cmds[svc_updatelocalplayer]	= &CL_UpdateLocalPlayer;
 	cmds[svc_userinfo]			= &CL_SetupUserInfo;
 	cmds[svc_teampoints]		= &CL_TeamPoints;
+	cmds[svc_playerstate]		= &CL_UpdatePlayerState;
 
 	cmds[svc_updateping]		= &CL_UpdatePing;
 	cmds[svc_spawnmobj]			= &CL_SpawnMobj;

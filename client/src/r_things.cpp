@@ -1255,8 +1255,8 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 		vis->mobjflags = MF_SHADOW;
 	}
 
-	// Don't display the weapon sprite if using spynext or spectating
-	if (displayplayer().id != consoleplayer().id || consoleplayer().spectator)
+	// Don't display the weapon sprite if using spectating without spynext
+	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
 		return;
 
 	R_DrawVisSprite (vis, vis->x1, vis->x2);

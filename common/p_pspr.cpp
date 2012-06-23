@@ -211,6 +211,9 @@ void P_SetPsprite(player_t* player, int position, statenum_t stnum)
 //
 void A_FireSound (player_t *player, const char *sound)
 {
+	if (!serverside && player->id != consoleplayer_id)
+		return;
+
  	UV_SoundAvoidPlayer (player->mo, CHAN_WEAPON, sound, ATTN_NORM);
 }
 
@@ -411,22 +414,19 @@ BOOL P_CheckAmmo (player_t *player)
 
 static void DecreaseAmmo(player_t *player, int amount)
 {
+	// [SL] 2012-06-17 - Don't decrease ammo for players we are viewing
+	// The server will send the correct ammo	
+	if (!serverside && player->id != consoleplayer_id)
+		return;
+
 	if (!sv_infiniteammo)
 	{
 		ammotype_t ammonum = weaponinfo[player->readyweapon].ammo;
 
 		if (ammonum < NUMAMMO)
-		{
 			player->ammo[ammonum] -= amount;
-		}
-		else
-		{
-			// denis - within reason!
-			if (ammonum - NUMAMMO < NUMAMMO)
-			{
-				player->maxammo[ammonum - NUMAMMO] -= amount;
-			}
-		}
+		else if (ammonum - NUMAMMO < NUMAMMO)
+			player->maxammo[ammonum - NUMAMMO] -= amount;
 	}	
 }
 
@@ -830,8 +830,7 @@ void A_FireRailgun (AActor *mo)
 		return;
 	}
 
-	if (!sv_infiniteammo)
-		player->ammo[weaponinfo[player->readyweapon].ammo] -= 10;
+	DecreaseAmmo(player, 10);
 
 	P_SetPsprite (player,
 				  ps_flash,

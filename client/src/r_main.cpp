@@ -50,8 +50,6 @@ void R_SpanInitData ();
 extern int *walllights;
 
 // [RH] Defined in d_main.cpp
-extern BOOL DrawNewHUD;
-extern BOOL DrawNewSpecHUD;
 extern dyncolormap_t NormalLight;
 extern bool r_fakingunderwater;
 
@@ -766,17 +764,6 @@ void R_ExecuteSetViewSize (void)
 		realviewwidth = ((setblocks*screen->width)/10) & (~(15>>(screen->is8bit() ? 0 : 2)));
 		realviewheight = ((setblocks*ST_Y)/10)&~7;
 		freelookviewheight = ((setblocks*screen->height)/10)&~7;
-	}
-
-	if ((&consoleplayer())->spectator && setblocks != 12) {
-		DrawNewHUD = false;
-		DrawNewSpecHUD = true;
-	} else if (setblocks == 11) {
-		DrawNewHUD = true;
-		DrawNewSpecHUD = false;
-	} else {
-		DrawNewHUD = false;
-		DrawNewSpecHUD = false;
 	}
 
 	viewwidth = realviewwidth >> detailxshift;

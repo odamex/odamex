@@ -3411,6 +3411,46 @@ void SV_SendPackets(void)
 	}
 }
 
+void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
+{
+	if (!client || !player || !player->mo)
+		return;
+
+	buf_t *buf = &client->netbuf;
+
+	MSG_WriteMarker(buf, svc_playerstate);
+	MSG_WriteByte(buf, player->id);
+	MSG_WriteShort(buf, player->health);
+	MSG_WriteByte(buf, player->armortype);
+	MSG_WriteShort(buf, player->armorpoints);
+	
+	MSG_WriteByte(buf, player->readyweapon);
+
+	for (int i = 0; i < NUMAMMO; i++)
+		MSG_WriteShort(buf, player->ammo[i]);
+	
+	for (int i = 0; i < NUMPSPRITES; i++)
+	{	
+		pspdef_t *psp = &player->psprites[i];
+		if (psp->state)
+			MSG_WriteByte(buf, psp->state - states);
+		else
+			MSG_WriteByte(buf, 0xFF);
+	}
+}
+
+void SV_SpyPlayer(player_t &viewer)
+{
+	byte id = MSG_ReadByte();
+
+	player_t &other = idplayer(id);
+	if (!validplayer(other) || !P_CanSpy(viewer, other))
+		return;
+
+	viewer.spying = id;
+	SV_SendPlayerStateUpdate(&viewer.client, &other);
+}
+
 //
 // SV_WriteCommands
 //
@@ -3494,6 +3534,11 @@ void SV_WriteCommands(void)
 					MSG_WriteLong(&cl->netbuf, players[j].powers[pw_invisibility]);
 			}
 		}
+
+		// [SL] Send client info about player he is spying on 
+		player_t *target = &idplayer(players[i].spying);
+		if (validplayer(*target) && P_CanSpy(players[i], *target))
+			SV_SendPlayerStateUpdate(&players[i].client, target);
 
 		SV_UpdateHiddenMobj();
 
@@ -4389,6 +4434,10 @@ void SV_ParseCommands(player_t &player)
 			Printf(PRINT_HIGH, "Client abort.\n");
 			SV_DropClient(player);
 			return;
+
+		case clc_spy:
+			SV_SpyPlayer(player);
+			break;
 
 		// [AM] Vote
 		case clc_callvote:
