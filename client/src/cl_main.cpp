@@ -61,6 +61,7 @@
 #include "cl_vote.h"
 #include "p_mobj.h"
 #include "p_pspr.h"
+#include "d_netcmd.h"
 
 #include <string>
 #include <vector>
@@ -125,6 +126,8 @@ NetDemo netdemo;
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
 bool simulated_connection = false;
 bool forcenetdemosplit = false;		// need to split demo due to svc_reconnect
+
+NetCommand localcmds[MAXSAVETICS];
 
 extern NetGraph netgraph;
 
@@ -1876,13 +1879,6 @@ void CL_UpdatePlayerState(void)
 		P_SetPsprite(&player, i, stnum[i]);
 }
 
-ticcmd_t localcmds[MAXSAVETICS];
-
-void CL_SaveCmd(void)
-{
-	memcpy (&localcmds[gametic%MAXSAVETICS], &consoleplayer().cmd, sizeof(ticcmd_t));
-}
-
 //
 // CL_UpdateLocalPlayer
 //
@@ -2397,7 +2393,11 @@ void CL_KillMobj(void)
     if (!serverside && target->flags & MF_COUNTKILL)
 		level.killed_monsters++;
 
-	P_KillMobj (source, target, inflictor, joinkill);	
+	if (target->player == &consoleplayer())
+		for (size_t i = 0; i < MAXSAVETICS; i++)
+			localcmds[i].clear();
+			
+	P_KillMobj (source, target, inflictor, joinkill);
 }
 
 
@@ -3338,6 +3338,15 @@ void CL_ParseCommands(void)
 	}
 }
 
+
+void CL_SaveCmd(void)
+{
+	NetCommand *netcmd = &localcmds[gametic % MAXSAVETICS];
+	netcmd->fromPlayer(&consoleplayer());
+	netcmd->setTic(gametic);
+	netcmd->setWorldIndex(world_index);
+}
+
 extern int outrate;
 
 //
@@ -3353,11 +3362,6 @@ void CL_SendCmd(void)
 	if (!p->mo || gametic < 1 )
 		return;
 
-	// denis - we know server won't accept two changes per tic, so we shouldn't
-	//static int last_sent_tic = 0;
-	//if(last_sent_tic == gametic)
-	//	return;
-	
 	// GhostlyDeath -- If we are spectating, tell the server of our new position
 	if (p->spectator)
 	{
@@ -3367,10 +3371,6 @@ void CL_SendCmd(void)
 		MSG_WriteLong(&net_buffer, p->mo->y);
 		MSG_WriteLong(&net_buffer, p->mo->z);
 	}
-	// GhostlyDeath -- We just throw it all away down here since we need those buttons!
-
-	ticcmd_t *prevcmd = &localcmds[(gametic-1) % MAXSAVETICS];
-	ticcmd_t *curcmd  = &consoleplayer().cmd;
 
 	MSG_WriteMarker(&net_buffer, clc_move);
 
@@ -3378,63 +3378,14 @@ void CL_SendCmd(void)
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
 	// need to be used for client's positional prediction. 
     MSG_WriteLong(&net_buffer, gametic);
-    
-    // Send the server's tic we are currently simulating.  This indicates to the
-	// server which update of player positions the client is basing his actions
-	//  on.  Used by unlagging calculations.
-	MSG_WriteByte(&net_buffer, world_index & 0xFF);
 
-    // send the previous cmds in the message, so if the last packet
-    // was dropped, it can be recovered
-	MSG_WriteByte(&net_buffer,	prevcmd->ucmd.buttons);
-	MSG_WriteShort(&net_buffer,	p->mo->angle >> 16);
-	MSG_WriteShort(&net_buffer,	p->mo->pitch >> 16);
-	MSG_WriteShort(&net_buffer,	prevcmd->ucmd.forwardmove);
-	MSG_WriteShort(&net_buffer,	prevcmd->ucmd.sidemove);
-	MSG_WriteShort(&net_buffer, prevcmd->ucmd.upmove);
-	MSG_WriteByte(&net_buffer,	prevcmd->ucmd.impulse);
-
-    // send the current cmds in the message
-	MSG_WriteByte(&net_buffer,	curcmd->ucmd.buttons);
-	if (step_mode) 
-		MSG_WriteShort(&net_buffer, curcmd->ucmd.yaw);
-	else 
-		MSG_WriteShort(&net_buffer, (p->mo->angle + (curcmd->ucmd.yaw << 16)) >> 16);
-	MSG_WriteShort(&net_buffer,	(p->mo->pitch + (curcmd->ucmd.pitch << 16)) >> 16);
-	MSG_WriteShort(&net_buffer,	curcmd->ucmd.forwardmove);
-	MSG_WriteShort(&net_buffer,	curcmd->ucmd.sidemove);
-	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
-
-	// [SL] 2011-11-20 - Player isn't requesting a weapon change
-	// send player's weapon to server and server will correct it if wrong
-	if (!curcmd->ucmd.impulse && !(curcmd->ucmd.buttons & BT_CHANGE))
+	NetCommand *netcmd;
+	for (int i = 9; i >= 0; i--)
 	{
-		if (p->pendingweapon != wp_nochange)
-			MSG_WriteByte(&net_buffer, p->pendingweapon);
-		else
-			MSG_WriteByte(&net_buffer, p->readyweapon);
+		netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
+		netcmd->write(&net_buffer);
 	}
-	else
-		MSG_WriteByte(&net_buffer, curcmd->ucmd.impulse);
 
-#ifdef _UNLAG_DEBUG_
-	if 	(player.size() == 2 && 
-		(prevcmd->ucmd.buttons & BT_ATTACK || curcmd->ucmd.buttons & BT_ATTACK))
-	{
-		player_t *enemy;
-			
-		if (players[0].id != consoleplayer().id)
-			enemy = &players[0];
-		else
-			enemy = &players[1];
-			
-		int x = enemy->mo->x >> FRACBITS;
-		int y = enemy->mo->y >> FRACBITS;
-		DPrintf("Unlag: Weapon fired with svgametic = %d, enemy position = (%d, %d)\n",
-				last_svgametic, x, y);
-	}
-#endif	// _UNLAG_DEBUG_
-	
 	NET_SendPacket(net_buffer, serveraddr);
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);

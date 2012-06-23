@@ -3568,8 +3568,8 @@ void SV_PlayerTriedToCheat(player_t &player)
 //
 void SV_FlushPlayerCmds(player_t &player)
 {
-	while (!player.cmds.empty())
-		player.cmds.pop();
+	while (!player.cmdqueue.empty())
+		player.cmdqueue.pop();
 }
 
 //
@@ -3581,11 +3581,11 @@ void SV_FlushPlayerCmds(player_t &player)
 //
 int SV_CalculateNumTiccmds(player_t &player)
 {
-	if (!player.mo || player.cmds.empty())
+	if (!player.mo || player.cmdqueue.empty())
 		return 0;
 
-	const int minimum_cmds = 1;
-	const size_t maximum_queue_size = TICRATE / 4;
+	static const int minimum_cmds = 1;
+	static const size_t maximum_queue_size = TICRATE / 4;
 	
 	if (!sv_ticbuffer || player.spectator || player.playerstate == PST_DEAD)
 	{
@@ -3597,7 +3597,7 @@ int SV_CalculateNumTiccmds(player_t &player)
 		// Player is not moving
 		return 2 * minimum_cmds;
 	}
-	if (player.cmds.size() > maximum_queue_size)
+	if (player.cmdqueue.size() > maximum_queue_size)
 	{
 		// The player experienced a large latency spike so try to catch up by
 		// processing more than one ticcmd at the expense of appearing perfectly
@@ -3624,64 +3624,39 @@ int SV_CalculateNumTiccmds(player_t &player)
 //
 void SV_ProcessPlayerCmd(player_t &player)
 {
-	if (!validplayer(player))
+	static const int maxcmdmove = 12800;
+	
+	if (!validplayer(player) || !player.mo)
 		return;
 
 	#ifdef _TICCMD_QUEUE_DEBUG_
 	DPrintf("Cmd queue size for %s: %d\n", 
-				player.userinfo.netname, player.cmds.size());
+				player.userinfo.netname, player.cmdqueue.size());
 	#endif	// _TICCMD_QUEUE_DEBUG_
-
-	if (!player.mo)
-		return;
 
 	int num_cmds = SV_CalculateNumTiccmds(player);	
 
-	for (int i = 0; i < num_cmds && !player.cmds.empty(); i++)
+	for (int i = 0; i < num_cmds && !player.cmdqueue.empty(); i++)
 	{
-		usercmd_t *ucmd = &(player.cmds.front().ucmd);
+		NetCommand *netcmd = &(player.cmdqueue.front());
+		memset(&player.cmd, 0, sizeof(ticcmd_t));
 
-		// if the server thinks a player is alive and the player also thinks
-		// he's alive, we can update his angle
-		bool valid_ticcmd = (player.playerstate != PST_DEAD && ucmd->impulse != DEADIMPULSE);
+		player.tic = netcmd->getTic();
+		// Set the latency amount for Unlagging
+		Unlag::getInstance().setRoundtripDelay(player.id, netcmd->getWorldIndex() & 0xFF);
 
-		if (valid_ticcmd)
-		{
-			if (step_mode)
-				player.mo->angle = ucmd->yaw;
-			else
-				player.mo->angle = ucmd->yaw << FRACBITS;
-
-			if (!sv_freelook)
-				player.mo->pitch = 0;
-			else
-				player.mo->pitch = ucmd->pitch << FRACBITS;
-		}
-		else
-			P_ClearTiccmdMovement(&player.cmds.front());
-
-		if (abs(ucmd->forwardmove) > 12800 || abs(ucmd->sidemove) > 12800)
+		if ((netcmd->hasForwardMove() && abs(netcmd->getForwardMove()) > maxcmdmove) ||
+			(netcmd->hasSideMove() && abs(netcmd->getSideMove()) > maxcmdmove))
 		{
 			SV_PlayerTriedToCheat(player);
 			return;
 		}
 
-		// copy this ticcmd to the player.cmd so that it will be processsed
-		player.cmd.ucmd.buttons		= ucmd->buttons;
-		player.cmd.ucmd.yaw			= ucmd->yaw;
-		player.cmd.ucmd.pitch		= ucmd->pitch;
-		player.cmd.ucmd.forwardmove	= ucmd->forwardmove;
-		player.cmd.ucmd.sidemove	= ucmd->sidemove;
-		player.cmd.ucmd.upmove		= ucmd->upmove;
-		player.cmd.ucmd.impulse		= ucmd->impulse;
-		player.cmd.ucmd.roll		= ucmd->roll;
-		player.cmd.ucmd.msec		= ucmd->msec;
-		player.cmd.ucmd.use			= ucmd->use;
-		player.tic 					= player.cmds.front().tic;
-		
-		// Set the latency amount for Unlagging
-		Unlag::getInstance().setRoundtripDelay(player.id, player.cmds.front().svgametic);
+		netcmd->toPlayer(&player);
 
+		if (!sv_freelook)
+			player.mo->pitch = 0;
+			
 		// Apply this ticcmd using the game logic
 		if (!sv_speedhackfix && gamestate == GS_LEVEL)
 		{
@@ -3689,7 +3664,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 			player.mo->RunThink();
 		}
 
-		player.cmds.pop();		// remove this tic from the queue after being processed
+		player.cmdqueue.pop();		// remove this tic from the queue after being processed
 	}
 }
 
@@ -3704,61 +3679,26 @@ void SV_ProcessPlayerCmd(player_t &player)
 void SV_GetPlayerCmd(player_t &player)
 {
 	client_t *cl = &player.client;
-	ticcmd_t prevcmd, curcmd;
 
 	// The client-tic at the time this message was sent.  The server stores
 	// this and sends it back the next time it tells the client
-	int tic 					= MSG_ReadLong();
+	int tic = MSG_ReadLong();
 	
-	// The last server-tic the client received before sending this ticcmd.
-	// The server sends server-tics with every update of player positions.
-	byte svgametic				= MSG_ReadByte();
-	
-	// Get the previous cmd
-	prevcmd.tic					= tic - 1;
-	prevcmd.svgametic			= svgametic;
-	prevcmd.ucmd.buttons 		= MSG_ReadByte();
-	prevcmd.ucmd.yaw 			= MSG_ReadShort();
-	prevcmd.ucmd.pitch 			= MSG_ReadShort();
-	prevcmd.ucmd.forwardmove 	= MSG_ReadShort();
-	prevcmd.ucmd.sidemove		= MSG_ReadShort();
-	prevcmd.ucmd.upmove			= MSG_ReadShort();
-	prevcmd.ucmd.impulse		= MSG_ReadByte();
-	prevcmd.ucmd.roll			= 0;	// unused
-	prevcmd.ucmd.msec			= 0;	// unused
-	prevcmd.ucmd.use			= 0;	// unused
-
-	// Get the current cmd
-	curcmd.tic					= tic;
-	curcmd.svgametic			= svgametic;
-	curcmd.ucmd.buttons 		= MSG_ReadByte();
-	curcmd.ucmd.yaw 			= MSG_ReadShort();
-	curcmd.ucmd.pitch 			= MSG_ReadShort();
-	curcmd.ucmd.forwardmove 	= MSG_ReadShort();
-	curcmd.ucmd.sidemove		= MSG_ReadShort();
-	curcmd.ucmd.upmove			= MSG_ReadShort();
-	curcmd.ucmd.impulse			= MSG_ReadByte();
-	curcmd.ucmd.roll			= 0;	// unused
-	curcmd.ucmd.msec			= 0;	// unused
-	curcmd.ucmd.use				= 0;	// unused
-
-	// out of order packet
-	// TODO: Insert into the appropriate place in the queue
-	if (!player.mo || cl->lastclientcmdtic > tic)
-		return;
-
-	// if the server somehow missed the previous cmd in the last cmd
-	// (dropped packet), add it to the queue
-	if (  cl->lastclientcmdtic && (tic - cl->lastclientcmdtic >= 2)
-		     && gamestate != GS_INTERMISSION)
+	// Read the last 10 ticcmds from the client and add any new ones
+	// to the cmdqueue
+	for (int i = 9; i >= 0; i--)
 	{
-		player.cmds.push(prevcmd);
+		NetCommand netcmd;
+		netcmd.read(&net_message);
+		netcmd.setTic(tic - i);
+		
+		if (netcmd.getTic() > cl->lastclientcmdtic && gamestate == GS_LEVEL)
+		{
+			player.cmdqueue.push(netcmd);
+			cl->lastclientcmdtic = netcmd.getTic();
+			cl->lastcmdtic = gametic;
+		}
 	}
-
-	player.cmds.push(curcmd);
-
-	cl->lastclientcmdtic = tic;
-	cl->lastcmdtic = gametic;
 }
 
 void SV_UpdateConsolePlayer(player_t &player)

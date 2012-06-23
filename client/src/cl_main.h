@@ -43,7 +43,6 @@ extern buf_t     net_buffer;
 extern NetDemo	netdemo;
 
 #define MAXSAVETICS 70
-extern ticcmd_t localcmds[MAXSAVETICS];
 
 extern bool predicting;
 

@@ -126,24 +126,6 @@ size_t P_NumPlayersOnTeam(team_t team)
 }
 
 //
-// P_ClearTiccmdMovement
-//
-// Removes any movement or turning from a ticcmd
-// 
-void P_ClearTiccmdMovement(ticcmd_t *cmd)
-{
-	if (!cmd)
-		return;
-
-	cmd->ucmd.pitch = 0;
-	cmd->ucmd.yaw = 0;
-	cmd->ucmd.roll = 0;
-	cmd->ucmd.forwardmove = 0;
-	cmd->ucmd.sidemove = 0;
-	cmd->ucmd.upmove = 0;
-}
-
-//
 // P_Thrust
 // Moves the given origin along a given angle.
 //
@@ -976,7 +958,7 @@ player_s &player_s::operator =(const player_s &other)
 	playerstate = other.playerstate;
 	mo = other.mo;
 	cmd = other.cmd;
-	cmds = other.cmds;
+	cmdqueue = other.cmdqueue;
 	userinfo = other.userinfo;
 	fov = other.fov;
 	viewz = other.viewz;

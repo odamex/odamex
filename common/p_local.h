@@ -73,10 +73,6 @@
 // follow a player exlusively for 3 seconds
 #define BASETHRESHOLD	100
 
-// [SL] The impulse code to signify that a player is dead and his movement
-// should be ignored
-#define DEADIMPULSE 40
-
 //
 // P_PSPR
 //
@@ -88,7 +84,6 @@ void P_DropWeapon (player_t* player);
 //
 // P_USER
 //
-void P_ClearTiccmdMovement(ticcmd_t *cmd);
 void P_FallingDamage (AActor *ent);
 void P_PlayerThink (player_t *player);
 bool P_AreTeammates(player_t &a, player_t &b);

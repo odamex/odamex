@@ -51,6 +51,7 @@
 #include "huffman.h"
 
 #include "p_snapshot.h"
+#include "d_netcmd.h"
 
 //
 // Player states.
@@ -137,7 +138,7 @@ public:
 	AActor::AActorPtr	mo;
 
 	struct ticcmd_t cmd;	// the ticcmd currently being processed
-	std::queue<struct ticcmd_t> cmds;	// all received ticcmds
+	std::queue<struct NetCommand> cmdqueue;	// all received ticcmds
 
 	// [RH] who is this?
 	userinfo_t	userinfo;

@@ -59,16 +59,16 @@ struct zdemoheader_s {
 // Player movement
 
 struct usercmd_s {
-	byte	msec;			// not sure how to use this yet...
+	byte	msec;			// UNUSED 
 	byte	buttons;
 	short	pitch;			// up/down. currently just a y-sheering amount
-	short	yaw;			// left/right	// If you haven't guessed, I just
-	short	roll;			// tilt			// ripped these from Quake2's usercmd.
+	short	yaw;			// left/right
+	short	roll;			// UNUSED
 	short	forwardmove;
 	short	sidemove;
 	short	upmove;
 	byte	impulse;
-	byte	use;
+	byte	use;			// UNUSED
 	
 	usercmd_s() : msec(0), buttons(0), pitch(0), yaw(0), roll(0), forwardmove(0), sidemove(0), upmove(0), impulse(0), use(0) {}
 };

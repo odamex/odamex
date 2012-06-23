@@ -51,7 +51,7 @@ void P_DeathThink (player_t *player);
 void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
 
-static ticcmd_t cl_savedticcmds[MAXSAVETICS];
+extern NetCommand localcmds[MAXSAVETICS];
 static PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
 
 bool predicting;
@@ -234,13 +234,14 @@ static void CL_PredictLocalPlayer(int predtic)
 	if (!player->ingame() || !player->mo || player->tic >= predtic)
 		return;
 
+	// Restore the angle, viewheight, etc for the player
+	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
+
 	// Copy the player's previous input ticcmd for the tic 'predtic'
 	// to player.cmd so that P_MovePlayer can simulate their movement in
 	// that tic
-	player->cmd = cl_savedticcmds[predtic % MAXSAVETICS];
-	
-	// Restore the angle, viewheight, etc for the player
-	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
+	NetCommand *netcmd = &localcmds[predtic % MAXSAVETICS];
+	netcmd->toPlayer(player);
 
 	if (!cl_predictlocalplayer)
 	{
@@ -293,20 +294,12 @@ void CL_PredictWorld(void)
 	// Disable sounds, etc, during prediction
 	predicting = true;
 	
-	// Clear out past movements if we're dead!
-	if (consoleplayer().playerstate == PST_DEAD)
-		for (int i = 0; i < MAXSAVETICS; i++)
-			P_ClearTiccmdMovement(&cl_savedticcmds[i]);
-
 	// Figure out where to start predicting from
 	int predtic = consoleplayer().tic > 0 ? consoleplayer().tic: 0;
 	// Last position update from the server is too old!
 	if (predtic < gametic - MAXSAVETICS)
 		predtic = gametic - MAXSAVETICS;
 	
-	// Save a copy of the player's input for the current tic
-	cl_savedticcmds[gametic % MAXSAVETICS] = p->cmd;
-
 	// Save a snapshot of the player's state before prediction
 	PlayerSnapshot prevsnap(p->tic, p);
 	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
