@@ -32,6 +32,7 @@
 #endif
 
 #ifdef WIN32
+#include <Shlwapi.h>
 #include <io.h>
 #include <direct.h>
 #include <process.h>
@@ -399,6 +400,14 @@ std::string I_GetHomeDir(std::string user = "")
 std::string I_GetUserFileName (const char *file)
 {
 #if defined(UNIX) && !defined(GEKKO)
+	// return absolute or explicitly relative pathnames unmodified,
+	// so launchers or CLI/console users have control over netdemo placement
+	if (file &&
+		(file[0] == PATHSEPCHAR || // /path/to/file
+		(file[0] == '.' && file[1] == PATHSEPCHAR) || // ./file
+		(file[0] == '.' && file[1] == '.' && file[2] == PATHSEPCHAR))) // ../file
+		return std::string (file);
+
 	std::string path = I_GetHomeDir();
 
 	if(path[path.length() - 1] != PATHSEPCHAR)
@@ -431,6 +440,9 @@ std::string I_GetUserFileName (const char *file)
 	path += PATHSEP;
 	path += file;
 #else
+	if (!PathIsRelative(file))
+		return std::string (file);
+
 	std::string path = I_GetBinaryDir();
 
 	if(path[path.length() - 1] != PATHSEPCHAR)
