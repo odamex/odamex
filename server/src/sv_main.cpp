@@ -2720,14 +2720,14 @@ void SV_DrawScores()
 						(int)sortedplayers[i]->client.address.ip[2],
 						(int)sortedplayers[i]->client.address.ip[3]);
 
-                    Printf(PRINT_HIGH, "%-3d %-16s %-15s %-6d N/A  %-5d  N/A",
+                    Printf(PRINT_HIGH, "%-3d %-16s %-15s %-6d N/A  %-5d %-3d", 
 						i+1,
 						ip,
                         sortedplayers[i]->userinfo.netname,
                         sortedplayers[i]->points,
                         //sortedplayers[i]->captures,
-                        sortedplayers[i]->fragcount);
-                        //sortedplayers[i]->GameTime / 60);
+                        sortedplayers[i]->fragcount,
+                        sortedplayers[i]->GameTime / 60);
                 }
             }
         }
@@ -2777,14 +2777,14 @@ void SV_DrawScores()
 						(int)sortedplayers[i]->client.address.ip[2],
 						(int)sortedplayers[i]->client.address.ip[3]);
 
-					Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s  N/A",
+					Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d", 
 						i+1,
 						ip,
 						sortedplayers[i]->userinfo.netname,
 						sortedplayers[i]->fragcount,
 						sortedplayers[i]->deathcount,
-						str);
-						//sortedplayers[i]->GameTime / 60);
+						str,
+						sortedplayers[i]->GameTime / 60);
                 }
             }
         }
@@ -2828,14 +2828,14 @@ void SV_DrawScores()
 					(int)sortedplayers[i]->client.address.ip[2],
 					(int)sortedplayers[i]->client.address.ip[3]);
 
-				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s  N/A",
+				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d",
 					i+1,
 					ip,
 					sortedplayers[i]->userinfo.netname,
 					sortedplayers[i]->fragcount,
 					sortedplayers[i]->deathcount,
-					str);
-					//sortedplayers[i]->GameTime / 60);
+					str,
+					sortedplayers[i]->GameTime / 60);
 			}
         }
 
@@ -2864,14 +2864,14 @@ void SV_DrawScores()
 					(int)sortedplayers[i]->client.address.ip[2],
 					(int)sortedplayers[i]->client.address.ip[3]);
 
-				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s  N/A",
+				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d", 
 					i+1,
 					ip,
 					sortedplayers[i]->userinfo.netname,
 					sortedplayers[i]->killcount,
 					sortedplayers[i]->deathcount,
-					str);
-					//sortedplayers[i]->GameTime / 60);
+					str,
+					sortedplayers[i]->GameTime / 60);
         	}
         }
 
@@ -4637,6 +4637,15 @@ void SV_TouchSpecial(AActor *special, player_t *player)
     MSG_WriteShort(&cl->reliablebuf, special->netid);
 }
 
+void SV_PlayerTimes (void)
+{
+	for (size_t i = 0; i < players.size(); i++)
+	{                                  
+		if (players[i].ingame())
+			players[i].GameTime++;
+	}                          
+}
+                                                                             
 //
 // SV_StepTics
 //
@@ -4662,6 +4671,15 @@ void SV_StepTics (QWORD tics)
 		// the finished moving sectors until we've sent the clients the update
 		if (P_AtInterval(3))
 			SV_DestroyFinishedMovingSectors();
+
+		// increment player_t::GameTime for all players once a second
+		static int TicCount = 0;
+		// Only do this once a second.
+		if (TicCount++ >= 35)
+		{
+			SV_PlayerTimes();
+			TicCount = 0;
+		}
 
 		gametic++;
 	}
@@ -4764,7 +4782,7 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, " userinfo.color   - %d \n",		  player->userinfo.color);
 	Printf (PRINT_HIGH, " userinfo.skin    - %s \n",		  skins[player->userinfo.skin].name);
 	Printf (PRINT_HIGH, " userinfo.gender  - %d \n",		  player->userinfo.gender);
-//	Printf (PRINT_HIGH, " time             - %d \n",		  player->GameTime);
+	Printf (PRINT_HIGH, " time             - %d \n",		  player->GameTime);
 	Printf (PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
