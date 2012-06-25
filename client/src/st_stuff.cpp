@@ -1515,18 +1515,19 @@ void ST_Drawer (void)
 	if (noisedebug)
 		S_NoiseDebug ();
 
-	if (screenblocks == 12)
+	bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
+
+	if ((realviewheight == screen->height && viewactive) || spechud)
 	{
-		// [SL] no HUD
-	}
-	else if (screenblocks == 11)
-	{
-		if (consoleplayer().spectator && (displayplayer_id == consoleplayer_id))
-			hud::SpectatorHUD();
-		else if (hud_fullhudtype >= 1)
-			hud::OdamexHUD();
-		else
-			hud::ZDoomHUD();
+		if (screenblocks < 12)
+		{
+			if (spechud)
+				hud::SpectatorHUD();
+			else if (hud_fullhudtype >= 1)
+				hud::OdamexHUD();
+			else
+				hud::ZDoomHUD();
+		}
 
 		st_firsttime = true;
 	}
