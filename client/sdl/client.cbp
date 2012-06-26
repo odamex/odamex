@@ -345,6 +345,8 @@
 		<Unit filename="..\..\common\d_items.h" />
 		<Unit filename="..\..\common\d_main.h" />
 		<Unit filename="..\..\common\d_net.h" />
+		<Unit filename="..\..\common\d_netcmd.cpp" />
+		<Unit filename="..\..\common\d_netcmd.h" />
 		<Unit filename="..\..\common\d_netinf.h" />
 		<Unit filename="..\..\common\d_player.h" />
 		<Unit filename="..\..\common\d_protocol.cpp" />
