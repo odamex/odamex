@@ -578,6 +578,12 @@
 				RelativePath="..\common\d_net.h">
 			</File>
 			<File
+				RelativePath="..\common\d_netcmd.cpp">
+			</File>
+			<File
+				RelativePath="..\common\d_netcmd.h">
+			</File>
+			<File
 				RelativePath="..\common\d_netinf.h">
 			</File>
 			<File

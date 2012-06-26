@@ -32,7 +32,6 @@
 #endif
 
 #ifdef WIN32
-#include <shlwapi.h>
 #include <io.h>
 #include <direct.h>
 #include <process.h>
@@ -44,6 +43,7 @@
 #else
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <shlwapi.h>
 #endif // !_XBOX
 #endif // WIN32
 
