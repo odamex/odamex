@@ -138,7 +138,7 @@ public:
 	AActor::AActorPtr	mo;
 
 	struct ticcmd_t cmd;	// the ticcmd currently being processed
-	std::queue<struct NetCommand> cmdqueue;	// all received ticcmds
+	std::queue<NetCommand> cmdqueue;	// all received ticcmds
 
 	// [RH] who is this?
 	userinfo_t	userinfo;

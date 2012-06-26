@@ -26,7 +26,11 @@
 
 #include "doomtype.h"
 #include "i_net.h"
-#include "d_player.h"
+#include "m_fixed.h"
+ 
+// Forward declaration avoids circular reference
+class player_s;
+typedef player_s player_t;
 
 //
 // NetCommand
