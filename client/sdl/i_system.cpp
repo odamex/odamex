@@ -32,7 +32,7 @@
 #endif
 
 #ifdef WIN32
-#include <Shlwapi.h>
+#include <shlwapi.h>
 #include <io.h>
 #include <direct.h>
 #include <process.h>

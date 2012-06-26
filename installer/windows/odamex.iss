@@ -25,6 +25,7 @@ PrivilegesRequired=none
 ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
+AppVersion=0.6.0
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -54,7 +55,10 @@ Source: ..\..\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: clie
 Source: ..\..\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server
 Source: ..\..\odasrv.cfg; DestDir: {app}; Flags: ignoreversion; Components: server
 Source: ..\..\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher
+Source: ..\..\config-samples\*; DestDir: {app}; Flags: ignoreversion; Components: server
 Source: ..\..\odamex.wad; DestDir: {app}; Flags: ignoreversion; Components: client server
+Source: ..\..\libgcc_s_dw2-1.dll; DestDir: {app}; Flags: ignoreversion; Components: base
+Source: ..\..\libstdc++-6.dll; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\mingwm10.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher libs
 Source: ..\..\SDL.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\SDL_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
