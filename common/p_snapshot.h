@@ -385,7 +385,7 @@ public:
 
 	void setOnGround(fixed_t val)
 	{
-		mActorSnap.setOnGround(val);
+		mActorSnap.setOnGround(val != 0);
 		mFields |= PLY_ONGROUND;
 	}
 	

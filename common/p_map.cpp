@@ -1945,7 +1945,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
 	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);
 	
-	spawnprecise = (bool)co_fixweaponimpacts;
+	spawnprecise = (co_fixweaponimpacts != 0);
 
 	if (in->isaline)
 	{

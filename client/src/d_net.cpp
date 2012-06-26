@@ -93,7 +93,7 @@ void D_CheckNetGame (void)
 
     ticdup = 1;
 
-    step_mode = Args.CheckParm ("-stepmode");
+    step_mode = ((Args.CheckParm ("-stepmode")) != 0);
 }
 
 

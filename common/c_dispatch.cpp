@@ -441,7 +441,7 @@ BEGIN_COMMAND (if)
 	}
 	else if(op == "ne")
 	{
-		if_command_result = strcmp(var->cstring(), argv[3]);
+		if_command_result = ((strcmp(var->cstring(), argv[3])) != 0);
 	}
 	else
 	{

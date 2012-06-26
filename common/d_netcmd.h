@@ -46,15 +46,15 @@ class NetCommand
 public:
 	NetCommand();
 	
-	bool	hasButtons() const		{ return mFields & CMD_BUTTONS; }
-	bool	hasAngle() const		{ return mFields & CMD_ANGLE; }
-	bool	hasPitch() const		{ return mFields & CMD_PITCH; }
-	bool	hasForwardMove() const	{ return mFields & CMD_FORWARD; }
-	bool	hasSideMove() const		{ return mFields & CMD_SIDE; }
-	bool	hasUpMove() const		{ return mFields & CMD_UP; }
-	bool	hasImpulse() const		{ return mFields & CMD_IMPULSE; }
-	bool	hasDeltaYaw() const		{ return mFields & CMD_DELTAYAW; }
-	bool	hasDeltaPitch() const	{ return mFields & CMD_DELTAPITCH; }
+	bool	hasButtons() const		{ return ((mFields & CMD_BUTTONS) != 0); }
+	bool	hasAngle() const		{ return ((mFields & CMD_ANGLE) != 0); }
+	bool	hasPitch() const		{ return ((mFields & CMD_PITCH) != 0); }
+	bool	hasForwardMove() const	{ return ((mFields & CMD_FORWARD) != 0); }
+	bool	hasSideMove() const		{ return ((mFields & CMD_SIDE) != 0); }
+	bool	hasUpMove() const		{ return ((mFields & CMD_UP) != 0); }
+	bool	hasImpulse() const		{ return ((mFields & CMD_IMPULSE) != 0); }
+	bool	hasDeltaYaw() const		{ return ((mFields & CMD_DELTAYAW) != 0); }
+	bool	hasDeltaPitch() const	{ return ((mFields & CMD_DELTAPITCH) != 0); }
 	
 	int		getTic() const			{ return mTic; }
 	int		getWorldIndex() const	{ return mWorldIndex; }

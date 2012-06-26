@@ -188,7 +188,7 @@ inline	FArchive& operator>> (SDWORD &i) { DWORD in; operator>> (in); i = (SDWORD
 inline	FArchive& operator>> (SQWORD &i) { QWORD in; operator>> (in); i = (SQWORD)in; return *this; }
 //inline	FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
 //inline	FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
-inline	FArchive& operator>> (bool &b) { BYTE in; operator>> (in); b = (bool)in; return *this; }
+inline	FArchive& operator>> (bool &b) { BYTE in; operator>> (in); b = (in != 0); return *this; }
 inline  FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
 
 #ifdef WIN32

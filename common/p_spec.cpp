@@ -2816,9 +2816,9 @@ bool A_CheckTrigger(AActor *mo, AActor *triggerer) {
 		 ((mo->flags2 & MF2_DORMANT) && (triggerer->flags2 & MF2_PCROSS)))) {
 		int savedSide = TeleportSide;
 		TeleportSide = 0;
-		bool res = LineSpecials[mo->special](NULL, triggerer, mo->args[0],
+		bool res = (LineSpecials[mo->special](NULL, triggerer, mo->args[0],
 											 mo->args[1], mo->args[2],
-											 mo->args[3], mo->args[4]);
+											 mo->args[3], mo->args[4]) != 0);
 		TeleportSide = savedSide;
 		return res;
 	}
@@ -2833,34 +2833,34 @@ bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType) {
 	// The mobj type must agree with the activation type.
 	switch (mo->type) {
 	case MT_SECACTENTER:
-		trigger_action = activationType & SECSPAC_Enter;
+		trigger_action = ((activationType & SECSPAC_Enter) != 0);
 		break;
 	case MT_SECACTEXIT:
-		trigger_action = activationType & SECSPAC_Exit;
+		trigger_action = ((activationType & SECSPAC_Exit) != 0);
 		break;
 	case MT_SECACTHITFLOOR:
-		trigger_action = activationType & SECSPAC_HitFloor;
+		trigger_action = ((activationType & SECSPAC_HitFloor) != 0);
 		break;
 	case MT_SECACTHITCEIL:
-		trigger_action = activationType & SECSPAC_HitCeiling;
+		trigger_action = ((activationType & SECSPAC_HitCeiling) != 0);
 		break;
 	case MT_SECACTUSE:
-		trigger_action = activationType & SECSPAC_Use;
+		trigger_action = ((activationType & SECSPAC_Use) != 0);
 		break;
 	case MT_SECACTUSEWALL:
-		trigger_action = activationType & SECSPAC_UseWall;
+		trigger_action = ((activationType & SECSPAC_UseWall) != 0);
 		break;
 	case MT_SECACTEYESDIVE:
-		trigger_action = activationType & SECSPAC_EyesDive;
+		trigger_action = ((activationType & SECSPAC_EyesDive) != 0);
 		break;
 	case MT_SECACTEYESSURFACE:
-		trigger_action = activationType & SECSPAC_EyesSurface;
+		trigger_action = ((activationType & SECSPAC_EyesSurface) != 0);
 		break;
 	case MT_SECACTEYESBELOWC:
-		trigger_action = activationType & SECSPAC_EyesBelowC;
+		trigger_action = ((activationType & SECSPAC_EyesBelowC) != 0);
 		break;
 	case MT_SECACTEYESABOVEC:
-		trigger_action = activationType & SECSPAC_EyesAboveC;
+		trigger_action = ((activationType & SECSPAC_EyesAboveC) != 0);
 		break;
 	default:
 		// This isn't a sector action mobj.

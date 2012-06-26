@@ -556,7 +556,7 @@ void CL_CheckDisplayPlayer()
 		MSG_WriteByte(&net_buffer, newid);
 		displayplayer_id = newid;
 
-		ST_AdjustStatusBarScale(st_scale);
+		ST_AdjustStatusBarScale(st_scale != 0);
 	}
 
 	previd = newid;
@@ -2383,7 +2383,7 @@ void CL_KillMobj(void)
 
 	MeansOfDeath = MSG_ReadLong();
 	
-	bool joinkill = MSG_ReadByte();
+	bool joinkill = ((MSG_ReadByte()) != 0);
 
 	if (!target)
 		return;
@@ -3168,7 +3168,7 @@ void CL_Spectate()
 	player_t &player = CL_FindPlayer(MSG_ReadByte());
 
 	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
-	player.spectator = MSG_ReadByte();
+	player.spectator = ((MSG_ReadByte()) != 0);
 
 	if (player.spectator && wasalive)
 		P_DisconnectEffect(player.mo);

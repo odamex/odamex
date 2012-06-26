@@ -145,7 +145,7 @@ public:
 		int bytenum = id >> 3;
 		int bitnum = id & bytemask;	
 	
-		return (bitfield[bytenum] & (1 << bitnum));
+		return ((bitfield[bytenum] & (1 << bitnum)) != 0);
 	}
 	
 private:

@@ -1162,7 +1162,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 
 		data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
 		length = W_LumpLength(lumpnum);
-		I_PlaySong(data, length, bool(looping));
+		I_PlaySong(data, length, (looping != 0));
     }
     else
 	{
@@ -1173,7 +1173,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 		fclose(f);
 	
 		if (result == 1)
-			I_PlaySong(data, length, bool(looping));
+			I_PlaySong(data, length, (looping != 0));
 		M_Free(data);
 	}		
 		

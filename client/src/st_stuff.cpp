@@ -115,7 +115,7 @@ void ST_AdjustStatusBarScale(bool scale)
 
 CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
 {
-	ST_AdjustStatusBarScale(var);
+	ST_AdjustStatusBarScale(var != 0);
 }
 
 // [RH] Needed when status bar scale changes
