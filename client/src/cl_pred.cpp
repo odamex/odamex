@@ -200,6 +200,23 @@ static void CL_PredictSectors(int predtic)
 }
 
 //
+// CL_PredictSpying
+//
+// Handles calling the thinker routines for the player being spied with spynext.
+//
+static void CL_PredictSpying()
+{
+	player_t *player = &displayplayer();
+	if (consoleplayer_id == displayplayer_id)
+		return;
+
+	predicting = false;
+	
+	P_PlayerThink(player);
+	P_CalcHeight(player);
+}
+
+//
 // CL_PredictSpectator
 //
 //
@@ -213,12 +230,6 @@ static void CL_PredictSpectator()
 	
 	P_PlayerThink(player);
 	P_CalcHeight(player);
-	
-	if (consoleplayer_id != displayplayer_id)
-	{
-		P_PlayerThink(&displayplayer());
-		P_CalcHeight(&displayplayer());		
-	}
 	
 	predicting = false;
 }
@@ -279,6 +290,9 @@ void CL_PredictWorld(void)
 
 	// tenatively tell the netgraph that our prediction was successful
 	netgraph.setMisprediction(false);
+
+	if (consoleplayer_id != displayplayer_id)
+		CL_PredictSpying();
 
 	// [SL] 2012-03-10 - Spectators can predict their position without server
 	// correction.  Handle them as a special case and leave.
@@ -357,12 +371,6 @@ void CL_PredictWorld(void)
 	if (cl_predictsectors)
 		CL_PredictSectors(gametic);		
 	CL_PredictLocalPlayer(gametic);
-
-	if (consoleplayer_id != displayplayer_id)
-	{
-		P_PlayerThink(&displayplayer());
-		P_CalcHeight(&displayplayer());		
-	}
 }
 
 
