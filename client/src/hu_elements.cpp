@@ -188,7 +188,7 @@ std::string HelpText() {
 			if (players < min_players)
 				min_players = players;
 		}
-		if (min_players >= sv_maxplayersperteam) {
+		if (sv_maxplayersperteam && min_players >= sv_maxplayersperteam) {
 			return "Game is full";
 		}
 	}
