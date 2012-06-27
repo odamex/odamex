@@ -265,10 +265,7 @@ player_t		&displayplayer()
 
 player_t		&listenplayer()
 {
-	if (netdemo.isPlaying() || consoleplayer().spectator)
-		return displayplayer();
-
-	return consoleplayer();
+	return displayplayer();
 }
 
 // [RH] Name of screenshot file to generate (usually NULL)
