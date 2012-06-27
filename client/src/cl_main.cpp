@@ -838,14 +838,6 @@ END_COMMAND (serverinfo)
 // rate: takes a kbps value
 CVAR_FUNC_IMPL (rate)
 {
-/*  // [SL] 2011-09-02 - Commented out this code as it would force clients with
-	// a version that has rate in kbps to have a rate of < 5000 bps on an older
-	// server version that has rate in bps, resulting in an unplayable connection.
-
-	const int max_rate = 5000;	// 40Mbps, likely set erroneously
-	if (var > max_rate)
-		var.RestoreDefault();		
-*/
 	if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_rate);
