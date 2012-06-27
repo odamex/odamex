@@ -111,9 +111,8 @@ static void ExpandSoundData(byte *data,
     else
     {
         Sint16 *expanded = (Sint16 *) destination->abuf;
-        int expanded_length;
+        size_t expanded_length;
         int expand_ratio;
-        int i;
 
         // Generic expansion if conversion does not work:
         //
@@ -123,10 +122,10 @@ static void ExpandSoundData(byte *data,
 
         // number of samples in the converted sound
 
-        expanded_length = ((uint64_t) length * mixer_freq) / samplerate;
+        expanded_length = (length * mixer_freq) / samplerate;
         expand_ratio = (length << 8) / expanded_length;
 
-        for (i=0; i<expanded_length; ++i)
+        for (size_t i = 0; i < expanded_length; ++i)
         {
             Sint16 sample;
             int src;

@@ -79,7 +79,7 @@ void R_InitSkyMap ()
 {
 	texpatch_t *texpatch;
 	patch_t *wpatch;
-	int p_height, t_height,i,j,count;
+	int p_height, t_height,i,count;
 
 	if (textureheight == NULL)
 		return;
