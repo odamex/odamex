@@ -333,7 +333,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		memset (lumpsfound, 0, sizeof(lumpsfound));
 		if ( (f = fopen (iwad.c_str(), "rb")) )
 		{
-			fread (&header, sizeof(header), 1, f);
+			size_t res = fread (&header, sizeof(header), 1, f);
 			header.identification = LONG(header.identification);
 			if (header.identification == IWAD_ID ||
 				header.identification == PWAD_ID)

@@ -1481,6 +1481,7 @@ void G_DoLoadGame (void)
 {
     unsigned int i;
 	char text[16];
+	size_t res;
 
 	gameaction = ga_nothing;
 
@@ -1492,7 +1493,7 @@ void G_DoLoadGame (void)
 	}
 
 	fseek (stdfile, SAVESTRINGSIZE, SEEK_SET);	// skip the description field
-	fread (text, 16, 1, stdfile);
+	res = fread (text, 16, 1, stdfile);
 	if (strncmp (text, SAVESIG, 16))
 	{
 		Printf (PRINT_HIGH, "Savegame '%s' is from a different version\n", savename);
@@ -1501,7 +1502,7 @@ void G_DoLoadGame (void)
 
 		return;
 	}
-	fread (text, 8, 1, stdfile);
+	res = fread (text, 8, 1, stdfile);
 	text[8] = 0;
 
 	/*bglobal.RemoveAllBots (true);*/
@@ -1593,6 +1594,7 @@ void G_DoSaveGame (void)
 {
 	std::string name;
 	char *description;
+	size_t res;
 	int i;
 
 	G_SnapshotLevel ();
@@ -1613,9 +1615,9 @@ void G_DoSaveGame (void)
 
 	Printf (PRINT_HIGH, "Saving game to '%s'...\n", name.c_str());
 
-	fwrite (description, SAVESTRINGSIZE, 1, stdfile);
-	fwrite (SAVESIG, 16, 1, stdfile);
-	fwrite (level.mapname, 8, 1, stdfile);
+	res = fwrite (description, SAVESTRINGSIZE, 1, stdfile);
+	res = fwrite (SAVESIG, 16, 1, stdfile);
+	res = fwrite (level.mapname, 8, 1, stdfile);
 
 	FLZOFile savefile (stdfile, FFile::EWriting, true);
 	FArchive arc (savefile);
@@ -1789,7 +1791,7 @@ void G_WriteDemoTiccmd ()
 
         *demo_p++ = cmd->buttons;
 
-        fwrite(demo_tmp, demostep, 1, recorddemo_fp);
+        size_t res = fwrite(demo_tmp, demostep, 1, recorddemo_fp);
     }
 }
 
@@ -1870,7 +1872,7 @@ void G_BeginRecording (void)
     *demo_p++ = 0;
     *demo_p++ = 0;
 
-    fwrite(demo_tmp, 13, 1, recorddemo_fp);
+    size_t res = fwrite(demo_tmp, 13, 1, recorddemo_fp);
 }
 
 //

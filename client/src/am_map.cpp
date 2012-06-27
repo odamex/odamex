@@ -1656,7 +1656,7 @@ void AM_Drawer (void)
                 epsub = level.cluster - 1;
             }
 
-            sprintf (line, GStrings(i+level.levelnum-epsub));
+            strcpy (line, GStrings(i+level.levelnum-epsub));
             if (viewactive && screenblocks == 11)
                 FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
             else if (viewactive && screenblocks == 12)

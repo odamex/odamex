@@ -275,6 +275,7 @@ std::string W_AddFile (std::string filename)
 	FILE			*handle;
 	size_t			length;
 	size_t			startlump;
+	size_t          res;
 	filelump_t*		fileinfo;
 	filelump_t		singleinfo;
 
@@ -293,7 +294,7 @@ std::string W_AddFile (std::string filename)
 
 	startlump = numlumps;
 
-	fread (&header, sizeof(header), 1, handle);
+	res = fread (&header, sizeof(header), 1, handle);
 	header.identification = LONG(header.identification);
 
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
@@ -322,7 +323,7 @@ std::string W_AddFile (std::string filename)
 
 		fileinfo = (filelump_t *)Z_Malloc (length, PU_STATIC, 0);
 		fseek (handle, header.infotableofs, SEEK_SET);
-		fread (fileinfo, length, 1, handle);
+		res = fread (fileinfo, length, 1, handle);
 		numlumps += header.numlumps;
 		Printf (PRINT_HIGH, " (%d lumps)\n", header.numlumps);
 	}

@@ -126,11 +126,11 @@ int main(int argc, char *argv[])
 		}
 		
 		// Set SDL video centering
-		putenv("SDL_VIDEO_WINDOW_POS=center");
-		putenv("SDL_VIDEO_CENTERED=1");
+		putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
+		putenv((char*)"SDL_VIDEO_CENTERED=1");
 		
         // [Russell] - No more double-tapping of capslock to enable autorun
-        putenv("SDL_DISABLE_LOCK_KEYS=1");
+        putenv((char*)"SDL_DISABLE_LOCK_KEYS=1");
 
 #if defined WIN32 && !defined _XBOX
     	// From the SDL 1.2.10 release notes:
@@ -147,9 +147,9 @@ int main(int argc, char *argv[])
 		// GDI mouse issues fill many users with great sadness. We are going back
 		// to directx as defulat for now and the people will rejoice. --Hyper_Eye
      	if (Args.CheckParm ("-gdi"))
-        	putenv("SDL_VIDEODRIVER=windib");
+        	putenv((char*)"SDL_VIDEODRIVER=windib");
     	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-directx") > 0)
-        	putenv("SDL_VIDEODRIVER=directx");
+        	putenv((char*)"SDL_VIDEODRIVER=directx");
 
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
 #ifdef LINUX
 		// [SL] 2011-12-21 - Ensure we're getting raw DGA mouse input from X11,
 		// bypassing X11's mouse acceleration
-		putenv("SDL_VIDEO_X11_DGAMOUSE=1");
+		putenv((char*)"SDL_VIDEO_X11_DGAMOUSE=1");
 #endif
 
 		if (SDL_Init (SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)
