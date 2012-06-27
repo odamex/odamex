@@ -971,11 +971,17 @@ BEGIN_COMMAND (spy)
 	if (argc > 1)
 		id = atoi(argv[1]);
 
+	if (id == 0)
+	{
+		Printf(PRINT_HIGH, "Expecting player ID.  Try 'players' to list all of the player IDs.\n");
+		return;
+	}
+
 	displayplayer_id = id;
 	CL_CheckDisplayPlayer();
 
 	if (displayplayer_id != id)
-		Printf(PRINT_HIGH, "Unable to spy player id %i!\n", id);
+		Printf(PRINT_HIGH, "Unable to spy player ID %i!\n", id);
 }
 END_COMMAND (spy)
 
