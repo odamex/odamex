@@ -403,7 +403,7 @@ BEGIN_COMMAND (setcolor)
 		return;
 	}
 
-	std::string name = BuildString (argc - 2, (const char **)(argv + 2));
+	std::string name = C_ArgCombine(argc - 2, (const char **)(argv + 2));
 	if (name.length())
 	{
 		std::string desc = V_GetColorStringByName (name.c_str());

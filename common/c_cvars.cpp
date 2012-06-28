@@ -499,7 +499,7 @@ void cvar_t::C_ArchiveCVars (void *f)
 			|| (baseapp == server && cvar->m_Flags & CVAR_SERVERARCHIVE))
 		{
 			fprintf ((FILE *)f, "// %s\n", cvar->helptext());
-			fprintf ((FILE *)f, "set %s \"%s\"\n\n", cvar->name(), cvar->cstring());
+			fprintf ((FILE *)f, "set %s %s\n\n", C_QuoteString(cvar->name()).c_str(), C_QuoteString(cvar->cstring()).c_str());
 		}
 		cvar = cvar->m_Next;
 	}

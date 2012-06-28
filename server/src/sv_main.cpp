@@ -600,11 +600,11 @@ BEGIN_COMMAND(addban)
 		return;
 
 	if (argc >= 3)
-		reason = BuildString(argc - 2, (const char **)(argv + 2));
+		reason = C_ArgCombine(argc - 2, (const char **)(argv + 2));
 	else
 		reason = "none given";
 
-	std::string IPtoBan = BuildString(argc - 1, (const char **)(argv + 1));
+	std::string IPtoBan = C_ArgCombine(argc - 1, (const char **)(argv + 1));
 	SV_IPListAdd (&BanList, "Ban", IPtoBan, reason);
 }
 END_COMMAND(addban)
@@ -614,7 +614,7 @@ BEGIN_COMMAND(delban)
 	if (argc < 2)
 		return;
 
-	std::string IPtoBan = BuildString(argc - 1, (const char **)(argv + 1));
+	std::string IPtoBan = C_ArgCombine(argc - 1, (const char **)(argv + 1));
 	SV_IPListDelete (&BanList, "Ban", IPtoBan);
 }
 END_COMMAND(delban)
@@ -639,11 +639,11 @@ BEGIN_COMMAND(addexception)
 		return;
 
 	if (argc >= 3)
-		reason = BuildString(argc - 2, (const char **)(argv + 2));
+		reason = C_ArgCombine(argc - 2, (const char **)(argv + 2));
 	else
 		reason = "none given";
 
-	std::string IPtoBan = BuildString(argc - 1, (const char **)(argv + 1));
+	std::string IPtoBan = C_ArgCombine(argc - 1, (const char **)(argv + 1));
 	SV_IPListAdd (&WhiteList, "Exception", IPtoBan, reason);
 }
 END_COMMAND(addexception)
@@ -653,7 +653,7 @@ BEGIN_COMMAND(delexception)
 	if (argc < 2)
 		return;
 
-	std::string IPtoBan = BuildString(argc - 1, (const char **)(argv + 1));
+	std::string IPtoBan = C_ArgCombine(argc - 1, (const char **)(argv + 1));
 	SV_IPListDelete (&WhiteList, "Exception", IPtoBan);
 }
 END_COMMAND(delexception)
@@ -702,7 +702,7 @@ BEGIN_COMMAND(kickban)
 	// The kick...
 	if (argc > 2)
 	{
-		std::string reason = BuildString(argc - 2, (const char **)(argv + 2));
+		std::string reason = C_ArgCombine(argc - 2, (const char **)(argv + 2));
 		SV_BroadcastPrintf(PRINT_HIGH, "%s was kickbanned from the server! (Reason: %s)\n", player.userinfo.netname, reason.c_str());
 	}
 	else
@@ -716,7 +716,7 @@ BEGIN_COMMAND(kickban)
 	command += tempipstring;
 	if (argc > 2) {
 		command += " ";
-		command += BuildString(argc - 2, (const char **)(argv + 2));
+		command += C_ArgCombine(argc - 2, (const char **)(argv + 2));
 	}
 	AddCommandString(command);
 }
@@ -726,10 +726,9 @@ BEGIN_COMMAND (say)
 {
 	if (argc > 1)
 	{
-		std::string chat = BuildString (argc - 1, (const char **)(argv + 1));
-		SV_BroadcastPrintf (PRINT_CHAT, "[console]: %s\n", chat.c_str());
+		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		SV_BroadcastPrintf(PRINT_CHAT, "[console]: %s\n", chat.c_str());
 	}
-
 }
 END_COMMAND (say)
 

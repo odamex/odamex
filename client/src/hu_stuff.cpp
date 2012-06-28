@@ -370,8 +370,8 @@ BEGIN_COMMAND (say)
 {
 	if (argc > 1)
 	{
-		std::string chat = BuildString (argc - 1, (const char **)(argv + 1));
-		ShoveChatStr (chat, 0);
+		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		ShoveChatStr(chat, 0);
 	}
 }
 END_COMMAND (say)
@@ -392,8 +392,8 @@ BEGIN_COMMAND (say_team)
 {
 	if (argc > 1)
 	{
-		std::string chat = BuildString (argc - 1, (const char **)(argv + 1));
-		ShoveChatStr (chat, 1);
+		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		ShoveChatStr(chat, 1);
 	}
 }
 END_COMMAND (say_team)

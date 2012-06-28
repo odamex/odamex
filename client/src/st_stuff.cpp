@@ -938,7 +938,7 @@ BEGIN_COMMAND (give)
 	if (argc < 2)
 		return;
 
-	std::string name = BuildString (argc - 1, (const char **)(argv + 1));
+	std::string name = C_ArgCombine(argc - 1, (const char **)(argv + 1));
 	if (name.length())
 	{
 		//Net_WriteByte (DEM_GIVECHEAT);
