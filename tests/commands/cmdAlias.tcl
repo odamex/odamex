@@ -17,10 +17,10 @@ proc testAlias { module } {
 
  # add an alias
  clear
- $module {alias cmdAlias "echo hi"}
+ $module {alias cmdAlias "echo \"Hello, world!\""}
  expect $out {}
  $module {cmdAlias}
- expect $out {Unknown command echo hi} $offset
+ expect $out {Hello, world!} $offset
 
  # remove the alias
  clear
@@ -31,11 +31,11 @@ proc testAlias { module } {
 
  # add an alias to an alias
  clear
- $module {alias cmdAlias "echo hi"}
+ $module {alias cmdAlias "echo \"Hello, world!\""}
  $module {alias cmdAlias2 "cmdAlias"}
  expect $out {}
  $module {cmdAlias2}
- expect $out {Unknown command echo hi} $offset
+ expect $out {Hello, world!} $offset
 
  # remove the alias
  clear

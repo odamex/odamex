@@ -31,16 +31,17 @@ proc main {} {
  server "rcon_password $pass"
  clear
  client "rcon_password whatever"
- expect $serverout {}
+ expect $serverout {rcon login failure from Player - 127.0.0.1:10501}
 
  # good rcon_password
  clear
  client "rcon_password $pass"
- expect $serverout {rcon login from 127.0.0.1:10501}
+ expect $serverout {rcon login from Player - 127.0.0.1:10501}
  
  # rcon ability
  clear
  client "rcon say hi"
+ expect $serverout {rcon command from Player - 127.0.0.1:10501 -> say hi}
  expect $serverout {[console]: hi}
 }
 
