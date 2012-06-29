@@ -144,16 +144,23 @@ AG_Box *AGOL_About::CreateLicenseBox(void *parent)
 	AG_BoxSetPadding(lbox, 5);
 	AG_BoxSetSpacing(lbox, 5);
 
+#if !AG_VERSION_ATLEAST(1,4,2)
 	text = AG_TextboxNewS(lbox, AG_TEXTBOX_MULTILINE | AG_TEXTBOX_EXPAND, "");
+#else
+	text = AG_TextboxNewS(lbox, AG_TEXTBOX_READONLY | AG_TEXTBOX_MULTILINE | AG_TEXTBOX_EXPAND, "");
+#endif
+
 	AG_TextboxSetWordWrap(text, true);
 
 	AG_TextboxSetString(text, license.c_str());
 
+#if !AG_VERSION_ATLEAST(1,4,2)
 	AG_SetEvent(text, "textbox-prechg", EventReceiver, "%p",
 		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_About::OnLicensePrechg));
 
 	AG_SetEvent(text, "textbox-postchg", EventReceiver, "%p",
 		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_About::OnLicensePostchg));
+#endif
 
 	return lbox;
 }
