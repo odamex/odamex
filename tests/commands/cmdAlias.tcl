@@ -36,16 +36,8 @@ proc testAlias { module } {
  expect $out {}
  $module {cmdAlias2}
  expect $out {Hello, world!} $offset
-
- # remove the alias
- clear
  $module {alias cmdAlias}
  $module {alias cmdAlias2}
- expect $out {}
- $module {cmdAlias}
- expect $out {Unknown command cmdAlias} $offset
- $module {cmdAlias2}
- expect $out {Unknown command cmdAlias2} $offset
 }
 
 proc main {} {

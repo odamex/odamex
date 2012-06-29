@@ -506,7 +506,7 @@ const char *ParseString2(const char *data)
 		data++;
 	}
 
-	if (data[0] == '\\' && data[1] != 0)
+	if (data[0] == '\\' && (data[1] == '"' || data[1] == ';' || data[1] == '\\'))
 	{
 		// [AM] Handle escaped chars.
 		com_token[len] = data[1];
@@ -523,7 +523,7 @@ const char *ParseString2(const char *data)
 				// [AM] Unclosed quote, show no mercy.
 				return NULL;
 			}
-			if (data[0] == '\\' && data[1] != 0)
+			if (data[0] == '\\' && (data[1] == '"' || data[1] == ';' || data[1] == '\\'))
 			{
 				// [AM] Handle escaped chars.
 				com_token[len] = data[1];
@@ -716,9 +716,9 @@ std::string C_QuoteString(const std::string &argstr)
 	buffer << "\"";
 	for (std::string::const_iterator it = argstr.begin();it != argstr.end();++it)
 	{
-		if (*it == '"' || *it == '\\')
+		if (*it == '"' || *it == ';' || *it == '\\')
 		{
-			// Escape this quote.
+			// Escape this char.
 			buffer << '\\' << *it;
 		}
 		else
