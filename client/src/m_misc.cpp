@@ -117,9 +117,7 @@ void M_LoadDefaults (void)
 	// by the bindings in the config file if it exists.
 	AddCommandString (DefBindings);
 
-	std::string cmd = "exec \"";
-	cmd += GetConfigPath();
-	cmd += "\"";
+	std::string cmd = "exec " + C_QuoteString(GetConfigPath());
 
 	cvar_defflags = CVAR_ARCHIVE;
 	AddCommandString (cmd.c_str());
