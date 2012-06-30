@@ -617,7 +617,7 @@ void AGOL_Settings::SaveExtraParams()
 	extraParams = AG_TextboxDupString(ExtraCmdParamsEntry);
 
 	if(extraParams && strlen(extraParams) > 0)
-		GuiConfig::Write("ExtraParams", extraParams);
+		GuiConfig::Write("ExtraParams", string(extraParams));
 	else
 		GuiConfig::Unset("ExtraParams");
 
