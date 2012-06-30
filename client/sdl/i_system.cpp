@@ -116,7 +116,7 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-#ifdef _XBOX
+#ifdef GCONSOLE
 size_t def_heapsize = 16;
 #else
 size_t def_heapsize = 128;
