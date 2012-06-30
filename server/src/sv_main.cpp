@@ -1401,7 +1401,7 @@ team_t SV_GoodTeam (void)
 		}
 	}
 
-	if (smallest_team_size >= sv_maxplayersperteam)
+	if (sv_maxplayersperteam && smallest_team_size >= sv_maxplayersperteam)
 		return TEAM_NONE;
 
 	return smallest_team;
