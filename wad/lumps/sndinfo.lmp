@@ -329,24 +329,12 @@ switches/exitbutn		dsswtchx
 
 misc/teleport			dstelept
 
-
-//---------------------------------------------------------------------------
-// 	CAPTURE THE FLAG SOUNDS
-//---------------------------------------------------------------------------
-
-ctf/f-flaggrab		dsffg
-ctf/f-flagreturn	dsffr
-ctf/f-flagscore		dsffs
-ctf/f-flagdrop		dsffd
-ctf/f-flagmanualreturn	dsffm
-
-ctf/e-flaggrab		dsefg
-ctf/e-flagreturn	dsefr
-ctf/e-flagscore		dsefs
-ctf/e-flagdrop		dsefd
-ctf/e-flagmanualreturn	dsefm
+ctf/take			dsctft
+ctf/drop			dsctfd
+ctf/manualreturn	dsctfm
+ctf/return			dsctfr
+ctf/capture			dsctfc
 
 // Any new sounds have to be last (for clients to use older servers)
 misc/pljoin			dspljoin
 misc/plpart			dsplpart
-

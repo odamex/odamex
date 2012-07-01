@@ -31,6 +31,7 @@
 #include	"p_ctf.h"
 #include	"p_mobj.h"
 #include    "st_stuff.h"
+#include	"s_sound.h"
 
 flagdata CTFdata[NUMFLAGS];
 int TEAMpoints[NUMFLAGS];
@@ -161,6 +162,9 @@ void CL_CTFEvent (void)
 				CTFdata[flag].actor->Destroy();
 			break;
 	}
+
+	// [AM] Play CTF sound, moved from server.
+	CTF_Sound(flag, event);
 }
 
 //	CTF_CheckFlags
@@ -437,6 +441,85 @@ FArchive &operator>> (FArchive &arc, flagdata &flag)
 	flag.actor = AActor::AActorPtr();
 
 	return arc;
+}
+
+// [AM] Clientside CTF sounds.
+// 0: Team-agnostic SFX
+// 1: Own team announcer
+// 2: Enemy team announcer
+// 3: Blue team announcer
+// 4: Red team announcer
+static const char *flag_sound[NUM_CTF_SCORE][5] = {
+	{"", "", "", "", ""}, // NONE
+	{"", "", "", "", ""}, // REFRESH
+	{"", "", "", "", ""}, // KILL
+	{"", "", "", "", ""}, // BETRAYAL
+	{"ctf/take", "vox/you/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take"}, // GRAB
+	{"ctf/take", "vox/you/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take"}, // FIRSTGRAB
+	{"", "", "", "", ""}, // CARRIERKILL
+	{"ctf/return", "vox/you/flag/return", "vox/enemy/flag/return", "vox/blue/flag/return", "vox/red/flag/return"}, // RETURN
+	{"ctf/capture", "vox/enemy/score", "vox/you/score", "vox/red/score", "vox/blue/score"}, // CAPTURE
+	{"ctf/drop", "vox/you/flag/drop", "vox/enemy/flag/drop", "vox/blue/flag/drop", "vox/red/flag/drop"}, // DROP
+	{"ctf/manualreturn", "vox/you/flag/manualreturn", "vox/enemy/flag/manualreturn", "vox/blue/flag/manualreturn", "vox/red/flag/manualreturn"}, // MANUALRETURN
+};
+
+EXTERN_CVAR(snd_voxtype)
+EXTERN_CVAR(snd_gamesfx)
+
+// [AM] Play appropriate sounds for CTF events.
+void CTF_Sound(flag_t f, flag_score_t event) {
+	if (f >= NUMFLAGS) {
+		// Invalid team
+		return;
+	}
+
+	if (event >= NUM_CTF_SCORE) {
+		// Invalid CTF event
+		return;
+	}
+
+	if (strcmp(flag_sound[event][0], "") == 0) {
+		// No logical sound for this event
+		return;
+	}
+
+	// Play sound effect
+	if (snd_gamesfx && S_FindSound(flag_sound[event][0]) != -1) {
+		S_Sound(CHAN_GAMEINFO, flag_sound[event][0], 1, ATTN_NONE);
+	}
+
+	// Play announcer sound
+	switch (snd_voxtype.asInt()) {
+	case 2:
+		// Possessive (yours/theirs)
+		if (!consoleplayer().spectator) {
+			if (consoleplayer().userinfo.team != (team_t)f) {
+				if (S_FindSound(flag_sound[event][2]) != -1) {
+					S_Sound(CHAN_ANNOUNCER, flag_sound[event][2], 1, ATTN_NONE);
+					break;
+				}
+			} else {
+				if (S_FindSound(flag_sound[event][1]) != -1) {
+					S_Sound(CHAN_ANNOUNCER, flag_sound[event][1], 1, ATTN_NONE);
+					break;
+				}
+			}
+		}
+		// fallthrough
+	case 1:
+		// Team colors (red/blue)
+		if (S_FindSound(flag_sound[event][3 + f]) != -1) {
+			if (consoleplayer().userinfo.team != (team_t)f && !consoleplayer().spectator) {
+				S_Sound(CHAN_ANNOUNCER, flag_sound[event][3 + f], 1, ATTN_NONE);
+			} else {
+				S_Sound(CHAN_ANNOUNCER, flag_sound[event][3 + f], 1, ATTN_NONE);
+			}
+			break;
+		}
+		// fallthrough
+	default:
+		break;
+	}
 }
 
 VERSION_CONTROL (cl_ctf_cpp, "$Id$")

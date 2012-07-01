@@ -25,7 +25,6 @@
 #include "sv_main.h"
 #include "m_random.h"
 #include "p_ctf.h"
-#include "s_sound.h"
 #include "i_system.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
@@ -105,8 +104,6 @@ void SV_CTFEvent (flag_t f, flag_score_t event, player_t &who)
 		for(size_t j = 0; j < NUMFLAGS; j++)
 			MSG_WriteLong (&cl->reliablebuf, TEAMpoints[j]);
 	}
-
-	CTF_Sound (f, event);
 }
 
 //
@@ -465,37 +462,6 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
 
 	return NULL;
 }
-
-// sounds played differ depending on your team, [0] for event on own team, [1] for others
-static const char *flag_sound[NUM_CTF_SCORE][2] =
-{
-	{"", ""}, // NONE
-	{"", ""}, // REFRESH
-	{"", ""}, // KILL
-	{"", ""}, // BETRAYAL
-	{"ctf/f-flaggrab", "ctf/e-flaggrab"}, // GRAB
-	{"ctf/f-flaggrab", "ctf/e-flaggrab"}, // FIRSTGRAB
-	{"", ""}, // CARRIERKILL
-	{"ctf/f-flagreturn", "ctf/e-flagreturn"}, // RETURN
-	{"ctf/f-flagscore", "ctf/e-flagscore"}, // CAPTURE
-	{"ctf/f-flagdrop", "ctf/e-flagdrop"}, // DROP
-	{"ctf/f-flagmanualreturn", "ctf/e-flagmanualreturn"}, // MANUALRETURN
-};
-
-//
-//	[Toke - CTF] CTF_Sound
-//	Plays the flag event sounds
-//
-void CTF_Sound (flag_t f, flag_score_t event)
-{
-	for(size_t i = 0; i < NUMTEAMS; i++)
-	{
-		const char *snd = flag_sound[event][f == (flag_t)i];
-		if(snd && *snd)
-			SV_SoundTeam ((f == (flag_t)i) ? CHAN_ANNOUNCERF : CHAN_ANNOUNCERE, snd, ATTN_NONE, i);
-	}
-}
-
 
 FArchive &operator<< (FArchive &arc, flagdata &flag)
 {

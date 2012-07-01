@@ -643,7 +643,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	{
 		sep = NORM_SEP;
 
-		if (channel == CHAN_ANNOUNCERE || channel == CHAN_ANNOUNCERF)
+		if (channel == CHAN_ANNOUNCER)
 			volume = snd_announcervolume;
 		else
 			volume = snd_sfxvolume;
@@ -652,8 +652,8 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	// Set up the sound channel's priority
 	switch (channel)
 	{
-		case CHAN_ANNOUNCERE:
-		case CHAN_ANNOUNCERF:
+		case CHAN_ANNOUNCER:
+		case CHAN_GAMEINFO:
 			priority = 1000;
 			break;
 		case CHAN_INTERFACE:
@@ -1026,9 +1026,8 @@ void S_UpdateSounds (void *listener_p)
 				// initialize parameters
 				sep = NORM_SEP;
 
-				float maxvolume;	
-				if (Channel[cnum].entchannel == CHAN_ANNOUNCERE ||
-					Channel[cnum].entchannel == CHAN_ANNOUNCERF)
+				float maxvolume;
+				if (Channel[cnum].entchannel == CHAN_ANNOUNCER)
 					maxvolume = snd_announcervolume;
 				else
 					maxvolume = snd_sfxvolume;

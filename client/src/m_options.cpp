@@ -132,6 +132,8 @@ EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_announcervolume)
 EXTERN_CVAR (snd_sfxvolume)
 EXTERN_CVAR (snd_crossover)
+EXTERN_CVAR (snd_gamesfx)
+EXTERN_CVAR (snd_voxtype)
 EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
 
@@ -535,6 +537,12 @@ static value_t MusSys[] = {
 	{ MS_NONE,		"No Music"}
 };
 
+static value_t VoxType[] = {
+	{ 0.0,			"Off" },
+	{ 1.0,			"Team Colors" },
+	{ 2.0,			"Possessive" }
+};
+
 static int num_mussys = STACKARRAY_LENGTH(MusSys);
 
 static menuitem_t SoundItems[] = {
@@ -547,7 +555,9 @@ static menuitem_t SoundItems[] = {
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
-	{ bricktext ,   "Multiplayer Options"               , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ bricktext ,   "Sound Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },
+	{ discrete  ,   "Announcer Type"                    , {&snd_voxtype},		{3.0},			{0.0},		{0.0},		{VoxType} },
 	{ discrete  ,   "Player Connect Alert"              , {&cl_connectalert},	{2.0},			{0.0},		{0.0},		{OnOff} },
 	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} }	
  };
