@@ -322,19 +322,47 @@ misc/i_pkup			dsitemup
 misc/spawn			dsitmbk
 misc/chat			dsradio		// Doom 2 chat sound
 misc/chat2			dstink		// Chat sound for everything else
-misc/teamchat			dsradio2	// Team chat sound
+misc/teamchat		dsradio2		// Team chat sound
 
 switches/normbutn		dsswtchn
 switches/exitbutn		dsswtchx
 
-misc/teleport			dstelept
+misc/teleport		dstelept
 
 ctf/take			dsctft
 ctf/drop			dsctfd
-ctf/manualreturn	dsctfm
+ctf/manualreturn		dsctfm
 ctf/return			dsctfr
 ctf/capture			dsctfc
 
 // Any new sounds have to be last (for clients to use older servers)
 misc/pljoin			dspljoin
 misc/plpart			dsplpart
+
+//---------------------------------------------------------------------------
+// DEFAULT ANNOUNCER
+//---------------------------------------------------------------------------
+
+vox/you/score			dvys
+vox/you/flag/take			dvyft
+vox/you/flag/drop			dvyfd
+vox/you/flag/manualreturn	dvyfm
+vox/you/flag/return		dvyfr
+
+vox/enemy/score			dves
+vox/enemy/flag/take		dveft
+vox/enemy/flag/drop		dvefd
+vox/enemy/flag/manualreturn	dvefm
+vox/enemy/flag/return		dvefr
+
+vox/blue/score			dvbs
+vox/blue/flag/take		dvbft
+vox/blue/flag/drop		dvbfd
+vox/blue/flag/manualreturn	dvbfm
+vox/blue/flag/return		dvbfr
+
+vox/red/score			dvrs
+vox/red/flag/take			dvrft
+vox/red/flag/drop			dvrfd
+vox/red/flag/manualreturn	dvrfm
+vox/red/flag/return		dvrfr
