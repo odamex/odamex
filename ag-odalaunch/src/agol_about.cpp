@@ -160,6 +160,8 @@ AG_Box *AGOL_About::CreateLicenseBox(void *parent)
 
 	AG_SetEvent(text, "textbox-postchg", EventReceiver, "%p",
 		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_About::OnLicensePostchg));
+#else
+	AG_TextboxSetCursorPos(text, 0);
 #endif
 
 	return lbox;
