@@ -70,6 +70,16 @@ int LONG (int x)
 
 #else
 
+short SHORT(short x)
+{
+	return x;
+}
+
+long LONG(long x)
+{
+	return x;
+}
+
 short BESHORT (short x)
 {
 	return (short)((((unsigned short)x)>>8) | (((unsigned short)x)<<8));

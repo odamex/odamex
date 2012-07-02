@@ -55,8 +55,11 @@ int LONG (int x);
 
 #else
 
-#define SHORT(x)		(x)
-#define LONG(x) 		(x)
+//#define SHORT(x)		(x)
+//#define LONG(x) 		(x)
+
+short SHORT(short x);
+long LONG(long x);
 
 short BESHORT (short x);
 unsigned short BESHORT (unsigned short x);
