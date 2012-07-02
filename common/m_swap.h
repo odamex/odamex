@@ -43,23 +43,20 @@
 
 // Swap 16bit, that is, MSB and LSB byte.
 // No masking with 0xFF should be necessary. 
-short SHORT (short x);
-unsigned short SHORT (unsigned short x);
+short LESHORT (short x);
+unsigned short LESHORT (unsigned short x);
 
 // Swapping 32bit.
-unsigned int LONG (unsigned int x);
-int LONG (int x);
+unsigned int LELONG (unsigned int x);
+int LELONG (int x);
 
-#define BESHORT(x)		(x)
-#define BELONG(x)		(x)
+short BESHORT(short x);
+long BELONG(long x);
 
 #else
 
-//#define SHORT(x)		(x)
-//#define LONG(x) 		(x)
-
-short SHORT(short x);
-long LONG(long x);
+short LESHORT(short x);
+long LELONG(long x);
 
 short BESHORT (short x);
 unsigned short BESHORT (unsigned short x);

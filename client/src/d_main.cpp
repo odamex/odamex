@@ -906,7 +906,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			{
 				wadinfo_t header;
 				fread (&header, sizeof(header), 1, f);
-				header.identification = LONG(header.identification);
+				header.identification = LELONG(header.identification);
 				if (header.identification != IWAD_ID)
 				{
 					if(header.identification == PWAD_ID)
@@ -959,12 +959,12 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		if ( (f = fopen (iwad.c_str(), "rb")) )
 		{
 			size_t res = fread (&header, sizeof(header), 1, f);
-			header.identification = LONG(header.identification);
+			header.identification = LELONG(header.identification);
 			if (header.identification == IWAD_ID ||
 				header.identification == PWAD_ID)
 			{
-				header.numlumps = LONG(header.numlumps);
-				if (0 == fseek (f, LONG(header.infotableofs), SEEK_SET))
+				header.numlumps = LELONG(header.numlumps);
+				if (0 == fseek (f, LELONG(header.infotableofs), SEEK_SET))
 				{
 					for (i = 0; i < header.numlumps; i++)
 					{

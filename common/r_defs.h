@@ -506,10 +506,10 @@ private:
 
 public:
 
-	short width() const { return SHORT(_width); }
-	short height() const { return SHORT(_height); }
-	short leftoffset() const { return SHORT(_leftoffset); }
-	short topoffset() const { return SHORT(_topoffset); }
+	short width() const { return LESHORT(_width); }
+	short height() const { return LESHORT(_height); }
+	short leftoffset() const { return LESHORT(_leftoffset); }
+	short topoffset() const { return LESHORT(_topoffset); }
 
 	int columnofs[8]; // only [width] used
 	// the [0] is &columnofs[width]

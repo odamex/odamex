@@ -157,13 +157,13 @@ bool NetDemo::writeHeader()
 	memcpy(&tmpheader, &header, sizeof(header));
 
 	// convert from native byte ordering to little-endian
-	tmpheader.snapshot_index_size	= SHORT(tmpheader.snapshot_index_size);
-	tmpheader.snapshot_index_offset	= LONG(tmpheader.snapshot_index_offset);
-	tmpheader.map_index_size		= SHORT(tmpheader.map_index_size);
-	tmpheader.map_index_offset		= LONG(tmpheader.map_index_offset);
-	tmpheader.snapshot_spacing		= SHORT(tmpheader.snapshot_spacing);
-	tmpheader.starting_gametic		= LONG(tmpheader.starting_gametic);
-	tmpheader.ending_gametic		= LONG(tmpheader.ending_gametic);
+	tmpheader.snapshot_index_size	= LESHORT(tmpheader.snapshot_index_size);
+	tmpheader.snapshot_index_offset	= LELONG(tmpheader.snapshot_index_offset);
+	tmpheader.map_index_size		= LESHORT(tmpheader.map_index_size);
+	tmpheader.map_index_offset		= LELONG(tmpheader.map_index_offset);
+	tmpheader.snapshot_spacing		= LESHORT(tmpheader.snapshot_spacing);
+	tmpheader.starting_gametic		= LELONG(tmpheader.starting_gametic);
+	tmpheader.ending_gametic		= LELONG(tmpheader.ending_gametic);
 	
 	fseek(demofp, 0, SEEK_SET);
 	size_t cnt = 0;
@@ -236,13 +236,13 @@ bool NetDemo::readHeader()
 		return false;
 
 	// convert from little-endian to native byte ordering
-	header.snapshot_index_size 		= SHORT(header.snapshot_index_size);
-	header.snapshot_index_offset 	= LONG(header.snapshot_index_offset);
-	header.map_index_size 			= SHORT(header.map_index_size);
-	header.map_index_offset 		= LONG(header.map_index_offset);
-	header.snapshot_spacing 		= SHORT(header.snapshot_spacing);
-	header.starting_gametic 		= LONG(header.starting_gametic);
-	header.ending_gametic			= LONG(header.ending_gametic);
+	header.snapshot_index_size 		= LESHORT(header.snapshot_index_size);
+	header.snapshot_index_offset 	= LELONG(header.snapshot_index_offset);
+	header.map_index_size 			= LESHORT(header.map_index_size);
+	header.map_index_offset 		= LELONG(header.map_index_offset);
+	header.snapshot_spacing 		= LESHORT(header.snapshot_spacing);
+	header.starting_gametic 		= LELONG(header.starting_gametic);
+	header.ending_gametic			= LELONG(header.ending_gametic);
 	
 	return true;
 }
@@ -265,8 +265,8 @@ bool NetDemo::writeSnapshotIndex()
 	{
 		netdemo_index_entry_t entry;
 		// convert to little-endian
-		entry.ticnum = LONG(snapshot_index[i].ticnum);
-		entry.offset = LONG(snapshot_index[i].offset);
+		entry.ticnum = LELONG(snapshot_index[i].ticnum);
+		entry.offset = LELONG(snapshot_index[i].offset);
 		
 		size_t cnt = 0;
 		cnt += sizeof(entry.ticnum) *
@@ -307,8 +307,8 @@ bool NetDemo::readSnapshotIndex()
 			return false;
 
 		// convert from little-endian to native
-		entry.ticnum = LONG(entry.ticnum);	
-		entry.offset = LONG(entry.offset);
+		entry.ticnum = LELONG(entry.ticnum);	
+		entry.offset = LELONG(entry.offset);
 
 		snapshot_index.push_back(entry);
 	}
@@ -325,8 +325,8 @@ bool NetDemo::writeMapIndex()
 	{
 		netdemo_index_entry_t entry;
 		// convert to little-endian
-		entry.ticnum = LONG(map_index[i].ticnum);
-		entry.offset = LONG(map_index[i].offset);
+		entry.ticnum = LELONG(map_index[i].ticnum);
+		entry.offset = LELONG(map_index[i].offset);
 		
 		size_t cnt = 0;
 		cnt += sizeof(entry.ticnum) *
@@ -359,8 +359,8 @@ bool NetDemo::readMapIndex()
 			return false;
 
 		// convert from little-endian to native
-		entry.ticnum = LONG(entry.ticnum);	
-		entry.offset = LONG(entry.offset);
+		entry.ticnum = LELONG(entry.ticnum);	
+		entry.offset = LELONG(entry.offset);
 
 		map_index.push_back(entry);
 	}
@@ -702,8 +702,8 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 	memset(&msgheader, 0, sizeof(msgheader));
 	
 	msgheader.type = static_cast<byte>(type);
-	msgheader.length = LONG((uint32_t)size);
-	msgheader.gametic = LONG(gametic);
+	msgheader.length = LELONG((uint32_t)size);
+	msgheader.gametic = LELONG(gametic);
 	
 	size_t cnt = 0;
 	cnt += sizeof(msgheader.type) *
@@ -824,8 +824,8 @@ bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t
 	}
 
 	// convert the values to native byte order
-	len = LONG(msgheader.length);
-	tic = LONG(msgheader.gametic);
+	len = LELONG(msgheader.length);
+	tic = LELONG(msgheader.gametic);
 	type = static_cast<netdemo_message_t>(msgheader.type);
 
 	return true;

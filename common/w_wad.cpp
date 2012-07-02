@@ -295,7 +295,7 @@ std::string W_AddFile (std::string filename)
 	startlump = numlumps;
 
 	res = fread (&header, sizeof(header), 1, handle);
-	header.identification = LONG(header.identification);
+	header.identification = LELONG(header.identification);
 
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
 	{
@@ -310,8 +310,8 @@ std::string W_AddFile (std::string filename)
 	else
 	{
 		// WAD file
-		header.numlumps = LONG(header.numlumps);
-		header.infotableofs = LONG(header.infotableofs);
+		header.numlumps = LELONG(header.numlumps);
+		header.infotableofs = LELONG(header.infotableofs);
 		length = header.numlumps*sizeof(filelump_t);
 
 		if(length > (unsigned)M_FileLength(handle))
@@ -339,8 +339,8 @@ std::string W_AddFile (std::string filename)
 	for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
 	{
 		lump_p->handle = handle;
-		lump_p->position = LONG(fileinfo->filepos);
-		lump_p->size = LONG(fileinfo->size);
+		lump_p->position = LELONG(fileinfo->filepos);
+		lump_p->size = LELONG(fileinfo->size);
 		strncpy (lump_p->name, fileinfo->name, 8);
 
 		// W_CheckNumForName needs all lump names in upper case

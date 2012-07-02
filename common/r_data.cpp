@@ -179,7 +179,7 @@ void R_GenerateComposite (int texnum)
 		for (; x1<x2 ; x1++)
 			if (collump[x1] == -1)			// Column has multiple patches?
 				// killough 1/25/98, 4/9/98: Fix medusa bug.
-				R_DrawColumnInCache((column_t*)((byte*)realpatch+LONG(cofs[x1])),
+				R_DrawColumnInCache((column_t*)((byte*)realpatch+LELONG(cofs[x1])),
 									block+colofs[x1],patch->originy,texture->height,
 									marks + x1 * texture->height);
 	}
@@ -270,7 +270,7 @@ static void R_GenerateLookup(int texnum, int *const errors)
 			// killough 4/9/98: keep a count of the number of posts in column,
 			// to fix Medusa bug while allowing for transparent multipatches.
 
-			const column_t *col = (column_t*)((byte*)realpatch + LONG(cofs[x]));
+			const column_t *col = (column_t*)((byte*)realpatch + LELONG(cofs[x]));
 			for (;col->topdelta != 0xff; count[x].posts++)
 			{
 				col = (column_t *)((byte *)col + col->length + 4);
@@ -289,7 +289,7 @@ static void R_GenerateLookup(int texnum, int *const errors)
 			}
 			count[x].patches++;
 			collump[x] = pat;
-			colofs[x] = LONG(cofs[x])+3;
+			colofs[x] = LELONG(cofs[x])+3;
 		}
 	}
 
@@ -417,7 +417,7 @@ void R_InitTextures (void)
 		char *names = (char *)W_CacheLumpName ("PNAMES", PU_STATIC);
 		char *name_p = names+4;
 
-		nummappatches = LONG ( *((int *)names) );
+		nummappatches = LELONG ( *((int *)names) );
 		patchlookup = new int[nummappatches];
 
 		for (i = 0; i < nummappatches; i++)
@@ -443,14 +443,14 @@ void R_InitTextures (void)
 	// The data is contained in one or two lumps,
 	//	TEXTURE1 for shareware, plus TEXTURE2 for commercial.
 	maptex = maptex1 = (int *)W_CacheLumpName ("TEXTURE1", PU_STATIC);
-	numtextures1 = LONG(*maptex);
+	numtextures1 = LELONG(*maptex);
 	maxoff = W_LumpLength (W_GetNumForName ("TEXTURE1"));
 	directory = maptex+1;
 
 	if (W_CheckNumForName ("TEXTURE2") != -1)
 	{
 		maptex2 = (int *)W_CacheLumpName ("TEXTURE2", PU_STATIC);
-		numtextures2 = LONG(*maptex2);
+		numtextures2 = LELONG(*maptex2);
 		maxoff2 = W_LumpLength (W_GetNumForName ("TEXTURE2"));
 	}
 	else
@@ -510,7 +510,7 @@ void R_InitTextures (void)
 			directory = maptex+1;
 		}
 
-		offset = LONG(*directory);
+		offset = LELONG(*directory);
 
 		if (offset > maxoff)
 			I_FatalError ("R_InitTextures: bad texture directory");
@@ -534,9 +534,9 @@ void R_InitTextures (void)
 
 		for (j=0 ; j<texture->patchcount ; j++, mpatch++, patch++)
 		{
-			patch->originx = SHORT(mpatch->originx);
-			patch->originy = SHORT(mpatch->originy);
-			patch->patch = patchlookup[SHORT(mpatch->patch)];
+			patch->originx = LESHORT(mpatch->originx);
+			patch->originy = LESHORT(mpatch->originy);
+			patch->patch = patchlookup[LESHORT(mpatch->patch)];
 			if (patch->patch == -1)
 			{
 				Printf (PRINT_HIGH, "R_InitTextures: Missing patch in texture %s\n", texture->name);

@@ -1540,8 +1540,8 @@ void AM_drawMarks (void)
 	{
 		if (markpoints[i].x != -1)
 		{
-			//      w = SHORT(marknums[i]->width);
-			//      h = SHORT(marknums[i]->height);
+			//      w = LESHORT(marknums[i]->width);
+			//      h = LESHORT(marknums[i]->height);
 			w = 5; // because something's wrong with the wad, i guess
 			h = 6; // because something's wrong with the wad, i guess
 

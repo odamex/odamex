@@ -49,7 +49,7 @@
 
 #define QUEUESIZE		128
 #define HU_INPUTX		0
-#define HU_INPUTY		(0 + (SHORT(hu_font[0]->height) +1))
+#define HU_INPUTY		(0 + (LESHORT(hu_font[0]->height) +1))
 
 #define CTFBOARDWIDTH	236
 #define CTFBOARDHEIGHT	40

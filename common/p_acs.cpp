@@ -184,31 +184,31 @@ FBehavior::FBehavior (BYTE *object, int len)
 		Functions = FindChunk(MAKE_ID('F','U','N','C'));
 		if (Functions != NULL)
 		{
-			NumFunctions = LONG(((DWORD *)Functions)[1]);
+			NumFunctions = LELONG(((DWORD *)Functions)[1]);
 			Functions += 8;
 		}
 
 		chunk = (DWORD *)FindChunk(MAKE_ID('M','I','N','I'));
 		if (chunk != NULL)
 		{
-			int numvars = LONG(chunk[1])/4;
-			int firstvar = LONG(chunk[2]);
+			int numvars = LELONG(chunk[1])/4;
+			int firstvar = LELONG(chunk[2]);
 			for (i = 0; i < numvars; ++i)
 			{
-				level.vars[i+firstvar] = LONG(chunk[3+i]);
+				level.vars[i+firstvar] = LELONG(chunk[3+i]);
 			}
 		}
 
 		chunk = (DWORD *)FindChunk(MAKE_ID('A','R','A','Y'));
 		if (chunk != NULL)
 		{
-			NumArrays = LONG(chunk[1])/8;
+			NumArrays = LELONG(chunk[1])/8;
 			Arrays = new ArrayInfo[NumArrays];
 			memset (Arrays, 0, sizeof(*Arrays)*NumArrays);
 			for (i = 0; i < NumArrays; ++i)
 			{
-				level.vars[LONG(chunk[2+i*2])] = i;
-				Arrays[i].ArraySize = LONG(chunk[3+i*2]);
+				level.vars[LELONG(chunk[2+i*2])] = i;
+				Arrays[i].ArraySize = LELONG(chunk[3+i*2]);
 				Arrays[i].Elements = new SDWORD[Arrays[i].ArraySize];
 				memset(Arrays[i].Elements, 0, Arrays[i].ArraySize*sizeof(DWORD));
 			}
@@ -217,14 +217,14 @@ FBehavior::FBehavior (BYTE *object, int len)
 		chunk = (DWORD *)FindChunk(MAKE_ID('A','I','N','I'));
 		while (chunk != NULL)
 		{
-			int arraynum = level.vars[LONG(chunk[2])];
+			int arraynum = level.vars[LELONG(chunk[2])];
 			if ((unsigned)arraynum < (unsigned)NumArrays)
 			{
-				int initsize = MIN<int> (Arrays[arraynum].ArraySize, (LONG(chunk[1])-4)/4);
+				int initsize = MIN<int> (Arrays[arraynum].ArraySize, (LELONG(chunk[1])-4)/4);
 				SDWORD *elems = Arrays[arraynum].Elements;
 				for (i = 0; i < initsize; ++i)
 				{
-					elems[i] = LONG(chunk[3+i]);
+					elems[i] = LELONG(chunk[3+i]);
 				}
 			}
 			chunk = (DWORD *)NextChunk((BYTE *)chunk);
@@ -514,7 +514,7 @@ void FBehavior::StartTypedScripts (WORD type, AActor *activator) const
 
 
 
-#define NEXTWORD	(LONG(*pc++))
+#define NEXTWORD	(LELONG(*pc++))
 #define NEXTBYTE	(fmt==ACS_LittleEnhanced?getbyte(pc):NEXTWORD)
 #define STACK(a)	(Stack[sp - (a)])
 #define PushToStack(a)	(Stack[sp++] = (a))
