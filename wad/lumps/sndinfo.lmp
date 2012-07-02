@@ -322,18 +322,24 @@ misc/i_pkup			dsitemup
 misc/spawn			dsitmbk
 misc/chat			dsradio		// Doom 2 chat sound
 misc/chat2			dstink		// Chat sound for everything else
-misc/teamchat		dsradio2		// Team chat sound
+misc/teamchat			dsradio2	// Team chat sound
 
 switches/normbutn		dsswtchn
 switches/exitbutn		dsswtchx
 
-misc/teleport		dstelept
+misc/teleport			dstelept
 
-ctf/take			dsctft
-ctf/drop			dsctfd
-ctf/manualreturn		dsctfm
-ctf/return			dsctfr
-ctf/capture			dsctfc
+ctf/you/take			dsctfyt
+ctf/you/drop			dsctfyd
+ctf/you/manualreturn		dsctfym
+ctf/you/return			dsctfyr
+ctf/you/capture			dsctfyc
+
+ctf/enemy/take			dsctfet
+ctf/enemy/drop			dsctfed
+ctf/enemy/manualreturn		dsctfem
+ctf/enemy/return		dsctfer
+ctf/enemy/capture		dsctfec
 
 // Any new sounds have to be last (for clients to use older servers)
 misc/pljoin			dspljoin
@@ -344,8 +350,8 @@ misc/plpart			dsplpart
 //---------------------------------------------------------------------------
 
 vox/you/score			dvys
-vox/you/flag/take			dvyft
-vox/you/flag/drop			dvyfd
+vox/you/flag/take		dvyft
+vox/you/flag/drop		dvyfd
 vox/you/flag/manualreturn	dvyfm
 vox/you/flag/return		dvyfr
 
@@ -362,7 +368,7 @@ vox/blue/flag/manualreturn	dvbfm
 vox/blue/flag/return		dvbfr
 
 vox/red/score			dvrs
-vox/red/flag/take			dvrft
-vox/red/flag/drop			dvrfd
+vox/red/flag/take		dvrft
+vox/red/flag/drop		dvrfd
 vox/red/flag/manualreturn	dvrfm
 vox/red/flag/return		dvrfr
