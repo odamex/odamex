@@ -36,7 +36,7 @@ namespace agOdalaunch {
 
 bool GuiConfig::Save()
 {
-	return AG_ConfigSave();
+	return (0 != AG_ConfigSave());
 }
 
 void GuiConfig::Unset(const string &option)
@@ -177,7 +177,7 @@ bool GuiConfig::Read(const std::string &option, bool &value)
 	if(!option.size())
 		return true;
 
-	value = AG_GetUint8(agConfig, option.c_str());
+	value = (0 != AG_GetUint8(agConfig, option.c_str()));
 
 	return false;
 }
