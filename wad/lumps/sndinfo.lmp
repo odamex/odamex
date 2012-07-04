@@ -329,17 +329,17 @@ switches/exitbutn		dsswtchx
 
 misc/teleport			dstelept
 
-ctf/you/take			dsctfyt
-ctf/you/drop			dsctfyd
-ctf/you/manualreturn		dsctfym
-ctf/you/return			dsctfyr
-ctf/you/capture			dsctfyc
+ctf/your/score			dscys
+ctf/your/flag/take		dscyft
+ctf/your/flag/drop		dscyfd
+ctf/your/flag/manualreturn	dscyfm
+ctf/your/flag/return		dscyfr
 
-ctf/enemy/take			dsctfet
-ctf/enemy/drop			dsctfed
-ctf/enemy/manualreturn		dsctfem
-ctf/enemy/return		dsctfer
-ctf/enemy/capture		dsctfec
+ctf/enemy/score			dsces
+ctf/enemy/flag/take		dsceft
+ctf/enemy/flag/drop		dscefd
+ctf/enemy/flag/manualreturn	dscefm
+ctf/enemy/flag/return		dscefr
 
 // Any new sounds have to be last (for clients to use older servers)
 misc/pljoin			dspljoin
@@ -349,11 +349,16 @@ misc/plpart			dsplpart
 // DEFAULT ANNOUNCER
 //---------------------------------------------------------------------------
 
-vox/you/score			dvys
-vox/you/flag/take		dvyft
-vox/you/flag/drop		dvyfd
-vox/you/flag/manualreturn	dvyfm
-vox/you/flag/return		dvyfr
+// Announcer events should be sounded out to come up with logical lump names:
+// Examples:
+// - "Your flag has been taken" => vox/your/flag/take
+// - "Your team has the enemy flag" => vox/your/take/flag
+
+vox/your/score			dvys
+vox/your/flag/take		dvyft
+vox/your/flag/drop		dvyfd
+vox/your/flag/manualreturn	dvyfm
+vox/your/flag/return		dvyfr
 
 vox/enemy/score			dves
 vox/enemy/flag/take		dveft

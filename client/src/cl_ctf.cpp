@@ -454,21 +454,21 @@ static const char *flag_sound[NUM_CTF_SCORE][6] = {
 	{"", "", "", "", "", ""}, // REFRESH
 	{"", "", "", "", "", ""}, // KILL
 	{"", "", "", "", "", ""}, // BETRAYAL
-	{"ctf/you/take", "ctf/enemy/take", "vox/you/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take"}, // GRAB
-	{"ctf/you/take", "ctf/enemy/take", "vox/you/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take"}, // FIRSTGRAB
+	{"ctf/your/flag/take", "ctf/enemy/flag/take", "vox/your/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take"}, // GRAB
+	{"ctf/your/flag/take", "ctf/enemy/flag/take", "vox/your/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take"}, // FIRSTGRAB
 	{"", "", "", "", "", ""}, // CARRIERKILL
-	{"ctf/you/return", "ctf/enemy/return", "vox/you/flag/return", "vox/enemy/flag/return", "vox/blue/flag/return", "vox/red/flag/return"}, // RETURN
-	{"ctf/you/capture", "ctf/enemy/capture", "vox/enemy/score", "vox/you/score", "vox/red/score", "vox/blue/score"}, // CAPTURE
-	{"ctf/you/drop", "ctf/enemy/drop", "vox/you/flag/drop", "vox/enemy/flag/drop", "vox/blue/flag/drop", "vox/red/flag/drop"}, // DROP
-	{"ctf/you/manualreturn", "ctf/enemy/manualreturn", "vox/you/flag/manualreturn", "vox/enemy/flag/manualreturn", "vox/blue/flag/manualreturn", "vox/red/flag/manualreturn"}, // MANUALRETURN
+	{"ctf/your/flag/return", "ctf/enemy/flag/return", "vox/your/flag/return", "vox/enemy/flag/return", "vox/blue/flag/return", "vox/red/flag/return"}, // RETURN
+	{"ctf/enemy/score", "ctf/your/score", "vox/enemy/score", "vox/your/score", "vox/red/score", "vox/blue/score"}, // CAPTURE
+	{"ctf/your/flag/drop", "ctf/enemy/flag/drop", "vox/your/flag/drop", "vox/enemy/flag/drop", "vox/blue/flag/drop", "vox/red/flag/drop"}, // DROP
+	{"ctf/your/flag/manualreturn", "ctf/enemy/flag/manualreturn", "vox/your/flag/manualreturn", "vox/enemy/flag/manualreturn", "vox/blue/flag/manualreturn", "vox/red/flag/manualreturn"}, // MANUALRETURN
 };
 
 EXTERN_CVAR(snd_voxtype)
 EXTERN_CVAR(snd_gamesfx)
 
 // [AM] Play appropriate sounds for CTF events.
-void CTF_Sound(flag_t f, flag_score_t event) {
-	if (f >= NUMFLAGS) {
+void CTF_Sound(flag_t flag, flag_score_t event) {
+	if (flag >= NUMFLAGS) {
 		// Invalid team
 		return;
 	}
@@ -485,11 +485,13 @@ void CTF_Sound(flag_t f, flag_score_t event) {
 
 	// Play sound effect
 	if (snd_gamesfx) {
-		if (!consoleplayer().spectator && consoleplayer().userinfo.team != (team_t)f) {
+		if (consoleplayer().spectator || consoleplayer().userinfo.team != (team_t)flag) {
+			// Enemy flag is being evented
 			if (S_FindSound(flag_sound[event][1]) != -1) {
 				S_Sound(CHAN_GAMEINFO, flag_sound[event][1], 1, ATTN_NONE);
 			}
 		} else {
+			// Your flag is being evented
 			if (S_FindSound(flag_sound[event][0]) != -1) {
 				S_Sound(CHAN_GAMEINFO, flag_sound[event][0], 1, ATTN_NONE);
 			}
@@ -501,12 +503,15 @@ void CTF_Sound(flag_t f, flag_score_t event) {
 	case 2:
 		// Possessive (yours/theirs)
 		if (!consoleplayer().spectator) {
-			if (consoleplayer().userinfo.team != (team_t)f) {
+			if (consoleplayer().userinfo.team != (team_t)flag) {
+				// Enemy flag is being evented
 				if (S_FindSound(flag_sound[event][3]) != -1) {
 					S_Sound(CHAN_ANNOUNCER, flag_sound[event][3], 1, ATTN_NONE);
 					break;
 				}
 			} else {
+				Printf(PRINT_HIGH, "%s\n", flag_sound[event][2]);
+				// Your flag is being evented
 				if (S_FindSound(flag_sound[event][2]) != -1) {
 					S_Sound(CHAN_ANNOUNCER, flag_sound[event][2], 1, ATTN_NONE);
 					break;
@@ -516,11 +521,11 @@ void CTF_Sound(flag_t f, flag_score_t event) {
 		// fallthrough
 	case 1:
 		// Team colors (red/blue)
-		if (S_FindSound(flag_sound[event][4 + f]) != -1) {
-			if (consoleplayer().userinfo.team != (team_t)f && !consoleplayer().spectator) {
-				S_Sound(CHAN_ANNOUNCER, flag_sound[event][4 + f], 1, ATTN_NONE);
+		if (S_FindSound(flag_sound[event][4 + flag]) != -1) {
+			if (consoleplayer().userinfo.team != (team_t)flag && !consoleplayer().spectator) {
+				S_Sound(CHAN_ANNOUNCER, flag_sound[event][4 + flag], 1, ATTN_NONE);
 			} else {
-				S_Sound(CHAN_ANNOUNCER, flag_sound[event][4 + f], 1, ATTN_NONE);
+				S_Sound(CHAN_ANNOUNCER, flag_sound[event][4 + flag], 1, ATTN_NONE);
 			}
 			break;
 		}
