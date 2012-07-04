@@ -30,10 +30,10 @@
 #endif
 
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "60"
-#define GAMEVER (0*256+60)
+#define CONFIGVERSIONSTR "61"
+#define GAMEVER (0*256+61)
 
-#define DOTVERSIONSTR "0.6.0"
+#define DOTVERSIONSTR "0.6.1"
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2012 The Odamex Team"
 
@@ -49,7 +49,7 @@
 // earlier than this version.
 #define SAVESIG "ODAMEXSAVE060   "	// Needs to be exactly 16 chars long
 
-#define NETDEMOVER 2
+#define NETDEMOVER 3
 
 // denis - per-file svn version stamps
 class file_version
