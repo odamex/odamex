@@ -90,7 +90,7 @@ AG_Box *AGOL_About::CreateTopBox(void *parent)
 		AG_CloseDataSource(pngdata);
 	}
 
-	box = AG_BoxNewVert(tbox, 0);
+	box = AG_BoxNewVert(tbox, AG_BOX_HFILL);
 	label = AG_LabelNewS(box, AG_LABEL_HFILL, "The Odamex Launcher");
 	AG_LabelJustify(label, AG_TEXT_CENTER);
 	label = AG_LabelNewS(box, AG_LABEL_HFILL, "Copyright (C) 2010-2012 by The Odamex Team");

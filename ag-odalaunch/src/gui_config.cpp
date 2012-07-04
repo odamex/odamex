@@ -45,6 +45,11 @@ void GuiConfig::Unset(const string &option)
 		AG_Unset(agConfig, option.c_str());
 }
 
+bool GuiConfig::IsDefined(const std::string &option)
+{
+	return (0 != AG_Defined(agConfig, option.c_str()));
+}
+
 bool GuiConfig::Write(const string &option, const string &value)
 {
 	if(!option.size() || !value.size())

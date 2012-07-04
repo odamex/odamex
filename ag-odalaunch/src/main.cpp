@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 				break;
 			case 'f':
 				/* Force full screen */
-				AG_SetBool(agConfig, "view.full-screen", 1);
+				GuiConfig::Write("view.full-screen", true);
 				break;
 			case '?':
 			default:
@@ -112,6 +112,10 @@ int main(int argc, char *argv[])
 				exit(0);
 		}
 	}
+
+	// Set the default font size
+	if(!GuiConfig::IsDefined("font.size"))
+		GuiConfig::Write("font.size", 10);
 
 #ifdef GCONSOLE
 	// For now just use a resolution that compensates for overscan on most televisions
