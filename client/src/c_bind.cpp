@@ -262,9 +262,7 @@ BEGIN_COMMAND (bind)
 			return;
 		}
 		if (argc == 2) {
-			Printf (PRINT_HIGH, "%s = %s\n", 
-							C_QuoteString(argv[1]).c_str(),
-							C_QuoteString(Bindings[i]).c_str());
+			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(Bindings[i]).c_str());
 		} else {
 			Bindings[i] = argv[2];
 		}
@@ -273,9 +271,7 @@ BEGIN_COMMAND (bind)
 
 		for (i = 0; i < NUM_KEYS; i++) {
 			if (Bindings[i].length())
-				Printf (PRINT_HIGH, "%s %s\n", 
-								C_QuoteString(KeyName(i)).c_str(),
-								C_QuoteString(Bindings[i]).c_str());
+				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(Bindings[i]).c_str());
 		}
 	}
 }
@@ -309,9 +305,7 @@ BEGIN_COMMAND (doublebind)
 		}
 		if (argc == 2)
 		{
-			Printf (PRINT_HIGH, "%s = %s\n",
-							C_QuoteString(argv[1]).c_str(),
-							C_QuoteString(DoubleBindings[i]).c_str());
+			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(DoubleBindings[i]).c_str());
 		}
 		else
 		{
@@ -325,9 +319,7 @@ BEGIN_COMMAND (doublebind)
 		for (i = 0; i < NUM_KEYS; i++)
 		{
 			if (DoubleBindings[i].length())
-				Printf (PRINT_HIGH, "%s %s\n", 
-								C_QuoteString(KeyName(i)).c_str(),
-								C_QuoteString(DoubleBindings[i]).c_str());
+				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(DoubleBindings[i]).c_str());
 		}
 	}
 }

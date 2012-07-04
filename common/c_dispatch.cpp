@@ -486,6 +486,12 @@ BEGIN_COMMAND (if)
 }
 END_COMMAND (if)
 
+// Returns true if the character is a valid escape char, false otherwise.
+bool ValidEscape(char data)
+{
+	return (data == '"' || data == ';' || data == '\\');
+}
+
 // ParseString2 is adapted from COM_Parse
 // found in the Quake2 source distribution
 const char *ParseString2(const char *data)
@@ -506,7 +512,7 @@ const char *ParseString2(const char *data)
 		data++;
 	}
 
-	if (data[0] == '\\' && (data[1] == '"' || data[1] == ';' || data[1] == '\\'))
+	if (data[0] == '\\' && ValidEscape(data[1]))
 	{
 		// [AM] Handle escaped chars.
 		com_token[len] = data[1];
@@ -523,7 +529,7 @@ const char *ParseString2(const char *data)
 				// [AM] Unclosed quote, show no mercy.
 				return NULL;
 			}
-			if (data[0] == '\\' && (data[1] == '"' || data[1] == ';' || data[1] == '\\'))
+			if (data[0] == '\\' && ValidEscape(data[1]))
 			{
 				// [AM] Handle escaped chars.
 				com_token[len] = data[1];
@@ -551,7 +557,7 @@ const char *ParseString2(const char *data)
 			// End of word.
 			break;
 		}
-		if (data[0] == '\\' && data[1] != 0)
+		if (data[0] == '\\' && ValidEscape(data[1]))
 		{
 			// [AM] Handle escaped chars.
 			com_token[len] = data[1];
@@ -716,7 +722,7 @@ std::string C_QuoteString(const std::string &argstr)
 	buffer << "\"";
 	for (std::string::const_iterator it = argstr.begin();it != argstr.end();++it)
 	{
-		if (*it == '"' || *it == ';' || *it == '\\')
+		if (ValidEscape(*it))
 		{
 			// Escape this char.
 			buffer << '\\' << *it;
