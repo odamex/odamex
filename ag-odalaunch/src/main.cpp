@@ -24,6 +24,7 @@
 //-----------------------------------------------------------------------------
 
 #include <iostream>
+#include <sstream>
 
 #include <agar/core.h>
 #include <agar/gui.h>
@@ -42,40 +43,25 @@ using namespace std;
 
 namespace agOdalaunch {
 
-int AGOL_InitVideo(const string& drivers, const int width, const int height)
+int AGOL_InitVideo(const string& drivers, const int width, const int height, const short depth)
 {
+	ostringstream spec;
+
 	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
 
-	if(!drivers.size() || drivers.compare(0, 3, "sdl"))
-	{
 		/* Initialize Agar-GUI. */
-		if (AG_InitGraphics(drivers.c_str()) == -1) 
+		if(drivers.size())
+			spec << drivers;
+		else
+			spec << "<OpenGL>";
+
+		spec << "(width=" << width << ":height=" << height << ":depth=" << depth << ")";
+
+		if (AG_InitGraphics(spec.str().c_str()) == -1) 
 		{
 			cerr << AG_GetError() << endl;
 			return -1;
 		}
-		if(agDriverSw)
-			AG_ResizeDisplay(width, height);
-	}
-	else // Alternative initialization. This will only initialize single-window display.
-	{
-		if(drivers.size() && drivers == "sdlfb")
-		{
-			if (AG_InitVideo(width, height, 32, AG_VIDEO_SDL | AG_VIDEO_RESIZABLE) == -1) 
-			{
-				cerr << AG_GetError() << endl;
-				return -1;
-			}
-		}
-		else
-		{
-			if (AG_InitVideo(width, height, 32, AG_VIDEO_OPENGL_OR_SDL | AG_VIDEO_RESIZABLE) == -1) 
-			{
-				cerr << AG_GetError() << endl;
-				return -1;
-			}
-		}
-	}
 
 #ifdef _XBOX
 	// Software cursor only updates at the refresh rate so make it respectable
@@ -150,7 +136,7 @@ int main(int argc, char *argv[])
 #endif
 	}
 
-	if(AGOL_InitVideo(drivers, width, height))
+	if(AGOL_InitVideo(drivers, width, height, 32))
 		return (-1);
 
 	// Initialize socket API
