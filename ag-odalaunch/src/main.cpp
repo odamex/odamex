@@ -49,19 +49,19 @@ int AGOL_InitVideo(const string& drivers, const int width, const int height, con
 
 	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
 
-		/* Initialize Agar-GUI. */
-		if(drivers.size())
-			spec << drivers;
-		else
-			spec << "<OpenGL>";
+	/* Initialize Agar-GUI. */
+	if(drivers.size())
+		spec << drivers;
+	else
+		spec << "<OpenGL>";
 
-		spec << "(width=" << width << ":height=" << height << ":depth=" << depth << ")";
+	spec << "(width=" << width << ":height=" << height << ":depth=" << depth << ")";
 
-		if (AG_InitGraphics(spec.str().c_str()) == -1) 
-		{
-			cerr << AG_GetError() << endl;
-			return -1;
-		}
+	if (AG_InitGraphics(spec.str().c_str()) == -1) 
+	{
+		cerr << AG_GetError() << endl;
+		return -1;
+	}
 
 #ifdef _XBOX
 	// Software cursor only updates at the refresh rate so make it respectable
