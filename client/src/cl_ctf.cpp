@@ -510,7 +510,6 @@ void CTF_Sound(flag_t flag, flag_score_t event) {
 					break;
 				}
 			} else {
-				Printf(PRINT_HIGH, "%s\n", flag_sound[event][2]);
 				// Your flag is being evented
 				if (S_FindSound(flag_sound[event][2]) != -1) {
 					S_Sound(CHAN_ANNOUNCER, flag_sound[event][2], 1, ATTN_NONE);
