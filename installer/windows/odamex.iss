@@ -25,7 +25,7 @@ PrivilegesRequired=none
 ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
-AppVersion=0.6.0
+AppVersion=0.6.1
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -46,7 +46,7 @@ Name: base; Description: Base data; Types: full compact custom; Flags: fixed
 Name: client; Description: Odamex Client; Types: full compact custom
 Name: server; Description: Odamex Server; Types: full
 Name: launcher; Description: Odalaunch (Game Launcher); Types: full compact custom
-Name: libs; Description: Libraries (SDL, SDL_Mixer); Types: full compact
+Name: libs; Description: Libraries (SDL 1.2.15, SDL_Mixer 1.2.12); Types: full compact
 
 
 [Files]
@@ -66,6 +66,7 @@ Source: ..\..\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: li
 Source: ..\..\smpeg.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
+Source: ..\..\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\mikmod.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\CHANGELOG; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\LICENSE; DestDir: {app}; Flags: ignoreversion; Components: base
