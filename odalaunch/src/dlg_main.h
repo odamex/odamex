@@ -110,6 +110,8 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnExit(wxCommandEvent& event);
 		
+		void SetupToolbar();
+
 		wxInt32 FindServer(wxString);
 		wxInt32 FindServerInList(wxString);
 		wxInt32 GetSelectedServerListIndex();

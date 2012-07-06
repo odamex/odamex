@@ -1716,7 +1716,7 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 		if (deh) {
 			filelen = M_FileLength (deh);
 			if ( (PatchFile = new char[filelen + 1]) ) {
-				fread (PatchFile, 1, filelen, deh);
+				size_t res = fread (PatchFile, 1, filelen, deh);
 				fclose (deh);
 			}
 		}

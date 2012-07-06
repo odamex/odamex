@@ -207,8 +207,14 @@ void M_ProjectPointOnPlane(v3double_t *dest, const v3double_t *p, const v3double
 void M_PerpendicularVec3(v3double_t *dest, const v3double_t *src);
 void M_RotatePointAroundVector(v3double_t *dest, const v3double_t *dir, const v3double_t *point, float degrees);
 
-void M_TranslateVec3f(v3float_t *vec);
-void M_TranslateVec3 (v3double_t *vec);
+
+//
+// M_TranslateVec3f
+//
+// Rotates a vector around a point of origin
+//
+void M_TranslateVec3f(v3float_t *vec, const v3float_t *origin, angle_t ang);
+void M_TranslateVec3(v3double_t *vec, const v3double_t *origin, angle_t ang);
 
 #endif //__VECTORS_H__
 

@@ -148,6 +148,8 @@ CVAR_FUNC_DECL (rate, "200", "Rate of client updates in multiplayer mode", CVART
 CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH)
 // Maximum amount of players who can join the game, others are spectators
 CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH)
+// Maximum number of players that can be on a team
+CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR_FUNC_DECL (cl_autoaim,	"5000", "", CVARTYPE_INT,		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -158,6 +160,7 @@ CVAR (cl_unlag,				"1", "client opt-in/out for server unlagging", CVARTYPE_BOOL,
 CVAR_FUNC_DECL (cl_updaterate, "1",	"Update players every N tics", CVARTYPE_BYTE,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (cl_interp,	"1", "Interpolate enemy player positions", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (cl_prednudge,	"0.30", "Smooth out the collisions", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_predictlocalplayer, "1", "Predict local player position", CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (cl_netgraph,				"0", "Show a graph of network related statistics", CVARTYPE_BOOL, CVAR_NULL)
 
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
@@ -252,7 +255,9 @@ CVAR (chatmacro0, "No", "",	CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE
 
 CVAR_FUNC_DECL (snd_sfxvolume, "0.5", "Sound volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)      // Sound volume
 CVAR_FUNC_DECL (snd_musicvolume, "0.5", "Music volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // Music volume
-CVAR_FUNC_DECL (snd_announcervolume, "0.5", "Announcer volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // CTF announcer volume
+CVAR_FUNC_DECL (snd_announcervolume, "1.0", "Announcer volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // CTF announcer volume
+CVAR (snd_voxtype, "2", "Voice announcer type", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (snd_gamesfx, "1", "Game SFX", CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_ARCHIVE)                                         // Stereo switch
 CVAR (snd_samplerate, "22050", "Samplerate",	CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)             // Sample rate
 CVAR (snd_timeout, "0", "",	CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)					// Clean up finished sounds
@@ -320,6 +325,12 @@ CVAR (r_particles, "1","Draw particles",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
 CVAR_FUNC_DECL (r_stretchsky, "2", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Invulnerability sphere changes the palette of the sky
 CVAR (r_skypalette, "0", "Invulnerability sphere changes the palette of the sky",	CVARTYPE_BOOL, CVAR_ARCHIVE)
+// Enemy sprite coloring
+CVAR_FUNC_DECL (r_forceenemycolor, "0", "Changes the color of all enemies to the specified color", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR_FUNC_DECL (r_enemycolor, "40 cf 00", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Teammate sprite coloring
+CVAR_FUNC_DECL (r_forceteamcolor, "0", "Changes the color of all teammates to the specified color", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR_FUNC_DECL (r_teamcolor, "40 cf 00", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 #ifdef _XBOX // The burn wipe works better in 720p
 CVAR (r_wipetype, "2", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)

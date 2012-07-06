@@ -49,7 +49,7 @@
 
 #define QUEUESIZE		128
 #define HU_INPUTX		0
-#define HU_INPUTY		(0 + (SHORT(hu_font[0]->height) +1))
+#define HU_INPUTY		(0 + (LESHORT(hu_font[0]->height) +1))
 
 #define CTFBOARDWIDTH	236
 #define CTFBOARDHEIGHT	40
@@ -370,8 +370,8 @@ BEGIN_COMMAND (say)
 {
 	if (argc > 1)
 	{
-		std::string chat = BuildString (argc - 1, (const char **)(argv + 1));
-		ShoveChatStr (chat, 0);
+		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		ShoveChatStr(chat, 0);
 	}
 }
 END_COMMAND (say)
@@ -392,8 +392,8 @@ BEGIN_COMMAND (say_team)
 {
 	if (argc > 1)
 	{
-		std::string chat = BuildString (argc - 1, (const char **)(argv + 1));
-		ShoveChatStr (chat, 1);
+		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		ShoveChatStr(chat, 1);
 	}
 }
 END_COMMAND (say_team)
@@ -446,14 +446,13 @@ void drawHeader(player_t *player, int y) {
 	              str.c_str(), CR_GOLD, true);
 
 	brokenlines_t *hostname = V_BreakLines(192, sv_hostname.cstring());
-	hud::DrawText(0, y + 8, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_CENTER, hud::Y_TOP,
-	              hostname[0].string, CR_GREY, true);
-	hud::DrawText(0, y + 16, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_CENTER, hud::Y_TOP,
-	              hostname[1].string, CR_GREY, true);
+	for (size_t i = 0; i < 2 && hostname[i].width > 0; i++)
+	{
+		hud::DrawText(0, y + 8 * (i + 1), hud_scalescoreboard,
+					  hud::X_CENTER, hud::Y_MIDDLE,
+					  hud::X_CENTER, hud::Y_TOP,
+					  hostname[i].string, CR_GREY, true);
+	}
 	V_FreeBrokenLines(hostname);
 
 	// Left

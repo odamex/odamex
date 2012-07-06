@@ -43,6 +43,7 @@
 #else
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <shlwapi.h>
 #endif // !_XBOX
 #endif // WIN32
 
@@ -115,7 +116,7 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-#ifdef _XBOX
+#ifdef GCONSOLE
 size_t def_heapsize = 16;
 #else
 size_t def_heapsize = 128;
@@ -126,6 +127,9 @@ const size_t min_heapsize = 8;
 size_t got_heapsize = 0;
 
 DWORD LanguageIDs[4];
+
+// Endoom screen is showing
+bool in_endoom = false;
 
 //
 // I_MegabytesToBytes
@@ -195,6 +199,23 @@ void *I_ZoneBase (size_t *size)
 
 void I_BeginRead(void)
 {
+	patch_t *diskpatch = W_CachePatch("STDISK");
+
+	if (!screen || !diskpatch || in_endoom)
+		return;
+
+	screen->Lock();
+
+	int scale = MIN(CleanXfac, CleanYfac);
+	int w = diskpatch->width() * scale;
+	int h = diskpatch->height() * scale;
+	// offset x and y for the lower right corner of the screen
+	int ofsx = screen->width - w + (scale * diskpatch->leftoffset());
+	int ofsy = screen->height - h + (scale * diskpatch->topoffset());
+
+	screen->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
+
+	screen->Unlock();
 }
 
 void I_EndRead(void)
@@ -379,6 +400,14 @@ std::string I_GetHomeDir(std::string user = "")
 std::string I_GetUserFileName (const char *file)
 {
 #if defined(UNIX) && !defined(GEKKO)
+	// return absolute or explicitly relative pathnames unmodified,
+	// so launchers or CLI/console users have control over netdemo placement
+	if (file &&
+		(file[0] == PATHSEPCHAR || // /path/to/file
+		(file[0] == '.' && file[1] == PATHSEPCHAR) || // ./file
+		(file[0] == '.' && file[1] == '.' && file[2] == PATHSEPCHAR))) // ../file
+		return std::string (file);
+
 	std::string path = I_GetHomeDir();
 
 	if(path[path.length() - 1] != PATHSEPCHAR)
@@ -411,6 +440,9 @@ std::string I_GetUserFileName (const char *file)
 	path += PATHSEP;
 	path += file;
 #else
+	if (!PathIsRelative(file))
+		return std::string (file);
+
 	std::string path = I_GetBinaryDir();
 
 	if(path[path.length() - 1] != PATHSEPCHAR)
@@ -527,6 +559,9 @@ void I_Endoom(void)
 	int y;
 	int indent;
 
+    // Hack to stop crash with disk icon
+    in_endoom = true;
+
 	endoom_data = (unsigned char *)W_CacheLumpName("ENDOOM", PU_STATIC);
 
 	// Set up text mode screen
@@ -564,6 +599,8 @@ void I_Endoom(void)
 	// Shut down text mode screen
 
 	TXT_Shutdown();
+
+	in_endoom = false;
 #endif // Hyper_Eye
 }
 

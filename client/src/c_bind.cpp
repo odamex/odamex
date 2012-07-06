@@ -104,7 +104,7 @@ char DefBindings[] =
 	"bind pause pause; "
 	"bind sysrq screenshot; "			// <- Also known as the Print Screen key
 	"bind t messagemode; "
-	"bind \\ +showscores; "				// <- Another new command
+	"bind \\\\ +showscores; "				// <- Another new command
 	"bind f11 bumpgamma; "
 	"bind f12 spynext; "
 	"bind pgup vote_yes; "				// <- New for voting
@@ -246,7 +246,7 @@ BEGIN_COMMAND (unbind)
 		if ( (i = GetKeyFromName (argv[1])) )
 			Bindings[i] = "";
 		else
-			Printf (PRINT_HIGH, "Unknown key \"%s\"\n", argv[1]);
+			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
 }
 END_COMMAND (unbind)
@@ -258,11 +258,11 @@ BEGIN_COMMAND (bind)
 	if (argc > 1) {
 		i = GetKeyFromName (argv[1]);
 		if (!i) {
-			Printf (PRINT_HIGH, "Unknown key \"%s\"\n", argv[1]);
+			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 			return;
 		}
 		if (argc == 2) {
-			Printf (PRINT_HIGH, "\"%s\" = \"%s\"\n", argv[1], Bindings[i].c_str());
+			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(Bindings[i]).c_str());
 		} else {
 			Bindings[i] = argv[2];
 		}
@@ -271,7 +271,7 @@ BEGIN_COMMAND (bind)
 
 		for (i = 0; i < NUM_KEYS; i++) {
 			if (Bindings[i].length())
-				Printf (PRINT_HIGH, "%s \"%s\"\n", KeyName (i), Bindings[i].c_str());
+				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(Bindings[i]).c_str());
 		}
 	}
 }
@@ -286,7 +286,7 @@ BEGIN_COMMAND (undoublebind)
 		if ( (i = GetKeyFromName (argv[1])) )
 			DoubleBindings[i] = "";
 		else
-			Printf (PRINT_HIGH, "Unknown key \"%s\"\n", argv[1]);
+			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
 }
 END_COMMAND (undoublebind)
@@ -300,12 +300,12 @@ BEGIN_COMMAND (doublebind)
 		i = GetKeyFromName (argv[1]);
 		if (!i)
 		{
-			Printf (PRINT_HIGH, "Unknown key \"%s\"\n", argv[1]);
+			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 			return;
 		}
 		if (argc == 2)
 		{
-			Printf (PRINT_HIGH, "\"%s\" = \"%s\"\n", argv[1], DoubleBindings[i].c_str());
+			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(DoubleBindings[i]).c_str());
 		}
 		else
 		{
@@ -319,7 +319,7 @@ BEGIN_COMMAND (doublebind)
 		for (i = 0; i < NUM_KEYS; i++)
 		{
 			if (DoubleBindings[i].length())
-				Printf (PRINT_HIGH, "%s \"%s\"\n", KeyName (i), DoubleBindings[i].c_str());
+				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(DoubleBindings[i]).c_str());
 		}
 	}
 }
@@ -437,11 +437,19 @@ void C_ArchiveBindings (FILE *f)
 
 	fprintf (f, "unbindall\n");
 	for (i = 0; i < NUM_KEYS; i++)
+	{
 		if (Bindings[i].length())
-			fprintf (f, "bind \"%s\" \"%s\"\n", KeyName (i), Bindings[i].c_str());
+			fprintf (f, "bind %s %s\n",
+					C_QuoteString(KeyName(i)).c_str(),
+					C_QuoteString(Bindings[i]).c_str());
+	}
 	for (i = 0; i < NUM_KEYS; i++)
+	{
 		if (DoubleBindings[i].length())
-			fprintf (f, "doublebind \"%s\" \"%s\"\n", KeyName (i), DoubleBindings[i].c_str());
+			fprintf (f, "doublebind %s %s\n", 
+					C_QuoteString(KeyName(i)).c_str(),
+					C_QuoteString(DoubleBindings[i]).c_str());
+	}
 }
 
 int C_GetKeysForCommand (const char *cmd, int *first, int *second)

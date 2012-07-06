@@ -36,7 +36,6 @@ struct ticcmd_t
 {
 	usercmd_t	ucmd;
 	int			tic;	// the client's tic when this cmd was sent
-	byte		svgametic;	// from the clc_svgametic sent along with this cmd
 /*
 	char		forwardmove;	// *2048 for move
 	char		sidemove;		// *2048 for move

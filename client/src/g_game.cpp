@@ -160,10 +160,12 @@ EXTERN_CVAR(sv_allowjump)
 EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_fixweaponimpacts)
+EXTERN_CVAR(co_blockmapfix)
 EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
 EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
 EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
 EXTERN_CVAR (m_filter)
+EXTERN_CVAR (cl_predictpickup)
 
 CVAR_FUNC_IMPL(cl_mouselook)
 {
@@ -263,10 +265,7 @@ player_t		&displayplayer()
 
 player_t		&listenplayer()
 {
-	if (netdemo.isPlaying() || consoleplayer().spectator)
-		return displayplayer();
-
-	return consoleplayer();
+	return displayplayer();
 }
 
 // [RH] Name of screenshot file to generate (usually NULL)
@@ -310,8 +309,28 @@ BEGIN_COMMAND (pause)
 }
 END_COMMAND (pause)
 
-static int turntick;
+BEGIN_COMMAND (turnspeeds)
+{
+	if (argc == 1)
+	{
+		Printf (PRINT_HIGH, "Current turn speeds: %ld %ld %ld\n",
+				angleturn[0], angleturn[1], angleturn[2]);
+	}
+	else
+	{
+		size_t i;
+		for (i = 1; i <= 3 && i < argc; i++)
+			angleturn[i-1] = atoi (argv[i]);
 
+		if (i <= 2)
+			angleturn[1] = angleturn[0] * 2;
+		if (i <= 3)
+			angleturn[2] = angleturn[0] / 2;
+	}
+}
+END_COMMAND (turnspeeds)
+
+static int turntick;
 BEGIN_COMMAND (turn180)
 {
 	turntick = TURN180_TICKS;
@@ -334,43 +353,6 @@ BEGIN_COMMAND (weapprev)
 		Impulse = int(newweapon) + 50;
 }
 END_COMMAND (weapprev)
-
-BEGIN_COMMAND (spynext)
-{
-	extern bool st_firsttime;
-
-	size_t curr;
-	size_t s = players.size();
-	for(curr = 0; curr < s; curr++)
-		if(players[curr].id == displayplayer().id)
-			break;
-
-	for(size_t i = 1; i < s; i++)
-	{
-		curr = (curr+1)%s;
-
-		if(!players[curr].mo)
-			continue;
-
-		if(demoplayback)
-		{
-			consoleplayer_id = players[curr].id;
-			displayplayer_id = players[curr].id;
-			st_firsttime = true;
-			break;
-		}
-		else if (consoleplayer().spectator ||
-			 sv_gametype == GM_COOP ||
-			 (sv_gametype != GM_DM &&
-				players[curr].userinfo.team == consoleplayer().userinfo.team) || 
-				(netdemo.isPlaying() || netdemo.isPaused()))
-		{
-			displayplayer_id = players[curr].id;
-			break;
-		}
-	}
-}
-END_COMMAND (spynext)
 
 extern constate_e ConsoleState;
 
@@ -505,9 +487,12 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 
 	// [SL] 2012-03-31 - Let the server know when the client is predicting a
 	// weapon change due to a weapon pickup
-	if (!cmd->ucmd.impulse && !(cmd->ucmd.buttons & BT_CHANGE) &&
-		consoleplayer().pendingweapon != wp_nochange)
-		cmd->ucmd.impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
+	if (!serverside && cl_predictpickup)
+	{
+		if (!cmd->ucmd.impulse && !(cmd->ucmd.buttons & BT_CHANGE) &&
+			consoleplayer().pendingweapon != wp_nochange)
+			cmd->ucmd.impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
+	}
 
 	if (strafe || lookstrafe)
 		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
@@ -599,11 +584,6 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		turntick--;
 		cmd->ucmd.yaw = (ANG180 / TURN180_TICKS) >> 16;
 	}
-
-	// [SL] 2012-04-05 - If the player is dead, tell the server not to process
-	// any of its movement or turning by setting impulse to 40
-	if (consoleplayer().playerstate == PST_DEAD)
-		cmd->ucmd.impulse = DEADIMPULSE;
 }
 
 
@@ -966,10 +946,9 @@ void G_Ticker (void)
 			realrate = 0;
 		}
 
+		CL_SaveCmd();      // save console commands
 		if (!noservermsgs)
 			CL_SendCmd();  // send console commands to the server
-
-		CL_SaveCmd();      // save console commands
 
 		if (!(gametic%TICRATE))
 		{
@@ -1499,6 +1478,7 @@ void G_DoLoadGame (void)
 {
     unsigned int i;
 	char text[16];
+	size_t res;
 
 	gameaction = ga_nothing;
 
@@ -1510,7 +1490,7 @@ void G_DoLoadGame (void)
 	}
 
 	fseek (stdfile, SAVESTRINGSIZE, SEEK_SET);	// skip the description field
-	fread (text, 16, 1, stdfile);
+	res = fread (text, 16, 1, stdfile);
 	if (strncmp (text, SAVESIG, 16))
 	{
 		Printf (PRINT_HIGH, "Savegame '%s' is from a different version\n", savename);
@@ -1519,7 +1499,7 @@ void G_DoLoadGame (void)
 
 		return;
 	}
-	fread (text, 8, 1, stdfile);
+	res = fread (text, 8, 1, stdfile);
 	text[8] = 0;
 
 	/*bglobal.RemoveAllBots (true);*/
@@ -1611,6 +1591,7 @@ void G_DoSaveGame (void)
 {
 	std::string name;
 	char *description;
+	size_t res;
 	int i;
 
 	G_SnapshotLevel ();
@@ -1631,9 +1612,9 @@ void G_DoSaveGame (void)
 
 	Printf (PRINT_HIGH, "Saving game to '%s'...\n", name.c_str());
 
-	fwrite (description, SAVESTRINGSIZE, 1, stdfile);
-	fwrite (SAVESIG, 16, 1, stdfile);
-	fwrite (level.mapname, 8, 1, stdfile);
+	res = fwrite (description, SAVESTRINGSIZE, 1, stdfile);
+	res = fwrite (SAVESIG, 16, 1, stdfile);
+	res = fwrite (level.mapname, 8, 1, stdfile);
 
 	FLZOFile savefile (stdfile, FFile::EWriting, true);
 	FArchive arc (savefile);
@@ -1807,7 +1788,7 @@ void G_WriteDemoTiccmd ()
 
         *demo_p++ = cmd->buttons;
 
-        fwrite(demo_tmp, demostep, 1, recorddemo_fp);
+        size_t res = fwrite(demo_tmp, demostep, 1, recorddemo_fp);
     }
 }
 
@@ -1888,7 +1869,7 @@ void G_BeginRecording (void)
     *demo_p++ = 0;
     *demo_p++ = 0;
 
-    fwrite(demo_tmp, 13, 1, recorddemo_fp);
+    size_t res = fwrite(demo_tmp, 13, 1, recorddemo_fp);
 }
 
 //
@@ -2179,6 +2160,15 @@ void G_DoPlayDemo (bool justStreamInput)
 		sv_nomonsters = *demo_p++;
 		byte who = *demo_p++;
 
+		// comatibility
+		sv_freelook = "0";
+		sv_allowjump = "0";
+		co_realactorheight = "0";
+		co_zdoomphys = "0";
+		co_allowdropoff = "0";
+		co_fixweaponimpacts = "0";
+		co_blockmapfix = "0";
+
 		if(!justStreamInput)
 			players.clear();
 
@@ -2247,14 +2237,6 @@ void G_DoPlayDemo (bool justStreamInput)
     		usergame = false;
 		}
 		demoplayback = true;
-
-		// comatibility
-		sv_freelook = "0";
-		sv_allowjump = "0";
-		co_realactorheight = "0";
-		co_zdoomphys = "0";
-		co_allowdropoff = "0";
-		co_fixweaponimpacts = "0";
 
 		return;
 	} else {

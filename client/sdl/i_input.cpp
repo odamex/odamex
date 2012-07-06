@@ -576,7 +576,7 @@ void I_GetEvent (void)
       switch(ev.type)
       {
          case SDL_QUIT:
-            AddCommandString("menu_quit");
+            AddCommandString("quit");
             break;
          // Resizable window mode resolutions
          case SDL_VIDEORESIZE:
@@ -629,7 +629,7 @@ void I_GetEvent (void)
 #ifdef WIN32
             //HeX9109: Alt+F4 for cheats! Thanks Spleen
             if(event.data1 == SDLK_F4 && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
-                AddCommandString("menu_quit");
+                AddCommandString("quit");
             // SoM: Ignore the tab portion of alt-tab presses
             if(event.data1 == SDLK_TAB && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
                event.data1 = event.data2 = event.data3 = 0;

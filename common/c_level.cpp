@@ -937,6 +937,7 @@ void G_InitLevelLocals ()
 
 	level.gravity = sv_gravity;
 	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
+	G_AirControlChanged();
 
 	if ((i = FindWadLevelInfo (level.mapname)) > -1)
 	{

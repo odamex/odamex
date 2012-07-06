@@ -905,7 +905,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			{
 				wadinfo_t header;
 				fread (&header, sizeof(header), 1, f);
-				header.identification = LONG(header.identification);
+				header.identification = LELONG(header.identification);
 				if (header.identification != IWAD_ID)
 				{
 					if(header.identification == PWAD_ID)
@@ -957,13 +957,13 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		memset (lumpsfound, 0, sizeof(lumpsfound));
 		if ( (f = fopen (iwad.c_str(), "rb")) )
 		{
-			fread (&header, sizeof(header), 1, f);
-			header.identification = LONG(header.identification);
+			size_t res = fread (&header, sizeof(header), 1, f);
+			header.identification = LELONG(header.identification);
 			if (header.identification == IWAD_ID ||
 				header.identification == PWAD_ID)
 			{
-				header.numlumps = LONG(header.numlumps);
-				if (0 == fseek (f, LONG(header.infotableofs), SEEK_SET))
+				header.numlumps = LELONG(header.numlumps);
+				if (0 == fseek (f, LELONG(header.infotableofs), SEEK_SET))
 				{
 					for (i = 0; i < header.numlumps; i++)
 					{
@@ -1612,6 +1612,17 @@ void D_DoomMain (void)
 
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
     //gamestate = GS_FULLCONSOLE;
+
+	// [SL] allow the user to pass the name of a netdemo as the first argument.
+	// This allows easy launching of netdemos from Windows Explorer or other GUIs.
+	
+	// [Xyltol]
+	if (Args.GetArg(1))
+	{
+		std::string demoarg = Args.GetArg(1);
+		if (demoarg.find(".odd") != std::string::npos)
+			CL_NetDemoPlay(demoarg);
+	}
 
 	p = Args.CheckParm("-netplay");
 	if (p)

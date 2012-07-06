@@ -366,6 +366,12 @@ void Server::ReadInformation(const uint8_t &VersionMajor,
 		Player_t Player;
 
 		Socket.ReadString(Player.Name);
+		QRYNEWINFO(2)
+		{
+            Socket.Read32(Player.Colour);
+		}
+		else
+            Player.Colour = 0;
 		Socket.Read8(Player.Team);
 		Socket.Read16(Player.Ping);
 		Socket.Read16(Player.Time);

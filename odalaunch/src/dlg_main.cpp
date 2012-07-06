@@ -40,6 +40,7 @@
 #include <wx/iconbndl.h>
 #include <wx/regex.h>
 #include <wx/process.h>
+#include <wx/toolbar.h>
 #include <wx/xrc/xmlres.h>
 
 #ifdef __WXMSW__
@@ -105,6 +106,37 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     EVT_LIST_ITEM_ACTIVATED(XRCID("Id_LstCtrlServers"), dlgMain::OnServerListDoubleClick)
 END_EVENT_TABLE()
 
+void dlgMain::SetupToolbar()
+{
+    wxBitmap toolLaunch, toolRunOffline, toolRefresh, toolRefreshAll, 
+        toolGetList, toolPreferences, toolAbout, toolExit;
+
+    wxToolBar *ToolBar;
+
+    ToolBar = GetToolBar();
+
+    if (!ToolBar)
+        return;
+
+    toolLaunch = wxXmlResource::Get()->LoadBitmap(wxT("btnlaunch"));
+    toolRunOffline = wxXmlResource::Get()->LoadBitmap(wxT("btnqlaunch"));
+    toolRefresh = wxXmlResource::Get()->LoadBitmap(wxT("btnrefresh"));
+    toolRefreshAll = wxXmlResource::Get()->LoadBitmap(wxT("btnrefresha"));
+    toolGetList = wxXmlResource::Get()->LoadBitmap(wxT("btngetlist"));
+    toolPreferences = wxXmlResource::Get()->LoadBitmap(wxT("btnprefs"));
+    toolAbout = wxXmlResource::Get()->LoadBitmap(wxT("btnabout"));
+    toolExit = wxXmlResource::Get()->LoadBitmap(wxT("btnexit"));
+
+    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmLaunch"), toolLaunch);
+    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmRunOffline"), toolRunOffline);
+    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmRefreshServer"), toolRefresh);
+    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmRefreshAll"), toolRefreshAll);
+    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmGetList"), toolGetList);
+    ToolBar->SetToolNormalBitmap(wxID_PREFERENCES, toolPreferences);
+    ToolBar->SetToolNormalBitmap(wxID_ABOUT, toolAbout);
+    ToolBar->SetToolNormalBitmap(wxID_EXIT, toolExit);
+}
+
 // Main window creation
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
@@ -113,6 +145,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     // Loads the frame from the xml resource file
 	wxXmlResource::Get()->LoadFrame(this, parent, wxT("dlgMain"));
+
+    // Not needed
+    //SetupToolbar();
 
     // Set window icon
     MainIcon = wxXmlResource::Get()->LoadIcon(wxT("mainicon"));

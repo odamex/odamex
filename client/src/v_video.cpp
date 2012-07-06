@@ -402,7 +402,7 @@ BEGIN_COMMAND (setcolor)
 		return;
 	}
 
-	std::string name = BuildString (argc - 2, (const char **)(argv + 2));
+	std::string name = C_ArgCombine(argc - 2, (const char **)(argv + 2));
 	if (name.length())
 	{
 		std::string desc = V_GetColorStringByName (name.c_str());
@@ -580,14 +580,30 @@ BOOL V_SetResolution (int width, int height, int bits)
 		oldbits = bits;
 	}
 
-	I_ClosestResolution (&width, &height, bits);
-	if (!I_CheckResolution (width, height, bits)) {				// Try specified resolution
-		if (!I_CheckResolution (oldwidth, oldheight, oldbits)) {// Try previous resolution (if any)
-	   		return false;
+	if ((int)(autoadjust_video_settings)) {
+		if (vid_fullscreen) {
+			// Fullscreen needs to check for a valid resolution.
+			I_ClosestResolution(&width, &height, bits);
 		} else {
-			width = oldwidth;
-			height = oldheight;
-			bits = oldbits;
+			// Windowed mode needs to have a check to make sure we don't
+			// make a window tinier than Doom's default, otherwise bad
+			// things might happen.
+			if (width < 320) {
+				width = 320;
+			}
+			if (height < 200) {
+				height = 200;
+			}
+		}
+
+		if (!I_CheckResolution (width, height, bits)) {				// Try specified resolution
+			if (!I_CheckResolution (oldwidth, oldheight, oldbits)) {// Try previous resolution (if any)
+		   		return false;
+			} else {
+				width = oldwidth;
+				height = oldheight;
+				bits = oldbits;
+			}
 		}
 	}
 	return V_DoModeSetup (width, height, bits);

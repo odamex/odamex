@@ -1476,8 +1476,8 @@ BEGIN_COMMAND (echo)
 {
 	if (argc > 1)
 	{
-		std::string str = BuildString (argc - 1, (const char **)(argv + 1));
-		Printf (PRINT_HIGH, "%s\n", str.c_str());
+		std::string str = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		Printf(PRINT_HIGH, "%s\n", str.c_str());
 	}
 }
 END_COMMAND (echo)

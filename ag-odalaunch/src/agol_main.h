@@ -27,6 +27,7 @@
 #define _AGOL_MAIN_H
 
 #include <vector>
+#include <memory>
 
 #include "agol_settings.h"
 #include "agol_solo.h"
@@ -35,6 +36,7 @@
 #include "event_handler.h"
 #include "oda_thread.h"
 #include "net_packet.h"
+#include "typedefs.h"
 
 /**
  * agOdalaunch namespace.
@@ -116,6 +118,7 @@ private:
 	void OnCloseSoloGameDialog(AG_Event *event);
 	void OnManualConnect(AG_Event *event);
 	void OnCloseManualDialog(AG_Event *event);
+	void OnShow(AG_Event *event);
 	void OnExit(AG_Event *event);
 	void OnLaunch(AG_Event *event);
 	void OnRefreshSelected(AG_Event *event);
@@ -151,8 +154,10 @@ private:
 	void           SetServerListRowCellFlags(int row);
 	void           StartServerListPoll();
 	void           StopServerListPoll();
+	void           AutoSizeTableColumn(AG_Table *table, int col);
 
 	// Interface Creation Functions
+	void           LoadResources();
 	AG_Menu       *CreateMainMenu(void *parent);
 	ODA_ButtonBox *CreateMainButtonBox(void *parent);
 	AG_Pane       *CreateMainListPane(void *parent);
@@ -175,6 +180,12 @@ private:
 	// Comapre functions
 	static bool CvarCompare(const Cvar_t &a, const Cvar_t &b);
 	static int  CellCompare(const void *p1, const void *p2);
+
+	static AG_Surface        *BulletRedSurfFn(void *tbl, int x, int y);
+	static AG_Surface        *BulletBlueSurfFn(void *tbl, int x, int y);
+	static AG_Surface        *SpectatorIconSurfFn(void *tbl, int x, int y);
+	static AG_Surface        *PadlockIconSurfFn(void *tbl, int x, int y);
+	static AG_Surface        *NullSurfFn(void *tbl, int x, int y);
 
 	// Interface Components
 	AG_Window                *MainWindow;
@@ -206,6 +217,13 @@ private:
 
 	bool                      StartupQuery;
 	bool                      WindowExited;
+
+	// Static Resources
+	static AG_SurfacePtr      BulletRed;
+	static AG_SurfacePtr      BulletBlue;
+	static AG_SurfacePtr      SpectatorIcon;
+	static AG_SurfacePtr      PadlockIcon;
+	static AG_SurfacePtr      NullSurface;
 };
 
 } // namespace

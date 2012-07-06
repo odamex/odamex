@@ -995,6 +995,7 @@ void P_DoDeferedScripts (void);
 //
 BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad);
 
+// [AM] Trigger actor specials.
+bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType);
+
 #endif
-
-

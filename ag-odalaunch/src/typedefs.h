@@ -26,13 +26,9 @@
 #ifndef _TYPEDEFS_H
 #define _TYPEDEFS_H
 
-/**
- * agOdalaunch namespace.
- *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
- * namespace.
- */
-namespace agOdalaunch {
+#include <memory>
+
+#include <agar/gui.h>
 
 #ifdef _MSC_VER
 	typedef signed   __int8   int8_t;
@@ -46,6 +42,10 @@ namespace agOdalaunch {
 #else
 	#include <stdint.h>
 #endif
+
+namespace agOdalaunch {
+
+typedef std::auto_ptr<AG_Surface> AG_SurfacePtr;
 
 } // namespace
 

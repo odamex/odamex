@@ -43,6 +43,7 @@
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictsectors)
+EXTERN_CVAR (cl_predictlocalplayer)
 
 extern NetGraph netgraph;
 
@@ -50,7 +51,7 @@ void P_DeathThink (player_t *player);
 void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
 
-static ticcmd_t cl_savedticcmds[MAXSAVETICS];
+extern NetCommand localcmds[MAXSAVETICS];
 static PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
 
 bool predicting;
@@ -199,6 +200,23 @@ static void CL_PredictSectors(int predtic)
 }
 
 //
+// CL_PredictSpying
+//
+// Handles calling the thinker routines for the player being spied with spynext.
+//
+static void CL_PredictSpying()
+{
+	player_t *player = &displayplayer();
+	if (consoleplayer_id == displayplayer_id)
+		return;
+
+	predicting = false;
+	
+	P_PlayerThink(player);
+	P_CalcHeight(player);
+}
+
+//
 // CL_PredictSpectator
 //
 //
@@ -210,15 +228,8 @@ static void CL_PredictSpectator()
 		
 	predicting = true;
 	
-	P_MovePlayer(player);
 	P_PlayerThink(player);
 	P_CalcHeight(player);
-	
-	if (consoleplayer_id != displayplayer_id)
-	{
-		P_PlayerThink(&displayplayer());
-		P_CalcHeight(&displayplayer());		
-	}
 	
 	predicting = false;
 }
@@ -234,22 +245,31 @@ static void CL_PredictLocalPlayer(int predtic)
 	if (!player->ingame() || !player->mo || player->tic >= predtic)
 		return;
 
-	// Copy the player's previous input ticcmd for the tic 'predtic'
-	// to player.cmd so that P_MovePlayer can simulate their movement in
-	// that tic
-	player->cmd = cl_savedticcmds[predtic % MAXSAVETICS];
-	
 	// Restore the angle, viewheight, etc for the player
 	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
 
-	if (player->playerstate != PST_DEAD)
-		P_MovePlayer(player);
-		
+	// Copy the player's previous input ticcmd for the tic 'predtic'
+	// to player.cmd so that P_MovePlayer can simulate their movement in
+	// that tic
+	NetCommand *netcmd = &localcmds[predtic % MAXSAVETICS];
+	netcmd->toPlayer(player);
+
+	if (!cl_predictlocalplayer)
+	{
+		if (predtic == gametic)
+		{
+			P_PlayerThink(player);
+			player->mo->RunThink();
+		}
+
+		return;
+	}
+
 	if (!predicting)
 		P_PlayerThink(player);
-		
-	P_CalcHeight(player);	
-	
+	else
+		P_MovePlayer(player);
+
 	player->mo->RunThink();
 }
 
@@ -271,6 +291,9 @@ void CL_PredictWorld(void)
 	// tenatively tell the netgraph that our prediction was successful
 	netgraph.setMisprediction(false);
 
+	if (consoleplayer_id != displayplayer_id)
+		CL_PredictSpying();
+
 	// [SL] 2012-03-10 - Spectators can predict their position without server
 	// correction.  Handle them as a special case and leave.
 	if (consoleplayer().spectator)
@@ -285,20 +308,12 @@ void CL_PredictWorld(void)
 	// Disable sounds, etc, during prediction
 	predicting = true;
 	
-	// Clear out past movements if we're dead!
-	if (consoleplayer().playerstate == PST_DEAD)
-		for (int i = 0; i < MAXSAVETICS; i++)
-			P_ClearTiccmdMovement(&cl_savedticcmds[i]);
-
 	// Figure out where to start predicting from
 	int predtic = consoleplayer().tic > 0 ? consoleplayer().tic: 0;
 	// Last position update from the server is too old!
 	if (predtic < gametic - MAXSAVETICS)
 		predtic = gametic - MAXSAVETICS;
 	
-	// Save a copy of the player's input for the current tic
-	cl_savedticcmds[gametic % MAXSAVETICS] = p->cmd;
-
 	// Save a snapshot of the player's state before prediction
 	PlayerSnapshot prevsnap(p->tic, p);
 	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
@@ -312,52 +327,50 @@ void CL_PredictWorld(void)
 	PlayerSnapshot snap = p->snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
-	while (++predtic < gametic)
+	if (cl_predictlocalplayer)
 	{
-		if (cl_predictsectors)
-			CL_PredictSectors(predtic);
-		CL_PredictLocalPlayer(predtic);
-	}
-
-	// If the player didn't just spawn or teleport, nudge the player from
-	// his position last tic to this new corrected position.  This smooths the
-	// view when there's a misprediction.
-	if (snap.isContinuous())
-	{
-		PlayerSnapshot correctedprevsnap(p->tic, p);
-
-		// Did we predict correctly?
-		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
-					   (correctedprevsnap.getY() == prevsnap.getY()) &&
-					   (correctedprevsnap.getZ() == prevsnap.getZ());
-
-		if (!correct)
+		while (++predtic < gametic)
 		{
-			// Update the netgraph concerning our prediction's error
-			netgraph.setMisprediction(true);
+			if (cl_predictsectors)
+				CL_PredictSectors(predtic);
+			CL_PredictLocalPlayer(predtic);  
+		}
 
-			// Lerp from the our previous position to the correct position
-			PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);	
-			lerpedsnap.toPlayer(p);
+		// If the player didn't just spawn or teleport, nudge the player from
+		// his position last tic to this new corrected position.  This smooths the
+		// view when there's a misprediction.
+		if (snap.isContinuous())
+		{
+			PlayerSnapshot correctedprevsnap(p->tic, p);
+
+			// Did we predict correctly?
+			bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
+						   (correctedprevsnap.getY() == prevsnap.getY()) &&
+						   (correctedprevsnap.getZ() == prevsnap.getZ());
+
+			if (!correct)
+			{
+				// Update the netgraph concerning our prediction's error
+				netgraph.setMisprediction(true);
+
+				// Lerp from the our previous position to the correct position
+				PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);	
+				lerpedsnap.toPlayer(p);
 			
-			// [SL] 2012-04-26 - Snap directly to the corrected position in
-			// the z direction.  This prevents players from floating above
-			// lifts when the lift height is mispredicted.
-			p->mo->z = correctedprevsnap.getZ();
+				// [SL] 2012-04-26 - Snap directly to the corrected position in
+				// the z direction.  This prevents players from floating above
+				// lifts when the lift height is mispredicted.
+				p->mo->z = correctedprevsnap.getZ();
+			}
 		}
 	}
 
 	predicting = false;
 
+	// Run thinkers for current gametic
 	if (cl_predictsectors)
 		CL_PredictSectors(gametic);		
 	CL_PredictLocalPlayer(gametic);
-
-	if (consoleplayer_id != displayplayer_id)
-	{
-		P_PlayerThink(&displayplayer());
-		P_CalcHeight(&displayplayer());		
-	}
 }
 
 

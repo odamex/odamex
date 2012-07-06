@@ -108,6 +108,7 @@ BOOL EV_Teleport (int tid, int side, AActor *thing)
 
 	thing->momx = thing->momy = thing->momz = 0;
 	thing->angle = m->angle;
+	thing->pitch = 0;
 
 	return true;
 }
@@ -191,6 +192,7 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 
 				thing->momx = thing->momy = thing->momz = 0;
 				thing->angle = m->angle;
+				thing->pitch = 0;
 
 				return true;
 			}

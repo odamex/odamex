@@ -46,6 +46,9 @@ enum
 extern DWORD LanguageIDs[4];
 extern void SetLanguageIDs ();
 
+void I_BeginRead (void);
+void I_EndRead (void);
+
 // Called by DoomMain.
 void I_Init (void);
 std::string I_GetCWD();

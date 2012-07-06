@@ -101,14 +101,14 @@ void MapThing::Serialize (FArchive &arc)
 
 AActor::AActor () :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
-    pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
+    pitch(0), roll(0), effects(0), subsector(NULL),
     floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0),
     momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
     flags(0), flags2(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
     visdir(0), reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
     iprev(NULL), translation(NULL), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
-    tid(0)
+    tid(0), bmapnode(this)
 {
 	memset(args, 0, sizeof(args));
 	self.init(this);
@@ -118,7 +118,7 @@ AActor::AActor (const AActor &other) :
     x(other.x), y(other.y), z(other.z), snext(other.snext), sprev(other.sprev),
     angle(other.angle), sprite(other.sprite), frame(other.frame),
     pitch(other.pitch), roll(other.roll), effects(other.effects),
-    bnext(other.bnext), bprev(other.bprev), subsector(other.subsector),
+    subsector(other.subsector),
     floorz(other.floorz), ceilingz(other.ceilingz), dropoffz(other.dropoffz),
     floorsector(other.floorsector),	radius(other.radius), height(other.height), momx(other.momx),
 	momy(other.momy), momz(other.momz), validcount(other.validcount),
@@ -131,7 +131,7 @@ AActor::AActor (const AActor &other) :
     translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
     onground(other.onground), touching_sectorlist(other.touching_sectorlist),
     deadtic(other.deadtic), oldframe(other.oldframe),
-    rndindex(other.rndindex), netid(other.netid), tid(other.tid)
+    rndindex(other.rndindex), netid(other.netid), tid(other.tid), bmapnode(other.bmapnode)
 {
 	memcpy(args, other.args, sizeof(args));
 	self.init(this);
@@ -150,8 +150,6 @@ AActor &AActor::operator= (const AActor &other)
     pitch = other.pitch;
     roll = other.roll;
     effects = other.effects;
-    bnext = other.bnext;
-    bprev = other.bprev;
     subsector = other.subsector;
     floorz = other.floorz;
     ceilingz = other.ceilingz;
@@ -194,6 +192,7 @@ AActor &AActor::operator= (const AActor &other)
     tid = other.tid;
     special = other.special;
     memcpy(args, other.args, sizeof(args));
+	bmapnode = other.bmapnode;
 
 	return *this;
 }
@@ -206,14 +205,14 @@ AActor &AActor::operator= (const AActor &other)
 
 AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
-    pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
+    pitch(0), roll(0), effects(0), subsector(NULL),
     floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0), momx(0), momy(0), momz(0),
     validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), flags2(0),
     special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
     reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
     iprev(NULL), translation(NULL), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
-    tid(0)
+    tid(0), bmapnode(this)
 {
 	state_t *st;
 
@@ -444,7 +443,8 @@ void P_MoveActor(AActor *mo)
     fixed_t minmom;
 	
 	// [RH] If standing on a steep slope, fall down it
-	if (!(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) && mo->momz <= 0 &&
+	if (!(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) && 
+		!(mo->player && mo->player->spectator) && mo->momz <= 0 &&
 		mo->floorz == mo->z && mo->floorsector && 
 		mo->floorsector->floorplane.c < STEEPSLOPE &&
 		P_FloorHeight(mo->x, mo->y, mo->floorsector) <= mo->floorz)
@@ -1164,6 +1164,7 @@ void P_ZMovement(AActor *mo)
 {
 	fixed_t	dist;
 	fixed_t	delta;
+	fixed_t oldz = mo->z;
 
 	// check for smooth step up
 	if (mo->player && mo->z < mo->floorz)
@@ -1237,6 +1238,14 @@ void P_ZMovement(AActor *mo)
 	if (mo->z <= mo->floorz)
 	{
 		// hit the floor
+
+		// [AM] If there is a actor special for hitting the floor,
+		//      activate it.
+		if (mo->subsector->sector->SecActTarget != NULL &&
+		    P_FloorHeight(mo->x, mo->y, mo->subsector->sector) == mo->floorz) {
+			A_TriggerAction(mo->subsector->sector->SecActTarget,
+			                mo, SECSPAC_HitFloor);
+		}
 
 		// Note (id):
 		//  somebody left this after the setting momz to 0,
@@ -1359,6 +1368,15 @@ void P_ZMovement(AActor *mo)
 	if (mo->z + mo->height > mo->ceilingz)
 	{
 		// hit the ceiling
+
+		// [AM] If there is a actor special for hitting the floor,
+		//      activate it.
+		if (mo->subsector->sector->SecActTarget != NULL &&
+		    P_CeilingHeight(mo->x, mo->y, mo->subsector->sector) == mo->ceilingz) {
+			A_TriggerAction(mo->subsector->sector->SecActTarget,
+			                mo, SECSPAC_HitCeiling);
+		}
+
 		if (mo->flags2 & MF2_FLOORBOUNCE)
 		{
 			// reverse momentum here for ceiling bounce
@@ -1395,50 +1413,42 @@ void P_ZMovement(AActor *mo)
 			return;
 		}
 	}
-	
-	/*  [ML] 7/13/11: This isn't going to be used just yet - no need...
-	if (mo->subsector->sector->heightsec != NULL && mo->subsector->sector->SecActTarget != NULL)
-	{
+
+	// [AM] Handle actor specials that deal with fake floors and ceilings.
+	if (mo->subsector->sector->heightsec != NULL && mo->subsector->sector->SecActTarget != NULL) {
 		sector_t *hs = mo->subsector->sector->heightsec;
 		fixed_t waterz = P_FloorHeight(mo->x, mo->y, hs);
 		fixed_t newz;
 		fixed_t viewheight;
 
-		if (mo->player != NULL)
-		{
+		if (mo->player != NULL) {
 			viewheight = mo->player->viewheight;
-		}
-		else
-		{
+		} else {
 			viewheight = mo->height / 2;
 		}
 
 		newz = mo->z + viewheight;
 		oldz += viewheight;
 
-		if (oldz <= waterz && newz > waterz)
-		{ // View went above fake floor
-			mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesSurface);
-		}
-		else if (oldz > waterz && newz <= waterz)
-		{ // View went below fake floor
-			mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesDive);
+		if (oldz <= waterz && newz > waterz) {
+			// View went above fake floor
+			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_EyesSurface);
+		} else if (oldz > waterz && newz <= waterz) {
+			// View went below fake floor
+			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_EyesDive);
 		}
 
-		if (!(hs->MoreFlags & SECF_FAKEFLOORONLY))
-		{
-			waterz = hs->ceilingheight;
-			if (oldz <= waterz && newz > waterz)
-			{ // View went above fake floor
-				mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesAboveC);
-			}
-			else if (oldz > waterz && newz <= waterz)
-			{ // View went below fake floor
-				mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesBelowC);
+		if (!(hs->MoreFlags & SECF_FAKEFLOORONLY)) {
+			waterz = P_CeilingHeight(mo->x, mo->y, hs);
+			if (oldz <= waterz && newz > waterz) {
+				// View went above fake ceiling
+				A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_EyesAboveC);
+			} else if (oldz > waterz && newz <= waterz) {
+				// View went below fake ceiling
+				A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_EyesBelowC);
 			}
 		}
 	}
-	*/
 }
 
 //
@@ -2179,8 +2189,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (clientside && sv_gametype == GM_COOP &&
-			(validplayer(p) && p.ingame()))
+		if (clientside && sv_gametype == GM_COOP && (validplayer(p) && p.ingame()))
 		{
 			P_SpawnPlayer (p, mthing);
 			return;
@@ -2189,20 +2198,20 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
+	// Filter mapthings based on the gamemode
+	if (!multiplayer)
+	{
+		if (!(mthing->flags & MTF_SINGLE))
+			return;
+	}
+	else if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM) 
 	{
 		if (!(mthing->flags & MTF_DEATHMATCH))
 			return;
 	}
-	else if (multiplayer)
+	else if (sv_gametype == GM_COOP)
 	{
 		if (!(mthing->flags & MTF_COOPERATIVE))
-			return;
-	}
-
-	if (!multiplayer)
-	{
-		if (!(mthing->flags & MTF_SINGLE))
 			return;
 	}
 
@@ -2401,6 +2410,15 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	mobj->AddToHash ();
 
 	SV_SpawnMobj(mobj);
+
+	if ((mthing->type >= 9992 && mthing->type <= 9999) ||
+		(mthing->type >= 9982 && mthing->type <= 9983)) {
+		// Add ourselves to this sector's list of actions.
+		if (mobj->subsector->sector->SecActTarget != NULL) {
+			mobj->tracer = mobj->subsector->sector->SecActTarget->ptr();
+		}
+		mobj->subsector->sector->SecActTarget = mobj->ptr();
+	}
 
 	if (sv_gametype == GM_CTF) {
 		// [Toke - CTF] Setup flag sockets

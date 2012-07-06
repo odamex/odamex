@@ -603,49 +603,44 @@ void M_RotatePointAroundVector(v3double_t *dest, const v3double_t *dir, const v3
 #pragma optimize( "", on )
 #endif
 
-
-extern fixed_t viewx, viewy, viewz;
-extern angle_t viewangle;
 // 
 // M_TranslateVec3f
 //
 // Translates the given vector (in doom's coordinate system) to the camera
 // space (in right-handed coordinate system) This function is used for slopes.
 // 
-void M_TranslateVec3f(v3float_t *vec)
+void M_TranslateVec3f(v3float_t *vec, const v3float_t *origin, angle_t ang)
 {
-   float tx, ty, tz;
+	float tx, ty, tz;
+	static const float fixed_conv = 1.0f / 65536.0f;
    
-   angle_t ang = (angle_t)(-(int)viewangle);
-   float viewcos = finecosine[ang >> ANGLETOFINESHIFT] / 65536.f;
-   float viewsin = finesine[ang >> ANGLETOFINESHIFT] / 65536.f;   
+	float viewcos = fixed_conv * finecosine[ang >> ANGLETOFINESHIFT];
+	float viewsin = fixed_conv * finesine[ang >> ANGLETOFINESHIFT];   
    
-   tx = vec->x - viewx / 65536.f;
-   ty = viewz / 65536.f - vec->y;
-   tz = vec->z - viewy / 65536.f;
+	tx = vec->x - origin->x;
+	ty = origin->z - vec->y;
+	tz = vec->z - origin->y;
 
-   // Just like wall projection.
-   vec->x = (tx * viewcos) - (tz * viewsin);
-   vec->z = (tz * viewcos) + (tx * viewsin);
-   vec->y = ty;
+	vec->x = (tx * viewcos) - (tz * viewsin);
+	vec->z = (tz * viewcos) + (tx * viewsin);
+	vec->y = ty;
 }
 
-void M_TranslateVec3 (v3double_t *vec)
+void M_TranslateVec3 (v3double_t *vec, const v3double_t *origin, angle_t ang)
 {
-   double tx, ty, tz;
+	double tx, ty, tz;
+	static const double fixed_conv = 1.0 / 65536.0;
 
-   double ang = -(viewangle * PI / ANG180) + PI/2;
-   double viewcos = cos(ang);
-   double viewsin = sin(ang);
-   
-   tx = vec->x - viewx / 65536.0;
-   ty = viewz / 65536.0 - vec->y;
-   tz = vec->z - viewy / 65536.0;
+	double viewcos = fixed_conv * finecosine[ang >> ANGLETOFINESHIFT];
+	double viewsin = fixed_conv * finesine[ang >> ANGLETOFINESHIFT];
+ 	  
+	tx = vec->x - origin->x;
+	ty = origin->z - vec->y;
+	tz = vec->z - origin->y;
 
-   // Just like wall projection.
-   vec->x = (tx * viewcos) - (tz * viewsin);
-   vec->z = (tz * viewcos) + (tx * viewsin);
-   vec->y = ty;
+	vec->x = (tx * viewcos) - (tz * viewsin);
+	vec->z = (tz * viewcos) + (tx * viewsin);
+	vec->y = ty;
 }
 
 

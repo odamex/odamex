@@ -2,7 +2,7 @@
 project(Odamex)
 cmake_minimum_required(VERSION 2.8)
 
-set(PROJECT_VERSION 0.6.0)
+set(PROJECT_VERSION 0.6.1)
 set(PROJECT_COPYRIGHT "2006-2012")
 
 # Default build type
@@ -44,4 +44,9 @@ add_subdirectory(client)
 add_subdirectory(server)
 add_subdirectory(master)
 add_subdirectory(odalaunch)
-add_subdirectory(ag-odalaunch)
+
+# Disable the ag-odalaunch target completely: -DNO_AG-ODALAUNCH_TARGET
+# This is only really useful when setting up a universal build.
+if(NOT NO_AG-ODALAUNCH_TARGET)
+  add_subdirectory(ag-odalaunch)
+endif()

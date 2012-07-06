@@ -40,6 +40,7 @@ extern "C" int			dc_yh;
 extern "C" fixed_t		dc_iscale;
 extern "C" fixed_t		dc_texturemid;
 extern "C" fixed_t		dc_texturefrac;
+extern "C" fixed_t		dc_textureheight;
 extern "C" int			dc_color;		// [RH] For flat colors (no texturing)
 
 // first pixel in a column

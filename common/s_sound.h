@@ -102,15 +102,16 @@ void S_LoopedSoundID (fixed_t *pt, int channel, int sfxid, float volume, int att
 
 // sound channels
 // channel 0 never willingly overrides
-// other channels (1-7) always override a playing sound on that channel
+// other channels (1-8) always override a playing sound on that channel
 #define CHAN_AUTO				0
 #define CHAN_WEAPON				1
 #define CHAN_VOICE				2
 #define CHAN_ITEM				3
 #define CHAN_BODY				4
-#define CHAN_ANNOUNCERF			5
-#define CHAN_ANNOUNCERE			6
+#define CHAN_ANNOUNCER			5
+#define CHAN_GAMEINFO			6
 #define CHAN_INTERFACE			7
+
 // modifier flags
 //#define CHAN_NO_PHS_ADD		8	// send to all clients, not just ones in PHS (ATTN 0 will also do this)
 //#define CHAN_RELIABLE			16	// send by reliable message, not datagram

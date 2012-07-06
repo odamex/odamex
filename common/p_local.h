@@ -73,10 +73,6 @@
 // follow a player exlusively for 3 seconds
 #define BASETHRESHOLD	100
 
-// [SL] The impulse code to signify that a player is dead and his movement
-// should be ignored
-#define DEADIMPULSE 40
-
 //
 // P_PSPR
 //
@@ -88,9 +84,10 @@ void P_DropWeapon (player_t* player);
 //
 // P_USER
 //
-void P_ClearTiccmdMovement(ticcmd_t *cmd);
 void P_FallingDamage (AActor *ent);
 void P_PlayerThink (player_t *player);
+bool P_AreTeammates(player_t &a, player_t &b);
+bool P_CanSpy(player_t &viewer, player_t &other);
 
 //
 // P_MOBJ
@@ -243,6 +240,7 @@ void	P_ApplyTorque(AActor *mo);
 void	P_CopySector(sector_t *dest, sector_t *src);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
+double P_PlaneZ(double x, double y, const plane_t *plane);
 fixed_t P_FloorHeight(fixed_t x, fixed_t y, const sector_t *sec = NULL);
 fixed_t P_FloorHeight(const AActor *mo);
 fixed_t P_FloorHeight(const sector_t *sector);

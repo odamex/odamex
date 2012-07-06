@@ -159,23 +159,47 @@ void R_DrawColumnP_C (void)
 		// [RH] Get local copies of these variables so that the compiler
 		//		has a better chance of optimizing this well.
 		byte *colormap = dc_colormap;
-		int mask = dc_mask;
+		int texheight = dc_textureheight;
+		int mask = (texheight >> FRACBITS) - 1;
 		byte *source = dc_source;
 		int pitch = dc_pitch;
 
-		// Inner loop that does the actual texture mapping,
-		//	e.g. a DDA-lile scaling.
-		// This is as fast as it gets.
-		do
+		// [SL] Properly tile textures whose heights are not a power-of-2,
+		// avoiding a tutti-frutti effect.  From Eternity Engine.
+		if (texheight & (texheight - 1))
 		{
-			// Re-map color indices from wall texture column
-			//	using a lighting/special effects LUT.
-			*dest = colormap[source[(frac>>FRACBITS)&mask]];
+			// texture height is not a power-of-2
+			if (frac < 0)
+				while((frac += texheight) < 0);
+			else
+				while(frac >= texheight)
+					frac -= texheight;
 
-			dest += pitch;
-			frac += fracstep;
+			do
+			{
+				*dest = colormap[source[frac>>FRACBITS]];
+				dest += pitch;
+				if ((frac += fracstep) >= texheight)
+					frac -= texheight;
+			} while(--count);
+		}
+		else
+		{
+			// texture height is a power-of-2
+			
+			// Inner loop that does the actual texture mapping,
+			//	e.g. a DDA-lile scaling.
+			// This is as fast as it gets.
+			do
+			{
+				// Re-map color indices from wall texture column
+				//	using a lighting/special effects LUT.
+				*dest = colormap[source[(frac>>FRACBITS)&mask]];
 
-		} while (--count);
+				dest += pitch;
+				frac += fracstep;
+			} while (--count);
+		}
 	}
 } 
 #endif	// USEASM
@@ -211,16 +235,40 @@ void R_StretchColumnP_C (void)
 	frac = dc_texturefrac;
 
 	{
-		int mask = dc_mask;
+		int texheight = dc_textureheight;
+		int mask = (texheight >> FRACBITS) - 1;
 		byte *source = dc_source;
 		int pitch = dc_pitch;
 
-		do
+		// [SL] Properly tile textures whose heights are not a power-of-2,
+		// avoiding a tutti-frutti effect.  From Eternity Engine.
+		if (texheight & (texheight - 1))
 		{
-			*dest = source[(frac>>FRACBITS)&mask];
-			dest += pitch;
-			frac += fracstep;
-		} while (--count);
+			// texture height is not a power-of-2
+			if (frac < 0)
+				while((frac += texheight) < 0);
+			else
+				while(frac >= texheight)
+					frac -= texheight;
+
+			do
+			{
+				*dest = source[frac>>FRACBITS];
+				dest += pitch;
+				if ((frac += fracstep) >= texheight)
+					frac -= texheight;
+			} while(--count);
+		}
+		else
+		{		
+			// texture height is a power-of-2
+			do
+			{
+				*dest = source[(frac>>FRACBITS)&mask];
+				dest += pitch;
+				frac += fracstep;
+			} while (--count);
+		}
 	}
 } 
 
@@ -464,21 +512,51 @@ void R_DrawTranslucentColumnP_C (void)
 	{
 		byte *colormap = dc_colormap;
 		byte *source = dc_source;
-		int mask = dc_mask;
+		int texheight = dc_textureheight;
+		int mask = (texheight >> FRACBITS) - 1;
 		int pitch = dc_pitch;
 
-		do
+		// [SL] Properly tile textures whose heights are not a power-of-2,
+		// avoiding a tutti-frutti effect.  From Eternity Engine.
+		if (texheight & (texheight - 1))
 		{
-			unsigned int fg = colormap[source[(frac>>FRACBITS)&mask]];
-			unsigned int bg = *dest;
+			// texture height is not a power-of-2
+			if (frac < 0)
+				while((frac += texheight) < 0);
+			else
+				while(frac >= texheight)
+					frac -= texheight;
 
-			fg = fg2rgb[fg];
-			bg = bg2rgb[bg];
-			fg = (fg+bg) | 0x1f07c1f;
-			*dest = RGB32k[0][0][fg & (fg>>15)];
-			dest += pitch;
-			frac += fracstep;
-		} while (--count);
+			do
+			{
+				unsigned int fg = colormap[source[(frac>>FRACBITS)]];
+				unsigned int bg = *dest;
+				
+				fg = fg2rgb[fg];
+				bg = bg2rgb[bg];
+				fg = (fg+bg) | 0x1f07c1f;
+				*dest = RGB32k[0][0][fg & (fg>>15)];
+				dest += pitch;
+				if ((frac += fracstep) >= texheight)
+					frac -= texheight;
+			} while(--count);
+		}
+		else
+		{		
+			// texture height is a power-of-2
+			do
+			{
+				unsigned int fg = colormap[source[(frac>>FRACBITS)&mask]];
+				unsigned int bg = *dest;
+
+				fg = fg2rgb[fg];
+				bg = bg2rgb[bg];
+				fg = (fg+bg) | 0x1f07c1f;
+				*dest = RGB32k[0][0][fg & (fg>>15)];
+				dest += pitch;
+				frac += fracstep;
+			} while (--count);
+		}
 	}
 }
 
@@ -526,17 +604,43 @@ void R_DrawTranslatedColumnP_C (void)
 		// [RH] Local copies of global vars to improve compiler optimizations
 		byte *colormap = dc_colormap;
 		byte *translation = dc_translation;
+
+		int texheight = dc_textureheight;
+		int mask = (texheight >> FRACBITS) - 1;
 		byte *source = dc_source;
 		int pitch = dc_pitch;
-		int mask = dc_mask;
 
-		do
+		// [SL] Properly tile textures whose heights are not a power-of-2,
+		// avoiding a tutti-frutti effect.  From Eternity Engine.
+		if (texheight & (texheight - 1))
 		{
-			*dest = colormap[translation[source[(frac>>FRACBITS) & mask]]];
-			dest += pitch;
+			// texture height is not a power-of-2
+			if (frac < 0)
+				while((frac += texheight) < 0);
+			else
+				while(frac >= texheight)
+					frac -= texheight;
 
-			frac += fracstep;
-		} while (--count);
+			do
+			{
+				*dest = colormap[translation[source[(frac>>FRACBITS)]]];
+				dest += pitch;
+				
+				if ((frac += fracstep) >= texheight)
+					frac -= texheight;
+			} while(--count);
+		}
+		else
+		{		
+			// texture height is a power-of-2
+			do
+			{
+				*dest = colormap[translation[source[(frac>>FRACBITS) & mask]]];
+				dest += pitch;
+
+				frac += fracstep;
+			} while (--count);
+		}
 	}
 }
 
@@ -582,22 +686,54 @@ void R_DrawTlatedLucentColumnP_C (void)
 	{
 		byte *translation = dc_translation;
 		byte *colormap = dc_colormap;
+
+		int texheight = dc_textureheight;
+		int mask = (texheight >> FRACBITS) - 1;
 		byte *source = dc_source;
-		int mask = dc_mask;
 		int pitch = dc_pitch;
 
-		do
+		// [SL] Properly tile textures whose heights are not a power-of-2,
+		// avoiding a tutti-frutti effect.  From Eternity Engine.
+		if (texheight & (texheight - 1))
 		{
-			unsigned int fg = colormap[translation[source[(frac>>FRACBITS)&mask]]];
-			unsigned int bg = *dest;
+			// texture height is not a power-of-2
+			if (frac < 0)
+				while((frac += texheight) < 0);
+			else
+				while(frac >= texheight)
+					frac -= texheight;
 
-			fg = fg2rgb[fg];
-			bg = bg2rgb[bg];
-			fg = (fg+bg) | 0x1f07c1f;
-			*dest = RGB32k[0][0][fg & (fg>>15)];
-			dest += pitch;
-			frac += fracstep;
-		} while (--count);
+			do
+			{
+				unsigned int fg = colormap[translation[source[(frac>>FRACBITS)]]];
+				unsigned int bg = *dest;
+
+				fg = fg2rgb[fg];
+				bg = bg2rgb[bg];
+				fg = (fg+bg) | 0x1f07c1f;
+				*dest = RGB32k[0][0][fg & (fg>>15)];
+				dest += pitch;
+				
+				if ((frac += fracstep) >= texheight)
+					frac -= texheight;
+			} while(--count);
+		}
+		else
+		{		
+			// texture height is a power-of-2
+			do
+			{
+				unsigned int fg = colormap[translation[source[(frac>>FRACBITS)&mask]]];
+				unsigned int bg = *dest;
+
+				fg = fg2rgb[fg];
+				bg = bg2rgb[bg];
+				fg = (fg+bg) | 0x1f07c1f;
+				*dest = RGB32k[0][0][fg & (fg>>15)];
+				dest += pitch;
+				frac += fracstep;
+			} while (--count);
+		}
 	}
 }
 
@@ -924,17 +1060,41 @@ void R_DrawColumnD_C (void)
 	{
 		unsigned int *shademap = dc_shademap;
 		byte *source = dc_source;
-		int mask = dc_mask;
 		int pitch = dc_pitch >> 2;
+		int texheight = dc_textureheight;
+		int mask = (texheight >> FRACBITS) - 1;
 
-		do
+		// [SL] Properly tile textures whose heights are not a power-of-2,
+		// avoiding a tutti-frutti effect.  From Eternity Engine.
+		if (texheight & (texheight - 1))
 		{
-			*dest = shademap[source[(frac>>FRACBITS)&mask]];
+			// texture height is not a power-of-2
+			if (frac < 0)
+				while((frac += texheight) < 0);
+			else
+				while(frac >= texheight)
+					frac -= texheight;
 
-			dest += pitch;
-			frac += fracstep;
+			do
+			{
+				*dest = shademap[source[(frac>>FRACBITS)]];
+				dest += pitch;
+				if ((frac += fracstep) >= texheight)
+					frac -= texheight;
+			} while(--count);
+		}
+		else
+		{		
+			// texture height is a power-of-2
+			do
+			{
+				*dest = shademap[source[(frac>>FRACBITS)&mask]];
 
-		} while (--count);
+				dest += pitch;
+				frac += fracstep;
+
+			} while (--count);
+		}
 	}
 }
 
@@ -1021,17 +1181,43 @@ void R_DrawTranslucentColumnD_C (void)
 	{
 		unsigned int *shademap = dc_shademap;
 		byte *source = dc_source;
-		int mask = dc_mask;
 		int pitch = dc_pitch >> 2;
+		int texheight = dc_textureheight;
+		int mask = (texheight >> FRACBITS) - 1;
 
-		do
+		// [SL] Properly tile textures whose heights are not a power-of-2,
+		// avoiding a tutti-frutti effect.  From Eternity Engine.
+		if (texheight & (texheight - 1))
 		{
-			*dest = ((*dest >> 1) & 0x7f7f7f) +
-					((shademap[source[(frac>>FRACBITS)&mask]] >> 1) & 0x7f7f7f);
-			dest += pitch;
+			// texture height is not a power-of-2
+			if (frac < 0)
+				while((frac += texheight) < 0);
+			else
+				while(frac >= texheight)
+					frac -= texheight;
 
-			frac += fracstep;
-		} while (--count);
+			do
+			{
+				*dest = ((*dest >> 1) & 0x7f7f7f) +
+						((shademap[source[(frac>>FRACBITS)]] >> 1) & 0x7f7f7f);
+				dest += pitch;
+				
+				if ((frac += fracstep) >= texheight)
+					frac -= texheight;
+			} while(--count);
+		}
+		else
+		{		
+			// texture height is a power-of-2
+			do
+			{
+				*dest = ((*dest >> 1) & 0x7f7f7f) +
+						((shademap[source[(frac>>FRACBITS)&mask]] >> 1) & 0x7f7f7f);
+				dest += pitch;
+
+				frac += fracstep;
+			} while (--count);
+		}
 	}
 }
 
@@ -1069,16 +1255,40 @@ void R_DrawTranslatedColumnD_C (void)
 		byte *source = dc_source;
 		unsigned int *shademap = dc_shademap;
 		byte *translation = dc_translation;
-		int mask = dc_mask;
 		int pitch = dc_pitch >> 2;
+		int texheight = dc_textureheight;
+		int mask = (texheight >> FRACBITS) - 1;
 
-		do
+		// [SL] Properly tile textures whose heights are not a power-of-2,
+		// avoiding a tutti-frutti effect.  From Eternity Engine.
+		if (texheight & (texheight - 1))
 		{
-			*dest = shademap[translation[source[(frac>>FRACBITS) & mask]]];
-			dest += pitch;
+			// texture height is not a power-of-2
+			if (frac < 0)
+				while((frac += texheight) < 0);
+			else
+				while(frac >= texheight)
+					frac -= texheight;
+
+			do
+			{
+				*dest = shademap[translation[source[(frac>>FRACBITS)]]];
+				dest += pitch;
+				if ((frac += fracstep) >= texheight)
+					frac -= texheight;
+			} while(--count);
+		}
+		else
+		{		
+			// texture height is a power-of-2
+			do
+			{
+				*dest = shademap[translation[source[(frac>>FRACBITS) & mask]]];
+				dest += pitch;
 			
-			frac += fracstep;
-		} while (--count);
+				frac += fracstep;
+			} while (--count);
+		}
 	}
 }
 

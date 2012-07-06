@@ -38,7 +38,7 @@
 #ifdef ALPHA
 #define SAFESHORT(s)	((short)(((byte *)&(s))[0] + ((byte *)&(s))[1] * 256))
 #else
-#define SAFESHORT(s)	SHORT(s)
+#define SAFESHORT(s)	LESHORT(s)
 #endif
 
 

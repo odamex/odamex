@@ -95,7 +95,7 @@ int*			texturetranslation;
 
 // [RH] Tutti-Frutti fix
 unsigned int	dc_mask;
-
+fixed_t			dc_textureheight;
 
 //
 // MAPTEXTURE_T CACHING
@@ -179,7 +179,7 @@ void R_GenerateComposite (int texnum)
 		for (; x1<x2 ; x1++)
 			if (collump[x1] == -1)			// Column has multiple patches?
 				// killough 1/25/98, 4/9/98: Fix medusa bug.
-				R_DrawColumnInCache((column_t*)((byte*)realpatch+LONG(cofs[x1])),
+				R_DrawColumnInCache((column_t*)((byte*)realpatch+LELONG(cofs[x1])),
 									block+colofs[x1],patch->originy,texture->height,
 									marks + x1 * texture->height);
 	}
@@ -270,7 +270,7 @@ static void R_GenerateLookup(int texnum, int *const errors)
 			// killough 4/9/98: keep a count of the number of posts in column,
 			// to fix Medusa bug while allowing for transparent multipatches.
 
-			const column_t *col = (column_t*)((byte*)realpatch + LONG(cofs[x]));
+			const column_t *col = (column_t*)((byte*)realpatch + LELONG(cofs[x]));
 			for (;col->topdelta != 0xff; count[x].posts++)
 			{
 				col = (column_t *)((byte *)col + col->length + 4);
@@ -289,7 +289,7 @@ static void R_GenerateLookup(int texnum, int *const errors)
 			}
 			count[x].patches++;
 			collump[x] = pat;
-			colofs[x] = LONG(cofs[x])+3;
+			colofs[x] = LELONG(cofs[x])+3;
 		}
 	}
 
@@ -304,17 +304,18 @@ static void R_GenerateLookup(int texnum, int *const errors)
 	int height = texture->height;
 	int csize = 0;
 
-	while (--x >= 0)
-	{
-		if (!count[x].patches)				// killough 4/9/98
-		{
-			Printf (PRINT_HIGH, "\nR_GenerateLookup: Column %d is without a patch in texture %.8s",
-					x, texture->name);
-					++*errors;
-		}
-	}		
+	bool multipatch = (texture->patchcount > 1 || texture->height > 254);
 
-	if (texture->patchcount > 1 || texture->height > 254)
+	// [SL] Check for columns without patches - these should be handled as
+	// multi-patched textures so we can fill in the empty columns with
+	// masked columns
+	while (--x >= 0 && !multipatch)
+	{
+		if (!count[x].patches)
+			multipatch = true;
+	}
+
+	if (multipatch)
 	{
 		// [RH] Always create a composite texture for multipatch textures
 		// or tall textures in order to keep things simpler.	
@@ -323,27 +324,18 @@ static void R_GenerateLookup(int texnum, int *const errors)
 		csize = 0;
 		while (--x >= 0)
 		{
-			if (!count[x].patches)				// killough 4/9/98
-			{
-				Printf (PRINT_HIGH, "\nR_GenerateLookup: Column %d is without a patch in texture %.8s",
-						x, texture->name);
-						++*errors;
-			}
-			else
-			{
-				// killough 1/25/98, 4/9/98:
-				//
-				// Fix Medusa bug, by adding room for column header
-				// and trailer bytes for each post in merged column.
-				// For now, just allocate conservatively 4 bytes
-				// per post per patch per column, since we don't
-				// yet know how many posts the merged column will
-				// require, and it's bounded above by this limit.
+			// killough 1/25/98, 4/9/98:
+			//
+			// Fix Medusa bug, by adding room for column header
+			// and trailer bytes for each post in merged column.
+			// For now, just allocate conservatively 4 bytes
+			// per post per patch per column, since we don't
+			// yet know how many posts the merged column will
+			// require, and it's bounded above by this limit.
 
-				collump[x] = -1;				// mark lump as multipatched
-				colofs[x] = csize + 4;			// four header bytes in a column
-				csize += 4*count[x].posts+2+height;	// 2 stop bytes plus 4 bytes per post
-			}
+			collump[x] = -1;				// mark lump as multipatched
+			colofs[x] = csize + 4;			// four header bytes in a column
+			csize += 4*count[x].posts+2+height;	// 2 stop bytes plus 4 bytes per post
 		}
 	}
 	else
@@ -371,7 +363,8 @@ R_GetColumn
 	col &= texturewidthmask[tex];
 	lump = texturecolumnlump[tex][col];
 	ofs = texturecolumnofs[tex][col];
-	dc_mask = textureheightmask[tex];	
+	dc_mask = textureheightmask[tex];
+	dc_textureheight = textureheight[tex];
 
 	if (lump > 0)
 		return (byte *)W_CacheLumpNum(lump,PU_CACHE)+ofs;
@@ -424,7 +417,7 @@ void R_InitTextures (void)
 		char *names = (char *)W_CacheLumpName ("PNAMES", PU_STATIC);
 		char *name_p = names+4;
 
-		nummappatches = LONG ( *((int *)names) );
+		nummappatches = LELONG ( *((int *)names) );
 		patchlookup = new int[nummappatches];
 
 		for (i = 0; i < nummappatches; i++)
@@ -450,14 +443,14 @@ void R_InitTextures (void)
 	// The data is contained in one or two lumps,
 	//	TEXTURE1 for shareware, plus TEXTURE2 for commercial.
 	maptex = maptex1 = (int *)W_CacheLumpName ("TEXTURE1", PU_STATIC);
-	numtextures1 = LONG(*maptex);
+	numtextures1 = LELONG(*maptex);
 	maxoff = W_LumpLength (W_GetNumForName ("TEXTURE1"));
 	directory = maptex+1;
 
 	if (W_CheckNumForName ("TEXTURE2") != -1)
 	{
 		maptex2 = (int *)W_CacheLumpName ("TEXTURE2", PU_STATIC);
-		numtextures2 = LONG(*maptex2);
+		numtextures2 = LELONG(*maptex2);
 		maxoff2 = W_LumpLength (W_GetNumForName ("TEXTURE2"));
 	}
 	else
@@ -517,7 +510,7 @@ void R_InitTextures (void)
 			directory = maptex+1;
 		}
 
-		offset = LONG(*directory);
+		offset = LELONG(*directory);
 
 		if (offset > maxoff)
 			I_FatalError ("R_InitTextures: bad texture directory");
@@ -541,9 +534,9 @@ void R_InitTextures (void)
 
 		for (j=0 ; j<texture->patchcount ; j++, mpatch++, patch++)
 		{
-			patch->originx = SHORT(mpatch->originx);
-			patch->originy = SHORT(mpatch->originy);
-			patch->patch = patchlookup[SHORT(mpatch->patch)];
+			patch->originx = LESHORT(mpatch->originx);
+			patch->originy = LESHORT(mpatch->originy);
+			patch->patch = patchlookup[LESHORT(mpatch->patch)];
 			if (patch->patch == -1)
 			{
 				Printf (PRINT_HIGH, "R_InitTextures: Missing patch in texture %s\n", texture->name);

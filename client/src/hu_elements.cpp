@@ -37,6 +37,7 @@
 #include "v_video.h"
 
 size_t P_NumPlayersInGame(void);
+int CL_GetPlayerColor(player_t*);
 
 extern NetDemo netdemo;
 extern bool HasBehavior;
@@ -46,6 +47,7 @@ EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_gametype)
 EXTERN_CVAR (sv_maxclients)
 EXTERN_CVAR (sv_maxplayers)
+EXTERN_CVAR (sv_maxplayersperteam)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_timelimit)
 
@@ -53,6 +55,7 @@ EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (sv_allowtargetnames)
 
 size_t P_NumPlayersInGame();
+size_t P_NumPlayersOnTeam(team_t team);
 
 // GhostlyDeath -- From Strawberry-Doom
 // [AM] This doesn't belong here.
@@ -171,11 +174,26 @@ int teamTextColor(byte team) {
 
 // Return a "help" string.
 std::string HelpText() {
-	if (P_NumPlayersInGame() < sv_maxplayers) {
-		return "Press USE to join";
+	if (P_NumPlayersInGame() >= sv_maxplayers)
+	{
+		return "Game is full";
 	}
 
-	return "Game is full";
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		size_t min_players = MAXPLAYERS;
+		for (byte i = 0;i < NUMTEAMS;i++)
+		{
+			size_t players = P_NumPlayersOnTeam((team_t)i);
+			if (players < min_players)
+				min_players = players;
+		}
+		if (sv_maxplayersperteam && min_players >= sv_maxplayersperteam) {
+			return "Game is full";
+		}
+	}
+
+	return "Press USE to join";
 }
 
 // Return a string that contains the name of the player being spectated,
@@ -617,10 +635,11 @@ void EAPlayerColors(int x, int y,
 
 		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player)) {
+			int playercolor = CL_GetPlayerColor(player);
 			int color = BestColor(DefaultPalette->basecolors,
-			                      RPART(player->userinfo.color),
-			                      GPART(player->userinfo.color),
-			                      BPART(player->userinfo.color),
+			                      RPART(playercolor),
+			                      GPART(playercolor),
+			                      BPART(playercolor),
 			                      DefaultPalette->numcolors);
 
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
@@ -647,10 +666,11 @@ void EATeamPlayerColors(int x, int y,
 
 		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
+			int playercolor = CL_GetPlayerColor(player);
 			int color = BestColor(DefaultPalette->basecolors,
-			                      RPART(player->userinfo.color),
-			                      GPART(player->userinfo.color),
-			                      BPART(player->userinfo.color),
+			                      RPART(playercolor),
+			                      GPART(playercolor),
+			                      BPART(playercolor),
 			                      DefaultPalette->numcolors);
 
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
@@ -1200,7 +1220,7 @@ void EATargets(int x, int y, const float scale,
 
 			// FIXME: This bit of code is way too generous with the target
 			//        names, needs to be narrower angle. [AM]
-			fixed_t tr_x, tr_y, gxt, gyt, tx, tz, xscale;
+			fixed_t tr_x, tr_y, gxt, gyt, tx, tz;
 
 			// transform the origin point
 			tr_x = players[i].mo->x - viewx;
@@ -1214,10 +1234,6 @@ void EATargets(int x, int y, const float scale,
 			// thing is behind view plane?
 			if (tz < (FRACUNIT*4))
 				continue;
-
-			// [AM] For some reason this is throwing an
-			//      'unused variable' warning for me.  Why?
-			xscale = FixedDiv (FocalLengthX, tz);
 
 			gxt = -FixedMul (tr_x, viewsin);
 			gyt = FixedMul (tr_y, viewcos);

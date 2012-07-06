@@ -904,7 +904,8 @@ void InitNetMessageFormats()
       MSG(clc_maplist,            "x"),
       MSG(clc_getplayerinfo,      "x"),
       MSG(clc_launcher_challenge, "x"),
-      MSG(clc_challenge,          "x")
+      MSG(clc_challenge,          "x"),
+      MSG(clc_spy,                "x")
    };
 
    msg_info_t svc_messages[] = {
@@ -978,7 +979,8 @@ void InitNetMessageFormats()
 	MSG(svc_inttimeleft,		"x"),
 	MSG(svc_mobjtranslation,	"x"),
 	MSG(svc_fullupdatedone,		"x"),
-	MSG(svc_railtrail,			"x")
+	MSG(svc_railtrail,			"x"),
+	MSG(svc_playerstate,		"x")
    };
 
    size_t i;

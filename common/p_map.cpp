@@ -870,8 +870,8 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 						{
 							if (thingblocker == NULL ||	BlockingMobj->z > thingblocker->z)
 								thingblocker = BlockingMobj;
-
-							robin = BlockingMobj->bnext;
+							
+							robin = BlockingMobj->bmapnode.Next(bx, by);
 							BlockingMobj = NULL;
 						}
 						else if (thing->player &&
@@ -886,7 +886,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 							// Nothing is blocking us, but this actor potentially could
 							// if there is something else to step on.
 							fakedblocker = BlockingMobj;
-							robin = BlockingMobj->bnext;
+							robin = BlockingMobj->bmapnode.Next(bx, by);
 							BlockingMobj = NULL;
 						}
 						else
@@ -1055,6 +1055,8 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 	int 		side;
 	int 		oldside;
 	line_t* 	ld;
+	sector_t*	oldsec = thing->subsector->sector;	// [RH] for sector actions
+	sector_t*	newsec;
 
 	floatok = false;
 
@@ -1172,6 +1174,29 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 				if(ld->special)
 					P_CrossSpecialLine (ld-lines, oldside, thing);
 			}
+		}
+	}
+
+	// [RH] If changing sectors, trigger transitions
+	newsec = thing->subsector->sector;
+	if (oldsec != newsec)
+	{
+		if (oldsec->SecActTarget)
+		{
+			A_TriggerAction(oldsec->SecActTarget, thing, SECSPAC_Exit);
+		}
+		if (newsec->SecActTarget)
+		{
+			int act = SECSPAC_Enter;
+			if (thing->z <= P_FloorHeight(thing->x, thing->y, newsec))
+			{
+				act |= SECSPAC_HitFloor;
+			}
+			if (thing->z + thing->height >= P_CeilingHeight(thing->x, thing->y, newsec))
+			{
+				act |= SECSPAC_HitCeiling;
+			}
+			A_TriggerAction(newsec->SecActTarget, thing, act);
 		}
 	}
 
@@ -1423,7 +1448,7 @@ bool P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove)
 		if (plane->c < STEEPSLOPE)
 		{
 			// Can't climb up slopes of ~45 degrees or more
-			if (actor->flags & MF_NOCLIP)
+			if (actor->flags & MF_NOCLIP || (actor->player && actor->player->spectator))
 				return true;
 			else
 			{
@@ -1920,7 +1945,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
 	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);
 	
-	spawnprecise = (bool)co_fixweaponimpacts;
+	spawnprecise = (co_fixweaponimpacts != 0);
 
 	if (in->isaline)
 	{
@@ -2622,6 +2647,7 @@ void P_AimCamera (AActor *t1)
 // USE LINES
 //
 AActor *usething;
+bool foundline;
 
 BOOL PTR_UseTraverse (intercept_t *in)
 {
@@ -2633,14 +2659,20 @@ BOOL PTR_UseTraverse (intercept_t *in)
 		P_LineOpeningIntercept(in->d.line, in);
 		if (openrange <= 0)
 		{
-			UV_SoundAvoidPlayer (usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
-
+			// [RH] Give sector a chance to intercept the use
+			sector_t *sec = in->d.line->frontsector;
+			if ((!sec->SecActTarget ||
+			    !A_TriggerAction(sec->SecActTarget, usething, SECSPAC_Use|SECSPAC_UseWall)) &&
+			    usething->player)
+			{
+				UV_SoundAvoidPlayer(usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+			}
 			// can't use through a wall
 			return false;
 		}
 
-		// not a special line, but keep checking
-		return true;
+		foundline = true;
+		return true; // not a special line, but keep checking
 	}
 
 	int side = (P_PointOnLineSide (usething->x, usething->y, in->d.line) == 1);
@@ -2703,6 +2735,7 @@ void P_UseLines (player_t *player)
 		return;
 
 	usething = player->mo;
+	foundline = false;
 
 	//Added by MC: Check if bot and use special activating (spin round) if it is.
 	angle = player->mo->angle >> ANGLETOFINESHIFT;
@@ -2712,15 +2745,19 @@ void P_UseLines (player_t *player)
 	x2 = x1 + (USERANGE>>FRACBITS)*finecosine[angle];
 	y2 = y1 + (USERANGE>>FRACBITS)*finesine[angle];
 
-	// old code:
-	if (!co_boomlinecheck)
-		P_PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse );
-	else {
-		// This added test makes the "oof" sound work on 2s lines -- killough:
-		// [ML] It also apparently allows additional silent bfg tricks not present in vanilla...
-		if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse))
-			if (!P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse))
-				UV_SoundAvoidPlayer (usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse)) {
+		// [RH] Give sector a chance to eat the use
+		sector_t *sec = usething->subsector->sector;
+		int spac = SECSPAC_Use;
+		if (foundline)
+			spac |= SECSPAC_UseWall;
+		if ((!sec->SecActTarget || !A_TriggerAction(sec->SecActTarget, usething, spac)) &&
+		    (co_boomlinecheck && !P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse)))
+		{
+			// This added test makes the "oof" sound work on 2s lines -- killough:
+			// [ML] It also apparently allows additional silent bfg tricks not present in vanilla...
+			UV_SoundAvoidPlayer(usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+		}
 	}
 }
 
@@ -3339,6 +3376,20 @@ fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane)
 		return -FixedMul(plane->c, plane->d);
 
 	return -FixedMul(plane->invc, FixedMul(plane->a, x) + FixedMul(plane->b, y) + plane->d);
+}
+
+double P_PlaneZ(double x, double y, const plane_t *plane)
+{
+	if (!plane)
+		return MAXINT / 65536.0;
+
+	static const double m = 1.0 / (65536.0 * 65536.0);
+
+	// Is the plane level?  (Z value is constant for entire plane)
+	if (P_IsPlaneLevel(plane))
+		return -double(plane->c) * plane->d * m;
+
+	return -(plane->a * x + plane->b * y + plane->d) / plane->c;
 }
 
 

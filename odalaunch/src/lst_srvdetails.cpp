@@ -69,10 +69,10 @@ void LstOdaSrvDetails::InsertHeader(const wxString &Name,
     ListItem.SetId(InsertItem(GetItemCount(), ListItem.GetText()));
 
     if (NameColor == wxNullColour)
-        NameColor = Header;
+        NameColor = HeaderText;
 
     if (NameBGColor == wxNullColour)
-        NameBGColor = HeaderText;
+        NameBGColor = Header;
 
     ListItem.SetBackgroundColour(NameBGColor);
     ListItem.SetTextColour(NameColor);

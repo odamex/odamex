@@ -57,8 +57,8 @@ planefunction_t 		ceilingfunc;
 // Here comes the obnoxious "visplane".
 #define MAXVISPLANES 128    /* must be a power of 2 */
 
-static const float flatwidth = 64.f;
-static const float flatheight = 64.f;
+static const double flatwidth = 64.0;
+static const double flatheight = 64.0;
 
 static visplane_t		*visplanes[MAXVISPLANES];	// killough
 static visplane_t		*freetail;					// killough
@@ -149,9 +149,10 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 		return;
 
 	// center of the view plane
-	v3double_t s;		
-	M_SetVec3(&s, double(x1 - centerx),	double(y - centery + 1.0),
-				  double(FocalLengthX) / FRACUNIT);
+	v3double_t s;
+	s.x = x1 - centerx;
+	s.y = y - centery + 1;
+	s.z = fixed_conv * double(FocalLengthX);
 
 	ds_iu = M_DotProductVec3(&s, &a) * flatwidth;
 	ds_iv = M_DotProductVec3(&s, &b) * flatheight;
@@ -163,11 +164,11 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 
 	// From R_SlopeLights, Eternity Engine
 	double map1, map2;
-	map1 = 256.0f - (shade - plight * ds_id);
+	map1 = 256.0 - (shade - plight * ds_id);
 	if (len > 1)
 	{
 		double id = ds_id + ds_idstep * (x2 - x1);
-		map2 = 256.0f - (shade - plight * id);
+		map2 = 256.0 - (shade - plight * id);
 	}
 	else
 		map2 = map1;
@@ -180,8 +181,8 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 			slopelighting[i] = fixedcolormap;
 	else
 	{
-		fixed_t mapstart = FLOAT2FIXED((256.0f - map1) / 256.0f * NUMCOLORMAPS);
-		fixed_t mapend = FLOAT2FIXED((256.0f - map2) / 256.0f * NUMCOLORMAPS);
+		fixed_t mapstart = FLOAT2FIXED((256.0 - map1) / 256.0 * NUMCOLORMAPS);
+		fixed_t mapend = FLOAT2FIXED((256.0 - map2) / 256.0 * NUMCOLORMAPS);
 		fixed_t map = mapstart;
 		fixed_t step = 0;
 
@@ -596,6 +597,30 @@ static void R_DrawSky (visplane_t *pl)
 }
 
 //
+// R_MakeSpans
+//
+
+void R_MakeSpans(visplane_t *pl, void(*spanfunc)(int, int, int))
+{
+	for (int x = pl->minx; x <= pl->maxx + 1; x++)
+	{
+		unsigned int t1 = pl->top[x-1];
+		unsigned int b1 = pl->bottom[x-1];
+		unsigned int t2 = pl->top[x];
+		unsigned int b2 = pl->bottom[x];
+		
+		for (; t1 < t2 && t1 <= b1; t1++)
+			spanfunc(t1, spanstart[t1], x-1);
+		for (; b1 > b2 && b1 >= t1; b1--)
+			spanfunc(b1, spanstart[b1], x-1);
+		while (t2 < t1 && t2 <= b2)
+			spanstart[t2++] = x;
+		while (b2 > b1 && b2 >= t2)
+			spanstart[b2--] = x;
+	}
+}
+
+//
 // R_DrawSlopedPlane
 //
 // Calculates the vectors a, b, & c, which are used to texture map a sloped
@@ -605,41 +630,46 @@ static void R_DrawSky (visplane_t *pl)
 //
 void R_DrawSlopedPlane(visplane_t *pl)
 {
-	float sinang = FIXED2FLOAT(finesine[(pl->angle + ANG90) >> ANGLETOFINESHIFT]);
-	float cosang = FIXED2FLOAT(finecosine[(pl->angle + ANG90) >> ANGLETOFINESHIFT]);
+	double sinang = fixed_conv * finesine[(pl->angle + ANG90) >> ANGLETOFINESHIFT];
+	double cosang = fixed_conv * finecosine[(pl->angle + ANG90) >> ANGLETOFINESHIFT];
 	
-	float xoffsf = FIXED2FLOAT(pl->xoffs);
-	float yoffsf = FIXED2FLOAT(pl->yoffs);
+	double xoffsf = fixed_conv * pl->xoffs;
+	double yoffsf = fixed_conv * pl->yoffs;
 
 	// Scale the flat's texture
-	float scaledflatwidth = flatwidth * FIXED2FLOAT(pl->xscale);
-	float scaledflatheight = flatheight * FIXED2FLOAT(pl->yscale);
+	double scaledflatwidth = flatwidth * fixed_conv * pl->xscale;
+	double scaledflatheight = flatheight * fixed_conv * pl->yscale;
 	
-	v3double_t p, t, s, m, n;
+	v3double_t p, t, s, m, n, viewpos;
 	
+	viewpos.x = fixed_conv * viewx;
+	viewpos.y = fixed_conv * viewy;
+	viewpos.z = fixed_conv * viewz;
+
 	// Point p is the anchor point of the texture.  It starts out as the
 	// map coordinate (0, 0, planez(0,0)) but texture offset and rotation get applied
 	p.x = -yoffsf * cosang - xoffsf * sinang;
 	p.z = -yoffsf * sinang + xoffsf * cosang;
-	p.y = FIXED2FLOAT(P_PlaneZ(FLOAT2FIXED(p.x), FLOAT2FIXED(p.z), &pl->secplane));
+	p.y = P_PlaneZ(p.x, p.z, &pl->secplane);
 
 	// Point t is the point along the plane (texwidth, 0, planez(texwidth, 0)) with texture
 	// offset and rotation applied
 	t.x = p.x - scaledflatwidth * sinang;
 	t.z = p.z + scaledflatwidth * cosang;
-	t.y = FIXED2FLOAT(P_PlaneZ(FLOAT2FIXED(t.x), FLOAT2FIXED(t.z), &pl->secplane));
+	t.y = P_PlaneZ(t.x, t.z, &pl->secplane);
 
 	// Point s is the point along the plane (0, texheight, planez(0, texheight)) with texture
 	// offset and rotation applied
 	s.x = p.x + scaledflatheight * cosang;
 	s.z = p.z + scaledflatheight * sinang;
-	s.y = FIXED2FLOAT(P_PlaneZ(FLOAT2FIXED(s.x), FLOAT2FIXED(s.z), &pl->secplane));
+	s.y = P_PlaneZ(s.x, s.z, &pl->secplane);
 	
 	// Translate the points to their position relative to viewx, viewy and
 	// rotate them based on viewangle
-	M_TranslateVec3(&p);
-	M_TranslateVec3(&t);
-	M_TranslateVec3(&s);
+	angle_t rotation = (angle_t)(-(int)viewangle + ANG90);
+	M_TranslateVec3(&p, &viewpos, rotation);
+	M_TranslateVec3(&t, &viewpos, rotation);
+	M_TranslateVec3(&s, &viewpos, rotation);
 	
 	// Create direction vector m from point p to point t, and n from point p to point s
 	M_SubVec3(&m, &t, &p);
@@ -660,39 +690,22 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	c.y *= invfocratio;		
 	
 	// (SoM) More help from randy. I was totally lost on this... 
-	float ixscale = FIXED2FLOAT(finetangent[FINEANGLES/4+FieldOfView/2]) / float(flatwidth);
-	float iyscale = FIXED2FLOAT(finetangent[FINEANGLES/4+FieldOfView/2]) / float(flatheight);
+	double scalenumer = fixed_conv * finetangent[FINEANGLES/4+FieldOfView/2];
+	double ixscale = scalenumer / flatwidth;
+	double iyscale = scalenumer / flatheight;
 
-	float zat = FIXED2FLOAT(P_PlaneZ(viewx, viewy, &pl->secplane));
+	double zat = P_PlaneZ(viewpos.x, viewpos.y, &pl->secplane);
 
-	float slopet = (float)tan((90.0f + consoleplayer().fov / 2.0f) * PI / 180.0f);
-	float slopevis = 8.0f * slopet * 16.0f * 320.0f / (float)screen->width;
+	angle_t fovang = ANG(consoleplayer().fov / 2.0f);
+	double slopetan = fixed_conv * finetangent[fovang >> ANGLETOFINESHIFT];
+	double slopevis = 8.0 * slopetan * 16.0 * 320.0 / double(screen->width);
 	
-	plight = (slopevis * ixscale * iyscale) / (zat - FIXED2FLOAT(viewz));
-	shade = 256.0f * 2.0f - (pl->lightlevel + 16.0f) * 256.0f / 128.0f;
+	plight = (slopevis * ixscale * iyscale) / (zat - viewpos.z);
+	shade = 256.0 * 2.0 - (pl->lightlevel + 16.0) * 256.0 / 128.0;
 
 	basecolormap = pl->colormap;	// [RH] set basecolormap
    
-	pl->top[pl->maxx+1] = 0xffffffffu;
-	pl->top[pl->minx-1] = 0xffffffffu;
-
-	// Make spans
-	for (int x = pl->minx; x <= pl->maxx + 1; x++)
-	{
-		unsigned int t1 = pl->top[x-1];
-		unsigned int b1 = pl->bottom[x-1];
-		unsigned int t2 = pl->top[x];
-		unsigned int b2 = pl->bottom[x];
-		
-		for (; t1 < t2 && t1 <= b1; t1++)
-			R_MapSlopedPlane (t1, spanstart[t1], x-1);
-		for (; b1 > b2 && b1 >= t1; b1--)
-			R_MapSlopedPlane (b1, spanstart[b1] ,x-1);
-		while (t2 < t1 && t2 <= b2)
-			spanstart[t2++] = x;
-		while (b2 > b1 && b2 >= t2)
-			spanstart[b2--] = x;
-	}
+	R_MakeSpans(pl, R_MapSlopedPlane);
 }
 
 void R_DrawLevelPlane(visplane_t *pl)
@@ -728,26 +741,7 @@ void R_DrawLevelPlane(visplane_t *pl)
 
 	planezlight = zlight[light];
 
-	pl->top[pl->maxx+1] = 0xffffffffu;
-	pl->top[pl->minx-1] = 0xffffffffu;
-
-	// Make Spans
-	for (int x = pl->minx; x <= pl->maxx + 1; x++)
-	{
-		unsigned int t1 = pl->top[x-1];
-		unsigned int b1 = pl->bottom[x-1];
-		unsigned int t2 = pl->top[x];
-		unsigned int b2 = pl->bottom[x];
-		
-		for (; t1 < t2 && t1 <= b1; t1++)
-			R_MapLevelPlane (t1, spanstart[t1], x-1);
-		for (; b1 > b2 && b1 >= t1; b1--)
-			R_MapLevelPlane (b1, spanstart[b1] ,x-1);
-		while (t2 < t1 && t2 <= b2)
-			spanstart[t2++] = x;
-		while (b2 > b1 && b2 >= t2)
-			spanstart[b2--] = x;
-	}
+	R_MakeSpans(pl, R_MapLevelPlane);
 }
 
 
@@ -895,6 +889,9 @@ void R_DrawPlanes (void)
 				if (ds_source != ds_cursource)
 					R_SetSpanSource_ASM (ds_source);
 #endif
+
+				pl->top[pl->maxx+1] = 0xffffffffu;
+				pl->top[pl->minx-1] = 0xffffffffu;
 
 				if (P_IsPlaneLevel(&pl->secplane))
 					R_DrawLevelPlane(pl);

@@ -55,6 +55,8 @@ extern patch_t *hu_font[];
 
 #include "am_map.h"
 
+int CL_GetPlayerColor(player_t*);
+
 static int Background, YourColor, WallColor, TSWallColor,
 		   FDWallColor, CDWallColor, ThingColor,
 		   SecretWallColor, GridColor, XHairColor,
@@ -1474,12 +1476,14 @@ void AM_drawPlayers(void)
 				case 3: color = V_GetColorFromString (palette, "C0 00 00"); break;
 				default: break;
 			}
-		} else
+		} else {
+			int playercolor = CL_GetPlayerColor(p);
 			color = BestColor (DefaultPalette->basecolors,
-							   RPART(p->userinfo.color),
-							   GPART(p->userinfo.color),
-							   BPART(p->userinfo.color),
+							   RPART(playercolor),
+							   GPART(playercolor),
+							   BPART(playercolor),
 							   DefaultPalette->numcolors);
+		}
 
 		pt.x = p->mo->x;
 		pt.y = p->mo->y;
@@ -1536,8 +1540,8 @@ void AM_drawMarks (void)
 	{
 		if (markpoints[i].x != -1)
 		{
-			//      w = SHORT(marknums[i]->width);
-			//      h = SHORT(marknums[i]->height);
+			//      w = LESHORT(marknums[i]->width);
+			//      h = LESHORT(marknums[i]->height);
 			w = 5; // because something's wrong with the wad, i guess
 			h = 6; // because something's wrong with the wad, i guess
 
@@ -1652,7 +1656,7 @@ void AM_Drawer (void)
                 epsub = level.cluster - 1;
             }
 
-            sprintf (line, GStrings(i+level.levelnum-epsub));
+            strcpy (line, GStrings(i+level.levelnum-epsub));
             if (viewactive && screenblocks == 11)
                 FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
             else if (viewactive && screenblocks == 12)

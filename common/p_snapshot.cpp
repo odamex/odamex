@@ -723,7 +723,7 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mCeilingStatus		= ceiling->m_Status;
 			mCeilingTag			= ceiling->m_Tag;
 			mCeilingCrush		= ceiling->m_Crush;
-			mSilent				= ceiling->m_Silent;
+			mSilent				= (ceiling->m_Silent != 0);
 			mCeilingLow			= ceiling->m_BottomHeight;
 			mCeilingHigh		= ceiling->m_TopHeight;
 			mCeilingSpeed		= ceiling->m_Speed;

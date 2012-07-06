@@ -72,6 +72,17 @@ public:
 	static void Unset(const std::string &option);
 
 	/**
+	Query the existence of a configuration option.
+
+	This method queries the agar configuration for the existence of the
+	specified configuration option.
+
+	@param option The name of the configuration option.
+	@return True if the option is defined, False if it is not.
+	*/
+	static bool IsDefined(const std::string &option);
+
+	/**
 	Write a configuration option with a string value.
 
 	This method writes an option to the configuration with a string value.
@@ -81,6 +92,18 @@ public:
 	@return True if an error occurred, False if successful.
 	*/
 	static bool Write(const std::string &option, const std::string &value);
+
+	/**
+	Write a configuration option with a boolean value.
+
+	This method writes an option to the configuration with a boolean
+	value.
+
+	@param option The name of the option to set.
+	@param value A boolean value.
+	@return True if an error occurred, False if successful.
+	*/
+	static bool Write(const std::string &option, const bool &value);
 
 	/**
 	Write a configuration option with an 8-bit signed integer value.
@@ -188,6 +211,18 @@ public:
 	@return True if an error occurred, False if successful.
 	*/
 	static bool Read(const std::string &option, std::string &value);
+
+	/**
+	Read a configuration option with a boolean value.
+
+	This method reads an option from the configuration with a boolean
+	value.
+
+	@param option The name of the option to read.
+	@param value A boolean to read the value into.
+	@return True if an error occurred, False if successful.
+	*/
+	static bool Read(const std::string &option, bool &value);
 
 	/**
 	Read a configuration option with an 8-bit signed integer value.

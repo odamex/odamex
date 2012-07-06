@@ -44,7 +44,7 @@ typedef enum
 class LstOdaServerList : public wxAdvancedListCtrl
 {
     public:
-        LstOdaServerList() { };
+        LstOdaServerList();
         virtual ~LstOdaServerList();
 
         void SetupServerListColumns();
@@ -54,7 +54,17 @@ class LstOdaServerList : public wxAdvancedListCtrl
         
         void ClearItemCells(long item);
         
+        void OnOpenContextMenu(wxContextMenuEvent& event);
+
+        void OnCopyAddress(wxCommandEvent& event);
+
         DECLARE_DYNAMIC_CLASS(LstOdaServerList)
+
+    private:
+
+        wxMenu *m_mnuPopup;
+
+        DECLARE_EVENT_TABLE()
 };
 
 #endif // __LST_SERVERS_H__

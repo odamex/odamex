@@ -65,7 +65,6 @@ EXTERN_CVAR (cl_weaponpref9)
 
 void CL_RefreshWeaponPreferenceCvars();
 void CL_PrepareWeaponPreferenceUserInfo();
-void P_SetWeaponPreference(player_t *player, int slot, weapontype_t weapon);
 void CL_SetWeaponPreferenceCvar(int slot, weapontype_t weapon);
 
 enum
@@ -121,7 +120,7 @@ void D_SetupUserInfo(void)
 	coninfo->skin			= R_FindSkin (cl_skin.cstring());
 	coninfo->gender			= D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist		= (fixed_t)(cl_autoaim * 16384.0);
-	coninfo->unlag			= cl_unlag;
+	coninfo->unlag			= (cl_unlag != 0);
 	coninfo->update_rate	= cl_updaterate;
 	coninfo->switchweapon	= (weaponswitch_t)cl_switchweapon.asInt();
 

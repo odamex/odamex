@@ -50,8 +50,6 @@ void R_SpanInitData ();
 extern int *walllights;
 
 // [RH] Defined in d_main.cpp
-extern BOOL DrawNewHUD;
-extern BOOL DrawNewSpecHUD;
 extern dyncolormap_t NormalLight;
 extern bool r_fakingunderwater;
 
@@ -393,25 +391,24 @@ fixed_t R_PointToDist2 (fixed_t dx, fixed_t dy)
 
 fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 {
-	fixed_t scale;
-
 	angle_t anglea = ANG90 + (visangle - viewangle);
 	angle_t angleb = ANG90 + (visangle - rw_normalangle);
 	// both sines are always positive
 	fixed_t num = FixedMul (FocalLengthY, finesine[angleb>>ANGLETOFINESHIFT]);
 	fixed_t den = FixedMul (rw_distance, finesine[anglea>>ANGLETOFINESHIFT]);
 
-	if (den > num>>16)
-	{
-		scale = FixedDiv (num, den);
+	static const fixed_t maxscale = 256 << FRACBITS;
+	static const fixed_t minscale = 64;
 
-		if (scale > 64*FRACUNIT)
-			scale = 64*FRACUNIT;
-		else if (scale < 256)
-			scale = 256;
-	}
-	else
-		scale = 64*FRACUNIT;
+	if (den == 0)
+		return maxscale;
+
+	fixed_t scale = FixedDiv(num, den);
+	if (scale > maxscale)
+		scale = maxscale;
+	else if (scale < minscale)
+		scale = minscale;
+
 	return scale;
 }
 
@@ -767,17 +764,6 @@ void R_ExecuteSetViewSize (void)
 		realviewwidth = ((setblocks*screen->width)/10) & (~(15>>(screen->is8bit() ? 0 : 2)));
 		realviewheight = ((setblocks*ST_Y)/10)&~7;
 		freelookviewheight = ((setblocks*screen->height)/10)&~7;
-	}
-
-	if ((&consoleplayer())->spectator && setblocks != 12) {
-		DrawNewHUD = false;
-		DrawNewSpecHUD = true;
-	} else if (setblocks == 11) {
-		DrawNewHUD = true;
-		DrawNewSpecHUD = false;
-	} else {
-		DrawNewHUD = false;
-		DrawNewSpecHUD = false;
 	}
 
 	viewwidth = realviewwidth >> detailxshift;

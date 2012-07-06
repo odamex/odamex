@@ -120,6 +120,7 @@ enum svc_t
 	svc_fullupdatedone,		// [SL] Inform client the full update is over
 	svc_railtrail,			// [SL] Draw railgun trail and play sound
 	svc_readystate,			// [AM] Broadcast ready state to client
+	svc_playerstate,		// [SL] Health, armor, and weapon of a player
 
 	// for co-op
 	svc_mobjstate = 70,
@@ -178,6 +179,7 @@ enum clc_t
 	clc_maplist_update,     // [AM] - Request the entire maplist from the server.
 	clc_getplayerinfo,
 	clc_ready,				// [AM] Toggle ready state.
+	clc_spy,				// [SL] Tell server to send info about this player
 
 	// for when launcher packets go astray
 	clc_launcher_challenge = 212,

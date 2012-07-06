@@ -403,8 +403,8 @@ BEGIN_COMMAND (echo)
 {
 	if (argc > 1)
 	{
-		std::string text = BuildString (argc - 1, (const char **)(argv + 1));
-		Printf (PRINT_HIGH, "%s\n", text.c_str());
+		std::string text = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		Printf(PRINT_HIGH, "%s\n", text.c_str());
 	}
 }
 END_COMMAND (echo)

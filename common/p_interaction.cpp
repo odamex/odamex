@@ -247,11 +247,11 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 		// two clips with a found weapon
 		if (dropped)
         {
-			gaveammo = P_GiveAmmo(player, weaponinfo[weapon].ammo, 1);
+			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammo, 1)) != 0);
         }
 		else
         {
-			gaveammo = P_GiveAmmo(player, weaponinfo[weapon].ammo, 2);
+			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammo, 2)) != 0);
         }
 	}
 	else

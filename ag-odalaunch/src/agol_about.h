@@ -82,6 +82,7 @@ private:
 	EventHandler *CloseEventHandler;
 
 	int           LicenseCursorPos;
+	bool          LicenseDirty;
 };
 
 } // namespace

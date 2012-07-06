@@ -61,6 +61,7 @@
 #include "cl_vote.h"
 #include "p_mobj.h"
 #include "p_pspr.h"
+#include "d_netcmd.h"
 
 #include <string>
 #include <vector>
@@ -126,6 +127,8 @@ NetDemo netdemo;
 bool simulated_connection = false;
 bool forcenetdemosplit = false;		// need to split demo due to svc_reconnect
 
+NetCommand localcmds[MAXSAVETICS];
+
 extern NetGraph netgraph;
 
 // [SL] 2012-03-07 - Players that were teleported during the current gametic
@@ -159,6 +162,83 @@ CVAR_FUNC_IMPL (cl_updaterate)
 		var.Set(1.0f);
 	else if (var > 3.0f)
 		var.Set(3.0f);
+}
+
+// [SL] Force enemies to have the specified color
+EXTERN_CVAR (r_forceenemycolor)
+EXTERN_CVAR (r_forceteamcolor)
+static int enemycolor = 0, teamcolor = 0;
+
+int CL_GetPlayerColor(player_t *player)
+{
+	if (!player)
+		return 0;
+
+	if (sv_gametype == GM_COOP)
+	{
+		if (r_forceteamcolor && player->id != consoleplayer_id)
+			return teamcolor;
+	}
+	else if (sv_gametype == GM_DM)
+	{
+		if (r_forceenemycolor && player->id != consoleplayer_id)
+			return enemycolor;
+	}
+	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player))
+			return enemycolor;
+		if (r_forceteamcolor &&
+			(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
+			return teamcolor;
+
+		// Adjust the shade of color for team games
+		int red = RPART(player->userinfo.color);
+		int green = GPART(player->userinfo.color);
+		int blue = BPART(player->userinfo.color);
+
+		int intensity = MAX(MAX(red, green), blue) / 3;
+
+		if (player->userinfo.team == TEAM_BLUE)
+			return (0xAA + intensity);
+		if (player->userinfo.team == TEAM_RED)
+			return (0xAA + intensity) << 16;
+	}
+
+	return player->userinfo.color;
+}
+
+static void CL_RebuildAllPlayerTranslations()
+{
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		int color = CL_GetPlayerColor(&players[i]);
+		R_BuildPlayerTranslation(players[i].id, color);
+	}
+}
+
+CVAR_FUNC_IMPL (r_enemycolor)
+{
+	// cache the color whenever the user changes it
+	enemycolor = V_GetColorFromString(NULL, var.cstring());
+	CL_RebuildAllPlayerTranslations();
+}
+
+CVAR_FUNC_IMPL (r_teamcolor)
+{
+	// cache the color whenever the user changes it
+	teamcolor = V_GetColorFromString(NULL, var.cstring());
+	CL_RebuildAllPlayerTranslations();
+}
+
+CVAR_FUNC_IMPL (r_forceenemycolor)
+{
+	CL_RebuildAllPlayerTranslations();
+}
+
+CVAR_FUNC_IMPL (r_forceteamcolor)
+{
+	CL_RebuildAllPlayerTranslations();
 }
 
 EXTERN_CVAR (cl_weaponpref1)
@@ -240,6 +320,7 @@ EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (cl_autorecord)
 EXTERN_CVAR (cl_splitnetdemos)
+EXTERN_CVAR (st_scale)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -275,6 +356,8 @@ team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 void AM_Stop();
+
+void ST_AdjustStatusBarScale(bool scale);
 
 //
 // CL_CalculateWorldIndexSync
@@ -445,15 +528,99 @@ void CL_ConnectClient(void)
 }
 
 //
+// CL_CheckDisplayPlayer
+//
+// Perfoms validation on the value of displayplayer_id based on the current
+// game state and status of the consoleplayer.
+//
+void CL_CheckDisplayPlayer()
+{
+	static byte previd = consoleplayer_id;
+	byte newid = 0;
+
+	if (!validplayer(displayplayer()) || !displayplayer().mo)
+		newid = consoleplayer_id;
+
+	if (!(P_CanSpy(consoleplayer(), displayplayer()) ||
+		  netdemo.isPlaying() || netdemo.isPaused()))
+		newid = consoleplayer_id;
+
+	if (displayplayer_id != previd)
+		newid = displayplayer_id;
+
+	if (newid)
+	{
+		// Request information about this player from the server
+		// (weapons, ammo, health, etc)
+		MSG_WriteMarker(&net_buffer, clc_spy);
+		MSG_WriteByte(&net_buffer, newid);
+		displayplayer_id = newid;
+
+		ST_AdjustStatusBarScale(st_scale != 0);
+	}
+
+	previd = newid;
+}
+
+//
+// CL_SpyCycle
+//
+// Cycles through the point-of-view of players in the game.  Checks
+// are made to ensure only spectators can view enemy players.
+//
+void CL_SpyCycle(bool forward)
+{
+	int direction = forward ? 1 : -1;
+    extern bool st_firsttime;
+
+    // make sure players[0] is valid
+    if (players.empty())
+        return;
+
+    if (!validplayer(displayplayer()))
+    {
+        CL_CheckDisplayPlayer();
+        return;
+    }
+
+	// get the index of the displayplayer in the players[] vector
+    size_t curr = &displayplayer() - &players[0];
+    size_t numplayers = players.size();
+
+    for (size_t i = 1; i < numplayers; i++)
+    {
+        curr = (curr + direction) % numplayers;
+        player_t &player = players[curr];
+
+        if (P_CanSpy(consoleplayer(), player) || player.id == consoleplayer_id ||
+            demoplayback || netdemo.isPlaying() || netdemo.isPaused())
+        {
+            if (!player.mo)
+                continue;
+
+            displayplayer_id = player.id;
+            CL_CheckDisplayPlayer();
+
+            if (demoplayback)
+            {
+                consoleplayer_id = player.id;
+                st_firsttime = true;
+            }
+
+            return;
+        }
+    }
+}
+
+
+//
 // CL_DisconnectClient
 //
 void CL_DisconnectClient(void)
 {
 	player_t &player = idplayer(MSG_ReadByte());
-
-	// if this was our displayplayer, update camera
-	if(&player == &displayplayer())
-		displayplayer_id = consoleplayer_id;
+	if (players.empty() || !validplayer(player))
+		return;
 
 	if(player.mo)
 	{
@@ -461,27 +628,20 @@ void CL_DisconnectClient(void)
 		player.mo->Destroy();		
 	}
 
-	size_t i;
-
-	for(i = 0; i < players.size(); i++)
-	{
-		if(&players[i] == &player)
-		{
-			// GhostlyDeath <August 1, 2008> -- Play disconnect sound
-			// GhostlyDeath <August 6, 2008> -- Only if they really are inside
-			if (cl_disconnectalert && &player != &consoleplayer())
-				S_Sound (CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
-			players.erase(players.begin() + i);
-			break;
-		}
-	}
+	size_t index = &player - &players[0];
+	if (cl_disconnectalert && &player != &consoleplayer())
+		S_Sound (CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
+	players.erase(players.begin() + index);
 
 	// repair mo after player pointers are reset
-	for(i = 0; i < players.size(); i++)
+	for(size_t i = 0; i < players.size(); i++)
 	{
 		if(players[i].mo)
 			players[i].mo->player = &players[i];
 	}
+
+	// if this was our displayplayer, update camera
+	CL_CheckDisplayPlayer();
 }
 
 /////// CONSOLE COMMANDS ///////
@@ -678,14 +838,6 @@ END_COMMAND (serverinfo)
 // rate: takes a kbps value
 CVAR_FUNC_IMPL (rate)
 {
-/*  // [SL] 2011-09-02 - Commented out this code as it would force clients with
-	// a version that has rate in kbps to have a rate of < 5000 bps on an older
-	// server version that has rate in bps, resulting in an unplayable connection.
-
-	const int max_rate = 5000;	// 40Mbps, likely set erroneously
-	if (var > max_rate)
-		var.RestoreDefault();		
-*/
 	if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_rate);
@@ -781,6 +933,57 @@ BEGIN_COMMAND (join)
 	MSG_WriteByte(&net_buffer, false);
 }
 END_COMMAND (join)
+
+BEGIN_COMMAND (flagnext)
+{
+	if (sv_gametype == GM_CTF && (consoleplayer().spectator || netdemo.isPlaying()))
+	{
+		for (int i = 0; i < NUMTEAMS; i++)
+		{
+			byte id = CTFdata[i].flagger;
+			if (id != 0 && displayplayer_id != id)
+			{
+				displayplayer_id = id;
+				CL_CheckDisplayPlayer();
+				return;
+			}
+		}
+	}
+}
+END_COMMAND (flagnext)
+
+BEGIN_COMMAND (spynext)
+{
+	CL_SpyCycle(true);
+}
+END_COMMAND (spynext)
+
+BEGIN_COMMAND (spyprev)
+{
+	CL_SpyCycle(false);
+}
+END_COMMAND (spyprev)
+
+BEGIN_COMMAND (spy)
+{
+	byte id = consoleplayer_id;
+
+	if (argc > 1)
+		id = atoi(argv[1]);
+
+	if (id == 0)
+	{
+		Printf(PRINT_HIGH, "Expecting player ID.  Try 'players' to list all of the player IDs.\n");
+		return;
+	}
+
+	displayplayer_id = id;
+	CL_CheckDisplayPlayer();
+
+	if (displayplayer_id != id)
+		Printf(PRINT_HIGH, "Unable to spy player ID %i!\n", id);
+}
+END_COMMAND (spy)
 
 void STACK_ARGS call_terms (void);
 
@@ -1029,7 +1232,6 @@ void CL_SendUserInfo(void)
 	}
 }
 
-
 //
 // CL_FindPlayer
 //
@@ -1076,8 +1278,6 @@ void CL_SetupUserInfo(void)
 
 	p->GameTime			= MSG_ReadShort();
 
-	R_BuildPlayerTranslation (p->id, p->userinfo.color);
-
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
 
@@ -1086,11 +1286,11 @@ void CL_SetupUserInfo(void)
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?
-	bool teammate = p->userinfo.team == consoleplayer().userinfo.team;
-	bool teamgame = (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF);
+	// [SL] 2012-05-24 - Were we spectating a teammate before we changed teams?
+	CL_CheckDisplayPlayer();
 
-	if (p->id == displayplayer_id && !consoleplayer().spectator && teamgame && !teammate)
-		displayplayer_id = consoleplayer_id;
+	int color = CL_GetPlayerColor(p);
+	R_BuildPlayerTranslation (p->id, color);
 
 	extern bool st_firsttime;
 	st_firsttime = true;
@@ -1553,13 +1753,32 @@ void CL_UpdatePlayer()
 	fixed_t x = MSG_ReadLong();
 	fixed_t y = MSG_ReadLong();
 	fixed_t z = MSG_ReadLong();
-	angle_t angle = MSG_ReadLong();
+
+	angle_t angle = 0, pitch = 0;
+
+	// [SL] 2012-06-15 - Netdemo compatibility with 0.6.0 and prior
+	if (gameversion <= 60)
+	{
+		angle = MSG_ReadLong();
+	}
+	else
+	{
+		angle = MSG_ReadShort() << FRACBITS;
+		pitch = MSG_ReadShort() << FRACBITS;
+	}
+
 	int frame = MSG_ReadByte();
 	fixed_t momx = MSG_ReadLong();
 	fixed_t momy = MSG_ReadLong();
 	fixed_t momz = MSG_ReadLong();
 
-	int invisibility = MSG_ReadLong();
+	int invisibility = 0;
+	
+	// [SL] 2012-06-15 - Netdemo compatibility with 0.6.0 and prior
+	if (gameversion <= 60)
+		invisibility = MSG_ReadLong();
+	else
+		invisibility = MSG_ReadByte();
 
 	if	(!validplayer(*p) || !p->mo)
 		return;
@@ -1574,13 +1793,9 @@ void CL_UpdatePlayer()
     // [Russell] - hack, read and set invisibility flag
     p->powers[pw_invisibility] = invisibility;
     if (p->powers[pw_invisibility])
-    {
         p->mo->flags |= MF_SHADOW;
-    }
     else
-    {
         p->mo->flags &= ~MF_SHADOW;
-    }
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
@@ -1605,6 +1820,7 @@ void CL_UpdatePlayer()
 	newsnap.setMomY(momy);
 	newsnap.setMomZ(momz);
 	newsnap.setAngle(angle);
+	newsnap.setPitch(pitch);
 	newsnap.setFrame(frame);
 
 	// Mark the snapshot as continuous unless the player just teleported
@@ -1615,11 +1831,50 @@ void CL_UpdatePlayer()
 	p->snapshots.addSnapshot(newsnap);
 }
 
-ticcmd_t localcmds[MAXSAVETICS];
+BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
-void CL_SaveCmd(void)
+void CL_UpdatePlayerState(void)
 {
-	memcpy (&localcmds[gametic%MAXSAVETICS], &consoleplayer().cmd, sizeof(ticcmd_t));
+	byte id				= MSG_ReadByte();
+	short health		= MSG_ReadShort();
+	byte armortype		= MSG_ReadByte();
+	short armorpoints	= MSG_ReadShort();
+
+	weapontype_t weap	= static_cast<weapontype_t>(MSG_ReadByte());
+
+	short ammo[NUMAMMO];
+	for (int i = 0; i < NUMAMMO; i++)
+		ammo[i] = MSG_ReadShort();
+
+	statenum_t stnum[NUMPSPRITES];
+	for (int i = 0; i < NUMPSPRITES; i++)
+	{
+		int n = MSG_ReadByte();
+		if (n == 0xFF)
+			stnum[i] = S_NULL;
+		else
+			stnum[i] = static_cast<statenum_t>(n);
+	}
+		
+	player_t &player = idplayer(id);
+	if (!validplayer(player) || !player.mo)
+		return;
+
+	player.health = player.mo->health = health;
+	player.armortype = armortype;
+	player.armorpoints = armorpoints;
+
+	player.readyweapon = weap;
+	player.pendingweapon = wp_nochange;
+
+	if (!player.weaponowned[weap])
+		P_GiveWeapon(&player, weap, false);
+	
+	for (int i = 0; i < NUMAMMO; i++)
+		player.ammo[i] = ammo[i];
+
+	for (int i = 0; i < NUMPSPRITES; i++)
+		P_SetPsprite(&player, i, stnum[i]);
 }
 
 //
@@ -2126,7 +2381,7 @@ void CL_KillMobj(void)
 
 	MeansOfDeath = MSG_ReadLong();
 	
-	bool joinkill = MSG_ReadByte();
+	bool joinkill = ((MSG_ReadByte()) != 0);
 
 	if (!target)
 		return;
@@ -2136,7 +2391,11 @@ void CL_KillMobj(void)
     if (!serverside && target->flags & MF_COUNTKILL)
 		level.killed_monsters++;
 
-	P_KillMobj (source, target, inflictor, joinkill);	
+	if (target->player == &consoleplayer())
+		for (size_t i = 0; i < MAXSAVETICS; i++)
+			localcmds[i].clear();
+			
+	P_KillMobj (source, target, inflictor, joinkill);
 }
 
 
@@ -2907,7 +3166,7 @@ void CL_Spectate()
 	player_t &player = CL_FindPlayer(MSG_ReadByte());
 
 	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
-	player.spectator = MSG_ReadByte();
+	player.spectator = ((MSG_ReadByte()) != 0);
 
 	if (player.spectator && wasalive)
 		P_DisconnectEffect(player.mo);
@@ -2915,8 +3174,6 @@ void CL_Spectate()
 	if (&player == &consoleplayer()) {
 		st_scale.Callback (); // refresh status bar size
 		if (player.spectator) {
-			for (int i=0 ; i<NUMPSPRITES ; i++) // remove all weapon sprites
-				(&player)->psprites[i].state = NULL;
 			player.playerstate = PST_LIVE; // resurrect dead spectators
 			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
 			player.deltaviewheight = 1000 << FRACBITS;
@@ -2926,8 +3183,7 @@ void CL_Spectate()
 	}
 
 	// GhostlyDeath -- If the player matches our display player...
-	if (&player == &displayplayer())
-		displayplayer_id = consoleplayer_id;
+	CL_CheckDisplayPlayer();
 }
 
 void CL_ReadyState() {
@@ -2954,6 +3210,7 @@ void CL_InitCommands(void)
 	cmds[svc_updatelocalplayer]	= &CL_UpdateLocalPlayer;
 	cmds[svc_userinfo]			= &CL_SetupUserInfo;
 	cmds[svc_teampoints]		= &CL_TeamPoints;
+	cmds[svc_playerstate]		= &CL_UpdatePlayerState;
 
 	cmds[svc_updateping]		= &CL_UpdatePing;
 	cmds[svc_spawnmobj]			= &CL_SpawnMobj;
@@ -3079,6 +3336,15 @@ void CL_ParseCommands(void)
 	}
 }
 
+
+void CL_SaveCmd(void)
+{
+	NetCommand *netcmd = &localcmds[gametic % MAXSAVETICS];
+	netcmd->fromPlayer(&consoleplayer());
+	netcmd->setTic(gametic);
+	netcmd->setWorldIndex(world_index);
+}
+
 extern int outrate;
 
 //
@@ -3094,11 +3360,6 @@ void CL_SendCmd(void)
 	if (!p->mo || gametic < 1 )
 		return;
 
-	// denis - we know server won't accept two changes per tic, so we shouldn't
-	//static int last_sent_tic = 0;
-	//if(last_sent_tic == gametic)
-	//	return;
-	
 	// GhostlyDeath -- If we are spectating, tell the server of our new position
 	if (p->spectator)
 	{
@@ -3108,10 +3369,6 @@ void CL_SendCmd(void)
 		MSG_WriteLong(&net_buffer, p->mo->y);
 		MSG_WriteLong(&net_buffer, p->mo->z);
 	}
-	// GhostlyDeath -- We just throw it all away down here since we need those buttons!
-
-	ticcmd_t *prevcmd = &localcmds[(gametic-1) % MAXSAVETICS];
-	ticcmd_t *curcmd  = &consoleplayer().cmd;
 
 	MSG_WriteMarker(&net_buffer, clc_move);
 
@@ -3119,63 +3376,14 @@ void CL_SendCmd(void)
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
 	// need to be used for client's positional prediction. 
     MSG_WriteLong(&net_buffer, gametic);
-    
-    // Send the server's tic we are currently simulating.  This indicates to the
-	// server which update of player positions the client is basing his actions
-	//  on.  Used by unlagging calculations.
-	MSG_WriteByte(&net_buffer, world_index & 0xFF);
 
-    // send the previous cmds in the message, so if the last packet
-    // was dropped, it can be recovered
-	MSG_WriteByte(&net_buffer,	prevcmd->ucmd.buttons);
-	MSG_WriteShort(&net_buffer,	p->mo->angle >> 16);
-	MSG_WriteShort(&net_buffer,	p->mo->pitch >> 16);
-	MSG_WriteShort(&net_buffer,	prevcmd->ucmd.forwardmove);
-	MSG_WriteShort(&net_buffer,	prevcmd->ucmd.sidemove);
-	MSG_WriteShort(&net_buffer, prevcmd->ucmd.upmove);
-	MSG_WriteByte(&net_buffer,	prevcmd->ucmd.impulse);
-
-    // send the current cmds in the message
-	MSG_WriteByte(&net_buffer,	curcmd->ucmd.buttons);
-	if (step_mode) 
-		MSG_WriteShort(&net_buffer, curcmd->ucmd.yaw);
-	else 
-		MSG_WriteShort(&net_buffer, (p->mo->angle + (curcmd->ucmd.yaw << 16)) >> 16);
-	MSG_WriteShort(&net_buffer,	(p->mo->pitch + (curcmd->ucmd.pitch << 16)) >> 16);
-	MSG_WriteShort(&net_buffer,	curcmd->ucmd.forwardmove);
-	MSG_WriteShort(&net_buffer,	curcmd->ucmd.sidemove);
-	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
-
-	// [SL] 2011-11-20 - Player isn't requesting a weapon change
-	// send player's weapon to server and server will correct it if wrong
-	if (!curcmd->ucmd.impulse && !(curcmd->ucmd.buttons & BT_CHANGE))
+	NetCommand *netcmd;
+	for (int i = 9; i >= 0; i--)
 	{
-		if (p->pendingweapon != wp_nochange)
-			MSG_WriteByte(&net_buffer, p->pendingweapon);
-		else
-			MSG_WriteByte(&net_buffer, p->readyweapon);
+		netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
+		netcmd->write(&net_buffer);
 	}
-	else
-		MSG_WriteByte(&net_buffer, curcmd->ucmd.impulse);
 
-#ifdef _UNLAG_DEBUG_
-	if 	(player.size() == 2 && 
-		(prevcmd->ucmd.buttons & BT_ATTACK || curcmd->ucmd.buttons & BT_ATTACK))
-	{
-		player_t *enemy;
-			
-		if (players[0].id != consoleplayer().id)
-			enemy = &players[0];
-		else
-			enemy = &players[1];
-			
-		int x = enemy->mo->x >> FRACBITS;
-		int y = enemy->mo->y >> FRACBITS;
-		DPrintf("Unlag: Weapon fired with svgametic = %d, enemy position = (%d, %d)\n",
-				last_svgametic, x, y);
-	}
-#endif	// _UNLAG_DEBUG_
-	
 	NET_SendPacket(net_buffer, serveraddr);
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);

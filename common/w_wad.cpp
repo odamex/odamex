@@ -275,6 +275,7 @@ std::string W_AddFile (std::string filename)
 	FILE			*handle;
 	size_t			length;
 	size_t			startlump;
+	size_t          res;
 	filelump_t*		fileinfo;
 	filelump_t		singleinfo;
 
@@ -293,8 +294,8 @@ std::string W_AddFile (std::string filename)
 
 	startlump = numlumps;
 
-	fread (&header, sizeof(header), 1, handle);
-	header.identification = LONG(header.identification);
+	res = fread (&header, sizeof(header), 1, handle);
+	header.identification = LELONG(header.identification);
 
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
 	{
@@ -309,8 +310,8 @@ std::string W_AddFile (std::string filename)
 	else
 	{
 		// WAD file
-		header.numlumps = LONG(header.numlumps);
-		header.infotableofs = LONG(header.infotableofs);
+		header.numlumps = LELONG(header.numlumps);
+		header.infotableofs = LELONG(header.infotableofs);
 		length = header.numlumps*sizeof(filelump_t);
 
 		if(length > (unsigned)M_FileLength(handle))
@@ -322,7 +323,7 @@ std::string W_AddFile (std::string filename)
 
 		fileinfo = (filelump_t *)Z_Malloc (length, PU_STATIC, 0);
 		fseek (handle, header.infotableofs, SEEK_SET);
-		fread (fileinfo, length, 1, handle);
+		res = fread (fileinfo, length, 1, handle);
 		numlumps += header.numlumps;
 		Printf (PRINT_HIGH, " (%d lumps)\n", header.numlumps);
 	}
@@ -338,8 +339,8 @@ std::string W_AddFile (std::string filename)
 	for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
 	{
 		lump_p->handle = handle;
-		lump_p->position = LONG(fileinfo->filepos);
-		lump_p->size = LONG(fileinfo->size);
+		lump_p->position = LELONG(fileinfo->filepos);
+		lump_p->size = LELONG(fileinfo->size);
 		strncpy (lump_p->name, fileinfo->name, 8);
 
 		// W_CheckNumForName needs all lump names in upper case
@@ -672,11 +673,15 @@ W_ReadLump
 
 	l = lumpinfo + lump;
 
+    I_BeginRead();
+
 	fseek (l->handle, l->position, SEEK_SET);
 	c = fread (dest, l->size, 1, l->handle);
 
 	if (feof(l->handle))
 		I_Error ("W_ReadLump: only read %i of %i on lump %i", c, l->size, lump);
+
+    I_EndRead();
 }
 
 //

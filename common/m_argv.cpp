@@ -302,6 +302,7 @@ void M_FindResponseFile (void)
 			int 	size;
 			long	argsize;
 			size_t 	index;
+			size_t  res;
 
 			// READ THE RESPONSE FILE INTO MEMORY
 			handle = fopen (Args.GetArg(i) + 1,"rb");
@@ -316,7 +317,7 @@ void M_FindResponseFile (void)
 			size = ftell (handle);
 			fseek (handle, 0, SEEK_SET);
 			file = new char[size+1];
-			fread (file, size, 1, handle);
+			res = fread (file, size, 1, handle);
 			file[size] = 0;
 			fclose (handle);
 

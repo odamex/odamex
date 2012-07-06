@@ -2809,5 +2809,77 @@ static void P_SpawnPushers(void)
 //
 ////////////////////////////////////////////////////////////////////////////
 
+// [AM] Trigger a special associated with an actor.
+bool A_CheckTrigger(AActor *mo, AActor *triggerer) {
+	if (mo->special &&
+		(triggerer->player ||
+		 ((mo->flags & MF_AMBUSH) && (triggerer->flags2 & MF2_MCROSS)) ||
+		 ((mo->flags2 & MF2_DORMANT) && (triggerer->flags2 & MF2_PCROSS)))) {
+		int savedSide = TeleportSide;
+		TeleportSide = 0;
+		bool res = (LineSpecials[mo->special](NULL, triggerer, mo->args[0],
+											 mo->args[1], mo->args[2],
+											 mo->args[3], mo->args[4]) != 0);
+		TeleportSide = savedSide;
+		return res;
+	}
+	return false;
+}
+ 
+// [AM] Selectively trigger a list of sector action specials that are linked by
+//      their tracer fields based on the passed activation type.
+bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType) {
+	bool trigger_action = false;
+
+	// The mobj type must agree with the activation type.
+	switch (mo->type) {
+	case MT_SECACTENTER:
+		trigger_action = ((activationType & SECSPAC_Enter) != 0);
+		break;
+	case MT_SECACTEXIT:
+		trigger_action = ((activationType & SECSPAC_Exit) != 0);
+		break;
+	case MT_SECACTHITFLOOR:
+		trigger_action = ((activationType & SECSPAC_HitFloor) != 0);
+		break;
+	case MT_SECACTHITCEIL:
+		trigger_action = ((activationType & SECSPAC_HitCeiling) != 0);
+		break;
+	case MT_SECACTUSE:
+		trigger_action = ((activationType & SECSPAC_Use) != 0);
+		break;
+	case MT_SECACTUSEWALL:
+		trigger_action = ((activationType & SECSPAC_UseWall) != 0);
+		break;
+	case MT_SECACTEYESDIVE:
+		trigger_action = ((activationType & SECSPAC_EyesDive) != 0);
+		break;
+	case MT_SECACTEYESSURFACE:
+		trigger_action = ((activationType & SECSPAC_EyesSurface) != 0);
+		break;
+	case MT_SECACTEYESBELOWC:
+		trigger_action = ((activationType & SECSPAC_EyesBelowC) != 0);
+		break;
+	case MT_SECACTEYESABOVEC:
+		trigger_action = ((activationType & SECSPAC_EyesAboveC) != 0);
+		break;
+	default:
+		// This isn't a sector action mobj.
+		break;
+	}
+
+	if (trigger_action) {
+		trigger_action = A_CheckTrigger(mo, triggerer);
+	}
+
+	// The tracer field could potentially contain a pointer to another
+	// actor special.
+	if (mo->tracer != NULL) {
+		return trigger_action | A_TriggerAction(mo->tracer, triggerer, activationType);
+	}
+
+	return trigger_action;
+}
+
 VERSION_CONTROL (p_spec_cpp, "$Id$")
 
