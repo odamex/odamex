@@ -32,6 +32,7 @@
 class player_s;
 typedef player_s player_t;
 
+static const short CENTERVIEW = -32768;
 //
 // NetCommand
 //

@@ -99,7 +99,7 @@ void NetCommand::write(buf_t *buf)
 	if (serialized_fields & CMD_PITCH)
 	{
 		// ZDoom uses a hack to center the view when toggling cl_mouselook
-		bool centerview = (mDeltaPitch == -32768);
+		bool centerview = (mDeltaPitch == CENTERVIEW);
 		if (centerview)
 			buf->WriteShort(0);
 		else

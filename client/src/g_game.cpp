@@ -532,7 +532,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	if (sendcenterview)
 	{
 		sendcenterview = false;
-		look = -32768;
+		look = CENTERVIEW;
 	}
 	else
 	{
