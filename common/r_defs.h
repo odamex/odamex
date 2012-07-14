@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -96,7 +96,7 @@ enum
 	SECSPAC_EyesDive	= 64,	// Trigger when player eyes go below fake floor
 	SECSPAC_EyesSurface = 128,	// Trigger when player eyes go above fake floor
 	SECSPAC_EyesBelowC	= 256,	// Trigger when player eyes go below fake ceiling
-	SECSPAC_EyesAboveC	= 512,	// Triggen when player eyes go above fake ceiling
+	SECSPAC_EyesAboveC	= 512	// Triggen when player eyes go above fake ceiling
 };
 
 // Ceiling/floor flags
@@ -165,10 +165,10 @@ struct sector_s
 
     // if == validcount, already checked
 	int 		validcount;
-	
+
     // list of mobjs in sector
 	AActor* 	thinglist;
-	int			seqType;		// this sector's sound sequence	
+	int			seqType;		// this sector's sound sequence
 	int sky;
 
 	// killough 8/28/98: friction is a sector property, not an mobj property.
@@ -252,19 +252,19 @@ struct side_s
 {
     // add this to the calculated texture column
     fixed_t	textureoffset;
-    
+
     // add this to the calculated texture top
     fixed_t	rowoffset;
-	
+
     // Texture indices.
-    // We do not maintain names here. 
+    // We do not maintain names here.
     short	toptexture;
     short	bottomtexture;
     short	midtexture;
 
     // Sector the SideDef is facing.
     sector_t*	sector;
-	
+
 	// [RH] Bah. Had to add these for BOOM stuff
 	short		linenum;
 	short		special;
@@ -289,16 +289,16 @@ struct line_s
     // Vertices, from v1 to v2.
     vertex_t*	v1;
     vertex_t*	v2;
-	
+
     // Precalculated v2 - v1 for side checking.
     fixed_t	dx;
     fixed_t	dy;
-	
+
     // Animation related.
     short		flags;
 	byte		special;	// [RH] specials are only one byte (like Hexen)
 	byte		lucency;	// <--- translucency (0-255/255=opaque)
-	
+
 	// Visual appearance: SideDefs.
     //  sidenum[1] will be -1 if one sided
 	short		sidenum[2];
@@ -306,7 +306,7 @@ struct line_s
     // Neat. Another bounding box, for the extent
     //  of the LineDef.
     fixed_t	bbox[4];
-	
+
     // To aid move clipping.
     slopetype_t	slopetype;
 
@@ -314,7 +314,7 @@ struct line_s
     // Note: redundant? Can be retrieved from SideDefs.
     sector_t*	frontsector;
     sector_t*	backsector;
-	
+
     // if == validcount, already checked
     int		validcount;
 
@@ -323,7 +323,7 @@ struct line_s
 							//		note that these are shorts in order to support
 							//		the tag parameter from DOOM.
 	int			firstid, nextid;
-	
+
 	// denis - has this switch ever been pressed?
 	bool wastoggled;
 };
@@ -375,7 +375,7 @@ struct seg_s
 	// Could be retrieved from linedef, too.
 	sector_t*	frontsector;
 	sector_t*	backsector;		// NULL for one-sided lines
-	
+
 	fixed_t		length;
 
 };
@@ -466,24 +466,24 @@ struct drawseg_s
     fixed_t		scale1;
     fixed_t		scale2;
     fixed_t		scalestep;
-	
+
 	fixed_t		light, lightstep;
 
     // 0=none, 1=bottom, 2=top, 3=both
     int			silhouette;
-	
+
     // do not clip sprites above this
     fixed_t		bsilheight;
-	
+
     // do not clip sprites below this
     fixed_t		tsilheight;
-    
+
     // Pointers to lists for sprite clipping,
     //  all three adjusted so [x1] is first value.
-    int*		sprtopclip;		
-    int*		sprbottomclip;	
+    int*		sprtopclip;
+    int*		sprbottomclip;
     int*		maskedtexturecol;
-    
+
     fixed_t		topclipstart;
     fixed_t		topclipstep;
     fixed_t		bottomclipstart;
@@ -527,7 +527,7 @@ struct vissprite_s
 
     // for line side calculation
     fixed_t		gx;
-    fixed_t		gy;		
+    fixed_t		gy;
 
     // global bottom / top for silhouette clipping
     fixed_t		gz;
@@ -539,7 +539,7 @@ struct vissprite_s
 	fixed_t			xscale, yscale;
 
     // negative if flipped
-    fixed_t		xiscale;	
+    fixed_t		xiscale;
 
 	fixed_t			depth;
 	fixed_t			texturemid;
@@ -550,7 +550,7 @@ struct vissprite_s
     lighttable_t*	colormap;
 
 	int 			mobjflags;
-	
+
 	byte			*translation;	// [RH] for translation;
 	sector_t		*heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
 	fixed_t			translucency;
@@ -558,7 +558,7 @@ struct vissprite_s
 };
 typedef struct vissprite_s vissprite_t;
 
-//	
+//
 // Sprites are patches with a special naming convention
 //  so they can be recognized by R_InitSprites.
 // The base name is NNNNFx or NNNNFxFx, with
@@ -582,7 +582,7 @@ struct spriteframe_s
 
     // Lump to use for view angles 0-7.
     short	lump[8];
-	
+
     // Flip bit (1 = flip) to use for view angles 0-7.
     byte	flip[8];
 
@@ -632,7 +632,7 @@ struct visplane_s
 	fixed_t		xoffs, yoffs;		// killough 2/28/98: Support scrolling flats
 	int			minx;
 	int			maxx;
-	
+
 	byte		*colormap;			// [RH] Support multiple colormaps
 	fixed_t		xscale, yscale;		// [RH] Support flat scaling
 	angle_t		angle;				// [RH] Support flat rotation
