@@ -710,20 +710,66 @@ void DCanvas::DrawCNMWrapper (EWrapperCode drawer, const patch_t *patch, int x0,
 void DCanvas::CopyRect (int srcx, int srcy, int _width, int _height,
 						int destx, int desty, DCanvas *destscrn)
 {
-#ifdef RANGECHECK
-	if (srcx<0
-		||srcx+_width > width
-		|| srcy<0
-		|| srcy+_height> height
-		||destx<0||destx+_width > destscrn->width
-		|| desty<0
-		|| desty+_height > destscrn->height)
-	{
-		I_Error ("Bad DCanvas::CopyRect");
-	}
-#endif
-	V_MarkRect (destx, desty, _width, _height);
+	#ifdef RANGECHECK 
+	// [AM] Properly crop the copy.  All of these comparison checks (except
+	//      the very last two) used to be done every tic anyway, now we attempt
+	//      to do something intelligent about it.
 
+	// Source coordinates OOB means we offset our destination coordinates by
+	// the same ammount, effectively giving it a whitespace border.
+	if (srcx < 0)
+	{
+		destx -= srcx;
+		srcx = 0;
+	}
+	if (srcy < 0)
+	{
+		desty -= srcy;
+		srcy = 0;
+	}
+	// Rectangle going outside of the source buffer's width and height
+	// means we reduce the size of the rectangle until it fits into the source
+	// buffer.
+	if (srcx + _width > this->width)
+	{
+		_width = this->width - srcx;
+	}
+	if (srcy + _height > this->height)
+	{
+		_height = this->height - srcy;
+	}
+	// Destination coordinates OOB means we offset our source coordinates by
+	// the same amount, effectively cutting off the top or left hand corner.
+	if (destx < 0)
+	{
+		srcx -= destx;
+		destx = 0;
+	}
+	if (desty < 0)
+	{
+		srcy -= desty;
+		desty = 0;
+	}
+	// Rectangle going outside of the destination buffer's width and height
+	// means we reduce the size of the rectangle (again?) so it fits into the
+	// destination buffer.
+	if (destx + _width > destscrn->width)
+	{
+		_width = destscrn->width - destx;
+	}
+	if (desty + _height > destscrn->height)
+	{
+		_height = destscrn->height - desty;
+	}
+	// If rectangle width or height is 0 or less, our blit is useless.
+	if (_width <= 0 || _height <= 0)
+	{
+		DPrintf("DCanvas::CopyRect: Bad copy (ignored)\n");
+		return;
+	}
+	#endif
+
+	V_MarkRect (destx, desty, _width, _height);
 	Blit (srcx, srcy, _width, _height, destscrn, destx, desty, _width, _height);
 }
 
