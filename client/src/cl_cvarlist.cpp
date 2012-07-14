@@ -175,7 +175,7 @@ CVAR (cl_team,		"blue", "",	CVARTYPE_STRING,		CVAR_USERINFO | CVAR_ARCHIVE | CVA
 
 CVAR (chasedemo, "0", "",	CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR (cl_run,		"1", "Always run",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// Always run? // [Toke - Defaults]
+CVAR (cl_run,		"0", "Always run",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// Always run? // [Toke - Defaults]
 
 // Mouse settings
 // --------------
@@ -344,15 +344,9 @@ CVAR_FUNC_DECL (r_painintensity, "1", "Value of red pain intensity shift",	CVART
 
 // TODO: document
 CVAR (r_viewsize, "0", "",	CVARTYPE_BYTE, CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)
-#ifdef GCONSOLE
-	// Standard SDTV resolution is the default on game consoles
-	CVAR (vid_defwidth, "640", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-	CVAR (vid_defheight, "480", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-#else
-	// Default video dimensions. [AM] Bumped up from 320x200.
-	CVAR (vid_defwidth, "640", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-	CVAR (vid_defheight, "480", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-#endif
+// Default video dimensions. [AM] Bumped up from 320x200.
+CVAR (vid_defwidth, "640", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (vid_defheight, "480", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Default bitdepth
 CVAR (vid_defbits, "8", "",	CVARTYPE_BYTE, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Force video mode
