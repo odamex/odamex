@@ -181,8 +181,17 @@ void dlgConfig::OnSpinValChange(wxSpinEvent &event)
 {
     wxInt32 PQGood, PQPlayable, PQLaggy;
 
-    PQGood = m_SpnCtrlPQGood->GetValue();
-    PQPlayable = m_SpnCtrlPQPlayable->GetValue();
+    wxSpinCtrl *SpinControl = wxDynamicCast(event.GetEventObject(), wxSpinCtrl);
+
+    if (!SpinControl)
+        return;
+
+
+    if (SpinControl == m_SpnCtrlPQGood)
+        PQGood = m_SpnCtrlPQGood->GetValue();
+
+    if (SpinControl == m_SpnCtrlPQPlayable)
+        PQPlayable = m_SpnCtrlPQPlayable->GetValue();
 
     // Handle spin values that go beyond a certain range
     // wxWidgets Bug: Double-clicking the down arrow on a spin control will go
@@ -190,15 +199,19 @@ void dlgConfig::OnSpinValChange(wxSpinEvent &event)
     // counteract this with using +2 stepping
     if (PQGood >= PQPlayable)
     {
-        m_SpnCtrlPQPlayable->SetValue(PQGood + 2);
+        if (SpinControl == m_SpnCtrlPQPlayable)
+            m_SpnCtrlPQPlayable->SetValue(PQGood + 2);
     }
 
-    PQPlayable = m_SpnCtrlPQPlayable->GetValue();
-    PQLaggy = m_SpnCtrlPQLaggy->GetValue();
+    if (SpinControl == m_SpnCtrlPQPlayable)
+        PQPlayable = m_SpnCtrlPQPlayable->GetValue();
+    if (SpinControl == m_SpnCtrlPQLaggy)
+        PQLaggy = m_SpnCtrlPQLaggy->GetValue();
 
     if (PQPlayable >= PQLaggy)
     {
-        m_SpnCtrlPQLaggy->SetValue(PQPlayable + 2);
+        if (SpinControl == m_SpnCtrlPQLaggy)
+            m_SpnCtrlPQLaggy->SetValue(PQPlayable + 2);
     }
 
     UserChangedSetting = true;
@@ -278,7 +291,7 @@ void dlgConfig::OnAddDir(wxCommandEvent &event)
         }
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found"), 
+        wxMessageBox(wxString::Format(_T("Directory %s not found"),
                 WadDirectory.c_str()));
 }
 
@@ -286,7 +299,7 @@ void dlgConfig::OnAddDir(wxCommandEvent &event)
 void dlgConfig::OnReplaceDir(wxCommandEvent &event)
 {
     wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
-    
+
     wxString WadDirectory;
 
     if (i == wxNOT_FOUND)
@@ -316,7 +329,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent &event)
         UserChangedSetting = true;
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found"), 
+        wxMessageBox(wxString::Format(_T("Directory %s not found"),
                 WadDirectory.c_str()));
 }
 
