@@ -163,6 +163,8 @@ private:
 	short		mDeltaYaw;
 	short		mDeltaPitch;
 
+	int getSerializedFields();
+
 	void updateFields(int flag, int value)
 	{
 		if (value == 0)

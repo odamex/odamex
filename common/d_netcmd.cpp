@@ -80,32 +80,38 @@ void NetCommand::toPlayer(player_t *player) const
 		ucmd->yaw = getDeltaYaw();
 		ucmd->pitch = getDeltaPitch();
 		
-		if (hasAngle())
-			player->mo->angle = getAngle();
-		if (hasPitch())
-			player->mo->pitch = getPitch();
+		player->mo->angle = getAngle();
+		player->mo->pitch = getPitch();
 	}
 }
 
 void NetCommand::write(buf_t *buf)
 {
 	// Let the recipient know which cmd fields are being sent
-	buf->WriteByte(mFields);
+	int serialized_fields = getSerializedFields();
+	buf->WriteByte(serialized_fields);
 	buf->WriteLong(mWorldIndex);
 		
-	if (hasButtons())
+	if (serialized_fields & CMD_BUTTONS)
 		buf->WriteByte(mButtons);
-	if (hasAngle())
+	if (serialized_fields & CMD_ANGLE)
 		buf->WriteShort((mAngle >> FRACBITS) + mDeltaYaw);
-	if (hasPitch())
-		buf->WriteShort((mPitch >> FRACBITS) + mDeltaPitch);
-	if (hasForwardMove())
+	if (serialized_fields & CMD_PITCH)
+	{
+		// ZDoom uses a hack to center the view when toggling cl_mouselook
+		bool centerview = (mDeltaPitch == -32768);
+		if (centerview)
+			buf->WriteShort(0);
+		else
+			buf->WriteShort((mPitch >> FRACBITS) + mDeltaPitch);
+	}
+	if (serialized_fields & CMD_FORWARD)
 		buf->WriteShort(mForwardMove);
-	if (hasSideMove())
+	if (serialized_fields & CMD_SIDE)
 		buf->WriteShort(mSideMove);
-	if (hasUpMove())
+	if (serialized_fields & CMD_UP)
 		buf->WriteShort(mUpMove);
-	if (hasImpulse())
+	if (serialized_fields & CMD_IMPULSE)
 		buf->WriteByte(mImpulse);
 }
 
@@ -128,9 +134,31 @@ void NetCommand::read(buf_t *buf)
 	if (hasUpMove())
 		mUpMove = buf->ReadShort();
 	if (hasImpulse())
-		mImpulse = buf->ReadByte();		
+		mImpulse = buf->ReadByte();
 }
 
+
+int NetCommand::getSerializedFields()
+{
+	int serialized_fields = 0;
+
+	if (hasButtons())
+		serialized_fields |= CMD_BUTTONS;
+	if (hasAngle() || hasDeltaYaw())
+		serialized_fields |= CMD_ANGLE;
+	if (hasPitch() || hasDeltaPitch())
+		serialized_fields |= CMD_PITCH;
+	if (hasForwardMove())
+		serialized_fields |= CMD_FORWARD;
+	if (hasSideMove())
+		serialized_fields |= CMD_SIDE;
+	if (hasUpMove())
+		serialized_fields |= CMD_UP;
+	if (hasImpulse())
+		serialized_fields |= CMD_IMPULSE;
+
+	return serialized_fields;
+}
 
 VERSION_CONTROL (d_netcmd_cpp, "$Id: d_netcmd.cpp 3174 2012-05-11 01:03:43Z dr_sean $")
 
