@@ -1,3 +1,7 @@
+#ifdef _WIN64
+#define WX_CPU_AMD64
+#endif
+
 //Microsoft Developer Studio generated resource script.
 //
 #include "resource.h"
