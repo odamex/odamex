@@ -53,10 +53,10 @@ endif()
 # Portmidi configuration
 find_package(PortMidi)
 if(PortMidi_FOUND)
-  include_directories(${PortMidi_INCLUDE_DIR})
+  include_directories(${PortMidi_PROCESS_INCLUDES})
   ADD_DEFINITIONS(-DPORTMIDI ${PortMidi_CFLAGS})
 else()
-  set(PortMidi_LIBRARIES "")
+  set(PortMidi_PROCESS_LIBS "")
 endif()
 
 # Find Mac frameworks
@@ -75,7 +75,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS}
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
     ${CLIENT_MAC_OBJC_SOURCES})
-  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${PortMidi_LIBRARIES})
+  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${PortMidi_PROCESS_LIBS})
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 Shlwapi)
   elseif(APPLE)
