@@ -199,9 +199,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_LstCtrlPlayers = XRCCTRL(*this, "Id_LstCtrlPlayers", LstOdaPlayerList);
     m_LstOdaSrvDetails = XRCCTRL(*this, "Id_LstCtrlServerDetails", LstOdaSrvDetails);
 
-    m_LstCtrlServers->SetupServerListColumns();
-    m_LstCtrlPlayers->SetupPlayerListColumns();
-
 	// set up the master server information
     MServer.AddMaster("master1.odamex.net", 15000);
     MServer.AddMaster("voxelsoft.com", 15000);

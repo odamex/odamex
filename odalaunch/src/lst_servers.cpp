@@ -37,6 +37,8 @@ BEGIN_EVENT_TABLE(LstOdaServerList, wxAdvancedListCtrl)
     EVT_CONTEXT_MENU(LstOdaServerList::OnOpenContextMenu)
 
     EVT_MENU(XRCID("Id_mnuServersCopyAddress"), LstOdaServerList::OnCopyAddress)
+    
+    EVT_WINDOW_CREATE(LstOdaServerList::OnCreateControl)
 END_EVENT_TABLE()
 
 
@@ -49,6 +51,14 @@ static int ImageList_PingGray = -1;
 LstOdaServerList::LstOdaServerList()
 {
      m_mnuPopup = wxXmlResource::Get()->LoadMenu(wxT("Id_mnuServersPopup"));
+}
+
+void LstOdaServerList::OnCreateControl(wxWindowCreateEvent &event)
+{
+    SetupServerListColumns();
+    
+    // Propagate the event to the base class as well
+    event.Skip();
 }
 
 void LstOdaServerList::OnCopyAddress(wxCommandEvent& event)

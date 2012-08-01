@@ -30,6 +30,11 @@ using namespace odalpapi;
 
 IMPLEMENT_DYNAMIC_CLASS(LstOdaPlayerList, wxAdvancedListCtrl)
 
+BEGIN_EVENT_TABLE(LstOdaPlayerList, wxAdvancedListCtrl)
+    
+    EVT_WINDOW_CREATE(LstOdaPlayerList::OnCreateControl)
+END_EVENT_TABLE()
+
 typedef enum
 {
      playerlist_field_attr
@@ -51,6 +56,14 @@ static int ImageList_BlueBullet = -1;
 
 // Special case
 static wxInt32 WidthTeam, WidthTeamScore;
+
+void LstOdaPlayerList::OnCreateControl(wxWindowCreateEvent &event)
+{
+    SetupPlayerListColumns();
+    
+    // Propagate the event to the base class as well
+    event.Skip();
+}
 
 void LstOdaPlayerList::SetupPlayerListColumns()
 {
