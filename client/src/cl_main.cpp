@@ -538,15 +538,15 @@ void CL_CheckDisplayPlayer()
 	static byte previd = consoleplayer_id;
 	byte newid = 0;
 
+	if (displayplayer_id != previd)
+		newid = displayplayer_id;
+
 	if (!validplayer(displayplayer()) || !displayplayer().mo)
 		newid = consoleplayer_id;
 
 	if (!(P_CanSpy(consoleplayer(), displayplayer()) ||
 		  netdemo.isPlaying() || netdemo.isPaused()))
 		newid = consoleplayer_id;
-
-	if (displayplayer_id != previd)
-		newid = displayplayer_id;
 
 	if (newid)
 	{
