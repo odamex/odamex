@@ -47,6 +47,9 @@ extern std::string digest;
 extern playerskin_t* skins;
 extern std::vector<std::string> wadfiles, wadhashes;
 
+int CL_GetPlayerColor(player_t *player);
+
+
 NetDemo::NetDemo() :
 	state(st_stopped), oldstate(st_stopped), filename(""),
 	demofp(NULL)
@@ -961,14 +964,11 @@ void NetDemo::capture(const buf_t* inputbuffer)
 
 void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 {
-	cvar_t *var = NULL, *prev_cvar = NULL;
-	
 	// Server sends launcher info
 	MSG_WriteLong	(netbuffer, CHALLENGE);
 	MSG_WriteLong	(netbuffer, 0);		// server_token
 	
 	// get sv_hostname and write it
-	var = cvar_t::FindCVar("sv_hostname", &prev_cvar);
 	MSG_WriteString (netbuffer, server_host.c_str());
 	
 	int playersingame = 0;
@@ -1574,7 +1574,10 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 
 	// restore player colors
 	for (size_t i = 0; i < players.size(); i++)
-		R_BuildPlayerTranslation(players[i].id, players[i].userinfo.color);
+	{
+		int color = CL_GetPlayerColor(&players[i]);
+		R_BuildPlayerTranslation(players[i].id, color);
+	}
 
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;
