@@ -47,6 +47,7 @@ EXTERN_CVAR(sv_friendlyfire)
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
+EXTERN_CVAR(sv_zdoomspawndelay)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR (cl_predictpickup)
 
@@ -1155,14 +1156,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		{
 			singleplayerjustdied = true;
 		}
-		// [RH] Force a delay between death and respawn
-		// [Toke] Lets not fuck up deathmatch tactics ok randy?
-		if (!clientside) {
-			tplayer->respawn_time = level.time + sv_forcerespawntime.asInt() * TICRATE;
-		} else {
-			// vanilla immediate respawn
-			target->player->respawn_time = level.time;
-		}
+
+		tplayer->death_time = level.time;
 
 		if (target == consoleplayer().camera)
 		{

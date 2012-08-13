@@ -212,7 +212,7 @@ public:
 
 	int			jumpTics;				// delay the next jump for a moment
 
-	int			respawn_time;			// [RH] delay respawning until this tic
+	int			death_time;				// [SL] Record time of death to enforce respawn delay if needed 
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
 
 	AActor::AActorPtr camera;			// [RH] Whose eyes this player sees through

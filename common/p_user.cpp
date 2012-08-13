@@ -49,6 +49,8 @@ EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (sv_forcerespawn)
+EXTERN_CVAR (sv_forcerespawntime)
+EXTERN_CVAR (sv_zdoomspawndelay)
 
 extern bool predicting, step_mode;
 
@@ -555,9 +557,16 @@ void P_DeathThink (player_t *player)
 
 	if(serverside)
 	{
+		bool force_respawn =	(!clientside && sv_forcerespawn && 
+								level.time >= player->death_time + sv_forcerespawntime * TICRATE);
+
+		// [SL] Can we respawn yet?
+		// Delay respawn by 1 second like ZDoom if sv_zdoomspawndelay is enabled
+		bool delay_respawn =	(!clientside && sv_zdoomspawndelay &&
+								(level.time < player->death_time + TICRATE));
+
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE
-			|| (!clientside && sv_forcerespawn && level.time >= player->respawn_time)))
+		if (player->ingame() && ((player->cmd.ucmd.buttons & BT_USE && !delay_respawn) || force_respawn))
 		{
 			player->playerstate = PST_REBORN;
 		}
@@ -798,7 +807,7 @@ void player_s::Serialize (FArchive &arc)
 			<< fixedcolormap
 			<< xviewshift
 			<< jumpTics
-			<< respawn_time
+			<< death_time
 			<< air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
 			arc << powers[i];
@@ -848,7 +857,7 @@ void player_s::Serialize (FArchive &arc)
 			>> fixedcolormap
 			>> xviewshift
 			>> jumpTics
-			>> respawn_time
+			>> death_time 
 			>> air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
 			arc >> powers[i];
@@ -919,7 +928,7 @@ player_s::player_s()
 	xviewshift = 0;
 	memset(psprites, 0, sizeof(pspdef_t) * NUMPSPRITES);
 	jumpTics = 0;
-	respawn_time = 0;
+	death_time = 0;
 	memset(oldvelocity, 0, sizeof(oldvelocity));
 	camera = AActor::AActorPtr();
 	air_finished = 0;
@@ -1018,7 +1027,7 @@ player_s &player_s::operator =(const player_s &other)
 
     jumpTics = other.jumpTics;
 
-	respawn_time = other.respawn_time;
+	death_time = other.death_time;
 
 	memcpy(oldvelocity, other.oldvelocity, sizeof(oldvelocity));
 

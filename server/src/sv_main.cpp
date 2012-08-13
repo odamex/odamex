@@ -4336,7 +4336,7 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_kill:
 			if(player.mo &&
-               level.time > player.respawn_time + TICRATE*10 &&
+               level.time > player.death_time + TICRATE*10 &&
                sv_allowcheats)
             {
 				SV_Suicide (player);
