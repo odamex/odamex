@@ -53,10 +53,9 @@
 
 extern int MaxDrawSegs;
 
-#define MAXWIDTH				2048
-#define MAXHEIGHT				1536
-
-
+// [AM] The size of a Macbook Pro Retina display.
+#define MAXWIDTH				2880
+#define MAXHEIGHT				1800
 
 //
 // INTERNAL MAP TYPES

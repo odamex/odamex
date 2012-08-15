@@ -616,25 +616,42 @@ BEGIN_COMMAND (vid_setmode)
 	int		width = 0, height = 0;
 	int		bits = DisplayBits;
 
+	// No arguments
+	if (argc == 1) {
+		Printf(PRINT_HIGH, "Usage: vid_setmode <width> <height>\n");
+		return;
+	}
+	// Width
 	if (argc > 1) {
-		width = atoi (argv[1]);
-		if (argc > 2) {
-			height = atoi (argv[2]);
-			if (!height)
-                height = screen->height;
-			if (argc > 3) {
-				bits = 8;
-				//bits = atoi (argv[3]);
-			}
-		}
+		width = atoi(argv[1]);
+	}
+	// Height (optional)
+	if (argc > 2) {
+		height = atoi(argv[2]);
+	}
+	if (!height) {
+		height = screen->height;
+	}
+	// Bits (always 8-bit for now)
+	bits = 8;
+
+	if (width < 320 || height < 200) {
+		Printf(PRINT_HIGH, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
+		if (width < 320)
+			width = 320;
+		if (height < 200)
+			height = 200;
 	}
 
-	if (width) {
-		if (I_CheckResolution (width, height, bits))
-			goodmode = true;
+	if (width > MAXWIDTH || height > MAXHEIGHT) {
+		Printf(PRINT_HIGH, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
+		if (width > MAXWIDTH)
+			width = MAXWIDTH;
+		if (height > MAXHEIGHT)
+			height = MAXHEIGHT;
 	}
 
-	if (goodmode) {
+	if (I_CheckResolution(width, height, bits)) {
 		// The actual change of resolution will take place
 		// near the beginning of D_Display().
 		if (gamestate != GS_STARTUP) {
@@ -643,11 +660,8 @@ BEGIN_COMMAND (vid_setmode)
 			NewHeight = height;
 			NewBits = bits;
 		}
-	} else if (width) {
-		Printf (PRINT_HIGH, "Unknown resolution %d x %d x %d\n", width, height, bits);
 	} else {
-      // SoM: enforce 8-bit modes for now
-		Printf (PRINT_HIGH, "Usage: vid_setmode <width> <height>\n");
+		Printf(PRINT_HIGH, "Unknown resolution %dx%d\n", width, height);
 	}
 }
 END_COMMAND (vid_setmode)

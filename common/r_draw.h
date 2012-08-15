@@ -25,7 +25,7 @@
 #ifndef __R_DRAW__
 #define __R_DRAW__
 
-
+#include "r_defs.h"
 
 extern "C" byte**		ylookup;
 extern "C" int*			columnofs;
@@ -47,7 +47,7 @@ extern "C" int			dc_color;		// [RH] For flat colors (no texturing)
 extern "C" byte*			dc_source;
 
 // [RH] Temporary buffer for column drawing
-extern "C" byte			dc_temp[1536*4];
+extern "C" byte			dc_temp[MAXHEIGHT * 4];
 extern "C" unsigned int	dc_tspans[4][256];
 extern "C" unsigned int	*dc_ctspan[4];
 extern "C" unsigned int	horizspans[4];
