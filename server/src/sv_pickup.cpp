@@ -33,6 +33,7 @@
 #include "d_player.h"
 #include "m_random.h"
 #include "sv_main.h"
+#include "p_local.h"
 
 EXTERN_CVAR(sv_gametype)
 
@@ -79,8 +80,10 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	// onto alternating teams.
 	team_t dest_team = TEAM_BLUE;
 	for (size_t i = 0;i < eligible.size();i++) {
+		player_t &player = players[eligible[i]];
+
 		// Force-join the player if he's spectating.
-		SV_SetPlayerSpec(players[eligible[i]], false, true);
+		SV_SetPlayerSpec(player, false, true);
 
 		// Is the last player an odd-one-out?  Randomize
 		// the team he is put on.
@@ -90,10 +93,16 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 
 		// Switch player to the proper team, ensure the correct color,
 		// and then update everyone else in the game about it.
-		SV_ForceSetTeam(players[eligible[i]], dest_team);
-		SV_CheckTeam(players[eligible[i]]);
+		//
+		// [SL] Kill the player if they are switching teams so they don't end up
+		// holding their own team's flags
+		if (player.mo && player.userinfo.team != dest_team)
+			P_DamageMobj(player.mo, 0, 0, 1000, 0);
+
+		SV_ForceSetTeam(player, dest_team);
+		SV_CheckTeam(player);
 		for (size_t j = 0;j< players.size();j++) {
-			SV_SendUserInfo(players[eligible[i]], &clients[j]);
+			SV_SendUserInfo(player, &clients[j]);
 		}
 
 		if (dest_team == TEAM_BLUE) {
