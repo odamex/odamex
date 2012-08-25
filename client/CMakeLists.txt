@@ -51,12 +51,15 @@ else()
 endif()
 
 # Portmidi configuration
+set(PORTMIDI_DIR $ENV{PortMidi_DIR} CACHE PATH
+  "Path to PortMIDI base directory.  Only necessary if you get errors about PortMIDI not being found, or if you want to use a different installation of PortMIDI.")
+set(ENV{PORTMIDI_DIR} ${PORTMIDI_DIR})
 find_package(PortMidi)
-if(PortMidi_FOUND)
-  include_directories(${PortMidi_PROCESS_INCLUDES})
-  ADD_DEFINITIONS(-DPORTMIDI ${PortMidi_CFLAGS})
+if(PORTMIDI_FOUND)
+  include_directories(${PORTMIDI_INCLUDE_DIR})
+  add_definitions(-DPORTMIDI)
 else()
-  set(PortMidi_PROCESS_LIBS "")
+  message(WARNING "PortMidi not found, client will not be built with PortMidi support.")
 endif()
 
 # Find Mac frameworks
@@ -75,7 +78,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS}
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
     ${CLIENT_MAC_OBJC_SOURCES})
-  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${PortMidi_PROCESS_LIBS})
+  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${PORTMIDI_LIBRARIES})
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 Shlwapi)
   elseif(APPLE)
@@ -133,7 +136,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
 
     # If PortMidi was built in install the PortMidi library into the bundle
     if(PortMidi_FOUND)
-      install(FILES ${PortMidi_LIBRARIES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks/)
+      install(FILES ${PORTMIDI_LIBRARIES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks/)
       install(CODE "execute_process(COMMAND 
         install_name_tool -change libportmidi.dylib
         @executable_path/../Frameworks/libportmidi.dylib
