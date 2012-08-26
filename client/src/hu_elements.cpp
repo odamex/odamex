@@ -282,7 +282,7 @@ std::string IntermissionTimer() {
 // current player or team is ahead or behind by.
 std::string PersonalSpread(int& color) {
 	color = CR_BRICK;
-	player_t *plyr = &consoleplayer();
+	player_t *plyr = &displayplayer();
 
 	if (sv_gametype == GM_DM) {
 		// Seek the highest number of frags.
@@ -392,7 +392,7 @@ std::string PersonalSpread(int& color) {
 std::string PersonalScore(int& color) {
 	color = CR_GREY;
 	std::ostringstream buffer;
-	player_t *plyr = &consoleplayer();
+	player_t *plyr = &displayplayer();
 
 	if (sv_gametype == GM_DM) {
 		buffer << plyr->fragcount;
