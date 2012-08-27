@@ -315,7 +315,7 @@ void SV_UpdateConsolePlayer(player_t &player);
 void SV_CheckTeam (player_t & playernum);
 team_t SV_GoodTeam (void);
 
-void SV_SendServerSettings (client_t *cl);
+void SV_SendServerSettings (player_t &pl);
 void SV_ServerSettingChange (void);
 
 // some doom functions
@@ -2002,26 +2002,34 @@ void SV_ClientFullUpdate (player_t &pl)
 //	Sends server setting info
 //
 
-void SV_SendServerSettings (client_t *cl)
+void SV_SendPackets(void);
+
+void SV_SendServerSettings (player_t &pl)
 {
 	// GhostlyDeath <June 19, 2008> -- Loop through all CVARs and send the CVAR_SERVERINFO stuff only
 	cvar_t *var = GetFirstCvar();
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_serversettings);
+    client_t *cl = &pl.client;
 
 	while (var)
 	{
 		if (var->flags() & CVAR_SERVERINFO)
 		{
-			MSG_WriteByte(&cl->reliablebuf, 1);
+            if ((cl->reliablebuf.cursize + 1 + 1 + (strlen(var->name()) + 1) + (strlen(var->cstring()) + 1) + 1) >= 512)
+                SV_SendPacket(pl);
+                
+            MSG_WriteMarker(&cl->reliablebuf, svc_serversettings);
+                       
+            MSG_WriteByte(&cl->reliablebuf, 1); // TODO: REMOVE IN 0.7
+			
 			MSG_WriteString(&cl->reliablebuf, var->name());
 			MSG_WriteString(&cl->reliablebuf, var->cstring());
+            
+            MSG_WriteByte(&cl->reliablebuf, 2); // TODO: REMOVE IN 0.7
 		}
 
 		var = var->GetNext();
 	}
-
-	MSG_WriteByte(&cl->reliablebuf, 2);
 }
 
 //
@@ -2035,7 +2043,7 @@ void SV_ServerSettingChange (void)
 		return;
 
 	for (size_t i = 0; i < players.size(); i++)
-		SV_SendServerSettings (&clients[i]);
+		SV_SendServerSettings (players[i]);
 }
 
 //
@@ -2428,7 +2436,7 @@ void SV_ConnectClient (void)
     SV_SendPacket(players[n]);
 
 	// [Toke] send server settings
-	SV_SendServerSettings (cl);
+	SV_SendServerSettings (players[n]);
 
 	cl->download.name = "";
 	if(connection_type == 1)
