@@ -29,40 +29,40 @@
 #include "event_handler.h"
 
 /**
- * agOdalaunch namespace.
- *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
- * namespace.
- */
+agOdalaunch namespace.
+
+All code for the ag-odalaunch launcher is contained within the agOdalaunch
+namespace.
+*/
 namespace agOdalaunch {
 
 /**
- * The solo game launcher dialog.
- *
- * This class provides a solo game launcher dialog with a wad list. The user can
- * select the wads they are interested in launching a solo game with and then start
- * the game.
- */
+The solo game launcher dialog.
+
+This class provides a solo game launcher dialog with a wad list. The user can
+select the wads they are interested in launching a solo game with and then start
+the game.
+*/
 class AGOL_Solo : public ODA_EventRegister
 {
 public:
 	/**
-	 * Constructor.
-	 */
+	Constructor.
+	*/
 	AGOL_Solo();
 
 	/**
-	 * Destructor.
-	 */
+	Destructor.
+	*/
 	~AGOL_Solo();
 
 	/**
-	 * Set the window close event.
-	 *
-	 * The provided event handler will be called when the window closes.
-	 *
-	 * @param handler The event handler.
-	 */
+	Set the window close event.
+
+	The provided event handler will be called when the window closes.
+
+	@param handler The event handler.
+	*/
 	void SetWindowCloseEvent(EventHandler *handler);
 
 private:

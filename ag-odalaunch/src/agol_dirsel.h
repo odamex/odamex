@@ -29,58 +29,58 @@
 #include "event_handler.h"
 
 /**
- * agOdalaunch namespace.
- *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
- * namespace.
- */
+agOdalaunch namespace.
+
+All code for the ag-odalaunch launcher is contained within the agOdalaunch
+namespace.
+*/
 namespace agOdalaunch {
 
 /**
- * Directory selection dialog.
- *
- * This class provides a directory selection dialog that can be used to browse
- * the filesystem and return a directory string.
- */
+Directory selection dialog.
+
+This class provides a directory selection dialog that can be used to browse
+the filesystem and return a directory string.
+*/
 class AGOL_DirSelector
 {
 public:
 	/**
-	 * Constructor.
-	 */
+	Constructor.
+	*/
 	AGOL_DirSelector();
 
 	/**
-	 * Constructor.
-	 *
-	 * @param title Window title.
-	 */
+	Constructor.
+
+	@param title Window title.
+	*/
 	AGOL_DirSelector(const std::string &title);
 
 	/**
-	 * Destructor.
-	 */
+	Destructor.
+	*/
 	~AGOL_DirSelector();
 
 	/**
-	 * Set the OK button action.
-	 *
-	 * This method sets the action for the OK button. The provided event handler
-	 * is called when the OK button is pressed. The second AG argument provided
-	 * to the event handler is the selected directory in an ascii string.
-	 *
-	 * @param event The event handler.
-	 */
+	Set the OK button action.
+
+	This method sets the action for the OK button. The provided event handler
+	is called when the OK button is pressed. The second AG argument provided
+	to the event handler is the selected directory in an ascii string.
+
+	@param event The event handler.
+	*/
 	void SetOkAction(EventHandler *event);
 
 	/**
-	 * Set the cancel button action.
-	 *
-	 * This method sets the action for the cancel button. The provided event handler
-	 * is called when the cancel button is pressed.
-	 *
-	 * @param event The event handler.
-	 */
+	Set the cancel button action.
+
+	This method sets the action for the cancel button. The provided event handler
+	is called when the cancel button is pressed.
+
+	@param event The event handler.
+	*/
 	void SetCancelAction(EventHandler *event);
 
 private:

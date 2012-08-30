@@ -29,11 +29,11 @@
 #define _GUI_CONFIG_H
 
 /**
- * agOdalaunch namespace.
- *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
- * namespace.
- */
+agOdalaunch namespace.
+
+All code for the ag-odalaunch launcher is contained within the agOdalaunch
+namespace.
+*/
 namespace agOdalaunch {
 
 #ifdef _WIN32

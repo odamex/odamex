@@ -39,16 +39,16 @@
 #include "typedefs.h"
 
 /**
- * agOdalaunch namespace.
- *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
- * namespace.
- */
+agOdalaunch namespace.
+
+All code for the ag-odalaunch launcher is contained within the agOdalaunch
+namespace.
+*/
 namespace agOdalaunch {
 
 /**
- * Main button box.
- */
+Main button box.
+*/
 typedef struct
 {
 	AG_Box    *buttonbox;
@@ -63,8 +63,8 @@ typedef struct
 } ODA_ButtonBox;
 
 /**
- * Main statusbar.
- */
+Main statusbar.
+*/
 typedef struct 
 {
 	AG_Box               *statbox;
@@ -88,24 +88,24 @@ typedef struct
 } ODA_Statusbar;
 
 /**
- * The main window.
- *
- * This class contains the main application window.
- */
+The main window.
+
+This class contains the main application window.
+*/
 class AGOL_MainWindow : public ODA_ThreadBase, ODA_EventRegister
 {
 public:
 	/**
-	 * Constructor.
-	 *
-	 * @param width Width of window.
-	 * @param height Height of window.
-	 */
+	Constructor.
+
+	@param width Width of window.
+	@param height Height of window.
+	*/
 	AGOL_MainWindow(int width, int height);
 
 	/**
-	 * Destructor.
-	 */
+	Destructor.
+	*/
 	~AGOL_MainWindow();
 
 private:

@@ -29,38 +29,38 @@
 #include "event_handler.h"
 
 /**
- * agOdalaunch namespace.
- *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
- * namespace.
- */
+agOdalaunch namespace.
+
+All code for the ag-odalaunch launcher is contained within the agOdalaunch
+namespace.
+*/
 namespace agOdalaunch {
 
 /**
- * The about box.
- *
- * This dialog provides information about the application, authors, and license.
- */
+The about box.
+
+This dialog provides information about the application, authors, and license.
+*/
 class AGOL_About : public ODA_EventRegister
 {
 public:
 	/**
-	 * Constructor.
-	 */
+	Constructor.
+	*/
 	AGOL_About();
 
 	/**
-	 * Destructor.
-	 */
+	Destructor.
+	*/
 	~AGOL_About();
 
 	/**
-	 * Set the window close event.
-	 *
-	 * The provided event handler will be called when the window closes.
-	 *
-	 * @param handler The event handler.
-	 */
+	Set the window close event.
+
+	The provided event handler will be called when the window closes.
+
+	@param handler The event handler.
+	*/
 	void SetWindowCloseEvent(EventHandler *handler);
 
 private:
