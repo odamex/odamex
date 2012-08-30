@@ -325,28 +325,23 @@ void S_Start (void)
 }
 
 
-//
-// S_CompareChannels
-//
-// A comparison function that determines which sound channel should
-// take priority.  Can be used with std::sort.  Returns true if 
-// channel a has less priority than channel b.
-//
-// Note: this implicitly gives preference to channel b if
-// channel a and b are equal.  The more recent sound should
-// therefore be in channel b to give preference to newer sounds.
-//
+/**
+ * A comparison function that determines which sound channel should
+ * take priority.  Can be used with std::sort.  Note that this implicitly
+ * gives preference to channel b if channel a and b are equal.  The more
+ * recent sound should therefore be in channel b to give preference to
+ * newer sounds.
+ *
+ * @param a The first channel being compared.
+ * @param b The second channel being compared.
+ * @return true if the first channel should precede the second.
+ */
 bool S_CompareChannels(const channel_t &a, const channel_t &b)
 {
-	if (a.sfxinfo == NULL)	// empty channel
+	if (a.sfxinfo == NULL || b.sfxinfo == NULL)
+		return b.sfxinfo != NULL;
+	if (a.priority < b.priority || (a.priority == b.priority && a.volume < b.volume))
 		return true;
-
-	if (b.sfxinfo == NULL)
-		return false;
-
-	if (a.priority < b.priority || (a.priority == b.priority && a.volume <= b.volume))
-		return true;
-
 	return false;
 }
 
