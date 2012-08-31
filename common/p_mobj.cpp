@@ -2184,8 +2184,25 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (mthing->args[0] != position)
 			return;
 
-		// save spots for respawning in network games
 		size_t playernum = mthing->type <= 4 ? mthing->type-1 : (mthing->type - 4001 + 4)%MAXPLAYERSTARTS;
+
+		// search for spots that already are for this player number
+		for (size_t i = 0; i < playerstarts.size(); i++)
+		{
+			size_t otherplayernum = playerstarts[i].type <= 4 ? 
+				playerstarts[i].type - 1 :
+				(playerstarts[i].type - 4001 + 4) % MAXPLAYERSTARTS;
+
+			if (otherplayernum == playernum)
+			{
+				// consider playerstarts[i] to be a voodoo doll start
+				voodoostarts.push_back(playerstarts[i]);
+				playerstarts.erase(playerstarts.begin() + i);
+				break;
+			}
+		}
+
+		// save spots for respawning in network games
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 

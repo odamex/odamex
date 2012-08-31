@@ -181,6 +181,7 @@ extern	mapthing2_t*	deathmatch_p;
 // Player spawn spots.
 #define MAXPLAYERSTARTS		64
 extern std::vector<mapthing2_t> playerstarts;
+extern std::vector<mapthing2_t> voodoostarts;
 
 // ----------------------------------------------
 //	[Toke - CTF - starts]

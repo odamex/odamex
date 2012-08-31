@@ -128,6 +128,7 @@ mapthing2_t		*deathmatchstarts;
 mapthing2_t		*deathmatch_p;
 
 std::vector<mapthing2_t> playerstarts;
+std::vector<mapthing2_t> voodoostarts;
 
 //	[Toke - CTF - starts] Teamplay starts
 size_t			MaxBlueTeamStarts;
@@ -495,6 +496,7 @@ void P_LoadThings (int lump)
 	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
 
 	playerstarts.clear();
+	voodoostarts.clear();
 
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
@@ -541,6 +543,7 @@ void P_LoadThings2 (int lump, int position)
 	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
 
 	playerstarts.clear();
+	voodoostarts.clear();
 
 	for ( ; mt < lastmt; mt++)
 	{
