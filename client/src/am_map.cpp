@@ -38,6 +38,7 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 #include "p_ctf.h"
+#include "cl_demo.h"
 
 // Needs access to LFB.
 #include "v_video.h"
@@ -331,6 +332,8 @@ extern byte cheat_amap_seq[5];
 cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
 
 static BOOL stopped = true;
+
+extern NetDemo netdemo;
 
 #define NUMALIASES		3
 #define WALLCOLORS		-1
@@ -1461,6 +1464,7 @@ void AM_drawPlayers(void)
 		if (!players[i].ingame() || !p->mo ||
 			(((sv_gametype == GM_DM && p != &conplayer) ||
 			((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && p->userinfo.team != conplayer.userinfo.team))
+			&& !(netdemo.isPlaying() || netdemo.isPaused())
 			&& !demoplayback && !(conplayer.spectator)) || p->spectator)
 		{
 			continue;
