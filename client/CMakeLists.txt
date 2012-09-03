@@ -78,7 +78,10 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS}
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
     ${CLIENT_MAC_OBJC_SOURCES})
-  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${PORTMIDI_LIBRARIES})
+  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY})
+  if(PORTMIDI_FOUND)
+    target_link_libraries(odamex ${PORTMIDI_LIBRARIES})
+  endif()
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 Shlwapi)
   elseif(APPLE)
