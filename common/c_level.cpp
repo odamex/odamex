@@ -939,6 +939,9 @@ void G_InitLevelLocals ()
 	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
 	G_AirControlChanged();
 
+	// clear all ACS variables
+	memset(level.vars, 0, sizeof(level.vars));
+
 	if ((i = FindWadLevelInfo (level.mapname)) > -1)
 	{
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
