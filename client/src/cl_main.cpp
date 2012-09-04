@@ -548,6 +548,9 @@ void CL_CheckDisplayPlayer()
 		  netdemo.isPlaying() || netdemo.isPaused()))
 		newid = consoleplayer_id;
 
+	if (displayplayer().spectator)
+		newid = consoleplayer_id;
+
 	if (newid)
 	{
 		// Request information about this player from the server
