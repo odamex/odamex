@@ -304,7 +304,7 @@ void SV_FlagDrop (player_t &player, flag_t f)
 //
 void CTF_RunTics (void)
 {
-	if (shotclock)
+	if (shotclock || gamestate != GS_LEVEL)
 		return;
 
 	for(size_t i = 0; i < NUMFLAGS; i++)
