@@ -19,21 +19,21 @@ find_library(PORTMIDI_LIBRARY portmidi
   $ENV{PORTMIDI_DIR}
 )
 
-find_library(PORTRIME_LIBRARY porttime
+find_library(PORTTIME_LIBRARY porttime
   HINTS
   $ENV{PORTMIDI_DIR}
 )
 
 # Porttime library is merged to Portmidi in new versions, so
 # we work around problems by adding it only if it's present
-if(NOT ${PORTRIME_LIBRARY})
+if(NOT ${PORTTIME_LIBRARY_FOUND})
   set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
 else()
-  set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY} ${PORTRIME_LIBRARY})
+  set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY} ${PORTTIME_LIBRARY})
 endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PortMidi
   REQUIRED_VARS PORTMIDI_INCLUDE_DIR PORTMIDI_LIBRARIES)
 
-mark_as_advanced(PORTMIDI_LIBRARY PORTRIME_LIBRARY)
+mark_as_advanced(PORTMIDI_LIBRARY PORTTIME_LIBRARY)
