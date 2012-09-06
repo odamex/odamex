@@ -2035,11 +2035,8 @@ void Reset2Defaults (void)
 
 void Reset2Saved (void)
 {
-	std::string cmd = "exec \"";
-	cmd += GetConfigPath();
-	cmd += "\"";
-
-	AddCommandString (cmd.c_str());
+	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
+	AddCommandString(cmd.c_str());
 	UpdateStuff();
 }
 

@@ -29,11 +29,11 @@
 
 #include "doomtype.h"
 
-void M_LoadDefaults (void);
+void M_LoadDefaults(void);
 
-void STACK_ARGS M_SaveDefaults (void);
+void STACK_ARGS M_SaveDefaults(std::string filename = "");
 
-std::string GetConfigPath (void);
+std::string M_GetConfigPath(void);
 std::string M_ExpandTokens(const std::string &str);
 
 #endif
