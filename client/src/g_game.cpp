@@ -2323,10 +2323,10 @@ BOOL G_CheckDemoStatus (void)
 		if (demotest) {
 			AActor *mo = idplayer(1).mo;
 
-			if(mo)
-				Printf(PRINT_HIGH, "%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
+			if (mo)
+				Printf(PRINT_HIGH, "demotest:%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
 			else
-				Printf(PRINT_HIGH, "demotest: no player\n");
+				Printf(PRINT_HIGH, "demotest:no player\n");
 		}
 
 

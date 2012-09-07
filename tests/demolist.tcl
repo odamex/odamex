@@ -44,20 +44,24 @@ while { ![eof $file] } {
 	append args " +demotest $lump"
 	append args " +logfile odamex.log"
 
-	set stdout "CRASHED"
+	set demotest "CRASHED"
 	catch {
-		eval exec ./odamex [split $args] > tmp
+		if [file exists ./odamex] {
+			eval exec ./odamex [split $args] > tmp
+		} else {
+			eval exec ./build/client/odamex [split $args] > tmp
+		}
 		set log [open odamex.log r]
 		while { ![eof $log] } {
 			set line [gets $log]
-			if { $line != "" } {
-				set stdout $line
+			if { [string range $line 0 8] == "demotest:" } {
+				set demotest [string range $line 9 end]
 			}
 		}
 		close $log
 	}
-	
-	set result [lindex [split $stdout "\n"] end]
+
+	set result [lindex [split $demotest "\n"] end]
 	set expected [lindex $demo 3]
 
 	if { $result != $expected} {
