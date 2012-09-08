@@ -574,52 +574,48 @@ void DCanvas::DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int
 	}
 }
 
+extern void F_DrawPatchCol(int, const patch_t*, int, const DCanvas*);
+
 //
 // V_DrawSWrapper
 // Masks a column based masked pic to the screen
 // stretching it to fit the given dimensions.
 //
-extern void F_DrawPatchCol (int, const patch_t *, int, const DCanvas *);
-
-void DCanvas::DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x0, int y0, int destwidth, int destheight) const
+void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
+                           const int destwidth, const int destheight) const
 {
-	column_t*	column; 
-	byte*		desttop;
-	vdrawsfunc	drawfunc;
-	int			colstep;
-
-	int			xinc, yinc, col, w, ymul, xmul;
-
 	if (!patch || patch->width() <= 0 || patch->height() <= 0 ||
-		destwidth <= 0 || destheight <= 0)
+	    destwidth <= 0 || destheight <= 0)
 		return;
 
 	if (destwidth == patch->width() && destheight == patch->height())
 	{
-		DrawWrapper (drawer, patch, x0, y0);
+		// Perfect 1:1 mapping, so we use the unscaled draw wrapper.
+		DrawWrapper(drawer, patch, x0, y0);
 		return;
 	}
 
-	xinc = (patch->width() << 16) / destwidth;
-	yinc = (patch->height() << 16) / destheight;
-	xmul = (destwidth << 16) / patch->width();
-	ymul = (destheight << 16) / patch->height();
+	// [AM] Adding 1 to the inc variables leads to fewer weird scaling
+	//      artifacts since it forces col to roll over to the next real number
+	//      a column-of-real-pixels sooner.
+	int xinc = (patch->width() << FRACBITS) / destwidth + 1;
+	int yinc = (patch->height() << FRACBITS) / destheight + 1;
+	int xmul = (destwidth << FRACBITS) / patch->width();
+	int ymul = (destheight << FRACBITS) / patch->height();
 
-	y0 -= (patch->topoffset() * ymul) >> 16;
-	x0 -= (patch->leftoffset() * xmul) >> 16;
+	y0 -= (patch->topoffset() * ymul) >> FRACBITS;
+	x0 -= (patch->leftoffset() * xmul) >> FRACBITS;
 
 #ifdef RANGECHECK 
-	if (x0<0
-		|| x0+destwidth > width
-		|| y0<0
-		|| y0+destheight> height)
+	if (x0 < 0 || x0 + destwidth > width || y0 < 0 || y0 + destheight > height)
 	{
-		//Printf ("Patch at %d,%d exceeds LFB\n", x0,y0 );
-		DPrintf ("DCanvas::DrawSWrapper: bad patch (ignored)\n");
+		DPrintf("DCanvas::DrawSWrapper: bad patch (ignored)\n");
 		return;
 	}
 #endif
 
+	vdrawsfunc drawfunc;
+	int colstep;
 	if (is8bit()) {
 		drawfunc = Psfuncs[drawer];
 		colstep = 1;
@@ -629,27 +625,26 @@ void DCanvas::DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x0, i
 	}
 
 	if (this == screen)
-		V_MarkRect (x0, y0, destwidth, destheight);
+		V_MarkRect(x0, y0, destwidth, destheight);
 
-	col = 0;
-	desttop = buffer + y0*pitch + x0 * colstep;
+	int col = 0;
+	byte* desttop = buffer + (y0 * pitch) + (x0 * colstep);
+	int w = destwidth * xinc;
 
-	w = destwidth * xinc;
-
-	for ( ; col<w ; col += xinc, desttop += colstep)
+	const column_t* column;
+	for (;col < w;col += xinc, desttop += colstep)
 	{
-		column = (column_t *)((byte *)patch + LELONG(patch->columnofs[col >> 16]));
+		column = reinterpret_cast<const column_t*>(reinterpret_cast<const byte*>(patch) +
+		                                           LELONG(patch->columnofs[col >> FRACBITS]));
 
 		// step through the posts in a column
-		while (column->topdelta != 0xff )
+		while (column->topdelta != 0xff)
 		{
-			drawfunc ((byte *)column + 3,
-					  desttop + (((column->topdelta * ymul)) >> 16) * pitch,
-					  (column->length * ymul) >> 16,
-					  pitch,
-					  yinc);
-			column = (column_t *)(	(byte *)column + column->length
-									+ 4 );
+			drawfunc(reinterpret_cast<const byte*>(column) + 3,
+			         desttop + (((column->topdelta * ymul)) >> FRACBITS) * pitch,
+			         (column->length * ymul) >> FRACBITS,
+			         pitch, yinc);
+			column = reinterpret_cast<const column_t*>(reinterpret_cast<const byte*>(column) + column->length + 4);
 		}
 	}
 }
@@ -800,8 +795,8 @@ void DCanvas::DrawPatchFlipped (const patch_t *patch, int x0, int y0) const
 		destwidth <= 0 || destheight <= 0)
 		return;
 
-	xinc = (patch->width() << 16) / destwidth;
-	yinc = (patch->height() << 16) / destheight;
+	xinc = (patch->width() << 16) / destwidth + 1;
+	yinc = (patch->height() << 16) / destheight + 1;
 	xmul = (destwidth << 16) / patch->width();
 	ymul = (destheight << 16) / patch->height();
 
