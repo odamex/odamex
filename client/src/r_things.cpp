@@ -761,7 +761,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		dc_translevel = vis->translucency;
 	}
 
-	dc_iscale = FixedDiv (FRACUNIT, vis->yscale);
+	dc_iscale = FixedDiv (FRACUNIT, vis->yscale) + 1;
 	dc_texturemid = vis->texturemid;
 	frac = vis->startfrac;
 	spryscale = vis->yscale;
