@@ -590,7 +590,7 @@ void I_GetEvent (void)
                 Command << "vid_setmode " << ev.resize.w << " " << ev.resize.h 
                     << std::endl;
 
-                AddCommandString(Command.str().c_str());
+                AddCommandString(Command.str());
 
                 vid_defwidth.Set((float)ev.resize.w);
 				vid_defheight.Set((float)ev.resize.h);

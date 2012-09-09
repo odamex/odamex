@@ -415,7 +415,7 @@ BEGIN_COMMAND (setcolor)
 			setcmd += " \"";
 			setcmd += desc;
 			setcmd += "\"";
-			AddCommandString (setcmd.c_str());
+			AddCommandString (setcmd);
 		}
 	}
 }

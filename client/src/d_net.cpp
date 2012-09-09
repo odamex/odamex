@@ -144,7 +144,7 @@ void TryRunTics (void)
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())
 	{
-		AddCommandString (cmd.c_str());
+		AddCommandString (cmd);
 	}
 
 	if(CON.is_open())
@@ -153,7 +153,7 @@ void TryRunTics (void)
 		if(!CON.eof())
 		{
 			std::getline(CON, cmd);
-			AddCommandString (cmd.c_str());
+			AddCommandString (cmd);
 		}
 	}
 	

@@ -149,7 +149,7 @@ void M_LoadDefaults(void)
 	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 
 	cvar_defflags = CVAR_ARCHIVE;
-	AddCommandString(cmd.c_str());
+	AddCommandString(cmd);
 	cvar_defflags = 0;
 
 	AddCommandString("alias ? help");	
@@ -260,7 +260,7 @@ std::string M_ExpandTokens(const std::string &str)
 bool M_FindFreeName(std::string &filename, const std::string &extension)
 {
 	std::string unmodified = filename + '.' + extension;
-	if (!M_FileExists(unmodified.c_str())) {
+	if (!M_FileExists(unmodified)) {
 		// Name requires no modification.
 		filename = unmodified;
 		return true;
@@ -271,7 +271,7 @@ bool M_FindFreeName(std::string &filename, const std::string &extension)
 	for (i=1; i <= 9999;i++) {
 		std::ostringstream buffer;
 		buffer << filename << '.' << i << "." << extension;
-		if (!M_FileExists(buffer.str().c_str())) {
+		if (!M_FileExists(buffer.str())) {
 			// File doesn't exist.
 			filename = buffer.str();
 			break;

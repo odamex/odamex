@@ -663,7 +663,7 @@ void DConsoleAlias::Run()
             }
         }
 
-        AddCommandString (m_CommandParam.c_str());
+        AddCommandString (m_CommandParam);
 
 		state_lock = false;
 	}
