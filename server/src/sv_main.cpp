@@ -2993,7 +2993,7 @@ void STACK_ARGS SV_TeamPrintf (int level, int who, const char *fmt, ...)
 		if(!(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) || players[i].userinfo.team != idplayer(who).userinfo.team)
 			continue;
 
-		if (players[i].spectator)
+		if (players[i].spectator || players[i].playerstate == PST_DOWNLOAD)
 			continue;
 
 		cl = &clients[i];
