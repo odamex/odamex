@@ -26,7 +26,7 @@ find_library(PORTTIME_LIBRARY porttime
 
 # Porttime library is merged to Portmidi in new versions, so
 # we work around problems by adding it only if it's present
-if(NOT PORTTIME_LIBRARY_FOUND)
+if(NOT PORTTIME_LIBRARY)
   set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
 else()
   set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY} ${PORTTIME_LIBRARY})
