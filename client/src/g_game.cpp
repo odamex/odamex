@@ -93,6 +93,7 @@ void	G_DoSaveGame (void);
 void	CL_RunTics (void);
 
 bool	C_DoNetDemoKey(event_t *ev);
+bool	C_DoSpectatorKey(event_t *ev);
 
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
@@ -749,6 +750,8 @@ BOOL G_Responder (event_t *ev)
 	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
 	{
 		if (C_DoNetDemoKey(ev))	// netdemo playback ate the event
+			return true;
+		if (C_DoSpectatorKey(ev))
 			return true;
 
 		if (HU_Responder (ev))
