@@ -354,7 +354,7 @@ static std::list<MidiEvent*> *I_ReadMidiTrack(MEMFILE *mf)
 	
     size_t res = mem_fread(&chunkheader, cTrackHeaderSize, 1, mf); 
 	if (!res)
-		return false;
+		return NULL;
 		
 	chunkheader.chunk_id = ntohl(chunkheader.chunk_id);
 	chunkheader.chunk_size = ntohl(chunkheader.chunk_size);
