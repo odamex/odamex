@@ -419,19 +419,21 @@ bool Banlist::json_replace(const Json::Value& json_bans) {
 
 	for (size_t i = 0;i < json_bans.size();i++) {
 		Ban ban;
-		if (json_bans[i]["range"] != 0) {
-			ban.range.set(json_bans[i]["range"].asString());
+		const Json::ArrayIndex index = Json::ArrayIndex(i);
+
+		if (json_bans[index]["range"] != 0) {
+			ban.range.set(json_bans[index]["range"].asString());
 		}
-		if (json_bans[i]["expire"] != 0) {
-			if (StrParseISOTime(json_bans[i]["expire"].asString(), &tmp)) {
+		if (json_bans[index]["expire"] != 0) {
+			if (StrParseISOTime(json_bans[index]["expire"].asString(), &tmp)) {
 				ban.expire = timegm(&tmp);
 			}
 		}
-		if (json_bans[i]["name"] != 0) {
-			ban.name = json_bans[i]["name"].asString();
+		if (json_bans[index]["name"] != 0) {
+			ban.name = json_bans[index]["name"].asString();
 		}
-		if (json_bans[i]["reason"] != 0) {
-			ban.reason = json_bans[i]["reason"].asString();
+		if (json_bans[index]["reason"] != 0) {
+			ban.reason = json_bans[index]["reason"].asString();
 		}
 		this->banlist.push_back(ban);
 	}
