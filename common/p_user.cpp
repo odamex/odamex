@@ -55,6 +55,7 @@ EXTERN_CVAR (sv_zdoomspawndelay)
 extern bool predicting, step_mode;
 
 static player_t nullplayer;		// used to indicate 'player not found' when searching
+EXTERN_CVAR (sv_allowmovebob)
 EXTERN_CVAR (cl_movebob)
 
 player_t &idplayer(byte id)
@@ -232,7 +233,10 @@ void P_CalcHeight (player_t *player)
 		}
 	}
 
-	bob *= cl_movebob;
+	// [SL] Scale view-bobbing based on user's preference (if the server allows)
+	if (sv_allowmovebob)
+		bob *= cl_movebob;
+
 	player->viewz = player->mo->z + player->viewheight + bob;
 
 	if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
