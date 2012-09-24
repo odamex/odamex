@@ -54,9 +54,8 @@ extern dyncolormap_t NormalLight;
 extern bool r_fakingunderwater;
 
 EXTERN_CVAR (r_viewsize)
-EXTERN_CVAR (r_widescreen)
 
-static float	LastFOV = 0.0f;
+static float	LastFOV = 90.0f;
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
 int 			viewangleoffset = 0;
@@ -146,9 +145,7 @@ void (*hcolfunc_post2) (int hx, int sx, int yl, int yh);
 void (*hcolfunc_post4) (int sx, int yl, int yh);
 
 static int lastcenteryfrac;
-// [AM] Number of fineangles in a default 90 degree FOV at a 4:3 resolution.
-int FieldOfView = 2048;
-int CorrectFieldOfView = 2048;
+int FieldOfView = 2048;	// Fineangles in the SCREENWIDTH wide window
 
 //
 //
@@ -539,8 +536,8 @@ void R_InitTextureMapping (void)
 	// Use tangent table to generate viewangletox: viewangletox will give
 	// the next greatest x after the view angle.
 
-	const fixed_t hitan = finetangent[FINEANGLES/4+CorrectFieldOfView/2];
-	const fixed_t lotan = finetangent[FINEANGLES/4-CorrectFieldOfView/2];
+	const fixed_t hitan = finetangent[FINEANGLES/4+FieldOfView/2];
+	const fixed_t lotan = finetangent[FINEANGLES/4-FieldOfView/2];
 	const int highend = viewwidth + 1;
 
 	// Calc focallength so FieldOfView angles covers viewwidth.
@@ -593,10 +590,17 @@ void R_InitTextureMapping (void)
 	clipangle = xtoviewangle[0];
 }
 
-// Changes the field of view.
-void R_SetFOV(float fov, bool force = false)
+//
+//
+// R_SetFOV
+//
+// Changes the field of view
+//
+//
+
+void R_SetFOV (float fov)
 {
-	if (fov == LastFOV && !force)
+	if (fov == LastFOV)
 		return;
 
 	if (fov < 1)
@@ -605,20 +609,7 @@ void R_SetFOV(float fov, bool force = false)
 		fov = 179;
 
 	LastFOV = fov;
-	FieldOfView = static_cast<int>(fov * static_cast<float>(FINEANGLES) / 360.0f);
-	float am = (static_cast<float>(screen->width) / screen->height) / (4.0f / 3.0f);
-	if (r_widescreen.asInt() == 3 && am > 1.0f)
-	{
-		// [AM] The FOV is corrected to fit the wider screen.
-		float radfov = fov * PI / 180.0f;
-		float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
-		CorrectFieldOfView = static_cast<int>(widefov * static_cast<float>(FINEANGLES) / 360.0f);
-	}
-	else
-	{
-		// [AM] The FOV is left as-is for the wider screen.
-		CorrectFieldOfView = FieldOfView;
-	}
+	FieldOfView = (int)(fov * (float)FINEANGLES / 360.0f);
 	setsizeneeded = true;
 }
 
@@ -725,21 +716,6 @@ CVAR_FUNC_IMPL (r_detail)
 	setsizeneeded = true;
 }
 
-CVAR_FUNC_IMPL (r_widescreen)
-{
-	if (var.asInt() < 0 || var.asInt() > 3)
-	{
-		Printf(PRINT_HIGH, "Invalid widescreen setting.\n");
-		var.RestoreDefault();
-	}
-	else if (var.asInt() == 1)
-	{
-		Printf(PRINT_HIGH, "Not implemented.\n");
-		var.RestoreDefault();
-	}
-	setmodeneeded = true;
-}
-
 //
 //
 // R_ExecuteSetViewSize
@@ -810,10 +786,7 @@ void R_ExecuteSetViewSize (void)
 	virtwidth = screen->width >> detailxshift;
 	virtheight = screen->height >> detailyshift;
 
-	if (r_widescreen.asInt() >= 2)
-		yaspectmul = 78643; // [AM] Force correct aspect ratio
-	else
-		yaspectmul = (fixed_t)(65536.0f*(320.0f*(float)virtheight/(200.0f*(float)virtwidth)));
+	yaspectmul = (fixed_t)(65536.0f*(320.0f*(float)virtheight/(200.0f*(float)virtwidth)));
 
 	colfunc = basecolfunc = R_DrawColumn;
 	lucentcolfunc = R_DrawTranslucentColumn;
@@ -833,22 +806,9 @@ void R_ExecuteSetViewSize (void)
 	R_InitTextureMapping ();
 
 	// psprite scales
-	if (r_widescreen.asInt() >= 2) {
-		// [AM] Using centerxfrac will make our sprite too fat, so we
-		//      generate a corrected 4:3 screen width based on our
-		//      height, then generate the x-scale based on that.
-		int cswidth, crvwidth;
-		cswidth = (4 * screen->height) / 3;
-		if (setblocks < 10)
-			crvwidth = ((setblocks * cswidth) / 10) & (~(15 >> (screen->is8bit() ? 0 : 2)));
-		else
-			crvwidth = cswidth;
-		pspritexscale = (((crvwidth >> detailxshift) / 2) << FRACBITS) / 160;
-	} else {
-		pspritexscale = centerxfrac / 160;
-	}
-	pspriteyscale = FixedMul(pspritexscale, yaspectmul);
-	pspritexiscale = FixedDiv(FRACUNIT, pspritexscale);
+	pspritexscale = centerxfrac / 160;
+	pspriteyscale = FixedMul (pspritexscale, yaspectmul);
+	pspritexiscale = FixedDiv (FRACUNIT, pspritexscale);
 
 	// [RH] Sky height fix for screens not 200 (or 240) pixels tall
 	R_InitSkyMap ();

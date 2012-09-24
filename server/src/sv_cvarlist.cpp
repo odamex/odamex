@@ -168,6 +168,14 @@ CVAR (ctf_flagtimeout, "10",  "Time for a dropped flag to be returned automatica
 CVAR (sv_ticbuffer, "1", "Buffer controller input from players experiencing sudden latency spikes for smoother movement",
 	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+// Ban settings
+// ============
+
+CVAR (sv_banfile, "banlist.json", "Default file to save and load the banlist.",
+      CVARTYPE_STRING, CVAR_SERVERARCHIVE)
+CVAR (sv_exceptionfile, "exceptionlist.json", "Default file to save and load the exception list.",
+      CVARTYPE_STRING, CVAR_SERVERARCHIVE)
+
 // Vote settings
 // =============
 

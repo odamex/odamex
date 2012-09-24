@@ -690,7 +690,7 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	c.y *= invfocratio;		
 	
 	// (SoM) More help from randy. I was totally lost on this... 
-	double scalenumer = fixed_conv * finetangent[FINEANGLES/4+CorrectFieldOfView/2];
+	double scalenumer = fixed_conv * finetangent[FINEANGLES/4+FieldOfView/2];
 	double ixscale = scalenumer / flatwidth;
 	double iyscale = scalenumer / flatheight;
 

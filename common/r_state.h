@@ -159,9 +159,9 @@ extern int				rw_angle1;
 extern visplane_t*		floorplane;
 extern visplane_t*		ceilingplane;
 
-// [AM] 4:3 Field of View
 extern int				FieldOfView;
-// [AM] Corrected (for widescreen) Field of View
-extern int				CorrectFieldOfView;
+
 
 #endif // __R_STATE_H__
+
+

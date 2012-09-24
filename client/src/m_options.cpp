@@ -772,7 +772,6 @@ EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showtime)
 EXTERN_CVAR (am_classicmapstring)
 EXTERN_CVAR (am_usecustomcolors)
-EXTERN_CVAR (r_widescreen)
 EXTERN_CVAR (st_scale)
 EXTERN_CVAR (r_stretchsky)
 EXTERN_CVAR (r_skypalette)
@@ -782,14 +781,6 @@ EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
-
-static value_t Widescreen[] =
-{
-	{ 0.0, "Stretch" },
-	//{ 1.0, "Pillarbox" }, [AM] Not implemented.
-	{ 2.0, "Zoom" },
-	{ 3.0, "Wide" }
-};
 
 static value_t Crosshairs[] =
 {
@@ -863,7 +854,6 @@ static menuitem_t VideoItems[] = {
 	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
-	{ discrete,	"Widescreen",				{&r_widescreen},		{3.0}, {0.0},	{0.0},  {Widescreen}} ,
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {5.0},	{1.0},  {NULL} },
 	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },	
 	{ slider,	"Movement bobbing",			{&cl_movebob},			{0.0}, {1.0},	{0.1},	{NULL} },

@@ -223,6 +223,10 @@ void D_Display (void)
 
 	BEGIN_STAT(D_Display);
 
+	if (gamestate == GS_LEVEL && viewactive && consoleplayer().camera)
+		R_SetFOV (consoleplayer().camera->player ?
+			consoleplayer().camera->player->fov : 90.0f);
+
 	// [RH] change the screen mode if needed
 	if (setmodeneeded)
 	{
@@ -241,15 +245,6 @@ void D_Display (void)
 		st_scale.Callback ();
 		// Refresh the console.
 		C_NewModeAdjust ();
-	}
-
-	// [AM] Moved to below setmodeneeded so we have accurate screen size info.
-	if (gamestate == GS_LEVEL && viewactive && consoleplayer().camera)
-	{
-		if (consoleplayer().camera->player)
-			R_SetFOV(consoleplayer().camera->player->fov, setmodeneeded || setsizeneeded);
-		else
-			R_SetFOV(90.0f, setmodeneeded || setsizeneeded);
 	}
 
 	// change the view size if needed

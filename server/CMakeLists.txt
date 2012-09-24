@@ -13,6 +13,14 @@ if(WIN32)
   set(SERVER_WIN32_RESOURCES ${SERVER_WIN32_DIR}/server.rc)
 endif()
 
+# cURL
+#find_package(CURL)
+#if(CURL_FOUND)
+#  include_directories(${CURL_INCLUDE_DIRS})
+#else()
+#  message(WARNING "cURL not found, client target not generated.")
+#endif()
+
 # JsonCpp
 set(JSONCPP_DIR ../jsoncpp)
 file(GLOB JSONCPP_HEADERS ${JSONCPP_DIR}/json/*.h)
@@ -29,13 +37,16 @@ endif()
 include_directories(${JSONCPP_DIR} ${COMMON_DIR} ${SERVER_DIR} ${SERVER_WIN32_DIR})
 
 # Server target
-add_executable(odasrv
-  ${JSONCPP_SOURCE} ${JSONCPP_HEADERS}
-  ${COMMON_SOURCES} ${COMMON_HEADERS}
-  ${SERVER_SOURCES} ${SERVER_HEADERS}
-  ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
-if(WIN32)
-  target_link_libraries(odasrv winmm wsock32)
-elseif(SOLARIS)
-  target_link_libraries(odasrv socket nsl)
-endif()
+#if(CURL_FOUND)
+  add_executable(odasrv
+    ${JSONCPP_SOURCE} ${JSONCPP_HEADERS}
+    ${COMMON_SOURCES} ${COMMON_HEADERS}
+    ${SERVER_SOURCES} ${SERVER_HEADERS}
+    ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
+    #target_link_libraries(odasrv ${CURL_LIBRARIES})
+  if(WIN32)
+    target_link_libraries(odasrv winmm wsock32)
+  elseif(SOLARIS)
+    target_link_libraries(odasrv socket nsl)
+  endif()
+#endif()

@@ -361,9 +361,6 @@ CVAR (vid_fps, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
 #endif
 // TODO: document
 CVAR_FUNC_DECL (screenblocks, "10", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// How to handle widescreen resolutions
-CVAR_FUNC_DECL (r_widescreen, "3", "Determine how widescreen video modes are handled.\n// 0: Stretched to fit.\n// 1: Pillarboxed/Letterboxed (Not Implemented).\n// 2: Zoomed-in field of view.\n// 3: Widened field-of-view (true widescreen).",
-                CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Older (Doom-style) FPS counter
 CVAR (vid_ticker, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
 // Resizes the window by a scale factor

@@ -91,6 +91,14 @@ unsigned short CRC_Value(unsigned short crcvalue);
 
 std::vector<std::string> VectorArgs(size_t argc, char **argv);
 std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue = "");
+
+typedef std::vector<std::string> StringTokens;
+StringTokens TokenizeString(const std::string& str, const std::string& delim);
+
+bool StrFormatISOTime(std::string& s, const tm* utc_tm);
+bool StrParseISOTime(const std::string& s, tm* utc_tm);
+bool StrToTime(std::string str, time_t &tim);
+
 bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (const char **ptr, const char *str);
 
