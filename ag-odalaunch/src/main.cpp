@@ -95,6 +95,8 @@ int main(int argc, char *argv[])
 		return (-1);
 	}
 
+	GuiConfig::Load();
+
 	while ((c = AG_Getopt(argc, argv, "?d:f", &optArg, NULL)) != -1) 
 	{
 		switch (c) 

@@ -67,13 +67,13 @@ Main statusbar.
 */
 typedef struct 
 {
-	AG_Box               *statbox;
-	AG_Statusbar         *tooltip;
-	AG_Statusbar         *mping;
+	AG_Box           *statbox;
+	AG_Label         *tooltip;
+	AG_Label         *mping;
 
 	struct ODA_QueriedStatusbar
 	{
-		AG_Statusbar *statusbar;
+		AG_Label     *label;
 		AG_Mutex      mutex;
 		int           completed;
 		int           total;
@@ -81,7 +81,7 @@ typedef struct
 
 	struct ODA_PlayersStatusbar
 	{
-		AG_Statusbar *statusbar;
+		AG_Label     *label;
 		AG_Mutex      mutex;
 		int           numplayers;
 	} players;

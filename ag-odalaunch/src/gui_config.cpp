@@ -34,6 +34,11 @@ using namespace std;
 
 namespace agOdalaunch {
 
+bool GuiConfig::Load()
+{
+	return (0 != AG_ConfigLoad());
+}
+
 bool GuiConfig::Save()
 {
 	return (0 != AG_ConfigSave());

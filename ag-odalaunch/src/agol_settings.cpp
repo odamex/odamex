@@ -103,13 +103,11 @@ ODA_SrvOptionsBox *AGOL_Settings::CreateSrvOptionsBox(void *parent)
 	if(GuiConfig::Read("ServerTimeout", ServerTimeout) || ServerTimeout == 0)
 		ServerTimeout = 500;
 
-	obox->masterTimeoutSpin = AG_NumericalNewUint(obox->optionsBox, 0, NULL, 
-			"Master Timeout (ms)", &MasterTimeout);
-	AG_NumericalSetRangeInt(obox->masterTimeoutSpin, 1, 5000);
+	obox->masterTimeoutSpin = AG_NumericalNewUintR(obox->optionsBox, 0, NULL, 
+			"Master Timeout (ms)", &MasterTimeout, 1, 5000);
 
-	obox->serverTimeoutSpin = AG_NumericalNewUint(obox->optionsBox, 0, NULL, 
-			"Server Timeout (ms)", &ServerTimeout);
-	AG_NumericalSetRangeInt(obox->serverTimeoutSpin, 1, 5000);
+	obox->serverTimeoutSpin = AG_NumericalNewUintR(obox->optionsBox, 0, NULL, 
+			"Server Timeout (ms)", &ServerTimeout, 1, 5000);
 
 	return obox;
 }

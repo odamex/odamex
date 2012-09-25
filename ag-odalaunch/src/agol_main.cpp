@@ -398,23 +398,19 @@ ODA_Statusbar *AGOL_MainWindow::CreateMainStatusbar(void *parent)
 
 	statusbar->statbox = AG_BoxNewHoriz(parent, AG_BOX_HOMOGENOUS | AG_BOX_HFILL);
 
-	statusbar->tooltip = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
-	AG_StatusbarAddLabel(statusbar->tooltip, AG_LABEL_POLLED, "Welcome to Odamex");
+	statusbar->tooltip = AG_LabelNew(statusbar->statbox, AG_LABEL_EXPAND, "Welcome to Odamex");
 
-	statusbar->mping = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
-	AG_StatusbarAddLabel(statusbar->mping, AG_LABEL_POLLED, "Master Ping: 0");
+	statusbar->mping = AG_LabelNew(statusbar->statbox, AG_LABEL_EXPAND, "Master Ping: 0");
 
-	statusbar->queried.statusbar = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
 	statusbar->queried.completed = statusbar->queried.total = 0;
 	AG_MutexInit(&statusbar->queried.mutex);
-	AG_StatusbarAddLabel(statusbar->queried.statusbar, AG_LABEL_POLLED_MT, "Queried Servers %i of %i", 
-			&statusbar->queried.mutex, &statusbar->queried.completed, &statusbar->queried.total);
+	statusbar->queried.label = AG_LabelNewPolledMT(statusbar->statbox, AG_LABEL_EXPAND, &statusbar->queried.mutex,
+	"Queried Servers %i of %i", &statusbar->queried.completed, &statusbar->queried.total);
 
-	statusbar->players.statusbar = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
 	statusbar->players.numplayers = 0;
 	AG_MutexInit(&statusbar->players.mutex);
-	AG_StatusbarAddLabel(statusbar->players.statusbar, AG_LABEL_POLLED_MT, "Total Players: %i",
-			&statusbar->players.mutex, &statusbar->players.numplayers);
+	statusbar->players.label = AG_LabelNewPolledMT(statusbar->statbox, AG_LABEL_EXPAND, &statusbar->players.mutex,
+	"Total Players: %i", &statusbar->players.numplayers);
 
 	return statusbar;
 }
@@ -426,17 +422,19 @@ ODA_Statusbar *AGOL_MainWindow::CreateMainStatusbar(void *parent)
 void AGOL_MainWindow::UpdateStatusbarTooltip(const char *tip)
 {
 	if(tip)
-		AG_LabelTextS(MainStatusbar->tooltip->labels[0], tip);
+	{
+		AG_LabelTextS(MainStatusbar->tooltip, tip);
+	}
 }
 
 void AGOL_MainWindow::ClearStatusbarTooltip()
 {
-	AG_LabelTextS(MainStatusbar->tooltip->labels[0], "");
+	AG_LabelTextS(MainStatusbar->tooltip, "");
 }
 
 void AGOL_MainWindow::UpdateStatusbarMasterPing(uint32_t ping)
 {
-	AG_LabelText(MainStatusbar->mping->labels[0], "Master Ping: %u", ping);
+	AG_LabelText(MainStatusbar->mping, "Master Ping: %u", ping);
 }
 
 AG_Button *AGOL_MainWindow::CreateButton(void *parent, const char *label, 

@@ -53,6 +53,15 @@ class GuiConfig
 {
 public:
 	/**
+	Load the configuration.
+
+	Requests that Agar load the configuration settings.
+
+	@return True if an error occurred, False if successful.
+	*/
+	static bool Load();
+
+	/**
 	Save the configuration.
 
 	Requests that Agar save the current configuration settings.
