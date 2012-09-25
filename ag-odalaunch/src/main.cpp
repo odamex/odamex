@@ -51,9 +51,13 @@ int AGOL_InitVideo(const string& drivers, const int width, const int height, con
 
 	/* Initialize Agar-GUI. */
 	if(drivers.size())
+	{
 		spec << drivers;
+	}
 	else
+	{
 		spec << "<OpenGL>";
+	}
 
 	spec << "(width=" << width << ":height=" << height << ":depth=" << depth << ")";
 
@@ -66,8 +70,13 @@ int AGOL_InitVideo(const string& drivers, const int width, const int height, con
 #ifdef _XBOX
 	// Software cursor only updates at the refresh rate so make it respectable
 	if(agDriverSw)
+	{
 		AG_SetRefreshRate(60);
+	}
 #endif
+
+	// Pick up GUI subsystem options
+	GuiConfig::Load();
 
 	return 0;
 }
@@ -95,6 +104,7 @@ int main(int argc, char *argv[])
 		return (-1);
 	}
 
+	// Initial config load
 	GuiConfig::Load();
 
 	while ((c = AG_Getopt(argc, argv, "?d:f", &optArg, NULL)) != -1) 
@@ -117,7 +127,9 @@ int main(int argc, char *argv[])
 
 	// Set the default font size
 	if(!GuiConfig::IsDefined("font.size"))
+	{
 		GuiConfig::Write("font.size", 10);
+	}
 
 #ifdef GCONSOLE
 	// For now just use a resolution that compensates for overscan on most televisions
@@ -126,9 +138,13 @@ int main(int argc, char *argv[])
 #else
 	// Get the dimensions for initialization
 	if(GuiConfig::Read("MainWindow-Width", width) || width <= 0)
+	{
 		width = 640;
+	}
 	if(GuiConfig::Read("MainWindow-Height", height) || height <= 0)
+	{
 		height = 480;
+	}
 #endif
 
 	// Check if a video driver is specified in the config file
@@ -138,12 +154,16 @@ int main(int argc, char *argv[])
 
 #ifdef _XBOX
 		if(!drivers.size())
+		{
 			drivers = "sdlfb";
+		}
 #endif
 	}
 
 	if(AGOL_InitVideo(drivers, width, height, 32))
+	{
 		return (-1);
+	}
 
 	// Initialize socket API
 	BufferedSocket::InitializeSocketAPI();
