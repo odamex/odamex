@@ -2329,7 +2329,13 @@ void CL_UpdateMobjInfo(void)
 //
 void CL_RemoveMobj(void)
 {
-	P_ClearId(MSG_ReadShort());
+	int netid = MSG_ReadShort();
+
+	AActor *mo = P_FindThingById(netid);
+	if (mo && mo->player && mo->player->id == displayplayer_id)
+		displayplayer_id = consoleplayer_id;
+
+	P_ClearId(netid);
 }
 
 
