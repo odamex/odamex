@@ -170,7 +170,7 @@ R_AddPointToBox
   fixed_t*	box );
 
 fixed_t R_PointToDist2 (fixed_t dx, fixed_t dy);
-void R_SetFOV (float fov);
+void R_SetFOV(float fov, bool force);
 float R_GetFOV (void);
 
 //
