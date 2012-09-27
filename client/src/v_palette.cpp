@@ -147,9 +147,9 @@ CVAR_FUNC_IMPL (gammalevel)
 	static int lastgamma = 0;
 	int i;
 
-	if (var <= 0 || var > 5)
+	if (var <= 0 || var > 9)
 	{
-		// Only gamma values of 0 to 4 are legal.
+		// Only gamma values of 1 to 9 are legal.
 		var.Set (1.0f);
 		return;
 	}
@@ -161,13 +161,26 @@ CVAR_FUNC_IMPL (gammalevel)
 
 		lastgamma = var;
 
-		// I found this formula on the web at
-		// http://panda.mostang.com/sane/sane-gamma.html
 
-		for (i = 0; i < 256; i++)
+		if (var > 5)
 		{
-			newgamma[i] = gammatable[lastgamma - 1][i];
+			// [SL] Use ZDoom's gamma calculation for gamma levels > 5
+			// shifted to transition nicely from vanilla Doom gamma levels
+
+			// I found this formula on the web at
+			// http://panda.mostang.com/sane/sane-gamma.html
+			double invgamma = 1.0 / (lastgamma - 3.5);
+
+			for (i = 0; i < 256; i++)
+				newgamma[i] = (BYTE)(255.0 * pow (i / 255.0, invgamma));
 		}
+		else
+		{	
+			// [SL] Use vanilla Doom's gamma table for gamma levels 1 - 5
+			for (i = 0; i < 256; i++)
+				newgamma[i] = gammatable[lastgamma - 1][i];
+		}
+
 		GammaAdjustPalettes ();
 		if (screen && screen->is8bit())
 		{
