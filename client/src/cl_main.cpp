@@ -3657,25 +3657,33 @@ void CL_SimulatePlayers()
 			// previous world_index, then old position was probably extrapolated
 			// and should be smoothly moved towards the corrected position instead
 			// of snapping to it.
-		
-			PlayerSnapshot prevsnap = player->snapshots.getSnapshot(world_index - 1);
-			v3fixed_t offset;
-			M_SetVec3Fixed(&offset, prevsnap.getX() - player->mo->x,
-									prevsnap.getY() - player->mo->y,
-									prevsnap.getZ() - player->mo->z);
+			
+			if (snap.isContinuous())
+			{
+				PlayerSnapshot prevsnap = player->snapshots.getSnapshot(world_index - 1);
 
-			static const fixed_t correction_amount = FRACUNIT * 0.20f; 
-			M_ScaleVec3Fixed(&offset, &offset, correction_amount);
-		
-			#ifdef _SNAPSHOT_DEBUG_
-			if (offset.x != 0 || offset.y != 0 || offset.z != 0)
-				Printf(PRINT_HIGH, "Snapshot %i, Correcting extrapolation error\n", world_index);
-			#endif // _SNAPSHOT_DEBUG_
-	
-			// Apply the current snapshot to the player (with smoothing offset)
-			snap.setX(snap.getX() - offset.x);
-			snap.setY(snap.getY() - offset.y);
-			snap.setZ(snap.getZ() - offset.z);
+				v3fixed_t offset;
+				M_SetVec3Fixed(&offset, prevsnap.getX() - player->mo->x,
+										prevsnap.getY() - player->mo->y,
+										prevsnap.getZ() - player->mo->z);
+
+				fixed_t dist = M_LengthVec3Fixed(&offset);
+				if (dist > 2 * FRACUNIT)
+				{
+					#ifdef _SNAPSHOT_DEBUG_
+					Printf(PRINT_HIGH, "Snapshot %i, Correcting extrapolation error of %i\n",
+							world_index, dist >> FRACBITS);
+					#endif	// _SNAPSHOT_DEBUG_
+
+					static const fixed_t correction_amount = FRACUNIT * 0.80f; 
+					M_ScaleVec3Fixed(&offset, &offset, correction_amount);
+					
+					// Apply a smoothing offset to the current snapshot
+					snap.setX(snap.getX() - offset.x);
+					snap.setY(snap.getY() - offset.y);
+					snap.setZ(snap.getZ() - offset.z);
+				}
+			}
 
 			snap.toPlayer(player);
 		}
