@@ -387,7 +387,7 @@ public:
 
             case BT_SEND:
             {
-                if (readpos-offset < 0)
+                if ((int)(readpos-offset) < 0)
                 {
                     // lies, an underflow occured
                     overflowed = true;
