@@ -108,24 +108,37 @@ fixed_t			dc_textureheight;
 //	but any columns with multiple patches
 //	will have new column_ts generated.
 //
-
-
-
 // Rewritten by Lee Killough for performance and to fix Medusa bug
+// [SL] 2012-10-01 - Added support for DeePsea tall textures
 //
 
 void R_DrawColumnInCache (const column_t *patch, byte *cache,
 						  int originy, int cacheheight, byte *marks)
 {
+	int position = originy;
+
 	while (patch->topdelta != 0xff)
 	{
 		int count = patch->length;
-		int position = originy + patch->topdelta;
 
 		if (position < 0)
 		{
 			count += position;
 			position = 0;
+		}
+
+		if (patch->topdelta <= position)
+		{
+			// [SL] DeePsea tall textures are identified by a hack that assumes
+			// each patch's topdelta is less than the absolute offset for the patch
+			// in the texture. In essence, the tall texture topdelta offset becomes a
+			// relative offset instead of the usual absolute offset.
+			position += patch->topdelta;
+		}
+		else 
+		{
+			// standard Doom texture with absolute offset
+			position = patch->topdelta + originy;
 		}
 
 		if (position + count > cacheheight)
@@ -189,6 +202,7 @@ void R_GenerateComposite (int texnum)
 
 	source = (byte *)Malloc (texture->height); 		// temporary column
 	for (i=0; i < texture->width; i++)
+	{
 		if (collump[i] == -1) 				// process only multipatched columns
 		{
 			column_t *col = (column_t *)(block + colofs[i] - 3);	// cached column
@@ -208,13 +222,18 @@ void R_GenerateComposite (int texnum)
 					break;
 				}
 				col->topdelta = j;						// starting offset of post
-				for (col->length=0; j < texture->height && mark[j]; j++)
-					col->length++;						// count opaque cells
+				int len = 0;
+				for (; j < texture->height && mark[j]; j++)
+					len++;						// count opaque cells
 				// copy opaque cells from the temporary back into the column
-				memcpy((byte *) col + 3, source + col->topdelta, col->length);
-				col = (column_t *)((byte *) col + col->length + 4); // next post
+				memcpy((byte *) col + 3, source + col->topdelta, len);
+//				col = (column_t *)((byte *) col + col->length + 4); // next post
+				col = (column_t *)((byte *) col + len + 4); // next post
+				col->length = len;
 			}
 		}
+	}
+
 	M_Free(source); 				// free temporary column
 	M_Free(marks);				// free transparency marks
 
