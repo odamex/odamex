@@ -483,7 +483,7 @@ bool I_InitInput (void)
 	// denis - disable key repeats as they mess with the mouse in XP
 	// mike - maybe not?
 	//SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL*2);
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY / 2, SDL_DEFAULT_REPEAT_INTERVAL);
 
 	// Initialize the joystick subsystem and open a joystick if use_joystick is enabled. -- Hyper_Eye
 	Printf(PRINT_HIGH, "I_InitInput: Initializing SDL's joystick subsystem.\n");
