@@ -306,9 +306,9 @@
 		<Unit filename="..\..\common\d_items.h" />
 		<Unit filename="..\..\common\d_main.h" />
 		<Unit filename="..\..\common\d_net.h" />
-		<Unit filename="..\..\common\d_netinf.h" />
 		<Unit filename="..\..\common\d_netcmd.cpp" />
 		<Unit filename="..\..\common\d_netcmd.h" />
+		<Unit filename="..\..\common\d_netinf.h" />
 		<Unit filename="..\..\common\d_player.h" />
 		<Unit filename="..\..\common\d_protocol.cpp" />
 		<Unit filename="..\..\common\d_protocol.h" />
@@ -428,10 +428,12 @@
 		<Unit filename="..\..\common\stringenums.h" />
 		<Unit filename="..\..\common\stringtable.cpp" />
 		<Unit filename="..\..\common\stringtable.h" />
+		<Unit filename="..\..\common\strptime.cpp" />
 		<Unit filename="..\..\common\szp.h" />
 		<Unit filename="..\..\common\tables.cpp" />
 		<Unit filename="..\..\common\tables.h" />
 		<Unit filename="..\..\common\tarray.h" />
+		<Unit filename="..\..\common\timegm.cpp" />
 		<Unit filename="..\..\common\v_palette.h" />
 		<Unit filename="..\..\common\v_video.h" />
 		<Unit filename="..\..\common\vectors.cpp" />
@@ -440,6 +442,7 @@
 		<Unit filename="..\..\common\version.h" />
 		<Unit filename="..\..\common\w_wad.cpp" />
 		<Unit filename="..\..\common\w_wad.h" />
+		<Unit filename="..\..\common\win32time.h" />
 		<Unit filename="..\..\common\z_zone.cpp" />
 		<Unit filename="..\..\common\z_zone.h" />
 		<Unit filename="..\..\jsoncpp\json\json-forwards.h" />
@@ -459,6 +462,8 @@
 		<Unit filename="..\src\r_sky.cpp" />
 		<Unit filename="..\src\r_things.cpp" />
 		<Unit filename="..\src\s_sound.cpp" />
+		<Unit filename="..\src\sv_banlist.cpp" />
+		<Unit filename="..\src\sv_banlist.h" />
 		<Unit filename="..\src\sv_ctf.cpp" />
 		<Unit filename="..\src\sv_cvarlist.cpp" />
 		<Unit filename="..\src\sv_main.cpp" />

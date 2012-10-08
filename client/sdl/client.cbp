@@ -471,10 +471,12 @@
 		<Unit filename="..\..\common\stringenums.h" />
 		<Unit filename="..\..\common\stringtable.cpp" />
 		<Unit filename="..\..\common\stringtable.h" />
+		<Unit filename="..\..\common\strptime.cpp" />
 		<Unit filename="..\..\common\szp.h" />
 		<Unit filename="..\..\common\tables.cpp" />
 		<Unit filename="..\..\common\tables.h" />
 		<Unit filename="..\..\common\tarray.h" />
+		<Unit filename="..\..\common\timegm.cpp" />
 		<Unit filename="..\..\common\v_palette.h" />
 		<Unit filename="..\..\common\v_video.h" />
 		<Unit filename="..\..\common\vectors.cpp" />
@@ -483,6 +485,7 @@
 		<Unit filename="..\..\common\version.h" />
 		<Unit filename="..\..\common\w_wad.cpp" />
 		<Unit filename="..\..\common\w_wad.h" />
+		<Unit filename="..\..\common\win32time.h" />
 		<Unit filename="..\..\common\z_zone.cpp" />
 		<Unit filename="..\..\common\z_zone.h" />
 		<Unit filename="..\src\am_map.cpp" />
