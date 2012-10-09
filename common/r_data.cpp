@@ -112,14 +112,28 @@ fixed_t			dc_textureheight;
 // [SL] 2012-10-01 - Added support for DeePsea tall textures
 //
 
-void R_DrawColumnInCache (const column_t *patch, byte *cache,
+void R_DrawColumnInCache (const column_t *post, byte *cache,
 						  int originy, int cacheheight, byte *marks)
 {
 	int position = originy;
 
-	while (patch->topdelta != 0xff)
+	while (post->topdelta != 0xff)
 	{
-		int count = patch->length;
+		int count = post->length;
+
+		if (post->topdelta <= position)
+		{
+			// [SL] DeePsea tall textures are identified by a hack that assumes
+			// each patch's topdelta is less than the absolute offset for the patch
+			// in the texture. In essence, the tall texture topdelta offset becomes a
+			// relative offset instead of the usual absolute offset.
+			position += post->topdelta;
+		}
+		else
+		{
+			// standard Doom texture with absolute offset
+			position = post->topdelta + originy;
+		}
 
 		if (position < 0)
 		{
@@ -127,26 +141,12 @@ void R_DrawColumnInCache (const column_t *patch, byte *cache,
 			position = 0;
 		}
 
-		if (patch->topdelta <= position)
-		{
-			// [SL] DeePsea tall textures are identified by a hack that assumes
-			// each patch's topdelta is less than the absolute offset for the patch
-			// in the texture. In essence, the tall texture topdelta offset becomes a
-			// relative offset instead of the usual absolute offset.
-			position += patch->topdelta;
-		}
-		else 
-		{
-			// standard Doom texture with absolute offset
-			position = patch->topdelta + originy;
-		}
-
 		if (position + count > cacheheight)
 			count = cacheheight - position;
 
 		if (count > 0)
 		{
-			memcpy (cache + position, (byte *)patch + 3, count);
+			memcpy (cache + position, (byte *)post + 3, count);
 
 			// killough 4/9/98: remember which cells in column have been drawn,
 			// so that column can later be converted into a series of posts, to
@@ -155,7 +155,7 @@ void R_DrawColumnInCache (const column_t *patch, byte *cache,
 			memset (marks + position, 0xff, count);
 		}
 
-		patch = (column_t *)((byte *) patch + patch->length + 4);
+		post = (column_t *)((byte *) post + post->length + 4);
 	}
 }
 
@@ -216,20 +216,24 @@ void R_GenerateComposite (int texnum)
 			{
 				while (j < texture->height && !mark[j]) // skip transparent cells
 					j++;
+
 				if (j >= texture->height) 				// if at end of column
 				{
-					col->topdelta = 255; 				// end-of-column marker
+					col->topdelta = 0xFF; 				// write end-of-column marker
 					break;
 				}
+
 				col->topdelta = j;						// starting offset of post
+
+				// count opaque cells in post
 				int len = 0;
 				for (; j < texture->height && mark[j]; j++)
-					len++;						// count opaque cells
+					len++;
+
 				// copy opaque cells from the temporary back into the column
-				memcpy((byte *) col + 3, source + col->topdelta, len);
-//				col = (column_t *)((byte *) col + col->length + 4); // next post
-				col = (column_t *)((byte *) col + len + 4); // next post
 				col->length = len;
+				memcpy((byte *) col + 3, source + col->topdelta, len);
+				col = (column_t *)((byte *) col + len + 4); // next post
 			}
 		}
 	}
