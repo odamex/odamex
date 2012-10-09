@@ -1,5 +1,33 @@
-$Id: Changelog.txt,v 1.168 2012/05/01 16:16:51 nanard Exp $
+$Id: Changelog.txt,v 1.177 2012/08/29 07:51:29 nanard Exp $
 miniUPnP client Changelog.
+
+2012/08/29:
+  Python 3 support (thanks to Christopher Foo)
+
+2012/08/11:
+  Fix a memory link in UPNP_GetValidIGD()
+  Try to handle scope id in link local IPv6 URL under MS Windows
+
+2012/07/20:
+  Disable HAS_IP_MREQN on DragonFly BSD
+
+2012/06/28:
+  GetUPNPUrls() now inserts scope into link-local IPv6 addresses
+
+2012/06/23:
+  More error return checks in upnpc.c
+  #define MINIUPNPC_GET_SRC_ADDR enables receivedata() to get scope_id
+  parseURL() now parses IPv6 addresses scope
+  new parameter for miniwget() : IPv6 address scope
+  increment API_VERSION to 9
+
+2012/06/20:
+  fixed CMakeLists.txt
+
+2012/05/29
+  Improvements in testminiwget.sh
+
+VERSION 1.7 : released 2012/05/24
 
 2012/05/01:
   Cleanup settings of CFLAGS in Makefile

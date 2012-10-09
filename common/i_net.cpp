@@ -186,13 +186,14 @@ void init_upnp (void)
       //      " desc: %s\n st: %s\n",
         //    dev->descURL, dev->st);
 
-    descXML = (char *)miniwget(dev->descURL, &descXMLsize);
+    descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0);
 
     if (descXML)
     {
         parserootdesc (descXML, descXMLsize, &data);
-        free (descXML); descXML = 0;
-        GetUPNPUrls (&urls, &data, dev->descURL);
+        free (descXML); 
+        descXML = NULL;
+        GetUPNPUrls (&urls, &data, dev->descURL, 0);
     }
 
     freeUPNPDevlist(devlist);
