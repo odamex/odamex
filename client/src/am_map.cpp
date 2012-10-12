@@ -1612,7 +1612,7 @@ void AM_Drawer (void)
 	if (!(viewactive && am_overlay < 2)) {
 
 		char line[64+10];
-		int OV_Y, i, time = level.time / TICRATE, height, epsub;
+		int OV_Y, i, time = level.time / TICRATE, height;
 
 		height = (hu_font[0]->height() + 1) * CleanYfac;
 		OV_Y = screen->height - ((32 * screen->height) / 200);
@@ -1646,28 +1646,27 @@ void AM_Drawer (void)
 			}
 		}
 
-		if (am_classicmapstring) {
-		    i = 0;
-		    epsub = 0;
-            if (gamemission == doom2)
-                i = 100;
-            else if (gamemission == pack_plut)
-                i = 132;
-            else if (gamemission == pack_tnt)
-                i = 164;
-            else {
-                i = 64;
-                epsub = level.cluster - 1;
-            }
+		if (am_classicmapstring)
+		{
+			int firstmap;
+			switch (gamemission)
+			{
+				case doom2: firstmap = HUSTR_1; break;
+				case pack_plut: firstmap = PHUSTR_1; break;
+				case pack_tnt: firstmap = THUSTR_1; break;
+				default: firstmap = HUSTR_E1M1; break;
+			}
 
-            strcpy (line, GStrings(i+level.levelnum-epsub));
-            if (viewactive && screenblocks == 11)
-                FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
-            else if (viewactive && screenblocks == 12)
-                FB->DrawTextClean (CR_RED, 0, screen->height - (height * 1) + 1, line);
-            else
-                FB->DrawTextClean (CR_RED, 0, ST_Y - (height * 1) + 1, line);
-		} else {
+			strcpy(line, GStrings(firstmap + level.levelnum - 1));
+			if (viewactive && screenblocks == 11)
+				FB->DrawTextClean(CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
+			else if (viewactive && screenblocks == 12)
+				FB->DrawTextClean (CR_RED, 0, screen->height - (height * 1) + 1, line);
+			else
+				FB->DrawTextClean (CR_RED, 0, ST_Y - (height * 1) + 1, line);
+		}
+		else
+		{
             line[0] = '\x8a';
             line[1] = CR_RED + 'A';
             i = 0;
