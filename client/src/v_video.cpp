@@ -240,7 +240,7 @@ void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
 }
 
 
-void DCanvas::Dim(int x1, int y1, int w, int h) const
+void DCanvas::Dim(int x1, int y1, int w, int h, const char* color, float famount) const
 {
 	if (!buffer)
 		return;
@@ -248,24 +248,21 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 	if (x1 < 0 || x1 + w > width || y1 < 0 || y1 + h > height)
 		return;
 
-	if (ui_dimamount < 0)
-		ui_dimamount.Set (0.0f);
-	else if (ui_dimamount > 1)
-		ui_dimamount.Set (1.0f);
-
-	if (ui_dimamount == 0)
+	if (famount <= 0.0f)
 		return;
+	else if (famount > 1.0f)
+		famount = 1.0f;
 
 	if (is8bit())
 	{
 		int bg;
 		int x, y;
 
-		fixed_t amount = (fixed_t)(ui_dimamount * 64);
+		fixed_t amount = (fixed_t)(famount * 64.0f);
 		unsigned int *fg2rgb = Col2RGB8[amount];
 		unsigned int *bg2rgb = Col2RGB8[64-amount];
 		unsigned int fg = 
-				fg2rgb[V_GetColorFromString(DefaultPalette->basecolors, ui_dimcolor.cstring())];
+				fg2rgb[V_GetColorFromString(DefaultPalette->basecolors, color)];
 		
 		byte *dest = buffer + y1 * pitch + x1;
 		int gap = pitch - w;
@@ -308,11 +305,11 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 	{
 		int x, y;
 		int *line;
-		int fill = V_GetColorFromString (NULL, ui_dimcolor.cstring());
+		int fill = V_GetColorFromString (NULL, color);
 
 		line = (int *)(screen->buffer);
 
-		if (ui_dimamount == 1.0)
+		if (famount == 1.0f)
 		{
 			fill = (fill >> 2) & 0x3f3f3f;
 			for (y = y1; y < y1 + h; y++)
@@ -324,7 +321,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 				line += pitch >> 2;
 			}
 		}
-		else if (ui_dimamount == 2.0)
+		else if (famount == 2.0)
 		{
 			fill = (fill >> 1) & 0x7f7f7f;
 			for (y = y1; y < y1 + h; y++)
@@ -336,7 +333,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 				line += pitch >> 2;
 			}
 		}
-		else if (ui_dimamount == 3.0)
+		else if (famount == 3.0)
 		{
 			fill = fill - ((fill >> 2) & 0x3f3f3f);
 			for (y = y1; y < y1 + h; y++)
@@ -349,6 +346,19 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 			}
 		}
 	}
+}
+
+void DCanvas::Dim(int x1, int y1, int w, int h) const
+{
+	if (ui_dimamount < 0.0f)
+		ui_dimamount.Set (0.0f);
+	else if (ui_dimamount > 1.0f)
+		ui_dimamount.Set (1.0f);
+
+	if (ui_dimamount == 0.0f)
+		return;
+
+	Dim(x1, y1, w, h, ui_dimcolor.cstring(), ui_dimamount);
 }
 
 std::string V_GetColorStringByName (const char *name)

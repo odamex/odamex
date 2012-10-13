@@ -96,6 +96,7 @@ public:
 	void GetBlock (int x, int y, int width, int height, byte *dest) const;
 
 	// Darken a rectangle of th canvas
+	void Dim (int x, int y, int width, int height, const char* color, float amount) const;
 	void Dim (int x, int y, int width, int height) const;
 
 	// Fill an area with a 64x64 flat texture
