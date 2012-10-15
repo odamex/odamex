@@ -95,7 +95,7 @@ void R_ColumnToPointOnSeg(int column, line_t *line, fixed_t &x, fixed_t &y);
 //
 // R_StoreWallRange
 //
-static void BlastMaskedColumn (void (*blastfunc)(column_t *column), int texnum)
+static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 {
 	if (maskedtexturecol[dc_x] != MAXINT && spryscale > 0)
 	{
@@ -140,7 +140,7 @@ static void BlastMaskedColumn (void (*blastfunc)(column_t *column), int texnum)
 		// when forming multipatched textures (see r_data.c).
 
 		// draw the texture
-		blastfunc ((column_t *)((byte *)R_GetColumn(texnum, maskedtexturecol[dc_x]) -3));
+		blastfunc (R_GetColumn(texnum, maskedtexturecol[dc_x]));
 		maskedtexturecol[dc_x] = MAXINT;
 	}
 	spryscale += rw_scalestep;
@@ -400,7 +400,7 @@ static void BlastColumn (void (*blastfunc)())
 		dc_yl = yl;
 		dc_yh = yh;
 		dc_texturefrac = rw_midtexturemid + dc_yl * dc_iscale - texfracdiff;
-		dc_source = R_GetColumn (midtexture, texturecolumn);
+		dc_source = R_GetColumnData(midtexture, texturecolumn);
 		blastfunc ();
 		ceilingclip[rw_x] = viewheight;
 		floorclip[rw_x] = -1;
@@ -421,7 +421,7 @@ static void BlastColumn (void (*blastfunc)())
 				dc_yl = yl;
 				dc_yh = mid;
 				dc_texturefrac = rw_toptexturemid + dc_yl * dc_iscale - texfracdiff;
-				dc_source = R_GetColumn (toptexture, texturecolumn);
+				dc_source = R_GetColumnData(toptexture, texturecolumn);
 				blastfunc ();
 				ceilingclip[rw_x] = mid;
 			}
@@ -449,7 +449,7 @@ static void BlastColumn (void (*blastfunc)())
 				dc_yl = mid;
 				dc_yh = yh;
 				dc_texturefrac = rw_bottomtexturemid + dc_yl * dc_iscale - texfracdiff;
-				dc_source = R_GetColumn (bottomtexture, texturecolumn);
+				dc_source = R_GetColumnData(bottomtexture, texturecolumn);
 				blastfunc ();
 				floorclip[rw_x] = mid;
 			}

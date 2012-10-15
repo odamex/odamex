@@ -91,7 +91,7 @@ extern fixed_t		pspriteyscale;
 extern fixed_t		pspritexiscale;
 
 
-void R_DrawMaskedColumn (column_t* column);
+void R_DrawMaskedColumn(tallpost_t* post);
 
 
 void R_CacheSprite (spritedef_t *sprite);

@@ -84,7 +84,8 @@ extern texture_t **textures;
 extern byte* textureheightmask;
 
 // Retrieve column data for span blitting.
-byte* R_GetColumn (int tex, int col);
+tallpost_t* R_GetColumn(int tex, int col);
+byte* R_GetColumnData(int tex, int col);
 
 
 // I/O, setting up the stuff.
@@ -116,9 +117,6 @@ extern size_t numfakecmaps;
 int R_FindSkin (const char *name);	// [RH] Find a skin
 
 unsigned int SlopeDiv(unsigned int num, unsigned int den);
-
-// [RH] Tutti-Frutti fix
-extern "C" unsigned int		dc_mask;
 
 #endif
 

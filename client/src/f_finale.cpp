@@ -516,7 +516,6 @@ void F_CastDrawer (void)
 //
 void F_DrawPatchCol (int x, const patch_t *patch, int col, const DCanvas *scrn)
 {
-	column_t*	column;
 	byte*		source;
 	byte*		dest;
 	byte*		desttop;
@@ -545,16 +544,16 @@ void F_DrawPatchCol (int x, const patch_t *patch, int col, const DCanvas *scrn)
 	step = (200<<16) / scrn->height;
 	invstep = (scrn->height<<16) / 200;
 
-	column = (column_t *)((byte *)patch + LELONG(patch->columnofs[col]));
+	tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
 	desttop = scrn->buffer + x;
 	pitch = scrn->pitch;
 
 	// step through the posts in a column
-	while (column->topdelta != 0xff )
+	while (!post->end())
 	{
-		source = (byte *)column + 3;
-		dest = desttop + ((column->topdelta*invstep)>>16)*pitch;
-		count = (column->length * invstep) >> 16;
+		source = post->data();
+		dest = desttop + ((post->topdelta*invstep)>>16)*pitch;
+		count = (post->length * invstep) >> 16;
 		c = 0;
 
 		switch (repeat) {
@@ -610,7 +609,8 @@ void F_DrawPatchCol (int x, const patch_t *patch, int col, const DCanvas *scrn)
 				}
 				break;
 		}
-		column = (column_t *)(	(byte *)column + column->length + 4 );
+
+		post = post->next();
 	}
 }
 

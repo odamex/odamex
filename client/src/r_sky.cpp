@@ -111,7 +111,6 @@ void R_InitSkyMap ()
 	textures[sky1texture]->height = MAX(t_height,p_height);
 	textureheight[sky1texture] = textures[sky1texture]->height << FRACBITS;
 	
-	textureheightmask[sky1texture] = (textureheight[sky1texture] & (textureheight[sky1texture] - 1)) - 1;
 	skystretch = 0;
 
 	if (textureheight[sky1texture] <= (128 << FRACBITS))

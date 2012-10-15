@@ -448,6 +448,17 @@ typedef struct post_s post_t;
 // column_t is a list of 0 or more post_t, (byte)-1 terminated
 typedef post_t	column_t;
 
+struct tallpost_s
+{
+	unsigned short		topdelta;
+	unsigned short		length;
+	
+	byte *data() const { return (byte*)(this) + 4; }
+	tallpost_s *next() const { return (tallpost_s*)((byte*)(this) + 4 + length); }
+	bool end() const { return *(byte*)(this) == 0xFF; }
+	void writeend() { *(byte*)(this) = 0xFF; }
+};
+typedef struct tallpost_s tallpost_t;
 
 //
 // OTHER TYPES

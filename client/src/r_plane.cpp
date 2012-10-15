@@ -494,7 +494,7 @@ static void _skycolumn (void (*drawfunc)(void), int x)
 		int angle = ((((viewangle + xtoviewangle[x])^skyflip)>>sky1shift) + frontpos)>>16;
 
 		dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
-		dc_source = R_GetColumn (skytex, angle);
+		dc_source = R_GetColumnData(skytex, angle);
 		drawfunc ();
 	}
 }
@@ -506,7 +506,6 @@ static void R_DrawSky (visplane_t *pl)
 	if (pl->minx > pl->maxx)
 		return;
 
-	dc_mask = 255;
 	dc_iscale = skyiscale >> skystretch;
 	dc_texturemid = skytexturemid;
 	_skypl = pl;

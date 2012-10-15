@@ -663,12 +663,15 @@ W_ReadLump
 	int		c;
 	lumpinfo_t*	l;
 
+	static unsigned stdisk_lumpnum = W_GetNumForName("STDISK");
+
 	if (lump >= numlumps)
 		I_Error ("W_ReadLump: %i >= numlumps",lump);
 
 	l = lumpinfo + lump;
 
-    I_BeginRead();
+	if (lump != stdisk_lumpnum)
+    	I_BeginRead();
 
 	fseek (l->handle, l->position, SEEK_SET);
 	c = fread (dest, l->size, 1, l->handle);
@@ -676,7 +679,8 @@ W_ReadLump
 	if (feof(l->handle))
 		I_Error ("W_ReadLump: only read %i of %i on lump %i", c, l->size, lump);
 
-    I_EndRead();
+	if (lump != stdisk_lumpnum)
+    	I_EndRead();
 }
 
 //
@@ -774,23 +778,87 @@ W_CacheLumpName
 //
 // W_CachePatch
 //
-patch_t* W_CachePatch
-( unsigned	lump,
- int		tag )
+// [SL] Reads and caches a patch from disk. This takes care of converting the
+// patch from the standard Doom format of posts with 1-byte lengths and offsets
+// to a new format for posts that uses 2-byte lengths and offsets.
+// 
+patch_t* W_CachePatch(unsigned lumpnum, int tag)
 {
-	patch_t *patch = (patch_t *)W_CacheLumpNum (lump, tag);
+	if (lumpnum >= numlumps)
+		I_Error ("W_CachePatch: %u >= numlumps", lumpnum);
+
+	if (!lumpcache[lumpnum])
+	{
+		size_t lumplen = W_LumpLength(lumpnum);
+		byte *ptr = (byte *)Z_Malloc(lumplen + 1, tag, &lumpcache[lumpnum]);
+
+		// temporary storage of the raw patch in the old format
+		byte *rawlumpdata = new byte[lumplen];
+		// cached converted patch
+		byte *newlumpdata = (byte*)lumpcache[lumpnum];	
+
+		W_ReadLump(lumpnum, rawlumpdata);
+		patch_t *patch = (patch_t*)(rawlumpdata);
+
+		unsigned *rawpostofs = (unsigned*)(rawlumpdata + 8);
+		unsigned *newpostofs = (unsigned*)(newlumpdata + 8);
+
+		memcpy(newlumpdata, rawlumpdata, 8 + 4 * patch->width());	// copy the patch header
+
+		for (int i = 0; i < patch->width(); i++)
+		{
+			int abs_offset = 0;
+			
+			tallpost_t *newpost = (tallpost_t*)(newlumpdata + newpostofs[i]);
+			post_t *rawpost = (post_t*)(rawlumpdata + LELONG(rawpostofs[i]));
+
+			while (rawpost->topdelta != 0xFF)
+			{
+				// handle DeePsea tall patches where topdelta is treated as a relative
+				// offset instead of an absolute offset
+				if (rawpost->topdelta <= abs_offset)
+					abs_offset += rawpost->topdelta;
+				else
+					abs_offset = rawpost->topdelta;
+				
+				// watch for column overruns
+				int length = rawpost->length;
+				if (abs_offset + length > patch->height())
+					length = patch->height() - abs_offset;
+
+				// copy the pixels in the post
+				memcpy(newpost->data(), (byte*)(rawpost) + 3, length);
+				
+				newpost->topdelta = abs_offset;
+				newpost->length = length;
+
+				rawpost = (post_t*)((byte*)rawpost + rawpost->length + 4);
+				newpost = newpost->next();
+			}
+
+			newpost->writeend();
+		}
+
+		delete [] rawlumpdata;
+
+		ptr[lumplen] = 0;
+	}
+	else
+	{
+		Z_ChangeTag(lumpcache[lumpnum], tag);
+	}
+
 
 	// denis - todo - would be good to check whether the patch violates W_LumpLength here
 	// denis - todo - would be good to check for width/height == 0 here, and maybe replace those with a valid patch
 
-	return patch;
+	return (patch_t*)lumpcache[lumpnum];
 }
 
-patch_t* W_CachePatch
-( const char* name,
- int		tag )
+patch_t* W_CachePatch(const char* name, int tag)
 {
-	return W_CachePatch(W_GetNumForName(name), tag); // denis - todo - would be good to replace non-existant patches with a default '404' patch
+	return W_CachePatch(W_GetNumForName(name), tag);
+	// denis - todo - would be good to replace non-existant patches with a default '404' patch
 }
 
 //

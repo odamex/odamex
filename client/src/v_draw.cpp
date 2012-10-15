@@ -517,7 +517,6 @@ void DCanvas::DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int
 {
 	int 		col;
 	int			colstep;
-	column_t*	column;
 	byte*		desttop;
 	int 		w;
 	vdrawfunc	drawfunc;
@@ -558,18 +557,16 @@ void DCanvas::DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int
 
 	for ( ; col<w ; x++, col++, desttop += colstep)
 	{
-		column = (column_t *)((byte *)patch + LELONG(patch->columnofs[col]));
+		tallpost_t *post =
+				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
 
 		// step through the posts in a column
-		while (column->topdelta != 0xff )
+		while (!post->end())
 		{
-			drawfunc ((byte *)column + 3,
-					  desttop + column->topdelta * pitch,
-					  column->length,
-					  pitch);
+			drawfunc (post->data(), desttop + post->topdelta * pitch,
+					  post->length, pitch);
 
-			column = (column_t *)(	(byte *)column + column->length
-									+ 4 );
+			post = post->next();
 		}
 	}
 }
@@ -631,20 +628,20 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 	byte* desttop = buffer + (y0 * pitch) + (x0 * colstep);
 	int w = destwidth * xinc;
 
-	const column_t* column;
 	for (;col < w;col += xinc, desttop += colstep)
 	{
-		column = reinterpret_cast<const column_t*>(reinterpret_cast<const byte*>(patch) +
-		                                           LELONG(patch->columnofs[col >> FRACBITS]));
+		tallpost_t *post =
+				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col >> FRACBITS]));	
 
 		// step through the posts in a column
-		while (column->topdelta != 0xff)
+		while (!post->end())
 		{
-			drawfunc(reinterpret_cast<const byte*>(column) + 3,
-			         desttop + (((column->topdelta * ymul)) >> FRACBITS) * pitch,
-			         (column->length * ymul) >> FRACBITS,
+			drawfunc(post->data(),
+			         desttop + (((post->topdelta * ymul)) >> FRACBITS) * pitch,
+			         (post->length * ymul) >> FRACBITS,
 			         pitch, yinc);
-			column = reinterpret_cast<const column_t*>(reinterpret_cast<const byte*>(column) + column->length + 4);
+	
+			post = post->next();
 		}
 	}
 }
@@ -778,7 +775,6 @@ void DCanvas::CopyRect (int srcx, int srcy, int _width, int _height,
 //
 void DCanvas::DrawPatchFlipped (const patch_t *patch, int x0, int y0) const
 {
-	column_t*	column; 
 	byte*		desttop;
 	vdrawsfunc	drawfunc;
 	int			colstep;
@@ -832,18 +828,16 @@ void DCanvas::DrawPatchFlipped (const patch_t *patch, int x0, int y0) const
 
 	for ( ; col >= 0 ; col -= xinc, desttop += colstep)
 	{
-		column = (column_t *)((byte *)patch + LELONG(patch->columnofs[col >> 16]));
+		tallpost_t *post =
+				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col >> 16]));
 
 		// step through the posts in a column
-		while (column->topdelta != 0xff )
+		while (!post->end())
 		{
-			drawfunc ((byte *)column + 3,
-					  desttop + (((column->topdelta * ymul)) >> 16) * pitch,
-					  (column->length * ymul) >> 16,
-					  pitch,
-					  yinc);
-			column = (column_t *)(	(byte *)column + column->length
-									+ 4 );
+			drawfunc (post->data(), desttop + (((post->topdelta * ymul)) >> 16) * pitch,
+					  (post->length * ymul) >> 16, pitch, yinc);
+		
+			post = post->next();
 		}
 	}
 }

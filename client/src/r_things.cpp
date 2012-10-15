@@ -651,17 +651,17 @@ int*			mceilingclip;
 fixed_t 		spryscale;
 fixed_t 		sprtopscreen;
 
-void R_DrawMaskedColumn (column_t *column)
+void R_DrawMaskedColumn(tallpost_t *post)
 {
 	dc_texturefrac = 0;
 
-	while (column->topdelta != 0xff)
+	while (!post->end())
 	{
 		// calculate unclipped screen coordinates for post
-		int topscreen = sprtopscreen + spryscale*column->topdelta + 1;
+		int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
 
 		dc_yl = (topscreen + FRACUNIT) >> FRACBITS;
-		dc_yh = (topscreen + spryscale * column->length) >> FRACBITS;
+		dc_yh = (topscreen + spryscale * post->length) >> FRACBITS;
 
 		if (dc_yh >= mfloorclip[dc_x])
 			dc_yh = mfloorclip[dc_x] - 1;
@@ -676,10 +676,11 @@ void R_DrawMaskedColumn (column_t *column)
 
 		if (dc_yl <= dc_yh)
 		{
-			dc_source = (byte *)column + 3;
+			dc_source = post->data();
 			colfunc ();
 		}
-		column = (column_t *)((byte *)column + column->length + 4);
+	
+		post = post->next();
 	}
 }
 
@@ -695,8 +696,6 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	fixed_t 			frac;
 	patch_t*			patch;
 
-	// [RH] Tutti-Frutti fix (also allows sprites up to 256 pixels tall)
-	dc_mask = 0xff;
 	dc_textureheight = 256 << FRACBITS;
 
 	if (vis->mobjflags & MF_SPECTATOR)
@@ -786,7 +785,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 			}
 #endif
 
-			R_DrawMaskedColumn ((column_t *)((byte *)patch + LELONG(patch->columnofs[texturecolumn])));
+			R_DrawMaskedColumn ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[texturecolumn])));
 		}
 	} else {
 		// [RH] Cache-friendly drawer
@@ -813,7 +812,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 			dc_x = x1;
 
 			if (dc_x & 1) {
-				R_DrawMaskedColumn ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumn ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 				dc_x++;
 				frac += xiscale;
 			}
@@ -821,15 +820,15 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 			if (dc_x & 2) {
 				if (dc_x < x2 - 1) {
 					rt_initcols();
-					R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+					R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 					dc_x++;
 					frac += xiscale;
-					R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+					R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 					rt_draw2cols ((dc_x - 1) & 3, dc_x - 1);
 					dc_x++;
 					frac += xiscale;
 				} else if (dc_x == x2 - 1) {
-					R_DrawMaskedColumn ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+					R_DrawMaskedColumn ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 					dc_x++;
 					frac += xiscale;
 				}
@@ -837,34 +836,34 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 			while (dc_x < stop) {
 				rt_initcols();
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 				dc_x++;
 				frac += xiscale;
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 				dc_x++;
 				frac += xiscale;
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 				dc_x++;
 				frac += xiscale;
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 				rt_draw4cols (dc_x - 3);
 				dc_x++;
 				frac += xiscale;
 			}
 
 			if (x2 - dc_x == 1) {
-				R_DrawMaskedColumn ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumn ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 			} else if (x2 - dc_x >= 2) {
 				rt_initcols();
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 				dc_x++;
 				frac += xiscale;
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 				rt_draw2cols ((dc_x - 1) & 3, dc_x - 1);
 				dc_x++;
 				frac += xiscale;
 				if (++dc_x < x2) {
-					R_DrawMaskedColumn ((column_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+					R_DrawMaskedColumn ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
 				}
 			}
 		}
