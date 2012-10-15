@@ -775,6 +775,9 @@ W_CacheLumpName
 	return W_CacheLumpNum (W_GetNumForName(name), tag);
 }
 
+size_t R_CalculateNewPatchSize(patch_t *patch);
+void R_ConvertPatch(patch_t *rawpatch, patch_t *newpatch);
+
 //
 // W_CachePatch
 //
@@ -789,65 +792,27 @@ patch_t* W_CachePatch(unsigned lumpnum, int tag)
 
 	if (!lumpcache[lumpnum])
 	{
-		size_t lumplen = W_LumpLength(lumpnum);
-		byte *ptr = (byte *)Z_Malloc(lumplen + 1, tag, &lumpcache[lumpnum]);
-
 		// temporary storage of the raw patch in the old format
-		byte *rawlumpdata = new byte[lumplen];
-		// cached converted patch
-		byte *newlumpdata = (byte*)lumpcache[lumpnum];	
+		byte *rawlumpdata = new byte[W_LumpLength(lumpnum)];
 
 		W_ReadLump(lumpnum, rawlumpdata);
-		patch_t *patch = (patch_t*)(rawlumpdata);
+		patch_t *rawpatch = (patch_t*)(rawlumpdata);
 
-		unsigned *rawpostofs = (unsigned*)(rawlumpdata + 8);
-		unsigned *newpostofs = (unsigned*)(newlumpdata + 8);
+		size_t newlumplen = R_CalculateNewPatchSize(rawpatch);
 
-		memcpy(newlumpdata, rawlumpdata, 8 + 4 * patch->width());	// copy the patch header
+		byte *ptr = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
+		patch_t *newpatch = (patch_t*)lumpcache[lumpnum];	
 
-		for (int i = 0; i < patch->width(); i++)
-		{
-			int abs_offset = 0;
-			
-			tallpost_t *newpost = (tallpost_t*)(newlumpdata + newpostofs[i]);
-			post_t *rawpost = (post_t*)(rawlumpdata + LELONG(rawpostofs[i]));
-
-			while (rawpost->topdelta != 0xFF)
-			{
-				// handle DeePsea tall patches where topdelta is treated as a relative
-				// offset instead of an absolute offset
-				if (rawpost->topdelta <= abs_offset)
-					abs_offset += rawpost->topdelta;
-				else
-					abs_offset = rawpost->topdelta;
-				
-				// watch for column overruns
-				int length = rawpost->length;
-				if (abs_offset + length > patch->height())
-					length = patch->height() - abs_offset;
-
-				// copy the pixels in the post
-				memcpy(newpost->data(), (byte*)(rawpost) + 3, length);
-				
-				newpost->topdelta = abs_offset;
-				newpost->length = length;
-
-				rawpost = (post_t*)((byte*)rawpost + rawpost->length + 4);
-				newpost = newpost->next();
-			}
-
-			newpost->writeend();
-		}
+		R_ConvertPatch(newpatch, rawpatch);
 
 		delete [] rawlumpdata;
 
-		ptr[lumplen] = 0;
+		ptr[newlumplen] = 0;
 	}
 	else
 	{
 		Z_ChangeTag(lumpcache[lumpnum], tag);
 	}
-
 
 	// denis - todo - would be good to check whether the patch violates W_LumpLength here
 	// denis - todo - would be good to check for width/height == 0 here, and maybe replace those with a valid patch

@@ -455,8 +455,8 @@ struct tallpost_s
 	
 	byte *data() const { return (byte*)(this) + 4; }
 	tallpost_s *next() const { return (tallpost_s*)((byte*)(this) + 4 + length); }
-	bool end() const { return *(byte*)(this) == 0xFF; }
-	void writeend() { *(byte*)(this) = 0xFF; }
+	bool end() const { return topdelta == 0xFFFF; }
+	void writeend() { topdelta = 0xFFFF; }
 };
 typedef struct tallpost_s tallpost_t;
 

@@ -92,6 +92,96 @@ int*			texturetranslation;
 
 fixed_t			dc_textureheight;
 
+
+//
+// W_CalculatePatchSize
+//
+// Helper function for converting raw patches that use post_t into patches
+// that use tallpost_t. Returns the lump size of the converted patch.
+//
+size_t R_CalculateNewPatchSize(patch_t *patch)
+{
+	if (!patch)
+		return 0;
+
+	int numposts = 0, numpixels = 0;
+	unsigned int *postofs = (unsigned int *)((byte*)patch + 8);
+
+	for (int i = 0; i < patch->width(); i++)
+	{
+		post_t *post = (post_t*)((byte*)patch + LELONG(postofs[i]));
+
+		while (post->topdelta != 0xFF)
+		{
+			numposts++;
+			numpixels += post->length;
+			post = (post_t*)((byte*)post + post->length + 4);
+		}
+	}
+
+	// 8 byte patch header
+	// 4 * width bytes for column offset table
+	// 4 bytes per post for post header
+	// 1 byte per pixel
+	// 2 bytes per column for termination
+	return 8 + 4 * patch->width() + 4 * numposts + numpixels + 2 * patch->width();
+}
+
+//
+// R_ConvertPatch
+//
+// Converts a patch that uses post_t posts into a patch that uses tallpost_t.
+//
+void R_ConvertPatch(patch_t *newpatch, patch_t *rawpatch)
+{
+	if (!rawpatch || !newpatch)
+		return;
+
+	memcpy(newpatch, rawpatch, 8);		// copy the patch header
+
+	unsigned *rawpostofs = (unsigned*)((byte*)rawpatch + 8);
+	unsigned *newpostofs = (unsigned*)((byte*)newpatch + 8);
+
+	unsigned curofs = 8 + 4 * rawpatch->width();	// keep track of the column offset
+
+	for (int i = 0; i < rawpatch->width(); i++)
+	{
+		int abs_offset = 0;
+			
+		newpostofs[i] = curofs;		// write the new offset for this column
+		post_t *rawpost = (post_t*)((byte*)rawpatch + LELONG(rawpostofs[i]));
+		tallpost_t *newpost = (tallpost_t*)((byte*)newpatch + newpostofs[i]);
+
+		while (rawpost->topdelta != 0xFF)
+		{
+			// handle DeePsea tall patches where topdelta is treated as a relative
+			// offset instead of an absolute offset
+			if (rawpost->topdelta <= abs_offset)
+				abs_offset += rawpost->topdelta;
+			else
+				abs_offset = rawpost->topdelta;
+				
+			// watch for column overruns
+			int length = rawpost->length;
+			if (abs_offset + length > rawpatch->height())
+				length = rawpatch->height() - abs_offset;
+
+			// copy the pixels in the post
+			memcpy(newpost->data(), (byte*)(rawpost) + 3, length);
+				
+			newpost->topdelta = abs_offset;
+			newpost->length = length;
+
+			curofs += newpost->length + 4;
+			rawpost = (post_t*)((byte*)rawpost + rawpost->length + 4);
+			newpost = newpost->next();
+		}
+
+		newpost->writeend();
+		curofs += 2;
+	}
+}
+
 //
 // MAPTEXTURE_T CACHING
 // When a texture is first needed,
@@ -283,15 +373,6 @@ static void R_GenerateLookup(int texnum, int *const errors)
 			{
 				postcount[x]++;
 				post = post->next();
-				
-				// denis - prevent a crash when col goes out of range
-				unsigned int n = (const byte *)post - (const byte *)patch;
-				if (n >= W_LumpLength(patchnum))
-				{
-					Printf(PRINT_HIGH, "R_GenerateLookup warning: post truncated for texture %d\n", texnum);
-					postcount[x]--;
-					break;
-				}
 			}
 		}
 	}
