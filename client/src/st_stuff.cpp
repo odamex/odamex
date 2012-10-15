@@ -832,7 +832,7 @@ END_COMMAND (notarget)
 
 BEGIN_COMMAND (fly)
 {
-	if (CheckCheatmode ())
+	if (!consoleplayer().spectator && CheckCheatmode ())
 		return;
 
 	consoleplayer().cheats ^= CF_FLY;
@@ -842,8 +842,11 @@ BEGIN_COMMAND (fly)
     else
         Printf(PRINT_HIGH, "Fly mode off\n");
 
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	if (!consoleplayer().spectator)
+	{
+		MSG_WriteMarker(&net_buffer, clc_cheat);
+		MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	}
 }
 END_COMMAND (fly)
 
