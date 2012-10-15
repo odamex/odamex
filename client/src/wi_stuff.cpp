@@ -1436,7 +1436,7 @@ void WI_loadData (void)
     secret = W_CachePatch ("WISCRT2", PU_STATIC);
     
 	// "frgs"
-	frags = (patch_t *)W_CacheLumpName ("WIFRGS", PU_STATIC);	 
+	frags = (patch_t *)W_CachePatch ("WIFRGS", PU_STATIC);	 
 	
 	// "time"
     timepatch = W_CachePatch ("WITIME", PU_STATIC);
@@ -1448,13 +1448,13 @@ void WI_loadData (void)
     par = W_CachePatch ("WIPAR", PU_STATIC);
 
 	// "total"
-	total = (patch_t *)W_CacheLumpName ("WIMSTT", PU_STATIC);	
+	total = (patch_t *)W_CachePatch ("WIMSTT", PU_STATIC);	
 
 	// your face
-	star = (patch_t *)W_CacheLumpName ("STFST01", PU_STATIC);
+	star = (patch_t *)W_CachePatch ("STFST01", PU_STATIC);
 
 	// dead face
-	bstar = (patch_t *)W_CacheLumpName("STFDEAD0", PU_STATIC);
+	bstar = (patch_t *)W_CachePatch("STFDEAD0", PU_STATIC);
 
 	p = W_CachePatch ("STPBANY", PU_STATIC);
 

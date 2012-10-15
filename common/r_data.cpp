@@ -446,7 +446,7 @@ tallpost_t* R_GetColumn(int tex, int col)
 	dc_textureheight = textureheight[tex];
 
 	if (lump > 0)
-		return (tallpost_t*)((byte *)W_CacheLumpNum(lump,PU_CACHE) + ofs);
+		return (tallpost_t*)((byte *)W_CachePatch(lump,PU_CACHE) + ofs);
 
 	if (!texturecomposite[tex])
 		R_GenerateComposite (tex);

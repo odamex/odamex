@@ -651,7 +651,7 @@ void M_DrawLoad (void)
 {
 	int i;
 
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("M_LOADG",PU_CACHE), 72, 28);
+	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_LOADG"), 72, 28);
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
@@ -702,7 +702,7 @@ void M_DrawSave(void)
 {
 	int i;
 
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_SAVEG",PU_CACHE), 72, 28);
+	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SAVEG"), 72, 28);
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
@@ -940,8 +940,8 @@ void M_DrawMainMenu (void)
 
 void M_DrawNewGame(void)
 {
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_NEWG",PU_CACHE), 96, 14);
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_SKILL",PU_CACHE), 54, 38);
+	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_NEWG"), 96, 14);
+	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SKILL"), 54, 38);
 }
 
 void M_NewGame(int choice)
@@ -977,7 +977,7 @@ int 	epi;
 
 void M_DrawEpisode(void)
 {
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_EPISOD",PU_CACHE), 54, 38);
+	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_EPISOD"), 54, 38);
 }
 
 void M_VerifyNightmare(int ch)
@@ -1030,7 +1030,7 @@ void M_Episode (int choice)
 //
 void M_DrawReadThis1 (void)
 {
-	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[0], PU_CACHE), 0, 0);
+	screen->DrawPatchIndirect ((patch_t *)W_CachePatch(gameinfo.info.infoPage[0]), 0, 0);
 }
 
 
@@ -1040,7 +1040,7 @@ void M_DrawReadThis1 (void)
 //
 void M_DrawReadThis2 (void)
 {
-	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[1], PU_CACHE), 0, 0);
+	screen->DrawPatchIndirect ((patch_t *)W_CachePatch(gameinfo.info.infoPage[1]), 0, 0);
 }
 
 //
@@ -1048,7 +1048,7 @@ void M_DrawReadThis2 (void)
 //
 void M_DrawReadThis3 (void)
 {
-	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[2], PU_CACHE), 0, 0);
+	screen->DrawPatchIndirect ((patch_t *)W_CachePatch(gameinfo.info.infoPage[2]), 0, 0);
 }
 
 //
