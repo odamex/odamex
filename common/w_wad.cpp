@@ -72,6 +72,8 @@ size_t			numlumps;
 
 void**			lumpcache;
 
+static unsigned	stdisk_lumpnum;
+
 #define MAX_HASHES 10
 
 typedef struct
@@ -567,6 +569,8 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
 
 	memset (lumpcache,0, size);
 
+	stdisk_lumpnum = W_GetNumForName("STDISK");
+
 	return hashes;
 }
 
@@ -662,8 +666,6 @@ W_ReadLump
 {
 	int		c;
 	lumpinfo_t*	l;
-
-	static unsigned stdisk_lumpnum = W_GetNumForName("STDISK");
 
 	if (lump >= numlumps)
 		I_Error ("W_ReadLump: %i >= numlumps",lump);
