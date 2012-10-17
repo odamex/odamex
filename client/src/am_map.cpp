@@ -1649,15 +1649,25 @@ void AM_Drawer (void)
 		if (am_classicmapstring)
 		{
 			int firstmap;
+			int mapoffset = 1;
 			switch (gamemission)
 			{
-				case doom2: firstmap = HUSTR_1; break;
-				case pack_plut: firstmap = PHUSTR_1; break;
-				case pack_tnt: firstmap = THUSTR_1; break;
-				default: firstmap = HUSTR_E1M1; break;
+				case doom2:
+				firstmap = HUSTR_1;
+				break;
+				case pack_plut:
+				firstmap = PHUSTR_1;
+				break;
+				case pack_tnt:
+				firstmap = THUSTR_1;
+				break;
+				default:
+				firstmap = HUSTR_E1M1;
+				mapoffset = level.cluster; // Episodes skip map numbers.
+				break;
 			}
+			strcpy(line, GStrings(firstmap + level.levelnum - mapoffset));
 
-			strcpy(line, GStrings(firstmap + level.levelnum - 1));
 			if (viewactive && screenblocks == 11)
 				FB->DrawTextClean(CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
 			else if (viewactive && screenblocks == 12)
