@@ -693,12 +693,16 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		}
 	}
 
-	S_StopSound (pt, channel);
+	// [AM] Announcers take longer to mentally parse than other SFX, so don't
+	//      let them cut each other off.  We run the risk of it turning into a
+	//      muddled mess, but cutting it off is indecipherable in every case.
+	if (channel != CHAN_ANNOUNCER)
+		S_StopSound(pt, channel);
 
-  	// try to find a channel
+	// try to find a channel
 	cnum = S_getChannel(pt, sfx, volume, priority);
 
-  	// no channel found
+	// no channel found
 	if (cnum < 0)
 		return;
 
