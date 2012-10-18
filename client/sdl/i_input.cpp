@@ -174,13 +174,33 @@ static void SetCursorState (int visible)
 
 static void UpdateFocus(void)
 {
-    Uint8 state;
+	static bool curfocus = false;
 
-    state = SDL_GetAppState();
+	SDL_PumpEvents();
 
-    // We should have input (keyboard) focus and be visible
-    // (not minimized)
-    havefocus = (state & SDL_APPINPUTFOCUS) && (state & SDL_APPACTIVE);
+	Uint8 state = SDL_GetAppState();
+
+	// We should have input (keyboard) focus and be visible (not minimized)
+	havefocus = (state & SDL_APPINPUTFOCUS) && (state & SDL_APPACTIVE);
+
+	// [CG] Handle focus changes, this is all necessary to avoid repeat events.
+	// [AM] This fixes the tab key sticking when alt-tabbing away from the
+	//      program, but seems to make tab a 'dead' key for one keypress.
+	if (curfocus != havefocus)
+	{
+		if (havefocus)
+		{
+			SDL_Event  event;
+			while (SDL_PollEvent(&event))
+			{
+				// Do nothing
+			}
+			SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY / 2, SDL_DEFAULT_REPEAT_INTERVAL);
+		}
+		else
+			SDL_EnableKeyRepeat(0, 0);
+		curfocus = havefocus;
+	}
 }
 
 //
@@ -631,6 +651,7 @@ void I_GetEvent (void)
             if(event.data1 == SDLK_F4 && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
                 AddCommandString("quit");
             // SoM: Ignore the tab portion of alt-tab presses
+            // [AM] Windows 7 seems to preempt this check.
             if(event.data1 == SDLK_TAB && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
                event.data1 = event.data2 = event.data3 = 0;
             else
