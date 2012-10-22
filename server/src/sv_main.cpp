@@ -62,6 +62,7 @@
 #include "p_unlag.h"
 #include "sv_vote.h"
 #include "sv_maplist.h"
+#include "g_warmup.h"
 #include "sv_banlist.h"
 
 #include <algorithm>
@@ -1618,6 +1619,9 @@ void SV_ClientFullUpdate (player_t &pl)
 			if(!SV_SendPacket(pl))
 				return;
 	}
+
+	// update warmup state
+	SV_SendWarmupState(pl, warmup.get_status());
 
 	// update frags/points/spectate/ready
 	for (i = 0; i < players.size(); i++)
@@ -3485,6 +3489,8 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		}
 
 		player.spectator = true;
+		SV_SetReady(player, false, true);
+		player.timeout_ready = 0;
 		player.playerstate = PST_LIVE;
 		player.joinafterspectatortime = level.time;
 
@@ -3588,6 +3594,8 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 			MSG_WriteBool(&(players[j].client.reliablebuf), setting);
 		}
 	}
+
+	warmup.readytoggle();
 }
 
 void SV_Ready(player_t &player)
@@ -3600,6 +3608,19 @@ void SV_Ready(player_t &player)
 	if (player.timeout_ready > level.time) {
 		// We must be on a new map.  Reset the timeout.
 		player.timeout_ready = 0;
+	}
+
+	if (player.spectator == true)
+	{
+		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't ready as a spectator.\n");
+		return;
+	}
+
+	// Check to see if warmup will allow us to toggle our ready state.
+	if (!warmup.checkreadytoggle())
+	{
+		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't ready in the middle of a match!\n");
+		return;
 	}
 
 	// Check to see if the player's timeout has expired.
@@ -4128,7 +4149,11 @@ void SV_TimelimitCheck()
 	if(!sv_timelimit)
 		return;
 
-	level.timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;	// in tics
+	level.timeleft = (int)(sv_timelimit * TICRATE * 60);
+
+	// Don't substract the proper amount of time unless we're actually ingame.
+	if (warmup.checktimeleftadvance())
+		level.timeleft -= level.time;	// in tics
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
 	if (P_AtInterval(1 * TICRATE))		// every second
@@ -4206,6 +4231,7 @@ void SV_GameTics (void)
 	{
 		case GS_LEVEL:
 			SV_RemoveCorpses();
+			warmup.tic();
 			SV_WinCheck();
 			SV_TimelimitCheck();
 			Vote_Runtic();

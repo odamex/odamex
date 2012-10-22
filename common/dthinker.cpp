@@ -47,11 +47,26 @@ void DThinker::Serialize (FArchive &arc)
 	// constructor handles them for us.
 }
 
-void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
+void DThinker::SerializeAll (FArchive &arc, bool hubLoad, bool noStorePlayers)
 {
 	DThinker *thinker;
-
-	if (arc.IsStoring ())
+	if (arc.IsStoring () && noStorePlayers)
+	{
+		thinker = FirstThinker;
+		while (thinker)
+		{
+			// Don't store player mobjs.
+			if (!(thinker->IsKindOf(RUNTIME_CLASS(AActor)) &&
+			    static_cast<AActor *>(thinker)->type == MT_PLAYER))
+			{
+				arc << (BYTE)1;
+				arc << thinker;
+			}
+			thinker = thinker->m_Next;
+		}
+		arc << (BYTE)0;
+	}
+	else if (arc.IsStoring ())
 	{
 		thinker = FirstThinker;
 		while (thinker)
@@ -64,7 +79,7 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 	}
 	else
 	{
-		if (hubLoad)
+		if (hubLoad || noStorePlayers)
 			DestroyMostThinkers ();
 		else
 			DestroyAllThinkers ();

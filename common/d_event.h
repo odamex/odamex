@@ -64,7 +64,9 @@ typedef enum
 	ga_victory,
 	ga_worlddone,
 	ga_screenshot,
-	ga_fullconsole
+	ga_fullconsole,
+	ga_fullresetlevel,
+	ga_resetlevel
 } gameaction_t;
 
 

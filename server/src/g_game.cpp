@@ -445,6 +445,12 @@ void G_Ticker (void)
 		case ga_loadlevel:
 			G_DoLoadLevel (-1);
 			break;
+		case ga_fullresetlevel:
+			G_DoResetLevel(true);
+			break;
+		case ga_resetlevel:
+			G_DoResetLevel(false);
+			break;
 		case ga_newgame:
 			G_DoNewGame ();
 			break;

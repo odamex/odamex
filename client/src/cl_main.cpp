@@ -62,6 +62,7 @@
 #include "p_mobj.h"
 #include "p_pspr.h"
 #include "d_netcmd.h"
+#include "g_warmup.h"
 
 #include <string>
 #include <vector>
@@ -3201,6 +3202,12 @@ void CL_ReadyState() {
 	player.ready = MSG_ReadBool();
 }
 
+// Set local warmup state.
+void CL_WarmupState()
+{
+	warmup.set_client_status(static_cast<Warmup::status_t>(MSG_ReadByte()));
+}
+
 // client source (once)
 typedef void (*client_callback)();
 typedef std::map<svc_t, client_callback> cmdmap;
@@ -3282,6 +3289,7 @@ void CL_InitCommands(void)
 	
 	cmds[svc_spectate]   		= &CL_Spectate;
 	cmds[svc_readystate]		= &CL_ReadyState;
+	cmds[svc_warmupstate]		= &CL_WarmupState;
 
 	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
 

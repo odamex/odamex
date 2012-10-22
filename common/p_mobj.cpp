@@ -743,7 +743,7 @@ void AActor::Serialize (FArchive &arc)
 			<< threshold
 			<< playerid
 			<< lastlook
-			/*<< tracer ? tracer->netid : 0*/
+			<< tracer
 			<< tid
             << special
 			<< args[0]
@@ -768,6 +768,7 @@ void AActor::Serialize (FArchive &arc)
 		unsigned dummy;
 		unsigned playerid;
 		int newnetid;
+		AActor* tmptracer;
 
 		arc >> newnetid
 			>> x
@@ -804,7 +805,7 @@ void AActor::Serialize (FArchive &arc)
 			>> threshold
 			>> playerid
 			>> lastlook
-			/*>> tracer->netid*/
+			>> tmptracer
 			>> tid
 			>> special
 			>> args[0]
@@ -817,6 +818,8 @@ void AActor::Serialize (FArchive &arc)
 			>> translucency
 			>> waterlevel
 			>> gear;
+
+		tracer.init(tmptracer);
 
 		P_SetThingId(this, newnetid);
 

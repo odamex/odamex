@@ -218,6 +218,12 @@ CVAR (sv_callvote_scorelimit, "0", "Clients can vote a new scorelimit.",
 CVAR (sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+// Warmup mode
+CVAR (sv_warmup, "0", "Enable a 'warmup mode' before the match starts.",
+      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
+CVAR (sv_warmup_countdown, "5", "Number of seconds the countdown should wait before the game starts.",
+      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+
 // Experimental settings (all categories)
 // =======================================
 

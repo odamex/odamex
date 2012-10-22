@@ -65,6 +65,7 @@
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
+#include "g_warmup.h"
 
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
@@ -98,6 +99,9 @@ int ACS_WorldVars[NUM_WORLDVARS];
 // ACS variables with global scope
 int ACS_GlobalVars[NUM_GLOBALVARS];
 
+// [AM] Stores the reset snapshot
+FLZOMemFile	*reset_snapshot = NULL;
+
 BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
 
 extern BOOL netdemo;
@@ -125,8 +129,15 @@ void G_DeferedInitNew (char *mapname)
 	sv_nextmap.ForceSet(d_mapname);
 }
 
+void G_DeferedFullReset()
+{
+	gameaction = ga_fullresetlevel;
+}
 
-
+void G_DeferedReset()
+{
+	gameaction = ga_resetlevel;
+}
 
 const char* GetBase(const char* in)
 {
@@ -611,6 +622,112 @@ void G_DoCompleted (void)
 			G_PlayerFinishLevel(players[i]);
 }
 
+extern void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers);
+
+// [AM] - Save the state of the level that can be reset to
+void G_DoSaveResetState()
+{
+	if (reset_snapshot != NULL)
+	{
+		// An existing reset snapshot exists.  Kill it and replace it with
+		// a new one.
+		delete reset_snapshot;
+	}
+	reset_snapshot = new FLZOMemFile;
+	reset_snapshot->Open();
+	FArchive arc(*reset_snapshot);
+	G_SerializeLevel(arc, false, true);
+	arc << level.time;
+}
+
+// [AM] - Reset the state of the level.  Second parameter is true if you want
+//        to zero-out gamestate as well (i.e. resetting scores, RNG, etc.).
+void G_DoResetLevel(bool full_reset)
+{
+	gameaction = ga_nothing;
+	if (reset_snapshot == NULL)
+	{
+		// No saved state to reload to
+		DPrintf("G_DoResetLevel: No saved state to reload.");
+		return;
+	}
+
+	// Clear CTF state.  Last time I tried commonizing this, I started
+	// getting garbage on the screen upon connecting to a server.
+	std::vector<player_t>::iterator it;
+	if (sv_gametype == GM_CTF)
+	{
+		for (size_t i = 0;i < NUMFLAGS;i++)
+		{
+			for (it = players.begin();it != players.end();++it)
+			{
+				it->flags[i] = false;
+			}
+			CTFdata[i].flagger = 0;
+			CTFdata[i].state = flag_home;
+		}
+	}
+
+	// Unserialize saved snapshot
+	reset_snapshot->Reopen();
+	FArchive arc(*reset_snapshot);
+	G_SerializeLevel(arc, false, true);
+	int level_time;
+	arc >> level_time;
+	reset_snapshot->Seek(0, FFile::ESeekSet);
+	// Clear the item respawn queue, otherwise all those actors we just
+	// destroyed and replaced with the serialized items will start respawning.
+	iquehead = iquetail = 0;
+	// Potentially clear out gamestate as well.
+	if (full_reset)
+	{
+		// Set time to the initial tic
+		level.time = level_time;
+		// Clear global goals.
+		for (size_t i = 0; i < NUMTEAMS; i++)
+			TEAMpoints[i] = 0;
+		// Clear player scores.
+		for (it = players.begin();it != players.end();++it)
+		{
+			it->fragcount = 0;
+			it->itemcount = 0;
+			it->secretcount = 0;
+			it->deathcount = 0;
+			it->killcount = 0;
+			it->points = 0;
+			it->ready = false;
+		}
+		// For predictable first spawns.
+		M_ClearRandom();
+	}
+	// Send information about the newly reset map.
+	for (it = players.begin();it != players.end();++it)
+	{
+		// Player needs to actually be ingame
+		if (!it->ingame())
+			continue;
+
+		SV_ClientFullUpdate(*it);
+	}
+	// Force every ingame player to be reborn.
+	for (it = players.begin();it != players.end();++it)
+	{
+		// Spectators aren't reborn
+		if (!it->ingame() || it->spectator)
+			continue;
+
+		// Destroy the attached mobj, otherwise we leave a ghost.
+		// NOTE: For some reason, I would expect that this would disable
+		//       the teleport fog, but it still shows up.  Gramted, I _want_
+		//       teleport fog, but why does it still appear? [AM]
+		it->mo->Destroy();
+
+		// Take their inventory.
+		it->playerstate = PST_REBORN;
+		G_DoReborn(*it);
+	}
+}
+
 //
 // G_DoLoadLevel
 //
@@ -674,6 +791,8 @@ void G_DoLoadLevel (int position)
 		players[i].deathcount = 0; // [Toke - Scores - deaths]
 		players[i].killcount = 0; // [deathz0r] Coop kills
 		players[i].points = 0;
+		players[i].ready = false;
+		players[i].timeout_ready = 0;
 	}
 
 	// [deathz0r] It's a smart idea to reset the team points
@@ -761,8 +880,14 @@ void G_DoLoadLevel (int position)
 	}
 
 	level.starttime = I_GetTime ();
-	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
-	P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
+	// [RH] Restore the state of the level.
+	G_UnSnapshotLevel (!savegamerestore);
+	// [RH] Do script actions that were triggered on another map.
+	P_DoDeferedScripts ();
+	// [AM] Save the state of the level on the first tic.
+	G_DoSaveResetState();
+	// [AM] Handle warmup init.
+	warmup.loadmap();
 	//	C_FlushDisplay ();
 }
 

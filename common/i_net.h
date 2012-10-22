@@ -121,6 +121,7 @@ enum svc_t
 	svc_railtrail,			// [SL] Draw railgun trail and play sound
 	svc_readystate,			// [AM] Broadcast ready state to client
 	svc_playerstate,		// [SL] Health, armor, and weapon of a player
+	svc_warmupstate,		// [AM] Broadcast warmup state to client
 
 	// for co-op
 	svc_mobjstate = 70,

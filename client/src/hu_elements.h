@@ -30,6 +30,7 @@ namespace hud {
 std::string HelpText(void);
 std::string SpyPlayerName(int& color);
 std::string IntermissionTimer(void);
+std::string Warmup(int& color);
 std::string Timer(int& color);
 std::string PersonalSpread(int& color);
 std::string PersonalScore(int& color);

@@ -30,6 +30,7 @@
 #include "d_netinf.h"
 #include "d_player.h"
 #include "doomstat.h"
+#include "g_warmup.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
 #include "p_ctf.h"
@@ -213,8 +214,46 @@ std::string SpyPlayerName(int& color) {
 	return plyr->userinfo.netname;
 }
 
+// Returns a string that contains the current warmup state.
+std::string Warmup(int& color)
+{
+	color = CR_GREY;
+	player_t *dp = &displayplayer();
+	player_t *cp = &consoleplayer();
+
+	Warmup::status_t wstatus = warmup.get_status();
+	if (wstatus == Warmup::WARMUP)
+	{
+		if (dp->spectator)
+			return "Warmup: You are spectating";
+		else if (dp->ready)
+		{
+			color = CR_GREEN;
+			if (dp == cp)
+				return "Warmup: You are ready";
+			else
+				return "Warmup: This player is ready";
+		}
+		else
+		{
+			color = CR_RED;
+			if (dp == cp)
+				return "Warmup: You are not ready";
+			else
+				return "Warmup: This player is not ready";
+		}
+	}
+	else if (wstatus == Warmup::COUNTDOWN)
+	{
+		color = CR_GOLD;
+		return "Warmup: Match is about to start...";
+	}
+	return "";
+}
+
 // Return a string that contains the amount of time left in the map,
-// or a blank string if there is no timer needed.
+// or a blank string if there is no timer needed.  Can also display
+// warmup information if it exists.
 std::string Timer(int& color) {
 	color = CR_GREY;
 

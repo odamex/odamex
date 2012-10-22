@@ -89,6 +89,9 @@ int ACS_WorldVars[NUM_WORLDVARS];
 // ACS variables with global scope
 int ACS_GlobalVars[NUM_GLOBALVARS];
 
+// [AM] Stores the reset snapshot
+FLZOMemFile	*reset_snapshot = NULL;
+
 extern bool r_underwater;
 BOOL savegamerestore;
 
@@ -541,6 +544,8 @@ void G_DoLoadLevel (int position)
 		players[i].deathcount = 0; // [Toke - Scores - deaths]
 		players[i].killcount = 0; // [deathz0r] Coop kills
 		players[i].points = 0;
+		players[i].ready = false;
+		players[i].timeout_ready = 0;
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98

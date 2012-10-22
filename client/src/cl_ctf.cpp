@@ -68,6 +68,7 @@ void CTF_Connect()
 
 	for(i = 0; i < NUMFLAGS; i++)
 	{
+		CTFdata[i].flagger = 0;
 		CTFdata[i].state = (flag_state_t)MSG_ReadByte();
 		byte flagger = MSG_ReadByte();
 
@@ -252,6 +253,14 @@ void CTF_MoveFlags ()
 			fixed_t y = (player.mo->y + FixedMul (-2*FRACUNIT, finesine[an]));
 
 			CL_MoveThing(flag, x, y, player.mo->z);
+		}
+		else
+		{
+			// [AM] The flag isn't actually being held by anybody, so if
+			// anything is in CTFdata[i].actor it's a ghost and should
+			// be cleaned up.
+			if(CTFdata[i].actor)
+				CTFdata[i].actor->Destroy();
 		}
 	}
 }
