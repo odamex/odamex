@@ -95,7 +95,8 @@ void W_VC6Init(void)
 
 		// DOOM2
 		doomwadnames[1].name = "DOOM2.WAD";
-		doomwadnames[1].hash[0] = "25E1459CA71D321525F84628F45CA8CD";
+		doomwadnames[1].hash[0] = "25E1459CA71D321525F84628F45CA8CD",
+		doomwadnames[1].hash[1] = "C3BEA40570C23E511A7ED3EBCD9865F7";
 
 		// PLUTONIA
 		doomwadnames[2].name = "PLUTONIA.WAD";
@@ -108,11 +109,12 @@ void W_VC6Init(void)
 		// DOOMU
 		doomwadnames[4].name = "DOOMU.WAD";
 		doomwadnames[4].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
-			    
+
 		// DOOM
 		doomwadnames[5].name = "DOOM.WAD";
 		doomwadnames[5].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
 		doomwadnames[5].hash[1] = "1CD63C5DDFF1BF8CE844237F580E9CF3";
+		doomwadnames[5].hash[2] = "FB35C4A5A9FD49EC29AB6E900572C524"; // BFG Edition
 
 		// DOOM SHAREWARE
 		doomwadnames[6].name = "DOOM1.WAD";
@@ -120,15 +122,15 @@ void W_VC6Init(void)
 
 		// FREEDOOM
 		doomwadnames[7].name = "FREEDOOM.WAD";
-		
+
 		// FREEDM
 		doomwadnames[8].name = "FREEDM.WAD";
-				
+
 		// CHEX
 		doomwadnames[9].name = "CHEX.WAD";
 		doomwadnames[9].hash[0] = "25485721882b050afa96a56e5758dd52";
 
-		
+
 		WasVC6Inited = true;
 	}
 }
@@ -144,10 +146,10 @@ static const gamewadinfo_t doomwadnames[] =
     { "PLUTONIA.WAD", { "75C8CF89566741FA9D22447604053BD7" } },
     { "TNT.WAD", { "4E158D9953C79CCF97BD0663244CC6B6" } },
     { "DOOMU.WAD", { "C4FE9FD920207691A9F493668E0A2083" } },
-    { "DOOM.WAD", { "C4FE9FD920207691A9F493668E0A2083", "1CD63C5DDFF1BF8CE844237F580E9CF3" } },
+    { "DOOM.WAD", { "C4FE9FD920207691A9F493668E0A2083", "1CD63C5DDFF1BF8CE844237F580E9CF3","FB35C4A5A9FD49EC29AB6E900572C524" } },
     { "DOOM1.WAD", { "F0CEFCA49926D00903CF57551D901ABE" } },
     { "FREEDOOM.WAD", { "" } },
-    { "FREEDM.WAD", { "" } },    
+    { "FREEDM.WAD", { "" } },
     { "CHEX.WAD", { "25485721882b050afa96a56e5758dd52" } },
     { "", { "" } }
 };
@@ -786,7 +788,7 @@ void R_ConvertPatch(patch_t *rawpatch, patch_t *newpatch);
 // [SL] Reads and caches a patch from disk. This takes care of converting the
 // patch from the standard Doom format of posts with 1-byte lengths and offsets
 // to a new format for posts that uses 2-byte lengths and offsets.
-// 
+//
 patch_t* W_CachePatch(unsigned lumpnum, int tag)
 {
 	if (lumpnum >= numlumps)
@@ -803,7 +805,7 @@ patch_t* W_CachePatch(unsigned lumpnum, int tag)
 		size_t newlumplen = R_CalculateNewPatchSize(rawpatch);
 
 		byte *ptr = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
-		patch_t *newpatch = (patch_t*)lumpcache[lumpnum];	
+		patch_t *newpatch = (patch_t*)lumpcache[lumpnum];
 
 		R_ConvertPatch(newpatch, rawpatch);
 

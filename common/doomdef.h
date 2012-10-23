@@ -88,6 +88,7 @@ enum GameMode_t
   // DOOM 2 german edition not handled
   retail,		// DOOM 1 retail, E4, M36
   retail_chex,	// Chex Quest
+  commercial_bfg,
   undetermined	// Well, no IWAD found.
 
 };

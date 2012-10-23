@@ -117,6 +117,8 @@ extern gameinfo_t SharewareGameInfo;
 extern gameinfo_t RegisteredGameInfo;
 extern gameinfo_t RetailGameInfo;
 extern gameinfo_t CommercialGameInfo;
+extern gameinfo_t RetailBFGGameInfo;
+extern gameinfo_t CommercialBFGGameInfo;
 
 extern QWORD testingmode;
 extern BOOL setsizeneeded;
@@ -528,7 +530,7 @@ void D_DoAdvanceDemo (void)
                 pagetic = 170;
 
             gamestate = GS_DEMOSCREEN;
-            pagename = "TITLEPIC";
+            pagename = gameinfo.titlePage;
 
             S_StartMusic(gameinfo.titleMusic);
 
@@ -540,7 +542,7 @@ void D_DoAdvanceDemo (void)
         case 2:
             pagetic = 200;
             gamestate = GS_DEMOSCREEN;
-            pagename = "CREDIT";
+            pagename = gameinfo.creditPage1;
 
             break;
         case 3:
@@ -556,16 +558,16 @@ void D_DoAdvanceDemo (void)
 					pagetic = TICRATE * 11;
 				else
 					pagetic = 170;
-                pagename = "TITLEPIC";
+                pagename = gameinfo.titlePage;
                 S_StartMusic(gameinfo.titleMusic);
             }
             else
             {
                 pagetic = 200;
 				if (gamemode == retail_chex)	// [ML] Chex mode just cycles this screen
-					pagename = "CREDIT";
+					pagename = gameinfo.creditPage1;
 				else
-					pagename = "HELP2";
+					pagename = gameinfo.creditPage2;
             }
 
             break;
@@ -576,7 +578,7 @@ void D_DoAdvanceDemo (void)
         case 6:
             pagetic = 200;
             gamestate = GS_DEMOSCREEN;
-            pagename = "CREDIT";
+            pagename = gameinfo.creditPage2;
 
             break;
         case 7:
@@ -759,11 +761,11 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 	} while(FindNextFile(hFind, &FindFileData));
 
 	dwError = GetLastError();
-	
-	// Note: As documented, FindNextFile sets ERROR_NO_MORE_FILES as the error 
-	// code, but when this function "fails" it does not set it we have to assume 
-	// that it completed successfully (this is actually  bad practice, because 
-    // it says in the docs that it does not set ERROR_SUCCESS, even though 
+
+	// Note: As documented, FindNextFile sets ERROR_NO_MORE_FILES as the error
+	// code, but when this function "fails" it does not set it we have to assume
+	// that it completed successfully (this is actually  bad practice, because
+    // it says in the docs that it does not set ERROR_SUCCESS, even though
     // GetLastError returns 0) WTF DO WE DO?!
 	if(dwError != ERROR_SUCCESS && dwError != ERROR_NO_MORE_FILES)
 		Printf (PRINT_HIGH, "FindNextFile failed. GetLastError: %d\n", dwError);
@@ -948,12 +950,13 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 	// Now scan the contents of the IWAD to determine which one it is
 	if (iwad.length())
 	{
-#define NUM_CHECKLUMPS 9
+#define NUM_CHECKLUMPS 10
 		static const char checklumps[NUM_CHECKLUMPS][8] = {
 			"E1M1", "E2M1", "E4M1", "MAP01",
 			{ 'A','N','I','M','D','E','F','S'},
 			"FINAL2", "REDTNT2", "CAMO1",
-			{ 'E','X','T','E','N','D','E','D'}
+			{ 'E','X','T','E','N','D','E','D'},
+			{ 'D','M','E','N','U','P','I','C'}
 		};
 		int lumpsfound[NUM_CHECKLUMPS];
 		wadinfo_t header;
@@ -991,8 +994,17 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 
 		if (lumpsfound[3])
 		{
-			gamemode = commercial;
-			gameinfo = CommercialGameInfo;
+            if (lumpsfound[9])
+            {
+                gameinfo = CommercialBFGGameInfo;
+                gamemode = commercial_bfg;
+            }
+            else
+            {
+                gameinfo = CommercialGameInfo;
+                gamemode = commercial;
+            }
+
 			if (lumpsfound[6])
 			{
 				gamemission = pack_tnt;
@@ -1006,7 +1018,11 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			else
 			{
 				gamemission = doom2;
-				titlestring = "DOOM 2: Hell on Earth";
+
+				if (lumpsfound[9])
+                    titlestring = "DOOM 2: Hell on Earth (BFG Edition)";
+                else
+                    titlestring = "DOOM 2: Hell on Earth";
 			}
 		}
 		else if (lumpsfound[0])
@@ -1025,9 +1041,18 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 					}
 					else
 					{
-						gamemode = retail;
-						gameinfo = RetailGameInfo;
-						titlestring = "The Ultimate DOOM";
+					    gamemode = retail;
+
+					    if (lumpsfound[9])
+                        {
+                            gameinfo = RetailBFGGameInfo;
+                            titlestring = "The Ultimate DOOM (BFG Edition)";
+                        }
+                        else
+                        {
+                            gameinfo = RetailGameInfo;
+                            titlestring = "The Ultimate DOOM";
+                        }
 					}
 				}
 				else
@@ -1333,7 +1358,7 @@ std::vector<size_t> D_DoomWadReboot(
     {
         memset(wadclusterinfos,0,sizeof(wadclusterinfos));
         numwadclusterinfos = 0;
-    }	
+    }
 
 	// Restart the memory manager
 	Z_Init();
@@ -1561,7 +1586,7 @@ void D_DoomMain (void)
 
 	// [RH] Parse through all loaded mapinfo lumps
 	G_ParseMapInfo ();
-	
+
 	// [ML] Parse musinfo lump
 	G_ParseMusInfo ();
 
@@ -1621,7 +1646,7 @@ void D_DoomMain (void)
 
 	// [SL] allow the user to pass the name of a netdemo as the first argument.
 	// This allows easy launching of netdemos from Windows Explorer or other GUIs.
-	
+
 	// [Xyltol]
 	if (Args.GetArg(1))
 	{

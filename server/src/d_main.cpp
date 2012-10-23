@@ -102,6 +102,8 @@ extern gameinfo_t SharewareGameInfo;
 extern gameinfo_t RegisteredGameInfo;
 extern gameinfo_t RetailGameInfo;
 extern gameinfo_t CommercialGameInfo;
+extern gameinfo_t RetailBFGGameInfo;
+extern gameinfo_t CommercialBFGGameInfo;
 
 extern int testingmode;
 extern BOOL setsizeneeded;
@@ -318,12 +320,13 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 	// Now scan the contents of the IWAD to determine which one it is
 	if (iwad.length())
 	{
-#define NUM_CHECKLUMPS 9
+#define NUM_CHECKLUMPS 10
 		static const char checklumps[NUM_CHECKLUMPS][8] = {
 			"E1M1", "E2M1", "E4M1", "MAP01",
 			{ 'A','N','I','M','D','E','F','S'},
 			"FINAL2", "REDTNT2", "CAMO1",
-			{ 'E','X','T','E','N','D','E','D'}
+			{ 'E','X','T','E','N','D','E','D'},
+			{ 'D','M','E','N','U','P','I','C'}
 		};
 		int lumpsfound[NUM_CHECKLUMPS];
 		wadinfo_t header;
@@ -361,8 +364,17 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 
 		if (lumpsfound[3])
 		{
-			gamemode = commercial;
-			gameinfo = CommercialGameInfo;
+            if (lumpsfound[9])
+            {
+                gameinfo = CommercialBFGGameInfo;
+                gamemode = commercial_bfg;
+            }
+            else
+            {
+                gameinfo = CommercialGameInfo;
+                gamemode = commercial;
+            }
+
 			if (lumpsfound[6])
 			{
 				gamemission = pack_tnt;
@@ -376,7 +388,11 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			else
 			{
 				gamemission = doom2;
-				titlestring = "DOOM 2: Hell on Earth";
+
+				if (lumpsfound[9])
+                    titlestring = "DOOM 2: Hell on Earth (BFG Edition)";
+                else
+                    titlestring = "DOOM 2: Hell on Earth";
 			}
 		}
 		else if (lumpsfound[0])
@@ -387,7 +403,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 				if (lumpsfound[2])
 				{
 					if (!StdStringCompare(iwad_file,"chex.wad",true))	// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
-					{								// iwad.  It's ultimate doom with their stuff replacing most things.
+					{													// iwad.  It's ultimate doom with their stuff replacing most things.
 						gamemission = chex;
 						gamemode = retail_chex;
 						gameinfo = RetailGameInfo;
@@ -395,9 +411,18 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 					}
 					else
 					{
-						gamemode = retail;
-						gameinfo = RetailGameInfo;
-						titlestring = "The Ultimate DOOM";
+					    gamemode = retail;
+
+					    if (lumpsfound[9])
+                        {
+                            gameinfo = RetailBFGGameInfo;
+                            titlestring = "The Ultimate DOOM (BFG Edition)";
+                        }
+                        else
+                        {
+                            gameinfo = RetailGameInfo;
+                            titlestring = "The Ultimate DOOM";
+                        }
 					}
 				}
 				else

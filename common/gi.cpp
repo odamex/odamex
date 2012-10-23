@@ -130,10 +130,56 @@ gameinfo_t RetailGameInfo =
 	&DoomBorder
 };
 
+gameinfo_t RetailBFGGameInfo =
+{
+	GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH,
+	{ 'T','I','T','L','E','P','I','C' },
+	"CREDIT",
+	"CREDIT",
+	"D_INTRO",
+	5,
+	0,
+	200/35,
+	"misc/chat2",
+	{ 'D','_','V','I','C','T','O','R' },
+	{ 'F','L','O','O','R','4','_','8' },
+	"CREDIT",
+	{ 'V','I','C','T','O','R','Y','2' },
+	"ENDPIC",
+	{ { "HELP1", "CREDIT", "CREDIT"  } },
+	quitsounds,
+	2,
+	{ 'F','L','O','O','R','7','_','2' },
+	&DoomBorder
+};
+
 gameinfo_t CommercialGameInfo =
 {
 	GI_MAPxx | GI_MENUHACK_COMMERCIAL,
 	{ 'T','I','T','L','E','P','I','C' },
+	"CREDIT",
+	"CREDIT",
+	{ 'D','_','D','M','2','T','T','L' },
+	11,
+	0,
+	200/35,
+	"misc/chat",
+	{ 'D','_','R','E','A','D','_','M' },
+	"SLIME16",
+	"CREDIT",
+	"CREDIT",
+	"CREDIT",
+	{ { "HELP", "CREDIT", "CREDIT" } },
+	quitsounds2,
+	3,
+	"GRNROCK",
+	&DoomBorder
+};
+
+gameinfo_t CommercialBFGGameInfo =
+{
+	GI_MAPxx | GI_MENUHACK_COMMERCIAL,
+	{ 'I','N','T','E','R','P','I','C' },
 	"CREDIT",
 	"CREDIT",
 	{ 'D','_','D','M','2','T','T','L' },
