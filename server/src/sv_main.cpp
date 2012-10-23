@@ -45,6 +45,7 @@
 #include "g_level.h"
 #include "p_tick.h"
 #include "p_local.h"
+#include "p_inter.h"
 #include "sv_main.h"
 #include "sv_sqp.h"
 #include "sv_sqpold.h"
