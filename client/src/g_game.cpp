@@ -2374,42 +2374,5 @@ BOOL G_CheckDemoStatus (void)
 	return false;
 }
 
-EXTERN_CVAR (sv_fraglimit)
-EXTERN_CVAR (sv_allowexit)
-EXTERN_CVAR (sv_fragexitswitch)
-
-BOOL CheckIfExitIsGood (AActor *self)
-{
-	if (self == NULL)
-		return false;
-
-	// [Toke - dmflags] Old location of DF_NO_EXIT
-    // [ML] 04/4/06: Check for sv_fragexitswitch - seems a bit hacky
-
-    unsigned int i;
-
-    for(i = 0; i < players.size(); i++)
-        if(players[i].fragcount >= sv_fraglimit)
-            break;
-
-    if (sv_gametype != GM_COOP && self)
-    {
-        if (!sv_allowexit && sv_fragexitswitch && i == players.size())
-            return false;
-
-        if (!sv_allowexit && !sv_fragexitswitch)
-            return false;
-    }
-
-	if(self->player && multiplayer)
-		Printf (PRINT_HIGH, "%s exited the level.\n", self->player->userinfo.netname);
-
-    return true;
-}
-
 
 VERSION_CONTROL (g_game_cpp, "$Id$")
-
-
-
-

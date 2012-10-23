@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -34,7 +34,7 @@ BOOL P_GiveWeapon(player_s*, weapontype_t, BOOL);
 BOOL P_GiveArmor(player_s*, int);
 void P_GiveCard(player_s*, card_t);
 BOOL P_GivePower(player_s*, int);
-
+void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 
 #endif
 

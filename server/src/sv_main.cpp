@@ -262,7 +262,7 @@ void SV_SetClientRate(client_t &client, int rate)
 	else if (rate > sv_maxrate)
 		rate = sv_maxrate;
 
-	client.rate = rate;	
+	client.rate = rate;
 }
 
 EXTERN_CVAR (sv_waddownloadcap)
@@ -308,7 +308,6 @@ void SV_SendServerSettings (player_t &pl);
 void SV_ServerSettingChange (void);
 
 // some doom functions
-void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 bool P_CheckSightEdges (const AActor* t1, const AActor* t2, float radius_boost = 0.0);
 bool P_CheckSightEdges2 (const AActor* t1, const AActor* t2, float radius_boost = 0.0);
 size_t P_NumPlayersOnTeam(team_t team);
@@ -560,7 +559,7 @@ void SV_CheckTimeouts (void)
 void SV_RemoveDisconnectedPlayer(player_t &player)
 {
     int player_id = player.id;
-	
+
 	if (!validplayer(player))
 		return;
 
@@ -963,7 +962,7 @@ void SV_SetupUserInfo (player_t &player)
 	player.userinfo.aimdist			= aimdist;
 	player.userinfo.switchweapon	= switchweapon;
 	memcpy(player.userinfo.weapon_prefs, weapon_prefs, sizeof(weapon_prefs));
-	
+
 	// [SL] 2011-12-02 - Prevent players from spamming certain userinfo updates
 	if (player.userinfo.next_change_time > gametic)
 	{
@@ -977,7 +976,7 @@ void SV_SetupUserInfo (player_t &player)
 	player.userinfo.team			= new_team;
 	player.userinfo.color			= color;
 	player.prefcolor				= color;
-	
+
 	// sanitize the client's name
 	new_netname = TrimString(new_netname);
 	if (new_netname.empty())
@@ -999,7 +998,7 @@ void SV_SetupUserInfo (player_t &player)
 			default:			gendermessage = "its";  break;
 		}
 
-		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", 
+		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n",
             old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname);
 	}
 
@@ -1046,11 +1045,11 @@ EXTERN_CVAR (sv_teamsinplay)
 //
 void SV_CheckTeam (player_t &player)
 {
-	if (sv_gametype == GM_CTF && 
+	if (sv_gametype == GM_CTF &&
 			(player.userinfo.team < 0 || player.userinfo.team >= NUMTEAMS))
 		SV_ForceSetTeam (player, SV_GoodTeam ());
 
-	if (sv_gametype != GM_CTF && 
+	if (sv_gametype != GM_CTF &&
 			(player.userinfo.team < 0 || player.userinfo.team >= sv_teamsinplay))
 		SV_ForceSetTeam (player, SV_GoodTeam ());
 }
@@ -1245,7 +1244,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		ok = true;
 
 	bool previously_ok = mo->players_aware.get(player.id);
-	
+
 	client_t *cl = &player.client;
 
 	if(!ok && previously_ok)
@@ -1390,11 +1389,11 @@ void SV_DestroyFinishedMovingSectors()
 {
 	std::list<movingsector_t>::iterator itr;
 	itr = movingsectors.begin();
-	
+
 	while (itr != movingsectors.end())
 	{
 		sector_t *sector = itr->sector;
-		
+
 		if (P_MovingCeilingCompleted(sector))
 		{
 			itr->moving_ceiling = false;
@@ -1420,7 +1419,7 @@ void SV_DestroyFinishedMovingSectors()
 //
 // SV_SendMovingSectorUpdate
 //
-// 
+//
 void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
 {
 	if (!sector || !validplayer(player))
@@ -1429,9 +1428,9 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
 	int sectornum = sector - sectors;
 	if (sectornum < 0 || sectornum >= numsectors)
 		return;
-		
+
 	buf_t *netbuf = &(player.client.netbuf);
-    
+
 	// Determine which moving planes are in this sector
 	movertype_t floor_mover = SEC_INVALID, ceiling_mover = SEC_INVALID;
 
@@ -1460,7 +1459,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
 
 	// Create bitfield to denote moving planes in this sector
 	byte movers = byte(ceiling_mover) | (byte(floor_mover) << 4);
-				
+
 	MSG_WriteMarker(netbuf, svc_movingsector);
 	MSG_WriteShort(netbuf, sectornum);
 	MSG_WriteShort(netbuf, P_CeilingHeight(sector) >> FRACBITS);
@@ -1478,7 +1477,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
         MSG_WriteShort(netbuf, Elevator->m_CeilingDestHeight >> FRACBITS);
         MSG_WriteShort(netbuf, Elevator->m_Speed >> FRACBITS);
 	}
-	
+
 	if (ceiling_mover == SEC_PILLAR)
 	{
 		DPillar *Pillar = static_cast<DPillar *>(sector->ceilingdata);
@@ -1495,7 +1494,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
 	if (ceiling_mover == SEC_CEILING)
 	{
 		DCeiling *Ceiling = static_cast<DCeiling *>(sector->ceilingdata);
-		
+
         MSG_WriteByte(netbuf, Ceiling->m_Type);
         MSG_WriteShort(netbuf, Ceiling->m_BottomHeight >> FRACBITS);
         MSG_WriteShort(netbuf, Ceiling->m_TopHeight >> FRACBITS);
@@ -1565,7 +1564,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
         MSG_WriteShort(netbuf, Plat->m_Height >> FRACBITS);
         MSG_WriteShort(netbuf, Plat->m_Lip >> FRACBITS);
 	}
-}	
+}
 
 //
 // SV_UpdateMovingSectors
@@ -1577,7 +1576,7 @@ void SV_UpdateMovingSectors(player_t &player)
 	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
 	{
 		sector_t *sector = itr->sector;
-		
+
 		SV_SendMovingSectorUpdate(player, sector);
 	}
 }
@@ -1588,7 +1587,7 @@ void SV_UpdateMovingSectors(player_t &player)
 // Sends gametic to synchronize with the client
 //
 // [SL] 2011-05-11 - Instead of sending the whole gametic (4 bytes),
-// send only the least significant byte to save bandwidth. 
+// send only the least significant byte to save bandwidth.
 void SV_SendGametic(client_t* cl)
 {
 	MSG_WriteMarker	(&cl->netbuf, svc_svgametic);
@@ -1705,14 +1704,14 @@ void SV_SendServerSettings (player_t &pl)
 		{
             if ((cl->reliablebuf.cursize + 1 + 1 + (strlen(var->name()) + 1) + (strlen(var->cstring()) + 1) + 1) >= 512)
                 SV_SendPacket(pl);
-                
+
             MSG_WriteMarker(&cl->reliablebuf, svc_serversettings);
-                       
+
             MSG_WriteByte(&cl->reliablebuf, 1); // TODO: REMOVE IN 0.7
-			
+
 			MSG_WriteString(&cl->reliablebuf, var->name());
 			MSG_WriteString(&cl->reliablebuf, var->cstring());
-            
+
             MSG_WriteByte(&cl->reliablebuf, 2); // TODO: REMOVE IN 0.7
 		}
 
@@ -1983,7 +1982,7 @@ void SV_ConnectClient (void)
 
 	// get client userinfo
 	MSG_ReadByte();  // clc_userinfo
-	SV_SetupUserInfo(players[n]); 
+	SV_SetupUserInfo(players[n]);
 
 	// get rate value
 	SV_SetClientRate(*cl, MSG_ReadLong());
@@ -2309,7 +2308,7 @@ void SV_DrawScores()
 						(int)sortedplayers[i]->client.address.ip[2],
 						(int)sortedplayers[i]->client.address.ip[3]);
 
-                    Printf(PRINT_HIGH, "%-3d %-16s %-15s %-6d N/A  %-5d %-3d", 
+                    Printf(PRINT_HIGH, "%-3d %-16s %-15s %-6d N/A  %-5d %-3d",
 						i+1,
 						ip,
                         sortedplayers[i]->userinfo.netname,
@@ -2366,7 +2365,7 @@ void SV_DrawScores()
 						(int)sortedplayers[i]->client.address.ip[2],
 						(int)sortedplayers[i]->client.address.ip[3]);
 
-					Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d", 
+					Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d",
 						i+1,
 						ip,
 						sortedplayers[i]->userinfo.netname,
@@ -2453,7 +2452,7 @@ void SV_DrawScores()
 					(int)sortedplayers[i]->client.address.ip[2],
 					(int)sortedplayers[i]->client.address.ip[3]);
 
-				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d", 
+				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d",
 					i+1,
 					ip,
 					sortedplayers[i]->userinfo.netname,
@@ -2758,7 +2757,7 @@ void SV_UpdateMonsters(player_t &pl)
     {
         if (mo->flags & MF_CORPSE)
 			continue;
-	
+
         if (!(mo->flags & MF_COUNTKILL ||
 			mo->type == MT_SKULL))
 			continue;
@@ -3026,14 +3025,14 @@ void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 	MSG_WriteShort(buf, player->health);
 	MSG_WriteByte(buf, player->armortype);
 	MSG_WriteShort(buf, player->armorpoints);
-	
+
 	MSG_WriteByte(buf, player->readyweapon);
 
 	for (int i = 0; i < NUMAMMO; i++)
 		MSG_WriteShort(buf, player->ammo[i]);
-	
+
 	for (int i = 0; i < NUMPSPRITES; i++)
-	{	
+	{
 		pspdef_t *psp = &player->psprites[i];
 		if (psp->state)
 			MSG_WriteByte(buf, psp->state - states);
@@ -3067,14 +3066,14 @@ void SV_WriteCommands(void)
 	for (size_t i=0; i < players.size(); i++)
 	{
 		client_t *cl = &clients[i];
-		
+
 		// Don't need to update origin every tic.
 		// The server sends origin and velocity of a
 		// player and the client always knows origin on
 		// on the next tic.
 		// HOWEVER, update as often as the player requests
 		if (P_AtInterval(players[i].userinfo.update_rate))
-		{ 
+		{
 			// [SL] 2011-05-11 - Send the client the server's gametic
 			// this gametic is returned to the server with the client's
 			// next cmd
@@ -3138,7 +3137,7 @@ void SV_WriteCommands(void)
 			}
 		}
 
-		// [SL] Send client info about player he is spying on 
+		// [SL] Send client info about player he is spying on
 		player_t *target = &idplayer(players[i].spying);
 		if (validplayer(*target) && P_CanSpy(players[i], *target))
 			SV_SendPlayerStateUpdate(&players[i].client, target);
@@ -3189,7 +3188,7 @@ int SV_CalculateNumTiccmds(player_t &player)
 
 	static const int minimum_cmds = 1;
 	static const size_t maximum_queue_size = TICRATE / 4;
-	
+
 	if (!sv_ticbuffer || player.spectator || player.playerstate == PST_DEAD)
 	{
 		// Process all queued ticcmds.
@@ -3228,16 +3227,16 @@ int SV_CalculateNumTiccmds(player_t &player)
 void SV_ProcessPlayerCmd(player_t &player)
 {
 	static const int maxcmdmove = 12800;
-	
+
 	if (!validplayer(player) || !player.mo)
 		return;
 
 	#ifdef _TICCMD_QUEUE_DEBUG_
-	DPrintf("Cmd queue size for %s: %d\n", 
+	DPrintf("Cmd queue size for %s: %d\n",
 				player.userinfo.netname, player.cmdqueue.size());
 	#endif	// _TICCMD_QUEUE_DEBUG_
 
-	int num_cmds = SV_CalculateNumTiccmds(player);	
+	int num_cmds = SV_CalculateNumTiccmds(player);
 
 	for (int i = 0; i < num_cmds && !player.cmdqueue.empty(); i++)
 	{
@@ -3259,7 +3258,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 
 		if (!sv_freelook)
 			player.mo->pitch = 0;
-			
+
 		// Apply this ticcmd using the game logic
 		if (!sv_speedhackfix && gamestate == GS_LEVEL)
 		{
@@ -3286,7 +3285,7 @@ void SV_GetPlayerCmd(player_t &player)
 	// The client-tic at the time this message was sent.  The server stores
 	// this and sends it back the next time it tells the client
 	int tic = MSG_ReadLong();
-	
+
 	// Read the last 10 ticcmds from the client and add any new ones
 	// to the cmdqueue
 	for (int i = 9; i >= 0; i--)
@@ -3294,7 +3293,7 @@ void SV_GetPlayerCmd(player_t &player)
 		NetCommand netcmd;
 		netcmd.read(&net_message);
 		netcmd.setTic(tic - i);
-		
+
 		if (netcmd.getTic() > cl->lastclientcmdtic && gamestate == GS_LEVEL)
 		{
 			player.cmdqueue.push(netcmd);
@@ -3308,7 +3307,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 {
 	AActor *mo = player.mo;
 	client_t *cl = &player.client;
-	
+
 	// Send updates about a player's position as often as the player wishes
 	if (!mo || !P_AtInterval(player.userinfo.update_rate))
 		return;
@@ -4081,7 +4080,7 @@ void SV_WadDownloads (void)
 			unsigned int read;
 			unsigned int filelen = 0;
 			read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, chunk_size, buff, filelen);
-			
+
 			if (!read)
 				break;
 
@@ -4108,10 +4107,10 @@ void SV_WadDownloads (void)
 
 			cl->download.next_offset += read;
 		} while (
-			(double)(cl->reliable_bps + cl->unreliable_bps) * TICRATE 
-				/ (double)(gametic % TICRATE)	// bps already used 
+			(double)(cl->reliable_bps + cl->unreliable_bps) * TICRATE
+				/ (double)(gametic % TICRATE)	// bps already used
 				+ (double)chunk_size / TICRATE 	// bps this chunk will use
-			< (double)download_rate); 
+			< (double)download_rate);
 	}
 }
 
@@ -4239,7 +4238,7 @@ void SV_GameTics (void)
 		case GS_INTERMISSION:
 			SV_IntermissionTimeCheck();
 		break;
-		
+
 		default:
 		break;
 	}
@@ -4265,12 +4264,12 @@ void SV_TouchSpecial(AActor *special, player_t *player)
 void SV_PlayerTimes (void)
 {
 	for (size_t i = 0; i < players.size(); i++)
-	{                                  
+	{
 		if (players[i].ingame())
 			players[i].GameTime++;
-	}                          
+	}
 }
-                                                                             
+
 //
 // SV_StepTics
 //
@@ -4291,7 +4290,7 @@ void SV_StepTics (QWORD tics)
 		SV_SendPackets();
 		SV_ClearClientsBPS();
 		SV_CheckTimeouts();
-		
+
 		// Since clients are only sent sector updates every 3rd tic, don't destroy
 		// the finished moving sectors until we've sent the clients the update
 		if (P_AtInterval(3))
@@ -4501,11 +4500,11 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 
 	if (!self || !self->player)
 		return;
-		
-	// Don't print obituaries after the end of a round		
+
+	// Don't print obituaries after the end of a round
 	if (shotclock || gamestate != GS_LEVEL)
 		return;
-		
+
 	gender = self->player->userinfo.gender;
 
 	// Treat voodoo dolls as unknown deaths
@@ -4515,7 +4514,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	if (sv_gametype == GM_COOP)
 		MeansOfDeath |= MOD_FRIENDLY_FIRE;
 
-	if ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && 
+	if ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
 		attacker && attacker->player &&
 		self->player->userinfo.team == attacker->player->userinfo.team)
 		MeansOfDeath |= MOD_FRIENDLY_FIRE;
@@ -4619,7 +4618,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 			self = attacker;
 			gender = self->player->userinfo.gender;
 			messagenum = OB_FRIENDLY1 + (rnum & 3);
-		
+
 		} else {
 			switch (mod)
 			{
@@ -4755,7 +4754,7 @@ void SV_SendDestroyActor(AActor *mo)
             	// objects, as a flood of destroyed things could easily overflow a
             	// buffer
 				MSG_WriteMarker(&cl->reliablebuf, svc_removemobj);
-				MSG_WriteShort(&cl->reliablebuf, mo->netid);			
+				MSG_WriteShort(&cl->reliablebuf, mo->netid);
 			}
 		}
 	}

@@ -428,7 +428,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 {
 	if (!player || !player->mo || !special)
 		return;
-		
+
 	AActor *toucher = player->mo;
 	int sound = 0;
 	bool firstgrab = false;
@@ -944,7 +944,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 	// out of reach?
 	fixed_t delta = special->z - toucher->z;
 	fixed_t lowerbound = co_zdoomphys ? -32*FRACUNIT : -8*FRACUNIT;
-	
+
 	if (delta > toucher->height || delta < lowerbound)
 		return;
 
@@ -991,7 +991,7 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 		else
 		{
 			int gendermsg = -1;
-			
+
 			switch (from[1])
 			{
 			case 'g':	gendermsg = 0;	break;
@@ -1235,7 +1235,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	{
 		// [Toke] Better sv_fraglimit
 		if (sv_gametype == GM_DM && sv_fraglimit &&
-            splayer->fragcount >= sv_fraglimit && !sv_fragexitswitch && !shotclock)
+            splayer->fragcount >= sv_fraglimit && !shotclock)
 		{
             // [ML] 04/4/06: Added !sv_fragexitswitch
             SV_BroadcastPrintf(
