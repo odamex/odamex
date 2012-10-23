@@ -1707,6 +1707,9 @@ void D_DoomMain (void)
 
 			C_ToggleConsole();
 
+			if (gamemode == commercial_bfg) // DOOM 2 BFG Edtion
+                AddCommandString("menu_main");
+
 			D_StartTitle (); // start up intro loop
 		}
     }
