@@ -432,7 +432,7 @@ public:
 		return true;
 	}
 	bool exec(void) {
-		G_RestartMap();
+		G_DeferedFullReset();
 		return true;
 	}
 };
