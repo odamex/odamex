@@ -405,67 +405,6 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 	data->flaglocated = true;
 }
 
-//
-//	[Toke - CTF] CTF_SelectTeamPlaySpot
-//	Randomly selects a team spawn point
-//
-mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
-{
-    switch (player.userinfo.team)
-    {
-        case TEAM_BLUE:
-        {
-            if (sv_gametype != GM_CTF && sv_teamsinplay < 1)
-                break;
-
-            for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
-            {
-                size_t i = M_Random () % selections;
-                if (G_CheckSpot (player, &blueteamstarts[i]) )
-                {
-                    return &blueteamstarts[i];
-                }
-            }
-        }
-        break;
-
-        case TEAM_RED:
-        {
-            if (sv_gametype != GM_CTF && sv_teamsinplay < 2)
-                break;
-
-            for (size_t j = 0; j < MaxRedTeamStarts; ++j)
-            {
-                size_t i = M_Random () % selections;
-                if (G_CheckSpot (player, &redteamstarts[i]) )
-                {
-                    return &redteamstarts[i];
-                }
-            }
-		}
-		break;
-
-        default:
-        {
-
-        }
-        break;
-    }
-
-	if (sv_gametype == GM_CTF) {
-		if (MaxBlueTeamStarts) return &blueteamstarts[0];
-		else if (MaxRedTeamStarts) return &redteamstarts[0];
-	} else {
-		if (sv_teamsinplay >= 1 && MaxBlueTeamStarts)
-			return &blueteamstarts[0];
-		else
-		if (sv_teamsinplay >= 2 && MaxRedTeamStarts)
-			return &redteamstarts[0];
-	}
-
-	return NULL;
-}
-
 FArchive &operator<< (FArchive &arc, flagdata &flag)
 {
 	return arc;

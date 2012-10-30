@@ -763,7 +763,44 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 	return &deathmatchstarts[i];
 }
 
-void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this function to accept teamplay starts
+// [Toke] Randomly selects a team spawn point
+// [AM] Moved out of CTF gametype and cleaned up.
+static mapthing2_t *SelectRandomTeamSpot(player_t &player, int selections)
+{
+	size_t i;
+
+	switch (player.userinfo.team)
+	{
+	case TEAM_BLUE:
+		for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
+		{
+			i = M_Random() % selections;
+			if (G_CheckSpot(player, &blueteamstarts[i]))
+			{
+				return &blueteamstarts[i];
+			}
+		}
+		return &blueteamstarts[i];
+	case TEAM_RED:
+		for (size_t j = 0; j < MaxRedTeamStarts; ++j)
+		{
+			i = M_Random() % selections;
+			if (G_CheckSpot(player, &redteamstarts[i]))
+			{
+				return &redteamstarts[i];
+			}
+		}
+		return &redteamstarts[i];
+	default:
+		// This team doesn't have a dedicated spawn point.  Fallthrough
+		// to using a deathmatch spawn point.
+		break;
+	}
+
+	return SelectRandomDeathmatchSpot(player, selections);
+}
+
+void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this function to accept teamplay starts
 {
 	int selections;
 	mapthing2_t *spot = NULL;
@@ -781,14 +818,14 @@ void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this
 	{
 		selections = deathmatch_p - deathmatchstarts;
 
-		if(selections)
+		if (selections)
 		{
-			spot = SelectRandomDeathmatchSpot (player, selections);
+			spot = SelectRandomDeathmatchSpot(player, selections);
 		}
 	}
 	else
 	{
-		spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
+		spot = SelectRandomTeamSpot(player, selections);  // [Toke - Teams]
 	}
 
 	if (selections < 1)
