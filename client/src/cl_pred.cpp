@@ -78,7 +78,7 @@ CVAR_FUNC_IMPL(cl_prednudge)
 static SectorSnapshotManager *CL_GetSectorSnapshotManager(sector_t *sector)
 {
 	unsigned short sectornum = sector - sectors;
-	if (!sector || sectornum < 0 || sectornum >= numsectors)
+	if (!sector || sectornum >= numsectors)
 		return NULL;
 
 	std::map<unsigned short, SectorSnapshotManager>::iterator mgr_itr;
@@ -132,7 +132,7 @@ static void CL_ResetSectors()
 	{
 		sector_t *sector = itr->sector;
 		unsigned short sectornum = sector - sectors;
-		if (sectornum < 0 || sectornum >= numsectors)
+		if (sectornum >= numsectors)
 			continue;
 		
 		// Find the most recent snapshot received from the server for this sector
