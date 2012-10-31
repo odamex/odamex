@@ -40,7 +40,7 @@ public:
 	} status_t;
 	Warmup() : status(Warmup::DISABLED), time_begin(0) { }
 	Warmup::status_t get_status();
-	void loadmap();
+	void reset();
 	bool checkscorechange();
 	bool checktimeleftadvance();
 	bool checkfireweapon();

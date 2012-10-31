@@ -22,6 +22,7 @@
 
 #include "cmdlib.h"
 #include "d_player.h"
+#include "g_warmup.h"
 #include "sv_main.h"
 #include "sv_maplist.h"
 #include "sv_pickup.h"
@@ -427,6 +428,9 @@ public:
 		return true;
 	}
 	bool exec(void) {
+		// When in warmup mode, we would rather not catch players off guard.
+		warmup.reset();
+
 		G_DeferedFullReset();
 		return true;
 	}

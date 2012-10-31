@@ -71,13 +71,14 @@ Warmup::status_t Warmup::get_status()
 	return this->status;
 }
 
-// Handle warmup bits on the loading of a map.
-void Warmup::loadmap()
+// Reset warmup to "factory defaults".
+void Warmup::reset()
 {
 	if (sv_warmup)
 		this->set_status(Warmup::WARMUP);
 	else
 		this->set_status(Warmup::DISABLED);
+	this->time_begin = 0;
 }
 
 // Don't allow a players score to change if the server is in the middle of warmup.
