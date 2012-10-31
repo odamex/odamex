@@ -38,20 +38,20 @@ public:
 	    INGAME,
 	    COUNTDOWN,
 	} status_t;
-	Warmup() : status(Warmup::DISABLED), time_begin(0), ready_players(0) { }
+	Warmup() : status(Warmup::DISABLED), time_begin(0) { }
 	Warmup::status_t get_status();
 	void loadmap();
 	bool checkscorechange();
 	bool checktimeleftadvance();
 	bool checkfireweapon();
 	bool checkreadytoggle();
+	void forcestart();
 	void readytoggle();
 	void tic();
 	void set_client_status(status_t new_status); // Clientside only.
 private:
 	status_t status;
 	int time_begin;
-	size_t ready_players;
 	void set_status(status_t new_status);
 };
 

@@ -112,6 +112,25 @@ size_t P_NumPlayersInGame()
 	return num_players;
 }
 
+//
+// P_NumReadyPlayersInGame()
+//
+// Returns the number of players who are marked ready in the current game.
+// This does not include spectators or downloaders.
+//
+size_t P_NumReadyPlayersInGame()
+{
+	size_t num_players = 0;
+
+	for (size_t i = 0; i < players.size(); ++i)
+	{
+		if (!players[i].spectator && players[i].ingame() && players[i].ready)
+			++num_players;
+	}
+
+	return num_players;
+}
+
 // P_NumPlayersOnTeam()
 //
 // Returns the number of active players on a team.  No specs or downloaders.

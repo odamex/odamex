@@ -25,12 +25,14 @@
 #include <cmath>
 
 #include "c_cvars.h"
+#include "c_dispatch.h"
 #include "d_player.h"
 #include "g_level.h"
 #include "i_net.h"
 #include "sv_main.h"
 
 EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR(sv_warmup_autostart)
 EXTERN_CVAR(sv_warmup_countdown)
 
 // Store Warmup state.
@@ -113,6 +115,7 @@ bool Warmup::checkreadytoggle()
 }
 
 extern size_t P_NumPlayersInGame();
+extern size_t P_NumReadyPlayersInGame();
 
 // Start or stop the countdown based on if players are ready or not.
 void Warmup::readytoggle()
@@ -125,25 +128,24 @@ void Warmup::readytoggle()
 	if (!this->checkreadytoggle())
 		return;
 
-	bool everyone_ready = true;
-	std::vector<player_t>::iterator it;
-	for (it = players.begin(); it != players.end(); ++it)
-	{
-		if (it->ingame() && !it->spectator && !it->ready)
-		{
-			// A non-spectator is not ready.
-			everyone_ready = false;
-			break;
-		}
-	}
+	// Check to see if we satisfy our autostart setting.
+	size_t ready = P_NumReadyPlayersInGame();
+	size_t total = P_NumPlayersInGame();
+	size_t needed;
 
-	if (everyone_ready)
+	float f_calc = total * sv_warmup_autostart;
+	size_t i_calc = (int)floor(f_calc + 0.5f);
+	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON) {
+		needed = i_calc + 1;
+	}
+	needed = (int)ceil(f_calc);
+
+	if (ready >= needed)
 	{
 		if (this->status == Warmup::WARMUP)
 		{
 			this->set_status(Warmup::COUNTDOWN);
 			this->time_begin = level.time + (sv_warmup_countdown.asInt() * TICRATE);
-			this->ready_players = P_NumPlayersInGame();
 		}
 	}
 	else
@@ -157,22 +159,30 @@ void Warmup::readytoggle()
 	return;
 }
 
+// Force the start of the game.
+void Warmup::forcestart()
+{
+	// Useless outside of warmup.
+	if (this->status != Warmup::WARMUP)
+		return;
+
+	this->set_status(Warmup::COUNTDOWN);
+	this->time_begin = level.time + (sv_warmup_countdown.asInt() * TICRATE);
+}
+
 // Handle tic-by-tic maintenance of the warmup.
 void Warmup::tic()
 {
+	// If autostart is zeroed out, start immediately.
+	if (this->status == Warmup::WARMUP && sv_warmup_autostart == 0.0f)
+	{
+		this->set_status(Warmup::COUNTDOWN);
+		this->time_begin = level.time + (sv_warmup_countdown.asInt() * TICRATE);
+	}
+
 	// If we're not advancing the countdown, we don't care.
 	if (this->status != Warmup::COUNTDOWN)
 		return;
-
-	size_t npig = P_NumPlayersInGame();
-	if (npig != this->ready_players)
-	{
-		if (npig > this->ready_players)
-			SV_BroadcastPrintf(PRINT_HIGH, "Countdown aborted: Player joined.\n");
-		else
-			SV_BroadcastPrintf(PRINT_HIGH, "Countdown aborted: Player left.\n");
-		this->set_status(Warmup::WARMUP);
-	}
 
 	// If we haven't reached the level tic that we begin the map on,
 	// we don't care.
@@ -194,3 +204,9 @@ void Warmup::tic()
 	G_DeferedFullReset();
 	SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");
 }
+
+BEGIN_COMMAND (forcestart)
+{
+	warmup.forcestart();
+}
+END_COMMAND (forcestart)
