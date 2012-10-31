@@ -1117,12 +1117,6 @@ void A_BFGSpray (AActor *mo)
 	if (!mo->target)
 		return;
 
-	// [SL] 2011-07-12 - Move players and sectors back to their positions when
-	// this player hit the fire button clientside.
-	player_t *player = mo->target->player;	// player who fired BFG
-	if (player)
-		Unlag::getInstance().reconcile(player->id);
-
 	// offset angles from its attack angle
 	for (i=0 ; i<40 ; i++)
 	{
@@ -1136,14 +1130,6 @@ void A_BFGSpray (AActor *mo)
 			continue;
 
 		fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
-		// [SL] 2011-07-12 - In unlagged games, spawn BFG tracers at the 
-		// opponent's current position, not at their reconciled position
-		if (player && linetarget->player)
-		{
-			Unlag::getInstance().getReconciliationOffset(   player->id,
-															linetarget->player->id,
-															xoffs, yoffs, zoffs);
-		}
 
 		new AActor (linetarget->x + xoffs,
 					linetarget->y + yoffs,
@@ -1156,11 +1142,6 @@ void A_BFGSpray (AActor *mo)
 
 		P_DamageMobj (linetarget, mo->target,mo->target, damage, MOD_BFG_SPLASH);
 	}
-
-	// [SL] 2011-07-12 - Restore players and sectors to their current position
-	// according to the server.
-	if (player)
-		Unlag::getInstance().restore(player->id);
 }
 
 
