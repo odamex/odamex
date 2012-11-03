@@ -977,8 +977,11 @@ void P_XYMovement(AActor *mo)
 	
 	do
 	{
-		if ((xmove > maxmove || ymove > maxmove)
-		     || (co_zdoomphys && (xmove < -maxmove || ymove < -maxmove)))
+		// This is where the "wallrunning" effect happens. Vanilla only
+		// allows wallrunning North and East, while ZDoom physics allow
+		// North and South.
+		if ((!co_zdoomphys && (xmove > maxmove)) || ymove > maxmove ||
+		    (co_zdoomphys && (ymove < -maxmove)))
 		{
 			ptryx = mo->x + xmove/2;
 			ptryy = mo->y + ymove/2;
