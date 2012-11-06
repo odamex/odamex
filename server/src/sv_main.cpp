@@ -2745,82 +2745,83 @@ void SV_UpdateMissiles(player_t &pl)
     }
 }
 
-//
-// SV_UpdateMonsters
-// Updates monster position/angle sometimes.
-//
+// Update the given actors state immediately.
+void SV_UpdateMobjState(AActor *mo)
+{
+	for (size_t i = 0;i < players.size();i++)
+	{
+		if (!players[i].ingame())
+			continue;
+
+		if (SV_IsPlayerAllowedToSee(players[i], mo))
+		{
+			client_t *cl = &players[i].client;
+			statenum_t mostate = (statenum_t)(mo->state - states);
+
+			MSG_WriteMarker(&cl->netbuf, svc_mobjstate);
+			MSG_WriteShort(&cl->netbuf, mo->netid);
+			MSG_WriteShort(&cl->netbuf, (short)mostate);
+		}
+	}
+}
+
+// Keep tabs on monster positions and angles.
 void SV_UpdateMonsters(player_t &pl)
 {
-    AActor *mo;
+	AActor *mo;
 
-    TThinkerIterator<AActor> iterator;
-    while ( (mo = iterator.Next() ) )
-    {
-        if (mo->flags & MF_CORPSE)
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+		// Ignore corpses.
+		if (mo->flags & MF_CORPSE)
 			continue;
 
-        if (!(mo->flags & MF_COUNTKILL ||
-			mo->type == MT_SKULL))
+		// We don't handle updating non-monsters here.
+		if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
 			continue;
 
-		// update monster position every 10 tics
-		if ((gametic+mo->netid) % 10)
+		// update monster position every 7 tics
+		if ((gametic+mo->netid) % 7)
 			continue;
 
-		if(SV_IsPlayerAllowedToSee(pl, mo))
+		if (SV_IsPlayerAllowedToSee(pl, mo))
 		{
 			client_t *cl = &pl.client;
 
-            statenum_t mostate = (statenum_t)(mo->state - states);
-            mobjinfo_t moinfo = mobjinfo[mo->type];
-
-			MSG_WriteMarker (&cl->netbuf, svc_movemobj);
-			MSG_WriteShort (&cl->netbuf, mo->netid);
-			MSG_WriteByte (&cl->netbuf, mo->rndindex);
-			MSG_WriteLong (&cl->netbuf, mo->x);
-			MSG_WriteLong (&cl->netbuf, mo->y);
-			MSG_WriteLong (&cl->netbuf, mo->z);
-
-			MSG_WriteMarker (&cl->netbuf, svc_mobjspeedangle);
+			MSG_WriteMarker(&cl->netbuf, svc_movemobj);
 			MSG_WriteShort(&cl->netbuf, mo->netid);
-			MSG_WriteLong (&cl->netbuf, mo->angle);
-			MSG_WriteLong (&cl->netbuf, mo->momx);
-			MSG_WriteLong (&cl->netbuf, mo->momy);
-			MSG_WriteLong (&cl->netbuf, mo->momz);
+			MSG_WriteByte(&cl->netbuf, mo->rndindex);
+			MSG_WriteLong(&cl->netbuf, mo->x);
+			MSG_WriteLong(&cl->netbuf, mo->y);
+			MSG_WriteLong(&cl->netbuf, mo->z);
 
-			MSG_WriteMarker (&cl->netbuf, svc_actor_movedir);
-			MSG_WriteShort (&cl->netbuf, mo->netid);
-			MSG_WriteByte (&cl->netbuf, mo->movedir);
-			MSG_WriteLong (&cl->netbuf, mo->movecount);
+			MSG_WriteMarker(&cl->netbuf, svc_mobjspeedangle);
+			MSG_WriteShort(&cl->netbuf, mo->netid);
+			MSG_WriteLong(&cl->netbuf, mo->angle);
+			MSG_WriteLong(&cl->netbuf, mo->momx);
+			MSG_WriteLong(&cl->netbuf, mo->momy);
+			MSG_WriteLong(&cl->netbuf, mo->momz);
 
-            if (mo->target)
-            {
-                MSG_WriteMarker (&cl->netbuf, svc_actor_target);
-                MSG_WriteShort(&cl->netbuf, mo->netid);
-                MSG_WriteShort (&cl->netbuf, mo->target->netid);
-            }
+			MSG_WriteMarker(&cl->netbuf, svc_actor_movedir);
+			MSG_WriteShort(&cl->netbuf, mo->netid);
+			MSG_WriteByte(&cl->netbuf, mo->movedir);
+			MSG_WriteLong(&cl->netbuf, mo->movecount);
 
-            // This code is designed to send the 'starting' state, not inbetween
-            // ones
-			if ((moinfo.spawnstate == mostate) ||
-                (moinfo.seestate == mostate) ||
-                (moinfo.painstate == mostate) ||
-                (moinfo.meleestate == mostate) ||
-                (moinfo.missilestate == mostate) ||
-                (moinfo.deathstate == mostate) ||
-                (moinfo.xdeathstate == mostate) ||
-                (moinfo.raisestate == mostate))
-            {
-                MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
-                MSG_WriteShort (&cl->netbuf, mo->netid);
-                MSG_WriteShort (&cl->netbuf, (short)mostate);
-            }
+			if (mo->target)
+			{
+				MSG_WriteMarker(&cl->netbuf, svc_actor_target);
+				MSG_WriteShort(&cl->netbuf, mo->netid);
+				MSG_WriteShort(&cl->netbuf, mo->target->netid);
+			}
 
-            if (cl->netbuf.cursize >= 1024)
-                if(!SV_SendPacket(pl))
-                    return;
+			if (cl->netbuf.cursize >= 1024)
+			{
+				if (!SV_SendPacket(pl))
+					return;
+			}
 		}
-    }
+	}
 }
 
 //

@@ -769,7 +769,7 @@ void A_Look (AActor *actor)
 	}
 
 	if (actor->target)
-		P_SetMobjState (actor, actor->info->seestate);
+		P_SetMobjState (actor, actor->info->seestate, true);
 }
 #include "vectors.h"
 
@@ -825,7 +825,7 @@ void A_Chase (AActor *actor)
 		
 		if (!actor->target)
 		{
-			P_SetMobjState (actor, actor->info->spawnstate); // denis - todo - this sometimes leads to a stack overflow due to infinite recursion: A_Chase->SetMobjState->A_Look->SetMobjState
+			P_SetMobjState (actor, actor->info->spawnstate, true); // denis - todo - this sometimes leads to a stack overflow due to infinite recursion: A_Chase->SetMobjState->A_Look->SetMobjState
 			return;
 		}
 	}
@@ -853,7 +853,7 @@ void A_Chase (AActor *actor)
 				actor->goal = AActor::AActorPtr();
 				
 			actor->target = AActor::AActorPtr();
-			P_SetMobjState (actor, actor->info->spawnstate);
+			P_SetMobjState (actor, actor->info->spawnstate, true);
 			return;
 		}
 		goto nomissile;
@@ -865,7 +865,7 @@ void A_Chase (AActor *actor)
 		if (actor->info->attacksound)
 			S_Sound (actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
 
-		P_SetMobjState (actor, actor->info->meleestate);
+		P_SetMobjState (actor, actor->info->meleestate, true);
 		return;
 	}
 
@@ -881,7 +881,7 @@ void A_Chase (AActor *actor)
 		if (!P_CheckMissileRange (actor))
 			goto nomissile;
 
-		P_SetMobjState (actor, actor->info->missilestate);
+		P_SetMobjState (actor, actor->info->missilestate, true);
 		actor->flags |= MF_JUSTATTACKED;
 		return;
 	}
@@ -1045,7 +1045,7 @@ void A_CPosRefire (AActor *actor)
         || (!HasBehavior && !P_CheckSight (actor, actor->target))
         )
 	{
-		P_SetMobjState (actor, actor->info->seestate);
+		P_SetMobjState (actor, actor->info->seestate, true);
 	}
 }
 
@@ -1064,7 +1064,7 @@ void A_SpidRefire (AActor *actor)
 		|| (!HasBehavior && !P_CheckSight (actor, actor->target))
         )
 	{
-		P_SetMobjState (actor, actor->info->seestate);
+		P_SetMobjState (actor, actor->info->seestate, true);
 	}
 }
 
@@ -1392,11 +1392,11 @@ void A_VileChase (AActor *actor)
 					A_FaceTarget (actor);
 					actor->target = temp;
 
-					P_SetMobjState (actor, S_VILE_HEAL1);
+					P_SetMobjState (actor, S_VILE_HEAL1, true);
 					S_Sound (corpsehit, CHAN_BODY, "vile/raise", 1, ATTN_IDLE);
 					info = corpsehit->info;
 
-					P_SetMobjState (corpsehit,info->raisestate);
+					P_SetMobjState (corpsehit,info->raisestate, true);
 
 					// [Nes] - Classic demo compatability: Ghost monster bug.
 					if ((demoplayback || demorecording) && democlassic) {
@@ -2000,7 +2000,7 @@ void A_BrainScream (AActor *mo)
 		th = new AActor (x,y,z, MT_ROCKET);
 		th->momz = P_Random (mo) << 9;
 
-		P_SetMobjState (th, S_BRAINEXPLODE1);
+		P_SetMobjState (th, S_BRAINEXPLODE1, true);
 
 		th->tics -= P_Random (mo) & 7;
 		if (th->tics < 1)
@@ -2023,7 +2023,7 @@ void A_BrainExplode (AActor *mo)
 	AActor *th = new AActor (x,y,z, MT_ROCKET);
 	th->momz = P_Random (mo) << 9;
 
-	P_SetMobjState (th, S_BRAINEXPLODE1);
+	P_SetMobjState (th, S_BRAINEXPLODE1, true);
 
 	th->tics -= P_Random (mo) & 7;
 	if (th->tics < 1)
@@ -2134,7 +2134,7 @@ void A_SpawnFly (AActor *mo)
 
 	newmobj = new AActor (targ->x, targ->y, targ->z, type);
 	if (P_LookForPlayers (newmobj, true))
-		P_SetMobjState (newmobj, newmobj->info->seestate);
+		P_SetMobjState (newmobj, newmobj->info->seestate, true);
 
 	// telefrag anything in this spot
 	P_TeleportMove (newmobj, newmobj->x, newmobj->y, newmobj->z, true);

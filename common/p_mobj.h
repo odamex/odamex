@@ -112,7 +112,7 @@ AActor* P_FindThingById(size_t id);
 void P_SetThingId(AActor *mo, size_t newnetid);
 void P_ClearId(size_t id);
 
-bool P_SetMobjState(AActor *mobj, statenum_t state);
+bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update);
 void P_XYMovement(AActor *mo);
 void P_ZMovement(AActor *mo);
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj); // [CG] Used to be 'static'
