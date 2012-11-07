@@ -367,7 +367,6 @@ BEGIN_COMMAND (restart) {
 
 void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);
-void G_DoReborn(player_t &playernum);
 
 //
 // G_DoNewGame
@@ -712,19 +711,15 @@ void G_DoResetLevel(bool full_reset)
 	// Force every ingame player to be reborn.
 	for (it = players.begin();it != players.end();++it)
 	{
-		// Spectators aren't reborn
+		// Spectators aren't reborn.
 		if (!it->ingame() || it->spectator)
 			continue;
 
 		// Destroy the attached mobj, otherwise we leave a ghost.
-		// NOTE: For some reason, I would expect that this would disable
-		//       the teleport fog, but it still shows up.  Gramted, I _want_
-		//       teleport fog, but why does it still appear? [AM]
 		it->mo->Destroy();
 
-		// Take their inventory.
-		it->playerstate = PST_REBORN;
-		G_DoReborn(*it);
+		// Set the respawning machinery in motion
+		it->playerstate = full_reset ? PST_ENTER : PST_REBORN;
 	}
 }
 
