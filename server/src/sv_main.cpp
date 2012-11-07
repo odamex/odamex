@@ -2758,9 +2758,9 @@ void SV_UpdateMobjState(AActor *mo)
 			client_t *cl = &players[i].client;
 			statenum_t mostate = (statenum_t)(mo->state - states);
 
-			MSG_WriteMarker(&cl->netbuf, svc_mobjstate);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
-			MSG_WriteShort(&cl->netbuf, (short)mostate);
+			MSG_WriteMarker(&cl->reliablebuf, svc_mobjstate);
+			MSG_WriteShort(&cl->reliablebuf, mo->netid);
+			MSG_WriteShort(&cl->reliablebuf, (short)mostate);
 		}
 	}
 }
