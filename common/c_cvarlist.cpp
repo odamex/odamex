@@ -138,6 +138,10 @@ CVAR (sv_allowredscreen, "0","Allow clients to adjust amount of red pain screen 
 CVAR (sv_allowpwo, "0", "Allow clients to set their preferences for automatic weapon swithching",
    CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
+// [AM] Allow true widescreen usage
+CVAR (sv_allowwidescreen, "1", "Allow clients to use true widescreen",
+      CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
+
 // Compatibility options for vanilla
 // ---------------------------------
 

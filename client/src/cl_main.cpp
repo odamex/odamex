@@ -2889,6 +2889,9 @@ void CL_GetServerSettings(void)
     
 	// Nes - update the skies in case sv_freelook is changed.
 	R_InitSkyMap ();
+
+	// [AM] - Adhere to sv_allowwidescreen setting.
+	setmodeneeded = true;
 }
 
 //

@@ -786,9 +786,9 @@ EXTERN_CVAR (cl_movebob)
 static value_t Widescreen[] =
 {
 	{ 0.0, "Stretch" },
-	//{ 1.0, "Pillarbox" }, [AM] Not implemented.
-	{ 2.0, "Zoom" },
-	{ 3.0, "Wide" }
+	{ 1.0, "Zoom" },
+	{ 2.0, "Wide or Stretch" },
+	{ 3.0, "Wide or Zoom" }
 };
 
 static value_t Crosshairs[] =
@@ -863,7 +863,7 @@ static menuitem_t VideoItems[] = {
 	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
-	{ discrete,	"Widescreen",				{&r_widescreen},		{3.0}, {0.0},	{0.0},  {Widescreen}} ,
+	{ discrete,	"Widescreen",				{&r_widescreen},		{4.0}, {0.0},	{0.0},  {Widescreen}} ,
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {9.0},	{1.0},  {NULL} },
 	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },	
 	{ slider,	"Movement bobbing",			{&cl_movebob},			{0.0}, {1.0},	{0.1},	{NULL} },

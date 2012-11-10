@@ -173,6 +173,12 @@ fixed_t R_PointToDist2 (fixed_t dx, fixed_t dy);
 void R_SetFOV(float fov, bool force);
 float R_GetFOV (void);
 
+#define WIDE_STRETCH 0
+#define WIDE_ZOOM 1
+#define WIDE_TRUE 2
+
+int R_GetWidescreen(void);
+
 //
 // REFRESH - the actual rendering functions.
 //
