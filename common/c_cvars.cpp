@@ -544,10 +544,13 @@ BEGIN_COMMAND (set)
 
 		var = cvar_t::FindCVar (argv[1], &prev);
 		if (!var)
-			var = new cvar_t (argv[1], NULL, "", CVARTYPE_NONE,  CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
+			var = new cvar_t(argv[1], NULL, "", CVARTYPE_NONE,  CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
 
 		if (var->flags() & CVAR_NOSET)
-			Printf (PRINT_HIGH, "%s is write protected.\n", argv[1]);
+		{
+			Printf(PRINT_HIGH, "%s is write protected.\n", argv[1]);
+			return;
+		}
 		else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
 		{
 			Printf (PRINT_HIGH, "%s is under server control and hasn't been changed.\n", argv[1]);
@@ -557,30 +560,33 @@ BEGIN_COMMAND (set)
 		{
 			Printf (PRINT_HIGH, "%s is under client control and hasn't been changed.\n", argv[1]);
 			return;
-		}		
-		else if (var->flags() & CVAR_LATCH)
-		{
-			if(strcmp(var->cstring(), argv[2])) // if different from current value
-				if(strcmp(var->latched(), argv[2])) // and if different from latched value
-					Printf (PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
 		}
 
-        // [Russell] - Allow the user to specify either 'enable' and 'disable',
-        // this will get converted to either 1 or 0
-        if (!strcmp("enabled", argv[2]) && !(var->flags() & CVAR_NOENABLEDISABLE))
-        {
-            var->Set(1.0);
+		// [Russell] - Allow the user to specify either 'enable' and 'disable',
+		// this will get converted to either 1 or 0
+		// [AM] Introduce zdoom-standard "true" and "false"
+		if (!(var->flags() & CVAR_NOENABLEDISABLE))
+		{
+			if (strcmp("enabled", argv[2]) == 0 ||
+			    strcmp("true", argv[2]) == 0)
+			{
+				argv[2] = "1";
+			}
+			else if (strcmp("disabled", argv[2]) == 0 ||
+			         strcmp("false", argv[2]) == 0)
+			{
+				argv[2] = "0";
+			}
+		}
 
-            return;
-        }
-        else if (!strcmp("disabled", argv[2]) && !(var->flags() & CVAR_NOENABLEDISABLE))
-        {
-            var->Set(0.0);
+		if (var->flags() & CVAR_LATCH)
+		{
+			if (strcmp(var->cstring(), argv[2])) // if different from current value
+				if (strcmp(var->latched(), argv[2])) // and if different from latched value
+					Printf(PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
+		}
 
-            return;
-        }
-
-		var->Set (argv[2]);
+		var->Set(argv[2]);
 	}
 }
 END_COMMAND (set)
@@ -598,21 +604,33 @@ BEGIN_COMMAND (get)
 	
     var = cvar_t::FindCVar (argv[1], &prev);
 
-    if (var)
-    {
-        // [Russell] - Don't make the user feel inadequate, tell
-        // them its either enabled, disabled or its other value
-        if (var->flags() & CVAR_NOENABLEDISABLE)
-            Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
-        else if (var->cstring()[0] == '0')
-            Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
-        else
-            Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-    }
-    else
-    {
-        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
-    }
+	if (var)
+	{
+		// [AM] Determine whose control the cvar is under
+		std::string control;
+		if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
+			control = " (server)";
+		else if (baseapp == server && (var->flags() & CVAR_CLIENTINFO))
+			control = " (client)";
+
+		// [Russell] - Don't make the user feel inadequate, tell
+		// them its either enabled, disabled or its other value
+		if (!(var->flags() & CVAR_NOENABLEDISABLE))
+		{
+			if (var->cstring()[0] == '0')
+				Printf(PRINT_HIGH, "\"%s\" is disabled%s.\n", var->name(), control.c_str());
+			else
+				Printf(PRINT_HIGH, "\"%s\" is enabled%s.\n", var->name(), control.c_str());
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "\"%s\" is \"%s\"%s.\n", var->name(), var->cstring(), control.c_str());
+		}
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+	}
 }
 END_COMMAND (get)
 
