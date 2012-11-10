@@ -73,6 +73,7 @@ void	G_DoWorldDone (void);
 void	G_DoSaveGame (void);
 
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (co_nosilentspawns)
 
 gameaction_t	gameaction;
@@ -555,8 +556,11 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	}
 	for (i = 0; i < NUMWEAPONS; i++)
 		p.weaponowned[i] = false;
-	for (i = 0; i < NUMCARDS; i++)
-		p.cards[i] = false;
+	if (!sv_keepkeys)
+	{
+		for (i = 0; i < NUMCARDS; i++)
+			p.cards[i] = false;
+	}
 	for (i = 0; i < NUMPOWERS; i++)
 		p.powers[i] = false;
 	for (i = 0; i < NUMFLAGS; i++)

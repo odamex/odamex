@@ -119,6 +119,10 @@ CVAR_FUNC_DECL (sv_intermissionlimit, "10", "Sets the time limit for the intermi
 // Weapons stay
 CVAR (sv_weaponstay,    "1", "Weapons stay after pickup",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+// Keep keys on death
+CVAR(sv_keepkeys, "0", "Keep keys on death",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 // [SL] 2011-05-11 - Allow reconciliation for players on lagged connections
 CVAR (sv_unlag,            "1", "Allow reconciliation for players on lagged connections",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
