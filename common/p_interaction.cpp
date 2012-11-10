@@ -42,6 +42,8 @@ extern bool singleplayerjustdied;
 
 EXTERN_CVAR(sv_doubleammo)
 EXTERN_CVAR(sv_weaponstay)
+EXTERN_CVAR(sv_weapondamage)
+EXTERN_CVAR(sv_monsterdamage)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_fragexitswitch) // [ML] 04/4/06: Added compromise for older exit method
 EXTERN_CVAR(sv_friendlyfire)
@@ -1361,6 +1363,12 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
     {
 		damage >>= 1;	// take half damage in trainer mode
     }
+
+	// [AM] Weapon and monster damage scaling.
+	if (source && source->player && target)
+		damage *= sv_weapondamage;
+	else if (source && target && target->player)
+		damage *= sv_monsterdamage;
 
 	// Some close combat weapons should not
 	// inflict thrust and push the victim out of reach,

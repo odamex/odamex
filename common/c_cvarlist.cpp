@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Common console variables, used by both client and server.
+// Common console variables, used by both client and server.
 //
 //-----------------------------------------------------------------------------
 
@@ -55,44 +55,50 @@ CVAR (sv_allowjump, "0", "Allows players to jump when set in all game modes",
 // Give double ammo regardless of difficulty
 CVAR (sv_doubleammo, "0", "Give double ammo regardless of difficulty",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+// Multiplier for player weapon damage
+CVAR (sv_weapondamage, "1.0", "Amount to multiply player weapon damage by",
+      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Makes water movement more realistic
 CVAR_FUNC_DECL (sv_forcewater, "0", "Makes water more realistic (boom maps at the moment)",
                 CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Look up/down is allowed
-CVAR (sv_freelook,		"0", "Allow Looking up and down",
+CVAR (sv_freelook,      "0", "Allow Looking up and down",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Names of players appear in the FOV
 CVAR (sv_allowtargetnames, "0", "When set, names of players appear in the FOV",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Game ends on frag limit being reached
-CVAR (sv_fraglimit,		"0", "Sets the amount of frags a player can accumulate before the game ends",
+CVAR (sv_fraglimit,     "0", "Sets the amount of frags a player can accumulate before the game ends",
       CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Monsters are at nightmare speed
-CVAR (sv_fastmonsters,		"0", "Monsters are at nightmare speed",
+CVAR (sv_fastmonsters,     "0", "Monsters are at nightmare speed",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+// Multiplier for monster damage
+CVAR (sv_monsterdamage, "1.0", "Amount to multiply monster weapon damage by",
+      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // OLD: Allow exit switch at maxfrags, must click to exit
 // NEW: When enabled, exit switch will kill the player who flips it
 // [ML] NOTE: Behavior was changed October 2012, see bug
 CVAR (sv_fragexitswitch,   "0", "When enabled, exit switch will kill the player who flips it",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Players will have infinite ammunition
-CVAR (sv_infiniteammo,		"0", "Infinite ammo for all players",
+CVAR (sv_infiniteammo,     "0", "Infinite ammo for all players",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Items will respawn after time
-CVAR (sv_itemsrespawn,		"0", "Items will respawn after a fixed period, see sv_itemrespawntime",
+CVAR (sv_itemsrespawn,     "0", "Items will respawn after a fixed period, see sv_itemrespawntime",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // If itemrespawn is on, items will respawn after this time. (in seconds)
-CVAR (sv_itemrespawntime,	"30", "If sv_itemsrespawn is set, items will respawn after this time (in seconds)",
+CVAR (sv_itemrespawntime,  "30", "If sv_itemsrespawn is set, items will respawn after this time (in seconds)",
       CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Monsters will respawn after time
-CVAR (sv_monstersrespawn,	"0", "Monsters will respawn after a period of time",
+CVAR (sv_monstersrespawn,  "0", "Monsters will respawn after a period of time",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Monsters are not present
-CVAR (sv_nomonsters,		"0", "No monsters will be present",
+CVAR (sv_nomonsters,    "0", "No monsters will be present",
      CVARTYPE_BOOL,  CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // Monsters have a specific percentage of their normal health
 CVAR (sv_monstershealth, "1.0", "Amount to multiply monster health by",
-      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Skill level
 CVAR (sv_skill,             "3", "Sets the skill level, values are:\n" \
                                  "// 0 - No things mode\n" \
@@ -103,7 +109,7 @@ CVAR (sv_skill,             "3", "Sets the skill level, values are:\n" \
                                  "// 5 - Nightmare",
       CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Game ends on time limit being reached
-CVAR_FUNC_DECL (sv_timelimit,		"0", "Sets the time limit for the game to end, must be greater than 1",
+CVAR_FUNC_DECL (sv_timelimit,    "0", "Sets the time limit for the game to end, must be greater than 1",
       CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 // Intermission ends on intermission time limit being reached
@@ -111,10 +117,10 @@ CVAR_FUNC_DECL (sv_intermissionlimit, "10", "Sets the time limit for the intermi
       CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 // Weapons stay
-CVAR (sv_weaponstay,		"1", "Weapons stay after pickup",
+CVAR (sv_weaponstay,    "1", "Weapons stay after pickup",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // [SL] 2011-05-11 - Allow reconciliation for players on lagged connections
-CVAR (sv_unlag,				"1", "Allow reconciliation for players on lagged connections",
+CVAR (sv_unlag,            "1", "Allow reconciliation for players on lagged connections",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // [ML] allow weapon & view bob changing
 CVAR (sv_allowmovebob, "0", "Allow weapon & view bob changing",
@@ -122,11 +128,11 @@ CVAR (sv_allowmovebob, "0", "Allow weapon & view bob changing",
 
 // [ML] Allow clients to adjust amount of red pain screen intensity
 CVAR (sv_allowredscreen, "0","Allow clients to adjust amount of red pain screen intensity",
-	  CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
+     CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
 // [SL] Allow PWO
 CVAR (sv_allowpwo, "0", "Allow clients to set their preferences for automatic weapon swithching",
-	CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
+   CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
 // Compatibility options for vanilla
 // ---------------------------------
@@ -178,7 +184,7 @@ CVAR (cl_deathcam, "1", "Dead player's view follows the actor who killed them",
       CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 CVAR (cl_predictsectors, "1", "Move floors and ceilings immediately instead of waiting for confirmation",
-	  CVARTYPE_BOOL, CVAR_ARCHIVE)
+     CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 CVAR (cl_predictpickup, "1", "Predict weapon pickups", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
@@ -216,12 +222,12 @@ CVAR (developer, "0", "debugging mode",
 CVAR (port, "0", "Display currently used port number",
       CVARTYPE_INT, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 // Chase camera settings
-CVAR (chase_height,		"-8", "Height of chase camera",
+CVAR (chase_height,     "-8", "Height of chase camera",
       CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chase_dist,		"90", "Chase camera distance",
+CVAR (chase_dist,    "90", "Chase camera distance",
       CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 // Generate centerview when -mlook encountered?
-CVAR (lookspring,		"1", "Generate centerview when mlook encountered",
+CVAR (lookspring,    "1", "Generate centerview when mlook encountered",
       CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 // Allows players to walk through other players
 CVAR (sv_unblockplayers, "0", "Allows players to walk through other players",
@@ -230,14 +236,14 @@ CVAR (sv_unblockplayers, "0", "Allows players to walk through other players",
 CVAR (waddirs, "", "Allow custom WAD directories to be specified",
       CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // [Xyltol 02/27/2012] Hostname retrieval for Scoreboard
-CVAR (sv_hostname,		"Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
-	CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
+CVAR (sv_hostname,      "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
+   CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
 // Experimental settings (all categories)
 // =======================================
 
 // Speedhack code (server related)
-CVAR (sv_speedhackfix,		"0", "Experimental anti-speedhack code",
+CVAR (sv_speedhackfix,     "0", "Experimental anti-speedhack code",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")
