@@ -90,6 +90,9 @@ CVAR (sv_monstersrespawn,	"0", "Monsters will respawn after a period of time",
 // Monsters are not present
 CVAR (sv_nomonsters,		"0", "No monsters will be present",
      CVARTYPE_BOOL,  CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+// Monsters have a specific percentage of their normal health
+CVAR (sv_monstershealth, "1.0", "Amount to multiply monster health by",
+      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // Skill level
 CVAR (sv_skill,             "3", "Sets the skill level, values are:\n" \
                                  "// 0 - No things mode\n" \
