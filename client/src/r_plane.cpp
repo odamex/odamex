@@ -100,18 +100,20 @@ int 					*spanstart;
 // texture mapping
 //
 extern fixed_t FocalLengthX, FocalLengthY;
+extern double focratio, ifocratio;
 
 int*					planezlight;
-fixed_t 				planeheight;
 float					plight, shade;
 
 fixed_t 				*yslope;
 fixed_t 				*distscale;
-fixed_t 				xstepscale;
-fixed_t 				ystepscale;
-static fixed_t			xscale, yscale;
-static fixed_t			pviewx, pviewy;
-static angle_t			baseangle;
+static double			fplaneheight;
+
+static fixed_t			pl_xscale, pl_yscale;
+static fixed_t			pl_sin, pl_cos;
+static fixed_t			pl_viewsin, pl_viewcos;
+static fixed_t			pl_viewxtrans, pl_viewytrans;
+static fixed_t			pl_xstepscale, pl_ystepscale;
 
 v3double_t				a, b, c;
 float					ixscale, iyscale;
@@ -216,69 +218,38 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 //
 // R_MapLevelPlane
 //
-// Uses global vars:
-//  planeheight
-//  ds_source
-//  basexscale
-//  baseyscale
-//  viewx
-//  viewy
+// [SL] 2012-11-09 - Based loosely on R_MapPlane() from PrBoom+ to increase
+// the accuracy of texture-mapping visplanes with the same textures.
 //
-// BASIC PRIMITIVE
+// e6y
 //
-void
-R_MapLevelPlane
-( int		y,
-  int		x1,
-  int		x2 )
+// [RH]Instead of using the xtoviewangle array, I calculated the fractional values
+// at the middle of the screen, then used the calculated ds_xstep and ds_ystep
+// to step from those to the proper texture coordinate to start drawing at.
+// That way, the texture coordinate is always calculated by its position
+// on the screen and not by its position relative to the edge of the visplane.
+//
+// Visplanes with the same texture now match up far better than before.
+//
+void R_MapLevelPlane(int y, int x1, int x2)
 {
-    angle_t	angle;
-    fixed_t	distance;
-    fixed_t	length;
-    unsigned	index;
+	double fdistance = fplaneheight * yslope[y] / 65536.0;
+	double slope = fplaneheight / abs(centery - y);
 
-#ifdef RANGECHECK
-	if (x2 < x1 || x1<0 || x2>=viewwidth || (unsigned)y>=(unsigned)viewheight)
-	{
-		I_FatalError ("R_MapLevelPlane: %i, %i at %i", x1, x2, y);
-	}
-#endif
+	ds_xstep = (fixed_t)(pl_xstepscale * slope * focratio);
+	ds_ystep = (fixed_t)(pl_ystepscale * slope * focratio);
 
-	// Find the z-coordinate of the left edge of the span in camera space
-	// This is some simple triangle scaling:
-	//		(vertical distance of plane from camera) * (focal length)
-	//		---------------------------------------------------------
-	//		     (vertical distance of span from screen center)
-	distance = FixedMul (planeheight, yslope[y]);
+	ds_xfrac = pl_viewxtrans +
+				FixedMul((int)(pl_viewcos * fdistance), pl_xscale) + 
+				(x1 - centerx) * ds_xstep;
+	ds_yfrac = pl_viewytrans -
+				FixedMul((int)(pl_viewsin * fdistance), pl_yscale) +
+				(x1 - centerx) * ds_ystep;
 
-	// Use this to determine stepping values. Because the plane is always
-	// viewed with constant z, knowing the distance from the span is enough
-	// to do a rough approximation of the stepping values. In reality, you
-	// should find the (u,v) coordinates at the left and right edges of the
-	// span and step between them, but that involves more math (including
-	// some divides).
-	ds_xstep = FixedMul (xstepscale, distance) << 10;
-	ds_ystep = FixedMul (ystepscale, distance) << 10;
-
-	// Find the length of a 2D vector from the camera to the left edge of
-	// the span in camera space. This is accomplished using some trig:
-	//		    (distance)
-	//		------------------
-	//		 sin (view angle)
-	length = FixedMul (distance, distscale[x1]);
-
-	// Find the angle from the center of the screen to the start of the span.
-	// This is also precalculated in the distscale array used above (minus the
-	// baseangle rotation). Baseangle compensates for the player's view angle
-	// and also for the texture's rotation relative to the world.
-	angle = (baseangle + xtoviewangle[x1]) >> ANGLETOFINESHIFT;
-
-	// Find the (u,v) coordinate of the left edge of the span by extending a
-	// ray from the camera position out into texture space. (For all intents and
-	// purposes, texture space is equivalent to world space here.) The (u,v) values
-	// are multiplied by scaling factors for the plane to scale the texture.
-	ds_xfrac = FixedMul (xscale, pviewx + FixedMul (finecosine[angle], length)) << 10;
-	ds_yfrac = FixedMul (yscale, pviewy - FixedMul (finesine[angle], length)) << 10;
+	ds_xstep <<= 10;	
+	ds_ystep <<= 10;	
+	ds_xfrac <<= 10;
+	ds_yfrac <<= 10;
 
 	if (fixedlightlev)
 		ds_colormap = basecolormap + fixedlightlev;
@@ -287,18 +258,13 @@ R_MapLevelPlane
 	else
 	{
 		// Determine lighting based on the span's distance from the viewer.
-		index = distance >> LIGHTZSHIFT;
+		unsigned int index = (int)fdistance >> (LIGHTZSHIFT - FRACBITS);
 
 		if (index >= MAXLIGHTZ)
 			index = MAXLIGHTZ-1;
 
 		ds_colormap = planezlight[index] + basecolormap;
 	}
-
-#ifdef USEASM
-	if (ds_colormap != ds_curcolormap)
-		R_SetSpanColormap_ASM (ds_colormap);
-#endif
 
 	ds_y = y;
 	ds_x1 = x1;
@@ -677,16 +643,14 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	M_CrossProductVec3(&a, &p, &n);
 	M_CrossProductVec3(&b, &m, &p);
 	M_CrossProductVec3(&c, &m, &n);
-	
-	double invfocratio =  double(FocalLengthX) / double(FocalLengthY);
 
 	M_ScaleVec3(&a, &a, 0.5);
 	M_ScaleVec3(&b, &b, 0.5);
 	M_ScaleVec3(&c, &c, 0.5);
 	
-	a.y *= invfocratio;
-	b.y *= invfocratio;
-	c.y *= invfocratio;		
+	a.y *= ifocratio;
+	b.y *= ifocratio;
+	c.y *= ifocratio;		
 	
 	// (SoM) More help from randy. I was totally lost on this... 
 	double scalenumer = fixed_conv * finetangent[FINEANGLES/4+CorrectFieldOfView/2];
@@ -709,28 +673,35 @@ void R_DrawSlopedPlane(visplane_t *pl)
 
 void R_DrawLevelPlane(visplane_t *pl)
 {
-	xscale = pl->xscale;
-	yscale = pl->yscale;
+	// texture scaling factor
+	pl_xscale = pl->xscale;
+	pl_yscale = pl->yscale;
 
-	fixed_t cosine = finecosine[pl->angle >> ANGLETOFINESHIFT];
-	fixed_t sine = finesine[pl->angle >> ANGLETOFINESHIFT];
-	pviewx = FixedMul (viewx, cosine) - FixedMul (viewy, sine) + pl->xoffs;
-	pviewy = -(FixedMul (viewx, sine) + FixedMul (viewy, cosine)) + pl->yoffs;
+	// viewsin/viewcos rotated by the texture rotation angle
+	pl_viewsin = finesine[(viewangle + pl->angle) >> ANGLETOFINESHIFT];
+	pl_viewcos = finecosine[(viewangle + pl->angle) >> ANGLETOFINESHIFT];
 
-	// left to right mapping
-	angle_t angle = (viewangle - ANG90 + pl->angle) >> ANGLETOFINESHIFT;
+	pl_cos = finecosine[pl->angle >> ANGLETOFINESHIFT];
+	pl_sin = finesine[pl->angle >> ANGLETOFINESHIFT];
 
-	// scale will be unit scale at SCREENWIDTH/2 distance
-	xstepscale = FixedMul (xscale, FixedDiv (finecosine[angle], FocalLengthX));
-	ystepscale = FixedMul (yscale, -FixedDiv (finesine[angle], FocalLengthX));
+	// viewx/viewy rotated by the texture rotation angle
+	fixed_t pl_viewx = FixedMul(viewx, pl_cos) - FixedMul(viewy, pl_sin);
+	fixed_t pl_viewy = -(FixedMul(viewx, pl_sin) + FixedMul(viewy, pl_cos));
 
-	baseangle = viewangle + pl->angle;
+	// cache a calculation used by R_MapLevelPlane
+	pl_xstepscale = FixedMul(pl_viewsin, pl->xscale);
+	pl_ystepscale = FixedMul(pl_viewcos, pl->yscale);
 
+	// cache a calculation used by R_MapLevelPlane
+	pl_viewxtrans = FixedMul(pl_viewx + pl->xoffs, pl->xscale);
+	pl_viewytrans = FixedMul(pl_viewy + pl->yoffs, pl->yscale);
+	
 	basecolormap = pl->colormap;	// [RH] set basecolormap
 
 	// [SL] 2012-02-05 - Plane's height should be constant for all (x,y)
 	// so just use (0, 0) when calculating the plane's z height
-	planeheight = abs(P_PlaneZ(0, 0, &pl->secplane) - viewz);
+	fplaneheight = double(abs(P_PlaneZ(0, 0, &pl->secplane) - viewz)) / 65536.0;
+
 	int light = (pl->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 
 	if (light >= LIGHTLEVELS)
