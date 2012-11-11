@@ -443,27 +443,26 @@ void G_InitNew (const char *mapname)
 
 	cvar_t::UnlatchCVars ();
 
-	if(old_gametype != sv_gametype || sv_gametype != GM_COOP) {
+	if (old_gametype != sv_gametype || sv_gametype != GM_COOP)
 		unnatural_level_progression = true;
 
-		// Nes - Force all players to be spectators when the sv_gametype is not now or previously co-op.
-		for (i = 0; i < players.size(); i++) {
-			// [SL] 2011-07-30 - Don't force downloading players to become spectators
-			// it stops their downloading
-			if (!players[i].ingame())
-				continue;
+	// [AM] Force all players to be spectators online.
+	for (i = 0; i < players.size(); i++) {
+		// [SL] 2011-07-30 - Don't force downloading players to become spectators
+		// it stops their downloading
+		if (!players[i].ingame())
+			continue;
 
-			for (size_t j = 0; j < players.size(); j++) {
-				if (!players[j].ingame())
-					continue;
-				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
-				MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
-				MSG_WriteByte (&(players[j].client.reliablebuf), true);
-			}
-			players[i].spectator = true;
-			players[i].playerstate = PST_LIVE;
-			players[i].joinafterspectatortime = -(TICRATE*5);
+		for (size_t j = 0; j < players.size(); j++) {
+			if (!players[j].ingame())
+				continue;
+			MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+			MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
+			MSG_WriteByte (&(players[j].client.reliablebuf), true);
 		}
+		players[i].spectator = true;
+		players[i].playerstate = PST_LIVE;
+		players[i].joinafterspectatortime = -(TICRATE*5);
 	}
 
 	// [SL] 2011-09-01 - Change gamestate here so SV_ServerSettingChange will
@@ -533,7 +532,10 @@ void G_InitNew (const char *mapname)
 
 			// denis - dead players should have their stuff looted, otherwise they'd take their ammo into their afterlife!
 			if(players[i].playerstate == PST_DEAD)
+			{
+				players[i].keepinventory = false;
 				G_PlayerReborn(players[i]);
+			}
 
 			players[i].playerstate = PST_ENTER; // [BC]
 

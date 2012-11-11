@@ -1525,19 +1525,10 @@ void P_SetupLevel (char *lumpname, int position)
 
     PO_Init ();
 
-    if (serverside)
-    {
-		for (i=0 ; i<players.size() ; i++)
-		{
+	// [AM] On the server, we might need to preserve players inventories between maps.
+	if (serverside)
+		for (i = 0;i < players.size();i++)
 			SV_PreservePlayer(players[i]);
-
-    		// if deathmatch, randomly spawn the active players
-			if (players[i].ingame())
-			{
-				G_DeathMatchSpawnPlayer (players[i]); // denis - this function checks for deathmatch internally
-			}
-		}
-    }
 
 	// clear special respawning que
 	iquehead = iquetail = 0;

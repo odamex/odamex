@@ -176,6 +176,9 @@ public:
 	int			deathcount;
 	int			killcount, itemcount, secretcount;		// for intermission
 
+	// [AM] Determine if we should keep our inventory on next spawn
+	bool		keepinventory;
+
     // Is wp_nochange if not changing.
 	weapontype_t	pendingweapon;
 	weapontype_t	readyweapon;
