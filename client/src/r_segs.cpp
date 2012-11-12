@@ -120,32 +120,31 @@ static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 		// arithmetic and by skipping the drawing of 2s normals whose
 		// mapping to screen coordinates is totally out of range:
 
-		{
-			__int64 t = ((__int64) centeryfrac << FRACBITS) -
-				(__int64) dc_texturemid * spryscale;
+		int64_t t = ((int64_t)centeryfrac << FRACBITS) -
+					(int64_t)dc_texturemid * spryscale;
 			
-			// [RH] This doesn't work properly as-is with freelook. Probably just me.
-			// [SL] Seems to work for me and prevents overflows after increasing
-			//      the max scale factor for segs.
-			if (t + (__int64) textureheight[texnum] * spryscale < 0 ||
-					 t > (__int64) screen->height << FRACBITS*2)
-				return;		// skip if the texture is out of screen's range
-
+		// [RH] This doesn't work properly as-is with freelook. Probably just me.
+		// [SL] Seems to work for me and prevents overflows after increasing
+		//      the max scale factor for segs.
+		// Skip if the texture is out of the screen's range	
+		if (t + (int64_t)textureheight[texnum] * spryscale >= 0 &&
+		    t < (int64_t)screen->height << (FRACBITS * 2))
+		{
 			sprtopscreen = (fixed_t)(t >> FRACBITS);
+			dc_iscale = 0xffffffffu / (unsigned)spryscale;
+
+			// killough 1/25/98: here's where Medusa came in, because
+			// it implicitly assumed that the column was all one patch.
+			// Originally, Doom did not construct complete columns for
+			// multipatched textures, so there were no header or trailer
+			// bytes in the column referred to below, which explains
+			// the Medusa effect. The fix is to construct true columns
+			// when forming multipatched textures (see r_data.c).
+
+			// draw the texture
+			blastfunc (R_GetColumn(texnum, maskedtexturecol[dc_x]));
+			maskedtexturecol[dc_x] = MAXINT;
 		}
-		dc_iscale = 0xffffffffu / (unsigned)spryscale;
-
-		// killough 1/25/98: here's where Medusa came in, because
-		// it implicitly assumed that the column was all one patch.
-		// Originally, Doom did not construct complete columns for
-		// multipatched textures, so there were no header or trailer
-		// bytes in the column referred to below, which explains
-		// the Medusa effect. The fix is to construct true columns
-		// when forming multipatched textures (see r_data.c).
-
-		// draw the texture
-		blastfunc (R_GetColumn(texnum, maskedtexturecol[dc_x]));
-		maskedtexturecol[dc_x] = MAXINT;
 	}
 	spryscale += rw_scalestep;
 	rw_light += rw_lightstep;
