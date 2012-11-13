@@ -730,6 +730,8 @@ void R_StoreWallRange(int start, int stop)
 	else
 	{
 		ds_p->scale2 = ds_p->scale1;
+		ds_p->scalestep = rw_scalestep = 0;
+		ds_p->lightstep = rw_lightstep = 0;
 	}
 
 	// calculate texture boundaries
@@ -1043,60 +1045,59 @@ void R_StoreWallRange(int start, int stop)
 			markceiling = false;	
 	}
 
+	float fscale1 = FIXED2FLOAT(ds_p->scale1);
+	float fscale2 = FIXED2FLOAT(ds_p->scale2);
+
 	// [SL] 2012-01-31 - Calculate front side ceiling height values
-	fixed_t topf_start = ((rw_frontcz1 - viewz) >> 4) * FIXED2FLOAT(ds_p->scale1);
-	fixed_t topf_stop = ((rw_frontcz2 - viewz) >> 4) * FIXED2FLOAT(ds_p->scale2);
+	fixed_t topf_start = ((rw_frontcz1 - viewz) >> 4) * fscale1; 
+	fixed_t topf_stop  = ((rw_frontcz2 - viewz) >> 4) * fscale2;
+	fixed_t topf_step  = 0;
+
 	if (stop > start)
-	{
-		fixed_t topf_step = (topf_start - topf_stop) / (stop - start);
-		for (int n = start; n <= stop; n++)
-			walltopf[n] = (centeryfrac >> 4) - topf_start + (n - start) * topf_step;	
-	}
-	else
-		walltopf[start] = (centeryfrac >> 4)- topf_start;
+		topf_step = (topf_start - topf_stop) / (stop - start);
+	
+	for (int n = start; n <= stop; n++)
+		walltopf[n] = (centeryfrac >> 4) - topf_start + (n - start) * topf_step;	
 
 	// [SL] 2012-01-31 - Calculate front side floor height values
-	fixed_t bottomf_start = ((rw_frontfz1 - viewz) >> 4) * FIXED2FLOAT(ds_p->scale1);
-	fixed_t bottomf_stop = ((rw_frontfz2 - viewz) >> 4) * FIXED2FLOAT(ds_p->scale2);
+	fixed_t bottomf_start = ((rw_frontfz1 - viewz) >> 4) * fscale1; 
+	fixed_t bottomf_stop  = ((rw_frontfz2 - viewz) >> 4) * fscale2; 
+	fixed_t bottomf_step  = 0;
+
 	if (stop > start)
-	{
-		fixed_t bottomf_step = (bottomf_start - bottomf_stop) / (stop - start);
-		for (int n = start; n <= stop; n++)
-			wallbottomf[n] = (centeryfrac >> 4) - bottomf_start + (n - start) * bottomf_step;	
-	}
-	else
-		wallbottomf[start] = (centeryfrac >> 4) - bottomf_start;
+		bottomf_step = (bottomf_start - bottomf_stop) / (stop - start);
+
+	for (int n = start; n <= stop; n++)
+		wallbottomf[n] = (centeryfrac >> 4) - bottomf_start + (n - start) * bottomf_step;	
 
 	if (backsector)
 	{
 		if (rw_backcz1 < rw_frontcz1 || rw_backcz2 < rw_frontcz2)
 		{
 			// [SL] 2012-01-31 - Calculate back side ceiling height values
-			fixed_t topb_start = ((rw_backcz1 - viewz) >> 4) * FIXED2FLOAT(ds_p->scale1);
-			fixed_t topb_stop = ((rw_backcz2 - viewz) >> 4) * FIXED2FLOAT(ds_p->scale2);
+			fixed_t topb_start = ((rw_backcz1 - viewz) >> 4) * fscale1; 
+			fixed_t topb_stop  = ((rw_backcz2 - viewz) >> 4) * fscale2; 
+			fixed_t topb_step  = 0;
+
 			if (stop > start)
-			{
-				fixed_t topb_step = (topb_start - topb_stop) / (stop - start);
-				for (int n = start; n <= stop; n++)
-					walltopb[n] = (centeryfrac >> 4) - topb_start + (n - start) * topb_step;	
-			}
-			else
-				walltopb[start] = (centeryfrac >> 4) - topb_start;
+				topb_step = (topb_start - topb_stop) / (stop - start);
+
+			for (int n = start; n <= stop; n++)
+				walltopb[n] = (centeryfrac >> 4) - topb_start + (n - start) * topb_step;	
 		}
 
 		if (rw_backfz1 > rw_frontfz1 || rw_backfz2 > rw_frontfz2)
 		{
 			// [SL] 2012-01-31 - Calculate back side floor height values
-			fixed_t bottomb_start = ((rw_backfz1 - viewz) >> 4) * FIXED2FLOAT(ds_p->scale1);
-			fixed_t bottomb_stop = ((rw_backfz2 - viewz) >> 4) * FIXED2FLOAT(ds_p->scale2);
+			fixed_t bottomb_start = ((rw_backfz1 - viewz) >> 4) * fscale1; 
+			fixed_t bottomb_stop  = ((rw_backfz2 - viewz) >> 4) * fscale2;
+			fixed_t bottomb_step  = 0;
+ 
 			if (stop > start)
-			{
-				fixed_t bottomb_step = (bottomb_start - bottomb_stop) / (stop - start);
-				for (int n = start; n <= stop; n++)
-					wallbottomb[n] = (centeryfrac >> 4) - bottomb_start + (n - start) * bottomb_step;	
-			}
-			else
-				wallbottomb[start] = (centeryfrac >> 4) - bottomb_start;
+				bottomb_step = (bottomb_start - bottomb_stop) / (stop - start);
+
+			for (int n = start; n <= stop; n++)
+				wallbottomb[n] = (centeryfrac >> 4) - bottomb_start + (n - start) * bottomb_step;	
 		}
 	}
 	
