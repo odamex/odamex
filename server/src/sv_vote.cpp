@@ -41,8 +41,10 @@ EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_timelimit)
 
-EXTERN_CVAR(sv_vote_majority)
 EXTERN_CVAR(sv_vote_countabs)
+EXTERN_CVAR(sv_vote_majority)
+EXTERN_CVAR(sv_vote_speccall)
+EXTERN_CVAR(sv_vote_specvote)
 EXTERN_CVAR(sv_vote_timelimit)
 EXTERN_CVAR(sv_vote_timeout)
 
@@ -674,6 +676,12 @@ bool Vote::init(const std::vector<std::string> &args, const player_t &player) {
 		return false;
 	}
 
+	// Make sure a spectating player can call the vote
+	if (!sv_vote_speccall && player.spectator) {
+		this->error = "Spectators cannot call votes on this server.";
+		return false;
+	}
+
 	// Check the vote timeout.
 	if (player.timeout_callvote > 0) {
 		int timeout = level.time - player.timeout_callvote;
@@ -704,6 +712,10 @@ bool Vote::init(const std::vector<std::string> &args, const player_t &player) {
 	// Give everybody an "undecided" vote except the current player.
 	for (std::vector<player_t>::size_type i = 0;i != players.size();i++) {
 		if (!players[i].ingame()) {
+			continue;
+		}
+
+		if (!sv_vote_specvote && players[i].spectator) {
 			continue;
 		}
 
@@ -798,7 +810,11 @@ bool Vote::vote(player_t &player, bool ballot) {
 
 	// Does the user actually have an entry in the tally?
 	if (this->tally.find(player.id) == this->tally.end()) {
-		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't vote on something that was called before you joined the server.\n");
+		if (!sv_vote_specvote && player.spectator) {
+			SV_PlayerPrintf(PRINT_HIGH, player.id, "Spectators can't vote on this server.\n");
+		} else {
+			SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't vote on something that was called before you joined the server.\n");
+		}
 		return false;
 	}
 

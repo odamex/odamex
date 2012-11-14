@@ -185,6 +185,12 @@ CVAR (sv_vote_countabs, "1", "Count absent voters as 'no' if the vote timer runs
 // A percentage of players needed to pass a vote.
 CVAR (sv_vote_majority, "0.5", "Ratio of yes votes needed for vote to pass.",
 	  CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+// Spectators are allowed to vote.
+CVAR (sv_vote_speccall, "1", "Spectators are allowed to callvote.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+// Spectators are allowed to vote.
+CVAR (sv_vote_specvote, "1", "Spectators are allowed to vote.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 // Number of seconds that a countdown lasts.
 CVAR (sv_vote_timelimit, "30", "Amount of time a vote takes in seconds.",
 	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
