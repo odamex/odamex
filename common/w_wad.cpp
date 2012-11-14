@@ -779,7 +779,7 @@ W_CacheLumpName
 	return W_CacheLumpNum (W_GetNumForName(name), tag);
 }
 
-size_t R_CalculateNewPatchSize(patch_t *patch);
+size_t R_CalculateNewPatchSize(patch_t *patch, size_t length);
 void R_ConvertPatch(patch_t *rawpatch, patch_t *newpatch);
 
 //
@@ -802,16 +802,25 @@ patch_t* W_CachePatch(unsigned lumpnum, int tag)
 		W_ReadLump(lumpnum, rawlumpdata);
 		patch_t *rawpatch = (patch_t*)(rawlumpdata);
 
-		size_t newlumplen = R_CalculateNewPatchSize(rawpatch);
+		size_t newlumplen = R_CalculateNewPatchSize(rawpatch, W_LumpLength(lumpnum));
 
-		byte *ptr = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
-		patch_t *newpatch = (patch_t*)lumpcache[lumpnum];
+		if (newlumplen > 0)
+		{
+			// valid patch
+			byte *ptr = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
+			patch_t *newpatch = (patch_t*)lumpcache[lumpnum];
 
-		R_ConvertPatch(newpatch, rawpatch);
+			R_ConvertPatch(newpatch, rawpatch);
+			ptr[newlumplen] = 0;
+		}
+		else
+		{
+			// invalid patch - just create a header with width = 0, height = 0
+			Z_Malloc(sizeof(patch_t) + 1, tag, &lumpcache[lumpnum]);
+			memset(lumpcache[lumpnum], 0, sizeof(patch_t) + 1);
+		}
 
 		delete [] rawlumpdata;
-
-		ptr[newlumplen] = 0;
 	}
 	else
 	{

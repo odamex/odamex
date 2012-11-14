@@ -94,14 +94,18 @@ fixed_t			dc_textureheight;
 
 
 //
-// W_CalculatePatchSize
+// R_CalculateNewPatchSize
 //
 // Helper function for converting raw patches that use post_t into patches
 // that use tallpost_t. Returns the lump size of the converted patch.
 //
-size_t R_CalculateNewPatchSize(patch_t *patch)
+size_t R_CalculateNewPatchSize(patch_t *patch, size_t length)
 {
 	if (!patch)
+		return 0;
+
+	// sanity check to see if the postofs array fits in the patch lump
+	if (length < patch->width() * sizeof(unsigned int))
 		return 0;
 
 	int numposts = 0, numpixels = 0;
@@ -109,9 +113,15 @@ size_t R_CalculateNewPatchSize(patch_t *patch)
 
 	for (int i = 0; i < patch->width(); i++)
 	{
-		post_t *post = (post_t*)((byte*)patch + LELONG(postofs[i]));
+		size_t ofs = LELONG(postofs[i]);
 
-		while (post->topdelta != 0xFF)
+		// check that the offset is valid
+		if (ofs >= length)
+			return 0;
+
+		post_t *post = (post_t*)((byte*)patch + ofs);
+
+		while (post->length + ofs <= length && post->topdelta != 0xFF)
 		{
 			numposts++;
 			numpixels += post->length;
