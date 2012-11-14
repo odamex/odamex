@@ -33,7 +33,6 @@
 
 BOOL R_AlignFlat (int linenum, int side, int fc);
 
-const double fixed_conv = 1.0 / 65536.0;
 //
 // POV related.
 //

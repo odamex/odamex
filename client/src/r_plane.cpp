@@ -154,7 +154,7 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 	v3double_t s;
 	s.x = x1 - centerx;
 	s.y = y - centery + 1;
-	s.z = fixed_conv * double(FocalLengthX);
+	s.z = FIXED2DOUBLE(FocalLengthX);
 
 	ds_iu = M_DotProductVec3(&s, &a) * flatwidth;
 	ds_iv = M_DotProductVec3(&s, &b) * flatheight;
@@ -595,21 +595,19 @@ void R_MakeSpans(visplane_t *pl, void(*spanfunc)(int, int, int))
 //
 void R_DrawSlopedPlane(visplane_t *pl)
 {
-	double sinang = fixed_conv * finesine[(pl->angle + ANG90) >> ANGLETOFINESHIFT];
-	double cosang = fixed_conv * finecosine[(pl->angle + ANG90) >> ANGLETOFINESHIFT];
+	double sinang = FIXED2DOUBLE(finesine[(pl->angle + ANG90) >> ANGLETOFINESHIFT]);
+	double cosang = FIXED2DOUBLE(finecosine[(pl->angle + ANG90) >> ANGLETOFINESHIFT]);
 	
-	double xoffsf = fixed_conv * pl->xoffs;
-	double yoffsf = fixed_conv * pl->yoffs;
+	double xoffsf = FIXED2DOUBLE(pl->xoffs);
+	double yoffsf = FIXED2DOUBLE(pl->yoffs);
 
 	// Scale the flat's texture
-	double scaledflatwidth = flatwidth * fixed_conv * pl->xscale;
-	double scaledflatheight = flatheight * fixed_conv * pl->yscale;
+	double scaledflatwidth = flatwidth * FIXED2DOUBLE(pl->xscale);
+	double scaledflatheight = flatheight * FIXED2DOUBLE(pl->yscale);
 	
 	v3double_t p, t, s, m, n, viewpos;
 	
-	viewpos.x = fixed_conv * viewx;
-	viewpos.y = fixed_conv * viewy;
-	viewpos.z = fixed_conv * viewz;
+	M_SetVec3(&viewpos, viewx, viewy, viewz);
 
 	// Point p is the anchor point of the texture.  It starts out as the
 	// map coordinate (0, 0, planez(0,0)) but texture offset and rotation get applied
@@ -653,14 +651,14 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	c.y *= ifocratio;		
 	
 	// (SoM) More help from randy. I was totally lost on this... 
-	double scalenumer = fixed_conv * finetangent[FINEANGLES/4+CorrectFieldOfView/2];
+	double scalenumer = FIXED2DOUBLE(finetangent[FINEANGLES/4+CorrectFieldOfView/2]);
 	double ixscale = scalenumer / flatwidth;
 	double iyscale = scalenumer / flatheight;
 
 	double zat = P_PlaneZ(viewpos.x, viewpos.y, &pl->secplane);
 
 	angle_t fovang = ANG(consoleplayer().fov / 2.0f);
-	double slopetan = fixed_conv * finetangent[fovang >> ANGLETOFINESHIFT];
+	double slopetan = FIXED2DOUBLE(finetangent[fovang >> ANGLETOFINESHIFT]);
 	double slopevis = 8.0 * slopetan * 16.0 * 320.0 / double(screen->width);
 	
 	plight = (slopevis * ixscale * iyscale) / (zat - viewpos.z);

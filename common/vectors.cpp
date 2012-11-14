@@ -42,14 +42,6 @@
 
 #define DEG2RAD( a ) ( a * M_PI ) / 180.0F
 
-// factor for converting from floating-point to fixed-point
-static const double fixedfac = double(FRACUNIT);
-static const float fixedfacf = float(FRACUNIT);
-// factor for converting from fixed-point to floating-point
-// precalculate so that we can use multiplcation when converting (faster)
-static const double invfixedfac = 1.0 / fixedfac;
-static const float invfixedfacf = 1.0f / fixedfacf;
-
 //
 // M_SetVec3f
 //
@@ -64,9 +56,9 @@ void M_SetVec3f(v3float_t *dest, float x, float y, float z)
 
 void M_SetVec3f(v3float_t *dest, fixed_t x, fixed_t y, fixed_t z)
 {
-	dest->x = float(x) * invfixedfacf;
-	dest->y = float(y) * invfixedfacf;
-	dest->z = float(z) * invfixedfacf;
+	dest->x = FIXED2FLOAT(x);
+	dest->y = FIXED2FLOAT(y);
+	dest->z = FIXED2FLOAT(z);
 }		
 
 void M_SetVec3(v3double_t *dest, double x, double y, double z)
@@ -78,15 +70,15 @@ void M_SetVec3(v3double_t *dest, double x, double y, double z)
 
 void M_SetVec3(v3double_t *dest, fixed_t x, fixed_t y, fixed_t z)
 {
-	dest->x = double(x) * invfixedfac;
-	dest->y = double(y) * invfixedfac;	
-	dest->z = double(z) * invfixedfac;
+	dest->x = FIXED2DOUBLE(x);
+	dest->y = FIXED2DOUBLE(y);	
+	dest->z = FIXED2DOUBLE(z);
 }
 
 void M_SetVec2Fixed(v2fixed_t *dest, double x, double y)
 {
-	dest->x = (fixed_t)(x * fixedfac);
-	dest->y = (fixed_t)(y * fixedfac);
+	dest->x = DOUBLE2FIXED(x); 
+	dest->y = DOUBLE2FIXED(y);
 }
 
 void M_SetVec2Fixed(v2fixed_t *dest, fixed_t x, fixed_t y)
@@ -97,9 +89,9 @@ void M_SetVec2Fixed(v2fixed_t *dest, fixed_t x, fixed_t y)
 
 void M_SetVec3Fixed(v3fixed_t *dest, double x, double y, double z)
 {
-	dest->x = (fixed_t)(x * fixedfac);
-	dest->y = (fixed_t)(y * fixedfac);
-	dest->z = (fixed_t)(z * fixedfac);	
+	dest->x = DOUBLE2FIXED(x);
+	dest->y = DOUBLE2FIXED(y);
+	dest->z = DOUBLE2FIXED(z);
 }
 
 void M_SetVec3Fixed(v3fixed_t *dest, fixed_t x, fixed_t y, fixed_t z)
@@ -274,19 +266,19 @@ double M_LengthVec3(const v3double_t *v)
 
 fixed_t M_LengthVec2Fixed(const v2fixed_t *v)
 {
-	float fx = float(v->x);
-	float fy = float(v->y);	
+	double fx = FIXED2DOUBLE(v->x);
+	double fy = FIXED2DOUBLE(v->y);
 	
-	return (fixed_t)sqrtf(fx * fx + fy * fy);
+	return DOUBLE2FIXED(sqrt(fx * fx + fy * fy));
 }
 
 fixed_t M_LengthVec3Fixed(const v3fixed_t *v)
 {
-	float fx = float(v->x);
-	float fy = float(v->y);	
-	float fz = float(v->z);
+	double fx = FIXED2DOUBLE(v->x);
+	double fy = FIXED2DOUBLE(v->y);
+	double fz = FIXED2DOUBLE(v->z);
 	
-	return (fixed_t)sqrtf(fx * fx + fy * fy + fz * fz);
+	return DOUBLE2FIXED(sqrt(fx * fx + fy * fy + fz * fz));
 }
 
 
@@ -389,16 +381,16 @@ void M_NormalizeVec3(v3double_t *dest, const v3double_t *v)
 //
 void M_ActorPositionToVec3f(v3float_t *dest, const AActor *thing)
 {
-	dest->x = float(thing->x) * invfixedfacf;
-	dest->y = float(thing->y) * invfixedfacf;
-	dest->z = float(thing->z) * invfixedfacf;
+	dest->x = FIXED2FLOAT(thing->x);
+	dest->y = FIXED2FLOAT(thing->y);
+	dest->z = FIXED2FLOAT(thing->z);
 }
 
 void M_ActorPositionToVec3(v3double_t *dest, const AActor *thing)
 {
-	dest->x = double(thing->x) * invfixedfac;
-	dest->y = double(thing->y) * invfixedfac;
-	dest->z = double(thing->z) * invfixedfac;
+	dest->x = FIXED2DOUBLE(thing->x);
+	dest->y = FIXED2DOUBLE(thing->y);
+	dest->z = FIXED2DOUBLE(thing->z);
 }
 
 void M_ActorPositionToVec2Fixed(v2fixed_t *dest, const AActor *thing)
@@ -422,16 +414,16 @@ void M_ActorPositionToVec3Fixed(v3fixed_t *dest, const AActor *thing)
 //
 void M_ActorMomentumToVec3f(v3float_t *dest, const AActor *thing)
 {
-	dest->x = float(thing->momx) * invfixedfacf;
-	dest->y = float(thing->momy) * invfixedfacf;
-	dest->z = float(thing->momz) * invfixedfacf;
+	dest->x = FIXED2FLOAT(thing->momx);
+	dest->y = FIXED2FLOAT(thing->momy);
+	dest->z = FIXED2FLOAT(thing->momz);
 }
 
-void M_ActorMomentumToVec3f(v3double_t *dest, const AActor *thing)
+void M_ActorMomentumToVec3(v3double_t *dest, const AActor *thing)
 {
-	dest->x = double(thing->momx) * invfixedfac;
-	dest->y = double(thing->momy) * invfixedfac;
-	dest->z = double(thing->momz) * invfixedfac;
+	dest->x = FIXED2DOUBLE(thing->momx);
+	dest->y = FIXED2DOUBLE(thing->momy);
+	dest->z = FIXED2DOUBLE(thing->momz);
 }
 
 void M_ActorMomentumToVec2Fixed(v2fixed_t *dest, const AActor *thing)
@@ -455,17 +447,17 @@ void M_ActorMomentumToVec3Fixed(v3fixed_t *dest, const AActor *thing)
 //
 void M_AngleToVec3f(v3float_t *dest, angle_t ang, int pitch)
 {
-	dest->x = float(finecosine[ang >> ANGLETOFINESHIFT]);
-	dest->y = float(finesine[ang >> ANGLETOFINESHIFT]);
-	dest->z = float(finetangent[FINEANGLES/4 - (pitch >> ANGLETOFINESHIFT)]);
+	dest->x = FIXED2FLOAT(finecosine[ang >> ANGLETOFINESHIFT]);
+	dest->y = FIXED2FLOAT(finesine[ang >> ANGLETOFINESHIFT]);
+	dest->z = FIXED2FLOAT(finetangent[FINEANGLES/4 - (pitch >> ANGLETOFINESHIFT)]);
 	M_NormalizeVec3f(dest, dest);
 }
 	
 void M_AngleToVec3(v3double_t *dest, angle_t ang, int pitch)
 {
-	dest->x = double(finecosine[ang >> ANGLETOFINESHIFT]);
-	dest->y = double(finesine[ang >> ANGLETOFINESHIFT]) ;
-	dest->z = double(finetangent[FINEANGLES/4 - (pitch >> ANGLETOFINESHIFT)]);
+	dest->x = FIXED2DOUBLE(finecosine[ang >> ANGLETOFINESHIFT]);
+	dest->y = FIXED2DOUBLE(finesine[ang >> ANGLETOFINESHIFT]) ;
+	dest->z = FIXED2DOUBLE(finetangent[FINEANGLES/4 - (pitch >> ANGLETOFINESHIFT)]);
 	M_NormalizeVec3(dest, dest);
 }
 
@@ -612,34 +604,32 @@ void M_RotatePointAroundVector(v3double_t *dest, const v3double_t *dir, const v3
 void M_TranslateVec3f(v3float_t *vec, const v3float_t *origin, angle_t ang)
 {
 	float tx, ty, tz;
-	static const float fixed_conv = 1.0f / 65536.0f;
-   
-	float viewcos = fixed_conv * finecosine[ang >> ANGLETOFINESHIFT];
-	float viewsin = fixed_conv * finesine[ang >> ANGLETOFINESHIFT];   
+
+	float viewcosf = FIXED2FLOAT(finecosine[ang >> ANGLETOFINESHIFT]);
+	float viewsinf = FIXED2FLOAT(finesine[ang >> ANGLETOFINESHIFT]);
    
 	tx = vec->x - origin->x;
 	ty = origin->z - vec->y;
 	tz = vec->z - origin->y;
 
-	vec->x = (tx * viewcos) - (tz * viewsin);
-	vec->z = (tz * viewcos) + (tx * viewsin);
+	vec->x = (tx * viewcosf) - (tz * viewsinf);
+	vec->z = (tz * viewcosf) + (tx * viewsinf);
 	vec->y = ty;
 }
 
 void M_TranslateVec3 (v3double_t *vec, const v3double_t *origin, angle_t ang)
 {
 	double tx, ty, tz;
-	static const double fixed_conv = 1.0 / 65536.0;
 
-	double viewcos = fixed_conv * finecosine[ang >> ANGLETOFINESHIFT];
-	double viewsin = fixed_conv * finesine[ang >> ANGLETOFINESHIFT];
+	double viewcosf = FIXED2DOUBLE(finecosine[ang >> ANGLETOFINESHIFT]);
+	double viewsinf = FIXED2DOUBLE(finesine[ang >> ANGLETOFINESHIFT]);
  	  
 	tx = vec->x - origin->x;
 	ty = origin->z - vec->y;
 	tz = vec->z - origin->y;
 
-	vec->x = (tx * viewcos) - (tz * viewsin);
-	vec->z = (tz * viewcos) + (tx * viewsin);
+	vec->x = (tx * viewcosf) - (tz * viewsinf);
+	vec->z = (tz * viewcosf) + (tx * viewsinf);
 	vec->y = ty;
 }
 
