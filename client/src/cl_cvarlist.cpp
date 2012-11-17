@@ -196,8 +196,7 @@ CVAR (mouse_threshold,		"0", 	"",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDI
 CVAR (m_filter,				"0",	"Smooth mouse input",	CVARTYPE_STRING, CVAR_ARCHIVE)
 CVAR (dynres_state,			"0", 	"",	CVARTYPE_FLOAT,	CVAR_ARCHIVE)
 CVAR (dynresval,			"1.0",	"",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (displaymouse,			"0",	"Display mouse values",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
-
+CVAR (hud_mousegraph,			"0",	"Display mouse values",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
 
 CVAR (idmypos, "0", "Shows current player position on map",	CVARTYPE_BOOL, CVAR_NULL)
 

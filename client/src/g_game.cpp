@@ -64,6 +64,7 @@
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "gi.h"
+#include "hu_mousegraph.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -167,6 +168,7 @@ EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
 EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
 EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
 EXTERN_CVAR (m_filter)
+EXTERN_CVAR (hud_mousegraph)
 EXTERN_CVAR (cl_predictpickup)
 
 CVAR_FUNC_IMPL(cl_mouselook)
@@ -235,7 +237,6 @@ int 			mousey;
 // [Toke - Mouse] new mouse stuff
 int	mousexleft;
 int	mouseydown;
-
 
 // Joystick values are repeated
 // Store a value for each of the analog axis controls -- Hyper_Eye
@@ -784,8 +785,8 @@ BOOL G_Responder (event_t *ev)
 	  case ev_mouse:
 		G_ProcessMouseMovementEvent(ev);
 
-		if (displaymouse == 1)
-			Printf(PRINT_MEDIUM, "(%d %d) ", mousex, mousey);
+		if (hud_mousegraph)
+			mousegraph.append(mousex, mousey);
 
 		break;
 

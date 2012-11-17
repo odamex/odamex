@@ -43,6 +43,7 @@
 #include "i_video.h"
 #include "i_input.h"
 #include "cl_netgraph.h"
+#include "hu_mousegraph.h"
 
 #include "hu_drawers.h"
 #include "hu_elements.h"
@@ -69,6 +70,7 @@ EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (cl_netgraph)
+EXTERN_CVAR (hud_mousegraph)
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
@@ -338,6 +340,9 @@ void HU_Drawer (void)
 
 	if (cl_netgraph)
 		netgraph.draw();
+
+	if (hud_mousegraph)
+		mousegraph.draw(hud_mousegraph);
 }
 
 static void ShoveChatStr (std::string str, byte who)
