@@ -796,13 +796,17 @@ FUNC(LS_Teleport_NewMap)
 }
 
 FUNC(LS_Teleport)
-// Teleport (tid)
+// Teleport (tid, tag)
 {
 	if(!it) return false;
 	BOOL result;
 
-	if ((result = EV_Teleport (arg0, TeleportSide, it)) == false && !HasBehavior)
-		result = EV_LineTeleport (ln, TeleportSide, it);
+	if (HasBehavior)
+		// [AM] Use ZDoom-style teleport for Hexen-format maps
+		result = EV_Teleport(arg0, arg1, TeleportSide, it);
+	else
+		// [AM] Use Vanilla-style teleport for Doom-format maps
+		result = EV_LineTeleport(ln, TeleportSide, it);
 
 	return result;
 }

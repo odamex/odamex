@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 1998-2012 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -28,6 +29,7 @@
 #include "doomtype.h"
 #include "doomdef.h"
 
+#include "m_random.h"
 #include "s_sound.h"
 
 #include "p_local.h"
@@ -39,12 +41,113 @@
 
 extern void P_CalcHeight (player_t *player);
 
+// [AM] From ZDoom SVN, modified for use with Odamex and without the
+//      buggy 2.0.x teleport behavior compatibility fix.  Thanks to both
+//      Randy and Graf.
+static AActor* SelectTeleDest(int tid, int tag)
+{
+	AActor* searcher;
+
+	// If tid is non-zero, select a destination from a matching actor at random.
+	// If tag is also non-zero, the selection is restricted to actors in sectors
+	// with a matching tag. If tid is zero and tag is non-zero, then the old Doom
+	// behavior is used instead (return the first teleport dest found in a tagged
+	// sector).
+
+	if (tid != 0)
+	{
+		TThinkerIterator<AActor> iterator;
+		int count = 0;
+		while ((searcher = iterator.Next()))
+		{
+			if (!(searcher->type == MT_TELEPORTMAN || searcher->type == MT_TELEPORTMAN2))
+				continue;
+			if (searcher->tid != tid)
+				continue;
+
+			if (tag == 0 || searcher->subsector->sector->tag == tag)
+				count++;
+		}
+
+		// If teleport dests were not found, the sector tag is ignored for the
+		// following compatibility searches.
+		// Do this only when tag is 0 because this is the only case that was defined in Hexen.
+		if (count == 0)
+		{
+			if (tag == 0)
+			{
+				// Try to find a matching map spot (fixes Hexen MAP10)
+				TThinkerIterator<AActor> it2;
+				searcher = it2.Next();
+				while ((searcher = it2.Next()) != NULL)
+				{
+					if (searcher->type == MT_MAPSPOT || searcher->type == MT_MAPSPOTGRAVITY)
+						break;
+				}
+
+				if (searcher == NULL)
+				{
+					// Try to find a matching non-blocking spot of any type (fixes Caldera MAP13)
+					FActorIterator it3(tid);
+					searcher = it3.Next();
+					while (searcher != NULL && (searcher->flags & MF_SOLID))
+						searcher = it3.Next();
+					return searcher;
+				}
+			}
+		}
+		else
+		{
+			if (count != 1)
+				count = 1 + (P_Random() % count);
+
+			searcher = NULL;
+			while (count > 0)
+			{
+				searcher = iterator.Next();
+				if (!(searcher->type == MT_TELEPORTMAN || searcher->type == MT_TELEPORTMAN2))
+					continue;
+				if (searcher->tid != tid)
+					continue;
+				if (tag == 0 || searcher->subsector->sector->tag == tag)
+					count--;
+			}
+		}
+		return searcher;
+	}
+
+	if (tag != 0)
+	{
+		int secnum = -1;
+
+		while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
+		{
+			// Scanning the snext links of things in the sector will not work, because
+			// TeleportDests have MF_NOSECTOR set. So you have to search *everything*.
+			// If there is more than one sector with a matching tag, then the destination
+			// in the lowest-numbered sector is returned, rather than the earliest placed
+			// teleport destination. This means if 50 sectors have a matching tag and
+			// only the last one has a destination, *every* actor is scanned at least 49
+			// times. Yuck.
+			TThinkerIterator<AActor> it2;
+			while ((searcher = it2.Next()) != NULL)
+			{
+				if (!(searcher->type == MT_TELEPORTMAN || searcher->type == MT_TELEPORTMAN2))
+					continue;
+
+				if (searcher->subsector->sector == sectors + secnum)
+					return searcher;
+			}
+		}
+	}
+
+	return NULL;
+}
 
 //
 // TELEPORTATION
 //
-// [RH] Changed to look for a destination by ThingID
-BOOL EV_Teleport (int tid, int side, AActor *thing)
+BOOL EV_Teleport(int tid, int tag, int side, AActor *thing)
 {
 	AActor *m;
 	unsigned	an;
@@ -53,21 +156,18 @@ BOOL EV_Teleport (int tid, int side, AActor *thing)
 	fixed_t 	oldz;
 	player_t	*player;
 
-    // don't teleport missiles
-    if (thing->flags & MF_MISSILE)
-		return false;		
+	// don't teleport missiles
+	if (thing->flags & MF_MISSILE)
+		return false;
 
-    // Don't teleport if hit back of line,
-    //  so you can get out of teleporter.
-    if (side == 1)		
-		return false;	
+	// Don't teleport if hit back of line, so you can get out of teleporter.
+	if (side == 1)
+		return false;
 
-	// [RH] Find destination based on it's TID rather than
-	//		the sector containing it. Also allow for destinations
-	//		that remember their vertical position.
-	if (NULL == (m = AActor::FindGoal (NULL, tid, MT_TELEPORTMAN)))
-		if (NULL == (m = AActor::FindGoal (NULL, tid, MT_TELEPORTMAN2)))
-			return false;
+	// [AM] Use modern ZDoom teleport destination selection.
+	m = SelectTeleDest(tid, tag);
+	if (m == NULL)
+		return false;
 
 	// killough 5/12/98: exclude voodoo dolls:
 	player = thing->player;
@@ -83,12 +183,12 @@ BOOL EV_Teleport (int tid, int side, AActor *thing)
 	if (!P_TeleportMove (thing, m->x, m->y, destz, false))
 		return false;
 
-    // fraggle: this was changed in final doom, 
-    // problem between normal doom2 1.9 and final doom
-    // Note that although chex.exe is based on Final Doom,
-    // it does not have this quirk.
-    if (gamemission < pack_tnt || gamemission == chex)
-		    thing->z = thing->floorz;
+	// fraggle: this was changed in final doom, 
+	// problem between normal doom2 1.9 and final doom
+	// Note that although chex.exe is based on Final Doom,
+	// it does not have this quirk.
+	if (gamemission < pack_tnt || gamemission == chex)
+		thing->z = thing->floorz;
 
 	if (player)
 		player->viewz = thing->z + thing->player->viewheight;
@@ -221,6 +321,7 @@ BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing)
 	if (thing->flags & MF_MISSILE || !line)
 		return false;
 
+	// [AM] TODO: Change this to use SelectTeleDest.
 	if (NULL == (m = AActor::FindGoal (NULL, tid, MT_TELEPORTMAN)))
 		if (NULL == (m = AActor::FindGoal (NULL, tid, MT_TELEPORTMAN2)))
 			return false;
