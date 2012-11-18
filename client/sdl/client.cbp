@@ -528,6 +528,8 @@
 		<Unit filename="../src/hu_drawers.h" />
 		<Unit filename="../src/hu_elements.cpp" />
 		<Unit filename="../src/hu_elements.h" />
+		<Unit filename="../src/hu_mousegraph.cpp" />
+		<Unit filename="../src/hu_mousegraph.h" />
 		<Unit filename="../src/hu_stuff.cpp" />
 		<Unit filename="../src/hu_stuff.h" />
 		<Unit filename="../src/m_menu.cpp" />
