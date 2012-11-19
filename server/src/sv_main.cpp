@@ -2242,6 +2242,68 @@ void SV_ExitLevel()
 	}
 }
 
+//
+// SV_SendLoadWad
+//
+// Sends a message to all clients telling them to change to the specified WAD
+// and DEH patch files
+//
+void SV_SendLoadWad(const std::vector<std::string> &wadnames,
+					const std::vector<std::string> &patchnames)
+{
+	std::vector<std::string> stripped_wadnames, wadhashes;
+	for (size_t i = 0; i < 255 && i < wadnames.size(); i++)
+	{
+		std::string str(wadnames[i]);
+
+		// strip absolute paths
+		FixPathSeparator(str);
+		size_t slash = str.find_last_of(PATHSEPCHAR);
+		if (slash != std::string::npos)
+			str = str.substr(slash + 1, str.length() - slash);
+
+		stripped_wadnames.push_back(str);
+		wadhashes.push_back(W_MD5(str));
+	}
+
+	std::vector<std::string> stripped_patchnames, patchhashes;
+	for (size_t i = 0; i < 255 && i < patchnames.size(); i++)
+	{
+		std::string str(patchnames[i]);
+
+		// strip absolute paths
+		FixPathSeparator(str);
+		size_t slash = str.find_last_of(PATHSEPCHAR);
+		if (slash != std::string::npos)
+			str = str.substr(slash + 1, str.length() - slash);
+
+		stripped_patchnames.push_back(str);
+		patchhashes.push_back(W_MD5(str));
+	}
+
+	// send each player a list of wad names and deh patches to load
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		buf_t *buf = &(players[i].client.reliablebuf);
+	
+		MSG_WriteMarker(buf, svc_loadwad);
+
+		MSG_WriteByte(buf, stripped_wadnames.size());
+		for (size_t j = 0; j < stripped_wadnames.size(); j++)
+		{
+			MSG_WriteString(buf, stripped_wadnames[j].c_str());
+			MSG_WriteString(buf, wadhashes[j].c_str());
+		}
+
+		MSG_WriteByte(buf, stripped_patchnames.size());
+		for (size_t j = 0; j < stripped_patchnames.size(); j++)
+		{
+			MSG_WriteString(buf, stripped_patchnames[j].c_str());
+			MSG_WriteString(buf, patchhashes[j].c_str());
+		}
+	}
+}
+
 static bool STACK_ARGS compare_player_frags (const player_t *arg1, const player_t *arg2)
 {
 	return arg2->fragcount < arg1->fragcount;

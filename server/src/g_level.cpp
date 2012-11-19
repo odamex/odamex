@@ -84,7 +84,6 @@ EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_intermissionlimit)
 
-
 extern int timingdemo;
 
 extern int mapchange;
@@ -246,6 +245,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 		D_DoomWadReboot(wads, patches);
 		unnatural_level_progression = true;
 		G_DeferedInitNew(startmap);
+
+		SV_SendLoadWad(wads, patches);
 	}
 }
 END_COMMAND (wad)

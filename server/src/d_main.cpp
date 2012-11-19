@@ -924,8 +924,6 @@ std::vector<size_t> D_DoomWadReboot(
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_Error ("\nYou cannot switch WAD with the shareware version. Register!");
 
-	SV_SendReconnectSignal();
-
 	G_ExitLevel(0, 0);
 	DThinker::DestroyAllThinkers();
 

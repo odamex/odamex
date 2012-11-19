@@ -3090,6 +3090,34 @@ void CL_ConsolePlayer(void)
 	digest = MSG_ReadString();
 }
 
+void CL_LoadWad(void)
+{
+	bool missingfiles = false;
+	std::vector<std::string> wadfilenames, wadhashes, patchfilenames, patchhashes;
+
+	int wadcount = MSG_ReadByte();
+	while (wadcount--)
+	{
+		wadfilenames.push_back(MSG_ReadString());
+		wadhashes.push_back(MSG_ReadString());
+	}
+
+	int patchcount = MSG_ReadByte();
+	while (patchcount--)
+	{
+		patchfilenames.push_back(MSG_ReadString());
+		patchhashes.push_back(MSG_ReadString());
+	}
+
+	// Load the specified WAD and DEH files
+	std::vector<size_t> missing_files = 
+			D_DoomWadReboot(wadfilenames, patchfilenames, wadhashes);
+
+	// Reconnect to start download any missing files
+	if (!missing_files.empty())
+		CL_Reconnect();
+}
+
 void CL_LoadMap(void)
 {
 	const char *mapname = MSG_ReadString ();
@@ -3228,7 +3256,8 @@ cmdmap cmds;
 //
 void CL_InitCommands(void)
 {
-	cmds[svc_abort]			= &CL_EndGame;
+	cmds[svc_abort]				= &CL_EndGame;
+	cmds[svc_loadwad]			= &CL_LoadWad;
 	cmds[svc_loadmap]			= &CL_LoadMap;
 	cmds[svc_playerinfo]		= &CL_PlayerInfo;
 	cmds[svc_consoleplayer]		= &CL_ConsolePlayer;
