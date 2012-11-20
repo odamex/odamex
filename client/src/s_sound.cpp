@@ -44,6 +44,7 @@
 #include "v_text.h"
 #include "vectors.h"
 #include "m_fileio.h"
+#include "gi.h"
 
 #define NORM_PITCH				128
 #define NORM_PRIORITY				64
@@ -136,6 +137,8 @@ static struct mus_playing_t
 EXTERN_CVAR (snd_timeout)
 EXTERN_CVAR (snd_channels)
 EXTERN_CVAR (co_zdoomsoundcurve)
+EXTERN_CVAR (co_level8soundfeature)
+
 size_t			numChannels;
 
 static int		nextcleanup;
@@ -233,6 +236,32 @@ void S_NoiseDebug (void)
 	}
 }
 
+//
+// S_UseMap8Volume
+//
+// Determines if it is appropriate to use the special ExM8 attentuation
+// based on the current map number and the status of co_level8soundfeature
+//
+static bool S_UseMap8Volume()
+{
+	if (!co_level8soundfeature)
+		return false;
+
+    if (gameinfo.flags & GI_MAPxx)
+	{
+		// Doom2 style map naming (MAPxy)
+		if (level.mapname[3] == '0' && level.mapname[4] == '8')
+			return true;
+	}
+	else
+	{
+		// Doom1 style map naming (ExMy)
+		if (level.mapname[3] == '8')
+			return true;
+	}
+
+	return false;
+}
 
 //
 // Internals.
@@ -423,8 +452,6 @@ int S_getChannel (void*	origin, sfxinfo_t* sfxinfo, float volume, int priority)
 	return cnum;
 }
 
-EXTERN_CVAR (co_level8soundfeature)
-
 
 //
 // S_AdjustZdoomSoundParams
@@ -450,7 +477,7 @@ int S_AdjustZdoomSoundParams(	AActor*	listener,
 		
 	if (dist >= MAX_SND_DIST)
 	{
-		if (co_level8soundfeature && level.levelnum == 8)
+		if (S_UseMap8Volume())
 		{
 			dist = MAX_SND_DIST;
 		}
@@ -519,7 +546,7 @@ int S_AdjustSoundParams(AActor*		listener,
 	// GhostlyDeath <November 16, 2008> -- ExM8 has the full volume effect
 	// [Russell] - Change this to an option and remove the dependence on
 	// we run doom 1 or not
-	if ((multiplayer && !co_level8soundfeature) && level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
+	if (!S_UseMap8Volume() && approx_dist > S_CLIPPING_DIST)
 		return 0;
 
     // angle of source to listener
@@ -541,7 +568,7 @@ int S_AdjustSoundParams(AActor*		listener,
 		*vol = snd_sfxvolume;
 		*sep = NORM_SEP;
 	}
-	else if (co_level8soundfeature && level.levelnum == 8)
+	else if (S_UseMap8Volume())
 	{
 		if (approx_dist > S_CLIPPING_DIST)
 			approx_dist = S_CLIPPING_DIST;
