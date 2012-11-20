@@ -783,14 +783,6 @@ EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
 
-static value_t Widescreen[] =
-{
-	{ 0.0, "Stretch" },
-	{ 1.0, "Zoom" },
-	{ 2.0, "Wide or Stretch" },
-	{ 3.0, "Wide or Zoom" }
-};
-
 static value_t Crosshairs[] =
 {
 	{ 0.0, "None" },
@@ -863,7 +855,6 @@ static menuitem_t VideoItems[] = {
 	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
-	{ discrete,	"Widescreen",				{&r_widescreen},		{4.0}, {0.0},	{0.0},  {Widescreen}} ,
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {9.0},	{1.0},  {NULL} },
 	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },	
 	{ slider,	"Movement bobbing",			{&cl_movebob},			{0.0}, {1.0},	{0.1},	{NULL} },
@@ -1052,15 +1043,23 @@ static value_t DetailModes[] = {
 	{ 3.0, "Double Horiz & Vert" }
 };
 
+static value_t Widescreen[] =
+{
+	{ 0.0, "Stretch" },
+	{ 1.0, "Zoom" },
+	{ 2.0, "Wide or Stretch" },
+	{ 3.0, "Wide or Zoom" }
+};
 
 static menuitem_t ModesItems[] = {
-	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
+//	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
 	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
 #ifdef _XBOX
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
 #endif
+	{ discrete,	"Widescreen",			{&r_widescreen},		{4.0}, {0.0},	{0.0},  {Widescreen}} ,
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
