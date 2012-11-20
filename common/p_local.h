@@ -166,6 +166,10 @@ extern TArray<intercept_t> intercepts;
 typedef BOOL (*traverser_t) (intercept_t *in);
 
 fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
+fixed_t P_AproxDistance2 (fixed_t *pos_array, fixed_t x, fixed_t y);
+fixed_t P_AproxDistance2 (AActor *mo, fixed_t x, fixed_t y);
+fixed_t P_AproxDistance2 (AActor *a, AActor *b);
+
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
 void	P_MakeDivline (const line_t *li, divline_t *dl);

@@ -45,26 +45,6 @@
 #define S_PITCH_PERTURB 		1
 #define S_STEREO_SWING			(96<<FRACBITS)
 
-fixed_t P_AproxDistance2 (fixed_t *listener, fixed_t x, fixed_t y)
-{
-	// calculate the distance to sound origin
-	//	and clip it if necessary
-	if (listener)
-	{
-		fixed_t adx = abs (listener[0] - x);
-		fixed_t ady = abs (listener[1] - y);
-		// From _GG1_ p.428. Appox. eucledian distance fast.
-		return adx + ady - ((adx < ady ? adx : ady)>>1);
-	}
-	else
-		return 0;
-}
-
-fixed_t P_AproxDistance2 (AActor *listener, fixed_t x, fixed_t y)
-{
-	return P_AproxDistance2 (&listener->x, x, y);
-}
-
 //
 // [RH] Print sound debug info. Called from D_Display()
 //

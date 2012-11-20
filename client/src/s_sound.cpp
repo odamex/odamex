@@ -143,29 +143,6 @@ size_t			numChannels;
 
 static int		nextcleanup;
 
-static fixed_t P_AproxDistance2 (fixed_t *listener, fixed_t x, fixed_t y)
-{
-	// calculate the distance to sound origin
-	//	and clip it if necessary
-	if (listener)
-	{
-		fixed_t adx = abs (listener[0] - x);
-		fixed_t ady = abs (listener[1] - y);
-		// From _GG1_ p.428. Appox. eucledian distance fast.
-		return adx + ady - ((adx < ady ? adx : ady)>>1);
-	}
-	else
-		return 0;
-}
-
-static fixed_t P_AproxDistance2 (AActor *listener, fixed_t x, fixed_t y)
-{
-	if (listener)
-		return P_AproxDistance2 (&listener->x, x, y);
-	else
-		return 0;
-}
-
 //
 // [RH] Print sound debug info. Called from D_Display()
 //

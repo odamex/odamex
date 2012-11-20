@@ -58,30 +58,6 @@ EXTERN_CVAR (sv_allowtargetnames)
 size_t P_NumPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
 
-// GhostlyDeath -- From Strawberry-Doom
-// [AM] This doesn't belong here.
-#include <cmath>
-int MobjToMobjDistance(AActor *a, AActor *b) {
-	double x1, x2;
-	double y1, y2;
-	double z1, z2;
-
-	if (a && b) {
-		x1 = a->x >> FRACBITS;
-		x2 = b->x >> FRACBITS;
-		y1 = a->y >> FRACBITS;
-		y2 = b->y >> FRACBITS;
-		z1 = a->z >> FRACBITS;
-		z2 = b->z >> FRACBITS;
-
-		return (int)sqrt(pow(x2 - x1, 2) +
-		                 pow(y2 - y1, 2) +
-		                 pow(z2 - z1, 2));
-	}
-
-	return 0;
-}
-
 namespace hud {
 
 // Player sorting functions
@@ -1227,7 +1203,7 @@ void EATargets(int x, int y, const float scale,
 		// Now if they are visible...
 		if (players[i].mo && players[i].mo->health > 0) {
 			// If they are beyond 512 units, ignore
-			if (MobjToMobjDistance(displayplayer().mo, players[i].mo) > 512)
+			if (P_AproxDistance2(displayplayer().mo, players[i].mo) > 512*FRACUNIT)
 				continue;
 
 			// Check to see if the other player is visible
@@ -1294,7 +1270,7 @@ void EATargets(int x, int y, const float scale,
 			// Ok, make the temporary player info then add it
 			TargetInfo_t temp = {
 				&players[i],
-				MobjToMobjDistance(displayplayer().mo, players[i].mo),
+				P_AproxDistance2(displayplayer().mo, players[i].mo) >> FRACBITS,
 				color
 			};
 			Targets.push_back(temp);

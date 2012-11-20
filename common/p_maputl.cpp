@@ -168,6 +168,34 @@ fixed_t P_AproxDistance (fixed_t dx, fixed_t dy)
 	return dx+dy-(dy>>1);
 }
 
+fixed_t P_AproxDistance2 (fixed_t *pos_array, fixed_t x, fixed_t y)
+{
+	if (pos_array)
+	{
+		fixed_t adx = abs(pos_array[0] - x);
+		fixed_t ady = abs(pos_array[1] - y);
+		// From _GG1_ p.428. Appox. eucledian distance fast.
+		return adx + ady - ((adx < ady ? adx : ady)>>1);
+	}
+	else
+		return 0;
+}
+
+fixed_t P_AproxDistance2 (AActor *mo, fixed_t x, fixed_t y)
+{
+	if (mo)
+		return P_AproxDistance2(&mo->x, x, y);
+	else
+		return 0;
+}
+
+fixed_t P_AproxDistance2 (AActor *a, AActor *b)
+{
+	if (a && b)
+		return P_AproxDistance2(&a->x, b->x, b->y);
+	else
+		return 0;
+}
 
 //
 // P_PointOnLineSide
