@@ -314,12 +314,15 @@ std::string PersonalSpread(int& color) {
 				continue;
 			}
 
+			if (players[i].fragcount == maxfrags) {
+				maxplayer = players[i].id;
+				maxother++;
+			}
+
 			if (players[i].fragcount > maxfrags) {
 				maxplayer = players[i].id;
 				maxfrags = players[i].fragcount;
-				if (plyr->id != maxplayer) {
-					maxother += 1;
-				}
+				maxother = 0;
 			}
 
 			ingame += 1;
