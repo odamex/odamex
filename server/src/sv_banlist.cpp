@@ -39,6 +39,7 @@
 
 EXTERN_CVAR(sv_email)
 EXTERN_CVAR(sv_banfile)
+EXTERN_CVAR(sv_banlist_autosave)
 EXTERN_CVAR(sv_exceptionfile)
 
 Banlist banlist;
@@ -571,6 +572,9 @@ BEGIN_COMMAND(ban)
 
 	// Add the ban and kick the player.
 	banlist.add(player, tim, reason);
+	Printf(PRINT_HIGH, "ban: ban added.\n");
+	if (sv_banlist_autosave)
+		AddCommandString("savebanlist");
 	SV_KickPlayer(player, reason);
 }
 END_COMMAND(ban)
@@ -622,6 +626,9 @@ BEGIN_COMMAND(addban)
 	}
 
 	banlist.add(address, tim, name, reason);
+	Printf(PRINT_HIGH, "addban: ban added.\n");
+	if (sv_banlist_autosave)
+		AddCommandString("savebanlist");
 }
 END_COMMAND(addban)
 
@@ -709,6 +716,10 @@ BEGIN_COMMAND(delban)
 		Printf(PRINT_HIGH, "delban: banlist index does not exist.\n");
 		return;
 	}
+
+	Printf(PRINT_HIGH, "delban: ban deleted.\n");
+	if (sv_banlist_autosave)
+		AddCommandString("savebanlist");
 }
 END_COMMAND(delban)
 
@@ -808,7 +819,10 @@ END_COMMAND(banlist)
 BEGIN_COMMAND(clearbanlist)
 {
 	banlist.clear();
+
 	Printf(PRINT_HIGH, "clearbanlist: banlist cleared.\n");
+	if (sv_banlist_autosave)
+		AddCommandString("savebanlist");
 }
 END_COMMAND(clearbanlist)
 
@@ -821,19 +835,10 @@ BEGIN_COMMAND(savebanlist)
 		banfile = sv_banfile.cstring();
 
 	Json::Value json_bans(Json::arrayValue);
-	if (!banlist.json(json_bans))
-	{
-		Printf(PRINT_HIGH, "savebanlist: banlist is empty.\n");
-		return;
-	}
 	if (M_WriteJSON(banfile.c_str(), json_bans, true))
-	{
 		Printf(PRINT_HIGH, "savebanlist: banlist saved to %s.\n", banfile.c_str());
-	}
 	else
-	{
 		Printf(PRINT_HIGH, "savebanlist: could not save banlist.\n");
-	}
 }
 END_COMMAND(savebanlist)
 

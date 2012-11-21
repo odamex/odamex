@@ -173,6 +173,8 @@ CVAR (sv_ticbuffer, "1", "Buffer controller input from players experiencing sudd
 
 CVAR (sv_banfile, "banlist.json", "Default file to save and load the banlist.",
       CVARTYPE_STRING, CVAR_SERVERARCHIVE)
+CVAR (sv_banlist_autosave, "1", "Automatically save bans when the banlist is modified.",
+      CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 CVAR (sv_exceptionfile, "exceptionlist.json", "Default file to save and load the exception list.",
       CVARTYPE_STRING, CVAR_SERVERARCHIVE)
 
