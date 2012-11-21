@@ -1075,5 +1075,49 @@ angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y)
 	return 0;
 }
 
+//
+// P_ActorInFOV
+//
+// Returns true if the actor mo is in the field-of-view of the actor origin,
+// with FOV specified by f (0.0 - 45.0) and within a maximum distance specified
+// by dist.
+//
+bool P_ActorInFOV(AActor* origin, AActor* mo , float f, fixed_t dist)
+{
+	if (!mo)
+		return false;
+
+	// check that the actors are within a radius of dist of each other
+	// (A very cheap calculation)
+	if (P_AproxDistance2(origin, mo) > dist)
+		return false;
+
+	// check that the actor mo is in front of origin's field of view
+	// (Not so expensive...)
+
+	// transform and rotate so that tx and ty represent mo's location with respect
+	// to the direction origin is looking
+	fixed_t tx, ty;
+	R_RotatePoint(mo->x - origin->x, mo->y - origin->y, ANG90 - origin->angle, tx, ty);
+
+	// mo is behind origin?
+	if (ty < 4*FRACUNIT)
+		return false;
+
+	// calculate the angle from the direction origin is facing to mo
+	float ang = 360.0f * tantoangle_acc[SlopeDiv(abs(tx), ty)] / ANG360;
+
+	// is the actor mo within the FOV specified by f?
+	if (ang > f / 2)
+		return false;
+
+	// check to see if the actor mo is hidden behind walls, etc
+	// (A very expensive calculation)
+	if (!P_CheckSightEdges(origin, mo, 0.0))
+			return false;
+
+	return true;
+}
+
 VERSION_CONTROL (p_maputl_cpp, "$Id$")
 

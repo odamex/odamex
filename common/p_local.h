@@ -170,6 +170,8 @@ fixed_t P_AproxDistance2 (fixed_t *pos_array, fixed_t x, fixed_t y);
 fixed_t P_AproxDistance2 (AActor *mo, fixed_t x, fixed_t y);
 fixed_t P_AproxDistance2 (AActor *a, AActor *b);
 
+bool P_ActorInFOV(AActor* origin, AActor* mo , float f, fixed_t dist);
+
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
 void	P_MakeDivline (const line_t *li, divline_t *dl);
@@ -271,9 +273,7 @@ struct v3fixed_t;
 v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg, const v3fixed_t &linedir);
 
 
-// GhostlyDeath -- I put this here
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);
-bool P_CheckSightEdges2(const AActor* t1, const AActor* t2, float radius_boost);
 
 bool	P_ChangeSector (sector_t* sector, bool crunch);
 

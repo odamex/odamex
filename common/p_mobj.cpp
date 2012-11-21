@@ -2513,9 +2513,7 @@ bool P_VisibleToPlayers(AActor *mo)
 		if (!players[i].mo || players[i].spectator)
 			continue;
 	
-		if (HasBehavior && P_CheckSightEdges2(players[i].mo, mo, 5.0))
-			return true;
-		if (!HasBehavior && P_CheckSightEdges(players[i].mo, mo, 5.0))
+		if (P_CheckSightEdges(players[i].mo, mo, 5.0))
 			return true;
 	}
 

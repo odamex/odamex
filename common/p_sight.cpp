@@ -449,7 +449,7 @@ bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 /*
 =====================
 =
-= [denis] P_CheckSightEdges2
+= [denis] P_CheckSightEdgesHexen
 =
 = Returns true if a straight line between t1 and t2 is unobstructed
 = look from eyes of t1 to any part of t2
@@ -457,7 +457,7 @@ bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 =====================
 */
 
-bool P_CheckSightEdges2 (const AActor *t1, const AActor *t2, float radius_boost)
+bool P_CheckSightEdgesHexen (const AActor *t1, const AActor *t2, float radius_boost)
 {
 	const sector_t *s1 = t1->subsector->sector;
 	const sector_t *s2 = t2->subsector->sector;
@@ -888,13 +888,12 @@ P_CheckSight
 }
 
 //
-// denis - P_CheckSightEdges
+// denis - P_CheckSightEdgesDoom
 // Returns true if a straight line between the eyes of t1 and
 // any part of t2 is unobstructed.
 // Uses REJECT.
 //
-bool
-P_CheckSightEdges
+bool P_CheckSightEdgesDoom
 ( const AActor*	t1,
   const AActor*	t2,
   float radius_boost )
@@ -925,6 +924,16 @@ P_CheckSightEdges
 
 	return contact;
 }	
+
+extern bool HasBehavior;
+
+bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost)
+{
+	if (HasBehavior)
+		return P_CheckSightEdgesHexen(t1, t2, radius_boost);
+	else
+		return P_CheckSightEdgesDoom(t1, t2, radius_boost);
+}
 
 VERSION_CONTROL (p_sight_cpp, "$Id$")
 

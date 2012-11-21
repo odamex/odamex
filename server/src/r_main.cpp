@@ -299,6 +299,7 @@ R_PointToAngle
     return R_PointToAngle2 (viewx, viewy, x, y);
 }
 
+
 //
 // R_InitPointToAngle
 //
@@ -317,6 +318,14 @@ void R_InitPointToAngle (void)
 	}
 }
 */
+
+void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
+{
+	int index = ang >> ANGLETOFINESHIFT;
+	
+	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
+	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
+}
 
 //
 //

@@ -1194,90 +1194,34 @@ void EATargets(int x, int y, const float scale,
 	std::vector<TargetInfo_t> Targets;
 
 	// What players should be drawn?
-	for (size_t i = 0; i < players.size();i++) {
-		// We don't care about spectators.
-		if (players[i].spectator)
+	for (size_t i = 0; i < players.size();i++)
+	{
+		if (players[i].spectator || !players[i].mo || players[i].mo->health <= 0)
 			continue;
 
 		// We don't care about the player whose eyes we are looking through.
 		if (&(players[i]) == &(displayplayer()))
 			continue;
 
-		// Now if they are visible...
-		if (players[i].mo && players[i].mo->health > 0) {
-			// If they are beyond 512 units, ignore
-			if (P_AproxDistance2(displayplayer().mo, players[i].mo) > 512*FRACUNIT)
-				continue;
+		if (!P_ActorInFOV(displayplayer().mo, players[i].mo, 45.0f, 512*FRACUNIT))
+			continue;
 
-			// Check to see if the other player is visible
-			if (HasBehavior) {
-				// Hexen format
-				if (!P_CheckSightEdges2(displayplayer().mo, players[i].mo, 0.0))
-					continue;
-			} else {
-				// Doom format
-				if (!P_CheckSightEdges(displayplayer().mo, players[i].mo, 0.0))
-					continue;
-			}
-
-			// GhostlyDeath -- Don't draw dead enemies
-			if (!consoleplayer().spectator && (players[i].mo->health <= 0)) {
-				if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-					if ((players[i].userinfo.team != displayplayer().userinfo.team) ||
-						(displayplayer().userinfo.team == TEAM_NONE) ||
-						(players[i].userinfo.team == TEAM_NONE))
-							continue;
-				} else {
-					if (sv_gametype != GM_COOP)
-						continue;
-				}
-			}
-
-			// Now we need to figure out if they are infront of us
-			// Taken from r_things.cpp and I have no clue what it does
-
-			// FIXME: This bit of code is way too generous with the target
-			//        names, needs to be narrower angle. [AM]
-			fixed_t tr_x, tr_y, gxt, gyt, tx, tz;
-
-			// transform the origin point
-			tr_x = players[i].mo->x - viewx;
-			tr_y = players[i].mo->y - viewy;
-
-			gxt = FixedMul (tr_x,viewcos);
-			gyt = -FixedMul (tr_y,viewsin);
-
-			tz = gxt-gyt;
-
-			// thing is behind view plane?
-			if (tz < (FRACUNIT*4))
-				continue;
-
-			gxt = -FixedMul (tr_x, viewsin);
-			gyt = FixedMul (tr_y, viewcos);
-			tx = -(gyt+gxt);
-
-			// too far off the side?
-			if (abs(tx)>(tz>>1))
-				continue;
-
-			// Pick a decent color for the player name.
-			int color;
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-				// In teamgames, we want to use team colors for targets.
-				color = teamTextColor(players[i].userinfo.team);
-			} else {
-				color = CR_GREY;
-			}
-
-			// Ok, make the temporary player info then add it
-			TargetInfo_t temp = {
-				&players[i],
-				P_AproxDistance2(displayplayer().mo, players[i].mo) >> FRACBITS,
-				color
-			};
-			Targets.push_back(temp);
+		// Pick a decent color for the player name.
+		int color;
+		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+			// In teamgames, we want to use team colors for targets.
+			color = teamTextColor(players[i].userinfo.team);
+		} else {
+			color = CR_GREY;
 		}
+
+		// Ok, make the temporary player info then add it
+		TargetInfo_t temp = {
+			&players[i],
+			P_AproxDistance2(displayplayer().mo, players[i].mo) >> FRACBITS,
+			color
+		};
+		Targets.push_back(temp);
 	}
 
 	// GhostlyDeath -- Now Sort (hopefully I got my selection sort working!)
