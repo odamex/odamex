@@ -1079,11 +1079,16 @@ angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y)
 // P_ActorInFOV
 //
 // Returns true if the actor mo is in the field-of-view of the actor origin,
-// with FOV specified by f (0.0 - 45.0) and within a maximum distance specified
+// with FOV specified by f (0.0 - 180.0) and within a maximum distance specified
 // by dist.
 //
 bool P_ActorInFOV(AActor* origin, AActor* mo , float f, fixed_t dist)
 {
+	if (f <= 0.0f)
+		return false;
+	if (f > 180.0f)
+		f = 180.0f;
+
 	if (!mo)
 		return false;
 
@@ -1105,10 +1110,16 @@ bool P_ActorInFOV(AActor* origin, AActor* mo , float f, fixed_t dist)
 		return false;
 
 	// calculate the angle from the direction origin is facing to mo
-	float ang = 360.0f * tantoangle_acc[SlopeDiv(abs(tx), ty)] / ANG360;
+	float ang;
+
+	tx = abs(tx);		// just to make calculations simplier
+	if (tx > ty)
+		ang = 360.0f * (ANG90 - 1 - tantoangle_acc[SlopeDiv(ty, tx)]) / ANG360;
+	else
+		ang = 360.0f * tantoangle_acc[SlopeDiv(tx, ty)] / ANG360;
 
 	// is the actor mo within the FOV specified by f?
-	if (ang > f / 2)
+	if (ang > f / 2.0f)
 		return false;
 
 	// check to see if the actor mo is hidden behind walls, etc
