@@ -39,7 +39,6 @@
 
 EXTERN_CVAR(sv_email)
 EXTERN_CVAR(sv_banfile)
-EXTERN_CVAR(sv_banlist_autosave)
 EXTERN_CVAR(sv_exceptionfile)
 
 Banlist banlist;
@@ -573,8 +572,15 @@ BEGIN_COMMAND(ban)
 	// Add the ban and kick the player.
 	banlist.add(player, tim, reason);
 	Printf(PRINT_HIGH, "ban: ban added.\n");
-	if (sv_banlist_autosave)
-		AddCommandString("savebanlist");
+
+	// If we have a banfile, save the banlist.
+	if (sv_banfile.cstring()[0] != 0)
+	{
+		Json::Value json_bans(Json::arrayValue);
+		if (!(banlist.json(json_bans) && M_WriteJSON(sv_banfile.cstring(), json_bans, true)))
+			Printf(PRINT_HIGH, "ban: banlist could not be saved.\n");
+	}
+
 	SV_KickPlayer(player, reason);
 }
 END_COMMAND(ban)
@@ -627,8 +633,14 @@ BEGIN_COMMAND(addban)
 
 	banlist.add(address, tim, name, reason);
 	Printf(PRINT_HIGH, "addban: ban added.\n");
-	if (sv_banlist_autosave)
-		AddCommandString("savebanlist");
+
+	// If we have a banfile, save the banlist.
+	if (sv_banfile.cstring()[0] != 0)
+	{
+		Json::Value json_bans(Json::arrayValue);
+		if (!(banlist.json(json_bans) && M_WriteJSON(sv_banfile.cstring(), json_bans, true)))
+			Printf(PRINT_HIGH, "addban: banlist could not be saved.\n");
+	}
 }
 END_COMMAND(addban)
 
@@ -718,8 +730,14 @@ BEGIN_COMMAND(delban)
 	}
 
 	Printf(PRINT_HIGH, "delban: ban deleted.\n");
-	if (sv_banlist_autosave)
-		AddCommandString("savebanlist");
+
+	// If we have a banfile, save the banlist.
+	if (sv_banfile.cstring()[0] != 0)
+	{
+		Json::Value json_bans(Json::arrayValue);
+		if (!(banlist.json(json_bans) && M_WriteJSON(sv_banfile.cstring(), json_bans, true)))
+			Printf(PRINT_HIGH, "delban: banlist could not be saved.\n");
+	}
 }
 END_COMMAND(delban)
 
@@ -821,8 +839,14 @@ BEGIN_COMMAND(clearbanlist)
 	banlist.clear();
 
 	Printf(PRINT_HIGH, "clearbanlist: banlist cleared.\n");
-	if (sv_banlist_autosave)
-		AddCommandString("savebanlist");
+
+	// If we have a banfile, save the banlist.
+	if (sv_banfile.cstring()[0] != 0)
+	{
+		Json::Value json_bans(Json::arrayValue);
+		if (!(banlist.json(json_bans) && M_WriteJSON(sv_banfile.cstring(), json_bans, true)))
+			Printf(PRINT_HIGH, "clearbanlist: banlist could not be saved.\n");
+	}
 }
 END_COMMAND(clearbanlist)
 
