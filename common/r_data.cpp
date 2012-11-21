@@ -158,9 +158,9 @@ void R_ConvertPatch(patch_t *newpatch, patch_t *rawpatch)
 	{
 		int abs_offset = 0;
 			
-		newpostofs[i] = curofs;		// write the new offset for this column
+		newpostofs[i] = LELONG(curofs);		// write the new offset for this column
 		post_t *rawpost = (post_t*)((byte*)rawpatch + LELONG(rawpostofs[i]));
-		tallpost_t *newpost = (tallpost_t*)((byte*)newpatch + newpostofs[i]);
+		tallpost_t *newpost = (tallpost_t*)((byte*)newpatch + curofs);
 
 		while (rawpost->topdelta != 0xFF)
 		{
