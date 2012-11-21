@@ -197,8 +197,8 @@ std::string Warmup(int& color)
 	player_t *dp = &displayplayer();
 	player_t *cp = &consoleplayer();
 
-	Warmup::status_t wstatus = warmup.get_status();
-	if (wstatus == Warmup::WARMUP)
+	::Warmup::status_t wstatus = warmup.get_status();
+	if (wstatus == ::Warmup::WARMUP)
 	{
 		if (dp->spectator)
 			return "Warmup: You are spectating";
@@ -219,7 +219,7 @@ std::string Warmup(int& color)
 				return "Warmup: This player is not ready";
 		}
 	}
-	else if (wstatus == Warmup::COUNTDOWN)
+	else if (wstatus == ::Warmup::COUNTDOWN)
 	{
 		color = CR_GOLD;
 		return "Warmup: Match is about to start...";
