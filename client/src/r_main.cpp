@@ -1257,7 +1257,6 @@ void R_ResetDrawFuncs()
 	if (r_drawflat)
 	{
 		R_SetFlatDrawFuncs();
-		R_SetBlankDrawFuncs();
 	}
 	else
 	{
