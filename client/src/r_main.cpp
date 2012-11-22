@@ -1217,20 +1217,47 @@ void R_SetupFrame (player_t *player)
 }
 
 //
+// R_SetFlatDrawFuncs
+//
+// Sets the drawing function pointers to functions that floodfill with
+// flat colors instead of texture mapping.
+//
+void R_SetFlatDrawFuncs()
+{
+	colfunc = R_FillColumnP;
+	hcolfunc_pre = R_FillColumnHorizP;
+	hcolfunc_post1 = rt_copy1col;
+	hcolfunc_post2 = rt_copy2cols;
+	hcolfunc_post4 = rt_copy4cols;
+	spanfunc = R_FillSpan;
+	spanslopefunc = R_FillSpan;
+}
+
+//
+// R_SetBlankDrawFuncs
+//
+// Sets the drawing function pointers to functions that draw nothing.
+// These can be used instead of the flat color functions for lucent midtex.
+//
+void R_SetBlankDrawFuncs()
+{
+	colfunc = R_BlankColumn;
+	hcolfunc_pre = R_BlankColumn; 
+	hcolfunc_post1 = rt_copy1col;
+	hcolfunc_post2 = rt_copy2cols;
+	hcolfunc_post4 = rt_copy4cols;
+	spanfunc = spanslopefunc = R_BlankColumn;
+}
+
+//
 // R_ResetDrawFuncs
 //
 void R_ResetDrawFuncs()
 {
-	// [RH] Show off segs if r_drawflat is 1
 	if (r_drawflat)
 	{
-		colfunc = R_FillColumnP;
-		hcolfunc_pre = R_FillColumnHorizP;
-		hcolfunc_post1 = rt_copy1col;
-		hcolfunc_post2 = rt_copy2cols;
-		hcolfunc_post4 = rt_copy4cols;
-		spanfunc = R_FillSpan;
-		spanslopefunc = R_FillSpan;
+		R_SetFlatDrawFuncs();
+		R_SetBlankDrawFuncs();
 	}
 	else
 	{
@@ -1241,6 +1268,54 @@ void R_ResetDrawFuncs()
 		hcolfunc_post4 = rt_map4cols;
 		spanfunc = R_DrawSpan;
 		spanslopefunc = R_DrawSlopeSpan;
+	}
+}
+
+void R_SetLucentDrawFuncs()
+{
+	if (r_drawflat)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else
+	{
+		colfunc = lucentcolfunc;
+		hcolfunc_pre = R_DrawColumnHoriz;
+		hcolfunc_post1 = rt_lucent1col;
+		hcolfunc_post2 = rt_lucent2cols;
+		hcolfunc_post4 = rt_lucent4cols;
+	}
+}
+
+void R_SetTranslatedDrawFuncs()
+{
+	if (r_drawflat)
+	{
+		R_SetFlatDrawFuncs();
+	}
+	else
+	{
+		colfunc = transcolfunc;
+		hcolfunc_pre = R_DrawColumnHoriz;
+		hcolfunc_post1 = rt_tlate1col;
+		hcolfunc_post2 = rt_tlate2cols;
+		hcolfunc_post4 = rt_tlate4cols;
+	}
+}
+
+void R_SetTranslatedLucentDrawFuncs()
+{
+	if (r_drawflat)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else
+	{
+		colfunc = tlatedlucentcolfunc;
+		hcolfunc_pre = R_DrawColumnHoriz;
+		hcolfunc_post1 = rt_tlatelucent1col;
+		hcolfunc_post2 = rt_tlatelucent2cols;
+		hcolfunc_post4 = rt_tlatelucent4cols;
 	}
 }
 

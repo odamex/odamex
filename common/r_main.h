@@ -198,5 +198,10 @@ void R_SetViewSize (int blocks);
 void R_MultiresInit (void);
 
 void R_ResetDrawFuncs(void);
+void R_SetLucentDrawFuncs(void);
+void R_SetTranslatedDrawFuncs(void);
+void R_SetTranslatedLucentDrawFuncs(void);
+
+
 
 #endif // __R_MAIN_H__

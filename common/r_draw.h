@@ -170,6 +170,7 @@ void	R_DrawTlatedLucentColumnP_C (void);
 void	R_StretchColumnP_C (void);
 #define R_StretchColumn R_StretchColumnP_C
 
+void	R_BlankColumn (void);
 void	R_FillColumnP (void);
 void	R_FillColumnHorizP (void);
 void	R_FillSpan (void);

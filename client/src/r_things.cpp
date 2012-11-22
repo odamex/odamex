@@ -696,6 +696,10 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	fixed_t 			frac;
 	patch_t*			patch;
 
+	bool				fuzz_effect = false;
+	bool				translated = false;
+	bool				lucent = false;
+
 	dc_textureheight = 256 << FRACBITS;
 
 	if (vis->mobjflags & MF_SPECTATOR)
@@ -710,11 +714,10 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	patch = W_CachePatch (vis->patch);
 
 	dc_colormap = vis->colormap;
-	R_ResetDrawFuncs();
 
 	if (vis->translation)
 	{
-		colfunc = transcolfunc;
+		translated = true;
 		dc_translation = vis->translation;
 	}
 	else if (vis->mobjflags & MF_TRANSLATION)
@@ -722,7 +725,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		// [RH] MF_TRANSLATION is still available for DeHackEd patches that
 		//		used it, but the prefered way to change a thing's colors
 		//		is now with the palette field.
-		colfunc = transcolfunc;
+		translated = true;
 		dc_translation = translationtables + (MAXPLAYERS-1)*256 +
 			( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
 	}
@@ -734,16 +737,25 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		//		translucency with light levels if desired. The original
 		//		code used colormap == NULL to indicate shadows.
 		dc_translevel = FRACUNIT/5;
-		colfunc = fuzzcolfunc;
+		fuzz_effect = true;
 	}
 	else if (vis->translucency < FRACUNIT)
 	{	// [RH] draw translucent column
-		if (colfunc == basecolfunc)
-			colfunc = lucentcolfunc;
-		else
-			colfunc = tlatedlucentcolfunc;
+		lucent = true;
 		dc_translevel = vis->translucency;
 	}
+
+	// [SL] Select the set of drawing functions to use
+	R_ResetDrawFuncs();
+
+	if (fuzz_effect)
+		colfunc = fuzzcolfunc;
+	else if (lucent && translated)
+		R_SetTranslatedLucentDrawFuncs();
+	else if (lucent)
+		R_SetLucentDrawFuncs();
+	else if (translated)
+		R_SetTranslatedDrawFuncs();
 
 	dc_iscale = FixedDiv (FRACUNIT, vis->yscale) + 1;
 	dc_texturemid = vis->texturemid;
@@ -754,7 +766,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	patchwidth = (unsigned)(patch->width());
 #endif
 
-	if (!r_columnmethod || colfunc == fuzzcolfunc) {
+	if (!r_columnmethod || fuzz_effect) {
 		// [RH] The original Doom method of drawing sprites
 		int x1 = vis->x1, x2 = vis->x2;
 		fixed_t xiscale = vis->xiscale;
@@ -779,21 +791,6 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		int stop = x2 & ~3;
 
 		if (x1 < x2) {
-			// Set things up for the cache-friendly drawers
-			if (colfunc == lucentcolfunc) {
-				hcolfunc_post1 = rt_lucent1col;
-				hcolfunc_post2 = rt_lucent2cols;
-				hcolfunc_post4 = rt_lucent4cols;
-			} else if (colfunc == tlatedlucentcolfunc) {
-				hcolfunc_post1 = rt_tlatelucent1col;
-				hcolfunc_post2 = rt_tlatelucent2cols;
-				hcolfunc_post4 = rt_tlatelucent4cols;
-			} else if (colfunc == transcolfunc) {
-				hcolfunc_post1 = rt_tlate1col;
-				hcolfunc_post2 = rt_tlate2cols;
-				hcolfunc_post4 = rt_tlate4cols;
-			}
-
 			dc_x = x1;
 
 			if (dc_x & 1) {

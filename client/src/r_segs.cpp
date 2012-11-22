@@ -193,10 +193,7 @@ R_RenderMaskedSegRange
 	//		translucency maps
 	if (curline->linedef->lucency < 240)
 	{
-		colfunc = lucentcolfunc;
-		hcolfunc_post1 = rt_lucent1col;
-		hcolfunc_post2 = rt_lucent2cols;
-		hcolfunc_post4 = rt_lucent4cols;
+		R_SetLucentDrawFuncs();
 		dc_translevel = curline->linedef->lucency << 8;
 	}
 	else

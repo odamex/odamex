@@ -272,6 +272,16 @@ void R_StretchColumnP_C (void)
 	}
 } 
 
+//
+// R_BlankColumn
+//
+// [SL] - Does nothing (obviously). Used when a column drawing function
+// pointer should not draw anything.
+//
+void R_BlankColumn (void)
+{
+}
+
 // [RH] Just fills a column with a color
 void R_FillColumnP (void)
 {
