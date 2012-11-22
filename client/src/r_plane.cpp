@@ -476,6 +476,8 @@ static void R_DrawSky (visplane_t *pl)
 	dc_texturemid = skytexturemid;
 	_skypl = pl;
 
+	R_ResetDrawFuncs();
+
 	if (!r_columnmethod)
 	{
 		for (x = pl->minx; x <= pl->maxx; x++)
@@ -723,8 +725,10 @@ void R_DrawPlanes (void)
 	visplane_t *pl;
 	int i;
 
-	ds_color = 3;
+	R_ResetDrawFuncs();
 
+	ds_color = 3;
+	
 	for (i = 0; i < MAXVISPLANES; i++)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
@@ -797,11 +801,8 @@ void R_DrawPlanes (void)
 				}
 
 				R_DrawSky (pl);
-
-				colfunc = basecolfunc;
-				hcolfunc_post1 = rt_map1col;
-				hcolfunc_post2 = rt_map2cols;
-				hcolfunc_post4 = rt_map4cols;
+				
+				R_ResetDrawFuncs();
 			}
 			else
 			{

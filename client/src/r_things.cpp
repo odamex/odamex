@@ -710,10 +710,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	patch = W_CachePatch (vis->patch);
 
 	dc_colormap = vis->colormap;
-	colfunc = basecolfunc;
-	hcolfunc_post1 = rt_map1col;
-	hcolfunc_post2 = rt_map2cols;
-	hcolfunc_post4 = rt_map4cols;
+	R_ResetDrawFuncs();
 
 	if (vis->translation)
 	{
@@ -737,19 +734,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		//		translucency with light levels if desired. The original
 		//		code used colormap == NULL to indicate shadows.
 		dc_translevel = FRACUNIT/5;
-		/* Only going to allow the fuzz effect
-		if (r_drawfuzz) {
-			colfunc = fuzzcolfunc;
-		} else {
-			if (colfunc == basecolfunc)
-				colfunc = lucentcolfunc;
-			else
-				colfunc = tlatedlucentcolfunc;
-		}
-		*/
-
 		colfunc = fuzzcolfunc;
-
 	}
 	else if (vis->translucency < FRACUNIT)
 	{	// [RH] draw translucent column
@@ -869,10 +854,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		}
 	}
 
-	colfunc = basecolfunc;
-	hcolfunc_post1 = rt_map1col;
-	hcolfunc_post2 = rt_map2cols;
-	hcolfunc_post4 = rt_map4cols;
+	R_ResetDrawFuncs();
 }
 
 

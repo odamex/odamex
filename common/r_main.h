@@ -197,4 +197,6 @@ void R_SetViewSize (int blocks);
 // [RH] Initialize multires stuff for renderer
 void R_MultiresInit (void);
 
+void R_ResetDrawFuncs(void);
+
 #endif // __R_MAIN_H__

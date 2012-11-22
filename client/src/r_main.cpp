@@ -1217,6 +1217,34 @@ void R_SetupFrame (player_t *player)
 }
 
 //
+// R_ResetDrawFuncs
+//
+void R_ResetDrawFuncs()
+{
+	// [RH] Show off segs if r_drawflat is 1
+	if (r_drawflat)
+	{
+		colfunc = R_FillColumnP;
+		hcolfunc_pre = R_FillColumnHorizP;
+		hcolfunc_post1 = rt_copy1col;
+		hcolfunc_post2 = rt_copy2cols;
+		hcolfunc_post4 = rt_copy4cols;
+		spanfunc = R_FillSpan;
+		spanslopefunc = R_FillSpan;
+	}
+	else
+	{
+		colfunc = basecolfunc;
+		hcolfunc_pre = R_DrawColumnHoriz;
+		hcolfunc_post1 = rt_map1col;
+		hcolfunc_post2 = rt_map2cols;
+		hcolfunc_post4 = rt_map4cols;
+		spanfunc = R_DrawSpan;
+		spanslopefunc = R_DrawSlopeSpan;
+	}
+}
+
+//
 //
 // R_RenderView
 //
@@ -1232,27 +1260,7 @@ void R_RenderPlayerView (player_t *player)
 	R_ClearPlanes ();
 	R_ClearSprites ();
 
-	// [RH] Show off segs if r_drawflat is 1
-	if (r_drawflat)
-	{
-		hcolfunc_pre = R_FillColumnHorizP;
-		hcolfunc_post1 = rt_copy1col;
-		hcolfunc_post2 = rt_copy2cols;
-		hcolfunc_post4 = rt_copy4cols;
-		colfunc = R_FillColumnP;
-		spanfunc = R_FillSpan;
-		spanslopefunc = R_FillSpan;
-	}
-	else
-	{
-		hcolfunc_pre = R_DrawColumnHoriz;
-		colfunc = basecolfunc;
-		hcolfunc_post1 = rt_map1col;
-		hcolfunc_post2 = rt_map2cols;
-		hcolfunc_post4 = rt_map4cols;
-		spanfunc = R_DrawSpan;
-		spanslopefunc = R_DrawSlopeSpan;
-	}
+	R_ResetDrawFuncs();
 
 	// [RH] Hack to make windows into underwater areas possible
 	r_fakingunderwater = false;

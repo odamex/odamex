@@ -191,26 +191,17 @@ R_RenderMaskedSegRange
 	// killough 4/11/98: draw translucent 2s normal textures
 	// [RH] modified because we don't use user-definable
 	//		translucency maps
-	if (!r_columnmethod) {
-		if (curline->linedef->lucency < 240) {
-			colfunc = lucentcolfunc;
-			dc_translevel = curline->linedef->lucency << 8;
-		} else
-			colfunc = basecolfunc;
-		// killough 4/11/98: end translucent 2s normal code
-	} else {
-		// [RH] Alternate drawer functions
-		if (curline->linedef->lucency < 240) {
-			colfunc = lucentcolfunc;
-			hcolfunc_post1 = rt_lucent1col;
-			hcolfunc_post2 = rt_lucent2cols;
-			hcolfunc_post4 = rt_lucent4cols;
-			dc_translevel = curline->linedef->lucency << 8;
-		} else {
-			hcolfunc_post1 = rt_map1col;
-			hcolfunc_post2 = rt_map2cols;
-			hcolfunc_post4 = rt_map4cols;
-		}
+	if (curline->linedef->lucency < 240)
+	{
+		colfunc = lucentcolfunc;
+		hcolfunc_post1 = rt_lucent1col;
+		hcolfunc_post2 = rt_lucent2cols;
+		hcolfunc_post4 = rt_lucent4cols;
+		dc_translevel = curline->linedef->lucency << 8;
+	}
+	else
+	{
+		R_ResetDrawFuncs();
 	}
 
 	frontsector = curline->frontsector;
