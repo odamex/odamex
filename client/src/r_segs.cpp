@@ -142,6 +142,7 @@ static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 			// when forming multipatched textures (see r_data.c).
 
 			// draw the texture
+			R_ResetDrawFuncs();
 			blastfunc (R_GetColumn(texnum, maskedtexturecol[dc_x]));
 			maskedtexturecol[dc_x] = MAXINT;
 		}
@@ -181,6 +182,8 @@ R_RenderMaskedSegRange
 	int 		lightnum;
 	int 		texnum;
 	sector_t	tempsec;		// killough 4/13/98
+
+	dc_color = (dc_color + 4) & 0xFF;	// color if using r_drawflat
 
 	// Calculate light table.
 	// Use different light tables
