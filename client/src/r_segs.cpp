@@ -142,7 +142,9 @@ static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 			// when forming multipatched textures (see r_data.c).
 
 			// draw the texture
-			R_ResetDrawFuncs();
+
+
+
 			blastfunc (R_GetColumn(texnum, maskedtexturecol[dc_x]));
 			maskedtexturecol[dc_x] = MAXINT;
 		}
@@ -218,7 +220,7 @@ R_RenderMaskedSegRange
 	lightnum += R_OrthogonalLightnumAdjustment();
 
 	walllights = lightnum >= LIGHTLEVELS ? scalelight[LIGHTLEVELS-1] :
-		lightnum <  0           ? scalelight[0] : scalelight[lightnum];
+		lightnum <  0 ? scalelight[0] : scalelight[lightnum];
 
 	maskedtexturecol = ds->maskedtexturecol;
 
@@ -380,7 +382,12 @@ static void BlastColumn (void (*blastfunc)())
 	{
 		// calculate texture offset
 		texturecolumn = rw_offset-FixedMul(finetangent[(rw_centerangle + xtoviewangle[rw_x])>>ANGLETOFINESHIFT], rw_distance);
-		texturecolumn >>= FRACBITS;
+		// [SL] 2012-11-21 - Changed from >>= FRACBITS to /= FRACUNIT
+		// Integer division rounds towards 0 for negative numbers, which
+		// prevents an ugly wrap-around anomaly seen mostly with masked midtex.
+		// Right bitshifting on negative numbers rounds towards negative
+		// infinity on most (all?) platforms.
+		texturecolumn /= FRACUNIT;
 
 		dc_iscale = 0xffffffffu / (unsigned)rw_scale;
 	}
