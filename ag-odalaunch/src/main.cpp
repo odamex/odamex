@@ -29,6 +29,10 @@
 #include <agar/core.h>
 #include <agar/gui.h>
 
+#ifdef AG_DEBUG
+#include <agar/dev.h>
+#endif
+
 #include <SDL/SDL.h>
 
 #include "agol_main.h"
@@ -42,6 +46,18 @@
 using namespace std;
 
 namespace agOdalaunch {
+
+#ifdef AG_DEBUG
+static void AGOL_StartDebugger(void)
+{
+	AG_Window *win;
+
+	if((win = AG_GuiDebugger(agWindowFocused)) != NULL)
+	{
+		AG_WindowShow(win);
+	}
+}
+#endif
 
 int AGOL_InitVideo(const string& drivers, const int width, const int height, const short depth)
 {
@@ -174,6 +190,9 @@ int main(int argc, char *argv[])
 	// Set key bindings
 	AG_BindGlobalKey(AG_KEY_ESCAPE, AG_KEYMOD_ANY, AG_QuitGUI);
 	AG_BindGlobalKey(AG_KEY_F8, AG_KEYMOD_ANY, AG_ViewCapture);
+#ifdef AG_DEBUG
+	AG_BindGlobalKey(AG_KEY_F12,    AG_KEYMOD_ANY,  AGOL_StartDebugger);
+#endif
 
 #ifdef _XBOX
 	// Initialize the Xbox controller
