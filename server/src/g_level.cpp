@@ -783,6 +783,11 @@ void G_DoLoadLevel (int position)
 		if (players[i].ingame() && players[i].playerstate == PST_DEAD)
 			players[i].playerstate = PST_REBORN;
 
+		// [AM] If sv_keepkeys is on, players might still be carrying keys, so
+		//      make sure they're gone.
+		for (size_t j = 0; j < NUMCARDS; j++)
+			players[i].cards[j] = false;
+
 		players[i].fragcount = 0;
 		players[i].itemcount = 0;
 		players[i].secretcount = 0;

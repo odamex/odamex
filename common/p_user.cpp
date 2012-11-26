@@ -825,6 +825,7 @@ void player_s::Serialize (FArchive &arc)
 			<< damagecount
 			<< bonuscount
 			<< points
+			<< keepinventory
 			/*<< attacker->netid*/
 			<< extralight
 			<< fixedcolormap
@@ -875,6 +876,7 @@ void player_s::Serialize (FArchive &arc)
 			>> damagecount
 			>> bonuscount
 			>> points
+			>> keepinventory
 			/*>> attacker->netid*/
 			>> extralight
 			>> fixedcolormap
@@ -930,6 +932,7 @@ player_s::player_s()
 	fragcount = 0;
 	deathcount = 0;
 	killcount = 0;
+	keepinventory = false;
 	pendingweapon = wp_nochange;
 	readyweapon = wp_nochange;
 	for (i = 0; i < NUMWEAPONS; i++)
@@ -1017,6 +1020,7 @@ player_s &player_s::operator =(const player_s &other)
 	fragcount = other.fragcount;
 	deathcount = other.deathcount;
 	killcount = other.killcount;
+	keepinventory = other.keepinventory;
 
 	pendingweapon = other.pendingweapon;
 	readyweapon = other.readyweapon;
