@@ -71,8 +71,7 @@ const char *weaponnames[] =
 	"Plasma Gun",
 	"BFG9000",
 	"Chainsaw",
-	"Super Shotgun",
-	"Chainsaw"
+	"Super Shotgun"
 };
 
 // [SL] 2011-11-14 - Maintain what the vertical position of the weapon sprite
@@ -284,28 +283,32 @@ bool P_EnoughAmmo(player_t *player, weapontype_t weapon, bool switching = false)
 //
 void P_SwitchWeapon(player_t *player)
 {
-	const weapontype_t *prefs;
+	const byte *prefs;
 
 	if ((multiplayer && !sv_allowpwo) || demoplayback || demorecording)
 		prefs = default_weaponprefs;
 	else
 		prefs = player->userinfo.weapon_prefs;
 
+	// find which weapon has the highest preference among availible weapons
+	size_t best_weapon_num = 0;
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
-		weapontype_t weapon = prefs[i];
-		if (player->weaponowned[weapon] &&
-			P_EnoughAmmo(player, weapon, true) &&
-			weapon != player->readyweapon)
+		if (player->weaponowned[i] &&
+			P_EnoughAmmo(player, static_cast<weapontype_t>(i), true) &&
+			prefs[i] > prefs[best_weapon_num])
 		{
-			// Switch to this weapon
-			player->pendingweapon = weapon;
-			// Now set appropriate weapon overlay.
-			P_SetPsprite (player, ps_weapon,
-				  weaponinfo[player->readyweapon].downstate);
-
-			return;
+			best_weapon_num = i;
 		}
+	}
+
+	weapontype_t best_weapon = static_cast<weapontype_t>(best_weapon_num);
+	if (best_weapon != player->readyweapon)
+	{
+		// Switch to this weapon
+		player->pendingweapon = best_weapon;
+		// Now set appropriate weapon overlay.
+		P_SetPsprite(player, ps_weapon, weaponinfo[player->readyweapon].downstate);
 	}
 }
 
@@ -377,18 +380,12 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 	if (player->userinfo.switchweapon == WPSW_NEVER)
 		return false;
 
-	// Use player's preferred weapon ordering
-	for (size_t i = 0; i < NUMWEAPONS; i++)
-	{
-		if (player->userinfo.weapon_prefs[i] == player->readyweapon)
-			return false;	// current weapon is preferable
-		else if (player->userinfo.weapon_prefs[i] == weapon)
-			return true;	// this other weapon would be preferable
-	}
-
-	// Somehow the player's weapon_preference choices are screwed up.
-	// Change anyway.
-	return true;  
+	// Use player's weapon preferences
+	byte *prefs = player->userinfo.weapon_prefs;
+	if (prefs[weapon] > prefs[player->readyweapon])
+		return true;
+	
+	return false;
 }
 
 

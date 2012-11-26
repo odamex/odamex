@@ -73,7 +73,7 @@ struct userinfo_s
 	gender_t		gender;
 
 	weaponswitch_t	switchweapon;
-	weapontype_t	weapon_prefs[NUMWEAPONS];
+	byte			weapon_prefs[NUMWEAPONS];
 
 	userinfo_s() :
 		next_change_time(0),

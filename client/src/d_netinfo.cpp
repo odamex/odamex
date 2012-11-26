@@ -53,19 +53,15 @@ EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_updaterate)
 EXTERN_CVAR (cl_switchweapon)
-EXTERN_CVAR (cl_weaponpref1)
-EXTERN_CVAR (cl_weaponpref2)
-EXTERN_CVAR (cl_weaponpref3)
-EXTERN_CVAR (cl_weaponpref4)
-EXTERN_CVAR (cl_weaponpref5)
-EXTERN_CVAR (cl_weaponpref6)
-EXTERN_CVAR (cl_weaponpref7)
-EXTERN_CVAR (cl_weaponpref8)
-EXTERN_CVAR (cl_weaponpref9)
-
-void CL_RefreshWeaponPreferenceCvars();
-void CL_PrepareWeaponPreferenceUserInfo();
-void CL_SetWeaponPreferenceCvar(int slot, weapontype_t weapon);
+EXTERN_CVAR (cl_weaponpref_fst)
+EXTERN_CVAR (cl_weaponpref_csw)
+EXTERN_CVAR (cl_weaponpref_pis)
+EXTERN_CVAR (cl_weaponpref_sg)
+EXTERN_CVAR (cl_weaponpref_ssg)
+EXTERN_CVAR (cl_weaponpref_cg)
+EXTERN_CVAR (cl_weaponpref_rl)
+EXTERN_CVAR (cl_weaponpref_pls)
+EXTERN_CVAR (cl_weaponpref_bfg)
 
 enum
 {
@@ -104,13 +100,29 @@ team_t D_TeamByName (const char *team)
 	else return TEAM_NONE;
 }
 
+
+static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
+	&cl_weaponpref_fst, &cl_weaponpref_pis, &cl_weaponpref_sg, &cl_weaponpref_cg,
+	&cl_weaponpref_rl, &cl_weaponpref_pls, &cl_weaponpref_bfg, &cl_weaponpref_csw,
+	&cl_weaponpref_ssg };
+
+//
+// D_PrepareWeaponPreferenceUserInfo
+//
+// Copies the weapon order preferences from the cl_weaponpref_* cvars
+// to the userinfo struct for the consoleplayer.
+//
+void D_PrepareWeaponPreferenceUserInfo()
+{
+	byte *prefs = consoleplayer().userinfo.weapon_prefs;
+
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+		prefs[i] = weaponpref_cvar_map[i]->asInt();
+}
+
 void D_SetupUserInfo(void)
 {
 	userinfo_t *coninfo = &consoleplayer().userinfo;
-
-	// Save the previous weapon preferences
-	weapontype_t backup_weapon_prefs[NUMWEAPONS];
-	memcpy(backup_weapon_prefs, coninfo->weapon_prefs, sizeof(backup_weapon_prefs));
 
 	memset (&consoleplayer().userinfo, 0, sizeof(userinfo_t));
 	
@@ -125,31 +137,7 @@ void D_SetupUserInfo(void)
 	coninfo->switchweapon	= (weaponswitch_t)cl_switchweapon.asInt();
 
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
-	CL_PrepareWeaponPreferenceUserInfo();
-
-	// Find which weapon preference slot was changed
-	for (size_t i = 0; i < NUMWEAPONS; i++)
-	{
-		if (backup_weapon_prefs[i] != coninfo->weapon_prefs[i])
-		{
-			// slot i was changed
-			weapontype_t oldweapon = backup_weapon_prefs[i];
-			weapontype_t newweapon = coninfo->weapon_prefs[i];
-			
-			// swap the weapon in slot i with whatever slot already has newweapon
-			for (size_t j = 0; j < NUMWEAPONS; j++)
-			{
-				if (coninfo->weapon_prefs[j] == newweapon &&  j != i)
-				{
-					coninfo->weapon_prefs[j] = oldweapon;
-					CL_SetWeaponPreferenceCvar(j, oldweapon);
-					break;
-				}
-			}
-
-			break;
-		}
-	}
+	D_PrepareWeaponPreferenceUserInfo();
 }
 
 void D_UserInfoChanged (cvar_t *cvar)
