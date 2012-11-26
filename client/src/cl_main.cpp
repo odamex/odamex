@@ -2867,38 +2867,40 @@ void CL_ReadPacketHeader(void)
 void CL_GetServerSettings(void)
 {
 	cvar_t *var = NULL, *prev = NULL;
-		
-    // TODO: REMOVE IN 0.7 - We don't need this loop anymore
+
+	// TODO: REMOVE IN 0.7 - We don't need this loop anymore
 	while (MSG_ReadByte() != 2)
 	{
 		std::string CvarName = MSG_ReadString();
 		std::string CvarValue = MSG_ReadString();
-			
+
 		var = cvar_t::FindCVar (CvarName.c_str(), &prev);
-			
+
 		// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
 		if (var)
 		{
 			if (var->flags() & CVAR_SERVERINFO)
-                var->Set(CvarValue.c_str());
-        }
-        else
-        {
-            // [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
-            // for cleanup on program termination
-            var = new cvar_t (CvarName.c_str(), NULL, "", CVARTYPE_NONE,
-                CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
-                                  
-            var->Set(CvarValue.c_str());
-        }
-			
-    }
-    
+				var->Set(CvarValue.c_str());
+		}
+		else
+		{
+			// [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
+			// for cleanup on program termination
+			// [AM] We have no way of telling of cvars are CVAR_NOENABLEDISABLE,
+			//      so let's set it on all cvars.
+			var = new cvar_t(CvarName.c_str(), NULL, "", CVARTYPE_NONE,
+			                 CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE |
+			                 CVAR_NOENABLEDISABLE);
+			var->Set(CvarValue.c_str());
+		}
+	}
+
 	// Nes - update the skies in case sv_freelook is changed.
 	R_InitSkyMap ();
 
 	// [AM] - Adhere to sv_allowwidescreen setting.
-	setmodeneeded = true;
+	ST_AdjustStatusBarScale(st_scale != 0);
+	setsizeneeded = true;
 }
 
 //

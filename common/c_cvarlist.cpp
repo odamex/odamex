@@ -140,7 +140,7 @@ CVAR (sv_allowpwo, "0", "Allow clients to set their preferences for automatic we
 
 // [AM] Allow true widescreen usage
 CVAR (sv_allowwidescreen, "1", "Allow clients to use true widescreen",
-      CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
+      CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE | CVAR_LATCH)
 
 // Compatibility options for vanilla
 // ---------------------------------
