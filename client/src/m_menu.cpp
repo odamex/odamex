@@ -586,7 +586,7 @@ BEGIN_COMMAND (bumpgamma)
 
 	float newgamma = gammalevel + 1;
 
-	if (newgamma > 5.0)
+	if (newgamma > 9.0)
 		newgamma = 1.0;
 
 	gammalevel.Set (newgamma);
