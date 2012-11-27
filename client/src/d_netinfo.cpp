@@ -117,7 +117,15 @@ void D_PrepareWeaponPreferenceUserInfo()
 	byte *prefs = consoleplayer().userinfo.weapon_prefs;
 
 	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		// sanitize the weapon preferences
+		if (weaponpref_cvar_map[i]->asInt() < 0)
+			weaponpref_cvar_map[i]->ForceSet(0.0f);
+		if (weaponpref_cvar_map[i]->asInt() >= NUMWEAPONS)
+			weaponpref_cvar_map[i]->ForceSet(float(NUMWEAPONS - 1));
+
 		prefs[i] = weaponpref_cvar_map[i]->asInt();
+	}
 }
 
 void D_SetupUserInfo(void)
@@ -134,7 +142,12 @@ void D_SetupUserInfo(void)
 	coninfo->aimdist		= (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->unlag			= (cl_unlag != 0);
 	coninfo->update_rate	= cl_updaterate;
+
+	// sanitize the weapon switching choice
+	if (cl_switchweapon < 0 || cl_switchweapon > 2)
+		cl_switchweapon.ForceSet(float(WPSW_ALWAYS));
 	coninfo->switchweapon	= (weaponswitch_t)cl_switchweapon.asInt();
+
 
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
 	D_PrepareWeaponPreferenceUserInfo();

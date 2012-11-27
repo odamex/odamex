@@ -238,15 +238,15 @@ enum weapontype_t
 // Vanilla Doom compatible
 const byte default_weaponprefs[NUMWEAPONS] =
 {
-	1,		// wp_fist
-	5,		// wp_pistol
-	6,		// wp_shotgun
-	7,		// wp_chaingun
-	2,		// wp_missile
-	9,		// wp_plasma
-	3,		// wp_bfg
-	4,		// wp_chaingun
-	8		// wp_supershotgun
+	0,		// wp_fist
+	4,		// wp_pistol
+	5,		// wp_shotgun
+	6,		// wp_chaingun
+	1,		// wp_missile
+	8,		// wp_plasma
+	2,		// wp_bfg
+	3,		// wp_chainsaw
+	7		// wp_supershotgun
 };
 
 inline FArchive &operator<< (FArchive &arc, weapontype_t i)

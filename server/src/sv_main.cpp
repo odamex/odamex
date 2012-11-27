@@ -933,9 +933,12 @@ void SV_SetupUserInfo (player_t &player)
 	weapontype_t	weapon_prefs[NUMWEAPONS];
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
-		weapon_prefs[i] = static_cast<weapontype_t>(MSG_ReadByte());
-		if (weapon_prefs[i] < 0 || weapon_prefs[i] >= NUMWEAPONS)
-			weapon_prefs[i] = wp_fist;
+		// sanitize the weapon preference input
+		byte preflevel = MSG_ReadByte();
+		if (preflevel >= NUMWEAPONS)
+			preflevel = NUMWEAPONS - 1;
+
+		weapon_prefs[i] = static_cast<weapontype_t>(preflevel);
 	}
 
 	// ensure sane values for userinfo

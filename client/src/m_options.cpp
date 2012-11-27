@@ -669,15 +669,15 @@ static menuitem_t WeaponItems[] = {
 	{ bricktext,	"Configure Weapon Preferences",	{NULL},					{0.0},	{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Switch on pickup",				{&cl_switchweapon},		{3.0},	{0.0},		{0.0},		{WeapSwitch} },
 	{ redtext,		" ",							{NULL},					{0.0},	{0.0},		{0.0},		{NULL} },	
-	{ slider,		weaponnames[0],					{&cl_weaponpref_fst},	{1.0},	{9.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[7],					{&cl_weaponpref_csw},	{1.0},	{9.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[1],					{&cl_weaponpref_pis},	{1.0},	{9.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[2],					{&cl_weaponpref_sg},	{1.0},	{9.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[8],					{&cl_weaponpref_ssg},	{1.0},	{9.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[3],					{&cl_weaponpref_cg},	{1.0},	{9.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[4],					{&cl_weaponpref_rl},	{1.0},	{9.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[5],					{&cl_weaponpref_pls},	{1.0},	{9.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[6],					{&cl_weaponpref_bfg},	{1.0},	{9.0},		{1.0},		{NULL} }
+	{ slider,		weaponnames[0],					{&cl_weaponpref_fst},	{0.0},	{8.0},		{1.0},		{NULL} },
+	{ slider,		weaponnames[7],					{&cl_weaponpref_csw},	{0.0},	{8.0},		{1.0},		{NULL} },
+	{ slider,		weaponnames[1],					{&cl_weaponpref_pis},	{0.0},	{8.0},		{1.0},		{NULL} },
+	{ slider,		weaponnames[2],					{&cl_weaponpref_sg},	{0.0},	{8.0},		{1.0},		{NULL} },
+	{ slider,		weaponnames[8],					{&cl_weaponpref_ssg},	{0.0},	{8.0},		{1.0},		{NULL} },
+	{ slider,		weaponnames[3],					{&cl_weaponpref_cg},	{0.0},	{8.0},		{1.0},		{NULL} },
+	{ slider,		weaponnames[4],					{&cl_weaponpref_rl},	{0.0},	{8.0},		{1.0},		{NULL} },
+	{ slider,		weaponnames[5],					{&cl_weaponpref_pls},	{0.0},	{8.0},		{1.0},		{NULL} },
+	{ slider,		weaponnames[6],					{&cl_weaponpref_bfg},	{0.0},	{8.0},		{1.0},		{NULL} }
 };
 
 menu_t WeaponMenu = {
