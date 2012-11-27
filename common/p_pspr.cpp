@@ -939,6 +939,7 @@ void P_GunShot (AActor *mo, BOOL accurate)
 	P_LineAttack (mo, angle, MISSILERANGE, bulletslope, damage);
 }
 
+//
 // P_FireHitscan
 //
 // [SL] - Factored out common code from the P_Fire procedures for the
@@ -953,19 +954,38 @@ void P_GunShot (AActor *mo, BOOL accurate)
 
 void P_FireHitscan (player_t *player, size_t quantity, bool accurate, bool ssg_spread)
 {
-	if (!serverside)
+	if (!player || !player->mo)
 		return;
+
+	bool predict_puffs = clientside && !serverside &&
+						 consoleplayer().userinfo.predict_weapons;
+
+	if (!serverside && !predict_puffs)
+		return;
+
+	// [SL] 2012-10-02 - To ensure bullet puff prediction on the client matches
+	// the server, use the client's gametic as the initial PRNG index
+	if (serverside && !clientside)
+		player->mo->rndindex = player->tic;
+	else if (predict_puffs)
+		player->mo->rndindex = gametic;
 
 	// [SL] 2011-05-11 - Move players and sectors back to their positions when
 	// this player hit the fire button clientside.
 	// NOTE: Important to reconcile sectors and players BEFORE calculating
 	// bulletslope!
-	Unlag::getInstance().reconcile(player->id);
+	if (serverside)
+		Unlag::getInstance().reconcile(player->id);
 
 	P_BulletSlope (player->mo);
+
 	for (size_t i=0; i<quantity; i++)
 	{
 		int damage = 5 * (P_Random(player->mo) % 3 + 1);
+
+		// [SL] Don't do damage if the client is predicting bullet puffs
+		if (predict_puffs)
+			damage = 0;
 
 		angle_t angle = player->mo->angle;
 		fixed_t slope = bulletslope;
@@ -984,7 +1004,8 @@ void P_FireHitscan (player_t *player, size_t quantity, bool accurate, bool ssg_s
     
 	// [SL] 2011-05-11 - Restore players and sectors to their current position
 	// according to the server.
-	Unlag::getInstance().restore(player->id);
+	if (serverside)
+		Unlag::getInstance().restore(player->id);
 }
 
 //

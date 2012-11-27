@@ -67,6 +67,7 @@ struct userinfo_s
 	team_t			team; // [Toke - Teams] 
 	fixed_t			aimdist;
 	bool			unlag;
+	bool			predict_weapons;
 	byte			update_rate;
 	int				color;
 	unsigned int	skin;
@@ -77,7 +78,8 @@ struct userinfo_s
 
 	userinfo_s() :
 		next_change_time(0),
-		team(TEAM_NONE), aimdist(0), unlag(true), update_rate(2), color(0),
+		team(TEAM_NONE), aimdist(0), unlag(true), predict_weapons(true),
+		update_rate(2), color(0),
 		skin(0), gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
  	{
 		*netname = 0;

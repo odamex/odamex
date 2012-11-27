@@ -62,6 +62,7 @@ EXTERN_CVAR (cl_weaponpref_cg)
 EXTERN_CVAR (cl_weaponpref_rl)
 EXTERN_CVAR (cl_weaponpref_pls)
 EXTERN_CVAR (cl_weaponpref_bfg)
+EXTERN_CVAR (cl_predictweapons)
 
 enum
 {
@@ -135,19 +136,19 @@ void D_SetupUserInfo(void)
 	memset (&consoleplayer().userinfo, 0, sizeof(userinfo_t));
 	
 	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
-	coninfo->team			= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
-	coninfo->color			= V_GetColorFromString (NULL, cl_color.cstring());
-	coninfo->skin			= R_FindSkin (cl_skin.cstring());
-	coninfo->gender			= D_GenderByName (cl_gender.cstring());
-	coninfo->aimdist		= (fixed_t)(cl_autoaim * 16384.0);
-	coninfo->unlag			= (cl_unlag != 0);
-	coninfo->update_rate	= cl_updaterate;
+	coninfo->team				= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
+	coninfo->color				= V_GetColorFromString (NULL, cl_color.cstring());
+	coninfo->skin				= R_FindSkin (cl_skin.cstring());
+	coninfo->gender				= D_GenderByName (cl_gender.cstring());
+	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
+	coninfo->unlag				= (cl_unlag != 0);
+	coninfo->update_rate		= cl_updaterate;
+	coninfo->predict_weapons	= (cl_predictweapons != 0);
 
 	// sanitize the weapon switching choice
 	if (cl_switchweapon < 0 || cl_switchweapon > 2)
 		cl_switchweapon.ForceSet(float(WPSW_ALWAYS));
 	coninfo->switchweapon	= (weaponswitch_t)cl_switchweapon.asInt();
-
 
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
 	D_PrepareWeaponPreferenceUserInfo();

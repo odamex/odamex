@@ -927,6 +927,7 @@ void SV_SetupUserInfo (player_t &player)
 
 	int				aimdist = MSG_ReadLong();
 	bool			unlag = MSG_ReadBool();
+	bool			predict_weapons = MSG_ReadBool();
 	byte			update_rate = MSG_ReadByte();
 	weaponswitch_t	switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
 
@@ -960,6 +961,7 @@ void SV_SetupUserInfo (player_t &player)
 
 	// [SL] 2011-12-02 - Players can update these parameters whenever they like
 	player.userinfo.unlag			= unlag;
+	player.userinfo.predict_weapons	= predict_weapons;
 	player.userinfo.update_rate		= update_rate;
 	player.userinfo.aimdist			= aimdist;
 	player.userinfo.switchweapon	= switchweapon;

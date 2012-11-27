@@ -46,6 +46,7 @@
 extern bool predicting;
 extern fixed_t attackrange;
 extern bool HasBehavior;
+extern AActor *shootthing;
 
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 void P_ExplodeMissile(AActor* mo);
@@ -1706,8 +1707,10 @@ AActor *AActor::FindGoal (const AActor *actor, int tid, int kind)
 //
 void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 {
-    if (!serverside)
-        return;
+	// [SL] Allow only servers and clients that are predicting their own shots
+	if (!serverside && (shootthing != consoleplayer().mo || 
+					   !consoleplayer().userinfo.predict_weapons))
+		return;
 
     AActor *puff;
 
@@ -1723,8 +1726,16 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 	// don't make punches spark on the wall
 	if (attackrange == MELEERANGE)
         P_SetMobjState(puff, S_PUFF3);
+
     if (serverside)
-        SV_SpawnMobj(puff);
+	{
+		// [SL] 2012-10-02 - Allow a client to predict their own bullet puffs
+		// so don't send the puffs to the client already predicting
+		if (shootthing && shootthing->player && shootthing->player->userinfo.predict_weapons)
+			puff->players_aware.set(shootthing->player->id);
+
+		SV_SpawnMobj(puff);
+	}
 }
 
 //
