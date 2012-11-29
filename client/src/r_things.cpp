@@ -255,8 +255,6 @@ void R_InitSpriteDefs (const char **namelist)
 	int i;
 	int l;
 	int intname;
-	int start;
-	int end;
 	int realsprites;
 
 	// count the number of sprite names
@@ -270,9 +268,6 @@ void R_InitSpriteDefs (const char **namelist)
 		return;
 
 	sprites = (spritedef_t *)Z_Malloc (numsprites * sizeof(*sprites), PU_STATIC, NULL);
-
-	start = firstspritelump - 1;
-	end = lastspritelump + 1;
 
 	// scan all the lump names for each of the names,
 	//	noting the highest frame letter.
@@ -874,6 +869,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	fixed_t 			tz;
 
 	fixed_t 			xscale;
+	fixed_t				yscale;
 
 	int 				x1;
 	int 				x2;
@@ -894,12 +890,9 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 
 	sector_t*			heightsec;			// killough 3/27/98
 
-	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0)
+	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0 ||
+		(thing->player && thing->player->spectator))
 		return;
-
-        // GhostlyDeath -- Don't draw yourself if you are spectating
-        if (thing->player && (thing->player == &consoleplayer()) && consoleplayer().spectator)
-                return;
 
 	// transform the origin point
 	tr_x = thing->x - viewx;
@@ -915,6 +908,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 		return;
 
 	xscale = FixedDiv (FocalLengthX, tz);
+	yscale = FixedDiv (FocalLengthY, tz);
 
 	gxt = -FixedMul (tr_x, viewsin);
 	gyt = FixedMul (tr_y, viewcos);
@@ -1022,7 +1016,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 
 	vis->mobjflags = thing->flags;
 	vis->xscale = xscale;
-	vis->yscale = FixedDiv (FocalLengthY, tz);
+	vis->yscale = yscale;
 	vis->gx = thing->x;
 	vis->gy = thing->y;
 	vis->gz = gzb;
@@ -1361,13 +1355,10 @@ void R_DrawSprite (vissprite_t *spr)
 
 	drawseg_t*			ds;
 	int 				x;
-	int 				r1;
-	int 				r2;
-	fixed_t 			segscale1;
-	fixed_t 			segscale2;
+	int 				r1, r2;
+	fixed_t 			segscale1, segscale2;
 
-	int					topclip = 0;
-	int					botclip = viewheight;
+	int					topclip = 0, botclip = viewheight;
 	int*				clip1;
 	int*				clip2;
 
@@ -1469,15 +1460,6 @@ void R_DrawSprite (vissprite_t *spr)
 			if (ds->silhouette & SIL_TOP && cliptop[x] < ds->sprtopclip[x])
 				cliptop[x] = ds->sprtopclip[x];
 		}
-	}
-
-	// check for unclipped columns
-	for (x = spr->x1 ; x<=spr->x2 ; x++)
-	{
-		if (clipbot[x] > viewheight)
-			clipbot[x] = viewheight;
-		if (cliptop[x] < 0)
-			cliptop[x] = -1;
 	}
 
 	// all clipping has been performed, so draw the sprite
@@ -1698,28 +1680,28 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	// from the viewer, by either water or fake ceilings
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
 
-	heightsec = sector->heightsec;
-	if (particle->z < P_FloorHeight(particle->x, particle->y, sector) ||
-		particle->z > P_CeilingHeight(particle->x, particle->y, sector))
+	if (gzt < P_FloorHeight(particle->x, particle->y, sector) ||
+		gzb > P_CeilingHeight(particle->x, particle->y, sector))
 		return;
 
+	heightsec = sector->heightsec;
 	if (heightsec)	// only clip particles which are in special sectors
 	{
 		if (fakeside == FAKED_AboveCeiling)
 		{
-			if (gzt < P_CeilingHeight(particle->x, particle->y, heightsec))
+			if (gzt < P_CeilingHeight(heightsec))
 				return;
 		}
 		else if (fakeside == FAKED_BelowFloor)
 		{
-			if (gzb >= P_FloorHeight(particle->x, particle->y, heightsec))
+			if (gzb >= P_FloorHeight(heightsec))
 				return;
 		}
 		else
 		{
-			if (gzt < P_FloorHeight(particle->x, particle->y, heightsec))
+			if (gzt < P_FloorHeight(heightsec))
 				return;
-			if (gzb >= P_CeilingHeight(particle->x, particle->y, heightsec))
+			if (gzb >= P_CeilingHeight(heightsec))
 				return;
 		}
 	}
@@ -1751,17 +1733,16 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	{
 		byte *map;
 
-		if (sector->heightsec == NULL)
-			map = sector->floorcolormap->maps;
+		if (heightsec && 
+			(gzt <= P_FloorHeight(heightsec) || gzb > P_CeilingHeight(heightsec)))
+		{
+			map = sector->heightsec->floorcolormap->maps;
+		}
 		else
 		{
-			if (particle->z <= P_FloorHeight(particle->x, particle->y, sector->heightsec) ||
-				particle->z > P_CeilingHeight(particle->x, particle->y, sector->heightsec))
-
-				map = sector->heightsec->floorcolormap->maps;
-			else
-				map = sector->floorcolormap->maps;
+			map = sector->floorcolormap->maps;
 		}
+
 
 		if (fixedlightlev)
 		{
