@@ -990,26 +990,26 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 
 	heightsec = thing->subsector->sector->heightsec;
 	
-	if (heightsec != NULL && heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
+	if (heightsec && heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
 		heightsec = NULL;
 	
 	if (heightsec)	// only clip things which are in special sectors
 	{
 		if (fakeside == FAKED_AboveCeiling)
 		{
-			if (gzt < P_CeilingHeight(thing->x, thing->y, heightsec))
+			if (gzt < P_CeilingHeight(heightsec))
 				return;
 		}
 		else if (fakeside == FAKED_BelowFloor)
 		{
-			if (gzb >= P_FloorHeight(thing->x, thing->y, heightsec))
+			if (gzb >= P_FloorHeight(heightsec))
 				return;
 		}
 		else
 		{
-			if (gzt < P_FloorHeight(thing->x, thing->y, heightsec))
+			if (gzt < P_FloorHeight(heightsec))
 				return;
-			if (gzb >= P_CeilingHeight(thing->x, thing->y, heightsec))
+			if (gzb >= P_CeilingHeight(heightsec))
 				return;
 		}
 	}
@@ -1351,30 +1351,79 @@ void R_SortVisSprites (void)
 }
 
 
-// [RH] Allocated in R_MultiresInit() to
-// SCREENWIDTH entries each.
-int *r_dsclipbot, *r_dscliptop;
-
-// [RH] The original code used -2 to indicate that a sprite was not clipped.
-//		With ZDoom's freelook, it's possible that the rendering process
-//		could actually generate a clip value of -2, and the rendering code
-//		would mistake this to indicate the the sprite wasn't clipped.
-#define NOT_CLIPPED		(-32768)
-
 //
 // R_DrawSprite
 //
 void R_DrawSprite (vissprite_t *spr)
 {
+	static int			cliptop[MAXWIDTH];
+	static int			clipbot[MAXWIDTH];
+
 	drawseg_t*			ds;
 	int 				x;
 	int 				r1;
 	int 				r2;
-	fixed_t 			scale;
-	fixed_t 			lowscale;
+	fixed_t 			segscale1;
+	fixed_t 			segscale2;
 
-	for (x = spr->x1 ; x<=spr->x2 ; x++)
-		r_dsclipbot[x] = r_dscliptop[x] = NOT_CLIPPED;
+	int					topclip = 0;
+	int					botclip = viewheight;
+	int*				clip1;
+	int*				clip2;
+
+	// [RH] Quickly reject sprites with bad x ranges.
+	if (spr->x1 > spr->x2)
+		return;
+
+	// killough 3/27/98:
+	// Clip the sprite against deep water and/or fake ceilings.
+	// [RH] rewrote this to be based on which part of the sector is really visible
+
+	if (spr->heightsec && !(spr->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
+	{ 
+		if (spr->FakeFlat != FAKED_AboveCeiling)
+		{
+			fixed_t h = P_FloorHeight(spr->heightsec);
+			h = (centeryfrac - FixedMul(h - viewz, spr->yscale)) >> FRACBITS;
+
+			if (spr->FakeFlat == FAKED_BelowFloor)
+			{ // seen below floor: clip top
+				if (h > topclip)
+					topclip = MIN<int>(h, viewheight);
+			}
+			else
+			{ // seen in the middle: clip bottom
+				if (h < botclip)
+					botclip = MAX<int>(0, h);
+			}
+		}
+		if (spr->FakeFlat != FAKED_BelowFloor)
+		{
+			fixed_t h = P_CeilingHeight(spr->heightsec);
+			h = (centeryfrac - FixedMul(h - viewz, spr->yscale)) >> FRACBITS;
+
+			if (spr->FakeFlat == FAKED_AboveCeiling)
+			{ // seen above ceiling: clip bottom
+				if (h < botclip)
+					botclip = MAX<int>(0, h);
+			}
+			else
+			{ // seen in the middle: clip top
+				if (h > topclip)
+					topclip = MIN<int>(h, viewheight);
+			}
+		}
+	}
+
+	// initialize the clipping arrays
+	int i = spr->x2 - spr->x1 + 1;
+	clip1 = clipbot + spr->x1;
+	clip2 = cliptop + spr->x1;
+	do
+	{
+		*clip1++ = botclip;
+		*clip2++ = topclip;
+	} while (--i);
 
 	// Scan drawsegs from end to start for obscuring segs.
 	// The first drawseg that has a greater scale is the clip seg.
@@ -1386,31 +1435,22 @@ void R_DrawSprite (vissprite_t *spr)
 	for (ds = ds_p ; ds-- > drawsegs ; )  // new -- killough
 	{
 		// determine if the drawseg obscures the sprite
-		if (ds->x1 > spr->x2
-			|| ds->x2 < spr->x1
-			|| (!ds->silhouette && !ds->maskedtexturecol) )
+		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 ||
+			(!(ds->silhouette & SIL_BOTH) && !ds->maskedtexturecol) )
 		{
 			// does not cover sprite
 			continue;
 		}
 
-		r1 = ds->x1 < spr->x1 ? spr->x1 : ds->x1;
-		r2 = ds->x2 > spr->x2 ? spr->x2 : ds->x2;
+		r1 = MAX<int>(ds->x1, spr->x1);
+		r2 = MIN<int>(ds->x2, spr->x2);
 
-		if (ds->scale1 > ds->scale2)
-		{
-			lowscale = ds->scale2;
-			scale = ds->scale1;
-		}
-		else
-		{
-			lowscale = ds->scale1;
-			scale = ds->scale2;
-		}
+		segscale1 = MAX<int>(ds->scale1, ds->scale2);
+		segscale2 = MIN<int>(ds->scale1, ds->scale2);
 
-		if (scale < spr->yscale
-			|| ( lowscale < spr->yscale
-				 && !R_PointOnSegSide (spr->gx, spr->gy, ds->curline) ) )
+		// check if the seg is in front of the sprite
+		if (segscale1 < spr->yscale ||
+			(segscale2 < spr->yscale && !R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
 		{
 			// masked mid texture?
 			if (ds->maskedtexturecol)
@@ -1419,88 +1459,30 @@ void R_DrawSprite (vissprite_t *spr)
 			continue;
 		}
 
-
 		// clip this piece of the sprite
 		// killough 3/27/98: optimized and made much shorter
 
-		if (ds->silhouette&SIL_BOTTOM && spr->gz < ds->bsilheight) //bottom sil
-			for (x = r1; x <= r2; x++)
-				if (r_dsclipbot[x] == NOT_CLIPPED)
-					r_dsclipbot[x] = ds->sprbottomclip[x];
-
-		if (ds->silhouette&SIL_TOP && spr->gzt > ds->tsilheight)   // top sil
-			for (x = r1; x <= r2; x++)
-				if (r_dscliptop[x] == NOT_CLIPPED)
-					r_dscliptop[x] = ds->sprtopclip[x];
-	}
-
-	// killough 3/27/98:
-	// Clip the sprite against deep water and/or fake ceilings.
-	// killough 4/9/98: optimize by adding mh
-	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
-	// [RH] rewrote this to be based on which part of the sector is really visible
-
-	if (spr->heightsec &&
-		!(spr->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
-	{
-		// only things in specially marked sectors
-		if (spr->FakeFlat != FAKED_AboveCeiling)
+		for (x = r1; x <= r2; x++)
 		{
-			fixed_t h = P_FloorHeight(spr->gx, spr->gy, spr->heightsec);
-			h = (centeryfrac - FixedMul(h - viewz, spr->yscale)) >> FRACBITS;
-
-			if (spr->FakeFlat == FAKED_BelowFloor)
-			{
-				// seen below floor: clip top
-				for (x=spr->x1 ; x<=spr->x2 ; x++)
-					if (r_dscliptop[x] == NOT_CLIPPED || h > r_dscliptop[x])
-						r_dscliptop[x] = MIN<short> (h, viewheight);
-			}
-			else
-			{
-				// seen in the middle: clip bottom
-				for (x=spr->x1 ; x<=spr->x2 ; x++)
-					if (r_dsclipbot[x] == NOT_CLIPPED || h < r_dsclipbot[x])
-						r_dsclipbot[x] = MAX<short> (0, h);
-			}
-		}
-		if (spr->FakeFlat != FAKED_BelowFloor)
-		{
-			fixed_t h = P_CeilingHeight(spr->gx, spr->gy, spr->heightsec);
-			h = (centeryfrac - FixedMul(h - viewz, spr->yscale)) >> FRACBITS;
-
-			if (spr->FakeFlat == FAKED_AboveCeiling)
-			{
-				// seen above ceiling: clip bottom
-				for (x=spr->x1 ; x<=spr->x2 ; x++)
-					if (r_dsclipbot[x] == NOT_CLIPPED || h < r_dsclipbot[x])
-						r_dsclipbot[x] = MAX<short> (0, h);
-			}
-			else
-			{
-				// seen in the middle: clip top
-				for (x=spr->x1 ; x<=spr->x2 ; x++)
-					if (r_dscliptop[x] == NOT_CLIPPED || h > r_dscliptop[x])
-						r_dscliptop[x] = MIN<short> (h, viewheight);
-			}
+			if (ds->silhouette & SIL_BOTTOM && clipbot[x] > ds->sprbottomclip[x])
+				clipbot[x] = ds->sprbottomclip[x];
+			if (ds->silhouette & SIL_TOP && cliptop[x] < ds->sprtopclip[x])
+				cliptop[x] = ds->sprtopclip[x];
 		}
 	}
-	// killough 3/27/98: end special clipping for deep water / fake ceilings
-
-	// all clipping has been performed, so draw the sprite
 
 	// check for unclipped columns
 	for (x = spr->x1 ; x<=spr->x2 ; x++)
 	{
-		if (r_dsclipbot[x] == NOT_CLIPPED || r_dsclipbot[x] > (int)viewheight)
-			r_dsclipbot[x] = (int)viewheight;
-
-		if (r_dscliptop[x] == NOT_CLIPPED || r_dscliptop[x] < 0)
-			r_dscliptop[x] = -1;
+		if (clipbot[x] > viewheight)
+			clipbot[x] = viewheight;
+		if (cliptop[x] < 0)
+			cliptop[x] = -1;
 	}
 
-	mfloorclip = r_dsclipbot;
-	mceilingclip = r_dscliptop;
+	// all clipping has been performed, so draw the sprite
+	mfloorclip = clipbot;
+	mceilingclip = cliptop;
 	R_DrawVisSprite (spr, spr->x1, spr->x2);
 }
 

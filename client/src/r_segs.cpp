@@ -775,8 +775,6 @@ void R_StoreWallRange(int start, int stop)
 		ds_p->silhouette = SIL_BOTH;
 		ds_p->sprtopclip = screenheightarray;
 		ds_p->sprbottomclip = negonearray;
-		ds_p->bsilheight = MAXINT;
-		ds_p->tsilheight = MININT;
 	}
 	else
 	{
@@ -791,39 +789,25 @@ void R_StoreWallRange(int start, int stop)
 		rw_backfz1 = P_FloorHeight(px1, py1, backsector);
 		rw_backfz2 = P_FloorHeight(px2, py2, backsector);
 
-		if (rw_frontfz1 > rw_backfz1 || rw_frontfz2 > rw_backfz2)
-		{
-			ds_p->silhouette = SIL_BOTTOM;
-			ds_p->bsilheight = MAX(rw_frontfz1, rw_frontfz2);
-		}
-		else if (rw_backfz1 > viewz || rw_backfz2 > viewz)
-		{
-			ds_p->silhouette = SIL_BOTTOM;
-			ds_p->bsilheight = MAXINT;
-		}
+		if (rw_frontfz1 > rw_backfz1 || rw_frontfz2 > rw_backfz2 || 
+			rw_backfz1 > viewz || rw_backfz2 > viewz || 
+			!P_IsPlaneLevel(&backsector->floorplane))	// backside sloping?
+			ds_p->silhouette |= SIL_BOTTOM;
 
-		if (rw_frontcz1 < rw_backcz1 || rw_frontcz2 < rw_backcz2)
-		{
+		if (rw_frontcz1 < rw_backcz1 || rw_frontcz2 < rw_backcz2 ||
+			rw_backcz1 < viewz || rw_backcz2 < viewz || 
+			!P_IsPlaneLevel(&backsector->ceilingplane))	// backside sloping?
 			ds_p->silhouette |= SIL_TOP;
-			ds_p->tsilheight = MIN(rw_frontcz1, rw_frontcz2);
-		}
-		else if (rw_backcz1 < viewz || rw_backcz2 < viewz)
-		{
-			ds_p->silhouette |= SIL_TOP;
-			ds_p->tsilheight = MININT;
-		}
 
 		if (rw_backcz1 <= rw_frontfz1 || rw_backcz2 <= rw_frontfz2)
 		{
 			ds_p->sprbottomclip = negonearray;
-			ds_p->bsilheight = MAXINT;
 			ds_p->silhouette |= SIL_BOTTOM;
 		}
 
 		if (rw_backfz1 >= rw_frontcz1 || rw_backfz2 >= rw_frontcz2)
 		{
 			ds_p->sprtopclip = screenheightarray;
-			ds_p->tsilheight = MININT;
 			ds_p->silhouette |= SIL_TOP;
 		}
 
@@ -838,13 +822,11 @@ void R_StoreWallRange(int start, int stop)
 		if (doorclosed || (rw_backcz1 <= rw_frontfz1 && rw_backcz2 <= rw_frontfz2))
 		{
 			ds_p->sprbottomclip = negonearray;
-			ds_p->bsilheight = MAXINT;
 			ds_p->silhouette |= SIL_BOTTOM;
 		}
 		if (doorclosed || (rw_backfz1 >= rw_frontcz1 && rw_backfz2 >= rw_frontcz2))
 		{						// killough 1/17/98, 2/8/98
 			ds_p->sprtopclip = screenheightarray;
-			ds_p->tsilheight = MININT;
 			ds_p->silhouette |= SIL_TOP;
 		}
 
@@ -1130,15 +1112,9 @@ void R_StoreWallRange(int start, int stop)
 	}
 
 	if (maskedtexture && !(ds_p->silhouette & SIL_TOP))
-	{
 		ds_p->silhouette |= SIL_TOP;
-		ds_p->tsilheight = MININT;
-	}
 	if (maskedtexture && !(ds_p->silhouette & SIL_BOTTOM))
-	{
 		ds_p->silhouette |= SIL_BOTTOM;
-		ds_p->bsilheight = MAXINT;
-	}
 
 	ds_p++;
 }

@@ -1373,8 +1373,6 @@ void R_MultiresInit (void)
 {
 	int i;
 
-	// in r_things.c
-	extern int *r_dscliptop, *r_dsclipbot;
 	// in r_draw.c
 	extern byte **ylookup;
 	extern int *columnofs;
@@ -1382,16 +1380,12 @@ void R_MultiresInit (void)
 	// [Russell] - Possible bug, ylookup is 2 star.
     M_Free(ylookup);
     M_Free(columnofs);
-    M_Free(r_dscliptop);
-    M_Free(r_dsclipbot);
     M_Free(negonearray);
     M_Free(screenheightarray);
     M_Free(xtoviewangle);
 
 	ylookup = (byte **)M_Malloc (screen->height * sizeof(byte *));
 	columnofs = (int *)M_Malloc (screen->width * sizeof(int));
-	r_dscliptop = (int *)M_Malloc (screen->width * sizeof(int));
-	r_dsclipbot = (int *)M_Malloc (screen->width * sizeof(int));
 
 	// Moved from R_InitSprites()
 	negonearray = (int *)M_Malloc (sizeof(int) * screen->width);
@@ -1403,8 +1397,6 @@ void R_MultiresInit (void)
 	// GhostlyDeath -- Clean up the buffers
 	memset(ylookup, 0, screen->height * sizeof(byte*));
 	memset(columnofs, 0, screen->width * sizeof(int));
-	memset(r_dscliptop, 0, screen->width * sizeof(int));
-	memset(r_dsclipbot, 0, screen->width * sizeof(int));
 
 	for(i = 0; i < screen->width; i++)
 	{
