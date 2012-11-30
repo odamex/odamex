@@ -3717,7 +3717,9 @@ void CL_SimulateWorld()
 		else if (world_index > upper_sync_limit)
 			reason = "too far ahead of server";
 		else if (world_index < lower_sync_limit)
-			reason == "too far behind server";
+			reason = "too far behind server";
+		else
+			reason = "invalid world_index";
 			
 		Printf(PRINT_HIGH, "Gametic %i, world_index %i, Resynching world index (%s).\n",
 			gametic, world_index, reason.c_str());
