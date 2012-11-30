@@ -38,7 +38,8 @@ public:
 		enum EOpenMode
 		{
 			EReading,
-			EWriting
+			EWriting,
+			ENotOpen
 		};
 
 		enum ESeekPos

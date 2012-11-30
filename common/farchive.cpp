@@ -71,6 +71,7 @@ void FLZOFile::BeEmpty ()
 	m_Buffer = NULL;
 	m_File = NULL;
 	m_NoCompress = false;
+	m_Mode = ENotOpen;
 }
 
 static const char LZOSig[4] = { 'F', 'L', 'Z', 'O' };
@@ -250,7 +251,7 @@ FFile &FLZOFile::Seek (int pos, ESeekPos ofs)
 
 void FLZOFile::Implode ()
 {
-	lzo_uint outlen;
+	lzo_uint outlen = 0;
 	unsigned int len = m_BufferSize;
 	lzo_byte *compressed = NULL;
 	lzo_byte *wrkmem;
@@ -338,7 +339,8 @@ void FLZOFile::Explode ()
 	}
 }
 
-FLZOMemFile::FLZOMemFile ()
+FLZOMemFile::FLZOMemFile () :
+	FLZOFile()
 {
 	m_SourceFromMem = false;
 	m_ImplodedBuffer = NULL;
