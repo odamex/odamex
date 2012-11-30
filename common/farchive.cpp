@@ -46,7 +46,7 @@
 #define SWAP_SIZE(x,y)
 #else
 #define SWAP_WORD(x)		{ x = (((x)<<8) | ((x)>>8)); }
-#define SWAP_DWORD(x)		{ x = (((x)>>24) | (((x)>>8)&0xff00) | ((x)<<8)&0xff0000 | ((x)<<24)); }
+#define SWAP_DWORD(x)		{ x = (((x)>>24) | (((x)>>8)&0xff00) | (((x)<<8)&0xff0000) | ((x)<<24)); }
 // Swap any kind of data based on size - x = pointer to data, y = number of bytes
 #define SWAP_SIZE(x, y)		{ std::reverse((unsigned char*)x, (unsigned char*)x+(size_t)y); }
 
@@ -118,8 +118,7 @@ void FLZOFile::PostOpen ()
 	if (m_File && m_Mode == EReading)
 	{
 		char sig[4];
-		size_t res;
-		res = fread (sig, 4, 1, m_File);
+		fread (sig, 4, 1, m_File);
 		if (sig[0] != LZOSig[0] || sig[1] != LZOSig[1] || sig[2] != LZOSig[2] || sig[3] != LZOSig[3])
 		{
 			fclose (m_File);
@@ -128,12 +127,12 @@ void FLZOFile::PostOpen ()
 		else
 		{
 			DWORD sizes[2];
-			res = fread (sizes, sizeof(DWORD), 2, m_File);
+			fread (sizes, sizeof(DWORD), 2, m_File);
 			SWAP_DWORD (sizes[0]);
 			SWAP_DWORD (sizes[1]);
 			unsigned int len = sizes[0] == 0 ? sizes[1] : sizes[0];
 			m_Buffer = (byte *)Malloc (len+8);
-			res = fread (m_Buffer+8, len, 1, m_File);
+			fread (m_Buffer+8, len, 1, m_File);
 			SWAP_DWORD (sizes[0]);
 			SWAP_DWORD (sizes[1]);
 			((DWORD *)m_Buffer)[0] = sizes[0];
@@ -149,11 +148,9 @@ void FLZOFile::Close ()
 	{
 		if (m_Mode == EWriting)
 		{
-			size_t res;
-
 			Implode ();
-			res = fwrite (LZOSig, 4, 1, m_File);
-			res = fwrite (m_Buffer, m_BufferSize + 8, 1, m_File);
+			fwrite (LZOSig, 4, 1, m_File);
+			fwrite (m_Buffer, m_BufferSize + 8, 1, m_File);
 		}
 		fclose (m_File);
 		m_File = NULL;
