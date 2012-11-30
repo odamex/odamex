@@ -121,8 +121,11 @@ size_t R_CalculateNewPatchSize(patch_t *patch, size_t length)
 
 		post_t *post = (post_t*)((byte*)patch + ofs);
 
-		while (post->length + ofs <= length && post->topdelta != 0xFF)
+		while (post->topdelta != 0xFF)
 		{
+			if (ofs + post->length >= length)
+				return 0;		// patch is corrupt
+
 			numposts++;
 			numpixels += post->length;
 			post = (post_t*)((byte*)post + post->length + 4);
