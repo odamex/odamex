@@ -45,4 +45,9 @@ void I_CloseJoystick();
 
 void I_GetEvent (void);
 
+#if defined WIN32 && !defined _XBOX
+void FixGDIMouseInput();
+void STACK_ARGS RestoreGDIMouseSettings();
+#endif
+
 #endif

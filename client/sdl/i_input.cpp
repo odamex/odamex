@@ -118,6 +118,30 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 
 	return CallNextHookEx( g_hKeyboardHook, nCode, wParam, lParam );
 }
+
+static int backup_mouse_settings[3];
+
+// [Russell - From Darkplaces/Nexuiz] - In gdi mode, disable accelerated mouse input
+void FixGDIMouseInput()
+{
+    int mouse_settings[3];
+
+    // Backup global mouse settings
+    SystemParametersInfo (SPI_GETMOUSE, 0, &backup_mouse_settings, 0);
+
+    // Turn off accelerated mouse input incoming from windows
+    mouse_settings[0] = 0;
+    mouse_settings[1] = 0;
+    mouse_settings[2] = 0;
+
+    SystemParametersInfo (SPI_SETMOUSE, 0, (PVOID)mouse_settings, 0);
+}
+
+// Restore global mouse settings
+void STACK_ARGS RestoreGDIMouseSettings()
+{
+    SystemParametersInfo (SPI_SETMOUSE, 0, (PVOID)backup_mouse_settings, 0);
+}
 #endif
 
 void I_FlushInput()
