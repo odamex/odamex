@@ -3122,6 +3122,20 @@ void CL_LoadMap(void)
 		netdemo.writeMapChange();
 }
 
+void CL_ResetMap()
+{
+	// Destroy every actor with a netid that isn't a player.  We're going to
+	// get the contents of the map with a full update later on anyway.
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+		if (mo->netid && mo->type != MT_PLAYER)
+		{
+			mo->Destroy();
+		}
+	}
+}
 
 void CL_EndGame()
 {
@@ -3205,6 +3219,7 @@ void CL_InitCommands(void)
 	cmds[svc_abort]				= &CL_EndGame;
 	cmds[svc_loadwad]			= &CL_LoadWad;
 	cmds[svc_loadmap]			= &CL_LoadMap;
+	cmds[svc_resetmap]			= &CL_ResetMap;
 	cmds[svc_playerinfo]		= &CL_PlayerInfo;
 	cmds[svc_consoleplayer]		= &CL_ConsolePlayer;
 	cmds[svc_updatefrags]		= &CL_UpdateFrags;

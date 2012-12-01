@@ -654,8 +654,7 @@ void G_DoResetLevel(bool full_reset)
 		return;
 	}
 
-	// Clear CTF state.  Last time I tried commonizing this, I started
-	// getting garbage on the screen upon connecting to a server.
+	// Clear CTF state.
 	std::vector<player_t>::iterator it;
 	if (sv_gametype == GM_CTF)
 	{
@@ -670,6 +669,31 @@ void G_DoResetLevel(bool full_reset)
 		}
 	}
 
+	// Clear netids of every non-player actor so we don't spam the
+	// destruction message of actors to clients.
+	{
+		AActor* mo;
+		TThinkerIterator<AActor> iterator;
+		while ((mo = iterator.Next()))
+		{
+			if (mo->netid && mo->type != MT_PLAYER)
+			{
+				ServerNetID.ReleaseNetID(mo->netid);
+				mo->netid = 0;
+			}
+		}
+	}
+
+	// Tell clients that a map reset is incoming.
+	for (size_t i = 0;i < players.size();i++)
+	{
+		if (!players[i].ingame())
+			continue;
+
+		client_t *cl = &clients[i];
+		MSG_WriteMarker(&cl->reliablebuf, svc_resetmap);
+	}
+
 	// Unserialize saved snapshot
 	reset_snapshot->Reopen();
 	FArchive arc(*reset_snapshot);
@@ -677,6 +701,21 @@ void G_DoResetLevel(bool full_reset)
 	int level_time;
 	arc >> level_time;
 	reset_snapshot->Seek(0, FFile::ESeekSet);
+
+	// Assign new netids to every non-player actor to make sure we don't have
+	// any weird destruction of any items post-reset.
+	{
+		AActor* mo;
+		TThinkerIterator<AActor> iterator;
+		while ((mo = iterator.Next()))
+		{
+			if (mo->netid && mo->type != MT_PLAYER)
+			{
+				mo->netid = ServerNetID.ObtainNetID();
+			}
+		}
+	}
+
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
 	iquehead = iquetail = 0;
@@ -688,7 +727,7 @@ void G_DoResetLevel(bool full_reset)
 		// Clear global goals.
 		for (size_t i = 0; i < NUMTEAMS; i++)
 			TEAMpoints[i] = 0;
-		// Clear player scores.
+		// Clear player information.
 		for (it = players.begin();it != players.end();++it)
 		{
 			it->fragcount = 0;
@@ -698,6 +737,7 @@ void G_DoResetLevel(bool full_reset)
 			it->killcount = 0;
 			it->points = 0;
 			it->ready = false;
+			it->joinafterspectatortime = level.time;
 		}
 		// For predictable first spawns.
 		M_ClearRandom();
