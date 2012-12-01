@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 		// to directx as defulat for now and the people will rejoice. --Hyper_Eye
      	if (Args.CheckParm ("-gdi"))
         {
-        	FixGDIMouseInput();
+            BackupGDIMouseSettings();
         	atterm(RestoreGDIMouseSettings);
 
         	putenv((char*)"SDL_VIDEODRIVER=windib");

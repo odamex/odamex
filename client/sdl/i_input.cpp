@@ -121,13 +121,16 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 
 static int backup_mouse_settings[3];
 
+// Backup global mouse settings
+void BackupGDIMouseSettings()
+{
+    SystemParametersInfo (SPI_GETMOUSE, 0, &backup_mouse_settings, 0);
+}
+
 // [Russell - From Darkplaces/Nexuiz] - In gdi mode, disable accelerated mouse input
 void FixGDIMouseInput()
 {
     int mouse_settings[3];
-
-    // Backup global mouse settings
-    SystemParametersInfo (SPI_GETMOUSE, 0, &backup_mouse_settings, 0);
 
     // Turn off accelerated mouse input incoming from windows
     mouse_settings[0] = 0;
@@ -250,6 +253,16 @@ static void UpdateGrab(void)
 		SetCursorState(true);
 		SDL_WM_GrabInput(SDL_GRAB_OFF);
 	}
+
+	#if defined WIN32 && !defined _XBOX
+    if (Args.CheckParm ("-gdi"))
+	{
+        if (grab)
+            FixGDIMouseInput();
+        else
+            RestoreGDIMouseSettings();
+    }
+    #endif
 
 	mousegrabbed = grab;
 }
