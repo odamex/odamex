@@ -117,6 +117,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		mobj->translucency = 0;
 		p->mo->flags |= MF_SPECTATOR;
 		p->mo->flags2 |= MF2_FLY;
+		p->mo->flags &= ~MF_SOLID;
 	}
 
 	// [RH] Allow chasecam for demo watching
