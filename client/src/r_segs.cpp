@@ -781,7 +781,7 @@ void R_StoreWallRange(int start, int stop)
 		// two sided line
 		ds_p->sprtopclip = ds_p->sprbottomclip = NULL;
 		ds_p->silhouette = 0;
-		
+
 		// Calculate the back sector's floor and ceiling height at the two
 		// endpoints of the drawseg
 		rw_backcz1 = P_CeilingHeight(px1, py1, backsector);
@@ -789,45 +789,26 @@ void R_StoreWallRange(int start, int stop)
 		rw_backfz1 = P_FloorHeight(px1, py1, backsector);
 		rw_backfz2 = P_FloorHeight(px2, py2, backsector);
 
-		if (rw_frontfz1 > rw_backfz1 || rw_frontfz2 > rw_backfz2 || 
-			rw_backfz1 > viewz || rw_backfz2 > viewz || 
-			!P_IsPlaneLevel(&backsector->floorplane))	// backside sloping?
-			ds_p->silhouette |= SIL_BOTTOM;
-
-		if (rw_frontcz1 < rw_backcz1 || rw_frontcz2 < rw_backcz2 ||
-			rw_backcz1 < viewz || rw_backcz2 < viewz || 
-			!P_IsPlaneLevel(&backsector->ceilingplane))	// backside sloping?
-			ds_p->silhouette |= SIL_TOP;
-
-		if (rw_backcz1 <= rw_frontfz1 || rw_backcz2 <= rw_frontfz2)
+		extern bool doorclosed;	
+		if (doorclosed)
 		{
-			ds_p->sprbottomclip = negonearray;
-			ds_p->silhouette |= SIL_BOTTOM;
-		}
-
-		if (rw_backfz1 >= rw_frontcz1 || rw_backfz2 >= rw_frontcz2)
-		{
+			// clip all sprites behind this closed door (or otherwise solid line)
+			ds_p->silhouette = SIL_BOTH;
 			ds_p->sprtopclip = screenheightarray;
-			ds_p->silhouette |= SIL_TOP;
-		}
-
-		// killough 1/17/98: this test is required if the fix
-		// for the automap bug (r_bsp.c) is used, or else some
-		// sprites will be displayed behind closed doors. That
-		// fix prevents lines behind closed doors with dropoffs
-		// from being displayed on the automap.
-		//
-		// killough 4/7/98: make doorclosed external variable
-		extern int doorclosed;	// killough 1/17/98, 2/8/98, 4/7/98
-		if (doorclosed || (rw_backcz1 <= rw_frontfz1 && rw_backcz2 <= rw_frontfz2))
-		{
 			ds_p->sprbottomclip = negonearray;
-			ds_p->silhouette |= SIL_BOTTOM;
 		}
-		if (doorclosed || (rw_backfz1 >= rw_frontcz1 && rw_backfz2 >= rw_frontcz2))
-		{						// killough 1/17/98, 2/8/98
-			ds_p->sprtopclip = screenheightarray;
-			ds_p->silhouette |= SIL_TOP;
+		else
+		{
+			// determine sprite clipping for non-solid line segs	
+			if (rw_frontfz1 > rw_backfz1 || rw_frontfz2 > rw_backfz2 || 
+				rw_backfz1 > viewz || rw_backfz2 > viewz || 
+				!P_IsPlaneLevel(&backsector->floorplane))	// backside sloping?
+				ds_p->silhouette |= SIL_BOTTOM;
+
+			if (rw_frontcz1 < rw_backcz1 || rw_frontcz2 < rw_backcz2 ||
+				rw_backcz1 < viewz || rw_backcz2 < viewz || 
+				!P_IsPlaneLevel(&backsector->ceilingplane))	// backside sloping?
+				ds_p->silhouette |= SIL_TOP;
 		}
 
 		// hack to allow height changes in outdoor areas
@@ -903,12 +884,8 @@ void R_StoreWallRange(int start, int stop)
 				 backsector->ceilingpic != skyflatnum);
 		}
 
-		if (rw_backcz1 <= rw_frontfz1 || rw_backcz2 <= rw_frontfz2 ||
-			rw_backfz1 >= rw_frontcz1 || rw_backfz2 >= rw_frontcz2)
-		{
-			// closed door
+		if (doorclosed)
 			markceiling = markfloor = true;
-		}
 
 		if (rw_backcz1 < rw_frontcz1 || rw_backcz2 < rw_frontcz2)
 		{

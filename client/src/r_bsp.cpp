@@ -46,7 +46,7 @@ sector_t*		frontsector;
 sector_t*		backsector;
 
 // killough 4/7/98: indicates doors closed wrt automap bugfix:
-int				doorclosed;
+bool			doorclosed;
 
 bool			r_fakingunderwater;
 bool			r_underwater;
@@ -277,32 +277,6 @@ void R_ClearClipSegs (void)
 	solidsegs[1].last = 0x7fff;		// new short limit --  killough
 	newend = solidsegs+2;
 }
-
-// killough 1/18/98 -- This function is used to fix the automap bug which
-// showed lines behind closed doors simply because the door had a dropoff.
-//
-// It assumes that Doom has already ruled out a door being closed because
-// of front-back closure (e.g. front floor is taller than back ceiling).
-
-bool R_DoorClosed()
-{
-	return
-		(backsector->ceilingpic != skyflatnum ||
-		 frontsector->ceilingpic != skyflatnum)
-
-		// if door is closed because back is shut:
-		&& rw_backcz1 <= rw_backfz1 && rw_backcz2 <= rw_backfz2
-
-		// preserve a kind of transparent door/lift special effect:
-		&& rw_backcz1 >= rw_frontcz1 && rw_backcz2 >= rw_frontcz2
-
-		&& ((rw_backcz1 >= rw_frontcz1 && rw_backcz2 >= rw_frontcz2) ||
-			curline->sidedef->toptexture != 0)
-			
-		&& ((rw_backfz1 <= rw_frontfz1 && rw_backfz2 <= rw_frontfz2) ||
-			curline->sidedef->bottomtexture != 0);
-}
-
 
 bool CopyPlaneIfValid (plane_t *dest, const plane_t *source, const plane_t *opp)
 {
@@ -647,17 +621,42 @@ void R_AddLine (seg_t *line)
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
 	backsector = R_FakeFlat (backsector, &tempsec, NULL, NULL, true);
 
-	doorclosed = 0;		// killough 4/16/98
-
-	// Closed door.
-	if ((rw_backcz1 <= rw_frontfz1 && rw_backfz1 >= rw_frontcz1) ||
-		(rw_backcz2 <= rw_frontfz2 && rw_backfz2 >= rw_frontcz2))
-		goto clipsolid;
-
+	// [SL] Check for closed doors or other scenarios that would make this
+	// line seg solid.
+	//
 	// This fixes the automap floor height bug -- killough 1/18/98:
 	// killough 4/7/98: optimize: save result in doorclosed for use in r_segs.c
-	if ((doorclosed = R_DoorClosed()))
+	if (!(line->linedef->flags & ML_TWOSIDED) ||
+		 (rw_backcz1 <= rw_frontfz1 && rw_backcz2 <= rw_frontfz2) ||
+		 (rw_backfz1 >= rw_frontcz1 && rw_backfz2 >= rw_frontcz2) ||
+
+		// handle a case where the backsector slopes one direction
+		// and the frontsector slopes the opposite:
+		(rw_backcz1 <= rw_frontfz1 && rw_backfz1 >= rw_frontcz1) ||
+		(rw_backcz2 <= rw_frontfz2 && rw_backfz2 >= rw_frontcz2) ||
+
+		// if door is closed because back is shut:
+		((rw_backcz1 <= rw_backfz1 && rw_backcz2 <= rw_backfz2) &&
+		
+		// preserve a kind of transparent door/lift special effect:
+		((rw_backcz1 >= rw_frontcz1 && rw_backcz2 >= rw_frontcz2) ||
+		 line->sidedef->toptexture) &&
+		
+		((rw_backfz1 <= rw_frontfz1 && rw_backfz2 <= rw_frontfz2) ||
+		 line->sidedef->bottomtexture) &&
+
+
+		// properly render skies (consider door "open" if both ceilings are sky):
+		 (backsector->ceilingpic !=skyflatnum || 
+		  frontsector->ceilingpic!=skyflatnum)))
+	{
+		doorclosed = true;
 		goto clipsolid;
+	}
+	else
+	{
+		doorclosed = false;
+	}
 
 	// Window.
 	if (!P_IdenticalPlanes(&frontsector->ceilingplane, &backsector->ceilingplane) ||
