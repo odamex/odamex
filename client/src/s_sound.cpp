@@ -137,6 +137,7 @@ static struct mus_playing_t
 EXTERN_CVAR (snd_timeout)
 EXTERN_CVAR (snd_channels)
 EXTERN_CVAR (co_zdoomsoundcurve)
+EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (co_level8soundfeature)
 
 size_t			numChannels;
@@ -1139,6 +1140,10 @@ void S_StartMusic (const char *m_id)
 // It's up to the caller to figure out what that name is.
 void S_ChangeMusic (std::string musicname, int looping)
 {
+	// [SL] Avoid caching music lumps if we're not playing music
+	if (snd_musicsystem == MS_NONE)
+		return;
+
 	if (mus_playing.name == musicname)
 		return;
 
