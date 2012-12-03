@@ -3546,6 +3546,10 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 			player.deathcount = 0;
 			player.killcount = 0;
 			SV_UpdateFrags(player);
+
+			// [AM] Set player unready
+			SV_SetReady(player, false, true);
+			player.timeout_ready = 0;
 		}
 	} else if (setting && !player.spectator) {
 		// We want to spectate the player
@@ -3642,12 +3646,18 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 	if (player.ready && !setting) {
 		player.ready = false;
 		if (!silent) {
-			SV_PlayerPrintf(PRINT_HIGH, player.id, "You are no longer ready.\n");
+			if (player.spectator)
+				SV_PlayerPrintf(PRINT_HIGH, player.id, "You are no longer willing to play.\n");
+			else
+				SV_PlayerPrintf(PRINT_HIGH, player.id, "You are no longer ready to play.\n");
 		}
 	} else if (!player.ready && setting) {
 		player.ready = true;
 		if (!silent) {
-			SV_PlayerPrintf(PRINT_HIGH, player.id, "You are now ready.\n");
+			if (player.spectator)
+				SV_PlayerPrintf(PRINT_HIGH, player.id, "You are now willing to play.\n");
+			else
+				SV_PlayerPrintf(PRINT_HIGH, player.id, "You are now ready to play.\n");
 		}
 	} else {
 		changed = false;
@@ -3675,12 +3685,6 @@ void SV_Ready(player_t &player)
 	if (player.timeout_ready > level.time) {
 		// We must be on a new map.  Reset the timeout.
 		player.timeout_ready = 0;
-	}
-
-	if (player.spectator == true)
-	{
-		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't ready as a spectator.\n");
-		return;
 	}
 
 	// Check to see if warmup will allow us to toggle our ready state.
