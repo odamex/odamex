@@ -3038,7 +3038,6 @@ void CL_ConsolePlayer(void)
 
 void CL_LoadWad(void)
 {
-	bool missingfiles = false;
 	std::vector<std::string> wadfilenames, wadhashes, patchfilenames, patchhashes;
 
 	int wadcount = MSG_ReadByte();
@@ -3058,6 +3057,11 @@ void CL_LoadWad(void)
 	// Load the specified WAD and DEH files
 	std::vector<size_t> missing_files = 
 			D_DoomWadReboot(wadfilenames, patchfilenames, wadhashes);
+
+	// [SL] 2012-12-02 - Force the music to stop when the new map uses
+	// the same music lump name that is currently playing. Otherwise,
+	// the music from the old wad continues to play...
+	S_StopMusic();
 
 	// Reconnect to start download any missing files
 	if (!missing_files.empty())
