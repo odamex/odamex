@@ -351,11 +351,11 @@ static void R_GenerateLookup(int texnum, int *const errors)
 
 	// killough 4/9/98: keep count of posts in addition to patches.
 	// Part of fix for medusa bug for multipatched 2s normals.
-	unsigned short *patchcount = new unsigned short[texture->width];
-	unsigned short *postcount = new unsigned short[texture->width];
+	unsigned short patchcount[texture->width];
+	unsigned short postcount[texture->width];
 
-	memset(patchcount, 0, sizeof(unsigned short) * texture->width);	
-	memset(postcount, 0, sizeof(unsigned short) * texture->width);	
+	memset(patchcount, 0, sizeof(patchcount));	
+	memset(postcount, 0, sizeof(postcount));	
 
 	const texpatch_t *texpatch = texture->patches;
 
@@ -376,7 +376,9 @@ static void R_GenerateLookup(int texnum, int *const errors)
 			// to fix Medusa bug while allowing for transparent multipatches.
 
 			const tallpost_t *post = (tallpost_t*)((byte*)patch + LELONG(cofs[x]));
-		
+	
+			// NOTE: this offset will be rewritten later if a composite is generated
+			// for this texture (eg, there's more than one patch)	
 			texturecolumnofs[texnum][x] = (byte *)post - (byte *)patch;
 
 			patchcount[x]++;
@@ -394,9 +396,6 @@ static void R_GenerateLookup(int texnum, int *const errors)
 	// Fill in the lump / offset, so columns with only a single patch are all done.
 
 	texturecomposite[texnum] = 0;
-
-	int x = texture->width;
-	int height = texture->height;
 	int csize = 0;
 
 	// [RH] Always create a composite texture for multipatch textures
@@ -406,16 +405,15 @@ static void R_GenerateLookup(int texnum, int *const errors)
 	// [SL] Check for columns without patches.
 	// If a texture has columns without patches, generate a composite for
 	// the texture, which will create empty posts and prevent crashes.
-	while (--x >= 0 && !needcomposite)
+	for (int x = 0; x < texture->width && !needcomposite; x++)
 	{
-		if (!patchcount[x])
+		if (patchcount[x] == 0)
 			needcomposite = true;
 	}
 
 	if (needcomposite)
 	{
-		x = texture->width;
-		csize = 0;
+		int x = texture->width;
 		while (--x >= 0)
 		{
 			// killough 1/25/98, 4/9/98:
@@ -431,18 +429,12 @@ static void R_GenerateLookup(int texnum, int *const errors)
 
 			texturecolumnofs[texnum][x] = csize;
 
-			csize += 4 * postcount[x] + 2 + height;	// 2 stop bytes plus 4 bytes per post
+			// 4 header bytes per post + column height + 2 byte terminator
+			csize += 4 * postcount[x] + 2 + texture->height;
 		}
-	}
-	else
-	{
-		csize = x*height;
 	}
 	
 	texturecompositesize[texnum] = csize;
-
-	delete [] postcount;
-	delete [] patchcount;
 }
 
 //
