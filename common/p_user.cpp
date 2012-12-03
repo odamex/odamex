@@ -959,6 +959,7 @@ player_s::player_s()
 	camera = AActor::AActorPtr();
 	air_finished = 0;
 	GameTime = 0;
+	JoinTime = 0;
 	ping = 0;
 	last_received = 0;
 	tic = 0;
@@ -1061,8 +1062,8 @@ player_s &player_s::operator =(const player_s &other)
 	camera = other.camera;
 	air_finished = other.air_finished;
 
-	JoinTime = other.JoinTime;
 	GameTime = other.GameTime;
+	JoinTime = other.JoinTime;
 	ping = other.ping;
 
 	last_received = other.last_received;
