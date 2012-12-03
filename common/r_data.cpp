@@ -1019,7 +1019,7 @@ void R_PrecacheLevel (void)
 			texture_t *texture = textures[i];
 
 			for (j = texture->patchcount - 1; j > 0; j--)
-				W_CacheLumpNum(texture->patches[j].patch, PU_CACHE);
+				W_CachePatch(texture->patches[j].patch, PU_CACHE);
 		}
 	}
 
