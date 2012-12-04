@@ -1176,7 +1176,7 @@ void CL_SendUserInfo(void)
 	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
-		MSG_WriteByte (&net_buffer, (char)coninfo->weapon_prefs[i]);
+		MSG_WriteByte (&net_buffer, coninfo->weapon_prefs[i]);
 	}
 }
 

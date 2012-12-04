@@ -931,7 +931,7 @@ void SV_SetupUserInfo (player_t &player)
 	byte			update_rate = MSG_ReadByte();
 	weaponswitch_t	switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
 
-	weapontype_t	weapon_prefs[NUMWEAPONS];
+	byte			weapon_prefs[NUMWEAPONS];
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
 		// sanitize the weapon preference input
@@ -939,7 +939,7 @@ void SV_SetupUserInfo (player_t &player)
 		if (preflevel >= NUMWEAPONS)
 			preflevel = NUMWEAPONS - 1;
 
-		weapon_prefs[i] = static_cast<weapontype_t>(preflevel);
+		weapon_prefs[i] = preflevel;
 	}
 
 	// ensure sane values for userinfo
