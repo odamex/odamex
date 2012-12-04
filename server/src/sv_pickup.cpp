@@ -55,7 +55,8 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	std::vector<size_t> eligible;
 
 	for (size_t i = 0;i < players.size();i++) {
-		if (validplayer(players[i]) && players[i].ingame() && !players[i].spectator) {
+		if (validplayer(players[i]) && players[i].ingame() &&
+		    (!players[i].spectator || (players[i].spectator && players[i].ready))) {
 			eligible.push_back(i);
 		}
 	}
