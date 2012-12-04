@@ -31,6 +31,7 @@
 #include "i_net.h"
 #include "sv_main.h"
 
+EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_warmup_autostart)
 EXTERN_CVAR(sv_warmup_countdown)
@@ -74,7 +75,7 @@ Warmup::status_t Warmup::get_status()
 // Reset warmup to "factory defaults".
 void Warmup::reset()
 {
-	if (sv_warmup)
+	if (sv_warmup && sv_gametype != GM_COOP)
 		this->set_status(Warmup::WARMUP);
 	else
 		this->set_status(Warmup::DISABLED);
