@@ -134,6 +134,12 @@ void Warmup::readytoggle()
 	size_t total = P_NumPlayersInGame();
 	size_t needed;
 
+	// We want at least one ingame ready player to start the game.  Servers
+	// that start automatically with no ready players are handled by
+	// Warmup::tic().
+	if (ready == 0 || total == 0)
+		return;
+
 	float f_calc = total * sv_warmup_autostart;
 	size_t i_calc = (int)floor(f_calc + 0.5f);
 	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON) {
