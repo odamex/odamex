@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "cmdlib.h"
+#include "c_dispatch.h"
 #include "d_player.h"
 #include "g_warmup.h"
 #include "sv_main.h"
@@ -50,6 +51,7 @@ EXTERN_CVAR(sv_vote_timeout)
 
 EXTERN_CVAR(sv_callvote_coinflip)
 EXTERN_CVAR(sv_callvote_forcespec)
+EXTERN_CVAR(sv_callvote_forcestart)
 EXTERN_CVAR(sv_callvote_kick)
 EXTERN_CVAR(sv_callvote_map)
 EXTERN_CVAR(sv_callvote_nextmap)
@@ -140,6 +142,38 @@ public:
 		return true;
 	}
 };
+
+class ForcestartVote : public Vote {
+public:
+	bool setup(const std::vector<std::string> &args, const player_t &player) {
+		// Is forcespec vote enabled?
+		if (!sv_callvote_forcestart) {
+			this->error = "forcestart vote has been disabled by the server.";
+			return false;
+		}
+
+		if (warmup.get_status() != Warmup::WARMUP) {
+			this->error = "Game is not in warmup mode.";
+			return false;
+		}
+
+		this->votestring = "forcestart";
+		return true;
+	}
+	bool tic() {
+		if (warmup.get_status() != Warmup::WARMUP) {
+			this->error = "No need to force start, game is about to start.";
+			return false;
+		}
+
+		return true;
+	}
+	bool exec(void) {
+		AddCommandString("forcestart");
+		return true;
+	}
+};
+
 
 class FraglimitVote : public Vote {
 private:
@@ -928,6 +962,9 @@ void SV_Callvote(player_t &player) {
 		break;
 	case VOTE_FORCESPEC:
 		vote = new ForcespecVote;
+		break;
+	case VOTE_FORCESTART:
+		vote = new ForcestartVote;
 		break;
 	case VOTE_RANDCAPS:
 		vote = new RandCapsVote;

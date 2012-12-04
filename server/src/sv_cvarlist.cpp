@@ -205,6 +205,8 @@ CVAR (sv_callvote_kick, "0", "Clients can votekick other players.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 CVAR (sv_callvote_forcespec, "0", "Clients can vote to force a player to spectate.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_forcestart, "0", "Clients can vote to force the match to start.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 CVAR (sv_callvote_map, "0", "Clients can vote to switch to a specific map from the server's maplist.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 CVAR (sv_callvote_nextmap, "0", "Clients can vote on progressing to the next map.",

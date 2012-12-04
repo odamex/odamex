@@ -174,6 +174,7 @@ BEGIN_COMMAND(callvote) {
 	// Prepare the specific vote command.
 	switch (votecmd) {
 	case VOTE_NONE:
+	case VOTE_FORCESTART:
 	case VOTE_RANDCAPS:
 	case VOTE_NEXTMAP:
 	case VOTE_RESTART:
