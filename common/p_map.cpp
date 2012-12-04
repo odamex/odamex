@@ -22,9 +22,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <set>
-
 #include "vectors.h"
 
 #include "m_alloc.h"
@@ -48,6 +45,7 @@
 #include "p_unlag.h"
 #include "vectors.h"
 #include <math.h>
+#include <set>
 
 fixed_t 		tmbbox[4];
 static AActor  *tmthing;
@@ -102,6 +100,7 @@ EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_fixweaponimpacts)
 EXTERN_CVAR (co_boomlinecheck)
 EXTERN_CVAR (co_zdoomphys)
+EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (sv_friendlyfire)
 
 CVAR_FUNC_IMPL (sv_gravity)
@@ -2769,7 +2768,6 @@ AActor* 		bombspot;
 int 			bombdamage;
 float			bombdamagefloat;
 int				bombmod;
-v3double_t		bombvec;
 
 //
 // PIT_ZdoomRadiusAttack
@@ -2924,38 +2922,55 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 //
 void P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod)
 {
-	int 		x;
-	int 		y;
-
-	int 		xl;
-	int 		xh;
-	int 		yl;
-	int 		yh;
-
-	fixed_t 	dist;
-
-	dist = (damage+MAXRADIUS)<<FRACBITS;
-	yh = (spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT;
-	yl = (spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT;
-	xh = (spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT;
-	xl = (spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT;
+	fixed_t dist = (damage+MAXRADIUS)<<FRACBITS;
+	int yh = (spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT;
+	int yl = (spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT;
+	int xh = (spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT;
+	int xl = (spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT;
 	bombspot = spot;
 	bombsource = source;
 	bombdamage = damage;
 	bombmod = mod;
 	bombdamagefloat = (float)damage;
 	bombmod = mod;
-	M_ActorPositionToVec3(&bombvec, spot);
 
-	for (y=yl ; y<=yh ; y++)
+	// decide which radius attack function to use
+	BOOL (*pAttackFunc)(AActor*) = co_zdoomphys ?
+		PIT_ZdoomRadiusAttack : PIT_RadiusAttack;
+
+	if (co_blockmapfix)
 	{
-		for (x=xl ; x<=xh ; x++)
+		// [SL] 2012-12-03 - With co_blockmapfix, an actor can get radius
+		// damage more than once since an actor can be in more than one block.
+		// So we make a list of unique actors in the surrounding blocks and
+		// then call the radius attack function once for each actor.
+
+		std::set<AActor*> actorset;
+		for (int y=yl ; y<=yh ; y++)
 		{
-			if (co_zdoomphys)
-				P_BlockThingsIterator (x, y, PIT_ZdoomRadiusAttack);
-			else
-				P_BlockThingsIterator (x, y, PIT_RadiusAttack);
+			for (int x=xl ; x<=xh ; x++)
+			{			
+				AActor *mobj = blocklinks[y*bmapwidth+x];
+				while (mobj)
+				{
+					actorset.insert(mobj);
+					mobj = mobj->bmapnode.Next(x, y);
+				}
+			}
 		}
+
+		std::set<AActor*>::iterator itr = actorset.begin();
+		while (itr != actorset.end())
+		{
+			pAttackFunc(*itr);
+			++itr;
+		}
+	}
+	else
+	{
+		for (int y=yl ; y<=yh ; y++)
+			for (int x=xl ; x<=xh ; x++)
+				P_BlockThingsIterator (x, y, pAttackFunc);
 	}
 }
 
