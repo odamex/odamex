@@ -96,7 +96,7 @@ void W_VC6Init(void)
 		// DOOM2
 		doomwadnames[1].name = "DOOM2.WAD";
 		doomwadnames[1].hash[0] = "25E1459CA71D321525F84628F45CA8CD",
-		doomwadnames[1].hash[1] = "C3BEA40570C23E511A7ED3EBCD9865F7";
+		doomwadnames[1].hash[1] = "C3BEA40570C23E511A7ED3EBCD9865F7"; // BFG Edition
 
 		// PLUTONIA
 		doomwadnames[2].name = "PLUTONIA.WAD";
@@ -142,7 +142,7 @@ void W_VC6Init(void)
 static const gamewadinfo_t doomwadnames[] =
 {
     { "DOOM2F.WAD", { "" } },
-    { "DOOM2.WAD", { "25E1459CA71D321525F84628F45CA8CD" } },
+    { "DOOM2.WAD", { "25E1459CA71D321525F84628F45CA8CD", "C3BEA40570C23E511A7ED3EBCD9865F7" } },
     { "PLUTONIA.WAD", { "75C8CF89566741FA9D22447604053BD7" } },
     { "TNT.WAD", { "4E158D9953C79CCF97BD0663244CC6B6" } },
     { "DOOMU.WAD", { "C4FE9FD920207691A9F493668E0A2083" } },
