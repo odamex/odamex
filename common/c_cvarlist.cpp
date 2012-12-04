@@ -176,7 +176,7 @@ CVAR (co_zdoomphys, "0", "Enable/disable zdoom-based gravity and physics interac
 
 // 0 - Play the switch resetting sound at map location (0,0) like the vanilla bug
 // 1 - switch sounds attenuate with distance like plats and doors.
-CVAR (co_zdoomswitches, "0", "Play the switch resetting sound at map location (0,0) like the vanilla bug",
+CVAR (co_zdoomswitches, "0", "Play switch sounds attenuate with distance",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 // Use ZDoom's sound curve instead of vanilla Doom's
