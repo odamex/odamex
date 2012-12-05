@@ -747,8 +747,8 @@ void R_StoreWallRange(int start, int stop)
 		 				P_IsPlaneLevel(&linedef->backsector->floorplane)));
 	if (flatplanes)
 	{
-		rw_frontcz1 = rw_frontcz2 = P_CeilingHeight(linedef->v1->x, linedef->v1->y, frontsector);
-		rw_frontfz1 = rw_frontfz2 = P_FloorHeight(linedef->v1->x, linedef->v1->y, frontsector);
+		rw_frontcz1 = rw_frontcz2 = P_CeilingHeight(frontsector);
+		rw_frontfz1 = rw_frontfz2 = P_FloorHeight(frontsector);
 	}
 	else
 	{
@@ -802,8 +802,8 @@ void R_StoreWallRange(int start, int stop)
 
 		if (flatplanes)
 		{
-			rw_backcz1 = rw_backcz2 = P_CeilingHeight(linedef->v1->x, linedef->v1->y, backsector);
-			rw_backfz1 = rw_backfz2 = P_FloorHeight(linedef->v1->x, linedef->v1->y, backsector);
+			rw_backcz1 = rw_backcz2 = P_CeilingHeight(backsector);
+			rw_backfz1 = rw_backfz2 = P_FloorHeight(backsector);
 		}
 		else
 		{
