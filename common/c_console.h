@@ -71,6 +71,8 @@ void C_SetTicker (unsigned int at);
 
 void C_MidPrint (const char *msg, player_t *p = NULL, int msgtime=0);
 void C_DrawMid (void);
+void C_GMidPrint(const char* msg, int color, int msgtime);
+void C_DrawGMid (void);
 
 BOOL C_Responder (event_t *ev);
 

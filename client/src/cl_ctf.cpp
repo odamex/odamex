@@ -20,7 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
+#include	"c_console.h"
 #include	"c_dispatch.h"
 #include	"cl_main.h"
 #include	"w_wad.h"
@@ -32,6 +32,7 @@
 #include	"p_mobj.h"
 #include    "st_stuff.h"
 #include	"s_sound.h"
+#include	"v_text.h"
 
 flagdata CTFdata[NUMFLAGS];
 int TEAMpoints[NUMFLAGS];
@@ -52,6 +53,7 @@ static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 
 EXTERN_CVAR		(screenblocks)
 EXTERN_CVAR		(st_scale)
+EXTERN_CVAR		(hud_gamemsgtype)
 
 //
 // CTF_Connect
@@ -166,6 +168,9 @@ void CL_CTFEvent (void)
 
 	// [AM] Play CTF sound, moved from server.
 	CTF_Sound(flag, event);
+
+	// [AM] Show CTF message.
+	CTF_Message(flag, event);
 }
 
 //	CTF_CheckFlags
@@ -543,6 +548,69 @@ void CTF_Sound(flag_t flag, flag_score_t event) {
 	}
 }
 
+static const char* flag_message[NUM_CTF_SCORE][4] = {
+	{"", "", "", ""}, // NONE
+	{"", "", "", ""}, // REFRESH
+	{"", "", "", ""}, // KILL
+	{"", "", "", ""}, // BETRAYAL
+	{"Your Flag Taken", "Enemy Flag Taken", "Blue Flag Taken", "Red Flag Taken"}, // GRAB
+	{"Your Flag Taken", "Enemy Flag Taken", "Blue Flag Taken", "Red Flag Taken"}, // FIRSTGRAB
+	{"", "", "", ""}, // CARRIERKILL
+	{"Your Flag Returned", "Enemy Flag Returned", "Blue Flag Returned", "Red Flag Returned"}, // RETURN
+	{"Enemy Team Scores", "Your Team Scores", "Red Team Scores", "Blue Team Scores"}, // CAPTURE
+	{"Your Flag Dropped", "Enemy Flag Dropped", "Blue Flag Dropped", "Red Flag Dropped"}, // DROP
+	{"Your Flag Returning", "Enemy Flag Returning", "Blue Flag Returning", "Red Flag Returning"} // MANUALRETURN*/
+};
+
+void CTF_Message(flag_t flag, flag_score_t event) {
+	// Invalid team
+	if (flag >= NUMFLAGS)
+		return;
+
+	// Invalid CTF event
+	if (event >= NUM_CTF_SCORE)
+		return;
+
+	// No message for this event
+	if (strcmp(flag_sound[event][0], "") == 0)
+		return;
+
+	int color = CR_GREY;
+
+	// Show message 
+	switch (hud_gamemsgtype.asInt()) {
+	case 2:
+		// Possessive (yours/theirs)
+		if (!consoleplayer().spectator) {
+			if (consoleplayer().userinfo.team != (team_t)flag) {
+				// Enemy flag is being evented
+				C_GMidPrint(flag_message[event][1], CR_GREEN, 0);
+			} else {
+				// Friendly flag is being evented
+				C_GMidPrint(flag_message[event][0], CR_BRICK, 0);
+			}
+			break;
+		}
+		// fallthrough
+	case 1:
+		// Team colors (red/blue)
+		if (event == SCORE_CAPTURE) {
+			if (flag == it_blueflag)
+				color = CR_RED;
+			else
+				color = CR_BLUE;
+		} else {
+			if (flag == it_blueflag)
+				color = CR_BLUE;
+			else
+				color = CR_RED;
+		}
+		
+		C_GMidPrint(flag_message[event][2 + flag], color, 0);
+		break;
+	default:
+		break;
+	}
+}
+
 VERSION_CONTROL (cl_ctf_cpp, "$Id$")
-
-

@@ -1566,6 +1566,83 @@ void C_DrawMid (void)
 	}
 }
 
+static brokenlines_t *GameMsg = NULL;
+static int GameTicker = 0, GameColor = CR_GREY, GameLines;
+
+// [AM] This is literally the laziest excuse of a copy-paste job I have ever
+//      done, but I really want CTF messages in time for 0.6.2.  Please replace
+//      me eventually.  The two statics above, the two functions below, and
+//      any direct calls to these two functions are all you need to remove.
+void C_GMidPrint(const char* msg, int color, int msgtime)
+{
+	unsigned int i;
+
+	if (!msgtime)
+		msgtime = con_midtime.asInt();
+
+	if (GameMsg)
+		V_FreeBrokenLines(GameMsg);
+
+	if (msg)
+	{
+		// [Russell] - convert textual "\n" into the binary representation for
+		// line breaking
+		std::string str = msg;
+
+		for (size_t pos = str.find("\\n");pos != std::string::npos;pos = str.find("\\n", pos))
+		{
+			str[pos] = '\n';
+			str.erase(pos + 1, 1);
+		}
+
+		char *newmsg = strdup(str.c_str());
+
+		if ((GameMsg = V_BreakLines(screen->width / V_TextScaleXAmount(), (byte *)newmsg)) )
+		{
+			GameTicker = (int)(msgtime * TICRATE) + gametic;
+
+			for (i = 0;GameMsg[i].width != -1;i++)
+				;
+
+			GameLines = i;
+		}
+
+		GameColor = color;
+		free(newmsg);
+	}
+	else
+	{
+		GameMsg = NULL;
+		GameColor = CR_GREY;
+	}
+}
+
+void C_DrawGMid()
+{
+	if (GameMsg)
+	{
+		int i, line, x, y, xscale, yscale;
+
+		xscale = V_TextScaleXAmount();
+		yscale = V_TextScaleYAmount();
+
+		y = 8 * yscale;
+		x = screen->width >> 1;
+		for (i = 0, line = (ST_Y * 2) / 8 - GameLines * 4 * yscale;i < GameLines; i++, line += y)
+		{
+			screen->DrawTextStretched(GameColor,
+			                          x - (GameMsg[i].width >> 1) * xscale,
+			                          line, (byte *)GameMsg[i].string, xscale, yscale);
+		}
+
+		if (gametic >= GameTicker)
+		{
+			V_FreeBrokenLines(GameMsg);
+			GameMsg = NULL;
+		}
+	}
+}
+
 // denis - moved secret discovery message to this function
 EXTERN_CVAR (hud_revealsecrets)
 void C_RevealSecret()

@@ -211,6 +211,7 @@ CVAR (hud_crosshairhealth, "0", "Color of crosshair represents health level",
       CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n// 1: New Odamex HUD",
       CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (hud_gamemsgtype, "2", "Game message type", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (hud_revealsecrets, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (hud_scale, "0", "HUD scaling", CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (hud_scalescoreboard, "0", "Scoreboard scaling", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)

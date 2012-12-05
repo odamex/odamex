@@ -99,6 +99,7 @@ EXTERN_CVAR (language)
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_level8soundfeature)
 EXTERN_CVAR (hud_targetnames)
+EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_scalescoreboard)
 EXTERN_CVAR (hud_timer)
@@ -879,6 +880,7 @@ static menuitem_t MessagesItems[] = {
 	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },	
     { discrete,	"Show player target names",	{&hud_targetnames},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete ,"Game Message Type",    {&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },
 	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },

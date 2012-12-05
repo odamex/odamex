@@ -303,6 +303,7 @@ void D_Display (void)
 			if (automapactive)
 				AM_Drawer ();
 			C_DrawMid ();
+			C_DrawGMid();
 			CTF_DrawHud ();
 			ST_Drawer ();
 			HU_Drawer ();
