@@ -584,10 +584,18 @@ void CTF_Message(flag_t flag, flag_score_t event) {
 		if (!consoleplayer().spectator) {
 			if (consoleplayer().userinfo.team != (team_t)flag) {
 				// Enemy flag is being evented
-				C_GMidPrint(flag_message[event][1], CR_GREEN, 0);
+				if (event == SCORE_GRAB || event == SCORE_FIRSTGRAB || event == SCORE_CAPTURE)
+					color = CR_GREEN;
+				else
+					color = CR_BRICK;
+				C_GMidPrint(flag_message[event][1], color, 0);
 			} else {
 				// Friendly flag is being evented
-				C_GMidPrint(flag_message[event][0], CR_BRICK, 0);
+				if (event == SCORE_GRAB || event == SCORE_FIRSTGRAB || event == SCORE_CAPTURE)
+					color = CR_BRICK;
+				else
+					color = CR_GREEN;
+				C_GMidPrint(flag_message[event][0], color, 0);
 			}
 			break;
 		}
