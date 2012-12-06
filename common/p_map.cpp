@@ -2766,7 +2766,6 @@ void P_UseLines (player_t *player)
 AActor* 		bombsource;
 AActor* 		bombspot;
 int 			bombdamage;
-float			bombdamagefloat;
 int				bombmod;
 
 //
@@ -2882,7 +2881,7 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 			len = 0.0f;
 	}
 	
-	float points = bombdamagefloat - (len / FRACUNIT) + 1.0f;
+	float points = bombdamage - (len / FRACUNIT) + 1.0f;
 	if (thing == bombsource)
 		points *= sv_splashfactor;
 
@@ -2923,15 +2922,14 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 void P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod)
 {
 	fixed_t dist = (damage+MAXRADIUS)<<FRACBITS;
-	int yh = (spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT;
-	int yl = (spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT;
-	int xh = (spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT;
-	int xl = (spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT;
+	int yh = MIN<int>((spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT, bmapheight - 1);
+	int yl = MAX<int>((spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT, 0);
+	int xh = MIN<int>((spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT, bmapwidth - 1);
+	int xl = MAX<int>((spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT, 0);
 	bombspot = spot;
 	bombsource = source;
 	bombdamage = damage;
 	bombmod = mod;
-	bombdamagefloat = (float)damage;
 	bombmod = mod;
 
 	// decide which radius attack function to use
