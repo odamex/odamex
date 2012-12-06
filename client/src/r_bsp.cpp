@@ -612,14 +612,14 @@ void R_AddLine (seg_t *line)
 	// Single sided line?
 	if (!backsector)
 		goto clipsolid;
+
+	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
+	backsector = R_FakeFlat (backsector, &tempsec, NULL, NULL, true);
 		
 	rw_backcz1 = P_CeilingHeight(line->v1->x, line->v1->y, backsector);
 	rw_backfz1 = P_FloorHeight(line->v1->x, line->v1->y, backsector);
 	rw_backcz2 = P_CeilingHeight(line->v2->x, line->v2->y, backsector);
 	rw_backfz2 = P_FloorHeight(line->v2->x, line->v2->y, backsector);
-
-	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
-	backsector = R_FakeFlat (backsector, &tempsec, NULL, NULL, true);
 
 	// [SL] Check for closed doors or other scenarios that would make this
 	// line seg solid.
@@ -644,7 +644,6 @@ void R_AddLine (seg_t *line)
 		
 		((rw_backfz1 <= rw_frontfz1 && rw_backfz2 <= rw_frontfz2) ||
 		 line->sidedef->bottomtexture) &&
-
 
 		// properly render skies (consider door "open" if both ceilings are sky):
 		 (backsector->ceilingpic !=skyflatnum || 
