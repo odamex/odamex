@@ -49,6 +49,8 @@ fixed_t		t2y;
 int		sightcounts[2];
 int		sightcounts2[3];
 
+extern bool HasBehavior;
+
 /*
 ==============
 =
@@ -394,7 +396,7 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 =====================
 */
 
-bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
+bool P_CheckSightHexen(const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 {
 	if(!t1 || !t2 || !t1->subsector || !t2->subsector)
 		return false;
@@ -777,11 +779,9 @@ bool P_CrossBSPNode (int bspnum)
 //  if a straight line between t1 and t2 is unobstructed.
 // Uses REJECT.
 //
-bool
-P_CheckSight
-( const AActor*	t1,
-  const AActor*	t2,
-  bool ignoreInvisibility )
+bool P_CheckSightDoom
+( const AActor* t1, const AActor* t2,
+  bool ignoreInvisibility)
 {
     int		s1;
     int		s2;
@@ -837,8 +837,7 @@ P_CheckSight
 //  if a straight line between t1 and t2 is unobstructed.
 // Uses REJECT.
 //
-bool
-P_CheckSight
+static bool P_CheckSightDoom
 ( fixed_t x1, fixed_t y1, fixed_t z1, fixed_t h1,
   fixed_t x2, fixed_t y2, fixed_t z2, fixed_t h2 )
 {
@@ -887,6 +886,16 @@ P_CheckSight
     return P_CrossBSPNode (numnodes-1);	
 }
 
+bool P_CheckSight
+( const AActor* t1, const AActor* t2,
+  bool ignoreInvisibility)
+{
+	if (HasBehavior)
+		return P_CheckSightHexen(t1, t2, ignoreInvisibility);
+	else
+		return P_CheckSightDoom(t1, t2, ignoreInvisibility);
+}
+
 //
 // denis - P_CheckSightEdgesDoom
 // Returns true if a straight line between the eyes of t1 and
@@ -913,19 +922,17 @@ bool P_CheckSightEdgesDoom
 
 	bool contact = false;
 
-	contact |= P_CheckSight(t1->x, t1->y, t1->z, t1->height,
+	contact |= P_CheckSightDoom(t1->x, t1->y, t1->z, t1->height,
 							t2->x, t2->y, t2->z, t2->height);
 
-	contact |= P_CheckSight(t1->x, t1->y, t1->z, t1->height,
+	contact |= P_CheckSightDoom(t1->x, t1->y, t1->z, t1->height,
 							t2->x - FLOAT2FIXED(w.x), t2->y - FLOAT2FIXED(w.y), t2->z, t2->height);
 
-	contact |= P_CheckSight(t1->x, t1->y, t1->z, t1->height,
+	contact |= P_CheckSightDoom(t1->x, t1->y, t1->z, t1->height,
 							t2->x + FLOAT2FIXED(w.x), t2->y + FLOAT2FIXED(w.y), t2->z, t2->height);
 
 	return contact;
 }	
-
-extern bool HasBehavior;
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost)
 {

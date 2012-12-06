@@ -2820,8 +2820,7 @@ BOOL PIT_RadiusAttack (AActor *thing)
     if (dist >= bombdamage)
 	return true;	// out of range
 
-    if ((!HasBehavior && P_CheckSight (thing, bombspot)) ||
-		(HasBehavior && P_CheckSight2 (thing, bombspot)) )
+	if (P_CheckSight(thing, bombspot))
     {
 		// must be in direct path
 		P_DamageMobj (thing, bombspot, bombsource, bombdamage - dist, bombmod);
@@ -2885,9 +2884,7 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 	if (thing == bombsource)
 		points *= sv_splashfactor;
 
-	if (points > 0.0f &&
-		((!HasBehavior && P_CheckSight(thing, bombspot, true)) ||
-		 (HasBehavior && P_CheckSight2(thing, bombspot, true))))
+	if (points > 0.0f && P_CheckSight(thing, bombspot, true))
 	{
 		// OK to damage; target is in direct path
 
