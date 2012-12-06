@@ -739,12 +739,12 @@ void R_StoreWallRange(int start, int stop)
 	// endpoints of the drawseg
 	fixed_t px1, py1, px2, py2;
 
-	// [SL] Determine if we can use less expensive calculations for non-sloping lines
-	bool flatplanes =	P_IsPlaneLevel(&linedef->frontsector->ceilingplane) &&
-						P_IsPlaneLevel(&linedef->frontsector->floorplane) &&
-						(!linedef->backsector || 
-						(P_IsPlaneLevel(&linedef->backsector->ceilingplane) &&
-		 				P_IsPlaneLevel(&linedef->backsector->floorplane)));
+	// [SL]Use less expensive calculations for non-sloping lines
+	bool flatplanes =	P_IsPlaneLevel(&frontsector->ceilingplane) &&
+						P_IsPlaneLevel(&frontsector->floorplane) &&
+						(!backsector || 
+						(P_IsPlaneLevel(&backsector->ceilingplane) &&
+		 				P_IsPlaneLevel(&backsector->floorplane)));
 	if (flatplanes)
 	{
 		rw_frontcz1 = rw_frontcz2 = P_CeilingHeight(frontsector);
