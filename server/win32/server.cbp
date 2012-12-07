@@ -304,6 +304,7 @@
 		<Unit filename="../../common/d_event.h" />
 		<Unit filename="../../common/d_items.cpp" />
 		<Unit filename="../../common/d_items.h" />
+		<Unit filename="../../common/d_main.cpp" />
 		<Unit filename="../../common/d_main.h" />
 		<Unit filename="../../common/d_net.h" />
 		<Unit filename="../../common/d_netcmd.cpp" />
