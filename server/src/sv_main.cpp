@@ -3873,9 +3873,11 @@ void SV_WantWad(player_t &player)
 	std::transform(md5.begin(), md5.end(), md5.begin(), toupper);
 
 	size_t i;
+	std::string filename;
 	for (i = 0; i < wadfiles.size(); i++)
 	{
-		if (wadfiles[i] == request && (md5.empty() || wadhashes[i] == md5))
+		filename = D_CleanseFileName(wadfiles[i]);
+		if (filename == request && (md5.empty() || wadhashes[i] == md5))
 			break;
 	}
 
@@ -3900,7 +3902,7 @@ void SV_WantWad(player_t &player)
 	}
 
 	if (player.playerstate != PST_DOWNLOAD || cl->download.name != wadfiles[i])
-		Printf(PRINT_HIGH, "> client %d is downloading %s\n", player.id, wadfiles[i].c_str());
+		Printf(PRINT_HIGH, "> client %d is downloading %s\n", player.id, filename.c_str());
 
 	cl->download.name = wadfiles[i];
 	cl->download.next_offset = next_offset;

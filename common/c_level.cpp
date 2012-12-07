@@ -564,8 +564,8 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 
 	if (Reboot)
 	{
-		std::vector<size_t> missing = D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
-		if (!missing.empty())
+		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+		if (!missingfiles.empty())
 			return false;
 	}
 

@@ -1369,9 +1369,9 @@ bool CL_PrepareConnect(void)
 	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
-	std::vector<std::string> wadnames(server_wads);
+	std::vector<std::string> newwadfiles(server_wads);
 	for(i = 0; i < server_wads; i++)
-		wadnames[i] = MSG_ReadString();
+		newwadfiles[i] = MSG_ReadString();
 
 	MSG_ReadBool();							// deathmatch
 	MSG_ReadByte();							// skill
@@ -1386,11 +1386,11 @@ bool CL_PrepareConnect(void)
 		MSG_ReadByte();
 	}
 
-	std::vector<std::string> wadhashes(server_wads);
+	std::vector<std::string> newwadhashes(server_wads);
 	for(i = 0; i < server_wads; i++)
 	{
-		wadhashes[i] = MSG_ReadString();
-		Printf(PRINT_HIGH, "> %s\n   %s\n", wadnames[i].c_str(), wadhashes[i].c_str());
+		newwadhashes[i] = MSG_ReadString();
+		Printf(PRINT_HIGH, "> %s\n   %s\n", newwadfiles[i].c_str(), newwadhashes[i].c_str());
 	}
 
 	MSG_ReadString();
@@ -1459,20 +1459,20 @@ bool CL_PrepareConnect(void)
     Printf(PRINT_HIGH, "\n");
 
     // DEH/BEX Patch files
-	std::vector<std::string> PatchFiles;
-    size_t PatchCount = MSG_ReadByte();
+    size_t patch_count = MSG_ReadByte();
+	std::vector<std::string> newpatchfiles(patch_count);
     
-    for (i = 0; i < PatchCount; ++i)
-        PatchFiles.push_back(MSG_ReadString());
+    for (i = 0; i < patch_count; ++i)
+        newpatchfiles[i] = MSG_ReadString();
 	
     // TODO: Allow deh/bex file downloads
-	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, PatchFiles, wadhashes);
+	D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
 
-	if(!missing_files.empty())
+	if (!missingfiles.empty())
 	{
 		// denis - download files
-		missing_file = wadnames[missing_files[0]];
-		missing_hash = wadhashes[missing_files[0]];
+		missing_file = missingfiles[0]; 
+		missing_hash = missinghashes[0];
 
 		if (netdemo.isPlaying())
 		{
@@ -1497,7 +1497,6 @@ bool CL_PrepareConnect(void)
 //
 //  Connecting to a server...
 //
-extern std::string missing_file, missing_hash;
 bool CL_Connect(void)
 {
 	players.clear();
@@ -3070,11 +3069,21 @@ void CL_LoadMap(void)
 
 	const char *mapname = MSG_ReadString ();
 
+	if (gamestate == GS_DOWNLOAD)
+	{
+		CL_Reconnect();
+		return;
+	}	
+
 	// Load the specified WAD and DEH files and change the level.
 	// if any WADs are missing, reconnect to begin downloading.
-	if (gamestate == GS_DOWNLOAD || 
-		!G_LoadWad(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes))
+	G_LoadWad(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+
+	if (!missingfiles.empty())
 	{
+		missing_file = missingfiles[0]; 
+		missing_hash = missinghashes[0];
+
 		CL_Reconnect();
 		return;
 	}

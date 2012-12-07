@@ -38,7 +38,7 @@
 //
 void D_DoomMain(void);
 
-std::vector<size_t> D_DoomWadReboot(
+bool D_DoomWadReboot(
 	const std::vector<std::string> &newwadfiles,
 	const std::vector<std::string> &newpatchfiles,
 	const std::vector<std::string> &newwadhashes = std::vector<std::string>(),
@@ -68,6 +68,7 @@ void D_AddCmdParameterFiles(void);
 
 extern std::vector<std::string> wadfiles, wadhashes;
 extern std::vector<std::string> patchfiles, patchhashes;
+extern std::vector<std::string> missingfiles, missinghashes;
 
 #endif
 

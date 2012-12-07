@@ -66,6 +66,7 @@ EXTERN_CVAR (waddirs)
 
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
 std::vector<std::string> patchfiles, patchhashes;	// [RH] remove limit on # of loaded wads
+std::vector<std::string> missingfiles, missinghashes;
 
 extern gameinfo_t SharewareGameInfo;
 extern gameinfo_t RegisteredGameInfo;
@@ -678,22 +679,25 @@ void D_NewWadInit();
 //
 // D_DoomWadReboot
 // [denis] change wads at runtime
-// on 404, returns a vector of bad files
+// Returns false if there are missing files and fills the missingfiles
+// vector
 //
 // [SL] passing an IWAD as newwadfiles[0] is now optional
 // TODO: hash checking for patchfiles
 //
-std::vector<size_t> D_DoomWadReboot(
+bool D_DoomWadReboot(
 	const std::vector<std::string> &newwadfiles,
 	const std::vector<std::string> &newpatchfiles,
 	const std::vector<std::string> &newwadhashes,
 	const std::vector<std::string> &newpatchhashes
 )
 {
-	std::vector<size_t> fails;
 	size_t i;
 
 	bool hashcheck = (newwadfiles.size() == newwadhashes.size());
+
+	missingfiles.clear();
+	missinghashes.clear();
 
 	// already loaded these?
 	if (lastWadRebootSuccess &&	!wadhashes.empty() &&
@@ -701,7 +705,7 @@ std::vector<size_t> D_DoomWadReboot(
 	{
 		// fast track if files have not been changed // denis - todo - actually check the file timestamps
 		Printf (PRINT_HIGH, "Currently loaded WADs match server checksum\n\n");
-		return fails;
+		return true;
 	}
 
 	lastWadRebootSuccess = false;
@@ -776,7 +780,9 @@ std::vector<size_t> D_DoomWadReboot(
 			else
 			{
 				Printf(PRINT_HIGH, "could not find WAD: %s\n", base_filename.c_str());
-				fails.push_back(i);
+				missingfiles.push_back(base_filename);
+				if (hashcheck)
+					missinghashes.push_back(newwadhashes[i]);
 			}
 		}
 	}
@@ -802,11 +808,11 @@ std::vector<size_t> D_DoomWadReboot(
 	D_NewWadInit();
 
 	// preserve state
-	lastWadRebootSuccess = fails.empty();
+	lastWadRebootSuccess = missingfiles.empty();
 
 	gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
 
-	return fails;
+	return missingfiles.empty();
 }
 
 //
