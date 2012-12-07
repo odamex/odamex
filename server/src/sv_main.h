@@ -118,8 +118,12 @@ bool CMD_ForcespecCheck(const std::vector<std::string> &arguments,
 void SV_SetPlayerSpec(player_t &player, bool setting, bool silent = false);
 void SV_SetReady(player_t &player, bool setting, bool silent = false);
 
-void SV_SendLoadWad(const std::vector<std::string> &wadnames,
-                    const std::vector<std::string> &patchnames);
+void SV_SendLoadMap(const std::vector<std::string> &wadnames,
+                    const std::vector<std::string> &patchnames,
+                    const std::string &mapname, player_t *player);
+
+
+
 
 extern bool unnatural_level_progression;
 

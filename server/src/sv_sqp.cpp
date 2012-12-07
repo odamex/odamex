@@ -27,6 +27,7 @@
 
 #include "doomtype.h"
 #include "doomstat.h"
+#include "d_main.h"
 #include "d_player.h"
 #include "p_local.h"
 #include "sv_main.h"
@@ -37,7 +38,6 @@
 #include "md5.h"
 #include "p_ctf.h"
 
-extern std::vector<std::string> patchfiles, wadnames, wadhashes;
 static buf_t ml_message(MAX_UDP_PACKET);
 
 EXTERN_CVAR (sv_usemasters)
@@ -188,15 +188,15 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
 	
 	for (size_t i = 0; i < patchfiles.size(); ++i)
 	{
-        MSG_WriteString(&ml_message, patchfiles[i].c_str());
+        MSG_WriteString(&ml_message, D_CleanseFileName(patchfiles[i]).c_str());
 	}
 	
 	// Wad files
-	MSG_WriteByte(&ml_message, wadnames.size());
+	MSG_WriteByte(&ml_message, wadfiles.size());
 	
-	for (size_t i = 0; i < wadnames.size(); ++i)
+	for (size_t i = 0; i < wadfiles.size(); ++i)
     {
-        MSG_WriteString(&ml_message, wadnames[i].c_str());
+        MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
         MSG_WriteString(&ml_message, wadhashes[i].c_str());
     }
     

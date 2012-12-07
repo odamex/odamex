@@ -150,11 +150,6 @@ const char* GetBase(const char* in)
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
-	std::vector<std::string> wads, patches, hashes;
-	bool AddedIWAD = false;
-	bool Reboot = false;
-	QWORD i, j;
-
 	// [Russell] print out some useful info
 	if (argc == 1)
 	{
@@ -167,87 +162,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
-	// Did we pass an IWAD?
-	if (W_IsIWAD(argv[1])) {
-		std::string ext;
-
-		if (!M_ExtractFileExtension(argv[1], ext)) {
-			wads.push_back(std::string(argv[1]) + ".wad");
-		} else {
-			wads.push_back(argv[1]);
-		}
-		AddedIWAD = true;
-	}
-
-	// Are the passed params WAD files or patch files?
-	for (i = 1; i < argc; i++) {
-		std::string ext;
-
-		if (M_ExtractFileExtension(argv[i], ext)) {
-			if ((ext == "wad") && !W_IsIWAD(argv[i])) {
-				// Wad that isn't an IWAD
-				wads.push_back(argv[i]);
-			} else if  (ext == "deh" || ext == "bex") {
-				// Patch file
-				patches.push_back(argv[i]);
-			}
-		}
-	}
-
-	// Check our environment, if the same WADs are used, ignore this command.
-
-	// Did we switch IWAD files?
-	if (AddedIWAD && !wadfiles.empty()) {
-		if (StdStringCompare(M_ExtractFileName(wads[0]), M_ExtractFileName(wadfiles[1]), true) != 0) {
-			Reboot = true;
-		}
-	}
-
-	// Do the sizes of the WAD lists not match up?
-	if (!Reboot) {
-		if (wadfiles.size() - 2 != wads.size() - (AddedIWAD ? 1 : 0)) {
-			Reboot = true;
-		}
-	}
-
-	// Do our WAD lists match up exactly?
-	if (!Reboot) {
-		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < wads.size(); i++, j++) {
-			if (StdStringCompare(M_ExtractFileName(wads[j]), M_ExtractFileName(wadfiles[i]), true) != 0) {
-				Reboot = true;
-				break;
-			}
-		}
-	}
-
-	// Do the sizes of the patch lists not match up?
-	if (!Reboot) {
-		if (patchfiles.size() != patches.size()) {
-			Reboot = true;
-		}
-	}
-
-	// Do our patchfile lists match up exactly?
-	if (!Reboot) {
-		for (i = 0, j = 0; i < patchfiles.size() && j < patches.size(); i++, j++) {
-			if (StdStringCompare(M_ExtractFileName(patches[j]), M_ExtractFileName(patchfiles[i]), true) != 0) {
-				Reboot = true;
-				break;
-			}
-		}
-	}
-
-	if (Reboot) {
-		if (!AddedIWAD) {
-			wads.insert(wads.begin(), wadfiles[1]);
-		}
-
-		D_DoomWadReboot(wads, patches);
-		unnatural_level_progression = true;
-		G_DeferedInitNew(startmap);
-
-		SV_SendLoadWad(wads, patches);
-	}
+	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
+	G_LoadWad(str);
 }
 END_COMMAND (wad)
 
@@ -297,11 +213,7 @@ void G_ChangeMap() {
 		maplist_entry_t maplist_entry;
 		Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-		// Change the map and bump the position of the next maplist entry.
-		// FIXME: AddCommandString is evil, kill it and call a Wad-changing
-		//        function directly.
-		AddCommandString("wad " + JoinStrings(maplist_entry.wads, " "));
-		G_DeferedInitNew((char *)maplist_entry.map.c_str());
+		G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
 
 		// Set the new map as the current map
 		Maplist::instance().set_index(next_index);
@@ -324,11 +236,7 @@ void G_ChangeMap(size_t index) {
 		return;
 	}
 
-	// Change the map and bump the position of the next maplist entry.
-	// FIXME: AddCommandString is evil, kill it and call a Wad-changing
-	//        function directly.
-	AddCommandString("wad " + JoinStrings(maplist_entry.wads, " "));
-	G_DeferedInitNew((char *)maplist_entry.map.c_str());
+	G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);
@@ -383,10 +291,7 @@ void G_DoNewGame (void)
 		if(!players[i].ingame())
 			continue;
 
-		client_t *cl = &clients[i];
-
-		MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);
-		MSG_WriteString (&cl->reliablebuf, d_mapname);
+		SV_SendLoadMap(wadfiles, patchfiles, d_mapname, &players[i]);
 	}
 
 	sv_curmap.ForceSet(d_mapname);

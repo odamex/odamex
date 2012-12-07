@@ -38,12 +38,11 @@
 //
 void D_DoomMain(void);
 
-std::string BaseFileSearch(std::string file, std::string ext = "",
-                           std::string hash = "");
 std::vector<size_t> D_DoomWadReboot(
-	const std::vector<std::string> &wadnames,
-    const std::vector<std::string> &patch_files = std::vector<std::string>(),
-    std::vector<std::string> needhashes = std::vector<std::string>()
+	const std::vector<std::string> &newwadfiles,
+	const std::vector<std::string> &newpatchfiles,
+	const std::vector<std::string> &newwadhashes = std::vector<std::string>(),
+	const std::vector<std::string> &newpatchhashes = std::vector<std::string>()
 );
 
 // Called by IO functions when input is detected.
@@ -62,6 +61,13 @@ void D_StartTitle(void);
 extern const char *D_DrawIcon;
 
 void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator);
+void D_AddDefWads (std::string iwad);
+void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files = std::vector<std::string>());
+std::string D_CleanseFileName(const std::string &filename, const std::string &ext = "");
+void D_AddCmdParameterFiles(void);
+
+extern std::vector<std::string> wadfiles, wadhashes;
+extern std::vector<std::string> patchfiles, patchhashes;
 
 #endif
 

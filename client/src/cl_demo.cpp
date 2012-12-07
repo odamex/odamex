@@ -38,6 +38,7 @@
 #include "version.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
+#include "c_level.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -1141,9 +1142,26 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, consoleplayer().id);
 	MSG_WriteByte	(netbuffer, consoleplayer().spectator);
 
-	// Server sends map name
+	// Server sends wads & map name
 	MSG_WriteMarker	(netbuffer, svc_loadmap);
-	MSG_WriteString	(netbuffer, level.mapname);
+
+	// send list of wads (skip over wadnames[0] == odamex.wad)  
+	MSG_WriteByte(netbuffer, MIN<size_t>(wadfiles.size() - 1, 255));
+	for (size_t i = 1; i < MIN<size_t>(wadfiles.size(), 256); i++)
+	{
+		MSG_WriteString(netbuffer, D_CleanseFileName(wadfiles[i], "wad").c_str());
+		MSG_WriteString(netbuffer, wadhashes[i].c_str());
+	}
+
+    // send list of DEH/BEX patches
+    MSG_WriteByte(netbuffer, MIN<size_t>(patchfiles.size(), 255));
+    for (size_t i = 0; i < MIN<size_t>(patchfiles.size(), 255); i++)
+    {
+        MSG_WriteString(netbuffer, D_CleanseFileName(patchfiles[i]).c_str());
+        MSG_WriteString(netbuffer, patchfiles[i].c_str());
+    }
+
+	MSG_WriteString(netbuffer, level.mapname);
 
 	// Server spawns the player
 	MSG_WriteMarker	(netbuffer, svc_spawnplayer);
@@ -1446,6 +1464,14 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	arc.WriteCount(vars_p - vars);
 	arc.Write(vars, vars_p - vars);
 
+	// write wad info
+	arc << (byte)(wadfiles.size() - 1);
+	for (size_t i = 1; i < wadfiles.size(); i++)
+		arc << wadfiles[i].c_str();
+	arc << (byte)patchfiles.size();
+	for (size_t i = 0; i < patchfiles.size(); i++)
+		arc << patchfiles[i].c_str();
+	// write map info
 	arc << level.mapname;
 	arc << (BYTE)(gamestate == GS_INTERMISSION);
 
@@ -1520,6 +1546,24 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	arc.Read(vars, len);
 	cvar_t::C_ReadCVars(&vars_p);
 
+	// read wad info
+	std::vector<std::string> newwadfiles, newpatchfiles;
+	byte numwads, numpatches;
+	std::string str;
+
+	arc >> numwads;
+	for (size_t i = 0; i < numwads; i++)
+	{
+		arc >> str;
+		newwadfiles.push_back(str);
+	}
+	arc >> numpatches;
+	for (size_t i = 0; i < numpatches; i++)
+	{
+		arc >> str;
+		newpatchfiles.push_back(str);
+	}
+
 	std::string mapname;
 	bool intermission;
 	arc >> mapname;
@@ -1550,6 +1594,9 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	// load a base level
 	savegamerestore = true;     // Use the player actors in the savegame
 	serverside = false;
+
+	G_LoadWad(newwadfiles, newpatchfiles);
+
 	G_InitNew(mapname.c_str());
 	displayplayer_id = consoleplayer_id = 1;
 	savegamerestore = false;

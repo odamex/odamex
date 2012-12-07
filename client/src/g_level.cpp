@@ -117,8 +117,6 @@ void G_DeferedInitNew (char *mapname)
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
-	std::vector<std::string> wads, patch_files, hashes;
-
 	// [Russell] print out some useful info
 	if (argc == 1)
 	{
@@ -139,31 +137,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 
 	C_HideConsole();
 
-    // add our iwad if it is one
-    // [ML] 7/26/2010: otherwise reload the currently-loaded iwad
-    if (W_IsIWAD(argv[1]))
-        wads.push_back(argv[1]);
-    else
-        wads.push_back(wadfiles[1].c_str());
-
-    // check whether they are wads or patch files
-	for (QWORD i = 1; i < argc; i++)
-	{
-		std::string ext;
-
-		if (M_ExtractFileExtension(argv[i], ext))
-		{
-		    // don't allow subsequent iwads to be loaded
-		    if ((ext == "wad") && !W_IsIWAD(argv[i]))
-                wads.push_back(argv[i]);
-            else if (ext == "deh" || ext == "bex")
-                patch_files.push_back(argv[i]);
-		}
-	}
-
-    hashes.resize(wads.size());
-
-	D_DoomWadReboot(wads, patch_files, hashes);
+	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
+	G_LoadWad(str);
 
 	D_StartTitle ();
 	CL_QuitNetGame();

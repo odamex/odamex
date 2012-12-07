@@ -72,6 +72,10 @@ void S_Start (void)
 {
 }
 
+void S_Stop (void)
+{
+}
+
 void S_SoundID (int channel, int sound_id, float volume, int attenuation)
 {
 }

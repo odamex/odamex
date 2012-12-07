@@ -493,6 +493,123 @@ void G_ParseMusInfo(void)
 	// Nothing yet...
 }
 
+//
+// G_LoadWad
+//
+// Determines if the vectors of wad & patch filenames differs from the currently
+// loaded ones and calls D_DoomWadReboot if so.
+//
+bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
+				const std::vector<std::string> &newpatchfiles,
+				const std::vector<std::string> &newwadhashes,
+				const std::vector<std::string> &newpatchhashes,
+				const std::string &mapname)
+{
+	bool AddedIWAD = false;
+	bool Reboot = false;
+	size_t i, j;
+
+	// Did we pass an IWAD?
+	if (!newwadfiles.empty() && W_IsIWAD(newwadfiles[0]))
+		AddedIWAD = true;
+
+	// Check our environment, if the same WADs are used, ignore this command.
+
+	// Did we switch IWAD files?
+	if (AddedIWAD && !wadfiles.empty())
+	{
+		if (StdStringCompare(M_ExtractFileName(newwadfiles[0]), M_ExtractFileName(wadfiles[1]), true) != 0)
+			Reboot = true;
+	}
+
+	// Do the sizes of the WAD lists not match up?
+	if (!Reboot)
+	{
+		if (wadfiles.size() - 2 != newwadfiles.size() - (AddedIWAD ? 1 : 0))
+			Reboot = true;
+	}
+
+	// Do our WAD lists match up exactly?
+	if (!Reboot)
+	{
+		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < newwadfiles.size(); i++, j++)
+		{
+			if (StdStringCompare(M_ExtractFileName(newwadfiles[j]), M_ExtractFileName(wadfiles[i]), true) != 0)
+			{
+				Reboot = true;
+				break;
+			}
+		}
+	}
+
+	// Do the sizes of the patch lists not match up?
+	if (!Reboot)
+	{
+		if (patchfiles.size() != newpatchfiles.size())
+			Reboot = true;
+	}
+
+	// Do our patchfile lists match up exactly?
+	if (!Reboot)
+	{
+		for (i = 0, j = 0; i < patchfiles.size() && j < newpatchfiles.size(); i++, j++)
+		{
+			if (StdStringCompare(M_ExtractFileName(newpatchfiles[j]), M_ExtractFileName(patchfiles[i]), true) != 0)
+			{
+				Reboot = true;
+				break;
+			}
+		}
+	}
+
+	if (Reboot)
+	{
+		std::vector<size_t> missing = D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+		if (!missing.empty())
+			return false;
+	}
+
+	unnatural_level_progression = true;
+	if (mapname.length())
+		G_DeferedInitNew((char *)mapname.c_str());
+	else
+		G_DeferedInitNew(startmap);
+
+	return true;
+}
+
+const char *ParseString2(const char *data);
+
+//
+// G_LoadWad
+//
+// Takes a space-separated string list of wad and patch names, which is parsed
+// into a vector of wad filenames and patch filenames and then calls
+// D_DoomWadReboot.
+//
+bool G_LoadWad(const std::string &str, const std::string &mapname)
+{
+	std::vector<std::string> newwadfiles;
+	std::vector<std::string> newpatchfiles;
+	std::vector<std::string> nohashes;	// intentionally empty
+
+	const char *data = str.c_str();
+
+	while ( (data = ParseString2(data)) )
+	{
+		std::string ext;
+
+		if (M_ExtractFileExtension(com_token, ext))
+		{
+			if (ext == "wad")
+				newwadfiles.push_back(com_token);
+			else if (ext == "deh" || ext == "bex")
+				newpatchfiles.push_back(com_token);		// Patch file
+		}
+	}
+
+	return G_LoadWad(newwadfiles, newpatchfiles, nohashes, nohashes, mapname);
+}
 
 BEGIN_COMMAND (map)
 {

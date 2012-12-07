@@ -65,6 +65,7 @@
 #include "sv_maplist.h"
 #include "g_warmup.h"
 #include "sv_banlist.h"
+#include "d_main.h"
 
 #include <algorithm>
 #include <sstream>
@@ -2077,8 +2078,7 @@ void SV_ConnectClient (void)
 	}
 
 	// send a map name
-	MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);
-	MSG_WriteString (&cl->reliablebuf, level.mapname);
+	SV_SendLoadMap(wadfiles, patchfiles, level.mapname, &players[n]);
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
@@ -2246,65 +2246,38 @@ void SV_ExitLevel()
 }
 
 //
-// SV_SendLoadWad
+// SV_SendLoadMap
 //
-// Sends a message to all clients telling them to change to the specified WAD
-// and DEH patch files
+// Sends a message to a player telling them to change to the specified WAD
+// and DEH patch files and load a map.
 //
-void SV_SendLoadWad(const std::vector<std::string> &wadnames,
-					const std::vector<std::string> &patchnames)
+void SV_SendLoadMap(const std::vector<std::string> &wadnames,
+					const std::vector<std::string> &patchnames,
+					const std::string &mapname, player_t *player)
 {
-	std::vector<std::string> stripped_wadnames, wadhashes;
-	for (size_t i = 0; i < 255 && i < wadnames.size(); i++)
+	if (!player)
+		return;
+
+	buf_t *buf = &(player->client.reliablebuf);
+	MSG_WriteMarker(buf, svc_loadmap);
+
+	// send list of wads (skip over wadnames[0] == odamex.wad)	
+	MSG_WriteByte(buf, MIN<size_t>(wadnames.size() - 1, 255));
+	for (size_t i = 1; i < MIN<size_t>(wadnames.size(), 256); i++)
 	{
-		std::string str(wadnames[i]);
-
-		// strip absolute paths
-		FixPathSeparator(str);
-		size_t slash = str.find_last_of(PATHSEPCHAR);
-		if (slash != std::string::npos)
-			str = str.substr(slash + 1, str.length() - slash);
-
-		stripped_wadnames.push_back(str);
-		wadhashes.push_back(W_MD5(str));
+		MSG_WriteString(buf, D_CleanseFileName(wadnames[i], "wad").c_str());
+		MSG_WriteString(buf, wadhashes[i].c_str());
 	}
 
-	std::vector<std::string> stripped_patchnames, patchhashes;
-	for (size_t i = 0; i < 255 && i < patchnames.size(); i++)
+	// send list of DEH/BEX patches
+	MSG_WriteByte(buf, MIN<size_t>(patchnames.size(), 255));
+	for (size_t i = 0; i < MIN<size_t>(patchnames.size(), 255); i++)
 	{
-		std::string str(patchnames[i]);
-
-		// strip absolute paths
-		FixPathSeparator(str);
-		size_t slash = str.find_last_of(PATHSEPCHAR);
-		if (slash != std::string::npos)
-			str = str.substr(slash + 1, str.length() - slash);
-
-		stripped_patchnames.push_back(str);
-		patchhashes.push_back(W_MD5(str));
+		MSG_WriteString(buf, D_CleanseFileName(patchnames[i]).c_str());
+		MSG_WriteString(buf, patchhashes[i].c_str());
 	}
 
-	// send each player a list of wad names and deh patches to load
-	for (size_t i = 0; i < players.size(); i++)
-	{
-		buf_t *buf = &(players[i].client.reliablebuf);
-	
-		MSG_WriteMarker(buf, svc_loadwad);
-
-		MSG_WriteByte(buf, stripped_wadnames.size());
-		for (size_t j = 0; j < stripped_wadnames.size(); j++)
-		{
-			MSG_WriteString(buf, stripped_wadnames[j].c_str());
-			MSG_WriteString(buf, wadhashes[j].c_str());
-		}
-
-		MSG_WriteByte(buf, stripped_patchnames.size());
-		for (size_t j = 0; j < stripped_patchnames.size(); j++)
-		{
-			MSG_WriteString(buf, stripped_patchnames[j].c_str());
-			MSG_WriteString(buf, patchhashes[j].c_str());
-		}
-	}
+	MSG_WriteString(buf, mapname.c_str());
 }
 
 static bool STACK_ARGS compare_player_frags (const player_t *arg1, const player_t *arg2)
@@ -3900,13 +3873,13 @@ void SV_WantWad(player_t &player)
 	std::transform(md5.begin(), md5.end(), md5.begin(), toupper);
 
 	size_t i;
-	for(i = 0; i < wadnames.size(); i++)
+	for (i = 0; i < wadfiles.size(); i++)
 	{
-		if(wadnames[i] == request && (wadhashes[i] == md5 || md5 == ""))
+		if (wadfiles[i] == request && (md5.empty() || wadhashes[i] == md5))
 			break;
 	}
 
-	if(i == wadnames.size())
+	if (i == wadfiles.size())
 	{
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
@@ -3916,7 +3889,7 @@ void SV_WantWad(player_t &player)
 	}
 
 	// denis - do not download commercial wads
-	if(W_IsIWAD(wadnames[i], wadhashes[i]))
+	if (W_IsIWAD(wadfiles[i], wadhashes[i]))
 	{
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
@@ -3926,8 +3899,8 @@ void SV_WantWad(player_t &player)
 		return;
 	}
 
-	if(player.playerstate != PST_DOWNLOAD || cl->download.name != wadfiles[i])
-		Printf(PRINT_HIGH, "> client %d is downloading %s\n", player.id, wadnames[i].c_str());
+	if (player.playerstate != PST_DOWNLOAD || cl->download.name != wadfiles[i])
+		Printf(PRINT_HIGH, "> client %d is downloading %s\n", player.id, wadfiles[i].c_str());
 
 	cl->download.name = wadfiles[i];
 	cl->download.next_offset = next_offset;

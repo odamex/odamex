@@ -63,6 +63,7 @@
 #include "p_pspr.h"
 #include "d_netcmd.h"
 #include "g_warmup.h"
+#include "c_level.h"
 
 #include <string>
 #include <vector>
@@ -3036,53 +3037,52 @@ void CL_ConsolePlayer(void)
 	digest = MSG_ReadString();
 }
 
-void CL_LoadWad(void)
-{
-	std::vector<std::string> wadfilenames, wadhashes, patchfilenames, patchhashes;
-
-	int wadcount = MSG_ReadByte();
-	while (wadcount--)
-	{
-		wadfilenames.push_back(MSG_ReadString());
-		wadhashes.push_back(MSG_ReadString());
-	}
-
-	int patchcount = MSG_ReadByte();
-	while (patchcount--)
-	{
-		patchfilenames.push_back(MSG_ReadString());
-		patchhashes.push_back(MSG_ReadString());
-	}
-
-	// Load the specified WAD and DEH files
-	std::vector<size_t> missing_files = 
-			D_DoomWadReboot(wadfilenames, patchfilenames, wadhashes);
-
-	// [SL] 2012-12-02 - Force the music to stop when the new map uses
-	// the same music lump name that is currently playing. Otherwise,
-	// the music from the old wad continues to play...
-	S_StopMusic();
-
-	// Reconnect to start download any missing files
-	if (!missing_files.empty())
-		CL_Reconnect();
-}
-
+//
+// CL_LoadMap
+//
+// Read wad & deh filenames and map name from the server and loads
+// the appropriate wads & map.
+//
 void CL_LoadMap(void)
 {
-	const char *mapname = MSG_ReadString ();
-
 	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
 	forcenetdemosplit = false;
 	
 	if (splitnetdemo)
 		netdemo.stopRecording();
 	
-	if(gamestate == GS_DOWNLOAD)
-		return;
+	std::vector<std::string> newwadfiles, newwadhashes;
+	std::vector<std::string> newpatchfiles, newpatchhashes;
 
-	if(gamestate == GS_LEVEL)
-		G_ExitLevel (0, 0);
+	int wadcount = MSG_ReadByte();
+	while (wadcount--)
+	{
+		newwadfiles.push_back(MSG_ReadString());
+		newwadhashes.push_back(MSG_ReadString());
+	}
+
+	int patchcount = MSG_ReadByte();
+	while (patchcount--)
+	{
+		newpatchfiles.push_back(MSG_ReadString());
+		newpatchhashes.push_back(MSG_ReadString());
+	}
+
+	const char *mapname = MSG_ReadString ();
+
+	// Load the specified WAD and DEH files and change the level.
+	// if any WADs are missing, reconnect to begin downloading.
+	if (gamestate == GS_DOWNLOAD || 
+		!G_LoadWad(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes))
+	{
+		CL_Reconnect();
+		return;
+	}
+
+	// [SL] 2012-12-02 - Force the music to stop when the new map uses
+	// the same music lump name that is currently playing. Otherwise,
+	// the music from the old wad continues to play...
+	S_StopMusic();
 
 	G_InitNew (mapname);
 
@@ -3139,6 +3139,10 @@ void CL_ResetMap()
 			mo->Destroy();
 		}
 	}
+
+	// write the map index to the netdemo
+	if (netdemo.isRecording() && recv_full_update)
+		netdemo.writeMapChange();
 }
 
 void CL_EndGame()
@@ -3221,7 +3225,6 @@ cmdmap cmds;
 void CL_InitCommands(void)
 {
 	cmds[svc_abort]				= &CL_EndGame;
-	cmds[svc_loadwad]			= &CL_LoadWad;
 	cmds[svc_loadmap]			= &CL_LoadMap;
 	cmds[svc_resetmap]			= &CL_ResetMap;
 	cmds[svc_playerinfo]		= &CL_PlayerInfo;

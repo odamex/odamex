@@ -25,6 +25,7 @@
 #ifndef __C_LEVEL_H__
 #define __C_LEVEL_H__
 
+#include <vector>
 #include "g_level.h"
 
 extern bool unnatural_level_progression;
@@ -35,5 +36,13 @@ int FindWadClusterInfo (int cluster);
 
 level_info_t *FindDefLevelInfo (char *mapname);
 cluster_info_t *FindDefClusterInfo (int cluster);
+
+bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
+				const std::vector<std::string> &newpatchfiles,
+				const std::vector<std::string> &newwadhashes = std::vector<std::string>(),
+				const std::vector<std::string> &newpatchhashes = std::vector<std::string>(),
+				const std::string &mapname = "");
+
+bool G_LoadWad(const std::string &str, const std::string &mapname = "");
 
 #endif // __C_LEVEL_H__
