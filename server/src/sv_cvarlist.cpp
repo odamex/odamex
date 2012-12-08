@@ -173,8 +173,8 @@ CVAR (sv_ticbuffer, "1", "Buffer controller input from players experiencing sudd
 
 CVAR (sv_banfile, "banlist.json", "Default file to save and load the banlist.",
       CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (sv_exceptionfile, "exceptionlist.json", "Default file to save and load the exception list.",
-      CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (sv_banfile_reload, "0", "Number of seconds to wait between automatically loading the banlist.",
+      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Vote settings
 // =============

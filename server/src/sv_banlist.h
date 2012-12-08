@@ -96,6 +96,8 @@ private:
 	std::vector<Exception> exceptionlist;
 };
 
+void SV_InitBanlist();
 bool SV_BanCheck(client_t* cl, int n);
+void SV_BanlistTics();
 
 #endif

@@ -29,17 +29,18 @@
 #endif
 
 #include "json/json.h"
-//#include <curl/curl.h>
 
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "d_player.h"
+#include "m_fileio.h"
+#include "p_tick.h"
 #include "sv_banlist.h"
 #include "sv_main.h"
 
 EXTERN_CVAR(sv_email)
 EXTERN_CVAR(sv_banfile)
-EXTERN_CVAR(sv_exceptionfile)
+EXTERN_CVAR(sv_banfile_reload)
 
 Banlist banlist;
 
@@ -925,6 +926,37 @@ BEGIN_COMMAND(clearexceptionlist)
 }
 END_COMMAND(clearexceptionlist)
 
+// Load banlist
+void SV_InitBanlist()
+{
+	const char* banfile = sv_banfile.cstring();
+
+	if (!banfile)
+	{
+		Printf(PRINT_HIGH, "SV_InitBanlist: No banlist loaded.\n");
+		return;
+	}
+
+	Json::Value json_bans;
+	if (!M_ReadJSON(json_bans, banfile))
+	{
+		if (!M_FileExists(banfile))
+		{
+			if (!M_WriteJSON(banfile, json_bans, true))
+				Printf(PRINT_HIGH, "SV_InitBanlist: Could not create new banlist.\n");
+			else
+				Printf(PRINT_HIGH, "SV_InitBanlist: Initialized new banlist.\n");
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "SV_InitBanlist: Could not parse banlist.\n");
+		}
+		return;
+	}
+	banlist.json_replace(json_bans);
+	Printf(PRINT_HIGH, "SV_InitBanlist: Loaded %d bans.\n", json_bans.size());
+}
+
 // Check to see if a client is on the banlist, and kick them out of the server
 // if they are.  Returns true if the player was banned.
 bool SV_BanCheck(client_t* cl, int n)
@@ -989,4 +1021,33 @@ bool SV_BanCheck(client_t* cl, int n)
 	SV_ClientPrintf(cl, PRINT_HIGH, "%s", buffer.str().c_str());
 
 	return true;
+}
+
+// Run every tic to see if we should load the banfile.
+void SV_BanlistTics()
+{
+	int secs = sv_banfile_reload.asInt();
+
+	// 0 seconds means not enabled.
+	if (!secs)
+		return;
+
+	const char* banfile = sv_banfile.cstring();
+
+	// No banfile to automatically read.
+	if (!banfile)
+		return;
+
+	// Only if we're evenly divisible into the number of seconds to wait.
+	if (!P_AtInterval(secs * TICRATE))
+		return;
+
+	// Load the banlist.
+	Json::Value json_bans;
+	if (!M_ReadJSON(json_bans, banfile))
+	{
+		Printf(PRINT_HIGH, "sv_banfilereload: could not load banlist.\n");
+		return;
+	}
+	banlist.json_replace(json_bans);
 }

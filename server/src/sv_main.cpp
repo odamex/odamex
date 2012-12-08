@@ -4270,6 +4270,8 @@ void SV_IntermissionTimeCheck()
 //
 void SV_GameTics (void)
 {
+	SV_BanlistTics();
+
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics();
 

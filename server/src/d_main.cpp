@@ -74,6 +74,7 @@
 #include "m_swap.h"
 #include "gi.h"
 #include "sv_main.h"
+#include "sv_banlist.h"
 
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
@@ -450,6 +451,9 @@ void D_DoomMain (void)
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems ();
 
+	// [AM] Initialize banlist
+	SV_InitBanlist();
+
 	// [RH] Lock any cvars that should be locked now that we're
 	// about to begin the game.
 	cvar_t::EnableNoSet ();
@@ -471,7 +475,6 @@ void D_DoomMain (void)
 
 	//iwad = Args.CheckValue("-iwad");
 	//D_DoomWadReboot(start_wads);
-
 
 	unsigned p = Args.CheckParm ("-warp");
 	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
