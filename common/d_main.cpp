@@ -266,7 +266,7 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 
 	for(size_t i = 0; i < dirs.size(); i++)
 	{
-		std::string found = BaseFileSearchDir(dirs[i], file, ext);
+		std::string found = BaseFileSearchDir(dirs[i], file, ext, hash);
 
 		if(found.length())
 		{
@@ -674,6 +674,24 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 	return newname;
 }
 
+static bool VerifyFile(
+		const std::string &filename,
+		std::string &base_filename,
+		std::string &full_filename,
+		const std::string &hash = "")
+{
+	std::string ext;
+	M_ExtractFileExtension(filename, ext);
+
+	base_filename = D_CleanseFileName(filename);
+	full_filename = BaseFileSearch(base_filename, "." + ext, hash);
+
+	if (base_filename.length() && full_filename.length())
+		return true;
+	else
+		return false;
+}
+
 void D_NewWadInit();
 
 //
@@ -750,40 +768,48 @@ bool D_DoomWadReboot(
 
 	// [SL] 2012-12-06 - If we weren't provided with a new IWAD filename in
 	// newwadfiles, use the previous IWAD.
-	std::string iwad_filename;
+	std::string iwad_filename, iwad_hash;
 	if ((newwadfiles.empty() || !W_IsIWAD(newwadfiles[0])) && (wadfiles.size() >= 2))
+	{
 		iwad_filename = wadfiles[1];
+		iwad_hash = wadhashes[1];
+	}
 	else if (!newwadfiles.empty())
+	{
 		iwad_filename = newwadfiles[0];
+		iwad_hash = hashcheck ? newwadhashes[0] : "";
+	}
 
 	wadfiles.clear();
 	D_AddDefWads(iwad_filename);	// add odamex.wad & IWAD
 
+	// check if the wad files exist and if they match the MD5SUM
+	std::string base_filename, full_filename;
+
+	if (!VerifyFile(iwad_filename, base_filename, full_filename, iwad_hash))
+	{
+		Printf(PRINT_HIGH, "could not find WAD: %s\n", base_filename.c_str());
+		missingfiles.push_back(base_filename);
+		if (hashcheck)
+			missinghashes.push_back(iwad_hash);
+	}
+
 	for (i = 0; i < newwadfiles.size(); i++)
 	{
+		std::string hash = hashcheck ? newwadhashes[i] : "";
+
 		// already added the IWAD with D_AddDefWads
 		if (W_IsIWAD(newwadfiles[i]))
 			continue;
 
-		std::string base_filename = D_CleanseFileName(newwadfiles[i], "wad");
-		std::string full_filename;
-
-		if (hashcheck)
-			full_filename = BaseFileSearch(base_filename, ".WAD", newwadhashes[i]);
+		if (VerifyFile(newwadfiles[i], base_filename, full_filename, hash))
+			wadfiles.push_back(full_filename);
 		else
-			full_filename = BaseFileSearch(base_filename, ".WAD");
-
-		if (base_filename.length())
 		{
-			if (full_filename.length())
-				wadfiles.push_back(full_filename);
-			else
-			{
-				Printf(PRINT_HIGH, "could not find WAD: %s\n", base_filename.c_str());
-				missingfiles.push_back(base_filename);
-				if (hashcheck)
-					missinghashes.push_back(newwadhashes[i]);
-			}
+			Printf(PRINT_HIGH, "could not find WAD: %s\n", base_filename.c_str());
+			missingfiles.push_back(base_filename);
+			if (hashcheck)
+				missinghashes.push_back(newwadhashes[i]);
 		}
 	}
 
