@@ -1467,10 +1467,10 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	// write wad info
 	arc << (byte)(wadfiles.size() - 1);
 	for (size_t i = 1; i < wadfiles.size(); i++)
-		arc << wadfiles[i].c_str();
+		arc << D_CleanseFileName(wadfiles[i]).c_str();
 	arc << (byte)patchfiles.size();
 	for (size_t i = 0; i < patchfiles.size(); i++)
-		arc << patchfiles[i].c_str();
+		arc << D_CleanseFileName(patchfiles[i]).c_str();
 	// write map info
 	arc << level.mapname;
 	arc << (BYTE)(gamestate == GS_INTERMISSION);
@@ -1555,13 +1555,13 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	for (size_t i = 0; i < numwads; i++)
 	{
 		arc >> str;
-		newwadfiles.push_back(str);
+		newwadfiles.push_back(D_CleanseFileName(str));
 	}
 	arc >> numpatches;
 	for (size_t i = 0; i < numpatches; i++)
 	{
 		arc >> str;
-		newpatchfiles.push_back(str);
+		newpatchfiles.push_back(D_CleanseFileName(str));
 	}
 
 	std::string mapname;
