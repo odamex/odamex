@@ -562,11 +562,8 @@ void AGOL_Settings::DirectorySelectorCancel(AG_Event *event)
 
 void AGOL_Settings::SaveServerOptions()
 {
-	bool mos = MasterOnStart != 0;
-	bool sb = ShowBlocked != 0;
-
-	GuiConfig::Write("MasterOnStart", mos);
-	GuiConfig::Write("ShowBlockedServers", sb);
+	GuiConfig::Write("MasterOnStart", MasterOnStart);
+	GuiConfig::Write("ShowBlockedServers", ShowBlocked);
 	GuiConfig::Write("MasterTimeout", MasterTimeout);
 	GuiConfig::Write("ServerTimeout", ServerTimeout);
 }
