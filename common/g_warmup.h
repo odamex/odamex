@@ -40,6 +40,7 @@ public:
 	} status_t;
 	Warmup() : status(Warmup::DISABLED), time_begin(0) { }
 	Warmup::status_t get_status();
+	short get_countdown();
 	void reset();
 	bool checkscorechange();
 	bool checktimeleftadvance();
@@ -55,7 +56,7 @@ private:
 	void set_status(status_t new_status);
 };
 
-void SV_SendWarmupState(player_t &player, Warmup::status_t status); // Serverside only.
+void SV_SendWarmupState(player_t &player, Warmup::status_t status, short count); // Serverside only.
 
 extern Warmup warmup;
 

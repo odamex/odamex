@@ -40,22 +40,24 @@ EXTERN_CVAR(sv_warmup_countdown)
 Warmup warmup;
 
 // Broadcast warmup state to client.
-void SV_SendWarmupState(player_t &player, Warmup::status_t status)
+void SV_SendWarmupState(player_t &player, Warmup::status_t status, short count = 0)
 {
 	client_t* cl = &player.client;
 	MSG_WriteMarker(&cl->reliablebuf, svc_warmupstate);
 	MSG_WriteByte(&cl->reliablebuf, static_cast<byte>(status));
+	if (status == Warmup::COUNTDOWN)
+		MSG_WriteShort(&cl->reliablebuf, count);
 }
 
 // Broadcast warmup state to all clients.
-void SV_BroadcastWarmupState(Warmup::status_t status)
+void SV_BroadcastWarmupState(Warmup::status_t status, short count = 0)
 {
 	std::vector<player_t>::iterator it;
 	for (it = players.begin(); it != players.end(); ++it)
 	{
 		if (!it->ingame())
 			continue;
-		SV_SendWarmupState(*it, status);
+		SV_SendWarmupState(*it, status, count);
 	}
 }
 
@@ -63,13 +65,27 @@ void SV_BroadcastWarmupState(Warmup::status_t status)
 void Warmup::set_status(Warmup::status_t new_status)
 {
 	this->status = new_status;
-	SV_BroadcastWarmupState(new_status);
+
+	// [AM] If we switch to countdown, set the correct time.
+	if (this->status == Warmup::COUNTDOWN)
+	{
+		this->time_begin = level.time + (sv_warmup_countdown.asInt() * TICRATE);
+		SV_BroadcastWarmupState(new_status, (short)sv_warmup_countdown.asInt());
+	}
+	else
+		SV_BroadcastWarmupState(new_status);
 }
 
 // Status getter
 Warmup::status_t Warmup::get_status()
 {
 	return this->status;
+}
+
+// Warmup countdown getter
+short Warmup::get_countdown()
+{
+	return ceil((this->time_begin - level.time) / (float)TICRATE);
 }
 
 // Reset warmup to "factory defaults".
@@ -151,10 +167,7 @@ void Warmup::readytoggle()
 	if (ready >= needed)
 	{
 		if (this->status == Warmup::WARMUP)
-		{
 			this->set_status(Warmup::COUNTDOWN);
-			this->time_begin = level.time + (sv_warmup_countdown.asInt() * TICRATE);
-		}
 	}
 	else
 	{
@@ -175,7 +188,6 @@ void Warmup::forcestart()
 		return;
 
 	this->set_status(Warmup::COUNTDOWN);
-	this->time_begin = level.time + (sv_warmup_countdown.asInt() * TICRATE);
 }
 
 // Handle tic-by-tic maintenance of the warmup.
@@ -183,10 +195,7 @@ void Warmup::tic()
 {
 	// If autostart is zeroed out, start immediately.
 	if (this->status == Warmup::WARMUP && sv_warmup_autostart == 0.0f)
-	{
 		this->set_status(Warmup::COUNTDOWN);
-		this->time_begin = level.time + (sv_warmup_countdown.asInt() * TICRATE);
-	}
 
 	// If we're not advancing the countdown, we don't care.
 	if (this->status != Warmup::COUNTDOWN)
@@ -199,11 +208,7 @@ void Warmup::tic()
 		// Broadcast a countdown (this should be handled clientside)
 		if ((this->time_begin - level.time) % TICRATE == 0)
 		{
-			int count = ceil((this->time_begin - level.time) / (float)TICRATE);
-			if (count == sv_warmup_countdown.asInt())
-				SV_BroadcastPrintf(PRINT_HIGH, "Match begins in %d...\n", count);
-			else
-				SV_BroadcastPrintf(PRINT_HIGH, "%d...\n", count);
+			SV_BroadcastWarmupState(this->status, this->get_countdown());
 		}
 		return;
 	}

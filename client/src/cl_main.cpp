@@ -64,6 +64,7 @@
 #include "d_netcmd.h"
 #include "g_warmup.h"
 #include "c_level.h"
+#include "v_text.h"
 
 #include <string>
 #include <vector>
@@ -3221,6 +3222,19 @@ void CL_ReadyState() {
 void CL_WarmupState()
 {
 	warmup.set_client_status(static_cast<Warmup::status_t>(MSG_ReadByte()));
+	if (warmup.get_status() == Warmup::COUNTDOWN)
+	{
+		// Read an extra countdown number off the wire
+		short count = MSG_ReadShort();
+		std::ostringstream buffer;
+		buffer << "Match begins in " << count << "...";
+		C_GMidPrint(buffer.str().c_str(), CR_GREEN, 0);
+	}
+	else if (warmup.get_status() == Warmup::INGAME)
+	{
+		// Clear the midprint when the game starts
+		C_GMidPrint("", CR_GREY, 0);
+	}
 }
 
 // client source (once)

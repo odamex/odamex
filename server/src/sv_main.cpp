@@ -1625,7 +1625,7 @@ void SV_ClientFullUpdate (player_t &pl)
 	}
 
 	// update warmup state
-	SV_SendWarmupState(pl, warmup.get_status());
+	SV_SendWarmupState(pl, warmup.get_status(), warmup.get_countdown());
 
 	// update frags/points/spectate/ready
 	for (i = 0; i < players.size(); i++)
