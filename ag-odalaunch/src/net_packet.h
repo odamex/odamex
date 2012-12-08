@@ -180,7 +180,7 @@ public:
 
 	void GetLock() { AG_MutexLock(&m_Mutex); }
 	void Unlock() { AG_MutexUnlock(&m_Mutex); }
-	int TryLock() { AG_MutexTryLock(&m_Mutex); return 0; }
+	int TryLock() { return AG_MutexTryLock(&m_Mutex); }
 };
 
 class MasterServer : public ServerBase  // [Russell] - A master server packet
