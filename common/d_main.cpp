@@ -77,6 +77,136 @@ extern gameinfo_t CommercialBFGGameInfo;
 
 bool lastWadRebootSuccess = true;
 
+#ifdef WIN32
+
+#define arrlen(array) (sizeof(array) / sizeof(*array))
+
+typedef struct 
+{
+	HKEY root;
+	const char* path;
+	const char* value;
+} registry_value_t;
+
+static const char* uninstaller_string = "\\uninstl.exe /S ";
+
+// Keys installed by the various CD editions.  These are actually the 
+// commands to invoke the uninstaller and look like this:
+//
+// C:\Program Files\Path\uninstl.exe /S C:\Program Files\Path
+//
+// With some munging we can find where Doom was installed.
+static registry_value_t uninstall_values[] = 
+{
+	// Ultimate Doom, CD version (Depths of Doom trilogy)
+	{
+		HKEY_LOCAL_MACHINE, 
+		"Software\\Microsoft\\Windows\\CurrentVersion\\"
+			"Uninstall\\Ultimate Doom for Windows 95",
+		"UninstallString",
+	},
+
+	// Doom II, CD version (Depths of Doom trilogy)
+	{
+		HKEY_LOCAL_MACHINE, 
+		"Software\\Microsoft\\Windows\\CurrentVersion\\"
+			"Uninstall\\Doom II for Windows 95",
+		"UninstallString",
+	},
+
+	// Final Doom
+	{
+		HKEY_LOCAL_MACHINE, 
+		"Software\\Microsoft\\Windows\\CurrentVersion\\"
+			"Uninstall\\Final Doom for Windows 95",
+		"UninstallString",
+	},
+
+	// Shareware version
+	{
+		HKEY_LOCAL_MACHINE, 
+		"Software\\Microsoft\\Windows\\CurrentVersion\\"
+			"Uninstall\\Doom Shareware for Windows 95",
+		"UninstallString",
+	},
+};
+
+// Value installed by the Collector's Edition when it is installed
+static registry_value_t collectors_edition_value =
+{
+	HKEY_LOCAL_MACHINE,
+	"Software\\Activision\\DOOM Collector's Edition\\v1.0",
+	"INSTALLPATH",
+};
+
+// Subdirectories of the above install path, where IWADs are installed.
+static const char* collectors_edition_subdirs[] = 
+{
+	"Doom2",
+	"Final Doom",
+	"Ultimate Doom",
+};
+
+// Location where Steam is installed
+static registry_value_t steam_install_location =
+{
+	HKEY_LOCAL_MACHINE,
+	"Software\\Valve\\Steam",
+	"InstallPath",
+};
+
+// Subdirs of the steam install directory where IWADs are found
+static const char* steam_install_subdirs[] =
+{
+	"steamapps\\common\\doom 2\\base",
+	"steamapps\\common\\final doom\\base",
+	"steamapps\\common\\ultimate doom\\base",
+	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
+};
+
+
+static char *GetRegistryString(registry_value_t *reg_val)
+{
+	HKEY key;
+	DWORD len;
+	DWORD valtype;
+	char* result;
+
+	// Open the key (directory where the value is stored)
+
+	if (RegOpenKeyEx(reg_val->root, reg_val->path,
+	    0, KEY_READ, &key) != ERROR_SUCCESS)
+	{
+		return NULL;
+	}
+
+	result = NULL;
+
+	// Find the type and length of the string, and only accept strings.
+
+	if (RegQueryValueEx(key, reg_val->value,
+	    NULL, &valtype, NULL, &len) == ERROR_SUCCESS && valtype == REG_SZ)
+	{
+		// Allocate a buffer for the value and read the value
+		result = static_cast<char*>(malloc(len));
+
+		if (RegQueryValueEx(key, reg_val->value, NULL, &valtype,
+		    (unsigned char *)result, &len) != ERROR_SUCCESS)
+		{
+			free(result);
+			result = NULL;
+		}
+	}
+
+	// Close the key
+
+	RegCloseKey(key);
+
+	return result;
+}
+
+#endif
+
 //
 // BaseFileSearchDir
 // denis - Check single paths for a given file with a possible extension
@@ -142,14 +272,9 @@ static std::string BaseFileSearchDir(std::string dir, std::string file, std::str
 
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = FindFirstFile(all_ext.c_str(), &FindFileData);
-	DWORD dwError = GetLastError();
 
 	if (hFind == INVALID_HANDLE_VALUE)
-	{
-		Printf (PRINT_HIGH, "FindFirstFile failed for %s\n", all_ext.c_str());
-		Printf (PRINT_HIGH, "GetLastError: %d\n", dwError);
 		return "";
-	}
 
 	do
 	{
@@ -177,16 +302,6 @@ static std::string BaseFileSearchDir(std::string dir, std::string file, std::str
 			}
 		}
 	} while(FindNextFile(hFind, &FindFileData));
-
-	dwError = GetLastError();
-
-	// Note: As documented, FindNextFile sets ERROR_NO_MORE_FILES as the error
-	// code, but when this function "fails" it does not set it we have to assume
-	// that it completed successfully (this is actually  bad practice, because
-    // it says in the docs that it does not set ERROR_SUCCESS, even though
-    // GetLastError returns 0) WTF DO WE DO?!
-	if(dwError != ERROR_SUCCESS && dwError != ERROR_NO_MORE_FILES)
-		Printf (PRINT_HIGH, "FindNextFile failed. GetLastError: %d\n", dwError);
 
 	FindClose(hFind);
 #endif
@@ -222,6 +337,112 @@ void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char 
 
 		dirs.push_back(segment);
 	}
+}
+
+// [AM] Add platform-sepcific search directories
+static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
+{
+	#if defined(WIN32)
+
+	const char separator = ';';
+
+	// Doom 95
+	{
+		unsigned int i;
+
+		for (i = 0;i < arrlen(uninstall_values);++i)
+		{
+			char* val;
+			char* path;
+			char* unstr;
+
+			val = GetRegistryString(&uninstall_values[i]);
+
+			if (val == NULL)
+				continue;
+
+			unstr = strstr(val, uninstaller_string);
+
+			if (unstr == NULL)
+			{
+				free(val);
+			}
+			else
+			{
+				path = unstr + strlen(uninstaller_string);
+
+				const char* cpath = path;
+				D_AddSearchDir(dirs, cpath, separator);
+			}
+		}
+	}
+
+	// Doom Collectors Edition
+	{
+		char* install_path;
+		char* subpath;
+		unsigned int i;
+
+		install_path = GetRegistryString(&collectors_edition_value);
+
+		if (install_path != NULL)
+		{
+			for (i = 0;i < arrlen(collectors_edition_subdirs);++i)
+			{
+				subpath = static_cast<char*>(malloc(strlen(install_path)
+				                             + strlen(collectors_edition_subdirs[i])
+				                             + 5));
+				sprintf(subpath, "%s\\%s", install_path, collectors_edition_subdirs[i]);
+
+				const char* csubpath = subpath;
+				D_AddSearchDir(dirs, csubpath, separator);
+			}
+
+			free(install_path);
+		}
+	}
+
+	// Doom on Steam
+	{
+		char* install_path;
+		char* subpath;
+		size_t i;
+
+		install_path = GetRegistryString(&steam_install_location);
+
+		if (install_path != NULL)
+		{
+			for (i = 0;i < arrlen(steam_install_subdirs);++i)
+			{
+				subpath = static_cast<char*>(malloc(strlen(install_path)
+				                             + strlen(steam_install_subdirs[i]) + 5));
+				sprintf(subpath, "%s\\%s", install_path, steam_install_subdirs[i]);
+
+				const char* csubpath = subpath;
+				D_AddSearchDir(dirs, csubpath, separator);
+			}
+
+			free(install_path);
+		}
+	}
+
+	// DOS Doom via DEICE
+	D_AddSearchDir(dirs, "\\doom2", separator);    // Doom II
+	D_AddSearchDir(dirs, "\\plutonia", separator); // Final Doom
+	D_AddSearchDir(dirs, "\\tnt", separator);
+	D_AddSearchDir(dirs, "\\doom_se", separator);  // Ultimate Doom
+	D_AddSearchDir(dirs, "\\doom", separator);     // Shareware / Registered Doom
+	D_AddSearchDir(dirs, "\\dooms", separator);    // Shareware versions
+	D_AddSearchDir(dirs, "\\doomsw", separator);
+
+	#elif defined(UNIX)
+
+	const char separator = ':';
+
+	D_AddSearchDir(dirs, "/usr/share/games/doom", separator);
+	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator);
+
+	#endif
 }
 
 //
@@ -260,6 +481,10 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
 	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
 	D_AddSearchDir(dirs, getenv("HOME"), separator);
+
+	// [AM] Search additional paths based on platform
+	D_AddPlatformSearchDirs(dirs);
+
 	D_AddSearchDir(dirs, waddirs.cstring(), separator);
 
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
