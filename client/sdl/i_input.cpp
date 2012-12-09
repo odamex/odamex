@@ -62,10 +62,6 @@ static BOOL mousepaused = true; // SoM: This should start off true
 static BOOL havefocus = false;
 static BOOL nomouse = false;
 
-// Used by the console for making keys repeat
-int KeyRepeatDelay;
-int KeyRepeatRate;
-
 EXTERN_CVAR (use_joystick)
 EXTERN_CVAR (joy_active)
 
@@ -154,6 +150,21 @@ void I_FlushInput()
 	while (SDL_PollEvent(&ev));
 }
 
+void I_EnableKeyRepeat()
+{
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY / 2, SDL_DEFAULT_REPEAT_INTERVAL);
+}
+
+void I_DisableKeyRepeat()
+{
+	SDL_EnableKeyRepeat(0, 0);	
+}
+
+void I_ResetKeyRepeat()
+{
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+}
+
 static bool MouseShouldBeGrabbed()
 {
 	// if the window doesn't have focus, never grab it
@@ -222,10 +233,14 @@ static void UpdateFocus(void)
 			{
 				// Do nothing
 			}
-			SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY / 2, SDL_DEFAULT_REPEAT_INTERVAL);
+
+			I_EnableKeyRepeat();
 		}
 		else
-			SDL_EnableKeyRepeat(0, 0);
+		{
+			I_DisableKeyRepeat();
+		}
+
 		curfocus = havefocus;
 	}
 }
@@ -537,10 +552,7 @@ bool I_InitInput (void)
 
 	SDL_EnableUNICODE(true);
 
-	// denis - disable key repeats as they mess with the mouse in XP
-	// mike - maybe not?
-	//SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY / 2, SDL_DEFAULT_REPEAT_INTERVAL);
+	I_DisableKeyRepeat();
 
 	// Initialize the joystick subsystem and open a joystick if use_joystick is enabled. -- Hyper_Eye
 	Printf(PRINT_HIGH, "I_InitInput: Initializing SDL's joystick subsystem.\n");
@@ -572,7 +584,7 @@ void STACK_ARGS I_ShutdownInput (void)
 	//SDL_SetCursor(cursors[1]);
 	SDL_ShowCursor(1);
 	SDL_WM_GrabInput(SDL_GRAB_OFF);
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+	I_ResetKeyRepeat();
 
 #ifdef WIN32
 	// denis - in fullscreen, prevent exit on accidental windows key press

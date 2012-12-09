@@ -30,9 +30,6 @@
 #define MOUSE_ODAMEX 1
 #define MOUSE_ZDOOM_DI 2
 
-extern int KeyRepeatRate;
-extern int KeyRepeatDelay;
-
 bool I_InitInput (void);
 void STACK_ARGS I_ShutdownInput (void);
 void I_PauseMouse();
@@ -44,6 +41,9 @@ bool I_OpenJoystick();
 void I_CloseJoystick();
 
 void I_GetEvent (void);
+
+void I_EnableKeyRepeat();
+void I_DisableKeyRepeat();
 
 #if defined WIN32 && !defined _XBOX
 void BackupGDIMouseSettings();

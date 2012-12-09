@@ -197,6 +197,7 @@ BOOL HU_Responder (event_t *ev)
 				ShoveChatStr (chat_macros[ev->data2 - '0']->cstring(), headsupactive - 1);
 
 			I_ResumeMouse();
+			I_DisableKeyRepeat();
 			headsupactive = 0;
 			return true;
 		}
@@ -205,12 +206,14 @@ BOOL HU_Responder (event_t *ev)
 	{
 		ShoveChatStr (input_text, headsupactive - 1);
         I_ResumeMouse();
+		I_DisableKeyRepeat();
 		headsupactive = 0;
 		return true;
 	}
 	else if (ev->data1 == KEY_ESCAPE || ev->data1 == KEY_JOY2)
 	{
         I_ResumeMouse();
+		I_DisableKeyRepeat();
 		headsupactive = 0;
 		return true;
 	}
@@ -366,6 +369,7 @@ BEGIN_COMMAND (messagemode)
 
 	headsupactive = 1;
 	C_HideConsole ();
+	I_EnableKeyRepeat();
     I_PauseMouse();
 	input_text = "";
 }
@@ -388,6 +392,7 @@ BEGIN_COMMAND (messagemode2)
 
 	headsupactive = 2;
 	C_HideConsole ();
+	I_EnableKeyRepeat();
 	I_PauseMouse();
 	input_text = "";
 }

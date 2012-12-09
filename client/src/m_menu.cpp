@@ -29,6 +29,7 @@
 #include "d_main.h"
 #include "i_system.h"
 #include "i_video.h"
+#include "i_input.h"
 #include "z_zone.h"
 #include "v_video.h"
 #include "w_wad.h"
@@ -2016,6 +2017,7 @@ void M_StartControlPanel (void)
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
 	I_PauseMouse ();				// [RH] Give the mouse back in windowed modes.
+	I_EnableKeyRepeat();
 }
 
 
@@ -2098,7 +2100,10 @@ void M_ClearMenus (void)
 	drawSkull = true;
 	M_DemoNoPlay = false;
 	if (gamestate != GS_FULLCONSOLE)
+	{
 		I_ResumeMouse ();	// [RH] Recapture the mouse in windowed modes.
+		I_DisableKeyRepeat();
+	}
 }
 
 

@@ -32,6 +32,7 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
+#include "i_input.h"
 #include "hu_stuff.h"
 #include "i_system.h"
 #include "i_video.h"
@@ -60,8 +61,6 @@ static BOOL TabbedLast;		// Last key pressed was tab
 
 static DCanvas *conback;
 
-extern int KeyRepeatRate, KeyRepeatDelay;
-
 extern int		gametic;
 extern BOOL		automapactive;	// in AM_map.c
 extern BOOL		advancedemo;
@@ -76,8 +75,6 @@ int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
 char		VersionString[8];
 
-event_t		RepeatEvent;		// always type ev_keydown
-int			RepeatCountdown;
 BOOL		KeysShifted;
 BOOL		KeysCtrl;
 
@@ -668,29 +665,15 @@ void C_Ticker (void)
 
 	if (ConsoleState != c_up)
 	{
-		// Handle repeating keys
-		switch (ScrollState)
+		if (ScrollState == SCROLLUP)
 		{
-			case SCROLLUP:
-				if (RowAdjust < ConRows - SkipRows - ConBottom/8)
-					RowAdjust++;
-				break;
-
-			case SCROLLDN:
-				if (RowAdjust)
-					RowAdjust--;
-				break;
-
-			default:
-				if (RepeatCountdown)
-				{
-					if (--RepeatCountdown == 0)
-					{
-						RepeatCountdown = KeyRepeatRate;
-						C_HandleKey (&RepeatEvent, CmdLine, 255);
-					}
-				}
-				break;
+			if (RowAdjust < ConRows - SkipRows - ConBottom/8)
+				RowAdjust++;
+		}
+		else if (ScrollState == SCROLLDN)
+		{
+			if (RowAdjust)
+				RowAdjust--;
 		}
 
 		if (ConsoleState == c_falling)
@@ -925,6 +908,7 @@ void C_FullConsole (void)
  		SN_StopAllSequences ();
 		V_SetBlend (0,0,0,0);
 		I_PauseMouse ();
+		I_EnableKeyRepeat();
 	} else
 		C_AdjustBottom ();
 }
@@ -940,6 +924,7 @@ void C_ToggleConsole (void)
 		HistPos = NULL;
 		TabbedLast = false;
 		I_PauseMouse ();
+		I_EnableKeyRepeat();
 	}
 	else if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP
             && gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
@@ -950,6 +935,7 @@ void C_ToggleConsole (void)
 			ConsoleState = c_rising;
 		C_FlushDisplay ();
 		I_ResumeMouse ();
+		I_DisableKeyRepeat();
 	}
 }
 
@@ -963,7 +949,10 @@ void C_HideConsole (void)
 		ConBottom = 0;
 		HistPos = NULL;
 		if (!menuactive)
+		{
 			I_ResumeMouse ();
+			I_DisableKeyRepeat();
+		}
 	}
 }
 
@@ -1382,9 +1371,6 @@ BOOL C_Responder (event_t *ev)
 
 	if (ev->type == ev_keyup)
 	{
-		if (ev->data1 == RepeatEvent.data1)
-			RepeatCountdown = 0;
-
 		switch (ev->data1)
 		{
 #ifdef _XBOX
@@ -1407,38 +1393,6 @@ BOOL C_Responder (event_t *ev)
 	}
 	else if (ev->type == ev_keydown)
 	{
-		// Okay, fine. Most keys don't repeat
-		switch (ev->data1)
-		{
-		case KEY_RIGHTARROW:
-		case KEY_LEFTARROW:
-		case KEY_UPARROW:
-		case KEY_DOWNARROW:
-		case KEY_SPACE:
-		case KEY_BACKSPACE:
-		case KEY_DEL:
-			RepeatCountdown = KeyRepeatDelay;
-			break;
-		default:
-			RepeatCountdown = 0;
-//			RepeatCountdown = KeyRepeatDelay; // denis - all keys repeat in console [Toke] Repeating keys caused some problems
-			break;
-		}
-
-		/*
-		if (ev->data1 == KEY_PGUP ||
-			ev->data1 == KEY_PGDN ||
-			ev->data1 == KEY_RSHIFT ||
-			ev->data1 == KEY_TAB ||
-			ev->data1 == KEY_ENTER ||
-			ev->data1 == KEY_ESCAPE ||
-			ev->data2 == '`')
-			RepeatCountdown = 0;
-		else
-		// Others do.
-			RepeatCountdown = KeyRepeatDelay;
-			*/
-		RepeatEvent = *ev;
 		return C_HandleKey (ev, CmdLine, 255);
 	}
 
