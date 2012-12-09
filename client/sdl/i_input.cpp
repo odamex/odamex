@@ -223,22 +223,17 @@ static void UpdateFocus(void)
 
 	// [CG] Handle focus changes, this is all necessary to avoid repeat events.
 	// [AM] This fixes the tab key sticking when alt-tabbing away from the
-	//      program, but seems to make tab a 'dead' key for one keypress.
+	//      program, but does not seem to solve the problem of tab being 'dead'
+	//      for one keypress after switching back.
 	if (curfocus != havefocus)
 	{
 		if (havefocus)
 		{
-			SDL_Event  event;
+			SDL_Event event;
 			while (SDL_PollEvent(&event))
 			{
 				// Do nothing
 			}
-
-			I_EnableKeyRepeat();
-		}
-		else
-		{
-			I_DisableKeyRepeat();
 		}
 
 		curfocus = havefocus;
