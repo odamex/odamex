@@ -145,11 +145,11 @@ CVAR (show_messages, "1", "", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Rate of client updates
 CVAR_FUNC_DECL (rate, "200", "Rate of client updates in multiplayer mode", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Maximum number of clients who can connect to the server
-CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Maximum amount of players who can join the game, others are spectators
-CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Maximum number of players that can be on a team
-CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL (cl_autoaim,	"5000", "", CVARTYPE_INT,		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
