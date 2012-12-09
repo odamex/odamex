@@ -52,7 +52,7 @@ CVAR (sv_waddownload,	"0", "Allow downloading of WAD files from this server",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Enables WAD file download cap
 CVAR (sv_waddownloadcap, "200", "Cap wad file downloading to a specific rate",
-      CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Reset the current map when the last player leaves
 CVAR (sv_emptyreset,   "0", "Reloads the current map when all players leave",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
@@ -61,7 +61,7 @@ CVAR (sv_globalspectatorchat, "1", "Players can see spectator chat",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Maximum corpses that can appear on a map
 CVAR (sv_maxcorpses, "200", "Maximum corpses to appear on map",
-      CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Unused (tracks number of connected players for scripting)
 CVAR (sv_clientcount,	"0", "Don't use",
       CVARTYPE_BYTE, CVAR_NOSET | CVAR_NOENABLEDISABLE)
