@@ -351,8 +351,8 @@ static void R_GenerateLookup(int texnum, int *const errors)
 
 	// killough 4/9/98: keep count of posts in addition to patches.
 	// Part of fix for medusa bug for multipatched 2s normals.
-	unsigned short patchcount[texture->width];
-	unsigned short postcount[texture->width];
+	unsigned short *patchcount = new unsigned short[texture->width];
+	unsigned short *postcount = new unsigned short[texture->width];
 
 	memset(patchcount, 0, sizeof(patchcount));	
 	memset(postcount, 0, sizeof(postcount));	
@@ -435,6 +435,9 @@ static void R_GenerateLookup(int texnum, int *const errors)
 	}
 	
 	texturecompositesize[texnum] = csize;
+	
+	delete [] patchcount;
+	delete [] postcount;
 }
 
 //
