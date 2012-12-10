@@ -354,8 +354,8 @@ static void R_GenerateLookup(int texnum, int *const errors)
 	unsigned short *patchcount = new unsigned short[texture->width];
 	unsigned short *postcount = new unsigned short[texture->width];
 
-	memset(patchcount, 0, sizeof(patchcount));	
-	memset(postcount, 0, sizeof(postcount));	
+	memset(patchcount, 0, sizeof(unsigned short) * texture->width);	
+	memset(postcount, 0, sizeof(unsigned short) * texture->width);	
 
 	const texpatch_t *texpatch = texture->patches;
 
