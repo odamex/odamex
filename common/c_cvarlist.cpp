@@ -208,7 +208,7 @@ CVAR (sv_forcerespawn, "0", "Force a player to respawn.",
 // [AM] Force a player to respawn after a set amount of time
 CVAR (sv_forcerespawntime, "30", "Force a player to respawn after a set amount of time",
       CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-CVAR (sv_zdoomspawndelay, "0", "Force a player to wait a second before respawning",
+CVAR (co_zdoomspawndelay, "0", "Force a player to wait a second before respawning",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_FUNC_DECL (sv_gravity, "800", "Gravity of the environment",

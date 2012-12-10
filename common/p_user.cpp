@@ -50,7 +50,7 @@ EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (sv_forcerespawn)
 EXTERN_CVAR (sv_forcerespawntime)
-EXTERN_CVAR (sv_zdoomspawndelay)
+EXTERN_CVAR (co_zdoomspawndelay)
 
 extern bool predicting, step_mode;
 
@@ -584,8 +584,8 @@ void P_DeathThink (player_t *player)
 								level.time >= player->death_time + sv_forcerespawntime * TICRATE);
 
 		// [SL] Can we respawn yet?
-		// Delay respawn by 1 second like ZDoom if sv_zdoomspawndelay is enabled
-		bool delay_respawn =	(!clientside && sv_zdoomspawndelay &&
+		// Delay respawn by 1 second like ZDoom if co_zdoomspawndelay is enabled
+		bool delay_respawn =	(!clientside && co_zdoomspawndelay &&
 								(level.time < player->death_time + TICRATE));
 
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN

@@ -50,7 +50,6 @@ EXTERN_CVAR(sv_friendlyfire)
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
-EXTERN_CVAR(sv_zdoomspawndelay)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR (cl_predictpickup)
 
