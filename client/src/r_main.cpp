@@ -403,7 +403,7 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 	fixed_t num = FixedMul (FocalLengthY, finesine[angleb>>ANGLETOFINESHIFT]);
 	fixed_t den = FixedMul (rw_distance, finesine[anglea>>ANGLETOFINESHIFT]);
 
-	static const fixed_t maxscale = 512 << FRACBITS;
+	static const fixed_t maxscale = 256 << FRACBITS;
 	static const fixed_t minscale = 64;
 
 	if (den == 0)
