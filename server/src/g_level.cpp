@@ -83,6 +83,7 @@ EXTERN_CVAR (sv_curmap)
 EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_intermissionlimit)
+EXTERN_CVAR (sv_warmup)
 
 extern int timingdemo;
 
@@ -641,8 +642,11 @@ void G_DoResetLevel(bool full_reset)
 			it->deathcount = 0;
 			it->killcount = 0;
 			it->points = 0;
-			it->ready = false;
 			it->joinafterspectatortime = level.time;
+
+			// [AM] Only touch ready state if warmup mode is enabled.
+			if (sv_warmup)
+				it->ready = false;
 		}
 		// For predictable first spawns.
 		M_ClearRandom();
@@ -739,8 +743,20 @@ void G_DoLoadLevel (int position)
 		players[i].deathcount = 0; // [Toke - Scores - deaths]
 		players[i].killcount = 0; // [deathz0r] Coop kills
 		players[i].points = 0;
-		players[i].ready = false;
-		players[i].timeout_ready = 0;
+
+		// [AM] Only touch ready state if warmup mode is enabled.
+		if (sv_warmup)
+		{
+			players[i].ready = false;
+			players[i].timeout_ready = 0;
+
+			// [AM] Make sure the clients are updated on the new ready state
+			for (size_t j = 0;j < players.size();j++) {
+				MSG_WriteMarker(&(players[j].client.reliablebuf), svc_readystate);
+				MSG_WriteByte(&(players[j].client.reliablebuf), players[i].id);
+				MSG_WriteBool(&(players[j].client.reliablebuf), false);
+			}
+		}
 	}
 
 	// [deathz0r] It's a smart idea to reset the team points
