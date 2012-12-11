@@ -409,22 +409,31 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 	short special = LESHORT(mld->special);
 	short tag = LESHORT(mld->tag);
 	short flags = LESHORT(mld->flags);
-	bool passthrough;
+	bool passthrough = (flags & ML_PASSUSE_BOOM);
 	int i;
 	
-	passthrough = ((flags & ML_PASSUSE_BOOM) != 0);
-	
-	flags = flags & 0x01ff;	// Ignore flags unknown to DOOM
+	flags &= 0x01ff;	// Ignore flags unknown to DOOM
 
 	if (special <= NUM_SPECIALS)
 	{
 		// This is a regular special; translate thru LUT
 		flags = flags | (SpecialTranslation[special].flags << 8);
-		if (passthrough && (GET_SPAC(flags) == SPAC_USE))
-		{
-			flags &= ~ML_SPAC_MASK;
-			flags |= SPAC_USETHROUGH << ML_SPAC_SHIFT;
+		if (passthrough)
+		{	
+			if (GET_SPAC(flags) == SPAC_USE)
+			{
+				flags &= ~ML_SPAC_MASK;
+				flags |= SPAC_USETHROUGH << ML_SPAC_SHIFT;
+			}
+			if (GET_SPAC(flags) == SPAC_CROSS)
+			{
+				flags &= ~ML_SPAC_MASK;
+				flags |= SPAC_CROSSTHROUGH << ML_SPAC_SHIFT;
+			}
+			
+			// TODO: what to do with gun-activated lines with passthrough?
 		}
+
 		ld->special = SpecialTranslation[special].newspecial;
 		for (i = 0; i < 5; i++)
 			ld->args[i] = SpecialTranslation[special].args[i] == TAG ? tag :
