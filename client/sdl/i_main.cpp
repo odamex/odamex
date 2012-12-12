@@ -47,6 +47,10 @@ typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
 #include <iostream>
 
 #include <SDL.h>
+// [Russell] - Don't need SDLmain library
+#ifdef WIN32
+#undef main
+#endif // WIN32
 
 #include "errors.h"
 #include "hardware.h"

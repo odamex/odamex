@@ -190,7 +190,6 @@
 					<Add directory="../../libtextscreen" />
 				</ResourceCompiler>
 				<Linker>
-					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
 					<Add library="ws2_32.lib" />
@@ -267,7 +266,6 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
-					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
 					<Add library="ws2_32.lib" />
@@ -320,7 +318,6 @@
 			<Add directory="../../portmidi/porttime" />
 		</Compiler>
 		<Linker>
-			<Add library="SDLmain" />
 			<Add library="SDL" />
 			<Add library="SDL_mixer" />
 			<Add directory="../../lib" />
