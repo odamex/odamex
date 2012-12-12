@@ -107,6 +107,7 @@ EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_ticbuffer)
+EXTERN_CVAR(sv_warmup)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -1627,7 +1628,7 @@ void SV_ClientFullUpdate (player_t &pl)
 	// update warmup state
 	SV_SendWarmupState(pl, warmup.get_status(), warmup.get_countdown());
 
-	// update frags/points/spectate/ready
+	// update frags/points/.tate/ready
 	for (i = 0; i < players.size(); i++)
 	{
 		if (!players[i].ingame())
@@ -3520,9 +3521,12 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 			player.killcount = 0;
 			SV_UpdateFrags(player);
 
-			// [AM] Set player unready
-			SV_SetReady(player, false, true);
-			player.timeout_ready = 0;
+			// [AM] Set player unready if we're in warmup mode.
+			if (sv_warmup)
+			{
+				SV_SetReady(player, false, true);
+				player.timeout_ready = 0;
+			}
 		}
 	} else if (setting && !player.spectator) {
 		// We want to spectate the player
@@ -3533,8 +3537,14 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		}
 
 		player.spectator = true;
-		SV_SetReady(player, false, true);
-		player.timeout_ready = 0;
+
+		// [AM] Set player unready if we're in warmup mode.
+		if (sv_warmup)
+		{
+			SV_SetReady(player, false, true);
+			player.timeout_ready = 0;
+		}
+
 		player.playerstate = PST_LIVE;
 		player.joinafterspectatortime = level.time;
 
