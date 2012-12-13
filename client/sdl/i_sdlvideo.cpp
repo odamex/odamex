@@ -160,6 +160,10 @@ SDLVideo::SDLVideo(int parm)
       // Get rid of any duplicates (SDL some times reports duplicates as well)
       vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end()), vidModeList.end());
    }
+   
+   // [Russell] - HACK PLEASE FIX 
+   // Video mode must be set before calling ANY input event code
+   sdlScreen = SDL_SetVideoMode(640, 480, 8, 0);
 }
 
 SDLVideo::~SDLVideo(void)
