@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // Copyright(C) 2006 Simon Howard
@@ -22,7 +22,7 @@
 #ifndef TEXTSCREEN_H
 #define TEXTSCREEN_H
 
-#include "doomkeys.h"
+#include "../src/doomkeys.h"
 #include "txt_main.h"
 
 #include "txt_button.h"

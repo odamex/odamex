@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // Copyright(C) 2006 Simon Howard
@@ -46,7 +46,7 @@ static void TXT_SeparatorSizeCalc(TXT_UNCAST_ARG(separator))
     separator->widget.h = 1;
 }
 
-static void TXT_SeparatorDrawer(TXT_UNCAST_ARG(separator), int selected)
+static void TXT_SeparatorDrawer(TXT_UNCAST_ARG(separator))
 {
     TXT_CAST_ARG(txt_separator_t, separator);
     int x, y;
@@ -60,12 +60,11 @@ static void TXT_SeparatorDrawer(TXT_UNCAST_ARG(separator), int selected)
     // to overlap the window borders.
 
     TXT_DrawSeparator(x-2, y, w + 4);
-
+    
     if (separator->label != NULL)
     {
         TXT_GotoXY(x, y);
 
-        TXT_BGColor(TXT_COLOR_BLUE, 0);
         TXT_FGColor(TXT_COLOR_BRIGHT_GREEN);
         TXT_DrawString(" ");
         TXT_DrawString(separator->label);
@@ -80,8 +79,23 @@ static void TXT_SeparatorDestructor(TXT_UNCAST_ARG(separator))
     free(separator->label);
 }
 
+void TXT_SetSeparatorLabel(txt_separator_t *separator, char *label)
+{
+    free(separator->label);
+
+    if (label != NULL)
+    {
+        separator->label = strdup(label);
+    }
+    else
+    {
+        separator->label = NULL;
+    }
+}
+
 txt_widget_class_t txt_separator_class =
 {
+    TXT_NeverSelectable,
     TXT_SeparatorSizeCalc,
     TXT_SeparatorDrawer,
     NULL,
@@ -94,19 +108,12 @@ txt_separator_t *TXT_NewSeparator(char *label)
 {
     txt_separator_t *separator;
 
-    separator = (txt_separator_t *)malloc(sizeof(txt_separator_t));
+    separator = malloc(sizeof(txt_separator_t));
 
     TXT_InitWidget(separator, &txt_separator_class);
-    separator->widget.selectable = 0;
 
-    if (label != NULL)
-    {
-        separator->label = strdup(label);
-    }
-    else
-    {
-        separator->label = NULL;
-    }
+    separator->label = NULL;
+    TXT_SetSeparatorLabel(separator, label);
 
     return separator;
 }

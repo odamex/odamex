@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // Copyright(C) 2006 Simon Howard
@@ -26,6 +26,7 @@
 #include "txt_gui.h"
 #include "txt_io.h"
 #include "txt_main.h"
+#include "txt_utf8.h"
 #include "txt_window.h"
 
 static void TXT_LabelSizeCalc(TXT_UNCAST_ARG(label))
@@ -36,7 +37,7 @@ static void TXT_LabelSizeCalc(TXT_UNCAST_ARG(label))
     label->widget.h = label->h;
 }
 
-static void TXT_LabelDrawer(TXT_UNCAST_ARG(label), int selected)
+static void TXT_LabelDrawer(TXT_UNCAST_ARG(label))
 {
     TXT_CAST_ARG(txt_label_t, label);
     unsigned int x, y;
@@ -46,14 +47,20 @@ static void TXT_LabelDrawer(TXT_UNCAST_ARG(label), int selected)
 
     w = label->widget.w;
 
-    TXT_BGColor(label->bgcolor, 0);
-    TXT_FGColor(label->fgcolor);
+    if (label->bgcolor >= 0)
+    {
+        TXT_BGColor(label->bgcolor, 0);
+    }
+    if (label->fgcolor >= 0)
+    {
+        TXT_FGColor(label->fgcolor);
+    }
 
     TXT_GetXY(&origin_x, &origin_y);
 
     for (y=0; y<label->h; ++y)
     {
-        // Calculate the amount to indent this line due to the align
+        // Calculate the amount to indent this line due to the align 
         // setting
 
         switch (label->widget.align)
@@ -82,8 +89,8 @@ static void TXT_LabelDrawer(TXT_UNCAST_ARG(label), int selected)
 
         // The string itself
 
-        TXT_DrawString(label->lines[y]);
-        x += strlen(label->lines[y]);
+        TXT_DrawUTF8String(label->lines[y]);
+        x += TXT_UTF8_Strlen(label->lines[y]);
 
         // Gap at the end
 
@@ -104,6 +111,7 @@ static void TXT_LabelDestructor(TXT_UNCAST_ARG(label))
 
 txt_widget_class_t txt_label_class =
 {
+    TXT_NeverSelectable,
     TXT_LabelSizeCalc,
     TXT_LabelDrawer,
     NULL,
@@ -140,7 +148,7 @@ void TXT_SetLabel(txt_label_t *label, char *value)
 
     // Split into lines
 
-    label->lines = (char **)malloc(sizeof(char *) * label->h);
+    label->lines = malloc(sizeof(char *) * label->h);
     label->lines[0] = label->label;
     y = 1;
 
@@ -158,8 +166,12 @@ void TXT_SetLabel(txt_label_t *label, char *value)
 
     for (y=0; y<label->h; ++y)
     {
-        if (strlen(label->lines[y]) > label->w)
-            label->w = strlen(label->lines[y]);
+        unsigned int line_len;
+
+        line_len = TXT_UTF8_Strlen(label->lines[y]);
+
+        if (line_len > label->w)
+            label->w = line_len;
     }
 }
 
@@ -167,17 +179,16 @@ txt_label_t *TXT_NewLabel(char *text)
 {
     txt_label_t *label;
 
-    label = (txt_label_t *)malloc(sizeof(txt_label_t));
+    label = malloc(sizeof(txt_label_t));
 
     TXT_InitWidget(label, &txt_label_class);
-    label->widget.selectable = 0;
     label->label = NULL;
     label->lines = NULL;
 
     // Default colors
 
-    label->bgcolor = TXT_COLOR_BLUE;
-    label->fgcolor = TXT_COLOR_BRIGHT_WHITE;
+    label->bgcolor = -1;
+    label->fgcolor = -1;
 
     TXT_SetLabel(label, text);
 

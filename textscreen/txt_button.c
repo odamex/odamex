@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // Copyright(C) 2006 Simon Howard
@@ -38,7 +38,7 @@ static void TXT_ButtonSizeCalc(TXT_UNCAST_ARG(button))
     button->widget.h = 1;
 }
 
-static void TXT_ButtonDrawer(TXT_UNCAST_ARG(button), int selected)
+static void TXT_ButtonDrawer(TXT_UNCAST_ARG(button))
 {
     TXT_CAST_ARG(txt_button_t, button);
     int i;
@@ -46,13 +46,7 @@ static void TXT_ButtonDrawer(TXT_UNCAST_ARG(button), int selected)
 
     w = button->widget.w;
 
-    TXT_BGColor(TXT_COLOR_BLUE, 0);
-    TXT_FGColor(TXT_COLOR_BRIGHT_WHITE);
-
-    if (selected)
-    {
-        TXT_BGColor(TXT_COLOR_GREY, 0);
-    }
+    TXT_SetWidgetBG(button);
 
     TXT_DrawString(button->label);
 
@@ -78,7 +72,7 @@ static int TXT_ButtonKeyPress(TXT_UNCAST_ARG(button), int key)
         TXT_EmitSignal(button, "pressed");
         return 1;
     }
-
+    
     return 0;
 }
 
@@ -96,6 +90,7 @@ static void TXT_ButtonMousePress(TXT_UNCAST_ARG(button), int x, int y, int b)
 
 txt_widget_class_t txt_button_class =
 {
+    TXT_AlwaysSelectable,
     TXT_ButtonSizeCalc,
     TXT_ButtonDrawer,
     TXT_ButtonKeyPress,
@@ -114,7 +109,7 @@ txt_button_t *TXT_NewButton(char *label)
 {
     txt_button_t *button;
 
-    button = (txt_button_t *)malloc(sizeof(txt_button_t));
+    button = malloc(sizeof(txt_button_t));
 
     TXT_InitWidget(button, &txt_button_class);
     button->label = strdup(label);

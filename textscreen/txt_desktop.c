@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // Copyright(C) 2006 Simon Howard
@@ -41,13 +41,28 @@ static int main_loop_running = 0;
 
 void TXT_AddDesktopWindow(txt_window_t *win)
 {
+    // Previously-top window loses focus:
+
+    if (num_windows > 0)
+    {
+        TXT_SetWindowFocus(all_windows[num_windows - 1], 0);
+    }
+
     all_windows[num_windows] = win;
     ++num_windows;
+
+    // New window gains focus:
+
+    TXT_SetWindowFocus(win, 1);
 }
 
 void TXT_RemoveDesktopWindow(txt_window_t *win)
 {
     int from, to;
+
+    // Window must lose focus if it's being removed:
+
+    TXT_SetWindowFocus(win, 0);
 
     for (from=0, to=0; from<num_windows; ++from)
     {
@@ -59,6 +74,23 @@ void TXT_RemoveDesktopWindow(txt_window_t *win)
     }
 
     num_windows = to;
+
+    // Top window gains focus:
+
+    if (num_windows > 0)
+    {
+        TXT_SetWindowFocus(all_windows[num_windows - 1], 1);
+    }
+}
+
+txt_window_t *TXT_GetActiveWindow(void)
+{
+    if (num_windows == 0)
+    {
+        return NULL;
+    }
+
+    return all_windows[num_windows - 1];
 }
 
 static void DrawDesktopBackground(const char *title)
@@ -68,11 +100,11 @@ static void DrawDesktopBackground(const char *title)
     unsigned char *p;
 
     screendata = TXT_GetScreenData();
-
+    
     // Fill the screen with gradient characters
 
     p = screendata;
-
+    
     for (i=0; i<TXT_SCREEN_W * TXT_SCREEN_H; ++i)
     {
         *p++ = 0xb1;
@@ -130,7 +162,7 @@ void TXT_DrawDesktop(void)
 
     for (i=0; i<num_windows; ++i)
     {
-        TXT_DrawWindow(all_windows[i], i == num_windows - 1);
+        TXT_DrawWindow(all_windows[i]);
     }
 
     TXT_UpdateScreen();
@@ -201,7 +233,7 @@ void TXT_GUIMainLoop(void)
         {
             TXT_ExitMainLoop();
         }
-
+        
         TXT_DrawDesktop();
 //        TXT_DrawASCIITable();
         TXT_Sleep(0);

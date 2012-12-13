@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // Copyright(C) 2006 Simon Howard
@@ -31,7 +31,7 @@
 #include "txt_main.h"
 #include "txt_window.h"
 
-typedef struct
+typedef struct 
 {
     txt_window_t *window;
     txt_dropdown_list_t *list;
@@ -78,7 +78,7 @@ static void ItemSelected(TXT_UNCAST_ARG(button), TXT_UNCAST_ARG(callback_data))
 
 // Free callback data when the window is closed
 
-static void FreeCallbackData(TXT_UNCAST_ARG(list),
+static void FreeCallbackData(TXT_UNCAST_ARG(list), 
                              TXT_UNCAST_ARG(callback_data))
 {
     TXT_CAST_ARG(callback_data_t, callback_data);
@@ -91,6 +91,22 @@ static void FreeCallbackData(TXT_UNCAST_ARG(list),
 static int SelectorWindowListener(txt_window_t *window, int key, void *user_data)
 {
     if (key == KEY_ESCAPE)
+    {
+        TXT_CloseWindow(window);
+        return 1;
+    }
+
+    return 0;
+}
+
+static int SelectorMouseListener(txt_window_t *window, int x, int y, int b,
+                                 void *unused)
+{
+    txt_widget_t *win;
+
+    win = (txt_widget_t *) window;
+
+    if (x < win->x || x > win->x + win->w || y < win->y || y > win->y + win->h)
     {
         TXT_CloseWindow(window);
         return 1;
@@ -133,22 +149,22 @@ static void OpenSelectorWindow(txt_dropdown_list_t *list)
 
         // Callback struct
 
-        data = (callback_data_t *)malloc(sizeof(callback_data_t));
+        data = malloc(sizeof(callback_data_t));
         data->list = list;
         data->window = window;
         data->item = i;
-
+        
         // When the button is pressed, invoke the button press callback
-
+       
         TXT_SignalConnect(button, "pressed", ItemSelected, data);
-
+        
         // When the window is closed, free back the callback struct
 
         TXT_SignalConnect(window, "closed", FreeCallbackData, data);
 
         // Is this the currently-selected value?  If so, select the button
         // in the window as the default.
-
+        
         if (i == *list->variable)
         {
             TXT_SelectWidget(window, button);
@@ -158,6 +174,7 @@ static void OpenSelectorWindow(txt_dropdown_list_t *list)
     // Catch presses of escape in this window and close it.
 
     TXT_SetKeyListener(window, SelectorWindowListener, NULL);
+    TXT_SetMouseListener(window, SelectorMouseListener, NULL);
 }
 
 static int DropdownListWidth(txt_dropdown_list_t *list)
@@ -166,13 +183,13 @@ static int DropdownListWidth(txt_dropdown_list_t *list)
     int result;
 
     // Find the maximum string width
-
+ 
     result = 0;
 
     for (i=0; i<list->num_values; ++i)
     {
         int w = strlen(list->values[i]);
-        if (w > result)
+        if (w > result) 
         {
             result = w;
         }
@@ -189,7 +206,7 @@ static void TXT_DropdownListSizeCalc(TXT_UNCAST_ARG(list))
     list->widget.h = 1;
 }
 
-static void TXT_DropdownListDrawer(TXT_UNCAST_ARG(list), int selected)
+static void TXT_DropdownListDrawer(TXT_UNCAST_ARG(list))
 {
     TXT_CAST_ARG(txt_dropdown_list_t, list);
     unsigned int i;
@@ -197,16 +214,7 @@ static void TXT_DropdownListDrawer(TXT_UNCAST_ARG(list), int selected)
 
     // Set bg/fg text colors.
 
-    if (selected)
-    {
-        TXT_BGColor(TXT_COLOR_GREY, 0);
-    }
-    else
-    {
-        TXT_BGColor(TXT_COLOR_BLUE, 0);
-    }
-
-    TXT_FGColor(TXT_COLOR_BRIGHT_WHITE);
+    TXT_SetWidgetBG(list);
 
     // Select a string to draw from the list, if the current value is
     // in range.  Otherwise fall back to a default.
@@ -224,7 +232,7 @@ static void TXT_DropdownListDrawer(TXT_UNCAST_ARG(list), int selected)
 
     TXT_DrawString(str);
 
-    for (i=strlen(str); i<list->widget.w; ++i)
+    for (i=strlen(str); i<list->widget.w; ++i) 
     {
         TXT_DrawString(" ");
     }
@@ -243,11 +251,11 @@ static int TXT_DropdownListKeyPress(TXT_UNCAST_ARG(list), int key)
         OpenSelectorWindow(list);
         return 1;
     }
-
+    
     return 0;
 }
 
-static void TXT_DropdownListMousePress(TXT_UNCAST_ARG(list),
+static void TXT_DropdownListMousePress(TXT_UNCAST_ARG(list), 
                                        int x, int y, int b)
 {
     TXT_CAST_ARG(txt_dropdown_list_t, list);
@@ -262,6 +270,7 @@ static void TXT_DropdownListMousePress(TXT_UNCAST_ARG(list),
 
 txt_widget_class_t txt_dropdown_list_class =
 {
+    TXT_AlwaysSelectable,
     TXT_DropdownListSizeCalc,
     TXT_DropdownListDrawer,
     TXT_DropdownListKeyPress,
@@ -270,12 +279,12 @@ txt_widget_class_t txt_dropdown_list_class =
     NULL,
 };
 
-txt_dropdown_list_t *TXT_NewDropdownList(int *variable, char **values,
+txt_dropdown_list_t *TXT_NewDropdownList(int *variable, char **values, 
                                          int num_values)
 {
     txt_dropdown_list_t *list;
 
-    list = (txt_dropdown_list_t *)malloc(sizeof(txt_dropdown_list_t));
+    list = malloc(sizeof(txt_dropdown_list_t));
 
     TXT_InitWidget(list, &txt_dropdown_list_class);
     list->variable = variable;

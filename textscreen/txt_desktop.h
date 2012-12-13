@@ -34,7 +34,8 @@ void TXT_AddDesktopWindow(txt_window_t *win);
 void TXT_RemoveDesktopWindow(txt_window_t *win);
 void TXT_DrawDesktop(void);
 void TXT_DispatchEvents(void);
-void TXT_DrawWindow(txt_window_t *window, int selected);
+void TXT_DrawWindow(txt_window_t *window);
+void TXT_SetWindowFocus(txt_window_t *window, int focused);
 void TXT_WindowKeyPress(txt_window_t *window, int c);
 
 /**
@@ -62,6 +63,15 @@ void TXT_ExitMainLoop(void);
  */
 
 void TXT_GUIMainLoop(void);
+
+/**
+ * Get the top window on the desktop that is currently receiving
+ * inputs.
+ *
+ * @return    The active window, or NULL if no windows are present.
+ */
+
+txt_window_t *TXT_GetActiveWindow(void);
 
 #endif /* #ifndef TXT_DESKTOP_H */
 

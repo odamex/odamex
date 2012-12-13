@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // Copyright(C) 2006 Simon Howard
@@ -37,25 +37,34 @@ static void TXT_WindowActionSizeCalc(TXT_UNCAST_ARG(action))
 
     TXT_GetKeyDescription(action->key, buf);
 
-    // Minimum width is the string length + two spaces for padding
+    // Width is label length, plus key description length, plus '='
+    // and two surrounding spaces.
 
-    action->widget.w = strlen(action->label) + strlen(buf) + 1;
+    action->widget.w = strlen(action->label) + strlen(buf) + 3;
     action->widget.h = 1;
 }
 
-static void TXT_WindowActionDrawer(TXT_UNCAST_ARG(action), int selected)
+static void TXT_WindowActionDrawer(TXT_UNCAST_ARG(action))
 {
     TXT_CAST_ARG(txt_window_action_t, action);
     char buf[10];
 
     TXT_GetKeyDescription(action->key, buf);
 
+    if (TXT_HoveringOverWidget(action))
+    {
+        TXT_BGColor(TXT_COLOR_BLACK, 0);
+    }
+
+    TXT_DrawString(" ");
     TXT_FGColor(TXT_COLOR_BRIGHT_GREEN);
     TXT_DrawString(buf);
     TXT_FGColor(TXT_COLOR_BRIGHT_CYAN);
     TXT_DrawString("=");
+
     TXT_FGColor(TXT_COLOR_BRIGHT_WHITE);
     TXT_DrawString(action->label);
+    TXT_DrawString(" ");
 }
 
 static void TXT_WindowActionDestructor(TXT_UNCAST_ARG(action))
@@ -69,16 +78,16 @@ static int TXT_WindowActionKeyPress(TXT_UNCAST_ARG(action), int key)
 {
     TXT_CAST_ARG(txt_window_action_t, action);
 
-    if (key == action->key)
+    if (tolower(key) == tolower(action->key))
     {
         TXT_EmitSignal(action, "pressed");
         return 1;
     }
-
+    
     return 0;
 }
 
-static void TXT_WindowActionMousePress(TXT_UNCAST_ARG(action),
+static void TXT_WindowActionMousePress(TXT_UNCAST_ARG(action), 
                                        int x, int y, int b)
 {
     TXT_CAST_ARG(txt_window_action_t, action);
@@ -93,6 +102,7 @@ static void TXT_WindowActionMousePress(TXT_UNCAST_ARG(action),
 
 txt_widget_class_t txt_window_action_class =
 {
+    TXT_AlwaysSelectable,
     TXT_WindowActionSizeCalc,
     TXT_WindowActionDrawer,
     TXT_WindowActionKeyPress,
@@ -105,7 +115,7 @@ txt_window_action_t *TXT_NewWindowAction(int key, const char *label)
 {
     txt_window_action_t *action;
 
-    action = (txt_window_action_t *)malloc(sizeof(txt_window_action_t));
+    action = malloc(sizeof(txt_window_action_t));
 
     TXT_InitWidget(action, &txt_window_action_class);
     action->key = key;

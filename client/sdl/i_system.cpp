@@ -98,7 +98,11 @@
 #endif
 
 #ifndef GCONSOLE // I will add this back later -- Hyper_Eye
+// For libtextscreen to link properly
+extern "C"
+{
 #include "txt_main.h"
+}
 #define ENDOOM_W 80
 #define ENDOOM_H 25
 #endif // _XBOX
