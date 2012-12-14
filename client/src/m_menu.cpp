@@ -276,6 +276,32 @@ oldmenu_t EpiDef =
 };
 
 //
+// EXPANSION SELECT (DOOM2 BFG)
+//
+enum expansions_t
+{
+	hoe,
+	nrftl,
+	exp_end
+} expansions_e;
+
+oldmenuitem_t ExpansionMenu[]=
+{
+	{1,"M_EPI1", M_Episode,'h'},
+	{1,"M_EPI2", M_Episode,'n'},
+};
+
+oldmenu_t ExpDef =
+{
+	exp_end,	 			// # of menu items
+	ExpansionMenu,		// oldmenuitem_t ->
+	M_DrawEpisode,		// drawing routine ->
+	48,63,				// x,y
+	hoe 				// lastOn
+};
+
+
+//
 // NEW GAME
 //
 enum newgame_t
@@ -957,6 +983,10 @@ void M_NewGame(int choice)
 		M_SetupNextMenu(&NewDef);
 	else if (gamemode == retail_chex)			// [ML] Don't show the episode selection in chex mode
 		M_SetupNextMenu(&NewDef);
+    else if (gamemode == commercial_bfg)
+    {
+        M_SetupNextMenu(&ExpDef);
+    }
 	else if (gameinfo.flags & GI_MENUHACK_RETAIL)
 	{
 	    EpiDef.numitems = ep_end;
@@ -996,6 +1026,12 @@ void M_StartGame(int choice)
 	sv_skill.Set ((float)(choice+1));
 	sv_gametype = GM_COOP;
 
+	if (gamemode == commercial_bfg && choice == 2)
+    {
+        M_ClearMenus ();
+        return;
+    }
+
 	G_DeferedInitNew (CalcMapName (epi+1, 1));
 	M_ClearMenus ();
 }
@@ -1024,6 +1060,13 @@ void M_Episode (int choice)
 	epi = choice;
 	M_SetupNextMenu(&NewDef);
 }
+
+void M_Expansion (int choice)
+{
+	epi = choice;
+	M_SetupNextMenu(&NewDef);
+}
+
 
 //
 // Read This Menus
