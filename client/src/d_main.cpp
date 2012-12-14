@@ -802,6 +802,9 @@ void D_DoomMain (void)
 	I_Init ();
 	V_Init ();
 
+    // SDL needs video mode set up first before input code can be used
+    I_InitInput();
+
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks ();
 

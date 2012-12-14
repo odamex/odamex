@@ -357,7 +357,6 @@ void I_Init (void)
 
 	I_InitSound ();
 	I_InitHardware ();
-	I_InitInput ();
 }
 
 std::string I_GetCWD ()
