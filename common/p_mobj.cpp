@@ -37,6 +37,7 @@
 #include "g_game.h"
 #include "p_mobj.h"
 #include "p_ctf.h"
+#include "gi.h"
 
 #define WATER_SINK_FACTOR		3
 #define WATER_SINK_SMALL_FACTOR	4
@@ -267,7 +268,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	ceilingz = P_CeilingHeight(this);
 	dropoffz = floorz;
 	floorsector = subsector->sector;
-	
+
 	if (iz == ONFLOORZ)
 	{
 		z = floorz;
@@ -284,7 +285,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	{
 		z = iz;
 	}
-	
+
 	memset(args, 0, sizeof(args));
 }
 
@@ -345,7 +346,7 @@ void P_ClearId(size_t id)
 
 	if(!mo)
 		return;
-		
+
 	if(mo->player)
 	{
 		if(mo->player->mo == mo)
@@ -440,14 +441,14 @@ void P_MoveActor(AActor *mo)
 {
 	if (!mo || !mo->subsector)
 		return;
-	
+
 	AActor *onmo = NULL;
     fixed_t minmom;
-	
+
 	// [RH] If standing on a steep slope, fall down it
-	if (!(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) && 
+	if (!(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) &&
 		!(mo->player && mo->player->spectator) && mo->momz <= 0 &&
-		mo->floorz == mo->z && mo->floorsector && 
+		mo->floorz == mo->z && mo->floorsector &&
 		mo->floorsector->floorplane.c < STEEPSLOPE &&
 		P_FloorHeight(mo->x, mo->y, mo->floorsector) <= mo->floorz)
 	{
@@ -531,7 +532,7 @@ void P_MoveActor(AActor *mo)
 	    {
             P_ZMovement(mo);
 	    }
-		
+
         if (mo->ObjectFlags & OF_MassDestruction)
             return;		// actor was destroyed
 	}
@@ -542,7 +543,7 @@ void P_MoveActor(AActor *mo)
 		mo->waterlevel = 0;
 		if (mo->subsector->sector->waterzone)
 			mo->waterlevel = 3;
-			
+
 		sector_t *hsec = mo->subsector->sector->heightsec;
 		if (hsec && hsec->waterzone && !mo->subsector->sector->waterzone)
 		{
@@ -570,13 +571,13 @@ void P_MoveActor(AActor *mo)
 			}
 		}
 	}
-	
+
 	// killough 9/12/98: objects fall off ledges if they are hanging off
 	// slightly push off of ledge if hanging more than halfway off
-	// [RH] Be more restrictive to avoid pushing monsters/players down steps	
+	// [RH] Be more restrictive to avoid pushing monsters/players down steps
 	if (!(mo->flags & MF_NOGRAVITY) && !(mo->flags2 & MF2_FLOATBOB) && (mo->z > mo->dropoffz) &&
 		 (mo->health <= 0 || (mo->flags & MF_COUNTKILL && mo->z - mo->dropoffz > 24*FRACUNIT)) &&
-		  co_allowdropoff)	
+		  co_allowdropoff)
 	{
 		P_ApplyTorque(mo);   // Apply torque
 	}
@@ -600,7 +601,7 @@ void P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
 {
 	// backup the actor's position/state
 	ActorSnapshot backup(gametic, mo);
-	
+
 	mo->momx = tryx - mo->x;
 	mo->momy = tryy - mo->y;
 	mo->momz = tryz - mo->z;
@@ -979,7 +980,7 @@ void P_XYMovement(AActor *mo)
 
 	// [RH] Adjust player movement on sloped floors
 	walkplane = P_CheckSlopeWalk (mo, xmove, ymove);
-	
+
 	do
 	{
 		// This is where the "wallrunning" effect happens. Vanilla only
@@ -1016,12 +1017,12 @@ void P_XYMovement(AActor *mo)
 					{
 						mo->momz = WATER_JUMP_SPEED;
 					}
-					
+
 					P_SlideMove (mo);
 				}
 				else
 				{ // slide against mobj
-					
+
 					// try sliding in the x direction
 					fixed_t tx = 0, ty = ptryy - mo->y;
 					walkplane = P_CheckSlopeWalk(mo, tx, ty);
@@ -1066,7 +1067,7 @@ void P_XYMovement(AActor *mo)
 
 					if (!co_fixweaponimpacts ||
 						mo->z > P_CeilingHeight(mo->x, mo->y, ceilingline->backsector))
-					{	
+					{
 						mo->Destroy ();
 						return;
 					}
@@ -1211,10 +1212,10 @@ void P_ZMovement(AActor *mo)
 			}
 		}
 	}
-	
+
 	// adjust height
 	mo->z += mo->momz;
-	
+
 	// GhostlyDeath <Jun, 4 2008> -- Floating monsters shouldn't adjust to spectator height
 
 	if (mo->flags & MF_FLOAT && mo->target &&
@@ -1233,7 +1234,7 @@ void P_ZMovement(AActor *mo)
 				mo->z += FLOATSPEED;
 		}
 	}
-	
+
 	if (mo->player && (mo->flags2 & MF2_FLY) && (mo->z > mo->floorz))
 	{
 		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
@@ -1290,9 +1291,9 @@ void P_ZMovement(AActor *mo)
 			// the skull slammed into something
 			mo->momz = -mo->momz;
 		}
-		
+
 		mo->z = mo->floorz;
-		
+
 		if (mo->momz < 0)
 		{
 			if (mo->player)
@@ -1302,7 +1303,7 @@ void P_ZMovement(AActor *mo)
 				fixed_t minmom = P_CalculateMinMom(mo);
 				if (mo->momz < minmom)
 					momsquat = true;
-			
+
 
 				mo->player->jumpTics = 7;	// delay any jumping for a short while
 				if (momsquat && !(mo->player->spectator) && !(mo->flags2 & MF2_FLY))
@@ -1338,7 +1339,7 @@ void P_ZMovement(AActor *mo)
 	else
 	{
 		// actor is above the floor
-		
+
 		// apply gravity (if standard or boom)
 		if (!co_zdoomphys)
 		{
@@ -1361,7 +1362,7 @@ void P_ZMovement(AActor *mo)
 					else
 						mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity);
 				}
-				
+
 				if (mo->waterlevel > 1)
 				{
 					fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
@@ -1397,7 +1398,7 @@ void P_ZMovement(AActor *mo)
 
 			return;
 		}
-		
+
 		if (mo->momz > 0)
 			mo->momz = 0;
 
@@ -1411,13 +1412,13 @@ void P_ZMovement(AActor *mo)
 
 		if (mo->flags & MF_MISSILE && !(mo->flags & MF_NOCLIP))
 		{
-			if ((HasBehavior || co_fixweaponimpacts) && 
+			if ((HasBehavior || co_fixweaponimpacts) &&
 				 mo->subsector->sector->ceilingpic == skyflatnum)
 			{
 				mo->Destroy ();
 				return;
 			}
-			
+
 			// [SL] 2011-06-02 - Only server should control explosions
 			if (serverside)
 				P_ExplodeMissile (mo);
@@ -1471,7 +1472,7 @@ void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 		return;
 
 	mo->player->deltaviewheight = mo->momz>>3;
-	
+
 	// The server sends the sound to us for other players
 	if (mo->player->id != consoleplayer_id && !serverside)
 		return;
@@ -1708,7 +1709,7 @@ AActor *AActor::FindGoal (const AActor *actor, int tid, int kind)
 void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 {
 	// [SL] Allow only servers and clients that are predicting their own shots
-	if (!serverside && (shootthing != consoleplayer().mo || 
+	if (!serverside && (shootthing != consoleplayer().mo ||
 					   !consoleplayer().userinfo.predict_weapons))
 		return;
 
@@ -2124,7 +2125,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 
 	// only servers control spawning of items
-    // EXCEPT the client must spawn Type 14 (teleport exit). 
+    // EXCEPT the client must spawn Type 14 (teleport exit).
 	// otherwise teleporters won't work well.
 	if (!serverside && (mthing->type != 14))
 		return;
@@ -2255,7 +2256,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (!(mthing->flags & MTF_SINGLE))
 			return;
 	}
-	else if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM) 
+	else if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
 	{
 		if (!(mthing->flags & MTF_DEATHMATCH))
 			return;
@@ -2520,10 +2521,10 @@ bool P_VisibleToPlayers(AActor *mo)
 		// players aren't considered visible to themselves
 		if (mo->player && mo->player->id == players[i].id)
 			continue;
-	
+
 		if (!players[i].mo || players[i].spectator)
 			continue;
-	
+
 		if (P_CheckSightEdges(players[i].mo, mo, 5.0))
 			return true;
 	}

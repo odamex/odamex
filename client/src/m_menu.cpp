@@ -52,6 +52,7 @@
 
 #include "gi.h"
 #include "m_memio.h"
+#include "m_fileio.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -1040,7 +1041,7 @@ void M_StartGame(int choice)
         std::string str = "nerve.wad";
 
         if (epi)
-        {   
+        {
             // Load No Rest for The Living Externally
             epi = 0;
             G_LoadWad(str);
@@ -1056,12 +1057,12 @@ void M_StartGame(int choice)
                 }
             }
 
-            G_DeferedInitNew (CalcMapName (epi+1, 1));      
+            G_DeferedInitNew (CalcMapName (epi+1, 1));
         }
     }
     else
     {
-        G_DeferedInitNew (CalcMapName (epi+1, 1)); 
+        G_DeferedInitNew (CalcMapName (epi+1, 1));
     }
 
     M_ClearMenus ();

@@ -30,6 +30,7 @@
 #include "s_sound.h"
 #include "i_system.h"
 #include "i_net.h"
+#include "gi.h"
 
 #include "p_snapshot.h"
 
@@ -436,7 +437,7 @@ void P_MovePlayer (player_t *player)
 		if (mo->state == &states[S_PLAY])
 		{
 			// denis - fixme - this function might destoy player->mo without setting it to 0
-			P_SetMobjState (player->mo, S_PLAY_RUN1); 
+			P_SetMobjState (player->mo, S_PLAY_RUN1);
 		}
 
 		if (player->cheats & CF_REVERTPLEASE)
@@ -445,11 +446,11 @@ void P_MovePlayer (player_t *player)
 			player->camera = player->mo;
 		}
 	}
-	
+
 	// [RH] check for jump
 	if (player->jumpTics)
 		player->jumpTics--;
-		
+
 	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
 	{
 		if (player->mo->waterlevel >= 2)
@@ -459,15 +460,15 @@ void P_MovePlayer (player_t *player)
 		else if (player->mo->flags2 & MF2_FLY)
 		{
 			player->mo->momz = 3*FRACUNIT;
-		}		
+		}
 		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
 		{
 			player->mo->momz += 8*FRACUNIT;
 			if(!player->spectator)
 				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
-				
+
             player->mo->flags2 &= ~MF2_ONMOBJ;
-            player->jumpTics = 18;				
+            player->jumpTics = 18;
 		}
 	}
 }
@@ -580,7 +581,7 @@ void P_DeathThink (player_t *player)
 
 	if(serverside)
 	{
-		bool force_respawn =	(!clientside && sv_forcerespawn && 
+		bool force_respawn =	(!clientside && sv_forcerespawn &&
 								level.time >= player->death_time + sv_forcerespawntime * TICRATE);
 
 		// [SL] Can we respawn yet?
@@ -882,7 +883,7 @@ void player_s::Serialize (FArchive &arc)
 			>> fixedcolormap
 			>> xviewshift
 			>> jumpTics
-			>> death_time 
+			>> death_time
 			>> air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
 			arc >> powers[i];
@@ -982,7 +983,7 @@ player_s::player_s()
 	BlendG = 0;
 	BlendB = 0;
 	BlendA = 0;
-	
+
 	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
 }
 
@@ -1094,7 +1095,7 @@ player_s &player_s::operator =(const player_s &other)
 	client = other.client;
 
 	snapshots = other.snapshots;
-	
+
 	to_spawn = other.to_spawn;
 
 	return *this;
