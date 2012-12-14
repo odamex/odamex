@@ -212,7 +212,7 @@ CVAR (co_zdoomspawndelay, "0", "Force a player to wait a second before respawnin
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_FUNC_DECL (sv_gravity, "800", "Gravity of the environment",
-      CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (sv_aircontrol, "0.00390625", "How much control the player has in the air",
       CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
