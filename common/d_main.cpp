@@ -533,10 +533,12 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 	{
 		"doom2f.wad",
 		"doom2.wad",
+		"doom2bfg.wad",
 		"plutonia.wad",
 		"tnt.wad",
 		"doomu.wad", // Hack from original Linux version. Not necessary, but I threw it in anyway.
 		"doom.wad",
+		"doombfg.wad",
 		"doom1.wad",
 		"freedoom.wad",
 		"freedm.wad",
