@@ -73,6 +73,7 @@
 #include "i_system.h"
 #include "i_sound.h"
 #include "i_video.h"
+#include "i_input.h"
 #include "g_game.h"
 #include "hu_stuff.h"
 #include "wi_stuff.h"
