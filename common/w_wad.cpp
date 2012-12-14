@@ -83,7 +83,7 @@ typedef struct
 } gamewadinfo_t;
 
 #if _MSC_VER <= 1200	// GhostlyDeath -- Work on VC6
-static gamewadinfo_t doomwadnames[11];
+static gamewadinfo_t doomwadnames[13];
 bool WasVC6Inited = false;
 
 void W_VC6Init(void)
@@ -98,37 +98,45 @@ void W_VC6Init(void)
 		doomwadnames[1].hash[0] = "25E1459CA71D321525F84628F45CA8CD",
 		doomwadnames[1].hash[1] = "C3BEA40570C23E511A7ED3EBCD9865F7"; // BFG Edition
 
+        // DOOM2 BFG EDITION
+        doomwadnames[2].name = "DOOM2BFG.WAD";
+        doomwadnames[2].hash[0] = "C3BEA40570C23E511A7ED3EBCD9865F7"; // BFG Edition
+
 		// PLUTONIA
-		doomwadnames[2].name = "PLUTONIA.WAD";
-		doomwadnames[2].hash[0] = "75C8CF89566741FA9D22447604053BD7";
+		doomwadnames[3].name = "PLUTONIA.WAD";
+		doomwadnames[3].hash[0] = "75C8CF89566741FA9D22447604053BD7";
 
 		// TNT
-		doomwadnames[3].name = "TNT.WAD";
-		doomwadnames[3].hash[0] = "4E158D9953C79CCF97BD0663244CC6B6";
+		doomwadnames[4].name = "TNT.WAD";
+		doomwadnames[4].hash[0] = "4E158D9953C79CCF97BD0663244CC6B6";
 
 		// DOOMU
-		doomwadnames[4].name = "DOOMU.WAD";
-		doomwadnames[4].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
+		doomwadnames[5].name = "DOOMU.WAD";
+		doomwadnames[5].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
 
 		// DOOM
-		doomwadnames[5].name = "DOOM.WAD";
-		doomwadnames[5].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
-		doomwadnames[5].hash[1] = "1CD63C5DDFF1BF8CE844237F580E9CF3";
-		doomwadnames[5].hash[2] = "FB35C4A5A9FD49EC29AB6E900572C524"; // BFG Edition
+		doomwadnames[6].name = "DOOM.WAD";
+		doomwadnames[6].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
+		doomwadnames[6].hash[1] = "1CD63C5DDFF1BF8CE844237F580E9CF3";
+		doomwadnames[6].hash[2] = "FB35C4A5A9FD49EC29AB6E900572C524"; // BFG Edition
+
+		// DOOM BFG EDITION
+		doomwadnames[7].name = "DOOMBFG.WAD";
+        doomwadnames[7].hash[0] = "FB35C4A5A9FD49EC29AB6E900572C524"; // BFG Edition
 
 		// DOOM SHAREWARE
-		doomwadnames[6].name = "DOOM1.WAD";
-		doomwadnames[6].hash[0] = "F0CEFCA49926D00903CF57551D901ABE";
+		doomwadnames[8].name = "DOOM1.WAD";
+		doomwadnames[8].hash[0] = "F0CEFCA49926D00903CF57551D901ABE";
 
 		// FREEDOOM
-		doomwadnames[7].name = "FREEDOOM.WAD";
+		doomwadnames[9].name = "FREEDOOM.WAD";
 
 		// FREEDM
-		doomwadnames[8].name = "FREEDM.WAD";
+		doomwadnames[10].name = "FREEDM.WAD";
 
 		// CHEX
-		doomwadnames[9].name = "CHEX.WAD";
-		doomwadnames[9].hash[0] = "25485721882b050afa96a56e5758dd52";
+		doomwadnames[11].name = "CHEX.WAD";
+		doomwadnames[11].hash[0] = "25485721882b050afa96a56e5758dd52";
 
 
 		WasVC6Inited = true;
@@ -143,10 +151,12 @@ static const gamewadinfo_t doomwadnames[] =
 {
     { "DOOM2F.WAD", { "" } },
     { "DOOM2.WAD", { "25E1459CA71D321525F84628F45CA8CD", "C3BEA40570C23E511A7ED3EBCD9865F7" } },
+    { "DOOM2BFG.WAD", { "C3BEA40570C23E511A7ED3EBCD9865F7" } },
     { "PLUTONIA.WAD", { "75C8CF89566741FA9D22447604053BD7" } },
     { "TNT.WAD", { "4E158D9953C79CCF97BD0663244CC6B6" } },
     { "DOOMU.WAD", { "C4FE9FD920207691A9F493668E0A2083" } },
     { "DOOM.WAD", { "C4FE9FD920207691A9F493668E0A2083", "1CD63C5DDFF1BF8CE844237F580E9CF3","FB35C4A5A9FD49EC29AB6E900572C524" } },
+    { "DOOMBFG.WAD", { "FB35C4A5A9FD49EC29AB6E900572C524" } },
     { "DOOM1.WAD", { "F0CEFCA49926D00903CF57551D901ABE" } },
     { "FREEDOOM.WAD", { "" } },
     { "FREEDM.WAD", { "" } },
