@@ -626,7 +626,7 @@ BEGIN_COMMAND (map)
             // [Russell] - gamemode is always the better option compared to above
 			if ( argc == 2 )
 			{
-				if (gamemode == commercial)
+				if ((gameinfo.flags & GI_MAPxx))
                     sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
                 else
                     sprintf( mapname, "E%cM%c", argv[1][0], argv[1][1]);

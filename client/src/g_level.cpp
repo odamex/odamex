@@ -326,7 +326,7 @@ void G_ExitLevel (int position, int drawscores)
 void G_SecretExitLevel (int position, int drawscores)
 {
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	if ( (gamemode == commercial)
+	if ( (gameinfo.flags & GI_MAPxx)
 		 && (W_CheckNumForName("map31")<0))
 		secretexit = false;
 	else

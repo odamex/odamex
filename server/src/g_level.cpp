@@ -507,7 +507,7 @@ void G_SecretExitLevel (int position, int drawscores)
 	mapchange = TICRATE*intlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	if ( (gamemode == commercial)
+	if ( (gameinfo.flags & GI_MAPxx)
 		 && (W_CheckNumForName("map31")<0))
 		secretexit = false;
 	else

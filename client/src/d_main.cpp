@@ -516,7 +516,7 @@ void D_DoAdvanceDemo (void)
     switch (demosequence)
     {
         case 0:
-            if (gamemode == commercial)
+            if (gameinfo.flags & GI_MAPxx)
                 pagetic = TICRATE * 11;
             else
                 pagetic = 170;
@@ -544,9 +544,9 @@ void D_DoAdvanceDemo (void)
         case 4:
             gamestate = GS_DEMOSCREEN;
 
-            if (gamemode == commercial || gamemode == retail)
+            if ((gameinfo.flags & GI_MAPxx) || gamemode == retail)
             {
-				if (gamemode == commercial)
+				if (gameinfo.flags & GI_MAPxx)
 					pagetic = TICRATE * 11;
 				else
 					pagetic = 170;

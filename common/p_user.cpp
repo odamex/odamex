@@ -697,7 +697,7 @@ void P_PlayerThink (player_t *player)
 				newweapon = wp_chainsaw;
 			}
 
-			if (gamemode == commercial
+			if ((gameinfo.flags & GI_MAPxx)
 				&& newweapon == wp_shotgun
 				&& player->weaponowned[wp_supershotgun]
 				&& player->readyweapon != wp_supershotgun)

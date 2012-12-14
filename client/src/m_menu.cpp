@@ -48,6 +48,7 @@
 #include "r_sky.h"
 #include "cl_main.h"
 #include "c_bind.h"
+#include "c_level.h"
 
 #include "gi.h"
 #include "m_memio.h"
@@ -1034,14 +1035,32 @@ void M_StartGame(int choice)
 	sv_skill.Set ((float)(choice+1));
 	sv_gametype = GM_COOP;
 
-	if (gamemode == commercial_bfg && epi)
+    if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
     {
-        M_ClearMenus ();
-        return;
+        std::string str = "nerve.wad";
+
+        if (epi)
+        {   
+            // Load No Rest for The Living Externally
+            epi = 0;
+            G_LoadWad(str);
+        }
+        else
+        {
+            // Check for nerve.wad, if it's loaded re-load with just iwad (DOOM 2 BFG)
+            for (unsigned int i = 2; i < wadfiles.size(); i++)
+            {
+                if (StdStringCompare(str, M_ExtractFileName(wadfiles[i]), true) == 0)
+                {
+                    G_LoadWad(wadfiles[1]);
+                }
+            }
+
+            G_DeferedInitNew (CalcMapName (epi+1, 1));      
+        }
     }
 
-	G_DeferedInitNew (CalcMapName (epi+1, 1));
-	M_ClearMenus ();
+    M_ClearMenus ();
 }
 
 void M_ChooseSkill(int choice)
@@ -2254,7 +2273,7 @@ void M_Init (void)
 	messageString = NULL;
 	messageLastMenuActive = menuactive;
 
-    if (gamemode == commercial)
+    if (gameinfo.flags & GI_MAPxx)
     {
         // Commercial has no "read this" entry.
         MainDef.numitems = d2_main_end;

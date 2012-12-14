@@ -539,7 +539,7 @@ void WI_initAnimatedBack (void)
 	int i;
 	anim_t *a;
 
-	if (gamemode == commercial || wbs->epsd > 2)
+	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
 		return;
 
 	for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
@@ -563,7 +563,7 @@ void WI_updateAnimatedBack (void)
 	int i;
 	anim_t *a;
 
-	if (gamemode == commercial || wbs->epsd > 2)
+	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
 		return;
 
 	for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
@@ -1009,7 +1009,7 @@ void WI_updateNetgameStats (void)
 		if (acceleratestage)
 		{
 			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
-			if ( gamemode == commercial )
+			if ( (gameinfo.flags & GI_MAPxx) )
 				WI_initNoState();
 			else
 				WI_initShowNextLoc();
@@ -1182,7 +1182,7 @@ void WI_updateStats(void)
 	{
 	    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
 
-	    if (gamemode == commercial)
+	    if ((gameinfo.flags & GI_MAPxx))
 		WI_initNoState();
 	    else
 		WI_initShowNextLoc();
@@ -1220,7 +1220,7 @@ void WI_drawStats (void)
     screen->DrawPatchClean(timepatch, SP_TIMEX, SP_TIMEY);
     WI_drawTime(cnt_time, 160 - SP_TIMEX, SP_TIMEY);
 
-	if (gamemode == commercial || wbs->epsd < 3)
+	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd < 3)
     {
     	screen->DrawPatchClean(par, SP_TIMEX + 160, SP_TIMEY);
     	WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
@@ -1269,7 +1269,7 @@ void WI_Ticker (void)
 	if (bcnt == 1)
 	{
 		// intermission music
-		if (gamemode == commercial)
+		if ((gameinfo.flags & GI_MAPxx))
 			S_ChangeMusic ("d_dm2int", true);
 		else
 			S_ChangeMusic ("d_inter", true);
@@ -1333,7 +1333,7 @@ void WI_loadData (void)
 	anim_t *a;
 	patch_t *bg;
 
-	if ((gamemode == commercial) ||
+	if ((gameinfo.flags & GI_MAPxx) ||
 		(gamemode == retail && wbs->epsd >= 3))
 		strcpy (name, "INTERPIC");
 	else
