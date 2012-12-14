@@ -125,6 +125,7 @@ oldmenu_t *currentMenu;
 //
 void M_NewGame(int choice);
 void M_Episode(int choice);
+void M_Expansion(int choice);
 void M_ChooseSkill(int choice);
 void M_LoadGame(int choice);
 void M_SaveGame(int choice);
@@ -287,13 +288,13 @@ enum expansions_t
 
 oldmenuitem_t ExpansionMenu[]=
 {
-	{1,"M_EPI1", M_Episode,'h'},
-	{1,"M_EPI2", M_Episode,'n'},
+	{1,"M_EPI1", M_Expansion,'h'},
+	{1,"M_EPI2", M_Expansion,'n'},
 };
 
 oldmenu_t ExpDef =
 {
-	exp_end,	 			// # of menu items
+	exp_end,	 		// # of menu items
 	ExpansionMenu,		// oldmenuitem_t ->
 	M_DrawEpisode,		// drawing routine ->
 	48,63,				// x,y
@@ -980,14 +981,21 @@ void M_NewGame(int choice)
 	}
 */
 	if (gameinfo.flags & GI_MAPxx)
-		M_SetupNextMenu(&NewDef);
-	else if (gamemode == retail_chex)			// [ML] Don't show the episode selection in chex mode
-		M_SetupNextMenu(&NewDef);
-    else if (gamemode == commercial_bfg)
     {
-        M_SetupNextMenu(&ExpDef);
+        if (gamemode == commercial_bfg)
+        {
+            M_SetupNextMenu(&ExpDef);
+        }
+        else
+        {
+            M_SetupNextMenu(&NewDef);
+        }
     }
-	else if (gameinfo.flags & GI_MENUHACK_RETAIL)
+	else if (gamemode == retail_chex)			// [ML] Don't show the episode selection in chex mode
+    {
+        M_SetupNextMenu(&NewDef);
+    }
+    else if (gameinfo.flags & GI_MENUHACK_RETAIL)
 	{
 	    EpiDef.numitems = ep_end;
 	    M_SetupNextMenu(&EpiDef);
@@ -1026,7 +1034,7 @@ void M_StartGame(int choice)
 	sv_skill.Set ((float)(choice+1));
 	sv_gametype = GM_COOP;
 
-	if (gamemode == commercial_bfg && choice == 2)
+	if (gamemode == commercial_bfg && epi)
     {
         M_ClearMenus ();
         return;
