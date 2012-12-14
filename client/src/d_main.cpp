@@ -544,7 +544,7 @@ void D_DoAdvanceDemo (void)
         case 4:
             gamestate = GS_DEMOSCREEN;
 
-            if ((gameinfo.flags & GI_MAPxx) || gamemode == retail)
+            if ((gameinfo.flags & GI_MAPxx) || (gameinfo.flags & GI_MENUHACK_RETAIL))
             {
 				if (gameinfo.flags & GI_MAPxx)
 					pagetic = TICRATE * 11;

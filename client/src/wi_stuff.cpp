@@ -1334,7 +1334,7 @@ void WI_loadData (void)
 	patch_t *bg;
 
 	if ((gameinfo.flags & GI_MAPxx) ||
-		(gamemode == retail && wbs->epsd >= 3))
+		((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
 		strcpy (name, "INTERPIC");
 	else
 		sprintf (name, "WIMAP%d", wbs->epsd);

@@ -1059,6 +1059,10 @@ void M_StartGame(int choice)
             G_DeferedInitNew (CalcMapName (epi+1, 1));      
         }
     }
+    else
+    {
+        G_DeferedInitNew (CalcMapName (epi+1, 1)); 
+    }
 
     M_ClearMenus ();
 }
