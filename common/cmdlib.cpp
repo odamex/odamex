@@ -31,8 +31,8 @@
 #define WIN32_LEAN_AND_MEAN
 #ifndef _XBOX
 #include <windows.h>
+#endif // !_XBOX
 #include "win32time.h"
-#endif // _XBOX
 #endif // WIN32
 
 #include "doomtype.h"

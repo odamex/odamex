@@ -31,7 +31,11 @@
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
+#ifdef _XBOX
+#include <xtl.h>
+#else
 #include <windows.h>
+#endif // _XBOX
 #else
 #include <sys/stat.h>
 #endif
@@ -62,6 +66,14 @@
 #include "s_sound.h"
 #include "gi.h"
 
+#ifdef GEKKO
+#include "i_wii.h"
+#endif
+
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 EXTERN_CVAR (waddirs)
 
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
@@ -77,7 +89,7 @@ extern gameinfo_t CommercialBFGGameInfo;
 
 bool lastWadRebootSuccess = true;
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(_XBOX)
 
 #define arrlen(array) (sizeof(array) / sizeof(*array))
 
@@ -342,7 +354,7 @@ void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char 
 // [AM] Add platform-sepcific search directories
 static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 {
-	#if defined(WIN32)
+	#if defined(WIN32) && !defined(_XBOX)
 
 	const char separator = ';';
 
