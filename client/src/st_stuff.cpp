@@ -690,7 +690,7 @@ bool ST_Responder (event_t *ev)
             if (CheckCheatmode ())
                 return false;
 
-            if (gamemode != commercial)
+            if (gamemode != commercial && gamemode != commercial_bfg)
                 return false;
 
             AddCommandString("noclip");

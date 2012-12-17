@@ -25,7 +25,7 @@ PrivilegesRequired=none
 ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
-AppVersion=0.6.1
+AppVersion=0.6.2
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -67,7 +67,6 @@ Source: ..\..\smpeg.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
-Source: ..\..\mikmod.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\CHANGELOG; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\LICENSE; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\MAINTAINERS; DestDir: {app}; Flags: ignoreversion; Components: base

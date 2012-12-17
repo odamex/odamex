@@ -1046,7 +1046,7 @@ void SV_BanlistTics()
 	Json::Value json_bans;
 	if (!M_ReadJSON(json_bans, banfile))
 	{
-		Printf(PRINT_HIGH, "sv_banfilereload: could not load banlist.\n");
+		Printf(PRINT_HIGH, "sv_banfile_reload: could not load banlist.\n");
 		return;
 	}
 	banlist.json_replace(json_bans);
