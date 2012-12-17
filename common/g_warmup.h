@@ -36,7 +36,7 @@ public:
 	    DISABLED,
 	    WARMUP,
 	    INGAME,
-	    COUNTDOWN,
+	    COUNTDOWN
 	} status_t;
 	Warmup() : status(Warmup::DISABLED), time_begin(0) { }
 	Warmup::status_t get_status();

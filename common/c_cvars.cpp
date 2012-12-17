@@ -206,7 +206,7 @@ void cvar_t::SetDefault (const char *val)
 
 void cvar_t::RestoreDefault ()
 {
-	Set(m_Default.c_str());	
+	Set(m_Default.c_str());
 	m_Flags |= CVAR_ISDEFAULT;
 }
 
@@ -516,11 +516,11 @@ void cvar_t::cvarlist()
 
 		count++;
 		Printf (PRINT_HIGH, "%c%c%c%c %s \"%s\"\n",
-				flags & CVAR_ARCHIVE ? 'A' : 
+				flags & CVAR_ARCHIVE ? 'A' :
 					flags & CVAR_CLIENTARCHIVE ? 'C' :
 					flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
 				flags & CVAR_USERINFO ? 'U' : ' ',
-				flags & CVAR_SERVERINFO ? 'S' : 
+				flags & CVAR_SERVERINFO ? 'S' :
 					flags & CVAR_CLIENTINFO ? 'C' : ' ',
 				flags & CVAR_NOSET ? '-' :
 					flags & CVAR_LATCH ? 'L' :
@@ -570,12 +570,12 @@ BEGIN_COMMAND (set)
 			if (strcmp("enabled", argv[2]) == 0 ||
 			    strcmp("true", argv[2]) == 0)
 			{
-				argv[2] = "1";
+				argv[2] = (char *)"1";
 			}
 			else if (strcmp("disabled", argv[2]) == 0 ||
 			         strcmp("false", argv[2]) == 0)
 			{
-				argv[2] = "0";
+				argv[2] = (char *)"0";
 			}
 		}
 
@@ -601,7 +601,7 @@ BEGIN_COMMAND (get)
 		Printf (PRINT_HIGH, "usage: get <variable>\n");
         return;
 	}
-	
+
     var = cvar_t::FindCVar (argv[1], &prev);
 
 	if (var)
@@ -646,7 +646,7 @@ BEGIN_COMMAND (toggle)
 	}
 
     var = cvar_t::FindCVar (argv[1], &prev);
-	
+
     if (var)
     {
         if (var->flags() & CVAR_NOENABLEDISABLE) {

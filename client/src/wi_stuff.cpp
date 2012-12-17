@@ -616,7 +616,7 @@ void WI_drawAnimatedBack (void)
 	int i;
 	anim_t *a;
 
-	if (gamemode != commercial && wbs->epsd <= 2)
+	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2)
 	{
 		background->Lock ();
 		for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
@@ -795,7 +795,7 @@ void WI_drawShowNextLoc (void)
 	// draw animated background
 	WI_drawAnimatedBack ();
 
-	if (gamemode != commercial)
+	if (gamemode != commercial && gamemode != commercial_bfg )
 	{
 		if (wbs->epsd > 2)
 		{
@@ -1368,7 +1368,7 @@ void WI_loadData (void)
 		}
 	}
 
-	if (gamemode != commercial)
+	if (gamemode != commercial && gamemode != commercial_bfg )
 	{
 		// you are here
 		yah[0] = W_CachePatch ("WIURH0", PU_STATIC);
@@ -1482,7 +1482,7 @@ void WI_unloadData (void)
 		}
 	}
 
-	if (gamemode != commercial)
+	if (gamemode != commercial && gamemode != commercial_bfg )
 	{
 		Z_ChangeTag (yah[0], PU_CACHE);
 		Z_ChangeTag (yah[1], PU_CACHE);
