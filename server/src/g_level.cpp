@@ -164,6 +164,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
+	unnatural_level_progression = true;
 	G_LoadWad(str);
 }
 END_COMMAND (wad)
@@ -237,6 +238,7 @@ void G_ChangeMap(size_t index) {
 		return;
 	}
 
+	unnatural_level_progression = true;
 	G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
 
 	// Set the new map as the current map
