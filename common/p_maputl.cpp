@@ -36,6 +36,7 @@
 #include "r_state.h"
 
 EXTERN_CVAR (co_blockmapfix)
+EXTERN_CVAR (co_zdoomphys)
 
 AActor::ActorBlockMapListNode::ActorBlockMapListNode(AActor *mo) :
 	actor(mo)
@@ -203,18 +204,27 @@ fixed_t P_AproxDistance2 (AActor *a, AActor *b)
 //
 int P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line)
 {
-	if (!line->dx)
+	if (co_zdoomphys)
 	{
-		return (x <= line->v1->x) ? (line->dy > 0) : (line->dy < 0);
-	}
-	else if (!line->dy)
-	{
-		return (y <= line->v1->y) ? (line->dx < 0) : (line->dx > 0);
+		// Make use of vector cross product
+		return	int64_t(y - line->v1->y) * int64_t(line->dx) +
+				int64_t(line->v1->x - x) * int64_t(line->dy) >= 0;
 	}
 	else
 	{
-		return FixedMul (line->dy >> FRACBITS, x - line->v1->x)
-			   <= FixedMul (y - line->v1->y , line->dx >> FRACBITS);
+		if (!line->dx)
+		{
+			return (x <= line->v1->x) ? (line->dy > 0) : (line->dy < 0);
+		}
+		else if (!line->dy)
+		{
+			return (y <= line->v1->y) ? (line->dx < 0) : (line->dx > 0);
+		}
+		else
+		{
+			return FixedMul (line->dy >> FRACBITS, x - line->v1->x)
+				   <= FixedMul (y - line->v1->y , line->dx >> FRACBITS);
+		}
 	}
 }
 
@@ -273,27 +283,36 @@ int P_BoxOnLineSide (const fixed_t *tmbox, const line_t *ld)
 //
 int P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line)
 {
-	if (!line->dx)
+	if (co_zdoomphys)
 	{
-		return (x <= line->x) ? (line->dy > 0) : (line->dy < 0);
-	}
-	else if (!line->dy)
-	{
-		return (y <= line->y) ? (line->dx < 0) : (line->dx > 0);
+		// Make use of vector cross product
+		return	int64_t(y - line->y) * int64_t(line->dx) +
+				int64_t(line->x - x) * int64_t(line->dy) >= 0;
 	}
 	else
 	{
-		fixed_t dx = (x - line->x);
-		fixed_t dy = (y - line->y);
-
-		// try to quickly decide by looking at sign bits
-		if ((line->dy ^ line->dx ^ dx ^ dy) & 0x80000000)
-		{	// (left is negative)
-			return ((line->dy ^ dx) & 0x80000000) ? 1 : 0;
+		if (!line->dx)
+		{
+			return (x <= line->x) ? (line->dy > 0) : (line->dy < 0);
+		}
+		else if (!line->dy)
+		{
+			return (y <= line->y) ? (line->dx < 0) : (line->dx > 0);
 		}
 		else
-		{	// if (left >= right), return 1, 0 otherwise
-			return FixedMul (dy >> 8, line->dx >> 8) >= FixedMul (line->dy >> 8, dx >> 8);
+		{
+			fixed_t dx = (x - line->x);
+			fixed_t dy = (y - line->y);
+
+			// try to quickly decide by looking at sign bits
+			if ((line->dy ^ line->dx ^ dx ^ dy) & 0x80000000)
+			{	// (left is negative)
+				return ((line->dy ^ dx) & 0x80000000) ? 1 : 0;
+			}
+			else
+			{	// if (left >= right), return 1, 0 otherwise
+				return FixedMul (dy >> 8, line->dx >> 8) >= FixedMul (line->dy >> 8, dx >> 8);
+			}
 		}
 	}
 }
