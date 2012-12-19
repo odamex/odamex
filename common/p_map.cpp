@@ -430,7 +430,7 @@ BOOL PIT_CheckLine (line_t *ld)
 	if (P_IsPlaneLevel(&ld->frontsector->floorplane) &&
 		P_IsPlaneLevel(&ld->backsector->floorplane) &&
 		P_IsPlaneLevel(&ld->frontsector->ceilingplane) &&
-		P_IsPlaneLevel(&ld->backsector->floorplane))
+		P_IsPlaneLevel(&ld->backsector->ceilingplane))
 	{
 		P_LineOpening(ld, tmx, tmy);
 	}
