@@ -461,24 +461,26 @@ BOOL PIT_CheckLine (line_t *ld)
 	{
 		// Find the point on the line closest to the actor's center, and use
 		// that to calculate openings
-		float dx = (float)ld->dx;
-		float dy = (float)ld->dy;
-		fixed_t r = (fixed_t)(((float)(tmx - ld->v1->x) * dx +
-				 			   (float)(tmy - ld->v1->y) * dy) /
-							  (dx*dx + dy*dy) * 16777216.f);
-							  
-		if (r <= 0)
-		{
+		// Find the point on the line closest to the actor's center, and use
+		// that to calculate openings
+		double dx = FIXED2DOUBLE(ld->dx);
+		double dy = FIXED2DOUBLE(ld->dy);
+		double r =	(FIXED2DOUBLE(tmx - ld->v1->x) * dx +
+					 FIXED2DOUBLE(tmy - ld->v1->y) * dy) /
+					(dx * dx + dy * dy);
+
+		if (r <= 0.0)
+		{				  
 			P_LineOpening (ld, ld->v1->x, ld->v1->y, tmx, tmy);
 		}
-		else if (r >= 16777216)
+		else if (r >= 1.0)
 		{
 			P_LineOpening (ld, ld->v2->x, ld->v2->y, tmthing->x, tmthing->y);
 		}
 		else
 		{
-			fixed_t sx = ld->v1->x + float(r) / 16777216 * ld->dx;
-			fixed_t sy = ld->v1->y + float(r) / 16777216 * ld->dy;
+			fixed_t sx = ld->v1->x + r * ld->dx;
+			fixed_t sy = ld->v1->y + r * ld->dy;
 			P_LineOpening (ld, sx, sy, tmx, tmy);
 		}
 	}
