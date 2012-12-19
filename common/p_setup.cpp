@@ -1556,7 +1556,7 @@ void P_SetupLevel (char *lumpname, int position)
 	R_OldBlend = ~0;
 
 	// preload graphics
-	if (precache)
+	if (clientside && precache)
 		R_PrecacheLevel ();
 }
 

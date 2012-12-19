@@ -667,9 +667,12 @@ void R_InitTextures (void)
 		textures[j]->index = i;
 	}
 
-	// Precalculate whatever possible.
-	for (i = 0; i < numtextures; i++)
-		R_GenerateLookup (i, &errors);
+	if (clientside)		// server doesn't need to load patches ever
+	{
+		// Precalculate whatever possible.
+		for (i = 0; i < numtextures; i++)
+			R_GenerateLookup (i, &errors);
+	}
 
 //	if (errors)
 //		I_FatalError ("%d errors encountered during texture generation.", errors);
