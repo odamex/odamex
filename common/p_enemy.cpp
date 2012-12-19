@@ -271,8 +271,7 @@ BOOL P_CheckMissileRange (AActor *actor)
 // Move in the current direction,
 // returns false if the move is blocked.
 //
-extern	line_t	**spechit;
-extern	int 	numspechit;
+extern	std::vector<line_t*> spechit;
 
 BOOL P_Move (AActor *actor)
 {
@@ -352,14 +351,16 @@ BOOL P_Move (AActor *actor)
 			return true;
 		}
 
-		if (!numspechit)
+		if (spechit.empty())
 			return false;
 
 		actor->movedir = DI_NODIR;
 		good = false;
-		while (numspechit--)
+		while (!spechit.empty())
 		{
-			line_t *ld = spechit[numspechit];
+			line_t *ld = spechit.back();
+			spechit.pop_back();
+
 			// if the special is not a door
 			// that can be opened,
 			// return false

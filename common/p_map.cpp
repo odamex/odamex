@@ -80,11 +80,7 @@ line_t			*BlockingLine;
 
 // keep track of special lines as they are hit,
 // but don't process them until the move is proven valid
-// [RH] MaxSpecialCross	grows as needed
-int				MaxSpecialCross = 0;
-
-line_t** 		spechit;
-int 			numspechit;
+std::vector<line_t*> spechit;
 
 AActor *onmobj; // generic global onmobj...used for landing on pods/players
 AActor *BlockingMobj;
@@ -202,7 +198,7 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	tmfloorsector = newsubsec->sector;
 
 	validcount++;
-	numspechit = 0;
+	spechit.clear();
 
 	StompAlwaysFrags = tmthing->player || (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
@@ -365,22 +361,6 @@ BOOL PIT_CrossLine (line_t* ld)
 // Adjusts tmfloorz and tmceilingz as lines are contacted
 //
 
-// [RH] Moved this out of PIT_CheckLine()
-static void AddSpecialLine (line_t *ld)
-{
-	if (ld->special)
-	{
-		// [RH] Grow the spechit array as needed
-		if (numspechit >= MaxSpecialCross)
-		{
-			MaxSpecialCross = MaxSpecialCross ? MaxSpecialCross * 2 : 8;
-			spechit = (line_t **)Realloc (spechit, MaxSpecialCross * sizeof(*spechit));
-			DPrintf ("MaxSpecialCross increased to %d\n", MaxSpecialCross);
-		}
-		spechit[numspechit++] = ld;
-	}
-}
-
 static // killough 3/26/98: make static
 BOOL PIT_CheckLine (line_t *ld)
 {
@@ -505,7 +485,7 @@ BOOL PIT_CheckLine (line_t *ld)
 
 	// if contacted a special line, add it to the list
 	if (ld->special)
-		AddSpecialLine (ld);
+		spechit.push_back(ld);
 
 	return true;
 }
@@ -827,7 +807,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	tmsector = newsubsec->sector;
 
 	validcount++;
-	numspechit = 0;
+	spechit.clear();
 
 	if (tmflags & MF_NOCLIP && !(tmflags & MF_SKULLFLY))
 		return true;
@@ -1164,17 +1144,16 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 	// if any special lines were hit, do the effect
 	if (! (thing->flags&(MF_TELEPORT|MF_NOCLIP)) )
 	{
-		while (numspechit--)
+		while (!spechit.empty())
 		{
 			// see if the line was crossed
-			ld = spechit[numspechit];
+			ld = spechit.back();
+			spechit.pop_back();
+
 			side = P_PointOnLineSide (thing->x, thing->y, ld);
 			oldside = P_PointOnLineSide (oldx, oldy, ld);
-			if (side != oldside)
-			{
-				if(ld->special)
-					P_CrossSpecialLine (ld-lines, oldside, thing);
-			}
+			if (side != oldside && ld->special)
+				P_CrossSpecialLine (ld-lines, oldside, thing);
 		}
 	}
 
@@ -1211,14 +1190,10 @@ pushline:
 	
 	if(!(thing->flags&(MF_TELEPORT|MF_NOCLIP)))
 	{
-		int numSpecHitTemp;
-
-		numSpecHitTemp = numspechit;
-		while (numSpecHitTemp > 0)
+		for (size_t i = 0; i < spechit.size(); i++)
 		{
-			numSpecHitTemp--;
 			// see which lines were pushed
-			ld = spechit[numSpecHitTemp];
+			ld = spechit[i];
 			side = P_PointOnLineSide (thing->x, thing->y, ld);
 			CheckForPushSpecial (ld, side, thing);
 		}
