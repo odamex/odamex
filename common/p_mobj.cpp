@@ -479,13 +479,12 @@ void P_MoveActor(AActor *mo)
 
 	// Handle X and Y momemtums
     BlockingMobj = NULL;
-	if (mo->momx || mo->momy || (mo->flags & MF_SKULLFLY))
-	{
+
+	if (mo->momx || mo->momy || (mo->flags & MF_SKULLFLY) || co_zdoomphys)
 		P_XYMovement(mo);
 
-		if (mo->ObjectFlags & OF_MassDestruction)
-			return;		// actor was destroyed
-	}
+	if (mo->ObjectFlags & OF_MassDestruction)
+		return;		// actor was destroyed
 
 	if (mo->flags2 & MF2_FLOATBOB)
 	{ // Floating item bobbing motion (special1 is height)
@@ -1009,7 +1008,8 @@ void P_XYMovement(AActor *mo)
 			{
 				// try to slide along it
 				if (BlockingMobj == NULL)
-				{ // slide against wall
+				{
+					// slide against wall
 					if (BlockingLine != NULL &&
 						mo->player && mo->waterlevel && mo->waterlevel < 3 &&
 						(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove) &&
@@ -1021,19 +1021,20 @@ void P_XYMovement(AActor *mo)
 					P_SlideMove (mo);
 				}
 				else
-				{ // slide against mobj
+				{
+					// slide against mobj
 
 					// try sliding in the x direction
 					fixed_t tx = 0, ty = ptryy - mo->y;
 					walkplane = P_CheckSlopeWalk(mo, tx, ty);
-					if (P_TryMove(mo, mo->x, ptryy, true, walkplane))
+					if (P_TryMove (mo, mo->x + tx, mo->y + ty, true, walkplane))
 						mo->momx = 0;
 					else
 					{
-						// try sliding n the y direction
+						// try sliding in the y direction
 						tx = ptryx - mo->x, ty = 0;
-						walkplane = P_CheckSlopeWalk (mo, tx, ty);
-						if (P_TryMove(mo, ptryx, mo->y, true, walkplane))
+						walkplane = P_CheckSlopeWalk(mo, tx, ty);
+						if (P_TryMove (mo, mo->x + tx, mo->y + ty, true, walkplane))
 							mo->momy = 0;
 						else
 							mo->momx = mo->momy = 0;
@@ -1303,7 +1304,6 @@ void P_ZMovement(AActor *mo)
 				fixed_t minmom = P_CalculateMinMom(mo);
 				if (mo->momz < minmom)
 					momsquat = true;
-
 
 				mo->player->jumpTics = 7;	// delay any jumping for a short while
 				if (momsquat && !(mo->player->spectator) && !(mo->flags2 & MF2_FLY))
