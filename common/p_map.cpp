@@ -1403,16 +1403,14 @@ bool P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove)
 
 	const plane_t *plane = &actor->floorsector->floorplane;
 
+	if (actor->floorsector != actor->subsector->sector)
+		return false;
+
 	// Don't bother with non-sloping floors
 	if (P_IsPlaneLevel(plane))
 		return false;
 
 	fixed_t floorheight = P_FloorHeight(actor->x, actor->y, actor->floorsector);
-
-// [SL] 2012-03-16 - TODO: this seems to break the jump from the flag to the
-// upper walkway on zdectf2 map19
-//	if (actor->floorsector != actor->subsector->sector)
-//		return false;
 
 	// not on floor ?
 	if (actor->z - floorheight > FRACUNIT)
@@ -1459,24 +1457,22 @@ bool P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove)
 				return false;
 			}
 		}
+
 		// Slide the desired location along the plane's normal
 		// so that it lies on the plane's surface
-		destx -= FixedMul(plane->a, t);
-		desty -= FixedMul(plane->b, t);
-		xmove = destx - actor->x;
-		ymove = desty - actor->y;
+		xmove -= FixedMul(plane->a, t);
+		ymove -= FixedMul(plane->b, t);
 		return true;
 	}
 	else if (t > 0)
 	{ // Desired location is in front of (above) the plane
 		if (floorheight == actor->z)
-		{ // Actor's current spot is on/in the plane, so walk down it
-		  // Same principle as walking up, except reversed
-			destx += FixedMul(plane->a, t);
-			desty += FixedMul(plane->b, t);
-			xmove = destx - actor->x;
-			ymove = desty - actor->y;
-			return true;//(plane->c >= STEEPSLOPE);
+		{
+			// Actor's current spot is on/in the plane, so walk down it
+			// Same principle as walking up, except reversed
+			xmove += FixedMul(plane->a, t);
+			ymove += FixedMul(plane->b, t);
+			return true;
 		}
 	}
 
@@ -1721,7 +1717,7 @@ void P_SlideMove (AActor *mo)
 		// killough 3/15/98: Allow objects to drop off ledges
 		fixed_t xmove = 0, ymove = mo->momy;
 		walkplane = P_CheckSlopeWalk(mo, xmove, ymove);
-		if (!P_TryMove(mo, mo->x, mo->y + mo->momy, true, walkplane))
+		if (!P_TryMove(mo, mo->x + xmove, mo->y + ymove, true, walkplane))
 		{
 			ymove = 0;
 			if (co_zdoomphys)

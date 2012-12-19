@@ -532,9 +532,9 @@ void AActor::UnlinkFromWorld ()
 void AActor::LinkToWorld ()
 {
 	// link into subsector
-	subsector_t *ss = subsector = R_PointInSubsector (x, y);
+	subsector = R_PointInSubsector (x, y);
 
-	if(!ss)
+	if (!subsector)
 		return;
 
 	if ( !(flags & MF_NOSECTOR) )
@@ -542,7 +542,7 @@ void AActor::LinkToWorld ()
 		// invisible things don't go into the sector links
 		// killough 8/11/98: simpler scheme using pointer-to-pointer prev
 		// pointers, allows head nodes to be treated like everything else
-		AActor **link = &ss->sector->thinglist;
+		AActor **link = &subsector->sector->thinglist;
 		AActor *next = *link;
 		if ((snext = next))
 			next->sprev = &snext;
