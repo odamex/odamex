@@ -1627,8 +1627,20 @@ BOOL PTR_SlideTraverse (intercept_t* in)
 	if (opentop - slidemo->z < slidemo->height)
 		goto isblocking;				// mobj is too high
 
-	if (openbottom - slidemo->z > 24*FRACUNIT )
+	if (openbottom - slidemo->z > 24*FRACUNIT)
+	{
 		goto isblocking;				// too big a step up
+	}
+	else if (co_zdoomphys && slidemo->z < openbottom)
+	{
+		// [RH] Check to make sure there's nothing in the way for the step up
+		fixed_t savedz = slidemo->z;
+		slidemo->z = openbottom;
+		bool good = P_TestMobjZ (slidemo);
+		slidemo->z = savedz;
+		if (!good)
+			goto isblocking;
+	}
 
 	// this line doesn't block movement
 	return true;
