@@ -68,9 +68,6 @@ fixed_t 		tmceilingz;
 fixed_t 		tmdropoffz;
 sector_t*		tmfloorsector;
 
-//Added by MC: So bot will know what kind of sector it's entering.
-sector_t*		tmsector;
-
 extern sector_t *openbottomsec;
 
 // keep track of the line that lowers the ceiling,
@@ -802,9 +799,6 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	tmfloorz = tmdropoffz = P_FloorHeight(x, y, newsubsec->sector);
 	tmceilingz = P_CeilingHeight(x, y, newsubsec->sector);
 	tmfloorsector = newsubsec->sector;
-
-	//Added by MC: Fill the tmsector.
-	tmsector = newsubsec->sector;
 
 	validcount++;
 	spechit.clear();

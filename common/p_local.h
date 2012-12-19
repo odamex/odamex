@@ -221,9 +221,7 @@ extern AActor			*BlockingMobj;
 extern line_t			*BlockingLine;		// Used only by P_Move
 											// This is not necessarily a *blocking* line
 
-//Added by MC: tmsectortype
 extern fixed_t			tmdropoffz; //Needed in b_move.c
-extern sector_t			*tmsector;
 extern sector_t			*tmfloorsector;
 
 extern	line_t* 		ceilingline;
