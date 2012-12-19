@@ -50,6 +50,7 @@ int		sightcounts[2];
 int		sightcounts2[3];
 
 extern bool HasBehavior;
+EXTERN_CVAR (co_zdoomphys)
 
 /*
 ==============
@@ -396,7 +397,7 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 =====================
 */
 
-bool P_CheckSightHexen(const AActor *t1, const AActor *t2,bool ignoreInvisibility)
+bool P_CheckSightZDoom(const AActor *t1, const AActor *t2)
 {
 	if(!t1 || !t2 || !t1->subsector || !t2->subsector)
 		return false;
@@ -405,16 +406,16 @@ bool P_CheckSightHexen(const AActor *t1, const AActor *t2,bool ignoreInvisibilit
 	const sector_t *s2 = t2->subsector->sector;
 	int pnum = (s1 - sectors) * numsectors + (s2 - sectors);
 
-//
-// check for trivial rejection
-//
+	//
+	// check for trivial rejection
+	//
 	if (!rejectempty && rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
 		sightcounts2[0]++;
 		return false;			// can't possibly be connected
 	}
-//
-// check precisely
-//
+	//
+	// check precisely
+	//
 	// killough 4/19/98: make fake floors and ceilings block monster view
 
 	fixed_t s1_floorheight_t1 = P_FloorHeight(t1->x, t1->y, s1->heightsec);
@@ -451,7 +452,7 @@ bool P_CheckSightHexen(const AActor *t1, const AActor *t2,bool ignoreInvisibilit
 /*
 =====================
 =
-= [denis] P_CheckSightEdgesHexen
+= [denis] P_CheckSightEdgesZDoom
 =
 = Returns true if a straight line between t1 and t2 is unobstructed
 = look from eyes of t1 to any part of t2
@@ -459,24 +460,24 @@ bool P_CheckSightHexen(const AActor *t1, const AActor *t2,bool ignoreInvisibilit
 =====================
 */
 
-bool P_CheckSightEdgesHexen (const AActor *t1, const AActor *t2, float radius_boost)
+bool P_CheckSightEdgesZDoom(const AActor *t1, const AActor *t2, float radius_boost)
 {
 	const sector_t *s1 = t1->subsector->sector;
 	const sector_t *s2 = t2->subsector->sector;
 	int pnum = (s1 - sectors) * numsectors + (s2 - sectors);
 
-//
-// check for trivial rejection
-//
+	//
+	// check for trivial rejection
+	//
 	if (!rejectempty && rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
 		sightcounts2[0]++;
 		return false;                   // can't possibly be connected
 	}
 
-//
-// check precisely
-//
-        // killough 4/19/98: make fake floors and ceilings block monster view
+	//
+	// check precisely
+	//
+	// killough 4/19/98: make fake floors and ceilings block monster view
 
 	fixed_t s1_floorheight_t1 = P_FloorHeight(t1->x, t1->y, s1->heightsec);
 	fixed_t s1_floorheight_t2 = P_FloorHeight(t2->x, t2->y, s1->heightsec);
@@ -486,6 +487,7 @@ bool P_CheckSightEdgesHexen (const AActor *t1, const AActor *t2, float radius_bo
 	fixed_t s2_floorheight_t2 = P_FloorHeight(t2->x, t2->y, s2->heightsec);
 	fixed_t s2_ceilingheight_t1 = P_CeilingHeight(t1->x, t1->y, s2->heightsec);
 	fixed_t s2_ceilingheight_t2 = P_CeilingHeight(t2->x, t2->y, s2->heightsec);
+
 	if ((s1->heightsec && !(s1->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		((t1->z + t1->height <= s1_floorheight_t1 &&
 		  t2->z >= s1_floorheight_t2) ||
@@ -779,9 +781,7 @@ bool P_CrossBSPNode (int bspnum)
 //  if a straight line between t1 and t2 is unobstructed.
 // Uses REJECT.
 //
-bool P_CheckSightDoom
-( const AActor* t1, const AActor* t2,
-  bool ignoreInvisibility)
+bool P_CheckSightDoom(const AActor* t1, const AActor* t2)
 {
     int		s1;
     int		s2;
@@ -886,14 +886,12 @@ static bool P_CheckSightDoom
     return P_CrossBSPNode (numnodes-1);	
 }
 
-bool P_CheckSight
-( const AActor* t1, const AActor* t2,
-  bool ignoreInvisibility)
+bool P_CheckSight(const AActor* t1, const AActor* t2)
 {
-	if (HasBehavior)
-		return P_CheckSightHexen(t1, t2, ignoreInvisibility);
+	if (co_zdoomphys || HasBehavior)
+		return P_CheckSightZDoom(t1, t2);
 	else
-		return P_CheckSightDoom(t1, t2, ignoreInvisibility);
+		return P_CheckSightDoom(t1, t2);
 }
 
 //
@@ -936,8 +934,8 @@ bool P_CheckSightEdgesDoom
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost)
 {
-	if (HasBehavior)
-		return P_CheckSightEdgesHexen(t1, t2, radius_boost);
+	if (co_zdoomphys || HasBehavior)
+		return P_CheckSightEdgesZDoom(t1, t2, radius_boost);
 	else
 		return P_CheckSightEdgesDoom(t1, t2, radius_boost);
 }

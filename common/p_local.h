@@ -239,7 +239,7 @@ bool	P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);
 BOOL	P_TryMove (AActor* thing, fixed_t x, fixed_t y, bool dropoff, bool onfloor = false);
 BOOL	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);
-bool	P_CheckSight (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
+bool	P_CheckSight (const AActor* t1, const AActor* t2);
 void	P_UseLines (player_t* player);
 void	P_ApplyTorque(AActor *mo);
 void	P_CopySector(sector_t *dest, sector_t *src);

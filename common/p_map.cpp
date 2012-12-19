@@ -2862,7 +2862,7 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 	if (thing == bombsource)
 		points *= sv_splashfactor;
 
-	if (points > 0.0f && P_CheckSight(thing, bombspot, true))
+	if (points > 0.0f && P_CheckSight(thing, bombspot))
 	{
 		// OK to damage; target is in direct path
 
