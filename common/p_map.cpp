@@ -1021,6 +1021,24 @@ void P_FakeZMovement(AActor *mo)
 	}
 }
 
+
+void P_CheckPushLines(AActor *thing)
+{
+	if (!thing || !HasBehavior)
+		return;
+	
+	if (!(thing->flags&(MF_TELEPORT|MF_NOCLIP)))
+	{
+		for (size_t i = 0; i < spechit.size(); i++)
+		{
+			// see which lines were pushed
+			line_t *ld = spechit[i];
+			int side = P_PointOnLineSide(thing->x, thing->y, ld);
+			CheckForPushSpecial(ld, side, thing);
+		}
+	}
+}
+
 //
 // P_TryMove
 // Attempt to move to a new position,
@@ -1030,82 +1048,89 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 				bool dropoff, // killough 3/15/98: allow dropoff as option
 				bool onfloor) // [RH] Let P_TryMove keep the thing on the floor
 {
-	fixed_t 	oldx = thing->x;
-	fixed_t 	oldy = thing->y;
-	fixed_t		oldz = thing->z;
-	int 		side;
-	int 		oldside;
-	line_t* 	ld;
+	fixed_t		testz = thing->z;
 	sector_t*	oldsec = thing->subsector->sector;	// [RH] for sector actions
-	sector_t*	newsec;
 
 	floatok = false;
 
-	if (co_zdoomphys && onfloor)
-		thing->z = P_FloorHeight(x, y, thing->floorsector);
+	if (onfloor)
+		testz = P_FloorHeight(x, y, thing->floorsector);
 
 	if (!P_CheckPosition(thing, x, y))
 	{
 		// Solid wall or thing
 		if ((!BlockingMobj || BlockingMobj->player || !thing->player) ||
-			(BlockingMobj->z + BlockingMobj->height - thing->z > (24 * FRACUNIT) ||
+			(BlockingMobj->z + BlockingMobj->height - testz > (24 * FRACUNIT) ||
 			(P_CeilingHeight(x, y, BlockingMobj->subsector->sector) -
 			(BlockingMobj->z + BlockingMobj->height) < thing->height) ||
 			(tmceilingz - (BlockingMobj->z + BlockingMobj->height) < thing->height)))
 		{
-			goto pushline;
+			P_CheckPushLines(thing);
+			return false;
 		}
 		
 		if (!(co_realactorheight && (tmthing->flags2 & MF2_PASSMOBJ)))
-		{
-			thing->z = oldz;
 			return false;
-		}
 	}
 
 	if (co_zdoomphys && onfloor && tmfloorsector == thing->floorsector)
-		thing->z = tmfloorz;
+		testz = tmfloorz;
 
 	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
 	{
 		if (tmceilingz - tmfloorz < thing->height)
-			goto pushline;		// doesn't fit
+		{
+			// doesn't fit
+			P_CheckPushLines(thing);
+			return false;
+		}
 
 		floatok = true;
 	
 		if (!(thing->flags & MF_TELEPORT)
-			&& tmceilingz - thing->z < thing->height
+			&& tmceilingz - testz < thing->height
 			&& !(thing->flags2 & MF2_FLY))
 		{
-			goto pushline;		// mobj must lower itself to fit
+			// mobj must lower itself to fit
+			P_CheckPushLines(thing);
+			return false;
 		}
 	
-		if (thing->flags2 & MF2_FLY && thing->z + thing->height > tmceilingz)
-			goto pushline;
+		if (thing->flags2 & MF2_FLY && testz + thing->height > tmceilingz)
+		{
+			P_CheckPushLines(thing);
+			return false;
+		}
 
 		if (!(thing->flags & MF_TELEPORT))
 		{
-			if (tmfloorz-thing->z > 24*FRACUNIT)
-			{ // too big a step up
-				goto pushline;
+			if (tmfloorz - testz > 24*FRACUNIT)
+			{
+				// too big a step up
+				P_CheckPushLines(thing);
+				return false;
 			}
 			else if (co_fixweaponimpacts && thing->flags & MF_MISSILE &&
-					tmfloorz > thing->z)
+					tmfloorz > testz)
 			{
 				// [SL] 2011-09-16 - Fix the vanilla Doom bug that allows
 				// missiles to climb stairs.
-				goto pushline;
+				P_CheckPushLines(thing);
+				return false;
 			}
 			// FIXME: [SL] this causes problems in the tunnel of zdctfmp.wad map04
-/*			else if (co_zdoomphys && thing->z < tmfloorz)
+/*			else if (co_zdoomphys && testz < tmfloorz)
 			{ // [RH] Check to make sure there's nothing in the way for the step up
-				fixed_t savedz = thing->z;
+				fixed_t savedz = testz;
 				bool good;
-				thing->z = tmfloorz;
+				testz = tmfloorz;
 				good = P_TestMobjZ (thing);
-				thing->z = savedz;
+				testz = savedz;
 				if (!good)
-					goto pushline;
+				{
+					P_CheckPushLines(thing);
+					return false;
+				}
 			} */
 		}
 
@@ -1115,12 +1140,11 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			  tmfloorz - tmdropoffz > 24*FRACUNIT &&
 			!(thing->flags2 & MF2_BLASTED))
 		{ // Can't move over a dropoff unless it's been blasted
-			thing->z = oldz;
 			return false;
 		}
 
 		// killough 11/98: prevent falling objects from going up too many steps
-		if (co_zdoomphys && thing->flags & MF_FALLING && tmfloorz - thing->z >
+		if (co_zdoomphys && thing->flags & MF_FALLING && tmfloorz - testz >
 			FixedMul(thing->momx, thing->momx) + FixedMul(thing->momy, thing->momy))
 		{
 			return false;
@@ -1130,14 +1154,15 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 	// the move is ok, so link the thing into its new position
 	thing->UnlinkFromWorld ();
 
-	oldx = thing->x;
-	oldy = thing->y;
+	fixed_t oldx = thing->x;
+	fixed_t oldy = thing->y;
 	thing->floorz = tmfloorz;
 	thing->ceilingz = tmceilingz;
 	thing->dropoffz = tmdropoffz;		// killough 11/98: keep track of dropoffs
 	thing->floorsector = tmfloorsector;
 	thing->x = x;
 	thing->y = y;
+	thing->z = testz;
 
 	thing->LinkToWorld ();
 
@@ -1147,18 +1172,18 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 		while (!spechit.empty())
 		{
 			// see if the line was crossed
-			ld = spechit.back();
+			line_t *ld = spechit.back();
 			spechit.pop_back();
 
-			side = P_PointOnLineSide (thing->x, thing->y, ld);
-			oldside = P_PointOnLineSide (oldx, oldy, ld);
+			int side = P_PointOnLineSide (thing->x, thing->y, ld);
+			int oldside = P_PointOnLineSide (oldx, oldy, ld);
 			if (side != oldside && ld->special)
 				P_CrossSpecialLine (ld-lines, oldside, thing);
 		}
 	}
 
 	// [RH] If changing sectors, trigger transitions
-	newsec = thing->subsector->sector;
+	sector_t *newsec = thing->subsector->sector;
 	if (oldsec != newsec)
 	{
 		if (oldsec->SecActTarget)
@@ -1168,11 +1193,11 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 		if (newsec->SecActTarget)
 		{
 			int act = SECSPAC_Enter;
-			if (thing->z <= P_FloorHeight(thing->x, thing->y, newsec))
+			if (testz <= P_FloorHeight(thing->x, thing->y, newsec))
 			{
 				act |= SECSPAC_HitFloor;
 			}
-			if (thing->z + thing->height >= P_CeilingHeight(thing->x, thing->y, newsec))
+			if (testz + thing->height >= P_CeilingHeight(thing->x, thing->y, newsec))
 			{
 				act |= SECSPAC_HitCeiling;
 			}
@@ -1181,27 +1206,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 	}
 
 	return true;
-	
-pushline:
-	thing->z = oldz;
-	
-	if (!HasBehavior)
-		return false;
-	
-	if(!(thing->flags&(MF_TELEPORT|MF_NOCLIP)))
-	{
-		for (size_t i = 0; i < spechit.size(); i++)
-		{
-			// see which lines were pushed
-			ld = spechit[i];
-			side = P_PointOnLineSide (thing->x, thing->y, ld);
-			CheckForPushSpecial (ld, side, thing);
-		}
-	}
-
-	return false;
-}
-
+}	
 
 //
 // killough 9/12/98:
