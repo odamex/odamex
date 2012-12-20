@@ -1025,11 +1025,11 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			return false;
 		}
 		
-		if (!(co_realactorheight && (tmthing->flags2 & MF2_PASSMOBJ)))
+		if (!co_realactorheight || !(tmthing->flags2 & MF2_PASSMOBJ))
 			return false;
 	}
 
-	if (co_zdoomphys && onfloor && tmfloorsector == thing->floorsector)
+	if (onfloor && tmfloorsector == thing->floorsector)
 		testz = tmfloorz;
 
 	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
@@ -1074,20 +1074,19 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 				P_CheckPushLines(thing);
 				return false;
 			}
-			// FIXME: [SL] this causes problems in the tunnel of zdctfmp.wad map04
-/*			else if (co_zdoomphys && testz < tmfloorz)
-			{ // [RH] Check to make sure there's nothing in the way for the step up
-				fixed_t savedz = testz;
-				bool good;
-				testz = tmfloorz;
-				good = P_TestMobjZ (thing);
-				testz = savedz;
+			else if (co_realactorheight && testz < tmfloorz)
+			{
+				// [RH] Check to make sure there's nothing in the way for the step up
+				fixed_t savedz = thing->z;
+				thing->z = tmfloorz;
+				bool good = P_TestMobjZ(thing);
+				thing->z = savedz;
 				if (!good)
 				{
 					P_CheckPushLines(thing);
 					return false;
 				}
-			} */
+			}
 		}
 
 		// killough 3/15/98: Allow certain objects to drop off
