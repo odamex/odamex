@@ -480,8 +480,7 @@ void P_MoveActor(AActor *mo)
 	// Handle X and Y momemtums
     BlockingMobj = NULL;
 
-	if (mo->momx || mo->momy || (mo->flags & MF_SKULLFLY) || co_zdoomphys)
-		P_XYMovement(mo);
+	P_XYMovement(mo);
 
 	if (mo->ObjectFlags & OF_MassDestruction)
 		return;		// actor was destroyed
@@ -923,32 +922,13 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 void P_XYMovement(AActor *mo)
 {
 	fixed_t ptryx, ptryy;
-	player_t *player = NULL;
-	fixed_t xmove, ymove;
-	bool walkplane;
-	fixed_t maxmove;
-	static const int windTab[3] = {2048*5, 2048*10, 2048*25};
 
 	if (!mo || !mo->subsector)
 		return;
 
-	if (!mo->momx && !mo->momy)
-	{
-		if (mo->flags & MF_SKULLFLY)
-		{
-			// the skull slammed into something
-			mo->flags &= ~MF_SKULLFLY;
-			mo->momx = mo->momy = mo->momz = 0;
-
-			P_SetMobjState (mo, mo->info->spawnstate);
-		}
-		return;
-	}
-
-	maxmove = (mo->waterlevel < 2) || (mo->flags & MF_MISSILE) ? MAXMOVE : MAXMOVE/4;
-
 	if (mo->flags2 & MF2_WINDTHRUST)
 	{
+		static const int windTab[3] = {2048*5, 2048*10, 2048*25};
 		int special = mo->subsector->sector->special;
 		switch (special)
 		{
@@ -967,18 +947,32 @@ void P_XYMovement(AActor *mo)
 		}
 	}
 
-	xmove = mo->momx = clamp (mo->momx, -maxmove, maxmove);
-	ymove = mo->momy = clamp (mo->momy, -maxmove, maxmove);
+	if (!mo->momx && !mo->momy)
+	{
+		if (mo->flags & MF_SKULLFLY)
+		{
+			// the skull slammed into something
+			mo->flags &= ~MF_SKULLFLY;
+			mo->momx = mo->momy = mo->momz = 0;
 
-	player = mo->player;
+			P_SetMobjState (mo, mo->info->spawnstate);
+		}
+		return;
+	}
 
-	if(!player || !player->mo)
+	fixed_t maxmove = (mo->waterlevel < 2) || (mo->flags & MF_MISSILE) ? MAXMOVE : MAXMOVE/4;
+
+	fixed_t xmove = mo->momx = clamp (mo->momx, -maxmove, maxmove);
+	fixed_t ymove = mo->momy = clamp (mo->momy, -maxmove, maxmove);
+
+	player_t *player = mo->player;
+	if (!player || !player->mo)
 		player = NULL;
 
 	maxmove /= 2;
 
 	// [RH] Adjust player movement on sloped floors
-	walkplane = P_CheckSlopeWalk (mo, xmove, ymove);
+	bool walkplane = P_CheckSlopeWalk (mo, xmove, ymove);
 
 	do
 	{
