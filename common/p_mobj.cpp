@@ -985,11 +985,23 @@ void P_XYMovement(AActor *mo)
 		// This is where the "wallrunning" effect happens. Vanilla only
 		// allows wallrunning North and East, while ZDoom physics allow
 		// North and South.
-		if ((!co_zdoomphys && (xmove > maxmove)) || ymove > maxmove ||
-		    (co_zdoomphys && (ymove < -maxmove)))
+
+		if (xmove > maxmove || ymove > maxmove ||
+			(co_zdoomphys && (xmove < -maxmove || ymove < -maxmove)))
 		{
-			ptryx = mo->x + xmove/2;
-			ptryy = mo->y + ymove/2;
+			if (co_zdoomphys)
+			{
+				// [SL] Note: xmove >> 1 behaves differently than xmove / 2
+				// for negative numbers
+				ptryx = mo->x + (xmove >> 1);
+				ptryy = mo->y + (ymove >> 1);
+			}
+			else
+			{
+				ptryx = mo->x + xmove/2;
+				ptryy = mo->y + ymove/2;
+			}
+
 			xmove >>= 1;
 			ymove >>= 1;
 		}

@@ -1680,23 +1680,17 @@ void P_SlideMove (AActor *mo)
 	// move up to the wall
 	if (bestslidefrac == FRACUNIT+1)
 	{
+		fixed_t xmove, ymove;
 		// the move must have hit the middle, so stairstep
 	  stairstep:
-		// killough 3/15/98: Allow objects to drop off ledges
-		fixed_t xmove = 0, ymove = mo->momy;
-		walkplane = P_CheckSlopeWalk(mo, xmove, ymove);
-		if (!P_TryMove(mo, mo->x + xmove, mo->y + ymove, true, walkplane))
+		xmove = 0, ymove = mo->momy;
+		walkplane = P_CheckSlopeWalk (mo, xmove, ymove);
+		if (!P_TryMove (mo, mo->x + xmove, mo->y + ymove, true, walkplane))
 		{
-			ymove = 0;
-			if (co_zdoomphys)
-				xmove = mo->momy;
-			else
-				xmove = mo->momx; 
-
-			walkplane = P_CheckSlopeWalk(mo, xmove, ymove);
-			P_TryMove(mo, mo->x + mo->momx, mo->y, true, walkplane);
+			xmove = mo->momx, ymove = 0;
+			walkplane = P_CheckSlopeWalk (mo, xmove, ymove);
+			P_TryMove (mo, mo->x + xmove, mo->y + ymove, true, walkplane);
 		}
-		
 		return;
 	}
 
