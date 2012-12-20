@@ -75,6 +75,11 @@ typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
+// Use main() on windows for msvc
+#ifdef _MSC_VER
+#    pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
+#endif
+
 DArgs Args;
 
 // functions to be called at shutdown are stored in this stack
