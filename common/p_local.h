@@ -184,7 +184,6 @@ extern fixed_t			openrange;
 extern fixed_t			lowfloor;
 
 void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=MINFIXED, fixed_t refy=0);
-void P_LineOpeningIntercept(const line_t *line, const intercept_t *in);
 
 BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*) );
 BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*), AActor *start=NULL);

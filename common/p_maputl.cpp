@@ -339,47 +339,37 @@ void P_MakeDivline (const line_t *li, divline_t *dl)
 //
 fixed_t P_InterceptVector (const divline_t *v2, const divline_t *v1)
 {
-#if 1
-	fixed_t 	frac;
-	fixed_t 	num;
-	fixed_t 	den;
+	if (co_zdoomphys)
+	{
+		// [RH] Use 64 bit ints, so long divlines don't overflow
+		int64_t den =
+				(int64_t(v1->dy) * int64_t(v2->dx) -
+				 int64_t(v1->dx) * int64_t(v2->dy)) >> FRACBITS;
 
-	den = FixedMul (v1->dy>>8,v2->dx) - FixedMul(v1->dx>>8,v2->dy);
+		if (den == 0)
+			return 0;		// parallel
 
-	if (den == 0)
-		return 0;
-	//	I_Error ("P_InterceptVector: parallel");
+		int64_t num =
+				int64_t(v1->x - v2->x) * int64_t(v1->dy) +
+				int64_t(v2->y - v1->y) * int64_t(v1->dx);
 
-	num =
-		FixedMul ( (v1->x - v2->x)>>8 ,v1->dy )
-		+FixedMul ( (v2->y - v1->y)>>8, v1->dx );
+		return (fixed_t)(num / den);
+	}
+	else
+	{
+		fixed_t den = FixedMul (v1->dy>>8,v2->dx) - FixedMul(v1->dx>>8,v2->dy);
 
-	frac = FixedDiv (num , den);
+		if (den == 0)
+			return 0;
 
-	return frac;
-#else	// UNUSED, float debug.
-	float frac;
-	float num;
-	float den;
-	float v1x = (float)v1->x/FRACUNIT;
-	float v1y = (float)v1->y/FRACUNIT;
-	float v1dx = (float)v1->dx/FRACUNIT;
-	float v1dy = (float)v1->dy/FRACUNIT;
-	float v2x = (float)v2->x/FRACUNIT;
-	float v2y = (float)v2->y/FRACUNIT;
-	float v2dx = (float)v2->dx/FRACUNIT;
-	float v2dy = (float)v2->dy/FRACUNIT;
+		fixed_t num =
+			FixedMul ( (v1->x - v2->x)>>8 ,v1->dy )
+			+FixedMul ( (v2->y - v1->y)>>8, v1->dx );
 
-	den = v1dy*v2dx - v1dx*v2dy;
+		fixed_t frac = FixedDiv (num , den);
 
-	if (den == 0)
-		return 0;		// parallel
-
-	num = (v1x - v2x)*v1dy + (v2y - v1y)*v1dx;
-	frac = num / den;
-
-	return frac*FRACUNIT;
-#endif
+		return frac;
+	}
 }
 
 
@@ -397,9 +387,6 @@ sector_t *openbottomsec;
 
 void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx, fixed_t refy)
 {
-	sector_t *front, *back;
-	fixed_t fc, ff, bc, bf;
-
 	if (linedef->sidenum[1] == -1)
 	{
 		// single sided line
@@ -407,32 +394,36 @@ void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx, f
 		return;
 	}
 
-	front = linedef->frontsector;
-	back = linedef->backsector;
+	sector_t *front = linedef->frontsector;
+	sector_t *back = linedef->backsector;
 
-	fc = P_CeilingHeight(x, y, front);
-	ff = P_FloorHeight(x, y, front);
-	bc = P_CeilingHeight(x, y, back);
-	bf = P_FloorHeight(x, y, back);
+	fixed_t fc = P_CeilingHeight(x, y, front);
+	fixed_t ff = P_FloorHeight(x, y, front);
+	fixed_t bc = P_CeilingHeight(x, y, back);
+	fixed_t bf = P_FloorHeight(x, y, back);
 
-	opentop = MIN(fc, bc);
+	opentop = MIN<fixed_t>(fc, bc);
 
-	bool usefront;
+	bool fflevel = P_IsPlaneLevel(&front->floorplane);
+	bool bflevel = P_IsPlaneLevel(&back->floorplane);
+
+	bool usefront = (ff > bf);
 
 	// [RH] fudge a bit for actors that are moving across lines
 	// bordering a slope/non-slope that meet on the floor. Note
 	// that imprecisions in the plane equation mean there is a
 	// good chance that even if a slope and non-slope look like
 	// they line up, they won't be perfectly aligned.
-	if (refx == MINFIXED ||	abs(ff - bf) > 256)
-		usefront = (ff > bf);
-	else
+	//
+	// [SL] 2012-12-18 - Increase the tolerance from 256 to FRACUNIT/2
+
+	if ((!fflevel || !bflevel) && abs(ff - bf) < FRACUNIT/2)
 	{
-		if (P_IsPlaneLevel(&front->floorplane))
+		if (fflevel)
 			usefront = true;
-		else if (P_IsPlaneLevel(&back->floorplane))
+		else if (bflevel)
 			usefront = false;
-		else
+		else if (refx != MINFIXED)
 			usefront = !P_PointOnLineSide(refx, refy, linedef);
 	}
 
@@ -450,22 +441,6 @@ void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx, f
 	}
 
 	openrange = opentop - openbottom;
-}
-
-//
-// P_LineOpeningIntercept
-//
-// [SL] 2012-02-08 - Calculates where the intercept crosses the line and calls
-// P_LineOpening() to obtain the correct values for opentop, openbottom, and
-// openrange on lines bordering sloping sectors.
-//
-void P_LineOpeningIntercept(const line_t *line, const intercept_t *in)
-{
-	
-	fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
-	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);	
-	
-	P_LineOpening(line, crossx, crossy);
 }
 
 //

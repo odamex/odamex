@@ -433,7 +433,7 @@ BOOL PIT_CheckLine (line_t *ld)
 		P_IsPlaneLevel(&ld->frontsector->ceilingplane) &&
 		P_IsPlaneLevel(&ld->backsector->ceilingplane))
 	{
-		P_LineOpening(ld, tmx, tmy);
+		P_LineOpening(ld, tmx, tmy, tmx, tmy);
 	}
 	else
 	{
@@ -1574,7 +1574,8 @@ BOOL PTR_SlideTraverse (intercept_t* in)
 	}
 
 	// set openrange, opentop, openbottom
-	P_LineOpeningIntercept(li, in);
+	P_LineOpening(li, trace.x + FixedMul(trace.dx, in->frac),
+				trace.y + FixedMul(trace.dy, in->frac));
 
 	if (openrange < slidemo->height)
 		goto isblocking;				// doesn't fit
@@ -1786,7 +1787,8 @@ BOOL PTR_AimTraverse (intercept_t* in)
 		// Crosses a two sided line.
 		// A two sided line will restrict
 		// the possible target ranges.
-		P_LineOpeningIntercept(li, in);
+		P_LineOpening(li, trace.x + FixedMul(trace.dx, in->frac),
+				trace.y + FixedMul(trace.dy, in->frac));
 
 		if (openbottom >= opentop)
 			return false;				// stop
@@ -1909,7 +1911,8 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 			goto hitline;
 
 		// crosses a two sided line
-		P_LineOpeningIntercept(li, in);
+		P_LineOpening(li, trace.x + FixedMul(trace.dx, in->frac),
+				trace.y + FixedMul(trace.dy, in->frac));
 
 		if (spawnprecise)
 		{
@@ -2289,7 +2292,8 @@ BOOL PTR_RailTraverse (intercept_t *in)
 			goto hitline;
 		
 		// crosses a two sided line
-		P_LineOpeningIntercept(li, in);
+		P_LineOpening(li, trace.x + FixedMul(trace.dx, in->frac),
+				trace.y + FixedMul(trace.dy, in->frac));
 
 		if (z >= opentop || z <= openbottom)
 			goto hitline;
@@ -2501,7 +2505,7 @@ BOOL PTR_CameraTraverse (intercept_t* in)
 		goto hitline;
 
 	// crosses a two sided line
-	P_LineOpeningIntercept(li, in);
+	P_LineOpening(li, crossx, crossy);
 
 	if (z >= opentop || z <= openbottom)
 		goto hitline;
@@ -2600,7 +2604,9 @@ BOOL PTR_UseTraverse (intercept_t *in)
 
 	if (!in->d.line->special)
 	{
-		P_LineOpeningIntercept(in->d.line, in);
+		P_LineOpening(in->d.line, trace.x + FixedMul(trace.dx, in->frac),
+				trace.y + FixedMul(trace.dy, in->frac));
+
 		if (openrange <= 0)
 		{
 			// [RH] Give sector a chance to intercept the use
@@ -2654,7 +2660,8 @@ BOOL PTR_NoWayTraverse (intercept_t *in)
 
 	return ld->special || !(					// Ignore specials
 		ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING) || (		// Always blocking
-		P_LineOpeningIntercept(ld, in),			// Find openings
+		P_LineOpening(ld, trace.x + FixedMul(trace.dx, in->frac),
+				trace.y + FixedMul(trace.dy, in->frac)),		// Find openings
 		openrange <= 0 ||						// No opening
 		openbottom > usething->z+24*FRACUNIT ||	// Too high it blocks
 		opentop < usething->z+usething->height	// Too low it blocks
