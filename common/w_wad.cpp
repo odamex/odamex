@@ -669,7 +669,7 @@ int W_CheckNumForName(const char *name, int namespc)
 	// worth the overhead, considering namespace collisions are rare in
 	// Doom wads.
 
-	while (i >= 0 && (strncasecmp(lumpinfo[i].name, name, 8) ||
+	while (i >= 0 && (strnicmp(lumpinfo[i].name, name, 8) ||
 				lumpinfo[i].namespc != namespc))
 		i = lumpinfo[i].next;
 
@@ -896,7 +896,7 @@ int W_FindLump (const char *name, int *lastlump)
 	lump_p = lumpinfo + *lastlump;
 	while (lump_p < lumpinfo + numlumps)
 	{
-		if (strncasecmp(lump_p->name, name, 8) == 0)
+		if (strnicmp(lump_p->name, name, 8) == 0)
 		{
 			int lump = lump_p - lumpinfo;
 			*lastlump = lump + 1;
