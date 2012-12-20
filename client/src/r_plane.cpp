@@ -614,7 +614,7 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	// Point p is the anchor point of the texture.  It starts out as the
 	// map coordinate (0, 0, planez(0,0)) but texture offset and rotation get applied
 	p.x = -yoffsf * cosang - xoffsf * sinang;
-	p.z = -yoffsf * sinang + xoffsf * cosang;
+	p.z = -xoffsf * cosang + yoffsf * sinang;
 	p.y = P_PlaneZ(p.x, p.z, &pl->secplane);
 
 	// Point t is the point along the plane (texwidth, 0, planez(texwidth, 0)) with texture
