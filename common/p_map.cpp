@@ -95,6 +95,7 @@ EXTERN_CVAR (co_boomlinecheck)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (sv_friendlyfire)
+EXTERN_CVAR (sv_unblockplayers)
 
 CVAR_FUNC_IMPL (sv_gravity)
 {
@@ -242,7 +243,7 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 	{
 		friction = FRICTION_FLY;
 	}
-	else if (!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1 ||
+	else if ((!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1) ||
 		(mo->waterlevel == 1 && (mo->z > mo->floorz + 6*FRACUNIT)))
 	{
 		friction = mo->subsector->sector->friction;
@@ -438,8 +439,6 @@ BOOL PIT_CheckLine (line_t *ld)
 	{
 		// Find the point on the line closest to the actor's center, and use
 		// that to calculate openings
-		// Find the point on the line closest to the actor's center, and use
-		// that to calculate openings
 		double dx = FIXED2DOUBLE(ld->dx);
 		double dy = FIXED2DOUBLE(ld->dy);
 		double r =	(FIXED2DOUBLE(tmx - ld->v1->x) * dx +
@@ -487,17 +486,12 @@ BOOL PIT_CheckLine (line_t *ld)
 	return true;
 }
 
-EXTERN_CVAR(sv_unblockplayers)
-
 //
 // PIT_CheckThing
 //
-static // killough 3/26/98: make static
-BOOL PIT_CheckThing (AActor *thing)
+static BOOL PIT_CheckThing (AActor *thing)
 {
-	fixed_t blockdist;
-	BOOL 	solid;
-	int 	damage;
+	bool solid = thing->flags & MF_SOLID;
 
 	// don't clip against self
 	if (thing == tmthing)
@@ -506,18 +500,15 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)) )
 		return true;	// can't hit thing
 
-
 	// GhostlyDeath -- Spectators go through everything!
-	if (thing->player && thing->player->spectator)
-		return true;
-	// and vice versa
-	if (tmthing->player && tmthing->player->spectator)
+	if ((thing->player && thing->player->spectator) ||
+		(tmthing->player && tmthing->player->spectator))
 		return true;
 
     if (tmthing->player && thing->player && sv_unblockplayers)
         return true;
 
-	blockdist = thing->radius + tmthing->radius;
+	fixed_t blockdist = thing->radius + tmthing->radius;
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
 	{
 		// didn't hit thing
@@ -527,7 +518,7 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (co_realactorheight)
 		BlockingMobj = thing;
 
-	if ((tmthing->flags2 & MF2_PASSMOBJ) && co_realactorheight)
+	if (co_realactorheight && (tmthing->flags2 & MF2_PASSMOBJ))
 	{
 		// check if a mobj passed over/under another object
 		// [SL] 2012-03-27 - ZDoom uses a modified thing->height value for
@@ -543,7 +534,7 @@ BOOL PIT_CheckThing (AActor *thing)
     // check for skulls slamming into things
 	if (tmthing->flags & MF_SKULLFLY)
 	{
-		damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
+		int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
 		P_DamageMobj (thing, tmthing, tmthing, damage, MOD_UNKNOWN);
 		tmthing->flags &= ~MF_SKULLFLY;
 		tmthing->momx = tmthing->momy = tmthing->momz = 0;
@@ -573,22 +564,16 @@ BOOL PIT_CheckThing (AActor *thing)
 
 			// [RH] DeHackEd infighting is here.
 			if (!deh.Infight && !thing->player)
-			{
-				// Hit same species as originator, explode, no damage
-				return false;
-			}
+				return false;		// Hit same species as originator, explode, no damage
 		}
 
 		if (!(thing->flags & MF_SHOOTABLE))
-		{
-			// didn't do any damage
-			return !(thing->flags & MF_SOLID);
-		}
+			return !solid;		// didn't do any damage
 
 		// damage / explode
 		if (tmthing->info->damage)
 		{
-			damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
+			int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
 			{
 				// [RH] figure out the means of death
 				int mod;
@@ -611,30 +596,19 @@ BOOL PIT_CheckThing (AActor *thing)
 			}
 		}
 
-		// don't traverse any more
-		return false;
+		return false;		// don't traverse any more
 	}
+
 	// check for special pickup
 	if (thing->flags & MF_SPECIAL)
 	{
-		solid = thing->flags & MF_SOLID;
-		if (tmthing->flags&MF_PICKUP)
-		{
-			// can remove thing
-			P_TouchSpecialThing (thing, tmthing);
-		}
+		if (tmthing->flags & MF_PICKUP)
+			P_TouchSpecialThing (thing, tmthing);	// can remove thing
+
 		return !solid;
 	}
 
-		// killough 3/16/98: Allow non-solid moving objects to move through solid
-	// ones, by allowing the moving thing (tmthing) to move if it's non-solid,
-	// despite another solid thing being in the way.
-	// killough 4/11/98: Treat no-clipping things as not blocking
-
-	//return !((thing->flags & MF_SOLID && !(thing->flags & MF_NOCLIP))
-	//		 && (tmthing->flags & MF_SOLID));
-
-	return !(thing->flags & MF_SOLID);	// old code -- killough
+	return !solid;
 }
 
 // This routine checks for Lost Souls trying to be spawned		// phares
@@ -708,11 +682,10 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 		return true;
 	else if (tmthing->z + tmthing->height < thing->z)
 		return true;
+
 	fixed_t blockdist = thing->radius+tmthing->radius;
-	if (abs(thing->x-tmx) >= blockdist || abs(thing->y-tmy) >= blockdist)
-	{ // Didn't hit thing
-		return true;
-	}
+	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
+		return true;		// Didn't hit thing
 	
 	onmobj = thing;
 	return false;
@@ -722,23 +695,27 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 // MOVEMENT CLIPPING
 //
 
-
+//
+// P_TestMobjLocation
+//
+// Returns true if the mobj is not blocked by anything at its current
+// location, otherwise returns false.
+//
 BOOL P_TestMobjLocation (AActor *mobj)
 {
-	int flags;
-
-	flags = mobj->flags;
+	int flags = mobj->flags;
 	mobj->flags &= ~MF_PICKUP;
+
 	if (P_CheckPosition(mobj, mobj->x, mobj->y))
-	{ // XY is ok, now check Z
+	{
+		// XY is ok, now check Z
 		mobj->flags = flags;
-		if ((mobj->z < mobj->floorz)
-			|| (mobj->z + mobj->height > mobj->ceilingz))
-		{ // Bad Z
-			return false;
-		}
+		if ((mobj->z < mobj->floorz) || (mobj->z + mobj->height > mobj->ceilingz))
+			return false;		// Bad Z
+
 		return true;
 	}
+
 	mobj->flags = flags;
 	return false;
 }
@@ -768,37 +745,26 @@ BOOL P_TestMobjLocation (AActor *mobj)
 //   blocked, or blocked by a line).
 bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 {
-	int xl, xh;
-	int yl, yh;
-	int bx, by;
-	subsector_t *newsubsec;
 	AActor *thingblocker = NULL;
-	AActor *fakedblocker = NULL;
 	fixed_t realheight = thing->height;
 	bool spectator = thing->player && thing->player->spectator;
-
-	tmthing = thing;
-	tmflags = thing->flags;
-
-	tmx = x;
-	tmy = y;
+	sector_t *newsec = R_PointInSubsector(x,y)->sector;
 
 	tmbbox[BOXTOP] = y + thing->radius;
 	tmbbox[BOXBOTTOM] = y - thing->radius;
 	tmbbox[BOXRIGHT] = x + thing->radius;
 	tmbbox[BOXLEFT] = x - thing->radius;
 
-	newsubsec = R_PointInSubsector (x,y);
+	// The base floor / ceiling is from the subsector that contains the point.
+	// Any contacted lines the step closer together will adjust them.
+	tmfloorz = tmdropoffz = P_FloorHeight(x, y, newsec);
+	tmceilingz = P_CeilingHeight(x, y, newsec);
+	tmfloorsector = newsec;
+	tmthing = thing;
+	tmflags = thing->flags;
+	tmx = x;
+	tmy = y;
 	ceilingline = BlockingLine = NULL;
-
-	if (!newsubsec)
-		return false;
-
-// The base floor / ceiling is from the subsector that contains the point.
-// Any contacted lines the step closer together will adjust them.
-	tmfloorz = tmdropoffz = P_FloorHeight(x, y, newsubsec->sector);
-	tmceilingz = P_CeilingHeight(x, y, newsubsec->sector);
-	tmfloorsector = newsubsec->sector;
 
 	validcount++;
 	spechit.clear();
@@ -811,10 +777,10 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	// because DActors are grouped into mapblocks
 	// based on their origin point, and can overlap
 	// into adjacent blocks by up to MAXRADIUS units.
-	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	int xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
+	int xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
+	int yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
+	int yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 
 	BlockingMobj = NULL;
 
@@ -823,9 +789,9 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 		if (thing->player)	// [RH] Fake taller height to catch stepping up into things.
 			thing->height = realheight + 24*FRACUNIT;
 
-		for (bx = xl; bx <= xh; bx++)
+		for (int bx = xl; bx <= xh; bx++)
 		{
-			for (by = yl; by <= yh; by++)
+			for (int by = yl; by <= yh; by++)
 			{
 				AActor *robin = NULL;
 				do
@@ -860,7 +826,6 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 							}
 							// Nothing is blocking us, but this actor potentially could
 							// if there is something else to step on.
-							fakedblocker = BlockingMobj;
 							robin = BlockingMobj->bmapnode.Next(bx, by);
 							BlockingMobj = NULL;
 						}
@@ -878,7 +843,6 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 			}
 		}
 
-		// check lines
 		BlockingMobj = NULL;
 		thing->height = realheight;
 		if (tmflags & MF_NOCLIP)
@@ -889,25 +853,23 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	else
 	{
 		// vanilla Doom's check for blocking things
-		for (bx=xl ; bx<=xh ; bx++)
-			for (by=yl ; by<=yh ; by++)
+		for (int bx=xl ; bx<=xh ; bx++)
+			for (int by=yl ; by<=yh ; by++)
 				if (!P_BlockThingsIterator(bx,by,PIT_CheckThing))
 					return false;
 
-		// check lines
 		if (tmflags & MF_NOCLIP)
 			return true;
-
-		BlockingMobj = NULL;
 	}
 
+	// check lines
 	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
 	xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
 
-	for (bx=xl ; bx<=xh ; bx++)
-		for (by=yl ; by<=yh ; by++)
+	for (int bx=xl ; bx<=xh ; bx++)
+		for (int by=yl ; by<=yh ; by++)
 			if (!P_BlockLinesIterator (bx,by,PIT_CheckLine))
 				return false;
 	
