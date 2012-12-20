@@ -521,13 +521,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 	if (co_realactorheight && (tmthing->flags2 & MF2_PASSMOBJ))
 	{
 		// check if a mobj passed over/under another object
-		// [SL] 2012-03-27 - ZDoom uses a modified thing->height value for
-		// testing (height += 24*FRACUNIT).  This allows the player to grab
-		// items above his head so just use the thing's original height
-		// (returned by P_ThingInfoHeight) for now.
-
-		if (tmthing->z >= thing->z + P_ThingInfoHeight(thing->info) ||
-			tmthing->z + P_ThingInfoHeight(tmthing->info) < thing->z)
+		if (tmthing->z >= thing->z + thing->height || tmthing->z + tmthing->height <= thing->z)
 			return true;
 	}
 
@@ -600,12 +594,14 @@ static BOOL PIT_CheckThing (AActor *thing)
 	}
 
 	// check for special pickup
-	if (thing->flags & MF_SPECIAL)
+	if (thing->flags & MF_SPECIAL && tmthing->flags & MF_PICKUP)
 	{
-		if (tmthing->flags & MF_PICKUP)
+		// [SL] Work-around the additional height added to players
+		// in P_CheckPosition. Don't let players grab items above
+		// their real height!
+		if (!co_realactorheight || !tmthing->player || 
+			thing->z < tmthing->z + tmthing->height - 24*FRACUNIT)
 			P_TouchSpecialThing (thing, tmthing);	// can remove thing
-
-		return !solid;
 	}
 
 	return !solid;
@@ -787,7 +783,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	if (co_realactorheight && !spectator)
 	{
 		if (thing->player)	// [RH] Fake taller height to catch stepping up into things.
-			thing->height = realheight + 24*FRACUNIT;
+			thing->height += 24*FRACUNIT;
 
 		for (int bx = xl; bx <= xh; bx++)
 		{
