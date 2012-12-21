@@ -187,11 +187,12 @@ int CL_GetPlayerColor(player_t *player)
 	}
 	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player))
-			return enemycolor;
-		if (r_forceteamcolor &&
-			(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
+		if (r_forceteamcolor && 
+					(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
 			return teamcolor;
+		if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
+					player->id != consoleplayer_id)
+			return enemycolor;
 
 		// Adjust the shade of color for team games
 		int red = RPART(player->userinfo.color);
