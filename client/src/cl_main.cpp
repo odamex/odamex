@@ -144,7 +144,6 @@ EXTERN_CVAR (sv_weaponstay)
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_color)
-EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_interp)
@@ -239,6 +238,11 @@ CVAR_FUNC_IMPL (r_forceenemycolor)
 }
 
 CVAR_FUNC_IMPL (r_forceteamcolor)
+{
+	CL_RebuildAllPlayerTranslations();
+}
+
+CVAR_FUNC_IMPL (cl_team)
 {
 	CL_RebuildAllPlayerTranslations();
 }
