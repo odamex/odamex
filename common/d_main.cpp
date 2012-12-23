@@ -988,13 +988,13 @@ bool D_DoomWadReboot(
 				delete wadlevelinfos[i].snapshot;
 				wadlevelinfos[i].snapshot = NULL;
 			}
-        memset(wadlevelinfos,0,sizeof(wadlevelinfos));
+        memset(wadlevelinfos,0,sizeof(*wadlevelinfos));
         numwadlevelinfos = 0;
     }
 
     if (wadclusterinfos)
     {
-        memset(wadclusterinfos,0,sizeof(wadclusterinfos));
+        memset(wadclusterinfos,0,sizeof(*wadclusterinfos));
         numwadclusterinfos = 0;
     }
 
