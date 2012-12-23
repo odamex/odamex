@@ -618,7 +618,7 @@ SectorSnapshot::SectorSnapshot(int time) :
 	mCeilingTexture(0), mFloorTexture(0),
 	mNewCeilingSpecial(0), mNewFloorSpecial(0), mCeilingLow(0), mCeilingHigh(0),
 	mFloorLow(0), mFloorHigh(0), mCeilingCrush(false), mFloorCrush(false), mSilent(false),
-	mCeilingWait(0), mFloorWait(0), mCeilingCounter(0), mFloorCounter(0),
+	mCeilingWait(0), mFloorWait(0), mCeilingCounter(0), mFloorCounter(0), mResetCounter(0),
 	mCeilingStatus(0), mFloorStatus(0), mOldFloorStatus(0),
 	mCrusherSpeed1(0), mCrusherSpeed2(0), mStepTime(0), mPerStepTime(0), mPauseTime(0),
 	mOrgHeight(0), mDelay(0), mFloorLip(0), mFloorOffset(0), mCeilingChange(0), mFloorChange(0)

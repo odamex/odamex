@@ -172,7 +172,7 @@ private:
 
  protected:
 
-	cvar_t () : m_Flags(0), m_Name(0), m_String(0), m_Value(0.f) {}
+	cvar_t () : m_Flags(0), m_Callback(NULL), m_Next(NULL), m_Type(CVARTYPE_NONE), m_Value(0.f) {}
 };
 
 cvar_t* GetFirstCvar(void);
