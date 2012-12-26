@@ -64,10 +64,8 @@
 
 level_locals_t level;			// info about current level
 
-level_pwad_info_t *wadlevelinfos;
-cluster_info_t *wadclusterinfos;
-size_t numwadlevelinfos = 0;
-size_t numwadclusterinfos = 0;
+std::vector<level_pwad_info_t> wadlevelinfos;
+std::vector<cluster_info_t> wadclusterinfos;
 
 BOOL HexenHack;
 
@@ -226,7 +224,7 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 
 int FindWadLevelInfo (char *name)
 {
-	for (size_t i = 0; i < numwadlevelinfos; i++)
+	for (size_t i = 0; i < wadlevelinfos.size(); i++)
 		if (!strnicmp (name, wadlevelinfos[i].mapname, 8))
 			return i;
 
@@ -235,7 +233,7 @@ int FindWadLevelInfo (char *name)
 
 int FindWadClusterInfo (int cluster)
 {
-	for (size_t i = 0; i < numwadclusterinfos; i++)
+	for (size_t i = 0; i < wadclusterinfos.size(); i++)
 		if (wadclusterinfos[i].cluster == cluster)
 			return i;
 
@@ -297,11 +295,11 @@ void G_ParseMapInfo (void)
 				levelindex = FindWadLevelInfo (sc_String);
 				if (levelindex == -1)
 				{
-					levelindex = numwadlevelinfos++;
-					wadlevelinfos = (level_pwad_info_t *)Realloc (wadlevelinfos, sizeof(level_pwad_info_t)*numwadlevelinfos);
+					wadlevelinfos.push_back(level_pwad_info_t());
+					levelindex = wadlevelinfos.size() - 1;
 				}
-				levelinfo = wadlevelinfos + levelindex;
-				memcpy (levelinfo, &defaultinfo, sizeof(*levelinfo));
+				levelinfo = &wadlevelinfos[levelindex];
+				memcpy (levelinfo, &defaultinfo, sizeof(level_pwad_info_t));
 				uppercopy (levelinfo->mapname, sc_String);
 				SC_MustGetString ();
 				ReplaceString (&levelinfo->level_name, sc_String);
@@ -322,11 +320,11 @@ void G_ParseMapInfo (void)
 				clusterindex = FindWadClusterInfo (sc_Number);
 				if (clusterindex == -1)
 				{
-					clusterindex = numwadclusterinfos++;
-					wadclusterinfos = (cluster_info_t *)Realloc (wadclusterinfos, sizeof(cluster_info_t)*numwadclusterinfos);
-					memset (wadclusterinfos + clusterindex, 0, sizeof(cluster_info_t));
+					wadclusterinfos.push_back(cluster_info_t());
+					clusterindex = wadclusterinfos.size() - 1;
+					memset(&wadclusterinfos[clusterindex], 0, sizeof(cluster_info_t));
 				}
-				clusterinfo = wadclusterinfos + clusterindex;
+				clusterinfo = &wadclusterinfos[clusterindex];
 				clusterinfo->cluster = sc_Number;
 				ParseMapInfoLower (ClusterHandlers, MapInfoClusterLevel, NULL, clusterinfo, 0);
 				break;
@@ -473,7 +471,7 @@ void P_RemoveDefereds (void)
 	unsigned int i;
 
 	// Remove any existing defereds
-	for (i = 0; i < numwadlevelinfos; i++)
+	for (i = 0; i < wadlevelinfos.size(); i++)
 		if (wadlevelinfos[i].defered) {
 			zapDefereds (wadlevelinfos[i].defered);
 			wadlevelinfos[i].defered = NULL;
@@ -695,7 +693,7 @@ level_info_t *FindLevelInfo (char *mapname)
 	int i;
 
 	if ((i = FindWadLevelInfo (mapname)) > -1)
-		return (level_info_t *)(wadlevelinfos + i);
+		return (level_info_t *)(&wadlevelinfos[i]);
 	else
 		return FindDefLevelInfo (mapname);
 }
@@ -703,9 +701,9 @@ level_info_t *FindLevelInfo (char *mapname)
 level_info_t *FindLevelByNum (int num)
 {
 	{
-		for (size_t i = 0; i < numwadlevelinfos; i++)
+		for (size_t i = 0; i < wadlevelinfos.size(); i++)
 			if (wadlevelinfos[i].levelnum == num)
-				return (level_info_t *)(wadlevelinfos + i);
+				return (level_info_t *)(&wadlevelinfos[i]);
 	}
 	{
 		level_info_t *i = LevelInfos;
@@ -734,7 +732,7 @@ cluster_info_t *FindClusterInfo (int cluster)
 	int i;
 
 	if ((i = FindWadClusterInfo (cluster)) > -1)
-		return wadclusterinfos + i;
+		return &wadclusterinfos[i];
 	else
 		return FindDefClusterInfo (cluster);
 }
@@ -919,7 +917,7 @@ void G_ClearSnapshots (void)
 {
 	size_t i;
 
-	for (i = 0; i < numwadlevelinfos; i++)
+	for (i = 0; i < wadlevelinfos.size(); i++)
 		if (wadlevelinfos[i].snapshot)
 		{
 			delete wadlevelinfos[i].snapshot;
@@ -946,7 +944,7 @@ void G_SerializeSnapshots (FArchive &arc)
 	{
 		size_t i;
 
-		for (i = 0; i < numwadlevelinfos; i++)
+		for (i = 0; i < wadlevelinfos.size(); i++)
 			if (wadlevelinfos[i].snapshot)
 				writeSnapShot (arc, (level_info_s *)&wadlevelinfos[i]);
 
@@ -987,7 +985,7 @@ void P_SerializeACSDefereds (FArchive &arc)
 	{
 		unsigned int i;
 
-		for (i = 0; i < numwadlevelinfos; i++)
+		for (i = 0; i < wadlevelinfos.size(); i++)
 			if (wadlevelinfos[i].defered)
 				writeDefereds (arc, (level_info_s *)&wadlevelinfos[i]);
 
@@ -1069,7 +1067,7 @@ void G_InitLevelLocals ()
 
 	if ((i = FindWadLevelInfo (level.mapname)) > -1)
 	{
-		level_pwad_info_t *pinfo = wadlevelinfos + i;
+		level_pwad_info_t *pinfo = &wadlevelinfos[i];
 
 		// [ML] 5/11/06 - Remove sky scrolling and sky2
 		// [SL] 2012-03-19 - Add sky2 back

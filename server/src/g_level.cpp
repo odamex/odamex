@@ -341,7 +341,7 @@ void G_InitNew (const char *mapname)
 	// [RH] Mark all levels as not visited
 	if (!savegamerestore)
 	{
-		for (i = 0; i < numwadlevelinfos; i++)
+		for (i = 0; i < wadlevelinfos.size(); i++)
 			wadlevelinfos[i].flags &= ~LEVEL_VISITED;
 
 		for (i = 0; LevelInfos[i].mapname[0]; i++)

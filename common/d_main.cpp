@@ -979,24 +979,17 @@ bool D_DoomWadReboot(
 	W_Close();
 
 	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
-    // I have never used memset, I hope I am not invoking satan by doing this :(
-	if (wadlevelinfos)
-    {
-		for (i = 0; i < numwadlevelinfos; i++)
-			if (wadlevelinfos[i].snapshot)
-			{
-				delete wadlevelinfos[i].snapshot;
-				wadlevelinfos[i].snapshot = NULL;
-			}
-        memset(wadlevelinfos,0,sizeof(*wadlevelinfos));
-        numwadlevelinfos = 0;
-    }
+	for (i = 0; i < wadlevelinfos.size(); i++)
+	{
+		if (wadlevelinfos[i].snapshot)
+		{
+			delete wadlevelinfos[i].snapshot;
+			wadlevelinfos[i].snapshot = NULL;
+		}
+	}
 
-    if (wadclusterinfos)
-    {
-        memset(wadclusterinfos,0,sizeof(*wadclusterinfos));
-        numwadclusterinfos = 0;
-    }
+	wadlevelinfos.clear();
+	wadclusterinfos.clear();
 
 	// Restart the memory manager
 	Z_Init();
