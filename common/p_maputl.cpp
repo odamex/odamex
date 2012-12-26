@@ -59,13 +59,22 @@ void AActor::ActorBlockMapListNode::Link()
 		left = right = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
 	}
 
-	originx = left;
-	originy = top;
-	blockcntx = right - left + 1;
-	blockcnty = bottom - top + 1;
-	
-	if (left >= 0 && right < bmapwidth && top >= 0 && bottom < bmapheight)
+	// do not ignore actors only *partially* outside blockmap
+	// e.g. do not ignore an actor just because its left edge is off the left
+	// side of the blockmap - its *right* edge must be off the left side as well
+	if (right >= 0 && left < bmapwidth && bottom >= 0 && top < bmapheight)
 	{
+		// however, need to clamp a partially off-limits actor to the grid
+		if (left < 0) left = 0;
+		if (right >= bmapwidth) right = bmapwidth - 1;
+		if (top < 0) top = 0;
+		if (bottom >= bmapheight) bottom = bmapheight - 1;
+
+		originx = left;
+		originy = top;
+		blockcntx = right - left + 1;
+		blockcnty = bottom - top + 1;
+
 		// [SL] 2012-05-15 - Add the actor to the blocklinks list for all of the
 		// blockmaps it overlaps, not just the blockmap for the actor's center point.
 		for (int bmy = top; bmy <= bottom; bmy++)
