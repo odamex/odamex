@@ -105,6 +105,7 @@ char DefBindings[] =
 	"bind pause pause; "
 	"bind sysrq screenshot; "			// <- Also known as the Print Screen key
 	"bind t messagemode; "
+	"bind y messagemode2; "
 	"bind \\\\ +showscores; "				// <- Another new command
 	"bind f11 bumpgamma; "
 	"bind f12 spynext; "
