@@ -433,6 +433,8 @@ void CL_QuitNetGame(void)
 			}
 		}
 	}
+
+	cvar_t::C_RestoreCVars();
 }
 
 
@@ -1358,6 +1360,8 @@ void CL_RequestConnectInfo(void)
 std::string missing_file, missing_hash;
 bool CL_PrepareConnect(void)
 {
+	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
+
 	size_t i;
 	DWORD server_token = MSG_ReadLong();
 	server_host = MSG_ReadString();

@@ -114,9 +114,13 @@ public:
 	// Read all cvars from *demo_p and set them appropriately.
 	static void C_ReadCVars (byte **demo_p);
 
-	// Backup demo cvars. Called before a demo starts playing to save all
-	// cvars the demo might change.
-	static void C_BackupCVars (void);
+	// Backup cvars for restoration later. Called before connecting to a server
+	// or a demo starts playing to save all cvars which could be changed while
+	// by the server or by playing a demo.
+	// [SL] bitflag can be used to filter which cvars are set to default.
+	// The default value for bitflag is 0xFFFFFFFF, which effectively disables
+	// the filtering.
+	static void C_BackupCVars (unsigned int bitflag = 0xFFFFFFFF);
 
 	// Restore demo cvars. Called after demo playback to restore all cvars
 	// that might possibly have been changed during the course of demo playback.
@@ -131,8 +135,11 @@ public:
 	// archive cvars to FILE f
 	static void C_ArchiveCVars (void *f);
 
-	// initialize cvars to default values after they are created
-	static void C_SetCVarsToDefaults (void);
+	// Initialize cvars to default values after they are created.
+	// [SL] bitflag can be used to filter which cvars are set to default.
+	// The default value for bitflag is 0xFFFFFFFF, which effectively disables
+	// the filtering.
+	static void C_SetCVarsToDefaults (unsigned int bitflag = 0xFFFFFFFF);
 
 	static bool SetServerVar (const char *name, const char *value);
 
@@ -177,9 +184,8 @@ private:
 
 cvar_t* GetFirstCvar(void);
 
-// Maximum number of cvars that can be saved across a demo. If you need
-// to save more, bump this up.
-#define MAX_DEMOCVARS 32
+// Maximum number of cvars that can be saved.
+#define MAX_BACKUPCVARS 128 
 
 #define BEGIN_CUSTOM_CVAR(name,def,help,type,flags) \
 	static void cvarfunc_##name(cvar_t &); \

@@ -2123,7 +2123,11 @@ void G_DoPlayDemo (bool justStreamInput)
 
 	Printf (PRINT_HIGH, "Playing demo %s\n", defdemoname.c_str());
 
-	cvar_t::C_BackupCVars ();		// [RH] Save cvars that might be affected by demo
+	// [SL] 2012-12-26 - Backup any cvars that need to be set to default to
+	// ensure demo compatibility. CVAR_SERVERINFO cvars is a handy superset
+	// of those cvars
+	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
+	cvar_t::C_SetCVarsToDefaults(CVAR_SERVERINFO);
 	MakeEmptyUserCmd ();
 	demostartgametic = gametic;
 
@@ -2178,15 +2182,6 @@ void G_DoPlayDemo (bool justStreamInput)
 		sv_fastmonsters = *demo_p++;
 		sv_nomonsters = *demo_p++;
 		byte who = *demo_p++;
-
-		// comatibility
-		sv_freelook = "0";
-		sv_allowjump = "0";
-		co_realactorheight = "0";
-		co_zdoomphys = "0";
-		co_allowdropoff = "0";
-		co_fixweaponimpacts = "0";
-		co_blockmapfix = "0";
 
 		if(!justStreamInput)
 			players.clear();
