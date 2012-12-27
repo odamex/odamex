@@ -27,6 +27,7 @@
 #include "p_ctf.h"
 #include "i_system.h"
 #include "g_warmup.h"
+#include "p_unlag.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
@@ -295,10 +296,10 @@ void SV_FlagDrop (player_t &player, flag_t f)
 	player.flags[f] = false; // take ex-carrier's flag
 	CTFdata[f].flagger = 0;
 
-	CTF_SpawnDroppedFlag (f,
-				   player.mo->x,
-				   player.mo->y,
-				   player.mo->z);
+	fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
+	Unlag::getInstance().getReconciliationOffset(player.id, xoffs, yoffs, zoffs);
+
+	CTF_SpawnDroppedFlag(f, player.mo->x + xoffs, player.mo->y + yoffs, player.mo->z + zoffs);
 }
 
 //

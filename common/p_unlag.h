@@ -51,7 +51,7 @@ public:
 	void registerSector(sector_t *sector);
 	void unregisterSector(sector_t *sector);
 	void setRoundtripDelay(byte player_id, byte svgametic);
-	void getReconciliationOffset(	byte shooter_id, byte target_id,
+	void getReconciliationOffset(	byte target_id,
 									fixed_t &x, fixed_t &y, fixed_t &z);
 	static bool enabled();
 private:
@@ -75,6 +75,10 @@ private:
 		fixed_t		backup_x;
 		fixed_t		backup_y;
 		fixed_t		backup_z;
+
+		fixed_t		offset_x;
+		fixed_t		offset_y;
+		fixed_t		offset_z;
 		
 		// did we change player's MF_SHOOTABLE flag during reconciliation?
 		bool		changed_flags;

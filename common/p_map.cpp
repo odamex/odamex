@@ -2084,8 +2084,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 		// position, not at their reconciled position
 		if (shootthing->player && th->player)
 		{
-			Unlag::getInstance().getReconciliationOffset(	shootthing->player->id,
-													    	th->player->id,
+			Unlag::getInstance().getReconciliationOffset(	th->player->id,
 													    	xoffs, yoffs, zoffs);
 		}
 

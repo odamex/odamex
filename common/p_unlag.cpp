@@ -178,6 +178,10 @@ void Unlag::reconcilePlayerPositions(byte shooter_id, size_t ticsago)
 			dest_y = player_history[i].history_y[cur];
 			dest_z = player_history[i].history_z[cur];
 
+			player_history[i].offset_x = player_history[i].backup_x - dest_x;
+			player_history[i].offset_y = player_history[i].backup_y - dest_y;
+			player_history[i].offset_z = player_history[i].backup_z - dest_z;
+
 			if (player_history[i].history_size < ticsago)
 			{
 				// make the player temporarily unshootable since this player
@@ -504,7 +508,7 @@ void Unlag::reconcile(byte shooter_id)
 				gametic & 0xFF, shooter_id, lag);
 	#endif	// _UNLAG_DEBUG_
 
-	if (lag > 0 && lag <= Unlag::MAX_HISTORY_TICS) 
+	if (lag > 0 && lag < Unlag::MAX_HISTORY_TICS) 
 	{
 		reconcileSectorPositions(lag);
 		reconcilePlayerPositions(shooter_id, lag);
@@ -572,25 +576,20 @@ void Unlag::setRoundtripDelay(byte player_id, byte svgametic)
 // Changes the x, y, z parameters to reflect how much a player was moved
 // during reconciliation.
 
-void Unlag::getReconciliationOffset(	byte shooter_id, byte target_id,
+void Unlag::getReconciliationOffset(	byte target_id,
 			   	 			   			fixed_t &x, fixed_t &y, fixed_t &z)
 {  
-	if (!reconciled)	// reconciled will only be true if sv_unlag is 1)
+	x = y = z = 0;
+
+	if (!reconciled)	// reconciled will only be true if sv_unlag is 1
 		return;
 
 	size_t target_index  = player_id_map[target_id];
-	size_t shooter_index = player_id_map[shooter_id];
 
-	// how many tics was the target reconciled?
-	size_t ticsago = player_history[shooter_index].current_lag;
-    size_t cur = (gametic - ticsago) % Unlag::MAX_HISTORY_TICS;
 	// calculate how far the target was moved during reconciliation
-	x = player_history[target_index].backup_x 
-		- player_history[target_index].history_x[cur];
-	y = player_history[target_index].backup_y 
-		- player_history[target_index].history_y[cur];
-	z =	player_history[target_index].backup_z 
-		- player_history[target_index].history_z[cur];
+	x = player_history[target_index].offset_x;
+	y = player_history[target_index].offset_y;
+	z = player_history[target_index].offset_z;
 }
 
 

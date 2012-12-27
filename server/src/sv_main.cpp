@@ -4774,9 +4774,19 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		MSG_WriteMarker(&cl->reliablebuf, svc_movemobj);
 		MSG_WriteShort(&cl->reliablebuf, target->netid);
 		MSG_WriteByte(&cl->reliablebuf, target->rndindex);
-		MSG_WriteLong(&cl->reliablebuf, target->x);
-		MSG_WriteLong(&cl->reliablebuf, target->y);
-		MSG_WriteLong(&cl->reliablebuf, target->z);
+
+		// [SL] 2012-12-26 - Get real position since this actor is at
+		// a reconciled position with sv_unlag 1
+		fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
+		if (target->player)
+		{
+			Unlag::getInstance().getReconciliationOffset(
+					target->player->id, xoffs, yoffs, zoffs);
+		}
+
+		MSG_WriteLong(&cl->reliablebuf, target->x + xoffs);
+		MSG_WriteLong(&cl->reliablebuf, target->y + yoffs);
+		MSG_WriteLong(&cl->reliablebuf, target->z + zoffs);
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_mobjspeedangle);
 		MSG_WriteShort(&cl->reliablebuf, target->netid);
