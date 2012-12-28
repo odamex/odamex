@@ -751,9 +751,6 @@ bool ST_Responder (event_t *ev)
         // 'clev' change-level cheat
         else if (cht_CheckCheat(&cheat_clev, (char)ev->data2))
         {
-            if (CheckCheatmode ())
-                return false;
-
             char buf[16];
 			//char *bb;
 
