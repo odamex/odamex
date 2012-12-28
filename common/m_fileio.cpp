@@ -205,7 +205,7 @@ BOOL M_ExtractFileExtension (std::string filename, std::string &dest)
         return false;
 
     // extract extension without leading dot
-    dest = filename.substr(last_dot + 1, filename.length());
+    dest = filename.substr(last_dot + 1);
 
     // fun in the sun
     return true;
@@ -237,7 +237,7 @@ void M_ExtractFileBase (std::string filename, std::string &dest)
 		e = filename.length();
 
 	if(l < filename.length())
-		dest = filename.substr(l, e);
+		dest = filename.substr(l, e - l);
 }
 
 //
@@ -255,7 +255,7 @@ void M_ExtractFileName (std::string filename, std::string &dest)
 		l++;
 
     if(l < filename.length())
-        dest = filename.substr(l, filename.length());
+        dest = filename.substr(l);
 }
 
 std::string M_ExtractFileName(const std::string filename) {
