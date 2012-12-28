@@ -76,7 +76,7 @@ typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
 #endif
 
 // Use main() on windows for msvc
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(GCONSOLE)
 #    pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
 #endif
 
