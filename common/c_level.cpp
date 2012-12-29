@@ -594,13 +594,24 @@ bool G_LoadWad(const std::string &str, const std::string &mapname)
 
 	const char *data = str.c_str();
 
-	while ( (data = ParseString2(data)) )
+	for (size_t argv = 0; (data = ParseString2(data)); argv++)
 	{
 		std::string ext;
 
-		if (M_ExtractFileExtension(com_token, ext))
+		if (argv == 0 && W_IsIWAD(com_token))
 		{
-			if (ext == "wad")
+			// Add an IWAD
+			std::string iwad_name(com_token);
+
+			// The first argument in the string can be the name of an IWAD
+			// with the WAD extension omitted
+			M_AppendExtension(iwad_name, ".wad");
+
+			newwadfiles.push_back(iwad_name);
+		}
+		else if (M_ExtractFileExtension(com_token, ext))
+		{
+			if (ext == "wad" && !W_IsIWAD(com_token))
 				newwadfiles.push_back(com_token);
 			else if (ext == "deh" || ext == "bex")
 				newpatchfiles.push_back(com_token);		// Patch file
