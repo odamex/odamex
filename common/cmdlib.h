@@ -102,4 +102,6 @@ bool StrToTime(std::string str, time_t &tim);
 bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (const char **ptr, const char *str);
 
+int RegexMatch(const char *regexp, const char *text, bool cis = false);
+
 #endif
