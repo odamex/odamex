@@ -3215,6 +3215,7 @@ void CL_Spectate()
 			player.deltaviewheight = 1000 << FRACBITS;
 		} else {
 			displayplayer_id = consoleplayer_id; // get out of spynext
+			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
 	}
 
