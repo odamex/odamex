@@ -21,11 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-#if _MSC_VER == 1200
-// MSVC6, disable broken warnings about truncated stl lines
-#pragma warning(disable:4786)
-#endif
-
 #include <string>
 #include <vector>
 #include <fstream>

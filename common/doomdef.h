@@ -29,11 +29,6 @@
 #include <stdio.h>
 #include <string.h>
 
-// GhostlyDeath -- Can't stand the warnings
-#if _MSC_VER == 1200
-#pragma warning(disable:4786)
-#endif
-
 // GhostlyDeath -- MSVC++ 8+, remove "deprecated" warnings
 #if _MSC_VER >= 1400
 #pragma warning(disable : 4996)

@@ -35,12 +35,6 @@
 
 #include <sstream>
 
-// GhostlyDeath -- VC6 requires Map and sstream doesn't seem to have anything either
-#if _MSC_VER <= 1200
-#include <string>
-#include <map>
-#endif
-
 /* [Petteri] Use Winsock for Win32: */
 #ifdef _WIN32
 #	define WIN32_LEAN_AND_MEAN

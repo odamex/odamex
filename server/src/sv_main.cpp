@@ -2655,12 +2655,8 @@ void SV_Say(player_t &player)
     // Flood protection
     if (player.LastMessage.Time)
     {
-#if defined(_MSC_VER) && _MSC_VER <= 1200
-		// GhostlyDeath <October 28, 2008> -- VC6 can't cast unsigned __int64 to a double!
-		signed __int64 Difference = (I_GetTime() - player.LastMessage.Time);
-#else
         QWORD Difference = (I_GetTime() - player.LastMessage.Time);
-#endif
+
         float Delay = (float)(sv_flooddelay * TICRATE);
 
         if (Difference <= Delay)
