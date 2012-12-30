@@ -469,17 +469,11 @@ void DCanvas::Lock ()
 			{
 				dc_pitch = pitch << detailyshift;
 				R_InitFuzzTable ();
-#ifdef USEASM
-				ASM_PatchPitch ();
-#endif
 			}
 
 			if ((is8bit() ? 1 : 4) << detailxshift != ds_colsize)
 			{
 				ds_colsize = (is8bit() ? 1 : 4) << detailxshift;
-#ifdef USEASM
-				ASM_PatchColSize ();
-#endif
 			}
 		}
 	}

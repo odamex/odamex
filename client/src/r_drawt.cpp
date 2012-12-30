@@ -42,7 +42,6 @@ unsigned int dc_tspans[4][256];
 unsigned int *dc_ctspan[4];
 unsigned int *horizspan[4];
 
-#ifndef USEASM
 // Copies one span at hx to the screen at sx.
 void rt_copy1col_c (int hx, int sx, int yl, int yh)
 {
@@ -266,7 +265,6 @@ void rt_map4cols_c (int sx, int yl, int yh)
 		dest += pitch*2;
 	} while (--count);
 }
-#endif	/* !USEASM */
 
 // Translates one span at hx to the screen at sx.
 void rt_tlate1col (int hx, int sx, int yl, int yh)

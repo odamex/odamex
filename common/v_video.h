@@ -486,12 +486,6 @@ std::string V_GetColorStringByName (const char *name);
 
 BOOL V_SetResolution (int width, int height, int bpp);
 
-
-#ifdef USEASM
-extern "C" void ASM_PatchPitch (void);
-extern "C" void ASM_PatchColSize (void);
-#endif
-
 #endif // __V_VIDEO_H__
 
 

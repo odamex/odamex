@@ -99,29 +99,14 @@ void rt_tlate4cols (int sx, int yl, int yh);
 void rt_tlatelucent1col (int hx, int sx, int yl, int yh);
 void rt_tlatelucent2cols (int hx, int sx, int yl, int yh);
 void rt_tlatelucent4cols (int sx, int yl, int yh);
-extern "C" void rt_copy1col_asm (int hx, int sx, int yl, int yh);
-extern "C" void rt_copy2cols_asm (int hx, int sx, int yl, int yh);
-extern "C" void rt_copy4cols_asm (int sx, int yl, int yh);
-extern "C" void rt_map1col_asm (int hx, int sx, int yl, int yh);
-extern "C" void rt_map2cols_asm (int hx, int sx, int yl, int yh);
-extern "C" void rt_map4cols_asm1 (int sx, int yl, int yh);
-extern "C" void rt_map4cols_asm2 (int sx, int yl, int yh);
 
 extern void (*rt_map4cols)(int sx, int yl, int yh);
 
-#ifdef USEASM
-#define rt_copy1col		rt_copy1col_asm
-#define rt_copy2cols	rt_copy2cols_asm
-#define rt_copy4cols	rt_copy4cols_asm
-#define rt_map1col		rt_map1col_asm
-#define rt_map2cols		rt_map2cols_asm
-#else
 #define rt_copy1col		rt_copy1col_c
 #define rt_copy2cols	rt_copy2cols_c
 #define rt_copy4cols	rt_copy4cols_c
 #define rt_map1col		rt_map1col_c
 #define rt_map2cols		rt_map2cols_c
-#endif
 
 void rt_draw1col (int hx, int sx);
 void rt_draw2cols (int hx, int sx);
@@ -131,7 +116,6 @@ void rt_draw4cols (int sx);
 void rt_initcols (void);
 
 
-#ifndef USEASM
 void	R_DrawColumnHorizP_C (void);
 void	R_DrawColumnP_C (void);
 void	R_DrawFuzzColumnP_C (void);
@@ -145,25 +129,6 @@ void	R_DrawFuzzColumnD_C (void);
 void	R_DrawTranslucentColumnD_C (void);
 void	R_DrawTranslatedColumnD_C (void);
 void	R_DrawSpanD (void);
-
-#else	/* USEASM */
-
-extern "C" void	R_DrawColumnP_Unrolled (void);
-
-extern "C" void	R_DrawColumnHorizP_ASM (void);
-extern "C" void	R_DrawColumnP_ASM (void);
-extern "C" void	R_DrawFuzzColumnP_ASM (void);
-void	R_DrawTranslucentColumnP_C (void);
-void	R_DrawTranslatedColumnP_C (void);
-extern "C" void	R_DrawSpanP_ASM (void);
-void	R_DrawSlopeSpanIdealP_C (void);		// [SL] NO ASM version yet
-
-void	R_DrawColumnD_C (void);
-void	R_DrawFuzzColumnD_C (void);
-void	R_DrawTranslucentColumnD_C (void);
-void	R_DrawTranslatedColumnD_C (void);
-void	R_DrawSpanD (void);
-#endif
 
 void	R_DrawTlatedLucentColumnP_C (void);
 #define R_DrawTlatedLucentColumn R_DrawTlatedLucentColumnP_C

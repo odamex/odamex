@@ -172,7 +172,6 @@
 					<Add option="/DWIN32" />
 					<Add option="/DNDEBUG" />
 					<Add option="/D_WINDOWS" />
-					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DPORTMIDI" />
@@ -247,7 +246,6 @@
 					<Add option="/wd4430" />
 					<Add option="/DWIN32" />
 					<Add option="/D_WINDOWS" />
-					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DPORTMIDI" />
@@ -308,7 +306,6 @@
 			<Add option="-fexceptions" />
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
-			<Add option="-DNOASM" />
 			<Add option="-DPORTMIDI" />
 			<Add directory="." />
 			<Add directory="../src" />

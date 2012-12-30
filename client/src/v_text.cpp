@@ -183,9 +183,6 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 		charimg = (DWORD *)&ConChars[(*str) * 128];
 		if (is8bit())
 		{
-#ifdef USEASM
-			PrintChar1P (charimg, temp + x, pitch);
-#else
 			int z;
 			DWORD *writepos;
 
@@ -198,7 +195,6 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 				writepos += (pitch >> 2) - 1;
 				charimg += 4;
 			}
-#endif
 		}
 		else
 		{
@@ -279,13 +275,7 @@ void DCanvas::PrintStr2 (int x, int y, const char *s, int count) const
 	    }
 
 		charimg = (DWORD *)&ConChars[(*str) * 128];
-#ifdef USEASM
-		if (UseMMX)
-		{
-			PrintChar2P_MMX (charimg, temp + x, pitch);
-		}
-		else
-#endif
+
 		{
 			int z;
 			byte *buildmask, *buildbits, *image;
@@ -336,9 +326,6 @@ void DCanvas::PrintStr2 (int x, int y, const char *s, int count) const
 		count--;
 		x += 16;
 	}
-#ifdef USEASM
-	ENDMMX;
-#endif
 }
 
 //

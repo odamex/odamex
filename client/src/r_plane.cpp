@@ -120,12 +120,6 @@ float					ixscale, iyscale;
 
 EXTERN_CVAR (r_skypalette)
 
-#ifdef USEASM
-extern "C" void R_SetSpanSource_ASM (byte *flat);
-extern "C" void R_SetSpanColormap_ASM (byte *colormap);
-extern "C" byte *ds_curcolormap, *ds_cursource;
-#endif
-
 //
 // R_InitPlanes
 // Only at game startup.
@@ -854,11 +848,6 @@ void R_DrawPlanes (void)
 					}
 				}
 				
-#ifdef USEASM
-				if (ds_source != ds_cursource)
-					R_SetSpanSource_ASM (ds_source);
-#endif
-
 				pl->top[pl->maxx+1] = 0xffffffffu;
 				pl->top[pl->minx-1] = 0xffffffffu;
 

@@ -153,16 +153,6 @@ typedef signed __int64		SQWORD;
 
 typedef DWORD				BITFIELD;
 
-#ifndef NOASM
-#ifndef USEASM
-#define USEASM 1
-#endif
-#else
-#ifdef USEASM
-#undef USEASM
-#endif
-#endif
-
 #ifdef _WIN32
 #define PATHSEP "\\"
 #define PATHSEPCHAR '\\'

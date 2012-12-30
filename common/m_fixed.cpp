@@ -31,8 +31,6 @@
 #include "m_fixed.h"
 
 
-#ifndef USEASM
-
 // C routines
 
 fixed_t FixedMul_C (fixed_t a, fixed_t b)
@@ -63,7 +61,6 @@ fixed_t FixedDiv_C (fixed_t a, fixed_t b)
 	}
 }
 
-#endif
 
 VERSION_CONTROL (m_fixed_cpp, "$Id$")
 

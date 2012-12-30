@@ -165,7 +165,6 @@
 					<Add option="/DWIN32" />
 					<Add option="/DNDEBUG" />
 					<Add option="/D_WINDOWS" />
-					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DODA_HAVE_MINIUPNP" />
@@ -227,7 +226,6 @@
 					<Add option="/wd4430" />
 					<Add option="/DWIN32" />
 					<Add option="/D_WINDOWS" />
-					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DODA_HAVE_MINIUPNP" />
@@ -274,7 +272,6 @@
 			<Add option="-fexceptions" />
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
-			<Add option="-DNOASM" />
 			<Add option="-D_WIN32_WINNT=0x0500" />
 			<Add option="-DJSON_IS_AMALGAMATION" />
 			<Add directory="." />
