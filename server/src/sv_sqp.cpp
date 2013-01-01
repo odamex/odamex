@@ -314,9 +314,7 @@ static DWORD IntQrySendResponse(const WORD &TagId,
     // Begin enquirer version translation
     DWORD EqVersion = MSG_ReadLong();
     DWORD EqProtocolVersion = MSG_ReadLong();
-    DWORD EqTime = 0;
-
-    EqTime = MSG_ReadLong();
+    DWORD EqTime = MSG_ReadLong();
 
     // Override other packet types for older enquirer version response
     if (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) || 

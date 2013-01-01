@@ -86,7 +86,7 @@ void SV_InitMasters(void)
         // [Russell] - Add some default masters
         // so we can dump them to the server cfg file if
         // one does not exist
-        if (!masters.size())
+        if (masters.empty())
 		{
 			int i = 0;
             while(def_masterlist[i])
