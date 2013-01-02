@@ -34,32 +34,25 @@
 #define FRACBITS				16
 #define FRACUNIT				(1<<FRACBITS)
 
-typedef int fixed_t;		// fixed 16.16
+typedef int fixed_t;				// fixed 16.16
 typedef unsigned int dsfixed_t;	// fixedpt used by span drawer
 
-fixed_t FixedMul_C				(fixed_t a, fixed_t b);
-fixed_t FixedDiv_C				(fixed_t a, fixed_t b);
-
-#ifdef ALPHA
-inline fixed_t FixedMul (fixed_t a, fixed_t b)
+//
+// Fixed Point Multiplication
+//
+inline static fixed_t FixedMul(fixed_t a, fixed_t b)
 {
-    return (fixed_t)(((long)a * (long)b) >> 16);
+	return (fixed_t)(((int64_t)a * b) >> FRACBITS);
 }
 
-inline fixed_t FixedDiv (fixed_t a, fixed_t b)
+//
+// Fixed Point Division
+//
+inline static fixed_t FixedDiv(fixed_t a, fixed_t b)
 {
-    if (abs(a) >> 14 >= abs(b))
-	    return (a^b)<0 ? MININT : MAXINT;
-	return (fixed_t)((((long)a) << 16) / b);
+	return (abs(a) >> 14) >= abs(b) ? ((a ^ b) >> 31) ^ MAXINT :
+		(fixed_t)(((int64_t)a << FRACBITS) / b);
 }
-
-#else
-
-#define FixedMul(a,b)			FixedMul_C(a,b)
-#define FixedDiv(a,b)			FixedDiv_C(a,b)
-
-
-#endif // !ALPHA
 
 #endif
 
