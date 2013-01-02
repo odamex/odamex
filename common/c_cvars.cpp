@@ -154,10 +154,15 @@ void cvar_t::ForceSet (const char *val)
 	{
 		m_Flags |= CVAR_MODIFIED;
 		if(val)
+		{
 			m_String = val;
+            m_Value = atof(val);
+		}
 		else
+		{
 			m_String = "";
-		m_Value = atof (val);
+            m_Value = 0.0f;
+		}
 
 		if (m_Flags & CVAR_USERINFO)
 			D_UserInfoChanged (this);
