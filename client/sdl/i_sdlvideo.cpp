@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -48,7 +48,7 @@
 #include "i_xbox.h"
 #endif
 
-EXTERN_CVAR (autoadjust_video_settings)
+EXTERN_CVAR (vid_autoadjust)
 
 SDLVideo::SDLVideo(int parm)
 {
@@ -84,18 +84,18 @@ SDLVideo::SDLVideo(int parm)
     if (hIcon)
     {
         HWND WindowHandle;
-        
+
         SDL_SysWMinfo wminfo;
         SDL_VERSION(&wminfo.version)
         SDL_GetWMInfo(&wminfo);
-        
+
         WindowHandle = wminfo.window;
 
         SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
         SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
     }
     #endif
-    
+
     I_SetWindowCaption();
 
    sdlScreen = NULL;
@@ -130,19 +130,19 @@ SDLVideo::SDLVideo(int parm)
    }
    else
    {
-      vidMode_t CustomVidModes[] = 
+      vidMode_t CustomVidModes[] =
       {
          { 640, 480, 8 }
         ,{ 640, 400, 8 }
         ,{ 320, 240, 8 }
         ,{ 320, 200, 8 }
-      }; 
-      
+      };
+
       // Add in generic video modes reported by SDL
       for(int i = 0; sdllist[i]; ++i)
       {
         vidMode_t vm;
-        
+
         vm.width = sdllist[i]->w;
         vm.height = sdllist[i]->h;
         vm.bits = 8;
@@ -242,7 +242,7 @@ bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
    if(fs && !vidModeList.empty())
    {
       flags = 0;
-       
+
       flags |= SDL_FULLSCREEN;
 
       if(bits == 8)
@@ -278,11 +278,11 @@ void SDLVideo::SetPalette (DWORD *palette)
 }
 
 void SDLVideo::SetOldPalette (byte *doompalette)
-{ 
+{
     //for(size_t i = 0; i < sizeof(newPalette)/sizeof(SDL_Color); i++)
     int i;
     for (i = 0; i < 256; ++i)
-    {    
+    {
       newPalette[i].r = newgamma[*doompalette++];
       newPalette[i].g = newgamma[*doompalette++];
       newPalette[i].b = newgamma[*doompalette++];
@@ -302,7 +302,7 @@ void SDLVideo::UpdateScreen (DCanvas *canvas)
    // If not writing directly to the screen blit to the primary surface
    if(canvas->m_Private != sdlScreen)
       SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, NULL);
-   
+
    SDL_Flip(sdlScreen);
 }
 
@@ -331,7 +331,7 @@ void SDLVideo::ReadScreen (byte *block)
       block += sdlScreen->w;
       source += sdlScreen->pitch;
    }
-   
+
    if(unlock)
       SDL_UnlockSurface(sdlScreen);
 }
@@ -379,7 +379,7 @@ bool SDLVideo::NextMode (int *width, int *height)
 DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primary)
 {
 	DCanvas *scrn = new DCanvas;
-	
+
 	scrn->width = width;
 	scrn->height = height;
 	scrn->bits = screenbits;
@@ -403,8 +403,8 @@ DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primar
 
 	if(!s)
 	   I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
-	   
-	if(s->pitch != (width * (bits / 8)) && autoadjust_video_settings)
+
+	if(s->pitch != (width * (bits / 8)) && vid_autoadjust)
 	   Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
 
 	scrn->pitch = s->pitch;
@@ -415,7 +415,7 @@ DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primar
 	  nnode->linkTo(chainHead);
 	}
 
-	return scrn;   
+	return scrn;
 }
 
 
@@ -444,7 +444,7 @@ void SDLVideo::ReleaseSurface (DCanvas *scrn)
          break;
       }
    }
-   
+
    delete scrn;
 }
 
@@ -461,7 +461,7 @@ void SDLVideo::LockSurface (DCanvas *scrn)
 
       scrn->m_LockCount ++;
    }
-   
+
    scrn->buffer = (unsigned char *)s->pixels;
 }
 
