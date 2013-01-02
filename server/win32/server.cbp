@@ -350,7 +350,6 @@
 		<Unit filename="../../common/m_cheat.h" />
 		<Unit filename="../../common/m_fileio.cpp" />
 		<Unit filename="../../common/m_fileio.h" />
-		<Unit filename="../../common/m_fixed.cpp" />
 		<Unit filename="../../common/m_fixed.h" />
 		<Unit filename="../../common/m_memio.cpp" />
 		<Unit filename="../../common/m_memio.h" />
