@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -38,6 +38,7 @@
 #include "r_data.h"
 
 extern int CleanWidth, CleanHeight, CleanXfac, CleanYfac;
+extern float RealXfac;
 
 extern BOOL    gotconback;
 
