@@ -384,13 +384,9 @@ static void BlastColumn (void (*blastfunc)())
 		}
 	}
 
-	// pre-calculate values that differ based on the y-scaling of
-	// each wall tier
-	if (segtextured && rw_scale > 0)
-	{
-		// calculate texture offset
-		texturecolumn = rw_offset-FixedMul(finetangent[(rw_centerangle + xtoviewangle[rw_x])>>ANGLETOFINESHIFT], rw_distance);
-	}
+	// calculate texture offset (prior to applying each
+	// wall tier's x-scaling factor)
+	texturecolumn = rw_offset-FixedMul(finetangent[(rw_centerangle + xtoviewangle[rw_x])>>ANGLETOFINESHIFT], rw_distance);
 
 	// draw the wall tiers
 	if (midtexture)
@@ -402,7 +398,8 @@ static void BlastColumn (void (*blastfunc)())
 		const fixed_t scalex = texturescalex[midtexture];
 		const fixed_t scaley = texturescaley[midtexture];
 
-		dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
+		if (rw_scale > 0)
+			dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
 		fixed_t texfracdiff = FixedMul(centeryfrac, dc_iscale);
 		dc_texturefrac = FixedMul(rw_midtexturemid, scaley) + dc_yl * dc_iscale - texfracdiff;
 
@@ -432,7 +429,8 @@ static void BlastColumn (void (*blastfunc)())
 				const fixed_t scalex = texturescalex[toptexture];
 				const fixed_t scaley = texturescaley[toptexture];
 
-				dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
+				if (rw_scale > 0)
+					dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
 				fixed_t texfracdiff = FixedMul(centeryfrac, dc_iscale);
 				dc_texturefrac = FixedMul(rw_toptexturemid, scaley) + dc_yl * dc_iscale - texfracdiff;
 
@@ -469,7 +467,8 @@ static void BlastColumn (void (*blastfunc)())
 				const fixed_t scalex = texturescalex[bottomtexture];
 				const fixed_t scaley = texturescaley[bottomtexture];
 
-				dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
+				if (rw_scale > 0)
+					dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
 				fixed_t texfracdiff = FixedMul(centeryfrac, dc_iscale);
 				dc_texturefrac = FixedMul(rw_bottomtexturemid, scaley) + dc_yl * dc_iscale - texfracdiff;
 
@@ -994,6 +993,7 @@ void R_StoreWallRange(int start, int stop)
 	{
 		rw_scale = ds_p->scale1 = ds_p->scale2 = rw_scalestep = ds_p->light = rw_light = 0;
 		segtextured = false;
+		midtexture = toptexture = bottomtexture = maskedtexture = 0;
 	}
 
 	if (segtextured)
