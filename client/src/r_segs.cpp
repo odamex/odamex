@@ -92,6 +92,11 @@ static int  	*maskedtexturecol;
 void (*R_RenderSegLoop)(void);
 void R_ColumnToPointOnSeg(int column, line_t *line, fixed_t &x, fixed_t &y);
 
+static fixed_t R_ScaledTextureHeight(int texnum)
+{
+	return FixedDiv(textureheight[texnum], texturescaley[texnum]);
+}
+
 //
 // R_StoreWallRange
 //
@@ -142,8 +147,6 @@ static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 			// when forming multipatched textures (see r_data.c).
 
 			// draw the texture
-
-
 
 			blastfunc (R_GetColumn(texnum, maskedtexturecol[dc_x]));
 			maskedtexturecol[dc_x] = MAXINT;
@@ -224,9 +227,12 @@ R_RenderMaskedSegRange
 
 	maskedtexturecol = ds->maskedtexturecol;
 
-	rw_scalestep = ds->scalestep;
+	// [SL] 2013-01-02 - Adjust the scaling variables for the texture
+	// y-scaling factor
+	rw_scalestep = FixedDiv(ds->scalestep, texturescaley[texnum]);
+	spryscale = FixedDiv(ds->scale1, texturescaley[texnum]) + (x1 - ds->x1) * rw_scalestep;
+
 	rw_lightstep = ds->lightstep;
-	spryscale = ds->scale1 + (x1 - ds->x1) * rw_scalestep;
 	rw_light = ds->light + (x1 - ds->x1) * rw_lightstep;
 	mfloorclip = ds->sprbottomclip;
 	mceilingclip = ds->sprtopclip;
@@ -238,7 +244,7 @@ R_RenderMaskedSegRange
 		fixed_t bf = P_FloorHeight(backsector);
 
 		dc_texturemid = ff > bf ? ff : bf;
-		dc_texturemid += textureheight[texnum] - viewz;
+		dc_texturemid += R_ScaledTextureHeight(texnum) - viewz;
 	}
 	else
 	{
@@ -248,7 +254,8 @@ R_RenderMaskedSegRange
 		dc_texturemid = fc < bc ? fc : bc;
 		dc_texturemid -= viewz;
 	}
-	dc_texturemid += curline->sidedef->rowoffset;
+	dc_texturemid = FixedMul(dc_texturemid + curline->sidedef->rowoffset, 
+							 texturescaley[texnum]);
 
 	if (fixedlightlev)
 		dc_colormap = basecolormap + fixedlightlev;
@@ -377,22 +384,13 @@ static void BlastColumn (void (*blastfunc)())
 		}
 	}
 
-	// texturecolumn and lighting are independent of wall tiers
+	// pre-calculate values that differ based on the y-scaling of
+	// each wall tier
 	if (segtextured && rw_scale > 0)
 	{
 		// calculate texture offset
 		texturecolumn = rw_offset-FixedMul(finetangent[(rw_centerangle + xtoviewangle[rw_x])>>ANGLETOFINESHIFT], rw_distance);
-		// [SL] 2012-11-21 - Changed from >>= FRACBITS to /= FRACUNIT
-		// Integer division rounds towards 0 for negative numbers, which
-		// prevents an ugly wrap-around anomaly seen mostly with masked midtex.
-		// Right bitshifting on negative numbers rounds towards negative
-		// infinity on most (all?) platforms.
-		texturecolumn /= FRACUNIT;
-
-		dc_iscale = 0xffffffffu / (unsigned)rw_scale;
 	}
-
-	fixed_t texfracdiff = FixedMul (centeryfrac, dc_iscale);
 
 	// draw the wall tiers
 	if (midtexture)
@@ -400,8 +398,17 @@ static void BlastColumn (void (*blastfunc)())
 		// single sided line
 		dc_yl = yl;
 		dc_yh = yh;
-		dc_texturefrac = rw_midtexturemid + dc_yl * dc_iscale - texfracdiff;
-		dc_source = R_GetColumnData(midtexture, texturecolumn);
+
+		const fixed_t scalex = texturescalex[midtexture];
+		const fixed_t scaley = texturescaley[midtexture];
+
+		dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
+		fixed_t texfracdiff = FixedMul(centeryfrac, dc_iscale);
+		dc_texturefrac = FixedMul(rw_midtexturemid, scaley) + dc_yl * dc_iscale - texfracdiff;
+
+		int colnum = FixedMul(scalex, texturecolumn) / FRACUNIT;
+		dc_source = R_GetColumnData(midtexture, colnum);
+
 		blastfunc ();
 		ceilingclip[rw_x] = viewheight;
 		floorclip[rw_x] = -1;
@@ -421,8 +428,17 @@ static void BlastColumn (void (*blastfunc)())
 			{
 				dc_yl = yl;
 				dc_yh = mid;
-				dc_texturefrac = rw_toptexturemid + dc_yl * dc_iscale - texfracdiff;
-				dc_source = R_GetColumnData(toptexture, texturecolumn);
+
+				const fixed_t scalex = texturescalex[toptexture];
+				const fixed_t scaley = texturescaley[toptexture];
+
+				dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
+				fixed_t texfracdiff = FixedMul(centeryfrac, dc_iscale);
+				dc_texturefrac = FixedMul(rw_toptexturemid, scaley) + dc_yl * dc_iscale - texfracdiff;
+
+				int colnum = FixedMul(scalex, texturecolumn) / FRACUNIT;
+				dc_source = R_GetColumnData(toptexture, colnum);
+
 				blastfunc ();
 				ceilingclip[rw_x] = mid;
 			}
@@ -449,8 +465,17 @@ static void BlastColumn (void (*blastfunc)())
 			{
 				dc_yl = mid;
 				dc_yh = yh;
-				dc_texturefrac = rw_bottomtexturemid + dc_yl * dc_iscale - texfracdiff;
-				dc_source = R_GetColumnData(bottomtexture, texturecolumn);
+
+				const fixed_t scalex = texturescalex[bottomtexture];
+				const fixed_t scaley = texturescaley[bottomtexture];
+
+				dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
+				fixed_t texfracdiff = FixedMul(centeryfrac, dc_iscale);
+				dc_texturefrac = FixedMul(rw_bottomtexturemid, scaley) + dc_yl * dc_iscale - texfracdiff;
+
+				int colnum = FixedMul(scalex, texturecolumn) / FRACUNIT;
+				dc_source = R_GetColumnData(bottomtexture, colnum);
+
 				blastfunc ();
 				floorclip[rw_x] = mid;
 			}
@@ -468,7 +493,7 @@ static void BlastColumn (void (*blastfunc)())
 		{
 			// save texturecol
 			//	for backdrawing of masked mid texture
-			maskedtexturecol[rw_x] = texturecolumn;
+			maskedtexturecol[rw_x] = FixedMul(texturescalex[maskedtexture], texturecolumn) / FRACUNIT; 
 		}
 	}
 
@@ -776,7 +801,7 @@ void R_StoreWallRange(int start, int stop)
 		{
 			// bottom of texture at bottom
 			fixed_t ff = P_FloorHeight(frontsector);
-			rw_midtexturemid = ff - viewz + textureheight[sidedef->midtexture];
+			rw_midtexturemid = ff - viewz + R_ScaledTextureHeight(sidedef->midtexture);
 		}
 		else
 		{
@@ -925,7 +950,7 @@ void R_StoreWallRange(int start, int stop)
 			{
 				// bottom of texture
 				fixed_t bc = P_CeilingHeight(backsector);
-				rw_toptexturemid = bc - viewz + textureheight[sidedef->toptexture];				
+				rw_toptexturemid = bc - viewz + R_ScaledTextureHeight(sidedef->toptexture);
 			}
 		}
 		if (rw_backfz1 > rw_frontfz1 || rw_backfz2 > rw_frontfz2)
@@ -954,7 +979,7 @@ void R_StoreWallRange(int start, int stop)
 		if (sidedef->midtexture)
 		{
 			// masked midtexture
-			maskedtexture = true;
+			maskedtexture = sidedef->midtexture;
 			ds_p->maskedtexturecol = maskedtexturecol = lastopening - rw_x;
 			lastopening += rw_stopx - rw_x;
 		}

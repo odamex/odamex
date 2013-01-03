@@ -82,6 +82,8 @@ typedef struct
 
 extern texture_t **textures;
 extern byte* textureheightmask;
+extern fixed_t* texturescalex;
+extern fixed_t* texturescaley;
 
 // Retrieve column data for span blitting.
 tallpost_t* R_GetColumn(int tex, int col);

@@ -79,8 +79,8 @@ static int*		texturecompositesize;
 static short** 	texturecolumnlump;
 static unsigned **texturecolumnofs;
 static byte**	texturecomposite;
-byte*			texturescalex;			// [RH] Texture scales
-byte*			texturescaley;
+fixed_t*		texturescalex;			// [RH] Texture scales
+fixed_t*		texturescaley;
 
 // for global animation
 bool*			flatwarp;
@@ -578,8 +578,8 @@ void R_InitTextures (void)
 	texturecompositesize = new int[numtextures];
 	texturewidthmask = new int[numtextures];
 	textureheight = new fixed_t[numtextures];
-	texturescalex = new byte[numtextures];
-	texturescaley = new byte[numtextures];
+	texturescalex = new fixed_t[numtextures];
+	texturescaley = new fixed_t[numtextures];
 
 	totalwidth = 0;
 
@@ -639,8 +639,8 @@ void R_InitTextures (void)
 		// to determine scaling instead of defaulting to 8. I will likely
 		// remove this once I finish the betas, because by then, users
 		// should be able to actually create scaled textures.
-		texturescalex[i] = mtexture->scalex ? mtexture->scalex : 0;
-		texturescaley[i] = mtexture->scaley ? mtexture->scaley : 0;		
+		texturescalex[i] = mtexture->scalex ? (mtexture->scalex * FRACUNIT) >> 3 : FRACUNIT;
+		texturescaley[i] = mtexture->scaley ? (mtexture->scaley * FRACUNIT) >> 3 : FRACUNIT;
 
 		totalwidth += texture->width;
 	}
