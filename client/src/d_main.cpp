@@ -583,8 +583,14 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		int width, height, cwidth, cheight;
+		int width, height;
 		patch_t *data;
+
+		if (page && (page->width != screen->width || page->height != screen->height))
+		{
+			I_FreeScreen(page);
+			page = NULL;
+		}
 
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
@@ -599,22 +605,36 @@ void D_DoAdvanceDemo (void)
 			height = data->height();
 		}
 
-		cwidth = width * ((((float)screen->height * 4.0f)/3.0f) / 320.0f);
-
-		if (page && (page->width != screen->width || page->height != screen->height))
-		{
-			I_FreeScreen(page);
-			page = NULL;
-		}
-
 		if (page == NULL)
-			page = I_AllocateScreen (screen->width, screen->height, 8);
+        {
+            if (screen->isProtectedRes())
+            {
+                page = I_AllocateScreen (width, height, 8);
+            }
+            else
+            {
+                page = I_AllocateScreen (screen->width, screen->height, 8);
+            }
+        }
 
 		page->Lock ();
+
 		if (gameinfo.flags & GI_PAGESARERAW)
-			page->DrawBlock (0, 0, 320, 200, (byte *)data);
+        {
+            page->DrawBlock (0, 0, 320, 200, (byte *)data);
+        }
 		else
-			page->DrawPatchStretched (data, (screen->width / 2) - (cwidth / 2), 0, cwidth, screen->height);
+        {
+            if (screen->isProtectedRes())
+            {
+                page->DrawPatch(data,0,0);
+            }
+            else
+            {
+                page->DrawPatchStretched (data, (screen->width / 2) - ((width * RealXfac) / 2), 0, (width * RealXfac), screen->height);
+            }
+        }
+
 		page->Unlock ();
 	}
 }

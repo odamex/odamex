@@ -82,6 +82,8 @@ CVAR_FUNC_IMPL (r_painintensity)
 		var.Set (1.f);
 }
 
+extern int SquareWidth;
+
 void ST_AdjustStatusBarScale(bool scale)
 {
 	if (scale)
@@ -90,9 +92,12 @@ void ST_AdjustStatusBarScale(bool scale)
 		ST_HEIGHT = (32 * screen->height) / 200;
 		// [AM] Scale status bar width according to height, unless there isn't
 		//      enough room for it.  Fixes widescreen status bar scaling.
-		ST_WIDTH = ST_HEIGHT * 10;
-		if (ST_WIDTH > screen->width || R_GetWidescreen() == WIDE_STRETCH)
-			ST_WIDTH = screen->width;
+		// [ML] A couple of minor changes for true 4:3 correctness...
+		ST_WIDTH = ST_HEIGHT*10;
+		if (!screen->isProtectedRes())
+        {
+            ST_WIDTH = SquareWidth;
+        }
 	}
 	else
 	{

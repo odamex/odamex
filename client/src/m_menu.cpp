@@ -1107,10 +1107,16 @@ void M_Expansion (int choice)
 void M_DrawReadThis1 (void)
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
-	int cw = p->width() * RealXfac;
 
-	screen->Clear(0, 0, screen->width, screen->height, 0);
-	screen->DrawPatchStretched(p,(screen->width / 2) - (cw / 2), 0, cw, screen->height);
+	if (screen->isProtectedRes())
+    {
+        screen->DrawPatchIndirect (p, 0, 0);
+    }
+    else
+    {
+        screen->Clear(0, 0, screen->width, screen->height, 0);
+        screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
+    }
 }
 
 //
@@ -1119,10 +1125,16 @@ void M_DrawReadThis1 (void)
 void M_DrawReadThis2 (void)
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[1]);
-	int cw = p->width() * RealXfac;
 
-	screen->Clear(0, 0, screen->width, screen->height, 0);
-	screen->DrawPatchStretched(p,(screen->width / 2) - (cw / 2), 0, cw, screen->height);
+	if (screen->isProtectedRes())
+    {
+        screen->DrawPatchIndirect (p, 0, 0);
+    }
+    else
+    {
+        screen->Clear(0, 0, screen->width, screen->height, 0);
+        screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
+    }
 }
 
 //
@@ -1131,10 +1143,16 @@ void M_DrawReadThis2 (void)
 void M_DrawReadThis3 (void)
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[2]);
-	int cw = p->width() * RealXfac;
 
-    screen->Clear(0, 0, screen->width, screen->height, 0);
-	screen->DrawPatchStretched(p,(screen->width / 2) - (cw / 2), 0, cw, screen->height);
+	if (screen->isProtectedRes())
+    {
+        screen->DrawPatchIndirect (p, 0, 0);
+    }
+    else
+    {
+        screen->Clear(0, 0, screen->width, screen->height, 0);
+        screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
+    }
 }
 
 //

@@ -65,6 +65,7 @@
 IMPLEMENT_CLASS (DCanvas, DObject)
 
 int DisplayWidth, DisplayHeight, DisplayBits;
+int SquareWidth;
 
 unsigned int Col2RGB8[65][256];
 byte RGB32k[32][32][32];
@@ -511,7 +512,7 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 
 	I_SetOverscan (vid_overscan);
 
-	RealXfac = ((((float)height * 4.0f)/3.0f) / (float)basew);
+	RealXfac = (((static_cast<float>(height) * 4.0f)/3.0f) / static_cast<float>(basew));
 
 	if (!RealXfac)
     {
@@ -534,12 +535,11 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 			CleanXfac = CleanYfac;
 	}
 
-	CleanWidth = width / CleanXfac;
-	CleanHeight = height / CleanYfac;
-
 	DisplayWidth = width;
 	DisplayHeight = height;
 	DisplayBits = bits;
+
+	SquareWidth = (static_cast<float>(DisplayHeight) * 4.0f) / 3.0f;
 
 	// Allocate a new virtual framebuffer
 	if (vid_fullscreen)

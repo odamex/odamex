@@ -36,8 +36,6 @@
 // [RH] Stretch values for V_DrawPatchClean()
 int CleanXfac, CleanYfac;
 float RealXfac;
-// [RH] Virtual screen sizes as perpetuated by V_DrawPatchClean()
-int CleanWidth, CleanHeight;
 
 EXTERN_CVAR(hud_transparency)
 
