@@ -513,10 +513,16 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	I_SetOverscan (vid_overscan);
 
 	RealXfac = (((static_cast<float>(height) * 4.0f)/3.0f) / static_cast<float>(basew));
+	RealYfac = (((static_cast<float>(width) * 3.0f)/4.0f) / static_cast<float>(baseh));
 
 	if (!RealXfac)
     {
         RealXfac = 1.0f;
+    }
+
+	if (!RealYfac)
+    {
+        RealYfac = 1.0f;
     }
 
 	// This uses the smaller of the two results. It's still not ideal but at least
@@ -540,6 +546,9 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	DisplayBits = bits;
 
 	SquareWidth = (static_cast<float>(DisplayHeight) * 4.0f) / 3.0f;
+
+	if (SquareWidth > DisplayWidth)
+        SquareWidth = DisplayWidth;
 
 	// Allocate a new virtual framebuffer
 	if (vid_fullscreen)

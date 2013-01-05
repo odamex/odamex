@@ -1115,7 +1115,15 @@ void M_DrawReadThis1 (void)
     else
     {
         screen->Clear(0, 0, screen->width, screen->height, 0);
-        screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
+
+        if ((float)screen->width/screen->height < (float)4.0f/3.0f)
+        {
+            screen->DrawPatchStretched(p, 0, (screen->height / 2) - ((p->height() * RealYfac) / 2), screen->width, (p->height() * RealYfac));
+        }
+        else
+        {
+            screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
+        }
     }
 }
 
@@ -1133,7 +1141,15 @@ void M_DrawReadThis2 (void)
     else
     {
         screen->Clear(0, 0, screen->width, screen->height, 0);
-        screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
+
+        if ((float)screen->width/screen->height < (float)4.0f/3.0f)
+        {
+            screen->DrawPatchStretched(p, 0, (screen->height / 2) - ((p->height() * RealYfac) / 2), screen->width, (p->height() * RealYfac));
+        }
+        else
+        {
+            screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
+        }
     }
 }
 
@@ -1151,7 +1167,15 @@ void M_DrawReadThis3 (void)
     else
     {
         screen->Clear(0, 0, screen->width, screen->height, 0);
-        screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
+
+        if ((float)screen->width/screen->height < (float)4.0f/3.0f)
+        {
+            screen->DrawPatchStretched(p, 0, (screen->height / 2) - ((p->height() * RealYfac) / 2), screen->width, (p->height() * RealYfac));
+        }
+        else
+        {
+            screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
+        }
     }
 }
 
