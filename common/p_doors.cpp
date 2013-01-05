@@ -359,7 +359,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 			return false;
 
 		// if the wrong side of door is pushed, give oof sound
-		if (line->sidenum[1]==-1)				// killough
+		if (line->sidenum[1]==R_NOSIDE)				// killough
 		{
 			UV_SoundAvoidPlayer (thing, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 			return false;

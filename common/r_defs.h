@@ -283,6 +283,8 @@ typedef enum
 	ST_NEGATIVE
 } slopetype_t;
 
+#define R_NOSIDE ((unsigned short)(-1))
+
 struct line_s
 {
     // Vertices, from v1 to v2.
@@ -299,8 +301,8 @@ struct line_s
 	byte		lucency;	// <--- translucency (0-255/255=opaque)
 
 	// Visual appearance: SideDefs.
-    //  sidenum[1] will be -1 if one sided
-	short		sidenum[2];
+    //  sidenum[1] will be R_NOSIDE if one sided
+	unsigned short sidenum[2];
 
     // Neat. Another bounding box, for the extent
     //  of the LineDef.

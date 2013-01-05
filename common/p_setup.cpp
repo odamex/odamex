@@ -306,7 +306,7 @@ void P_LoadSegs (int lump)
 		li->frontsector = sides[ldef->sidenum[side]].sector;
 
 		// killough 5/3/98: ignore 2s flag if second sidedef missing:
-		if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side^1]!=-1)
+		if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side^1]!=R_NOSIDE)
 			li->backsector = sides[ldef->sidenum[side^1]].sector;
 		else
 		{
@@ -623,7 +623,7 @@ void P_AdjustLine (line_t *ld)
 	}
 
 	// denis - prevent buffer overrun
-	if(*ld->sidenum == -1)
+	if(*ld->sidenum == R_NOSIDE)
 		return;
 
 	// killough 4/4/98: support special sidedef interpretation below
@@ -645,11 +645,11 @@ void P_FinishLoadingLineDefs (void)
 
 	for (i = numlines, linenum = 0; i--; ld++, linenum++)
 	{
-		ld->frontsector = ld->sidenum[0]!=-1 ? sides[ld->sidenum[0]].sector : 0;
-		ld->backsector  = ld->sidenum[1]!=-1 ? sides[ld->sidenum[1]].sector : 0;
-		if (ld->sidenum[0] != -1)
+		ld->frontsector = ld->sidenum[0]!=R_NOSIDE ? sides[ld->sidenum[0]].sector : 0;
+		ld->backsector  = ld->sidenum[1]!=R_NOSIDE ? sides[ld->sidenum[1]].sector : 0;
+		if (ld->sidenum[0] != R_NOSIDE)
 			sides[ld->sidenum[0]].linenum = linenum;
-		if (ld->sidenum[1] != -1)
+		if (ld->sidenum[1] != R_NOSIDE)
 			sides[ld->sidenum[1]].linenum = linenum;
 
 		switch (ld->special)
@@ -717,9 +717,9 @@ void P_LoadLineDefs (int lump)
 		ld->sidenum[1] = LESHORT(mld->sidenum[1]);
 
 		if(ld->sidenum[0] >= numsides || ld->sidenum[0] < 0)
-			ld->sidenum[0] = -1;
+			ld->sidenum[0] = R_NOSIDE;
 		if(ld->sidenum[1] >= numsides || ld->sidenum[1] < 0)
-			ld->sidenum[1] = -1;
+			ld->sidenum[1] = R_NOSIDE;
 
 		P_AdjustLine (ld);
 	}
@@ -770,9 +770,9 @@ void P_LoadLineDefs2 (int lump)
 		ld->sidenum[1] = LESHORT(mld->sidenum[1]);
 
 		if(ld->sidenum[0] >= numsides || ld->sidenum[0] < 0)
-			ld->sidenum[0] = -1;
+			ld->sidenum[0] = R_NOSIDE;
 		if(ld->sidenum[1] >= numsides || ld->sidenum[1] < 0)
-			ld->sidenum[1] = -1;
+			ld->sidenum[1] = R_NOSIDE;
 
 		P_AdjustLine (ld);
 	}

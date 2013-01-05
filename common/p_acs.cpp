@@ -1049,7 +1049,7 @@ void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 	while ((linenum = P_FindLineFromID (lineid, linenum)) >= 0) {
 		side_t *sidedef;
 
-		if (lines[linenum].sidenum[side] == -1)
+		if (lines[linenum].sidenum[side] == R_NOSIDE)
 			continue;
 		sidedef = sides + lines[linenum].sidenum[side];
 

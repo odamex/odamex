@@ -396,7 +396,7 @@ sector_t *openbottomsec;
 
 void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx, fixed_t refy)
 {
-	if (linedef->sidenum[1] == -1)
+	if (linedef->sidenum[1] == R_NOSIDE)
 	{
 		// single sided line
 		openrange = 0;

@@ -1019,7 +1019,7 @@ void P_XYMovement(AActor *mo)
 					if (BlockingLine != NULL &&
 						mo->player && mo->waterlevel && mo->waterlevel < 3 &&
 						(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove) &&
-						BlockingLine->sidenum[1] != -1)
+						BlockingLine->sidenum[1] != R_NOSIDE)
 					{
 						mo->momz = WATER_JUMP_SPEED;
 					}
