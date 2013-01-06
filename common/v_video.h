@@ -83,7 +83,7 @@ public:
 	int pitch;
 	inline bool is8bit() const { return bits == 8; };
 	inline bool isProtectedRes() const {                      // [ML] If this is 320x200 or 640x400, the resolutions
-        if (width == 320 || (width == 640 && height <= 400))    // "protected" from aspect ratio correction.
+        if ((width == 320 && height <= 200) || (width == 640 && height <= 400))    // "protected" from aspect ratio correction.
         {
             return true;
         }
