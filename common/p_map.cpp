@@ -744,7 +744,11 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	AActor *thingblocker = NULL;
 	fixed_t realheight = thing->height;
 	bool spectator = thing->player && thing->player->spectator;
-	sector_t *newsec = R_PointInSubsector(x,y)->sector;
+	subsector_t *subsec = R_PointInSubsector(x,y);
+	// NOTE(jsd): NULL check here fixes crash while awaiting download in an active game.
+	if (subsec == NULL)
+		return false;
+	sector_t *newsec = subsec->sector;
 
 	tmbbox[BOXTOP] = y + thing->radius;
 	tmbbox[BOXBOTTOM] = y - thing->radius;
