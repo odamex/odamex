@@ -388,8 +388,8 @@ void AM_restoreScaleAndLoc(void)
     }
 	else
 	{
-		m_x = consoleplayer().camera->x - m_w/2; // denis - todo - consoleplayer
-		m_y = consoleplayer().camera->y - m_h/2;
+		m_x = displayplayer().camera->x - m_w/2;
+		m_y = displayplayer().camera->y - m_h/2;
     }
 	m_x2 = m_x + m_w;
 	m_y2 = m_y + m_h;
@@ -902,7 +902,7 @@ void AM_changeWindowScale (void)
 //
 void AM_doFollowPlayer(void)
 {
-	player_t &p = consoleplayer();
+	player_t &p = displayplayer();
 
     if (f_oldloc.x != p.camera->x ||
 		f_oldloc.y != p.camera->y)
@@ -1374,7 +1374,7 @@ AM_rotate
 
 void AM_rotatePoint (fixed_t *x, fixed_t *y)
 {
-	player_t &p = consoleplayer();
+	player_t &p = displayplayer();
 
 	*x -= p.camera->x;
 	*y -= p.camera->y;
@@ -1433,7 +1433,7 @@ void AM_drawPlayers(void)
 {
 	angle_t angle;
 	size_t i;
-	player_t &conplayer = consoleplayer();
+	player_t &conplayer = displayplayer();
 	DWORD *palette;
 	palette = DefaultPalette->colors;
 
@@ -1524,7 +1524,7 @@ void AM_drawThings (int color)
 			if (am_rotate)
 			{
 				AM_rotatePoint (&p.x, &p.y);
-				angle += ANG90 - consoleplayer().camera->angle;
+				angle += ANG90 - displayplayer().camera->angle;
 			}
 
 			AM_drawLineCharacter
