@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -102,6 +102,8 @@ EXTERN_CVAR (language)
 EXTERN_CVAR (co_level8soundfeature)
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (hud_scale)
+EXTERN_CVAR (hud_scalescoreboard)
+EXTERN_CVAR (hud_timer)
 EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (r_showendoom)
@@ -129,6 +131,7 @@ EXTERN_CVAR (mouse_threshold)
 // [Ralphis - Menu] Sound Menu
 EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (snd_musicvolume)
+EXTERN_CVAR (snd_announcervolume)
 EXTERN_CVAR (snd_sfxvolume)
 EXTERN_CVAR (snd_crossover)
 EXTERN_CVAR (cl_connectalert)
@@ -150,6 +153,9 @@ EXTERN_CVAR (joy_freelook)
 EXTERN_CVAR (rate)
 EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_updaterate)
+EXTERN_CVAR (cl_interp)
+EXTERN_CVAR (cl_predictpickup)
+EXTERN_CVAR (cl_predictsectors)
 
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
@@ -314,7 +320,7 @@ static menuitem_t ControlsItems[] = {
 	{ bricktext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
 	{ control,	"Fly / Swim down",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+movedown"} },
-	{ control,	"Stop flying",			{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"land"} },
+	{ control,	"Toggle flying",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"fly"} },
 	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookup"} },
 	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookdown"} },
 	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"centerview"} },
@@ -324,6 +330,8 @@ static menuitem_t ControlsItems[] = {
 	{ bricktext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
 	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
+	{ control,	"Ready",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"ready"} },
+	{ control,	"Change teams",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"changeteams"} },
 	{ control,	"Spectate",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spectate"} },
 	{ control,	"Coop Spy",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spynext"} },
 	{ control,	"Show Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
@@ -536,6 +544,7 @@ static menuitem_t SoundItems[] = {
 	{ bricktext ,   "Sound Levels"                      , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ slider    ,	"Music Volume"                      , {&snd_musicvolume},	{0.0},      	{1.0},	    {0.1},      {NULL} },
 	{ slider    ,	"Sound Volume"                      , {&snd_sfxvolume},		{0.0},      	{1.0},	    {0.1},      {NULL} },
+	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.1},      {NULL} },
 	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },	
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
@@ -615,7 +624,10 @@ static menuitem_t NetworkItems[] = {
 	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Bandwidth",					{&rate},			{4.0},		{0.0},		{0.0},		{BandwidthLevels} },
 	{ discrete,		"Position update freq",			{&cl_updaterate},	{3.0},		{0.0},		{0.0},		{UpdateRate} },
+	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
 	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete,		"Predict weapon pickups",		{&cl_predictpickup},{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete,		"Predict sectors",				{&cl_predictsectors},{2.0},		{0.0},		{0.0},		{OnOff} },
 };
 
 menu_t NetworkMenu = {
@@ -758,9 +770,9 @@ EXTERN_CVAR (r_skypalette)
 EXTERN_CVAR (r_wipetype)
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (ui_dimamount)
-EXTERN_CVAR (hud_usehighresboard)
 EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (r_painintensity)
+EXTERN_CVAR (cl_movebob)
 
 static value_t Crosshairs[] =
 {
@@ -836,14 +848,16 @@ static menuitem_t VideoItems[] = {
 	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {5.0},	{1.0},  {NULL} },
 	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },	
+	{ slider,	"Movement bobbing",			{&cl_movebob},			{0.0}, {1.0},	{0.1},	{NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },	
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },	
+	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},  {NULL} },
+	{ discrete, "HUD Timer Visibility",     {&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
 	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Crosshair health",			{&hud_crosshairhealth},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "High-res scoreboard",  	{&hud_usehighresboard}, {2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Multiplayer Intermissions",{&wi_newintermission}, {2.0}, {0.0},	{0.0},  {DoomOrOdamex} },	
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,   "UI Background Red",        {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
@@ -893,8 +907,9 @@ static value_t TextColors[] =
 	{ 6.0, "red" },
 	{ 7.0, "blue" },
 	{ 8.0, "orange" },
-	{ 9.0, "yellow" },
-	{ 10.0, "white" }
+	{ 9.0, "white" },
+//	[SL] remove yellow until the color translation can be fixed
+//	{ 10.0, "yellow" }
 };
 
 static value_t MessageLevels[] = {
@@ -914,17 +929,17 @@ static value_t Languages[] = {
 static menuitem_t MessagesItems[] = {
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
 	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
-	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {5.0}, 	{1.0}, {NULL} },	
+	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },	
     { discrete,	"Show player target names",	{&hud_targetnames},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},       {2.0}, {0.0},   {0.0}, {OnOff} },
+	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Obituaries",			{&msg1color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Chat Messages",		{&msg3color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Team Messages",		{&msg4color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Centered Messages",	{&msgmidcolor},			{8.0}, {0.0},	{0.0}, {TextColors} }
+	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Obituaries",			{&msg1color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Chat Messages",		{&msg3color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Team Messages",		{&msg4color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Centered Messages",	{&msgmidcolor},			{10.0}, {0.0},	{0.0}, {TextColors} }
 };
 
 menu_t MessagesMenu = {

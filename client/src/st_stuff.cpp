@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -69,8 +69,6 @@ bool		st_firsttime;
 // lump number for PLAYPAL
 static int		lu_palette;
 
-extern NetDemo netdemo;
-
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (idmypos)
 EXTERN_CVAR (sv_allowredscreen)
@@ -129,6 +127,7 @@ BOOL DrawNewSpecHUD;	// [Nes] Draw the new spectator HUD?
 // functions in st_new.c
 void ST_initNew (void);
 void ST_unloadNew (void);
+void ST_voteDraw (int y);
 void ST_newDraw (void);
 void ST_newDrawCTF (void);
 
@@ -136,6 +135,7 @@ void ST_newDrawCTF (void);
 int BaseBlendR, BaseBlendG, BaseBlendB;
 float BaseBlendA;
 
+extern bool simulated_connection;
 
 //
 // STATUS BAR DATA
@@ -541,6 +541,11 @@ EXTERN_CVAR (sv_allowcheats)
 // and false if they ARE enabled (stupid huh? not my work [Russell])
 BOOL CheckCheatmode (void)
 {
+	// [SL] 2012-04-04 - Don't allow cheat codes to be entered while playing
+	// back a netdemo
+	if (simulated_connection)
+		return true;
+
 	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
 	// are disabled
 	if (sv_skill == sk_nightmare && !multiplayer)
@@ -1575,19 +1580,14 @@ void ST_Drawer (void)
 
 	if ((realviewheight == screen->height && viewactive) || (&consoleplayer())->spectator)
 	{
-		if (DrawNewHUD)
-		{
-			if (hud_fullhudtype == 1)
-				ST_odamexHudDraw();
-			else
-				ST_newDraw ();
-		}
-		else if (DrawNewSpecHUD && sv_gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
-		{
-			if (hud_fullhudtype == 1)
-				ST_odamexHudDrawCTF();
-			else
-				ST_newDrawCTF();
+		if (DrawNewHUD) {
+			if (hud_fullhudtype >= 1) {
+				hud::OdamexHUD();
+			} else {
+				hud::ZDoomHUD();
+			}
+		} else if (DrawNewSpecHUD) {
+			hud::SpectatorHUD();
 		}
 		st_firsttime = true;
 	}
@@ -1607,13 +1607,12 @@ void ST_Drawer (void)
 
 		stnumscreen->Unlock ();
 		stbarscreen->Unlock ();
+
+		hud::DoomHUD();
 	}
 
-
-	if (viewheight <= ST_Y)
-		ST_nameDraw (ST_Y - 11 * CleanYfac);
-	else
-		ST_nameDraw (screen->height - 11 * CleanYfac);
+	// [AM] Voting HUD!
+	ST_voteDraw(11 * CleanYfac);
 
 	// Do red-/gold-shifts from damage/items
 	ST_doPaletteStuff();
@@ -1621,10 +1620,10 @@ void ST_Drawer (void)
 	// [RH] Hey, it's somewhere to put the idmypos stuff!
 	if (idmypos)
 		Printf (PRINT_HIGH, "ang=%d;x,y,z=(%d,%d,%d)\n",
-				consoleplayer().camera->angle/FRACUNIT,
-				consoleplayer().camera->x/FRACUNIT,
-				consoleplayer().camera->y/FRACUNIT,
-				consoleplayer().camera->z/FRACUNIT);
+				displayplayer().camera->angle/FRACUNIT,
+				displayplayer().camera->x/FRACUNIT,
+				displayplayer().camera->y/FRACUNIT,
+				displayplayer().camera->z/FRACUNIT);
 }
 
 static patch_t *LoadFaceGraphic (char *name, int namespc)

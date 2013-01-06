@@ -3,8 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2012 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,51 +16,69 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Maplist-related functionality.
+//  Serverside maplist-related functionality.
 //
 //-----------------------------------------------------------------------------
 
 #ifndef __SV_MAPLIST__
 #define __SV_MAPLIST__
 
+#include <c_maplist.h>
+#include <d_player.h>
+
+#include <map>
 #include <string>
 #include <vector>
 
-namespace sv {
-
-// Map list entry structure
-typedef struct {
-	std::string map;
-	std::string wads;
-} maplist_entry_t;
-
+// Serverside maplist structure
 class Maplist {
-public:
-	// The map list itself
-	std::vector<maplist_entry_t> maplist;
-	// The current map in the rotation.  Setting this to -1 means that the very
-	// first time we load up odamex the "pointer" in the maplist console
-	// command won't appear unless you have size_t maps in the maplist.
-	size_t maplist_index;
-	// The next map in the rotation, incrementally.
-	size_t nextmap_index;
-
-	static Maplist& instance(void);
-	void clear(void);
-	void random_shuffle(void);
-	bool gotomap_check(const std::vector<std::string> &arguments,
-					   std::vector<std::string> &response, size_t &index);
-	void gotomap(const size_t &index);
-	void print_maplist(const std::vector<std::string> &arguments,
-				 std::vector<std::string> &response);
-	bool randmap_check(std::string &error);
-	void randmap(void);
 private:
-	Maplist() : maplist_index(-1), nextmap_index(0) { };
-
-	std::vector<size_t> expand(const std::vector<std::string> &arguments);
+	bool entered_once;
+	std::string error;
+	size_t index;
+	bool in_maplist;
+	std::vector<maplist_entry_t> maplist;
+	bool shuffled;
+	size_t s_index;
+	std::vector<size_t> s_maplist;
+	std::map<int, QWORD> timeout;
+	byte version;
+	void shuffle(void);
+	void update_shuffle_index(void);
+public:
+	Maplist() : entered_once(false), error(""), index(0),
+				in_maplist(false), shuffled(false), s_index(0), version(0) { };
+	static Maplist& instance(void);
+	// Modifiers
+	bool add(maplist_entry_t &maplist_entry);
+	bool insert(const size_t &position, maplist_entry_t &maplist_entry);
+	bool remove(const size_t &position);
+	bool clear(void);
+	// Elements
+	bool empty(void);
+	std::string get_error(void);
+	bool get_map_by_index(const size_t &index, maplist_entry_t &maplist_entry);
+	bool get_next_index(size_t &index);
+	bool get_this_index(size_t &index);
+	byte get_version(void);
+	bool query(std::vector<std::pair<size_t, maplist_entry_t*> > &result);
+	bool query(const std::vector<std::string> &query,
+			   std::vector<std::pair<size_t, maplist_entry_t*> > &result);
+	// Settings
+	bool set_index(const size_t &index);
+	void set_shuffle(const bool setting);
+	// Timeout
+	bool pid_timeout(const int index);
+	bool pid_cached(const int index);
+	void set_timeout(const int index);
+	void clear_timeout(const int index);
 };
 
-}
+void SV_Maplist(player_t &player);
+void SV_MaplistUpdate(player_t &player);
+
+void Maplist_Disconnect(player_t &player);
+
+bool CMD_Randmap(std::string &error);
 
 #endif

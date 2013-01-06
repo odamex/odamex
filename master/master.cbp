@@ -19,6 +19,7 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-fexceptions" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_CONSOLE" />
 					<Add option="-D_MBCS" />
@@ -42,6 +43,7 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_DEBUG" />
 					<Add option="-D_CONSOLE" />

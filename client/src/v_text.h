@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,7 +47,20 @@ enum EColorRange
 	CR_ORANGE,
 	CR_WHITE,
 	CR_YELLOW,
+
+	// [AM] Extended ZDoom colors.  Not all of these actually work yet.
 	CR_UNTRANSLATED,
+	CR_BLACK,
+	CR_LIGHTBLUE,
+	CR_CREAM,
+	CR_OLIVE,
+	CR_DARKGREEN,
+	CR_DARKRED,
+	CR_DARKBROWN,
+	CR_PURPLE,
+	CR_DARKGRAY,
+	CR_DARKGREY = CR_DARKGRAY,
+	CR_CYAN,
 	NUM_TEXT_COLORS
 };
 
@@ -65,6 +78,20 @@ enum EColorRange
 #define TEXTCOLOR_ORANGE	"\x8aI"
 #define TEXTCOLOR_WHITE		"\x8aJ"
 #define TEXTCOLOR_YELLOW	"\x8aK"
+
+// [AM] Extended ZDoom colors.  Not all of these actually work yet.
+#define TEXTCOLOR_UNTRANSLATED	"\x8aL"
+#define TEXTCOLOR_BLACK		"\x8aM"
+#define TEXTCOLOR_LIGHTBLUE	"\x8aN"
+#define TEXTCOLOR_CREAM		"\x8aO"
+#define TEXTCOLOR_OLIVE		"\x8aP"
+#define TEXTCOLOR_DARKGREEN	"\x8aQ"
+#define TEXTCOLOR_DARKRED	"\x8aR"
+#define TEXTCOLOR_DARKBROWN	"\x8aS"
+#define TEXTCOLOR_PURPLE	"\x8aT"
+#define TEXTCOLOR_DARKGRAY	"\x8aU"
+#define TEXTCOLOR_DARKGREY	"\x8aU"
+#define TEXTCOLOR_CYAN		"\x8aV"
 
 #define TEXTCOLOR_NORMAL	"\x8a-"
 #define TEXTCOLOR_BOLD		"\x8a+"

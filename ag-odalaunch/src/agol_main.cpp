@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -897,7 +897,7 @@ void AGOL_MainWindow::OnReportBug(AG_Event *event)
 void AGOL_MainWindow::OnMouseOverWidget(AG_Event *event)
 {
 	static AG_Widget *last = NULL;
-	AG_Widget        *widget = (AG_Widget *)AG_SELF();
+	AG_Widget        *widget = static_cast<AG_Widget *>(AG_SELF());
 	int               overlap = AG_INT(2); // Passed by '<widget>-mouseoverlap'
 
 	if(overlap)

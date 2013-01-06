@@ -4,7 +4,7 @@
 // $Id: r_plane.h 1856 2010-09-05 03:14:13Z ladna $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -61,7 +61,7 @@ R_MakeSpans
 void R_DrawPlanes (void);
 
 visplane_t *R_FindPlane
-( fixed_t		height,
+( plane_t		secplane,
   int			picnum,
   int			lightlevel,
   fixed_t		xoffs,		// killough 2/28/98: add x-y offsets

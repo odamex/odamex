@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -617,6 +617,9 @@ void AGOL_Settings::SaveExtraParams()
 		GuiConfig::Write("ExtraParams", extraParams);
 	else
 		GuiConfig::Unset("ExtraParams");
+
+	if(extraParams)
+		free(extraParams);
 }
 
 //******************//

@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -584,7 +584,6 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	fixed_t 			x;
 	fixed_t 			y;
 	fixed_t				z, oldz;
-	subsector_t*		ss;
 	unsigned			an;
 	AActor* 			mo;
 	size_t 				i;
@@ -592,10 +591,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
-	z = mthing->z << FRACBITS;
-
-	ss = R_PointInSubsector (x,y);
-	z = ss->sector->floorheight;
+	z = P_FloorHeight(x, y);
 
 	if (!player.mo)
 	{

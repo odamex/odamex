@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,8 @@
 #include <limits>
 
 #include "net_utils.h"
+
+namespace odalpapi {
 
 // GetMillisNow()
 
@@ -62,6 +64,8 @@ uint64_t GetMillisNow()
 {
     return _UnwrapTime(_Millis());
 }
+
+} // namespace
 
 // ???
 // ---

@@ -16,6 +16,7 @@
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -38,11 +39,11 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-file idl2011.wad +map map26" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -86,7 +87,6 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-waddir ~/Games/doomwads -connect 66.170.3.2:10703" />
 				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -330,6 +330,9 @@
 		<Unit filename="..\..\common\c_dispatch.h" />
 		<Unit filename="..\..\common\c_effect.cpp" />
 		<Unit filename="..\..\common\c_effect.h" />
+		<Unit filename="..\..\common\c_level.cpp" />
+		<Unit filename="..\..\common\c_level.h" />
+		<Unit filename="..\..\common\c_maplist.h" />
 		<Unit filename="..\..\common\c_pch.h" />
 		<Unit filename="..\..\common\c_vote.cpp" />
 		<Unit filename="..\..\common\c_vote.h" />
@@ -426,6 +429,8 @@
 		<Unit filename="..\..\common\p_setup.cpp" />
 		<Unit filename="..\..\common\p_setup.h" />
 		<Unit filename="..\..\common\p_sight.cpp" />
+		<Unit filename="..\..\common\p_snapshot.cpp" />
+		<Unit filename="..\..\common\p_snapshot.h" />
 		<Unit filename="..\..\common\p_spec.cpp" />
 		<Unit filename="..\..\common\p_spec.h" />
 		<Unit filename="..\..\common\p_switch.cpp" />
@@ -487,7 +492,11 @@
 		<Unit filename="..\src\cl_download.h" />
 		<Unit filename="..\src\cl_main.cpp" />
 		<Unit filename="..\src\cl_main.h" />
+		<Unit filename="..\src\cl_maplist.cpp" />
+		<Unit filename="..\src\cl_maplist.h" />
 		<Unit filename="..\src\cl_mobj.cpp" />
+		<Unit filename="..\src\cl_netgraph.cpp" />
+		<Unit filename="..\src\cl_netgraph.h" />
 		<Unit filename="..\src\cl_pch.h">
 			<Option compile="1" />
 			<Option weight="0" />
@@ -495,6 +504,7 @@
 		<Unit filename="..\src\cl_pred.cpp" />
 		<Unit filename="..\src\cl_stubs.cpp" />
 		<Unit filename="..\src\cl_vote.cpp" />
+		<Unit filename="..\src\cl_vote.h" />
 		<Unit filename="..\src\d_main.cpp" />
 		<Unit filename="..\src\d_net.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />
@@ -504,6 +514,10 @@
 		<Unit filename="..\src\f_wipe.h" />
 		<Unit filename="..\src\g_game.cpp" />
 		<Unit filename="..\src\g_level.cpp" />
+		<Unit filename="..\src\hu_drawers.cpp" />
+		<Unit filename="..\src\hu_drawers.h" />
+		<Unit filename="..\src\hu_elements.cpp" />
+		<Unit filename="..\src\hu_elements.h" />
 		<Unit filename="..\src\hu_stuff.cpp" />
 		<Unit filename="..\src\hu_stuff.h" />
 		<Unit filename="..\src\m_menu.cpp" />

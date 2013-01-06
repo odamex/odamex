@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -92,12 +92,15 @@ void	G_DoSaveGame (void);
 
 void	CL_RunTics (void);
 
+bool	C_DoNetDemoKey(event_t *ev);
+
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (co_nosilentspawns)
+EXTERN_CVAR (co_allowdropoff)
 
 EXTERN_CVAR (chasedemo)
 
@@ -162,7 +165,6 @@ EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
 EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
 EXTERN_CVAR (m_filter)
 
-
 CVAR_FUNC_IMPL(cl_mouselook)
 {
 	// Nes - center the view
@@ -172,12 +174,10 @@ CVAR_FUNC_IMPL(cl_mouselook)
 	R_InitSkyMap ();
 }
 
-
 char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
 BOOL			democlassic;
-extern NetDemo	netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 
 extern bool		simulated_connection;
@@ -362,7 +362,8 @@ BEGIN_COMMAND (spynext)
 		else if (consoleplayer().spectator ||
 			 sv_gametype == GM_COOP ||
 			 (sv_gametype != GM_DM &&
-				players[curr].userinfo.team == consoleplayer().userinfo.team) || netdemo.isPlaying())
+				players[curr].userinfo.team == consoleplayer().userinfo.team) || 
+				(netdemo.isPlaying() || netdemo.isPaused()))
 		{
 			displayplayer_id = players[curr].id;
 			break;
@@ -491,16 +492,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 
 	// [RH] Handle impulses. If they are between 1 and 7,
 	//		they get sent as weapon change events.
-	if (!Impulse)
-	{
-		// [SL] 2011-11-20 - Player isn't requesting a weapon change
-		// send player's weapon to server and server will correct it if wrong
-		if (consoleplayer().pendingweapon != wp_nochange)
-			cmd->ucmd.impulse = static_cast<byte>(consoleplayer().pendingweapon);
-		else
-			cmd->ucmd.impulse = static_cast<byte>(consoleplayer().readyweapon);
-	}
-	else if (Impulse >= 1 && Impulse <= 8)
+	if (Impulse >= 1 && Impulse <= 8)
 	{
 		cmd->ucmd.buttons |= BT_CHANGE;
 		cmd->ucmd.buttons |= (Impulse - 1) << BT_WEAPONSHIFT;
@@ -510,6 +502,12 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		cmd->ucmd.impulse = Impulse;
 	}
 	Impulse = 0;
+
+	// [SL] 2012-03-31 - Let the server know when the client is predicting a
+	// weapon change due to a weapon pickup
+	if (!cmd->ucmd.impulse && !(cmd->ucmd.buttons & BT_CHANGE) &&
+		consoleplayer().pendingweapon != wp_nochange)
+		cmd->ucmd.impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
 
 	if (strafe || lookstrafe)
 		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
@@ -601,6 +599,11 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		turntick--;
 		cmd->ucmd.yaw = (ANG180 / TURN180_TICKS) >> 16;
 	}
+
+	// [SL] 2012-04-05 - If the player is dead, tell the server not to process
+	// any of its movement or turning by setting impulse to 40
+	if (consoleplayer().playerstate == PST_DEAD)
+		cmd->ucmd.impulse = DEADIMPULSE;
 }
 
 
@@ -765,6 +768,9 @@ BOOL G_Responder (event_t *ev)
 
 	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
 	{
+		if (C_DoNetDemoKey(ev))	// netdemo playback ate the event
+			return true;
+
 		if (HU_Responder (ev))
 			return true;		// chat ate the event
 		if (ST_Responder (ev))
@@ -846,7 +852,7 @@ END_COMMAND(netstat)
 void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
 void P_DeathThink (player_t *player);
-
+void CL_SimulateWorld();
 //
 // G_Ticker
 // Make ticcmd_ts for the players.
@@ -901,7 +907,7 @@ void G_Ticker (void)
 			G_DoWorldDone ();
 			break;
 		case ga_screenshot:
-			I_ScreenShot(shotfile.c_str());
+			I_ScreenShot(shotfile);
 			gameaction = ga_nothing;
 			break;
 		case ga_fullconsole:
@@ -1046,26 +1052,16 @@ void G_Ticker (void)
 				// [SL] 2011-12-14 - Spawn message from server has not arrived
 				// yet.  Fake it and hope it arrives soon.
 				AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
+				mobj->flags &= ~MF_SOLID;
+				mobj->flags2 |= MF2_DONTDRAW;
 				consoleplayer().mo = mobj->ptr();
 				consoleplayer().mo->player = &consoleplayer();
 				G_PlayerReborn(consoleplayer());
 				DPrintf("Did not receive spawn for consoleplayer.\n");
 			}
 
-			// GhostlyDeath -- If we are a spectator, we do things ourselves
-			if (consoleplayer().spectator)
-			{
-				if (displayplayer().health <= 0 && (&displayplayer() != &consoleplayer()))
-					P_DeathThink(&displayplayer());
-				else
-					P_PlayerThink(&consoleplayer());
-
-				P_MovePlayer(&consoleplayer());
-				P_CalcHeight(&consoleplayer());
-				P_CalcHeight(&displayplayer());
-			}
-
-			CL_PredictMove();
+			CL_SimulateWorld();
+			CL_PredictWorld();
 		}
 		P_Ticker ();
 		ST_Ticker ();
@@ -1169,7 +1165,6 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	fixed_t 			x;
 	fixed_t 			y;
 	fixed_t				z, oldz;
-	subsector_t*		ss;
 	unsigned			an;
 	AActor* 			mo;
 	size_t 				i;
@@ -1179,8 +1174,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	y = mthing->y << FRACBITS;
 	z = mthing->z << FRACBITS;
 
-	ss = R_PointInSubsector (x,y);
-	z = ss->sector->floorheight;
+	z = P_FloorHeight(x, y);
 
 	if (!player.mo)
 	{
@@ -1551,7 +1545,7 @@ void G_DoLoadGame (void)
 	// dearchive all the modifications
 	G_SerializeSnapshots (arc);
 	P_SerializeRNGState (arc);
-	/*P_SerializeACSDefereds (arc);*/
+	P_SerializeACSDefereds (arc);
 
 	CL_QuitNetGame();
 
@@ -1569,10 +1563,10 @@ void G_DoLoadGame (void)
 
 
 	for (i = 0; i < NUM_WORLDVARS; i++)
-		arc << ACS_WorldVars[i];
+		arc >> ACS_WorldVars[i];
 
 	for (i = 0; i < NUM_GLOBALVARS; i++)
-		arc << ACS_GlobalVars[i];
+		arc >> ACS_GlobalVars[i];
 
 	arc >> text[9];
 
@@ -1606,7 +1600,7 @@ void G_BuildSaveName (std::string &name, int slot)
 #endif
 
 	ssName << path;
-    ssName << GStrings(SAVEGAMENAME);
+    ssName << "odasv";
 	ssName << slot;
 	ssName << ".ods";
 
@@ -1617,6 +1611,7 @@ void G_DoSaveGame (void)
 {
 	std::string name;
 	char *description;
+	int i;
 
 	G_SnapshotLevel ();
 
@@ -1654,13 +1649,16 @@ void G_DoSaveGame (void)
 
 	G_SerializeSnapshots (arc);
 	P_SerializeRNGState (arc);
-	/*P_SerializeACSDefereds (arc);*/
+	P_SerializeACSDefereds (arc);
 
 	arc << level.time;
-/*
+
 	for (i = 0; i < NUM_WORLDVARS; i++)
-		arc << WorldVars[i];
-*/
+		arc << ACS_WorldVars[i];
+
+	for (i = 0; i < NUM_GLOBALVARS; i++)
+		arc << ACS_GlobalVars[i];
+
 
 	arc << (BYTE)0x1d;			// consistancy marker
 
@@ -2255,6 +2253,7 @@ void G_DoPlayDemo (bool justStreamInput)
 		sv_allowjump = "0";
 		co_realactorheight = "0";
 		co_zdoomphys = "0";
+		co_allowdropoff = "0";
 		co_fixweaponimpacts = "0";
 
 		return;

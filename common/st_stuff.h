@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -113,10 +113,21 @@ void ST_HticLoadGraphics (void);
 // [ML] HUDified status bar
 void ST_drawStatusBar (void);
 
-// [ML] New Odamex fullscreen HUD
-void ST_odamexHudDraw(void);
-void ST_odamexHudDrawCTF(void);
+namespace hud {
 
+// [ML] New Odamex fullscreen HUD
+void OdamexHUD(void);
+
+// [AM] Spectator HUD
+void SpectatorHUD(void);
+
+// [AM] Original ZDoom HUD
+void ZDoomHUD(void);
+
+// [AM] HUD drawn with the Doom Status Bar.
+void DoomHUD(void);
+
+}
 
 // States for status bar code.
 typedef enum

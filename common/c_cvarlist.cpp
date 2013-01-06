@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -105,17 +105,14 @@ CVAR_FUNC_DECL (sv_timelimit,		"0", "Sets the time limit for the game to end, mu
 CVAR_FUNC_DECL (sv_intermissionlimit, "10", "Sets the time limit for the intermission to end, 0 disables (defaults to 10 seconds)", 
       CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
-// Speedhack code (server related)
-CVAR (sv_speedhackfix,		"0", "", 
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Weapons stay
 CVAR (sv_weaponstay,		"1", "Weapons stay after pickup", 
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // [SL] 2011-05-11 - Allow reconciliation for players on lagged connections
 CVAR (sv_unlag,				"1", "Allow reconciliation for players on lagged connections", 
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
-// [ML] allow weapon bob changing
-CVAR (sv_allownobob, "0", "Allow weapon bob changing", 
+// [ML] allow weapon & view bob changing
+CVAR (sv_allowmovebob, "0", "Allow weapon & view bob changing", 
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 // [ML] Allow clients to adjust amount of red pain screen intensity
@@ -131,7 +128,7 @@ CVAR (sv_allowpwo, "0", "Allow clients to set their preferences for automatic we
 
 // Enable/disable infinitely tall actors
 CVAR (co_realactorheight, "0", "Enable/Disable infinitely tall actors", 
-      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 // [Spleen] When enabled, monsters can get pushed or thrusted off of ledges, like in boom
 CVAR (co_allowdropoff, "0", "When enabled, monsters can get pushed or thrusted off of ledges, like in boom", 
@@ -171,9 +168,14 @@ CVAR (co_nosilentspawns, "0", "Turns off the west-facing silent spawns vanilla b
 CVAR (cl_deathcam, "1", "Dead player's view follows the actor who killed them", 
       CVARTYPE_BOOL, CVAR_ARCHIVE)
 
+CVAR (cl_predictsectors, "1", "Move floors and ceilings immediately instead of waiting for confirmation",
+	  CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR (cl_predictpickup, "1", "Predict weapon pickups", CVARTYPE_BOOL, CVAR_ARCHIVE)
+
 // Movebob
-CVAR (cl_nobob, "0", "Movebob", 
-      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_CLIENTINFO)
+CVAR_FUNC_DECL (cl_movebob, "1.0", "Adjust weapon and movement bobbing", 
+      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE | CVAR_CLIENTINFO)
 
 CVAR (cl_rockettrails, "0", "Rocket trails on/off (currently unused)", CVARTYPE_BOOL,  CVAR_ARCHIVE)
 
@@ -189,6 +191,9 @@ CVAR_FUNC_DECL (sv_gravity, "800", "Gravity of the environment",
 CVAR_FUNC_DECL (sv_aircontrol, "0.00390625", "How much control the player has in the air", 
       CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
+CVAR_FUNC_DECL (sv_splashfactor, "1.0", "Rocket explosion thrust effect?", 
+      CVARTYPE_FLOAT,  CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 
 // Misc stuff
 // ----------
@@ -199,9 +204,6 @@ CVAR (developer, "0", "debugging mode",
 // Port (???)
 CVAR (port, "0", "Display currently used port number", 
       CVARTYPE_INT, CVAR_NOSET | CVAR_NOENABLEDISABLE)
-// File compression (???)
-CVAR (filecompression,	"1", "", 
-      CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Chase camera settings
 CVAR (chase_height,		"-8", "Height of chase camera", 
       CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -216,5 +218,15 @@ CVAR (sv_unblockplayers, "0", "Allows players to walk through other players",
 // [Spleen] Allow custom WAD directories to be specified in a cvar
 CVAR (waddirs, "", "Allow custom WAD directories to be specified", 
       CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// [Xyltol 02/27/2012] Hostname retrieval for Scoreboard
+CVAR (sv_hostname,		"Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
+	CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
+
+// Experimental settings (all categories)
+// =======================================
+
+// Speedhack code (server related)
+CVAR (sv_speedhackfix,		"0", "Experimental anti-speedhack code", 
+      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")

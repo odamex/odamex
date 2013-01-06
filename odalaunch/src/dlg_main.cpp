@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -20,7 +20,7 @@
 //	AUTHOR:	Russell Rice, John D Corrado
 //
 //-----------------------------------------------------------------------------
-
+#include <iostream>
 
 #include "dlg_main.h"
 #include "query_thread.h"
@@ -40,6 +40,7 @@
 #include <wx/iconbndl.h>
 #include <wx/regex.h>
 #include <wx/process.h>
+#include <wx/xrc/xmlres.h>
 
 #ifdef __WXMSW__
     #include <windows.h>
@@ -52,13 +53,10 @@
     #include <netdb.h>
 #endif
 
+using namespace odalpapi;
+
 // Control ID assignments for events
 // application icon
-
-// lists
-const char * Id_LstCtrlServers = "Id_LstCtrlServers";
-const char * Id_LstCtrlPlayers = "Id_LstCtrlPlayers";
-const char * Id_LstCtrlServerDetails = "Id_LstCtrlServerDetails";
 
 static wxInt32 Id_MnuItmLaunch = XRCID("Id_MnuItmLaunch");
 static wxInt32 Id_MnuItmGetList = XRCID("Id_MnuItmGetList");
@@ -84,33 +82,32 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 
     EVT_MENU(XRCID("Id_MnuItmDownloadWad"), dlgMain::OnOpenOdaGet)
 
-	EVT_MENU(XRCID("Id_MnuItmSettings"), dlgMain::OnOpenSettingsDialog)
+	EVT_MENU(wxID_PREFERENCES, dlgMain::OnOpenSettingsDialog)
 
 	EVT_MENU(XRCID("Id_MnuItmVisitWebsite"), dlgMain::OnOpenWebsite)
 	EVT_MENU(XRCID("Id_MnuItmVisitForum"), dlgMain::OnOpenForum)
 	EVT_MENU(XRCID("Id_MnuItmVisitWiki"), dlgMain::OnOpenWiki)
     EVT_MENU(XRCID("Id_MnuItmViewChangelog"), dlgMain::OnOpenChangeLog)
     EVT_MENU(XRCID("Id_MnuItmSubmitBugReport"), dlgMain::OnOpenReportBug)
-	EVT_MENU(XRCID("Id_MnuItmAboutOdamex"), dlgMain::OnAbout)
+	EVT_MENU(wxID_ABOUT, dlgMain::OnAbout)
 
 	EVT_SHOW(dlgMain::OnShow)
 	EVT_CLOSE(dlgMain::OnClose)
+
+    EVT_WINDOW_CREATE(dlgMain::OnWindowCreate)
 
     // thread events
     EVT_COMMAND(-1, wxEVT_THREAD_MONITOR_SIGNAL, dlgMain::OnMonitorSignal)
     EVT_COMMAND(-1, wxEVT_THREAD_WORKER_SIGNAL, dlgMain::OnWorkerSignal)
 
     // misc events
-    EVT_LIST_ITEM_SELECTED(XRCID(Id_LstCtrlServers), dlgMain::OnServerListClick)
-    EVT_LIST_ITEM_ACTIVATED(XRCID(Id_LstCtrlServers), dlgMain::OnServerListDoubleClick)
+    EVT_LIST_ITEM_SELECTED(XRCID("Id_LstCtrlServers"), dlgMain::OnServerListClick)
+    EVT_LIST_ITEM_ACTIVATED(XRCID("Id_LstCtrlServers"), dlgMain::OnServerListDoubleClick)
 END_EVENT_TABLE()
 
 // Main window creation
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
-    wxFileConfig ConfigInfo;
-    wxInt32 WindowPosX, WindowPosY, WindowWidth, WindowHeight;
-    bool WindowMaximized;
     wxString Version;
     wxIcon MainIcon;
 
@@ -137,43 +134,35 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     SetLabel(Version);
 
-    // Sets the window size
-    ConfigInfo.Read(wxT("MainWindowWidth"),
-                    &WindowWidth,
-                    0);
+    #ifdef __WXMAC__
+    {
+        // Remove the file menu on Mac as it will be empty
+        wxMenu* fileMenu = GetMenuBar()->Remove(GetMenuBar()->FindMenu(_("File")));
+        if(fileMenu)
+        {
+            wxMenuItem* prefMenuItem = fileMenu->Remove(wxID_PREFERENCES);
+            wxMenu* helpMenu = GetMenuBar()->GetMenu(GetMenuBar()->FindMenu(_("Help")));
 
-    ConfigInfo.Read(wxT("MainWindowHeight"),
-                    &WindowHeight,
-                    0);
+            // Before deleting the file menu the preferences menu item must be moved or
+            // it will not work after this even though it has been placed somewhere else.
+            // Attaching it to the help menu is the only way to not duplicate it as Help is
+            // a special menu just as Preferences is a special menu itme.
+            if(helpMenu)
+                helpMenu->Append(prefMenuItem);
 
-    if (WindowWidth >= 0 && WindowHeight >= 0)
-        SetClientSize(WindowWidth, WindowHeight);
-
-    // Set Window position
-    ConfigInfo.Read(wxT("MainWindowPosX"),
-                    &WindowPosX,
-                    0);
-
-    ConfigInfo.Read(wxT("MainWindowPosY"),
-                    &WindowPosY,
-                    0);
-
-    if (WindowPosX >= 0 && WindowPosY >= 0)
-        Move(WindowPosX, WindowPosY);
-
-    // Set whether this window is maximized or not
-    ConfigInfo.Read(wxT("MainWindowMaximized"), &WindowMaximized, false);
-
-    Maximize(WindowMaximized);
+            delete fileMenu;
+        }
+    }
+    #endif
 
     launchercfg_s.get_list_on_start = 1;
-    launchercfg_s.show_blocked_servers = 1;
+    launchercfg_s.show_blocked_servers = 0;
     launchercfg_s.wad_paths = wxGetCwd();
     launchercfg_s.odamex_directory = wxGetCwd();
 
-    m_LstCtrlServers = XRCCTRL(*this, Id_LstCtrlServers, LstOdaServerList);
-    m_LstCtrlPlayers = XRCCTRL(*this, Id_LstCtrlPlayers, LstOdaPlayerList);
-    m_LstOdaSrvDetails = XRCCTRL(*this, Id_LstCtrlServerDetails, LstOdaSrvDetails);
+    m_LstCtrlServers = XRCCTRL(*this, "Id_LstCtrlServers", LstOdaServerList);
+    m_LstCtrlPlayers = XRCCTRL(*this, "Id_LstCtrlPlayers", LstOdaPlayerList);
+    m_LstOdaSrvDetails = XRCCTRL(*this, "Id_LstCtrlServerDetails", LstOdaSrvDetails);
 
     m_LstCtrlServers->SetupServerListColumns();
     m_LstCtrlPlayers->SetupPlayerListColumns();
@@ -220,6 +209,42 @@ dlgMain::~dlgMain()
 
     if (OdaGet != NULL)
         OdaGet->Destroy();
+}
+
+void dlgMain::OnWindowCreate(wxWindowCreateEvent &event)
+{
+    wxFileConfig ConfigInfo;
+    wxInt32 WindowPosX, WindowPosY, WindowWidth, WindowHeight;
+    bool WindowMaximized;
+
+    // Sets the window size
+    ConfigInfo.Read(wxT("MainWindowWidth"),
+                    &WindowWidth,
+                    -1);
+
+    ConfigInfo.Read(wxT("MainWindowHeight"),
+                    &WindowHeight,
+                    -1);
+
+    if (WindowWidth >= 0 && WindowHeight >= 0)
+        SetClientSize(WindowWidth, WindowHeight);
+
+    // Set Window position
+    ConfigInfo.Read(wxT("MainWindowPosX"),
+                    &WindowPosX,
+                    -1);
+
+    ConfigInfo.Read(wxT("MainWindowPosY"),
+                    &WindowPosY,
+                    -1);
+
+    if (WindowPosX >= 0 && WindowPosY >= 0)
+        Move(WindowPosX, WindowPosY);
+
+    // Set whether this window is maximized or not
+    ConfigInfo.Read(wxT("MainWindowMaximized"), &WindowMaximized, false);
+
+    Maximize(WindowMaximized);
 }
 
 // Called when the menu exit item or exit button is clicked
@@ -433,16 +458,18 @@ bool dlgMain::MonThrGetMasterList()
 {
     wxFileConfig ConfigInfo;
     wxInt32 MasterTimeout;
+    wxInt32 RetryCount;
     bool UseBroadcast;
     size_t ServerCount;
     mtrs_t Signal;
 
     // Get the masters timeout from the config file
     ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
     ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
 
     // Query the masters with the timeout
-    MServer.QueryMasters(MasterTimeout, UseBroadcast);
+    MServer.QueryMasters(MasterTimeout, UseBroadcast, RetryCount);
 
     // Get the amount of servers found
     ServerCount = MServer.GetServerCount();
@@ -468,6 +495,7 @@ void dlgMain::MonThrGetServerList()
 {
     wxFileConfig ConfigInfo;
     wxInt32 ServerTimeout;
+    wxInt32 RetryCount;
     size_t ServerCount;
 
     size_t count = 0;
@@ -485,6 +513,7 @@ void dlgMain::MonThrGetServerList()
     }
 
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
 
     delete[] QServer;
     QServer = new Server [ServerCount];
@@ -521,7 +550,7 @@ void dlgMain::MonThrGetServerList()
 
                 // add the thread to the vector
                 threadVector.push_back(new QueryThread(this,
-                    &QServer[serverNum], serverNum, ServerTimeout));
+                    &QServer[serverNum], serverNum, ServerTimeout, RetryCount));
 
                 // create and run the thread
                 if(threadVector.back()->Create() == wxTHREAD_NO_ERROR)
@@ -560,11 +589,15 @@ void dlgMain::MonThrGetSingleServer()
 {
     wxFileConfig ConfigInfo;
     wxInt32 ServerTimeout;
+    wxInt32 RetryCount;
 
     if (!MServer.GetServerCount())
         return;
 
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
+
+    QServer[mtcs_Request.Index].SetRetries(RetryCount);
 
     if (QServer[mtcs_Request.Index].Query(ServerTimeout))
     {
@@ -1001,8 +1034,7 @@ wxInt32 dlgMain::GetSelectedServerListIndex()
         return -1;
     }
 
-    i = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL,
-        wxLIST_STATE_SELECTED);
+    i = m_LstCtrlServers->GetFirstSelected();
 
     return i;
 }
@@ -1019,7 +1051,7 @@ wxInt32 dlgMain::GetSelectedServerArrayIndex()
         return -1;
 
     item.SetId(i);
-    item.SetColumn(7);
+    item.SetColumn(serverlist_field_address);
     item.SetMask(wxLIST_MASK_TEXT);
 
     m_LstCtrlServers->GetItem(item);

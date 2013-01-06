@@ -3,7 +3,7 @@
 //
 // $Id: i_musicsystem.cpp 2541 2011-10-27 02:36:31Z dr_sean $
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,6 +34,7 @@
 
 #ifdef OSX
 #include <AudioToolbox/AudioToolbox.h>
+#include <CoreServices/CoreServices.h>
 #endif	// OSX
 
 #ifdef PORTMIDI
@@ -880,6 +881,9 @@ void MidiMusicSystem::_InitializePlayback()
 	for (int i = 0; i < _GetNumChannels(); i++)
 		mChannelVolume[i] = 127;
 		
+	// shut off all notes and reset all controllers
+	_AllNotesOff();
+
 	setTempo(120.0);
 }
 
@@ -959,7 +963,7 @@ PortMidiMusicSystem::PortMidiMusicSystem() :
 	
 	if (Pm_Initialize() != pmNoError)
 	{
-		Printf(PRINT_HIGH, "I_InitMusic: PortMidi initialization failed failed.\n");
+		Printf(PRINT_HIGH, "I_InitMusic: PortMidi initialization failed.\n");
 		return;
 	}
 
@@ -1065,10 +1069,6 @@ void PortMidiMusicSystem::_PlayEvent(MidiEvent *event, int time)
 		{
 			double tempo = I_GetTempoChange(metaevent);
 			setTempo(tempo);
-		}
-		else if (metaevent->getMetaType() == MIDI_META_END_OF_TRACK)
-		{
-			_AllNotesOff();
 		}
 		
 		//	Just ignore other meta events for now

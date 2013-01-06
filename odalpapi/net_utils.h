@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,6 +29,16 @@
 
 #include "typedefs.h"
 
+/**
+ * odalpapi namespace.
+ *
+ * All code for the odamex launcher protocol api is contained within the odalpapi
+ * namespace.
+ */
+namespace odalpapi {
+
 uint64_t GetMillisNow();
+
+} // namespace
 
 #endif // __NET_UTILS_H__

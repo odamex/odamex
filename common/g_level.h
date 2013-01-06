@@ -4,7 +4,7 @@
 // $Id: g_level.h 1859 2010-09-05 21:54:58Z mike $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -115,6 +115,7 @@ struct level_pwad_info_s
 	struct acsdefered_s *defered;
 
 	// level_pwad_info_s				[ML] 5/11/06 Removed sky scrolling/sky2
+	char		skypic2[9];
 	DWORD		fadeto;
 	char		fadetable[8];
 	DWORD		outsidefog;
@@ -146,6 +147,7 @@ struct level_locals_s {
 
 	char		*music;
 	char		skypic[8];
+	char		skypic2[8];
 
 	int			total_secrets;
 	int			found_secrets;
@@ -214,6 +216,8 @@ extern BOOL HexenHack;		// Semi-Hexen-compatibility mode
 
 void G_InitNew (const char *mapname);
 void G_ChangeMap (void);
+void G_ChangeMap (size_t index);
+void G_RestartMap (void);
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,

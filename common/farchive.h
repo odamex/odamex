@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -118,6 +118,9 @@ public:
 
 	void Serialize (FArchive &arc);
 
+	size_t Length() const;
+	void WriteToBuffer(void *buf, size_t length) const;
+	
 protected:
 	bool FreeOnExplode () { return !m_SourceFromMem; }
 
@@ -178,19 +181,19 @@ inline	FArchive& operator<< (unsigned int i) { return operator<< ((DWORD)i); }
 		FArchive& operator>> (std::string &s);
 		FArchive& ReadObject (DObject *&obj, TypeInfo *wanttype);
 
-inline	FArchive& operator>> (char &c) { return operator>> ((BYTE &)c); }
-inline	FArchive& operator>> (SBYTE &c) { return operator>> ((BYTE &)c); }
-inline	FArchive& operator>> (SWORD &s) { return operator>> ((WORD &)s); }
-inline	FArchive& operator>> (SDWORD &i) { return operator>> ((DWORD &)i); }
-inline	FArchive& operator>> (SQWORD &i) { return operator>> ((QWORD &)i); }
+inline	FArchive& operator>> (char &c) { BYTE in; operator>> (in); c = (char)in; return *this; }
+inline	FArchive& operator>> (SBYTE &c) { BYTE in; operator>> (in); c = (SBYTE)in; return *this; }
+inline	FArchive& operator>> (SWORD &s) { WORD in; operator>> (in); s = (SWORD)in; return *this; }
+inline	FArchive& operator>> (SDWORD &i) { DWORD in; operator>> (in); i = (SDWORD)in; return *this; }
+inline	FArchive& operator>> (SQWORD &i) { QWORD in; operator>> (in); i = (SQWORD)in; return *this; }
 //inline	FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
 //inline	FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
-inline	FArchive& operator>> (bool &b) { return operator>> ((BYTE &)b); }
+inline	FArchive& operator>> (bool &b) { BYTE in; operator>> (in); b = (bool)in; return *this; }
 inline  FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
 
 #ifdef WIN32
-inline	FArchive& operator>> (int &i) { return operator>> ((DWORD &)i); }
-inline	FArchive& operator>> (unsigned int &i) { return operator>> ((DWORD &)i); }
+inline	FArchive& operator>> (int &i) { DWORD in; operator>> (in); i = (int)in; return *this; }
+inline	FArchive& operator>> (unsigned int &i) { DWORD in; operator>> (in); i = (unsigned int)in; return *this; }
 #endif
 
 protected:

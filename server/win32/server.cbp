@@ -3,7 +3,6 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="server" />
-		<Option pch_mode="0" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Win Release (GCC)">
@@ -18,6 +17,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -46,6 +46,7 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -290,6 +291,9 @@
 		<Unit filename="..\..\common\c_dispatch.h" />
 		<Unit filename="..\..\common\c_effect.cpp" />
 		<Unit filename="..\..\common\c_effect.h" />
+		<Unit filename="..\..\common\c_level.cpp" />
+		<Unit filename="..\..\common\c_level.h" />
+		<Unit filename="..\..\common\c_maplist.h" />
 		<Unit filename="..\..\common\c_pch.h" />
 		<Unit filename="..\..\common\c_vote.cpp" />
 		<Unit filename="..\..\common\c_vote.h" />
@@ -385,6 +389,8 @@
 		<Unit filename="..\..\common\p_setup.cpp" />
 		<Unit filename="..\..\common\p_setup.h" />
 		<Unit filename="..\..\common\p_sight.cpp" />
+		<Unit filename="..\..\common\p_snapshot.cpp" />
+		<Unit filename="..\..\common\p_snapshot.h" />
 		<Unit filename="..\..\common\p_spec.cpp" />
 		<Unit filename="..\..\common\p_spec.h" />
 		<Unit filename="..\..\common\p_switch.cpp" />
@@ -465,6 +471,8 @@
 			<Option compile="1" />
 			<Option weight="0" />
 		</Unit>
+		<Unit filename="..\src\sv_pickup.cpp" />
+		<Unit filename="..\src\sv_pickup.h" />
 		<Unit filename="..\src\sv_rproto.cpp" />
 		<Unit filename="..\src\sv_sqp.cpp" />
 		<Unit filename="..\src\sv_sqp.h" />

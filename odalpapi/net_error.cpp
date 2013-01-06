@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,6 +44,8 @@
 #ifdef _XBOX
 #include "xbox_main.h"
 #endif
+
+namespace odalpapi {
 
 #ifdef _WIN32
 // Russell - bits from msdn:
@@ -115,3 +117,5 @@ void _ReportError(const char *file, int line, const char *func,
     LocalFree(syserrmsg);
     #endif
 }
+
+} // namespace

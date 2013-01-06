@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -95,13 +95,32 @@ static byte		*SoundCurve;
 // Internal default is max out of 0-15.
 CVAR_FUNC_IMPL (snd_sfxvolume)
 {
+	if (var > 1.0f)
+		var = 1.0f;
+	if (var < 0.0f)
+		var = 0.0f;
+
 	S_SetSfxVolume (var);
 }
 
 // Maximum volume of Music.
 CVAR_FUNC_IMPL (snd_musicvolume)
 {
+	if (var > 1.0f)
+		var = 1.0f;
+	if (var < 0.0f)
+		var = 0.0f;
+
 	S_SetMusicVolume (var);
+}
+
+// Maximum volume of announcer sounds.
+CVAR_FUNC_IMPL (snd_announcervolume)
+{
+	if (var > 1.0f)
+		var = 1.0f;
+	if (var < 0.0f)
+		var = 0.0f;
 }
 
 // whether songs are mus_paused
@@ -622,7 +641,14 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			return;
 	}
 	else
+	{
 		sep = NORM_SEP;
+
+		if (channel == CHAN_ANNOUNCERE || channel == CHAN_ANNOUNCERF)
+			volume = snd_announcervolume;
+		else
+			volume = snd_sfxvolume;
+	}
 
 	// Set up the sound channel's priority
 	switch (channel)
@@ -769,7 +795,7 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 	if (!consoleplayer().mo && channel != CHAN_INTERFACE)
 		return;
 
-	if (name == NULL ||
+	if (name == NULL || strlen(name) == 0 ||
 			(ent && ent != (AActor *)(~0) && ent->subsector && ent->subsector->sector && 
 			ent->subsector->sector->MoreFlags & SECF_SILENT))
 	{
@@ -998,9 +1024,17 @@ void S_UpdateSounds (void *listener_p)
 		{
 			if (I_SoundIsPlaying(c->handle))
 			{
-		// initialize parameters
-				volume = snd_sfxvolume;
+				// initialize parameters
 				sep = NORM_SEP;
+
+				float maxvolume;	
+				if (Channel[cnum].entchannel == CHAN_ANNOUNCERE ||
+					Channel[cnum].entchannel == CHAN_ANNOUNCERF)
+					maxvolume = snd_announcervolume;
+				else
+					maxvolume = snd_sfxvolume;
+
+				volume = maxvolume;
 
 				if (sfx->link)
 				{
@@ -1011,9 +1045,9 @@ void S_UpdateSounds (void *listener_p)
 						S_StopChannel(cnum);
 						continue;
 					}
-					else if (volume > snd_sfxvolume)
+					else if (volume > maxvolume)
 					{
-						volume = snd_sfxvolume;
+						volume = maxvolume;
 					}
 				}
 
@@ -1449,10 +1483,18 @@ static void SetTicker (int *tics, struct AmbientSound *ambient)
 	{
 		*tics = ambient->periodmin;
 	}
+
+	// [SL] 2012-04-27 - Do not allow updates every 0 tics as it causes
+	// an infinite loop
+	if (*tics == 0)
+		*tics = 1;
 }
 
 void A_Ambient (AActor *actor)
 {
+	if (!actor)
+		return;
+		
 	struct AmbientSound *ambient = &Ambients[actor->args[0]];
 
 	if ((ambient->type & CONTINUOUS) == CONTINUOUS)
@@ -1490,11 +1532,18 @@ void A_Ambient (AActor *actor)
 
 void S_ActivateAmbient (AActor *origin, int ambient)
 {
+	if (!origin)
+		return;
+
 	struct AmbientSound *amb = &Ambients[ambient];
 
 	if (!(amb->type & 3) && !amb->periodmin)
 	{
-		sfxinfo_t *sfx = S_sfx + S_FindSound (amb->sound);
+		int sndnum = S_FindSound(amb->sound);
+		if (sndnum == 0)
+			return;
+
+		sfxinfo_t *sfx = S_sfx + sndnum;
 
 		// Make sure the sound has been loaded so we know how long it is
 		if (!sfx->data)

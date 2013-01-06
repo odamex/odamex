@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -341,6 +341,9 @@ std::string W_AddFile (std::string filename)
 		lump_p->position = LONG(fileinfo->filepos);
 		lump_p->size = LONG(fileinfo->size);
 		strncpy (lump_p->name, fileinfo->name, 8);
+
+		// W_CheckNumForName needs all lump names in upper case
+		std::transform(lump_p->name, lump_p->name+8, lump_p->name, toupper);
 	}
 
 	return W_MD5(filename);

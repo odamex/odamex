@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,29 +35,6 @@
 
 #include "main.h"
 
-// Widget ID's
-const char *Id_ChkCtrlGetListOnStart = "Id_ChkCtrlGetListOnStart";
-const char *Id_ChkCtrlShowBlockedServers = "Id_ChkCtrlShowBlockedServers";
-const char *Id_ChkCtrlEnableBroadcasts = "Id_ChkCtrlEnableBroadcasts";
-
-const char *Id_DirCtrlChooseWadDir = "Id_DirCtrlChooseWadDir";
-const char *Id_DirCtrlChooseOdamexPath = "Id_DirCtrlChooseOdamexPath";
-
-const char *Id_LstCtrlWadDirectories = "Id_LstCtrlWadDirectories";
-
-const char *Id_SpnCtrlMasterTimeout = "Id_SpnCtrlMasterTimeout";
-const char *Id_SpnCtrlServerTimeout = "Id_SpnCtrlServerTimeout";
-const char *Id_TxtCtrlExtraCmdLineArgs = "Id_TxtCtrlExtraCmdLineArgs";
-
-const char *Id_SpnCtrlPQGood = "Id_SpnCtrlPQGood";
-const char *Id_SpnCtrlPQPlayable = "Id_SpnCtrlPQPlayable";
-const char *Id_SpnCtrlPQLaggy = "Id_SpnCtrlPQLaggy";
-
-const char *Id_StcBmpPQGood = "Id_StcBmpPQGood";
-const char *Id_StcBmpPQPlayable = "Id_StcBmpPQPlayable";
-const char *Id_StcBmpPQLaggy = "Id_StcBmpPQLaggy";
-const char *Id_StcBmpPQBad = "Id_StcBmpPQBad";
-
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
@@ -72,20 +49,23 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
 	EVT_BUTTON(wxID_OK, dlgConfig::OnOK)
 
-    EVT_DIRPICKER_CHANGED(XRCID(Id_DirCtrlChooseOdamexPath), dlgConfig::OnChooseOdamexPath)
+    EVT_DIRPICKER_CHANGED(XRCID("Id_DirCtrlChooseOdamexPath"), dlgConfig::OnChooseOdamexPath)
 
 	// Misc events
-	EVT_CHECKBOX(XRCID(Id_ChkCtrlGetListOnStart), dlgConfig::OnCheckedBox)
-	EVT_CHECKBOX(XRCID(Id_ChkCtrlShowBlockedServers), dlgConfig::OnCheckedBox)
-	EVT_CHECKBOX(XRCID(Id_ChkCtrlEnableBroadcasts), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkCtrlGetListOnStart"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkCtrlShowBlockedServers"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkCtrlEnableBroadcasts"), dlgConfig::OnCheckedBox)
 
-	EVT_TEXT(XRCID(Id_SpnCtrlMasterTimeout), dlgConfig::OnTextChange)
-	EVT_TEXT(XRCID(Id_SpnCtrlServerTimeout), dlgConfig::OnTextChange)
-	EVT_TEXT(XRCID(Id_TxtCtrlExtraCmdLineArgs), dlgConfig::OnTextChange)
+	EVT_TEXT(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnTextChange)
+	EVT_TEXT(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnTextChange)
+	EVT_TEXT(XRCID("Id_SpnCtrlRetry"), dlgConfig::OnTextChange)
+	EVT_TEXT(XRCID("Id_TxtCtrlExtraCmdLineArgs"), dlgConfig::OnTextChange)
 
-	EVT_SPINCTRL(XRCID(Id_SpnCtrlPQGood), dlgConfig::OnSpinValChange)
-	EVT_SPINCTRL(XRCID(Id_SpnCtrlPQPlayable), dlgConfig::OnSpinValChange)
-	EVT_SPINCTRL(XRCID(Id_SpnCtrlPQLaggy), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQGood"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQPlayable"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQLaggy"), dlgConfig::OnSpinValChange)
+
+	EVT_LISTBOX_DCLICK(XRCID("Id_LstCtrlWadDirectories"), dlgConfig::OnReplaceDir)
 END_EVENT_TABLE()
 
 // Window constructor
@@ -94,27 +74,27 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgConfig"));
 
-    m_ChkCtrlGetListOnStart = XRCCTRL(*this, Id_ChkCtrlGetListOnStart, wxCheckBox);
-    m_ChkCtrlShowBlockedServers = XRCCTRL(*this, Id_ChkCtrlShowBlockedServers, wxCheckBox);
-    m_ChkCtrlEnableBroadcasts = XRCCTRL(*this, Id_ChkCtrlEnableBroadcasts, wxCheckBox);
+    m_ChkCtrlGetListOnStart = XRCCTRL(*this, "Id_ChkCtrlGetListOnStart", wxCheckBox);
+    m_ChkCtrlShowBlockedServers = XRCCTRL(*this, "Id_ChkCtrlShowBlockedServers", wxCheckBox);
+    m_ChkCtrlEnableBroadcasts = XRCCTRL(*this, "Id_ChkCtrlEnableBroadcasts", wxCheckBox);
 
-    m_LstCtrlWadDirectories = XRCCTRL(*this, Id_LstCtrlWadDirectories, wxListBox);
+    m_LstCtrlWadDirectories = XRCCTRL(*this, "Id_LstCtrlWadDirectories", wxListBox);
 
-    m_DirCtrlChooseWadDir = XRCCTRL(*this, Id_DirCtrlChooseWadDir, wxDirPickerCtrl);
-    m_DirCtrlChooseOdamexPath = XRCCTRL(*this, Id_DirCtrlChooseOdamexPath, wxDirPickerCtrl);
+    m_DirCtrlChooseOdamexPath = XRCCTRL(*this, "Id_DirCtrlChooseOdamexPath", wxDirPickerCtrl);
 
-    m_SpnCtrlMasterTimeout = XRCCTRL(*this, Id_SpnCtrlMasterTimeout, wxSpinCtrl);
-    m_SpnCtrlServerTimeout = XRCCTRL(*this, Id_SpnCtrlServerTimeout, wxSpinCtrl);
-    m_TxtCtrlExtraCmdLineArgs = XRCCTRL(*this, Id_TxtCtrlExtraCmdLineArgs, wxTextCtrl);
+    m_SpnCtrlMasterTimeout = XRCCTRL(*this, "Id_SpnCtrlMasterTimeout", wxSpinCtrl);
+    m_SpnCtrlServerTimeout = XRCCTRL(*this, "Id_SpnCtrlServerTimeout", wxSpinCtrl);
+    m_SpnCtrlRetry = XRCCTRL(*this, "Id_SpnCtrlRetry", wxSpinCtrl);
+    m_TxtCtrlExtraCmdLineArgs = XRCCTRL(*this, "Id_TxtCtrlExtraCmdLineArgs", wxTextCtrl);
 
-    m_SpnCtrlPQGood = XRCCTRL(*this, Id_SpnCtrlPQGood, wxSpinCtrl);
-    m_SpnCtrlPQPlayable = XRCCTRL(*this, Id_SpnCtrlPQPlayable, wxSpinCtrl);
-    m_SpnCtrlPQLaggy = XRCCTRL(*this, Id_SpnCtrlPQLaggy, wxSpinCtrl);
+    m_SpnCtrlPQGood = XRCCTRL(*this, "Id_SpnCtrlPQGood", wxSpinCtrl);
+    m_SpnCtrlPQPlayable = XRCCTRL(*this, "Id_SpnCtrlPQPlayable", wxSpinCtrl);
+    m_SpnCtrlPQLaggy = XRCCTRL(*this, "Id_SpnCtrlPQLaggy", wxSpinCtrl);
 
-    m_StcBmpPQGood = XRCCTRL(*this, Id_StcBmpPQGood, wxStaticBitmap);
-    m_StcBmpPQPlayable = XRCCTRL(*this, Id_StcBmpPQPlayable, wxStaticBitmap);
-    m_StcBmpPQLaggy = XRCCTRL(*this, Id_StcBmpPQLaggy, wxStaticBitmap);
-    m_StcBmpPQBad = XRCCTRL(*this, Id_StcBmpPQBad, wxStaticBitmap);
+    m_StcBmpPQGood = XRCCTRL(*this, "Id_StcBmpPQGood", wxStaticBitmap);
+    m_StcBmpPQPlayable = XRCCTRL(*this, "Id_StcBmpPQPlayable", wxStaticBitmap);
+    m_StcBmpPQLaggy = XRCCTRL(*this, "Id_StcBmpPQLaggy", wxStaticBitmap);
+    m_StcBmpPQBad = XRCCTRL(*this, "Id_StcBmpPQBad", wxStaticBitmap);
 
     // Ping quality icons
     m_StcBmpPQGood->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_green")));
@@ -159,14 +139,16 @@ void dlgConfig::Show()
 
     m_DirCtrlChooseOdamexPath->SetPath(cfg_file->odamex_directory);
 
-    wxString MasterTimeout, ServerTimeout, ExtraCmdLineArgs;
+    wxString MasterTimeout, ServerTimeout, RetryCount, ExtraCmdLineArgs;
 
     ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, wxT("500"));
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, wxT("1000"));
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, wxT("2"));
     ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
 
     m_SpnCtrlMasterTimeout->SetValue(MasterTimeout);
     m_SpnCtrlServerTimeout->SetValue(ServerTimeout);
+    m_SpnCtrlRetry->SetValue(RetryCount);
     m_TxtCtrlExtraCmdLineArgs->SetValue(ExtraCmdLineArgs);
 
     wxInt32 PQGood, PQPlayable, PQLaggy;
@@ -274,19 +256,15 @@ void dlgConfig::OnTextChange(wxCommandEvent &event)
 // Add a directory to the listbox
 void dlgConfig::OnAddDir(wxCommandEvent &event)
 {
-    wxString WadDirectory = m_DirCtrlChooseWadDir->GetPath();
+    wxString WadDirectory;
 
-    if (WadDirectory == wxT(""))
-    {
-        wxDirDialog ChooseWadDialog(this,
-                                    wxT("Select a folder containing WAD files"));
+    wxDirDialog ChooseWadDialog(this,
+        wxT("Select a directory containing WAD files"));
 
+    if (ChooseWadDialog.ShowModal() != wxID_OK)
+        return;
 
-        if (ChooseWadDialog.ShowModal() != wxID_OK)
-            return;
-
-        WadDirectory = ChooseWadDialog.GetPath();
-    }
+    WadDirectory = ChooseWadDialog.GetPath();
 
     // Check to see if the path exists on the system
     if (wxDirExists(WadDirectory))
@@ -300,32 +278,34 @@ void dlgConfig::OnAddDir(wxCommandEvent &event)
         }
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found!"), WadDirectory.c_str()));
+        wxMessageBox(wxString::Format(_T("Directory %s not found"), 
+                WadDirectory.c_str()));
 }
 
 // Replace a directory in the listbox
 void dlgConfig::OnReplaceDir(wxCommandEvent &event)
 {
     wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
-    wxString WadDirectory = m_DirCtrlChooseWadDir->GetPath();
+    
+    wxString WadDirectory;
 
     if (i == wxNOT_FOUND)
     {
-        wxMessageBox(_T("Select an directory from the list to replace!"));
+        wxMessageBox(_T("Select a directory from the list to replace"));
 
         return;
     }
 
-    if (WadDirectory == wxT(""))
-    {
-        wxDirDialog ChooseWadDialog(this,
-                                    wxT("Select a folder containing WAD files"));
+    WadDirectory = m_LstCtrlWadDirectories->GetStringSelection();
 
-        if (ChooseWadDialog.ShowModal() != wxID_OK)
-            return;
+    wxDirDialog ChooseWadDialog(this,
+                                wxT("Replace selected directory with.."),
+                                WadDirectory);
 
-        WadDirectory = ChooseWadDialog.GetPath();
-    }
+    if (ChooseWadDialog.ShowModal() != wxID_OK)
+        return;
+
+    WadDirectory = ChooseWadDialog.GetPath();
 
     // Check to see if the path exists on the system
     if (wxDirExists(WadDirectory))
@@ -336,7 +316,8 @@ void dlgConfig::OnReplaceDir(wxCommandEvent &event)
         UserChangedSetting = true;
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found!"), WadDirectory.c_str()));
+        wxMessageBox(wxString::Format(_T("Directory %s not found"), 
+                WadDirectory.c_str()));
 }
 
 // Delete a directory from the listbox
@@ -353,7 +334,7 @@ void dlgConfig::OnDeleteDir(wxCommandEvent &event)
         UserChangedSetting = true;
     }
     else
-        wxMessageBox(_T("Select an item to delete."));
+        wxMessageBox(_T("Select a directory from the list to delete"));
 }
 
 // Move directory in list up 1 item
@@ -431,7 +412,7 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
 
     if (path_count)
     {
-        wxMessageBox(_T("Environment variables import successful!"));
+        wxMessageBox(_T("Environment variables import successful"));
 
         UserChangedSetting = true;
     }
@@ -460,6 +441,7 @@ void dlgConfig::SaveSettings()
 {
     ConfigInfo.Write(wxT(MASTERTIMEOUT), m_SpnCtrlMasterTimeout->GetValue());
     ConfigInfo.Write(wxT(SERVERTIMEOUT), m_SpnCtrlServerTimeout->GetValue());
+    ConfigInfo.Write(wxT(RETRYCOUNT), m_SpnCtrlRetry->GetValue());
     ConfigInfo.Write(wxT(EXTRACMDLINEARGS), m_TxtCtrlExtraCmdLineArgs->GetValue());
     ConfigInfo.Write(wxT(GETLISTONSTART), cfg_file->get_list_on_start);
 	ConfigInfo.Write(wxT(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);

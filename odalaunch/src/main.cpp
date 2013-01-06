@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,11 +35,19 @@
 
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
+#include <wx/sysopt.h>
+
+using namespace odalpapi;
 
 IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {   
+#ifdef __WXMAC__
+    // The native listctrl on Mac is problematic for us so always use the generic listctrl
+    wxSystemOptions::SetOption(wxMAC_ALWAYS_USE_GENERIC_LISTCTRL, true);
+#endif
+
     if (BufferedSocket::InitializeSocketAPI() == false)
         return false;
     

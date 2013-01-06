@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -83,7 +83,9 @@ public:
 		targ->running = &m_Running;
 		targ->arg = arg;
 
-		return AG_ThreadCreate(&m_Thread, CallThreadFunc, targ);
+		AG_ThreadCreate(&m_Thread, CallThreadFunc, targ);
+
+		return 0;
 	}
 
 	static void *CallThreadFunc(void *arg)

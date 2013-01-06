@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -217,15 +217,17 @@ bool IndependentThinker(DThinker *thinker)
 			return true;
 	}
 	
-/*	if (thinker->IsKindOf (RUNTIME_CLASS (DPillar)) ||
-		thinker->IsKindOf (RUNTIME_CLASS (DElevator)) ||
-		thinker->IsKindOf (RUNTIME_CLASS (DMovingFloor)) ||
-		thinker->IsKindOf (RUNTIME_CLASS (DMovingCeiling)))
+	if (thinker->IsA(RUNTIME_CLASS (DPillar)) ||
+		thinker->IsA(RUNTIME_CLASS (DElevator)) ||
+		thinker->IsA(RUNTIME_CLASS (DFloor)) ||
+		thinker->IsA(RUNTIME_CLASS (DCeiling)) ||
+		thinker->IsA(RUNTIME_CLASS (DPlat)) ||
+		thinker->IsA(RUNTIME_CLASS (DDoor)))
 	{
 		// Client ticks movable sectors in prediction code
 		if (clientside)
 			return true;
-	} */
+	}
 
 	return false;
 }

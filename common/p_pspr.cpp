@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,15 +43,21 @@
 
 #define LOWERSPEED				FRACUNIT*6
 #define RAISESPEED				FRACUNIT*6
-
 #define WEAPONBOTTOM			128*FRACUNIT
 #define WEAPONTOP				32*FRACUNIT
 
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(sv_allownobob)
-EXTERN_CVAR(cl_nobob)
+EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(sv_allowpwo)
+
+CVAR_FUNC_IMPL(cl_movebob)
+{
+	if (var > 1.0f)
+		var.Set(1.0f);
+	if (var < 0.0f)
+		var.Set(0.0f);
+}
 
 const char *weaponnames[] =
 {
@@ -164,8 +170,8 @@ static void P_BobWeapon(player_t *player)
 
 	float scale_amount = 1.0f;
 	
-	if ((clientside && sv_allownobob) || (clientside && serverside))
-		scale_amount = 1.0f - cl_nobob;
+	if ((clientside && sv_allowmovebob) || (clientside && serverside))
+		scale_amount = cl_movebob;
 	
 	struct pspdef_s *psp = &player->psprites[player->psprnum];
 	psp->sx = P_CalculateBobXPosition(player, scale_amount);
@@ -459,6 +465,15 @@ void P_FireWeapon (player_t *player)
 
 	if (!P_CheckAmmo (player))
 		return;
+
+	// [tm512] Send the client the weapon they just fired so
+	// that they can fix any weapon desyncs that they get - apr 14 2012
+	if (serverside && !clientside)
+	{
+		MSG_WriteMarker (&player->client.reliablebuf, svc_fireweapon);
+		MSG_WriteByte (&player->client.reliablebuf, player->readyweapon);
+		MSG_WriteLong (&player->client.reliablebuf, player->tic);
+	}
 
 	P_SetMobjState (player->mo, S_PLAY_ATK1);
 	newstate = weaponinfo[player->readyweapon].atkstate;
@@ -853,7 +868,16 @@ void A_FireRailgun (AActor *mo)
 	else
 		damage = 150;
 
+	// [SL] 2012-04-18 - Move players and sectors back to their positions when
+	// this player hit the fire button clientside.
+	Unlag::getInstance().reconcile(player->id);
+
 	P_RailAttack (player->mo, damage, RailOffset);
+
+	// [SL] 2012-04-18 - Restore players and sectors to their current position
+	// according to the server.
+	Unlag::getInstance().restore(player->id);
+
 	RailOffset = 0;
 }
 
@@ -1245,6 +1269,28 @@ void A_CloseShotgun2 (AActor *mo)
     
 	A_FireSound(player, "weapons/sshotc");
 	A_ReFire(mo);
+}
+
+
+//
+// A_ForceWeaponFire
+//
+// Immediately changes a players weapon to a new weapon and new animation state
+// 
+void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic)
+{
+	if (!mo || !mo->player)
+		return;
+		
+	player_t *player = mo->player;
+	
+	player->weaponowned[weapon] = true;
+	player->readyweapon = weapon;
+	P_SetPsprite(player, ps_weapon, weaponinfo[player->readyweapon].atkstate);
+	player->psprites[player->psprnum].sy = WEAPONTOP;
+		
+	while (tic++ < gametic)
+		P_MovePsprites(player);
 }
 
 FArchive &operator<< (FArchive &arc, pspdef_t &def)

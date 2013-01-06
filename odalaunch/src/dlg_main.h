@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,8 +47,6 @@
 #include "query_thread.h"
 #include "net_packet.h"
 
-//using namespace agOdalaunch;
-
 // custom event declarations
 BEGIN_DECLARE_EVENT_TYPES()
 DECLARE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL, -1)
@@ -79,9 +77,9 @@ class dlgMain : public wxFrame, wxThreadHelper
 		dlgMain(wxWindow* parent,wxWindowID id = -1);
 		virtual ~dlgMain();
 		
-		Server          NullServer;
-        Server          *QServer;
-        MasterServer    MServer;
+        odalpapi::Server         NullServer;
+        odalpapi::Server        *QServer;
+        odalpapi::MasterServer   MServer;
         
         launchercfg_t launchercfg_s;
 	protected:
@@ -108,6 +106,7 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnShow(wxShowEvent &event);
 		void OnClose(wxCloseEvent &event);
+		void OnWindowCreate(wxWindowCreateEvent &event);
 		
 		void OnExit(wxCommandEvent& event);
 		

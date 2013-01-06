@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,10 +29,11 @@
 #include <cstdlib>
 
 #include "net_packet.h"
+#include "net_error.h"
 
 using namespace std;
 
-//namespace agOdalaunch {
+namespace odalpapi {
 
 /*
    Create a packet to send, which in turn will
@@ -44,29 +45,54 @@ to override this
 */
 int32_t ServerBase::Query(int32_t Timeout)
 {
+	int8_t Retry = m_RetryCount;
+
 	string Address = Socket.GetRemoteAddress();
 
-	if (Address != "")
-	{
-		Socket.ClearBuffer();
+	if (Address.empty())
+        return 0;
 
-		Socket.Write32(challenge);
+    Socket.ClearBuffer();
 
-		if(!Socket.SendData(Timeout))
-			return 0;
+    // If we didn't get it the first time, try again
+    while (Retry)
+    {
+        Socket.Write32(challenge);
 
-		if (!Socket.GetData(Timeout))
-			return 0;
+        if (!Socket.SendData(Timeout))
+            return 0;
 
-		Ping = Socket.GetPing();
+        int32_t err = Socket.GetData(Timeout);
 
-		if (!Parse())
-			return 0;
+        switch (err)
+        {
+            case -1:
+            case -3: 
+            {
+                Socket.ClearBuffer();
+                --Retry;
+                continue;
+            };
 
-		return 1;
-	}
+            case -2:
+                return 0;
 
-	return 0;
+            default:
+                goto ok;
+        }
+    }
+
+    if (!Retry)
+        return 0;
+
+    ok:
+
+    Ping = Socket.GetPing();
+
+    if (!Parse())
+        return 0;
+
+    return 1;
 }
 
 /*
@@ -498,35 +524,61 @@ int32_t Server::Parse()
 
 int32_t Server::Query(int32_t Timeout)
 {
+    int8_t Retry = m_RetryCount;
+
 	string Address = Socket.GetRemoteAddress();
 
-	if (Address != "")
-	{
-		Socket.ClearBuffer();
+	if (Address.empty())
+        return 0;
 
-		ResetData();
+	Socket.ClearBuffer();
 
-		Socket.Write32(challenge);
-		Socket.Write32(VERSION);
-		Socket.Write32(PROTOCOL_VERSION);
-		// bond - time
+	ResetData();
+
+    // If we didn't get it the first time, try again
+    while (Retry)
+    {
+        Socket.Write32(challenge);
+        Socket.Write32(VERSION);
+        Socket.Write32(PROTOCOL_VERSION);
+        // bond - time
         Socket.Write32(Info.PTime);
 
-		if(!Socket.SendData(Timeout))
-			return 0;
+        if (!Socket.SendData(Timeout))
+            return 0;
 
-		if (!Socket.GetData(Timeout))
-			return 0;
+        int32_t err = Socket.GetData(Timeout);
 
-		Ping = Socket.GetPing();
+        switch (err)
+        {
+            case -1:
+            case -3: 
+            {
+                Socket.ResetBuffer();
+                Socket.ResetSize();
+                --Retry;
+                continue;
+            };
 
-		if (!Parse())
-			return 0;
+            case -2:
+                return 0;
 
-		return 1;
-	}
+            default:
+                goto ok;
+        }
+    }
 
-	return 0;
+    if (!Retry)
+        return 0;
+
+    ok:
+
+    Ping = Socket.GetPing();
+
+    if (!Parse())
+        return 0;
+
+    return 1;
 }
 
 // Send network-wide broadcasts
@@ -550,7 +602,7 @@ void MasterServer::QueryBC(const uint32_t &Timeout)
 
     BCSocket.SendData(Timeout);
 
-    while (BCSocket.GetData(Timeout) != 0)
+    while (BCSocket.GetData(Timeout) > 0)
     {
         addr_t address = { "", 0, false};
         size_t j = 0;
@@ -575,4 +627,4 @@ void MasterServer::QueryBC(const uint32_t &Timeout)
     }
 }
 
-//} // namespace
+} // namespace

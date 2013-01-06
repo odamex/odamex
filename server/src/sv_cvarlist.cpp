@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,7 +30,8 @@
 // Extended timestamp info (dd/mm/yyyy hh:mm:ss)
 CVAR (log_fulltimestamps, "0", "Extended timestamp info (dd/mm/yyyy hh:mm:ss)",
       CVARTYPE_BOOL, CVAR_ARCHIVE)
-
+CVAR (log_packetdebug, "0", "Print debugging messages for each packet sent",
+	  CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 // Server administrative settings
 // ------------------------------
@@ -38,9 +39,8 @@ CVAR (log_fulltimestamps, "0", "Extended timestamp info (dd/mm/yyyy hh:mm:ss)",
 // Server "message of the day" that gets to displayed to clients upon connecting
 CVAR (sv_motd,		"Welcome to Odamex", "Message Of The Day", CVARTYPE_STRING,
       CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-// Server name that appears to masters, clients and launchers
-CVAR (sv_hostname,		"Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
-      CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+
 // Administrator email address
 CVAR (sv_email,		"email@domain.com", "Administrator email address",
       CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
@@ -55,9 +55,6 @@ CVAR (sv_waddownloadcap, "200", "Cap wad file downloading to a specific rate",
       CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Reset the current map when the last player leaves
 CVAR (sv_emptyreset,   "0", "Reloads the current map when all players leave",
-      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
-// Do not run ticker functions when there are no players
-CVAR (sv_emptyfreeze,  "0", "Does not progress the game when there are no players",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Allow spectators talk to show to ingame players
 CVAR (sv_globalspectatorchat, "1", "Players can see spectator chat",
@@ -107,12 +104,15 @@ CVAR (sv_nextmap, "", "Tracks next map to be played",
 // Determines whether Doom 1 episodes should carry over.		
 CVAR (sv_loopepisode, "0", "Determines whether Doom 1 episodes carry over",
       CVARTYPE_BOOL, CVAR_ARCHIVE)	
+// GhostlyDeath <August 14, 2008> -- Randomize the map list
+CVAR_FUNC_DECL (sv_shufflemaplist,	"0", "Randomly shuffle the maplist",
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 // Network settings
 // ----------------
 
 // Network compression (experimental)
-CVAR (sv_networkcompression, "0", "Experimental network compression",
+CVAR (sv_networkcompression, "1", "Network compression",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 // NAT firewall workaround port number
 CVAR (sv_natport,	"0", "NAT firewall workaround, this is a port number",
@@ -121,9 +121,6 @@ CVAR (sv_natport,	"0", "NAT firewall workaround, this is a port number",
 // in seconds
 CVAR (sv_flooddelay, "1.5", "Flood protection time",
       CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// GhostlyDeath <August 14, 2008> -- Randomize the map list
-CVAR_FUNC_DECL (sv_shufflemaplist,	"0", "Randomly shuffle the maplist",
-      CVARTYPE_BOOL, CVAR_ARCHIVE)
 // [Spleen] limits the rate of clients to avoid bandwidth issues
 CVAR_FUNC_DECL (sv_maxrate, "200", "Forces clients to be on or below this rate",
       CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -165,7 +162,7 @@ CVAR (ctf_flagtimeout, "10",  "Time for a dropped flag to be returned automatica
 //CVAR (sv_inttimecountdown, "0",  "Display time left for an intermission screen to next map",
 //      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-CVAR (sv_ticbuffer, "0", "Buffer controller input from players experiencing sudden latency spikes for smoother movement",
+CVAR (sv_ticbuffer, "1", "Buffer controller input from players experiencing sudden latency spikes for smoother movement",
 	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 // Vote settings
@@ -182,16 +179,37 @@ CVAR (sv_vote_timeout, "60", "Timeout between votes in seconds.",
 	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Enable or disable specific votes.
-CVAR (sv_callvote_kick, "1", "Clients can votekick other players.",
-     CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-CVAR (sv_callvote_map, "1", "Clients can vote on a new map.",
+CVAR (sv_callvote_coinflip, "0", "Clients can flip a coin.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-CVAR (sv_callvote_fraglimit, "1", "Clients can vote a new fraglimit.",
+CVAR (sv_callvote_kick, "0", "Clients can votekick other players.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-CVAR (sv_callvote_scorelimit, "1", "Clients can vote a new scorelimit.",
+CVAR (sv_callvote_forcespec, "0", "Clients can vote to force a player to spectate.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-CVAR (sv_callvote_timelimit, "1", "Clients can vote a new timelimit.",
+CVAR (sv_callvote_map, "0", "Clients can vote to switch to a specific map from the server's maplist.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_nextmap, "0", "Clients can vote on progressing to the next map.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_randmap, "0", "Clients can vote to switch to a random map from the server's maplist.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_randcaps, "0", "Clients can vote to force the server to pick two players from the pool of ingame players and force-spectate everyone else.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_randpickup, "0", "Clients can vote to force the server to pick a certian number of players from the pool of ingame players and force-spectate everyone else.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_restart, "0", "Clients can vote to reload the current map.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_fraglimit, "0", "Clients can vote a new fraglimit.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_scorelimit, "0", "Clients can vote a new scorelimit.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
+// Experimental settings (all categories)
+// =======================================
+
+// Do not run ticker functions when there are no players
+CVAR (sv_emptyfreeze,  "0", "Experimental: Does not progress the game when there are no players",
+      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
 

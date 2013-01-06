@@ -24,16 +24,34 @@
 #define __C_VOTE__
 
 /**
- * A byte enum used for sending the vote type over the wire.
+ * An enum used for keeping track of the state of the vote as well as
+ * internally keeping track of individual player votes.
+ */
+typedef enum {
+	VOTE_UNDEC,
+	VOTE_NO,
+	VOTE_YES,
+	VOTE_INTERRUPT,
+	VOTE_ABANDON
+} vote_result_t;
+
+/**
+ * An enum used for sending the vote type over the wire.
  */
 typedef enum {
 	VOTE_NONE, // Reserved
 	VOTE_KICK,
+	VOTE_FORCESPEC,
+	VOTE_RANDCAPS,
+	VOTE_RANDPICKUP,
 	VOTE_MAP,
+	VOTE_NEXTMAP,
 	VOTE_RANDMAP,
+	VOTE_RESTART,
 	VOTE_FRAGLIMIT,
 	VOTE_SCORELIMIT,
 	VOTE_TIMELIMIT,
+	VOTE_COINFLIP,
 	VOTE_MAX // Reserved
 } vote_type_t;
 

@@ -4,7 +4,7 @@
 // $Id: p_unlag.h $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -83,16 +83,21 @@ private:
 		size_t		current_lag;
 	} PlayerHistoryRecord;
    
-	typedef struct {
+	class SectorHistoryRecord
+	{
+	public:
+		SectorHistoryRecord();
+		SectorHistoryRecord(sector_t *sec);
+
 		sector_t*	sector;
+		size_t		history_size;
 		fixed_t		history_ceilingheight[Unlag::MAX_HISTORY_TICS];
 		fixed_t		history_floorheight[Unlag::MAX_HISTORY_TICS];
-		size_t		history_size;
 
 		// current position. restore this position after reconciliation.
 		fixed_t		backup_ceilingheight;
 		fixed_t		backup_floorheight;
-	} SectorHistoryRecord;
+	};
 
 	std::vector<PlayerHistoryRecord> player_history;
 	std::vector<SectorHistoryRecord> sector_history;

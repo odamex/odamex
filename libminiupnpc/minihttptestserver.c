@@ -1,4 +1,4 @@
-/* $Id: minihttptestserver.c,v 1.6 2011/05/09 08:53:15 nanard Exp $ */
+/* $Id: minihttptestserver.c,v 1.10 2012/05/01 16:24:36 nanard Exp $ */
 /* Project : miniUPnP
  * Author : Thomas Bernard
  * Copyright (c) 2011 Thomas Bernard
@@ -190,7 +190,7 @@ void handle_http_connection(int c)
 	int content_length = 16*1024;
 
 	/* read the request */
-	while(request_len < sizeof(request_buffer) && !headers_found) {
+	while(request_len < (int)sizeof(request_buffer) && !headers_found) {
 		n = read(c,
 		         request_buffer + request_len,
 		         sizeof(request_buffer) - request_len);
@@ -218,7 +218,7 @@ void handle_http_connection(int c)
 	printf("headers :\n%.*s", request_len, request_buffer);
 	/* the request have been received, now parse the request line */
 	p = request_buffer;
-	for(i = 0; i < sizeof(request_method) - 1; i++) {
+	for(i = 0; i < (int)sizeof(request_method) - 1; i++) {
 		if(*p == ' ' || *p == '\r')
 			break;
 		request_method[i] = *p;
@@ -227,7 +227,7 @@ void handle_http_connection(int c)
 	request_method[i] = '\0';
 	while(*p == ' ')
 		p++;
-	for(i = 0; i < sizeof(request_uri) - 1; i++) {
+	for(i = 0; i < (int)sizeof(request_uri) - 1; i++) {
 		if(*p == ' ' || *p == '\r')
 			break;
 		request_uri[i] = *p;
@@ -236,7 +236,7 @@ void handle_http_connection(int c)
 	request_uri[i] = '\0';
 	while(*p == ' ')
 		p++;
-	for(i = 0; i < sizeof(http_version) - 1; i++) {
+	for(i = 0; i < (int)sizeof(http_version) - 1; i++) {
 		if(*p == ' ' || *p == '\r')
 			break;
 		http_version[i] = *p;
@@ -249,10 +249,21 @@ void handle_http_connection(int c)
 	if(0 != strcmp(request_method, "GET")) {
 		const char response405[] = "HTTP/1.1 405 Method Not Allowed\r\n"
 		                           "Allow: GET\r\n\r\n";
+		const char * pc;
 		/* 405 Method Not Allowed */
 		/* The response MUST include an Allow header containing a list
 		 * of valid methods for the requested resource. */
-		write(c, response405, sizeof(response405) - 1);
+		n = sizeof(response405) - 1;
+		pc = response405;
+		while(n > 0) {
+			i = write(c, pc, n);
+			if(i<0) {
+				perror("write");
+				return;
+			}
+			n -= i;
+			pc += i;
+		}
 		return;
 	}
 
@@ -360,12 +371,12 @@ int main(int argc, char * * argv) {
 		struct sockaddr_in6 * addr = (struct sockaddr_in6 *)&server_addr;
 		addr->sin6_family = AF_INET6;
 		addr->sin6_port = htons(port);
-		addr->sin6_addr = in6addr_any;
+		addr->sin6_addr = in6addr_loopback;
 	} else {
 		struct sockaddr_in * addr = (struct sockaddr_in *)&server_addr;
 		addr->sin_family = AF_INET;
 		addr->sin_port = htons(port);
-		addr->sin_addr.s_addr = htonl(INADDR_ANY);
+		addr->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 	}
 	if(bind(s, (struct sockaddr *)&server_addr,
 	        ipv6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in)) < 0) {
@@ -400,9 +411,14 @@ int main(int argc, char * * argv) {
 			char * buffer;
 			buffer = malloc(16*1024);
 			build_content(buffer, 16*1024);
-			fwrite(buffer, 1, 16*1024, f);
+			i = fwrite(buffer, 1, 16*1024, f);
+			if(i != 16*1024) {
+				fprintf(stderr, "error writing to file %s : %dbytes written (out of %d)\n", expected_file_name, i, 16*1024);
+			}
 			free(buffer);
 			fclose(f);
+		} else {
+			fprintf(stderr, "error opening file %s for writing\n", expected_file_name);
 		}
 	}
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -122,15 +122,19 @@ void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
 		if (! (check->flags & ML_TWOSIDED) )
 			continue;
 
-		P_LineOpening (check);
-
-		if (openrange <= 0)
-			continue;	// closed door
-
 		if ( sides[ check->sidenum[0] ].sector == sec)
 			other = sides[ check->sidenum[1] ] .sector;
 		else
 			other = sides[ check->sidenum[0] ].sector;
+		
+		// [SL] 2012-02-08 - FIXME: Currently only checks for a line opening at
+		// midpoint of a sloped linedef.  P_RecursiveSound() in ZDoom 1.23 causes
+		// demo desyncs.
+		P_LineOpening(check, (check->v1->x >> 1) + (check->v2->x >> 1),
+							 (check->v1->y >> 1) + (check->v2->y >> 1));
+		
+		if (openrange <= 0)
+			continue;	// closed door
 
 		if (check->flags & ML_SOUNDBLOCK)
 		{
@@ -1209,7 +1213,7 @@ void A_Tracer (AActor *actor)
 	// spawn a puff of smoke behind the rocket
 	if(serverside)
 	{
-		P_SpawnPuff (actor->x, actor->y, actor->z, 0, 3);
+		P_SpawnPuff(actor->x, actor->y, actor->z);
 
 		AActor* th = new AActor (actor->x - actor->momx,
 						 actor->y - actor->momy,
@@ -1326,19 +1330,9 @@ BOOL PIT_VileCheck (AActor *thing)
 
 	corpsehit = thing;
 	corpsehit->momx = corpsehit->momy = 0;
-	// [RH] Check against real height and radius
-	{
-		fixed_t oldheight = corpsehit->height;
-		fixed_t oldradius = corpsehit->radius;
-		int oldflags = corpsehit->flags;
-
-		corpsehit->flags |= MF_SOLID;
-		corpsehit->height = P_ThingInfoHeight(corpsehit->info);
-		check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
-		corpsehit->flags = oldflags;
-		corpsehit->radius = oldradius;
-		corpsehit->height = oldheight;
-	}
+	corpsehit->height <<= 2;
+	check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
+	corpsehit->height >>= 2;
 
 	return !check;
 }
@@ -1719,7 +1713,7 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 	}																// phares
 	 */
 	// Check for movements.
-    if (!P_TryMove (other, other->x, other->y, false))
+	if (!P_TryMove(other, x, y, false))
 	{
 		// kill it immediately
 		P_DamageMobj (other, actor, actor, 10000, MOD_UNKNOWN);

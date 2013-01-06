@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -583,7 +583,7 @@ void STACK_ARGS I_Quit (void)
 
 	M_SaveDefaults();
 
-	I_ShutdownHardware();
+	//I_ShutdownHardware();
 
     CloseNetwork();
 
@@ -937,7 +937,7 @@ std::string I_ConsoleInput (void)
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    if (!select(1, &fdr, NULL, NULL, &tv))
+    if (select(1, &fdr, NULL, NULL, &tv) <= 0)
         return "";
 
     len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead

@@ -52,6 +52,7 @@ public:
 
 	void LoadStrings (int lump, int expectedSize, bool enuOnly);
 	void ReloadStrings ();
+	void ResetStrings ();
 
 	void LoadNames () const;
 	void FlushNames () const;

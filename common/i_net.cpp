@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -548,6 +548,8 @@ std::string NET_GetLocalAddress (void)
         ret_str = inet_ntoa(addr);
     }
 
+	Printf(PRINT_HIGH, "Bound to IP: %s\n",ret_str.c_str());
+
     return ret_str;
 }
 
@@ -900,6 +902,7 @@ void InitNetMessageFormats()
       MSG(clc_callvote,           "x"),
       MSG(clc_vote,               "x"),
       MSG(clc_maplist,            "x"),
+      MSG(clc_getplayerinfo,      "x"),
       MSG(clc_launcher_challenge, "x"),
       MSG(clc_challenge,          "x")
    };
@@ -972,7 +975,10 @@ void InitNetMessageFormats()
  	MSG(svc_midprint,           "x"),
  	MSG(svc_svgametic,          "x"),
 	MSG(svc_timeleft,			"x"),
-	MSG(svc_inttimeleft,		"x")
+	MSG(svc_inttimeleft,		"x"),
+	MSG(svc_mobjtranslation,	"x"),
+	MSG(svc_fullupdatedone,		"x"),
+	MSG(svc_railtrail,			"x")
    };
 
    size_t i;
@@ -1040,8 +1046,8 @@ bool NetWaitOrTimeout(size_t ms)
 			Printf(PRINT_HIGH, "select returned SOCKET_ERROR: %d\n", WSAGetLastError());
 	#else
 		// handle -1
-		if(ret < 0)
-			Printf(PRINT_HIGH, "select returned %d: %d\n", ret, errno);
+		if(ret == -1 && ret != EINTR)
+			Printf(PRINT_HIGH, "select returned -1: %s\n", strerror(errno));
 	#endif
 
 	return false;

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2010 by The Odamex Team.
+// Copyright (C) 2006-2012 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,8 +42,9 @@
 #include <unistd.h>
 #endif
 
-#include <time.h>
 #include <math.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include "errors.h"
 
@@ -994,10 +995,9 @@ std::vector<size_t> D_DoomWadReboot(
     patchfiles.clear();
 
 	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.ResetStrings ();
 	GStrings.Compact ();
 
-	//D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);
 
 	if (DefaultsLoaded)	{		// [ML] This is being called while loading defaults,
@@ -1027,6 +1027,8 @@ void D_DoomMain (void)
 	const char *iwad;
 
 	M_ClearRandom();
+	// [AM] Init rand() PRNG, needed for non-deterministic maplist shuffling.
+	srand(time(NULL));
 
 	gamestate = GS_STARTUP;
 	SetLanguageIDs ();
