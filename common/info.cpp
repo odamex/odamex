@@ -7859,6 +7859,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -7890,6 +7891,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -7920,6 +7922,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -7950,6 +7953,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -7959,6 +7963,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0x10000,
 	"MT_HTIC_MISC1"
      },
+
 
     {                           // MT_HTIC_MISC2
      35,                        // doomednum
@@ -7980,6 +7985,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8010,6 +8016,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8040,6 +8047,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8070,6 +8078,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8100,6 +8109,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8130,6 +8140,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8160,6 +8171,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8190,6 +8202,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      18 * FRACUNIT,             // speed
      8 * FRACUNIT,              // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      1,                         // damage
      NULL,                  // activesound
@@ -8220,6 +8233,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8250,6 +8264,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8280,6 +8295,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8310,6 +8326,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8340,6 +8357,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8370,6 +8388,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      16 * FRACUNIT,             // radius
      54 * FRACUNIT,             // height
+     54 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8400,6 +8419,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      2 * FRACUNIT,              // radius
      4 * FRACUNIT,              // height
+     4 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8430,6 +8450,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8460,6 +8481,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      2 * FRACUNIT,              // radius
      4 * FRACUNIT,              // height
+     4 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8490,6 +8512,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8520,6 +8543,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8550,6 +8574,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8580,6 +8605,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      2 * FRACUNIT,              // radius
      4 * FRACUNIT,              // height
+     4 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8610,6 +8636,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8639,7 +8666,8 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      NULL,                  // deathsound
      0,                         // speed
      20 * FRACUNIT,             // radius
-     70 * FRACUNIT,             // height
+     70 * FRACUNIT,              // height
+     70 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8670,6 +8698,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      60 * FRACUNIT,             // height
+     60 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8700,6 +8729,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      45 * FRACUNIT,             // height
+     45 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8730,6 +8760,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      35 * FRACUNIT,             // height
+     35 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8760,6 +8791,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      60 * FRACUNIT,             // height
+     60 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8790,6 +8822,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      12 * FRACUNIT,             // radius
      54 * FRACUNIT,             // height
+     54 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8820,6 +8853,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      16 * FRACUNIT,             // radius
      34 * FRACUNIT,             // height
+     34 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8850,6 +8884,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      8 * FRACUNIT,              // radius
      32 * FRACUNIT,             // height
+     32 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8880,6 +8915,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      12 * FRACUNIT,             // radius
      64 * FRACUNIT,             // height
+     64 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8910,6 +8946,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      8 * FRACUNIT,              // radius
      36 * FRACUNIT,             // height
+     36 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8940,6 +8977,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      12 * FRACUNIT,             // radius
      68 * FRACUNIT,             // height
+     68 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -8970,6 +9008,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      16 * FRACUNIT,             // radius
      44 * FRACUNIT,             // height
+     44 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9000,6 +9039,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      12 * FRACUNIT,             // radius
      32 * FRACUNIT,             // height
+     32 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9030,6 +9070,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      14 * FRACUNIT,             // radius
      128 * FRACUNIT,            // height
+     128 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9060,6 +9101,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      23 * FRACUNIT,             // height
+     23 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9090,6 +9132,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      27 * FRACUNIT,             // height
+     27 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9120,6 +9163,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9150,6 +9194,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      8 * FRACUNIT,              // radius
      104 * FRACUNIT,            // height
+     104 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9180,6 +9225,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      16 * FRACUNIT,             // radius
      50 * FRACUNIT,             // height
+     50 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9210,6 +9256,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      16 * FRACUNIT,             // radius
      50 * FRACUNIT,             // height
+     50 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9240,6 +9287,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      16 * FRACUNIT,             // radius
      50 * FRACUNIT,             // height
+     50 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9270,6 +9318,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      16 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9300,6 +9349,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      12 * FRACUNIT,             // radius
      20 * FRACUNIT,             // height
+     20 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9330,6 +9380,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      2 * FRACUNIT,              // speed
      8 * FRACUNIT,              // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      2,                         // damage
      NULL,                  // activesound
@@ -9360,6 +9411,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      2 * FRACUNIT,              // speed
      8 * FRACUNIT,              // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      1,                         // damage
      NULL,                  // activesound
@@ -9390,6 +9442,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9420,6 +9473,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9450,6 +9504,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9480,6 +9535,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9510,6 +9566,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9540,6 +9597,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9570,6 +9628,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9600,6 +9659,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9630,6 +9690,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9660,6 +9721,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9690,6 +9752,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9720,6 +9783,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9750,6 +9814,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9780,6 +9845,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      184 * FRACUNIT,            // speed
      12 * FRACUNIT,             // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      2,                         // damage
      NULL,                  // activesound
@@ -9810,6 +9876,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9840,6 +9907,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      14 * FRACUNIT,             // speed
      8 * FRACUNIT,              // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      1,                         // damage
      NULL,                  // activesound
@@ -9870,6 +9938,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9900,6 +9969,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9930,6 +10000,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -9960,6 +10031,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      20 * FRACUNIT,             // speed
      8 * FRACUNIT,              // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      2,                         // damage
      NULL,                  // activesound
@@ -9990,6 +10062,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      10 * FRACUNIT,             // speed
      8 * FRACUNIT,              // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      6,                         // damage
      NULL,                  // activesound
@@ -10020,6 +10093,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      7 * FRACUNIT,              // speed
      8 * FRACUNIT,              // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      4,                         // damage
      NULL,                  // activesound
@@ -10050,6 +10124,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      7 * FRACUNIT,              // speed
      8 * FRACUNIT,              // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      18,                        // damage
      NULL,                  // activesound
@@ -10080,6 +10155,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10110,6 +10186,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      22 * FRACUNIT,             // speed
      12 * FRACUNIT,             // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      3,                         // damage
      NULL,                  // activesound
@@ -10140,6 +10217,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      22 * FRACUNIT,             // speed
      12 * FRACUNIT,             // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      10,                        // damage
      NULL,                  // activesound
@@ -10170,6 +10248,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12 * FRACUNIT,             // speed
      5 * FRACUNIT,              // radius
      12 * FRACUNIT,             // height
+     12 * FRACUNIT,             // cdheight
      100,                       // mass
      5,                         // damage
      NULL,                  // activesound
@@ -10200,6 +10279,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12 * FRACUNIT,             // speed
      5 * FRACUNIT,              // radius
      12 * FRACUNIT,             // height
+     12 * FRACUNIT,             // cdheight
      100,                       // mass
      5,                         // damage
      NULL,                  // activesound
@@ -10230,6 +10310,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12 * FRACUNIT,             // speed
      5 * FRACUNIT,              // radius
      12 * FRACUNIT,             // height
+     12 * FRACUNIT,             // cdheight
      100,                       // mass
      5,                         // damage
      NULL,                  // activesound
@@ -10260,6 +10341,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12 * FRACUNIT,             // speed
      5 * FRACUNIT,              // radius
      12 * FRACUNIT,             // height
+     12 * FRACUNIT,             // cdheight
      100,                       // mass
      5,                         // damage
      NULL,                  // activesound
@@ -10290,6 +10372,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      22 * FRACUNIT,             // speed
      10 * FRACUNIT,             // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      2,                         // damage
      NULL,                  // activesound
@@ -10320,6 +10403,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      18 * FRACUNIT,             // speed
      10 * FRACUNIT,             // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      1,                         // damage
      NULL,                  // activesound
@@ -10350,6 +10434,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10380,6 +10465,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10410,6 +10496,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10440,6 +10527,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      20 * FRACUNIT,             // speed
      11 * FRACUNIT,             // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      20,                        // damage
      NULL,                  // activesound
@@ -10474,6 +10562,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      2 * FRACUNIT,              // radius
      4 * FRACUNIT,              // height
+     4 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10505,6 +10594,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10535,6 +10625,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      10 * FRACUNIT,             // speed
      6 * FRACUNIT,              // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      2,                         // damage
      NULL,                  // activesound
@@ -10565,6 +10656,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10595,6 +10687,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      30 * FRACUNIT,             // speed
      11 * FRACUNIT,             // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      10,                        // damage
      NULL,                  // activesound
@@ -10625,6 +10718,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      32 * FRACUNIT,             // speed
      11 * FRACUNIT,             // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      6,                         // damage
      NULL,                  // activesound
@@ -10655,6 +10749,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      20 * FRACUNIT,             // speed
      11 * FRACUNIT,             // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      2,                         // damage
      NULL,                  // activesound
@@ -10685,6 +10780,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10715,6 +10811,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10746,6 +10843,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      2 * FRACUNIT,              // radius
      4 * FRACUNIT,              // height
+     4 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10776,6 +10874,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      16 * FRACUNIT,             // radius
      56 * FRACUNIT,             // height
+     56 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10805,6 +10904,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      4 * FRACUNIT,              // radius
      4 * FRACUNIT,              // height
+     4 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10835,6 +10935,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      16 * FRACUNIT,             // radius
      24 * FRACUNIT,             // height
+     24 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10865,6 +10966,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      4,                         // speed
      9 * FRACUNIT,              // radius
      22 * FRACUNIT,             // height
+     22 * FRACUNIT,             // cdheight
      40,                        // mass
      0,                         // damage
      NULL,//sfx_chicact,               // activesound
@@ -10895,6 +10997,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      2 * FRACUNIT,              // radius
      4 * FRACUNIT,              // height
+     4 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -10925,6 +11028,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12,                        // speed
      22 * FRACUNIT,             // radius
      62 * FRACUNIT,             // height
+     62 * FRACUNIT,             // cdheight
      75,                        // mass
      0,                         // damage
      NULL,//sfx_mumact,                // activesound
@@ -10955,6 +11059,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12,                        // speed
      22 * FRACUNIT,             // radius
      62 * FRACUNIT,             // height
+     62 * FRACUNIT,             // cdheight
      75,                        // mass
      0,                         // damage
      NULL,//sfx_mumact,                // activesound
@@ -10985,6 +11090,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12,                        // speed
      22 * FRACUNIT,             // radius
      62 * FRACUNIT,             // height
+     62 * FRACUNIT,             // cdheight
      75,                        // mass
      0,                         // damage
      NULL,//sfx_mumact,                // activesound
@@ -11015,6 +11121,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12,                        // speed
      22 * FRACUNIT,             // radius
      62 * FRACUNIT,             // height
+     62 * FRACUNIT,             // cdheight
      75,                        // mass
      0,                         // damage
      NULL,//sfx_mumact,                // activesound
@@ -11045,6 +11152,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -11075,6 +11183,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      9 * FRACUNIT,              // speed
      8 * FRACUNIT,              // radius
      14 * FRACUNIT,             // height
+     14 * FRACUNIT,             // cdheight
      100,                       // mass
      4,                         // damage
      NULL,                  // activesound
@@ -11105,6 +11214,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      14,                        // speed
      32 * FRACUNIT,             // radius
      74 * FRACUNIT,             // height
+     74 * FRACUNIT,             // cdheight
      200,                       // mass
      0,                         // damage
      NULL,//sfx_bstact,                // activesound
@@ -11135,6 +11245,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12 * FRACUNIT,             // speed
      9 * FRACUNIT,              // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      4,                         // damage
      NULL,                  // activesound
@@ -11165,6 +11276,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      10 * FRACUNIT,             // speed
      6 * FRACUNIT,              // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      2,                         // damage
      NULL,                  // activesound
@@ -11195,6 +11307,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      10 * FRACUNIT,             // speed
      6 * FRACUNIT,              // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      2,                         // damage
      NULL,                  // activesound
@@ -11225,6 +11338,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      10 * FRACUNIT,             // speed
      6 * FRACUNIT,              // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      2,                         // damage
      NULL,                  // activesound
@@ -11254,7 +11368,8 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      NULL,//sfx_snkdth,                // deathsound
      10,                        // speed
      22 * FRACUNIT,             // radius
-     70 * FRACUNIT,             // height
+     70 * FRACUNIT,              // height
+     70 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,//sfx_snkact,                // activesound
@@ -11285,6 +11400,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      14 * FRACUNIT,             // speed
      12 * FRACUNIT,             // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      1,                         // damage
      NULL,                  // activesound
@@ -11315,6 +11431,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      14 * FRACUNIT,             // speed
      12 * FRACUNIT,             // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      3,                         // damage
      NULL,                  // activesound
@@ -11345,6 +11462,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      6,                         // speed
      40 * FRACUNIT,             // radius
      72 * FRACUNIT,             // height
+     72 * FRACUNIT,             // cdheight
      325,                       // mass
      0,                         // damage
      NULL,//sfx_hedact,                // activesound
@@ -11375,6 +11493,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      13 * FRACUNIT,             // speed
      12 * FRACUNIT,             // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      1,                         // damage
      NULL,                  // activesound
@@ -11405,6 +11524,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      8 * FRACUNIT,              // speed
      12 * FRACUNIT,             // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      3,                         // damage
      NULL,                  // activesound
@@ -11435,6 +11555,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      10 * FRACUNIT,             // speed
      14 * FRACUNIT,             // radius
      12 * FRACUNIT,             // height
+     12 * FRACUNIT,             // cdheight
      100,                       // mass
      5,                         // damage
      NULL,                  // activesound
@@ -11465,6 +11586,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      10 * FRACUNIT,             // speed
      16 * FRACUNIT,             // radius
      74 * FRACUNIT,             // height
+     74 * FRACUNIT,             // cdheight
      100,                       // mass
      1,                         // damage
      NULL,                  // activesound
@@ -11495,6 +11617,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      14,                        // speed
      20 * FRACUNIT,             // radius
      64 * FRACUNIT,             // height
+     64 * FRACUNIT,             // cdheight
      75,                        // mass
      0,                         // damage
      NULL,//sfx_clkact,                // activesound
@@ -11525,6 +11648,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12,                        // speed
      16 * FRACUNIT,             // radius
      68 * FRACUNIT,             // height
+     68 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,//sfx_wizact,                // activesound
@@ -11555,6 +11679,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      18 * FRACUNIT,             // speed
      10 * FRACUNIT,             // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      3,                         // damage
      NULL,                  // activesound
@@ -11585,6 +11710,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      10,                        // speed
      16 * FRACUNIT,             // radius
      36 * FRACUNIT,             // height
+     36 * FRACUNIT,             // cdheight
      50,                        // mass
      0,                         // damage
      NULL,//sfx_impact,                // activesound
@@ -11615,6 +11741,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      10,                        // speed
      16 * FRACUNIT,             // radius
      36 * FRACUNIT,             // height
+     36 * FRACUNIT,             // cdheight
      50,                        // mass
      0,                         // damage
      NULL,//sfx_impact,                // activesound
@@ -11645,6 +11772,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -11675,6 +11803,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -11705,6 +11834,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      10 * FRACUNIT,             // speed
      8 * FRACUNIT,              // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      1,                         // damage
      NULL,                  // activesound
@@ -11735,6 +11865,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12,                        // speed
      24 * FRACUNIT,             // radius
      78 * FRACUNIT,             // height
+     78 * FRACUNIT,             // cdheight
      150,                       // mass
      0,                         // damage
      NULL,//sfx_kgtact,                // activesound
@@ -11765,6 +11896,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      12,                        // speed
      24 * FRACUNIT,             // radius
      78 * FRACUNIT,             // height
+     78 * FRACUNIT,             // cdheight
      150,                       // mass
      0,                         // damage
      NULL,//sfx_kgtact,                // activesound
@@ -11795,6 +11927,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      9 * FRACUNIT,              // speed
      10 * FRACUNIT,             // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      2,                         // damage
      NULL,                  // activesound
@@ -11825,6 +11958,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      9 * FRACUNIT,              // speed
      10 * FRACUNIT,             // radius
      8 * FRACUNIT,              // height
+     8 * FRACUNIT,             // cdheight
      100,                       // mass
      7,                         // damage
      NULL,                  // activesound
@@ -11855,6 +11989,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      16,                        // speed
      28 * FRACUNIT,             // radius
      100 * FRACUNIT,            // height
+     100 * FRACUNIT,             // cdheight
      800,                       // mass
      0,                         // damage
      NULL,//sfx_sbtact,                // activesound
@@ -11885,6 +12020,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      20 * FRACUNIT,             // speed
      10 * FRACUNIT,             // radius
      10 * FRACUNIT,             // height
+     10 * FRACUNIT,             // cdheight
      100,                       // mass
      10,                        // damage
      NULL,                  // activesound
@@ -11914,7 +12050,8 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // deathsound
      14,                        // speed
      16 * FRACUNIT,             // radius
-     70 * FRACUNIT,             // height
+     70 * FRACUNIT,              // height
+     70 * FRACUNIT,             // cdheight
      300,                       // mass
      0,                         // damage
      NULL,//sfx_soract,                // activesound
@@ -11945,6 +12082,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      20 * FRACUNIT,             // speed
      10 * FRACUNIT,             // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      1,                         // damage
      NULL,                  // activesound
@@ -11975,6 +12113,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12005,6 +12144,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      6 * FRACUNIT,              // speed
      10 * FRACUNIT,             // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      10,                        // damage
      NULL,                  // activesound
@@ -12035,6 +12175,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12065,6 +12206,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      16,                        // speed
      28 * FRACUNIT,             // radius
      100 * FRACUNIT,            // height
+     100 * FRACUNIT,             // cdheight
      800,                       // mass
      7,                         // damage
      NULL,//sfx_minact,                // activesound
@@ -12095,6 +12237,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      20 * FRACUNIT,             // speed
      10 * FRACUNIT,             // radius
      6 * FRACUNIT,              // height
+     6 * FRACUNIT,             // cdheight
      100,                       // mass
      3,                         // damage
      NULL,                  // activesound
@@ -12125,6 +12268,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      14 * FRACUNIT,             // speed
      5 * FRACUNIT,              // radius
      12 * FRACUNIT,             // height
+     12 * FRACUNIT,             // cdheight
      100,                       // mass
      4,                         // damage
      NULL,                  // activesound
@@ -12155,6 +12299,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      8 * FRACUNIT,              // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      4,                         // damage
      NULL,                  // activesound
@@ -12185,6 +12330,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12215,6 +12361,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12245,6 +12392,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12275,6 +12423,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12305,6 +12454,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12335,6 +12485,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12365,6 +12516,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12395,6 +12547,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12425,6 +12578,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12455,6 +12609,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12485,6 +12640,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12515,6 +12671,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12545,6 +12702,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12575,6 +12733,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12605,6 +12764,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12635,6 +12795,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12665,6 +12826,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
      0,                         // speed
      20 * FRACUNIT,             // radius
      16 * FRACUNIT,             // height
+     16 * FRACUNIT,             // cdheight
      100,                       // mass
      0,                         // damage
      NULL,                  // activesound
@@ -12695,6 +12857,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+     4*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -12725,6 +12888,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+     4*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -12755,6 +12919,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+     4*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -12785,6 +12950,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+     4*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -12815,6 +12981,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+     4*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -12845,6 +13012,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+     4*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -12875,6 +13043,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+     4*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -12905,6 +13074,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+     4*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -12935,6 +13105,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	32*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+     56*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -12966,6 +13137,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	8,		// radius
 	8,		// height
+     8,             // cdheight
 	10,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -12997,6 +13169,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	8,		// radius
 	8,		// height
+     8,             // cdheight
 	10,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13027,6 +13200,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	8,		// radius
 	8,		// height
+     8,             // cdheight
 	10,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13057,6 +13231,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13087,6 +13262,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13117,6 +13293,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13147,6 +13324,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13177,6 +13355,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	0*FRACUNIT,		// height
+	0*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13207,6 +13386,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13237,6 +13417,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13267,6 +13448,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13298,6 +13480,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	14*FRACUNIT,		// height
+	14*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13329,6 +13512,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	14*FRACUNIT,		// height
+	14*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13363,6 +13547,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13394,6 +13579,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13425,6 +13611,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13456,6 +13643,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13487,6 +13675,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13518,6 +13707,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13548,6 +13738,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	36*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+     4*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -13578,6 +13769,7 @@ mobjinfo_t hticmobjinfo[NUMMOBJTYPES-NUMDOOMTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+     16*FRACUNIT,             // cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound

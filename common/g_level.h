@@ -194,8 +194,8 @@ struct cluster_info_s {
 	int			cluster;
 	// [Russell] - Naturally, this should have an extra byte for the null terminator
 	char		finaleflat[9];
-	char		*exittext;
-	char		*entertext;
+	const char		*exittext;
+	const char		*entertext;
 	char		*messagemusic;
 	int			flags;
 };

@@ -401,10 +401,88 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 
 // [AM] Draw the state of voting
 void ST_voteDraw (int y) {
-	vote_state_t vote_state;
-	if (!VoteState::instance().get(vote_state)) {
-		return;
-	}
+    vote_state_t vote_state;
+    if (!VoteState::instance().get(vote_state)) {
+        return;
+    }
+
+    int xscale = hud_scale ? CleanXfac : 1;
+    int yscale = hud_scale ? CleanYfac : 1;
+
+    // Vote Result/Countdown
+    std::ostringstream buffer;
+    std::string result_string;
+    EColorRange result_color;
+
+    switch (vote_state.result) {
+    case VOTE_YES:
+        result_string = "VOTE PASSED";
+        result_color = CR_GREEN;
+        break;
+    case VOTE_NO:
+        result_string = "VOTE FAILED";
+        result_color = CR_RED;
+        break;
+    case VOTE_INTERRUPT:
+        result_string = "VOTE INTERRUPTED";
+        result_color = CR_TAN;
+        break;
+    case VOTE_ABANDON:
+        result_string = "VOTE ABANDONED";
+        result_color = CR_TAN;
+        break;
+    case VOTE_UNDEC:
+        buffer << "VOTE NOW: " << vote_state.countdown;
+        result_string = buffer.str();
+        if (vote_state.countdown <= 5 && (I_MSTime() % 1000) < 500) {
+            result_color = CR_BRICK;
+        } else {
+            result_color = CR_GOLD;
+        }
+        break;
+    default:
+        return;
+    }
+
+    size_t x1, x2;
+    x1 = (screen->width - V_StringWidth(result_string.c_str()) * xscale) >> 1;
+    if (hud_scale) {
+        screen->DrawTextClean(result_color, x1, y, result_string.c_str());
+    } else {
+        screen->DrawText(result_color, x1, y, result_string.c_str());
+    }
+
+    // Votestring - Break lines
+    brokenlines_t *votestring = V_BreakLines(320, vote_state.votestring.c_str());
+    for (byte i = 0;i < 4;i++) {
+        if (votestring[i].width == -1) {
+            break;
+        }
+
+        x2 = (screen->width - votestring[i].width * xscale) >> 1;
+        y += yscale * 8;
+
+        if (hud_scale) {
+            screen->DrawTextClean(CR_GREY, x2, y, votestring[i].string);
+        } else {
+            screen->DrawText(CR_GREY, x2, y, votestring[i].string);
+        }
+    }
+    V_FreeBrokenLines(votestring);
+
+    if (vote_state.result == VOTE_ABANDON) {
+        return;
+    }
+
+    // Voting Bar
+    y += yscale * 8;
+
+    ST_DrawBar(CR_RED, vote_state.no, vote_state.no_needed,
+               (screen->width >> 1) - xscale * 40, y, xscale * 40,
+               true, false, true);
+    ST_DrawBar(CR_GREEN, vote_state.yes, vote_state.yes_needed,
+               (screen->width >> 1), y, xscale * 40, false, true);
+}
 
 void ST_DrawNumNewRight (int x, int y, DCanvas *scrn, int num)
 {
@@ -430,82 +508,25 @@ void ST_newDraw (void)
 	ammotype_t ammo = weaponinfo[plyr->readyweapon].ammo;
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
-	
 
-	// Vote Result/Countdown
-	std::ostringstream buffer;
-	std::string result_string;
-	EColorRange result_color;
-
-	switch (vote_state.result) {
-	case VOTE_YES:
-		result_string = "VOTE PASSED";
-		result_color = CR_GREEN;
-		break;
-	case VOTE_NO:
-		result_string = "VOTE FAILED";
-		result_color = CR_RED;
-		break;
-	case VOTE_INTERRUPT:
-		result_string = "VOTE INTERRUPTED";
-		result_color = CR_TAN;
-		break;
-	case VOTE_ABANDON:
-		result_string = "VOTE ABANDONED";
-		result_color = CR_TAN;
-		break;
-	case VOTE_UNDEC:
-		buffer << "VOTE NOW: " << vote_state.countdown;
-		result_string = buffer.str();
-		if (vote_state.countdown <= 5 && (I_MSTime() % 1000) < 500) {
-			result_color = CR_BRICK;
-		} else {
-			result_color = CR_GOLD;
-		}
-		break;
-	default:
-		return;
-	}
-
-	size_t x1, x2;
-	x1 = (screen->width - V_StringWidth(result_string.c_str()) * xscale) >> 1;
-	if (hud_scale) {
-		screen->DrawTextClean(result_color, x1, y, result_string.c_str());
-	} else {
-		screen->DrawText(result_color, x1, y, result_string.c_str());
-	}
-
-	// Votestring - Break lines
-	brokenlines_t *votestring = V_BreakLines(320, vote_state.votestring.c_str());
-	for (byte i = 0;i < 4;i++) {
-		if (votestring[i].width == -1) {
-			break;
-		}
-
-		x2 = (screen->width - votestring[i].width * xscale) >> 1;
-		y += yscale * 8;
-
-		if (hud_scale) {
-			screen->DrawTextClean(CR_GREY, x2, y, votestring[i].string);
-		} else {
-			screen->DrawText(CR_GREY, x2, y, votestring[i].string);
-		}
-	}
-	V_FreeBrokenLines(votestring);
-
-	if (vote_state.result == VOTE_ABANDON) {
-		return;
-	}
-
-	// Voting Bar
-	y += yscale * 8;
-
-	ST_DrawBar(CR_RED, vote_state.no, vote_state.no_needed,
-			   (screen->width >> 1) - xscale * 40, y, xscale * 40,
-			   true, false, true);
-	ST_DrawBar(CR_GREEN, vote_state.yes, vote_state.yes_needed,
-			   (screen->width >> 1), y, xscale * 40, false, true);
 }
+
+
+void ST_HticDrawFullScreenStuff (void)
+{
+	player_t *plyr = &consoleplayer();
+	ammotype_t ammo = weaponinfo[plyr->readyweapon].ammo;	
+	unsigned int x,y;
+	int xscale = hud_scale ? CleanXfac : 1;
+	int yscale = hud_scale ? CleanYfac : 1;
+
+	y = 180;//screen->height - numheight * yscale;
+
+	// Draw health
+	ST_DrawNumNew(4, y, screen, plyr->health);
+	
+}
+
 
 namespace hud {
 
@@ -514,6 +535,83 @@ void drawCTF() {
 	if (sv_gametype != GM_CTF) {
 		return;
 	}
+
+    player_t *plyr = &consoleplayer();
+    int xscale = hud_scale ? CleanXfac : 1;
+    int yscale = hud_scale ? CleanYfac : 1;
+    const patch_t *flagbluepatch = flagiconbhome;
+    const patch_t *flagredpatch = flagiconrhome;
+
+    switch (CTFdata[it_blueflag].state) {
+        case flag_carried:
+            if (CTFdata[it_blueflag].flagger) {
+                player_t &player = idplayer(CTFdata[it_blueflag].flagger);
+                if (player.userinfo.team == TEAM_BLUE) {
+                    flagbluepatch = flagiconbtakenbyb;
+                } else if (player.userinfo.team == TEAM_RED) {
+                    flagbluepatch = flagiconbtakenbyr;
+                }
+            }
+            break;
+        case flag_dropped:
+            flagbluepatch = flagiconbdropped;
+            break;
+        default:
+            break;
+    }
+
+    switch (CTFdata[it_redflag].state) {
+        case flag_carried:
+            if (CTFdata[it_redflag].flagger) {
+                player_t &player = idplayer(CTFdata[it_redflag].flagger);
+                if (player.userinfo.team == TEAM_BLUE) {
+                    flagredpatch = flagiconrtakenbyb;
+                } else if (player.userinfo.team == TEAM_RED) {
+                    flagredpatch = flagiconrtakenbyr;
+                }
+            }
+            break;
+        case flag_dropped:
+            flagredpatch = flagiconrdropped;
+            break;
+        default:
+            break;
+    }
+
+    // Draw base flag patches
+    hud::DrawPatch(4, 61, hud_scale,
+                   hud::X_RIGHT, hud::Y_BOTTOM,
+                   hud::X_RIGHT, hud::Y_BOTTOM,
+                   flagbluepatch);
+    hud::DrawPatch(4, 43, hud_scale,
+                   hud::X_RIGHT, hud::Y_BOTTOM,
+                   hud::X_RIGHT, hud::Y_BOTTOM,
+                   flagredpatch);
+
+    // Draw team border
+    switch (plyr->userinfo.team) {
+        case TEAM_BLUE:
+            hud::DrawPatch(4, 61, hud_scale,
+                           hud::X_RIGHT, hud::Y_BOTTOM,
+                           hud::X_RIGHT, hud::Y_BOTTOM,
+                           flagiconteam);
+            break;
+        case TEAM_RED:
+            hud::DrawPatch(4, 43, hud_scale,
+                           hud::X_RIGHT, hud::Y_BOTTOM,
+                           hud::X_RIGHT, hud::Y_BOTTOM,
+                           flagiconteam);
+            break;
+        default:
+            break;
+    }
+
+    // Draw team scores
+    ST_DrawNumRight(screen->width - 24 * xscale, screen->height - (62 + 16) * yscale,
+                    screen, TEAMpoints[TEAM_BLUE]);
+    ST_DrawNumRight(screen->width - 24 * xscale, screen->height - (44 + 16) * yscale,
+                    screen, TEAMpoints[TEAM_RED]);
+}
 
 void ST_HticDrawFullScreenStuff (void)
 {

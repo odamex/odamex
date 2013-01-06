@@ -1350,6 +1350,7 @@ void ST_Ticker (void)
 {
 	st_randomnumber = M_Random();
 	ST_updateWidgets();
+	//gameinfo.StatusBar->Ticker();
 	st_oldhealth = consoleplayer().health;
 }
 
@@ -1575,26 +1576,43 @@ void ST_diffDraw(void)
 
 void ST_Drawer (void)
 {
+    stbarfns_t *StatusBar = gameinfo.StatusBar;
+
 	if (noisedebug)
 		S_NoiseDebug ();
 
 	if ((realviewheight == screen->height && viewactive) || (&consoleplayer())->spectator)
 	{
 		if (DrawNewHUD) {
-			if (hud_fullhudtype >= 1) {
-				hud::OdamexHUD();
-			} else {
-				hud::ZDoomHUD();
+            if (gameinfo.gametype & GAME_Heretic)   // Move this into the hud system, determine gametype in there
+			{
+                ST_HticDrawFullScreenStuff();
 			}
-		} else if (DrawNewSpecHUD) {
+			else
+            {
+                if (hud_fullhudtype >= 1)
+                {
+                    hud::OdamexHUD();
+                }
+                else
+                {
+                    hud::ZDoomHUD();
+                }                
+            }
+		} 
+		else if (DrawNewSpecHUD)
+        {
 			hud::SpectatorHUD();
 		}
+
 		st_firsttime = true;
 	}
 	else
 	{
 		stbarscreen->Lock ();
 		stnumscreen->Lock ();
+		
+		//StatusBar->Drawer();
 
 		if (st_firsttime)
 		{
@@ -1607,8 +1625,15 @@ void ST_Drawer (void)
 
 		stnumscreen->Unlock ();
 		stbarscreen->Unlock ();
-
-		hud::DoomHUD();
+		
+		if (gameinfo.gametype & GAME_Heretic)
+        {
+            //hud::HereticHUD();
+        }
+        else
+        {
+            hud::DoomHUD();
+        }
 	}
 
 	// [AM] Voting HUD!
@@ -1626,20 +1651,6 @@ void ST_Drawer (void)
 				displayplayer().camera->z/FRACUNIT);
 }
 
-static patch_t *LoadFaceGraphic (char *name, int namespc)
-{
-	char othername[9];
-	int lump;
-
-	lump = W_CheckNumForName (name, namespc);
-	if (lump == -1)
-	{
-		strcpy (othername, name);
-		othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
-		lump = W_GetNumForName (othername);
-	}
-	return W_CachePatch (lump, PU_STATIC);
-}
 
 void ST_loadGraphics(void)
 {
@@ -1812,10 +1823,7 @@ void ST_unloadGraphics (void)
 	for (i=0;i<ST_NUMFACES;i++)
 		Z_ChangeTag(faces[i], PU_CACHE);
 
-	// Note: nobody ain't seen no unloading
-	//	 of stminus yet. Dude.
-
-
+	Z_ChangeTag(negminus, PU_CACHE);
 }
 
 void ST_unloadData(void)
@@ -2434,412 +2442,8 @@ void ST_HticInit(void)
 /**				   COMMON STATUS BAR FUNCTIONS				  **/
 /***************************************************************/
 
-// Respond to keyboard input events, intercept cheats.
-// [RH] Cheats eatkey the last keypress used to trigger them
-bool ST_Responder (event_t *ev)
-{
-	  player_t *plyr = &consoleplayer();
-	  bool eatkey = false;
-	  int i;
 
-	  // Filter automap on/off.
-	  if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
-	  {
-		switch(ev->data1)
-		{
-		case AM_MSGENTERED:
-			st_gamestate = AutomapState;
-			st_firsttime = true;
-			break;
 
-		case AM_MSGEXITED:
-			st_gamestate = FirstPersonState;
-			break;
-		}
-	}
-
-	// if a user keypress...
-    else if (ev->type == ev_keydown)
-    {
-        // 'dqd' cheat for toggleable god mode
-        if (cht_CheckCheat(&cheat_god, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            // [Russell] - give full health
-            plyr->mo->health = deh.StartHealth;
-            plyr->health = deh.StartHealth;
-
-            AddCommandString("god");
-
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_IDDQD);
-            eatkey = true;
-        }
-
-        // 'fa' cheat for killer fucking arsenal
-        else if (cht_CheckCheat(&cheat_ammonokey, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf(PRINT_HIGH, "Ammo (No keys) Added\n");
-
-            plyr->armorpoints = deh.FAArmor;
-            plyr->armortype = deh.FAAC;
-
-            weapontype_t pendweap = plyr->pendingweapon;
-            for (i = 0; i<NUMWEAPONS; i++)
-                P_GiveWeapon (plyr, (weapontype_t)i, false);
-            plyr->pendingweapon = pendweap;
-
-            for (i=0; i<NUMAMMO; i++)
-                plyr->ammo[i] = plyr->maxammo[i];
-
-            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-            MSG_WriteByte(&net_buffer, 1);
-
-            eatkey = true;
-        }
-
-        // 'kfa' cheat for key full ammo
-        else if (cht_CheckCheat(&cheat_ammo, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf(PRINT_HIGH, "Very Happy Ammo Added\n");
-
-            plyr->armorpoints = deh.KFAArmor;
-            plyr->armortype = deh.KFAAC;
-
-            weapontype_t pendweap = plyr->pendingweapon;
-            for (i = 0; i<NUMWEAPONS; i++)
-                P_GiveWeapon (plyr, (weapontype_t)i, false);
-            plyr->pendingweapon = pendweap;
-
-            for (i=0; i<NUMAMMO; i++)
-                plyr->ammo[i] = plyr->maxammo[i];
-
-            for (i=0; i<NUMCARDS; i++)
-                plyr->cards[i] = true;
-
-            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-            MSG_WriteByte(&net_buffer, 2);
-
-            eatkey = true;
-        }
-        // [Russell] - Only doom 1/registered can have idspispopd and
-        // doom 2/final can have idclip
-        else if (cht_CheckCheat(&cheat_noclip, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            if ((gamemode != shareware) && (gamemode != registered) &&
-                (gamemode != retail))
-                return false;
-
-            AddCommandString("noclip");
-
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_NOCLIP);
-            eatkey = true;
-        }
-        else if (cht_CheckCheat(&cheat_commercial_noclip, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            if (gamemode != commercial)
-                return false;
-
-            AddCommandString("noclip");
-
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_NOCLIP);
-            eatkey = true;
-        }
-        // 'behold?' power-up cheats
-        for (i=0; i<6; i++)
-        {
-            if (cht_CheckCheat(&cheat_powerup[i], (char)ev->data2))
-            {
-                if (CheckCheatmode ())
-                    return false;
-
-                Printf(PRINT_HIGH, "Power-up toggled\n");
-                if (!plyr->powers[i])
-                    P_GivePower( plyr, i);
-                else if (i!=pw_strength)
-                    plyr->powers[i] = 1;
-                else
-                    plyr->powers[i] = 0;
-
-                MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-                MSG_WriteByte(&net_buffer, 3);
-                MSG_WriteByte(&net_buffer, (byte)i);
-
-                eatkey = true;
-            }
-        }
-
-        // 'behold' power-up menu
-        if (cht_CheckCheat(&cheat_powerup[6], (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf (PRINT_HIGH, "%s\n", STSTR_BEHOLD);
-
-        }
-
-        // 'choppers' invulnerability & chainsaw
-        else if (cht_CheckCheat(&cheat_choppers, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf(PRINT_HIGH, "... Doesn't suck - GM\n");
-            plyr->weaponowned[wp_chainsaw] = true;
-
-            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-            MSG_WriteByte(&net_buffer, 4);
-
-            eatkey = true;
-        }
-
-        // 'clev' change-level cheat
-        else if (cht_CheckCheat(&cheat_clev, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            char buf[16];
-			//char *bb;
-
-            cht_GetParam(&cheat_clev, buf);
-            buf[2] = 0;
-
-			// [ML] Chex mode: always set the episode number to 1.
-			// FIXME: This is probably a horrible hack, it sure looks like one at least
-			if (gamemode == retail_chex)
-				sprintf(buf,"1%c",buf[1]);
-
-            sprintf (buf + 3, "map %s\n", buf);
-            AddCommandString (buf + 3);
-            eatkey = true;
-        }
-
-        // 'mypos' for player position
-        else if (cht_CheckCheat(&cheat_mypos, (char)ev->data2))
-        {
-            AddCommandString ("toggle idmypos");
-            eatkey = true;
-        }
-
-        // 'idmus' change-music cheat
-        else if (cht_CheckCheat(&cheat_mus, (char)ev->data2))
-        {
-            char buf[16];
-
-            cht_GetParam(&cheat_mus, buf);
-            buf[2] = 0;
-
-            sprintf (buf + 3, "idmus %s\n", buf);
-            AddCommandString (buf + 3);
-            eatkey = true;
-        }
-    }
-
-    return eatkey;
-}
-
-void ST_Ticker (void)
-{
-	st_randomnumber = M_Random();
-	gameinfo.StatusBar->Ticker();
-	st_oldhealth = consoleplayer().health;
-}
-static int st_palette = 0;
-
-/* Original redscreen palette method - replaces ZDoom method - ML       */
-void ST_doPaletteStuff(void)
-{
-
-    int		palette;
-    byte*	pal;
-    int		cnt;
-    int		bzc;
-
-	player_t *plyr = &consoleplayer();
-
-    cnt = plyr->damagecount;
-
-    if (plyr->powers[pw_strength])
-    {
-	// slowly fade the berzerk out
-        bzc = 12 - (plyr->powers[pw_strength]>>6);
-
-        if (bzc > cnt)
-            cnt = bzc;
-    }
-
-    if (cnt)
-    {
-        palette = (cnt+7)>>3;
-
-		if (gamemode == retail_chex)
-			palette = RADIATIONPAL;
-		else {
-			if (palette >= NUMREDPALS)
-				palette = NUMREDPALS-1;
-
-			palette += STARTREDPALS;
-		}
-    }
-
-    else if (plyr->bonuscount)
-    {
-        palette = (plyr->bonuscount+7)>>3;
-
-        if (palette >= NUMBONUSPALS)
-            palette = NUMBONUSPALS-1;
-
-        palette += STARTBONUSPALS;
-    }
-
-    else if ( plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
-        palette = RADIATIONPAL;
-
-    else
-        palette = 0;
-
-    if (palette != st_palette)
-    {
-        st_palette = palette;
-        pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
-
-        I_SetOldPalette (pal);
-    }
-
-}
-
-void ST_Drawer(void)
-{
-	stbarfns_t *StatusBar = gameinfo.StatusBar;
-	
-	if (noisedebug)
-		S_NoiseDebug ();
-		
-	if ((screenblocks > 10 && viewactive) || (&consoleplayer())->spectator)
-	{
-		if (DrawNewHUD)
-			if (!multiplayer)
-				if (gameinfo.gametype & GAME_Heretic)
-					ST_HticDrawFullScreenStuff();
-				else
-					ST_newDraw();
-			else
-				ST_newDrawDM();
-		else if (DrawNewSpecHUD && sv_gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
-			ST_newDrawCTF();
-			
-		st_firsttime = true;
-	}
-	else
-	{
-		stbarscreen->Lock ();
-		stnumscreen->Lock ();
-		
-		StatusBar->Drawer();
-
-		stnumscreen->Unlock ();
-		stbarscreen->Unlock ();
-	}	
-	
-	if (viewheight <= ST_Y)
-		ST_nameDraw (ST_Y - 11 * CleanYfac);
-	else
-		ST_nameDraw (screen->height - 11 * CleanYfac);	
-
-	// Do red-/gold-shifts from damage/items
-	ST_doPaletteStuff();
-	
-	// [RH] Hey, it's somewhere to put the idmypos stuff!
-	if (idmypos)
-		Printf (PRINT_HIGH, "ang=%d;x,y,z=(%d,%d,%d)\n",
-				consoleplayer().camera->angle/FRACUNIT,
-				consoleplayer().camera->x/FRACUNIT,
-				consoleplayer().camera->y/FRACUNIT,
-				consoleplayer().camera->z/FRACUNIT);
-}
-
-void ST_unloadGraphics (void)
-{
-	int i;
-
-	// unload the numbers, tall and short
-	for (i=0;i<10;i++)
-	{
-		Z_ChangeTag(tallnum[i], PU_CACHE);
-		Z_ChangeTag(shortnum[i], PU_CACHE);
-	}
-	// unload tall percent
-	Z_ChangeTag(tallpercent, PU_CACHE);
-
-	// unload arms background
-	Z_ChangeTag(armsbg, PU_CACHE);
-
-	// unload flags background
-	Z_ChangeTag(flagsbg, PU_CACHE);
-
-	// unload flagbox
-	Z_ChangeTag(flagbox, PU_CACHE);
-	Z_ChangeTag(flagboxblu, PU_CACHE);
-	Z_ChangeTag(flagboxred, PU_CACHE);
-
-	// unload gray #'s
-	for (i=0;i<6;i++)
-		Z_ChangeTag(arms[i][0], PU_CACHE);
-
-	// unload the key cards
-	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
-		Z_ChangeTag(keys[i], PU_CACHE);
-
-	Z_ChangeTag(sbar, PU_CACHE);
-	Z_ChangeTag(faceback, PU_CACHE);
-
-	for (i=0;i<ST_NUMFACES;i++)
-		Z_ChangeTag(faces[i], PU_CACHE);
-
-	Z_ChangeTag(negminus, PU_CACHE);
-}
-
-void ST_unloadData(void)
-{
-	ST_unloadGraphics();
-	ST_unloadNew();
-}
-
-void ST_initData(void)
-{
-	int i;
-
-	st_firsttime = true;
-
-	st_gamestate = FirstPersonState;
-
-	st_statusbaron = true;
-	st_oldchat = st_chat = false;
-	st_cursoron = false;
-	st_palette = -1;
-	st_oldhealth = -1;
-
-	for (i=0;i<3;i++)
-		keyboxes[i] = -1;
-}
 
 void ST_Stop (void)
 {

@@ -1283,7 +1283,9 @@ void M_QuitDOOM (int choice)
 
 void M_QuitHERETIC (int choice)
 {
-	sprintf(endstring,"%s\n\n", endmsg[0] );
+	sprintf (endstring, "%s\n\n%s",
+		GStrings(QUITMSG + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
+
 	M_StartMessage(endstring,M_QuitResponse,true);
 }
 

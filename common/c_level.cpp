@@ -61,6 +61,54 @@
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
+static int FindEndSequence (int type, const char *picname);
+static void SetEndSequence (char *nextmap, int type);
+
+TArray<EndSequence> EndSequences;
+
+static const char Musics1[48][9] =
+{
+	"D_E1M1",		"D_E1M2",		"D_E1M3",		"D_E1M4",		"D_E1M5",
+	"D_E1M6",		"D_E1M7",		"D_E1M8",		"D_E1M9",		"D_E2M1",
+	"D_E2M2",		"D_E2M3",		"D_E2M4",		"D_E2M5",		"D_E2M6",
+	"D_E2M7",		"D_E2M8",		"D_E2M9",		"D_E3M1",		"D_E3M2",
+	"D_E3M3",		"D_E3M4",		"D_E3M5",		"D_E3M6",		"D_E3M7",
+	"D_E3M8",		"D_E3M9",		"D_E3M4",		"D_E3M2",		"D_E3M3",
+	"D_E1M5",		"D_E2M7",		"D_E2M4",		"D_E2M6",		"D_E2M5",
+	"D_E1M9",		"MUS_E2M1",		"MUS_E2M2",		"MUS_E2M3",		"MUS_E2M4",
+	"MUS_E1M4",		"MUS_E2M6",		"MUS_E2M7",		"MUS_E2M8",		"MUS_E2M9",
+	"MUS_E3M2",		"MUS_E3M3",		"MUS_E1M6"
+};
+
+static const char Musics2[36][9] =
+{
+	"MUS_E1M1",		"MUS_E1M2",		"MUS_E1M3",		"MUS_E1M4",		"MUS_E1M5",
+	"MUS_E1M6",		"MUS_E1M7",		"MUS_E1M8",		"MUS_E1M9",		"MUS_E2M1",
+	"MUS_E2M2",		"MUS_E2M3",		"MUS_E2M4",		"MUS_E1M4",		"MUS_E2M6",
+	"MUS_E2M7",		"MUS_E2M8",		"MUS_E2M9",		"MUS_E1M1",		"MUS_E3M2",
+	"MUS_E3M3",		"MUS_E1M6",		"MUS_E1M3",		"MUS_E1M2",		"MUS_E1M5",
+	"MUS_E1M9",		"MUS_E2M6",		"MUS_E1M6",		"MUS_E1M2",		"MUS_E1M3",
+	"MUS_E1M4",		"MUS_E1M5",		"MUS_E1M1",		"MUS_E1M7",		"MUS_E1M8",
+	"MUS_E1M9"
+};
+
+static const char Musics3[32][9] =
+{
+	"D_RUNNIN",		"D_STALKS",		"D_COUNTD",		"D_BETWEE",		"D_DOOM",
+	"D_THE_DA",		"D_SHAWN",		"D_DDTBLU",		"D_IN_CIT",		"D_DEAD",
+	"D_STLKS2",		"D_THEDA2",		"D_DOOM2",		"D_DDTBL2",		"D_RUNNI2",
+	"D_DEAD2",		"D_STLKS3",		"D_ROMERO",		"D_SHAWN2",		"D_MESSAG",
+	"D_COUNT2",		"D_DDTBL3",		"D_AMPIE",		"D_THEDA3",		"D_ADRIAN",
+	"D_MESSG2",		"D_ROMER2",		"D_TENSE",		"D_SHAWN3",		"D_OPENIN",
+	"D_EVIL",		"D_ULTIMA"
+};
+
+static const char Musics4[15][9] =
+{
+	"D_VICTOR",		"D_VICTOR",		"D_VICTOR",		"D_VICTOR",		"D_READ_M",
+	"D_READ_M",		"D_READ_M",		"D_READ_M",		"D_READ_M",		"D_READ_M",
+	"MUS_CPTD",		"MUS_CPTD",		"MUS_CPTD",		"MUS_CPTD",		"MUS_CPTD"
+};
 
 level_locals_t level;			// info about current level
 
@@ -458,6 +506,53 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 	else
 		clusterinfo->flags = flags;
 }
+
+
+static int FindEndSequence (int type, const char *picname)
+{
+	int i, num;
+
+	num = EndSequences.Size ();
+	for (i = 0; i < num; i++)
+	{
+		if (EndSequences[i].EndType == type &&
+			(type != END_Pic || stricmp (EndSequences[i].PicName, picname) == 0))
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+static void SetEndSequence (char *nextmap, int type)
+{
+	int seqnum;
+
+	seqnum = FindEndSequence (type, NULL);
+	if (seqnum == -1)
+	{
+		EndSequence newseq;
+		newseq.EndType = type;
+		memset (newseq.PicName, 0, sizeof(newseq.PicName));
+		seqnum = EndSequences.Push (newseq);
+	}
+	strcpy (nextmap, "enDSeQ");
+	*((WORD *)(nextmap + 6)) = (WORD)seqnum;
+}
+
+void G_SetForEndGame (char *nextmap)
+{
+	if (gamemode == commercial)
+	{
+		SetEndSequence (nextmap, END_Cast);
+	}
+	else
+	{ // The ExMx games actually have different ends based on the episode,
+	  // but I want to keep this simple.
+		SetEndSequence (nextmap, END_Pic1);
+	}
+}
+
 
 static void zapDefereds (acsdefered_t *def)
 {
