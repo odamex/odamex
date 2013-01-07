@@ -1487,7 +1487,6 @@ static void M_PlayerSetupDrawer (void)
 				break;
 
 			case 4:
-			default:
 				for (b = 0; b < FireScreen->height; b++)
 				{
 					byte *to = screen->buffer + y * screen->pitch + x;
@@ -1507,6 +1506,29 @@ static void M_PlayerSetupDrawer (void)
 					}
 				}
 				break;
+
+				case 5:
+				default:
+					for (b = 0; b < FireScreen->height; b++)
+					{
+						byte *to = screen->buffer + y * screen->pitch + x;
+						from = FireScreen->buffer + b * FireScreen->pitch;
+						y += CleanYfac;
+
+						for (a = 0; a < FireScreen->width; a++, to += 5, from++)
+						{
+							int c;
+							for (c = CleanYfac; c; c--)
+							{
+								*(to + pitch*c) = FireRemap[*from];
+								*(to + pitch*c + 1) = FireRemap[*from];
+								*(to + pitch*c + 2) = FireRemap[*from];
+								*(to + pitch*c + 3) = FireRemap[*from];
+								*(to + pitch*c + 4) = FireRemap[*from];
+							}
+						}
+					}
+                break;
 			}
 			FireScreen->Unlock ();
 		}
