@@ -299,8 +299,8 @@ void P_LoadSegs (int lump)
 
 		side = LESHORT(ml->side);
 
-		if(side < 0 || side >= numsides)
-			I_Error("P_LoadSegs: invalid side %d", side);
+		if (side != 0 && side != 1)
+			side = 1;	// assume invalid value means back
 
 		li->sidedef = &sides[ldef->sidenum[side]];
 		li->frontsector = sides[ldef->sidenum[side]].sector;
@@ -313,11 +313,16 @@ void P_LoadSegs (int lump)
 			li->backsector = 0;
 			ldef->flags &= ~ML_TWOSIDED;
 		}
-		
-		// [SL] 2012-01-25 - Calculate and store the seg's length
-		float dx = li->v2->x - li->v1->x;
-		float dy = li->v2->y - li->v1->y;
-		li->length = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
+	
+		// recalculate seg offsets. values in wads are untrustworthy.
+		vertex_t *from = (side == 0)
+			? ldef->v1			// right side: offset is from start of linedef
+			: ldef->v2;			// left side: offset is from end of linedef
+		vertex_t *to = li->v1;	// end point is start of seg, in both cases
+
+		float dx = FIXED2FLOAT(to->x - from->x);
+		float dy = FIXED2FLOAT(to->y - from->y);
+		li->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
 	}
 
 	Z_Free (data);
