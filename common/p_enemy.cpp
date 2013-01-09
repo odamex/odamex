@@ -1800,7 +1800,7 @@ void A_Explode (AActor *thing)
 			mod = MOD_BARREL;
 			break;
 		case MT_ROCKET:
-			mod = MOD_ROCKET;
+			mod = MOD_R_SPLASH;
 			break;
 		default:
 			mod = MOD_UNKNOWN;
