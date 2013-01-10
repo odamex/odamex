@@ -824,14 +824,14 @@ patch_t* W_CachePatch(const char* name, int tag)
 //
 int W_FindLump (const char *name, int *lastlump)
 {
-	if (numlumps == 0)
+	if (numlumps == 0 || lastlump == NULL || *lastlump >= (int)numlumps)
 		return -1;
 
 	int i = (*lastlump < 0) ? 
 				W_CheckNumForName(name) :
 				lumpinfo[*lastlump].next;
 
-	if (strnicmp(lumpinfo[i].name, name, 8) == 0)
+	if (i >= 0 && strnicmp(lumpinfo[i].name, name, 8) == 0)
 	{
 		*lastlump = i;
 		return i;
