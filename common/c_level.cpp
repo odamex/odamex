@@ -255,7 +255,7 @@ static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 //
 void G_ParseMapInfo (void)
 {
-	int lump, lastlump = 0;
+	int lump, lastlump = -1;
 	level_pwad_info_t defaultinfo;
 	level_pwad_info_t *levelinfo;
 	int levelindex;

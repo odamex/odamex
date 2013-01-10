@@ -1355,7 +1355,7 @@ void S_ParseSndInfo (void)
 
 	S_ClearSoundLumps ();
 
-	lastlump = 0;
+	lastlump = -1;
 	while ((lump = W_FindLump ("SNDINFO", &lastlump)) != -1) {
 		sndinfo = (char *)W_CacheLumpNum (lump, PU_CACHE);
 

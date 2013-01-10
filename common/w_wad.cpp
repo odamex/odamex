@@ -819,24 +819,24 @@ patch_t* W_CachePatch(const char* name, int tag)
 // Find a named lump. Specifically allows duplicates for merging of e.g.
 // SNDINFO lumps.
 //
-
+// [SL] 2013-01-09 - Changed to use Killough's hash-table scheme for lump names.
+// Initialize by setting *lastlump = -1 before calling for the first time.
+//
 int W_FindLump (const char *name, int *lastlump)
 {
-	lumpinfo_t *lump_p;
+	if (numlumps == 0)
+		return -1;
 
-	lump_p = lumpinfo + *lastlump;
-	while (lump_p < lumpinfo + numlumps)
+	int i = (*lastlump < 0) ? 
+				W_CheckNumForName(name) :
+				lumpinfo[*lastlump].next;
+
+	if (strnicmp(lumpinfo[i].name, name, 8) == 0)
 	{
-		if (strnicmp(lump_p->name, name, 8) == 0)
-		{
-			int lump = lump_p - lumpinfo;
-			*lastlump = lump + 1;
-			return lump;
-		}
-		lump_p++;
+		*lastlump = i;
+		return i;
 	}
 
-	*lastlump = numlumps;
 	return -1;
 }
 

@@ -410,7 +410,7 @@ void S_ParseSndSeq (void)
 	stopsound = -1;
 
 	memset (SeqTrans, -1, sizeof(SeqTrans));
-	lastlump = 0;
+	lastlump = -1;
 	name[MAX_SNDNAME] = 0;
 	ScriptTemp = (unsigned int *)Malloc (MAX_SEQSIZE * sizeof(*ScriptTemp));
 	ScriptTempSize = MAX_SEQSIZE;
