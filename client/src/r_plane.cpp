@@ -146,8 +146,8 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 
 	// center of the view plane
 	v3double_t s;
-	s.x = x1 - FIXED2DOUBLE(centerxfrac);
-	s.y = y - FIXED2DOUBLE(centeryfrac) + 1.0;
+	s.x = x1 - centerx;
+	s.y = y - centery + 1;
 	s.z = FIXED2DOUBLE(FocalLengthX);
 
 	ds_iu = M_DotProductVec3(&s, &a) * flatwidth;
