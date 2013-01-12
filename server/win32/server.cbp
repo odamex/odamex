@@ -144,7 +144,7 @@
 				<Option object_output="../../obj/server/vc/release/" />
 				<Option deps_output="../../deps" />
 				<Option type="1" />
-				<Option compiler="msvc8" />
+				<Option compiler="msvc10" />
 				<Option use_console_runner="0" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
@@ -203,7 +203,7 @@
 				<Option object_output="../../obj/server/vc/debug/" />
 				<Option deps_output="../../deps" />
 				<Option type="1" />
-				<Option compiler="msvc8" />
+				<Option compiler="msvc10" />
 				<Option use_console_runner="0" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />

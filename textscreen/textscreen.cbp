@@ -42,11 +42,11 @@
 				<Option working_dir="" />
 				<Option object_output="../obj/libtextscreen/vc/release" />
 				<Option type="2" />
-				<Option compiler="msvc8" />
+				<Option compiler="msvc10" />
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="/MD" />
-					<Add option="/TP" />
+					<Add option="/TC" />
 					<Add option="/GA" />
 					<Add option="/fp:except" />
 					<Add option="/EHa" />
@@ -68,7 +68,7 @@
 				<Option working_dir="" />
 				<Option object_output="../obj/libtextscreen/vc/debug" />
 				<Option type="2" />
-				<Option compiler="msvc8" />
+				<Option compiler="msvc10" />
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="/MD" />
@@ -83,8 +83,8 @@
 					<Add option="/Od" />
 					<Add option="/W2" />
 					<Add option="/Zc:forScope" />
-					<Add option="/wd4430" />
 					<Add option="/Zi" />
+					<Add option="/wd4430" />
 					<Add option="/DWIN32" />
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOASM" />
@@ -92,6 +92,7 @@
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 				</Compiler>
 				<Linker>
+					<Add option="/DEBUG" />
 					<Add option="/debug" />
 				</Linker>
 			</Target>
@@ -134,88 +135,69 @@
 			<Add directory="../common" />
 		</Compiler>
 		<Unit filename="textscreen.h" />
-		<Unit filename="textscreen.h" />
 		<Unit filename="txt_button.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="txt_button.h" />
 		<Unit filename="txt_button.h" />
 		<Unit filename="txt_checkbox.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_checkbox.h" />
-		<Unit filename="txt_checkbox.h" />
 		<Unit filename="txt_desktop.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="txt_desktop.h" />
 		<Unit filename="txt_desktop.h" />
 		<Unit filename="txt_dropdown.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_dropdown.h" />
-		<Unit filename="txt_dropdown.h" />
-		<Unit filename="txt_font.h" />
 		<Unit filename="txt_font.h" />
 		<Unit filename="txt_gui.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_gui.h" />
-		<Unit filename="txt_gui.h" />
 		<Unit filename="txt_inputbox.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="txt_inputbox.h" />
 		<Unit filename="txt_inputbox.h" />
 		<Unit filename="txt_io.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_io.h" />
-		<Unit filename="txt_io.h" />
 		<Unit filename="txt_label.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_label.h" />
-		<Unit filename="txt_label.h" />
 		<Unit filename="txt_largefont.h" />
-		<Unit filename="txt_main.h" />
 		<Unit filename="txt_main.h" />
 		<Unit filename="txt_radiobutton.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_radiobutton.h" />
-		<Unit filename="txt_radiobutton.h" />
 		<Unit filename="txt_scrollpane.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="txt_scrollpane.h" />
 		<Unit filename="txt_scrollpane.h" />
 		<Unit filename="txt_sdl.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_sdl.h" />
-		<Unit filename="txt_sdl.h" />
 		<Unit filename="txt_separator.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_separator.h" />
-		<Unit filename="txt_separator.h" />
-		<Unit filename="txt_smallfont.h" />
 		<Unit filename="txt_smallfont.h" />
 		<Unit filename="txt_spinctrl.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_spinctrl.h" />
-		<Unit filename="txt_spinctrl.h" />
 		<Unit filename="txt_strut.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_strut.h" />
-		<Unit filename="txt_strut.h" />
 		<Unit filename="txt_table.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="txt_table.h" />
 		<Unit filename="txt_table.h" />
 		<Unit filename="txt_utf8.c">
 			<Option compilerVar="CC" />
@@ -225,16 +207,13 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_widget.h" />
-		<Unit filename="txt_widget.h" />
 		<Unit filename="txt_window.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_window.h" />
-		<Unit filename="txt_window.h" />
 		<Unit filename="txt_window_action.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="txt_window_action.h" />
 		<Unit filename="txt_window_action.h" />
 		<Extensions>
 			<code_completion />

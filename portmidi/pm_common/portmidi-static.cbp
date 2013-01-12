@@ -61,7 +61,7 @@
 				<Option working_dir="" />
 				<Option object_output="../../obj/libportmidi/vc/debug" />
 				<Option type="2" />
-				<Option compiler="msvc8" />
+				<Option compiler="msvc10" />
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="-DWIN32" />
@@ -88,11 +88,11 @@
 				<Option working_dir="" />
 				<Option object_output="../../obj/libportmidi/vc/release" />
 				<Option type="2" />
-				<Option compiler="msvc8" />
+				<Option compiler="msvc10" />
 				<Option createDefFile="1" />
 				<Compiler>
+					<Add option="/W2" />
 					<Add option="-O2" />
-					<Add option="-W" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />

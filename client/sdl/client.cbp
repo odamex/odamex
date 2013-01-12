@@ -152,7 +152,7 @@
 				<Option working_dir="../../" />
 				<Option object_output="../../obj/client/vc/release" />
 				<Option type="0" />
-				<Option compiler="msvc8" />
+				<Option compiler="msvc10" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Option projectIncludeDirsRelation="1" />
@@ -223,7 +223,7 @@
 				<Option working_dir="../../" />
 				<Option object_output="../../obj/client/vc/debug" />
 				<Option type="0" />
-				<Option compiler="msvc8" />
+				<Option compiler="msvc10" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Option projectIncludeDirsRelation="1" />

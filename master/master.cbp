@@ -8,10 +8,10 @@
 		<Build>
 			<Target title="Win Release (GCC)">
 				<Option platforms="Windows;" />
-				<Option output="..\odamaster" prefix_auto="0" extension_auto="1" />
-				<Option working_dir="..\" />
-				<Option object_output="..\obj\master\gcc\release" />
-				<Option deps_output="..\..\deps" />
+				<Option output="../odamaster" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/gcc/release" />
+				<Option deps_output="../../deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
@@ -32,10 +32,10 @@
 			</Target>
 			<Target title="Win Debug (GCC)">
 				<Option platforms="Windows;" />
-				<Option output="..\odamaster-dbg" prefix_auto="0" extension_auto="1" />
-				<Option working_dir="..\" />
-				<Option object_output="..\obj\master\gcc\debug" />
-				<Option deps_output="..\..\deps" />
+				<Option output="../odamaster-dbg" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/gcc/debug" />
+				<Option deps_output="../../deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
@@ -55,10 +55,10 @@
 			</Target>
 			<Target title="Unix Release">
 				<Option platforms="Unix;" />
-				<Option output="..\odamaster" prefix_auto="0" extension_auto="1" />
-				<Option working_dir="..\" />
-				<Option object_output="..\obj\master\release" />
-				<Option deps_output="..\..\deps" />
+				<Option output="../odamaster" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/release" />
+				<Option deps_output="../../deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
@@ -76,10 +76,10 @@
 			</Target>
 			<Target title="Unix Debug">
 				<Option platforms="Unix;" />
-				<Option output="..\odamaster-dbg" prefix_auto="0" extension_auto="1" />
-				<Option working_dir="..\" />
-				<Option object_output="..\obj\master\debug" />
-				<Option deps_output="..\..\deps" />
+				<Option output="../odamaster-dbg" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/debug" />
+				<Option deps_output="../../deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
@@ -95,10 +95,10 @@
 			</Target>
 			<Target title="Mac Release">
 				<Option platforms="Mac;" />
-				<Option output="..\odamaster" prefix_auto="0" extension_auto="1" />
-				<Option working_dir="..\" />
-				<Option object_output="..\obj\master\release" />
-				<Option deps_output="..\..\deps" />
+				<Option output="../odamaster" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/release" />
+				<Option deps_output="../../deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
@@ -116,10 +116,10 @@
 			</Target>
 			<Target title="Mac Debug">
 				<Option platforms="Mac;" />
-				<Option output="..\odamaster-dbg" prefix_auto="0" extension_auto="1" />
-				<Option working_dir="..\" />
-				<Option object_output="..\obj\master\debug" />
-				<Option deps_output="..\..\deps" />
+				<Option output="../odamaster-dbg" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/debug" />
+				<Option deps_output="../../deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
@@ -138,12 +138,12 @@
 			</Target>
 			<Target title="Win Release (VC)">
 				<Option platforms="Windows;" />
-				<Option output="..\odamaster" prefix_auto="0" extension_auto="1" />
-				<Option working_dir="..\" />
-				<Option object_output="..\obj\master\vc\release" />
-				<Option deps_output="..\..\deps" />
+				<Option output="../odamaster" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/vc/release" />
+				<Option deps_output="../../deps" />
 				<Option type="1" />
-				<Option compiler="msvc8" />
+				<Option compiler="msvc10" />
 				<Option use_console_runner="0" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
@@ -176,12 +176,12 @@
 			</Target>
 			<Target title="Win Debug (VC)">
 				<Option platforms="Windows;" />
-				<Option output="..\odamaster-dbg" prefix_auto="0" extension_auto="1" />
-				<Option working_dir="..\" />
-				<Option object_output="..\obj\master\vc\debug" />
-				<Option deps_output="..\..\deps" />
+				<Option output="../odamaster-dbg" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/vc/debug" />
+				<Option deps_output="../../deps" />
 				<Option type="1" />
-				<Option compiler="msvc8" />
+				<Option compiler="msvc10" />
 				<Option use_console_runner="0" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
@@ -209,6 +209,7 @@
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 				</Compiler>
 				<Linker>
+					<Add option="/DEBUG" />
 					<Add option="/debug" />
 					<Add library="wsock32" />
 				</Linker>
@@ -229,7 +230,7 @@
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
 		</Compiler>
-		<Unit filename="..\common\version.h" />
+		<Unit filename="../common/version.h" />
 		<Unit filename="i_net.cpp" />
 		<Unit filename="i_net.h" />
 		<Unit filename="main.cpp" />
