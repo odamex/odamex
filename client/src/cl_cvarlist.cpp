@@ -308,8 +308,10 @@ CVAR_FUNC_DECL (st_scale, "1", "",	CVARTYPE_BYTE, CVAR_ARCHIVE)
 // Video and Renderer
 // ------------------
 
-// Gamma correction level, 1 - 4
-CVAR_FUNC_DECL (gammalevel, "1", "Gamma correction level, 1 - 4",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Gamma correction level, 1 - 8
+CVAR_FUNC_DECL (gammalevel, "1", "Gamma correction level, 1 - 8",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// ZDoom style gamma correction?
+CVAR_FUNC_DECL (vid_gammatype, "0", "Select between Doom and ZDoom gamma correction",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Type of crosshair, 0 means none
 CVAR_FUNC_DECL (hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Column optimization method
