@@ -65,7 +65,7 @@ enum {
 byte newgamma[256];
 static void V_UpdateGammaLevel(float var)
 {
-	static int lastgamma = 0;
+	static float lastgamma = 0;
 	static int lasttype = -1;			// ensure this gets set up the first time
 	int type = vid_gammatype;
 
@@ -97,8 +97,12 @@ static void V_UpdateGammaLevel(float var)
 			// while the 255/256 is to scale to ensure 255 isn't exceeded.
 			// This generates a 1:1 match with the original gammatable but also
 			// allows for intermediate values.
+
+			const double basefac = pow(2.0, var - 1.0) * (255.0/256.0);
+			const double exp = 1.0 - 0.125 * (var - 1.0);
+
 			for (int i = 0; i < 256; i++)
-				newgamma[i] = (byte)(0.5 + (255.0/256.0) * pow(2.0, var - 1.0) * pow(i + 1, 1.0 - 0.125 * (var - 1.0)));
+				newgamma[i] = (byte)(0.5 + basefac * pow(i + 1, exp));
 		}
 
 		GammaAdjustPalettes ();
