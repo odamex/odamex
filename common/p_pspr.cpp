@@ -380,9 +380,13 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 	if (player->userinfo.switchweapon == WPSW_NEVER)
 		return false;
 
+	weapontype_t currentweapon = (player->pendingweapon == wp_nochange)
+			? player->readyweapon
+			: player->pendingweapon;
+
 	// Use player's weapon preferences
 	byte *prefs = player->userinfo.weapon_prefs;
-	if (prefs[weapon] > prefs[player->readyweapon])
+	if (prefs[weapon] > prefs[currentweapon])
 		return true;
 
 	return false;
