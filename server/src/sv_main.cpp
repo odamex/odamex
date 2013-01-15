@@ -3545,6 +3545,9 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		player.playerstate = PST_LIVE;
 		player.joinafterspectatortime = level.time;
 
+		if (player.mo)
+			player.mo->flags &= ~MF_SOLID;
+
 		if (sv_gametype == GM_CTF) {
 			CTF_CheckFlags(player);
 		}
