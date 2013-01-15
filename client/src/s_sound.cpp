@@ -1349,14 +1349,14 @@ int S_AddSound (char *logicalname, char *lumpname)
 // Parses all loaded SNDINFO lumps.
 void S_ParseSndInfo (void)
 {
-	int lastlump, lump;
 	char *sndinfo;
 	char *data;
 
 	S_ClearSoundLumps ();
 
-	lastlump = -1;
-	while ((lump = W_FindLump ("SNDINFO", &lastlump)) != -1) {
+	int lump = -1;
+	while ((lump = W_FindLump ("SNDINFO", lump)) != -1)
+	{
 		sndinfo = (char *)W_CacheLumpNum (lump, PU_CACHE);
 
 		while ( (data = COM_Parse (sndinfo)) ) {

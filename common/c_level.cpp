@@ -255,7 +255,6 @@ static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 //
 void G_ParseMapInfo (void)
 {
-	int lump, lastlump = -1;
 	level_pwad_info_t defaultinfo;
 	level_pwad_info_t *levelinfo;
 	int levelindex;
@@ -263,7 +262,8 @@ void G_ParseMapInfo (void)
 	int clusterindex;
 	DWORD levelflags;
 
-	while ((lump = W_FindLump ("MAPINFO", &lastlump)) != -1)
+	int lump = -1;
+	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
 	{
 		SetLevelDefaults (&defaultinfo);
 		SC_OpenLumpNum (lump, "MAPINFO");

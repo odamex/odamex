@@ -820,20 +820,17 @@ patch_t* W_CachePatch(const char* name, int tag)
 //
 // [SL] 2013-01-15 - Search forwards through the list of lumps in reverse pwad
 // ordering, returning older lumps with a matching name first.
-// Initialize by setting *lastlump = -1 before calling for the first time.
+// Initialize search with lastlump == -1 before calling for the first time.
 //
-int W_FindLump (const char *name, int *lastlump)
+int W_FindLump (const char *name, int lastlump)
 {
-	if (numlumps == 0 || lastlump == NULL || *lastlump >= (int)numlumps)
-		return -1;
+	if (lastlump < -1)
+		lastlump = -1;
 
-	for (int i = *lastlump + 1; i < (int)numlumps; i++)
+	for (int i = lastlump + 1; i < (int)numlumps; i++)
 	{
 		if (strnicmp(lumpinfo[i].name, name, 8) == 0)
-		{
-			*lastlump = i;
 			return i;
-		}
 	}
 
 	return -1;
