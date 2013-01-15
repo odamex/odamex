@@ -1029,33 +1029,49 @@ void R_FillColumnHorizP (void)
 // R_DrawColumnHoriz().
 void R_DrawMaskedColumnHoriz (tallpost_t *post)
 {
-	dc_texturefrac = 0;
-
 	while (!post->end())
 	{
+		if (post->length == 0)
+		{
+			post = post->next();
+			continue;
+		}
+
 		// calculate unclipped screen coordinates for post
-		int topscreen = sprtopscreen + spryscale * post->topdelta - 1;
+		int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
 
 		dc_yl = (topscreen + FRACUNIT) >> FRACBITS;
 		dc_yh = (topscreen + spryscale * post->length) >> FRACBITS;
-				
+
 		if (dc_yh >= mfloorclip[dc_x])
 			dc_yh = mfloorclip[dc_x] - 1;
 		if (dc_yl <= mceilingclip[dc_x])
-		{
-			int oldyl = dc_yl;
 			dc_yl = mceilingclip[dc_x] + 1;
-			dc_texturefrac = (dc_yl - oldyl) * dc_iscale;
-		}
-		else
-			dc_texturefrac = 0;
 
-		if (dc_yl <= dc_yh)
+		dc_texturefrac = dc_texturemid - (post->topdelta << FRACBITS)
+			+ (dc_yl*dc_iscale) - FixedMul(centeryfrac-FRACUNIT, dc_iscale);
+
+		if (dc_texturefrac < 0)
 		{
-			dc_source = post->data();
-			hcolfunc_pre (); 
+			int cnt = (FixedDiv(-dc_texturefrac, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
+			dc_yl += cnt;
+			dc_texturefrac += cnt * dc_iscale;
 		}
 
+		const fixed_t endfrac = dc_texturefrac + (dc_yh-dc_yl)*dc_iscale;
+		const fixed_t maxfrac = post->length << FRACBITS;
+		
+		if (endfrac >= maxfrac)
+		{
+			int cnt = (FixedDiv(endfrac - maxfrac - 1, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
+			dc_yh -= cnt;
+		}
+
+		dc_source = post->data();
+
+		if (dc_yl >= 0 && dc_yh < viewheight && dc_yl <= dc_yh)
+			hcolfunc_pre();
+	
 		post = post->next();
 	}
 }
