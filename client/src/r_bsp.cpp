@@ -94,15 +94,25 @@ typedef struct {
 	short first, last;		// killough
 } cliprange_t;
 
-
-int				MaxSegs;
+// 1/11/98: Lee Killough
+//
+// This fixes many strange venetian blinds crashes, which occurred when a scan
+// line had too many "posts" of alternating non-transparent and transparent
+// regions. Using a doubly-linked list to represent the posts is one way to
+// do it, but it has increased overhead and poor spatial locality, which hurts
+// cache performance on modern machines. Since the maximum number of posts
+// theoretically possible is a function of screen width, a static limit is
+// okay in this case. It used to be 32, which was way too small.
+//
+// This limit was frequently mistaken for the visplane limit in some Doom
+// editing FAQs, where visplanes were said to "double" if a pillar or other
+// object split the view's space into two pieces horizontally. That did not
+// have anything to do with visplanes, but it had everything to do with these
+// clip posts.
 
 // newend is one past the last valid seg
-cliprange_t*	newend;
-cliprange_t		*solidsegs;
-cliprange_t		*lastsolidseg;
-
-
+static cliprange_t *newend;
+static cliprange_t solidsegs[MAXWIDTH / 2 + 2];
 
 //
 // R_ClipSolidWallSegment
@@ -116,24 +126,6 @@ R_ClipSolidWallSegment
   int			last )
 {
 	cliprange_t *next, *start;
-
-	if(newend + 1 >= lastsolidseg)
-	{
-		// denis - out of solidsegs, this would crash vanilla
-		DPrintf("warning: exceeded %d solidsegs\n", MaxSegs);
-		if(MaxSegs >= 1024*1024)
-		{
-			// not that crazy, though
-			I_FatalError("R_ClipSolidWallSegment: refusing to extend solidsegs over %d", MaxSegs);
-		}
-		cliprange_t *old = solidsegs;
-		solidsegs = (cliprange_t *)Malloc (2 * MaxSegs * sizeof(cliprange_t));
-		memcpy(solidsegs, old,  (sizeof(cliprange_t)*MaxSegs));
-		MaxSegs *= 2;
-		lastsolidseg = &solidsegs[MaxSegs];
-		newend = newend - old + solidsegs;
-		M_Free(old);
-	}
 
 	// Find the first range that touches the range
 	//	(adjacent pixels are touching).
@@ -265,12 +257,6 @@ R_ClipPassWallSegment
 //
 void R_ClearClipSegs (void)
 {
-	if (!solidsegs)
-	{
-		MaxSegs = 32;	// [RH] Default. Increased as needed.
-		solidsegs = (cliprange_t *)Malloc (MaxSegs * sizeof(cliprange_t));
-		lastsolidseg = &solidsegs[MaxSegs];
-	}
 	solidsegs[0].first = -0x7fff;	// new short limit --  killough
 	solidsegs[0].last = -1;
 	solidsegs[1].first = viewwidth;
