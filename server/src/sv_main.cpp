@@ -3448,6 +3448,8 @@ void SV_Spectate (player_t &player) {
 
 // Change a player into a spectator or vice-versa.  Pass 'true' for silent
 // param to spec or unspec the player without a broadcasted message.
+void P_SetSpectatorFlags(player_t &player);
+
 void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 	// We don't care about spectators during intermission
 	if (gamestate == GS_INTERMISSION) {
@@ -3545,8 +3547,7 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		player.playerstate = PST_LIVE;
 		player.joinafterspectatortime = level.time;
 
-		if (player.mo)
-			player.mo->flags &= ~MF_SOLID;
+		P_SetSpectatorFlags(player);
 
 		if (sv_gametype == GM_CTF) {
 			CTF_CheckFlags(player);

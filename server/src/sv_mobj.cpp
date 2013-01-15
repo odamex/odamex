@@ -46,7 +46,17 @@ EXTERN_CVAR(sv_maxplayers)
 void G_PlayerReborn(player_t &player);
 void CTF_RememberFlagPos(mapthing2_t *mthing);
 
-//
+void P_SetSpectatorFlags(player_t &player)
+{
+	player.spectator = true;
+
+	if (player.mo)
+	{
+		player.mo->flags |= MF_SPECTATOR;
+		player.mo->flags &= ~MF_SOLID;
+		player.mo->flags2 |= MF2_FLY;
+	}
+}
 
 //
 // P_SpawnPlayer
@@ -109,12 +119,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	// Set up some special spectator stuff
 	if (p->spectator)
-	{
-		mobj->translucency = 0;
-		p->mo->flags |= MF_SPECTATOR;
-		p->mo->flags2 |= MF2_FLY;
-		p->mo->flags &= ~MF_SOLID;
-	}
+		P_SetSpectatorFlags(player);
 
 	// [RH] Allow chasecam for demo watching
 	//if ((demoplayback || demonew) && chasedemo)
