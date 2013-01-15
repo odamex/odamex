@@ -234,10 +234,10 @@ void R_MapLevelPlane(int y, int x1, int x2)
 	ds_ystep = FixedMul(pl_ystepscale, slope);
 
 	ds_xfrac = pl_viewxtrans +
-				FixedMul((int)(FixedMul(pl_viewcos, distance)), pl_xscale) + 
+				FixedMul(FixedMul(pl_viewcos, distance), pl_xscale) + 
 				(x1 - centerx) * ds_xstep;
 	ds_yfrac = pl_viewytrans -
-				FixedMul((int)(FixedMul(pl_viewsin, distance)), pl_yscale) +
+				FixedMul(FixedMul(pl_viewsin, distance), pl_yscale) +
 				(x1 - centerx) * ds_ystep;
 
 	if (fixedlightlev)
