@@ -240,11 +240,6 @@ void R_MapLevelPlane(int y, int x1, int x2)
 				FixedMul((int)(FixedMul(pl_viewsin, distance)), pl_yscale) +
 				(x1 - centerx) * ds_ystep;
 
-	ds_xstep <<= 10;	
-	ds_ystep <<= 10;	
-	ds_xfrac <<= 10;
-	ds_yfrac <<= 10;
-
 	if (fixedlightlev)
 		ds_colormap = basecolormap + fixedlightlev;
 	else if (fixedcolormap)
@@ -668,8 +663,8 @@ void R_DrawSlopedPlane(visplane_t *pl)
 void R_DrawLevelPlane(visplane_t *pl)
 {
 	// texture scaling factor
-	pl_xscale = pl->xscale;
-	pl_yscale = pl->yscale;
+	pl_xscale = pl->xscale << 10;
+	pl_yscale = pl->yscale << 10;
 
 	// viewsin/viewcos rotated by the texture rotation angle
 	pl_viewsin = finesine[(viewangle + pl->angle) >> ANGLETOFINESHIFT];
@@ -683,12 +678,12 @@ void R_DrawLevelPlane(visplane_t *pl)
 	fixed_t pl_viewy = -(FixedMul(viewx, pl_sin) + FixedMul(viewy, pl_cos));
 
 	// cache a calculation used by R_MapLevelPlane
-	pl_xstepscale = FixedMul(pl_viewsin, pl->xscale);
-	pl_ystepscale = FixedMul(pl_viewcos, pl->yscale);
+	pl_xstepscale = FixedMul(pl_viewsin, pl->xscale) << 10;
+	pl_ystepscale = FixedMul(pl_viewcos, pl->yscale) << 10;
 
 	// cache a calculation used by R_MapLevelPlane
-	pl_viewxtrans = FixedMul(pl_viewx + pl->xoffs, pl->xscale);
-	pl_viewytrans = FixedMul(pl_viewy + pl->yoffs, pl->yscale);
+	pl_viewxtrans = FixedMul(pl_viewx + pl->xoffs, pl->xscale) << 10;
+	pl_viewytrans = FixedMul(pl_viewy + pl->yoffs, pl->yscale) << 10;
 	
 	basecolormap = pl->colormap;	// [RH] set basecolormap
 
