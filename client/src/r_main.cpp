@@ -825,7 +825,7 @@ void R_ExecuteSetViewSize (void)
 	virtheight = screen->height >> detailyshift;
 
 	if (R_GetWidescreen() != WIDE_STRETCH)
-		yaspectmul = 78643; // [AM] Force correct aspect ratio
+		yaspectmul = (78643 << detailxshift) >> detailyshift ; // [AM] Force correct aspect ratio
 	else
 		yaspectmul = (fixed_t)(65536.0f*(320.0f*(float)virtheight/(200.0f*(float)virtwidth)));
 
