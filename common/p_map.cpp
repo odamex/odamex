@@ -1953,7 +1953,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 		if (spawnprecise)
 		{
 			plane_t *floorplane, *ceilingplane;
-			int ceilingpic;
+			int ceilingpic, floorpic;
 
 			// [SL] 2012-01-25 - Don't show bullet puffs on horizon lines 
 			if (li->special == Line_Horizon)
@@ -1966,6 +1966,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 				ceilingheight = P_CeilingHeight(crossx, crossy, li->frontsector);
 				floorheight = P_FloorHeight(crossx, crossy, li->frontsector);
 				ceilingpic = li->frontsector->ceilingpic;
+				floorpic = li->frontsector->floorpic;
 			} else {
 				ceilingplane = &li->backsector->ceilingplane;
 				floorplane = &li->backsector->floorplane;
@@ -1973,12 +1974,16 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 				ceilingheight = P_CeilingHeight(crossx, crossy, li->backsector);
 				floorheight = P_FloorHeight(crossx, crossy, li->backsector);
 				ceilingpic = li->backsector->ceilingpic;
+				floorpic = li->backsector->floorpic;
 			}
 
 			// [RH] If the trace went below/above the floor/ceiling, make the puff
 			//		appear in the right place and not on a wall.
 			if (z < floorheight)
 			{
+				if (floorpic == skyflatnum)			// don't shoot the sky!
+					return false;
+			
 				// [SL] 2012-03-18 - Calculate where the the tracer intersects
 				// with the floor plane
 				v3fixed_t pt = P_LinePlaneIntersection(floorplane, lineorg, linedir);
