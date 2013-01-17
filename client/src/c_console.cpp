@@ -793,7 +793,7 @@ void C_DrawConsole (void)
 
 		visheight = ConBottom;
 
-		if(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+		if(gamestate == GS_LEVEL || gamestate == GS_DEMOSCREEN || gamestate == GS_INTERMISSION)
 		{
 			screen->Dim(0, 0, screen->width, visheight);
 		}
@@ -917,9 +917,9 @@ void C_ToggleConsole (void)
 {
 	if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull))
 	{
-		if (gamestate == GS_DEMOSCREEN || demoplayback)
-			ConsoleState = c_fallfull;
-		else
+		//if (gamestate == GS_DEMOSCREEN || (demoplayback && gamestate != GS_LEVEL))
+		//	ConsoleState = c_fallfull;
+		//else
 			ConsoleState = c_falling;
 		HistPos = NULL;
 		TabbedLast = false;
