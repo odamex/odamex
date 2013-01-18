@@ -115,8 +115,8 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
         AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
         
         // Add our sort icons by default.
-        ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowAscending));
         ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowDescending));
+        ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowAscending));
     }
     
     if (Image.IsOk())
