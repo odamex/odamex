@@ -626,8 +626,15 @@ void STACK_ARGS I_Quit (void)
 
     CloseNetwork();
 
-	if (r_showendoom && !Args.CheckParm ("-novideo"))
-		I_Endoom();
+	try
+	{
+		if (r_showendoom && !Args.CheckParm ("-novideo"))
+			I_Endoom();
+	}
+	catch (CRecoverableError &error)
+	{
+		// [AM] ENDOOM does not exist, but at this point we don't care.
+	}
 }
 
 
