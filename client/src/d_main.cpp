@@ -354,9 +354,9 @@ void D_Display (void)
 		if(live_wiping)
 		{
 			// wipe update online (multiple calls, not just looping here)
-			C_DrawConsole ();
 			wipe_EndScreen();
 			live_wiping = !wipe_ScreenWipe (1);
+			C_DrawConsole ();
 			M_Drawer ();			// menu is drawn even on top of wipes
 			I_FinishUpdate ();		// page flip or blit buffer
 		}
@@ -376,7 +376,6 @@ void D_Display (void)
 			int wipestart, wipecont, nowtime, tics;
 			BOOL done;
 
-			C_DrawConsole ();
 			wipe_EndScreen ();
 			I_FinishUpdateNoBlit ();
 
@@ -395,6 +394,7 @@ void D_Display (void)
 				wipecont = nowtime;
 				I_BeginUpdate ();
 				done = wipe_ScreenWipe (tics);
+				C_DrawConsole ();
 				M_Drawer ();			// menu is drawn even on top of wipes
 				I_FinishUpdate ();		// page flip or blit buffer
 			} while (!done);
@@ -408,9 +408,9 @@ void D_Display (void)
 			live_wiping = true;
 
 			// wipe update online (multiple calls, not just looping here)
-			C_DrawConsole ();
 			wipe_EndScreen();
 			live_wiping = !wipe_ScreenWipe (1);
+			C_DrawConsole ();
 			M_Drawer ();			// menu is drawn even on top of wipes
 			I_FinishUpdate ();		// page flip or blit buffer
 		}
