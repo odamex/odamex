@@ -1,5 +1,3 @@
-include(FindPortMidi)
-
 # Common
 set(COMMON_DIR ../common)
 file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
@@ -29,9 +27,6 @@ add_definitions(-DNOASM)
 include_directories(${COMMON_DIR} ${TEXTSCREEN_DIR} ${CLIENT_DIR})
 
 # SDL configuration
-set(SDLDIR $ENV{SDLDIR} CACHE PATH
-  "Path to SDL (and optionally SDL_mixer) base directory.  Only necessary if you get errors about SDL not being found, or if you want to use a different installation of SDL.")
-set(ENV{SDLDIR} ${SDLDIR})
 find_package(SDL)
 if(SDL_FOUND)
   include_directories(${SDL_INCLUDE_DIR})
@@ -40,9 +35,6 @@ else()
 endif()
 
 # SDL_Mixer configuration
-set(SDLMIXERDIR $ENV{SDLMIXERDIR} CACHE PATH
-  "Path to SDL_mixer base directory.  Only necessary if you get errors about SDL not being found, or if you want to use a different installation of SDL_mixer.  If SDL_mixer is in the location specified by SDLMAIN then you can leave this blank.")
-set(ENV{SDLMIXERDIR} ${SDLMIXERDIR})
 find_package(SDL_mixer)
 if(SDLMIXER_FOUND)
   include_directories(${SDLMIXER_INCLUDE_DIR})
@@ -51,9 +43,6 @@ else()
 endif()
 
 # Portmidi configuration
-set(PORTMIDI_DIR $ENV{PortMidi_DIR} CACHE PATH
-  "Path to PortMIDI base directory.  Only necessary if you get errors about PortMIDI not being found, or if you want to use a different installation of PortMIDI.")
-set(ENV{PORTMIDI_DIR} ${PORTMIDI_DIR})
 find_package(PortMidi)
 if(PORTMIDI_FOUND)
   include_directories(${PORTMIDI_INCLUDE_DIR})
