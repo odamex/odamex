@@ -53,7 +53,7 @@
 				<Option working_dir="" />
 				<Option object_output="../obj/libminiupnpc/gcc/debug" />
 				<Option type="2" />
-				<Option compiler="msvc10" />
+				<Option compiler="gcc" />
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="-g" />
