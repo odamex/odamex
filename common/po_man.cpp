@@ -60,6 +60,7 @@ static void InitBlockMap (void);
 static void IterFindPolySegs (int x, int y, seg_t **segList);
 static void SpawnPolyobj (int index, int tag, BOOL crush);
 static void TranslateToStartSpot (int tag, int originX, int originY);
+static void DoMovePolyobj (polyobj_t *po, int x, int y);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -188,7 +189,7 @@ void DRotatePoly::RunThink ()
 			{
 				poly->specialdata = NULL;
 			}
-			//SN_StopSequence (poly);
+			SN_StopSequence (poly);
 			Destroy ();
 		}
 		else if (m_Dist < absSpeed)
@@ -297,7 +298,7 @@ void DMovePoly::RunThink ()
 			{
 				poly->specialdata = NULL;
 			}
-			//SN_StopSequence (poly);
+			SN_StopSequence (poly);
 			Destroy ();
 		}
 		else if (m_Dist < absSpeed)
@@ -392,7 +393,7 @@ void DPolyDoor::RunThink ()
 			if (m_Dist <= 0)
 			{
 				poly = GetPolyobj (m_PolyObj);
-				//SN_StopSequence (poly);
+				SN_StopSequence (poly);
 				if (!m_Close)
 				{
 					m_Dist = m_TotalDist;
@@ -444,7 +445,7 @@ void DPolyDoor::RunThink ()
 			if (m_Dist <= 0)
 			{
 				poly = GetPolyobj (m_PolyObj);
-				//SN_StopSequence (poly);
+				SN_StopSequence (poly);
 				if (!m_Close)
 				{
 					m_Dist = m_TotalDist;
@@ -714,10 +715,8 @@ BOOL PO_MovePolyobj (int num, int x, int y)
 {
 	int count;
 	seg_t **segList;
-	seg_t **veryTempSeg;
 	polyobj_t *po;
-	vertex_t *prevPts;
-	BOOL blocked;
+	bool blocked;
 
 	if (!(po = GetPolyobj (num)))
 	{
@@ -725,21 +724,58 @@ BOOL PO_MovePolyobj (int num, int x, int y)
 	}
 
 	UnLinkPolyobj (po);
+	DoMovePolyobj (po, x, y);
+
+	segList = po->segs;
+	blocked = false;
+	for (count = po->numsegs; count; count--, segList++)
+	{
+		if (CheckMobjBlocking(*segList, po))
+		{
+			blocked = true;
+			break;
+		}
+	}
+	if (blocked)
+	{
+		DoMovePolyobj (po, -x, -y);
+		LinkPolyobj(po);
+		return false;
+	}
+	po->startSpot[0] += x;
+	po->startSpot[1] += y;
+	LinkPolyobj (po);
+	return true;
+}
+
+//
+// DoMovePolyobj
+//
+void DoMovePolyobj (polyobj_t *po, int x, int y)
+{
+	int count;
+	seg_t **segList;
+	seg_t **veryTempSeg;
+	vertex_t *prevPts;
 
 	segList = po->segs;
 	prevPts = po->prevPts;
-	blocked = false;
 
 	validcount++;
 	for (count = po->numsegs; count; count--, segList++, prevPts++)
 	{
-		if ((*segList)->linedef->validcount != validcount)
+		line_t *linedef = (*segList)->linedef;
+		if (linedef->validcount != validcount)
 		{
-			(*segList)->linedef->bbox[BOXTOP] += y;
-			(*segList)->linedef->bbox[BOXBOTTOM] += y;
-			(*segList)->linedef->bbox[BOXLEFT] += x;
-			(*segList)->linedef->bbox[BOXRIGHT] += x;
-			(*segList)->linedef->validcount = validcount;
+			linedef->bbox[BOXTOP] += y;
+			linedef->bbox[BOXBOTTOM] += y;
+			linedef->bbox[BOXLEFT] += x;
+			linedef->bbox[BOXRIGHT] += x;
+			//if (linedef->sidenum[0] != -1)
+			//	ADecal::MoveChain (sides[linedef->sidenum[0]].BoundActors, x, y);
+			//if (linedef->sidenum[1] != -1)
+			//	ADecal::MoveChain (sides[linedef->sidenum[1]].BoundActors, x, y);
+			linedef->validcount = validcount;
 		}
 		for (veryTempSeg = po->segs; veryTempSeg != segList;
 			veryTempSeg++)
@@ -757,55 +793,6 @@ BOOL PO_MovePolyobj (int num, int x, int y)
 		(*prevPts).x += x; // previous points are unique for each seg
 		(*prevPts).y += y;
 	}
-	segList = po->segs;
-	for (count = po->numsegs; count; count--, segList++)
-	{
-		if (CheckMobjBlocking(*segList, po))
-		{
-			blocked = true;
-		}
-	}
-	if (blocked)
-	{
-		count = po->numsegs;
-		segList = po->segs;
-		prevPts = po->prevPts;
-		validcount++;
-		while (count--)
-		{
-			if ((*segList)->linedef->validcount != validcount)
-			{
-				(*segList)->linedef->bbox[BOXTOP] -= y;
-				(*segList)->linedef->bbox[BOXBOTTOM] -= y;
-				(*segList)->linedef->bbox[BOXLEFT] -= x;
-				(*segList)->linedef->bbox[BOXRIGHT] -= x;
-				(*segList)->linedef->validcount = validcount;
-			}
-			for (veryTempSeg = po->segs; veryTempSeg != segList;
-				veryTempSeg++)
-			{
-				if((*veryTempSeg)->v1 == (*segList)->v1)
-				{
-					break;
-				}
-			}
-			if (veryTempSeg == segList)
-			{
-				(*segList)->v1->x -= x;
-				(*segList)->v1->y -= y;
-			}
-			(*prevPts).x -= x;
-			(*prevPts).y -= y;
-			segList++;
-			prevPts++;
-		}
-		LinkPolyobj(po);
-		return false;
-	}
-	po->startSpot[0] += x;
-	po->startSpot[1] += y;
-	LinkPolyobj (po);
-	return true;
 }
 
 //
@@ -875,7 +862,12 @@ BOOL PO_RotatePolyobj (int num, angle_t angle)
 		if ((*segList)->linedef->validcount != validcount)
 		{
 			UpdateSegBBox(*segList);
-			(*segList)->linedef->validcount = validcount;
+			line_t *line = (*segList)->linedef;
+			//if (line->sidenum[0] != -1)
+			//	ADecal::FixForSide (&sides[line->sidenum[0]]);
+			//if (line->sidenum[1] != -1)
+			//	ADecal::FixForSide (&sides[line->sidenum[1]]);
+			line->validcount = validcount;
 		}
 		(*segList)->angle += angle;
 	}
@@ -895,7 +887,12 @@ BOOL PO_RotatePolyobj (int num, angle_t angle)
 			if ((*segList)->linedef->validcount != validcount)
 			{
 				UpdateSegBBox(*segList);
-				(*segList)->linedef->validcount = validcount;
+				line_t *line = (*segList)->linedef;
+				//if (line->sidenum[0] != -1)
+				//	ADecal::FixForSide (&sides[line->sidenum[0]]);
+				//if (line->sidenum[1] != -1)
+				//	ADecal::FixForSide (&sides[line->sidenum[1]]);
+				line->validcount = validcount;
 			}
 			(*segList)->angle -= angle;
 		}
@@ -1059,7 +1056,7 @@ static BOOL CheckMobjBlocking (seg_t *seg, polyobj_t *po)
 		{
 			for (mobj = blocklinks[j+i]; mobj; mobj = mobj->bmapnode.Next(i, j/bmapwidth))
 			{
-				if (mobj->flags&MF_SOLID || mobj->player)
+				if ((mobj->flags&MF_SOLID) && !(mobj->flags&MF_NOCLIP))
 				{
 					tmbbox[BOXTOP] = mobj->y+mobj->radius;
 					tmbbox[BOXBOTTOM] = mobj->y-mobj->radius;
@@ -1093,15 +1090,6 @@ static void InitBlockMap (void)
 {
 	int i;
 
-// [RH] The area was being calculated, but never used
-#if 0
-	int j;
-	seg_t **segList;
-	int area;
-	int leftX, rightX;
-	int topY, bottomY;
-#endif
-
 	PolyBlockMap = (polyblock_t **)Z_Malloc (bmapwidth*bmapheight*sizeof(polyblock_t *),
 		PU_LEVEL, 0);
 	memset (PolyBlockMap, 0, bmapwidth*bmapheight*sizeof(polyblock_t *));
@@ -1109,39 +1097,6 @@ static void InitBlockMap (void)
 	for (i = 0; i < po_NumPolyobjs; i++)
 	{
 		LinkPolyobj(&polyobjs[i]);
-
-#if 0
-		// calculate a rough area
-		// right now, working like shit...gotta fix this...
-		segList = polyobjs[i].segs;
-		leftX = rightX = (*segList)->v1->x;
-		topY = bottomY = (*segList)->v1->y;
-		for (j = 0; j < polyobjs[i].numsegs; j++, segList++)
-		{
-			if ((*segList)->v1->x < leftX)
-			{
-				leftX = (*segList)->v1->x;
-			}
-			if ((*segList)->v1->x > rightX)
-			{
-				rightX = (*segList)->v1->x;
-			}
-			if ((*segList)->v1->y < bottomY)
-			{
-				bottomY = (*segList)->v1->y;
-			}
-			if ((*segList)->v1->y > topY)
-			{
-				topY = (*segList)->v1->y;
-			}
-		}
-		area = ((rightX>>FRACBITS)-(leftX>>FRACBITS))*
-			((topY>>FRACBITS)-(bottomY>>FRACBITS));
-//    fprintf (stdaux, "Area of Polyobj[%d]: %d\n", polyobjs[i].tag, area);
-//    fprintf (stdaux, "\t[%d]\n[%d]\t\t[%d]\n\t[%d]\n", topY>>FRACBITS, 
-//    		leftX>>FRACBITS,
-//    	rightX>>FRACBITS, bottomY>>FRACBITS);
-#endif
 	}
 }
 
