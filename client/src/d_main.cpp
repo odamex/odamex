@@ -620,8 +620,8 @@ void D_DoAdvanceDemo (void)
             }
             else
             {
-                width = data->width();
-                height = data->height();
+                //width = data->width();
+                //height = data->height();
                 // [ML] We need a better, concise way to determine 4:3 or not...                
                 if ((float)screen->width/screen->height < (float)4.0f/3.0f)
                 {
