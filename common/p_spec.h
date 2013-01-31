@@ -430,6 +430,8 @@ void	P_ChangeSwitchTexture (line_t *line, int useAgain);
 
 void	P_InitSwitchList ();
 
+void	P_ProcessSwitchDef ();
+
 bool	P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
 
