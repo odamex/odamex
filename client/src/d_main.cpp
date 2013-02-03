@@ -278,6 +278,7 @@ void D_Display (void)
 		case GS_FULLCONSOLE:
 		case GS_DOWNLOAD:
 		case GS_CONNECTING:
+        case GS_CONNECTED:
 			C_DrawConsole ();
 			M_Drawer ();
 			I_FinishUpdate ();

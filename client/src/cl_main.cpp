@@ -1537,6 +1537,7 @@ bool CL_Connect(void)
     network_game = true;
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
+	gamestate = GS_CONNECTED;
 
 	CL_Decompress(0);
 	CL_ParseCommands();

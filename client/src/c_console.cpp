@@ -917,9 +917,9 @@ void C_ToggleConsole (void)
 {
 	if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull))
 	{
-		//if (gamestate == GS_DEMOSCREEN || (demoplayback && gamestate != GS_LEVEL))
-		//	ConsoleState = c_fallfull;
-		//else
+		if (gamestate == GS_CONNECTING)
+			ConsoleState = c_fallfull;
+		else
 			ConsoleState = c_falling;
 		HistPos = NULL;
 		TabbedLast = false;
@@ -1259,7 +1259,8 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			// Close console, clear command line, but if we're in the
 			// fullscreen console mode, there's nothing to fall back on
 			// if it's closed.
-			if (gamestate == GS_FULLCONSOLE || gamestate == GS_CONNECTING || gamestate == GS_DOWNLOAD)
+			if (gamestate == GS_FULLCONSOLE || gamestate == GS_CONNECTING 
+                || gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTED)
 			{
 				C_HideConsole();
 
