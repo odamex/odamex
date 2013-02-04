@@ -66,6 +66,9 @@ fixed_t			rw_backfz1, rw_backfz2;
 fixed_t			rw_frontcz1, rw_frontcz2;
 fixed_t			rw_frontfz1, rw_frontfz2;
 
+fixed_t			rw_backcz_step, rw_backfz_step;
+fixed_t			rw_frontcz_step, rw_frontfz_step;
+
 
 int rw_start, rw_stop;
 
@@ -525,6 +528,14 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	return sec;
 }
 
+#include "c_dispatch.h"
+extern fixed_t FocalLengthY;
+BEGIN_COMMAND (rvars)
+{
+	Printf(PRINT_HIGH, "FocalLengthX = %i, FocalLengthY = %i, centerxfrac = %i\n", FocalLengthX, FocalLengthY, centerxfrac);
+	Printf(PRINT_HIGH, "FocalLengthX = %i, FocalLengthY = %i, centerxfrac = %i\n", FocalLengthX >> 16, FocalLengthY >> 16, centerxfrac >> 16);
+}
+END_COMMAND (rvars)
 
 //
 // R_AddLine
@@ -546,7 +557,7 @@ void R_AddLine (seg_t *line)
 
 	// have not clipped this line seg yet
 	lclip1 = 0;
-	lclip2 = line->length;
+	lclip2 = FRACUNIT;
 
 	// Clip the wall seg to the viewing window
 
@@ -560,36 +571,63 @@ void R_AddLine (seg_t *line)
 
 	// Clip portions of the line that are behind the view plane
 	const fixed_t nearclip = 0.05*FRACUNIT;
-	if (t1.y < nearclip)
+	if (t1.y <= nearclip)
 	{      
 		// reject the line entirely if the whole thing is behind the view plane.
-		if (t2.y < nearclip)
+		if (t2.y <= nearclip)
 			return;
 
 		// clip the line at the point where t1.y == nearclip
-		fixed_t t = FixedDiv(nearclip - t1.y, t2.y - t1.y);
-		t1.x = FixedMul(FRACUNIT - t, t1.x) + FixedMul(t, t2.x);
-		t1.y = nearclip;
-
-		lclip1 = FixedMul(t, line->length);
+		lclip1 = FixedDiv(nearclip - t1.y, t2.y - t1.y);
 	}
 
-	double fx1 = FIXED2DOUBLE(centerxfrac) + FIXED2DOUBLE(FocalLengthX) * double(t1.x) / t1.y;	
-
-	if (t2.y < nearclip)
+	if (t2.y <= nearclip)
 	{
 		// clip the line at the point where t2.y == nearclip
-		fixed_t t = FixedDiv(nearclip - t1.y, t2.y - t1.y);
-		t2.x = FixedMul(FRACUNIT - t, t1.x) + FixedMul(t, t2.x);
-		t2.y = nearclip;
-
-		lclip2 = FixedMul(t, line->length);
+		lclip2 = FixedDiv(nearclip - t1.y, t2.y - t1.y);
 	}
 
-	double fx2 = FIXED2DOUBLE(centerxfrac) + FIXED2DOUBLE(FocalLengthX) * double(t2.x) / t2.y;
+	// clip portions of the line that extend off the sides of the screen
+	if (-t1.x > t1.y)
+	{
+		if (t2.y > nearclip && -t2.x > t2.y)	// entire line is off the left side of the screen
+			return;
 
-	x1 = (int)(fx1 + 0.5);		// + 0.5 to round to nearest integer
-	x2 = (int)(fx2 + 0.5);
+		// clip part that is off the left side of screen
+		// TODO: handle widescreen
+		fixed_t den = t1.x - t2.x + t1.y - t2.y;
+		if (den == 0)
+			return;
+
+		lclip1 = MAX<fixed_t>(lclip1, FixedDiv(t1.x + t1.y, den));
+	}
+
+	if (t2.x > t2.y)
+	{
+		if (t1.y > nearclip && t1.x > t1.y)	// entire line is off the right side of the screen
+			return;
+
+		// clip part that is off the right side of screen
+		// TODO: handle widescreen
+		fixed_t den = t2.x - t1.x + t1.y - t2.y;
+		if (den == 0)
+			return;
+
+		lclip2 = MIN<fixed_t>(lclip2, FixedDiv(t1.y - t1.x, den));
+	}
+
+	// backface rejection
+	if (lclip1 >= lclip2)
+		return;
+
+	v2fixed_t clipt1, clipt2;
+	clipt1.x = FixedMul(FRACUNIT - lclip1, t1.x) + FixedMul(lclip1, t2.x);
+	clipt1.y = FixedMul(FRACUNIT - lclip1, t1.y) + FixedMul(lclip1, t2.y);
+	clipt2.x = FixedMul(FRACUNIT - lclip2, t1.x) + FixedMul(lclip2, t2.x);
+	clipt2.y = FixedMul(FRACUNIT - lclip2, t1.y) + FixedMul(lclip2, t2.y);
+
+	x1 = centerx + ((int64_t(FocalLengthX) * int64_t(clipt1.x) / int64_t(clipt1.y)) >> FRACBITS);
+	x2 = centerx + ((int64_t(FocalLengthX) * int64_t(clipt2.x) / int64_t(clipt2.y)) >> FRACBITS);
 
 	// backface rejection
 	if (x2 < x1)
@@ -603,15 +641,10 @@ void R_AddLine (seg_t *line)
 	if (x1 >= x2)	// killough 1/31/98 -- change == to >= for robustness
 		return;
 
-	// TODO: [SL] when clipping x1 and x2, also clip lclip1 and lclip2
 	if (x1 < 0)
-	{
 		x1 = 0;
-	}
 	if (x2 > viewwidth)
-	{
 		x2 = viewwidth;
-	}
 
 	rw_start = x1;
 	rw_stop = x2 - 1;
