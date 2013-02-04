@@ -82,10 +82,10 @@ extern fixed_t	rw_frontfz1, rw_frontfz2;
 extern fixed_t	rw_backcz1, rw_backcz2;
 extern fixed_t	rw_backfz1, rw_backfz2;
 
-static short walltopf[MAXWIDTH];
-static short walltopb[MAXWIDTH];
-static short wallbottomf[MAXWIDTH];
-static short wallbottomb[MAXWIDTH];
+static int walltopf[MAXWIDTH];
+static int walltopb[MAXWIDTH];
+static int wallbottomf[MAXWIDTH];
+static int wallbottomb[MAXWIDTH];
 
 extern fixed_t FocalLengthY;
 
@@ -356,43 +356,29 @@ static void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
 
 static void BlastColumn (void (*blastfunc)())
 {
-	fixed_t texturecolumn = 0;
-	int yl, yh;
-
 	// mark floor / ceiling areas
-	yl = walltopf[rw_x] + 1;
-
-	// no space above wall?
-	if (yl < ceilingclip[rw_x]+1)
-		yl = ceilingclip[rw_x]+1;
+	walltopf[rw_x] = MAX(walltopf[rw_x], ceilingclip[rw_x]);
 
 	if (markceiling)
 	{
-		int top = ceilingclip[rw_x]+1;
-		int bottom = yl-1;
+		int top = ceilingclip[rw_x];
+		int bottom = MIN(walltopf[rw_x], floorclip[rw_x]);
 
-		if (bottom >= floorclip[rw_x])
-			bottom = floorclip[rw_x]-1;
-
-		if (top <= bottom)
+		if (top < bottom)
 		{
 			ceilingplane->top[rw_x] = top;
 			ceilingplane->bottom[rw_x] = bottom;
 		}
 	}
 
-	yh = wallbottomf[rw_x];
-
-	if (yh >= floorclip[rw_x])
-		yh = floorclip[rw_x]-1;
+	wallbottomf[rw_x] = MIN(wallbottomf[rw_x], floorclip[rw_x]);
 
 	if (markfloor)
 	{
-		int top = yh+1;
-		int bottom = floorclip[rw_x]-1;
-		if (top <= ceilingclip[rw_x])
-			top = ceilingclip[rw_x]+1;
-		if (top <= bottom)
+		int top = MAX(wallbottomf[rw_x], ceilingclip[rw_x]);
+		int bottom = floorclip[rw_x];
+
+		if (top < bottom)
 		{
 			floorplane->top[rw_x] = top;
 			floorplane->bottom[rw_x] = bottom;
@@ -401,79 +387,57 @@ static void BlastColumn (void (*blastfunc)())
 
 	// calculate texture offset (prior to applying each
 	// wall tier's x-scaling factor)
-	texturecolumn = rw_offset-FixedMul(finetangent[(rw_centerangle + xtoviewangle[rw_x])>>ANGLETOFINESHIFT], rw_distance);
+	fixed_t texturecolumn = 
+		rw_offset-FixedMul(finetangent[(rw_centerangle + xtoviewangle[rw_x])>>ANGLETOFINESHIFT], rw_distance);
 
 	// draw the wall tiers
 	if (midtexture)
 	{
 		// single sided line
-		dc_yl = yl;
-		dc_yh = yh;
+		dc_yl = walltopf[rw_x];
+		dc_yh = wallbottomf[rw_x] - 1;
 
 		R_SetTextureParams(midtexture, texturecolumn, rw_midtexturemid);
 
 		blastfunc ();
-		ceilingclip[rw_x] = viewheight;
-		floorclip[rw_x] = -1;
+		ceilingclip[rw_x] = viewheight - 1;
+		floorclip[rw_x] = 0;
 	}
 	else
 	{
 		// two sided line
 		if (toptexture)
 		{
-			// top wall
-			int mid = walltopb[rw_x];
+			walltopb[rw_x] = MAX(MIN(walltopb[rw_x], floorclip[rw_x]), walltopf[rw_x]);
+			dc_yl = walltopf[rw_x];
+			dc_yh = walltopb[rw_x] - 1;
 
-			if (mid >= floorclip[rw_x])
-				mid = floorclip[rw_x]-1;
+			R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
+			blastfunc();
 
-			if (mid >= yl)
-			{
-				dc_yl = yl;
-				dc_yh = mid;
-
-				R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
-
-				blastfunc ();
-				ceilingclip[rw_x] = mid;
-			}
-			else
-				ceilingclip[rw_x] = yl - 1;
+			ceilingclip[rw_x] = walltopb[rw_x];		
 		}
-		else
+		else if (markceiling)
 		{
 			// no top wall
-			if (markceiling)
-				ceilingclip[rw_x] = yl - 1;
+			ceilingclip[rw_x] = walltopf[rw_x];
 		}
 
 		if (bottomtexture)
 		{
-			// bottom wall
-			int mid = wallbottomb[rw_x] + 1;
+			wallbottomb[rw_x] = MIN(MAX(wallbottomb[rw_x], ceilingclip[rw_x]), wallbottomf[rw_x]);
+			dc_yl = wallbottomb[rw_x];
+			dc_yh = wallbottomf[rw_x] - 1;
 
-			// no space above wall?
-			if (mid <= ceilingclip[rw_x])
-				mid = ceilingclip[rw_x] + 1;
+			R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
+			blastfunc();
 
-			if (mid <= yh)
-			{
-				dc_yl = mid;
-				dc_yh = yh;
-
-				R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
-
-				blastfunc ();
-				floorclip[rw_x] = mid;
-			}
-			else
-				floorclip[rw_x] = yh + 1;
+			floorclip[rw_x] = wallbottomb[rw_x];
 		}
-		else
+		else if (markfloor)	
 		{
 			// no bottom wall
-			if (markfloor)
-				floorclip[rw_x] = yh + 1;
+			floorclip[rw_x] = wallbottomf[rw_x];
 		}
 
 		if (maskedtexture)
@@ -678,7 +642,7 @@ static void R_AdjustOpenings(int start, int stop)
 // Calculates the wall-texture screen coordinates for a span of columns.
 //
 static void R_FillWallHeightArray(
-	short *array, 
+	int *array, 
 	int start, int stop,
 	fixed_t val1, fixed_t val2, 
 	fixed_t dist1, fixed_t dist2)
@@ -698,7 +662,7 @@ static void R_FillWallHeightArray(
 		else if (y >= screen->height)
 			y = screen->height - 1;
 
-		array[i] = (short)y;
+		array[i] = (int)y;
 	}
 }
 
@@ -754,7 +718,7 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 		// hack to allow height changes in outdoor areas
 		// copy back ceiling height array to front ceiling height array
 		if (frontsector->ceilingpic == skyflatnum && backsector->ceilingpic == skyflatnum)
-			memcpy(walltopf+start, walltopb+start, (stop-start+1)*sizeof(short));
+			memcpy(walltopf+start, walltopb+start, (stop-start+1)*sizeof(*walltopb));
 	}
 }
 

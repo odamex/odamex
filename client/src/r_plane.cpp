@@ -84,8 +84,8 @@ int 					*lastopening;
 
 //
 // Clip values are the solid pixel bounding the range.
-//	floorclip starts out SCREENHEIGHT
-//	ceilingclip starts out -1
+//	floorclip starts out SCREENHEIGHT-1
+//	ceilingclip starts out 0
 //
 int     				*floorclip;
 int 					*ceilingclip;
@@ -273,9 +273,9 @@ void R_ClearPlanes (void)
 	// opening / clipping determination
 	for (i = 0; i < viewwidth ; i++)
 	{
-		floorclip[i] = (int)viewheight;
+		floorclip[i] = (int)(viewheight - 1);
 	}
-	memset (ceilingclip, 0xffffffffu, sizeof(*ceilingclip) * viewwidth);
+	memset (ceilingclip, 0, sizeof(*ceilingclip) * viewwidth);
 
 	for (i = 0; i < MAXVISPLANES; i++)	// new code -- killough
 		for (*freehead = visplanes[i], visplanes[i] = NULL; *freehead; )
