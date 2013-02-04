@@ -726,10 +726,8 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 
 	// [SL] Points v1 and v2 represent the original line's endpoints after clipping
 	v2fixed_t v1, v2;
-	v1.x = FixedMul(FRACUNIT - lclip1, line->v1->x) + FixedMul(lclip1, line->v2->x);
-	v1.y = FixedMul(FRACUNIT - lclip1, line->v1->y) + FixedMul(lclip1, line->v2->y);
-	v2.x = FixedMul(FRACUNIT - lclip2, line->v1->x) + FixedMul(lclip2, line->v2->x);
-	v2.y = FixedMul(FRACUNIT - lclip2, line->v1->y) + FixedMul(lclip2, line->v2->y);
+	R_ClipEndPoints(line->v1->x, line->v1->y, line->v2->x, line->v2->y,
+					lclip1, lclip2, v1.x, v1.y, v2.x, v2.y);
 
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
 	sector_t *frontsector = R_FakeFlat(line->frontsector, &tempsec, NULL, NULL, true);

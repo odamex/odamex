@@ -565,10 +565,8 @@ void R_AddLine (seg_t *line)
 	// [SL] Rotate the seg's vertices such that the camera is at the origin
 	// and looking along the y-axis.
 	v2fixed_t t1, t2;
-	t1.x = FixedMul(line->v1->x - viewx, viewsin) - FixedMul(line->v1->y - viewy, viewcos);
-	t1.y = FixedMul(line->v1->y - viewy, viewsin) + FixedMul(line->v1->x - viewx, viewcos);
-	t2.x = FixedMul(line->v2->x - viewx, viewsin) - FixedMul(line->v2->y - viewy, viewcos);
-	t2.y = FixedMul(line->v2->y - viewy, viewsin) + FixedMul(line->v2->x - viewx, viewcos);
+	R_RotatePoint(line->v1->x - viewx, line->v1->y - viewy, ANG90 - viewangle, t1.x, t1.y);
+	R_RotatePoint(line->v2->x - viewx, line->v2->y - viewy, ANG90 - viewangle, t2.x, t2.y);
 
 	// Clip portions of the line that are behind the view plane
 	const fixed_t nearclip = 0.05*FRACUNIT;
@@ -623,10 +621,7 @@ void R_AddLine (seg_t *line)
 		return;
 
 	v2fixed_t clipt1, clipt2;
-	clipt1.x = FixedMul(FRACUNIT - lclip1, t1.x) + FixedMul(lclip1, t2.x);
-	clipt1.y = FixedMul(FRACUNIT - lclip1, t1.y) + FixedMul(lclip1, t2.y);
-	clipt2.x = FixedMul(FRACUNIT - lclip2, t1.x) + FixedMul(lclip2, t2.x);
-	clipt2.y = FixedMul(FRACUNIT - lclip2, t1.y) + FixedMul(lclip2, t2.y);
+	R_ClipEndPoints(t1.x, t1.y, t2.x, t2.y, lclip1, lclip2, clipt1.x, clipt1.y, clipt2.x, clipt2.y);
 
 	x1 = centerx + ((int64_t(FocalLengthX) * int64_t(clipt1.x) / int64_t(clipt1.y)) >> FRACBITS);
 	x2 = centerx + ((int64_t(FocalLengthX) * int64_t(clipt2.x) / int64_t(clipt2.y)) >> FRACBITS);

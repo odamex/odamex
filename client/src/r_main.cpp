@@ -429,6 +429,19 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
 }
 
+void R_ClipEndPoints(
+	fixed_t x1, fixed_t y1,
+	fixed_t x2, fixed_t y2,
+	fixed_t lclip1, fixed_t lclip2,
+	fixed_t &cx1, fixed_t &cy1,
+	fixed_t &cx2, fixed_t &cy2)
+{
+	cx1 = FixedMul(FRACUNIT - lclip1, x1) + FixedMul(lclip1, x2);
+	cy1 = FixedMul(FRACUNIT - lclip1, y1) + FixedMul(lclip1, y2);
+	cx2 = FixedMul(FRACUNIT - lclip2, x1) + FixedMul(lclip2, x2);
+	cy2 = FixedMul(FRACUNIT - lclip2, y1) + FixedMul(lclip2, y2);
+}
+
 //
 //
 // R_InitTables
