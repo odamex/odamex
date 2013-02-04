@@ -332,15 +332,12 @@ R_RenderMaskedSegRange
 //
 // R_SetTextureParams
 //
-// Sets dc_source, dc_texturefrac, and dc_iscale
+// Sets dc_source, dc_texturefrac
 //
 static void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
 {
 	const fixed_t scalex = texturescalex[texnum];
 	const fixed_t scaley = texturescaley[texnum];
-
-	if (rw_scale > 0)
-		dc_iscale = (unsigned)(0xffffffffu / rw_scale);
 
 	dc_texturefrac = FixedMul(scaley, mid + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale));
 
@@ -391,6 +388,9 @@ static void BlastColumn (void (*blastfunc)())
 	// wall tier's x-scaling factor)
 	fixed_t texturecolumn = 
 		rw_offset-FixedMul(finetangent[(rw_centerangle + xtoviewangle[rw_x])>>ANGLETOFINESHIFT], rw_distance);
+
+	if (rw_scale > 0)
+		dc_iscale = 0xffffffffu / (unsigned)rw_scale;
 
 	// draw the wall tiers
 	if (midtexture)
