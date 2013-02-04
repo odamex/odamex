@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleIdentifier</key>
+	<string>org.ag-odalaunch.app</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>AG-OdaLaunch</string>
+	<key>CFBundleIconFile</key>
+	<string>odalaunch.icns</string>
+	<key>CFBundleName</key>
+	<string>AG-Odalaunch</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>0.6.2</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.6.2</string>
+	<key>CFBundleGetInfoString</key>
+	<string>Copyright © 2006-2012 The Odamex Team</string>
+	<key>CFBundleLongVersionString</key>
+	<string>0.6.2</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2006-2012 The Odamex Team</string>
+	<key>LSRequiresCarbon</key>
+	<true/>
+</dict>
+</plist>

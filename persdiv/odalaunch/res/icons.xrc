@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<resource xmlns="http://www.wxwindows.org/wxxrc" version="2.3.0.1">
+    <object class="wxIcon" name="mainicon">odalaunch.ico</object>
+    <object class="wxBitmap" name="bullet_green">icons/bullet_green.png</object>
+    <object class="wxBitmap" name="bullet_orange">icons/bullet_orange.png</object>
+    <object class="wxBitmap" name="bullet_red">icons/bullet_red.png</object>
+    <object class="wxBitmap" name="bullet_gray">icons/bullet_gray.png</object>
+    <object class="wxBitmap" name="bullet_blue">icons/bullet_blue.png</object>
+    <object class="wxBitmap" name="locked_server">icons/locked_server.png</object>
+    <object class="wxBitmap" name="spectator">icons/spectator.png</object>
+    <object class="wxBitmap" name="btnlaunch">icons/btnlaunch.png</object>
+    <object class="wxBitmap" name="btnqlaunch">icons/btnqlaunch.png</object>
+    <object class="wxBitmap" name="btnrefresh">icons/btnrefresh.png</object>
+    <object class="wxBitmap" name="btnrefresha">icons/btnrefresha.png</object>
+    <object class="wxBitmap" name="btngetlist">icons/btngetlist.png</object>
+    <object class="wxBitmap" name="btnprefs">icons/btnprefs.png</object>
+    <object class="wxBitmap" name="btnabout">icons/btnabout.png</object>
+    <object class="wxBitmap" name="btnexit">icons/btnexit.png</object>
+</resource>

@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="master" />
+		<Option pch_mode="0" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Win Release (GCC)">
+				<Option platforms="Windows;" />
+				<Option output="../odamaster" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/gcc/release" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-fexceptions" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-D_MBCS" />
+					<Add option="-DNDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="wsock32" />
+				</Linker>
+			</Target>
+			<Target title="Win Debug (GCC)">
+				<Option platforms="Windows;" />
+				<Option output="../odamaster-dbg" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/gcc/debug" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-gdwarf-2" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-D_MBCS" />
+				</Compiler>
+				<Linker>
+					<Add library="wsock32" />
+				</Linker>
+			</Target>
+			<Target title="Unix Release">
+				<Option platforms="Unix;" />
+				<Option output="../odamaster" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/release" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-fexceptions" />
+					<Add option="-DUNIX" />
+					<Add option="-DLINUX" />
+					<Add option="-DNDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Unix Debug">
+				<Option platforms="Unix;" />
+				<Option output="../odamaster-dbg" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/debug" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-fexceptions" />
+					<Add option="-DUNIX" />
+					<Add option="-DLINUX" />
+					<Add option="-DDEBUG" />
+				</Compiler>
+			</Target>
+			<Target title="Mac Release">
+				<Option platforms="Mac;" />
+				<Option output="../odamaster" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/release" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-fexceptions" />
+					<Add option="-DUNIX" />
+					<Add option="-DLINUX" />
+					<Add option="-DNDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Mac Debug">
+				<Option platforms="Mac;" />
+				<Option output="../odamaster-dbg" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/debug" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-gdwarf-2" />
+					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-D_MBCS" />
+				</Compiler>
+				<Linker>
+					<Add library="wsock32" />
+				</Linker>
+			</Target>
+			<Target title="Win Release (VC)">
+				<Option platforms="Windows;" />
+				<Option output="../odamaster" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/vc/release" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="msvc10" />
+				<Option use_console_runner="0" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/TP" />
+					<Add option="/GA" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
+					<Add option="/DWIN32" />
+					<Add option="/DNDEBUG" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOASM" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+				</Compiler>
+				<Linker>
+					<Add library="wsock32" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
+			</Target>
+			<Target title="Win Debug (VC)">
+				<Option platforms="Windows;" />
+				<Option output="../odamaster-dbg" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="../" />
+				<Option object_output="../obj/master/vc/debug" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="msvc10" />
+				<Option use_console_runner="0" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/TP" />
+					<Add option="/RTCu" />
+					<Add option="/RTCs" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/GS" />
+					<Add option="/Od" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
+					<Add option="/Zi" />
+					<Add option="/DWIN32" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOASM" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+				</Compiler>
+				<Linker>
+					<Add option="/DEBUG" />
+					<Add option="/debug" />
+					<Add library="wsock32" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
+			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-pedantic" />
+			<Add option="-fexceptions" />
+			<Add option="-Wno-long-long" />
+			<Add option="-fno-optimize-sibling-calls" />
+		</Compiler>
+		<Unit filename="../common/version.h" />
+		<Unit filename="i_net.cpp" />
+		<Unit filename="i_net.h" />
+		<Unit filename="main.cpp" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

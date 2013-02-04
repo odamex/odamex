@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="libminiupnpc" />
+		<Option pch_mode="2" />
+		<Option compiler="msvc8" />
+		<Build>
+			<Target title="Win Debug (VC)">
+				<Option platforms="Windows;" />
+				<Option output="../../lib/libminiupnpc-dbg.lib" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="../obj/libminiupnpc/vc/debug" />
+				<Option type="2" />
+				<Option compiler="msvc8" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="/MDd" />
+					<Add option="/Od" />
+					<Add option="/W3" />
+					<Add option="/ZI" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DWIN32" />
+					<Add option="/DSTATICLIB" />
+					<Add directory="../../libminiupnpc" />
+				</Compiler>
+			</Target>
+			<Target title="Win Release (VC)">
+				<Option platforms="Windows;" />
+				<Option output="../../lib/libminiupnpc.lib" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="../obj/libminiupnpc/vc/release" />
+				<Option type="2" />
+				<Option compiler="msvc10" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/O2" />
+					<Add option="/W3" />
+					<Add option="/Zi" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DWIN32" />
+					<Add option="/DSTATICLIB" />
+					<Add directory="../../libminiupnpc" />
+				</Compiler>
+				<Linker>
+					<Add option="/DEBUG" />
+				</Linker>
+			</Target>
+			<Target title="Win Debug (GCC)">
+				<Option platforms="Windows;" />
+				<Option output="../../lib/libminiupnpc-dbg.a" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="../obj/libminiupnpc/gcc/debug" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-DSTATICLIB" />
+					<Add option="-D_WIN32_WINNT=0x501" />
+					<Add directory="../../libminiupnpc" />
+				</Compiler>
+			</Target>
+			<Target title="Win Release (GCC)">
+				<Option platforms="Windows;" />
+				<Option output="../../lib/libminiupnpc.a" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="../obj/libminiupnpc/gcc/release" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-DSTATICLIB" />
+					<Add option="-D_WIN32_WINNT=0x501" />
+					<Add directory="../../libminiupnpc" />
+				</Compiler>
+			</Target>
+			<Target title="Unix Debug">
+				<Option platforms="Unix;" />
+				<Option output="../../lib/libminiupnpc-dbg.a" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="../obj/libminiupnpc/gcc/debug" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-DSTATICLIB" />
+					<Add option="-D_WIN32_WINNT=0x501" />
+					<Add directory="../../libminiupnpc" />
+				</Compiler>
+			</Target>
+			<Target title="Unix Release">
+				<Option platforms="Unix;" />
+				<Option output="../../lib/libminiupnpc.a" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="../obj/libminiupnpc/gcc/release" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DSTATICLIB" />
+					<Add directory="../../libminiupnpc" />
+				</Compiler>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="All (WIN GCC)" targets="Win Debug (GCC);Win Release (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Debug (VC);Win Release (VC);" />
+		</VirtualTargets>
+		<Unit filename="../bsdqueue.h" />
+		<Unit filename="../connecthostport.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../connecthostport.h" />
+		<Unit filename="../declspec.h" />
+		<Unit filename="../igd_desc_parse.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../igd_desc_parse.h" />
+		<Unit filename="../minisoap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../minisoap.h" />
+		<Unit filename="../miniupnpc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../miniupnpc.h" />
+		<Unit filename="../miniupnpcstrings.h" />
+		<Unit filename="../miniwget.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../miniwget.h" />
+		<Unit filename="../minixml.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../minixml.h" />
+		<Unit filename="../portlistingparse.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../portlistingparse.h" />
+		<Unit filename="../receivedata.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../receivedata.h" />
+		<Unit filename="../upnpcommands.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../upnpcommands.h" />
+		<Unit filename="../upnperrors.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../upnperrors.h" />
+		<Unit filename="../upnpreplyparse.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../upnpreplyparse.h" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

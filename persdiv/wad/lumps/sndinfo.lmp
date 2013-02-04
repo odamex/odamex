@@ -1,0 +1,379 @@
+//---------------------------------------------------------------------------
+// 	PLAYER SOUNDS
+//---------------------------------------------------------------------------
+
+// This sound is never actually used. It's just defined here for
+// compatibility with DeHackEd patches that reference dsskldth.
+misc/unused			dsskldth	// Sounds just like dsoof
+
+player/male/death1		dspldeth
+player/male/death2		dspldeth
+player/male/death3		dspldeth
+player/male/death4		dspldeth
+player/male/xdeath1		dspdiehi
+player/male/pain100_1		dsplpain
+player/male/pain100_2		dsplpain
+player/male/pain75_1		dsplpain
+player/male/pain75_2		dsplpain
+player/male/pain50_1		dsplpain
+player/male/pain50_2		dsplpain
+player/male/pain25_1		dsplpain
+player/male/pain25_2		dsplpain
+player/male/grunt1		dsnoway
+player/male/land1		dsoof
+player/male/jump1		dsjump
+player/male/gibbed		dsslop
+player/male/fist		dspunch
+
+player/female/death1		dsfldeth
+player/female/death2		dsfldeth
+player/female/death3		dsfldeth
+player/female/death4		dsfldeth
+player/female/xdeath1		dsfdiehi
+player/female/pain100_1		dsflpain
+player/female/pain100_2		dsflpain
+player/female/pain75_1		dsflpain
+player/female/pain75_2		dsflpain
+player/female/pain50_1		dsflpain
+player/female/pain50_2		dsflpain
+player/female/pain25_1		dsflpain
+player/female/pain25_2		dsflpain
+player/female/grunt1		dsfnoway
+player/female/land1		dsfoof
+player/female/jump1		dsfjump
+player/female/gibbed		dsslop
+player/female/fist		dspunch
+
+player/cyborg/death1		dscldeth
+player/cyborg/death2		dscldeth
+player/cyborg/death3		dscldeth
+player/cyborg/death4		dscldeth
+player/cyborg/xdeath1		dscdiehi
+player/cyborg/pain100_1		dsclpain
+player/cyborg/pain100_2		dsclpain
+player/cyborg/pain75_1		dsclpain
+player/cyborg/pain75_2		dsclpain
+player/cyborg/pain50_1		dsclpain
+player/cyborg/pain50_2		dsclpain
+player/cyborg/pain25_1		dsclpain
+player/cyborg/pain25_2		dsclpain
+player/cyborg/grunt1		dscnoway
+player/cyborg/land1		dscoof
+player/cyborg/jump1		dscjump
+player/cyborg/gibbed		dsslop
+player/cyborg/fist		dspunch
+
+//
+// Weapons
+//
+
+weapons/sawup			dssawup
+weapons/sawidle			dssawidl
+weapons/sawfull			dssawful
+weapons/sawhit			dssawhit
+weapons/pistol			dspistol
+weapons/shotgf			dsshotgn
+weapons/shotgr			dssgcock
+weapons/sshotf			dsdshtgn
+weapons/sshoto			dsdbopn
+weapons/sshotc			dsdbcls
+weapons/sshotl			dsdbload
+weapons/chngun			dspistol
+weapons/rocklx			dsbarexp
+weapons/rocklf			dsrlaunc
+weapons/plasmaf			dsplasma
+weapons/plasmax			dsfirxpl
+weapons/bfgf			dsbfg
+weapons/bfgx			dsrxplod
+weapons/railgf			railgf1
+
+//---------------------------------------------------------------------------
+// 	MONSTER SOUNDS
+//---------------------------------------------------------------------------
+
+misc/gibbed			dsslop
+
+// Zombie man
+
+grunt/sight1			dsposit1
+grunt/sight2			dsposit2
+grunt/sight3			dsposit3
+grunt/active			dsposact
+grunt/pain			dspopain
+grunt/death1			dspodth1
+grunt/death2			dspodth2
+grunt/death3			dspodth3
+grunt/attack			dspistol
+
+// Shotgun guy
+
+shotguy/sight1			dsposit1
+shotguy/sight2			dsposit2
+shotguy/sight3			dsposit3
+shotguy/active			dsposact
+shotguy/pain			dspopain
+shotguy/death1			dspodth1
+shotguy/death2			dspodth2
+shotguy/death3			dspodth3
+shotguy/attack			dsshotgn
+
+// Archvile
+
+vile/sight			dsvilsit
+vile/active			dsvilact
+vile/pain			dsvipain
+vile/death			dsvildth
+vile/raise			dsslop
+vile/start			dsvilatk
+vile/stop			dsbarexp
+vile/firestrt			dsflamst
+vile/firecrkl			dsflame
+
+// Revenant
+
+skeleton/sight			dsskesit
+skeleton/active			dsskeact
+skeleton/pain			dspopain
+skeleton/melee			dsskepch
+skeleton/swing			dsskeswg
+skeleton/death			dsskedth
+skeleton/attack			dsskeatk
+skeleton/tracex			dsbarexp
+
+// Fatso
+
+fatso/sight			dsmansit
+fatso/active			dsposact
+fatso/pain			dsmnpain
+fatso/raiseguns			dsmanatk
+fatso/death			dsmandth
+fatso/attack			dsfirsht
+fatso/shotx			dsfirxpl
+
+// Chainguy
+
+chainguy/sight1			dsposit1
+chainguy/sight2			dsposit2
+chainguy/sight3			dsposit3
+chainguy/active			dsposact
+chainguy/pain			dspopain
+chainguy/death1			dspodth1
+chainguy/death2			dspodth2
+chainguy/death3			dspodth3
+chainguy/attack			dsshotgn
+
+// Imp
+
+imp/sight1			dsbgsit1
+imp/sight2			dsbgsit2
+imp/active			dsbgact
+imp/pain			dspopain
+imp/melee			dsclaw
+imp/death1			dsbgdth1
+imp/death2			dsbgdth2
+imp/attack			dsfirsht
+imp/shotx			dsfirxpl
+
+// Demon
+
+demon/sight			dssgtsit
+demon/active			dsdmact
+demon/pain			dsdmpain
+demon/melee			dssgtatk
+demon/death			dssgtdth
+
+// Spectre
+
+spectre/sight			dssgtsit
+spectre/active			dsdmact
+spectre/pain			dsdmpain
+spectre/attack			dssgtatk
+spectre/death			dssgtdth
+
+// Cacodemon
+
+caco/sight			dscacsit
+caco/active			dsdmact
+caco/pain			dsdmpain
+caco/death			dscacdth
+caco/attack			dsfirsht
+caco/shotx			dsfirxpl
+
+// Baron of Hell
+
+baron/sight			dsbrssit
+baron/active			dsdmact
+baron/pain			dsdmpain
+baron/melee			dsclaw
+baron/death			dsbrsdth
+baron/attack			dsfirsht
+baron/shotx			dsfirxpl
+
+// Hell Knight
+
+knight/sight			dskntsit
+knight/active			dsdmact
+knight/pain			dsdmpain
+knight/death			dskntdth
+
+// Lost Soul
+
+skull/active			dsdmact
+skull/pain			dsdmpain
+skull/melee			dssklatk
+skull/death			dsfirxpl
+
+// Spider Mastermind
+
+spider/sight			dsspisit
+spider/active			dsdmact
+spider/pain			dsdmpain
+spider/attack			dsshotgn
+spider/death			dsspidth
+spider/walk			dsmetal
+
+// Arachnotron
+
+baby/sight			dsbspsit
+baby/active			dsbspact
+baby/pain			dsdmpain
+baby/death			dsbspdth
+baby/walk			dsbspwlk
+baby/attack			dsplasma
+baby/shotx			dsfirxpl
+
+// Cyber Demon
+
+cyber/sight			dscybsit
+cyber/active			dsdmact
+cyber/pain			dsdmpain
+cyber/death			dscybdth
+cyber/hoof			dshoof
+
+// Pain Elemental
+
+pain/sight			dspesit
+pain/active			dsdmact
+pain/pain			dspepain
+pain/death			dspedth
+
+// Wolfenstein SS
+
+wolfss/sight			dssssit
+wolfss/active			dsposact
+wolfss/pain			dspopain
+wolfss/death			dsssdth
+
+// Commander Keen
+
+keen/pain			dskeenpn
+keen/death			dskeendt
+
+// Boss Brain
+
+brain/sight			dsbossit
+brain/pain			dsbospn
+brain/death			dsbosdth
+brain/spit			dsbospit
+brain/cube			dsboscub
+brain/spawn			dsfirxpl
+
+
+//---------------------------------------------------------------------------
+// 	WORLD SOUNDS
+//---------------------------------------------------------------------------
+
+world/barrelx			dsbarexp
+world/quake			dsquake
+world/spark1			spark1
+world/spark2			spark2
+world/spark3			spark3
+
+//
+//
+// Platform Sounds
+//
+
+plats/pt1_strt			dspstart
+plats/pt1_stop			dspstop
+plats/pt1_mid			dsstnmov
+
+//
+// Door Sounds
+//
+
+doors/dr1_open			dsdoropn
+doors/dr1_clos			dsdorcls
+doors/dr2_open			dsbdopn
+doors/dr2_clos			dsbdcls
+
+// Uncomment this if you have a specific locked door sound. If misc/keytry
+// is undefined, the game will play the appropriate "oof" sound instead.
+//misc/keytry			dsoof
+
+//---------------------------------------------------------------------------
+// 	MISCELLANEOUS SOUNDS
+//---------------------------------------------------------------------------
+
+misc/secret			dssecret
+misc/w_pkup			dswpnup
+misc/p_pkup			dsgetpow
+misc/i_pkup			dsitemup
+misc/spawn			dsitmbk
+misc/chat			dsradio		// Doom 2 chat sound
+misc/chat2			dstink		// Chat sound for everything else
+misc/teamchat			dsradio2	// Team chat sound
+
+switches/normbutn		dsswtchn
+switches/exitbutn		dsswtchx
+
+misc/teleport			dstelept
+
+ctf/your/score			dscys
+ctf/your/flag/take		dscyft
+ctf/your/flag/drop		dscyfd
+ctf/your/flag/manualreturn	dscyfm
+ctf/your/flag/return		dscyfr
+
+ctf/enemy/score			dsces
+ctf/enemy/flag/take		dsceft
+ctf/enemy/flag/drop		dscefd
+ctf/enemy/flag/manualreturn	dscefm
+ctf/enemy/flag/return		dscefr
+
+// Any new sounds have to be last (for clients to use older servers)
+misc/pljoin			dspljoin
+misc/plpart			dsplpart
+
+//---------------------------------------------------------------------------
+// DEFAULT ANNOUNCER
+//---------------------------------------------------------------------------
+
+// Announcer events should be sounded out to come up with logical lump names:
+// Examples:
+// - "Your flag has been taken" => vox/your/flag/take
+// - "Your team has the enemy flag" => vox/your/take/flag
+
+vox/your/score			dvys
+vox/your/flag/take		dvyft
+vox/your/flag/drop		dvyfd
+vox/your/flag/manualreturn	dvyfm
+vox/your/flag/return		dvyfr
+
+vox/enemy/score			dves
+vox/enemy/flag/take		dveft
+vox/enemy/flag/drop		dvefd
+vox/enemy/flag/manualreturn	dvefm
+vox/enemy/flag/return		dvefr
+
+vox/blue/score			dvbs
+vox/blue/flag/take		dvbft
+vox/blue/flag/drop		dvbfd
+vox/blue/flag/manualreturn	dvbfm
+vox/blue/flag/return		dvbfr
+
+vox/red/score			dvrs
+vox/red/flag/take		dvrft
+vox/red/flag/drop		dvrfd
+vox/red/flag/manualreturn	dvrfm
+vox/red/flag/return		dvrfr

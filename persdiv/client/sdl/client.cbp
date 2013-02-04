@@ -1,0 +1,601 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="client" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Win Release (GCC)">
+				<Option platforms="Windows;" />
+				<Option output="../../odamex.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/client/gcc/release" />
+				<Option deps_output="../../deps" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="2" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-DNDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="mingw32" />
+					<Add library="ws2_32" />
+					<Add library="libtextscreen" />
+					<Add library="libportmidi" />
+					<Add library="winmm" />
+					<Add library="shlwapi" />
+					<Add directory="../../lib" />
+				</Linker>
+			</Target>
+			<Target title="Win Debug (GCC)">
+				<Option platforms="Windows;" />
+				<Option output="../../odamex-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/client/gcc/debug" />
+				<Option deps_output="../../deps" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="2" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-gdwarf-2" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_DEBUG" />
+				</Compiler>
+				<Linker>
+					<Add library="mingw32" />
+					<Add library="ws2_32" />
+					<Add library="libtextscreen-dbg" />
+					<Add library="libportmidi-dbg" />
+					<Add library="winmm" />
+					<Add library="shlwapi" />
+					<Add directory="../../lib" />
+				</Linker>
+			</Target>
+			<Target title="Unix Release">
+				<Option platforms="Unix;" />
+				<Option output="../../odamex" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/client/release" />
+				<Option deps_output="../../deps" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectResourceIncludeDirsRelation="0" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DUNIX" />
+					<Add option="-DLINUX" />
+					<Add option="-DNDEBUG" />
+					<Add directory="/usr/include/SDL" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="X11" />
+					<Add library="..\..\lib\libtextscreen.a" />
+				</Linker>
+			</Target>
+			<Target title="Unix Debug">
+				<Option platforms="Unix;" />
+				<Option output="../../odamex-dbg" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/client/debug" />
+				<Option deps_output="../../deps" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectResourceIncludeDirsRelation="0" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-DUNIX" />
+					<Add option="-DLINUX" />
+					<Add option="-D_DEBUG" />
+					<Add directory="/usr/include/SDL" />
+				</Compiler>
+				<Linker>
+					<Add library="X11" />
+					<Add library="..\..\lib\libtextscreen-dbg.a" />
+				</Linker>
+			</Target>
+			<Target title="Mac Release">
+				<Option platforms="Mac;" />
+				<Option output="../../odamex" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/client/release" />
+				<Option deps_output="../../deps" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectResourceIncludeDirsRelation="0" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DUNIX" />
+					<Add option="-DLINUX" />
+					<Add option="-DNDEBUG" />
+					<Add directory="/usr/include/SDL" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Mac Debug">
+				<Option platforms="Mac;" />
+				<Option output="../../odamex-dbg" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/client/debug" />
+				<Option deps_output="../../deps" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="2" />
+				<Option projectResourceIncludeDirsRelation="0" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-gdwarf-2" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_DEBUG" />
+				</Compiler>
+				<Linker>
+					<Add library="mingw32" />
+					<Add library="winmm" />
+					<Add library="wsock32" />
+				</Linker>
+			</Target>
+			<Target title="Win Release (VC)">
+				<Option platforms="Windows;" />
+				<Option output="../../odamex.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/client/vc/release" />
+				<Option type="0" />
+				<Option compiler="msvc10" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/TP" />
+					<Add option="/GA" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
+					<Add option="/wd4430" />
+					<Add option="/DWIN32" />
+					<Add option="/DNDEBUG" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DPORTMIDI" />
+					<Add directory="." />
+					<Add directory="../src" />
+					<Add directory="../../common" />
+					<Add directory="../../textscreen" />
+					<Add directory="../../portmidi/pm_common" />
+					<Add directory="../../portmidi/porttime" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="." />
+					<Add directory="../src" />
+					<Add directory="../../common" />
+					<Add directory="../../libtextscreen" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="SDL.lib" />
+					<Add library="SDL_mixer.lib" />
+					<Add library="ws2_32.lib" />
+					<Add library="Winmm.lib" />
+					<Add library="kernel32.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="winspool.lib" />
+					<Add library="comdlg32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="ole32.lib" />
+					<Add library="oleaut32.lib" />
+					<Add library="uuid.lib" />
+					<Add library="odbc32.lib" />
+					<Add library="odbccp32.lib" />
+					<Add library="libtextscreen" />
+					<Add library="libportmidi" />
+					<Add library="shlwapi" />
+					<Add directory="." />
+					<Add directory="../src" />
+					<Add directory="../../common" />
+					<Add directory="../../lib" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
+			</Target>
+			<Target title="Win Debug (VC)">
+				<Option platforms="Windows;" />
+				<Option output="../../odamex-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/client/vc/debug" />
+				<Option type="0" />
+				<Option compiler="msvc10" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/TP" />
+					<Add option="/RTCu" />
+					<Add option="/RTCs" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/GS" />
+					<Add option="/Od" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
+					<Add option="/Zi" />
+					<Add option="/wd4430" />
+					<Add option="/DWIN32" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DPORTMIDI" />
+					<Add directory="." />
+					<Add directory="../src" />
+					<Add directory="../../common" />
+					<Add directory="../../textscreen" />
+					<Add directory="../../portmidi/pm_common" />
+					<Add directory="../../portmidi/porttime" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="." />
+					<Add directory="../src" />
+					<Add directory="../../common" />
+					<Add directory="../../libtextscreen" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="/DEBUG" />
+					<Add library="SDL.lib" />
+					<Add library="SDL_mixer.lib" />
+					<Add library="ws2_32.lib" />
+					<Add library="Winmm.lib" />
+					<Add library="kernel32.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="winspool.lib" />
+					<Add library="comdlg32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="ole32.lib" />
+					<Add library="oleaut32.lib" />
+					<Add library="uuid.lib" />
+					<Add library="odbc32.lib" />
+					<Add library="odbccp32.lib" />
+					<Add library="libtextscreen-dbg" />
+					<Add library="libportmidi-dbg" />
+					<Add library="shlwapi" />
+					<Add directory="." />
+					<Add directory="../src" />
+					<Add directory="../../common" />
+					<Add directory="../../lib" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
+			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-pedantic" />
+			<Add option="-Winvalid-pch" />
+			<Add option='-include &quot;cl_pch.h&quot;' />
+			<Add option="-fexceptions" />
+			<Add option="-Wno-long-long" />
+			<Add option="-fno-optimize-sibling-calls" />
+			<Add option="-DPORTMIDI" />
+			<Add directory="." />
+			<Add directory="../src" />
+			<Add directory="../../common" />
+			<Add directory="../../textscreen" />
+			<Add directory="../../portmidi/pm_common" />
+			<Add directory="../../portmidi/porttime" />
+		</Compiler>
+		<Linker>
+			<Add library="SDL" />
+			<Add library="SDL_mixer" />
+			<Add directory="../../lib" />
+		</Linker>
+		<Unit filename="../../common/actor.h" />
+		<Unit filename="../../common/c_console.h" />
+		<Unit filename="../../common/c_cvarlist.cpp" />
+		<Unit filename="../../common/c_cvars.cpp" />
+		<Unit filename="../../common/c_cvars.h" />
+		<Unit filename="../../common/c_dispatch.cpp" />
+		<Unit filename="../../common/c_dispatch.h" />
+		<Unit filename="../../common/c_effect.cpp" />
+		<Unit filename="../../common/c_effect.h" />
+		<Unit filename="../../common/c_level.cpp" />
+		<Unit filename="../../common/c_level.h" />
+		<Unit filename="../../common/c_maplist.h" />
+		<Unit filename="../../common/c_pch.h" />
+		<Unit filename="../../common/c_vote.cpp" />
+		<Unit filename="../../common/c_vote.h" />
+		<Unit filename="../../common/cmdlib.cpp" />
+		<Unit filename="../../common/cmdlib.h" />
+		<Unit filename="../../common/d_dehacked.cpp" />
+		<Unit filename="../../common/d_dehacked.h" />
+		<Unit filename="../../common/d_event.h" />
+		<Unit filename="../../common/d_items.cpp" />
+		<Unit filename="../../common/d_items.h" />
+		<Unit filename="../../common/d_main.cpp" />
+		<Unit filename="../../common/d_main.h" />
+		<Unit filename="../../common/d_net.h" />
+		<Unit filename="../../common/d_netcmd.cpp" />
+		<Unit filename="../../common/d_netcmd.h" />
+		<Unit filename="../../common/d_netinf.h" />
+		<Unit filename="../../common/d_player.h" />
+		<Unit filename="../../common/d_protocol.cpp" />
+		<Unit filename="../../common/d_protocol.h" />
+		<Unit filename="../../common/d_ticcmd.h" />
+		<Unit filename="../../common/dobject.cpp" />
+		<Unit filename="../../common/dobject.h" />
+		<Unit filename="../../common/doomdata.h" />
+		<Unit filename="../../common/doomdef.h" />
+		<Unit filename="../../common/doomkeys.h" />
+		<Unit filename="../../common/doomstat.cpp" />
+		<Unit filename="../../common/doomstat.h" />
+		<Unit filename="../../common/doomtype.h" />
+		<Unit filename="../../common/dsectoreffect.cpp" />
+		<Unit filename="../../common/dsectoreffect.h" />
+		<Unit filename="../../common/dthinker.cpp" />
+		<Unit filename="../../common/dthinker.h" />
+		<Unit filename="../../common/errors.h" />
+		<Unit filename="../../common/farchive.cpp" />
+		<Unit filename="../../common/farchive.h" />
+		<Unit filename="../../common/g_game.h" />
+		<Unit filename="../../common/g_level.h" />
+		<Unit filename="../../common/g_warmup.h" />
+		<Unit filename="../../common/gi.cpp" />
+		<Unit filename="../../common/gi.h" />
+		<Unit filename="../../common/gstrings.h" />
+		<Unit filename="../../common/huffman.cpp" />
+		<Unit filename="../../common/huffman.h" />
+		<Unit filename="../../common/i_net.cpp" />
+		<Unit filename="../../common/i_net.h" />
+		<Unit filename="../../common/info.cpp" />
+		<Unit filename="../../common/info.h" />
+		<Unit filename="../../common/lzoconf.h" />
+		<Unit filename="../../common/lzodefs.h" />
+		<Unit filename="../../common/m_alloc.cpp" />
+		<Unit filename="../../common/m_alloc.h" />
+		<Unit filename="../../common/m_argv.cpp" />
+		<Unit filename="../../common/m_argv.h" />
+		<Unit filename="../../common/m_bbox.cpp" />
+		<Unit filename="../../common/m_bbox.h" />
+		<Unit filename="../../common/m_cheat.cpp" />
+		<Unit filename="../../common/m_cheat.h" />
+		<Unit filename="../../common/m_fileio.cpp" />
+		<Unit filename="../../common/m_fileio.h" />
+		<Unit filename="../../common/m_fixed.h" />
+		<Unit filename="../../common/m_memio.cpp" />
+		<Unit filename="../../common/m_memio.h" />
+		<Unit filename="../../common/m_misc.h" />
+		<Unit filename="../../common/m_random.cpp" />
+		<Unit filename="../../common/m_random.h" />
+		<Unit filename="../../common/m_swap.cpp" />
+		<Unit filename="../../common/m_swap.h" />
+		<Unit filename="../../common/md5.cpp" />
+		<Unit filename="../../common/md5.h" />
+		<Unit filename="../../common/minilzo.cpp" />
+		<Unit filename="../../common/minilzo.h" />
+		<Unit filename="../../common/p_acs.cpp" />
+		<Unit filename="../../common/p_acs.h" />
+		<Unit filename="../../common/p_ceiling.cpp" />
+		<Unit filename="../../common/p_ctf.h" />
+		<Unit filename="../../common/p_doors.cpp" />
+		<Unit filename="../../common/p_enemy.cpp" />
+		<Unit filename="../../common/p_floor.cpp" />
+		<Unit filename="../../common/p_inter.h" />
+		<Unit filename="../../common/p_interaction.cpp" />
+		<Unit filename="../../common/p_lights.cpp" />
+		<Unit filename="../../common/p_lnspec.cpp" />
+		<Unit filename="../../common/p_lnspec.h" />
+		<Unit filename="../../common/p_local.h" />
+		<Unit filename="../../common/p_map.cpp" />
+		<Unit filename="../../common/p_maputl.cpp" />
+		<Unit filename="../../common/p_mobj.cpp" />
+		<Unit filename="../../common/p_mobj.h" />
+		<Unit filename="../../common/p_pillar.cpp" />
+		<Unit filename="../../common/p_plats.cpp" />
+		<Unit filename="../../common/p_pspr.cpp" />
+		<Unit filename="../../common/p_pspr.h" />
+		<Unit filename="../../common/p_quake.cpp" />
+		<Unit filename="../../common/p_saveg.cpp" />
+		<Unit filename="../../common/p_saveg.h" />
+		<Unit filename="../../common/p_setup.cpp" />
+		<Unit filename="../../common/p_setup.h" />
+		<Unit filename="../../common/p_sight.cpp" />
+		<Unit filename="../../common/p_snapshot.cpp" />
+		<Unit filename="../../common/p_snapshot.h" />
+		<Unit filename="../../common/p_spec.cpp" />
+		<Unit filename="../../common/p_spec.h" />
+		<Unit filename="../../common/p_switch.cpp" />
+		<Unit filename="../../common/p_teleport.cpp" />
+		<Unit filename="../../common/p_things.cpp" />
+		<Unit filename="../../common/p_tick.cpp" />
+		<Unit filename="../../common/p_tick.h" />
+		<Unit filename="../../common/p_unlag.cpp" />
+		<Unit filename="../../common/p_unlag.h" />
+		<Unit filename="../../common/p_user.cpp" />
+		<Unit filename="../../common/p_xlat.cpp" />
+		<Unit filename="../../common/po_man.cpp" />
+		<Unit filename="../../common/r_bsp.h" />
+		<Unit filename="../../common/r_data.cpp" />
+		<Unit filename="../../common/r_data.h" />
+		<Unit filename="../../common/r_defs.h" />
+		<Unit filename="../../common/r_draw.h" />
+		<Unit filename="../../common/r_local.h" />
+		<Unit filename="../../common/r_main.h" />
+		<Unit filename="../../common/r_plane.h" />
+		<Unit filename="../../common/r_segs.h" />
+		<Unit filename="../../common/r_sky.h" />
+		<Unit filename="../../common/r_state.h" />
+		<Unit filename="../../common/r_things.h" />
+		<Unit filename="../../common/s_sndseq.cpp" />
+		<Unit filename="../../common/s_sndseq.h" />
+		<Unit filename="../../common/s_sound.h" />
+		<Unit filename="../../common/sc_man.cpp" />
+		<Unit filename="../../common/sc_man.h" />
+		<Unit filename="../../common/st_stuff.h" />
+		<Unit filename="../../common/stats.cpp" />
+		<Unit filename="../../common/stats.h" />
+		<Unit filename="../../common/stringenums.h" />
+		<Unit filename="../../common/stringtable.cpp" />
+		<Unit filename="../../common/stringtable.h" />
+		<Unit filename="../../common/strptime.cpp" />
+		<Unit filename="../../common/szp.h" />
+		<Unit filename="../../common/tables.cpp" />
+		<Unit filename="../../common/tables.h" />
+		<Unit filename="../../common/tarray.h" />
+		<Unit filename="../../common/timegm.cpp" />
+		<Unit filename="../../common/v_palette.h" />
+		<Unit filename="../../common/v_video.h" />
+		<Unit filename="../../common/vectors.cpp" />
+		<Unit filename="../../common/vectors.h" />
+		<Unit filename="../../common/version.cpp" />
+		<Unit filename="../../common/version.h" />
+		<Unit filename="../../common/w_wad.cpp" />
+		<Unit filename="../../common/w_wad.h" />
+		<Unit filename="../../common/win32time.h" />
+		<Unit filename="../../common/z_zone.cpp" />
+		<Unit filename="../../common/z_zone.h" />
+		<Unit filename="../src/am_map.cpp" />
+		<Unit filename="../src/am_map.h" />
+		<Unit filename="../src/c_bind.cpp" />
+		<Unit filename="../src/c_bind.h" />
+		<Unit filename="../src/c_console.cpp" />
+		<Unit filename="../src/cl_ctf.cpp" />
+		<Unit filename="../src/cl_cvarlist.cpp" />
+		<Unit filename="../src/cl_demo.cpp" />
+		<Unit filename="../src/cl_download.cpp" />
+		<Unit filename="../src/cl_download.h" />
+		<Unit filename="../src/cl_main.cpp" />
+		<Unit filename="../src/cl_main.h" />
+		<Unit filename="../src/cl_maplist.cpp" />
+		<Unit filename="../src/cl_maplist.h" />
+		<Unit filename="../src/cl_mobj.cpp" />
+		<Unit filename="../src/cl_netgraph.cpp" />
+		<Unit filename="../src/cl_netgraph.h" />
+		<Unit filename="../src/cl_pch.h">
+			<Option compile="1" />
+			<Option weight="0" />
+		</Unit>
+		<Unit filename="../src/cl_pred.cpp" />
+		<Unit filename="../src/cl_stubs.cpp" />
+		<Unit filename="../src/cl_vote.cpp" />
+		<Unit filename="../src/cl_vote.h" />
+		<Unit filename="../src/d_main.cpp" />
+		<Unit filename="../src/d_net.cpp" />
+		<Unit filename="../src/d_netinfo.cpp" />
+		<Unit filename="../src/f_finale.cpp" />
+		<Unit filename="../src/f_finale.h" />
+		<Unit filename="../src/f_wipe.cpp" />
+		<Unit filename="../src/f_wipe.h" />
+		<Unit filename="../src/g_game.cpp" />
+		<Unit filename="../src/g_level.cpp" />
+		<Unit filename="../src/g_warmup.cpp" />
+		<Unit filename="../src/hu_drawers.cpp" />
+		<Unit filename="../src/hu_drawers.h" />
+		<Unit filename="../src/hu_elements.cpp" />
+		<Unit filename="../src/hu_elements.h" />
+		<Unit filename="../src/hu_mousegraph.cpp" />
+		<Unit filename="../src/hu_mousegraph.h" />
+		<Unit filename="../src/hu_stuff.cpp" />
+		<Unit filename="../src/hu_stuff.h" />
+		<Unit filename="../src/m_menu.cpp" />
+		<Unit filename="../src/m_menu.h" />
+		<Unit filename="../src/m_misc.cpp" />
+		<Unit filename="../src/m_options.cpp" />
+		<Unit filename="../src/r_bsp.cpp" />
+		<Unit filename="../src/r_draw.cpp" />
+		<Unit filename="../src/r_drawt.cpp" />
+		<Unit filename="../src/r_main.cpp" />
+		<Unit filename="../src/r_plane.cpp" />
+		<Unit filename="../src/r_segs.cpp" />
+		<Unit filename="../src/r_sky.cpp" />
+		<Unit filename="../src/r_things.cpp" />
+		<Unit filename="../src/s_sound.cpp" />
+		<Unit filename="../src/st_lib.cpp" />
+		<Unit filename="../src/st_lib.h" />
+		<Unit filename="../src/st_new.cpp" />
+		<Unit filename="../src/st_stuff.cpp" />
+		<Unit filename="../src/v_draw.cpp" />
+		<Unit filename="../src/v_palette.cpp" />
+		<Unit filename="../src/v_text.cpp" />
+		<Unit filename="../src/v_text.h" />
+		<Unit filename="../src/v_video.cpp" />
+		<Unit filename="../src/wi_stuff.cpp" />
+		<Unit filename="../src/wi_stuff.h" />
+		<Unit filename="client.rc">
+			<Option compilerVar="WINDRES" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
+		</Unit>
+		<Unit filename="hardware.cpp" />
+		<Unit filename="hardware.h" />
+		<Unit filename="i_input.cpp" />
+		<Unit filename="i_input.h" />
+		<Unit filename="i_main.cpp" />
+		<Unit filename="i_midi.cpp" />
+		<Unit filename="i_midi.h" />
+		<Unit filename="i_music.cpp" />
+		<Unit filename="i_music.h" />
+		<Unit filename="i_musicsystem.cpp" />
+		<Unit filename="i_musicsystem.h" />
+		<Unit filename="i_sdlvideo.cpp" />
+		<Unit filename="i_sdlvideo.h" />
+		<Unit filename="i_sound.cpp" />
+		<Unit filename="i_sound.h" />
+		<Unit filename="i_system.cpp" />
+		<Unit filename="i_system.h" />
+		<Unit filename="i_video.h" />
+		<Unit filename="mus2midi.cpp" />
+		<Unit filename="mus2midi.h" />
+		<Unit filename="resource.h">
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<DoxyBlocks>
+				<comment_style block="0" line="0" />
+				<doxyfile_project />
+				<doxyfile_build />
+				<doxyfile_warnings />
+				<doxyfile_output />
+				<doxyfile_dot />
+				<general />
+			</DoxyBlocks>
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

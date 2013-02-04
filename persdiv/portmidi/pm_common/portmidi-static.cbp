@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="libportmidi" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Win Debug (GCC)">
+				<Option output="../../lib/portmidi-dbg" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../../obj/libportmidi/gcc/debug" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-O0" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_DEBUG" />
+					<Add option="-DPM_CHECK_ERRORS=1" />
+					<Add option='-DCMAKE_INTDIR=\&quot;Debug\&quot;' />
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Win Release (GCC)">
+				<Option output="../../lib/portmidi" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../../obj/libportmidi/gcc/release" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-W" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-DNDEBUG" />
+					<Add option='-DCMAKE_INTDIR=\&quot;Release\&quot;' />
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+				</ResourceCompiler>
+			</Target>
+			<Target title="Win Debug (VC)">
+				<Option output="../../lib/libportmidi-dbg" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../../obj/libportmidi/vc/debug" />
+				<Option type="2" />
+				<Option compiler="msvc10" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_DEBUG" />
+					<Add option="-DPM_CHECK_ERRORS=1" />
+					<Add option='-DCMAKE_INTDIR=\&quot;Debug\&quot;' />
+					<Add option="-W" />
+					<Add option="-O0" />
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+					<Add directory="C:/Program Files/Java/jdk1.6.0_16/include" />
+					<Add directory="C:/Program Files/Java/jdk1.6.0_16/include/win32" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+					<Add directory="C:/Program Files/Java/jdk1.6.0_16/include" />
+					<Add directory="C:/Program Files/Java/jdk1.6.0_16/include/win32" />
+				</ResourceCompiler>
+			</Target>
+			<Target title="Win Release (VC)">
+				<Option output="../../lib/libportmidi" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../../obj/libportmidi/vc/release" />
+				<Option type="2" />
+				<Option compiler="msvc10" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="/W2" />
+					<Add option="-O2" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-DNDEBUG" />
+					<Add option='-DCMAKE_INTDIR=\&quot;Release\&quot;' />
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+				</ResourceCompiler>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
+		</VirtualTargets>
+		<Unit filename="../pm_win/pmwin.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../pm_win/pmwinmm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../porttime/ptwinmm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pmutil.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="portmidi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

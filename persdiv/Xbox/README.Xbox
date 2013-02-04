@@ -1,0 +1,313 @@
+===============================================================================
+                            Odamex v0.6.2 for Xbox
+                              http://odamex.net/
+                                 Authored by:
+                            Michael "Hyper_Eye" Wood
+                       Revision date: December 12, 2012
+===============================================================================
+
+Table of contents:
+	1. Introduction
+		1.1 What is Odamex?
+		1.2 Xbox Features at a Glance
+
+	2. Installation
+		2.1 Requirements
+		2.2 Installation - binary download
+		2.3 Installation - source download
+
+	3. Xbox Controls
+		3.1 Launcher
+		3.2 Game Client
+
+	4. Issues
+		4.1 TODO
+		4.2 Known Issues
+		4.3 Bug Reporting
+
+	5. Frequently Asked Questions
+
+	6. Acknowledgements
+
+===============================================================================
+
+Section 1: Introduction
+
+1.1 What is Odamex?
+
+Odamex is a modification of DOOM to allow players to compete with each other
+over the Internet using the client/server architecture. Odamex also provides
+a feature-rich single-player engine.
+
+Please see the general README provided with Odamex for a thorough description
+of Odamex and its features.
+
+1.2 Xbox Features at a Glance
+
+ * Supports all online game modes and features that are available on other
+ 	platforms
+ * Game launcher with server browser and solo launcher with wad selector
+ * Multiple wad search paths can be configured
+ * Complete analog Xbox controller support with configurable axis assignments,
+ 	turn sensitivity, optional freelook, and configurable button bindings
+ * Support for USB mouse and keyboard
+ * Saved games and configuration files are stored in UDATA and TDATA paths so
+ 	they integrate properly with the official memory manager as well as
+ 	homebrew dashboards complete with icons
+ * Saved games can be deleted using the memory manager
+ * Saved games can be copied to and from a memory card
+ * Vanilla 320x200 resolution, multiple SDTV resolutions including 480i, and
+ 	HDTV resolutions up to 720p are supported
+
+===============================================================================
+
+Section 2. Installation
+
+2.1 - Requirements
+
+Odamex requires a modded Xbox in order to operate.
+
+2.2 - Installation - binary download
+
+Binary downloads of Odamex are not available from odamex.net or any site
+associated with The Odamex Team. Because Odamex is built with the official
+XDK binary builds cannot be provided.
+
+2.3 - Installation - source download
+
+If you are interested in the bleeding edge development of Odamex, you can
+access the SVN at http://odamex.net/svn/root with anonymous read access. Be
+warned however that it might be incompatible with current release versions,
+and stability is not guaranteed.
+
+The following libraries are required:
+	
+	* SDLx (http://svn.huntsvegas.org/wsvn/SDLx)
+
+Additionally the launcher also requires SDLx and the following libraries:
+
+	* pthreads-Xbox (http://svn.huntsvegas.org/wsvn/pthreads-xbox)
+	* Agar (http://www.libagar.org)
+
+Building the Odamex and AG-Odalaunch source for Xbox requries the use of the
+Microsoft Xbox Software Development kit (a.k.a XDK). You must be a Microsoft
+approved Xbox developer to gain access to the required software.
+
+===============================================================================
+
+Section 3: Xbox Controls
+
+3.1 - Launcher
+
+Left Analog Stick - Move Cursor
+Left/Right Trigger - Increment/Decrement list selection by 10
+D-Pad Up/Down - Increment/Decrement list selection by 1
+Left/Right Trigger (Held) - Scroll list selection
+D-Pad up/Down (Held) - Scroll list selection
+D-Pad Left/Right - Cycle focused widget/button
+A Button - Activate cursor selection
+B Button - Activate focused widget/button
+
+3.2 - Game Client
+
+The D-Pad is used to navigate the game menus while A activates
+items within the menu and B returns to the previous menu.
+
+When the console is down the left and right triggers scroll.
+
+Default Controller Binding:
+
+Left Analog Stick X Axis - Step left/right
+Left Analog Stick Y Axis - Move forward/backward
+Right Analog Stick X Axis - Turn Left/Right
+Right Analog Stick Y Axis - Look Up/Down (Freelook disabled by default)
+Right Analog Stick Push Down - Center View
+D-Pad Up - Say
+D-Pad Right - Team Say
+D-Pad Down - Quick Swap to Shotgun & Toggle SG/SSG
+D-Pad Left - Spectate/Spy Next
+Left Trigger - Walk/Run
+Right Trigger - Attack/Fire Weapon
+A Button - Activate
+X Button - Strafe
+B Button - Next Weapon
+Y Button - Previous Weapon
+White Button - Scoreboard
+Black Button - Toggle Automap
+Start Button - Menu (Not Configurable)
+Back Button - Toggle Console
+
+===============================================================================
+
+Section 4: Issues
+
+4.1 - TODO
+
+ * Virtual (On-Screen) Keyboard
+ * Configurable overscan in launcher
+ * Rumble
+ * Use a DVD as a wad source
+ * Further optimization (Improve 720p performance)
+
+4.2 - Known Issues
+
+ * The game currently cannot be launched from a DVD. This is hampered by a bug
+	that is very difficult to debug.
+ * Controller events are not received in the launcher while the master list is
+	being queried or a complete server list refresh is taking place. Joystick
+	events are disabled during these tasks because of a mutex issue or race
+	condition that results in a freeze before processing the final queried
+	server. The cursor can be moved with a mouse during these tasks.
+ * The "Query Master On Start" launcher option does not work. It might be that
+	the Xbox network controller takes a little longer to initialize but I
+	don't really know at this point.
+ * You must hit A inside the main launcher window before you can use B to
+ 	activate a focused widget. This is due to a window focus issue.
+ * The version of SDLx used with Odamex supports 1080i but 1080i has been
+ 	disabled in the library as it is not currently usable in Odamex. Selecting
+	1080i results in unplayable framerate and likely a crash when the system
+	runs out of memory.
+ * SDLx reports all 4 joystick ports as active regardless of whether or not a
+ 	joystick is plugged in. If the active joystick selection is changed to a
+	port that does not have a joystick plugged in control may be lost and a
+	reboot is required or the selection must be changed with a keyboard.
+
+4.3 - Bug Reporting
+
+Please report any bugs you find at http://www.odamex.net/bugs
+Your bug submissions help us make Odamex better. Thank you!
+
+===============================================================================
+
+Section 5: Frequently Asked Questions
+
+Q. How do I communicate with other players?
+A. Currently there is no way to insert text using the Xbox controller. Xbox
+	players can communicate by either plugging in a USB keyboard or by using
+	chat macros. A virtual keyboard is a planned feature.
+
+Q. How do the chat macros work?
+A. While in a multiplayer game push either "Say" (default: D-Pad Up) or
+	"Team Say" (default: D-Pad Right). You can then insert a macro by
+	pushing D-Pad Up + the macro button that corresponds to the message
+	you wish to insert. For example, to say "Hi" to everyone in the game
+	you would press D-Pad Up and then D-Pad Up + A.
+
+	The default macros on Xbox are as follows:
+
+	A - "Hi."
+	B - "I'm ready to kick butt!"
+	X - "Help!"
+	Y - "GG"
+	White - "Yes"
+	Black - "No"
+	Left Trigger - "I'll take care of it."
+	Right Trigger - "Come here!"
+	Start - "Thanks for the game. Bye."
+	Back - "I am on Xbox and can only use chat macros."
+
+Q. How can I customize the chat macros?
+A. You will need to manually change them in your odamex.cfg file.
+	To do this perform the following steps:
+
+	1) Launch the Odamex game client from the launcher (a solo game is fine)
+	2) Quit Odamex using the game menus (turning off the power without
+		quitting will discard configuration changes.)
+	3) Quit the launcher and return to your dashboard.
+	4) FTP into the machine or use another method of accessing the file system.
+	5) Copy E:\TDATA\4f444d58\odamex.cfg to your computer.
+	6) Open odamex.cfg in an editor.
+	7) Find the "chatmacro" options and change them as desired (note the order
+		as they correspond to controller buttons above.)
+	8) Save the file.
+	9) Copy odamex.cfg back to E:\TDATA\4f444d58\odamex.cfg
+
+Q. How do I change my player name without a keyboard?
+A. You will need to manually change the setting for your player name in
+	your odamex.cfg file. To do this perform the following steps:
+
+	1) Launch the Odamex game client from the launcher (a solo game is fine)
+	2) Quit Odamex using the game menus (turning off the power without
+		quitting will discard configuration changes.)
+	3) Quit the launcher and return to your dashboard.
+	4) FTP into the machine or use another method of accessing the file system.
+	5) Copy E:\TDATA\4f444d58\odamex.cfg to your computer.
+	6) Open odamex.cfg in an editor.
+	7) Find the "cl_name" option and change the name to your desired handle.
+	8) Save the file.
+	9) Copy odamex.cfg back to E:\TDATA\4f444d58\odamex.cfg
+
+Q. What is required to use a keyboard and/or mouse?
+A. A simple USB-to-Xbox adapter will work. These can be easily obtained
+	from online stores and auction sites for little cost. A device with a
+	cable modified to use an Xbox safety release cable will also work.
+
+Q. Is it safe to try all the resolutions listed in the resolution list?
+A. SDLx scales all resolutions to 640x480 except for 720x480 and 1280x720.
+	Only resolutions that are supported by the AV pack and system settings
+	are shown.
+
+Q. I have a widescreen television but the 720x480 options isn't available?
+A. In your Xbox system video settings select "Wide Screen" or "Letterbox".
+
+Q. I have an HDTV and the HDTV AV Pack but the 1280x720 (720p) option isn't
+	available?
+A. In your Xbox system video settings enable the 720p HDTV resolution.
+
+===============================================================================
+
+Section 6: Acknowledgements
+
+This port would not be possible without the contributions and assistance of
+many people. The following especially deserve to be mentioned.
+
+ * Undead of Team Assembly - Undead donated 2 Xbox debug kits that proved
+	to be instrumental in the development of the libraries that Odamex
+	depends on as well as Odamex itself. HUGE thanks to him for his
+	kind donation!
+
+ * Vedge of Hypertriton, Inc. (Developer of Agar) - Agar is a critical
+	piece that serves as the cross-platform GUI toolkit behind AG-Odalaunch.
+	Vedge provided assistance and knowledge as well as bug fixes and feature
+	enhancements that directly benefited the Xbox and the development of
+	AG-Odalaunch. He also trusted me with commit access so that I could
+	more efficiently get code changes into Agar. Thanks for not getting
+	annoyed while I flooded the channel with my thoughts, inquiries, and
+	general ramblings.
+
+ * Sirlemonhead - Sirlemonhead helped get me set up for development and I
+ 	e-mailed him with questions and ideas on many occasions. Also, he made
+	the AvP port and nobody can thank him enough for that.
+
+ * weinerschnitzel - Provided testing and feedback throughout development.
+
+ * ldotsfan - Bouncing Xbox development tricks back and forth with him has
+	been both an enjoyable and educational experience and I look forward
+	to more of the same.
+
+ * Likklebaer - Thanks for your role in Doom-X and for sharing your experience.
+
+ * To all those at Xbox-Scene that have provided interest, suggestions, and
+	great encouragement. I hope you guys love playing this port as much as I 
+	enjoy working on it - Clockface, Cheema201, guybird, ultimate509, neil222,
+	moonmaster1, lawdawg0931, Mega Man (?), flux2k, Pulsemasta, rubarb, Koooi,
+	Finker282, Rygrass, trrobin, |11|1VeNoM1|11|, XTecuterX73
+
+ * Special thanks to the faithful Odamex bug testers and patch contributers who 
+	put up with our crap on a daily basis because they believe in Odamex and
+	the philosophies behind it - Spleen, Ladna, HeX9101, tm512, GhostlyDeath,
+	and a hat tip to blzut3
+
+ * To anyone I missed and all the developers in the Xbox development scene that
+	released source and made it possible to work on the system without being
+	completely lost. The Xbox Linux guys, XBMC devs, Arnova and the rest of the
+	XBMC4Xbox devs, XPort, madmab, Team Assembly, RessurectionXtras, Team Evox,
+	MXM devs, everyone who has contributed to openxdk, and all the rest.
+
+ * Finally, all the members of the Odamex development team. Working with you
+ 	guys is great. I appreciate the maturity, intelligence, and dedication each
+	of you has brought to the team. It is the level-headedness and respect that
+	everyone working on this project maintains that will see Odamex succeed as
+	a great open-source project and Doom source port - Manc, Russell, Ralphis,
+	Denis, and NES
+===============================================================================

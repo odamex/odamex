@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Odalaunch
+Exec=odalaunch
+Icon=odalaunch
+Type=Application
+Comment=Server Browser for Odamex
+Categories=Game;ActionGame;
+
