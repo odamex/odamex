@@ -327,8 +327,23 @@ R_RenderMaskedSegRange
 	}
 }
 
+//
+// R_SetTextureParams
+//
+// Sets dc_source, dc_texturefrac, and dc_iscale
+//
+static void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
+{
+	const fixed_t scalex = texturescalex[texnum];
+	const fixed_t scaley = texturescaley[texnum];
 
+	if (rw_scale > 0)
+		dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
 
+	dc_texturefrac = FixedMul(mid, scaley) + dc_yl * dc_iscale - FixedMul(centeryfrac, dc_iscale);
+
+	dc_source = R_GetColumnData(texnum, FixedMul(scalex, texcol) / FRACUNIT);
+}
 
 //
 // R_RenderSegLoop
@@ -395,16 +410,7 @@ static void BlastColumn (void (*blastfunc)())
 		dc_yl = yl;
 		dc_yh = yh;
 
-		const fixed_t scalex = texturescalex[midtexture];
-		const fixed_t scaley = texturescaley[midtexture];
-
-		if (rw_scale > 0)
-			dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
-		fixed_t texfracdiff = FixedMul(centeryfrac, dc_iscale);
-		dc_texturefrac = FixedMul(rw_midtexturemid, scaley) + dc_yl * dc_iscale - texfracdiff;
-
-		int colnum = FixedMul(scalex, texturecolumn) / FRACUNIT;
-		dc_source = R_GetColumnData(midtexture, colnum);
+		R_SetTextureParams(midtexture, texturecolumn, rw_midtexturemid);
 
 		blastfunc ();
 		ceilingclip[rw_x] = viewheight;
@@ -426,16 +432,7 @@ static void BlastColumn (void (*blastfunc)())
 				dc_yl = yl;
 				dc_yh = mid;
 
-				const fixed_t scalex = texturescalex[toptexture];
-				const fixed_t scaley = texturescaley[toptexture];
-
-				if (rw_scale > 0)
-					dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
-				fixed_t texfracdiff = FixedMul(centeryfrac, dc_iscale);
-				dc_texturefrac = FixedMul(rw_toptexturemid, scaley) + dc_yl * dc_iscale - texfracdiff;
-
-				int colnum = FixedMul(scalex, texturecolumn) / FRACUNIT;
-				dc_source = R_GetColumnData(toptexture, colnum);
+				R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
 
 				blastfunc ();
 				ceilingclip[rw_x] = mid;
@@ -464,16 +461,7 @@ static void BlastColumn (void (*blastfunc)())
 				dc_yl = mid;
 				dc_yh = yh;
 
-				const fixed_t scalex = texturescalex[bottomtexture];
-				const fixed_t scaley = texturescaley[bottomtexture];
-
-				if (rw_scale > 0)
-					dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
-				fixed_t texfracdiff = FixedMul(centeryfrac, dc_iscale);
-				dc_texturefrac = FixedMul(rw_bottomtexturemid, scaley) + dc_yl * dc_iscale - texfracdiff;
-
-				int colnum = FixedMul(scalex, texturecolumn) / FRACUNIT;
-				dc_source = R_GetColumnData(bottomtexture, colnum);
+				R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
 
 				blastfunc ();
 				floorclip[rw_x] = mid;
@@ -695,8 +683,8 @@ static void R_FillWallHeightArray(
 	fixed_t val1, fixed_t val2, 
 	fixed_t dist1, fixed_t dist2)
 {
-	int64_t h1 = (int64_t(val1 - viewz) >> 6) * (int64_t(FocalLengthY) >> 6) / (int64_t(dist1) >> 6);
-	int64_t h2 = (int64_t(val2 - viewz) >> 6) * (int64_t(FocalLengthY) >> 6) / (int64_t(dist2) >> 6);
+	int64_t h1 = (int64_t(val1 - viewz) * FocalLengthY) / dist1;
+	int64_t h2 = (int64_t(val2 - viewz) * FocalLengthY) / dist2;
 
 	int64_t step = 0;
 	if (stop > start)
@@ -704,11 +692,11 @@ static void R_FillWallHeightArray(
 
 	for (int i = start; i <= stop; i++)
 	{
-		int64_t y = centery - ((h1 + (i - start) * step) >> 10);
+		int64_t y = centery - ((h1 + (i - start) * step) >> FRACBITS);
 		if (y < 0)
 			y = 0;
-		if (y > screen->height)
-			y = screen->height;
+		else if (y >= screen->height)
+			y = screen->height - 1;
 
 		array[i] = (short)y;
 	}
@@ -734,7 +722,12 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 	R_ClipEndPoints(line->v1->x, line->v1->y, line->v2->x, line->v2->y,
 					lclip1, lclip2, v1.x, v1.y, v2.x, v2.y);
 
-	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
+	// Find distance in camera space from the vertices to the camera
+	fixed_t dist1 = FixedMul(v1.x - viewx, finesine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]) + 
+					FixedMul(v1.y - viewy, finecosine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]);
+	fixed_t dist2 = FixedMul(v2.x - viewx, finesine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]) + 
+					FixedMul(v2.y - viewy, finecosine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]);
+
 	sector_t *frontsector = R_FakeFlat(line->frontsector, &tempsec, NULL, NULL, true);
 
 	rw_frontcz1 = P_CeilingHeight(v1.x, v1.y, frontsector);
@@ -742,31 +735,26 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 	rw_frontcz2 = P_CeilingHeight(v2.x, v2.y, frontsector);
 	rw_frontfz2 = P_FloorHeight(v2.x, v2.y, frontsector);
 
-	sector_t *backsector = line->backsector;
+	// calculate the upper and lower heights of the walls in the front
+	R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, dist1, dist2);
+	R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, dist1, dist2);
+
+	sector_t *backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
 	if (backsector)
 	{
-		// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
-		backsector = R_FakeFlat(backsector, &tempsec, NULL, NULL, true);
-		
 		rw_backcz1 = P_CeilingHeight(v1.x, v1.y, backsector);
 		rw_backfz1 = P_FloorHeight(v1.x, v1.y, backsector);
 		rw_backcz2 = P_CeilingHeight(v2.x, v2.y, backsector);
 		rw_backfz2 = P_FloorHeight(v2.x, v2.y, backsector);
-	}
 
-	// Find distance in camera space from the vertices to the camera
-	v2fixed_t t1, t2;
-	R_RotatePoint(v1.x - viewx, v1.y - viewy, ANG90 - viewangle, t1.x, t1.y);
-	R_RotatePoint(v2.x - viewx, v2.y - viewy, ANG90 - viewangle, t2.x, t2.y);
+		// calculate the upper and lower heights of the walls in the back
+		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, dist1, dist2);
+		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, dist1, dist2);
 
-	// calculate the upper and lower heights of the walls at both vertices
-	R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, t1.y, t2.y);
-	R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, t1.y, t2.y);
-
-	if (backsector)
-	{
-		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, t1.y, t2.y);
-		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, t1.y, t2.y);
+		// hack to allow height changes in outdoor areas
+		// copy back ceiling height array to front ceiling height array
+		if (frontsector->ceilingpic == skyflatnum && backsector->ceilingpic == skyflatnum)
+			memcpy(walltopf+start, walltopb+start, (stop-start+1)*sizeof(short));
 	}
 }
 
@@ -901,11 +889,6 @@ void R_StoreWallRange(int start, int stop)
 				!P_IsPlaneLevel(&backsector->ceilingplane))	// backside sloping?
 				ds_p->silhouette |= SIL_TOP;
 		}
-
-		// hack to allow height changes in outdoor areas
-		// copy back ceiling height array to front ceiling height array
-		if (frontsector->ceilingpic == skyflatnum && backsector->ceilingpic == skyflatnum)
-			memcpy(walltopf+start, walltopb+start, (stop-start+1)*sizeof(short));
 
 		if (spanfunc == R_FillSpan)
 		{
