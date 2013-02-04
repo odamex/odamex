@@ -1,8 +1,0 @@
-[Desktop Entry]
-Encoding=UTF-8
-Name=Odamex
-Exec=odamex -waddir /usr/share/doom
-Icon=odamex
-Type=Application
-Comment=A Doom multiplayer game engine
-Categories=Game;ActionGame;

@@ -1,9 +1,0 @@
-[Desktop Entry]
-Encoding=UTF-8
-Name=Odamex server
-Exec=odasrv
-Icon=odasrv
-Type=Application
-Terminal=true
-Comment=Run an Odamex game server
-Categories=Network;
