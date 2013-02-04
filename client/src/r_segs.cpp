@@ -695,13 +695,15 @@ static void R_FillWallHeightArray(
 	fixed_t *array, 
 	int start, int stop,
 	fixed_t val1, fixed_t val2, 
-	fixed_t scale1, fixed_t scale2)
+	fixed_t dist1, fixed_t dist2)
 {
+	fixed_t i1 = FixedDiv(FocalLengthY, dist1);
+	fixed_t i2 = FixedDiv(FocalLengthY, dist2);
+
+	array[start] = (centeryfrac >> 4) - FixedMul((val1 - viewz) >> 4, i1);
+	array[stop] = (centeryfrac >> 4) - FixedMul((val2 - viewz) >> 4, i2);
+
 	fixed_t step = 0;
-
-	array[start] = (centeryfrac >> 4) - FixedMul((val1 - viewz) >> 4, scale1);
-	array[stop] = (centeryfrac >> 4) - FixedMul((val2 - viewz) >> 4, scale2);
-
 	if (stop > start)
 		step = (array[stop] - array[start]) / (stop - start);
 
@@ -749,18 +751,19 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 		rw_backfz2 = P_FloorHeight(v2.x, v2.y, backsector);
 	}
 
-	angle_t ang1 = ANG90 + xtoviewangle[start];
-	angle_t ang2 = ANG90 + xtoviewangle[stop];
-	fixed_t scale1 = FixedDiv(FocalLengthY, FixedMul(R_PointToDist(v1.x, v1.y), finesine[ang1>>ANGLETOFINESHIFT]));
-	fixed_t scale2 = FixedDiv(FocalLengthY, FixedMul(R_PointToDist(v2.x, v2.y), finesine[ang2>>ANGLETOFINESHIFT]));
+	// Find distance in camera space from the vertices to the camera
+	v2fixed_t t1, t2;
+	R_RotatePoint(v1.x - viewx, v1.y - viewy, ANG90 - viewangle, t1.x, t1.y);
+	R_RotatePoint(v2.x - viewx, v2.y - viewy, ANG90 - viewangle, t2.x, t2.y);
 
-	R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, scale1, scale2);
-	R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, scale1, scale2);
+	// calculate the upper and lower heights of the walls at both vertices
+	R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, t1.y, t2.y);
+	R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, t1.y, t2.y);
 
 	if (backsector)
 	{
-		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, scale1, scale2);
-		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, scale1, scale2);
+		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, t1.y, t2.y);
+		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, t1.y, t2.y);
 	}
 }
 
@@ -1025,8 +1028,12 @@ void R_StoreWallRange(int start, int stop)
 	{
 		rw_scale = ds_p->scale1 = ds_p->scale2 = rw_scalestep = ds_p->light = rw_light = 0;
 		midtexture = toptexture = bottomtexture = maskedtexture = 0;
-		R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, 0, 0);
-		R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, 0, 0);
+
+		for (int n = start; n <= stop; n++)
+		{
+			walltopf[n] = centeryfrac >> 4;
+			wallbottomf[n] = centeryfrac >> 4;
+		}
 	}
 
 	// calculate rw_offset (only needed for textured lines)
