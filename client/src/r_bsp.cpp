@@ -21,7 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
+#include <math.h>
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "m_bbox.h"
@@ -31,6 +31,7 @@
 #include "r_draw.h"
 #include "r_things.h"
 #include "p_local.h"
+#include "vectors.h"
 
 // State.
 #include "doomstat.h"
@@ -55,15 +56,21 @@ int				MaxDrawSegs;
 drawseg_t		*drawsegs;
 drawseg_t*		ds_p;
 
+// percentage along the length of a lineseg where v1 and v2 are clipped to respectively
+// FRACUNIT = lineseg length
+static fixed_t	lclip1, lclip2;
+
 // Floor and ceiling heights at the end points of a seg_t
 fixed_t			rw_backcz1, rw_backcz2;
 fixed_t			rw_backfz1, rw_backfz2;
 fixed_t			rw_frontcz1, rw_frontcz2;
 fixed_t			rw_frontfz1, rw_frontfz2;
 
+
 int rw_start, rw_stop;
 
 static BYTE		FakeSide;
+extern fixed_t FocalLengthX;
 
 void R_StoreWallRange(int start, int stop);
 
@@ -526,69 +533,89 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 //
 void R_AddLine (seg_t *line)
 {
-	int 			x1;
-	int 			x2;
-	angle_t 		angle1;
-	angle_t 		angle2;
-	angle_t 		span;
-	angle_t 		tspan;
+	int				x1, x2;
 	static sector_t tempsec;	// killough 3/8/98: ceiling/water hack
+
+	// TODO: [SL] remove rw_angle1 when no longer needed
+	rw_angle1 = R_PointToAngle (line->v1->x, line->v1->y);
 
 	curline = line;
 
 	// [RH] Color if not texturing line
 	dc_color = ((line - segs) & 31) * 4;
 
-	// OPTIMIZE: quickly reject orthogonal back sides.
-	angle1 = R_PointToAngle (line->v1->x, line->v1->y);
-	angle2 = R_PointToAngle (line->v2->x, line->v2->y);
+	// have not clipped this line seg yet
+	lclip1 = 0;
+	lclip2 = line->length;
 
-	// Clip to view edges.
-	// OPTIMIZE: make constant out of 2*clipangle (FIELDOFVIEW).
-	span = angle1 - angle2;
+	// Clip the wall seg to the viewing window
 
-	// Back side? I.e. backface culling?
-	if (span >= ANG180)
+	// [SL] Rotate the seg's vertices such that the camera is at the origin
+	// and looking along the y-axis.
+	v2fixed_t t1, t2;
+	t1.x = FixedMul(line->v1->x - viewx, viewsin) - FixedMul(line->v1->y - viewy, viewcos);
+	t1.y = FixedMul(line->v1->y - viewy, viewsin) + FixedMul(line->v1->x - viewx, viewcos);
+	t2.x = FixedMul(line->v2->x - viewx, viewsin) - FixedMul(line->v2->y - viewy, viewcos);
+	t2.y = FixedMul(line->v2->y - viewy, viewsin) + FixedMul(line->v2->x - viewx, viewcos);
+
+	// Clip portions of the line that are behind the view plane
+	const fixed_t nearclip = 0.05*FRACUNIT;
+	if (t1.y < nearclip)
+	{      
+		// reject the line entirely if the whole thing is behind the view plane.
+		if (t2.y < nearclip)
+			return;
+
+		// clip the line at the point where t1.y == nearclip
+		fixed_t t = FixedDiv(nearclip - t1.y, t2.y - t1.y);
+		t1.x = FixedMul(FRACUNIT - t, t1.x) + FixedMul(t, t2.x);
+		t1.y = nearclip;
+
+		lclip1 = FixedMul(t, line->length);
+	}
+
+	double fx1 = FIXED2DOUBLE(centerxfrac) + FIXED2DOUBLE(FocalLengthX) * double(t1.x) / t1.y;	
+
+	if (t2.y < nearclip)
+	{
+		// clip the line at the point where t2.y == nearclip
+		fixed_t t = FixedDiv(nearclip - t1.y, t2.y - t1.y);
+		t2.x = FixedMul(FRACUNIT - t, t1.x) + FixedMul(t, t2.x);
+		t2.y = nearclip;
+
+		lclip2 = FixedMul(t, line->length);
+	}
+
+	double fx2 = FIXED2DOUBLE(centerxfrac) + FIXED2DOUBLE(FocalLengthX) * double(t2.x) / t2.y;
+
+	x1 = (int)(fx1 + 0.5);		// + 0.5 to round to nearest integer
+	x2 = (int)(fx2 + 0.5);
+
+	// backface rejection
+	if (x2 < x1)
 		return;
 
-	// Global angle needed by segcalc.
-	rw_angle1 = angle1;
-	angle1 -= viewangle;
-	angle2 -= viewangle;
-
-	tspan = angle1 + clipangle;
-	if (tspan > 2*clipangle)
-	{
-		// Totally off the left edge?
-		if (tspan - 2*clipangle >= span)
-			return;
-
-		angle1 = clipangle;
-	}
-	tspan = clipangle - angle2;
-	if (tspan > 2*clipangle)
-	{
-		// Totally off the left edge?
-		if (tspan - 2*clipangle >= span)
-			return;
-		angle2 = (unsigned) (-(int)clipangle);
-	}
-
-	// The seg is in the view range, but not necessarily visible.
-	angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
-	angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
-
-	// killough 1/31/98: Here is where "slime trails" can SOMETIMES occur:
-	x1 = viewangletox[angle1];
-	x2 = viewangletox[angle2];
+	// off the screen rejection
+	if (x2 < 0 || x1 >= viewwidth)
+		return;
 
 	// Does not cross a pixel?
 	if (x1 >= x2)	// killough 1/31/98 -- change == to >= for robustness
 		return;
 
+	// TODO: [SL] when clipping x1 and x2, also clip lclip1 and lclip2
+	if (x1 < 0)
+	{
+		x1 = 0;
+	}
+	if (x2 > viewwidth)
+	{
+		x2 = viewwidth;
+	}
+
 	rw_start = x1;
 	rw_stop = x2 - 1;
-	
+
 	rw_frontcz1 = P_CeilingHeight(line->v1->x, line->v1->y, frontsector);
 	rw_frontfz1 = P_FloorHeight(line->v1->x, line->v1->y, frontsector);
 	rw_frontcz2 = P_CeilingHeight(line->v2->x, line->v2->y, frontsector);
