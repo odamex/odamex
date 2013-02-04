@@ -94,6 +94,7 @@ EXTERN_CVAR (co_fixweaponimpacts)
 EXTERN_CVAR (co_boomlinecheck)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_blockmapfix)
+EXTERN_CVAR (co_boomsectortouch)
 EXTERN_CVAR (sv_friendlyfire)
 EXTERN_CVAR (sv_unblockplayers)
 
@@ -3026,15 +3027,47 @@ bool P_ChangeSector (sector_t *sector, bool crunch)
 	if (!sector)
 		return true;
 
-	int x, y;
-
 	nofit = false;
 	crushchange = crunch;
 
-    // re-check heights for all things near the moving sector
-    for (x=sector->blockbox[BOXLEFT] ; x<= sector->blockbox[BOXRIGHT] ; x++)
-	for (y=sector->blockbox[BOXBOTTOM];y<= sector->blockbox[BOXTOP] ; y++)
-	    P_BlockThingsIterator (x, y, PIT_ChangeSector);
+	if (co_boomsectortouch)
+	{
+		msecnode_t *n;
+
+		// killough 4/4/98: scan list front-to-back until empty or exhausted,
+		// restarting from beginning after each thing is processed. Avoids
+		// crashes, and is sure to examine all things in the sector, and only
+		// the things which are in the sector, until a steady-state is reached.
+		// Things can arbitrarily be inserted and removed and it won't mess up.
+		//
+		// killough 4/7/98: simplified to avoid using complicated counter
+
+		// Mark all things invalid
+
+		for (n=sector->touching_thinglist; n; n=n->m_snext)
+			n->visited = false;
+
+		do
+			for (n=sector->touching_thinglist; n; n=n->m_snext)	// go through list
+				if (!n->visited)								// unprocessed thing found
+				{
+					n->visited	= true; 						// mark thing as processed
+					if (!(n->m_thing->flags & MF_NOBLOCKMAP))	//jff 4/7/98 don't do these
+						PIT_ChangeSector(n->m_thing); 			// process it
+					break;										// exit and start over
+				}
+		while (n);	// repeat from scratch until all things left are marked valid
+	}
+	else
+	{
+		int x, y;
+
+		// re-check heights for all things near the moving sector
+		for (x=sector->blockbox[BOXLEFT] ; x<= sector->blockbox[BOXRIGHT] ; x++)
+			for (y=sector->blockbox[BOXBOTTOM];y<= sector->blockbox[BOXTOP] ; y++)
+				P_BlockThingsIterator (x, y, PIT_ChangeSector);
+
+	}
 
 	return nofit;
 }

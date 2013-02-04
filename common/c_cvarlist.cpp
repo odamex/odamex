@@ -162,6 +162,10 @@ CVAR (co_fixweaponimpacts, "0", "When enabled, activate correct impact of projec
 CVAR (co_boomlinecheck, "0", "additional checks are made on two-sided lines, allows additional silent bfg tricks, and the player will \"oof\" on two-sided lines",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+// Use Boom's algorithm for determining the actors in, or at least touching, a sector
+CVAR (co_boomsectortouch, "0", "Use a finer-grained, faster, and more accurate test for actors that are touching a sector (i.e. those affected if it moves)",
+	  CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 // Enable/disable the "level 8 full sound at far distances" feature
 CVAR (co_level8soundfeature, "0", "Enable/disable the \"level 8 full sound at far distances\" feature",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
