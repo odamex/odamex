@@ -651,6 +651,12 @@ static void R_FillWallHeightArray(
 	fixed_t val1, fixed_t val2, 
 	fixed_t dist1, fixed_t dist2)
 {
+	const fixed_t mindist = FRACUNIT;
+	const fixed_t maxdist = 16384*FRACUNIT;
+
+	clamp(dist1, mindist, maxdist);
+	clamp(dist2, mindist, maxdist);
+
 	int64_t h1 = (int64_t(val1 - viewz) * FocalLengthY) / dist1;
 	int64_t h2 = (int64_t(val2 - viewz) * FocalLengthY) / dist2;
 	
@@ -662,12 +668,8 @@ static void R_FillWallHeightArray(
 
 	for (int i = start; i <= stop; i++)
 	{
-		if (heightfrac < 0)
-			array[i] = 0;
-		else if (heightfrac >= (screen->height << FRACBITS))
-			array[i] = screen->height - 1;
-		else
-			array[i] = (int)(heightfrac >> FRACBITS);
+		array[i] = (int)(heightfrac >> FRACBITS);
+		clamp(array[i], 0, screen->height - 1);
 
 		heightfrac -= step;
 	}

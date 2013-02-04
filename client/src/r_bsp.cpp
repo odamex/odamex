@@ -56,19 +56,11 @@ int				MaxDrawSegs;
 drawseg_t		*drawsegs;
 drawseg_t*		ds_p;
 
-// percentage along the length of a lineseg where v1 and v2 are clipped to respectively
-// FRACUNIT = lineseg length
-static fixed_t	lclip1, lclip2;
-
 // Floor and ceiling heights at the end points of a seg_t
 fixed_t			rw_backcz1, rw_backcz2;
 fixed_t			rw_backfz1, rw_backfz2;
 fixed_t			rw_frontcz1, rw_frontcz2;
 fixed_t			rw_frontfz1, rw_frontfz2;
-
-fixed_t			rw_backcz_step, rw_backfz_step;
-fixed_t			rw_frontcz_step, rw_frontfz_step;
-
 
 int rw_start, rw_stop;
 
@@ -547,9 +539,10 @@ void R_AddLine (seg_t *line)
 	// [RH] Color if not texturing line
 	dc_color = ((line - segs) & 31) * 4;
 
-	// have not clipped this line seg yet
-	lclip1 = 0;
-	lclip2 = FRACUNIT;
+
+	// percentage along the length of a lineseg where v1 and v2 are clipped to respectively
+	// FRACUNIT = lineseg length
+	fixed_t	lclip1 = 0, lclip2 = FRACUNIT;
 
 	// Clip the wall seg to the viewing window
 
