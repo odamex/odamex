@@ -77,10 +77,10 @@ static fixed_t	rw_midtexturemid;
 static fixed_t	rw_toptexturemid;
 static fixed_t	rw_bottomtexturemid;
 
-static fixed_t	rw_frontcz1, rw_frontcz2;
-static fixed_t	rw_frontfz1, rw_frontfz2;
-static fixed_t	rw_backcz1, rw_backcz2;
-static fixed_t	rw_backfz1, rw_backfz2;
+extern fixed_t	rw_frontcz1, rw_frontcz2;
+extern fixed_t	rw_frontfz1, rw_frontfz2;
+extern fixed_t	rw_backcz1, rw_backcz2;
+extern fixed_t	rw_backfz1, rw_backfz2;
 
 fixed_t walltopf[MAXWIDTH];
 fixed_t walltopb[MAXWIDTH];
@@ -758,33 +758,6 @@ void R_StoreWallRange(int start, int stop)
 
 	// calculate texture boundaries
 	//	and decide if floor / ceiling marks are needed
-	
-	// Calculate the front sector's floor and ceiling height at the two
-	// endpoints of the drawseg
-	fixed_t px1, py1, px2, py2;
-
-	// [SL]Use less expensive calculations for non-sloping lines
-	bool flatplanes =	P_IsPlaneLevel(&frontsector->ceilingplane) &&
-						P_IsPlaneLevel(&frontsector->floorplane) &&
-						(!backsector || 
-						(P_IsPlaneLevel(&backsector->ceilingplane) &&
-		 				P_IsPlaneLevel(&backsector->floorplane)));
-	if (flatplanes)
-	{
-		rw_frontcz1 = rw_frontcz2 = P_CeilingHeight(frontsector);
-		rw_frontfz1 = rw_frontfz2 = P_FloorHeight(frontsector);
-	}
-	else
-	{
-		R_ColumnToPointOnSeg(start, linedef, px1, py1);
-		R_ColumnToPointOnSeg(stop, linedef, px2, py2);
-
-		rw_frontcz1 = P_CeilingHeight(px1, py1, frontsector);
-		rw_frontcz2 = P_CeilingHeight(px2, py2, frontsector);
-		rw_frontfz1 = P_FloorHeight(px1, py1, frontsector);
-		rw_frontfz2 = P_FloorHeight(px2, py2, frontsector);
-	}
-	
 	midtexture = toptexture = bottomtexture = maskedtexture = 0;
 	ds_p->maskedtexturecol = NULL;
 
@@ -820,22 +793,6 @@ void R_StoreWallRange(int start, int stop)
 		// two sided line
 		ds_p->sprtopclip = ds_p->sprbottomclip = NULL;
 		ds_p->silhouette = 0;
-
-		// Calculate the back sector's floor and ceiling height at the two
-		// endpoints of the drawseg
-
-		if (flatplanes)
-		{
-			rw_backcz1 = rw_backcz2 = P_CeilingHeight(backsector);
-			rw_backfz1 = rw_backfz2 = P_FloorHeight(backsector);
-		}
-		else
-		{
-			rw_backcz1 = P_CeilingHeight(px1, py1, backsector);
-			rw_backcz2 = P_CeilingHeight(px2, py2, backsector);
-			rw_backfz1 = P_FloorHeight(px1, py1, backsector);
-			rw_backfz2 = P_FloorHeight(px2, py2, backsector);
-		}
 
 		extern bool doorclosed;	
 		if (doorclosed)
