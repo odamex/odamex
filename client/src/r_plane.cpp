@@ -106,7 +106,6 @@ int*					planezlight;
 float					plight, shade;
 
 fixed_t 				*yslope;
-fixed_t 				*distscale;
 static fixed_t			planeheight;
 
 static fixed_t			pl_xscale, pl_yscale;
@@ -869,7 +868,6 @@ BOOL R_PlaneInitData (void)
 	delete[] ceilingclip;
 	delete[] spanstart;
 	delete[] yslope;
-	delete[] distscale;
 
 	floorclip = new int[screen->width];
 	ceilingclip = new int[screen->width];
@@ -877,7 +875,6 @@ BOOL R_PlaneInitData (void)
 	spanstart = new int[screen->height];
 
 	yslope = new fixed_t[screen->height];
-	distscale = new fixed_t[screen->width];
 
 	// Free all visplanes and let them be re-allocated as needed.
 	pl = freetail;

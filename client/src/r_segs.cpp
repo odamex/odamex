@@ -340,9 +340,9 @@ static void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
 	const fixed_t scaley = texturescaley[texnum];
 
 	if (rw_scale > 0)
-		dc_iscale = (unsigned)((0xffffffffu * uint64_t(scaley) / uint64_t(rw_scale)) >> FRACBITS);
+		dc_iscale = (unsigned)(0xffffffffu / rw_scale);
 
-	dc_texturefrac = FixedMul(mid, scaley) + dc_yl * dc_iscale - FixedMul(centeryfrac, dc_iscale);
+	dc_texturefrac = FixedMul(scaley, mid + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale));
 
 	dc_source = R_GetColumnData(texnum, FixedMul(scalex, texcol) / FRACUNIT);
 }
@@ -369,7 +369,7 @@ static void BlastColumn (void (*blastfunc)())
 		if (top < bottom)
 		{
 			ceilingplane->top[rw_x] = top;
-			ceilingplane->bottom[rw_x] = bottom - 1;
+			ceilingplane->bottom[rw_x] = bottom;
 		}
 	}
 
@@ -383,7 +383,7 @@ static void BlastColumn (void (*blastfunc)())
 		if (top < bottom)
 		{
 			floorplane->top[rw_x] = top;
-			floorplane->bottom[rw_x] = bottom - 1;
+			floorplane->bottom[rw_x] = bottom;
 		}
 	}
 
@@ -397,7 +397,7 @@ static void BlastColumn (void (*blastfunc)())
 	{
 		// single sided line
 		dc_yl = walltopf[rw_x];
-		dc_yh = wallbottomf[rw_x] - 1;
+		dc_yh = wallbottomf[rw_x];
 
 		R_SetTextureParams(midtexture, texturecolumn, rw_midtexturemid);
 
@@ -412,7 +412,7 @@ static void BlastColumn (void (*blastfunc)())
 		{
 			walltopb[rw_x] = MAX(MIN(walltopb[rw_x], floorclip[rw_x]), walltopf[rw_x]);
 			dc_yl = walltopf[rw_x];
-			dc_yh = walltopb[rw_x] - 1;
+			dc_yh = walltopb[rw_x];
 
 			R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
 			blastfunc();
@@ -429,7 +429,7 @@ static void BlastColumn (void (*blastfunc)())
 		{
 			wallbottomb[rw_x] = MIN(MAX(wallbottomb[rw_x], ceilingclip[rw_x]), wallbottomf[rw_x]);
 			dc_yl = wallbottomb[rw_x];
-			dc_yh = wallbottomf[rw_x] - 1;
+			dc_yh = wallbottomf[rw_x];
 
 			R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
 			blastfunc();

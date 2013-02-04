@@ -819,13 +819,6 @@ void R_ExecuteSetViewSize (void)
 	for (i = 0; i < viewwidth; i++)
 		screenheightarray[i] = (int)viewheight;
 
-	// planes
-	for (i = 0; i < viewwidth; i++)
-	{
-		fixed_t cosadj = abs (finecosine[xtoviewangle[i]>>ANGLETOFINESHIFT]);
-		distscale[i] = FixedDiv (FRACUNIT, cosadj);
-	}
-
 	// Calculate the light levels to use for each level / scale combination.
 	// [RH] This just stores indices into the colormap rather than pointers to a specific one.
 	for (i = 0; i < LIGHTLEVELS; i++)
