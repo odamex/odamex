@@ -651,18 +651,7 @@ void R_AddLine (seg_t *line)
 	rw_start = x1;
 	rw_stop = x2 - 1;
 
-	// [SL] Create points v1 and v2, which represent the
-	// original line's endpoints after clipping
-	v2fixed_t v1, v2;
-	v1.x = FixedMul(FRACUNIT - lclip1, line->v1->x) + FixedMul(lclip1, line->v2->x);
-	v1.y = FixedMul(FRACUNIT - lclip1, line->v1->y) + FixedMul(lclip1, line->v2->y);
-	v2.x = FixedMul(FRACUNIT - lclip2, line->v1->x) + FixedMul(lclip2, line->v2->x);
-	v2.y = FixedMul(FRACUNIT - lclip2, line->v1->y) + FixedMul(lclip2, line->v2->y);
-
-	rw_frontcz1 = P_CeilingHeight(v1.x, v1.y, frontsector);
-	rw_frontfz1 = P_FloorHeight(v1.x, v1.y, frontsector);
-	rw_frontcz2 = P_CeilingHeight(v2.x, v2.y, frontsector);
-	rw_frontfz2 = P_FloorHeight(v2.x, v2.y, frontsector);	
+	R_PrepWall(line, rw_start, rw_stop, lclip1, lclip2);
 	
 	backsector = line->backsector;
 	// Single sided line?
@@ -672,11 +661,6 @@ void R_AddLine (seg_t *line)
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
 	backsector = R_FakeFlat (backsector, &tempsec, NULL, NULL, true);
 		
-	rw_backcz1 = P_CeilingHeight(v1.x, v1.y, backsector);
-	rw_backfz1 = P_FloorHeight(v1.x, v1.y, backsector);
-	rw_backcz2 = P_CeilingHeight(v2.x, v2.y, backsector);
-	rw_backfz2 = P_FloorHeight(v2.x, v2.y, backsector);
-
 	// [SL] Check for closed doors or other scenarios that would make this
 	// line seg solid.
 	//

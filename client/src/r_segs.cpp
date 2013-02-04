@@ -685,6 +685,95 @@ static void R_AdjustOpenings(int start, int stop)
 }
 
 //
+// R_FillWallHeightArray
+//
+// 
+static void R_FillWallHeightArray(
+	fixed_t *array, 
+	int start, int stop,
+	fixed_t val1, fixed_t val2, 
+	fixed_t scale1, fixed_t scale2)
+{
+	fixed_t step;
+
+	array[start] = (centeryfrac >> 4) - FixedMul((val1 - viewz) >> 4, scale1);
+	array[stop] = (centeryfrac >> 4) - FixedMul((val2 - viewz) >> 4, scale2);
+
+	if (stop > start)
+		step = (array[stop] - array[start]) / (stop - start);
+
+	for (int n = start +1; n <= stop; n++)
+		array[n] = array[n-1] + step;
+}
+
+
+//
+// R_PrepWall
+//
+// Prepares a lineseg for rendering. It fills the walltopf, wallbottomf,
+// walltopb, and wallbottomb arrays with the top and bottom pixel heights
+// of the wall for the span from start to stop.
+//
+// lclip1 and lclip2 are percentanges of the left and right edge of the
+// line that have been clipped off by R_AddLine.
+//
+void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2)
+{
+	static sector_t tempsec;
+
+	// [SL] Points v1 and v2 represent the original line's endpoints after clipping
+	v2fixed_t v1, v2;
+	v1.x = FixedMul(FRACUNIT - lclip1, line->v1->x) + FixedMul(lclip1, line->v2->x);
+	v1.y = FixedMul(FRACUNIT - lclip1, line->v1->y) + FixedMul(lclip1, line->v2->y);
+	v2.x = FixedMul(FRACUNIT - lclip2, line->v1->x) + FixedMul(lclip2, line->v2->x);
+	v2.y = FixedMul(FRACUNIT - lclip2, line->v1->y) + FixedMul(lclip2, line->v2->y);
+
+	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
+	sector_t *frontsector = R_FakeFlat(line->frontsector, &tempsec, NULL, NULL, true);
+
+	rw_frontcz1 = P_CeilingHeight(v1.x, v1.y, frontsector);
+	rw_frontfz1 = P_FloorHeight(v1.x, v1.y, frontsector);
+	rw_frontcz2 = P_CeilingHeight(v2.x, v2.y, frontsector);
+	rw_frontfz2 = P_FloorHeight(v2.x, v2.y, frontsector);
+
+	sector_t *backsector = line->backsector;
+	if (backsector)
+	{
+		// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
+		backsector = R_FakeFlat(backsector, &tempsec, NULL, NULL, true);
+		
+		rw_backcz1 = P_CeilingHeight(v1.x, v1.y, backsector);
+		rw_backfz1 = P_FloorHeight(v1.x, v1.y, backsector);
+		rw_backcz2 = P_CeilingHeight(v2.x, v2.y, backsector);
+		rw_backfz2 = P_FloorHeight(v2.x, v2.y, backsector);
+	}
+
+	// calculate rw_distance for scale calculation
+	// TODO: remove calls to R_ScaleFromGlobalAngle and calculate scale directly
+	rw_normalangle = curline->angle + ANG90;
+	fixed_t offsetangle = (int)abs((int)rw_normalangle - rw_angle1);
+
+	if (offsetangle > ANG90)
+		offsetangle = ANG90;
+
+	angle_t distangle = ANG90 - offsetangle;
+	fixed_t hyp = (viewx == curline->v1->x && viewy == curline->v1->y) ? 0 : R_PointToDist(curline->v1->x, curline->v1->y);
+	rw_distance = FixedMul(hyp, finesine[distangle>>ANGLETOFINESHIFT]);
+
+	fixed_t scale1 = R_ScaleFromGlobalAngle(viewangle + xtoviewangle[start]);
+	fixed_t scale2 = R_ScaleFromGlobalAngle(viewangle + xtoviewangle[stop]);
+
+	R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, scale1, scale2);
+	R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, scale1, scale2);
+
+	if (backsector)
+	{
+		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, scale1, scale2);
+		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, scale1, scale2);
+	}
+}
+
+//
 // R_StoreWallRange
 // A wall segment will be drawn
 //	between start and stop pixels (inclusive).
@@ -741,7 +830,7 @@ void R_StoreWallRange(int start, int stop)
 	ds_p->scale1 = rw_scale =
 		R_ScaleFromGlobalAngle (viewangle + xtoviewangle[start]);
 	ds_p->light = rw_light = rw_scale * lightscalexmul;
-
+ 
 	if (stop > start)
 	{
 		ds_p->scale2 = R_ScaleFromGlobalAngle (viewangle + xtoviewangle[stop]);
@@ -817,11 +906,9 @@ void R_StoreWallRange(int start, int stop)
 		}
 
 		// hack to allow height changes in outdoor areas
+		// copy back ceiling height array to front ceiling height array
 		if (frontsector->ceilingpic == skyflatnum && backsector->ceilingpic == skyflatnum)
-		{
-			rw_frontcz1 = rw_backcz1;
-			rw_frontcz2 = rw_backcz2;
-		}
+			memcpy(walltopf+start, walltopb+start, (stop-start+1)*sizeof(fixed_t));
 
 		if (spanfunc == R_FillSpan)
 		{
@@ -941,17 +1028,18 @@ void R_StoreWallRange(int start, int stop)
 		}
 	}
 
-	// calculate rw_offset (only needed for textured lines)
-	segtextured = (midtexture | toptexture) | (bottomtexture | maskedtexture);
-
 	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
 	// height to 0
 	if (curline->linedef->special == Line_Horizon)
 	{
 		rw_scale = ds_p->scale1 = ds_p->scale2 = rw_scalestep = ds_p->light = rw_light = 0;
-		segtextured = false;
 		midtexture = toptexture = bottomtexture = maskedtexture = 0;
+		R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, 0, 0);
+		R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, 0, 0);
 	}
+
+	// calculate rw_offset (only needed for textured lines)
+	segtextured = (midtexture | toptexture) | (bottomtexture | maskedtexture);
 
 	if (segtextured)
 	{
@@ -1008,62 +1096,6 @@ void R_StoreWallRange(int start, int stop)
 			markceiling = false;	
 	}
 
-	float fscale1 = FIXED2FLOAT(ds_p->scale1);
-	float fscale2 = FIXED2FLOAT(ds_p->scale2);
-
-	// [SL] 2012-01-31 - Calculate front side ceiling height values
-	fixed_t topf_start = ((rw_frontcz1 - viewz) >> 4) * fscale1; 
-	fixed_t topf_stop  = ((rw_frontcz2 - viewz) >> 4) * fscale2;
-	fixed_t topf_step  = 0;
-
-	if (stop > start)
-		topf_step = (topf_start - topf_stop) / (stop - start);
-	
-	for (int n = start; n <= stop; n++)
-		walltopf[n] = (centeryfrac >> 4) - topf_start + (n - start) * topf_step;	
-
-	// [SL] 2012-01-31 - Calculate front side floor height values
-	fixed_t bottomf_start = ((rw_frontfz1 - viewz) >> 4) * fscale1; 
-	fixed_t bottomf_stop  = ((rw_frontfz2 - viewz) >> 4) * fscale2; 
-	fixed_t bottomf_step  = 0;
-
-	if (stop > start)
-		bottomf_step = (bottomf_start - bottomf_stop) / (stop - start);
-
-	for (int n = start; n <= stop; n++)
-		wallbottomf[n] = (centeryfrac >> 4) - bottomf_start + (n - start) * bottomf_step;	
-
-	if (backsector)
-	{
-		if (rw_backcz1 < rw_frontcz1 || rw_backcz2 < rw_frontcz2)
-		{
-			// [SL] 2012-01-31 - Calculate back side ceiling height values
-			fixed_t topb_start = ((rw_backcz1 - viewz) >> 4) * fscale1; 
-			fixed_t topb_stop  = ((rw_backcz2 - viewz) >> 4) * fscale2; 
-			fixed_t topb_step  = 0;
-
-			if (stop > start)
-				topb_step = (topb_start - topb_stop) / (stop - start);
-
-			for (int n = start; n <= stop; n++)
-				walltopb[n] = (centeryfrac >> 4) - topb_start + (n - start) * topb_step;	
-		}
-
-		if (rw_backfz1 > rw_frontfz1 || rw_backfz2 > rw_frontfz2)
-		{
-			// [SL] 2012-01-31 - Calculate back side floor height values
-			fixed_t bottomb_start = ((rw_backfz1 - viewz) >> 4) * fscale1; 
-			fixed_t bottomb_stop  = ((rw_backfz2 - viewz) >> 4) * fscale2;
-			fixed_t bottomb_step  = 0;
- 
-			if (stop > start)
-				bottomb_step = (bottomb_start - bottomb_stop) / (stop - start);
-
-			for (int n = start; n <= stop; n++)
-				wallbottomb[n] = (centeryfrac >> 4) - bottomb_start + (n - start) * bottomb_step;	
-		}
-	}
-	
 	// render it
 	if (markceiling && ceilingplane)
 		ceilingplane = R_CheckPlane(ceilingplane, rw_x, rw_stopx-1);
