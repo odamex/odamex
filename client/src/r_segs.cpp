@@ -905,7 +905,7 @@ void R_StoreWallRange(int start, int stop)
 		// hack to allow height changes in outdoor areas
 		// copy back ceiling height array to front ceiling height array
 		if (frontsector->ceilingpic == skyflatnum && backsector->ceilingpic == skyflatnum)
-			memcpy(walltopf+start, walltopb+start, (stop-start+1)*sizeof(fixed_t));
+			memcpy(walltopf+start, walltopb+start, (stop-start+1)*sizeof(short));
 
 		if (spanfunc == R_FillSpan)
 		{
@@ -1034,8 +1034,8 @@ void R_StoreWallRange(int start, int stop)
 
 		for (int n = start; n <= stop; n++)
 		{
-			walltopf[n] = centeryfrac >> 4;
-			wallbottomf[n] = centeryfrac >> 4;
+			walltopf[n] = centery;
+			wallbottomf[n] = centery;
 		}
 	}
 

@@ -623,8 +623,8 @@ void R_AddLine (seg_t *line)
 	v2fixed_t clipt1, clipt2;
 	R_ClipEndPoints(t1.x, t1.y, t2.x, t2.y, lclip1, lclip2, clipt1.x, clipt1.y, clipt2.x, clipt2.y);
 
-	x1 = centerx + ((int64_t(FocalLengthX) * int64_t(clipt1.x) / int64_t(clipt1.y)) >> FRACBITS);
-	x2 = centerx + ((int64_t(FocalLengthX) * int64_t(clipt2.x) / int64_t(clipt2.y)) >> FRACBITS);
+	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt1.x) / clipt1.y) >> FRACBITS;
+	x2 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt2.x) / clipt2.y) >> FRACBITS;
 
 	// backface rejection
 	if (x2 < x1)
