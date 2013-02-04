@@ -86,6 +86,7 @@ static int walltopf[MAXWIDTH];
 static int walltopb[MAXWIDTH];
 static int wallbottomf[MAXWIDTH];
 static int wallbottomb[MAXWIDTH];
+static fixed_t wallscalex[MAXWIDTH];
 
 static int texoffs[MAXWIDTH];
 
@@ -355,6 +356,8 @@ static void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
 
 static void BlastColumn (void (*blastfunc)())
 {
+	rw_scale = wallscalex[rw_x];
+
 	// mark floor / ceiling areas
 	walltopf[rw_x] = MAX(walltopf[rw_x], ceilingclip[rw_x]);
 
@@ -366,7 +369,7 @@ static void BlastColumn (void (*blastfunc)())
 		if (top < bottom)
 		{
 			ceilingplane->top[rw_x] = top;
-			ceilingplane->bottom[rw_x] = bottom;
+			ceilingplane->bottom[rw_x] = bottom - 1;
 		}
 	}
 
@@ -380,7 +383,7 @@ static void BlastColumn (void (*blastfunc)())
 		if (top < bottom)
 		{
 			floorplane->top[rw_x] = top;
-			floorplane->bottom[rw_x] = bottom;
+			floorplane->bottom[rw_x] = bottom - 1;
 		}
 	}
 
@@ -397,7 +400,7 @@ static void BlastColumn (void (*blastfunc)())
 	{
 		// single sided line
 		dc_yl = walltopf[rw_x];
-		dc_yh = wallbottomf[rw_x];
+		dc_yh = wallbottomf[rw_x] - 1;
 
 		R_SetTextureParams(midtexture, texturecolumn, rw_midtexturemid);
 
@@ -412,7 +415,7 @@ static void BlastColumn (void (*blastfunc)())
 		{
 			walltopb[rw_x] = MAX(MIN(walltopb[rw_x], floorclip[rw_x]), walltopf[rw_x]);
 			dc_yl = walltopf[rw_x];
-			dc_yh = walltopb[rw_x];
+			dc_yh = walltopb[rw_x] - 1;
 
 			R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
 			blastfunc();
@@ -429,7 +432,7 @@ static void BlastColumn (void (*blastfunc)())
 		{
 			wallbottomb[rw_x] = MIN(MAX(wallbottomb[rw_x], ceilingclip[rw_x]), wallbottomf[rw_x]);
 			dc_yl = wallbottomb[rw_x];
-			dc_yh = wallbottomf[rw_x];
+			dc_yh = wallbottomf[rw_x] - 1;
 
 			R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
 			blastfunc();
@@ -450,7 +453,6 @@ static void BlastColumn (void (*blastfunc)())
 		}
 	}
 
-	rw_scale += rw_scalestep;
 	rw_light += rw_lightstep;
 }
 
@@ -649,22 +651,27 @@ static void R_FillWallHeightArray(
 	fixed_t val1, fixed_t val2, 
 	fixed_t dist1, fixed_t dist2)
 {
-	int64_t step = 0;
 	int64_t h1 = (int64_t(val1 - viewz) * FocalLengthY) / dist1;
 	int64_t h2 = (int64_t(val2 - viewz) * FocalLengthY) / dist2;
 	
+	int64_t step = 0;
 	if (stop > start)
 		step = (h2 - h1) / (stop - start);
 
+	int64_t heightfrac = centeryfrac - h1 + FRACUNIT/2;
+
 	for (int i = start; i <= stop; i++)
 	{
-		int64_t y = (centeryfrac - (h1 + (i - start) * step) + FRACUNIT/2) >> FRACBITS;
-		if (y < 0)
-			y = 0;
-		else if (y >= screen->height)
-			y = screen->height - 1;
+		if (heightfrac < 0)
+			array[i] = 0;
+		else if (heightfrac >= (screen->height << FRACBITS))
+			array[i] = screen->height - 1;
+		else
+			array[i] = (int)(heightfrac >> FRACBITS);
 
-		array[i] = (int)y;
+		heightfrac -= step;
+
+		wallscalex[i] = h1 + (i - start) * step;		
 	}
 }
 
@@ -717,6 +724,20 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 		// copy back ceiling height array to front ceiling height array
 		if (frontsector->ceilingpic == skyflatnum && backsector->ceilingpic == skyflatnum)
 			memcpy(walltopf+start, walltopb+start, (stop-start+1)*sizeof(*walltopb));
+	}
+
+	// calculate wall scale along its length
+	fixed_t scale1 = FixedDiv(FocalLengthY, dist1);
+	fixed_t scale2 = FixedDiv(FocalLengthY, dist2);
+
+	fixed_t scalestep = 0;
+	if (stop > start)
+		scalestep = (scale2 - scale1) / (stop - start);
+
+	for (int i = start; i <= stop; i++)
+	{
+		wallscalex[i] = scale1;
+		scale1 += scalestep;
 	}
 }
 
@@ -774,13 +795,12 @@ void R_StoreWallRange(int start, int stop)
 	R_AdjustOpenings(start, stop);
 
 	// calculate scale at both ends and step
-	ds_p->scale1 = rw_scale =
-		R_ScaleFromGlobalAngle (viewangle + xtoviewangle[start]);
+	ds_p->scale1 = rw_scale = wallscalex[start];
 	ds_p->light = rw_light = rw_scale * lightscalexmul;
  
 	if (stop > start)
 	{
-		ds_p->scale2 = R_ScaleFromGlobalAngle (viewangle + xtoviewangle[stop]);
+		ds_p->scale2 = wallscalex[stop];
 		ds_p->scalestep = rw_scalestep =
 			(ds_p->scale2 - rw_scale) / (stop-start);
 		ds_p->lightstep = rw_lightstep = rw_scalestep * lightscalexmul;
