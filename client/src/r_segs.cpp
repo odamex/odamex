@@ -82,10 +82,12 @@ extern fixed_t	rw_frontfz1, rw_frontfz2;
 extern fixed_t	rw_backcz1, rw_backcz2;
 extern fixed_t	rw_backfz1, rw_backfz2;
 
-fixed_t walltopf[MAXWIDTH];
-fixed_t walltopb[MAXWIDTH];
-fixed_t wallbottomf[MAXWIDTH];
-fixed_t wallbottomb[MAXWIDTH];
+static fixed_t walltopf[MAXWIDTH];
+static fixed_t walltopb[MAXWIDTH];
+static fixed_t wallbottomf[MAXWIDTH];
+static fixed_t wallbottomb[MAXWIDTH];
+
+extern fixed_t FocalLengthY;
 
 static int  	*maskedtexturecol;
 
@@ -687,14 +689,15 @@ static void R_AdjustOpenings(int start, int stop)
 //
 // R_FillWallHeightArray
 //
-// 
+// Calculates the wall-texture screen coordinates for a span of columns.
+//
 static void R_FillWallHeightArray(
 	fixed_t *array, 
 	int start, int stop,
 	fixed_t val1, fixed_t val2, 
 	fixed_t scale1, fixed_t scale2)
 {
-	fixed_t step;
+	fixed_t step = 0;
 
 	array[start] = (centeryfrac >> 4) - FixedMul((val1 - viewz) >> 4, scale1);
 	array[stop] = (centeryfrac >> 4) - FixedMul((val2 - viewz) >> 4, scale2);
@@ -748,20 +751,10 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 		rw_backfz2 = P_FloorHeight(v2.x, v2.y, backsector);
 	}
 
-	// calculate rw_distance for scale calculation
-	// TODO: remove calls to R_ScaleFromGlobalAngle and calculate scale directly
-	rw_normalangle = curline->angle + ANG90;
-	fixed_t offsetangle = (int)abs((int)rw_normalangle - rw_angle1);
-
-	if (offsetangle > ANG90)
-		offsetangle = ANG90;
-
-	angle_t distangle = ANG90 - offsetangle;
-	fixed_t hyp = (viewx == curline->v1->x && viewy == curline->v1->y) ? 0 : R_PointToDist(curline->v1->x, curline->v1->y);
-	rw_distance = FixedMul(hyp, finesine[distangle>>ANGLETOFINESHIFT]);
-
-	fixed_t scale1 = R_ScaleFromGlobalAngle(viewangle + xtoviewangle[start]);
-	fixed_t scale2 = R_ScaleFromGlobalAngle(viewangle + xtoviewangle[stop]);
+	angle_t ang1 = ANG90 + xtoviewangle[start];
+	angle_t ang2 = ANG90 + xtoviewangle[stop];
+	fixed_t scale1 = FixedDiv(FocalLengthY, FixedMul(R_PointToDist(v1.x, v1.y), finesine[ang1>>ANGLETOFINESHIFT]));
+	fixed_t scale2 = FixedDiv(FocalLengthY, FixedMul(R_PointToDist(v2.x, v2.y), finesine[ang2>>ANGLETOFINESHIFT]));
 
 	R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, scale1, scale2);
 	R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, scale1, scale2);
