@@ -691,6 +691,11 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 	fixed_t dist2 = FixedMul(v2.x - viewx, finesine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]) + 
 					FixedMul(v2.y - viewy, finecosine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]);
 
+	const fixed_t mindist = 0.25*FRACUNIT;
+	const fixed_t maxdist = 16384*FRACUNIT;
+	clamp(dist1, mindist, maxdist);
+	clamp(dist2, mindist, maxdist);
+
 	// calculate texture coordinates at the line's endpoints
 	double scale1 = yfoc / FIXED2DOUBLE(dist1);
 	double scale2 = yfoc / FIXED2DOUBLE(dist2);
