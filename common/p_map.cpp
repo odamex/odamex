@@ -2715,8 +2715,13 @@ void P_UseLines (player_t *player)
 //
 AActor* 		bombsource;
 AActor* 		bombspot;
-int 			bombdamage;
-int				bombmod;
+int 	        bombdamage;
+float	        bombdamagefloat;
+int		        bombdistance;
+float	        bombdistancefloat;
+bool	        DamageSource;
+int		        bombmod;
+vec3_t	        bombvec;
 
 //
 // PIT_ZdoomRadiusAttack
@@ -2866,9 +2871,10 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 // P_RadiusAttack
 // Source is the creature that caused the explosion at spot.
 //
-void P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod)
+void P_RadiusAttack (AActor *spot, AActor *source, int damage, int distance,
+	bool hurtSource, int mod)
 {
-	fixed_t dist = (damage+MAXRADIUS)<<FRACBITS;
+	fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
 	int yh = MIN<int>((spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT, bmapheight - 1);
 	int yl = MAX<int>((spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT, 0);
 	int xh = MIN<int>((spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT, bmapwidth - 1);
@@ -2876,8 +2882,12 @@ void P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod)
 	bombspot = spot;
 	bombsource = source;
 	bombdamage = damage;
+	bombdistance = distance;
+	bombdistancefloat = 1.f / (float)distance;
+	DamageSource = hurtSource;
+	bombdamagefloat = (float)damage;	
 	bombmod = mod;
-	bombmod = mod;
+	VectorPosition (spot, bombvec);
 
 	// decide which radius attack function to use
 	BOOL (*pAttackFunc)(AActor*) = co_zdoomphys ?

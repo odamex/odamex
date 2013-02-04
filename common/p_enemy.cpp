@@ -80,7 +80,10 @@ fixed_t xspeed[8] = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000};
 fixed_t yspeed[8] = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000};
 
 
-
+void A_Die (AActor *actor);
+void A_Detonate (AActor *mo);
+void A_Explode (AActor *thing);
+void A_Mushroom (AActor *actor);
 void A_Fall (AActor *actor);
 
 
@@ -1507,7 +1510,7 @@ void A_VileAttack (AActor *actor)
 	// move the fire between the vile and the player
 	fire->x = actor->target->x - FixedMul (24*FRACUNIT, finecosine[an]);
 	fire->y = actor->target->y - FixedMul (24*FRACUNIT, finesine[an]);
-	P_RadiusAttack (fire, actor, 70, MOD_UNKNOWN);
+	P_RadiusAttack (fire, actor, 70, 70, true, MOD_UNKNOWN);
 }
 
 
@@ -1591,6 +1594,40 @@ void A_FatAttack3 (AActor *actor)
 		mo->momy = FixedMul (mo->info->speed, finesine[an]);
 	}
 }
+
+
+//
+// killough 9/98: a mushroom explosion effect, sorta :)
+// Original idea: Linguica
+//
+
+void A_Mushroom (AActor *actor)
+{
+	int i, j, n = actor->damage;
+
+	A_Explode (actor);	// First make normal explosion
+
+	// Now launch mushroom cloud
+	for (i = -n; i <= n; i += 8)
+	{
+		for (j = -n; j <= n; j += 8)
+		{
+			AActor target = *actor, *mo;
+			target.x += i << FRACBITS; // Aim in many directions from source
+			target.y += j << FRACBITS;
+			target.z += P_AproxDistance(i,j) << (FRACBITS+2); // Aim up fairly high
+			mo = P_SpawnMissile (actor, &target, MT_FATSHOT); // Launch fireball
+			if (mo != NULL)
+			{
+				mo->momx >>= 1;
+				mo->momy >>= 1;				  // Slow it down a bit
+				mo->momz >>= 1;
+				mo->flags &= ~MF_NOGRAVITY;   // Make debris fall under gravity
+			}
+		}
+	}
+}
+
 
 
 //
@@ -1787,6 +1824,28 @@ void A_Fall (AActor *actor)
 	// are meant to be obstacles.
 }
 
+
+// killough 11/98: kill an object
+void A_Die (AActor *actor)
+{
+	P_DamageMobj (actor, NULL, NULL, actor->health, MOD_UNKNOWN);
+}
+
+//
+// A_Detonate
+// killough 8/9/98: same as A_Explode, except that the damage is variable
+//
+
+void A_Detonate (AActor *mo)
+{
+	P_RadiusAttack (mo, mo->target, mo->damage, mo->damage, true, MOD_UNKNOWN);
+	if (mo->z <= mo->floorz + (mo->damage<<FRACBITS))
+	{
+		P_HitFloor (mo);
+	}
+}
+
+
 //
 // A_Explode
 //
@@ -1794,6 +1853,9 @@ void A_Explode (AActor *thing)
 {
 	// [RH] figure out means of death;
 	int mod;
+	int damage = 128;
+	int distance = 128;
+	bool hurtSource = true;
 
 	switch (thing->type) {
 		case MT_BARREL:
@@ -1807,7 +1869,7 @@ void A_Explode (AActor *thing)
 			break;
 	}
 
-	P_RadiusAttack (thing, thing->target, 128, mod);
+	P_RadiusAttack (thing, thing->target, damage, distance, hurtSource, mod);	
 }
 
 #define SPEED(a)		((a)*(FRACUNIT/8))

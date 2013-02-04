@@ -114,6 +114,7 @@ AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 void	P_SpawnPlayerMissile (AActor* source, mobjtype_t type);
 
 void	P_RailAttack (AActor *source, int damage, int offset);	// [RH] Shoot a railgun
+bool	P_HitFloor (AActor *thing);
 //
 // [RH] P_THINGS
 //
@@ -283,7 +284,7 @@ void	P_AimCamera (AActor *t1);
 extern	fixed_t CameraX, CameraY, CameraZ;
 
 // [RH] Means of death
-void	P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod);
+void	P_RadiusAttack (AActor *spot, AActor *source, int damage, int distance, bool hurtSelf, int mod);
 
 void	P_DelSeclist(msecnode_t *);							// phares 3/16/98
 void	P_CreateSecNodeList(AActor*,fixed_t,fixed_t);		// phares 3/14/98

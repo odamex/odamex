@@ -42,6 +42,75 @@
 
 #define DEG2RAD( a ) ( a * M_PI ) / 180.0F
 
+
+
+// [RH] Convert a thing's position into a vec3_t
+void VectorPosition (const AActor *thing, vec3_t out)
+{
+	out[0] = (float)thing->x / 65536.0f;
+	out[1] = (float)thing->y / 65536.0f;
+	out[2] = (float)thing->z / 65536.0f;
+}
+
+void FixedAngleToVector (angle_t an, int pitch, vec3_t v)
+{
+	an >>= ANGLETOFINESHIFT;
+	v[0] = ((float)finecosine[an]) / 65536.0f;
+	v[1] = ((float)finesine[an]) / 65536.0f;
+	v[2] = ((float)finetangent[FINEANGLES/4-(pitch>>ANGLETOFINESHIFT)]) / 65536.0f;
+	VectorNormalize (v);
+}
+
+// Taken from Q2
+vec_t VectorLength (const vec3_t v)
+{
+	float	length;
+	
+	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];;
+	length = (float) sqrt (length);		// FIXME
+
+	return length;
+}
+
+
+vec_t VectorNormalize (vec3_t v)
+{
+	float length, ilength;
+
+	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+	length = (float)sqrt (length);		// FIXME
+
+	if (length)
+	{
+		ilength = 1/length;
+		v[0] *= ilength;
+		v[1] *= ilength;
+		v[2] *= ilength;
+	}
+		
+	return length;
+
+}
+
+vec_t VectorNormalize2 (const vec3_t v, vec3_t out)
+{
+	float length, ilength;
+
+	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+	length = (float)sqrt (length);		// FIXME
+
+	if (length)
+	{
+		ilength = 1/length;
+		out[0] = v[0]*ilength;
+		out[1] = v[1]*ilength;
+		out[2] = v[2]*ilength;
+	}
+		
+	return length;
+
+}
+
 //
 // M_SetVec3f
 //

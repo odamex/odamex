@@ -351,6 +351,9 @@ void A_SpawnSound(AActor*);
 void A_SpawnFly(AActor*);
 void A_BrainExplode(AActor*);
 void A_MonsterRail(AActor*);
+void A_Die(AActor*);
+void A_Detonate(AActor*);
+void A_Mushroom(AActor*);
 
 struct CodePtr {
 	const char *name;
@@ -438,6 +441,9 @@ static const struct CodePtr CodePtrs[] = {
 	{ "SpawnSound",		A_SpawnSound },
 	{ "SpawnFly",		A_SpawnFly },
 	{ "BrainExplode",	A_BrainExplode },
+	{ "Die",	        A_Die },
+	{ "Detonate",	    A_Detonate },
+    { "Mushroom",	    A_Mushroom },
 	{ NULL, NULL }
 };
 

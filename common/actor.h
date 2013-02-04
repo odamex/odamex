@@ -377,6 +377,7 @@ public:
     mobjinfo_t*		info;	// &mobjinfo[mobj->type]
     int				tics;	// state tic counter
 	state_t			*state;
+	int				damage;			// For missiles	
 	int				flags;
 	int				flags2;	// Heretic flags
 	int				special1;		// Special info
