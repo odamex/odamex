@@ -56,9 +56,6 @@ static int		toptexture;
 static int		bottomtexture;
 static int		midtexture;
 
-angle_t 		rw_normalangle;	// angle to line origin
-int 			rw_angle1;
-fixed_t 		rw_distance;
 int*			walllights;
 
 //
@@ -69,8 +66,6 @@ fixed_t			rw_lightstep;
 
 static int		rw_x;
 static int		rw_stopx;
-static angle_t	rw_centerangle;
-static fixed_t	rw_offset;
 static fixed_t	rw_scale;
 static fixed_t	rw_scalestep;
 static fixed_t	rw_midtexturemid;
@@ -86,11 +81,12 @@ static int walltopf[MAXWIDTH];
 static int walltopb[MAXWIDTH];
 static int wallbottomf[MAXWIDTH];
 static int wallbottomb[MAXWIDTH];
-static fixed_t wallscalex[MAXWIDTH];
 
+static fixed_t wallscalex[MAXWIDTH];
 static int texoffs[MAXWIDTH];
 
 extern fixed_t FocalLengthY;
+extern double yfoc;
 
 static int  	*maskedtexturecol;
 
@@ -387,10 +383,7 @@ static void BlastColumn (void (*blastfunc)())
 		}
 	}
 
-	// calculate texture offset (prior to applying each
-	// wall tier's x-scaling factor)
-	fixed_t texturecolumn = 
-		rw_offset-FixedMul(finetangent[(rw_centerangle + xtoviewangle[rw_x])>>ANGLETOFINESHIFT], rw_distance);
+	fixed_t texturecolumn = texoffs[rw_x];
 
 	if (rw_scale > 0)
 		dc_iscale = 0xffffffffu / (unsigned)rw_scale;
@@ -649,32 +642,25 @@ static void R_FillWallHeightArray(
 	int *array, 
 	int start, int stop,
 	fixed_t val1, fixed_t val2, 
-	fixed_t dist1, fixed_t dist2)
+	double scale1, double scale2)
 {
-	const fixed_t mindist = FRACUNIT;
-	const fixed_t maxdist = 16384*FRACUNIT;
-
-	clamp(dist1, mindist, maxdist);
-	clamp(dist2, mindist, maxdist);
-
-	int64_t h1 = (int64_t(val1 - viewz) * FocalLengthY) / dist1;
-	int64_t h2 = (int64_t(val2 - viewz) * FocalLengthY) / dist2;
+	double h1 = FIXED2DOUBLE(val1 - viewz) * scale1;
+	double h2 = FIXED2DOUBLE(val2 - viewz) * scale2;
 	
-	int64_t step = 0;
+	double step = 0.0;
 	if (stop > start)
 		step = (h2 - h1) / (stop - start);
 
-	int64_t heightfrac = centeryfrac - h1 + FRACUNIT/2;
+	double frac = double(centery) - h1;
 
 	for (int i = start; i <= stop; i++)
 	{
-		array[i] = (int)(heightfrac >> FRACBITS);
+		array[i] = (int)frac;
 		clamp(array[i], 0, screen->height - 1);
 
-		heightfrac -= step;
+		frac -= step;
 	}
 }
-
 
 //
 // R_PrepWall
@@ -693,11 +679,46 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 	R_ClipEndPoints(line->v1->x, line->v1->y, line->v2->x, line->v2->y,
 					lclip1, lclip2, v1.x, v1.y, v2.x, v2.y);
 
+	// clipped lineseg length
+	fixed_t seglen = FixedMul(line->length, lclip2 - lclip1);
+
+	// distance from lineseg start to start of clipped lineseg
+	fixed_t segoffs = FixedMul(line->length, lclip1) + line->sidedef->textureoffset + line->offset;
+
 	// Find distance in camera space from the vertices to the camera
 	fixed_t dist1 = FixedMul(v1.x - viewx, finesine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]) + 
 					FixedMul(v1.y - viewy, finecosine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]);
 	fixed_t dist2 = FixedMul(v2.x - viewx, finesine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]) + 
 					FixedMul(v2.y - viewy, finecosine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]);
+
+	// calculate texture coordinates at the line's endpoints
+	double scale1 = yfoc / FIXED2DOUBLE(dist1);
+	double scale2 = yfoc / FIXED2DOUBLE(dist2);
+
+	// [SL] Quick note on texture mapping: we can not linearly interpolate along the length of the seg
+	// as it will yield evenly spaced texels instead of correct perspective (taking depth Z into account).
+	// We also can not linearly interpolate Z, but we can linearly interpolate 1/Z (scale), so we linearly
+	// interpolate the texture coordinates u / Z and then divide by 1/Z to get the correct u for each column.
+	double uinvz = 0.0;
+	double uinvz2 = FIXED2DOUBLE(seglen) * scale2;
+
+	double scalestep = 0.0, uinvzstep = 0.0;
+	if (stop > start)
+	{
+		scalestep = (scale2 - scale1) / (stop - start);
+		uinvzstep = uinvz2 / (stop - start);
+	}
+
+	// fill the texture column array
+	double curscale = scale1;
+	for (int i = start; i <= stop; i++)
+	{
+		wallscalex[i] = DOUBLE2FIXED(curscale);
+		texoffs[i] = segoffs + DOUBLE2FIXED(uinvz / curscale);
+
+		uinvz += uinvzstep;
+		curscale += scalestep;
+	}
 
 	// get the z coordinates of the line's vertices on each side of the line
 	rw_frontcz1 = P_CeilingHeight(v1.x, v1.y, frontsector);
@@ -706,8 +727,8 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 	rw_frontfz2 = P_FloorHeight(v2.x, v2.y, frontsector);
 
 	// calculate the upper and lower heights of the walls in the front
-	R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, dist1, dist2);
-	R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, dist1, dist2);
+	R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, scale1, scale2);
+	R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, scale1, scale2);
 
 	if (backsector)
 	{
@@ -717,27 +738,13 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 		rw_backfz2 = P_FloorHeight(v2.x, v2.y, backsector);
 
 		// calculate the upper and lower heights of the walls in the back
-		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, dist1, dist2);
-		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, dist1, dist2);
+		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, scale1, scale2);
+		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, scale1, scale2);
 
 		// hack to allow height changes in outdoor areas (sky hack)
 		// copy back ceiling height array to front ceiling height array
 		if (frontsector->ceilingpic == skyflatnum && backsector->ceilingpic == skyflatnum)
 			memcpy(walltopf+start, walltopb+start, (stop-start+1)*sizeof(*walltopb));
-	}
-
-	// calculate wall scale along its length
-	fixed_t scale1 = FixedDiv(FocalLengthY, dist1);
-	fixed_t scale2 = FixedDiv(FocalLengthY, dist2);
-
-	fixed_t scalestep = 0;
-	if (stop > start)
-		scalestep = (scale2 - scale1) / (stop - start);
-
-	for (int i = start; i <= stop; i++)
-	{
-		wallscalex[i] = scale1;
-		scale1 += scalestep;
 	}
 }
 
@@ -748,10 +755,6 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 //
 void R_StoreWallRange(int start, int stop)
 {
-	fixed_t hyp;
-	fixed_t sineval;
-	angle_t distangle, offsetangle;
-
 #ifdef RANGECHECK
 	if (start >= viewwidth || start > stop)
 		I_FatalError ("Bad R_StoreWallRange: %i to %i", start , stop);
@@ -772,19 +775,6 @@ void R_StoreWallRange(int start, int stop)
 
 	// mark the segment as visible for auto map
 	linedef->flags |= ML_MAPPED;
-
-	// calculate rw_distance for scale calculation
-	rw_normalangle = curline->angle + ANG90;
-	offsetangle = (int)abs((int)rw_normalangle - rw_angle1);
-
-	if (offsetangle > ANG90)
-		offsetangle = ANG90;
-
-	distangle = ANG90 - offsetangle;
-	hyp = (viewx == curline->v1->x && viewy == curline->v1->y) ?
-		0 : R_PointToDist (curline->v1->x, curline->v1->y);
-	sineval = finesine[distangle>>ANGLETOFINESHIFT];
-	rw_distance = FixedMul (hyp, sineval);
 
 	ds_p->x1 = rw_x = start;
 	ds_p->x2 = stop;
@@ -1010,22 +1000,6 @@ void R_StoreWallRange(int start, int stop)
 
 	if (segtextured)
 	{
-		offsetangle = rw_normalangle-rw_angle1;
-
-		if (offsetangle > ANG180)
-			offsetangle = (unsigned)(-(int)offsetangle);
-		else if (offsetangle > ANG90)
-			offsetangle = ANG90;
-
-		sineval = finesine[offsetangle >>ANGLETOFINESHIFT];
-		rw_offset = FixedMul (hyp, sineval);
-
-		if (rw_normalangle-rw_angle1 < ANG180)
-			rw_offset = -rw_offset;
-
-		rw_offset += sidedef->textureoffset + curline->offset;
-		rw_centerangle = ANG90 + viewangle - rw_normalangle;
-
 		// calculate light table
 		//	use different light tables
 		//	for horizontal / vertical / diagonal

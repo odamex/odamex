@@ -531,9 +531,6 @@ void R_AddLine (seg_t *line)
 {
 	int				x1, x2;
 
-	// TODO: [SL] remove rw_angle1 when no longer needed
-	rw_angle1 = R_PointToAngle (line->v1->x, line->v1->y);
-
 	curline = line;
 
 	// [RH] Color if not texturing line

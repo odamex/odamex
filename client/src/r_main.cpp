@@ -60,6 +60,8 @@ EXTERN_CVAR (sv_allowwidescreen)
 static float	LastFOV = 0.0f;
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
+double			xfoc;		// FIXED2DOUBLE(FocalLengthX)
+double			yfoc;		// FIXED2DOUBLE(FocalLengthY)
 fixed_t			fovtan;
 double			focratio;
 double			ifocratio;
@@ -456,14 +458,16 @@ void R_InitTextureMapping (void)
 	const fixed_t hitan = finetangent[FINEANGLES/4+CorrectFieldOfView/2];
 	const fixed_t lotan = finetangent[FINEANGLES/4-CorrectFieldOfView/2];
 	const int highend = viewwidth + 1;
+	fovtan = hitan; 
 
 	// Calc focallength so FieldOfView angles covers viewwidth.
 	FocalLengthX = FixedDiv (centerxfrac, hitan);
 	FocalLengthY = FixedDiv (FixedMul (centerxfrac, yaspectmul), hitan);
-	fovtan = hitan; 
+	xfoc = FIXED2DOUBLE(FocalLengthX);
+	yfoc = FIXED2DOUBLE(FocalLengthY);
 
-	focratio = double(FocalLengthY) / double(FocalLengthX);
-	ifocratio = double(FocalLengthX) / double(FocalLengthY);
+	focratio = yfoc / xfoc;
+	ifocratio = xfoc / yfoc;
 
 	for (i = 0; i < FINEANGLES/2; i++)
 	{

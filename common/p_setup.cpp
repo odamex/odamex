@@ -323,6 +323,10 @@ void P_LoadSegs (int lump)
 		float dx = FIXED2FLOAT(to->x - from->x);
 		float dy = FIXED2FLOAT(to->y - from->y);
 		li->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
+
+		dx = FIXED2FLOAT(li->v2->x - li->v1->x);
+		dy = FIXED2FLOAT(li->v2->y - li->v1->y);
+		li->length = FLOAT2FIXED(sqrt(dx * dx + dy* dy));
 	}
 
 	Z_Free (data);
