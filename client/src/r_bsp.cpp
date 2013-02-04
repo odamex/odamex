@@ -74,6 +74,7 @@ int rw_start, rw_stop;
 
 static BYTE		FakeSide;
 extern fixed_t FocalLengthX;
+extern fixed_t fovtan;
 
 void R_StoreWallRange(int start, int stop);
 
@@ -588,32 +589,33 @@ void R_AddLine (seg_t *line)
 	}
 
 	// clip portions of the line that extend off the sides of the screen
-	if (-t1.x > t1.y)
+	fixed_t cy1 = FixedMul(fovtan, t1.y);		// t1.y adjusted for non-90 degree fov
+	fixed_t cy2 = FixedMul(fovtan, t2.y);		// t2.y adjusted for non-90 degree fov
+
+	if (-t1.x > cy1)
 	{
-		if (t2.y > nearclip && -t2.x > t2.y)	// entire line is off the left side of the screen
+		if (t2.y > nearclip && -t2.x > cy2)	// entire line is off the left side of the screen
 			return;
 
 		// clip part that is off the left side of screen
-		// TODO: handle widescreen
-		fixed_t den = t1.x - t2.x + t1.y - t2.y;
+		fixed_t den = t1.x - t2.x + cy1 - cy2;
 		if (den == 0)
 			return;
 
-		lclip1 = MAX<fixed_t>(lclip1, FixedDiv(t1.x + t1.y, den));
+		lclip1 = MAX<fixed_t>(lclip1, FixedDiv(t1.x + cy1, den));
 	}
 
-	if (t2.x > t2.y)
+	if (t2.x > cy2)
 	{
-		if (t1.y > nearclip && t1.x > t1.y)	// entire line is off the right side of the screen
+		if (t1.y > nearclip && t1.x > cy1)	// entire line is off the right side of the screen
 			return;
 
 		// clip part that is off the right side of screen
-		// TODO: handle widescreen
-		fixed_t den = t2.x - t1.x + t1.y - t2.y;
+		fixed_t den = t2.x - t1.x + cy1 - cy2;
 		if (den == 0)
 			return;
 
-		lclip2 = MIN<fixed_t>(lclip2, FixedDiv(t1.y - t1.x, den));
+		lclip2 = MIN<fixed_t>(lclip2, FixedDiv(cy1 - t1.x, den));
 	}
 
 	// backface rejection
