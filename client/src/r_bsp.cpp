@@ -356,7 +356,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		// Replace floor and ceiling height with control sector's heights.
 		if (diffTex)
 		{
-			
 			if (CopyPlaneIfValid (&tempsec->floorplane, &s->floorplane, &sec->ceilingplane))
 				tempsec->floorpic = s->floorpic;
 			else if (s->MoreFlags & SECF_FAKEFLOORONLY)
@@ -389,8 +388,10 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		// sectors at the same time.
 		if (back && !r_fakingunderwater && curline->frontsector->heightsec == NULL)
 		{
-			if (rw_frontcz1 <= P_FloorHeight(curline->v1->x, curline->v1->y, s) &&
-				rw_frontcz2 <= P_FloorHeight(curline->v2->x, curline->v2->y, s))
+			fixed_t fcz1 = P_CeilingHeight(curline->v1->x, curline->v1->y, frontsector);
+			fixed_t fcz2 = P_CeilingHeight(curline->v2->x, curline->v2->y, frontsector);
+			if (fcz1 <= P_FloorHeight(curline->v1->x, curline->v1->y, s) &&
+				fcz2 <= P_FloorHeight(curline->v2->x, curline->v2->y, s))
 			{
 				// Check that the window is actually visible
 				for (int z = rw_start; z < rw_stop; z++)
@@ -529,15 +530,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	return sec;
 }
 
-#include "c_dispatch.h"
-extern fixed_t FocalLengthY;
-BEGIN_COMMAND (rvars)
-{
-	Printf(PRINT_HIGH, "FocalLengthX = %i, FocalLengthY = %i, centerxfrac = %i\n", FocalLengthX, FocalLengthY, centerxfrac);
-	Printf(PRINT_HIGH, "FocalLengthX = %i, FocalLengthY = %i, centerxfrac = %i\n", FocalLengthX >> 16, FocalLengthY >> 16, centerxfrac >> 16);
-}
-END_COMMAND (rvars)
-
 //
 // R_AddLine
 // Clips the given segment
@@ -546,7 +538,6 @@ END_COMMAND (rvars)
 void R_AddLine (seg_t *line)
 {
 	int				x1, x2;
-	static sector_t tempsec;	// killough 3/8/98: ceiling/water hack
 
 	// TODO: [SL] remove rw_angle1 when no longer needed
 	rw_angle1 = R_PointToAngle (line->v1->x, line->v1->y);
@@ -646,16 +637,16 @@ void R_AddLine (seg_t *line)
 	rw_start = x1;
 	rw_stop = x2 - 1;
 
+	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
+	static sector_t tempsec;
+	backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
+
 	R_PrepWall(line, rw_start, rw_stop, lclip1, lclip2);
-	
-	backsector = line->backsector;
+
 	// Single sided line?
 	if (!backsector)
 		goto clipsolid;
 
-	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
-	backsector = R_FakeFlat (backsector, &tempsec, NULL, NULL, true);
-		
 	// [SL] Check for closed doors or other scenarios that would make this
 	// line seg solid.
 	//

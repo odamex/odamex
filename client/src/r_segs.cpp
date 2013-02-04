@@ -87,6 +87,8 @@ static int walltopb[MAXWIDTH];
 static int wallbottomf[MAXWIDTH];
 static int wallbottomb[MAXWIDTH];
 
+static int texoffs[MAXWIDTH];
+
 extern fixed_t FocalLengthY;
 
 static int  	*maskedtexturecol;
@@ -367,7 +369,7 @@ static void BlastColumn (void (*blastfunc)())
 		if (top < bottom)
 		{
 			ceilingplane->top[rw_x] = top;
-			ceilingplane->bottom[rw_x] = bottom;
+			ceilingplane->bottom[rw_x] = bottom - 1;
 		}
 	}
 
@@ -381,7 +383,7 @@ static void BlastColumn (void (*blastfunc)())
 		if (top < bottom)
 		{
 			floorplane->top[rw_x] = top;
-			floorplane->bottom[rw_x] = bottom;
+			floorplane->bottom[rw_x] = bottom - 1;
 		}
 	}
 
@@ -647,16 +649,16 @@ static void R_FillWallHeightArray(
 	fixed_t val1, fixed_t val2, 
 	fixed_t dist1, fixed_t dist2)
 {
+	int64_t step = 0;
 	int64_t h1 = (int64_t(val1 - viewz) * FocalLengthY) / dist1;
 	int64_t h2 = (int64_t(val2 - viewz) * FocalLengthY) / dist2;
-
-	int64_t step = 0;
+	
 	if (stop > start)
 		step = (h2 - h1) / (stop - start);
 
 	for (int i = start; i <= stop; i++)
 	{
-		int64_t y = centery - ((h1 + (i - start) * step) >> FRACBITS);
+		int64_t y = (centeryfrac - (h1 + (i - start) * step) + FRACUNIT/2) >> FRACBITS;
 		if (y < 0)
 			y = 0;
 		else if (y >= screen->height)
@@ -679,8 +681,6 @@ static void R_FillWallHeightArray(
 //
 void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2)
 {
-	static sector_t tempsec;
-
 	// [SL] Points v1 and v2 represent the original line's endpoints after clipping
 	v2fixed_t v1, v2;
 	R_ClipEndPoints(line->v1->x, line->v1->y, line->v2->x, line->v2->y,
@@ -692,8 +692,7 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 	fixed_t dist2 = FixedMul(v2.x - viewx, finesine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]) + 
 					FixedMul(v2.y - viewy, finecosine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]);
 
-	sector_t *frontsector = R_FakeFlat(line->frontsector, &tempsec, NULL, NULL, true);
-
+	// get the z coordinates of the line's vertices on each side of the line
 	rw_frontcz1 = P_CeilingHeight(v1.x, v1.y, frontsector);
 	rw_frontfz1 = P_FloorHeight(v1.x, v1.y, frontsector);
 	rw_frontcz2 = P_CeilingHeight(v2.x, v2.y, frontsector);
@@ -703,7 +702,6 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 	R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, dist1, dist2);
 	R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, dist1, dist2);
 
-	sector_t *backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
 	if (backsector)
 	{
 		rw_backcz1 = P_CeilingHeight(v1.x, v1.y, backsector);
@@ -715,7 +713,7 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, dist1, dist2);
 		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, dist1, dist2);
 
-		// hack to allow height changes in outdoor areas
+		// hack to allow height changes in outdoor areas (sky hack)
 		// copy back ceiling height array to front ceiling height array
 		if (frontsector->ceilingpic == skyflatnum && backsector->ceilingpic == skyflatnum)
 			memcpy(walltopf+start, walltopb+start, (stop-start+1)*sizeof(*walltopb));
@@ -916,9 +914,9 @@ void R_StoreWallRange(int start, int stop)
 				
 			// Sky hack
 			markceiling = markceiling &&
-				(frontsector->ceilingpic != skyflatnum ||
-				 backsector->ceilingpic != skyflatnum);
+				(frontsector->ceilingpic != skyflatnum || backsector->ceilingpic != skyflatnum);
 		}
+
 
 		if (doorclosed)
 			markceiling = markfloor = true;
@@ -970,6 +968,10 @@ void R_StoreWallRange(int start, int stop)
 			ds_p->maskedtexturecol = maskedtexturecol = lastopening - rw_x;
 			lastopening += rw_stopx - rw_x;
 		}
+
+		// [SL] additional fix for sky hack
+		if (frontsector->ceilingpic == skyflatnum && backsector->ceilingpic == skyflatnum)
+			toptexture = 0;
 	}
 
 	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
@@ -980,10 +982,7 @@ void R_StoreWallRange(int start, int stop)
 		midtexture = toptexture = bottomtexture = maskedtexture = 0;
 
 		for (int n = start; n <= stop; n++)
-		{
-			walltopf[n] = centery;
-			wallbottomf[n] = centery;
-		}
+			walltopf[n] = wallbottomf[n] = centery;
 	}
 
 	// calculate rw_offset (only needed for textured lines)

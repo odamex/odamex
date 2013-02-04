@@ -444,7 +444,7 @@ static void _skycolumn (void (*drawfunc)(void), int x)
 	dc_yl = _skypl->top[x];
 	dc_yh = _skypl->bottom[x];
 
-	if (dc_yl != -1 && dc_yl <= dc_yh)
+	if (dc_yl >= 0 && dc_yl <= dc_yh)
 	{
 		int angle = ((((viewangle + xtoviewangle[x])^skyflip)>>sky1shift) + frontpos)>>16;
 
