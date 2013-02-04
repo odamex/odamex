@@ -670,8 +670,6 @@ static void R_FillWallHeightArray(
 			array[i] = (int)(heightfrac >> FRACBITS);
 
 		heightfrac -= step;
-
-		wallscalex[i] = h1 + (i - start) * step;		
 	}
 }
 

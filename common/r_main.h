@@ -153,8 +153,6 @@ R_PointToDist
   fixed_t	y );
 
 
-fixed_t R_ScaleFromGlobalAngle (angle_t visangle);
-
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty);
 void R_ClipEndPoints(
 	fixed_t x1, fixed_t y1,

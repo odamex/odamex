@@ -387,39 +387,6 @@ fixed_t R_PointToDist2 (fixed_t dx, fixed_t dy)
 	return FixedDiv (dx, finecosine[tantoangle[FixedDiv (dy, dx) >> DBITS] >> ANGLETOFINESHIFT]);
 }
 
-//
-//
-// R_ScaleFromGlobalAngle
-//
-// Returns the texture mapping scale for the current line (horizontal span)
-// at the given angle. rw_distance must be calculated first.
-//
-//
-
-fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
-{
-	angle_t anglea = ANG90 + (visangle - viewangle);
-	angle_t angleb = ANG90 + (visangle - rw_normalangle);
-	// both sines are always positive
-	fixed_t num = FixedMul (FocalLengthY, finesine[angleb>>ANGLETOFINESHIFT]);
-	fixed_t den = FixedMul (rw_distance, finesine[anglea>>ANGLETOFINESHIFT]);
-
-	static const fixed_t maxscale = 256 << FRACBITS;
-	static const fixed_t minscale = 64;
-
-	if (den == 0)
-		return maxscale;
-
-	fixed_t scale = FixedDiv(num, den);
-	if (scale > maxscale)
-		scale = maxscale;
-	else if (scale < minscale)
-		scale = minscale;
-
-	return scale;
-}
-
-
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 {
