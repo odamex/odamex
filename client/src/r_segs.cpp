@@ -82,10 +82,10 @@ extern fixed_t	rw_frontfz1, rw_frontfz2;
 extern fixed_t	rw_backcz1, rw_backcz2;
 extern fixed_t	rw_backfz1, rw_backfz2;
 
-static fixed_t walltopf[MAXWIDTH];
-static fixed_t walltopb[MAXWIDTH];
-static fixed_t wallbottomf[MAXWIDTH];
-static fixed_t wallbottomb[MAXWIDTH];
+static short walltopf[MAXWIDTH];
+static short walltopb[MAXWIDTH];
+static short wallbottomf[MAXWIDTH];
+static short wallbottomb[MAXWIDTH];
 
 extern fixed_t FocalLengthY;
 
@@ -338,8 +338,6 @@ R_RenderMaskedSegRange
 //	textures.
 // CALLED: CORE LOOPING ROUTINE.
 //
-#define HEIGHTBITS				12
-#define HEIGHTUNIT				(1<<HEIGHTBITS)
 
 static void BlastColumn (void (*blastfunc)())
 {
@@ -347,7 +345,7 @@ static void BlastColumn (void (*blastfunc)())
 	int yl, yh;
 
 	// mark floor / ceiling areas
-	yl = (walltopf[rw_x] + HEIGHTUNIT - 1) >> HEIGHTBITS;
+	yl = walltopf[rw_x] + 1;
 
 	// no space above wall?
 	if (yl < ceilingclip[rw_x]+1)
@@ -368,7 +366,7 @@ static void BlastColumn (void (*blastfunc)())
 		}
 	}
 
-	yh = wallbottomf[rw_x] >> HEIGHTBITS;
+	yh = wallbottomf[rw_x];
 
 	if (yh >= floorclip[rw_x])
 		yh = floorclip[rw_x]-1;
@@ -418,7 +416,7 @@ static void BlastColumn (void (*blastfunc)())
 		if (toptexture)
 		{
 			// top wall
-			int mid = walltopb[rw_x] >> HEIGHTBITS;
+			int mid = walltopb[rw_x];
 
 			if (mid >= floorclip[rw_x])
 				mid = floorclip[rw_x]-1;
@@ -455,7 +453,7 @@ static void BlastColumn (void (*blastfunc)())
 		if (bottomtexture)
 		{
 			// bottom wall
-			int mid = (wallbottomb[rw_x] + HEIGHTUNIT - 1) >> HEIGHTBITS;
+			int mid = wallbottomb[rw_x] + 1;
 
 			// no space above wall?
 			if (mid <= ceilingclip[rw_x])
@@ -692,23 +690,28 @@ static void R_AdjustOpenings(int start, int stop)
 // Calculates the wall-texture screen coordinates for a span of columns.
 //
 static void R_FillWallHeightArray(
-	fixed_t *array, 
+	short *array, 
 	int start, int stop,
 	fixed_t val1, fixed_t val2, 
 	fixed_t dist1, fixed_t dist2)
 {
-	fixed_t i1 = FixedDiv(FocalLengthY, dist1);
-	fixed_t i2 = FixedDiv(FocalLengthY, dist2);
+	int64_t h1 = (int64_t(val1 - viewz) >> 6) * (int64_t(FocalLengthY) >> 6) / (int64_t(dist1) >> 6);
+	int64_t h2 = (int64_t(val2 - viewz) >> 6) * (int64_t(FocalLengthY) >> 6) / (int64_t(dist2) >> 6);
 
-	array[start] = (centeryfrac >> 4) - FixedMul((val1 - viewz) >> 4, i1);
-	array[stop] = (centeryfrac >> 4) - FixedMul((val2 - viewz) >> 4, i2);
-
-	fixed_t step = 0;
+	int64_t step = 0;
 	if (stop > start)
-		step = (array[stop] - array[start]) / (stop - start);
+		step = (h2 - h1) / (stop - start);
 
-	for (int n = start +1; n <= stop; n++)
-		array[n] = array[n-1] + step;
+	for (int i = start; i <= stop; i++)
+	{
+		int64_t y = centery - ((h1 + (i - start) * step) >> 10);
+		if (y < 0)
+			y = 0;
+		if (y > screen->height)
+			y = screen->height;
+
+		array[i] = (short)y;
+	}
 }
 
 
