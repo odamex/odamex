@@ -70,6 +70,8 @@ extern fixed_t fovtan;
 
 void R_StoreWallRange(int start, int stop);
 
+const fixed_t NEARCLIP = 0.05*FRACUNIT;
+
 //
 // R_ClearDrawSegs
 //
@@ -536,7 +538,6 @@ void R_AddLine (seg_t *line)
 	// [RH] Color if not texturing line
 	dc_color = ((line - segs) & 31) * 4;
 
-
 	// percentage along the length of a lineseg where v1 and v2 are clipped to respectively
 	// FRACUNIT = lineseg length
 	fixed_t	lclip1 = 0, lclip2 = FRACUNIT;
@@ -550,21 +551,20 @@ void R_AddLine (seg_t *line)
 	R_RotatePoint(line->v2->x - viewx, line->v2->y - viewy, ANG90 - viewangle, t2.x, t2.y);
 
 	// Clip portions of the line that are behind the view plane
-	const fixed_t nearclip = 0.05*FRACUNIT;
-	if (t1.y <= nearclip)
+	if (t1.y <= NEARCLIP)
 	{      
 		// reject the line entirely if the whole thing is behind the view plane.
-		if (t2.y <= nearclip)
+		if (t2.y <= NEARCLIP)
 			return;
 
 		// clip the line at the point where t1.y == nearclip
-		lclip1 = FixedDiv(nearclip - t1.y, t2.y - t1.y);
+		lclip1 = FixedDiv(NEARCLIP - t1.y, t2.y - t1.y);
 	}
 
-	if (t2.y <= nearclip)
+	if (t2.y <= NEARCLIP)
 	{
 		// clip the line at the point where t2.y == nearclip
-		lclip2 = FixedDiv(nearclip - t1.y, t2.y - t1.y);
+		lclip2 = FixedDiv(NEARCLIP - t1.y, t2.y - t1.y);
 	}
 
 	// clip portions of the line that extend off the sides of the screen
@@ -573,7 +573,7 @@ void R_AddLine (seg_t *line)
 
 	if (-t1.x > cy1)
 	{
-		if (t2.y > nearclip && -t2.x > cy2)	// entire line is off the left side of the screen
+		if (t2.y > NEARCLIP && -t2.x > cy2)	// entire line is off the left side of the screen
 			return;
 
 		// clip part that is off the left side of screen
@@ -586,7 +586,7 @@ void R_AddLine (seg_t *line)
 
 	if (t2.x > cy2)
 	{
-		if (t1.y > nearclip && t1.x > cy1)	// entire line is off the right side of the screen
+		if (t1.y > NEARCLIP && t1.x > cy1)	// entire line is off the right side of the screen
 			return;
 
 		// clip part that is off the right side of screen
@@ -605,8 +605,8 @@ void R_AddLine (seg_t *line)
 	R_ClipEndPoints(t1.x, t1.y, t2.x, t2.y, lclip1, lclip2, clipt1.x, clipt1.y, clipt2.x, clipt2.y);
 
 	// prevent divide-by-zero due to fixed-point imprecision
-	clipt1.y = MAX<fixed_t>(nearclip, clipt1.y);
-	clipt2.y = MAX<fixed_t>(nearclip, clipt2.y);
+	clipt1.y = MAX<fixed_t>(NEARCLIP, clipt1.y);
+	clipt2.y = MAX<fixed_t>(NEARCLIP, clipt2.y);
 
 	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt1.x) / clipt1.y) >> FRACBITS;
 	x2 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt2.x) / clipt2.y) >> FRACBITS;
