@@ -525,6 +525,99 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 }
 
 //
+// R_ClipLine
+//
+// Clips a line defined by (px1, py1) and (px2, py2) to the viewing window.
+// It calculates lclip1 and lclip2, which represent the percentage the left
+// and right vertices are clipped. The screen columns the line encompasses,
+// x1 and x2 are also calculated. The function returns false if the line
+// is completely clipped.
+//
+static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
+					fixed_t &lclip1, fixed_t &lclip2,
+					int &x1, int &x2)
+{
+	lclip1 = 0;
+	lclip2 = FRACUNIT;
+
+	v2fixed_t t1, t2;
+	R_RotatePoint(px1 - viewx, py1 - viewy, ANG90 - viewangle, t1.x, t1.y);
+	R_RotatePoint(px2 - viewx, py2 - viewy, ANG90 - viewangle, t2.x, t2.y);
+
+	// [SL] check if the line is behind the viewer
+	if (int64_t(t2.x - t1.x) * -t1.y - int64_t(t2.y - t1.y) * -t1.x >= 0)
+		return false;
+
+	// Clip portions of the line that are behind the view plane
+	if (t1.y <= NEARCLIP)
+	{      
+		// reject the line entirely if the whole thing is behind the view plane.
+		if (t2.y <= NEARCLIP)
+			return false;
+
+		// clip the line at the point where t1.y == nearclip
+		lclip1 = FixedDiv(NEARCLIP - t1.y, t2.y - t1.y);
+	}
+
+	if (t2.y <= NEARCLIP)
+	{
+		// clip the line at the point where t2.y == nearclip
+		lclip2 = FixedDiv(NEARCLIP - t1.y, t2.y - t1.y);
+	}
+
+	// clip portions of the line that extend off the sides of the screen
+	fixed_t clipline1 = FixedMul(fovtan, t1.y);		// t1.y adjusted for non-90 degree fov
+	fixed_t clipline2 = FixedMul(fovtan, t2.y);		// t2.y adjusted for non-90 degree fov
+
+	if (-t1.x > clipline1)
+	{
+		if (t2.y > NEARCLIP && -t2.x > clipline2)	// entire line is off the left side of the screen
+			return false;
+
+		// clip part that is off the left side of screen
+		fixed_t den = t1.x - t2.x + clipline1 - clipline2;
+		if (den == 0)
+			return false;
+
+		lclip1 = MAX<fixed_t>(lclip1, FixedDiv(t1.x + clipline1, den));
+	}
+
+	if (t2.x > clipline2)
+	{
+		if (t1.y > NEARCLIP && t1.x > clipline1)	// entire line is off the right side of the screen
+			return false;
+
+		// clip part that is off the right side of screen
+		fixed_t den = t2.x - t1.x + clipline1 - clipline2;
+		if (den == 0)
+			return false;
+
+		lclip2 = MIN<fixed_t>(lclip2, FixedDiv(clipline1 - t1.x, den));
+	}
+
+	v2fixed_t clipt1, clipt2;
+	R_ClipEndPoints(t1.x, t1.y, t2.x, t2.y, lclip1, lclip2, clipt1.x, clipt1.y, clipt2.x, clipt2.y);
+
+	// prevent divide-by-zero due to fixed-point imprecision
+	clipt1.y = MAX<fixed_t>(NEARCLIP, clipt1.y);
+	clipt2.y = MAX<fixed_t>(NEARCLIP, clipt2.y);
+
+	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt1.x) / clipt1.y) >> FRACBITS;
+	x2 = ((centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt2.x) / clipt2.y) >> FRACBITS) - 1;
+
+	if (x1 < 0)
+		x1 = 0;
+	if (x2 >= viewwidth)
+		x2 = viewwidth - 1;
+
+	// Does not cross a pixel?
+	if (x1 > x2)
+		return false;
+
+	return true;
+}
+
+//
 // R_AddLine
 // Clips the given segment
 // and adds any visible pieces to the line list.
@@ -540,96 +633,14 @@ void R_AddLine (seg_t *line)
 
 	// percentage along the length of a lineseg where v1 and v2 are clipped to respectively
 	// FRACUNIT = lineseg length
-	fixed_t	lclip1 = 0, lclip2 = FRACUNIT;
+	fixed_t	lclip1, lclip2;
 
 	// Clip the wall seg to the viewing window
-
-	// [SL] Rotate the seg's vertices such that the camera is at the origin
-	// and looking along the y-axis.
-	v2fixed_t t1, t2;
-	R_RotatePoint(line->v1->x - viewx, line->v1->y - viewy, ANG90 - viewangle, t1.x, t1.y);
-	R_RotatePoint(line->v2->x - viewx, line->v2->y - viewy, ANG90 - viewangle, t2.x, t2.y);
-
-	// Clip portions of the line that are behind the view plane
-	if (t1.y <= NEARCLIP)
-	{      
-		// reject the line entirely if the whole thing is behind the view plane.
-		if (t2.y <= NEARCLIP)
-			return;
-
-		// clip the line at the point where t1.y == nearclip
-		lclip1 = FixedDiv(NEARCLIP - t1.y, t2.y - t1.y);
-	}
-
-	if (t2.y <= NEARCLIP)
-	{
-		// clip the line at the point where t2.y == nearclip
-		lclip2 = FixedDiv(NEARCLIP - t1.y, t2.y - t1.y);
-	}
-
-	// clip portions of the line that extend off the sides of the screen
-	fixed_t cy1 = FixedMul(fovtan, t1.y);		// t1.y adjusted for non-90 degree fov
-	fixed_t cy2 = FixedMul(fovtan, t2.y);		// t2.y adjusted for non-90 degree fov
-
-	if (-t1.x > cy1)
-	{
-		if (t2.y > NEARCLIP && -t2.x > cy2)	// entire line is off the left side of the screen
-			return;
-
-		// clip part that is off the left side of screen
-		fixed_t den = t1.x - t2.x + cy1 - cy2;
-		if (den == 0)
-			return;
-
-		lclip1 = MAX<fixed_t>(lclip1, FixedDiv(t1.x + cy1, den));
-	}
-
-	if (t2.x > cy2)
-	{
-		if (t1.y > NEARCLIP && t1.x > cy1)	// entire line is off the right side of the screen
-			return;
-
-		// clip part that is off the right side of screen
-		fixed_t den = t2.x - t1.x + cy1 - cy2;
-		if (den == 0)
-			return;
-
-		lclip2 = MIN<fixed_t>(lclip2, FixedDiv(cy1 - t1.x, den));
-	}
-
-	// backface rejection
-	if (lclip1 >= lclip2)
+	if (!R_ClipLine(line->v1->x, line->v1->y, line->v2->x, line->v2->y, lclip1, lclip2, x1, x2))
 		return;
-
-	v2fixed_t clipt1, clipt2;
-	R_ClipEndPoints(t1.x, t1.y, t2.x, t2.y, lclip1, lclip2, clipt1.x, clipt1.y, clipt2.x, clipt2.y);
-
-	// prevent divide-by-zero due to fixed-point imprecision
-	clipt1.y = MAX<fixed_t>(NEARCLIP, clipt1.y);
-	clipt2.y = MAX<fixed_t>(NEARCLIP, clipt2.y);
-
-	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt1.x) / clipt1.y) >> FRACBITS;
-	x2 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt2.x) / clipt2.y) >> FRACBITS;
-
-	// backface rejection
-	if (x2 < x1)
-		return;
-
-	// off the screen rejection
-	if (x2 < 0 || x1 >= viewwidth)
-		return;
-
-	// Does not cross a pixel?
-	if (x1 >= x2)	// killough 1/31/98 -- change == to >= for robustness
-		return;
-
-	if (x1 < 0)
-		x1 = 0;
-	if (x2 > viewwidth)
-		x2 = viewwidth;
 
 	rw_start = x1;
-	rw_stop = x2 - 1;
+	rw_stop = x2;
 
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
 	static sector_t tempsec;
@@ -721,11 +732,11 @@ void R_AddLine (seg_t *line)
 	}
 
   clippass:
-	R_ClipPassWallSegment (x1, x2-1);
+	R_ClipPassWallSegment (x1, x2);
 	return;
 
   clipsolid:
-	R_ClipSolidWallSegment (x1, x2-1);
+	R_ClipSolidWallSegment (x1, x2);
 }
 
 
