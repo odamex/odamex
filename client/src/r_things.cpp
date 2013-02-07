@@ -1005,8 +1005,8 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 		return;
 	}
 
-	x1 = (centerxfrac + (int64_t(FocalLengthX) * tx1) / ty) >> FRACBITS;
-	x2 = ((centerxfrac + (int64_t(FocalLengthX) * tx2) / ty ) >> FRACBITS) - 1;
+	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx1) / ty) >> FRACBITS;
+	x2 = ((centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx2) / ty ) >> FRACBITS) - 1;
 
 	// off the right side?
 	if (x1 > viewwidth)
@@ -1699,8 +1699,8 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		return;
 	}
 
-	x1 = (centerxfrac + (int64_t(FocalLengthX) * tx1) / ty) >> FRACBITS;
-	x2 = ((centerxfrac + (int64_t(FocalLengthX) * tx2) / ty ) >> FRACBITS) - 1;
+	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx1) / ty) >> FRACBITS;
+	x2 = ((centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx2) / ty ) >> FRACBITS) - 1;
 
 	// off the right side?
 	if (x1 > viewwidth)

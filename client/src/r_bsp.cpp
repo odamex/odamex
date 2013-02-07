@@ -562,7 +562,7 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	if (t2.y <= NEARCLIP)
 	{
 		// clip the line at the point where t2.y == nearclip
-		lclip2 = FixedDiv(NEARCLIP - t1.y, t2.y - t1.y);
+		lclip2 = FRACUNIT - FixedDiv(NEARCLIP - t2.y, t2.y - t1.y);
 	}
 
 	// clip portions of the line that extend off the sides of the screen
@@ -571,20 +571,20 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 
 	if (-t1.x > clipline1)
 	{
-		if (t2.y > NEARCLIP && -t2.x > clipline2)	// entire line is off the left side of the screen
+		if (-t2.x > clipline2)	// entire line is off the left side of the screen
 			return false;
 
 		// clip part that is off the left side of screen
-		fixed_t den = t1.x - t2.x + clipline1 - clipline2;
+		fixed_t den = t2.x - t1.x + clipline2 - clipline1;
 		if (den == 0)
 			return false;
 
-		lclip1 = MAX<fixed_t>(lclip1, FixedDiv(t1.x + clipline1, den));
+		lclip1 = MAX<fixed_t>(lclip1, FixedDiv(-t1.x - clipline1, den));
 	}
 
 	if (t2.x > clipline2)
 	{
-		if (t1.y > NEARCLIP && t1.x > clipline1)	// entire line is off the right side of the screen
+		if (t1.x > clipline1)	// entire line is off the right side of the screen
 			return false;
 
 		// clip part that is off the right side of screen
@@ -594,6 +594,9 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 
 		lclip2 = MIN<fixed_t>(lclip2, FixedDiv(clipline1 - t1.x, den));
 	}
+
+	if (lclip1 > lclip2)
+		return false;
 
 	v2fixed_t clipt1, clipt2;
 	R_ClipEndPoints(t1.x, t1.y, t2.x, t2.y, lclip1, lclip2, clipt1.x, clipt1.y, clipt2.x, clipt2.y);
