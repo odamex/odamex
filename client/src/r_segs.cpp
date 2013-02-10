@@ -1000,7 +1000,6 @@ void R_StoreWallRange(int start, int stop)
 			walltopf[n] = wallbottomf[n] = centery;
 	}
 
-	// calculate rw_offset (only needed for textured lines)
 	segtextured = (midtexture | toptexture) | (bottomtexture | maskedtexture);
 
 	if (segtextured)

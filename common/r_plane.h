@@ -39,7 +39,6 @@ extern int  			*floorclip;
 extern int  			*ceilingclip;
 
 extern fixed_t			*yslope;
-extern fixed_t			*distscale;
 
 void R_InitPlanes (void);
 void R_ClearPlanes (void);
