@@ -1765,7 +1765,8 @@ void P_UpdateSpecials (void)
 		{
 			int speedframe;
 
-			anim->curframe = (anim->curframe + 1) % anim->numframes;
+			anim->curframe = (anim->numframes) ? 
+					(anim->curframe + 1) % anim->numframes : 0;
 
 			speedframe = (anim->uniqueframes) ? anim->curframe : 0;
 
