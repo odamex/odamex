@@ -803,9 +803,7 @@ void MidiMusicSystem::resumeSong()
 void MidiMusicSystem::setVolume(float volume)
 {
 	MusicSystem::setVolume(volume);
-
-	for (int i = 0; i < _GetNumChannels(); i ++)
-		_RefreshVolume(i);
+	_RefreshVolume();
 }
 
 //
@@ -821,42 +819,18 @@ void MidiMusicSystem::_SetChannelVolume(int channel, int volume)
 }
 
 //
-// _GetChannelVolume()
-//
-// Returns the value of the last channel volume event or -1 if there was
-// an error.  Note that channel is 0-indexed (0 - 15).
-//
-int MidiMusicSystem::_GetChannelVolume(int channel) const
-{
-	if (channel < 0 || channel >= _GetNumChannels())
-		return -1;
-		
-	return mChannelVolume[channel];
-}
-
-//
 // _RefreshVolume()
 //
-// Scales the cached midi channel volume by the cached master volume for the
-// music system and sends out a volume controller event to change the volume.
+// Sends out a volume controller event to change the volume to the current
+// cached volume for the indicated channel.
 //
-void MidiMusicSystem::_RefreshVolume(int channel)
+void MidiMusicSystem::_RefreshVolume()
 {
-	if (channel < 0 || channel >= _GetNumChannels())
-		return;
-		
-	// backup mChannelVolume since playEvent() will modify it
-	int oldchanvol = _GetChannelVolume(channel);
-	if (oldchanvol == -1)
-		return;
-		
-	// existing channel volume (0-127) scaled by the master volume (0-1)
-	int scaledvol = _GetChannelVolume(channel) * getVolume();
-	MidiControllerEvent event(0, MIDI_CONTROLLER_MAIN_VOLUME, channel, scaledvol);
-	playEvent(&event);
-		
-	// restore mChannelVolume
-	_SetChannelVolume(channel, oldchanvol);
+	for (int i = 0; i < _GetNumChannels(); i++)
+	{
+		MidiControllerEvent event(0, MIDI_CONTROLLER_MAIN_VOLUME, i, mChannelVolume[i]);
+		playEvent(&event);
+	}
 }
 
 //
@@ -877,14 +851,16 @@ void MidiMusicSystem::_InitializePlayback()
 	mSongItr = mMidiSong->begin();
 	mPrevClockTime = 0;
 	
-	// initialize all channel volumes to 100%
-	for (int i = 0; i < _GetNumChannels(); i++)
-		mChannelVolume[i] = 127;
-		
 	// shut off all notes and reset all controllers
 	_AllNotesOff();
 
 	setTempo(120.0);
+
+	// initialize all channel volumes to 100%
+	for (int i = 0; i < _GetNumChannels(); i++)
+		mChannelVolume[i] = 127;
+
+	_RefreshVolume();
 }
 
 void MidiMusicSystem::playChunk()

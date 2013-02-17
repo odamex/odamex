@@ -57,13 +57,13 @@ public:
 	virtual void playChunk() = 0;
 	
 	virtual void setVolume(float volume);
-	float getVolume() { return mVolume; }
+	float getVolume() const { return mVolume; }
 	virtual void setTempo(float tempo);
-	float getTempo() { return mTempo; }
+	float getTempo() const { return mTempo; }
 	
 	virtual bool isInitialized() const = 0;
-	bool isPlaying() { return mIsPlaying; }
-	bool isPaused() { return mIsPaused; }
+	bool isPlaying() const { return mIsPlaying; }
+	bool isPaused() const { return mIsPaused; }
 	
 	// Can this MusicSystem object play a particular type of music file?
 	virtual bool isMusCapable() const { return false; }
@@ -101,7 +101,7 @@ public:
 	virtual void pauseSong() {}
 	virtual void resumeSong() {}
 	virtual void playChunk() {}
-	virtual void setVolume(float volume) {}
+	virtual void setVolume(float volume) const {}
 	
 	virtual bool isInitialized() const { return true; }
 	
@@ -241,8 +241,7 @@ protected:
 	
 	int _GetNumChannels() const { return cNumChannels; }
 	void _SetChannelVolume(int channel, int volume);
-	int _GetChannelVolume(int channel) const;
-	void _RefreshVolume(int channel);
+	void _RefreshVolume();
 	
 	unsigned int _GetLastEventTime() const { return mLastEventTime; }
 	
