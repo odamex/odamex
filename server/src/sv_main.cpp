@@ -670,8 +670,9 @@ void SV_MidPrint (const char *msg, player_t *p, int msgtime)
 //
 void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 {
-	int        sfx_id;
-	client_t  *cl;
+	int			sfx_id;
+	client_t*	cl;
+	int			x = 0, y = 0;
 
 	sfx_id = S_FindSound (name);
 
@@ -681,20 +682,15 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 		return;
 	}
 
+	if (mo)
+	{
+		x = mo->x;
+		y = mo->y;
+	}
+
 	for (size_t i = 0; i < players.size(); i++)
 	{
 		cl = &clients[i];
-
-		int x = 0, y = 0;
-		byte vol = 0;
-
-		if(mo)
-		{
-			x = mo->x;
-			y = mo->y;
-
-			vol = SV_PlayerHearingLoss(players[i], x, y);
-		}
 
 		MSG_WriteMarker (&cl->netbuf, svc_startsound);
 		if(mo)
@@ -706,7 +702,7 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 		MSG_WriteByte (&cl->netbuf, channel);
 		MSG_WriteByte (&cl->netbuf, sfx_id);
 		MSG_WriteByte (&cl->netbuf, attenuation);
-		MSG_WriteByte (&cl->netbuf, vol);
+		MSG_WriteByte (&cl->netbuf, 255);		// client calculates volume on its own
 	}
 
 }
@@ -715,6 +711,7 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	int sfx_id;
+	int x = 0, y = 0;
 
 	sfx_id = S_FindSound (name);
 
@@ -724,15 +721,10 @@ void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte at
 		return;
 	}
 
-	int x = 0, y = 0;
-	byte vol = 0;
-
 	if(mo)
 	{
 		x = mo->x;
 		y = mo->y;
-
-		vol = SV_PlayerHearingLoss(pl, x, y);
 	}
 
 	client_t *cl = &pl.client;
@@ -747,7 +739,7 @@ void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte at
 	MSG_WriteByte (&cl->netbuf, channel);
 	MSG_WriteByte (&cl->netbuf, sfx_id);
 	MSG_WriteByte (&cl->netbuf, attenuation);
-	MSG_WriteByte (&cl->netbuf, vol);
+	MSG_WriteByte (&cl->netbuf, 255);		// client calculates volume on its own
 }
 
 //
@@ -779,8 +771,6 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
         cl = &clients[i];
 
-		byte vol = SV_PlayerHearingLoss(players[i], mo->x, mo->y);
-
 		MSG_WriteMarker (&cl->netbuf, svc_startsound);
 		MSG_WriteShort (&cl->netbuf, mo->netid);
 		MSG_WriteLong (&cl->netbuf, mo->x);
@@ -788,7 +778,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 		MSG_WriteByte (&cl->netbuf, channel);
 		MSG_WriteByte (&cl->netbuf, sfx_id);
 		MSG_WriteByte (&cl->netbuf, attenuation);
-		MSG_WriteByte (&cl->netbuf, vol);
+		MSG_WriteByte (&cl->netbuf, 255);		// client calculates volume on its own
     }
 }
 
@@ -807,7 +797,6 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 	if ( sfx_id > 255 || sfx_id < 0 )
 	{
 		Printf( PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id );
-
 		return;
 	}
 
@@ -825,8 +814,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 			MSG_WriteByte	(&cl->netbuf, channel);
 			MSG_WriteByte	(&cl->netbuf, sfx_id);
 			MSG_WriteByte	(&cl->netbuf, attenuation);
-			MSG_WriteByte	(&cl->netbuf, 255 );	// volume [0 - 255]
-
+			MSG_WriteByte	(&cl->netbuf, 255);		// client calculates volume on its own
 		}
 	}
 }
@@ -851,18 +839,13 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 		cl = &clients[i];
 
-		byte vol;
-
-		if((vol = SV_PlayerHearingLoss(players[i], x, y)))
-		{
-			MSG_WriteMarker (&cl->netbuf, svc_soundorigin);
-			MSG_WriteLong (&cl->netbuf, x);
-			MSG_WriteLong (&cl->netbuf, y);
-			MSG_WriteByte (&cl->netbuf, channel);
-			MSG_WriteByte (&cl->netbuf, sfx_id);
-			MSG_WriteByte (&cl->netbuf, attenuation);
-			MSG_WriteByte (&cl->netbuf, vol);
-		}
+		MSG_WriteMarker (&cl->netbuf, svc_soundorigin);
+		MSG_WriteLong (&cl->netbuf, x);
+		MSG_WriteLong (&cl->netbuf, y);
+		MSG_WriteByte (&cl->netbuf, channel);
+		MSG_WriteByte (&cl->netbuf, sfx_id);
+		MSG_WriteByte (&cl->netbuf, attenuation);
+		MSG_WriteByte (&cl->netbuf, 255);		// client calculates volume on its own
 	}
 }
 
@@ -1095,50 +1078,6 @@ team_t SV_GoodTeam (void)
 		return TEAM_NONE;
 
 	return smallest_team;
-}
-
-
-//
-// [denis] SV_ClientHearingLoss
-// determine if an actor should be able to hear a sound
-//
-fixed_t P_AproxDistance2 (AActor *listener, fixed_t x, fixed_t y);
-byte SV_PlayerHearingLoss(player_t &pl, fixed_t &x, fixed_t &y)
-{
-	AActor *ear = pl.camera;
-
-	if(!ear)
-		return 0;
-
-	float dist = (FIXED2FLOAT(P_AproxDistance2 (ear, x, y)));
-
-	if(S_CLIPPING_DIST - dist < (float)S_CLIPPING_DIST/4)
-	{
-		// at this range, you shouldn't be able to tell the direction
-		x = -1;
-		y = -1;
-	}
-	else if(dist)
-	{
-		// randomly scramble this distance
-		float a = rand()%(int)(1 + dist*dist/(float)(S_CLIPPING_DIST));
-		float b = rand()%(int)(1 + dist*dist/(float)(S_CLIPPING_DIST));
-		float c = rand()%(int)(1 + dist*dist/(float)(S_CLIPPING_DIST));
-		float d = rand()%(int)(1 + dist*dist/(float)(S_CLIPPING_DIST));
-
-		x += FLOAT2FIXED(a) - FLOAT2FIXED(b);
-		y += FLOAT2FIXED(c) - FLOAT2FIXED(d);
-	}
-
-	if (dist >= S_CLIPPING_DIST)
-	{
-		if (!(level.flags & LEVEL_NOSOUNDCLIPPING))
-			return 0; // sound is beyond the hearing range...
-	}
-
-	byte vol = (byte)((1 - dist/(float)S_CLIPPING_DIST) * 255);
-
-	return vol;
 }
 
 //
