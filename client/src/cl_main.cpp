@@ -3045,14 +3045,14 @@ void CL_LoadMap(void)
 	std::vector<std::string> newwadfiles, newwadhashes;
 	std::vector<std::string> newpatchfiles, newpatchhashes;
 
-	int wadcount = MSG_ReadByte();
+	int wadcount = (byte)MSG_ReadByte();
 	while (wadcount--)
 	{
 		newwadfiles.push_back(MSG_ReadString());
 		newwadhashes.push_back(MSG_ReadString());
 	}
 
-	int patchcount = MSG_ReadByte();
+	int patchcount = (byte)MSG_ReadByte();
 	while (patchcount--)
 	{
 		newpatchfiles.push_back(MSG_ReadString());
