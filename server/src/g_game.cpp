@@ -628,8 +628,10 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	//    return false;
 
 	player.mo->flags |=  MF_SOLID;
+	player.mo->flags2 &= ~MF2_PASSMOBJ; // [AM] Prevent spawnfragging flying players
 	i = P_CheckPosition(player.mo, x, y);
 	player.mo->flags &= ~MF_SOLID;
+	player.mo->flags2 |=  MF2_PASSMOBJ;
 	player.mo->z = oldz;	// [RH] Restore corpse's height
 	if (!i)
 		return false;

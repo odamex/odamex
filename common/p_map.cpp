@@ -519,7 +519,8 @@ static BOOL PIT_CheckThing (AActor *thing)
 	if (co_realactorheight)
 		BlockingMobj = thing;
 
-	if (co_realactorheight && (tmthing->flags2 & MF2_PASSMOBJ))
+	if (co_realactorheight &&
+	    ((thing->flags2 & MF2_PASSMOBJ) && (tmthing->flags2 & MF2_PASSMOBJ)))
 	{
 		// check if a mobj passed over/under another object
 		if (tmthing->z >= thing->z + thing->height || tmthing->z + tmthing->height <= thing->z)
