@@ -1795,7 +1795,7 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage)
 
 bool P_HitFloor (AActor *thing)
 {
-    
+    return true;
 }
 
 
