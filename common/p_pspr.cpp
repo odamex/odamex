@@ -52,6 +52,7 @@ EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(sv_allowpwo)
+EXTERN_CVAR(co_fineautoaim)
 
 CVAR_FUNC_IMPL(cl_movebob)
 {
@@ -891,25 +892,19 @@ void P_BulletSlope (AActor *mo)
 
 	// see which target is to be aimed at
 	an = mo->angle;
-	bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
 
-	// GhostlyDeath <June 19, 2008> -- Autoaim bug here!
-	if (!linetarget)	// Autoaim missed something
+	// [AM] Refactored autoaim into a single function.
+	if (co_fineautoaim)
+		bulletslope = P_AutoAimLineAttack(mo, an, 1 << 26, 10, 16 * 64 * FRACUNIT);
+	else
+		bulletslope = P_AutoAimLineAttack(mo, an, 1 << 26, 1, 16 * 64 * FRACUNIT);
+
+	// [RH] If we never found a target, use actor's pitch to
+	// determine bulletslope
+	if (sv_freelook && !linetarget)
 	{
-		an += 1<<26;
-		bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
-		if (!linetarget)	// Still missing something
-		{
-			an -= 2<<26;
-			bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
-			// [RH] If we never found a target, use actor's pitch to
-			// determine bulletslope
-			if (sv_freelook && !linetarget)
-			{
-				an = mo->angle;
-				bulletslope = pitchslope;
-			}
-		}
+		an = mo->angle;
+		bulletslope = pitchslope;
 	}
 
 	// GhostlyDeath -- If sv_freelook was on and a line target was found
