@@ -137,12 +137,14 @@ BOOL PIT_StompThing (AActor *thing)
 		return true;
 	}
 
-	// [RH] Z-Check
-/*	if (tmz > thing->z + thing->height)
-		return true;        // overhead
-	if (tmz+tmthing->height < thing->z)
-		return true;        // underneath
-*/
+	if (co_realactorheight)
+	{
+		// [RH] Z-Check
+		if (tmz > thing->z + thing->height)
+			return true;        // overhead
+		if (tmz + tmthing->height < thing->z)
+			return true;        // underneath
+	}
 
 	// monsters don't stomp things except on boss level
 	if (StompAlwaysFrags) {
