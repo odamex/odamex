@@ -656,7 +656,7 @@ static void R_FillWallHeightArray(
 	for (int i = start; i <= stop; i++)
 	{
 		array[i] = (int)frac;
-		clamp(array[i], 0, screen->height - 1);
+		array[i] = clamp(array[i], 0, screen->height - 1);
 
 		frac -= step;
 	}
@@ -693,8 +693,8 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 
 	const fixed_t mindist = 0.25*FRACUNIT;
 	const fixed_t maxdist = 16384*FRACUNIT;
-	clamp(dist1, mindist, maxdist);
-	clamp(dist2, mindist, maxdist);
+	dist1 = clamp(dist1, mindist, maxdist);
+	dist2 = clamp(dist2, mindist, maxdist);
 
 	// calculate texture coordinates at the line's endpoints
 	double scale1 = yfoc / FIXED2DOUBLE(dist1);
