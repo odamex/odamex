@@ -605,8 +605,8 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	clipt1.y = MAX<fixed_t>(1, clipt1.y);
 	clipt2.y = MAX<fixed_t>(1, clipt2.y);
 
-	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt1.x) / clipt1.y) >> FRACBITS;
-	x2 = ((centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt2.x) / clipt2.y) >> FRACBITS) - 1;
+	x1 = FIXED2INT(centerxfrac + (int64_t(FocalLengthX) * clipt1.x) / clipt1.y);
+	x2 = FIXED2INT(centerxfrac + (int64_t(FocalLengthX) * clipt2.x) / clipt2.y) - 1;
 
 	if (x1 < 0)
 		x1 = 0;

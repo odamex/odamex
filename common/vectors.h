@@ -45,14 +45,6 @@ vec_t VectorLength (const vec3_t v);
 vec_t VectorNormalize (vec3_t v);
 vec_t VectorNormalize2 (const vec3_t v, vec3_t out);
 
-const double FIXEDTODOUBLE_FACTOR	= 1.0 / 65536.0;
-const float  FIXEDTOFLOAT_FACTOR	= 1.0f / 65536.0f;
-
-#define FIXED2FLOAT(f)			((float)(f) * FIXEDTOFLOAT_FACTOR)
-#define FLOAT2FIXED(f)			(fixed_t)((f) * (float)FRACUNIT)
-#define FIXED2DOUBLE(f)			((double)(f) * FIXEDTODOUBLE_FACTOR)
-#define DOUBLE2FIXED(f)			(fixed_t)((f) * (double)FRACUNIT)
-
 struct v2fixed_t
 {
    fixed_t x, y;
