@@ -743,12 +743,6 @@ void R_AddLine (seg_t *line)
 }
 
 
-//
-// R_CheckBBox
-// Checks BSP node/subtree bounding box.
-// Returns true
-//	if some part of the bbox might be visible.
-//
 static const int checkcoord[12][4] = // killough -- static const
 {
 	{3,0,2,1},
@@ -764,17 +758,18 @@ static const int checkcoord[12][4] = // killough -- static const
 	{2,1,3,0}
 };
 
-
-static BOOL R_CheckBBox (fixed_t *bspcoord)	// killough 1/28/98: static
+//
+// R_CheckBBox
+//
+// Checks BSP node/subtree bounding box.
+// Returns true if some part of the bbox might be visible.
+//
+static BOOL R_CheckBBox(fixed_t *bspcoord)
 {
-	int 				boxx;
-	int 				boxy;
+	int 				boxx, boxy;
 	int 				boxpos;
 
-	fixed_t 			x1;
-	fixed_t 			y1;
-	fixed_t 			x2;
-	fixed_t 			y2;
+	fixed_t 			xl, xh, yl, yh;
 
 	angle_t 			angle1;
 	angle_t 			angle2;
@@ -783,8 +778,7 @@ static BOOL R_CheckBBox (fixed_t *bspcoord)	// killough 1/28/98: static
 
 	cliprange_t*		start;
 
-	int 				sx1;
-	int 				sx2;
+	int 				x1, x2;
 
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
@@ -806,14 +800,14 @@ static BOOL R_CheckBBox (fixed_t *bspcoord)	// killough 1/28/98: static
 	if (boxpos == 5)
 		return true;
 
-	x1 = bspcoord[checkcoord[boxpos][0]];
-	y1 = bspcoord[checkcoord[boxpos][1]];
-	x2 = bspcoord[checkcoord[boxpos][2]];
-	y2 = bspcoord[checkcoord[boxpos][3]];
+	xl = bspcoord[checkcoord[boxpos][0]];
+	yl = bspcoord[checkcoord[boxpos][1]];
+	xh = bspcoord[checkcoord[boxpos][2]];
+	yh = bspcoord[checkcoord[boxpos][3]];
 
 	// check clip list for an open space
-	angle1 = R_PointToAngle (x1, y1) - viewangle;
-	angle2 = R_PointToAngle (x2, y2) - viewangle;
+	angle1 = R_PointToAngle (xl, yl) - viewangle;
+	angle2 = R_PointToAngle (xh, yh) - viewangle;
 
 	span = angle1 - angle2;
 
@@ -850,20 +844,19 @@ static BOOL R_CheckBBox (fixed_t *bspcoord)	// killough 1/28/98: static
 	//	(adjacent pixels are touching).
 	angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
 	angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
-	sx1 = viewangletox[angle1];
-	sx2 = viewangletox[angle2];
+	x1 = viewangletox[angle1];
+	x2 = viewangletox[angle2];
 
 	// Does not cross a pixel.
-	if (sx1 == sx2)
+	if (x1 == x2)
 		return false;
-	sx2--;
+	x2--;
 
 	start = solidsegs;
-	while (start->last < sx2)
+	while (start->last < x2)
 		start++;
 
-        if (sx1 >= start->first
-            && sx2 <= start->last)
+	if (x1 >= start->first && x2 <= start->last)
 	{
 		// The clippost contains the new span.
 		return false;
@@ -980,8 +973,8 @@ void R_Subsector (int num)
 
 //
 // RenderBSPNode
-// Renders all subsectors below a given node,
-//	traversing subtree recursively.
+//
+// Renders all subsectors below a given node, traversing subtree recursively.
 // Just call with BSP root.
 // killough 5/2/98: reformatted, removed tail recursion
 
@@ -992,17 +985,19 @@ void R_RenderBSPNode (int bspnum)
 		node_t *bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
-		int side = R_PointOnSide(viewx, viewy, bsp);
+		int frontside = R_PointOnSide(viewx, viewy, bsp);
+		int backside = frontside ^ 1;
 
 		// Recursively divide front space.
-		R_RenderBSPNode(bsp->children[side]);
+		R_RenderBSPNode(bsp->children[frontside]);
 
 		// Possibly divide back space.
-		if (!R_CheckBBox(bsp->bbox[side^1]))
+		if (!R_CheckBBox(bsp->bbox[backside]))
 			return;
 
-		bspnum = bsp->children[side^1];
+		bspnum = bsp->children[backside];
 	}
+
 	R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
 
