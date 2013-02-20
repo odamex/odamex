@@ -534,7 +534,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 // is completely clipped.
 //
 static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
-					fixed_t &lclip1, fixed_t &lclip2,
+					fixed_t clipdist, fixed_t &lclip1, fixed_t &lclip2,
 					int &x1, int &x2)
 {
 	lclip1 = 0;
@@ -549,20 +549,20 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	R_RotatePoint(px2 - viewx, py2 - viewy, ANG90 - viewangle, t2.x, t2.y);
 
 	// Clip portions of the line that are behind the view plane
-	if (t1.y <= NEARCLIP)
+	if (t1.y < clipdist)
 	{      
 		// reject the line entirely if the whole thing is behind the view plane.
-		if (t2.y <= NEARCLIP)
+		if (t2.y < clipdist)
 			return false;
 
-		// clip the line at the point where t1.y == nearclip
-		lclip1 = FixedDiv(NEARCLIP - t1.y, t2.y - t1.y);
+		// clip the line at the point where t1.y == clipdist
+		lclip1 = FixedDiv(clipdist - t1.y, t2.y - t1.y);
 	}
 
-	if (t2.y <= NEARCLIP)
+	if (t2.y < clipdist)
 	{
-		// clip the line at the point where t2.y == nearclip
-		lclip2 = FRACUNIT - FixedDiv(NEARCLIP - t2.y, t2.y - t1.y);
+		// clip the line at the point where t2.y == clipdist
+		lclip2 = FRACUNIT - FixedDiv(clipdist - t2.y, t2.y - t1.y);
 	}
 
 	// clip portions of the line that extend off the sides of the screen
@@ -601,9 +601,9 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	v2fixed_t clipt1, clipt2;
 	R_ClipEndPoints(t1.x, t1.y, t2.x, t2.y, lclip1, lclip2, clipt1.x, clipt1.y, clipt2.x, clipt2.y);
 
-	// prevent divide-by-zero due to fixed-point imprecision
-	clipt1.y = MAX<fixed_t>(NEARCLIP, clipt1.y);
-	clipt2.y = MAX<fixed_t>(NEARCLIP, clipt2.y);
+	// prevent divide-by-zero
+	clipt1.y = MAX<fixed_t>(1, clipt1.y);
+	clipt2.y = MAX<fixed_t>(1, clipt2.y);
 
 	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt1.x) / clipt1.y) >> FRACBITS;
 	x2 = ((centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt2.x) / clipt2.y) >> FRACBITS) - 1;
@@ -639,7 +639,7 @@ void R_AddLine (seg_t *line)
 	fixed_t	lclip1, lclip2;
 
 	// Clip the wall seg to the viewing window
-	if (!R_ClipLine(line->v1->x, line->v1->y, line->v2->x, line->v2->y, lclip1, lclip2, x1, x2))
+	if (!R_ClipLine(line->v1->x, line->v1->y, line->v2->x, line->v2->y, NEARCLIP, lclip1, lclip2, x1, x2))
 		return;
 
 	rw_start = x1;
@@ -796,8 +796,8 @@ static BOOL R_CheckBBox(const fixed_t *bspcoord)
 	// diagonals are entirely clipped, then none of the bounding box
 	// is in the viewing window.
 	//
-	if (!R_ClipLine(xl, yl, xh, yh, lclip1, lclip2, x1, x2) &&
-		!R_ClipLine(xl, yh, xh, yl, lclip1, lclip2, x1, x2))
+	if (!R_ClipLine(xl, yl, xh, yh, 0, lclip1, lclip2, x1, x2) &&
+		!R_ClipLine(xl, yh, xh, yl, 0, lclip1, lclip2, x1, x2))
 		return false;
 
 	cliprange_t* start = solidsegs;
