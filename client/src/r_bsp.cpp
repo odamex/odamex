@@ -764,103 +764,49 @@ static const int checkcoord[12][4] = // killough -- static const
 // Checks BSP node/subtree bounding box.
 // Returns true if some part of the bbox might be visible.
 //
-static BOOL R_CheckBBox(fixed_t *bspcoord)
+// killough 1/28/98: static
+// CPhipps - const parameter, reformatted
+// [SL] Changed to use R_LineClip()
+//
+static BOOL R_CheckBBox(const fixed_t *bspcoord)
 {
-	int 				boxx, boxy;
-	int 				boxpos;
-
-	fixed_t 			xl, xh, yl, yh;
-
-	angle_t 			angle1;
-	angle_t 			angle2;
-	angle_t 			span;
-	angle_t 			tspan;
-
-	cliprange_t*		start;
-
 	int 				x1, x2;
+	fixed_t				lclip1, lclip2;
 
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
-	if (viewx <= bspcoord[BOXLEFT])
-		boxx = 0;
-	else if (viewx < bspcoord[BOXRIGHT])
-		boxx = 1;
-	else
-		boxx = 2;
+	int boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
+				(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
 
-	if (viewy >= bspcoord[BOXTOP])
-		boxy = 0;
-	else if (viewy > bspcoord[BOXBOTTOM])
-		boxy = 1;
-	else
-		boxy = 2;
-
-	boxpos = (boxy<<2)+boxx;
 	if (boxpos == 5)
 		return true;
 
-	xl = bspcoord[checkcoord[boxpos][0]];
-	yl = bspcoord[checkcoord[boxpos][1]];
-	xh = bspcoord[checkcoord[boxpos][2]];
-	yh = bspcoord[checkcoord[boxpos][3]];
+	fixed_t xl = bspcoord[checkcoord[boxpos][0]];
+	fixed_t yl = bspcoord[checkcoord[boxpos][1]];
+	fixed_t xh = bspcoord[checkcoord[boxpos][2]];
+	fixed_t yh = bspcoord[checkcoord[boxpos][3]];
 
-	// check clip list for an open space
-	angle1 = R_PointToAngle (xl, yl) - viewangle;
-	angle2 = R_PointToAngle (xh, yh) - viewangle;
-
-	span = angle1 - angle2;
-
-	// Sitting on a line?
-	if (span >= ANG180)
+	if (R_PointOnSide(viewx, viewx, xl, yl, xh, yh) == 1)
 		return true;
 
-	tspan = angle1 + clipangle;
-
-	if (tspan > 2*clipangle)
-	{
-		tspan -= 2*clipangle;
-
-		// Totally off the left edge?
-		if (tspan >= span)
-			return false;
-
-		angle1 = clipangle;
-	}
-	tspan = clipangle - angle2;
-	if (tspan > 2*clipangle)
-	{
-		tspan -= 2*clipangle;
-
-		// Totally off the left edge?
-		if (tspan >= span)
-			return false;
-
-		angle2 = (unsigned)(-(int)clipangle);
-	}
-
-	// Find the first clippost
-	//	that touches the source post
-	//	(adjacent pixels are touching).
-	angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
-	angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
-	x1 = viewangletox[angle1];
-	x2 = viewangletox[angle2];
-
-	// Does not cross a pixel.
-	if (x1 == x2)
+	// check if part of the bounding box is within the viewing window
+	// and calculate x1 and x2.
+	//
+	// We pass R_ClipLine the bounding-box's diagonals. If both
+	// diagonals are entirely clipped, then none of the bounding box
+	// is in the viewing window.
+	//
+	if (!R_ClipLine(xl, yl, xh, yh, lclip1, lclip2, x1, x2) &&
+		!R_ClipLine(xl, yh, xh, yl, lclip1, lclip2, x1, x2))
 		return false;
-	x2--;
 
-	start = solidsegs;
+	cliprange_t* start = solidsegs;
 	while (start->last < x2)
 		start++;
 
+	// does the clippost contains the new span?
 	if (x1 >= start->first && x2 <= start->last)
-	{
-		// The clippost contains the new span.
 		return false;
-	}
 
 	return true;
 }
@@ -967,8 +913,6 @@ void R_Subsector (int num)
 		R_AddLine (line++);
 	}
 }
-
-
 
 
 //

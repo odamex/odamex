@@ -101,7 +101,6 @@ AActor			*camera;	// [RH] camera to draw from. doesn't have to be a player
 //
 // precalculated math tables
 //
-angle_t 		clipangle;
 
 // The viewangletox[viewangle + FINEANGLES/4] lookup
 // maps the visible view angles to screen X coordinates,
@@ -492,8 +491,6 @@ void R_InitTextureMapping (void)
 		else if (viewangletox[i] == highend)
 			viewangletox[i]--;
 	}
-
-	clipangle = xtoviewangle[0];
 }
 
 // Changes the field of view.
