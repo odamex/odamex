@@ -116,42 +116,21 @@ static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 			dc_colormap = walllights[index] + basecolormap;	// [RH] add basecolormap
 		}
 
-		// killough 3/2/98:
-		//
-		// This calculation used to overflow and cause crashes in Doom:
-		//
-		// sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
-		//
-		// This code fixes it, by using double-precision intermediate
-		// arithmetic and by skipping the drawing of 2s normals whose
-		// mapping to screen coordinates is totally out of range:
+		sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
+		dc_iscale = 0xffffffffu / (unsigned)spryscale;
 
-		int64_t t = ((int64_t)centeryfrac << FRACBITS) -
-					(int64_t)dc_texturemid * spryscale;
-			
-		// [RH] This doesn't work properly as-is with freelook. Probably just me.
-		// [SL] Seems to work for me and prevents overflows after increasing
-		//      the max scale factor for segs.
-		// Skip if the texture is out of the screen's range	
-		if (t + (int64_t)textureheight[texnum] * spryscale >= 0 &&
-		    t < (int64_t)screen->height << (FRACBITS * 2))
-		{
-			sprtopscreen = (fixed_t)(t >> FRACBITS);
-			dc_iscale = 0xffffffffu / (unsigned)spryscale;
+		// killough 1/25/98: here's where Medusa came in, because
+		// it implicitly assumed that the column was all one patch.
+		// Originally, Doom did not construct complete columns for
+		// multipatched textures, so there were no header or trailer
+		// bytes in the column referred to below, which explains
+		// the Medusa effect. The fix is to construct true columns
+		// when forming multipatched textures (see r_data.c).
 
-			// killough 1/25/98: here's where Medusa came in, because
-			// it implicitly assumed that the column was all one patch.
-			// Originally, Doom did not construct complete columns for
-			// multipatched textures, so there were no header or trailer
-			// bytes in the column referred to below, which explains
-			// the Medusa effect. The fix is to construct true columns
-			// when forming multipatched textures (see r_data.c).
+		// draw the texture
 
-			// draw the texture
-
-			blastfunc (R_GetColumn(texnum, maskedtexturecol[dc_x]));
-			maskedtexturecol[dc_x] = MAXINT;
-		}
+		blastfunc (R_GetColumn(texnum, maskedtexturecol[dc_x]));
+		maskedtexturecol[dc_x] = MAXINT;
 	}
 	spryscale += rw_scalestep;
 	rw_light += rw_lightstep;
@@ -257,6 +236,19 @@ R_RenderMaskedSegRange
 	}
 	dc_texturemid = FixedMul(dc_texturemid + curline->sidedef->rowoffset, 
 							 texturescaley[texnum]);
+
+	int64_t topscreenclip = int64_t(centery) << 2*FRACBITS;
+	int64_t botscreenclip = int64_t(centery - viewheight) << 2*FRACBITS;
+
+	// top of texture entirely below screen?
+	if (int64_t(dc_texturemid) * ds->scale1 <= botscreenclip &&
+		int64_t(dc_texturemid) * ds->scale2 <= botscreenclip)
+		return;
+
+	// bottom of texture entirely above screen?
+	if (int64_t(dc_texturemid - R_ScaledTextureHeight(texnum)) * ds->scale1 > topscreenclip &&
+		int64_t(dc_texturemid - R_ScaledTextureHeight(texnum)) * ds->scale2 > topscreenclip)
+		return;
 
 	if (fixedlightlev)
 		dc_colormap = basecolormap + fixedlightlev;
