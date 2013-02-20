@@ -540,13 +540,13 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	lclip1 = 0;
 	lclip2 = FRACUNIT;
 
+	// [SL] check if the line is behind the viewer
+	if (R_PointOnSide(viewx, viewy, px1, py1, px2, py2) == 1)
+		return false;
+
 	v2fixed_t t1, t2;
 	R_RotatePoint(px1 - viewx, py1 - viewy, ANG90 - viewangle, t1.x, t1.y);
 	R_RotatePoint(px2 - viewx, py2 - viewy, ANG90 - viewangle, t2.x, t2.y);
-
-	// [SL] check if the line is behind the viewer
-	if (int64_t(t2.x - t1.x) * -t1.y - int64_t(t2.y - t1.y) * -t1.x >= 0)
-		return false;
 
 	// Clip portions of the line that are behind the view plane
 	if (t1.y <= NEARCLIP)
