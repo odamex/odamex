@@ -1549,7 +1549,7 @@ void P_NightmareRespawn (AActor *mobj)
         S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 
     // spawn a teleport fog at the new spot
-    ss = R_PointInSubsector (x,y);
+    ss = P_PointInSubsector (x,y);
 
 	// spawn a teleport fog at the new spot
     mo = new AActor (x, y,  P_FloorHeight(x, y, ss->sector), MT_TFOG);
@@ -2313,7 +2313,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// [RH] sound sequence overrides
 	if (mthing->type >= 1400 && mthing->type < 1410)
 	{
-		R_PointInSubsector (mthing->x<<FRACBITS,
+		P_PointInSubsector (mthing->x<<FRACBITS,
 			mthing->y<<FRACBITS)->sector->seqType = mthing->type - 1400;
 		return;
 	}
@@ -2332,7 +2332,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		}
 		else
 		{
-			R_PointInSubsector (mthing->x << FRACBITS,
+			P_PointInSubsector (mthing->x << FRACBITS,
 				mthing->y << FRACBITS)->sector->seqType = type;
 		}
 		return;
@@ -2437,7 +2437,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (i == MT_WATERZONE)
 	{
-		sector_t *sec = R_PointInSubsector (x, y)->sector;
+		sector_t *sec = P_PointInSubsector (x, y)->sector;
 		sec->waterzone = 1;
 		return;
 	}
