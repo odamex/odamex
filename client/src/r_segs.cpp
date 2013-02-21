@@ -138,7 +138,7 @@ static void R_FillWallHeightArray(
 	
 	double step = 0.0;
 	if (stop > start)
-		step = (h2 - h1) / (stop - start);
+		step = (h2 - h1) / (stop - start + 1);
 
 	double frac = double(centery) - h1;
 
@@ -698,8 +698,8 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 	double scalestep = 0.0, uinvzstep = 0.0;
 	if (stop > start)
 	{
-		scalestep = (scale2 - scale1) / (stop - start);
-		uinvzstep = uinvz2 / (stop - start);
+		scalestep = (scale2 - scale1) / (stop - start + 1);
+		uinvzstep = uinvz2 / (stop - start + 1);
 	}
 
 	// fill the texture column array
