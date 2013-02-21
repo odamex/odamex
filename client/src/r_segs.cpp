@@ -81,8 +81,6 @@ static int walltopf[MAXWIDTH];
 static int walltopb[MAXWIDTH];
 static int wallbottomf[MAXWIDTH];
 static int wallbottomb[MAXWIDTH];
-static int masktop[MAXWIDTH];
-static int maskbottom[MAXWIDTH];
 
 static fixed_t wallscalex[MAXWIDTH];
 static int texoffs[MAXWIDTH];
@@ -167,24 +165,21 @@ static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 			dc_colormap = walllights[index] + basecolormap;	// [RH] add basecolormap
 		}
 
-		if (maskbottom[dc_x] >= 0 && masktop[dc_x] < viewheight)
-		{
-			sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
-			dc_iscale = 0xffffffffu / (unsigned)spryscale;
+		sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
+		dc_iscale = 0xffffffffu / (unsigned)spryscale;
 
-			// killough 1/25/98: here's where Medusa came in, because
-			// it implicitly assumed that the column was all one patch.
-			// Originally, Doom did not construct complete columns for
-			// multipatched textures, so there were no header or trailer
-			// bytes in the column referred to below, which explains
-			// the Medusa effect. The fix is to construct true columns
-			// when forming multipatched textures (see r_data.c).
+		// killough 1/25/98: here's where Medusa came in, because
+		// it implicitly assumed that the column was all one patch.
+		// Originally, Doom did not construct complete columns for
+		// multipatched textures, so there were no header or trailer
+		// bytes in the column referred to below, which explains
+		// the Medusa effect. The fix is to construct true columns
+		// when forming multipatched textures (see r_data.c).
 
-			// draw the texture
+		// draw the texture
 
-			blastfunc (R_GetColumn(texnum, maskedtexturecol[dc_x]));
-			maskedtexturecol[dc_x] = MAXINT;
-		}
+		blastfunc (R_GetColumn(texnum, maskedtexturecol[dc_x]));
+		maskedtexturecol[dc_x] = MAXINT;
 	}
 	spryscale += rw_scalestep;
 	rw_light += rw_lightstep;
@@ -200,7 +195,6 @@ R_RenderMaskedSegRange
   int		x2 )
 {
 	int 		lightnum;
-	int 		texnum;
 	sector_t	tempsec;		// killough 4/13/98
 
 	dc_color = (dc_color + 4) & 0xFF;	// color if using r_drawflat
@@ -227,29 +221,28 @@ R_RenderMaskedSegRange
 	frontsector = curline->frontsector;
 	backsector = curline->backsector;
 
-	texnum = texturetranslation[curline->sidedef->midtexture];
+	int texnum = texturetranslation[curline->sidedef->midtexture];
+	fixed_t texheight = R_ScaledTextureHeight(texnum);
 
 	// find texture positioning
-	fixed_t top, bottom;
 	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
-		top = MAX<fixed_t>(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + R_ScaledTextureHeight(texnum);
+		dc_texturemid = MAX<fixed_t>(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + texheight;
 	else
-		top = MIN<fixed_t>(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
-	bottom = top - R_ScaledTextureHeight(texnum);
+		dc_texturemid = MIN<fixed_t>(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
 
-	dc_texturemid = FixedMul(top - viewz + curline->sidedef->rowoffset, texturescaley[texnum]);
+	dc_texturemid = FixedMul(dc_texturemid - viewz + curline->sidedef->rowoffset, texturescaley[texnum]);
 	
-	// project the top and bottom of the texture along the length of the seg
-	double fscale1 = FIXED2DOUBLE(ds->scale1);
-	double fscale2 = FIXED2DOUBLE(ds->scale2);
-	R_FillWallHeightArray(masktop, ds->x1, ds->x2, top, top, fscale1, fscale2);
-	R_FillWallHeightArray(maskbottom, ds->x1, ds->x2, bottom, bottom, fscale1, fscale2);	
-
-	// bottom of texture entirely above screen?
-	if (maskbottom[x1] < 0 && maskbottom[x2] < 0)
-		return;
+	int64_t topscreenclip = int64_t(centery) << 2*FRACBITS;
+	int64_t botscreenclip = int64_t(centery - viewheight) << 2*FRACBITS;
+ 
 	// top of texture entirely below screen?
-	if (masktop[x1] >= viewheight && masktop[x2] >= viewheight)
+	if (int64_t(dc_texturemid) * ds->scale1 <= botscreenclip &&
+		int64_t(dc_texturemid) * ds->scale2 <= botscreenclip)
+		return;
+ 
+	// bottom of texture entirely above screen?
+	if (int64_t(dc_texturemid - texheight) * ds->scale1 > topscreenclip &&
+		int64_t(dc_texturemid - texheight) * ds->scale2 > topscreenclip)
 		return;
 
 	basecolormap = frontsector->floorcolormap->maps;	// [RH] Set basecolormap
