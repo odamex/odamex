@@ -119,7 +119,7 @@ int R_OrthogonalLightnumAdjustment()
 			return 1;
 	}
 	
-return 0;	// no adjustment for diagonal lines
+	return 0;	// no adjustment for diagonal lines
 }
 
 //
@@ -355,7 +355,7 @@ static void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
 
 	dc_texturefrac = FixedMul(scaley, mid + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale));
 
-	dc_source = R_GetColumnData(texnum, FixedMul(scalex, texcol) / FRACUNIT);
+	dc_source = R_GetColumnData(texnum, FIXED2INT(FixedMul(scalex, texcol)));
 }
 
 //
@@ -693,7 +693,7 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 	// We also can not linearly interpolate Z, but we can linearly interpolate 1/Z (scale), so we linearly
 	// interpolate the texture coordinates u / Z and then divide by 1/Z to get the correct u for each column.
 	double uinvz = 0.0;
-	double uinvz2 = FIXED2DOUBLE(seglen) * scale2;
+	double uinvz2 = FIXED2DOUBLE(seglen - FRACUNIT) * scale2;
 
 	double scalestep = 0.0, uinvzstep = 0.0;
 	if (stop > start)
