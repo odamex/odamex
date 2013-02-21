@@ -169,7 +169,7 @@ static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 
 		if (maskbottom[dc_x] >= 0 && masktop[dc_x] < viewheight)
 		{
-			sprtopscreen = masktop[dc_x] << FRACBITS;
+			sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
 			dc_iscale = 0xffffffffu / (unsigned)spryscale;
 
 			// killough 1/25/98: here's where Medusa came in, because
