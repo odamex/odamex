@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include <string>
+#include <math.h>
 #include "i_system.h"
 #include "m_fileio.h"
 #include "cmdlib.h"
@@ -802,7 +803,8 @@ void MidiMusicSystem::resumeSong()
 //
 void MidiMusicSystem::setVolume(float volume)
 {
-	MusicSystem::setVolume(volume);
+	// [SL] mimic the volume curve of midiOutSetVolume, as used by SDL_Mixer
+	MusicSystem::setVolume(pow(volume, 0.5f));
 	_RefreshVolume();
 }
 
