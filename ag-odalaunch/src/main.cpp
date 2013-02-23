@@ -52,7 +52,7 @@ static void AGOL_StartDebugger(void)
 {
 	AG_Window *win;
 
-	if((win = AG_GuiDebugger(agWindowFocused)) != NULL)
+	if((win = (AG_Window*)AG_GuiDebugger(agWindowFocused)) != NULL)
 	{
 		AG_WindowShow(win);
 	}
