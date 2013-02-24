@@ -803,9 +803,19 @@ void MidiMusicSystem::resumeSong()
 //
 void MidiMusicSystem::setVolume(float volume)
 {
-	// [SL] mimic the volume curve of midiOutSetVolume, as used by SDL_Mixer
-	MusicSystem::setVolume(pow(volume, 0.5f));
 	_RefreshVolume();
+}
+
+//
+// MidiMusicSystem::_GetScaledVolume
+//
+// Returns the volume scaled logrithmically so that the for each unit the volume
+// increases, the perceived volume increases linearly.
+//
+float MidiMusicSystem::_GetScaledVolume()
+{
+	// [SL] mimic the volume curve of midiOutSetVolume, as used by SDL_Mixer
+	return pow(MusicSystem::getVolume(), 0.5f);
 }
 
 //
@@ -1068,7 +1078,7 @@ void PortMidiMusicSystem::_PlayEvent(MidiEvent *event, int time)
 			_SetChannelVolume(channel, param1);
 			
 			// scale the channel's volume by the master music volume
-			param1 *= getVolume();
+			param1 *= _GetScaledVolume();
 		}
 			
 		PmMessage msg = Pm_Message(event->getEventType() | channel, controltype, param1);

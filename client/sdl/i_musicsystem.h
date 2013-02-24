@@ -246,6 +246,8 @@ protected:
 	unsigned int _GetLastEventTime() const { return mLastEventTime; }
 	
 	void _InitializePlayback();
+
+	float _GetScaledVolume();
 	
 private:
 	static const int			cNumChannels = 16;
