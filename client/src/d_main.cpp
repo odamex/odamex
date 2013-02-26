@@ -746,7 +746,7 @@ void D_NewWadInit()
 
 	HU_Init ();
 
-	if(!(DefaultPalette = InitPalettes("PLAYPAL")))
+	if (!(InitPalettes("PLAYPAL")))
 		I_Error("Could not reinitialize palette");
 	V_InitPalette();
 

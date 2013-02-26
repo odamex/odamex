@@ -654,11 +654,11 @@ void EAPlayerColors(int x, int y,
 		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player)) {
 			int playercolor = CL_GetPlayerColor(player);
-			int color = BestColor(DefaultPalette->basecolors,
+			int color = BestColor(GetDefaultPalette()->basecolors,
 			                      RPART(playercolor),
 			                      GPART(playercolor),
 			                      BPART(playercolor),
-			                      DefaultPalette->numcolors);
+			                      GetDefaultPalette()->numcolors);
 
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
 			y += h + padding;
@@ -685,11 +685,11 @@ void EATeamPlayerColors(int x, int y,
 		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
 			int playercolor = CL_GetPlayerColor(player);
-			int color = BestColor(DefaultPalette->basecolors,
+			int color = BestColor(GetDefaultPalette()->basecolors,
 			                      RPART(playercolor),
 			                      GPART(playercolor),
 			                      BPART(playercolor),
-			                      DefaultPalette->numcolors);
+			                      GetDefaultPalette()->numcolors);
 
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
 			y += h + padding;

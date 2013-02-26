@@ -411,7 +411,7 @@ void R_DrawFuzzColumnP_C (void)
 		//		the optimizations made by the compiler.
 		int pitch = dc_pitch;
 		int fuzz = fuzzpos;
-		byte *map = DefaultPalette->maps.colormaps + 6*256;
+		byte *map = GetDefaultPalette()->maps.colormaps + 6*256;
 
 		do 
 		{

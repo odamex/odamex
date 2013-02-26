@@ -87,10 +87,6 @@ EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (ui_dimcolor)
 
-extern "C" {
-palette_t *DefaultPalette;
-}
-
 // [RH] Set true when vid_setmode command has been executed
 BOOL	setmodeneeded = false;
 // [RH] Resolution to change to when setmodeneeded is true
@@ -263,7 +259,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color, float famount
 		unsigned int *fg2rgb = Col2RGB8[amount];
 		unsigned int *bg2rgb = Col2RGB8[64-amount];
 		unsigned int fg =
-				fg2rgb[V_GetColorFromString(DefaultPalette->basecolors, color)];
+				fg2rgb[V_GetColorFromString(GetDefaultPalette()->basecolors, color)];
 
 		byte *dest = buffer + y1 * pitch + x1;
 		int gap = pitch - w;
@@ -688,12 +684,12 @@ END_COMMAND (checkres)
 void V_InitPalette (void)
 {
 	// [RH] Initialize palette subsystem
-	if (!(DefaultPalette = InitPalettes ("PLAYPAL")))
+	if (!(InitPalettes ("PLAYPAL")))
 		I_FatalError ("Could not initialize palette");
 
-	V_Palette = (unsigned int *)DefaultPalette->colors;
+	V_Palette = (unsigned int *)GetDefaultPalette()->colors;
 
-	BuildTransTable (DefaultPalette->basecolors);
+	BuildTransTable(GetDefaultPalette()->basecolors);
 
 	V_ForceBlend (0, 0, 0, 0);
 

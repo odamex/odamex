@@ -456,8 +456,6 @@ inline void DCanvas::DrawColoredLucentPatchCleanNoMove (const patch_t *patch, in
 	DrawCNMWrapper (EWrapper_ColoredLucent, patch, x, y);
 }
 
-extern "C" palette_t *DefaultPalette;
-
 // This is the screen updated by I_FinishUpdate.
 extern	DCanvas *screen;
 
