@@ -189,6 +189,7 @@
 					<Add directory="../../libtextscreen" />
 				</ResourceCompiler>
 				<Linker>
+					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
 					<Add library="ws2_32.lib" />
@@ -214,7 +215,7 @@
 					<Add directory="../../lib" />
 				</Linker>
 				<ExtraCommands>
-					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+					<Add after="mt -nologo -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);#1" />
 				</ExtraCommands>
 			</Target>
 			<Target title="Win Debug (VC)">
@@ -264,6 +265,7 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
+					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
 					<Add library="ws2_32.lib" />
@@ -289,7 +291,7 @@
 					<Add directory="../../lib" />
 				</Linker>
 				<ExtraCommands>
-					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+					<Add after="mt -nologo -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);#1" />
 				</ExtraCommands>
 			</Target>
 		</Build>

@@ -175,6 +175,7 @@
 					<Add directory="./res" />
 				</ResourceCompiler>
 				<Linker>
+					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_xrc" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_adv" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_html" />
@@ -206,7 +207,7 @@
 				</Linker>
 				<ExtraCommands>
 					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
-					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+					<Add after="mt -nologo -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);#1" />
 				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_CFG" value="" />
@@ -261,6 +262,7 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
+					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_xrc" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_adv" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_html" />
@@ -292,7 +294,7 @@
 				</Linker>
 				<ExtraCommands>
 					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
-					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+					<Add after="mt -nologo -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);#1" />
 				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_CFG" value="d" />

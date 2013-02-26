@@ -168,10 +168,11 @@
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 				</Compiler>
 				<Linker>
+					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
 					<Add library="wsock32" />
 				</Linker>
 				<ExtraCommands>
-					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+					<Add after="mt -nologo -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);#1" />
 				</ExtraCommands>
 			</Target>
 			<Target title="Win Debug (VC)">
@@ -210,11 +211,11 @@
 				</Compiler>
 				<Linker>
 					<Add option="/DEBUG" />
-					<Add option="/debug" />
+					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
 					<Add library="wsock32" />
 				</Linker>
 				<ExtraCommands>
-					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+					<Add after="mt -nologo -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);#1" />
 				</ExtraCommands>
 			</Target>
 		</Build>
