@@ -803,6 +803,7 @@ void MidiMusicSystem::resumeSong()
 //
 void MidiMusicSystem::setVolume(float volume)
 {
+	MusicSystem::setVolume(volume);
 	_RefreshVolume();
 }
 
