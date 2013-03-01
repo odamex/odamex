@@ -524,6 +524,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	return sec;
 }
 
+
 //
 // R_ClipLine
 //
@@ -537,16 +538,13 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 					fixed_t clipdist, fixed_t &lclip1, fixed_t &lclip2,
 					int &x1, int &x2)
 {
-	lclip1 = 0;
-	lclip2 = FRACUNIT;
-
-	// [SL] check if the line is behind the viewer
-	if (R_PointOnSide(viewx, viewy, px1, py1, px2, py2) == 1)
-		return false;
-
 	v2fixed_t t1, t2;
 	R_RotatePoint(px1 - viewx, py1 - viewy, ANG90 - viewangle, t1.x, t1.y);
 	R_RotatePoint(px2 - viewx, py2 - viewy, ANG90 - viewangle, t2.x, t2.y);
+
+	// save the unclipped coordinates to calculate lclip1 and lclip2 later
+	v2fixed_t unclipped_t1 = t1;
+	v2fixed_t unclipped_t2 = t2;
 
 	// Clip portions of the line that are behind the view plane
 	if (t1.y < clipdist)
@@ -556,22 +554,26 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 			return false;
 
 		// clip the line at the point where t1.y == clipdist
-		lclip1 = FixedDiv(clipdist - t1.y, t2.y - t1.y);
+		fixed_t t = FixedDiv(clipdist - t1.y, t2.y - t1.y);
+		t1.x = t1.x + FixedMul(t, t2.x - t1.x);
+		t1.y = clipdist;
 	}
 
 	if (t2.y < clipdist)
 	{
 		// clip the line at the point where t2.y == clipdist
-		lclip2 = FRACUNIT - FixedDiv(clipdist - t2.y, t2.y - t1.y);
+		fixed_t t = FixedDiv(clipdist - t1.y, t2.y - t1.y);
+		t2.x = t1.x + FixedMul(t, t2.x - t1.x);
+		t2.y = clipdist;
 	}
 
 	// clip portions of the line that extend off the sides of the screen
 	fixed_t clipline1 = FixedMul(fovtan, t1.y);		// t1.y adjusted for non-90 degree fov
 	fixed_t clipline2 = FixedMul(fovtan, t2.y);		// t2.y adjusted for non-90 degree fov
 
-	if (-t1.x > clipline1)
+	if (t1.x < -clipline1)
 	{
-		if (-t2.x > clipline2)	// entire line is off the left side of the screen
+		if (t2.x < -clipline2)	// entire line is off the left side of the screen
 			return false;
 
 		// clip part that is off the left side of screen
@@ -579,7 +581,9 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 		if (den == 0)
 			return false;
 
-		lclip1 = MAX<fixed_t>(lclip1, FixedDiv(-t1.x - clipline1, den));
+		fixed_t t = FixedDiv(-clipline1 - t1.x, den);
+		t1.x = t1.x + FixedMul(t, t2.x - t1.x);
+		t1.y = t1.y + FixedMul(t, t2.y - t1.y);
 	}
 
 	if (t2.x > clipline2)
@@ -592,21 +596,20 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 		if (den == 0)
 			return false;
 
-		lclip2 = MIN<fixed_t>(lclip2, FixedDiv(clipline1 - t1.x, den));
+		fixed_t t = FixedDiv(clipline1 - t1.x, den);
+		t2.x = t1.x + FixedMul(t, t2.x - t1.x);
+		t2.y = t1.y + FixedMul(t, t2.y - t1.y);
 	}
 
-	if (lclip1 > lclip2)
-		return false;
+	if (t1.y == 0)
+		x1 = centerx;
+	else
+		x1 = FIXED2INT(centerxfrac + (int64_t(FocalLengthX) * t1.x) / t1.y);
 
-	v2fixed_t clipt1, clipt2;
-	R_ClipEndPoints(t1.x, t1.y, t2.x, t2.y, lclip1, lclip2, clipt1.x, clipt1.y, clipt2.x, clipt2.y);
-
-	// prevent divide-by-zero
-	clipt1.y = MAX<fixed_t>(1, clipt1.y);
-	clipt2.y = MAX<fixed_t>(1, clipt2.y);
-
-	x1 = FIXED2INT(centerxfrac + (int64_t(FocalLengthX) * clipt1.x) / clipt1.y);
-	x2 = FIXED2INT(centerxfrac + (int64_t(FocalLengthX) * clipt2.x) / clipt2.y) - 1;
+	if (t2.y == 0)
+		x2 = centerx;
+	else
+		x2 = FIXED2INT(centerxfrac + (int64_t(FocalLengthX) * t2.x) / t2.y) - 1;
 
 	if (x1 < 0)
 		x1 = 0;
@@ -616,6 +619,9 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	// Does not cross a pixel?
 	if (x1 > x2)
 		return false;
+
+	lclip1 = FixedDiv(t1.x - unclipped_t1.x, unclipped_t2.x - unclipped_t1.x);
+	lclip2 = FixedDiv(t2.x - unclipped_t1.x, unclipped_t2.x - unclipped_t1.x);
 
 	return true;
 }

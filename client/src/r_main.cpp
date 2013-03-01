@@ -385,10 +385,10 @@ void R_ClipEndPoints(
 	fixed_t &cx1, fixed_t &cy1,
 	fixed_t &cx2, fixed_t &cy2)
 {
-	cx1 = FixedMul(FRACUNIT - lclip1, x1) + FixedMul(lclip1, x2);
-	cy1 = FixedMul(FRACUNIT - lclip1, y1) + FixedMul(lclip1, y2);
-	cx2 = FixedMul(FRACUNIT - lclip2, x1) + FixedMul(lclip2, x2);
-	cy2 = FixedMul(FRACUNIT - lclip2, y1) + FixedMul(lclip2, y2);
+	cx1 = x1 + FixedMul(lclip1, x2 - x1);
+	cy1 = y1 + FixedMul(lclip1, y2 - y1);
+	cx2 = x1 + FixedMul(lclip2, x2 - x1);
+	cy2 = y1 + FixedMul(lclip2, y2 - y1);
 }
 
 //
