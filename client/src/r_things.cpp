@@ -717,8 +717,12 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		return;
 
 	if (vis->patch == NO_PARTICLE)
-	{ // [RH] It's a particle
-		R_DrawParticle (vis, x1, x2);
+	{
+		// [RH] It's a particle
+		if (screen->is8bit())
+			R_DrawParticleP (vis, x1, x2);
+		else
+			R_DrawParticleD (vis, x1, x2);
 		return;
 	}
 
@@ -737,8 +741,8 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		//		used it, but the prefered way to change a thing's colors
 		//		is now with the palette field.
 		translated = true;
-		dc_translation = translationtables + (MAXPLAYERS-1)*256 +
-			( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
+		dc_translation = translationref_t(translationtables + (MAXPLAYERS-1)*256 +
+			( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) ));
 	}
 
 	if (vis->mobjflags & MF_SHADOW)
@@ -1064,9 +1068,9 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	// get light level
 	if (fixedlightlev)
 	{
-		vis->colormap = basecolormap + fixedlightlev;
+		vis->colormap = basecolormap.with(fixedlightlev);
 	}
-	else if (fixedcolormap)
+	else if (fixedcolormap.isValid())
 	{
 		// fixed map
 		vis->colormap = fixedcolormap;
@@ -1084,7 +1088,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 		if (index >= MAXLIGHTSCALE)
 			index = MAXLIGHTSCALE-1;
 
-		vis->colormap = spritelights[index] + basecolormap;	// [RH] Use basecolormap
+		vis->colormap = basecolormap.with(spritelights[index]);	// [RH] Use basecolormap
 	}
 }
 
@@ -1196,7 +1200,7 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 	vis->xscale = pspritexscale;
 	vis->yscale = pspriteyscale;
-	vis->translation = NULL;		// [RH] Use default colors
+	vis->translation = translationref_t();		// [RH] Use default colors
 	vis->translucency = FRACUNIT;
 
 	if (flip)
@@ -1217,9 +1221,9 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 
 	if (fixedlightlev)
 	{
-		vis->colormap = basecolormap + fixedlightlev;
+		vis->colormap = basecolormap.with(fixedlightlev);
 	}
-	else if (fixedcolormap)
+	else if (fixedcolormap.isValid())
 	{
 		// fixed color
 		vis->colormap = fixedcolormap;
@@ -1232,7 +1236,7 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 	else
 	{
 		// local light
-		vis->colormap = spritelights[MAXLIGHTSCALE-1] + basecolormap;	// [RH] add basecolormap
+		vis->colormap = basecolormap.with(spritelights[MAXLIGHTSCALE-1]);	// [RH] add basecolormap
 	}
 	if (camera->player &&
 		(camera->player->powers[pw_invisibility] > 4*32
@@ -1522,7 +1526,7 @@ static void R_DrawCrosshair (void)
 		else
 			crosshair_trans[crosshair_color] = crosshair_color;	// no trans
 
-		V_ColorMap = crosshair_trans;
+		V_ColorMap = translationref_t(crosshair_trans);
 
 		if (hud_crosshairdim && hud_crosshairscale)
 			screen->DrawTranslatedLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
@@ -1735,19 +1739,19 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->texturemid = FixedMul (yaspectmul, vis->gzt - viewz);
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
-	vis->translation = NULL;
+	vis->translation = translationref_t();
 	vis->startfrac = particle->color;
 	vis->patch = NO_PARTICLE;
 	vis->mobjflags = particle->trans;
 	vis->FakeFlat = fakeside;
 
-	if (fixedcolormap)
+	if (fixedcolormap.isValid())
 	{
 		vis->colormap = fixedcolormap;
 	}
 	else if (sector)
 	{
-		byte *map;
+		shaderef_t map;
 
 		if (heightsec && 
 			(gzt <= P_FloorHeight(heightsec) || gzb > P_CeilingHeight(heightsec)))
@@ -1762,7 +1766,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 
 		if (fixedlightlev)
 		{
-			vis->colormap = map + fixedlightlev;
+			vis->colormap = map.with(fixedlightlev);
 		}
 		else
 		{
@@ -1777,18 +1781,90 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 			if (index >= MAXLIGHTSCALE) 
 				index = MAXLIGHTSCALE-1;
 
-			vis->colormap = scalelight[lightnum][index] + map;
+			vis->colormap = map.with(scalelight[lightnum][index]);
 		}
 	}
 	else
 	{
-		vis->colormap = realcolormaps;
+		vis->colormap = shaderef_t(&realcolormaps, 0);
+		//vis->colormap = shaderef_t(&GetDefaultPalette()->maps, 0);
 	}
 }
 
-void R_DrawParticle (vissprite_t *vis, int x1, int x2)
+void R_DrawParticleP (vissprite_t *vis, int x1, int x2)
 {
-	byte color = vis->colormap[vis->startfrac];
+	byte color = vis->colormap.index(vis->startfrac);
+	int yl = (centeryfrac - FixedMul(vis->texturemid, vis->xscale) + FRACUNIT - 1) >> FRACBITS;
+	int yh;
+	x1 = vis->x1;
+	x2 = vis->x2;
+
+	if (x1 < 0)
+		x1 = 0;
+	if (x2 < x1)
+		x2 = x1;
+	if (x2 >= viewwidth)
+		x2 = viewwidth - 1;
+
+	yh = yl + (((x2 - x1)<<detailxshift)>>detailyshift);
+
+	// Don't bother clipping each individual column
+	if (yh >= mfloorclip[x1])
+		yh = mfloorclip[x1]-1;
+	if (yl <= mceilingclip[x1])
+		yl = mceilingclip[x1]+1;
+	if (yh >= mfloorclip[x2])
+		yh = mfloorclip[x2]-1;
+	if (yl <= mceilingclip[x2])
+		yl = mceilingclip[x2]+1;
+
+	// vis->mobjflags holds translucency level (0-255)
+	{
+		argb_t *bg2rgb;
+		int countbase = x2 - x1 + 1;
+		int ycount;
+		int colsize = ds_colsize;
+		int spacing;
+		byte *dest;
+		argb_t fg;
+
+		ycount = yh - yl;
+		if (ycount < 0)
+			return;
+		ycount++;
+
+		{
+			fixed_t fglevel, bglevel;
+			argb_t *fg2rgb;
+
+			fglevel = ((vis->mobjflags + 1) << 8) & ~0x3ff;
+			bglevel = FRACUNIT-fglevel;
+			fg2rgb = Col2RGB8[fglevel>>10];
+			bg2rgb = Col2RGB8[bglevel>>10];
+			fg = fg2rgb[color];
+		}
+
+		spacing = screen->pitch - (countbase << detailxshift);
+		dest = ylookup[yl] + columnofs[x1];
+
+		do
+		{
+			int count = countbase;
+			do
+			{
+				argb_t bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest = RGB32k[0][0][bg & (bg>>15)];
+				dest += colsize;
+			} while (--count);
+			dest += spacing;
+		} while (--ycount);
+	}
+}
+
+void R_DrawParticleD (vissprite_t *vis, int x1, int x2)
+{
+	argb_t color = vis->colormap.shade(vis->startfrac);
 	int yl = (centeryfrac - FixedMul(vis->texturemid, vis->xscale) + FRACUNIT - 1) >> FRACBITS;
 	int yh;
 	x1 = vis->x1;
@@ -1820,36 +1896,35 @@ void R_DrawParticle (vissprite_t *vis, int x1, int x2)
 		int ycount;
 		int colsize = ds_colsize;
 		int spacing;
-		byte *dest;
-		unsigned int fg;
+		int pitch;
+		argb_t *dest;
 
 		ycount = yh - yl;
 		if (ycount < 0)
 			return;
 		ycount++;
 
+		pitch = screen->pitch / sizeof(argb_t);
+
+		int fga, bga;
 		{
 			fixed_t fglevel, bglevel;
-			unsigned int *fg2rgb;
 
 			fglevel = ((vis->mobjflags + 1) << 8) & ~0x3ff;
 			bglevel = FRACUNIT-fglevel;
-			fg2rgb = Col2RGB8[fglevel>>10];
-			bg2rgb = Col2RGB8[bglevel>>10];
-			fg = fg2rgb[color];
+			fga = fglevel >> 8;
+			bga = bglevel >> 8;
 		}
 
-		spacing = screen->pitch - (countbase << detailxshift);
-		dest = ylookup[yl] + columnofs[x1];
+		spacing = pitch - (countbase << detailxshift);
+		dest = (argb_t *)( ylookup[yl] + columnofs[x1] );
 
 		do
 		{
 			int count = countbase;
 			do
 			{
-				unsigned int bg = bg2rgb[*dest];
-				bg = (fg+bg) | 0x1f07c1f;
-				*dest = RGB32k[0][0][bg & (bg>>15)];
+				*dest = alphablend2a(*dest, bga, color, fga);
 				dest += colsize;
 			} while (--count);
 			dest += spacing;

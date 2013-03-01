@@ -105,7 +105,7 @@ ticcmd_t *I_BaseTiccmd (void);
 // Clean exit, displays sell blurb.
 void STACK_ARGS I_Quit (void);
 
-
+void STACK_ARGS I_Warning(const char *warning, ...);
 void STACK_ARGS I_Error (const char *error, ...);
 void STACK_ARGS I_FatalError (const char *error, ...);
 

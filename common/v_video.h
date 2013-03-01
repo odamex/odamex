@@ -465,8 +465,8 @@ extern byte newgamma[256];
 EXTERN_CVAR (gammalevel)
 
 // Translucency tables
-extern unsigned int Col2RGB8[65][256];
-extern byte RGB32k[32][32][32];
+extern argb_t Col2RGB8[65][256];
+extern palindex_t RGB32k[32][32][32];
 
 // Allocates buffer screens, call before R_Init.
 void V_Init (void);
@@ -475,24 +475,42 @@ void V_Init (void);
 extern int V_ColorFill;
 
 // The color map for #1 and #2 above
-extern byte *V_ColorMap;
+extern translationref_t V_ColorMap;
 
 // The palette lookup table to be used with for direct modes
-extern unsigned int *V_Palette;
+extern shaderef_t V_Palette;
 
 void V_MarkRect (int x, int y, int width, int height);
 
 // BestColor
-byte BestColor (const DWORD *palette, const int r, const int g, const int b, const int numcolors);
+byte BestColor (const argb_t *palette, const int r, const int g, const int b, const int numcolors);
+byte BestColor2 (const argb_t *palette, const argb_t color, const int numcolors);
 // Returns the closest color to the one desired. String
 // should be of the form "rr gg bb".
-int V_GetColorFromString (const DWORD *palette, const char *colorstring);
+int V_GetColorFromString (const argb_t *palette, const char *colorstring);
 // Scans through the X11R6RGB lump for a matching color
 // and returns a color string suitable for V_GetColorFromString.
 std::string V_GetColorStringByName (const char *name);
 
 
 BOOL V_SetResolution (int width, int height, int bpp);
+
+template<>
+forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)
+{
+	// Crazy 8bpp alpha-blending using lookup tables and bit twiddling magic
+	argb_t bgARGB = Col2RGB8[bga >> 2][bg];
+	argb_t fgARGB = Col2RGB8[fga >> 2][fg];
+
+	argb_t mix = (fgARGB + bgARGB) | 0x1f07c1f;
+	return RGB32k[0][0][mix & (mix >> 15)];
+}
+
+template<>
+forceinline argb_t rt_blend2(const argb_t bg, const int bga, const argb_t fg, const int fga)
+{
+	return alphablend2a(bg, bga, fg, fga);
+}
 
 #endif // __V_VIDEO_H__
 

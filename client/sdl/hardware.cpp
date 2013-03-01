@@ -134,6 +134,11 @@ void I_FinishUpdateNoBlit ()
 	screen->Unlock ();
 }
 
+void I_TempUpdate ()
+{
+	Video->UpdateScreen (screen);
+}
+
 void I_FinishUpdate ()
 {
 	// Draws frame time and cumulative fps
@@ -149,10 +154,10 @@ void I_FinishUpdate ()
 		if (howlong > 0)
 		{
 			#ifdef WIN32
-			chars = sprintf (fpsbuff, "%I64d ms (%d fps)",
+			chars = sprintf (fpsbuff, "%3I64d ms (%3d fps)",
 				howlong, lastcount);
 			#else
-			chars = sprintf (fpsbuff, "%lld ms (%d fps)",
+			chars = sprintf (fpsbuff, "%3lld ms (%3d fps)",
 				howlong, lastcount);
             #endif
 			screen->Clear (0, screen->height - 8, chars * 8, screen->height, 0);
@@ -257,7 +262,7 @@ void I_ScreenShot(std::string filename)
 	screen->Lock();
 
 	surface = SDL_CreateRGBSurfaceFrom(screen->buffer, screen->width,
-									   screen->height, 8, screen->pitch,
+									   screen->height, screen->bits, screen->pitch,
 									   0, 0, 0, 0);
 
 	screen->Unlock();
@@ -267,6 +272,8 @@ void I_ScreenShot(std::string filename)
 		return;
 	}
 
+	if (screen->is8bit())
+	{
 	// Set up the palette for our screen shot
 	pal = IndexedPalette;
 
@@ -278,6 +285,7 @@ void I_ScreenShot(std::string filename)
 	}
 
 	SDL_SetColors(surface, colors, 0, 256);
+	}
 
 	// save the bmp file
 	if(SDL_SaveBMP(surface, filename.c_str()) == -1) {
@@ -325,9 +333,11 @@ bool I_SetOverscan (float scale)
 	return Video->SetOverscan (scale);
 }
 
-void I_SetMode (int &width, int &height, int &bits)
+BOOL I_SetMode (int &width, int &height, int &bits)
 {
 	bool fs = false;
+	int tbits = bits;
+
 	switch (Video->GetDisplayType ())
 	{
 	case DISPLAY_WindowOnly:
@@ -345,23 +355,40 @@ void I_SetMode (int &width, int &height, int &bits)
 
 		break;
 	}
-	bool res = Video->SetMode (width, height, bits, fs);
 
-	if (!res)
-	{
-		I_ClosestResolution (&width, &height, bits);
-		if (!Video->SetMode (width, height, bits, fs))
-			I_FatalError ("Mode %dx%dx%d is unavailable\n",
-						  width, height, bits);
-	}
+	bool res = Video->SetMode (width, height, tbits, fs);
+	if (res) return true;
+
+	// Try the opposite bit mode:
+	tbits = bits == 32 ? 8 : 32;
+	res = Video->SetMode (width, height, tbits, fs);
+	if (res) return true;
+
+	// Switch the bit mode back:
+	tbits = bits;
+
+	// Try the closest resolution:
+	I_ClosestResolution (&width, &height);
+	res = Video->SetMode (width, height, tbits, fs);
+	if (res) return true;
+
+	// Try the opposite bit mode:
+	tbits = bits == 32 ? 8 : 32;
+	res = Video->SetMode (width, height, tbits, fs);
+	if (res) return true;
+
+	// Just couldn't get it:
+	return false;
+	//I_FatalError ("Mode %dx%dx%d is unavailable\n",
+	//			width, height, bits);
 }
 
-bool I_CheckResolution(int width, int height, int bits)
+bool I_CheckResolution(int width, int height)
 {
 	int twidth, theight;
 
 	Video->FullscreenChanged(vid_fullscreen ? true : false);
-	Video->StartModeIterator(bits);
+	Video->StartModeIterator();
 	while (Video->NextMode (&twidth, &theight))
 	{
 		if (width == twidth && height == theight)
@@ -372,7 +399,7 @@ bool I_CheckResolution(int width, int height, int bits)
 	return !vid_fullscreen;
 }
 
-void I_ClosestResolution (int *width, int *height, int bits)
+void I_ClosestResolution (int *width, int *height)
 {
 	int twidth, theight;
 	int cwidth = 0, cheight = 0;
@@ -382,7 +409,7 @@ void I_ClosestResolution (int *width, int *height, int bits)
 	Video->FullscreenChanged (vid_fullscreen ? true : false);
 	for (iteration = 0; iteration < 2; iteration++)
 	{
-		Video->StartModeIterator (bits);
+		Video->StartModeIterator ();
 		while (Video->NextMode (&twidth, &theight))
 		{
 			if (twidth == *width && theight == *height)
@@ -418,9 +445,9 @@ bool I_CheckVideoDriver (const char *name)
 	return (std::string(name) == Video->GetVideoDriverName());
 }
 
-void I_StartModeIterator (int bits)
+void I_StartModeIterator ()
 {
-	Video->StartModeIterator (bits);
+	Video->StartModeIterator ();
 }
 
 bool I_NextMode (int *width, int *height)
@@ -486,15 +513,10 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 		{
 			// INDEX8 -> INDEX8 or ARGB8888 -> ARGB8888
 
-			byte *destline, *srcline;
-
-			if (!dest->is8bit())
+			if (dest->is8bit())
 			{
-				destwidth <<= 2;
-				srcwidth <<= 2;
-				srcx <<= 2;
-				destx <<= 2;
-			}
+				// INDEX8 -> INDEX8
+				byte *destline, *srcline;
 
 			if (fracxstep == FRACUNIT)
 			{
@@ -518,6 +540,34 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 				}
 			}
 		}
+			else
+			{
+				// ARGB8888 -> ARGB8888
+				argb_t *destline, *srcline;
+
+				if (fracxstep == FRACUNIT)
+				{
+					for (y = desty; y < desty + destheight; y++, fracy += fracystep)
+					{
+						memcpy ((argb_t *)(dest->buffer + y * dest->pitch) + destx,
+								(argb_t *)(src->buffer + (fracy >> FRACBITS) * src->pitch) + srcx,
+								destwidth * (dest->bits / 8));
+					}
+				}
+				else
+				{
+					for (y = desty; y < desty + destheight; y++, fracy += fracystep)
+					{
+						srcline = (argb_t *)(src->buffer + (fracy >> FRACBITS) * src->pitch) + srcx;
+						destline = (argb_t *)(dest->buffer + y * dest->pitch) + destx;
+						for (x = fracx = 0; x < destwidth; x++, fracx += fracxstep)
+						{
+							destline[x] = srcline[fracx >> FRACBITS];
+						}
+					}
+				}
+			}
+		}
 		else if (!src->is8bit() && dest->is8bit())
 		{
 			// ARGB8888 -> INDEX8
@@ -526,7 +576,7 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 		else
 		{
 			// INDEX8 -> ARGB8888 (Palette set in V_Palette)
-			DWORD *destline;
+			argb_t *destline;
 			byte *srcline;
 
 			if (fracxstep == FRACUNIT)
@@ -535,10 +585,10 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 				for (y = desty; y < desty + destheight; y++, fracy += fracystep)
 				{
 					srcline = src->buffer + (fracy >> FRACBITS) * src->pitch + srcx;
-					destline = (DWORD *)(dest->buffer + y * dest->pitch) + destx;
+					destline = (argb_t *)(dest->buffer + y * dest->pitch) + destx;
 					for (x = 0; x < destwidth; x++)
 					{
-						destline[x] = V_Palette[srcline[x]];
+						destline[x] = V_Palette.shade(srcline[x]);
 					}
 				}
 			}
@@ -548,10 +598,10 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 				for (y = desty; y < desty + destheight; y++, fracy += fracystep)
 				{
 					srcline = src->buffer + (fracy >> FRACBITS) * src->pitch + srcx;
-					destline = (DWORD *)(dest->buffer + y * dest->pitch) + destx;
+					destline = (argb_t *)(dest->buffer + y * dest->pitch) + destx;
 					for (x = fracx = 0; x < destwidth; x++, fracx += fracxstep)
 					{
-						destline[x] = V_Palette[srcline[fracx >> FRACBITS]];
+						destline[x] = V_Palette.shade(srcline[fracx >> FRACBITS]);
 					}
 				}
 			}
@@ -577,14 +627,14 @@ bool IVideo::CanBlit () { return true; }
 bool IVideo::SetOverscan (float scale) { return true; }
 
 bool IVideo::SetMode (int width, int height, int bits, bool fs) { return true; }
-void IVideo::SetPalette (DWORD *palette) {}
+void IVideo::SetPalette (argb_t *palette) {}
 
 void IVideo::SetOldPalette (byte *doompalette) {}
 void IVideo::UpdateScreen (DCanvas *canvas) {}
 void IVideo::ReadScreen (byte *block) {}
 
 int IVideo::GetModeCount () { return 1; }
-void IVideo::StartModeIterator (int bits) {}
+void IVideo::StartModeIterator () {}
 bool IVideo::NextMode (int *width, int *height) { static int w = 320, h = 240; width = &w; height = &h; return false; }
 
 DCanvas *IVideo::AllocateSurface (int width, int height, int bits, bool primary)
@@ -596,6 +646,7 @@ DCanvas *IVideo::AllocateSurface (int width, int height, int bits, bool primary)
 	scrn->bits = bits;
 	scrn->m_LockCount = 0;
 	scrn->m_Palette = NULL;
+	// TODO(jsd): Align to 16-byte boundaries for SSE2 optimization!
 	scrn->buffer = new byte[width*height*(bits/8)];
 	scrn->pitch = width * (bits / 8);
 
@@ -615,17 +666,14 @@ bool IVideo::Blit (DCanvas *src, int sx, int sy, int sw, int sh,
 
 BEGIN_COMMAND (vid_listmodes)
 {
-	int width, height, bits;
+	int width, height;
 
-	for (bits = 1; bits <= 32; bits++)
-	{
-		Video->StartModeIterator (bits);
+	Video->StartModeIterator ();
 		while (Video->NextMode (&width, &height))
-			if (width == DisplayWidth && height == DisplayHeight && bits == DisplayBits)
-				Printf_Bold ("%4d x%5d x%3d\n", width, height, bits);
+		if (width == DisplayWidth && height == DisplayHeight)
+			Printf_Bold ("%4d x%5d\n", width, height);
 			else
-				Printf (PRINT_HIGH, "%4d x%5d x%3d\n", width, height, bits);
-	}
+			Printf (PRINT_HIGH, "%4d x%5d\n", width, height);
 }
 END_COMMAND (vid_listmodes)
 

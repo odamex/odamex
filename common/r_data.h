@@ -111,9 +111,11 @@ inline int R_TextureNumForName (const byte *name) { return R_TextureNumForName (
 inline int R_CheckTextureNumForName (const byte *name) { return R_CheckTextureNumForName ((const char *)name); }
 
 int R_ColormapNumForName(const char *name);		// killough 4/4/98
+void R_ReinitColormap();
+void R_ForceDefaultColormap (const char *name);
 void R_SetDefaultColormap (const char *name);	// [RH] change normal fadetable
 unsigned int R_BlendForColormap (int map);		// [RH] return calculated blend for a colormap
-extern byte *realcolormaps;						// [RH] make the colormaps externally visible
+extern shademap_t realcolormaps;				// [RH] make the colormaps externally visible
 extern size_t numfakecmaps;
 
 int R_FindSkin (const char *name);	// [RH] Find a skin

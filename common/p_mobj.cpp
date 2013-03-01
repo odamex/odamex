@@ -110,7 +110,7 @@ AActor::AActor () :
     momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
     damage(0), flags(0), flags2(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
     visdir(0), reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), gear(0), onground(false),
+    iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
     tid(0), bmapnode(this)
 {
@@ -215,7 +215,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
     special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
     reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), gear(0), onground(false),
+    iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
     tid(0), bmapnode(this)
 {
@@ -760,8 +760,9 @@ void AActor::Serialize (FArchive &arc)
 			<< waterlevel
 			<< gear;
 
+		// NOTE(jsd): This is pretty awful right here:
 		if (translation)
-			arc << (DWORD)(translation - translationtables);
+			arc << (DWORD)(translation.getTable() - translationtables);
 		else
 			arc << (DWORD)0xffffffff;
 		spawnpoint.Serialize (arc);
@@ -829,9 +830,14 @@ void AActor::Serialize (FArchive &arc)
 		DWORD trans;
 		arc >> trans;
 		if (trans == (DWORD)0xffffffff)
-			translation = NULL;
+			translation = translationref_t();
 		else
-			translation = translationtables + trans;
+		{
+			if ((trans / 256) <= MAXPLAYERS)
+				translation = translationref_t(translationtables + trans, trans / 256);
+			else
+				translation = translationref_t(translationtables + trans);
+		}
 		spawnpoint.Serialize (arc);
 		if(type >= NUMMOBJTYPES)
 			I_Error("Unknown object type in saved game");

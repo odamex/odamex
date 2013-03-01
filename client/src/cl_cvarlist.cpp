@@ -350,18 +350,25 @@ CVAR (r_viewsize, "0", "",	CVARTYPE_BYTE, CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NO
 // Default video dimensions. [AM] Bumped up from 320x200.
 CVAR (vid_defwidth, "640", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (vid_defheight, "480", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Default bitdepth
-CVAR (vid_defbits, "8", "",	CVARTYPE_BYTE, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Force video mode
 CVAR (vid_autoadjust, "1", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
 // Frames per second counter
 CVAR (vid_fps, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
+// Wait for vertical sync (vsync)
+CVAR (vid_vsync, "1", "Wait for vertical sync", CVARTYPE_BOOL, CVAR_ARCHIVE)
+// Run at 35fps
+CVAR (vid_capfps, "1", "Limit to 35fps", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Fullscreen mode
 #ifdef GCONSOLE
 	CVAR_FUNC_DECL (vid_fullscreen, "1", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
 #else
 	CVAR_FUNC_DECL (vid_fullscreen, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
 #endif
+// Yes for 32-bit, No for 8-bit
+CVAR_FUNC_DECL (vid_32bpp,		"0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
+// Optimize rendering functions based on CPU vectorization support
+// Can be of "detect" or "none" or "mmx","sse2","altivec" depending on availability; case-insensitive.
+CVAR_FUNC_DECL (r_optimize, "detect", "Rendering optimizations", CVARTYPE_STRING, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // TODO: document
 CVAR_FUNC_DECL (screenblocks, "10", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // How to handle widescreen resolutions

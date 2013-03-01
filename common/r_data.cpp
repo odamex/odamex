@@ -57,8 +57,6 @@
 // a patch or sprite is composed of zero or more columns.
 //
 
-
-
 int 			firstflat;
 int 			lastflat;
 int				numflats;
@@ -69,7 +67,6 @@ int				numspritelumps;
 
 int				numtextures;
 texture_t** 	textures;
-
 
 int*			texturewidthmask;
 
@@ -758,20 +755,48 @@ static struct FakeCmap {
 } *fakecmaps;
 size_t numfakecmaps;
 int firstfakecmap;
-byte *realcolormaps;
+shademap_t realcolormaps;
 int lastusedcolormap;
+
+void R_ForceDefaultColormap(const char *name)
+{
+	byte *data = (byte *)W_CacheLumpName (name, PU_CACHE);
+
+	memcpy (realcolormaps.colormap, data, (NUMCOLORMAPS+1)*256);
+
+#if 0
+	// Setup shademap to mirror colormapped colors:
+	for (int m = 0; m < (NUMCOLORMAPS+1); ++m)
+		for (int c = 0; c < 256; ++c)
+			realcolormaps.shademap[m*256+c] = V_Palette.shade(realcolormaps.colormap[m*256+c]);
+#else
+	BuildDefaultShademap (GetDefaultPalette(), realcolormaps);
+#endif
+
+	strncpy (fakecmaps[0].name, name, 9); // denis - todo - string limit?
+	std::transform(fakecmaps[0].name, fakecmaps[0].name + strlen(fakecmaps[0].name), fakecmaps[0].name, toupper);
+	fakecmaps[0].blend = 0;
+}
 
 void R_SetDefaultColormap (const char *name)
 {
 	if (strnicmp (fakecmaps[0].name, name, 8))
 	{
-		byte *data = (byte *)W_CacheLumpName (name, PU_CACHE);
-
-		memcpy (realcolormaps, data, (NUMCOLORMAPS+1)*256);
-		strncpy (fakecmaps[0].name, name, 9); // denis - todo - string limit?
-		std::transform(fakecmaps[0].name, fakecmaps[0].name + strlen(fakecmaps[0].name), fakecmaps[0].name, toupper);
-		fakecmaps[0].blend = 0;
+		R_ForceDefaultColormap(name);
 	}
+}
+
+void R_ReinitColormap()
+{
+	if (fakecmaps == NULL)
+		return;
+
+	const char *name = fakecmaps[0].name;
+
+	if (name[0] == 0)
+		name = "COLORMAP";
+
+	R_ForceDefaultColormap(name);
 }
 
 //
@@ -795,18 +820,19 @@ void R_InitColormaps (void)
 		numfakecmaps = lastfakecmap - firstfakecmap;
 	}
 
-	realcolormaps = (byte *)Z_Malloc (256*(NUMCOLORMAPS+1)*numfakecmaps+255,PU_STATIC,0);
-	realcolormaps = (byte *)(((ptrdiff_t)realcolormaps + 255) & ~255);
+	realcolormaps.colormap = (byte *)Z_Malloc (256*(NUMCOLORMAPS+1)*numfakecmaps,PU_STATIC,0);
+	realcolormaps.shademap = (argb_t *)Z_Malloc (256*sizeof(argb_t)*(NUMCOLORMAPS+1)*numfakecmaps,PU_STATIC,0);
 	fakecmaps = (FakeCmap *)Z_Malloc (sizeof(*fakecmaps) * numfakecmaps, PU_STATIC, 0);
 
 	fakecmaps[0].name[0] = 0;
-	R_SetDefaultColormap ("COLORMAP");
+	R_ForceDefaultColormap ("COLORMAP");
 
 	if (numfakecmaps > 1)
 	{
 		int i;
 		size_t j;
 		palette_t *pal = GetDefaultPalette ();
+		shaderef_t defpal = shaderef_t(&pal->maps, 0);
 
 		for (i = ++firstfakecmap, j = 1; j < numfakecmaps; i++, j++)
 		{
@@ -815,8 +841,11 @@ void R_InitColormaps (void)
 				int k, r, g, b;
 				byte *map = (byte *)W_CacheLumpNum (i, PU_CACHE);
 
-				memcpy (realcolormaps+(NUMCOLORMAPS+1)*256*j,
-						map, (NUMCOLORMAPS+1)*256);
+				byte  *colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*j;
+				argb_t *shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
+
+				// Copy colormap data:
+				memcpy (colormap, map, (NUMCOLORMAPS+1)*256);
 
 				if(pal->basecolors)
 				{
@@ -830,7 +859,23 @@ void R_InitColormaps (void)
 						g = (g + GPART(pal->basecolors[map[k]])) >> 1;
 						b = (b + BPART(pal->basecolors[map[k]])) >> 1;
 					}
-					fakecmaps[j].blend = MAKEARGB (255, r, g, b);
+					// NOTE(jsd): This alpha value is used for 32bpp in water areas.
+					fakecmaps[j].blend = MAKEARGB (64, r, g, b);
+
+					// Set up shademap for the colormap:
+					for (k = 0; k < 256; ++k)
+					{
+						argb_t c = pal->basecolors[map[0]];
+						shademap[k] = alphablend1a(c, MAKERGB(r,g,b), j * (256 / numfakecmaps));
+					}
+				}
+				else
+				{
+					// Set up shademap for the colormap:
+					for (k = 0; k < 256; ++k)
+					{
+						shademap[k] = defpal.shade(colormap[k]);
+					}
 				}
 			}
 		}
@@ -1071,7 +1116,7 @@ BestColor
 (borrowed from Quake2 source: utils3/qdata/images.c)
 ===============
 */
-byte BestColor (const DWORD *palette, const int r, const int g, const int b, const int numcolors)
+byte BestColor (const argb_t *palette, const int r, const int g, const int b, const int numcolors)
 {
 	int		i;
 	int		dr, dg, db;
@@ -1103,6 +1148,10 @@ byte BestColor (const DWORD *palette, const int r, const int g, const int b, con
 	return bestcolor;
 }
 
+byte BestColor2 (const argb_t *palette, const argb_t color, const int numcolors)
+{
+	return BestColor(palette, RPART(color), GPART(color), BPART(color), numcolors);
+}
 
 VERSION_CONTROL (r_data_cpp, "$Id$")
 

@@ -105,14 +105,14 @@ static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 	if (maskedtexturecol[dc_x] != MAXINT && spryscale > 0)
 	{
 		// calculate lighting
-		if (!fixedcolormap)
+		if (!fixedcolormap.isValid())
 		{
 			unsigned index = rw_light >> LIGHTSCALESHIFT;	// [RH]
 
 			if (index >= MAXLIGHTSCALE)
 				index = MAXLIGHTSCALE-1;
 
-			dc_colormap = walllights[index] + basecolormap;	// [RH] add basecolormap
+			dc_colormap = basecolormap.with(walllights[index]);	// [RH] add basecolormap
 		}
 
 		// killough 3/2/98:
@@ -258,8 +258,8 @@ R_RenderMaskedSegRange
 							 texturescaley[texnum]);
 
 	if (fixedlightlev)
-		dc_colormap = basecolormap + fixedlightlev;
-	else if (fixedcolormap)
+		dc_colormap = basecolormap.with(fixedlightlev);
+	else if (fixedcolormap.isValid())
 		dc_colormap = fixedcolormap;
 
 	// draw the columns
@@ -508,8 +508,8 @@ static void BlastColumn (void (*blastfunc)())
 void R_RenderSegLoop1 (void)
 {
 	if (fixedlightlev)
-		dc_colormap = basecolormap + fixedlightlev;
-	else if (fixedcolormap)
+		dc_colormap = basecolormap.with(fixedlightlev);
+	else if (fixedcolormap.isValid())
 		dc_colormap = fixedcolormap;
 	else if (!walllights)
 		walllights = scalelight[0];
@@ -517,7 +517,7 @@ void R_RenderSegLoop1 (void)
 	for ( ; rw_x < rw_stopx ; rw_x++)
 	{
 		dc_x = rw_x;
-		if (!fixedcolormap)
+		if (!fixedcolormap.isValid())
 		{
 			// calculate lighting
 			unsigned index = rw_light >> LIGHTSCALESHIFT;
@@ -525,7 +525,7 @@ void R_RenderSegLoop1 (void)
 			if (index >= MAXLIGHTSCALE)
 				index = MAXLIGHTSCALE-1;
 
-			dc_colormap = walllights[index] + basecolormap;	// [RH] add basecolormap
+			dc_colormap = basecolormap.with(walllights[index]);	// [RH] add basecolormap
 		}
 		BlastColumn (colfunc);
 	}
@@ -549,8 +549,8 @@ void R_RenderSegLoop2 (void)
 		return;
 
 	if (fixedlightlev)
-		dc_colormap = basecolormap + fixedlightlev;
-	else if (fixedcolormap)
+		dc_colormap = basecolormap.with(fixedlightlev);
+	else if (fixedcolormap.isValid())
 		dc_colormap = fixedcolormap;
 	else {
 		// calculate lighting
@@ -562,7 +562,7 @@ void R_RenderSegLoop2 (void)
 		if (!walllights)
 			walllights = scalelight[0];
 
-		dc_colormap = walllights[index] + basecolormap;	// [RH] add basecolormap
+		dc_colormap = basecolormap.with(walllights[index]);	// [RH] add basecolormap
 	}
 
 	if (rw_x & 1) {
@@ -589,14 +589,14 @@ void R_RenderSegLoop2 (void)
 	}
 
 	while (rw_x < stop) {
-		if (!fixedcolormap) {
+		if (!fixedcolormap.isValid()) {
 			// calculate lighting
 			unsigned index = rw_light >> LIGHTSCALESHIFT;
 
 			if (index >= MAXLIGHTSCALE)
 				index = MAXLIGHTSCALE-1;
 
-			dc_colormap = walllights[index] + basecolormap;	// [RH] add basecolormap
+			dc_colormap = basecolormap.with(walllights[index]);	// [RH] add basecolormap
 		}
 		rt_initcols();
 		dc_x = 0;
@@ -614,14 +614,14 @@ void R_RenderSegLoop2 (void)
 		rw_x++;
 	}
 
-	if (!fixedcolormap) {
+	if (!fixedcolormap.isValid()) {
 		// calculate lighting
 		unsigned index = rw_light >> LIGHTSCALESHIFT;
 
 		if (index >= MAXLIGHTSCALE)
 			index = MAXLIGHTSCALE-1;
 
-		dc_colormap = walllights[index] + basecolormap;	// [RH] add basecolormap
+		dc_colormap = basecolormap.with(walllights[index]);	// [RH] add basecolormap
 	}
 
 	if (rw_stopx - rw_x == 1) {
@@ -1018,7 +1018,7 @@ void R_StoreWallRange(int start, int stop)
 		//	use different light tables
 		//	for horizontal / vertical / diagonal
 		// OPTIMIZE: get rid of LIGHTSEGSHIFT globally
-		if (!fixedcolormap)
+		if (!fixedcolormap.isValid())
 		{
 			int lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT)
 					+ (foggy ? 0 : extralight);

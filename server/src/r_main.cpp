@@ -58,11 +58,6 @@ int 			viewangleoffset;
 // increment every time a check is made
 int 			validcount = 1;
 
-// [RH] colormap currently drawing with
-lighttable_t	*basecolormap;
-int				fixedlightlev;
-lighttable_t	*fixedcolormap;
-
 int 			centerx;
 extern "C" {int	centery; }
 

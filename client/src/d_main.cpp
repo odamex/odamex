@@ -222,7 +222,8 @@ void D_Display (void)
 	{
 		int oldwidth = screen->width;
 		int oldheight = screen->height;
-		int oldbits = DisplayBits;
+		//int oldbits = DisplayBits;
+		int oldbits = screen->bits;
 
 		// Change screen mode.
 		if (!V_SetResolution (NewWidth, NewHeight, NewBits))
@@ -935,6 +936,10 @@ void D_DoomMain (void)
 	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
 	P_InitEffects();	// [ML] Do this here so we don't have to put particle crap in server
 	P_Init ();
+
+	// NOTE(jsd): Set up local player color
+	EXTERN_CVAR(cl_color);
+	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
 
 	Printf (PRINT_HIGH, "S_Init: Setting up sound.\n");
 	Printf (PRINT_HIGH, "S_Init: default sfx volume is %g\n", (float)snd_sfxvolume);

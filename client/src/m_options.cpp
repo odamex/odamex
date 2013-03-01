@@ -960,12 +960,10 @@ static void SetModesMenu (int w, int h, int bits);
 
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
-EXTERN_CVAR (vid_defbits)
-
-static cvar_t DummyDepthCvar (NULL, NULL, "", CVARTYPE_NONE, 0);
 
 EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
+EXTERN_CVAR (vid_32bpp)
 
 static value_t Depths[22];
 
@@ -993,13 +991,13 @@ static value_t Widescreen[] =
 };
 
 static menuitem_t ModesItems[] = {
-//	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
 	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
 #ifdef _XBOX
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
 #endif
+	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete,	"Widescreen",			{&r_widescreen},		{4.0}, {0.0},	{0.0},  {Widescreen}} ,
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1011,7 +1009,6 @@ static menuitem_t ModesItems[] = {
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ whitetext,"Note: Only 8 bpp modes are supported",{NULL},	{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,  VMEnterText,			{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,  VMTestText,				{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1019,13 +1016,13 @@ static menuitem_t ModesItems[] = {
 };
 
 #define VM_DEPTHITEM	0
-#define VM_RESSTART		4
-#define VM_ENTERLINE	14
-#define VM_TESTLINE		16
+#define VM_RESSTART		5
+#define VM_ENTERLINE	15
+#define VM_TESTLINE		17
 
 menu_t ModesMenu = {
 	"M_VIDMOD",
-	4,
+	5,
 	STACKARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,
@@ -1074,26 +1071,20 @@ static void M_SlideUIBlue (int val)
 //
 //		Set some stuff up for the video modes menu
 //
-static byte BitTranslate[16];
 
 void M_OptInit (void)
 {
 	int currval = 0, dummy1, dummy2, i;
 	char name[24];
 
-	for (i = 1; i < 32; i++)
-	{
-		I_StartModeIterator (i);
+	I_StartModeIterator ();
 		if (I_NextMode (&dummy1, &dummy2))
 		{
 			Depths[currval].value = currval;
-			sprintf (name, "%d bit", i);
 			delete[] Depths[currval].name;
 			Depths[currval].name = copystring (name);
-			BitTranslate[currval] = i;
 			currval++;
 		}
-	}
 
 	switch (I_DisplayType ())
 	{
@@ -1865,12 +1856,11 @@ void M_OptResponder (event_t *ev)
 					NewWidth = screen->width;
 					NewHeight = screen->height;
 				}
-				NewBits = BitTranslate[(int)DummyDepthCvar];
+				NewBits = (int)vid_32bpp ? 32 : 8;
 				setmodeneeded = true;
 				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				vid_defwidth.Set ((float)NewWidth);
 				vid_defheight.Set ((float)NewHeight);
-				vid_defbits.Set ((float)NewBits);
 				SetModesMenu (NewWidth, NewHeight, NewBits);
 			}
 			else if (item->type == more && item->e.mfunc)
@@ -1949,7 +1939,7 @@ void M_OptResponder (event_t *ev)
 					OldWidth = screen->width;
 					OldHeight = screen->height;
 					OldBits = DisplayBits;
-					NewBits = BitTranslate[(int)DummyDepthCvar];
+					NewBits = (int)vid_32bpp ? 32 : 8;
 					setmodeneeded = true;
 					testingmode = I_GetTime() + 5 * TICRATE;
 					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
@@ -2078,11 +2068,9 @@ static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
 	char strtemp[32];
     const char **str = NULL;
 	int	 i, c;
-	int	 width, height, showbits;
+	int	 width, height;
 
-	showbits = BitTranslate[(int)DummyDepthCvar];
-
-	I_StartModeIterator (showbits);
+	I_StartModeIterator ();
 
 	for (i = VM_RESSTART; ModesItems[i].type == screenres; i++)
 	{
@@ -2103,7 +2091,7 @@ static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
 			}
 			if (I_NextMode (&width, &height))
 			{
-				if (/* hi_bits == showbits && */ width == hiwidth && height == hiheight)
+				if (width == hiwidth && height == hiheight)
 					ModesItems[i].e.highlight = ModesItems[i].a.selmode = c;
 
 				sprintf (strtemp, "%dx%d", width, height);
@@ -2136,7 +2124,7 @@ static BOOL GetSelectedSize (int line, int *width, int *height)
 	}
 	else
 	{
-		I_StartModeIterator (BitTranslate[(int)DummyDepthCvar]);
+		I_StartModeIterator ();
 
 		stopat = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode + 1;
 
@@ -2148,24 +2136,9 @@ static BOOL GetSelectedSize (int line, int *width, int *height)
 	return true;
 }
 
-static int FindBits (int bits)
-{
-	int i;
-
-	for (i = 0; i < 22; i++)
-	{
-		if (BitTranslate[i] == bits)
-			return i;
-	}
-
-	return 0;
-}
-
 static void SetModesMenu (int w, int h, int bits)
 {
 	char strtemp[64];
-
-	DummyDepthCvar.Set ((float)FindBits (bits));
 
 	if (!testingmode)
 	{

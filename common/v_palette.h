@@ -25,31 +25,19 @@
 #define __V_PALETTE_H__
 
 #include "doomtype.h"
-
-#define MAKERGB(r,g,b)		(((r)<<16)|((g)<<8)|(b))
-#define MAKEARGB(a,r,g,b)	(((a)<<24)|((r)<<16)|((g)<<8)|(b))
-
-#define APART(c)			(((c)>>24)&0xff)
-#define RPART(c)			(((c)>>16)&0xff)
-#define GPART(c)			(((c)>>8)&0xff)
-#define BPART(c)			((c)&0xff)
+#include "r_defs.h"
 
 struct palette_s {
 	struct palette_s *next, *prev;
 
-	union {
-		// Which of these is used is determined by screen.is8bit
-
-		byte		*colormaps;		// Colormaps for 8-bit graphics
-		DWORD		*shades;		// ARGB8888 values for 32-bit graphics
-	} maps;
+	shademap_t      maps;
 	byte			*colormapsbase;
 	union {
 		char		name[8];
 		int			nameint[2];
 	} name;
-	DWORD			*colors;		// gamma corrected colors
-	DWORD			*basecolors;	// non-gamma corrected colors
+	argb_t			*colors;		// gamma corrected colors
+	argb_t			*basecolors;	// non-gamma corrected colors
 	unsigned		numcolors;
 	unsigned		flags;
 	unsigned		shadeshift;
@@ -80,13 +68,21 @@ typedef struct palette_s palette_t;
 
 
 struct dyncolormap_s {
-	byte *maps;
+	shaderef_t   maps;
 	unsigned int color;
 	unsigned int fade;
 	struct dyncolormap_s *next;
 };
 typedef struct dyncolormap_s dyncolormap_t;
 
+
+// Alpha blend between two RGB colors with only dest alpha value
+// 0 <=   toa <= 256
+argb_t alphablend1a(const argb_t from, const argb_t to, const int toa);
+// Alpha blend between two RGB colors with two alpha values
+// 0 <= froma <= 256
+// 0 <=   toa <= 256
+argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa);
 
 // InitPalettes()
 //	input: name:  the name of the default palette lump
@@ -149,6 +145,11 @@ palette_t *FindPalette (char *name, unsigned flags);
 // Generates all colormaps or shadings for the specified palette
 // with the current blending levels.
 void RefreshPalette (palette_t *pal);
+
+// Sets up the default colormaps and shademaps based on the given palette:
+void BuildDefaultColorAndShademap (palette_t *pal, shademap_t &maps);
+// Sets up the default shademaps (no colormaps) based on the given palette:
+void BuildDefaultShademap (palette_t *pal, shademap_t &maps);
 
 // RefreshPalettes()
 //

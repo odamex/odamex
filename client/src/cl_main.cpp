@@ -985,7 +985,11 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 
 	// keep trying to find a filename that doesn't yet exist
 	if (!M_FindFreeName(newfilename, "odd"))
-		I_Error("Unable to generate netdemo file name.  Please delete some netdemos.");
+	{
+		//I_Error("Unable to generate netdemo file name.  Please delete some netdemos.");
+		I_Warning("Unable to generate netdemo file name.");
+		return std::string();
+	}
 	
 	return newfilename;
 }
@@ -1037,6 +1041,10 @@ BEGIN_COMMAND(netrecord)
 		filename = CL_GenerateNetDemoFileName(argv[1]);
 	else
 		filename = CL_GenerateNetDemoFileName();
+
+	// NOTE(jsd): Presumably a warning is already printed.
+	if (filename.empty())
+		return;
 
 	CL_NetDemoRecord(filename.c_str());
 	netdemo.writeMapChange();
@@ -2112,7 +2120,7 @@ void CL_SpawnPlayer()
 	mobj->momx = mobj->momy = mobj->momz = 0;
 
 	// set color translations for player sprites
-	mobj->translation = translationtables + 256*playernum;
+	mobj->translation = translationref_t(translationtables + 256*playernum, playernum);
 	mobj->angle = angle;
 	mobj->pitch = mobj->roll = 0;
 	mobj->player = p;
@@ -2950,7 +2958,10 @@ void CL_MobjTranslation()
     if (!mo)
         return;
 
-	mo->translation = translationtables + 256 * table;
+	if (table <= MAXPLAYERS)
+		mo->translation = translationref_t(translationtables + 256 * table, table);
+	else
+		mo->translation = translationref_t(translationtables + 256 * table);
 }
 
 
@@ -3117,6 +3128,13 @@ void CL_LoadMap(void)
 				filename = CL_GenerateNetDemoFileName();
 			else
 				filename = CL_GenerateNetDemoFileName(filename);
+
+			// NOTE(jsd): Presumably a warning is already printed.
+			if (filename.empty())
+			{
+				netdemo.stopRecording();
+				return;
+			}
 
 			netdemo.startRecording(filename);
 		}

@@ -40,10 +40,6 @@
 
 #include "dthinker.h"
 
-
-
-
-
 // Silhouette, needed for clipping Segs (mainly)
 // and sprites representing things.
 #define SIL_NONE				0
@@ -241,6 +237,7 @@ struct sector_s
 	plane_t floorplane, ceilingplane;
 };
 typedef struct sector_s sector_t;
+
 
 
 
@@ -463,8 +460,6 @@ typedef struct tallpost_s tallpost_t;
 // OTHER TYPES
 //
 
-typedef byte lighttable_t;	// This could be wider for >8 bit display.
-
 struct drawseg_s
 {
 	seg_t*		curline;
@@ -515,6 +510,8 @@ public:
 typedef struct patch_s patch_t;
 
 
+
+
 // A vissprite_t is a thing
 //	that will be drawn during a refresh.
 // I.e. a sprite object that is partly visible.
@@ -545,11 +542,11 @@ struct vissprite_s
 
     // for color translation and shadow draw,
     //  maxbright frames as well
-    lighttable_t*	colormap;
+    shaderef_t		colormap;
 
 	int 			mobjflags;
 
-	byte			*translation;	// [RH] for translation;
+	translationref_t translation;	// [RH] for translation;
 	sector_t		*heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
 	fixed_t			translucency;
 	BYTE			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
@@ -631,7 +628,7 @@ struct visplane_s
 	int			minx;
 	int			maxx;
 
-	byte		*colormap;			// [RH] Support multiple colormaps
+	shaderef_t	colormap;			// [RH] Support multiple colormaps
 	fixed_t		xscale, yscale;		// [RH] Support flat scaling
 	angle_t		angle;				// [RH] Support flat rotation
 

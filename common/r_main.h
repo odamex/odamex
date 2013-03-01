@@ -27,6 +27,7 @@
 
 #include "d_player.h"
 #include "r_data.h"
+#include "v_palette.h"
 
 // killough 10/98: special mask indicates sky flat comes from sidedef
 #define PL_SKYFLAT (0x80000000)
@@ -54,7 +55,7 @@ extern fixed_t			centerxfrac;
 extern fixed_t			centeryfrac;
 extern fixed_t			yaspectmul;
 
-extern byte*			basecolormap;	// [RH] Colormap for sector currently being drawn
+extern shaderef_t		basecolormap;	// [RH] Colormap for sector currently being drawn
 
 extern int				validcount;
 
@@ -78,7 +79,7 @@ extern int				loopcount;
 #define MAXLIGHTZ			   128
 #define LIGHTZSHIFT 			20
 
-// [RH] Changed from lighttable_t* to int.
+// [RH] Changed from shaderef_t* to int.
 extern int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 extern int				scalelightfixed[MAXLIGHTSCALE];
 extern int				zlight[LIGHTLEVELS][MAXLIGHTZ];
@@ -86,7 +87,7 @@ extern int				zlight[LIGHTLEVELS][MAXLIGHTZ];
 extern int				extralight;
 extern BOOL				foggy;
 extern int				fixedlightlev;
-extern lighttable_t*	fixedcolormap;
+extern shaderef_t		fixedcolormap;
 
 extern int				lightscalexmul;	// [RH] for hires lighting fix
 extern int				lightscaleymul;
@@ -202,6 +203,49 @@ void R_SetLucentDrawFuncs(void);
 void R_SetTranslatedDrawFuncs(void);
 void R_SetTranslatedLucentDrawFuncs(void);
 
+inline const byte shaderef_t::ramp() const
+{
+	if (m_mapnum >= NUMCOLORMAPS)
+		return 0;
 
+	int index = clamp(m_mapnum * 256 / NUMCOLORMAPS, 0, 255);
+	return m_colors->ramp[index];
+}
+
+extern argb_t translationRGB[MAXPLAYERS+1][16];
+
+inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte c) const
+{
+	int pid = translation.getPlayerID();
+
+	// Not a player color translation:
+	if (pid == -1)
+		return shade(translation.tlate(c));
+
+	// Special effect:
+	if (m_mapnum >= NUMCOLORMAPS)
+		return shade(translation.tlate(c));
+
+	// Is a player color translation, but not a player color index:
+	if (!(c >= 0x70 && c < 0x80))
+		return shade(c);
+
+	// Default to white light:
+	argb_t lightcolor = MAKERGB(255, 255, 255);
+
+	// Use the dynamic lighting's light color if we have one:
+	if (m_dyncolormap != NULL)
+		lightcolor = m_dyncolormap->color;
+
+	// Find the shading for the custom player colors:
+	byte a = 255 - ramp();
+	argb_t t = translationRGB[pid][c - 0x70];
+	argb_t s = MAKERGB(
+		RPART(t) * RPART(lightcolor) * a / (255 * 255),
+		GPART(t) * GPART(lightcolor) * a / (255 * 255),
+		BPART(t) * BPART(lightcolor) * a / (255 * 255)
+	);
+	return s;
+}
 
 #endif // __R_MAIN_H__

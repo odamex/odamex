@@ -1295,6 +1295,11 @@ void M_PlayerSetup (int choice)
 
 	// [Nes] Intialize the player preview color.
 	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
+
+	if (consoleplayer().ingame())
+	{
+		R_CopyTranslationRGB (0, consoleplayer_id);
+	}
 }
 
 static void M_PlayerSetupTicker (void)
@@ -1309,6 +1314,46 @@ static void M_PlayerSetupTicker (void)
 		PlayerState = &states[PlayerState->nextstate];
 	}
 	PlayerTics = PlayerState->tics;
+}
+
+template<typename pixel_t>
+static forceinline pixel_t R_FirePixel(const byte c);
+
+template<>
+forceinline byte R_FirePixel<byte>(const byte c)
+{
+	return FireRemap[c];
+}
+
+template<>
+forceinline argb_t R_FirePixel<argb_t>(const byte c)
+{
+	return MAKERGB(c, 0, 0);
+}
+
+template<int xscale, typename pixel_t>
+static forceinline void R_RenderFire(int x, int y)
+{
+	int pitch = screen->pitch / sizeof(pixel_t);
+
+	for (int b = 0; b < FireScreen->height; b++)
+	{
+		pixel_t *to = (pixel_t *)(screen->buffer + y * screen->pitch + x * sizeof(pixel_t));
+		byte *from = FireScreen->buffer + b * FireScreen->pitch;
+		y += CleanYfac;
+
+		for (int a = 0; a < FireScreen->width; a++, to += xscale, from++)
+		{
+			int c;
+			for (c = CleanYfac; c; c--)
+			{
+				for (int i = 0; i < xscale; ++i)
+				{
+					*(to + pitch*c + i) = R_FirePixel<pixel_t>(*from);
+				}
+			}
+		}
+	}
 }
 
 static void M_PlayerSetupDrawer (void)
@@ -1428,107 +1473,23 @@ static void M_PlayerSetupDrawer (void)
 			}
 
 			y--;
-			pitch = screen->pitch;
-			switch (CleanXfac)
-			{
-			case 1:
-				for (b = 0; b < FireScreen->height; b++)
+			if (screen->is8bit())
 				{
-					byte *to = screen->buffer + y * screen->pitch + x;
-					from = FireScreen->buffer + b * FireScreen->pitch;
-					y += CleanYfac;
-
-					for (a = 0; a < FireScreen->width; a++, to++, from++)
-					{
-						int c;
-						for (c = CleanYfac; c; c--)
-							*(to + pitch*c) = FireRemap[*from];
+				// 8bpp rendering:
+				     if (CleanXfac == 1) R_RenderFire<1, byte>(x, y);
+				else if (CleanXfac == 2) R_RenderFire<2, byte>(x, y);
+				else if (CleanXfac == 3) R_RenderFire<3, byte>(x, y);
+				else if (CleanXfac == 4) R_RenderFire<4, byte>(x, y);
+				else if (CleanXfac == 5) R_RenderFire<5, byte>(x, y);
 					}
-				}
-				break;
-
-			case 2:
-				for (b = 0; b < FireScreen->height; b++)
-				{
-					byte *to = screen->buffer + y * screen->pitch + x;
-					from = FireScreen->buffer + b * FireScreen->pitch;
-					y += CleanYfac;
-
-					for (a = 0; a < FireScreen->width; a++, to += 2, from++)
-					{
-						int c;
-						for (c = CleanYfac; c; c--)
-						{
-							*(to + pitch*c) = FireRemap[*from];
-							*(to + pitch*c + 1) = FireRemap[*from];
-						}
-					}
-				}
-				break;
-
-			case 3:
-				for (b = 0; b < FireScreen->height; b++)
-				{
-					byte *to = screen->buffer + y * screen->pitch + x;
-					from = FireScreen->buffer + b * FireScreen->pitch;
-					y += CleanYfac;
-
-					for (a = 0; a < FireScreen->width; a++, to += 3, from++)
-					{
-						int c;
-						for (c = CleanYfac; c; c--)
-						{
-							*(to + pitch*c) = FireRemap[*from];
-							*(to + pitch*c + 1) = FireRemap[*from];
-							*(to + pitch*c + 2) = FireRemap[*from];
-						}
-					}
-				}
-				break;
-
-			case 4:
-				for (b = 0; b < FireScreen->height; b++)
-				{
-					byte *to = screen->buffer + y * screen->pitch + x;
-					from = FireScreen->buffer + b * FireScreen->pitch;
-					y += CleanYfac;
-
-					for (a = 0; a < FireScreen->width; a++, to += 4, from++)
-					{
-						int c;
-						for (c = CleanYfac; c; c--)
-						{
-							*(to + pitch*c) = FireRemap[*from];
-							*(to + pitch*c + 1) = FireRemap[*from];
-							*(to + pitch*c + 2) = FireRemap[*from];
-							*(to + pitch*c + 3) = FireRemap[*from];
-						}
-					}
-				}
-				break;
-
-				case 5:
-				default:
-					for (b = 0; b < FireScreen->height; b++)
-					{
-						byte *to = screen->buffer + y * screen->pitch + x;
-						from = FireScreen->buffer + b * FireScreen->pitch;
-						y += CleanYfac;
-
-						for (a = 0; a < FireScreen->width; a++, to += 5, from++)
-						{
-							int c;
-							for (c = CleanYfac; c; c--)
+			else
 							{
-								*(to + pitch*c) = FireRemap[*from];
-								*(to + pitch*c + 1) = FireRemap[*from];
-								*(to + pitch*c + 2) = FireRemap[*from];
-								*(to + pitch*c + 3) = FireRemap[*from];
-								*(to + pitch*c + 4) = FireRemap[*from];
-							}
-						}
-					}
-                break;
+				// 32bpp rendering:
+				     if (CleanXfac == 1) R_RenderFire<1, DWORD>(x, y);
+				else if (CleanXfac == 2) R_RenderFire<2, DWORD>(x, y);
+				else if (CleanXfac == 3) R_RenderFire<3, DWORD>(x, y);
+				else if (CleanXfac == 4) R_RenderFire<4, DWORD>(x, y);
+				else if (CleanXfac == 5) R_RenderFire<5, DWORD>(x, y);
 			}
 			FireScreen->Unlock ();
 		}
@@ -1540,12 +1501,14 @@ static void M_PlayerSetupDrawer (void)
 
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
-		V_ColorMap = translationtables; // + 0 * 256
+		V_ColorMap = translationref_t(translationtables, 0);
 		//V_ColorMap = translationtables + consoleplayer().id * 256;
 
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
 			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
 	}
+
+	// Draw box surrounding fire and player:
 	screen->DrawPatchClean (W_CachePatch ("M_PBOX"),
 		320 - 88 - 32 + 36, PSetupDef.y + LINEHEIGHT*3 + 22);
 
@@ -1729,6 +1692,11 @@ static void SendNewColor (int red, int green, int blue)
 
 	// [Nes] Change the player preview color.
 	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
+
+	if (consoleplayer().ingame())
+	{
+		R_CopyTranslationRGB (0, consoleplayer_id);
+	}
 }
 
 static void M_SlidePlayerRed (int choice)

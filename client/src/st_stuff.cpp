@@ -534,7 +534,8 @@ void ST_refreshBackground(void)
 			if (!demoplayback || !democlassic) {
 				// [RH] Always draw faceback with the player's color
 				//		using a translation rather than a different patch.
-				V_ColorMap = translationtables + (displayplayer_id) * 256;
+				//V_ColorMap = translationtables + (displayplayer_id) * 256;
+				V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
 				BG->DrawTranslatedPatch (faceback, ST_FX, ST_FY);
 			} else {
 				BG->DrawPatch (faceclassic[displayplayer_id-1], ST_FX, ST_FY);
@@ -1343,7 +1344,6 @@ static int st_palette = 0;
 /* Original redscreen palette method - replaces ZDoom method - ML       */
 void ST_doPaletteStuff(void)
 {
-	int		palette;
 	byte*	pal;
 	float	cnt;
 	int		bzc;
@@ -1354,27 +1354,37 @@ void ST_doPaletteStuff(void)
 
 	SV_AddBlend (BaseBlendR / 255.0f, BaseBlendG / 255.0f, BaseBlendB / 255.0f, BaseBlendA, blend);
 
-	if (!r_underwater && memcmp (blend, st_zdpalette, sizeof(blend))) {
+	if (!screen->is8bit() && memcmp (blend, st_zdpalette, sizeof(blend))) {
 		memcpy (st_zdpalette, blend, sizeof(blend));
 		V_SetBlend ((int)(blend[0] * 255.0f), (int)(blend[1] * 255.0f),
 					(int)(blend[2] * 255.0f), (int)(blend[3] * 256.0f));
 	}
 
-	if (r_underwater)
+	if (!screen->is8bit())
 	{
-		palette = 0;
-
+		// 32bpp gets color blending approximated to the original palettes:
 		if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
 			SV_AddBlend (0.0f, 1.0f, 0.0f, 0.125f, blend);
-		if (plyr->bonuscount) {
+
+		if (plyr->bonuscount)
+		{
 			cnt = (float)(plyr->bonuscount << 3);
 			SV_AddBlend (0.8431f, 0.7294f, 0.2706f, cnt > 128 ? 0.5f : cnt / 255.0f, blend);
 		}
 
+#if 0
+		// Existing 32bpp code:
 		if (plyr->damagecount < 114)
 			cnt = damageToAlpha[(int)(plyr->damagecount*r_painintensity)];
 		else
 			cnt = damageToAlpha[(int)(113*r_painintensity)];
+#else
+		// NOTE(jsd): rewritten to better match 8bpp behavior
+		// 0 <= damagecount <= 100
+		cnt = (float)plyr->damagecount*3.5f;
+		if (!multiplayer || sv_allowredscreen)
+			cnt *= r_painintensity;
+#endif
 
 		if (plyr->powers[pw_strength])
 		{
@@ -1390,11 +1400,13 @@ void ST_doPaletteStuff(void)
 			if (cnt > 237)
 				cnt = 237;
 
-			SV_AddBlend (1.0f, 0.0f, 0.0f, cnt / 255.0f, blend);
+			SV_AddBlend (1.0f, 0.0f, 0.0f, (cnt + 18) / 255.0f, blend);
 		}
 	}
 	else
 	{
+		int		palette;
+
 		cnt = (float)plyr->damagecount;
 		if (!multiplayer || sv_allowredscreen)
 			cnt *= r_painintensity;
@@ -1433,13 +1445,10 @@ void ST_doPaletteStuff(void)
 
 			palette += STARTBONUSPALS;
 		}
-
 		else if ( plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
 			palette = RADIATIONPAL;
-
 		else
 			palette = 0;
-	}
 
 	if (palette != st_palette)
 	{
@@ -1447,6 +1456,7 @@ void ST_doPaletteStuff(void)
 		pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
 
 		I_SetOldPalette (pal);
+	}
 	}
 
 	SV_AddBlend (plyr->BlendR, plyr->BlendG, plyr->BlendB, plyr->BlendA, blend);

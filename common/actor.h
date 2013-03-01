@@ -424,7 +424,7 @@ public:
 	PlayerBitField	players_aware;
 
 	AActorPtr		goal;			// Monster's goal if not chasing anything
-	byte			*translation;	// Translation table (or NULL)
+	translationref_t translation;	// Translation table (or NULL)
 	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
 	byte			waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
 	SWORD			gear;			// killough 11/98: used in torque simulation

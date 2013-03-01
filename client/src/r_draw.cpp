@@ -24,6 +24,11 @@
 //-----------------------------------------------------------------------------
 
 #include <stddef.h>
+#include <assert.h>
+#include <algorithm>
+
+#include "SDL_cpuinfo.h"
+#include "r_intrin.h"
 
 #include "m_alloc.h"
 #include "doomdef.h"
@@ -81,8 +86,26 @@ void (*R_DrawTranslucentColumn)(void);
 void (*R_DrawTranslatedColumn)(void);
 void (*R_DrawSpan)(void);
 void (*R_DrawSlopeSpan)(void);
-void (*rt_map4cols)(int,int,int);
+void (*rt_copy1col) (int hx, int sx, int yl, int yh);
+void (*rt_copy2cols) (int hx, int sx, int yl, int yh);
+void (*rt_copy4cols) (int sx, int yl, int yh);
+void (*rt_map1col) (int hx, int sx, int yl, int yh);
+void (*rt_map2cols) (int hx, int sx, int yl, int yh);
+void (*rt_map4cols) (int sx, int yl, int yh);
+void (*rt_lucent1col) (int hx, int sx, int yl, int yh);
+void (*rt_lucent2cols) (int hx, int sx, int yl, int yh);
+void (*rt_lucent4cols) (int sx, int yl, int yh);
+void (*rt_tlate1col) (int hx, int sx, int yl, int yh);
+void (*rt_tlate2cols) (int hx, int sx, int yl, int yh);
+void (*rt_tlate4cols) (int sx, int yl, int yh);
+void (*rt_tlatelucent1col) (int hx, int sx, int yl, int yh);
+void (*rt_tlatelucent2cols) (int hx, int sx, int yl, int yh);
+void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
 
+// Possibly vectorized functions:
+void (*R_DrawSpanD)(void);
+void (*R_DrawSlopeSpanD)(void);
+void (*r_dimpatchD)(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 //
 // R_DrawColumn
@@ -91,7 +114,7 @@ void (*rt_map4cols)(int,int,int);
 extern "C" {
 int				dc_pitch=0x12345678;	// [RH] Distance between rows
 
-lighttable_t*	dc_colormap; 
+shaderef_t		dc_colormap;
 int 			dc_x; 
 int 			dc_yl; 
 int 			dc_yh; 
@@ -120,7 +143,7 @@ int 			dccount;
 // Thus a special case loop for very fast rendering can
 //	be used. It has also been used with Wolfenstein 3D.
 // 
-void R_DrawColumnP_C (void)
+void R_DrawColumnP (void)
 {
 	int 				count;
 	byte*				dest;
@@ -139,7 +162,7 @@ void R_DrawColumnP_C (void)
 	if (dc_x >= screen->width
 		|| dc_yl < 0
 		|| dc_yh >= screen->height) {
-		Printf (PRINT_HIGH, "R_DrawColumnP_C: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+		Printf (PRINT_HIGH, "R_DrawColumnP: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
 		return;
 	}
 #endif
@@ -157,7 +180,6 @@ void R_DrawColumnP_C (void)
 	{
 		// [RH] Get local copies of these variables so that the compiler
 		//		has a better chance of optimizing this well.
-		byte *colormap = dc_colormap;
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
 		byte *source = dc_source;
@@ -176,7 +198,7 @@ void R_DrawColumnP_C (void)
 
 			do
 			{
-				*dest = colormap[source[frac>>FRACBITS]];
+				*dest = dc_colormap.index(source[frac>>FRACBITS]);
 				dest += pitch;
 				if ((frac += fracstep) >= texheight)
 					frac -= texheight;
@@ -193,7 +215,7 @@ void R_DrawColumnP_C (void)
 			{
 				// Re-map color indices from wall texture column
 				//	using a lighting/special effects LUT.
-				*dest = colormap[source[(frac>>FRACBITS)&mask]];
+				*dest = dc_colormap.index(source[(frac>>FRACBITS)&mask]);
 
 				dest += pitch;
 				frac += fracstep;
@@ -203,9 +225,9 @@ void R_DrawColumnP_C (void)
 } 
 
 
-// [RH] Same as R_DrawColumnP_C except that it doesn't do any colormapping.
+// [RH] Same as R_DrawColumnP except that it doesn't do any colormapping.
 //		Used by the sky drawer because the sky is always fullbright.
-void R_StretchColumnP_C (void)
+void R_StretchColumnP (void)
 {
 	int 				count;
 	byte*				dest;
@@ -223,7 +245,7 @@ void R_StretchColumnP_C (void)
 	if (dc_x >= screen->width
 		|| dc_yl < 0
 		|| dc_yh >= screen->height) {
-		Printf (PRINT_HIGH, "R_StretchColumnP_C: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+		Printf (PRINT_HIGH, "R_StretchColumnP: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
 		return;
 	}
 #endif
@@ -297,7 +319,7 @@ void R_FillColumnP (void)
 	if (dc_x >= screen->width
 		|| dc_yl < 0
 		|| dc_yh >= screen->height) {
-		Printf (PRINT_HIGH, "R_StretchColumnP_C: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+		Printf (PRINT_HIGH, "R_StretchColumnP: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
 		return;
 	}
 #endif
@@ -362,6 +384,7 @@ void R_InitFuzzTable (void)
 		fuzzoffset[i] = fuzzinit[i] * fuzzoff;
 }
 
+
 //
 // Framebuffer postprocessing.
 // Creates a fuzzy image by copying pixels
@@ -370,7 +393,7 @@ void R_InitFuzzTable (void)
 //	could create the SHADOW effect,
 //	i.e. spectres and invisible players.
 //
-void R_DrawFuzzColumnP_C (void)
+void R_DrawFuzzColumnP (void)
 {
 	int count;
 	byte *dest;
@@ -395,11 +418,10 @@ void R_DrawFuzzColumnP_C (void)
 	if (dc_x >= screen->width
 		|| dc_yl < 0 || dc_yh >= screen->height)
 	{
-		I_Error ("R_DrawFuzzColumnP_C: %i to %i at %i",
+		I_Error ("R_DrawFuzzColumnP: %i to %i at %i",
 				 dc_yl, dc_yh, dc_x);
 	}
 #endif
-
 
 	dest = ylookup[dc_yl] + columnofs[dc_x];
 
@@ -411,7 +433,9 @@ void R_DrawFuzzColumnP_C (void)
 		//		the optimizations made by the compiler.
 		int pitch = dc_pitch;
 		int fuzz = fuzzpos;
-		byte *map = GetDefaultPalette()->maps.colormaps + 6*256;
+
+		//byte *map = GetDefaultPalette()->maps.colormap + 6*256;
+		shaderef_t  map(&GetDefaultPalette()->maps, 6);
 
 		do 
 		{
@@ -419,7 +443,7 @@ void R_DrawFuzzColumnP_C (void)
 			//	a pixel that is either one column
 			//	left or right of the current one.
 			// Add index from colormap to index.
-			*dest = map[dest[fuzzoffset[fuzz]]]; 
+			*dest = map.index(dest[fuzzoffset[fuzz]]);
 
 			// Clamp table lookup index.
 			fuzz = (fuzz + 1) & (FUZZTABLE - 1);
@@ -478,13 +502,12 @@ algorithm that uses RGB tables.
 
 */
 
-void R_DrawTranslucentColumnP_C (void)
+void R_DrawTranslucentColumnP (void)
 {
 	int count;
 	byte *dest;
 	fixed_t frac;
 	fixed_t fracstep;
-	unsigned int *fg2rgb, *bg2rgb;
 
 	count = dc_yh - dc_yl;
 	if (count < 0)
@@ -496,18 +519,24 @@ void R_DrawTranslucentColumnP_C (void)
 		|| dc_yl < 0
 		|| dc_yh >= screen->height)
 	{
-		I_Error ( "R_DrawTranslucentColumnP_C: %i to %i at %i",
+		I_Error ( "R_DrawTranslucentColumnP: %i to %i at %i",
 				  dc_yl, dc_yh, dc_x);
 	}
 #endif 
 
+	int bga, fga;
 	{
 		fixed_t fglevel, bglevel;
 
 		fglevel = dc_translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
+#if 1
+		fga = fglevel >> 8;
+		bga = bglevel >> 8;
+#else
 		fg2rgb = Col2RGB8[fglevel>>10];
 		bg2rgb = Col2RGB8[bglevel>>10];
+#endif
 	}
 
 	dest = ylookup[dc_yl] + columnofs[dc_x];
@@ -516,7 +545,6 @@ void R_DrawTranslucentColumnP_C (void)
 	frac = dc_texturefrac;
 
 	{
-		byte *colormap = dc_colormap;
 		byte *source = dc_source;
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
@@ -535,13 +563,18 @@ void R_DrawTranslucentColumnP_C (void)
 
 			do
 			{
-				unsigned int fg = colormap[source[(frac>>FRACBITS)]];
-				unsigned int bg = *dest;
+				palindex_t fg = dc_colormap.index(source[(frac>>FRACBITS)]);
+				palindex_t bg = *dest;
 				
+#if 1
+				*dest = rt_blend2<palindex_t>(bg, bga, fg, fga);
+#else
 				fg = fg2rgb[fg];
 				bg = bg2rgb[bg];
 				fg = (fg+bg) | 0x1f07c1f;
 				*dest = RGB32k[0][0][fg & (fg>>15)];
+#endif
+
 				dest += pitch;
 				if ((frac += fracstep) >= texheight)
 					frac -= texheight;
@@ -552,13 +585,18 @@ void R_DrawTranslucentColumnP_C (void)
 			// texture height is a power-of-2
 			do
 			{
-				unsigned int fg = colormap[source[(frac>>FRACBITS)&mask]];
-				unsigned int bg = *dest;
+				palindex_t fg = dc_colormap.index(source[(frac>>FRACBITS)&mask]);
+				palindex_t bg = *dest;
 
+#if 1
+				*dest = rt_blend2<palindex_t>(bg, bga, fg, fga);
+#else
 				fg = fg2rgb[fg];
 				bg = bg2rgb[bg];
 				fg = (fg+bg) | 0x1f07c1f;
 				*dest = RGB32k[0][0][fg & (fg>>15)];
+#endif
+
 				dest += pitch;
 				frac += fracstep;
 			} while (--count);
@@ -575,10 +613,11 @@ void R_DrawTranslucentColumnP_C (void)
 //	of the BaronOfHell, the HellKnight, uses
 //	identical sprites, kinda brightened up.
 //
-byte*	dc_translation;
+translationref_t dc_translation;
 byte*	translationtables;
+argb_t           translationRGB[MAXPLAYERS+1][16];
 
-void R_DrawTranslatedColumnP_C (void)
+void R_DrawTranslatedColumnP (void)
 { 
 	int 				count;
 	byte*				dest;
@@ -595,7 +634,7 @@ void R_DrawTranslatedColumnP_C (void)
 		|| dc_yl < 0
 		|| dc_yh >= screen->height)
 	{
-		I_Error ( "R_DrawTranslatedColumnP_C: %i to %i at %i",
+		I_Error ( "R_DrawTranslatedColumnP: %i to %i at %i",
 				  dc_yl, dc_yh, dc_x);
 	}
 	
@@ -607,10 +646,6 @@ void R_DrawTranslatedColumnP_C (void)
 	frac = dc_texturefrac;
 
 	{
-		// [RH] Local copies of global vars to improve compiler optimizations
-		byte *colormap = dc_colormap;
-		byte *translation = dc_translation;
-
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
 		byte *source = dc_source;
@@ -629,7 +664,7 @@ void R_DrawTranslatedColumnP_C (void)
 
 			do
 			{
-				*dest = colormap[translation[source[(frac>>FRACBITS)]]];
+				*dest = dc_colormap.index(dc_translation.tlate(source[(frac>>FRACBITS)]));
 				dest += pitch;
 				
 				if ((frac += fracstep) >= texheight)
@@ -641,7 +676,7 @@ void R_DrawTranslatedColumnP_C (void)
 			// texture height is a power-of-2
 			do
 			{
-				*dest = colormap[translation[source[(frac>>FRACBITS) & mask]]];
+				*dest = dc_colormap.index(dc_translation.tlate(source[(frac>>FRACBITS) & mask]));
 				dest += pitch;
 
 				frac += fracstep;
@@ -651,13 +686,13 @@ void R_DrawTranslatedColumnP_C (void)
 }
 
 // Draw a column that is both translated and translucent
-void R_DrawTlatedLucentColumnP_C (void)
+void R_DrawTlatedLucentColumnP (void)
 {
 	int count;
 	byte *dest;
 	fixed_t frac;
 	fixed_t fracstep;
-	unsigned int *fg2rgb, *bg2rgb;
+	argb_t *fg2rgb, *bg2rgb;
 
 	count = dc_yh - dc_yl;
 	if (count < 0)
@@ -669,7 +704,7 @@ void R_DrawTlatedLucentColumnP_C (void)
 		|| dc_yl < 0
 		|| dc_yh >= screen->height)
 	{
-		I_Error ( "R_DrawTlatedLucentColumnP_C: %i to %i at %i",
+		I_Error ( "R_DrawTlatedLucentColumnP: %i to %i at %i",
 				  dc_yl, dc_yh, dc_x);
 	}
 	
@@ -690,9 +725,6 @@ void R_DrawTlatedLucentColumnP_C (void)
 	frac = dc_texturefrac;
 
 	{
-		byte *translation = dc_translation;
-		byte *colormap = dc_colormap;
-
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
 		byte *source = dc_source;
@@ -711,7 +743,7 @@ void R_DrawTlatedLucentColumnP_C (void)
 
 			do
 			{
-				unsigned int fg = colormap[translation[source[(frac>>FRACBITS)]]];
+				unsigned int fg = dc_colormap.index(dc_translation.tlate(source[(frac>>FRACBITS)]));
 				unsigned int bg = *dest;
 
 				fg = fg2rgb[fg];
@@ -729,7 +761,7 @@ void R_DrawTlatedLucentColumnP_C (void)
 			// texture height is a power-of-2
 			do
 			{
-				unsigned int fg = colormap[translation[source[(frac>>FRACBITS)&mask]]];
+				unsigned int fg = dc_colormap.index(dc_translation.tlate(source[(frac>>FRACBITS)&mask]));
 				unsigned int bg = *dest;
 
 				fg = fg2rgb[fg];
@@ -764,7 +796,7 @@ int 					ds_y;
 int 					ds_x1; 
 int 					ds_x2;
 
-lighttable_t*			ds_colormap; 
+shaderef_t				ds_colormap; 
 
 dsfixed_t 				ds_xfrac; 
 dsfixed_t 				ds_yfrac; 
@@ -784,12 +816,13 @@ double					ds_iustep;
 double					ds_ivstep;
 double					ds_id;
 double					ds_idstep;
-byte					*slopelighting[MAXWIDTH];
+shaderef_t				slopelighting[MAXWIDTH];
 }
 
 //
 // Draws the actual span.
-void R_DrawSpanP_C (void)
+
+void R_DrawSpanP (void)
 {
 	dsfixed_t			xfrac;
 	dsfixed_t			yfrac;
@@ -829,7 +862,7 @@ void R_DrawSpanP_C (void)
 
 		// Lookup pixel from flat texture tile,
 		//  re-index using light/colormap.
-		*dest = ds_colormap[ds_source[spot]];
+		*dest = ds_colormap.index(ds_source[spot]);
 		dest += ds_colsize;
 
 		// Next step in u,v.
@@ -866,10 +899,8 @@ void R_FillSpan (void)
 //
 // Based on R_DrawSlope_8_64 from Eternity Engine, written by SoM/Quasar
 //
-#define SPANJUMP 16
-#define INTERPSTEP (0.0625f)
 
-void R_DrawSlopeSpanP_C(void)
+void R_DrawSlopeSpanP(void)
 {
 	int count = ds_x2 - ds_x1 + 1;
 	if (count <= 0)
@@ -897,7 +928,7 @@ void R_DrawSlopeSpanP_C(void)
 	byte *src = (byte *)ds_source;
 
 	int colsize = ds_colsize;
-	lighttable_t* colormap;
+	shaderef_t colormap;
 	int ltindex = 0;		// index into the lighting table
 
    while(count >= SPANJUMP)
@@ -926,7 +957,7 @@ void R_DrawSlopeSpanP_C(void)
       while(incount--)
       {
          colormap = slopelighting[ltindex++];
-         *dest = colormap[src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]];
+         *dest = colormap.index(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
          dest += colsize;
          ufrac += ustep;
          vfrac += vstep;
@@ -960,7 +991,7 @@ void R_DrawSlopeSpanP_C(void)
       while(incount--)
       {
          colormap = slopelighting[ltindex++];
-         *dest = colormap[src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]];
+         *dest = colormap.index(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
          dest += colsize;
          ufrac += ustep;
          vfrac += vstep;
@@ -1005,7 +1036,7 @@ void R_DrawSlopeSpanIdealP_C(void)
 	byte *src = (byte *)ds_source;
 
 	int colsize = ds_colsize;
-	lighttable_t* colormap;
+	shaderef_t colormap;
 	int ltindex = 0;		// index into the lighting table
 
 	do
@@ -1017,7 +1048,7 @@ void R_DrawSlopeSpanIdealP_C(void)
 		unsigned texl = (v & 63) * 64 + (u & 63);
 
 		colormap = slopelighting[ltindex++];
-		*dest = colormap[src[texl]];
+		*dest = colormap.index(src[texl]);
 		dest += colsize;
 
 		iu += ius;
@@ -1032,12 +1063,10 @@ void R_DrawSlopeSpanIdealP_C(void)
 /*										*/
 /****************************************/
 
-#define dc_shademap ((unsigned int *)dc_colormap)
-
-void R_DrawColumnD_C (void) 
+void R_DrawColumnD (void)
 { 
 	int 				count;
-	unsigned int*		dest;
+	argb_t*		dest;
 	fixed_t 			frac;
 	fixed_t 			fracstep;
 
@@ -1052,20 +1081,19 @@ void R_DrawColumnD_C (void)
 	if (dc_x >= screen->width
 		|| dc_yl < 0
 		|| dc_yh >= screen->height) {
-		Printf (PRINT_HIGH, "R_DrawColumnD_C: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+		Printf (PRINT_HIGH, "R_DrawColumnD: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
 		return;
 	}
 #endif
 
-	dest = (unsigned int *)(ylookup[dc_yl] + columnofs[dc_x]);
+	dest = (argb_t *)(ylookup[dc_yl] + columnofs[dc_x]);
 
 	fracstep = dc_iscale;
 	frac = dc_texturefrac;
 
 	{
-		unsigned int *shademap = dc_shademap;
 		byte *source = dc_source;
-		int pitch = dc_pitch >> 2;
+		int pitch = dc_pitch / sizeof(DWORD);
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
 
@@ -1082,7 +1110,8 @@ void R_DrawColumnD_C (void)
 
 			do
 			{
-				*dest = shademap[source[(frac>>FRACBITS)]];
+				*dest = dc_colormap.shade(source[(frac>>FRACBITS)]);
+
 				dest += pitch;
 				if ((frac += fracstep) >= texheight)
 					frac -= texheight;
@@ -1093,20 +1122,19 @@ void R_DrawColumnD_C (void)
 			// texture height is a power-of-2
 			do
 			{
-				*dest = shademap[source[(frac>>FRACBITS)&mask]];
+				*dest = dc_colormap.shade(source[(frac>>FRACBITS)&mask]);
 
 				dest += pitch;
 				frac += fracstep;
-
 			} while (--count);
 		}
 	}
 }
 
-void R_DrawFuzzColumnD_C (void)
+void R_DrawFuzzColumnD (void)
 {
 	int 				count;
-	unsigned int*		dest;
+	argb_t*		dest;
 
 	// Adjust borders. Low...
 	if (!dc_yl)
@@ -1127,22 +1155,22 @@ void R_DrawFuzzColumnD_C (void)
 	if (dc_x >= screen->width
 		|| dc_yl < 0 || dc_yh >= screen->height)
 	{
-		I_Error ("R_DrawFuzzColumnD_C: %i to %i at %i",
+		I_Error ("R_DrawFuzzColumnD: %i to %i at %i",
 				 dc_yl, dc_yh, dc_x);
 	}
 #endif
 
-	dest = (unsigned int *)(ylookup[dc_yl] + columnofs[dc_x]);
+	dest = (argb_t *)(ylookup[dc_yl] + columnofs[dc_x]);
 
 	// [RH] This is actually slightly brighter than
 	//		the indexed version, but it's close enough.
 	{
 		int fuzz = fuzzpos;
-		int pitch = dc_pitch >> 2;
+		int pitch = dc_pitch / sizeof(argb_t);
 
 		do
 		{
-			unsigned int work = dest[fuzzoffset[fuzz]>>2];
+			argb_t work = dest[fuzzoffset[fuzz]>>2];
 			*dest = work - ((work >> 2) & 0x3f3f3f);
 
 			// Clamp table lookup index.
@@ -1155,10 +1183,10 @@ void R_DrawFuzzColumnD_C (void)
 	}
 }
 
-void R_DrawTranslucentColumnD_C (void)
+void R_DrawTranslucentColumnD (void)
 {
 	int 				count;
-	unsigned int*		dest;
+	argb_t*		dest;
 	fixed_t 			frac;
 	fixed_t 			fracstep;
 
@@ -1172,21 +1200,31 @@ void R_DrawTranslucentColumnD_C (void)
 		|| dc_yl < 0
 		|| dc_yh >= screen->height)
 	{
-		I_Error ( "R_DrawTranslucentColumnD_C: %i to %i at %i",
+		I_Error ( "R_DrawTranslucentColumnD: %i to %i at %i",
 				  dc_yl, dc_yh, dc_x);
 	}
 	
 #endif 
 
-	dest = (unsigned int *)(ylookup[dc_yl] + columnofs[dc_x]);
+	int fga, bga;
+	{
+		fixed_t fglevel, bglevel;
+
+		fglevel = dc_translevel & ~0x3ff;
+		bglevel = FRACUNIT-fglevel;
+
+		fga = fglevel >> 8;
+		bga = bglevel >> 8;
+	}
+
+	dest = (argb_t *)(ylookup[dc_yl] + columnofs[dc_x]);
 
 	fracstep = dc_iscale;
 	frac = dc_texturefrac;
 
 	{
-		unsigned int *shademap = dc_shademap;
 		byte *source = dc_source;
-		int pitch = dc_pitch >> 2;
+		int pitch = dc_pitch / sizeof(argb_t);
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
 
@@ -1203,8 +1241,9 @@ void R_DrawTranslucentColumnD_C (void)
 
 			do
 			{
-				*dest = ((*dest >> 1) & 0x7f7f7f) +
-						((shademap[source[(frac>>FRACBITS)]] >> 1) & 0x7f7f7f);
+				argb_t fg = dc_colormap.shade(source[(frac>>FRACBITS)]);
+				argb_t bg = *dest;
+				*dest = alphablend2a(bg, bga, fg, fga);
 				dest += pitch;
 				
 				if ((frac += fracstep) >= texheight)
@@ -1216,8 +1255,9 @@ void R_DrawTranslucentColumnD_C (void)
 			// texture height is a power-of-2
 			do
 			{
-				*dest = ((*dest >> 1) & 0x7f7f7f) +
-						((shademap[source[(frac>>FRACBITS)&mask]] >> 1) & 0x7f7f7f);
+				argb_t fg = dc_colormap.shade(source[(frac>>FRACBITS)&mask]);
+				argb_t bg = *dest;
+				*dest = alphablend2a(bg, bga, fg, fga);
 				dest += pitch;
 
 				frac += fracstep;
@@ -1226,10 +1266,10 @@ void R_DrawTranslucentColumnD_C (void)
 	}
 }
 
-void R_DrawTranslatedColumnD_C (void)
+void R_DrawTranslatedColumnD (void)
 {
 	int 				count;
-	unsigned int*		dest;
+	argb_t*		dest;
 	fixed_t 			frac;
 	fixed_t 			fracstep;
 
@@ -1243,14 +1283,14 @@ void R_DrawTranslatedColumnD_C (void)
 		|| dc_yl < 0
 		|| dc_yh >= screen->height)
 	{
-		I_Error ( "R_DrawTranslatedColumnD_C: %i to %i at %i",
+		I_Error ( "R_DrawTranslatedColumnD: %i to %i at %i",
 				  dc_yl, dc_yh, dc_x);
 	}
 	
 #endif
 
 
-	dest = (unsigned int *)(ylookup[dc_yl] + columnofs[dc_x]);
+	dest = (argb_t *)(ylookup[dc_yl] + columnofs[dc_x]);
 
 	fracstep = dc_iscale;
 	frac = dc_texturefrac;
@@ -1258,9 +1298,7 @@ void R_DrawTranslatedColumnD_C (void)
 	// Here we do an additional index re-mapping.
 	{
 		byte *source = dc_source;
-		unsigned int *shademap = dc_shademap;
-		byte *translation = dc_translation;
-		int pitch = dc_pitch >> 2;
+		int pitch = dc_pitch / sizeof(argb_t);
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
 
@@ -1277,8 +1315,9 @@ void R_DrawTranslatedColumnD_C (void)
 
 			do
 			{
-				*dest = shademap[translation[source[(frac>>FRACBITS)]]];
+				*dest = dc_colormap.tlate(dc_translation, source[(frac>>FRACBITS)]);
 				dest += pitch;
+
 				if ((frac += fracstep) >= texheight)
 					frac -= texheight;
 			} while(--count);
@@ -1288,7 +1327,7 @@ void R_DrawTranslatedColumnD_C (void)
 			// texture height is a power-of-2
 			do
 			{
-				*dest = shademap[translation[source[(frac>>FRACBITS) & mask]]];
+				*dest = dc_colormap.tlate(dc_translation, source[(frac>>FRACBITS) & mask]);
 				dest += pitch;
 			
 				frac += fracstep;
@@ -1296,58 +1335,6 @@ void R_DrawTranslatedColumnD_C (void)
 		}
 	}
 }
-
-void R_DrawSpanD (void)
-{ 
-	fixed_t 			xfrac;
-	fixed_t 			yfrac;
-	unsigned int*		dest;
-	int 				count;
-	int 				spot;
-
-#ifdef RANGECHECK 
-	if (ds_x2 < ds_x1
-		|| ds_x1<0
-		|| ds_x2>=screen->width
-		|| ds_y>screen->height)
-	{
-		I_Error( "R_DrawSpan: %i to %i at %i",
-				 ds_x1,ds_x2,ds_y);
-	}
-//		dscount++;
-#endif
-
-	
-	xfrac = ds_xfrac;
-	yfrac = ds_yfrac;
-
-	dest = (unsigned int *)(ylookup[ds_y] + columnofs[ds_x1]);
-
-	count = ds_x2 - ds_x1 + 1;
-
-	{
-		byte *source = ds_source;
-		unsigned int *shademap = (unsigned int *)ds_colormap;
-		int colsize = ds_colsize >> 2;
-		int xstep = ds_xstep;
-		int ystep = ds_ystep;
-
-		do {
-			spot = ((yfrac>>(16-6))&(63*64)) + ((xfrac>>16)&63);
-
-			// Lookup pixel from flat texture tile,
-			//  re-index using light/colormap.
-			*dest = shademap[source[spot]];
-			dest += colsize;
-
-			// Next step in u,v.
-			xfrac += xstep; 
-			yfrac += ystep;
-		} while (--count);
-	}
-}
-
-
 
 /****************************************************/
 /****************************************************/
@@ -1408,6 +1395,14 @@ void R_InitTranslationTables (void)
 	for (i = 0; i < 256; i++)
 		translationtables[i] = i;
 
+	// Set up default translationRGB tables:
+	palette_t *pal = GetDefaultPalette();
+	for (i = 0; i < MAXPLAYERS; ++i)
+	{
+		for (int j = 0x70; j < 0x80; ++j)
+			translationRGB[i][j - 0x70] = pal->basecolors[j];
+	}
+
 	for (i = 1; i < MAXPLAYERS+3; i++)
 		memcpy (translationtables + i*256, translationtables, 256);
 
@@ -1434,17 +1429,36 @@ void R_FreeTranslationTables (void)
 // [Nes] Vanilla player translation table.
 void R_BuildClassicPlayerTranslation (int player, int color)
 {
+	palette_t *pal = GetDefaultPalette();
 	int i;
 	
 	if (color == 1) // Indigo
 		for (i = 0x70; i < 0x80; i++)
+		{
 			translationtables[i+(player * 256)] = 0x60 + (i&0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
 	else if (color == 2) // Brown
 		for (i = 0x70; i < 0x80; i++)
+		{
 			translationtables[i+(player * 256)] = 0x40 + (i&0xf);	
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
 	else if (color == 3) // Red
 		for (i = 0x70; i < 0x80; i++)
+		{
 			translationtables[i+(player * 256)] = 0x20 + (i&0xf);	
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
+}
+
+void R_CopyTranslationRGB (int fromplayer, int toplayer)
+{
+	for (int i = 0x70; i < 0x80; ++i)
+	{
+		translationRGB[toplayer][i - 0x70] = translationRGB[fromplayer][i - 0x70];
+		translationtables[i+(toplayer * 256)] = translationtables[i+(fromplayer * 256)];
+	}
 }
 
 // [RH] Create a player's translation table based on
@@ -1474,6 +1488,14 @@ void R_BuildPlayerTranslation (int player, int color)
 
 	for (i = 0x70; i < 0x80; i++) {
 		HSVtoRGB (&r, &g, &b, h, s, v);
+
+		// Set up RGB values for 32bpp translation:
+		translationRGB[player][i - 0x70] = MAKERGB(
+			(int)(r * 255.0f),
+			(int)(g * 255.0f),
+			(int)(b * 255.0f)
+		);
+
 		table[i] = BestColor (pal->basecolors,
 							  (int)(r * 255.0f),
 							  (int)(g * 255.0f),
@@ -1523,7 +1545,7 @@ R_InitBuffer
 
 	// Column offset. For windows
 	for (i = 0; i < width; i++)
-		columnofs[i] = viewwindowx + (i << xshift);
+		columnofs[i] = (viewwindowx + i) << xshift;
 
 	// Same with base row offset.
 	if ((width<<detailxshift) == screen->width)
@@ -1687,32 +1709,264 @@ void R_DetailDouble (void)
 	}
 }
 
-// [RH] Initialize the column drawer pointers
-void R_InitColumnDrawers (BOOL is8bit)
+enum r_optimize_kind {
+	OPTIMIZE_NONE,
+	OPTIMIZE_SSE2,
+	OPTIMIZE_MMX,
+	OPTIMIZE_ALTIVEC
+};
+
+static r_optimize_kind optimize_kind = OPTIMIZE_NONE;
+static std::vector<r_optimize_kind> optimizations_available;
+
+static const char *get_optimization_name(r_optimize_kind kind)
 {
-	if (is8bit)
+	switch (kind)
 	{
-		R_DrawColumnHoriz		= R_DrawColumnHorizP_C;
-		R_DrawColumn			= R_DrawColumnP_C;
-		R_DrawFuzzColumn		= R_DrawFuzzColumnP_C;
-		R_DrawTranslucentColumn = R_DrawTranslucentColumnP_C;
-		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP_C;
-		R_DrawSpan				= R_DrawSpanP_C;
-		rt_map4cols				= rt_map4cols_c;
-		R_DrawSlopeSpan			= R_DrawSlopeSpanP_C;
+		case OPTIMIZE_SSE2:    return "sse2";
+		case OPTIMIZE_MMX:     return "mmx";
+		case OPTIMIZE_ALTIVEC: return "altivec";
+		case OPTIMIZE_NONE:
+		default:
+			return "none";
+	}
+}
 
-	} else {
-		R_DrawColumnHoriz		= R_DrawColumnHorizP_C;
-		R_DrawColumn			= R_DrawColumnD_C;
-		R_DrawFuzzColumn		= R_DrawFuzzColumnD_C;
-		R_DrawTranslucentColumn = R_DrawTranslucentColumnD_C;
-		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD_C;
+static std::string get_optimization_name_list(const bool includeNone)
+{
+	std::string list;
+	std::vector<r_optimize_kind>::iterator it = optimizations_available.begin();
+	if (!includeNone) ++it;
+	for (; it != optimizations_available.end(); ++it)
+	{
+		list.append(get_optimization_name(*it));
+		if (it+1 != optimizations_available.end())
+			list.append(", ");
+	}
+	return list;
+}
 
+static void print_optimizations()
+{
+	Printf(PRINT_HIGH, "r_optimize detected \"%s\"\n", get_optimization_name_list(false).c_str());
+}
+
+static bool detect_optimizations()
+{
+	if (optimizations_available.size() != 0)
+		return false;
+
+	optimizations_available.clear();
+
+	// Start with default non-optimized:
+	optimizations_available.push_back(OPTIMIZE_NONE);
+
+	// Detect CPU features in ascending order of preference:
+#ifdef __MMX__
+	if (SDL_HasMMX())
+	{
+		optimizations_available.push_back(OPTIMIZE_MMX);
+	}
+#endif
+
+#ifdef __SSE2__
+	if (SDL_HasSSE2())
+	{
+		optimizations_available.push_back(OPTIMIZE_SSE2);
+	}
+#endif
+
+#ifdef __ALTIVEC__
+	if (SDL_HasAltiVec())
+	{
+		optimizations_available.push_back(OPTIMIZE_ALTIVEC);
+	}
+#endif
+
+	return true;
+}
+
+CVAR_FUNC_IMPL (r_optimize)
+{
+	// NOTE(jsd): Stupid hack to prevent stack overflow when trying to set the value from within this callback.
+	static bool resetting = false;
+	if (resetting)
+	{
+		resetting = false;
+		return;
+	}
+
+	const char *val = var.cstring();
+	//Printf(PRINT_HIGH, "r_optimize called with \"%s\"\n", val);
+
+	// Only print the detected list the first time:
+	if (detect_optimizations())
+		print_optimizations();
+
+	// Set the optimization based on availability:
+	r_optimize_kind trykind = optimize_kind;
+	if (stricmp(val, "none") == 0)
+		trykind = OPTIMIZE_NONE;
+	else if (stricmp(val, "sse2") == 0)
+		trykind = OPTIMIZE_SSE2;
+	else if (stricmp(val, "mmx") == 0)
+		trykind = OPTIMIZE_MMX;
+	else if (stricmp(val, "altivec") == 0)
+		trykind = OPTIMIZE_ALTIVEC;
+	else if (stricmp(val, "detect") == 0)
+		// Default to the most preferred:
+		trykind = optimizations_available.back();
+	else
+	{
+		Printf(PRINT_HIGH, "Invalid value for r_optimize. Try one of \"%s, detect\"\n", get_optimization_name_list(true).c_str());
+
+		// Restore the original setting:
+		resetting = true;
+		var.Set(get_optimization_name(optimize_kind));
+		R_InitDrawers();
+		R_InitColumnDrawers();
+		return;
+	}
+
+	// If we found the CPU feature, use it:
+	std::vector<r_optimize_kind>::iterator it = std::find(optimizations_available.begin(), optimizations_available.end(), trykind);
+	if (it != optimizations_available.end())
+	{
+		optimize_kind = trykind;
+		R_InitDrawers();
+		R_InitColumnDrawers();
+	}
+
+	// Update the cvar string:
+	const char *resetname = get_optimization_name(optimize_kind);
+	Printf(PRINT_HIGH, "r_optimize set to \"%s\" based on availability\n", resetname);
+	resetting = true;
+	var.Set(resetname);
+}
+
+// Sets up the r_*D function pointers based on CPU optimization selected
+void R_InitDrawers ()
+{
+	if (optimize_kind == OPTIMIZE_SSE2)
+	{
+#ifdef __SSE2__
+		rtv_lucent4colsP        = rtv_lucent4cols_SSE2;
+		rtv_lucent4colsD        = rtv_lucent4cols_SSE2;
+		R_DrawSpanD				= R_DrawSpanD_SSE2;
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_SSE2;
+		r_dimpatchD             = r_dimpatchD_SSE2;
+#else
+		// No SSE2 support compiled in.
+		optimize_kind = OPTIMIZE_NONE;
+		goto setNone;
+#endif
+	}
+	else if (optimize_kind == OPTIMIZE_MMX)
+	{
+#ifdef __MMX__
+		rtv_lucent4colsP        = rtv_lucent4cols_MMX;
+		rtv_lucent4colsD        = rtv_lucent4cols_MMX;
+		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
+		r_dimpatchD             = r_dimpatchD_MMX;
+#else
+		// No MMX support compiled in.
+		optimize_kind = OPTIMIZE_NONE;
+		goto setNone;
+#endif
+	}
+	else if (optimize_kind == OPTIMIZE_ALTIVEC)
+	{
+#ifdef __ALTIVEC__
+		rtv_lucent4colsP        = rtv_lucent4cols_ALTIVEC;
+		rtv_lucent4colsD        = rtv_lucent4cols_ALTIVEC;
+		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
+		r_dimpatchD             = r_dimpatchD_ALTIVEC;
+#else
+		// No ALTIVEC support compiled in.
+		optimize_kind = OPTIMIZE_NONE;
+		goto setNone;
+#endif
+	}
+	else
+	{
+		// No CPU vectorization available.
+setNone:
+		rtv_lucent4colsP        = rtv_lucent4cols_c;
+		rtv_lucent4colsD        = rtv_lucent4cols_c;
+		R_DrawSpanD				= R_DrawSpanD_c;
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;
+		r_dimpatchD             = r_dimpatchD_c;
+	}
+
+	// Check that all pointers are definitely assigned!
+	assert(rtv_lucent4colsP != NULL);
+	assert(rtv_lucent4colsD != NULL);
+	assert(R_DrawSpanD != NULL);
+	assert(R_DrawSlopeSpanD != NULL);
+	assert(r_dimpatchD != NULL);
+}
+
+// [RH] Initialize the column drawer pointers
+void R_InitColumnDrawers ()
+{
+	if (!screen)
+		return;
+
+	// NOTE(jsd): It's okay to use R_DrawColumnHorizP because it renders to a temp buffer first.
+	R_DrawColumnHoriz		= R_DrawColumnHorizP;
+
+	if (screen->is8bit())
+	{
+		R_DrawColumn			= R_DrawColumnP;
+		R_DrawFuzzColumn		= R_DrawFuzzColumnP;
+		R_DrawTranslucentColumn = R_DrawTranslucentColumnP;
+		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP;
+		R_DrawSlopeSpan         = R_DrawSlopeSpanP;
+		R_DrawSpan				= R_DrawSpanP;
+
+		rt_copy1col             = rt_copy1colP;
+		rt_copy2cols            = rt_copy2colsP;
+		rt_copy4cols            = rt_copy4colsP;
+		rt_map1col              = rt_map1colP;
+		rt_map2cols             = rt_map2colsP;
+		rt_map4cols             = rt_map4colsP;
+		rt_lucent1col			= rt_lucent1colP;
+		rt_lucent2cols          = rt_lucent2colsP;
+		rt_lucent4cols          = rt_lucent4colsP;
+		rt_tlate1col            = rt_tlate1colP;
+		rt_tlate2cols           = rt_tlate2colsP;
+		rt_tlate4cols           = rt_tlate4colsP;
+		rt_tlatelucent1col      = rt_tlatelucent1colP;
+		rt_tlatelucent2cols     = rt_tlatelucent2colsP;
+		rt_tlatelucent4cols     = rt_tlatelucent4colsP;
+	}
+	else
+	{
+		// 32bpp rendering functions:
+		R_DrawColumn			= R_DrawColumnD;
+		R_DrawFuzzColumn		= R_DrawFuzzColumnD;
+		R_DrawTranslucentColumn = R_DrawTranslucentColumnD;
+		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD;
+		R_DrawSlopeSpan			= R_DrawSlopeSpanD;
 		R_DrawSpan				= R_DrawSpanD;
 		
-		// [SL] 2012-03-30 - TODO: A 32bit color version of R_DrawSlopeSpan
-		// will be needed if > 8bit color is supported again.
-		R_DrawSlopeSpan			= R_DrawSlopeSpanP_C;
+		rt_copy1col             = rt_copy1colD;
+		rt_copy2cols            = rt_copy2colsD;
+		rt_copy4cols            = rt_copy4colsD;
+		rt_map1col              = rt_map1colD;
+		rt_map2cols             = rt_map2colsD;
+		rt_map4cols             = rt_map4colsD;
+		rt_lucent1col			= rt_lucent1colD;
+		rt_lucent2cols          = rt_lucent2colsD;
+		rt_lucent4cols          = rt_lucent4colsD;
+		rt_tlate1col            = rt_tlate1colD;
+		rt_tlate2cols           = rt_tlate2colsD;
+		rt_tlate4cols           = rt_tlate4colsD;
+		rt_tlatelucent1col      = rt_tlatelucent1colD;
+		rt_tlatelucent2cols     = rt_tlatelucent2colsD;
+		rt_tlatelucent4cols     = rt_tlatelucent4colsD;
 	}
 }
 

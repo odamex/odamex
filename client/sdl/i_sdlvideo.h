@@ -54,7 +54,7 @@ class SDLVideo : public IVideo
 	virtual void ReadScreen (byte *block);
 
 	virtual int GetModeCount (void);
-	virtual void StartModeIterator (int bits);
+	virtual void StartModeIterator ();
 	virtual bool NextMode (int *width, int *height);
 
 	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false);
@@ -63,7 +63,6 @@ class SDLVideo : public IVideo
 	virtual void UnlockSurface (DCanvas *scrn);
 	virtual bool Blit (DCanvas *src, int sx, int sy, int sw, int sh,
 					   DCanvas *dst, int dx, int dy, int dw, int dh);
-
 
    protected:
 
@@ -85,47 +84,35 @@ class SDLVideo : public IVideo
 
    struct vidMode_t
    {
-      int width, height, bits;
+		int width, height;
 
       bool operator<(const vidMode_t& right) const
       {
-         if (bits < right.bits)
-            return true;
-         else if (bits == right.bits)
-         {
             if (width < right.width)
                return true;
             else if (width == right.width && height < right.height)
                return true;
-         }
          return false;
       }
 
       bool operator>(const vidMode_t& right) const
       {
-         if (bits > right.bits)
-            return true;
-		 else if (bits == right.bits)
-         {
             if (width > right.width)
                return true;
 			else if (width == right.width && height > right.height)
                return true;
-		 }
          return false;
       }
 
       bool operator==(const vidMode_t& right) const
       {
          return (width == right.width &&
-                 height == right.height &&
-                 bits == right.bits);
+					height == right.height);
       }
    };
 
    std::vector<vidMode_t> vidModeList;
    size_t vidModeIterator;
-   int vidModeIteratorBits;
 
    SDL_Surface *sdlScreen;
    bool infullscreen;

@@ -514,7 +514,10 @@ void F_CastDrawer (void)
 //
 // F_DrawPatchCol
 //
-void F_DrawPatchCol (int x, const patch_t *patch, int col, const DCanvas *scrn)
+
+// Palettized version 8bpp
+
+void F_DrawPatchColP (int x, const patch_t *patch, int col, const DCanvas *scrn)
 {
 	byte*		source;
 	byte*		dest;
@@ -614,6 +617,110 @@ void F_DrawPatchCol (int x, const patch_t *patch, int col, const DCanvas *scrn)
 	}
 }
 
+// Direct version 32bpp:
+
+void F_DrawPatchColD (int x, const patch_t *patch, int col, const DCanvas *scrn)
+{
+	byte*		source;
+	argb_t*		dest;
+	argb_t*		desttop;
+	unsigned	count;
+	int			repeat;
+	int			c;
+	unsigned	step;
+	unsigned	invstep;
+	float		mul;
+	float		fx;
+	argb_t		p;
+	int			pitch;
+
+	// [RH] figure out how many times to repeat this column
+	// (for screens wider than 320 pixels)
+	mul = scrn->width / (float)320;
+	fx = (float)x;
+	repeat = (int)(floor (mul*(fx+1)) - floor(mul*fx));
+	if (repeat == 0)
+		return;
+
+	// [RH] Remap virtual-x to real-x
+	x = (int)floor (mul*x);
+
+	// [RH] Figure out per-row fixed-point step
+	step = (200<<16) / scrn->height;
+	invstep = (scrn->height<<16) / 200;
+
+	tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
+	desttop = (argb_t *)scrn->buffer + x;
+	pitch = scrn->pitch / sizeof(argb_t);
+
+	shaderef_t pal = shaderef_t(&GetDefaultPalette()->maps, 0);
+
+	// step through the posts in a column
+	while (!post->end())
+	{
+		source = post->data();
+		dest = desttop + ((post->topdelta*invstep)>>16)*pitch;
+		count = (post->length * invstep) >> 16;
+		c = 0;
+
+		switch (repeat) {
+			case 1:
+				do {
+					*dest = pal.shade(source[c>>16]);
+					dest += pitch;
+					c += step;
+				} while (--count);
+				break;
+			case 2:
+				do {
+					p = pal.shade(source[c>>16]);
+					dest[0] = p;
+					dest[1] = p;
+					dest += pitch;
+					c += step;
+				} while (--count);
+				break;
+			case 3:
+				do {
+					p = pal.shade(source[c>>16]);
+					dest[0] = p;
+					dest[1] = p;
+					dest[2] = p;
+					dest += pitch;
+					c += step;
+				} while (--count);
+				break;
+			case 4:
+				do {
+					p = pal.shade(source[c>>16]);
+					dest[0] = p;
+					dest[1] = p;
+					dest[2] = p;
+					dest[3] = p;
+					dest += pitch;
+					c += step;
+				} while (--count);
+				break;
+			default:
+				{
+					int count2;
+
+					do {
+						p = pal.shade(source[c>>16]);
+						for (count2 = repeat; count2; count2--) {
+							dest[count2] = p;
+						}
+						dest += pitch;
+						c += step;
+					} while (--count);
+				}
+				break;
+		}
+
+		post = post->next();
+	}
+}
+
 
 //
 // F_BunnyScroll
@@ -639,12 +746,25 @@ void F_BunnyScroll (void)
 	if (scrolled < 0)
 		scrolled = 0;
 
+	if (screen->is8bit())
+	{
+		for ( x=0 ; x<320 ; x++)
+		{
+			if (x+scrolled < 320)
+				F_DrawPatchColP (x, p1, x+scrolled, screen);
+			else
+				F_DrawPatchColP (x, p2, x+scrolled - 320, screen);
+		}
+	}
+	else
+	{
 	for ( x=0 ; x<320 ; x++)
 	{
 		if (x+scrolled < 320)
-			F_DrawPatchCol (x, p1, x+scrolled, screen);
+				F_DrawPatchColD (x, p1, x+scrolled, screen);
 		else
-			F_DrawPatchCol (x, p2, x+scrolled - 320, screen);
+				F_DrawPatchColD (x, p2, x+scrolled - 320, screen);
+		}
 	}
 
 	if (finalecount < 1130)
