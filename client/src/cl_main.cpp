@@ -2501,17 +2501,6 @@ void CL_Sound(void)
 
 	float volume = vol/(float)255;
 
-	if(volume < 0.25f)
-	{
-		// so far away that it becomes directionless
-		AActor *mo = consoleplayer().mo;
-
-		if(mo)
-			S_SoundID (mo->x, mo->y, channel, sfx_id, volume, attenuation);
-
-		return;
-	}
-
 	if(mo)
 		S_SoundID (mo, channel, sfx_id, volume, attenuation); // play at thing location
 	else
@@ -2533,14 +2522,6 @@ void CL_SoundOrigin(void)
 
 	if(!mo)
 		return;
-
-	if(volume < 0.25f)
-	{
-		x = mo->x;
-		y = mo->y;
-		S_SoundID (x, y, channel, sfx_id, volume, attenuation);
-		return;
-	}
 
 	S_SoundID (x, y, channel, sfx_id, volume, attenuation);
 }
@@ -3064,14 +3045,14 @@ void CL_LoadMap(void)
 	std::vector<std::string> newwadfiles, newwadhashes;
 	std::vector<std::string> newpatchfiles, newpatchhashes;
 
-	int wadcount = MSG_ReadByte();
+	int wadcount = (byte)MSG_ReadByte();
 	while (wadcount--)
 	{
 		newwadfiles.push_back(MSG_ReadString());
 		newwadhashes.push_back(MSG_ReadString());
 	}
 
-	int patchcount = MSG_ReadByte();
+	int patchcount = (byte)MSG_ReadByte();
 	while (patchcount--)
 	{
 		newpatchfiles.push_back(MSG_ReadString());

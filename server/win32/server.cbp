@@ -168,13 +168,16 @@
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DODA_HAVE_MINIUPNP" />
+					<Add option="/DJSON_IS_AMALGAMATION" />
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
 					<Add directory="../../libminiupnpc" />
+					<Add directory="../../jsoncpp" />
 				</Compiler>
 				<Linker>
-					<Add library="Winmm.lib" />
+					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
+					<Add library="winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
 					<Add library="gdi32.lib" />
@@ -193,7 +196,7 @@
 					<Add directory="../../lib" />
 				</Linker>
 				<ExtraCommands>
-					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+					<Add after="mt -nologo -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);#1" />
 				</ExtraCommands>
 			</Target>
 			<Target title="Win Debug (VC)">
@@ -229,13 +232,16 @@
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DODA_HAVE_MINIUPNP" />
+					<Add option="/DJSON_IS_AMALGAMATION" />
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
 					<Add directory="../../libminiupnpc" />
+					<Add directory="../../jsoncpp" />
 				</Compiler>
 				<Linker>
 					<Add option="/DEBUG" />
+					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest  /MANIFEST" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -255,7 +261,7 @@
 					<Add directory="../../lib" />
 				</Linker>
 				<ExtraCommands>
-					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+					<Add after="mt -nologo -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);#1" />
 				</ExtraCommands>
 			</Target>
 		</Build>

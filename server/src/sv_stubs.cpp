@@ -29,8 +29,6 @@
 
 float BaseBlendA;
 bool r_underwater;
-palette_t dummypalette = { 0 };
-palette_t *DefaultPalette = &dummypalette;
 
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {} 

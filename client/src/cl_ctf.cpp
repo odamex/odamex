@@ -388,6 +388,8 @@ void CTF_DrawHud (void)
 	}
 
 	if (hasflag) {
+		palette_t *pal = GetDefaultPalette();
+
 		if (tintglow < 15)
 			tintglowtype = tintglow;
 		else if (tintglow < 30)
@@ -401,18 +403,18 @@ void CTF_DrawHud (void)
 
 		if (hasflags[0] && hasflags[1]) {
 			if (tintglow < 15 || tintglow > 60)
-				TintScreen(BestColor (DefaultPalette->basecolors, (int)(255/15)*tintglowtype,
-					(int)(255/15)*tintglowtype, 255, DefaultPalette->numcolors));
+				TintScreen(BestColor(pal->basecolors, (int)(255/15)*tintglowtype,
+					(int)(255/15)*tintglowtype, 255, pal->numcolors));
 			else
-				TintScreen(BestColor (DefaultPalette->basecolors, 255,
-					(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
+				TintScreen(BestColor(pal->basecolors, 255,
+					(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, pal->numcolors));
 		}
 		else if (hasflags[0])
-			TintScreen(BestColor (DefaultPalette->basecolors, (int)(255/15)*tintglowtype,
-				(int)(255/15)*tintglowtype, 255, DefaultPalette->numcolors));
+			TintScreen(BestColor(pal->basecolors, (int)(255/15)*tintglowtype,
+				(int)(255/15)*tintglowtype, 255, pal->numcolors));
 		else if (hasflags[1])
-			TintScreen(BestColor (DefaultPalette->basecolors, 255,
-				(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
+			TintScreen(BestColor(pal->basecolors, 255,
+				(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, pal->numcolors));
 	}
 }
 

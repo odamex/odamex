@@ -52,6 +52,7 @@ EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(sv_allowpwo)
+EXTERN_CVAR(co_fineautoaim)
 
 CVAR_FUNC_IMPL(cl_movebob)
 {
@@ -891,25 +892,19 @@ void P_BulletSlope (AActor *mo)
 
 	// see which target is to be aimed at
 	an = mo->angle;
-	bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
 
-	// GhostlyDeath <June 19, 2008> -- Autoaim bug here!
-	if (!linetarget)	// Autoaim missed something
+	// [AM] Refactored autoaim into a single function.
+	if (co_fineautoaim)
+		bulletslope = P_AutoAimLineAttack(mo, an, 1 << 26, 10, 16 * 64 * FRACUNIT);
+	else
+		bulletslope = P_AutoAimLineAttack(mo, an, 1 << 26, 1, 16 * 64 * FRACUNIT);
+
+	// [RH] If we never found a target, use actor's pitch to
+	// determine bulletslope
+	if (sv_freelook && !linetarget)
 	{
-		an += 1<<26;
-		bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
-		if (!linetarget)	// Still missing something
-		{
-			an -= 2<<26;
-			bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
-			// [RH] If we never found a target, use actor's pitch to
-			// determine bulletslope
-			if (sv_freelook && !linetarget)
-			{
-				an = mo->angle;
-				bulletslope = pitchslope;
-			}
-		}
+		an = mo->angle;
+		bulletslope = pitchslope;
 	}
 
 	// GhostlyDeath -- If sv_freelook was on and a line target was found
@@ -948,15 +943,21 @@ void P_GunShot (AActor *mo, BOOL accurate)
 //
 // [SL] - Factored out common code from the P_Fire procedures for the
 // hitscan weapons.
-//   quantity:     number of bullets/pellets to fire.
-//   accurate:     spread out bullets because player is re-firing (or using shotgun)
-//   ssg_spread:   spread the pellets for the super shotgun
+//   quantity:	number of bullets/pellets to fire.
+//   spread:	spread the fire in a pattern dictated by weapon type
 //
 // It takes care of reconciling the players and sectors to account for the
 // shooter's network lag.
 //
 
-void P_FireHitscan (player_t *player, size_t quantity, bool accurate, bool ssg_spread)
+typedef enum 
+{
+	SPREAD_NONE,
+	SPREAD_NORMAL,
+	SPREAD_SUPERSHOTGUN
+} spreadtype_t;
+
+void P_FireHitscan (player_t *player, size_t quantity, spreadtype_t spread)
 {
 	if (!player || !player->mo)
 		return;
@@ -993,12 +994,12 @@ void P_FireHitscan (player_t *player, size_t quantity, bool accurate, bool ssg_s
 
 		angle_t angle = player->mo->angle;
 		fixed_t slope = bulletslope;
-		if (ssg_spread)		// for super shotgun
+		if (spread == SPREAD_SUPERSHOTGUN)
 		{
 			angle += P_RandomDiff(player->mo) << 19;
 			slope += P_RandomDiff(player->mo) << 5;
 		}
-		if (!accurate)
+		else if (spread == SPREAD_NORMAL)
 		{
 			// single-barrel shotgun or re-firing pistol/chaingun
 			angle += P_RandomDiff(player->mo) << 18;
@@ -1029,7 +1030,8 @@ void A_FirePistol (AActor *mo)
 				  ps_flash,
 				  weaponinfo[player->readyweapon].flashstate);
 
-	P_FireHitscan (player, 1, !player->refire, false);	// [SL] 2011-05-11
+	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
+	P_FireHitscan (player, 1, accuracy);
 }
 
 
@@ -1049,7 +1051,7 @@ void A_FireShotgun (AActor *mo)
 				  ps_flash,
 				  weaponinfo[player->readyweapon].flashstate);
 
-	P_FireHitscan(player, 7, false, false);		// [SL] 2011-05-11
+	P_FireHitscan (player, 7, SPREAD_NORMAL);
 }
 
 
@@ -1070,7 +1072,7 @@ void A_FireShotgun2 (AActor *mo)
 				  ps_flash,
 				  weaponinfo[player->readyweapon].flashstate);
 
-	P_FireHitscan(player, 20, true, true);		// [SL] 2011-05-11
+	P_FireHitscan (player, 20, SPREAD_SUPERSHOTGUN);
 }
 
 //
@@ -1097,7 +1099,8 @@ void A_FireCGun (AActor *mo)
 				  + psp->state
 				  - &states[S_CHAIN1]) );
 
-	P_FireHitscan(player, 1, !player->refire, false);	// [SL] 2011-05-11
+	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
+	P_FireHitscan (player, 1, accuracy);
 }
 
 

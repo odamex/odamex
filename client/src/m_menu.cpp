@@ -2364,8 +2364,10 @@ void M_Init (void)
 	M_OptInit ();
 
 	// [RH] Build a palette translation table for the fire
+	palette_t *pal = GetDefaultPalette();
+
 	for (i = 0; i < 255; i++)
-		FireRemap[i] = BestColor (DefaultPalette->basecolors, i, 0, 0, DefaultPalette->numcolors);
+		FireRemap[i] = BestColor(pal->basecolors, i, 0, 0, pal->numcolors);
 }
 
 //

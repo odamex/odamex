@@ -137,12 +137,14 @@ BOOL PIT_StompThing (AActor *thing)
 		return true;
 	}
 
-	// [RH] Z-Check
-/*	if (tmz > thing->z + thing->height)
-		return true;        // overhead
-	if (tmz+tmthing->height < thing->z)
-		return true;        // underneath
-*/
+	if (co_realactorheight)
+	{
+		// [RH] Z-Check
+		if (tmz > thing->z + thing->height)
+			return true;        // overhead
+		if (tmz + tmthing->height < thing->z)
+			return true;        // underneath
+	}
 
 	// monsters don't stomp things except on boss level
 	if (StompAlwaysFrags) {
@@ -2178,6 +2180,54 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 
 	if (linetarget)
 		return aimslope;
+
+	return 0;
+}
+
+/**
+ * A function created especially for implementing player autoaim.  First
+ * attempts to shoot a tracer straight ahead, then tries progressively wider
+ * and wider tracers in a short cone.
+ * 
+ * @param  actor    Source actor.
+ * @param  angle    Angle of shot.  Set to the 'correct' angle on return.
+ * @param  spread   Maximum spread angle of shot, plus or minus 0 degrees.
+ *                  Vanilla is 1 << 26.
+ * @param  tracers  Number of tracers to shoot per side.  Fewer tracers means
+ *                  you're less likely to hit a distant object that is between
+ *                  straigt ahead and the maximum spread.  Vanilla is 1.
+ * @param  distance Distance to shoot the tracer.  Vanilla is 16 * 64 * FRACUNIT.
+ * @return          Slope of the resulting shot.
+ */
+fixed_t P_AutoAimLineAttack(AActor* actor, angle_t& angle, const angle_t spread, const int tracers, fixed_t distance)
+{
+	fixed_t slope = P_AimLineAttack(actor, angle, distance);
+
+	if (linetarget)
+		return slope;
+
+	angle_t originangle = angle;
+	angle_t testspread = spread / tracers;
+
+	for (int i = 1;i <= tracers;i++)
+	{
+		angle = originangle;
+		if (i == tracers)
+			angle += spread;
+		else
+			angle += testspread * i;
+		slope = P_AimLineAttack(actor, angle, distance);
+		if (linetarget)
+			return slope;
+
+		if (i == tracers)
+			angle -= spread * 2;
+		else
+			angle -= testspread * i * 2;
+		slope = P_AimLineAttack(actor, angle, distance);
+		if (linetarget)
+			return slope;
+	}
 
 	return 0;
 }

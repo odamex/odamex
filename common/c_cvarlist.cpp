@@ -191,6 +191,10 @@ CVAR (co_zdoomsoundcurve, "0", "Use ZDoom's sound curve instead of vanilla Doom'
 CVAR (co_nosilentspawns, "0", "Turns off the west-facing silent spawns vanilla bug",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+// Increase precision of autoatim
+CVAR (co_fineautoaim, "0", "Increase precision of autoatim",
+      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 // Dead player's view follows the actor who killed them
 CVAR (cl_deathcam, "1", "Dead player's view follows the actor who killed them",
       CVARTYPE_BOOL, CVAR_ARCHIVE)

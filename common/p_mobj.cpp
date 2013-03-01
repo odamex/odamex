@@ -65,6 +65,7 @@ EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_monstershealth)
 EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_allowdropoff)
+EXTERN_CVAR(co_fineautoaim)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -1794,7 +1795,7 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage)
 
 bool P_HitFloor (AActor *thing)
 {
-    
+    return true;
 }
 
 
@@ -1925,28 +1926,20 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	}
 	else
 	{
-		slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
+		// [AM] Refactored autoaim into a single function.
+		if (co_fineautoaim)
+			slope = P_AutoAimLineAttack(source, an, 1 << 26, 10, 16 * 64 * FRACUNIT);
+		else
+			slope = P_AutoAimLineAttack(source, an, 1 << 26, 1, 16 * 64 * FRACUNIT);
 
 		if (!linetarget)
 		{
-			an += 1<<26;
-			slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
+			an = source->angle;
 
-			if (!linetarget)
-			{
-				an -= 2<<26;
-				slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
-			}
-
-			if (!linetarget)
-			{
-				an = source->angle;
-
-				if(sv_freelook)
-					slope = pitchslope;
-				else
-					slope = 0;
-			}
+			if(sv_freelook)
+				slope = pitchslope;
+			else
+				slope = 0;
 		}
 
 		if (linetarget && source->player)
