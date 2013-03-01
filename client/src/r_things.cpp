@@ -46,8 +46,10 @@
 #include "s_sound.h"
 
 #include "qsort.h"
+#include "vectors.h"
 
 extern fixed_t FocalLengthX, FocalLengthY;
+extern fixed_t fovtan;
 
 #define MINZ							(FRACUNIT*4)
 #define BASEYCENTER 					(100)
@@ -877,19 +879,8 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 //
 void R_ProjectSprite (AActor *thing, int fakeside)
 {
-	fixed_t 			tr_x;
-	fixed_t 			tr_y;
-
-	fixed_t 			gxt;
-	fixed_t 			gyt;
-
 	fixed_t				gzt;				// killough 3/27/98
 	fixed_t				gzb;
-	fixed_t 			tx;
-	fixed_t 			tz;
-
-	fixed_t 			xscale;
-	fixed_t				yscale;
 
 	int 				x1;
 	int 				x2;
@@ -900,6 +891,8 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 
 	unsigned			rot;
 	BOOL 				flip;
+	fixed_t				xoffset = 0;	// [SL] offset if the left side of the
+										// sprite was clipped at the left screen edge
 
 	int 				index;
 
@@ -912,30 +905,6 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 
 	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0 ||
 		(thing->player && thing->player->spectator))
-		return;
-
-	// transform the origin point
-	tr_x = thing->x - viewx;
-	tr_y = thing->y - viewy;
-
-	gxt = FixedMul (tr_x,viewcos);
-	gyt = -FixedMul (tr_y,viewsin);
-
-	tz = gxt-gyt;
-
-	// thing is behind view plane?
-	if (tz < MINZ)
-		return;
-
-	xscale = FixedDiv (FocalLengthX, tz);
-	yscale = FixedDiv (FocalLengthY, tz);
-
-	gxt = -FixedMul (tr_x, viewsin);
-	gyt = FixedMul (tr_y, viewcos);
-	tx = -(gyt+gxt);
-
-	// too far off the side?
-	if (abs(tx)>(tz<<2))
 		return;
 
 	// decide which patch to use for sprite relative to player
@@ -974,34 +943,39 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	if (sprframe->width[rot] == SPRITE_NEEDS_INFO)
 		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
 
+	// transform the origin point
+	fixed_t tx1, tx2;
+	fixed_t ty, clipline;
+	R_RotatePoint(thing->x - viewx, thing->y - viewy, ANG90 - viewangle, tx1, ty);
+
+	// thing is behind view plane?
+	if (ty < NEARCLIP)
+		return;
+
 	// calculate edges of the shape
-	tx -= sprframe->offset[rot];	// [RH] Moved out of spriteoffset[]
-	x1 = (centerxfrac + FixedMul (tx,xscale)) >> FRACBITS;
+	tx1 = tx1 - sprframe->offset[rot];
+	tx2 = tx1 + sprframe->width[rot];
+	clipline = FixedMul(fovtan, ty);		
 
-	// off the right side?
-	if (x1 > viewwidth)
+	if (tx1 > clipline)			// entirely off the right side of the screen
+		return;
+	if (-tx2 > clipline)			// entirely off the left side of the screen
 		return;
 
-	tx += sprframe->width[rot];	// [RH] Moved out of spritewidth[]
-	x2 = ((centerxfrac + FixedMul (tx,xscale)) >> FRACBITS) - 1;
-
-	// off the left side or too small?
-	if (x2 < 0 || x2 < x1)
-		return;
+	if (-tx1 > clipline)			// clip left edge of sprite to left edge of the screen
+	{
+		xoffset = -tx1 - clipline;
+		tx1 = -clipline;
+	}
+	if (tx2 > clipline)			// clip right edge of sprite to right edge of the screen
+		tx2 = clipline; 
 
 	gzt = thing->z + sprframe->topoffset[rot];	// [RH] Moved out of spritetopoffset[]
 	gzb = thing->z;
 
-	// killough 4/9/98: clip things which are out of view due to height
-// [RH] This doesn't work too well with freelook
-//	if (thing->z > viewz + FixedDiv(centeryfrac, yscale) ||
-//		gzt      < viewz - FixedDiv(centeryfrac-viewheight, yscale))
-//		return;
-
 	// killough 3/27/98: exclude things totally separated
 	// from the viewer, by either water or fake ceilings
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
-
 	heightsec = thing->subsector->sector->heightsec;
 	
 	if (heightsec && heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
@@ -1028,6 +1002,24 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 		}
 	}
 
+	// Entirely above the top of the screen or below the bottom?
+	if (centeryfrac - ((int64_t(gzb - viewz) * FocalLengthY) / ty) < 0 ||
+ 		centeryfrac - ((int64_t(gzt - viewz) * FocalLengthY) / ty) >= (viewheight << FRACBITS))
+	{
+		return;
+	}
+
+	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx1) / ty) >> FRACBITS;
+	x2 = ((centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx2) / ty ) >> FRACBITS) - 1;
+
+	// off the right side?
+	if (x1 > viewwidth)
+		return;
+
+	// off the left side or too small?
+	if (x2 < 0 || x2 < x1)
+		return;
+
 	// store information in a vissprite
 	vis = R_NewVisSprite ();
 
@@ -1035,8 +1027,8 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	vis->heightsec = heightsec;
 
 	vis->mobjflags = thing->flags;
-	vis->xscale = xscale;
-	vis->yscale = yscale;
+	vis->xscale = FixedDiv(FocalLengthX, ty);
+	vis->yscale = FixedDiv(FocalLengthY, ty);
 	vis->gx = thing->x;
 	vis->gy = thing->y;
 	vis->gz = gzb;
@@ -1046,23 +1038,21 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
-	vis->depth = tz;
+	vis->depth = ty;
 	vis->FakeFlat = fakeside;
-	iscale = FixedDiv (tz, FocalLengthX);
+	iscale = FixedDiv(ty, FocalLengthX);
 
 	if (flip)
 	{
-		vis->startfrac = sprframe->width[rot]-1;	// [RH] Moved out of spritewidth
+		vis->startfrac = sprframe->width[rot]-1 - xoffset;	// [RH] Moved out of spritewidth
 		vis->xiscale = -iscale;
 	}
 	else
 	{
-		vis->startfrac = 0;
+		vis->startfrac = xoffset;
 		vis->xiscale = iscale;
 	}
 
-	if (vis->x1 > x1)
-		vis->startfrac += vis->xiscale*(vis->x1-x1);
 	vis->patch = lump;
 
 	// get light level
@@ -1643,55 +1633,36 @@ void R_FindParticleSubsectors ()
 
 void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakeside)
 {
-	fixed_t 			tr_x;
-	fixed_t 			tr_y;
-	fixed_t 			gxt;
-	fixed_t 			gyt;
 	fixed_t				gzt;				// killough 3/27/98
 	fixed_t				gzb;
-	fixed_t 			tx;
-	fixed_t 			tz;
-	fixed_t 			xscale;
 	int 				x1;
 	int 				x2;
 	vissprite_t*		vis;
 	sector_t*			heightsec = NULL;	// killough 3/27/98
-		
+
 	// transform the origin point
-	tr_x = particle->x - viewx;
-	tr_y = particle->y - viewy;
-		
-	gxt = FixedMul (tr_x, viewcos); 
-	gyt = -FixedMul (tr_y, viewsin);
-	
-	tz = gxt - gyt; 
+	fixed_t tx1, tx2;
+	fixed_t ty, clipline;
+	R_RotatePoint(particle->x - viewx, particle->y - viewy, ANG90 - viewangle, tx1, ty);
 
-	// particle is behind view plane?
-	if (tz < MINZ)
+	// thing is behind view plane?
+	if (ty < NEARCLIP)
 		return;
-	
-	xscale = FixedDiv (FocalLengthX, tz);
-		
-	gxt = -FixedMul (tr_x, viewsin); 
-	gyt = FixedMul (tr_y, viewcos); 
-	tx = -(gyt+gxt); 
 
-	// too far off the side?
-	if (abs(tx)>(tz<<2))
-		return;
-	
 	// calculate edges of the shape
-	x1 = (centerxfrac + FixedMul (tx,xscale)) >> FRACBITS;
+	tx1 = tx1 - (particle->size >> 1)*(FRACUNIT/4);
+	tx2 = tx1 + particle->size*(FRACUNIT/4);
+	clipline = FixedMul(fovtan, ty);		
 
-	// off the right side?
-	if (x1 >= viewwidth)
+	if (tx1 > clipline)			// entirely off the right side of the screen
 		return;
-	
-	x2 = ((centerxfrac + FixedMul (tx+particle->size*(FRACUNIT/4),xscale)) >> FRACBITS);
+	if (-tx2 > clipline)			// entirely off the left side of the screen
+		return;
 
-	// off the left side
-	if (x2 < 0)
-		return;
+	if (-tx1 > clipline)			// clip left edge of sprite to left edge of the screen
+		tx1 = -clipline;
+	if (tx2 > clipline)			// clip right edge of sprite to right edge of the screen
+		tx2 = clipline; 
 
 	gzt = particle->z+1;
 	gzb = particle->z;
@@ -1699,7 +1670,6 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	// killough 3/27/98: exclude things totally separated
 	// from the viewer, by either water or fake ceilings
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
-
 	if (gzt < P_FloorHeight(particle->x, particle->y, sector) ||
 		gzb > P_CeilingHeight(particle->x, particle->y, sector))
 		return;
@@ -1726,12 +1696,30 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		}
 	}
 
+	// Entirely above the top of the screen or below the bottom?
+	if (centeryfrac - ((int64_t(gzb - viewz) * FocalLengthY) / ty) < 0 ||
+ 		centeryfrac - ((int64_t(gzt - viewz) * FocalLengthY) / ty) >= (viewheight << FRACBITS))
+	{
+		return;
+	}
+
+	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx1) / ty) >> FRACBITS;
+	x2 = ((centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx2) / ty ) >> FRACBITS) - 1;
+
+	// off the right side?
+	if (x1 > viewwidth)
+		return;
+
+	// off the left side or too small?
+	if (x2 < 0 || x2 < x1)
+		return;
+
 	// store information in a vissprite
 	vis = R_NewVisSprite ();
 	vis->heightsec = heightsec;
-	vis->xscale = xscale;
-	vis->yscale = FixedMul (xscale, yaspectmul);
-	vis->depth = tz;
+	vis->xscale = FixedDiv(FocalLengthX, ty);
+	vis->yscale = FixedDiv(FocalLengthY, ty);
+	vis->depth = ty;
 	vis->gx = particle->x;
 	vis->gy = particle->y;
 	vis->gz = gzb;

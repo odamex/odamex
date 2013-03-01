@@ -1237,14 +1237,16 @@ void AM_drawFlineD(fline_t* fl, argb_t color)
 //
 void AM_drawMline (mline_t* ml, am_color_t color)
 {
-    static fline_t fl;
+	static fline_t fl;
 
-    if (AM_clipMline(ml, &fl))
+	if (AM_clipMline(ml, &fl))
+	{
 		// draws it on frame buffer using fb coords
 		if (screen->is8bit())
 			AM_drawFlineP(&fl, color.index);
 		else
 			AM_drawFlineD(&fl, color.rgb);
+	}
 }
 
 

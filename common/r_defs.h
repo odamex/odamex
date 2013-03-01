@@ -373,6 +373,8 @@ struct seg_s
 	// Could be retrieved from linedef, too.
 	sector_t*	frontsector;
 	sector_t*	backsector;		// NULL for one-sided lines
+
+	fixed_t		length;
 };
 typedef struct seg_s seg_t;
 

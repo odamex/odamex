@@ -84,7 +84,6 @@ AActor			*camera;	// [RH] camera to draw from. doesn't have to be a player
 //
 // precalculated math tables
 //
-angle_t 		clipangle;
 
 // The viewangletox[viewangle + FINEANGLES/4] lookup
 // maps the visible view angles to screen X coordinates,
@@ -129,67 +128,8 @@ void (*hcolfunc_post1) (int hx, int sx, int yl, int yh);
 void (*hcolfunc_post2) (int hx, int sx, int yl, int yh);
 void (*hcolfunc_post4) (int sx, int yl, int yh);
 
-//
-//
-// R_PointOnSide
-//
-// Traverse BSP (sub) tree, check point against partition plane.
-// Returns side 0 (front) or 1 (back).
-//
-// killough 5/2/98: reformatted
-//
-//
-
-int R_PointOnSide (fixed_t x, fixed_t y, node_t *node)
-{
-	if (!node->dx)
-		return x <= node->x ? node->dy > 0 : node->dy < 0;
-
-	if (!node->dy)
-		return y <= node->y ? node->dx < 0 : node->dx > 0;
-
-	x -= node->x;
-	y -= node->y;
-
-	// Try to quickly decide by looking at sign bits.
-	if ((node->dy ^ node->dx ^ x ^ y) < 0)
-		return (node->dy ^ x) < 0;  // (left is negative)
-	return FixedMul (y, node->dx >> FRACBITS) >= FixedMul (node->dy >> FRACBITS, x);
-}
-
-//
-//
-// R_PointOnSegSide
-//
-// Same, except takes a lineseg as input instead of a linedef
-//
-// killough 5/2/98: reformatted
-//
-//
-
-int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
-{
-	fixed_t lx = line->v1->x;
-	fixed_t ly = line->v1->y;
-	fixed_t ldx = line->v2->x - lx;
-	fixed_t ldy = line->v2->y - ly;
-
-	if (!ldx)
-		return x <= lx ? ldy > 0 : ldy < 0;
-
-	if (!ldy)
-		return y <= ly ? ldx < 0 : ldx > 0;
-
-	x -= lx;
-	y -= ly;
-
-	// Try to quickly decide by looking at sign bits.
-	if ((ldy ^ ldx ^ x ^ y) < 0)
-		return (ldy ^ x) < 0;          // (left is negative)
-	return FixedMul (y, ldx >> FRACBITS) >= FixedMul (ldy >> FRACBITS, x);
-}
-
 #define R_P2ATHRESHOLD (INT_MAX / 4)
+
 //
 // R_PointToAngle
 //
@@ -294,26 +234,6 @@ R_PointToAngle
     return R_PointToAngle2 (viewx, viewy, x, y);
 }
 
-
-//
-// R_InitPointToAngle
-//
-/*
-void R_InitPointToAngle (void)
-{
-	int i;
-	float f;
-//
-// slope (tangent) to angle lookup
-//
-	for (i = 0; i <= SLOPERANGE; i++)
-	{
-		f = atan((float)i/SLOPERANGE)/(3.141592657*2); // denis - vanilla
-		tantoangle[i] = (angle_t)(0xffffffff*f);
-	}
-}
-*/
-
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 {
 	int index = ang >> ANGLETOFINESHIFT;
@@ -324,35 +244,6 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 
 //
 //
-// R_InitTables
-//
-//
-#if 0
-void R_InitTables (void)
-{
-	int i;
-	float a, fv;
-
-	// viewangle tangent table
-	for (i = 0; i < FINEANGLES/2; i++)
-	{
-		a = (i-FINEANGLES/4+0.5)*PI*2/FINEANGLES;
-		fv = FRACUNIT*tan (a);
-		finetangent[i] = (fixed_t)fv;
-	}
-
-	// finesine table
-	for (i = 0; i < 5*FINEANGLES/4; i++)
-	{
-		// OPTIMIZE: mirror...
-		a = (i+0.5)*PI*2/FINEANGLES;
-		finesine[i] = (fixed_t)(FRACUNIT * sin (a));
-	}
-}
-#endif
-
-//
-//
 // R_Init
 //
 //
@@ -360,40 +251,9 @@ void R_InitTables (void)
 void R_Init (void)
 {
 	R_InitData ();
-	//R_InitPointToAngle ();
-	//R_InitTables ();
 
 	framecount = 0;
 }
-
-//
-//
-// R_PointInSubsector
-//
-//
-
-subsector_t *R_PointInSubsector (fixed_t x, fixed_t y)
-{
-	node_t *node;
-	int side;
-	int nodenum;
-
-	// single subsector is a special case
-	if (!numnodes)
-		return subsectors;
-
-	nodenum = numnodes-1;
-
-	while (! (nodenum & NF_SUBSECTOR) )
-	{
-		node = &nodes[nodenum];
-		side = R_PointOnSide (x, y, node);
-		nodenum = node->children[side];
-	}
-
-	return &subsectors[nodenum & ~NF_SUBSECTOR];
-}
-
 
 VERSION_CONTROL (r_main_cpp, "$Id$")
 

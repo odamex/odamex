@@ -27,6 +27,7 @@
 
 #include "c_cvars.h"
 
+void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2);
 void R_RenderMaskedSegRange (drawseg_t *ds, int x1, int x2);
 
 // [RH] There are two different RenderSegLoops.

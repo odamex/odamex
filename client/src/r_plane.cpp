@@ -84,8 +84,8 @@ int 					*lastopening;
 
 //
 // Clip values are the solid pixel bounding the range.
-//	floorclip starts out SCREENHEIGHT
-//	ceilingclip starts out -1
+//	floorclip starts out SCREENHEIGHT-1
+//	ceilingclip starts out 0
 //
 int     				*floorclip;
 int 					*ceilingclip;
@@ -106,7 +106,6 @@ int*					planezlight;
 float					plight, shade;
 
 fixed_t 				*yslope;
-fixed_t 				*distscale;
 static fixed_t			planeheight;
 
 static fixed_t			pl_xscale, pl_yscale;
@@ -273,9 +272,9 @@ void R_ClearPlanes (void)
 	// opening / clipping determination
 	for (i = 0; i < viewwidth ; i++)
 	{
-		floorclip[i] = (int)viewheight;
+		floorclip[i] = (int)(viewheight - 1);
 	}
-	memset (ceilingclip, 0xffffffffu, sizeof(*ceilingclip) * viewwidth);
+	memset (ceilingclip, 0, sizeof(*ceilingclip) * viewwidth);
 
 	for (i = 0; i < MAXVISPLANES; i++)	// new code -- killough
 		for (*freehead = visplanes[i], visplanes[i] = NULL; *freehead; )
@@ -444,7 +443,7 @@ static void _skycolumn (void (*drawfunc)(void), int x)
 	dc_yl = _skypl->top[x];
 	dc_yh = _skypl->bottom[x];
 
-	if (dc_yl != -1 && dc_yl <= dc_yh)
+	if (dc_yl >= 0 && dc_yl <= dc_yh)
 	{
 		int angle = ((((viewangle + xtoviewangle[x])^skyflip)>>sky1shift) + frontpos)>>16;
 
@@ -871,7 +870,6 @@ BOOL R_PlaneInitData (void)
 	delete[] ceilingclip;
 	delete[] spanstart;
 	delete[] yslope;
-	delete[] distscale;
 
 	floorclip = new int[screen->width];
 	ceilingclip = new int[screen->width];
@@ -879,7 +877,6 @@ BOOL R_PlaneInitData (void)
 	spanstart = new int[screen->height];
 
 	yslope = new fixed_t[screen->height];
-	distscale = new fixed_t[screen->width];
 
 	// Free all visplanes and let them be re-allocated as needed.
 	pl = freetail;

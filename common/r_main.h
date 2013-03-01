@@ -128,17 +128,11 @@ extern void (*hcolfunc_post4) (int sx, int yl, int yh);
 //
 // Utility functions.
 
-int
-R_PointOnSide
-( fixed_t	x,
-  fixed_t	y,
-  node_t*	node );
+int R_PointOnSide(fixed_t x, fixed_t y, const node_t* node);
 
-int
-R_PointOnSegSide
-( fixed_t	x,
-  fixed_t	y,
-  seg_t*	line );
+int R_PointOnSide(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh);
+
+int R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t* line);
 
 angle_t
 R_PointToAngle
@@ -154,9 +148,13 @@ R_PointToDist
   fixed_t	y );
 
 
-fixed_t R_ScaleFromGlobalAngle (angle_t visangle);
-
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty);
+void R_ClipEndPoints(
+	fixed_t x1, fixed_t y1,
+	fixed_t x2, fixed_t y2,
+	fixed_t lclip1, fixed_t lclip2,
+	fixed_t &cx1, fixed_t &cy1,
+	fixed_t &cx2, fixed_t &cy2);
 
 subsector_t*
 R_PointInSubsector

@@ -187,7 +187,7 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
 	tmbbox[BOXLEFT] = x - tmthing->radius;
 
-	newsubsec = R_PointInSubsector (x,y);
+	newsubsec = P_PointInSubsector (x,y);
 	ceilingline = NULL;
 
 	// The base floor/ceiling is from the subsector
@@ -747,7 +747,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	AActor *thingblocker = NULL;
 	fixed_t realheight = thing->height;
 	bool spectator = thing->player && thing->player->spectator;
-	subsector_t *subsec = R_PointInSubsector(x,y);
+	subsector_t *subsec = P_PointInSubsector(x,y);
 	// NOTE(jsd): NULL check here fixes crash while awaiting download in an active game.
 	if (subsec == NULL)
 		return false;
@@ -2282,7 +2282,7 @@ void P_LineAttack (AActor *t1, angle_t angle, fixed_t distance,
 			x2 = t1->x + FixedMul (x2 - t1->x, frac);
 			y2 = t1->y + FixedMul (y2 - t1->y, frac);
 			updown = 1;
-			if ( (subsector = R_PointInSubsector (x2, y2)) ) {
+			if ( (subsector = P_PointInSubsector (x2, y2)) ) {
 				if (subsector->sector->ceilingpic == skyflatnum)
 					return;	// disappeared in the clouds
 			} else
@@ -2615,7 +2615,7 @@ void P_AimCamera (AActor *t1)
 	aimslope = finetangent[FINEANGLES/4+(t1->pitch>>ANGLETOFINESHIFT)];
 
 	CameraZ = shootz + (fixed_t)(chase_dist * aimslope);
-	subsector = R_PointInSubsector (x2, y2);
+	subsector = P_PointInSubsector (x2, y2);
 	if (subsector) {
 		fixed_t ceilingheight = P_CeilingHeight(x2, y2, subsector->sector) - CAMERA_DIST;
 		fixed_t floorheight = P_FloorHeight(x2, y2, subsector->sector) + CAMERA_DIST;		
@@ -3451,7 +3451,7 @@ double P_PlaneZ(double x, double y, const plane_t *plane)
 //
 // Returns the height of a floor plane at the point (x, y).  The subsector
 // parameter is optional but provides a speedup if used because P_PlaneZ
-// can avoid a call to R_PointInSubsector().
+// can avoid a call to P_PointInSubsector().
 //
 // Note that there is no check made to ensure the point (x, y) is actually
 // within the subsector.
@@ -3460,7 +3460,7 @@ double P_PlaneZ(double x, double y, const plane_t *plane)
 //
 fixed_t P_FloorHeight(fixed_t x, fixed_t y, const sector_t *sector)
 {
-	if (!sector && !(sector = R_PointInSubsector(x, y)->sector))
+	if (!sector && !(sector = P_PointInSubsector(x, y)->sector))
 		return MAXINT;
 
 	return P_PlaneZ(x, y, &sector->floorplane);
@@ -3488,7 +3488,7 @@ fixed_t P_FloorHeight(const sector_t *sector)
 //
 // Returns the height of a ceiling plane at the point (x, y).  The subsector
 // parameter is optional but provides a speedup if used because P_PlaneZ
-// can avoid a call to R_PointInSubsector().
+// can avoid a call to P_PointInSubsector().
 //
 // Note that there is no check made to ensure the point (x, y) is actually
 // within the subsector.
@@ -3497,7 +3497,7 @@ fixed_t P_FloorHeight(const sector_t *sector)
 //
 fixed_t P_CeilingHeight(fixed_t x, fixed_t y, const sector_t *sector)
 {
-	if (!sector && !(sector = R_PointInSubsector(x, y)->sector))
+	if (!sector && !(sector = P_PointInSubsector(x, y)->sector))
 		return MAXINT;
 
 	return P_PlaneZ(x, y, &sector->ceilingplane);

@@ -38,6 +38,64 @@
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_zdoomphys)
 
+//
+//
+// P_PointOnSide
+//
+// Traverse BSP (sub) tree, check point against partition plane.
+// Returns side 0 (front) or 1 (back).
+//
+// killough 5/2/98: reformatted
+// [SL] This is a version for the physics code so that R_PointOnSide
+// may be changed without affecting compatibility.
+//
+
+static int P_PointOnSide(fixed_t x, fixed_t y, node_t *node)
+{
+	if (!node->dx)
+		return x <= node->x ? node->dy > 0 : node->dy < 0;
+
+	if (!node->dy)
+		return y <= node->y ? node->dx < 0 : node->dx > 0;
+
+	x -= node->x;
+	y -= node->y;
+
+	// Try to quickly decide by looking at sign bits.
+	if ((node->dy ^ node->dx ^ x ^ y) < 0)
+		return (node->dy ^ x) < 0;  // (left is negative)
+	return FixedMul (y, node->dx >> FRACBITS) >= FixedMul (node->dy >> FRACBITS, x);
+}
+
+//
+//
+// P_PointInSubsector
+//
+//
+
+subsector_t* P_PointInSubsector(fixed_t x, fixed_t y)
+{
+	node_t *node;
+	int side;
+	int nodenum;
+
+	// single subsector is a special case
+	if (!numnodes)
+		return subsectors;
+
+	nodenum = numnodes-1;
+
+	while (! (nodenum & NF_SUBSECTOR) )
+	{
+		node = &nodes[nodenum];
+		side = P_PointOnSide (x, y, node);
+		nodenum = node->children[side];
+	}
+
+	return &subsectors[nodenum & ~NF_SUBSECTOR];
+}
+
+
 AActor::ActorBlockMapListNode::ActorBlockMapListNode(AActor *mo) :
 	actor(mo)
 {
@@ -516,7 +574,7 @@ void AActor::UnlinkFromWorld ()
 void AActor::LinkToWorld ()
 {
 	// link into subsector
-	subsector = R_PointInSubsector (x, y);
+	subsector = P_PointInSubsector (x, y);
 
 	if (!subsector)
 		return;

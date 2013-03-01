@@ -54,6 +54,17 @@ inline static fixed_t FixedDiv(fixed_t a, fixed_t b)
 		(fixed_t)(((int64_t)a << FRACBITS) / b);
 }
 
-#endif
+const double FIXEDTODOUBLE_FACTOR	= 1.0 / 65536.0;
+const float  FIXEDTOFLOAT_FACTOR	= 1.0f / 65536.0f;
 
+#define FIXED2FLOAT(f)			((float)(f) * FIXEDTOFLOAT_FACTOR)
+#define FLOAT2FIXED(f)			(fixed_t)((f) * (float)FRACUNIT)
+#define FIXED2DOUBLE(f)			((double)(f) * FIXEDTODOUBLE_FACTOR)
+#define DOUBLE2FIXED(f)			(fixed_t)((f) * (double)FRACUNIT)
+
+// Round when converting fixed_t to int
+#define FIXED2INT(f)			((f + FRACUNIT/2) / FRACUNIT)
+#define INT2FIXED(f)			(f << FRACBITS)
+
+#endif	// __M_FIXED__
 
