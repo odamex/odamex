@@ -882,23 +882,13 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	fixed_t				gzt;				// killough 3/27/98
 	fixed_t				gzb;
 
-	int 				x1;
-	int 				x2;
-
 	spritedef_t*		sprdef;
 	spriteframe_t*		sprframe;
 	int 				lump;
 
 	unsigned			rot;
 	BOOL 				flip;
-	fixed_t				xoffset = 0;	// [SL] offset if the left side of the
-										// sprite was clipped at the left screen edge
 
-	int 				index;
-
-	vissprite_t*		vis;
-
-	angle_t 			ang;
 	fixed_t 			iscale;
 
 	sector_t*			heightsec;			// killough 3/27/98
@@ -928,8 +918,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	if (sprframe->rotate)
 	{
 		// choose a different rotation based on player view
-		ang = R_PointToAngle (thing->x, thing->y);
-		rot = (ang-thing->angle+(unsigned)(ANG45/2)*9)>>29;
+		rot = (R_PointToAngle(thing->x, thing->y) - thing->angle + (unsigned)(ANG45/2)*9) >> 29;
 		lump = sprframe->lump[rot];
 		flip = (BOOL)sprframe->flip[rot];
 	}
@@ -943,35 +932,28 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	if (sprframe->width[rot] == SPRITE_NEEDS_INFO)
 		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
 
-	// transform the origin point
-	fixed_t tx1, tx2;
-	fixed_t ty, clipline;
+	// translate the sprite edges from world-space to camera-space
+	// and store in (t1x, ty) and (t2x, ty)
+	fixed_t tx1, tx2, ty;
 	R_RotatePoint(thing->x - viewx, thing->y - viewy, ANG90 - viewangle, tx1, ty);
-
-	// thing is behind view plane?
-	if (ty < NEARCLIP)
-		return;
-
-	// calculate edges of the shape
 	tx1 = tx1 - sprframe->offset[rot];
 	tx2 = tx1 + sprframe->width[rot];
-	clipline = FixedMul(fovtan, ty);		
 
-	if (tx1 > clipline)			// entirely off the right side of the screen
-		return;
-	if (-tx2 > clipline)			// entirely off the left side of the screen
+	// clip the sprite to the left & right screen edges
+	if (!R_ClipLineToFrustum(tx1, ty, tx2, ty, NEARCLIP))
 		return;
 
-	if (-tx1 > clipline)			// clip left edge of sprite to left edge of the screen
-	{
-		xoffset = -tx1 - clipline;
-		tx1 = -clipline;
-	}
-	if (tx2 > clipline)			// clip right edge of sprite to right edge of the screen
-		tx2 = clipline; 
+	// calculate how much of the sprite was clipped from the left side
+	fixed_t clipped_offset = (tx1 < 0) ? sprframe->width[rot] - tx2 + tx1 : 0;
 
-	gzt = thing->z + sprframe->topoffset[rot];	// [RH] Moved out of spritetopoffset[]
+	gzt = thing->z + sprframe->topoffset[rot];
 	gzb = thing->z;
+
+	// Entirely above the top of the screen or below the bottom?
+	int y1 = R_ProjectPointY(gzt - viewz, ty);
+	int y2 = R_ProjectPointY(gzb - viewz, ty);
+	if (!R_CheckProjectionY(y1, y2))
+		return;
 
 	// killough 3/27/98: exclude things totally separated
 	// from the viewer, by either water or fake ceilings
@@ -1002,26 +984,14 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 		}
 	}
 
-	// Entirely above the top of the screen or below the bottom?
-	if (centeryfrac - ((int64_t(gzb - viewz) * FocalLengthY) / ty) < 0 ||
- 		centeryfrac - ((int64_t(gzt - viewz) * FocalLengthY) / ty) >= (viewheight << FRACBITS))
-	{
-		return;
-	}
-
-	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx1) / ty) >> FRACBITS;
-	x2 = ((centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx2) / ty ) >> FRACBITS) - 1;
-
-	// off the right side?
-	if (x1 > viewwidth)
-		return;
-
-	// off the left side or too small?
-	if (x2 < 0 || x2 < x1)
+	// project the sprite edges to determine which columns the sprite occupies
+	int x1 = R_ProjectPointX(tx1, ty);
+	int x2 = R_ProjectPointX(tx2, ty) - 1;
+	if (!R_CheckProjectionX(x1, x2))
 		return;
 
 	// store information in a vissprite
-	vis = R_NewVisSprite ();
+	vissprite_t *vis = R_NewVisSprite();
 
 	// killough 3/27/98: save sector for special clipping later
 	vis->heightsec = heightsec;
@@ -1034,8 +1004,8 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	vis->gz = gzb;
 	vis->gzt = gzt;		// killough 3/27/98
 	vis->texturemid = gzt - viewz;
-	vis->x1 = x1 < 0 ? 0 : x1;
-	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+	vis->x1 = x1;
+	vis->x2 = x2;
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
 	vis->depth = ty;
@@ -1044,12 +1014,12 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 
 	if (flip)
 	{
-		vis->startfrac = sprframe->width[rot]-1 - xoffset;	// [RH] Moved out of spritewidth
+		vis->startfrac = sprframe->width[rot]-1 - clipped_offset;
 		vis->xiscale = -iscale;
 	}
 	else
 	{
-		vis->startfrac = xoffset;
+		vis->startfrac = clipped_offset;
 		vis->xiscale = iscale;
 	}
 
@@ -1073,7 +1043,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	else
 	{
 		// diminished light
-		index = (vis->yscale*lightscalexmul)>>LIGHTSCALESHIFT;	// [RH]
+		int index = (vis->yscale*lightscalexmul)>>LIGHTSCALESHIFT;	// [RH]
 
 		if (index >= MAXLIGHTSCALE)
 			index = MAXLIGHTSCALE-1;
@@ -1635,37 +1605,24 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 {
 	fixed_t				gzt;				// killough 3/27/98
 	fixed_t				gzb;
-	int 				x1;
-	int 				x2;
 	vissprite_t*		vis;
 	sector_t*			heightsec = NULL;	// killough 3/27/98
 
-	// transform the origin point
-	fixed_t tx1, tx2;
-	fixed_t ty, clipline;
+	// translate the particle edges from world-space to camera-space
+	// and store in (t1x, ty) and (t2x, ty)
+	fixed_t tx1, tx2, ty;
 	R_RotatePoint(particle->x - viewx, particle->y - viewy, ANG90 - viewangle, tx1, ty);
-
-	// thing is behind view plane?
-	if (ty < NEARCLIP)
-		return;
-
-	// calculate edges of the shape
 	tx1 = tx1 - (particle->size >> 1)*(FRACUNIT/4);
 	tx2 = tx1 + particle->size*(FRACUNIT/4);
-	clipline = FixedMul(fovtan, ty);		
-
-	if (tx1 > clipline)			// entirely off the right side of the screen
-		return;
-	if (-tx2 > clipline)			// entirely off the left side of the screen
-		return;
-
-	if (-tx1 > clipline)			// clip left edge of sprite to left edge of the screen
-		tx1 = -clipline;
-	if (tx2 > clipline)			// clip right edge of sprite to right edge of the screen
-		tx2 = clipline; 
 
 	gzt = particle->z+1;
 	gzb = particle->z;
+
+	// Entirely above the top of the screen or below the bottom?
+	int y1 = R_ProjectPointY(gzt - viewz, ty);
+	int y2 = R_ProjectPointY(gzb - viewz, ty);
+	if (!R_CheckProjectionY(y1, y2))
+		return;
 
 	// killough 3/27/98: exclude things totally separated
 	// from the viewer, by either water or fake ceilings
@@ -1696,22 +1653,10 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		}
 	}
 
-	// Entirely above the top of the screen or below the bottom?
-	if (centeryfrac - ((int64_t(gzb - viewz) * FocalLengthY) / ty) < 0 ||
- 		centeryfrac - ((int64_t(gzt - viewz) * FocalLengthY) / ty) >= (viewheight << FRACBITS))
-	{
-		return;
-	}
-
-	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx1) / ty) >> FRACBITS;
-	x2 = ((centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * tx2) / ty ) >> FRACBITS) - 1;
-
-	// off the right side?
-	if (x1 > viewwidth)
-		return;
-
-	// off the left side or too small?
-	if (x2 < 0 || x2 < x1)
+	// project the particle edges to determine which columns the particle occupies
+	int x1 = R_ProjectPointX(tx1, ty);
+	int x2 = R_ProjectPointX(tx2, ty) - 1;
+	if (!R_CheckProjectionX(x1, x2))
 		return;
 
 	// store information in a vissprite
@@ -1725,8 +1670,8 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->gz = gzb;
 	vis->gzt = gzt;
 	vis->texturemid = FixedMul (yaspectmul, vis->gzt - viewz);
-	vis->x1 = x1 < 0 ? 0 : x1;
-	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+	vis->x1 = x1;
+	vis->x2 = x2;
 	vis->translation = translationref_t();
 	vis->startfrac = particle->color;
 	vis->patch = NO_PARTICLE;

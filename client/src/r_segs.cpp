@@ -643,6 +643,14 @@ static void R_AdjustOpenings(int start, int stop)
 	}
 }
 
+static fixed_t R_LineLength(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2)
+{
+	double dx = FIXED2DOUBLE(px2 - px1);
+	double dy = FIXED2DOUBLE(py2 - py1);
+
+	return DOUBLE2FIXED(sqrt(dx*dx + dy*dy));
+}
+
 //
 // R_PrepWall
 //
@@ -653,27 +661,19 @@ static void R_AdjustOpenings(int start, int stop)
 // lclip1 and lclip2 are percentanges of the left and right edge of the
 // line that have been clipped off by R_AddLine.
 //
-void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2)
+void R_PrepWall(seg_t *line, fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist1, fixed_t dist2, int start, int stop)
 {
 	if (start > stop)
 		return;
 
-	// [SL] Points v1 and v2 represent the original line's endpoints after clipping
-	v2fixed_t v1, v2;
-	R_ClipEndPoints(line->v1->x, line->v1->y, line->v2->x, line->v2->y,
-					lclip1, lclip2, v1.x, v1.y, v2.x, v2.y);
-
 	// clipped lineseg length
-	fixed_t seglen = FixedMul(line->length, lclip2 - lclip1);
+//	fixed_t seglen = FixedMul(line->length, lclip2 - lclip1);
+	fixed_t seglen = R_LineLength(px1, py1, px2, py2);
+
 
 	// distance from lineseg start to start of clipped lineseg
-	fixed_t segoffs = FixedMul(line->length, lclip1) + line->sidedef->textureoffset + line->offset;
-
-	// Find distance in camera space from the vertices to the camera
-	fixed_t dist1 = FixedMul(v1.x - viewx, finesine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]) + 
-					FixedMul(v1.y - viewy, finecosine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]);
-	fixed_t dist2 = FixedMul(v2.x - viewx, finesine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]) + 
-					FixedMul(v2.y - viewy, finecosine[(ANG90 - viewangle) >> ANGLETOFINESHIFT]);
+//	fixed_t segoffs = FixedMul(line->length, lclip1) + line->sidedef->textureoffset + line->offset;
+	fixed_t segoffs = R_LineLength(line->v1->x, line->v1->y, px1, py1) + line->sidedef->textureoffset + line->offset;
 
 	const fixed_t mindist = 0.25*FRACUNIT;
 	const fixed_t maxdist = 16384*FRACUNIT;
@@ -706,10 +706,10 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 	}
 
 	// get the z coordinates of the line's vertices on each side of the line
-	rw_frontcz1 = P_CeilingHeight(v1.x, v1.y, frontsector);
-	rw_frontfz1 = P_FloorHeight(v1.x, v1.y, frontsector);
-	rw_frontcz2 = P_CeilingHeight(v2.x, v2.y, frontsector);
-	rw_frontfz2 = P_FloorHeight(v2.x, v2.y, frontsector);
+	rw_frontcz1 = P_CeilingHeight(px1, py1, frontsector);
+	rw_frontfz1 = P_FloorHeight(px1, py1, frontsector);
+	rw_frontcz2 = P_CeilingHeight(px2, py2, frontsector);
+	rw_frontfz2 = P_FloorHeight(px2, py2, frontsector);
 
 	// calculate the upper and lower heights of the walls in the front
 	R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, scale1, scale2);
@@ -717,10 +717,10 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 
 	if (backsector)
 	{
-		rw_backcz1 = P_CeilingHeight(v1.x, v1.y, backsector);
-		rw_backfz1 = P_FloorHeight(v1.x, v1.y, backsector);
-		rw_backcz2 = P_CeilingHeight(v2.x, v2.y, backsector);
-		rw_backfz2 = P_FloorHeight(v2.x, v2.y, backsector);
+		rw_backcz1 = P_CeilingHeight(px1, py1, backsector);
+		rw_backfz1 = P_FloorHeight(px1, py1, backsector);
+		rw_backcz2 = P_CeilingHeight(px2, py2, backsector);
+		rw_backfz2 = P_FloorHeight(px2, py2, backsector);
 
 		// calculate the upper and lower heights of the walls in the back
 		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, scale1, scale2);

@@ -526,136 +526,53 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 
 //
-// R_ClipLine
-//
-// Clips a line defined by (px1, py1) and (px2, py2) to the viewing window.
-// It calculates lclip1 and lclip2, which represent the percentage the left
-// and right vertices are clipped. The screen columns the line encompasses,
-// x1 and x2 are also calculated. The function returns false if the line
-// is completely clipped.
-//
-static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
-					fixed_t clipdist, fixed_t &lclip1, fixed_t &lclip2,
-					int &x1, int &x2)
-{
-	v2fixed_t t1, t2;
-	R_RotatePoint(px1 - viewx, py1 - viewy, ANG90 - viewangle, t1.x, t1.y);
-	R_RotatePoint(px2 - viewx, py2 - viewy, ANG90 - viewangle, t2.x, t2.y);
-
-	// save the unclipped coordinates to calculate lclip1 and lclip2 later
-	v2fixed_t unclipped_t1 = t1;
-	v2fixed_t unclipped_t2 = t2;
-
-	// Clip portions of the line that are behind the view plane
-	if (t1.y < clipdist)
-	{      
-		// reject the line entirely if the whole thing is behind the view plane.
-		if (t2.y < clipdist)
-			return false;
-
-		// clip the line at the point where t1.y == clipdist
-		fixed_t t = FixedDiv(clipdist - t1.y, t2.y - t1.y);
-		t1.x = t1.x + FixedMul(t, t2.x - t1.x);
-		t1.y = clipdist;
-	}
-
-	if (t2.y < clipdist)
-	{
-		// clip the line at the point where t2.y == clipdist
-		fixed_t t = FixedDiv(clipdist - t1.y, t2.y - t1.y);
-		t2.x = t1.x + FixedMul(t, t2.x - t1.x);
-		t2.y = clipdist;
-	}
-
-	// clip portions of the line that extend off the sides of the screen
-	fixed_t clipline1 = FixedMul(fovtan, t1.y);		// t1.y adjusted for non-90 degree fov
-	fixed_t clipline2 = FixedMul(fovtan, t2.y);		// t2.y adjusted for non-90 degree fov
-
-	if (t1.x < -clipline1)
-	{
-		if (t2.x < -clipline2)	// entire line is off the left side of the screen
-			return false;
-
-		// clip part that is off the left side of screen
-		fixed_t den = t2.x - t1.x + clipline2 - clipline1;
-		if (den == 0)
-			return false;
-
-		fixed_t t = FixedDiv(-clipline1 - t1.x, den);
-		t1.x = t1.x + FixedMul(t, t2.x - t1.x);
-		t1.y = t1.y + FixedMul(t, t2.y - t1.y);
-	}
-
-	if (t2.x > clipline2)
-	{
-		if (t1.x > clipline1)	// entire line is off the right side of the screen
-			return false;
-
-		// clip part that is off the right side of screen
-		fixed_t den = t2.x - t1.x + clipline1 - clipline2;
-		if (den == 0)
-			return false;
-
-		fixed_t t = FixedDiv(clipline1 - t1.x, den);
-		t2.x = t1.x + FixedMul(t, t2.x - t1.x);
-		t2.y = t1.y + FixedMul(t, t2.y - t1.y);
-	}
-
-	if (t1.y == 0)
-		x1 = centerx;
-	else
-		x1 = FIXED2INT(centerxfrac + (int64_t(FocalLengthX) * t1.x) / t1.y);
-
-	if (t2.y == 0)
-		x2 = centerx;
-	else
-		x2 = FIXED2INT(centerxfrac + (int64_t(FocalLengthX) * t2.x) / t2.y) - 1;
-
-	if (x1 < 0)
-		x1 = 0;
-	if (x2 >= viewwidth)
-		x2 = viewwidth - 1;
-
-	// Does not cross a pixel?
-	if (x1 > x2)
-		return false;
-
-	lclip1 = FixedDiv(t1.x - unclipped_t1.x, unclipped_t2.x - unclipped_t1.x);
-	lclip2 = FixedDiv(t2.x - unclipped_t1.x, unclipped_t2.x - unclipped_t1.x);
-
-	return true;
-}
-
-//
 // R_AddLine
 // Clips the given segment
 // and adds any visible pieces to the line list.
 //
 void R_AddLine (seg_t *line)
 {
-	int				x1, x2;
-
 	curline = line;
 
 	// [RH] Color if not texturing line
 	dc_color = ((line - segs) & 31) * 4;
 
-	// percentage along the length of a lineseg where v1 and v2 are clipped to respectively
-	// FRACUNIT = lineseg length
-	fixed_t	lclip1, lclip2;
-
 	// Clip the wall seg to the viewing window
-	if (!R_ClipLine(line->v1->x, line->v1->y, line->v2->x, line->v2->y, NEARCLIP, lclip1, lclip2, x1, x2))
+
+	// translate the line endpoints from world-space to camera-space
+	// and store in (t1.x, t1.y) and (t2.x, t2.y)
+	v2fixed_t t1, t2;
+	R_RotatePoint(line->v1->x - viewx, line->v1->y - viewy, ANG90 - viewangle, t1.x, t1.y);
+	R_RotatePoint(line->v2->x - viewx, line->v2->y - viewy, ANG90 - viewangle, t2.x, t2.y);
+
+	if (!R_ClipLineToFrustum(t1.x, t1.y, t2.x, t2.y, NEARCLIP))
+		return;
+
+	// project the line endpoints to determine which columns the line occupies
+	int x1 = R_ProjectPointX(t1.x, t1.y);
+	int x2 = R_ProjectPointX(t2.x, t2.y) - 1;
+	if (!R_CheckProjectionX(x1, x2))
 		return;
 
 	rw_start = x1;
 	rw_stop = x2;
 
+	// translate the clipped line endpoints from camera-space to world-space
+	// and store in (w1.x, w1.y) and (w2.x, w2.y)
+	v2fixed_t w1, w2;
+	R_RotatePoint(t1.x, t1.y, viewangle - ANG90, w1.x, w1.y);
+	R_RotatePoint(t2.x, t2.y, viewangle - ANG90, w2.x, w2.y);
+
+	w1.x += viewx;
+	w1.y += viewy;
+	w2.x += viewx;
+	w2.y += viewy;
+
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
 	static sector_t tempsec;
 	backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
 
-	R_PrepWall(line, rw_start, rw_stop, lclip1, lclip2);
+	R_PrepWall(line, w1.x, w1.y, w2.x, w2.y, t1.y, t2.y, rw_start, rw_stop);
 
 	// Single sided line?
 	if (!backsector)
@@ -741,11 +658,11 @@ void R_AddLine (seg_t *line)
 	}
 
   clippass:
-	R_ClipPassWallSegment (x1, x2);
+	R_ClipPassWallSegment(x1, x2);
 	return;
 
   clipsolid:
-	R_ClipSolidWallSegment (x1, x2);
+	R_ClipSolidWallSegment(x1, x2);
 }
 
 
@@ -776,9 +693,6 @@ static const int checkcoord[12][4] = // killough -- static const
 //
 static BOOL R_CheckBBox(const fixed_t *bspcoord)
 {
-	int 				x1, x2;
-	fixed_t				lclip1, lclip2;
-
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
 	int boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
@@ -792,9 +706,6 @@ static BOOL R_CheckBBox(const fixed_t *bspcoord)
 	fixed_t xh = bspcoord[checkcoord[boxpos][2]];
 	fixed_t yh = bspcoord[checkcoord[boxpos][3]];
 
-	if (R_PointOnSide(viewx, viewx, xl, yl, xh, yh) == 1)
-		return true;
-
 	// check if part of the bounding box is within the viewing window
 	// and calculate x1 and x2.
 	//
@@ -802,9 +713,28 @@ static BOOL R_CheckBBox(const fixed_t *bspcoord)
 	// diagonals are entirely clipped, then none of the bounding box
 	// is in the viewing window.
 	//
-	if (!R_ClipLine(xl, yl, xh, yh, 0, lclip1, lclip2, x1, x2) &&
-		!R_ClipLine(xl, yh, xh, yl, 0, lclip1, lclip2, x1, x2))
+
+	// translate the line endpoints from world-space to camera-space
+	// and store in (t1.x, t1.y) and (t2.x, t2.y)
+	v2fixed_t t1, t2;
+	R_RotatePoint(xl - viewx, yl - viewy, ANG90 - viewangle, t1.x, t1.y);
+	R_RotatePoint(xh - viewx, yh - viewy, ANG90 - viewangle, t2.x, t2.y);
+
+	// We pass R_ClipLine the bounding-box's diagonals. If both
+	// diagonals are entirely clipped, then none of the bounding box
+	// is in the viewing window.
+	if (!R_ClipLineToFrustum(t1.x, t1.y, t2.x, t2.y, 0) &&
+		!R_ClipLineToFrustum(t1.x, t2.y, t2.x, t1.y, 0))
 		return false;
+
+	// project the line endpoints to determine which columns the line occupies
+// TODO: FIXME
+//	int x1 = R_ProjectPointX(t1.x, t1.y);
+//	int x2 = R_ProjectPointX(t2.x, t2.y);
+//	if (!R_CheckProjectionX(x1, x2))
+//		return false;
+
+	int x1 = 0, x2 = viewwidth - 1;
 
 	cliprange_t* start = solidsegs;
 	while (start->last < x2)

@@ -63,8 +63,8 @@ const float  FIXEDTOFLOAT_FACTOR	= 1.0f / 65536.0f;
 #define DOUBLE2FIXED(f)			(fixed_t)((f) * (double)FRACUNIT)
 
 // Round when converting fixed_t to int
-#define FIXED2INT(f)			((f + FRACUNIT/2) / FRACUNIT)
-#define INT2FIXED(f)			(f << FRACBITS)
+#define FIXED2INT(f)			((int)((f + FRACUNIT/2) / FRACUNIT))
+#define INT2FIXED(f)			((fixed_t)(f << FRACBITS))
 
 #endif	// __M_FIXED__
 

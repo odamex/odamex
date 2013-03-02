@@ -147,14 +147,13 @@ R_PointToDist
 ( fixed_t	x,
   fixed_t	y );
 
+int R_ProjectPointX(fixed_t x, fixed_t y);
+int R_ProjectPointY(fixed_t z, fixed_t y);
+bool R_CheckProjectionX(int &x1, int &x2);
+bool R_CheckProjectionY(int &y1, int &y2);
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty);
-void R_ClipEndPoints(
-	fixed_t x1, fixed_t y1,
-	fixed_t x2, fixed_t y2,
-	fixed_t lclip1, fixed_t lclip2,
-	fixed_t &cx1, fixed_t &cy1,
-	fixed_t &cx2, fixed_t &cy2);
+bool R_ClipLineToFrustum(fixed_t &px1, fixed_t &py1, fixed_t &px2, fixed_t &py2, fixed_t clipdist);
 
 subsector_t*
 R_PointInSubsector

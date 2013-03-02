@@ -378,18 +378,148 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
 }
 
-void R_ClipEndPoints(
-	fixed_t x1, fixed_t y1,
-	fixed_t x2, fixed_t y2,
-	fixed_t lclip1, fixed_t lclip2,
-	fixed_t &cx1, fixed_t &cy1,
-	fixed_t &cx2, fixed_t &cy2)
+//
+// R_ClipLineToFrustum
+//
+// Clips the endpoints of a line to the view frustum.
+// (px1, py1) and (px2, py2) are the endpoints of the line
+// clipdist is the distance from the viewer to the near plane of the frustum.
+//
+// Returns false if the line is entirely clipped.
+//
+bool R_ClipLineToFrustum(fixed_t &px1, fixed_t &py1, fixed_t &px2, fixed_t &py2, fixed_t clipdist)
 {
-	cx1 = x1 + FixedMul(lclip1, x2 - x1);
-	cy1 = y1 + FixedMul(lclip1, y2 - y1);
-	cx2 = x1 + FixedMul(lclip2, x2 - x1);
-	cy2 = y1 + FixedMul(lclip2, y2 - y1);
+	double den, t;
+	double ft1x = FIXED2DOUBLE(px1);
+	double ft1y = FIXED2DOUBLE(py1);
+	double ft2x = FIXED2DOUBLE(px2);
+	double ft2y = FIXED2DOUBLE(py2);
+
+	double fclipdist = FIXED2DOUBLE(clipdist);
+
+	// Clip portions of the line that are behind the view plane
+	if (ft1y < fclipdist)
+	{      
+		// reject the line entirely if the whole thing is behind the view plane.
+		if (ft2y < fclipdist)
+			return false;
+
+		// clip the line at the point where t1.y == clipdist
+		t = (fclipdist - ft1y) / (ft2y - ft1y);
+		ft1x = ft1x + t*(ft2x - ft1x);
+		ft1y = fclipdist;
+	}
+
+	if (ft2y < fclipdist)
+	{
+		// clip the line at the point where t2.y == clipdist
+		t = (fclipdist - ft1y) / (ft2y - ft1y);
+		ft2x = ft1x + t*(ft2x - ft1x);
+		ft2y = fclipdist;
+	}
+
+	// clip line at right edge of the screen
+	double f = FIXED2DOUBLE(fovtan);
+	den = ft2x - ft1x - f*(ft2y - ft1y);	
+	if (den == 0.0)
+		return false;
+
+	t = (f*ft1y - ft1x) / den;
+
+	// is the entire line off the right side of the screen?
+//	if (t < 0.0)
+//		return false;
+
+	if (t > 0.0 && t < 1.0)
+	{
+		ft2x = ft1x + t*(ft2x - ft1x);
+		ft2y = ft1y + t*(ft2y - ft1y);
+	}
+
+	// clip line at left edge of the screen
+	f *= -1.0;
+	den = ft2x - ft1x - f*(ft2y - ft1y);	
+	if (den == 0.0)
+		return false;
+
+	t = (f*ft1y - ft1x) / den;		// use c2?
+
+	// is the entire line off the left side of the screen?
+//	if (t > 1.0)
+//		return false;
+
+	if (t > 0.0 && t < 1.0)
+	{
+		ft1x = ft1x + t*(ft2x - ft1x);
+		ft1y = ft1y + t*(ft2y - ft1y);
+	}
+
+	px1 = DOUBLE2FIXED(ft1x);
+	py1 = DOUBLE2FIXED(ft1y);
+	px2 = DOUBLE2FIXED(ft2x);
+	py2 = DOUBLE2FIXED(ft2y);
+
+	return true;
 }
+
+//
+// R_ProjectPointX
+//
+// Returns the screen column that a point in camera-space projects to.
+//
+int R_ProjectPointX(fixed_t x, fixed_t y)
+{
+	if (y > 0)
+		return FIXED2INT(centerxfrac + int64_t(FocalLengthX) * int64_t(x) / int64_t(y));
+	else
+		return centerx;
+}
+
+//
+// R_ProjectPointY
+//
+// Returns the screen row that a point in camera-space projects to.
+//
+int R_ProjectPointY(fixed_t z, fixed_t y)
+{
+	if (y > 0)
+		return FIXED2INT(centeryfrac - int64_t(FocalLengthY) * int64_t(z) / int64_t(y));
+	else
+		return centery;
+}
+
+//
+// R_CheckProjectionX
+//
+// Clamps the columns x1 and x2 to the viewing screen and returns false if
+// the entire projection is off the screen.
+//
+bool R_CheckProjectionX(int &x1, int &x2)
+{
+	x1 = MAX<int>(x1, 0);
+	x2 = MIN<int>(x2, viewwidth - 1);
+
+	if (x1 > x2 || x2 < 0 || x1 >= viewwidth)
+		return false;
+	return true;
+}
+
+//
+// R_CheckProjectionY
+//
+// Clamps the rows y1 and y2 to the viewing screen and returns false if
+// the entire projection is off the screen.
+//
+bool R_CheckProjectionY(int &y1, int &y2)
+{
+	y1 = MAX<int>(y1, 0);
+	y2 = MIN<int>(y2, viewheight - 1);
+
+	if (y1 > y2 || y2 < 0 || y1 >= viewwidth)
+		return false;
+	return true;
+}
+
 
 //
 //
