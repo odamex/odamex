@@ -572,7 +572,7 @@ void R_AddLine (seg_t *line)
 	static sector_t tempsec;
 	backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
 
-	R_PrepWall(line, w1.x, w1.y, w2.x, w2.y, t1.y, t2.y, rw_start, rw_stop);
+	R_PrepWall(w1.x, w1.y, w2.x, w2.y, t1.y, t2.y, rw_start, rw_stop);
 
 	// Single sided line?
 	if (!backsector)

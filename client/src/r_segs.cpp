@@ -661,21 +661,25 @@ static fixed_t R_LineLength(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2)
 // lclip1 and lclip2 are percentanges of the left and right edge of the
 // line that have been clipped off by R_AddLine.
 //
-void R_PrepWall(seg_t *line, fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist1, fixed_t dist2, int start, int stop)
+void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist1, fixed_t dist2, int start, int stop)
 {
 	if (start > stop)
 		return;
 
+	// determine which vertex of the linedef should be used for texture alignment
+	vertex_t *v1;
+	if (curline->linedef->sidenum[0] == curline->sidedef - sides)
+		v1 = curline->linedef->v1;
+	else
+		v1 = curline->linedef->v2;
+
 	// clipped lineseg length
-//	fixed_t seglen = FixedMul(line->length, lclip2 - lclip1);
 	fixed_t seglen = R_LineLength(px1, py1, px2, py2);
 
-
 	// distance from lineseg start to start of clipped lineseg
-//	fixed_t segoffs = FixedMul(line->length, lclip1) + line->sidedef->textureoffset + line->offset;
-	fixed_t segoffs = R_LineLength(line->v1->x, line->v1->y, px1, py1) + line->sidedef->textureoffset + line->offset;
+	fixed_t segoffs = R_LineLength(v1->x, v1->y, px1, py1) + curline->sidedef->textureoffset;
 
-	const fixed_t mindist = 0.25*FRACUNIT;
+	const fixed_t mindist = NEARCLIP;
 	const fixed_t maxdist = 16384*FRACUNIT;
 	dist1 = clamp(dist1, mindist, maxdist);
 	dist2 = clamp(dist2, mindist, maxdist);
@@ -689,10 +693,9 @@ void R_PrepWall(seg_t *line, fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	// We also can not linearly interpolate Z, but we can linearly interpolate 1/Z (scale), so we linearly
 	// interpolate the texture coordinates u / Z and then divide by 1/Z to get the correct u for each column.
 	double uinvz = 0.0;
-	double uinvz2 = FIXED2DOUBLE(seglen - FRACUNIT) * scale2;
 
 	double scalestep = (scale2 - scale1) / (stop - start + 1);
-	double uinvzstep = uinvz2 / (stop - start + 1);
+	double uinvzstep = FIXED2DOUBLE(seglen - FRACUNIT) * scale2 / (stop - start + 1);
 
 	// fill the texture column array
 	double curscale = scale1;
