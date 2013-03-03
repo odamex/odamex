@@ -420,15 +420,16 @@ bool R_ClipLineToFrustum(fixed_t &px1, fixed_t &py1, fixed_t &px2, fixed_t &py2,
 
 	// clip line at right edge of the screen
 	double f = FIXED2DOUBLE(fovtan);
+
+	// is the entire line off the right side of the screen?
+	if (ft1x > f*ft1y && ft2x > f*ft2y)
+		return false;
+
 	den = ft2x - ft1x - f*(ft2y - ft1y);	
 	if (den == 0.0)
 		return false;
 
 	t = (f*ft1y - ft1x) / den;
-
-	// is the entire line off the right side of the screen?
-//	if (t < 0.0)
-//		return false;
 
 	if (t > 0.0 && t < 1.0)
 	{
@@ -438,15 +439,16 @@ bool R_ClipLineToFrustum(fixed_t &px1, fixed_t &py1, fixed_t &px2, fixed_t &py2,
 
 	// clip line at left edge of the screen
 	f *= -1.0;
+
+	// is the entire line off the left side of the screen?
+	if (ft1x < f*ft1y && ft2x < f*ft2y)
+		return false;
+
 	den = ft2x - ft1x - f*(ft2y - ft1y);	
 	if (den == 0.0)
 		return false;
 
 	t = (f*ft1y - ft1x) / den;		// use c2?
-
-	// is the entire line off the left side of the screen?
-//	if (t > 1.0)
-//		return false;
 
 	if (t > 0.0 && t < 1.0)
 	{
