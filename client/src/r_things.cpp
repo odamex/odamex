@@ -934,9 +934,9 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 
 	// translate the sprite edges from world-space to camera-space
 	// and store in (t1x, ty) and (t2x, ty)
-	fixed_t tx1, tx2, ty;
+	fixed_t tx1, tx2, ty, tx1old;
 	R_RotatePoint(thing->x - viewx, thing->y - viewy, ANG90 - viewangle, tx1, ty);
-	tx1 = tx1 - sprframe->offset[rot];
+	tx1 = tx1old = tx1 - sprframe->offset[rot];
 	tx2 = tx1 + sprframe->width[rot];
 
 	// clip the sprite to the left & right screen edges
@@ -944,7 +944,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 		return;
 
 	// calculate how much of the sprite was clipped from the left side
-	fixed_t clipped_offset = (tx1 < 0) ? sprframe->width[rot] - tx2 + tx1 : 0;
+	fixed_t clipped_offset = tx1 - tx1old;
 
 	gzt = thing->z + sprframe->topoffset[rot];
 	gzb = thing->z;
