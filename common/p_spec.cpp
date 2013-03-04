@@ -1635,10 +1635,14 @@ void P_PlayerInSpecialSector (player_t *player)
 
 	// Has hitten ground.
 	// [RH] Normal DOOM special or BOOM specialized?
-	if (special >= dLight_Flicker && special <= dDamage_LavaHefty)
+	if (special >= dLight_Flicker && special <= 255255)
 	{
 		switch (special)
 		{
+		  case Damage_InstantDeath:
+			P_DamageMobj (player->mo, NULL, NULL, 999, MOD_UNKNOWN);
+			break;
+
 		  case dDamage_Hellslime:
 			// HELLSLIME DAMAGE
 			if (!player->powers[pw_ironfeet])
@@ -1651,6 +1655,11 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (!player->powers[pw_ironfeet])
 				if (!(level.time&0x1f))
 					P_DamageMobj (player->mo, NULL, NULL, 5, MOD_LAVA);
+			break;
+
+		  case hDamage_Sludge:
+			if (!player->powers[pw_ironfeet] && !(level.time&0x1f))
+				P_DamageMobj (player->mo, NULL, NULL, 4, MOD_SLIME);
 			break;
 
 		  case dDamage_SuperHellslime:

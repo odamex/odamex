@@ -282,7 +282,12 @@ typedef enum {
 	dDamage_LavaWimpy = 82,
 	dDamage_LavaHefty = 83,
 	dScroll_EastLavaDamage = 84,
-
+	hDamage_Sludge = 85,
+	
+	sLight_Strobe_Hurt = 104,
+	sDamage_Hellslime = 105,
+	Damage_InstantDeath = 115,
+	sDamage_SuperHellslime = 116,
 
 	Light_IndoorLightning2 = 198,
 	Light_IndoorLightning1 = 199,
