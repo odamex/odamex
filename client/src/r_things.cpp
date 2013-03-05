@@ -45,11 +45,9 @@
 #include "cmdlib.h"
 #include "s_sound.h"
 
-#include "qsort.h"
 #include "vectors.h"
 
 extern fixed_t FocalLengthX, FocalLengthY;
-extern fixed_t fovtan;
 
 #define MINZ							(FRACUNIT*4)
 #define BASEYCENTER 					(100)
@@ -1291,37 +1289,37 @@ void R_DrawPlayerSprites (void)
 //		more vissprites that need to be sorted, the better the performance
 //		gain compared to the old function.
 //
-static struct vissort_s {
-	vissprite_t *sprite;
-	fixed_t		depth;
-}				*spritesorter;
-static int		spritesortersize = 0;
-static int		vsprcount;
 
-#define cmp_sprites(a, b) (b->depth < a->depth)
+static int				vsprcount;
+static vissprite_t**	spritesorter;
+static int				spritesorter_size = 0;
+
+static int STACK_ARGS sv_compare(const void *arg1, const void *arg2)
+{
+	int diff = (*(vissprite_t **)arg1)->depth - (*(vissprite_t **)arg2)->depth;
+	if (diff == 0)
+		return (*(vissprite_t **)arg2)->gzt - (*(vissprite_t **)arg1)->gzt;
+	return diff;
+}
 
 void R_SortVisSprites (void)
 {
-	int i;
-
 	vsprcount = vissprite_p - vissprites;
 
 	if (!vsprcount)
 		return;
 
-	if (spritesortersize < MaxVisSprites)
+	if (spritesorter_size < MaxVisSprites)
 	{
-		spritesorter = (vissort_s *)Realloc (spritesorter, sizeof(struct vissort_s) * MaxVisSprites);
-		spritesortersize = MaxVisSprites;
+		delete [] spritesorter;
+		spritesorter = new vissprite_t*[MaxVisSprites];
+		spritesorter_size = MaxVisSprites;
 	}
 
-	for (i = 0; i < vsprcount; i++)
-	{
-		spritesorter[i].sprite = &vissprites[i];
-		spritesorter[i].depth = vissprites[i].depth;
-	}
+	for (int i = 0; i < vsprcount; i++)
+		spritesorter[i] = vissprites + i;
 
-    QSORT(vissort_s, spritesorter, vsprcount, cmp_sprites);
+	qsort(spritesorter, vsprcount, sizeof(vissprite_t *), sv_compare);
 }
 
 
@@ -1513,19 +1511,11 @@ static void R_DrawCrosshair (void)
 void R_DrawMasked (void)
 {
 	drawseg_t		 *ds;
-	struct vissort_s *sorttail;
 
 	R_SortVisSprites ();
 
-	if (vsprcount)
-	{
-		sorttail = spritesorter + vsprcount;
-		vsprcount = -vsprcount;
-		do
-		{
-			R_DrawSprite (sorttail[vsprcount].sprite);
-		} while (++vsprcount);
-	}
+	while (vsprcount > 0)
+		R_DrawSprite(spritesorter[--vsprcount]);
 
 	// render any remaining masked mid textures
 
