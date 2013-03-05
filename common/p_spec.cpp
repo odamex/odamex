@@ -1635,7 +1635,7 @@ void P_PlayerInSpecialSector (player_t *player)
 
 	// Has hitten ground.
 	// [RH] Normal DOOM special or BOOM specialized?
-	if (special >= dLight_Flicker && special <= 255255)
+	if (special >= dLight_Flicker && special <= 255)
 	{
 		switch (special)
 		{
