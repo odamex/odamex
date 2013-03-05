@@ -96,6 +96,7 @@ extern bool HasBehavior;
 extern inline int V_StringWidth (const char *str);
 size_t P_NumPlayersInGame();
 static void ShoveChatStr (std::string str, byte who);
+void C_ReleaseKeys();
 
 static std::string input_text;
 int headsupactive;
@@ -372,6 +373,7 @@ BEGIN_COMMAND (messagemode)
 	I_EnableKeyRepeat();
     I_PauseMouse();
 	input_text = "";
+	C_ReleaseKeys();
 }
 END_COMMAND (messagemode)
 
@@ -395,6 +397,7 @@ BEGIN_COMMAND (messagemode2)
 	I_EnableKeyRepeat();
 	I_PauseMouse();
 	input_text = "";
+	C_ReleaseKeys();
 }
 END_COMMAND (messagemode2)
 
