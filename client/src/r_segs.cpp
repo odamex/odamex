@@ -141,7 +141,7 @@ static void R_FillWallHeightArray(
 
 	for (int i = start; i <= stop; i++)
 	{
-		array[i] = clamp((int)(frac + 0.5), -1, screen->height);
+		array[i] = clamp((int)frac, 0, screen->height - 1);
 		frac -= step;
 	}
 }
@@ -618,7 +618,7 @@ extern size_t maxopenings;
 static void R_AdjustOpenings(int start, int stop)
 {
 	ptrdiff_t pos = lastopening - openings;
-	size_t need = (rw_stopx - start)*4 + pos;
+	size_t need = 4*(stop - start + 1) + pos;
 
 	if (need > maxopenings)
 	{
@@ -662,12 +662,14 @@ static fixed_t R_LineLength(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2)
 // walltopb, and wallbottomb arrays with the top and bottom pixel heights
 // of the wall for the span from start to stop.
 //
-// lclip1 and lclip2 are percentanges of the left and right edge of the
-// line that have been clipped off by R_AddLine.
+// It also fills in the wallscalex and texoffs arrays with the vertical
+// scaling for each column and the horizontal texture offset for each column
+// respectively.
 //
 void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist1, fixed_t dist2, int start, int stop)
 {
-	if (start > stop)
+	int width = stop - start + 1;
+	if (width <= 0)
 		return;
 
 	// determine which vertex of the linedef should be used for texture alignment
@@ -696,12 +698,12 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 	// as it will yield evenly spaced texels instead of correct perspective (taking depth Z into account).
 	// We also can not linearly interpolate Z, but we can linearly interpolate 1/Z (scale), so we linearly
 	// interpolate the texture coordinates u / Z and then divide by 1/Z to get the correct u for each column.
-	double uinvz = 0.0;
 
-	double scalestep = (scale2 - scale1) / (stop - start + 1);
-	double uinvzstep = FIXED2DOUBLE(seglen) * scale2 / (stop - start + 1);
+	double scalestep = (scale2 - scale1) / width;
+	double uinvzstep = FIXED2DOUBLE(seglen) * scale2 / width;
 
 	// fill the texture column array
+	double uinvz = 0.0;
 	double curscale = scale1;
 	for (int i = start; i <= stop; i++)
 	{
@@ -736,8 +738,10 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 		// hack to allow height changes in outdoor areas (sky hack)
 		// copy back ceiling height array to front ceiling height array
 		if (frontsector->ceilingpic == skyflatnum && backsector->ceilingpic == skyflatnum)
-			memcpy(walltopf+start, walltopb+start, (stop-start+1)*sizeof(*walltopb));
+			memcpy(walltopf+start, walltopb+start, width*sizeof(*walltopb));
 	}
+
+	rw_scalestep = DOUBLE2FIXED(scalestep);
 }
 
 //
@@ -774,7 +778,7 @@ void R_StoreWallRange(int start, int stop)
 	// calculate scale at both ends and step
 	ds_p->scale1 = rw_scale = wallscalex[start];
 	ds_p->scale2 = wallscalex[stop];
-	ds_p->scalestep = rw_scalestep = (ds_p->scale2 - rw_scale) / (stop - start + 1);
+	ds_p->scalestep = rw_scalestep;
 
 	ds_p->light = rw_light = rw_scale * lightscalexmul;
  	ds_p->lightstep = rw_lightstep = rw_scalestep * lightscalexmul;
@@ -839,7 +843,11 @@ void R_StoreWallRange(int start, int stop)
 				ds_p->silhouette |= SIL_TOP;
 		}
 
-		if (spanfunc == R_FillSpan)
+		if (doorclosed)
+		{
+			markceiling = markfloor = true;
+		}
+		else if (spanfunc == R_FillSpan)
 		{
 			markfloor = markceiling = frontsector != backsector;
 		}
@@ -903,10 +911,6 @@ void R_StoreWallRange(int start, int stop)
 			markceiling = markceiling &&
 				(frontsector->ceilingpic != skyflatnum || backsector->ceilingpic != skyflatnum);
 		}
-
-
-		if (doorclosed)
-			markceiling = markfloor = true;
 
 		if (rw_backcz1 < rw_frontcz1 || rw_backcz2 < rw_frontcz2)
 		{
