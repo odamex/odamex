@@ -456,7 +456,7 @@ static void BlastColumn (void (*blastfunc)())
 
 		// cph - if we completely blocked further sight through this column,
 		// add this info to the solid columns array
-		if ((markceiling || markfloor) && (floorclip[rw_x] <= ceilingclip[rw_x] + 1))
+		if ((markceiling || markfloor) && (floorclip[rw_x] <= ceilingclip[rw_x]))
 			solidcol[rw_x] = 1;
 	}
 
