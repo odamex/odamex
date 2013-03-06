@@ -30,6 +30,7 @@
 void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, 
 				fixed_t dist1, fixed_t dist2, int start, int stop);
 void R_RenderMaskedSegRange (drawseg_t *ds, int x1, int x2);
+void R_StoreWallRange(int start, int stop);
 
 // [RH] There are two different RenderSegLoops.
 extern void (*R_RenderSegLoop)(void);

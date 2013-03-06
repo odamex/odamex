@@ -38,6 +38,7 @@ extern BOOL			skymap;
 extern drawseg_t	*drawsegs;
 extern drawseg_t*	ds_p;
 
+extern byte *solidcol;
 
 typedef void (*drawfunc_t) (int start, int stop);
 
@@ -45,6 +46,7 @@ EXTERN_CVAR (r_drawflat)		// [RH] Don't texture segs?
 
 // BSP?
 void R_ClearClipSegs (void);
+void R_ReallocDrawSegs(void);
 void R_ClearDrawSegs (void);
 void R_RenderBSPNode (int bspnum);
 bool R_DoorClosed(void);	// killough 1/17/98

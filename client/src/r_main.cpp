@@ -894,6 +894,10 @@ void R_ExecuteSetViewSize (void)
 	// [RH] Sky height fix for screens not 200 (or 240) pixels tall
 	R_InitSkyMap ();
 
+	// allocate for the array that indicates if a screen column is fully solid
+	delete [] solidcol;
+	solidcol = new byte[viewwidth];
+
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
 		screenheightarray[i] = (int)viewheight;

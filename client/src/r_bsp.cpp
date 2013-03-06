@@ -52,10 +52,6 @@ bool			doorclosed;
 bool			r_fakingunderwater;
 bool			r_underwater;
 
-int				MaxDrawSegs;
-drawseg_t		*drawsegs;
-drawseg_t*		ds_p;
-
 // Floor and ceiling heights at the end points of a seg_t
 fixed_t			rw_backcz1, rw_backcz2;
 fixed_t			rw_backfz1, rw_backfz2;
@@ -65,208 +61,87 @@ fixed_t			rw_frontfz1, rw_frontfz2;
 int rw_start, rw_stop;
 
 static BYTE		FakeSide;
-extern fixed_t FocalLengthX;
-extern fixed_t fovtan;
-
-void R_StoreWallRange(int start, int stop);
 
 const fixed_t NEARCLIP = 0.05*FRACUNIT;
 
-//
-// R_ClearDrawSegs
-//
-void R_ClearDrawSegs (void)
-{
-	if (!drawsegs)
-	{
-		MaxDrawSegs = 256;		// [RH] Default. Increased as needed.
-		drawsegs = (drawseg_t *)Malloc (MaxDrawSegs * sizeof(drawseg_t));
-	}
-	ds_p = drawsegs;
-}
+drawseg_t*		ds_p;
+drawseg_t*		drawsegs;
+unsigned		maxdrawsegs;
 
-//
-// ClipWallSegment
-// Clips the given range of columns
-// and includes it in the new clip list.
-//
-//
-// 1/11/98 killough: Since a type "short" is sufficient, we
-// should use it, since smaller arrays fit better in cache.
-//
-
-typedef struct {
-	short first, last;		// killough
-} cliprange_t;
-
-// 1/11/98: Lee Killough
-//
-// This fixes many strange venetian blinds crashes, which occurred when a scan
-// line had too many "posts" of alternating non-transparent and transparent
-// regions. Using a doubly-linked list to represent the posts is one way to
-// do it, but it has increased overhead and poor spatial locality, which hurts
-// cache performance on modern machines. Since the maximum number of posts
-// theoretically possible is a function of screen width, a static limit is
-// okay in this case. It used to be 32, which was way too small.
-//
-// This limit was frequently mistaken for the visplane limit in some Doom
-// editing FAQs, where visplanes were said to "double" if a pillar or other
-// object split the view's space into two pieces horizontally. That did not
-// have anything to do with visplanes, but it had everything to do with these
-// clip posts.
-
-// newend is one past the last valid seg
-static cliprange_t *newend;
-static cliprange_t solidsegs[MAXWIDTH / 2 + 2];
-
-//
-// R_ClipSolidWallSegment
-// Does handle solid walls,
-//	e.g. single sided LineDefs (middle texture)
-//	that entirely block the view.
-//
-void
-R_ClipSolidWallSegment
-( int			first,
-  int			last )
-{
-	cliprange_t *next, *start;
-
-	// Find the first range that touches the range
-	//	(adjacent pixels are touching).
-	start = solidsegs;
-	while (start->last < first-1)
-		start++;
-
-	if (first < start->first)
-	{
-		if (last < start->first-1)
-		{
-			// Post is entirely visible (above start), so insert a new clippost.
-			R_StoreWallRange (first, last);
-
-			// 1/11/98 killough: performance tuning using fast memmove
-			memmove (start+1, start, (++newend-start)*sizeof(*start));
-			start->first = first;
-			start->last = last;
-			return;
-		}
-
-		// There is a fragment above *start.
-		R_StoreWallRange (first, start->first - 1);
-
-		// Now adjust the clip size.
-		start->first = first;
-	}
-
-	// Bottom contained in start?
-	if (last <= start->last)
-		return;
-
-	next = start;
-	while (last >= (next+1)->first-1)
-	{
-		// There is a fragment between two posts.
-		R_StoreWallRange (next->last + 1, (next+1)->first - 1);
-		next++;
-
-		if (last <= next->last)
-		{
-			// Bottom is contained in next. Adjust the clip size.
-			start->last = next->last;
-			goto crunch;
-		}
-	}
-
-	// There is a fragment after *next.
-	R_StoreWallRange (next->last + 1, last);
-	// Adjust the clip size.
-	start->last = last;
-
-	// Remove start+1 to next from the clip list,
-	// because start now covers their area.
-  crunch:
-	if (next == start)
-	{
-		// Post just extended past the bottom of one post.
-		return;
-	}
-
-
-	while (next++ != newend)
-	{
-		// Remove a post.
-		*++start = *next;
-	}
-
-	newend = start+1;
-}
-
-
-
-//
-// R_ClipPassWallSegment
-// Clips the given range of columns,
-//	but does not includes it in the clip list.
-// Does handle windows,
-//	e.g. LineDefs with upper and lower texture.
-//
-void
-R_ClipPassWallSegment
-( int	first,
-  int	last )
-{
-	cliprange_t *start;
-
-	// Find the first range that touches the range
-	//	(adjacent pixels are touching).
-	start = solidsegs;
-	while (start->last < first-1)
-		start++;
-
-	if (first < start->first)
-	{
-		if (last < start->first-1)
-		{
-			// Post is entirely visible (above start).
-			R_StoreWallRange (first, last);
-			return;
-		}
-
-		// There is a fragment above *start.
-		R_StoreWallRange (first, start->first - 1);
-	}
-
-	// Bottom contained in start?
-	if (last <= start->last)
-		return;
-
-	while (last >= (start+1)->first-1)
-	{
-		// There is a fragment between two posts.
-		R_StoreWallRange (start->last + 1, (start+1)->first - 1);
-		start++;
-
-		if (last <= start->last)
-			return;
-	}
-
-	// There is a fragment after *next.
-	R_StoreWallRange (start->last + 1, last);
-}
-
-
+// CPhipps -
+// Instead of clipsegs, let's try using an array with one entry for each column,
+// indicating whether it's blocked by a solid wall yet or not.
+// e6y: resolution limitation is removed
+byte *solidcol;
 
 //
 // R_ClearClipSegs
 //
 void R_ClearClipSegs (void)
 {
-	solidsegs[0].first = -0x7fff;	// new short limit --  killough
-	solidsegs[0].last = -1;
-	solidsegs[1].first = viewwidth;
-	solidsegs[1].last = 0x7fff;		// new short limit --  killough
-	newend = solidsegs+2;
+	memset(solidcol, 0, viewwidth);
+}
+
+//
+// R_ReallocDrawSegs
+//
+// [SL] From prboom-plus. Moved out of R_StoreWallRange()
+void R_ReallocDrawSegs(void)
+{
+	if (ds_p == drawsegs+maxdrawsegs)		// killough 1/98 -- fix 2s line HOM
+	{
+		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
+		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
+		drawsegs = (drawseg_t*)realloc(drawsegs, newmax*sizeof(*drawsegs));
+		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
+		maxdrawsegs = newmax;
+		DPrintf("MaxDrawSegs increased to %d\n", maxdrawsegs);
+	}
+}
+
+//
+// R_ClearDrawSegs
+//
+void R_ClearDrawSegs(void)
+{
+	ds_p = drawsegs;
+}
+
+// CPhipps -
+// R_ClipWallSegment
+//
+// Replaces the old R_Clip*WallSegment functions. It draws bits of walls in those
+// columns which aren't solid, and updates the solidcol[] array appropriately
+//
+// [SL] From prboom-plus
+static void R_ClipWallSegment(int first, int last, dboolean solid)
+{
+	byte *p;
+	last++;
+
+	while (first < last)
+	{
+		if (solidcol[first])
+		{
+			// All columns in this range are already solid?
+			if (!(p = (byte*)memchr(solidcol + first, 0, last - first)))
+				return; 
+			first = p - solidcol;
+		}
+		else
+		{
+			int to;
+			if (!(p = (byte*)memchr(solidcol + first, 1, last - first)))
+				to = last;
+			else
+				to = p - solidcol;
+			R_StoreWallRange(first, to - 1);
+			if (solid)
+				memset(solidcol+first, 1, to - first);
+
+			first = to;
+		}
+	}
 }
 
 bool CopyPlaneIfValid (plane_t *dest, const plane_t *source, const plane_t *opp)
@@ -658,11 +533,11 @@ void R_AddLine (seg_t *line)
 	}
 
   clippass:
-	R_ClipPassWallSegment(x1, x2);
+	R_ClipWallSegment(x1, x2, false);
 	return;
 
   clipsolid:
-	R_ClipSolidWallSegment(x1, x2);
+	R_ClipWallSegment(x1, x2, true);
 }
 
 
@@ -730,18 +605,14 @@ static BOOL R_CheckBBox(const fixed_t *bspcoord)
 	// project the line endpoints to determine which columns the line occupies
 // TODO: FIXME
 //	int x1 = R_ProjectPointX(t1.x, t1.y);
-//	int x2 = R_ProjectPointX(t2.x, t2.y);
+//	int x2 = R_ProjectPointX(t2.x, t2.y) - 1;
 //	if (!R_CheckProjectionX(x1, x2))
 //		return false;
 
 	int x1 = 0, x2 = viewwidth - 1;
 
-	cliprange_t* start = solidsegs;
-	while (start->last < x2)
-		start++;
-
-	// does the clippost contains the new span?
-	if (x1 >= start->first && x2 <= start->last)
+	// are all columns in the bounding box's viewable range solid?
+	if (!memchr(solidcol + x1, 0, x2 - x1 + 1))
 		return false;
 
 	return true;
@@ -839,15 +710,11 @@ void R_Subsector (int num)
 		int polyCount = sub->poly->numsegs;
 		seg_t **polySeg = sub->poly->segs;
 		while (polyCount--)
-		{
 			R_AddLine (*polySeg++);
-		}
 	}
 	
 	while (count--)
-	{
 		R_AddLine (line++);
-	}
 }
 
 

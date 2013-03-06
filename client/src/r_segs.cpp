@@ -91,7 +91,6 @@ extern double yfoc;
 static int  	*maskedtexturecol;
 
 void (*R_RenderSegLoop)(void);
-void R_ColumnToPointOnSeg(int column, line_t *line, fixed_t &x, fixed_t &y);
 
 //
 // R_ScaledTextureHeight
@@ -454,6 +453,11 @@ static void BlastColumn (void (*blastfunc)())
 			//	for backdrawing of masked mid texture
 			maskedtexturecol[rw_x] = FixedMul(texturescalex[maskedtexture], texturecolumn) / FRACUNIT; 
 		}
+
+		// cph - if we completely blocked further sight through this column,
+		// add this info to the solid columns array
+		if ((markceiling || markfloor) && (floorclip[rw_x] <= ceilingclip[rw_x] + 1))
+			solidcol[rw_x] = 1;
 	}
 
 	rw_light += rw_lightstep;
@@ -748,15 +752,10 @@ void R_StoreWallRange(int start, int stop)
 		I_FatalError ("Bad R_StoreWallRange: %i to %i", start , stop);
 #endif
 
-	// don't overflow and crash
-	if (ds_p == &drawsegs[MaxDrawSegs])
-	{ // [RH] Grab some more drawsegs
-		size_t newdrawsegs = MaxDrawSegs ? MaxDrawSegs*2 : 32;
-		drawsegs = (drawseg_t *)Realloc (drawsegs, newdrawsegs * sizeof(drawseg_t));
-		ds_p = drawsegs + MaxDrawSegs;
-		MaxDrawSegs = newdrawsegs;
-		DPrintf ("MaxDrawSegs increased to %d\n", MaxDrawSegs);
-	}
+	if (start > stop)
+		return;
+
+	R_ReallocDrawSegs();	// don't overflow and crash
 
 	sidedef = curline->sidedef;
 	linedef = curline->linedef;
@@ -774,21 +773,11 @@ void R_StoreWallRange(int start, int stop)
 
 	// calculate scale at both ends and step
 	ds_p->scale1 = rw_scale = wallscalex[start];
+	ds_p->scale2 = wallscalex[stop];
+	ds_p->scalestep = rw_scalestep = (ds_p->scale2 - rw_scale) / (stop - start + 1);
+
 	ds_p->light = rw_light = rw_scale * lightscalexmul;
- 
-	if (stop > start)
-	{
-		ds_p->scale2 = wallscalex[stop];
-		ds_p->scalestep = rw_scalestep =
-			(ds_p->scale2 - rw_scale) / (stop-start);
-		ds_p->lightstep = rw_lightstep = rw_scalestep * lightscalexmul;
-	}
-	else
-	{
-		ds_p->scale2 = ds_p->scale1;
-		ds_p->scalestep = rw_scalestep = 0;
-		ds_p->lightstep = rw_lightstep = 0;
-	}
+ 	ds_p->lightstep = rw_lightstep = rw_scalestep * lightscalexmul;
 
 	// calculate texture boundaries
 	//	and decide if floor / ceiling marks are needed
