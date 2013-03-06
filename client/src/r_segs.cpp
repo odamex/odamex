@@ -348,7 +348,7 @@ static void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
 
 	dc_texturefrac = FixedMul(scaley, mid + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale));
 
-	dc_source = R_GetColumnData(texnum, FIXED2INT(FixedMul(scalex, texcol)));
+	dc_source = R_GetColumnData(texnum, (FixedMul(scalex, texcol)) >> FRACBITS);
 }
 
 //
@@ -695,7 +695,7 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 	double uinvz = 0.0;
 
 	double scalestep = (scale2 - scale1) / (stop - start + 1);
-	double uinvzstep = FIXED2DOUBLE(seglen - FRACUNIT) * scale2 / (stop - start + 1);
+	double uinvzstep = FIXED2DOUBLE(seglen) * scale2 / (stop - start + 1);
 
 	// fill the texture column array
 	double curscale = scale1;
