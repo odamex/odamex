@@ -232,15 +232,6 @@ static forceinline void rt_copycols(int hx, int sx, int yl, int yh)
 		source += 4;
 		dest += pitch;
 	}
-	if (count & 2)
-	{
-		for (int i = 0; i < columns; ++i)
-			dest[pitch*0+i] = rt_rawcolor<pixel_t>(pal, source[0+i]);
-		for (int i = 0; i < columns; ++i)
-			dest[pitch*1+i] = rt_rawcolor<pixel_t>(pal, source[4+i]);
-		source += 8;
-		dest += pitch*2;
-	}
 	if (!(count >>= 1))
 		return;
 
