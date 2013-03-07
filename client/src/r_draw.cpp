@@ -86,6 +86,8 @@ void (*R_DrawTranslucentColumn)(void);
 void (*R_DrawTranslatedColumn)(void);
 void (*R_DrawSpan)(void);
 void (*R_DrawSlopeSpan)(void);
+void (*R_FillColumn)(void);
+void (*R_FillSpan)(void);
 void (*rt_copy1col) (int hx, int sx, int yl, int yh);
 void (*rt_copy2cols) (int hx, int sx, int yl, int yh);
 void (*rt_copy4cols) (int sx, int yl, int yh);
@@ -872,7 +874,7 @@ void R_DrawSpanP (void)
 }
 
 // [RH] Just fill a span with a color
-void R_FillSpan (void)
+void R_FillSpanP (void)
 {
 #ifdef RANGECHECK
 	if (ds_x2 < ds_x1
@@ -1333,6 +1335,76 @@ void R_DrawTranslatedColumnD (void)
 				frac += fracstep;
 			} while (--count);
 		}
+	}
+}
+
+// [RH] Just fills a column with a color
+void R_FillColumnD (void)
+{
+	int 				count;
+	argb_t*				dest;
+
+	count = dc_yh - dc_yl + 1;
+
+	if (count <= 0)
+		return;
+
+#ifdef RANGECHECK 
+	if (dc_x >= screen->width
+		|| dc_yl < 0
+		|| dc_yh >= screen->height) {
+		Printf (PRINT_HIGH, "R_FillColumnD: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+		return;
+	}
+#endif
+
+	dest = (argb_t *)(ylookup[dc_yl] + columnofs[dc_x]);
+
+	{
+		int pitch = dc_pitch / sizeof(argb_t);
+		argb_t color = dc_colormap.shade(dc_color);
+
+		do
+		{
+			*dest = color;
+			dest += pitch;
+		} while (--count);
+	}
+}
+
+// [RH] Just fill a span with a color
+void R_FillSpanD (void)
+{
+	int 				count;
+	argb_t*				dest;
+	
+	count = ds_x2 - ds_x1 + 1;
+
+	if (count <= 0)
+		return;
+
+#ifdef RANGECHECK
+	if (ds_x2 < ds_x1
+		|| ds_x1<0
+		|| ds_x2>=screen->width
+		|| ds_y>screen->height)
+	{
+		I_Error( "R_FillSpanD: %i to %i at %i",
+				 ds_x1,ds_x2,ds_y);
+	}
+#endif
+
+	dest = (argb_t *)(ylookup[ds_y] + columnofs[ds_x1]);
+	
+	{
+		argb_t color = dc_colormap.shade(ds_color);
+		int colsize = ds_colsize;
+
+		do
+		{
+			*dest = color;
+			dest += colsize;
+		} while (--count);
 	}
 }
 
@@ -1925,6 +1997,8 @@ void R_InitColumnDrawers ()
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP;
 		R_DrawSlopeSpan         = R_DrawSlopeSpanP;
 		R_DrawSpan				= R_DrawSpanP;
+		R_FillColumn			= R_FillColumnP;
+		R_FillSpan				= R_FillSpanP;
 
 		rt_copy1col             = rt_copy1colP;
 		rt_copy2cols            = rt_copy2colsP;
@@ -1951,6 +2025,8 @@ void R_InitColumnDrawers ()
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanD;
 		R_DrawSpan				= R_DrawSpanD;
+		R_FillColumn			= R_FillColumnD;
+		R_FillSpan				= R_FillSpanD;
 		
 		rt_copy1col             = rt_copy1colD;
 		rt_copy2cols            = rt_copy2colsD;

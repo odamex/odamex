@@ -77,6 +77,9 @@ extern void (*R_DrawSpan)(void);
 
 extern void (*R_DrawSlopeSpan)(void);
 
+extern void (*R_FillColumn)(void);
+extern void (*R_FillSpan)(void);
+
 // [RH] Span blit into an interleaved intermediate buffer
 extern void (*R_DrawColumnHoriz)(void);
 void R_DrawMaskedColumnHoriz(tallpost_t *post);
@@ -107,7 +110,8 @@ void	R_StretchColumnP (void);
 void	R_BlankColumn (void);
 void	R_FillColumnP (void);
 void	R_FillColumnHorizP (void);
-void	R_FillSpan (void);
+void	R_FillSpanP (void);
+void	R_FillSpanD (void);
 
 // [RH] Moves data from the temporary horizontal buffer to the screen.
 void rt_copy1colP (int hx, int sx, int yl, int yh);
