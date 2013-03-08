@@ -54,103 +54,84 @@ unsigned int *horizspan[4];
 // drawn to the screen along with up to three other columns.
 void R_DrawColumnHorizP (void)
 {
-	int count = dc_yh - dc_yl;
 	byte *dest;
 	fixed_t fracstep;
 	fixed_t frac;
 
-	if (count++ < 0)
+	int count = dc_yh - dc_yl + 1;
+	if (count <= 0)
 		return;
 
-	count++;
-	{
-		int x = dc_x & 3;
-		unsigned int **span = &dc_ctspan[x];
+	int x = dc_x & 3;
+	unsigned int **span = &dc_ctspan[x];
 
-		(*span)[0] = dc_yl;
-		(*span)[1] = dc_yh;
-		*span += 2;
-		dest = &dc_temp[x + 4*dc_yl];
-	}
+	(*span)[0] = dc_yl;
+	(*span)[1] = dc_yh;
+	*span += 2;
+	dest = &dc_temp[x + 4*dc_yl];
+
 	fracstep = dc_iscale;
 	frac = dc_texturefrac;
 
+	int texheight = dc_textureheight;
+	int mask = (texheight >> FRACBITS) - 1;
+	
+	byte *source = dc_source;
+
+	// [SL] Properly tile textures whose heights are not a power-of-2,
+	// avoiding a tutti-frutti effect.  From Eternity Engine.
+	if (texheight & (texheight - 1))
 	{
-		int texheight = dc_textureheight;
-		int mask = (texheight >> FRACBITS) - 1;
-		
-		byte *source = dc_source;
-
-		// [SL] Properly tile textures whose heights are not a power-of-2,
-		// avoiding a tutti-frutti effect.  From Eternity Engine.
-		if (texheight & (texheight - 1))
-		{
-			// texture height is not a power-of-2
-			if (frac < 0)
-				while((frac += texheight) < 0);
-			else
-				while(frac >= texheight)
-					frac -= texheight;
-
-			do
-			{
-				*dest = source[frac>>FRACBITS];
-				dest += 4;
-				if ((frac += fracstep) >= texheight)
-					frac -= texheight;
-			} while (--count);	
-		}
+		// texture height is not a power-of-2
+		if (frac < 0)
+			while((frac += texheight) < 0);
 		else
-		{
-			// texture height is a power-of-2
-	if (count & 1) {
-				*dest = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest += 4;				
-	}
-	if (count & 2) {
-				dest[0] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest[4] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest += 8;
-			}
-			if (count & 4) {
-				dest[0] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest[4] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest[8] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest[12] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest += 16;
-	}
-			count >>= 3;
-			if (!count)
-		return;
+			while(frac >= texheight)
+				frac -= texheight;
 
-			do
-			{
-				dest[0] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest[4] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest[8] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest[12] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest[16] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest[20] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest[24] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest[28] = source[(frac>>FRACBITS) & mask];
-				frac += fracstep;
-				dest += 32;
-	} while (--count);
-}
+		do
+		{
+			*dest = source[frac>>FRACBITS];
+			dest += 4;
+			if ((frac += fracstep) >= texheight)
+				frac -= texheight;
+		} while (--count);	
+	}
+	else
+	{
+		// texture height is a power-of-2
+		if (count & 1) {
+			*dest = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest += 4;				
+		}
+		if (count & 2) {
+			dest[0] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest[4] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest += 8;
+		}
+		if (count & 4) {
+			dest[0] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest[4] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest[8] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest[12] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest += 16;
+		}
+		count >>= 3;
+		if (!count)
+			return;
+
+		do
+		{
+			dest[0] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest[4] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest[8] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest[12] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest[16] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest[20] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest[24] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest[28] = source[(frac>>FRACBITS) & mask];	frac += fracstep;
+			dest += 32;
+		} while (--count);
 	}
 }
 
