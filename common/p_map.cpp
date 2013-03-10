@@ -2379,28 +2379,19 @@ BOOL PTR_RailTraverse (intercept_t *in)
 			// [SL] 2012-04-18 - Calculate where the the tracer intersects
 			// with the floor plane
 			v3fixed_t pt = P_LinePlaneIntersection(floorplane, lineorg, linedir);
-			x = pt.x;
-			y = pt.y;
-			z = pt.z;
+			x = pt.x;  y = pt.y;  z = pt.z;
 		} else if (z > ceilingheight) {
 			// [SL] 2012-04-18 - Calculate where the the tracer intersects
 			// with the ceiling plane
 			v3fixed_t pt = P_LinePlaneIntersection(ceilingplane, lineorg, linedir);
-			x = pt.x;
-			y = pt.y;
-			z = pt.z;
+			x = pt.x;  y = pt.y;  z = pt.z;
 		} else {
-			if (li->backsector && z > opentop &&
-				li->frontsector->ceilingpic == skyflatnum &&
-				li->backsector->ceilingpic == skyflatnum)
-				return false;	// sky hack wall
-				
 			x = trace.x + FixedMul(trace.dx, frac);
 			y = trace.y + FixedMul(trace.dy, frac);
 			
 			if (!co_fixweaponimpacts && li->special) {
 				// Shot actually hit a wall. It might be set up for shoot activation
-				P_ShootSpecialLine (shootthing, li);
+				P_ShootSpecialLine(shootthing, li);
 			}
 		}
 
@@ -2461,18 +2452,16 @@ BOOL PTR_RailTraverse (intercept_t *in)
 
 void P_RailAttack (AActor *source, int damage, int offset)
 {
-	angle_t angle;
-	fixed_t x1, y1, x2, y2;
 	v3double_t start, end;
 
-	x1 = source->x;
-	y1 = source->y;
-	angle = (source->angle - ANG90) >> ANGLETOFINESHIFT;
-	x1 += offset*finecosine[angle];
-	y1 += offset*finesine[angle];
-	angle = source->angle >> ANGLETOFINESHIFT;
-	x2 = source->x + 8192*finecosine[angle];
-	y2 = source->y + 8192*finesine[angle];
+	int angleidx = (source->angle - ANG90) >> ANGLETOFINESHIFT;
+	fixed_t x1 = source->x + offset*finecosine[angleidx];
+	fixed_t y1 = source->y + offset*finesine[angleidx];
+
+	angleidx = (source->angle) >> ANGLETOFINESHIFT;
+	fixed_t x2 = source->x + 8192*finecosine[angleidx];
+	fixed_t y2 = source->y + 8192*finesine[angleidx];
+
 	shootz = source->z + (source->height >> 1) + 8*FRACUNIT;
 	attackrange = 8192*FRACUNIT;
 	aimslope = finetangent[FINEANGLES/4-(source->pitch>>ANGLETOFINESHIFT)];
