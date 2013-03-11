@@ -1301,20 +1301,6 @@ void P_ZMovement(AActor *mo)
 			mo->momz = -mo->momz;
 		}
 
-		if (mo->flags & MF_MISSILE && !(mo->flags & MF_NOCLIP))
-		{
-			if ((HasBehavior || co_fixweaponimpacts) &&
-				mo->subsector->sector->floorpic == skyflatnum)
-			{
-				mo->Destroy();
-				return;
-			}
-
-			if (serverside)
-				P_ExplodeMissile(mo);
-			return;
-		}
-
 		mo->z = mo->floorz;
 
 		if (mo->momz < 0)
@@ -1352,6 +1338,13 @@ void P_ZMovement(AActor *mo)
 
 		if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
 		{
+			if ((HasBehavior || co_fixweaponimpacts) &&
+				mo->subsector->sector->floorpic == skyflatnum)
+			{
+				mo->Destroy();
+				return;
+			}
+
 			// [SL] 2011-06-02 - Only server should control explosions
 			if (serverside)
 				P_ExplodeMissile (mo);
