@@ -97,7 +97,7 @@ void (*R_RenderSegLoop)(void);
 //
 // Returns the texture height after y-scaling has been applied
 //
-static fixed_t R_ScaledTextureHeight(int texnum)
+static inline fixed_t R_ScaledTextureHeight(int texnum)
 {
 	return FixedDiv(textureheight[texnum], texturescaley[texnum]);
 }
@@ -141,7 +141,7 @@ static void R_FillWallHeightArray(
 
 	for (int i = start; i <= stop; i++)
 	{
-		array[i] = clamp((int)frac, 0, screen->height - 1);
+		array[i] = clamp((int)frac, -1, screen->height);
 		frac -= step;
 	}
 }
@@ -340,7 +340,7 @@ R_RenderMaskedSegRange
 //
 // Sets dc_source, dc_texturefrac
 //
-static void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
+static inline void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
 {
 	const fixed_t scalex = texturescalex[texnum];
 	const fixed_t scaley = texturescaley[texnum];
@@ -362,103 +362,110 @@ static void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
 static void BlastColumn (void (*blastfunc)())
 {
 	rw_scale = wallscalex[rw_x];
-
-	// mark floor / ceiling areas
-	walltopf[rw_x] = MAX(walltopf[rw_x], ceilingclip[rw_x]);
-
-	if (markceiling)
-	{
-		int top = ceilingclip[rw_x];
-		int bottom = MIN(walltopf[rw_x], floorclip[rw_x]);
-
-		if (top < bottom)
-		{
-			ceilingplane->top[rw_x] = top;
-			ceilingplane->bottom[rw_x] = bottom - 1;
-		}
-	}
-
-	wallbottomf[rw_x] = MIN(wallbottomf[rw_x], floorclip[rw_x]);
-
-	if (markfloor)
-	{
-		int top = MAX(wallbottomf[rw_x], ceilingclip[rw_x]);
-		int bottom = floorclip[rw_x];
-
-		if (top < bottom)
-		{
-			floorplane->top[rw_x] = top;
-			floorplane->bottom[rw_x] = bottom - 1;
-		}
-	}
-
-	fixed_t texturecolumn = texoffs[rw_x];
-
 	if (rw_scale > 0)
 		dc_iscale = 0xffffffffu / (unsigned)rw_scale;
 
-	// draw the wall tiers
-	if (midtexture)
+	fixed_t texturecolumn = texoffs[rw_x];
+
+	// mark ceiling area
+	walltopf[rw_x] = MAX(walltopf[rw_x], ceilingclip[rw_x] + 1);
+
+	if (markceiling)
 	{
-		// single sided line
+		int top = ceilingclip[rw_x] + 1;
+		int bottom = MIN(walltopf[rw_x], floorclip[rw_x]) - 1;
+
+		if (top <= bottom)
+		{
+			ceilingplane->top[rw_x] = top;
+			ceilingplane->bottom[rw_x] = bottom;
+		}
+	}
+
+	// mark floor area
+	wallbottomf[rw_x] = MIN(wallbottomf[rw_x], floorclip[rw_x] - 1);
+
+	if (markfloor)
+	{
+		int top = MAX(wallbottomf[rw_x], ceilingclip[rw_x]) + 1;
+		int bottom = floorclip[rw_x] - 1;
+
+		if (top <= bottom)
+		{
+			floorplane->top[rw_x] = top;
+			floorplane->bottom[rw_x] = bottom;
+		}
+	}
+
+	// draw the wall tiers
+	if (midtexture)						// single sided line
+	{
 		dc_yl = walltopf[rw_x];
-		dc_yh = wallbottomf[rw_x] - 1;
+		dc_yh = wallbottomf[rw_x];
 
 		R_SetTextureParams(midtexture, texturecolumn, rw_midtexturemid);
 
 		blastfunc ();
-		ceilingclip[rw_x] = viewheight - 1;
-		floorclip[rw_x] = 0;
+		ceilingclip[rw_x] = viewheight;
+		floorclip[rw_x] = -1;
 	}
-	else
+	else							// two sided line
 	{
-		// two sided line
-		if (toptexture)
+		if (toptexture)				// upper wall tier
 		{
-			walltopb[rw_x] = MAX(MIN(walltopb[rw_x], floorclip[rw_x]), walltopf[rw_x]);
-			dc_yl = walltopf[rw_x];
-			dc_yh = walltopb[rw_x] - 1;
+			walltopb[rw_x] = MIN(walltopb[rw_x], floorclip[rw_x] - 1);
 
-			R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
-			blastfunc();
+			if (walltopb[rw_x] >= walltopf[rw_x])
+			{
+				dc_yl = walltopf[rw_x];
+				dc_yh = walltopb[rw_x];
 
-			ceilingclip[rw_x] = walltopb[rw_x];		
+				R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
+
+				blastfunc ();
+				ceilingclip[rw_x] = walltopb[rw_x];
+			}
+			else
+				ceilingclip[rw_x] = walltopf[rw_x] - 1;
 		}
-		else if (markceiling)
+		else if (markceiling)		// no upper wall tier
 		{
-			// no top wall
-			ceilingclip[rw_x] = walltopf[rw_x];
+			ceilingclip[rw_x] = walltopf[rw_x] - 1;
 		}
 
-		if (bottomtexture)
+		if (bottomtexture)			// lower wall tier
 		{
-			wallbottomb[rw_x] = MIN(MAX(wallbottomb[rw_x], ceilingclip[rw_x]), wallbottomf[rw_x]);
-			dc_yl = wallbottomb[rw_x];
-			dc_yh = wallbottomf[rw_x] - 1;
+			wallbottomb[rw_x] = MAX(wallbottomb[rw_x], ceilingclip[rw_x] + 1);
 
-			R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
-			blastfunc();
+			if (wallbottomf[rw_x] >= wallbottomb[rw_x])
+			{
+				dc_yl = wallbottomb[rw_x];
+				dc_yh = wallbottomf[rw_x];
 
-			floorclip[rw_x] = wallbottomb[rw_x];
+				R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
+				blastfunc();
+
+				floorclip[rw_x] = wallbottomb[rw_x];
+			}
+			else
+				floorclip[rw_x] = wallbottomf[rw_x] + 1;
 		}
-		else if (markfloor)	
+		else if (markfloor)			// no lower wall tier
 		{
-			// no bottom wall
-			floorclip[rw_x] = wallbottomf[rw_x];
+			floorclip[rw_x] = wallbottomf[rw_x] + 1;
 		}
 
 		if (maskedtexture)
 		{
-			// save texturecol
-			//	for backdrawing of masked mid texture
+			// save texturecol for backdrawing of masked mid texture
 			maskedtexturecol[rw_x] = FixedMul(texturescalex[maskedtexture], texturecolumn) / FRACUNIT; 
 		}
-
-		// cph - if we completely blocked further sight through this column,
-		// add this info to the solid columns array
-		if ((markceiling || markfloor) && (floorclip[rw_x] <= ceilingclip[rw_x]))
-			solidcol[rw_x] = 1;
 	}
+
+	// cph - if we completely blocked further sight through this column,
+	// add this info to the solid columns array
+	if ((markceiling || markfloor) && (floorclip[rw_x] <= ceilingclip[rw_x]))
+		solidcol[rw_x] = 1;
 
 	rw_light += rw_lightstep;
 }

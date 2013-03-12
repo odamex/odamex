@@ -270,11 +270,8 @@ void R_ClearPlanes (void)
 	int i;
 
 	// opening / clipping determination
-	for (i = 0; i < viewwidth ; i++)
-	{
-		floorclip[i] = (int)(viewheight - 1);
-	}
-	memset (ceilingclip, 0, sizeof(*ceilingclip) * viewwidth);
+	memcpy(ceilingclip, negonearray, sizeof(*ceilingclip) * viewwidth);
+	memcpy(floorclip, screenheightarray, sizeof(*floorclip) * viewwidth);
 
 	for (i = 0; i < MAXVISPLANES; i++)	// new code -- killough
 		for (*freehead = visplanes[i], visplanes[i] = NULL; *freehead; )
