@@ -408,22 +408,19 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 void R_AddLine (seg_t *line)
 {
 	curline = line;
+	dc_color = ((line - segs) & 31) * 4;	// [RH] Color if not texturing line
 
-	// [RH] Color if not texturing line
-	dc_color = ((line - segs) & 31) * 4;
-
-	// Clip the wall seg to the viewing window
-
-	// translate the line endpoints from world-space to camera-space
+	// translate the line seg endpoints from world-space to camera-space
 	// and store in (t1.x, t1.y) and (t2.x, t2.y)
 	v2fixed_t t1, t2;
 	R_RotatePoint(line->v1->x - viewx, line->v1->y - viewy, ANG90 - viewangle, t1.x, t1.y);
 	R_RotatePoint(line->v2->x - viewx, line->v2->y - viewy, ANG90 - viewangle, t2.x, t2.y);
 
+	// Clip the line seg to the viewing window
 	if (!R_ClipLineToFrustum(t1.x, t1.y, t2.x, t2.y, NEARCLIP))
 		return;
 
-	// project the line endpoints to determine which columns the line occupies
+	// project the line endpoints to determine which columns the line seg occupies
 	int x1 = R_ProjectPointX(t1.x, t1.y);
 	int x2 = R_ProjectPointX(t2.x, t2.y) - 1;
 	if (!R_CheckProjectionX(x1, x2))
@@ -432,40 +429,30 @@ void R_AddLine (seg_t *line)
 	rw_start = x1;
 	rw_stop = x2;
 
-	// translate the clipped line endpoints from camera-space to world-space
+	// translate the clipped line seg endpoints from camera-space to world-space
 	// and store in (w1.x, w1.y) and (w2.x, w2.y)
 	v2fixed_t w1, w2;
 	R_RotatePoint(t1.x, t1.y, viewangle - ANG90, w1.x, w1.y);
 	R_RotatePoint(t2.x, t2.y, viewangle - ANG90, w2.x, w2.y);
 
-	w1.x += viewx;
-	w1.y += viewy;
-	w2.x += viewx;
-	w2.y += viewy;
+	w1.x += viewx;	w1.y += viewy;
+	w2.x += viewx;	w2.y += viewy;
 
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
 	static sector_t tempsec;
 	backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
 
-	R_PrepWall(w1.x, w1.y, w2.x, w2.y, t1.y, t2.y, rw_start, rw_stop);
+	R_PrepWall(w1.x, w1.y, w2.x, w2.y, t1.y, t2.y, x1, x2);
 
-	// Single sided line?
-	if (!backsector)
-		goto clipsolid;
-
-	// [SL] Check for closed doors or other scenarios that would make this
-	// line seg solid.
+	// [SL] Check for single-sided line, closed doors or other scenarios that
+	// would make this line seg solid.
 	//
 	// This fixes the automap floor height bug -- killough 1/18/98:
 	// killough 4/7/98: optimize: save result in doorclosed for use in r_segs.c
-	if (!(line->linedef->flags & ML_TWOSIDED) ||
-		 (rw_backcz1 <= rw_frontfz1 && rw_backcz2 <= rw_frontfz2) ||
-		 (rw_backfz1 >= rw_frontcz1 && rw_backfz2 >= rw_frontcz2) ||
 
-		// handle a case where the backsector slopes one direction
-		// and the frontsector slopes the opposite:
-		(rw_backcz1 <= rw_frontfz1 && rw_backfz1 >= rw_frontcz1) ||
-		(rw_backcz2 <= rw_frontfz2 && rw_backfz2 >= rw_frontcz2) ||
+	if (!backsector || !(line->linedef->flags & ML_TWOSIDED) ||
+		(rw_backcz1 <= rw_frontfz1 && rw_backcz2 <= rw_frontfz2) ||
+		(rw_backfz1 >= rw_frontcz1 && rw_backfz2 >= rw_frontcz2) ||
 
 		// if door is closed because back is shut:
 		((rw_backcz1 <= rw_backfz1 && rw_backcz2 <= rw_backfz2) &&
@@ -478,28 +465,19 @@ void R_AddLine (seg_t *line)
 		 line->sidedef->bottomtexture) &&
 
 		// properly render skies (consider door "open" if both ceilings are sky):
-		 (backsector->ceilingpic !=skyflatnum || 
-		  frontsector->ceilingpic!=skyflatnum)))
+		(backsector->ceilingpic !=skyflatnum || frontsector->ceilingpic!=skyflatnum)))
 	{
 		doorclosed = true;
-		goto clipsolid;
-	}
-	else
-	{
-		doorclosed = false;
+		R_ClipWallSegment(x1, x2, true);
+		return;
 	}
 
-	// Window.
-	if (!P_IdenticalPlanes(&frontsector->ceilingplane, &backsector->ceilingplane) ||
-		!P_IdenticalPlanes(&frontsector->floorplane, &backsector->floorplane))
-		goto clippass;
-
-	// Reject empty lines used for triggers
-	//	and special events.
+	// Reject empty lines used for triggers and special events.
 	// Identical floor and ceiling on both sides,
-	// identical light levels on both sides,
-	// and no middle texture.
-	if (backsector->lightlevel == frontsector->lightlevel
+	// identical light levels on both sides, and no middle texture.
+	if (P_IdenticalPlanes(&frontsector->ceilingplane, &backsector->ceilingplane)
+		&& P_IdenticalPlanes(&frontsector->floorplane, &backsector->floorplane)
+		&& backsector->lightlevel == frontsector->lightlevel
 		&& backsector->floorpic == frontsector->floorpic
 		&& backsector->ceilingpic == frontsector->ceilingpic
 		&& curline->sidedef->midtexture == 0
@@ -532,12 +510,8 @@ void R_AddLine (seg_t *line)
 		return;
 	}
 
-  clippass:
+	doorclosed = false;
 	R_ClipWallSegment(x1, x2, false);
-	return;
-
-  clipsolid:
-	R_ClipWallSegment(x1, x2, true);
 }
 
 
