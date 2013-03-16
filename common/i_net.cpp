@@ -950,7 +950,7 @@ void InitNetMessageFormats()
 	MSG(svc_reserved47,         "x"),
 	MSG(svc_forceteam,          "x"),
 	MSG(svc_switch,             "x"),
-	MSG(svc_reserved50,         "x"),
+	MSG(svc_say,                "x"),
 	MSG(svc_reserved51,         "x"),
 	MSG(svc_spawnhiddenplayer,  "x"),
 	MSG(svc_updatedeaths,       "x"),
