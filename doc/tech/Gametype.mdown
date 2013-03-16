@@ -1,0 +1,316 @@
+A list of things that are different based on sv_gametype.  Bullet points that
+are questions mean that I'm not sure what is going on, or that I'm not sure
+that I am parsing the code correctly.
+
+Client
+======
+
+am_map.cpp
+----------
+
+- In coop, you can do the automap cheat.
+- In deathmatch, you cannot see other players.
+- In Team Deathmatch, you cannot see people who are on the wrong team.
+- In coop, there is an extra "Monsters" and "Secrets" label on the automap.
+
+c_console.cpp
+-------------
+
+- You only get secret discovery messages in coop.
+
+cl_ctf.cpp
+----------
+
+- Don't draw the CTF HUD if you're not in CTF.
+
+cl_demo.cpp
+-----------
+
+- Used in the fake connection string.
+
+cl_main.cpp
+-----------
+
+- Used to enforce different rules in forcing colors.
+- Gametype is forced to COOP when you disconnect from the server.
+- Only allow the `flagnext` console command if we're playing CTF.
+- The parsed svc_updatefrags message carries the killcount instead of the
+  fragcount if we're playing Coop.
+- When the server spawns a player on the client, if the gametype not Coop
+  give them all of the keys when spawning them.
+- Every time we run CL_RunTics, run CTF-specific tics if we're playing CTF.
+
+cl_mobj.cpp
+-----------
+
+- When P_SpawnPlayer() is run, if the gametype is not Coop, give them all
+  of the keys when spawning them.
+
+d_main.cpp
+----------
+
+- If we use `-warp`, force the gametype to coop.
+
+g_game.cpp
+----------
+
+- Bail out of `G_DeathMatchSpawnPlayer` if we're playing coop.
+- Only run `G_DeathMatchSpawnPlayer` in `G_DoReborn` if we're not playing coop.
+- Save the value of the gametype in the demo.
+- Set the gametype to something specific if we're playing a vanilla demo.
+
+g_level.cpp
+-----------
+
+- In if we're not playing coop, using an exit switch always keeps you
+  on the same map?
+- If the gametype is deathmatch, take their inventory upon changing maps.
+- If the gametype is not deathmatch and the level is flagged for not having an
+  intermission, do not call `G_WorldDone`, which deals with finalies and
+  cluster changes.
+- Only start the cluster finale if the next level's cluster is different than
+  the current one and we're not in deathmatch.
+
+hu_elements.cpp
+---------------
+
+- The sorting of the player list used in the scoreboard depends on the gametype.
+  Kills for Coop, Frags for DM and TeamDM, and individual points for CTF.
+- The "Game is Full" message only depends on `sv_maxplayersperteam`, in team
+  games.
+- When spying on a player, if the gametype is TeamDM or CTF, their team color
+  determines the color of the text.
+- The "spread" that is displayed on your HUD is dependant on the gametype.
+- When displaying your personal score on the HUD, the numbers that are
+  displayed is dependant on the gametype.
+- When drawing a player's name on a scoreboard, the number of possible colors
+  is greatly expanded if they're playing a team game (is ready, has a flag).
+- When drawing a spectator's name on a scoreboard, they can be marked ready.
+- When drawing a list of targets, use their team colors if we're playing TDM
+  or CTF.
+
+hu_stuff.cpp
+------------
+
+- Talking to teammates is only possible in teamgames or if you are a spectator.
+- The scoreboard is almost entirely different depending on which gametype you
+  are playing.  Some things are different based on specific gametype, and others
+  are only different between teams.
+- The console scoreboard is similar - almost entirely different between gametypes.
+
+m_menu.cpp
+----------
+
+- When starting the game, the gametype is forced to coop.
+- Selecting skins in CTF mode is disabled.
+
+m_misc.cpp
+----------
+
+- There is a token that can be expanded that represents a gametype.
+
+st_new.cpp
+----------
+
+- `NameUp` is an unused variable that is dependant on the gametype.
+- Only draw the fullscreen CTF HUD scoreboard if we're playing CTF.
+- Only draw keys on the Odamex fullscreen HUD if we're playing Coop.
+- Only draw individual frags on the ZDoom Fullscreen HUD if we're not
+  playing coop.
+
+st_stuff.cpp
+------------
+
+- Status bar contains the CTF score in CTF, the ARMS block in Coop, and the
+  frags box everywhere else.
+- Status bar contains the CTF status in CTF and a list of obtained keys
+  everywhere else.
+- sv_allowcheats allows you to control the use of cheats in single player
+  gametypes that aren't coop.
+
+wi_stuff.cpp
+------------
+
+- During the intermission, display the oldschool coop intermission screen if
+  there are less than five players and we're playing coop.
+
+Common
+======
+
+c_cvarlist.cpp
+--------------
+
+- There can be no `sv_gametype` differences without an `sv_gametype` cvar.
+
+p_acs.cpp
+---------
+
+- There is an ACS bytecode command called `PCD_GAMETYPE` that returns a
+  different value for every gametype.  It is worth mentioning that this
+  is not compatible with ZDoom ACS, not even Zandronum's ACS.
+
+p_enemy.cpp
+-----------
+
+- If we're not playing coop, `sv_allowexit` prevents ending the level, which is
+  called if the boss of the level dies.
+
+p_interaction.cpp
+-----------------
+
+- If "Weapon Stay" is enabled, playing coop gives you slightly more ammo for a
+  weapon on the ground than non-coop gametypes.
+- In Team Deathmatch, killing yourself subtracts one from the team score.
+- In Team Deathmatch, killing a teammate subtracts one from your personal
+  fragcount and the team fragcount.
+- In CTF, killing a teammate subtracts one from your personal fragcount and
+  your personal score.
+- In Team Deathamtch, killing an opponent adds one to the team score.
+- In CTF, killing an opponent adds a different amount to your personal score.
+- In Coop, killing something adds kill to your personal killcount.
+- In CTF, killing an opponent causes them to drop their flag.
+- In Deathmatch, having a personal fragcount >= sv_fraglimit causes the
+  game to end.
+- In Team Deathmatch, having a team score >= sv_fraglimit causes the game
+  to end.
+- In Coop, being damaged by a 'damage floor + exit level' special causes the
+  damage to always be one less than what would actually kill you.
+- In Coop, `sv_friendlyfire` can prevent you from damaging other players.
+- In Team Deathmatch or CTF, `sv_friendlyfire` can prevent you from damaging
+  your teammates.
+
+p_lnspec.cpp
+------------
+
+- In Coop, pressing an exit switch always works and is not governed by
+  `sv_allowexit`.
+
+p_main.cpp
+----------
+
+- Team Deathmatch and CTF do not autoaim at teammates if friendly fire is off.
+
+p_mobj.cpp
+----------
+
+- The thing flag MTF_DEATHMATCH being turned off prevents a thing from
+  spawning in Deathamtch and Team Deathmatch (but not CTF!).
+- The thing flag MTF_COOPERATIVE being turned off prevents a thing from
+  spawning in any non-Coop gametype.
+- Do not spawn keycards in any non-coop gametype.
+- Only spawn flag "sockets" in CTF.
+
+p_pspr.cpp
+----------
+
+- Railguns do 100 damage in Coop, but 150 in other gametypes.
+
+p_spec.cpp
+----------
+
+- Damage floor + exit level always exits the level in Coop.
+
+p_user.cpp
+----------
+
+- A very nice function `P_AreTeammates()` that determines if two player_t's are
+  teammates.
+
+Server
+======
+
+g_game.cpp
+----------
+
+- Save the value of the gametype in the demo.
+- Bail out of `G_DeathMatchSpawnPlayer` if we're playing coop.
+- In `G_DeathMatchSpawnPlayer` and `G_DoReborn`, call `G_TeamSpawnPlayer` if
+  we're playing Team Deathmatch or CTF.
+- In `G_DoReborn`, call `G_DeathMatchSpawnPlayer` if we're playing deathmatch.
+
+g_level.cpp
+-----------
+
+- When playing any non-coop gametype on a server and there is no maplist, the
+  same map repeats forever.
+- When playing any teamgame, force the server to check to see if the teams are
+  valid.
+- If the gametype is not coop, don't allow players to keep their inventory
+  between maps.
+- Coop has a constnat amount of time to wait between maps, and is not governed
+  by `sv_intermissionlimit`.
+- When resetting the level to a stored state, reset the state of CTF if we're
+  playing it.
+- When loading a new level, reset team points if we're playing CTF or TeamDM.
+- When loading a new level, make sure the flags are placed somewhere if we're
+  playing CTF.
+- Only start the finale if the next level's cluster is different than the 
+  current one and we're playing coop.
+
+g_warmup.cpp
+------------
+
+- Warmup does not work in coop.
+
+sv_main.cpp
+-----------
+
+- For disconnected players, drop the flag at the players old location.
+- When sending svc_updatefrags, send kills instead of frags in coop.
+- When setting up a player's userinfo, make sure the player is on a correct
+  team if we're playing TeamDM or CTF.
+- When checking to see if players are on a 'correct' team, we use the hardcoded
+  maximum number of teams in CTF, but use `sv_teamsinplay` for TeamDM.
+- When attempting to pick a "good team", the number of teams we determine as
+  our max team is not governed by `sv_teamsinplay` if we are playing CTF.
+- `SV_IsTeammate()` determines if two player_t's are teammates using the help
+  of gametypes.  Same thing as `P_AreTeammates()`.
+- During a full update, we only send your kills via a `svc_updatefrags` if we
+  are playing coop, otherwise we send frags.
+- During a full update, we only send out `svc_teampoints` if it's a teamgame.
+- During a full update, if we're playing CTF, send out the state of all flags.
+- When disconnecting, print what team the disconnecting player is on if the
+  game is TeamDM or CTF.
+- When disconnecting, print out the number of personal points and frags the
+  player has if they're playing CTF, kills if they're playing Coop, otherwise
+  frags.
+- Draw a different serverside scoreboard based on your gametype.
+- When doing a "Team Printf", skip sending the printf if you're not playing a
+  teamgame.
+- When recording a chat in the server, only record a teamchat if it's Team
+  Deathmatch or Capture the Flag.
+- Allowing players to change teams is governed by the gametype in some ways.
+- Allowing players to change from a spectator is checked against
+  `sv_maxplayersperteam` first if they're playing TeamDM or CTF.
+- Change the join message to mention the team if they're playing TeamDM or CTF.
+- When you spectate the player, if they're playing CTF make them drop the flag.
+- When the timelimit is up and the gametype is Deathmatch, TeamDM or CTF, and
+  try to determine who the winner is, showing it in the console. 
+- If we're playing CTF, run CTF-specific gameplay functionality.
+- If we're playing Coop or a Teamgame, make sure that the obituary signals the
+  use of friendly fire.
+- If we're playing Coop, make sure that we keep our inventory between maps for
+  a "natural" level progression.
+
+sv_mobj.cpp
+-----------
+
+- When a player is spawned, give them every keycard in deathmatch mode.
+
+sv_pickup.cpp
+-------------
+
+- When distributing players evenly between teams, make sure that we're playing
+  a teamgame like TeamDM or CTF.
+
+sv_sqpold.cpp
+-------------
+
+- The old server query protocol contains many explicit references to specific
+  gametypes.
+
+sv_vote.cpp
+-----------
+
+- Calling a vote for scorelimit doesn't make sense for gametypes that are
+  not CTF.

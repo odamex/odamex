@@ -198,6 +198,7 @@ static std::string DoubleBindings[NUM_KEYS];
 static std::string NetDemoBindings[NUM_KEYS];
 static int DClickTime[NUM_KEYS];
 static byte DClicked[(NUM_KEYS+7)/8];
+static bool KeysDown[NUM_KEYS];
 
 static int GetKeyFromName (const char *name)
 {
@@ -439,6 +440,7 @@ BOOL C_DoKey (event_t *ev)
 		if (ev->type == ev_keydown)
 		{
 			AddCommandString (binding->c_str());
+			KeysDown[ev->data1] = true;
 		}
 		else
 		{
@@ -453,10 +455,42 @@ BOOL C_DoKey (event_t *ev)
 				AddCommandString (binding->c_str());
 				(*binding)[achar] = '+';
 			}
+
+			KeysDown[ev->data1] = false;
 		}
 		return true;
 	}
 	return false;
+}
+
+//
+// C_ReleaseKeys
+//
+// Calls the key-release action for all bound keys that are currently
+// being held down.
+//
+void C_ReleaseKeys()
+{
+	for (int i = 0; i < NUM_KEYS; i++)
+	{
+		if (!KeysDown[i])
+			continue;
+
+		KeysDown[i] = false;
+		std::string *binding = &Bindings[i];
+		if (binding->empty())
+			continue;
+
+		size_t achar = binding->find_first_of('+');
+
+		if (achar != std::string::npos && 
+			(achar == 0 || (*binding)[achar - 1] <= ' '))
+		{
+			(*binding)[achar] = '-';
+			AddCommandString(binding->c_str());
+			(*binding)[achar] = '+';
+		}
+	}
 }
 
 void C_ArchiveBindings (FILE *f)

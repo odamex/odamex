@@ -123,7 +123,7 @@ static void ExpandSoundData(byte *data,
 
         // number of samples in the converted sound
 
-        expanded_length = (length * mixer_freq) / samplerate;
+        expanded_length = (size_t)((int64_t(length) * mixer_freq) / samplerate);
         expand_ratio = (length << 8) / expanded_length;
 
         for (size_t i = 0; i < expanded_length; ++i)

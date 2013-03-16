@@ -66,20 +66,35 @@ EXTERN_CVAR(sv_callvote_timelimit)
 // Vote class goes here
 Vote *vote = 0;
 
+// Checks a particular vote to see if it's been enabled by the server
+bool Vote::setup_check_cvar()
+{
+	if (!*(this->cvar))
+	{
+		std::ostringstream buffer;
+		buffer << this->name << " vote has been disabled by the server.";
+		this->error = buffer.str();
+		return false;
+	}
+	return true;
+}
+
 //////// VOTE SUBCLASSES ////////
 
-class CoinFlipVote : public Vote {
+class CoinflipVote : public Vote
+{
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
-		// Is coinflip voting enabled?
-		if (!sv_callvote_coinflip) {
-			this->error = "coinflip vote has been disabled by the server.";
+	CoinflipVote() : Vote("coinflip", &sv_callvote_coinflip) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
+
 		this->votestring = "coinflip";
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		std::string result;
 		CMD_CoinFlip(result);
 		SV_BroadcastPrintf(PRINT_HIGH, "%s\n", result.c_str());
@@ -87,26 +102,28 @@ public:
 	}
 };
 
-class ForcespecVote : public Vote {
+class ForcespecVote : public Vote
+{
 private:
 	byte id;
 	std::string netname;
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
-		// Is forcespec vote enabled?
-		if (!sv_callvote_forcespec) {
-			this->error = "forcespec vote has been disabled by the server.";
+	ForcespecVote() : Vote("forcespec", &sv_callvote_forcespec) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
 		// Run forcespec command check.
 		size_t pid;
-		if (!CMD_ForcespecCheck(args, this->error, pid)) {
+		if (!CMD_ForcespecCheck(args, this->error, pid))
+		{
 			return false;
 		}
 
 		// Stop the player from trying to forcespec himself.
-		if (pid == player.id) {
+		if (pid == player.id)
+		{
 			this->error = "You can't vote forcespec yourself!  Try 'spectate' instead.";
 			return false;
 		}
@@ -122,14 +139,17 @@ public:
 
 		return true;
 	}
-	bool tic() {
-		if (!validplayer(idplayer(this->id))) {
+	bool tic()
+	{
+		if (!validplayer(idplayer(this->id)))
+		{
 			std::ostringstream buffer;
 			buffer << this->netname << " left the server.";
 			this->error = buffer.str();
 			return false;
 		}
-		if (idplayer(this->id).spectator) {
+		if (idplayer(this->id).spectator)
+		{
 			std::ostringstream buffer;
 			buffer << this->netname << " became a spectator on his own.";
 			this->error = buffer.str();
@@ -137,22 +157,24 @@ public:
 		}
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		SV_SetPlayerSpec(idplayer(this->id), true);
 		return true;
 	}
 };
 
-class ForcestartVote : public Vote {
+class ForcestartVote : public Vote
+{
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
-		// Is forcespec vote enabled?
-		if (!sv_callvote_forcestart) {
-			this->error = "forcestart vote has been disabled by the server.";
+	ForcestartVote() : Vote("forcestart", &sv_callvote_forcestart) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
-		if (warmup.get_status() != Warmup::WARMUP) {
+		if (warmup.get_status() != Warmup::WARMUP)
+		{
 			this->error = "Game is not in warmup mode.";
 			return false;
 		}
@@ -160,36 +182,40 @@ public:
 		this->votestring = "forcestart";
 		return true;
 	}
-	bool tic() {
-		if (warmup.get_status() != Warmup::WARMUP) {
+	bool tic()
+	{
+		if (warmup.get_status() != Warmup::WARMUP)
+		{
 			this->error = "No need to force start, game is about to start.";
 			return false;
 		}
 
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		AddCommandString("forcestart");
 		return true;
 	}
 };
 
 
-class FraglimitVote : public Vote {
+class FraglimitVote : public Vote
+{
 private:
 	unsigned int fraglimit;
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
+	FraglimitVote() : Vote("fraglimit", &sv_callvote_fraglimit) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
 		unsigned int fraglimit;
 
-		// Is fraglimit voting enabled?
-		if (!sv_callvote_fraglimit) {
-			this->error = "fraglimit vote has been disabled by the server.";
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
 		// Do we have at least one argument?
-		if (args.size() < 1) {
+		if (args.size() < 1)
+		{
 			this->error = "fraglimit needs a second argument.";
 			return false;
 		}
@@ -197,13 +223,15 @@ public:
 		// Is the fraglimit a numeric value?
 		std::istringstream buffer(args[0].c_str());
 		buffer >> fraglimit;
-		if (!buffer) {
+		if (!buffer)
+		{
 			this->error = "fraglimit must be a number.";
 			return false;
 		}
 
 		// Is the fraglimit positive?
-		if (args[0].length() > 0 && args[0][0] == '-') {
+		if (args[0].length() > 0 && args[0][0] == '-')
+		{
 			this->error = "fraglimit must be 0 or a positive number.";
 			return false;
 		}
@@ -215,34 +243,37 @@ public:
 		this->votestring = vote_string.str();
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		sv_fraglimit.Set(this->fraglimit);
 		return true;
 	}
 };
 
-class KickVote : public Vote {
+class KickVote : public Vote
+{
 private:
 	std::string caller;
 	byte id;
 	std::string netname;
 	std::string reason;
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
-		// Is kickvote enabled?
-		if (!sv_callvote_kick) {
-			this->error = "kick vote has been disabled by the server.";
+	KickVote() : Vote("kick", &sv_callvote_kick) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
 		// Run kick command check.
 		size_t pid;
-		if (!CMD_KickCheck(args, this->error, pid, this->reason)) {
+		if (!CMD_KickCheck(args, this->error, pid, this->reason))
+		{
 			return false;
 		}
 
 		// Stop the player from trying to kick himself.
-		if (pid == player.id) {
+		if (pid == player.id)
+		{
 			this->error = "You can't votekick yourself!  Try 'disconnect' instead.";
 			return false;
 		}
@@ -255,15 +286,18 @@ public:
 		// Create votestring
 		std::ostringstream buffer;
 		buffer << "kick " << this->netname << " (id:" << (int)this->id << ")";
-		if (!this->reason.empty()) {
+		if (!this->reason.empty())
+		{
 			buffer << " \"" << this->reason << "\"";
 		}
 		this->votestring = buffer.str();
 
 		return true;
 	}
-	bool tic() {
-		if (!validplayer(idplayer(this->id))) {
+	bool tic()
+	{
+		if (!validplayer(idplayer(this->id)))
+		{
 			std::ostringstream buffer;
 			buffer << this->netname << " left the server.";
 			this->error = buffer.str();
@@ -271,11 +305,15 @@ public:
 		}
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		std::ostringstream buffer;
-		if (this->reason.empty()) {
+		if (this->reason.empty())
+		{
 			buffer << "Votekick called by " << this->caller << " passed.";
-		} else {
+		}
+		else
+		{
 			buffer << "Votekick called by " << this->caller << " passed: \""<< this->reason << "\".";
 		}
 		SV_KickPlayer(idplayer(this->id), buffer.str());
@@ -283,22 +321,23 @@ public:
 	}
 };
 
-class MapVote : public Vote {
+class MapVote : public Vote
+{
 private:
 	size_t index;
 	byte version;
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
+	MapVote() : Vote("map", &sv_callvote_map) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
 		size_t index;
 
-		// Is map vote enabled?
-		if (!sv_callvote_map) {
-			this->error = "map vote has been disabled by the server.";
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
 		// We need at least one argument.
-		if (args.empty()) {
+		if (args.empty())
+		{
 			this->error = "map needs at least one argument.";
 			return false;
 		}
@@ -307,7 +346,8 @@ public:
 		// that is a maplist index.
 		std::istringstream buffer(args[0].c_str());
 		buffer >> index;
-		if (!buffer) {
+		if (!buffer)
+		{
 			this->error = "passed maplist index must be a number.";
 			return false;
 		}
@@ -315,7 +355,8 @@ public:
 		// Make sure our index is valid and grab the maplist
 		// entry associated with the index.
 		maplist_entry_t maplist_entry;
-		if (!Maplist::instance().get_map_by_index(index, maplist_entry)) {
+		if (!Maplist::instance().get_map_by_index(index, maplist_entry))
+		{
 			this->error = Maplist::instance().get_error();
 			return false;
 		}
@@ -328,68 +369,74 @@ public:
 		this->votestring = vsbuffer.str();
 		return true;
 	}
-	bool tic(void) {
-		if (this->version != Maplist::instance().get_version()) {
+	bool tic(void)
+	{
+		if (this->version != Maplist::instance().get_version())
+		{
 			this->error = "Maplist modified, vote aborted.";
 			return false;
 		}
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		G_ChangeMap(this->index);
 		return true;
 	}
 };
 
-class NextmapVote : public Vote {
+class NextmapVote : public Vote
+{
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
-		// Is nextmap vote enabled?
-		if (!sv_callvote_nextmap) {
-			this->error = "nextmap vote has been disabled by the server.";
+	NextmapVote() : Vote("nextmap", &sv_callvote_nextmap) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
 		// We don't need to keep any state, since "nextmap" takes no arguments
 		// and has no failure condition.
 		this->votestring = "nextmap";
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		G_ExitLevel(0, 1);
 		return true;
 	}
 };
 
-class RandCapsVote : public Vote {
+class RandcapsVote : public Vote
+{
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
-		// Is randcaps vote enabled?
-		if (!sv_callvote_randcaps) {
-			this->error = "randcaps vote has been disabled by the server.";
+	RandcapsVote() : Vote("randcaps", &sv_callvote_randcaps) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
 		// We don't really care about any state until the vote passes.
 		this->votestring = "randcaps";
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		return Pickup_DistributePlayers(2, this->error);
 	}
 };
 
-class RandmapVote : public Vote {
+class RandmapVote : public Vote
+{
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
-		// Is randmap vote enabled?
-		if (!sv_callvote_randmap) {
-			this->error = "randmap vote has been disabled by the server.";
+	RandmapVote() : Vote("randmap", &sv_callvote_randmap) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
 		// Does the maplist actually have anything in it?
-		if (Maplist::instance().empty()) {
+		if (Maplist::instance().empty())
+		{
 			this->error = "Maplist is empty.";
 			return false;
 		}
@@ -399,41 +446,47 @@ public:
 		this->votestring = "randmap";
 		return true;
 	}
-	bool tic(void) {
-		if (Maplist::instance().empty()) {
+	bool tic(void)
+	{
+		if (Maplist::instance().empty())
+		{
 			this->error = "Maplist was cleared since the vote started, vote aborted.";
 			return false;
 		}
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		return CMD_Randmap(this->error);
 	}
 };
 
-class RandPickupVote : public Vote {
+class RandpickupVote : public Vote
+{
 private:
 	size_t num_players;
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
-		// Is randcaps vote enabled?
-		if (!sv_callvote_randpickup) {
-			this->error = "randpickup vote has been disabled by the server.";
+	RandpickupVote() : Vote("randpickup", &sv_callvote_randpickup) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
-		if (!CMD_RandpickupCheck(args, this->error, this->num_players)) {
+		if (!CMD_RandpickupCheck(args, this->error, this->num_players))
+		{
 			return false;
 		}
 
 		// No odd-numbered teams.
-		if (this->num_players % 2 != 0) {
+		if (this->num_players % 2 != 0)
+		{
 			this->error = "Teams must be even.";
 			return false;
 		}
 
 		// Nothing below 2v2.
-		if (this->num_players < 4) {
+		if (this->num_players < 4)
+		{
 			this->error = "Each team must have at least 2 players.";
 			return false;
 		}
@@ -444,26 +497,28 @@ public:
 		this->votestring = buffer.str();
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		return Pickup_DistributePlayers(this->num_players, this->error);
 	}
 };
 
-class RestartVote : public Vote {
+class RestartVote : public Vote
+{
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
-		// Is restart vote enabled?
-		if (!sv_callvote_restart) {
-			this->error = "restart vote has been disabled by the server.";
+	RestartVote() : Vote("restart", &sv_callvote_restart) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
 		// We don't need to keep any state, since "nextmap" takes no arguments
 		// and has no failure condition.
 		this->votestring = "restart";
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		// When in warmup mode, we would rather not catch players off guard.
 		warmup.reset();
 
@@ -472,27 +527,29 @@ public:
 	}
 };
 
-class ScorelimitVote : public Vote {
+class ScorelimitVote : public Vote
+{
 private:
 	unsigned int scorelimit;
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
+	ScorelimitVote() : Vote("scorelimit", &sv_callvote_scorelimit) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
 		unsigned int scorelimit;
 
-		// Is scorelimit voting enabled?
-		if (!sv_callvote_scorelimit) {
-			this->error = "scorelimit vote has been disabled by the server.";
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
 		// Does scorelimit voting make sense in this gametype?
-		if (sv_gametype != GM_CTF) {
+		if (sv_gametype != GM_CTF)
+		{
 			this->error = "scorelimit does nothing in this gametype.";
 			return false;
 		}
 
 		// Do we have at least one argument?
-		if (args.size() < 1) {
+		if (args.size() < 1)
+		{
 			this->error = "scorelimit needs a second argument.";
 			return false;
 		}
@@ -500,13 +557,15 @@ public:
 		// Is the scorelimit a numeric value?
 		std::istringstream buffer(args[0].c_str());
 		buffer >> scorelimit;
-		if (!buffer) {
+		if (!buffer)
+		{
 			this->error = "scorelimit must be a number.";
 			return false;
 		}
 
 		// Is the scorelimit positive?
-		if (args[0].length() > 0 && args[0][0] == '-') {
+		if (args[0].length() > 0 && args[0][0] == '-')
+		{
 			this->error = "scorelimit must be 0 or a positive number.";
 			return false;
 		}
@@ -518,27 +577,29 @@ public:
 		this->votestring = vote_string.str();
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		sv_scorelimit.Set(this->scorelimit);
 		return true;
 	}
 };
 
-class TimelimitVote : public Vote {
+class TimelimitVote : public Vote
+{
 private:
 	float timelimit;
 public:
-	bool setup(const std::vector<std::string> &args, const player_t &player) {
+	TimelimitVote() : Vote("timelimit", &sv_callvote_timelimit) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
 		float timelimit;
 
-		// Is timelimit voting enabled?
-		if (!sv_callvote_timelimit) {
-			this->error = "timelimit vote has been disabled by the server.";
+		if (!Vote::setup_check_cvar())
 			return false;
-		}
 
 		// Do we have at least one argument?
-		if (args.size() < 1) {
+		if (args.size() < 1)
+		{
 			this->error = "timelimit needs a second argument.";
 			return false;
 		}
@@ -546,19 +607,22 @@ public:
 		// Is the timelimit a numeric value?
 		std::istringstream buffer(args[0].c_str());
 		buffer >> timelimit;
-		if (!buffer) {
+		if (!buffer)
+		{
 			this->error = "timelimit must be a number.";
 			return false;
 		}
 
 		// Is the timelimit positive?
-		if (args[0].length() > 0 && args[0][0] == '-') {
+		if (args[0].length() > 0 && args[0][0] == '-')
+		{
 			this->error = "timelimit must be 0 or a positive number.";
 			return false;
 		}
 
 		// Is the timelimit less than a minute?
-		if (timelimit > 0.0f && timelimit < 1.0f) {
+		if (timelimit > 0.0f && timelimit < 1.0f)
+		{
 			this->error = "timelimit must either be 0 or greater than 1 minute.";
 			return false;
 		}
@@ -570,7 +634,8 @@ public:
 		this->votestring = vote_string.str();
 		return true;
 	}
-	bool exec(void) {
+	bool exec(void)
+	{
 		sv_timelimit.Set(this->timelimit);
 		return true;
 	}
@@ -579,9 +644,11 @@ public:
 //////// VOTING FUNCTIONS ////////
 
 // Returns if the result of a vote is a forgone conclusion.
-vote_result_t Vote::check(void) {
+vote_result_t Vote::check(void)
+{
 	// Does the tally have any entries in it?
-	if (this->tally.empty()) {
+	if (this->tally.empty())
+	{
 		return VOTE_ABANDON;
 	}
 
@@ -589,29 +656,37 @@ vote_result_t Vote::check(void) {
 	size_t no = this->count_no();
 	size_t undec = this->tally.size() - yes - no;
 
-	if (yes >= this->calc_yes()) {
+	if (yes >= this->calc_yes())
+	{
 		return VOTE_YES;
 	}
 
-	if (no >= this->calc_no()) {
+	if (no >= this->calc_no())
+	{
 		return VOTE_NO;
 	}
 
 	// If everyone is undecided and neither of the calculations above resulted
 	// in anything definitive, err on the side of no.
-	if (undec == 0) {
+	if (undec == 0)
+	{
 		return VOTE_NO;
 	}
 
 	// If we've run out of time with an undecided vote, we need a result now.
-	if (this->get_countdown() <= 0) {
-		if (sv_vote_countabs) {
+	if (this->get_countdown() <= 0)
+	{
+		if (sv_vote_countabs)
+		{
 			// Since the vote didn't already pass and all vote calculations
 			// up to now take absent voters into account, we know it failed.
 			return VOTE_NO;
-		} else {
+		}
+		else
+		{
 			// This last calculation does not take absent voters into account.
-			if (yes >= this->calc_yes(true)) {
+			if (yes >= this->calc_yes(true))
+			{
 				return VOTE_YES;
 			}
 			return VOTE_NO;
@@ -622,9 +697,11 @@ vote_result_t Vote::check(void) {
 }
 
 // Tally up the number of players who are voting for the current callvote.
-size_t Vote::count_yes(void) {
+size_t Vote::count_yes(void)
+{
 	// Does the tally have any entries in it?
-	if (this->tally.empty()) {
+	if (this->tally.empty())
+	{
 		return 0;
 	}
 
@@ -632,8 +709,10 @@ size_t Vote::count_yes(void) {
 	std::map<int, vote_result_t>::iterator it;
 
 	// Count the for votes.
-	for (it = this->tally.begin();it != this->tally.end();++it) {
-		if ((*it).second == VOTE_YES) {
+	for (it = this->tally.begin(); it != this->tally.end(); ++it)
+	{
+		if ((*it).second == VOTE_YES)
+		{
 			count++;
 		}
 	}
@@ -643,27 +722,34 @@ size_t Vote::count_yes(void) {
 
 // Calculate the number of players needed for the vote to pass.  Pass true
 // for the first param if you don't want to count absent voters.
-size_t Vote::calc_yes(const bool noabs) {
+size_t Vote::calc_yes(const bool noabs)
+{
 	size_t size;
 
-	if (noabs) {
+	if (noabs)
+	{
 		size = this->count_yes() + this->count_no();
-	} else {
+	}
+	else
+	{
 		size = this->tally.size();
 	}
 
 	float f_calc = size * sv_vote_majority;
 	size_t i_calc = (int)floor(f_calc + 0.5f);
-	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON) {
+	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON)
+	{
 		return i_calc + 1;
 	}
 	return (int)ceil(f_calc);
 }
 
 // Tally up the number of players who are voting against the current callvote.
-size_t Vote::count_no(void) {
+size_t Vote::count_no(void)
+{
 	// Does the tally have any entries in it?
-	if (this->tally.empty()) {
+	if (this->tally.empty())
+	{
 		return 0;
 	}
 
@@ -671,8 +757,10 @@ size_t Vote::count_no(void) {
 	std::map<int, vote_result_t>::iterator it;
 
 	// Count the against votes.
-	for (it = this->tally.begin();it != this->tally.end();++it) {
-		if ((*it).second == VOTE_NO) {
+	for (it = this->tally.begin(); it != this->tally.end(); ++it)
+	{
+		if ((*it).second == VOTE_NO)
+		{
 			count++;
 		}
 	}
@@ -681,57 +769,70 @@ size_t Vote::count_no(void) {
 }
 
 // Calculate the number of players needed for the vote to fail.
-size_t Vote::calc_no(void) {
+size_t Vote::calc_no(void)
+{
 	float f_calc = this->tally.size() * (1.0f - sv_vote_majority);
 	size_t i_calc = (int)floor(f_calc + 0.5f);
-	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON) {
+	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON)
+	{
 		return i_calc;
 	}
 	return (int)ceil(f_calc);
 }
 
-size_t Vote::count_abs(void) {
+size_t Vote::count_abs(void)
+{
 	return this->tally.size() - this->count_yes() - this->count_no();
 }
 
 // Handle disconnecting players.
-void Vote::ev_disconnect(player_t &player) {
+void Vote::ev_disconnect(player_t &player)
+{
 	// If the player had an entry in the tally, delete it.
-	if (this->tally.count(player.id) > 0) {
+	if (this->tally.count(player.id) > 0)
+	{
 		this->tally.erase(player.id);
 	}
 }
 
 // Initialize the vote and also run the vote-specific 'setup' code.  Return
 // false if there is an error state and the vote shouldn't start.
-bool Vote::init(const std::vector<std::string> &args, const player_t &player) {
+bool Vote::init(const std::vector<std::string> &args, const player_t &player)
+{
 	// First we need to run our vote-specific checks.
-	if (!this->setup(args, player)) {
+	if (!this->setup(args, player))
+	{
 		return false;
 	}
 
 	// Make sure a spectating player can call the vote
-	if (!sv_vote_speccall && player.spectator) {
+	if (!sv_vote_speccall && player.spectator)
+	{
 		this->error = "Spectators cannot call votes on this server.";
 		return false;
 	}
 
 	// Check the vote timeout.
-	if (player.timeout_callvote > 0) {
+	if (player.timeout_callvote > 0)
+	{
 		int timeout = level.time - player.timeout_callvote;
 		int timeout_check, timeout_waitsec;
-		if (players.size() == 1) {
+		if (players.size() == 1)
+		{
 			// A single player is made to always wait 10 seconds.
 			timeout_check = 10 * TICRATE;
 			timeout_waitsec = 10 - (timeout / TICRATE);
-		} else {
+		}
+		else
+		{
 			// If there are other players in the game, the callvoting player
 			// is bound to sv_vote_timeout.
 			timeout_check = sv_vote_timeout.asInt() * TICRATE;
 			timeout_waitsec = sv_vote_timeout.asInt() - (timeout / TICRATE);
 		}
 
-		if (timeout < timeout_check) {
+		if (timeout < timeout_check)
+		{
 			std::ostringstream buffer;
 			buffer << "Please wait another " << timeout_waitsec << " second" << ((timeout_waitsec != 1) ? "s" : "") << " to call a vote.";
 			this->error = buffer.str();
@@ -744,18 +845,24 @@ bool Vote::init(const std::vector<std::string> &args, const player_t &player) {
 	this->countdown = sv_vote_timelimit.asInt() * TICRATE;
 
 	// Give everybody an "undecided" vote except the current player.
-	for (std::vector<player_t>::size_type i = 0;i != players.size();i++) {
-		if (!players[i].ingame()) {
+	for (std::vector<player_t>::size_type i = 0; i != players.size(); i++)
+	{
+		if (!players[i].ingame())
+		{
 			continue;
 		}
 
-		if (!sv_vote_specvote && players[i].spectator) {
+		if (!sv_vote_specvote && players[i].spectator)
+		{
 			continue;
 		}
 
-		if (players[i].id == this->caller_id) {
+		if (players[i].id == this->caller_id)
+		{
 			this->tally[this->caller_id] = VOTE_YES;
-		} else {
+		}
+		else
+		{
 			this->tally[players[i].id] = VOTE_UNDEC;
 		}
 	}
@@ -769,17 +876,21 @@ void SVC_GlobalVoteUpdate(void);
 // Pass or fail the vote.  Most of the time this method adheres to the result
 // of the check method, but can also be used to 'force pass' or 'force fail' a
 // vote under special circumstances.
-void Vote::parse(vote_result_t vote_result) {
+void Vote::parse(vote_result_t vote_result)
+{
 	// Make sure the clients have the final state of the vote
 	// before we do anything else.
 	SVC_GlobalVoteUpdate();
-	for (size_t i = 0; i < players.size(); i++) {
-		if (validplayer(players[i])) {
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		if (validplayer(players[i]))
+		{
 			SV_SendPacket(players[i]);
 		}
 	}
 
-	if (this->tally.empty() || vote_result == VOTE_ABANDON) {
+	if (this->tally.empty() || vote_result == VOTE_ABANDON)
+	{
 		SV_BroadcastPrintf(PRINT_HIGH, "Vote %s abandoned!\n", this->votestring.c_str());
 		return;
 	}
@@ -788,17 +899,20 @@ void Vote::parse(vote_result_t vote_result) {
 	size_t no = this->count_no();
 	size_t abs = this->count_abs();
 
-	if (vote_result == VOTE_INTERRUPT) {
+	if (vote_result == VOTE_INTERRUPT)
+	{
 		SV_BroadcastPrintf(PRINT_HIGH, "Vote %s interrupted! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
 		return;
 	}
 
-	if (vote_result != VOTE_YES) {
+	if (vote_result != VOTE_YES)
+	{
 		SV_BroadcastPrintf(PRINT_HIGH, "Vote %s failed! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
 
 		// Only set the timeout tic if the vote failed.
 		player_t caller = idplayer(this->caller_id);
-		if (validplayer(caller)) {
+		if (validplayer(caller))
+		{
 			caller.timeout_callvote = level.time;
 		}
 
@@ -816,19 +930,22 @@ void Vote::parse(vote_result_t vote_result) {
 
 // Runs tic by tic operations for the vote.  Returns true if the vote should
 // continue, otherwise returns false if the vote should be destroyed.
-bool Vote::ev_tic(void) {
+bool Vote::ev_tic(void)
+{
 	// Check to see if the vote has passed.
 	this->result = this->check();
 
 	// Run tic-specific vote functions.  Also interrupt if we're in
 	// intermission or on a new map.
-	if (gamestate == GS_INTERMISSION || level.time == 1 || !this->tic()) {
+	if (gamestate == GS_INTERMISSION || level.time == 1 || !this->tic())
+	{
 		this->result = VOTE_INTERRUPT;
 	}
 
 	// Continue the countdown as long as the check returns undecided and
 	// the tic function doesn't fail and interrupt the vote.
-	if (this->result == VOTE_UNDEC) {
+	if (this->result == VOTE_UNDEC)
+	{
 		this->countdown -= 1;
 		return true;
 	}
@@ -839,33 +956,41 @@ bool Vote::ev_tic(void) {
 
 // This method is used to change the vote tally.  It will return false
 // if the player already voted the same way beforehand.
-bool Vote::vote(player_t &player, bool ballot) {
+bool Vote::vote(player_t &player, bool ballot)
+{
 	vote_result_t ballot_r = (ballot == true) ? VOTE_YES : VOTE_NO;
 
 	// Does the user actually have an entry in the tally?
-	if (this->tally.find(player.id) == this->tally.end()) {
-		if (!sv_vote_specvote && player.spectator) {
+	if (this->tally.find(player.id) == this->tally.end())
+	{
+		if (!sv_vote_specvote && player.spectator)
+		{
 			SV_PlayerPrintf(PRINT_HIGH, player.id, "Spectators can't vote on this server.\n");
-		} else {
+		}
+		else
+		{
 			SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't vote on something that was called before you joined the server.\n");
 		}
 		return false;
 	}
 
 	// Did the user already vote the same way before?
-	if (this->tally[player.id] == ballot_r) {
+	if (this->tally[player.id] == ballot_r)
+	{
 		return false;
 	}
 
 	// Has the user voted too soon after his last vote?
-	if (player.timeout_vote > 0) {
+	if (player.timeout_vote > 0)
+	{
 		int timeout = level.time - player.timeout_vote;
 
 		// Players can only change their minds once every 3 seconds.
 		int timeout_check = 3 * TICRATE;
 		int timeout_waitsec = 3 - (timeout / TICRATE);
 
-		if (timeout < timeout_check) {
+		if (timeout < timeout_check)
+		{
 			SV_PlayerPrintf(PRINT_HIGH, player.id, "Please wait another %d second%s to change your vote.\n",
 			                timeout_waitsec, timeout_waitsec != 1 ? "s" : "");
 			return false;
@@ -880,13 +1005,15 @@ bool Vote::vote(player_t &player, bool ballot) {
 //////// COMMANDS TO CLIENT ////////
 
 // Send a full vote update to a specific player
-void SVC_VoteUpdate(player_t &player) {
+void SVC_VoteUpdate(player_t &player)
+{
 	// Keep us from segfaulting on a non-existant vote
-	if (vote == 0) {
+	if (vote == 0)
+	{
 		return;
 	}
 
-	client_t *cl = &player.client;
+	client_t* cl = &player.client;
 
 	MSG_WriteMarker(&cl->netbuf, svc_vote_update);
 	MSG_WriteByte(&cl->netbuf, vote->get_result());
@@ -900,8 +1027,10 @@ void SVC_VoteUpdate(player_t &player) {
 }
 
 // Send a full vote update to everybody
-void SVC_GlobalVoteUpdate(void) {
-	for (size_t i=0; i < players.size(); i++) {
+void SVC_GlobalVoteUpdate(void)
+{
+	for (size_t i=0; i < players.size(); i++)
+	{
 		SVC_VoteUpdate(players[i]);
 	}
 }
@@ -909,27 +1038,32 @@ void SVC_GlobalVoteUpdate(void) {
 //////// COMMANDS FROM CLIENT ////////
 
 // Handle callvote commands from the client.
-void SV_Callvote(player_t &player) {
+void SV_Callvote(player_t &player)
+{
 	vote_type_t votecmd = (vote_type_t)MSG_ReadByte();
 	byte argc = (byte)MSG_ReadByte();
 
 	DPrintf("SV_Callvote: Got votecmd %s from player %d, %d additional arguments.\n",
-			vote_type_cmd[votecmd], player.id, argc);
+	        vote_type_cmd[votecmd], player.id, argc);
 
 	std::vector<std::string> arguments(argc);
-	for (int i = 0;i < argc;i++) {
+	for (int i = 0; i < argc; i++)
+	{
 		arguments[i] = std::string(MSG_ReadString());
 		DPrintf("SV_Callvote: arguments[%d] = \"%s\"\n", i, arguments[i].c_str());
 	}
 
-	if (!(votecmd > VOTE_NONE && votecmd < VOTE_MAX)) {
+	if (!(votecmd > VOTE_NONE && votecmd < VOTE_MAX))
+	{
 		// Return a list of valid votes if the client doesn't pass a vote.
 		// TODO: Only return enabled votes.
 		std::ostringstream buffer;
 		buffer << "Valid votes are: ";
-		for (int i = VOTE_NONE + 1;i < VOTE_MAX;i++) {
+		for (int i = VOTE_NONE + 1; i < VOTE_MAX; i++)
+		{
 			buffer << vote_type_cmd[i];
-			if (i + 1 != VOTE_MAX) {
+			if (i + 1 != VOTE_MAX)
+			{
 				buffer << ", ";
 			}
 		}
@@ -938,25 +1072,29 @@ void SV_Callvote(player_t &player) {
 	}
 
 	// Is the player ingame?
-	if (!player.ingame()) {
+	if (!player.ingame())
+	{
 		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't callvote until you're in the game.\n");
 		return;
 	}
 
 	// Is the server in intermission?
-	if (gamestate == GS_INTERMISSION) {
+	if (gamestate == GS_INTERMISSION)
+	{
 		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't callvote while the server is in intermission.\n");
 		return;
 	}
 
 	// Is another vote already in progress?
-	if (vote != 0) {
+	if (vote != 0)
+	{
 		SV_PlayerPrintf(PRINT_HIGH, player.id, "Another vote is already in progress.\n");
 		return;
 	}
 
 	// Select the proper vote
-	switch (votecmd) {
+	switch (votecmd)
+	{
 	case VOTE_KICK:
 		vote = new KickVote;
 		break;
@@ -967,10 +1105,10 @@ void SV_Callvote(player_t &player) {
 		vote = new ForcestartVote;
 		break;
 	case VOTE_RANDCAPS:
-		vote = new RandCapsVote;
+		vote = new RandcapsVote;
 		break;
 	case VOTE_RANDPICKUP:
-		vote = new RandPickupVote;
+		vote = new RandpickupVote;
 		break;
 	case VOTE_MAP:
 		vote = new MapVote;
@@ -994,7 +1132,7 @@ void SV_Callvote(player_t &player) {
 		vote = new TimelimitVote;
 		break;
 	case VOTE_COINFLIP:
-		vote = new CoinFlipVote;
+		vote = new CoinflipVote;
 		break;
 	default:
 		return;
@@ -1005,7 +1143,8 @@ void SV_Callvote(player_t &player) {
 
 	// If we encountered an unrecoverable error with the vote,
 	// abort the vote and print a message to the player.
-	if (!valid) {
+	if (!valid)
+	{
 		SV_PlayerPrintf(PRINT_HIGH, player.id, "%s\n", vote->get_error().c_str());
 		delete vote;
 		vote = 0;
@@ -1017,17 +1156,20 @@ void SV_Callvote(player_t &player) {
 }
 
 // Handle vote commands from the client.
-void SV_Vote(player_t &player) {
+void SV_Vote(player_t &player)
+{
 	bool ballot = MSG_ReadBool();
 
 	// Is there even a vote going on?
-	if (vote == 0) {
+	if (vote == 0)
+	{
 		SV_PlayerPrintf(PRINT_HIGH, player.id, "Invalid vote, no vote in progress.\n");
 		return;
 	}
 
 	// Did the player actually change his vote?
-	if (vote->vote(player, ballot)) {
+	if (vote->vote(player, ballot))
+	{
 		SV_BroadcastPrintf(PRINT_HIGH, "%s voted %s.\n", player.userinfo.netname, ballot == true ? "Yes" : "No");
 		SVC_GlobalVoteUpdate();
 	}
@@ -1036,9 +1178,11 @@ void SV_Vote(player_t &player) {
 //////// EVENTS ////////
 
 // Remove a disconnected player from the tally.
-void Vote_Disconnect(player_t &player) {
+void Vote_Disconnect(player_t &player)
+{
 	// Is there even a vote happening?  If not, we don't really care.
-	if (vote == 0) {
+	if (vote == 0)
+	{
 		return;
 	}
 
@@ -1046,12 +1190,16 @@ void Vote_Disconnect(player_t &player) {
 }
 
 // Handles tic-by-tic maintenance of voting.
-void Vote_Runtic(void) {
+void Vote_Runtic(void)
+{
 	// Special housekeeping for intermission or a new map.
-	if (level.time == 1) {
+	if (level.time == 1)
+	{
 		// Every player has a clean slate in terms of timeouts.
-		for (size_t i = 0;i < players.size();i++) {
-			if (!validplayer(players[i])) {
+		for (size_t i = 0; i < players.size(); i++)
+		{
+			if (!validplayer(players[i]))
+			{
 				continue;
 			}
 
@@ -1061,18 +1209,21 @@ void Vote_Runtic(void) {
 	}
 
 	// Is there even a vote happening?
-	if (vote == 0) {
+	if (vote == 0)
+	{
 		return;
 	}
 
 	// Run tic-by-tic maintenence of the vote.
-	if (!vote->ev_tic()) {
+	if (!vote->ev_tic())
+	{
 		// Vote is done!  Parse it with the result taken from
 		// the vote iteslf.
 		vote->parse(vote->get_result());
 
 		// If there is an error message, display it.
-		if (!vote->get_error().empty()) {
+		if (!vote->get_error().empty())
+		{
 			SV_BroadcastPrintf(PRINT_HIGH, "%s\n", vote->get_error().c_str());
 		}
 
@@ -1083,7 +1234,8 @@ void Vote_Runtic(void) {
 
 	// Sync the countdown every few seconds.
 	if (vote->get_countdown() % (TICRATE * 5) == 0 &&
-		vote->get_countdown() != ((unsigned int)sv_vote_timelimit.asInt() * TICRATE)) {
+	        vote->get_countdown() != ((unsigned int)sv_vote_timelimit.asInt() * TICRATE))
+	{
 		SVC_GlobalVoteUpdate();
 	}
 }

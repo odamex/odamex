@@ -347,7 +347,7 @@ public:
     angle_t		angle;	// orientation
     spritenum_t		sprite;	// used to find patch_t and flip value
     int			frame;	// might be ORed with FF_FULLBRIGHT
-	fixed_t		pitch, roll;
+	fixed_t		pitch;
 
 	DWORD			effects;			// [RH] see p_effect.h
 

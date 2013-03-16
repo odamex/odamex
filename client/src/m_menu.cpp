@@ -997,7 +997,7 @@ void M_NewGame(int choice)
     {
         M_SetupNextMenu(&NewDef);
     }
-    else if (gameinfo.flags & GI_MENUHACK_RETAIL)
+    else if (gamemode == retail)
 	{
 	    EpiDef.numitems = ep_end;
 	    M_SetupNextMenu(&EpiDef);

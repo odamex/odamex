@@ -48,6 +48,7 @@ void SV_SendDestroyActor(AActor *mo);
 #endif	// _UNLAG_DEBUG_
 
 EXTERN_CVAR(sv_unlag)
+EXTERN_CVAR(sv_maxunlagtime)
 
 Unlag::SectorHistoryRecord::SectorHistoryRecord()
 	:	sector(NULL), history_size(0),
@@ -557,11 +558,15 @@ void Unlag::setRoundtripDelay(byte player_id, byte svgametic)
 {
 	if (!Unlag::enabled())
 		return;
-	
+
+	size_t maxdelay = TICRATE * sv_maxunlagtime;
+	if (maxdelay < 0 || maxdelay > Unlag::MAX_HISTORY_TICS)
+		maxdelay = Unlag::MAX_HISTORY_TICS;
+
 	size_t delay = ((gametic & 0xFF) + 256 - svgametic) & 0xFF;
 	
 	size_t player_index = player_id_map[player_id];
-	player_history[player_index].current_lag = delay;
+	player_history[player_index].current_lag = MIN(delay, maxdelay);
 	
 	#ifdef _UNLAG_DEBUG_
 	DPrintf("Unlag (%03d): received gametic %d from player %d, lag = %d\n",

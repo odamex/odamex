@@ -1687,6 +1687,46 @@ void CL_MidPrint (void)
     C_MidPrint(str,NULL,msgtime);
 }
 
+/**
+ * Handle the svc_say server message, which contains a message from another
+ * client with a player id attached to it.
+ */
+void CL_Say()
+{
+	byte who = MSG_ReadByte();
+	byte player_id = MSG_ReadByte();
+	const char* message = MSG_ReadString();
+
+	player_t &player = idplayer(player_id);
+	const char* name;
+
+	if (!validplayer(player))
+		name = "???";
+	else
+		name = player.userinfo.netname;
+
+	switch (who)
+	{
+	case 0:
+		if (strnicmp(message, "/me ", 4) == 0)
+			Printf(PRINT_CHAT, "* %s %s\n", name, &message[4]);
+		else
+			Printf(PRINT_CHAT, "%s: %s\n", name, message);
+		if (show_messages)
+			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+		break;
+	case 1:
+		if (strnicmp(message, "/me ", 4) == 0)
+			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
+		else
+			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
+		if (show_messages)
+			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+		break;
+	}
+
+}
+
 //
 // CL_PlayerJustTeleported
 //
@@ -2122,7 +2162,7 @@ void CL_SpawnPlayer()
 	// set color translations for player sprites
 	mobj->translation = translationref_t(translationtables + 256*playernum, playernum);
 	mobj->angle = angle;
-	mobj->pitch = mobj->roll = 0;
+	mobj->pitch = 0;
 	mobj->player = p;
 	mobj->health = p->health;
 	P_SetThingId(mobj, netid);
@@ -3299,6 +3339,7 @@ void CL_InitCommands(void)
 	cmds[svc_switch]			= &CL_Switch;
 	cmds[svc_print]				= &CL_Print;
     cmds[svc_midprint]          = &CL_MidPrint;
+	cmds[svc_say]				= &CL_Say;
     cmds[svc_pingrequest]       = &CL_SendPingReply;
 	cmds[svc_svgametic]			= &CL_SaveSvGametic;
 	cmds[svc_mobjtranslation]	= &CL_MobjTranslation;

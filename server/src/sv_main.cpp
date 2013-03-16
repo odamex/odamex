@@ -2579,54 +2579,145 @@ void STACK_ARGS SV_TeamPrintf (int level, int who, const char *fmt, ...)
     }
 }
 
+/**
+ * Send a message to teammates of a player.
+ *
+ * @param player  Player who said the message.
+ * @param message Message that the player said.
+ */
+void SVC_TeamSay(player_t &player, const char* message)
+{
+	if (strnicmp(message, "/me ", 4) == 0)
+		Printf(PRINT_TEAMCHAT, "<TEAM> * %s %s\n", player.userinfo.netname, &message[4]);
+	else
+		Printf(PRINT_TEAMCHAT, "<TEAM> %s: %s\n", player.userinfo.netname, message);
+
+	std::vector<player_t>::iterator it;
+	for (it = players.begin();it != players.end();++it)
+	{
+		// Player needs to be valid.
+		if (!validplayer(*it))
+			continue;
+
+		// Player needs to be on the same team
+		if (!it->userinfo.team == player.userinfo.team)
+			continue;
+
+		MSG_WriteMarker(&(it->client.reliablebuf), svc_say);
+		MSG_WriteByte(&(it->client.reliablebuf), 1);
+		MSG_WriteByte(&(it->client.reliablebuf), player.id);
+		MSG_WriteString(&(it->client.reliablebuf), message);
+	}
+}
+
+/**
+ * Send a message to all spectators.
+ *
+ * @param player  Player who said the message.
+ * @param message Message that the player said.
+ */
+void SVC_SpecSay(player_t &player, const char* message)
+{
+	if (strnicmp(message, "/me ", 4) == 0)
+		Printf(PRINT_TEAMCHAT, "<SPEC> * %s %s\n", player.userinfo.netname, &message[4]);
+	else
+		Printf(PRINT_TEAMCHAT, "<SPEC> %s: %s\n", player.userinfo.netname, message);
+
+	std::vector<player_t>::iterator it;
+	for (it = players.begin();it != players.end();++it)
+	{
+		// Player needs to be valid.
+		if (!validplayer(*it))
+			continue;
+
+		// Player needs to be a spectator
+		if (!it->spectator)
+			continue;
+
+		MSG_WriteMarker(&(it->client.reliablebuf), svc_say);
+		MSG_WriteByte(&(it->client.reliablebuf), 1);
+		MSG_WriteByte(&(it->client.reliablebuf), player.id);
+		MSG_WriteString(&(it->client.reliablebuf), message);
+	}
+}
+
+/**
+ * Send a message to everybody.
+ *
+ * @param player  Player who said the message.
+ * @param message Message that the player said.
+ */
+void SVC_Say(player_t &player, const char* message)
+{
+	if (strnicmp(message, "/me ", 4) == 0)
+		Printf(PRINT_CHAT, "<CHAT> * %s %s\n", player.userinfo.netname, &message[4]);
+	else
+		Printf(PRINT_CHAT, "<CHAT> %s: %s\n", player.userinfo.netname, message);
+
+	std::vector<player_t>::iterator it;
+	for (it = players.begin();it != players.end();++it)
+	{
+		// Player needs to be valid.
+		if (!validplayer(*it))
+			continue;
+
+		MSG_WriteMarker(&(it->client.reliablebuf), svc_say);
+		MSG_WriteByte(&(it->client.reliablebuf), 0);
+		MSG_WriteByte(&(it->client.reliablebuf), player.id);
+		MSG_WriteString(&(it->client.reliablebuf), message);
+	}
+}
+
 //
 // SV_Say
 // Show a chat string and send it to others clients.
 //
 void SV_Say(player_t &player)
 {
-	byte team = MSG_ReadByte();
-    const char *s = MSG_ReadString();
+	byte who = MSG_ReadByte();
+	const char* s = MSG_ReadString();
 
-	if(!strlen(s) || strlen(s) > MAX_CHATSTR_LEN)
+	if (!strlen(s) || strlen(s) > MAX_CHATSTR_LEN)
 		return;
 
-    // Flood protection
-    if (player.LastMessage.Time)
-    {
-        QWORD Difference = (I_GetTime() - player.LastMessage.Time);
-
-        float Delay = (float)(sv_flooddelay * TICRATE);
-
-        if (Difference <= Delay)
-            return;
-
-        player.LastMessage.Time = 0;
-    }
-
-    if (!player.LastMessage.Time)
-    {
-        player.LastMessage.Time = I_GetTime();
-        player.LastMessage.Message = s;
-    }
-
-	if (strnicmp(s, "/me ", 4) == 0)
+	// Flood protection
+	if (player.LastMessage.Time)
 	{
-		if (player.spectator && (!sv_globalspectatorchat || team))
-			SV_SpectatorPrintf(PRINT_TEAMCHAT, "<SPECTATORS> * %s %s\n", player.userinfo.netname, &s[4]);
-		else if(!team)
-			SV_BroadcastPrintf (PRINT_CHAT, "* %s %s\n", player.userinfo.netname, &s[4]);
-		else if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-			SV_TeamPrintf(PRINT_TEAMCHAT, player.id, "<TEAM> * %s %s\n", player.userinfo.netname, &s[4]);
+		QWORD Difference = (I_GetTime() - player.LastMessage.Time);
+
+		float Delay = (float)(sv_flooddelay * TICRATE);
+
+		if (Difference <= Delay)
+			return;
+
+		player.LastMessage.Time = 0;
 	}
-	else
+
+	if (!player.LastMessage.Time)
 	{
-		if (player.spectator && (!sv_globalspectatorchat || team))
-			SV_SpectatorPrintf (PRINT_TEAMCHAT, "<%s to SPECTATORS> %s\n", player.userinfo.netname, s);
-		else if(!team)
-			SV_BroadcastPrintf (PRINT_CHAT, "%s: %s\n", player.userinfo.netname, s);
-		else if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-			SV_TeamPrintf (PRINT_TEAMCHAT, player.id, "<%s to TEAM> %s\n", player.userinfo.netname, s);
+		player.LastMessage.Time = I_GetTime();
+		player.LastMessage.Message = s;
+	}
+
+	switch (who)
+	{
+	case 1:
+		if (player.spectator)
+			SVC_SpecSay(player, s);
+		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			SVC_TeamSay(player, s);
+		else
+			SVC_Say(player, s);
+		break;
+	case 0:
+		if (player.spectator && !sv_globalspectatorchat)
+			SVC_SpecSay(player, s);
+		else
+			SVC_Say(player, s);
+		break;
+	default:
+		// Invalid destination
+		break;
 	}
 }
 

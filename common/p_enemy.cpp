@@ -1607,24 +1607,27 @@ void A_Mushroom (AActor *actor)
 
 	A_Explode (actor);	// First make normal explosion
 
-	// Now launch mushroom cloud
-	for (i = -n; i <= n; i += 8)
+	if(serverside)
 	{
-		for (j = -n; j <= n; j += 8)
-		{
-			AActor target = *actor, *mo;
-			target.x += i << FRACBITS; // Aim in many directions from source
-			target.y += j << FRACBITS;
-			target.z += P_AproxDistance(i,j) << (FRACBITS+2); // Aim up fairly high
-			mo = P_SpawnMissile (actor, &target, MT_FATSHOT); // Launch fireball
-			if (mo != NULL)
-			{
-				mo->momx >>= 1;
-				mo->momy >>= 1;				  // Slow it down a bit
-				mo->momz >>= 1;
-				mo->flags &= ~MF_NOGRAVITY;   // Make debris fall under gravity
-			}
-		}
+        // Now launch mushroom cloud
+        for (i = -n; i <= n; i += 8)
+        {
+            for (j = -n; j <= n; j += 8)
+            {
+                AActor target = *actor, *mo;
+                target.x += i << FRACBITS; // Aim in many directions from source
+                target.y += j << FRACBITS;
+                target.z += P_AproxDistance(i,j) << (FRACBITS+2); // Aim up fairly high
+                mo = P_SpawnMissile (actor, &target, MT_FATSHOT); // Launch fireball
+                if (mo != NULL)
+                {
+                    mo->momx >>= 1;
+                    mo->momy >>= 1;				  // Slow it down a bit
+                    mo->momz >>= 1;
+                    mo->flags &= ~MF_NOGRAVITY;   // Make debris fall under gravity
+                }
+            }
+        }
 	}
 }
 

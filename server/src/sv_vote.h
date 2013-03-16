@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Server voting-specific stuff.
+//  Server voting-specific stuff.
 //
 //-----------------------------------------------------------------------------
 
@@ -26,7 +26,8 @@
 #include "c_vote.h"
 #include "d_player.h"
 
-class Vote {
+class Vote
+{
 protected:
 	byte caller_id;
 	unsigned int countdown;
@@ -35,20 +36,26 @@ protected:
 	std::map<int, vote_result_t> tally;
 	std::string votestring;
 public:
-	Vote() : countdown(0), error(""), result(VOTE_UNDEC), votestring("") { };
+	Vote(const char* cname, const cvar_t* ccvar) : countdown(0), error(""), result(VOTE_UNDEC), votestring(""), name(cname), cvar(ccvar) { };
 	virtual ~Vote() { };
-	unsigned int get_countdown(void) {
+	const char* name;
+	const cvar_t* cvar;
+	unsigned int get_countdown(void)
+	{
 		return this->countdown;
-	};
-	std::string get_error(void) {
+	}
+	std::string get_error(void)
+	{
 		return this->error;
-	};
-	vote_result_t get_result(void) {
+	}
+	vote_result_t get_result(void)
+	{
 		return this->result;
 	}
-	std::string get_votestring(void) {
+	std::string get_votestring(void)
+	{
 		return this->votestring;
-	};
+	}
 	vote_result_t check(void);
 	size_t count_yes(void);
 	size_t count_no(void);
@@ -60,24 +67,28 @@ public:
 	bool init(const std::vector<std::string> &args, const player_t &player);
 	void parse(vote_result_t vote_result);
 	bool vote(player_t &player, bool ballot);
+	bool setup_check_cvar();
 	// Subclass this method with checks that should run before a vote is
 	// started.  If the vote can start, you should store enough state to
 	// successfully execute the vote once the vote is over, set the
 	// votestring, and return true.  Otherwise, set an error and return false.
-	virtual bool setup(const std::vector<std::string> &args, const player_t &player) {
+	virtual bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
 		return true;
-	};
+	}
 	// Subclass this method with checks that should run every tic.  If the
 	// vote should be aborted, set an error and return false.  Otherwise,
 	// return true.
-	virtual bool tic(void) {
+	virtual bool tic(void)
+	{
 		return true;
 	}
 	// Subclass this method with the actual commands that should be executed
 	// if the vote passes.
-	virtual bool exec(void) {
+	virtual bool exec(void)
+	{
 		return true;
-	};
+	}
 };
 
 void SV_Callvote(player_t &player);

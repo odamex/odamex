@@ -87,7 +87,7 @@ enum svc_t
 	svc_reserved47,
 	svc_forceteam,			// [Toke] Allows server to change a clients team setting.
 	svc_switch,
-	svc_reserved50,
+	svc_say,
 	svc_reserved51,
 	svc_spawnhiddenplayer,	// [denis] when client can't see player
 	svc_updatedeaths,		// [byte] [short]
