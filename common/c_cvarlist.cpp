@@ -126,6 +126,8 @@ CVAR(sv_keepkeys, "0", "Keep keys on death",
 // [SL] 2011-05-11 - Allow reconciliation for players on lagged connections
 CVAR (sv_unlag,            "1", "Allow reconciliation for players on lagged connections",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (sv_maxunlagtime,	"1.0", "Cap the maxiumum time allowed for player reconciliation",
+      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // [ML] allow weapon & view bob changing
 CVAR (sv_allowmovebob, "0", "Allow weapon & view bob changing",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
