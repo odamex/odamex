@@ -1298,7 +1298,7 @@ void P_ZMovement(AActor *mo)
 		// So we need to check that this is either retail or commercial
 		// (but not doom2)
 
-		int correct_lost_soul_bounce = co_zdoomphys || (gameinfo.flags & GI_MENUHACK_RETAIL) ||
+		int correct_lost_soul_bounce = co_zdoomphys || gamemode == retail ||
                                      ((gamemode == commercial
                                      && (gamemission == pack_tnt || gamemission == pack_plut)));
 

@@ -191,7 +191,7 @@ std::string G_NextMap(void) {
 	if (!strncmp(next.c_str(), "EndGame", 7) ||
 		(gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4))) {
 		if (gameinfo.flags & GI_MAPxx || gamemode == shareware ||
-			(!sv_loopepisode && (((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 3) || (gamemode == retail && level.cluster == 4)))) {
+			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4)))) {
 			next = CalcMapName(1, 1);
 		} else if (sv_loopepisode) {
 			next = CalcMapName(level.cluster, 1);
