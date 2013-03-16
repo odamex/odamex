@@ -2087,24 +2087,24 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 
 	// Spawn bullet puffs or blod spots,
 	// depending on target type.
-	if ((in->d.thing->flags & MF_NOBLOOD))
-		P_SpawnPuff (x, y, z);
-	else
+	bool spawnblood = !(in->d.thing->flags & MF_NOBLOOD);
+
+	// [SL] 2011-05-11 - In unlagged games, spawn blood at the target's current
+	// position, not at their reconciled position
+	if (shootthing->player && th->player)
 	{
-		// [SL] 2011-05-11 - In unlagged games, spawn blood at the target's current
-		// position, not at their reconciled position
-		if (shootthing->player && th->player)
-		{
-			fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
-			Unlag::getInstance().getReconciliationOffset(th->player->id, xoffs, yoffs, zoffs);
-			x += xoffs; y += yoffs; z += zoffs;
-		}
+		fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
+		Unlag::getInstance().getReconciliationOffset(th->player->id, xoffs, yoffs, zoffs);
+		x += xoffs; y += yoffs; z += zoffs;
 
 		if (P_AreTeammates(*shootthing->player, *th->player) && !sv_friendlyfire)
-			P_SpawnPuff(x, y, z);
-		else
-			P_SpawnBlood(x, y, z, la_damage);
+			spawnblood = false;
 	}
+
+	if (spawnblood)
+		P_SpawnBlood(x, y, z, la_damage);
+	else
+		P_SpawnPuff(x, y, z);
 
 	if (la_damage) {
 		// [RH] try and figure out means of death;
