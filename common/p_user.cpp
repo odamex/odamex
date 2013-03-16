@@ -339,42 +339,27 @@ void P_MovePlayer (player_t *player)
 		return;
 	}
 
-	if (co_zdoomphys)
+	if (cmd->ucmd.upmove == -32768)
 	{
-		if (cmd->ucmd.upmove &&
-			(player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY))
+		// Only land if in the air
+		if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
 		{
-			player->mo->momz = cmd->ucmd.upmove << 8;
+			player->mo->flags2 &= ~MF2_FLY;
+			player->mo->flags &= ~MF_NOGRAVITY;
 		}
 	}
-	else
+	else if (cmd->ucmd.upmove != 0)
 	{
-		if (cmd->ucmd.upmove == -32768)
-		{ // Only land if in the air
-			if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
-			{
-				player->mo->flags2 &= ~MF2_FLY;
-				player->mo->flags &= ~MF_NOGRAVITY;
-			}
-		}
-		else if (cmd->ucmd.upmove != 0)
+		if (player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY)
 		{
-			if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
-			{
-				player->mo->momz = cmd->ucmd.upmove << 8;
-			}
-			else if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
+			player->mo->momz = cmd->ucmd.upmove << 9;
+
+			if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
 			{
 				player->mo->flags2 |= MF2_FLY;
 				player->mo->flags |= MF_NOGRAVITY;
 				if (player->mo->momz <= -39*FRACUNIT)
-				{ // Stop falling scream
-					S_StopSound (player->mo, CHAN_VOICE);
-				}
-			}
-			else if (cmd->ucmd.upmove > 0)
-			{
-				//P_PlayerUseArtifact (player, arti_fly);
+					S_StopSound(player->mo, CHAN_VOICE);	// Stop falling scream
 			}
 		}
 	}
