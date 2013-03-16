@@ -87,7 +87,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	mobj->translation = translationtables + 256*p->id;
 
 	mobj->angle = ANG45 * (mthing->angle/45);
-	mobj->pitch = mobj->roll = 0;
+	mobj->pitch = 0;
 	mobj->player = p;
 	mobj->health = p->health;
 

@@ -2154,7 +2154,7 @@ void CL_SpawnPlayer()
 	// set color translations for player sprites
 	mobj->translation = translationtables + 256*playernum;
 	mobj->angle = angle;
-	mobj->pitch = mobj->roll = 0;
+	mobj->pitch = 0;
 	mobj->player = p;
 	mobj->health = p->health;
 	P_SetThingId(mobj, netid);
