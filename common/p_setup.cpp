@@ -1534,10 +1534,9 @@ void P_SetupLevel (char *lumpname, int position)
     {
 		for (i = 0 ; i < players.size() ; i++)
 		{
-			// [AM] On the server, we might need to preserve players inventories between maps.
 			SV_PreservePlayer(players[i]);
 
-			if (!players[i].keepinventory && players[i].ingame())
+			if (players[i].ingame())
 			{
 				// if deathmatch, randomly spawn the active players
 				// denis - this function checks for deathmatch internally

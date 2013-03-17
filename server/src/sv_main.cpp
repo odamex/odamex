@@ -2005,7 +2005,6 @@ void SV_ConnectClient (void)
 	players[n].fragcount	= 0;
 	players[n].killcount	= 0;
 	players[n].points		= 0;
-	players[n].keepinventory = false;
 
 	if(!step_mode) {
 		players[n].spectator	= true;
@@ -4886,42 +4885,46 @@ void SV_ExplodeMissile(AActor *mo)
 	}
 }
 
+//
 // SV_SendPlayerInfo
 //
 // Sends a player their current weapon, ammo, health, and armor
+//
+
 void SV_SendPlayerInfo(player_t &player)
 {
 	client_t *cl = &player.client;
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_playerinfo);
+	MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
 
 	for (int i = 0; i < NUMWEAPONS; i++)
-		MSG_WriteBool(&cl->reliablebuf, player.weaponowned[i]);
+		MSG_WriteBool (&cl->reliablebuf, player.weaponowned[i]);
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		MSG_WriteShort(&cl->reliablebuf, player.maxammo[i]);
-		MSG_WriteShort(&cl->reliablebuf, player.ammo[i]);
+		MSG_WriteShort (&cl->reliablebuf, player.maxammo[i]);
+		MSG_WriteShort (&cl->reliablebuf, player.ammo[i]);
 	}
 
-	MSG_WriteByte(&cl->reliablebuf, player.health);
-	MSG_WriteByte(&cl->reliablebuf, player.armorpoints);
-	MSG_WriteByte(&cl->reliablebuf, player.armortype);
-	MSG_WriteByte(&cl->reliablebuf, player.readyweapon);
-	MSG_WriteBool(&cl->reliablebuf, player.backpack);
-	MSG_WriteBool(&cl->reliablebuf, player.keepinventory);
+	MSG_WriteByte (&cl->reliablebuf, player.health);
+	MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
+	MSG_WriteByte (&cl->reliablebuf, player.armortype);
+	MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+	MSG_WriteByte (&cl->reliablebuf, player.backpack);
 }
 
-// Optionally preserve a player's loadout from level to level.
+//
+// SV_PreservePlayer
+//
 void SV_PreservePlayer(player_t &player)
 {
-	if (!validplayer(player))
+	if (!serverside || sv_gametype != GM_COOP || !validplayer(player) || !player.ingame())
 		return;
 
-	// [AM] Don't allow the player to keep his inventory if we're not
-	//      in coop or if we are advancing levels at an unexpected time.
-	if (sv_gametype == GM_COOP && !unnatural_level_progression)
-		player.keepinventory = true;
+	if(!unnatural_level_progression)
+		player.playerstate = PST_LIVE; // denis - carry weapons and keys over to next level
+
+	G_DoReborn(player);
 
 	SV_SendPlayerInfo(player);
 }

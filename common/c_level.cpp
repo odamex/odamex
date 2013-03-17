@@ -565,10 +565,9 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
 		if (!missingfiles.empty())
 			return false;
-		// [AM] If we're switching WAD files, force a pistol start.
-		unnatural_level_progression = true;
 	}
 
+	unnatural_level_progression = true;
 	if (mapname.length())
 		G_DeferedInitNew((char *)mapname.c_str());
 	else

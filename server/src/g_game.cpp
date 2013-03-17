@@ -549,39 +549,34 @@ void G_PlayerFinishLevel (player_t &player)
 void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 {
 	size_t i;
-	if (!p.keepinventory)
+	for (i = 0; i < NUMAMMO; i++)
 	{
-		for (i = 0; i < NUMAMMO; i++)
-		{
-			p.maxammo[i] = maxammo[i];
-			p.ammo[i] = 0;
-		}
-		for (i = 0; i < NUMWEAPONS; i++)
-			p.weaponowned[i] = false;
-
-		p.backpack = false;
-		p.health = deh.StartHealth;		// [RH] Used to be MAXHEALTH
-		p.armortype = 0;
-		p.armorpoints = 0;
-		p.readyweapon = p.pendingweapon = wp_pistol;
-		p.weaponowned[wp_fist] = true;
-		p.weaponowned[wp_pistol] = true;
-		p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
+		p.maxammo[i] = maxammo[i];
+		p.ammo[i] = 0;
 	}
-
+	for (i = 0; i < NUMWEAPONS; i++)
+		p.weaponowned[i] = false;
 	if (!sv_keepkeys)
 	{
 		for (i = 0; i < NUMCARDS; i++)
 			p.cards[i] = false;
 	}
-
 	for (i = 0; i < NUMPOWERS; i++)
 		p.powers[i] = false;
 	for (i = 0; i < NUMFLAGS; i++)
 		p.flags[i] = false;
+	p.backpack = false;
 
 	p.usedown = p.attackdown = true;	// don't do anything immediately
 	p.playerstate = PST_LIVE;
+	p.health = deh.StartHealth;		// [RH] Used to be MAXHEALTH
+	p.armortype = 0;
+	p.armorpoints = 0;
+	p.readyweapon = p.pendingweapon = wp_pistol;
+	p.weaponowned[wp_fist] = true;
+	p.weaponowned[wp_pistol] = true;
+	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
+
 	p.death_time = 0;
 	p.tic = 0;
 }

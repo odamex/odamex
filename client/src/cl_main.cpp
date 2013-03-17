@@ -2141,11 +2141,7 @@ void CL_SpawnPlayer()
 		p->mo->health = 0;
 	}
 
-	G_PlayerReborn(*p);
-	// [AM] If we're "reborn" as a spectator, don't touch the keepinventory
-	//      flag, but otherwise turn it off.
-	if (!p->spectator)
-		p->keepinventory = false;
+	G_PlayerReborn (*p);
 
 	mobj = new AActor (x, y, z, MT_PLAYER);
 	
@@ -2223,18 +2219,18 @@ void CL_PlayerInfo(void)
 {
 	player_t *p = &consoleplayer();
 
-	for (size_t j = 0; j < NUMWEAPONS; j++)
+	for(size_t j = 0; j < NUMWEAPONS; j++)
 		p->weaponowned[j] = MSG_ReadBool();
 
-	for (size_t j = 0; j < NUMAMMO; j++)
+	for(size_t j = 0; j < NUMAMMO; j++)
 	{
-		p->maxammo[j] = MSG_ReadShort();
-		p->ammo[j] = MSG_ReadShort();
+		p->maxammo[j] = MSG_ReadShort ();
+		p->ammo[j] = MSG_ReadShort ();
 	}
 
-	p->health = MSG_ReadByte();
-	p->armorpoints = MSG_ReadByte();
-	p->armortype = MSG_ReadByte();
+	p->health = MSG_ReadByte ();
+	p->armorpoints = MSG_ReadByte ();
+	p->armortype = MSG_ReadByte ();
 
 	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
 	if (newweapon >= NUMWEAPONS)	// bad weapon number, choose something else
@@ -2242,11 +2238,8 @@ void CL_PlayerInfo(void)
 
 	if (newweapon != p->readyweapon)
 		p->pendingweapon = newweapon;
-
+	
 	p->backpack = MSG_ReadBool();
-
-	// [AM] Determine if we should be keeping our inventory on next spawn.
-	p->keepinventory = MSG_ReadBool();
 }
 
 //
