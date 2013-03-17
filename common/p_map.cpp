@@ -47,6 +47,8 @@
 #include <math.h>
 #include <set>
 
+EXTERN_CVAR(sv_unblockplayers)
+
 fixed_t 		tmbbox[4];
 static AActor  *tmthing;
 static int 		tmflags;
@@ -203,7 +205,7 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 
 	StompAlwaysFrags = tmthing->player || (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
-	if (!(tmthing->player && tmthing->player->spectator))
+	if (!(tmthing->player && (tmthing->player->spectator || sv_unblockplayers)))
 	{
 		// stomp on any things contacted
 		xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
