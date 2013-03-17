@@ -149,6 +149,9 @@ EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_predictsectors)
 
+EXTERN_CVAR (mute_spectators)
+EXTERN_CVAR (mute_enemies)
+
 CVAR_FUNC_IMPL (cl_autoaim)
 {
 	if (var < 0)
@@ -394,6 +397,9 @@ void CL_QuitNetGame(void)
 	sv_allowjump = 1;
 	sv_allowexit = 1;
 	sv_allowredscreen = 1;
+
+	mute_spectators = 0.f;
+	mute_enemies = 0.f;
 
 	P_ClearAllNetIds();
 	players.clear();
@@ -1693,9 +1699,21 @@ void CL_Say()
 	const char* name;
 
 	if (!validplayer(player))
-		name = "???";
-	else
-		name = player.userinfo.netname;
+		return;
+
+	if (consoleplayer().id != player.id)
+	{
+		if (mute_spectators && player.spectator)
+			return;
+
+		if (mute_enemies && !player.spectator &&
+		    (sv_gametype == GM_DM ||
+		    ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+		     player.userinfo.team != consoleplayer().userinfo.team)))
+			return;
+	}
+
+	name = player.userinfo.netname;
 
 	switch (who)
 	{
