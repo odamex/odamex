@@ -1959,10 +1959,7 @@ bool M_Responder (event_t* ev)
 			break;
 
 		  default:
-			ch = toupper(ev->data3);	// [RH] Use user keymap
-			if (ch != 32)
-				if (ch-HU_FONTSTART < 0 || ch-HU_FONTSTART >= HU_FONTSIZE)
-					break;
+			ch = ev->data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
 				V_StringWidth(savegamestrings[saveSlot]) <
