@@ -562,12 +562,12 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 
 	if (Reboot)
 	{
+		unnatural_level_progression = true;
 		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
 		if (!missingfiles.empty())
 			return false;
 	}
 
-	unnatural_level_progression = true;
 	if (mapname.length())
 		G_DeferedInitNew((char *)mapname.c_str());
 	else
