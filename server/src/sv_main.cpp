@@ -976,6 +976,53 @@ void SV_SetupUserInfo (player_t &player)
 			new_netname = old_netname;
 	}
 
+	// Make sure that we're not duplicating any player name
+	player_t& other = nameplayer(new_netname.c_str());
+	if (validplayer(other))
+	{
+		// Give the player an enumerated name (Player2, Player3, etc.)
+		if (player.id != other.id)
+		{
+			std::string test_netname = std::string(new_netname);
+
+			for (int num = 2;num < MAXPLAYERS + 2;num++)
+			{
+				std::ostringstream buffer;
+				buffer << num;
+				std::string strnum = buffer.str();
+
+				// If the enumerated name would be greater than the maximum
+				// allowed netname, have the enumeration eat into the last few
+				// letters of their netname.
+				if (new_netname.length() + strnum.length() >= MAXPLAYERNAME)
+					test_netname = new_netname.substr(0, MAXPLAYERNAME - strnum.length()) + strnum;
+				else
+					test_netname = new_netname + strnum;
+
+				// Check to see if the enumerated name is taken.
+				player_t& test = nameplayer(test_netname.c_str());
+				if (!validplayer(test))
+					break;
+
+				// Check to see if player already has a given enumerated name.
+				// Prevents `cl_name Player` from changing their own name from
+				// Player2 to Player3.
+				if (player.id == test.id)
+					break;
+			}
+
+			new_netname = test_netname;
+		}
+		else
+		{
+			// Player is trying to be cute and change their name to an
+			// automatically enumerated name that they already have.  Prevents
+			// `cl_name Player2` from changing their own name from Player2 to
+			// Player22.
+			new_netname = old_netname;
+		}
+	}
+
 	strncpy(player.userinfo.netname, new_netname.c_str(), MAXPLAYERNAME + 1);
 	// Compare names and broadcast if different.
 	if (!old_netname.empty() && StdStringCompare(new_netname, old_netname, false))
