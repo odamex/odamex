@@ -2667,6 +2667,36 @@ void SVC_Say(player_t &player, const char* message)
 	}
 }
 
+/**
+ * Send a message to a specific player from a specific other player.
+ * 
+ * @param player  Sending player.
+ * @param dplayer Player to send to.
+ * @param message Message to send.
+ */
+void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
+{
+	if (strnicmp(message, "/me ", 4) == 0)
+		Printf(PRINT_CHAT, "<PRIVMSG> * %s (to %s) %s\n", player.userinfo.netname, dplayer.userinfo.netname, &message[4]);
+	else
+		Printf(PRINT_CHAT, "<PRIVMSG> %s (to %s): %s\n", player.userinfo.netname, dplayer.userinfo.netname, message);
+
+	MSG_WriteMarker(&(dplayer.client.reliablebuf), svc_say);
+	MSG_WriteByte(&(dplayer.client.reliablebuf), 1);
+	MSG_WriteByte(&(dplayer.client.reliablebuf), player.id);
+	MSG_WriteString(&(dplayer.client.reliablebuf), message);
+
+	// [AM] Send a duplicate message to the sender, so he knows the message
+	//      went through.
+	if (player.id != dplayer.id)
+	{
+		MSG_WriteMarker(&(player.client.reliablebuf), svc_say);
+		MSG_WriteByte(&(player.client.reliablebuf), 1);
+		MSG_WriteByte(&(player.client.reliablebuf), player.id);
+		MSG_WriteString(&(player.client.reliablebuf), message);
+	}
+}
+
 //
 // SV_Say
 // Show a chat string and send it to others clients.
@@ -2718,6 +2748,46 @@ void SV_Say(player_t &player)
 		// Invalid destination
 		break;
 	}
+}
+
+//
+// SV_PrivMsg
+// Show a chat string and show it to a single other client.
+//
+void SV_PrivMsg(player_t &player)
+{
+	player_t& dplayer = idplayer(MSG_ReadByte());
+	const char* s = MSG_ReadString();
+
+	if (!validplayer(dplayer))
+		return;
+
+	if (!strlen(s) || strlen(s) > MAX_CHATSTR_LEN)
+		return;
+
+	// In competitive gamemodes, don't allow spectators to message players.
+	if (sv_gametype != GM_COOP && player.spectator && !dplayer.spectator)
+		return;
+
+	// Flood protection
+	if (player.LastMessage.Time)
+	{
+		QWORD Difference = (I_GetTime() - player.LastMessage.Time);
+		float Delay = (float)(sv_flooddelay * TICRATE);
+
+		if (Difference <= Delay)
+			return;
+
+		player.LastMessage.Time = 0;
+	}
+
+	if (!player.LastMessage.Time)
+	{
+		player.LastMessage.Time = I_GetTime();
+		player.LastMessage.Message = s;
+	}
+
+	SVC_PrivMsg(player, dplayer, s);
 }
 
 //
@@ -3981,6 +4051,10 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_say:
 			SV_Say(player);
+			break;
+
+		case clc_privmsg:
+			SV_PrivMsg(player);
 			break;
 
 		case clc_move:

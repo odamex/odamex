@@ -900,7 +900,8 @@ void InitNetMessageFormats()
       MSG(clc_getplayerinfo,      "x"),
       MSG(clc_launcher_challenge, "x"),
       MSG(clc_challenge,          "x"),
-      MSG(clc_spy,                "x")
+      MSG(clc_spy,                "x"),
+      MSG(clc_privmsg,            "x")
    };
 
    msg_info_t svc_messages[] = {

@@ -363,6 +363,20 @@ static void ShoveChatStr (std::string str, byte who)
 	MSG_WriteString (&net_buffer, str.c_str());
 }
 
+static void ShovePrivMsg(byte pid, std::string str)
+{
+	// Do not send this chat message if the chat string is empty
+	if (str.length() == 0)
+		return;
+
+	if (str.length() > MAX_CHATSTR_LEN)
+		str.resize(MAX_CHATSTR_LEN);
+
+	MSG_WriteMarker(&net_buffer, clc_privmsg);
+	MSG_WriteByte(&net_buffer, pid);
+	MSG_WriteString(&net_buffer, str.c_str());
+}
+
 BEGIN_COMMAND (messagemode)
 {
 	if(!connected)
@@ -410,6 +424,23 @@ BEGIN_COMMAND (say_team)
 	}
 }
 END_COMMAND (say_team)
+
+BEGIN_COMMAND (say_to)
+{
+	if (argc > 2)
+	{
+		player_t &player = nameplayer(argv[1]);
+		if (!validplayer(player))
+		{
+			Printf(PRINT_HIGH, "%s isn't the name of anybody on the server.\n", argv[1]);
+			return;
+		}
+
+		std::string chat = C_ArgCombine(argc - 2, (const char **)(argv + 2));
+		ShovePrivMsg(player.id, chat);
+	}
+}
+END_COMMAND (say_to)
 
 static bool STACK_ARGS compare_player_frags (const player_t *arg1, const player_t *arg2)
 {

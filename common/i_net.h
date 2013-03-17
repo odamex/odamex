@@ -182,6 +182,7 @@ enum clc_t
 	clc_getplayerinfo,
 	clc_ready,				// [AM] Toggle ready state.
 	clc_spy,				// [SL] Tell server to send info about this player
+	clc_privmsg,			// [AM] Targeted chat to a specific player.
 
 	// for when launcher packets go astray
 	clc_launcher_challenge = 212,

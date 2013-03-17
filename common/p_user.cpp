@@ -83,6 +83,34 @@ player_t &idplayer(byte id)
 	return nullplayer;
 }
 
+/**
+ * Find player by netname.  Note that this search is case-insensitive.
+ * 
+ * @param  netname Name of player to look for.
+ * @return         Player reference of found player, or nullplayer.
+ */
+player_t &nameplayer(const char* netname)
+{
+	char uppername[MAXPLAYERNAME + 1];
+
+	for (int i = 0;i <= MAXPLAYERNAME;i++)
+		uppername[i] = toupper(netname[i]);
+
+	std::vector<player_t>::iterator it;
+	for (it = players.begin(); it != players.end(); ++it)
+	{
+		for (int i = 0;i <= MAXPLAYERNAME;i++)
+		{
+			if (uppername[i] != toupper(it->userinfo.netname[i]))
+				break;
+			if (uppername[i] == '\0')
+				return *it;
+		}
+	}
+
+	return nullplayer;
+}
+
 bool validplayer(player_t &ref)
 {
 	if (&ref == &nullplayer)
