@@ -152,5 +152,10 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	}
 }
 
+/**
+ * Stub
+ */
+void P_ShowSpawns(mapthing2_t* mthing) { }
+
 VERSION_CONTROL (sv_mobj_cpp, "$Id: sv_mobj.cpp 1832 2010-09-01 23:59:33Z mike $")
 
