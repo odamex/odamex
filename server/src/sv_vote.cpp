@@ -522,7 +522,9 @@ public:
 		// When in warmup mode, we would rather not catch players off guard.
 		warmup.reset();
 
-		G_DeferedFullReset();
+		// Do a countdown-led restart.
+		warmup.restart();
+
 		return true;
 	}
 };

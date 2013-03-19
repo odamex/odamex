@@ -229,9 +229,9 @@ CVAR (sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
 // Warmup mode
 CVAR (sv_warmup, "0", "Enable a 'warmup mode' before the match starts.",
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
-CVAR (sv_warmup_autostart, "1.0", "Ratio of players needed for warmup to automatically end.",
+CVAR (sv_warmup_autostart, "1.0", "Ratio of players needed for warmup to automatically start the game.",
       CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-CVAR (sv_warmup_countdown, "5", "Number of seconds the countdown should wait before the game starts.",
+CVAR (sv_countdown, "5", "Number of seconds to wait before starting the game from warmup or restarting the game.",
       CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 
 // Experimental settings (all categories)

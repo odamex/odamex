@@ -34,7 +34,7 @@
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_warmup_autostart)
-EXTERN_CVAR(sv_warmup_countdown)
+EXTERN_CVAR(sv_countdown)
 
 // Store Warmup state.
 Warmup warmup;
@@ -45,7 +45,7 @@ void SV_SendWarmupState(player_t &player, Warmup::status_t status, short count =
 	client_t* cl = &player.client;
 	MSG_WriteMarker(&cl->reliablebuf, svc_warmupstate);
 	MSG_WriteByte(&cl->reliablebuf, static_cast<byte>(status));
-	if (status == Warmup::COUNTDOWN)
+	if (status == Warmup::COUNTDOWN || status == Warmup::FORCE_COUNTDOWN)
 		MSG_WriteShort(&cl->reliablebuf, count);
 }
 
@@ -67,10 +67,10 @@ void Warmup::set_status(Warmup::status_t new_status)
 	this->status = new_status;
 
 	// [AM] If we switch to countdown, set the correct time.
-	if (this->status == Warmup::COUNTDOWN)
+	if (this->status == Warmup::COUNTDOWN || this->status == Warmup::FORCE_COUNTDOWN)
 	{
-		this->time_begin = level.time + (sv_warmup_countdown.asInt() * TICRATE);
-		SV_BroadcastWarmupState(new_status, (short)sv_warmup_countdown.asInt());
+		this->time_begin = level.time + (sv_countdown.asInt() * TICRATE);
+		SV_BroadcastWarmupState(new_status, (short)sv_countdown.asInt());
 	}
 	else
 		SV_BroadcastWarmupState(new_status);
@@ -101,7 +101,8 @@ void Warmup::reset()
 // Don't allow a players score to change if the server is in the middle of warmup.
 bool Warmup::checkscorechange()
 {
-	if (this->status == Warmup::WARMUP || this->status == Warmup::COUNTDOWN)
+	if (this->status == Warmup::WARMUP || this->status == Warmup::COUNTDOWN ||
+	    this->status == Warmup::FORCE_COUNTDOWN)
 		return false;
 	return true;
 }
@@ -109,7 +110,8 @@ bool Warmup::checkscorechange()
 // Don't allow the timeleft to advance if the server is in the middle of warmup.
 bool Warmup::checktimeleftadvance()
 {
-	if (this->status == Warmup::WARMUP || this->status == Warmup::COUNTDOWN)
+	if (this->status == Warmup::WARMUP || this->status == Warmup::COUNTDOWN ||
+	    this->status == Warmup::FORCE_COUNTDOWN)
 		return false;
 	return true;
 }
@@ -118,16 +120,15 @@ bool Warmup::checktimeleftadvance()
 // of a countdown.
 bool Warmup::checkfireweapon()
 {
-	if (this->status == Warmup::COUNTDOWN)
+	if (this->status == Warmup::COUNTDOWN || this->status == Warmup::FORCE_COUNTDOWN)
 		return false;
 	return true;
 }
 
-// Check to see if we should allow players to check their ready state.
+// Check to see if we should allow players to toggle their ready state.
 bool Warmup::checkreadytoggle()
 {
-	// If we're ingame, ready toggling is useless spam.
-	if (this->status == Warmup::INGAME)
+	if (this->status == Warmup::INGAME || this->status == Warmup::FORCE_COUNTDOWN)
 		return false;
 	return true;
 }
@@ -140,6 +141,10 @@ void Warmup::readytoggle()
 {
 	// If warmup mode is disabled, don't bother.
 	if (this->status == Warmup::DISABLED)
+		return;
+
+	// If we're not actually in a countdown we can control, don't bother.
+	if (this->status == Warmup::FORCE_COUNTDOWN)
 		return;
 
 	// Rerun our checks to make sure we didn't skip them earlier.
@@ -180,6 +185,13 @@ void Warmup::readytoggle()
 	return;
 }
 
+// We want to restart the map, so initialize a countdown that we
+// can't bail out of.
+void Warmup::restart()
+{
+	this->set_status(Warmup::FORCE_COUNTDOWN);
+}
+
 // Force the start of the game.
 void Warmup::forcestart()
 {
@@ -198,7 +210,7 @@ void Warmup::tic()
 		this->set_status(Warmup::COUNTDOWN);
 
 	// If we're not advancing the countdown, we don't care.
-	if (this->status != Warmup::COUNTDOWN)
+	if (!(this->status == Warmup::COUNTDOWN || this->status == Warmup::FORCE_COUNTDOWN))
 		return;
 
 	// If we haven't reached the level tic that we begin the map on,
@@ -213,7 +225,11 @@ void Warmup::tic()
 		return;
 	}
 
-	this->set_status(Warmup::INGAME);
+	if (sv_warmup)
+		this->set_status(Warmup::INGAME);
+	else
+		this->set_status(Warmup::DISABLED);
+
 	G_DeferedFullReset();
 	SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");
 }

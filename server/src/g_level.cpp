@@ -272,7 +272,7 @@ BEGIN_COMMAND (forcenextmap) {
 } END_COMMAND (forcenextmap)
 
 BEGIN_COMMAND (restart) {
-	G_RestartMap();
+	warmup.restart();
 } END_COMMAND (restart)
 
 void SV_ClientFullUpdate(player_t &pl);

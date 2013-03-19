@@ -3265,7 +3265,8 @@ void CL_ReadyState() {
 void CL_WarmupState()
 {
 	warmup.set_client_status(static_cast<Warmup::status_t>(MSG_ReadByte()));
-	if (warmup.get_status() == Warmup::COUNTDOWN)
+	if (warmup.get_status() == Warmup::COUNTDOWN ||
+	    warmup.get_status() == Warmup::FORCE_COUNTDOWN)
 	{
 		// Read an extra countdown number off the wire
 		short count = MSG_ReadShort();
@@ -3273,9 +3274,9 @@ void CL_WarmupState()
 		buffer << "Match begins in " << count << "...";
 		C_GMidPrint(buffer.str().c_str(), CR_GREEN, 0);
 	}
-	else if (warmup.get_status() == Warmup::INGAME)
+	else
 	{
-		// Clear the midprint when the game starts
+		// Clear the midprint in other cases.
 		C_GMidPrint("", CR_GREY, 0);
 	}
 }
