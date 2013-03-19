@@ -228,6 +228,7 @@ CVAR (hud_timer, "1", "Show the HUD timer", CVARTYPE_BOOL,
       CVAR_ARCHIVE)
 CVAR (hud_transparency, "0.5", "HUD transparency",	CVARTYPE_FLOAT,
       CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (hud_heldflag, "1", "Show the held flag border", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                       // A

@@ -103,6 +103,7 @@ EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_scalescoreboard)
 EXTERN_CVAR (hud_timer)
+EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (r_showendoom)
@@ -806,6 +807,7 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },	
 	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},  {NULL} },
 	{ discrete, "HUD Timer Visibility",     {&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
+	{ discrete, "Held Flag Border",         {&hud_heldflag},        {2.0}, {0.0},   {0.0},  {OnOff} },
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
 	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Crosshair health",			{&hud_crosshairhealth},	{2.0}, {0.0},	{0.0},	{OnOff} },

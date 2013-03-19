@@ -51,9 +51,10 @@ static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 	{MT_RFLG, MT_RDWN, MT_RCAR}
 };
 
-EXTERN_CVAR		(screenblocks)
-EXTERN_CVAR		(st_scale)
-EXTERN_CVAR		(hud_gamemsgtype)
+EXTERN_CVAR (screenblocks)
+EXTERN_CVAR (st_scale)
+EXTERN_CVAR (hud_gamemsgtype)
+EXTERN_CVAR (hud_heldflag)
 
 //
 // CTF_Connect
@@ -386,6 +387,9 @@ void CTF_DrawHud (void)
 			hasflags[i] = true;
 		}
 	}
+
+	if (!hud_heldflag)
+		return;
 
 	if (hasflag) {
 		palette_t *pal = GetDefaultPalette();
