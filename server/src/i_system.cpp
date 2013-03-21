@@ -530,6 +530,8 @@ void STACK_ARGS I_Quit (void)
     SV_SendDisconnectSignal();
 
     CloseNetwork ();
+
+	DConsoleAlias::DestroyAll();
 }
 
 

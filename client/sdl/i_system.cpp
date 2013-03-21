@@ -626,6 +626,8 @@ void STACK_ARGS I_Quit (void)
 
     CloseNetwork();
 
+	DConsoleAlias::DestroyAll();
+
 	try
 	{
 		if (r_showendoom && !Args.CheckParm ("-novideo"))
