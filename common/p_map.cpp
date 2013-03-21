@@ -121,10 +121,15 @@ BOOL PIT_StompThing (AActor *thing)
 	if (!(thing->flags & MF_SHOOTABLE))
 		return true;
 
+	// Spectators shouldn't stomp anybody, and cannot be stomped.
 	if (thing->player && thing->player->spectator)
 		return true;
 
 	if (tmthing->player && tmthing->player->spectator)
+		return true;
+
+	// Unblocked players shouldn't telefrag friendlies.  Thanks Amateur Spammer!
+	if (tmthing->player && thing->player && sv_unblockplayers)
 		return true;
 
 	// don't clip against self
@@ -205,19 +210,16 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 
 	StompAlwaysFrags = tmthing->player || (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
-	if (!(tmthing->player && (tmthing->player->spectator || sv_unblockplayers)))
-	{
-		// stomp on any things contacted
-		xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-		xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-		yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-		yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	// stomp on any things contacted
+	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
+	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
+	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
+	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 
-		for (bx=xl ; bx<=xh ; bx++)
-			for (by=yl ; by<=yh ; by++)
-				if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
-					return false;
-	}
+	for (bx=xl ; bx<=xh ; bx++)
+		for (by=yl ; by<=yh ; by++)
+			if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
+				return false;
 
 	// the move is ok,
 	// so link the thing into its new position
