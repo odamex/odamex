@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
 		MessageBox(NULL, error.GetMsg().c_str(), "Odamex Error", MB_OK);
 #endif
 		call_terms();
-		exit (-1);
+		exit(EXIT_FAILURE);
 	}
 #ifndef _DEBUG
 	catch (...)

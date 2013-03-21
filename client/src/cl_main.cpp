@@ -952,7 +952,7 @@ void STACK_ARGS call_terms (void);
 void CL_QuitCommand()
 {
 	call_terms();
-	exit (0);
+	exit(EXIT_SUCCESS);
 }
 
 BEGIN_COMMAND (quit)

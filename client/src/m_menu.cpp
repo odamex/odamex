@@ -1246,7 +1246,7 @@ void M_QuitResponse(int ch)
 
     call_terms();
 
-	exit (0);
+	exit(EXIT_SUCCESS);
 }
 
 void M_QuitDOOM (int choice)

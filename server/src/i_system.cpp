@@ -571,7 +571,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 
         call_terms();
 
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 }
 

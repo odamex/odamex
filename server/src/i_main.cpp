@@ -164,7 +164,7 @@ int __cdecl main(int argc, char *argv[])
             MessageBox(NULL, error.GetMsg().c_str(), "Odasrv Error", MB_OK);
         }
 
-		exit (-1);
+		exit(EXIT_FAILURE);
     }
     catch (...)
     {
@@ -206,7 +206,7 @@ void daemon_init(void)
     if ((pid = fork()) != 0)
     {
     	call_terms();
-    	exit(0);
+    	exit(EXIT_SUCCESS);
     }
 
 	const char *forkargs = Args.CheckValue("-fork");
@@ -283,7 +283,7 @@ int main (int argc, char **argv)
         }
 
 	call_terms();
-	exit (-1);
+	exit(EXIT_FAILURE);
     }
     catch (...)
     {
