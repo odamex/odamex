@@ -625,7 +625,11 @@ BEGIN_COMMAND(addban)
 		reason = JoinStrings(arguments, " ");
 	}
 
-	banlist.add(address, tim, name, reason);
+	if (!banlist.add(address, tim, name, reason))
+	{
+		Printf(PRINT_HIGH, "addban: invalid address or range.\n");
+		return;
+	}
 	Printf(PRINT_HIGH, "addban: ban added.\n");
 
 	// If we have a banfile, save the banlist.
