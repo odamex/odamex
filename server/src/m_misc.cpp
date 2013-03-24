@@ -148,21 +148,25 @@ void M_LoadDefaults(void)
 // JSON Utility Functions (based on those from EECS)
 
 // Reads a file in JSON format
-bool M_ReadJSON(Json::Value &json, const char *filename) {
-	byte *buffer = NULL;
+bool M_ReadJSON(Json::Value &json, const char* filename) {
+	byte* buffer = NULL;
 	std::string data;
 	Json::Reader reader;
+	QWORD length;
 
 	if (!(M_FileExists(filename))) {
 		return false;
 	}
 
-	if (!M_ReadFile(filename, &buffer)) {
+	length = M_ReadFile(filename, &buffer);
+	if (!length) {
 		return false;
 	}
-	data = (char *)buffer;
 
-	if (!reader.parse(data, json)) {
+	const char* start = reinterpret_cast<const char*>(buffer);
+	const char* end = reinterpret_cast<const char*>(&buffer[length]);
+
+	if (!reader.parse(start, end, json)) {
 		Printf(PRINT_HIGH,"M_ReadJSONFromFile: Error parsing JSON: %s.\n",
 				reader.getFormattedErrorMessages().c_str());
 		return false;
