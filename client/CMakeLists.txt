@@ -42,13 +42,34 @@ else()
   message(WARNING "SDL_mixer not found, client target not generated.")
 endif()
 
-# Portmidi configuration
+# PortMidi configuration
 find_package(PortMidi)
 if(PORTMIDI_FOUND)
   include_directories(${PORTMIDI_INCLUDE_DIR})
   add_definitions(-DPORTMIDI)
 else()
-  message(WARNING "PortMidi not found, client will not be built with PortMidi support.")
+  if(WIN32)
+    # Create a static library and link against it
+    include_directories(
+      ../portmidi/pm_common/
+      ../portmidi/pm_win/
+      ../portmidi/porttime/
+    )
+    add_definitions(-DPORTMIDI)
+    add_library(portmidi STATIC
+      ../portmidi/pm_common/pmutil.c
+      ../portmidi/pm_common/portmidi.c
+      ../portmidi/pm_win/pmwin.c
+      ../portmidi/pm_win/pmwinmm.c
+      ../portmidi/porttime/ptwinmm.c
+    )
+    set(PORTMIDI_FOUND "YES")
+    set(PORTMIDI_LIBRARY "portmidi")
+    set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
+    message(STATUS "PortMidi will be statically linked.")
+  else()
+    message(WARNING "PortMidi not found, client will not be built with PortMidi support.")
+  endif()
 endif()
 
 # Find Mac frameworks
