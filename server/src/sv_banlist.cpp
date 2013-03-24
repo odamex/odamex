@@ -180,6 +180,11 @@ std::string IPRange::string()
 
 //// Banlist ////
 
+size_t Banlist::size()
+{
+	return this->banlist.size();
+}
+
 bool Banlist::add(const std::string &address, const time_t expire,
                   const std::string &name, const std::string &reason)
 {
@@ -474,34 +479,49 @@ bool Banlist::json(Json::Value &json_bans)
 // Replace the current banlist with the contents of a JSON array.
 bool Banlist::json_replace(const Json::Value &json_bans)
 {
-	this->clear();
-
 	tm tmp = {0};
 
-	for (size_t i = 0; i < json_bans.size(); i++)
+	// Must be an array or null root node
+	if (!(json_bans.isArray() || json_bans.isNull()))
+		return false;
+
+	this->clear();
+
+	// No bans to parse?
+	if (json_bans.isNull() || json_bans.empty())
+		return true;
+
+	Json::ValueConstIterator it;
+	for (it = json_bans.begin(); it != json_bans.end(); ++it)
 	{
 		Ban ban;
-		const Json::ArrayIndex index = Json::ArrayIndex(i);
+		Json::Value value;
 
-		if (json_bans[index]["range"] != 0)
+		// Range
+		value = (*it).get("range", Json::Value::null);
+		if (value.isNull())
+			continue;
+		else
+			ban.range.set((*it).get("range", false).asString());
+
+		// Expire time
+		value = (*it).get("expire", Json::Value::null);
+		if (!value.isNull())
 		{
-			ban.range.set(json_bans[index]["range"].asString());
-		}
-		if (json_bans[index]["expire"] != 0)
-		{
-			if (StrParseISOTime(json_bans[index]["expire"].asString(), &tmp))
-			{
+			if (StrParseISOTime(value.asString(), &tmp))
 				ban.expire = timegm(&tmp);
-			}
 		}
-		if (json_bans[index]["name"] != 0)
-		{
-			ban.name = json_bans[index]["name"].asString();
-		}
-		if (json_bans[index]["reason"] != 0)
-		{
-			ban.reason = json_bans[index]["reason"].asString();
-		}
+
+		// Name
+		value = (*it).get("name", Json::Value::null);
+		if (!value.isNull())
+			ban.name = value.asString();
+
+		// Reason
+		value = (*it).get("reason", Json::Value::null);
+		if (!value.isNull())
+			ban.reason = value.asString();
+
 		this->banlist.push_back(ban);
 	}
 
@@ -878,8 +898,19 @@ BEGIN_COMMAND(loadbanlist)
 		Printf(PRINT_HIGH, "loadbanlist: could not load banlist.\n");
 		return;
 	}
-	banlist.json_replace(json_bans);
-	Printf(PRINT_HIGH, "loadbanlist: loaded %d bans from %s.\n", json_bans.size(), banfile.c_str());
+	if (!banlist.json_replace(json_bans))
+	{
+		Printf(PRINT_HIGH, "loadbanlist: malformed banlist file, aborted.\n");
+		return;
+	}
+
+	size_t bansize = banlist.size();
+	size_t jsonsize = json_bans.size();
+
+	if (bansize == jsonsize)
+		Printf(PRINT_HIGH, "loadbanlist: loaded %d bans from %s.\n", bansize, banfile.c_str());
+	else
+		Printf(PRINT_HIGH, "loadbanlist: loaded %d bans and skipped %d invalid entries from %s.", bansize, jsonsize - bansize, banfile.c_str());
 }
 END_COMMAND(loadbanlist)
 
@@ -950,8 +981,19 @@ void SV_InitBanlist()
 		}
 		return;
 	}
-	banlist.json_replace(json_bans);
-	Printf(PRINT_HIGH, "SV_InitBanlist: Loaded %d bans.\n", json_bans.size());
+	if (!banlist.json_replace(json_bans))
+	{
+		Printf(PRINT_HIGH, "SV_InitBanlist: Detected malformed banlist file, ignored.\n");
+		return;
+	}
+
+	size_t bansize = banlist.size();
+	size_t jsonsize = json_bans.size();
+
+	if (bansize == jsonsize)
+		Printf(PRINT_HIGH, "SV_InitBanlist: Loaded %d bans from %s.\n", bansize, banfile);
+	else
+		Printf(PRINT_HIGH, "SV_InitBanlist: Loaded %d bans and skipped %d invalid entries from %s.", bansize, jsonsize - bansize, banfile);
 }
 
 // Check to see if a client is on the banlist, and kick them out of the server
@@ -1046,5 +1088,9 @@ void SV_BanlistTics()
 		Printf(PRINT_HIGH, "sv_banfile_reload: could not load banlist.\n");
 		return;
 	}
-	banlist.json_replace(json_bans);
+	if (!banlist.json_replace(json_bans))
+	{
+		Printf(PRINT_HIGH, "sv_banfile_reload: malformed banlist file, ignored.\n");
+		return;
+	}
 }

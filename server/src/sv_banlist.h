@@ -70,6 +70,7 @@ typedef std::vector<exceptionlist_result_t> exceptionlist_results_t;
 class Banlist
 {
 public:
+	size_t size();
 	bool add(const std::string &address, const time_t expire = 0,
 	         const std::string &name = std::string(),
 	         const std::string &reason = std::string());
