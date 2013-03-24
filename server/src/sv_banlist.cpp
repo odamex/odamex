@@ -443,13 +443,6 @@ void Banlist::clear_exceptions()
 // Fills a JSON array with bans.
 bool Banlist::json(Json::Value &json_bans)
 {
-	// If there are no bans, we don't want to bother any potential
-	// writeout functions.
-	if (banlist.empty())
-	{
-		return false;
-	}
-
 	std::string expire;
 	tm* tmp;
 
@@ -860,7 +853,7 @@ BEGIN_COMMAND(savebanlist)
 		banfile = sv_banfile.cstring();
 
 	Json::Value json_bans(Json::arrayValue);
-	if (M_WriteJSON(banfile.c_str(), json_bans, true))
+	if (banlist.json(json_bans) && M_WriteJSON(banfile.c_str(), json_bans, true))
 		Printf(PRINT_HIGH, "savebanlist: banlist saved to %s.\n", banfile.c_str());
 	else
 		Printf(PRINT_HIGH, "savebanlist: could not save banlist.\n");
