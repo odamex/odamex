@@ -148,27 +148,26 @@ void M_LoadDefaults(void)
 // JSON Utility Functions (based on those from EECS)
 
 // Reads a file in JSON format
-bool M_ReadJSON(Json::Value &json, const char* filename) {
+bool M_ReadJSON(Json::Value &json, const char* filename){
 	byte* buffer = NULL;
 	std::string data;
 	Json::Reader reader;
 	QWORD length;
 
-	if (!(M_FileExists(filename))) {
+	if (!(M_FileExists(filename)))
 		return false;
-	}
 
 	length = M_ReadFile(filename, &buffer);
-	if (!length) {
+	if (!length)
 		return false;
-	}
 
 	const char* start = reinterpret_cast<const char*>(buffer);
 	const char* end = reinterpret_cast<const char*>(&buffer[length]);
 
-	if (!reader.parse(start, end, json)) {
+	if (!reader.parse(start, end, json))
+	{
 		Printf(PRINT_HIGH,"M_ReadJSONFromFile: Error parsing JSON: %s.\n",
-				reader.getFormattedErrorMessages().c_str());
+		       reader.getFormattedErrorMessages().c_str());
 		return false;
 	}
 
@@ -177,22 +176,27 @@ bool M_ReadJSON(Json::Value &json, const char* filename) {
 
 // Writes a file in JSON format.  Third param is true if the output
 // should be pretty-printed.
-bool M_WriteJSON(const char *filename, Json::Value &value, bool styled) {
+bool M_WriteJSON(const char* filename, Json::Value &value, bool styled)
+{
 	std::ofstream out_file;
 	Json::FastWriter fast_writer;
 	Json::StyledWriter styled_writer;
 
 	out_file.open(filename);
 
-	if (styled) {
+	if (styled)
+	{
 		out_file << styled_writer.write(value);
-	} else {
+	}
+	else
+	{
 		out_file << fast_writer.write(value);
 	}
 
 	out_file.close();
 
-	if (out_file.fail()) {
+	if (out_file.fail())
+	{
 		return false;
 	}
 	return true;
