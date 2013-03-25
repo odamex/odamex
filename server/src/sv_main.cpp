@@ -3481,7 +3481,8 @@ void SV_GetPlayerCmd(player_t &player)
 
 		if (netcmd.getTic() > cl->lastclientcmdtic && gamestate == GS_LEVEL)
 		{
-			player.cmdqueue.push(netcmd);
+			if (!player.spectator)
+				player.cmdqueue.push(netcmd);
 			cl->lastclientcmdtic = netcmd.getTic();
 			cl->lastcmdtic = gametic;
 		}
