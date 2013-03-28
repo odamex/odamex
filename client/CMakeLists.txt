@@ -3,11 +3,6 @@ set(COMMON_DIR ../common)
 file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
 file(GLOB COMMON_SOURCES ${COMMON_DIR}/*.cpp)
 
-# Textscreen
-set(TEXTSCREEN_DIR ../textscreen)
-file(GLOB TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/*.h)
-file(GLOB TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/*.c)
-
 # Client
 set(CLIENT_DIR sdl src)
 file(GLOB CLIENT_HEADERS sdl/*.h src/*.h)
@@ -24,7 +19,17 @@ define_platform()
 
 # Client definitions
 add_definitions(-DNOASM)
-include_directories(${COMMON_DIR} ${TEXTSCREEN_DIR} ${CLIENT_DIR})
+include_directories(${COMMON_DIR} ${CLIENT_DIR})
+
+# Textscreen
+set(TEXTSCREEN_LIBRARY "textscreen")
+set(TEXTSCREEN_DIR ../textscreen)
+file(GLOB TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/*.h)
+file(GLOB TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/*.c)
+
+include_directories(${TEXTSCREEN_DIR})
+add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
+message(STATUS "Textscreen will be statically linked.")
 
 # SDL configuration
 find_package(SDL)
@@ -85,13 +90,16 @@ endif()
 if(SDL_FOUND AND SDLMIXER_FOUND)
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${COMMON_SOURCES} ${COMMON_HEADERS}
-    ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS}
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
     ${CLIENT_MAC_OBJC_SOURCES})
-  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY})
+  target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
+  target_link_libraries(odamex ${SDL_LIBRARY})
+  target_link_libraries(odamex ${SDLMIXER_LIBRARY})
+
   if(PORTMIDI_FOUND)
     target_link_libraries(odamex ${PORTMIDI_LIBRARIES})
   endif()
+
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 Shlwapi)
   elseif(APPLE)

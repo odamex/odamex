@@ -28,16 +28,27 @@ if(WIN32 AND NOT MSVC)
 endif()
 include_directories(${JSONCPP_DIR} ${COMMON_DIR} ${SERVER_DIR} ${SERVER_WIN32_DIR})
 
-# Server target
-#if(CURL_FOUND)
-  add_executable(odasrv
-    ${JSONCPP_SOURCE} ${JSONCPP_HEADERS}
-    ${COMMON_SOURCES} ${COMMON_HEADERS}
-    ${SERVER_SOURCES} ${SERVER_HEADERS}
-    ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
-  if(WIN32)
-    target_link_libraries(odasrv winmm wsock32)
-  elseif(SOLARIS)
-    target_link_libraries(odasrv socket nsl)
-  endif()
-#endif()
+# MiniUPnP
+find_package(MiniUPnPc)
+if(MINIUPNPC_FOUND)
+  add_definitions(-DODA_HAVE_MINIUPNP)
+  include_directories(${MINIUPNPC_INCLUDE_DIRS})
+else()
+  message(WARNING "MiniUPnPc not found, server will not be built with MiniUPnPc support.")
+endif()
+
+add_executable(odasrv
+  ${JSONCPP_SOURCE} ${JSONCPP_HEADERS}
+  ${COMMON_SOURCES} ${COMMON_HEADERS}
+  ${SERVER_SOURCES} ${SERVER_HEADERS}
+  ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
+
+if(MINIUPNPC_FOUND)
+  target_link_libraries(odasrv ${MINIUPNPC_LIBRARIES})
+endif()
+
+if(WIN32)
+  target_link_libraries(odasrv winmm wsock32)
+elseif(SOLARIS)
+  target_link_libraries(odasrv socket nsl)
+endif()
