@@ -560,7 +560,7 @@ void Unlag::setRoundtripDelay(byte player_id, byte svgametic)
 		return;
 
 	size_t maxdelay = TICRATE * sv_maxunlagtime;
-	if (maxdelay < 0 || maxdelay > Unlag::MAX_HISTORY_TICS)
+	if (maxdelay > Unlag::MAX_HISTORY_TICS)
 		maxdelay = Unlag::MAX_HISTORY_TICS;
 
 	size_t delay = ((gametic & 0xFF) + 256 - svgametic) & 0xFF;
