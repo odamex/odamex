@@ -18,6 +18,13 @@ endif()
 if(NOT MSVC)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
   set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+
+  set(SANITIZE_ADDRESS "No" CACHE STRING
+    "Turn on Address Sanitizer in Debug builds, requires GCC >= 4.8 or Clang >= 3.1")
+  set_property(CACHE SANITIZE_ADDRESS PROPERTY STRINGS Yes No)
+  if(SANITIZE_ADDRESS)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+  endif()
 endif()
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES SunOS )
