@@ -383,7 +383,7 @@ player_t		&consoleplayer();
 player_t		&displayplayer();
 player_t		&listenplayer();
 player_t		&idplayer(byte id);
-player_t		&nameplayer(std::string netname);
+player_t		&nameplayer(const std::string &netname);
 bool			validplayer(player_t &ref);
 
 extern byte consoleplayer_id;

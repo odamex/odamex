@@ -90,7 +90,7 @@ player_t &idplayer(byte id)
  * @param  netname Name of player to look for.
  * @return         Player reference of found player, or nullplayer.
  */
-player_t &nameplayer(std::string netname)
+player_t &nameplayer(const std::string &netname)
 {
 	std::vector<player_t>::iterator it;
 	for (it = players.begin(); it != players.end(); ++it)
