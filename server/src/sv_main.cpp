@@ -977,7 +977,7 @@ void SV_SetupUserInfo (player_t &player)
 	}
 
 	// Make sure that we're not duplicating any player name
-	player_t& other = nameplayer(new_netname.c_str());
+	player_t& other = nameplayer(new_netname);
 	if (validplayer(other))
 	{
 		// Give the player an enumerated name (Player2, Player3, etc.)
