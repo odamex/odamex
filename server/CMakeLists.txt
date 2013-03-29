@@ -22,13 +22,13 @@ set(JSONCPP_SOURCE ${JSONCPP_DIR}/jsoncpp.cpp)
 define_platform()
 
 # Server definitions
-add_definitions(-DNOASM -DJSON_IS_AMALGAMATION)
+add_definitions(-DJSON_IS_AMALGAMATION)
 if(WIN32 AND NOT MSVC)
   add_definitions(-DWINVER=0x0500)
 endif()
 include_directories(${JSONCPP_DIR} ${COMMON_DIR} ${SERVER_DIR} ${SERVER_WIN32_DIR})
 
-# MiniUPnP
+# MiniUPnPc
 find_package(MiniUPnPc)
 if(MINIUPNPC_FOUND)
   add_definitions(-DODA_HAVE_MINIUPNP)

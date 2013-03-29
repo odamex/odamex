@@ -18,7 +18,6 @@ endif()
 define_platform()
 
 # Client definitions
-add_definitions(-DNOASM)
 include_directories(${COMMON_DIR} ${CLIENT_DIR})
 
 # Textscreen
