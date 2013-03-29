@@ -1199,7 +1199,7 @@ static void S_StopChannel (unsigned int cnum)
 	unsigned int i;
 	channel_t* c;
 
-	if(cnum > numChannels - 1 || cnum < 0)
+	if(cnum >= numChannels)
 	{
 		printf("Trying to stop invalid channel %d\n", cnum);
 		return;

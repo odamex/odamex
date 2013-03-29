@@ -721,9 +721,9 @@ void P_LoadLineDefs (int lump)
 		ld->sidenum[0] = LESHORT(mld->sidenum[0]);
 		ld->sidenum[1] = LESHORT(mld->sidenum[1]);
 
-		if(ld->sidenum[0] >= numsides || ld->sidenum[0] < 0)
+		if(ld->sidenum[0] >= numsides)
 			ld->sidenum[0] = R_NOSIDE;
-		if(ld->sidenum[1] >= numsides || ld->sidenum[1] < 0)
+		if(ld->sidenum[1] >= numsides)
 			ld->sidenum[1] = R_NOSIDE;
 
 		P_AdjustLine (ld);
@@ -774,9 +774,9 @@ void P_LoadLineDefs2 (int lump)
 		ld->sidenum[0] = LESHORT(mld->sidenum[0]);
 		ld->sidenum[1] = LESHORT(mld->sidenum[1]);
 
-		if(ld->sidenum[0] >= numsides || ld->sidenum[0] < 0)
+		if(ld->sidenum[0] >= numsides)
 			ld->sidenum[0] = R_NOSIDE;
-		if(ld->sidenum[1] >= numsides || ld->sidenum[1] < 0)
+		if(ld->sidenum[1] >= numsides)
 			ld->sidenum[1] = R_NOSIDE;
 
 		P_AdjustLine (ld);
