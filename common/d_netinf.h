@@ -60,36 +60,34 @@ enum weaponswitch_t
 	WPSW_NUMTYPES
 };
 
-struct userinfo_s
+struct UserInfo
 {
-	int				next_change_time;
-	std::string		netname;
-	team_t			team; // [Toke - Teams] 
-	fixed_t			aimdist;
-	bool			unlag;
-	bool			predict_weapons;
-	byte			update_rate;
-	int				color;
-	unsigned int	skin;
-	gender_t		gender;
+	int             next_change_time;
+	std::string     netname;
+	team_t          team; // [Toke - Teams]
+	fixed_t         aimdist;
+	bool            unlag;
+	bool            predict_weapons;
+	byte            update_rate;
+	int             color;
+	unsigned int    skin;
+	gender_t        gender;
+	weaponswitch_t  switchweapon;
+	byte            weapon_prefs[NUMWEAPONS];
 
-	weaponswitch_t	switchweapon;
-	byte			weapon_prefs[NUMWEAPONS];
+	static const byte weapon_prefs_default[NUMWEAPONS];
 
-	userinfo_s() :
-		next_change_time(0), netname(""),
-		team(TEAM_NONE), aimdist(0), unlag(true), predict_weapons(true),
-		update_rate(2), color(0),
-		skin(0), gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
- 	{
+	UserInfo() : next_change_time(0), netname(""), team(TEAM_NONE), aimdist(0),
+	             unlag(true), predict_weapons(true), update_rate(2), color(0),
+	             skin(0), gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
+	{
 		// default doom weapon ordering when player runs out of ammo
-		memcpy(weapon_prefs, default_weaponprefs, sizeof(weapon_prefs));
+		memcpy(weapon_prefs, UserInfo::weapon_prefs_default, sizeof(weapon_prefs));
 	}
 };
-typedef userinfo_s userinfo_t;
 
-FArchive &operator<< (FArchive &arc, userinfo_t &info);
-FArchive &operator>> (FArchive &arc, userinfo_t &info);
+FArchive &operator<< (FArchive &arc, UserInfo &info);
+FArchive &operator>> (FArchive &arc, UserInfo &info);
 
 void D_SetupUserInfo (void);
 

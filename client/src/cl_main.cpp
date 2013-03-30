@@ -1175,7 +1175,7 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 void CL_SendUserInfo(void)
 {
-	userinfo_t *coninfo = &consoleplayer().userinfo;
+	UserInfo* coninfo = &consoleplayer().userinfo;
 	D_SetupUserInfo();
 
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);

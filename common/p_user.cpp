@@ -852,7 +852,7 @@ void player_s::Serialize (FArchive &arc)
 	}
 	else
 	{ // Restoring from archive
-		userinfo_t dummyuserinfo;
+		UserInfo dummyuserinfo;
 
 		arc >> id
 			>> playerstate

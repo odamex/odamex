@@ -230,21 +230,6 @@ enum weapontype_t
 	wp_nochange
 };
 
-// The default preference ordering when the player runs out of one type of ammo
-// Vanilla Doom compatible
-const byte default_weaponprefs[NUMWEAPONS] =
-{
-	0,		// wp_fist
-	4,		// wp_pistol
-	5,		// wp_shotgun
-	6,		// wp_chaingun
-	1,		// wp_missile
-	8,		// wp_plasma
-	2,		// wp_bfg
-	3,		// wp_chainsaw
-	7		// wp_supershotgun
-};
-
 inline FArchive &operator<< (FArchive &arc, weapontype_t i)
 {
 	return arc << (BYTE)i;

@@ -141,7 +141,7 @@ public:
 	std::queue<NetCommand> cmdqueue;	// all received ticcmds
 
 	// [RH] who is this?
-	userinfo_t	userinfo;
+	UserInfo	userinfo;
 
 	// FOV in degrees
 	float		fov;

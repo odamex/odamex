@@ -287,7 +287,7 @@ void P_SwitchWeapon(player_t *player)
 	const byte *prefs;
 
 	if ((multiplayer && !sv_allowpwo) || demoplayback || demorecording)
-		prefs = default_weaponprefs;
+		prefs = UserInfo::weapon_prefs_default;
 	else
 		prefs = player->userinfo.weapon_prefs;
 
