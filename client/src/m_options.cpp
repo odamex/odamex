@@ -156,6 +156,7 @@ EXTERN_CVAR (rate)
 EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_updaterate)
 EXTERN_CVAR (cl_interp)
+EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictpickup)
 EXTERN_CVAR (cl_predictsectors)
 EXTERN_CVAR (cl_predictweapons)
@@ -636,6 +637,7 @@ static menuitem_t NetworkItems[] = {
 	{ discrete,		"Bandwidth",					{&rate},			{4.0},		{0.0},		{0.0},		{BandwidthLevels} },
 	{ discrete,		"Position update freq",			{&cl_updaterate},	{3.0},		{0.0},		{0.0},		{UpdateRate} },
 	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
+	{ slider,		"Smooth collisions",			{&cl_prednudge},	{1.0},		{0.1},		{-0.1},		{NULL} },
 	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ discrete,		"Predict weapon pickups",		{&cl_predictpickup},{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ discrete,		"Predict sectors",				{&cl_predictsectors},{2.0},		{0.0},		{0.0},		{OnOff} },
@@ -1103,11 +1105,11 @@ void M_OptInit (void)
 	{
 	case DISPLAY_FullscreenOnly:
 		ModesItems[2].type = nochoice;
-		ModesItems[2].b.min = 1.f;
+		ModesItems[2].b.leftval = 1.f;
 		break;
 	case DISPLAY_WindowOnly:
 		ModesItems[2].type = nochoice;
-		ModesItems[2].b.min = 0.f;
+		ModesItems[2].b.leftval = 0.f;
 		break;
 	default:
 		break;
@@ -1211,26 +1213,21 @@ bool M_StartOptionsMenu (void)
 	return true;
 }
 
-void M_DrawSlider (int x, int y, float min, float max, float cur)
+void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
 {
-	float range;
-	int i;
+	if (leftval < rightval)
+		cur = clamp(cur, leftval, rightval);
+	else
+		cur = clamp(cur, rightval, leftval);
 
-	range = max - min;
-
-	if (cur > max)
-		cur = max;
-	else if (cur < min)
-		cur = min;
-
-	cur -= min;
+	float dist = (cur - leftval) / (rightval - leftval);
 
 	screen->DrawPatchClean (W_CachePatch ("LSLIDE"), x, y);
-	for (i = 1; i < 11; i++)
+	for (int i = 1; i < 11; i++)
 		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
 	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
 
-	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)((cur * 78.0) / range), y);
+	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)
@@ -1353,7 +1350,7 @@ void M_OptDrawer (void)
 			{
 				int v, vals;
 
-				vals = (int)item->b.min;
+				vals = (int)item->b.leftval;
 				v = M_FindCurVal (item->a.cvar->value(), item->e.values, vals);
 
 				if (v == vals)
@@ -1373,11 +1370,11 @@ void M_OptDrawer (void)
 
 			case nochoice:
 				screen->DrawTextCleanMove (CR_GOLD, CurrentMenu->indent + 14, y,
-										   (item->e.values[(int)item->b.min]).name);
+										   (item->e.values[(int)item->b.leftval]).name);
 				break;
 
 			case slider:
-				M_DrawSlider (CurrentMenu->indent + 8, y, item->b.min, item->c.max, item->a.cvar->value());
+				M_DrawSlider (CurrentMenu->indent + 8, y, item->b.leftval, item->c.rightval, item->a.cvar->value());
 				break;
 
 			case control:
@@ -1392,7 +1389,7 @@ void M_OptDrawer (void)
 				value_t *value;
 				const char *str;
 
-				if (item->b.min)
+				if (item->b.leftval)
 					value = NoYes;
 				else
 					value = YesNo;
@@ -1689,8 +1686,10 @@ void M_OptResponder (event_t *ev)
 					{
 						float newval = item->a.cvar->value() - item->d.step;
 
-						if (newval < item->b.min)
-							newval = item->b.min;
+						if (item->b.leftval < item->c.rightval)
+							newval = MAX(newval, item->b.leftval);
+						else
+							newval = MIN(newval, item->b.leftval);
 
 						if (item->e.cfunc)
 							item->e.cfunc (item->a.cvar, newval);
@@ -1706,7 +1705,7 @@ void M_OptResponder (event_t *ev)
 						int cur;
 						int numvals;
 
-						numvals = (int)item->b.min;
+						numvals = (int)item->b.leftval;
 						cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
 						if (--cur < 0)
 							cur = numvals - 1;
@@ -1771,8 +1770,10 @@ void M_OptResponder (event_t *ev)
 					{
 						float newval = item->a.cvar->value() + item->d.step;
 
-						if (newval > item->c.max)
-							newval = item->c.max;
+						if (item->b.leftval < item->c.rightval)
+							newval = MIN(newval, item->c.rightval);
+						else
+							newval = MAX(newval, item->c.rightval);
 
 						if (item->e.cfunc)
 							item->e.cfunc (item->a.cvar, newval);
@@ -1788,7 +1789,7 @@ void M_OptResponder (event_t *ev)
 						int cur;
 						int numvals;
 
-						numvals = (int)item->b.min;
+						numvals = (int)item->b.leftval;
 						cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
 						if (++cur >= numvals)
 							cur = 0;
@@ -1888,7 +1889,7 @@ void M_OptResponder (event_t *ev)
 				int cur;
 				int numvals;
 
-				numvals = (int)item->b.min;
+				numvals = (int)item->b.leftval;
 				cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
 				if (++cur >= numvals)
 					cur = 0;
