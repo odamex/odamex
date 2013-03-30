@@ -967,7 +967,7 @@ PortMidiMusicSystem::PortMidiMusicSystem() :
 			continue;
 			
 		std::string curdevicename(info->name);
-		if (!prefdevicename.empty() && StdStringCompare(prefdevicename, curdevicename, true) == 0)
+		if (!prefdevicename.empty() && iequals(prefdevicename, curdevicename))
 			mOutputDevice = i;
 
 		Printf(PRINT_HIGH, "%d: %s, %s\n", i, info->interf, info->name);

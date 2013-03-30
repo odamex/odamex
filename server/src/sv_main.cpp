@@ -1028,7 +1028,7 @@ void SV_SetupUserInfo (player_t &player)
 		new_netname.erase(MAXPLAYERNAME);
 
 	// Compare names and broadcast if different.
-	if (!old_netname.empty() && StdStringCompare(new_netname, old_netname, true))
+	if (!old_netname.empty() && !iequals(new_netname, old_netname))
 	{
 		std::string	gendermessage;
 		switch (gender) {

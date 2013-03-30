@@ -60,7 +60,7 @@ BOOL	IsNum (char *str);		// [RH] added
 
 // [Russell] Returns 0 if strings are the same, optional parameter for case 
 // sensitivity
-int		StdStringCompare(const std::string &, const std::string &, bool);
+bool iequals(const std::string &, const std::string &);
 
 size_t  StdStringFind(const std::string& haystack, const std::string& needle,
     size_t pos, size_t n, bool CIS);

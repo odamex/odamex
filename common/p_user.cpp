@@ -95,7 +95,7 @@ player_t &nameplayer(const std::string &netname)
 	std::vector<player_t>::iterator it;
 	for (it = players.begin(); it != players.end(); ++it)
 	{
-		if (StdStringCompare(netname, it->userinfo.netname, true) == 0)
+		if (iequals(netname, it->userinfo.netname))
 			return *it;
 	}
 

@@ -214,16 +214,9 @@ BOOL IsNum (char *str)
 
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
-int StdStringCompare(const std::string &s1, const std::string &s2,
-    bool CIS = false)
+bool iequals(const std::string &s1, const std::string &s2)
 {
-	// Convert to upper case
-	if (CIS)
-	{
-		return StdStringToUpper(s1).compare(StdStringToUpper(s2));
-	}
-
-    return s1.compare(s2);
+	return StdStringToUpper(s1).compare(StdStringToUpper(s2)) == 0;
 }
 
 size_t StdStringFind(const std::string& haystack, const std::string& needle,
