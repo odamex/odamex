@@ -1028,8 +1028,8 @@ void SV_SetupUserInfo (player_t &player)
 		new_netname.erase(MAXPLAYERNAME);
 
 	// Compare names and broadcast if different.
-	if (!old_netname.empty() && StdStringCompare(new_netname, old_netname, false))
-    {
+	if (!old_netname.empty() && StdStringCompare(new_netname, old_netname, true))
+	{
 		std::string	gendermessage;
 		switch (gender) {
 			case GENDER_MALE:	gendermessage = "his";  break;
@@ -1037,8 +1037,8 @@ void SV_SetupUserInfo (player_t &player)
 			default:			gendermessage = "its";  break;
 		}
 
-		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n",
-            old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname.c_str());
+		SV_BroadcastPrintf(PRINT_HIGH, "%s changed %s name to %s.\n",
+			old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname.c_str());
 	}
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
