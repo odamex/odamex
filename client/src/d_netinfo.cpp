@@ -133,9 +133,11 @@ void D_SetupUserInfo(void)
 {
 	userinfo_t *coninfo = &consoleplayer().userinfo;
 
-	memset (&consoleplayer().userinfo, 0, sizeof(userinfo_t));
-	
-	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
+	std::string netname = cl_name.str();
+	if (netname.length() > MAXPLAYERNAME)
+		netname.erase(MAXPLAYERNAME);
+
+	coninfo->netname			= netname;
 	coninfo->team				= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
 	coninfo->color				= V_GetColorFromString (NULL, cl_color.cstring());
 	coninfo->skin				= R_FindSkin (cl_skin.cstring());

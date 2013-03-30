@@ -719,7 +719,7 @@ void EAPlayerNames(int x, int y, const float scale,
 				color = CR_GOLD;
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              player->userinfo.netname, color, force_opaque);
+			              player->userinfo.netname.c_str(), color, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
 		}
@@ -770,7 +770,7 @@ void EATeamPlayerNames(int x, int y, const float scale,
 				}
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              player->userinfo.netname, color, force_opaque);
+			              player->userinfo.netname.c_str(), color, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
 		}
@@ -806,7 +806,7 @@ void EASpectatorNames(int x, int y, const float scale,
 					}
 				}
 				hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-				              player->userinfo.netname, color, force_opaque);
+				              player->userinfo.netname.c_str(), color, force_opaque);
 				y += 7 + padding;
 				drawn += 1;
 			} else {
@@ -1256,7 +1256,7 @@ void EATargets(int x, int y, const float scale,
 			              "You", Targets[i].Color);
 		} else {
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              Targets[i].PlayPtr->userinfo.netname,
+			              Targets[i].PlayPtr->userinfo.netname.c_str(),
 			              Targets[i].Color);
 		}
 

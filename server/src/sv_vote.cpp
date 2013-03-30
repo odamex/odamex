@@ -869,7 +869,7 @@ bool Vote::init(const std::vector<std::string> &args, const player_t &player)
 		}
 	}
 
-	SV_BroadcastPrintf(PRINT_HIGH, "%s has called a vote for %s.\n", player.userinfo.netname, this->get_votestring().c_str());
+	SV_BroadcastPrintf(PRINT_HIGH, "%s has called a vote for %s.\n", player.userinfo.netname.c_str(), this->get_votestring().c_str());
 	return true;
 }
 
@@ -1172,7 +1172,7 @@ void SV_Vote(player_t &player)
 	// Did the player actually change his vote?
 	if (vote->vote(player, ballot))
 	{
-		SV_BroadcastPrintf(PRINT_HIGH, "%s voted %s.\n", player.userinfo.netname, ballot == true ? "Yes" : "No");
+		SV_BroadcastPrintf(PRINT_HIGH, "%s voted %s.\n", player.userinfo.netname.c_str(), ballot == true ? "Yes" : "No");
 		SVC_GlobalVoteUpdate();
 	}
 }

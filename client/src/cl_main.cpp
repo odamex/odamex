@@ -728,7 +728,7 @@ BEGIN_COMMAND (playerinfo)
 	}
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname);
+	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname.c_str());
 	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.color       - #%06x \n",	player->userinfo.color);
 	Printf (PRINT_HIGH, " userinfo.skin        - %s \n",	skins[player->userinfo.skin].name);
@@ -1179,7 +1179,7 @@ void CL_SendUserInfo(void)
 	D_SetupUserInfo();
 
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
-	MSG_WriteString	(&net_buffer, coninfo->netname);
+	MSG_WriteString	(&net_buffer, coninfo->netname.c_str());
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
 	MSG_WriteLong	(&net_buffer, coninfo->gender);
 	MSG_WriteLong	(&net_buffer, coninfo->color);
@@ -1232,8 +1232,7 @@ void CL_SetupUserInfo(void)
 	byte who = MSG_ReadByte();
 	player_t *p = &CL_FindPlayer(who);
 
-	strncpy(p->userinfo.netname, MSG_ReadString(), sizeof(p->userinfo.netname));
-
+	p->userinfo.netname = MSG_ReadString();
 	p->userinfo.team	= (team_t)MSG_ReadByte();
 	p->userinfo.gender	= (gender_t)MSG_ReadLong();
 	p->userinfo.color	= MSG_ReadLong();
@@ -1713,7 +1712,7 @@ void CL_Say()
 			return;
 	}
 
-	name = player.userinfo.netname;
+	name = player.userinfo.netname.c_str();
 
 	switch (who)
 	{

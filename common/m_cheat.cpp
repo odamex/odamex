@@ -244,7 +244,7 @@ void cht_DoCheat (player_t *player, int cheat)
 	if (player == &consoleplayer())
 		Printf (PRINT_HIGH, "%s\n", msg);
 	else
-		Printf (PRINT_HIGH, "%s is a cheater: %s\n", player->userinfo.netname, msg);
+		Printf (PRINT_HIGH, "%s is a cheater: %s\n", player->userinfo.netname.c_str(), msg);
 }
 
 void cht_Give (player_t *player, const char *name)
@@ -254,7 +254,7 @@ void cht_Give (player_t *player, const char *name)
 	gitem_t *it;
 
 	if (player != &consoleplayer())
-		Printf (PRINT_HIGH, "%s is a cheater: give %s\n", player->userinfo.netname, name);
+		Printf (PRINT_HIGH, "%s is a cheater: give %s\n", player->userinfo.netname.c_str(), name);
 
 	if (stricmp (name, "all") == 0)
 		giveall = true;

@@ -189,7 +189,7 @@ void SV_SendServerInfo()
 	{
 		if (players[i].ingame())
 		{
-			MSG_WriteString(&ml_message, players[i].userinfo.netname);
+			MSG_WriteString(&ml_message, players[i].userinfo.netname.c_str());
 			MSG_WriteShort(&ml_message, players[i].fragcount);
 			MSG_WriteLong(&ml_message, players[i].ping);
 

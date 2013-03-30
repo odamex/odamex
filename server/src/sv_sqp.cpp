@@ -205,7 +205,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
     // Player info
     for (size_t i = 0; i < players.size(); ++i)
     {
-        MSG_WriteString(&ml_message, players[i].userinfo.netname);
+        MSG_WriteString(&ml_message, players[i].userinfo.netname.c_str());
         QRYNEWINFO(2)
         {
             MSG_WriteLong(&ml_message, players[i].userinfo.color);

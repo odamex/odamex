@@ -636,7 +636,7 @@ void P_PlayerThink (player_t *player)
 	if (!player->mo && clientside && multiplayer)
 	{
 		DPrintf("Warning: P_PlayerThink called for player %s without a valid Actor.\n",
-				player->userinfo.netname);
+				player->userinfo.netname.c_str());
 		return;
 	}
 	else if (!player->mo)

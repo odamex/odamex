@@ -1115,7 +1115,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	// our userinfo
 	MSG_WriteMarker	(netbuffer, svc_userinfo);
 	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	MSG_WriteString	(netbuffer, consoleplayer().userinfo.netname);
+	MSG_WriteString	(netbuffer, consoleplayer().userinfo.netname.c_str());
 	MSG_WriteByte	(netbuffer, consoleplayer().userinfo.team);
 	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.gender);
 	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.color);

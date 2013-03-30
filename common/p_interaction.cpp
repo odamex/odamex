@@ -1242,7 +1242,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
             SV_BroadcastPrintf(
                 PRINT_HIGH,
                 "Frag limit hit. Game won by %s!\n",
-                splayer->userinfo.netname
+                splayer->userinfo.netname.c_str()
             );
             shotclock = TICRATE*2;
 		}

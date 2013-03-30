@@ -157,7 +157,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 					MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
 					MSG_WriteByte (&(players[j].client.reliablebuf), true);
 				}
-				SV_BroadcastPrintf (PRINT_HIGH, "%s became a spectator.\n", players[i].userinfo.netname);
+				SV_BroadcastPrintf (PRINT_HIGH, "%s became a spectator.\n", players[i].userinfo.netname.c_str());
 				MSG_WriteMarker (&players[i].client.reliablebuf, svc_print);
 				MSG_WriteByte (&players[i].client.reliablebuf, PRINT_CHAT);
 				MSG_WriteString (&players[i].client.reliablebuf, "Active player limit reduced. You are now a spectator!\n");
@@ -387,9 +387,9 @@ void SV_KickPlayer(player_t &player, const std::string &reason) {
 	}
 
 	if (reason.empty()) {
-		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server!\n", player.userinfo.netname);
+		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server!\n", player.userinfo.netname.c_str());
 	} else {
-		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server! (Reason: %s)\n", player.userinfo.netname, reason.c_str());
+		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server! (Reason: %s)\n", player.userinfo.netname.c_str(), reason.c_str());
 	}
 
 	player.client.displaydisconnect = false;
@@ -878,7 +878,7 @@ void SV_SendUserInfo (player_t &player, client_t* cl)
 
 	MSG_WriteMarker	(&cl->reliablebuf, svc_userinfo);
 	MSG_WriteByte	(&cl->reliablebuf, p->id);
-	MSG_WriteString (&cl->reliablebuf, p->userinfo.netname);
+	MSG_WriteString (&cl->reliablebuf, p->userinfo.netname.c_str());
 	MSG_WriteByte	(&cl->reliablebuf, p->userinfo.team);
 	MSG_WriteLong	(&cl->reliablebuf, p->userinfo.gender);
 	MSG_WriteLong	(&cl->reliablebuf, p->userinfo.color);
@@ -1023,7 +1023,10 @@ void SV_SetupUserInfo (player_t &player)
 		}
 	}
 
-	strncpy(player.userinfo.netname, new_netname.c_str(), MAXPLAYERNAME + 1);
+	player.userinfo.netname = new_netname;
+	if (new_netname.length() > MAXPLAYERNAME)
+		new_netname.erase(MAXPLAYERNAME);
+
 	// Compare names and broadcast if different.
 	if (!old_netname.empty() && StdStringCompare(new_netname, old_netname, false))
     {
@@ -1035,7 +1038,7 @@ void SV_SetupUserInfo (player_t &player)
 		}
 
 		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n",
-            old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname);
+            old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname.c_str());
 	}
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
@@ -1068,7 +1071,7 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 	MSG_WriteMarker (&cl->reliablebuf, svc_forceteam);
 
 	who.userinfo.team = team;
-	Printf (PRINT_HIGH, "Forcing %s to %s team\n", who.userinfo.netname, team == TEAM_NONE ? "NONE" : team_names[team]);
+	Printf (PRINT_HIGH, "Forcing %s to %s team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : team_names[team]);
 	MSG_WriteShort (&cl->reliablebuf, team);
 }
 
@@ -2016,7 +2019,7 @@ void SV_ConnectClient (void)
 	{
 		if (sv_waddownload)
 		{
-			SV_BroadcastPrintf (PRINT_HIGH, "%s has connected (downloading).\n", players[n].userinfo.netname);
+			SV_BroadcastPrintf (PRINT_HIGH, "%s has connected (downloading).\n", players[n].userinfo.netname.c_str());
 
 			players[n].playerstate = PST_DOWNLOAD;
 			for (j = 0; j < players.size(); j++)
@@ -2076,7 +2079,7 @@ void SV_ConnectClient (void)
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
 	SV_SendPacket (players[n]);
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname.c_str());
 
 	// tell others clients about it
 	for (i = 0; i < players.size(); i++)
@@ -2120,9 +2123,9 @@ void SV_DisconnectClient(player_t &who)
 	if (who.client.displaydisconnect) {
 		// Name and reason for disconnect.
 		if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
-			sprintf(str, "%s timed out. (", who.userinfo.netname);
+			sprintf(str, "%s timed out. (", who.userinfo.netname.c_str());
 		else
-			sprintf(str, "%s disconnected. (", who.userinfo.netname);
+			sprintf(str, "%s disconnected. (", who.userinfo.netname.c_str());
 
 		disconnectmessage = str;
 
@@ -2337,7 +2340,7 @@ void SV_DrawScores()
                     Printf(PRINT_HIGH, "%-3d %-16s %-15s %-6d N/A  %-5d %-3d",
 						i+1,
 						ip,
-                        sortedplayers[i]->userinfo.netname,
+                        sortedplayers[i]->userinfo.netname.c_str(),
                         sortedplayers[i]->points,
                         //sortedplayers[i]->captures,
                         sortedplayers[i]->fragcount,
@@ -2394,7 +2397,7 @@ void SV_DrawScores()
 					Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d",
 						i+1,
 						ip,
-						sortedplayers[i]->userinfo.netname,
+						sortedplayers[i]->userinfo.netname.c_str(),
 						sortedplayers[i]->fragcount,
 						sortedplayers[i]->deathcount,
 						str,
@@ -2445,7 +2448,7 @@ void SV_DrawScores()
 				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d",
 					i+1,
 					ip,
-					sortedplayers[i]->userinfo.netname,
+					sortedplayers[i]->userinfo.netname.c_str(),
 					sortedplayers[i]->fragcount,
 					sortedplayers[i]->deathcount,
 					str,
@@ -2481,7 +2484,7 @@ void SV_DrawScores()
 				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d",
 					i+1,
 					ip,
-					sortedplayers[i]->userinfo.netname,
+					sortedplayers[i]->userinfo.netname.c_str(),
 					sortedplayers[i]->killcount,
 					sortedplayers[i]->deathcount,
 					str,
@@ -2502,7 +2505,7 @@ void SV_DrawScores()
 					(int)sortedplayers[i]->client.address.ip[2],
 					(int)sortedplayers[i]->client.address.ip[3]);
 
-				Printf(PRINT_HIGH, "%-3d %-16s %-15s\n", i+1,ip,sortedplayers[i]->userinfo.netname);
+				Printf(PRINT_HIGH, "%-3d %-16s %-15s\n", i+1,ip,sortedplayers[i]->userinfo.netname.c_str());
             }
         }
 
@@ -2634,9 +2637,9 @@ void STACK_ARGS SV_TeamPrintf (int level, int who, const char *fmt, ...)
 void SVC_TeamSay(player_t &player, const char* message)
 {
 	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_TEAMCHAT, "<TEAM> * %s %s\n", player.userinfo.netname, &message[4]);
+		Printf(PRINT_TEAMCHAT, "<TEAM> * %s %s\n", player.userinfo.netname.c_str(), &message[4]);
 	else
-		Printf(PRINT_TEAMCHAT, "<TEAM> %s: %s\n", player.userinfo.netname, message);
+		Printf(PRINT_TEAMCHAT, "<TEAM> %s: %s\n", player.userinfo.netname.c_str(), message);
 
 	std::vector<player_t>::iterator it;
 	for (it = players.begin();it != players.end();++it)
@@ -2665,9 +2668,9 @@ void SVC_TeamSay(player_t &player, const char* message)
 void SVC_SpecSay(player_t &player, const char* message)
 {
 	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_TEAMCHAT, "<SPEC> * %s %s\n", player.userinfo.netname, &message[4]);
+		Printf(PRINT_TEAMCHAT, "<SPEC> * %s %s\n", player.userinfo.netname.c_str(), &message[4]);
 	else
-		Printf(PRINT_TEAMCHAT, "<SPEC> %s: %s\n", player.userinfo.netname, message);
+		Printf(PRINT_TEAMCHAT, "<SPEC> %s: %s\n", player.userinfo.netname.c_str(), message);
 
 	std::vector<player_t>::iterator it;
 	for (it = players.begin();it != players.end();++it)
@@ -2696,9 +2699,9 @@ void SVC_SpecSay(player_t &player, const char* message)
 void SVC_Say(player_t &player, const char* message)
 {
 	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_CHAT, "<CHAT> * %s %s\n", player.userinfo.netname, &message[4]);
+		Printf(PRINT_CHAT, "<CHAT> * %s %s\n", player.userinfo.netname.c_str(), &message[4]);
 	else
-		Printf(PRINT_CHAT, "<CHAT> %s: %s\n", player.userinfo.netname, message);
+		Printf(PRINT_CHAT, "<CHAT> %s: %s\n", player.userinfo.netname.c_str(), message);
 
 	std::vector<player_t>::iterator it;
 	for (it = players.begin();it != players.end();++it)
@@ -2724,9 +2727,9 @@ void SVC_Say(player_t &player, const char* message)
 void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 {
 	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_CHAT, "<PRIVMSG> * %s (to %s) %s\n", player.userinfo.netname, dplayer.userinfo.netname, &message[4]);
+		Printf(PRINT_CHAT, "<PRIVMSG> * %s (to %s) %s\n", player.userinfo.netname.c_str(), dplayer.userinfo.netname.c_str(), &message[4]);
 	else
-		Printf(PRINT_CHAT, "<PRIVMSG> %s (to %s): %s\n", player.userinfo.netname, dplayer.userinfo.netname, message);
+		Printf(PRINT_CHAT, "<PRIVMSG> %s (to %s): %s\n", player.userinfo.netname.c_str(), dplayer.userinfo.netname.c_str(), message);
 
 	MSG_WriteMarker(&(dplayer.client.reliablebuf), svc_say);
 	MSG_WriteByte(&(dplayer.client.reliablebuf), 1);
@@ -3343,7 +3346,7 @@ void SV_WriteCommands(void)
 
 void SV_PlayerTriedToCheat(player_t &player)
 {
-	SV_BroadcastPrintf(PRINT_HIGH, "%s tried to cheat!\n", player.userinfo.netname);
+	SV_BroadcastPrintf(PRINT_HIGH, "%s tried to cheat!\n", player.userinfo.netname.c_str());
 	SV_DropClient(player);
 }
 
@@ -3654,10 +3657,10 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 
 			if (!silent) {
 				if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF) {
-					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname);
+					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname.c_str());
 				} else {
 					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
-									   player.userinfo.netname, team_names[player.userinfo.team]);
+									   player.userinfo.netname.c_str(), team_names[player.userinfo.team]);
 				}
 			}
 
@@ -3701,7 +3704,7 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		}
 
 		if (!silent) {
-			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname);
+			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname.c_str());
 		}
 	}
 }
@@ -3861,7 +3864,7 @@ void SV_RConLogout (player_t &player)
 
 	if (cl->allow_rcon)
 	{
-		Printf(PRINT_HIGH, "rcon logout from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
+		Printf(PRINT_HIGH, "rcon logout from %s - %s", player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
 		cl->allow_rcon = false;
 	}
 }
@@ -3885,11 +3888,11 @@ void SV_RConPassword (player_t &player)
 	if (!password.empty() && MD5SUM(password + cl->digest) == challenge)
 	{
 		cl->allow_rcon = true;
-		Printf(PRINT_HIGH, "rcon login from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
+		Printf(PRINT_HIGH, "rcon login from %s - %s", player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "rcon login failure from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
+		Printf(PRINT_HIGH, "rcon login failure from %s - %s", player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
 		MSG_WriteString (&cl->reliablebuf, "Bad password\n");
@@ -4131,7 +4134,7 @@ void SV_ParseCommands(player_t &player)
 				if (player.client.allow_rcon)
 				{
 					Printf(PRINT_HIGH, "rcon command from %s - %s -> %s",
-							player.userinfo.netname, NET_AdrToString(net_from), str);
+							player.userinfo.netname.c_str(), NET_AdrToString(net_from), str);
 					AddCommandString (str);
 				}
 			}
@@ -4395,7 +4398,7 @@ void SV_TimelimitCheck()
 			if (drawgame)
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game is a draw!\n");
 			else
-				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game won by %s!\n", winplayer->userinfo.netname);
+				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game won by %s!\n", winplayer->userinfo.netname.c_str());
 		} else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
 			team_t winteam = SV_WinningTeam ();
 
@@ -4610,7 +4613,7 @@ BEGIN_COMMAND (playerinfo)
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf (PRINT_HIGH, " IP Address       - %s \n",		  ip);
-	Printf (PRINT_HIGH, " userinfo.netname - %s \n",		  player->userinfo.netname);
+	Printf (PRINT_HIGH, " userinfo.netname - %s \n",		  player->userinfo.netname.c_str());
 	Printf (PRINT_HIGH, " userinfo.team    - %d \n",		  player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.aimdist - %d \n",		  player->userinfo.aimdist);
 	Printf (PRINT_HIGH, " userinfo.unlag   - %d \n",          player->userinfo.unlag);
@@ -4628,7 +4631,7 @@ BEGIN_COMMAND (playerlist)
 
 	for(int i = players.size()-1; i >= 0 ; i--)
 	{
-		Printf(PRINT_HIGH, "(%02d): %s - %s - frags:%d ping:%d\n", players[i].id, players[i].userinfo.netname, NET_AdrToString(clients[i].address), players[i].fragcount, players[i].ping);
+		Printf(PRINT_HIGH, "(%02d): %s - %s - frags:%d ping:%d\n", players[i].id, players[i].userinfo.netname.c_str(), NET_AdrToString(clients[i].address), players[i].fragcount, players[i].ping);
 		anybody = true;
 	}
 
@@ -4817,7 +4820,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 
 	if (message) {
 		SexMessage (message, gendermessage, gender,
-			self->player->userinfo.netname, self->player->userinfo.netname);
+			self->player->userinfo.netname.c_str(), self->player->userinfo.netname.c_str());
 		SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
 		return;
 	}
@@ -4855,13 +4858,13 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	if (message && attacker && attacker->player)
 	{
 		SexMessage (message, gendermessage, gender,
-			self->player->userinfo.netname, attacker->player->userinfo.netname);
+			self->player->userinfo.netname.c_str(), attacker->player->userinfo.netname.c_str());
 		SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
 		return;
 	}
 
 	SexMessage (GStrings(OB_DEFAULT), gendermessage, gender,
-		self->player->userinfo.netname, self->player->userinfo.netname);
+		self->player->userinfo.netname.c_str(), self->player->userinfo.netname.c_str());
 	SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
 }
 
