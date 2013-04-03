@@ -19,6 +19,13 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
   set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
+  set(STATIC_STDLIB "No" CACHE STRING
+    "Statically link against the C and C++ Standard Library.")
+  set_property(CACHE STATIC_STDLIB PROPERTY STRINGS Yes No)
+  if(STATIC_STDLIB)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+  endif()
+
   set(SANITIZE_ADDRESS "No" CACHE STRING
     "Turn on Address Sanitizer in Debug builds, requires GCC >= 4.8 or Clang >= 3.1")
   set_property(CACHE SANITIZE_ADDRESS PROPERTY STRINGS Yes No)
