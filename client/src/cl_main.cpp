@@ -1542,7 +1542,6 @@ bool CL_Connect(void)
     network_game = true;
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
-	gamestate = GS_CONNECTED;
 
 	CL_Decompress(0);
 	CL_ParseCommands();
@@ -1558,6 +1557,9 @@ bool CL_Connect(void)
 
 	noservermsgs = false;
 	last_received = gametic;
+	
+	if (gamestate != GS_DOWNLOAD)
+        gamestate = GS_CONNECTED;
 
 	return true;
 }
