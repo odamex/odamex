@@ -116,6 +116,11 @@ EXTERN_CVAR (co_zdoomswitches)
 EXTERN_CVAR (co_fixweaponimpacts)
 EXTERN_CVAR (co_zdoomsoundcurve)
 EXTERN_CVAR (cl_deathcam)
+EXTERN_CVAR (co_fineautoaim)
+EXTERN_CVAR (co_nosilentspawns)
+EXTERN_CVAR (co_boomsectortouch)
+EXTERN_CVAR (co_zdoomspawndelay)
+EXTERN_CVAR (co_blockmapfix)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -583,28 +588,35 @@ menu_t SoundMenu = {
  * Compatibility Options Menu
  *
  *=======================================*/
-static menuitem_t CompatItems[] = {
-    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },   
-	{ bricktext,				"Enhanced Interaction"		, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },     
-	{ discrete  ,	"Things are actual height"              , {&co_realactorheight},{2.0},      {0.0},	    {0.0},      {OnOff} },		
-	{ discrete  ,	"Items drop off ledges"                 , {&co_allowdropoff},	{2.0},      {0.0},	    {0.0},      {OnOff} },
-	{ discrete	,	"Correct Weapon Impacts"				, {&co_fixweaponimpacts},{2.0},		{0.0},		{0.0},		{OnOff} },	
-	{ discrete	,	"Follow killer when dead"				, {&cl_deathcam},		{2.0},		{0.0},		{0.0},		{OnOff} },	
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },  
-	{ bricktext,				"BOOM Compatibility"		, {NULL},				{0.0}, 		{0.0},		{0.0}, 		{NULL} },     
-	{ discrete  ,	"Use Line Extra Checks"    				, {&co_boomlinecheck},	{2.0},      {0.0},	    {0.0},      {OnOff} },
-    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },  	
-	{ bricktext,				"ZDOOM Compatibility"		, {NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },     
-	{ discrete	,	"Use ZDoom physics"						, {&co_zdoomphys},		{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete	,	"Positional switch sounds"				, {&co_zdoomswitches},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete	,	"Extended Sound Curve"					, {&co_zdoomsoundcurve},{2.0},		{0.0},		{0.0},		{OnOff} },	
- };
+static menuitem_t CompatItems[] ={
+	{bricktext, "Gameplay",                        {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{discrete,  "Camera follows killer on death",  {&cl_deathcam},          {2.0}, {0.0}, {0.0}, {OnOff}},
+	{discrete,  "Finer-precision Autoaim",         {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{discrete,  "Fix hit detection at grid edges", {&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{discrete,  "Players can't instantly respawn", {&co_zdoomspawndelay},   {2.0}, {0.0}, {0.0}, {OnOff}},
+	{discrete,  "ZDOOM 1.23 physics",              {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{bricktext, "Items and Decoration",            {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{discrete,  "Fix invisible puffs under skies", {&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
+	{discrete,  "Items can be walked over/under",  {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
+	{discrete,  "Items can drop off ledges",       {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{bricktext, "Map Compatibility",               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{discrete,  "BOOM actor-in-sector check",      {&co_boomsectortouch},   {2.0}, {0.0}, {0.0}, {OnOff}},
+	{discrete,  "BOOM extra line checks on use",   {&co_boomlinecheck},     {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{bricktext, "Sound",                           {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{discrete,  "Fix silent west spawns",          {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
+	{discrete,  "Louder sounds on map 8",          {&co_level8soundfeature},{2.0}, {0.0}, {0.0}, {OnOff}},
+	{discrete,  "Positional switch sounds",        {&co_zdoomswitches},     {2.0}, {0.0}, {0.0}, {OnOff}},
+	{discrete,  "ZDOOM 1.23 extended sound curve", {&co_zdoomsoundcurve},   {2.0}, {0.0}, {0.0}, {OnOff}},
+};
 
 menu_t CompatMenu = {
 	"M_COMPAT",
 	2,
 	STACKARRAY_LENGTH(CompatItems),
-	177,
+	240,
 	CompatItems,
 	0,
 	0,
