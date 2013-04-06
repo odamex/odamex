@@ -683,24 +683,27 @@ static value_t WeapSwitch[] = {
 extern const char *weaponnames[];
 
 static menuitem_t WeaponItems[] = {
-	{ redtext,		" ",							{NULL},					{0.0},	{0.0},		{0.0},		{NULL} },	
-	{ bricktext,	"Configure Weapon Preferences",	{NULL},					{0.0},	{0.0},		{0.0},		{NULL} },
-	{ discrete,		"Switch on pickup",				{&cl_switchweapon},		{3.0},	{0.0},		{0.0},		{WeapSwitch} },
-	{ redtext,		" ",							{NULL},					{0.0},	{0.0},		{0.0},		{NULL} },	
-	{ slider,		weaponnames[0],					{&cl_weaponpref_fst},	{0.0},	{8.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[7],					{&cl_weaponpref_csw},	{0.0},	{8.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[1],					{&cl_weaponpref_pis},	{0.0},	{8.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[2],					{&cl_weaponpref_sg},	{0.0},	{8.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[8],					{&cl_weaponpref_ssg},	{0.0},	{8.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[3],					{&cl_weaponpref_cg},	{0.0},	{8.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[4],					{&cl_weaponpref_rl},	{0.0},	{8.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[5],					{&cl_weaponpref_pls},	{0.0},	{8.0},		{1.0},		{NULL} },
-	{ slider,		weaponnames[6],					{&cl_weaponpref_bfg},	{0.0},	{8.0},		{1.0},		{NULL} }
+	{bricktext, "Weapon Preferences",  {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
+	{discrete,  "Switch on pickup",    {&cl_switchweapon},   {3.0}, {0.0}, {0.0}, {WeapSwitch}},
+	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
+	{bricktext, "Weapon Switch Order", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
+	{slider,    weaponnames[0],        {&cl_weaponpref_fst}, {0.0}, {8.0}, {1.0}, {NULL}},
+	{slider,    weaponnames[7],        {&cl_weaponpref_csw}, {0.0}, {8.0}, {1.0}, {NULL}},
+	{slider,    weaponnames[1],        {&cl_weaponpref_pis}, {0.0}, {8.0}, {1.0}, {NULL}},
+	{slider,    weaponnames[2],        {&cl_weaponpref_sg},  {0.0}, {8.0}, {1.0}, {NULL}},
+	{slider,    weaponnames[8],        {&cl_weaponpref_ssg}, {0.0}, {8.0}, {1.0}, {NULL}},
+	{slider,    weaponnames[3],        {&cl_weaponpref_cg},  {0.0}, {8.0}, {1.0}, {NULL}},
+	{slider,    weaponnames[4],        {&cl_weaponpref_rl},  {0.0}, {8.0}, {1.0}, {NULL}},
+	{slider,    weaponnames[5],        {&cl_weaponpref_pls}, {0.0}, {8.0}, {1.0}, {NULL}},
+	{slider,    weaponnames[6],        {&cl_weaponpref_bfg}, {0.0}, {8.0}, {1.0}, {NULL}},
+	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
+	{whitetext, "Weapons with higher", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
+	{whitetext, "preference are selected first", {NULL},     {0.0}, {0.0}, {0.0}, {NULL}},
 };
 
 menu_t WeaponMenu = {
 	"M_WEAPON",
-	2,
+	1,
 	STACKARRAY_LENGTH(WeaponItems),
 	177,
 	WeaponItems,
