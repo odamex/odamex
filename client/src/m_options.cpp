@@ -614,7 +614,7 @@ static menuitem_t CompatItems[] ={
 
 menu_t CompatMenu = {
 	"M_COMPAT",
-	2,
+	1,
 	STACKARRAY_LENGTH(CompatItems),
 	240,
 	CompatItems,
