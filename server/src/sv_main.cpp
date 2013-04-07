@@ -5031,10 +5031,10 @@ void SV_SendPlayerInfo(player_t &player)
 	for (int i = 0; i < NUMCARDS; i++)
 	{
 		if (player.cards[i])
-			booleans |= (1 << i + NUMWEAPONS);
+			booleans |= (1 << (i + NUMWEAPONS));
 	}
 	if (player.backpack)
-		booleans |= (1 << NUMWEAPONS + NUMCARDS);
+		booleans |= (1 << (NUMWEAPONS + NUMCARDS));
 	MSG_WriteShort(&cl->reliablebuf, booleans);
 
 	for (int i = 0; i < NUMAMMO; i++)
