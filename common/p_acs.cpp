@@ -64,6 +64,8 @@ struct FBehavior::ArrayInfo
 // Inventory shim for Doom.
 #include "gi.h"
 
+void SV_SendPlayerInfo(player_t &player);
+
 static void DoClearInv(player_t* player)
 {
 	memset(player->weaponowned, 0, sizeof(player->weaponowned));
@@ -92,11 +94,13 @@ static void ClearInventory(AActor* activator)
 		{
 			if (it->ingame() && !it->spectator)
 				DoClearInv(&(*it));
+				SV_SendPlayerInfo(*it);
 		}
 	}
 	else if (activator->player != NULL)
 	{
 		DoClearInv(activator->player);
+		SV_SendPlayerInfo(*(activator->player));
 	}
 }
 
@@ -139,6 +143,7 @@ static void GiveBackpack(player_t* player)
 	{
 		P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
 	}
+	SV_SendPlayerInfo(*player);
 }
 
 static void DoGiveInv(player_t* player, const char* type, int amount)
@@ -227,14 +232,17 @@ static void GiveInventory(AActor* activator, const char* type, int amount)
 			std::vector<player_t>::iterator it;
 			for (it = players.begin();it != players.end();++it)
 			{
-				if (it->ingame() && !it->spectator)
+				if (it->ingame() && !it->spectator) {
 					DoGiveInv(&(*it), type, amount);
+					SV_SendPlayerInfo(*it);
+				}
 			}
 		}
 	}
 	else if (activator->player != NULL)
 	{
 		DoGiveInv(activator->player, type, amount);
+		SV_SendPlayerInfo(*(activator->player));
 	}
 }
 
@@ -247,6 +255,7 @@ static void TakeWeapon(player_t* player, int weapon)
 	{
 		P_SwitchWeapon(player);
 	}
+	SV_SendPlayerInfo(*player);
 }
 
 extern BOOL P_CheckAmmo (player_t *player);
@@ -284,6 +293,7 @@ static void TakeAmmo(player_t* player, int ammo, int amount)
 		// Make sure we still have enough ammo for the current weapon
 		P_CheckAmmo(player);
 	}
+	SV_SendPlayerInfo(*player);
 }
 
 static void TakeBackpack(player_t* player)
@@ -300,6 +310,7 @@ static void TakeBackpack(player_t* player)
 			player->ammo[i] = player->maxammo[i];
 		}
 	}
+	SV_SendPlayerInfo(*player);
 }
 
 static void DoTakeInv(player_t* player, const char* type, int amount)
@@ -345,13 +356,16 @@ static void TakeInventory(AActor* activator, const char* type, int amount)
 		std::vector<player_t>::iterator it;
 		for (it = players.begin();it != players.end();++it)
 		{
-			if (it->ingame() && !it->spectator)
+			if (it->ingame() && !it->spectator) {
 				DoTakeInv(&(*it), type, amount);
+				SV_SendPlayerInfo(*it);
+			}
 		}
 	}
 	else if (activator->player != NULL)
 	{
 		DoTakeInv(activator->player, type, amount);
+		SV_SendPlayerInfo(*(activator->player));
 	}
 }
 

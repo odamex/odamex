@@ -5013,17 +5013,29 @@ void SV_ExplodeMissile(AActor *mo)
 //
 // SV_SendPlayerInfo
 //
-// Sends a player their current weapon, ammo, health, and armor
+// Sends a player their current inventory
 //
-
 void SV_SendPlayerInfo(player_t &player)
 {
 	client_t *cl = &player.client;
 
 	MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
 
+	// [AM] 9 weapons, 6 cards, 1 backpack = 16 bits
+	uint16_t booleans = 0;
 	for (int i = 0; i < NUMWEAPONS; i++)
-		MSG_WriteBool (&cl->reliablebuf, player.weaponowned[i]);
+	{
+		if (player.weaponowned[i])
+			booleans |= (1 << i);
+	}
+	for (int i = 0; i < NUMCARDS; i++)
+	{
+		if (player.cards[i])
+			booleans |= (1 << i + NUMWEAPONS);
+	}
+	if (player.backpack)
+		booleans |= (1 << NUMWEAPONS + NUMCARDS);
+	MSG_WriteShort(&cl->reliablebuf, booleans);
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
@@ -5035,7 +5047,9 @@ void SV_SendPlayerInfo(player_t &player)
 	MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
 	MSG_WriteByte (&cl->reliablebuf, player.armortype);
 	MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
-	MSG_WriteByte (&cl->reliablebuf, player.backpack);
+
+	for (int i = 0; i < NUMPOWERS; i++)
+		MSG_WriteShort(&cl->reliablebuf, player.powers[i]);
 }
 
 //
