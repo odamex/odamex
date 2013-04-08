@@ -140,9 +140,8 @@ cvar_t::~cvar_t ()
 
 void cvar_t::ForceSet (const char *val)
 {
-	if (m_Flags & CVAR_LATCH &&
-		 !(m_Flags & CVAR_SERVERINFO && baseapp != server) &&
-		 !(m_Flags & CVAR_CLIENTINFO && baseapp != client))
+	if (m_Flags & CVAR_LATCH && 
+	    !(m_Flags & CVAR_SERVERINFO && baseapp == client && multiplayer))
 	{
 		m_Flags |= CVAR_MODIFIED;
 		if(val)
@@ -473,8 +472,7 @@ void cvar_t::UnlatchCVars (void)
 	while (var)
 	{
 		if (var->m_Flags & (CVAR_MODIFIED | CVAR_LATCH) &&
-		 !(var->m_Flags & CVAR_SERVERINFO && baseapp != server) &&
-		 !(var->m_Flags & CVAR_CLIENTINFO && baseapp != client))
+		    !(var->m_Flags & CVAR_SERVERINFO && baseapp == client && multiplayer))
 		{
 			unsigned oldflags = var->m_Flags & ~CVAR_MODIFIED;
 			var->m_Flags &= ~(CVAR_LATCH);
@@ -544,8 +542,7 @@ void cvar_t::cvarlist()
 					flags & CVAR_CLIENTARCHIVE ? 'C' :
 					flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
 				flags & CVAR_USERINFO ? 'U' : ' ',
-				flags & CVAR_SERVERINFO ? 'S' :
-					flags & CVAR_CLIENTINFO ? 'C' : ' ',
+				flags & CVAR_SERVERINFO ? 'S' : ' ',
 				flags & CVAR_NOSET ? '-' :
 					flags & CVAR_LATCH ? 'L' :
 					flags & CVAR_UNSETTABLE ? '*' : ' ',
@@ -577,12 +574,7 @@ BEGIN_COMMAND (set)
 		}
 		else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
 		{
-			Printf (PRINT_HIGH, "%s is under server control and hasn't been changed.\n", argv[1]);
-			return;
-		}
-		else if (baseapp == server && (var->flags() & CVAR_CLIENTINFO))
-		{
-			Printf (PRINT_HIGH, "%s is under client control and hasn't been changed.\n", argv[1]);
+			Printf (PRINT_HIGH, "%s is under server control.\n", argv[1]);
 			return;
 		}
 
@@ -634,8 +626,6 @@ BEGIN_COMMAND (get)
 		std::string control;
 		if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
 			control = " (server)";
-		else if (baseapp == server && (var->flags() & CVAR_CLIENTINFO))
-			control = " (client)";
 
 		// [Russell] - Don't make the user feel inadequate, tell
 		// them its either enabled, disabled or its other value

@@ -212,7 +212,7 @@ CVAR (cl_predictpickup, "1", "Predict weapon pickups", CVARTYPE_BOOL, CVAR_ARCHI
 
 // Movebob
 CVAR_FUNC_DECL (cl_movebob, "1.0", "Adjust weapon and movement bobbing",
-      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE | CVAR_CLIENTINFO)
+      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR (cl_rockettrails, "0", "Rocket trails on/off (currently unused)", CVARTYPE_BOOL,  CVAR_ARCHIVE)
 

@@ -38,24 +38,23 @@ CVARS (console variables)
 ==========================================================
 */
 
-#define CVAR_NULL 0		// [deathz0r] no special properties
-#define CVAR_ARCHIVE	1	// set to cause it to be saved to vars.rc
-#define CVAR_USERINFO	2	// added to userinfo  when changed
-#define CVAR_SERVERINFO	4	// [Toke - todo] Changed the meaning of this flag
-							// it now describes cvars that clients will be
-							// informed if changed
-#define CVAR_NOSET		8	// don't allow change from console at all,
-							// but can be set from the command line
-#define CVAR_LATCH		16	// save changes until server restart
-#define CVAR_UNSETTABLE	32	// can unset this var from console
-#define CVAR_DEMOSAVE	64	// save the value of this cvar_t in a demo
-#define CVAR_MODIFIED	128	// set each time the cvar_t is changed
-#define CVAR_ISDEFAULT	256	// is cvar unchanged since creation?
-#define CVAR_AUTO		512	// allocated, needs to be freed when destroyed
+#define CVAR_NULL               0 // [deathz0r] no special properties
+#define CVAR_ARCHIVE            1 // set to cause it to be saved to vars.rc
+#define CVAR_USERINFO           2 // added to userinfo  when changed
+#define CVAR_SERVERINFO         4 // [Toke - todo] Changed the meaning of this flag
+                                  // it now describes cvars that clients will be
+                                  // informed if changed
+#define CVAR_NOSET              8 // don't allow change from console at all,
+                                  // but can be set from the command line
+#define CVAR_LATCH             16 // save changes until server restart
+#define CVAR_UNSETTABLE        32 // can unset this var from console
+#define CVAR_DEMOSAVE          64 // save the value of this cvar_t in a demo
+#define CVAR_MODIFIED         128 // set each time the cvar_t is changed
+#define CVAR_ISDEFAULT        256 // is cvar unchanged since creation?
+#define CVAR_AUTO             512 // allocated, needs to be freed when destroyed
 #define CVAR_NOENABLEDISABLE 1024 // [Nes] No substitution (0=disable, 1=enable)
-#define CVAR_CLIENTINFO 2048 // [Russell] client version of CVAR_SERVERINFO
-#define CVAR_SERVERARCHIVE 4096 // [Nes] Server version of CVAR_ARCHIVE
-#define CVAR_CLIENTARCHIVE 8192 // [Nes] Client version of CVAR_ARCHIVE
+#define CVAR_SERVERARCHIVE   4096 // [Nes] Server version of CVAR_ARCHIVE
+#define CVAR_CLIENTARCHIVE   8192 // [Nes] Client version of CVAR_ARCHIVE
 
 // Hints for network code optimization
 typedef enum
