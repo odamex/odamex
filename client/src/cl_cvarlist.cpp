@@ -142,6 +142,9 @@ CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_ARCHIVE)
 
 CVAR (show_messages, "1", "", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
+CVAR (mute_spectators, "0", "Mute spectators chat until next disconnect", CVARTYPE_BOOL, 0)
+CVAR (mute_enemies, "0", "Mute enemy players chat until next disconnect", CVARTYPE_BOOL, 0)
+
 // Rate of client updates
 CVAR_FUNC_DECL (rate, "200", "Rate of client updates in multiplayer mode", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Maximum number of clients who can connect to the server
@@ -183,7 +186,7 @@ CVAR (cl_run,		"0", "Always run",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// Always run? /
 CVAR (mouse_type,			"0", 	"",	CVARTYPE_BYTE,	CVAR_ARCHIVE)
 CVAR (mouse_sensitivity,	"35.0", "",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL (cl_mouselook, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
+CVAR_FUNC_DECL (cl_mouselook, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 CVAR (m_pitch,				"0.25",	"",	CVARTYPE_FLOAT,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (m_yaw,				"1.0",	"",	CVARTYPE_FLOAT,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -225,6 +228,7 @@ CVAR (hud_timer, "1", "Show the HUD timer", CVARTYPE_BOOL,
       CVAR_ARCHIVE)
 CVAR (hud_transparency, "0.5", "HUD transparency",	CVARTYPE_FLOAT,
       CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (hud_heldflag, "1", "Show the held flag border", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                       // A
@@ -315,17 +319,17 @@ CVAR_FUNC_DECL (vid_gammatype, "0", "Select between Doom and ZDoom gamma correct
 // Type of crosshair, 0 means none
 CVAR_FUNC_DECL (hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Column optimization method
-CVAR (r_columnmethod, "1", "Column optimization method",	CVARTYPE_BYTE, CVAR_CLIENTINFO | CVAR_ARCHIVE)
+CVAR (r_columnmethod, "1", "Column optimization method",	CVARTYPE_BYTE, CVAR_ARCHIVE)
 // Detail level (affects performance)
-CVAR_FUNC_DECL (r_detail, "0", "Detail level (affects performance)",	CVARTYPE_BYTE, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (r_detail, "0", "Detail level (affects performance)",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Disables all texturing of walls
-CVAR (r_drawflat, "0", "Disables all texturing of walls",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
+CVAR (r_drawflat, "0", "Disables all texturing of walls",	CVARTYPE_BOOL, 0)
 // Draw player sprites
-CVAR (r_drawplayersprites, "1", "Draw player sprites",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
+CVAR (r_drawplayersprites, "1", "Draw player sprites",	CVARTYPE_BOOL, 0)
 // Draw particles
-CVAR (r_particles, "1","Draw particles",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
+CVAR (r_particles, "1","Draw particles",	CVARTYPE_BOOL, 0)
 // Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)
-CVAR_FUNC_DECL (r_stretchsky, "2", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (r_stretchsky, "2", "",	CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Invulnerability sphere changes the palette of the sky
 CVAR (r_skypalette, "0", "Invulnerability sphere changes the palette of the sky",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Enemy sprite coloring
@@ -346,26 +350,26 @@ CVAR (r_showendoom, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)   // [ML] 1/5/10: Add 
 CVAR_FUNC_DECL (r_painintensity, "1", "Value of red pain intensity shift",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // TODO: document
-CVAR (r_viewsize, "0", "",	CVARTYPE_BYTE, CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)
+CVAR (r_viewsize, "0", "",	CVARTYPE_BYTE, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 // Default video dimensions. [AM] Bumped up from 320x200.
-CVAR (vid_defwidth, "640", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (vid_defheight, "480", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (vid_defwidth, "640", "",	CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (vid_defheight, "480", "",	CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Force video mode
-CVAR (vid_autoadjust, "1", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
+CVAR (vid_autoadjust, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Frames per second counter
-CVAR (vid_fps, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
+CVAR (vid_fps, "0", "",	CVARTYPE_BOOL, 0)
 // Wait for vertical sync (vsync)
 CVAR (vid_vsync, "1", "Wait for vertical sync", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Run at 35fps
 CVAR (vid_capfps, "1", "Limit to 35fps", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Fullscreen mode
 #ifdef GCONSOLE
-	CVAR_FUNC_DECL (vid_fullscreen, "1", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
+	CVAR_FUNC_DECL (vid_fullscreen, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 #else
-	CVAR_FUNC_DECL (vid_fullscreen, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
+	CVAR_FUNC_DECL (vid_fullscreen, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 #endif
 // Yes for 32-bit, No for 8-bit
-CVAR_FUNC_DECL (vid_32bpp,		"0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
+CVAR_FUNC_DECL (vid_32bpp,		"0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Optimize rendering functions based on CPU vectorization support
 // Can be of "detect" or "none" or "mmx","sse2","altivec" depending on availability; case-insensitive.
 CVAR_FUNC_DECL (r_optimize, "detect", "Rendering optimizations", CVARTYPE_STRING, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -375,11 +379,11 @@ CVAR_FUNC_DECL (screenblocks, "10", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENA
 CVAR_FUNC_DECL (r_widescreen, "3", "Determine how widescreen video modes are handled.\n// 0: Stretched to fit.\n// 1: Zoomed-in field of view.\n// 2: Widened field-of-view (true widescreen) with a stretched fallback.\n// 3: Widened field-of-view (true widescreen) with a zoomed fallback.",
                 CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Older (Doom-style) FPS counter
-CVAR (vid_ticker, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
+CVAR (vid_ticker, "0", "",	CVARTYPE_BOOL, 0)
 // Resizes the window by a scale factor
-CVAR_FUNC_DECL (vid_winscale, "1.0", "",	CVARTYPE_FLOAT, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (vid_winscale, "1.0", "",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Overscan
-CVAR_FUNC_DECL (vid_overscan, "1.0", "Overscan",	CVARTYPE_FLOAT, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (vid_overscan, "1.0", "Overscan",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Netdemo format string
 CVAR_FUNC_DECL (cl_netdemoname, "Odamex_%g_%d_%t_%w_%m",
@@ -390,6 +394,8 @@ CVAR_FUNC_DECL (cl_netdemoname, "Odamex_%g_%d_%t_%w_%m",
 CVAR_FUNC_DECL (cl_screenshotname, "Odamex_%g_%d_%t",
 				"Default screenshot name.  Parses the following tokens:\n// %d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// %n: player name\n// %g: gametype\n// %w: WAD file loaded; either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
 				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(cl_showspawns, "0", "Show spawn points as particle fountains", CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_LATCH)
 
 // Record netdemos automatically
 CVAR (cl_autorecord, "0", "Automatically record netdemos", CVARTYPE_BOOL, CVAR_ARCHIVE)

@@ -425,6 +425,8 @@ protected:
 	static void ChangeFlat (int tag, int name, bool floorOrCeiling);
 	static int CountPlayers ();
 	static void SetLineTexture (int lineid, int side, int position, int name);
+	// static int DoSpawn (int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle);
+	// static int DoSpawnSpot (int type, int spot, int tid, int angle);
 
 	void DoFadeTo (int r, int g, int b, int a, fixed_t time);
 	void DoFadeRange (int r1, int g1, int b1, int a1,

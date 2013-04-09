@@ -80,13 +80,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		return;
 
 	if (p->playerstate == PST_REBORN || p->playerstate == PST_ENTER)
-	{
 		G_PlayerReborn (*p);
-		// [AM] If we're "reborn" as a spectator, don't touch the keepinventory
-		//      flag, but otherwise turn it off.
-		if (!p->spectator)
-			p->keepinventory = false;
-	}
 
 	AActor *mobj = new AActor (mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
 
@@ -157,6 +151,11 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		SV_SpawnMobj(mobj);
 	}
 }
+
+/**
+ * Stub
+ */
+void P_ShowSpawns(mapthing2_t* mthing) { }
 
 VERSION_CONTROL (sv_mobj_cpp, "$Id: sv_mobj.cpp 1832 2010-09-01 23:59:33Z mike $")
 

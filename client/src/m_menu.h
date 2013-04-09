@@ -114,12 +114,12 @@ typedef struct menuitem_s {
 		int				  flagmask;
 	} a;
 	union {
-		float			  min;		/* aka numvalues aka invflag */
+		float			  leftval;		/* aka numvalues aka invflag */
 		int				  key1;
 		const char			 *res1;
 	} b;
 	union {
-		float			  max;
+		float			  rightval;
 		int				  key2;
 		const char			 *res2;
 	} c;

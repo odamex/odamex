@@ -95,6 +95,9 @@ public:
 
 	// Write out alias commands to a file for all current aliases.
 	static void C_ArchiveAliases (FILE *f);
+
+	// Destroy all aliases (used on shutdown)
+	static void DestroyAll();
 protected:
 	std::string m_Command;
 	std::string m_CommandParam;

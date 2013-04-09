@@ -149,6 +149,9 @@ EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_predictsectors)
 
+EXTERN_CVAR (mute_spectators)
+EXTERN_CVAR (mute_enemies)
+
 CVAR_FUNC_IMPL (cl_autoaim)
 {
 	if (var < 0)
@@ -394,6 +397,9 @@ void CL_QuitNetGame(void)
 	sv_allowjump = 1;
 	sv_allowexit = 1;
 	sv_allowredscreen = 1;
+
+	mute_spectators = 0.f;
+	mute_enemies = 0.f;
 
 	P_ClearAllNetIds();
 	players.clear();
@@ -722,7 +728,7 @@ BEGIN_COMMAND (playerinfo)
 	}
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname);
+	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname.c_str());
 	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.color       - #%06x \n",	player->userinfo.color);
 	Printf (PRINT_HIGH, " userinfo.skin        - %s \n",	skins[player->userinfo.skin].name);
@@ -946,7 +952,7 @@ void STACK_ARGS call_terms (void);
 void CL_QuitCommand()
 {
 	call_terms();
-	exit (0);
+	exit(EXIT_SUCCESS);
 }
 
 BEGIN_COMMAND (quit)
@@ -1177,11 +1183,11 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 void CL_SendUserInfo(void)
 {
-	userinfo_t *coninfo = &consoleplayer().userinfo;
+	UserInfo* coninfo = &consoleplayer().userinfo;
 	D_SetupUserInfo();
 
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
-	MSG_WriteString	(&net_buffer, coninfo->netname);
+	MSG_WriteString	(&net_buffer, coninfo->netname.c_str());
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
 	MSG_WriteLong	(&net_buffer, coninfo->gender);
 	MSG_WriteLong	(&net_buffer, coninfo->color);
@@ -1234,8 +1240,7 @@ void CL_SetupUserInfo(void)
 	byte who = MSG_ReadByte();
 	player_t *p = &CL_FindPlayer(who);
 
-	strncpy(p->userinfo.netname, MSG_ReadString(), sizeof(p->userinfo.netname));
-
+	p->userinfo.netname = MSG_ReadString();
 	p->userinfo.team	= (team_t)MSG_ReadByte();
 	p->userinfo.gender	= (gender_t)MSG_ReadLong();
 	p->userinfo.color	= MSG_ReadLong();
@@ -1545,7 +1550,6 @@ bool CL_Connect(void)
     network_game = true;
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
-	gamestate = GS_CONNECTED;
 
 	CL_Decompress(0);
 	CL_ParseCommands();
@@ -1561,6 +1565,9 @@ bool CL_Connect(void)
 
 	noservermsgs = false;
 	last_received = gametic;
+	
+	if (gamestate != GS_DOWNLOAD)
+        gamestate = GS_CONNECTED;
 
 	return true;
 }
@@ -1701,9 +1708,21 @@ void CL_Say()
 	const char* name;
 
 	if (!validplayer(player))
-		name = "???";
-	else
-		name = player.userinfo.netname;
+		return;
+
+	if (consoleplayer().id != player.id)
+	{
+		if (mute_spectators && player.spectator)
+			return;
+
+		if (mute_enemies && !player.spectator &&
+		    (sv_gametype == GM_DM ||
+		    ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+		     player.userinfo.team != consoleplayer().userinfo.team)))
+			return;
+	}
+
+	name = player.userinfo.netname.c_str();
 
 	switch (who)
 	{
@@ -2149,11 +2168,7 @@ void CL_SpawnPlayer()
 		p->mo->health = 0;
 	}
 
-	G_PlayerReborn(*p);
-	// [AM] If we're "reborn" as a spectator, don't touch the keepinventory
-	//      flag, but otherwise turn it off.
-	if (!p->spectator)
-		p->keepinventory = false;
+	G_PlayerReborn (*p);
 
 	mobj = new AActor (x, y, z, MT_PLAYER);
 	
@@ -2231,13 +2246,18 @@ void CL_PlayerInfo(void)
 {
 	player_t *p = &consoleplayer();
 
-	for (size_t j = 0; j < NUMWEAPONS; j++)
-		p->weaponowned[j] = MSG_ReadBool();
+	uint16_t booleans = MSG_ReadShort();
 
-	for (size_t j = 0; j < NUMAMMO; j++)
+	for (int i = 0; i < NUMWEAPONS; i++)
+		p->weaponowned[i] = booleans & 1 << i;
+	for (int i = 0; i < NUMCARDS; i++)
+		p->cards[i] = booleans & 1 << (i + NUMWEAPONS);
+	p->backpack = booleans & 1 << (NUMWEAPONS + NUMCARDS);
+
+	for (int i = 0; i < NUMAMMO; i++)
 	{
-		p->maxammo[j] = MSG_ReadShort();
-		p->ammo[j] = MSG_ReadShort();
+		p->maxammo[i] = MSG_ReadShort();
+		p->ammo[i] = MSG_ReadShort();
 	}
 
 	p->health = MSG_ReadByte();
@@ -2251,10 +2271,8 @@ void CL_PlayerInfo(void)
 	if (newweapon != p->readyweapon)
 		p->pendingweapon = newweapon;
 
-	p->backpack = MSG_ReadBool();
-
-	// [AM] Determine if we should be keeping our inventory on next spawn.
-	p->keepinventory = MSG_ReadBool();
+	for (int i = 0; i < NUMPOWERS; i++)
+		p->powers[i] = MSG_ReadShort();
 }
 
 //
@@ -3272,7 +3290,8 @@ void CL_ReadyState() {
 void CL_WarmupState()
 {
 	warmup.set_client_status(static_cast<Warmup::status_t>(MSG_ReadByte()));
-	if (warmup.get_status() == Warmup::COUNTDOWN)
+	if (warmup.get_status() == Warmup::COUNTDOWN ||
+	    warmup.get_status() == Warmup::FORCE_COUNTDOWN)
 	{
 		// Read an extra countdown number off the wire
 		short count = MSG_ReadShort();
@@ -3280,9 +3299,9 @@ void CL_WarmupState()
 		buffer << "Match begins in " << count << "...";
 		C_GMidPrint(buffer.str().c_str(), CR_GREEN, 0);
 	}
-	else if (warmup.get_status() == Warmup::INGAME)
+	else
 	{
-		// Clear the midprint when the game starts
+		// Clear the midprint in other cases.
 		C_GMidPrint("", CR_GREY, 0);
 	}
 }

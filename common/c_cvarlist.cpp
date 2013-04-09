@@ -144,6 +144,10 @@ CVAR (sv_allowpwo, "0", "Allow clients to set their preferences for automatic we
 CVAR (sv_allowwidescreen, "1", "Allow clients to use true widescreen",
       CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE | CVAR_LATCH)
 
+// [AM] Allow players to see the spawns on the map
+CVAR (sv_allowshowspawns, "1", "Allow clients to see spawn points as particle fountains",
+      CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE | CVAR_LATCH)
+
 // Compatibility options for vanilla
 // ---------------------------------
 
@@ -208,7 +212,7 @@ CVAR (cl_predictpickup, "1", "Predict weapon pickups", CVARTYPE_BOOL, CVAR_ARCHI
 
 // Movebob
 CVAR_FUNC_DECL (cl_movebob, "1.0", "Adjust weapon and movement bobbing",
-      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE | CVAR_CLIENTINFO)
+      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR (cl_rockettrails, "0", "Rocket trails on/off (currently unused)", CVARTYPE_BOOL,  CVAR_ARCHIVE)
 

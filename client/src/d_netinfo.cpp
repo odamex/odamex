@@ -43,6 +43,19 @@
 
 #include "p_ctf.h"
 
+// The default preference ordering when the player runs out of one type of ammo.
+// Vanilla Doom compatible.
+const byte UserInfo::weapon_prefs_default[NUMWEAPONS] = {
+	0, // wp_fist
+	4, // wp_pistol
+	5, // wp_shotgun
+	6, // wp_chaingun
+	1, // wp_missile
+	8, // wp_plasma
+	2, // wp_bfg
+	3, // wp_chainsaw
+	7  // wp_supershotgun
+};
 
 EXTERN_CVAR (cl_autoaim)
 EXTERN_CVAR (cl_name)
@@ -74,6 +87,8 @@ enum
 	INFO_Gender,
     INFO_Unlag
 };
+
+
 
 
 gender_t D_GenderByName (const char *gender)
@@ -131,11 +146,13 @@ void D_PrepareWeaponPreferenceUserInfo()
 
 void D_SetupUserInfo(void)
 {
-	userinfo_t *coninfo = &consoleplayer().userinfo;
+	UserInfo* coninfo = &consoleplayer().userinfo;
 
-	memset (&consoleplayer().userinfo, 0, sizeof(userinfo_t));
-	
-	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
+	std::string netname = cl_name.str();
+	if (netname.length() > MAXPLAYERNAME)
+		netname.erase(MAXPLAYERNAME);
+
+	coninfo->netname			= netname;
 	coninfo->team				= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
 	coninfo->color				= V_GetColorFromString (NULL, cl_color.cstring());
 	coninfo->skin				= R_FindSkin (cl_skin.cstring());
@@ -163,7 +180,7 @@ void D_UserInfoChanged (cvar_t *cvar)
 		CL_SendUserInfo();
 }
 
-FArchive &operator<< (FArchive &arc, userinfo_t &info)
+FArchive &operator<< (FArchive &arc, UserInfo &info)
 {
 	arc.Write (&info.netname, sizeof(info.netname));
 	arc.Write (&info.team, sizeof(info.team));  // [Toke - Teams]
@@ -176,7 +193,7 @@ FArchive &operator<< (FArchive &arc, userinfo_t &info)
 	return arc;
 }
 
-FArchive &operator>> (FArchive &arc, userinfo_t &info)
+FArchive &operator>> (FArchive &arc, UserInfo &info)
 {
 	int dummy;
 	byte switchweapon;

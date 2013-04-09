@@ -141,7 +141,7 @@ public:
 	std::queue<NetCommand> cmdqueue;	// all received ticcmds
 
 	// [RH] who is this?
-	userinfo_t	userinfo;
+	UserInfo	userinfo;
 
 	// FOV in degrees
 	float		fov;
@@ -175,9 +175,6 @@ public:
 	int			fragcount;
 	int			deathcount;
 	int			killcount, itemcount, secretcount;		// for intermission
-
-	// [AM] Determine if we should keep our inventory on next spawn
-	bool		keepinventory;
 
     // Is wp_nochange if not changing.
 	weapontype_t	pendingweapon;
@@ -386,6 +383,7 @@ player_t		&consoleplayer();
 player_t		&displayplayer();
 player_t		&listenplayer();
 player_t		&idplayer(byte id);
+player_t		&nameplayer(const std::string &netname);
 bool			validplayer(player_t &ref);
 
 extern byte consoleplayer_id;

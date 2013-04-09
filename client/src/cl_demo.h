@@ -77,6 +77,7 @@ private:
 	void cleanUp();
 	void copy(NetDemo &to, const NetDemo &from);
 	void error(const std::string &message);
+	void fatalError(const std::string &message);
 	void reset();
 
 	const netdemo_index_entry_t *snapshotLookup(int ticnum) const;

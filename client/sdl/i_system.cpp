@@ -633,6 +633,8 @@ void STACK_ARGS I_Quit (void)
 
     CloseNetwork();
 
+	DConsoleAlias::DestroyAll();
+
 	try
 	{
 		if (r_showendoom && !Args.CheckParm ("-novideo"))
@@ -678,7 +680,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 
 		call_terms();
 
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 }
 

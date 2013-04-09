@@ -1963,7 +1963,7 @@ BOOL CheckIfExitIsGood (AActor *self)
     }
 
 	if (self->player)
-		Printf (PRINT_HIGH, "%s exited the level.\n", self->player->userinfo.netname);
+		Printf (PRINT_HIGH, "%s exited the level.\n", self->player->userinfo.netname.c_str());
 
     return true;
 }

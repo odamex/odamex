@@ -1051,7 +1051,7 @@ void M_StartGame(int choice)
             // Check for nerve.wad, if it's loaded re-load with just iwad (DOOM 2 BFG)
             for (unsigned int i = 2; i < wadfiles.size(); i++)
             {
-                if (StdStringCompare(str, M_ExtractFileName(wadfiles[i]), true) == 0)
+                if (iequals(str, M_ExtractFileName(wadfiles[i])))
                 {
                     G_LoadWad(wadfiles[1]);
                 }
@@ -1246,7 +1246,7 @@ void M_QuitResponse(int ch)
 
     call_terms();
 
-	exit (0);
+	exit(EXIT_SUCCESS);
 }
 
 void M_QuitDOOM (int choice)
@@ -1927,10 +1927,7 @@ bool M_Responder (event_t* ev)
 			break;
 
 		  default:
-			ch = toupper(ev->data3);	// [RH] Use user keymap
-			if (ch != 32)
-				if (ch-HU_FONTSTART < 0 || ch-HU_FONTSTART >= HU_FONTSIZE)
-					break;
+			ch = ev->data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
 				V_StringWidth(savegamestrings[saveSlot]) <

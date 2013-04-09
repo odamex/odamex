@@ -690,8 +690,10 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			{
 				if (lumpsfound[2])
 				{
-					if (!StdStringCompare(iwad_file,"chex.wad",true))	// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
-					{													// iwad.  It's ultimate doom with their stuff replacing most things.
+					// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
+					// iwad.  It's ultimate doom with their stuff replacing most things.
+					if (iequals(iwad_file, "chex.wad"))
+					{
 						gamemission = chex;
 						gamemode = retail_chex;
 						gameinfo = RetailGameInfo;

@@ -516,7 +516,7 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 	// Did we switch IWAD files?
 	if (AddedIWAD && !wadfiles.empty())
 	{
-		if (StdStringCompare(M_ExtractFileName(newwadfiles[0]), M_ExtractFileName(wadfiles[1]), true) != 0)
+		if (!iequals(M_ExtractFileName(newwadfiles[0]), M_ExtractFileName(wadfiles[1])))
 			Reboot = true;
 	}
 
@@ -532,7 +532,7 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 	{
 		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < newwadfiles.size(); i++, j++)
 		{
-			if (StdStringCompare(M_ExtractFileName(newwadfiles[j]), M_ExtractFileName(wadfiles[i]), true) != 0)
+			if (!iequals(M_ExtractFileName(newwadfiles[j]), M_ExtractFileName(wadfiles[i])))
 			{
 				Reboot = true;
 				break;
@@ -552,7 +552,7 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 	{
 		for (i = 0, j = 0; i < patchfiles.size() && j < newpatchfiles.size(); i++, j++)
 		{
-			if (StdStringCompare(M_ExtractFileName(newpatchfiles[j]), M_ExtractFileName(patchfiles[i]), true) != 0)
+			if (!iequals(M_ExtractFileName(newpatchfiles[j]), M_ExtractFileName(patchfiles[i])))
 			{
 				Reboot = true;
 				break;
@@ -562,11 +562,10 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 
 	if (Reboot)
 	{
+		unnatural_level_progression = true;
 		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
 		if (!missingfiles.empty())
 			return false;
-		// [AM] If we're switching WAD files, force a pistol start.
-		unnatural_level_progression = true;
 	}
 
 	if (mapname.length())

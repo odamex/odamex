@@ -23,6 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "cmdlib.h"
 #include "doomdef.h"
 #include "d_event.h"
 #include "p_local.h"
@@ -78,6 +79,24 @@ player_t &idplayer(byte id)
 		translation[players[i].id] = i;
 		if (players[i].id == id)
  			return players[i];
+	}
+
+	return nullplayer;
+}
+
+/**
+ * Find player by netname.  Note that this search is case-insensitive.
+ * 
+ * @param  netname Name of player to look for.
+ * @return         Player reference of found player, or nullplayer.
+ */
+player_t &nameplayer(const std::string &netname)
+{
+	std::vector<player_t>::iterator it;
+	for (it = players.begin(); it != players.end(); ++it)
+	{
+		if (iequals(netname, it->userinfo.netname))
+			return *it;
 	}
 
 	return nullplayer;
@@ -617,7 +636,7 @@ void P_PlayerThink (player_t *player)
 	if (!player->mo && clientside && multiplayer)
 	{
 		DPrintf("Warning: P_PlayerThink called for player %s without a valid Actor.\n",
-				player->userinfo.netname);
+				player->userinfo.netname.c_str());
 		return;
 	}
 	else if (!player->mo)
@@ -811,7 +830,6 @@ void player_s::Serialize (FArchive &arc)
 			<< damagecount
 			<< bonuscount
 			<< points
-			<< keepinventory
 			/*<< attacker->netid*/
 			<< extralight
 			<< fixedcolormap
@@ -834,7 +852,7 @@ void player_s::Serialize (FArchive &arc)
 	}
 	else
 	{ // Restoring from archive
-		userinfo_t dummyuserinfo;
+		UserInfo dummyuserinfo;
 
 		arc >> id
 			>> playerstate
@@ -862,7 +880,6 @@ void player_s::Serialize (FArchive &arc)
 			>> damagecount
 			>> bonuscount
 			>> points
-			>> keepinventory
 			/*>> attacker->netid*/
 			>> extralight
 			>> fixedcolormap
@@ -918,7 +935,6 @@ player_s::player_s()
 	fragcount = 0;
 	deathcount = 0;
 	killcount = 0;
-	keepinventory = false;
 	pendingweapon = wp_nochange;
 	readyweapon = wp_nochange;
 	for (i = 0; i < NUMWEAPONS; i++)
@@ -1007,7 +1023,6 @@ player_s &player_s::operator =(const player_s &other)
 	fragcount = other.fragcount;
 	deathcount = other.deathcount;
 	killcount = other.killcount;
-	keepinventory = other.keepinventory;
 
 	pendingweapon = other.pendingweapon;
 	readyweapon = other.readyweapon;

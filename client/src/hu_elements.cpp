@@ -198,6 +198,7 @@ std::string Warmup(int& color)
 	player_t *cp = &consoleplayer();
 
 	::Warmup::status_t wstatus = warmup.get_status();
+
 	if (wstatus == ::Warmup::WARMUP)
 	{
 		if (dp->spectator)
@@ -219,10 +220,10 @@ std::string Warmup(int& color)
 				return "Warmup: This player is not ready";
 		}
 	}
-	else if (wstatus == ::Warmup::COUNTDOWN)
+	else if (wstatus == ::Warmup::COUNTDOWN || wstatus == ::Warmup::FORCE_COUNTDOWN)
 	{
 		color = CR_GOLD;
-		return "Warmup: Match is about to start...";
+		return "Match is about to start...";
 	}
 	return "";
 }
@@ -722,7 +723,7 @@ void EAPlayerNames(int x, int y, const float scale,
 				color = CR_GOLD;
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              player->userinfo.netname, color, force_opaque);
+			              player->userinfo.netname.c_str(), color, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
 		}
@@ -773,7 +774,7 @@ void EATeamPlayerNames(int x, int y, const float scale,
 				}
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              player->userinfo.netname, color, force_opaque);
+			              player->userinfo.netname.c_str(), color, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
 		}
@@ -809,7 +810,7 @@ void EASpectatorNames(int x, int y, const float scale,
 					}
 				}
 				hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-				              player->userinfo.netname, color, force_opaque);
+				              player->userinfo.netname.c_str(), color, force_opaque);
 				y += 7 + padding;
 				drawn += 1;
 			} else {
@@ -1259,7 +1260,7 @@ void EATargets(int x, int y, const float scale,
 			              "You", Targets[i].Color);
 		} else {
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              Targets[i].PlayPtr->userinfo.netname,
+			              Targets[i].PlayPtr->userinfo.netname.c_str(),
 			              Targets[i].Color);
 		}
 

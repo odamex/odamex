@@ -44,7 +44,7 @@ bool Warmup::checkfireweapon()
 	if (!multiplayer)
 		return true;
 
-	if (this->status == Warmup::COUNTDOWN)
+	if (this->status == Warmup::COUNTDOWN || this->status == Warmup::FORCE_COUNTDOWN)
 		return false;
 	return true;
 }

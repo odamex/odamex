@@ -773,6 +773,17 @@ void DConsoleAlias::C_ArchiveAliases (FILE *f)
 	}
 }
 
+void DConsoleAlias::DestroyAll()
+{
+	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; ++i)
+	{
+		DConsoleCommand *alias = i->second;
+
+		if (alias->IsAlias())
+			delete alias;
+	}
+}
+
 BEGIN_COMMAND (alias)
 {
 	if (argc == 1)

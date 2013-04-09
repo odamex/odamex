@@ -36,7 +36,8 @@ public:
 	    DISABLED,
 	    WARMUP,
 	    INGAME,
-	    COUNTDOWN
+	    COUNTDOWN,      // Can be cancelled by unreadying
+	    FORCE_COUNTDOWN // Can't be cancelled by unreadying
 	} status_t;
 	Warmup() : status(Warmup::DISABLED), time_begin(0) { }
 	Warmup::status_t get_status();
@@ -46,6 +47,7 @@ public:
 	bool checktimeleftadvance();
 	bool checkfireweapon();
 	bool checkreadytoggle();
+	void restart();
 	void forcestart();
 	void readytoggle();
 	void tic();

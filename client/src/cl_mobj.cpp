@@ -33,6 +33,7 @@
 #include "doomtype.h"
 #include "v_video.h"
 #include "c_cvars.h"
+#include "c_effect.h"
 #include "vectors.h"
 #include "p_mobj.h"
 #include "cl_main.h"
@@ -44,6 +45,7 @@
 extern BOOL demonew;
 
 EXTERN_CVAR(sv_nomonsters)
+EXTERN_CVAR(cl_showspawns)
 EXTERN_CVAR(chasedemo)
 
 void G_PlayerReborn(player_t &player);
@@ -72,13 +74,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		return;
 
 	if (p->playerstate == PST_REBORN || p->playerstate == PST_ENTER)
-	{
 		G_PlayerReborn (*p);
-		// [AM] If we're "reborn" as a spectator, don't touch the keepinventory
-		//      flag, but otherwise turn it off.
-		if (!p->spectator)
-			p->keepinventory = false;
-	}
 
 	AActor *mobj = new AActor (mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
 
@@ -163,8 +159,43 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
             }
         }
     }
+}
 
+std::vector<AActor*> spawnfountains;
+
+/**
+ * Show spawn points as particle fountains
+ */
+void P_ShowSpawns(mapthing2_t* mthing)
+{
+	if (clientside && cl_showspawns)
+	{
+		AActor* spawn = 0;
+
+		if (sv_gametype == GM_DM && mthing->type == 11)
+		{
+			spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
+			spawn->args[0] = 7; // White
+		}
+
+		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		{
+			if (mthing->type == 5080)
+			{
+				spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
+				spawn->args[0] = 3; // Blue
+			}
+			else if (mthing->type == 5081)
+			{
+				spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
+				spawn->args[0] = 1; // Red
+			}
+		}
+
+		if (spawn) {
+			spawn->effects = spawn->args[0] << FX_FOUNTAINSHIFT;
+		}
+	}
 }
 
 VERSION_CONTROL (cl_mobj_cpp, "$Id$")
-
