@@ -77,7 +77,7 @@ struct UserInfo
 
 	static const byte weapon_prefs_default[NUMWEAPONS];
 
-	UserInfo() : next_change_time(0), netname(""), team(TEAM_NONE), aimdist(0),
+	UserInfo() : next_change_time(0), team(TEAM_NONE), aimdist(0),
 	             unlag(true), predict_weapons(true), update_rate(2), color(0),
 	             skin(0), gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
 	{

@@ -79,7 +79,7 @@ public:
 	virtual ~cvar_t ();
 
 	const char *cstring() const {return m_String.c_str(); }
-	const std::string str() const { return m_String; }
+	const std::string& str() const { return m_String; }
 	const char *name() const { return m_Name.c_str(); }
 	const char *helptext() const {return m_HelpText.c_str(); }
 	const char *latched() const { return m_LatchedString.c_str(); }
