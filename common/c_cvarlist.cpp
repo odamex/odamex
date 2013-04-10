@@ -266,6 +266,6 @@ CVAR (sv_hostname,      "Untitled Odamex Server", "Server name to appear on mast
 
 // Speedhack code (server related)
 CVAR (sv_speedhackfix,     "0", "Experimental anti-speedhack code",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")
