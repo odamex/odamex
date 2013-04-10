@@ -590,8 +590,8 @@ void P_DeathThink (player_t *player)
 
 		// [SL] Can we respawn yet?
 		// Delay respawn by 1 second like ZDoom if co_zdoomspawndelay is enabled
-		bool delay_respawn =	(!clientside && co_zdoomspawndelay &&
-								(level.time < player->death_time + TICRATE));
+		int respawn_time = player->death_time + co_zdoomspawndelay * TICRATE;
+		bool delay_respawn =	(!clientside && level.time < respawn_time);
 
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
 		if (player->ingame() && ((player->cmd.ucmd.buttons & BT_USE && !delay_respawn) || force_respawn))
