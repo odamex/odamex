@@ -182,8 +182,9 @@ void D_UserInfoChanged (cvar_t *cvar)
 
 FArchive &operator<< (FArchive &arc, UserInfo &info)
 {
-	const char* netname = info.netname.c_str();
-	arc.Write (&netname, MAXPLAYERNAME+1);
+	arc.Write(info.netname.c_str(), MAXPLAYERNAME);
+	arc << byte(0);		// ensure the string is properly terminated
+
 	arc.Write (&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Write (&info.gender, sizeof(info.gender));
 	arc << info.aimdist << info.color << info.skin << info.unlag
@@ -200,8 +201,7 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 	byte switchweapon;
 
 	char netname[MAXPLAYERNAME+1];
-	arc.Read (&netname, sizeof(netname));
-	netname[MAXPLAYERNAME] = '\0';
+	arc.Read(netname, MAXPLAYERNAME+1);
 	info.netname = netname;
 
 	arc.Read (&info.team, sizeof(info.team));  // [Toke - Teams]
