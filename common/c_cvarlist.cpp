@@ -222,8 +222,8 @@ CVAR (sv_forcerespawn, "0", "Force a player to respawn.",
 // [AM] Force a player to respawn after a set amount of time
 CVAR (sv_forcerespawntime, "30", "Force a player to respawn after a set amount of time",
       CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-CVAR (co_zdoomspawndelay, "0", "Force a player to wait a second before respawning",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+CVAR (sv_spawndelaytime, "0.0", "Force a player to wait a period (in seconds) before respawning",
+      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_FUNC_DECL (sv_gravity, "800", "Gravity of the environment",
       CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
@@ -266,6 +266,6 @@ CVAR (sv_hostname,      "Untitled Odamex Server", "Server name to appear on mast
 
 // Speedhack code (server related)
 CVAR (sv_speedhackfix,     "0", "Experimental anti-speedhack code",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")

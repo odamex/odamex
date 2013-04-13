@@ -182,12 +182,15 @@ void D_UserInfoChanged (cvar_t *cvar)
 
 FArchive &operator<< (FArchive &arc, UserInfo &info)
 {
-	arc.Write (&info.netname, sizeof(info.netname));
-	arc.Write (&info.team, sizeof(info.team));  // [Toke - Teams]
-	arc.Write (&info.gender, sizeof(info.gender));
+	arc.Write(info.netname.c_str(), MAXPLAYERNAME);
+	arc << byte(0);		// ensure the string is properly terminated
+
+	arc.Write(&info.team, sizeof(info.team));  // [Toke - Teams]
+	arc.Write(&info.gender, sizeof(info.gender));
 	arc << info.aimdist << info.color << info.skin << info.unlag
-		<< info.update_rate << (byte)info.switchweapon;
-	arc.Write (&info.weapon_prefs, sizeof(info.weapon_prefs));
+		<< info.update_rate;
+	arc.Write(&info.switchweapon, sizeof(info.switchweapon));
+	arc.Write(info.weapon_prefs, sizeof(info.weapon_prefs));
  	arc << 0;
 
 	return arc;
@@ -196,15 +199,17 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 FArchive &operator>> (FArchive &arc, UserInfo &info)
 {
 	int dummy;
-	byte switchweapon;
 
-	arc.Read (&info.netname, sizeof(info.netname));
-	arc.Read (&info.team, sizeof(info.team));  // [Toke - Teams]
-	arc.Read (&info.gender, sizeof(info.gender));
+	char netname[MAXPLAYERNAME+1];
+	arc.Read(netname, sizeof(netname));
+	info.netname = netname;
+
+	arc.Read(&info.team, sizeof(info.team));  // [Toke - Teams]
+	arc.Read(&info.gender, sizeof(info.gender));
 	arc >> info.aimdist >> info.color >> info.skin >> info.unlag
-		>> info.update_rate >> switchweapon;
-	info.switchweapon = (weaponswitch_t)switchweapon;
-	arc.Read (&info.weapon_prefs, sizeof(info.weapon_prefs));
+		>> info.update_rate;
+	arc.Read(&info.switchweapon, sizeof(info.switchweapon));
+	arc.Read(info.weapon_prefs, sizeof(info.weapon_prefs));
 	arc >> dummy;
 
 	return arc;

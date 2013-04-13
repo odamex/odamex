@@ -119,7 +119,6 @@ EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (co_fineautoaim)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_boomsectortouch)
-EXTERN_CVAR (co_zdoomspawndelay)
 EXTERN_CVAR (co_blockmapfix)
 
 // [Toke - Menu] New Menu Stuff.
@@ -593,7 +592,6 @@ static menuitem_t CompatItems[] ={
 	{discrete,  "Camera follows killer on death",  {&cl_deathcam},          {2.0}, {0.0}, {0.0}, {OnOff}},
 	{discrete,  "Finer-precision Autoaim",         {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
 	{discrete,  "Fix hit detection at grid edges", {&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Players can't instantly respawn", {&co_zdoomspawndelay},   {2.0}, {0.0}, {0.0}, {OnOff}},
 	{discrete,  "ZDOOM 1.23 physics",              {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
 	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{bricktext, "Items and Decoration",            {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
