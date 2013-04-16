@@ -473,6 +473,8 @@ void G_DoLoadLevel (int position)
 	else
 		lastposition = position;
 
+	cvar_t::UnlatchCVars();
+
 	G_InitLevelLocals ();
 
     Printf_Bold ("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"

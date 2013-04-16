@@ -140,8 +140,11 @@ cvar_t::~cvar_t ()
 
 void cvar_t::ForceSet (const char *val)
 {
-	if (m_Flags & CVAR_LATCH && 
-	    !(m_Flags & CVAR_SERVERINFO && baseapp == client && multiplayer))
+	// [SL] 2013-04-16 - Latched CVARs do not change values until the next map.
+	// Servers and single-player games should abide by this behavior but
+	// multiplayer clients should just do what the server tells them.
+	if (m_Flags & CVAR_LATCH && serverside && 
+		(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION))
 	{
 		m_Flags |= CVAR_MODIFIED;
 		if(val)
@@ -471,8 +474,7 @@ void cvar_t::UnlatchCVars (void)
 	var = ad.GetCVars();
 	while (var)
 	{
-		if (var->m_Flags & (CVAR_MODIFIED | CVAR_LATCH) &&
-		    !(var->m_Flags & CVAR_SERVERINFO && baseapp == client && multiplayer))
+		if (var->m_Flags & (CVAR_MODIFIED | CVAR_LATCH))
 		{
 			unsigned oldflags = var->m_Flags & ~CVAR_MODIFIED;
 			var->m_Flags &= ~(CVAR_LATCH);
