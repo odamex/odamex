@@ -102,7 +102,7 @@ static void V_UpdateGammaLevel(float var)
 			const double exp = 1.0 - 0.125 * (var - 1.0);
 
 			for (int i = 0; i < 256; i++)
-				newgamma[i] = (byte)(0.5 + basefac * pow(i + 1, exp));
+				newgamma[i] = (byte)(0.5 + basefac * pow(static_cast<double>(i + 1), exp));
 		}
 
 		GammaAdjustPalettes ();
