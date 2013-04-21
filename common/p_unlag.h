@@ -53,6 +53,8 @@ public:
 	void setRoundtripDelay(byte player_id, byte svgametic);
 	void getReconciliationOffset(	byte target_id,
 									fixed_t &x, fixed_t &y, fixed_t &z);
+	void getCurrentPlayerPosition(	byte player_id,
+									fixed_t &x, fixed_t &y, fixed_t &z);
 	static bool enabled();
 private:
 	static const size_t MAX_HISTORY_TICS = TICRATE;

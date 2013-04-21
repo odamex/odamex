@@ -296,10 +296,9 @@ void SV_FlagDrop (player_t &player, flag_t f)
 	player.flags[f] = false; // take ex-carrier's flag
 	CTFdata[f].flagger = 0;
 
-	fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
-	Unlag::getInstance().getReconciliationOffset(player.id, xoffs, yoffs, zoffs);
-
-	CTF_SpawnDroppedFlag(f, player.mo->x + xoffs, player.mo->y + yoffs, player.mo->z + zoffs);
+	fixed_t x, y, z;
+	Unlag::getInstance().getCurrentPlayerPosition(player.id, x, y, z);
+	CTF_SpawnDroppedFlag(f, x, y, z);
 }
 
 //
