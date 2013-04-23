@@ -156,44 +156,37 @@ void W_HashLumps(void)
 // shortened (base name) versions of standard file names (eg doom2, plutonia),
 // it can also do an optional hash comparison against a correct hash list
 // for more "accurate" detection.
-BOOL W_IsIWAD(std::string filename, std::string hash)
+bool W_IsIWAD(const std::string& filename, const std::string& hash)
 {
-    std::string name;
+	if (filename.empty())
+		return false;
 
-    if (!filename.length())
-        return false;
+	// find our match if there is one
+	for (size_t i = 0; !doomwadnames[i].name.empty(); i++)
+	{
+		if (!hash.empty())
+		{
+			// hash comparison
+			for (size_t j = 0; !doomwadnames[i].hash[j].empty(); j++)
+			{
+				// the hash is always right! even if the name is wrong..
+				if (iequals(hash, doomwadnames[i].hash[j]))
+					return true;
+			}
+		}
+		else
+		{
+			std::string base_filename, base_iwadname;
+			M_ExtractFileBase(filename, base_filename);
+			M_ExtractFileBase(doomwadnames[i].name, base_iwadname);
 
-    // uppercase our comparison strings
-    std::transform(filename.begin(), filename.end(), filename.begin(), toupper);
+			if (iequals(filename, doomwadnames[i].name) ||
+				iequals(base_filename, base_iwadname))
+				return true;
+		}
+	}
 
-    if (!hash.empty())
-        std::transform(hash.begin(), hash.end(), hash.begin(), toupper);
-
-    // Just get the base name
-    M_ExtractFileBase(filename, name);
-
-    // find our match if there is one
-    for (DWORD i = 0; !doomwadnames[i].name.empty(); i++)
-    {
-        std::string basename;
-
-        // We want a base name comparison aswell
-        M_ExtractFileBase(doomwadnames[i].name, basename);
-
-        // hash comparison
-        if (!hash.empty())
-        for (DWORD j = 0; !doomwadnames[i].hash[j].empty(); j++)
-        {
-            // the hash is always right! even if the name is wrong..
-            if (doomwadnames[i].hash[j] == hash)
-                return true;
-        }
-
-        if ((filename == doomwadnames[i].name) || (name == basename))
-            return true;
-    }
-
-    return false;
+	return false;
 }
 
 
