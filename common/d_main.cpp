@@ -926,12 +926,22 @@ static bool VerifyFile(
 	M_ExtractFileExtension(filename, ext);
 
 	base_filename = D_CleanseFileName(filename);
-	full_filename = BaseFileSearch(base_filename, "." + ext, hash);
-
-	if (base_filename.length() && full_filename.length())
-		return true;
-	else
+	if (base_filename.empty())
 		return false;
+
+	// is there an exact match for the filename and hash?
+	full_filename = BaseFileSearch(base_filename, "." + ext, hash);
+	if (!full_filename.empty())
+		return true;
+
+	// if it's an IWAD, check if we have a valid alternative hash
+	if (W_IsIWAD(base_filename, hash))
+	{
+		full_filename = BaseFileSearch(base_filename, "." + ext);
+		return (full_filename.length() > 0);
+	}
+
+	return false;
 }
 
 void D_NewWadInit();
