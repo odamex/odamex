@@ -26,6 +26,8 @@ ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
 AppVersion=0.6.2
+EnableDirDoesntExistWarning=true
+DirExistsWarning=no
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -96,3 +98,7 @@ Root: HKCR; Subkey: odamex; ValueType: string; ValueData: URL:Odamex Protocol; F
 Root: HKCR; Subkey: odamex; ValueType: string; ValueName: Url Protocol; Flags: createvalueifdoesntexist uninsdeletekey noerror
 Root: HKCR; Subkey: odamex\DefaultIcon; ValueData: odamex.exe,1; Flags: createvalueifdoesntexist uninsdeletekey noerror
 Root: HKCR; Subkey: odamex\shell\open\command; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: createvalueifdoesntexist uninsdeletekey; ValueType: string
+Root: HKCR; SubKey: .odd; ValueType: string; ValueData: Odamex Demo; Flags: uninsdeletekey
+Root: HKCR; SubKey: Odamex Demo; ValueType: string; ValueData: Odamex Net Demo; Flags: uninsdeletekey
+Root: HKCR; SubKey: Odamex Demo\Shell\Open\Command; ValueType: string; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletevalue
+Root: HKCR; Subkey: Odamex Demo\DefaultIcon; ValueType: string; ValueData: {app}\odamex.exe,0; Flags: uninsdeletevalue
