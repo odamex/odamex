@@ -30,8 +30,6 @@
 #include <string>
 #include <vector>
 
-#define HASH_SIZE	251				// I think this is prime
-
 void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 
 // add commands to the console as if they were typed in

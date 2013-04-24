@@ -2,8 +2,8 @@
 project(Odamex)
 cmake_minimum_required(VERSION 2.8)
 
-set(PROJECT_VERSION 0.6.2)
-set(PROJECT_COPYRIGHT "2006-2012")
+set(PROJECT_VERSION 0.6.3)
+set(PROJECT_COPYRIGHT "2006-2013")
 
 # Default build type
 if(NOT MSVC)

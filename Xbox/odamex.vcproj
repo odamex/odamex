@@ -758,9 +758,6 @@
 				RelativePath="..\common\m_fileio.h">
 			</File>
 			<File
-				RelativePath="..\common\m_fixed.cpp">
-			</File>
-			<File
 				RelativePath="..\common\m_fixed.h">
 			</File>
 			<File

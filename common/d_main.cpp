@@ -926,12 +926,25 @@ static bool VerifyFile(
 	M_ExtractFileExtension(filename, ext);
 
 	base_filename = D_CleanseFileName(filename);
-	full_filename = BaseFileSearch(base_filename, "." + ext, hash);
-
-	if (base_filename.length() && full_filename.length())
-		return true;
-	else
+	if (base_filename.empty())
 		return false;
+
+	// is there an exact match for the filename and hash?
+	full_filename = BaseFileSearch(base_filename, "." + ext, hash);
+	if (!full_filename.empty())
+		return true;
+
+	// is there a file with matching name even if the hash is incorrect?
+	full_filename = BaseFileSearch(base_filename, "." + ext);
+	if (full_filename.empty())
+		return false;
+	
+	// if it's an IWAD, check if we have a valid alternative hash
+	std::string found_hash = W_MD5(full_filename);
+	if (W_IsIWAD(base_filename, found_hash))
+		return true;
+
+	return false;
 }
 
 void D_NewWadInit();

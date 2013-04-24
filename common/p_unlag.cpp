@@ -599,6 +599,38 @@ void Unlag::getReconciliationOffset(	byte target_id,
 
 
 //
+// Unlag::getCurrentPlayerPosition
+//
+// Changes the x, y, z parameters to the position of a player that
+// was saved prior to reconciliation.
+//
+void Unlag::getCurrentPlayerPosition(	byte player_id,
+										fixed_t &x, fixed_t &y, fixed_t &z)
+{
+	x = y = z = 0;
+
+	size_t cur = player_id_map[player_id];
+	player_t* player = player_history[cur].player;
+
+	if (!player || !player->mo || player->spectator)
+		return;
+
+	if (Unlag::enabled() && reconciled)
+	{
+		x = player_history[cur].backup_x;
+		y = player_history[cur].backup_y;
+		z = player_history[cur].backup_z;
+	}
+	else
+	{
+		x = player->mo->x;
+		y = player->mo->y;
+		z = player->mo->z;
+	}
+}
+
+
+//
 // Unlag::debugReconciliation
 //
 // Attempts to determine which tic would have been ideal to use for reconciling
