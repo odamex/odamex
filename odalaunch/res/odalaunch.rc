@@ -58,8 +58,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,6,2,0
- PRODUCTVERSION 0,6,2,0
+ FILEVERSION 0,6,3,0
+ PRODUCTVERSION 0,6,3,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -77,14 +77,14 @@ BEGIN
             VALUE "Comments", "\0"
             VALUE "CompanyName", " \0"
             VALUE "FileDescription", "Odamex Launcher\0"
-            VALUE "FileVersion", "0.6.2\0"
+            VALUE "FileVersion", "0.6.3\0"
             VALUE "InternalName", "Odamex Launcher\0"
-            VALUE "LegalCopyright", "Copyright © 2006-2012 The Odamex Team\0"
+            VALUE "LegalCopyright", "Copyright © 2006-2013 The Odamex Team\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "odalaunch.exe\0"
             VALUE "PrivateBuild", "$Id$\0"
             VALUE "ProductName", "Odamex Launcher\0"
-            VALUE "ProductVersion", "0.6.2\0"
+            VALUE "ProductVersion", "0.6.3\0"
             VALUE "SpecialBuild", "$Id$\0"
         END
     END

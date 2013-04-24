@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=Odamex
-AppVerName=Odamex 0.6.2
+AppVerName=Odamex 0.6.3
 AppPublisher=Odamex Dev Team
 AppPublisherURL=http://odamex.net
 AppSupportURL=http://odamex.net
@@ -13,11 +13,11 @@ DefaultGroupName=Odamex
 AllowNoIcons=true
 LicenseFile=..\..\LICENSE
 ;InfoBeforeFile=..\..\CHANGES
-OutputBaseFilename=odamex-win32-0.6.2
+OutputBaseFilename=odamex-win32-0.6.3
 Compression=zip
 SolidCompression=true
 VersionInfoProductName=Odamex Win32 Installer
-VersionInfoProductVersion=0.6.2
+VersionInfoProductVersion=0.6.3
 AlwaysShowDirOnReadyPage=true
 ChangesEnvironment=true
 AppID={{2E517BBB-916F-4AB6-80E0-D4A292513F7A}
@@ -25,7 +25,7 @@ PrivilegesRequired=none
 ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
-AppVersion=0.6.2
+AppVersion=0.6.3
 EnableDirDoesntExistWarning=true
 DirExistsWarning=no
 
