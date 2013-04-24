@@ -3,7 +3,7 @@
 //
 // $Id: i_musicsystem.cpp 2541 2011-10-27 02:36:31Z dr_sean $
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2013 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
