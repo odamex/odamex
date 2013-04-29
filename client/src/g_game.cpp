@@ -2320,14 +2320,14 @@ BOOL G_CheckDemoStatus (void)
 		if (timingdemo)
 			endtime = I_GetTimePolled () - starttime;
 
-		cvar_t::C_RestoreCVars ();		// [RH] Restore cvars demo might have changed
-
 		Z_Free (demobuffer);
 
 		demoplayback = false;
 		netgame = false;
 		multiplayer = false;
 		serverside = false;
+
+		cvar_t::C_RestoreCVars ();		// [RH] Restore cvars demo might have changed
 
 		if (demotest) {
 			AActor *mo = idplayer(1).mo;
