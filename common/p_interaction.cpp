@@ -1149,14 +1149,12 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		}
 	}
 
-	// [Toke - CTF]
-	if (sv_gametype == GM_CTF && target->player)
-	{
-		CTF_CheckFlags(*target->player);
-	}
-
 	if (target->player)
 	{
+		// [Toke - CTF]
+		if (sv_gametype == GM_CTF)
+			CTF_CheckFlags(*target->player);
+
 		if (!joinkill && !shotclock)
 		{
 			P_GiveDeaths(tplayer, 1);
@@ -1174,8 +1172,6 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			// [RH] Cumulative frag count
 			P_GiveFrags(tplayer, -1);
 		}
-
-		CTF_CheckFlags(*target->player);
 
 		// [NightFang] - Added this, thought it would be cooler
 		// [Fly] - No, it's not cooler
