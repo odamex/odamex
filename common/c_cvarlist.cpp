@@ -223,7 +223,7 @@ CVAR (sv_forcerespawn, "0", "Force a player to respawn.",
 CVAR (sv_forcerespawntime, "30", "Force a player to respawn after a set amount of time",
       CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 CVAR (sv_spawndelaytime, "0.0", "Force a player to wait a period (in seconds) before respawning",
-      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL (sv_gravity, "800", "Gravity of the environment",
       CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
