@@ -580,8 +580,6 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 		player.mo = AActor::AActorPtr();
 	}
 
-	Unlag::getInstance().unregisterPlayer(player_id);
-
 	// remove this player from the global players vector
 	if (!players.empty())
 	{
@@ -590,6 +588,8 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 		players.erase(players.begin() + index);
 		free_player_ids.push(player_id);
 	}
+
+	Unlag::getInstance().unregisterPlayer(player_id);
 
 	// update tracking cvar
 	sv_clientcount.ForceSet(players.size());
