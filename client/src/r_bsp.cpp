@@ -564,13 +564,10 @@ static BOOL R_CheckBBox(const fixed_t *bspcoord)
 	fixed_t xh = bspcoord[checkcoord[boxpos][2]];
 	fixed_t yh = bspcoord[checkcoord[boxpos][3]];
 
-	// check if part of the bounding box is within the viewing window
-	// and calculate x1 and x2.
-	//
-	// We pass R_ClipLine the bounding-box's diagonals. If both
-	// diagonals are entirely clipped, then none of the bounding box
-	// is in the viewing window.
-	//
+	// if the camera is on one of the bounding-box's diagonals, it's visible
+	if (R_PointOnLine(viewx, viewy, xl, yl, xh, yh) ||
+		R_PointOnLine(viewx, viewy, xl, yh, xh, yl))
+		return true;
 
 	// translate the line endpoints from world-space to camera-space
 	// and store in (t1.x, t1.y) and (t2.x, t2.y)
@@ -585,11 +582,6 @@ static BOOL R_CheckBBox(const fixed_t *bspcoord)
 	v2fixed_t diag1pt1, diag1pt2, diag2pt1, diag2pt2;
 	diag1pt1.x = t1.x;	diag1pt1.y = t1.y;	diag1pt2.x = t2.x;	diag1pt2.y = t2.y;
 	diag2pt1.x = t1.x;	diag2pt1.y = t2.y;	diag2pt2.x = t2.x;	diag2pt2.y = t1.y;
-
-	// if the camera is on one of the bounding-box's diagonals, it's visible
-	if (R_PointOnLine(0, 0, diag1pt1.x, diag1pt1.y, diag1pt2.x, diag1pt2.y) ||
-		R_PointOnLine(0, 0, diag2pt1.x, diag2pt1.y, diag2pt2.x, diag2pt2.y))
-		return true;
 
 	bool diag1_visible = R_ClipLineToFrustum(diag1pt1.x, diag1pt1.y, diag1pt2.x, diag1pt2.y, 0);
 	bool diag2_visible = R_ClipLineToFrustum(diag2pt1.x, diag2pt1.y, diag2pt2.x, diag2pt2.y, 0);
