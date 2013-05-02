@@ -569,25 +569,55 @@ static BOOL R_CheckBBox(const fixed_t *bspcoord)
 	R_RotatePoint(xl - viewx, yl - viewy, ANG90 - viewangle, t1.x, t1.y);
 	R_RotatePoint(xh - viewx, yh - viewy, ANG90 - viewangle, t2.x, t2.y);
 
-	// We pass R_ClipLine the bounding-box's diagonals. If both
+	// We pass R_ClipLineToFrustum the bounding-box's diagonals. If both
 	// diagonals are entirely clipped, then none of the bounding box
 	// is in the viewing window.
-	if (!R_ClipLineToFrustum(t1.x, t1.y, t2.x, t2.y, 0) &&
-		!R_ClipLineToFrustum(t1.x, t2.y, t2.x, t1.y, 0))
+
+	v2fixed_t diag1pt1, diag1pt2, diag2pt1, diag2pt2;
+	diag1pt1.x = t1.x;	diag1pt1.y = t1.y;	diag1pt2.x = t2.x;	diag1pt2.y = t2.y;
+	diag2pt1.x = t1.x;	diag2pt1.y = t2.y;	diag2pt2.x = t2.x;	diag2pt2.y = t1.y;
+
+	bool diag1_visible = R_ClipLineToFrustum(diag1pt1.x, diag1pt1.y, diag1pt2.x, diag1pt2.y, 0);
+	bool diag2_visible = R_ClipLineToFrustum(diag2pt1.x, diag2pt1.y, diag2pt2.x, diag2pt2.y, 0);
+
+	if (!diag1_visible && !diag2_visible)
 		return false;
 
-	// project the line endpoints to determine which columns the line occupies
-// TODO: FIXME
-//	int x1 = R_ProjectPointX(t1.x, t1.y);
-//	int x2 = R_ProjectPointX(t2.x, t2.y) - 1;
-//	if (!R_CheckProjectionX(x1, x2))
-//		return false;
+	// determine the screen columns that could be occupied by the
+	// visible part of the two diagonals
+	int x1 = viewwidth, x2 = -1;
 
-	int x1 = 0, x2 = viewwidth - 1;
+	if (diag1_visible)
+	{
+		int cx1 = R_ProjectPointX(diag1pt1.x, diag1pt1.y);
+		int cx2 = R_ProjectPointX(diag1pt2.x, diag1pt2.y) - 1;
+		if (R_CheckProjectionX(cx1, cx2))
+		{
+			x1 = MIN(x1, cx1);
+			x2 = MAX(x2, cx2);
+		}
+	}
+
+	if (diag2_visible)
+	{
+		int cx1 = R_ProjectPointX(diag2pt1.x, diag2pt1.y);
+		int cx2 = R_ProjectPointX(diag2pt2.x, diag2pt2.y) - 1;
+		if (R_CheckProjectionX(cx1, cx2))
+		{
+			x1 = MIN(x1, cx1);
+			x2 = MAX(x2, cx2);
+		}
+	}
+
+	if (!R_CheckProjectionX(x1, x2))
+		return false;
 
 	// are all columns in the bounding box's viewable range solid?
-	if (!memchr(solidcol + x1, 0, x2 - x1 + 1))
-		return false;
+	// TODO: [SL] the code that maintains solidcol appears to be buggy
+	//       Uncommenting this creates occasional HOM issues, though
+	//       it does speed up the renderer.
+//	if (!memchr(solidcol + x1, 0, x2 - x1 + 1))
+//		return false;
 
 	return true;
 }
