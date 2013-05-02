@@ -552,8 +552,9 @@ static const int checkcoord[12][4] = // killough -- static const
 //
 static bool R_CheckBBox(const fixed_t *bspcoord)
 {
-	// Find the corners of the box
-	// that define the edges from current viewpoint.
+	const fixed_t clipdist = 0;
+
+	// Find the corners of the box that define the edges from current viewpoint
 	int boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
 				(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
 
@@ -580,7 +581,7 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	// a non-solid screen column is a column of the screen that has not yet had
 	// a 1s linedef drawn to it.
 	diagpt1.x = t1.x;	diagpt1.y = t1.y;	diagpt2.x = t2.x;	diagpt2.y = t2.y;
-	if (R_ClipLineToFrustum(diagpt1.x, diagpt1.y, diagpt2.x, diagpt2.y, 0))
+	if (R_ClipLineToFrustum(diagpt1.x, diagpt1.y, diagpt2.x, diagpt2.y, clipdist))
 	{
 		int x1 = R_ProjectPointX(diagpt1.x, diagpt1.y);
 		int x2 = R_ProjectPointX(diagpt2.x, diagpt2.y) - 1;
@@ -594,7 +595,7 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	
 	// check if the second bbox diagonal will occupy any non-solid screen columns
 	diagpt1.x = t1.x;	diagpt1.y = t2.y;	diagpt2.x = t2.x;	diagpt2.y = t1.y;
-	if (R_ClipLineToFrustum(diagpt1.x, diagpt1.y, diagpt2.x, diagpt2.y, 0))
+	if (R_ClipLineToFrustum(diagpt1.x, diagpt1.y, diagpt2.x, diagpt2.y, clipdist))
 	{
 		int x1 = R_ProjectPointX(diagpt1.x, diagpt1.y);
 		int x2 = R_ProjectPointX(diagpt2.x, diagpt2.y) - 1;
