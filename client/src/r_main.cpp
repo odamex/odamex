@@ -196,6 +196,18 @@ int R_PointOnSegSide (fixed_t x, fixed_t y, const seg_t *line)
 	return R_PointOnSide(x, y, line->v1->x, line->v1->y, line->v2->x, line->v2->y);
 }
 
+
+//
+// R_PointOnLine
+//
+// Determines if a point is sitting on a line.
+//
+bool R_PointOnLine(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh)
+{
+	return int64_t(xh - xl) * (y - yl) - int64_t(yh - yl) * (x - xl) == 0;
+}
+
+
 #define R_P2ATHRESHOLD (INT_MAX / 4)
 //
 // R_PointToAngle
