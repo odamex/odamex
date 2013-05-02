@@ -107,39 +107,48 @@ void R_ClearDrawSegs(void)
 	ds_p = drawsegs;
 }
 
-// CPhipps -
+//
 // R_ClipWallSegment
 //
-// Replaces the old R_Clip*WallSegment functions. It draws bits of walls in those
-// columns which aren't solid, and updates the solidcol[] array appropriately
+// [SL] From prboom-plus. Modified for clarity.
 //
-// [SL] From prboom-plus
-static void R_ClipWallSegment(int first, int last, dboolean solid)
+// Calls R_StoreWallRange for each span of non-solid range of columns that
+// is within the range of first to (and including) last. Non-solid columns
+// are those which have not yet had a 1s lineseg drawn to them. If makesolid
+// is specified, any range of non-solid columns found will be marked as solid.
+//
+static void R_ClipWallSegment(int first, int last, bool makesolid)
 {
-	byte *p;
-	last++;
-
-	while (first < last)
+	while (first <= last)
 	{
 		if (solidcol[first])
 		{
-			// All columns in this range are already solid?
-			if (!(p = (byte*)memchr(solidcol + first, 0, last - first)))
+			// find the first remaining non-solid column
+			// if all columns remaining are solid, we're done
+			byte* p = (byte*)memchr(solidcol + first, 0, last - first + 1);
+			if (p == NULL)
 				return; 
+
 			first = p - solidcol;
 		}
 		else
 		{
 			int to;
-			if (!(p = (byte*)memchr(solidcol + first, 1, last - first)))
+			// find where the span of non-solid columns ends
+			byte* p = (byte*)memchr(solidcol + first, 1, last - first + 1);
+			if (p == NULL)
 				to = last;
 			else
-				to = p - solidcol;
-			R_StoreWallRange(first, to - 1);
-			if (solid)
-				memset(solidcol+first, 1, to - first);
+				to = p - solidcol - 1;
 
-			first = to;
+			// set the range for this wall to the range of non-solid columns
+			R_StoreWallRange(first, to);
+
+			// mark the  columns as solid
+			if (makesolid)
+				memset(solidcol + first, 1, to - first + 1);
+
+			first = to + 1;
 		}
 	}
 }
@@ -613,10 +622,7 @@ static BOOL R_CheckBBox(const fixed_t *bspcoord)
 		return false;
 
 	// are all columns in the bounding box's viewable range solid?
-	// TODO: [SL] the code that maintains solidcol appears to be buggy
-	//       Uncommenting this creates occasional HOM issues, though
-	//       it does speed up the renderer.
-//	if (!memchr(solidcol + x1, 0, x2 - x1 + 1))
+//	if (memchr(solidcol + x1, 0, x2 - x1 + 1) == NULL)	
 //		return false;
 
 	return true;
