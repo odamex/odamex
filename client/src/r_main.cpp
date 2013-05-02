@@ -516,7 +516,7 @@ bool R_CheckProjectionY(int &y1, int &y2)
 	y1 = MAX<int>(y1, 0);
 	y2 = MIN<int>(y2, viewheight - 1);
 
-	if (y1 > y2 || y2 < 0 || y1 >= viewwidth)
+	if (y1 > y2 || y2 < 0 || y1 >= viewheight)
 		return false;
 	return true;
 }
