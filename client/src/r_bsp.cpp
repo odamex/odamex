@@ -547,9 +547,10 @@ static const int checkcoord[12][4] = // killough -- static const
 //
 // killough 1/28/98: static
 // CPhipps - const parameter, reformatted
-// [SL] Changed to use R_LineClip()
+// [SL] Rewritten to use R_ClipLineToFrustum to determine if any part of the
+//      bbox's two diagonals would be drawn in a non-solid screen column.
 //
-static BOOL R_CheckBBox(const fixed_t *bspcoord)
+static bool R_CheckBBox(const fixed_t *bspcoord)
 {
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
@@ -571,58 +572,41 @@ static BOOL R_CheckBBox(const fixed_t *bspcoord)
 
 	// translate the line endpoints from world-space to camera-space
 	// and store in (t1.x, t1.y) and (t2.x, t2.y)
-	v2fixed_t t1, t2;
+	v2fixed_t t1, t2, diagpt1, diagpt2;
 	R_RotatePoint(xl - viewx, yl - viewy, ANG90 - viewangle, t1.x, t1.y);
 	R_RotatePoint(xh - viewx, yh - viewy, ANG90 - viewangle, t2.x, t2.y);
 
-	// We pass R_ClipLineToFrustum the bounding-box's diagonals. If both
-	// diagonals are entirely clipped, then none of the bounding box
-	// is in the viewing window.
-
-	v2fixed_t diag1pt1, diag1pt2, diag2pt1, diag2pt2;
-	diag1pt1.x = t1.x;	diag1pt1.y = t1.y;	diag1pt2.x = t2.x;	diag1pt2.y = t2.y;
-	diag2pt1.x = t1.x;	diag2pt1.y = t2.y;	diag2pt2.x = t2.x;	diag2pt2.y = t1.y;
-
-	bool diag1_visible = R_ClipLineToFrustum(diag1pt1.x, diag1pt1.y, diag1pt2.x, diag1pt2.y, 0);
-	bool diag2_visible = R_ClipLineToFrustum(diag2pt1.x, diag2pt1.y, diag2pt2.x, diag2pt2.y, 0);
-
-	if (!diag1_visible && !diag2_visible)
-		return false;
-
-	// determine the screen columns that could be occupied by the
-	// visible part of the two diagonals
-	int x1 = viewwidth, x2 = -1;
-
-	if (diag1_visible)
+	// check if the first bbox diagonal will occupy any non-solid screen columns
+	// a non-solid screen column is a column of the screen that has not yet had
+	// a 1s linedef drawn to it.
+	diagpt1.x = t1.x;	diagpt1.y = t1.y;	diagpt2.x = t2.x;	diagpt2.y = t2.y;
+	if (R_ClipLineToFrustum(diagpt1.x, diagpt1.y, diagpt2.x, diagpt2.y, 0))
 	{
-		int cx1 = R_ProjectPointX(diag1pt1.x, diag1pt1.y);
-		int cx2 = R_ProjectPointX(diag1pt2.x, diag1pt2.y) - 1;
-		if (R_CheckProjectionX(cx1, cx2))
+		int x1 = R_ProjectPointX(diagpt1.x, diagpt1.y);
+		int x2 = R_ProjectPointX(diagpt2.x, diagpt2.y) - 1;
+		if (R_CheckProjectionX(x1, x2))
 		{
-			x1 = MIN(x1, cx1);
-			x2 = MAX(x2, cx2);
+			// are any of the screen columns for this projected diagonal non-solid?
+			if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)	
+				return true;
+		}
+	}
+	
+	// check if the second bbox diagonal will occupy any non-solid screen columns
+	diagpt1.x = t1.x;	diagpt1.y = t2.y;	diagpt2.x = t2.x;	diagpt2.y = t1.y;
+	if (R_ClipLineToFrustum(diagpt1.x, diagpt1.y, diagpt2.x, diagpt2.y, 0))
+	{
+		int x1 = R_ProjectPointX(diagpt1.x, diagpt1.y);
+		int x2 = R_ProjectPointX(diagpt2.x, diagpt2.y) - 1;
+		if (R_CheckProjectionX(x1, x2))
+		{
+			// are any of the screen columns for this projected diagonal non-solid?
+			if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)	
+				return true;
 		}
 	}
 
-	if (diag2_visible)
-	{
-		int cx1 = R_ProjectPointX(diag2pt1.x, diag2pt1.y);
-		int cx2 = R_ProjectPointX(diag2pt2.x, diag2pt2.y) - 1;
-		if (R_CheckProjectionX(cx1, cx2))
-		{
-			x1 = MIN(x1, cx1);
-			x2 = MAX(x2, cx2);
-		}
-	}
-
-	if (!R_CheckProjectionX(x1, x2))
-		return false;
-
-	// are all columns in the bounding box's viewable range solid?
-	if (memchr(solidcol + x1, 0, x2 - x1 + 1) == NULL)	
-		return false;
-
-	return true;
+	return false;
 }
 
 //
