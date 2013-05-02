@@ -401,77 +401,64 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 //
 bool R_ClipLineToFrustum(fixed_t &px1, fixed_t &py1, fixed_t &px2, fixed_t &py2, fixed_t clipdist)
 {
-	double den, t;
-	double ft1x = FIXED2DOUBLE(px1);
-	double ft1y = FIXED2DOUBLE(py1);
-	double ft2x = FIXED2DOUBLE(px2);
-	double ft2y = FIXED2DOUBLE(py2);
-
-	double fclipdist = FIXED2DOUBLE(clipdist);
+	fixed_t den, t;
 
 	// Clip portions of the line that are behind the view plane
-	if (ft1y < fclipdist)
+	if (py1 < clipdist)
 	{      
 		// reject the line entirely if the whole thing is behind the view plane.
-		if (ft2y < fclipdist)
+		if (py2 < clipdist)
 			return false;
 
 		// clip the line at the point where t1.y == clipdist
-		t = (fclipdist - ft1y) / (ft2y - ft1y);
-		ft1x = ft1x + t*(ft2x - ft1x);
-		ft1y = fclipdist;
+		t = FixedDiv(clipdist - py1, py2 - py1);
+		px1 = px1 + FixedMul(t, px2 - px1);
+		py1 = clipdist;
 	}
 
-	if (ft2y < fclipdist)
+	if (py2 < clipdist)
 	{
 		// clip the line at the point where t2.y == clipdist
-		t = (fclipdist - ft1y) / (ft2y - ft1y);
-		ft2x = ft1x + t*(ft2x - ft1x);
-		ft2y = fclipdist;
+		t = FixedDiv(clipdist - py1, py2 - py1);
+		px2 = px1 + FixedMul(t, px2 - px1);
+		py2 = clipdist;
 	}
 
 	// clip line at right edge of the screen
-	double f = FIXED2DOUBLE(fovtan);
 
 	// is the entire line off the right side of the screen?
-	if (ft1x > f*ft1y && ft2x > f*ft2y)
+	if (px1 > FixedMul(fovtan, py1) && px2 > FixedMul(fovtan, py2))
 		return false;
 
-	den = ft2x - ft1x - f*(ft2y - ft1y);	
-	if (den == 0.0)
+	den = px2 - px1 - FixedMul(fovtan, py2 - py1);	
+	if (den == 0)
 		return false;
 
-	t = (f*ft1y - ft1x) / den;
+	t = FixedDiv(FixedMul(fovtan, py1) - px1, den);
 
-	if (t > 0.0 && t < 1.0)
+	if (t > 0 && t < FRACUNIT)
 	{
-		ft2x = ft1x + t*(ft2x - ft1x);
-		ft2y = ft1y + t*(ft2y - ft1y);
+		px2 = px1 + FixedMul(t, px2 - px1);
+		py2 = py1 + FixedMul(t, py2 - py1);
 	}
 
 	// clip line at left edge of the screen
-	f *= -1.0;
 
 	// is the entire line off the left side of the screen?
-	if (ft1x < f*ft1y && ft2x < f*ft2y)
+	if (px1 < FixedMul(-fovtan, py1) && px2 < FixedMul(-fovtan, py2))
 		return false;
 
-	den = ft2x - ft1x - f*(ft2y - ft1y);	
-	if (den == 0.0)
+	den = px2 - px1 - FixedMul(-fovtan, py2 - py1);
+	if (den == 0)
 		return false;
 
-	t = (f*ft1y - ft1x) / den;		// use c2?
+	t = FixedDiv(FixedMul(-fovtan, py1) - px1, den);
 
-	if (t > 0.0 && t < 1.0)
+	if (t > 0 && t < FRACUNIT)
 	{
-		ft1x = ft1x + t*(ft2x - ft1x);
-		ft1y = ft1y + t*(ft2y - ft1y);
+		px1 = px1 + FixedMul(t, px2 - px1);
+		py1 = py1 + FixedMul(t, py2 - py1);
 	}
-
-	px1 = DOUBLE2FIXED(ft1x);
-	py1 = DOUBLE2FIXED(ft1y);
-	px2 = DOUBLE2FIXED(ft2x);
-	py2 = DOUBLE2FIXED(ft2y);
 
 	return true;
 }
