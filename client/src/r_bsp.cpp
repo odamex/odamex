@@ -198,7 +198,7 @@ bool CopyPlaneIfValid (plane_t *dest, const plane_t *source, const plane_t *opp)
 
 sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 					 int *floorlightlevel, int *ceilinglightlevel,
-					 BOOL back)
+					 bool back)
 {
 	// [RH] allow per-plane lighting
 	if (floorlightlevel != NULL)
@@ -215,196 +215,222 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 	FakeSide = FAKED_Center;
 
-	if (sec->heightsec && !(sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
+	if (!sec->heightsec || sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
+		return sec;
+	if (!camera || !camera->subsector || !camera->subsector->sector)
+		return sec;
+
+	const sector_t* s = sec->heightsec;
+	sector_t *heightsec = camera->subsector->sector->heightsec;
+
+	bool underwater = r_fakingunderwater ||
+		(heightsec && viewz <= P_FloorHeight(viewx, viewy, heightsec));
+	bool doorunderwater = false;
+	int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
+
+	// Replace sector being drawn with a copy to be hacked
+	*tempsec = *sec;
+
+	// Replace floor and ceiling height with control sector's heights.
+	if (diffTex)
 	{
-		if (!camera || !camera->subsector || !camera->subsector->sector)
+		if (CopyPlaneIfValid (&tempsec->floorplane, &s->floorplane, &sec->ceilingplane))
+			tempsec->floorpic = s->floorpic;
+		else if (s->MoreFlags & SECF_FAKEFLOORONLY)
+		{
+			if (underwater)
+			{
+				tempsec->floorcolormap = s->floorcolormap;
+				tempsec->ceilingcolormap = s->ceilingcolormap;
+
+				if (!(s->MoreFlags & SECF_NOFAKELIGHT))
+				{
+					tempsec->lightlevel = s->lightlevel;
+
+					if (floorlightlevel != NULL)
+					{
+						*floorlightlevel = s->floorlightsec == NULL ?
+							s->lightlevel : s->floorlightsec->lightlevel;
+					}
+
+					if (ceilinglightlevel != NULL)
+					{
+						*ceilinglightlevel = s->ceilinglightsec == NULL ?
+							s->lightlevel : s->ceilinglightsec->lightlevel;
+					}
+				}
+
+				FakeSide = FAKED_BelowFloor;
+				return tempsec;
+			}
 			return sec;
-		sector_t *heightsec = camera->subsector->sector->heightsec;
+		}
+	}
+	else
+	{
+		tempsec->floorplane = s->floorplane;
+	}
 
-		const sector_t *s = sec->heightsec;
-
-		bool underwater = r_fakingunderwater ||
-			(heightsec && viewz <= P_FloorHeight(viewx, viewy, heightsec));
-		bool doorunderwater = false;
-		int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
-
-		// Replace sector being drawn with a copy to be hacked
-		*tempsec = *sec;
-
-		// Replace floor and ceiling height with control sector's heights.
+	if (!(s->MoreFlags & SECF_FAKEFLOORONLY))
+	{
 		if (diffTex)
 		{
-			if (CopyPlaneIfValid (&tempsec->floorplane, &s->floorplane, &sec->ceilingplane))
-				tempsec->floorpic = s->floorpic;
-			else if (s->MoreFlags & SECF_FAKEFLOORONLY)
-				return sec;
+			if (CopyPlaneIfValid (&tempsec->ceilingplane, &s->ceilingplane, &sec->floorplane))
+				tempsec->ceilingpic = s->ceilingpic;
 		}
 		else
 		{
-			tempsec->floorplane = s->floorplane;
+			tempsec->ceilingplane  = s->ceilingplane;
 		}
+	}
 
-		if (!(s->MoreFlags & SECF_FAKEFLOORONLY))
+	fixed_t refceilz = P_CeilingHeight(viewx, viewy, s);
+	fixed_t orgceilz = P_CeilingHeight(viewx, viewy, sec);
+
+	// [RH] Allow viewing underwater areas through doors/windows that
+	// are underwater but not in a water sector themselves.
+	// Only works if you cannot see the top surface of any deep water
+	// sectors at the same time.
+
+	if (back && !r_fakingunderwater && curline->frontsector->heightsec == NULL)
+	{
+		fixed_t fcz1 = P_CeilingHeight(curline->v1->x, curline->v1->y, frontsector);
+		fixed_t fcz2 = P_CeilingHeight(curline->v2->x, curline->v2->y, frontsector);
+
+		if (fcz1 <= P_FloorHeight(curline->v1->x, curline->v1->y, s) &&
+			fcz2 <= P_FloorHeight(curline->v2->x, curline->v2->y, s))
 		{
-			if (diffTex)
-			{
-				if (CopyPlaneIfValid (&tempsec->ceilingplane, &s->ceilingplane, &sec->floorplane))
-					tempsec->ceilingpic = s->ceilingpic;
-			}
-			else
-			{
-				tempsec->ceilingplane  = s->ceilingplane;
+			// will any columns of this window be visible or will they be blocked
+			// by 1s lines and closed doors?
+			if (memchr(solidcol + rw_start, 0, rw_stop - rw_start + 1) != NULL)
+			{	
+				doorunderwater = true;
+				r_fakingunderwater = true;
 			}
 		}
+	}
 
-		fixed_t refceilz = P_CeilingHeight(viewx, viewy, s);
-		fixed_t orgceilz = P_CeilingHeight(viewx, viewy, sec);
+	if (underwater || doorunderwater)
+	{
+		tempsec->floorplane = sec->floorplane;
+		tempsec->ceilingplane = s->floorplane;
+		P_InvertPlane(&tempsec->ceilingplane);
+		P_ChangeCeilingHeight(tempsec, -1);
+		tempsec->floorcolormap = s->floorcolormap;
+		tempsec->ceilingcolormap = s->ceilingcolormap;
+	}
 
-		// [RH] Allow viewing underwater areas through doors/windows that
-		// are underwater but not in a water sector themselves.
-		// Only works if you cannot see the top surface of any deep water
-		// sectors at the same time.
-		if (back && !r_fakingunderwater && curline->frontsector->heightsec == NULL)
+	// killough 11/98: prevent sudden light changes from non-water sectors:
+	if ((underwater && !back) || doorunderwater)
+	{					// head-below-floor hack
+		tempsec->floorpic			= diffTex ? sec->floorpic : s->floorpic;
+		tempsec->floor_xoffs		= s->floor_xoffs;
+		tempsec->floor_yoffs		= s->floor_yoffs;
+		tempsec->floor_xscale		= s->floor_xscale;
+		tempsec->floor_yscale		= s->floor_yscale;
+		tempsec->floor_angle		= s->floor_angle;
+		tempsec->base_floor_angle	= s->base_floor_angle;
+		tempsec->base_floor_yoffs	= s->base_floor_yoffs;
+
+		tempsec->ceilingplane		= s->floorplane;
+		P_InvertPlane(&tempsec->ceilingplane);
+		P_ChangeCeilingHeight(tempsec, -1);
+		if (s->ceilingpic == skyflatnum)
 		{
-			fixed_t fcz1 = P_CeilingHeight(curline->v1->x, curline->v1->y, frontsector);
-			fixed_t fcz2 = P_CeilingHeight(curline->v2->x, curline->v2->y, frontsector);
-			if (fcz1 <= P_FloorHeight(curline->v1->x, curline->v1->y, s) &&
-				fcz2 <= P_FloorHeight(curline->v2->x, curline->v2->y, s))
-			{
-				// Check that the window is actually visible
-				for (int z = rw_start; z < rw_stop; z++)
-				{
-					if (floorclip[z] > ceilingclip[z])
-					{
-						doorunderwater = true;
-						r_fakingunderwater = true;
-						break;
-					}
-				}
-			}
-		}
-
-		if (underwater || doorunderwater)
-		{
-			tempsec->floorplane = sec->floorplane;
-			tempsec->ceilingplane = s->floorplane;
-			P_InvertPlane(&tempsec->ceilingplane);
-			P_ChangeCeilingHeight(tempsec, -1);
-			tempsec->floorcolormap = s->floorcolormap;
-			tempsec->ceilingcolormap = s->ceilingcolormap;
-		}
-
-		// killough 11/98: prevent sudden light changes from non-water sectors:
-		if ((underwater && !back) || doorunderwater)
-		{					// head-below-floor hack
-			tempsec->floorpic			= diffTex ? sec->floorpic : s->floorpic;
-			tempsec->floor_xoffs		= s->floor_xoffs;
-			tempsec->floor_yoffs		= s->floor_yoffs;
-			tempsec->floor_xscale		= s->floor_xscale;
-			tempsec->floor_yscale		= s->floor_yscale;
-			tempsec->floor_angle		= s->floor_angle;
-			tempsec->base_floor_angle	= s->base_floor_angle;
-			tempsec->base_floor_yoffs	= s->base_floor_yoffs;
-
-			tempsec->ceilingplane		= s->floorplane;
-			P_InvertPlane(&tempsec->ceilingplane);
-			P_ChangeCeilingHeight(tempsec, -1);
-			if (s->ceilingpic == skyflatnum)
-			{
-				tempsec->floorplane			= tempsec->ceilingplane;
-				P_InvertPlane(&tempsec->floorplane);
-				P_ChangeFloorHeight(tempsec, +1);
-				tempsec->ceilingpic			= tempsec->floorpic;
-				tempsec->ceiling_xoffs		= tempsec->floor_xoffs;
-				tempsec->ceiling_yoffs		= tempsec->floor_yoffs;
-				tempsec->ceiling_xscale		= tempsec->floor_xscale;
-				tempsec->ceiling_yscale		= tempsec->floor_yscale;
-				tempsec->ceiling_angle		= tempsec->floor_angle;
-				tempsec->base_ceiling_angle	= tempsec->base_floor_angle;
-				tempsec->base_ceiling_yoffs	= tempsec->base_floor_yoffs;
-			}
-			else
-			{
-				tempsec->ceilingpic			= diffTex ? s->floorpic : s->ceilingpic;
-				tempsec->ceiling_xoffs		= s->ceiling_xoffs;
-				tempsec->ceiling_yoffs		= s->ceiling_yoffs;
-				tempsec->ceiling_xscale		= s->ceiling_xscale;
-				tempsec->ceiling_yscale		= s->ceiling_yscale;
-				tempsec->ceiling_angle		= s->ceiling_angle;
-				tempsec->base_ceiling_angle	= s->base_ceiling_angle;
-				tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
-			}
-
-			if (!(s->MoreFlags & SECF_NOFAKELIGHT))
-			{
-				tempsec->lightlevel = s->lightlevel;
-
-				if (floorlightlevel != NULL)
-				{
-					*floorlightlevel = s->floorlightsec == NULL ?
-						s->lightlevel : s->floorlightsec->lightlevel;
-				}
-
-				if (ceilinglightlevel != NULL)
-				{
-					*ceilinglightlevel = s->ceilinglightsec == NULL ?
-						s->lightlevel : s->ceilinglightsec->lightlevel;
-				}
-			}
-			FakeSide = FAKED_BelowFloor;
-		}
-		else if (heightsec && viewz >= P_CeilingHeight(viewx, viewy, heightsec) &&
-				 orgceilz > refceilz && !(s->MoreFlags & SECF_FAKEFLOORONLY))
-		{	// Above-ceiling hack
-			tempsec->ceilingplane		= s->ceilingplane;
-			tempsec->floorplane			= s->ceilingplane;
+			tempsec->floorplane			= tempsec->ceilingplane;
 			P_InvertPlane(&tempsec->floorplane);
 			P_ChangeFloorHeight(tempsec, +1);
-
-			tempsec->ceilingcolormap	= s->ceilingcolormap;
-			tempsec->floorcolormap		= s->floorcolormap;
-
-			tempsec->ceilingpic = diffTex ? sec->ceilingpic : s->ceilingpic;
-			tempsec->floorpic											= s->ceilingpic;
-			tempsec->floor_xoffs		= tempsec->ceiling_xoffs		= s->ceiling_xoffs;
-			tempsec->floor_yoffs		= tempsec->ceiling_yoffs		= s->ceiling_yoffs;
-			tempsec->floor_xscale		= tempsec->ceiling_xscale		= s->ceiling_xscale;
-			tempsec->floor_yscale		= tempsec->ceiling_yscale		= s->ceiling_yscale;
-			tempsec->floor_angle		= tempsec->ceiling_angle		= s->ceiling_angle;
-			tempsec->base_floor_angle	= tempsec->base_ceiling_angle	= s->base_ceiling_angle;
-			tempsec->base_floor_yoffs	= tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
-
-			if (s->floorpic != skyflatnum)
-			{
-				tempsec->ceilingplane	= sec->ceilingplane;
-				tempsec->floorpic		= s->floorpic;
-				tempsec->floor_xoffs	= s->floor_xoffs;
-				tempsec->floor_yoffs	= s->floor_yoffs;
-				tempsec->floor_xscale	= s->floor_xscale;
-				tempsec->floor_yscale	= s->floor_yscale;
-				tempsec->floor_angle	= s->floor_angle;
-			}
-
-			if (!(s->MoreFlags & SECF_NOFAKELIGHT))
-			{
-				tempsec->lightlevel  = s->lightlevel;
-
-				if (floorlightlevel != NULL)
-				{
-					*floorlightlevel = s->floorlightsec == NULL ?
-						s->lightlevel : s->floorlightsec->lightlevel;
-				}
-
-				if (ceilinglightlevel != NULL)
-				{
-					*ceilinglightlevel = s->ceilinglightsec == NULL ?
-						s->lightlevel : s->ceilinglightsec->lightlevel;
-				}
-			}
-			FakeSide = FAKED_AboveCeiling;
+			tempsec->ceilingpic			= tempsec->floorpic;
+			tempsec->ceiling_xoffs		= tempsec->floor_xoffs;
+			tempsec->ceiling_yoffs		= tempsec->floor_yoffs;
+			tempsec->ceiling_xscale		= tempsec->floor_xscale;
+			tempsec->ceiling_yscale		= tempsec->floor_yscale;
+			tempsec->ceiling_angle		= tempsec->floor_angle;
+			tempsec->base_ceiling_angle	= tempsec->base_floor_angle;
+			tempsec->base_ceiling_yoffs	= tempsec->base_floor_yoffs;
 		}
-		sec = tempsec;					// Use other sector
+		else
+		{
+			tempsec->ceilingpic			= diffTex ? s->floorpic : s->ceilingpic;
+			tempsec->ceiling_xoffs		= s->ceiling_xoffs;
+			tempsec->ceiling_yoffs		= s->ceiling_yoffs;
+			tempsec->ceiling_xscale		= s->ceiling_xscale;
+			tempsec->ceiling_yscale		= s->ceiling_yscale;
+			tempsec->ceiling_angle		= s->ceiling_angle;
+			tempsec->base_ceiling_angle	= s->base_ceiling_angle;
+			tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
+		}
+
+		if (!(s->MoreFlags & SECF_NOFAKELIGHT))
+		{
+			tempsec->lightlevel = s->lightlevel;
+
+			if (floorlightlevel != NULL)
+			{
+				*floorlightlevel = s->floorlightsec == NULL ?
+					s->lightlevel : s->floorlightsec->lightlevel;
+			}
+
+			if (ceilinglightlevel != NULL)
+			{
+				*ceilinglightlevel = s->ceilinglightsec == NULL ?
+					s->lightlevel : s->ceilinglightsec->lightlevel;
+			}
+		}
+		FakeSide = FAKED_BelowFloor;
 	}
+	else if (heightsec && viewz >= P_CeilingHeight(viewx, viewy, heightsec) &&
+			 orgceilz > refceilz && !(s->MoreFlags & SECF_FAKEFLOORONLY))
+	{	// Above-ceiling hack
+		tempsec->ceilingplane		= s->ceilingplane;
+		tempsec->floorplane			= s->ceilingplane;
+		P_InvertPlane(&tempsec->floorplane);
+		P_ChangeFloorHeight(tempsec, +1);
+
+		tempsec->ceilingcolormap	= s->ceilingcolormap;
+		tempsec->floorcolormap		= s->floorcolormap;
+
+		tempsec->ceilingpic = diffTex ? sec->ceilingpic : s->ceilingpic;
+		tempsec->floorpic											= s->ceilingpic;
+		tempsec->floor_xoffs		= tempsec->ceiling_xoffs		= s->ceiling_xoffs;
+		tempsec->floor_yoffs		= tempsec->ceiling_yoffs		= s->ceiling_yoffs;
+		tempsec->floor_xscale		= tempsec->ceiling_xscale		= s->ceiling_xscale;
+		tempsec->floor_yscale		= tempsec->ceiling_yscale		= s->ceiling_yscale;
+		tempsec->floor_angle		= tempsec->ceiling_angle		= s->ceiling_angle;
+		tempsec->base_floor_angle	= tempsec->base_ceiling_angle	= s->base_ceiling_angle;
+		tempsec->base_floor_yoffs	= tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
+
+		if (s->floorpic != skyflatnum)
+		{
+			tempsec->ceilingplane	= sec->ceilingplane;
+			tempsec->floorpic		= s->floorpic;
+			tempsec->floor_xoffs	= s->floor_xoffs;
+			tempsec->floor_yoffs	= s->floor_yoffs;
+			tempsec->floor_xscale	= s->floor_xscale;
+			tempsec->floor_yscale	= s->floor_yscale;
+			tempsec->floor_angle	= s->floor_angle;
+		}
+
+		if (!(s->MoreFlags & SECF_NOFAKELIGHT))
+		{
+			tempsec->lightlevel  = s->lightlevel;
+
+			if (floorlightlevel != NULL)
+			{
+				*floorlightlevel = s->floorlightsec == NULL ?
+					s->lightlevel : s->floorlightsec->lightlevel;
+			}
+
+			if (ceilinglightlevel != NULL)
+			{
+				*ceilinglightlevel = s->ceilinglightsec == NULL ?
+					s->lightlevel : s->ceilinglightsec->lightlevel;
+			}
+		}
+		FakeSide = FAKED_AboveCeiling;
+	}
+	sec = tempsec;					// Use other sector
+
 	return sec;
 }
 
