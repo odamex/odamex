@@ -28,34 +28,34 @@
 /* Need to do this here because intrin.h has C++ code in it */
 /* Visual Studio 2005 has a bug where intrin.h conflicts with winnt.h */
 #if defined(_MSC_VER) && (_MSC_VER >= 1500) && !defined(_WIN32_WCE)
-#include <intrin.h>
-#ifndef _WIN64
-#define __MMX__
-#define __3dNOW__
-#endif
-#define __SSE__
-#define __SSE2__
+	#include <intrin.h>
+	#ifndef _WIN64
+		#define __MMX__
+		#define __3dNOW__
+	#endif
+	#define __SSE__
+	#define __SSE2__
 #elif defined(__MINGW64_VERSION_MAJOR)
-#include <intrin.h>
+	#include <intrin.h>
 #else
-#ifdef __ALTIVEC__
-#if HAVE_ALTIVEC_H && !defined(__APPLE_ALTIVEC__)
-#include <altivec.h>
-#undef pixel
-#endif
-#endif
-#ifdef __MMX__
-#include <mmintrin.h>
-#endif
-#ifdef __3dNOW__
-#include <mm3dnow.h>
-#endif
-#ifdef __SSE__
-#include <xmmintrin.h>
-#endif
-#ifdef __SSE2__
-#include <emmintrin.h>
-#endif
+	#ifdef __ALTIVEC__
+		#if HAVE_ALTIVEC_H && !defined(__APPLE_ALTIVEC__)
+			#include <altivec.h>
+			#undef pixel
+		#endif
+	#endif
+	#ifdef __MMX__
+		#include <mmintrin.h>
+	#endif
+	#ifdef __3dNOW__
+		#include <mm3dnow.h>
+	#endif
+	#ifdef __SSE__
+		#include <xmmintrin.h>
+	#endif
+	#ifdef __SSE2__
+		#include <emmintrin.h>
+	#endif
 #endif
 
 #endif
