@@ -1597,7 +1597,7 @@ void P_NightmareRespawn (AActor *mobj)
 	mobj->Destroy ();
 }
 
-AActor *AActor::TIDHash[128];
+AActor* AActor::TIDHash[TIDHashSize];
 
 //
 // [RH] Some new functions to work with Thing IDs. ------->
@@ -1608,12 +1608,9 @@ AActor *AActor::TIDHash[128];
 //
 // Clears the tid hashtable.
 //
-
 void AActor::ClearTIDHashes ()
 {
-	int i;
-
-	for (i = 0; i < 128; i++)
+	for (size_t i = 0; i < TIDHashSize; i++)
 		TIDHash[i] = NULL;
 }
 

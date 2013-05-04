@@ -446,6 +446,7 @@ void cvar_t::C_RestoreCVars (void)
 		backup->name = backup->string = "";
 	}
 	numbackedup = 0;
+	UnlatchCVars();
 }
 
 cvar_t *cvar_t::FindCVar (const char *var_name, cvar_t **prev)

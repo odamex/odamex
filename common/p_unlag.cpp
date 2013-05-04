@@ -399,9 +399,6 @@ void Unlag::unregisterPlayer(byte player_id)
 	if (!Unlag::enabled())
 		return;
 
-	if (!validplayer(idplayer(player_id)))
-		return;
-
 	size_t history_index = player_id_map[player_id];
 	if (history_index >= player_history.size())
 		return;

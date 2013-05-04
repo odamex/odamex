@@ -1640,105 +1640,70 @@ static void P_SetupLevelCeilingPlane(sector_t *sector)
 // ceiling of this sector.  The equation coefficients are stored in a plane_t
 // structure and saved either to the sector's ceilingplan or floorplane.
 //
-void P_SetupPlane(sector_t *refsector, line_t *refline, bool floor)
+void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
 {
-	if (!refsector || !refline || !refline->backsector)
+	if (!sec || !line || !line->backsector)
 		return;
-
-	double refv1x = FIXED2DOUBLE(refline->v1->x);
-	double refv1y = FIXED2DOUBLE(refline->v1->y);
-
-	double refdx = FIXED2DOUBLE(refline->dx);
-	double refdy = FIXED2DOUBLE(refline->dy);
-	
-	vertex_t *farthest_vertex = NULL;
-	double farthest_distance = 0.0;
 
 	// Find the vertex comprising the sector that is farthest from the
 	// slope's reference line
-	for (int linenum = 0; linenum < refsector->linecount; linenum++)
+
+	int bestdist = 0;
+	line_t** probe = sec->lines;
+	vertex_t *refvert = (*sec->lines)->v1;
+
+	for (int i = sec->linecount*2; i > 0; i--)
 	{
-		line_t *line = refsector->lines[linenum];
-		if (!line)
-			continue;
-		
-		// Calculate distance from vertex 1 of this line
-		double dist = abs((refv1y - FIXED2DOUBLE(line->v1->y)) * refdx -
-						  (refv1x - FIXED2DOUBLE(line->v1->x)) * refdy);
-		if (dist > farthest_distance)
+		int dist;
+		vertex_t *vert;
+
+		// Do calculations with only the upper bits, because the lower ones
+		// are all zero, and we would overflow for a lot of distances if we
+		// kept them around.
+
+		if (i & 1)
+			vert = (*probe++)->v2;
+		else
+			vert = (*probe)->v1;
+		dist = abs (((line->v1->y - vert->y) >> FRACBITS) * (line->dx >> FRACBITS) -
+					((line->v1->x - vert->x) >> FRACBITS) * (line->dy >> FRACBITS));
+
+		if (dist > bestdist)
 		{
-			farthest_distance = dist;
-			farthest_vertex = line->v1;
+			bestdist = dist;
+			refvert = vert;
 		}
-	
-		// Calculate distance from vertex 2 of this line
-		dist = abs((refv1y - FIXED2DOUBLE(line->v2->y)) * refdx -
-				   (refv1x - FIXED2DOUBLE(line->v2->x)) * refdy);
-		if (dist > farthest_distance)
-		{
-			farthest_distance = dist;
-			farthest_vertex = line->v2;
-		}	
 	}
-	
-	if (farthest_distance <= 0.0)
-		return;
 
-	sector_t *align_sector = (refsector == refline->frontsector) ?
-		refline->backsector : refline->frontsector;
+	const sector_t* refsec = line->frontsector == sec ? line->backsector : line->frontsector;
+	plane_t* srcplane = floor ? &sec->floorplane : &sec->ceilingplane;
+	fixed_t srcheight = floor ? sec->floorheight : sec->ceilingheight;
+	fixed_t destheight = floor ? refsec->floorheight : refsec->ceilingheight;
 
-	// Now we have three points, which can define a plane:
-	// The two vertices making up refline and farthest_vertex
-	
-	fixed_t z1 = floor ? align_sector->floorheight : align_sector->ceilingheight;
-	fixed_t z2 = floor ? refsector->floorheight : refsector->ceilingheight;
-	
-	// bail if the plane is perfectly level
-	if (z1 == z2)
-		return;
+	v3float_t p, v1, v2, cross;
+	M_SetVec3f(&p, line->v1->x, line->v1->y, destheight);
+	M_SetVec3f(&v1, line->dx, line->dy, 0);
+	M_SetVec3f(&v2, refvert->x - line->v1->x, refvert->y - line->v1->y, srcheight - destheight);
 
-	v3double_t p1, p2, p3;
-	M_SetVec3(&p1, refline->v1->x, refline->v1->y, z1);
-	M_SetVec3(&p2, refline->v2->x, refline->v2->y, z1);
-	M_SetVec3(&p3, farthest_vertex->x, farthest_vertex->y, z2);
+	M_CrossProductVec3f(&cross, &v1, &v2);
+	M_NormalizeVec3f(&cross, &cross);
 
-	// Define the plane by drawing two vectors originating from
-	// point p2:  the vector from p2 to p1 and from p2 to p3
-	// Then take the crossproduct of those vectors to get the normal vector
-	// for the plane, which provides the planar equation's coefficients
-	v3double_t vector1, vector2;
-	M_SubVec3(&vector1, &p1, &p2);
-	M_SubVec3(&vector2, &p3, &p2);
-
-	v3double_t normal;
-	M_CrossProductVec3(&normal, &vector1, &vector2);
-	M_NormalizeVec3(&normal, &normal);
-	
-	plane_t *plane = floor ? &refsector->floorplane : &refsector->ceilingplane;
-	plane->a = DOUBLE2FIXED(normal.x);
-	plane->b = DOUBLE2FIXED(normal.y);
-	plane->c = DOUBLE2FIXED(normal.z);
-	plane->invc = DOUBLE2FIXED(1.0 / normal.z);
-	plane->d = -DOUBLE2FIXED(M_DotProductVec3(&normal, &p1));
-
-	// Flip inverted normals
-	if ((floor && normal.z < 0.0) || (!floor && normal.z > 0.0))
-		P_InvertPlane(plane);
-
-	// determine the point that can be used for aligning wall textures
-	// we use the point on the plane that has the same Z value as
-	// ceilingheight/floorheight
-	plane->texx = refline->v1->x;
-	plane->texy = refline->v1->y;
-
-	if ((floor && refsector->floorheight != align_sector->floorheight) ||
-	   (!floor && refsector->ceilingheight != align_sector->ceilingheight))
+	// Fix backward normals
+	if ((cross.z < 0 && floor == true) || (cross.z > 0 && floor == false)) 
 	{
-		plane->texx = farthest_vertex->x;
-		plane->texy = farthest_vertex->y;
+		cross.x = -cross.x;
+		cross.y = -cross.y;
+		cross.z = -cross.z;
 	}
-}
 
+	srcplane->a = FLOAT2FIXED(cross.x);
+	srcplane->b = FLOAT2FIXED(cross.y);
+	srcplane->c = FLOAT2FIXED(cross.z);
+	srcplane->invc = FLOAT2FIXED(1.f/cross.z);
+	srcplane->d = -FixedMul(srcplane->a, line->v1->x) - FixedMul(srcplane->b, line->v1->y) - FixedMul(srcplane->c, destheight);
+	srcplane->texx = refvert->x;
+	srcplane->texy = refvert->y;
+}
 
 static void P_SetupSlopes()
 {

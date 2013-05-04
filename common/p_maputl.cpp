@@ -481,10 +481,8 @@ void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx, f
 	// that imprecisions in the plane equation mean there is a
 	// good chance that even if a slope and non-slope look like
 	// they line up, they won't be perfectly aligned.
-	//
-	// [SL] 2012-12-18 - Increase the tolerance from 256 to FRACUNIT/2
 
-	if ((!fflevel || !bflevel) && abs(ff - bf) < FRACUNIT/2)
+	if ((!fflevel || !bflevel) && abs(ff - bf) < 256)
 	{
 		if (fflevel)
 			usefront = true;

@@ -452,8 +452,10 @@ public:
 	short			tid;			// thing identifier
 
 private:
-	static AActor *TIDHash[128];
-	static inline int TIDHASH (int key) { return key & 127; }
+	static const size_t TIDHashSize = 256;
+	static const size_t TIDHashMask = TIDHashSize - 1;
+	static AActor *TIDHash[TIDHashSize];
+	static inline int TIDHASH (int key) { return key & TIDHashMask; }
 
 	friend class FActorIterator;
 
@@ -518,7 +520,7 @@ public:
 		if (id == 0)
 			return NULL;
 		if (!base)
-			base = AActor::TIDHash[id & 127];
+			base = AActor::FindByTID(NULL, id);
 		else
 			base = base->inext;
 

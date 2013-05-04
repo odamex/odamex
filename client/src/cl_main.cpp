@@ -3757,7 +3757,12 @@ void CL_SimulatePlayers()
 		// Consoleplayer is handled in CL_PredictWorld
 		if (player->id == consoleplayer_id)
 			continue;
-		
+
+		// [SL] 2013-04-30 - Let the animation ticker update frames, etc for
+		// dying players. This leads to less jittery animation when cl_interp is used.	
+		if (player->mo->health <= 0)
+			continue;
+	
 		PlayerSnapshot snap = player->snapshots.getSnapshot(world_index);
 		if (snap.isValid())
 		{

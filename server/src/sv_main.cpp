@@ -580,8 +580,6 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 		player.mo = AActor::AActorPtr();
 	}
 
-	Unlag::getInstance().unregisterPlayer(player_id);
-
 	// remove this player from the global players vector
 	if (!players.empty())
 	{
@@ -590,6 +588,8 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 		players.erase(players.begin() + index);
 		free_player_ids.push(player_id);
 	}
+
+	Unlag::getInstance().unregisterPlayer(player_id);
 
 	// update tracking cvar
 	sv_clientcount.ForceSet(players.size());
@@ -2649,7 +2649,7 @@ void SVC_TeamSay(player_t &player, const char* message)
 			continue;
 
 		// Player needs to be on the same team
-		if (!it->userinfo.team == player.userinfo.team)
+		if (!it->userinfo.team == player.userinfo.team || it->spectator)
 			continue;
 
 		MSG_WriteMarker(&(it->client.reliablebuf), svc_say);
@@ -4895,19 +4895,25 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		MSG_WriteShort(&cl->reliablebuf, target->health);
 		MSG_WriteByte(&cl->reliablebuf, pain);
 
-		MSG_WriteMarker (&cl->netbuf, svc_movemobj);
-		MSG_WriteShort (&cl->netbuf, target->netid);
-		MSG_WriteByte (&cl->netbuf, target->rndindex);
-		MSG_WriteLong (&cl->netbuf, target->x);
-		MSG_WriteLong (&cl->netbuf, target->y);
-		MSG_WriteLong (&cl->netbuf, target->z);
+		// [SL] 2013-04-30 - Don't update the position if it's a player that
+		// is damaged since this message would interfere with the clientside
+		// interpolation/extrapolation system
+		if (!target->player)
+		{
+			MSG_WriteMarker (&cl->netbuf, svc_movemobj);
+			MSG_WriteShort (&cl->netbuf, target->netid);
+			MSG_WriteByte (&cl->netbuf, target->rndindex);
+			MSG_WriteLong (&cl->netbuf, target->x);
+			MSG_WriteLong (&cl->netbuf, target->y);
+			MSG_WriteLong (&cl->netbuf, target->z);
 
-		MSG_WriteMarker (&cl->netbuf, svc_mobjspeedangle);
-		MSG_WriteShort(&cl->netbuf, target->netid);
-		MSG_WriteLong (&cl->netbuf, target->angle);
-		MSG_WriteLong (&cl->netbuf, target->momx);
-		MSG_WriteLong (&cl->netbuf, target->momy);
-		MSG_WriteLong (&cl->netbuf, target->momz);
+			MSG_WriteMarker (&cl->netbuf, svc_mobjspeedangle);
+			MSG_WriteShort(&cl->netbuf, target->netid);
+			MSG_WriteLong (&cl->netbuf, target->angle);
+			MSG_WriteLong (&cl->netbuf, target->momx);
+			MSG_WriteLong (&cl->netbuf, target->momy);
+			MSG_WriteLong (&cl->netbuf, target->momz);
+		}
 	}
 }
 
@@ -4924,30 +4930,27 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		if(!SV_IsPlayerAllowedToSee(players[i], target))
 			continue;
 
-		// send death location first
-		MSG_WriteMarker(&cl->reliablebuf, svc_movemobj);
-		MSG_WriteShort(&cl->reliablebuf, target->netid);
-		MSG_WriteByte(&cl->reliablebuf, target->rndindex);
-
-		// [SL] 2012-12-26 - Get real position since this actor is at
-		// a reconciled position with sv_unlag 1
-		fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
-		if (target->player)
+		// [SL] 2013-04-30 - Don't update the position if it's a player that
+		// died since this message would interfere with the clientside
+		// interpolation/extrapolation system
+		if (!target->player)
 		{
-			Unlag::getInstance().getReconciliationOffset(
-					target->player->id, xoffs, yoffs, zoffs);
+			// send death location first
+			MSG_WriteMarker(&cl->reliablebuf, svc_movemobj);
+			MSG_WriteShort(&cl->reliablebuf, target->netid);
+			MSG_WriteByte(&cl->reliablebuf, target->rndindex);
+
+			MSG_WriteLong(&cl->reliablebuf, target->x);
+			MSG_WriteLong(&cl->reliablebuf, target->y);
+			MSG_WriteLong(&cl->reliablebuf, target->z);
+
+			MSG_WriteMarker (&cl->reliablebuf, svc_mobjspeedangle);
+			MSG_WriteShort(&cl->reliablebuf, target->netid);
+			MSG_WriteLong (&cl->reliablebuf, target->angle);
+			MSG_WriteLong (&cl->reliablebuf, target->momx);
+			MSG_WriteLong (&cl->reliablebuf, target->momy);
+			MSG_WriteLong (&cl->reliablebuf, target->momz);
 		}
-
-		MSG_WriteLong(&cl->reliablebuf, target->x + xoffs);
-		MSG_WriteLong(&cl->reliablebuf, target->y + yoffs);
-		MSG_WriteLong(&cl->reliablebuf, target->z + zoffs);
-
-		MSG_WriteMarker (&cl->reliablebuf, svc_mobjspeedangle);
-		MSG_WriteShort(&cl->reliablebuf, target->netid);
-		MSG_WriteLong (&cl->reliablebuf, target->angle);
-		MSG_WriteLong (&cl->reliablebuf, target->momx);
-		MSG_WriteLong (&cl->reliablebuf, target->momy);
-		MSG_WriteLong (&cl->reliablebuf, target->momz);
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_killmobj);
 		if (source)
