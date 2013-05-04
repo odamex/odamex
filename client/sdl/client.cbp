@@ -15,7 +15,8 @@
 				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
-					<Add option="-O2" />
+					<Add option="-march=pentium4" />
+					<Add option="-O3" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
@@ -535,6 +536,9 @@
 		<Unit filename="../src/r_bsp.cpp" />
 		<Unit filename="../src/r_draw.cpp" />
 		<Unit filename="../src/r_drawt.cpp" />
+		<Unit filename="../src/r_drawt_altivec.cpp" />
+		<Unit filename="../src/r_drawt_mmx.cpp" />
+		<Unit filename="../src/r_drawt_sse2.cpp" />
 		<Unit filename="../src/r_main.cpp" />
 		<Unit filename="../src/r_plane.cpp" />
 		<Unit filename="../src/r_segs.cpp" />
