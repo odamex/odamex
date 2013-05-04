@@ -2649,7 +2649,7 @@ void SVC_TeamSay(player_t &player, const char* message)
 			continue;
 
 		// Player needs to be on the same team
-		if (!it->userinfo.team == player.userinfo.team)
+		if (!it->userinfo.team == player.userinfo.team || it->spectator)
 			continue;
 
 		MSG_WriteMarker(&(it->client.reliablebuf), svc_say);
