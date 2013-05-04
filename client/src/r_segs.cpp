@@ -76,6 +76,7 @@ extern fixed_t	rw_frontcz1, rw_frontcz2;
 extern fixed_t	rw_frontfz1, rw_frontfz2;
 extern fixed_t	rw_backcz1, rw_backcz2;
 extern fixed_t	rw_backfz1, rw_backfz2;
+static bool		rw_hashigh, rw_haslow;
 
 static int walltopf[MAXWIDTH];
 static int walltopb[MAXWIDTH];
@@ -731,6 +732,8 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 	R_FillWallHeightArray(walltopf, start, stop, rw_frontcz1, rw_frontcz2, scale1, scale2);
 	R_FillWallHeightArray(wallbottomf, start, stop, rw_frontfz1, rw_frontfz2, scale1, scale2);
 
+	rw_hashigh = rw_haslow = false;
+
 	if (backsector)
 	{
 		rw_backcz1 = P_CeilingHeight(px1, py1, backsector);
@@ -741,6 +744,18 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 		// calculate the upper and lower heights of the walls in the back
 		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, scale1, scale2);
 		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, scale1, scale2);
+
+		// determine if an upper texture is showing
+		rw_hashigh	= (P_CeilingHeight(curline->linedef->v1->x, curline->linedef->v1->y, frontsector) >
+					   P_CeilingHeight(curline->linedef->v1->x, curline->linedef->v1->y, backsector)) ||
+					  (P_CeilingHeight(curline->linedef->v2->x, curline->linedef->v2->y, frontsector) >
+					   P_CeilingHeight(curline->linedef->v2->x, curline->linedef->v2->y, backsector));
+
+		// determine if a lower texture is showing
+		rw_haslow	= (P_FloorHeight(curline->linedef->v1->x, curline->linedef->v1->y, frontsector) <
+					   P_FloorHeight(curline->linedef->v1->x, curline->linedef->v1->y, backsector)) ||
+					  (P_FloorHeight(curline->linedef->v2->x, curline->linedef->v2->y, frontsector) <
+					   P_FloorHeight(curline->linedef->v2->x, curline->linedef->v2->y, backsector));
 
 		// hack to allow height changes in outdoor areas (sky hack)
 		// copy back ceiling height array to front ceiling height array
@@ -919,7 +934,8 @@ void R_StoreWallRange(int start, int stop)
 				(frontsector->ceilingpic != skyflatnum || backsector->ceilingpic != skyflatnum);
 		}
 
-		if (rw_backcz1 < rw_frontcz1 || rw_backcz2 < rw_frontcz2)
+
+		if (rw_hashigh)
 		{
 			// top texture
 			toptexture = texturetranslation[sidedef->toptexture];
@@ -936,7 +952,8 @@ void R_StoreWallRange(int start, int stop)
 				rw_toptexturemid = bc - viewz + R_ScaledTextureHeight(sidedef->toptexture);
 			}
 		}
-		if (rw_backfz1 > rw_frontfz1 || rw_backfz2 > rw_frontfz2)
+
+		if (rw_haslow)
 		{
 			// bottom texture
 			bottomtexture = texturetranslation[sidedef->bottomtexture];
