@@ -889,7 +889,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	tx2 = tx1 + width;
 
 	// clip the sprite to the left & right screen edges
-	if (!R_ClipLineToFrustum(tx1, ty, tx2, ty, NEARCLIP))
+	if (!R_ClipLineToFrustum(tx1, ty, tx2, ty, FRACUNIT))
 		return NULL;
 
 	// calculate how much of the sprite was clipped from the left side
@@ -1012,7 +1012,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 
 	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
-// decide which patch to use for sprite relative to player
+	// decide which patch to use for sprite relative to player
 	if (sprframe->rotate)
 	{
 		// choose a different rotation based on player view
@@ -1639,7 +1639,6 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->startfrac = particle->color;
 	vis->patch = NO_PARTICLE;
 	vis->mobjflags = particle->trans;
-
 
 	if (fixedcolormap.isValid())
 	{
