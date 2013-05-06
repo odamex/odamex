@@ -870,6 +870,108 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 }
 
 
+//
+// R_GenereateVisSprite
+//
+// Helper function that creates a vissprite_t and projects the given world
+// coordinates onto the screen. Returns NULL if the projection is completely
+// clipped off the screen.
+//
+static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside, 
+		fixed_t x, fixed_t y, fixed_t z, fixed_t height, fixed_t width, 
+		fixed_t topoffs, fixed_t sideoffs, bool flip)
+{
+	// translate the sprite edges from world-space to camera-space
+	// and store in (t1x, ty) and (t2x, ty)
+	fixed_t tx1, tx2, ty, tx1old;
+	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx1, ty);
+	tx1 = tx1old = tx1 - sideoffs;
+	tx2 = tx1 + width;
+
+	// clip the sprite to the left & right screen edges
+	if (!R_ClipLineToFrustum(tx1, ty, tx2, ty, NEARCLIP))
+		return NULL;
+
+	// calculate how much of the sprite was clipped from the left side
+	fixed_t clipped_offset = tx1 - tx1old;
+
+	fixed_t gzt = z + topoffs;
+	fixed_t gzb = z;
+
+	// Entirely above the top of the screen or below the bottom?
+	int y1 = R_ProjectPointY(gzt - viewz, ty);
+	int y2 = R_ProjectPointY(gzb - viewz, ty);
+	if (!R_CheckProjectionY(y1, y2))
+		return NULL;
+
+	// killough 3/27/98: exclude things totally separated
+	// from the viewer, by either water or fake ceilings
+	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
+	sector_t* heightsec = sector->heightsec;
+	
+	if (heightsec && heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
+		heightsec = NULL;
+	
+	if (heightsec)	// only clip things which are in special sectors
+	{
+		if (fakeside == FAKED_AboveCeiling)
+		{
+			if (gzt < P_CeilingHeight(heightsec))
+				return NULL;
+		}
+		else if (fakeside == FAKED_BelowFloor)
+		{
+			if (gzb >= P_FloorHeight(heightsec))
+				return NULL;
+		}
+		else
+		{
+			if (gzt < P_FloorHeight(heightsec))
+				return NULL;
+			if (gzb >= P_CeilingHeight(heightsec))
+				return NULL;
+		}
+	}
+
+	// project the sprite edges to determine which columns the sprite occupies
+	int x1 = R_ProjectPointX(tx1, ty);
+	int x2 = R_ProjectPointX(tx2, ty) - 1;
+	if (!R_CheckProjectionX(x1, x2))
+		return NULL;
+
+	// store information in a vissprite
+	vissprite_t *vis = R_NewVisSprite();
+
+	// killough 3/27/98: save sector for special clipping later
+	vis->heightsec = heightsec;
+
+	vis->xscale = FixedDiv(FocalLengthX, ty);
+	vis->yscale = FixedDiv(FocalLengthY, ty);
+	vis->gx = x;
+	vis->gy = y;
+	vis->gzb = gzb;
+	vis->gzt = gzt;
+	vis->texturemid = gzt - viewz;
+	vis->x1 = x1;
+	vis->x2 = x2;
+	vis->depth = ty;
+	vis->FakeFlat = fakeside;
+	vis->colormap = basecolormap;
+
+	fixed_t iscale = FixedDiv(ty, FocalLengthX);
+	if (flip)
+	{
+		vis->startfrac = width - 1 - clipped_offset;
+		vis->xiscale = -iscale;
+	}
+	else
+	{
+		vis->startfrac = clipped_offset;
+		vis->xiscale = iscale;
+	}
+
+	return vis;
+}
 
 //
 // R_ProjectSprite
@@ -877,25 +979,19 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 //
 void R_ProjectSprite (AActor *thing, int fakeside)
 {
-	fixed_t				gzt;				// killough 3/27/98
-	fixed_t				gzb;
-
 	spritedef_t*		sprdef;
 	spriteframe_t*		sprframe;
 	int 				lump;
+	unsigned int		rot;
+	bool 				flip;
 
-	unsigned			rot;
-	BOOL 				flip;
-
-	fixed_t 			iscale;
-
-	sector_t*			heightsec;			// killough 3/27/98
+	if (!thing || !thing->subsector || !thing->subsector->sector)
+		return;
 
 	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0 ||
 		(thing->player && thing->player->spectator))
 		return;
-
-	// decide which patch to use for sprite relative to player
+	
 #ifdef RANGECHECK
 	if ((unsigned)thing->sprite >= (unsigned)numsprites)
 	{
@@ -903,16 +999,20 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 		return;
 	}
 #endif
+
 	sprdef = &sprites[thing->sprite];
+
 #ifdef RANGECHECK
-	if ( (thing->frame&FF_FRAMEMASK) >= sprdef->numframes )
+	if ( (thing->frame & FF_FRAMEMASK) >= sprdef->numframes )
 	{
 		DPrintf ("R_ProjectSprite: invalid sprite frame %i : %i\n ", thing->sprite, thing->frame);
 		return;
 	}
 #endif
+
 	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
+// decide which patch to use for sprite relative to player
 	if (sprframe->rotate)
 	{
 		// choose a different rotation based on player view
@@ -930,97 +1030,25 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	if (sprframe->width[rot] == SPRITE_NEEDS_INFO)
 		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
 
-	// translate the sprite edges from world-space to camera-space
-	// and store in (t1x, ty) and (t2x, ty)
-	fixed_t tx1, tx2, ty, tx1old;
-	R_RotatePoint(thing->x - viewx, thing->y - viewy, ANG90 - viewangle, tx1, ty);
-	tx1 = tx1old = tx1 - sprframe->offset[rot];
-	tx2 = tx1 + sprframe->width[rot];
+	sector_t* sector = thing->subsector->sector;
+	fixed_t x = thing->x;
+	fixed_t y = thing->y;
+	fixed_t z = thing->z;
+	fixed_t topoffs = sprframe->topoffset[rot];
+	fixed_t sideoffs = sprframe->offset[rot];
 
-	// clip the sprite to the left & right screen edges
-	if (!R_ClipLineToFrustum(tx1, ty, tx2, ty, NEARCLIP))
+	patch_t* patch = W_CachePatch(lump);
+	fixed_t height = patch->height() << FRACBITS;
+	fixed_t width = patch->width() << FRACBITS;
+
+	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, height, width, topoffs, sideoffs, flip);
+
+	if (vis == NULL)
 		return;
-
-	// calculate how much of the sprite was clipped from the left side
-	fixed_t clipped_offset = tx1 - tx1old;
-
-	gzt = thing->z + sprframe->topoffset[rot];
-	gzb = thing->z;
-
-	// Entirely above the top of the screen or below the bottom?
-	int y1 = R_ProjectPointY(gzt - viewz, ty);
-	int y2 = R_ProjectPointY(gzb - viewz, ty);
-	if (!R_CheckProjectionY(y1, y2))
-		return;
-
-	// killough 3/27/98: exclude things totally separated
-	// from the viewer, by either water or fake ceilings
-	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
-	heightsec = thing->subsector->sector->heightsec;
-	
-	if (heightsec && heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
-		heightsec = NULL;
-	
-	if (heightsec)	// only clip things which are in special sectors
-	{
-		if (fakeside == FAKED_AboveCeiling)
-		{
-			if (gzt < P_CeilingHeight(heightsec))
-				return;
-		}
-		else if (fakeside == FAKED_BelowFloor)
-		{
-			if (gzb >= P_FloorHeight(heightsec))
-				return;
-		}
-		else
-		{
-			if (gzt < P_FloorHeight(heightsec))
-				return;
-			if (gzb >= P_CeilingHeight(heightsec))
-				return;
-		}
-	}
-
-	// project the sprite edges to determine which columns the sprite occupies
-	int x1 = R_ProjectPointX(tx1, ty);
-	int x2 = R_ProjectPointX(tx2, ty) - 1;
-	if (!R_CheckProjectionX(x1, x2))
-		return;
-
-	// store information in a vissprite
-	vissprite_t *vis = R_NewVisSprite();
-
-	// killough 3/27/98: save sector for special clipping later
-	vis->heightsec = heightsec;
 
 	vis->mobjflags = thing->flags;
-	vis->xscale = FixedDiv(FocalLengthX, ty);
-	vis->yscale = FixedDiv(FocalLengthY, ty);
-	vis->gx = thing->x;
-	vis->gy = thing->y;
-	vis->gz = gzb;
-	vis->gzt = gzt;		// killough 3/27/98
-	vis->texturemid = gzt - viewz;
-	vis->x1 = x1;
-	vis->x2 = x2;
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
-	vis->depth = ty;
-	vis->FakeFlat = fakeside;
-	iscale = FixedDiv(ty, FocalLengthX);
-
-	if (flip)
-	{
-		vis->startfrac = sprframe->width[rot]-1 - clipped_offset;
-		vis->xiscale = -iscale;
-	}
-	else
-	{
-		vis->startfrac = clipped_offset;
-		vis->xiscale = iscale;
-	}
-
 	vis->patch = lump;
 
 	// get light level
@@ -1042,9 +1070,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	{
 		// diminished light
 		int index = (vis->yscale*lightscalexmul)>>LIGHTSCALESHIFT;	// [RH]
-
-		if (index >= MAXLIGHTSCALE)
-			index = MAXLIGHTSCALE-1;
+		index = clamp(index, 0, MAXLIGHTSCALE - 1);
 
 		vis->colormap = basecolormap.with(spritelights[index]);	// [RH] Use basecolormap
 	}
@@ -1593,99 +1619,44 @@ void R_FindParticleSubsectors ()
 
 void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakeside)
 {
-	fixed_t				gzt;				// killough 3/27/98
-	fixed_t				gzb;
-	vissprite_t*		vis;
-	sector_t*			heightsec = NULL;	// killough 3/27/98
-
-	// translate the particle edges from world-space to camera-space
-	// and store in (t1x, ty) and (t2x, ty)
-	fixed_t tx1, tx2, ty;
-	R_RotatePoint(particle->x - viewx, particle->y - viewy, ANG90 - viewangle, tx1, ty);
-	tx1 = tx1 - (particle->size >> 1)*(FRACUNIT/4);
-	tx2 = tx1 + particle->size*(FRACUNIT/4);
-
-	gzt = particle->z+1;
-	gzb = particle->z;
-
-	// Entirely above the top of the screen or below the bottom?
-	int y1 = R_ProjectPointY(gzt - viewz, ty);
-	int y2 = R_ProjectPointY(gzb - viewz, ty);
-	if (!R_CheckProjectionY(y1, y2))
+	if (sector == NULL)
 		return;
 
-	// killough 3/27/98: exclude things totally separated
-	// from the viewer, by either water or fake ceilings
-	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
-	if (gzt < P_FloorHeight(particle->x, particle->y, sector) ||
-		gzb > P_CeilingHeight(particle->x, particle->y, sector))
+	fixed_t x = particle->x;
+	fixed_t y = particle->y;
+	fixed_t z = particle->z;
+	fixed_t height = particle->size*(FRACUNIT/4);
+	fixed_t width = particle->size*(FRACUNIT/4);
+	fixed_t topoffs = height;
+	fixed_t sideoffs = width >> 1;
+
+	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, height, width, topoffs, sideoffs, false);
+
+	if (vis == NULL)
 		return;
 
-	heightsec = sector->heightsec;
-	if (heightsec)	// only clip particles which are in special sectors
-	{
-		if (fakeside == FAKED_AboveCeiling)
-		{
-			if (gzt < P_CeilingHeight(heightsec))
-				return;
-		}
-		else if (fakeside == FAKED_BelowFloor)
-		{
-			if (gzb >= P_FloorHeight(heightsec))
-				return;
-		}
-		else
-		{
-			if (gzt < P_FloorHeight(heightsec))
-				return;
-			if (gzb >= P_CeilingHeight(heightsec))
-				return;
-		}
-	}
-
-	// project the particle edges to determine which columns the particle occupies
-	int x1 = R_ProjectPointX(tx1, ty);
-	int x2 = R_ProjectPointX(tx2, ty) - 1;
-	if (!R_CheckProjectionX(x1, x2))
-		return;
-
-	// store information in a vissprite
-	vis = R_NewVisSprite ();
-	vis->heightsec = heightsec;
-	vis->xscale = FixedDiv(FocalLengthX, ty);
-	vis->yscale = FixedDiv(FocalLengthY, ty);
-	vis->depth = ty;
-	vis->gx = particle->x;
-	vis->gy = particle->y;
-	vis->gz = gzb;
-	vis->gzt = gzt;
-	vis->texturemid = FixedMul (yaspectmul, vis->gzt - viewz);
-	vis->x1 = x1;
-	vis->x2 = x2;
 	vis->translation = translationref_t();
 	vis->startfrac = particle->color;
 	vis->patch = NO_PARTICLE;
 	vis->mobjflags = particle->trans;
-	vis->FakeFlat = fakeside;
+
 
 	if (fixedcolormap.isValid())
 	{
 		vis->colormap = fixedcolormap;
 	}
-	else if (sector)
+	else
 	{
 		shaderef_t map;
 
-		if (heightsec && 
-			(gzt <= P_FloorHeight(heightsec) || gzb > P_CeilingHeight(heightsec)))
-		{
-			map = sector->heightsec->floorcolormap->maps;
-		}
-		else
+		if (vis->heightsec == NULL || vis->FakeFlat == FAKED_Center)
 		{
 			map = sector->floorcolormap->maps;
 		}
-
+		else
+		{
+			map = vis->heightsec->floorcolormap->maps;
+		}
 
 		if (fixedlightlev)
 		{
@@ -1694,23 +1665,13 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		else
 		{
 			int index = (vis->yscale*lightscalexmul)>>(LIGHTSCALESHIFT-1);
-			int lightnum = (sector->lightlevel >> LIGHTSEGSHIFT)
-					+ (foggy ? 0 : extralight);
+			int lightnum = (sector->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 
-			if (lightnum < 0)
-				lightnum = 0;
-			else if (lightnum >= LIGHTLEVELS)
-				lightnum = LIGHTLEVELS-1;
-			if (index >= MAXLIGHTSCALE) 
-				index = MAXLIGHTSCALE-1;
+			index = clamp(index, 0, MAXLIGHTSCALE - 1);
+			lightnum = clamp(lightnum, 0, LIGHTLEVELS - 1);
 
 			vis->colormap = map.with(scalelight[lightnum][index]);
 		}
-	}
-	else
-	{
-		vis->colormap = shaderef_t(&realcolormaps, 0);
-		//vis->colormap = shaderef_t(&GetDefaultPalette()->maps, 0);
 	}
 }
 

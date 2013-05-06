@@ -519,24 +519,24 @@ typedef struct patch_s patch_t;
 // I.e. a sprite object that is partly visible.
 struct vissprite_s
 {
-    int			x1;
-    int			x2;
+    int				x1;
+    int				x2;
 
     // for line side calculation
-    fixed_t		gx;
-    fixed_t		gy;
+    fixed_t			gx;
+    fixed_t			gy;
 
     // global bottom / top for silhouette clipping
-    fixed_t		gz;
-    fixed_t		gzt;
+    fixed_t			gzb;
+    fixed_t			gzt;
 
     // horizontal position of x1
-    fixed_t		startfrac;
+    fixed_t			startfrac;
 
 	fixed_t			xscale, yscale;
 
     // negative if flipped
-    fixed_t		xiscale;
+    fixed_t			xiscale;
 
 	fixed_t			depth;
 	fixed_t			texturemid;
@@ -549,9 +549,9 @@ struct vissprite_s
 	int 			mobjflags;
 
 	translationref_t translation;	// [RH] for translation;
-	sector_t		*heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
+	sector_t*		heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
 	fixed_t			translucency;
-	BYTE			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
+	byte			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
 };
 typedef struct vissprite_s vissprite_t;
 
