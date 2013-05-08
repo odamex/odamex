@@ -744,18 +744,20 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 		// calculate the upper and lower heights of the walls in the back
 		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, scale1, scale2);
 		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, scale1, scale2);
+	
+		const fixed_t tolerance = FRACUNIT/2;
 
 		// determine if an upper texture is showing
-		rw_hashigh	= (P_CeilingHeight(curline->linedef->v1->x, curline->linedef->v1->y, frontsector) >
-					   P_CeilingHeight(curline->linedef->v1->x, curline->linedef->v1->y, backsector)) ||
-					  (P_CeilingHeight(curline->linedef->v2->x, curline->linedef->v2->y, frontsector) >
-					   P_CeilingHeight(curline->linedef->v2->x, curline->linedef->v2->y, backsector));
+		rw_hashigh	= (P_CeilingHeight(curline->v1->x, curline->v1->y, frontsector) - tolerance >
+					   P_CeilingHeight(curline->v1->x, curline->v1->y, backsector)) ||
+					  (P_CeilingHeight(curline->v2->x, curline->v2->y, frontsector) - tolerance>
+					   P_CeilingHeight(curline->v2->x, curline->v2->y, backsector));
 
 		// determine if a lower texture is showing
-		rw_haslow	= (P_FloorHeight(curline->linedef->v1->x, curline->linedef->v1->y, frontsector) <
-					   P_FloorHeight(curline->linedef->v1->x, curline->linedef->v1->y, backsector)) ||
-					  (P_FloorHeight(curline->linedef->v2->x, curline->linedef->v2->y, frontsector) <
-					   P_FloorHeight(curline->linedef->v2->x, curline->linedef->v2->y, backsector));
+		rw_haslow	= (P_FloorHeight(curline->v1->x, curline->v1->y, frontsector) + tolerance <
+					   P_FloorHeight(curline->v1->x, curline->v1->y, backsector)) ||
+					  (P_FloorHeight(curline->v2->x, curline->v2->y, frontsector) + tolerance <
+					   P_FloorHeight(curline->v2->x, curline->v2->y, backsector));
 
 		// hack to allow height changes in outdoor areas (sky hack)
 		// copy back ceiling height array to front ceiling height array
