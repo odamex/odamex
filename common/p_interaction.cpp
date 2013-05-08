@@ -120,32 +120,32 @@ void P_GiveTeamPoints(player_t* player, int num)
 // Returns false if the ammo can't be picked up at all
 //
 
-BOOL P_GiveAmmo(player_t *player, ammotype_t ammo, int num)
+BOOL P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 {
-	int oldammo;
+	int oldammotype;
 
-	if (ammo == am_noammo)
+	if (ammotype == am_noammo)
     {
 		return false;
     }
 
-	if (ammo < 0 || ammo > NUMAMMO)
+	if (ammotype < 0 || ammotype > NUMAMMO)
     {
-		I_Error("P_GiveAmmo: bad type %i", ammo);
+		I_Error("P_GiveAmmo: bad type %i", ammotype);
     }
 
-	if (player->ammo[ammo] == player->maxammo[ammo])
+	if (player->ammo[ammotype] == player->maxammo[ammotype])
     {
 		return false;
     }
 
 	if (num)
     {
-		num *= clipammo[ammo];
+		num *= clipammo[ammotype];
     }
 	else
     {
-		num = clipammo[ammo]/2;
+		num = clipammo[ammotype]/2;
     }
 
 	if (sv_skill == sk_baby || sv_skill == sk_nightmare || sv_doubleammo)
@@ -155,18 +155,18 @@ BOOL P_GiveAmmo(player_t *player, ammotype_t ammo, int num)
 		num <<= 1;
 	}
 
-	oldammo = player->ammo[ammo];
-	player->ammo[ammo] += num;
+	oldammotype = player->ammo[ammotype];
+	player->ammo[ammotype] += num;
 
-	if (player->ammo[ammo] > player->maxammo[ammo])
+	if (player->ammo[ammotype] > player->maxammo[ammotype])
     {
-		player->ammo[ammo] = player->maxammo[ammo];
+		player->ammo[ammotype] = player->maxammo[ammotype];
     }
 
 	// If non zero ammo,
 	// don't change up weapons,
 	// player was lower on purpose.
-	if (oldammo)
+	if (oldammotype)
     {
 		return true;
     }
@@ -174,7 +174,7 @@ BOOL P_GiveAmmo(player_t *player, ammotype_t ammo, int num)
 	// We were down to zero,
 	// so select a new weapon.
 	// Preferences are not user selectable.
-	switch (ammo)
+	switch (ammotype)
 	{
         case am_clip:
             if (player->readyweapon == wp_fist)
@@ -259,11 +259,11 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 
 		if (sv_gametype != GM_COOP)
         {
-			P_GiveAmmo(player, weaponinfo[weapon].ammo, 5);
+			P_GiveAmmo(player, weaponinfo[weapon].ammotype, 5);
         }
 		else
         {
-			P_GiveAmmo(player, weaponinfo[weapon].ammo, 2);
+			P_GiveAmmo(player, weaponinfo[weapon].ammotype, 2);
         }
 
 		if (P_CheckSwitchWeapon(player, weapon))
@@ -276,17 +276,17 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 		return false;
 	}
 
-	if (weaponinfo[weapon].ammo != am_noammo)
+	if (weaponinfo[weapon].ammotype != am_noammo)
 	{
 		// give one clip with a dropped weapon,
 		// two clips with a found weapon
 		if (dropped)
         {
-			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammo, 1)) != 0);
+			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 1)) != 0);
         }
 		else
         {
-			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammo, 2)) != 0);
+			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 2)) != 0);
         }
 	}
 	else

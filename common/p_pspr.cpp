@@ -48,6 +48,8 @@
 #define WEAPONBOTTOM			128*FRACUNIT
 #define WEAPONTOP				32*FRACUNIT
 
+void A_FireRailgun(AActor *mo);
+
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowmovebob)
@@ -253,14 +255,10 @@ void P_BringUpWeapon (player_t *player)
 //
 bool P_EnoughAmmo(player_t *player, weapontype_t weapon, bool switching = false)
 {
-	ammotype_t		ammo = weaponinfo[weapon].ammo;
+	ammotype_t		ammotype = weaponinfo[weapon].ammotype;
 	int				count = 1;	// default amount of ammo for most weapons
 
-    // Minimal amount for one shot varies.
-    if (weapon == wp_bfg)
-        count = deh.BFGCells;
-	else if (weapon == wp_supershotgun)
-		count = 2;
+	count = weaponinfo[weapon].minammo;
 
 	// Vanilla Doom requires > 40 cells to switch to BFG and > 2 shells to
 	// switch to SSG when current weapon is out of ammo due to a bug.
@@ -269,7 +267,7 @@ bool P_EnoughAmmo(player_t *player, weapontype_t weapon, bool switching = false)
 
     // Some do not need ammunition anyway.
     // Return if current ammunition sufficient.
-    if (ammo == am_noammo || player->ammo[ammo] >= count)
+    if (ammotype == am_noammo || player->ammo[ammotype] >= count)
         return true;
 
 	return false;
@@ -346,7 +344,7 @@ weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 			continue;
 		if (!player->weaponowned[itemlist[index].offset])
 			continue;
-		if (!player->ammo[weaponinfo[itemlist[index].offset].ammo])
+		if (!player->ammo[weaponinfo[itemlist[index].offset].ammotype])
 			continue;
 		if (itemlist[index].offset == wp_plasma && gamemode == shareware)
 			continue;
@@ -416,7 +414,7 @@ BOOL P_CheckAmmo (player_t *player)
 // example, it is possible to make a weapon that decreases the max
 // number of ammo for another weapon.  Emulate this.
 
-static void DecreaseAmmo(player_t *player, int amount)
+static void DecreaseAmmo(player_t *player)
 {
 	// [SL] 2012-06-17 - Don't decrease ammo for players we are viewing
 	// The server will send the correct ammo
@@ -425,7 +423,8 @@ static void DecreaseAmmo(player_t *player, int amount)
 
 	if (!sv_infiniteammo)
 	{
-		ammotype_t ammonum = weaponinfo[player->readyweapon].ammo;
+		ammotype_t ammonum = weaponinfo[player->readyweapon].ammotype;
+		int amount = weaponinfo[player->readyweapon].ammouse;
 
 		if (ammonum < NUMAMMO)
 			player->ammo[ammonum] -= amount;
@@ -767,7 +766,7 @@ void A_FireMissile (AActor *mo)
 {
     player_t *player = mo->player;
 
-	DecreaseAmmo(player, 1);
+	DecreaseAmmo(player);
 
 	if(serverside)
 		P_SpawnPlayerMissile (player->mo, MT_ROCKET);
@@ -786,7 +785,7 @@ void A_FireBFG (AActor *mo)
 	angle_t storedpitch = player->mo->pitch;
 	int storedaimdist = player->userinfo.aimdist;
 
-	DecreaseAmmo(player, deh.BFGCells);
+	DecreaseAmmo(player);
 
 	player->mo->pitch = 0;
 	player->userinfo.aimdist = 81920000;
@@ -807,7 +806,7 @@ void A_FirePlasma (AActor *mo)
 {
     player_t *player = mo->player;
 
-	DecreaseAmmo(player, 1);
+	DecreaseAmmo(player);
 
 	P_SetPsprite (player,
 				  ps_flash,
@@ -827,16 +826,7 @@ void A_FireRailgun (AActor *mo)
 	int damage;
 
     player_t *player = mo->player;
-
-	if (player->ammo[weaponinfo[player->readyweapon].ammo] < 10)
-	{
-		int ammo = player->ammo[weaponinfo[player->readyweapon].ammo];
-		player->ammo[weaponinfo[player->readyweapon].ammo] = 0;
-		player->ammo[weaponinfo[player->readyweapon].ammo] = ammo;
-		return;
-	}
-
-	DecreaseAmmo(player, 10);
+	DecreaseAmmo(player);
 
 	P_SetPsprite (player,
 				  ps_flash,
@@ -1024,7 +1014,7 @@ void A_FirePistol (AActor *mo)
 
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
-	DecreaseAmmo(player, 1);
+	DecreaseAmmo(player);
 
 	P_SetPsprite (player,
 				  ps_flash,
@@ -1045,7 +1035,7 @@ void A_FireShotgun (AActor *mo)
 	A_FireSound (player, "weapons/shotgf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
-	DecreaseAmmo(player, 1);
+	DecreaseAmmo(player);
 
 	P_SetPsprite (player,
 				  ps_flash,
@@ -1066,7 +1056,7 @@ void A_FireShotgun2 (AActor *mo)
 	A_FireSound (player, "weapons/sshotf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
-	DecreaseAmmo(player, 2);
+	DecreaseAmmo(player);
 
 	P_SetPsprite (player,
 				  ps_flash,
@@ -1085,13 +1075,13 @@ void A_FireCGun (AActor *mo)
 
 	A_FireSound (player, "weapons/chngun");
 
-	if (weaponinfo[player->readyweapon].ammo != am_noammo
-		&& !player->ammo[weaponinfo[player->readyweapon].ammo])
+	if (weaponinfo[player->readyweapon].ammotype != am_noammo
+		&& !player->ammo[weaponinfo[player->readyweapon].ammotype])
 		return;
 
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
-	DecreaseAmmo(player, 1);
+	DecreaseAmmo(player);
 
 	P_SetPsprite (player,
 				  ps_flash,

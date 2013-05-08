@@ -61,7 +61,7 @@ struct DehInfo deh = {
 	  2,	// .FAAC
 	200,	// .KFAArmor
 	  2,	// .KFAAC
-	 40,	// .BFGCells
+	 40,	// .BFGCells (No longer used)
 	  0,	// .Infight
 };
 
@@ -1225,12 +1225,15 @@ static int PatchAmmo (int ammoNum)
 static int PatchWeapon (int weapNum)
 {
 	static const struct Key keys[] = {
-		{ "Ammo type",			myoffsetof(weaponinfo_t,ammo) },
+		{ "Ammo type",			myoffsetof(weaponinfo_t,ammotype) },
 		{ "Deselect frame",		myoffsetof(weaponinfo_t,upstate) },
 		{ "Select frame",		myoffsetof(weaponinfo_t,downstate) },
 		{ "Bobbing frame",		myoffsetof(weaponinfo_t,readystate) },
 		{ "Shooting frame",		myoffsetof(weaponinfo_t,atkstate) },
 		{ "Firing frame",		myoffsetof(weaponinfo_t,flashstate) },
+		{ "Ammo use",			myoffsetof(weaponinfo_t,ammouse) },		// ZDoom 1.23b33
+		{ "Ammo per shot",		myoffsetof(weaponinfo_t,ammouse) },		// Eternity
+		{ "Min ammo",			myoffsetof(weaponinfo_t,minammo) },		// ZDoom 1.23b33
 		{ NULL, 0}
 	};
 	int result;
@@ -1353,8 +1356,18 @@ static int PatchMisc (int dummy)
 	DPrintf ("Misc\n");
 
 	while ((result = GetLine()) == 1)
+	{
 		if (HandleKey (keys, &deh, Line1, atoi (Line2)))
 			DPrintf ("Unknown miscellaneous info %s.\n", Line2);
+		
+		// [SL] manually check if BFG Cells/Shot is being changed and
+		// update weaponinfo accordingly. BFGCells should be considered depricated.
+		if (Line1 != NULL && stricmp(Line1, "BFG Cells/Shot") == 0)
+		{
+			weaponinfo[wp_bfg].ammouse = deh.BFGCells;
+			weaponinfo[wp_bfg].minammo = deh.BFGCells;
+		}
+	}
 
 	if ( (item = FindItem ("Basic Armor")) )
 		item->offset = deh.GreenAC;
