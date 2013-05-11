@@ -1182,16 +1182,16 @@ void ST_updateWidgets(void)
 	// must redirect the pointer if the ready weapon has changed.
 	//	if (w_ready.data != plyr->readyweapon)
 	//	{
-	if (weaponinfo[plyr->readyweapon].ammo == am_noammo)
+	if (weaponinfo[plyr->readyweapon].ammotype == am_noammo)
 		w_ready.num = &largeammo;
 	else
-		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammo];
+		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 	//{
 	// static int tic=0;
 	// static int dir=-1;
 	// if (!(tic&15))
-	//	 plyr->ammo[weaponinfo[plyr->readyweapon].ammo]+=dir;
-	// if (plyr->ammo[weaponinfo[plyr->readyweapon].ammo] == -100)
+	//	 plyr->ammo[weaponinfo[plyr->readyweapon].ammotype]+=dir;
+	// if (plyr->ammo[weaponinfo[plyr->readyweapon].ammotype] == -100)
 	//	 dir = 1;
 	// tic++;
 	// }
@@ -1214,7 +1214,7 @@ void ST_updateWidgets(void)
 			st_weaponowned[i] = 0;
 	}
 
-	st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammo];
+	st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 	// if (*w_ready.on)
 	//	STlib_updateNum(&w_ready, true);
 	// refresh weapon change

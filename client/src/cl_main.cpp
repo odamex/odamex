@@ -1780,31 +1780,15 @@ void CL_UpdatePlayer()
 	fixed_t y = MSG_ReadLong();
 	fixed_t z = MSG_ReadLong();
 
-	angle_t angle = 0, pitch = 0;
-
-	// [SL] 2012-06-15 - Netdemo compatibility with 0.6.0 and prior
-	if (gameversion <= 60)
-	{
-		angle = MSG_ReadLong();
-	}
-	else
-	{
-		angle = MSG_ReadShort() << FRACBITS;
-		pitch = MSG_ReadShort() << FRACBITS;
-	}
+	angle_t angle = MSG_ReadShort() << FRACBITS;
+	angle_t pitch = MSG_ReadShort() << FRACBITS;
 
 	int frame = MSG_ReadByte();
 	fixed_t momx = MSG_ReadLong();
 	fixed_t momy = MSG_ReadLong();
 	fixed_t momz = MSG_ReadLong();
 
-	int invisibility = 0;
-	
-	// [SL] 2012-06-15 - Netdemo compatibility with 0.6.0 and prior
-	if (gameversion <= 60)
-		invisibility = MSG_ReadLong();
-	else
-		invisibility = MSG_ReadByte();
+	int invisibility = MSG_ReadByte();
 
 	if	(!validplayer(*p) || !p->mo)
 		return;

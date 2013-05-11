@@ -35,13 +35,15 @@ class player_s;
 // Weapon info: sprite frames, ammunition use.
 struct weaponinfo_s
 {
-	ammotype_t	ammo;
+	ammotype_t	ammotype;
 	statenum_t	upstate;
 	statenum_t	downstate;
 	statenum_t 	readystate;
 	statenum_t	atkstate;
 	statenum_t	flashstate;
 	mobjtype_t	droptype;
+	int			ammouse;
+	int			minammo;
 };
 typedef struct weaponinfo_s weaponinfo_t;
 
