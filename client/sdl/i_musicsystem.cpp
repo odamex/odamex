@@ -948,7 +948,7 @@ PortMidiMusicSystem::PortMidiMusicSystem() :
 	MidiMusicSystem(), mIsInitialized(false),
 	mOutputDevice(-1), mStream(NULL)
 {
-	const int output_buffer_size = 100;
+	const int output_buffer_size = 1024;
 	
 	if (Pm_Initialize() != pmNoError)
 	{
