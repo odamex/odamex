@@ -1067,39 +1067,43 @@ void P_XYMovement(AActor *mo)
 			else if (mo->flags & MF_MISSILE)
 			{
 				// [SL] 2012-01-25 - Don't explode missiles on horizon line
-				if (BlockingLine && BlockingLine->special == Line_Horizon &&
-					co_fixweaponimpacts)
+				if (BlockingLine && BlockingLine->special == Line_Horizon)
 				{
 					mo->Destroy();
 					return;
 				}
 
-				// explode a missile
-				if (ceilingline &&
-					ceilingline->backsector &&
-					ceilingline->backsector->ceilingpic == skyflatnum)
+				// [SL] 2013-05-14 - Check for sky wall hacks
+				if (ceilingline)
 				{
-					// Hack to prevent missiles exploding
-					// against the sky.
-					// Does not handle sky floors.
-
-					// [SL] 2011-09-16 - Add fix for impact of missiles against
-					// lower or upper walls whose line is facing away from a
-					// bordering sector with a F_SKY ceiling texture.  In vanilla
-					// Doom, the missile disappears when hitting such a wall
-					// instead of exploding.
-
-					if (!co_fixweaponimpacts ||
-						mo->z > P_CeilingHeight(mo->x, mo->y, ceilingline->backsector))
+					sector_t *sec1, *sec2;
+					if (!co_fixweaponimpacts || !ceilingline->backsector || !P_PointOnLineSide(mo->x, mo->y, ceilingline))
 					{
-						mo->Destroy ();
-						return;
+						sec1 = ceilingline->frontsector;
+						sec2 = ceilingline->backsector;
+					}
+					else
+					{
+						sec1 = ceilingline->backsector;
+						sec2 = ceilingline->frontsector;
+					}
+
+					bool skyceiling1 = sec1->ceilingpic == skyflatnum;
+					bool skyceiling2 = sec2 && sec2->ceilingpic == skyflatnum;
+
+					if (skyceiling2)
+					{
+						if (!co_fixweaponimpacts || (skyceiling1 && mo->z > P_CeilingHeight(mo->x, mo->y, sec2)))
+						{
+							mo->Destroy();
+							return;
+						}
 					}
 				}
+
 				// [SL] 2011-06-02 - Only server should control explosions
 				if (serverside)
 					 P_ExplodeMissile (mo);
-
 			}
 			else
 			{

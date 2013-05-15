@@ -27,6 +27,7 @@
 #include <cstddef>
 
 #include "v_video.h"
+#include "v_gamma.h"
 #include "m_alloc.h"
 #include "r_main.h"		// For lighting constants
 #include "w_wad.h"
@@ -135,60 +136,50 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_co
 /* Gamma correction stuff */
 /**************************/
 
-enum {
-	GAMMA_DOOM = 0,
-	GAMMA_ZDOOM = 1
-};
+static DoomGammaStrategy doomgammastrat;
+static ZDoomGammaStrategy zdoomgammastrat;
+static GammaStrategy* gammastrat = &doomgammastrat;
+
+CVAR_FUNC_IMPL(vid_gammatype)
+{
+	int sanitized_var = clamp(var.value(), 0.0f, 1.0f);
+	if (var == sanitized_var)
+	{
+		if (vid_gammatype == GAMMA_ZDOOM)
+			gammastrat = &zdoomgammastrat;
+		else
+			gammastrat = &doomgammastrat;
+
+		gammalevel.Set(gammalevel);
+	}
+	else
+	{
+		var.Set(sanitized_var);
+	}
+}
 
 byte newgamma[256];
 static bool gamma_initialized = false;
 
-static void V_UpdateGammaLevel(float var)
+static void V_UpdateGammaLevel(float level)
 {
-	static float lastgamma = 0;
+	static float lastgammalevel = 0.0f;
 	static int lasttype = -1;			// ensure this gets set up the first time
 	int type = vid_gammatype;
 
-	if (lastgamma != var || lasttype != type)
+	if (lastgammalevel != level || lasttype != type)
 	{
 		// Only recalculate the gamma table if the new gamma
 		// value is different from the old one.
 
-		lastgamma = var;
+		lastgammalevel = level;
 		lasttype = type;
 
-		if (vid_gammatype == GAMMA_ZDOOM)
-		{
-			// [SL] Use ZDoom 1.22 gamma correction
+		gammastrat->generateGammaTable(newgamma, level);
+		GammaAdjustPalettes();
 
-			// [RH] I found this formula on the web at
-			// http://panda.mostang.com/sane/sane-gamma.html
-			double invgamma = 1.0 / var;
-
-			for (int i = 0; i < 256; i++)
-				newgamma[i] = (BYTE)(255.0 * pow (i / 255.0, invgamma));
-		}
-		else
-		{	
-			// [SL] Use vanilla Doom's gamma table
-			//
-			// This was derived from the original Doom gammatable after some
-			// trial and error and several beers.  The +0.5 is used to round
-			// while the 255/256 is to scale to ensure 255 isn't exceeded.
-			// This generates a 1:1 match with the original gammatable but also
-			// allows for intermediate values.
-
-			const double basefac = pow(2.0, var - 1.0) * (255.0/256.0);
-			const double exp = 1.0 - 0.125 * (var - 1.0);
-
-			for (int i = 0; i < 256; i++)
-				newgamma[i] = (byte)(0.5 + basefac * pow(static_cast<double>(i + 1), exp));
-		}
-
-		gamma_initialized = true;
-
-		GammaAdjustPalettes ();
-		if (!screen) return;
+		if (!screen)
+			return;
 		if (screen->is8bit())
 		{
 			DoBlending (DefPal.colors, IndexedPalette, DefPal.numcolors,
@@ -200,38 +191,26 @@ static void V_UpdateGammaLevel(float var)
 	}
 }
 
-
-CVAR_FUNC_IMPL (gammalevel)
+CVAR_FUNC_IMPL(gammalevel)
 {
-	if (var < 1.0f)
-	{
-		var.Set(1.0f);
-		return;
-	}
-	else if (var > 8)
-	{
-		var.Set(8.0f);
-		return;
-	}
-
-	V_UpdateGammaLevel(var);
+	float sanitized_var = clamp(var.value(), gammastrat->min(), gammastrat->max());
+	if (var == sanitized_var)
+		V_UpdateGammaLevel(var);
+	else
+		var.Set(sanitized_var);
 }
 
-CVAR_FUNC_IMPL(vid_gammatype)
+BEGIN_COMMAND(bumpgamma)
 {
-	if (var < GAMMA_DOOM)
-	{
-		var.Set(GAMMA_DOOM);
-		return;
-	}
-	else if (var > GAMMA_ZDOOM)
-	{
-		var.Set(GAMMA_ZDOOM);
-		return;
-	}
+	gammalevel.Set(gammastrat->increment(gammalevel));
 
-	V_UpdateGammaLevel(gammalevel);
+	if (gammalevel.value() == gammastrat->min())
+	    Printf (PRINT_HIGH, "Gamma correction off\n");
+	else
+	    Printf (PRINT_HIGH, "Gamma correction level %g\n", gammalevel.value());
 }
+END_COMMAND(bumpgamma)
+
 
 // [Russell] - Restore original screen palette from current gamma level
 void V_RestoreScreenPalette(void)

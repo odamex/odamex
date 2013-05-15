@@ -439,6 +439,13 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 			ld->args[i] = SpecialTranslation[special].args[i] == TAG ? tag :
 						  SpecialTranslation[special].args[i];
 	}
+	else if (special == 337)
+	{
+		ld->special = Line_Horizon;
+		ld->flags = flags;
+		ld->id = tag;
+		memset(ld->args, 0, sizeof(ld->args));
+	}
 	else if (special >= 340 && special <= 347)
 	{
 		// [SL] 2012-01-30 - convert to ZDoom Plane_Align special for
