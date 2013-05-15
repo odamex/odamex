@@ -607,27 +607,6 @@ BEGIN_COMMAND (menu_player)
 }
 END_COMMAND (menu_player)
 
-BEGIN_COMMAND (bumpgamma)
-{
-    // F11
-	// [RH] Gamma correction tables are now generated
-	// on the fly for *any* gamma level.
-	// Q: What are reasonable limits to use here?
-
-	float newgamma = gammalevel + 1;
-
-	if (newgamma > 8.0)
-		newgamma = 1.0;
-
-	gammalevel.Set (newgamma);
-
-	if (gammalevel.value() == 1.0)
-        Printf (PRINT_HIGH, "Gamma correction off\n");
-    else
-        Printf (PRINT_HIGH, "Gamma correction level %g\n", gammalevel.value() - 1);
-}
-END_COMMAND (bumpgamma)
-
 /*
 void M_LoadSaveResponse(int choice)
 {
