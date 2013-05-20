@@ -551,7 +551,7 @@ static value_t VoxType[] = {
 	{ 2.0,			"Possessive" }
 };
 
-static int num_mussys = STACKARRAY_LENGTH(MusSys);
+static float num_mussys = static_cast<float>(STACKARRAY_LENGTH(MusSys));
 
 static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    

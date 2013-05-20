@@ -848,7 +848,6 @@ extern int connecttimeout;
 void G_Ticker (void)
 {
 	int 		buf;
-	gamestate_t	oldgamestate;
 	size_t i;
 
 
@@ -862,7 +861,6 @@ void G_Ticker (void)
 				G_DoReborn (players[i]);
 
 	// do things to change the game state
-	oldgamestate = gamestate;
 	while (gameaction != ga_nothing)
 	{
 		switch (gameaction)
@@ -1492,7 +1490,6 @@ void G_DoLoadGame (void)
 {
     unsigned int i;
 	char text[16];
-	size_t res;
 
 	gameaction = ga_nothing;
 
@@ -1504,7 +1501,7 @@ void G_DoLoadGame (void)
 	}
 
 	fseek (stdfile, SAVESTRINGSIZE, SEEK_SET);	// skip the description field
-	res = fread (text, 16, 1, stdfile);
+	fread (text, 16, 1, stdfile);
 	if (strncmp (text, SAVESIG, 16))
 	{
 		Printf (PRINT_HIGH, "Savegame '%s' is from a different version\n", savename);
@@ -1513,7 +1510,7 @@ void G_DoLoadGame (void)
 
 		return;
 	}
-	res = fread (text, 8, 1, stdfile);
+	fread (text, 8, 1, stdfile);
 	text[8] = 0;
 
 	/*bglobal.RemoveAllBots (true);*/
@@ -1605,7 +1602,6 @@ void G_DoSaveGame (void)
 {
 	std::string name;
 	char *description;
-	size_t res;
 	int i;
 
 	G_SnapshotLevel ();
@@ -1626,9 +1622,9 @@ void G_DoSaveGame (void)
 
 	Printf (PRINT_HIGH, "Saving game to '%s'...\n", name.c_str());
 
-	res = fwrite (description, SAVESTRINGSIZE, 1, stdfile);
-	res = fwrite (SAVESIG, 16, 1, stdfile);
-	res = fwrite (level.mapname, 8, 1, stdfile);
+	fwrite (description, SAVESTRINGSIZE, 1, stdfile);
+	fwrite (SAVESIG, 16, 1, stdfile);
+	fwrite (level.mapname, 8, 1, stdfile);
 
 	FLZOFile savefile (stdfile, FFile::EWriting, true);
 	FArchive arc (savefile);
@@ -1802,7 +1798,7 @@ void G_WriteDemoTiccmd ()
 
         *demo_p++ = cmd->buttons;
 
-        size_t res = fwrite(demo_tmp, demostep, 1, recorddemo_fp);
+        fwrite(demo_tmp, demostep, 1, recorddemo_fp);
     }
 }
 
@@ -1883,7 +1879,7 @@ void G_BeginRecording (void)
     *demo_p++ = 0;
     *demo_p++ = 0;
 
-    size_t res = fwrite(demo_tmp, 13, 1, recorddemo_fp);
+    fwrite(demo_tmp, 13, 1, recorddemo_fp);
 }
 
 //
@@ -1991,7 +1987,6 @@ END_COMMAND(streamdemo)
 //		until a BODY chunk is entered.
 BOOL G_ProcessIFFDemo (char *mapname)
 {
-	BOOL headerHit = false;
 	BOOL bodyHit = false;
 	int numPlayers = 0;
 	int id, len;
@@ -2027,8 +2022,6 @@ BOOL G_ProcessIFFDemo (char *mapname)
 
 		switch (id) {
 			case ZDHD_ID:
-				headerHit = true;
-
 				iffdemover = ReadWord (&demo_p);	// ZDoom version demo was created with
 				if (ReadWord (&demo_p) > GAMEVER) {		// Minimum ZDoom version
 					Printf (PRINT_HIGH, "Demo requires newer software version\n");
