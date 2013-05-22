@@ -110,27 +110,27 @@ static void I_ShutdownMouseDriver()
 static void I_InitMouseDriver()
 {
 	static float prev_mouse_driver = -1.0f;
-	if (mouse_driver != prev_mouse_driver)
-	{
-		I_ShutdownMouseDriver();
+	if (mouse_driver == prev_mouse_driver)
+		return;
 
-		if (!nomouse && screen)
-		{
+	I_ShutdownMouseDriver();
+
+	if (!nomouse && screen)
+	{
 #ifdef WIN32
-			if (mouse_input == NULL && mouse_driver == RAW_WIN32_MOUSE_DRIVER)
-			{
-				mouse_input = RawWin32Mouse::create();
-				if (mouse_input != NULL)
-					Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing Win32 Raw Mouse Input.\n");
-			}
+		if (mouse_input == NULL && mouse_driver == RAW_WIN32_MOUSE_DRIVER)
+		{
+			mouse_input = RawWin32Mouse::create();
+			if (mouse_input != NULL)
+				Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing Win32 Raw Mouse Input.\n");
+		}
 #endif
 
-			if (mouse_input == NULL)
-			{
-				mouse_input = SDLMouse::create();
-				if (mouse_input != NULL)
-					Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing SDL Mouse Input.\n");
-			}
+		if (mouse_input == NULL)
+		{
+			mouse_input = SDLMouse::create();
+			if (mouse_input != NULL)
+				Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing SDL Mouse Input.\n");
 		}
 	}
 
@@ -146,6 +146,8 @@ void I_FlushInput()
 {
 	SDL_Event ev;
 	while (SDL_PollEvent(&ev));
+	if (mouse_input)
+		mouse_input->flushEvents();
 }
 
 void I_EnableKeyRepeat()
@@ -770,8 +772,8 @@ void I_StartFrame (void)
 // ============================================================================
 
 // define the static member variables declared in the header
-HHOOK RawWin32Mouse::mHookHandle;
-RawWin32Mouse* RawWin32Mouse::mThis;
+HHOOK RawWin32Mouse::mHookHandle = NULL;
+RawWin32Mouse* RawWin32Mouse::mThis = NULL;
 
 //
 // RawWin32Mouse::RawWin32Mouse

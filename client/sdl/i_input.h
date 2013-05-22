@@ -55,6 +55,8 @@ enum
 class MouseInput
 {
 public:
+	virtual ~MouseInput() { }
+
 	virtual void processEvents() = 0;
 	virtual void flushEvents() = 0;
 	virtual void center() = 0;
