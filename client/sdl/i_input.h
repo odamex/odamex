@@ -90,10 +90,15 @@ private:
 	LRESULT hookProc(int nCode, WPARAM wParam, LPARAM lParam);
 	static LRESULT hookProcWrapper(int nCode, WPARAM wParam, LPARAM lParam);
 
+	void backupMouseDevice();
+	void restoreMouseDevice();
+
 	bool					mActive;
 	bool					mInitialized;
 
-	RAWINPUTDEVICE			mDevice;
+	bool					mHasBackedupMouseDevice;
+	RAWINPUTDEVICE			mBackedupMouseDevice;
+
 	static HHOOK			mHookHandle;
 	static RawWin32Mouse*	mThis;
 

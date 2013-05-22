@@ -780,14 +780,18 @@ RawWin32Mouse* RawWin32Mouse::mThis = NULL;
 //
 RawWin32Mouse::RawWin32Mouse() :
 	mActive(false), mInitialized(false),
+	mHasBackedupMouseDevice(false),
 	mPrevX(0), mPrevY(0), mPrevValid(false)
 {
-	mDevice.usUsagePage = 1;
-	mDevice.usUsage = 2;
-	mDevice.dwFlags = 0;
-	mDevice.hwndTarget = NULL;
+	backupMouseDevice();
 
-	if (RegisterRawInputDevices(&mDevice, 1, sizeof(RAWINPUTDEVICE)) == FALSE)
+	RAWINPUTDEVICE device;
+	device.usUsagePage = 1;
+	device.usUsage = 2;
+	device.dwFlags = 0;
+	device.hwndTarget = NULL;
+
+	if (RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE)) == FALSE)
 		return;
 
 	// set up the callback and save its handle for later
@@ -808,11 +812,15 @@ RawWin32Mouse::~RawWin32Mouse()
 		UnhookWindowsHookEx(mHookHandle);
 	mHookHandle = NULL;
 
-	mDevice.usUsagePage = 1;
-	mDevice.usUsage = 2;
-	mDevice.dwFlags = RIDEV_REMOVE;
-	mDevice.hwndTarget = NULL;
-	RegisterRawInputDevices(&mDevice, 1, sizeof(RAWINPUTDEVICE));
+	RAWINPUTDEVICE device;
+	device.usUsagePage = 1;
+	device.usUsage = 2;
+	device.dwFlags = RIDEV_REMOVE;
+	device.hwndTarget = NULL;
+
+	RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE));
+
+	restoreMouseDevice();
 }
 
 //
@@ -1052,6 +1060,53 @@ LRESULT RawWin32Mouse::hookProc(int nCode, WPARAM wParam, LPARAM lParam)
 LRESULT RawWin32Mouse::hookProcWrapper(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	return mThis->hookProc(nCode, wParam, lParam);
+}
+
+//
+// RawWin32Mouse::backupMouseDevice
+//
+// Saves a copy of an existing mouse raw input device. This should be called
+// prior to registering our own mouse input device.
+//
+void RawWin32Mouse::backupMouseDevice()
+{
+	mHasBackedupMouseDevice = false;
+
+	// get the number of raw input devices
+	UINT num_devices;
+	GetRegisteredRawInputDevices(NULL, &num_devices, sizeof(RAWINPUTDEVICE));
+
+	// create a buffer to hold the raw input device info
+	RAWINPUTDEVICE* devices = new RAWINPUTDEVICE[num_devices];
+
+	// retrieve the raw input device info
+	UINT res = GetRegisteredRawInputDevices(devices, &num_devices, sizeof(RAWINPUTDEVICE));
+	if (res == num_devices)
+	{
+		for (UINT i = 0; i < num_devices; i++)
+		{
+			// if it's a mouse, back it up
+			if (devices[i].usUsagePage == 1 && devices[i].usUsage == 2)
+			{
+				memcpy(&mBackedupMouseDevice, &devices[i], sizeof(RAWINPUTDEVICE));
+				mHasBackedupMouseDevice = true;
+			}
+		}
+    }
+
+    delete [] devices;
+}
+
+//
+// RawWin32Mouse::restoreMouseDevice
+//
+// Restores a saved copy of a mouse raw input device. This should be called
+// after unregistering our own mouse input device.
+//
+void RawWin32Mouse::restoreMouseDevice()
+{
+	if (mHasBackedupMouseDevice)
+		RegisterRawInputDevices(&mBackedupMouseDevice, 1, sizeof(RAWINPUTDEVICE));
 }
 
 #endif	// WIN32
