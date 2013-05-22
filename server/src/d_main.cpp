@@ -31,11 +31,9 @@
 #include <vector>
 #include <algorithm>
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#else
-#include <sys/stat.h>
+#include "win32inc.h"
+#ifndef WIN32
+    #include <sys/stat.h>
 #endif
 
 #ifdef UNIX

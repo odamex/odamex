@@ -29,15 +29,9 @@
 #include <vector>
 #include <algorithm>
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#ifdef _XBOX
-#include <xtl.h>
-#else
-#include <windows.h>
-#endif // _XBOX
-#else
-#include <sys/stat.h>
+#include "win32inc.h"
+#ifndef WIN32
+    #include <sys/stat.h>
 #endif
 
 #ifdef UNIX
@@ -93,7 +87,7 @@ bool lastWadRebootSuccess = true;
 
 #define arrlen(array) (sizeof(array) / sizeof(*array))
 
-typedef struct 
+typedef struct
 {
 	HKEY root;
 	const char* path;
@@ -102,17 +96,17 @@ typedef struct
 
 static const char* uninstaller_string = "\\uninstl.exe /S ";
 
-// Keys installed by the various CD editions.  These are actually the 
+// Keys installed by the various CD editions.  These are actually the
 // commands to invoke the uninstaller and look like this:
 //
 // C:\Program Files\Path\uninstl.exe /S C:\Program Files\Path
 //
 // With some munging we can find where Doom was installed.
-static registry_value_t uninstall_values[] = 
+static registry_value_t uninstall_values[] =
 {
 	// Ultimate Doom, CD version (Depths of Doom trilogy)
 	{
-		HKEY_LOCAL_MACHINE, 
+		HKEY_LOCAL_MACHINE,
 		"Software\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Ultimate Doom for Windows 95",
 		"UninstallString",
@@ -120,7 +114,7 @@ static registry_value_t uninstall_values[] =
 
 	// Doom II, CD version (Depths of Doom trilogy)
 	{
-		HKEY_LOCAL_MACHINE, 
+		HKEY_LOCAL_MACHINE,
 		"Software\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Doom II for Windows 95",
 		"UninstallString",
@@ -128,7 +122,7 @@ static registry_value_t uninstall_values[] =
 
 	// Final Doom
 	{
-		HKEY_LOCAL_MACHINE, 
+		HKEY_LOCAL_MACHINE,
 		"Software\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Final Doom for Windows 95",
 		"UninstallString",
@@ -136,7 +130,7 @@ static registry_value_t uninstall_values[] =
 
 	// Shareware version
 	{
-		HKEY_LOCAL_MACHINE, 
+		HKEY_LOCAL_MACHINE,
 		"Software\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Doom Shareware for Windows 95",
 		"UninstallString",
@@ -152,7 +146,7 @@ static registry_value_t collectors_edition_value =
 };
 
 // Subdirectories of the above install path, where IWADs are installed.
-static const char* collectors_edition_subdirs[] = 
+static const char* collectors_edition_subdirs[] =
 {
 	"Doom2",
 	"Final Doom",
@@ -454,7 +448,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	D_AddSearchDir(dirs, "/usr/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/doom", separator);
-    
+
 	#endif
 }
 
@@ -847,7 +841,7 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &newpatchfiles)
                         M_ExtractFileName(f, Filename);
                         patchfiles.push_back(Filename);
                     }
-  
+
 					if (!strncmp(files.GetArg(i),"chex.deh", 8))
 						chexLoaded = true;
 
@@ -912,7 +906,7 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 		newname = newname.substr(slash + 1, newname.length() - slash);
 
 	std::transform(newname.begin(), newname.end(), newname.begin(), toupper);
-	
+
 	return newname;
 }
 
@@ -938,7 +932,7 @@ static bool VerifyFile(
 	full_filename = BaseFileSearch(base_filename, "." + ext);
 	if (full_filename.empty())
 		return false;
-	
+
 	// if it's an IWAD, check if we have a valid alternative hash
 	std::string found_hash = W_MD5(full_filename);
 	if (W_IsIWAD(base_filename, found_hash))

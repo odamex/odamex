@@ -37,7 +37,7 @@
 #include "c_dispatch.h"
 #include "c_cvars.h"
 #include "v_text.h"
-#include "v_video.h"
+
 #include "cl_main.h"
 #include "p_ctf.h"
 #include "i_video.h"
@@ -47,6 +47,8 @@
 
 #include "hu_drawers.h"
 #include "hu_elements.h"
+
+#include "v_video.h"
 
 #define QUEUESIZE		128
 #define HU_INPUTX		0

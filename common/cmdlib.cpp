@@ -28,12 +28,9 @@
 #include <sstream>
 #include <functional>
 
+#include "win32inc.h"
 #ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#ifndef _XBOX
-#include <windows.h>
-#endif // !_XBOX
-#include "win32time.h"
+    #include "win32time.h"
 #endif // WIN32
 
 #include "doomtype.h"
@@ -455,7 +452,7 @@ bool StrToTime(std::string str, time_t &tim) {
 	return true;
 }
 
-// [SL] Reimplement std::isspace 
+// [SL] Reimplement std::isspace
 static int _isspace(int c)
 {
 	return (c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\f' || c == '\r');
@@ -467,14 +464,14 @@ std::string &TrimStringStart(std::string &s)
 	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(_isspace))));
 	return s;
 }
- 
+
 // Trim whitespace from the end of a string
 std::string &TrimStringEnd(std::string &s)
 {
 	s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(_isspace))).base(), s.end());
 	return s;
 }
- 
+
 // Trim whitespace from the start and end of a string
 std::string &TrimString(std::string &s)
 {

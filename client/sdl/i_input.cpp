@@ -28,15 +28,8 @@
 #include <list>
 #include <sstream>
 
-#ifdef WIN32
-#define _WIN32_WINNT 0x0400
-#define WIN32_LEAN_AND_MEAN
-#ifndef _XBOX
-#include <windows.h>
-#endif // !_XBOX
-#endif // WIN32
-
 #include <SDL.h>
+#include "win32inc.h"
 
 #include "doomstat.h"
 #include "m_argv.h"
@@ -66,7 +59,7 @@ EXTERN_CVAR (joy_active)
 
 typedef struct
 {
-	SDL_Event    Event;
+	SDL_Event	Event;
 	unsigned int RegTick;
 	unsigned int LastTick;
 } JoystickEvent_t;
@@ -89,7 +82,12 @@ EXTERN_CVAR (mouse_threshold)
 
 extern constate_e ConsoleState;
 
-EXTERN_CVAR (mouse_driver)
+static void I_InitMouseDriver();
+CVAR_FUNC_IMPL(mouse_driver)
+{
+	I_InitMouseDriver();
+}
+
 static MouseInput* mouse_input = NULL;
 
 //
@@ -111,18 +109,32 @@ static void I_ShutdownMouseDriver()
 //
 static void I_InitMouseDriver()
 {
-	I_ShutdownMouseDriver();
-
-	if (!nomouse && screen)
+	static float prev_mouse_driver = -1.0f;
+	if (mouse_driver != prev_mouse_driver)
 	{
+		I_ShutdownMouseDriver();
+
+		if (!nomouse && screen)
+		{
 #ifdef WIN32
-		if (mouse_input == NULL && mouse_driver == DI_MOUSE_DRIVER)
-			mouse_input = DirectInputMouse::create();
+			if (mouse_input == NULL && mouse_driver == RAW_WIN32_MOUSE_DRIVER)
+			{
+				mouse_input = RawWin32Mouse::create();
+				if (mouse_input != NULL)
+					Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing Win32 Raw Mouse Input.\n");
+			}
 #endif
-	
-		if (mouse_input == NULL)
-			mouse_input = SDLMouse::create();
+
+			if (mouse_input == NULL)
+			{
+				mouse_input = SDLMouse::create();
+				if (mouse_input != NULL)
+					Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing SDL Mouse Input.\n");
+			}
+		}
 	}
+
+	prev_mouse_driver = mouse_driver;
 }
 
 //
@@ -143,7 +155,7 @@ void I_EnableKeyRepeat()
 
 void I_DisableKeyRepeat()
 {
-	SDL_EnableKeyRepeat(0, 0);	
+	SDL_EnableKeyRepeat(0, 0);
 }
 
 void I_ResetKeyRepeat()
@@ -172,12 +184,12 @@ static bool I_CheckMouseGrab()
 	if (nomouse)
 		return false;
 
-    // when menu is active, console is down or game is paused, release the mouse
-    if (menuactive || ConsoleState == c_down || paused)
-        return false;
+	// when menu is active, console is down or game is paused, release the mouse
+	if (menuactive || ConsoleState == c_down || paused)
+		return false;
 
-    // only grab mouse when playing levels (but not demos)
-    return (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback;
+	// only grab mouse when playing levels (but not demos)
+	return (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback;
 }
 
 
@@ -265,7 +277,7 @@ static void I_UpdateFocus()
 static int RegisterJoystickEvent(SDL_Event *ev, int value)
 {
 	JoystickEvent_t *evc = NULL;
-	event_t          event;
+	event_t		  event;
 
 	if(!ev)
 		return -1;
@@ -278,7 +290,7 @@ static int RegisterJoystickEvent(SDL_Event *ev, int value)
 
 			for(i = JoyEventList.begin(); i != JoyEventList.end(); ++i)
 			{
-				if(((*i)->Event.type == ev->type) && ((*i)->Event.jhat.which == ev->jhat.which) 
+				if(((*i)->Event.type == ev->type) && ((*i)->Event.jhat.which == ev->jhat.which)
 							&& ((*i)->Event.jhat.hat == ev->jhat.hat) && ((*i)->Event.jhat.value == value))
 					return 0;
 			}
@@ -318,7 +330,7 @@ static int RegisterJoystickEvent(SDL_Event *ev, int value)
 void UpdateJoystickEvents()
 {
 	std::list<JoystickEvent_t*>::iterator i;
-	event_t    event;
+	event_t	event;
 
 	if(JoyEventList.empty())
 		return;
@@ -332,8 +344,8 @@ void UpdateJoystickEvents()
 			if(!(SDL_JoystickGetHat(openedjoy, (*i)->Event.jhat.hat) & (*i)->Event.jhat.value))
 				event.type = ev_keyup;
 			// Hat button still held - Repeat at key repeat interval
-			else if((SDL_GetTicks() - (*i)->RegTick >= SDL_DEFAULT_REPEAT_DELAY) && 
-		            (SDL_GetTicks() - (*i)->LastTick >= SDL_DEFAULT_REPEAT_INTERVAL*2))
+			else if((SDL_GetTicks() - (*i)->RegTick >= SDL_DEFAULT_REPEAT_DELAY) &&
+					(SDL_GetTicks() - (*i)->LastTick >= SDL_DEFAULT_REPEAT_INTERVAL*2))
 			{
 				(*i)->LastTick = SDL_GetTicks();
 				event.type = ev_keydown;
@@ -435,7 +447,7 @@ std::string I_GetJoystickNameFromIndex (int index)
 
 	if(!joyname)
 		return "";
-	
+
 	ret = joyname;
 
 	return ret;
@@ -471,7 +483,7 @@ bool I_OpenJoystick()
 void I_CloseJoystick()
 {
 	extern int joyforward, joystrafe, joyturn, joylook;
-	int        ndx;
+	int		ndx;
 
 #ifndef _XBOX // This is to avoid a bug in SDLx
 	if(!I_GetJoystickCount() || !openedjoy)
@@ -550,6 +562,7 @@ void STACK_ARGS I_ShutdownInput (void)
 //
 void I_PauseMouse()
 {
+	SDL_ShowCursor(true);
 	if (mouse_input)
 		mouse_input->pause();
 }
@@ -562,6 +575,7 @@ void I_PauseMouse()
 //
 void I_ResumeMouse()
 {
+	SDL_ShowCursor(false);
 	if (mouse_input)
 		mouse_input->resume();
 }
@@ -583,7 +597,7 @@ void I_GetEvent()
 	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
 	// process only mouse events, SDL_PumpEvents is necessary.
 	SDL_PumpEvents();
-	const unsigned int mask = 
+	const unsigned int mask =
 		SDL_KEYEVENTMASK | SDL_JOYEVENTMASK | SDL_VIDEORESIZEMASK |
 		SDL_VIDEOEXPOSEMASK | SDL_QUITMASK | SDL_SYSWMEVENTMASK;
 
@@ -604,7 +618,7 @@ void I_GetEvent()
 		{
 			// Resizable window mode resolutions
 			if (!vid_fullscreen)
-			{            	
+			{
 				std::stringstream Command;
 				Command << "vid_setmode " << sdl_ev->resize.w << " " << sdl_ev->resize.h;
 				AddCommandString(Command.str());
@@ -639,7 +653,7 @@ void I_GetEvent()
 
 #ifdef _XBOX
 			// Fix for ENTER key on Xbox
-            if (event.data1 == SDLK_RETURN)
+			if (event.data1 == SDLK_RETURN)
 				event.data2 = event.data3 = '\r';
 #endif
 
@@ -742,7 +756,6 @@ void I_StartFrame (void)
 {
 }
 
-
 // ============================================================================
 //
 // DirectInputMouse
@@ -750,50 +763,293 @@ void I_StartFrame (void)
 // ============================================================================
 
 #ifdef WIN32
+// ============================================================================
+//
+// RawWin32Mouse
+//
+// ============================================================================
 
-DirectInputMouse::DirectInputMouse() :
-	mActive(false),
-	mInitialized(false)
-{
-}
+// define the static member variables declared in the header
+HHOOK RawWin32Mouse::mHookHandle;
+RawWin32Mouse* RawWin32Mouse::mThis;
 
-DirectInputMouse::~DirectInputMouse()
+//
+// RawWin32Mouse::RawWin32Mouse
+//
+RawWin32Mouse::RawWin32Mouse() :
+	mActive(false), mInitialized(false),
+	mPrevX(0), mPrevY(0), mPrevValid(false)
 {
+	mDevice.usUsagePage = 1;
+	mDevice.usUsage = 2;
+	mDevice.dwFlags = 0;
+	mDevice.hwndTarget = NULL;
+
+	if (RegisterRawInputDevices(&mDevice, 1, sizeof(RAWINPUTDEVICE)) == FALSE)
+		return;
+
+	// set up the callback and save its handle for later
+	setHook();
+
+	mInitialized = true;
 }
 
 //
-// DirectInputMouse::create
+// RawWin32Mouse::~RawWin32Mouse
 //
-// Instantiates and returns a new DirectInputMouse object or returns NULL
-// if DirectInput could not be initialized.
+// Remove the hook for retreiving input and unregister the RAWINPUTDEVICE
 //
-MouseInput* DirectInputMouse::create()
+RawWin32Mouse::~RawWin32Mouse()
 {
+	// remove the callback hook
+	if (mHookHandle != NULL)
+		UnhookWindowsHookEx(mHookHandle);
+	mHookHandle = NULL;
+
+	mDevice.usUsagePage = 1;
+	mDevice.usUsage = 2;
+	mDevice.dwFlags = RIDEV_REMOVE;
+	mDevice.hwndTarget = NULL;
+	RegisterRawInputDevices(&mDevice, 1, sizeof(RAWINPUTDEVICE));
 }
 
-void DirectInputMouse::flushEvents()
+//
+// RawWin32Mouse::create
+//
+// Instantiates a new RawWin32Mouse and returns a pointer to it if successful
+// or returns NULL if unable to instantiate it.
+//
+RawWin32Mouse* RawWin32Mouse::create()
 {
+	RawWin32Mouse* obj = new RawWin32Mouse();
+
+	if (obj && obj->mInitialized)
+		return obj;
+
+	// could not properly initialize
+	delete obj;
+	return NULL;
 }
 
-void DirectInputMouse::processEvents()
+//
+// RawWin32Mouse::flushEvents
+//
+// Clears the queued events
+//
+void RawWin32Mouse::flushEvents()
 {
+	clear();
 }
 
-void DirectInputMouse::center()
+//
+// RawWin32Mouse::processEvents
+//
+// Iterates our queue of RAWINPUT events and converts them to Doom event_t
+// and posts them for processing by the game internals.
+//
+void RawWin32Mouse::processEvents()
 {
+	if (!mActive)
+		return;
+
+	// [SL] accumulate the total mouse movement over all events polled
+	// and post one aggregate mouse movement event after all are polled.
+	event_t movement_event;
+	movement_event.type = ev_mouse;
+	movement_event.data1 = movement_event.data2 = movement_event.data3 = 0;
+
+	for (size_t i = 0; i < queueSize(); i++)
+	{
+		const RAWMOUSE* mouse = &front()->data.mouse;
+
+		if (mouse->usFlags & MOUSE_MOVE_ABSOLUTE)
+		{
+			// we're given absolute mouse coordinates
+			if (mPrevValid)
+			{
+				movement_event.data2 += mouse->lLastX - mPrevX;
+				movement_event.data3 -= mouse->lLastY - mPrevY;
+			}
+
+			mPrevX = mouse->lLastX;
+			mPrevY = mouse->lLastY;
+			mPrevValid = true;
+		}
+		else
+		{
+			// we're given relative mouse coordinates
+			movement_event.data2 += mouse->lLastX;
+			movement_event.data3 -= mouse->lLastY;
+			mPrevValid = false;
+		}
+
+		event_t button_event;
+		button_event.data2 = button_event.data3 = 0;
+
+		// handle mouse button down events
+		button_event.type = ev_keydown;
+		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_1_DOWN)
+		{
+			button_event.data1 = KEY_MOUSE1;
+			D_PostEvent(&button_event);
+		}
+		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_2_DOWN)
+		{
+			button_event.data1 = KEY_MOUSE2;
+			D_PostEvent(&button_event);
+		}
+		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_3_DOWN)
+		{
+			button_event.data1 = KEY_MOUSE3;
+			D_PostEvent(&button_event);
+		}
+		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_4_DOWN)
+		{
+			button_event.data1 = KEY_MOUSE4;
+			D_PostEvent(&button_event);
+		}
+		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_5_DOWN)
+		{
+			button_event.data1 = KEY_MOUSE5;
+			D_PostEvent(&button_event);
+		}
+
+		// handle mouse button up events
+		button_event.type = ev_keyup;
+		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_1_UP)
+		{
+			button_event.data1 = KEY_MOUSE1;
+			D_PostEvent(&button_event);
+		}
+		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_2_UP)
+		{
+			button_event.data1 = KEY_MOUSE2;
+			D_PostEvent(&button_event);
+		}
+		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_3_UP)
+		{
+			button_event.data1 = KEY_MOUSE3;
+			D_PostEvent(&button_event);
+		}
+		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_4_UP)
+		{
+			button_event.data1 = KEY_MOUSE4;
+			D_PostEvent(&button_event);
+		}
+		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_5_UP)
+		{
+			button_event.data1 = KEY_MOUSE5;
+			D_PostEvent(&button_event);
+		}
+
+		// handle scroll-wheel events
+		button_event.type = ev_keydown;
+		if (mouse->usButtonFlags & RI_MOUSE_WHEEL)
+		{
+			if ((SHORT)mouse->usButtonData < 0)
+			{
+				button_event.data1 = KEY_MWHEELDOWN;
+				D_PostEvent(&button_event);
+			}
+			else if ((SHORT)mouse->usButtonData > 0)
+			{
+				button_event.data1 = KEY_MWHEELUP;
+				D_PostEvent(&button_event);
+			}
+		}
+
+		popFront();
+	}
+
+	if (movement_event.data2 != 0 || movement_event.data3 != 0)
+		D_PostEvent(&movement_event);
 }
 
-bool DirectInputMouse::paused() const
+void RawWin32Mouse::center()
+{
+	// not needed with raw mouse input
+}
+
+bool RawWin32Mouse::paused() const
 {
 	return mActive == false;
 }
 
-void DirectInputMouse::pause()
+void RawWin32Mouse::pause()
 {
+	mActive = false;
 }
 
-void DirectInputMouse::resume()
+void RawWin32Mouse::resume()
 {
+	mActive = true;
+	center();
+	flushEvents();
+}
+
+//
+// RawWin32Mouse::setHook
+//
+// Sets up the Windows message hook so that hookProc can receive WM_INPUT
+// messages.
+//
+void RawWin32Mouse::setHook()
+{
+	RawWin32Mouse::mThis = this;
+	mHookHandle =
+		SetWindowsHookEx(WH_GETMESSAGE, (HOOKPROC)RawWin32Mouse::hookProcWrapper, NULL, GetCurrentThreadId());
+}
+
+//
+// RawWin32Mouse::hookProc
+//
+// A callback function that reads WM_Input messages and queues them for polling
+// in processEvents;
+//
+LRESULT RawWin32Mouse::hookProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	if (nCode >= 0)
+	{
+		MSG* msg = (MSG*)lParam;
+		if (msg->message == WM_INPUT)
+		{
+			const UINT buf_size = sizeof(RAWINPUT);
+			BYTE buf[buf_size];
+
+			// get the size of the input data
+			UINT size = 0, count;
+			count = GetRawInputData((HRAWINPUT)msg->lParam, RID_INPUT, NULL, &size, sizeof(RAWINPUTHEADER));
+
+			if (count == 0 && size > 0 && size <= buf_size)
+			{
+				// get the input data itself
+				count = GetRawInputData((HRAWINPUT)msg->lParam, RID_INPUT, buf, &size, sizeof(RAWINPUTHEADER));
+
+				if (count == size)
+				{
+					// add the input to our queue
+					RAWINPUT* raw = (RAWINPUT*)buf;
+					if (count > 0 && raw->header.dwType == RIM_TYPEMOUSE)
+						pushBack(raw);
+				}
+			}
+
+			return 0;
+		}
+	}
+
+	return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+
+//
+// RawWin32Mouse::hookProcWrapper
+//
+// A static member function that wraps calls to hookProc to allow member
+// functions to use Windows callbacks.
+//
+LRESULT RawWin32Mouse::hookProcWrapper(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	return mThis->hookProc(nCode, wParam, lParam);
 }
 
 #endif	// WIN32
@@ -804,17 +1060,31 @@ void DirectInputMouse::resume()
 //
 // ============================================================================
 
+//
+// SDLMouse::SDLMouse
+//
 SDLMouse::SDLMouse() :
 	mActive(false)
 {
 }
 
+//
+// SDLMouse::~SDLMouse
+//
 SDLMouse::~SDLMouse()
 {
 	SDL_ShowCursor(true);
 }
 
-MouseInput* SDLMouse::create()
+//
+// SDLMouse::create
+//
+// Instantiates a new SDLMouse and returns a pointer to it if successful
+// or returns NULL if unable to instantiate it. However, since SDL is
+// always availible, this never returns NULL
+//
+//
+SDLMouse* SDLMouse::create()
 {
 	return new SDLMouse();
 }
@@ -825,6 +1095,13 @@ void SDLMouse::flushEvents()
 	SDL_PeepEvents(mEvents, MAX_EVENTS, SDL_GETEVENT, SDL_MOUSEEVENTMASK);
 }
 
+//
+// SDLMouse::processEvents
+//
+// Pumps SDL's event queue and processes only its mouse events. The events
+// are converted to Doom event_t and posted for processing by the game
+// internals.
+//
 void SDLMouse::processEvents()
 {
 	if (!mActive)
@@ -912,6 +1189,12 @@ void SDLMouse::processEvents()
 	center();
 }
 
+//
+// SDLMouse::center
+//
+// Moves the mouse to the center of the screen to prevent absolute position
+// methods from causing problems when the mouse is near the screen edges.
+//
 void SDLMouse::center()
 {
 	if (screen)
@@ -929,16 +1212,16 @@ bool SDLMouse::paused() const
 	return mActive == false;
 }
 
+
 void SDLMouse::pause()
 {
 	mActive = false;
-	SDL_ShowCursor(true);
 }
+
 
 void SDLMouse::resume()
 {
 	mActive = true;
-	SDL_ShowCursor(false);
 	center();
 }
 
