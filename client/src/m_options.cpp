@@ -1199,9 +1199,6 @@ void M_SwitchMenu (menu_t *menu)
 	CurrentMenu = menu;
 	CurrentItem = menu->lastOn;
 
-	if (menu == &ControlsMenu)
-		I_ResumeMouse ();
-
 	if (!menu->indent)
 	{
 		for (i = 0; i < menu->numitems; i++)

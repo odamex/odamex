@@ -183,7 +183,8 @@ CVAR (cl_run,		"0", "Always run",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// Always run? /
 
 // Mouse settings
 // --------------
-CVAR (mouse_type,			"0", 	"",	CVARTYPE_BYTE,	CVAR_ARCHIVE)
+CVAR (mouse_driver,			"0",	"", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (mouse_type,			"0", 	"",	CVARTYPE_BYTE,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_sensitivity,	"35.0", "",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL (cl_mouselook, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)

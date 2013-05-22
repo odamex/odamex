@@ -166,7 +166,6 @@ EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_blockmapfix)
 EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
 EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
-EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
 EXTERN_CVAR (m_filter)
 EXTERN_CVAR (hud_mousegraph)
 EXTERN_CVAR (cl_predictpickup)
@@ -220,13 +219,16 @@ int				lookspeed[2] = {450, 512};
 #define SLOWTURNTICS	6
 
 EXTERN_CVAR (cl_run)
+
+EXTERN_CVAR (mouse_type)
 EXTERN_CVAR (invertmouse)
 EXTERN_CVAR (lookstrafe)
+EXTERN_CVAR (mouse_acceleration)
+EXTERN_CVAR (mouse_threshold)
 EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (m_yaw)
 EXTERN_CVAR (m_forward)
 EXTERN_CVAR (m_side)
-EXTERN_CVAR (displaymouse)
 
 int 			turnheld;								// for accelerative turning
 
@@ -634,74 +636,82 @@ void G_ConvertMouseSettings(int old_type, int new_type)
 	}
 }
 
-int G_DoomMouseScaleX(int x)
+float G_DoomMouseScaleX(float x)
 {
-	return int(x * (mouse_sensitivity + 5.0f) / 10.0f);
+	return (x * (mouse_sensitivity + 5.0f) / 10.0f);
 }
 
-int G_DoomMouseScaleY(int y)
+float G_DoomMouseScaleY(float y)
 {
 	return G_DoomMouseScaleX(y); // identical scaling for x and y
 }
 
-int G_ZDoomDIMouseScaleX(int x)
+float G_ZDoomDIMouseScaleX(float x)
 {
-	return int(x * 4.0f * mouse_sensitivity);
+	return (x * 4.0f * mouse_sensitivity);
 }
 
-int G_ZDoomDIMouseScaleY(int y)
+float G_ZDoomDIMouseScaleY(float y)
 {
-	return int(y * mouse_sensitivity);
+	return (y * mouse_sensitivity);
 }
 
 void G_ProcessMouseMovementEvent(const event_t *ev)
 {
-	static int prevx = 0, prevy = 0;
-	int evx = ev->data2;
-	int evy = ev->data3;
+	static float fprevx = 0.0f, fprevy = 0.0f;
+	float fmousex = (float)ev->data2;
+	float fmousey = (float)ev->data3;
+
+	if (mouse_acceleration > 0.0f)
+	{
+		// apply mouse acceleration (from Chocolate Doom)
+		if (fmousex > mouse_threshold)
+			fmousex = (fmousex - mouse_threshold) * mouse_acceleration + mouse_threshold;
+		else if (fmousex < -mouse_threshold)
+			fmousex = (fmousex + mouse_threshold) * mouse_acceleration - mouse_threshold;
+		if (fmousey > mouse_threshold)
+			fmousey = (fmousey - mouse_threshold) * mouse_acceleration + mouse_threshold;
+		else if (fmousey < -mouse_threshold)
+			fmousey = (fmousey + mouse_threshold) * mouse_acceleration - mouse_threshold;
+	}
 
 	if (m_filter)
 	{
 		// smooth out the mouse input
-		evx = (evx + prevx) / 2;
-		evy = (evy + prevy) / 2;
+		fmousex = (fmousex + fprevx) / 2.0f;
+		fmousey = (fmousey + fprevy) / 2.0f;
 	}
-	prevx = evx;
-	prevy = evy;
 
-	int (*scalexfunc)(int) = NULL;
-	int (*scaleyfunc)(int) = NULL;
+	fprevx = fmousex;
+	fprevy = fmousey;
 
-	if (mouse_type == MOUSE_DOOM)
+	if (mouse_type == MOUSE_ZDOOM_DI)
 	{
-		scalexfunc = &G_DoomMouseScaleX;
-		scaleyfunc = &G_DoomMouseScaleY;
-	}
-	else if (mouse_type == MOUSE_ZDOOM_DI)
-	{
-		scalexfunc = &G_ZDoomDIMouseScaleX;
-		scaleyfunc = &G_ZDoomDIMouseScaleY;
+		fmousex = G_ZDoomDIMouseScaleX(fmousex);
+		fmousey = G_ZDoomDIMouseScaleY(fmousey);
 	}
 	else
-		return;	// invalid mouse type
+	{
+		fmousex = G_DoomMouseScaleX(fmousex);
+		fmousey = G_DoomMouseScaleY(fmousey);
+	}
 
 	if (dynres_state)
 	{
-		if (evx < 0)
-			mousex = -int(pow((double)(*scalexfunc)(-evx), (double)dynresval));
+		// add some funky exponential sensitivity
+		if (fmousex < 0.0f)
+			fmousex = -pow(-fmousex, dynresval);
 		else
-			mousex = int(pow((double)(*scalexfunc)(evx), (double)dynresval));
+			fmousex = pow(fmousex, dynresval);
 
-		if (evy < 0)
-			mousey = -int(pow((double)(*scaleyfunc)(-evy), (double)dynresval));
+		if (fmousey < 0.0f)
+			fmousey = -pow(-fmousey, dynresval);
 		else
-			mousey = int(pow((double)(*scaleyfunc)(evy), (double)dynresval));
+			fmousey = pow(fmousey, dynresval);
 	}
-	else
-	{
-		mousex = (*scalexfunc)(evx);
-		mousey = (*scaleyfunc)(evy);
-	}
+
+	mousex = (int)fmousex;
+	mousey = (int)fmousey;
 }
 
 //
