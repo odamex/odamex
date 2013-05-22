@@ -123,6 +123,7 @@ EXTERN_CVAR (co_blockmapfix)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
+EXTERN_CVAR (mouse_driver)
 EXTERN_CVAR (mouse_type)
 EXTERN_CVAR (mouse_sensitivity)
 EXTERN_CVAR (m_pitch)
@@ -384,6 +385,15 @@ menu_t ControlsMenu = {
 //
 // -------------------------------------------------------
 
+static value_t MouseDrivers[] = {
+	{ SDL_MOUSE_DRIVER, "SDL"},
+	#ifdef WIN32
+	{ RAW_WIN32_MOUSE_DRIVER, "Raw Input"}
+	#endif	// WIN32
+};
+
+static float num_mousedrivers = static_cast<float>(STACKARRAY_LENGTH(MouseDrivers));
+
 static value_t MouseType[] = {
 	{ MOUSE_DOOM,		"Doom"},
 	{ MOUSE_ZDOOM_DI,	"ZDoom"}
@@ -394,7 +404,8 @@ void M_ResetMouseValues();
 
 static menuitem_t MouseItems[] =
 {
-	{ discrete,	"Mouse Type"					, {&mouse_type},		{2.0},	{0.0},		{0.0},		{MouseType}},
+	{ discrete, "Mouse Driver"					, {&mouse_driver},{num_mousedrivers}, {0.0},{0.0},		{MouseDrivers}},
+	{ discrete,	"Mouse Config Type"				, {&mouse_type},		{2.0},	{0.0},		{0.0},		{MouseType}},
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ slider,	"Overall Sensitivity" 			, {&mouse_sensitivity},	{0.0},	{77.0},		{1.0},		{NULL}},
 	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.0},	{1.0},		{0.025},	{NULL}},
