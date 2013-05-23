@@ -166,36 +166,6 @@ void I_ResetKeyRepeat()
 }
 
 //
-// I_CheckMouseGrab
-//
-// Determines if SDL should grab the mouse based on the game window having
-// focus and the status of the menu and console.
-//
-static bool I_CheckMouseGrab()
-{
-	// if the window doesn't have focus, never grab it
-	if (!window_focused)
-		return false;
-
-	// always grab the mouse when full screen (dont want to
-	// see the mouse pointer)
-	if (vid_fullscreen)
-		return true;
-
-	// Don't grab the mouse if mouse input is disabled
-	if (nomouse)
-		return false;
-
-	// when menu is active, console is down or game is paused, release the mouse
-	if (menuactive || ConsoleState == c_down || paused)
-		return false;
-
-	// only grab mouse when playing levels (but not demos)
-	return (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback;
-}
-
-
-//
 // I_CheckFocusState
 //
 // Determines if the Odamex window currently has the window manager focus.
@@ -205,7 +175,7 @@ static bool I_CheckFocusState()
 {
 	SDL_PumpEvents();
 	Uint8 state = SDL_GetAppState();
-	return (state & SDL_APPINPUTFOCUS) && (state & SDL_APPACTIVE);
+	return (state & SDL_APPACTIVE) && (state & SDL_APPINPUTFOCUS);
 }
 
 //
@@ -252,22 +222,45 @@ static void I_UpdateFocus()
 	}
 
 	window_focused = new_window_focused;
+}
 
-	bool mouse_grabbed = mouse_input && !mouse_input->paused();
-	bool can_grab_mouse = I_CheckMouseGrab();
 
-	if (can_grab_mouse && !mouse_grabbed)
+//
+// I_UpdateInputGrabbing
+//
+// Determines if SDL should grab the mouse based on the game window having
+// focus and the status of the menu and console.
+//
+static void I_UpdateInputGrabbing()
+{
+	bool can_grab = false;
+	bool grabbed = SDL_WM_GrabInput(SDL_GRAB_QUERY);
+
+	if (!window_focused)
+		can_grab = false;
+	else if (vid_fullscreen)
+		can_grab = true;
+	else if (nomouse)
+		can_grab = false;
+	else if (menuactive || ConsoleState == c_down || paused)
+		can_grab = false;
+	else if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
+		can_grab = true;
+
+
+	if (can_grab&& !grabbed)
 	{
 		SDL_WM_GrabInput(SDL_GRAB_ON);
-		I_FlushInput();
 		I_ResumeMouse();
+		I_FlushInput();
 	}
-	else if (mouse_grabbed && !can_grab_mouse)
+	else if (grabbed && !can_grab)
 	{
 		SDL_WM_GrabInput(SDL_GRAB_OFF);
 		I_PauseMouse();
 	}
 }
+
 
 // Add any joystick event to a list if it will require manual polling
 // to detect release. This includes hat events (mostly due to d-pads not
@@ -535,6 +528,7 @@ bool I_InitInput (void)
 
 	I_InitMouseDriver();
 	I_InitFocus();
+	I_UpdateInputGrabbing();
 
 	return true;
 }
@@ -566,7 +560,10 @@ void I_PauseMouse()
 {
 	SDL_ShowCursor(true);
 	if (mouse_input)
+	{
 		mouse_input->pause();
+		mouse_input->center();
+	}
 }
 
 //
@@ -599,11 +596,7 @@ void I_GetEvent()
 	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
 	// process only mouse events, SDL_PumpEvents is necessary.
 	SDL_PumpEvents();
-	const unsigned int mask =
-		SDL_KEYEVENTMASK | SDL_JOYEVENTMASK | SDL_VIDEORESIZEMASK |
-		SDL_VIDEOEXPOSEMASK | SDL_QUITMASK | SDL_SYSWMEVENTMASK;
-
-	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, mask);
+	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, SDL_ALLEVENTS);
 
 	for (int i = 0; i < num_events; i++)
 	{
@@ -748,6 +741,7 @@ void I_GetEvent()
 void I_StartTic (void)
 {
 	I_UpdateFocus();
+	I_UpdateInputGrabbing();
 	I_GetEvent();
 }
 
