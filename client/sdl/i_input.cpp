@@ -771,6 +771,14 @@ void I_StartFrame (void)
 //
 // ============================================================================
 
+#ifndef HID_USAGE_PAGE_GENERIC
+#define HID_USAGE_PAGE_GENERIC  ((USHORT) 0x01)
+#endif
+
+#ifndef HID_USAGE_GENERIC_MOUSE
+#define HID_USAGE_GENERIC_MOUSE  ((USHORT) 0x02)
+#endif 
+
 // define the static member variables declared in the header
 HHOOK RawWin32Mouse::mHookHandle = NULL;
 RawWin32Mouse* RawWin32Mouse::mThis = NULL;
@@ -786,9 +794,9 @@ RawWin32Mouse::RawWin32Mouse() :
 	backupMouseDevice();
 
 	RAWINPUTDEVICE device;
-	device.usUsagePage = 1;
-	device.usUsage = 2;
-	device.dwFlags = 0;
+	device.usUsagePage = HID_USAGE_PAGE_GENERIC;
+	device.usUsage = HID_USAGE_GENERIC_MOUSE;
+	device.dwFlags = RIDEV_NOLEGACY;
 	device.hwndTarget = NULL;
 
 	if (RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE)) == FALSE)
@@ -798,6 +806,7 @@ RawWin32Mouse::RawWin32Mouse() :
 	setHook();
 
 	mInitialized = true;
+	center();
 }
 
 //
@@ -813,8 +822,8 @@ RawWin32Mouse::~RawWin32Mouse()
 	mHookHandle = NULL;
 
 	RAWINPUTDEVICE device;
-	device.usUsagePage = 1;
-	device.usUsage = 2;
+	device.usUsagePage = HID_USAGE_PAGE_GENERIC;
+	device.usUsage = HID_USAGE_GENERIC_MOUSE;
 	device.dwFlags = RIDEV_REMOVE;
 	device.hwndTarget = NULL;
 
@@ -1018,10 +1027,10 @@ void RawWin32Mouse::setHook()
 //
 LRESULT RawWin32Mouse::hookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-	if (nCode >= 0)
+	if (nCode == HC_ACTION)
 	{
 		MSG* msg = (MSG*)lParam;
-		if (msg->message == WM_INPUT)
+		if (msg->message == WM_INPUT && wParam == PM_REMOVE)
 		{
 			const UINT buf_size = sizeof(RAWINPUT);
 			BYTE buf[buf_size];
@@ -1043,7 +1052,7 @@ LRESULT RawWin32Mouse::hookProc(int nCode, WPARAM wParam, LPARAM lParam)
 						pushBack(raw);
 				}
 			}
-
+			
 			return 0;
 		}
 	}
@@ -1086,7 +1095,8 @@ void RawWin32Mouse::backupMouseDevice()
 		for (UINT i = 0; i < num_devices; i++)
 		{
 			// if it's a mouse, back it up
-			if (devices[i].usUsagePage == 1 && devices[i].usUsage == 2)
+			if (devices[i].usUsagePage == HID_USAGE_PAGE_GENERIC && 
+				devices[i].usUsage == HID_USAGE_GENERIC_MOUSE)
 			{
 				memcpy(&mBackedupMouseDevice, &devices[i], sizeof(RAWINPUTDEVICE));
 				mHasBackedupMouseDevice = true;
@@ -1123,6 +1133,7 @@ void RawWin32Mouse::restoreMouseDevice()
 SDLMouse::SDLMouse() :
 	mActive(false)
 {
+	center();
 }
 
 //
