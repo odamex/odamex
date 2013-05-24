@@ -51,6 +51,10 @@ EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 
+static MouseInput* mouse_input = NULL;
+static void I_InitMouseDriver();
+static void I_ShutdownMouseDriver();
+
 static bool window_focused = false;
 static bool nomouse = false;
 
@@ -81,61 +85,6 @@ EXTERN_CVAR (mouse_acceleration)
 EXTERN_CVAR (mouse_threshold)
 
 extern constate_e ConsoleState;
-
-static void I_InitMouseDriver();
-CVAR_FUNC_IMPL(mouse_driver)
-{
-	I_InitMouseDriver();
-}
-
-static MouseInput* mouse_input = NULL;
-
-//
-// I_ShutdownMouseDriver
-//
-// Frees the memory used by mouse_input
-//
-static void I_ShutdownMouseDriver()
-{
-	delete mouse_input;
-	mouse_input = NULL;
-}
-
-//
-// I_InitMouseDriver
-//
-// Instantiates the proper concrete MouseInput object based on the
-// mouse_driver cvar and stores a pointer to the object in mouse_input.
-//
-static void I_InitMouseDriver()
-{
-	static float prev_mouse_driver = -1.0f;
-	if (mouse_driver == prev_mouse_driver)
-		return;
-
-	I_ShutdownMouseDriver();
-
-	if (!nomouse && screen)
-	{
-#ifdef WIN32
-		if (mouse_input == NULL && mouse_driver == RAW_WIN32_MOUSE_DRIVER)
-		{
-			mouse_input = RawWin32Mouse::create();
-			if (mouse_input != NULL)
-				Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing Win32 Raw Mouse Input.\n");
-		}
-#endif
-
-		if (mouse_input == NULL)
-		{
-			mouse_input = SDLMouse::create();
-			if (mouse_input != NULL)
-				Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing SDL Mouse Input.\n");
-		}
-	}
-
-	prev_mouse_driver = mouse_driver;
-}
 
 //
 // I_FlushInput
@@ -754,16 +703,159 @@ void I_StartFrame (void)
 
 // ============================================================================
 //
-// DirectInputMouse
+// Mouse Drivers
 //
 // ============================================================================
 
+static bool I_RawWin32MouseAvailible();
+static bool I_SDLMouseAvailible();
+
+MouseDriverInfo_t MouseDriverInfo[] = {
+	{ SDL_MOUSE_DRIVER,			"SDL Mouse",	&I_SDLMouseAvailible,		&SDLMouse::create },
 #ifdef WIN32
+	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_RawWin32MouseAvailible,	&RawWin32Mouse::create }
+#else
+	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_RawWin32MouseAvailible,	NULL }
+#endif	// WIN32
+};
+
+//
+// I_IsMouseDriverValid
+//
+// Returns whether a mouse driver with the given ID is availible to use.
+//
+static bool I_IsMouseDriverValid(int id)
+{
+	for (int i = 0; i < NUM_MOUSE_DRIVERS; i++)
+	{
+		if (MouseDriverInfo[i].id == id)
+			return (MouseDriverInfo[i].avail_test() == true);
+	}
+
+	return false;
+}
+
+CVAR_FUNC_IMPL(mouse_driver)
+{
+	if (!I_IsMouseDriverValid(var))
+		var.Set(SDL_MOUSE_DRIVER);
+
+	I_InitMouseDriver();
+}
+
+//
+// I_ShutdownMouseDriver
+//
+// Frees the memory used by mouse_input
+//
+static void I_ShutdownMouseDriver()
+{
+	delete mouse_input;
+	mouse_input = NULL;
+}
+
+//
+// I_InitMouseDriver
+//
+// Instantiates the proper concrete MouseInput object based on the
+// mouse_driver cvar and stores a pointer to the object in mouse_input.
+//
+static void I_InitMouseDriver()
+{
+	static float prev_mouse_driver = -1.0f;
+	if (mouse_driver == prev_mouse_driver)
+		return;
+
+	I_ShutdownMouseDriver();
+
+	if (!nomouse && screen)
+	{
+		// try to initialize the user's preferred mouse driver
+		for (int i = 0; i < NUM_MOUSE_DRIVERS; i++)
+		{
+			if (MouseDriverInfo[i].id == mouse_driver)
+			{	
+				if (MouseDriverInfo[i].create != NULL)
+					mouse_input = MouseDriverInfo[i].create();
+				if (mouse_input != NULL)
+					Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing %s input.\n", MouseDriverInfo[i].name);
+				else
+					Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initalize %s input.\n", MouseDriverInfo[i].name);
+				break;
+			}
+		}
+
+		// fall back on SDLMouse if the preferred driver failed to initialize
+		if (mouse_input == NULL)
+		{
+			mouse_input = SDLMouse::create();
+			if (mouse_input != NULL)
+				Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing SDL Mouse input as a fallback.\n");
+			else
+				Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initialize SDL Mouse input as a fallback.\n");
+		}
+	}
+
+	prev_mouse_driver = mouse_driver;
+}
+
+//
+// I_CheckForProc
+//
+// Checks if a function with the given name is in the given DLL file.
+// This is used to determine if the user's version of Windows has the necessary
+// functions availible.
+//
+#ifdef WIN32
+static bool I_CheckForProc(const char* dllname, const char* procname)
+{
+	bool avail;
+	HMODULE dll = LoadLibrary(TEXT(dllname));
+	if (dll == NULL)
+		return false;
+	avail = (GetProcAddress(dll, procname) != NULL);
+	FreeLibrary(dll);
+	return avail;
+}
+#endif  // WIN32
+
+//
+// I_RawWin32MouseAvailible
+//
+// Checks if the raw input mouse functions that the RawWin32Mouse
+// class calls are availible on the current system. They require
+// Windows XP or higher.
+//
+static bool I_RawWin32MouseAvailible()
+{
+#ifdef WIN32
+	return	I_CheckForProc("user32.dll", "RegisterRawInputDevices") &&
+			I_CheckForProc("user32.dll", "GetRegisteredRawInputDevices") &&
+			I_CheckForProc("user32.dll", "GetRawInputData") &&
+			I_CheckForProc("user32.dll", "SetWindowsHookEx");
+#else
+	return false;
+#endif  // WIN32
+}
+
+//
+// I_SDLMouseAvailible
+//
+// Checks if SDLMouse can be used. Always true since SDL is used as the
+// primary backend for everything.
+//
+static bool I_SDLMouseAvailible()
+{
+	return true;
+}
+
 // ============================================================================
 //
 // RawWin32Mouse
 //
 // ============================================================================
+
+#ifdef WIN32
 
 #ifndef HID_USAGE_PAGE_GENERIC
 #define HID_USAGE_PAGE_GENERIC  ((USHORT) 0x01)
@@ -785,6 +877,9 @@ RawWin32Mouse::RawWin32Mouse() :
 	mHasBackedupMouseDevice(false),
 	mPrevX(0), mPrevY(0), mPrevValid(false)
 {
+	if (!I_RawWin32MouseAvailible())
+		return;
+
 	backupMouseDevice();
 
 	RAWINPUTDEVICE device;
@@ -832,7 +927,7 @@ RawWin32Mouse::~RawWin32Mouse()
 // Instantiates a new RawWin32Mouse and returns a pointer to it if successful
 // or returns NULL if unable to instantiate it.
 //
-RawWin32Mouse* RawWin32Mouse::create()
+MouseInput* RawWin32Mouse::create()
 {
 	RawWin32Mouse* obj = new RawWin32Mouse();
 
@@ -1146,7 +1241,7 @@ SDLMouse::~SDLMouse()
 // always availible, this never returns NULL
 //
 //
-SDLMouse* SDLMouse::create()
+MouseInput* SDLMouse::create()
 {
 	return new SDLMouse();
 }

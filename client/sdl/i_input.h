@@ -46,11 +46,30 @@ void I_GetEvent (void);
 void I_EnableKeyRepeat();
 void I_DisableKeyRepeat();
 
+// ============================================================================
+//
+// Mouse Drivers
+//
+// ============================================================================
+
+class MouseInput;
+
 enum
 {
 	SDL_MOUSE_DRIVER = 0,
-	RAW_WIN32_MOUSE_DRIVER = 1
+	RAW_WIN32_MOUSE_DRIVER = 1,
+	NUM_MOUSE_DRIVERS = 2
 };
+
+typedef struct
+{
+	int				id;
+	const char*		name;
+	bool 			(*avail_test)();
+	MouseInput*		(*create)();
+} MouseDriverInfo_t;
+
+extern MouseDriverInfo_t MouseDriverInfo[];
 
 class MouseInput
 {
@@ -70,7 +89,7 @@ public:
 class RawWin32Mouse : public MouseInput
 {
 public:
-	static RawWin32Mouse* create();
+	static MouseInput* create();
 	virtual ~RawWin32Mouse();
 
 	void processEvents();
@@ -148,7 +167,7 @@ private:
 class SDLMouse : public MouseInput
 {
 public:
-	static SDLMouse* create();
+	static MouseInput* create();
 	virtual ~SDLMouse();
 
 	void processEvents();

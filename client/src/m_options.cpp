@@ -385,14 +385,7 @@ menu_t ControlsMenu = {
 //
 // -------------------------------------------------------
 
-static value_t MouseDrivers[] = {
-	{ SDL_MOUSE_DRIVER, "SDL"},
-	#ifdef WIN32
-	{ RAW_WIN32_MOUSE_DRIVER, "Raw Input"}
-	#endif	// WIN32
-};
-
-static float num_mousedrivers = static_cast<float>(STACKARRAY_LENGTH(MouseDrivers));
+static value_t MouseDrivers[NUM_MOUSE_DRIVERS];
 
 static value_t MouseType[] = {
 	{ MOUSE_DOOM,		"Doom"},
@@ -404,7 +397,7 @@ void M_ResetMouseValues();
 
 static menuitem_t MouseItems[] =
 {
-	{ discrete, "Mouse Driver"					, {&mouse_driver},{num_mousedrivers}, {0.0},{0.0},		{MouseDrivers}},
+	{ discrete, "Mouse Driver"					, {&mouse_driver},		{0.0},	{0.0},		{0.0},		{MouseDrivers}},
 	{ discrete,	"Mouse Config Type"				, {&mouse_type},		{2.0},	{0.0},		{0.0},		{MouseType}},
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ slider,	"Overall Sensitivity" 			, {&mouse_sensitivity},	{0.0},	{77.0},		{1.0},		{NULL}},
@@ -433,9 +426,10 @@ static void M_UpdateMouseOptions()
 	const static size_t mouse_pitch_index = M_FindCvarInMenu(m_pitch, MouseItems, menu_length); 
 	const static size_t mouse_accel_index = M_FindCvarInMenu(mouse_acceleration, MouseItems, menu_length);
 	const static size_t mouse_thresh_index = M_FindCvarInMenu(mouse_threshold, MouseItems, menu_length);
+	const static size_t mouse_driver_index = M_FindCvarInMenu(mouse_driver, MouseItems, menu_length);
 
 	static menuitem_t doom_sens_menuitem = MouseItems[mouse_sens_index];
-	static menuitem_t doom_pitch_menuitem =	MouseItems[mouse_pitch_index];
+	static menuitem_t doom_pitch_menuitem = MouseItems[mouse_pitch_index];
 	static menuitem_t doom_accel_menuitem = MouseItems[mouse_accel_index];
 	static menuitem_t doom_thresh_menuitem = MouseItems[mouse_thresh_index];
 
@@ -469,6 +463,26 @@ static void M_UpdateMouseOptions()
 			memcpy(&MouseItems[mouse_accel_index], &doom_accel_menuitem, sizeof(menuitem_t));
 		if (mouse_thresh_index < menu_length)
 			memcpy(&MouseItems[mouse_thresh_index], &doom_thresh_menuitem, sizeof(menuitem_t));
+	}
+
+	// refresh the list of availible mouse drivers
+	if (mouse_driver_index < menu_length)
+	{
+		// check each potential driver's availibility
+		int num_avail_drivers = 0;
+		for (int i = 0; i < NUM_MOUSE_DRIVERS; i++)
+		{
+			if (MouseDriverInfo[i].avail_test() == true)
+			{			
+				// update the menu with the pair of {value,name} for this driver
+				MouseDrivers[num_avail_drivers].value = float(MouseDriverInfo[i].id);
+				MouseDrivers[num_avail_drivers].name = MouseDriverInfo[i].name; 
+				num_avail_drivers++;
+			}
+		}
+
+		// update the number of driver options in the menu
+		MouseItems[mouse_driver_index].b.leftval = (float)num_avail_drivers;
 	}
 
 	G_ConvertMouseSettings(previous_mouse_type, mouse_type);
