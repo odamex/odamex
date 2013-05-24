@@ -105,12 +105,13 @@ private:
 	RawWin32Mouse(const RawWin32Mouse& other) { }
 	RawWin32Mouse& operator=(const RawWin32Mouse& other) { return *this; }
 
-	void setHook();
-	LRESULT hookProc(int nCode, WPARAM wParam, LPARAM lParam);
-	static LRESULT hookProcWrapper(int nCode, WPARAM wParam, LPARAM lParam);
+	LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+	static LRESULT CALLBACK windowProcWrapper(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	void backupMouseDevice();
 	void restoreMouseDevice();
+	
+	static RawWin32Mouse*	mInstance;
 
 	bool					mActive;
 	bool					mInitialized;
@@ -118,8 +119,8 @@ private:
 	bool					mHasBackedupMouseDevice;
 	RAWINPUTDEVICE			mBackedupMouseDevice;
 
-	static HHOOK			mHookHandle;
-	static RawWin32Mouse*	mThis;
+	HWND					mWindow;
+	WNDPROC					mDefaultWindowProc;
 
 	static const size_t		QUEUE_CAPACITY = 1024;
 	RAWINPUT				mInputQueue[QUEUE_CAPACITY];
