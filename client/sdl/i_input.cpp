@@ -876,25 +876,14 @@ RawWin32Mouse* RawWin32Mouse::mInstance = NULL;
 //
 RawWin32Mouse::RawWin32Mouse() :
 	mActive(false), mInitialized(false),
-	mDefaultWindowProc(NULL),
 	mHasBackedupMouseDevice(false),
+	mWindow(NULL), mDefaultWindowProc(NULL),
 	mPrevX(0), mPrevY(0), mPrevValid(false)
 {
 	if (!I_RawWin32MouseAvailible())
 		return;
 
 	backupMouseDevice();
-
-	RAWINPUTDEVICE device;
-	device.usUsagePage = HID_USAGE_PAGE_GENERIC;
-	device.usUsage = HID_USAGE_GENERIC_MOUSE;
-	device.dwFlags = RIDEV_NOLEGACY;
-	device.hwndTarget = NULL;
-
-	if (RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE)) == FALSE)
-		return;
-
-	mInstance = this;
 
 	// get a handle to the window
 	SDL_SysWMinfo wminfo;
@@ -905,6 +894,17 @@ RawWin32Mouse::RawWin32Mouse() :
 	// install our own window message callback and save the previous
 	// callback as mDefaultWindowProc
 	mDefaultWindowProc = (WNDPROC)SetWindowLongPtr(mWindow, GWL_WNDPROC, (LONG_PTR)RawWin32Mouse::windowProcWrapper);
+
+	RAWINPUTDEVICE device;
+	device.usUsagePage = HID_USAGE_PAGE_GENERIC;
+	device.usUsage = HID_USAGE_GENERIC_MOUSE;
+	device.dwFlags = RIDEV_NOLEGACY;
+	device.hwndTarget = mWindow;
+
+	if (RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE)) == FALSE)
+		return;
+
+	mInstance = this;
 
 	mInitialized = true;
 	center();
@@ -925,8 +925,7 @@ RawWin32Mouse::~RawWin32Mouse()
 	device.usUsagePage = HID_USAGE_PAGE_GENERIC;
 	device.usUsage = HID_USAGE_GENERIC_MOUSE;
 	device.dwFlags = RIDEV_REMOVE;
-	device.hwndTarget = NULL;
-
+	device.hwndTarget = mWindow;
 	RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE));
 
 	restoreMouseDevice();
