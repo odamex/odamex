@@ -200,8 +200,14 @@ static void I_UpdateInputGrabbing()
 	else if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
 		can_grab = true;
 
+	// force I_ResumeMouse or I_PauseMouse if toggling between fullscreen/windowed
+	static float prev_vid_fullscreen = vid_fullscreen;
+	if (vid_fullscreen != prev_vid_fullscreen)
+		grabbed = !can_grab;
+	prev_vid_fullscreen = vid_fullscreen;
 
-	if (can_grab&& !grabbed)
+	// check if the window focus changed (or menu/console status changed)
+	if (can_grab && !grabbed)
 	{
 		SDL_WM_GrabInput(SDL_GRAB_ON);
 		I_ResumeMouse();
