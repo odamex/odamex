@@ -64,7 +64,7 @@ enum
 typedef struct
 {
 	int				id;
-	const char*		name;
+	const char*	name;
 	bool 			(*avail_test)();
 	MouseInput*		(*create)();
 } MouseDriverInfo_t;
@@ -105,38 +105,36 @@ private:
 	RawWin32Mouse(const RawWin32Mouse& other) { }
 	RawWin32Mouse& operator=(const RawWin32Mouse& other) { return *this; }
 
+	void installWindowProc();
+	void uninstallWindowProc();
 	LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK windowProcWrapper(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-	void backupMouseDevice();
-	void restoreMouseDevice();
+	bool registerMouseDevice();
+	bool unregisterMouseDevice();
 	
 	static RawWin32Mouse*	mInstance;
 
 	bool					mActive;
 	bool					mInitialized;
 
-	bool					mHasBackedupMouseDevice;
-	RAWINPUTDEVICE			mBackedupMouseDevice;
+	RAWINPUTDEVICE			mOldMouseDevice;
 
 	HWND					mWindow;
 	WNDPROC					mDefaultWindowProc;
+	HWND					mDirectInputWindow;
 
-	static const size_t		QUEUE_CAPACITY = 1024;
-	RAWINPUT				mInputQueue[QUEUE_CAPACITY];
+	static const size_t	QUEUE_CAPACITY = 256;
+	RAWMOUSE				mInputQueue[QUEUE_CAPACITY];
 	size_t					mQueueFront;
 	size_t					mQueueBack;
-
-	int						mPrevX;
-	int						mPrevY;
-	bool					mPrevValid;
 
 	inline size_t queueSize() const
 	{
 		return (mQueueBack + QUEUE_CAPACITY - mQueueFront) % QUEUE_CAPACITY;
 	}
 
-	inline void pushBack(const RAWINPUT* input)
+	inline void pushBack(const RAWMOUSE* input)
 	{
 		if (queueSize() < QUEUE_CAPACITY)
 		{
@@ -151,7 +149,7 @@ private:
 			mQueueFront = (mQueueFront + 1) % QUEUE_CAPACITY;
 	}
 
-	inline const RAWINPUT* front() const
+	inline const RAWMOUSE* front() const
 	{
 		if (queueSize() > 0)
 			return &mInputQueue[mQueueFront];

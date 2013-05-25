@@ -874,6 +874,111 @@ static bool I_SDLMouseAvailible()
 #define HID_USAGE_GENERIC_MOUSE  ((USHORT) 0x02)
 #endif
 
+//
+// processRawMouseMovement
+//
+// Helper function to aggregate mouse movement events from a RAWMOUSE struct
+// to a Doom event_t struct. Note that event->data2 and event->data3 need to
+// be zeroed before calling.
+//
+bool processRawMouseMovement(const RAWMOUSE* mouse, event_t* event)
+{
+	static int prevx, prevy;
+	static bool prev_valid = false;
+
+	event->type = ev_mouse;
+	event->data1 = 0;
+
+	if (mouse->usFlags & MOUSE_MOVE_ABSOLUTE)
+	{
+		// we're given absolute mouse coordinates and need to convert
+		// them to relative coordinates based on the previous x & y
+		if (prev_valid)
+		{
+			event->data2 += mouse->lLastX - prevx;
+			event->data3 -= mouse->lLastY - prevy;
+		}
+
+		prevx = mouse->lLastX;
+		prevy = mouse->lLastY;
+		prev_valid = true;
+	}
+	else
+	{
+		// we're given relative mouse coordinates
+		event->data2 += mouse->lLastX;
+		event->data3 -= mouse->lLastY;
+		prev_valid = false;
+	}
+
+	return true;
+}
+
+//
+// processRawMouseButtons
+//
+// Helper function to check if there is an event for the specified mouse
+// button number in the RAWMOUSE struct. Returns true and fills the fields
+// of event if there is a button event.
+//
+bool processRawMouseButtons(const RAWMOUSE* mouse, event_t* event, int button_num)
+{
+	static const UINT ri_down_lookup[5] = {
+		RI_MOUSE_BUTTON_1_DOWN, RI_MOUSE_BUTTON_2_DOWN, RI_MOUSE_BUTTON_3_DOWN,
+		RI_MOUSE_BUTTON_4_DOWN,	RI_MOUSE_BUTTON_5_DOWN };
+
+	static const UINT ri_up_lookup[5] = {
+		RI_MOUSE_BUTTON_1_UP, RI_MOUSE_BUTTON_2_UP, RI_MOUSE_BUTTON_3_UP,
+		RI_MOUSE_BUTTON_4_UP, RI_MOUSE_BUTTON_5_UP };
+
+	static const int oda_button_lookup[5] = {
+		KEY_MOUSE1, KEY_MOUSE2, KEY_MOUSE3, KEY_MOUSE4, KEY_MOUSE5 };
+
+	event->data1 = event->data2 = event->data3 = 0;
+
+	if (mouse->usButtonFlags & ri_down_lookup[button_num])
+	{
+		event->type = ev_keydown;
+		event->data1 = oda_button_lookup[button_num];
+		return true;
+	}
+	else if (mouse->usButtonFlags & ri_up_lookup[button_num])
+	{
+		event->type = ev_keyup;
+		event->data1 = oda_button_lookup[button_num];
+		return true;
+	}
+	return false;
+}
+
+//
+// processRawMouseScrollWheel
+//
+// Helper function to check for scroll wheel events in the RAWMOUSE struct.
+// Returns true and fills in the fields in event if there is a scroll
+// wheel event.
+bool processRawMouseScrollWheel(const RAWMOUSE* mouse, event_t* event)
+{
+	event->type = ev_keydown;
+	event->data1 = event->data2 = event->data3 = 0;
+
+	if (mouse->usButtonFlags & RI_MOUSE_WHEEL)
+	{
+		if ((SHORT)mouse->usButtonData < 0)
+		{
+			event->data1 = KEY_MWHEELDOWN;
+			return true;
+		}
+		else if ((SHORT)mouse->usButtonData > 0)
+		{
+			event->data1 = KEY_MWHEELUP;
+			return true;
+		}
+	}
+
+	return false;
+}
+
 // define the static member variables declared in the header
 RawWin32Mouse* RawWin32Mouse::mInstance = NULL;
 
@@ -882,30 +987,22 @@ RawWin32Mouse* RawWin32Mouse::mInstance = NULL;
 //
 RawWin32Mouse::RawWin32Mouse() :
 	mActive(false), mInitialized(false),
-	mHasBackedupMouseDevice(false),
-	mWindow(NULL), mDefaultWindowProc(NULL),
-	mPrevX(0), mPrevY(0), mPrevValid(false)
+	mWindow(NULL), mDirectInputWindow(NULL), mDefaultWindowProc(NULL)
 {
 	if (!I_RawWin32MouseAvailible())
 		return;
 
-	backupMouseDevice();
+	memset(&mOldMouseDevice, 0, sizeof(mOldMouseDevice));
+	if (registerMouseDevice() == false)
+		return;
 
-	// get a handle to the window
-	SDL_SysWMinfo wminfo;
-	SDL_VERSION(&wminfo.version)
-	SDL_GetWMInfo(&wminfo);
-	mWindow = wminfo.window;
-
-	// install our own window message callback and save the previous
-	// callback as mDefaultWindowProc
-	mDefaultWindowProc = (WNDPROC)SetWindowLongPtr(mWindow, GWL_WNDPROC, (LONG_PTR)RawWin32Mouse::windowProcWrapper);
+	installWindowProc();
 
 	RAWINPUTDEVICE device;
 	device.usUsagePage = HID_USAGE_PAGE_GENERIC;
 	device.usUsage = HID_USAGE_GENERIC_MOUSE;
 	device.dwFlags = RIDEV_NOLEGACY;
-	device.hwndTarget = mWindow;
+	device.hwndTarget = NULL;
 
 	if (RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE)) == FALSE)
 		return;
@@ -923,19 +1020,8 @@ RawWin32Mouse::RawWin32Mouse() :
 //
 RawWin32Mouse::~RawWin32Mouse()
 {
-	// uninstall our window message callback and restore it to the previous one
-	if (mDefaultWindowProc != NULL)
-		SetWindowLongPtr(mWindow, GWL_WNDPROC, (LONG_PTR)mDefaultWindowProc);
-
-	RAWINPUTDEVICE device;
-	device.usUsagePage = HID_USAGE_PAGE_GENERIC;
-	device.usUsage = HID_USAGE_GENERIC_MOUSE;
-	device.dwFlags = RIDEV_REMOVE;
-	device.hwndTarget = mWindow;
-	RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE));
-
-	restoreMouseDevice();
-
+	uninstallWindowProc();
+	unregisterMouseDevice();
 	mInstance = NULL;
 }
 
@@ -989,108 +1075,27 @@ void RawWin32Mouse::processEvents()
 
 	for (size_t i = 0; i < queueSize(); i++)
 	{
-		const RAWMOUSE* mouse = &front()->data.mouse;
+		const RAWMOUSE* mouse = front();
 
-		if (mouse->usFlags & MOUSE_MOVE_ABSOLUTE)
-		{
-			// we're given absolute mouse coordinates
-			if (mPrevValid)
-			{
-				movement_event.data2 += mouse->lLastX - mPrevX;
-				movement_event.data3 -= mouse->lLastY - mPrevY;
-			}
+		// process mouse movement and save it
+		processRawMouseMovement(mouse, &movement_event);
 
-			mPrevX = mouse->lLastX;
-			mPrevY = mouse->lLastY;
-			mPrevValid = true;
-		}
-		else
-		{
-			// we're given relative mouse coordinates
-			movement_event.data2 += mouse->lLastX;
-			movement_event.data3 -= mouse->lLastY;
-			mPrevValid = false;
-		}
-
+		// process mouse button clicks and post the events
 		event_t button_event;
-		button_event.data2 = button_event.data3 = 0;
-
-		// handle mouse button down events
-		button_event.type = ev_keydown;
-		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_1_DOWN)
+		for (int i = 0; i < 5; i++)
 		{
-			button_event.data1 = KEY_MOUSE1;
-			D_PostEvent(&button_event);
-		}
-		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_2_DOWN)
-		{
-			button_event.data1 = KEY_MOUSE2;
-			D_PostEvent(&button_event);
-		}
-		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_3_DOWN)
-		{
-			button_event.data1 = KEY_MOUSE3;
-			D_PostEvent(&button_event);
-		}
-		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_4_DOWN)
-		{
-			button_event.data1 = KEY_MOUSE4;
-			D_PostEvent(&button_event);
-		}
-		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_5_DOWN)
-		{
-			button_event.data1 = KEY_MOUSE5;
-			D_PostEvent(&button_event);
-		}
-
-		// handle mouse button up events
-		button_event.type = ev_keyup;
-		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_1_UP)
-		{
-			button_event.data1 = KEY_MOUSE1;
-			D_PostEvent(&button_event);
-		}
-		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_2_UP)
-		{
-			button_event.data1 = KEY_MOUSE2;
-			D_PostEvent(&button_event);
-		}
-		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_3_UP)
-		{
-			button_event.data1 = KEY_MOUSE3;
-			D_PostEvent(&button_event);
-		}
-		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_4_UP)
-		{
-			button_event.data1 = KEY_MOUSE4;
-			D_PostEvent(&button_event);
-		}
-		if (mouse->usButtonFlags & RI_MOUSE_BUTTON_5_UP)
-		{
-			button_event.data1 = KEY_MOUSE5;
-			D_PostEvent(&button_event);
-		}
-
-		// handle scroll-wheel events
-		button_event.type = ev_keydown;
-		if (mouse->usButtonFlags & RI_MOUSE_WHEEL)
-		{
-			if ((SHORT)mouse->usButtonData < 0)
-			{
-				button_event.data1 = KEY_MWHEELDOWN;
+			if (processRawMouseButtons(mouse, &button_event, i))
 				D_PostEvent(&button_event);
-			}
-			else if ((SHORT)mouse->usButtonData > 0)
-			{
-				button_event.data1 = KEY_MWHEELUP;
-				D_PostEvent(&button_event);
-			}
 		}
+
+		// process mouse scroll wheel action
+		if (processRawMouseScrollWheel(mouse, &button_event))
+			D_PostEvent(&button_event);
 
 		popFront();
 	}
 
-	if (movement_event.data2 != 0 || movement_event.data3 != 0)
+	if (movement_event.data2 || movement_event.data3)
 		D_PostEvent(&movement_event);
 }
 
@@ -1110,6 +1115,7 @@ bool RawWin32Mouse::paused() const
 void RawWin32Mouse::pause()
 {
 	mActive = false;
+	uninstallWindowProc();
 }
 
 void RawWin32Mouse::resume()
@@ -1117,6 +1123,49 @@ void RawWin32Mouse::resume()
 	mActive = true;
 	center();
 	flushEvents();
+	installWindowProc();
+}
+
+//
+// RawWin32Mouse::installWindowProc
+//
+// Saves the existing WNDPROC for the app window and installs our own.
+//
+void RawWin32Mouse::installWindowProc()
+{
+	// get a handle to the window
+	SDL_SysWMinfo wminfo;
+	SDL_VERSION(&wminfo.version)
+	SDL_GetWMInfo(&wminfo);
+	mWindow = wminfo.window;
+
+	if ((WNDPROC)GetWindowLongPtr(mWindow, GWLP_WNDPROC) == RawWin32Mouse::windowProcWrapper)
+		return;
+
+	// install our own window message callback and save the previous
+	// callback as mDefaultWindowProc
+	mDefaultWindowProc = (WNDPROC)SetWindowLongPtr(mWindow, GWLP_WNDPROC, (LONG_PTR)RawWin32Mouse::windowProcWrapper);
+}
+
+
+//
+// RawWin32Mouse::uninstallWindowProc
+//
+// Restore the saved WNDPROC for the app window.
+//
+void RawWin32Mouse::uninstallWindowProc()
+{
+	if (mDefaultWindowProc == NULL)
+		return;
+
+	// get a handle to the window
+	SDL_SysWMinfo wminfo;
+	SDL_VERSION(&wminfo.version)
+	SDL_GetWMInfo(&wminfo);
+	mWindow = wminfo.window;
+
+	SetWindowLongPtr(mWindow, GWLP_WNDPROC, (LONG_PTR)mDefaultWindowProc);
+	mDefaultWindowProc = NULL;
 }
 
 //
@@ -1136,7 +1185,7 @@ LRESULT CALLBACK RawWin32Mouse::windowProc(HWND hwnd, UINT message, WPARAM wPara
 
 		if (raw.header.dwType == RIM_TYPEMOUSE)
 		{
-			pushBack(&raw);
+			pushBack(&raw.data.mouse);
 			return 0;
 		}
 	}
@@ -1157,14 +1206,14 @@ LRESULT CALLBACK RawWin32Mouse::windowProcWrapper(HWND hwnd, UINT message, WPARA
 }
 
 //
-// RawWin32Mouse::backupMouseDevice
+// RawWin32Mouse::registerRawInputDevice
 //
-// Saves a copy of an existing mouse raw input device. This should be called
-// prior to registering our own mouse input device.
+// Registers the mouse as a raw input device, backing up the previous raw input
+// device for later restoration.
 //
-void RawWin32Mouse::backupMouseDevice()
+bool RawWin32Mouse::registerMouseDevice()
 {
-	mHasBackedupMouseDevice = false;
+	bool need_to_register = true;
 
 	// get the number of raw input devices
 	UINT num_devices;
@@ -1174,34 +1223,54 @@ void RawWin32Mouse::backupMouseDevice()
 	RAWINPUTDEVICE* devices = new RAWINPUTDEVICE[num_devices];
 
 	// retrieve the raw input device info
-	UINT res = GetRegisteredRawInputDevices(devices, &num_devices, sizeof(RAWINPUTDEVICE));
-	if (res == num_devices)
+	GetRegisteredRawInputDevices(devices, &num_devices, sizeof(RAWINPUTDEVICE));
+	for (UINT i = 0; i < num_devices; i++)
 	{
-		for (UINT i = 0; i < num_devices; i++)
+		// if it's a mouse, back it up
+		if (devices[i].usUsagePage == HID_USAGE_PAGE_GENERIC &&
+			devices[i].usUsage == HID_USAGE_GENERIC_MOUSE)
 		{
-			// if it's a mouse, back it up
-			if (devices[i].usUsagePage == HID_USAGE_PAGE_GENERIC &&
-				devices[i].usUsage == HID_USAGE_GENERIC_MOUSE)
-			{
-				memcpy(&mBackedupMouseDevice, &devices[i], sizeof(RAWINPUTDEVICE));
-				mHasBackedupMouseDevice = true;
-			}
+			if (devices[i].hwndTarget != mWindow)
+				memcpy(&mOldMouseDevice, &devices[i], sizeof(RAWINPUTDEVICE));
+			break;
 		}
-    }
+	}
 
     delete [] devices;
+
+	RAWINPUTDEVICE device;
+	device.usUsagePage = HID_USAGE_PAGE_GENERIC;
+	device.usUsage = HID_USAGE_GENERIC_MOUSE;
+	device.dwFlags = RIDEV_NOLEGACY;
+	device.hwndTarget = mWindow;
+
+	return (RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE)) != FALSE);
 }
 
 //
-// RawWin32Mouse::restoreMouseDevice
+// RawWin32Mouse::unregisterRawInputDevice
 //
-// Restores a saved copy of a mouse raw input device. This should be called
-// after unregistering our own mouse input device.
+// Removes the mouse as a raw input device, restoring a previously backedup
+// mouse device if applicable.
 //
-void RawWin32Mouse::restoreMouseDevice()
+bool RawWin32Mouse::unregisterMouseDevice()
 {
-	if (mHasBackedupMouseDevice)
-		RegisterRawInputDevices(&mBackedupMouseDevice, 1, sizeof(RAWINPUTDEVICE));
+	RAWINPUTDEVICE device;
+	device.usUsagePage = HID_USAGE_PAGE_GENERIC;
+	device.usUsage = HID_USAGE_GENERIC_MOUSE;
+	device.dwFlags = RIDEV_REMOVE;
+	device.hwndTarget = mWindow;
+
+	bool success = (RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE)) != FALSE);
+
+	if (mOldMouseDevice.usUsagePage != 0)
+	{
+		memcpy(&device, &mOldMouseDevice, sizeof(RAWINPUTDEVICE));
+		RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE));
+		memset(&mOldMouseDevice, 0, sizeof(RAWINPUTDEVICE));
+	}
+
+	return success;
 }
 
 #endif	// WIN32
@@ -1336,7 +1405,7 @@ void SDLMouse::processEvents()
 		}
 	}
 
-	if (movement_event.data2 != 0 || movement_event.data3 != 0)
+	if (movement_event.data2 || movement_event.data3)
 		D_PostEvent(&movement_event);
 
 	center();

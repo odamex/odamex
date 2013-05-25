@@ -44,6 +44,7 @@
 #include "i_sdlvideo.h"
 #include "m_fileio.h"
 #include "g_game.h"
+#include "i_input.h"
 
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
@@ -437,6 +438,8 @@ DCanvas *I_AllocateScreen (int width, int height, int bits, bool primary)
 		I_FatalError ("Failed to allocate a %dx%dx%d surface",
 					  width, height, bits);
 	}
+
+	I_PauseMouse();
 
 	return scrn;
 }
