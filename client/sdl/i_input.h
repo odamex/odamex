@@ -31,6 +31,9 @@
 #define MOUSE_ODAMEX 1
 #define MOUSE_ZDOOM_DI 2
 
+void I_InitMouseDriver();
+void I_ShutdownMouseDriver();
+
 bool I_InitInput (void);
 void STACK_ARGS I_ShutdownInput (void);
 void I_PauseMouse();
@@ -69,6 +72,7 @@ typedef struct
 	MouseInput*		(*create)();
 } MouseDriverInfo_t;
 
+MouseDriverInfo_t* I_FindMouseDriverInfo(int id);
 extern MouseDriverInfo_t MouseDriverInfo[];
 
 class MouseInput
@@ -83,9 +87,17 @@ public:
 	virtual bool paused() const = 0;
 	virtual void pause() = 0;
 	virtual void resume() = 0;
+
+	virtual void debug() const { }
 };
 
-#ifdef WIN32
+#if defined WIN32 && !defined _XBOX
+	#define USE_RAW_WIN32_MOUSE
+#else
+	#undef USE_RAW_WIN32_MOUSE
+#endif
+
+#ifdef USE_RAW_WIN32_MOUSE
 class RawWin32Mouse : public MouseInput
 {
 public:
@@ -100,6 +112,8 @@ public:
 	void pause();
 	void resume();
 
+	void debug() const;
+
 private:
 	RawWin32Mouse();
 	RawWin32Mouse(const RawWin32Mouse& other) { }
@@ -112,17 +126,22 @@ private:
 
 	bool registerMouseDevice();
 	bool unregisterMouseDevice();
+
+	void backupMouseDevice(const RAWINPUTDEVICE& device);
+	void restoreMouseDevice(RAWINPUTDEVICE& device);
 	
 	static RawWin32Mouse*	mInstance;
 
 	bool					mActive;
 	bool					mInitialized;
 
-	RAWINPUTDEVICE			mOldMouseDevice;
+	RAWINPUTDEVICE			mBackupDevice;
+	bool					mHasBackupDevice;
+	bool					mRegisteredMouseDevice;	
 
 	HWND					mWindow;
-	WNDPROC					mDefaultWindowProc;
-	HWND					mDirectInputWindow;
+	WNDPROC					mBaseWindowProc;
+	bool					mInstalledWindowProc;
 
 	static const size_t	QUEUE_CAPACITY = 256;
 	RAWMOUSE				mInputQueue[QUEUE_CAPACITY];
@@ -161,7 +180,7 @@ private:
 		mQueueFront = mQueueBack = 0;
 	}
 };
-#endif  // WIN32
+#endif  // USE_RAW_WIN32_MOUSE
 
 class SDLMouse : public MouseInput
 {

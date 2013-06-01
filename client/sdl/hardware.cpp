@@ -439,8 +439,6 @@ DCanvas *I_AllocateScreen (int width, int height, int bits, bool primary)
 					  width, height, bits);
 	}
 
-	I_PauseMouse();
-
 	return scrn;
 }
 
