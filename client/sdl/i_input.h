@@ -119,8 +119,8 @@ private:
 	RawWin32Mouse(const RawWin32Mouse& other) { }
 	RawWin32Mouse& operator=(const RawWin32Mouse& other) { return *this; }
 
-	void installWindowProc();
-	void uninstallWindowProc();
+	void registerWindowProc();
+	void unregisterWindowProc();
 	LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK windowProcWrapper(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -128,7 +128,7 @@ private:
 	bool unregisterMouseDevice();
 
 	void backupMouseDevice(const RAWINPUTDEVICE& device);
-	void restoreMouseDevice(RAWINPUTDEVICE& device);
+	void restoreMouseDevice(RAWINPUTDEVICE& device) const;
 	
 	static RawWin32Mouse*	mInstance;
 
@@ -141,7 +141,7 @@ private:
 
 	HWND					mWindow;
 	WNDPROC					mBaseWindowProc;
-	bool					mInstalledWindowProc;
+	bool					mRegisteredWindowProc;
 
 	static const size_t	QUEUE_CAPACITY = 256;
 	RAWMOUSE				mInputQueue[QUEUE_CAPACITY];

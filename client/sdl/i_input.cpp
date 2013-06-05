@@ -20,7 +20,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 // SoM 12-24-05: yeah... I'm programming on christmas eve.
 // Removed all the DirectX crap.
 
@@ -717,7 +716,7 @@ static bool I_SDLMouseAvailible();
 static bool I_MouseUnavailible();
 #ifdef USE_RAW_WIN32_MOUSE
 static bool I_RawWin32MouseAvailible();
-#endif
+#endif	// USE_RAW_WIN32_MOUSE
 
 MouseDriverInfo_t MouseDriverInfo[] = {
 	{ SDL_MOUSE_DRIVER,			"SDL Mouse",	&I_SDLMouseAvailible,		&SDLMouse::create },
@@ -807,6 +806,8 @@ void I_InitMouseDriver()
 		else
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initialize SDL Mouse input as a fallback.\n");
 	}
+
+	I_ResumeMouse();
 }
 
 //
@@ -892,6 +893,7 @@ END_COMMAND(debugmouse)
 #define HID_USAGE_GENERIC_MOUSE  ((USHORT) 0x02)
 #endif
 
+
 //
 // processRawMouseMovement
 //
@@ -932,6 +934,7 @@ bool processRawMouseMovement(const RAWMOUSE* mouse, event_t* event)
 	return true;
 }
 
+
 //
 // processRawMouseButtons
 //
@@ -969,6 +972,7 @@ bool processRawMouseButtons(const RAWMOUSE* mouse, event_t* event, int button_nu
 	return false;
 }
 
+
 //
 // processRawMouseScrollWheel
 //
@@ -997,6 +1001,51 @@ bool processRawMouseScrollWheel(const RAWMOUSE* mouse, event_t* event)
 	return false;
 }
 
+
+//
+// getMouseRawInputDevice
+//
+// Helper function that searches for a registered mouse raw input device. If
+// found, the device parameter is filled with the information for the device
+// and the function returns true.
+//
+bool getMouseRawInputDevice(RAWINPUTDEVICE& device)
+{
+	device.usUsagePage	= 0;
+	device.usUsage		= 0;
+	device.dwFlags		= 0;
+	device.hwndTarget	= 0;
+
+	// get the number of raw input devices
+	UINT num_devices;
+	GetRegisteredRawInputDevices(NULL, &num_devices, sizeof(RAWINPUTDEVICE));
+
+	// create a buffer to hold the raw input device info
+	RAWINPUTDEVICE* devices = new RAWINPUTDEVICE[num_devices];
+
+	// look at existing registered raw input devices
+	GetRegisteredRawInputDevices(devices, &num_devices, sizeof(RAWINPUTDEVICE));
+	for (UINT i = 0; i < num_devices; i++)
+	{
+		// is there already a mouse device registered?
+		if (devices[i].usUsagePage == HID_USAGE_PAGE_GENERIC &&
+			devices[i].usUsage == HID_USAGE_GENERIC_MOUSE)
+		{
+			device.usUsagePage	= devices[i].usUsagePage;
+			device.usUsage		= devices[i].usUsage;
+			device.dwFlags		= devices[i].dwFlags;
+			device.hwndTarget	= devices[i].hwndTarget;
+			break;
+		}
+	}
+
+    delete [] devices;
+
+	return device.usUsagePage == HID_USAGE_PAGE_GENERIC &&
+			device.usUsage == HID_USAGE_GENERIC_MOUSE;
+}
+
+
 // define the static member variables declared in the header
 RawWin32Mouse* RawWin32Mouse::mInstance = NULL;
 
@@ -1006,7 +1055,7 @@ RawWin32Mouse* RawWin32Mouse::mInstance = NULL;
 RawWin32Mouse::RawWin32Mouse() :
 	mActive(false), mInitialized(false),
 	mHasBackupDevice(false), mRegisteredMouseDevice(false),
-	mWindow(NULL), mBaseWindowProc(NULL), mInstalledWindowProc(false)
+	mWindow(NULL), mBaseWindowProc(NULL), mRegisteredWindowProc(false)
 {
 	if (!I_RawWin32MouseAvailible())
 		return;
@@ -1020,8 +1069,10 @@ RawWin32Mouse::RawWin32Mouse() :
 	mInstance = this;
 
 	mInitialized = true;
-	I_ResumeMouse();
+	registerMouseDevice();
+	registerWindowProc();
 }
+
 
 //
 // RawWin32Mouse::~RawWin32Mouse
@@ -1030,9 +1081,10 @@ RawWin32Mouse::RawWin32Mouse() :
 //
 RawWin32Mouse::~RawWin32Mouse()
 {
-	I_PauseMouse();
+	pause();
 	mInstance = NULL;
 }
+
 
 //
 // RawWin32Mouse::create
@@ -1055,6 +1107,7 @@ MouseInput* RawWin32Mouse::create()
 	return NULL;
 }
 
+
 //
 // RawWin32Mouse::flushEvents
 //
@@ -1064,6 +1117,7 @@ void RawWin32Mouse::flushEvents()
 {
 	clear();
 }
+
 
 //
 // RawWin32Mouse::processEvents
@@ -1078,11 +1132,11 @@ void RawWin32Mouse::processEvents()
 
 	event_t movement_event;
 	movement_event.type = ev_mouse;
-	movement_event.data1 = movement_event.data2 = movement_event.data3 = 0;
+	movement_event.data1 = movement_event.data2 = movement_event.data3 = 0; 
 
-	for (size_t i = 0; i < queueSize(); i++)
+	const RAWMOUSE* mouse;
+	while (mouse = front())
 	{
-		const RAWMOUSE* mouse = front();
 		popFront();
 
 		// process mouse movement and save it
@@ -1106,68 +1160,85 @@ void RawWin32Mouse::processEvents()
 		D_PostEvent(&movement_event);
 }
 
+
+//
+// RawWin32Mouse::center
+//
 void RawWin32Mouse::center()
 {
 	RECT rect;
 	GetWindowRect(mWindow, &rect);
-
 	SetCursorPos((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2);
 }
 
+
+//
+// RawWin32Mouse::paused
+//
 bool RawWin32Mouse::paused() const
 {
 	return mActive == false;
 }
 
+
+//
+// RawWin32Mouse::pause
+//
 void RawWin32Mouse::pause()
 {
 	mActive = false;
 
 	unregisterMouseDevice();
-	uninstallWindowProc();
+	unregisterWindowProc();
 }
 
+
+//
+// RawWin32Mouse::resume
+//
 void RawWin32Mouse::resume()
 {
 	mActive = true;
 	center();
 	flushEvents();
 
-	installWindowProc();
 	registerMouseDevice();
+	registerWindowProc();
 }
 
+
 //
-// RawWin32Mouse::installWindowProc
+// RawWin32Mouse::registerWindowProc
 //
 // Saves the existing WNDPROC for the app window and installs our own.
 //
-void RawWin32Mouse::installWindowProc()
+void RawWin32Mouse::registerWindowProc()
 {
-	if (!mInstalledWindowProc)
+	if (!mRegisteredWindowProc)
 	{
 		// install our own window message callback and save the previous
 		// callback as mBaseWindowProc
 		mBaseWindowProc = (WNDPROC)SetWindowLongPtr(mWindow, GWLP_WNDPROC, (LONG_PTR)RawWin32Mouse::windowProcWrapper);
-		mInstalledWindowProc = true;
+		mRegisteredWindowProc = true;
 	}
 }
 
 
 //
-// RawWin32Mouse::uninstallWindowProc
+// RawWin32Mouse::unregisterWindowProc
 //
 // Restore the saved WNDPROC for the app window.
 //
-void RawWin32Mouse::uninstallWindowProc()
+void RawWin32Mouse::unregisterWindowProc()
 {
-	if (mInstalledWindowProc)
+	if (mRegisteredWindowProc)
 	{
 		SetWindowLongPtr(mWindow, GWLP_WNDPROC, (LONG_PTR)mBaseWindowProc);
 		mBaseWindowProc = NULL;
-		mInstalledWindowProc = false;
+		mRegisteredWindowProc = false;
 	}
 }
+
 
 //
 // RawWin32Mouse::windowProc
@@ -1198,6 +1269,7 @@ LRESULT CALLBACK RawWin32Mouse::windowProc(HWND hwnd, UINT message, WPARAM wPara
 		return CallWindowProc(mBaseWindowProc, hwnd, message, wParam, lParam);
 }
 
+
 //
 // RawWin32Mouse::windowProcWrapper
 //
@@ -1210,14 +1282,27 @@ LRESULT CALLBACK RawWin32Mouse::windowProcWrapper(HWND hwnd, UINT message, WPARA
 }
 
 
+//
+// RawWin32Mouse::backupMouseDevice
+//
 void RawWin32Mouse::backupMouseDevice(const RAWINPUTDEVICE& device)
 {
-	memcpy(&mBackupDevice, &device, sizeof(device));
+	mBackupDevice.usUsagePage	= device.usUsagePage;
+	mBackupDevice.usUsage		= device.usUsage;
+	mBackupDevice.dwFlags		= device.dwFlags;
+	mBackupDevice.hwndTarget	= device.hwndTarget;
 }
 
-void RawWin32Mouse::restoreMouseDevice(RAWINPUTDEVICE& device)
+
+//
+// RawWin32Mouse::restoreMouseDevice
+//
+void RawWin32Mouse::restoreMouseDevice(RAWINPUTDEVICE& device) const
 {
-	memcpy(&device, &mBackupDevice, sizeof(device));
+	device.usUsagePage	= mBackupDevice.usUsagePage;
+	device.usUsage		= mBackupDevice.usUsage;
+	device.dwFlags		= mBackupDevice.dwFlags;
+	device.hwndTarget	= mBackupDevice.hwndTarget;
 }
 
 
@@ -1232,46 +1317,33 @@ bool RawWin32Mouse::registerMouseDevice()
 	if (mRegisteredMouseDevice)
 		return false;
 
-	// get the number of raw input devices
-	UINT num_devices;
-	GetRegisteredRawInputDevices(NULL, &num_devices, sizeof(RAWINPUTDEVICE));
+	RAWINPUTDEVICE device;
 
-	// create a buffer to hold the raw input device info
-	RAWINPUTDEVICE* devices = new RAWINPUTDEVICE[num_devices];
-
-	// retrieve the raw input device info
-	GetRegisteredRawInputDevices(devices, &num_devices, sizeof(RAWINPUTDEVICE));
-	for (UINT i = 0; i < num_devices; i++)
+	if (getMouseRawInputDevice(device))
 	{
-		// is there already a mouse device registered?
-		if (devices[i].usUsagePage == HID_USAGE_PAGE_GENERIC &&
-			devices[i].usUsage == HID_USAGE_GENERIC_MOUSE)
+		// save a backup copy of this device
+		if (!mHasBackupDevice)
 		{
-			// save a backup copy of this device
-			if (!mHasBackupDevice)
-			{
-				backupMouseDevice(devices[i]);
-				mHasBackupDevice = true;
-			}
-				// remove the device
-			devices[i].dwFlags |= RIDEV_REMOVE;
-			RegisterRawInputDevices(&devices[i], 1, sizeof(RAWINPUTDEVICE));
-			break;
+			backupMouseDevice(device);
+			mHasBackupDevice = true;
 		}
+
+		// remove the existing device
+		device.dwFlags |= RIDEV_REMOVE;
+		RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE));
 	}
 
-    delete [] devices;
-
-	RAWINPUTDEVICE device;
-	device.usUsagePage = HID_USAGE_PAGE_GENERIC;
-	device.usUsage = HID_USAGE_GENERIC_MOUSE;
-	device.dwFlags = RIDEV_NOLEGACY;
-	device.hwndTarget = mWindow;
+	// register our raw input mouse device
+	device.usUsagePage	= HID_USAGE_PAGE_GENERIC;
+	device.usUsage		= HID_USAGE_GENERIC_MOUSE;
+	device.dwFlags		= RIDEV_NOLEGACY;
+	device.hwndTarget	= mWindow;
 
 	mRegisteredMouseDevice = true;
 
 	return (RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE)) != FALSE);
 }
+
 
 //
 // RawWin32Mouse::unregisterRawInputDevice
@@ -1281,16 +1353,19 @@ bool RawWin32Mouse::registerMouseDevice()
 //
 bool RawWin32Mouse::unregisterMouseDevice()
 {
+	bool success = false;
+
 	if (!mRegisteredMouseDevice)
 		return false;
 
 	RAWINPUTDEVICE device;
-	device.usUsagePage = HID_USAGE_PAGE_GENERIC;
-	device.usUsage = HID_USAGE_GENERIC_MOUSE;
-	device.dwFlags = RIDEV_REMOVE;
-	device.hwndTarget = mWindow;
 
-	bool success = (RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE)) != FALSE);
+	if (getMouseRawInputDevice(device))
+	{
+		// remove the device
+		device.dwFlags |= RIDEV_REMOVE;
+		success = RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE));
+	}
 
 	if (mHasBackupDevice)
 	{
@@ -1299,9 +1374,15 @@ bool RawWin32Mouse::unregisterMouseDevice()
 		RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE));
 	}
 
+	mRegisteredMouseDevice = false;
+
 	return success;
 }
 
+
+//
+// RawWin32Mouse::debug
+//
 void RawWin32Mouse::debug() const
 {
 	// get a handle to the window
@@ -1313,27 +1394,11 @@ void RawWin32Mouse::debug() const
 	// determine the hwndTarget parameter of the registered rawinput device
 	HWND hwndTarget = NULL;
 	
-	// get the number of raw input devices
-	UINT num_devices;
-	GetRegisteredRawInputDevices(NULL, &num_devices, sizeof(RAWINPUTDEVICE));
-
-	// create a buffer to hold the raw input device info
-	RAWINPUTDEVICE* devices = new RAWINPUTDEVICE[num_devices];
-
-	// retrieve the raw input device info
-	GetRegisteredRawInputDevices(devices, &num_devices, sizeof(RAWINPUTDEVICE));
-	for (UINT i = 0; i < num_devices; i++)
+	RAWINPUTDEVICE device;
+	if (getMouseRawInputDevice(device))
 	{
-		// is there already a mouse device registered?
-		if (devices[i].usUsagePage == HID_USAGE_PAGE_GENERIC &&
-			devices[i].usUsage == HID_USAGE_GENERIC_MOUSE)
-		{
-			hwndTarget = devices[i].hwndTarget;
-			break;
-		}
+		hwndTarget = device.hwndTarget;
 	}
-
-    delete [] devices;
 
 	Printf(PRINT_HIGH, "RawWin32Mouse: Current Window Address: 0x%x, mWindow: 0x%x, RAWINPUTDEVICE Window: 0x%x\n", 
 			cur_window, mWindow, hwndTarget);
