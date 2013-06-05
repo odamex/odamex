@@ -251,8 +251,17 @@ bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
    if (fs)
       sbits = 32;
 
+	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
+	// This interferes with RawWin32Mouse's input handlers so we need to
+	// disable them prior to reinitalizing DirectInput...
+	I_PauseMouse();
+
    if(!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
       return false;
+
+	// [SL] ...and re-enable RawWin32Mouse's input handlers after
+	// DirectInput is reinitalized.
+	I_ResumeMouse();
 
    screenw = width;
    screenh = height;
