@@ -196,6 +196,8 @@ public:
 	void pause();
 	void resume();
 
+	void debug() const;
+
 private:
 	SDLMouse();
 	SDLMouse(const SDLMouse& other) { }

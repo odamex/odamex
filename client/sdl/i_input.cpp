@@ -1263,10 +1263,7 @@ LRESULT CALLBACK RawWin32Mouse::windowProc(HWND hwnd, UINT message, WPARAM wPara
 	}
 
 	// hand the message off to mDefaultWindowProc since it's not a WM_INPUT mouse message
-	if (mBaseWindowProc == NULL)
-		return DefWindowProc(hwnd, message, wParam, lParam);
-	else
-		return CallWindowProc(mBaseWindowProc, hwnd, message, wParam, lParam);
+	return CallWindowProc(mBaseWindowProc, hwnd, message, wParam, lParam);
 }
 
 
@@ -1329,8 +1326,9 @@ bool RawWin32Mouse::registerMouseDevice()
 		}
 
 		// remove the existing device
-		device.dwFlags |= RIDEV_REMOVE;
-		RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE));
+		device.dwFlags = RIDEV_REMOVE;
+		device.hwndTarget = NULL;
+		RegisterRawInputDevices(&device, 1, sizeof(device));
 	}
 
 	// register our raw input mouse device
@@ -1339,9 +1337,8 @@ bool RawWin32Mouse::registerMouseDevice()
 	device.dwFlags		= RIDEV_NOLEGACY;
 	device.hwndTarget	= mWindow;
 
-	mRegisteredMouseDevice = true;
-
-	return (RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE)) != FALSE);
+	mRegisteredMouseDevice = RegisterRawInputDevices(&device, 1, sizeof(device));
+	return mRegisteredMouseDevice;
 }
 
 
@@ -1353,8 +1350,6 @@ bool RawWin32Mouse::registerMouseDevice()
 //
 bool RawWin32Mouse::unregisterMouseDevice()
 {
-	bool success = false;
-
 	if (!mRegisteredMouseDevice)
 		return false;
 
@@ -1363,20 +1358,20 @@ bool RawWin32Mouse::unregisterMouseDevice()
 	if (getMouseRawInputDevice(device))
 	{
 		// remove the device
-		device.dwFlags |= RIDEV_REMOVE;
-		success = RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE));
+		device.dwFlags = RIDEV_REMOVE;
+		device.hwndTarget = NULL;
+		RegisterRawInputDevices(&device, 1, sizeof(device));
+		mRegisteredMouseDevice = false;
 	}
 
 	if (mHasBackupDevice)
 	{
 		restoreMouseDevice(device);
 		mHasBackupDevice = false;
-		RegisterRawInputDevices(&device, 1, sizeof(RAWINPUTDEVICE));
+		RegisterRawInputDevices(&device, 1, sizeof(device));
 	}
 
-	mRegisteredMouseDevice = false;
-
-	return success;
+	return mRegisteredMouseDevice == false;
 }
 
 
@@ -1581,6 +1576,37 @@ void SDLMouse::resume()
 {
 	mActive = true;
 	center();
+}
+
+
+//
+// SDLMouse::debug
+//
+void SDLMouse::debug() const
+{
+#ifdef WIN32
+	// get a handle to the window
+	SDL_SysWMinfo wminfo;
+	SDL_VERSION(&wminfo.version)
+	SDL_GetWMInfo(&wminfo);
+	HWND cur_window = wminfo.window;
+
+	// determine the hwndTarget parameter of the registered rawinput device
+	HWND hwndTarget = NULL;
+	
+	RAWINPUTDEVICE device;
+	if (getMouseRawInputDevice(device))
+	{
+		hwndTarget = device.hwndTarget;
+	}
+
+	Printf(PRINT_HIGH, "SDLMouse: Current Window Address: 0x%x, RAWINPUTDEVICE Window: 0x%x\n", 
+			cur_window, hwndTarget);
+
+	WNDPROC wndproc = (WNDPROC)GetWindowLongPtr(cur_window, GWLP_WNDPROC);
+	Printf(PRINT_HIGH, "SDLMouse: Current Window WNDPROC Address: 0x%x\n",
+			wndproc);
+#endif
 }
 
 VERSION_CONTROL (i_input_cpp, "$Id$")
