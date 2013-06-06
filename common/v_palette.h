@@ -184,6 +184,7 @@ void V_SetBlend (int blendr, int blendg, int blendb, int blenda);
 // even if the blend hasn't changed.
 void V_ForceBlend (int blendr, int blendg, int blendb, int blenda);
 
+void V_DoPaletteEffects();
 
 // Colorspace conversion RGB <-> HSV
 void RGBtoHSV (float r, float g, float b, float *h, float *s, float *v);

@@ -1105,8 +1105,6 @@ void R_SetupFrame (player_t *player)
 			BaseBlendR = BaseBlendG = BaseBlendB = 0;
 			BaseBlendA = 0.0f;
 		}
-
-		V_SetBlend(BaseBlendR, BaseBlendG, BaseBlendB, (int)(BaseBlendA * 256));
 	}
 
 	fixedcolormap = shaderef_t();
@@ -1378,8 +1376,9 @@ void R_RenderPlayerView (player_t *player)
 
 	// NOTE(jsd): Full-screen status color blending:
 	extern int BlendA, BlendR, BlendG, BlendB;
+	unsigned int blend_rgb = MAKERGB(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]);
 	if (BlendA != 0)
-		r_dimpatchD(screen, MAKERGB(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]), BlendA, 0, 0, screen->width, screen->height);
+		r_dimpatchD(screen, blend_rgb, BlendA, 0, 0, screen->width, screen->height);
 }
 
 //

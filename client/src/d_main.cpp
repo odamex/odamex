@@ -301,6 +301,7 @@ void D_Display (void)
 			CTF_DrawHud ();
 			ST_Drawer ();
 			HU_Drawer ();
+			V_DoPaletteEffects();
 			break;
 
 		case GS_INTERMISSION:

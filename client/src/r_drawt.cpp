@@ -724,23 +724,18 @@ void R_DrawSlopeSpanD_c (void)
 // Functions for v_video.cpp support
 
 void r_dimpatchD_c(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h)
-	{
-	int x, y;
-	argb_t *line;
-	int invAlpha = 256 - alpha;
-
+{
 	int dpitch = cvs->pitch / sizeof(argb_t);
-	line = (argb_t *)cvs->buffer + y1 * dpitch;
+	argb_t* line = (argb_t *)cvs->buffer + y1 * dpitch;
 
-	for (y = y1; y < y1 + h; y++)
+	for (int y = y1; y < y1 + h; y++)
 	{
-		for (x = x1; x < x1 + w; x++)
-		{
+		for (int x = x1; x < x1 + w; x++)
 			line[x] = alphablend1a(line[x], color, alpha);
-		}
+
 		line += dpitch;
 	}
-	}
+}
 
 	
 // Generic drawing functions which call either D(irect) or P(alettized) functions above:

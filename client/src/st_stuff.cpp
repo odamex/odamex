@@ -52,16 +52,6 @@
 
 #include "p_ctf.h"
 
-/* Reimplement old way of doing red/gold colors, from Chocolate Doom - ML */
-
-// Palette indices.
-// For damage/bonus red-/gold-shifts
-#define STARTREDPALS		1
-#define STARTBONUSPALS		9
-#define NUMREDPALS			8
-#define NUMBONUSPALS		4
-// Radiation suit, green shift.
-#define RADIATIONPAL		13
 
 // ST_Start() has just been called
 bool		st_firsttime;
@@ -1305,169 +1295,6 @@ void ST_Ticker (void)
 	st_oldhealth = displayplayer().health;
 }
 
-/*
-=============
-SV_AddBlend
-[RH] This is from Q2.
-=============
-*/
-void SV_AddBlend (float r, float g, float b, float a, float *v_blend)
-{
-	float a2, a3;
-
-	if (a <= 0)
-		return;
-	a2 = v_blend[3] + (1-v_blend[3])*a;	// new total alpha
-	a3 = v_blend[3]/a2;		// fraction of color from old
-
-	v_blend[0] = v_blend[0]*a3 + r*(1-a3);
-	v_blend[1] = v_blend[1]*a3 + g*(1-a3);
-	v_blend[2] = v_blend[2]*a3 + b*(1-a3);
-	v_blend[3] = a2;
-}
-
-// [RH] Amount of red flash for up to 114 damage points. Calculated by hand
-//		using a logarithmic scale and my trusty HP48G.
-static byte damageToAlpha[114] = {
-	  0,   8,  16,  23,  30,  36,  42,  47,  53,  58,  62,  67,  71,  75,  79,
-	 83,  87,  90,  94,  97, 100, 103, 107, 109, 112, 115, 118, 120, 123, 125,
-	128, 130, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157,
-	159, 160, 162, 164, 165, 167, 169, 170, 172, 173, 175, 176, 178, 179, 181,
-	182, 183, 185, 186, 187, 189, 190, 191, 192, 194, 195, 196, 197, 198, 200,
-	201, 202, 203, 204, 205, 206, 207, 209, 210, 211, 212, 213, 214, 215, 216,
-	217, 218, 219, 220, 221, 221, 222, 223, 224, 225, 226, 227, 228, 229, 229,
-	230, 231, 232, 233, 234, 235, 235, 236, 237
-};
-
-static float st_zdpalette[4];
-static int st_palette = 0;
-/* Original redscreen palette method - replaces ZDoom method - ML       */
-void ST_doPaletteStuff(void)
-{
-	byte*	pal;
-	float	cnt;
-	int		bzc;
-	float 	blend[4];
-	player_t *plyr = &displayplayer();
-
-	blend[0] = blend[1] = blend[2] = blend[3] = 0;
-
-	SV_AddBlend (BaseBlendR / 255.0f, BaseBlendG / 255.0f, BaseBlendB / 255.0f, BaseBlendA, blend);
-
-	if (!screen->is8bit() && memcmp (blend, st_zdpalette, sizeof(blend))) {
-		memcpy (st_zdpalette, blend, sizeof(blend));
-		V_SetBlend ((int)(blend[0] * 255.0f), (int)(blend[1] * 255.0f),
-					(int)(blend[2] * 255.0f), (int)(blend[3] * 256.0f));
-	}
-
-	if (!screen->is8bit())
-	{
-		// 32bpp gets color blending approximated to the original palettes:
-		if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
-			SV_AddBlend (0.0f, 1.0f, 0.0f, 0.125f, blend);
-
-		if (plyr->bonuscount)
-		{
-			cnt = (float)(plyr->bonuscount << 3);
-			SV_AddBlend (0.8431f, 0.7294f, 0.2706f, cnt > 128 ? 0.5f : cnt / 255.0f, blend);
-		}
-
-#if 0
-		// Existing 32bpp code:
-		if (plyr->damagecount < 114)
-			cnt = damageToAlpha[(int)(plyr->damagecount*r_painintensity)];
-		else
-			cnt = damageToAlpha[(int)(113*r_painintensity)];
-#else
-		// NOTE(jsd): rewritten to better match 8bpp behavior
-		// 0 <= damagecount <= 100
-		cnt = (float)plyr->damagecount*3.5f;
-		if (!multiplayer || sv_allowredscreen)
-			cnt *= r_painintensity;
-#endif
-
-		if (plyr->powers[pw_strength])
-		{
-			// slowly fade the berzerk out
-			int bzc = 128 - ((plyr->powers[pw_strength]>>3) & (~0x1f));
-
-			if (bzc > cnt)
-				cnt = bzc;
-		}
-
-		if (cnt)
-		{
-			if (cnt > 237)
-				cnt = 237;
-
-			SV_AddBlend (1.0f, 0.0f, 0.0f, (cnt + 18) / 255.0f, blend);
-		}
-	}
-	else
-	{
-		int		palette;
-
-		cnt = (float)plyr->damagecount;
-		if (!multiplayer || sv_allowredscreen)
-			cnt *= r_painintensity;
-
-		if (plyr->powers[pw_strength])
-		{
-		// slowly fade the berzerk out
-			bzc = 12 - (plyr->powers[pw_strength]>>6);
-
-			if (bzc > cnt)
-				cnt = bzc;
-		}
-
-		if (cnt)
-		{
-			palette = ((int)cnt+7)>>3;
-
-			if (gamemode == retail_chex)
-				palette = RADIATIONPAL;
-			else {
-				if (palette >= NUMREDPALS)
-					palette = NUMREDPALS-1;
-
-				palette += STARTREDPALS;
-
-				if (palette < 0)
-					palette = 0;
-			}
-		}
-		else if (plyr->bonuscount)
-		{
-			palette = (plyr->bonuscount+7)>>3;
-
-			if (palette >= NUMBONUSPALS)
-				palette = NUMBONUSPALS-1;
-
-			palette += STARTBONUSPALS;
-		}
-		else if ( plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
-			palette = RADIATIONPAL;
-		else
-			palette = 0;
-
-	if (palette != st_palette)
-	{
-		st_palette = palette;
-		pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
-
-		I_SetOldPalette (pal);
-	}
-	}
-
-	SV_AddBlend (plyr->BlendR, plyr->BlendG, plyr->BlendB, plyr->BlendA, blend);
-
-    if (memcmp (blend, st_zdpalette, sizeof(blend)))
-        memcpy (st_zdpalette, blend, sizeof(blend));
-
-	V_SetBlend ((int)(blend[0] * 255.0f), (int)(blend[1] * 255.0f),
-				(int)(blend[2] * 255.0f), (int)(blend[3] * 256.0f));
-
-}
 
 void ST_drawWidgets(bool refresh)
 {
@@ -1572,9 +1399,6 @@ void ST_Drawer (void)
 
 	// [AM] Voting HUD!
 	ST_voteDraw(11 * CleanYfac);
-
-	// Do red-/gold-shifts from damage/items
-	ST_doPaletteStuff();
 
 	// [RH] Hey, it's somewhere to put the idmypos stuff!
 	if (idmypos)
@@ -1786,8 +1610,6 @@ void ST_initData(void)
 	st_cursoron = false;
 
 	st_faceindex = 0;
-	st_palette = -1;
-	memset (st_zdpalette, 255, sizeof(st_zdpalette));
 
 	st_oldhealth = -1;
 
