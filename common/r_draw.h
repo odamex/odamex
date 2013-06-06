@@ -242,12 +242,12 @@ extern "C" byte*			ds_source;
 extern "C" int				ds_color;		// [RH] For flat color (no texturing)
 
 // [SL] 2012-03-19 - For sloped planes
-extern "C" double			ds_iu;
-extern "C" double			ds_iv;
-extern "C" double			ds_iustep;
-extern "C" double			ds_ivstep;
-extern "C" double			ds_id;
-extern "C" double			ds_idstep;
+extern "C" float			ds_iu;
+extern "C" float			ds_iv;
+extern "C" float			ds_iustep;
+extern "C" float			ds_ivstep;
+extern "C" float			ds_id;
+extern "C" float			ds_idstep;
 extern "C" shaderef_t		slopelighting[MAXWIDTH];
 
 extern byte*			translationtables;

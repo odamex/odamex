@@ -246,9 +246,9 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	}
 #endif
 
-	double iu = ds_iu, iv = ds_iv;
-	double ius = ds_iustep, ivs = ds_ivstep;
-	double id = ds_id, ids = ds_idstep;
+	float iu = ds_iu, iv = ds_iv;
+	float ius = ds_iustep, ivs = ds_ivstep;
+	float id = ds_id, ids = ds_idstep;
 	
 	// framebuffer	
 	argb_t *dest = (argb_t *)( ylookup[ds_y] + columnofs[ds_x1] );
@@ -257,33 +257,32 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	byte *src = (byte *)ds_source;
 
 	assert (ds_colsize == 1);
-	int colsize = ds_colsize;
+	const int colsize = ds_colsize;
 	int ltindex = 0;		// index into the lighting table
 
 	// Blit the bulk in batches of SPANJUMP columns:
 	while (count >= SPANJUMP)
 	{
-		double ustart, uend;
-		double vstart, vend;
-		double mulstart, mulend;
-		unsigned int ustep, vstep, ufrac, vfrac;
-		int incount;
-
-		mulstart = 65536.0f / id;
+		const float mulstart = 65536.0f / id;
 		id += ids * SPANJUMP;
-		mulend = 65536.0f / id;
+		const float mulend = 65536.0f / id;
 
-		ufrac = (int)(ustart = iu * mulstart);
-		vfrac = (int)(vstart = iv * mulstart);
+		const float ustart = iu * mulstart;
+		const float vstart = iv * mulstart;
+
+		fixed_t ufrac = (fixed_t)ustart;
+		fixed_t vfrac = (fixed_t)vstart;
+
 		iu += ius * SPANJUMP;
 		iv += ivs * SPANJUMP;
-		uend = iu * mulend;
-		vend = iv * mulend;
 
-		ustep = (int)((uend - ustart) * INTERPSTEP);
-		vstep = (int)((vend - vstart) * INTERPSTEP);
+		const float uend = iu * mulend;
+		const float vend = iv * mulend;
 
-		incount = SPANJUMP;
+		fixed_t ustep = (fixed_t)((uend - ustart) * INTERPSTEP);
+		fixed_t vstep = (fixed_t)((vend - vstart) * INTERPSTEP);
+
+		int incount = SPANJUMP;
 
 		// Blit up to the first 16-byte aligned position:
 		while ((((size_t)dest) & 15) && (incount > 0))
@@ -298,7 +297,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 
 		if (incount > 0)
 		{
-			const int rounds = incount / 4;
+			const int rounds = incount >> 2;
 			if (rounds > 0)
 			{
 				for (int i = 0; i < rounds; ++i, incount -= 4)
@@ -346,27 +345,26 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	assert(count < SPANJUMP);
 	if (count > 0)
 	{
-		double ustart, uend;
-		double vstart, vend;
-		double mulstart, mulend;
-		unsigned int ustep, vstep, ufrac, vfrac;
-		int incount;
-
-		mulstart = 65536.0f / id;
+		const float mulstart = 65536.0f / id;
 		id += ids * count;
-		mulend = 65536.0f / id;
+		const float mulend = 65536.0f / id;
 
-		ufrac = (int)(ustart = iu * mulstart);
-		vfrac = (int)(vstart = iv * mulstart);
+		const float ustart = iu * mulstart;
+		const float vstart = iv * mulstart;
+
+		fixed_t ufrac = (fixed_t)ustart;
+		fixed_t vfrac = (fixed_t)vstart;
+
 		iu += ius * count;
 		iv += ivs * count;
-		uend = iu * mulend;
-		vend = iv * mulend;
 
-		ustep = (int)((uend - ustart) / count);
-		vstep = (int)((vend - vstart) / count);
+		const float uend = iu * mulend;
+		const float vend = iv * mulend;
 
-		incount = count;
+		fixed_t ustep = (fixed_t)((uend - ustart) / count);
+		fixed_t vstep = (fixed_t)((vend - vstart) / count);
+
+		int incount = count;
 		while (incount--)
 		{
 			const shaderef_t &colormap = slopelighting[ltindex++];

@@ -812,12 +812,12 @@ byte*					ds_source;
 int 					dscount;
 
 // [SL] 2012-03-19 - For sloped planes
-double					ds_iu;
-double					ds_iv;
-double					ds_iustep;
-double					ds_ivstep;
-double					ds_id;
-double					ds_idstep;
+float					ds_iu;
+float					ds_iv;
+float					ds_iustep;
+float					ds_ivstep;
+float					ds_id;
+float					ds_idstep;
 shaderef_t				slopelighting[MAXWIDTH];
 }
 
@@ -919,9 +919,9 @@ void R_DrawSlopeSpanP(void)
 	}
 #endif
 
-	double iu = ds_iu, iv = ds_iv;
-	double ius = ds_iustep, ivs = ds_ivstep;
-	double id = ds_id, ids = ds_idstep;
+	float iu = ds_iu, iv = ds_iv;
+	float ius = ds_iustep, ivs = ds_ivstep;
+	float id = ds_id, ids = ds_idstep;
 	
 	// framebuffer	
 	byte *dest = ylookup[ds_y] + columnofs[ds_x1];
@@ -929,76 +929,75 @@ void R_DrawSlopeSpanP(void)
 	// texture data
 	byte *src = (byte *)ds_source;
 
-	int colsize = ds_colsize;
+	const int colsize = ds_colsize;
 	shaderef_t colormap;
 	int ltindex = 0;		// index into the lighting table
 
-   while(count >= SPANJUMP)
-   {
-      double ustart, uend;
-      double vstart, vend;
-      double mulstart, mulend;
-      unsigned int ustep, vstep, ufrac, vfrac;
-      int incount;
+	while (count >= SPANJUMP)
+	{
+		const float mulstart = 65536.0f / id;
+		id += ids * SPANJUMP;
+		const float mulend = 65536.0f / id;
 
-      mulstart = 65536.0f / id;
-      id += ids * SPANJUMP;
-      mulend = 65536.0f / id;
+		const float ustart = iu * mulstart;
+		const float vstart = iv * mulstart;
 
-      ufrac = (int)(ustart = iu * mulstart);
-      vfrac = (int)(vstart = iv * mulstart);
-      iu += ius * SPANJUMP;
-      iv += ivs * SPANJUMP;
-      uend = iu * mulend;
-      vend = iv * mulend;
+		fixed_t ufrac = (fixed_t)ustart;
+		fixed_t vfrac = (fixed_t)vstart;
 
-      ustep = (int)((uend - ustart) * INTERPSTEP);
-      vstep = (int)((vend - vstart) * INTERPSTEP);
+		iu += ius * SPANJUMP;
+		iv += ivs * SPANJUMP;
 
-      incount = SPANJUMP;
-      while(incount--)
-      {
-         colormap = slopelighting[ltindex++];
-         *dest = colormap.index(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
-         dest += colsize;
-         ufrac += ustep;
-         vfrac += vstep;
-      }
+		const float uend = iu * mulend;
+		const float vend = iv * mulend;
 
-      count -= SPANJUMP;
-   }
-   if (count > 0)
-   {
-      double ustart, uend;
-      double vstart, vend;
-      double mulstart, mulend;
-      unsigned int ustep, vstep, ufrac, vfrac;
-      int incount;
+		fixed_t ustep = (fixed_t)((uend - ustart) * INTERPSTEP);
+		fixed_t vstep = (fixed_t)((vend - vstart) * INTERPSTEP);
 
-      mulstart = 65536.0f / id;
-      id += ids * count;
-      mulend = 65536.0f / id;
+		int incount = SPANJUMP;
+		while (incount--)
+		{
+			colormap = slopelighting[ltindex++];
+			*dest = colormap.index(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
+			dest += colsize;
+			ufrac += ustep;
+			vfrac += vstep;
+		}
 
-      ufrac = (int)(ustart = iu * mulstart);
-      vfrac = (int)(vstart = iv * mulstart);
-      iu += ius * count;
-      iv += ivs * count;
-      uend = iu * mulend;
-      vend = iv * mulend;
+		count -= SPANJUMP;
+	}
 
-      ustep = (int)((uend - ustart) / count);
-      vstep = (int)((vend - vstart) / count);
+	if (count > 0)
+	{
+		const float mulstart = 65536.0f / id;
+		id += ids * count;
+		const float mulend = 65536.0f / id;
 
-      incount = count;
-      while(incount--)
-      {
-         colormap = slopelighting[ltindex++];
-         *dest = colormap.index(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
-         dest += colsize;
-         ufrac += ustep;
-         vfrac += vstep;
-      }
-   }
+		const float ustart = iu * mulstart;
+		const float vstart = iv * mulstart;
+
+		fixed_t ufrac = (fixed_t)ustart;
+		fixed_t vfrac = (fixed_t)vstart;
+
+		iu += ius * count;
+		iv += ivs * count;
+
+		const float uend = iu * mulend;
+		const float vend = iv * mulend;
+
+		fixed_t ustep = (fixed_t)((uend - ustart) / count);
+		fixed_t vstep = (fixed_t)((vend - vstart) / count);
+
+		int incount = count;
+		while (incount--)
+		{
+			colormap = slopelighting[ltindex++];
+			*dest = colormap.index(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
+			dest += colsize;
+			ufrac += ustep;
+			vfrac += vstep;
+		}
+	}
 }
 
 //
@@ -1027,9 +1026,9 @@ void R_DrawSlopeSpanIdealP_C(void)
 	}
 #endif
 
-	double iu = ds_iu, iv = ds_iv;
-	double ius = ds_iustep, ivs = ds_ivstep;
-	double id = ds_id, ids = ds_idstep;
+	float iu = ds_iu, iv = ds_iv;
+	float ius = ds_iustep, ivs = ds_ivstep;
+	float id = ds_id, ids = ds_idstep;
 	
 	// framebuffer	
 	byte *dest = ylookup[ds_y] + columnofs[ds_x1];

@@ -641,9 +641,9 @@ void R_DrawSlopeSpanD_c (void)
 	}
 #endif
 
-	double iu = ds_iu, iv = ds_iv;
-	double ius = ds_iustep, ivs = ds_ivstep;
-	double id = ds_id, ids = ds_idstep;
+	float iu = ds_iu, iv = ds_iv;
+	float ius = ds_iustep, ivs = ds_ivstep;
+	float id = ds_id, ids = ds_idstep;
 
 	// framebuffer	
 	argb_t *dest = (argb_t *)( ylookup[ds_y] + columnofs[ds_x1] );
@@ -651,33 +651,32 @@ void R_DrawSlopeSpanD_c (void)
 	// texture data
 	byte *src = (byte *)ds_source;
 
-	int colsize = ds_colsize;
+	const int colsize = ds_colsize;
 	shaderef_t colormap;
 	int ltindex = 0;		// index into the lighting table
 
-	while(count >= SPANJUMP)
+	while (count >= SPANJUMP)
 	{
-		double ustart, uend;
-		double vstart, vend;
-		double mulstart, mulend;
-		unsigned int ustep, vstep, ufrac, vfrac;
-		int incount;
-
-		mulstart = 65536.0f / id;
+		const float mulstart = 65536.0f / id;
 		id += ids * SPANJUMP;
-		mulend = 65536.0f / id;
+		const float mulend = 65536.0f / id;
 
-		ufrac = (int)(ustart = iu * mulstart);
-		vfrac = (int)(vstart = iv * mulstart);
+		const float ustart = iu * mulstart;
+		const float vstart = iv * mulstart;
+
+		fixed_t ufrac = (fixed_t)ustart;
+		fixed_t vfrac = (fixed_t)vstart;
+
 		iu += ius * SPANJUMP;
 		iv += ivs * SPANJUMP;
-		uend = iu * mulend;
-		vend = iv * mulend;
 
-		ustep = (int)((uend - ustart) * INTERPSTEP);
-		vstep = (int)((vend - vstart) * INTERPSTEP);
+		const float uend = iu * mulend;
+		const float vend = iv * mulend;
 
-		incount = SPANJUMP;
+		fixed_t ustep = (fixed_t)((uend - ustart) * INTERPSTEP);
+		fixed_t vstep = (fixed_t)((vend - vstart) * INTERPSTEP);
+
+		int incount = SPANJUMP;
 		while(incount--)
 		{
 			colormap = slopelighting[ltindex++];
@@ -685,33 +684,32 @@ void R_DrawSlopeSpanD_c (void)
 			dest += colsize;
 			ufrac += ustep;
 			vfrac += vstep;
-}
+		}
 
 		count -= SPANJUMP;
 	}
 	if (count > 0)
-{
-		double ustart, uend;
-		double vstart, vend;
-		double mulstart, mulend;
-		unsigned int ustep, vstep, ufrac, vfrac;
-		int incount;
-
-		mulstart = 65536.0f / id;
+	{
+		const float mulstart = 65536.0f / id;
 		id += ids * count;
-		mulend = 65536.0f / id;
+		const float mulend = 65536.0f / id;
 
-		ufrac = (int)(ustart = iu * mulstart);
-		vfrac = (int)(vstart = iv * mulstart);
+		const float ustart = iu * mulstart;
+		const float vstart = iv * mulstart;
+
+		fixed_t ufrac = (fixed_t)ustart;
+		fixed_t vfrac = (fixed_t)vstart;
+
 		iu += ius * count;
 		iv += ivs * count;
-		uend = iu * mulend;
-		vend = iv * mulend;
 
-		ustep = (int)((uend - ustart) / count);
-		vstep = (int)((vend - vstart) / count);
+		const float uend = iu * mulend;
+		const float vend = iv * mulend;
 
-		incount = count;
+		fixed_t ustep = (fixed_t)((uend - ustart) / count);
+		fixed_t vstep = (fixed_t)((vend - vstart) / count);
+
+		int incount = count;
 		while(incount--)
 		{
 			colormap = slopelighting[ltindex++];
