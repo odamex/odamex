@@ -57,8 +57,8 @@ planefunction_t 		ceilingfunc;
 // Here comes the obnoxious "visplane".
 #define MAXVISPLANES 128    /* must be a power of 2 */
 
-static const double flatwidth = 64.0;
-static const double flatheight = 64.0;
+static const float flatwidth = 64.0f;
+static const float flatheight = 64.0f;
 
 static visplane_t		*visplanes[MAXVISPLANES];	// killough
 static visplane_t		*freetail;					// killough
@@ -100,7 +100,8 @@ int 					*spanstart;
 // texture mapping
 //
 extern fixed_t FocalLengthX, FocalLengthY;
-extern double focratio, ifocratio;
+extern float xfoc, yfoc;
+extern float focratio, ifocratio;
 
 int*					planezlight;
 float					plight, shade;
@@ -109,12 +110,11 @@ fixed_t 				*yslope;
 static fixed_t			planeheight;
 
 static fixed_t			pl_xscale, pl_yscale;
-static fixed_t			pl_sin, pl_cos;
 static fixed_t			pl_viewsin, pl_viewcos;
 static fixed_t			pl_viewxtrans, pl_viewytrans;
 static fixed_t			pl_xstepscale, pl_ystepscale;
 
-v3double_t				a, b, c;
+v3float_t				a, b, c;
 float					ixscale, iyscale;
 
 EXTERN_CVAR (r_skypalette)
@@ -144,45 +144,42 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 		return;
 
 	// center of the view plane
-	v3double_t s;
+	v3float_t s;
 	s.x = x1 - centerx;
-	s.y = y - centery + 1;
-	s.z = FIXED2DOUBLE(FocalLengthX);
+	s.y = y - centery + 1.0f;
+	s.z = xfoc; 
 
-	ds_iu = M_DotProductVec3(&s, &a) * flatwidth;
-	ds_iv = M_DotProductVec3(&s, &b) * flatheight;
-	ds_id = M_DotProductVec3(&s, &c);
+	ds_iu = M_DotProductVec3f(&s, &a) * flatwidth;
+	ds_iv = M_DotProductVec3f(&s, &b) * flatheight;
+	ds_id = M_DotProductVec3f(&s, &c);
 	
 	ds_iustep = a.x * flatwidth;
 	ds_ivstep = b.x * flatheight;
 	ds_idstep = c.x;
 
 	// From R_SlopeLights, Eternity Engine
-	double map1, map2;
-	map1 = 256.0 - (shade - plight * ds_id);
-	if (len > 1)
-	{
-		double id = ds_id + ds_idstep * (x2 - x1);
-		map2 = 256.0 - (shade - plight * id);
-	}
-	else
-		map2 = map1;
+	float id = ds_id + ds_idstep * (x2 - x1);
+	float map1 = 256.0f - (shade - plight * ds_id);
+	float map2 = 256.0f - (shade - plight * id);
 
 	if (fixedlightlev)
+	{
 		for (int i = 0; i < len; i++)
 			slopelighting[i] = basecolormap.with(fixedlightlev);
+	}
 	else if (fixedcolormap.isValid())
+	{
 		for (int i = 0; i < len; i++)
 			slopelighting[i] = fixedcolormap;
+	}
 	else
 	{
-		fixed_t mapstart = FLOAT2FIXED((256.0 - map1) / 256.0 * NUMCOLORMAPS);
-		fixed_t mapend = FLOAT2FIXED((256.0 - map2) / 256.0 * NUMCOLORMAPS);
+		fixed_t mapstart = FLOAT2FIXED((256.0f - map1) / 256.0f * NUMCOLORMAPS);
+		fixed_t mapend = FLOAT2FIXED((256.0f - map2) / 256.0f * NUMCOLORMAPS);
 		fixed_t map = mapstart;
 		fixed_t step = 0;
 
-		if (len > 1)
-			step = (mapend - mapstart) / (len - 1);
+		step = (mapend - mapstart) / len;
 
 		for (int i = 0; i < len; i++)
 		{
@@ -582,71 +579,94 @@ void R_MakeSpans(visplane_t *pl, void(*spanfunc)(int, int, int))
 //
 void R_DrawSlopedPlane(visplane_t *pl)
 {
-	double sinang = FIXED2DOUBLE(finesine[(pl->angle + ANG90) >> ANGLETOFINESHIFT]);
-	double cosang = FIXED2DOUBLE(finecosine[(pl->angle + ANG90) >> ANGLETOFINESHIFT]);
-	
-	double xoffsf = FIXED2DOUBLE(pl->xoffs);
-	double yoffsf = FIXED2DOUBLE(pl->yoffs);
+	const float xoffsf = FIXED2FLOAT(pl->xoffs);
+	const float yoffsf = FIXED2FLOAT(pl->yoffs);
+	const float scaledflatwidth = flatwidth * FIXED2FLOAT(pl->xscale);
+	const float scaledflatheight = flatheight * FIXED2FLOAT(pl->yscale);
 
-	// Scale the flat's texture
-	double scaledflatwidth = flatwidth * FIXED2DOUBLE(pl->xscale);
-	double scaledflatheight = flatheight * FIXED2DOUBLE(pl->yscale);
-	
-	v3double_t p, t, s, m, n, viewpos;
-	
-	M_SetVec3(&viewpos, viewx, viewy, viewz);
+	v3float_t p, t, s, viewpos;
+	M_SetVec3f(&viewpos, viewx, viewy, viewz);
 
-	// Point p is the anchor point of the texture.  It starts out as the
-	// map coordinate (0, 0, planez(0,0)) but texture offset and rotation get applied
-	p.x = -yoffsf * cosang - xoffsf * sinang;
-	p.z = -xoffsf * cosang + yoffsf * sinang;
-	p.y = P_PlaneZ(p.x, p.z, &pl->secplane);
+	// [SL] optimize when the texture rotation angle is zero (most of the time)
+	// This eliminates several multiplies and improves visibile accuracy as the
+	// finesine/cosine tables do not have an exact value for angle 0
+	if (pl->angle == 0)
+	{
+		// Point p is the anchor point of the texture.  It starts out as the
+		// map coordinate (0, 0, planez(0,0)) but texture offset gets applied
+		p.x = -xoffsf;
+		p.z = yoffsf;
+		p.y = P_PlaneZ(p.x, p.z, &pl->secplane);
 
-	// Point t is the point along the plane (texwidth, 0, planez(texwidth, 0)) with texture
-	// offset and rotation applied
-	t.x = p.x - scaledflatwidth * sinang;
-	t.z = p.z + scaledflatwidth * cosang;
-	t.y = P_PlaneZ(t.x, t.z, &pl->secplane);
+		// Point t is the point along the plane (texwidth, 0, planez(texwidth, 0)) with texture
+		// offset applied
+		t.x = p.x - scaledflatwidth;
+		t.z = p.z;
+		t.y = P_PlaneZ(t.x, t.z, &pl->secplane);
 
-	// Point s is the point along the plane (0, texheight, planez(0, texheight)) with texture
-	// offset and rotation applied
-	s.x = p.x + scaledflatheight * cosang;
-	s.z = p.z + scaledflatheight * sinang;
-	s.y = P_PlaneZ(s.x, s.z, &pl->secplane);
-	
+		// Point s is the point along the plane (0, texheight, planez(0, texheight)) with texture
+		// offset applied
+		s.x = p.x;
+		s.z = p.z + scaledflatheight;
+		s.y = P_PlaneZ(s.x, s.z, &pl->secplane);
+	}
+	else
+	{
+		float sinang = FIXED2FLOAT(finesine[(pl->angle + ANG90) >> ANGLETOFINESHIFT]);
+		float cosang = FIXED2FLOAT(finecosine[(pl->angle + ANG90) >> ANGLETOFINESHIFT]);
+
+		// Point p is the anchor point of the texture.  It starts out as the
+		// map coordinate (0, 0, planez(0,0)) but texture offset and rotation get applied
+		p.x = -yoffsf * cosang - xoffsf * sinang;
+		p.z = -xoffsf * cosang + yoffsf * sinang;
+		p.y = P_PlaneZ(p.x, p.z, &pl->secplane);
+
+		// Point t is the point along the plane (texwidth, 0, planez(texwidth, 0)) with texture
+		// offset and rotation applied
+		t.x = p.x - scaledflatwidth * sinang;
+		t.z = p.z + scaledflatwidth * cosang;
+		t.y = P_PlaneZ(t.x, t.z, &pl->secplane);
+
+		// Point s is the point along the plane (0, texheight, planez(0, texheight)) with texture
+		// offset and rotation applied
+		s.x = p.x + scaledflatheight * cosang;
+		s.z = p.z + scaledflatheight * sinang;
+		s.y = P_PlaneZ(s.x, s.z, &pl->secplane);
+	}
+
 	// Translate the points to their position relative to viewx, viewy and
 	// rotate them based on viewangle
 	angle_t rotation = (angle_t)(-(int)viewangle + ANG90);
-	M_TranslateVec3(&p, &viewpos, rotation);
-	M_TranslateVec3(&t, &viewpos, rotation);
-	M_TranslateVec3(&s, &viewpos, rotation);
+	M_TranslateVec3f(&p, &viewpos, rotation);
+	M_TranslateVec3f(&t, &viewpos, rotation);
+	M_TranslateVec3f(&s, &viewpos, rotation);
 	
-	// Create direction vector m from point p to point t, and n from point p to point s
-	M_SubVec3(&m, &t, &p);
-	M_SubVec3(&n, &s, &p);
+	// Subtract p from t and s, making t and s into direction vectors
+	M_SubVec3f(&t, &t, &p);
+	M_SubVec3f(&s, &s, &p);
 	
-	M_CrossProductVec3(&a, &p, &n);
-	M_CrossProductVec3(&b, &m, &p);
-	M_CrossProductVec3(&c, &m, &n);
+	M_CrossProductVec3f(&a, &p, &s);
+	M_CrossProductVec3f(&b, &t, &p);
+	M_CrossProductVec3f(&c, &t, &s);
 
-	M_ScaleVec3(&a, &a, 0.5);
-	M_ScaleVec3(&b, &b, 0.5);
-	M_ScaleVec3(&c, &c, 0.5);
-	
+	M_ScaleVec3f(&a, &a, 0.5f);
+	M_ScaleVec3f(&b, &b, 0.5f);
+	M_ScaleVec3f(&c, &c, 0.5f);
+
 	a.y *= ifocratio;
 	b.y *= ifocratio;
 	c.y *= ifocratio;		
 	
 	// (SoM) More help from randy. I was totally lost on this... 
-	double scalenumer = FIXED2DOUBLE(finetangent[FINEANGLES/4+CorrectFieldOfView/2]);
-	double ixscale = scalenumer / flatwidth;
-	double iyscale = scalenumer / flatheight;
+	float scalenumer = FIXED2FLOAT(finetangent[FINEANGLES/4+CorrectFieldOfView/2]);
+	float ixscale = scalenumer / flatwidth;
+	float iyscale = scalenumer / flatheight;
 
-	double zat = P_PlaneZ(viewpos.x, viewpos.y, &pl->secplane);
+	float zat = P_PlaneZ(viewpos.x, viewpos.y, &pl->secplane);
 
 	angle_t fovang = ANG(consoleplayer().fov / 2.0f);
-	double slopetan = FIXED2DOUBLE(finetangent[fovang >> ANGLETOFINESHIFT]);
-	double slopevis = 8.0 * slopetan * 16.0 * 320.0 / double(screen->width);
+	float slopetan = FIXED2FLOAT(finetangent[fovang >> ANGLETOFINESHIFT]);
+	float slopevis = 8.0 * slopetan * 16.0 * 320.0 / float(screen->width);
 	
 	plight = (slopevis * ixscale * iyscale) / (zat - viewpos.z);
 	shade = 256.0 * 2.0 - (pl->lightlevel + 16.0) * 256.0 / 128.0;
@@ -658,6 +678,9 @@ void R_DrawSlopedPlane(visplane_t *pl)
 
 void R_DrawLevelPlane(visplane_t *pl)
 {
+	// viewx/viewy rotated by the texture rotation angle
+	fixed_t pl_viewx, pl_viewy;
+
 	// texture scaling factor
 	pl_xscale = pl->xscale << 10;
 	pl_yscale = pl->yscale << 10;
@@ -666,12 +689,22 @@ void R_DrawLevelPlane(visplane_t *pl)
 	pl_viewsin = finesine[(viewangle + pl->angle) >> ANGLETOFINESHIFT];
 	pl_viewcos = finecosine[(viewangle + pl->angle) >> ANGLETOFINESHIFT];
 
-	pl_cos = finecosine[pl->angle >> ANGLETOFINESHIFT];
-	pl_sin = finesine[pl->angle >> ANGLETOFINESHIFT];
-
-	// viewx/viewy rotated by the texture rotation angle
-	fixed_t pl_viewx = FixedMul(viewx, pl_cos) - FixedMul(viewy, pl_sin);
-	fixed_t pl_viewy = -(FixedMul(viewx, pl_sin) + FixedMul(viewy, pl_cos));
+	// [SL] If the texture isn't rotated, we can optimize out a few multiplies
+	// and avoid using the finesine/cosine tables since they do not have exact
+	// values for angle 0. This helps the texture to line up correctly.
+	if (pl->angle == 0)
+	{
+		pl_viewx = viewx;
+		pl_viewy = -viewy;
+	}
+	else
+	{
+		const fixed_t pl_cos = finecosine[pl->angle >> ANGLETOFINESHIFT];
+		const fixed_t pl_sin = finesine[pl->angle >> ANGLETOFINESHIFT];
+		
+		pl_viewx = FixedMul(viewx, pl_cos) - FixedMul(viewy, pl_sin);
+		pl_viewy = -(FixedMul(viewx, pl_sin) + FixedMul(viewy, pl_cos));
+	}
 
 	// cache a calculation used by R_MapLevelPlane
 	pl_xstepscale = FixedMul(pl_viewsin, pl->xscale) << 10;
@@ -687,13 +720,7 @@ void R_DrawLevelPlane(visplane_t *pl)
 	// so just use (0, 0) when calculating the plane's z height
 	planeheight = abs(P_PlaneZ(0, 0, &pl->secplane) - viewz);
 
-	int light = (pl->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
-
-	if (light >= LIGHTLEVELS)
-		light = LIGHTLEVELS-1;
-	else if (light < 0)
-		light = 0;
-
+	int light = clamp((pl->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight), 0, LIGHTLEVELS - 1);
 	planezlight = zlight[light];
 
 	R_MakeSpans(pl, R_MapLevelPlane);

@@ -87,7 +87,7 @@ static fixed_t wallscalex[MAXWIDTH];
 static int texoffs[MAXWIDTH];
 
 extern fixed_t FocalLengthY;
-extern double yfoc;
+extern float yfoc;
 
 static int  	*maskedtexturecol;
 
@@ -129,16 +129,16 @@ static void R_FillWallHeightArray(
 	int *array, 
 	int start, int stop,
 	fixed_t val1, fixed_t val2, 
-	double scale1, double scale2)
+	float scale1, float scale2)
 {
 	if (start > stop)
 		return;
 
-	double h1 = FIXED2DOUBLE(val1 - viewz) * scale1;
-	double h2 = FIXED2DOUBLE(val2 - viewz) * scale2;
+	float h1 = FIXED2FLOAT(val1 - viewz) * scale1;
+	float h2 = FIXED2FLOAT(val2 - viewz) * scale2;
 	
-	double step = (h2 - h1) / (stop - start + 1);
-	double frac = double(centery) - h1;
+	float step = (h2 - h1) / (stop - start + 1);
+	float frac = float(centery) - h1;
 
 	for (int i = start; i <= stop; i++)
 	{
@@ -657,10 +657,10 @@ static void R_AdjustOpenings(int start, int stop)
 
 static fixed_t R_LineLength(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2)
 {
-	double dx = FIXED2DOUBLE(px2 - px1);
-	double dy = FIXED2DOUBLE(py2 - py1);
+	float dx = FIXED2FLOAT(px2 - px1);
+	float dy = FIXED2FLOAT(py2 - py1);
 
-	return DOUBLE2FIXED(sqrt(dx*dx + dy*dy));
+	return FLOAT2FIXED(sqrt(dx*dx + dy*dy));
 }
 
 //
@@ -699,24 +699,24 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 	dist2 = clamp(dist2, mindist, maxdist);
 
 	// calculate texture coordinates at the line's endpoints
-	double scale1 = yfoc / FIXED2DOUBLE(dist1);
-	double scale2 = yfoc / FIXED2DOUBLE(dist2);
+	float scale1 = yfoc / FIXED2FLOAT(dist1);
+	float scale2 = yfoc / FIXED2FLOAT(dist2);
 
 	// [SL] Quick note on texture mapping: we can not linearly interpolate along the length of the seg
 	// as it will yield evenly spaced texels instead of correct perspective (taking depth Z into account).
 	// We also can not linearly interpolate Z, but we can linearly interpolate 1/Z (scale), so we linearly
 	// interpolate the texture coordinates u / Z and then divide by 1/Z to get the correct u for each column.
 
-	double scalestep = (scale2 - scale1) / width;
-	double uinvzstep = FIXED2DOUBLE(seglen) * scale2 / width;
+	float scalestep = (scale2 - scale1) / width;
+	float uinvzstep = FIXED2FLOAT(seglen) * scale2 / width;
 
 	// fill the texture column array
-	double uinvz = 0.0;
-	double curscale = scale1;
+	float uinvz = 0.0f;
+	float curscale = scale1;
 	for (int i = start; i <= stop; i++)
 	{
-		wallscalex[i] = DOUBLE2FIXED(curscale);
-		texoffs[i] = segoffs + DOUBLE2FIXED(uinvz / curscale);
+		wallscalex[i] = FLOAT2FIXED(curscale);
+		texoffs[i] = segoffs + FLOAT2FIXED(uinvz / curscale);
 
 		uinvz += uinvzstep;
 		curscale += scalestep;
@@ -765,7 +765,7 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 			memcpy(walltopf+start, walltopb+start, width*sizeof(*walltopb));
 	}
 
-	rw_scalestep = DOUBLE2FIXED(scalestep);
+	rw_scalestep = FLOAT2FIXED(scalestep);
 }
 
 //

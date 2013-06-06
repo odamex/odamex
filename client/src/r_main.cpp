@@ -60,11 +60,11 @@ EXTERN_CVAR (sv_allowwidescreen)
 static float	LastFOV = 0.0f;
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
-double			xfoc;		// FIXED2DOUBLE(FocalLengthX)
-double			yfoc;		// FIXED2DOUBLE(FocalLengthY)
+float			xfoc;		// FIXEDFLOAT(FocalLengthX)
+float			yfoc;		// FIXEDFLOAT(FocalLengthY)
 fixed_t			fovtan;
-double			focratio;
-double			ifocratio;
+float			focratio;
+float			ifocratio;
 int 			viewangleoffset = 0;
 
 // increment every time a check is made
@@ -574,8 +574,8 @@ void R_InitTextureMapping (void)
 	// Calc focallength so FieldOfView angles covers viewwidth.
 	FocalLengthX = FixedDiv (centerxfrac, hitan);
 	FocalLengthY = FixedDiv (FixedMul (centerxfrac, yaspectmul), hitan);
-	xfoc = FIXED2DOUBLE(FocalLengthX);
-	yfoc = FIXED2DOUBLE(FocalLengthY);
+	xfoc = FIXED2FLOAT(FocalLengthX);
+	yfoc = FIXED2FLOAT(FocalLengthY);
 
 	focratio = yfoc / xfoc;
 	ifocratio = xfoc / yfoc;
