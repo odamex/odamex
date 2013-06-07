@@ -75,6 +75,7 @@ struct dyncolormap_s {
 };
 typedef struct dyncolormap_s dyncolormap_t;
 
+extern byte newgamma[256];
 
 // Alpha blend between two RGB colors with only dest alpha value
 // 0 <=   toa <= 256

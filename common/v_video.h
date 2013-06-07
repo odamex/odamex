@@ -461,9 +461,6 @@ extern	DCanvas *screen;
 
 extern	DBoundingBox 	dirtybox;
 
-extern byte newgamma[256];
-EXTERN_CVAR (gammalevel)
-
 // Translucency tables
 extern argb_t Col2RGB8[65][256];
 extern palindex_t RGB32k[32][32][32];

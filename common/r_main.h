@@ -237,10 +237,11 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	byte a = 255 - ramp();
 	argb_t t = translationRGB[pid][c - 0x70];
 	argb_t s = MAKERGB(
-		RPART(t) * RPART(lightcolor) * a / (255 * 255),
-		GPART(t) * GPART(lightcolor) * a / (255 * 255),
-		BPART(t) * BPART(lightcolor) * a / (255 * 255)
+		newgamma[RPART(t) * RPART(lightcolor) * a / (255 * 255)],
+		newgamma[GPART(t) * GPART(lightcolor) * a / (255 * 255)],
+		newgamma[BPART(t) * BPART(lightcolor) * a / (255 * 255)]
 	);
+
 	return s;
 }
 

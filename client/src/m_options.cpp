@@ -93,6 +93,7 @@ EXTERN_CVAR (hud_crosshair)
 EXTERN_CVAR (hud_crosshairhealth)
 EXTERN_CVAR (hud_crosshairscale)
 EXTERN_CVAR (cl_mouselook)
+EXTERN_CVAR (gammalevel)
 EXTERN_CVAR (r_detail)
 EXTERN_CVAR (language)
 

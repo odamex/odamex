@@ -48,6 +48,7 @@
 // Radiation suit, green shift.
 #define RADIATIONPAL		13
 
+EXTERN_CVAR(gammalevel)
 EXTERN_CVAR(vid_gammatype)
 EXTERN_CVAR(r_painintensity)
 EXTERN_CVAR(sv_allowredscreen)
