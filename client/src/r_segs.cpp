@@ -65,7 +65,7 @@ fixed_t			rw_light;		// [RH] Use different scaling for lights
 fixed_t			rw_lightstep;
 
 static int		rw_x;
-static int		rw_stopx;
+static int		rw_stop;
 static fixed_t	rw_scale;
 static fixed_t	rw_scalestep;
 static fixed_t	rw_midtexturemid;
@@ -502,14 +502,24 @@ static inline void R_SetColumnColormap()
 //		on a Pentium II, can be slower than R_RenderSegLoop2().
 void R_RenderSegLoop1 (void)
 {
-	for ( ; rw_x < rw_stopx ; rw_x++)
+	while (rw_x <= rw_stop)
 	{
 		dc_x = rw_x;
 		R_SetColumnColormap();
 		BlastColumn(colfunc);
+		rw_x++;
 	}
 }
 
+
+//
+// R_RenderSegRange
+//
+// Renders a seg range to the screen using a temporary buffer to write the
+// columns horizontally and then blit to the screen. Writing columns
+// horizontally utilizes the cache much better than writing columns vertically
+// to the screen buffer.
+//
 // [RH] This is a cache optimized version of R_RenderSegLoop(). It first
 //		draws columns into a temporary buffer with a pitch of 4 and then
 //		copies them to the framebuffer using a bunch of byte, word, and
@@ -519,26 +529,25 @@ void R_RenderSegLoop1 (void)
 //		On a Pentium II 300, using this code with rendering functions in
 //		C is about twice as fast as using R_RenderSegLoop1() with an
 //		assembly rendering function.
-
-void R_RenderSegLoop2 (void)
+//
+void R_RenderSegRange(int start, int stop)
 {
-	int stop = rw_stopx & ~3;
-
-	if (rw_x >= rw_stopx)
+	if (start > stop)
 		return;
 
-	R_SetColumnColormap();
+	rw_x = start;
 
+	// render until rw_x is dword aligned
+	R_SetColumnColormap();
 	if (rw_x & 1)
 	{
 		dc_x = rw_x;
 		BlastColumn(colfunc);
 		rw_x++;
 	}
-
 	if (rw_x & 2)
 	{
-		if (rw_x < rw_stopx - 1)
+		if (rw_x < stop)
 		{
 			rt_initcols();
 			dc_x = 0;
@@ -549,7 +558,7 @@ void R_RenderSegLoop2 (void)
 			rt_draw2cols(0, rw_x - 1);
 			rw_x++;
 		}
-		else if (rw_x == rw_stopx - 1)
+		else if (rw_x == stop)
 		{
 			dc_x = rw_x;
 			BlastColumn(colfunc);
@@ -557,7 +566,9 @@ void R_RenderSegLoop2 (void)
 		}
 	}
 
-	while (rw_x < stop)
+	// render in 4 column blocks
+	int blockend = (stop + 1) & ~3;
+	while (rw_x < blockend)
 	{
 		R_SetColumnColormap();
 
@@ -576,16 +587,10 @@ void R_RenderSegLoop2 (void)
 		rt_draw4cols(rw_x - 3);
 		rw_x++;
 	}
-	
-	R_SetColumnColormap();
 
-	if (rw_stopx - rw_x == 1)
-	{
-		dc_x = rw_x;
-		BlastColumn(colfunc);
-		rw_x++;
-	}
-	else if (rw_stopx - rw_x >= 2)
+	// render any remaining columns	
+	R_SetColumnColormap();
+	if (rw_x < stop)
 	{
 		rt_initcols();
 		dc_x = 0;
@@ -594,14 +599,26 @@ void R_RenderSegLoop2 (void)
 		dc_x = 1;
 		BlastColumn(hcolfunc_pre);
 		rt_draw2cols(0, rw_x - 1);
+		rw_x++;
 
-		if (++rw_x < rw_stopx)
+		if (rw_x <= stop)
 		{
 			dc_x = rw_x;
 			BlastColumn(colfunc);
 			rw_x++;
 		}
 	}
+	else if (rw_x == stop)
+	{
+		dc_x = rw_x;
+		BlastColumn(colfunc);
+		rw_x++;
+	}
+}
+
+void R_RenderSegLoop2 (void)
+{
+	R_RenderSegRange(rw_x, rw_stop);
 }
 
 extern int *openings;
@@ -772,6 +789,8 @@ void R_StoreWallRange(int start, int stop)
 	if (start > stop)
 		return;
 
+	int count = stop - start + 1;
+
 	R_ReallocDrawSegs();	// don't overflow and crash
 
 	sidedef = curline->sidedef;
@@ -781,9 +800,8 @@ void R_StoreWallRange(int start, int stop)
 	linedef->flags |= ML_MAPPED;
 
 	ds_p->x1 = rw_x = start;
-	ds_p->x2 = stop;
+	ds_p->x2 = rw_stop = stop;
 	ds_p->curline = curline;
-	rw_stopx = stop+1;
 
 	// killough: remove limits on openings
 	R_AdjustOpenings(start, stop);
@@ -972,7 +990,7 @@ void R_StoreWallRange(int start, int stop)
 			// masked midtexture
 			maskedtexture = sidedef->midtexture;
 			ds_p->maskedtexturecol = maskedtexturecol = lastopening - rw_x;
-			lastopening += rw_stopx - rw_x;
+			lastopening += count; 
 		}
 
 		// [SL] additional fix for sky hack
@@ -1034,12 +1052,12 @@ void R_StoreWallRange(int start, int stop)
 
 	// render it
 	if (markceiling && ceilingplane)
-		ceilingplane = R_CheckPlane(ceilingplane, rw_x, rw_stopx-1);
+		ceilingplane = R_CheckPlane(ceilingplane, rw_x, rw_stop);
 	else
 		markceiling = 0;
 
 	if (markfloor && floorplane)
-		floorplane = R_CheckPlane(floorplane, rw_x, rw_stopx-1);
+		floorplane = R_CheckPlane(floorplane, rw_x, rw_stop);
 	else
 		markfloor = 0;
 
@@ -1049,17 +1067,17 @@ void R_StoreWallRange(int start, int stop)
     if ( ((ds_p->silhouette & SIL_TOP) || maskedtexture)
 		 && !ds_p->sprtopclip)
 	{
-		memcpy (lastopening, ceilingclip+start, sizeof(*lastopening)*(rw_stopx-start));
+		memcpy (lastopening, ceilingclip+start, sizeof(*lastopening)*(count));
 		ds_p->sprtopclip = lastopening - start;
-		lastopening += rw_stopx - start;
+		lastopening += count;
 	}
 
     if ( ((ds_p->silhouette & SIL_BOTTOM) || maskedtexture)
 		 && !ds_p->sprbottomclip)
 	{
-		memcpy (lastopening, floorclip+start, sizeof(*lastopening)*(rw_stopx-start));
+		memcpy (lastopening, floorclip+start, sizeof(*lastopening)*(count));
 		ds_p->sprbottomclip = lastopening - start;
-		lastopening += rw_stopx - start;
+		lastopening += count;
 	}
 
 	if (maskedtexture && !(ds_p->silhouette & SIL_TOP))
