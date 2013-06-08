@@ -94,13 +94,43 @@ static int  	*maskedtexturecol;
 void (*R_RenderSegLoop)(void);
 
 //
-// R_ScaledTextureHeight
+// R_TexScaleX
 //
-// Returns the texture height after y-scaling has been applied
+// Scales a value by the horizontal scaling value for texnum
 //
-static inline fixed_t R_ScaledTextureHeight(int texnum)
+static inline fixed_t R_TexScaleX(fixed_t x, int texnum)
 {
-	return FixedDiv(textureheight[texnum], texturescaley[texnum]);
+	return FixedMul(x, texturescalex[texnum]);
+}
+
+//
+// R_TexScaleY
+//
+// Scales a value by the vertical scaling value for texnum
+//
+static inline fixed_t R_TexScaleY(fixed_t y, int texnum)
+{
+	return FixedMul(y, texturescaley[texnum]);
+}
+
+//
+// R_TexInvScaleX
+//
+// Scales a value by the inverse of the horizontal scaling value for texnum
+//
+static inline fixed_t R_TexInvScaleX(fixed_t x, int texnum)
+{
+	return FixedDiv(x, texturescalex[texnum]);
+}
+
+//
+// R_TexInvScaleY
+//
+// Scales a value by the inverse of the vertical scaling value for texnum
+//
+static inline fixed_t R_TexInvScaleY(fixed_t y, int texnum)
+{
+	return FixedDiv(y, texturescaley[texnum]);
 }
 
 //
@@ -222,7 +252,7 @@ R_RenderMaskedSegRange
 	backsector = curline->backsector;
 
 	int texnum = texturetranslation[curline->sidedef->midtexture];
-	fixed_t texheight = R_ScaledTextureHeight(texnum);
+	fixed_t texheight = R_TexScaleY(textureheight[texnum], texnum);
 
 	// find texture positioning
 	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
@@ -230,7 +260,7 @@ R_RenderMaskedSegRange
 	else
 		dc_texturemid = MIN<fixed_t>(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
 
-	dc_texturemid = FixedMul(dc_texturemid - viewz + curline->sidedef->rowoffset, texturescaley[texnum]);
+	dc_texturemid = R_TexScaleY(dc_texturemid - viewz + curline->sidedef->rowoffset, texnum);
 	
 	int64_t topscreenclip = int64_t(centery) << 2*FRACBITS;
 	int64_t botscreenclip = int64_t(centery - viewheight) << 2*FRACBITS;
@@ -258,10 +288,8 @@ R_RenderMaskedSegRange
 
 	maskedtexturecol = ds->maskedtexturecol;
 
-	// [SL] 2013-01-02 - Adjust the scaling variables for the texture
-	// y-scaling factor
-	rw_scalestep = FixedDiv(ds->scalestep, texturescaley[texnum]);
-	spryscale = FixedDiv(ds->scale1, texturescaley[texnum]) + (x1 - ds->x1) * rw_scalestep;
+	rw_scalestep = R_TexInvScaleY(ds->scalestep, texnum);
+	spryscale = R_TexInvScaleY(ds->scale1, texnum) + (x1 - ds->x1) * rw_scalestep;
 
 	rw_lightstep = ds->lightstep;
 	rw_light = ds->light + (x1 - ds->x1) * rw_lightstep;
@@ -343,12 +371,8 @@ R_RenderMaskedSegRange
 //
 static inline void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
 {
-	const fixed_t scalex = texturescalex[texnum];
-	const fixed_t scaley = texturescaley[texnum];
-
-	dc_texturefrac = FixedMul(scaley, mid + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale));
-
-	dc_source = R_GetColumnData(texnum, (FixedMul(scalex, texcol)) >> FRACBITS);
+	dc_texturefrac = R_TexScaleY(mid + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale), texnum);
+	dc_source = R_GetColumnData(texnum, R_TexScaleX(texcol, texnum) >> FRACBITS);
 }
 
 //
@@ -459,7 +483,7 @@ static void BlastColumn (void (*blastfunc)())
 		if (maskedtexture)
 		{
 			// save texturecol for backdrawing of masked mid texture
-			maskedtexturecol[rw_x] = FixedMul(texturescalex[maskedtexture], texturecolumn) / FRACUNIT; 
+			maskedtexturecol[rw_x] = R_TexScaleX(texturecolumn, maskedtexture) >> FRACBITS;
 		}
 	}
 
@@ -830,8 +854,8 @@ void R_StoreWallRange(int start, int stop)
 		if (linedef->flags & ML_DONTPEGBOTTOM)
 		{
 			// bottom of texture at bottom
-			fixed_t ff = P_FloorHeight(frontsector);
-			rw_midtexturemid = ff - viewz + R_ScaledTextureHeight(sidedef->midtexture);
+			fixed_t texheight = R_TexScaleY(textureheight[midtexture], midtexture); 
+			rw_midtexturemid = P_FloorHeight(frontsector) - viewz + texheight;
 		}
 		else
 		{
@@ -957,8 +981,8 @@ void R_StoreWallRange(int start, int stop)
 			else
 			{
 				// bottom of texture
-				fixed_t bc = P_CeilingHeight(backsector);
-				rw_toptexturemid = bc - viewz + R_ScaledTextureHeight(sidedef->toptexture);
+				fixed_t texheight = R_TexScaleY(textureheight[toptexture], toptexture);
+				rw_toptexturemid = P_CeilingHeight(backsector) - viewz + texheight;
 			}
 		}
 

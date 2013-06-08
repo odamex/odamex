@@ -76,7 +76,7 @@ static int*		texturecompositesize;
 static short** 	texturecolumnlump;
 static unsigned **texturecolumnofs;
 static byte**	texturecomposite;
-fixed_t*		texturescalex;			// [RH] Texture scales
+fixed_t*		texturescalex;
 fixed_t*		texturescaley;
 
 // for global animation
@@ -636,8 +636,8 @@ void R_InitTextures (void)
 		// to determine scaling instead of defaulting to 8. I will likely
 		// remove this once I finish the betas, because by then, users
 		// should be able to actually create scaled textures.
-		texturescalex[i] = mtexture->scalex ? (mtexture->scalex * FRACUNIT) >> 3 : FRACUNIT;
-		texturescaley[i] = mtexture->scaley ? (mtexture->scaley * FRACUNIT) >> 3 : FRACUNIT;
+		texturescalex[i] = mtexture->scalex ? mtexture->scalex << (FRACBITS - 3) : FRACUNIT;
+		texturescaley[i] = mtexture->scaley ? mtexture->scaley << (FRACBITS - 3) : FRACUNIT;
 
 		totalwidth += texture->width;
 	}
