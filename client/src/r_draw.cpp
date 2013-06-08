@@ -79,8 +79,8 @@ int				detailyshift;		// [RH] Y shift for vertical detail level
 // [RH] Pointers to the different column drawers.
 //		These get changed depending on the current
 //		screen depth.
-void (*R_DrawColumnHoriz)(void);
 void (*R_DrawColumn)(void);
+void (*R_DrawColumnHoriz)(void);
 void (*R_DrawFuzzColumn)(void);
 void (*R_DrawTranslucentColumn)(void);
 void (*R_DrawTranslatedColumn)(void);

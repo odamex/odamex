@@ -21,8 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -91,14 +89,16 @@ extern float yfoc;
 
 static int  	*maskedtexturecol;
 
-void (*R_RenderSegLoop)(void);
+EXTERN_CVAR(r_skypalette)
+static int		skytex;
+static angle_t	skyflip;
+static int		frontpos;
 
 enum {
-	SEG_SOLID,
-	SEG_MASKED
+	COL_SOLID,
+	COL_MASKED,
+	COL_SKY
 };
-
-void R_RenderSegRange(int start, int stop, int segtype);
 
 //
 // R_TexScaleX
@@ -355,31 +355,24 @@ static void BlastColumn(void (*blastfunc)())
 	rw_light += rw_lightstep;
 }
 
-//
-// R_SetColumnColormap
-//
-// Sets dc_colormap to the appropriate value for the next column
-//
-static inline void R_SetColumnColormap()
-{
-	if (fixedlightlev)
-	{
-		dc_colormap = basecolormap.with(fixedlightlev);
-	}
-	else if (fixedcolormap.isValid())
-	{
-		dc_colormap = fixedcolormap;	
-	}
-	else
-	{
-		if (!walllights)
-			walllights = scalelight[0];
 
-		int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-		dc_colormap = basecolormap.with(walllights[index]);
+//
+// BlastSkyColumn
+//
+static void BlastSkyColumn(void (*drawfunc)(void))
+{
+	dc_yl = skyplane->top[dc_x];
+	dc_yh = skyplane->bottom[dc_x];
+
+	if (dc_yl >= 0 && dc_yl <= dc_yh)
+	{
+		int angle = ((((viewangle + xtoviewangle[dc_x])^skyflip)>>sky1shift) + frontpos)>>16;
+
+		dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
+		dc_source = R_GetColumnData(skytex, angle);
+		drawfunc();
 	}
 }
-
 
 inline void SolidColumnBlaster()
 {
@@ -401,13 +394,24 @@ inline void MaskedHColumnBlaster()
 	BlastMaskedColumn(R_DrawMaskedColumnHoriz);
 }
 
+inline void SkyColumnBlaster()
+{
+	BlastSkyColumn(colfunc);
+}
+
+inline void SkyHColumnBlaster()
+{
+	BlastSkyColumn(hcolfunc_pre);
+}
+
 //
-// R_RenderSegRange
+// R_RenderColumnRange
 //
-// Renders a seg range to the screen using a temporary buffer to write the
-// columns horizontally and then blit to the screen. Writing columns
-// horizontally utilizes the cache much better than writing columns vertically
-// to the screen buffer.
+// Renders a range of columns to the screen.
+// If r_columnmethod is enabled, the columns are renderd using a temporary
+// buffer to write the columns horizontally and then blit to the screen.
+// Writing columns horizontally utilizes the cache much better than writing
+// columns vertically to the screen buffer.
 //
 // [RH] This is a cache optimized version of R_RenderSegLoop(). It first
 //		draws columns into a temporary buffer with a pitch of 4 and then
@@ -420,7 +424,7 @@ inline void MaskedHColumnBlaster()
 //		assembly rendering function.
 //
 
-void R_RenderSegRange(int start, int stop, int segtype)
+void R_RenderColumnRange(int start, int stop, int segtype)
 {
 	if (start > stop)
 		return;
@@ -428,28 +432,117 @@ void R_RenderSegRange(int start, int stop, int segtype)
 	void (*colblast)();
 	void (*hcolblast)();
 
-	if (segtype == SEG_SOLID)
+	if (segtype == COL_SOLID)
 	{
 		colblast = SolidColumnBlaster;
 		hcolblast = SolidHColumnBlaster;
 	}
-	else if (segtype == SEG_MASKED)
+	else if (segtype == COL_MASKED)
 	{
 		colblast = MaskedColumnBlaster;
 		hcolblast = MaskedHColumnBlaster;
 	}
+	else if (segtype == COL_SKY)
+	{
+		colblast = SkyColumnBlaster;
+		hcolblast = SkyHColumnBlaster;
+	}
 	
 	rw_x = dc_x = start;
 
-	// render until rw_x is dword aligned
-	R_SetColumnColormap();
-	if (rw_x & 1)
+	bool calc_light = false;
+	if (segtype != COL_SKY)
 	{
-		colblast();	
-		rw_x++; dc_x++;
+		if (fixedlightlev)
+		{
+			dc_colormap = basecolormap.with(fixedlightlev);
+		}
+		else if (fixedcolormap.isValid())
+		{
+			dc_colormap = fixedcolormap;	
+		}
+		else
+		{
+			if (!walllights)
+				walllights = scalelight[0];
+			calc_light = true;
+		}
 	}
-	if (rw_x & 2)
+
+	if (!r_columnmethod)
 	{
+		for (dc_x = rw_x = start; dc_x <= stop; dc_x++, rw_x++)
+		{
+			if (calc_light)
+			{
+				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+				dc_colormap = basecolormap.with(walllights[index]);
+			}
+
+			colblast();
+		}
+	}
+	else
+	{
+		// render until rw_x is dword aligned
+		if (calc_light)
+		{
+			int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+			dc_colormap = basecolormap.with(walllights[index]);
+		}
+
+		if (rw_x & 1)
+		{
+			colblast();	
+			rw_x++; dc_x++;
+		}
+		if (rw_x & 2)
+		{
+			if (rw_x < stop)
+			{
+				rt_initcols();
+				hcolblast();
+				rw_x++; dc_x++;
+				hcolblast();
+				rt_draw2cols((rw_x - 1) & 3, rw_x - 1);
+				rw_x++; dc_x++;
+			}
+			else if (rw_x == stop)
+			{
+				colblast();
+				rw_x++; dc_x++;
+			}
+		}
+
+		// render in 4 column blocks
+		int blockend = (stop + 1) & ~3;
+		while (rw_x < blockend)
+		{
+			if (calc_light)
+			{
+				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+				dc_colormap = basecolormap.with(walllights[index]);
+			}
+
+			rt_initcols();
+			hcolblast();
+			rw_x++; dc_x++;
+			hcolblast();
+			rw_x++; dc_x++;
+			hcolblast();
+			rw_x++; dc_x++;
+			hcolblast();
+			rt_draw4cols(rw_x - 3);
+			rw_x++; dc_x++;
+		}
+
+		// render any remaining columns	
+		if (calc_light)
+		{
+			int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+			dc_colormap = basecolormap.with(walllights[index]);
+		}
+
 		if (rw_x < stop)
 		{
 			rt_initcols();
@@ -458,6 +551,12 @@ void R_RenderSegRange(int start, int stop, int segtype)
 			hcolblast();
 			rt_draw2cols((rw_x - 1) & 3, rw_x - 1);
 			rw_x++; dc_x++;
+
+			if (rw_x <= stop)
+			{
+				colblast();
+				rw_x++; dc_x++;
+			}
 		}
 		else if (rw_x == stop)
 		{
@@ -465,73 +564,19 @@ void R_RenderSegRange(int start, int stop, int segtype)
 			rw_x++; dc_x++;
 		}
 	}
-
-	// render in 4 column blocks
-	int blockend = (stop + 1) & ~3;
-	while (rw_x < blockend)
-	{
-		R_SetColumnColormap();
-		rt_initcols();
-		hcolblast();
-		rw_x++; dc_x++;
-		hcolblast();
-		rw_x++; dc_x++;
-		hcolblast();
-		rw_x++; dc_x++;
-		hcolblast();
-		rt_draw4cols(rw_x - 3);
-		rw_x++; dc_x++;
-	}
-
-	// render any remaining columns	
-	R_SetColumnColormap();
-	if (rw_x < stop)
-	{
-		rt_initcols();
-		hcolblast();
-		rw_x++; dc_x++;
-		hcolblast();
-		rt_draw2cols((rw_x - 1) & 3, rw_x - 1);
-		rw_x++; dc_x++;
-
-		if (rw_x <= stop)
-		{
-			colblast();
-			rw_x++; dc_x++;
-		}
-	}
-	else if (rw_x == stop)
-	{
-		colblast();
-		rw_x++; dc_x++;
-	}
 }
 
+
 //
-// R_RenderSegLoop1
+// R_RenderSegLoop
 //
-// Renders a solid seg one at a time, directly to the screen buffer
+// Renders a solid seg
 //
-void R_RenderSegLoop1()
+void R_RenderSegLoop()
 {
-	while (rw_x <= rw_stop)
-	{
-		dc_x = rw_x;
-		R_SetColumnColormap();
-		BlastColumn(colfunc);
-		rw_x++;
-	}
+	R_RenderColumnRange(rw_x, rw_stop, COL_SOLID);
 }
 
-//
-// R_RenderSegLoop2
-//
-// Renders a solid seg using the horizontal column drawing scheme
-//
-void R_RenderSegLoop2()
-{
-	R_RenderSegRange(rw_x, rw_stop, SEG_SOLID);
-}
 
 //
 // R_RenderMaskedSegRange
@@ -612,19 +657,94 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	mfloorclip = ds->sprbottomclip;
 	mceilingclip = ds->sprtopclip;
 
-	R_SetColumnColormap();
-
 	// draw the columns
-	if (!r_columnmethod)
+	R_RenderColumnRange(x1, x2, COL_MASKED);
+}
+
+
+//
+// R_RenderSkyRange
+//
+// [RH] Can handle parallax skies. Note that the front sky is *not* masked in
+// in the normal convention for patches, but uses color 0 as a transparent
+// color.
+// [ML] 5/11/06 - Removed sky2
+//
+void R_RenderSkyRange(visplane_t* pl)
+{
+	if (pl->minx > pl->maxx)
+		return;
+
+	if (pl->picnum == skyflatnum)
 	{
-		for (dc_x = x1; dc_x <= x2; dc_x++)
-			BlastMaskedColumn(R_DrawMaskedColumn);
+		// use sky1
+		skytex = sky1texture;
+		skyflip = 0;
+	}
+	else if (pl->picnum == int(PL_SKYFLAT))
+	{
+		// use sky2
+		skytex = sky2texture;
+		skyflip = 0;
 	}
 	else
 	{
-		R_RenderSegRange(x1, x2, SEG_MASKED);
+		// MBF's linedef-controlled skies
+		short picnum = (pl->picnum & ~PL_SKYFLAT) - 1;
+		const line_t* line = &lines[picnum < numlines ? picnum : 0];
+
+		// Sky transferred from first sidedef
+		const side_t* side = *line->sidenum + sides;
+
+		// Texture comes from upper texture of reference sidedef
+		skytex = texturetranslation[side->toptexture];
+
+		// Horizontal offset is turned into an angle offset,
+		// to allow sky rotation as well as careful positioning.
+		// However, the offset is scaled very small, so that it
+		// allows a long-period of sky rotation.
+		frontpos = (-side->textureoffset) >> 6;
+
+		// Vertical offset allows careful sky positioning.
+		dc_texturemid = side->rowoffset - 28*FRACUNIT;
+
+		// We sometimes flip the picture horizontally.
+		//
+		// Doom always flipped the picture, so we make it optional,
+		// to make it easier to use the new feature, while to still
+		// allow old sky textures to be used.
+		skyflip = line->args[2] ? 0u : ~0u;
 	}
+
+	R_ResetDrawFuncs();
+
+	palette_t *pal = GetDefaultPalette();
+
+	// set up the appropriate colormap for the sky
+	if (fixedlightlev)
+	{
+		dc_colormap = shaderef_t(&pal->maps, fixedlightlev);
+	}
+	else if (fixedcolormap.isValid() && r_skypalette)
+	{
+		dc_colormap = fixedcolormap;
+	}
+	else
+	{
+		// [SL] 2011-06-28 - Emulate vanilla Doom's handling of skies
+		// when the player has the invulnerability powerup
+		dc_colormap = shaderef_t(&pal->maps, 0);
+	}
+
+	dc_iscale = skyiscale >> skystretch;
+	dc_texturemid = skytexturemid;
+	skyplane = pl;
+
+	R_RenderColumnRange(pl->minx, pl->maxx, COL_SKY);
+				
+	R_ResetDrawFuncs();
 }
+
 extern int *openings;
 extern size_t maxopenings;
 

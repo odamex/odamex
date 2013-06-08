@@ -66,6 +66,7 @@ static visplane_t		**freehead = &freetail;		// killough
 
 visplane_t 				*floorplane;
 visplane_t 				*ceilingplane;
+visplane_t				*skyplane;
 
 // killough -- hash function for visplanes
 // Empirically verified to be fairly uniform:
@@ -116,8 +117,6 @@ static fixed_t			pl_xstepscale, pl_ystepscale;
 
 v3float_t				a, b, c;
 float					ixscale, iyscale;
-
-EXTERN_CVAR (r_skypalette)
 
 //
 // R_InitPlanes
@@ -421,135 +420,8 @@ R_CheckPlane
 }
 
 //
-// [RH] R_DrawSky
-//
-// Can handle parallax skies. Note that the front sky is *not* masked in
-// in the normal convention for patches, but uses color 0 as a transparent
-// color.
-// [ML] 5/11/06 - Removed sky2
-
-static visplane_t *_skypl;
-static int skytex;
-static angle_t skyflip;
-static int frontpos;
-
-static void _skycolumn (void (*drawfunc)(void), int x)
-{
-	dc_yl = _skypl->top[x];
-	dc_yh = _skypl->bottom[x];
-
-	if (dc_yl >= 0 && dc_yl <= dc_yh)
-	{
-		int angle = ((((viewangle + xtoviewangle[x])^skyflip)>>sky1shift) + frontpos)>>16;
-
-		dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
-		dc_source = R_GetColumnData(skytex, angle);
-		drawfunc ();
-	}
-}
-
-static void R_DrawSky (visplane_t *pl)
-{
-	int x;
-
-	if (pl->minx > pl->maxx)
-		return;
-
-	dc_iscale = skyiscale >> skystretch;
-	dc_texturemid = skytexturemid;
-	_skypl = pl;
-
-	R_ResetDrawFuncs();
-
-	if (!r_columnmethod)
-	{
-		for (x = pl->minx; x <= pl->maxx; x++)
-		{
-			dc_x = x;
-			_skycolumn (colfunc, x);
-		}
-	}
-	else
-	{
-		int stop = (pl->maxx+1) & ~3;
-
-		x = pl->minx;
-
-		if (x & 1)
-		{
-			dc_x = x;
-			_skycolumn (colfunc, x);
-			x++;
-		}
-
-		if (x & 2)
-		{
-			if (x < pl->maxx)
-			{
-				rt_initcols();
-				dc_x = 0;
-				_skycolumn (hcolfunc_pre, x);
-				x++;
-				dc_x = 1;
-				_skycolumn (hcolfunc_pre, x);
-				rt_draw2cols (0, x - 1);
-				x++;
-			}
-			else if (x == pl->maxx)
-			{
-				dc_x = x;
-				_skycolumn (colfunc, x);
-				x++;
-			}
-		}
-
-		while (x < stop)
-		{
-			rt_initcols();
-			dc_x = 0;
-			_skycolumn (hcolfunc_pre, x);
-			x++;
-			dc_x = 1;
-			_skycolumn (hcolfunc_pre, x);
-			x++;
-			dc_x = 2;
-			_skycolumn (hcolfunc_pre, x);
-			x++;
-			dc_x = 3;
-			_skycolumn (hcolfunc_pre, x);
-			rt_draw4cols (x - 3);
-			x++;
-		}
-
-		if (pl->maxx == x)
-		{
-			dc_x = x;
-			_skycolumn (colfunc, x);
-			x++;
-		}
-		else if (pl->maxx > x)
-		{
-			rt_initcols();
-			dc_x = 0;
-			_skycolumn (hcolfunc_pre, x);
-			x++;
-			dc_x = 1;
-			_skycolumn (hcolfunc_pre, x);
-			rt_draw2cols (0, x - 1);
-			if (++x <= pl->maxx)
-			{
-				dc_x = x;
-				_skycolumn (colfunc, x);
-				x++;
-			}
-		}
-	}
-}
-
-//
 // R_MakeSpans
 //
-
 void R_MakeSpans(visplane_t *pl, void(*spanfunc)(int, int, int))
 {
 	for (int x = pl->minx; x <= pl->maxx + 1; x++)
@@ -752,72 +624,7 @@ void R_DrawPlanes (void)
 			// sky flat
 			if (pl->picnum == skyflatnum || pl->picnum & PL_SKYFLAT)
 			{
-				if (pl->picnum == skyflatnum)
-				{	// use sky1 [ML] 5/11/06 - Use it always!
-					skytex = sky1texture;
-					skyflip = 0;
-				}
-				else if (pl->picnum == int(PL_SKYFLAT))
-				{	// use sky2
-					skytex = sky2texture;
-					skyflip = 0;
-				}
-				else
-				{
-					// MBF's linedef-controlled skies
-					// Sky Linedef
-					short picnum = (pl->picnum & ~PL_SKYFLAT)-1;
-					const line_t *l = &lines[picnum < numlines ? picnum : 0];
-
-					// Sky transferred from first sidedef
-					const side_t *s = *l->sidenum + sides;
-
-					// Texture comes from upper texture of reference sidedef
-					skytex = texturetranslation[s->toptexture];
-
-					// Horizontal offset is turned into an angle offset,
-					// to allow sky rotation as well as careful positioning.
-					// However, the offset is scaled very small, so that it
-					// allows a long-period of sky rotation.
-					frontpos = (-s->textureoffset) >> 6;
-
-					// Vertical offset allows careful sky positioning.
-					dc_texturemid = s->rowoffset - 28*FRACUNIT;
-
-					// We sometimes flip the picture horizontally.
-					//
-					// Doom always flipped the picture, so we make it optional,
-					// to make it easier to use the new feature, while to still
-					// allow old sky textures to be used.
-					skyflip = l->args[2] ? 0u : ~0u;
-				}
-
-				palette_t *pal = GetDefaultPalette();
-
-				if (fixedlightlev) {
-					dc_colormap = shaderef_t(&pal->maps, fixedlightlev);
-				} else if (fixedcolormap.isValid()) {
-					if (r_skypalette)
-					{
-						dc_colormap = fixedcolormap;
-					}
-					else
-					{
-						// [SL] 2011-06-28 - Emulate vanilla Doom's handling of skies
-						// when the player has the invulnerability powerup
-						dc_colormap = shaderef_t(&pal->maps, 0);
-					}
-				} else if (!fixedcolormap.isValid()) {
-					dc_colormap = shaderef_t(&pal->maps, 0);
-					colfunc = R_StretchColumn;
-					hcolfunc_post1 = rt_copy1col;
-					hcolfunc_post2 = rt_copy2cols;
-					hcolfunc_post4 = rt_copy4cols;
-				}
-
-				R_DrawSky (pl);
-				
-				R_ResetDrawFuncs();
+				R_RenderSkyRange(pl);
 			}
 			else
 			{

@@ -792,7 +792,7 @@ void R_ExecuteSetViewSize (void)
 	int virtheight, virtwidth;
 
 	setsizeneeded = false;
-
+/*
 	if (setdetail >= 0)
 	{
 		if (!r_columnmethod)
@@ -809,6 +809,7 @@ void R_ExecuteSetViewSize (void)
 		detailyshift = (setdetail >> 1) & 1;
 		setdetail = -1;
 	}
+*/
 
 	if (setblocks == 11 || setblocks == 12)
 	{
@@ -1238,7 +1239,10 @@ void R_SetupFrame (player_t *player)
 //
 void R_SetFlatDrawFuncs()
 {
-	colfunc = R_FillColumnP;
+	colfunc = R_FillColumn;
+	// palettized version of hcolfunc_pre is ok because the columns are written
+	// to a temporary 8bpp buffer, which is later copied to the screen with the
+	// appropriate 8bpp or 32bpp function. 
 	hcolfunc_pre = R_FillColumnHorizP;
 	hcolfunc_post1 = rt_copy1col;
 	hcolfunc_post2 = rt_copy2cols;
