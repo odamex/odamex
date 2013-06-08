@@ -240,6 +240,180 @@ algorithm that uses RGB tables.
 translationref_t dc_translation;
 byte* translationtables;
 argb_t translationRGB[MAXPLAYERS+1][16];
+byte *Ranges;
+static byte *translationtablesmem = NULL;
+
+//
+// R_InitTranslationTables
+//
+// Creates the translation tables to map
+//	the green color ramp to gray, brown, red.
+// Assumes a given structure of the PLAYPAL.
+// Could be read from a lump instead.
+//
+void R_InitTranslationTables (void)
+{
+	static const char ranges[23][8] = {
+		"CRBRICK",
+		"CRTAN",
+		"CRGRAY",
+		"CRGREEN",
+		"CRBROWN",
+		"CRGOLD",
+		"CRRED",
+		"CRBLUE2",
+		{ 'C','R','O','R','A','N','G','E' },
+		"CRGRAY", // "White"
+		{ 'C','R','Y','E','L','L','O','W' },
+		"CRRED", // "Untranslated"
+		"CRGRAY", // "Black"
+		"CRBLUE",
+		"CRTAN", // "Cream"
+		"CRGREEN", // "Olive"
+		"CRGREEN", // "Dark Green"
+		"CRRED", // "Dark Red"
+		"CRBROWN", // "Dark Brown"
+		"CRRED", // "Purple"
+		"CRGRAY", // "Dark Gray"
+		"CRBLUE" // "Cyan"
+	};
+	
+    R_FreeTranslationTables();
+	
+	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?
+
+	// [Toke - fix13]
+	// denis - cleaned this up somewhat
+	translationtables = (byte *)(((ptrdiff_t)translationtablesmem + 255) & ~255);
+	
+	// [RH] Each player now gets their own translation table
+	//		(soon to be palettes). These are set up during
+	//		netgame arbitration and as-needed rather than
+	//		in here. We do, however load some text translation
+	//		tables from our PWAD (ala BOOM).
+
+	for (int i = 0; i < 256; i++)
+		translationtables[i] = i;
+
+	// Set up default translationRGB tables:
+	palette_t *pal = GetDefaultPalette();
+	for (int i = 0; i < MAXPLAYERS; ++i)
+	{
+		for (int j = 0x70; j < 0x80; ++j)
+			translationRGB[i][j - 0x70] = pal->basecolors[j];
+	}
+
+	for (int i = 1; i < MAXPLAYERS+3; i++)
+		memcpy (translationtables + i*256, translationtables, 256);
+
+	// create translation tables for dehacked patches that expect them
+	for (int i = 0x70; i < 0x80; i++) {
+		// map green ramp to gray, brown, red
+		translationtables[i+(MAXPLAYERS+0)*256] = 0x60 + (i&0xf);
+		translationtables[i+(MAXPLAYERS+1)*256] = 0x40 + (i&0xf);
+		translationtables[i+(MAXPLAYERS+2)*256] = 0x20 + (i&0xf);
+	}
+
+	Ranges = translationtables + (MAXPLAYERS+3)*256;
+	for (int i = 0; i < 22; i++)
+		W_ReadLump (W_GetNumForName (ranges[i]), Ranges + 256 * i);
+
+}
+
+void R_FreeTranslationTables (void)
+{
+    delete[] translationtablesmem;
+    translationtablesmem = NULL;
+}
+
+// [Nes] Vanilla player translation table.
+void R_BuildClassicPlayerTranslation (int player, int color)
+{
+	palette_t *pal = GetDefaultPalette();
+	int i;
+	
+	if (color == 1) // Indigo
+		for (i = 0x70; i < 0x80; i++)
+		{
+			translationtables[i+(player * 256)] = 0x60 + (i&0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
+	else if (color == 2) // Brown
+		for (i = 0x70; i < 0x80; i++)
+		{
+			translationtables[i+(player * 256)] = 0x40 + (i&0xf);	
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
+	else if (color == 3) // Red
+		for (i = 0x70; i < 0x80; i++)
+		{
+			translationtables[i+(player * 256)] = 0x20 + (i&0xf);	
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
+}
+
+void R_CopyTranslationRGB (int fromplayer, int toplayer)
+{
+	for (int i = 0x70; i < 0x80; ++i)
+	{
+		translationRGB[toplayer][i - 0x70] = translationRGB[fromplayer][i - 0x70];
+		translationtables[i+(toplayer * 256)] = translationtables[i+(fromplayer * 256)];
+	}
+}
+
+// [RH] Create a player's translation table based on
+//		a given mid-range color.
+void R_BuildPlayerTranslation (int player, int color)
+{
+	palette_t *pal = GetDefaultPalette();
+	byte *table = &translationtables[player * 256];
+	int i;
+	float r = (float)RPART(color) / 255.0f;
+	float g = (float)GPART(color) / 255.0f;
+	float b = (float)BPART(color) / 255.0f;
+	float h, s, v;
+	float sdelta, vdelta;
+
+	RGBtoHSV (r, g, b, &h, &s, &v);
+
+	s -= 0.23f;
+	if (s < 0.0f)
+		s = 0.0f;
+	sdelta = 0.014375f;
+
+	v += 0.1f;
+	if (v > 1.0f)
+		v = 1.0f;
+	vdelta = -0.05882f;
+
+	for (i = 0x70; i < 0x80; i++) {
+		HSVtoRGB (&r, &g, &b, h, s, v);
+
+		// Set up RGB values for 32bpp translation:
+		translationRGB[player][i - 0x70] = MAKERGB(
+			(int)(r * 255.0f),
+			(int)(g * 255.0f),
+			(int)(b * 255.0f)
+		);
+
+		table[i] = BestColor (pal->basecolors,
+							  (int)(r * 255.0f),
+							  (int)(g * 255.0f),
+							  (int)(b * 255.0f),
+							  pal->numcolors);
+		s += sdelta;
+		if (s > 1.0f) {
+			s = 1.0f;
+			sdelta = 0.0f;
+		}
+
+		v += vdelta;
+		if (v < 0.0f) {
+			v = 0.0f;
+			vdelta = 0.0f;
+		}
+	}
+}
 
 
 // ============================================================================
@@ -316,7 +490,7 @@ void R_BlankColumn (void)
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-forceinline static void R_FillColumnGeneric()
+static forceinline void R_FillColumnGeneric(PIXEL_T* dest, int pitch)
 {
 #ifdef RANGECHECK 
 	if (dc_x >= screen->width || dc_yl < 0 || dc_yh >= screen->height) {
@@ -329,14 +503,11 @@ forceinline static void R_FillColumnGeneric()
 	if (count <= 0)
 		return;
 
-	PIXEL_T* dest = (PIXEL_T*)(ylookup[dc_yl] + columnofs[dc_x]);
-	const int pitch = dc_pitch / sizeof(PIXEL_T);
 	byte color = dc_color;
 
 	COLORFUNC colorfunc(&basecolormap);
 
-	do
-	{
+	do {
 		colorfunc(color, dest);
 		dest += pitch;
 	} while (--count);
@@ -357,7 +528,7 @@ forceinline static void R_FillColumnGeneric()
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-forceinline static void R_DrawColumnGeneric()
+static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, int pitch)
 {
 #ifdef RANGECHECK 
 	if (dc_x >= screen->width || dc_yl < 0 || dc_yh >= screen->height) {
@@ -370,15 +541,13 @@ forceinline static void R_DrawColumnGeneric()
 	if (count <= 0)
 		return;
 
-	PIXEL_T* dest = (PIXEL_T*)(ylookup[dc_yl] + columnofs[dc_x]);
 	const byte *source = dc_source;
-	const int pitch = dc_pitch / sizeof(PIXEL_T);
 
-	fixed_t fracstep = dc_iscale; 
+	const fixed_t fracstep = dc_iscale; 
 	fixed_t frac = dc_texturefrac;
 
-	int texheight = dc_textureheight;
-	int mask = (texheight >> FRACBITS) - 1;
+	const int texheight = dc_textureheight;
+	const int mask = (texheight >> FRACBITS) - 1;
 
 	COLORFUNC colorfunc(&dc_colormap);
 
@@ -391,8 +560,7 @@ forceinline static void R_DrawColumnGeneric()
 		else
 			while (frac >= texheight)
 				frac -= texheight;
-		do
-		{
+		do {
 			colorfunc(source[frac >> FRACBITS], dest);
 			dest += pitch;
 			if ((frac += fracstep) >= texheight)
@@ -401,8 +569,7 @@ forceinline static void R_DrawColumnGeneric()
 	}
 	else							// is a power-of-2
 	{
-		do
-		{
+		do {
 			colorfunc(source[(frac >> FRACBITS) & mask], dest);
 			dest += pitch;
 			frac += fracstep;
@@ -419,7 +586,7 @@ forceinline static void R_DrawColumnGeneric()
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-forceinline static void R_FillSpanGeneric()
+static forceinline void R_FillSpanGeneric(PIXEL_T* dest, int pitch)
 {
 #ifdef RANGECHECK
 	if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= screen->width || ds_y > screen->height) {
@@ -432,16 +599,13 @@ forceinline static void R_FillSpanGeneric()
 	if (count <= 0)
 		return;
 
-	PIXEL_T* dest = (PIXEL_T*)(ylookup[ds_y] + columnofs[ds_x1]);
-	const int colsize = ds_colsize;
-	byte color = ds_color;
+	const byte color = ds_color;
 
 	COLORFUNC colorfunc(&basecolormap);
 
-	do
-	{
+	do {
 		colorfunc(color, dest);
-		dest += colsize;
+		dest += pitch;
 	} while (--count);
 }
 
@@ -454,11 +618,11 @@ forceinline static void R_FillSpanGeneric()
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-forceinline static void R_DrawLevelSpanGeneric()
+static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, int pitch)
 {
 #ifdef RANGECHECK
 	if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= screen->width || ds_y > screen->height) {
-		Printf(PRINT_HIGH, "R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+		Printf(PRINT_HIGH, "R_DrawLevelSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
 		return;
 	}
 #endif
@@ -467,14 +631,12 @@ forceinline static void R_DrawLevelSpanGeneric()
 	if (count <= 0)
 		return;
 	
-	PIXEL_T* dest = (PIXEL_T*)(ylookup[ds_y] + columnofs[ds_x1]);
 	const byte* source = ds_source;
-	const int colsize = ds_colsize;
 
 	dsfixed_t xfrac = ds_xfrac;
 	dsfixed_t yfrac = ds_yfrac;
-	dsfixed_t xstep = ds_xstep;
-	dsfixed_t ystep = ds_ystep;
+	const dsfixed_t xstep = ds_xstep;
+	const dsfixed_t ystep = ds_ystep;
 
 	COLORFUNC colorfunc(&ds_colormap);
 
@@ -486,7 +648,7 @@ forceinline static void R_DrawLevelSpanGeneric()
 		//  re-index using light/colormap.
 
 		colorfunc(source[spot], dest);
-		dest += colsize;
+		dest += pitch;
 
 		// Next step in u,v.
 		xfrac += xstep;
@@ -508,11 +670,11 @@ forceinline static void R_DrawLevelSpanGeneric()
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-forceinline static void R_DrawSlopedSpanGeneric()
+static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, int pitch)
 {
 #ifdef RANGECHECK
 	if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= screen->width || ds_y > screen->height) {
-		Printf(PRINT_HIGH, "R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+		Printf(PRINT_HIGH, "R_DrawSlopedSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
 		return;
 	}
 #endif
@@ -521,9 +683,7 @@ forceinline static void R_DrawSlopedSpanGeneric()
 	if (count <= 0)
 		return;
 	
-	PIXEL_T* dest = (PIXEL_T*)(ylookup[ds_y] + columnofs[ds_x1]);
 	const byte* source = ds_source;
-	const int colsize = ds_colsize;
 
 	float iu = ds_iu, iv = ds_iv;
 	const float ius = ds_iustep, ivs = ds_ivstep;
@@ -557,7 +717,7 @@ forceinline static void R_DrawSlopedSpanGeneric()
 		{
 			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 			colorfunc(source[spot], dest);
-			dest += colsize;
+			dest += pitch;
 			ufrac += ustep;
 			vfrac += vstep;
 		}
@@ -591,7 +751,7 @@ forceinline static void R_DrawSlopedSpanGeneric()
 		{
 			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 			colorfunc(source[spot], dest);
-			dest += colsize;
+			dest += pitch;
 			ufrac += ustep;
 			vfrac += vstep;
 		}
@@ -607,6 +767,13 @@ forceinline static void R_DrawSlopedSpanGeneric()
 // ----------------------------------------------------------------------------
 //
 // 8bpp color remapping functors
+//
+// These functors provide a variety of ways to manipulate a source pixel
+// color (given by 8bpp palette index) and write the result to the destination
+// buffer.
+//
+// The functors are instantiated with a shaderef_t* parameter (typically
+// dc_colormap or ds_colormap) that will be used to shade the pixel.
 //
 // ----------------------------------------------------------------------------
 
@@ -716,25 +883,29 @@ private:
 	mutable int lightidx;
 };
 
+
 // ----------------------------------------------------------------------------
 //
 // 8bpp color column drawing wrappers
 //
 // ----------------------------------------------------------------------------
 
+#define FB_COLDEST_P ((palindex_t*)(ylookup[dc_yl] + columnofs[dc_x]))
+#define FB_COLPITCH_P (dc_pitch / sizeof(palindex_t))
+
 void R_FillColumnP()
 {
-	R_FillColumnGeneric<palindex_t, PaletteFunc>();
+	R_FillColumnGeneric<palindex_t, PaletteFunc>(FB_COLDEST_P, FB_COLPITCH_P) ;
 }
 
 void R_DrawColumnP()
 {
-	R_DrawColumnGeneric<palindex_t, PaletteColormapFunc>();
+	R_DrawColumnGeneric<palindex_t, PaletteColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
 
 void R_StretchColumnP()
 {
-	R_DrawColumnGeneric<palindex_t, PaletteFunc>();
+	R_DrawColumnGeneric<palindex_t, PaletteFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
 
 void R_DrawFuzzColumnP()
@@ -745,22 +916,22 @@ void R_DrawFuzzColumnP()
 	if (dc_yh >= realviewheight - 1)
 		dc_yh = realviewheight - 2;
 
-	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>();
+	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
 
 void R_DrawTranslucentColumnP()
 {
-	R_DrawColumnGeneric<palindex_t, PaletteTranslucentColormapFunc>();
+	R_DrawColumnGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
 
 void R_DrawTranslatedColumnP()
 {
-	R_DrawColumnGeneric<palindex_t, PaletteTranslatedColormapFunc>();
+	R_DrawColumnGeneric<palindex_t, PaletteTranslatedColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
 
 void R_DrawTlatedLucentColumnP()
 {
-	R_DrawColumnGeneric<palindex_t, PaletteTranslatedTranslucentColormapFunc>();
+	R_DrawColumnGeneric<palindex_t, PaletteTranslatedTranslucentColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
 
 // ----------------------------------------------------------------------------
@@ -769,19 +940,22 @@ void R_DrawTlatedLucentColumnP()
 //
 // ----------------------------------------------------------------------------
 
+#define FB_SPANDEST_P ((palindex_t*)(ylookup[ds_y] + columnofs[ds_x1]))
+#define FB_SPANPITCH_P (ds_colsize)
+
 void R_FillSpanP()
 {
-	R_FillSpanGeneric<palindex_t, PaletteFunc>();
+	R_FillSpanGeneric<palindex_t, PaletteFunc>(FB_SPANDEST_P, FB_SPANPITCH_P);
 }
 
 void R_DrawSpanP()
 {
-	R_DrawLevelSpanGeneric<palindex_t, PaletteColormapFunc>();
+	R_DrawLevelSpanGeneric<palindex_t, PaletteColormapFunc>(FB_SPANDEST_P, FB_SPANPITCH_P);
 }
 
 void R_DrawSlopeSpanP()
 {
-	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeColormapFunc>();
+	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeColormapFunc>(FB_SPANDEST_P, FB_SPANPITCH_P);
 }
 
 
@@ -794,6 +968,13 @@ void R_DrawSlopeSpanP()
 // ----------------------------------------------------------------------------
 //
 // 32bpp color remapping functors
+//
+// These functors provide a variety of ways to manipulate a source pixel
+// color (given by 8bpp palette index) and write the result to the destination
+// buffer.
+//
+// The functors are instantiated with a shaderef_t* parameter (typically
+// dc_colormap or ds_colormap) that will be used to shade the pixel.
 //
 // ----------------------------------------------------------------------------
 
@@ -907,40 +1088,43 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-forceinline void R_DrawColumnD()
-{
-	R_DrawColumnGeneric<argb_t, DirectColormapFunc>();
-}
+#define FB_COLDEST_D ((argb_t*)(ylookup[dc_yl] + columnofs[dc_x]))
+#define FB_COLPITCH_D (dc_pitch / sizeof(argb_t))
 
 void R_FillColumnD()
 {
-	R_FillColumnGeneric<argb_t, DirectFunc>();
+	R_FillColumnGeneric<argb_t, DirectFunc>(FB_COLDEST_D, FB_COLPITCH_D);
+}
+
+void R_DrawColumnD()
+{
+	R_DrawColumnGeneric<argb_t, DirectColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
 }
 
 void R_DrawFuzzColumnD()
 {
-	// adjust the borders
+	// adjust the borders (prevent buffer over/under-reads)
 	if (dc_yl <= 0)
 		dc_yl = 1;
 	if (dc_yh >= realviewheight - 1)
 		dc_yh = realviewheight - 2;
 
-	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>();
+	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>(FB_COLDEST_D, FB_COLPITCH_D);
 }
 
 void R_DrawTranslucentColumnD()
 {
-	R_DrawColumnGeneric<argb_t, DirectTranslucentColormapFunc>();
+	R_DrawColumnGeneric<argb_t, DirectTranslucentColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
 }
 
 void R_DrawTranslatedColumnD()
 {
-	R_DrawColumnGeneric<argb_t, DirectTranslatedColormapFunc>();
+	R_DrawColumnGeneric<argb_t, DirectTranslatedColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
 }
 
 void R_DrawTlatedLucentColumnD()
 {
-	R_DrawColumnGeneric<argb_t, DirectTranslatedTranslucentColormapFunc>();
+	R_DrawColumnGeneric<argb_t, DirectTranslatedTranslucentColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
 }
 
 
@@ -950,200 +1134,25 @@ void R_DrawTlatedLucentColumnD()
 //
 // ----------------------------------------------------------------------------
 
+#define FB_SPANDEST_D ((argb_t*)(ylookup[ds_y] + columnofs[ds_x1]))
+#define FB_SPANPITCH_D (ds_colsize)
+
 void R_FillSpanD()
 {
-	R_FillSpanGeneric<argb_t, DirectFunc>();
+	R_FillSpanGeneric<argb_t, DirectFunc>(FB_SPANDEST_D, FB_SPANPITCH_D);
 }
 
 void R_DrawSpanD_c()
 {
-	R_DrawLevelSpanGeneric<argb_t, DirectColormapFunc>();
+	R_DrawLevelSpanGeneric<argb_t, DirectColormapFunc>(FB_SPANDEST_D, FB_SPANPITCH_D);
 }
 
 void R_DrawSlopeSpanD_c()
 {
-	R_DrawSlopedSpanGeneric<argb_t, DirectSlopeColormapFunc>();
+	R_DrawSlopedSpanGeneric<argb_t, DirectSlopeColormapFunc>(FB_SPANDEST_D, FB_SPANPITCH_D);
 }
 
 /****************************************************/
-/****************************************************/
-
-//
-// R_InitTranslationTables
-// Creates the translation tables to map
-//	the green color ramp to gray, brown, red.
-// Assumes a given structure of the PLAYPAL.
-// Could be read from a lump instead.
-//
-byte *Ranges;
-
-static byte *translationtablesmem = NULL;
-
-void R_InitTranslationTables (void)
-{
-	static const char ranges[23][8] = {
-		"CRBRICK",
-		"CRTAN",
-		"CRGRAY",
-		"CRGREEN",
-		"CRBROWN",
-		"CRGOLD",
-		"CRRED",
-		"CRBLUE2",
-		{ 'C','R','O','R','A','N','G','E' },
-		"CRGRAY", // "White"
-		{ 'C','R','Y','E','L','L','O','W' },
-		"CRRED", // "Untranslated"
-		"CRGRAY", // "Black"
-		"CRBLUE",
-		"CRTAN", // "Cream"
-		"CRGREEN", // "Olive"
-		"CRGREEN", // "Dark Green"
-		"CRRED", // "Dark Red"
-		"CRBROWN", // "Dark Brown"
-		"CRRED", // "Purple"
-		"CRGRAY", // "Dark Gray"
-		"CRBLUE" // "Cyan"
-	};
-	int i;
-	
-    R_FreeTranslationTables();
-	
-	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?
-
-	// [Toke - fix13]
-	// denis - cleaned this up somewhat
-	translationtables = (byte *)(((ptrdiff_t)translationtablesmem + 255) & ~255);
-	
-	// [RH] Each player now gets their own translation table
-	//		(soon to be palettes). These are set up during
-	//		netgame arbitration and as-needed rather than
-	//		in here. We do, however load some text translation
-	//		tables from our PWAD (ala BOOM).
-
-	for (i = 0; i < 256; i++)
-		translationtables[i] = i;
-
-	// Set up default translationRGB tables:
-	palette_t *pal = GetDefaultPalette();
-	for (i = 0; i < MAXPLAYERS; ++i)
-	{
-		for (int j = 0x70; j < 0x80; ++j)
-			translationRGB[i][j - 0x70] = pal->basecolors[j];
-	}
-
-	for (i = 1; i < MAXPLAYERS+3; i++)
-		memcpy (translationtables + i*256, translationtables, 256);
-
-	// create translation tables for dehacked patches that expect them
-	for (i = 0x70; i < 0x80; i++) {
-		// map green ramp to gray, brown, red
-		translationtables[i+(MAXPLAYERS+0)*256] = 0x60 + (i&0xf);
-		translationtables[i+(MAXPLAYERS+1)*256] = 0x40 + (i&0xf);
-		translationtables[i+(MAXPLAYERS+2)*256] = 0x20 + (i&0xf);
-	}
-
-	Ranges = translationtables + (MAXPLAYERS+3)*256;
-	for (i = 0; i < 22; i++)
-		W_ReadLump (W_GetNumForName (ranges[i]), Ranges + 256 * i);
-
-}
-
-void R_FreeTranslationTables (void)
-{
-    delete[] translationtablesmem;
-    translationtablesmem = NULL;
-}
-
-// [Nes] Vanilla player translation table.
-void R_BuildClassicPlayerTranslation (int player, int color)
-{
-	palette_t *pal = GetDefaultPalette();
-	int i;
-	
-	if (color == 1) // Indigo
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i+(player * 256)] = 0x60 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-	else if (color == 2) // Brown
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i+(player * 256)] = 0x40 + (i&0xf);	
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-	else if (color == 3) // Red
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i+(player * 256)] = 0x20 + (i&0xf);	
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-}
-
-void R_CopyTranslationRGB (int fromplayer, int toplayer)
-{
-	for (int i = 0x70; i < 0x80; ++i)
-	{
-		translationRGB[toplayer][i - 0x70] = translationRGB[fromplayer][i - 0x70];
-		translationtables[i+(toplayer * 256)] = translationtables[i+(fromplayer * 256)];
-	}
-}
-
-// [RH] Create a player's translation table based on
-//		a given mid-range color.
-void R_BuildPlayerTranslation (int player, int color)
-{
-	palette_t *pal = GetDefaultPalette();
-	byte *table = &translationtables[player * 256];
-	int i;
-	float r = (float)RPART(color) / 255.0f;
-	float g = (float)GPART(color) / 255.0f;
-	float b = (float)BPART(color) / 255.0f;
-	float h, s, v;
-	float sdelta, vdelta;
-
-	RGBtoHSV (r, g, b, &h, &s, &v);
-
-	s -= 0.23f;
-	if (s < 0.0f)
-		s = 0.0f;
-	sdelta = 0.014375f;
-
-	v += 0.1f;
-	if (v > 1.0f)
-		v = 1.0f;
-	vdelta = -0.05882f;
-
-	for (i = 0x70; i < 0x80; i++) {
-		HSVtoRGB (&r, &g, &b, h, s, v);
-
-		// Set up RGB values for 32bpp translation:
-		translationRGB[player][i - 0x70] = MAKERGB(
-			(int)(r * 255.0f),
-			(int)(g * 255.0f),
-			(int)(b * 255.0f)
-		);
-
-		table[i] = BestColor (pal->basecolors,
-							  (int)(r * 255.0f),
-							  (int)(g * 255.0f),
-							  (int)(b * 255.0f),
-							  pal->numcolors);
-		s += sdelta;
-		if (s > 1.0f) {
-			s = 1.0f;
-			sdelta = 0.0f;
-		}
-
-		v += vdelta;
-		if (v < 0.0f) {
-			v = 0.0f;
-			vdelta = 0.0f;
-		}
-	}
-}
-
 
 //
 // R_InitBuffer 
