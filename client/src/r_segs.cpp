@@ -471,6 +471,30 @@ static void BlastColumn (void (*blastfunc)())
 	rw_light += rw_lightstep;
 }
 
+//
+// R_SetColumnColormap
+//
+// Sets dc_colormap to the appropriate value for the next column
+//
+static inline void R_SetColumnColormap()
+{
+	if (fixedlightlev)
+	{
+		dc_colormap = basecolormap.with(fixedlightlev);
+	}
+	else if (fixedcolormap.isValid())
+	{
+		dc_colormap = fixedcolormap;	
+	}
+	else
+	{
+		if (!walllights)
+			walllights = scalelight[0];
+
+		int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+		dc_colormap = basecolormap.with(walllights[index]);
+	}
+}
 
 // [RH] This is DOOM's original R_RenderSegLoop() with most of the work
 //		having been split off into a separate BlastColumn() function. It
@@ -478,27 +502,11 @@ static void BlastColumn (void (*blastfunc)())
 //		on a Pentium II, can be slower than R_RenderSegLoop2().
 void R_RenderSegLoop1 (void)
 {
-	if (fixedlightlev)
-		dc_colormap = basecolormap.with(fixedlightlev);
-	else if (fixedcolormap.isValid())
-		dc_colormap = fixedcolormap;
-	else if (!walllights)
-		walllights = scalelight[0];
-
 	for ( ; rw_x < rw_stopx ; rw_x++)
 	{
 		dc_x = rw_x;
-		if (!fixedcolormap.isValid())
-		{
-			// calculate lighting
-			unsigned index = rw_light >> LIGHTSCALESHIFT;
-
-			if (index >= MAXLIGHTSCALE)
-				index = MAXLIGHTSCALE-1;
-
-			dc_colormap = basecolormap.with(walllights[index]);	// [RH] add basecolormap
-		}
-		BlastColumn (colfunc);
+		R_SetColumnColormap();
+		BlastColumn(colfunc);
 	}
 }
 
@@ -519,97 +527,78 @@ void R_RenderSegLoop2 (void)
 	if (rw_x >= rw_stopx)
 		return;
 
-	if (fixedlightlev)
-		dc_colormap = basecolormap.with(fixedlightlev);
-	else if (fixedcolormap.isValid())
-		dc_colormap = fixedcolormap;
-	else {
-		// calculate lighting
-		unsigned index = rw_light >> LIGHTSCALESHIFT;
+	R_SetColumnColormap();
 
-		if (index >= MAXLIGHTSCALE)
-			index = MAXLIGHTSCALE-1;
-
-		if (!walllights)
-			walllights = scalelight[0];
-
-		dc_colormap = basecolormap.with(walllights[index]);	// [RH] add basecolormap
-	}
-
-	if (rw_x & 1) {
+	if (rw_x & 1)
+	{
 		dc_x = rw_x;
-		BlastColumn (colfunc);
+		BlastColumn(colfunc);
 		rw_x++;
 	}
 
-	if (rw_x & 2) {
-		if (rw_x < rw_stopx - 1) {
+	if (rw_x & 2)
+	{
+		if (rw_x < rw_stopx - 1)
+		{
 			rt_initcols();
 			dc_x = 0;
-			BlastColumn (hcolfunc_pre);
+			BlastColumn(hcolfunc_pre);
 			rw_x++;
 			dc_x = 1;
-			BlastColumn (hcolfunc_pre);
-			rt_draw2cols (0, rw_x - 1);
+			BlastColumn(hcolfunc_pre);
+			rt_draw2cols(0, rw_x - 1);
 			rw_x++;
-		} else if (rw_x == rw_stopx - 1) {
+		}
+		else if (rw_x == rw_stopx - 1)
+		{
 			dc_x = rw_x;
-			BlastColumn (colfunc);
+			BlastColumn(colfunc);
 			rw_x++;
 		}
 	}
 
-	while (rw_x < stop) {
-		if (!fixedcolormap.isValid()) {
-			// calculate lighting
-			unsigned index = rw_light >> LIGHTSCALESHIFT;
+	while (rw_x < stop)
+	{
+		R_SetColumnColormap();
 
-			if (index >= MAXLIGHTSCALE)
-				index = MAXLIGHTSCALE-1;
-
-			dc_colormap = basecolormap.with(walllights[index]);	// [RH] add basecolormap
-		}
 		rt_initcols();
 		dc_x = 0;
-		BlastColumn (hcolfunc_pre);
+		BlastColumn(hcolfunc_pre);
 		rw_x++;
 		dc_x = 1;
-		BlastColumn (hcolfunc_pre);
+		BlastColumn(hcolfunc_pre);
 		rw_x++;
 		dc_x = 2;
-		BlastColumn (hcolfunc_pre);
+		BlastColumn(hcolfunc_pre);
 		rw_x++;
 		dc_x = 3;
-		BlastColumn (hcolfunc_pre);
-		rt_draw4cols (rw_x - 3);
+		BlastColumn(hcolfunc_pre);
+		rt_draw4cols(rw_x - 3);
 		rw_x++;
 	}
+	
+	R_SetColumnColormap();
 
-	if (!fixedcolormap.isValid()) {
-		// calculate lighting
-		unsigned index = rw_light >> LIGHTSCALESHIFT;
-
-		if (index >= MAXLIGHTSCALE)
-			index = MAXLIGHTSCALE-1;
-
-		dc_colormap = basecolormap.with(walllights[index]);	// [RH] add basecolormap
-	}
-
-	if (rw_stopx - rw_x == 1) {
+	if (rw_stopx - rw_x == 1)
+	{
 		dc_x = rw_x;
-		BlastColumn (colfunc);
+		BlastColumn(colfunc);
 		rw_x++;
-	} else if (rw_stopx - rw_x >= 2) {
+	}
+	else if (rw_stopx - rw_x >= 2)
+	{
 		rt_initcols();
 		dc_x = 0;
-		BlastColumn (hcolfunc_pre);
+		BlastColumn(hcolfunc_pre);
 		rw_x++;
 		dc_x = 1;
-		BlastColumn (hcolfunc_pre);
-		rt_draw2cols (0, rw_x - 1);
-		if (++rw_x < rw_stopx) {
+		BlastColumn(hcolfunc_pre);
+		rt_draw2cols(0, rw_x - 1);
+
+		if (++rw_x < rw_stopx)
+		{
 			dc_x = rw_x;
-			BlastColumn (colfunc);
+			BlastColumn(colfunc);
 			rw_x++;
 		}
 	}
