@@ -93,6 +93,13 @@ static int  	*maskedtexturecol;
 
 void (*R_RenderSegLoop)(void);
 
+enum {
+	SEG_SOLID,
+	SEG_MASKED
+};
+
+void R_RenderSegRange(int start, int stop, int segtype);
+
 //
 // R_TexScaleX
 //
@@ -131,6 +138,17 @@ static inline fixed_t R_TexInvScaleX(fixed_t x, int texnum)
 static inline fixed_t R_TexInvScaleY(fixed_t y, int texnum)
 {
 	return FixedDiv(y, texturescaley[texnum]);
+}
+
+//
+// R_SetTextureParams
+//
+// Sets dc_source, dc_texturefrac
+//
+static inline void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
+{
+	dc_texturefrac = R_TexScaleY(mid + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale), texnum);
+	dc_source = R_GetColumnData(texnum, R_TexScaleX(texcol, texnum) >> FRACBITS);
 }
 
 //
@@ -177,13 +195,16 @@ static void R_FillWallHeightArray(
 	}
 }
 
+
 //
 // BlastMaskedColumn
 //
-static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
+static void BlastMaskedColumn(void (*blastfunc)(tallpost_t *post))
 {
 	if (maskedtexturecol[dc_x] != MAXINT && spryscale > 0)
 	{
+		int texnum = texturetranslation[curline->sidedef->midtexture];
+
 		// calculate lighting
 		if (!fixedcolormap.isValid())
 		{
@@ -215,176 +236,11 @@ static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 	rw_light += rw_lightstep;
 }
 
-//
-// R_RenderMaskedSegRange
-//
-void
-R_RenderMaskedSegRange
-( drawseg_t*	ds,
-  int		x1,
-  int		x2 )
-{
-	int 		lightnum;
-	sector_t	tempsec;		// killough 4/13/98
-
-	dc_color = (dc_color + 4) & 0xFF;	// color if using r_drawflat
-
-	// Calculate light table.
-	// Use different light tables
-	//	 for horizontal / vertical / diagonal. Diagonal?
-	// OPTIMIZE: get rid of LIGHTSEGSHIFT globally
-	curline = ds->curline;
-
-	// killough 4/11/98: draw translucent 2s normal textures
-	// [RH] modified because we don't use user-definable
-	//		translucency maps
-	if (curline->linedef->lucency < 240)
-	{
-		R_SetLucentDrawFuncs();
-		dc_translevel = curline->linedef->lucency << 8;
-	}
-	else
-	{
-		R_ResetDrawFuncs();
-	}
-
-	frontsector = curline->frontsector;
-	backsector = curline->backsector;
-
-	int texnum = texturetranslation[curline->sidedef->midtexture];
-	fixed_t texheight = R_TexScaleY(textureheight[texnum], texnum);
-
-	// find texture positioning
-	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
-		dc_texturemid = MAX<fixed_t>(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + texheight;
-	else
-		dc_texturemid = MIN<fixed_t>(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
-
-	dc_texturemid = R_TexScaleY(dc_texturemid - viewz + curline->sidedef->rowoffset, texnum);
-	
-	int64_t topscreenclip = int64_t(centery) << 2*FRACBITS;
-	int64_t botscreenclip = int64_t(centery - viewheight) << 2*FRACBITS;
- 
-	// top of texture entirely below screen?
-	if (int64_t(dc_texturemid) * ds->scale1 <= botscreenclip &&
-		int64_t(dc_texturemid) * ds->scale2 <= botscreenclip)
-		return;
- 
-	// bottom of texture entirely above screen?
-	if (int64_t(dc_texturemid - texheight) * ds->scale1 > topscreenclip &&
-		int64_t(dc_texturemid - texheight) * ds->scale2 > topscreenclip)
-		return;
-
-	basecolormap = frontsector->floorcolormap->maps;	// [RH] Set basecolormap
-
-	// killough 4/13/98: get correct lightlevel for 2s normal textures
-	lightnum = (R_FakeFlat(frontsector, &tempsec, NULL, NULL, false)
-			->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
-
-	lightnum += R_OrthogonalLightnumAdjustment();
-
-	walllights = lightnum >= LIGHTLEVELS ? scalelight[LIGHTLEVELS-1] :
-		lightnum <  0 ? scalelight[0] : scalelight[lightnum];
-
-	maskedtexturecol = ds->maskedtexturecol;
-
-	rw_scalestep = R_TexInvScaleY(ds->scalestep, texnum);
-	spryscale = R_TexInvScaleY(ds->scale1, texnum) + (x1 - ds->x1) * rw_scalestep;
-
-	rw_lightstep = ds->lightstep;
-	rw_light = ds->light + (x1 - ds->x1) * rw_lightstep;
-	mfloorclip = ds->sprbottomclip;
-	mceilingclip = ds->sprtopclip;
-
-	if (fixedlightlev)
-		dc_colormap = basecolormap.with(fixedlightlev);
-	else if (fixedcolormap.isValid())
-		dc_colormap = fixedcolormap;
-
-	// draw the columns
-	if (!r_columnmethod)
-	{
-		for (dc_x = x1; dc_x <= x2; dc_x++)
-			BlastMaskedColumn (R_DrawMaskedColumn, texnum);
-	}
-	else
-	{
-		// [RH] Draw them through the temporary buffer
-		int stop = (++x2) & ~3;
-
-		if (x1 >= x2)
-			return;
-
-		dc_x = x1;
-
-		if (dc_x & 1) {
-			BlastMaskedColumn (R_DrawMaskedColumn, texnum);
-			dc_x++;
-		}
-
-		if (dc_x & 2) {
-			if (dc_x < x2 - 1) {
-				rt_initcols();
-				BlastMaskedColumn (R_DrawMaskedColumnHoriz, texnum);
-				dc_x++;
-				BlastMaskedColumn (R_DrawMaskedColumnHoriz, texnum);
-				rt_draw2cols ((dc_x - 1) & 3, dc_x - 1);
-				dc_x++;
-			} else if (dc_x == x2 - 1) {
-				BlastMaskedColumn (R_DrawMaskedColumn, texnum);
-				dc_x++;
-			}
-		}
-
-		while (dc_x < stop) {
-			rt_initcols();
-			BlastMaskedColumn (R_DrawMaskedColumnHoriz, texnum);
-			dc_x++;
-			BlastMaskedColumn (R_DrawMaskedColumnHoriz, texnum);
-			dc_x++;
-			BlastMaskedColumn (R_DrawMaskedColumnHoriz, texnum);
-			dc_x++;
-			BlastMaskedColumn (R_DrawMaskedColumnHoriz, texnum);
-			rt_draw4cols (dc_x - 3);
-			dc_x++;
-		}
-
-		if (x2 - dc_x == 1) {
-			BlastMaskedColumn (R_DrawMaskedColumn, texnum);
-		} else if (x2 - dc_x >= 2) {
-			rt_initcols();
-			BlastMaskedColumn (R_DrawMaskedColumnHoriz, texnum);
-			dc_x++;
-			BlastMaskedColumn (R_DrawMaskedColumnHoriz, texnum);
-			rt_draw2cols ((dc_x - 1) & 3, dc_x - 1);
-			if (++dc_x < x2) {
-				BlastMaskedColumn (R_DrawMaskedColumn, texnum);
-			}
-		}
-	}
-}
 
 //
-// R_SetTextureParams
+// BlastColumn
 //
-// Sets dc_source, dc_texturefrac
-//
-static inline void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
-{
-	dc_texturefrac = R_TexScaleY(mid + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale), texnum);
-	dc_source = R_GetColumnData(texnum, R_TexScaleX(texcol, texnum) >> FRACBITS);
-}
-
-//
-// R_RenderSegLoop
-// Draws zero, one, or two textures (and possibly a masked
-//	texture) for walls.
-// Can draw or mark the starting pixel of floor and ceiling
-//	textures.
-// CALLED: CORE LOOPING ROUTINE.
-//
-
-static void BlastColumn (void (*blastfunc)())
+static void BlastColumn(void (*blastfunc)())
 {
 	rw_scale = wallscalex[rw_x];
 	if (rw_scale > 0)
@@ -520,21 +376,26 @@ static inline void R_SetColumnColormap()
 	}
 }
 
-// [RH] This is DOOM's original R_RenderSegLoop() with most of the work
-//		having been split off into a separate BlastColumn() function. It
-//		just draws the columns straight to the frame buffer, and at least
-//		on a Pentium II, can be slower than R_RenderSegLoop2().
-void R_RenderSegLoop1 (void)
+
+inline void SolidColumnBlaster()
 {
-	while (rw_x <= rw_stop)
-	{
-		dc_x = rw_x;
-		R_SetColumnColormap();
-		BlastColumn(colfunc);
-		rw_x++;
-	}
+	BlastColumn(colfunc);
 }
 
+inline void SolidHColumnBlaster()
+{
+	BlastColumn(hcolfunc_pre);
+}
+
+inline void MaskedColumnBlaster()
+{
+	BlastMaskedColumn(R_DrawMaskedColumn);
+}
+
+inline void MaskedHColumnBlaster()
+{
+	BlastMaskedColumn(R_DrawMaskedColumnHoriz);
+}
 
 //
 // R_RenderSegRange
@@ -554,39 +415,50 @@ void R_RenderSegLoop1 (void)
 //		C is about twice as fast as using R_RenderSegLoop1() with an
 //		assembly rendering function.
 //
-void R_RenderSegRange(int start, int stop)
+
+void R_RenderSegRange(int start, int stop, int segtype)
 {
 	if (start > stop)
 		return;
 
-	rw_x = start;
+	void (*colblast)();
+	void (*hcolblast)();
+
+	if (segtype == SEG_SOLID)
+	{
+		colblast = SolidColumnBlaster;
+		hcolblast = SolidHColumnBlaster;
+	}
+	else if (segtype == SEG_MASKED)
+	{
+		colblast = MaskedColumnBlaster;
+		hcolblast = MaskedHColumnBlaster;
+	}
+	
+	rw_x = dc_x = start;
 
 	// render until rw_x is dword aligned
 	R_SetColumnColormap();
 	if (rw_x & 1)
 	{
-		dc_x = rw_x;
-		BlastColumn(colfunc);
-		rw_x++;
+		colblast();	
+		rw_x++; dc_x++;
 	}
 	if (rw_x & 2)
 	{
 		if (rw_x < stop)
 		{
 			rt_initcols();
-			dc_x = 0;
-			BlastColumn(hcolfunc_pre);
-			rw_x++;
-			dc_x = 1;
-			BlastColumn(hcolfunc_pre);
-			rt_draw2cols(0, rw_x - 1);
-			rw_x++;
+			hcolblast();
+			rw_x++; dc_x++;
+			hcolblast();
+			rt_draw2cols((rw_x - 1) & 3, rw_x - 1);
+			rw_x++; dc_x++;
 		}
 		else if (rw_x == stop)
 		{
-			dc_x = rw_x;
-			BlastColumn(colfunc);
-			rw_x++;
+			colblast();
+			rw_x++; dc_x++;
 		}
 	}
 
@@ -595,21 +467,16 @@ void R_RenderSegRange(int start, int stop)
 	while (rw_x < blockend)
 	{
 		R_SetColumnColormap();
-
 		rt_initcols();
-		dc_x = 0;
-		BlastColumn(hcolfunc_pre);
-		rw_x++;
-		dc_x = 1;
-		BlastColumn(hcolfunc_pre);
-		rw_x++;
-		dc_x = 2;
-		BlastColumn(hcolfunc_pre);
-		rw_x++;
-		dc_x = 3;
-		BlastColumn(hcolfunc_pre);
+		hcolblast();
+		rw_x++; dc_x++;
+		hcolblast();
+		rw_x++; dc_x++;
+		hcolblast();
+		rw_x++; dc_x++;
+		hcolblast();
 		rt_draw4cols(rw_x - 3);
-		rw_x++;
+		rw_x++; dc_x++;
 	}
 
 	// render any remaining columns	
@@ -617,34 +484,143 @@ void R_RenderSegRange(int start, int stop)
 	if (rw_x < stop)
 	{
 		rt_initcols();
-		dc_x = 0;
-		BlastColumn(hcolfunc_pre);
-		rw_x++;
-		dc_x = 1;
-		BlastColumn(hcolfunc_pre);
-		rt_draw2cols(0, rw_x - 1);
-		rw_x++;
+		hcolblast();
+		rw_x++; dc_x++;
+		hcolblast();
+		rt_draw2cols((rw_x - 1) & 3, rw_x - 1);
+		rw_x++; dc_x++;
 
 		if (rw_x <= stop)
 		{
-			dc_x = rw_x;
-			BlastColumn(colfunc);
-			rw_x++;
+			colblast();
+			rw_x++; dc_x++;
 		}
 	}
 	else if (rw_x == stop)
 	{
+		colblast();
+		rw_x++; dc_x++;
+	}
+}
+
+//
+// R_RenderSegLoop1
+//
+// Renders a solid seg one at a time, directly to the screen buffer
+//
+void R_RenderSegLoop1()
+{
+	while (rw_x <= rw_stop)
+	{
 		dc_x = rw_x;
+		R_SetColumnColormap();
 		BlastColumn(colfunc);
 		rw_x++;
 	}
 }
 
-void R_RenderSegLoop2 (void)
+//
+// R_RenderSegLoop2
+//
+// Renders a solid seg using the horizontal column drawing scheme
+//
+void R_RenderSegLoop2()
 {
-	R_RenderSegRange(rw_x, rw_stop);
+	R_RenderSegRange(rw_x, rw_stop, SEG_SOLID);
 }
 
+//
+// R_RenderMaskedSegRange
+//
+// Renders a masked seg
+//
+void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
+{
+	int 		lightnum;
+	sector_t	tempsec;		// killough 4/13/98
+
+	dc_color = (dc_color + 4) & 0xFF;	// color if using r_drawflat
+
+	// Calculate light table.
+	// Use different light tables
+	//	 for horizontal / vertical / diagonal. Diagonal?
+	// OPTIMIZE: get rid of LIGHTSEGSHIFT globally
+	curline = ds->curline;
+
+	// killough 4/11/98: draw translucent 2s normal textures
+	// [RH] modified because we don't use user-definable
+	//		translucency maps
+	if (curline->linedef->lucency < 240)
+	{
+		R_SetLucentDrawFuncs();
+		dc_translevel = curline->linedef->lucency << 8;
+	}
+	else
+	{
+		R_ResetDrawFuncs();
+	}
+
+	frontsector = curline->frontsector;
+	backsector = curline->backsector;
+
+	int texnum = texturetranslation[curline->sidedef->midtexture];
+	fixed_t texheight = R_TexScaleY(textureheight[texnum], texnum);
+
+	// find texture positioning
+	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
+		dc_texturemid = MAX<fixed_t>(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + texheight;
+	else
+		dc_texturemid = MIN<fixed_t>(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
+
+	dc_texturemid = R_TexScaleY(dc_texturemid - viewz + curline->sidedef->rowoffset, texnum);
+	
+	int64_t topscreenclip = int64_t(centery) << 2*FRACBITS;
+	int64_t botscreenclip = int64_t(centery - viewheight) << 2*FRACBITS;
+ 
+	// top of texture entirely below screen?
+	if (int64_t(dc_texturemid) * ds->scale1 <= botscreenclip &&
+		int64_t(dc_texturemid) * ds->scale2 <= botscreenclip)
+		return;
+ 
+	// bottom of texture entirely above screen?
+	if (int64_t(dc_texturemid - texheight) * ds->scale1 > topscreenclip &&
+		int64_t(dc_texturemid - texheight) * ds->scale2 > topscreenclip)
+		return;
+
+	basecolormap = frontsector->floorcolormap->maps;	// [RH] Set basecolormap
+
+	// killough 4/13/98: get correct lightlevel for 2s normal textures
+	lightnum = (R_FakeFlat(frontsector, &tempsec, NULL, NULL, false)
+			->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
+
+	lightnum += R_OrthogonalLightnumAdjustment();
+
+	walllights = lightnum >= LIGHTLEVELS ? scalelight[LIGHTLEVELS-1] :
+		lightnum <  0 ? scalelight[0] : scalelight[lightnum];
+
+	maskedtexturecol = ds->maskedtexturecol;
+
+	rw_scalestep = R_TexInvScaleY(ds->scalestep, texnum);
+	spryscale = R_TexInvScaleY(ds->scale1, texnum) + (x1 - ds->x1) * rw_scalestep;
+
+	rw_lightstep = ds->lightstep;
+	rw_light = ds->light + (x1 - ds->x1) * rw_lightstep;
+	mfloorclip = ds->sprbottomclip;
+	mceilingclip = ds->sprtopclip;
+
+	R_SetColumnColormap();
+
+	// draw the columns
+	if (!r_columnmethod)
+	{
+		for (dc_x = x1; dc_x <= x2; dc_x++)
+			BlastMaskedColumn(R_DrawMaskedColumn);
+	}
+	else
+	{
+		R_RenderSegRange(x1, x2, SEG_MASKED);
+	}
+}
 extern int *openings;
 extern size_t maxopenings;
 
