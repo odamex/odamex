@@ -62,8 +62,6 @@ int*			walllights;
 fixed_t			rw_light;		// [RH] Use different scaling for lights
 fixed_t			rw_lightstep;
 
-static int		rw_x;
-static int		rw_stop;
 static fixed_t	rw_scale;
 static fixed_t	rw_scalestep;
 static fixed_t	rw_midtexturemid;
@@ -242,115 +240,115 @@ static void BlastMaskedColumn(void (*blastfunc)(tallpost_t *post))
 //
 static void BlastColumn(void (*blastfunc)())
 {
-	rw_scale = wallscalex[rw_x];
+	rw_scale = wallscalex[dc_x];
 	if (rw_scale > 0)
 		dc_iscale = 0xffffffffu / (unsigned)rw_scale;
 
-	fixed_t texturecolumn = texoffs[rw_x];
+	fixed_t texturecolumn = texoffs[dc_x];
 
 	// mark ceiling area
-	walltopf[rw_x] = MAX(walltopf[rw_x], ceilingclip[rw_x]);
+	walltopf[dc_x] = MAX(walltopf[dc_x], ceilingclip[dc_x]);
 
 	if (markceiling)
 	{
-		int top = ceilingclip[rw_x];
-		int bottom = MIN(walltopf[rw_x], floorclip[rw_x]);
+		int top = ceilingclip[dc_x];
+		int bottom = MIN(walltopf[dc_x], floorclip[dc_x]);
 
 		if (top < bottom)
 		{
-			ceilingplane->top[rw_x] = top;
-			ceilingplane->bottom[rw_x] = bottom;
+			ceilingplane->top[dc_x] = top;
+			ceilingplane->bottom[dc_x] = bottom;
 		}
 	}
 
 	// mark floor area
-	wallbottomf[rw_x] = MIN(wallbottomf[rw_x], floorclip[rw_x]);
+	wallbottomf[dc_x] = MIN(wallbottomf[dc_x], floorclip[dc_x]);
 
 	if (markfloor)
 	{
-		int top = MAX(wallbottomf[rw_x], ceilingclip[rw_x]);
-		int bottom = floorclip[rw_x];
+		int top = MAX(wallbottomf[dc_x], ceilingclip[dc_x]);
+		int bottom = floorclip[dc_x];
 
 		if (top < bottom)
 		{
-			floorplane->top[rw_x] = top;
-			floorplane->bottom[rw_x] = bottom;
+			floorplane->top[dc_x] = top;
+			floorplane->bottom[dc_x] = bottom;
 		}
 	}
 
 	// draw the wall tiers
 	if (midtexture)						// single sided line
 	{
-		dc_yl = walltopf[rw_x];
-		dc_yh = wallbottomf[rw_x] - 1;
+		dc_yl = walltopf[dc_x];
+		dc_yh = wallbottomf[dc_x] - 1;
 
 		R_SetTextureParams(midtexture, texturecolumn, rw_midtexturemid);
 
 		blastfunc();
-		ceilingclip[rw_x] = viewheight - 1;
-		floorclip[rw_x] = 0;
+		ceilingclip[dc_x] = viewheight - 1;
+		floorclip[dc_x] = 0;
 	}
 	else							// two sided line
 	{
 		if (toptexture)				// upper wall tier
 		{
-			walltopb[rw_x] = MIN(walltopb[rw_x], floorclip[rw_x]);
+			walltopb[dc_x] = MIN(walltopb[dc_x], floorclip[dc_x]);
 
-			if (walltopb[rw_x] >= walltopf[rw_x])
+			if (walltopb[dc_x] >= walltopf[dc_x])
 			{
-				dc_yl = walltopf[rw_x];
-				dc_yh = walltopb[rw_x] - 1;
+				dc_yl = walltopf[dc_x];
+				dc_yh = walltopb[dc_x] - 1;
 
 				R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
 
 				blastfunc();
-				ceilingclip[rw_x] = walltopb[rw_x];
+				ceilingclip[dc_x] = walltopb[dc_x];
 			}
 			else
 			{
-				ceilingclip[rw_x] = walltopf[rw_x];
+				ceilingclip[dc_x] = walltopf[dc_x];
 			}
 		}
 		else if (markceiling)		// no upper wall tier
 		{
-			ceilingclip[rw_x] = walltopf[rw_x];
+			ceilingclip[dc_x] = walltopf[dc_x];
 		}
 
 		if (bottomtexture)			// lower wall tier
 		{
-			wallbottomb[rw_x] = MAX(wallbottomb[rw_x], ceilingclip[rw_x]);
+			wallbottomb[dc_x] = MAX(wallbottomb[dc_x], ceilingclip[dc_x]);
 
-			if (wallbottomf[rw_x] >= wallbottomb[rw_x])
+			if (wallbottomf[dc_x] >= wallbottomb[dc_x])
 			{
-				dc_yl = wallbottomb[rw_x];
-				dc_yh = wallbottomf[rw_x] - 1;
+				dc_yl = wallbottomb[dc_x];
+				dc_yh = wallbottomf[dc_x] - 1;
 
 				R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
 				blastfunc();
 
-				floorclip[rw_x] = wallbottomb[rw_x];
+				floorclip[dc_x] = wallbottomb[dc_x];
 			}
 			else
 			{
-				floorclip[rw_x] = wallbottomf[rw_x];
+				floorclip[dc_x] = wallbottomf[dc_x];
 			}
 		}
 		else if (markfloor)			// no lower wall tier
 		{
-			floorclip[rw_x] = wallbottomf[rw_x];
+			floorclip[dc_x] = wallbottomf[dc_x];
 		}
 
 		if (maskedtexture)
 		{
 			// save texturecol for backdrawing of masked mid texture
-			maskedtexturecol[rw_x] = R_TexScaleX(texturecolumn, maskedtexture) >> FRACBITS;
+			maskedtexturecol[dc_x] = R_TexScaleX(texturecolumn, maskedtexture) >> FRACBITS;
 		}
 	}
 
 	// cph - if we completely blocked further sight through this column,
 	// add this info to the solid columns array
-	if ((markceiling || markfloor) && (floorclip[rw_x] <= ceilingclip[rw_x]))
-		solidcol[rw_x] = 1;
+	if ((markceiling || markfloor) && (floorclip[dc_x] <= ceilingclip[dc_x]))
+		solidcol[dc_x] = 1;
 
 	rw_light += rw_lightstep;
 }
@@ -448,7 +446,7 @@ void R_RenderColumnRange(int start, int stop, int segtype)
 		hcolblast = SkyHColumnBlaster;
 	}
 	
-	rw_x = dc_x = start;
+	dc_x = start;
 
 	bool calc_light = false;
 	if (segtype != COL_SKY)
@@ -471,7 +469,7 @@ void R_RenderColumnRange(int start, int stop, int segtype)
 
 	if (!r_columnmethod)
 	{
-		for (dc_x = rw_x = start; dc_x <= stop; dc_x++, rw_x++)
+		for (dc_x = start; dc_x <= stop; dc_x++)
 		{
 			if (calc_light)
 			{
@@ -484,39 +482,22 @@ void R_RenderColumnRange(int start, int stop, int segtype)
 	}
 	else
 	{
-		// render until rw_x is dword aligned
-		if (calc_light)
+		// render until dc_x is dword aligned
+		while (dc_x & 3)
 		{
-			int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-			dc_colormap = basecolormap.with(walllights[index]);
-		}
+			if (calc_light)
+			{
+				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+				dc_colormap = basecolormap.with(walllights[index]);
+			}
 
-		if (rw_x & 1)
-		{
-			colblast();	
-			rw_x++; dc_x++;
-		}
-		if (rw_x & 2)
-		{
-			if (rw_x < stop)
-			{
-				rt_initcols();
-				hcolblast();
-				rw_x++; dc_x++;
-				hcolblast();
-				rt_draw2cols((rw_x - 1) & 3, rw_x - 1);
-				rw_x++; dc_x++;
-			}
-			else if (rw_x == stop)
-			{
-				colblast();
-				rw_x++; dc_x++;
-			}
+			colblast();
+			dc_x++;
 		}
 
 		// render in 4 column blocks
 		int blockend = (stop + 1) & ~3;
-		while (rw_x < blockend)
+		while (dc_x < blockend)
 		{
 			if (calc_light)
 			{
@@ -526,14 +507,14 @@ void R_RenderColumnRange(int start, int stop, int segtype)
 
 			rt_initcols();
 			hcolblast();
-			rw_x++; dc_x++;
+			dc_x++;
 			hcolblast();
-			rw_x++; dc_x++;
+			dc_x++;
 			hcolblast();
-			rw_x++; dc_x++;
+			dc_x++;
 			hcolblast();
-			rt_draw4cols(rw_x - 3);
-			rw_x++; dc_x++;
+			rt_draw4cols(dc_x - 3);
+			dc_x++;
 		}
 
 		// render any remaining columns	
@@ -543,25 +524,25 @@ void R_RenderColumnRange(int start, int stop, int segtype)
 			dc_colormap = basecolormap.with(walllights[index]);
 		}
 
-		if (rw_x < stop)
+		if (dc_x < stop)
 		{
 			rt_initcols();
 			hcolblast();
-			rw_x++; dc_x++;
+			dc_x++;
 			hcolblast();
-			rt_draw2cols((rw_x - 1) & 3, rw_x - 1);
-			rw_x++; dc_x++;
+			rt_draw2cols((dc_x - 1) & 3, dc_x - 1);
+			dc_x++;
 
-			if (rw_x <= stop)
+			if (dc_x <= stop)
 			{
 				colblast();
-				rw_x++; dc_x++;
+				dc_x++;
 			}
 		}
-		else if (rw_x == stop)
+		else if (dc_x == stop)
 		{
 			colblast();
-			rw_x++; dc_x++;
+			dc_x++;
 		}
 	}
 }
@@ -572,9 +553,9 @@ void R_RenderColumnRange(int start, int stop, int segtype)
 //
 // Renders a solid seg
 //
-void R_RenderSegLoop()
+void R_RenderSegRange(int start, int stop)
 {
-	R_RenderColumnRange(rw_x, rw_stop, COL_SOLID);
+	R_RenderColumnRange(start, stop, COL_SOLID);
 }
 
 
@@ -923,8 +904,8 @@ void R_StoreWallRange(int start, int stop)
 	// mark the segment as visible for auto map
 	linedef->flags |= ML_MAPPED;
 
-	ds_p->x1 = rw_x = start;
-	ds_p->x2 = rw_stop = stop;
+	ds_p->x1 = start;
+	ds_p->x2 = stop;
 	ds_p->curline = curline;
 
 	// killough: remove limits on openings
@@ -1113,7 +1094,7 @@ void R_StoreWallRange(int start, int stop)
 		{
 			// masked midtexture
 			maskedtexture = sidedef->midtexture;
-			ds_p->maskedtexturecol = maskedtexturecol = lastopening - rw_x;
+			ds_p->maskedtexturecol = maskedtexturecol = lastopening - start;
 			lastopening += count; 
 		}
 
@@ -1176,16 +1157,16 @@ void R_StoreWallRange(int start, int stop)
 
 	// render it
 	if (markceiling && ceilingplane)
-		ceilingplane = R_CheckPlane(ceilingplane, rw_x, rw_stop);
+		ceilingplane = R_CheckPlane(ceilingplane, start, stop);
 	else
 		markceiling = 0;
 
 	if (markfloor && floorplane)
-		floorplane = R_CheckPlane(floorplane, rw_x, rw_stop);
+		floorplane = R_CheckPlane(floorplane, start, stop);
 	else
 		markfloor = 0;
 
-	R_RenderSegLoop ();
+	R_RenderSegRange(start, stop);
 
     // save sprite clipping info
     if ( ((ds_p->silhouette & SIL_TOP) || maskedtexture)
