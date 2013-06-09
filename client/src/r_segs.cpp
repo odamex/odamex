@@ -282,6 +282,10 @@ static void BlastColumn(void (*blastfunc)())
 		dc_yl = walltopf[dc_x];
 		dc_yh = wallbottomf[dc_x] - 1;
 
+		// [SL] ensure the bottom row of the screen is filled
+		if (wallbottomf[dc_x] == floorclip[dc_x])
+			dc_yh++;
+
 		R_SetTextureParams(midtexture, texturecolumn, rw_midtexturemid);
 
 		blastfunc();
@@ -322,6 +326,10 @@ static void BlastColumn(void (*blastfunc)())
 			{
 				dc_yl = wallbottomb[dc_x];
 				dc_yh = wallbottomf[dc_x] - 1;
+
+				// [SL] ensure the bottom row of the screen is filled
+				if (wallbottomf[dc_x] == floorclip[dc_x])
+					dc_yh++;
 
 				R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
 				blastfunc();
