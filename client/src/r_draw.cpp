@@ -553,27 +553,78 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, int pitch)
 
 	// [SL] Properly tile textures whose heights are not a power-of-2,
 	// avoiding a tutti-frutti effect.  From Eternity Engine.
-	if (texheight & (texheight - 1))	// not a power-of-2?
+	if (texheight & (texheight - 1))
 	{
+		// texture height is NOT a power-of-2
+		// just do a simple blit to the dest buffer (I'm lazy)
+
 		if (frac < 0)
 			while ((frac += texheight) < 0);
 		else
 			while (frac >= texheight)
 				frac -= texheight;
-		do {
+
+		while (count--)
+		{
 			colorfunc(source[frac >> FRACBITS], dest);
 			dest += pitch;
 			if ((frac += fracstep) >= texheight)
 				frac -= texheight;
-		} while (--count);
+		}
 	}
-	else							// is a power-of-2
+	else
 	{
-		do {
+		// texture height is a power-of-2
+		// do some loop unrolling
+
+		if (count & 1)
+		{
 			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch;
-			frac += fracstep;
-		} while (--count);
+			dest += pitch; frac += fracstep;
+		}
+
+		if (count & 2)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+		}
+
+		if (count & 4)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+		}
+
+		count &= ~7;
+
+		while (count)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			count -= 8;
+		}
 	}
 }
 
@@ -689,7 +740,9 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, int pitch)
 	const float ius = ds_iustep, ivs = ds_ivstep;
 	float id = ds_id, ids = ds_idstep;
 	
-	COLORFUNC colorfunc(&ds_colormap);
+	int lightidx = 0;
+	shaderef_t colormap;
+	COLORFUNC colorfunc(&colormap);
 
 	while (count >= SPANJUMP)
 	{
@@ -715,6 +768,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, int pitch)
 		int incount = SPANJUMP;
 		while (incount--)
 		{
+			colormap = slopelighting[lightidx++];
+
 			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 			colorfunc(source[spot], dest);
 			dest += pitch;
@@ -749,6 +804,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, int pitch)
 		int incount = count;
 		while (incount--)
 		{
+			colormap = slopelighting[lightidx++];
+
 			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 			colorfunc(source[spot], dest);
 			dest += pitch;
@@ -757,6 +814,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, int pitch)
 		}
 	}
 }
+
 
 /************************************/
 /*									*/
@@ -872,15 +930,15 @@ private:
 class PaletteSlopeColormapFunc
 {
 public:
-	PaletteSlopeColormapFunc(shaderef_t* map) : lightidx(0) { }
+	PaletteSlopeColormapFunc(shaderef_t* map) : colormap(map) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
-		*dest = slopelighting[lightidx++].index(c);
+		*dest = colormap->index(c);
 	}
 
 private:
-	mutable int lightidx;
+	shaderef_t* colormap;
 };
 
 
@@ -893,21 +951,46 @@ private:
 #define FB_COLDEST_P ((palindex_t*)(ylookup[dc_yl] + columnofs[dc_x]))
 #define FB_COLPITCH_P (dc_pitch / sizeof(palindex_t))
 
+//
+// R_FillColumnP
+//
+// Fills a column in the 8bpp palettized screen buffer with a solid color,
+// determined by dc_color. Performs no shading.
+//
 void R_FillColumnP()
 {
 	R_FillColumnGeneric<palindex_t, PaletteFunc>(FB_COLDEST_P, FB_COLPITCH_P) ;
 }
 
+//
+// R_DrawColumnP
+//
+// Renders a column to the 8bpp palettized screen buffer from the source buffer
+// dc_source and scaled by dc_iscale. Shading is performed using dc_colormap.
+//
 void R_DrawColumnP()
 {
 	R_DrawColumnGeneric<palindex_t, PaletteColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
 
+//
+// R_StretchColumnP
+//
+// Renders a column to the 8bpp palettized screen buffer from the source buffer
+// dc_source and scaled by dc_iscale. Performs no shading.
+//
 void R_StretchColumnP()
 {
 	R_DrawColumnGeneric<palindex_t, PaletteFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
 
+//
+// R_DrawFuzzColumnP
+//
+// Alters a column in the 8bpp palettized screen buffer using Doom's partial
+// invisibility effect, which shades the column and rearranges the ordering
+// the pixels to create distortion. Shading is performed using colormap 6.
+//
 void R_DrawFuzzColumnP()
 {
 	// adjust the borders (prevent buffer over/under-reads)
@@ -919,20 +1002,85 @@ void R_DrawFuzzColumnP()
 	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
 
+//
+// R_DrawTranslucentColumnP
+//
+// Renders a translucent column to the 8bpp palettized screen buffer from the
+// source buffer dc_source and scaled by dc_iscale. The amount of
+// translucency is controlled by dc_translevel. Shading is performed using
+// dc_colormap.
+//
 void R_DrawTranslucentColumnP()
 {
 	R_DrawColumnGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
 
+//
+// R_DrawTranslatedColumnP
+//
+// Renders a column to the 8bpp palettized screen buffer with color-remapping
+// from the source buffer dc_source and scaled by dc_iscale. The translation
+// table is supplied by dc_translation. Shading is performed using dc_colormap.
+//
 void R_DrawTranslatedColumnP()
 {
 	R_DrawColumnGeneric<palindex_t, PaletteTranslatedColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
 
+//
+// R_DrawTlatedLucentColumnP
+//
+// Renders a translucent column to the 8bpp palettized screen buffer with
+// color-remapping from the source buffer dc_source and scaled by dc_iscale. 
+// The translation table is supplied by dc_translation and the amount of
+// translucency is controlled by dc_translevel. Shading is performed using
+// dc_colormap.
+//
 void R_DrawTlatedLucentColumnP()
 {
 	R_DrawColumnGeneric<palindex_t, PaletteTranslatedTranslucentColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
 }
+
+//
+// R_FillColumnHorizP
+//
+// Fills a column in an 8bpp palettized buffer dc_temp with a solid color,
+// determined by dc_color. Performs no shading.
+//
+void R_FillColumnHorizP()
+{
+	const int x = dc_x & 3;
+	unsigned int **span = &dc_ctspan[x];
+
+	(*span)[0] = dc_yl;
+	(*span)[1] = dc_yh;
+	*span += 2;
+	palindex_t* dest = &dc_temp[x + 4*dc_yl];
+
+	R_FillColumnGeneric<palindex_t, PaletteFunc>(dest, 4);
+}
+
+//
+// R_DrawColumnHorizP
+//
+// Renders a column to an 8bpp palettized buffer dc_temp from the source buffer
+// dc_source and scaled by dc_iscale. The column is rendered to the buffer in
+// an interleaved format, writing to every 4th byte of the buffer. Performs
+// no shading. 
+//
+void R_DrawColumnHorizP()
+{
+	const int x = dc_x & 3;
+	unsigned int **span = &dc_ctspan[x];
+
+	(*span)[0] = dc_yl;
+	(*span)[1] = dc_yh;
+	*span += 2;
+	palindex_t* dest = &dc_temp[x + 4*dc_yl];
+
+	R_DrawColumnGeneric<palindex_t, PaletteFunc>(dest, 4);
+}
+
 
 // ----------------------------------------------------------------------------
 //
@@ -943,16 +1091,34 @@ void R_DrawTlatedLucentColumnP()
 #define FB_SPANDEST_P ((palindex_t*)(ylookup[ds_y] + columnofs[ds_x1]))
 #define FB_SPANPITCH_P (ds_colsize)
 
+//
+// R_FillSpanP
+//
+// Fills a span in the 8bpp palettized screen buffer with a solid color,
+// determined by ds_color. Performs no shading.
+//
 void R_FillSpanP()
 {
 	R_FillSpanGeneric<palindex_t, PaletteFunc>(FB_SPANDEST_P, FB_SPANPITCH_P);
 }
 
+//
+// R_DrawSpanP
+//
+// Renders a span for a level plane to the 8bpp palettized screen buffer from
+// the source buffer ds_source. Shading is performed using ds_colormap.
+//
 void R_DrawSpanP()
 {
 	R_DrawLevelSpanGeneric<palindex_t, PaletteColormapFunc>(FB_SPANDEST_P, FB_SPANPITCH_P);
 }
 
+//
+// R_DrawSlopeSpanP
+//
+// Renders a span for a sloped plane to the 8bpp palettized screen buffer from
+// the source buffer ds_source. Shading is performed using ds_colormap.
+//
 void R_DrawSlopeSpanP()
 {
 	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeColormapFunc>(FB_SPANDEST_P, FB_SPANPITCH_P);
@@ -1070,15 +1236,15 @@ private:
 class DirectSlopeColormapFunc
 {
 public:
-	DirectSlopeColormapFunc(shaderef_t* map) : lightidx(0) { }
+	DirectSlopeColormapFunc(shaderef_t* map) : colormap(map) { }
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		*dest = slopelighting[lightidx++].shade(c);
+		*dest = colormap->shade(c);
 	}
 
 private:
-	mutable int lightidx;
+	shaderef_t* colormap;
 };
 
 
@@ -1091,16 +1257,35 @@ private:
 #define FB_COLDEST_D ((argb_t*)(ylookup[dc_yl] + columnofs[dc_x]))
 #define FB_COLPITCH_D (dc_pitch / sizeof(argb_t))
 
+//
+// R_FillColumnD
+//
+// Fills a column in the 32bpp ARGB8888 screen buffer with a solid color,
+// determined by dc_color. Performs no shading.
+//
 void R_FillColumnD()
 {
 	R_FillColumnGeneric<argb_t, DirectFunc>(FB_COLDEST_D, FB_COLPITCH_D);
 }
 
+//
+// R_DrawColumnD
+//
+// Renders a column to the 32bpp ARGB8888 screen buffer from the source buffer
+// dc_source and scaled by dc_iscale. Shading is performed using dc_colormap.
+//
 void R_DrawColumnD()
 {
 	R_DrawColumnGeneric<argb_t, DirectColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
 }
 
+//
+// R_DrawFuzzColumnD
+//
+// Alters a column in the 32bpp ARGB8888 screen buffer using Doom's partial
+// invisibility effect, which shades the column and rearranges the ordering
+// the pixels to create distortion. Shading is performed using colormap 6.
+//
 void R_DrawFuzzColumnD()
 {
 	// adjust the borders (prevent buffer over/under-reads)
@@ -1112,16 +1297,40 @@ void R_DrawFuzzColumnD()
 	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>(FB_COLDEST_D, FB_COLPITCH_D);
 }
 
+//
+// R_DrawTranslucentColumnD
+//
+// Renders a translucent column to the 32bpp ARGB8888 screen buffer from the
+// source buffer dc_source and scaled by dc_iscale. The amount of
+// translucency is controlled by dc_translevel. Shading is performed using
+// dc_colormap.
+//
 void R_DrawTranslucentColumnD()
 {
 	R_DrawColumnGeneric<argb_t, DirectTranslucentColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
 }
 
+//
+// R_DrawTranslatedColumnD
+//
+// Renders a column to the 32bpp ARGB8888 screen buffer with color-remapping
+// from the source buffer dc_source and scaled by dc_iscale. The translation
+// table is supplied by dc_translation. Shading is performed using dc_colormap.
+//
 void R_DrawTranslatedColumnD()
 {
 	R_DrawColumnGeneric<argb_t, DirectTranslatedColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
 }
 
+//
+// R_DrawTlatedLucentColumnD
+//
+// Renders a translucent column to the 32bpp ARGB8888 screen buffer with
+// color-remapping from the source buffer dc_source and scaled by dc_iscale. 
+// The translation table is supplied by dc_translation and the amount of
+// translucency is controlled by dc_translevel. Shading is performed using
+// dc_colormap.
+//
 void R_DrawTlatedLucentColumnD()
 {
 	R_DrawColumnGeneric<argb_t, DirectTranslatedTranslucentColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
@@ -1137,20 +1346,39 @@ void R_DrawTlatedLucentColumnD()
 #define FB_SPANDEST_D ((argb_t*)(ylookup[ds_y] + columnofs[ds_x1]))
 #define FB_SPANPITCH_D (ds_colsize)
 
+//
+// R_FillSpanD
+//
+// Fills a span in the 32bpp ARGB8888 screen buffer with a solid color,
+// determined by ds_color. Performs no shading.
+//
 void R_FillSpanD()
 {
 	R_FillSpanGeneric<argb_t, DirectFunc>(FB_SPANDEST_D, FB_SPANPITCH_D);
 }
 
+//
+// R_DrawSpanD
+//
+// Renders a span for a level plane to the 32bpp ARGB8888 screen buffer from
+// the source buffer ds_source. Shading is performed using ds_colormap.
+//
 void R_DrawSpanD_c()
 {
 	R_DrawLevelSpanGeneric<argb_t, DirectColormapFunc>(FB_SPANDEST_D, FB_SPANPITCH_D);
 }
 
+//
+// R_DrawSlopeSpanD
+//
+// Renders a span for a sloped plane to the 32bpp ARGB8888 screen buffer from
+// the source buffer ds_source. Shading is performed using ds_colormap.
+//
 void R_DrawSlopeSpanD_c()
 {
 	R_DrawSlopedSpanGeneric<argb_t, DirectSlopeColormapFunc>(FB_SPANDEST_D, FB_SPANPITCH_D);
 }
+
 
 /****************************************************/
 
