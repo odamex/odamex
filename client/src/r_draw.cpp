@@ -490,20 +490,22 @@ void R_BlankColumn (void)
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_FillColumnGeneric(PIXEL_T* dest, int pitch)
+static forceinline void R_FillColumnGeneric(
+		PIXEL_T* dest,
+		const palindex_t color,
+		int yl, int yh,
+		int pitch)
 {
 #ifdef RANGECHECK 
-	if (dc_x >= screen->width || dc_yl < 0 || dc_yh >= screen->height) {
-		Printf (PRINT_HIGH, "R_FillColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+	if (dc_x >= screen->width || yl < 0 || yh >= screen->height) {
+		Printf (PRINT_HIGH, "R_FillColumn: %i to %i at %i\n", yl, yh, dc_x);
 		return;
 	}
 #endif
 
-	int count = dc_yh - dc_yl + 1;
+	int count = yh - yl + 1;
 	if (count <= 0)
 		return;
-
-	byte color = dc_color;
 
 	COLORFUNC colorfunc(&basecolormap);
 
@@ -528,20 +530,22 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, int pitch)
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, int pitch)
+static forceinline void R_DrawColumnGeneric(
+		PIXEL_T* dest,
+		const palindex_t* source,
+		int yl, int yh,
+		int pitch)
 {
 #ifdef RANGECHECK 
-	if (dc_x >= screen->width || dc_yl < 0 || dc_yh >= screen->height) {
-		Printf (PRINT_HIGH, "R_DrawColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+	if (dc_x >= screen->width || yl < 0 || yh >= screen->height) {
+		Printf (PRINT_HIGH, "R_DrawColumn: %i to %i at %i\n", yl, yh, dc_x);
 		return;
 	}
 #endif
 
-	int count = dc_yh - dc_yl + 1;
+	int count = yh - yl + 1;
 	if (count <= 0)
 		return;
-
-	const byte *source = dc_source;
 
 	const fixed_t fracstep = dc_iscale; 
 	fixed_t frac = dc_texturefrac;
@@ -628,6 +632,65 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, int pitch)
 	}
 }
 
+/*
+//
+// R_DrawMultipleColumnsGeneric
+//
+// Maps columns from a source buffer 
+template<typename PIXEL_T, typename COLORFUNC>
+static forceinline void R_DrawMultipleColumnsGeneric(PIXEL_T* dest, const palindex_t* source, int dest_pitch)
+{
+#ifdef RANGECHECK 
+	if (dc_x >= screen->width || dc_yl < 0 || dc_yh >= screen->height) {
+		Printf (PRINT_HIGH, "R_DrawColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+		return;
+	}
+#endif
+
+	static const int MAXCOLS = 4;
+
+	int count = yh - yl + 1;
+	if (count <= 0)
+		return;
+
+	COLORFUNC colorfunc(&dc_colormap);
+
+	const int source_pitch = MAXCOLS;
+
+	if (colcount == 1)
+	{
+		while (count--)
+		{
+			colorfunc(*source, dest);
+			dest += dest_pitch;
+			source += source_pitch;
+		}
+	}
+	else if (colcount == 2)
+	{
+		while (count--)
+		{
+			colorfunc(source[0], &dest[0]);
+			colorfunc(source[1], &dest[1]);
+			dest += dest_pitch;
+			source += source_pitch;
+		}
+	}
+	else if (colcount == 4)
+	{
+		while (count--)
+		{
+			colorfunc(source[0], &dest[0]);
+			colorfunc(source[1], &dest[1]);
+			colorfunc(source[2], &dest[2]);
+			colorfunc(source[3], &dest[3]);
+			dest += dest_pitch;
+			source += source_pitch;
+		}
+	}
+}
+*/
+
 
 //
 // R_FillSpanGeneric
@@ -637,26 +700,28 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, int pitch)
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_FillSpanGeneric(PIXEL_T* dest, int pitch)
+static forceinline void R_FillSpanGeneric(
+		PIXEL_T* dest,
+		const palindex_t color,
+		int x1, int x2,
+		int colsize)
 {
 #ifdef RANGECHECK
-	if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= screen->width || ds_y > screen->height) {
-		Printf(PRINT_HIGH, "R_FillSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+	if (x2 < x1 || x1 < 0 || x2 >= screen->width || ds_y > screen->height) {
+		Printf(PRINT_HIGH, "R_FillSpan: %i to %i at %i", x1, x2, ds_y);
 		return;
 	}
 #endif
 
-	int count = ds_x2 - ds_x1 + 1;
+	int count = x2 - x1 + 1;
 	if (count <= 0)
 		return;
-
-	const byte color = ds_color;
 
 	COLORFUNC colorfunc(&basecolormap);
 
 	do {
 		colorfunc(color, dest);
-		dest += pitch;
+		dest += colsize;
 	} while (--count);
 }
 
@@ -669,21 +734,23 @@ static forceinline void R_FillSpanGeneric(PIXEL_T* dest, int pitch)
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, int pitch)
+static forceinline void R_DrawLevelSpanGeneric(
+		PIXEL_T* dest,
+		const palindex_t* source,
+		int x1, int x2,
+		int colsize)
 {
 #ifdef RANGECHECK
-	if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= screen->width || ds_y > screen->height) {
-		Printf(PRINT_HIGH, "R_DrawLevelSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+	if (x2 < x1 || x1 < 0 || x2 >= screen->width || ds_y > screen->height) {
+		Printf(PRINT_HIGH, "R_DrawLevelSpan: %i to %i at %i", x1, x2, ds_y);
 		return;
 	}
 #endif
 
-	int count = ds_x2 - ds_x1 + 1;
+	int count = x2 - x1 + 1;
 	if (count <= 0)
 		return;
 	
-	const byte* source = ds_source;
-
 	dsfixed_t xfrac = ds_xfrac;
 	dsfixed_t yfrac = ds_yfrac;
 	const dsfixed_t xstep = ds_xstep;
@@ -699,7 +766,7 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, int pitch)
 		//  re-index using light/colormap.
 
 		colorfunc(source[spot], dest);
-		dest += pitch;
+		dest += colsize;
 
 		// Next step in u,v.
 		xfrac += xstep;
@@ -721,26 +788,29 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, int pitch)
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, int pitch)
+static forceinline void R_DrawSlopedSpanGeneric(
+		PIXEL_T* dest,
+		const palindex_t* source,
+		int x1, int x2,
+		int colsize)
 {
 #ifdef RANGECHECK
-	if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= screen->width || ds_y > screen->height) {
-		Printf(PRINT_HIGH, "R_DrawSlopedSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+	if (x2 < x1 || x1 < 0 || x2 >= screen->width || ds_y > screen->height) {
+		Printf(PRINT_HIGH, "R_DrawSlopedSpan: %i to %i at %i", x1, x2, ds_y);
 		return;
 	}
 #endif
 
-	int count = ds_x2 - ds_x1 + 1;
+	int count = x2 - x1 + 1;
 	if (count <= 0)
 		return;
 	
-	const byte* source = ds_source;
-
 	float iu = ds_iu, iv = ds_iv;
 	const float ius = ds_iustep, ivs = ds_ivstep;
 	float id = ds_id, ids = ds_idstep;
 	
-	int lightidx = 0;
+	int ltindex = 0;
+
 	shaderef_t colormap;
 	COLORFUNC colorfunc(&colormap);
 
@@ -768,11 +838,11 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, int pitch)
 		int incount = SPANJUMP;
 		while (incount--)
 		{
-			colormap = slopelighting[lightidx++];
+			colormap = slopelighting[ltindex++];
 
 			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 			colorfunc(source[spot], dest);
-			dest += pitch;
+			dest += colsize;
 			ufrac += ustep;
 			vfrac += vstep;
 		}
@@ -804,11 +874,11 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, int pitch)
 		int incount = count;
 		while (incount--)
 		{
-			colormap = slopelighting[lightidx++];
+			colormap = slopelighting[ltindex++];
 
 			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 			colorfunc(source[spot], dest);
-			dest += pitch;
+			dest += colsize;
 			ufrac += ustep;
 			vfrac += vstep;
 		}
@@ -959,7 +1029,11 @@ private:
 //
 void R_FillColumnP()
 {
-	R_FillColumnGeneric<palindex_t, PaletteFunc>(FB_COLDEST_P, FB_COLPITCH_P) ;
+	R_FillColumnGeneric<palindex_t, PaletteFunc>(
+		FB_COLDEST_P,
+		dc_color,
+		dc_yl, dc_yh,
+		FB_COLPITCH_P);
 }
 
 //
@@ -970,7 +1044,11 @@ void R_FillColumnP()
 //
 void R_DrawColumnP()
 {
-	R_DrawColumnGeneric<palindex_t, PaletteColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
+	R_DrawColumnGeneric<palindex_t, PaletteColormapFunc>(
+		FB_COLDEST_P,
+		dc_source,
+		dc_yl, dc_yh,
+		FB_COLPITCH_P);
 }
 
 //
@@ -981,7 +1059,11 @@ void R_DrawColumnP()
 //
 void R_StretchColumnP()
 {
-	R_DrawColumnGeneric<palindex_t, PaletteFunc>(FB_COLDEST_P, FB_COLPITCH_P);
+	R_DrawColumnGeneric<palindex_t, PaletteFunc>(
+		FB_COLDEST_P,
+		dc_source,
+		dc_yl, dc_yh,
+		FB_COLPITCH_P);
 }
 
 //
@@ -999,7 +1081,11 @@ void R_DrawFuzzColumnP()
 	if (dc_yh >= realviewheight - 1)
 		dc_yh = realviewheight - 2;
 
-	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>(FB_COLDEST_P, FB_COLPITCH_P);
+	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>(
+		FB_COLDEST_P,
+		0,		// no color needed for fuzz effect
+		dc_yl, dc_yh,	
+		FB_COLPITCH_P);
 }
 
 //
@@ -1012,7 +1098,11 @@ void R_DrawFuzzColumnP()
 //
 void R_DrawTranslucentColumnP()
 {
-	R_DrawColumnGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
+	R_DrawColumnGeneric<palindex_t, PaletteTranslucentColormapFunc>(
+		FB_COLDEST_P,
+		dc_source,
+		dc_yl, dc_yh,
+		FB_COLPITCH_P);
 }
 
 //
@@ -1024,7 +1114,11 @@ void R_DrawTranslucentColumnP()
 //
 void R_DrawTranslatedColumnP()
 {
-	R_DrawColumnGeneric<palindex_t, PaletteTranslatedColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
+	R_DrawColumnGeneric<palindex_t, PaletteTranslatedColormapFunc>(
+		FB_COLDEST_P,
+		dc_source,
+		dc_yl, dc_yh,
+		FB_COLPITCH_P);
 }
 
 //
@@ -1038,7 +1132,11 @@ void R_DrawTranslatedColumnP()
 //
 void R_DrawTlatedLucentColumnP()
 {
-	R_DrawColumnGeneric<palindex_t, PaletteTranslatedTranslucentColormapFunc>(FB_COLDEST_P, FB_COLPITCH_P);
+	R_DrawColumnGeneric<palindex_t, PaletteTranslatedTranslucentColormapFunc>(
+		FB_COLDEST_P,
+		dc_source,
+		dc_yl, dc_yh,
+		FB_COLPITCH_P);
 }
 
 //
@@ -1056,8 +1154,12 @@ void R_FillColumnHorizP()
 	(*span)[1] = dc_yh;
 	*span += 2;
 	palindex_t* dest = &dc_temp[x + 4*dc_yl];
-
-	R_FillColumnGeneric<palindex_t, PaletteFunc>(dest, 4);
+	
+	R_FillColumnGeneric<palindex_t, PaletteFunc>(
+		dest,
+		dc_color,
+		dc_yl, dc_yh,
+		4);
 }
 
 //
@@ -1078,7 +1180,11 @@ void R_DrawColumnHorizP()
 	*span += 2;
 	palindex_t* dest = &dc_temp[x + 4*dc_yl];
 
-	R_DrawColumnGeneric<palindex_t, PaletteFunc>(dest, 4);
+	R_DrawColumnGeneric<palindex_t, PaletteFunc>(
+		dest,
+		dc_source,
+		dc_yl, dc_yh,
+		4);
 }
 
 
@@ -1099,7 +1205,11 @@ void R_DrawColumnHorizP()
 //
 void R_FillSpanP()
 {
-	R_FillSpanGeneric<palindex_t, PaletteFunc>(FB_SPANDEST_P, FB_SPANPITCH_P);
+	R_FillSpanGeneric<palindex_t, PaletteFunc>(
+		FB_SPANDEST_P,
+		ds_color,
+		ds_x1, ds_x2,
+		FB_SPANPITCH_P);
 }
 
 //
@@ -1110,7 +1220,11 @@ void R_FillSpanP()
 //
 void R_DrawSpanP()
 {
-	R_DrawLevelSpanGeneric<palindex_t, PaletteColormapFunc>(FB_SPANDEST_P, FB_SPANPITCH_P);
+	R_DrawLevelSpanGeneric<palindex_t, PaletteColormapFunc>(
+		FB_SPANDEST_P,
+		ds_source,
+		ds_x1, ds_x2,
+		FB_SPANPITCH_P);
 }
 
 //
@@ -1121,7 +1235,11 @@ void R_DrawSpanP()
 //
 void R_DrawSlopeSpanP()
 {
-	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeColormapFunc>(FB_SPANDEST_P, FB_SPANPITCH_P);
+	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeColormapFunc>(
+		FB_SPANDEST_P,
+		ds_source,
+		ds_x1, ds_x2,
+		FB_SPANPITCH_P);
 }
 
 
@@ -1265,7 +1383,11 @@ private:
 //
 void R_FillColumnD()
 {
-	R_FillColumnGeneric<argb_t, DirectFunc>(FB_COLDEST_D, FB_COLPITCH_D);
+	R_FillColumnGeneric<argb_t, DirectFunc>(
+		FB_COLDEST_D,
+		dc_color,
+		dc_yl, dc_yh,
+		FB_COLPITCH_D);
 }
 
 //
@@ -1276,7 +1398,11 @@ void R_FillColumnD()
 //
 void R_DrawColumnD()
 {
-	R_DrawColumnGeneric<argb_t, DirectColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
+	R_DrawColumnGeneric<argb_t, DirectColormapFunc>(
+		FB_COLDEST_D,
+		dc_source,
+		dc_yl, dc_yh,
+		FB_COLPITCH_D);
 }
 
 //
@@ -1294,7 +1420,11 @@ void R_DrawFuzzColumnD()
 	if (dc_yh >= realviewheight - 1)
 		dc_yh = realviewheight - 2;
 
-	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>(FB_COLDEST_D, FB_COLPITCH_D);
+	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>(
+		FB_COLDEST_D,
+		dc_color,
+		dc_yl, dc_yh,
+		FB_COLPITCH_D);
 }
 
 //
@@ -1307,7 +1437,11 @@ void R_DrawFuzzColumnD()
 //
 void R_DrawTranslucentColumnD()
 {
-	R_DrawColumnGeneric<argb_t, DirectTranslucentColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
+	R_DrawColumnGeneric<argb_t, DirectTranslucentColormapFunc>(
+		FB_COLDEST_D,
+		dc_source,
+		dc_yl, dc_yh,
+		FB_COLPITCH_D);
 }
 
 //
@@ -1319,7 +1453,11 @@ void R_DrawTranslucentColumnD()
 //
 void R_DrawTranslatedColumnD()
 {
-	R_DrawColumnGeneric<argb_t, DirectTranslatedColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
+	R_DrawColumnGeneric<argb_t, DirectTranslatedColormapFunc>(
+		FB_COLDEST_D,
+		dc_source,
+		dc_yl, dc_yh,
+		FB_COLPITCH_D);
 }
 
 //
@@ -1333,7 +1471,11 @@ void R_DrawTranslatedColumnD()
 //
 void R_DrawTlatedLucentColumnD()
 {
-	R_DrawColumnGeneric<argb_t, DirectTranslatedTranslucentColormapFunc>(FB_COLDEST_D, FB_COLPITCH_D);
+	R_DrawColumnGeneric<argb_t, DirectTranslatedTranslucentColormapFunc>(
+		FB_COLDEST_D,
+		dc_source,
+		dc_yl, dc_yh,
+		FB_COLPITCH_D);
 }
 
 
@@ -1354,7 +1496,11 @@ void R_DrawTlatedLucentColumnD()
 //
 void R_FillSpanD()
 {
-	R_FillSpanGeneric<argb_t, DirectFunc>(FB_SPANDEST_D, FB_SPANPITCH_D);
+	R_FillSpanGeneric<argb_t, DirectFunc>(
+		FB_SPANDEST_D,
+		ds_color,
+		ds_x1, ds_x2,
+		FB_SPANPITCH_D);
 }
 
 //
@@ -1365,7 +1511,11 @@ void R_FillSpanD()
 //
 void R_DrawSpanD_c()
 {
-	R_DrawLevelSpanGeneric<argb_t, DirectColormapFunc>(FB_SPANDEST_D, FB_SPANPITCH_D);
+	R_DrawLevelSpanGeneric<argb_t, DirectColormapFunc>(
+		FB_SPANDEST_D,
+		ds_source,
+		ds_x1, ds_x2,
+		FB_SPANPITCH_D);
 }
 
 //
@@ -1376,7 +1526,11 @@ void R_DrawSpanD_c()
 //
 void R_DrawSlopeSpanD_c()
 {
-	R_DrawSlopedSpanGeneric<argb_t, DirectSlopeColormapFunc>(FB_SPANDEST_D, FB_SPANPITCH_D);
+	R_DrawSlopedSpanGeneric<argb_t, DirectSlopeColormapFunc>(
+		FB_SPANDEST_D,
+		ds_source,
+		ds_x1, ds_x2,
+		FB_SPANPITCH_D);
 }
 
 
