@@ -37,6 +37,8 @@ extern planefunction_t	ceilingfunc_t;
 
 extern int  			*floorclip;
 extern int  			*ceilingclip;
+extern int				*floorclipinitial;
+extern int				*ceilingclipinitial;
 
 extern fixed_t			*yslope;
 

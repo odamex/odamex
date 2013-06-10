@@ -188,7 +188,7 @@ static void R_FillWallHeightArray(
 
 	for (int i = start; i <= stop; i++)
 	{
-		array[i] = clamp((int)frac, 0, screen->height - 1);
+		array[i] = clamp((int)frac, ceilingclipinitial[0], floorclipinitial[0]);
 		frac -= step;
 	}
 }
@@ -246,30 +246,39 @@ static void BlastColumn(void (*blastfunc)())
 
 	fixed_t texturecolumn = texoffs[dc_x];
 
-	// mark ceiling area
 	walltopf[dc_x] = MAX(walltopf[dc_x], ceilingclip[dc_x]);
+	wallbottomf[dc_x] = MIN(wallbottomf[dc_x], floorclip[dc_x]);
 
+	// mark ceiling-plane areas
 	if (markceiling)
 	{
 		int top = ceilingclip[dc_x];
-		int bottom = MIN(walltopf[dc_x], floorclip[dc_x]);
+		if (top < 0)
+			top = 0;
 
-		if (top < bottom)
+		int bottom = MIN(walltopf[dc_x], floorclip[dc_x]) - 1;
+		if (bottom >= viewheight)
+			bottom = viewheight - 1;
+
+		if (top <= bottom)
 		{
 			ceilingplane->top[dc_x] = top;
 			ceilingplane->bottom[dc_x] = bottom;
 		}
 	}
 
-	// mark floor area
-	wallbottomf[dc_x] = MIN(wallbottomf[dc_x], floorclip[dc_x]);
-
+	// mark floor-plane areas
 	if (markfloor)
 	{
 		int top = MAX(wallbottomf[dc_x], ceilingclip[dc_x]);
-		int bottom = floorclip[dc_x];
+		if (top < 0)
+			top = 0;
 
-		if (top < bottom)
+		int bottom = floorclip[dc_x] - 1;
+		if (bottom >= viewheight)
+			bottom = viewheight - 1;
+
+		if (top <= bottom)
 		{
 			floorplane->top[dc_x] = top;
 			floorplane->bottom[dc_x] = bottom;
@@ -277,72 +286,69 @@ static void BlastColumn(void (*blastfunc)())
 	}
 
 	// draw the wall tiers
-	if (midtexture)						// single sided line
+	if (midtexture)
 	{
 		dc_yl = walltopf[dc_x];
 		dc_yh = wallbottomf[dc_x] - 1;
 
-		// [SL] ensure the bottom row of the screen is filled
-		if (wallbottomf[dc_x] == floorclip[dc_x])
-			dc_yh++;
+		if (dc_yl < 0)
+			dc_yl = 0;
+		if (dc_yh >= viewheight)
+			dc_yh = viewheight - 1;
 
 		R_SetTextureParams(midtexture, texturecolumn, rw_midtexturemid);
-
 		blastfunc();
-		ceilingclip[dc_x] = viewheight - 1;
-		floorclip[dc_x] = 0;
+
+		// indicate that no further drawing can be done in this column
+		ceilingclip[dc_x] = floorclipinitial[dc_x];
+		floorclip[dc_x] = ceilingclipinitial[dc_x];
+
 	}
-	else							// two sided line
+	else
 	{
-		if (toptexture)				// upper wall tier
+		if (toptexture)
 		{
-			walltopb[dc_x] = MIN(walltopb[dc_x], floorclip[dc_x]);
+			walltopb[dc_x] = MAX(MIN(walltopb[dc_x], floorclip[dc_x]), walltopf[dc_x]);
 
-			if (walltopb[dc_x] >= walltopf[dc_x])
-			{
-				dc_yl = walltopf[dc_x];
-				dc_yh = walltopb[dc_x] - 1;
+			dc_yl = walltopf[dc_x];
+			dc_yh = walltopb[dc_x] - 1;
 
-				R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
+			if (dc_yl < 0)
+				dc_yl = 0;
+			if (dc_yh >= viewheight)
+				dc_yh = viewheight - 1;
+			
+			R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
+			blastfunc();
 
-				blastfunc();
-				ceilingclip[dc_x] = walltopb[dc_x];
-			}
-			else
-			{
-				ceilingclip[dc_x] = walltopf[dc_x];
-			}
+			ceilingclip[dc_x] = walltopb[dc_x];
 		}
-		else if (markceiling)		// no upper wall tier
+		else if (markceiling)
 		{
+			// no top wall
 			ceilingclip[dc_x] = walltopf[dc_x];
 		}
-
-		if (bottomtexture)			// lower wall tier
+		
+		if (bottomtexture)
 		{
-			wallbottomb[dc_x] = MAX(wallbottomb[dc_x], ceilingclip[dc_x]);
+			wallbottomb[dc_x] = MIN(MAX(wallbottomb[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
 
-			if (wallbottomf[dc_x] >= wallbottomb[dc_x])
-			{
-				dc_yl = wallbottomb[dc_x];
-				dc_yh = wallbottomf[dc_x] - 1;
+			dc_yl = wallbottomb[dc_x];
+			dc_yh = wallbottomf[dc_x] - 1;
 
-				// [SL] ensure the bottom row of the screen is filled
-				if (wallbottomf[dc_x] == floorclip[dc_x])
-					dc_yh++;
+			if (dc_yl < 0)
+				dc_yl = 0;
+			if (dc_yh >= viewheight)
+				dc_yh = viewheight - 1;
+			
+			R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
+			blastfunc();
 
-				R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
-				blastfunc();
-
-				floorclip[dc_x] = wallbottomb[dc_x];
-			}
-			else
-			{
-				floorclip[dc_x] = wallbottomf[dc_x];
-			}
+			floorclip[dc_x] = wallbottomb[dc_x];
 		}
-		else if (markfloor)			// no lower wall tier
+		else if (markfloor)
 		{
+			// no bottom wall
 			floorclip[dc_x] = wallbottomf[dc_x];
 		}
 

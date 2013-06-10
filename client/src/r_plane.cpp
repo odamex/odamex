@@ -90,6 +90,8 @@ int 					*lastopening;
 //
 int     				*floorclip;
 int 					*ceilingclip;
+int						*floorclipinitial;
+int						*ceilingclipinitial;
 
 //
 // spanstart holds the start of a plane span
@@ -264,11 +266,8 @@ void R_MapLevelPlane(int y, int x1, int x2)
 void R_ClearPlanes (void)
 {
 	// opening / clipping determination
-	for (int i = 0; i < viewwidth; i++)
-	{
-		ceilingclip[i] = 0;
-		floorclip[i] = viewheight - 1;
-	}
+	memcpy(floorclip, floorclipinitial, screen->width * sizeof(*floorclip));
+	memcpy(ceilingclip, ceilingclipinitial, screen->width * sizeof(*ceilingclip));
 
 	for (int i = 0; i < MAXVISPLANES; i++)	// new code -- killough
 		for (*freehead = visplanes[i], visplanes[i] = NULL; *freehead; )
@@ -700,11 +699,22 @@ BOOL R_PlaneInitData (void)
 
 	delete[] floorclip;
 	delete[] ceilingclip;
+	delete[] floorclipinitial;
+	delete[] ceilingclipinitial;
 	delete[] spanstart;
 	delete[] yslope;
 
 	floorclip = new int[screen->width];
 	ceilingclip = new int[screen->width];
+
+	floorclipinitial = new int[screen->width];
+	ceilingclipinitial = new int[screen->width];
+
+	for (int i = 0; i < screen->width; i++)
+	{
+		ceilingclipinitial[i] = -1;
+		floorclipinitial[i] = viewheight;
+	}
 
 	spanstart = new int[screen->height];
 
