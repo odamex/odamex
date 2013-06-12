@@ -192,14 +192,12 @@ typedef enum {
 //
 // R_BlastMaskedSegColumn
 //
-static void BlastMaskedSegColumn(void (*blastfunc)())
+static void BlastMaskedSegColumn(void (*drawfunc)())
 {
 	if (maskedtexturecol[dc_x] != MAXINT && spryscale > 0)
 	{
 		int texnum = texturetranslation[curline->sidedef->midtexture];
-		int colnum = R_TexScaleX(maskedtexturecol[dc_x], texnum);
-
-		tallpost_t* post = (tallpost_t*)R_GetColumn(texnum, colnum);
+		tallpost_t* post = (tallpost_t*)R_GetColumn(texnum, maskedtexturecol[dc_x]);
 
 		// calculate lighting
 		if (!fixedcolormap.isValid())
@@ -254,7 +252,7 @@ static void BlastMaskedSegColumn(void (*blastfunc)())
 			dc_source = post->data();
 
 			if (dc_yl >= 0 && dc_yh < viewheight && dc_yl <= dc_yh)
-				blastfunc();
+				drawfunc();
 		
 			post = post->next();
 		}
@@ -270,7 +268,7 @@ static void BlastMaskedSegColumn(void (*blastfunc)())
 //
 // R_BlastSolidSegColumn
 //
-static void R_BlastSolidSegColumn(void (*blastfunc)())
+static void R_BlastSolidSegColumn(void (*drawfunc)())
 {
 	rw_scale = wallscalex[dc_x];
 	if (rw_scale > 0)
@@ -320,16 +318,14 @@ static void R_BlastSolidSegColumn(void (*blastfunc)())
 	// draw the wall tiers
 	if (midtexture)
 	{
-		dc_yl = walltopf[dc_x];
-		dc_yh = wallbottomf[dc_x] - 1;
+		dc_yl = MAX(walltopf[dc_x], 0);
+		dc_yh = MIN(wallbottomf[dc_x] - 1, viewheight - 1);
 
-		if (dc_yl < 0)
-			dc_yl = 0;
-		if (dc_yh >= viewheight)
-			dc_yh = viewheight - 1;
-
-		R_SetTextureParams(midtexture, texturecolumn, rw_midtexturemid);
-		blastfunc();
+		if (dc_yl <= dc_yh)
+		{
+			R_SetTextureParams(midtexture, texturecolumn, rw_midtexturemid);
+			drawfunc();
+		}
 
 		// indicate that no further drawing can be done in this column
 		ceilingclip[dc_x] = floorclipinitial[dc_x];
@@ -342,16 +338,14 @@ static void R_BlastSolidSegColumn(void (*blastfunc)())
 		{
 			walltopb[dc_x] = MAX(MIN(walltopb[dc_x], floorclip[dc_x]), walltopf[dc_x]);
 
-			dc_yl = walltopf[dc_x];
-			dc_yh = walltopb[dc_x] - 1;
+			dc_yl = MAX(walltopf[dc_x], 0);
+			dc_yh = MIN(walltopb[dc_x] - 1, viewheight - 1);
 
-			if (dc_yl < 0)
-				dc_yl = 0;
-			if (dc_yh >= viewheight)
-				dc_yh = viewheight - 1;
-			
-			R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
-			blastfunc();
+			if (dc_yl <= dc_yh)
+			{			
+				R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
+				drawfunc();
+			}
 
 			ceilingclip[dc_x] = walltopb[dc_x];
 		}
@@ -365,16 +359,14 @@ static void R_BlastSolidSegColumn(void (*blastfunc)())
 		{
 			wallbottomb[dc_x] = MIN(MAX(wallbottomb[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
 
-			dc_yl = wallbottomb[dc_x];
-			dc_yh = wallbottomf[dc_x] - 1;
+			dc_yl = MAX(wallbottomb[dc_x], 0);
+			dc_yh = MIN(wallbottomf[dc_x] - 1, viewheight - 1);
 
-			if (dc_yl < 0)
-				dc_yl = 0;
-			if (dc_yh >= viewheight)
-				dc_yh = viewheight - 1;
-			
-			R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
-			blastfunc();
+			if (dc_yl <= dc_yh)
+			{
+				R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
+				drawfunc();
+			}
 
 			floorclip[dc_x] = wallbottomb[dc_x];
 		}
@@ -478,8 +470,8 @@ void R_RenderColumnRange(int start, int stop, int coltype, bool columnmethod)
 	if (start > stop)
 		return;
 
-	void (*colblast)();
-	void (*hcolblast)();
+	void (*colblast)() = NULL;
+	void (*hcolblast)() = NULL;
 
 	if (coltype == COL_SOLIDSEG)
 	{
