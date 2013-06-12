@@ -1947,7 +1947,7 @@ void R_InitColumnDrawers ()
 		R_DrawColumn			= R_DrawColumnP;
 		R_DrawFuzzColumn		= R_DrawFuzzColumnP;
 		R_DrawTranslucentColumn	= R_DrawTranslucentColumnP;
-		R_DrawTranslatedColum	= R_DrawTranslatedColumnP;
+		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanP;
 		R_DrawSpan				= R_DrawSpanP;
 		R_FillColumn			= R_FillColumnP;
@@ -1970,7 +1970,7 @@ void R_InitColumnDrawers ()
 		R_DrawColumn			= R_DrawColumnD;
 		R_DrawFuzzColumn		= R_DrawFuzzColumnD;
 		R_DrawTranslucentColumn	= R_DrawTranslucentColumnD;
-		R_DrawTranslatedColum	= R_DrawTranslatedColumnD;
+		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanD;
 		R_DrawSpan				= R_DrawSpanD;
 		R_FillColumn			= R_FillColumnD;
