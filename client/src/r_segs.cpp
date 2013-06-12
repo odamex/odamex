@@ -87,16 +87,6 @@ extern float yfoc;
 
 static int  	*maskedtexturecol;
 
-EXTERN_CVAR(r_skypalette)
-static int		skytex;
-static angle_t	skyflip;
-static int		frontpos;
-
-enum {
-	COL_SOLID,
-	COL_MASKED,
-	COL_SKY
-};
 
 //
 // R_TexScaleX
@@ -193,11 +183,16 @@ static void R_FillWallHeightArray(
 	}
 }
 
+typedef enum {
+	COL_SOLIDSEG,
+	COL_MASKEDSEG,
+	COL_SKY
+} coltype_t;
 
 //
-// BlastMaskedColumn
+// R_BlastMaskedSegColumn
 //
-static void BlastMaskedColumn(void (*blastfunc)(tallpost_t *post))
+static void R_BlastMaskedSegColumn(void (*blastfunc)(tallpost_t *post))
 {
 	if (maskedtexturecol[dc_x] != MAXINT && spryscale > 0)
 	{
@@ -236,9 +231,9 @@ static void BlastMaskedColumn(void (*blastfunc)(tallpost_t *post))
 
 
 //
-// BlastColumn
+// R_BlastSolidSegColumn
 //
-static void BlastColumn(void (*blastfunc)())
+static void R_BlastSolidSegColumn(void (*blastfunc)())
 {
 	rw_scale = wallscalex[dc_x];
 	if (rw_scale > 0)
@@ -368,10 +363,15 @@ static void BlastColumn(void (*blastfunc)())
 }
 
 
+EXTERN_CVAR(r_skypalette)
+static int		skytex;
+static angle_t	skyflip;
+static int		frontpos;
+
 //
-// BlastSkyColumn
+// R_BlastSkyColumn
 //
-static void BlastSkyColumn(void (*drawfunc)(void))
+static void R_BlastSkyColumn(void (*drawfunc)(void))
 {
 	dc_yl = skyplane->top[dc_x];
 	dc_yh = skyplane->bottom[dc_x];
@@ -388,32 +388,32 @@ static void BlastSkyColumn(void (*drawfunc)(void))
 
 inline void SolidColumnBlaster()
 {
-	BlastColumn(colfunc);
+	R_BlastSolidSegColumn(colfunc);
 }
 
 inline void SolidHColumnBlaster()
 {
-	BlastColumn(hcolfunc_pre);
+	R_BlastSolidSegColumn(hcolfunc_pre);
 }
 
 inline void MaskedColumnBlaster()
 {
-	BlastMaskedColumn(R_DrawMaskedColumn);
+	R_BlastMaskedSegColumn(R_DrawMaskedColumn);
 }
 
 inline void MaskedHColumnBlaster()
 {
-	BlastMaskedColumn(R_DrawMaskedColumnHoriz);
+	R_BlastMaskedSegColumn(R_DrawMaskedColumnHoriz);
 }
 
 inline void SkyColumnBlaster()
 {
-	BlastSkyColumn(colfunc);
+	R_BlastSkyColumn(colfunc);
 }
 
 inline void SkyHColumnBlaster()
 {
-	BlastSkyColumn(hcolfunc_pre);
+	R_BlastSkyColumn(hcolfunc_pre);
 }
 
 //
@@ -436,7 +436,7 @@ inline void SkyHColumnBlaster()
 //		assembly rendering function.
 //
 
-void R_RenderColumnRange(int start, int stop, int segtype)
+void R_RenderColumnRange(int start, int stop, int coltype, bool columnmethod)
 {
 	if (start > stop)
 		return;
@@ -444,17 +444,17 @@ void R_RenderColumnRange(int start, int stop, int segtype)
 	void (*colblast)();
 	void (*hcolblast)();
 
-	if (segtype == COL_SOLID)
+	if (coltype == COL_SOLIDSEG)
 	{
 		colblast = SolidColumnBlaster;
 		hcolblast = SolidHColumnBlaster;
 	}
-	else if (segtype == COL_MASKED)
+	else if (coltype == COL_MASKEDSEG)
 	{
 		colblast = MaskedColumnBlaster;
 		hcolblast = MaskedHColumnBlaster;
 	}
-	else if (segtype == COL_SKY)
+	else if (coltype == COL_SKY)
 	{
 		colblast = SkyColumnBlaster;
 		hcolblast = SkyHColumnBlaster;
@@ -463,7 +463,7 @@ void R_RenderColumnRange(int start, int stop, int segtype)
 	dc_x = start;
 
 	bool calc_light = false;
-	if (segtype != COL_SKY)
+	if (coltype != COL_SKY)
 	{
 		if (fixedlightlev)
 		{
@@ -481,7 +481,7 @@ void R_RenderColumnRange(int start, int stop, int segtype)
 		}
 	}
 
-	if (!r_columnmethod)
+	if (columnmethod == false)
 	{
 		for (dc_x = start; dc_x <= stop; dc_x++)
 		{
@@ -561,7 +561,6 @@ void R_RenderColumnRange(int start, int stop, int segtype)
 	}
 }
 
-
 //
 // R_RenderSegLoop
 //
@@ -569,7 +568,7 @@ void R_RenderColumnRange(int start, int stop, int segtype)
 //
 void R_RenderSegRange(int start, int stop)
 {
-	R_RenderColumnRange(start, stop, COL_SOLID);
+	R_RenderColumnRange(start, stop, COL_SOLIDSEG, r_columnmethod);
 }
 
 
@@ -653,7 +652,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	mceilingclip = ds->sprtopclip;
 
 	// draw the columns
-	R_RenderColumnRange(x1, x2, COL_MASKED);
+	R_RenderColumnRange(x1, x2, COL_MASKEDSEG, r_columnmethod);
 }
 
 
@@ -735,7 +734,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	dc_texturemid = skytexturemid;
 	skyplane = pl;
 
-	R_RenderColumnRange(pl->minx, pl->maxx, COL_SKY);
+	R_RenderColumnRange(pl->minx, pl->maxx, COL_SKY, r_columnmethod);
 				
 	R_ResetDrawFuncs();
 }
@@ -999,7 +998,7 @@ void R_StoreWallRange(int start, int stop)
 		}
 		else if (spanfunc == R_FillSpan)
 		{
-			markfloor = markceiling = frontsector != backsector;
+			markfloor = markceiling = (frontsector != backsector);
 		}
 		else
 		{
@@ -1173,28 +1172,26 @@ void R_StoreWallRange(int start, int stop)
 	if (markceiling && ceilingplane)
 		ceilingplane = R_CheckPlane(ceilingplane, start, stop);
 	else
-		markceiling = 0;
+		markceiling = false;
 
 	if (markfloor && floorplane)
 		floorplane = R_CheckPlane(floorplane, start, stop);
 	else
-		markfloor = 0;
+		markfloor = false;
 
 	R_RenderSegRange(start, stop);
 
     // save sprite clipping info
-    if ( ((ds_p->silhouette & SIL_TOP) || maskedtexture)
-		 && !ds_p->sprtopclip)
+    if ( ((ds_p->silhouette & SIL_TOP) || maskedtexture) && !ds_p->sprtopclip)
 	{
-		memcpy (lastopening, ceilingclip+start, sizeof(*lastopening)*(count));
+		memcpy(lastopening, ceilingclip+start, count * sizeof(*lastopening));
 		ds_p->sprtopclip = lastopening - start;
 		lastopening += count;
 	}
 
-    if ( ((ds_p->silhouette & SIL_BOTTOM) || maskedtexture)
-		 && !ds_p->sprbottomclip)
+    if ( ((ds_p->silhouette & SIL_BOTTOM) || maskedtexture) && !ds_p->sprbottomclip)
 	{
-		memcpy (lastopening, floorclip+start, sizeof(*lastopening)*(count));
+		memcpy(lastopening, floorclip+start, count * sizeof(*lastopening));
 		ds_p->sprbottomclip = lastopening - start;
 		lastopening += count;
 	}

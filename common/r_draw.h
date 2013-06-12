@@ -110,6 +110,7 @@ void	R_StretchColumnP (void);
 void	R_BlankColumn (void);
 void	R_FillColumnP (void);
 void	R_FillColumnHorizP (void);
+void	R_BlankSpan (void);
 void	R_FillSpanP (void);
 void	R_FillSpanD (void);
 

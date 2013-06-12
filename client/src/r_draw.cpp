@@ -478,7 +478,17 @@ shaderef_t				slopelighting[MAXWIDTH];
 // [SL] - Does nothing (obviously). Used when a column drawing function
 // pointer should not draw anything.
 //
-void R_BlankColumn (void)
+void R_BlankColumn(void)
+{
+}
+
+//
+// R_BlankSpan
+//
+// [SL] - Does nothing (obviously). Used when a span drawing function
+// pointer should not draw anything.
+//
+void R_BlankSpan()
 {
 }
 

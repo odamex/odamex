@@ -266,8 +266,8 @@ void R_MapLevelPlane(int y, int x1, int x2)
 void R_ClearPlanes (void)
 {
 	// opening / clipping determination
-	memcpy(floorclip, floorclipinitial, screen->width * sizeof(*floorclip));
-	memcpy(ceilingclip, ceilingclipinitial, screen->width * sizeof(*ceilingclip));
+	memcpy(floorclip, floorclipinitial, viewwidth * sizeof(*floorclip));
+	memcpy(ceilingclip, ceilingclipinitial, viewwidth * sizeof(*ceilingclip));
 
 	for (int i = 0; i < MAXVISPLANES; i++)	// new code -- killough
 		for (*freehead = visplanes[i], visplanes[i] = NULL; *freehead; )

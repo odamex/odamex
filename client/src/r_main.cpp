@@ -1275,7 +1275,7 @@ void R_SetBlankDrawFuncs()
 	hcolfunc_post1 = rt_copy1col;
 	hcolfunc_post2 = rt_copy2cols;
 	hcolfunc_post4 = rt_copy4cols;
-	spanfunc = spanslopefunc = R_BlankColumn;
+	spanfunc = spanslopefunc = R_BlankSpan;
 }
 
 //
