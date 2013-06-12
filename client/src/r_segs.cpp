@@ -192,39 +192,76 @@ typedef enum {
 //
 // R_BlastMaskedSegColumn
 //
-static void R_BlastMaskedSegColumn(void (*blastfunc)(tallpost_t *post))
+static void BlastMaskedSegColumn(void (*blastfunc)())
 {
 	if (maskedtexturecol[dc_x] != MAXINT && spryscale > 0)
 	{
 		int texnum = texturetranslation[curline->sidedef->midtexture];
+		int colnum = R_TexScaleX(maskedtexturecol[dc_x], texnum);
+
+		tallpost_t* post = (tallpost_t*)R_GetColumn(texnum, colnum);
 
 		// calculate lighting
 		if (!fixedcolormap.isValid())
 		{
-			unsigned index = rw_light >> LIGHTSCALESHIFT;	// [RH]
-
-			if (index >= MAXLIGHTSCALE)
-				index = MAXLIGHTSCALE-1;
-
-			dc_colormap = basecolormap.with(walllights[index]);	// [RH] add basecolormap
+			unsigned int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+			dc_colormap = basecolormap.with(walllights[index]);
 		}
 
 		sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
 		dc_iscale = 0xffffffffu / (unsigned)spryscale;
 
-		// killough 1/25/98: here's where Medusa came in, because
-		// it implicitly assumed that the column was all one patch.
-		// Originally, Doom did not construct complete columns for
-		// multipatched textures, so there were no header or trailer
-		// bytes in the column referred to below, which explains
-		// the Medusa effect. The fix is to construct true columns
-		// when forming multipatched textures (see r_data.c).
-
 		// draw the texture
+		while (!post->end())
+		{
+			// skip over blank posts
+			if (post->length == 0)
+			{
+				post = post->next();
+				continue;
+			}
 
-		blastfunc (R_GetColumn(texnum, maskedtexturecol[dc_x]));
+			// calculate unclipped screen coordinates for post
+			int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
+
+			dc_yl = (topscreen + FRACUNIT) >> FRACBITS;
+			dc_yh = (topscreen + spryscale * post->length) >> FRACBITS;
+
+			if (dc_yh >= mfloorclip[dc_x])
+				dc_yh = mfloorclip[dc_x] - 1;
+			if (dc_yl <= mceilingclip[dc_x])
+				dc_yl = mceilingclip[dc_x] + 1;
+
+			dc_texturefrac = dc_texturemid - (post->topdelta << FRACBITS)
+				+ (dc_yl*dc_iscale) - FixedMul(centeryfrac-FRACUNIT, dc_iscale);
+
+			if (dc_texturefrac < 0)
+			{
+				int cnt = (FixedDiv(-dc_texturefrac, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
+				dc_yl += cnt;
+				dc_texturefrac += cnt * dc_iscale;
+			}
+
+			const fixed_t endfrac = dc_texturefrac + (dc_yh-dc_yl)*dc_iscale;
+			const fixed_t maxfrac = post->length << FRACBITS;
+			
+			if (endfrac >= maxfrac)
+			{
+				int cnt = (FixedDiv(endfrac - maxfrac - 1, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
+				dc_yh -= cnt;
+			}
+
+			dc_source = post->data();
+
+			if (dc_yl >= 0 && dc_yh < viewheight && dc_yl <= dc_yh)
+				blastfunc();
+		
+			post = post->next();
+		}
+
 		maskedtexturecol[dc_x] = MAXINT;
 	}
+
 	spryscale += rw_scalestep;
 	rw_light += rw_lightstep;
 }
@@ -398,12 +435,12 @@ inline void SolidHColumnBlaster()
 
 inline void MaskedColumnBlaster()
 {
-	R_BlastMaskedSegColumn(R_DrawMaskedColumn);
+	BlastMaskedSegColumn(colfunc);
 }
 
 inline void MaskedHColumnBlaster()
 {
-	R_BlastMaskedSegColumn(R_DrawMaskedColumnHoriz);
+	BlastMaskedSegColumn(hcolfunc_pre);
 }
 
 inline void SkyColumnBlaster()
@@ -648,6 +685,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	rw_lightstep = ds->lightstep;
 	rw_light = ds->light + (x1 - ds->x1) * rw_lightstep;
+
 	mfloorclip = ds->sprbottomclip;
 	mceilingclip = ds->sprtopclip;
 
