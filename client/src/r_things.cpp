@@ -106,6 +106,9 @@ spriteframe_t	sprtemp[MAX_SPRITE_FRAMES];
 int 			maxframe;
 static const char*		spritename;
 
+int patchlumpnum;
+int patchcolnum[MAXWIDTH];
+
 // [RH] skin globals
 playerskin_t	*skins;
 size_t			numskins;
@@ -695,17 +698,80 @@ void R_DrawMaskedColumn(tallpost_t *post)
 	}
 }
 
+
+void R_BlastSpriteColumn(void (*drawfunc)())
+{
+	tallpost_t* post = R_GetPatchColumn(patchlumpnum, patchcolnum[dc_x]);
+
+	sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
+	dc_iscale = 0xffffffffu / (unsigned)spryscale;
+
+	while (!post->end())
+	{
+		if (post->length > 0)
+		{
+			// calculate unclipped screen coordinates for post
+			int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
+
+			dc_yl = (topscreen + FRACUNIT) >> FRACBITS;
+			dc_yh = (topscreen + spryscale * post->length) >> FRACBITS;
+
+			if (dc_yh >= mfloorclip[dc_x])
+				dc_yh = mfloorclip[dc_x] - 1;
+			if (dc_yl <= mceilingclip[dc_x])
+				dc_yl = mceilingclip[dc_x] + 1;
+
+			dc_texturefrac = dc_texturemid - (post->topdelta << FRACBITS)
+				+ (dc_yl*dc_iscale) - FixedMul(centeryfrac-FRACUNIT, dc_iscale);
+
+			if (dc_texturefrac < 0)
+			{
+				int cnt = (FixedDiv(-dc_texturefrac, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
+				dc_yl += cnt;
+				dc_texturefrac += cnt * dc_iscale;
+			}
+
+			const fixed_t endfrac = dc_texturefrac + (dc_yh-dc_yl)*dc_iscale;
+			const fixed_t maxfrac = post->length << FRACBITS;
+			
+			if (endfrac >= maxfrac)
+			{
+				int cnt = (FixedDiv(endfrac - maxfrac - 1, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
+				dc_yh -= cnt;
+			}
+
+			dc_source = post->data();
+
+			if (dc_yl >= 0 && dc_yh < viewheight && dc_yl <= dc_yh)
+				drawfunc();
+		}
+		
+		post = post->next();
+	}
+}
+
+void SpriteColumnBlaster()
+{
+	R_BlastSpriteColumn(colfunc);
+}
+
+void SpriteHColumnBlaster()
+{
+	R_BlastSpriteColumn(hcolfunc_pre);
+}
+
 //
 // R_DrawVisSprite
 //	mfloorclip and mceilingclip should also be set.
 //
 void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 {
-	fixed_t 			frac;
-
 	bool				fuzz_effect = false;
 	bool				translated = false;
 	bool				lucent = false;
+
+	if (vis->yscale <= 0)
+		return;
 
 	dc_textureheight = 256 << FRACBITS;
 
@@ -768,61 +834,21 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 	dc_iscale = FixedDiv (FRACUNIT, vis->yscale) + 1;
 	dc_texturemid = vis->texturemid;
-	frac = vis->startfrac;
 	spryscale = vis->yscale;
-	sprtopscreen = centeryfrac - FixedMul (dc_texturemid, spryscale);
+	sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
 
-	if (!r_columnmethod || fuzz_effect) {
-		// [RH] The original Doom method of drawing sprites
-		int x1 = vis->x1, x2 = vis->x2;
-		fixed_t xiscale = vis->xiscale;
+	patchlumpnum = vis->patch;
 
-		for (dc_x = x1; dc_x <= x2; dc_x++)
-		{
-			R_DrawMaskedColumn(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
-			frac += xiscale;
-		}
-	} else {
-		// [RH] Cache-friendly drawer
-		int x1 = vis->x1, x2 = vis->x2 + 1;
-		fixed_t xiscale = vis->xiscale;
-		int stop = x2 & ~3;
-
-		if (x1 < x2) {
-			dc_x = x1;
-
-			while ((dc_x < stop) && (dc_x & 3))
-			{
-				R_DrawMaskedColumn(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
-				dc_x++;
-				frac += xiscale;
-			}
-
-			while (dc_x < stop) {
-				rt_initcols();
-				R_DrawMaskedColumnHoriz(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
-				dc_x++;
-				frac += xiscale;
-				R_DrawMaskedColumnHoriz(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
-				dc_x++;
-				frac += xiscale;
-				R_DrawMaskedColumnHoriz(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
-				dc_x++;
-				frac += xiscale;
-				R_DrawMaskedColumnHoriz(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
-				dc_x++;
-				frac += xiscale;
-				rt_draw4cols (dc_x - 4);
-			}
-
-			while (dc_x < x2)
-			{
-				R_DrawMaskedColumn(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
-				dc_x++;
-				frac += xiscale;
-			}
-		}
+	// [SL] set up the array that indicates which patch column to use for each screen column
+	fixed_t colfrac = vis->startfrac;
+	for (int i = vis->x1; i <= vis->x2; i++)
+	{
+		patchcolnum[i] = colfrac >> FRACBITS;
+		colfrac += vis->xiscale;
 	}
+
+	bool rend_multiple_columns = r_columnmethod && !fuzz_effect;
+	R_RenderColumnRange(vis->x1, vis->x2, rend_multiple_columns, SpriteColumnBlaster, SpriteHColumnBlaster, false);
 
 	R_ResetDrawFuncs();
 }

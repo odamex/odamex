@@ -26,7 +26,6 @@
 #define __R_DRAW__
 
 #include "r_intrin.h"
-
 #include "r_defs.h"
 
 extern "C" byte**		ylookup;
@@ -53,6 +52,7 @@ extern "C" unsigned int	dc_tspans[4][256];
 extern "C" unsigned int	*dc_ctspan[4];
 extern "C" unsigned int	horizspans[4];
 
+void R_RenderColumnRange(int start, int stop, bool columnmethod, void (*colblast)(), void (*hcolblast)(), bool calc_light);
 
 // [RH] Pointers to the different column and span drawers...
 

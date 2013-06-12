@@ -183,70 +183,59 @@ static void R_FillWallHeightArray(
 	}
 }
 
-typedef enum {
-	COL_SOLIDSEG,
-	COL_MASKEDSEG,
-	COL_SKY
-} coltype_t;
-
 //
 // R_BlastMaskedSegColumn
 //
-static void BlastMaskedSegColumn(void (*drawfunc)())
+static void R_BlastMaskedSegColumn(void (*drawfunc)())
 {
 	if (maskedtexturecol[dc_x] != MAXINT && spryscale > 0)
 	{
 		int texnum = texturetranslation[curline->sidedef->midtexture];
-		tallpost_t* post = (tallpost_t*)R_GetTextureColumn(texnum, maskedtexturecol[dc_x]);
+		tallpost_t* post = R_GetTextureColumn(texnum, maskedtexturecol[dc_x]);
 
 		sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
 		dc_iscale = 0xffffffffu / (unsigned)spryscale;
 
-		// draw the texture
 		while (!post->end())
 		{
-			// skip over blank posts
-			if (post->length == 0)
+			if (post->length > 0)
 			{
-				post = post->next();
-				continue;
+				// calculate unclipped screen coordinates for post
+				int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
+
+				dc_yl = (topscreen + FRACUNIT) >> FRACBITS;
+				dc_yh = (topscreen + spryscale * post->length) >> FRACBITS;
+
+				if (dc_yh >= mfloorclip[dc_x])
+					dc_yh = mfloorclip[dc_x] - 1;
+				if (dc_yl <= mceilingclip[dc_x])
+					dc_yl = mceilingclip[dc_x] + 1;
+
+				dc_texturefrac = dc_texturemid - (post->topdelta << FRACBITS)
+					+ (dc_yl*dc_iscale) - FixedMul(centeryfrac-FRACUNIT, dc_iscale);
+
+				if (dc_texturefrac < 0)
+				{
+					int cnt = (FixedDiv(-dc_texturefrac, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
+					dc_yl += cnt;
+					dc_texturefrac += cnt * dc_iscale;
+				}
+
+				const fixed_t endfrac = dc_texturefrac + (dc_yh-dc_yl)*dc_iscale;
+				const fixed_t maxfrac = post->length << FRACBITS;
+				
+				if (endfrac >= maxfrac)
+				{
+					int cnt = (FixedDiv(endfrac - maxfrac - 1, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
+					dc_yh -= cnt;
+				}
+
+				dc_source = post->data();
+
+				if (dc_yl >= 0 && dc_yh < viewheight && dc_yl <= dc_yh)
+					drawfunc();
 			}
-
-			// calculate unclipped screen coordinates for post
-			int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
-
-			dc_yl = (topscreen + FRACUNIT) >> FRACBITS;
-			dc_yh = (topscreen + spryscale * post->length) >> FRACBITS;
-
-			if (dc_yh >= mfloorclip[dc_x])
-				dc_yh = mfloorclip[dc_x] - 1;
-			if (dc_yl <= mceilingclip[dc_x])
-				dc_yl = mceilingclip[dc_x] + 1;
-
-			dc_texturefrac = dc_texturemid - (post->topdelta << FRACBITS)
-				+ (dc_yl*dc_iscale) - FixedMul(centeryfrac-FRACUNIT, dc_iscale);
-
-			if (dc_texturefrac < 0)
-			{
-				int cnt = (FixedDiv(-dc_texturefrac, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
-				dc_yl += cnt;
-				dc_texturefrac += cnt * dc_iscale;
-			}
-
-			const fixed_t endfrac = dc_texturefrac + (dc_yh-dc_yl)*dc_iscale;
-			const fixed_t maxfrac = post->length << FRACBITS;
 			
-			if (endfrac >= maxfrac)
-			{
-				int cnt = (FixedDiv(endfrac - maxfrac - 1, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
-				dc_yh -= cnt;
-			}
-
-			dc_source = post->data();
-
-			if (dc_yl >= 0 && dc_yh < viewheight && dc_yl <= dc_yh)
-				drawfunc();
-		
 			post = post->next();
 		}
 
@@ -419,12 +408,12 @@ inline void SolidHColumnBlaster()
 
 inline void MaskedColumnBlaster()
 {
-	BlastMaskedSegColumn(colfunc);
+	R_BlastMaskedSegColumn(colfunc);
 }
 
 inline void MaskedHColumnBlaster()
 {
-	BlastMaskedSegColumn(hcolfunc_pre);
+	R_BlastMaskedSegColumn(hcolfunc_pre);
 }
 
 inline void SkyColumnBlaster()
@@ -456,49 +445,28 @@ inline void SkyHColumnBlaster()
 //		C is about twice as fast as using R_RenderSegLoop1() with an
 //		assembly rendering function.
 //
-
-void R_RenderColumnRange(int start, int stop, int coltype, bool columnmethod)
+void R_RenderColumnRange(int start, int stop, bool columnmethod, void (*colblast)(), void (*hcolblast)(), bool calc_light)
 {
 	if (start > stop)
 		return;
-
-	void (*colblast)() = NULL;
-	void (*hcolblast)() = NULL;
-
-	if (coltype == COL_SOLIDSEG)
-	{
-		colblast = SolidColumnBlaster;
-		hcolblast = SolidHColumnBlaster;
-	}
-	else if (coltype == COL_MASKEDSEG)
-	{
-		colblast = MaskedColumnBlaster;
-		hcolblast = MaskedHColumnBlaster;
-	}
-	else if (coltype == COL_SKY)
-	{
-		colblast = SkyColumnBlaster;
-		hcolblast = SkyHColumnBlaster;
-	}
-	
 	dc_x = start;
 
-	bool calc_light = false;
-	if (coltype != COL_SKY)
+	if (calc_light)
 	{
 		if (fixedlightlev)
 		{
 			dc_colormap = basecolormap.with(fixedlightlev);
+			calc_light = false;
 		}
 		else if (fixedcolormap.isValid())
 		{
 			dc_colormap = fixedcolormap;	
+			calc_light = false;
 		}
 		else
 		{
 			if (!walllights)
 				walllights = scalelight[0];
-			calc_light = true;
 		}
 	}
 
@@ -576,7 +544,7 @@ void R_RenderColumnRange(int start, int stop, int coltype, bool columnmethod)
 //
 void R_RenderSegRange(int start, int stop)
 {
-	R_RenderColumnRange(start, stop, COL_SOLIDSEG, r_columnmethod);
+	R_RenderColumnRange(start, stop, r_columnmethod, SolidColumnBlaster, SolidHColumnBlaster, true);
 }
 
 
@@ -661,7 +629,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	mceilingclip = ds->sprtopclip;
 
 	// draw the columns
-	R_RenderColumnRange(x1, x2, COL_MASKEDSEG, r_columnmethod);
+	R_RenderColumnRange(x1, x2, r_columnmethod, MaskedColumnBlaster, MaskedHColumnBlaster, true);
 }
 
 
@@ -743,7 +711,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	dc_texturemid = skytexturemid;
 	skyplane = pl;
 
-	R_RenderColumnRange(pl->minx, pl->maxx, COL_SKY, r_columnmethod);
+	R_RenderColumnRange(pl->minx, pl->maxx, r_columnmethod, SkyColumnBlaster, SkyHColumnBlaster, false);
 				
 	R_ResetDrawFuncs();
 }
