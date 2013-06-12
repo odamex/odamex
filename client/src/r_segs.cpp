@@ -199,13 +199,6 @@ static void BlastMaskedSegColumn(void (*drawfunc)())
 		int texnum = texturetranslation[curline->sidedef->midtexture];
 		tallpost_t* post = (tallpost_t*)R_GetColumn(texnum, maskedtexturecol[dc_x]);
 
-		// calculate lighting
-		if (!fixedcolormap.isValid())
-		{
-			unsigned int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-			dc_colormap = basecolormap.with(walllights[index]);
-		}
-
 		sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
 		dc_iscale = 0xffffffffu / (unsigned)spryscale;
 
@@ -261,7 +254,6 @@ static void BlastMaskedSegColumn(void (*drawfunc)())
 	}
 
 	spryscale += rw_scalestep;
-	rw_light += rw_lightstep;
 }
 
 
