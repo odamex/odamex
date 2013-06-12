@@ -938,7 +938,7 @@ void R_StoreWallRange(int start, int stop)
 		rw_midtexturemid += sidedef->rowoffset;
 
 		ds_p->silhouette = SIL_BOTH;
-		ds_p->sprtopclip = screenheightarray;
+		ds_p->sprtopclip = viewheightarray;
 		ds_p->sprbottomclip = negonearray;
 	}
 	else
@@ -952,7 +952,7 @@ void R_StoreWallRange(int start, int stop)
 		{
 			// clip all sprites behind this closed door (or otherwise solid line)
 			ds_p->silhouette = SIL_BOTH;
-			ds_p->sprtopclip = screenheightarray;
+			ds_p->sprtopclip = viewheightarray;
 			ds_p->sprbottomclip = negonearray;
 		}
 		else

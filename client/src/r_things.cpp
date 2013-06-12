@@ -79,11 +79,6 @@ fixed_t 		pspritexiscale;
 									// [ML] 5/11/06 - Removed sky2
 int*			spritelights;
 
-// constant arrays
-//	used for psprite clipping and initializing clipping
-int			*negonearray;
-int			*screenheightarray;
-
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	MAXINT
 
@@ -1264,7 +1259,7 @@ void R_DrawPlayerSprites (void)
 		spritelights = scalelight[lightnum];
 
 	// clip to screen bounds
-	mfloorclip = screenheightarray;
+	mfloorclip = viewheightarray;
 	mceilingclip = negonearray;
 
 	{

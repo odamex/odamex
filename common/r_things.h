@@ -76,11 +76,6 @@ extern vissprite_t		*vissprites;
 extern vissprite_t* 	vissprite_p;
 extern vissprite_t		vsprsortedhead;
 
-// Constant arrays used for psprite clipping
-//	and initializing clipping.
-extern int			*negonearray;
-extern int			*screenheightarray;
-
 // vars for R_DrawMaskedColumn
 extern int*			mfloorclip;
 extern int*			mceilingclip;

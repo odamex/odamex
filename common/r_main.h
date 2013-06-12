@@ -34,6 +34,9 @@
 
 BOOL R_AlignFlat (int linenum, int side, int fc);
 
+extern int negonearray[MAXWIDTH];
+extern int viewheightarray[MAXWIDTH];
+
 //
 // POV related.
 //

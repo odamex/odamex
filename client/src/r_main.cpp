@@ -45,6 +45,9 @@
 
 #define DISTMAP			2
 
+int negonearray[MAXWIDTH];
+int viewheightarray[MAXWIDTH];
+
 void R_SpanInitData ();
 
 extern int *walllights;
@@ -852,17 +855,10 @@ void R_ExecuteSetViewSize (void)
 	else
 		yaspectmul = (fixed_t)(65536.0f*(320.0f*(float)virtheight/(200.0f*(float)virtwidth)));
 
-	// setup negonearray and screenheightarray
-	delete[] negonearray;
-	delete[] screenheightarray;
-	
-	negonearray = new int[screen->width];
-	screenheightarray = new int[screen->width];
-
 	for (int i = 0; i < screen->width; i++)
 	{
 		negonearray[i] = -1;
-		screenheightarray[i] = (int)viewheight;
+		viewheightarray[i] = (int)viewheight;
 	}
 
 	colfunc = basecolfunc = R_DrawColumn;
