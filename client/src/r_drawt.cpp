@@ -206,11 +206,9 @@ static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
 
 		fglevel = dc_translevel & ~0x3ff;
 		bglevel = FRACUNIT - fglevel;
-
-		// alphas should be in [0 .. 256]
-		fga = (fglevel >> 8) * 256 / 255;
-		bga = 256 - fga;
-}
+		fga = fglevel >> 8;
+		bga = bglevel >> 8;
+	}
 
 	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4 + hx];
@@ -257,10 +255,8 @@ static forceinline void rt_tlatelucentcols(int hx, int sx, int yl, int yh)
 
 		fglevel = dc_translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
-
-		// alphas should be in [0 .. 256]
-		fga = (fglevel >> 8) * 256 / 255;
-		bga = 256 - fga;
+		fga = fglevel >> 8;
+		bga = bglevel >> 8;
 	}
 
 	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
@@ -289,12 +285,6 @@ void rt_copy1colP (int hx, int sx, int yl, int yh)
 	rt_copycols<byte, 1>(hx, sx, yl, yh);
 }
 
-// Copies two spans at hx and hx+1 to the screen at sx and sx+1.
-void rt_copy2colsP (int hx, int sx, int yl, int yh)
-{
-	rt_copycols<byte, 2>(hx, sx, yl, yh);
-}
-
 // Copies all four spans to the screen starting at sx.
 void rt_copy4colsP (int sx, int yl, int yh)
 {
@@ -305,12 +295,6 @@ void rt_copy4colsP (int sx, int yl, int yh)
 void rt_map1colP (int hx, int sx, int yl, int yh)
 {
 	rt_mapcols<byte, 1>(hx, sx, yl, yh);
-}
-
-// Maps two spans at hx and hx+1 to the screen at sx and sx+1.
-void rt_map2colsP (int hx, int sx, int yl, int yh)
-{
-	rt_mapcols<byte, 2>(hx, sx, yl, yh);
 }
 
 // Maps all four spans to the screen starting at sx.
@@ -325,12 +309,6 @@ void rt_tlate1colP (int hx, int sx, int yl, int yh)
 	rt_tlatecols<byte, 1>(hx, sx, yl, yh);
 }
 
-// Translates two spans at hx and hx+1 to the screen at sx and sx+1.
-void rt_tlate2colsP (int hx, int sx, int yl, int yh)
-{
-	rt_tlatecols<byte, 2>(hx, sx, yl, yh);
-}
-
 // Translates all four spans to the screen starting at sx.
 void rt_tlate4colsP (int sx, int yl, int yh)
 {
@@ -343,12 +321,6 @@ void rt_lucent1colP (int hx, int sx, int yl, int yh)
 	rt_lucentcols<byte, 1>(hx, sx, yl, yh);
 }
 
-// Mixes two spans at hx and hx+1 to the screen at sx and sx+1.
-void rt_lucent2colsP (int hx, int sx, int yl, int yh)
-{
-	rt_lucentcols<byte, 2>(hx, sx, yl, yh);
-}
-
 // Mixes all four spans to the screen starting at sx.
 void rt_lucent4colsP (int sx, int yl, int yh)
 {
@@ -359,12 +331,6 @@ void rt_lucent4colsP (int sx, int yl, int yh)
 void rt_tlatelucent1colP (int hx, int sx, int yl, int yh)
 {
 	rt_tlatelucentcols<byte, 1>(hx, sx, yl, yh);
-}
-
-// Translates and mixes two spans at hx and hx+1 to the screen at sx and sx+1.
-void rt_tlatelucent2colsP (int hx, int sx, int yl, int yh)
-{
-	rt_tlatelucentcols<byte, 2>(hx, sx, yl, yh);
 }
 
 // Translates and mixes all four spans to the screen starting at sx.
@@ -382,24 +348,14 @@ void rt_copy1colD (int hx, int sx, int yl, int yh)
 	rt_copycols<argb_t, 1>(hx, sx, yl, yh);
 }
 
-void rt_copy2colsD (int hx, int sx, int yl, int yh)
-{
-	rt_copycols<argb_t, 2>(hx, sx, yl, yh);
-}
-
 void rt_copy4colsD (int sx, int yl, int yh)
-	{
+{
 	rt_copycols<argb_t, 4>(0, sx, yl, yh);
 }
 
 void rt_map1colD (int hx, int sx, int yl, int yh)
 {
 	rt_mapcols<argb_t, 1>(hx, sx, yl, yh);
-	}
-
-void rt_map2colsD (int hx, int sx, int yl, int yh)
-{
-	rt_mapcols<argb_t, 2>(hx, sx, yl, yh);
 }
 
 void rt_map4colsD (int sx, int yl, int yh)
@@ -412,25 +368,15 @@ void rt_tlate1colD (int hx, int sx, int yl, int yh)
 	rt_tlatecols<argb_t, 1>(hx, sx, yl, yh);
 }
 
-void rt_tlate2colsD (int hx, int sx, int yl, int yh)
-{
-	rt_tlatecols<argb_t, 2>(hx, sx, yl, yh);
-}
-
 void rt_tlate4colsD (int sx, int yl, int yh)
 {
 	rt_tlatecols<argb_t, 4>(0, sx, yl, yh);
 }
 
 void rt_lucent1colD (int hx, int sx, int yl, int yh)
-	{
+{
 	rt_lucentcols<argb_t, 1>(hx, sx, yl, yh);
 }
-
-void rt_lucent2colsD (int hx, int sx, int yl, int yh)
-{
-	rt_lucentcols<argb_t, 2>(hx, sx, yl, yh);
-	}
 
 void rt_lucent4colsD (int sx, int yl, int yh)
 {
@@ -440,11 +386,6 @@ void rt_lucent4colsD (int sx, int yl, int yh)
 void rt_tlatelucent1colD (int hx, int sx, int yl, int yh)
 {
 	rt_tlatelucentcols<argb_t, 1>(hx, sx, yl, yh);
-}
-
-void rt_tlatelucent2colsD (int hx, int sx, int yl, int yh)
-{
-	rt_tlatelucentcols<argb_t, 2>(hx, sx, yl, yh);
 }
 
 void rt_tlatelucent4colsD (int sx, int yl, int yh)
@@ -481,202 +422,130 @@ void rt_draw1col (int hx, int sx)
 	}
 }
 
-// Adjusts two columns so that they both start on the same row.
-// Returns false if it succeeded, true if a column ran out.
-static BOOL rt_nudgecols (int hx, int sx)
-{
-	if (horizspan[hx][0] < horizspan[hx+1][0]) {
-spaghetti1:
-		// first column starts before the second; it might also end before it
-		if (horizspan[hx][1] < horizspan[hx+1][0]){
-			while (horizspan[hx] < dc_ctspan[hx] && horizspan[hx][1] < horizspan[hx+1][0]) {
-				hcolfunc_post1 (hx, sx, horizspan[hx][0], horizspan[hx][1]);
-				horizspan[hx] += 2;
-			}
-			if (horizspan[hx] >= dc_ctspan[hx]) {
-				// the first column ran out of spans
-				rt_draw1col (hx+1, sx+1);
-				return true;
-			}
-			if (horizspan[hx][0] > horizspan[hx+1][0])
-				goto spaghetti2;	// second starts before first now
-			else if (horizspan[hx][0] == horizspan[hx+1][0])
-				return false;
-		}
-		hcolfunc_post1 (hx, sx, horizspan[hx][0], horizspan[hx+1][0] - 1);
-		horizspan[hx][0] = horizspan[hx+1][0];
-	}
-	if (horizspan[hx][0] > horizspan[hx+1][0]) {
-spaghetti2:
-		// second column starts before the first; it might also end before it
-		if (horizspan[hx+1][1] < horizspan[hx][0]) {
-			while (horizspan[hx+1] < dc_ctspan[hx+1] && horizspan[hx+1][1] < horizspan[hx][0]) {
-				hcolfunc_post1 (hx+1, sx+1, horizspan[hx+1][0], horizspan[hx+1][1]);
-				horizspan[hx+1] += 2;
-			}
-			if (horizspan[hx+1] >= dc_ctspan[hx+1]) {
-				// the second column ran out of spans
-				rt_draw1col (hx, sx);
-				return true;
-			}
-			if (horizspan[hx][0] < horizspan[hx+1][0])
-				goto spaghetti1;	// first starts before second now
-			else if (horizspan[hx][0] == horizspan[hx+1][0])
-				return false;
-		}
-		hcolfunc_post1 (hx+1, sx+1, horizspan[hx+1][0], horizspan[hx][0] - 1);
-		horizspan[hx+1][0] = horizspan[hx][0];
-	}
-	return false;
-}
-
-// Copies all spans at hx and hx+1 to the screen at sx and sx+1.
-// hx and sx should be word-aligned.
-void rt_draw2cols (int hx, int sx)
-{
-    while(1) // keep going until all columns have no more spans
-    {
-        if (horizspan[hx] >= dc_ctspan[hx]) {
-            // no first column, do the second (if any)
-            rt_draw1col (hx+1, sx+1);
-            break;
-        }
-        if (horizspan[hx+1] >= dc_ctspan[hx+1]) {
-            // no second column, do the first
-            rt_draw1col (hx, sx);
-            break;
-        }
-
-        // both columns have spans, align their tops
-        if (rt_nudgecols (hx, sx))
-            break;
-
-        // now draw as much as possible as a series of words
-        if (horizspan[hx][1] < horizspan[hx+1][1]) {
-            // first column ends first, so draw down to its bottom
-            hcolfunc_post2 (hx, sx, horizspan[hx][0], horizspan[hx][1]);
-            horizspan[hx+1][0] = horizspan[hx][1] + 1;
-            horizspan[hx] += 2;
-        } else {
-            // second column ends first, or they end at the same spot
-            hcolfunc_post2 (hx, sx, horizspan[hx+1][0], horizspan[hx+1][1]);
-            if (horizspan[hx][1] == horizspan[hx+1][1]) {
-                horizspan[hx] += 2;
-                horizspan[hx+1] += 2;
-            } else {
-                horizspan[hx][0] = horizspan[hx+1][1] + 1;
-                horizspan[hx+1] += 2;
-            }
-        }
-    }
-}
-
 // Copies all spans in all four columns to the screen starting at sx.
-// sx should be longword-aligned.
-void rt_draw4cols (int sx)
+// sx should be dword-aligned
+void rt_draw4cols(int sx)
 {
-loop:
-	if (horizspan[0] >= dc_ctspan[0]) {
-		// no first column, do the second (if any)
-		rt_draw1col (1, sx+1);
-		rt_draw2cols (2, sx+2);
-		return;
-	}
-	if (horizspan[1] >= dc_ctspan[1]) {
-		// no second column, we already know there is a first one
-		rt_draw1col (0, sx);
-		rt_draw2cols (2, sx+2);
-		return;
-	}
-	if (horizspan[2] >= dc_ctspan[2]) {
-		// no third column, do the fourth (if any)
-		rt_draw2cols (0, sx);
-		rt_draw1col (3, sx+3);
-		return;
-	}
-	if (horizspan[3] >= dc_ctspan[3]) {
-		// no fourth column, but there is a third
-		rt_draw2cols (0, sx);
-		rt_draw1col (2, sx+2);
-		return;
-	}
+	int x, bad;
+	unsigned int maxtop, minbot, minnexttop;
 
-	// if we get here, then we know all four columns have something,
-	// make sure they all align at the top
-	if (rt_nudgecols (0, sx)) {
-		rt_draw2cols (2, sx+2);
-		return;
-	}
-	if (rt_nudgecols (2, sx+2)) {
-		rt_draw2cols (0, sx);
-		return;
-	}
-
-	// first column is now aligned with second at top, and third is aligned
-	// with fourth at top. now make sure both halves align at the top and
-	// also have some shared space to their bottoms.
+	// Place a dummy "span" in each column. These don't get
+	// drawn. They're just here to avoid special cases in the
+	// max/min calculations below.
+	for (x = 0; x < 4; ++x)
 	{
-		unsigned int bot1 = horizspan[0][1] < horizspan[1][1] ? horizspan[0][1] : horizspan[1][1];
-		unsigned int bot2 = horizspan[2][1] < horizspan[3][1] ? horizspan[2][1] : horizspan[3][1];
-
-		if (horizspan[0][0] < horizspan[2][0]) {
-			// first half starts before second half
-			if (bot1 >= horizspan[2][0]) {
-				// first half ends after second begins
-				hcolfunc_post2 (0, sx, horizspan[0][0], horizspan[2][0] - 1);
-				horizspan[0][0] = horizspan[1][0] = horizspan[2][0];
-			} else {
-				// first half ends before second begins
-				hcolfunc_post2 (0, sx, horizspan[0][0], bot1);
-				if (horizspan[0][1] == bot1)
-					horizspan[0] += 2;
-				else
-					horizspan[0][0] = bot1 + 1;
-				if (horizspan[1][1] == bot1)
-					horizspan[1] += 2;
-				else
-					horizspan[1][0] = bot1 + 1;
-				goto loop;	// start over
-			}
-		} else if (horizspan[0][0] > horizspan[2][0]) {
-			// second half starts before the first
-			if (bot2 >= horizspan[0][0]) {
-				// second half ends after first begins
-				hcolfunc_post2 (2, sx+2, horizspan[2][0], horizspan[0][0] - 1);
-				horizspan[2][0] = horizspan[3][0] = horizspan[0][0];
-			} else {
-				// second half ends before first begins
-				hcolfunc_post2 (2, sx+2, horizspan[2][0], bot2);
-				if (horizspan[2][1] == bot2)
-					horizspan[2] += 2;
-				else
-					horizspan[2][0] = bot2 + 1;
-				if (horizspan[3][1] == bot2)
-					horizspan[3] += 2;
-				else
-					horizspan[3][0] = bot2 + 1;
-				goto loop;	// start over
-			}
-		}
-
-		// all four columns are now aligned at the top; draw all of them
-		// until one ends.
-		bot1 = bot1 < bot2 ? bot1 : bot2;
-
-		hcolfunc_post4 (sx, horizspan[0][0], bot1);
-
-		{
-			int x;
-
-			for (x = 3; x >= 0; x--)
-				if (horizspan[x][1] == bot1)
-					horizspan[x] += 2;
-				else
-					horizspan[x][0] = bot1 + 1;
-		}
+		dc_ctspan[x][0] = viewheight + 1;
+		dc_ctspan[x][1] = viewheight;
 	}
 
-	goto loop;	// keep going until all columns have no more spans
+	for (;;)
+	{
+		// If a column is out of spans, mark it as such
+		bad = 0;
+		minnexttop = 0xffffffff;
+
+		for (x = 0; x < 4; ++x)
+		{
+			if (horizspan[x] >= dc_ctspan[x])
+				bad |= 1 << x;
+			else if ((horizspan[x]+2)[0] < minnexttop)
+				minnexttop = (horizspan[x]+2)[0];
+		}
+		// Once all columns are out of spans, we're done
+		if (bad == 15)
+			return;
+
+		// Find the largest shared area for the spans in each column
+		maxtop = MAX (MAX (horizspan[0][0], horizspan[1][0]),
+					  MAX (horizspan[2][0], horizspan[3][0]));
+		minbot = MIN (MIN (horizspan[0][1], horizspan[1][1]),
+					  MIN (horizspan[2][1], horizspan[3][1]));
+
+		// If there is no shared area with these spans, draw each span
+		// individually and advance to the next spans until we reach a shared area.
+		// However, only draw spans down to the highest span in the next set of
+		// spans. If we allow the entire height of a span to be drawn, it could
+		// prevent any more shared areas from being drawn in these four columns.
+		//
+		// Example: Suppose we have the following arrangement:
+		//			A CD
+		//			A CD
+		//			 B D
+		//			 B D
+		//			aB D
+		//			aBcD
+		//			aBcD
+		//			aBc
+		//
+		// If we draw the entire height of the spans, we end up drawing this first:
+		//			A CD
+		//			A CD
+		//			 B D
+		//			 B D
+		//			 B D
+		//			 B D
+		//			 B D
+		//			 B D
+		//			 B
+		//
+		// This leaves only the "a" and "c" columns to be drawn, and they are not
+		// part of a shared area, but if we can include B and D with them, we can
+		// get a shared area. So we cut off everything in the first set just
+		// above the "a" column and end up drawing this first:
+		//			A CD
+		//			A CD
+		//			 B D
+		//			 B D
+		//
+		// Then the next time through, we have the following arrangement with an
+		// easily shared area to draw:
+		//			aB D
+		//			aBcD
+		//			aBcD
+		//			aBc
+		if (bad != 0 || maxtop > minbot)
+		{
+			for (x = 0; x < 4; ++x)
+			{
+				if (!(bad & 1))
+				{
+					if (horizspan[x][1] < minnexttop)
+					{
+						hcolfunc_post1(x, sx + x, horizspan[x][0], horizspan[x][1]);
+						horizspan[x] += 2;
+					}
+					else if (minnexttop > horizspan[x][0])
+					{
+						hcolfunc_post1(x, sx + x, horizspan[x][0], minnexttop - 1);
+						horizspan[x][0] = minnexttop;
+					}
+				}
+				bad >>= 1;
+			}
+			continue;
+		}
+
+		// Draw any span fragments above the shared area.
+		for (x = 0; x < 4; ++x)
+		{
+			if (maxtop > horizspan[x][0])
+				hcolfunc_post1(x, sx + x, horizspan[x][0], maxtop - 1);
+		}
+
+		// Draw the shared area.
+		hcolfunc_post4(sx, maxtop, minbot);
+
+		// For each column, if part of the span is past the shared area,
+		// set its top to just below the shared area. Otherwise, advance
+		// to the next span in that column.
+		for (x = 0; x < 4; ++x)
+		{
+			if (minbot < horizspan[x][1])
+				horizspan[x][0] = minbot + 1;
+			else
+				horizspan[x] += 2;
+		}
+	}
 }
 
 // Before each pass through a rendering loop that uses these routines,

@@ -116,35 +116,25 @@ void	R_FillSpanD (void);
 
 // [RH] Moves data from the temporary horizontal buffer to the screen.
 void rt_copy1colP (int hx, int sx, int yl, int yh);
-void rt_copy2colsP (int hx, int sx, int yl, int yh);
 void rt_copy4colsP (int sx, int yl, int yh);
 void rt_map1colP (int hx, int sx, int yl, int yh);
-void rt_map2colsP (int hx, int sx, int yl, int yh);
 void rt_map4colsP (int sx, int yl, int yh);
 void rt_lucent1colP (int hx, int sx, int yl, int yh);
-void rt_lucent2colsP (int hx, int sx, int yl, int yh);
 void rt_lucent4colsP (int sx, int yl, int yh);
 void rt_tlate1colP (int hx, int sx, int yl, int yh);
-void rt_tlate2colsP (int hx, int sx, int yl, int yh);
 void rt_tlate4colsP (int sx, int yl, int yh);
 void rt_tlatelucent1colP (int hx, int sx, int yl, int yh);
-void rt_tlatelucent2colsP (int hx, int sx, int yl, int yh);
 void rt_tlatelucent4colsP (int sx, int yl, int yh);
 
 void rt_copy1colD (int hx, int sx, int yl, int yh);
-void rt_copy2colsD (int hx, int sx, int yl, int yh);
 void rt_copy4colsD (int sx, int yl, int yh);
 void rt_map1colD (int hx, int sx, int yl, int yh);
-void rt_map2colsD (int hx, int sx, int yl, int yh);
 void rt_map4colsD (int sx, int yl, int yh);
 void rt_lucent1colD (int hx, int sx, int yl, int yh);
-void rt_lucent2colsD (int hx, int sx, int yl, int yh);
 void rt_lucent4colsD (int sx, int yl, int yh);
 void rt_tlate1colD (int hx, int sx, int yl, int yh);
-void rt_tlate2colsD (int hx, int sx, int yl, int yh);
 void rt_tlate4colsD (int sx, int yl, int yh);
 void rt_tlatelucent1colD (int hx, int sx, int yl, int yh);
-void rt_tlatelucent2colsD (int hx, int sx, int yl, int yh);
 void rt_tlatelucent4colsD (int sx, int yl, int yh);
 
 void R_DrawSpanD_c(void);
@@ -154,7 +144,6 @@ void R_DrawSlopeSpanD_c(void);
 #define INTERPSTEP (0.0625f)
 
 void rt_draw1col (int hx, int sx);
-void rt_draw2cols (int hx, int sx);
 void rt_draw4cols (int sx);
 
 // [RH] Preps the temporary horizontal buffer.
@@ -202,19 +191,14 @@ void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, argb_t color, int alpha, int 
 
 // Palettized (8bpp) vs. Direct (32bpp) switchable function pointers:
 extern void (*rt_copy1col) (int hx, int sx, int yl, int yh);
-extern void (*rt_copy2cols) (int hx, int sx, int yl, int yh);
 extern void (*rt_copy4cols) (int sx, int yl, int yh);
 extern void (*rt_map1col) (int hx, int sx, int yl, int yh);
-extern void (*rt_map2cols) (int hx, int sx, int yl, int yh);
 extern void (*rt_map4cols) (int sx, int yl, int yh);
 extern void (*rt_lucent1col) (int hx, int sx, int yl, int yh);
-extern void (*rt_lucent2cols) (int hx, int sx, int yl, int yh);
 extern void (*rt_lucent4cols) (int sx, int yl, int yh);
 extern void (*rt_tlate1col) (int hx, int sx, int yl, int yh);
-extern void (*rt_tlate2cols) (int hx, int sx, int yl, int yh);
 extern void (*rt_tlate4cols) (int sx, int yl, int yh);
 extern void (*rt_tlatelucent1col) (int hx, int sx, int yl, int yh);
-extern void (*rt_tlatelucent2cols) (int hx, int sx, int yl, int yh);
 extern void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
 
 // Vectorizable function pointers:

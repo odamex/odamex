@@ -525,38 +525,24 @@ void R_RenderColumnRange(int start, int stop, int coltype, bool columnmethod)
 	}
 	else
 	{
-		if (calc_light)
-		{
-			int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-			dc_colormap = basecolormap.with(walllights[index]);
-		}
+		int blockend = (stop + 1) & ~3;
 
-		if (dc_x & 1)
+		// blit until dc_x is DWORD aligned
+		while ((dc_x < blockend) && (dc_x & 3))
 		{
-			colblast();
+			if (calc_light)
+			{
+				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+				dc_colormap = basecolormap.with(walllights[index]);
+			}
+
+			colblast();	
 			dc_x++;
 		}
 
-		if (dc_x & 2)
-		{
-			if (dc_x < stop)
-			{
-				rt_initcols();
-				hcolblast();
-				dc_x++;
-				hcolblast();
-				rt_draw2cols((dc_x - 1) & 3, dc_x - 1);
-				dc_x++;
-			}
-			else if (dc_x == stop)
-			{
-				colblast();
-				dc_x++;
-			}
-		}
-
-		int loopend = (stop + 1) & ~3;
-		while (dc_x < loopend)
+		// blit in DWORD blocks to a temporary buffer horizontally, with
+		// the columns interleaved, eg write to buf[0], buf[4], buf[8]
+		while (dc_x < blockend)
 		{
 			if (calc_light)
 			{
@@ -572,33 +558,21 @@ void R_RenderColumnRange(int start, int stop, int coltype, bool columnmethod)
 			hcolblast();
 			dc_x++;
 			hcolblast();
-			rt_draw4cols(dc_x - 3);
 			dc_x++;
+			rt_draw4cols(dc_x - 4);
 		}
 
-		if (calc_light)
+		// blit any remaining pixels
+		while (dc_x <= stop)
 		{
-			int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-			dc_colormap = basecolormap.with(walllights[index]);
-		}
-
-		if (dc_x == stop)
-		{
-			colblast();
-		}
-		else if (dc_x < stop)
-		{
-			rt_initcols();
-			hcolblast();
-			dc_x++;
-			hcolblast();
-			rt_draw2cols((dc_x - 1) & 3, dc_x - 1);
-			dc_x++;
-
-			if (dc_x < stop + 1)
+			if (calc_light)
 			{
-				colblast();
+				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+				dc_colormap = basecolormap.with(walllights[index]);
 			}
+
+			colblast();	
+			dc_x++;
 		}
 	}
 }

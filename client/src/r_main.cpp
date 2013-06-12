@@ -147,7 +147,6 @@ void (*spanslopefunc) (void);
 
 void (*hcolfunc_pre) (void);
 void (*hcolfunc_post1) (int hx, int sx, int yl, int yh);
-void (*hcolfunc_post2) (int hx, int sx, int yl, int yh);
 void (*hcolfunc_post4) (int sx, int yl, int yh);
 
 static int lastcenteryfrac;
@@ -877,7 +876,6 @@ void R_ExecuteSetViewSize (void)
 	// [RH] Horizontal column drawers
 	hcolfunc_pre = R_DrawColumnHoriz;
 	hcolfunc_post1 = rt_map1col;
-	hcolfunc_post2 = rt_map2cols;
 	hcolfunc_post4 = rt_map4cols;
 
 	R_InitBuffer (viewwidth, viewheight);
@@ -1256,7 +1254,6 @@ void R_SetFlatDrawFuncs()
 	// appropriate 8bpp or 32bpp function. 
 	hcolfunc_pre = R_FillColumnHorizP;
 	hcolfunc_post1 = rt_copy1col;
-	hcolfunc_post2 = rt_copy2cols;
 	hcolfunc_post4 = rt_copy4cols;
 	spanfunc = R_FillSpan;
 	spanslopefunc = R_FillSpan;
@@ -1273,7 +1270,6 @@ void R_SetBlankDrawFuncs()
 	colfunc = R_BlankColumn;
 	hcolfunc_pre = R_BlankColumn; 
 	hcolfunc_post1 = rt_copy1col;
-	hcolfunc_post2 = rt_copy2cols;
 	hcolfunc_post4 = rt_copy4cols;
 	spanfunc = spanslopefunc = R_BlankSpan;
 }
@@ -1292,7 +1288,6 @@ void R_ResetDrawFuncs()
 		colfunc = basecolfunc;
 		hcolfunc_pre = R_DrawColumnHoriz;
 		hcolfunc_post1 = rt_map1col;
-		hcolfunc_post2 = rt_map2cols;
 		hcolfunc_post4 = rt_map4cols;
 		spanfunc = R_DrawSpan;
 		spanslopefunc = R_DrawSlopeSpan;
@@ -1310,7 +1305,6 @@ void R_SetLucentDrawFuncs()
 		colfunc = lucentcolfunc;
 		hcolfunc_pre = R_DrawColumnHoriz;
 		hcolfunc_post1 = rt_lucent1col;
-		hcolfunc_post2 = rt_lucent2cols;
 		hcolfunc_post4 = rt_lucent4cols;
 	}
 }
@@ -1326,7 +1320,6 @@ void R_SetTranslatedDrawFuncs()
 		colfunc = transcolfunc;
 		hcolfunc_pre = R_DrawColumnHoriz;
 		hcolfunc_post1 = rt_tlate1col;
-		hcolfunc_post2 = rt_tlate2cols;
 		hcolfunc_post4 = rt_tlate4cols;
 	}
 }
@@ -1342,7 +1335,6 @@ void R_SetTranslatedLucentDrawFuncs()
 		colfunc = tlatedlucentcolfunc;
 		hcolfunc_pre = R_DrawColumnHoriz;
 		hcolfunc_post1 = rt_tlatelucent1col;
-		hcolfunc_post2 = rt_tlatelucent2cols;
 		hcolfunc_post4 = rt_tlatelucent4cols;
 	}
 }
