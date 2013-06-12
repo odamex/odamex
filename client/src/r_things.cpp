@@ -701,11 +701,7 @@ void R_DrawMaskedColumn(tallpost_t *post)
 //
 void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 {
-#ifdef RANGECHECK
-	unsigned int		patchwidth;
-#endif
 	fixed_t 			frac;
-	patch_t*			patch;
 
 	bool				fuzz_effect = false;
 	bool				translated = false;
@@ -725,8 +721,6 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 			R_DrawParticleD (vis, x1, x2);
 		return;
 	}
-
-	patch = W_CachePatch (vis->patch);
 
 	dc_colormap = vis->colormap;
 
@@ -777,27 +771,16 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	frac = vis->startfrac;
 	spryscale = vis->yscale;
 	sprtopscreen = centeryfrac - FixedMul (dc_texturemid, spryscale);
-#ifdef RANGECHECK
-	patchwidth = (unsigned)(patch->width());
-#endif
 
 	if (!r_columnmethod || fuzz_effect) {
 		// [RH] The original Doom method of drawing sprites
 		int x1 = vis->x1, x2 = vis->x2;
 		fixed_t xiscale = vis->xiscale;
 
-		for (dc_x = x1; dc_x <= x2; dc_x++, frac += xiscale)
+		for (dc_x = x1; dc_x <= x2; dc_x++)
 		{
-			unsigned int texturecolumn = frac>>FRACBITS;
-
-#ifdef RANGECHECK
-			if (texturecolumn >= patchwidth) {
-				DPrintf ("R_DrawSpriteRange: bad texturecolumn (%d)\n", texturecolumn);
-				continue;
-			}
-#endif
-
-			R_DrawMaskedColumn ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[texturecolumn])));
+			R_DrawMaskedColumn(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
+			frac += xiscale;
 		}
 	} else {
 		// [RH] Cache-friendly drawer
@@ -810,23 +793,23 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 			while ((dc_x < stop) && (dc_x & 3))
 			{
-				R_DrawMaskedColumn ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumn(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
 				dc_x++;
 				frac += xiscale;
 			}
 
 			while (dc_x < stop) {
 				rt_initcols();
-				R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
 				dc_x++;
 				frac += xiscale;
-				R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
 				dc_x++;
 				frac += xiscale;
-				R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
 				dc_x++;
 				frac += xiscale;
-				R_DrawMaskedColumnHoriz ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
 				dc_x++;
 				frac += xiscale;
 				rt_draw4cols (dc_x - 4);
@@ -834,7 +817,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 			while (dc_x < x2)
 			{
-				R_DrawMaskedColumn ((tallpost_t *)((byte *)patch + LELONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumn(R_GetPatchColumn(vis->patch, frac >> FRACBITS));
 				dc_x++;
 				frac += xiscale;
 			}
@@ -1749,7 +1732,6 @@ void R_DrawParticleD (vissprite_t *vis, int x1, int x2)
 
 	// vis->mobjflags holds translucency level (0-255)
 	{
-		unsigned int *bg2rgb;
 		int countbase = x2 - x1 + 1;
 		int ycount;
 		int colsize = ds_colsize;

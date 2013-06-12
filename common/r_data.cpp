@@ -438,31 +438,47 @@ static void R_GenerateLookup(int texnum, int *const errors)
 }
 
 //
-// R_GetColumn
+// R_GetPatchColumn
 //
-tallpost_t* R_GetColumn(int tex, int col)
+tallpost_t* R_GetPatchColumn(int lumpnum, int colnum)
 {
-	int lump;
-	int ofs;
-
-	col &= texturewidthmask[tex];
-	lump = texturecolumnlump[tex][col];
-	ofs = texturecolumnofs[tex][col];
-	dc_textureheight = textureheight[tex];
-
-	if (lump > 0)
-		return (tallpost_t*)((byte *)W_CachePatch(lump,PU_CACHE) + ofs);
-
-	if (!texturecomposite[tex])
-		R_GenerateComposite (tex);
-
-	return (tallpost_t*)(texturecomposite[tex] + ofs);
+	patch_t* patch = W_CachePatch(lumpnum, PU_CACHE);
+	return (tallpost_t*)((byte*)patch + LELONG(patch->columnofs[colnum]));
 }
 
-
-byte* R_GetColumnData(int tex, int col)
+//
+// R_GetPatchColumnData
+//
+byte* R_GetPatchColumnData(int lumpnum, int colnum)
 {
-	return R_GetColumn(tex, col)->data();
+	return R_GetPatchColumn(lumpnum, colnum)->data();
+}
+
+//
+// R_GetTextureColumn
+//
+tallpost_t* R_GetTextureColumn(int texnum, int colnum)
+{
+	colnum &= texturewidthmask[texnum];
+	int lump = texturecolumnlump[texnum][colnum];
+	int ofs = texturecolumnofs[texnum][colnum];
+	dc_textureheight = textureheight[texnum];
+
+	if (lump > 0)
+		return (tallpost_t*)((byte *)W_CachePatch(lump, PU_CACHE) + ofs);
+
+	if (!texturecomposite[texnum])
+		R_GenerateComposite(texnum);
+
+	return (tallpost_t*)(texturecomposite[texnum] + ofs);
+}
+
+//
+// R_GetTextureColumnData
+//
+byte* R_GetTextureColumnData(int texnum, int colnum)
+{
+	return R_GetTextureColumn(texnum, colnum)->data();
 }
 
 

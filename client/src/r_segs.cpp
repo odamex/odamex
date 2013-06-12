@@ -136,7 +136,7 @@ static inline fixed_t R_TexInvScaleY(fixed_t y, int texnum)
 static inline void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
 {
 	dc_texturefrac = R_TexScaleY(mid + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale), texnum);
-	dc_source = R_GetColumnData(texnum, R_TexScaleX(texcol, texnum) >> FRACBITS);
+	dc_source = R_GetTextureColumnData(texnum, R_TexScaleX(texcol, texnum) >> FRACBITS);
 }
 
 //
@@ -197,7 +197,7 @@ static void BlastMaskedSegColumn(void (*drawfunc)())
 	if (maskedtexturecol[dc_x] != MAXINT && spryscale > 0)
 	{
 		int texnum = texturetranslation[curline->sidedef->midtexture];
-		tallpost_t* post = (tallpost_t*)R_GetColumn(texnum, maskedtexturecol[dc_x]);
+		tallpost_t* post = (tallpost_t*)R_GetTextureColumn(texnum, maskedtexturecol[dc_x]);
 
 		sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
 		dc_iscale = 0xffffffffu / (unsigned)spryscale;
@@ -402,7 +402,7 @@ static void R_BlastSkyColumn(void (*drawfunc)(void))
 		int angle = ((((viewangle + xtoviewangle[dc_x])^skyflip)>>sky1shift) + frontpos)>>16;
 
 		dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
-		dc_source = R_GetColumnData(skytex, angle);
+		dc_source = R_GetTextureColumnData(skytex, angle);
 		drawfunc();
 	}
 }
