@@ -525,22 +525,38 @@ void R_RenderColumnRange(int start, int stop, int coltype, bool columnmethod)
 	}
 	else
 	{
-		// render until dc_x is dword aligned
-		while (dc_x & 3)
+		if (calc_light)
 		{
-			if (calc_light)
-			{
-				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-				dc_colormap = basecolormap.with(walllights[index]);
-			}
+			int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+			dc_colormap = basecolormap.with(walllights[index]);
+		}
 
+		if (dc_x & 1)
+		{
 			colblast();
 			dc_x++;
 		}
 
-		// render in 4 column blocks
-		int blockend = (stop + 1) & ~3;
-		while (dc_x < blockend)
+		if (dc_x & 2)
+		{
+			if (dc_x < stop)
+			{
+				rt_initcols();
+				hcolblast();
+				dc_x++;
+				hcolblast();
+				rt_draw2cols((dc_x - 1) & 3, dc_x - 1);
+				dc_x++;
+			}
+			else if (dc_x == stop)
+			{
+				colblast();
+				dc_x++;
+			}
+		}
+
+		int loopend = (stop + 1) & ~3;
+		while (dc_x < loopend)
 		{
 			if (calc_light)
 			{
@@ -560,14 +576,17 @@ void R_RenderColumnRange(int start, int stop, int coltype, bool columnmethod)
 			dc_x++;
 		}
 
-		// render any remaining columns	
 		if (calc_light)
 		{
 			int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
 			dc_colormap = basecolormap.with(walllights[index]);
 		}
 
-		if (dc_x < stop)
+		if (dc_x == stop)
+		{
+			colblast();
+		}
+		else if (dc_x < stop)
 		{
 			rt_initcols();
 			hcolblast();
@@ -576,16 +595,10 @@ void R_RenderColumnRange(int start, int stop, int coltype, bool columnmethod)
 			rt_draw2cols((dc_x - 1) & 3, dc_x - 1);
 			dc_x++;
 
-			if (dc_x <= stop)
+			if (dc_x < stop + 1)
 			{
 				colblast();
-				dc_x++;
 			}
-		}
-		else if (dc_x == stop)
-		{
-			colblast();
-			dc_x++;
 		}
 	}
 }
