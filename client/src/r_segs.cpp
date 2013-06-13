@@ -87,6 +87,8 @@ extern float yfoc;
 
 static int  	*maskedtexturecol;
 
+EXTERN_CVAR(r_skypalette)
+
 
 //
 // R_TexScaleX
@@ -126,17 +128,6 @@ static inline fixed_t R_TexInvScaleX(fixed_t x, int texnum)
 static inline fixed_t R_TexInvScaleY(fixed_t y, int texnum)
 {
 	return FixedDiv(y, texturescaley[texnum]);
-}
-
-//
-// R_SetTextureParams
-//
-// Sets dc_source, dc_texturefrac
-//
-static inline void R_SetTextureParams(int texnum, fixed_t texcol, fixed_t mid)
-{
-	dc_texturefrac = R_TexScaleY(mid + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale), texnum);
-	dc_source = R_GetTextureColumnData(texnum, R_TexScaleX(texcol, texnum) >> FRACBITS);
 }
 
 //
@@ -246,16 +237,35 @@ static void R_BlastMaskedSegColumn(void (*drawfunc)())
 }
 
 
+inline void R_BlastSolidSegColumnTier(void (*drawfunc)(), const tallpost_t* post, int yl, int yh, fixed_t offset)
+{
+	dc_yl = MAX(yl, 0);
+	dc_yh = MIN(yh - 1, viewheight - 1);
+
+	if (dc_yl <= dc_yh)
+	{
+		dc_source = post->data();
+		dc_textureheight = post->length << FRACBITS;
+		// TODO: dc_texturefrac should take y-scaling of textures into account
+		dc_texturefrac = offset + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale);
+		drawfunc();
+	}
+} 
+
 //
 // R_BlastSolidSegColumn
 //
+// Clips each of the three possible seg tiers of the column (top, mid, and bottom),
+// sets the appropriate drawcolumn variables and calls drawfunc() for each
+// tier to render the column.
+//
+// The clipping of the seg tiers also vertically clips the ceiling and floor
+// planes.
 static void R_BlastSolidSegColumn(void (*drawfunc)())
 {
 	rw_scale = wallscalex[dc_x];
 	if (rw_scale > 0)
 		dc_iscale = 0xffffffffu / (unsigned)rw_scale;
-
-	fixed_t texturecolumn = texoffs[dc_x];
 
 	walltopf[dc_x] = MAX(walltopf[dc_x], ceilingclip[dc_x]);
 	wallbottomf[dc_x] = MIN(wallbottomf[dc_x], floorclip[dc_x]);
@@ -299,14 +309,9 @@ static void R_BlastSolidSegColumn(void (*drawfunc)())
 	// draw the wall tiers
 	if (midtexture)
 	{
-		dc_yl = MAX(walltopf[dc_x], 0);
-		dc_yh = MIN(wallbottomf[dc_x] - 1, viewheight - 1);
+		walltopf[dc_x] = MIN(MAX(walltopf[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
 
-		if (dc_yl <= dc_yh)
-		{
-			R_SetTextureParams(midtexture, texturecolumn, rw_midtexturemid);
-			drawfunc();
-		}
+		R_BlastSolidSegColumnTier(drawfunc, dc_midposts[dc_x], walltopf[dc_x], wallbottomf[dc_x], rw_midtexturemid);
 
 		// indicate that no further drawing can be done in this column
 		ceilingclip[dc_x] = floorclipinitial[dc_x];
@@ -319,14 +324,7 @@ static void R_BlastSolidSegColumn(void (*drawfunc)())
 		{
 			walltopb[dc_x] = MAX(MIN(walltopb[dc_x], floorclip[dc_x]), walltopf[dc_x]);
 
-			dc_yl = MAX(walltopf[dc_x], 0);
-			dc_yh = MIN(walltopb[dc_x] - 1, viewheight - 1);
-
-			if (dc_yl <= dc_yh)
-			{			
-				R_SetTextureParams(toptexture, texturecolumn, rw_toptexturemid);
-				drawfunc();
-			}
+			R_BlastSolidSegColumnTier(drawfunc, dc_topposts[dc_x], walltopf[dc_x], walltopb[dc_x], rw_toptexturemid);
 
 			ceilingclip[dc_x] = walltopb[dc_x];
 		}
@@ -340,14 +338,7 @@ static void R_BlastSolidSegColumn(void (*drawfunc)())
 		{
 			wallbottomb[dc_x] = MIN(MAX(wallbottomb[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
 
-			dc_yl = MAX(wallbottomb[dc_x], 0);
-			dc_yh = MIN(wallbottomf[dc_x] - 1, viewheight - 1);
-
-			if (dc_yl <= dc_yh)
-			{
-				R_SetTextureParams(bottomtexture, texturecolumn, rw_bottomtexturemid);
-				drawfunc();
-			}
+			R_BlastSolidSegColumnTier(drawfunc, dc_bottomposts[dc_x], wallbottomb[dc_x], wallbottomf[dc_x], rw_bottomtexturemid);
 
 			floorclip[dc_x] = wallbottomb[dc_x];
 		}
@@ -360,7 +351,7 @@ static void R_BlastSolidSegColumn(void (*drawfunc)())
 		if (maskedtexture)
 		{
 			// save texturecol for backdrawing of masked mid texture
-			maskedtexturecol[dc_x] = R_TexScaleX(texturecolumn, maskedtexture) >> FRACBITS;
+			maskedtexturecol[dc_x] = R_TexScaleX(texoffs[dc_x], maskedtexture) >> FRACBITS;
 		}
 	}
 
@@ -372,12 +363,6 @@ static void R_BlastSolidSegColumn(void (*drawfunc)())
 	rw_light += rw_lightstep;
 }
 
-
-EXTERN_CVAR(r_skypalette)
-static int		skytex;
-static angle_t	skyflip;
-static int		frontpos;
-
 //
 // R_BlastSkyColumn
 //
@@ -388,10 +373,9 @@ static void R_BlastSkyColumn(void (*drawfunc)(void))
 
 	if (dc_yl >= 0 && dc_yl <= dc_yh)
 	{
-		int angle = ((((viewangle + xtoviewangle[dc_x])^skyflip)>>sky1shift) + frontpos)>>16;
-
+		dc_source = dc_midposts[dc_x]->data();
+		dc_textureheight = dc_midposts[dc_x]->length;
 		dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
-		dc_source = R_GetTextureColumnData(skytex, angle);
 		drawfunc();
 	}
 }
@@ -587,9 +571,9 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	// find texture positioning
 	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
-		dc_texturemid = MAX<fixed_t>(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + texheight;
+		dc_texturemid = MAX(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + texheight;
 	else
-		dc_texturemid = MIN<fixed_t>(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
+		dc_texturemid = MIN(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
 
 	dc_texturemid = R_TexScaleY(dc_texturemid - viewz + curline->sidedef->rowoffset, texnum);
 	
@@ -646,17 +630,19 @@ void R_RenderSkyRange(visplane_t* pl)
 	if (pl->minx > pl->maxx)
 		return;
 
+	int skytex;
+	fixed_t front_offset = 0;
+	angle_t skyflip = 0;
+
 	if (pl->picnum == skyflatnum)
 	{
 		// use sky1
 		skytex = sky1texture;
-		skyflip = 0;
 	}
 	else if (pl->picnum == int(PL_SKYFLAT))
 	{
 		// use sky2
 		skytex = sky2texture;
-		skyflip = 0;
 	}
 	else
 	{
@@ -674,7 +660,7 @@ void R_RenderSkyRange(visplane_t* pl)
 		// to allow sky rotation as well as careful positioning.
 		// However, the offset is scaled very small, so that it
 		// allows a long-period of sky rotation.
-		frontpos = (-side->textureoffset) >> 6;
+		front_offset = (-side->textureoffset) >> 6;
 
 		// Vertical offset allows careful sky positioning.
 		dc_texturemid = side->rowoffset - 28*FRACUNIT;
@@ -710,6 +696,14 @@ void R_RenderSkyRange(visplane_t* pl)
 	dc_iscale = skyiscale >> skystretch;
 	dc_texturemid = skytexturemid;
 	skyplane = pl;
+
+	// determine which texture posts will be used for each screen
+	// column in this range.
+	for (int i = pl->minx; i <= pl->maxx; i++)
+	{
+		int colnum = ((((viewangle + xtoviewangle[i]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
+		dc_midposts[i] = R_GetTextureColumn(skytex, colnum);
+	}
 
 	R_RenderColumnRange(pl->minx, pl->maxx, r_columnmethod, SkyColumnBlaster, SkyHColumnBlaster, false);
 				
@@ -781,6 +775,10 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 	if (width <= 0)
 		return;
 
+	int toptexture = texturetranslation[curline->sidedef->toptexture];
+	int midtexture = texturetranslation[curline->sidedef->midtexture];
+	int bottomtexture = texturetranslation[curline->sidedef->bottomtexture];
+
 	// determine which vertex of the linedef should be used for texture alignment
 	vertex_t *v1;
 	if (curline->linedef->sidenum[0] == curline->sidedef - sides)
@@ -811,13 +809,34 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 	float scalestep = (scale2 - scale1) / width;
 	float uinvzstep = FIXED2FLOAT(seglen) * scale2 / width;
 
-	// fill the texture column array
+	// determine which texture posts will be used for each screen
+	// column in this range and calculate the scaling factor for
+	// each column.
+
 	float uinvz = 0.0f;
 	float curscale = scale1;
 	for (int i = start; i <= stop; i++)
 	{
 		wallscalex[i] = FLOAT2FIXED(curscale);
-		texoffs[i] = segoffs + FLOAT2FIXED(uinvz / curscale);
+
+		fixed_t colfrac = segoffs + FLOAT2FIXED(uinvz / curscale);
+		texoffs[i] = colfrac;
+		
+		if (toptexture)
+		{
+			int colnum = R_TexScaleX(colfrac, toptexture) >> FRACBITS;	
+			dc_topposts[i] = R_GetTextureColumn(toptexture, colnum);
+		}
+		if (midtexture)
+		{
+			int colnum = R_TexScaleX(colfrac, midtexture) >> FRACBITS;	
+			dc_midposts[i] = R_GetTextureColumn(midtexture, colnum);
+		}
+		if (bottomtexture)
+		{
+			int colnum = R_TexScaleX(colfrac, bottomtexture) >> FRACBITS;	
+			dc_bottomposts[i] = R_GetTextureColumn(bottomtexture, colnum);
+		}
 
 		uinvz += uinvzstep;
 		curscale += scalestep;

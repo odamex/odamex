@@ -87,9 +87,6 @@ int*			flattranslation;
 
 int*			texturetranslation;
 
-fixed_t			dc_textureheight;
-
-
 //
 // R_CalculateNewPatchSize
 //
@@ -462,7 +459,6 @@ tallpost_t* R_GetTextureColumn(int texnum, int colnum)
 	colnum &= texturewidthmask[texnum];
 	int lump = texturecolumnlump[texnum][colnum];
 	int ofs = texturecolumnofs[texnum][colnum];
-	dc_textureheight = textureheight[texnum];
 
 	if (lump > 0)
 		return (tallpost_t*)((byte *)W_CachePatch(lump, PU_CACHE) + ofs);

@@ -118,10 +118,16 @@ int 			dc_yh;
 fixed_t 		dc_iscale; 
 fixed_t 		dc_texturemid;
 fixed_t			dc_texturefrac;
+fixed_t			dc_textureheight;
 int				dc_color;				// [RH] Color for column filler
 
 // first pixel in a column (possibly virtual) 
 byte*			dc_source;				
+
+tallpost_t*		dc_topposts[MAXWIDTH];
+tallpost_t*		dc_midposts[MAXWIDTH];
+tallpost_t*		dc_bottomposts[MAXWIDTH];
+
 
 // just for profiling 
 int 			dccount;
