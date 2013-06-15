@@ -374,7 +374,7 @@ static void R_BlastSkyColumn(void (*drawfunc)(void))
 	if (dc_yl >= 0 && dc_yl <= dc_yh)
 	{
 		dc_source = dc_midposts[dc_x]->data();
-		dc_textureheight = dc_midposts[dc_x]->length;
+		dc_textureheight = dc_midposts[dc_x]->length << FRACBITS;
 		dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
 		drawfunc();
 	}
