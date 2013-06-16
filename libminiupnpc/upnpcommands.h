@@ -1,11 +1,11 @@
-/* $Id: upnpcommands.h,v 1.24 2012/03/05 19:42:47 nanard Exp $ */
+/* $Id: upnpcommands.h,v 1.25 2012/09/27 15:42:10 nanard Exp $ */
 /* Miniupnp project : http://miniupnp.free.fr/
  * Author : Thomas Bernard
  * Copyright (c) 2005-2011 Thomas Bernard
  * This software is subject to the conditions detailed in the
  * LICENCE file provided within this distribution */
-#ifndef __UPNPCOMMANDS_H__
-#define __UPNPCOMMANDS_H__
+#ifndef UPNPCOMMANDS_H_INCLUDED
+#define UPNPCOMMANDS_H_INCLUDED
 
 #include "upnpreplyparse.h"
 #include "portlistingparse.h"

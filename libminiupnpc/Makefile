@@ -1,15 +1,15 @@
-# $Id: Makefile,v 1.98 2012/08/29 07:51:30 nanard Exp $
+# $Id: Makefile,v 1.104 2013/05/03 09:05:38 nanard Exp $
 # MiniUPnP Project
 # http://miniupnp.free.fr/
 # http://miniupnp.tuxfamily.org/
 # https://github.com/miniupnp/miniupnp
-# (c) 2005-2012 Thomas Bernard
+# (c) 2005-2013 Thomas Bernard
 # to install use :
-# $ PREFIX=/tmp/dummylocation make install
+# $ make DESTDIR=/tmp/dummylocation install
 # or
 # $ INSTALLPREFIX=/usr/local make install
 # or
-# make install (will go to /usr/bin, /usr/lib, etc...)
+# $ make install (default INSTALLPREFIX is /usr)
 OS = $(shell uname -s)
 VERSION = $(shell cat VERSION)
 
@@ -19,6 +19,12 @@ endif
 ifeq ($(OS), Linux)
 JARSUFFIX=linux
 endif
+ifneq (,$(findstring NT-5.1,$(OS)))
+JARSUFFIX=win32
+endif
+
+HAVE_IPV6 ?= yes
+export HAVE_IPV6
 
 CC ?= gcc
 #AR = gar
@@ -36,10 +42,17 @@ INSTALL = install
 SH = /bin/sh
 JAVA = java
 # see http://code.google.com/p/jnaerator/
-JNAERATOR = jnaerator-0.9.7.jar
+#JNAERATOR = jnaerator-0.9.7.jar
+#JNAERATOR = jnaerator-0.9.8-shaded.jar
+#JNAERATORARGS = -library miniupnpc
+#JNAERATOR = jnaerator-0.10-shaded.jar
+JNAERATOR = jnaerator-0.11-shaded.jar
+JNAERATORARGS = -mode StandaloneJar -runtime JNAerator -library miniupnpc
 JNAERATORBASEURL = http://jnaerator.googlecode.com/files/
-#following libs are needed on Solaris
-#LDLIBS=-lsocket -lnsl -lresolv
+
+ifeq (SunOS, $(OS))
+  LDFLAGS=-lsocket -lnsl -lresolv
+endif
 
 # APIVERSION is used to build SONAME
 APIVERSION = 9
@@ -48,7 +61,7 @@ SRCS = igd_desc_parse.c miniupnpc.c minixml.c minisoap.c miniwget.c \
        upnpc.c upnpcommands.c upnpreplyparse.c testminixml.c \
 	   minixmlvalid.c testupnpreplyparse.c minissdpc.c \
 	   upnperrors.c testigddescparse.c testminiwget.c \
-       connecthostport.c portlistringparse.c receivedata.c
+       connecthostport.c portlistingparse.c receivedata.c
 
 LIBOBJS = miniwget.o minixml.o igd_desc_parse.o minisoap.o \
           miniupnpc.o upnpreplyparse.o upnpcommands.o upnperrors.o \
@@ -74,8 +87,13 @@ ifeq ($(OS), Darwin)
   SONAME = $(basename $(SHAREDLIBRARY)).$(APIVERSION).dylib
   CFLAGS := -DMACOSX -D_DARWIN_C_SOURCE $(CFLAGS)
 else
+ifeq ($(JARSUFFIX), win32)
+  SHAREDLIBRARY = miniupnpc.dll
+else
+  # Linux/BSD/etc.
   SHAREDLIBRARY = libminiupnpc.so
   SONAME = $(SHAREDLIBRARY).$(APIVERSION)
+endif
 endif
 
 EXECUTABLES = upnpc-static
@@ -99,10 +117,11 @@ TESTMINIWGETOBJS := $(TESTMINIWGETOBJS) minissdpc.o
 TESTIGDDESCPARSE := $(TESTIGDDESCPARSE) minissdpc.o
 endif
 
+LIBDIR ?= lib
 # install directories
 INSTALLPREFIX ?= $(PREFIX)/usr
 INSTALLDIRINC = $(INSTALLPREFIX)/include/miniupnpc
-INSTALLDIRLIB = $(INSTALLPREFIX)/lib
+INSTALLDIRLIB = $(INSTALLPREFIX)/$(LIBDIR)
 INSTALLDIRBIN = $(INSTALLPREFIX)/bin
 INSTALLDIRMAN = $(INSTALLPREFIX)/share/man
 
@@ -157,36 +176,42 @@ clean:
 	# clean jnaerator stuff
 	$(RM) _jnaerator.* java/miniupnpc_$(OS).jar
 
+distclean: clean
+	$(RM) $(JNAERATOR) java/*.jar java/*.class out.errors.txt
+
 updateversion:	miniupnpc.h
 	cp miniupnpc.h miniupnpc.h.bak
 	sed 's/\(.*MINIUPNPC_API_VERSION\s\+\)[0-9]\+/\1$(APIVERSION)/' < miniupnpc.h.bak > miniupnpc.h
 
 install:	updateversion $(FILESTOINSTALL)
-	$(INSTALL) -d $(INSTALLDIRINC)
-	$(INSTALL) -m 644 $(HEADERS) $(INSTALLDIRINC)
-	$(INSTALL) -d $(INSTALLDIRLIB)
-	$(INSTALL) -m 644 $(LIBRARY) $(INSTALLDIRLIB)
+	$(INSTALL) -d $(DESTDIR)$(INSTALLDIRINC)
+	$(INSTALL) -m 644 $(HEADERS) $(DESTDIR)$(INSTALLDIRINC)
+	$(INSTALL) -d $(DESTDIR)$(INSTALLDIRLIB)
+	$(INSTALL) -m 644 $(LIBRARY) $(DESTDIR)$(INSTALLDIRLIB)
 ifneq ($(OS), AmigaOS)
-	$(INSTALL) -m 644 $(SHAREDLIBRARY) $(INSTALLDIRLIB)/$(SONAME)
-	ln -fs $(SONAME) $(INSTALLDIRLIB)/$(SHAREDLIBRARY)
+	$(INSTALL) -m 644 $(SHAREDLIBRARY) $(DESTDIR)$(INSTALLDIRLIB)/$(SONAME)
+	ln -fs $(SONAME) $(DESTDIR)$(INSTALLDIRLIB)/$(SHAREDLIBRARY)
 endif
-	$(INSTALL) -d $(INSTALLDIRBIN)
+	$(INSTALL) -d $(DESTDIR)$(INSTALLDIRBIN)
 ifeq ($(OS), AmigaOS)
-	$(INSTALL) -m 755 upnpc-static $(INSTALLDIRBIN)/upnpc
+	$(INSTALL) -m 755 upnpc-static $(DESTDIR)$(INSTALLDIRBIN)/upnpc
 else
-	$(INSTALL) -m 755 upnpc-shared $(INSTALLDIRBIN)/upnpc
+	$(INSTALL) -m 755 upnpc-shared $(DESTDIR)$(INSTALLDIRBIN)/upnpc
 endif
-	$(INSTALL) -m 755 external-ip.sh $(INSTALLDIRBIN)/external-ip
+	$(INSTALL) -m 755 external-ip.sh $(DESTDIR)$(INSTALLDIRBIN)/external-ip
 ifneq ($(OS), AmigaOS)
-	$(INSTALL) -d $(INSTALLDIRMAN)/man3
-	$(INSTALL) man3/miniupnpc.3 $(INSTALLDIRMAN)/man3/miniupnpc.3
+	$(INSTALL) -d $(DESTDIR)$(INSTALLDIRMAN)/man3
+	$(INSTALL) man3/miniupnpc.3 $(DESTDIR)$(INSTALLDIRMAN)/man3/miniupnpc.3
+ifeq ($(OS), Linux)
+	gzip $(DESTDIR)$(INSTALLDIRMAN)/man3/miniupnpc.3
+endif
 endif
 
 
 cleaninstall:
-	$(RM) -r $(INSTALLDIRINC)
-	$(RM) $(INSTALLDIRLIB)/$(LIBRARY)
-	$(RM) $(INSTALLDIRLIB)/$(SHAREDLIBRARY)
+	$(RM) -r $(DESTDIR)$(INSTALLDIRINC)
+	$(RM) $(DESTDIR)$(INSTALLDIRLIB)/$(LIBRARY)
+	$(RM) $(DESTDIR)$(INSTALLDIRLIB)/$(SHAREDLIBRARY)
 
 depend:
 	makedepend -Y -- $(CFLAGS) -- $(SRCS) 2>/dev/null
@@ -202,10 +227,10 @@ else
 	$(CC) -shared $(LDFLAGS) -Wl,-soname,$(SONAME) -o $@ $^
 endif
 
-upnpc-static:	upnpc.o $(LIBRARY) $(LDLIBS)
+upnpc-static:	upnpc.o $(LIBRARY)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-upnpc-shared:	upnpc.o $(SHAREDLIBRARY) $(LDLIBS)
+upnpc-shared:	upnpc.o $(SHAREDLIBRARY)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 testminixml:	$(TESTMINIXMLOBJS)
@@ -221,17 +246,14 @@ testigddescparse:	$(TESTIGDDESCPARSE)
 miniupnpcstrings.h:	miniupnpcstrings.h.in updateminiupnpcstrings.sh VERSION
 	$(SH) updateminiupnpcstrings.sh
 
-jnaerator-0.9.8-shaded.jar:
-	wget $(JNAERATORBASEURL)/$@ || curl -o $@ $(JNAERATORBASEURL)/$@
-
-jnaerator-0.9.7.jar:
-	wget $(JNAERATORBASEURL)/$@ || curl -o $@ $(JNAERATORBASEURL)/$@
-
-jnaerator-0.9.3.jar:
-	wget $(JNAERATORBASEURL)/$@ || curl -o $@ $(JNAERATORBASEURL)/$@
+# ftp tool supplied with OpenBSD can download files from http.
+jnaerator-%.jar:
+	wget $(JNAERATORBASEURL)/$@ || \
+	curl -o $@ $(JNAERATORBASEURL)/$@ || \
+	ftp $(JNAERATORBASEURL)/$@
 
 jar: $(SHAREDLIBRARY)  $(JNAERATOR)
-	$(JAVA) -jar $(JNAERATOR) -library miniupnpc \
+	$(JAVA) -jar $(JNAERATOR) $(JNAERATORARGS) \
 	miniupnpc.h declspec.h upnpcommands.h upnpreplyparse.h \
 	igd_desc_parse.h miniwget.h upnperrors.h $(SHAREDLIBRARY) \
 	-package fr.free.miniupnp -o . -jar java/miniupnpc_$(JARSUFFIX).jar -v

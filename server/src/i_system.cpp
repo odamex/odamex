@@ -30,19 +30,13 @@
 #include <stdarg.h>
 #include <math.h>
 
+#include "win32inc.h"
 #ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-
-#include <conio.h>
-#include <io.h>
-#include <process.h>
-
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <windows.h>
-#include <mmsystem.h>
-#include <direct.h> // SoM: I don't know HOW this has been overlooked until now...
+    #include <conio.h>
+    #include <io.h>
+    #include <process.h>
+    #include <mmsystem.h>
+    #include <direct.h> // SoM: I don't know HOW this has been overlooked until now...
 #endif
 
 #ifdef UNIX

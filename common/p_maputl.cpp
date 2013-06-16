@@ -684,7 +684,13 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 
 	// [RH] Get past starting 0 (from BOOM)
 	// denis - not so fast, this breaks doom1.wad 1.9 demo1
-	//list++;
+	// [SL] The first entry in each block list appears to have been intended to
+	// be used for a special purpose but instead contains garbage (most often
+	// referencing linedef 0). Using this first entry (as vanilla Doom does) can
+	// cause hitscan weapons to erroneously hit the first linedef entry regardless
+	// of where that linedef is located in relation to the block.
+	if (co_blockmapfix)
+		++list;
 
 	for (; *list != -1; list++)
 	{

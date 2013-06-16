@@ -29,13 +29,10 @@
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
-#ifdef WIN32
-#ifndef _XBOX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif // !_XBOX
-#include "SDL_syswm.h"
-#include "resource.h"
+#include "win32inc.h"
+#if defined(_WIN32) && !defined(_XBOX)
+    #include "SDL_syswm.h"
+    #include "resource.h"
 #endif // WIN32
 
 #include "v_palette.h"
@@ -250,8 +247,17 @@ bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
    if (fs)
       sbits = 32;
 
+	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
+	// This interferes with RawWin32Mouse's input handlers so we need to
+	// disable them prior to reinitalizing DirectInput...
+	I_PauseMouse();
+
    if(!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
       return false;
+
+	// [SL] ...and re-enable RawWin32Mouse's input handlers after
+	// DirectInput is reinitalized.
+	I_ResumeMouse();
 
    screenw = width;
    screenh = height;

@@ -2109,7 +2109,6 @@ void M_StartControlPanel (void)
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
-	I_PauseMouse ();				// [RH] Give the mouse back in windowed modes.
 	I_EnableKeyRepeat();
 }
 
@@ -2194,7 +2193,6 @@ void M_ClearMenus (void)
 	M_DemoNoPlay = false;
 	if (gamestate != GS_FULLCONSOLE)
 	{
-		I_ResumeMouse ();	// [RH] Recapture the mouse in windowed modes.
 		I_DisableKeyRepeat();
 	}
 }
@@ -2221,7 +2219,6 @@ void M_PopMenuStack (void)
 {
 	M_DemoNoPlay = false;
 	if (MenuStackDepth > 1) {
-		I_PauseMouse ();
 		MenuStackDepth -= 2;
 		if (MenuStack[MenuStackDepth].isNewStyle) {
 			OptionsActive = true;

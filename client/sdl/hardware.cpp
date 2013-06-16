@@ -44,6 +44,7 @@
 #include "i_sdlvideo.h"
 #include "m_fileio.h"
 #include "g_game.h"
+#include "i_input.h"
 
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 

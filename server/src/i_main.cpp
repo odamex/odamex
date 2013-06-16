@@ -26,9 +26,10 @@
 #include <map>
 #include <string>
 
+#include "win32inc.h"
 #ifdef WIN32
-#include <windows.h>
-#include "resource.h"
+    #include "resource.h"
+	#include "mmsystem.h"
 #endif
 
 #ifdef UNIX
@@ -210,12 +211,12 @@ void daemon_init(void)
     }
 
 	const char *forkargs = Args.CheckValue("-fork");
-	if (forkargs)    
+	if (forkargs)
 		pidfile = string(forkargs);
 
     if(!pidfile.size() || pidfile[0] == '-')
     	pidfile = "doomsv.pid";
-	
+
     pid = getpid();
     fpid = fopen(pidfile.c_str(), "w");
     fprintf(fpid, "%d\n", pid);
