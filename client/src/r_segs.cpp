@@ -612,6 +612,8 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	mfloorclip = ds->sprbottomclip;
 	mceilingclip = ds->sprtopclip;
 
+	dc_textureheight = 256*FRACUNIT;
+
 	// draw the columns
 	R_RenderColumnRange(x1, x2, r_columnmethod, MaskedColumnBlaster, MaskedHColumnBlaster, true);
 }
