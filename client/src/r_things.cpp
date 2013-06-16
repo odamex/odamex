@@ -1767,15 +1767,8 @@ void R_DrawParticleD (vissprite_t *vis, int x1, int x2)
 
 		pitch = screen->pitch / sizeof(argb_t);
 
-		int fga, bga;
-		{
-			fixed_t fglevel, bglevel;
-
-			fglevel = ((vis->mobjflags + 1) << 8) & ~0x3ff;
-			bglevel = FRACUNIT-fglevel;
-			fga = fglevel >> 8;
-			bga = bglevel >> 8;
-		}
+		int fga = (dc_translevel & ~0x03FF) >> 8;
+		int bga = 255 - fga;
 
 		spacing = pitch - (countbase << detailxshift);
 		dest = (argb_t *)( ylookup[yl] + columnofs[x1] );

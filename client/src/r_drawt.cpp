@@ -200,15 +200,8 @@ static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
 		return;
 	count++;
 
-	int fga, bga;
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT - fglevel;
-		fga = fglevel >> 8;
-		bga = bglevel >> 8;
-	}
+	int fga = (dc_translevel & ~0x03FF) >> 8;
+	int bga = 255 - fga;
 
 	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4 + hx];
@@ -249,15 +242,8 @@ static forceinline void rt_tlatelucentcols(int hx, int sx, int yl, int yh)
 		return;
 	count++;
 
-	int fga, bga;
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT-fglevel;
-		fga = fglevel >> 8;
-		bga = bglevel >> 8;
-	}
+	int fga = (dc_translevel & ~0x03FF) >> 8;
+	int bga = 255 - fga;
 
 	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4 + hx];

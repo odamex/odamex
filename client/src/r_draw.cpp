@@ -479,7 +479,7 @@ shaderef_t				slopelighting[MAXWIDTH];
 // [SL] - Does nothing (obviously). Used when a column drawing function
 // pointer should not draw anything.
 //
-void R_BlankColumn(void)
+void R_BlankColumn()
 {
 }
 
@@ -961,10 +961,8 @@ class PaletteTranslucentColormapFunc
 public:
 	PaletteTranslucentColormapFunc(shaderef_t* map) : colormap(map)
 	{
-		const fixed_t fglevel = dc_translevel & ~0x03FF;
-		const fixed_t bglevel = FRACUNIT - fglevel;
-		fga = fglevel >> 8;
-		bga = bglevel >> 8;
+		fga = (dc_translevel & ~0x03FF) >> 8;
+		bga = 255 - fga;
 	}
 
 	forceinline void operator()(byte c, palindex_t* dest) const
@@ -1316,10 +1314,8 @@ class DirectTranslucentColormapFunc
 public:
 	DirectTranslucentColormapFunc(shaderef_t* map) : colormap(map)
 	{
-		const fixed_t fglevel = dc_translevel & ~0x03FF;
-		const fixed_t bglevel = FRACUNIT - fglevel;
-		fga = fglevel >> 8;
-		bga = bglevel >> 8;
+		fga = (dc_translevel & ~0x03FF) >> 8;
+		bga = 255 - fga;
 	}
 
 	forceinline void operator()(byte c, argb_t* dest) const
