@@ -37,7 +37,7 @@
 #include "c_dispatch.h"
 #include "c_cvars.h"
 #include "v_text.h"
-#include "v_video.h"
+
 #include "cl_main.h"
 #include "p_ctf.h"
 #include "i_video.h"
@@ -47,6 +47,8 @@
 
 #include "hu_drawers.h"
 #include "hu_elements.h"
+
+#include "v_video.h"
 
 #define QUEUESIZE		128
 #define HU_INPUTX		0
@@ -197,7 +199,6 @@ BOOL HU_Responder (event_t *ev)
 			else
 				ShoveChatStr (chat_macros[ev->data2 - '0']->cstring(), headsupactive - 1);
 
-			I_ResumeMouse();
 			I_DisableKeyRepeat();
 			headsupactive = 0;
 			return true;
@@ -206,14 +207,12 @@ BOOL HU_Responder (event_t *ev)
 	if (ev->data3 == KEY_ENTER)
 	{
 		ShoveChatStr (input_text, headsupactive - 1);
-        I_ResumeMouse();
 		I_DisableKeyRepeat();
 		headsupactive = 0;
 		return true;
 	}
 	else if (ev->data1 == KEY_ESCAPE || ev->data1 == KEY_JOY2)
 	{
-        I_ResumeMouse();
 		I_DisableKeyRepeat();
 		headsupactive = 0;
 		return true;
@@ -385,7 +384,6 @@ BEGIN_COMMAND (messagemode)
 	headsupactive = 1;
 	C_HideConsole ();
 	I_EnableKeyRepeat();
-    I_PauseMouse();
 	input_text = "";
 	C_ReleaseKeys();
 }
@@ -409,7 +407,6 @@ BEGIN_COMMAND (messagemode2)
 	headsupactive = 2;
 	C_HideConsole ();
 	I_EnableKeyRepeat();
-	I_PauseMouse();
 	input_text = "";
 	C_ReleaseKeys();
 }

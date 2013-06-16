@@ -24,6 +24,7 @@
 #include "c_cvars.h"
 #include "s_sound.h"
 #include "i_music.h"
+#include "i_input.h"
 #include "d_netinf.h"
 
 // Automap
@@ -183,7 +184,30 @@ CVAR (cl_run,		"0", "Always run",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// Always run? /
 
 // Mouse settings
 // --------------
-CVAR (mouse_type,			"0", 	"",	CVARTYPE_BYTE,	CVAR_ARCHIVE)
+
+//
+// C_GetDefaultMouseDriver()
+//
+// Allows the default value for music_driver to change depending on
+// compile-time factors (eg, OS)
+//
+static char *C_GetDefaultMouseDriver()
+{
+	static char str[4];
+
+	int driver_id = SDL_MOUSE_DRIVER;
+
+	#ifdef WIN32
+	driver_id = RAW_WIN32_MOUSE_DRIVER;
+	#endif
+
+	sprintf(str, "%i", driver_id);
+	return str;
+}
+
+CVAR_FUNC_DECL (mouse_driver, C_GetDefaultMouseDriver(), "Mouse driver backend",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (mouse_type,			"0", 	"",	CVARTYPE_BYTE,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_sensitivity,	"35.0", "",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL (cl_mouselook, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)

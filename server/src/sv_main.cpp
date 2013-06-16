@@ -21,12 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
-
+#include "win32inc.h"
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <winsock.h>
-#include <time.h>
+    #include <winsock.h>
+    #include <time.h>
 #endif
 
 #ifdef UNIX
@@ -2250,7 +2248,7 @@ void SV_SendLoadMap(const std::vector<std::string> &wadnames,
 	buf_t *buf = &(player->client.reliablebuf);
 	MSG_WriteMarker(buf, svc_loadmap);
 
-	// send list of wads (skip over wadnames[0] == odamex.wad)	
+	// send list of wads (skip over wadnames[0] == odamex.wad)
 	MSG_WriteByte(buf, MIN<size_t>(wadnames.size() - 1, 255));
 	for (size_t i = 1; i < MIN<size_t>(wadnames.size(), 256); i++)
 	{
@@ -2719,7 +2717,7 @@ void SVC_Say(player_t &player, const char* message)
 
 /**
  * Send a message to a specific player from a specific other player.
- * 
+ *
  * @param player  Sending player.
  * @param dplayer Player to send to.
  * @param message Message to send.

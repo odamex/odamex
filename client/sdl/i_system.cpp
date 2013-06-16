@@ -31,20 +31,17 @@
 #include <Carbon/Carbon.h>
 #endif
 
+#include "win32inc.h"
 #ifdef WIN32
-#include <io.h>
-#include <direct.h>
-#include <process.h>
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#ifdef _XBOX
-#include <xtl.h>
-#else
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <shlwapi.h>
-#endif // !_XBOX
+    #include <io.h>
+    #include <direct.h>
+    #include <process.h>
+
+    #ifdef _XBOX
+        #include <xtl.h>
+    #else
+        #include <shlwapi.h>
+    #endif // !_XBOX
 #endif // WIN32
 
 #ifdef UNIX
