@@ -29,6 +29,7 @@
 #include "win32inc.h"
 #ifdef WIN32
     #include "resource.h"
+	#include "mmsystem.h"
 #endif
 
 #ifdef UNIX
