@@ -54,7 +54,7 @@ void G_BeginRecording(void);
 
 void G_PlayDemo(char* name);
 void G_DoPlayDemo(bool justStreamInput = false);
-void G_TimeDemo(char* name);
+void G_TimeDemo(const char* name);
 BOOL G_CheckDemoStatus(void);
 
 void G_WorldDone(void);
