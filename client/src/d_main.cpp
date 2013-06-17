@@ -863,6 +863,14 @@ void D_DoomMain (void)
 		defdemoname = Args.GetArg (p+1);
 	}
 
+	// [SL] check for -timedemo (was removed at some point)
+	p = Args.CheckParm("-timedemo");
+	if (p && p < Args.NumArgs() - 1)
+	{
+		singledemo = true;
+		G_TimeDemo(Args.GetArg(p + 1));
+	}
+
 	const char *val = Args.CheckValue ("-skill");
 	if (val)
 	{

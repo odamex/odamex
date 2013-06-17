@@ -45,6 +45,7 @@
 #include "cl_demo.h"
 
 extern NetDemo netdemo;
+extern int timingdemo;
 
 extern byte		*demo_p;		// [RH] Special "ticcmds" get recorded in demos
 
@@ -127,19 +128,39 @@ void TryStepTics(QWORD tics)
 	}
 	
 	DObject::EndFrame ();
-
 }
 
 QWORD nextstep = 0;
 
-void TryRunTics (void)
+//
+// D_CalculateRunTics
+//
+// Determines how many tics should be run based on the time since the last
+// frame. Under normal circumstances, this will block until the start of the
+// next frame @ 35fps. However, if a demo is being timed, always run tics
+// one at a time immediately without blocking.
+//
+static QWORD D_CalculateRunTics()
 {
-	// get real tics
 	static QWORD oldentertics = 0;
 
-	QWORD entertic = I_WaitForTic (oldentertics);
-	QWORD realtics = entertic - oldentertics;
-	oldentertics = entertic;
+	if (timingdemo)
+	{
+		oldentertics = I_GetTimePolled();
+		return 1;
+	}
+	else
+	{
+		QWORD entertics = I_WaitForTic(oldentertics);
+		QWORD realtics = entertics - oldentertics;
+		oldentertics = entertics;
+		return realtics;
+	}
+}
+
+void TryRunTics (void)
+{
+	QWORD realtics = D_CalculateRunTics();
 
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())
@@ -158,8 +179,10 @@ void TryRunTics (void)
 	}
 	
 	// run the realtics tics
-	if(!step_mode)
+	if (!step_mode)
+	{
 		TryStepTics(realtics);
+	}
 	else
 	{
 		NetUpdate();

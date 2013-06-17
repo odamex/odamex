@@ -2291,7 +2291,7 @@ void G_DoPlayDemo (bool justStreamInput)
 //
 // G_TimeDemo
 //
-void G_TimeDemo (char* name)
+void G_TimeDemo(const char* name)
 {
 	nodrawers = Args.CheckParm ("-nodraw");
 	noblit = Args.CheckParm ("-noblit");
