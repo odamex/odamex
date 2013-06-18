@@ -26,6 +26,7 @@
 #include <stddef.h>
 
 #include "m_alloc.h"
+#include "m_mempool.h"
 
 #include "i_system.h"
 
@@ -41,6 +42,9 @@
 #include <math.h>
 
 #include "p_lnspec.h"
+
+// a pool of bytes allocated for sprite clipping arrays
+MemoryPool openings(32768);
 
 // OPTIMIZE: closed two sided lines as single sided
 
@@ -712,46 +716,6 @@ void R_RenderSkyRange(visplane_t* pl)
 	R_ResetDrawFuncs();
 }
 
-extern int *openings;
-extern size_t maxopenings;
-
-//
-// R_AdjustOpenings
-//
-// killough 1/6/98, 2/1/98: remove limit on openings
-// [SL] 2012-01-21 - Moved into its own function
-static void R_AdjustOpenings(int start, int stop)
-{
-	ptrdiff_t pos = lastopening - openings;
-	size_t need = 4*(stop - start + 1) + pos;
-
-	if (need > maxopenings)
-	{
-		drawseg_t *ds;
-		int *oldopenings = openings;
-		int *oldlast = lastopening;
-
-		do
-			maxopenings = maxopenings ? maxopenings*2 : 16384;
-		while (need > maxopenings);
-		
-		openings = (int *)Realloc (openings, maxopenings * sizeof(*openings));
-		lastopening = openings + pos;
-		DPrintf ("MaxOpenings increased to %u\n", maxopenings);
-
-		// [RH] We also need to adjust the openings pointers that
-		//		were already stored in drawsegs.
-		for (ds = drawsegs; ds < ds_p; ds++) {
-#define ADJUST(p) if (ds->p + ds->x1 >= oldopenings && ds->p + ds->x1 <= oldlast)\
-				  ds->p = ds->p - oldopenings + openings;
-			ADJUST (maskedtexturecol);
-			ADJUST (sprtopclip);
-			ADJUST (sprbottomclip);
-		}
-#undef ADJUST
-	}
-}
-
 static fixed_t R_LineLength(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2)
 {
 	float dx = FIXED2FLOAT(px2 - px1);
@@ -918,9 +882,6 @@ void R_StoreWallRange(int start, int stop)
 	ds_p->x1 = start;
 	ds_p->x2 = stop;
 	ds_p->curline = curline;
-
-	// killough: remove limits on openings
-	R_AdjustOpenings(start, stop);
 
 	// calculate scale at both ends and step
 	ds_p->scale1 = rw_scale = wallscalex[start];
@@ -1105,8 +1066,7 @@ void R_StoreWallRange(int start, int stop)
 		{
 			// masked midtexture
 			maskedtexture = sidedef->midtexture;
-			ds_p->maskedtexturecol = maskedtexturecol = lastopening - start;
-			lastopening += count; 
+			ds_p->maskedtexturecol = maskedtexturecol = openings.alloc<int>(count) - start;
 		}
 
 		// [SL] additional fix for sky hack
@@ -1182,16 +1142,14 @@ void R_StoreWallRange(int start, int stop)
     // save sprite clipping info
     if ( ((ds_p->silhouette & SIL_TOP) || maskedtexture) && !ds_p->sprtopclip)
 	{
-		memcpy(lastopening, ceilingclip+start, count * sizeof(*lastopening));
-		ds_p->sprtopclip = lastopening - start;
-		lastopening += count;
+		ds_p->sprtopclip = openings.alloc<int>(count) - start;
+		memcpy(ds_p->sprtopclip + start, ceilingclip + start, count * sizeof(*ds_p->sprtopclip));
 	}
 
     if ( ((ds_p->silhouette & SIL_BOTTOM) || maskedtexture) && !ds_p->sprbottomclip)
 	{
-		memcpy(lastopening, floorclip+start, count * sizeof(*lastopening));
-		ds_p->sprbottomclip = lastopening - start;
-		lastopening += count;
+		ds_p->sprbottomclip = openings.alloc<int>(count) - start;
+		memcpy(ds_p->sprbottomclip + start, floorclip + start, count * sizeof(*ds_p->sprbottomclip));
 	}
 
 	if (maskedtexture && !(ds_p->silhouette & SIL_TOP))
@@ -1202,6 +1160,11 @@ void R_StoreWallRange(int start, int stop)
 	ds_p++;
 }
 
+
+void R_ClearOpenings()
+{
+	openings.clear();
+}
 
 VERSION_CONTROL (r_segs_cpp, "$Id$")
 

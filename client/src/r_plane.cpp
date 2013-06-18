@@ -75,15 +75,6 @@ visplane_t				*skyplane;
   ((unsigned)((picnum)*3+(lightlevel)+(secplane.d)*7) & (MAXVISPLANES-1))
 
 //
-// opening
-//
-
-size_t					maxopenings;
-int	    				*openings;
-int 					*lastopening;
-
-
-//
 // Clip values are the solid pixel bounding the range.
 //	floorclip starts out SCREENHEIGHT-1
 //	ceilingclip starts out 0
@@ -272,8 +263,6 @@ void R_ClearPlanes (void)
 	for (int i = 0; i < MAXVISPLANES; i++)	// new code -- killough
 		for (*freehead = visplanes[i], visplanes[i] = NULL; *freehead; )
 			freehead = &(*freehead)->next;
-
-	lastopening = openings;
 }
 
 //
