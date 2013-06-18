@@ -443,6 +443,11 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 void R_AddLine (seg_t *line)
 {
 	curline = line;
+
+	// skip this line if it's not facing the camera
+	if (R_PointOnSegSide(viewx, viewy, line) != 0)
+		return;
+
 	dc_color = ((line - segs) & 31) * 4;	// [RH] Color if not texturing line
 
 	// translate the line seg endpoints from world-space to camera-space
