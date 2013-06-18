@@ -464,25 +464,25 @@ typedef struct tallpost_s tallpost_t;
 
 struct drawseg_s
 {
-	seg_t*		curline;
+	seg_t*			curline;
 
-    int			x1;
-    int			x2;
+    int				x1;
+    int				x2;
 
-    fixed_t		scale1;
-    fixed_t		scale2;
-    fixed_t		scalestep;
+    fixed_t			scale1;
+    fixed_t			scale2;
+    fixed_t			scalestep;
 
-	fixed_t		light, lightstep;
+	fixed_t			light, lightstep;
 
     // 0=none, 1=bottom, 2=top, 3=both
-    int			silhouette;
+    int				silhouette;
 
     // Pointers to lists for sprite clipping,
     //  all three adjusted so [x1] is first value.
-    int*		sprtopclip;
-    int*		sprbottomclip;
-    int*		maskedtexturecol;
+    int*			sprtopclip;
+    int*			sprbottomclip;
+	tallpost_t**	midposts;
 };
 typedef struct drawseg_s drawseg_t;
 

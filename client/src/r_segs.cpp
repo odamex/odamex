@@ -89,7 +89,7 @@ static int texoffs[MAXWIDTH];
 extern fixed_t FocalLengthY;
 extern float yfoc;
 
-static int  	*maskedtexturecol;
+static tallpost_t** masked_midposts;
 
 EXTERN_CVAR(r_skypalette)
 
@@ -183,11 +183,10 @@ static void R_FillWallHeightArray(
 //
 static void R_BlastMaskedSegColumn(void (*drawfunc)())
 {
-	if (maskedtexturecol[dc_x] != MAXINT && spryscale > 0)
-	{
-		int texnum = texturetranslation[curline->sidedef->midtexture];
-		tallpost_t* post = R_GetTextureColumn(texnum, maskedtexturecol[dc_x]);
+	tallpost_t* post = masked_midposts[dc_x];
 
+	if (post != NULL && spryscale > 0)
+	{
 		sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
 		dc_iscale = 0xffffffffu / (unsigned)spryscale;
 
@@ -234,7 +233,7 @@ static void R_BlastMaskedSegColumn(void (*drawfunc)())
 			post = post->next();
 		}
 
-		maskedtexturecol[dc_x] = MAXINT;
+		masked_midposts[dc_x] = NULL;
 	}
 
 	spryscale += rw_scalestep;
@@ -355,7 +354,8 @@ static void R_BlastSolidSegColumn(void (*drawfunc)())
 		if (maskedtexture)
 		{
 			// save texturecol for backdrawing of masked mid texture
-			maskedtexturecol[dc_x] = R_TexScaleX(texoffs[dc_x], maskedtexture) >> FRACBITS;
+			int colnum = R_TexScaleX(texoffs[dc_x], maskedtexture) >> FRACBITS;
+			masked_midposts[dc_x] = R_GetTextureColumn(maskedtexture, colnum);
 		}
 	}
 
@@ -605,7 +605,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	walllights = lightnum >= LIGHTLEVELS ? scalelight[LIGHTLEVELS-1] :
 		lightnum <  0 ? scalelight[0] : scalelight[lightnum];
 
-	maskedtexturecol = ds->maskedtexturecol;
+	masked_midposts = ds->midposts;
 
 	rw_scalestep = R_TexInvScaleY(ds->scalestep, texnum);
 	spryscale = R_TexInvScaleY(ds->scale1, texnum) + (x1 - ds->x1) * rw_scalestep;
@@ -894,7 +894,7 @@ void R_StoreWallRange(int start, int stop)
 	// calculate texture boundaries
 	//	and decide if floor / ceiling marks are needed
 	midtexture = toptexture = bottomtexture = maskedtexture = 0;
-	ds_p->maskedtexturecol = NULL;
+	ds_p->midposts = NULL;
 
 	if (!backsector)
 	{
@@ -1066,7 +1066,7 @@ void R_StoreWallRange(int start, int stop)
 		{
 			// masked midtexture
 			maskedtexture = sidedef->midtexture;
-			ds_p->maskedtexturecol = maskedtexturecol = openings.alloc<int>(count) - start;
+			ds_p->midposts = masked_midposts = openings.alloc<tallpost_t*>(count) - start;
 		}
 
 		// [SL] additional fix for sky hack

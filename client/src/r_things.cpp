@@ -1410,7 +1410,7 @@ void R_DrawSprite (vissprite_t *spr)
 	{
 		// determine if the drawseg obscures the sprite
 		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 ||
-			(!(ds->silhouette & SIL_BOTH) && !ds->maskedtexturecol) )
+			(!(ds->silhouette & SIL_BOTH) && !ds->midposts) )
 		{
 			// does not cover sprite
 			continue;
@@ -1427,8 +1427,8 @@ void R_DrawSprite (vissprite_t *spr)
 			(segscale2 < spr->yscale && !R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
 		{
 			// masked mid texture?
-			if (ds->maskedtexturecol)
-				R_RenderMaskedSegRange (ds, r1, r2);
+			if (ds->midposts)
+				R_RenderMaskedSegRange(ds, r1, r2);
 			// seg is behind sprite
 			continue;
 		}
@@ -1531,8 +1531,8 @@ void R_DrawMasked (void)
 	//		for (ds=ds_p-1 ; ds >= drawsegs ; ds--)    old buggy code
 
 	for (ds=ds_p ; ds-- > drawsegs ; )	// new -- killough
-		if (ds->maskedtexturecol)
-			R_RenderMaskedSegRange (ds, ds->x1, ds->x2);
+		if (ds->midposts)
+			R_RenderMaskedSegRange(ds, ds->x1, ds->x2);
 
 	// draw the psprites on top of everything
 	//	but does not draw on side views
