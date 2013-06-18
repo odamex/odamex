@@ -133,6 +133,7 @@ int eventtail;
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 DCanvas *page;
 bool demotest;
+extern bool timingdemo;
 
 static int demosequence;
 static int pagetic;
@@ -423,6 +424,8 @@ void D_DoomLoop (void)
 	{
 		try
 		{
+			I_StartTicTimer();
+
 			TryRunTics (); // will run at least one tic
 
 			if (!connected)
@@ -434,6 +437,9 @@ void D_DoomLoop (void)
 
 			// Update display, next frame, with current state.
 			D_Display ();
+
+			if (!timingdemo)		
+				I_SleepUntilNextTic();
 		}
 		catch (CRecoverableError &error)
 		{
