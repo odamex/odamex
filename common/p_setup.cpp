@@ -181,31 +181,11 @@ void P_LoadSegs (int lump)
 {
 	int  i;
 	byte *data;
-	byte *vertchanged = (byte *)Z_Malloc (numvertexes,PU_LEVEL,0);	// phares 10/4/98
-	line_t* line;		// phares 10/4/98
-   // SoM: Changed variables to the correct types.
-	angle_t ptp_angle;		// phares 10/4/98
-	angle_t delta_angle;	// phares 10/4/98
-	fixed_t dis;			// phares 10/4/98
-	fixed_t dx,dy;			// phares 10/4/98
-	int vnum1,vnum2;	// phares 10/4/98
-
-	memset (vertchanged,0,numvertexes); // phares 10/4/98
 
 	numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
 	segs = (seg_t *)Z_Malloc (numsegs*sizeof(seg_t), PU_LEVEL, 0);
 	memset (segs, 0, numsegs*sizeof(seg_t));
 	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-
-	// phares: 10/4/98: Vertchanged is an array that represents the vertices.
-	// Mark those used by linedefs. A marked vertex is one that is not a
-	// candidate for movement further down.
-
-	line = lines;
-	for (i = 0; i < numlines ; i++, line++)
-	{
-		vertchanged[line->v1 - vertexes] = vertchanged[line->v2 - vertexes] = 1;
-	}
 
 	for (i = 0; i < numsegs; i++)
 	{
@@ -230,63 +210,6 @@ void P_LoadSegs (int lump)
 			li->v2 = &vertexes[v];
 
 		li->angle = (LESHORT(ml->angle))<<16;
-
-// phares 10/4/98: In the case of a lineseg that was created by splitting
-// another line, it appears that the line angle is inherited from the
-// father line. Due to roundoff, the new vertex may have been placed 'off
-// the line'. When you get close to such a line, and it is very short,
-// it's possible that the roundoff error causes 'firelines', the thin
-// lines that can draw from screen top to screen bottom occasionally. This
-// is due to all the angle calculations that are done based on the line
-// angle, the angles from the viewer to the vertices, and the viewer's
-// angle in the world. In the case of firelines, the rounded-off position
-// of one of the vertices determines one of these angles, and introduces
-// an error in the scaling factor for mapping textures and determining
-// where on the screen the ceiling and floor spans should be shown. For a
-// fireline, the engine thinks the ceiling bottom and floor top are at the
-// midpoint of the screen. So you get ceilings drawn all the way down to the
-// screen midpoint, and floors drawn all the way up. Thus 'firelines'. The
-// name comes from the original sighting, which involved a fire texture.
-//
-// To correct this, reset the vertex that was added so that it sits ON the
-// split line.
-//
-// To know which of the two vertices was added, its number is greater than
-// that of the last of the author-created vertices. If both vertices of the
-// line were added by splitting, pick the higher-numbered one. Once you've
-// changed a vertex, don't change it again if it shows up in another seg.
-//
-// To determine if there's an error in the first place, find the
-// angle of the line between the two seg vertices. If it's one degree or more
-// off, then move one vertex. This may seem insignificant, but one degree
-// errors _can_ cause firelines.
-
-		ptp_angle = R_PointToAngle2(li->v1->x,li->v1->y,li->v2->x,li->v2->y);
-		dis = 0;
-		delta_angle = ((ptp_angle-li->angle) >> ANGLETOFINESHIFT) * 360 / 8192;
-
-		if (delta_angle != 0)
-		{
-			dx = (li->v1->x - li->v2->x)>>FRACBITS;
-			dy = (li->v1->y - li->v2->y)>>FRACBITS;
-			dis = ((int)sqrt((float)dx*(float)dx + (float)dy*(float)dy))<<FRACBITS;
-			dx = finecosine[li->angle>>ANGLETOFINESHIFT];
-			dy = finesine[li->angle>>ANGLETOFINESHIFT];
-			vnum1 = li->v1 - vertexes;
-			vnum2 = li->v2 - vertexes;
-			if ((vnum2 > vnum1) && (vertchanged[vnum2] == 0))
-			{
-				li->v2->x = li->v1->x + FixedMul(dis,dx);
-				li->v2->y = li->v1->y + FixedMul(dis,dy);
-				vertchanged[vnum2] = 1; // this was changed
-			}
-			else if (vertchanged[vnum1] == 0)
-			{
-				li->v1->x = li->v2->x - FixedMul(dis,dx);
-				li->v1->y = li->v2->y - FixedMul(dis,dy);
-				vertchanged[vnum1] = 1; // this was changed
-			}
-		}
 
 		li->offset = (LESHORT(ml->offset))<<16;
 		linedef = LESHORT(ml->linedef);
@@ -326,7 +249,6 @@ void P_LoadSegs (int lump)
 	}
 
 	Z_Free (data);
-	Z_Free(vertchanged); // phares 10/4/98
 }
 
 
@@ -1376,6 +1298,89 @@ void P_GroupLines (void)
 }
 
 //
+// P_RemoveSlimeTrails()
+//
+// killough 10/98
+//
+// Slime trails are inherent to Doom's coordinate system -- i.e. there is
+// nothing that a node builder can do to prevent slime trails ALL of the time,
+// because it's a product of the integer coodinate system, and just because
+// two lines pass through exact integer coordinates, doesn't necessarily mean
+// that they will intersect at integer coordinates. Thus we must allow for
+// fractional coordinates if we are to be able to split segs with node lines,
+// as a node builder must do when creating a BSP tree.
+//
+// A wad file does not allow fractional coordinates, so node builders are out
+// of luck except that they can try to limit the number of splits (they might
+// also be able to detect the degree of roundoff error and try to avoid splits
+// with a high degree of roundoff error). But we can use fractional coordinates
+// here, inside the engine. It's like the difference between square inches and
+// square miles, in terms of granularity.
+//
+// For each vertex of every seg, check to see whether it's also a vertex of
+// the linedef associated with the seg (i.e, it's an endpoint). If it's not
+// an endpoint, and it wasn't already moved, move the vertex towards the
+// linedef by projecting it using the law of cosines. Formula:
+//
+//      2        2                         2        2
+//    dx  x0 + dy  x1 + dx dy (y0 - y1)  dy  y0 + dx  y1 + dx dy (x0 - x1)
+//   {---------------------------------, ---------------------------------}
+//                  2     2                            2     2
+//                dx  + dy                           dx  + dy
+//
+// (x0,y0) is the vertex being moved, and (x1,y1)-(x1+dx,y1+dy) is the
+// reference linedef.
+//
+// Segs corresponding to orthogonal linedefs (exactly vertical or horizontal
+// linedefs), which comprise at least half of all linedefs in most wads, don't
+// need to be considered, because they almost never contribute to slime trails
+// (because then any roundoff error is parallel to the linedef, which doesn't
+// cause slime). Skipping simple orthogonal lines lets the code finish quicker.
+//
+// Please note: This section of code is not interchangable with TeamTNT's
+// code which attempts to fix the same problem.
+//
+// Firelines (TM) is a Rezistered Trademark of MBF Productions
+//
+
+static void P_RemoveSlimeTrails()
+{
+	byte* hit = (byte *)Z_Malloc(numvertexes, PU_LEVEL, 0);
+	memset(hit, 0, numvertexes * sizeof(byte));
+
+	for (int i = 0; i < numsegs; i++)
+	{
+		const line_t *l = segs[i].linedef;		// The parent linedef
+
+		// We can ignore orthogonal lines
+		if (l->slopetype != ST_VERTICAL && l->slopetype != ST_HORIZONTAL)
+		{
+			vertex_t *v = segs[i].v1;
+			do
+			{
+				if (!hit[v - vertexes])				// If we haven't processed vertex
+				{
+					hit[v - vertexes] = 1;			// Mark this vertex as processed
+					if (v != l->v1 && v != l->v2)	// Exclude endpoints of linedefs
+					{ 
+						// Project the vertex back onto the parent linedef
+						int64_t dx2 = (l->dx >> FRACBITS) * (l->dx >> FRACBITS);
+						int64_t dy2 = (l->dy >> FRACBITS) * (l->dy >> FRACBITS);
+						int64_t dxy = (l->dx >> FRACBITS) * (l->dy >> FRACBITS);
+						int64_t s = dx2 + dy2;
+						fixed_t x0 = v->x, y0 = v->y, x1 = l->v1->x, y1 = l->v1->y;
+						v->x = (fixed_t)((dx2 * x0 + dy2 * x1 + dxy * (y0 - y1)) / s);
+						v->y = (fixed_t)((dy2 * y0 + dx2 * y1 + dxy * (x0 - x1)) / s);
+					}
+				}  // Obsfucated C contest entry:   :)
+			} while ((v != segs[i].v2) && (v = segs[i].v2));
+		}
+	}
+
+	Z_Free(hit);
+}
+
+//
 // [RH] P_LoadBehavior
 //
 void P_LoadBehavior (int lumpnum)
@@ -1514,6 +1519,11 @@ void P_SetupLevel (char *lumpname, int position)
 		}
 	}
 	P_GroupLines ();
+
+	// [SL] don't move seg vertices if compatibility is cruical
+	if (!demoplayback && !demorecording)
+		P_RemoveSlimeTrails();
+
 	P_SetupSlopes();
 
     po_NumPolyobjs = 0;
