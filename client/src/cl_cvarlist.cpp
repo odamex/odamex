@@ -384,6 +384,8 @@ CVAR (vid_defbits, "8", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (vid_autoadjust, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Frames per second counter
 CVAR (vid_fps, "0", "",	CVARTYPE_BOOL, 0)
+// Run at 35fps
+CVAR (vid_capfps, "1", "Limit to 35fps", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Fullscreen mode
 #ifdef GCONSOLE
 	CVAR_FUNC_DECL (vid_fullscreen, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
