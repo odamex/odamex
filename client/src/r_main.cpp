@@ -331,7 +331,7 @@ bool R_ClipLineToFrustum(fixed_t &px1, fixed_t &py1, fixed_t &px2, fixed_t &py2,
 	// clip line at right edge of the screen
 
 	// is the entire line off the right side of the screen?
-	if (px1 > FixedMul(fovtan, py1) && px2 > FixedMul(fovtan, py2))
+	if (px1 > FixedMul(fovtan, py1))
 		return false;
 
 	den = px2 - px1 - FixedMul(fovtan, py2 - py1);	
@@ -349,7 +349,7 @@ bool R_ClipLineToFrustum(fixed_t &px1, fixed_t &py1, fixed_t &px2, fixed_t &py2,
 	// clip line at left edge of the screen
 
 	// is the entire line off the left side of the screen?
-	if (px1 < FixedMul(-fovtan, py1) && px2 < FixedMul(-fovtan, py2))
+	if (px2 < FixedMul(-fovtan, py2))
 		return false;
 
 	den = px2 - px1 - FixedMul(-fovtan, py2 - py1);
