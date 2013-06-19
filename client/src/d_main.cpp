@@ -133,6 +133,7 @@ int eventtail;
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 DCanvas *page;
 bool demotest;
+extern bool timingdemo;
 
 static int demosequence;
 static int pagetic;
@@ -146,6 +147,7 @@ EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
 EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
+EXTERN_CVAR (vid_capfps)
 
 const char *LOG_FILE;
 
@@ -425,6 +427,8 @@ void D_DoomLoop (void)
 	{
 		try
 		{
+			I_StartTicTimer();
+
 			TryRunTics (); // will run at least one tic
 
 			if (!connected)
@@ -436,6 +440,11 @@ void D_DoomLoop (void)
 
 			// Update display, next frame, with current state.
 			D_Display ();
+
+			if (!timingdemo && vid_capfps)		
+				I_SleepUntilNextTic();
+			else
+				I_Sleep(1);		// allow the OS to have a little time for other apps
 		}
 		catch (CRecoverableError &error)
 		{

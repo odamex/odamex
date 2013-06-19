@@ -151,7 +151,7 @@ static QWORD D_CalculateRunTics()
 	}
 	else
 	{
-		QWORD entertics = I_WaitForTic(oldentertics);
+		QWORD entertics = I_GetTimePolled(); 
 		QWORD realtics = entertics - oldentertics;
 		oldentertics = entertics;
 		return realtics;
@@ -160,8 +160,6 @@ static QWORD D_CalculateRunTics()
 
 void TryRunTics (void)
 {
-	QWORD realtics = D_CalculateRunTics();
-
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())
 	{
@@ -181,6 +179,7 @@ void TryRunTics (void)
 	// run the realtics tics
 	if (!step_mode)
 	{
+		QWORD realtics = D_CalculateRunTics();
 		TryStepTics(realtics);
 	}
 	else

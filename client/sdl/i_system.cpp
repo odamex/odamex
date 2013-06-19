@@ -107,7 +107,8 @@ extern "C"
 EXTERN_CVAR (r_showendoom)
 
 QWORD (*I_GetTime) (void);
-QWORD (*I_WaitForTic) (QWORD);
+
+QWORD tic_start_time = 0;
 
 ticcmd_t emptycmd;
 ticcmd_t *I_BaseTiccmd(void)
@@ -226,6 +227,26 @@ void I_EndRead(void)
 {
 }
 
+void I_StartTicTimer()
+{
+	tic_start_time = I_MSTime();
+}
+
+void I_Sleep(int milliseconds)
+{
+	SDL_Delay(milliseconds);
+}
+
+void I_SleepUntilNextTic()
+{
+	QWORD current_time = I_MSTime();
+	QWORD next_tic_start_time = tic_start_time + 1000 / TICRATE;
+
+	if (current_time < next_tic_start_time)
+		I_Sleep(next_tic_start_time - current_time);
+}
+
+
 // denis - use this unless you want your program
 // to get confused every 49 days due to DWORD limit
 QWORD I_UnwrapTime(DWORD now32)
@@ -255,27 +276,6 @@ QWORD I_MSTime (void)
 QWORD I_GetTimePolled (void)
 {
 	return (I_MSTime()*TICRATE)/1000;
-}
-
-QWORD I_WaitForTicPolled (QWORD prevtic)
-{
-	QWORD time;
-
-	EXTERN_CVAR(vid_capfps);
-	if (!vid_capfps)
-		return I_GetTimePolled();
-
-	do
-	{
-		I_Yield();
-	}while ((time = I_GetTimePolled()) <= prevtic);
-
-	return time;
-}
-
-void I_Yield(void)
-{
-	SDL_Delay(1);
 }
 
 void I_WaitVBL (int count)
@@ -357,7 +357,6 @@ void SetLanguageIDs ()
 void I_Init (void)
 {
 	I_GetTime = I_GetTimePolled;
-	I_WaitForTic = I_WaitForTicPolled;
 
 	I_InitSound ();
 	I_InitHardware ();
@@ -592,7 +591,6 @@ void I_Endoom(void)
 	}
 
 	// Wait for a keypress
-
 	while (true)
 	{
 		TXT_UpdateScreen();
