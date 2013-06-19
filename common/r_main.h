@@ -108,15 +108,8 @@ extern "C" int			detailyshift;
 
 //
 // Function pointers to switch refresh/drawing functions.
-// Used to select shadow mode etc.
 //
 extern void 			(*colfunc) (void);
-extern void 			(*basecolfunc) (void);
-extern void 			(*fuzzcolfunc) (void);
-extern void				(*lucentcolfunc) (void);
-extern void				(*transcolfunc) (void);
-extern void				(*tlatedlucentcolfunc) (void);
-// No shadow effects on floors.
 extern void 			(*spanfunc) (void);
 extern void				(*spanslopefunc) (void);
 
@@ -195,10 +188,11 @@ void R_SetViewSize (int blocks);
 // [RH] Initialize multires stuff for renderer
 void R_MultiresInit (void);
 
-void R_ResetDrawFuncs(void);
-void R_SetLucentDrawFuncs(void);
-void R_SetTranslatedDrawFuncs(void);
-void R_SetTranslatedLucentDrawFuncs(void);
+void R_ResetDrawFuncs();
+void R_SetFuzzDrawFuncs();
+void R_SetLucentDrawFuncs();
+void R_SetTranslatedDrawFuncs();
+void R_SetTranslatedLucentDrawFuncs();
 
 inline const byte shaderef_t::ramp() const
 {

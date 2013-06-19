@@ -56,6 +56,7 @@ extern int *walllights;
 extern dyncolormap_t NormalLight;
 extern bool r_fakingunderwater;
 
+EXTERN_CVAR (r_columnmethod)
 EXTERN_CVAR (r_viewsize)
 EXTERN_CVAR (r_widescreen)
 EXTERN_CVAR (sv_allowwidescreen)
@@ -140,11 +141,6 @@ fixed_t			freelookviewheight;
 unsigned int	R_OldBlend = ~0;
 
 void (*colfunc) (void);
-void (*basecolfunc) (void);
-void (*fuzzcolfunc) (void);
-void (*lucentcolfunc) (void);
-void (*transcolfunc) (void);
-void (*tlatedlucentcolfunc) (void);
 void (*spanfunc) (void);
 void (*spanslopefunc) (void);
 
@@ -152,7 +148,6 @@ void (*hcolfunc_pre) (void);
 void (*hcolfunc_post1) (int hx, int sx, int yl, int yh);
 void (*hcolfunc_post4) (int sx, int yl, int yh);
 
-static int lastcenteryfrac;
 // [AM] Number of fineangles in a default 90 degree FOV at a 4:3 resolution.
 int FieldOfView = 2048;
 int CorrectFieldOfView = 2048;
@@ -210,7 +205,6 @@ bool R_PointOnLine(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fix
 }
 
 
-#define R_P2ATHRESHOLD (INT_MAX / 4)
 //
 // R_PointToAngle
 //
@@ -219,120 +213,31 @@ bool R_PointOnLine(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fix
 // then the y (<=x) is scaled and divided by x to get a tangent (slope)
 // value which is looked up in the tantoangle[] table.
 //
-
+// This version is from prboom-plus
+//
 angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
 {
-	x -= viewx;
-	y -= viewy;
-
-	if((x | y) == 0)
-		return 0;
-
-	if(x < R_P2ATHRESHOLD && x > -R_P2ATHRESHOLD &&
-		y < R_P2ATHRESHOLD && y > -R_P2ATHRESHOLD)
-	{
-		if(x >= 0)
-		{
-			if (y >= 0)
-			{
-				if(x > y)
-				{
-					// octant 0
-					return tantoangle_acc[SlopeDiv(y, x)];
-				}
-				else
-				{
-					// octant 1
-					return ANG90 - 1 - tantoangle_acc[SlopeDiv(x, y)];
-				}
-			}
-			else // y < 0
-			{
-				y = -y;
-
-				if(x > y)
-				{
-					// octant 8
-					return 0 - tantoangle_acc[SlopeDiv(y, x)];
-				}
-				else
-				{
-					// octant 7
-					return ANG270 + tantoangle_acc[SlopeDiv(x, y)];
-				}
-			}
-		}
-		else // x < 0
-		{
-			x = -x;
-
-			if(y >= 0)
-			{
-				if(x > y)
-				{
-					// octant 3
-					return ANG180 - 1 - tantoangle_acc[SlopeDiv(y, x)];
-				}
-				else
-				{
-					// octant 2
-					return ANG90 + tantoangle_acc[SlopeDiv(x, y)];
-				}
-			}
-			else // y < 0
-			{
-				y = -y;
-
-				if(x > y)
-				{
-					// octant 4
-					return ANG180 + tantoangle_acc[SlopeDiv(y, x)];
-				}
-				else
-				{
-					// octant 5
-					return ANG270 - 1 - tantoangle_acc[SlopeDiv(x, y)];
-				}
-			}
-		}
-	}
-	else
-	{
-      return (angle_t)(atan2((double)y, (double)x) * (ANG180 / PI));
-	}
-
-   return 0;
+	return (y -= viewy, (x -= viewx) || y) ?
+		x >= 0 ?
+			y >= 0 ?
+				(x > y) ? tantoangle[SlopeDiv(y,x)] :						// octant 0
+					ANG90-1-tantoangle[SlopeDiv(x,y)] :						// octant 1
+				x > (y = -y) ? 0-tantoangle[SlopeDiv(y,x)] :				// octant 8
+						ANG270+tantoangle[SlopeDiv(x,y)] :					// octant 7
+			y >= 0 ? (x = -x) > y ? ANG180-1-tantoangle[SlopeDiv(y,x)] :	// octant 3
+							ANG90 + tantoangle[SlopeDiv(x,y)] :				// octant 2
+				(x = -x) > (y = -y) ? ANG180+tantoangle[ SlopeDiv(y,x)] :	// octant 4
+								ANG270-1-tantoangle[SlopeDiv(x,y)] :		// octant 5
+		0;
 }
 
 //
 // R_PointToAngle - wrapper around R_PointToAngle2
 //
-angle_t
-R_PointToAngle
-( fixed_t	x,
-  fixed_t	y )
+angle_t R_PointToAngle(fixed_t x, fixed_t y)
 {
-    return R_PointToAngle2 (viewx, viewy, x, y);
+	return R_PointToAngle2(viewx, viewy, x, y);
 }
-
-//
-// R_InitPointToAngle
-//
-/*
-void R_InitPointToAngle (void)
-{
-	int i;
-	float f;
-//
-// slope (tangent) to angle lookup
-//
-	for (i = 0; i <= SLOPERANGE; i++)
-	{
-		f = atan((float)i/SLOPERANGE)/(3.141592657*2); // denis - vanilla
-		tantoangle[i] = (angle_t)(0xffffffff*f);
-	}
-}
-*/
 
 //
 // R_PointToDist
@@ -344,10 +249,7 @@ void R_InitPointToAngle (void)
 // killough 5/2/98: simplified
 // [RH] Simplified further [sin (t + 90 deg) == cos (t)]
 //
-fixed_t
-R_PointToDist
-( fixed_t	x,
-  fixed_t	y )
+fixed_t R_PointToDist(fixed_t x, fixed_t y)
 {
 	fixed_t dx = abs(x - viewx);
 	fixed_t dy = abs(y - viewy);
@@ -359,7 +261,7 @@ R_PointToDist
 		dy = t;
 	}
 
-	return FixedDiv (dx, finecosine[tantoangle[FixedDiv (dy, dx) >> DBITS] >> ANGLETOFINESHIFT]);
+	return FixedDiv(dx, finecosine[tantoangle[FixedDiv(dy, dx) >> DBITS] >> ANGLETOFINESHIFT]);
 }
 
 //
@@ -367,8 +269,7 @@ R_PointToDist
 // R_PointToDist2
 //
 //
-
-fixed_t R_PointToDist2 (fixed_t dx, fixed_t dy)
+fixed_t R_PointToDist2(fixed_t dx, fixed_t dy)
 {
 	dx = abs (dx);
 	dy = abs (dy);
@@ -380,7 +281,7 @@ fixed_t R_PointToDist2 (fixed_t dx, fixed_t dy)
 		dy = t;
 	}
 
-	return FixedDiv (dx, finecosine[tantoangle[FixedDiv (dy, dx) >> DBITS] >> ANGLETOFINESHIFT]);
+	return FixedDiv(dx, finecosine[tantoangle[FixedDiv(dy, dx) >> DBITS] >> ANGLETOFINESHIFT]);
 }
 
 
@@ -523,37 +424,6 @@ bool R_CheckProjectionY(int &y1, int &y2)
 	return true;
 }
 
-
-//
-//
-// R_InitTables
-//
-//
-#if 0
-// [Russell] - Calling this function can desync demos (tnt demo1 msvc being a
-// prime example)
-void R_InitTables (void)
-{
-	int i;
-	float a, fv;
-
-	// viewangle tangent table
-	for (i = 0; i < FINEANGLES/2; i++)
-	{
-		a = (i-FINEANGLES/4+0.5)*PI*2/FINEANGLES;
-		fv = FRACUNIT*tan (a);
-		finetangent[i] = (fixed_t)fv;
-	}
-
-	// finesine table
-	for (i = 0; i < 5*FINEANGLES/4; i++)
-	{
-		// OPTIMIZE: mirror...
-		a = (i+0.5)*PI*2/FINEANGLES;
-		finesine[i] = (fixed_t)(FRACUNIT * sin (a));
-	}
-}
-#endif
 
 //
 //
@@ -841,7 +711,6 @@ void R_ExecuteSetViewSize (void)
 		r_viewsize.ForceSet (temp);
 	}
 
-	lastcenteryfrac = 1<<30;
 	centery = viewheight/2;
 	centerx = viewwidth/2;
 	centerxfrac = centerx<<FRACBITS;
@@ -860,19 +729,6 @@ void R_ExecuteSetViewSize (void)
 		negonearray[i] = -1;
 		viewheightarray[i] = (int)viewheight;
 	}
-
-	colfunc = basecolfunc = R_DrawColumn;
-	lucentcolfunc = R_DrawTranslucentColumn;
-	fuzzcolfunc = R_DrawFuzzColumn;
-	transcolfunc = R_DrawTranslatedColumn;
-	tlatedlucentcolfunc = R_DrawTlatedLucentColumn;
-	spanfunc = R_DrawSpan;
-	spanslopefunc = R_DrawSlopeSpan;
-
-	// [RH] Horizontal column drawers
-	hcolfunc_pre = R_DrawColumnHoriz;
-	hcolfunc_post1 = rt_map1col;
-	hcolfunc_post4 = rt_map4cols;
 
 	R_InitBuffer (viewwidth, viewheight);
 	R_InitTextureMapping ();
@@ -948,28 +804,6 @@ CVAR_FUNC_IMPL (screenblocks)
 
 //
 //
-// CVAR r_columnmethod
-//
-// Selects which version of the seg renderers to use.
-//
-//
-
-// [ML] Disabled 16/3/06, now always 0 (Original)
-// [Russell] Reenabled 14/3/07, fixes smudging of graphics
-//BEGIN_CUSTOM_CVAR (r_columnmethod, "1", CVAR_ARCHIVE)
-//{
-    /*
-	if (var != 0 && var != 1)
-		var.Set (1);
-	else
-		// Trigger the change
-		r_detail.Callback ();
-    */
-//}
-//END_CUSTOM_CVAR (r_columnmethod)
-EXTERN_CVAR (r_columnmethod)
-//
-//
 // R_Init
 //
 //
@@ -977,10 +811,6 @@ EXTERN_CVAR (r_columnmethod)
 void R_Init (void)
 {
 	R_InitData ();
-	//R_InitPointToAngle ();
-//	R_InitTables ();
-	// viewwidth / viewheight are set by the defaults
-
 	R_SetViewSize ((int)screenblocks);
 	R_InitPlanes ();
 	R_InitLightTables ();
@@ -1026,18 +856,72 @@ subsector_t *R_PointInSubsector (fixed_t x, fixed_t y)
 }
 
 //
+// R_ViewShear
+//
+// Sets centeryfrac, centery, and fills the yslope array based on the given
+// pitch. This allows the y-shearing freelook approximation.
+//
+static void R_ViewShear(angle_t pitch)
+{
+	fixed_t dy = FixedMul(FocalLengthY, finetangent[(ANG90 - pitch) >> ANGLETOFINESHIFT]);
+
+	centeryfrac = (viewheight << (FRACBITS - 1)) + dy;
+	centery = centeryfrac >> FRACBITS;
+
+	int e = viewheight, i = 0;
+	fixed_t focus = FocalLengthY;
+	fixed_t den;
+
+	if (i < centery)
+	{
+		den = centeryfrac - (i << FRACBITS) - FRACUNIT / 2;
+
+		if (e <= centery)
+		{
+			do {
+				yslope[i] = FixedDiv(focus, den);
+				den -= FRACUNIT;
+			} while (++i < e);
+		}
+		else
+		{
+			do {
+				yslope[i] = FixedDiv(focus, den);
+				den -= FRACUNIT;
+			} while (++i < centery);
+
+			den = (i << FRACBITS) - centeryfrac + FRACUNIT / 2;
+
+			do {
+				yslope[i] = FixedDiv(focus, den);
+				den += FRACUNIT;
+			} while (++i < e);
+		}
+	}
+	else
+	{
+		den = (i << FRACBITS) - centeryfrac + FRACUNIT / 2;
+
+		do {
+			yslope[i] = FixedDiv(focus, den);
+			den += FRACUNIT;
+		} while (++i < e);
+	}
+}
+
+
+//
 //
 // R_SetupFrame
 //
 //
-
 void R_SetupFrame (player_t *player)
 {
 	unsigned int newblend;
 
 	camera = player->camera;	// [RH] Use camera instead of viewplayer
 
-	if(!camera || !camera->subsector)
+	if (!camera || !camera->subsector)
 		return;
 
 	if (player->cheats & CF_CHASECAM)
@@ -1073,7 +957,6 @@ void R_SetupFrame (player_t *player)
 
 	// killough 3/20/98, 4/4/98: select colormap based on player status
 	// [RH] Can also select a blend
-
 	if (camera->subsector->sector->heightsec &&
 		!(camera->subsector->sector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
@@ -1135,102 +1018,12 @@ void R_SetupFrame (player_t *player)
 	}
 
 	// [RH] freelook stuff
-	{
-		fixed_t dy = FixedMul (FocalLengthY, finetangent[(ANG90-camera->pitch)>>ANGLETOFINESHIFT]);
+	static angle_t last_pitch = 0xFFFFFFFF;
+	if (camera->pitch != last_pitch)
+		R_ViewShear(camera->pitch);
 
-		centeryfrac = (viewheight << (FRACBITS-1)) + dy;
-		centery = centeryfrac >> FRACBITS;
-
-		//centeryfrac &= 0xffff0000;
-		int i = lastcenteryfrac - centeryfrac;
-		if (i != 0)
-		{
-			int e;
-
-			if (i & ((FRACUNIT-1) == 0))	// Unlikely, but possible
-			{
-				i >>= FRACBITS;
-				if (abs (i) < viewheight)
-				{
-					fixed_t *from, *to;
-					if (i > 0)
-					{
-//						memmove (yslope, yslope + i, (viewheight - i) * sizeof(fixed_t));
-						int index = 0;
-						from = yslope + i;
-						to = yslope;
-						i = e = viewheight - i;
-						do
-						{
-							*(to + index) = *(from + index);
-							index++;
-						} while (--e);
-						e = viewheight;
-					}
-					else
-					{
-//						memmove (yslope - i, yslope, (viewheight + i) * sizeof(fixed_t));
-						from = yslope;
-						to = yslope - i;
-						e = viewheight + i - 1;
-						do
-						{
-							*(to + e) = *(from + e);
-						} while (--e >= 0);
-						e = -i;
-						i = 0;
-					}
-				}
-				else
-				{
-					i = 0;
-					e = viewheight;
-				}
-			}
-			else
-			{
-				i = 0;
-				e = viewheight;
-			}
-
-			{
-				fixed_t focus = FocalLengthY;
-				fixed_t den;
-				if (i < centery)
-				{
-					den = centeryfrac - (i << FRACBITS) - FRACUNIT/2;
-					if (e <= centery)
-					{
-						do {
-							yslope[i] = FixedDiv (focus, den);
-							den -= FRACUNIT;
-						} while (++i < e);
-					}
-					else
-					{
-						do {
-							yslope[i] = FixedDiv (focus, den);
-							den -= FRACUNIT;
-						} while (++i < centery);
-						den = (i << FRACBITS) - centeryfrac + FRACUNIT/2;
-						do {
-							yslope[i] = FixedDiv (focus, den);
-							den += FRACUNIT;
-						} while (++i < e);
-					}
-				}
-				else
-				{
-					den = (i << FRACBITS) - centeryfrac + FRACUNIT/2;
-					do {
-						yslope[i] = FixedDiv (focus, den);
-						den += FRACUNIT;
-					} while (++i < e);
-				}
-			}
-		}
-		lastcenteryfrac = centeryfrac;
-	}
+	// [RH] Hack to make windows into underwater areas possible
+	r_fakingunderwater = false;
 
 	framecount++;
 	validcount++;
@@ -1281,7 +1074,24 @@ void R_ResetDrawFuncs()
 	}
 	else
 	{
-		colfunc = basecolfunc;
+		colfunc = R_DrawColumn;
+		hcolfunc_pre = R_DrawColumnHoriz;
+		hcolfunc_post1 = rt_map1col;
+		hcolfunc_post4 = rt_map4cols;
+		spanfunc = R_DrawSpan;
+		spanslopefunc = R_DrawSlopeSpan;
+	}
+}
+
+void R_SetFuzzDrawFuncs()
+{
+	if (r_drawflat)
+	{
+		R_SetFlatDrawFuncs();
+	}
+	else
+	{
+		colfunc = R_DrawFuzzColumn;
 		hcolfunc_pre = R_DrawColumnHoriz;
 		hcolfunc_post1 = rt_map1col;
 		hcolfunc_post4 = rt_map4cols;
@@ -1298,7 +1108,7 @@ void R_SetLucentDrawFuncs()
 	}
 	else
 	{
-		colfunc = lucentcolfunc;
+		colfunc = R_DrawTranslucentColumn;
 		hcolfunc_pre = R_DrawColumnHoriz;
 		hcolfunc_post1 = rt_lucent1col;
 		hcolfunc_post4 = rt_lucent4cols;
@@ -1313,7 +1123,7 @@ void R_SetTranslatedDrawFuncs()
 	}
 	else
 	{
-		colfunc = transcolfunc;
+		colfunc = R_DrawTranslatedColumn;
 		hcolfunc_pre = R_DrawColumnHoriz;
 		hcolfunc_post1 = rt_tlate1col;
 		hcolfunc_post4 = rt_tlate4cols;
@@ -1328,7 +1138,7 @@ void R_SetTranslatedLucentDrawFuncs()
 	}
 	else
 	{
-		colfunc = tlatedlucentcolfunc;
+		colfunc = R_DrawTlatedLucentColumn;
 		hcolfunc_pre = R_DrawColumnHoriz;
 		hcolfunc_post1 = rt_tlatelucent1col;
 		hcolfunc_post4 = rt_tlatelucent4cols;
@@ -1354,9 +1164,6 @@ void R_RenderPlayerView (player_t *player)
 
 	R_ResetDrawFuncs();
 
-	// [RH] Hack to make windows into underwater areas possible
-	r_fakingunderwater = false;
-
 	// [RH] Setup particles for this frame
 	R_FindParticleSubsectors();
 
@@ -1364,12 +1171,13 @@ void R_RenderPlayerView (player_t *player)
 	// Never draw the player unless in chasecam mode
 	if (camera && camera->player && !(player->cheats & CF_CHASECAM))
 	{
+		int flags2_backup = camera->flags2;
 		camera->flags2 |= MF2_DONTDRAW;
-		R_RenderBSPNode (numnodes - 1);
-		camera->flags2 &= ~MF2_DONTDRAW;
+		R_RenderBSPNode(numnodes - 1);
+		camera->flags2 = flags2_backup; 
 	}
 	else
-		R_RenderBSPNode (numnodes-1);	// The head node is the last node output.
+		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
 
 	R_DrawPlanes ();
 
@@ -1380,9 +1188,11 @@ void R_RenderPlayerView (player_t *player)
 
 	// NOTE(jsd): Full-screen status color blending:
 	extern int BlendA, BlendR, BlendG, BlendB;
-	unsigned int blend_rgb = MAKERGB(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]);
 	if (BlendA != 0)
+	{
+		unsigned int blend_rgb = MAKERGB(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]);
 		r_dimpatchD(screen, blend_rgb, BlendA, 0, 0, screen->width, screen->height);
+	}
 }
 
 //
@@ -1395,8 +1205,6 @@ void R_RenderPlayerView (player_t *player)
 
 void R_MultiresInit (void)
 {
-	int i;
-
 	// in r_draw.c
 	extern byte **ylookup;
 	extern int *columnofs;

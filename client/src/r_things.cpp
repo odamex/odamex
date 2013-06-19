@@ -819,7 +819,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	R_ResetDrawFuncs();
 
 	if (fuzz_effect)
-		colfunc = fuzzcolfunc;
+		R_SetFuzzDrawFuncs();
 	else if (lucent && translated)
 		R_SetTranslatedLucentDrawFuncs();
 	else if (lucent)
