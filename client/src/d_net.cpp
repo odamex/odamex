@@ -45,7 +45,6 @@
 #include "cl_demo.h"
 
 extern NetDemo netdemo;
-extern int timingdemo;
 
 extern byte		*demo_p;		// [RH] Special "ticcmds" get recorded in demos
 

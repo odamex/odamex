@@ -85,8 +85,6 @@ EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 
-extern int timingdemo;
-
 extern int mapchange;
 extern int shotclock;
 

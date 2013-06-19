@@ -70,4 +70,6 @@ extern std::vector<level_pwad_info_t> wadlevelinfos;
 extern std::vector<cluster_info_t> wadclusterinfos;
 extern int mapchange;
 
+extern bool timingdemo;
+
 #endif
