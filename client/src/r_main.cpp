@@ -57,6 +57,7 @@ extern dyncolormap_t NormalLight;
 extern bool r_fakingunderwater;
 
 EXTERN_CVAR (r_columnmethod)
+EXTERN_CVAR (r_flashhom)
 EXTERN_CVAR (r_viewsize)
 EXTERN_CVAR (r_widescreen)
 EXTERN_CVAR (sv_allowwidescreen)
@@ -1163,6 +1164,22 @@ void R_RenderPlayerView (player_t *player)
 	R_ClearSprites ();
 
 	R_ResetDrawFuncs();
+
+	// [SL] fill the screen with a blinking solid color to make HOM more visible
+	if (r_flashhom)
+	{
+		int color = gametic & 8 ? 0 : 200;
+
+		int x1 = viewwindowx;
+		int y1 = viewwindowy;
+		int x2 = viewwindowx + viewwidth - 1;
+		int y2 = viewwindowy + viewheight - 1; 
+
+		if (screen->is8bit())
+			screen->Clear(x1, y1, x2, y2, color);
+		else
+			screen->Clear(x1, y1, x2, y2, basecolormap.shade(color));
+	}
 
 	// [RH] Setup particles for this frame
 	R_FindParticleSubsectors();
