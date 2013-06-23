@@ -108,8 +108,6 @@ EXTERN_CVAR (r_showendoom)
 
 QWORD (*I_GetTime) (void);
 
-QWORD tic_start_time = 0;
-
 ticcmd_t emptycmd;
 ticcmd_t *I_BaseTiccmd(void)
 {
@@ -224,25 +222,10 @@ void I_EndRead(void)
 {
 }
 
-void I_StartTicTimer()
-{
-	tic_start_time = I_MSTime();
-}
-
 void I_Sleep(int milliseconds)
 {
 	SDL_Delay(milliseconds);
 }
-
-void I_SleepUntilNextTic()
-{
-	QWORD current_time = I_MSTime();
-	QWORD next_tic_start_time = tic_start_time + 1000 / TICRATE;
-
-	if (current_time < next_tic_start_time)
-		I_Sleep(next_tic_start_time - current_time);
-}
-
 
 // denis - use this unless you want your program
 // to get confused every 49 days due to DWORD limit

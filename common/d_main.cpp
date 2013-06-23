@@ -83,6 +83,8 @@ extern gameinfo_t CommercialBFGGameInfo;
 
 bool lastWadRebootSuccess = true;
 
+bool capfps = true;
+
 #if defined(WIN32) && !defined(_XBOX)
 
 #define arrlen(array) (sizeof(array) / sizeof(*array))
@@ -1105,5 +1107,65 @@ void D_AddCmdParameterFiles(void)
 	}
 }
 
+
+//
+// D_RunTics
+//
+// The core of the main game loop.
+// This loop allows the game logic timing to be decoupled from the renderer
+// timing. If the the user selects a capped framerate and isn't using the
+// -timedemo parameter, both the logic and render functions will be called
+// TICRATE times a second. If the framerate is uncapped, the logic function
+// will still be called TICRATE times a second but the render function will
+// be called as often as possible. After each iteration through the loop,
+// the program yields briefly to the operating system. 
+//
+void D_RunTics(void (*logic_func)(), void(*render_func)())
+{
+	static const QWORD fixed_frame_time = 1000 / TICRATE;
+	static QWORD current_time = I_MSTime();
+	static QWORD time_accum = 0;
+
+	bool fixed_logic_ticrate = !timingdemo;
+	bool fixed_render_ticrate = !timingdemo && capfps;
+
+	QWORD new_time = I_MSTime();
+
+	QWORD frame_time = new_time - current_time;
+	current_time = new_time;
+
+	time_accum += frame_time;
+
+	while (time_accum >= fixed_frame_time)
+	{
+		if (fixed_logic_ticrate)
+			logic_func();
+
+		if (fixed_render_ticrate)
+			render_func();
+
+		time_accum -= fixed_frame_time;
+	}
+
+	if (!fixed_logic_ticrate)
+		logic_func();
+
+	if (!fixed_render_ticrate)
+		render_func();
+
+	if (fixed_logic_ticrate && fixed_render_ticrate)
+	{
+		QWORD delta_time = I_MSTime() - new_time;
+
+		if (delta_time >= fixed_frame_time)
+			I_Sleep(1);
+		else
+			I_Sleep(fixed_frame_time - delta_time);
+	}
+	else
+	{
+		I_Sleep(1);			// don't busy-wait
+	}
+}
 
 VERSION_CONTROL (d_main_cpp, "$Id: d_main.cpp 3426 2012-11-19 17:25:28Z dr_sean $")

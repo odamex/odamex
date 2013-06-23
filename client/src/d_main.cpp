@@ -146,7 +146,6 @@ EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
 EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
-EXTERN_CVAR (vid_capfps)
 
 const char *LOG_FILE;
 
@@ -424,24 +423,7 @@ void D_DoomLoop (void)
 	{
 		try
 		{
-			I_StartTicTimer();
-
-			TryRunTics (); // will run at least one tic
-
-			if (!connected)
-				CL_RequestConnectInfo();
-
-			// [RH] Use the consoleplayer's camera to update sounds
-			S_UpdateSounds (listenplayer().camera);	// move positional sounds
-			S_UpdateMusic();	// play another chunk of music
-
-			// Update display, next frame, with current state.
-			D_Display ();
-
-			if (!timingdemo && vid_capfps)		
-				I_SleepUntilNextTic();
-			else
-				I_Sleep(1);		// allow the OS to have a little time for other apps
+			D_RunTics(CL_RunTics, CL_RenderTics);
 		}
 		catch (CRecoverableError &error)
 		{

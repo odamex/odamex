@@ -91,8 +91,6 @@ void	G_DoVictory (void);
 void	G_DoWorldDone (void);
 void	G_DoSaveGame (void);
 
-void	CL_RunTics (void);
-
 bool	C_DoNetDemoKey(event_t *ev);
 bool	C_DoSpectatorKey(event_t *ev);
 
@@ -859,10 +857,6 @@ void G_Ticker (void)
 {
 	int 		buf;
 	size_t i;
-
-
-	// Run client tics;
-	CL_RunTics ();
 
 	// do player reborns if needed
 	if(serverside)

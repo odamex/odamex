@@ -32,9 +32,6 @@
 // Create any new ticcmds and broadcast to other players.
 void NetUpdate (void);
 
-//? how many ticks to run?
-void TryRunTics (void);
-
 #endif
 
 

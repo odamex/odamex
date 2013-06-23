@@ -30,6 +30,7 @@
 #include "g_game.h"
 #include "d_net.h"
 #include "p_local.h"
+#include "p_tick.h"
 #include "s_sound.h"
 #include "gi.h"
 #include "i_net.h"
@@ -276,7 +277,6 @@ EXTERN_CVAR (cl_autorecord)
 EXTERN_CVAR (cl_splitnetdemos)
 EXTERN_CVAR (st_scale)
 
-void CL_RunTics (void);
 void CL_PlayerTimes (void);
 void CL_GetServerSettings(void);
 void CL_RequestDownload(std::string filename, std::string filehash = "");
@@ -294,6 +294,11 @@ void CL_SimulateWorld();
 void CalcTeamFrags (void);
 
 // some doom functions (not csDoom)
+void D_Display(void);
+void D_DoAdvanceDemo(void);
+void M_Ticker(void);
+
+
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
 void CL_SpawnPlayer ();
@@ -606,18 +611,117 @@ void CL_DisconnectClient(void)
 	CL_CheckDisplayPlayer();
 }
 
+extern BOOL advancedemo;
+QWORD nextstep = 0;
+int canceltics = 0;
+
+void CL_StepTics(unsigned int count)
+{
+	DObject::BeginFrame ();
+	
+	// run the realtics tics
+	while (count--)
+	{
+		if (canceltics && canceltics--)
+			continue;
+
+		NetUpdate();
+
+		if (advancedemo)
+			D_DoAdvanceDemo();
+		
+		C_Ticker ();
+		M_Ticker ();
+
+		if (P_AtInterval(TICRATE))
+			CL_PlayerTimes();
+
+		if (sv_gametype == GM_CTF)
+			CTF_RunTics ();
+
+		Maplist_Runtic();
+
+		G_Ticker ();
+		gametic++;
+		if (netdemo.isPlaying() && !netdemo.isPaused())
+			netdemo.ticker();
+	}
+	
+	DObject::EndFrame ();
+}
+
+//
+// CL_RenderTics
+//
+void CL_RenderTics()
+{
+	D_Display();
+}
+
+//
+// CL_RunTics
+//
+void CL_RunTics()
+{
+	std::string cmd = I_ConsoleInput();
+	if (cmd.length())
+		AddCommandString(cmd);
+
+	if (CON.is_open())
+	{
+		CON.clear();
+		if (!CON.eof())
+		{
+			std::getline(CON, cmd);
+			AddCommandString(cmd);
+		}
+	}
+
+	if (step_mode)
+	{
+		NetUpdate();
+
+		if (nextstep)
+		{
+			canceltics = 0;
+			CL_StepTics(nextstep);
+			nextstep = 0;
+
+			// debugging output
+			extern unsigned char prndindex;
+			if (players.size() && players[0].mo)
+				Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n",
+						level.time, prndindex, players[0].mo->x, players[0].mo->y, players[0].mo->z);
+			else
+ 				Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
+		}
+	}
+	else
+	{
+		CL_StepTics(1);
+	}
+
+	if (!connected)
+		CL_RequestConnectInfo();
+
+	// [RH] Use the consoleplayer's camera to update sounds
+	S_UpdateSounds(listenplayer().camera);	// move positional sounds
+	S_UpdateMusic();	// play another chunk of music
+}
+
 /////// CONSOLE COMMANDS ///////
 
 BEGIN_COMMAND (stepmode)
 {
-    if (step_mode)
-        step_mode = false;
-    else
-        step_mode = true;
-        
-    return;
+	step_mode = !step_mode;
 }
 END_COMMAND (stepmode)
+
+BEGIN_COMMAND (step)
+{
+	nextstep = argc > 1 ? atoi(argv[1]) : 1;
+}
+END_COMMAND (step)
 
 BEGIN_COMMAND (connect)
 {
@@ -3483,26 +3587,6 @@ void CL_PlayerTimes (void)
 		if (players[i].ingame())
 			players[i].GameTime++;
 	}
-}
-
-//
-//	CL_RunTics
-//
-void CL_RunTics (void)
-{
-	static char TicCount = 0;
-
-	// Only do this once a second.
-	if ( TicCount++ >= 35 )
-	{
-		CL_PlayerTimes ();
-		TicCount = 0;
-	}
-
-	if (sv_gametype == GM_CTF)
-		CTF_RunTics ();
-
-	Maplist_Runtic();
 }
 
 void PickupMessage (AActor *toucher, const char *message)
