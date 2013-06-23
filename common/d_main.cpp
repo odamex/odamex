@@ -1122,9 +1122,9 @@ void D_AddCmdParameterFiles(void)
 //
 void D_RunTics(void (*logic_func)(), void(*render_func)())
 {
-	static const QWORD fixed_frame_time = 1000 / TICRATE;
+	static const double fixed_frame_time = 1000.0 / double(TICRATE);
 	static QWORD current_time = I_MSTime();
-	static QWORD time_accum = 0;
+	static double time_accum = 0.0;
 
 	bool fixed_logic_ticrate = !timingdemo;
 	bool fixed_render_ticrate = !timingdemo && capfps;
@@ -1155,7 +1155,7 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 
 	if (fixed_logic_ticrate && fixed_render_ticrate)
 	{
-		QWORD delta_time = I_MSTime() - new_time;
+		QWORD delta_time = I_MSTime() - new_time - 1;
 
 		if (delta_time >= fixed_frame_time)
 			I_Sleep(1);
