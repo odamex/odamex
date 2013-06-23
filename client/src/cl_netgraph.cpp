@@ -27,6 +27,7 @@
 #include "v_video.h"
 #include "v_text.h"
 #include "cl_netgraph.h"
+#include "r_draw.h"
 
 NetGraph::NetGraph(int x, int y) :
 	mX(x), mY(y)
@@ -63,12 +64,12 @@ extern "C" int *columnofs;
 
 static void NetGraphDrawBar(int startx, int starty, int width, int height, int color)
 {
-	for (int x = startx; x < startx + width; x++)
-		for (int y = starty; y < starty + height; y++)
-		{
-			byte *dest = ylookup[y] + columnofs[x];
-			*dest = color;
-		}
+	ds_color = color;
+	ds_x1 = startx;
+	ds_x2 = startx + width - 1;
+
+	for (ds_y = starty; ds_y < starty + height; ds_y++)
+		R_FillSpan();
 }
 
 void NetGraph::drawWorldIndexSync(int x, int y)
