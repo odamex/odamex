@@ -129,11 +129,8 @@ void I_ResumeMouse (void);
 // [RH] Returns millisecond-accurate time
 QWORD I_MSTime (void);
 
-// Saves the current time as a point of reference for framerate timing
-void I_StartTicTimer();
 // Sleeps for the specified number of milliseconds
 void I_Sleep(int milliseconds);
-void I_SleepUntilNextTic();
 
 // [RH] Title string to display at bottom of console during startup
 extern char DoomStartupTitle[256];

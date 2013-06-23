@@ -44,6 +44,7 @@
 #include "doomdef.h"
 #include "doomdata.h"
 #include "doomstat.h"
+#include "d_main.h"
 
 #include "c_console.h"
 #include "hu_stuff.h"
@@ -84,6 +85,10 @@ EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_32bpp)
 EXTERN_CVAR (vid_autoadjust)
 EXTERN_CVAR (vid_overscan)
+CVAR_FUNC_IMPL (vid_capfps)
+{
+	capfps = var != 0;
+}
 
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (ui_dimcolor)

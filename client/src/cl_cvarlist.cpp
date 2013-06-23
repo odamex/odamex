@@ -387,7 +387,7 @@ CVAR (vid_fps, "0", "",	CVARTYPE_BOOL, 0)
 // Wait for vertical sync (vsync)
 CVAR (vid_vsync, "1", "Wait for vertical sync", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Run at 35fps
-CVAR (vid_capfps, "1", "Limit to 35fps", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR_FUNC_DECL (vid_capfps, "1", "Limit to 35fps", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Fullscreen mode
 #ifdef GCONSOLE
 	CVAR_FUNC_DECL (vid_fullscreen, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)

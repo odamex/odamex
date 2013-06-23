@@ -167,7 +167,7 @@ void D_DoomLoop (void)
 	{
 		try
 		{
-			SV_RunTics (); // will run at least one tic
+			D_RunTics(SV_RunTics, SV_RenderTics);
 		}
 		catch (CRecoverableError &error)
 		{
@@ -178,7 +178,7 @@ void D_DoomLoop (void)
 			SV_SendDisconnectSignal();
 
 			// denis - sleep to conserve server resources (in case of recurring problem)
-			I_WaitForTic(I_GetTime() + 1000*10/TICRATE);
+			I_Sleep(10*1000);
 
 			// denis - reload with current settings
 			G_ChangeMap ();

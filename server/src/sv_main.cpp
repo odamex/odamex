@@ -298,8 +298,6 @@ client_c clients;
 
 #define CLIENT_TIMEOUT 65 // 65 seconds
 
-QWORD gametime;
-
 void SV_UpdateConsolePlayer(player_t &player);
 
 void SV_CheckTeam (player_t & playernum);
@@ -478,8 +476,6 @@ void SV_InitNetwork (void)
 	}
 
 	step_mode = Args.CheckParm ("-stepmode");
-
-	gametime = I_GetTime ();
 
 	// Nes - Connect with the master servers. (If valid)
 	SV_InitMasters();
@@ -4485,12 +4481,12 @@ void SV_PlayerTimes (void)
 //
 // SV_StepTics
 //
-void SV_StepTics (QWORD tics)
+void SV_StepTics(QWORD count)
 {
 	DObject::BeginFrame ();
 
 	// run the newtime tics
-	while (tics--)
+	while (count--)
 	{
 		C_Ticker ();
 
@@ -4524,40 +4520,39 @@ void SV_StepTics (QWORD tics)
 }
 
 //
+// SV_RenderTics
+//
+// Nothing to render...
+//
+void SV_RenderTics()
+{
+}
+
+//
 // SV_RunTics
 //
-void SV_RunTics (void)
+// Checks for incoming packets, processes console usage, and calls SV_StepTics.
+//
+void SV_RunTics()
 {
-	QWORD nowtime = I_GetTime ();
-	QWORD newtics = nowtime - gametime;
-
 	SV_GetPackets();
 
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())
-	{
-		AddCommandString (cmd);
-	}
+		AddCommandString(cmd);
 
-	if(CON.is_open())
+	if (CON.is_open())
 	{
 		CON.clear();
-		if(!CON.eof())
+		if (!CON.eof())
 		{
 			std::getline(CON, cmd);
-			AddCommandString (cmd);
+			AddCommandString(cmd);
 		}
 	}
 
-	if(newtics > 0 && !step_mode)
-	{
-		SV_StepTics(newtics);
-		gametime = nowtime;
-	}
-
-	// wait until a network message arrives or next tick starts
-	if(nowtime == I_GetTime())
-		NetWaitOrTimeout((I_MSTime()%TICRATE)+1);
+	if (!step_mode)
+		SV_StepTics(1);
 }
 
 BEGIN_COMMAND(step)

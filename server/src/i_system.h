@@ -72,6 +72,8 @@ extern QWORD (*I_WaitForTic) (QWORD);
 
 QWORD I_GetTimePolled (void);
 
+void I_Sleep(unsigned int sleep_time);
+
 //
 // Called by D_DoomLoop,
 // called before processing any tics in a frame

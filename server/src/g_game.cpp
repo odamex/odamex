@@ -87,7 +87,7 @@ BOOL 			usergame;				// ok to save / end game
 BOOL			sendcenterview;			// send a center view event next tic
 BOOL			menuactive;				// only to make sure p_tick doesn't bitch
 
-BOOL			timingdemo; 			// if true, exit with report on completion
+bool			timingdemo; 			// if true, exit with report on completion
 BOOL 			nodrawers;				// for comparative timing purposes
 BOOL 			noblit; 				// for comparative timing purposes
 

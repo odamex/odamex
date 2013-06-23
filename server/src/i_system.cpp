@@ -37,6 +37,9 @@
     #include <process.h>
     #include <mmsystem.h>
     #include <direct.h> // SoM: I don't know HOW this has been overlooked until now...
+	#ifndef _XBOX
+		#include <winsock2.h>
+	#endif  // !_XBOX
 #endif
 
 #ifdef UNIX
@@ -249,6 +252,30 @@ void I_Yield(void)
 	#else
 	usleep(1000);
 	#endif
+}
+
+//
+// I_Sleep
+//
+// Sleeps for the specified number of milliseconds, yielding control to the 
+// operating system.
+//
+void I_Sleep(unsigned int sleep_time)
+{
+	int result;
+	QWORD start_time = I_MSTime();
+
+	do
+	{
+		QWORD current_time = I_MSTime();
+		sleep_time -= current_time - start_time;
+
+		struct timeval timeout;
+		timeout.tv_sec = sleep_time / 1000;
+		timeout.tv_usec = 1000 * (sleep_time % 1000);
+
+		result = select(0, NULL, NULL, NULL, &timeout);
+	} while (result != 0 && errno == EINTR);
 }
 
 void I_WaitVBL (int count)

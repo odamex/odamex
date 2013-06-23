@@ -71,8 +71,6 @@
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 
-extern int timingdemo;
-
 extern int shotclock;
 
 EXTERN_CVAR(sv_fastmonsters)
