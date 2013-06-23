@@ -140,27 +140,34 @@ void I_FinishUpdate ()
 	// Draws frame time and cumulative fps
 	if (vid_fps)
 	{
-		static DWORD lastms = 0, lastsec = 0;
-		static int framecount = 0, lastcount = 0;
-		char fpsbuff[40];
-		int chars;
+		static double last_fps = 0.0;
+		static QWORD last_time = I_MSTime();
+		static QWORD time_accum = 0;
+		static unsigned int frame_count = 0;
 
-		QWORD ms = I_MSTime ();
-		QWORD howlong = ms - lastms;
-		if (howlong > 0)
+		QWORD current_time = I_MSTime();
+		QWORD delta_time = current_time - last_time;
+		last_time = current_time;
+
+		frame_count++;
+
+		if (delta_time > 0)
 		{
-			chars = sprintf(fpsbuff, "%3u ms (%3d fps)", (unsigned int)howlong, lastcount);
-			screen->Clear (0, screen->height - 8, chars * 8, screen->height, 0);
-			screen->PrintStr (0, screen->height - 8, (char *)&fpsbuff[0], chars);
-			if (lastsec < ms / 1000)
+			char fpsbuff[40];
+			int chars = sprintf(fpsbuff, "%3llu ms (%.2f fps)", delta_time, last_fps);
+			screen->Clear(0, screen->height - 8, chars * 8, screen->height, 0);
+			screen->PrintStr(0, screen->height - 8, fpsbuff, chars);
+
+			time_accum += delta_time;
+
+			// calculate last_fps every 1000ms
+			if (time_accum > 1000)
 			{
-				lastcount = framecount / (ms/1000 - lastsec);
-				lastsec = ms / 1000;
-				framecount = 0;
+				last_fps = double(1000 * frame_count) / time_accum;
+				time_accum = 0;
+				frame_count = 0;
 			}
-			framecount++;
 		}
-		lastms = ms;
 	}
 
     // draws little dots on the bottom of the screen
