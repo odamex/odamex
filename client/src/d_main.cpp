@@ -204,7 +204,7 @@ void D_PostEvent (const event_t* ev)
 //
 void D_Display (void)
 {
-	BOOL wipe;
+	bool begin_wiping = false;
 
 	if (nodrawers)
 		return; 				// for comparative timing / profiling
@@ -253,18 +253,14 @@ void D_Display (void)
 	if (NoWipe)
 	{
 		NoWipe--;
-		wipe = false;
+		begin_wiping = false;
 		wipegamestate = gamestate;
 	}
 	else if (gamestate != wipegamestate && gamestate != GS_FULLCONSOLE)
 	{ // save the current screen if about to wipe
-		wipe = true;
-		wipe_StartScreen ();
+		begin_wiping = true;
+		wipe_StartScreen();
 		wipegamestate = gamestate;
-	}
-	else
-	{
-		wipe = false;
 	}
 
 	switch (gamestate)
@@ -342,73 +338,24 @@ void D_Display (void)
 		NoWipe = 10;
 	}
 
-	static bool live_wiping = false;
+	static bool continue_wiping = false;
 
-	if (!wipe)
+	if (begin_wiping || continue_wiping)
 	{
-		if(live_wiping)
-		{
-			// wipe update online (multiple calls, not just looping here)
-			wipe_EndScreen();
-			live_wiping = !wipe_ScreenWipe (1);
-			C_DrawConsole ();
-			M_Drawer ();			// menu is drawn even on top of wipes
-			I_FinishUpdate ();		// page flip or blit buffer
-		}
-		else
-		{
-			// normal update
-			C_DrawConsole ();	// draw console
-			M_Drawer ();		// menu is drawn even on top of everything
-			I_FinishUpdate ();	// page flip or blit buffer
-		}
+		continue_wiping = true;
+
+		wipe_EndScreen();
+		continue_wiping = !wipe_ScreenWipe(1);
+		C_DrawConsole();
+		M_Drawer();				// menu is drawn even on top of wipes
+		I_FinishUpdate();		// page flip or blit buffer
 	}
 	else
 	{
-		if(!connected)
-		{
-			// wipe update offline
-			int wipestart, wipecont, nowtime, tics;
-			BOOL done;
-
-			wipe_EndScreen ();
-			I_FinishUpdateNoBlit ();
-
-			extern int canceltics;
-
-			wipestart = I_GetTime ();
-			wipecont = wipestart - 1;
-
-			do
-			{
-				do
-				{
-					nowtime = I_GetTime ();
-					tics = nowtime - wipecont;
-				} while (!tics);
-				wipecont = nowtime;
-				I_BeginUpdate ();
-				done = wipe_ScreenWipe (tics);
-				C_DrawConsole ();
-				M_Drawer ();			// menu is drawn even on top of wipes
-				I_FinishUpdate ();		// page flip or blit buffer
-			} while (!done);
-
-			if(!connected)
-				canceltics += I_GetTime () - wipestart;
-		}
-		else
-		{
-			// wipe update online
-			live_wiping = true;
-
-			// wipe update online (multiple calls, not just looping here)
-			wipe_EndScreen();
-			live_wiping = !wipe_ScreenWipe (1);
-			C_DrawConsole ();
-			M_Drawer ();			// menu is drawn even on top of wipes
-			I_FinishUpdate ();		// page flip or blit buffer
-		}
+		// normal update
+		C_DrawConsole();	// draw console
+		M_Drawer();			// menu is drawn even on top of everything
+		I_FinishUpdate();	// page flip or blit buffer
 	}
 
 	END_STAT(D_Display);
