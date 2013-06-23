@@ -37,6 +37,9 @@
     #include <process.h>
     #include <mmsystem.h>
     #include <direct.h> // SoM: I don't know HOW this has been overlooked until now...
+	#ifndef _XBOX
+		#include <winsock2.h>
+	#endif  // !_XBOX
 #endif
 
 #ifdef UNIX
