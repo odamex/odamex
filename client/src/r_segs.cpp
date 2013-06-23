@@ -270,10 +270,6 @@ static void R_BlastSolidSegColumn(void (*drawfunc)())
 	if (rw_scale > 0)
 		dc_iscale = 0xffffffffu / (unsigned)rw_scale;
 
-	bool drawmid = (backsector == NULL); 
-	bool drawtop = (backsector && walltopf[dc_x] < walltopb[dc_x]);
-	bool drawbottom = (backsector && wallbottomf[dc_x] > wallbottomb[dc_x]);
-
 	walltopf[dc_x] = MAX(walltopf[dc_x], ceilingclip[dc_x]);
 	wallbottomf[dc_x] = MIN(wallbottomf[dc_x], floorclip[dc_x]);
 
@@ -314,13 +310,11 @@ static void R_BlastSolidSegColumn(void (*drawfunc)())
 	}
 
 	// draw the wall tiers
-	if (drawmid)
+	if (midtexture)
 	{
 		walltopf[dc_x] = MIN(MAX(walltopf[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
 
-		if (midtexture)
-			R_BlastSolidSegColumnTier(drawfunc, dc_midposts[dc_x], walltopf[dc_x],
-										wallbottomf[dc_x], rw_midtexturemid);
+		R_BlastSolidSegColumnTier(drawfunc, dc_midposts[dc_x], walltopf[dc_x], wallbottomf[dc_x], rw_midtexturemid);
 
 		// indicate that no further drawing can be done in this column
 		ceilingclip[dc_x] = floorclipinitial[dc_x];
@@ -329,13 +323,11 @@ static void R_BlastSolidSegColumn(void (*drawfunc)())
 	}
 	else
 	{
-		if (drawtop)
+		if (toptexture)
 		{
 			walltopb[dc_x] = MAX(MIN(walltopb[dc_x], floorclip[dc_x]), walltopf[dc_x]);
 
-			if (toptexture)
-				R_BlastSolidSegColumnTier(drawfunc, dc_topposts[dc_x], walltopf[dc_x],
-											walltopb[dc_x], rw_toptexturemid);
+			R_BlastSolidSegColumnTier(drawfunc, dc_topposts[dc_x], walltopf[dc_x], walltopb[dc_x], rw_toptexturemid);
 
 			ceilingclip[dc_x] = walltopb[dc_x];
 		}
@@ -345,13 +337,11 @@ static void R_BlastSolidSegColumn(void (*drawfunc)())
 			ceilingclip[dc_x] = walltopf[dc_x];
 		}
 		
-		if (drawbottom)
+		if (bottomtexture)
 		{
 			wallbottomb[dc_x] = MIN(MAX(wallbottomb[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
 
-			if (bottomtexture)
-				R_BlastSolidSegColumnTier(drawfunc, dc_bottomposts[dc_x], wallbottomb[dc_x],
-											wallbottomf[dc_x], rw_bottomtexturemid);
+			R_BlastSolidSegColumnTier(drawfunc, dc_bottomposts[dc_x], wallbottomb[dc_x], wallbottomf[dc_x], rw_bottomtexturemid);
 
 			floorclip[dc_x] = wallbottomb[dc_x];
 		}
