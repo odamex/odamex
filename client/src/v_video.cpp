@@ -100,9 +100,9 @@ int		NewWidth, NewHeight, NewBits;
 CVAR_FUNC_IMPL (vid_fullscreen)
 {
 	setmodeneeded = true;
-	NewWidth = screen->width;
-	NewHeight = screen->height;
-	NewBits = DisplayBits;
+	NewWidth = I_GetVideoWidth();
+	NewHeight = I_GetVideoHeight();
+	NewBits = I_GetVideoBitDepth();
 }
 
 
@@ -572,9 +572,9 @@ bool V_SetResolution(int width, int height, int bits)
 
 	if (screen)
 	{
-		oldwidth = screen->width; 
-		oldheight = screen->height;
-		oldbits = DisplayBits;
+		oldwidth = I_GetVideoWidth(); 
+		oldheight = I_GetVideoHeight(); 
+		oldbits = I_GetVideoBitDepth(); 
 	}
 	else
 	{
@@ -631,7 +631,7 @@ BEGIN_COMMAND (vid_setmode)
 	if (argc > 2)
 		height = atoi(argv[2]);
 	if (height == 0)
-		height = screen->height;
+		height = I_GetVideoHeight(); 
 
 	// Bits (always 8-bit for now)
 	bits = 8;
@@ -663,8 +663,9 @@ END_COMMAND (vid_setmode)
 
 BEGIN_COMMAND (checkres)
 {
-    Printf (PRINT_HIGH, "Resolution: %d x %d x %d (%s)\n", screen->width, screen->height, screen->bits,
-        (vid_fullscreen ? "FULLSCREEN" : "WINDOWED")); // NES - Simple resolution checker.
+    Printf (PRINT_HIGH, "Resolution: %d x %d x %d (%s)\n",
+			I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth(),
+        	(vid_fullscreen ? "FULLSCREEN" : "WINDOWED")); // NES - Simple resolution checker.
 }
 END_COMMAND (checkres)
 

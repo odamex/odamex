@@ -33,7 +33,7 @@
 #include "doomstat.h"
 #include "m_argv.h"
 #include "i_input.h"
-#include "v_video.h"
+#include "i_video.h"
 #include "d_main.h"
 #include "c_console.h"
 #include "c_cvars.h"
@@ -1553,7 +1553,7 @@ void SDLMouse::center()
 	if (screen)
 	{
 		// warp the mouse to the center of the screen
-		SDL_WarpMouse(screen->width / 2, screen->height / 2);
+		SDL_WarpMouse(I_GetVideoWidth() / 2, I_GetVideoHeight() / 2);
 		// SDL_WarpMouse creates a new event in the queue and needs to be thrown out
 		flushEvents();
 	}

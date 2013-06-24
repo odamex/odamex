@@ -45,6 +45,10 @@ class SDLVideo : public IVideo
 	virtual void SetWindowedScale (float scale);
 	virtual bool SetOverscan (float scale);
 
+	virtual int GetWidth() const { return screenw; }
+	virtual int GetHeight() const { return screenh; }
+	virtual int GetBitDepth() const { return screenbits; }
+
 	virtual bool SetMode (int width, int height, int bits, bool fs);
 	virtual void SetPalette (DWORD *palette);
 

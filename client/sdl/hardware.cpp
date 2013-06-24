@@ -72,9 +72,9 @@ CVAR_FUNC_IMPL (vid_winscale)
 	else if (Video)
 	{
 		Video->SetWindowedScale (var);
-		NewWidth = screen->width;
-		NewHeight = screen->height;
-		NewBits = DisplayBits;
+		NewWidth = I_GetVideoWidth();
+		NewHeight = I_GetVideoHeight(); 
+		NewBits = I_GetVideoBitDepth(); 
 		setmodeneeded = true;
 	}
 }
@@ -327,6 +327,21 @@ bool I_SetOverscan (float scale)
 	return Video->SetOverscan (scale);
 }
 
+int I_GetVideoWidth()
+{
+	return Video->GetWidth();
+}
+
+int I_GetVideoHeight()
+{
+	return Video->GetHeight();
+}
+
+int I_GetVideoBitDepth()
+{
+	return Video->GetBitDepth();
+}
+
 void I_SetMode (int &width, int &height, int &bits)
 {
 	bool fs = false;
@@ -577,6 +592,10 @@ void IVideo::SetWindowedScale (float scale) {}
 bool IVideo::CanBlit () { return true; }
 
 bool IVideo::SetOverscan (float scale) { return true; }
+
+int IVideo::GetWidth() const { return 0; }
+int IVideo::GetHeight() const { return 0; }
+int IVideo::GetBitDepth() const { return 0; }
 
 bool IVideo::SetMode (int width, int height, int bits, bool fs) { return true; }
 void IVideo::SetPalette (DWORD *palette) {}
