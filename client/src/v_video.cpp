@@ -549,7 +549,12 @@ static bool V_DoModeSetup(int width, int height, int bits)
 
 	// Allocate a new virtual framebuffer
 	bool primary = (vid_fullscreen == 0);
-	screen = I_AllocateScreen(width, height, bits, primary);
+
+	// [SL] Add a bit to the screen width if it's a power-of-two to avoid
+	// cache thrashing
+	int cache_fudge = (width % 256) == 0 ? 4 : 0;
+	
+	screen = I_AllocateScreen(width + cache_fudge, height, bits, primary);
 
 	V_ForceBlend (0,0,0,0);
 	if (bits == 8)
