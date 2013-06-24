@@ -214,14 +214,9 @@ void D_Display (void)
 	// [RH] change the screen mode if needed
 	if (setmodeneeded)
 	{
-		int oldwidth = screen->width;
-		int oldheight = screen->height;
-		int oldbits = DisplayBits;
-
 		// Change screen mode.
 		if (!V_SetResolution (NewWidth, NewHeight, NewBits))
-			if (!V_SetResolution (oldwidth, oldheight, oldbits))
-				I_FatalError ("Could not change screen mode");
+			I_FatalError ("Could not change screen mode");
 
 		// Recalculate various view parameters.
 		setsizeneeded = true;

@@ -498,7 +498,7 @@ void DCanvas::Blit (int srcx, int srcy, int srcwidth, int srcheight,
 //
 // V_SetResolution
 //
-BOOL V_DoModeSetup (int width, int height, int bits)
+static bool V_DoModeSetup(int width, int height, int bits)
 {
 	int basew = 320, baseh = 200;
 
@@ -513,18 +513,14 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 
 	I_SetOverscan (vid_overscan);
 
-	RealXfac = (((static_cast<float>(height) * 4.0f)/3.0f) / static_cast<float>(basew));
-	RealYfac = (((static_cast<float>(width) * 3.0f)/4.0f) / static_cast<float>(baseh));
+	RealXfac = 4.0f * height / (3.0f * basew);
+	RealYfac = 4.0f * width / (3.0f * baseh);
 
 	if (!RealXfac)
-    {
         RealXfac = 1.0f;
-    }
 
 	if (!RealYfac)
-    {
         RealYfac = 1.0f;
-    }
 
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows con_scaletext to have some purpose...
@@ -546,82 +542,79 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	DisplayHeight = height;
 	DisplayBits = bits;
 
-	SquareWidth = (static_cast<float>(DisplayHeight) * 4.0f) / 3.0f;
-
+	SquareWidth = 4.0f * DisplayHeight / 3.0f;
+	
 	if (SquareWidth > DisplayWidth)
         SquareWidth = DisplayWidth;
 
 	// Allocate a new virtual framebuffer
-	if (vid_fullscreen)
-		screen = I_AllocateScreen (width, height, bits, false);
-	else
-		screen = I_AllocateScreen (width, height, bits, true);
+	bool primary = (vid_fullscreen == 0);
+	screen = I_AllocateScreen(width, height, bits, primary);
 
 	V_ForceBlend (0,0,0,0);
 	if (bits == 8)
 		RefreshPalettes ();
 
-	R_InitColumnDrawers (screen->is8bit());
-	R_MultiresInit ();
+	R_InitColumnDrawers(screen->is8bit());
+	R_MultiresInit();
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
 	I_FlushInput();
-
-//	M_RefreshModesList (); // [Toke - crap]
 
     gotconback = false;
 
 	return true;
 }
 
-BOOL V_SetResolution (int width, int height, int bits)
+bool V_SetResolution(int width, int height, int bits)
 {
-	int oldwidth, oldheight;
-	int oldbits;
+	int oldwidth, oldheight, oldbits;
 
-	if (screen) {
-		oldwidth = screen->width;
+	if (screen)
+	{
+		oldwidth = screen->width; 
 		oldheight = screen->height;
 		oldbits = DisplayBits;
-	} else {
+	}
+	else
+	{
 		// Harmless if screen wasn't allocated
 		oldwidth = width;
 		oldheight = height;
 		oldbits = bits;
 	}
 
-	if ((int)(vid_autoadjust)) {
-		if (vid_fullscreen) {
+	// Make sure we don't set the resolution smaller than Doom's original 320x200
+	// resolution. Bad things might happen. 
+	width = clamp(width, 320, MAXWIDTH);
+	height = clamp(height, 200, MAXHEIGHT);
+
+	if ((int)(vid_autoadjust))
+	{
+		if (vid_fullscreen)
+		{
 			// Fullscreen needs to check for a valid resolution.
 			I_ClosestResolution(&width, &height, bits);
-		} else {
-			// Windowed mode needs to have a check to make sure we don't
-			// make a window tinier than Doom's default, otherwise bad
-			// things might happen.
-			if (width < 320) {
-				width = 320;
-			}
-			if (height < 200) {
-				height = 200;
-			}
 		}
 
-		if (!I_CheckResolution (width, height, bits)) {				// Try specified resolution
-			if (!I_CheckResolution (oldwidth, oldheight, oldbits)) {// Try previous resolution (if any)
+		// Try the desired resolution
+		if (!I_CheckResolution (width, height, bits))
+		{				
+			// Try the previous resolution (if any)
+			if (!I_CheckResolution (oldwidth, oldheight, oldbits))
 		   		return false;
-			} else {
-				width = oldwidth;
-				height = oldheight;
-				bits = oldbits;
-			}
+
+			width = oldwidth;
+			height = oldheight;
+			bits = oldbits;
 		}
 	}
-	return V_DoModeSetup (width, height, bits);
+
+	return V_DoModeSetup(width, height, bits);
 }
 
 BEGIN_COMMAND (vid_setmode)
 {
-	BOOL	goodmode = false;
 	int		width = 0, height = 0;
 	int		bits = DisplayBits;
 
@@ -631,45 +624,38 @@ BEGIN_COMMAND (vid_setmode)
 		return;
 	}
 	// Width
-	if (argc > 1) {
+	if (argc > 1) 
 		width = atoi(argv[1]);
-	}
+	
 	// Height (optional)
-	if (argc > 2) {
+	if (argc > 2)
 		height = atoi(argv[2]);
-	}
-	if (!height) {
+	if (height == 0)
 		height = screen->height;
-	}
+
 	// Bits (always 8-bit for now)
 	bits = 8;
 
-	if (width < 320 || height < 200) {
+	if (width < 320 || height < 200) 
 		Printf(PRINT_HIGH, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
-		if (width < 320)
-			width = 320;
-		if (height < 200)
-			height = 200;
-	}
 
-	if (width > MAXWIDTH || height > MAXHEIGHT) {
+	if (width > MAXWIDTH || height > MAXHEIGHT)
 		Printf(PRINT_HIGH, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
-		if (width > MAXWIDTH)
-			width = MAXWIDTH;
-		if (height > MAXHEIGHT)
-			height = MAXHEIGHT;
-	}
 
-	if (I_CheckResolution(width, height, bits)) {
+	if (I_CheckResolution(width, height, bits))
+	{
 		// The actual change of resolution will take place
 		// near the beginning of D_Display().
-		if (gamestate != GS_STARTUP) {
+		if (gamestate != GS_STARTUP)
+		{
 			setmodeneeded = true;
 			NewWidth = width;
 			NewHeight = height;
 			NewBits = bits;
 		}
-	} else {
+	}
+	else
+	{
 		Printf(PRINT_HIGH, "Unknown resolution %dx%d\n", width, height);
 	}
 }

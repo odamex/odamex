@@ -100,8 +100,6 @@ SDLVideo::SDLVideo(int parm)
    screenw = screenh = screenbits = 0;
    palettechanged = false;
 
-   chainHead = new cChain(NULL);
-
    // Get Video modes
    SDL_PixelFormat fmt;
    fmt.palette = NULL;
@@ -161,16 +159,8 @@ SDLVideo::SDLVideo(int parm)
 
 SDLVideo::~SDLVideo(void)
 {
-   cChain *rover, *next;
-
-   for(rover = chainHead->next; rover != chainHead; rover = next)
-   {
-      next = rover->next;
-      ReleaseSurface(rover->canvas);
-      delete rover;
-   }
-
-   delete chainHead;
+	while (!surfaceList.empty())
+		ReleaseSurface(surfaceList.front());
 }
 
 
@@ -395,63 +385,53 @@ DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primar
 
 	SDL_Surface *s;
 
-	if(primary)
+	if (primary)
 	{
-	  scrn->m_Private = s = sdlScreen; // denis - let the engine write directly to screen
+		scrn->m_Private = s = sdlScreen; // denis - let the engine write directly to screen
 	}
 	else
 	{
-	  if(bits == 8)
-		 scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0, 0, 0, 0);
-	  else
-		 scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0xff0000, 0x00ff00, 0x0000ff, 0);
+		if (bits == 8)
+			scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0, 0, 0, 0);
+		else
+			scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0xff0000, 0x00ff00, 0x0000ff, 0);
 	}
 
-	if(!s)
-	   I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
+	if (!s)
+		I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
 
-	if(s->pitch != (width * (bits / 8)) && vid_autoadjust)
-	   Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
+	if (s->pitch != (width * (bits / 8)) && vid_autoadjust)
+		Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
 
 	scrn->pitch = s->pitch;
 
-	if(!primary)
-	{
-	  cChain *nnode = new cChain(scrn);
-	  nnode->linkTo(chainHead);
-	}
+	if (!primary)
+		surfaceList.push_back(scrn);
 
 	return scrn;
 }
 
 
 
-void SDLVideo::ReleaseSurface (DCanvas *scrn)
+void SDLVideo::ReleaseSurface(DCanvas *scrn)
 {
-   if(scrn->m_Private == sdlScreen) // primary stays
-      return;
+	if(scrn->m_Private == sdlScreen) // primary stays
+		return;
 
-   if(scrn->m_LockCount)
-      scrn->Unlock();
+	if (scrn->m_LockCount)
+		scrn->Unlock();
 
-   if(scrn->m_Private)
-   {
-      SDL_FreeSurface((SDL_Surface *)scrn->m_Private);
-      scrn->m_Private = NULL;
-   }
+	if (scrn->m_Private)
+	{
+		SDL_FreeSurface((SDL_Surface *)scrn->m_Private);
+		scrn->m_Private = NULL;
+	}
 
-   scrn->DetachPalette ();
+	scrn->DetachPalette ();
 
-   for(cChain *r = chainHead->next; r != chainHead; r = r->next)
-   {
-      if(r->canvas == scrn)
-      {
-         delete r;
-         break;
-      }
-   }
+	surfaceList.remove(scrn);
 
-   delete scrn;
+	delete scrn;
 }
 
 

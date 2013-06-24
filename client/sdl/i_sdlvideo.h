@@ -25,6 +25,7 @@
 #define __SDLVIDEO_H__
 
 #include <SDL.h>
+#include <list>
 #include "hardware.h"
 #include "i_video.h"
 #include "c_console.h"
@@ -66,22 +67,6 @@ class SDLVideo : public IVideo
 
 
    protected:
-
-   class cChain
-   {
-      public:
-      cChain(DCanvas *dc) : canvas(dc) {next = prev = this;}
-      ~cChain() {(prev->next = next)->prev = prev;}
-
-      void linkTo(cChain *head)
-      {
-         (next = head->next)->prev = next;
-         (head->next = next)->prev = head;
-      }
-
-      DCanvas *canvas;
-      cChain *next, *prev;
-   };
 
    struct vidMode_t
    {
@@ -136,7 +121,7 @@ class SDLVideo : public IVideo
    SDL_Color palette[256];
    bool palettechanged;
 
-   cChain      *chainHead;
+	std::list<DCanvas*>		surfaceList;
 };
 #endif
 
