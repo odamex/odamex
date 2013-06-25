@@ -116,8 +116,8 @@ BOOL 			usergame;				// ok to save / end game
 BOOL			sendcenterview;			// send a center view event next tic
 
 bool			timingdemo; 			// if true, exit with report on completion
-BOOL 			nodrawers;				// for comparative timing purposes
-BOOL 			noblit; 				// for comparative timing purposes
+bool 			nodrawers;				// for comparative timing purposes
+bool 			noblit; 				// for comparative timing purposes
 
 BOOL	 		viewactive;
 

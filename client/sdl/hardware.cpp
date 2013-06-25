@@ -193,7 +193,9 @@ void I_FinishUpdate ()
 			screen->buffer[(screen->height-1)*screen->pitch + i] = 0x0;
     }
 
-	Video->UpdateScreen (screen);
+	if (noblit == false)
+		Video->UpdateScreen(screen);
+
 	screen->Unlock(); // SoM: we should probably do this, eh?
 }
 

@@ -119,6 +119,8 @@ void	R_FillSpanP (void);
 void	R_FillSpanD (void);
 
 // [RH] Moves data from the temporary horizontal buffer to the screen.
+void rt_draw1blankcol(int hx, int sx, int yl, int yh);
+void rt_draw4blankcols(int sx, int yl, int yh);
 void rt_copy1colP (int hx, int sx, int yl, int yh);
 void rt_copy4colsP (int sx, int yl, int yh);
 void rt_map1colP (int hx, int sx, int yl, int yh);

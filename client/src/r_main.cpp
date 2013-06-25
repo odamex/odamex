@@ -1023,8 +1023,8 @@ void R_SetBlankDrawFuncs()
 {
 	colfunc = R_BlankColumn;
 	hcolfunc_pre = R_BlankColumn; 
-	hcolfunc_post1 = rt_copy1col;
-	hcolfunc_post4 = rt_copy4cols;
+	hcolfunc_post1 = rt_draw1blankcol; 
+	hcolfunc_post4 = rt_draw4blankcols;
 	spanfunc = spanslopefunc = R_BlankSpan;
 }
 
@@ -1033,7 +1033,11 @@ void R_SetBlankDrawFuncs()
 //
 void R_ResetDrawFuncs()
 {
-	if (r_drawflat)
+	if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (r_drawflat)
 	{
 		R_SetFlatDrawFuncs();
 	}
@@ -1050,7 +1054,11 @@ void R_ResetDrawFuncs()
 
 void R_SetFuzzDrawFuncs()
 {
-	if (r_drawflat)
+	if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (r_drawflat)
 	{
 		R_SetFlatDrawFuncs();
 	}
@@ -1067,9 +1075,13 @@ void R_SetFuzzDrawFuncs()
 
 void R_SetLucentDrawFuncs()
 {
-	if (r_drawflat)
+	if (nodrawers)
 	{
 		R_SetBlankDrawFuncs();
+	}
+	else if (r_drawflat)
+	{
+		R_SetFlatDrawFuncs();
 	}
 	else
 	{
@@ -1082,7 +1094,11 @@ void R_SetLucentDrawFuncs()
 
 void R_SetTranslatedDrawFuncs()
 {
-	if (r_drawflat)
+	if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (r_drawflat)
 	{
 		R_SetFlatDrawFuncs();
 	}
@@ -1097,9 +1113,13 @@ void R_SetTranslatedDrawFuncs()
 
 void R_SetTranslatedLucentDrawFuncs()
 {
-	if (r_drawflat)
+	if (nodrawers)
 	{
 		R_SetBlankDrawFuncs();
+	}
+	else if (r_drawflat)
+	{
+		R_SetFlatDrawFuncs();
 	}
 	else
 	{

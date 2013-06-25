@@ -115,8 +115,8 @@ extern	BOOL			paused; 		// Game Pause?
 
 extern	BOOL			viewactive;
 
-extern	BOOL	 		nodrawers;
-extern	BOOL	 		noblit;
+extern	bool	 		nodrawers;
+extern	bool	 		noblit;
 
 extern	int 			viewwindowx;
 extern	int 			viewwindowy;

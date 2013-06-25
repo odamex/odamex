@@ -50,6 +50,26 @@ unsigned int dc_tspans[4][256];
 unsigned int *dc_ctspan[4];
 unsigned int *horizspan[4];
 
+//
+// rt_draw1blankcol
+//
+// [SL] - Does nothing (obviously). Used when a column drawing function
+// pointer should not draw anything.
+//
+void rt_draw1blankcol(int hx, int sx, int yl, int yh)
+{
+}
+
+//
+// rt_draw4blankcols
+//
+// [SL] - Does nothing (obviously). Used when a column drawing function
+// pointer should not draw anything.
+//
+void rt_draw4blankcols(int sx, int yl, int yh)
+{
+}
+
 template<typename pixel_t, int columns>
 static forceinline void rt_copycols(int hx, int sx, int yl, int yh);
 
