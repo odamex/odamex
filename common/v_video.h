@@ -494,6 +494,10 @@ std::string V_GetColorStringByName (const char *name);
 
 bool V_SetResolution (int width, int height, int bpp);
 
+bool V_UsePillarBox();
+bool V_UseLetterBox();
+bool V_UseWidescreen();
+
 #endif // __V_VIDEO_H__
 
 

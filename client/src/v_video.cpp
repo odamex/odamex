@@ -494,6 +494,76 @@ void DCanvas::Blit (int srcx, int srcy, int srcwidth, int srcheight,
 	I_Blit (this, srcx, srcy, srcwidth, srcheight, dest, destx, desty, destwidth, destheight);
 }
 
+CVAR_FUNC_IMPL (vid_widescreen)
+{
+	static bool last_value = !var;	// force setmodeneeded when loading cvar
+	if (last_value != var)
+		setmodeneeded = true;
+	last_value = var;
+}
+
+CVAR_FUNC_IMPL (sv_allowwidescreen)
+{
+	// change setmodeneeded when the value of sv_allowwidescreen
+	// changes our ability to use wide-fov
+	bool wide_fov = V_UseWidescreen() || V_UseLetterBox();
+	static bool last_value = !wide_fov; 
+
+	if (last_value != wide_fov)
+		setmodeneeded = true;
+	last_value = wide_fov;
+}
+
+//
+// V_UsePillarBox
+//
+// Determines if the display should use pillarboxing. If the resolution is a
+// widescreen mode and either the user or the server doesn't allow
+// widescreen usage, use pillarboxing.
+//
+bool V_UsePillarBox()
+{
+	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+		return false;
+	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
+		return false;
+	
+	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
+	return (!vid_widescreen || (!serverside && !sv_allowwidescreen)) && ratio > (4.0f / 3.0f);
+}
+
+//
+// V_UseLetterBox
+//
+// Determines if the display should use letterboxing. If the resolution is a
+// standard 4:3 mode and both the user and the server allow widescreen
+// usage, use letterboxing.
+//
+bool V_UseLetterBox()
+{
+	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+		return false;
+	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
+		return false;
+	
+	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
+	return (vid_widescreen && (serverside || sv_allowwidescreen)) && ratio <= (4.0f / 3.0f);
+}
+
+//
+// V_UseWidescreen
+//
+//
+bool V_UseWidescreen()
+{
+	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+		return false;
+	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
+		return false;
+	
+	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
+	return (vid_widescreen && (serverside || sv_allowwidescreen)) && ratio > (4.0f / 3.0f);
+}
 
 //
 // V_SetResolution
@@ -503,15 +573,20 @@ static bool V_DoModeSetup(int width, int height, int bits)
 	int basew = 320, baseh = 200;
 
 	// Free the virtual framebuffer
-	if(screen)
+	if (screen)
 	{
 		I_FreeScreen(screen);
 		screen = NULL;
 	}
 
-	I_SetMode (width, height, bits);
+	I_SetMode(width, height, bits);
 
 	I_SetOverscan (vid_overscan);
+
+	if (V_UsePillarBox())
+		width = 4.0f * height / 3.0f;
+	else if (V_UseLetterBox())
+		height = 9.0f * width / 16.0f;
 
 	RealXfac = 4.0f * height / (3.0f * basew);
 	RealYfac = 4.0f * width / (3.0f * baseh);

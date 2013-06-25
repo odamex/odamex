@@ -54,7 +54,6 @@ extern dyncolormap_t NormalLight;
 extern bool r_fakingunderwater;
 
 EXTERN_CVAR (r_viewsize)
-EXTERN_CVAR (r_widescreen)
 EXTERN_CVAR (sv_allowwidescreen)
 
 static float	LastFOV = 0.0f;
@@ -599,32 +598,30 @@ void R_InitTextureMapping (void)
 	clipangle = xtoviewangle[0];
 }
 
-// Changes the field of view.
+//
+// R_SetFOV
+//
+// Changes the field of view based on widescreen mode availibility.
+//
 void R_SetFOV(float fov, bool force = false)
 {
-	if (fov == LastFOV && !force)
-		return;
-
-	if (fov < 1)
-		fov = 1;
-	else if (fov > 179)
-		fov = 179;
-
+	fov = clamp(fov, 1.0f, 179.0f);
+ 
 	LastFOV = fov;
-	FieldOfView = static_cast<int>(fov * static_cast<float>(FINEANGLES) / 360.0f);
-	float am = (static_cast<float>(screen->width) / screen->height) / (4.0f / 3.0f);
-	if (R_GetWidescreen() >= WIDE_TRUE && am > 1.0f)
+	FieldOfView = int(fov * FINEANGLES / 360.0f);
+
+	if (V_UseWidescreen() || V_UseLetterBox())
 	{
-		// [AM] The FOV is corrected to fit the wider screen.
+		float am = float(screen->width) / float(screen->height) / (4.0f / 3.0f);
 		float radfov = fov * PI / 180.0f;
 		float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
-		CorrectFieldOfView = static_cast<int>(widefov * static_cast<float>(FINEANGLES) / 360.0f);
+		CorrectFieldOfView = int(widefov * FINEANGLES / 360.0f);
 	}
 	else
-	{
-		// [AM] The FOV is left as-is for the wider screen.
+ 	{
 		CorrectFieldOfView = FieldOfView;
-	}
+ 	}
+
 	setsizeneeded = true;
 }
 
@@ -639,19 +636,6 @@ void R_SetFOV(float fov, bool force = false)
 float R_GetFOV (void)
 {
 	return LastFOV;
-}
-
-// [AM] Always grab the correct widescreen setting based on a
-//      combination of r_widescreen and serverside forcing.
-int R_GetWidescreen()
-{
-	if ((r_widescreen.asInt() < WIDE_TRUE) || !multiplayer ||
-	    (multiplayer && sv_allowwidescreen))
-	{
-		return r_widescreen.asInt();
-	}
-
-	return r_widescreen.asInt() - WIDE_TRUE;
 }
 
 //
@@ -744,16 +728,6 @@ CVAR_FUNC_IMPL (r_detail)
 	setsizeneeded = true;
 }
 
-CVAR_FUNC_IMPL (r_widescreen)
-{
-	if (var.asInt() < 0 || var.asInt() > 3)
-	{
-		Printf(PRINT_HIGH, "Invalid widescreen setting.\n");
-		var.RestoreDefault();
-	}
-	setmodeneeded = true;
-}
-
 //
 //
 // R_ExecuteSetViewSize
@@ -765,7 +739,6 @@ void R_ExecuteSetViewSize (void)
 	int i, j;
 	int level;
 	int startmap;
-	int virtheight, virtwidth;
 	int lightmapsize = 8 + (screen->is8bit() ? 0 : 2);
 
 	setsizeneeded = false;
@@ -821,13 +794,10 @@ void R_ExecuteSetViewSize (void)
 	centerxfrac = centerx<<FRACBITS;
 	centeryfrac = centery<<FRACBITS;
 
-	virtwidth = screen->width >> detailxshift;
-	virtheight = screen->height >> detailyshift;
-
-	if (R_GetWidescreen() != WIDE_STRETCH)
-		yaspectmul = (78643 << detailxshift) >> detailyshift ; // [AM] Force correct aspect ratio
-	else
-		yaspectmul = (fixed_t)(65536.0f*(320.0f*(float)virtheight/(200.0f*(float)virtwidth)));
+	// calculate the vertical stretching factor to emulate 320x200
+	// it's a 5:4 ratio = (320 / 200) / (4 / 3)
+	// also take r_detail into account
+	yaspectmul = (320.0f / 200.0f) / (4.0f / 3.0f) * ((FRACUNIT << detailxshift) >> detailyshift);
 
 	colfunc = basecolfunc = R_DrawColumn;
 	lucentcolfunc = R_DrawTranslucentColumn;
@@ -847,23 +817,17 @@ void R_ExecuteSetViewSize (void)
 	R_InitTextureMapping ();
 
 	// psprite scales
-	if (R_GetWidescreen() != WIDE_STRETCH)
-	{
-		// [AM] Using centerxfrac will make our sprite too fat, so we
-		//      generate a corrected 4:3 screen width based on our
-		//      height, then generate the x-scale based on that.
-		int cswidth, crvwidth;
-		cswidth = (4 * screen->height) / 3;
-		if (setblocks < 10)
-			crvwidth = ((setblocks * cswidth) / 10) & (~(15 >> (screen->is8bit() ? 0 : 2)));
-		else
-			crvwidth = cswidth;
-		pspritexscale = (((crvwidth >> detailxshift) / 2) << FRACBITS) / 160;
-	}
+	// [AM] Using centerxfrac will make our sprite too fat, so we
+	//      generate a corrected 4:3 screen width based on our
+	//      height, then generate the x-scale based on that.
+	int cswidth, crvwidth;
+	cswidth = (4 * screen->height) / 3;
+	if (setblocks < 10)
+		crvwidth = ((setblocks * cswidth) / 10) & (~(15 >> (screen->is8bit() ? 0 : 2)));
 	else
-	{
-		pspritexscale = centerxfrac / 160;
-	}
+		crvwidth = cswidth;
+	pspritexscale = (((crvwidth >> detailxshift) / 2) << FRACBITS) / 160;
+
 	pspriteyscale = FixedMul(pspritexscale, yaspectmul);
 	pspritexiscale = FixedDiv(FRACUNIT, pspritexscale);
 

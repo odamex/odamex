@@ -753,7 +753,6 @@ EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showtime)
 EXTERN_CVAR (am_classicmapstring)
 EXTERN_CVAR (am_usecustomcolors)
-EXTERN_CVAR (r_widescreen)
 EXTERN_CVAR (st_scale)
 EXTERN_CVAR (r_stretchsky)
 EXTERN_CVAR (r_skypalette)
@@ -1005,6 +1004,7 @@ static void SetModesMenu (int w, int h, int bits);
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
+EXTERN_CVAR (vid_widescreen)
 
 static cvar_t DummyDepthCvar (NULL, NULL, "", CVARTYPE_NONE, 0);
 
@@ -1028,14 +1028,6 @@ static value_t DetailModes[] = {
 	{ 3.0, "Double Horiz & Vert" }
 };
 
-static value_t Widescreen[] =
-{
-	{ 0.0, "Stretch" },
-	{ 1.0, "Zoom" },
-	{ 2.0, "Wide or Stretch" },
-	{ 3.0, "Wide or Zoom" }
-};
-
 static menuitem_t ModesItems[] = {
 //	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
 	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
@@ -1044,7 +1036,7 @@ static menuitem_t ModesItems[] = {
 #else
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
 #endif
-	{ discrete,	"Widescreen",			{&r_widescreen},		{4.0}, {0.0},	{0.0},  {Widescreen}} ,
+	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },

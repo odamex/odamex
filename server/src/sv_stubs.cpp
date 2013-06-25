@@ -53,5 +53,9 @@ void AM_Stop(void) {}
 
 void RefreshPalettes (void) {}
 
+CVAR_FUNC_IMPL (sv_allowwidescreen)
+{
+}
+
 VERSION_CONTROL (sv_stubs_cpp, "$Id: sv_stubs.cpp $")
 

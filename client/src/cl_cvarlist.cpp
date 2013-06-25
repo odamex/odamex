@@ -380,6 +380,8 @@ CVAR (vid_defwidth, "640", "",	CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABL
 CVAR (vid_defheight, "480", "",	CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Default bitdepth
 CVAR (vid_defbits, "8", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Use wide field-of-view with widescreen video modes.
+CVAR_FUNC_DECL (vid_widescreen, "0", "Use wide field-of-view with widescreen video modes.", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Force video mode
 CVAR (vid_autoadjust, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Frames per second counter
@@ -394,9 +396,6 @@ CVAR_FUNC_DECL (vid_capfps, "1", "Limit to 35fps", CVARTYPE_BOOL, CVAR_ARCHIVE)
 #endif
 // TODO: document
 CVAR_FUNC_DECL (screenblocks, "10", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// How to handle widescreen resolutions
-CVAR_FUNC_DECL (r_widescreen, "3", "Determine how widescreen video modes are handled.\n// 0: Stretched to fit.\n// 1: Zoomed-in field of view.\n// 2: Widened field-of-view (true widescreen) with a stretched fallback.\n// 3: Widened field-of-view (true widescreen) with a zoomed fallback.",
-                CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Older (Doom-style) FPS counter
 CVAR (vid_ticker, "0", "",	CVARTYPE_BOOL, 0)
 // Resizes the window by a scale factor
