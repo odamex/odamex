@@ -227,20 +227,25 @@ void I_Sleep(int milliseconds)
 	SDL_Delay(milliseconds);
 }
 
+//
+// I_UnwrapTime
+//
+// [SL] - Handles 32-bit integer wrap-around with time values.
 // denis - use this unless you want your program
 // to get confused every 49 days due to DWORD limit
-QWORD I_UnwrapTime(DWORD now32)
+//
+static uint64_t I_UnwrapTime(uint32_t val32)
 {
-	static QWORD last = 0;
-	QWORD now = now32;
-	static QWORD max = std::numeric_limits<DWORD>::max();
+	static const uint64_t mask = 0xFFFFFFFF;
+	static uint64_t last_time = 0;
+	uint64_t current_time = val32;
 
-	if(now < last%max)
-		last += (max-(last%max)) + now;
+	if (current_time < (last_time & mask))      // just wrapped around
+		last_time += mask + 1 - (last_time & mask) + current_time;
 	else
-		last = now;
+		last_time = current_time;
 
-	return last;
+	return last_time;
 }
 
 // [RH] Returns time in milliseconds
