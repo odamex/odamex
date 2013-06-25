@@ -1123,15 +1123,15 @@ void D_AddCmdParameterFiles(void)
 void D_RunTics(void (*logic_func)(), void(*render_func)())
 {
 	static const double fixed_frame_time = 1000.0 / double(TICRATE);
-	static QWORD current_time = I_MSTime();
+	static unsigned int current_time = I_MSTime();
 	static double time_accum = 0.0;
 
 	bool fixed_logic_ticrate = !timingdemo;
 	bool fixed_render_ticrate = !timingdemo && capfps;
 
-	QWORD new_time = I_MSTime();
+	unsigned int new_time = I_MSTime();
 
-	QWORD frame_time = new_time - current_time;
+	unsigned int frame_time = new_time - current_time;
 	current_time = new_time;
 
 	time_accum += frame_time;
@@ -1155,12 +1155,13 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 
 	if (fixed_logic_ticrate && fixed_render_ticrate)
 	{
-		QWORD delta_time = I_MSTime() - new_time - 1;
+		unsigned int delta_time = I_MSTime() - new_time;
 
-		if (delta_time >= fixed_frame_time)
-			I_Sleep(1);
-		else
+		// sleep until the next tic starts
+		if (delta_time < fixed_frame_time)
 			I_Sleep(fixed_frame_time - delta_time);
+		else
+			I_Sleep(1);
 	}
 	else
 	{

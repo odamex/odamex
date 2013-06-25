@@ -125,6 +125,38 @@ bool I_HardwareInitialized()
 
 // VIDEO WRAPPERS ---------------------------------------------------------
 
+void I_DrawFPS()
+{
+	static unsigned int last_time = I_MSTime();
+	static unsigned int time_accum = 0;
+	static unsigned int frame_count = 0;
+
+	unsigned int current_time = I_MSTime();
+	unsigned int delta_time = current_time - last_time;
+	last_time = current_time;
+	frame_count++;
+
+	if (delta_time > 0)
+	{
+		static double last_fps = 0.0;
+		static char fpsbuff[40];
+
+		int chars = sprintf(fpsbuff, "%3u ms (%.2f fps)", delta_time, last_fps);
+		screen->Clear(0, screen->height - 8, chars * 8, screen->height, 0);
+		screen->PrintStr(0, screen->height - 8, fpsbuff, chars);
+
+		time_accum += delta_time;
+
+		// calculate last_fps every 1000ms
+		if (time_accum > 1000)
+		{
+			last_fps = double(1000 * frame_count) / time_accum;
+			time_accum = 0;
+			frame_count = 0;
+		}
+	}
+}
+
 void I_BeginUpdate ()
 {
 	screen->Lock ();
@@ -139,36 +171,7 @@ void I_FinishUpdate ()
 {
 	// Draws frame time and cumulative fps
 	if (vid_fps)
-	{
-		static double last_fps = 0.0;
-		static QWORD last_time = I_MSTime();
-		static QWORD time_accum = 0;
-		static unsigned int frame_count = 0;
-
-		QWORD current_time = I_MSTime();
-		QWORD delta_time = current_time - last_time;
-		last_time = current_time;
-
-		frame_count++;
-
-		if (delta_time > 0)
-		{
-			char fpsbuff[40];
-			int chars = sprintf(fpsbuff, "%3llu ms (%.2f fps)", delta_time, last_fps);
-			screen->Clear(0, screen->height - 8, chars * 8, screen->height, 0);
-			screen->PrintStr(0, screen->height - 8, fpsbuff, chars);
-
-			time_accum += delta_time;
-
-			// calculate last_fps every 1000ms
-			if (time_accum > 1000)
-			{
-				last_fps = double(1000 * frame_count) / time_accum;
-				time_accum = 0;
-				frame_count = 0;
-			}
-		}
-	}
+		I_DrawFPS();
 
     // draws little dots on the bottom of the screen
     if (vid_ticker)
