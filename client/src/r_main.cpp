@@ -1220,6 +1220,10 @@ void R_ResetDrawFuncs()
 	{
 		R_SetFlatDrawFuncs();
 	}
+	else if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
 	else
 	{
 		colfunc = basecolfunc;
@@ -1235,6 +1239,10 @@ void R_ResetDrawFuncs()
 void R_SetLucentDrawFuncs()
 {
 	if (r_drawflat)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (nodrawers)
 	{
 		R_SetBlankDrawFuncs();
 	}
@@ -1254,6 +1262,10 @@ void R_SetTranslatedDrawFuncs()
 	{
 		R_SetFlatDrawFuncs();
 	}
+	else if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
 	else
 	{
 		colfunc = transcolfunc;
@@ -1267,6 +1279,10 @@ void R_SetTranslatedDrawFuncs()
 void R_SetTranslatedLucentDrawFuncs()
 {
 	if (r_drawflat)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (nodrawers)
 	{
 		R_SetBlankDrawFuncs();
 	}
