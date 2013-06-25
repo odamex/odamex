@@ -82,13 +82,13 @@ public:
 	int height;
 	int pitch;
 	inline bool is8bit() const { return bits == 8; };
-	inline bool isProtectedRes() const {                      // [ML] If this is 320x200 or 640x400, the resolutions
-        if ((width == 320 && height <= 200) || (width == 640 && height <= 400))    // "protected" from aspect ratio correction.
-        {
-            return true;
-        }
 
-        return false;
+	// [ML] If this is 320x200 or 640x400, the resolutions
+	// "protected" from aspect ratio correction.
+	// [SL] extended to additional similarly proportioned video modes
+	inline bool isProtectedRes() const
+	{
+		return 10 * width / height == 16;
 	};
 
 	int m_LockCount;
@@ -490,7 +490,7 @@ int V_GetColorFromString (const argb_t *palette, const char *colorstring);
 std::string V_GetColorStringByName (const char *name);
 
 
-BOOL V_SetResolution (int width, int height, int bpp);
+bool V_SetResolution (int width, int height, int bpp);
 
 template<>
 forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)
@@ -508,6 +508,10 @@ forceinline argb_t rt_blend2(const argb_t bg, const int bga, const argb_t fg, co
 {
 	return alphablend2a(bg, bga, fg, fga);
 }
+
+bool V_UsePillarBox();
+bool V_UseLetterBox();
+bool V_UseWidescreen();
 
 #endif // __V_VIDEO_H__
 

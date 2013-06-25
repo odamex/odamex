@@ -754,7 +754,6 @@ EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showtime)
 EXTERN_CVAR (am_classicmapstring)
 EXTERN_CVAR (am_usecustomcolors)
-EXTERN_CVAR (r_widescreen)
 EXTERN_CVAR (st_scale)
 EXTERN_CVAR (r_stretchsky)
 EXTERN_CVAR (r_skypalette)
@@ -1005,6 +1004,7 @@ static void SetModesMenu (int w, int h, int bits);
 
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
+EXTERN_CVAR (vid_widescreen)
 
 EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
@@ -1027,14 +1027,6 @@ static value_t DetailModes[] = {
 	{ 3.0, "Double Horiz & Vert" }
 };
 
-static value_t Widescreen[] =
-{
-	{ 0.0, "Stretch" },
-	{ 1.0, "Zoom" },
-	{ 2.0, "Wide or Stretch" },
-	{ 3.0, "Wide or Zoom" }
-};
-
 static menuitem_t ModesItems[] = {
 	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
 #ifdef _XBOX
@@ -1043,7 +1035,7 @@ static menuitem_t ModesItems[] = {
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
 #endif
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
-	{ discrete,	"Widescreen",			{&r_widescreen},		{4.0}, {0.0},	{0.0},  {Widescreen}} ,
+	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },

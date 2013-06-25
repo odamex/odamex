@@ -72,9 +72,9 @@ CVAR_FUNC_IMPL (vid_winscale)
 	else if (Video)
 	{
 		Video->SetWindowedScale (var);
-		NewWidth = screen->width;
-		NewHeight = screen->height;
-		NewBits = DisplayBits;
+		NewWidth = I_GetVideoWidth();
+		NewHeight = I_GetVideoHeight(); 
+		NewBits = I_GetVideoBitDepth(); 
 		setmodeneeded = true;
 	}
 }
@@ -125,6 +125,38 @@ bool I_HardwareInitialized()
 
 // VIDEO WRAPPERS ---------------------------------------------------------
 
+void I_DrawFPS()
+{
+	static unsigned int last_time = I_MSTime();
+	static unsigned int time_accum = 0;
+	static unsigned int frame_count = 0;
+
+	unsigned int current_time = I_MSTime();
+	unsigned int delta_time = current_time - last_time;
+	last_time = current_time;
+	frame_count++;
+
+	if (delta_time > 0)
+	{
+		static double last_fps = 0.0;
+		static char fpsbuff[40];
+
+		int chars = sprintf(fpsbuff, "%3u ms (%.2f fps)", delta_time, last_fps);
+		screen->Clear(0, screen->height - 8, chars * 8, screen->height, 0);
+		screen->PrintStr(0, screen->height - 8, fpsbuff, chars);
+
+		time_accum += delta_time;
+
+		// calculate last_fps every 1000ms
+		if (time_accum > 1000)
+		{
+			last_fps = double(1000 * frame_count) / time_accum;
+			time_accum = 0;
+			frame_count = 0;
+		}
+	}
+}
+
 void I_BeginUpdate ()
 {
 	screen->Lock ();
@@ -144,29 +176,7 @@ void I_FinishUpdate ()
 {
 	// Draws frame time and cumulative fps
 	if (vid_fps)
-	{
-		static DWORD lastms = 0, lastsec = 0;
-		static int framecount = 0, lastcount = 0;
-		char fpsbuff[40];
-		int chars;
-
-		QWORD ms = I_MSTime ();
-		QWORD howlong = ms - lastms;
-		if (howlong > 0)
-		{
-			chars = sprintf(fpsbuff, "%3u ms (%3d fps)", (unsigned int)howlong, lastcount);
-			screen->Clear (0, screen->height - 8, chars * 8, screen->height, 0);
-			screen->PrintStr (0, screen->height - 8, (char *)&fpsbuff[0], chars);
-			if (lastsec < ms / 1000)
-			{
-				lastcount = framecount / (ms/1000 - lastsec);
-				lastsec = ms / 1000;
-				framecount = 0;
-			}
-			framecount++;
-		}
-		lastms = ms;
-	}
+		I_DrawFPS();
 
     // draws little dots on the bottom of the screen
     if (vid_ticker)
@@ -328,7 +338,22 @@ bool I_SetOverscan (float scale)
 	return Video->SetOverscan (scale);
 }
 
-BOOL I_SetMode (int &width, int &height, int &bits)
+int I_GetVideoWidth()
+{
+	return Video->GetWidth();
+}
+
+int I_GetVideoHeight()
+{
+	return Video->GetHeight();
+}
+
+int I_GetVideoBitDepth()
+{
+	return Video->GetBitDepth();
+}
+
+bool I_SetMode(int &width, int &height, int &bits)
 {
 	bool fs = false;
 	int tbits = bits;
@@ -351,26 +376,26 @@ BOOL I_SetMode (int &width, int &height, int &bits)
 		break;
 	}
 
-	bool res = Video->SetMode (width, height, tbits, fs);
-	if (res) return true;
+	if (Video->SetMode(width, height, tbits, fs))
+		return true;
 
 	// Try the opposite bit mode:
 	tbits = bits == 32 ? 8 : 32;
-	res = Video->SetMode (width, height, tbits, fs);
-	if (res) return true;
+	if (Video->SetMode(width, height, tbits, fs))
+		return true;
 
 	// Switch the bit mode back:
 	tbits = bits;
 
 	// Try the closest resolution:
 	I_ClosestResolution (&width, &height);
-	res = Video->SetMode (width, height, tbits, fs);
-	if (res) return true;
+	if (Video->SetMode(width, height, tbits, fs))
+		return true;
 
 	// Try the opposite bit mode:
 	tbits = bits == 32 ? 8 : 32;
-	res = Video->SetMode (width, height, tbits, fs);
-	if (res) return true;
+	if (Video->SetMode(width, height, tbits, fs))
+		return true;
 
 	// Just couldn't get it:
 	return false;
@@ -620,6 +645,10 @@ void IVideo::SetWindowedScale (float scale) {}
 bool IVideo::CanBlit () { return true; }
 
 bool IVideo::SetOverscan (float scale) { return true; }
+
+int IVideo::GetWidth() const { return 0; }
+int IVideo::GetHeight() const { return 0; }
+int IVideo::GetBitDepth() const { return 0; }
 
 bool IVideo::SetMode (int width, int height, int bits, bool fs) { return true; }
 void IVideo::SetPalette (argb_t *palette) {}

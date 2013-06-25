@@ -101,9 +101,9 @@ int		NewWidth, NewHeight, NewBits;
 CVAR_FUNC_IMPL (vid_fullscreen)
 {
 	setmodeneeded = true;
-	NewWidth = screen->width;
-	NewHeight = screen->height;
-	NewBits = DisplayBits;
+	NewWidth = I_GetVideoWidth();
+	NewHeight = I_GetVideoHeight();
+	NewBits = I_GetVideoBitDepth();
 }
 
 CVAR_FUNC_IMPL (vid_32bpp)
@@ -460,38 +460,109 @@ void DCanvas::Blit (int srcx, int srcy, int srcwidth, int srcheight,
 	I_Blit (this, srcx, srcy, srcwidth, srcheight, dest, destx, desty, destwidth, destheight);
 }
 
+CVAR_FUNC_IMPL (vid_widescreen)
+{
+	static bool last_value = !var;	// force setmodeneeded when loading cvar
+	if (last_value != var)
+		setmodeneeded = true;
+	last_value = var;
+}
+
+CVAR_FUNC_IMPL (sv_allowwidescreen)
+{
+	// change setmodeneeded when the value of sv_allowwidescreen
+	// changes our ability to use wide-fov
+	bool wide_fov = V_UseWidescreen() || V_UseLetterBox();
+	static bool last_value = !wide_fov; 
+
+	if (last_value != wide_fov)
+		setmodeneeded = true;
+	last_value = wide_fov;
+}
+
+//
+// V_UsePillarBox
+//
+// Determines if the display should use pillarboxing. If the resolution is a
+// widescreen mode and either the user or the server doesn't allow
+// widescreen usage, use pillarboxing.
+//
+bool V_UsePillarBox()
+{
+	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+		return false;
+	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
+		return false;
+	
+	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
+	return (!vid_widescreen || (!serverside && !sv_allowwidescreen)) && ratio > (4.0f / 3.0f);
+}
+
+//
+// V_UseLetterBox
+//
+// Determines if the display should use letterboxing. If the resolution is a
+// standard 4:3 mode and both the user and the server allow widescreen
+// usage, use letterboxing.
+//
+bool V_UseLetterBox()
+{
+	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+		return false;
+	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
+		return false;
+	
+	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
+	return (vid_widescreen && (serverside || sv_allowwidescreen)) && ratio <= (4.0f / 3.0f);
+}
+
+//
+// V_UseWidescreen
+//
+//
+bool V_UseWidescreen()
+{
+	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+		return false;
+	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
+		return false;
+	
+	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
+	return (vid_widescreen && (serverside || sv_allowwidescreen)) && ratio > (4.0f / 3.0f);
+}
 
 //
 // V_SetResolution
 //
-BOOL V_DoModeSetup (int width, int height, int bits)
+static bool V_DoModeSetup(int width, int height, int bits)
 {
 	int basew = 320, baseh = 200;
 
 	// Free the virtual framebuffer
-	if(screen)
+	if (screen)
 	{
 		I_FreeScreen(screen);
 		screen = NULL;
 	}
 
-	if (!I_SetMode (width, height, bits))
+	if (!I_SetMode(width, height, bits))
 		return false;
 
 	I_SetOverscan (vid_overscan);
 
-	RealXfac = (((static_cast<float>(height) * 4.0f)/3.0f) / static_cast<float>(basew));
-	RealYfac = (((static_cast<float>(width) * 3.0f)/4.0f) / static_cast<float>(baseh));
+	if (V_UsePillarBox())
+		width = 4.0f * height / 3.0f;
+	else if (V_UseLetterBox())
+		height = 9.0f * width / 16.0f;
+
+	RealXfac = 4.0f * height / (3.0f * basew);
+	RealYfac = 4.0f * width / (3.0f * baseh);
 
 	if (!RealXfac)
-    {
         RealXfac = 1.0f;
-    }
 
 	if (!RealYfac)
-    {
         RealYfac = 1.0f;
-    }
 
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows con_scaletext to have some purpose...
@@ -513,83 +584,85 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	DisplayHeight = height;
 	DisplayBits = bits;
 
-	SquareWidth = (static_cast<float>(DisplayHeight) * 4.0f) / 3.0f;
-
+	SquareWidth = 4.0f * DisplayHeight / 3.0f;
+	
 	if (SquareWidth > DisplayWidth)
         SquareWidth = DisplayWidth;
 
 	// Allocate a new virtual framebuffer
-	if (vid_fullscreen)
-		screen = I_AllocateScreen (width, height, bits, false);
-	else
-		screen = I_AllocateScreen (width, height, bits, true);
+	bool primary = (vid_fullscreen == 0);
+
+	// [SL] Add a bit to the screen width if it's a power-of-two to avoid
+	// cache thrashing
+	int cache_fudge = (width % 256) == 0 ? 4 : 0;
+	
+	screen = I_AllocateScreen(width + cache_fudge, height, bits, primary);
 
 	V_ForceBlend (0,0,0,0);
 	GammaAdjustPalettes ();
 		RefreshPalettes ();
 	R_ReinitColormap ();
 
-	R_InitColumnDrawers ();
-	R_MultiresInit ();
+	R_InitColumnDrawers();
+	R_MultiresInit();
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
 	I_FlushInput();
-
-//	M_RefreshModesList (); // [Toke - crap]
 
     gotconback = false;
 
 	return true;
 }
 
-BOOL V_SetResolution (int width, int height, int bits)
+bool V_SetResolution(int width, int height, int bits)
 {
-	int oldwidth, oldheight;
-	int oldbits;
+	int oldwidth, oldheight, oldbits;
 
-	if (screen) {
-		oldwidth = screen->width;
-		oldheight = screen->height;
-		oldbits = screen->bits;
-	} else {
+	if (screen)
+	{
+		oldwidth = I_GetVideoWidth(); 
+		oldheight = I_GetVideoHeight(); 
+		oldbits = I_GetVideoBitDepth(); 
+	}
+	else
+	{
 		// Harmless if screen wasn't allocated
 		oldwidth = width;
 		oldheight = height;
 		oldbits = bits;
 	}
 
-	if ((int)(vid_autoadjust)) {
-		if (vid_fullscreen) {
+	// Make sure we don't set the resolution smaller than Doom's original 320x200
+	// resolution. Bad things might happen. 
+	width = clamp(width, 320, MAXWIDTH);
+	height = clamp(height, 200, MAXHEIGHT);
+
+	if ((int)(vid_autoadjust))
+	{
+		if (vid_fullscreen)
+		{
 			// Fullscreen needs to check for a valid resolution.
 			I_ClosestResolution(&width, &height);
-		} else {
-			// Windowed mode needs to have a check to make sure we don't
-			// make a window tinier than Doom's default, otherwise bad
-			// things might happen.
-			if (width < 320) {
-				width = 320;
-			}
-			if (height < 200) {
-				height = 200;
-			}
 		}
 
-		if (!I_CheckResolution (width, height)) {				// Try specified resolution
-			if (!I_CheckResolution (oldwidth, oldheight)) {		// Try previous resolution (if any)
+		// Try specified resolution
+		if (!I_CheckResolution(width, height))
+		{
+			// Try the previous resolution (if any)
+			if (!I_CheckResolution(oldwidth, oldheight))
 		   		return false;
-			} else {
-				width = oldwidth;
-				height = oldheight;
-				bits = oldbits;
-			}
+
+			width = oldwidth;
+			height = oldheight;
+			bits = oldbits;
 		}
 	}
-	return V_DoModeSetup (width, height, bits);
+
+	return V_DoModeSetup(width, height, bits);
 }
 
 BEGIN_COMMAND (vid_setmode)
 {
-	BOOL	goodmode = false;
 	int		width = 0, height = 0;
 	int		bits = DisplayBits;
 
@@ -599,45 +672,38 @@ BEGIN_COMMAND (vid_setmode)
 		return;
 	}
 	// Width
-	if (argc > 1) {
+	if (argc > 1) 
 		width = atoi(argv[1]);
-	}
+	
 	// Height (optional)
-	if (argc > 2) {
+	if (argc > 2)
 		height = atoi(argv[2]);
-	}
-	if (!height) {
-		height = screen->height;
-	}
+	if (height == 0)
+		height = I_GetVideoHeight(); 
+
 	// Bits
 	bits = (int)vid_32bpp ? 32 : 8;
 
-	if (width < 320 || height < 200) {
+	if (width < 320 || height < 200) 
 		Printf(PRINT_HIGH, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
-		if (width < 320)
-			width = 320;
-		if (height < 200)
-			height = 200;
-	}
 
-	if (width > MAXWIDTH || height > MAXHEIGHT) {
+	if (width > MAXWIDTH || height > MAXHEIGHT)
 		Printf(PRINT_HIGH, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
-		if (width > MAXWIDTH)
-			width = MAXWIDTH;
-		if (height > MAXHEIGHT)
-			height = MAXHEIGHT;
-	}
 
-	if (I_CheckResolution(width, height)) {
+	if (I_CheckResolution(width, height))
+	{
 		// The actual change of resolution will take place
 		// near the beginning of D_Display().
-		if (gamestate != GS_STARTUP) {
+		if (gamestate != GS_STARTUP)
+		{
 			setmodeneeded = true;
 			NewWidth = width;
 			NewHeight = height;
 			NewBits = bits;
 		}
-	} else {
+	}
+	else
+	{
 		Printf(PRINT_HIGH, "Unknown resolution %dx%d\n", width, height);
 	}
 }
@@ -645,8 +711,9 @@ END_COMMAND (vid_setmode)
 
 BEGIN_COMMAND (checkres)
 {
-    Printf (PRINT_HIGH, "Resolution: %d x %d x %d (%s)\n", screen->width, screen->height, screen->bits,
-        (vid_fullscreen ? "FULLSCREEN" : "WINDOWED")); // NES - Simple resolution checker.
+    Printf (PRINT_HIGH, "Resolution: %d x %d x %d (%s)\n",
+			I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth(),
+        	(vid_fullscreen ? "FULLSCREEN" : "WINDOWED")); // NES - Simple resolution checker.
 }
 END_COMMAND (checkres)
 
