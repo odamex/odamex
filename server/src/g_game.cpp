@@ -88,8 +88,8 @@ BOOL			sendcenterview;			// send a center view event next tic
 BOOL			menuactive;				// only to make sure p_tick doesn't bitch
 
 bool			timingdemo; 			// if true, exit with report on completion
-BOOL 			nodrawers;				// for comparative timing purposes
-BOOL 			noblit; 				// for comparative timing purposes
+bool 			nodrawers;				// for comparative timing purposes
+bool 			noblit; 				// for comparative timing purposes
 
 BOOL	 		viewactive;
 
