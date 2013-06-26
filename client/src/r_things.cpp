@@ -101,8 +101,8 @@ spriteframe_t	sprtemp[MAX_SPRITE_FRAMES];
 int 			maxframe;
 static const char*		spritename;
 
-int patchlumpnum;
-int patchcolnum[MAXWIDTH];
+static tallpost_t* spriteposts[MAXWIDTH];
+
 
 // [RH] skin globals
 playerskin_t	*skins;
@@ -696,7 +696,7 @@ void R_DrawMaskedColumn(tallpost_t *post)
 
 void R_BlastSpriteColumn(void (*drawfunc)())
 {
-	tallpost_t* post = R_GetPatchColumn(patchlumpnum, patchcolnum[dc_x]);
+	tallpost_t* post = dc_post;
 
 	sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
 	dc_iscale = 0xffffffffu / (unsigned)spryscale;
@@ -827,23 +827,24 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	else if (translated)
 		R_SetTranslatedDrawFuncs();
 
-	dc_iscale = FixedDiv (FRACUNIT, vis->yscale) + 1;
+	dc_iscale = FixedDiv(FRACUNIT, vis->yscale) + 1;
 	dc_texturemid = vis->texturemid;
 	spryscale = vis->yscale;
 	sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
 
-	patchlumpnum = vis->patch;
-
 	// [SL] set up the array that indicates which patch column to use for each screen column
 	fixed_t colfrac = vis->startfrac;
-	for (int i = vis->x1; i <= vis->x2; i++)
+	for (int x = vis->x1; x <= vis->x2; x++)
 	{
-		patchcolnum[i] = colfrac >> FRACBITS;
+		spriteposts[x] = R_GetPatchColumn(vis->patch, colfrac >> FRACBITS);
 		colfrac += vis->xiscale;
 	}
 
 	bool rend_multiple_columns = r_columnmethod && !fuzz_effect;
-	R_RenderColumnRange(vis->x1, vis->x2, rend_multiple_columns, SpriteColumnBlaster, SpriteHColumnBlaster, false);
+
+	// TODO: change from negonearray to actual top of sprite
+	R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray,
+			spriteposts, SpriteColumnBlaster, SpriteHColumnBlaster, false, rend_multiple_columns);
 
 	R_ResetDrawFuncs();
 }

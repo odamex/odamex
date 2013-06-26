@@ -183,7 +183,7 @@ static void R_FillWallHeightArray(
 //
 static void R_BlastMaskedSegColumn(void (*drawfunc)())
 {
-	tallpost_t* post = masked_midposts[dc_x];
+	tallpost_t* post = dc_post;
 
 	if (post != NULL && spryscale > 0)
 	{
@@ -239,153 +239,33 @@ static void R_BlastMaskedSegColumn(void (*drawfunc)())
 	spryscale += rw_scalestep;
 }
 
-
-inline void R_BlastSolidSegColumnTier(void (*drawfunc)(), const tallpost_t* post, int yl, int yh, fixed_t offset)
-{
-	dc_yl = MAX(yl, 0);
-	dc_yh = MIN(yh - 1, viewheight - 1);
-
-	if (dc_yl <= dc_yh)
-	{
-		dc_source = post->data();
-		dc_textureheight = post->length << FRACBITS;
-		// TODO: dc_texturefrac should take y-scaling of textures into account
-		dc_texturefrac = offset + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale);
-		drawfunc();
-	}
-} 
-
-
 //
 // R_BlastSolidSegColumn
 //
-// Clips each of the three possible seg tiers of the column (top, mid, and bottom),
-// sets the appropriate drawcolumn variables and calls drawfunc() for each
-// tier to render the column.
-//
-// The clipping of the seg tiers also vertically clips the ceiling and floor
-// planes.
 static void R_BlastSolidSegColumn(void (*drawfunc)())
 {
-/*
-	rw_scale = wallscalex[dc_x];
-	if (rw_scale > 0)
-		dc_iscale = 0xffffffffu / (unsigned)rw_scale;
+	if (wallscalex[dc_x] <= 0)
+		return;
 
-	walltopf[dc_x] = MAX(walltopf[dc_x], ceilingclip[dc_x]);
-	wallbottomf[dc_x] = MIN(wallbottomf[dc_x], floorclip[dc_x]);
+	dc_iscale = 0xffffffffu / unsigned(wallscalex[dc_x]);
+	dc_source = dc_post->data();
+	// TODO: dc_texturefrac should take y-scaling of textures into account
+	dc_texturefrac = dc_texturemid + FixedMul((dc_yl - centery + 1) << FRACBITS, dc_iscale);
 
-	// mark ceiling-plane areas
-	if (markceiling)
-	{
-		int top = ceilingclip[dc_x];
-		if (top < 0)
-			top = 0;
-
-		int bottom = MIN(walltopf[dc_x], floorclip[dc_x]) - 1;
-		if (bottom >= viewheight)
-			bottom = viewheight - 1;
-
-		if (top <= bottom)
-		{
-			ceilingplane->top[dc_x] = top;
-			ceilingplane->bottom[dc_x] = bottom;
-		}
-	}
-
-	// mark floor-plane areas
-	if (markfloor)
-	{
-		int top = MAX(wallbottomf[dc_x], ceilingclip[dc_x]);
-		if (top < 0)
-			top = 0;
-
-		int bottom = floorclip[dc_x] - 1;
-		if (bottom >= viewheight)
-			bottom = viewheight - 1;
-
-		if (top <= bottom)
-		{
-			floorplane->top[dc_x] = top;
-			floorplane->bottom[dc_x] = bottom;
-		}
-	}
-
-	// draw the wall tiers
-	if (midtexture)
-	{
-		walltopf[dc_x] = MIN(MAX(walltopf[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
-
-		R_BlastSolidSegColumnTier(drawfunc, dc_midposts[dc_x], walltopf[dc_x], wallbottomf[dc_x], rw_midtexturemid);
-
-		// indicate that no further drawing can be done in this column
-		ceilingclip[dc_x] = floorclipinitial[dc_x];
-		floorclip[dc_x] = ceilingclipinitial[dc_x];
-
-	}
-	else
-	{
-		if (toptexture)
-		{
-			walltopb[dc_x] = MAX(MIN(walltopb[dc_x], floorclip[dc_x]), walltopf[dc_x]);
-
-			R_BlastSolidSegColumnTier(drawfunc, dc_topposts[dc_x], walltopf[dc_x], walltopb[dc_x], rw_toptexturemid);
-
-			ceilingclip[dc_x] = walltopb[dc_x];
-		}
-		else if (markceiling)
-		{
-			// no top wall
-			ceilingclip[dc_x] = walltopf[dc_x];
-		}
-		
-		if (bottomtexture)
-		{
-			wallbottomb[dc_x] = MIN(MAX(wallbottomb[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
-
-			R_BlastSolidSegColumnTier(drawfunc, dc_bottomposts[dc_x], wallbottomb[dc_x], wallbottomf[dc_x], rw_bottomtexturemid);
-
-			floorclip[dc_x] = wallbottomb[dc_x];
-		}
-		else if (markfloor)
-		{
-			// no bottom wall
-			floorclip[dc_x] = wallbottomf[dc_x];
-		}
-
-		if (maskedtexture)
-		{
-			// save texturecol for backdrawing of masked mid texture
-			int colnum = R_TexScaleX(texoffs[dc_x], maskedtexture) >> FRACBITS;
-			masked_midposts[dc_x] = R_GetTextureColumn(maskedtexture, colnum);
-		}
-	}
-
-	// cph - if we completely blocked further sight through this column,
-	// add this info to the solid columns array
-	if ((markceiling || markfloor) && (floorclip[dc_x] <= ceilingclip[dc_x]))
-		solidcol[dc_x] = 1;
-
-	rw_light += rw_lightstep;
-*/
+	if (dc_yl <= dc_yh)
+		drawfunc();
 }
-
 
 //
 // R_BlastSkyColumn
 //
 static void R_BlastSkyColumn(void (*drawfunc)(void))
 {
-	dc_yl = skyplane->top[dc_x];
-	dc_yh = skyplane->bottom[dc_x];
+	dc_source = dc_post->data();
+	dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
 
-	if (dc_yl >= 0 && dc_yl <= dc_yh)
-	{
-		dc_source = dc_midposts[dc_x]->data();
-		dc_textureheight = dc_midposts[dc_x]->length << FRACBITS;
-		dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
+	if (dc_yl <= dc_yh)
 		drawfunc();
-	}
 }
 
 inline void SolidColumnBlaster()
@@ -418,6 +298,21 @@ inline void SkyHColumnBlaster()
 	R_BlastSkyColumn(hcolfunc_pre);
 }
 
+
+inline void R_ColumnSetup(int x, int* top, int* bottom, tallpost_t** posts, bool calc_light)
+{
+	if (calc_light)
+	{
+		int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+		dc_colormap = basecolormap.with(walllights[index]);
+	}
+
+	dc_yl = MAX(top[x], 0);
+	dc_yh = MIN(bottom[x], viewheight - 1);
+	dc_post = posts[x];
+}
+
+
 //
 // R_RenderColumnRange
 //
@@ -437,11 +332,11 @@ inline void SkyHColumnBlaster()
 //		C is about twice as fast as using R_RenderSegLoop1() with an
 //		assembly rendering function.
 //
-void R_RenderColumnRange(int start, int stop, bool columnmethod, void (*colblast)(), void (*hcolblast)(), bool calc_light)
+void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
+		tallpost_t** posts, void (*colblast)(), void (*hcolblast)(), bool calc_light, bool columnmethod)
 {
 	if (start > stop)
 		return;
-	dc_x = start;
 
 	if (calc_light)
 	{
@@ -466,104 +361,79 @@ void R_RenderColumnRange(int start, int stop, bool columnmethod, void (*colblast
 	{
 		for (dc_x = start; dc_x <= stop; dc_x++)
 		{
-			if (calc_light)
-			{
-				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-				dc_colormap = basecolormap.with(walllights[index]);
-			}
-
+			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
 			colblast();
+			rw_light += rw_lightstep;
 		}
 	}
 	else
 	{
+		dc_x = start;
 		int blockend = (stop + 1) & ~3;
 
 		// blit until dc_x is DWORD aligned
 		while ((dc_x < blockend) && (dc_x & 3))
 		{
-			if (calc_light)
-			{
-				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-				dc_colormap = basecolormap.with(walllights[index]);
-			}
-
+			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
 			colblast();	
 			dc_x++;
+			rw_light += rw_lightstep;
 		}
 
 		// blit in DWORD blocks to a temporary buffer horizontally, with
 		// the columns interleaved, eg write to buf[0], buf[4], buf[8]
 		while (dc_x < blockend)
 		{
-			if (calc_light)
-			{
-				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-				dc_colormap = basecolormap.with(walllights[index]);
-			}
-
 			rt_initcols();
+			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
 			hcolblast();
 			dc_x++;
+			rw_light += rw_lightstep;
+			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
 			hcolblast();
 			dc_x++;
+			rw_light += rw_lightstep;
+			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
 			hcolblast();
 			dc_x++;
+			rw_light += rw_lightstep;
+			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
 			hcolblast();
 			dc_x++;
+			rw_light += rw_lightstep;
 			rt_draw4cols(dc_x - 4);
 		}
 
 		// blit any remaining pixels
 		while (dc_x <= stop)
 		{
-			if (calc_light)
-			{
-				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-				dc_colormap = basecolormap.with(walllights[index]);
-			}
-
+			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
 			colblast();	
 			dc_x++;
+			rw_light += rw_lightstep;
 		}
 	}
 }
 
+
 //
-// R_RenderSegLoop
+// R_RenderSolidSegRange
 //
-// Renders a solid seg
+// Clips each of the three possible seg tiers of the column (top, mid, and bottom),
+// sets the appropriate drawcolumn variables and calls R_RenderColumnRange for each
+// tier to render the range of columns.
 //
-void R_RenderSegRange(int start, int stop)
+// The clipping of the seg tiers also vertically clips the ceiling and floor
+// planes.
+//
+void R_RenderSolidSegRange(int start, int stop)
 {
-	void (*drawfunc)() = colfunc;
-	bool calc_light = true;
 	int count = stop - start + 1;
 	int initial_light = rw_light;
 
 	if (start > stop)
 		return;
 
-	if (calc_light)
-	{
-		if (fixedlightlev)
-		{
-			dc_colormap = basecolormap.with(fixedlightlev);
-			calc_light = false;
-		}
-		else if (fixedcolormap.isValid())
-		{
-			dc_colormap = fixedcolormap;	
-			calc_light = false;
-		}
-		else
-		{
-			if (!walllights)
-				walllights = scalelight[0];
-		}
-	}
-
-	
 	// clip the front of the walls to the ceiling and floor
 	for (int x = start; x <= stop; x++)
 	{
@@ -618,24 +488,14 @@ void R_RenderSegRange(int start, int stop)
 		// draw the middle wall tier
 		rw_light = initial_light;
 
-		for (dc_x = start; dc_x <= stop; dc_x++)
-		{
-			if (calc_light)
-			{
-				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-				dc_colormap = basecolormap.with(walllights[index]);
-			}
+		for (int x = start; x <= stop; x++)
+			walltopf[x] = MIN(MAX(walltopf[x], ceilingclip[x]), wallbottomf[x]);
+	
+		dc_textureheight = textureheight[midtexture];
+		dc_texturemid = rw_midtexturemid;
 
-			rw_scale = wallscalex[dc_x];
-			if (rw_scale > 0)
-				dc_iscale = 0xffffffffu / (unsigned)rw_scale;
-
-			walltopf[dc_x] = MIN(MAX(walltopf[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
-
-			R_BlastSolidSegColumnTier(drawfunc, dc_midposts[dc_x], walltopf[dc_x], wallbottomf[dc_x], rw_midtexturemid);
-
-			rw_light += rw_lightstep;
-		}
+		R_RenderColumnRange(start, stop, walltopf, wallbottomf, dc_midposts,
+					SolidColumnBlaster, SolidHColumnBlaster, true, r_columnmethod);
 
 		// indicate that no further drawing can be done in this column
 		memcpy(ceilingclip + start, floorclipinitial + start, count * sizeof(*ceilingclip));
@@ -648,24 +508,14 @@ void R_RenderSegRange(int start, int stop)
 			// draw the upper wall tier
 			rw_light = initial_light;
 
-			for (dc_x = start; dc_x <= stop; dc_x++)
-			{
-				if (calc_light)
-				{
-					int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-					dc_colormap = basecolormap.with(walllights[index]);
-				}
+			for (int x = start; x <= stop; x++)
+				walltopb[x] = MAX(MIN(walltopb[x], floorclip[x]), walltopf[x]);
 
-				rw_scale = wallscalex[dc_x];
-				if (rw_scale > 0)
-					dc_iscale = 0xffffffffu / (unsigned)rw_scale;
+			dc_textureheight = textureheight[toptexture];
+			dc_texturemid = rw_toptexturemid;
 
-				walltopb[dc_x] = MAX(MIN(walltopb[dc_x], floorclip[dc_x]), walltopf[dc_x]);
-
-				R_BlastSolidSegColumnTier(drawfunc, dc_topposts[dc_x], walltopf[dc_x], walltopb[dc_x], rw_toptexturemid);
-
-				rw_light += rw_lightstep;
-			}
+			R_RenderColumnRange(start, stop, walltopf, walltopb, dc_topposts,
+						SolidColumnBlaster, SolidHColumnBlaster, true, r_columnmethod);
 
 			memcpy(ceilingclip + start, walltopb + start, count * sizeof(*ceilingclip));
 		}
@@ -680,25 +530,14 @@ void R_RenderSegRange(int start, int stop)
 			// draw the lower wall tier
 			rw_light = initial_light;
 
-			for (dc_x = start; dc_x <= stop; dc_x++)
-			{
-				if (calc_light)
-				{
-					int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-					dc_colormap = basecolormap.with(walllights[index]);
-				}
+			for (int x = start; x <= stop; x++)
+				wallbottomb[x] = MIN(MAX(wallbottomb[x], ceilingclip[x]), wallbottomf[x]);
 
-				rw_scale = wallscalex[dc_x];
-				if (rw_scale > 0)
-					dc_iscale = 0xffffffffu / (unsigned)rw_scale;
+			dc_textureheight = textureheight[bottomtexture];
+			dc_texturemid = rw_bottomtexturemid;
 
-				wallbottomb[dc_x] = MIN(MAX(wallbottomb[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
-
-				R_BlastSolidSegColumnTier(drawfunc, dc_bottomposts[dc_x], wallbottomb[dc_x],
-											wallbottomf[dc_x], rw_bottomtexturemid);
-
-				rw_light += rw_lightstep;
-			}
+			R_RenderColumnRange(start, stop, wallbottomb, wallbottomf, dc_bottomposts,
+						SolidColumnBlaster, SolidHColumnBlaster, true, r_columnmethod);
 
 			memcpy(floorclip + start, wallbottomb + start, count * sizeof(*floorclip));
 		}
@@ -707,7 +546,6 @@ void R_RenderSegRange(int start, int stop)
 			// no lower wall
 			memcpy(floorclip + start, wallbottomf + start, count * sizeof(*floorclip));
 		}
-
 
 		if (maskedtexture)
 		{
@@ -813,7 +651,9 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	dc_textureheight = 256*FRACUNIT;
 
 	// draw the columns
-	R_RenderColumnRange(x1, x2, r_columnmethod, MaskedColumnBlaster, MaskedHColumnBlaster, true);
+	// TODO: change negonearray to the actual top/bottom
+	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts,
+			MaskedColumnBlaster, MaskedHColumnBlaster, true, r_columnmethod);
 }
 
 
@@ -895,17 +735,19 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	dc_iscale = skyiscale >> skystretch;
 	dc_texturemid = skytexturemid;
+	dc_textureheight = textureheight[skytex];
 	skyplane = pl;
 
 	// determine which texture posts will be used for each screen
 	// column in this range.
-	for (int i = pl->minx; i <= pl->maxx; i++)
+	for (int x = pl->minx; x <= pl->maxx; x++)
 	{
-		int colnum = ((((viewangle + xtoviewangle[i]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
-		dc_midposts[i] = R_GetTextureColumn(skytex, colnum);
+		int colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
+		dc_midposts[x] = R_GetTextureColumn(skytex, colnum);
 	}
 
-	R_RenderColumnRange(pl->minx, pl->maxx, r_columnmethod, SkyColumnBlaster, SkyHColumnBlaster, false);
+	R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
+			dc_midposts, SkyColumnBlaster, SkyHColumnBlaster, false, r_columnmethod);
 				
 	R_ResetDrawFuncs();
 }
@@ -1259,7 +1101,7 @@ void R_StoreWallRange(int start, int stop)
 		if (sidedef->midtexture)
 		{
 			// masked midtexture
-			maskedtexture = sidedef->midtexture;
+			maskedtexture = texturetranslation[sidedef->midtexture];
 			ds_p->midposts = masked_midposts = openings.alloc<tallpost_t*>(count) - start;
 		}
 
@@ -1331,7 +1173,7 @@ void R_StoreWallRange(int start, int stop)
 	else
 		markfloor = false;
 
-	R_RenderSegRange(start, stop);
+	R_RenderSolidSegRange(start, stop);
 
     // save sprite clipping info
     if ( ((ds_p->silhouette & SIL_TOP) || maskedtexture) && !ds_p->sprtopclip)

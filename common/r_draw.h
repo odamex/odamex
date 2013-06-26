@@ -46,6 +46,7 @@ extern "C" int			dc_color;		// [RH] For flat colors (no texturing)
 // first pixel in a column
 extern "C" byte*			dc_source;
 
+extern "C" tallpost_t*		dc_post;
 extern "C" tallpost_t*		dc_topposts[MAXWIDTH];
 extern "C" tallpost_t*		dc_midposts[MAXWIDTH];
 extern "C" tallpost_t*		dc_bottomposts[MAXWIDTH];
@@ -56,7 +57,8 @@ extern "C" unsigned int	dc_tspans[4][256];
 extern "C" unsigned int	*dc_ctspan[4];
 extern "C" unsigned int	horizspans[4];
 
-void R_RenderColumnRange(int start, int stop, bool columnmethod, void (*colblast)(), void (*hcolblast)(), bool calc_light);
+void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
+		tallpost_t** posts, void (*colblast)(), void (*hcolblast)(), bool calc_light, bool columnmethod);
 
 // [RH] Pointers to the different column and span drawers...
 

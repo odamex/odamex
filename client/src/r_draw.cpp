@@ -124,6 +124,7 @@ int				dc_color;				// [RH] Color for column filler
 // first pixel in a column (possibly virtual) 
 byte*			dc_source;				
 
+tallpost_t*		dc_post;
 tallpost_t*		dc_topposts[MAXWIDTH];
 tallpost_t*		dc_midposts[MAXWIDTH];
 tallpost_t*		dc_bottomposts[MAXWIDTH];
