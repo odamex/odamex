@@ -47,9 +47,6 @@ extern "C" int			dc_color;		// [RH] For flat colors (no texturing)
 extern "C" byte*			dc_source;
 
 extern "C" tallpost_t*		dc_post;
-extern "C" tallpost_t*		dc_topposts[MAXWIDTH];
-extern "C" tallpost_t*		dc_midposts[MAXWIDTH];
-extern "C" tallpost_t*		dc_bottomposts[MAXWIDTH];
 
 // [RH] Temporary buffer for column drawing
 extern "C" byte			dc_temp[MAXHEIGHT * 4];

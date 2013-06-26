@@ -83,6 +83,10 @@ static int walltopb[MAXWIDTH];
 static int wallbottomf[MAXWIDTH];
 static int wallbottomb[MAXWIDTH];
 
+static tallpost_t* topposts[MAXWIDTH];
+static tallpost_t* midposts[MAXWIDTH];
+static tallpost_t* bottomposts[MAXWIDTH];
+
 static fixed_t wallscalex[MAXWIDTH];
 static int texoffs[MAXWIDTH];
 
@@ -494,7 +498,7 @@ void R_RenderSolidSegRange(int start, int stop)
 		dc_textureheight = textureheight[midtexture];
 		dc_texturemid = rw_midtexturemid;
 
-		R_RenderColumnRange(start, stop, walltopf, wallbottomf, dc_midposts,
+		R_RenderColumnRange(start, stop, walltopf, wallbottomf, midposts,
 					SolidColumnBlaster, SolidHColumnBlaster, true, r_columnmethod);
 
 		// indicate that no further drawing can be done in this column
@@ -514,7 +518,7 @@ void R_RenderSolidSegRange(int start, int stop)
 			dc_textureheight = textureheight[toptexture];
 			dc_texturemid = rw_toptexturemid;
 
-			R_RenderColumnRange(start, stop, walltopf, walltopb, dc_topposts,
+			R_RenderColumnRange(start, stop, walltopf, walltopb, topposts,
 						SolidColumnBlaster, SolidHColumnBlaster, true, r_columnmethod);
 
 			memcpy(ceilingclip + start, walltopb + start, count * sizeof(*ceilingclip));
@@ -536,7 +540,7 @@ void R_RenderSolidSegRange(int start, int stop)
 			dc_textureheight = textureheight[bottomtexture];
 			dc_texturemid = rw_bottomtexturemid;
 
-			R_RenderColumnRange(start, stop, wallbottomb, wallbottomf, dc_bottomposts,
+			R_RenderColumnRange(start, stop, wallbottomb, wallbottomf, bottomposts,
 						SolidColumnBlaster, SolidHColumnBlaster, true, r_columnmethod);
 
 			memcpy(floorclip + start, wallbottomb + start, count * sizeof(*floorclip));
@@ -743,11 +747,11 @@ void R_RenderSkyRange(visplane_t* pl)
 	for (int x = pl->minx; x <= pl->maxx; x++)
 	{
 		int colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
-		dc_midposts[x] = R_GetTextureColumn(skytex, colnum);
+		midposts[x] = R_GetTextureColumn(skytex, colnum);
 	}
 
 	R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
-			dc_midposts, SkyColumnBlaster, SkyHColumnBlaster, false, r_columnmethod);
+			midposts, SkyColumnBlaster, SkyHColumnBlaster, false, r_columnmethod);
 				
 	R_ResetDrawFuncs();
 }
@@ -827,17 +831,17 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 		if (toptexture)
 		{
 			int colnum = R_TexScaleX(colfrac, toptexture) >> FRACBITS;	
-			dc_topposts[i] = R_GetTextureColumn(toptexture, colnum);
+			topposts[i] = R_GetTextureColumn(toptexture, colnum);
 		}
 		if (midtexture)
 		{
 			int colnum = R_TexScaleX(colfrac, midtexture) >> FRACBITS;	
-			dc_midposts[i] = R_GetTextureColumn(midtexture, colnum);
+			midposts[i] = R_GetTextureColumn(midtexture, colnum);
 		}
 		if (bottomtexture)
 		{
 			int colnum = R_TexScaleX(colfrac, bottomtexture) >> FRACBITS;	
-			dc_bottomposts[i] = R_GetTextureColumn(bottomtexture, colnum);
+			bottomposts[i] = R_GetTextureColumn(bottomtexture, colnum);
 		}
 
 		uinvz += uinvzstep;
