@@ -255,6 +255,7 @@ inline void R_BlastSolidSegColumnTier(void (*drawfunc)(), const tallpost_t* post
 	}
 } 
 
+
 //
 // R_BlastSolidSegColumn
 //
@@ -266,6 +267,7 @@ inline void R_BlastSolidSegColumnTier(void (*drawfunc)(), const tallpost_t* post
 // planes.
 static void R_BlastSolidSegColumn(void (*drawfunc)())
 {
+/*
 	rw_scale = wallscalex[dc_x];
 	if (rw_scale > 0)
 		dc_iscale = 0xffffffffu / (unsigned)rw_scale;
@@ -365,7 +367,9 @@ static void R_BlastSolidSegColumn(void (*drawfunc)())
 		solidcol[dc_x] = 1;
 
 	rw_light += rw_lightstep;
+*/
 }
+
 
 //
 // R_BlastSkyColumn
@@ -532,7 +536,197 @@ void R_RenderColumnRange(int start, int stop, bool columnmethod, void (*colblast
 //
 void R_RenderSegRange(int start, int stop)
 {
-	R_RenderColumnRange(start, stop, r_columnmethod, SolidColumnBlaster, SolidHColumnBlaster, true);
+	void (*drawfunc)() = colfunc;
+	bool calc_light = true;
+	int count = stop - start + 1;
+	int initial_light = rw_light;
+
+	if (start > stop)
+		return;
+
+	if (calc_light)
+	{
+		if (fixedlightlev)
+		{
+			dc_colormap = basecolormap.with(fixedlightlev);
+			calc_light = false;
+		}
+		else if (fixedcolormap.isValid())
+		{
+			dc_colormap = fixedcolormap;	
+			calc_light = false;
+		}
+		else
+		{
+			if (!walllights)
+				walllights = scalelight[0];
+		}
+	}
+
+	
+	// clip the front of the walls to the ceiling and floor
+	for (int x = start; x <= stop; x++)
+	{
+		walltopf[x] = MAX(walltopf[x], ceilingclip[x]);
+		wallbottomf[x] = MIN(wallbottomf[x], floorclip[x]);
+	}
+
+	// mark ceiling-plane areas
+	if (markceiling)
+	{
+		for (int x = start; x <= stop; x++)
+		{
+			int top = ceilingclip[x];
+			if (top < 0)
+				top = 0;
+
+			int bottom = MIN(walltopf[x], floorclip[x]) - 1;
+			if (bottom >= viewheight)
+				bottom = viewheight - 1;
+
+			if (top <= bottom)
+			{
+				ceilingplane->top[x] = top;
+				ceilingplane->bottom[x] = bottom;
+			}
+		}
+	}
+
+	// mark floor-plane areas
+	if (markfloor)
+	{
+		for (int x = start; x <= stop; x++)
+		{
+			int top = MAX(wallbottomf[x], ceilingclip[x]);
+			if (top < 0)
+				top = 0;
+
+			int bottom = floorclip[x] - 1;
+			if (bottom >= viewheight)
+				bottom = viewheight - 1;
+
+			if (top <= bottom)
+			{
+				floorplane->top[x] = top;
+				floorplane->bottom[x] = bottom;
+			}
+		}
+	}
+
+	if (midtexture)		// 1-sided line
+	{
+		// draw the middle wall tier
+		rw_light = initial_light;
+
+		for (dc_x = start; dc_x <= stop; dc_x++)
+		{
+			if (calc_light)
+			{
+				int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+				dc_colormap = basecolormap.with(walllights[index]);
+			}
+
+			rw_scale = wallscalex[dc_x];
+			if (rw_scale > 0)
+				dc_iscale = 0xffffffffu / (unsigned)rw_scale;
+
+			walltopf[dc_x] = MIN(MAX(walltopf[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
+
+			R_BlastSolidSegColumnTier(drawfunc, dc_midposts[dc_x], walltopf[dc_x], wallbottomf[dc_x], rw_midtexturemid);
+
+			rw_light += rw_lightstep;
+		}
+
+		// indicate that no further drawing can be done in this column
+		memcpy(ceilingclip + start, floorclipinitial + start, count * sizeof(*ceilingclip));
+		memcpy(floorclip + start, ceilingclipinitial + start, count * sizeof(*floorclip));
+	}
+	else			// 2-sided line
+	{
+		if (toptexture)
+		{
+			// draw the upper wall tier
+			rw_light = initial_light;
+
+			for (dc_x = start; dc_x <= stop; dc_x++)
+			{
+				if (calc_light)
+				{
+					int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+					dc_colormap = basecolormap.with(walllights[index]);
+				}
+
+				rw_scale = wallscalex[dc_x];
+				if (rw_scale > 0)
+					dc_iscale = 0xffffffffu / (unsigned)rw_scale;
+
+				walltopb[dc_x] = MAX(MIN(walltopb[dc_x], floorclip[dc_x]), walltopf[dc_x]);
+
+				R_BlastSolidSegColumnTier(drawfunc, dc_topposts[dc_x], walltopf[dc_x], walltopb[dc_x], rw_toptexturemid);
+
+				rw_light += rw_lightstep;
+			}
+
+			memcpy(ceilingclip + start, walltopb + start, count * sizeof(*ceilingclip));
+		}
+		else if (markceiling)
+		{
+			// no upper wall
+			memcpy(ceilingclip + start, walltopf + start, count * sizeof(*ceilingclip));
+		}
+
+		if (bottomtexture)
+		{
+			// draw the lower wall tier
+			rw_light = initial_light;
+
+			for (dc_x = start; dc_x <= stop; dc_x++)
+			{
+				if (calc_light)
+				{
+					int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+					dc_colormap = basecolormap.with(walllights[index]);
+				}
+
+				rw_scale = wallscalex[dc_x];
+				if (rw_scale > 0)
+					dc_iscale = 0xffffffffu / (unsigned)rw_scale;
+
+				wallbottomb[dc_x] = MIN(MAX(wallbottomb[dc_x], ceilingclip[dc_x]), wallbottomf[dc_x]);
+
+				R_BlastSolidSegColumnTier(drawfunc, dc_bottomposts[dc_x], wallbottomb[dc_x],
+											wallbottomf[dc_x], rw_bottomtexturemid);
+
+				rw_light += rw_lightstep;
+			}
+
+			memcpy(floorclip + start, wallbottomb + start, count * sizeof(*floorclip));
+		}
+		else if (markfloor)
+		{
+			// no lower wall
+			memcpy(floorclip + start, wallbottomf + start, count * sizeof(*floorclip));
+		}
+
+
+		if (maskedtexture)
+		{
+			// save texturecol for backdrawing of masked mid texture
+			for (int x = start; x <= stop; x++)
+			{
+				int colnum = R_TexScaleX(texoffs[x], maskedtexture) >> FRACBITS;
+				masked_midposts[x] = R_GetTextureColumn(maskedtexture, colnum);
+			}
+		}
+	}
+
+	for (int x = start; x <= stop; x++)
+	{
+		// cph - if we completely blocked further sight through this column,
+		// add this info to the solid columns array
+		if ((markceiling || markfloor) && (floorclip[x] <= ceilingclip[x]))
+			solidcol[x] = 1;
+	}
 }
 
 
