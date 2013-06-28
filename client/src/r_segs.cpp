@@ -337,7 +337,7 @@ inline void R_ColumnSetup(int x, int* top, int* bottom, tallpost_t** posts, bool
 //		assembly rendering function.
 //
 void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
-		tallpost_t** posts, void (*colblast)(), void (*hcolblast)(), bool calc_light, bool columnmethod)
+		tallpost_t** posts, void (*colblast)(), void (*hcolblast)(), bool calc_light, int columnmethod)
 {
 	if (start > stop)
 		return;
@@ -361,7 +361,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		}
 	}
 
-	if (columnmethod == false)
+	if (columnmethod == 0)
 	{
 		for (dc_x = start; dc_x <= stop; dc_x++)
 		{
@@ -370,7 +370,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 			rw_light += rw_lightstep;
 		}
 	}
-	else
+	else if (columnmethod == 1)
 	{
 		dc_x = start;
 		int blockend = (stop + 1) & ~3;
@@ -417,6 +417,59 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 			rw_light += rw_lightstep;
 		}
 	}
+	else if (columnmethod == 2)
+	{
+		#define BLOCKBITS 6
+		#define BLOCKSIZE (1 << BLOCKBITS)
+		#define BLOCKMASK (BLOCKSIZE - 1)
+
+
+		// [SL] Render the range of columns in 64x64 pixel blocks, aligned to a grid
+		// on the screen. This is to make better use of spatial locality in the cache.
+		for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
+		{
+			fixed_t starting_light = rw_light;
+
+			int blockstartx = bx;
+			int blockstopx = MIN((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
+
+			int miny = viewheight - 1;
+			int maxy = -1;
+
+			for (int i = blockstartx; i <= blockstopx; i++)
+			{
+				miny = MIN(top[i], miny);
+				maxy = MAX(bottom[i], maxy);
+			}
+			miny = MAX(miny, 0);
+			maxy = MIN(maxy, viewheight - 1);
+
+			for (int by = miny; by <= maxy; by = (by & ~BLOCKMASK) + BLOCKSIZE)
+			{
+				int blockstarty = by;
+				int blockstopy = (by & ~BLOCKMASK) + BLOCKSIZE - 1;
+
+				rw_light = starting_light;
+
+				for (int x = blockstartx; x <= blockstopx; x++)
+				{
+					if (calc_light)
+					{
+						int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+						dc_colormap = basecolormap.with(walllights[index]);
+					}
+
+					dc_x = x;
+					dc_yl = MAX(top[x], blockstarty);
+					dc_yh = MIN(bottom[x], blockstopy);
+					dc_post = posts[x];
+					colblast();
+					rw_light += rw_lightstep;
+				}
+
+			}
+		}
+	}
 }
 
 
@@ -437,6 +490,8 @@ void R_RenderSolidSegRange(int start, int stop)
 
 	if (start > stop)
 		return;
+
+	int columnmethod = 2;
 
 	// clip the front of the walls to the ceiling and floor
 	for (int x = start; x <= stop; x++)
@@ -499,7 +554,7 @@ void R_RenderSolidSegRange(int start, int stop)
 		dc_texturemid = rw_midtexturemid;
 
 		R_RenderColumnRange(start, stop, walltopf, wallbottomf, midposts,
-					SolidColumnBlaster, SolidHColumnBlaster, true, r_columnmethod);
+					SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
 
 		// indicate that no further drawing can be done in this column
 		memcpy(ceilingclip + start, floorclipinitial + start, count * sizeof(*ceilingclip));
@@ -519,7 +574,7 @@ void R_RenderSolidSegRange(int start, int stop)
 			dc_texturemid = rw_toptexturemid;
 
 			R_RenderColumnRange(start, stop, walltopf, walltopb, topposts,
-						SolidColumnBlaster, SolidHColumnBlaster, true, r_columnmethod);
+						SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
 
 			memcpy(ceilingclip + start, walltopb + start, count * sizeof(*ceilingclip));
 		}
@@ -541,7 +596,7 @@ void R_RenderSolidSegRange(int start, int stop)
 			dc_texturemid = rw_bottomtexturemid;
 
 			R_RenderColumnRange(start, stop, wallbottomb, wallbottomf, bottomposts,
-						SolidColumnBlaster, SolidHColumnBlaster, true, r_columnmethod);
+						SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
 
 			memcpy(floorclip + start, wallbottomb + start, count * sizeof(*floorclip));
 		}
@@ -674,6 +729,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	if (pl->minx > pl->maxx)
 		return;
 
+	int columnmethod = 2;
 	int skytex;
 	fixed_t front_offset = 0;
 	angle_t skyflip = 0;
@@ -751,7 +807,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	}
 
 	R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
-			midposts, SkyColumnBlaster, SkyHColumnBlaster, false, r_columnmethod);
+			midposts, SkyColumnBlaster, SkyHColumnBlaster, false, columnmethod);
 				
 	R_ResetDrawFuncs();
 }
