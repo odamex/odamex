@@ -85,7 +85,6 @@ extern void (*R_FillSpan)(void);
 
 // [RH] Span blit into an interleaved intermediate buffer
 extern void (*R_DrawColumnHoriz)(void);
-void R_DrawMaskedColumnHoriz(tallpost_t *post);
 
 // [RH] Initialize the above function pointers
 void R_InitColumnDrawers ();

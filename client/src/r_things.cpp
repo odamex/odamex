@@ -633,8 +633,8 @@ vissprite_t *R_NewVisSprite (void)
 
 
 //
-// R_DrawMaskedColumn
-// Used for sprites and masked mid textures.
+// R_BlastSpriteColum
+// Used for sprites
 // Masked means: partly transparent, i.e. stored
 //	in posts/runs of opaque pixels.
 //
@@ -644,62 +644,9 @@ int*			mceilingclip;
 fixed_t 		spryscale;
 fixed_t 		sprtopscreen;
 
-void R_DrawMaskedColumn(tallpost_t *post)
-{
-	while (!post->end())
-	{
-		if (post->length == 0)
-		{
-			post = post->next();
-			continue;
-		}
-
-		// calculate unclipped screen coordinates for post
-		int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
-
-		dc_yl = (topscreen + FRACUNIT) >> FRACBITS;
-		dc_yh = (topscreen + spryscale * post->length) >> FRACBITS;
-
-		if (dc_yh >= mfloorclip[dc_x])
-			dc_yh = mfloorclip[dc_x] - 1;
-		if (dc_yl <= mceilingclip[dc_x])
-			dc_yl = mceilingclip[dc_x] + 1;
-
-		dc_texturefrac = dc_texturemid - (post->topdelta << FRACBITS)
-			+ (dc_yl*dc_iscale) - FixedMul(centeryfrac-FRACUNIT, dc_iscale);
-
-		if (dc_texturefrac < 0)
-		{
-			int cnt = (FixedDiv(-dc_texturefrac, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
-			dc_yl += cnt;
-			dc_texturefrac += cnt * dc_iscale;
-		}
-
-		const fixed_t endfrac = dc_texturefrac + (dc_yh-dc_yl)*dc_iscale;
-		const fixed_t maxfrac = post->length << FRACBITS;
-		
-		if (endfrac >= maxfrac)
-		{
-			int cnt = (FixedDiv(endfrac - maxfrac - 1, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
-			dc_yh -= cnt;
-		}
-
-		dc_source = post->data();
-
-		if (dc_yl >= 0 && dc_yh < viewheight && dc_yl <= dc_yh)
-			colfunc();
-	
-		post = post->next();
-	}
-}
-
-
 void R_BlastSpriteColumn(void (*drawfunc)())
 {
 	tallpost_t* post = dc_post;
-
-	sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
-	dc_iscale = 0xffffffffu / (unsigned)spryscale;
 
 	while (!post->end())
 	{
@@ -711,34 +658,34 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 			dc_yl = (topscreen + FRACUNIT) >> FRACBITS;
 			dc_yh = (topscreen + spryscale * post->length) >> FRACBITS;
 
-			if (dc_yh >= mfloorclip[dc_x])
-				dc_yh = mfloorclip[dc_x] - 1;
-			if (dc_yl <= mceilingclip[dc_x])
-				dc_yl = mceilingclip[dc_x] + 1;
-
-			dc_texturefrac = dc_texturemid - (post->topdelta << FRACBITS)
-				+ (dc_yl*dc_iscale) - FixedMul(centeryfrac-FRACUNIT, dc_iscale);
-
-			if (dc_texturefrac < 0)
-			{
-				int cnt = (FixedDiv(-dc_texturefrac, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
-				dc_yl += cnt;
-				dc_texturefrac += cnt * dc_iscale;
-			}
-
-			const fixed_t endfrac = dc_texturefrac + (dc_yh-dc_yl)*dc_iscale;
-			const fixed_t maxfrac = post->length << FRACBITS;
-			
-			if (endfrac >= maxfrac)
-			{
-				int cnt = (FixedDiv(endfrac - maxfrac - 1, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
-				dc_yh -= cnt;
-			}
-
-			dc_source = post->data();
+			dc_yl = MAX(dc_yl, mceilingclip[dc_x] + 1);
+			dc_yh = MIN(dc_yh, mfloorclip[dc_x] - 1);
 
 			if (dc_yl >= 0 && dc_yh < viewheight && dc_yl <= dc_yh)
+			{
+				dc_texturefrac = dc_texturemid - (post->topdelta << FRACBITS)
+					+ (dc_yl*dc_iscale) - FixedMul(centeryfrac-FRACUNIT, dc_iscale);
+
+				if (dc_texturefrac < 0)
+				{
+					int cnt = (FixedDiv(-dc_texturefrac, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
+					dc_yl += cnt;
+					dc_texturefrac += cnt * dc_iscale;
+				}
+
+				const fixed_t endfrac = dc_texturefrac + (dc_yh-dc_yl)*dc_iscale;
+				const fixed_t maxfrac = post->length << FRACBITS;
+				
+				if (endfrac >= maxfrac)
+				{
+					int cnt = (FixedDiv(endfrac - maxfrac - 1, dc_iscale) + FRACUNIT - 1) >> FRACBITS;
+					dc_yh -= cnt;
+				}
+
+				dc_source = post->data();
+
 				drawfunc();
+			}
 		}
 		
 		post = post->next();
@@ -827,7 +774,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	else if (translated)
 		R_SetTranslatedDrawFuncs();
 
-	dc_iscale = FixedDiv(FRACUNIT, vis->yscale) + 1;
+	dc_iscale = 0xffffffffu / (unsigned)vis->yscale;
 	dc_texturemid = vis->texturemid;
 	spryscale = vis->yscale;
 	sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
@@ -842,6 +789,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 	bool rend_multiple_columns = r_columnmethod && !fuzz_effect;
 
+return;
 	// TODO: change from negonearray to actual top of sprite
 	R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray,
 			spriteposts, SpriteColumnBlaster, SpriteHColumnBlaster, false, rend_multiple_columns);
