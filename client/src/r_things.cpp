@@ -789,7 +789,6 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 	bool rend_multiple_columns = r_columnmethod && !fuzz_effect;
 
-return;
 	// TODO: change from negonearray to actual top of sprite
 	R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray,
 			spriteposts, SpriteColumnBlaster, SpriteHColumnBlaster, false, rend_multiple_columns);
