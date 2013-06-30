@@ -32,7 +32,6 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 void R_RenderMaskedSegRange (drawseg_t *ds, int x1, int x2);
 void R_StoreWallRange(int start, int stop);
 void R_RenderSegLoop();
-void R_RenderSkyRange(visplane_t* pl);
 void R_ClearOpenings();
 
 EXTERN_CVAR (r_columnmethod)

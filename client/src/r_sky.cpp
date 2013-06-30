@@ -28,9 +28,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Needed for FRACUNIT.
 #include "m_fixed.h"
 #include "r_data.h"
+#include "r_draw.h"
+#include "r_main.h"
 #include "c_cvars.h"
 #include "g_level.h"
 #include "r_sky.h"
@@ -41,6 +42,8 @@ extern int *texturewidthmask;
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(cl_mouselook)
+EXTERN_CVAR(r_skypalette)
+
 
 //
 // sky mapping
@@ -65,6 +68,8 @@ char SKYFLATNAME[8] = "F_SKY1";
 
 extern "C" int detailxshift, detailyshift;
 extern fixed_t freelookviewheight;
+
+static tallpost_t* skyposts[MAXWIDTH];
 
 //
 //
@@ -142,4 +147,121 @@ void R_InitSkyMap ()
 		sky2shift -= skystretch;
 }
 
+//
+// R_BlastSkyColumn
+//
+static void R_BlastSkyColumn(void (*drawfunc)(void))
+{
+	dc_source = dc_post->data();
+	dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
+
+	if (dc_yl <= dc_yh)
+		drawfunc();
+}
+
+inline void SkyColumnBlaster()
+{
+	R_BlastSkyColumn(colfunc);
+}
+
+inline void SkyHColumnBlaster()
+{
+	R_BlastSkyColumn(hcolfunc_pre);
+}
+
+//
+// R_RenderSkyRange
+//
+// [RH] Can handle parallax skies. Note that the front sky is *not* masked in
+// in the normal convention for patches, but uses color 0 as a transparent
+// color.
+// [ML] 5/11/06 - Removed sky2
+//
+void R_RenderSkyRange(visplane_t* pl)
+{
+	if (pl->minx > pl->maxx)
+		return;
+
+	int columnmethod = 2;
+	int skytex;
+	fixed_t front_offset = 0;
+	angle_t skyflip = 0;
+
+	if (pl->picnum == skyflatnum)
+	{
+		// use sky1
+		skytex = sky1texture;
+	}
+	else if (pl->picnum == int(PL_SKYFLAT))
+	{
+		// use sky2
+		skytex = sky2texture;
+	}
+	else
+	{
+		// MBF's linedef-controlled skies
+		short picnum = (pl->picnum & ~PL_SKYFLAT) - 1;
+		const line_t* line = &lines[picnum < numlines ? picnum : 0];
+
+		// Sky transferred from first sidedef
+		const side_t* side = *line->sidenum + sides;
+
+		// Texture comes from upper texture of reference sidedef
+		skytex = texturetranslation[side->toptexture];
+
+		// Horizontal offset is turned into an angle offset,
+		// to allow sky rotation as well as careful positioning.
+		// However, the offset is scaled very small, so that it
+		// allows a long-period of sky rotation.
+		front_offset = (-side->textureoffset) >> 6;
+
+		// Vertical offset allows careful sky positioning.
+		skytexturemid = side->rowoffset - 28*FRACUNIT;
+
+		// We sometimes flip the picture horizontally.
+		//
+		// Doom always flipped the picture, so we make it optional,
+		// to make it easier to use the new feature, while to still
+		// allow old sky textures to be used.
+		skyflip = line->args[2] ? 0u : ~0u;
+	}
+
+	R_ResetDrawFuncs();
+
+	palette_t *pal = GetDefaultPalette();
+
+	dc_iscale = skyiscale >> skystretch;
+	dc_texturemid = skytexturemid;
+	dc_textureheight = textureheight[skytex];
+	skyplane = pl;
+
+	// set up the appropriate colormap for the sky
+	if (fixedlightlev)
+	{
+		dc_colormap = shaderef_t(&pal->maps, fixedlightlev);
+	}
+	else if (fixedcolormap.isValid() && r_skypalette)
+	{
+		dc_colormap = fixedcolormap;
+	}
+	else
+	{
+		// [SL] 2011-06-28 - Emulate vanilla Doom's handling of skies
+		// when the player has the invulnerability powerup
+		dc_colormap = shaderef_t(&pal->maps, 0);
+	}
+
+	// determine which texture posts will be used for each screen
+	// column in this range.
+	for (int x = pl->minx; x <= pl->maxx; x++)
+	{
+		int colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
+		skyposts[x] = R_GetTextureColumn(skytex, colnum);
+	}
+
+	R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
+			skyposts, SkyColumnBlaster, SkyHColumnBlaster, false, columnmethod);
+				
+	R_ResetDrawFuncs();
+}
 VERSION_CONTROL (r_sky_cpp, "$Id$")

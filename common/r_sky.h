@@ -46,5 +46,7 @@ EXTERN_CVAR (r_stretchsky)
 // Called whenever the sky changes.
 void R_InitSkyMap		();
 
+void R_RenderSkyRange(visplane_t* pl);
+
 #endif //__R_SKY_H__
 
