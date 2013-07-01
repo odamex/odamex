@@ -103,7 +103,6 @@ static const char*		spritename;
 
 static tallpost_t* spriteposts[MAXWIDTH];
 
-
 // [RH] skin globals
 playerskin_t	*skins;
 size_t			numskins;
@@ -774,7 +773,6 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	dc_texturemid = vis->texturemid;
 	spryscale = vis->yscale;
 	sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
-	sprtopscreen = vis->y1 << FRACBITS;
 
 	// [SL] set up the array that indicates which patch column to use for each screen column
 	fixed_t colfrac = vis->startfrac;
@@ -795,7 +793,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 
 //
-// R_GenereateVisSprite
+// R_GenerateVisSprite
 //
 // Helper function that creates a vissprite_t and projects the given world
 // coordinates onto the screen. Returns NULL if the projection is completely

@@ -54,6 +54,7 @@ static BOOL		segtextured;	// True if any of the segs textures might be visible.
 static BOOL		markfloor;		// False if the back side is the same plane.
 static BOOL		markceiling;
 static BOOL		maskedtexture;
+static bool		didsolidcol;
 static int		toptexture;
 static int		bottomtexture;
 static int		midtexture;
@@ -595,7 +596,10 @@ void R_RenderSolidSegRange(int start, int stop)
 		// cph - if we completely blocked further sight through this column,
 		// add this info to the solid columns array
 		if ((markceiling || markfloor) && (floorclip[x] <= ceilingclip[x]))
+		{
 			solidcol[x] = 1;
+			didsolidcol = true;
+		}
 	}
 }
 
@@ -839,10 +843,9 @@ void R_StoreWallRange(int start, int stop)
 		I_FatalError ("Bad R_StoreWallRange: %i to %i", start , stop);
 #endif
 
-	if (start > stop)
-		return;
-
 	int count = stop - start + 1;
+	if (count <= 0)
+		return;
 
 	R_ReallocDrawSegs();	// don't overflow and crash
 
@@ -1110,25 +1113,27 @@ void R_StoreWallRange(int start, int stop)
 	else
 		markfloor = false;
 
+	didsolidcol = false;
+
 	R_RenderSolidSegRange(start, stop);
 
+	// [SL] save full clipping info for masked midtextures
+	// cph - if a column was made solid by this wall, we _must_ save full clipping info
+	if (maskedtexture || (backsector && didsolidcol))
+		ds_p->silhouette = SIL_BOTH;
+
     // save sprite clipping info
-    if ( ((ds_p->silhouette & SIL_TOP) || maskedtexture) && !ds_p->sprtopclip)
+	if ((ds_p->silhouette & SIL_TOP) && ds_p->sprtopclip == NULL)
 	{
 		ds_p->sprtopclip = openings.alloc<int>(count) - start;
 		memcpy(ds_p->sprtopclip + start, ceilingclip + start, count * sizeof(*ds_p->sprtopclip));
 	}
 
-    if ( ((ds_p->silhouette & SIL_BOTTOM) || maskedtexture) && !ds_p->sprbottomclip)
+	if ((ds_p->silhouette & SIL_BOTTOM) && ds_p->sprbottomclip == NULL)
 	{
 		ds_p->sprbottomclip = openings.alloc<int>(count) - start;
 		memcpy(ds_p->sprbottomclip + start, floorclip + start, count * sizeof(*ds_p->sprbottomclip));
 	}
-
-	if (maskedtexture && !(ds_p->silhouette & SIL_TOP))
-		ds_p->silhouette |= SIL_TOP;
-	if (maskedtexture && !(ds_p->silhouette & SIL_BOTTOM))
-		ds_p->silhouette |= SIL_BOTTOM;
 
 	ds_p++;
 }
