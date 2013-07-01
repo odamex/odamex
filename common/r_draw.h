@@ -42,6 +42,7 @@ extern "C" fixed_t		dc_texturemid;
 extern "C" fixed_t		dc_texturefrac;
 extern "C" fixed_t		dc_textureheight;
 extern "C" int			dc_color;		// [RH] For flat colors (no texturing)
+extern "C" fixed_t		dc_translevel;
 
 // first pixel in a column
 extern "C" byte*			dc_source;
@@ -82,6 +83,7 @@ extern void (*R_DrawSlopeSpan)(void);
 
 extern void (*R_FillColumn)(void);
 extern void (*R_FillSpan)(void);
+extern void (*R_FillTranslucentSpan)(void);
 
 // [RH] Span blit into an interleaved intermediate buffer
 extern void (*R_DrawColumnHoriz)(void);
@@ -243,7 +245,6 @@ extern byte*			translationtables;
 extern translationref_t dc_translation;
 extern argb_t           translationRGB[MAXPLAYERS+1][16];
 
-extern fixed_t dc_translevel;
 
 enum
 {

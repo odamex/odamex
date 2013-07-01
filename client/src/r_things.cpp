@@ -722,11 +722,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 	if (vis->patch == NO_PARTICLE)
 	{
-		// [RH] It's a particle
-		if (screen->is8bit())
-			R_DrawParticleP (vis, x1, x2);
-		else
-			R_DrawParticleD (vis, x1, x2);
+		R_DrawParticle(vis);
 		return;
 	}
 
@@ -827,7 +823,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 
 	// Entirely above the top of the screen or below the bottom?
 	int y1 = R_ProjectPointY(gzt - viewz, ty);
-	int y2 = R_ProjectPointY(gzb - viewz, ty);
+	int y2 = R_ProjectPointY(gzb - viewz, ty) - 1;
 	if (!R_CheckProjectionY(y1, y2))
 		return NULL;
 
@@ -1567,6 +1563,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->patch = NO_PARTICLE;
 	vis->mobjflags = particle->trans;
 
+	// get light level
 	if (fixedcolormap.isValid())
 	{
 		vis->colormap = fixedcolormap;
@@ -1576,13 +1573,9 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		shaderef_t map;
 
 		if (vis->heightsec == NULL || vis->FakeFlat == FAKED_Center)
-		{
 			map = sector->floorcolormap->maps;
-		}
 		else
-		{
 			map = vis->heightsec->floorcolormap->maps;
-		}
 
 		if (fixedlightlev)
 		{
@@ -1601,136 +1594,31 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	}
 }
 
-void R_DrawParticleP (vissprite_t *vis, int x1, int x2)
+void R_DrawParticle(vissprite_t* vis)
 {
-	byte color = vis->colormap.index(vis->startfrac);
+	int x1 = vis->x1, x2 = vis->x2;
 	int yl = (centeryfrac - FixedMul(vis->texturemid, vis->xscale) + FRACUNIT - 1) >> FRACBITS;
-	int yh;
-	x1 = vis->x1;
-	x2 = vis->x2;
-
-	if (x1 < 0)
-		x1 = 0;
-	if (x2 < x1)
-		x2 = x1;
-	if (x2 >= viewwidth)
-		x2 = viewwidth - 1;
-
-	yh = yl + (((x2 - x1)<<detailxshift)>>detailyshift);
+	int yh = yl + (((x2 - x1) << detailxshift) >> detailyshift);
 
 	// Don't bother clipping each individual column
-	if (yh >= mfloorclip[x1])
-		yh = mfloorclip[x1]-1;
-	if (yl <= mceilingclip[x1])
-		yl = mceilingclip[x1]+1;
-	if (yh >= mfloorclip[x2])
-		yh = mfloorclip[x2]-1;
-	if (yl <= mceilingclip[x2])
-		yl = mceilingclip[x2]+1;
+	yl = MAX(yl, MAX(mceilingclip[x1] + 1, mceilingclip[x2] + 1));
+	yh = MIN(yh, MIN(mfloorclip[x1] - 1, mfloorclip[x2] - 1));
 
-	// vis->mobjflags holds translucency level (0-255)
+	yl = MAX(yl, 0);
+	yh = MIN(yh, viewheight - 1);
+
+	if (yl <= yh)
 	{
-		argb_t *bg2rgb;
-		int countbase = x2 - x1 + 1;
-		int ycount;
-		int colsize = ds_colsize;
-		int spacing;
-		byte *dest;
-		argb_t fg;
+		ds_x1 = vis->x1;
+		ds_x2 = vis->x2;
+		ds_colormap = vis->colormap;
+		// vis->mobjflags holds translucency level (0-255)
+		dc_translevel = (vis->mobjflags + 1) << 8;	// TODO: change to ds_translevel
+		// vis->startfrac holds palette color index
+		ds_color = vis->startfrac;
 
-		ycount = yh - yl;
-		if (ycount < 0)
-			return;
-		ycount++;
-
-		{
-			fixed_t fglevel, bglevel;
-			argb_t *fg2rgb;
-
-			fglevel = ((vis->mobjflags + 1) << 8) & ~0x3ff;
-			bglevel = FRACUNIT-fglevel;
-			fg2rgb = Col2RGB8[fglevel>>10];
-			bg2rgb = Col2RGB8[bglevel>>10];
-			fg = fg2rgb[color];
-		}
-
-		spacing = screen->pitch - (countbase << detailxshift);
-		dest = ylookup[yl] + columnofs[x1];
-
-		do
-		{
-			int count = countbase;
-			do
-			{
-				argb_t bg = bg2rgb[*dest];
-				bg = (fg+bg) | 0x1f07c1f;
-				*dest = RGB32k[0][0][bg & (bg>>15)];
-				dest += colsize;
-			} while (--count);
-			dest += spacing;
-		} while (--ycount);
-	}
-}
-
-void R_DrawParticleD (vissprite_t *vis, int x1, int x2)
-{
-	argb_t color = vis->colormap.shade(vis->startfrac);
-	int yl = (centeryfrac - FixedMul(vis->texturemid, vis->xscale) + FRACUNIT - 1) >> FRACBITS;
-	int yh;
-	x1 = vis->x1;
-	x2 = vis->x2;
-
-	if (x1 < 0)
-		x1 = 0;
-	if (x2 < x1)
-		x2 = x1;
-	if (x2 >= viewwidth)
-		x2 = viewwidth - 1;
-
-	yh = yl + (((x2 - x1)<<detailxshift)>>detailyshift);
-
-	// Don't bother clipping each individual column
-	if (yh >= mfloorclip[x1])
-		yh = mfloorclip[x1]-1;
-	if (yl <= mceilingclip[x1])
-		yl = mceilingclip[x1]+1;
-	if (yh >= mfloorclip[x2])
-		yh = mfloorclip[x2]-1;
-	if (yl <= mceilingclip[x2])
-		yl = mceilingclip[x2]+1;
-
-	// vis->mobjflags holds translucency level (0-255)
-	{
-		int countbase = x2 - x1 + 1;
-		int ycount;
-		int colsize = ds_colsize;
-		int spacing;
-		int pitch;
-		argb_t *dest;
-
-		ycount = yh - yl;
-		if (ycount < 0)
-			return;
-		ycount++;
-
-		pitch = screen->pitch / sizeof(argb_t);
-
-		int fga = (dc_translevel & ~0x03FF) >> 8;
-		int bga = 255 - fga;
-
-		spacing = pitch - (countbase << detailxshift);
-		dest = (argb_t *)( ylookup[yl] + columnofs[x1] );
-
-		do
-		{
-			int count = countbase;
-			do
-			{
-				*dest = alphablend2a(*dest, bga, color, fga);
-				dest += colsize;
-			} while (--count);
-			dest += spacing;
-		} while (--ycount);
+		for (ds_y = yl; ds_y <= yh; ds_y++)
+			R_FillTranslucentSpan();
 	}
 }
 

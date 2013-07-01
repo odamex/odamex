@@ -65,8 +65,7 @@ particle_t *NewParticle (void);
 #endif
 void R_InitParticles (void);
 void R_ClearParticles (void);
-void R_DrawParticleP (vissprite_t *, int, int);
-void R_DrawParticleD (vissprite_t *, int, int);
+void R_DrawParticle(vissprite_t*);
 void R_ProjectParticle (particle_t *, const sector_t* sector, int fakeside);
 void R_FindParticleSubsectors();
 

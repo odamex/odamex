@@ -88,6 +88,7 @@ void (*R_DrawSpan)(void);
 void (*R_DrawSlopeSpan)(void);
 void (*R_FillColumn)(void);
 void (*R_FillSpan)(void);
+void (*R_FillTranslucentSpan)(void);
 void (*rt_copy1col) (int hx, int sx, int yl, int yh);
 void (*rt_copy4cols) (int sx, int yl, int yh);
 void (*rt_map1col) (int hx, int sx, int yl, int yh);
@@ -120,6 +121,7 @@ fixed_t 		dc_texturemid;
 fixed_t			dc_texturefrac;
 fixed_t			dc_textureheight;
 int				dc_color;				// [RH] Color for column filler
+fixed_t			dc_translevel;
 
 // first pixel in a column (possibly virtual) 
 byte*			dc_source;				
@@ -130,7 +132,6 @@ tallpost_t*		dc_post;
 int 			dccount;
 }
 
-fixed_t			dc_translevel;
 
 // ============================================================================
 //
@@ -715,7 +716,7 @@ static forceinline void R_FillSpanGeneric(
 		int colsize)
 {
 #ifdef RANGECHECK
-	if (x2 < x1 || x1 < 0 || x2 >= screen->width || ds_y > screen->height) {
+	if (x2 < x1 || x1 < 0 || x2 >= viewwidth || ds_y >= viewheight || ds_y < 0) {
 		Printf(PRINT_HIGH, "R_FillSpan: %i to %i at %i", x1, x2, ds_y);
 		return;
 	}
@@ -749,7 +750,7 @@ static forceinline void R_DrawLevelSpanGeneric(
 		int colsize)
 {
 #ifdef RANGECHECK
-	if (x2 < x1 || x1 < 0 || x2 >= screen->width || ds_y > screen->height) {
+	if (x2 < x1 || x1 < 0 || x2 >= viewwidth || ds_y >= viewheight || ds_y < 0) {
 		Printf(PRINT_HIGH, "R_DrawLevelSpan: %i to %i at %i", x1, x2, ds_y);
 		return;
 	}
@@ -803,7 +804,7 @@ static forceinline void R_DrawSlopedSpanGeneric(
 		int colsize)
 {
 #ifdef RANGECHECK
-	if (x2 < x1 || x1 < 0 || x2 >= screen->width || ds_y > screen->height) {
+	if (x2 < x1 || x1 < 0 || x2 >= viewwidth || ds_y >= viewheight || ds_y < 0) {
 		Printf(PRINT_HIGH, "R_DrawSlopedSpan: %i to %i at %i", x1, x2, ds_y);
 		return;
 	}
@@ -1219,6 +1220,22 @@ void R_FillSpanP()
 }
 
 //
+// R_FillTranslucentSpanP
+//
+// Fills a span in the 8bpp palettized screen buffer with a solid color,
+// determined by ds_color using translucency. Shading is performed 
+// using ds_colormap.
+//
+void R_FillTranslucentSpanP()
+{
+	R_FillSpanGeneric<palindex_t, PaletteTranslucentColormapFunc>(
+		FB_SPANDEST_P,
+		ds_color,
+		ds_x1, ds_x2,
+		FB_SPANPITCH_P);
+}
+
+//
 // R_DrawSpanP
 //
 // Renders a span for a level plane to the 8bpp palettized screen buffer from
@@ -1501,6 +1518,22 @@ void R_DrawTlatedLucentColumnD()
 void R_FillSpanD()
 {
 	R_FillSpanGeneric<argb_t, DirectFunc>(
+		FB_SPANDEST_D,
+		ds_color,
+		ds_x1, ds_x2,
+		FB_SPANPITCH_D);
+}
+
+//
+// R_FillTranslucentSpanD
+//
+// Fills a span in the 32bpp ARGB8888 screen buffer with a solid color,
+// determined by ds_color using translucency. Shading is performed 
+// using ds_colormap.
+//
+void R_FillTranslucentSpanD()
+{
+	R_FillSpanGeneric<argb_t, DirectTranslucentColormapFunc>(
 		FB_SPANDEST_D,
 		ds_color,
 		ds_x1, ds_x2,
@@ -1951,6 +1984,7 @@ void R_InitColumnDrawers ()
 		R_DrawSpan				= R_DrawSpanP;
 		R_FillColumn			= R_FillColumnP;
 		R_FillSpan				= R_FillSpanP;
+		R_FillTranslucentSpan	= R_FillTranslucentSpanP;
 
 		rt_copy1col				= rt_copy1colP;
 		rt_copy4cols			= rt_copy4colsP;
@@ -1974,6 +2008,7 @@ void R_InitColumnDrawers ()
 		R_DrawSpan				= R_DrawSpanD;
 		R_FillColumn			= R_FillColumnD;
 		R_FillSpan				= R_FillSpanD;
+		R_FillTranslucentSpan	= R_FillTranslucentSpanD;
 		
 		rt_copy1col				= rt_copy1colD;
 		rt_copy4cols			= rt_copy4colsD;
