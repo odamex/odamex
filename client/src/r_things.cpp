@@ -774,6 +774,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	dc_texturemid = vis->texturemid;
 	spryscale = vis->yscale;
 	sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
+	sprtopscreen = vis->y1 << FRACBITS;
 
 	// [SL] set up the array that indicates which patch column to use for each screen column
 	fixed_t colfrac = vis->startfrac;
@@ -877,6 +878,8 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	vis->texturemid = gzt - viewz;
 	vis->x1 = x1;
 	vis->x2 = x2;
+	vis->y1 = y1;
+	vis->y2 = y2;
 	vis->depth = ty;
 	vis->FakeFlat = fakeside;
 	vis->colormap = basecolormap;
@@ -1596,30 +1599,21 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 
 void R_DrawParticle(vissprite_t* vis)
 {
-	int x1 = vis->x1, x2 = vis->x2;
-	int yl = (centeryfrac - FixedMul(vis->texturemid, vis->xscale) + FRACUNIT - 1) >> FRACBITS;
-	int yh = yl + (((x2 - x1) << detailxshift) >> detailyshift);
-
 	// Don't bother clipping each individual column
-	yl = MAX(yl, MAX(mceilingclip[x1] + 1, mceilingclip[x2] + 1));
-	yh = MIN(yh, MIN(mfloorclip[x1] - 1, mfloorclip[x2] - 1));
+	int x1 = vis->x1, x2 = vis->x2;
+	int y1 = MAX(vis->y1, MAX(mceilingclip[x1] + 1, mceilingclip[x2] + 1));
+	int y2 = MIN(vis->y2, MIN(mfloorclip[x1] - 1, mfloorclip[x2] - 1));
 
-	yl = MAX(yl, 0);
-	yh = MIN(yh, viewheight - 1);
+	ds_x1 = vis->x1;
+	ds_x2 = vis->x2;
+	ds_colormap = vis->colormap;
+	// vis->mobjflags holds translucency level (0-255)
+	dc_translevel = (vis->mobjflags + 1) << 8;	// TODO: change to ds_translevel
+	// vis->startfrac holds palette color index
+	ds_color = vis->startfrac;
 
-	if (yl <= yh)
-	{
-		ds_x1 = vis->x1;
-		ds_x2 = vis->x2;
-		ds_colormap = vis->colormap;
-		// vis->mobjflags holds translucency level (0-255)
-		dc_translevel = (vis->mobjflags + 1) << 8;	// TODO: change to ds_translevel
-		// vis->startfrac holds palette color index
-		ds_color = vis->startfrac;
-
-		for (ds_y = yl; ds_y <= yh; ds_y++)
-			R_FillTranslucentSpan();
-	}
+	for (ds_y = y1; ds_y <= y2; ds_y++)
+		R_FillTranslucentSpan();
 }
 
 VERSION_CONTROL (r_things_cpp, "$Id$")
