@@ -62,7 +62,7 @@ int rw_start, rw_stop;
 
 static BYTE		FakeSide;
 
-const fixed_t NEARCLIP = 0.05*FRACUNIT;
+const fixed_t NEARCLIP = FRACUNIT/4;
 
 drawseg_t*		ds_p;
 drawseg_t*		drawsegs;
