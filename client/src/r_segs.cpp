@@ -459,6 +459,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 //
 void R_RenderSolidSegRange(int start, int stop)
 {
+	static int lower[MAXWIDTH];
 	int count = stop - start + 1;
 	int initial_light = rw_light;
 
@@ -479,13 +480,8 @@ void R_RenderSolidSegRange(int start, int stop)
 	{
 		for (int x = start; x <= stop; x++)
 		{
-			int top = ceilingclip[x];
-			if (top < 0)
-				top = 0;
-
-			int bottom = MIN(walltopf[x], floorclip[x]) - 1;
-			if (bottom >= viewheight)
-				bottom = viewheight - 1;
+			int top = MAX(ceilingclip[x], 0);
+			int bottom = MIN(MIN(walltopf[x], floorclip[x]) - 1, viewheight - 1);
 
 			if (top <= bottom)
 			{
@@ -500,13 +496,8 @@ void R_RenderSolidSegRange(int start, int stop)
 	{
 		for (int x = start; x <= stop; x++)
 		{
-			int top = MAX(wallbottomf[x], ceilingclip[x]);
-			if (top < 0)
-				top = 0;
-
-			int bottom = floorclip[x] - 1;
-			if (bottom >= viewheight)
-				bottom = viewheight - 1;
+			int top = MAX(MAX(wallbottomf[x], ceilingclip[x]), 0);
+			int bottom = MIN(floorclip[x] - 1, viewheight - 1);
 
 			if (top <= bottom)
 			{
@@ -519,15 +510,15 @@ void R_RenderSolidSegRange(int start, int stop)
 	if (midtexture)		// 1-sided line
 	{
 		// draw the middle wall tier
+		for (int x = start; x <= stop; x++)
+			lower[x] = wallbottomf[x] - 1;
+
 		rw_light = initial_light;
 
-		for (int x = start; x <= stop; x++)
-			walltopf[x] = MIN(MAX(walltopf[x], ceilingclip[x]), wallbottomf[x]);
-	
 		dc_textureheight = textureheight[midtexture];
 		dc_texturemid = rw_midtexturemid;
 
-		R_RenderColumnRange(start, stop, walltopf, wallbottomf, midposts,
+		R_RenderColumnRange(start, stop, walltopf, lower, midposts,
 					SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
 
 		// indicate that no further drawing can be done in this column
@@ -542,12 +533,15 @@ void R_RenderSolidSegRange(int start, int stop)
 			rw_light = initial_light;
 
 			for (int x = start; x <= stop; x++)
+			{
 				walltopb[x] = MAX(MIN(walltopb[x], floorclip[x]), walltopf[x]);
+				lower[x] = walltopb[x] - 1;
+			}
 
 			dc_textureheight = textureheight[toptexture];
 			dc_texturemid = rw_toptexturemid;
 
-			R_RenderColumnRange(start, stop, walltopf, walltopb, topposts,
+			R_RenderColumnRange(start, stop, walltopf, lower, topposts,
 						SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
 
 			memcpy(ceilingclip + start, walltopb + start, count * sizeof(*ceilingclip));
@@ -564,12 +558,15 @@ void R_RenderSolidSegRange(int start, int stop)
 			rw_light = initial_light;
 
 			for (int x = start; x <= stop; x++)
+			{
 				wallbottomb[x] = MIN(MAX(wallbottomb[x], ceilingclip[x]), wallbottomf[x]);
+				lower[x] = wallbottomf[x] - 1;
+			}
 
 			dc_textureheight = textureheight[bottomtexture];
 			dc_texturemid = rw_bottomtexturemid;
 
-			R_RenderColumnRange(start, stop, wallbottomb, wallbottomf, bottomposts,
+			R_RenderColumnRange(start, stop, wallbottomb, lower, bottomposts,
 						SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
 
 			memcpy(floorclip + start, wallbottomb + start, count * sizeof(*floorclip));
