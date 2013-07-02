@@ -293,6 +293,24 @@ inline void R_ColumnSetup(int x, int* top, int* bottom, tallpost_t** posts, bool
 }
 
 
+static inline int R_ColumnRangeMinimumHeight(int start, int stop, int* top)
+{
+	int minheight = viewheight - 1;
+	for (int x = start; x <= stop; x++)
+		minheight = MIN(minheight, top[x]);
+
+	return MAX(minheight, 0);
+}
+
+static inline int R_ColumnRangeMaximumHeight(int start, int stop, int* bottom)
+{
+	int maxheight = 0;
+	for (int x = start; x <= stop; x++)
+		maxheight = MAX(maxheight, bottom[x]);
+
+	return MIN(maxheight, viewheight - 1);
+}
+
 //
 // R_RenderColumnRange
 //
@@ -399,47 +417,42 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		#define BLOCKSIZE (1 << BLOCKBITS)
 		#define BLOCKMASK (BLOCKSIZE - 1)
 
+		// pre-calculate the color map number for lighting for each screen column 
+		static int light_lookup[MAXWIDTH];
+		if (calc_light)
+		{
+			for (int x = start; x <= stop; x++)
+			{
+				light_lookup[x] = walllights[MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1)];
+				rw_light += rw_lightstep;
+			}
+		}
+			
 		// [SL] Render the range of columns in 64x64 pixel blocks, aligned to a grid
 		// on the screen. This is to make better use of spatial locality in the cache.
 		for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
 		{
-			fixed_t starting_light = rw_light;
-
 			int blockstartx = bx;
 			int blockstopx = MIN((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
 
-			int miny = viewheight - 1;
-			int maxy = -1;
-
-			for (int i = blockstartx; i <= blockstopx; i++)
-			{
-				miny = MIN(top[i], miny);
-				maxy = MAX(bottom[i], maxy);
-			}
-			miny = MAX(miny, 0);
-			maxy = MIN(maxy, viewheight - 1);
+			int miny = R_ColumnRangeMinimumHeight(blockstartx, blockstopx, top);
+			int maxy = R_ColumnRangeMaximumHeight(blockstartx, blockstopx, bottom);
 
 			for (int by = miny; by <= maxy; by = (by & ~BLOCKMASK) + BLOCKSIZE)
 			{
 				int blockstarty = by;
 				int blockstopy = (by & ~BLOCKMASK) + BLOCKSIZE - 1;
 
-				rw_light = starting_light;
-
 				for (int x = blockstartx; x <= blockstopx; x++)
 				{
 					if (calc_light)
-					{
-						int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-						dc_colormap = basecolormap.with(walllights[index]);
-					}
+						dc_colormap = basecolormap.with(light_lookup[x]);
 
 					dc_x = x;
 					dc_yl = MAX(top[x], blockstarty);
 					dc_yh = MIN(bottom[x], blockstopy);
 					dc_post = posts[x];
 					colblast();
-					rw_light += rw_lightstep;
 				}
 			}
 		}
