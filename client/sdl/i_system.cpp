@@ -237,33 +237,25 @@ uint64_t I_GetTime()
 	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
 
 #elif defined WIN32 && !defined _XBOX
-	return SDL_GetTicks() * 1000LL * 1000LL;
-
-	#ifdef 0
-	// [SL] may need more testing on Windows platforms
 	static bool initialized = false;
-	static uint64_t previous_count;
-	static uint64_t nanoseconds_per_count;
-	LARGE_INTEGER temp;
+	static uint64_t initial_count;
+	static double nanoseconds_per_count;
 
 	if (!initialized)
 	{
-		QueryPerformanceCounter(&temp);
-		previous_count = temp.QuadPart;
+		QueryPerformanceCounter((LARGE_INTEGER*)&initial_count);
 
-		QueryPerformanceFrequency(&temp);
-		nanoseconds_per_count = 1000LL * 1000LL * 1000LL / temp.QuadPart;
+		uint64_t temp;
+		QueryPerformanceFrequency((LARGE_INTEGER*)&temp);
+		nanoseconds_per_count = 1000.0 * 1000.0 * 1000.0 / double(temp);
 
 		initialized = true;
 	}
 
-	QueryPerformanceCounter(&temp);
-	uint64_t current_count = temp.QuadPart;
-	uint64_t value = nanoseconds_per_count * (current_count - previous_count);
+	uint64_t current_count;
+	QueryPerformanceCounter((LARGE_INTEGER*)&current_count);
 
-	previous_count = current_count;
-	return value;
-	#endif	// ifdef 0
+	return nanoseconds_per_count * (current_count - initial_count);
 
 #else
 	return SDL_GetTicks() * 1000LL * 1000LL;
