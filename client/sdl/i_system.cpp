@@ -258,7 +258,18 @@ uint64_t I_GetTime()
 	return nanoseconds_per_count * (current_count - initial_count);
 
 #else
-	return SDL_GetTicks() * 1000000LL;
+	// [SL] use SDL_GetTicks, but account for the fact that after
+	// 49 days, it wraps around since it returns a 32-bit int
+	static const uint64_t mask = 0xFFFFFFFFLL;
+	static uint64_t last_time = 0LL;
+	uint64_t current_time = SDL_GetTicks();
+
+	if (current_time < (last_time & mask))      // just wrapped around
+		last_time += mask + 1 - (last_time & mask) + current_time;
+	else
+		last_time = current_time;
+
+	return last_time * 1000000LL;
 
 #endif
 }
@@ -341,9 +352,9 @@ void I_Yield()
 // I_WaitVBL is never used to actually synchronize to the
 // vertical blank. Instead, it's used for delay purposes.
 //
-void I_WaitVBL (int count)
+void I_WaitVBL(int count)
 {
-	SDL_Delay (1000 * count / 70);
+	I_Sleep(1000000LL * 1000LL * count / 70);
 }
 
 //

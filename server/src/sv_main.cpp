@@ -2756,7 +2756,7 @@ void SV_Say(player_t &player)
 	// Flood protection
 	if (player.LastMessage.Time)
 	{
-		QWORD Difference = (I_GetTime() - player.LastMessage.Time);
+		QWORD Difference = (I_MSTime() * TICRATE / 1000 - player.LastMessage.Time);
 
 		float Delay = (float)(sv_flooddelay * TICRATE);
 
@@ -2768,7 +2768,7 @@ void SV_Say(player_t &player)
 
 	if (!player.LastMessage.Time)
 	{
-		player.LastMessage.Time = I_GetTime();
+		player.LastMessage.Time = I_MSTime() * TICRATE / 1000;
 		player.LastMessage.Message = s;
 	}
 
@@ -2816,7 +2816,7 @@ void SV_PrivMsg(player_t &player)
 	// Flood protection
 	if (player.LastMessage.Time)
 	{
-		QWORD Difference = (I_GetTime() - player.LastMessage.Time);
+		QWORD Difference = (I_MSTime() * TICRATE / 1000 - player.LastMessage.Time);
 		float Delay = (float)(sv_flooddelay * TICRATE);
 
 		if (Difference <= Delay)
@@ -2827,7 +2827,7 @@ void SV_PrivMsg(player_t &player)
 
 	if (!player.LastMessage.Time)
 	{
-		player.LastMessage.Time = I_GetTime();
+		player.LastMessage.Time = I_MSTime() * TICRATE / 1000;
 		player.LastMessage.Message = s;
 	}
 

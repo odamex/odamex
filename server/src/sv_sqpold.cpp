@@ -96,7 +96,7 @@ static std::vector<token_t> connect_tokens;
 //
 DWORD SV_NewToken()
 {
-	QWORD now = I_GetTime();
+	QWORD now = I_MSTime() * TICRATE / 1000;
 
 	token_t token;
 	token.id = rand()*time(0);
@@ -123,7 +123,7 @@ DWORD SV_NewToken()
 //
 bool SV_IsValidToken(DWORD token)
 {
-	QWORD now = I_GetTime();
+	QWORD now = I_MSTime() * TICRATE / 1000;
 
 	for(size_t i = 0; i < connect_tokens.size(); i++)
 	{
