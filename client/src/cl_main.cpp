@@ -3823,6 +3823,14 @@ void CL_SimulatePlayers()
 			
 			if (snap.isContinuous())
 			{
+				// [SL] Save the position prior to the new update so it can be
+				// used for rendering interpolation
+				player->mo->prevx = player->mo->x;
+				player->mo->prevy = player->mo->y;
+				player->mo->prevz = player->mo->z;
+				player->mo->prevangle = player->mo->angle;
+				player->mo->prevpitch = player->mo->pitch;
+
 				PlayerSnapshot prevsnap = player->snapshots.getSnapshot(world_index - 1);
 
 				v3fixed_t offset;
@@ -3849,6 +3857,17 @@ void CL_SimulatePlayers()
 			}
 
 			snap.toPlayer(player);
+
+			if (!snap.isContinuous())
+			{
+				// [SL] Save the position after to the new update so this position
+				// won't be interpolated.
+				player->mo->prevx = player->mo->x;
+				player->mo->prevy = player->mo->y;
+				player->mo->prevz = player->mo->z;
+				player->mo->prevangle = player->mo->angle;
+				player->mo->prevpitch = player->mo->pitch;
+			}
 		}
 	}
 }
