@@ -106,8 +106,9 @@ void MapThing::Serialize (FArchive &arc)
 }
 
 AActor::AActor () :
-    x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
-    pitch(0), effects(0), subsector(NULL),
+    x(0), y(0), z(0), prevx(0), prevy(0), prevz(0),
+	snext(NULL), sprev(NULL), angle(0), prevangle(0), sprite(SPR_UNKN), frame(0),
+    pitch(0), prevpitch(0), effects(0), subsector(NULL),
     floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0),
     momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
     damage(0), flags(0), flags2(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
@@ -121,9 +122,10 @@ AActor::AActor () :
 }
 
 AActor::AActor (const AActor &other) :
-    x(other.x), y(other.y), z(other.z), snext(other.snext), sprev(other.sprev),
-    angle(other.angle), sprite(other.sprite), frame(other.frame),
-    pitch(other.pitch), effects(other.effects),
+    x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy), prevz(other.prevz),
+	snext(other.snext), sprev(other.sprev),
+    angle(other.angle), prevangle(other.prevangle), sprite(other.sprite), frame(other.frame),
+    pitch(other.pitch), prevpitch(other.prevpitch), effects(other.effects),
     subsector(other.subsector),
     floorz(other.floorz), ceilingz(other.ceilingz), dropoffz(other.dropoffz),
     floorsector(other.floorsector),	radius(other.radius), height(other.height), momx(other.momx),
@@ -148,12 +150,17 @@ AActor &AActor::operator= (const AActor &other)
 	x = other.x;
     y = other.y;
     z = other.z;
+	prevx = other.prevx;
+	prevy = other.prevy;
+	prevz = other.prevz;
     snext = other.snext;
     sprev = other.sprev;
     angle = other.angle;
+	prevangle = other.prevangle;
     sprite = other.sprite;
     frame = other.frame;
     pitch = other.pitch;
+	prevpitch = other.prevpitch;
     effects = other.effects;
     subsector = other.subsector;
     floorz = other.floorz;
@@ -210,8 +217,9 @@ AActor &AActor::operator= (const AActor &other)
 //
 
 AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
-    x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
-    pitch(0), effects(0), subsector(NULL),
+    x(0), y(0), z(0), prevx(0), prevy(0), prevz(0),
+	snext(NULL), sprev(NULL), angle(0), prevangle(0), sprite(SPR_UNKN), frame(0),
+    pitch(0), prevpitch(0), effects(0), subsector(NULL),
     floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0), momx(0), momy(0), momz(0),
     validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
     special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
@@ -626,6 +634,15 @@ void AActor::RunThink ()
 {
 	if(!subsector)
 		return;
+
+	prevx = x;
+	prevy = y;
+	prevz = z;
+	if (!player)
+	{
+		prevangle = angle;
+		prevpitch = pitch;
+	}
 
     // server removal of corpses only
     if (!clientside && serverside)

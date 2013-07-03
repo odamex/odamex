@@ -152,6 +152,8 @@ static int lastcenteryfrac;
 int FieldOfView = 2048;
 int CorrectFieldOfView = 2048;
 
+fixed_t			render_lerp_amount;
+
 //
 //
 // R_PointOnSide
@@ -988,12 +990,18 @@ void R_SetupFrame (player_t *player)
 	}
 	else
 	{
-		viewx = camera->x;
-		viewy = camera->y;
-		viewz = camera->player ? camera->player->viewz : camera->z;
+		// [SL] interpolate between the current position and the previous position
+		// of the camera. If not using uncapped framerate / interpolation,
+		// render_lerp_amount will be FRACUJNIT.
+		viewx = camera->prevx + FixedMul(render_lerp_amount, camera->x - camera->prevx);
+		viewy = camera->prevy + FixedMul(render_lerp_amount, camera->y - camera->prevy);
+		if (camera->player)
+			viewz = camera->player->prevviewz + FixedMul(render_lerp_amount, camera->player->viewz - camera->player->prevviewz);
+		else
+			viewz = camera->prevz + FixedMul(render_lerp_amount, camera->z - camera->prevz);
 	}
 
-	viewangle = camera->angle + viewangleoffset;
+	viewangle = camera->prevangle + FixedMul(render_lerp_amount, camera->angle - camera->prevangle) + viewangleoffset;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
@@ -1078,7 +1086,8 @@ void R_SetupFrame (player_t *player)
 
 	// [RH] freelook stuff
 	{
-		fixed_t dy = FixedMul (FocalLengthY, finetangent[(ANG90-camera->pitch)>>ANGLETOFINESHIFT]);
+		fixed_t pitch = camera->prevpitch + FixedMul(render_lerp_amount, camera->pitch - camera->prevpitch);
+		fixed_t dy = FixedMul (FocalLengthY, finetangent[(ANG90 - pitch)>>ANGLETOFINESHIFT]);
 
 		centeryfrac = (viewheight << (FRACBITS-1)) + dy;
 		centery = centeryfrac >> FRACBITS;

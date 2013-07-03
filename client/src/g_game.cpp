@@ -2310,13 +2310,6 @@ BOOL G_CheckDemoStatus (void)
 {
 	if (demoplayback)
 	{
-		extern int starttime;
-		int endtime = 0;
-		extern bool demotest;
-
-		if (timingdemo)
-			endtime = I_GetTimePolled () - starttime;
-
 		Z_Free (demobuffer);
 
 		demoplayback = false;
@@ -2326,7 +2319,9 @@ BOOL G_CheckDemoStatus (void)
 
 		cvar_t::C_RestoreCVars ();		// [RH] Restore cvars demo might have changed
 
-		if (demotest) {
+		extern bool demotest;
+		if (demotest)
+		{
 			AActor *mo = idplayer(1).mo;
 
 			if (mo)
@@ -2335,23 +2330,29 @@ BOOL G_CheckDemoStatus (void)
 				Printf(PRINT_HIGH, "demotest:no player\n");
 		}
 
-
-		if (singledemo || timingdemo) {
+		if (singledemo || timingdemo)
+		{
 			if (timingdemo)
+			{
+				extern uint64_t starttime;
+				uint64_t endtime = I_MSTime() - starttime;
+				int realtics = endtime * TICRATE / 1000;
+
 				// Trying to get back to a stable state after timing a demo
 				// seems to cause problems. I don't feel like fixing that
 				// right now.
 				I_FatalError ("timed %i gametics in %i realtics (%.1f fps)", gametic,
-							  endtime, (float)gametic/(float)endtime*(float)TICRATE);
+							  realtics, (float)gametic/(float)realtics*(float)TICRATE);
+			}
 			else
 				Printf (PRINT_HIGH, "Demo ended.\n");
+
 			gameaction = ga_fullconsole;
 			timingdemo = false;
 			return false;
-		} else {
-			D_AdvanceDemo ();
 		}
 
+		D_AdvanceDemo ();
 		return true;
 	}
 

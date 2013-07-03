@@ -177,7 +177,7 @@ void I_FinishUpdate ()
     if (vid_ticker)
     {
 		static QWORD lasttic = 0;
-		QWORD i = I_GetTime();
+		QWORD i = I_MSTime() * TICRATE / 1000;
 		QWORD tics = i - lasttic;
 		lasttic = i;
 		if (tics > 20) tics = 20;

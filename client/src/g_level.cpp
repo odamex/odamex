@@ -79,7 +79,7 @@ EXTERN_CVAR(sv_gravity)
 EXTERN_CVAR(sv_aircontrol)
 
 // Start time for timing demos
-int starttime;
+uint64_t starttime;
 
 // ACS variables with world scope
 int ACS_WorldVars[NUM_WORLDVARS];
@@ -596,16 +596,18 @@ void G_DoLoadLevel (int position)
 	mousex = mousey = 0;
 	sendpause = sendsave = paused = sendcenterview = false;
 
-	if (timingdemo) {
+	if (timingdemo)
+	{
 		static BOOL firstTime = true;
 
-		if (firstTime) {
-			starttime = I_GetTimePolled ();
+		if (firstTime)
+		{
+			starttime = I_MSTime();
 			firstTime = false;
 		}
 	}
 
-	level.starttime = I_GetTime ();
+	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
 

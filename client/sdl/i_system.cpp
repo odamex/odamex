@@ -36,11 +36,13 @@
     #include <io.h>
     #include <direct.h>
     #include <process.h>
+    #include <mmsystem.h>
 
     #ifdef _XBOX
         #include <xtl.h>
     #else
         #include <shlwapi.h>
+		#include <winsock2.h>
     #endif // !_XBOX
 #endif // WIN32
 
@@ -50,6 +52,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <limits.h>
+#include <time.h>
 #endif
 
 #ifdef HAVE_PWD_H
@@ -105,8 +108,6 @@ extern "C"
 #endif // _XBOX
 
 EXTERN_CVAR (r_showendoom)
-
-QWORD (*I_GetTime) (void);
 
 ticcmd_t emptycmd;
 ticcmd_t *I_BaseTiccmd(void)
@@ -222,51 +223,105 @@ void I_EndRead(void)
 {
 }
 
-void I_Sleep(int milliseconds)
-{
-	SDL_Delay(milliseconds);
-}
-
-//
-// I_UnwrapTime
-//
-// [SL] - Handles 32-bit integer wrap-around with time values.
-// denis - use this unless you want your program
-// to get confused every 49 days due to DWORD limit
-//
-static uint64_t I_UnwrapTime(uint32_t val32)
-{
-	static const uint64_t mask = 0xFFFFFFFF;
-	static uint64_t last_time = 0;
-	uint64_t current_time = val32;
-
-	if (current_time < (last_time & mask))      // just wrapped around
-		last_time += mask + 1 - (last_time & mask) + current_time;
-	else
-		last_time = current_time;
-
-	return last_time;
-}
-
-// [RH] Returns time in milliseconds
-QWORD I_MSTime (void)
-{
-   return I_UnwrapTime(SDL_GetTicks());
-}
-
 //
 // I_GetTime
-// returns time in 1/35th second tics
 //
-QWORD I_GetTimePolled (void)
+// [SL] Retrieve an arbitrarily-based time from a high-resolution timer with
+// nanosecond accuracy.
+//
+uint64_t I_GetTime()
 {
-	return (I_MSTime()*TICRATE)/1000;
+#if defined UNIX
+	timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
+
+#elif defined WIN32 && !defined _XBOX
+	return SDL_GetTicks() * 1000LL * 1000LL;
+
+	#ifdef 0
+	// [SL] may need more testing on Windows platforms
+	static bool initialized = false;
+	static uint64_t previous_count;
+	static uint64_t nanoseconds_per_count;
+	LARGE_INTEGER temp;
+
+	if (!initialized)
+	{
+		QueryPerformanceCounter(&temp);
+		previous_count = temp.QuadPart;
+
+		QueryPerformanceFrequency(&temp);
+		nanoseconds_per_count = 1000LL * 1000LL * 1000LL / temp.QuadPart;
+
+		initialized = true;
+	}
+
+	QueryPerformanceCounter(&temp);
+	uint64_t current_count = temp.QuadPart;
+	uint64_t value = nanoseconds_per_count * (current_count - previous_count);
+
+	previous_count = current_count;
+	return value;
+	#endif	// ifdef 0
+
+#else
+	return SDL_GetTicks() * 1000LL * 1000LL;
+
+#endif
 }
 
+QWORD I_MSTime()
+{
+	return I_GetTime() / (1000LL * 1000LL);
+}
+
+//
+// I_Sleep
+//
+// Sleeps for the specified number of nanoseconds, yielding control to the 
+// operating system. In actuality, the highest resolution availible with
+// the select() function is 1 microsecond, but the nanosecond parameter
+// is used for consistency with I_GetTime().
+//
+void I_Sleep(uint64_t sleep_time)
+{
+	const uint64_t one_billion = 1000LL * 1000LL * 1000LL;
+	int result;
+	uint64_t start_time = I_GetTime();
+
+	// loop to finish sleeping  if select() gets interrupted by the signal handler
+	do
+	{
+		uint64_t current_time = I_GetTime();
+		sleep_time -= current_time - start_time;
+
+		struct timeval timeout;
+		timeout.tv_sec = sleep_time / one_billion;
+		timeout.tv_usec = (sleep_time % one_billion) / 1000;
+
+		result = select(0, NULL, NULL, NULL, &timeout);
+	} while (result == -1 && errno == EINTR);
+}
+
+//
+// I_Yield
+//
+// Sleeps for 1 millisecond
+//
+void I_Yield()
+{
+	I_Sleep(1000LL * 1000LL);		// sleep for 1ms
+}
+
+//
+// I_WaitVBL
+//
+// I_WaitVBL is never used to actually synchronize to the
+// vertical blank. Instead, it's used for delay purposes.
+//
 void I_WaitVBL (int count)
 {
-	// I_WaitVBL is never used to actually synchronize to the
-	// vertical blank. Instead, it's used for delay purposes.
 	SDL_Delay (1000 * count / 70);
 }
 
@@ -341,8 +396,6 @@ void SetLanguageIDs ()
 //
 void I_Init (void)
 {
-	I_GetTime = I_GetTimePolled;
-
 	I_InitSound ();
 	I_InitHardware ();
 }
