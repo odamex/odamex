@@ -56,3 +56,8 @@ if(WIN32)
 elseif(SOLARIS)
   target_link_libraries(odasrv socket nsl)
 endif()
+
+if(UNIX)
+	target_link_libraries(odasrv rt)
+endif()
+

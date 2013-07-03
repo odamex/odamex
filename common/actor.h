@@ -341,13 +341,19 @@ public:
     fixed_t		y;
     fixed_t		z;
 
+	fixed_t		prevx;
+	fixed_t		prevy;
+	fixed_t		prevz;
+
 	AActor			*snext, **sprev;	// links in sector (if needed)
 
     //More drawing info: to determine current sprite.
     angle_t		angle;	// orientation
+	angle_t		prevangle;
     spritenum_t		sprite;	// used to find patch_t and flip value
     int			frame;	// might be ORed with FF_FULLBRIGHT
 	fixed_t		pitch;
+	angle_t		prevpitch;
 
 	DWORD			effects;			// [RH] see p_effect.h
 

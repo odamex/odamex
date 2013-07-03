@@ -55,6 +55,7 @@
 #include "g_game.h"
 #include "p_setup.h"
 #include "r_local.h"
+#include "r_main.h"
 #include "d_main.h"
 #include "d_dehacked.h"
 #include "s_sound.h"
@@ -1122,50 +1123,53 @@ void D_AddCmdParameterFiles(void)
 //
 void D_RunTics(void (*logic_func)(), void(*render_func)())
 {
-	static const double fixed_frame_time = 1000.0 / double(TICRATE);
-	static unsigned int current_time = I_MSTime();
-	static double time_accum = 0.0;
+	static const uint64_t dt = 1000LL * 1000LL * 1000LL / TICRATE;
 
+	static uint64_t previous_time = I_GetTime();
+	static uint64_t accumulator = 0LL;
+
+	// should the physics run at 35Hz?
 	bool fixed_logic_ticrate = !timingdemo;
+	// should the renderer run at 35Hz?
 	bool fixed_render_ticrate = !timingdemo && capfps;
 
-	unsigned int new_time = I_MSTime();
+	uint64_t current_time = I_GetTime();
+	uint64_t frame_time = current_time - previous_time;
+	previous_time = current_time;
 
-	unsigned int frame_time = new_time - current_time;
-	current_time = new_time;
+	accumulator += frame_time;
 
-	time_accum += frame_time;
-
-	while (time_accum >= fixed_frame_time)
+	if (fixed_logic_ticrate)
 	{
-		if (fixed_logic_ticrate)
+		while (accumulator >= dt)
+		{
 			logic_func();
-
-		if (fixed_render_ticrate)
-			render_func();
-
-		time_accum -= fixed_frame_time;
-	}
-
-	if (!fixed_logic_ticrate)
-		logic_func();
-
-	if (!fixed_render_ticrate)
-		render_func();
-
-	if (fixed_logic_ticrate && fixed_render_ticrate)
-	{
-		unsigned int delta_time = I_MSTime() - new_time;
-
-		// sleep until the next tic starts
-		if (delta_time < fixed_frame_time)
-			I_Sleep(fixed_frame_time - delta_time);
-		else
-			I_Sleep(1);
+			accumulator -= dt;
+		} 
 	}
 	else
 	{
-		I_Sleep(1);			// don't busy-wait
+		logic_func();
+	}
+
+	// [SL] use linear interpolation for rendering entities if the renderer
+	// framerate is not synced with the physics frequency
+	if (fixed_render_ticrate != fixed_logic_ticrate && !(paused || menuactive))
+		render_lerp_amount = clamp((fixed_t)(accumulator * FRACUNIT / dt), 0, FRACUNIT);
+	else
+		render_lerp_amount = FRACUNIT;
+
+	render_func();
+
+	if (fixed_render_ticrate)
+	{
+		uint64_t sleep_start_time = I_GetTime();
+		if (current_time + dt > sleep_start_time)
+			I_Sleep(current_time + dt - sleep_start_time);
+	}
+	else
+	{
+		I_Yield();
 	}
 }
 

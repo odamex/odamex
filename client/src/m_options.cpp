@@ -1974,7 +1974,7 @@ void M_OptResponder (event_t *ev)
 					OldBits = DisplayBits;
 					NewBits = (int)vid_32bpp ? 32 : 8;
 					setmodeneeded = true;
-					testingmode = I_GetTime() + 5 * TICRATE;
+					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
 					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 					SetModesMenu (NewWidth, NewHeight, NewBits);
 				}

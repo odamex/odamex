@@ -915,7 +915,11 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0 ||
 		(thing->player && thing->player->spectator))
 		return;
-	
+
+	fixed_t thingx = thing->prevx + FixedMul(render_lerp_amount, thing->x - thing->prevx);
+	fixed_t thingy = thing->prevy + FixedMul(render_lerp_amount, thing->y - thing->prevy);
+	fixed_t thingz = thing->prevz + FixedMul(render_lerp_amount, thing->z - thing->prevz);
+
 #ifdef RANGECHECK
 	if ((unsigned)thing->sprite >= (unsigned)numsprites)
 	{
@@ -940,7 +944,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	if (sprframe->rotate)
 	{
 		// choose a different rotation based on player view
-		rot = (R_PointToAngle(thing->x, thing->y) - thing->angle + (unsigned)(ANG45/2)*9) >> 29;
+		rot = (R_PointToAngle(thingx, thingy) - thing->angle + (unsigned)(ANG45/2)*9) >> 29;
 		lump = sprframe->lump[rot];
 		flip = (BOOL)sprframe->flip[rot];
 	}

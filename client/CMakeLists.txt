@@ -107,6 +107,10 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     target_link_libraries(odamex socket nsl)
   endif()
 
+  if(UNIX)
+    target_link_libraries(odamex rt)
+  endif()
+
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
   set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
   set(MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}")

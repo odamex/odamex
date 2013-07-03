@@ -36,11 +36,13 @@
     #include <io.h>
     #include <direct.h>
     #include <process.h>
+    #include <mmsystem.h>
 
     #ifdef _XBOX
         #include <xtl.h>
     #else
         #include <shlwapi.h>
+		#include <winsock2.h>
     #endif // !_XBOX
 #endif // WIN32
 
@@ -50,6 +52,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <limits.h>
+#include <time.h>
 #endif
 
 #ifdef HAVE_PWD_H
@@ -105,8 +108,6 @@ extern "C"
 #endif // _XBOX
 
 EXTERN_CVAR (r_showendoom)
-
-QWORD (*I_GetTime) (void);
 
 ticcmd_t emptycmd;
 ticcmd_t *I_BaseTiccmd(void)
@@ -225,52 +226,138 @@ void I_EndRead(void)
 {
 }
 
-void I_Sleep(int milliseconds)
+//
+// I_GetTime
+//
+// [SL] Retrieve an arbitrarily-based time from a high-resolution timer with
+// nanosecond accuracy.
+//
+uint64_t I_GetTime()
 {
-	SDL_Delay(milliseconds);
-}
+#if defined UNIX
+	timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
 
-//
-// I_UnwrapTime
-//
-// [SL] - Handles 32-bit integer wrap-around with time values.
-// denis - use this unless you want your program
-// to get confused every 49 days due to DWORD limit
-//
-static uint64_t I_UnwrapTime(uint32_t val32)
-{
-	static const uint64_t mask = 0xFFFFFFFF;
-	static uint64_t last_time = 0;
-	uint64_t current_time = val32;
+#elif defined WIN32 && !defined _XBOX
+	static bool initialized = false;
+	static uint64_t initial_count;
+	static double nanoseconds_per_count;
+
+	if (!initialized)
+	{
+		QueryPerformanceCounter((LARGE_INTEGER*)&initial_count);
+
+		uint64_t temp;
+		QueryPerformanceFrequency((LARGE_INTEGER*)&temp);
+		nanoseconds_per_count = 1000.0 * 1000.0 * 1000.0 / double(temp);
+
+		initialized = true;
+	}
+
+	uint64_t current_count;
+	QueryPerformanceCounter((LARGE_INTEGER*)&current_count);
+
+	return nanoseconds_per_count * (current_count - initial_count);
+
+#else
+	// [SL] use SDL_GetTicks, but account for the fact that after
+	// 49 days, it wraps around since it returns a 32-bit int
+	static const uint64_t mask = 0xFFFFFFFFLL;
+	static uint64_t last_time = 0LL;
+	uint64_t current_time = SDL_GetTicks();
 
 	if (current_time < (last_time & mask))      // just wrapped around
 		last_time += mask + 1 - (last_time & mask) + current_time;
 	else
 		last_time = current_time;
 
-	return last_time;
+	return last_time * 1000000LL;
+
+#endif
 }
 
-// [RH] Returns time in milliseconds
-QWORD I_MSTime (void)
+QWORD I_MSTime()
 {
-   return I_UnwrapTime(SDL_GetTicks());
+	return I_GetTime() / (1000000LL);
 }
 
 //
-// I_GetTime
-// returns time in 1/35th second tics
+// I_Sleep
 //
-QWORD I_GetTimePolled (void)
+// Sleeps for the specified number of nanoseconds, yielding control to the 
+// operating system. In actuality, the highest resolution availible with
+// the select() function is 1 microsecond, but the nanosecond parameter
+// is used for consistency with I_GetTime().
+//
+void I_Sleep(uint64_t sleep_time)
 {
-	return (I_MSTime()*TICRATE)/1000;
+	const uint64_t one_billion = 1000LL * 1000LL * 1000LL;
+
+#if defined UNIX
+	uint64_t start_time = I_GetTime();
+	int result;
+
+	// loop to finish sleeping  if select() gets interrupted by the signal handler
+	do
+	{
+		uint64_t current_time = I_GetTime();
+		sleep_time -= current_time - start_time;
+
+		struct timeval timeout;
+		timeout.tv_sec = sleep_time / one_billion;
+		timeout.tv_usec = (sleep_time % one_billion) / 1000;
+
+		result = select(0, NULL, NULL, NULL, &timeout);
+	} while (result == -1 && errno == EINTR);
+
+#elif defined WIN32
+	uint64_t start_time = I_GetTime();
+	if (sleep_time > 5000000LL)
+		sleep_time -= 500000LL;		// [SL] hack to get the timing right for 35Hz
+
+	// have to create a dummy socket for select to work on Windows
+	static bool initialized = false;
+	static fd_set dummy;
+
+	if (!initialized)
+	{
+		SOCKET s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+		FD_ZERO(&dummy);
+		FD_SET(s, &dummy);
+	}
+
+	struct timeval timeout;
+	timeout.tv_sec = sleep_time / one_billion;
+	timeout.tv_usec = (sleep_time % one_billion) / 1000;
+
+	select(0, NULL, NULL, &dummy, &timeout);
+
+#else
+	SDL_Delay(sleep_time / 1000000LL);
+
+#endif
 }
 
-void I_WaitVBL (int count)
+//
+// I_Yield
+//
+// Sleeps for 1 millisecond
+//
+void I_Yield()
 {
-	// I_WaitVBL is never used to actually synchronize to the
-	// vertical blank. Instead, it's used for delay purposes.
-	SDL_Delay (1000 * count / 70);
+	I_Sleep(1000LL * 1000LL);		// sleep for 1ms
+}
+
+//
+// I_WaitVBL
+//
+// I_WaitVBL is never used to actually synchronize to the
+// vertical blank. Instead, it's used for delay purposes.
+//
+void I_WaitVBL(int count)
+{
+	I_Sleep(1000000LL * 1000LL * count / 70);
 }
 
 //
@@ -344,8 +431,6 @@ void SetLanguageIDs ()
 //
 void I_Init (void)
 {
-	I_GetTime = I_GetTimePolled;
-
 	I_InitSound ();
 	I_InitHardware ();
 }

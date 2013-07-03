@@ -63,16 +63,8 @@ void I_ExpandHomeDir (std::string &path);
 void *I_ZoneBase (size_t *size);
 
 
-// Called by D_DoomLoop,
-// returns current time in tics.
-extern QWORD (*I_GetTime) (void);
-
-// like I_GetTime, except it waits for a new tic before returning
-extern QWORD (*I_WaitForTic) (QWORD);
-
-QWORD I_GetTimePolled (void);
-
-void I_Sleep(unsigned int sleep_time);
+uint64_t I_GetTime();
+void I_Sleep(uint64_t sleep_time);
 
 //
 // Called by D_DoomLoop,

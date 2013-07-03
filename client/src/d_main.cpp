@@ -163,14 +163,10 @@ void D_ProcessEvents (void)
 	// [RH] If testing mode, do not accept input until test is over
 	if (testingmode)
 	{
-		if (testingmode <= I_GetTime())
-		{
+		if (testingmode <= I_MSTime() * TICRATE / 1000)
 			M_RestoreMode ();
-		}
 		else
-		{
 			M_ModeFlashTestText();
-		}
 
 		return;
 	}
