@@ -29,26 +29,121 @@
 #include "f_wipe.h"
 #include "c_cvars.h"
 #include "i_music.h"
+#include "r_draw.h"
 
 //
 //		SCREEN WIPE PACKAGE
 //
 
-enum
+typedef enum
 {
 	wipe_None,			// don't bother
 	wipe_Melt,			// weird screen melt
 	wipe_Burn,			// fade in shape of fire
 	wipe_Fade,			// crossfade from old to new
 	wipe_NUMWIPES
-};
+} wipe_type_t;
 
+static bool in_progress = false;
+
+static wipe_type_t current_wipe_type;
 EXTERN_CVAR (r_wipetype)
-static int Currentr_wipetype;
 
-static short *wipe_scr_start = NULL;
-static short *wipe_scr_end = NULL;
-static int *y = NULL;
+static byte* wipe_scr_start = NULL;
+static byte* wipe_scr_end = NULL;
+
+// Melt -------------------------------------------------------------
+
+// [SL] The standard Doom screen wipe. This implementation borrows
+// heavily from Eternity Engine, written by James Haley and SoM.
+//
+
+static int worms[320];
+
+void Wipe_StartMelt()
+{
+	worms[0] = - (M_Random() & 15); 
+
+	for (int x = 1; x < 320; x++)
+	{
+		int random_value = (M_Random() % 3) - 1;
+		worms[x] = worms[x - 1] + random_value;
+		worms[x] = clamp(worms[x], -15, 0);
+	}
+
+	// copy each column of the current screen image to wipe_scr_start
+	// each column is transposed and stored in row-major form for ease of use
+	for (int x = 0; x < screen->width; x++)
+	{
+		int sourcepitch = screen->pitch;
+
+		byte* source = screen->buffer + x;
+		byte* dest = wipe_scr_start + screen->height * x;
+
+		for (int y = 0; y < screen->height; y++)
+		{
+			*dest = *source;
+			source += sourcepitch;
+			dest++;
+		}
+	}
+}
+
+void Wipe_StopMelt()
+{
+}
+
+bool Wipe_TickMelt()
+{
+	bool done = true;
+
+	for (int x = 0; x < 320; x++)
+	{
+		if (worms[x] < 0)
+		{
+			++worms[x];
+			done = false;
+		}
+		else if (worms[x] < 200)
+		{
+			int dy = (worms[x] < 16) ? worms[x] + 1 : 8;
+			if (worms[x] + dy >= 200)
+				dy = 200 - worms[x];
+		
+			worms[x] += dy;
+			done = false;
+		}
+	}
+
+	return done;
+}
+
+void Wipe_DrawMelt()
+{
+	for (int x = 0; x < screen->width; x++)
+	{
+		int wormx = x * 320 / screen->width;
+		int wormy = worms[wormx] > 0 ? worms[wormx] : 0;
+
+		wormy = wormy * screen->height / 200;
+
+		byte* source = wipe_scr_start + screen->height * x;
+		byte* dest = screen->buffer + screen->pitch * wormy + x;
+
+		for (int y = screen->height - wormy; y--; )
+		{
+			*dest = *source;
+			dest += screen->pitch;
+			source++;
+		}
+	}
+}
+
+
+// Burn -------------------------------------------------------------
+
+// Well let's burn, until the sun burns your eyes and keep burnin' 'til it sets
+// on the Westside...
 
 // [RH] Fire Wipe
 #define FIREWIDTH	64
@@ -57,165 +152,34 @@ static byte *burnarray = NULL;
 static int density;
 static int burntime;
 
-// [RH] Crossfade
-static int fade;
-
-
-// Melt -------------------------------------------------------------
-
-void wipe_shittyColMajorXform (short *array)
+void Wipe_StartBurn()
 {
-	int x, y;
-	short *dest;
-	int width = screen->width / 2;
-
-	dest = new short[width*screen->height*2];
-
-	for(y = 0; y < screen->height; y++)
-		for(x = 0; x < width; x++)
-			dest[x*screen->height+y] = array[y*width+x];
-
-	memcpy(array, dest, screen->width*screen->height);
-
-	delete[] dest;
-}
-
-int wipe_initMelt (int ticks)
-{
-	int i, r;
-
-	// copy start screen to main screen
-	screen->DrawBlock (0, 0, screen->width, screen->height, (byte *)wipe_scr_start);
-
-	// makes this wipe faster (in theory)
-	// to have stuff in column-major format
-	wipe_shittyColMajorXform (wipe_scr_start);
-	wipe_shittyColMajorXform (wipe_scr_end);
-
-	// setup initial column positions
-	// (y<0 => not ready to scroll yet)
-	y = new int[screen->width*sizeof(int)];
-	y[0] = -(M_Random()&0xf);
-	for (i = 1; i < screen->width; i++)
-	{
-		r = (M_Random()%3) - 1;
-		y[i] = y[i-1] + r;
-		if (y[i] > 0) y[i] = 0;
-		else if (y[i] == -16) y[i] = -15;
-	}
-
-	return 0;
-}
-
-int wipe_doMelt (int ticks)
-{
-	int 		i;
-	int 		j;
-	int 		dy;
-	int 		idx;
-
-	short*		s;
-	short*		d;
-	BOOL	 	done = true;
-
-	int width = screen->width / 2;
-
-	while (ticks--)
-	{
-		for (i = 0; i < width; i++)
-		{
-			if (y[i]<0)
-			{
-				y[i]++; done = false;
-
-				s = &wipe_scr_start[i*screen->height];
-				d = &((short *)screen->buffer)[i];
-				idx = 0;
-				
-				for (j=screen->height;j;j--)
-				{
-					d[idx] = *(s++);
-					idx += screen->pitch/2;
-				}
-			}
-			else if (y[i] < screen->height)
-			{
-				dy = (y[i] < 16) ? y[i]+1 : 8;
-				dy = (dy * screen->height) / 200;
-				if (y[i]+dy >= screen->height)
-					dy = screen->height - y[i];
-				s = &wipe_scr_end[i*screen->height+y[i]];
-				d = &((short *)screen->buffer)[y[i]*(screen->pitch/2)+i];
-				idx = 0;
-				for (j=dy;j;j--)
-				{
-					d[idx] = *(s++);
-					idx += screen->pitch/2;
-				}
-				y[i] += dy;
-				s = &wipe_scr_start[i*screen->height];
-				d = &((short *)screen->buffer)[y[i]*(screen->pitch/2)+i];
-				idx = 0;
-				for (j=screen->height-y[i];j;j--)
-				{
-					d[idx] = *(s++);
-					idx += screen->pitch/2;
-				}
-				done = false;
-			}
-		}
-	}
-
-	return done;
-
-}
-
-int wipe_exitMelt (int ticks)
-{
-	if (wipe_scr_start != NULL)
-	{
-        delete[] wipe_scr_start;
-        wipe_scr_start = NULL;
-	}
-	
-	if (wipe_scr_end != NULL)
-	{
-        delete[] wipe_scr_end;
-        wipe_scr_end = NULL;
-	}
-	
-	if (y != NULL)
-	{
-        delete[] y;
-        y = NULL;
-	}
-	
-	return 0;
-}
-
-// Burn -------------------------------------------------------------
-
-int wipe_initBurn (int ticks)
-{
-	burnarray = new byte[FIREWIDTH * (FIREHEIGHT+5)];
-	memset (burnarray, 0, FIREWIDTH * (FIREHEIGHT+5));
+	const size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
+	burnarray = (byte*)(Z_Malloc(array_size, PU_STATIC, (void**)&burnarray));
+	memset(burnarray, 0, array_size);
 	density = 4;
 	burntime = 0;
-	return 0;
 }
 
-int wipe_doBurn (int ticks)
+void Wipe_StopBurn()
 {
-	static int voop;
-	BOOL done;
+	if (burnarray)
+	{
+		Z_Free(burnarray);
+		burnarray = NULL;
+	}
+}
+
+bool Wipe_TickBurn()
+{
+	static int voop = 0;
 
 	// This is a modified version of the fire from the player
 	// setup menu.
-	burntime += ticks;
-	ticks *= 2;
+	burntime++;
 
-	// Make the fire burn
-	while (ticks--)
+	// Make the fire burn (twice per tic)
+	for (int count = 0; count < 2; count++)
 	{
 		int a, b;
 		byte *from;
@@ -289,219 +253,241 @@ int wipe_doBurn (int ticks)
 		}
 	}
 
-	// Draw the screen
+	// check if done
+	if (burntime > 40)
+		return true;
+
+	int x, y;
+	fixed_t firex, firey;
+	fixed_t xstep = (FIREWIDTH * FRACUNIT) / screen->width;
+	fixed_t ystep = (FIREHEIGHT * FRACUNIT) / screen->height;
+
+	for (y = 0, firey = 0; y < screen->height; y++, firey += ystep)
 	{
-		fixed_t xstep, ystep, firex, firey;
-		int x, y;
-		byte *to, *fromold, *fromnew;
-
-		xstep = (FIREWIDTH * FRACUNIT) / screen->width;
-		ystep = (FIREHEIGHT * FRACUNIT) / screen->height;
-		to = screen->buffer;
-		fromold = (byte *)wipe_scr_start;
-		fromnew = (byte *)wipe_scr_end;
-		done = true;
-
-		for (y = 0, firey = 0; y < screen->height; y++, firey += ystep)
+		for (x = 0, firex = 0; x < screen->width; x++, firex += xstep)
 		{
-			for (x = 0, firex = 0; x < screen->width; x++, firex += xstep)
-			{
-				int fglevel;
+			int fglevel = burnarray[(firex>>FRACBITS)+(firey>>FRACBITS)*FIREWIDTH] / 2;
 
-				fglevel = burnarray[(firex>>FRACBITS)+(firey>>FRACBITS)*FIREWIDTH] / 2;
-				if (fglevel >= 63)
-				{
-					to[x] = fromnew[x];
-				}
-				else if (fglevel == 0)
-				{
-					to[x] = fromold[x];
-					done = false;
-				}
-				else
-				{
-					int bglevel = 64-fglevel;
-					unsigned int *fg2rgb = Col2RGB8[fglevel];
-					unsigned int *bg2rgb = Col2RGB8[bglevel];
-					unsigned int fg = fg2rgb[fromnew[x]];
-					unsigned int bg = bg2rgb[fromold[x]];
-					fg = (fg+bg) | 0x1f07c1f;
-					to[x] = RGB32k[0][0][fg & (fg>>15)];
-					done = false;
-				}
-			}
-			fromold += screen->width;
-			fromnew += screen->width;
-			to += screen->pitch;
+			if (fglevel < 63)
+				return false;
 		}
 	}
 
-	return done || (burntime > 40);
+	return true;
 }
 
-int wipe_exitBurn (int ticks)
+void Wipe_DrawBurn()
 {
-	if (wipe_scr_start != NULL)
-	{
-        delete[] wipe_scr_start;
-        wipe_scr_start = NULL;
-	}
-	
-	if (wipe_scr_end != NULL)
-	{
-        delete[] wipe_scr_end;
-        wipe_scr_end = NULL;
-	}
-	
-	if (burnarray != NULL)
-	{
-        delete[] burnarray;
-        burnarray = NULL;
-	}
-	
-	return 0;
-}
+	fixed_t xstep, ystep, firex, firey;
+	int x, y;
+	byte *to, *fromold, *fromnew;
 
-// Crossfade --------------------------------------------------------
+	xstep = (FIREWIDTH * FRACUNIT) / screen->width;
+	ystep = (FIREHEIGHT * FRACUNIT) / screen->height;
+	to = screen->buffer;
+	fromold = (byte *)wipe_scr_start;
+	fromnew = (byte *)wipe_scr_end;
 
-int wipe_initFade (int ticks)
-{
-	fade = 0;
-	return 0;
-}
+	screen->GetBlock(0, 0, screen->width, screen->height, (byte *)wipe_scr_end);
 
-int wipe_doFade (int ticks)
-{
-	fade += ticks;
-	if (fade > 64)
+	for (y = 0, firey = 0; y < screen->height; y++, firey += ystep)
 	{
-		screen->DrawBlock (0, 0, screen->width, screen->height, (byte *)wipe_scr_end);
-		return 1;
-	}
-	else
-	{
-		int x, y;
-		fixed_t bglevel = 64 - fade;
-		unsigned int *fg2rgb = Col2RGB8[fade];
-		unsigned int *bg2rgb = Col2RGB8[bglevel];
-		byte *fromnew = (byte *)wipe_scr_end;
-		byte *fromold = (byte *)wipe_scr_start;
-		byte *to = screen->buffer;
-
-		for (y = 0; y < screen->height; y++)
+		for (x = 0, firex = 0; x < screen->width; x++, firex += xstep)
 		{
-			for (x = 0; x < screen->width; x++)
+			int fglevel;
+
+			fglevel = burnarray[(firex>>FRACBITS)+(firey>>FRACBITS)*FIREWIDTH] / 2;
+			if (fglevel >= 63)
 			{
+				to[x] = fromnew[x];
+			}
+			else if (fglevel == 0)
+			{
+				to[x] = fromold[x];
+			}
+			else
+			{
+				int bglevel = 64-fglevel;
+				unsigned int *fg2rgb = Col2RGB8[fglevel];
+				unsigned int *bg2rgb = Col2RGB8[bglevel];
 				unsigned int fg = fg2rgb[fromnew[x]];
 				unsigned int bg = bg2rgb[fromold[x]];
 				fg = (fg+bg) | 0x1f07c1f;
 				to[x] = RGB32k[0][0][fg & (fg>>15)];
 			}
-			fromnew += screen->width;
-			fromold += screen->width;
-			to += screen->pitch;
 		}
+		fromold += screen->width;
+		fromnew += screen->width;
+		to += screen->pitch;
 	}
-	fade++;
-	return 0;
 }
 
-int wipe_exitFade (int ticks)
+
+// Crossfade --------------------------------------------------------
+
+int static fade = 0;
+
+void Wipe_StartFade()
 {
-	if (wipe_scr_start != NULL)
-	{
-        delete[] wipe_scr_start;
-        wipe_scr_start = NULL;
-	}
-	
-	if (wipe_scr_end != NULL)
-	{
-        delete[] wipe_scr_end;
-        wipe_scr_end = NULL;
-	}
-	
-	return 0;
+	fade = 0;
 }
+
+void Wipe_StopFade()
+{
+}
+
+bool Wipe_TickFade()
+{
+	fade += 2;
+	return (fade > 64);
+}
+
+void Wipe_DrawFade()
+{
+	fixed_t bglevel = 64 - fade;
+	unsigned int *fg2rgb = Col2RGB8[fade];
+	unsigned int *bg2rgb = Col2RGB8[bglevel];
+	byte *fromnew = (byte *)wipe_scr_end;
+	byte *fromold = (byte *)wipe_scr_start;
+	byte *to = screen->buffer;
+
+	screen->GetBlock(0, 0, screen->width, screen->height, (byte *)wipe_scr_end);
+
+	for (int y = 0; y < screen->height; y++)
+	{
+		for (int x = 0; x < screen->width; x++)
+		{
+			unsigned int fg = fg2rgb[fromnew[x]];
+			unsigned int bg = bg2rgb[fromold[x]];
+			fg = (fg+bg) | 0x1f07c1f;
+			to[x] = RGB32k[0][0][fg & (fg>>15)];
+		}
+
+		fromnew += screen->width;
+		fromold += screen->width;
+		to += screen->pitch;
+	}
+}
+
+
 
 // General Wipe Functions -------------------------------------------
 
-int wipe_StartScreen (void)
-{
-	Currentr_wipetype = (int)r_wipetype;
-	if (Currentr_wipetype < 0)
-		Currentr_wipetype = 0;
-	else if (Currentr_wipetype >= wipe_NUMWIPES)
-		Currentr_wipetype = wipe_NUMWIPES-1;
+static void (*wipe_start_func)();
+static void (*wipe_stop_func)();
+static bool (*wipe_tick_func)();
+static void (*wipe_draw_func)();
 
-	if (Currentr_wipetype)
+//
+// Wipe_Start
+//
+// Initializes the function pointers for the wiping animation system.
+//
+void Wipe_Start()
+{
+	if (r_wipetype.asInt() < 0 || r_wipetype.asInt() >= int(wipe_NUMWIPES))
+		current_wipe_type = wipe_Melt;
+	else
+		current_wipe_type = static_cast<wipe_type_t>(r_wipetype.asInt());
+
+	if (current_wipe_type == wipe_Melt)
 	{
-        delete[] wipe_scr_start;
-        
-        if (screen->is8bit())
-            wipe_scr_start = new short[screen->width * screen->height / 2];
-        else
-            wipe_scr_start = new short[screen->width * screen->height * 2];
-		
-		screen->GetBlock (0, 0, screen->width, screen->height, (byte *)wipe_scr_start);
+		wipe_start_func = Wipe_StartMelt;
+		wipe_stop_func = Wipe_StopMelt;
+		wipe_tick_func = Wipe_TickMelt;
+		wipe_draw_func = Wipe_DrawMelt;
 	}
-
-	return 0;
-}
-
-int wipe_EndScreen (void)
-{
-	if (Currentr_wipetype)
+	else if (current_wipe_type == wipe_Burn)
 	{
-        delete[] wipe_scr_end;
-            
-        if (screen->is8bit())
-            wipe_scr_end = new short[screen->width * screen->height / 2];
-        else
-            wipe_scr_end = new short[screen->width * screen->height * 2];
-	    
-		screen->GetBlock (0, 0, screen->width, screen->height, (byte *)wipe_scr_end);
+		wipe_start_func = Wipe_StartBurn;
+		wipe_stop_func = Wipe_StopBurn;
+		wipe_tick_func = Wipe_TickBurn;
+		wipe_draw_func = Wipe_DrawBurn;
 	}
-
-	return 0;
-}
-
-int wipe_ScreenWipe (int ticks)
-{
-	static BOOL	go = 0;		// when zero, stop the wipe
-	static int (*wipes[])(int) =
+	else if (current_wipe_type == wipe_Fade)
 	{
-		wipe_initMelt, wipe_doMelt, wipe_exitMelt,
-		wipe_initBurn, wipe_doBurn, wipe_exitBurn,
-		wipe_initFade, wipe_doFade, wipe_exitFade
-	};
-	int rc;
+		wipe_start_func = Wipe_StartFade;
+		wipe_stop_func = Wipe_StopFade;
+		wipe_tick_func = Wipe_TickFade;
+		wipe_draw_func = Wipe_DrawFade;
+	}	
 
-	// [SL] 2011-12-31 - Continue to play music during screenwipe so
-	// notes do not hang
-	I_UpdateMusic();
+	//  allocate data for the temporary screens
+	int pixel_size = screen->is8bit() ? sizeof(byte) : sizeof(int);
+
+	if (wipe_scr_start)
+		Z_Free(wipe_scr_start);
+	if (wipe_scr_end)
+		Z_Free(wipe_scr_end);
+
+	wipe_scr_start = (byte*)(Z_Malloc(screen->width * screen->height * pixel_size,
+									PU_STATIC, (void**)&wipe_scr_start));
+	wipe_scr_end = (byte*)(Z_Malloc(screen->width * screen->height * pixel_size,
+									PU_STATIC, (void**)&wipe_scr_end));
 	
-	if (Currentr_wipetype == wipe_None)
+	screen->GetBlock(0, 0, screen->width, screen->height, (byte *)wipe_scr_start);
+	screen->GetBlock(0, 0, screen->width, screen->height, (byte *)wipe_scr_end);
+
+	in_progress = true;
+	wipe_start_func();
+}
+
+//
+// Wipe_Stop
+//
+// Performs cleanup following the completion of the wipe animation.
+//
+static void Wipe_Stop()
+{
+	in_progress = false;
+	wipe_stop_func();
+
+	if (wipe_scr_start)
+	{
+		Z_Free(wipe_scr_start);
+		wipe_scr_start = NULL;
+	}
+	if (wipe_scr_end)
+	{
+		Z_Free(wipe_scr_end);
+		wipe_scr_end = NULL;
+	}
+}
+
+//
+// Wipe_Ticker
+//
+// Advances the wipe animation by one tick. This returns true
+// when the animation has completed. When completed, the cleanup is performed
+// and in_progress is set to false to indicate to the other wiping functions
+// that the resources are no longer valid.
+//
+bool Wipe_Ticker()
+{
+	if (current_wipe_type == wipe_None || !in_progress)
 		return true;
 
-	// initial stuff
-	if (!go)
+	bool done = wipe_tick_func();
+	if (done)
+		Wipe_Stop();
+
+	return done;
+}
+
+//
+// Wipe_Drawer
+//
+// Renders the wipe animation independent of the ticker. This allows the video
+// framerate to be uncapped while the animation speed moves at the consistent
+// 35Hz ticrate.
+//
+void Wipe_Drawer()
+{
+	if (in_progress)
 	{
-		go = 1;
-		(*wipes[(Currentr_wipetype-1)*3])(ticks);
+		wipe_draw_func();	
+		V_MarkRect(0, 0, screen->width, screen->height);
 	}
-
-	// do a piece of wipe-in
-	V_MarkRect(0, 0, screen->width, screen->height);
-	rc = (*wipes[(Currentr_wipetype-1)*3+1])(ticks);
-
-	// final stuff
-	if (rc)
-	{
-		go = 0;
-		(*wipes[(Currentr_wipetype-1)*3+2])(ticks);
-	}
-
-	return !go;
 }
 
 VERSION_CONTROL (f_wipe_cpp, "$Id$")

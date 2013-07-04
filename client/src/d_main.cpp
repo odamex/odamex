@@ -122,6 +122,8 @@ extern int NoWipe;			// [RH] Don't wipe when travelling in hubs
 BOOL devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
+static bool wiping_screen = false;
+
 char startmap[8];
 BOOL autostart;
 BOOL autorecord;
@@ -195,13 +197,24 @@ void D_PostEvent (const event_t* ev)
 }
 
 //
+// D_DisplayTicker
+//
+// Called once every gametic to provide timing for display funcitons such
+// as screenwipes.
+//
+void D_DisplayTicker()
+{
+	if (wiping_screen)
+		wiping_screen = (Wipe_Ticker() == false);
+}
+
+
+//
 // D_Display
 //  draw current display, possibly wiping it from the previous
 //
 void D_Display (void)
 {
-	bool begin_wiping = false;
-
 	if (nodrawers)
 		return; 				// for comparative timing / profiling
 
@@ -244,14 +257,13 @@ void D_Display (void)
 	if (NoWipe)
 	{
 		NoWipe--;
-		begin_wiping = false;
 		wipegamestate = gamestate;
 	}
 	else if (gamestate != wipegamestate && gamestate != GS_FULLCONSOLE)
-	{ // save the current screen if about to wipe
-		begin_wiping = true;
-		wipe_StartScreen();
+	{
 		wipegamestate = gamestate;
+		Wipe_Start();
+		wiping_screen = true;
 	}
 
 	switch (gamestate)
@@ -329,25 +341,12 @@ void D_Display (void)
 		NoWipe = 10;
 	}
 
-	static bool continue_wiping = false;
+	if (wiping_screen)
+		Wipe_Drawer();
 
-	if (begin_wiping || continue_wiping)
-	{
-		continue_wiping = true;
-
-		wipe_EndScreen();
-		continue_wiping = !wipe_ScreenWipe(1);
-		C_DrawConsole();
-		M_Drawer();				// menu is drawn even on top of wipes
-		I_FinishUpdate();		// page flip or blit buffer
-	}
-	else
-	{
-		// normal update
-		C_DrawConsole();	// draw console
-		M_Drawer();			// menu is drawn even on top of everything
-		I_FinishUpdate();	// page flip or blit buffer
-	}
+	C_DrawConsole();	// draw console
+	M_Drawer();			// menu is drawn even on top of everything
+	I_FinishUpdate();	// page flip or blit buffer
 
 	END_STAT(D_Display);
 }
