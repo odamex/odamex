@@ -50,7 +50,6 @@ static wipe_type_t current_wipe_type;
 EXTERN_CVAR (r_wipetype)
 
 static byte* wipe_scr_start = NULL;
-static byte* wipe_scr_end = NULL;
 
 // Melt -------------------------------------------------------------
 
@@ -60,7 +59,7 @@ static byte* wipe_scr_end = NULL;
 
 static int worms[320];
 
-void Wipe_StartMelt()
+static void Wipe_StartMelt()
 {
 	worms[0] = - (M_Random() & 15); 
 
@@ -89,11 +88,11 @@ void Wipe_StartMelt()
 	}
 }
 
-void Wipe_StopMelt()
+static void Wipe_StopMelt()
 {
 }
 
-bool Wipe_TickMelt()
+static bool Wipe_TickMelt()
 {
 	bool done = true;
 
@@ -118,7 +117,7 @@ bool Wipe_TickMelt()
 	return done;
 }
 
-void Wipe_DrawMelt()
+static void Wipe_DrawMelt()
 {
 	for (int x = 0; x < screen->width; x++)
 	{
@@ -152,7 +151,7 @@ static byte *burnarray = NULL;
 static int density;
 static int burntime;
 
-void Wipe_StartBurn()
+static void Wipe_StartBurn()
 {
 	const size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
 	burnarray = (byte*)(Z_Malloc(array_size, PU_STATIC, (void**)&burnarray));
@@ -161,7 +160,7 @@ void Wipe_StartBurn()
 	burntime = 0;
 }
 
-void Wipe_StopBurn()
+static void Wipe_StopBurn()
 {
 	if (burnarray)
 	{
@@ -170,7 +169,7 @@ void Wipe_StopBurn()
 	}
 }
 
-bool Wipe_TickBurn()
+static bool Wipe_TickBurn()
 {
 	static int voop = 0;
 
@@ -259,8 +258,8 @@ bool Wipe_TickBurn()
 
 	int x, y;
 	fixed_t firex, firey;
-	fixed_t xstep = (FIREWIDTH * FRACUNIT) / screen->width;
-	fixed_t ystep = (FIREHEIGHT * FRACUNIT) / screen->height;
+	const fixed_t xstep = (FIREWIDTH * FRACUNIT) / screen->width;
+	const fixed_t ystep = (FIREHEIGHT * FRACUNIT) / screen->height;
 
 	for (y = 0, firey = 0; y < screen->height; y++, firey += ystep)
 	{
@@ -276,19 +275,15 @@ bool Wipe_TickBurn()
 	return true;
 }
 
-void Wipe_DrawBurn()
+static void Wipe_DrawBurn()
 {
-	fixed_t xstep, ystep, firex, firey;
+	fixed_t firex, firey;
 	int x, y;
-	byte *to, *fromold, *fromnew;
 
-	xstep = (FIREWIDTH * FRACUNIT) / screen->width;
-	ystep = (FIREHEIGHT * FRACUNIT) / screen->height;
-	to = screen->buffer;
-	fromold = (byte *)wipe_scr_start;
-	fromnew = (byte *)wipe_scr_end;
-
-	screen->GetBlock(0, 0, screen->width, screen->height, (byte *)wipe_scr_end);
+	const fixed_t xstep = (FIREWIDTH * FRACUNIT) / screen->width;
+	const fixed_t ystep = (FIREHEIGHT * FRACUNIT) / screen->height;
+	byte* to = screen->buffer;
+	byte* from = (byte *)wipe_scr_start;
 
 	for (y = 0, firey = 0; y < screen->height; y++, firey += ystep)
 	{
@@ -297,27 +292,25 @@ void Wipe_DrawBurn()
 			int fglevel;
 
 			fglevel = burnarray[(firex>>FRACBITS)+(firey>>FRACBITS)*FIREWIDTH] / 2;
-			if (fglevel >= 63)
-			{
-				to[x] = fromnew[x];
-			}
-			else if (fglevel == 0)
-			{
-				to[x] = fromold[x];
-			}
-			else
+
+			if (fglevel > 0 && fglevel < 63)
 			{
 				int bglevel = 64-fglevel;
 				unsigned int *fg2rgb = Col2RGB8[fglevel];
 				unsigned int *bg2rgb = Col2RGB8[bglevel];
-				unsigned int fg = fg2rgb[fromnew[x]];
-				unsigned int bg = bg2rgb[fromold[x]];
+				unsigned int fg = fg2rgb[to[x]];
+				unsigned int bg = bg2rgb[from[x]];
 				fg = (fg+bg) | 0x1f07c1f;
 				to[x] = RGB32k[0][0][fg & (fg>>15)];
 			}
+			else if (fglevel == 0)
+			{
+				to[x] = from[x];
+			}
+
+			
 		}
-		fromold += screen->width;
-		fromnew += screen->width;
+		from += screen->width;
 		to += screen->pitch;
 	}
 }
@@ -325,46 +318,42 @@ void Wipe_DrawBurn()
 
 // Crossfade --------------------------------------------------------
 
-int static fade = 0;
+static int fade = 0;
 
-void Wipe_StartFade()
+static void Wipe_StartFade()
 {
 	fade = 0;
 }
 
-void Wipe_StopFade()
+static void Wipe_StopFade()
 {
 }
 
-bool Wipe_TickFade()
+static bool Wipe_TickFade()
 {
 	fade += 2;
 	return (fade > 64);
 }
 
-void Wipe_DrawFade()
+static void Wipe_DrawFade()
 {
-	fixed_t bglevel = 64 - fade;
+	fixed_t bglevel = MAX(64 - fade, 0);
 	unsigned int *fg2rgb = Col2RGB8[fade];
 	unsigned int *bg2rgb = Col2RGB8[bglevel];
-	byte *fromnew = (byte *)wipe_scr_end;
-	byte *fromold = (byte *)wipe_scr_start;
+	byte *from = (byte *)wipe_scr_start;
 	byte *to = screen->buffer;
-
-	screen->GetBlock(0, 0, screen->width, screen->height, (byte *)wipe_scr_end);
 
 	for (int y = 0; y < screen->height; y++)
 	{
 		for (int x = 0; x < screen->width; x++)
 		{
-			unsigned int fg = fg2rgb[fromnew[x]];
-			unsigned int bg = bg2rgb[fromold[x]];
+			unsigned int fg = fg2rgb[to[x]];
+			unsigned int bg = bg2rgb[from[x]];
 			fg = (fg+bg) | 0x1f07c1f;
 			to[x] = RGB32k[0][0][fg & (fg>>15)];
 		}
 
-		fromnew += screen->width;
-		fromold += screen->width;
+		from += screen->width;
 		to += screen->pitch;
 	}
 }
@@ -417,16 +406,11 @@ void Wipe_Start()
 
 	if (wipe_scr_start)
 		Z_Free(wipe_scr_start);
-	if (wipe_scr_end)
-		Z_Free(wipe_scr_end);
 
 	wipe_scr_start = (byte*)(Z_Malloc(screen->width * screen->height * pixel_size,
 									PU_STATIC, (void**)&wipe_scr_start));
-	wipe_scr_end = (byte*)(Z_Malloc(screen->width * screen->height * pixel_size,
-									PU_STATIC, (void**)&wipe_scr_end));
 	
 	screen->GetBlock(0, 0, screen->width, screen->height, (byte *)wipe_scr_start);
-	screen->GetBlock(0, 0, screen->width, screen->height, (byte *)wipe_scr_end);
 
 	in_progress = true;
 	wipe_start_func();
@@ -446,11 +430,6 @@ static void Wipe_Stop()
 	{
 		Z_Free(wipe_scr_start);
 		wipe_scr_start = NULL;
-	}
-	if (wipe_scr_end)
-	{
-		Z_Free(wipe_scr_end);
-		wipe_scr_end = NULL;
 	}
 }
 

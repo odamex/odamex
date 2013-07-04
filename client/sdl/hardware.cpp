@@ -334,17 +334,26 @@ bool I_SetOverscan (float scale)
 
 int I_GetVideoWidth()
 {
-	return Video->GetWidth();
+	if (Video)
+		return Video->GetWidth();
+	else
+		return 0;
 }
 
 int I_GetVideoHeight()
 {
-	return Video->GetHeight();
+	if (Video)
+		return Video->GetHeight();
+	else
+		return 0;
 }
 
 int I_GetVideoBitDepth()
 {
-	return Video->GetBitDepth();
+	if (Video)
+		return Video->GetBitDepth();
+	else
+		return 0;
 }
 
 void I_SetMode (int &width, int &height, int &bits)
