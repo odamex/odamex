@@ -489,6 +489,9 @@ CVAR_FUNC_IMPL (sv_allowwidescreen)
 //
 bool V_UsePillarBox()
 {
+	if (I_GetVideoWidth() == 0 || I_GetVideoHeight() == 0)
+		return false;
+
 	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
 		return false;
 	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
@@ -507,6 +510,9 @@ bool V_UsePillarBox()
 //
 bool V_UseLetterBox()
 {
+	if (I_GetVideoWidth() == 0 || I_GetVideoHeight() == 0)
+		return false;
+
 	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
 		return false;
 	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
@@ -522,6 +528,9 @@ bool V_UseLetterBox()
 //
 bool V_UseWidescreen()
 {
+	if (I_GetVideoWidth() == 0 || I_GetVideoHeight() == 0)
+		return false;
+
 	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
 		return false;
 	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)

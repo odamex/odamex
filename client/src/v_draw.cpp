@@ -895,7 +895,8 @@ void DCanvas::DrawBlock (int x, int y, int _width, int _height, const byte *src)
 
 
 //
-// V_GetBlock
+// DCanvas::GetBlock
+//
 // Gets a linear block of pixels from the view buffer.
 //
 void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
@@ -903,13 +904,8 @@ void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
 	const byte *src;
 
 #ifdef RANGECHECK
-	if (x<0
-		||x+_width > width
-		|| y<0
-		|| y+_height>height)
-	{
+	if (x < 0 ||x + _width > width || y < 0 || y + _height > height)
 		I_Error ("Bad V_GetBlock");
-	}
 #endif
 
 	x <<= (is8bit()) ? 0 : 2;
@@ -923,6 +919,44 @@ void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
 		src += pitch;
 		dest += _width;
 	}
+}
+
+
+//
+// DCanvas::GetTransposedBlock
+//
+// Gets a transposed block of pixels from the view buffer.
+//
+
+template<typename PIXEL_T>
+static inline void V_GetTransposedBlockGeneric(const DCanvas* canvas, int x, int y, int width, int height, byte* destbuffer)
+{
+	const int pitch = canvas->pitch / sizeof(PIXEL_T);
+	const PIXEL_T* source = (PIXEL_T*)canvas->buffer + y * pitch + x;
+	PIXEL_T* dest = (PIXEL_T*)destbuffer;
+
+	for (int col = x; col < x + width; col++)
+	{
+		const PIXEL_T* sourceptr = source++;
+		for (int row = y; row < y + height; row++)
+		{
+			*dest++ = *sourceptr;
+			sourceptr += pitch;
+		}
+	}
+}
+
+void DCanvas::GetTransposedBlock(int x, int y, int _width, int _height, byte* destbuffer) const
+{
+#ifdef RANGECHECK
+	if (x < 0 ||x + _width > width || y < 0 || y + _height > height)
+		I_Error ("Bad V_GetTransposedBlock");
+#endif
+
+	if (is8bit())
+		V_GetTransposedBlockGeneric<palindex_t>(this, x, y, _width, _height, destbuffer);
+	else
+		V_GetTransposedBlockGeneric<argb_t>(this, x, y, _width, _height, destbuffer);
 }
 
 int V_GetColorFromString (const argb_t *palette, const char *cstr)

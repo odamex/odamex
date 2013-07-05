@@ -55,6 +55,7 @@ void D_PageTicker(void);
 void D_PageDrawer(void);
 void D_AdvanceDemo(void);
 void D_StartTitle(void);
+void D_DisplayTicker(void);
 
 // [RH] Set this to something to draw an icon during the next screen refresh.
 extern const char *D_DrawIcon;

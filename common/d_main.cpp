@@ -1163,9 +1163,9 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 
 	if (fixed_render_ticrate)
 	{
-		uint64_t sleep_start_time = I_GetTime();
-		if (current_time + dt > sleep_start_time)
-			I_Sleep(current_time + dt - sleep_start_time);
+		int64_t sleep_time = dt - I_GetTime() + current_time;
+		if (sleep_time > 0)
+			I_Sleep(sleep_time);
 	}
 	else
 	{

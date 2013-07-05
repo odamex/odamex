@@ -102,8 +102,11 @@ public:
 	// Draw a linear block of pixels into the view buffer.
 	void DrawBlock (int x, int y, int width, int height, const byte *src) const;
 
-	// Reads a linear block of pixels into the view buffer.
+	// Reads a linear block of pixels from the view buffer.
 	void GetBlock (int x, int y, int width, int height, byte *dest) const;
+
+	// Reads a transposed block of pixels from the view buffer
+	void GetTransposedBlock(int x, int y, int _width, int _height, byte* dest) const;
 
 	// Darken a rectangle of th canvas
 	void Dim (int x, int y, int width, int height, const char* color, float amount) const;
