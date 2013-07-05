@@ -49,7 +49,7 @@ static bool in_progress = false;
 static wipe_type_t current_wipe_type;
 EXTERN_CVAR (r_wipetype)
 
-static byte* wipe_scr_start = NULL;
+static byte* wipe_screen = NULL;
 
 // Melt -------------------------------------------------------------
 
@@ -70,22 +70,9 @@ static void Wipe_StartMelt()
 		worms[x] = clamp(worms[x], -15, 0);
 	}
 
-	// copy each column of the current screen image to wipe_scr_start
+	// copy each column of the current screen image to wipe_screen
 	// each column is transposed and stored in row-major form for ease of use
-	for (int x = 0; x < screen->width; x++)
-	{
-		int sourcepitch = screen->pitch;
-
-		byte* source = screen->buffer + x;
-		byte* dest = wipe_scr_start + screen->height * x;
-
-		for (int y = 0; y < screen->height; y++)
-		{
-			*dest = *source;
-			source += sourcepitch;
-			dest++;
-		}
-	}
+	screen->GetTransposedBlock(0, 0, screen->width, screen->height, (byte*)wipe_screen);
 }
 
 static void Wipe_StopMelt()
@@ -126,7 +113,7 @@ static void Wipe_DrawMelt()
 
 		wormy = wormy * screen->height / 200;
 
-		byte* source = wipe_scr_start + screen->height * x;
+		byte* source = wipe_screen + screen->height * x;
 		byte* dest = screen->buffer + screen->pitch * wormy + x;
 
 		for (int y = screen->height - wormy; y--; )
@@ -158,6 +145,7 @@ static void Wipe_StartBurn()
 	memset(burnarray, 0, array_size);
 	density = 4;
 	burntime = 0;
+	screen->GetBlock(0, 0, screen->width, screen->height, (byte*)wipe_screen);
 }
 
 static void Wipe_StopBurn()
@@ -283,7 +271,7 @@ static void Wipe_DrawBurn()
 	const fixed_t xstep = (FIREWIDTH * FRACUNIT) / screen->width;
 	const fixed_t ystep = (FIREHEIGHT * FRACUNIT) / screen->height;
 	byte* to = screen->buffer;
-	byte* from = (byte *)wipe_scr_start;
+	byte* from = (byte *)wipe_screen;
 
 	for (y = 0, firey = 0; y < screen->height; y++, firey += ystep)
 	{
@@ -323,6 +311,7 @@ static int fade = 0;
 static void Wipe_StartFade()
 {
 	fade = 0;
+	screen->GetBlock(0, 0, screen->width, screen->height, (byte*)wipe_screen);
 }
 
 static void Wipe_StopFade()
@@ -340,7 +329,7 @@ static void Wipe_DrawFade()
 	fixed_t bglevel = MAX(64 - fade, 0);
 	unsigned int *fg2rgb = Col2RGB8[fade];
 	unsigned int *bg2rgb = Col2RGB8[bglevel];
-	byte *from = (byte *)wipe_scr_start;
+	byte *from = (byte *)wipe_screen;
 	byte *to = screen->buffer;
 
 	for (int y = 0; y < screen->height; y++)
@@ -404,14 +393,12 @@ void Wipe_Start()
 	//  allocate data for the temporary screens
 	int pixel_size = screen->is8bit() ? sizeof(byte) : sizeof(int);
 
-	if (wipe_scr_start)
-		Z_Free(wipe_scr_start);
+	if (wipe_screen)
+		Z_Free(wipe_screen);
 
-	wipe_scr_start = (byte*)(Z_Malloc(screen->width * screen->height * pixel_size,
-									PU_STATIC, (void**)&wipe_scr_start));
+	wipe_screen = (byte*)(Z_Malloc(screen->width * screen->height * pixel_size,
+									PU_STATIC, (void**)&wipe_screen));
 	
-	screen->GetBlock(0, 0, screen->width, screen->height, (byte *)wipe_scr_start);
-
 	in_progress = true;
 	wipe_start_func();
 }
@@ -426,10 +413,10 @@ static void Wipe_Stop()
 	in_progress = false;
 	wipe_stop_func();
 
-	if (wipe_scr_start)
+	if (wipe_screen)
 	{
-		Z_Free(wipe_scr_start);
-		wipe_scr_start = NULL;
+		Z_Free(wipe_screen);
+		wipe_screen = NULL;
 	}
 }
 
