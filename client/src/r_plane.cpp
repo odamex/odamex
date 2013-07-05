@@ -333,7 +333,7 @@ visplane_t *R_FindPlane (plane_t secplane, int picnum, int lightlevel,
 	check->minx = viewwidth;			// Was SCREENWIDTH -- killough 11/98
 	check->maxx = -1;
 
-	memset (check->top, 0xff, sizeof(*check->top) * screen->width);
+	memcpy(check->top, viewheightarray, viewwidth * sizeof(*check->top));
 
 	return check;
 }
@@ -341,11 +341,7 @@ visplane_t *R_FindPlane (plane_t secplane, int picnum, int lightlevel,
 //
 // R_CheckPlane
 //
-visplane_t*
-R_CheckPlane
-( visplane_t*	pl,
-  int		start,
-  int		stop )
+visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 {
     int		intrl;
     int		intrh;
@@ -375,7 +371,7 @@ R_CheckPlane
 		intrh = stop;
 	}
 
-	for (x=intrl ; x <= intrh && pl->top[x] == 0xffffffffu; x++)
+	for (x = intrl ; x <= intrh && pl->top[x] == viewheight; x++)
 		;
 
 	if (x > intrh)
@@ -402,7 +398,7 @@ R_CheckPlane
 		pl = new_pl;
 		pl->minx = start;
 		pl->maxx = stop;
-		memset (pl->top, 0xff, sizeof(*pl->top) * screen->width);
+		memcpy(pl->top, viewheightarray, viewwidth * sizeof(*pl->top));
 	}
 	return pl;
 }
@@ -664,8 +660,8 @@ void R_DrawPlanes (void)
 					}
 				}
 				
-				pl->top[pl->maxx+1] = 0xffffffffu;
-				pl->top[pl->minx-1] = 0xffffffffu;
+				pl->top[pl->maxx+1] = viewheight;
+				pl->top[pl->minx-1] = viewheight;
 
 				if (P_IsPlaneLevel(&pl->secplane))
 					R_DrawLevelPlane(pl);

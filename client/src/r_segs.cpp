@@ -184,7 +184,7 @@ static void R_FillWallHeightArray(
 //
 // R_BlastMaskedSegColumn
 //
-static void R_BlastMaskedSegColumn(void (*drawfunc)())
+static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 {
 	tallpost_t* post = dc_post;
 
@@ -245,7 +245,7 @@ static void R_BlastMaskedSegColumn(void (*drawfunc)())
 //
 // R_BlastSolidSegColumn
 //
-static void R_BlastSolidSegColumn(void (*drawfunc)())
+static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 {
 	if (wallscalex[dc_x] <= 0)
 		return;

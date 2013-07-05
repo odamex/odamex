@@ -150,13 +150,14 @@ void R_InitSkyMap ()
 //
 // R_BlastSkyColumn
 //
-static void R_BlastSkyColumn(void (*drawfunc)(void))
+static inline void R_BlastSkyColumn(void (*drawfunc)(void))
 {
-	dc_source = dc_post->data();
-	dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
-
 	if (dc_yl <= dc_yh)
+	{
+		dc_source = dc_post->data();
+		dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
 		drawfunc();
+	}
 }
 
 inline void SkyColumnBlaster()
@@ -264,4 +265,5 @@ void R_RenderSkyRange(visplane_t* pl)
 				
 	R_ResetDrawFuncs();
 }
+
 VERSION_CONTROL (r_sky_cpp, "$Id$")
