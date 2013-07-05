@@ -589,6 +589,26 @@ static forceinline void R_DrawColumnGeneric(
 	{
 		// texture height is a power-of-2
 		// do some loop unrolling
+		while (count >= 8)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			count -= 8;
+		}
 
 		if (count & 1)
 		{
@@ -615,90 +635,8 @@ static forceinline void R_DrawColumnGeneric(
 			colorfunc(source[(frac >> FRACBITS) & mask], dest);
 			dest += pitch; frac += fracstep;
 		}
-
-		count &= ~7;
-
-		while (count)
-		{
-			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
-			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
-			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
-			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
-			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
-			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
-			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
-			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
-			count -= 8;
-		}
 	}
 }
-
-/*
-//
-// R_DrawMultipleColumnsGeneric
-//
-// Maps columns from a source buffer 
-template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_DrawMultipleColumnsGeneric(PIXEL_T* dest, const palindex_t* source, int dest_pitch)
-{
-#ifdef RANGECHECK 
-	if (dc_x >= screen->width || dc_yl < 0 || dc_yh >= screen->height) {
-		Printf (PRINT_HIGH, "R_DrawColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
-		return;
-	}
-#endif
-
-	static const int MAXCOLS = 4;
-
-	int count = yh - yl + 1;
-	if (count <= 0)
-		return;
-
-	COLORFUNC colorfunc(&dc_colormap);
-
-	const int source_pitch = MAXCOLS;
-
-	if (colcount == 1)
-	{
-		while (count--)
-		{
-			colorfunc(*source, dest);
-			dest += dest_pitch;
-			source += source_pitch;
-		}
-	}
-	else if (colcount == 2)
-	{
-		while (count--)
-		{
-			colorfunc(source[0], &dest[0]);
-			colorfunc(source[1], &dest[1]);
-			dest += dest_pitch;
-			source += source_pitch;
-		}
-	}
-	else if (colcount == 4)
-	{
-		while (count--)
-		{
-			colorfunc(source[0], &dest[0]);
-			colorfunc(source[1], &dest[1]);
-			colorfunc(source[2], &dest[2]);
-			colorfunc(source[3], &dest[3]);
-			dest += dest_pitch;
-			source += source_pitch;
-		}
-	}
-}
-*/
 
 
 //
