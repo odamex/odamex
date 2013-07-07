@@ -357,12 +357,32 @@ static bool (*wipe_tick_func)();
 static void (*wipe_draw_func)();
 
 //
+// Wipe_Stop
+//
+// Performs cleanup following the completion of the wipe animation.
+//
+static void Wipe_Stop()
+{
+	in_progress = false;
+	wipe_stop_func();
+
+	if (wipe_screen)
+	{
+		delete [] wipe_screen;
+		wipe_screen = NULL;
+	}
+}
+
+//
 // Wipe_Start
 //
 // Initializes the function pointers for the wiping animation system.
 //
 void Wipe_Start()
 {
+	if (in_progress)
+		Wipe_Stop();
+
 	if (r_wipetype.asInt() < 0 || r_wipetype.asInt() >= int(wipe_NUMWIPES))
 		current_wipe_type = wipe_Melt;
 	else
@@ -392,32 +412,10 @@ void Wipe_Start()
 
 	//  allocate data for the temporary screens
 	int pixel_size = screen->is8bit() ? sizeof(byte) : sizeof(int);
-
-	if (wipe_screen)
-		Z_Free(wipe_screen);
-
-	wipe_screen = (byte*)(Z_Malloc(screen->width * screen->height * pixel_size,
-									PU_STATIC, (void**)&wipe_screen));
+	wipe_screen = new byte[screen->width * screen->height * pixel_size];
 	
 	in_progress = true;
 	wipe_start_func();
-}
-
-//
-// Wipe_Stop
-//
-// Performs cleanup following the completion of the wipe animation.
-//
-static void Wipe_Stop()
-{
-	in_progress = false;
-	wipe_stop_func();
-
-	if (wipe_screen)
-	{
-		Z_Free(wipe_screen);
-		wipe_screen = NULL;
-	}
 }
 
 //
