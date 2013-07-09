@@ -299,6 +299,8 @@ void I_Sleep(uint64_t sleep_time)
 	do
 	{
 		uint64_t current_time = I_GetTime();
+		if (current_time - start_time >= sleep_time)
+			break;
 		sleep_time -= current_time - start_time;
 
 		struct timeval timeout;
