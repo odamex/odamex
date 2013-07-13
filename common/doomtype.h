@@ -59,7 +59,7 @@ typedef enum {false, true} dboolean;
 
 // Predefined with some OS.
 #ifndef UNIX
-#ifndef _MSC_VER
+#ifndef _WIN32
 #ifndef GEKKO
 #include <values.h>
 #endif
