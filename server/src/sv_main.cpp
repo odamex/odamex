@@ -225,14 +225,18 @@ EXTERN_CVAR (sv_friendlyfire)
 // Private server settings
 CVAR_FUNC_IMPL (join_password)
 {
-	if(strlen(var.cstring()))
+	if (strlen(var.cstring()))
 		Printf(PRINT_HIGH, "join password set");
+	else
+		Printf(PRINT_HIGH, "join password cleared");
 }
 
 CVAR_FUNC_IMPL (spectate_password)
 {
-	if(strlen(var.cstring()))
+	if (strlen(var.cstring()))
 		Printf(PRINT_HIGH, "spectate password set");
+	else
+		Printf(PRINT_HIGH, "spectate password cleared");
 }
 
 CVAR_FUNC_IMPL (rcon_password) // Remote console password.
