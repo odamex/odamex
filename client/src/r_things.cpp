@@ -1265,11 +1265,6 @@ void R_DrawSprite (vissprite_t *spr)
 	static int			cliptop[MAXWIDTH];
 	static int			clipbot[MAXWIDTH];
 
-	drawseg_t*			ds;
-	int 				x;
-	int 				r1, r2;
-	fixed_t 			segscale1, segscale2;
-
 	int					topclip = 0, botclip = viewheight;
 	int*				clip1;
 	int*				clip2;
@@ -1335,7 +1330,7 @@ void R_DrawSprite (vissprite_t *spr)
 	// (pointer check was originally nonportable
 	// and buggy, by going past LEFT end of array):
 
-	for (ds = ds_p ; ds-- > drawsegs ; )  // new -- killough
+	for (drawseg_t* ds = ds_p ; ds-- > drawsegs ; )  // new -- killough
 	{
 		// determine if the drawseg obscures the sprite
 		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 ||
@@ -1345,39 +1340,78 @@ void R_DrawSprite (vissprite_t *spr)
 			continue;
 		}
 
-		r1 = MAX<int>(ds->x1, spr->x1);
-		r2 = MIN<int>(ds->x2, spr->x2);
+		// determine which part of the sprite overlaps with the seg
+		int overlap1 = ds->x1, overlap2 = ds->x2;
+		fixed_t segscale1 = ds->scale1, segscale2 = ds->scale2;
 
-		segscale1 = MAX<int>(ds->scale1, ds->scale2);
-		segscale2 = MIN<int>(ds->scale1, ds->scale2);
-
-		// check if the seg is in front of the sprite
-		if (segscale1 < spr->yscale ||
-			(segscale2 < spr->yscale && !R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
+		if (ds->x1 < spr->x1)
 		{
-			// masked mid texture?
-			if (ds->midposts)
-				R_RenderMaskedSegRange(ds, r1, r2);
-			// seg is behind sprite
-			continue;
+			overlap1 = spr->x1;
+			segscale1 = ds->scale1 + ds->scalestep * (spr->x1 - ds->x1);
 		}
 
-		// clip this piece of the sprite
-		// killough 3/27/98: optimized and made much shorter
+		if (ds->x2 > spr->x2)
+		{
+			overlap2 = spr->x2;
+			segscale2 = ds->scale2 - ds->scalestep * (ds->x2 - spr->x2);
+		}
 
-		for (x = r1; x <= r2; x++)
+		int clip1 = viewwidth, clip2 = -1;
+		int masked1 = viewwidth, masked2 = -1;
+	
+		if (segscale1 <= spr->yscale &&  segscale2 <= spr->yscale)
+		{
+			// the sprite is entirely in front of the drawseg
+			masked1 = overlap1; masked2 = overlap2;
+		}
+		else if (segscale1 > spr->yscale && segscale2 > spr->yscale)
+		{
+			// the drawseg is entirely in front of the sprite
+			clip1 = overlap1; clip2 = overlap2;
+		}
+		else
+		{
+			// part of the sprite is in front of the drawseg and part is behind...
+
+			#if 0
+			// find out where the intersection column is
+			fixed_t t = FixedDiv(spr->yscale - segscale1, segscale2 - segscale1);
+			int col = overlap1 + FixedMul(overlap2 - overlap1, t);
+
+			if (segscale1 > spr->yscale)
+			{
+				clip1 = overlap1; clip2 = col;
+				masked1 = col + 1; masked2 = overlap2;
+			}
+			else
+			{
+				clip1 = col + 1; clip2 = overlap2;
+				masked1 = overlap1; masked2 = col;
+			}
+			#else
+			clip1 = viewwidth; clip2 = -1;
+			masked1 = overlap1; masked2 = overlap2;	
+			#endif
+		}
+
+		// clip the part of the sprite that's behind the drawseg
+		for (int x = clip1; x <= clip2; x++)
 		{
 			if (ds->silhouette & SIL_BOTTOM && clipbot[x] > ds->sprbottomclip[x])
 				clipbot[x] = ds->sprbottomclip[x];
 			if (ds->silhouette & SIL_TOP && cliptop[x] < ds->sprtopclip[x])
 				cliptop[x] = ds->sprtopclip[x];
 		}
+
+		// render the part of the drawseg's masked midtexture that's behind the sprite
+		if (masked1 <= masked2 && ds->midposts)
+			R_RenderMaskedSegRange(ds, masked1, masked2);
 	}
 
 	// all clipping has been performed, so draw the sprite
 	mfloorclip = clipbot;
 	mceilingclip = cliptop;
-	R_DrawVisSprite (spr, spr->x1, spr->x2);
+	R_DrawVisSprite(spr, spr->x1, spr->x2);
 }
 
 
