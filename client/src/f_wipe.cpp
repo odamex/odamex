@@ -388,6 +388,9 @@ void Wipe_Start()
 	else
 		current_wipe_type = static_cast<wipe_type_t>(r_wipetype.asInt());
 
+	if (current_wipe_type == wipe_None)
+		return;
+
 	if (current_wipe_type == wipe_Melt)
 	{
 		wipe_start_func = Wipe_StartMelt;
