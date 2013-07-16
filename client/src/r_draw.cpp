@@ -1092,6 +1092,9 @@ void R_DrawTlatedLucentColumnP()
 //
 void R_FillColumnHorizP()
 {
+	if (dc_yl > dc_yh)
+		return;
+
 	const int x = dc_x & 3;
 	unsigned int **span = &dc_ctspan[x];
 
@@ -1117,6 +1120,9 @@ void R_FillColumnHorizP()
 //
 void R_DrawColumnHorizP()
 {
+	if (dc_yl > dc_yh)
+		return;
+
 	const int x = dc_x & 3;
 	unsigned int **span = &dc_ctspan[x];
 
