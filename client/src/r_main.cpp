@@ -43,6 +43,9 @@
 #include "i_video.h"
 #include "vectors.h"
 
+void R_BeginInterpolation(fixed_t amount);
+void R_EndInterpolation();
+
 #define DISTMAP			2
 
 int negonearray[MAXWIDTH];
@@ -1172,6 +1175,8 @@ void R_RenderPlayerView (player_t *player)
 			screen->Clear(x1, y1, x2, y2, basecolormap.shade(color));
 	}
 
+	R_BeginInterpolation(render_lerp_amount);
+
 	// [RH] Setup particles for this frame
 	R_FindParticleSubsectors();
 
@@ -1201,6 +1206,8 @@ void R_RenderPlayerView (player_t *player)
 		unsigned int blend_rgb = MAKERGB(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]);
 		r_dimpatchD(screen, blend_rgb, BlendA, 0, 0, screen->width, screen->height);
 	}
+
+	R_EndInterpolation();
 }
 
 //

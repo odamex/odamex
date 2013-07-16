@@ -875,13 +875,10 @@ fixed_t bulletslope;
 
 void P_BulletSlope (AActor *mo)
 {
-	angle_t 	an;
-	fixed_t		pitchslope;
-
-	pitchslope = finetangent[FINEANGLES/4-(mo->pitch>>ANGLETOFINESHIFT)];
+	fixed_t pitchslope = finetangent[FINEANGLES/4 - (mo->pitch>>ANGLETOFINESHIFT)];
 
 	// see which target is to be aimed at
-	an = mo->angle;
+	angle_t an = mo->angle;
 
 	// [AM] Refactored autoaim into a single function.
 	if (co_fineautoaim)
@@ -889,24 +886,14 @@ void P_BulletSlope (AActor *mo)
 	else
 		bulletslope = P_AutoAimLineAttack(mo, an, 1 << 26, 1, 16 * 64 * FRACUNIT);
 
-	// [RH] If we never found a target, use actor's pitch to
-	// determine bulletslope
-	if (sv_freelook && !linetarget)
+	// If a target was not found, or one was found, but outside the
+	// player's autoaim range, use the actor's pitch for the slope.
+	if (sv_freelook &&
+		(!linetarget || // target not found, or:
+		 (mo->player && // target found but outside of player's autoaim range
+		  abs(bulletslope - pitchslope) >= mo->player->userinfo.aimdist)))
 	{
-		an = mo->angle;
 		bulletslope = pitchslope;
-	}
-
-	// GhostlyDeath -- If sv_freelook was on and a line target was found
-	// and the shooting object is a player, we use the looking, so shouldn't
-	// linetarget become !linetarget and moved up!?
-	if (sv_freelook && !linetarget && mo->player)
-	{
-		if (abs(bulletslope - pitchslope) > mo->player->userinfo.aimdist)
-		{
-			bulletslope = pitchslope;
-			an = mo->angle;
-		}
 	}
 }
 

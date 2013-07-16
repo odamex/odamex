@@ -225,14 +225,18 @@ EXTERN_CVAR (sv_friendlyfire)
 // Private server settings
 CVAR_FUNC_IMPL (join_password)
 {
-	if(strlen(var.cstring()))
+	if (strlen(var.cstring()))
 		Printf(PRINT_HIGH, "join password set");
+	else
+		Printf(PRINT_HIGH, "join password cleared");
 }
 
 CVAR_FUNC_IMPL (spectate_password)
 {
-	if(strlen(var.cstring()))
+	if (strlen(var.cstring()))
 		Printf(PRINT_HIGH, "spectate password set");
+	else
+		Printf(PRINT_HIGH, "spectate password cleared");
 }
 
 CVAR_FUNC_IMPL (rcon_password) // Remote console password.
@@ -904,7 +908,7 @@ void SV_SetupUserInfo (player_t &player)
 	int				color = MSG_ReadLong();
 	std::string		skin(MSG_ReadString());
 
-	int				aimdist = MSG_ReadLong();
+	fixed_t			aimdist = MSG_ReadLong();
 	bool			unlag = MSG_ReadBool();
 	bool			predict_weapons = MSG_ReadBool();
 	byte			update_rate = MSG_ReadByte();
@@ -927,8 +931,8 @@ void SV_SetupUserInfo (player_t &player)
 
 	if (aimdist < 0)
 		aimdist = 0;
-	if (aimdist > 5000)
-		aimdist = 5000;
+	if (aimdist > (fixed_t)(5000 * 16384))
+		aimdist = (fixed_t)(5000 * 16384);
 
 	if (update_rate < 1)
 		update_rate = 1;
