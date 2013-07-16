@@ -43,6 +43,9 @@
 #include "i_video.h"
 #include "vectors.h"
 
+void R_BeginInterpolation(fixed_t amount);
+void R_EndInterpolation();
+
 #define DISTMAP			2
 
 void R_SpanInitData ();
@@ -1326,6 +1329,8 @@ void R_RenderPlayerView (player_t *player)
 	// [RH] Hack to make windows into underwater areas possible
 	r_fakingunderwater = false;
 
+	R_BeginInterpolation(render_lerp_amount);
+
 	// [RH] Setup particles for this frame
 	R_FindParticleSubsectors();
 
@@ -1346,6 +1351,8 @@ void R_RenderPlayerView (player_t *player)
 
 	// [RH] Apply detail mode doubling
 	R_DetailDouble ();
+
+	R_EndInterpolation();
 }
 
 //
