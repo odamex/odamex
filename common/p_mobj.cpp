@@ -1934,42 +1934,30 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	if(!serverside)
 		return;
 
-	angle_t an;
 	fixed_t slope;
-	fixed_t pitchslope = finetangent[FINEANGLES/4-(source->pitch>>ANGLETOFINESHIFT)];
+	fixed_t pitchslope = finetangent[FINEANGLES/4 - (source->pitch>>ANGLETOFINESHIFT)];
 
 	// see which target is to be aimed at
-	an = source->angle;
-	if (source->player && source->player->userinfo.aimdist == 0 && sv_freelook)
-	{
-		slope = pitchslope;
-	}
+	angle_t an = source->angle;
+
+	// [AM] Refactored autoaim into a single function.
+	if (co_fineautoaim)
+		slope = P_AutoAimLineAttack(source, an, 1 << 26, 10, 16 * 64 * FRACUNIT);
 	else
+		slope = P_AutoAimLineAttack(source, an, 1 << 26, 1, 16 * 64 * FRACUNIT);
+
+	if (!linetarget)
+		an = source->angle;
+
+	// If a target was not found, or one was found, but outside the
+	// player's autoaim range, use the actor's pitch for the slope.
+	if (sv_freelook &&
+		(!linetarget || // target not found, or:
+		 (source->player && // target found but outside of player's autoaim range
+		  abs(slope - pitchslope) >= source->player->userinfo.aimdist)))
 	{
-		// [AM] Refactored autoaim into a single function.
-		if (co_fineautoaim)
-			slope = P_AutoAimLineAttack(source, an, 1 << 26, 10, 16 * 64 * FRACUNIT);
-		else
-			slope = P_AutoAimLineAttack(source, an, 1 << 26, 1, 16 * 64 * FRACUNIT);
-
-		if (!linetarget)
-		{
-			an = source->angle;
-
-			if(sv_freelook)
-				slope = pitchslope;
-			else
-				slope = 0;
-		}
-
-		if (linetarget && source->player)
-		{
-			if (sv_freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
-			{
-				an = source->angle;
-				slope = pitchslope;
-			}
-		}
+		an = source->angle;
+		slope = pitchslope;
 	}
 
 	AActor *th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
