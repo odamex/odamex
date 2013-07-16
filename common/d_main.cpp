@@ -85,6 +85,7 @@ extern gameinfo_t CommercialBFGGameInfo;
 bool lastWadRebootSuccess = true;
 
 bool capfps = true;
+float maxfps = 35.0f;
 
 #if defined(WIN32) && !defined(_XBOX)
 
@@ -1123,14 +1124,14 @@ void D_AddCmdParameterFiles(void)
 //
 void D_RunTics(void (*logic_func)(), void(*render_func)())
 {
-	static const uint64_t dt = 1000LL * 1000LL * 1000LL / TICRATE;
+	static const uint64_t logic_dt = 1000LL * 1000LL * 1000LL / TICRATE;
 
 	static uint64_t previous_time = I_GetTime();
 	static uint64_t accumulator = 0LL;
 
 	// should the physics run at 35Hz?
 	bool fixed_logic_ticrate = !timingdemo;
-	// should the renderer run at 35Hz?
+	// should the renderer run at vid_maxfs (35Hz by default)?
 	bool fixed_render_ticrate = !timingdemo && capfps;
 
 	uint64_t current_time = I_GetTime();
@@ -1141,10 +1142,10 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 
 	if (fixed_logic_ticrate)
 	{
-		while (accumulator >= dt)
+		while (accumulator >= logic_dt)
 		{
 			logic_func();
-			accumulator -= dt;
+			accumulator -= logic_dt;
 		} 
 	}
 	else
@@ -1154,21 +1155,28 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 
 	// [SL] use linear interpolation for rendering entities if the renderer
 	// framerate is not synced with the physics frequency
-	if (fixed_render_ticrate != fixed_logic_ticrate && !(paused || menuactive))
-		render_lerp_amount = clamp((fixed_t)(accumulator * FRACUNIT / dt), 0, FRACUNIT);
+	if (!fixed_render_ticrate || maxfps != TICRATE)
+		render_lerp_amount = clamp((fixed_t)(accumulator * FRACUNIT / logic_dt), 0, FRACUNIT);
 	else
+		render_lerp_amount = FRACUNIT;
+
+	// disable interpolation while paused to avoid jackhammering since the physics aren't
+	// updated while paused
+	if (paused || menuactive)
 		render_lerp_amount = FRACUNIT;
 
 	render_func();
 
 	if (fixed_render_ticrate)
 	{
-		int64_t sleep_time = dt - I_GetTime() + current_time;
-		if (sleep_time > 0)
-			I_Sleep(sleep_time);
+		const uint64_t render_dt = 1000LL * 1000LL * 1000LL / maxfps;
+		int64_t sleep_time = render_dt - I_GetTime() + current_time;
+		sleep_time = MAX(sleep_time, int64_t(1000LL * 1000LL));	// sleep at least 1ms
+		I_Sleep(sleep_time);
 	}
-	else
+	else if (!timingdemo)
 	{
+		// sleep for 1ms to allow the operating system some time
 		I_Yield();
 	}
 }

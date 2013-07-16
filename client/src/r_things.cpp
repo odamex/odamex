@@ -881,7 +881,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 // R_ProjectSprite
 // Generates a vissprite for a thing if it might be visible.
 //
-void R_ProjectSprite (AActor *thing, int fakeside)
+void R_ProjectSprite(AActor *thing, int fakeside)
 {
 	spritedef_t*		sprdef;
 	spriteframe_t*		sprframe;
@@ -896,6 +896,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 		(thing->player && thing->player->spectator))
 		return;
 
+	// position of the actor after applying interpolation
 	fixed_t thingx = thing->prevx + FixedMul(render_lerp_amount, thing->x - thing->prevx);
 	fixed_t thingy = thing->prevy + FixedMul(render_lerp_amount, thing->y - thing->prevy);
 	fixed_t thingz = thing->prevz + FixedMul(render_lerp_amount, thing->z - thing->prevz);
@@ -939,9 +940,6 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
 
 	sector_t* sector = thing->subsector->sector;
-	fixed_t x = thing->x;
-	fixed_t y = thing->y;
-	fixed_t z = thing->z;
 	fixed_t topoffs = sprframe->topoffset[rot];
 	fixed_t sideoffs = sprframe->offset[rot];
 
@@ -949,7 +947,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	fixed_t height = patch->height() << FRACBITS;
 	fixed_t width = patch->width() << FRACBITS;
 
-	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, height, width, topoffs, sideoffs, flip);
+	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, thingx, thingy, thingz, height, width, topoffs, sideoffs, flip);
 
 	if (vis == NULL)
 		return;

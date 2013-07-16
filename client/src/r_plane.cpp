@@ -371,7 +371,7 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		intrh = stop;
 	}
 
-	for (x = intrl ; x <= intrh && pl->top[x] == viewheight; x++)
+	for (x = intrl ; x <= intrh && pl->top[x] == (unsigned int)viewheight; x++)
 		;
 
 	if (x > intrh)
