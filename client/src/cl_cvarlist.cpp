@@ -384,10 +384,12 @@ CVAR (vid_defbits, "8", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (vid_widescreen, "0", "Use wide field-of-view with widescreen video modes.", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Force video mode
 CVAR (vid_autoadjust, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-// Frames per second counter
+// Frames per second on screen display
 CVAR (vid_fps, "0", "",	CVARTYPE_BOOL, 0)
-// Run at 35fps
-CVAR_FUNC_DECL (vid_capfps, "1", "Limit to 35fps", CVARTYPE_BOOL, CVAR_ARCHIVE)
+// cap fps at vid_maxfps? 
+CVAR_FUNC_DECL (vid_uncapfps, "0", "Cap framerate at vid_maxfps", CVARTYPE_BOOL, CVAR_ARCHIVE)
+// maximum fps when vid_uncapfps is disabled
+CVAR_FUNC_DECL (vid_maxfps, "35", "Maximum framerate", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Fullscreen mode
 #ifdef GCONSOLE
 	CVAR_FUNC_DECL (vid_fullscreen, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)

@@ -71,6 +71,7 @@ extern std::vector<std::string> patchfiles, patchhashes;
 extern std::vector<std::string> missingfiles, missinghashes;
 
 extern bool capfps;
+extern float maxfps;
 void D_RunTics(void (*logic_func)(), void (*render_func)());
 
 #endif
