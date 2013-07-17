@@ -535,6 +535,7 @@
 		<Unit filename="../src/r_bsp.cpp" />
 		<Unit filename="../src/r_draw.cpp" />
 		<Unit filename="../src/r_drawt.cpp" />
+		<Unit filename="../src/r_interp.cpp" />
 		<Unit filename="../src/r_main.cpp" />
 		<Unit filename="../src/r_plane.cpp" />
 		<Unit filename="../src/r_segs.cpp" />
