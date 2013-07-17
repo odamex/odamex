@@ -31,23 +31,60 @@
 extern "C" byte**		ylookup;
 extern "C" int*			columnofs;
 
-extern "C" int			dc_pitch;		// [RH] Distance between rows
+typedef struct 
+{
+	int					x;
+	int					yl;
+	int					yh;
+	int					pitch;
+	
+	fixed_t				iscale;
+	fixed_t				texturemid;
+	fixed_t				texturefrac;
+	fixed_t				textureheight;
 
-extern "C" shaderef_t	dc_colormap;
-extern "C" int			dc_x;
-extern "C" int			dc_yl;
-extern "C" int			dc_yh;
-extern "C" fixed_t		dc_iscale;
-extern "C" fixed_t		dc_texturemid;
-extern "C" fixed_t		dc_texturefrac;
-extern "C" fixed_t		dc_textureheight;
-extern "C" int			dc_color;		// [RH] For flat colors (no texturing)
-extern "C" fixed_t		dc_translevel;
+	int					color;
+	fixed_t				translevel;
 
-// first pixel in a column
-extern "C" byte*			dc_source;
+	byte*				source;
+	tallpost_t*			post;
 
-extern "C" tallpost_t*		dc_post;
+	translationref_t	translation;
+	shaderef_t			colormap;
+} drawcolumn_t;
+
+extern "C" drawcolumn_t dcol;
+
+typedef struct
+{
+	int					y;
+	int					x1;
+	int					x2;
+	int					colsize;
+
+	dsfixed_t			xfrac;
+	dsfixed_t			yfrac;
+	dsfixed_t			xstep;
+	dsfixed_t			ystep;
+
+	int					color;
+	fixed_t				translevel;
+
+	float				iu;
+	float				iv;
+	float				id;
+	float				iustep;
+	float				ivstep;
+	float				idstep;
+
+	byte*				source;
+
+	shaderef_t			colormap;
+	shaderef_t			slopelighting[MAXWIDTH];
+} drawspan_t;
+
+extern "C" drawspan_t dspan;
+
 
 // [RH] Temporary buffer for column drawing
 extern "C" byte			dc_temp[MAXHEIGHT * 4];
@@ -162,7 +199,7 @@ void rtv_lucent4cols_c(byte *source, pixel_t *dest, int bga, int fga)
 {
 	for (int i = 0; i < 4; ++i)
 	{
-		const pixel_t fg = rt_mapcolor<pixel_t>(dc_colormap, source[i]);
+		const pixel_t fg = rt_mapcolor<pixel_t>(dcol.colormap, source[i]);
 		const pixel_t bg = dest[i];
 
 		dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
@@ -242,7 +279,6 @@ extern "C" float			ds_idstep;
 extern "C" shaderef_t		slopelighting[MAXWIDTH];
 
 extern byte*			translationtables;
-extern translationref_t dc_translation;
 extern argb_t           translationRGB[MAXPLAYERS+1][16];
 
 

@@ -186,12 +186,12 @@ static void R_FillWallHeightArray(
 //
 static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 {
-	tallpost_t* post = dc_post;
+	tallpost_t* post = dcol.post;
 
 	if (post != NULL && spryscale > 0)
 	{
-		sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
-		dc_iscale = 0xffffffffu / (unsigned)spryscale;
+		sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
+		dcol.iscale = 0xffffffffu / (unsigned)spryscale;
 
 		while (!post->end())
 		{
@@ -199,24 +199,24 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 			int topscreen = sprtopscreen + spryscale * post->topdelta;
 			int bottomscreen = topscreen + spryscale * (post->length - 1);
 
-			dc_yl = (topscreen + FRACUNIT - 1) >> FRACBITS;
-			dc_yh = (bottomscreen - 1) >> FRACBITS;
+			dcol.yl = (topscreen + FRACUNIT - 1) >> FRACBITS;
+			dcol.yh = (bottomscreen - 1) >> FRACBITS;
 
-			dc_yl = MAX(dc_yl, mceilingclip[dc_x] + 1);
-			dc_yh = MIN(dc_yh, mfloorclip[dc_x] - 1);
+			dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
+			dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
-			if (dc_yl <= dc_yh && dc_yl >= 0 && dc_yh < viewheight)
+			if (dcol.yl <= dcol.yh && dcol.yl >= 0 && dcol.yh < viewheight)
 			{
-				dc_texturefrac = dc_texturemid - (post->topdelta << FRACBITS) + (dc_yl - centery) * dc_iscale;
+				dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS) + (dcol.yl - centery) * dcol.iscale;
 
-				dc_source = post->data();
+				dcol.source = post->data();
 				drawfunc(); 
 			}
 			
 			post = post->next();
 		}
 
-		masked_midposts[dc_x] = NULL;
+		masked_midposts[dcol.x] = NULL;
 	}
 
 	spryscale += rw_scalestep;
@@ -227,15 +227,15 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 //
 static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 {
-	if (wallscalex[dc_x] <= 0)
+	if (wallscalex[dcol.x] <= 0)
 		return;
 
-	dc_iscale = 0xffffffffu / unsigned(wallscalex[dc_x]);
-	dc_source = dc_post->data();
-	// TODO: dc_texturefrac should take y-scaling of textures into account
-	dc_texturefrac = dc_texturemid + dc_iscale * (dc_yl - centery + 1);
+	dcol.iscale = 0xffffffffu / unsigned(wallscalex[dcol.x]);
+	dcol.source = dcol.post->data();
+	// TODO: dcol.texturefrac should take y-scaling of textures into account
+	dcol.texturefrac = dcol.texturemid + dcol.iscale * (dcol.yl - centery + 1);
 
-	if (dc_yl <= dc_yh)
+	if (dcol.yl <= dcol.yh)
 		drawfunc();
 }
 
@@ -264,12 +264,12 @@ inline void R_ColumnSetup(int x, int* top, int* bottom, tallpost_t** posts, bool
 	if (calc_light)
 	{
 		int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
-		dc_colormap = basecolormap.with(walllights[index]);
+		dcol.colormap = basecolormap.with(walllights[index]);
 	}
 
-	dc_yl = MAX(top[x], 0);
-	dc_yh = MIN(bottom[x], viewheight - 1);
-	dc_post = posts[x];
+	dcol.yl = MAX(top[x], 0);
+	dcol.yh = MIN(bottom[x], viewheight - 1);
+	dcol.post = posts[x];
 }
 
 
@@ -320,12 +320,12 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 	{
 		if (fixedlightlev)
 		{
-			dc_colormap = basecolormap.with(fixedlightlev);
+			dcol.colormap = basecolormap.with(fixedlightlev);
 			calc_light = false;
 		}
 		else if (fixedcolormap.isValid())
 		{
-			dc_colormap = fixedcolormap;	
+			dcol.colormap = fixedcolormap;	
 			calc_light = false;
 		}
 		else
@@ -337,57 +337,57 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 
 	if (columnmethod == 0)
 	{
-		for (dc_x = start; dc_x <= stop; dc_x++)
+		for (dcol.x = start; dcol.x <= stop; dcol.x++)
 		{
-			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
+			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
 			colblast();
 			rw_light += rw_lightstep;
 		}
 	}
 	else if (columnmethod == 1)
 	{
-		dc_x = start;
+		dcol.x = start;
 		int blockend = (stop + 1) & ~3;
 
-		// blit until dc_x is DWORD aligned
-		while ((dc_x < blockend) && (dc_x & 3))
+		// blit until dcol.x is DWORD aligned
+		while ((dcol.x < blockend) && (dcol.x & 3))
 		{
-			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
+			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
 			colblast();	
-			dc_x++;
+			dcol.x++;
 			rw_light += rw_lightstep;
 		}
 
 		// blit in DWORD blocks to a temporary buffer horizontally, with
 		// the columns interleaved, eg write to buf[0], buf[4], buf[8]
-		while (dc_x < blockend)
+		while (dcol.x < blockend)
 		{
 			rt_initcols();
-			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
+			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
 			hcolblast();
-			dc_x++;
+			dcol.x++;
 			rw_light += rw_lightstep;
-			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
+			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
 			hcolblast();
-			dc_x++;
+			dcol.x++;
 			rw_light += rw_lightstep;
-			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
+			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
 			hcolblast();
-			dc_x++;
+			dcol.x++;
 			rw_light += rw_lightstep;
-			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
+			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
 			hcolblast();
-			dc_x++;
+			dcol.x++;
 			rw_light += rw_lightstep;
-			rt_draw4cols(dc_x - 4);
+			rt_draw4cols(dcol.x - 4);
 		}
 
 		// blit any remaining pixels
-		while (dc_x <= stop)
+		while (dcol.x <= stop)
 		{
-			R_ColumnSetup(dc_x, top, bottom, posts, calc_light);
+			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
 			colblast();	
-			dc_x++;
+			dcol.x++;
 			rw_light += rw_lightstep;
 		}
 	}
@@ -426,12 +426,12 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 				for (int x = blockstartx; x <= blockstopx; x++)
 				{
 					if (calc_light)
-						dc_colormap = basecolormap.with(light_lookup[x]);
+						dcol.colormap = basecolormap.with(light_lookup[x]);
 
-					dc_x = x;
-					dc_yl = MAX(top[x], blockstarty);
-					dc_yh = MIN(bottom[x], blockstopy);
-					dc_post = posts[x];
+					dcol.x = x;
+					dcol.yl = MAX(top[x], blockstarty);
+					dcol.yh = MIN(bottom[x], blockstopy);
+					dcol.post = posts[x];
 					colblast();
 				}
 			}
@@ -508,8 +508,8 @@ void R_RenderSolidSegRange(int start, int stop)
 
 		rw_light = initial_light;
 
-		dc_textureheight = textureheight[midtexture];
-		dc_texturemid = rw_midtexturemid;
+		dcol.textureheight = textureheight[midtexture];
+		dcol.texturemid = rw_midtexturemid;
 
 		R_RenderColumnRange(start, stop, walltopf, lower, midposts,
 					SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
@@ -531,8 +531,8 @@ void R_RenderSolidSegRange(int start, int stop)
 				lower[x] = walltopb[x] - 1;
 			}
 
-			dc_textureheight = textureheight[toptexture];
-			dc_texturemid = rw_toptexturemid;
+			dcol.textureheight = textureheight[toptexture];
+			dcol.texturemid = rw_toptexturemid;
 
 			R_RenderColumnRange(start, stop, walltopf, lower, topposts,
 						SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
@@ -556,8 +556,8 @@ void R_RenderSolidSegRange(int start, int stop)
 				lower[x] = wallbottomf[x] - 1;
 			}
 
-			dc_textureheight = textureheight[bottomtexture];
-			dc_texturemid = rw_bottomtexturemid;
+			dcol.textureheight = textureheight[bottomtexture];
+			dcol.texturemid = rw_bottomtexturemid;
 
 			R_RenderColumnRange(start, stop, wallbottomb, lower, bottomposts,
 						SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
@@ -604,7 +604,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	int 		lightnum;
 	sector_t	tempsec;		// killough 4/13/98
 
-	dc_color = (dc_color + 4) & 0xFF;	// color if using r_drawflat
+	dcol.color = (dcol.color + 4) & 0xFF;	// color if using r_drawflat
 
 	// Calculate light table.
 	// Use different light tables
@@ -618,7 +618,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	if (curline->linedef->lucency < 240)
 	{
 		R_SetLucentDrawFuncs();
-		dc_translevel = curline->linedef->lucency << 8;
+		dcol.translevel = curline->linedef->lucency << 8;
 	}
 	else
 	{
@@ -633,23 +633,23 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	// find texture positioning
 	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
-		dc_texturemid = MAX(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + texheight;
+		dcol.texturemid = MAX(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + texheight;
 	else
-		dc_texturemid = MIN(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
+		dcol.texturemid = MIN(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
 
-	dc_texturemid = R_TexScaleY(dc_texturemid - viewz + curline->sidedef->rowoffset, texnum);
+	dcol.texturemid = R_TexScaleY(dcol.texturemid - viewz + curline->sidedef->rowoffset, texnum);
 	
 	int64_t topscreenclip = int64_t(centery) << 2*FRACBITS;
 	int64_t botscreenclip = int64_t(centery - viewheight) << 2*FRACBITS;
  
 	// top of texture entirely below screen?
-	if (int64_t(dc_texturemid) * ds->scale1 <= botscreenclip &&
-		int64_t(dc_texturemid) * ds->scale2 <= botscreenclip)
+	if (int64_t(dcol.texturemid) * ds->scale1 <= botscreenclip &&
+		int64_t(dcol.texturemid) * ds->scale2 <= botscreenclip)
 		return;
  
 	// bottom of texture entirely above screen?
-	if (int64_t(dc_texturemid - texheight) * ds->scale1 > topscreenclip &&
-		int64_t(dc_texturemid - texheight) * ds->scale2 > topscreenclip)
+	if (int64_t(dcol.texturemid - texheight) * ds->scale1 > topscreenclip &&
+		int64_t(dcol.texturemid - texheight) * ds->scale2 > topscreenclip)
 		return;
 
 	basecolormap = frontsector->floorcolormap->maps;	// [RH] Set basecolormap
@@ -674,7 +674,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	mfloorclip = ds->sprbottomclip;
 	mceilingclip = ds->sprtopclip;
 
-	dc_textureheight = 256*FRACUNIT;
+	dcol.textureheight = 256*FRACUNIT;
 
 	// draw the columns
 	// TODO: change negonearray to the actual top/bottom

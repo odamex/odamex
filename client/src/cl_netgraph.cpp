@@ -64,11 +64,11 @@ extern "C" int *columnofs;
 
 static void NetGraphDrawBar(int startx, int starty, int width, int height, int color)
 {
-	ds_color = color;
-	ds_x1 = startx;
-	ds_x2 = startx + width - 1;
+	dspan.color = color;
+	dspan.x1 = startx;
+	dspan.x2 = startx + width - 1;
 
-	for (ds_y = starty; ds_y < starty + height; ds_y++)
+	for (dspan.y = starty; dspan.y < starty + height; dspan.y++)
 		R_FillSpan();
 }
 

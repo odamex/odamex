@@ -141,28 +141,28 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 	s.y = y - centery + 1.0f;
 	s.z = xfoc; 
 
-	ds_iu = M_DotProductVec3f(&s, &a) * flatwidth;
-	ds_iv = M_DotProductVec3f(&s, &b) * flatheight;
-	ds_id = M_DotProductVec3f(&s, &c);
+	dspan.iu = M_DotProductVec3f(&s, &a) * flatwidth;
+	dspan.iv = M_DotProductVec3f(&s, &b) * flatheight;
+	dspan.id = M_DotProductVec3f(&s, &c);
 	
-	ds_iustep = a.x * flatwidth;
-	ds_ivstep = b.x * flatheight;
-	ds_idstep = c.x;
+	dspan.iustep = a.x * flatwidth;
+	dspan.ivstep = b.x * flatheight;
+	dspan.idstep = c.x;
 
 	// From R_SlopeLights, Eternity Engine
-	float id = ds_id + ds_idstep * (x2 - x1);
-	float map1 = 256.0f - (shade - plight * ds_id);
+	float id = dspan.id + dspan.idstep * (x2 - x1);
+	float map1 = 256.0f - (shade - plight * dspan.id);
 	float map2 = 256.0f - (shade - plight * id);
 
 	if (fixedlightlev)
 	{
 		for (int i = 0; i < len; i++)
-			slopelighting[i] = basecolormap.with(fixedlightlev);
+			dspan.slopelighting[i] = basecolormap.with(fixedlightlev);
 	}
 	else if (fixedcolormap.isValid())
 	{
 		for (int i = 0; i < len; i++)
-			slopelighting[i] = fixedcolormap;
+			dspan.slopelighting[i] = fixedcolormap;
 	}
 	else
 	{
@@ -179,19 +179,19 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 			index -= (foggy ? 0 : extralight << 2);
 			
 			if (index < 0)
-				slopelighting[i] = basecolormap;
+				dspan.slopelighting[i] = basecolormap;
 			else if (index >= NUMCOLORMAPS)
-				slopelighting[i] = basecolormap.with((NUMCOLORMAPS - 1));
+				dspan.slopelighting[i] = basecolormap.with((NUMCOLORMAPS - 1));
 			else
-				slopelighting[i] = basecolormap.with(index);
+				dspan.slopelighting[i] = basecolormap.with(index);
 			
 			map += step;
 		}
 	}
 
-   	ds_y = y;
-	ds_x1 = x1;
-	ds_x2 = x2;
+   	dspan.y = y;
+	dspan.x1 = x1;
+	dspan.x2 = x2;
 
 	spanslopefunc();
 }
@@ -218,20 +218,20 @@ void R_MapLevelPlane(int y, int x1, int x2)
 	fixed_t distance = FixedMul(planeheight, yslope[y]);
 	fixed_t slope = (fixed_t)(focratio * FixedDiv(planeheight, abs(centery - y) << FRACBITS));
 
-	ds_xstep = FixedMul(pl_xstepscale, slope);
-	ds_ystep = FixedMul(pl_ystepscale, slope);
+	dspan.xstep = FixedMul(pl_xstepscale, slope);
+	dspan.ystep = FixedMul(pl_ystepscale, slope);
 
-	ds_xfrac = pl_viewxtrans +
+	dspan.xfrac = pl_viewxtrans +
 				FixedMul(FixedMul(pl_viewcos, distance), pl_xscale) + 
-				(x1 - centerx) * ds_xstep;
-	ds_yfrac = pl_viewytrans -
+				(x1 - centerx) * dspan.xstep;
+	dspan.yfrac = pl_viewytrans -
 				FixedMul(FixedMul(pl_viewsin, distance), pl_yscale) +
-				(x1 - centerx) * ds_ystep;
+				(x1 - centerx) * dspan.ystep;
 
 	if (fixedlightlev)
-		ds_colormap = basecolormap.with(fixedlightlev);
+		dspan.colormap = basecolormap.with(fixedlightlev);
 	else if (fixedcolormap.isValid())
-		ds_colormap = fixedcolormap;
+		dspan.colormap = fixedcolormap;
 	else
 	{
 		// Determine lighting based on the span's distance from the viewer.
@@ -240,14 +240,14 @@ void R_MapLevelPlane(int y, int x1, int x2)
 		if (index >= MAXLIGHTZ)
 			index = MAXLIGHTZ-1;
 
-		ds_colormap = basecolormap.with(planezlight[index]);
+		dspan.colormap = basecolormap.with(planezlight[index]);
 	}
 
-	ds_y = y;
-	ds_x1 = x1;
-	ds_x2 = x2;
+	dspan.y = y;
+	dspan.x1 = x1;
+	dspan.x2 = x2;
 
-	spanfunc ();
+	spanfunc();
 }
 
 //
@@ -596,7 +596,7 @@ void R_DrawPlanes (void)
 
 	R_ResetDrawFuncs();
 
-	ds_color = 3;
+	dspan.color = 3;
 	
 	for (i = 0; i < MAXVISPLANES; i++)
 	{
@@ -615,8 +615,8 @@ void R_DrawPlanes (void)
 				// regular flat
 				int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
 
-				ds_color += 4;	// [RH] color if r_drawflat is 1
-				ds_source = (byte *)W_CacheLumpNum (firstflat + useflatnum, PU_STATIC);
+				dspan.color += 4;	// [RH] color if r_drawflat is 1
+				dspan.source = (byte *)W_CacheLumpNum (firstflat + useflatnum, PU_STATIC);
 										   
 				// [RH] warp a flat if desired
 				if (flatwarp[useflatnum])
@@ -634,7 +634,7 @@ void R_DrawPlanes (void)
 						for (int x = 63; x >= 0; x--)
 						{
 							int yt, yf = (finesine[(timebase + ((x+17) << 7))&FINEMASK]>>13) & 63;
-							byte *source = ds_source + x;
+							byte *source = dspan.source + x;
 							byte *dest = warped + x;
 							for (yt = 64; yt; yt--, yf = (yf+1)&63, dest += 64)
 								*dest = *(source + (yf << 6));
@@ -649,14 +649,14 @@ void R_DrawPlanes (void)
 								*dest++ = *(source+xf);
 							memcpy (warped + (y << 6), buffer, 64);
 						}
-						Z_ChangeTag (ds_source, PU_CACHE);
-						ds_source = warped;
+						Z_ChangeTag (dspan.source, PU_CACHE);
+						dspan.source = warped;
 					}
 					else
 					{
-						Z_ChangeTag (ds_source, PU_CACHE);
-						ds_source = warpedflats[useflatnum];
-						Z_ChangeTag (ds_source, PU_STATIC);
+						Z_ChangeTag (dspan.source, PU_CACHE);
+						dspan.source = warpedflats[useflatnum];
+						Z_ChangeTag (dspan.source, PU_STATIC);
 					}
 				}
 				
@@ -668,7 +668,7 @@ void R_DrawPlanes (void)
 				else
 					R_DrawSlopedPlane(pl);
 					
-				Z_ChangeTag (ds_source, PU_CACHE);
+				Z_ChangeTag (dspan.source, PU_CACHE);
 			}
 		}
 	}

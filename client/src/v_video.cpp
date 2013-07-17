@@ -442,15 +442,15 @@ void DCanvas::Lock ()
 
 		if (this == screen)
 		{
-			if (dc_pitch != pitch << detailyshift)
+			if (dcol.pitch != pitch << detailyshift)
 			{
-				dc_pitch = pitch << detailyshift;
+				dcol.pitch = pitch << detailyshift;
 				R_InitFuzzTable ();
 			}
 
-			if (1 << detailxshift != ds_colsize)
+			if (1 << detailxshift != dspan.colsize)
 			{
-				ds_colsize = 1 << detailxshift;
+				dspan.colsize = 1 << detailxshift;
 			}
 		}
 	}

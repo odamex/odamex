@@ -645,7 +645,7 @@ fixed_t 		sprtopscreen;
 
 void R_BlastSpriteColumn(void (*drawfunc)())
 {
-	tallpost_t* post = dc_post;
+	tallpost_t* post = dcol.post;
 
 	while (!post->end())
 	{
@@ -653,17 +653,17 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 		int topscreen = sprtopscreen + spryscale * post->topdelta;
 		int bottomscreen = topscreen + spryscale * (post->length - 1);
 
-		dc_yl = (topscreen + FRACUNIT - 1) >> FRACBITS;
-		dc_yh = (bottomscreen - 1) >> FRACBITS;
+		dcol.yl = (topscreen + FRACUNIT - 1) >> FRACBITS;
+		dcol.yh = (bottomscreen - 1) >> FRACBITS;
 
-		dc_yl = MAX(dc_yl, mceilingclip[dc_x] + 1);
-		dc_yh = MIN(dc_yh, mfloorclip[dc_x] - 1);
+		dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
+		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
-		if (dc_yl <= dc_yh && dc_yl >= 0 && dc_yh < viewheight)
+		if (dcol.yl <= dcol.yh && dcol.yl >= 0 && dcol.yh < viewheight)
 		{
-			dc_texturefrac = dc_texturemid - (post->topdelta << FRACBITS) + (dc_yl - centery) * dc_iscale;
+			dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS) + (dcol.yl - centery) * dcol.iscale;
 
-			dc_source = post->data();
+			dcol.source = post->data();
 			drawfunc(); 
 		}
 		
@@ -694,7 +694,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	if (vis->yscale <= 0)
 		return;
 
-	dc_textureheight = 256 << FRACBITS;
+	dcol.textureheight = 256 << FRACBITS;
 
 	if (vis->mobjflags & MF_SPECTATOR)
 		return;
@@ -705,12 +705,12 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		return;
 	}
 
-	dc_colormap = vis->colormap;
+	dcol.colormap = vis->colormap;
 
 	if (vis->translation)
 	{
 		translated = true;
-		dc_translation = vis->translation;
+		dcol.translation = vis->translation;
 	}
 	else if (vis->mobjflags & MF_TRANSLATION)
 	{
@@ -718,7 +718,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		//		used it, but the prefered way to change a thing's colors
 		//		is now with the palette field.
 		translated = true;
-		dc_translation = translationref_t(translationtables + (MAXPLAYERS-1)*256 +
+		dcol.translation = translationref_t(translationtables + (MAXPLAYERS-1)*256 +
 			( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) ));
 	}
 
@@ -728,13 +728,13 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		//		a NULL colormap. This allow proper substition of
 		//		translucency with light levels if desired. The original
 		//		code used colormap == NULL to indicate shadows.
-		dc_translevel = FRACUNIT/5;
+		dcol.translevel = FRACUNIT/5;
 		fuzz_effect = true;
 	}
 	else if (vis->translucency < FRACUNIT)
 	{	// [RH] draw translucent column
 		lucent = true;
-		dc_translevel = vis->translucency;
+		dcol.translevel = vis->translucency;
 	}
 
 	// [SL] Select the set of drawing functions to use
@@ -749,10 +749,10 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	else if (translated)
 		R_SetTranslatedDrawFuncs();
 
-	dc_iscale = 0xffffffffu / (unsigned)vis->yscale;
-	dc_texturemid = vis->texturemid;
+	dcol.iscale = 0xffffffffu / (unsigned)vis->yscale;
+	dcol.texturemid = vis->texturemid;
 	spryscale = vis->yscale;
-	sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
+	sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
 
 	// [SL] set up the array that indicates which patch column to use for each screen column
 	fixed_t colfrac = vis->startfrac;
@@ -1618,15 +1618,15 @@ void R_DrawParticle(vissprite_t* vis)
 	int y1 = MAX(vis->y1, MAX(mceilingclip[x1] + 1, mceilingclip[x2] + 1));
 	int y2 = MIN(vis->y2, MIN(mfloorclip[x1] - 1, mfloorclip[x2] - 1));
 
-	ds_x1 = vis->x1;
-	ds_x2 = vis->x2;
-	ds_colormap = vis->colormap;
+	dspan.x1 = vis->x1;
+	dspan.x2 = vis->x2;
+	dspan.colormap = vis->colormap;
 	// vis->mobjflags holds translucency level (0-255)
-	dc_translevel = (vis->mobjflags + 1) << 8;	// TODO: change to ds_translevel
+	dspan.translevel = (vis->mobjflags + 1) << 8;
 	// vis->startfrac holds palette color index
-	ds_color = vis->startfrac;
+	dspan.color = vis->startfrac;
 
-	for (ds_y = y1; ds_y <= y2; ds_y++)
+	for (dspan.y = y1; dspan.y <= y2; dspan.y++)
 		R_FillTranslucentSpan();
 }
 

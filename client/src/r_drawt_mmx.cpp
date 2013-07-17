@@ -94,8 +94,8 @@ void rtv_lucent4cols_MMX(byte *source, argb_t *dest, int bga, int fga)
 	const __m64 bgColors01 = *((__m64 *)&dest[0]);
 #endif
 	const __m64 fgColors01 = _mm_setr_pi32(
-		rt_mapcolor<argb_t>(dc_colormap, source[0]),
-		rt_mapcolor<argb_t>(dc_colormap, source[1])
+		rt_mapcolor<argb_t>(dcol.colormap, source[0]),
+		rt_mapcolor<argb_t>(dcol.colormap, source[1])
 	);
 
 	const __m64 finalColors01 = _mm_packs_pu16(
@@ -122,8 +122,8 @@ void rtv_lucent4cols_MMX(byte *source, argb_t *dest, int bga, int fga)
 	const __m64 bgColors23 = *((__m64 *)&dest[2]);
 #endif
 	const __m64 fgColors23 = _mm_setr_pi32(
-		rt_mapcolor<argb_t>(dc_colormap, source[2]),
-		rt_mapcolor<argb_t>(dc_colormap, source[3])
+		rt_mapcolor<argb_t>(dcol.colormap, source[2]),
+		rt_mapcolor<argb_t>(dcol.colormap, source[3])
 	);
 
 	const __m64 finalColors23 = _mm_packs_pu16(
@@ -163,7 +163,7 @@ void rtv_lucent4cols_MMX(byte *source, palindex_t *dest, int bga, int fga)
 {
 	for (int i = 0; i < 4; ++i)
 	{
-		const palindex_t fg = rt_mapcolor<palindex_t>(dc_colormap, source[i]);
+		const palindex_t fg = rt_mapcolor<palindex_t>(dcol.colormap, source[i]);
 		const palindex_t bg = dest[i];
 
 		dest[i] = rt_blend2<palindex_t>(bg, bga, fg, fga);

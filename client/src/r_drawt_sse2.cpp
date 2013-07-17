@@ -90,10 +90,10 @@ void rtv_lucent4cols_SSE2(byte *source, argb_t *dest, int bga, int fga)
 
 	const __m128i bgColors = _mm_loadu_si128((__m128i *)dest);
 	const __m128i fgColors = _mm_setr_epi32(
-		rt_mapcolor<argb_t>(dc_colormap, source[0]),
-		rt_mapcolor<argb_t>(dc_colormap, source[1]),
-		rt_mapcolor<argb_t>(dc_colormap, source[2]),
-		rt_mapcolor<argb_t>(dc_colormap, source[3])
+		rt_mapcolor<argb_t>(dcol.colormap, source[0]),
+		rt_mapcolor<argb_t>(dcol.colormap, source[1]),
+		rt_mapcolor<argb_t>(dcol.colormap, source[2]),
+		rt_mapcolor<argb_t>(dcol.colormap, source[3])
 	);
 
 	const __m128i finalColors = _mm_packus_epi16(
@@ -121,7 +121,7 @@ void rtv_lucent4cols_SSE2(byte *source, palindex_t *dest, int bga, int fga)
 {
 	for (int i = 0; i < 4; ++i)
 	{
-		const palindex_t fg = rt_mapcolor<palindex_t>(dc_colormap, source[i]);
+		const palindex_t fg = rt_mapcolor<palindex_t>(dcol.colormap, source[i]);
 		const palindex_t bg = dest[i];
 
 		dest[i] = rt_blend2<palindex_t>(bg, bga, fg, fga);
@@ -139,30 +139,30 @@ void R_DrawSpanD_SSE2 (void)
 	int 				spot;
 
 #ifdef RANGECHECK
-	if (ds_x2 < ds_x1
-		|| ds_x1<0
-		|| ds_x2>=screen->width
-		|| ds_y>screen->height)
+	if (dspan.x2 < dspan.x1
+		|| dspan.x1<0
+		|| dspan.x2>=screen->width
+		|| dspan.y>screen->height)
 	{
 		I_Error ("R_DrawSpan: %i to %i at %i",
-				 ds_x1,ds_x2,ds_y);
+				 dspan.x1, dspan.x2, dspan.y);
 	}
 //		dscount++;
 #endif
 
-	xfrac = ds_xfrac;
-	yfrac = ds_yfrac;
+	xfrac = dspan.xfrac;
+	yfrac = dspan.yfrac;
 
-	dest = (argb_t *)(ylookup[ds_y] + columnofs[ds_x1]);
+	dest = (argb_t *)(ylookup[dspan.y] + columnofs[dspan.x1]);
 
 	// We do not check for zero spans here?
-	count = ds_x2 - ds_x1 + 1;
+	count = dspan.x2 - dspan.x1 + 1;
 
-	xstep = ds_xstep;
-	ystep = ds_ystep;
+	xstep = dspan.xstep;
+	ystep = dspan.ystep;
 
 	// NOTE(jsd): Can this just die already?
-	assert(ds_colsize == 1);
+	assert(dspan.colsize == 1);
 
 	// Blit until we align ourselves with a 16-byte offset for SSE2:
 	while (((size_t)dest) & 15)
@@ -172,8 +172,8 @@ void R_DrawSpanD_SSE2 (void)
 
 		// Lookup pixel from flat texture tile,
 		//  re-index using light/colormap.
-		*dest = ds_colormap.shade(ds_source[spot]);
-		dest += ds_colsize;
+		*dest = dspan.colormap.shade(dspan.source[spot]);
+		dest += dspan.colsize;
 
 		// Next step in u,v.
 		xfrac += xstep;
@@ -195,10 +195,10 @@ void R_DrawSpanD_SSE2 (void)
 			const int spot3 = (((yfrac+ystep*3)>>(32-6-6))&(63*64)) + ((xfrac+xstep*3)>>(32-6));
 
 			const __m128i finalColors = _mm_setr_epi32(
-				ds_colormap.shade(ds_source[spot0]),
-				ds_colormap.shade(ds_source[spot1]),
-				ds_colormap.shade(ds_source[spot2]),
-				ds_colormap.shade(ds_source[spot3])
+				dspan.colormap.shade(dspan.source[spot0]),
+				dspan.colormap.shade(dspan.source[spot1]),
+				dspan.colormap.shade(dspan.source[spot2]),
+				dspan.colormap.shade(dspan.source[spot3])
 			);
 			_mm_store_si128((__m128i *)dest, finalColors);
 			dest += 4;
@@ -219,8 +219,8 @@ void R_DrawSpanD_SSE2 (void)
 
 			// Lookup pixel from flat texture tile,
 			//  re-index using light/colormap.
-			*dest = ds_colormap.shade(ds_source[spot]);
-			dest += ds_colsize;
+			*dest = dspan.colormap.shade(dspan.source[spot]);
+			dest += dspan.colsize;
 
 			// Next step in u,v.
 			xfrac += xstep;
@@ -231,33 +231,33 @@ void R_DrawSpanD_SSE2 (void)
 
 void R_DrawSlopeSpanD_SSE2 (void)
 {
-	int count = ds_x2 - ds_x1 + 1;
+	int count = dspan.x2 - dspan.x1 + 1;
 	if (count <= 0)
 		return;
 
 #ifdef RANGECHECK 
-	if (ds_x2 < ds_x1
-		|| ds_x1<0
-		|| ds_x2>=screen->width
-		|| ds_y>screen->height)
+	if (dspan.x2 < dspan.x1
+		|| dspan.x1<0
+		|| dspan.x2>=screen->width
+		|| dspan.y>screen->height)
 	{
 		I_Error ("R_DrawSlopeSpan: %i to %i at %i",
-				 ds_x1,ds_x2,ds_y);
+				 dspan.x1, dspan.x2, dspan.y);
 	}
 #endif
 
-	float iu = ds_iu, iv = ds_iv;
-	float ius = ds_iustep, ivs = ds_ivstep;
-	float id = ds_id, ids = ds_idstep;
+	float iu = dspan.iu, iv = dspan.iv;
+	float ius = dspan.iustep, ivs = dspan.ivstep;
+	float id = dspan.id, ids = dspan.idstep;
 	
 	// framebuffer	
-	argb_t *dest = (argb_t *)( ylookup[ds_y] + columnofs[ds_x1] );
+	argb_t *dest = (argb_t *)( ylookup[dspan.y] + columnofs[dspan.x1] );
 	
 	// texture data
-	byte *src = (byte *)ds_source;
+	byte *src = (byte *)dspan.source;
 
-	assert (ds_colsize == 1);
-	const int colsize = ds_colsize;
+	assert (dspan.colsize == 1);
+	const int colsize = dspan.colsize;
 	int ltindex = 0;		// index into the lighting table
 
 	// Blit the bulk in batches of SPANJUMP columns:
@@ -287,7 +287,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		// Blit up to the first 16-byte aligned position:
 		while ((((size_t)dest) & 15) && (incount > 0))
 		{
-			const shaderef_t &colormap = slopelighting[ltindex++];
+			const shaderef_t &colormap = dspan.slopelighting[ltindex++];
 			*dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
 			dest += colsize;
 			ufrac += ustep;
@@ -308,10 +308,10 @@ void R_DrawSlopeSpanD_SSE2 (void)
 					const int spot3 = (((vfrac+vstep*3) >> 10) & 0xFC0) | (((ufrac+ustep*3) >> 16) & 63);
 
 					const __m128i finalColors = _mm_setr_epi32(
-						slopelighting[ltindex+0].shade(src[spot0]),
-						slopelighting[ltindex+1].shade(src[spot1]),
-						slopelighting[ltindex+2].shade(src[spot2]),
-						slopelighting[ltindex+3].shade(src[spot3])
+						dspan.slopelighting[ltindex+0].shade(src[spot0]),
+						dspan.slopelighting[ltindex+1].shade(src[spot1]),
+						dspan.slopelighting[ltindex+2].shade(src[spot2]),
+						dspan.slopelighting[ltindex+3].shade(src[spot3])
 					);
 					_mm_store_si128((__m128i *)dest, finalColors);
 
@@ -328,7 +328,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		{
 			while(incount--)
 			{
-				const shaderef_t &colormap = slopelighting[ltindex++];
+				const shaderef_t &colormap = dspan.slopelighting[ltindex++];
 				const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 				*dest = colormap.shade(src[spot]);
 				dest += colsize;
@@ -367,7 +367,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		int incount = count;
 		while (incount--)
 		{
-			const shaderef_t &colormap = slopelighting[ltindex++];
+			const shaderef_t &colormap = dspan.slopelighting[ltindex++];
 			*dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
 			dest += colsize;
 			ufrac += ustep;

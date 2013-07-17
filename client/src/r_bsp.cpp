@@ -448,7 +448,7 @@ void R_AddLine (seg_t *line)
 	if (R_PointOnSegSide(viewx, viewy, line) != 0)
 		return;
 
-	dc_color = ((line - segs) & 31) * 4;	// [RH] Color if not texturing line
+	dcol.color = ((line - segs) & 31) * 4;	// [RH] Color if not texturing line
 
 	// translate the line seg endpoints from world-space to camera-space
 	// and store in (t1.x, t1.y) and (t2.x, t2.y)

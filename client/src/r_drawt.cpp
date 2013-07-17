@@ -102,7 +102,7 @@ static forceinline void rt_copycols(int hx, int sx, int yl, int yh)
 	shaderef_t pal = shaderef_t(&realcolormaps, 0);
 	dest = (pixel_t *)(ylookup[yl] + columnofs[sx]);
 	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(pixel_t);
+	pitch = dcol.pitch / sizeof(pixel_t);
 
 	if (count & 1)
 	{
@@ -140,12 +140,12 @@ static forceinline void rt_mapcols(int hx, int sx, int yl, int yh)
 
 	dest = (pixel_t *)(ylookup[yl] + columnofs[sx]);
 	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(pixel_t);
+	pitch = dcol.pitch / sizeof(pixel_t);
 
 	if (count & 1)
 	{
 		for (int i = 0; i < columns; ++i)
-			dest[pitch*0+i] = rt_mapcolor<pixel_t>(dc_colormap, source[0+i]);
+			dest[pitch*0+i] = rt_mapcolor<pixel_t>(dcol.colormap, source[0+i]);
 		source += 4;
 		dest += pitch;
 	}
@@ -155,9 +155,9 @@ static forceinline void rt_mapcols(int hx, int sx, int yl, int yh)
 	do
 	{
 		for (int i = 0; i < columns; ++i)
-			dest[pitch*0+i] = rt_mapcolor<pixel_t>(dc_colormap, source[0+i]);
+			dest[pitch*0+i] = rt_mapcolor<pixel_t>(dcol.colormap, source[0+i]);
 		for (int i = 0; i < columns; ++i)
-			dest[pitch*1+i] = rt_mapcolor<pixel_t>(dc_colormap, source[4+i]);
+			dest[pitch*1+i] = rt_mapcolor<pixel_t>(dcol.colormap, source[4+i]);
 		source += 8;
 		dest += pitch*2;
 	} while (--count);
@@ -178,12 +178,12 @@ static forceinline void rt_tlatecols(int hx, int sx, int yl, int yh)
 
 	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(pixel_t);
+	pitch = dcol.pitch / sizeof(pixel_t);
 	
 	do
 	{
 		for (int i = 0; i < columns; ++i)
-			dest[i] = rt_tlatecolor<pixel_t>(dc_colormap, dc_translation, source[i]);
+			dest[i] = rt_tlatecolor<pixel_t>(dcol.colormap, dcol.translation, source[i]);
 		source += 4;
 		dest += pitch;
 	} while (--count);
@@ -220,12 +220,12 @@ static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
 		return;
 	count++;
 
-	int fga = (dc_translevel & ~0x03FF) >> 8;
+	int fga = (dcol.translevel & ~0x03FF) >> 8;
 	int bga = 255 - fga;
 
 	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(pixel_t);
+	pitch = dcol.pitch / sizeof(pixel_t);
 
 	do
 	{
@@ -237,7 +237,7 @@ static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
 		{
 			for (int i = 0; i < columns; ++i)
 			{
-				const pixel_t fg = rt_mapcolor<pixel_t>(dc_colormap, source[i]);
+				const pixel_t fg = rt_mapcolor<pixel_t>(dcol.colormap, source[i]);
 				const pixel_t bg = dest[i];
 
 				dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
@@ -262,18 +262,18 @@ static forceinline void rt_tlatelucentcols(int hx, int sx, int yl, int yh)
 		return;
 	count++;
 
-	int fga = (dc_translevel & ~0x03FF) >> 8;
+	int fga = (dcol.translevel & ~0x03FF) >> 8;
 	int bga = 255 - fga;
 
 	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(pixel_t);
+	pitch = dcol.pitch / sizeof(pixel_t);
 
 	do
 	{
 		for (int i = 0; i < columns; ++i)
 		{
-			const pixel_t fg = rt_tlatecolor<pixel_t>(dc_colormap, dc_translation, source[i]);
+			const pixel_t fg = rt_tlatecolor<pixel_t>(dcol.colormap, dcol.translation, source[i]);
 			const pixel_t bg = dest[i];
 
 			dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
