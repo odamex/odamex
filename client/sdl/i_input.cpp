@@ -54,6 +54,7 @@ EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 
+static int mouse_driver_id = SDL_MOUSE_DRIVER;
 static MouseInput* mouse_input = NULL;
 
 static bool window_focused = false;
@@ -194,7 +195,7 @@ static void I_UpdateInputGrabbing()
 		can_grab = false;
 	else if (menuactive || ConsoleState == c_down || paused)
 		can_grab = false;
-	else if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
+	else if (gamestate == GS_LEVEL && !demoplayback)
 		can_grab = true;
 
 	// force I_ResumeMouse or I_PauseMouse if toggling between fullscreen/windowed
@@ -756,9 +757,17 @@ static bool I_IsMouseDriverValid(int id)
 CVAR_FUNC_IMPL(mouse_driver)
 {
 	if (!I_IsMouseDriverValid(var))
-		var.Set(SDL_MOUSE_DRIVER);
+	{
+		var.RestoreDefault();
+	}
 	else
-		I_InitMouseDriver();
+	{
+		if (var.asInt() != mouse_driver_id)
+		{
+			mouse_driver_id = var.asInt();
+			I_InitMouseDriver();
+		}
+	}
 }
 
 //
@@ -786,7 +795,7 @@ void I_InitMouseDriver()
 		return;
 
 	// try to initialize the user's preferred mouse driver
-	MouseDriverInfo_t* info = I_FindMouseDriverInfo(mouse_driver);
+	MouseDriverInfo_t* info = I_FindMouseDriverInfo(mouse_driver_id);
 	if (info)
 	{
 		if (info->create != NULL)
