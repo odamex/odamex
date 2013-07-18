@@ -85,17 +85,22 @@ EXTERN_CVAR (vid_defbits)
 EXTERN_CVAR (vid_autoadjust)
 EXTERN_CVAR (vid_overscan)
 
-CVAR_FUNC_IMPL (vid_uncapfps)
-{
-	capfps = (var == 0);
-}
-
 CVAR_FUNC_IMPL (vid_maxfps)
 {
-	if (var < 35.0f)
-		var.Set(35.0f);
+	if (var == 0)
+	{
+		capfps = false;
+	}
 	else
-		maxfps = var;
+	{
+		if (var < 35.0f)
+			var.Set(35.0f);
+		else
+		{
+			capfps = true;
+			maxfps = var;
+		}
+	}
 }
 
 EXTERN_CVAR (ui_dimamount)

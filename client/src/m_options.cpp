@@ -1005,6 +1005,7 @@ EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
 EXTERN_CVAR (vid_widescreen)
+EXTERN_CVAR (vid_maxfps)
 
 static cvar_t DummyDepthCvar (NULL, NULL, "", CVARTYPE_NONE, 0);
 
@@ -1028,15 +1029,24 @@ static value_t DetailModes[] = {
 	{ 3.0, "Double Horiz & Vert" }
 };
 
+static value_t VidFPSCaps[] = {
+	{ 35.0,		"35fps" },
+	{ 60.0,		"60fps" },
+	{ 70.0,		"70fps" },
+	{ 120.0,	"120fps" },
+	{ 0.0,		"Unlimited" }
+};
+
 static menuitem_t ModesItems[] = {
 //	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
-	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
 #ifdef _XBOX
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
 #endif
 	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
+	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
+	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1055,13 +1065,13 @@ static menuitem_t ModesItems[] = {
 };
 
 #define VM_DEPTHITEM	0
-#define VM_RESSTART		4
-#define VM_ENTERLINE	14
-#define VM_TESTLINE		16
+#define VM_RESSTART		5
+#define VM_ENTERLINE	15
+#define VM_TESTLINE		17
 
 menu_t ModesMenu = {
 	"M_VIDMOD",
-	4,
+	0,
 	STACKARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,
@@ -1741,7 +1751,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList (screen->width, screen->height, DisplayBits);
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -1825,7 +1835,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList (screen->width, screen->height, DisplayBits);
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -1894,8 +1904,8 @@ void M_OptResponder (event_t *ev)
 			{
 				if (!(item->type == screenres && GetSelectedSize (CurrentItem, &NewWidth, &NewHeight)))
 				{
-					NewWidth = screen->width;
-					NewHeight = screen->height;
+					NewWidth = I_GetVideoWidth();
+					NewHeight = I_GetVideoHeight();
 				}
 				NewBits = BitTranslate[(int)DummyDepthCvar];
 				setmodeneeded = true;
@@ -1925,7 +1935,7 @@ void M_OptResponder (event_t *ev)
 
 				// Hack hack. Rebuild list of resolutions
 				if (item->e.values == Depths)
-					BuildModesList (screen->width, screen->height, DisplayBits);
+					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 
 				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
@@ -1975,17 +1985,17 @@ void M_OptResponder (event_t *ev)
 					if (!(item->type == screenres &&
 						GetSelectedSize (CurrentItem, &NewWidth, &NewHeight)))
 					{
-						NewWidth = screen->width;
-						NewHeight = screen->height;
+						NewWidth = I_GetVideoWidth();
+						NewHeight = I_GetVideoHeight();
 					}
-					OldWidth = screen->width;
-					OldHeight = screen->height;
+					OldWidth = I_GetVideoWidth();
+					OldHeight = I_GetVideoHeight();
 					OldBits = DisplayBits;
 					NewBits = BitTranslate[(int)DummyDepthCvar];
 					setmodeneeded = true;
 					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
 					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-					SetModesMenu (NewWidth, NewHeight, NewBits);
+					SetModesMenu(NewWidth, NewHeight, NewBits);
 				}
 			}
 			break;
@@ -2155,7 +2165,7 @@ static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
 
 void M_RefreshModesList ()
 {
-	BuildModesList (screen->width, screen->height, DisplayBits);
+	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 }
 
 static BOOL GetSelectedSize (int line, int *width, int *height)
@@ -2242,7 +2252,7 @@ void M_RestoreMode (void)
 
 static void SetVidMode (void)
 {
-	SetModesMenu (screen->width, screen->height, DisplayBits);
+	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 	if (ModesMenu.items[ModesMenu.lastOn].type == screenres)
 	{
 		if (ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)

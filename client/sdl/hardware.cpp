@@ -58,7 +58,7 @@ static IVideo *Video;
 //static IMouse *Mouse;
 //static IJoystick *Joystick;
 
-EXTERN_CVAR (vid_fps)
+EXTERN_CVAR (vid_displayfps)
 EXTERN_CVAR (vid_ticker)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_overscan)
@@ -170,7 +170,7 @@ void I_FinishUpdateNoBlit ()
 void I_FinishUpdate ()
 {
 	// Draws frame time and cumulative fps
-	if (vid_fps)
+	if (vid_displayfps)
 		I_DrawFPS();
 
     // draws little dots on the bottom of the screen
