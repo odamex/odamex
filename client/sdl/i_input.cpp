@@ -54,7 +54,7 @@ EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 
-static int mouse_driver_id = SDL_MOUSE_DRIVER;
+static int mouse_driver_id = -1;
 static MouseInput* mouse_input = NULL;
 
 static bool window_focused = false;
@@ -483,9 +483,10 @@ bool I_InitInput (void)
 	//g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
 #endif
 
-	I_InitMouseDriver();
 	I_InitFocus();
-	I_UpdateInputGrabbing();
+
+	// [SL] do not intialize mouse driver here since it will be called from
+	// the mouse_driver CVAR callback
 
 	return true;
 }
