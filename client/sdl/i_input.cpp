@@ -195,7 +195,7 @@ static void I_UpdateInputGrabbing()
 		can_grab = false;
 	else if (menuactive || ConsoleState == c_down || paused)
 		can_grab = false;
-	else if (gamestate == GS_LEVEL && !demoplayback)
+	else if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
 		can_grab = true;
 
 	// force I_ResumeMouse or I_PauseMouse if toggling between fullscreen/windowed
