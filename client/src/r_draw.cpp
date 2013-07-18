@@ -445,7 +445,7 @@ void R_BlankSpan()
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_FillColumnGeneric(PIXEL_T* dest, drawcolumn_t& drawcolumn)
+static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
 #ifdef RANGECHECK 
 	if (drawcolumn.x >= screen->width || drawcolumn.yl < 0 || drawcolumn.yh >= screen->height)
@@ -461,7 +461,7 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, drawcolumn_t& drawcol
 	if (count <= 0)
 		return;
 
-	COLORFUNC colorfunc(drawcolumn, &basecolormap);
+	COLORFUNC colorfunc(drawcolumn);
 
 	do {
 		colorfunc(color, dest);
@@ -484,7 +484,7 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, drawcolumn_t& drawcol
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, drawcolumn_t& drawcolumn)
+static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
 #ifdef RANGECHECK 
 	if (drawcolumn.x >= screen->width || drawcolumn.yl < 0 || drawcolumn.yh >= screen->height)
@@ -506,7 +506,7 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, drawcolumn_t& drawcol
 	const int texheight = drawcolumn.textureheight;
 	const int mask = (texheight >> FRACBITS) - 1;
 
-	COLORFUNC colorfunc(drawcolumn, &drawcolumn.colormap);
+	COLORFUNC colorfunc(drawcolumn);
 
 	// [SL] Properly tile textures whose heights are not a power-of-2,
 	// avoiding a tutti-frutti effect.  From Eternity Engine.
@@ -591,7 +591,7 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, drawcolumn_t& drawcol
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_FillSpanGeneric(PIXEL_T* dest, drawspan_t& drawspan)
+static forceinline void R_FillSpanGeneric(PIXEL_T* dest, const drawspan_t& drawspan)
 {
 #ifdef RANGECHECK
 	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
@@ -608,7 +608,7 @@ static forceinline void R_FillSpanGeneric(PIXEL_T* dest, drawspan_t& drawspan)
 	if (count <= 0)
 		return;
 
-	COLORFUNC colorfunc(drawspan, &basecolormap);
+	COLORFUNC colorfunc(drawspan);
 
 	do {
 		colorfunc(color, dest);
@@ -625,7 +625,7 @@ static forceinline void R_FillSpanGeneric(PIXEL_T* dest, drawspan_t& drawspan)
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, drawspan_t& drawspan)
+static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& drawspan)
 {
 #ifdef RANGECHECK
 	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
@@ -647,7 +647,7 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, drawspan_t& drawsp
 	const dsfixed_t xstep = drawspan.xstep;
 	const dsfixed_t ystep = drawspan.ystep;
 
-	COLORFUNC colorfunc(drawspan, &drawspan.colormap);
+	COLORFUNC colorfunc(drawspan);
 
 	do {
 		// Current texture index in u,v.
@@ -679,7 +679,7 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, drawspan_t& drawsp
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, drawspan_t& drawspan)
+static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t& drawspan)
 {
 #ifdef RANGECHECK
 	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
@@ -703,7 +703,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, drawspan_t& draws
 	int ltindex = 0;
 
 	shaderef_t colormap;
-	COLORFUNC colorfunc(drawspan, &colormap);
+	COLORFUNC colorfunc(drawspan);
 
 	while (count >= SPANJUMP)
 	{
@@ -799,8 +799,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, drawspan_t& draws
 class PaletteFunc
 {
 public:
-	PaletteFunc(const drawcolumn_t& drawcolumn, shaderef_t* map) { }
-	PaletteFunc(const drawspan_t& drawspan, shaderef_t* map) { }
+	PaletteFunc(const drawcolumn_t& drawcolumn) { }
+	PaletteFunc(const drawspan_t& drawspan) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
@@ -811,22 +811,25 @@ public:
 class PaletteColormapFunc
 {
 public:
-	PaletteColormapFunc(const drawcolumn_t& drawcolnumn, shaderef_t* map) : colormap(map) { }
-	PaletteColormapFunc(const drawspan_t& drawspan, shaderef_t* map) : colormap(map) { }
+	PaletteColormapFunc(const drawcolumn_t& drawcolumn) :
+			colormap(drawcolumn.colormap) { }
+	PaletteColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.colormap) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
-		*dest = colormap->index(c);
+		*dest = colormap.index(c);
 	}
 
 private:
-	shaderef_t* colormap;
+	const shaderef_t& colormap;
 };
 
 class PaletteFuzzyFunc
 {
 public:
-	PaletteFuzzyFunc(const drawcolumn_t& drawcolumn, shaderef_t* map) : colormap(&GetDefaultPalette()->maps, 6) { }
+	PaletteFuzzyFunc(const drawcolumn_t& drawcolum) :
+			colormap(&GetDefaultPalette()->maps, 6) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
@@ -841,19 +844,21 @@ private:
 class PaletteTranslucentColormapFunc
 {
 public:
-	PaletteTranslucentColormapFunc(const drawcolumn_t& drawcolumn, shaderef_t* map) : colormap(map)
+	PaletteTranslucentColormapFunc(const drawcolumn_t& drawcolumn) :
+			colormap(drawcolumn.colormap)
 	{
 		calculate_alpha(drawcolumn.translevel);
 	}
 
-	PaletteTranslucentColormapFunc(const drawspan_t& drawspan, shaderef_t* map) : colormap(map)
+	PaletteTranslucentColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.colormap)
 	{
 		calculate_alpha(drawspan.translevel);
 	}
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
-		const palindex_t fg = colormap->index(c);
+		const palindex_t fg = colormap.index(c);
 		const palindex_t bg = *dest;
 				
 		*dest = rt_blend2<palindex_t>(bg, bga, fg, fga);
@@ -866,31 +871,31 @@ private:
 		bga = 255 - fga;
 	}
 
-	shaderef_t* colormap;
+	const shaderef_t& colormap;
 	int fga, bga;
 };
 
 class PaletteTranslatedColormapFunc
 {
 public:
-	PaletteTranslatedColormapFunc(const drawcolumn_t& drawcolumn, shaderef_t* map) : 
-			colormap(map), translation(drawcolumn.translation) { }
+	PaletteTranslatedColormapFunc(const drawcolumn_t& drawcolumn) : 
+			colormap(drawcolumn.colormap), translation(drawcolumn.translation) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
-		*dest = colormap->index(translation.tlate(c));
+		*dest = colormap.index(translation.tlate(c));
 	}
 
 private:
-	shaderef_t* colormap;
+	const shaderef_t& colormap;
 	const translationref_t& translation;
 };
 
 class PaletteTranslatedTranslucentColormapFunc
 {
 public:
-	PaletteTranslatedTranslucentColormapFunc(const drawcolumn_t& drawcolumn, shaderef_t* map) :
-			tlatefunc(drawcolumn, map), translation(drawcolumn.translation) { }
+	PaletteTranslatedTranslucentColormapFunc(const drawcolumn_t& drawcolumn) :
+			tlatefunc(drawcolumn), translation(drawcolumn.translation) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
@@ -905,15 +910,16 @@ private:
 class PaletteSlopeColormapFunc
 {
 public:
-	PaletteSlopeColormapFunc(const drawspan_t& drawspan, shaderef_t* map) : colormap(map) { }
+	PaletteSlopeColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.colormap) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
-		*dest = colormap->index(c);
+		*dest = colormap.index(c);
 	}
 
 private:
-	shaderef_t* colormap;
+	const shaderef_t& colormap;
 };
 
 
@@ -1150,8 +1156,8 @@ void R_DrawSlopeSpanP()
 class DirectFunc
 {
 public:
-	DirectFunc(const drawcolumn_t& drawcolumn, shaderef_t* map) { }
-	DirectFunc(const drawspan_t& drawspan, shaderef_t* map) { }
+	DirectFunc(const drawcolumn_t& drawcolumn) { }
+	DirectFunc(const drawspan_t& drawspan) { }
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
@@ -1162,22 +1168,24 @@ public:
 class DirectColormapFunc
 {
 public:
-	DirectColormapFunc(const drawcolumn_t& drawcolumn, shaderef_t* map) : colormap(map) { }
-	DirectColormapFunc(const drawspan_t& drawspan, shaderef_t* map) : colormap(map) { }
+	DirectColormapFunc(const drawcolumn_t& drawcolumn) :
+			colormap(drawcolumn.colormap) { }
+	DirectColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.colormap) { }
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		*dest = colormap->shade(c);
+		*dest = colormap.shade(c);
 	}
 
 private:
-	shaderef_t* colormap;
+	const shaderef_t& colormap;
 };
 
 class DirectFuzzyFunc
 {
 public:
-	DirectFuzzyFunc(const drawcolumn_t& drawcolumn, shaderef_t* map) { }
+	DirectFuzzyFunc(const drawcolumn_t& drawcolumn) { }
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
@@ -1190,19 +1198,21 @@ public:
 class DirectTranslucentColormapFunc
 {
 public:
-	DirectTranslucentColormapFunc(const drawcolumn_t& drawcolumn, shaderef_t* map) : colormap(map)
+	DirectTranslucentColormapFunc(const drawcolumn_t& drawcolumn) :
+			colormap(drawcolumn.colormap)
 	{
 		calculate_alpha(drawcolumn.translevel);
 	}
 
-	DirectTranslucentColormapFunc(const drawspan_t& drawspan, shaderef_t* map) : colormap(map)
+	DirectTranslucentColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.colormap)
 	{
 		calculate_alpha(drawspan.translevel);
 	}
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		argb_t fg = colormap->shade(c);
+		argb_t fg = colormap.shade(c);
 		argb_t bg = *dest;
 		*dest = alphablend2a(bg, bga, fg, fga);	
 	}
@@ -1214,31 +1224,31 @@ private:
 		bga = 255 - fga;
 	}
 
-	shaderef_t* colormap;
+	const shaderef_t& colormap;
 	int fga, bga;
 };
 
 class DirectTranslatedColormapFunc
 {
 public:
-	DirectTranslatedColormapFunc(const drawcolumn_t& drawcolumn, shaderef_t* map) :
-			colormap(map), translation(drawcolumn.translation) { }
+	DirectTranslatedColormapFunc(const drawcolumn_t& drawcolumn) :
+			colormap(drawcolumn.colormap), translation(drawcolumn.translation) { }
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		*dest = colormap->tlate(translation, c);
+		*dest = colormap.tlate(translation, c);
 	}
 
 private:
-	shaderef_t* colormap;
+	const shaderef_t& colormap;
 	const translationref_t& translation;
 };
 
 class DirectTranslatedTranslucentColormapFunc
 {
 public:
-	DirectTranslatedTranslucentColormapFunc(const drawcolumn_t& drawcolumn, shaderef_t* map) :
-			tlatefunc(drawcolumn, map), translation(drawcolumn.translation) { }
+	DirectTranslatedTranslucentColormapFunc(const drawcolumn_t& drawcolumn) :
+			tlatefunc(drawcolumn), translation(drawcolumn.translation) { }
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
@@ -1253,15 +1263,16 @@ private:
 class DirectSlopeColormapFunc
 {
 public:
-	DirectSlopeColormapFunc(const drawspan_t& drawspan, shaderef_t* map) : colormap(map) { }
+	DirectSlopeColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.colormap) { }
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		*dest = colormap->shade(c);
+		*dest = colormap.shade(c);
 	}
 
 private:
-	shaderef_t* colormap;
+	const shaderef_t& colormap;
 };
 
 
