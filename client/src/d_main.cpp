@@ -199,7 +199,7 @@ void D_PostEvent (const event_t* ev)
 //
 // D_DisplayTicker
 //
-// Called once every gametic to provide timing for display funcitons such
+// Called once every gametic to provide timing for display functions such
 // as screenwipes.
 //
 void D_DisplayTicker()
@@ -505,7 +505,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		int width = 320, height = 200;
+		const int width = 320, height = 200;
 		patch_t *data;
 
 		if (page && (page->width != screen->width || page->height != screen->height))
@@ -519,33 +519,17 @@ void D_DoAdvanceDemo (void)
 		if (page == NULL)
         {
             if (screen->isProtectedRes())
-            {
-                page = I_AllocateScreen (data->width(), data->height(), 8);
-            }
+                page = I_AllocateScreen(data->width(), data->height(), 8);
             else
-            {
-                page = I_AllocateScreen (screen->width, screen->height, 8);
-            }
+                page = I_AllocateScreen(screen->width, screen->height, 8);
         }
 
 		page->Lock ();
 
 		if (gameinfo.flags & GI_PAGESARERAW)
-        {
             page->DrawBlock (0, 0, width, height, (byte *)data);
-        }
-		else if (screen->isProtectedRes())
-        {
-            page->DrawPatch(data,0,0);
-        }
-        else if ((float)screen->width/screen->height < (float)4.0f/3.0f)
-        {
-            page->DrawPatchStretched (data, 0, (screen->height / 2) - ((height * RealYfac) / 2), screen->width, (height * RealYfac));
-        }
-        else
-        {
-            page->DrawPatchStretched (data, (screen->width / 2) - ((width * RealXfac) / 2), 0, (width * RealXfac), screen->height);
-        }
+		else
+			page->DrawPatchFullScreen(data);
 
 		page->Unlock ();
 	}

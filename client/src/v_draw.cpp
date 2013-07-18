@@ -35,7 +35,6 @@
 
 // [RH] Stretch values for V_DrawPatchClean()
 int CleanXfac, CleanYfac;
-float RealXfac, RealYfac;
 
 EXTERN_CVAR(hud_transparency)
 

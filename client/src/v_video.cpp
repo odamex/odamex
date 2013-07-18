@@ -215,6 +215,31 @@ void DCanvas::FlatFill (int left, int top, int right, int bottom, const byte *sr
 }
 
 
+// [SL] Stretches a patch to fill the full-screen while maintaining a 4:3
+// aspect ratio. Pillarboxing is used in widescreen resolutions.
+void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
+{
+	Clear(0, 0, width, height, 0);
+
+	if (isProtectedRes())
+	{
+		DrawPatch(patch, 0, 0);
+	}   
+	else if (width * 3 > height * 4)
+	{   
+		// widescreen resolution - draw pic in 4:3 ratio in center of screen
+		int picwidth = 4 * height / 3;
+		int picheight = height;
+		DrawPatchStretched(patch, (width - picwidth) / 2, 0, picwidth, picheight);
+	}   
+	else
+	{
+		// 4:3 resolution - draw pic to the entire screen
+		DrawPatchStretched(patch, 0, 0, width, height);
+	}
+}
+
+
 // [RH] Set an area to a specified color
 void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
 {
@@ -605,15 +630,6 @@ static bool V_DoModeSetup(int width, int height, int bits)
 		width = 4.0f * height / 3.0f;
 	else if (V_UseLetterBox())
 		height = 9.0f * width / 16.0f;
-
-	RealXfac = 4.0f * height / (3.0f * basew);
-	RealYfac = 4.0f * width / (3.0f * baseh);
-
-	if (!RealXfac)
-        RealXfac = 1.0f;
-
-	if (!RealYfac)
-        RealYfac = 1.0f;
 
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows con_scaletext to have some purpose...
