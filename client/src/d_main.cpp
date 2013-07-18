@@ -942,7 +942,7 @@ void D_DoomMain (void)
             if (gamestate != GS_CONNECTING)
                 gamestate = GS_HIDECONSOLE;
 
-			C_ToggleConsole();
+			C_HideConsole();
 
 			if (gamemode == commercial_bfg) // DOOM 2 BFG Edtion
                 AddCommandString("menu_main");
