@@ -911,15 +911,16 @@ class PaletteSlopeColormapFunc
 {
 public:
 	PaletteSlopeColormapFunc(const drawspan_t& drawspan) :
-			colormap(drawspan.colormap) { }
+			colormap(drawspan.slopelighting) { }
 
-	forceinline void operator()(byte c, palindex_t* dest) const
+	forceinline void operator()(byte c, palindex_t* dest)
 	{
-		*dest = colormap.index(c);
+		*dest = colormap->index(c);
+		colormap++;
 	}
 
 private:
-	const shaderef_t& colormap;
+	const shaderef_t* colormap;
 };
 
 
@@ -930,7 +931,6 @@ private:
 // ----------------------------------------------------------------------------
 
 #define FB_COLDEST_P ((palindex_t*)(ylookup[dcol.yl] + columnofs[dcol.x]))
-#define FB_COLPITCH_P (dcol.pitch / sizeof(palindex_t))
 
 //
 // R_FillColumnP
@@ -1086,7 +1086,6 @@ void R_DrawColumnHorizP()
 // ----------------------------------------------------------------------------
 
 #define FB_SPANDEST_P ((palindex_t*)(ylookup[dspan.y] + columnofs[dspan.x1]))
-#define FB_SPANPITCH_P (dspan.colsize)
 
 //
 // R_FillSpanP
@@ -1264,15 +1263,16 @@ class DirectSlopeColormapFunc
 {
 public:
 	DirectSlopeColormapFunc(const drawspan_t& drawspan) :
-			colormap(drawspan.colormap) { }
+			colormap(drawspan.slopelighting) { }
 
-	forceinline void operator()(byte c, argb_t* dest) const
+	forceinline void operator()(byte c, argb_t* dest)
 	{
-		*dest = colormap.shade(c);
+		*dest = colormap->shade(c);
+		colormap++;
 	}
 
 private:
-	const shaderef_t& colormap;
+	const shaderef_t* colormap;
 };
 
 
@@ -1283,7 +1283,6 @@ private:
 // ----------------------------------------------------------------------------
 
 #define FB_COLDEST_D ((argb_t*)(ylookup[dcol.yl] + columnofs[dcol.x]))
-#define FB_COLPITCH_D (dcol.pitch / sizeof(argb_t))
 
 //
 // R_FillColumnD
@@ -1372,7 +1371,6 @@ void R_DrawTlatedLucentColumnD()
 // ----------------------------------------------------------------------------
 
 #define FB_SPANDEST_D ((argb_t*)(ylookup[dspan.y] + columnofs[dspan.x1]))
-#define FB_SPANPITCH_D (dspan.colsize)
 
 //
 // R_FillSpanD
