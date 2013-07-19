@@ -1127,7 +1127,7 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 	static const uint64_t logic_dt = 1000LL * 1000LL * 1000LL / TICRATE;
 
 	static uint64_t previous_time = I_GetTime();
-	static uint64_t accumulator = 0LL;
+	static uint64_t accumulator = logic_dt;
 
 	// should the physics run at 35Hz?
 	bool fixed_logic_ticrate = !timingdemo;

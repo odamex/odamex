@@ -539,6 +539,7 @@
 		<Unit filename="../src/r_drawt_altivec.cpp" />
 		<Unit filename="../src/r_drawt_mmx.cpp" />
 		<Unit filename="../src/r_drawt_sse2.cpp" />
+		<Unit filename="../src/r_interp.cpp" />
 		<Unit filename="../src/r_main.cpp" />
 		<Unit filename="../src/r_plane.cpp" />
 		<Unit filename="../src/r_segs.cpp" />

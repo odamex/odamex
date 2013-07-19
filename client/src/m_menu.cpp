@@ -1086,24 +1086,7 @@ void M_Expansion (int choice)
 void M_DrawReadThis1 (void)
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
-
-	if (screen->isProtectedRes())
-    {
-        screen->DrawPatchIndirect (p, 0, 0);
-    }
-    else
-    {
-        screen->Clear(0, 0, screen->width, screen->height, 0);
-
-        if ((float)screen->width/screen->height < (float)4.0f/3.0f)
-        {
-            screen->DrawPatchStretched(p, 0, (screen->height / 2) - ((p->height() * RealYfac) / 2), screen->width, (p->height() * RealYfac));
-        }
-        else
-        {
-            screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
-        }
-    }
+	screen->DrawPatchFullScreen(p);
 }
 
 //
@@ -1112,24 +1095,7 @@ void M_DrawReadThis1 (void)
 void M_DrawReadThis2 (void)
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[1]);
-
-	if (screen->isProtectedRes())
-    {
-        screen->DrawPatchIndirect (p, 0, 0);
-    }
-    else
-    {
-        screen->Clear(0, 0, screen->width, screen->height, 0);
-
-        if ((float)screen->width/screen->height < (float)4.0f/3.0f)
-        {
-            screen->DrawPatchStretched(p, 0, (screen->height / 2) - ((p->height() * RealYfac) / 2), screen->width, (p->height() * RealYfac));
-        }
-        else
-        {
-            screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
-        }
-    }
+	screen->DrawPatchFullScreen(p);
 }
 
 //
@@ -1138,24 +1104,7 @@ void M_DrawReadThis2 (void)
 void M_DrawReadThis3 (void)
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[2]);
-
-	if (screen->isProtectedRes())
-    {
-        screen->DrawPatchIndirect (p, 0, 0);
-    }
-    else
-    {
-        screen->Clear(0, 0, screen->width, screen->height, 0);
-
-        if ((float)screen->width/screen->height < (float)4.0f/3.0f)
-        {
-            screen->DrawPatchStretched(p, 0, (screen->height / 2) - ((p->height() * RealYfac) / 2), screen->width, (p->height() * RealYfac));
-        }
-        else
-        {
-            screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
-        }
-    }
+	screen->DrawPatchFullScreen(p);
 }
 
 //

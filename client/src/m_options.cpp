@@ -1005,6 +1005,7 @@ static void SetModesMenu (int w, int h, int bits);
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_widescreen)
+EXTERN_CVAR (vid_maxfps)
 
 EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
@@ -1027,8 +1028,15 @@ static value_t DetailModes[] = {
 	{ 3.0, "Double Horiz & Vert" }
 };
 
+static value_t VidFPSCaps[] = {
+	{ 35.0,		"35fps" },
+	{ 60.0,		"60fps" },
+	{ 70.0,		"70fps" },
+	{ 120.0,	"120fps" },
+	{ 0.0,		"Unlimited" }
+};
+
 static menuitem_t ModesItems[] = {
-	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
 #ifdef _XBOX
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
@@ -1036,6 +1044,8 @@ static menuitem_t ModesItems[] = {
 #endif
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
+	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
+	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1059,7 +1069,7 @@ static menuitem_t ModesItems[] = {
 
 menu_t ModesMenu = {
 	"M_VIDMOD",
-	5,
+	0,
 	STACKARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,
@@ -1733,7 +1743,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList (screen->width, screen->height, DisplayBits);
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -1817,7 +1827,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList (screen->width, screen->height, DisplayBits);
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -1886,8 +1896,8 @@ void M_OptResponder (event_t *ev)
 			{
 				if (!(item->type == screenres && GetSelectedSize (CurrentItem, &NewWidth, &NewHeight)))
 				{
-					NewWidth = screen->width;
-					NewHeight = screen->height;
+					NewWidth = I_GetVideoWidth();
+					NewHeight = I_GetVideoHeight();
 				}
 				NewBits = (int)vid_32bpp ? 32 : 8;
 				setmodeneeded = true;
@@ -1916,7 +1926,7 @@ void M_OptResponder (event_t *ev)
 
 				// Hack hack. Rebuild list of resolutions
 				if (item->e.values == Depths)
-					BuildModesList (screen->width, screen->height, DisplayBits);
+					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 
 				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
@@ -1966,17 +1976,17 @@ void M_OptResponder (event_t *ev)
 					if (!(item->type == screenres &&
 						GetSelectedSize (CurrentItem, &NewWidth, &NewHeight)))
 					{
-						NewWidth = screen->width;
-						NewHeight = screen->height;
+						NewWidth = I_GetVideoWidth();
+						NewHeight = I_GetVideoHeight();
 					}
-					OldWidth = screen->width;
-					OldHeight = screen->height;
+					OldWidth = I_GetVideoWidth();
+					OldHeight = I_GetVideoHeight();
 					OldBits = DisplayBits;
 					NewBits = (int)vid_32bpp ? 32 : 8;
 					setmodeneeded = true;
 					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
 					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-					SetModesMenu (NewWidth, NewHeight, NewBits);
+					SetModesMenu(NewWidth, NewHeight, NewBits);
 				}
 			}
 			break;
@@ -2144,7 +2154,7 @@ static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
 
 void M_RefreshModesList ()
 {
-	BuildModesList (screen->width, screen->height, DisplayBits);
+	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 }
 
 static BOOL GetSelectedSize (int line, int *width, int *height)
@@ -2216,7 +2226,7 @@ void M_RestoreMode (void)
 
 static void SetVidMode (void)
 {
-	SetModesMenu (screen->width, screen->height, DisplayBits);
+	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 	if (ModesMenu.items[ModesMenu.lastOn].type == screenres)
 	{
 		if (ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)

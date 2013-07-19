@@ -38,7 +38,6 @@
 #include "r_data.h"
 
 extern int CleanXfac, CleanYfac;
-extern float RealXfac, RealYfac;
 
 extern BOOL    gotconback;
 
@@ -157,6 +156,8 @@ public:
 	inline void DrawPatchIndirect (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
+
+	void DrawPatchFullScreen(const patch_t* patch) const;
 
 	inline void DrawLucentPatch (const patch_t *patch, int x, int y) const;
 	inline void DrawLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
