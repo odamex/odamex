@@ -1412,8 +1412,24 @@ void CL_MoveMobj(void)
 	if (!mo)
 		return;
 
-	CL_MoveThing (mo, x, y, z);
-	mo->rndindex = rndindex;
+	if (mo->player)
+	{
+		// [SL] 2013-07-21 - Save the position information to a snapshot
+		int snaptime = last_svgametic;
+		PlayerSnapshot newsnap(snaptime);
+		newsnap.setAuthoritative(true);
+		
+		newsnap.setX(x);
+		newsnap.setY(y);
+		newsnap.setZ(z);
+		
+		mo->player->snapshots.addSnapshot(newsnap);
+	}
+	else
+	{
+		CL_MoveThing (mo, x, y, z);
+		mo->rndindex = rndindex;
+	}
 }
 
 //
@@ -2371,17 +2387,34 @@ void CL_SetMobjSpeedAndAngle(void)
 	netid = MSG_ReadShort();
 	mo = P_FindThingById(netid);
 
-	if (!mo)
-	{
-		for (int i=0; i<4; i++)
-			MSG_ReadLong();
-		return;
-	}
+	angle_t angle = MSG_ReadLong();
+	fixed_t momx = MSG_ReadLong();
+	fixed_t momy = MSG_ReadLong();
+	fixed_t momz = MSG_ReadLong();
 
-	mo->angle = MSG_ReadLong();
-	mo->momx = MSG_ReadLong();
-	mo->momy = MSG_ReadLong();
-	mo->momz = MSG_ReadLong();
+	if (!mo)
+		return;
+	
+	if (mo->player)
+	{
+		// [SL] 2013-07-21 - Save the position information to a snapshot
+		int snaptime = last_svgametic;
+		PlayerSnapshot newsnap(snaptime);
+		newsnap.setAuthoritative(true);
+		
+		newsnap.setMomX(momx);
+		newsnap.setMomY(momy);
+		newsnap.setMomZ(momz);
+		
+		mo->player->snapshots.addSnapshot(newsnap);
+	}
+	else
+	{
+		mo->angle = angle; 
+		mo->momx = momx;
+		mo->momy = momy;
+		mo->momz = momz; 
+	}
 }
 
 //
@@ -3812,12 +3845,7 @@ void CL_SimulatePlayers()
 		// Consoleplayer is handled in CL_PredictWorld
 		if (player->id == consoleplayer_id)
 			continue;
-
-		// [SL] 2013-04-30 - Let the animation ticker update frames, etc for
-		// dying players. This leads to less jittery animation when cl_interp is used.	
-		if (player->mo->health <= 0)
-			continue;
-	
+		
 		PlayerSnapshot snap = player->snapshots.getSnapshot(world_index);
 		if (snap.isValid())
 		{
@@ -3861,7 +3889,11 @@ void CL_SimulatePlayers()
 				}
 			}
 
+			int oldframe = player->mo->frame;
 			snap.toPlayer(player);
+
+			if (player->playerstate != PST_LIVE)
+				player->mo->frame = oldframe;
 
 			if (!snap.isContinuous())
 			{
