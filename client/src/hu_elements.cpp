@@ -239,9 +239,6 @@ std::string Timer(int& color) {
 	}
 
 	int timeleft = level.timeleft;
-	if (timeleft <= 60) {
-		color = CR_BRICK;
-	}
 
 	if (timeleft < 0) {
 		timeleft = 0;
@@ -254,6 +251,10 @@ std::string Timer(int& color) {
 
 	timeleft -= minutes * TICRATE * 60;
 	int seconds = timeleft / TICRATE;
+
+	if (minutes <= 0) {
+		color = CR_BRICK;
+	}
 
 	char str[9];
 	if (hours) {
