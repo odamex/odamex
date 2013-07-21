@@ -1334,7 +1334,8 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType);
 void P_HandleSpecialRepeat(line_t* line)
 {
 	// [SL] Don't remove specials from fragging exit line specials
-	if ((line->special == Exit_Normal || line->special == Exit_Secret) &&
+	if ((line->special == Exit_Normal || line->special == Exit_Secret || 
+		 line->special == Teleport_EndGame || line->special == Teleport_NewMap) &&
 		(!sv_allowexit && sv_fragexitswitch))
 		return;
 
