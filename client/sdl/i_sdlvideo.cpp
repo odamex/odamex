@@ -222,15 +222,12 @@ bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 {
 	Uint32 flags = SDL_SWSURFACE;
 
-	// SoM: I'm not sure if we should request a software or hardware surface yet... So I'm
-	// just ganna let SDL decide.
-
 	if (fullscreen && !vidModeList.empty())
 		flags |= SDL_FULLSCREEN;
 	else
 		flags |= SDL_RESIZABLE;
 
-	if (bits == 8)
+	if (fullscreen && bits == 8)
 		flags |= SDL_HWPALETTE;
 
 	// TODO: check for multicore
@@ -241,7 +238,16 @@ bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 	// disable them prior to reinitalizing DirectInput...
 	I_PauseMouse();
 
-   if (!(sdlScreen = SDL_SetVideoMode(width, height, bits, flags)))
+	int sbits = bits;
+
+	#ifdef WIN32
+	// fullscreen directx requires a 32-bit mode to fix broken palette
+	// [Russell] - Use for gdi as well, fixes d2 map02 water
+	if (fullscreen)
+		sbits = 32;
+	#endif
+
+	if (!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
 		return false;
 
 	// [SL] ...and re-enable RawWin32Mouse's input handlers after
