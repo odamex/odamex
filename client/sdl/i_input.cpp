@@ -809,6 +809,8 @@ void I_InitMouseDriver()
 	if (nomouse)
 		return;
 
+	bool using_sdl_mouse = true;
+
 	// try to initialize the user's preferred mouse driver
 	MouseDriverInfo_t* info = I_FindMouseDriverInfo(mouse_driver_id);
 	if (info)
@@ -821,7 +823,7 @@ void I_InitMouseDriver()
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initalize %s input.\n", info->name);
 
 		if (mouse_driver_id != SDL_MOUSE_DRIVER && mouse_input != NULL)
-			I_SetSDLIgnoreMouseEvents();
+			using_sdl_mouse = false;
 	}
 
 	// fall back on SDLMouse if the preferred driver failed to initialize
@@ -832,10 +834,14 @@ void I_InitMouseDriver()
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing SDL Mouse input as a fallback.\n");
 		else
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initialize SDL Mouse input as a fallback.\n");
-
-		if (mouse_input != NULL)
-			I_UnsetSDLIgnoreMouseEvents();
 	}
+
+	// tell SDL to ignore mouse events when using a non-SDL mouse driver
+	// otherwise mouse events are never cleared out of SDL's event queue
+	if (using_sdl_mouse)
+		I_UnsetSDLIgnoreMouseEvents();
+	else
+		I_SetSDLIgnoreMouseEvents();
 
 	I_FlushInput();
 	I_ResumeMouse();
