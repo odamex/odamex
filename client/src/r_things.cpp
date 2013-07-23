@@ -650,25 +650,41 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 	while (!post->end())
 	{
 		// calculate unclipped screen coordinates for post
-		int topscreen = sprtopscreen + spryscale * post->topdelta;
-		int bottomscreen = topscreen + spryscale * post->length;
+		int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
 
-		dcol.yl = (topscreen + FRACUNIT - 1) >> FRACBITS;
-		dcol.yh = (bottomscreen - 1) >> FRACBITS;
+		dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
+		dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
 
 		dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
 		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
+
+
+		dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
+			+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
+
+		if (dcol.texturefrac < 0)
+		{
+			int cnt = (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+			dcol.yl += cnt;
+			dcol.texturefrac += cnt * dcol.iscale;
+		}
+
+		const fixed_t endfrac = dcol.texturefrac + (dcol.yh - dcol.yl) * dcol.iscale;
+		const fixed_t maxfrac = post->length << FRACBITS;
+		
+		if (endfrac >= maxfrac)
+		{
+			int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+			dcol.yh -= cnt;
+		}
+
+		dcol.source = post->data();
 
 		dcol.yl = MAX(dcol.yl, 0);
 		dcol.yh = MIN(dcol.yh, viewheight - 1);
 
 		if (dcol.yl <= dcol.yh)
-		{
-			dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS) + (dcol.yl - centery) * dcol.iscale;
-
-			dcol.source = post->data();
-			drawfunc(); 
-		}
+			drawfunc();
 		
 		post = post->next();
 	}
