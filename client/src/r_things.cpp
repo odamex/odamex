@@ -910,9 +910,25 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 		(thing->player && thing->player->spectator))
 		return;
 
-	fixed_t thingx = thing->prevx + FixedMul(render_lerp_amount, thing->x - thing->prevx);
-	fixed_t thingy = thing->prevy + FixedMul(render_lerp_amount, thing->y - thing->prevy);
-	fixed_t thingz = thing->prevz + FixedMul(render_lerp_amount, thing->z - thing->prevz);
+	// [SL] interpolate the position of thing
+	fixed_t thingx, thingy, thingz;
+
+	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT)
+	{
+		// the actor probably did not teleport
+		// interpolate between previous and current position
+		thingx = thing->prevx + FixedMul(render_lerp_amount, thing->x - thing->prevx);
+		thingy = thing->prevy + FixedMul(render_lerp_amount, thing->y - thing->prevy);
+		thingz = thing->prevz + FixedMul(render_lerp_amount, thing->z - thing->prevz);
+	}
+	else
+	{
+		// the actor just teleported
+		// do not interpolate
+		thingx = thing->x;
+		thingy = thing->y;
+		thingz = thing->z;
+	}
 
 	// transform the origin point
 	tr_x = thingx - viewx;
