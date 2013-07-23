@@ -782,6 +782,20 @@ void I_ShutdownMouseDriver()
 	mouse_input = NULL;
 }
 
+static void I_SetSDLIgnoreMouseEvents()
+{
+	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
+	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
+}
+
+static void I_UnsetSDLIgnoreMouseEvents()
+{
+	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
+	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
+	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
+}
+
 //
 // I_InitMouseDriver
 //
@@ -805,6 +819,9 @@ void I_InitMouseDriver()
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing %s input.\n", info->name);
 		else
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initalize %s input.\n", info->name);
+
+		if (mouse_driver_id != SDL_MOUSE_DRIVER && mouse_input != NULL)
+			I_SetSDLIgnoreMouseEvents();
 	}
 
 	// fall back on SDLMouse if the preferred driver failed to initialize
@@ -815,8 +832,12 @@ void I_InitMouseDriver()
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing SDL Mouse input as a fallback.\n");
 		else
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initialize SDL Mouse input as a fallback.\n");
+
+		if (mouse_input != NULL)
+			I_UnsetSDLIgnoreMouseEvents();
 	}
 
+	I_FlushInput();
 	I_ResumeMouse();
 }
 
