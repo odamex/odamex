@@ -651,7 +651,7 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 	{
 		// calculate unclipped screen coordinates for post
 		int topscreen = sprtopscreen + spryscale * post->topdelta;
-		int bottomscreen = topscreen + spryscale * (post->length - 1);
+		int bottomscreen = topscreen + spryscale * post->length;
 
 		dcol.yl = (topscreen + FRACUNIT - 1) >> FRACBITS;
 		dcol.yh = (bottomscreen - 1) >> FRACBITS;
@@ -659,7 +659,10 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 		dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
 		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
-		if (dcol.yl <= dcol.yh && dcol.yl >= 0 && dcol.yh < viewheight)
+		dcol.yl = MAX(dcol.yl, 0);
+		dcol.yh = MIN(dcol.yh, viewheight - 1);
+
+		if (dcol.yl <= dcol.yh)
 		{
 			dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS) + (dcol.yl - centery) * dcol.iscale;
 
