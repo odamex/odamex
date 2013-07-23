@@ -1138,6 +1138,9 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 	uint64_t frame_time = current_time - previous_time;
 	previous_time = current_time;
 
+	if (gametic > 100 && frame_time > 2 * logic_dt)
+		Printf(PRINT_HIGH, "Frame time %ims\n", (int)(frame_time / (1000LL * 1000LL)));
+
 	accumulator += frame_time;
 
 	if (fixed_logic_ticrate)

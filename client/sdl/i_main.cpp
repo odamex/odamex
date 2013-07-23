@@ -186,7 +186,15 @@ int main(int argc, char *argv[])
 		putenv((char*)"SDL_VIDEO_X11_DGAMOUSE=1");
 #endif
 
-		if (SDL_Init (SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)
+		unsigned int sdl_flags = SDL_INIT_TIMER;
+
+#ifdef _MSC_VER
+		// [SL] per the SDL documentation, SDL's parachute, used to cleanup
+		// after a crash, causes the MSVC debugger to be unusable
+		sdl_flags |= SDL_INIT_NOPARACHUTE;
+#endif
+
+		if (SDL_Init(sdl_flags) == -1)
 			I_FatalError("Could not initialize SDL:\n%s\n", SDL_GetError());
 
 		atterm (SDL_Quit);

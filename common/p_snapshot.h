@@ -102,6 +102,8 @@ public:
 
 	bool operator==(const ActorSnapshot &other) const;
 	
+	void merge(const ActorSnapshot& other);
+
 	void toActor(AActor *mo) const;
 	
 	fixed_t getX() const			{ return mX; }
@@ -276,6 +278,8 @@ public:
 
 	bool operator==(const PlayerSnapshot &other) const;
 	
+	void merge(const PlayerSnapshot& other);
+
 	void toPlayer(player_t *player) const;
 
 	fixed_t getViewHeight() const		{ return mViewHeight; }

@@ -550,9 +550,9 @@ void I_GetEvent()
 
 	// Force SDL to gather events from input devices. This is called
 	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
-	// process only mouse events, SDL_PumpEvents is necessary.
+	// process only non-mouse events, SDL_PumpEvents is necessary.
 	SDL_PumpEvents();
-	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, SDL_ALLEVENTS);
+	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, SDL_ALLEVENTS & ~SDL_MOUSEEVENTMASK); 
 
 	for (int i = 0; i < num_events; i++)
 	{
