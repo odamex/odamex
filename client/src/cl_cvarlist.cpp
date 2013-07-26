@@ -346,6 +346,8 @@ CVAR_FUNC_DECL (hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",	C
 CVAR (r_columnmethod, "1", "Column optimization method",	CVARTYPE_BYTE, CVAR_ARCHIVE)
 // Detail level (affects performance)
 CVAR_FUNC_DECL (r_detail, "0", "Detail level (affects performance)",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Draws flashing colors where there is HOM
+CVAR (r_flashhom, "0", "Draws flashing colors where there is HOM", CVARTYPE_BOOL, 0)
 // Disables all texturing of walls
 CVAR (r_drawflat, "0", "Disables all texturing of walls",	CVARTYPE_BOOL, 0)
 // Draw player sprites
