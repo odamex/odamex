@@ -28,6 +28,7 @@
 #ifndef NET_PACKET_H
 #define NET_PACKET_H
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 

@@ -109,7 +109,9 @@ END_EVENT_TABLE()
 
 static const wxCmdLineEntryDesc cmdLineDesc[] =
 {
-    { wxCMD_LINE_OPTION,  "m", "master", "set alternate master server, example: /m 127.0.0.1:12345", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_NEEDS_SEPARATOR },
+    { 	wxCMD_LINE_OPTION,  wxT("m"), wxT("master"), 
+		wxT("set alternate master server, example: /m 127.0.0.1:12345"),
+		wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_NEEDS_SEPARATOR },
 
     { wxCMD_LINE_NONE }
 };
