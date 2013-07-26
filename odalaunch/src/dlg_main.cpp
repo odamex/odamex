@@ -42,6 +42,7 @@
 #include <wx/process.h>
 #include <wx/toolbar.h>
 #include <wx/xrc/xmlres.h>
+#include <wx/cmdline.h>
 
 #ifdef __WXMSW__
     #include <windows.h>
@@ -105,6 +106,15 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     EVT_LIST_ITEM_SELECTED(XRCID("Id_LstCtrlServers"), dlgMain::OnServerListClick)
     EVT_LIST_ITEM_ACTIVATED(XRCID("Id_LstCtrlServers"), dlgMain::OnServerListDoubleClick)
 END_EVENT_TABLE()
+
+static const wxCmdLineEntryDesc cmdLineDesc[] =
+{
+    { 	wxCMD_LINE_OPTION,  wxT("m"), wxT("master"), 
+		wxT("set alternate master server, example: /m 127.0.0.1:12345"),
+		wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_NEEDS_SEPARATOR },
+
+    { wxCMD_LINE_NONE }
+};
 
 void dlgMain::SetupToolbar()
 {
@@ -200,9 +210,24 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_LstOdaSrvDetails = XRCCTRL(*this, "Id_LstCtrlServerDetails", LstOdaSrvDetails);
 
 	// set up the master server information
-    MServer.AddMaster("master1.odamex.net", 15000);
-    MServer.AddMaster("voxelsoft.com", 15000);
-
+	wxCmdLineParser CmdLineParser(wxTheApp->argc, wxTheApp->argv);
+    wxString MasterAddress;
+    
+    CmdLineParser.SetDesc(cmdLineDesc);
+    
+    CmdLineParser.Parse();
+    
+    if (CmdLineParser.Found(cmdLineDesc[0].shortName, &MasterAddress) || 
+        CmdLineParser.Found(cmdLineDesc[0].longName, &MasterAddress))
+    {
+        MServer.AddMaster(wxstr_tostdstr(MasterAddress));
+    }
+    else
+    {
+        MServer.AddMaster("master1.odamex.net", 15000);
+        MServer.AddMaster("voxelsoft.com", 15000);
+    }
+    
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
     server_dlg = new dlgServers(&MServer, this);
@@ -752,8 +777,8 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             break;
     }
 
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %llu"), MServer.GetPing()), 1);
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), TotalPlayers), 3);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), (wxInt32)MServer.GetPing()), 1);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), (wxInt32)TotalPlayers), 3);
 
     delete Result;
 }
@@ -795,12 +820,12 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
     ++QueriedServers;
 
     GetStatusBar()->SetStatusText(wxString::Format(_T("Queried Server %d of %d"),
-                                                   QueriedServers,
-                                                   MServer.GetServerCount()),
+                                                   (wxInt32)QueriedServers,
+                                                   (wxInt32)MServer.GetServerCount()),
                                                    2);
 
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"),
-                                                   TotalPlayers),
+                                                   (wxInt32)TotalPlayers),
                                                    3);
 }
 

@@ -1130,13 +1130,16 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 	static uint64_t accumulator = logic_dt;
 
 	// should the physics run at 35Hz?
-	bool fixed_logic_ticrate = !timingdemo;
+	const bool fixed_logic_ticrate = !timingdemo;
 	// should the renderer run at vid_maxfs (35Hz by default)?
-	bool fixed_render_ticrate = !timingdemo && capfps;
+	const bool fixed_render_ticrate = !timingdemo && capfps;
 
 	uint64_t current_time = I_GetTime();
 	uint64_t frame_time = current_time - previous_time;
 	previous_time = current_time;
+
+	// prevent trying to run too many logic frames when we're already behind
+	frame_time = MIN(frame_time, 4 * logic_dt);
 
 	accumulator += frame_time;
 
@@ -1171,8 +1174,10 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 	{
 		const uint64_t render_dt = 1000LL * 1000LL * 1000LL / maxfps;
 		int64_t sleep_time = render_dt - I_GetTime() + current_time;
-		sleep_time = MAX(sleep_time, int64_t(1000LL * 1000LL));	// sleep at least 1ms
-		I_Sleep(sleep_time);
+		
+		// sleep if it will be for at least 1ms
+		if (sleep_time > 1000LL * 1000LL)
+			I_Sleep(sleep_time);
 	}
 	else if (!timingdemo)
 	{

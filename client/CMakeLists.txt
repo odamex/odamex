@@ -107,7 +107,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     target_link_libraries(odamex socket nsl)
   endif()
 
-  if(UNIX)
+  if(UNIX AND NOT APPLE)
     target_link_libraries(odamex rt)
   endif()
 

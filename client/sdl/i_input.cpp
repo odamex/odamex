@@ -512,10 +512,7 @@ void I_PauseMouse()
 {
 	SDL_ShowCursor(true);
 	if (mouse_input)
-	{
 		mouse_input->pause();
-		mouse_input->center();
-	}
 }
 
 //
@@ -583,6 +580,9 @@ void I_GetEvent()
 		case SDL_ACTIVEEVENT:
 			// need to update our focus state
 			I_UpdateFocus();
+			// pause the mouse when the focus goes away (eg, alt-tab)
+			if (!window_focused)
+				I_PauseMouse();
 			break;
 
 		case SDL_KEYDOWN:
@@ -782,6 +782,20 @@ void I_ShutdownMouseDriver()
 	mouse_input = NULL;
 }
 
+static void I_SetSDLIgnoreMouseEvents()
+{
+	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
+	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
+}
+
+static void I_UnsetSDLIgnoreMouseEvents()
+{
+	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
+	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
+	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
+}
+
 //
 // I_InitMouseDriver
 //
@@ -791,6 +805,9 @@ void I_ShutdownMouseDriver()
 void I_InitMouseDriver()
 {
 	I_ShutdownMouseDriver();
+
+	// ignore SDL mouse input for now... The mouse driver will change this if needed
+	I_SetSDLIgnoreMouseEvents();
 
 	if (nomouse)
 		return;
@@ -817,6 +834,7 @@ void I_InitMouseDriver()
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initialize SDL Mouse input as a fallback.\n");
 	}
 
+	I_FlushInput();
 	I_ResumeMouse();
 }
 
@@ -1560,13 +1578,10 @@ void SDLMouse::processEvents()
 //
 void SDLMouse::center()
 {
-	if (screen)
-	{
-		// warp the mouse to the center of the screen
-		SDL_WarpMouse(I_GetVideoWidth() / 2, I_GetVideoHeight() / 2);
-		// SDL_WarpMouse creates a new event in the queue and needs to be thrown out
-		flushEvents();
-	}
+	// warp the mouse to the center of the screen
+	SDL_WarpMouse(I_GetVideoWidth() / 2, I_GetVideoHeight() / 2);
+	// SDL_WarpMouse creates a new event in the queue and needs to be thrown out
+	flushEvents();
 }
 
 
@@ -1579,6 +1594,7 @@ bool SDLMouse::paused() const
 void SDLMouse::pause()
 {
 	mActive = false;
+	I_SetSDLIgnoreMouseEvents();
 }
 
 
@@ -1586,6 +1602,7 @@ void SDLMouse::resume()
 {
 	mActive = true;
 	center();
+	I_UnsetSDLIgnoreMouseEvents();
 }
 
 
