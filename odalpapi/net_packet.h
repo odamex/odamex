@@ -256,6 +256,24 @@ public:
 			masteraddresses.push_back(Master);
 	}
 
+    bool AddMaster(std::string Address)
+    {
+        size_t colon = Address.find(':');
+
+        if (colon == std::string::npos)
+            return false;
+
+        if (colon + 1 >= Address.length())
+            return false;
+
+        uint16_t Port = atoi(Address.substr(colon + 1).c_str());
+        std::string HostIP = Address.substr(0, colon);
+        
+        AddMaster(HostIP, Port);
+        
+        return true;
+    }
+
 	void QueryMasters(const uint32_t &Timeout, const bool &Broadcast, 
             const int8_t &Retries)
 	{           

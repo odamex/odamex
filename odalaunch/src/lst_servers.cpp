@@ -292,7 +292,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
     Ping = s.GetPing();
 
     li.m_col = serverlist_field_ping;
-    li.m_text = wxString::Format(_T("%llu"), Ping);
+    li.m_text = wxString::Format(_T("%lu"), (wxInt32)Ping);
 
     SetItem(li);
 
@@ -300,7 +300,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
     // TODO: acquire max players, max clients and spectators from these 2 and
     // create some kind of graphical column maybe
     li.m_col = serverlist_field_players;
-    li.m_text = wxString::Format(_T("%d/%d"),s.Info.Players.size(),s.Info.MaxClients);
+    li.m_text = wxString::Format(_T("%d/%d"),(wxInt32)s.Info.Players.size(),(wxInt32)s.Info.MaxClients);
     
     // Colour the entire text row if there are players
     // TODO: Allow the user to select prefered colours
