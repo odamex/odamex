@@ -84,10 +84,9 @@ public:
 
 	// [ML] If this is 320x200 or 640x400, the resolutions
 	// "protected" from aspect ratio correction.
-	// [SL] extended to additional similarly proportioned video modes
 	inline bool isProtectedRes() const
 	{
-		return 10 * width / height == 16;
+		return (width == 320 && height == 200) || (width == 640 && height == 400);
 	};
 
 	int m_LockCount;
