@@ -3279,7 +3279,7 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 	// e.g. when a telefrag results in an item drop.
 	// so we need to back up tmthing and then restore it
 	AActor *last_tmthing = tmthing;
-	int last_tmx = tmx, last_tmy = y;
+	int last_tmx = tmx, last_tmy = tmy;
 	int last_tmbbox[4] = {tmbbox[0], tmbbox[1], tmbbox[2], tmbbox[3]};
 
 	tmthing = thing;
