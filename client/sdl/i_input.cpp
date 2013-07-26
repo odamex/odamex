@@ -583,6 +583,10 @@ void I_GetEvent()
 		case SDL_ACTIVEEVENT:
 			// need to update our focus state
 			I_UpdateFocus();
+			if (!window_focused)
+				I_PauseMouse();
+			else
+				I_ResumeMouse();
 			break;
 
 		case SDL_KEYDOWN:
@@ -806,10 +810,11 @@ void I_InitMouseDriver()
 {
 	I_ShutdownMouseDriver();
 
+	// ignore SDL mouse input for now... The mouse driver will change this if needed
+	I_SetSDLIgnoreMouseEvents();
+
 	if (nomouse)
 		return;
-
-	bool using_sdl_mouse = true;
 
 	// try to initialize the user's preferred mouse driver
 	MouseDriverInfo_t* info = I_FindMouseDriverInfo(mouse_driver_id);
@@ -821,9 +826,6 @@ void I_InitMouseDriver()
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing %s input.\n", info->name);
 		else
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initalize %s input.\n", info->name);
-
-		if (mouse_driver_id != SDL_MOUSE_DRIVER && mouse_input != NULL)
-			using_sdl_mouse = false;
 	}
 
 	// fall back on SDLMouse if the preferred driver failed to initialize
@@ -835,13 +837,6 @@ void I_InitMouseDriver()
 		else
 			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initialize SDL Mouse input as a fallback.\n");
 	}
-
-	// tell SDL to ignore mouse events when using a non-SDL mouse driver
-	// otherwise mouse events are never cleared out of SDL's event queue
-	if (using_sdl_mouse)
-		I_UnsetSDLIgnoreMouseEvents();
-	else
-		I_SetSDLIgnoreMouseEvents();
 
 	I_FlushInput();
 	I_ResumeMouse();
@@ -1606,6 +1601,7 @@ bool SDLMouse::paused() const
 void SDLMouse::pause()
 {
 	mActive = false;
+	I_SetSDLIgnoreMouseEvents();
 }
 
 
@@ -1613,6 +1609,7 @@ void SDLMouse::resume()
 {
 	mActive = true;
 	center();
+	I_UnsetSDLIgnoreMouseEvents();
 }
 
 
