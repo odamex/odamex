@@ -512,10 +512,7 @@ void I_PauseMouse()
 {
 	SDL_ShowCursor(true);
 	if (mouse_input)
-	{
 		mouse_input->pause();
-		mouse_input->center();
-	}
 }
 
 //
@@ -583,10 +580,9 @@ void I_GetEvent()
 		case SDL_ACTIVEEVENT:
 			// need to update our focus state
 			I_UpdateFocus();
+			// pause the mouse when the focus goes away (eg, alt-tab)
 			if (!window_focused)
 				I_PauseMouse();
-			else
-				I_ResumeMouse();
 			break;
 
 		case SDL_KEYDOWN:
@@ -1582,13 +1578,10 @@ void SDLMouse::processEvents()
 //
 void SDLMouse::center()
 {
-	if (screen)
-	{
-		// warp the mouse to the center of the screen
-		SDL_WarpMouse(I_GetVideoWidth() / 2, I_GetVideoHeight() / 2);
-		// SDL_WarpMouse creates a new event in the queue and needs to be thrown out
-		flushEvents();
-	}
+	// warp the mouse to the center of the screen
+	SDL_WarpMouse(I_GetVideoWidth() / 2, I_GetVideoHeight() / 2);
+	// SDL_WarpMouse creates a new event in the queue and needs to be thrown out
+	flushEvents();
 }
 
 
