@@ -125,5 +125,27 @@ void R_EndInterpolation()
 	}
 }
 
+//
+// R_InterpolateCamera
+//
+// Interpolate between the current position and the previous position
+// of the camera. If not using uncapped framerate / interpolation,
+// render_lerp_amount will be FRACUNIT.
+//
+void R_InterpolateCamera(fixed_t amount)
+{
+	// interpolate amount/FRACUNIT percent between previous value and current value
+	viewangle = viewangleoffset + camera->prevangle +
+			FixedMul(amount, camera->angle - camera->prevangle);
+	viewx = camera->prevx + FixedMul(amount, camera->x - camera->prevx);
+	viewy = camera->prevy + FixedMul(amount, camera->y - camera->prevy);
+	if (camera->player)
+		viewz = camera->player->prevviewz +
+				FixedMul(amount, camera->player->viewz - camera->player->prevviewz);
+	else
+		viewz = camera->prevz +
+				FixedMul(amount, camera->z - camera->prevz);
+}
+
 VERSION_CONTROL (r_interp_cpp, "$Id: r_interp.cpp 3798 2013-04-24 03:09:33Z dr_sean $")
 
