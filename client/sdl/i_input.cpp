@@ -759,7 +759,16 @@ CVAR_FUNC_IMPL(mouse_driver)
 {
 	if (!I_IsMouseDriverValid(var))
 	{
-		var.RestoreDefault();
+		if (var.asInt() == SDL_MOUSE_DRIVER)
+		{
+			// can't initialize SDL_MOUSE_DRIVER so don't use a mouse
+			I_ShutdownMouseDriver();
+			nomouse = true;
+		}
+		else
+		{
+			var.Set(SDL_MOUSE_DRIVER);
+		}
 	}
 	else
 	{
