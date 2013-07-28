@@ -322,7 +322,7 @@ void I_Sleep(uint64_t sleep_time)
 		result = select(0, NULL, NULL, NULL, &timeout);
 	} while (result == -1 && errno == EINTR);
 
-#elif defined WIN32
+#elif defined(WIN32) && !defined(_XBOX)
 	uint64_t start_time = I_GetTime();
 	if (sleep_time > 5000000LL)
 		sleep_time -= 500000LL;		// [SL] hack to get the timing right for 35Hz
