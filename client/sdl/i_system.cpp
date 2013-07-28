@@ -328,21 +328,17 @@ void I_Sleep(uint64_t sleep_time)
 		sleep_time -= 500000LL;		// [SL] hack to get the timing right for 35Hz
 
 	// have to create a dummy socket for select to work on Windows
-	static bool initialized = false;
-	static fd_set dummy;
-
-	if (!initialized)
-	{
-		SOCKET s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-		FD_ZERO(&dummy);
-		FD_SET(s, &dummy);
-	}
+	fd_set dummy;
+	SOCKET s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	FD_ZERO(&dummy);
+	FD_SET(s, &dummy);
 
 	struct timeval timeout;
 	timeout.tv_sec = sleep_time / one_billion;
 	timeout.tv_usec = (sleep_time % one_billion) / 1000;
 
 	select(0, NULL, NULL, &dummy, &timeout);
+	closesocket(s);
 
 #else
 	SDL_Delay(sleep_time / 1000000LL);
