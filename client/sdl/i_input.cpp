@@ -184,6 +184,7 @@ static void I_UpdateFocus()
 //
 static void I_UpdateInputGrabbing()
 {
+#ifndef GCONSOLE
 	bool can_grab = false;
 	bool grabbed = SDL_WM_GrabInput(SDL_GRAB_QUERY);
 
@@ -216,6 +217,7 @@ static void I_UpdateInputGrabbing()
 		SDL_WM_GrabInput(SDL_GRAB_OFF);
 		I_PauseMouse();
 	}
+#endif
 }
 
 
