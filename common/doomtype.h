@@ -244,15 +244,37 @@ forceinline T clamp (const T in, const T min, const T max)
 	return in <= min ? min : in >= max ? max : in;
 }
 
+extern unsigned int ASHIFT, RSHIFT, GSHIFT, BSHIFT;
 
-#define MAKERGB(r,g,b)		(((r)<<16)|((g)<<8)|(b))
-#define MAKEARGB(a,r,g,b)	(((a)<<24)|((r)<<16)|((g)<<8)|(b))
+forceinline argb_t APART(argb_t c)
+{
+	return (c >> ASHIFT) & 0xFF;
+}
 
-#define APART(c)			(((c)>>24)&0xff)
-#define RPART(c)			(((c)>>16)&0xff)
-#define GPART(c)			(((c)>>8)&0xff)
-#define BPART(c)			((c)&0xff)
+forceinline argb_t RPART(argb_t c)
+{
+	return (c >> RSHIFT) & 0xFF;
+}
 
+forceinline argb_t GPART(argb_t c)
+{
+	return (c >> GSHIFT) & 0xFF;
+}
+
+forceinline argb_t BPART(argb_t c)
+{
+	return (c >> BSHIFT) & 0xFF;
+}
+
+forceinline argb_t MAKERGB(argb_t r, argb_t g, argb_t b)
+{
+	return (r << RSHIFT) | (g << GSHIFT) | (b << BSHIFT);
+}
+
+forceinline argb_t MAKEARGB(argb_t a, argb_t r, argb_t g, argb_t b)
+{
+	return (a << ASHIFT) | (r << RSHIFT) | (g << GSHIFT) | (b << BSHIFT);
+}
 
 // Alpha blend between two RGB colors with only dest alpha value
 // 0 <=   toa <= 255

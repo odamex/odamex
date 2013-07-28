@@ -27,6 +27,8 @@
 #include "doomdef.h"
 #include "v_palette.h"
 
+unsigned int ASHIFT, RSHIFT, GSHIFT, BSHIFT;
+
 float BaseBlendA;
 bool r_underwater;
 

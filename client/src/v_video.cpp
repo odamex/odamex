@@ -69,6 +69,8 @@ IMPLEMENT_CLASS (DCanvas, DObject)
 int DisplayWidth, DisplayHeight, DisplayBits;
 int SquareWidth;
 
+unsigned int ASHIFT, RSHIFT, GSHIFT, BSHIFT;
+
 argb_t Col2RGB8[65][256];
 palindex_t RGB32k[32][32][32];
 

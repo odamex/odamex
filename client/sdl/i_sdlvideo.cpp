@@ -375,35 +375,26 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 	scrn->buffer = NULL;
 
 	SDL_Surface* new_surface;
-
-	unsigned int rmask = 0;
-	unsigned int gmask = 0;
-	unsigned int bmask = 0;
-
-	if (bits == 32)
-	{
-		// SDL interprets each pixel as a 32-bit number, so our masks must depend
-		// on the endianness (byte order) of the machine
-		#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-		rmask = 0x0000ff00;
-		gmask = 0x00ff0000;
-		bmask = 0xff000000;
-		#else
-		rmask = 0x00ff0000;
-		gmask = 0x0000ff00;
-		bmask = 0x000000ff;
-		#endif
-	}
-
 	Uint32 flags = SDL_SWSURFACE;
 
-	new_surface = SDL_CreateRGBSurface(flags, width, height, bits, rmask, gmask, bmask, 0);
+	new_surface = SDL_CreateRGBSurface(flags, width, height, bits, 0, 0, 0, 0);
 
 	if (!new_surface)
 		I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
 
 	if (new_surface->pitch != (width * (bits / 8)) && vid_autoadjust)
 		Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
+
+	// determine format of 32bpp pixels
+	SDL_PixelFormat* fmt = new_surface->format;
+	if (fmt->BitsPerPixel == 32)
+	{
+		RSHIFT = fmt->Rshift;
+		GSHIFT = fmt->Gshift;
+		BSHIFT = fmt->Bshift;
+		// find which byte is not used and use it for alpha (SDL always reports 0 for alpha)
+		ASHIFT = 48 - RSHIFT + GSHIFT + BSHIFT;
+	}
 
 	scrn->m_Private = new_surface;
 	scrn->pitch = new_surface->pitch;
