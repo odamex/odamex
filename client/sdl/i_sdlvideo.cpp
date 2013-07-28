@@ -393,7 +393,7 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 		GSHIFT = fmt->Gshift;
 		BSHIFT = fmt->Bshift;
 		// find which byte is not used and use it for alpha (SDL always reports 0 for alpha)
-		ASHIFT = 48 - RSHIFT + GSHIFT + BSHIFT;
+		ASHIFT = 48 - (RSHIFT + GSHIFT + BSHIFT);
 	}
 
 	scrn->m_Private = new_surface;
