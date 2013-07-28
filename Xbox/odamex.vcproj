@@ -407,6 +407,9 @@
 				RelativePath="..\client\src\r_drawt.cpp">
 			</File>
 			<File
+				RelativePath="..\client\src\r_interp.cpp">
+			</File>
+			<File
 				RelativePath="..\client\src\r_main.cpp">
 			</File>
 			<File
@@ -503,6 +506,9 @@
 			</File>
 			<File
 				RelativePath="..\client\src\st_lib.h">
+			</File>
+			<File
+				RelativePath="..\client\src\v_gamma.h">
 			</File>
 			<File
 				RelativePath="..\client\src\v_text.h">
@@ -1029,6 +1035,9 @@
 			</File>
 			<File
 				RelativePath="..\common\w_wad.h">
+			</File>
+			<File
+				RelativePath="..\common\win32inc.h">
 			</File>
 			<File
 				RelativePath="..\common\win32time.h">

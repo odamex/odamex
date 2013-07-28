@@ -845,7 +845,7 @@ void I_InitMouseDriver()
 // This is used to determine if the user's version of Windows has the necessary
 // functions availible.
 //
-#ifdef WIN32
+#if defined(WIN32) && !defined(_XBOX)
 static bool I_CheckForProc(const char* dllname, const char* procname)
 {
 	bool avail = false;
@@ -1611,7 +1611,7 @@ void SDLMouse::resume()
 //
 void SDLMouse::debug() const
 {
-#ifdef WIN32
+#if defined(WIN32) && !defined(_XBOX)
 	// get a handle to the window
 	SDL_SysWMinfo wminfo;
 	SDL_VERSION(&wminfo.version)
