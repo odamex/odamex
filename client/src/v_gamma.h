@@ -79,7 +79,7 @@ public:
 		// This generates a 1:1 match with the original gammatable but also
 		// allows for intermediate values.
 
-		const double basefac = pow(2.0, level) * (255.0/256.0);
+		const double basefac = pow(2.0, (double)level) * (255.0/256.0);
 		const double exp = 1.0 - 0.125 * level;
 
 		for (int i = 0; i < 256; i++)

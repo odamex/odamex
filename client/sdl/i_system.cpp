@@ -39,13 +39,13 @@
     #include <io.h>
     #include <direct.h>
     #include <process.h>
-    #include <mmsystem.h>
 
     #ifdef _XBOX
         #include <xtl.h>
     #else
         #include <shlwapi.h>
 		#include <winsock2.h>
+		#include <mmsystem.h>
     #endif // !_XBOX
 #endif // WIN32
 
