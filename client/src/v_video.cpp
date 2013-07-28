@@ -69,8 +69,6 @@ IMPLEMENT_CLASS (DCanvas, DObject)
 int DisplayWidth, DisplayHeight, DisplayBits;
 int SquareWidth;
 
-unsigned int ASHIFT, RSHIFT, GSHIFT, BSHIFT;
-
 argb_t Col2RGB8[65][256];
 palindex_t RGB32k[32][32][32];
 
@@ -138,17 +136,6 @@ void V_MarkRect (int x, int y, int width, int height)
 	dirtybox.AddToBox (x+width-1, y+height-1);
 }
 
-
-DCanvas::DCanvas ()
-{
-	buffer = NULL;
-	m_LockCount = 0;
-	m_Private = NULL;
-}
-
-DCanvas::~DCanvas ()
-{
-}
 
 // [RH] Fill an area with a 64x64 flat texture
 //		right and bottom are one pixel *past* the boundaries they describe.

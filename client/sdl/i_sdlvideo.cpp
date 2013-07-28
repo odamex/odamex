@@ -386,14 +386,21 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 		Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
 
 	// determine format of 32bpp pixels
-	SDL_PixelFormat* fmt = new_surface->format;
-	if (fmt->BitsPerPixel == 32)
+	if (bits == 32)
 	{
-		RSHIFT = fmt->Rshift;
-		GSHIFT = fmt->Gshift;
-		BSHIFT = fmt->Bshift;
+		SDL_PixelFormat* fmt = new_surface->format;
 		// find which byte is not used and use it for alpha (SDL always reports 0 for alpha)
-		ASHIFT = 48 - (RSHIFT + GSHIFT + BSHIFT);
+		scrn->setAlphaShift(48 - (fmt->Rshift + fmt->Gshift + fmt->Bshift));
+		scrn->setRedShift(fmt->Rshift);
+		scrn->setGreenShift(fmt->Gshift);
+		scrn->setBlueShift(fmt->Bshift);
+	}
+	else
+	{
+		scrn->setAlphaShift(24);
+		scrn->setRedShift(16);
+		scrn->setGreenShift(8);
+		scrn->setBlueShift(0);
 	}
 
 	scrn->m_Private = new_surface;

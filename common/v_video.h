@@ -44,6 +44,14 @@ extern BOOL    gotconback;
 extern int DisplayWidth, DisplayHeight, DisplayBits;
 extern int SquareWidth;
 
+#define APART(c)				(screen->alphaPart(c))
+#define RPART(c)				(screen->redPart(c))
+#define GPART(c)				(screen->greenPart(c))
+#define BPART(c)				(screen->bluePart(c))
+
+#define MAKERGB(r, g, b)		(screen->makeRGB(r, g, b))
+#define MAKEARGB(a, r, g, b)	(screen->makeARGB(a, r, g, b))
+
 //
 // VIDEO
 //
@@ -72,22 +80,73 @@ public:
 		EWrapper_ColoredLucent = 5	// Mixes a solid color in the patch area with the background
 	};
 
-	DCanvas ();
-	virtual ~DCanvas ();
+	DCanvas() :
+		buffer(NULL), m_LockCount(0), m_Private(NULL),
+		ashift(24), rshift(16), gshift(8), bshift(0)
+	{ }
+
+	virtual ~DCanvas ()
+	{ }
 
 	int bits;
 	byte *buffer;
 	int width;
 	int height;
 	int pitch;
-	inline bool is8bit() const { return bits == 8; };
+	inline bool is8bit() const { return bits == 8; }
 
 	// [ML] If this is 320x200 or 640x400, the resolutions
 	// "protected" from aspect ratio correction.
 	inline bool isProtectedRes() const
 	{
 		return (width == 320 && height == 200) || (width == 640 && height == 400);
-	};
+	}
+
+	inline void setAlphaShift(byte n)
+	{	ashift = n;	}
+
+	inline void setRedShift(byte n)
+	{	rshift = n;	}
+
+	inline void setGreenShift(byte n)
+	{	gshift = n;	}
+
+	inline void setBlueShift(byte n)
+	{	bshift = n;	}
+
+	inline byte getAlphaShift() const
+	{	return ashift;	}
+
+	inline byte getRedShift() const
+	{	return rshift;	}
+
+	inline byte getGreenShift() const
+	{	return gshift;	}
+
+	inline byte getBlueShift() const
+	{	return bshift;	}
+
+	inline argb_t alphaPart(argb_t color) const
+	{	return (color >> ashift) & 0xFF;	}
+
+	inline argb_t redPart(argb_t color) const
+	{	return (color >> rshift) & 0xFF;	}
+
+	inline argb_t greenPart(argb_t color) const
+	{	return (color >> gshift) & 0xFF;	}
+
+	inline argb_t bluePart(argb_t color) const
+	{	return (color >> bshift) & 0xFF;	}
+
+	inline argb_t makeRGB(byte r, byte g, byte b) const
+	{
+		return (r << rshift) | (g << gshift) | (b << bshift);
+	}
+
+	inline argb_t makeARGB(byte a, byte r, byte g, byte b) const
+	{
+		return (a << ashift) | (r << rshift) | (g << gshift) | (b << bshift);
+	}
 
 	int m_LockCount;
 	palette_t *m_Palette;
@@ -242,6 +301,11 @@ protected:
 	// The current set of column drawers (set in V_SetResolution)
 	static vdrawfunc *m_Drawfuncs;
 	static vdrawsfunc *m_Drawsfuncs;
+
+	byte ashift;
+	byte rshift;
+	byte gshift;
+	byte bshift;
 };
 
 inline void DCanvas::DrawText (int normalcolor, int x, int y, const byte *string) const
@@ -515,6 +579,38 @@ forceinline argb_t rt_blend2(const argb_t bg, const int bga, const argb_t fg, co
 bool V_UsePillarBox();
 bool V_UseLetterBox();
 bool V_UseWidescreen();
+
+// Alpha blend between two RGB colors with only dest alpha value
+// 0 <=   toa <= 255
+forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int toa)
+{
+	const int fr = RPART(from);
+	const int fg = GPART(from);
+	const int fb = BPART(from);
+
+	const int dr = RPART(to) - fr;
+	const int dg = GPART(to) - fg;
+	const int db = BPART(to) - fb;
+
+	return MAKERGB(
+		fr + ((dr * toa) >> 8),
+		fg + ((dg * toa) >> 8),
+		fb + ((db * toa) >> 8)
+	);
+}
+
+// Alpha blend between two RGB colors with two alpha values
+// 0 <= froma <= 255
+// 0 <=   toa <= 255
+forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa)
+{
+	return MAKERGB(
+		(RPART(from) * froma + RPART(to) * toa) >> 8,
+		(GPART(from) * froma + GPART(to) * toa) >> 8,
+		(BPART(from) * froma + BPART(to) * toa) >> 8
+	);
+}
+
 
 #endif // __V_VIDEO_H__
 
