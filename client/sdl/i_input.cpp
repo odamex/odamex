@@ -1238,7 +1238,6 @@ void RawWin32Mouse::pause()
 void RawWin32Mouse::resume()
 {
 	mActive = true;
-	center();
 	flushEvents();
 
 	registerMouseDevice();
@@ -1548,6 +1547,7 @@ void SDLMouse::processEvents()
 				D_PostEvent(&button_event);
 			break;
 		}
+
 		case SDL_MOUSEBUTTONUP:
 		{
 			event_t button_event;
@@ -1576,9 +1576,10 @@ void SDLMouse::processEvents()
 	}
 
 	if (movement_event.data2 || movement_event.data3)
+	{
 		D_PostEvent(&movement_event);
-
-	center();
+		center();
+	}
 }
 
 //
@@ -1591,8 +1592,24 @@ void SDLMouse::center()
 {
 	// warp the mouse to the center of the screen
 	SDL_WarpMouse(I_GetVideoWidth() / 2, I_GetVideoHeight() / 2);
-	// SDL_WarpMouse creates a new event in the queue and needs to be thrown out
-	flushEvents();
+
+	// SDL_WarpMouse inserts a mouse event to warp the cursor to the center of the screen
+	// we need to filter out this event
+	SDL_PumpEvents();
+	int num_events = SDL_PeepEvents(mEvents, MAX_EVENTS, SDL_GETEVENT, SDL_MOUSEMOTIONMASK);
+
+	for (int i = 0; i < num_events; i++)
+	{
+		SDL_Event* sdl_ev = &mEvents[i];
+		if (sdl_ev->type != SDL_MOUSEMOTION ||
+			sdl_ev->motion.x != I_GetVideoWidth() / 2 ||
+			sdl_ev->motion.y != I_GetVideoHeight() / 2)
+		{
+			// this event is not the event caused by SDL_WarpMouse so add it back
+			// to the event queue
+			SDL_PushEvent(sdl_ev);
+		}
+	}
 }
 
 
@@ -1612,7 +1629,6 @@ void SDLMouse::pause()
 void SDLMouse::resume()
 {
 	mActive = true;
-	center();
 	I_UnsetSDLIgnoreMouseEvents();
 }
 
