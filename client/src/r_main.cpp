@@ -42,6 +42,7 @@
 #include "z_zone.h"
 #include "i_video.h"
 #include "vectors.h"
+#include "f_wipe.h"
 
 void R_BeginInterpolation(fixed_t amount);
 void R_EndInterpolation();
@@ -613,6 +614,9 @@ void R_InitTextureMapping (void)
 void R_SetFOV(float fov, bool force = false)
 {
 	fov = clamp(fov, 1.0f, 179.0f);
+
+	if (fov == LastFOV && force == false)
+		return;
  
 	LastFOV = fov;
 	FieldOfView = int(fov * FINEANGLES / 360.0f);

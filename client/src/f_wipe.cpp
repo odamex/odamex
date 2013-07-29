@@ -351,20 +351,22 @@ static void Wipe_DrawFade()
 
 // General Wipe Functions -------------------------------------------
 
-static void (*wipe_start_func)();
-static void (*wipe_stop_func)();
-static bool (*wipe_tick_func)();
-static void (*wipe_draw_func)();
+static void (*wipe_start_func)() = NULL;
+static void (*wipe_stop_func)() = NULL;
+static bool (*wipe_tick_func)() = NULL;
+static void (*wipe_draw_func)() = NULL;
 
 //
 // Wipe_Stop
 //
 // Performs cleanup following the completion of the wipe animation.
 //
-static void Wipe_Stop()
+void Wipe_Stop()
 {
 	in_progress = false;
-	wipe_stop_func();
+
+	if (wipe_stop_func)
+		wipe_stop_func();
 
 	if (wipe_screen)
 	{
@@ -418,7 +420,8 @@ void Wipe_Start()
 	wipe_screen = new byte[screen->width * screen->height * pixel_size];
 	
 	in_progress = true;
-	wipe_start_func();
+	if (wipe_start_func)
+		wipe_start_func();
 }
 
 //
@@ -434,7 +437,10 @@ bool Wipe_Ticker()
 	if (current_wipe_type == wipe_None || !in_progress)
 		return true;
 
-	bool done = wipe_tick_func();
+	bool done = true;
+	if (wipe_tick_func)
+		done = wipe_tick_func();
+
 	if (done)
 		Wipe_Stop();
 
@@ -452,7 +458,8 @@ void Wipe_Drawer()
 {
 	if (in_progress)
 	{
-		wipe_draw_func();	
+		if (wipe_draw_func)
+			wipe_draw_func();	
 		V_MarkRect(0, 0, screen->width, screen->height);
 	}
 }
