@@ -29,6 +29,7 @@
 //						 SCREEN WIPE PACKAGE
 //
 
+void Wipe_Stop();
 void Wipe_Start();
 bool Wipe_Ticker();
 void Wipe_Drawer();
