@@ -25,10 +25,10 @@ PrivilegesRequired=none
 ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
-AppVersion=0.6.3
+AppVersion=0.6.4
 EnableDirDoesntExistWarning=true
 DirExistsWarning=no
-VersionInfoVersion=0.6.3
+VersionInfoVersion=0.6.4
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
