@@ -172,6 +172,7 @@ static const char* steam_install_subdirs[] =
 	"steamapps\\common\\final doom\\base",
 	"steamapps\\common\\ultimate doom\\base",
 	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
+	"steamapps\\common\\master levels of doom\\master\\wads", //Let Odamex find the Master Levels pwads too
 };
 
 
@@ -1120,7 +1121,7 @@ void D_AddCmdParameterFiles(void)
 // TICRATE times a second. If the framerate is uncapped, the logic function
 // will still be called TICRATE times a second but the render function will
 // be called as often as possible. After each iteration through the loop,
-// the program yields briefly to the operating system. 
+// the program yields briefly to the operating system.
 //
 void D_RunTics(void (*logic_func)(), void(*render_func)())
 {
@@ -1149,7 +1150,7 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 		{
 			logic_func();
 			accumulator -= logic_dt;
-		} 
+		}
 	}
 	else
 	{
@@ -1174,7 +1175,7 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 	{
 		const uint64_t render_dt = 1000LL * 1000LL * 1000LL / maxfps;
 		int64_t sleep_time = render_dt - I_GetTime() + current_time;
-		
+
 		// sleep if it will be for at least 1ms
 		if (sleep_time > 1000LL * 1000LL)
 			I_Sleep(sleep_time);

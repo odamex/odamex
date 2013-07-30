@@ -3,21 +3,21 @@
 
 [Setup]
 AppName=Odamex
-AppVerName=Odamex 0.6.3
+AppVerName=Odamex 0.6.4
 AppPublisher=Odamex Dev Team
 AppPublisherURL=http://odamex.net
 AppSupportURL=http://odamex.net
 AppUpdatesURL=http://odamex.net
-DefaultDirName={pf}\odamex
+DefaultDirName={userpf}\odamex
 DefaultGroupName=Odamex
 AllowNoIcons=true
 LicenseFile=..\..\LICENSE
 ;InfoBeforeFile=..\..\CHANGES
-OutputBaseFilename=odamex-win32-0.6.3
+OutputBaseFilename=odamex-win32-0.6.4
 Compression=zip
 SolidCompression=true
 VersionInfoProductName=Odamex Win32 Installer
-VersionInfoProductVersion=0.6.3
+VersionInfoProductVersion=0.6.4
 AlwaysShowDirOnReadyPage=true
 ChangesEnvironment=true
 AppID={{2E517BBB-916F-4AB6-80E0-D4A292513F7A}
@@ -25,9 +25,10 @@ PrivilegesRequired=none
 ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
-AppVersion=0.6.3
+AppVersion=0.6.4
 EnableDirDoesntExistWarning=true
 DirExistsWarning=no
+VersionInfoVersion=0.6.4
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -97,8 +98,8 @@ Type: files; Name: {app}\odamex.out
 Root: HKCR; Subkey: odamex; ValueType: string; ValueData: URL:Odamex Protocol; Flags: uninsdeletekey noerror
 Root: HKCR; Subkey: odamex; ValueType: string; ValueName: Url Protocol; Flags: createvalueifdoesntexist uninsdeletekey noerror
 Root: HKCR; Subkey: odamex\DefaultIcon; ValueData: odamex.exe,1; Flags: createvalueifdoesntexist uninsdeletekey noerror
-Root: HKCR; Subkey: odamex\shell\open\command; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: createvalueifdoesntexist uninsdeletekey; ValueType: string
-Root: HKCR; SubKey: .odd; ValueType: string; ValueData: Odamex Demo; Flags: uninsdeletekey
-Root: HKCR; SubKey: Odamex Demo; ValueType: string; ValueData: Odamex Net Demo; Flags: uninsdeletekey
-Root: HKCR; SubKey: Odamex Demo\Shell\Open\Command; ValueType: string; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletevalue
-Root: HKCR; Subkey: Odamex Demo\DefaultIcon; ValueType: string; ValueData: {app}\odamex.exe,0; Flags: uninsdeletevalue
+Root: HKCR; Subkey: odamex\shell\open\command; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: createvalueifdoesntexist uninsdeletekey noerror; ValueType: string
+Root: HKCR; SubKey: .odd; ValueType: string; ValueData: Odamex Demo; Flags: uninsdeletekey noerror
+Root: HKCR; SubKey: Odamex Demo; ValueType: string; ValueData: Odamex Net Demo; Flags: uninsdeletekey noerror
+Root: HKCR; SubKey: Odamex Demo\Shell\Open\Command; ValueType: string; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletevalue noerror
+Root: HKCR; Subkey: Odamex Demo\DefaultIcon; ValueType: string; ValueData: {app}\odamex.exe,0; Flags: uninsdeletevalue noerror
