@@ -108,6 +108,7 @@ static char d_mapname[9];
 
 void G_DeferedInitNew (char *mapname)
 {
+	G_CleanupDemo();
 	strncpy (d_mapname, mapname, 8);
 	gameaction = ga_newgame;
 }
