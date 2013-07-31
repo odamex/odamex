@@ -56,6 +56,7 @@
 #include "m_argv.h"
 #include "m_swap.h"
 #include "m_memio.h"
+#include "v_gamma.h"
 
 #include "s_sound.h"
 #include "i_musicsystem.h"
@@ -850,7 +851,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
 	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Crosshair health",			{&hud_crosshairhealth},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Multiplayer Intermissions",{&wi_newintermission}, {2.0}, {0.0},	{0.0},  {DoomOrOdamex} },	
+	{ discrete, "Multiplayer Intermissions",{&wi_newintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },	
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,   "UI Background Red",        {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Background Green",      {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
@@ -863,6 +864,17 @@ static menuitem_t VideoItems[] = {
     { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
 };
 
+static void M_UpdateDisplayOptions()
+{
+	const static size_t menu_length = STACKARRAY_LENGTH(VideoItems);
+	const static size_t gamma_index = M_FindCvarInMenu(gammalevel, VideoItems, menu_length); 
+
+	// update the parameters for gammalevel based on vid_gammatype (doom or zdoom gamma)
+	VideoItems[gamma_index].b.leftval = gammastrat->min();
+	VideoItems[gamma_index].c.rightval = gammastrat->max();
+	VideoItems[gamma_index].d.step = gammastrat->increment(gammastrat->min()) - gammastrat->min();
+}
+
 menu_t VideoMenu = {
 	"M_VIDEO",
 	0,
@@ -871,7 +883,7 @@ menu_t VideoMenu = {
 	VideoItems,
 	3,
 	0,
-	NULL
+	&M_UpdateDisplayOptions
 };
 
 /*=======================================

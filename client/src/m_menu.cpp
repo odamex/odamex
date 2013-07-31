@@ -2046,7 +2046,7 @@ bool M_Responder (event_t* ev)
 		return true;
 
 	  default:
-		if (ch2) {
+		if (ch2 && (ch < KEY_JOY1)) {
 			for (i = itemOn+1;i < currentMenu->numitems;i++)
 				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
 				{

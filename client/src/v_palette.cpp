@@ -60,7 +60,7 @@ int		BlendR, BlendG, BlendB, BlendA;
 
 static DoomGammaStrategy doomgammastrat;
 static ZDoomGammaStrategy zdoomgammastrat;
-static GammaStrategy* gammastrat = &doomgammastrat;
+GammaStrategy* gammastrat = &doomgammastrat;
 
 CVAR_FUNC_IMPL(vid_gammatype)
 {

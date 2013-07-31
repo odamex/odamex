@@ -214,20 +214,6 @@ uint64_t I_GetTime()
 
 	return nanoseconds_per_count * (current_count - initial_count);
 
-#else
-	// [SL] use SDL_GetTicks, but account for the fact that after
-	// 49 days, it wraps around since it returns a 32-bit int
-	static const uint64_t mask = 0xFFFFFFFFLL;
-	static uint64_t last_time = 0LL;
-	uint64_t current_time = SDL_GetTicks();
-
-	if (current_time < (last_time & mask))      // just wrapped around
-		last_time += mask + 1 - (last_time & mask) + current_time;
-	else
-		last_time = current_time;
-
-	return last_time * 1000000LL;
-
 #endif
 }
 
@@ -235,6 +221,16 @@ QWORD I_MSTime()
 {
 	return I_GetTime() / (1000000LL);
 }
+
+
+#if defined(WIN32) && !defined(_XBOX)
+static SOCKET sleep_socket;
+
+void STACK_ARGS I_SleepSocketClose(void)
+{
+	closesocket(sleep_socket);
+}
+#endif
 
 //
 // I_Sleep
@@ -267,7 +263,7 @@ void I_Sleep(uint64_t sleep_time)
 		result = select(0, NULL, NULL, NULL, &timeout);
 	} while (result == -1 && errno == EINTR);
 
-#elif defined WIN32
+#elif defined(WIN32) && !defined(_XBOX)
 	uint64_t start_time = I_GetTime();
 	if (sleep_time > 5000000LL)
 		sleep_time -= 500000LL;		// [SL] hack to get the timing right for 35Hz
@@ -278,9 +274,11 @@ void I_Sleep(uint64_t sleep_time)
 
 	if (!initialized)
 	{
-		SOCKET s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+		sleep_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 		FD_ZERO(&dummy);
-		FD_SET(s, &dummy);
+		FD_SET(sleep_socket, &dummy);
+		atterm(I_SleepSocketClose);
+		initialized = true;
 	}
 
 	struct timeval timeout;
@@ -289,11 +287,9 @@ void I_Sleep(uint64_t sleep_time)
 
 	select(0, NULL, NULL, &dummy, &timeout);
 
-#else
-	SDL_Delay(sleep_time / 1000000LL);
-
 #endif
 }
+
 
 //
 // I_Yield
