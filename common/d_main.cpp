@@ -1170,29 +1170,31 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 
 	render_func();
 
-	static uint64_t previous_block, current_block;
 	static float previous_maxfps = -1;
-	uint64_t render_dt = 1000LL * 1000LL * 1000LL / maxfps;
-
-	if (maxfps != previous_maxfps)
-		previous_block = current_time / render_dt;
 
 	if (fixed_render_ticrate)
 	{
+		static uint64_t previous_block, current_block;
+		uint64_t render_dt = 1000LL * 1000LL * 1000LL / maxfps;
+
+		if (maxfps != previous_maxfps)
+			previous_block = current_time / render_dt;
+
 		// with fixed_render_ticrate, frames are rendered within fixed blocks of time
 		// and at the end of a frame, sleep until the start of the next block
 		do
 			I_Yield();
 		while ( (current_block = I_GetTime() / render_dt) <= previous_block);
+
+		previous_block = current_block;
+		previous_maxfps = maxfps;
 	}
 	else if (!timingdemo)
 	{
 		// sleep for 1ms to allow the operating system some time
 		I_Yield();
+		previous_maxfps = -1;
 	}
-
-	previous_block = current_block;
-	previous_maxfps = maxfps;
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id: d_main.cpp 3426 2012-11-19 17:25:28Z dr_sean $")
