@@ -157,7 +157,7 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_co
 
 static DoomGammaStrategy doomgammastrat;
 static ZDoomGammaStrategy zdoomgammastrat;
-static GammaStrategy* gammastrat = &doomgammastrat;
+GammaStrategy* gammastrat = &doomgammastrat;
 
 CVAR_FUNC_IMPL(vid_gammatype)
 {

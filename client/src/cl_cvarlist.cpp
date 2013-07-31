@@ -386,10 +386,10 @@ CVAR_FUNC_DECL (vid_widescreen, "0", "Use wide field-of-view with widescreen vid
 CVAR (vid_autoadjust, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Frames per second on screen display
 CVAR (vid_displayfps, "0", "",	CVARTYPE_BOOL, 0)
-// Wait for vertical sync (vsync)
-CVAR (vid_vsync, "1", "Wait for vertical sync", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // maximum fps with 0 indicating completely uncapped fps
 CVAR_FUNC_DECL (vid_maxfps, "35", "Maximum framerate (0 indicates unlimited framerate)", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// enable/disable vertical refresh sync (vsync)
+CVAR_FUNC_DECL(vid_vsync, "0", "Enable/Disable vertical refresh sync (vsync)", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Fullscreen mode
 #ifdef GCONSOLE
 	CVAR_FUNC_DECL (vid_fullscreen, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
