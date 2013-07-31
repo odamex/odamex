@@ -46,6 +46,12 @@
 #endif
 
 EXTERN_CVAR (vid_autoadjust)
+EXTERN_CVAR (vid_vsync)
+
+CVAR_FUNC_IMPL(vid_vsync)
+{
+	setmodeneeded = true;
+}
 
 SDLVideo::SDLVideo(int parm)
 {
@@ -220,7 +226,7 @@ bool SDLVideo::SetOverscan (float scale)
 
 bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 {
-	Uint32 flags = SDL_SWSURFACE;
+	Uint32 flags = (vid_vsync ? SDL_HWSURFACE | SDL_DOUBLEBUF : SDL_SWSURFACE);
 
 	if (fullscreen && !vidModeList.empty())
 		flags |= SDL_FULLSCREEN;
@@ -246,6 +252,8 @@ bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 	if (fullscreen)
 		sbits = 32;
 	#endif
+
+	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vid_vsync);
 
 	if (!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
 		return false;
@@ -418,7 +426,7 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 
 	scrn->m_Private = new_surface;
 	scrn->pitch = new_surface->pitch;
-	
+
 	surfaceList.push_back(scrn);
 
 	return scrn;
