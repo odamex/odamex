@@ -1159,32 +1159,40 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 
 	// [SL] use linear interpolation for rendering entities if the renderer
 	// framerate is not synced with the physics frequency
-	if (!fixed_render_ticrate || maxfps != TICRATE)
-		render_lerp_amount = clamp((fixed_t)(accumulator * FRACUNIT / logic_dt), 0, FRACUNIT);
-	else
+	if (fixed_render_ticrate && maxfps == TICRATE)
 		render_lerp_amount = FRACUNIT;
-
-	// disable interpolation while paused to avoid jackhammering since the physics aren't
-	// updated while paused
+	else
+		render_lerp_amount = clamp((fixed_t)(accumulator * FRACUNIT / logic_dt), 0, FRACUNIT);
+	
+	// disable interpolation while paused since the physics aren't updated while paused
 	if (paused || menuactive)
 		render_lerp_amount = FRACUNIT;
 
 	render_func();
 
+	static uint64_t previous_block, current_block;
+	static float previous_maxfps = -1;
+	uint64_t render_dt = 1000LL * 1000LL * 1000LL / maxfps;
+
+	if (maxfps != previous_maxfps)
+		previous_block = current_time / render_dt;
+
 	if (fixed_render_ticrate)
 	{
-		const uint64_t render_dt = 1000LL * 1000LL * 1000LL / maxfps;
-		int64_t sleep_time = render_dt - I_GetTime() + current_time;
-
-		// sleep if it will be for at least 1ms
-		if (sleep_time > 1000LL * 1000LL)
-			I_Sleep(sleep_time);
+		// with fixed_render_ticrate, frames are rendered within fixed blocks of time
+		// and at the end of a frame, sleep until the start of the next block
+		do
+			I_Yield();
+		while ( (current_block = I_GetTime() / render_dt) <= previous_block);
 	}
 	else if (!timingdemo)
 	{
 		// sleep for 1ms to allow the operating system some time
 		I_Yield();
 	}
+
+	previous_block = current_block;
+	previous_maxfps = maxfps;
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id: d_main.cpp 3426 2012-11-19 17:25:28Z dr_sean $")

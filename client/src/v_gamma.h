@@ -122,5 +122,7 @@ public:
 	}
 };
 
+extern GammaStrategy* gammastrat;
+
 #endif	// #define __V_GAMMA_H__
 

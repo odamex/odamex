@@ -90,6 +90,7 @@ CVAR_FUNC_IMPL (vid_maxfps)
 	if (var == 0)
 	{
 		capfps = false;
+		maxfps = 99999.0f;
 	}
 	else
 	{
