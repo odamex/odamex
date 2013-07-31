@@ -177,8 +177,8 @@ void D_DoomLoop (void)
 			// denis - drop clients
 			SV_SendDisconnectSignal();
 
-			// denis - sleep to conserve server resources (in case of recurring problem)
-			I_Sleep(10*1000);
+			// denis - sleep 10 seconds to conserve server resources (in case of recurring problem)
+			I_Sleep(10 * 1000LL * 1000LL * 1000LL);
 
 			// denis - reload with current settings
 			G_ChangeMap ();
