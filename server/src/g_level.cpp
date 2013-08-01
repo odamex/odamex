@@ -84,6 +84,7 @@ EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
+EXTERN_CVAR (sv_timelimit)
 
 extern int mapchange;
 extern int shotclock;
@@ -647,6 +648,12 @@ void G_DoResetLevel(bool full_reset)
 		// For predictable first spawns.
 		M_ClearRandom();
 	}
+
+	// [SL] always reset the time (for now at least)
+	level.time = 0;
+	level.timeleft = sv_timelimit * TICRATE * 60;
+	level.inttimeleft = mapchange / TICRATE;
+
 	// Send information about the newly reset map.
 	for (it = players.begin();it != players.end();++it)
 	{

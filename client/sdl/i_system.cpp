@@ -291,16 +291,6 @@ QWORD I_MSTime()
 	return I_GetTime() / (1000000LL);
 }
 
-#if defined(WIN32) && !defined(_XBOX)
-static SOCKET sleep_socket;
-
-void STACK_ARGS I_SleepSocketClose(void)
-{
-	closesocket(sleep_socket);
-}
-#endif
-
-
 //
 // I_Sleep
 //
@@ -311,50 +301,11 @@ void STACK_ARGS I_SleepSocketClose(void)
 //
 void I_Sleep(uint64_t sleep_time)
 {
-	const uint64_t one_billion = 1000LL * 1000LL * 1000LL;
-
 #if defined UNIX
-	uint64_t start_time = I_GetTime();
-	int result;
-
-	// loop to finish sleeping  if select() gets interrupted by the signal handler
-	do
-	{
-		uint64_t current_time = I_GetTime();
-		if (current_time - start_time >= sleep_time)
-			break;
-		sleep_time -= current_time - start_time;
-
-		struct timeval timeout;
-		timeout.tv_sec = sleep_time / one_billion;
-		timeout.tv_usec = (sleep_time % one_billion) / 1000;
-
-		result = select(0, NULL, NULL, NULL, &timeout);
-	} while (result == -1 && errno == EINTR);
+	usleep(sleep_time / 1000LL);
 
 #elif defined(WIN32) && !defined(_XBOX)
-	uint64_t start_time = I_GetTime();
-	if (sleep_time > 5000000LL)
-		sleep_time -= 500000LL;		// [SL] hack to get the timing right for 35Hz
-
-	// have to create a dummy socket for select to work on Windows
-	static bool initialized = false;
-	static fd_set dummy;
-
-	if (!initialized)
-	{
-		sleep_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-		FD_ZERO(&dummy);
-		FD_SET(sleep_socket, &dummy);
-		atterm(I_SleepSocketClose);
-		initialized = true;
-	}
-
-	struct timeval timeout;
-	timeout.tv_sec = sleep_time / one_billion;
-	timeout.tv_usec = (sleep_time % one_billion) / 1000;
-
-	select(0, NULL, NULL, &dummy, &timeout);
+	Sleep(sleep_time / 1000000LL);
 
 #else
 	SDL_Delay(sleep_time / 1000000LL);
