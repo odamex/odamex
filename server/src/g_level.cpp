@@ -654,8 +654,6 @@ void G_DoResetLevel(bool full_reset)
 	level.timeleft = sv_timelimit * TICRATE * 60;
 	level.inttimeleft = mapchange / TICRATE;
 
-	Printf(PRINT_HIGH, "level.time %i, level.timeleft %i\n", level.time, level.timeleft);
-
 	// Send information about the newly reset map.
 	for (it = players.begin();it != players.end();++it)
 	{
