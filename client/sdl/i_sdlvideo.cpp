@@ -253,7 +253,9 @@ bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 		sbits = 32;
 	#endif
 
+#ifdef SDL_GL_SWAP_CONTROL
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vid_vsync);
+#endif
 
 	if (!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
 		return false;
