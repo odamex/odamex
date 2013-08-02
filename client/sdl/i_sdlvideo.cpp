@@ -163,13 +163,6 @@ SDLVideo::SDLVideo(int parm)
    }
 }
 
-SDLVideo::~SDLVideo(void)
-{
-	while (!surfaceList.empty())
-		ReleaseSurface(surfaceList.front());
-}
-
-
 std::string SDLVideo::GetVideoDriverName()
 {
   char driver[128];
@@ -429,8 +422,6 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 	scrn->m_Private = new_surface;
 	scrn->pitch = new_surface->pitch;
 
-	surfaceList.push_back(scrn);
-
 	return scrn;
 }
 
@@ -451,8 +442,6 @@ void SDLVideo::ReleaseSurface(DCanvas *scrn)
 	}
 
 	scrn->DetachPalette ();
-
-	surfaceList.remove(scrn);
 
 	delete scrn;
 }
