@@ -62,6 +62,7 @@ if (CMAKE_COMPILER_IS_GNUC)
   endif (NOT CONFIGURED)
 endif ()
 
+# [AM] Use PROJECT_*_DIR instead of CMAKE_*_DIR so it works as a subproject
 configure_file (${PROJECT_SOURCE_DIR}/miniupnpcstrings.h.cmake ${PROJECT_BINARY_DIR}/miniupnpcstrings.h)
 include_directories (${PROJECT_BINARY_DIR})
 
