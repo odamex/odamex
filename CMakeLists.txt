@@ -53,7 +53,13 @@ endmacro(define_platform)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
-# Subdirectories for individual projects
+# MiniUPnPc
+set(UPNPC_BUILD_STATIC TRUE)
+set(UPNPC_BUILD_SHARED FALSE)
+set(UPNPC_BUILD_TESTS FALSE)
+add_subdirectory(libminiupnpc)
+
+# Subdirectories for Odamex projects
 add_subdirectory(client)
 add_subdirectory(server)
 add_subdirectory(master)
