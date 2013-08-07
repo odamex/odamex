@@ -301,77 +301,121 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 }
 
 //
+// R_ClipLine
+//
+// Clips the endpoints of the line defined by in1 & in2 and stores the
+// results in out1 & out2. The clipped left endpoint is lclip percent
+// of the way between the left and right endpoints and similarly the
+// right endpoint is rclip percent of the way between the left and right
+// endpoints
+//
+void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2, 
+				int32_t lclip, int32_t rclip,
+				v2fixed_t* out1, v2fixed_t* out2)
+{
+	const fixed_t dx = in2->x - in1->x;
+	const fixed_t dy = in2->y - in1->y;
+	const fixed_t x = in1->x;
+	const fixed_t y = in1->y;
+	out1->x = x + FixedMul30(lclip, dx);
+	out2->x = x + FixedMul30(rclip, dx);
+	out1->y = y + FixedMul30(lclip, dy);
+	out2->y = y + FixedMul30(rclip, dy);
+}
+
+void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
+				int32_t lclip, int32_t rclip,
+				v2fixed_t* out1, v2fixed_t* out2)
+{
+	R_ClipLine((const v2fixed_t*)in1, (const v2fixed_t*)in2, lclip, rclip, out1, out2);
+}
+
+//
 // R_ClipLineToFrustum
 //
 // Clips the endpoints of a line to the view frustum.
-// (px1, py1) and (px2, py2) are the endpoints of the line
+// v1 and v2 are the endpoints of the line
 // clipdist is the distance from the viewer to the near plane of the frustum.
+// The left endpoint of the line should be clipped lclip percent of the way
+// between the left and right endpoints and similarly the right endpoint
+// should be clipped rclip percent of the way between the left and right
+// endpoints.
 //
 // Returns false if the line is entirely clipped.
 //
-bool R_ClipLineToFrustum(fixed_t &px1, fixed_t &py1, fixed_t &px2, fixed_t &py2, fixed_t clipdist)
+bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip)
 {
-	fixed_t den, t;
+	static const int32_t CLIPUNIT = 1 << 30;
+	v2fixed_t p1 = *v1, p2 = *v2;
+
+	lclip = 0;
+	rclip = CLIPUNIT; 
 
 	// Clip portions of the line that are behind the view plane
-	if (py1 < clipdist)
+	if (p1.y < clipdist)
 	{      
 		// reject the line entirely if the whole thing is behind the view plane.
-		if (py2 < clipdist)
+		if (p2.y < clipdist)
 			return false;
 
-		// clip the line at the point where t1.y == clipdist
-		t = FixedDiv(clipdist - py1, py2 - py1);
-		px1 = px1 + FixedMul(t, px2 - px1);
-		py1 = clipdist;
+		// clip the line at the point where p1.y == clipdist
+		lclip = FixedDiv30(clipdist - p1.y, p2.y - p1.y);
 	}
 
-	if (py2 < clipdist)
+	if (p2.y < clipdist)
 	{
-		// clip the line at the point where t2.y == clipdist
-		t = FixedDiv(clipdist - py1, py2 - py1);
-		px2 = px1 + FixedMul(t, px2 - px1);
-		py2 = clipdist;
+		// clip the line at the point where p2.y == clipdist
+		rclip = FixedDiv30(clipdist - p1.y, p2.y - p1.y);
 	}
 
-	// clip line at right edge of the screen
+	int32_t unclipped_amount = rclip - lclip;
 
-	// is the entire line off the right side of the screen?
-	if (px1 > FixedMul(fovtan, py1) && px2 > FixedMul(fovtan, py2))
+	// apply the clipping against the 'y = clipdist' plane to p1 & p2
+	R_ClipLine(v1, v2, lclip, rclip, &p1, &p2);
+
+	// [SL] A note on clipping to the screen edges:
+	// With a 90-degree FOV, if p1.x < -p1.y, then the left point
+	// is off the left side of the screen. Similarly, if p2.x > p2.y,
+	// then the right point is off the right side of the screen.
+	// We use yc1 and yc2 instead of p1.y and p2.y because they are
+	// adjusted to work with the current FOV rather than just 90-degrees.
+	fixed_t yc1 = FixedMul(fovtan, p1.y);
+	fixed_t yc2 = FixedMul(fovtan, p2.y);
+
+	// is the entire line off the left side or the right side of the screen?
+	if ((p1.x < -yc1 && p2.x < -yc2) || (p1.x > yc1 && p2.x > yc2))
 		return false;
 
-	den = px2 - px1 - FixedMul(fovtan, py2 - py1);	
-	if (den == 0)
-		return false;
-
-	t = FixedDiv(FixedMul(fovtan, py1) - px1, den);
-
-	if (t > 0 && t < FRACUNIT)
+	// is the left vertex off the left side of the screen?
+	if (p1.x < -yc1)
 	{
-		px2 = px1 + FixedMul(t, px2 - px1);
-		py2 = py1 + FixedMul(t, py2 - py1);
+		// clip line at left edge of the screen
+		fixed_t den = p2.x - p1.x + yc2 - yc1;
+		if (den == 0)
+			return false;
+
+		int32_t t = FixedDiv30(-yc1 - p1.x, den);
+		lclip += FixedMul30(t, unclipped_amount);
 	}
 
-	// clip line at left edge of the screen
-
-	// is the entire line off the left side of the screen?
-	if (px1 < FixedMul(-fovtan, py1) && px2 < FixedMul(-fovtan, py2))
-		return false;
-
-	den = px2 - px1 - FixedMul(-fovtan, py2 - py1);
-	if (den == 0)
-		return false;
-
-	t = FixedDiv(FixedMul(-fovtan, py1) - px1, den);
-
-	if (t > 0 && t < FRACUNIT)
+	// is the right vertex off the right side of the screen?
+	if (p2.x > yc2)
 	{
-		px1 = px1 + FixedMul(t, px2 - px1);
-		py1 = py1 + FixedMul(t, py2 - py1);
+		// clip line at right edge of the screen
+		fixed_t den = p2.x - p1.x - yc2 + yc1;	
+		if (den == 0)
+			return false;
+
+		int32_t t = FixedDiv30(yc1 - p1.x, den);
+		rclip -= FixedMul30(CLIPUNIT - t, unclipped_amount);
 	}
+
+	if (lclip > rclip)
+		return false;
 
 	return true;
 }
+
 
 //
 // R_ProjectPointX

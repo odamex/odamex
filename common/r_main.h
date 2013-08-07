@@ -28,6 +28,7 @@
 #include "d_player.h"
 #include "r_data.h"
 #include "v_palette.h"
+#include "vectors.h"
 #include "v_video.h"
 
 // killough 10/98: special mask indicates sky flat comes from sidedef
@@ -149,7 +150,14 @@ bool R_CheckProjectionX(int &x1, int &x2);
 bool R_CheckProjectionY(int &y1, int &y2);
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty);
-bool R_ClipLineToFrustum(fixed_t &px1, fixed_t &py1, fixed_t &px2, fixed_t &py2, fixed_t clipdist);
+bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, fixed_t& lclip, fixed_t& rclip);
+
+void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2, 
+				int32_t lclip, int32_t rclip,
+				v2fixed_t* out1, v2fixed_t* out2);
+void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
+				int32_t lclip, int32_t rclip,
+				v2fixed_t* out1, v2fixed_t* out2);
 
 subsector_t*
 R_PointInSubsector

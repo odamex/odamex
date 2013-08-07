@@ -658,7 +658,6 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 		dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
 		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
-
 		dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
 			+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
 
@@ -803,21 +802,32 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 		fixed_t topoffs, fixed_t sideoffs, bool flip)
 {
 	// translate the sprite edges from world-space to camera-space
-	// and store in (t1x, ty) and (t2x, ty)
-	fixed_t tx1, tx2, ty, tx1old;
-	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx1, ty);
-	tx1 = tx1old = tx1 - sideoffs;
-	tx2 = tx1 + width;
+	// and store in t1 & t2
+	fixed_t tx, ty, t1xold;
+	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
+	
+	v2fixed_t t1, t2;
+	t1.x = t1xold = tx - sideoffs;
+	t2.x = t1.x + width;
+	t1.y = t2.y = ty;
 
 	// clip the sprite to the left & right screen edges
-	if (!R_ClipLineToFrustum(tx1, ty, tx2, ty, FRACUNIT))
+	int32_t lclip, rclip;
+	if (!R_ClipLineToFrustum(&t1, &t2, FRACUNIT, lclip, rclip))
 		return NULL;
 
 	// calculate how much of the sprite was clipped from the left side
-	fixed_t clipped_offset = tx1 - tx1old;
+	R_ClipLine(&t1, &t2, lclip, rclip, &t1, &t2);
+	fixed_t clipped_offset = t1.x - t1xold;
 
 	fixed_t gzt = z + topoffs;
 	fixed_t gzb = z;
+
+	// project the sprite edges to determine which columns the sprite occupies
+	int x1 = R_ProjectPointX(t1.x, ty);
+	int x2 = R_ProjectPointX(t2.x, ty) - 1;
+	if (!R_CheckProjectionX(x1, x2))
+		return NULL;
 
 	// Entirely above the top of the screen or below the bottom?
 	int y1 = R_ProjectPointY(gzt - viewz, ty);
@@ -853,12 +863,6 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 				return NULL;
 		}
 	}
-
-	// project the sprite edges to determine which columns the sprite occupies
-	int x1 = R_ProjectPointX(tx1, ty);
-	int x2 = R_ProjectPointX(tx2, ty) - 1;
-	if (!R_CheckProjectionX(x1, x2))
-		return NULL;
 
 	// store information in a vissprite
 	vissprite_t *vis = R_NewVisSprite();
