@@ -1,3 +1,5 @@
+include(CMakeDependentOption)
+
 # Common
 set(COMMON_DIR ../common)
 file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
@@ -47,33 +49,10 @@ else()
 endif()
 
 # PortMidi configuration
-find_package(PortMidi)
-if(PORTMIDI_FOUND)
-  include_directories(${PORTMIDI_INCLUDE_DIR})
+cmake_dependent_option(USE_PORTMIDI "Compile with PortMidi support." ON "WIN32" OFF)
+if(USE_PORTMIDI)
+  include_directories(../portmidi/pm_common/ ../portmidi/porttime/)
   add_definitions(-DPORTMIDI)
-else()
-  if(WIN32)
-    # Create a static library and link against it
-    include_directories(
-      ../portmidi/pm_common/
-      ../portmidi/pm_win/
-      ../portmidi/porttime/
-    )
-    add_definitions(-DPORTMIDI)
-    add_library(portmidi STATIC
-      ../portmidi/pm_common/pmutil.c
-      ../portmidi/pm_common/portmidi.c
-      ../portmidi/pm_win/pmwin.c
-      ../portmidi/pm_win/pmwinmm.c
-      ../portmidi/porttime/ptwinmm.c
-    )
-    set(PORTMIDI_FOUND "YES")
-    set(PORTMIDI_LIBRARY "portmidi")
-    set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
-    message(STATUS "PortMidi will be statically linked.")
-  else()
-    message(WARNING "PortMidi not found, client will not be built with PortMidi support.")
-  endif()
 endif()
 
 # Find Mac frameworks
@@ -95,8 +74,8 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
   target_link_libraries(odamex ${SDL_LIBRARY})
   target_link_libraries(odamex ${SDLMIXER_LIBRARY})
 
-  if(PORTMIDI_FOUND)
-    target_link_libraries(odamex ${PORTMIDI_LIBRARIES})
+  if(USE_PORTMIDI)
+    target_link_libraries(odamex portmidi-static)
   endif()
 
   if(WIN32)
@@ -146,7 +125,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     # Install the SDL framework into the bundle
     if(IS_DIRECTORY ${SDL_DIR})
       install(DIRECTORY ${SDL_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks)
-      install(CODE "execute_process(COMMAND 
+      install(CODE "execute_process(COMMAND
         install_name_tool -change @rpath/SDL.framework/Versions/A/SDL
         @executable_path/../Frameworks/SDL.framework/Versions/A/SDL
         ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
@@ -161,7 +140,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     # If PortMidi was built in install the PortMidi library into the bundle
     if(PortMidi_FOUND)
       install(FILES ${PORTMIDI_LIBRARIES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks/)
-      install(CODE "execute_process(COMMAND 
+      install(CODE "execute_process(COMMAND
         install_name_tool -change libportmidi.dylib
         @executable_path/../Frameworks/libportmidi.dylib
         ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)

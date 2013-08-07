@@ -54,10 +54,13 @@ endmacro(define_platform)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # MiniUPnPc
-set(UPNPC_BUILD_STATIC TRUE)
-set(UPNPC_BUILD_SHARED FALSE)
-set(UPNPC_BUILD_TESTS FALSE)
 add_subdirectory(libminiupnpc)
+set(UPNPC_BUILD_STATIC ON CACHE INTERNAL "" FORCE)
+set(UPNPC_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
+set(UPNPC_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
+
+# PortMidi
+add_subdirectory(portmidi)
 
 # Subdirectories for Odamex projects
 add_subdirectory(client)
