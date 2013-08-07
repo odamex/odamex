@@ -83,6 +83,7 @@ extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
 
 bool lastWadRebootSuccess = true;
+extern bool step_mode;
 
 bool capfps = true;
 float maxfps = 35.0f;
@@ -1165,7 +1166,7 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 		render_lerp_amount = clamp((fixed_t)(accumulator * FRACUNIT / logic_dt), 0, FRACUNIT);
 	
 	// disable interpolation while paused since the physics aren't updated while paused
-	if (paused || menuactive)
+	if (paused || menuactive || step_mode)
 		render_lerp_amount = FRACUNIT;
 
 	render_func();
