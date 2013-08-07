@@ -33,8 +33,8 @@
 class SDLVideo : public IVideo
 {
    public:
-   SDLVideo(int parm);
-	virtual ~SDLVideo (void);
+	SDLVideo(int parm);
+	virtual ~SDLVideo (void) {};
 
 	virtual std::string GetVideoDriverName();
 
@@ -111,8 +111,6 @@ class SDLVideo : public IVideo
    SDL_Color newPalette[256];
    SDL_Color palette[256];
    bool palettechanged;
-
-	std::list<DCanvas*>		surfaceList;
 };
 #endif
 

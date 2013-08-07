@@ -163,7 +163,7 @@ static int burntime;
 static void Wipe_StartBurn()
 {
 	const size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
-	burnarray = (byte*)(Z_Malloc(array_size, PU_STATIC, (void**)&burnarray));
+	burnarray = new byte[array_size];
 	memset(burnarray, 0, array_size);
 	density = 4;
 	burntime = 0;
@@ -174,7 +174,7 @@ static void Wipe_StopBurn()
 {
 	if (burnarray)
 	{
-		Z_Free(burnarray);
+		delete [] burnarray;
 		burnarray = NULL;
 	}
 }

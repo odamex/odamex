@@ -768,12 +768,29 @@ void V_InitPalette (void)
 }
 
 //
+// V_Close
+//
+//
+void STACK_ARGS V_Close()
+{
+	if(screen)
+	{
+		I_FreeScreen(screen);
+		screen = NULL;
+	}
+}
+
+//
 // V_Init
 //
 
 void V_Init (void)
 {
 	int width, height, bits;
+
+	bool firstTime = true;
+	if(firstTime)
+		atterm (V_Close);
 
 	width = height = bits = 0;
 

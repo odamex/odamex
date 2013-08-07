@@ -178,37 +178,40 @@ int CL_GetPlayerColor(player_t *player)
 {
 	if (!player)
 		return 0;
-
-	if (sv_gametype == GM_COOP)
+	
+	if (!consoleplayer().spectator)
 	{
-		if (r_forceteamcolor && player->id != consoleplayer_id)
-			return teamcolor;
-	}
-	else if (sv_gametype == GM_DM)
-	{
-		if (r_forceenemycolor && player->id != consoleplayer_id)
-			return enemycolor;
-	}
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
-		if (r_forceteamcolor && 
-					(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
-			return teamcolor;
-		if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
-					player->id != consoleplayer_id)
-			return enemycolor;
+		if (sv_gametype == GM_COOP)
+		{
+			if (r_forceteamcolor && player->id != consoleplayer_id)
+				return teamcolor;
+		}
+		else if (sv_gametype == GM_DM)
+		{
+			if (r_forceenemycolor && player->id != consoleplayer_id)
+				return enemycolor;
+		}
+		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		{
+			if (r_forceteamcolor && 
+						(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
+				return teamcolor;
+			if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
+						player->id != consoleplayer_id)
+				return enemycolor;
 
-		// Adjust the shade of color for team games
-		int red = RPART(player->userinfo.color);
-		int green = GPART(player->userinfo.color);
-		int blue = BPART(player->userinfo.color);
+			// Adjust the shade of color for team games
+			int red = RPART(player->userinfo.color);
+			int green = GPART(player->userinfo.color);
+			int blue = BPART(player->userinfo.color);
 
-		int intensity = MAX(MAX(red, green), blue) / 3;
+			int intensity = MAX(MAX(red, green), blue) / 3;
 
-		if (player->userinfo.team == TEAM_BLUE)
-			return (0xAA + intensity);
-		if (player->userinfo.team == TEAM_RED)
-			return (0xAA + intensity) << 16;
+			if (player->userinfo.team == TEAM_BLUE)
+				return (0xAA + intensity);
+			if (player->userinfo.team == TEAM_RED)
+				return (0xAA + intensity) << 16;
+		}
 	}
 
 	return player->userinfo.color;
@@ -3401,6 +3404,12 @@ void CL_Spectate()
 			displayplayer_id = consoleplayer_id; // get out of spynext
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
+
+		CL_RebuildAllPlayerTranslations();
+	}
+	else
+	{
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
 	}
 
 	// GhostlyDeath -- If the player matches our display player...

@@ -159,13 +159,6 @@ SDLVideo::SDLVideo(int parm)
       vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end()), vidModeList.end());
    }
 
-SDLVideo::~SDLVideo(void)
-{
-	while (!surfaceList.empty())
-		ReleaseSurface(surfaceList.front());
-}
-
-
 std::string SDLVideo::GetVideoDriverName()
 {
   char driver[128];
@@ -249,7 +242,9 @@ bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 		sbits = 32;
 	#endif
 
+#ifdef SDL_GL_SWAP_CONTROL
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vid_vsync);
+#endif
 
 	if (!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
 		return false;
@@ -413,8 +408,6 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 	scrn->m_Private = new_surface;
 	scrn->pitch = new_surface->pitch;
 
-	surfaceList.push_back(scrn);
-
 	return scrn;
 }
 
@@ -435,8 +428,6 @@ void SDLVideo::ReleaseSurface(DCanvas *scrn)
 	}
 
 	scrn->DetachPalette ();
-
-	surfaceList.remove(scrn);
 
 	delete scrn;
 }
