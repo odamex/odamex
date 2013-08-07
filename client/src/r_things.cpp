@@ -679,10 +679,7 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 
 		dcol.source = post->data();
 
-		dcol.yl = MAX(dcol.yl, 0);
-		dcol.yh = MIN(dcol.yh, viewheight - 1);
-
-		if (dcol.yl <= dcol.yh)
+		if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
 			drawfunc();
 		
 		post = post->next();

@@ -204,7 +204,6 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 			dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
 			dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
-
 			dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
 				+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
 
@@ -226,10 +225,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 			dcol.source = post->data();
 
-			dcol.yl = MAX(dcol.yl, 0);
-			dcol.yh = MIN(dcol.yh, viewheight - 1);
-
-			if (dcol.yl <= dcol.yh)
+			if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
 				drawfunc();
 			
 			post = post->next();
