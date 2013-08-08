@@ -32,7 +32,7 @@
 #include <algorithm>
 
 #include "win32inc.h"
-#ifndef WIN32
+#ifndef _WIN32
     #include <sys/stat.h>
 #endif
 
