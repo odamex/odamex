@@ -1035,7 +1035,7 @@ bool NetWaitOrTimeout(size_t ms)
 	if(ret == 1)
 		return true;
 
-	#ifdef WIN32
+	#ifdef _WIN32
 		// handle SOCKET_ERROR
 		if(ret == SOCKET_ERROR)
 			Printf(PRINT_HIGH, "select returned SOCKET_ERROR: %d\n", WSAGetLastError());

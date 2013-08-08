@@ -197,7 +197,7 @@ static char *C_GetDefaultMouseDriver()
 
 	int driver_id = SDL_MOUSE_DRIVER;
 
-	#ifdef WIN32
+	#ifdef _WIN32
 	driver_id = RAW_WIN32_MOUSE_DRIVER;
 	#endif
 
@@ -312,7 +312,7 @@ static char *C_GetDefaultMusicSystem()
 	defaultmusicsystem = MS_AUDIOUNIT;
 	#endif
 
-	#if defined WIN32 && !defined _XBOX
+	#if defined _WIN32 && !defined _XBOX
 	defaultmusicsystem = MS_PORTMIDI;
 	#endif
 

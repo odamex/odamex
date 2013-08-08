@@ -36,7 +36,7 @@
 #endif
 
 #include "win32inc.h"
-#ifdef WIN32
+#ifdef _WIN32
     #include <conio.h>
     #include <io.h>
     #include <process.h>
@@ -77,7 +77,7 @@
 #include "c_dispatch.h"
 #include "sv_main.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 UINT TimerPeriod;
 #endif
 
@@ -225,7 +225,7 @@ QWORD I_MSTime()
 //
 // I_Sleep
 //
-// Sleeps for the specified number of nanoseconds, yielding control to the 
+// Sleeps for the specified number of nanoseconds, yielding control to the
 // operating system. In actuality, the highest resolution availible with
 // the select() function is 1 microsecond, but the nanosecond parameter
 // is used for consistency with I_GetTime().
@@ -269,7 +269,7 @@ void I_WaitVBL(int count)
 //
 // SubsetLanguageIDs
 //
-#ifdef WIN32
+#ifdef _WIN32
 static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 {
 	char buf[8];
@@ -308,7 +308,7 @@ void SetLanguageIDs ()
 
 	if (langid == 0 || langid > 3)
 	{
-    #ifdef WIN32
+    #ifdef _WIN32
 		memset (LanguageIDs, 0, sizeof(LanguageIDs));
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
@@ -411,7 +411,7 @@ std::string I_GetUserFileName (const char *file)
 	path += file;
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 	std::string path = I_GetBinaryDir();
 
 	if(path[path.length() - 1] != PATHSEPCHAR)
@@ -454,7 +454,7 @@ std::string I_GetBinaryDir()
 {
 	std::string ret;
 
-#ifdef WIN32
+#ifdef _WIN32
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
 	ret = tmp;
@@ -518,7 +518,7 @@ void STACK_ARGS I_Quit (void)
 {
     has_exited = 1;             /* Prevent infinitely recursive exits -- killough */
 
-    #ifdef WIN32
+    #ifdef _WIN32
     timeEndPeriod (TimerPeriod);
     #endif
 
@@ -553,7 +553,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
                 va_list argptr;
                 va_start (argptr, error);
                 index = vsprintf (errortext, error, argptr);
-                #ifdef WIN32
+                #ifdef _WIN32
                 sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
 				#endif
                 va_end (argptr);
@@ -632,7 +632,7 @@ int I_FindAttr (findstate_t *fileinfo)
 //
 // I_ConsoleInput
 //
-#ifdef WIN32
+#ifdef _WIN32
 int ShutdownNow();
 
 std::string I_ConsoleInput (void)

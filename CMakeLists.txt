@@ -46,8 +46,6 @@ macro(define_platform)
     add_definitions(-DSOLARIS -DUNIX -DBSD_COMP -gstabs+)
   elseif(UNIX)
     add_definitions(-DUNIX)
-  elseif(WIN32)
-    add_definitions(-DWIN32)
   endif()
 endmacro(define_platform)
 

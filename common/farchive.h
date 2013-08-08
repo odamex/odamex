@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -121,7 +121,7 @@ public:
 
 	size_t Length() const;
 	void WriteToBuffer(void *buf, size_t length) const;
-	
+
 protected:
 	bool FreeOnExplode () { return !m_SourceFromMem; }
 
@@ -139,7 +139,7 @@ public:
 		inline bool IsLoading () const { return m_Loading; }
 		inline bool IsStoring () const { return m_Storing; }
 		inline bool IsPeristent () const { return m_Persistent; }
-		
+
 		void SetHubTravel () { m_HubTravel = true; }
 
 		void Close ();
@@ -168,7 +168,7 @@ inline	FArchive& operator<< (const unsigned char *str) { return operator<< ((con
 inline	FArchive& operator<< (const signed char *str) { return operator<< ((const char *)str); }
 inline	FArchive& operator<< (bool b) { return operator<< ((BYTE)b); }
 
-#ifdef WIN32
+#ifdef _WIN32
 inline	FArchive& operator<< (int i) { return operator<< ((SDWORD)i); }
 inline	FArchive& operator<< (unsigned int i) { return operator<< ((DWORD)i); }
 #endif
@@ -192,7 +192,7 @@ inline	FArchive& operator>> (SQWORD &i) { QWORD in; operator>> (in); i = (SQWORD
 inline	FArchive& operator>> (bool &b) { BYTE in; operator>> (in); b = (in != 0); return *this; }
 inline  FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
 
-#ifdef WIN32
+#ifdef _WIN32
 inline	FArchive& operator>> (int &i) { DWORD in; operator>> (in); i = (int)in; return *this; }
 inline	FArchive& operator>> (unsigned int &i) { DWORD in; operator>> (in); i = (unsigned int)in; return *this; }
 #endif

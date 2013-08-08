@@ -88,7 +88,7 @@ extern bool step_mode;
 bool capfps = true;
 float maxfps = 35.0f;
 
-#if defined(WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX)
 
 #define arrlen(array) (sizeof(array) / sizeof(*array))
 
@@ -354,7 +354,7 @@ void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char 
 // [AM] Add platform-sepcific search directories
 static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 {
-	#if defined(WIN32) && !defined(_XBOX)
+	#if defined(_WIN32) && !defined(_XBOX)
 
 	const char separator = ';';
 
@@ -464,7 +464,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 //
 static std::string BaseFileSearch(std::string file, std::string ext = "", std::string hash = "")
 {
-	#ifdef WIN32
+	#ifdef _WIN32
 		// absolute path?
 		if(file.find(':') != std::string::npos)
 			return file;
@@ -1164,7 +1164,7 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 		render_lerp_amount = FRACUNIT;
 	else
 		render_lerp_amount = clamp((fixed_t)(accumulator * FRACUNIT / logic_dt), 0, FRACUNIT);
-	
+
 	// disable interpolation while paused since the physics aren't updated while paused
 	if (paused || menuactive || step_mode)
 		render_lerp_amount = FRACUNIT;

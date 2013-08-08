@@ -31,7 +31,7 @@
 #endif
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <io.h>
 #else
 #define strcmpi	strcasecmp

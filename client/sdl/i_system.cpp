@@ -35,7 +35,7 @@
 #endif
 
 #include "win32inc.h"
-#ifdef WIN32
+#ifdef _WIN32
     #include <io.h>
     #include <direct.h>
     #include <process.h>
@@ -298,7 +298,7 @@ QWORD I_MSTime()
 //
 // I_Sleep
 //
-// Sleeps for the specified number of nanoseconds, yielding control to the 
+// Sleeps for the specified number of nanoseconds, yielding control to the
 // operating system. In actuality, the highest resolution availible with
 // the select() function is 1 microsecond, but the nanosecond parameter
 // is used for consistency with I_GetTime().
@@ -341,7 +341,7 @@ void I_WaitVBL(int count)
 //
 // SubsetLanguageIDs
 //
-#if defined WIN32 && !defined _XBOX
+#if defined _WIN32 && !defined _XBOX
 static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 {
 	char buf[8];
@@ -379,7 +379,7 @@ void SetLanguageIDs ()
 
 	if (langid == 0 || langid > 3)
 	{
-    #if defined WIN32 && !defined _XBOX
+    #if defined _WIN32 && !defined _XBOX
 		memset (LanguageIDs, 0, sizeof(LanguageIDs));
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
@@ -850,7 +850,7 @@ std::string I_GetClipboardText (void)
 	return ret;
 #endif
 
-#if defined WIN32 && !defined _XBOX
+#if defined _WIN32 && !defined _XBOX
 	std::string ret;
 
 	if(!IsClipboardFormatAvailable(CF_TEXT))
@@ -939,7 +939,7 @@ void I_PrintStr (int xp, const char *cp, int count, BOOL scroll)
 	// used in the DOS version
 }
 
-#ifdef WIN32 // denis - fixme - make this work on POSIX
+#ifdef _WIN32 // denis - fixme - make this work on POSIX
 
 long I_FindFirst (char *filespec, findstate_t *fileinfo)
 {
@@ -970,7 +970,7 @@ int I_FindClose (long handle) {return 0;}
 //
 // I_ConsoleInput
 //
-#ifdef WIN32
+#ifdef _WIN32
 std::string I_ConsoleInput (void)
 {
 	// denis - todo - implement this properly!!!
