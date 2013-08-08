@@ -1,3 +1,5 @@
+gloabl_compile_options()
+
 # API
 set(API_DIR ../odalpapi)
 file(GLOB API_HEADERS ${API_DIR}/*.h)

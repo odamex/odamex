@@ -14,32 +14,37 @@ if(NOT MSVC)
   endif()
 endif()
 
-# Build type definitions
+# Global compile options as shown in a GUI.
 if(NOT MSVC)
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
-  set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-
-  set(STATIC_STDLIB "No" CACHE STRING
+  set(USE_STATIC_STDLIB "No" CACHE STRING
     "Statically link against the C and C++ Standard Library.")
-  set_property(CACHE STATIC_STDLIB PROPERTY STRINGS Yes No)
-  if(STATIC_STDLIB)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
-  endif()
+  set_property(CACHE USE_STATIC_STDLIB PROPERTY STRINGS Yes No)
 
-  set(SANITIZE_ADDRESS "No" CACHE STRING
+  set(USE_SANITIZE_ADDRESS "No" CACHE STRING
     "Turn on Address Sanitizer in Debug builds, requires GCC >= 4.8 or Clang >= 3.1")
-  set_property(CACHE SANITIZE_ADDRESS PROPERTY STRINGS Yes No)
-  if(SANITIZE_ADDRESS)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
-  endif()
+  set_property(CACHE USE_SANITIZE_ADDRESS PROPERTY STRINGS Yes No)
 endif()
+
+# Global compile options.  Useful defines for any Odamex project.
+macro(gloabl_compile_options)
+  if(NOT MSVC)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+    if(USE_STATIC_STDLIB)
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+    endif()
+    if(USE_SANITIZE_ADDRESS)
+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+    endif()
+  endif()
+endmacro(gloabl_compile_options)
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES SunOS )
   set(SOLARIS 1)
 endif()
 
+# Platform definitions
+# [AM] TODO: Eliminate redundant defines
 macro(define_platform)
-  # Platform definitions
   if(APPLE)
     add_definitions(-DOSX -DUNIX)
   elseif(SOLARIS)

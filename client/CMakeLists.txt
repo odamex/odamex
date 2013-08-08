@@ -1,5 +1,12 @@
 include(CMakeDependentOption)
 
+# Client flags [AM] TODO: Test -O3 again sometime.
+if(NOT MSVC)
+  set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+endif()
+
+gloabl_compile_options()
+
 # Common
 set(COMMON_DIR ../common)
 file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)

@@ -1,5 +1,7 @@
 include(FindLibAgar)
 
+gloabl_compile_options()
+
 # Odalaunch
 set(LAUNCH_DIR src)
 file(GLOB LAUNCH_HEADERS src/*.h)
