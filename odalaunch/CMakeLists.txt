@@ -61,5 +61,14 @@ if(wxWidgets_FOUND)
       PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
       "${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources/${MACOSX_BUNDLE_ICON_FILE}"
     )
+  elseif(WIN32)
+    install(TARGETS odalaunch
+      RUNTIME DESTINATION .
+      COMPONENT odalaunch)
+  else()
+    install(TARGETS odalaunch
+      RUNTIME DESTINATION bin
+      COMPONENT odalaunch)
   endif()
+
 endif()

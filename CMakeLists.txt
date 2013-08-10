@@ -90,11 +90,13 @@ if(NOT APPLE)
   set(CPACK_PACKAGE_INSTALL_DIRECTORY Odamex)
   set(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/LICENSE)
 
-  set(CPACK_COMPONENTS_ALL client server common)
+  set(CPACK_COMPONENTS_ALL client server odalaunch common)
   set(CPACK_COMPONENT_CLIENT_DEPENDS common)
   set(CPACK_COMPONENT_CLIENT_DISPLAY_NAME "Odamex")
   set(CPACK_COMPONENT_SERVER_DEPENDS common)
   set(CPACK_COMPONENT_SERVER_DISPLAY_NAME "Odamex Dedicated Server")
+  set(CPACK_COMPONENT_ODALAUNCH_DEPENDS client)
+  set(CPACK_COMPONENT_ODALAUNCH_DISPLAY_NAME "Odalaunch Odamex Server Browser and Launcher")
   set(CPACK_COMPONENT_COMMON_DISPLAY_NAME "Support files")
 
   # TODO: If deutex is available, use that to build the wad.
@@ -123,7 +125,7 @@ if(NOT APPLE)
       set(CPACK_RPM_COMPONENT_INSTALL YES)
       set(CPACK_DEB_COMPONENT_INSTALL YES)
     else()
-      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libsdl1.2debian, libsdl-mixer1.2")
+      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libstdc++6, libsdl1.2debian, libsdl-mixer1.2, libwxbase2.8-0, libwxgtk2.8-0")
     endif()
 
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A free, cross-platform modification of the Doom engine that allows players to easily join servers dedicated to playing Doom online.")
