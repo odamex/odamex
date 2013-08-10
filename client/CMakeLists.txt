@@ -76,6 +76,11 @@ if(APPLE)
     ${AUDIOUNIT_LIBRARY})
 endif()
 
+# Set up FHS installation path
+if(NOT APPLE AND NOT WIN32)
+  add_definitions("-DINSTALL_PREFIX=\"${CMAKE_INSTALL_PREFIX}\"")
+endif()
+
 # Client target
 if(SDL_FOUND AND SDLMIXER_FOUND)
   add_executable(odamex MACOSX_BUNDLE WIN32
