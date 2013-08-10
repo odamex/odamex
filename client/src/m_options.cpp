@@ -223,6 +223,7 @@ static value_t DoomOrOdamex[2] =
 
 menu_t  *CurrentMenu;
 int		CurrentItem;
+bool configuring_controls = false;
 static BOOL	WaitingForKey;
 static BOOL	WaitingForAxis;
 static const char	   *OldContMessage;
@@ -1514,7 +1515,7 @@ void M_OptResponder (event_t *ev)
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
 	{
-		if(ev->type == ev_keydown)
+		if (ev->type == ev_keydown)
 		{
 #ifdef _XBOX
 			if (ch != KEY_ESCAPE && ch != KEY_JOY9)
@@ -1525,6 +1526,8 @@ void M_OptResponder (event_t *ev)
 				C_ChangeBinding (item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
 			}
+
+			configuring_controls = false;
 			WaitingForKey = false;
 			CurrentMenu->items[0].label = OldContMessage;
 			CurrentMenu->items[0].type = OldContType;
@@ -1954,6 +1957,7 @@ void M_OptResponder (event_t *ev)
 			}
 			else if (item->type == control)
 			{
+				configuring_controls = true;
 				WaitingForKey = true;
 				OldContMessage = CurrentMenu->items[0].label;
 				OldContType = CurrentMenu->items[0].type;

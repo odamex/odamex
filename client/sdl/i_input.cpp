@@ -59,6 +59,7 @@ static MouseInput* mouse_input = NULL;
 
 static bool window_focused = false;
 static bool nomouse = false;
+extern bool configuring_controls;
 
 EXTERN_CVAR (use_joystick)
 EXTERN_CVAR (joy_active)
@@ -194,6 +195,8 @@ static void I_UpdateInputGrabbing()
 		can_grab = true;
 	else if (nomouse)
 		can_grab = false;
+	else if (configuring_controls)
+		can_grab = true;
 	else if (menuactive || ConsoleState == c_down || paused)
 		can_grab = false;
 	else if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
