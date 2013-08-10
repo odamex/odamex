@@ -116,14 +116,15 @@ if(NOT APPLE)
     install(FILES ${CONFIG_SAMPLES}
       DESTINATION share/odamex/config-samples
       COMPONENT common)
+
+    option(ODAMEX_COMPONENT_PACKAGES "Create several rpm/deb packages for repository maintainers." OFF)
+    if(ODAMEX_COMPONENT_PACKAGES)
+      set(CPACK_RPM_COMPONENT_INSTALL YES)
+      set(CPACK_DEB_COMPONENT_INSTALL YES)
+    endif()
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Alex Mayfield <alexmax2742@gmail.com>")
+
   endif()
-
-  # RPM
-  set(CPACK_RPM_COMPONENT_INSTALL YES)
-
-  # DEB
-  set(CPACK_DEB_COMPONENT_INSTALL YES)
-  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Alex Mayfield <alexmax2742@gmail.com>")
 endif()
 
 include(CPack)
