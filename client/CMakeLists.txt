@@ -161,5 +161,11 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
         " )
     endif()
 
+  elseif(WIN32)
+    # TODO
+  else()
+    install(TARGETS odamex
+      RUNTIME DESTINATION bin
+      COMPONENT client)
   endif()
 endif()

@@ -80,3 +80,32 @@ add_subdirectory(odalaunch)
 if(NOT NO_AG-ODALAUNCH_TARGET)
   add_subdirectory(ag-odalaunch)
 endif()
+
+# TODO: If deutex is available, use that to build the wad.
+install(FILES odamex.wad LICENSE README
+  DESTINATION share/odamex
+  COMPONENT common)
+file(GLOB CONFIG_SAMPLES config-samples/*)
+install(FILES ${CONFIG_SAMPLES}
+  DESTINATION share/odamex/config-samples
+  COMPONENT common)
+
+# Packaging options.
+if(APPLE)
+elseif(WIN32)
+else()
+  set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+  set(CPACK_COMPONENTS_ALL client server common)
+
+  set(CPACK_COMPONENT_CLIENT_DEPENDS common)
+  set(CPACK_COMPONENT_SERVER_DEPENDS common)
+
+  # RPM
+  set(CPACK_RPM_COMPONENT_INSTALL YES)
+
+  # DEB
+  set(CPACK_DEB_COMPONENT_INSTALL YES)
+  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Alex Mayfield <alexmax2742@gmail.com>")
+endif()
+
+include(CPack)

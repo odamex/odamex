@@ -58,3 +58,10 @@ if(UNIX AND NOT APPLE)
   target_link_libraries(odasrv rt)
 endif()
 
+if(APPLE)
+elseif(WIN32)
+else()
+  install(TARGETS odasrv
+    RUNTIME DESTINATION bin
+    COMPONENT server)
+endif()
