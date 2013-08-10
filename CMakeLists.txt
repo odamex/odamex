@@ -27,7 +27,7 @@ if(NOT MSVC)
 endif()
 
 # Global compile options.  Useful defines for any Odamex project.
-macro(gloabl_compile_options)
+macro(global_compile_options)
   if(NOT MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
     if(USE_STATIC_STDLIB)
@@ -37,7 +37,7 @@ macro(gloabl_compile_options)
       set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
     endif()
   endif()
-endmacro(gloabl_compile_options)
+endmacro(global_compile_options)
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES SunOS )
   set(SOLARIS 1)

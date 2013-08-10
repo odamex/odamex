@@ -1,4 +1,4 @@
-gloabl_compile_options()
+global_compile_options()
 
 # API
 set(API_DIR ../odalpapi)

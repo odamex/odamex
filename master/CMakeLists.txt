@@ -1,4 +1,4 @@
-gloabl_compile_options()
+global_compile_options()
 
 # Master
 file(GLOB MASTER_HEADERS *.h)

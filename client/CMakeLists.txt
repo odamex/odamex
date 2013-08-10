@@ -3,7 +3,7 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 endif()
 
-gloabl_compile_options()
+global_compile_options()
 
 # Common
 set(COMMON_DIR ../common)

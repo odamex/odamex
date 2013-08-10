@@ -1,6 +1,6 @@
 include(FindLibAgar)
 
-gloabl_compile_options()
+global_compile_options()
 
 # Odalaunch
 set(LAUNCH_DIR src)
