@@ -1,3 +1,4 @@
+include(CMakeDependentOption)
 
 project(Odamex)
 cmake_minimum_required(VERSION 2.8)
@@ -63,7 +64,10 @@ set(UPNPC_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 add_subdirectory(libminiupnpc)
 
 # PortMidi
-add_subdirectory(portmidi)
+cmake_dependent_option(USE_INTREE_PORTMIDI "Compile with the version of PortMidi included in the source tree." ON "WIN32" OFF)
+if(USE_INTREE_PORTMIDI)
+  add_subdirectory(portmidi)
+endif()
 
 # Subdirectories for Odamex projects
 add_subdirectory(client)

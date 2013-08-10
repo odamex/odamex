@@ -1,5 +1,3 @@
-include(CMakeDependentOption)
-
 # Client flags [AM] TODO: Test -O3 again sometime.
 if(NOT MSVC)
   set(CMAKE_CXX_FLAGS_RELEASE "-O2")
@@ -56,10 +54,17 @@ else()
 endif()
 
 # PortMidi configuration
-cmake_dependent_option(USE_PORTMIDI "Compile with PortMidi support." ON "WIN32" OFF)
-if(USE_PORTMIDI)
+if(USE_INTREE_PORTMIDI)
   include_directories(../portmidi/pm_common/ ../portmidi/porttime/)
   add_definitions(-DPORTMIDI)
+else()
+  find_package(PortMidi)
+  if(PORTMIDI_FOUND)
+    include_directories(${PORTMIDI_INCLUDE_DIR})
+    add_definitions(-DPORTMIDI)
+  else()
+    message(WARNING "PortMidi not found, client will be built without PortMidi support.")
+  endif()
 endif()
 
 # Find Mac frameworks
@@ -81,8 +86,10 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
   target_link_libraries(odamex ${SDL_LIBRARY})
   target_link_libraries(odamex ${SDLMIXER_LIBRARY})
 
-  if(USE_PORTMIDI)
+  if(USE_INTREE_PORTMIDI)
     target_link_libraries(odamex portmidi-static)
+  elseif(PORTMIDI_FOUND)
+    target_link_libraries(odamex ${PORTMIDI_LIBRARIES})
   endif()
 
   if(WIN32)
