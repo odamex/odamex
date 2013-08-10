@@ -121,20 +121,27 @@ if(NOT APPLE)
 
     option(ODAMEX_COMPONENT_PACKAGES "Create several rpm/deb packages for repository maintainers." OFF)
     if(ODAMEX_COMPONENT_PACKAGES)
-      # TODO: Dependencies for components
       set(CPACK_RPM_COMPONENT_INSTALL YES)
+      # TODO: RPM Dependencies
+
       set(CPACK_DEB_COMPONENT_INSTALL YES)
+      # TODO: DEB Dependencies
     else()
+      # TODO: RPM Dependencies
+
       set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libstdc++6, libsdl1.2debian, libsdl-mixer1.2, libwxbase2.8-0, libwxgtk2.8-0")
+      set(CPACK_DEBIAN_PACKAGE_SUGGESTS "boom-wad | doom-wad, libportmidi0")
     endif()
 
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A free, cross-platform modification of the Doom engine that allows players to easily join servers dedicated to playing Doom online.")
+    set(CPACK_PACKAGE_VENDOR "Odamex Team")
     set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 
+    set(CPACK_RPM_PACKAGE_LICENSE "GPLv2+")
+
+    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://odamex.net")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Alex Mayfield <alexmax2742@gmail.com>")
     set(CPACK_DEBIAN_PACKAGE_SECTION Games)
-    set(CPACK_DEBIAN_PACKAGE_SUGGESTS "boom-wad | doom-wad, libportmidi0")
-
   endif()
 endif()
 
