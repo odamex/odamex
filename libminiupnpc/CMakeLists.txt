@@ -30,7 +30,9 @@ endif (NO_GETADDRINFO)
 
 if (NOT WIN32)
   add_definitions (-DMINIUPNPC_SET_SOCKET_TIMEOUT)
+if (NOT APPLE)
   add_definitions (-D_BSD_SOURCE -D_POSIX_C_SOURCE=1)
+endif (NOT APPLE)
 else (NOT WIN32)
   add_definitions (-D_WIN32_WINNT=0x0501) # XP or higher for getnameinfo and friends
 endif (NOT WIN32)
