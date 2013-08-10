@@ -100,7 +100,7 @@ if(NOT APPLE)
   set(CPACK_COMPONENT_COMMON_DISPLAY_NAME "Support files")
 
   # TODO: If deutex is available, use that to build the wad.
-  file(GLOB CONFIG_SAMPLES config-samples/*)
+  file(GLOB CONFIG_SAMPLES config-samples/*.cfg)
   if(WIN32)
     install(FILES odamex.wad LICENSE README
       DESTINATION .
