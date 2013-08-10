@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -24,10 +24,7 @@
 // ONLY for msvc! these make gcc debug builds GARGANTUAN
 // eg: 30mb compared to 13mb!
 #if defined(_MSC_VER)
-#define WIN32_LEAN_AND_MEAN
-#ifndef _XBOX
-#include <windows.h>
-#endif // !_XBOX
+#include "win32inc.h"
 #endif // MSC_VER
 
 #include "version.h"
@@ -38,7 +35,7 @@
 #ifdef __BIG_ENDIAN__
 
 // Swap 16bit, that is, MSB and LSB byte.
-// No masking with 0xFF should be necessary. 
+// No masking with 0xFF should be necessary.
 short LESHORT (short x)
 {
 	return (short)((((unsigned short)x)>>8) | (((unsigned short)x)<<8));

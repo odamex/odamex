@@ -147,6 +147,7 @@ public:
 	float		fov;
 	// Focal origin above r.z
 	fixed_t		viewz;
+	fixed_t		prevviewz;
 	// Base height above floor for viewz.
 	fixed_t		viewheight;
     // Bob/squat speed.

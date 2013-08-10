@@ -31,15 +31,9 @@
 #include <vector>
 #include <algorithm>
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#ifdef _XBOX
-#include <xtl.h>
-#else
-#include <windows.h>
-#endif // _XBOX
-#else
-#include <sys/stat.h>
+#include "win32inc.h"
+#ifndef _WIN32
+    #include <sys/stat.h>
 #endif
 
 #ifdef UNIX
@@ -128,6 +122,8 @@ extern int NoWipe;			// [RH] Don't wipe when travelling in hubs
 BOOL devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
+static bool wiping_screen = false;
+
 char startmap[8];
 BOOL autostart;
 BOOL autorecord;
@@ -169,14 +165,10 @@ void D_ProcessEvents (void)
 	// [RH] If testing mode, do not accept input until test is over
 	if (testingmode)
 	{
-		if (testingmode <= I_GetTime())
-		{
+		if (testingmode <= I_MSTime() * TICRATE / 1000)
 			M_RestoreMode ();
-		}
 		else
-		{
 			M_ModeFlashTestText();
-		}
 
 		return;
 	}
@@ -205,13 +197,24 @@ void D_PostEvent (const event_t* ev)
 }
 
 //
+// D_DisplayTicker
+//
+// Called once every gametic to provide timing for display functions such
+// as screenwipes.
+//
+void D_DisplayTicker()
+{
+	if (wiping_screen)
+		wiping_screen = (Wipe_Ticker() == false);
+}
+
+
+//
 // D_Display
 //  draw current display, possibly wiping it from the previous
 //
 void D_Display (void)
 {
-	BOOL wipe;
-
 	if (nodrawers)
 		return; 				// for comparative timing / profiling
 
@@ -220,14 +223,9 @@ void D_Display (void)
 	// [RH] change the screen mode if needed
 	if (setmodeneeded)
 	{
-		int oldwidth = screen->width;
-		int oldheight = screen->height;
-		int oldbits = DisplayBits;
-
 		// Change screen mode.
 		if (!V_SetResolution (NewWidth, NewHeight, NewBits))
-			if (!V_SetResolution (oldwidth, oldheight, oldbits))
-				I_FatalError ("Could not change screen mode");
+			I_FatalError ("Could not change screen mode");
 
 		// Recalculate various view parameters.
 		setsizeneeded = true;
@@ -259,18 +257,13 @@ void D_Display (void)
 	if (NoWipe)
 	{
 		NoWipe--;
-		wipe = false;
 		wipegamestate = gamestate;
 	}
 	else if (gamestate != wipegamestate && gamestate != GS_FULLCONSOLE)
-	{ // save the current screen if about to wipe
-		wipe = true;
-		wipe_StartScreen ();
-		wipegamestate = gamestate;
-	}
-	else
 	{
-		wipe = false;
+		wipegamestate = gamestate;
+		Wipe_Start();
+		wiping_screen = true;
 	}
 
 	switch (gamestate)
@@ -348,74 +341,12 @@ void D_Display (void)
 		NoWipe = 10;
 	}
 
-	static bool live_wiping = false;
+	if (wiping_screen)
+		Wipe_Drawer();
 
-	if (!wipe)
-	{
-		if(live_wiping)
-		{
-			// wipe update online (multiple calls, not just looping here)
-			wipe_EndScreen();
-			live_wiping = !wipe_ScreenWipe (1);
-			C_DrawConsole ();
-			M_Drawer ();			// menu is drawn even on top of wipes
-			I_FinishUpdate ();		// page flip or blit buffer
-		}
-		else
-		{
-			// normal update
-			C_DrawConsole ();	// draw console
-			M_Drawer ();		// menu is drawn even on top of everything
-			I_FinishUpdate ();	// page flip or blit buffer
-		}
-	}
-	else
-	{
-		if(!connected)
-		{
-			// wipe update offline
-			int wipestart, wipecont, nowtime, tics;
-			BOOL done;
-
-			wipe_EndScreen ();
-			I_FinishUpdateNoBlit ();
-
-			extern int canceltics;
-
-			wipestart = I_GetTime ();
-			wipecont = wipestart - 1;
-
-			do
-			{
-				do
-				{
-					nowtime = I_GetTime ();
-					tics = nowtime - wipecont;
-				} while (!tics);
-				wipecont = nowtime;
-				I_BeginUpdate ();
-				done = wipe_ScreenWipe (tics);
-				C_DrawConsole ();
-				M_Drawer ();			// menu is drawn even on top of wipes
-				I_FinishUpdate ();		// page flip or blit buffer
-			} while (!done);
-
-			if(!connected)
-				canceltics += I_GetTime () - wipestart;
-		}
-		else
-		{
-			// wipe update online
-			live_wiping = true;
-
-			// wipe update online (multiple calls, not just looping here)
-			wipe_EndScreen();
-			live_wiping = !wipe_ScreenWipe (1);
-			C_DrawConsole ();
-			M_Drawer ();			// menu is drawn even on top of wipes
-			I_FinishUpdate ();		// page flip or blit buffer
-		}
-	}
+	C_DrawConsole();	// draw console
+	M_Drawer();			// menu is drawn even on top of everything
+	I_FinishUpdate();	// page flip or blit buffer
 
 	END_STAT(D_Display);
 }
@@ -429,17 +360,7 @@ void D_DoomLoop (void)
 	{
 		try
 		{
-			TryRunTics (); // will run at least one tic
-
-			if (!connected)
-				CL_RequestConnectInfo();
-
-			// [RH] Use the consoleplayer's camera to update sounds
-			S_UpdateSounds (listenplayer().camera);	// move positional sounds
-			S_UpdateMusic();	// play another chunk of music
-
-			// Update display, next frame, with current state.
-			D_Display ();
+			D_RunTics(CL_RunTics, CL_RenderTics);
 		}
 		catch (CRecoverableError &error)
 		{
@@ -584,7 +505,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		int width = 320, height = 200;
+		const int width = 320, height = 200;
 		patch_t *data;
 
 		if (page && (page->width != screen->width || page->height != screen->height))
@@ -598,33 +519,17 @@ void D_DoAdvanceDemo (void)
 		if (page == NULL)
         {
             if (screen->isProtectedRes())
-            {
-                page = I_AllocateScreen (data->width(), data->height(), 8);
-            }
+                page = I_AllocateScreen(data->width(), data->height(), 8);
             else
-            {
-                page = I_AllocateScreen (screen->width, screen->height, 8);
-            }
+                page = I_AllocateScreen(screen->width, screen->height, 8);
         }
 
 		page->Lock ();
 
 		if (gameinfo.flags & GI_PAGESARERAW)
-        {
             page->DrawBlock (0, 0, width, height, (byte *)data);
-        }
-		else if (screen->isProtectedRes())
-        {
-            page->DrawPatch(data,0,0);
-        }
-        else if ((float)screen->width/screen->height < (float)4.0f/3.0f)
-        {
-            page->DrawPatchStretched (data, 0, (screen->height / 2) - ((height * RealYfac) / 2), screen->width, (height * RealYfac));
-        }
-        else
-        {
-            page->DrawPatchStretched (data, (screen->width / 2) - ((width * RealXfac) / 2), 0, (width * RealXfac), screen->height);
-        }
+		else
+			page->DrawPatchFullScreen(data);
 
 		page->Unlock ();
 	}
@@ -867,6 +772,14 @@ void D_DoomMain (void)
 		defdemoname = Args.GetArg (p+1);
 	}
 
+	// [SL] check for -timedemo (was removed at some point)
+	p = Args.CheckParm("-timedemo");
+	if (p && p < Args.NumArgs() - 1)
+	{
+		singledemo = true;
+		G_TimeDemo(Args.GetArg(p + 1));
+	}
+
 	const char *val = Args.CheckValue ("-skill");
 	if (val)
 	{
@@ -921,7 +834,7 @@ void D_DoomMain (void)
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_Error ("You cannot -file with the shareware version. Register!");
 
-#ifdef WIN32
+#ifdef _WIN32
 	const char *sdlv = getenv("SDL_VIDEODRIVER");
 	Printf (PRINT_HIGH, "Using %s video driver.\n",sdlv);
 #endif
@@ -1029,7 +942,7 @@ void D_DoomMain (void)
             if (gamestate != GS_CONNECTING)
                 gamestate = GS_HIDECONSOLE;
 
-			C_ToggleConsole();
+			C_HideConsole();
 
 			if (gamemode == commercial_bfg) // DOOM 2 BFG Edtion
                 AddCommandString("menu_main");

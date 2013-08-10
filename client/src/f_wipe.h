@@ -29,9 +29,10 @@
 //						 SCREEN WIPE PACKAGE
 //
 
-int wipe_StartScreen (void);
-int wipe_EndScreen (void);
-int wipe_ScreenWipe (int ticks);
+void Wipe_Stop();
+void Wipe_Start();
+bool Wipe_Ticker();
+void Wipe_Drawer();
 
 #endif
 

@@ -35,6 +35,9 @@ EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_warmup_autostart)
 EXTERN_CVAR(sv_countdown)
+EXTERN_CVAR(sv_timelimit)
+
+extern int mapchange;
 
 // Store Warmup state.
 Warmup warmup;
@@ -229,6 +232,11 @@ void Warmup::tic()
 		this->set_status(Warmup::INGAME);
 	else
 		this->set_status(Warmup::DISABLED);
+
+	// [SL] always reset the time (for now at least)
+	level.time = 0;
+	level.timeleft = sv_timelimit * TICRATE * 60;
+	level.inttimeleft = mapchange / TICRATE;
 
 	G_DeferedFullReset();
 	SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");

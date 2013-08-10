@@ -1,4 +1,4 @@
-/* $Id: connecthostport.c,v 1.9 2012/06/26 00:00:27 nanard Exp $ */
+/* $Id: connecthostport.c,v 1.10 2013/05/03 09:05:38 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas Bernard
  * Copyright (c) 2010-2012 Thomas Bernard
@@ -24,6 +24,7 @@
 #else /* #ifdef _WIN32 */
 #include <unistd.h>
 #include <sys/param.h>
+#include <sys/select.h>
 #include <errno.h>
 #define closesocket close
 #include <netdb.h>

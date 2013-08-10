@@ -40,6 +40,10 @@ class IVideo
 
 	virtual bool SetOverscan (float scale);
 
+	virtual int GetWidth() const;
+	virtual int GetHeight() const;
+	virtual int GetBitDepth() const;
+
 	virtual bool SetMode (int width, int height, int bits, bool fs);
 	virtual void SetPalette (DWORD *palette);
 	

@@ -28,6 +28,7 @@
 #ifndef NET_PACKET_H
 #define NET_PACKET_H
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -52,7 +53,7 @@
 #define VERSIONMINOR(V) ((V % 256) / 10)
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
-#define VERSION (0*256+63)
+#define VERSION (0*256+64)
 #define PROTOCOL_VERSION 2
 
 #define TAG_ID 0xAD0
@@ -255,6 +256,24 @@ public:
 		if ((Master.ip.size()) && (Master.port != 0))
 			masteraddresses.push_back(Master);
 	}
+
+    bool AddMaster(std::string Address)
+    {
+        size_t colon = Address.find(':');
+
+        if (colon == std::string::npos)
+            return false;
+
+        if (colon + 1 >= Address.length())
+            return false;
+
+        uint16_t Port = atoi(Address.substr(colon + 1).c_str());
+        std::string HostIP = Address.substr(0, colon);
+        
+        AddMaster(HostIP, Port);
+        
+        return true;
+    }
 
 	void QueryMasters(const uint32_t &Timeout, const bool &Broadcast, 
             const int8_t &Retries)

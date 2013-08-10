@@ -106,8 +106,9 @@ void MapThing::Serialize (FArchive &arc)
 }
 
 AActor::AActor () :
-    x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
-    pitch(0), effects(0), subsector(NULL),
+    x(0), y(0), z(0), prevx(0), prevy(0), prevz(0),
+	snext(NULL), sprev(NULL), angle(0), prevangle(0), sprite(SPR_UNKN), frame(0),
+    pitch(0), prevpitch(0), effects(0), subsector(NULL),
     floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0),
     momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
     damage(0), flags(0), flags2(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
@@ -121,9 +122,10 @@ AActor::AActor () :
 }
 
 AActor::AActor (const AActor &other) :
-    x(other.x), y(other.y), z(other.z), snext(other.snext), sprev(other.sprev),
-    angle(other.angle), sprite(other.sprite), frame(other.frame),
-    pitch(other.pitch), effects(other.effects),
+    x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy), prevz(other.prevz),
+	snext(other.snext), sprev(other.sprev),
+    angle(other.angle), prevangle(other.prevangle), sprite(other.sprite), frame(other.frame),
+    pitch(other.pitch), prevpitch(other.prevpitch), effects(other.effects),
     subsector(other.subsector),
     floorz(other.floorz), ceilingz(other.ceilingz), dropoffz(other.dropoffz),
     floorsector(other.floorsector),	radius(other.radius), height(other.height), momx(other.momx),
@@ -148,12 +150,17 @@ AActor &AActor::operator= (const AActor &other)
 	x = other.x;
     y = other.y;
     z = other.z;
+	prevx = other.prevx;
+	prevy = other.prevy;
+	prevz = other.prevz;
     snext = other.snext;
     sprev = other.sprev;
     angle = other.angle;
+	prevangle = other.prevangle;
     sprite = other.sprite;
     frame = other.frame;
     pitch = other.pitch;
+	prevpitch = other.prevpitch;
     effects = other.effects;
     subsector = other.subsector;
     floorz = other.floorz;
@@ -210,8 +217,9 @@ AActor &AActor::operator= (const AActor &other)
 //
 
 AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
-    x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
-    pitch(0), effects(0), subsector(NULL),
+    x(0), y(0), z(0), prevx(0), prevy(0), prevz(0),
+	snext(NULL), sprev(NULL), angle(0), prevangle(0), sprite(SPR_UNKN), frame(0),
+    pitch(0), prevpitch(0), effects(0), subsector(NULL),
     floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0), momx(0), momy(0), momz(0),
     validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
     special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
@@ -626,6 +634,15 @@ void AActor::RunThink ()
 {
 	if(!subsector)
 		return;
+
+	prevx = x;
+	prevy = y;
+	prevz = z;
+	if (!player)
+	{
+		prevangle = angle;
+		prevpitch = pitch;
+	}
 
     // server removal of corpses only
     if (!clientside && serverside)
@@ -1061,39 +1078,43 @@ void P_XYMovement(AActor *mo)
 			else if (mo->flags & MF_MISSILE)
 			{
 				// [SL] 2012-01-25 - Don't explode missiles on horizon line
-				if (BlockingLine && BlockingLine->special == Line_Horizon &&
-					co_fixweaponimpacts)
+				if (BlockingLine && BlockingLine->special == Line_Horizon)
 				{
 					mo->Destroy();
 					return;
 				}
 
-				// explode a missile
-				if (ceilingline &&
-					ceilingline->backsector &&
-					ceilingline->backsector->ceilingpic == skyflatnum)
+				// [SL] 2013-05-14 - Check for sky wall hacks
+				if (ceilingline)
 				{
-					// Hack to prevent missiles exploding
-					// against the sky.
-					// Does not handle sky floors.
-
-					// [SL] 2011-09-16 - Add fix for impact of missiles against
-					// lower or upper walls whose line is facing away from a
-					// bordering sector with a F_SKY ceiling texture.  In vanilla
-					// Doom, the missile disappears when hitting such a wall
-					// instead of exploding.
-
-					if (!co_fixweaponimpacts ||
-						mo->z > P_CeilingHeight(mo->x, mo->y, ceilingline->backsector))
+					sector_t *sec1, *sec2;
+					if (!co_fixweaponimpacts || !ceilingline->backsector || !P_PointOnLineSide(mo->x, mo->y, ceilingline))
 					{
-						mo->Destroy ();
-						return;
+						sec1 = ceilingline->frontsector;
+						sec2 = ceilingline->backsector;
+					}
+					else
+					{
+						sec1 = ceilingline->backsector;
+						sec2 = ceilingline->frontsector;
+					}
+
+					bool skyceiling1 = sec1->ceilingpic == skyflatnum;
+					bool skyceiling2 = sec2 && sec2->ceilingpic == skyflatnum;
+
+					if (skyceiling2)
+					{
+						if (!co_fixweaponimpacts || (skyceiling1 && mo->z > P_CeilingHeight(mo->x, mo->y, sec2)))
+						{
+							mo->Destroy();
+							return;
+						}
 					}
 				}
+
 				// [SL] 2011-06-02 - Only server should control explosions
 				if (serverside)
 					 P_ExplodeMissile (mo);
-
 			}
 			else
 			{
@@ -1591,7 +1612,7 @@ void P_NightmareRespawn (AActor *mobj)
 	mobj->Destroy ();
 }
 
-AActor *AActor::TIDHash[128];
+AActor* AActor::TIDHash[TIDHashSize];
 
 //
 // [RH] Some new functions to work with Thing IDs. ------->
@@ -1602,12 +1623,9 @@ AActor *AActor::TIDHash[128];
 //
 // Clears the tid hashtable.
 //
-
 void AActor::ClearTIDHashes ()
 {
-	int i;
-
-	for (i = 0; i < 128; i++)
+	for (size_t i = 0; i < TIDHashSize; i++)
 		TIDHash[i] = NULL;
 }
 
@@ -1916,42 +1934,30 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	if(!serverside)
 		return;
 
-	angle_t an;
 	fixed_t slope;
-	fixed_t pitchslope = finetangent[FINEANGLES/4-(source->pitch>>ANGLETOFINESHIFT)];
+	fixed_t pitchslope = finetangent[FINEANGLES/4 - (source->pitch>>ANGLETOFINESHIFT)];
 
 	// see which target is to be aimed at
-	an = source->angle;
-	if (source->player && source->player->userinfo.aimdist == 0 && sv_freelook)
-	{
-		slope = pitchslope;
-	}
+	angle_t an = source->angle;
+
+	// [AM] Refactored autoaim into a single function.
+	if (co_fineautoaim)
+		slope = P_AutoAimLineAttack(source, an, 1 << 26, 10, 16 * 64 * FRACUNIT);
 	else
+		slope = P_AutoAimLineAttack(source, an, 1 << 26, 1, 16 * 64 * FRACUNIT);
+
+	if (!linetarget)
+		an = source->angle;
+
+	// If a target was not found, or one was found, but outside the
+	// player's autoaim range, use the actor's pitch for the slope.
+	if (sv_freelook &&
+		(!linetarget || // target not found, or:
+		 (source->player && // target found but outside of player's autoaim range
+		  abs(slope - pitchslope) >= source->player->userinfo.aimdist)))
 	{
-		// [AM] Refactored autoaim into a single function.
-		if (co_fineautoaim)
-			slope = P_AutoAimLineAttack(source, an, 1 << 26, 10, 16 * 64 * FRACUNIT);
-		else
-			slope = P_AutoAimLineAttack(source, an, 1 << 26, 1, 16 * 64 * FRACUNIT);
-
-		if (!linetarget)
-		{
-			an = source->angle;
-
-			if(sv_freelook)
-				slope = pitchslope;
-			else
-				slope = 0;
-		}
-
-		if (linetarget && source->player)
-		{
-			if (sv_freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
-			{
-				an = source->angle;
-				slope = pitchslope;
-			}
-		}
+		an = source->angle;
+		slope = pitchslope;
 	}
 
 	AActor *th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);

@@ -42,6 +42,11 @@
 #include "z_zone.h"
 #include "i_video.h"
 #include "vectors.h"
+#include "f_wipe.h"
+
+void R_BeginInterpolation(fixed_t amount);
+void R_EndInterpolation();
+void R_InterpolateCamera(fixed_t amount);
 
 #define DISTMAP			2
 
@@ -53,8 +58,8 @@ extern int *walllights;
 extern dyncolormap_t NormalLight;
 extern bool r_fakingunderwater;
 
+EXTERN_CVAR (r_flashhom)
 EXTERN_CVAR (r_viewsize)
-EXTERN_CVAR (r_widescreen)
 EXTERN_CVAR (sv_allowwidescreen)
 
 static float	LastFOV = 0.0f;
@@ -152,6 +157,8 @@ static int lastcenteryfrac;
 // [AM] Number of fineangles in a default 90 degree FOV at a 4:3 resolution.
 int FieldOfView = 2048;
 int CorrectFieldOfView = 2048;
+
+fixed_t			render_lerp_amount;
 
 //
 //
@@ -599,32 +606,33 @@ void R_InitTextureMapping (void)
 	clipangle = xtoviewangle[0];
 }
 
-// Changes the field of view.
+//
+// R_SetFOV
+//
+// Changes the field of view based on widescreen mode availibility.
+//
 void R_SetFOV(float fov, bool force = false)
 {
-	if (fov == LastFOV && !force)
+	fov = clamp(fov, 1.0f, 179.0f);
+
+	if (fov == LastFOV && force == false)
 		return;
-
-	if (fov < 1)
-		fov = 1;
-	else if (fov > 179)
-		fov = 179;
-
+ 
 	LastFOV = fov;
-	FieldOfView = static_cast<int>(fov * static_cast<float>(FINEANGLES) / 360.0f);
-	float am = (static_cast<float>(screen->width) / screen->height) / (4.0f / 3.0f);
-	if (R_GetWidescreen() >= WIDE_TRUE && am > 1.0f)
+	FieldOfView = int(fov * FINEANGLES / 360.0f);
+
+	if (V_UseWidescreen() || V_UseLetterBox())
 	{
-		// [AM] The FOV is corrected to fit the wider screen.
+		float am = float(screen->width) / float(screen->height) / (4.0f / 3.0f);
 		float radfov = fov * PI / 180.0f;
 		float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
-		CorrectFieldOfView = static_cast<int>(widefov * static_cast<float>(FINEANGLES) / 360.0f);
+		CorrectFieldOfView = int(widefov * FINEANGLES / 360.0f);
 	}
 	else
-	{
-		// [AM] The FOV is left as-is for the wider screen.
+ 	{
 		CorrectFieldOfView = FieldOfView;
-	}
+ 	}
+
 	setsizeneeded = true;
 }
 
@@ -639,19 +647,6 @@ void R_SetFOV(float fov, bool force = false)
 float R_GetFOV (void)
 {
 	return LastFOV;
-}
-
-// [AM] Always grab the correct widescreen setting based on a
-//      combination of r_widescreen and serverside forcing.
-int R_GetWidescreen()
-{
-	if ((r_widescreen.asInt() < WIDE_TRUE) || !multiplayer ||
-	    (multiplayer && sv_allowwidescreen))
-	{
-		return r_widescreen.asInt();
-	}
-
-	return r_widescreen.asInt() - WIDE_TRUE;
 }
 
 //
@@ -744,16 +739,6 @@ CVAR_FUNC_IMPL (r_detail)
 	setsizeneeded = true;
 }
 
-CVAR_FUNC_IMPL (r_widescreen)
-{
-	if (var.asInt() < 0 || var.asInt() > 3)
-	{
-		Printf(PRINT_HIGH, "Invalid widescreen setting.\n");
-		var.RestoreDefault();
-	}
-	setmodeneeded = true;
-}
-
 //
 //
 // R_ExecuteSetViewSize
@@ -765,7 +750,6 @@ void R_ExecuteSetViewSize (void)
 	int i, j;
 	int level;
 	int startmap;
-	int virtheight, virtwidth;
 	int lightmapsize = 8 + (screen->is8bit() ? 0 : 2);
 
 	setsizeneeded = false;
@@ -821,13 +805,10 @@ void R_ExecuteSetViewSize (void)
 	centerxfrac = centerx<<FRACBITS;
 	centeryfrac = centery<<FRACBITS;
 
-	virtwidth = screen->width >> detailxshift;
-	virtheight = screen->height >> detailyshift;
-
-	if (R_GetWidescreen() != WIDE_STRETCH)
-		yaspectmul = (78643 << detailxshift) >> detailyshift ; // [AM] Force correct aspect ratio
-	else
-		yaspectmul = (fixed_t)(65536.0f*(320.0f*(float)virtheight/(200.0f*(float)virtwidth)));
+	// calculate the vertical stretching factor to emulate 320x200
+	// it's a 5:4 ratio = (320 / 200) / (4 / 3)
+	// also take r_detail into account
+	yaspectmul = (320.0f / 200.0f) / (4.0f / 3.0f) * ((FRACUNIT << detailxshift) >> detailyshift);
 
 	colfunc = basecolfunc = R_DrawColumn;
 	lucentcolfunc = R_DrawTranslucentColumn;
@@ -847,23 +828,17 @@ void R_ExecuteSetViewSize (void)
 	R_InitTextureMapping ();
 
 	// psprite scales
-	if (R_GetWidescreen() != WIDE_STRETCH)
-	{
-		// [AM] Using centerxfrac will make our sprite too fat, so we
-		//      generate a corrected 4:3 screen width based on our
-		//      height, then generate the x-scale based on that.
-		int cswidth, crvwidth;
-		cswidth = (4 * screen->height) / 3;
-		if (setblocks < 10)
-			crvwidth = ((setblocks * cswidth) / 10) & (~(15 >> (screen->is8bit() ? 0 : 2)));
-		else
-			crvwidth = cswidth;
-		pspritexscale = (((crvwidth >> detailxshift) / 2) << FRACBITS) / 160;
-	}
+	// [AM] Using centerxfrac will make our sprite too fat, so we
+	//      generate a corrected 4:3 screen width based on our
+	//      height, then generate the x-scale based on that.
+	int cswidth, crvwidth;
+	cswidth = (4 * screen->height) / 3;
+	if (setblocks < 10)
+		crvwidth = ((setblocks * cswidth) / 10) & (~(15 >> (screen->is8bit() ? 0 : 2)));
 	else
-	{
-		pspritexscale = centerxfrac / 160;
-	}
+		crvwidth = cswidth;
+	pspritexscale = (((crvwidth >> detailxshift) / 2) << FRACBITS) / 160;
+
 	pspriteyscale = FixedMul(pspritexscale, yaspectmul);
 	pspritexiscale = FixedDiv(FRACUNIT, pspritexscale);
 
@@ -1021,15 +996,22 @@ void R_SetupFrame (player_t *player)
 		viewx = CameraX;
 		viewy = CameraY;
 		viewz = CameraZ;
+		viewangle = viewangleoffset + camera->angle;
 	}
 	else
 	{
-		viewx = camera->x;
-		viewy = camera->y;
-		viewz = camera->player ? camera->player->viewz : camera->z;
+		if (render_lerp_amount < FRACUNIT)
+		{
+			R_InterpolateCamera(render_lerp_amount);
+		}
+		else
+		{
+			viewx = camera->x;
+			viewy = camera->y;
+			viewz = camera->player ? camera->player->viewz : camera->z;
+			viewangle = viewangleoffset + camera->angle;
+		}
 	}
-
-	viewangle = camera->angle + viewangleoffset;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
@@ -1114,7 +1096,8 @@ void R_SetupFrame (player_t *player)
 
 	// [RH] freelook stuff
 	{
-		fixed_t dy = FixedMul (FocalLengthY, finetangent[(ANG90-camera->pitch)>>ANGLETOFINESHIFT]);
+		fixed_t pitch = camera->prevpitch + FixedMul(render_lerp_amount, camera->pitch - camera->prevpitch);
+		fixed_t dy = FixedMul (FocalLengthY, finetangent[(ANG90 - pitch)>>ANGLETOFINESHIFT]);
 
 		centeryfrac = (viewheight << (FRACBITS-1)) + dy;
 		centery = centeryfrac >> FRACBITS;
@@ -1256,6 +1239,10 @@ void R_ResetDrawFuncs()
 	{
 		R_SetFlatDrawFuncs();
 	}
+	else if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
 	else
 	{
 		colfunc = basecolfunc;
@@ -1271,6 +1258,10 @@ void R_ResetDrawFuncs()
 void R_SetLucentDrawFuncs()
 {
 	if (r_drawflat)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (nodrawers)
 	{
 		R_SetBlankDrawFuncs();
 	}
@@ -1290,6 +1281,10 @@ void R_SetTranslatedDrawFuncs()
 	{
 		R_SetFlatDrawFuncs();
 	}
+	else if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
 	else
 	{
 		colfunc = transcolfunc;
@@ -1303,6 +1298,10 @@ void R_SetTranslatedDrawFuncs()
 void R_SetTranslatedLucentDrawFuncs()
 {
 	if (r_drawflat)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (nodrawers)
 	{
 		R_SetBlankDrawFuncs();
 	}
@@ -1337,6 +1336,21 @@ void R_RenderPlayerView (player_t *player)
 	// [RH] Hack to make windows into underwater areas possible
 	r_fakingunderwater = false;
 
+	// [SL] fill the screen with a blinking solid color to make HOM more visible
+	if (r_flashhom)
+	{
+		int color = gametic & 8 ? 0 : 200;
+
+		int x1 = viewwindowx;
+		int y1 = viewwindowy;
+		int x2 = viewwindowx + viewwidth - 1;
+		int y2 = viewwindowy + viewheight - 1;
+
+		screen->Clear(x1, y1, x2, y2, color);
+	}
+
+	R_BeginInterpolation(render_lerp_amount);
+
 	// [RH] Setup particles for this frame
 	R_FindParticleSubsectors();
 
@@ -1357,6 +1371,8 @@ void R_RenderPlayerView (player_t *player)
 
 	// [RH] Apply detail mode doubling
 	R_DetailDouble ();
+
+	R_EndInterpolation();
 }
 
 //

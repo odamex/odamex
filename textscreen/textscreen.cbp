@@ -72,7 +72,7 @@
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="/MD" />
-					<Add option="/TP" />
+					<Add option="/TC" />
 					<Add option="/RTCu" />
 					<Add option="/RTCs" />
 					<Add option="/GA" />
@@ -93,7 +93,6 @@
 				</Compiler>
 				<Linker>
 					<Add option="/DEBUG" />
-					<Add option="/debug" />
 				</Linker>
 			</Target>
 			<Target title="Unix Release">

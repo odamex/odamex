@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -26,7 +26,7 @@
 #ifndef __I_SYSTEM__
 #define __I_SYSTEM__
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <io.h>
 #endif
 
@@ -62,15 +62,13 @@ void I_ExpandHomeDir (std::string &path);
 void *I_ZoneBase (size_t *size);
 
 
-// Called by D_DoomLoop,
-// returns current time in tics.
-extern QWORD (*I_GetTime) (void);
+// returns current time in nanoseconds.
+uint64_t I_GetTime();
 
-// like I_GetTime, except it waits for a new tic before returning
-extern QWORD (*I_WaitForTic) (QWORD);
-
-QWORD I_GetTimePolled (void);
-
+// yields to the OS for the specified time (in nanoseconds)
+void I_Sleep(uint64_t);
+// yields to the OS for 1 millisecond
+void I_Yield();
 
 //
 // Called by D_DoomLoop,
@@ -131,8 +129,6 @@ void I_ResumeMouse (void);
 
 // [RH] Returns millisecond-accurate time
 QWORD I_MSTime (void);
-
-void I_Yield();
 
 // [RH] Title string to display at bottom of console during startup
 extern char DoomStartupTitle[256];

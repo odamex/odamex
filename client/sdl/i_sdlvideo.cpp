@@ -29,13 +29,10 @@
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
-#ifdef WIN32
-#ifndef _XBOX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif // !_XBOX
-#include "SDL_syswm.h"
-#include "resource.h"
+#include "win32inc.h"
+#if defined(_WIN32) && !defined(_XBOX)
+    #include "SDL_syswm.h"
+    #include "resource.h"
 #endif // WIN32
 
 #include "v_palette.h"
@@ -49,6 +46,12 @@
 #endif
 
 EXTERN_CVAR (vid_autoadjust)
+EXTERN_CVAR (vid_vsync)
+
+CVAR_FUNC_IMPL(vid_vsync)
+{
+	setmodeneeded = true;
+}
 
 SDLVideo::SDLVideo(int parm)
 {
@@ -102,8 +105,6 @@ SDLVideo::SDLVideo(int parm)
    infullscreen = false;
    screenw = screenh = screenbits = 0;
    palettechanged = false;
-
-   chainHead = new cChain(NULL);
 
    // Get Video modes
    SDL_PixelFormat fmt;
@@ -162,21 +163,6 @@ SDLVideo::SDLVideo(int parm)
    }
 }
 
-SDLVideo::~SDLVideo(void)
-{
-   cChain *rover, *next;
-
-   for(rover = chainHead->next; rover != chainHead; rover = next)
-   {
-      next = rover->next;
-      ReleaseSurface(rover->canvas);
-      delete rover;
-   }
-
-   delete chainHead;
-}
-
-
 std::string SDLVideo::GetVideoDriverName()
 {
   char driver[128];
@@ -231,79 +217,94 @@ bool SDLVideo::SetOverscan (float scale)
 	return true;
 }
 
-bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
+bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 {
-   Uint32 flags = SDL_RESIZABLE;
-   int sbits = bits;
+	Uint32 flags = (vid_vsync ? SDL_HWSURFACE | SDL_DOUBLEBUF : SDL_SWSURFACE);
 
-   // SoM: I'm not sure if we should request a software or hardware surface yet... So I'm
-   // just ganna let SDL decide.
+	if (fullscreen && !vidModeList.empty())
+		flags |= SDL_FULLSCREEN;
+	else
+		flags |= SDL_RESIZABLE;
 
-   if(fs && !vidModeList.empty())
-   {
-      flags = 0;
+	if (fullscreen && bits == 8)
+		flags |= SDL_HWPALETTE;
 
-      flags |= SDL_FULLSCREEN;
+	// TODO: check for multicore
+	flags |= SDL_ASYNCBLIT;
 
-      if(bits == 8)
-         flags |= SDL_HWPALETTE;
-   }
+	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
+	// This interferes with RawWin32Mouse's input handlers so we need to
+	// disable them prior to reinitalizing DirectInput...
+	I_PauseMouse();
 
-   // fullscreen directx requires a 32-bit mode to fix broken palette
-   // [Russell] - Use for gdi as well, fixes d2 map02 water
-   if (fs)
-      sbits = 32;
+	int sbits = bits;
 
-   if(!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
-      return false;
+	#ifdef _WIN32
+	// fullscreen directx requires a 32-bit mode to fix broken palette
+	// [Russell] - Use for gdi as well, fixes d2 map02 water
+	if (fullscreen)
+		sbits = 32;
+	#endif
 
-   screenw = width;
-   screenh = height;
-   screenbits = bits;
+#ifdef SDL_GL_SWAP_CONTROL
+	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vid_vsync);
+#endif
 
-   return true;
+	if (!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
+		return false;
+
+	// [SL] ...and re-enable RawWin32Mouse's input handlers after
+	// DirectInput is reinitalized.
+	I_ResumeMouse();
+
+	screenw = width;
+	screenh = height;
+	screenbits = bits;
+
+	return true;
 }
 
 
-void SDLVideo::SetPalette (DWORD *palette)
+void SDLVideo::SetPalette(DWORD *palette)
 {
-   for(size_t i = 0; i < sizeof(newPalette)/sizeof(SDL_Color); i++)
-   {
-      newPalette[i].r = RPART(palette[i]);
-      newPalette[i].g = GPART(palette[i]);
-      newPalette[i].b = BPART(palette[i]);
-   }
-
-   palettechanged = true;
+	for (size_t i = 0; i < sizeof(newPalette)/sizeof(SDL_Color); i++)
+	{
+		newPalette[i].r = RPART(palette[i]);
+		newPalette[i].g = GPART(palette[i]);
+		newPalette[i].b = BPART(palette[i]);
+	}
+	palettechanged = true;
 }
 
-void SDLVideo::SetOldPalette (byte *doompalette)
+void SDLVideo::SetOldPalette(byte *doompalette)
 {
-    //for(size_t i = 0; i < sizeof(newPalette)/sizeof(SDL_Color); i++)
-    int i;
-    for (i = 0; i < 256; ++i)
-    {
-      newPalette[i].r = newgamma[*doompalette++];
-      newPalette[i].g = newgamma[*doompalette++];
-      newPalette[i].b = newgamma[*doompalette++];
-    }
-   palettechanged = true;
+	for (int i = 0; i < 256; ++i)
+	{
+		newPalette[i].r = newgamma[*doompalette++];
+		newPalette[i].g = newgamma[*doompalette++];
+		newPalette[i].b = newgamma[*doompalette++];
+	}
+	palettechanged = true;
 }
 
-void SDLVideo::UpdateScreen (DCanvas *canvas)
+void SDLVideo::UpdateScreen(DCanvas *canvas)
 {
-   if(palettechanged)
-   {
-      // m_Private may or may not be the primary surface (sdlScreen)
-      SDL_SetPalette((SDL_Surface*)canvas->m_Private, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
-      palettechanged = false;
-   }
+	if (palettechanged)
+	{
+		// m_Private may or may not be the primary surface (sdlScreen)
+		SDL_SetPalette((SDL_Surface*)canvas->m_Private, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
+		SDL_SetPalette(sdlScreen, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
+		palettechanged = false;
+	}
 
-   // If not writing directly to the screen blit to the primary surface
-   if(canvas->m_Private != sdlScreen)
-      SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, NULL);
+	// If not writing directly to the screen blit to the primary surface
+	if (canvas->m_Private != sdlScreen)
+	{
+		SDL_Rect dstrect = { (screenw - canvas->width) >> 1, (screenh - canvas->height) >> 1 };
+		SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, &dstrect);
+	}
 
-   SDL_Flip(sdlScreen);
+	SDL_Flip(sdlScreen);
 }
 
 
@@ -376,7 +377,7 @@ bool SDLVideo::NextMode (int *width, int *height)
 }
 
 
-DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primary)
+DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary)
 {
 	DCanvas *scrn = new DCanvas;
 
@@ -387,65 +388,62 @@ DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primar
 	scrn->m_Palette = NULL;
 	scrn->buffer = NULL;
 
-	SDL_Surface *s;
+	SDL_Surface* new_surface;
 
-	if(primary)
+	unsigned int rmask = 0;
+	unsigned int gmask = 0;
+	unsigned int bmask = 0;
+
+	if (bits == 32)
 	{
-	  scrn->m_Private = s = sdlScreen; // denis - let the engine write directly to screen
+		// SDL interprets each pixel as a 32-bit number, so our masks must depend
+		// on the endianness (byte order) of the machine
+		#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		rmask = 0x00ff0000;
+		gmask = 0x0000ff00;
+		bmask = 0x000000ff;
+		#else
+		rmask = 0x0000ff00;
+		gmask = 0x00ff0000;
+		bmask = 0xff000000;
+		#endif
 	}
-	else
-	{
-	  if(bits == 8)
-		 scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0, 0, 0, 0);
-	  else
-		 scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0xff0000, 0x00ff00, 0x0000ff, 0);
-	}
 
-	if(!s)
-	   I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
+	Uint32 flags = SDL_SWSURFACE;
 
-	if(s->pitch != (width * (bits / 8)) && vid_autoadjust)
-	   Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
+	new_surface = SDL_CreateRGBSurface(flags, width, height, bits, rmask, gmask, bmask, 0);
 
-	scrn->pitch = s->pitch;
+	if (!new_surface)
+		I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
 
-	if(!primary)
-	{
-	  cChain *nnode = new cChain(scrn);
-	  nnode->linkTo(chainHead);
-	}
+	if (new_surface->pitch != (width * (bits / 8)) && vid_autoadjust)
+		Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
+
+	scrn->m_Private = new_surface;
+	scrn->pitch = new_surface->pitch;
 
 	return scrn;
 }
 
 
 
-void SDLVideo::ReleaseSurface (DCanvas *scrn)
+void SDLVideo::ReleaseSurface(DCanvas *scrn)
 {
-   if(scrn->m_Private == sdlScreen) // primary stays
-      return;
+	if(scrn->m_Private == sdlScreen) // primary stays
+		return;
 
-   if(scrn->m_LockCount)
-      scrn->Unlock();
+	if (scrn->m_LockCount)
+		scrn->Unlock();
 
-   if(scrn->m_Private)
-   {
-      SDL_FreeSurface((SDL_Surface *)scrn->m_Private);
-      scrn->m_Private = NULL;
-   }
+	if (scrn->m_Private)
+	{
+		SDL_FreeSurface((SDL_Surface *)scrn->m_Private);
+		scrn->m_Private = NULL;
+	}
 
-   scrn->DetachPalette ();
+	scrn->DetachPalette ();
 
-   for(cChain *r = chainHead->next; r != chainHead; r = r->next)
-   {
-      if(r->canvas == scrn)
-      {
-         delete r;
-         break;
-      }
-   }
-
-   delete scrn;
+	delete scrn;
 }
 
 
@@ -462,7 +460,7 @@ void SDLVideo::LockSurface (DCanvas *scrn)
       scrn->m_LockCount ++;
    }
 
-   scrn->buffer = (unsigned char *)s->pixels;
+   scrn->buffer = (byte*)s->pixels;
 }
 
 

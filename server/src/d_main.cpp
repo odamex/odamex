@@ -31,11 +31,9 @@
 #include <vector>
 #include <algorithm>
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#else
-#include <sys/stat.h>
+#include "win32inc.h"
+#ifndef _WIN32
+    #include <sys/stat.h>
 #endif
 
 #ifdef UNIX
@@ -169,7 +167,7 @@ void D_DoomLoop (void)
 	{
 		try
 		{
-			SV_RunTics (); // will run at least one tic
+			D_RunTics(SV_RunTics, SV_RenderTics);
 		}
 		catch (CRecoverableError &error)
 		{
@@ -179,8 +177,8 @@ void D_DoomLoop (void)
 			// denis - drop clients
 			SV_SendDisconnectSignal();
 
-			// denis - sleep to conserve server resources (in case of recurring problem)
-			I_WaitForTic(I_GetTime() + 1000*10/TICRATE);
+			// denis - sleep 10 seconds to conserve server resources (in case of recurring problem)
+			I_Sleep(10 * 1000LL * 1000LL * 1000LL);
 
 			// denis - reload with current settings
 			G_ChangeMap ();

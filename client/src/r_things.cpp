@@ -910,12 +910,32 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 		(thing->player && thing->player->spectator))
 		return;
 
-	// transform the origin point
-	tr_x = thing->x - viewx;
-	tr_y = thing->y - viewy;
+	// [SL] interpolate the position of thing
+	fixed_t thingx, thingy, thingz;
 
-	gxt = FixedMul (tr_x,viewcos);
-	gyt = -FixedMul (tr_y,viewsin);
+	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT)
+	{
+		// the actor probably did not teleport
+		// interpolate between previous and current position
+		thingx = thing->prevx + FixedMul(render_lerp_amount, thing->x - thing->prevx);
+		thingy = thing->prevy + FixedMul(render_lerp_amount, thing->y - thing->prevy);
+		thingz = thing->prevz + FixedMul(render_lerp_amount, thing->z - thing->prevz);
+	}
+	else
+	{
+		// the actor just teleported
+		// do not interpolate
+		thingx = thing->x;
+		thingy = thing->y;
+		thingz = thing->z;
+	}
+
+	// transform the origin point
+	tr_x = thingx - viewx;
+	tr_y = thingy - viewy;
+
+	gxt = FixedMul(tr_x,viewcos);
+	gyt = -FixedMul(tr_y,viewsin);
 
 	tz = gxt-gyt;
 
@@ -923,11 +943,11 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	if (tz < MINZ)
 		return;
 
-	xscale = FixedDiv (FocalLengthX, tz);
-	yscale = FixedDiv (FocalLengthY, tz);
+	xscale = FixedDiv(FocalLengthX, tz);
+	yscale = FixedDiv(FocalLengthY, tz);
 
-	gxt = -FixedMul (tr_x, viewsin);
-	gyt = FixedMul (tr_y, viewcos);
+	gxt = -FixedMul(tr_x, viewsin);
+	gyt = FixedMul(tr_y, viewcos);
 	tx = -(gyt+gxt);
 
 	// too far off the side?
@@ -955,7 +975,7 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	if (sprframe->rotate)
 	{
 		// choose a different rotation based on player view
-		ang = R_PointToAngle (thing->x, thing->y);
+		ang = R_PointToAngle(thingx, thingy);
 		rot = (ang-thing->angle+(unsigned)(ANG45/2)*9)>>29;
 		lump = sprframe->lump[rot];
 		flip = (BOOL)sprframe->flip[rot];
@@ -985,12 +1005,12 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	if (x2 < 0 || x2 < x1)
 		return;
 
-	gzt = thing->z + sprframe->topoffset[rot];	// [RH] Moved out of spritetopoffset[]
-	gzb = thing->z;
+	gzt = thingz + sprframe->topoffset[rot];	// [RH] Moved out of spritetopoffset[]
+	gzb = thingz;
 
 	// killough 4/9/98: clip things which are out of view due to height
 // [RH] This doesn't work too well with freelook
-//	if (thing->z > viewz + FixedDiv(centeryfrac, yscale) ||
+//	if (thingz > viewz + FixedDiv(centeryfrac, yscale) ||
 //		gzt      < viewz - FixedDiv(centeryfrac-viewheight, yscale))
 //		return;
 
@@ -1033,8 +1053,8 @@ void R_ProjectSprite (AActor *thing, int fakeside)
 	vis->mobjflags = thing->flags;
 	vis->xscale = xscale;
 	vis->yscale = yscale;
-	vis->gx = thing->x;
-	vis->gy = thing->y;
+	vis->gx = thingx;
+	vis->gy = thingy;
 	vis->gz = gzb;
 	vis->gzt = gzt;		// killough 3/27/98
 	vis->texturemid = gzt - viewz;

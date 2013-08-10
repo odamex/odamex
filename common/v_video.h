@@ -38,7 +38,6 @@
 #include "r_data.h"
 
 extern int CleanXfac, CleanYfac;
-extern float RealXfac, RealYfac;
 
 extern BOOL    gotconback;
 
@@ -82,13 +81,12 @@ public:
 	int height;
 	int pitch;
 	inline bool is8bit() const { return bits == 8; };
-	inline bool isProtectedRes() const {                      // [ML] If this is 320x200 or 640x400, the resolutions
-        if ((width == 320 && height <= 200) || (width == 640 && height <= 400))    // "protected" from aspect ratio correction.
-        {
-            return true;
-        }
 
-        return false;
+	// [ML] If this is 320x200 or 640x400, the resolutions
+	// "protected" from aspect ratio correction.
+	inline bool isProtectedRes() const
+	{
+		return (width == 320 && height == 200) || (width == 640 && height == 400);
 	};
 
 	int m_LockCount;
@@ -102,8 +100,11 @@ public:
 	// Draw a linear block of pixels into the view buffer.
 	void DrawBlock (int x, int y, int width, int height, const byte *src) const;
 
-	// Reads a linear block of pixels into the view buffer.
+	// Reads a linear block of pixels from the view buffer.
 	void GetBlock (int x, int y, int width, int height, byte *dest) const;
+
+	// Reads a transposed block of pixels from the view buffer
+	void GetTransposedBlock(int x, int y, int _width, int _height, byte* dest) const;
 
 	// Darken a rectangle of th canvas
 	void Dim (int x, int y, int width, int height, const char* color, float amount) const;
@@ -154,6 +155,8 @@ public:
 	inline void DrawPatchIndirect (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
+
+	void DrawPatchFullScreen(const patch_t* patch) const;
 
 	inline void DrawLucentPatch (const patch_t *patch, int x, int y) const;
 	inline void DrawLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
@@ -492,7 +495,11 @@ int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 std::string V_GetColorStringByName (const char *name);
 
 
-BOOL V_SetResolution (int width, int height, int bpp);
+bool V_SetResolution (int width, int height, int bpp);
+
+bool V_UsePillarBox();
+bool V_UseLetterBox();
+bool V_UseWidescreen();
 
 #endif // __V_VIDEO_H__
 

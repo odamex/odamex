@@ -25,6 +25,7 @@
 #define __SDLVIDEO_H__
 
 #include <SDL.h>
+#include <list>
 #include "hardware.h"
 #include "i_video.h"
 #include "c_console.h"
@@ -32,8 +33,8 @@
 class SDLVideo : public IVideo
 {
    public:
-   SDLVideo(int parm);
-	virtual ~SDLVideo (void);
+	SDLVideo(int parm);
+	virtual ~SDLVideo (void) {};
 
 	virtual std::string GetVideoDriverName();
 
@@ -43,6 +44,10 @@ class SDLVideo : public IVideo
 	virtual bool FullscreenChanged (bool fs);
 	virtual void SetWindowedScale (float scale);
 	virtual bool SetOverscan (float scale);
+
+	virtual int GetWidth() const { return screenw; }
+	virtual int GetHeight() const { return screenh; }
+	virtual int GetBitDepth() const { return screenbits; }
 
 	virtual bool SetMode (int width, int height, int bits, bool fs);
 	virtual void SetPalette (DWORD *palette);
@@ -66,22 +71,6 @@ class SDLVideo : public IVideo
 
 
    protected:
-
-   class cChain
-   {
-      public:
-      cChain(DCanvas *dc) : canvas(dc) {next = prev = this;}
-      ~cChain() {(prev->next = next)->prev = prev;}
-
-      void linkTo(cChain *head)
-      {
-         (next = head->next)->prev = next;
-         (head->next = next)->prev = head;
-      }
-
-      DCanvas *canvas;
-      cChain *next, *prev;
-   };
 
    struct vidMode_t
    {
@@ -135,8 +124,6 @@ class SDLVideo : public IVideo
    SDL_Color newPalette[256];
    SDL_Color palette[256];
    bool palettechanged;
-
-   cChain      *chainHead;
 };
 #endif
 

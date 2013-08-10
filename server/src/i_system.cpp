@@ -30,19 +30,21 @@
 #include <stdarg.h>
 #include <math.h>
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-
-#include <conio.h>
-#include <io.h>
-#include <process.h>
-
-#ifndef NOMINMAX
-#define NOMINMAX
+#ifdef OSX
+#include <mach/clock.h>
+#include <mach/mach.h>
 #endif
-#include <windows.h>
-#include <mmsystem.h>
-#include <direct.h> // SoM: I don't know HOW this has been overlooked until now...
+
+#include "win32inc.h"
+#ifdef _WIN32
+    #include <conio.h>
+    #include <io.h>
+    #include <process.h>
+    #include <mmsystem.h>
+    #include <direct.h> // SoM: I don't know HOW this has been overlooked until now...
+	#ifndef _XBOX
+		#include <winsock2.h>
+	#endif  // !_XBOX
 #endif
 
 #ifdef UNIX
@@ -75,12 +77,9 @@
 #include "c_dispatch.h"
 #include "sv_main.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 UINT TimerPeriod;
 #endif
-
-QWORD (*I_GetTime) (void);
-QWORD (*I_WaitForTic) (QWORD);
 
 ticcmd_t emptycmd;
 ticcmd_t *I_BaseTiccmd(void)
@@ -172,106 +171,105 @@ void I_EndRead(void)
 {
 }
 
-
-#ifdef WIN32
-// denis - use this unless you want your program
-// to get confused every 49 days due to DWORD limit
-QWORD I_UnwrapTime(DWORD now32)
-{
-	static QWORD last = 0;
-	QWORD now = now32;
-	static QWORD max = std::numeric_limits<DWORD>::max();
-
-	if(now < last%max)
-		last += (max-(last%max)) + now;
-	else
-		last = now;
-
-	return last;
-}
-
-// [RH] Returns time in milliseconds
-QWORD I_MSTime (void)
-{
-	static QWORD basetime = 0;
-	QWORD now = I_UnwrapTime(timeGetTime());
-
-	if(!basetime)
-		basetime = now;
-
-	return now - basetime;
-}
-#else
-// [RH] Returns time in milliseconds
-QWORD I_MSTime (void)
-{
-	struct timeval tv;
-	struct timezone tz;
-
-	gettimeofday(&tv, &tz);
-
-	static QWORD basetime = 0;
-	static QWORD last = 0;
-	QWORD now = (QWORD)(tv.tv_sec)*1000 + (QWORD)(tv.tv_usec)/1000;
-
-	// CPhipps - believe it or not, it is possible with consecutive calls to
-	// gettimeofday to receive times out of order, e.g you query the time twice and
-	// the second time is earlier than the first. Cheap'n'cheerful fix here.
-	// NOTE: only occurs with bad kernel drivers loaded, e.g. pc speaker drv
-	if(last > now)
-		now = last;
-	else
-		last = now;
-
-	if (!basetime)
-		basetime = now;
-
-	return now;
-}
-#endif
-
 //
 // I_GetTime
-// returns time in 1/35th second tics
 //
-QWORD I_GetTimePolled (void)
+// [SL] Retrieve an arbitrarily-based time from a high-resolution timer with
+// nanosecond accuracy.
+//
+uint64_t I_GetTime()
 {
-	return (I_MSTime()*TICRATE)/1000;
+#if defined OSX
+	clock_serv_t cclock;
+	mach_timespec_t mts;
+
+	host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
+	clock_get_time(cclock, &mts);
+	mach_port_deallocate(mach_task_self(), cclock);
+	return mts.tv_sec * 1000LL * 1000LL * 1000LL + mts.tv_nsec;
+
+#elif defined UNIX
+	timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
+
+#elif defined WIN32 && !defined _XBOX
+	static bool initialized = false;
+	static uint64_t initial_count;
+	static double nanoseconds_per_count;
+
+	if (!initialized)
+	{
+		QueryPerformanceCounter((LARGE_INTEGER*)&initial_count);
+
+		uint64_t temp;
+		QueryPerformanceFrequency((LARGE_INTEGER*)&temp);
+		nanoseconds_per_count = 1000.0 * 1000.0 * 1000.0 / double(temp);
+
+		initialized = true;
+	}
+
+	uint64_t current_count;
+	QueryPerformanceCounter((LARGE_INTEGER*)&current_count);
+
+	return nanoseconds_per_count * (current_count - initial_count);
+
+#endif
 }
 
-QWORD I_WaitForTicPolled (QWORD prevtic)
+QWORD I_MSTime()
 {
-    QWORD time;
-
-    while ((time = I_GetTimePolled()) <= prevtic)I_Yield();
-
-    return time;
+	return I_GetTime() / (1000000LL);
 }
 
-void I_Yield(void)
+//
+// I_Sleep
+//
+// Sleeps for the specified number of nanoseconds, yielding control to the
+// operating system. In actuality, the highest resolution availible with
+// the select() function is 1 microsecond, but the nanosecond parameter
+// is used for consistency with I_GetTime().
+//
+void I_Sleep(uint64_t sleep_time)
 {
-	#ifdef WIN32
-	Sleep(1);
-	#else
-	usleep(1000);
-	#endif
+#if defined UNIX
+	usleep(sleep_time / 1000LL);
+
+#elif defined(WIN32) && !defined(_XBOX)
+	Sleep(sleep_time / 1000000LL);
+
+#else
+	SDL_Delay(sleep_time / 1000000LL);
+
+#endif
 }
 
-void I_WaitVBL (int count)
+
+//
+// I_Yield
+//
+// Sleeps for 1 millisecond
+//
+void I_Yield()
 {
-    // I_WaitVBL is never used to actually synchronize to the
-    // vertical blank. Instead, it's used for delay purposes.
-    #ifdef WIN32
-    Sleep (1000 * count / 70);
-    #else
-    usleep (1000000 * count / 70);
-    #endif
+	I_Sleep(1000LL * 1000LL);		// sleep for 1ms
+}
+
+//
+// I_WaitVBL
+//
+// I_WaitVBL is never used to actually synchronize to the
+// vertical blank. Instead, it's used for delay purposes.
+//
+void I_WaitVBL(int count)
+{
+	I_Sleep(1000000LL * 1000LL * count / 70);
 }
 
 //
 // SubsetLanguageIDs
 //
-#ifdef WIN32
+#ifdef _WIN32
 static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 {
 	char buf[8];
@@ -310,7 +308,7 @@ void SetLanguageIDs ()
 
 	if (langid == 0 || langid > 3)
 	{
-    #ifdef WIN32
+    #ifdef _WIN32
 		memset (LanguageIDs, 0, sizeof(LanguageIDs));
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
@@ -340,8 +338,6 @@ void SetLanguageIDs ()
 //
 void I_Init (void)
 {
-	I_GetTime = I_GetTimePolled;
-	I_WaitForTic = I_WaitForTicPolled;
 }
 
 std::string I_GetCWD()
@@ -415,7 +411,7 @@ std::string I_GetUserFileName (const char *file)
 	path += file;
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 	std::string path = I_GetBinaryDir();
 
 	if(path[path.length() - 1] != PATHSEPCHAR)
@@ -458,7 +454,7 @@ std::string I_GetBinaryDir()
 {
 	std::string ret;
 
-#ifdef WIN32
+#ifdef _WIN32
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
 	ret = tmp;
@@ -522,7 +518,7 @@ void STACK_ARGS I_Quit (void)
 {
     has_exited = 1;             /* Prevent infinitely recursive exits -- killough */
 
-    #ifdef WIN32
+    #ifdef _WIN32
     timeEndPeriod (TimerPeriod);
     #endif
 
@@ -557,7 +553,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
                 va_list argptr;
                 va_start (argptr, error);
                 index = vsprintf (errortext, error, argptr);
-                #ifdef WIN32
+                #ifdef _WIN32
                 sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
 				#endif
                 va_end (argptr);
@@ -636,7 +632,7 @@ int I_FindAttr (findstate_t *fileinfo)
 //
 // I_ConsoleInput
 //
-#ifdef WIN32
+#ifdef _WIN32
 int ShutdownNow();
 
 std::string I_ConsoleInput (void)

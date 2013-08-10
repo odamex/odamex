@@ -35,7 +35,6 @@
 
 // [RH] Stretch values for V_DrawPatchClean()
 int CleanXfac, CleanYfac;
-float RealXfac, RealYfac;
 
 EXTERN_CVAR(hud_transparency)
 
@@ -313,20 +312,10 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 	if (count <= 0)
 		return;
 
-	unsigned int *bg2rgb;
-	unsigned int fg;
-
-	{
-		unsigned int *fg2rgb;
-		fixed_t fglevel, bglevel, translevel;
-
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
-		fglevel = translevel & ~0x3ff;
-		bglevel = FRACUNIT-fglevel;
-		fg2rgb = Col2RGB8[fglevel>>10];
-		bg2rgb = Col2RGB8[bglevel>>10];
-		fg = fg2rgb[V_ColorFill];
-	}
+	fixed_t translevel = (fixed_t)(0xFFFF * hud_transparency);
+	fixed_t fglevel = translevel & ~0x3ff;
+	fixed_t bglevel = FRACUNIT - fglevel;
+	unsigned int* bg2rgb = Col2RGB8[bglevel>>10];
 
 	do
 	{
@@ -878,7 +867,8 @@ void DCanvas::DrawBlock (int x, int y, int _width, int _height, const byte *src)
 
 
 //
-// V_GetBlock
+// DCanvas::GetBlock
+//
 // Gets a linear block of pixels from the view buffer.
 //
 void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
@@ -886,13 +876,8 @@ void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
 	const byte *src;
 
 #ifdef RANGECHECK
-	if (x<0
-		||x+_width > width
-		|| y<0
-		|| y+_height>height)
-	{
+	if (x < 0 ||x + _width > width || y < 0 || y + _height > height)
 		I_Error ("Bad V_GetBlock");
-	}
 #endif
 
 	x <<= (is8bit()) ? 0 : 2;
@@ -905,6 +890,50 @@ void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
 		memcpy (dest, src, _width);
 		src += pitch;
 		dest += _width;
+	}
+}
+
+//
+// DCanvas::GetTransposedBlock
+//
+// Gets a transposed block of pixels from the view buffer.
+//
+void DCanvas::GetTransposedBlock(int x, int y, int _width, int _height, byte* destbuffer) const
+{
+#ifdef RANGECHECK
+	if (x < 0 ||x + _width > width || y < 0 || y + _height > height)
+		I_Error ("Bad V_GetTransposedBlock");
+#endif
+
+	if (is8bit())
+	{
+		byte* source = (byte*)buffer + y*pitch + x;
+		byte* dest = (byte*)destbuffer;
+
+		for (int col = x; col < x + _width; col++)
+		{
+			byte* sourceptr = source++;
+			for (int row = y; row < y + _height; row++)
+			{
+				*dest++ = *sourceptr;
+				sourceptr += pitch;
+			}
+		}
+	}
+	else
+	{
+		int* source = (int*)buffer + y*pitch + x;
+		int* dest = (int*)destbuffer;
+
+		for (int col = x; col < x + _width; col++)
+		{
+			int* sourceptr = source++;
+			for (int row = y; row < y + _height; row++)
+			{
+				*dest++ = *sourceptr;
+				sourceptr += pitch;
+			}
+		}
 	}
 }
 

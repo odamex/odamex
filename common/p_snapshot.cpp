@@ -111,6 +111,47 @@ bool ActorSnapshot::operator==(const ActorSnapshot &other) const
 			mFrame == other.mFrame;
 }
 
+void ActorSnapshot::merge(const ActorSnapshot& other)
+{
+	if (other.mFields & ACT_POSITIONX)
+		setX(other.mX);
+	if (other.mFields & ACT_POSITIONY)
+		setY(other.mY);
+	if (other.mFields & ACT_POSITIONZ)
+		setZ(other.mZ);
+	if (other.mFields & ACT_MOMENTUMX)
+		setMomX(other.mMomX);
+	if (other.mFields & ACT_MOMENTUMY)
+		setMomY(other.mMomY);
+	if (other.mFields & ACT_MOMENTUMZ)
+		setMomZ(other.mMomZ);
+	if (other.mFields & ACT_ANGLE)
+		setAngle(other.mAngle);
+	if (other.mFields & ACT_PITCH)
+		setPitch(other.mPitch);
+	if (other.mFields & ACT_ONGROUND)
+		setOnGround(other.mOnGround);
+	if (other.mFields & ACT_CEILINGZ)
+		setCeilingZ(other.mCeilingZ);
+	if (other.mFields & ACT_FLOORZ)
+		setFloorZ(other.mFloorZ);
+	if (other.mFields & ACT_REACTIONTIME)
+		setReactionTime(other.mReactionTime);
+	if (other.mFields & ACT_WATERLEVEL)
+		setWaterLevel(other.mWaterLevel);
+	if (other.mFields & ACT_FLAGS)
+		setFlags(other.mFlags);
+	if (other.mFields & ACT_FLAGS2)
+		setFlags2(other.mFlags2);
+	if (other.mFields & ACT_FRAME)
+		setFrame(other.mFrame);
+
+	if (other.isContinuous())
+		setContinuous(true);
+	if (other.isAuthoritative())
+		setAuthoritative(true);
+}
+
 void ActorSnapshot::toActor(AActor *mo) const
 {
 	if (!mo)
@@ -212,6 +253,18 @@ bool PlayerSnapshot::operator==(const PlayerSnapshot &other) const
 			mViewHeight == other.mViewHeight &&
 			mDeltaViewHeight == other.mDeltaViewHeight &&
 			mJumpTime == other.mJumpTime;
+}
+
+void PlayerSnapshot::merge(const PlayerSnapshot& other)
+{
+	mActorSnap.merge(other.mActorSnap);
+	
+	if (other.mFields & PLY_VIEWHEIGHT)
+		setViewHeight(other.mViewHeight);
+	if (other.mFields & PLY_DELTAVIEWHEIGHT)
+		setDeltaViewHeight(other.mDeltaViewHeight);
+	if (other.mFields & PLY_JUMPTIME)
+		setJumpTime(other.mJumpTime);
 }
 
 void PlayerSnapshot::toPlayer(player_t *player) const
@@ -338,7 +391,16 @@ void PlayerSnapshotManager::addSnapshot(const PlayerSnapshot &snap)
 		return;
 	}
 
-	mSnaps[time % NUM_SNAPSHOTS] = snap;
+	PlayerSnapshot& dest = mSnaps[time % NUM_SNAPSHOTS];
+	if (dest.getTime() == time)
+	{
+		// A valid snapshot for this time already exists. Merge it with this one.
+		dest.merge(snap);
+	}
+	else
+	{
+		dest = snap;
+	}
 
 	if (time > mMostRecent)
 		mMostRecent = time;

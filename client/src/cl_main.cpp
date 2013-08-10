@@ -30,6 +30,7 @@
 #include "g_game.h"
 #include "d_net.h"
 #include "p_local.h"
+#include "p_tick.h"
 #include "s_sound.h"
 #include "gi.h"
 #include "i_net.h"
@@ -177,37 +178,40 @@ int CL_GetPlayerColor(player_t *player)
 {
 	if (!player)
 		return 0;
-
-	if (sv_gametype == GM_COOP)
+	
+	if (!consoleplayer().spectator)
 	{
-		if (r_forceteamcolor && player->id != consoleplayer_id)
-			return teamcolor;
-	}
-	else if (sv_gametype == GM_DM)
-	{
-		if (r_forceenemycolor && player->id != consoleplayer_id)
-			return enemycolor;
-	}
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
-		if (r_forceteamcolor && 
-					(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
-			return teamcolor;
-		if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
-					player->id != consoleplayer_id)
-			return enemycolor;
+		if (sv_gametype == GM_COOP)
+		{
+			if (r_forceteamcolor && player->id != consoleplayer_id)
+				return teamcolor;
+		}
+		else if (sv_gametype == GM_DM)
+		{
+			if (r_forceenemycolor && player->id != consoleplayer_id)
+				return enemycolor;
+		}
+		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		{
+			if (r_forceteamcolor && 
+						(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
+				return teamcolor;
+			if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
+						player->id != consoleplayer_id)
+				return enemycolor;
 
-		// Adjust the shade of color for team games
-		int red = RPART(player->userinfo.color);
-		int green = GPART(player->userinfo.color);
-		int blue = BPART(player->userinfo.color);
+			// Adjust the shade of color for team games
+			int red = RPART(player->userinfo.color);
+			int green = GPART(player->userinfo.color);
+			int blue = BPART(player->userinfo.color);
 
-		int intensity = MAX(MAX(red, green), blue) / 3;
+			int intensity = MAX(MAX(red, green), blue) / 3;
 
-		if (player->userinfo.team == TEAM_BLUE)
-			return (0xAA + intensity);
-		if (player->userinfo.team == TEAM_RED)
-			return (0xAA + intensity) << 16;
+			if (player->userinfo.team == TEAM_BLUE)
+				return (0xAA + intensity);
+			if (player->userinfo.team == TEAM_RED)
+				return (0xAA + intensity) << 16;
+		}
 	}
 
 	return player->userinfo.color;
@@ -276,7 +280,6 @@ EXTERN_CVAR (cl_autorecord)
 EXTERN_CVAR (cl_splitnetdemos)
 EXTERN_CVAR (st_scale)
 
-void CL_RunTics (void);
 void CL_PlayerTimes (void);
 void CL_GetServerSettings(void);
 void CL_RequestDownload(std::string filename, std::string filehash = "");
@@ -294,6 +297,12 @@ void CL_SimulateWorld();
 void CalcTeamFrags (void);
 
 // some doom functions (not csDoom)
+void D_Display(void);
+void D_DoAdvanceDemo(void);
+void M_Ticker(void);
+
+void R_InterpolationTicker();
+
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
 void CL_SpawnPlayer ();
@@ -606,18 +615,121 @@ void CL_DisconnectClient(void)
 	CL_CheckDisplayPlayer();
 }
 
+extern BOOL advancedemo;
+QWORD nextstep = 0;
+int canceltics = 0;
+
+void CL_StepTics(unsigned int count)
+{
+	DObject::BeginFrame ();
+	
+	// run the realtics tics
+	while (count--)
+	{
+		if (canceltics && canceltics--)
+			continue;
+
+		NetUpdate();
+
+		if (advancedemo)
+			D_DoAdvanceDemo();
+		
+		C_Ticker ();
+		M_Ticker ();
+
+		if (P_AtInterval(TICRATE))
+			CL_PlayerTimes();
+
+		if (sv_gametype == GM_CTF)
+			CTF_RunTics ();
+
+		Maplist_Runtic();
+
+		R_InterpolationTicker();
+
+		G_Ticker ();
+		gametic++;
+		if (netdemo.isPlaying() && !netdemo.isPaused())
+			netdemo.ticker();
+	}
+	
+	DObject::EndFrame ();
+}
+
+//
+// CL_RenderTics
+//
+void CL_RenderTics()
+{
+	D_Display();
+}
+
+//
+// CL_RunTics
+//
+void CL_RunTics()
+{
+	std::string cmd = I_ConsoleInput();
+	if (cmd.length())
+		AddCommandString(cmd);
+
+	if (CON.is_open())
+	{
+		CON.clear();
+		if (!CON.eof())
+		{
+			std::getline(CON, cmd);
+			AddCommandString(cmd);
+		}
+	}
+
+	if (step_mode)
+	{
+		NetUpdate();
+
+		if (nextstep)
+		{
+			canceltics = 0;
+			CL_StepTics(nextstep);
+			nextstep = 0;
+
+			// debugging output
+			extern unsigned char prndindex;
+			if (players.size() && players[0].mo)
+				Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n",
+						level.time, prndindex, players[0].mo->x, players[0].mo->y, players[0].mo->z);
+			else
+ 				Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
+		}
+	}
+	else
+	{
+		CL_StepTics(1);
+	}
+
+	if (!connected)
+		CL_RequestConnectInfo();
+
+	// [RH] Use the consoleplayer's camera to update sounds
+	S_UpdateSounds(listenplayer().camera);	// move positional sounds
+	S_UpdateMusic();	// play another chunk of music
+
+	D_DisplayTicker();
+}
+
 /////// CONSOLE COMMANDS ///////
 
 BEGIN_COMMAND (stepmode)
 {
-    if (step_mode)
-        step_mode = false;
-    else
-        step_mode = true;
-        
-    return;
+	step_mode = !step_mode;
 }
 END_COMMAND (stepmode)
+
+BEGIN_COMMAND (step)
+{
+	nextstep = argc > 1 ? atoi(argv[1]) : 1;
+}
+END_COMMAND (step)
 
 BEGIN_COMMAND (connect)
 {
@@ -1303,8 +1415,24 @@ void CL_MoveMobj(void)
 	if (!mo)
 		return;
 
-	CL_MoveThing (mo, x, y, z);
-	mo->rndindex = rndindex;
+	if (mo->player)
+	{
+		// [SL] 2013-07-21 - Save the position information to a snapshot
+		int snaptime = last_svgametic;
+		PlayerSnapshot newsnap(snaptime);
+		newsnap.setAuthoritative(true);
+		
+		newsnap.setX(x);
+		newsnap.setY(y);
+		newsnap.setZ(z);
+		
+		mo->player->snapshots.addSnapshot(newsnap);
+	}
+	else
+	{
+		CL_MoveThing (mo, x, y, z);
+		mo->rndindex = rndindex;
+	}
 }
 
 //
@@ -1772,31 +1900,15 @@ void CL_UpdatePlayer()
 	fixed_t y = MSG_ReadLong();
 	fixed_t z = MSG_ReadLong();
 
-	angle_t angle = 0, pitch = 0;
-
-	// [SL] 2012-06-15 - Netdemo compatibility with 0.6.0 and prior
-	if (gameversion <= 60)
-	{
-		angle = MSG_ReadLong();
-	}
-	else
-	{
-		angle = MSG_ReadShort() << FRACBITS;
-		pitch = MSG_ReadShort() << FRACBITS;
-	}
+	angle_t angle = MSG_ReadShort() << FRACBITS;
+	angle_t pitch = MSG_ReadShort() << FRACBITS;
 
 	int frame = MSG_ReadByte();
 	fixed_t momx = MSG_ReadLong();
 	fixed_t momy = MSG_ReadLong();
 	fixed_t momz = MSG_ReadLong();
 
-	int invisibility = 0;
-	
-	// [SL] 2012-06-15 - Netdemo compatibility with 0.6.0 and prior
-	if (gameversion <= 60)
-		invisibility = MSG_ReadLong();
-	else
-		invisibility = MSG_ReadByte();
+	int invisibility = MSG_ReadByte();
 
 	if	(!validplayer(*p) || !p->mo)
 		return;
@@ -2278,17 +2390,34 @@ void CL_SetMobjSpeedAndAngle(void)
 	netid = MSG_ReadShort();
 	mo = P_FindThingById(netid);
 
-	if (!mo)
-	{
-		for (int i=0; i<4; i++)
-			MSG_ReadLong();
-		return;
-	}
+	angle_t angle = MSG_ReadLong();
+	fixed_t momx = MSG_ReadLong();
+	fixed_t momy = MSG_ReadLong();
+	fixed_t momz = MSG_ReadLong();
 
-	mo->angle = MSG_ReadLong();
-	mo->momx = MSG_ReadLong();
-	mo->momy = MSG_ReadLong();
-	mo->momz = MSG_ReadLong();
+	if (!mo)
+		return;
+	
+	if (mo->player)
+	{
+		// [SL] 2013-07-21 - Save the position information to a snapshot
+		int snaptime = last_svgametic;
+		PlayerSnapshot newsnap(snaptime);
+		newsnap.setAuthoritative(true);
+		
+		newsnap.setMomX(momx);
+		newsnap.setMomY(momy);
+		newsnap.setMomZ(momz);
+		
+		mo->player->snapshots.addSnapshot(newsnap);
+	}
+	else
+	{
+		mo->angle = angle; 
+		mo->momx = momx;
+		mo->momy = momy;
+		mo->momz = momz; 
+	}
 }
 
 //
@@ -3257,6 +3386,12 @@ void CL_Spectate()
 			displayplayer_id = consoleplayer_id; // get out of spynext
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
+
+		CL_RebuildAllPlayerTranslations();
+	}
+	else
+	{
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
 	}
 
 	// GhostlyDeath -- If the player matches our display player...
@@ -3501,26 +3636,6 @@ void CL_PlayerTimes (void)
 	}
 }
 
-//
-//	CL_RunTics
-//
-void CL_RunTics (void)
-{
-	static char TicCount = 0;
-
-	// Only do this once a second.
-	if ( TicCount++ >= 35 )
-	{
-		CL_PlayerTimes ();
-		TicCount = 0;
-	}
-
-	if (sv_gametype == GM_CTF)
-		CTF_RunTics ();
-
-	Maplist_Runtic();
-}
-
 void PickupMessage (AActor *toucher, const char *message)
 {
 	// Some maps have multiple items stacked on top of each other.
@@ -3755,6 +3870,14 @@ void CL_SimulatePlayers()
 			
 			if (snap.isContinuous())
 			{
+				// [SL] Save the position prior to the new update so it can be
+				// used for rendering interpolation
+				player->mo->prevx = player->mo->x;
+				player->mo->prevy = player->mo->y;
+				player->mo->prevz = player->mo->z;
+				player->mo->prevangle = player->mo->angle;
+				player->mo->prevpitch = player->mo->pitch;
+
 				PlayerSnapshot prevsnap = player->snapshots.getSnapshot(world_index - 1);
 
 				v3fixed_t offset;
@@ -3780,7 +3903,22 @@ void CL_SimulatePlayers()
 				}
 			}
 
+			int oldframe = player->mo->frame;
 			snap.toPlayer(player);
+
+			if (player->playerstate != PST_LIVE)
+				player->mo->frame = oldframe;
+
+			if (!snap.isContinuous())
+			{
+				// [SL] Save the position after to the new update so this position
+				// won't be interpolated.
+				player->mo->prevx = player->mo->x;
+				player->mo->prevy = player->mo->y;
+				player->mo->prevz = player->mo->z;
+				player->mo->prevangle = player->mo->angle;
+				player->mo->prevpitch = player->mo->pitch;
+			}
 		}
 	}
 }

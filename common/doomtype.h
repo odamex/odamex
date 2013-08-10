@@ -59,7 +59,7 @@ typedef enum {false, true} dboolean;
 
 // Predefined with some OS.
 #ifndef UNIX
-#ifndef _MSC_VER
+#ifndef _WIN32
 #ifndef GEKKO
 #include <values.h>
 #endif
@@ -140,7 +140,7 @@ typedef unsigned short		WORD;
 typedef signed short		SWORD;
 
 // denis - todo - this 64 bit fix conflicts with windows' idea of long
-#ifndef WIN32
+#ifndef _WIN32
 typedef unsigned int		DWORD;
 typedef signed int			SDWORD;
 #else

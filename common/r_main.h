@@ -61,6 +61,8 @@ extern int				validcount;
 extern int				linecount;
 extern int				loopcount;
 
+extern fixed_t			render_lerp_amount;
+
 //
 // Lighting LUT.
 // Used for z-depth cuing per column/row,

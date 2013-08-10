@@ -1,7 +1,7 @@
 #ifndef __WIN32TIME__
 #define __WIN32TIME__
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #if (defined _MSC_VER)
 #define strncasecmp _strnicmp

@@ -79,10 +79,10 @@ void NetGraph::drawWorldIndexSync(int x, int y)
 	// draw the center line
 	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
 		NetGraphDrawBar(x, centery, graphwidth, 1, 0);
-						
+
 	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
 	{
-		int index = (gametic - (NetGraph::MAX_HISTORY_TICS - i)) % MAX_HISTORY_TICS; 
+		int index = (gametic - (NetGraph::MAX_HISTORY_TICS - i)) % MAX_HISTORY_TICS;
 		int width = NetGraph::BAR_WIDTH_WORLD_INDEX;
 		int height = abs(mWorldIndexSync[index] * NetGraph::BAR_HEIGHT_WORLD_INDEX);
 		int startx = x + i * NetGraph::BAR_WIDTH_WORLD_INDEX;
@@ -97,11 +97,11 @@ void NetGraph::drawWorldIndexSync(int x, int y)
 			color = 152;
 			starty = centery - (mWorldIndexSync[index] + 1) * NetGraph::BAR_HEIGHT_WORLD_INDEX;
 		}
-		
+
 		if (height != 0)
 			NetGraphDrawBar(startx, starty, width, height, color);
 	}
-	
+
 	// draw the interpolation line
 	if (mInterpolation > 0)
 	{
@@ -115,34 +115,34 @@ void NetGraph::drawMispredictions(int x, int y)
 {
 	const int graphwidth = NetGraph::BAR_WIDTH_MISPREDICTION * NetGraph::MAX_HISTORY_TICS;
 	const int centery = y + NetGraph::BAR_HEIGHT_MISPREDICTION;
-		
+
 	// draw the center line
 	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
 		NetGraphDrawBar(x, centery, graphwidth, 1, 0);
-		
+
 	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
 	{
-		int index = (gametic - (NetGraph::MAX_HISTORY_TICS - i)) % MAX_HISTORY_TICS; 
+		int index = (gametic - (NetGraph::MAX_HISTORY_TICS - i)) % MAX_HISTORY_TICS;
 		int width = NetGraph::BAR_WIDTH_MISPREDICTION;
 		int height = NetGraph::BAR_HEIGHT_MISPREDICTION;
 		int startx = x + i * NetGraph::BAR_WIDTH_MISPREDICTION;
 		int starty = y;
-		
+
 		if (mMisprediction[index])
 			NetGraphDrawBar(startx, starty, width, height, 0xB0);
-	}	
+	}
 }
 
 void NetGraph::draw()
 {
 	static const int textcolor = CR_GREY;
 	static const int fontheight = 8;
-	
-	screen->DrawText(textcolor, mX, mY, "World Index Sync");
+
+    screen->DrawText(textcolor, mX, mY, "World Index Sync");
 	drawWorldIndexSync(mX, mY + fontheight);
-	
-	screen->DrawText(textcolor, mX, mY + 64, "Mispredictions");
-	drawMispredictions(mX, mY + 64 + fontheight); 
+
+    screen->DrawText(textcolor, mX, mY + 64, "Mispredictions");
+	drawMispredictions(mX, mY + 64 + fontheight);
 }
 
 VERSION_CONTROL (cl_netgraph_cpp, "$Id$")

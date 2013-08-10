@@ -29,15 +29,9 @@
 #include <vector>
 #include <algorithm>
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#ifdef _XBOX
-#include <xtl.h>
-#else
-#include <windows.h>
-#endif // _XBOX
-#else
-#include <sys/stat.h>
+#include "win32inc.h"
+#ifndef _WIN32
+    #include <sys/stat.h>
 #endif
 
 #ifdef UNIX
@@ -61,6 +55,7 @@
 #include "g_game.h"
 #include "p_setup.h"
 #include "r_local.h"
+#include "r_main.h"
 #include "d_main.h"
 #include "d_dehacked.h"
 #include "s_sound.h"
@@ -88,12 +83,16 @@ extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
 
 bool lastWadRebootSuccess = true;
+extern bool step_mode;
 
-#if defined(WIN32) && !defined(_XBOX)
+bool capfps = true;
+float maxfps = 35.0f;
+
+#if defined(_WIN32) && !defined(_XBOX)
 
 #define arrlen(array) (sizeof(array) / sizeof(*array))
 
-typedef struct 
+typedef struct
 {
 	HKEY root;
 	const char* path;
@@ -102,17 +101,17 @@ typedef struct
 
 static const char* uninstaller_string = "\\uninstl.exe /S ";
 
-// Keys installed by the various CD editions.  These are actually the 
+// Keys installed by the various CD editions.  These are actually the
 // commands to invoke the uninstaller and look like this:
 //
 // C:\Program Files\Path\uninstl.exe /S C:\Program Files\Path
 //
 // With some munging we can find where Doom was installed.
-static registry_value_t uninstall_values[] = 
+static registry_value_t uninstall_values[] =
 {
 	// Ultimate Doom, CD version (Depths of Doom trilogy)
 	{
-		HKEY_LOCAL_MACHINE, 
+		HKEY_LOCAL_MACHINE,
 		"Software\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Ultimate Doom for Windows 95",
 		"UninstallString",
@@ -120,7 +119,7 @@ static registry_value_t uninstall_values[] =
 
 	// Doom II, CD version (Depths of Doom trilogy)
 	{
-		HKEY_LOCAL_MACHINE, 
+		HKEY_LOCAL_MACHINE,
 		"Software\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Doom II for Windows 95",
 		"UninstallString",
@@ -128,7 +127,7 @@ static registry_value_t uninstall_values[] =
 
 	// Final Doom
 	{
-		HKEY_LOCAL_MACHINE, 
+		HKEY_LOCAL_MACHINE,
 		"Software\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Final Doom for Windows 95",
 		"UninstallString",
@@ -136,7 +135,7 @@ static registry_value_t uninstall_values[] =
 
 	// Shareware version
 	{
-		HKEY_LOCAL_MACHINE, 
+		HKEY_LOCAL_MACHINE,
 		"Software\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Doom Shareware for Windows 95",
 		"UninstallString",
@@ -152,7 +151,7 @@ static registry_value_t collectors_edition_value =
 };
 
 // Subdirectories of the above install path, where IWADs are installed.
-static const char* collectors_edition_subdirs[] = 
+static const char* collectors_edition_subdirs[] =
 {
 	"Doom2",
 	"Final Doom",
@@ -174,6 +173,7 @@ static const char* steam_install_subdirs[] =
 	"steamapps\\common\\final doom\\base",
 	"steamapps\\common\\ultimate doom\\base",
 	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
+	"steamapps\\common\\master levels of doom\\master\\wads", //Let Odamex find the Master Levels pwads too
 };
 
 
@@ -354,7 +354,7 @@ void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char 
 // [AM] Add platform-sepcific search directories
 static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 {
-	#if defined(WIN32) && !defined(_XBOX)
+	#if defined(_WIN32) && !defined(_XBOX)
 
 	const char separator = ';';
 
@@ -451,10 +451,15 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 	const char separator = ':';
 
+	#ifdef INSTALL_PREFIX
+	D_AddSearchDir(dirs, INSTALL_PREFIX "/share/odamex", separator);
+	D_AddSearchDir(dirs, INSTALL_PREFIX "/share/games/odamex", separator);
+	#endif
+
 	D_AddSearchDir(dirs, "/usr/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/doom", separator);
-    
+
 	#endif
 }
 
@@ -464,7 +469,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 //
 static std::string BaseFileSearch(std::string file, std::string ext = "", std::string hash = "")
 {
-	#ifdef WIN32
+	#ifdef _WIN32
 		// absolute path?
 		if(file.find(':') != std::string::npos)
 			return file;
@@ -847,7 +852,7 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &newpatchfiles)
                         M_ExtractFileName(f, Filename);
                         patchfiles.push_back(Filename);
                     }
-  
+
 					if (!strncmp(files.GetArg(i),"chex.deh", 8))
 						chexLoaded = true;
 
@@ -912,7 +917,7 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 		newname = newname.substr(slash + 1, newname.length() - slash);
 
 	std::transform(newname.begin(), newname.end(), newname.begin(), toupper);
-	
+
 	return newname;
 }
 
@@ -938,7 +943,7 @@ static bool VerifyFile(
 	full_filename = BaseFileSearch(base_filename, "." + ext);
 	if (full_filename.empty())
 		return false;
-	
+
 	// if it's an IWAD, check if we have a valid alternative hash
 	std::string found_hash = W_MD5(full_filename);
 	if (W_IsIWAD(base_filename, found_hash))
@@ -1111,5 +1116,91 @@ void D_AddCmdParameterFiles(void)
 	}
 }
 
+
+//
+// D_RunTics
+//
+// The core of the main game loop.
+// This loop allows the game logic timing to be decoupled from the renderer
+// timing. If the the user selects a capped framerate and isn't using the
+// -timedemo parameter, both the logic and render functions will be called
+// TICRATE times a second. If the framerate is uncapped, the logic function
+// will still be called TICRATE times a second but the render function will
+// be called as often as possible. After each iteration through the loop,
+// the program yields briefly to the operating system.
+//
+void D_RunTics(void (*logic_func)(), void(*render_func)())
+{
+	static const uint64_t logic_dt = 1000LL * 1000LL * 1000LL / TICRATE;
+
+	static uint64_t previous_time = I_GetTime();
+	static uint64_t accumulator = logic_dt;
+
+	// should the physics run at 35Hz?
+	const bool fixed_logic_ticrate = !timingdemo;
+	// should the renderer run at vid_maxfs (35Hz by default)?
+	const bool fixed_render_ticrate = !timingdemo && capfps;
+
+	uint64_t current_time = I_GetTime();
+	uint64_t frame_time = current_time - previous_time;
+	previous_time = current_time;
+
+	// prevent trying to run too many logic frames when we're already behind
+	frame_time = MIN(frame_time, 4 * logic_dt);
+
+	accumulator += frame_time;
+
+	if (fixed_logic_ticrate)
+	{
+		while (accumulator >= logic_dt)
+		{
+			logic_func();
+			accumulator -= logic_dt;
+		}
+	}
+	else
+	{
+		logic_func();
+	}
+
+	// [SL] use linear interpolation for rendering entities if the renderer
+	// framerate is not synced with the physics frequency
+	if (fixed_render_ticrate && maxfps == TICRATE)
+		render_lerp_amount = FRACUNIT;
+	else
+		render_lerp_amount = clamp((fixed_t)(accumulator * FRACUNIT / logic_dt), 0, FRACUNIT);
+
+	// disable interpolation while paused since the physics aren't updated while paused
+	if (paused || menuactive || step_mode)
+		render_lerp_amount = FRACUNIT;
+
+	render_func();
+
+	static float previous_maxfps = -1;
+
+	if (fixed_render_ticrate)
+	{
+		static uint64_t previous_block, current_block;
+		uint64_t render_dt = 1000LL * 1000LL * 1000LL / maxfps;
+
+		if (maxfps != previous_maxfps)
+			previous_block = current_time / render_dt;
+
+		// with fixed_render_ticrate, frames are rendered within fixed blocks of time
+		// and at the end of a frame, sleep until the start of the next block
+		do
+			I_Yield();
+		while ( (current_block = I_GetTime() / render_dt) <= previous_block);
+
+		previous_block = current_block;
+		previous_maxfps = maxfps;
+	}
+	else if (!timingdemo)
+	{
+		// sleep for 1ms to allow the operating system some time
+		I_Yield();
+		previous_maxfps = -1;
+	}
+}
 
 VERSION_CONTROL (d_main_cpp, "$Id: d_main.cpp 3426 2012-11-19 17:25:28Z dr_sean $")

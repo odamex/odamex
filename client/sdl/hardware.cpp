@@ -44,6 +44,7 @@
 #include "i_sdlvideo.h"
 #include "m_fileio.h"
 #include "g_game.h"
+#include "i_input.h"
 
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
@@ -57,7 +58,7 @@ static IVideo *Video;
 //static IMouse *Mouse;
 //static IJoystick *Joystick;
 
-EXTERN_CVAR (vid_fps)
+EXTERN_CVAR (vid_displayfps)
 EXTERN_CVAR (vid_ticker)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_overscan)
@@ -71,9 +72,9 @@ CVAR_FUNC_IMPL (vid_winscale)
 	else if (Video)
 	{
 		Video->SetWindowedScale (var);
-		NewWidth = screen->width;
-		NewHeight = screen->height;
-		NewBits = DisplayBits;
+		NewWidth = I_GetVideoWidth();
+		NewHeight = I_GetVideoHeight(); 
+		NewBits = I_GetVideoBitDepth(); 
 		setmodeneeded = true;
 	}
 }
@@ -124,6 +125,38 @@ bool I_HardwareInitialized()
 
 // VIDEO WRAPPERS ---------------------------------------------------------
 
+void I_DrawFPS()
+{
+	static unsigned int last_time = I_MSTime();
+	static unsigned int time_accum = 0;
+	static unsigned int frame_count = 0;
+
+	unsigned int current_time = I_MSTime();
+	unsigned int delta_time = current_time - last_time;
+	last_time = current_time;
+	frame_count++;
+
+	if (delta_time > 0)
+	{
+		static double last_fps = 0.0;
+		static char fpsbuff[40];
+
+		int chars = sprintf(fpsbuff, "%3u ms (%.2f fps)", delta_time, last_fps);
+		screen->Clear(0, screen->height - 8, chars * 8, screen->height, 0);
+		screen->PrintStr(0, screen->height - 8, fpsbuff, chars);
+
+		time_accum += delta_time;
+
+		// calculate last_fps every 1000ms
+		if (time_accum > 1000)
+		{
+			last_fps = double(1000 * frame_count) / time_accum;
+			time_accum = 0;
+			frame_count = 0;
+		}
+	}
+}
+
 void I_BeginUpdate ()
 {
 	screen->Lock ();
@@ -137,42 +170,14 @@ void I_FinishUpdateNoBlit ()
 void I_FinishUpdate ()
 {
 	// Draws frame time and cumulative fps
-	if (vid_fps)
-	{
-		static DWORD lastms = 0, lastsec = 0;
-		static int framecount = 0, lastcount = 0;
-		char fpsbuff[40];
-		int chars;
-
-		QWORD ms = I_MSTime ();
-		QWORD howlong = ms - lastms;
-		if (howlong > 0)
-		{
-			#ifdef WIN32
-			chars = sprintf (fpsbuff, "%I64d ms (%d fps)",
-				howlong, lastcount);
-			#else
-			chars = sprintf (fpsbuff, "%lld ms (%d fps)",
-				howlong, lastcount);
-            #endif
-			screen->Clear (0, screen->height - 8, chars * 8, screen->height, 0);
-			screen->PrintStr (0, screen->height - 8, (char *)&fpsbuff[0], chars);
-			if (lastsec < ms / 1000)
-			{
-				lastcount = framecount / (ms/1000 - lastsec);
-				lastsec = ms / 1000;
-				framecount = 0;
-			}
-			framecount++;
-		}
-		lastms = ms;
-	}
+	if (vid_displayfps)
+		I_DrawFPS();
 
     // draws little dots on the bottom of the screen
     if (vid_ticker)
     {
 		static QWORD lasttic = 0;
-		QWORD i = I_GetTime();
+		QWORD i = I_MSTime() * TICRATE / 1000;
 		QWORD tics = i - lasttic;
 		lasttic = i;
 		if (tics > 20) tics = 20;
@@ -183,7 +188,9 @@ void I_FinishUpdate ()
 			screen->buffer[(screen->height-1)*screen->pitch + i] = 0x0;
     }
 
-	Video->UpdateScreen (screen);
+	if (noblit == false)
+		Video->UpdateScreen(screen);
+
 	screen->Unlock(); // SoM: we should probably do this, eh?
 }
 
@@ -323,6 +330,30 @@ EDisplayType I_DisplayType ()
 bool I_SetOverscan (float scale)
 {
 	return Video->SetOverscan (scale);
+}
+
+int I_GetVideoWidth()
+{
+	if (Video)
+		return Video->GetWidth();
+	else
+		return 0;
+}
+
+int I_GetVideoHeight()
+{
+	if (Video)
+		return Video->GetHeight();
+	else
+		return 0;
+}
+
+int I_GetVideoBitDepth()
+{
+	if (Video)
+		return Video->GetBitDepth();
+	else
+		return 0;
 }
 
 void I_SetMode (int &width, int &height, int &bits)
@@ -575,6 +606,10 @@ void IVideo::SetWindowedScale (float scale) {}
 bool IVideo::CanBlit () { return true; }
 
 bool IVideo::SetOverscan (float scale) { return true; }
+
+int IVideo::GetWidth() const { return 0; }
+int IVideo::GetHeight() const { return 0; }
+int IVideo::GetBitDepth() const { return 0; }
 
 bool IVideo::SetMode (int width, int height, int bits, bool fs) { return true; }
 void IVideo::SetPalette (DWORD *palette) {}

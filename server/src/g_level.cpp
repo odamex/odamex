@@ -84,14 +84,13 @@ EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
-
-extern int timingdemo;
+EXTERN_CVAR (sv_timelimit)
 
 extern int mapchange;
 extern int shotclock;
 
 // Start time for timing demos
-int starttime;
+uint64_t starttime;
 
 // ACS variables with world scope
 int ACS_WorldVars[NUM_WORLDVARS];
@@ -649,6 +648,12 @@ void G_DoResetLevel(bool full_reset)
 		// For predictable first spawns.
 		M_ClearRandom();
 	}
+
+	// [SL] always reset the time (for now at least)
+	level.time = 0;
+	level.timeleft = sv_timelimit * TICRATE * 60;
+	level.inttimeleft = mapchange / TICRATE;
+
 	// Send information about the newly reset map.
 	for (it = players.begin();it != players.end();++it)
 	{
@@ -832,16 +837,18 @@ void G_DoLoadLevel (int position)
 	mousex = mousey = 0;
 	sendpause = sendsave = paused = sendcenterview = false;
 
-	if (timingdemo) {
+	if (timingdemo)
+	{
 		static BOOL firstTime = true;
 
-		if (firstTime) {
-			starttime = I_GetTimePolled ();
+		if (firstTime)
+		{
+			starttime = I_MSTime();
 			firstTime = false;
 		}
 	}
 
-	level.starttime = I_GetTime ();
+	level.starttime = I_MSTime() * TICRATE / 1000;
 	// [RH] Restore the state of the level.
 	G_UnSnapshotLevel (!savegamerestore);
 	// [RH] Do script actions that were triggered on another map.

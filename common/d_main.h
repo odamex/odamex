@@ -55,7 +55,7 @@ void D_PageTicker(void);
 void D_PageDrawer(void);
 void D_AdvanceDemo(void);
 void D_StartTitle(void);
-
+void D_DisplayTicker(void);
 
 // [RH] Set this to something to draw an icon during the next screen refresh.
 extern const char *D_DrawIcon;
@@ -69,6 +69,10 @@ void D_AddCmdParameterFiles(void);
 extern std::vector<std::string> wadfiles, wadhashes;
 extern std::vector<std::string> patchfiles, patchhashes;
 extern std::vector<std::string> missingfiles, missinghashes;
+
+extern bool capfps;
+extern float maxfps;
+void D_RunTics(void (*logic_func)(), void (*render_func)());
 
 #endif
 

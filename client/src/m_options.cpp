@@ -56,6 +56,7 @@
 #include "m_argv.h"
 #include "m_swap.h"
 #include "m_memio.h"
+#include "v_gamma.h"
 
 #include "s_sound.h"
 #include "i_musicsystem.h"
@@ -106,7 +107,6 @@ EXTERN_CVAR (hud_timer)
 EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_revealsecrets)
-EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_boomlinecheck)
@@ -123,6 +123,7 @@ EXTERN_CVAR (co_blockmapfix)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
+EXTERN_CVAR (mouse_driver)
 EXTERN_CVAR (mouse_type)
 EXTERN_CVAR (mouse_sensitivity)
 EXTERN_CVAR (m_pitch)
@@ -222,6 +223,7 @@ static value_t DoomOrOdamex[2] =
 
 menu_t  *CurrentMenu;
 int		CurrentItem;
+bool configuring_controls = false;
 static BOOL	WaitingForKey;
 static BOOL	WaitingForAxis;
 static const char	   *OldContMessage;
@@ -384,6 +386,8 @@ menu_t ControlsMenu = {
 //
 // -------------------------------------------------------
 
+static value_t MouseDrivers[NUM_MOUSE_DRIVERS];
+
 static value_t MouseType[] = {
 	{ MOUSE_DOOM,		"Doom"},
 	{ MOUSE_ZDOOM_DI,	"ZDoom"}
@@ -394,7 +398,8 @@ void M_ResetMouseValues();
 
 static menuitem_t MouseItems[] =
 {
-	{ discrete,	"Mouse Type"					, {&mouse_type},		{2.0},	{0.0},		{0.0},		{MouseType}},
+	{ discrete, "Mouse Driver"					, {&mouse_driver},		{0.0},	{0.0},		{0.0},		{MouseDrivers}},
+	{ discrete,	"Mouse Config Type"				, {&mouse_type},		{2.0},	{0.0},		{0.0},		{MouseType}},
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ slider,	"Overall Sensitivity" 			, {&mouse_sensitivity},	{0.0},	{77.0},		{1.0},		{NULL}},
 	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.0},	{1.0},		{0.025},	{NULL}},
@@ -422,9 +427,10 @@ static void M_UpdateMouseOptions()
 	const static size_t mouse_pitch_index = M_FindCvarInMenu(m_pitch, MouseItems, menu_length); 
 	const static size_t mouse_accel_index = M_FindCvarInMenu(mouse_acceleration, MouseItems, menu_length);
 	const static size_t mouse_thresh_index = M_FindCvarInMenu(mouse_threshold, MouseItems, menu_length);
+	const static size_t mouse_driver_index = M_FindCvarInMenu(mouse_driver, MouseItems, menu_length);
 
 	static menuitem_t doom_sens_menuitem = MouseItems[mouse_sens_index];
-	static menuitem_t doom_pitch_menuitem =	MouseItems[mouse_pitch_index];
+	static menuitem_t doom_pitch_menuitem = MouseItems[mouse_pitch_index];
 	static menuitem_t doom_accel_menuitem = MouseItems[mouse_accel_index];
 	static menuitem_t doom_thresh_menuitem = MouseItems[mouse_thresh_index];
 
@@ -458,6 +464,26 @@ static void M_UpdateMouseOptions()
 			memcpy(&MouseItems[mouse_accel_index], &doom_accel_menuitem, sizeof(menuitem_t));
 		if (mouse_thresh_index < menu_length)
 			memcpy(&MouseItems[mouse_thresh_index], &doom_thresh_menuitem, sizeof(menuitem_t));
+	}
+
+	// refresh the list of availible mouse drivers
+	if (mouse_driver_index < menu_length)
+	{
+		// check each potential driver's availibility
+		int num_avail_drivers = 0;
+		for (int i = 0; i < NUM_MOUSE_DRIVERS; i++)
+		{
+			if (MouseDriverInfo[i].avail_test() == true)
+			{			
+				// update the menu with the pair of {value,name} for this driver
+				MouseDrivers[num_avail_drivers].value = float(MouseDriverInfo[i].id);
+				MouseDrivers[num_avail_drivers].name = MouseDriverInfo[i].name; 
+				num_avail_drivers++;
+			}
+		}
+
+		// update the number of driver options in the menu
+		MouseItems[mouse_driver_index].b.leftval = (float)num_avail_drivers;
 	}
 
 	G_ConvertMouseSettings(previous_mouse_type, mouse_type);
@@ -551,7 +577,7 @@ static value_t VoxType[] = {
 	{ 2.0,			"Possessive" }
 };
 
-static int num_mussys = STACKARRAY_LENGTH(MusSys);
+static float num_mussys = static_cast<float>(STACKARRAY_LENGTH(MusSys));
 
 static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
@@ -728,13 +754,13 @@ EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showtime)
 EXTERN_CVAR (am_classicmapstring)
 EXTERN_CVAR (am_usecustomcolors)
-EXTERN_CVAR (r_widescreen)
 EXTERN_CVAR (st_scale)
 EXTERN_CVAR (r_stretchsky)
 EXTERN_CVAR (r_skypalette)
 EXTERN_CVAR (r_wipetype)
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (ui_dimamount)
+EXTERN_CVAR (r_loadicon)
 EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
@@ -826,7 +852,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
 	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Crosshair health",			{&hud_crosshairhealth},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Multiplayer Intermissions",{&wi_newintermission}, {2.0}, {0.0},	{0.0},  {DoomOrOdamex} },	
+	{ discrete, "Multiplayer Intermissions",{&wi_newintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },	
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,   "UI Background Red",        {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Background Green",      {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
@@ -836,8 +862,20 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
+	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
     { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
 };
+
+static void M_UpdateDisplayOptions()
+{
+	const static size_t menu_length = STACKARRAY_LENGTH(VideoItems);
+	const static size_t gamma_index = M_FindCvarInMenu(gammalevel, VideoItems, menu_length); 
+
+	// update the parameters for gammalevel based on vid_gammatype (doom or zdoom gamma)
+	VideoItems[gamma_index].b.leftval = gammastrat->min();
+	VideoItems[gamma_index].c.rightval = gammastrat->max();
+	VideoItems[gamma_index].d.step = gammastrat->increment(gammastrat->min()) - gammastrat->min();
+}
 
 menu_t VideoMenu = {
 	"M_VIDEO",
@@ -847,7 +885,7 @@ menu_t VideoMenu = {
 	VideoItems,
 	3,
 	0,
-	NULL
+	&M_UpdateDisplayOptions
 };
 
 /*=======================================
@@ -980,6 +1018,8 @@ static void SetModesMenu (int w, int h, int bits);
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
+EXTERN_CVAR (vid_widescreen)
+EXTERN_CVAR (vid_maxfps)
 
 static cvar_t DummyDepthCvar (NULL, NULL, "", CVARTYPE_NONE, 0);
 
@@ -1003,23 +1043,24 @@ static value_t DetailModes[] = {
 	{ 3.0, "Double Horiz & Vert" }
 };
 
-static value_t Widescreen[] =
-{
-	{ 0.0, "Stretch" },
-	{ 1.0, "Zoom" },
-	{ 2.0, "Wide or Stretch" },
-	{ 3.0, "Wide or Zoom" }
+static value_t VidFPSCaps[] = {
+	{ 35.0,		"35fps" },
+	{ 60.0,		"60fps" },
+	{ 70.0,		"70fps" },
+	{ 120.0,	"120fps" },
+	{ 0.0,		"Unlimited" }
 };
 
 static menuitem_t ModesItems[] = {
 //	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
-	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
 #ifdef _XBOX
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
 #endif
-	{ discrete,	"Widescreen",			{&r_widescreen},		{4.0}, {0.0},	{0.0},  {Widescreen}} ,
+	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
+	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
+	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1038,13 +1079,13 @@ static menuitem_t ModesItems[] = {
 };
 
 #define VM_DEPTHITEM	0
-#define VM_RESSTART		4
-#define VM_ENTERLINE	14
-#define VM_TESTLINE		16
+#define VM_RESSTART		5
+#define VM_ENTERLINE	15
+#define VM_TESTLINE		17
 
 menu_t ModesMenu = {
 	"M_VIDMOD",
-	4,
+	0,
 	STACKARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,
@@ -1198,9 +1239,6 @@ void M_SwitchMenu (menu_t *menu)
 	CanScrollDown = false;
 	CurrentMenu = menu;
 	CurrentItem = menu->lastOn;
-
-	if (menu == &ControlsMenu)
-		I_ResumeMouse ();
 
 	if (!menu->indent)
 	{
@@ -1477,7 +1515,7 @@ void M_OptResponder (event_t *ev)
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
 	{
-		if(ev->type == ev_keydown)
+		if (ev->type == ev_keydown)
 		{
 #ifdef _XBOX
 			if (ch != KEY_ESCAPE && ch != KEY_JOY9)
@@ -1488,6 +1526,8 @@ void M_OptResponder (event_t *ev)
 				C_ChangeBinding (item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
 			}
+
+			configuring_controls = false;
 			WaitingForKey = false;
 			CurrentMenu->items[0].label = OldContMessage;
 			CurrentMenu->items[0].type = OldContType;
@@ -1727,7 +1767,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList (screen->width, screen->height, DisplayBits);
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -1811,7 +1851,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList (screen->width, screen->height, DisplayBits);
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -1880,8 +1920,8 @@ void M_OptResponder (event_t *ev)
 			{
 				if (!(item->type == screenres && GetSelectedSize (CurrentItem, &NewWidth, &NewHeight)))
 				{
-					NewWidth = screen->width;
-					NewHeight = screen->height;
+					NewWidth = I_GetVideoWidth();
+					NewHeight = I_GetVideoHeight();
 				}
 				NewBits = BitTranslate[(int)DummyDepthCvar];
 				setmodeneeded = true;
@@ -1911,12 +1951,13 @@ void M_OptResponder (event_t *ev)
 
 				// Hack hack. Rebuild list of resolutions
 				if (item->e.values == Depths)
-					BuildModesList (screen->width, screen->height, DisplayBits);
+					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 
 				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
 			else if (item->type == control)
 			{
+				configuring_controls = true;
 				WaitingForKey = true;
 				OldContMessage = CurrentMenu->items[0].label;
 				OldContType = CurrentMenu->items[0].type;
@@ -1961,17 +2002,17 @@ void M_OptResponder (event_t *ev)
 					if (!(item->type == screenres &&
 						GetSelectedSize (CurrentItem, &NewWidth, &NewHeight)))
 					{
-						NewWidth = screen->width;
-						NewHeight = screen->height;
+						NewWidth = I_GetVideoWidth();
+						NewHeight = I_GetVideoHeight();
 					}
-					OldWidth = screen->width;
-					OldHeight = screen->height;
+					OldWidth = I_GetVideoWidth();
+					OldHeight = I_GetVideoHeight();
 					OldBits = DisplayBits;
 					NewBits = BitTranslate[(int)DummyDepthCvar];
 					setmodeneeded = true;
-					testingmode = I_GetTime() + 5 * TICRATE;
+					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
 					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-					SetModesMenu (NewWidth, NewHeight, NewBits);
+					SetModesMenu(NewWidth, NewHeight, NewBits);
 				}
 			}
 			break;
@@ -2141,7 +2182,7 @@ static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
 
 void M_RefreshModesList ()
 {
-	BuildModesList (screen->width, screen->height, DisplayBits);
+	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 }
 
 static BOOL GetSelectedSize (int line, int *width, int *height)
@@ -2228,7 +2269,7 @@ void M_RestoreMode (void)
 
 static void SetVidMode (void)
 {
-	SetModesMenu (screen->width, screen->height, DisplayBits);
+	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
 	if (ModesMenu.items[ModesMenu.lastOn].type == screenres)
 	{
 		if (ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)

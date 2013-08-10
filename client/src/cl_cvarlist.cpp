@@ -24,6 +24,7 @@
 #include "c_cvars.h"
 #include "s_sound.h"
 #include "i_music.h"
+#include "i_input.h"
 #include "d_netinf.h"
 
 // Automap
@@ -79,7 +80,7 @@ CVAR_FUNC_DECL (msg0color, "6", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABL
 CVAR_FUNC_DECL (msg1color, "5", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (msg2color, "2", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (msg3color, "3", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_FUNC_DECL (msg4color, "3", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (msg4color, "8", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (msgmidcolor, "5", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Intermission
@@ -183,7 +184,30 @@ CVAR (cl_run,		"0", "Always run",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// Always run? /
 
 // Mouse settings
 // --------------
-CVAR (mouse_type,			"0", 	"",	CVARTYPE_BYTE,	CVAR_ARCHIVE)
+
+//
+// C_GetDefaultMouseDriver()
+//
+// Allows the default value for music_driver to change depending on
+// compile-time factors (eg, OS)
+//
+static char *C_GetDefaultMouseDriver()
+{
+	static char str[4];
+
+	int driver_id = SDL_MOUSE_DRIVER;
+
+	#ifdef _WIN32
+	driver_id = RAW_WIN32_MOUSE_DRIVER;
+	#endif
+
+	sprintf(str, "%i", driver_id);
+	return str;
+}
+
+CVAR_FUNC_DECL (mouse_driver, C_GetDefaultMouseDriver(), "Mouse driver backend",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (mouse_type,			"0", 	"",	CVARTYPE_BYTE,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_sensitivity,	"35.0", "",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL (cl_mouselook, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
@@ -288,7 +312,7 @@ static char *C_GetDefaultMusicSystem()
 	defaultmusicsystem = MS_AUDIOUNIT;
 	#endif
 
-	#if defined WIN32 && !defined _XBOX
+	#if defined _WIN32 && !defined _XBOX
 	defaultmusicsystem = MS_PORTMIDI;
 	#endif
 
@@ -322,6 +346,8 @@ CVAR_FUNC_DECL (hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",	C
 CVAR (r_columnmethod, "1", "Column optimization method",	CVARTYPE_BYTE, CVAR_ARCHIVE)
 // Detail level (affects performance)
 CVAR_FUNC_DECL (r_detail, "0", "Detail level (affects performance)",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Draws flashing colors where there is HOM
+CVAR (r_flashhom, "0", "Draws flashing colors where there is HOM", CVARTYPE_BOOL, 0)
 // Disables all texturing of walls
 CVAR (r_drawflat, "0", "Disables all texturing of walls",	CVARTYPE_BOOL, 0)
 // Draw player sprites
@@ -345,6 +371,7 @@ CVAR (r_wipetype, "2", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (r_wipetype, "1", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
 CVAR (r_showendoom, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
+CVAR (r_loadicon, "1", "Display the disk icon when loading data from disk", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 // [ML] Value of red pain intensity shift
 CVAR_FUNC_DECL (r_painintensity, "1", "Value of red pain intensity shift",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -356,10 +383,16 @@ CVAR (vid_defwidth, "640", "",	CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABL
 CVAR (vid_defheight, "480", "",	CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Default bitdepth
 CVAR (vid_defbits, "8", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Use wide field-of-view with widescreen video modes.
+CVAR_FUNC_DECL (vid_widescreen, "0", "Use wide field-of-view with widescreen video modes.", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Force video mode
 CVAR (vid_autoadjust, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-// Frames per second counter
-CVAR (vid_fps, "0", "",	CVARTYPE_BOOL, 0)
+// Frames per second on screen display
+CVAR (vid_displayfps, "0", "",	CVARTYPE_BOOL, 0)
+// maximum fps with 0 indicating completely uncapped fps
+CVAR_FUNC_DECL (vid_maxfps, "35", "Maximum framerate (0 indicates unlimited framerate)", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// enable/disable vertical refresh sync (vsync)
+CVAR_FUNC_DECL(vid_vsync, "0", "Enable/Disable vertical refresh sync (vsync)", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Fullscreen mode
 #ifdef GCONSOLE
 	CVAR_FUNC_DECL (vid_fullscreen, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
@@ -368,9 +401,6 @@ CVAR (vid_fps, "0", "",	CVARTYPE_BOOL, 0)
 #endif
 // TODO: document
 CVAR_FUNC_DECL (screenblocks, "10", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// How to handle widescreen resolutions
-CVAR_FUNC_DECL (r_widescreen, "3", "Determine how widescreen video modes are handled.\n// 0: Stretched to fit.\n// 1: Zoomed-in field of view.\n// 2: Widened field-of-view (true widescreen) with a stretched fallback.\n// 3: Widened field-of-view (true widescreen) with a zoomed fallback.",
-                CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Older (Doom-style) FPS counter
 CVAR (vid_ticker, "0", "",	CVARTYPE_BOOL, 0)
 // Resizes the window by a scale factor

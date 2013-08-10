@@ -32,6 +32,9 @@
 // [RH] True if the display is not in a window
 extern BOOL Fullscreen;
 
+int I_GetVideoWidth();
+int I_GetVideoHeight();
+int I_GetVideoBitDepth();
 
 // [RH] Set the display mode
 void I_SetMode (int &width, int &height, int &bits);

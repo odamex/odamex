@@ -21,12 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
-
+#include "win32inc.h"
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <winsock.h>
-#include <time.h>
+    #include <winsock.h>
+    #include <time.h>
 #endif
 
 #ifdef UNIX
@@ -227,14 +225,18 @@ EXTERN_CVAR (sv_friendlyfire)
 // Private server settings
 CVAR_FUNC_IMPL (join_password)
 {
-	if(strlen(var.cstring()))
+	if (strlen(var.cstring()))
 		Printf(PRINT_HIGH, "join password set");
+	else
+		Printf(PRINT_HIGH, "join password cleared");
 }
 
 CVAR_FUNC_IMPL (spectate_password)
 {
-	if(strlen(var.cstring()))
+	if (strlen(var.cstring()))
 		Printf(PRINT_HIGH, "spectate password set");
+	else
+		Printf(PRINT_HIGH, "spectate password cleared");
 }
 
 CVAR_FUNC_IMPL (rcon_password) // Remote console password.
@@ -299,8 +301,6 @@ client_c clients;
 
 
 #define CLIENT_TIMEOUT 65 // 65 seconds
-
-QWORD gametime;
 
 void SV_UpdateConsolePlayer(player_t &player);
 
@@ -480,8 +480,6 @@ void SV_InitNetwork (void)
 	}
 
 	step_mode = Args.CheckParm ("-stepmode");
-
-	gametime = I_GetTime ();
 
 	// Nes - Connect with the master servers. (If valid)
 	SV_InitMasters();
@@ -910,7 +908,7 @@ void SV_SetupUserInfo (player_t &player)
 	int				color = MSG_ReadLong();
 	std::string		skin(MSG_ReadString());
 
-	int				aimdist = MSG_ReadLong();
+	fixed_t			aimdist = MSG_ReadLong();
 	bool			unlag = MSG_ReadBool();
 	bool			predict_weapons = MSG_ReadBool();
 	byte			update_rate = MSG_ReadByte();
@@ -933,8 +931,8 @@ void SV_SetupUserInfo (player_t &player)
 
 	if (aimdist < 0)
 		aimdist = 0;
-	if (aimdist > 5000)
-		aimdist = 5000;
+	if (aimdist > (fixed_t)(5000 * 16384))
+		aimdist = (fixed_t)(5000 * 16384);
 
 	if (update_rate < 1)
 		update_rate = 1;
@@ -2250,7 +2248,7 @@ void SV_SendLoadMap(const std::vector<std::string> &wadnames,
 	buf_t *buf = &(player->client.reliablebuf);
 	MSG_WriteMarker(buf, svc_loadmap);
 
-	// send list of wads (skip over wadnames[0] == odamex.wad)	
+	// send list of wads (skip over wadnames[0] == odamex.wad)
 	MSG_WriteByte(buf, MIN<size_t>(wadnames.size() - 1, 255));
 	for (size_t i = 1; i < MIN<size_t>(wadnames.size(), 256); i++)
 	{
@@ -2649,7 +2647,7 @@ void SVC_TeamSay(player_t &player, const char* message)
 			continue;
 
 		// Player needs to be on the same team
-		if (!it->userinfo.team == player.userinfo.team)
+		if (!it->userinfo.team == player.userinfo.team || it->spectator)
 			continue;
 
 		MSG_WriteMarker(&(it->client.reliablebuf), svc_say);
@@ -2719,7 +2717,7 @@ void SVC_Say(player_t &player, const char* message)
 
 /**
  * Send a message to a specific player from a specific other player.
- * 
+ *
  * @param player  Sending player.
  * @param dplayer Player to send to.
  * @param message Message to send.
@@ -2762,7 +2760,7 @@ void SV_Say(player_t &player)
 	// Flood protection
 	if (player.LastMessage.Time)
 	{
-		QWORD Difference = (I_GetTime() - player.LastMessage.Time);
+		QWORD Difference = (I_MSTime() * TICRATE / 1000 - player.LastMessage.Time);
 
 		float Delay = (float)(sv_flooddelay * TICRATE);
 
@@ -2774,7 +2772,7 @@ void SV_Say(player_t &player)
 
 	if (!player.LastMessage.Time)
 	{
-		player.LastMessage.Time = I_GetTime();
+		player.LastMessage.Time = I_MSTime() * TICRATE / 1000;
 		player.LastMessage.Message = s;
 	}
 
@@ -2822,7 +2820,7 @@ void SV_PrivMsg(player_t &player)
 	// Flood protection
 	if (player.LastMessage.Time)
 	{
-		QWORD Difference = (I_GetTime() - player.LastMessage.Time);
+		QWORD Difference = (I_MSTime() * TICRATE / 1000 - player.LastMessage.Time);
 		float Delay = (float)(sv_flooddelay * TICRATE);
 
 		if (Difference <= Delay)
@@ -2833,7 +2831,7 @@ void SV_PrivMsg(player_t &player)
 
 	if (!player.LastMessage.Time)
 	{
-		player.LastMessage.Time = I_GetTime();
+		player.LastMessage.Time = I_MSTime() * TICRATE / 1000;
 		player.LastMessage.Message = s;
 	}
 
@@ -4487,12 +4485,12 @@ void SV_PlayerTimes (void)
 //
 // SV_StepTics
 //
-void SV_StepTics (QWORD tics)
+void SV_StepTics(QWORD count)
 {
 	DObject::BeginFrame ();
 
 	// run the newtime tics
-	while (tics--)
+	while (count--)
 	{
 		C_Ticker ();
 
@@ -4526,40 +4524,39 @@ void SV_StepTics (QWORD tics)
 }
 
 //
+// SV_RenderTics
+//
+// Nothing to render...
+//
+void SV_RenderTics()
+{
+}
+
+//
 // SV_RunTics
 //
-void SV_RunTics (void)
+// Checks for incoming packets, processes console usage, and calls SV_StepTics.
+//
+void SV_RunTics()
 {
-	QWORD nowtime = I_GetTime ();
-	QWORD newtics = nowtime - gametime;
-
 	SV_GetPackets();
 
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())
-	{
-		AddCommandString (cmd);
-	}
+		AddCommandString(cmd);
 
-	if(CON.is_open())
+	if (CON.is_open())
 	{
 		CON.clear();
-		if(!CON.eof())
+		if (!CON.eof())
 		{
 			std::getline(CON, cmd);
-			AddCommandString (cmd);
+			AddCommandString(cmd);
 		}
 	}
 
-	if(newtics > 0 && !step_mode)
-	{
-		SV_StepTics(newtics);
-		gametime = nowtime;
-	}
-
-	// wait until a network message arrives or next tick starts
-	if(nowtime == I_GetTime())
-		NetWaitOrTimeout((I_MSTime()%TICRATE)+1);
+	if (!step_mode)
+		SV_StepTics(1);
 }
 
 BEGIN_COMMAND(step)

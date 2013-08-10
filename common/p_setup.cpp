@@ -181,31 +181,11 @@ void P_LoadSegs (int lump)
 {
 	int  i;
 	byte *data;
-	byte *vertchanged = (byte *)Z_Malloc (numvertexes,PU_LEVEL,0);	// phares 10/4/98
-	line_t* line;		// phares 10/4/98
-   // SoM: Changed variables to the correct types.
-	angle_t ptp_angle;		// phares 10/4/98
-	angle_t delta_angle;	// phares 10/4/98
-	fixed_t dis;			// phares 10/4/98
-	fixed_t dx,dy;			// phares 10/4/98
-	int vnum1,vnum2;	// phares 10/4/98
-
-	memset (vertchanged,0,numvertexes); // phares 10/4/98
 
 	numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
 	segs = (seg_t *)Z_Malloc (numsegs*sizeof(seg_t), PU_LEVEL, 0);
 	memset (segs, 0, numsegs*sizeof(seg_t));
 	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-
-	// phares: 10/4/98: Vertchanged is an array that represents the vertices.
-	// Mark those used by linedefs. A marked vertex is one that is not a
-	// candidate for movement further down.
-
-	line = lines;
-	for (i = 0; i < numlines ; i++, line++)
-	{
-		vertchanged[line->v1 - vertexes] = vertchanged[line->v2 - vertexes] = 1;
-	}
 
 	for (i = 0; i < numsegs; i++)
 	{
@@ -230,63 +210,6 @@ void P_LoadSegs (int lump)
 			li->v2 = &vertexes[v];
 
 		li->angle = (LESHORT(ml->angle))<<16;
-
-// phares 10/4/98: In the case of a lineseg that was created by splitting
-// another line, it appears that the line angle is inherited from the
-// father line. Due to roundoff, the new vertex may have been placed 'off
-// the line'. When you get close to such a line, and it is very short,
-// it's possible that the roundoff error causes 'firelines', the thin
-// lines that can draw from screen top to screen bottom occasionally. This
-// is due to all the angle calculations that are done based on the line
-// angle, the angles from the viewer to the vertices, and the viewer's
-// angle in the world. In the case of firelines, the rounded-off position
-// of one of the vertices determines one of these angles, and introduces
-// an error in the scaling factor for mapping textures and determining
-// where on the screen the ceiling and floor spans should be shown. For a
-// fireline, the engine thinks the ceiling bottom and floor top are at the
-// midpoint of the screen. So you get ceilings drawn all the way down to the
-// screen midpoint, and floors drawn all the way up. Thus 'firelines'. The
-// name comes from the original sighting, which involved a fire texture.
-//
-// To correct this, reset the vertex that was added so that it sits ON the
-// split line.
-//
-// To know which of the two vertices was added, its number is greater than
-// that of the last of the author-created vertices. If both vertices of the
-// line were added by splitting, pick the higher-numbered one. Once you've
-// changed a vertex, don't change it again if it shows up in another seg.
-//
-// To determine if there's an error in the first place, find the
-// angle of the line between the two seg vertices. If it's one degree or more
-// off, then move one vertex. This may seem insignificant, but one degree
-// errors _can_ cause firelines.
-
-		ptp_angle = R_PointToAngle2(li->v1->x,li->v1->y,li->v2->x,li->v2->y);
-		dis = 0;
-		delta_angle = ((ptp_angle-li->angle) >> ANGLETOFINESHIFT) * 360 / 8192;
-
-		if (delta_angle != 0)
-		{
-			dx = (li->v1->x - li->v2->x)>>FRACBITS;
-			dy = (li->v1->y - li->v2->y)>>FRACBITS;
-			dis = ((int)sqrt((float)dx*(float)dx + (float)dy*(float)dy))<<FRACBITS;
-			dx = finecosine[li->angle>>ANGLETOFINESHIFT];
-			dy = finesine[li->angle>>ANGLETOFINESHIFT];
-			vnum1 = li->v1 - vertexes;
-			vnum2 = li->v2 - vertexes;
-			if ((vnum2 > vnum1) && (vertchanged[vnum2] == 0))
-			{
-				li->v2->x = li->v1->x + FixedMul(dis,dx);
-				li->v2->y = li->v1->y + FixedMul(dis,dy);
-				vertchanged[vnum2] = 1; // this was changed
-			}
-			else if (vertchanged[vnum1] == 0)
-			{
-				li->v1->x = li->v2->x - FixedMul(dis,dx);
-				li->v1->y = li->v2->y - FixedMul(dis,dy);
-				vertchanged[vnum1] = 1; // this was changed
-			}
-		}
 
 		li->offset = (LESHORT(ml->offset))<<16;
 		linedef = LESHORT(ml->linedef);
@@ -326,7 +249,6 @@ void P_LoadSegs (int lump)
 	}
 
 	Z_Free (data);
-	Z_Free(vertchanged); // phares 10/4/98
 }
 
 
@@ -1376,6 +1298,89 @@ void P_GroupLines (void)
 }
 
 //
+// P_RemoveSlimeTrails()
+//
+// killough 10/98
+//
+// Slime trails are inherent to Doom's coordinate system -- i.e. there is
+// nothing that a node builder can do to prevent slime trails ALL of the time,
+// because it's a product of the integer coodinate system, and just because
+// two lines pass through exact integer coordinates, doesn't necessarily mean
+// that they will intersect at integer coordinates. Thus we must allow for
+// fractional coordinates if we are to be able to split segs with node lines,
+// as a node builder must do when creating a BSP tree.
+//
+// A wad file does not allow fractional coordinates, so node builders are out
+// of luck except that they can try to limit the number of splits (they might
+// also be able to detect the degree of roundoff error and try to avoid splits
+// with a high degree of roundoff error). But we can use fractional coordinates
+// here, inside the engine. It's like the difference between square inches and
+// square miles, in terms of granularity.
+//
+// For each vertex of every seg, check to see whether it's also a vertex of
+// the linedef associated with the seg (i.e, it's an endpoint). If it's not
+// an endpoint, and it wasn't already moved, move the vertex towards the
+// linedef by projecting it using the law of cosines. Formula:
+//
+//      2        2                         2        2
+//    dx  x0 + dy  x1 + dx dy (y0 - y1)  dy  y0 + dx  y1 + dx dy (x0 - x1)
+//   {---------------------------------, ---------------------------------}
+//                  2     2                            2     2
+//                dx  + dy                           dx  + dy
+//
+// (x0,y0) is the vertex being moved, and (x1,y1)-(x1+dx,y1+dy) is the
+// reference linedef.
+//
+// Segs corresponding to orthogonal linedefs (exactly vertical or horizontal
+// linedefs), which comprise at least half of all linedefs in most wads, don't
+// need to be considered, because they almost never contribute to slime trails
+// (because then any roundoff error is parallel to the linedef, which doesn't
+// cause slime). Skipping simple orthogonal lines lets the code finish quicker.
+//
+// Please note: This section of code is not interchangable with TeamTNT's
+// code which attempts to fix the same problem.
+//
+// Firelines (TM) is a Rezistered Trademark of MBF Productions
+//
+
+static void P_RemoveSlimeTrails()
+{
+	byte* hit = (byte *)Z_Malloc(numvertexes, PU_LEVEL, 0);
+	memset(hit, 0, numvertexes * sizeof(byte));
+
+	for (int i = 0; i < numsegs; i++)
+	{
+		const line_t *l = segs[i].linedef;		// The parent linedef
+
+		// We can ignore orthogonal lines
+		if (l->slopetype != ST_VERTICAL && l->slopetype != ST_HORIZONTAL)
+		{
+			vertex_t *v = segs[i].v1;
+			do
+			{
+				if (!hit[v - vertexes])				// If we haven't processed vertex
+				{
+					hit[v - vertexes] = 1;			// Mark this vertex as processed
+					if (v != l->v1 && v != l->v2)	// Exclude endpoints of linedefs
+					{ 
+						// Project the vertex back onto the parent linedef
+						int64_t dx2 = (l->dx >> FRACBITS) * (l->dx >> FRACBITS);
+						int64_t dy2 = (l->dy >> FRACBITS) * (l->dy >> FRACBITS);
+						int64_t dxy = (l->dx >> FRACBITS) * (l->dy >> FRACBITS);
+						int64_t s = dx2 + dy2;
+						fixed_t x0 = v->x, y0 = v->y, x1 = l->v1->x, y1 = l->v1->y;
+						v->x = (fixed_t)((dx2 * x0 + dy2 * x1 + dxy * (y0 - y1)) / s);
+						v->y = (fixed_t)((dy2 * y0 + dx2 * y1 + dxy * (x0 - x1)) / s);
+					}
+				}  // Obsfucated C contest entry:   :)
+			} while ((v != segs[i].v2) && (v = segs[i].v2));
+		}
+	}
+
+	Z_Free(hit);
+}
+
+//
 // [RH] P_LoadBehavior
 //
 void P_LoadBehavior (int lumpnum)
@@ -1514,6 +1519,11 @@ void P_SetupLevel (char *lumpname, int position)
 		}
 	}
 	P_GroupLines ();
+
+	// [SL] don't move seg vertices if compatibility is cruical
+	if (!demoplayback && !demorecording)
+		P_RemoveSlimeTrails();
+
 	P_SetupSlopes();
 
     po_NumPolyobjs = 0;
@@ -1636,110 +1646,70 @@ static void P_SetupLevelCeilingPlane(sector_t *sector)
 // ceiling of this sector.  The equation coefficients are stored in a plane_t
 // structure and saved either to the sector's ceilingplan or floorplane.
 //
-void P_SetupPlane(sector_t *refsector, line_t *refline, bool floor)
+void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
 {
-	if (!refsector || !refline || !refline->backsector)
+	if (!sec || !line || !line->backsector)
 		return;
-
-	float refv1x = FIXED2FLOAT(refline->v1->x);
-	float refv1y = FIXED2FLOAT(refline->v1->y);
-
-	float refdx = FIXED2FLOAT(refline->dx);
-	float refdy = FIXED2FLOAT(refline->dy);
-	
-	vertex_t *farthest_vertex = NULL;
-	float farthest_distance = 0.0f;
 
 	// Find the vertex comprising the sector that is farthest from the
 	// slope's reference line
-	for (int linenum = 0; linenum < refsector->linecount; linenum++)
+
+	int bestdist = 0;
+	line_t** probe = sec->lines;
+	vertex_t *refvert = (*sec->lines)->v1;
+
+	for (int i = sec->linecount*2; i > 0; i--)
 	{
-		line_t *line = refsector->lines[linenum];
-		if (!line)
-			continue;
-		
-		// Calculate distance from vertex 1 of this line
-		float dist = abs((refv1y - FIXED2FLOAT(line->v1->y)) * refdx -
-						 (refv1x - FIXED2FLOAT(line->v1->x)) * refdy);
-		if (dist > farthest_distance)
+		int dist;
+		vertex_t *vert;
+
+		// Do calculations with only the upper bits, because the lower ones
+		// are all zero, and we would overflow for a lot of distances if we
+		// kept them around.
+
+		if (i & 1)
+			vert = (*probe++)->v2;
+		else
+			vert = (*probe)->v1;
+		dist = abs (((line->v1->y - vert->y) >> FRACBITS) * (line->dx >> FRACBITS) -
+					((line->v1->x - vert->x) >> FRACBITS) * (line->dy >> FRACBITS));
+
+		if (dist > bestdist)
 		{
-			farthest_distance = dist;
-			farthest_vertex = line->v1;
+			bestdist = dist;
+			refvert = vert;
 		}
-	
-		// Calculate distance from vertex 2 of this line
-		dist = abs((refv1y - FIXED2FLOAT(line->v2->y)) * refdx -
-				   (refv1x - FIXED2FLOAT(line->v2->x)) * refdy);
-		if (dist > farthest_distance)
-		{
-			farthest_distance = dist;
-			farthest_vertex = line->v2;
-		}	
 	}
-	
-	if (farthest_distance <= 0.0f)
-		return;
 
-	sector_t *align_sector = (refsector == refline->frontsector) ?
-		refline->backsector : refline->frontsector;
+	const sector_t* refsec = line->frontsector == sec ? line->backsector : line->frontsector;
+	plane_t* srcplane = floor ? &sec->floorplane : &sec->ceilingplane;
+	fixed_t srcheight = floor ? sec->floorheight : sec->ceilingheight;
+	fixed_t destheight = floor ? refsec->floorheight : refsec->ceilingheight;
 
-	// Now we have three points, which can define a plane:
-	// The two vertices making up refline and farthest_vertex
-	
-	float z1 = floor ? 
-		FIXED2FLOAT(align_sector->floorheight) : 
-		FIXED2FLOAT(align_sector->ceilingheight);
-	
-	float z2 = floor ?
-		FIXED2FLOAT(refsector->floorheight) :
-		FIXED2FLOAT(refsector->ceilingheight);
-	
-	// bail if the plane is perfectly level
-	if (z1 == z2)
-		return;
+	v3float_t p, v1, v2, cross;
+	M_SetVec3f(&p, line->v1->x, line->v1->y, destheight);
+	M_SetVec3f(&v1, line->dx, line->dy, 0);
+	M_SetVec3f(&v2, refvert->x - line->v1->x, refvert->y - line->v1->y, srcheight - destheight);
 
-	v3double_t p1, p2, p3;
-	M_SetVec3(&p1, FIXED2FLOAT(refline->v1->x), FIXED2FLOAT(refline->v1->y), z1);
-	M_SetVec3(&p2, FIXED2FLOAT(refline->v2->x), FIXED2FLOAT(refline->v2->y), z1);
-	M_SetVec3(&p3, FIXED2FLOAT(farthest_vertex->x), FIXED2FLOAT(farthest_vertex->y), z2);
+	M_CrossProductVec3f(&cross, &v1, &v2);
+	M_NormalizeVec3f(&cross, &cross);
 
-	// Define the plane by drawing two vectors originating from
-	// point p2:  the vector from p2 to p1 and from p2 to p3
-	// Then take the crossproduct of those vectors to get the normal vector
-	// for the plane, which provides the planar equation's coefficients
-	v3double_t vector1, vector2;
-	M_SubVec3(&vector1, &p1, &p2);
-	M_SubVec3(&vector2, &p3, &p2);
-
-	v3double_t normal;
-	M_CrossProductVec3(&normal, &vector1, &vector2);
-	M_NormalizeVec3(&normal, &normal);
-	
-	plane_t *plane = floor ? &refsector->floorplane : &refsector->ceilingplane;
-	plane->a = FLOAT2FIXED(normal.x);
-	plane->b = FLOAT2FIXED(normal.y);
-	plane->c = FLOAT2FIXED(normal.z);
-	plane->invc = FLOAT2FIXED(1.0f / normal.z);
-	plane->d = -FLOAT2FIXED(M_DotProductVec3(&normal, &p1));
-
-	// Flip inverted normals
-	if ((floor && normal.z < 0.0f) || (!floor && normal.z > 0.0f))
-		P_InvertPlane(plane);
-
-	// determine the point that can be used for aligning wall textures
-	// we use the point on the plane that has the same Z value as
-	// ceilingheight/floorheight
-	plane->texx = refline->v1->x;
-	plane->texy = refline->v1->y;
-
-	if ((floor && refsector->floorheight != align_sector->floorheight) ||
-	   (!floor && refsector->ceilingheight != align_sector->ceilingheight))
+	// Fix backward normals
+	if ((cross.z < 0 && floor == true) || (cross.z > 0 && floor == false)) 
 	{
-		plane->texx = farthest_vertex->x;
-		plane->texy = farthest_vertex->y;
+		cross.x = -cross.x;
+		cross.y = -cross.y;
+		cross.z = -cross.z;
 	}
-}
 
+	srcplane->a = FLOAT2FIXED(cross.x);
+	srcplane->b = FLOAT2FIXED(cross.y);
+	srcplane->c = FLOAT2FIXED(cross.z);
+	srcplane->invc = FLOAT2FIXED(1.f/cross.z);
+	srcplane->d = -FixedMul(srcplane->a, line->v1->x) - FixedMul(srcplane->b, line->v1->y) - FixedMul(srcplane->c, destheight);
+	srcplane->texx = refvert->x;
+	srcplane->texy = refvert->y;
+}
 
 static void P_SetupSlopes()
 {

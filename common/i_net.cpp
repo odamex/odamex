@@ -36,15 +36,12 @@
 #include <sstream>
 
 /* [Petteri] Use Winsock for Win32: */
+#include "win32inc.h"
 #ifdef _WIN32
-#	define WIN32_LEAN_AND_MEAN
-#ifdef _XBOX
-#	include <xtl.h>
-#else
-#	include <windows.h>
-#	include <winsock2.h>
-#   include <ws2tcpip.h>
-#endif // !_XBOX
+    #ifndef _XBOX
+    	#include <winsock2.h>
+        #include <ws2tcpip.h>
+    #endif // !_XBOX
 #else
 #ifdef GEKKO // Wii/GC
 #	include <network.h>
@@ -185,7 +182,7 @@ void init_upnp (void)
     if (descXML)
     {
         parserootdesc (descXML, descXMLsize, &data);
-        free (descXML); 
+        free (descXML);
         descXML = NULL;
         GetUPNPUrls (&urls, &data, dev->descURL, 0);
     }
@@ -1038,7 +1035,7 @@ bool NetWaitOrTimeout(size_t ms)
 	if(ret == 1)
 		return true;
 
-	#ifdef WIN32
+	#ifdef _WIN32
 		// handle SOCKET_ERROR
 		if(ret == SOCKET_ERROR)
 			Printf(PRINT_HIGH, "select returned SOCKET_ERROR: %d\n", WSAGetLastError());

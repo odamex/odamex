@@ -1,3 +1,10 @@
+# Client flags [AM] TODO: Test -O3 again sometime.
+if(NOT MSVC)
+  set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+endif()
+
+global_compile_options()
+
 # Common
 set(COMMON_DIR ../common)
 file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
@@ -23,8 +30,8 @@ include_directories(${COMMON_DIR} ${CLIENT_DIR})
 # Textscreen
 set(TEXTSCREEN_LIBRARY "textscreen")
 set(TEXTSCREEN_DIR ../textscreen)
-file(GLOB TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/*.h)
-file(GLOB TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/*.c)
+set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
+set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
 
 include_directories(${TEXTSCREEN_DIR})
 add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
@@ -47,32 +54,16 @@ else()
 endif()
 
 # PortMidi configuration
-find_package(PortMidi)
-if(PORTMIDI_FOUND)
-  include_directories(${PORTMIDI_INCLUDE_DIR})
+if(USE_INTREE_PORTMIDI)
+  include_directories(../portmidi/pm_common/ ../portmidi/porttime/)
   add_definitions(-DPORTMIDI)
 else()
-  if(WIN32)
-    # Create a static library and link against it
-    include_directories(
-      ../portmidi/pm_common/
-      ../portmidi/pm_win/
-      ../portmidi/porttime/
-    )
+  find_package(PortMidi)
+  if(PORTMIDI_FOUND)
+    include_directories(${PORTMIDI_INCLUDE_DIR})
     add_definitions(-DPORTMIDI)
-    add_library(portmidi STATIC
-      ../portmidi/pm_common/pmutil.c
-      ../portmidi/pm_common/portmidi.c
-      ../portmidi/pm_win/pmwin.c
-      ../portmidi/pm_win/pmwinmm.c
-      ../portmidi/porttime/ptwinmm.c
-    )
-    set(PORTMIDI_FOUND "YES")
-    set(PORTMIDI_LIBRARY "portmidi")
-    set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
-    message(STATUS "PortMidi will be statically linked.")
   else()
-    message(WARNING "PortMidi not found, client will not be built with PortMidi support.")
+    message(WARNING "PortMidi not found, client will be built without PortMidi support.")
   endif()
 endif()
 
@@ -85,6 +76,11 @@ if(APPLE)
     ${AUDIOUNIT_LIBRARY})
 endif()
 
+# Set up FHS installation path
+if(NOT APPLE AND NOT WIN32)
+  add_definitions("-DINSTALL_PREFIX=\"${CMAKE_INSTALL_PREFIX}\"")
+endif()
+
 # Client target
 if(SDL_FOUND AND SDLMIXER_FOUND)
   add_executable(odamex MACOSX_BUNDLE WIN32
@@ -95,7 +91,9 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
   target_link_libraries(odamex ${SDL_LIBRARY})
   target_link_libraries(odamex ${SDLMIXER_LIBRARY})
 
-  if(PORTMIDI_FOUND)
+  if(USE_INTREE_PORTMIDI)
+    target_link_libraries(odamex portmidi-static)
+  elseif(PORTMIDI_FOUND)
     target_link_libraries(odamex ${PORTMIDI_LIBRARIES})
   endif()
 
@@ -105,6 +103,10 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
+  endif()
+
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(odamex rt)
   endif()
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
@@ -142,7 +144,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     # Install the SDL framework into the bundle
     if(IS_DIRECTORY ${SDL_DIR})
       install(DIRECTORY ${SDL_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks)
-      install(CODE "execute_process(COMMAND 
+      install(CODE "execute_process(COMMAND
         install_name_tool -change @rpath/SDL.framework/Versions/A/SDL
         @executable_path/../Frameworks/SDL.framework/Versions/A/SDL
         ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
@@ -157,12 +159,20 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     # If PortMidi was built in install the PortMidi library into the bundle
     if(PortMidi_FOUND)
       install(FILES ${PORTMIDI_LIBRARIES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks/)
-      install(CODE "execute_process(COMMAND 
+      install(CODE "execute_process(COMMAND
         install_name_tool -change libportmidi.dylib
         @executable_path/../Frameworks/libportmidi.dylib
         ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
         " )
     endif()
 
+  elseif(WIN32)
+    install(TARGETS odamex
+      RUNTIME DESTINATION .
+      COMPONENT client)
+  else()
+    install(TARGETS odamex
+      RUNTIME DESTINATION bin
+      COMPONENT client)
   endif()
 endif()

@@ -119,6 +119,8 @@ BOOL		foggy;
 
 fixed_t			freelookviewheight;
 
+fixed_t		render_lerp_amount;
+
 unsigned int	R_OldBlend = ~0;
 
 void (*colfunc) (void);

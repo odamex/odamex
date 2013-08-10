@@ -607,27 +607,6 @@ BEGIN_COMMAND (menu_player)
 }
 END_COMMAND (menu_player)
 
-BEGIN_COMMAND (bumpgamma)
-{
-    // F11
-	// [RH] Gamma correction tables are now generated
-	// on the fly for *any* gamma level.
-	// Q: What are reasonable limits to use here?
-
-	float newgamma = gammalevel + 1;
-
-	if (newgamma > 8.0)
-		newgamma = 1.0;
-
-	gammalevel.Set (newgamma);
-
-	if (gammalevel.value() == 1.0)
-        Printf (PRINT_HIGH, "Gamma correction off\n");
-    else
-        Printf (PRINT_HIGH, "Gamma correction level %g\n", gammalevel.value() - 1);
-}
-END_COMMAND (bumpgamma)
-
 /*
 void M_LoadSaveResponse(int choice)
 {
@@ -1107,24 +1086,7 @@ void M_Expansion (int choice)
 void M_DrawReadThis1 (void)
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
-
-	if (screen->isProtectedRes())
-    {
-        screen->DrawPatchIndirect (p, 0, 0);
-    }
-    else
-    {
-        screen->Clear(0, 0, screen->width, screen->height, 0);
-
-        if ((float)screen->width/screen->height < (float)4.0f/3.0f)
-        {
-            screen->DrawPatchStretched(p, 0, (screen->height / 2) - ((p->height() * RealYfac) / 2), screen->width, (p->height() * RealYfac));
-        }
-        else
-        {
-            screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
-        }
-    }
+	screen->DrawPatchFullScreen(p);
 }
 
 //
@@ -1133,24 +1095,7 @@ void M_DrawReadThis1 (void)
 void M_DrawReadThis2 (void)
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[1]);
-
-	if (screen->isProtectedRes())
-    {
-        screen->DrawPatchIndirect (p, 0, 0);
-    }
-    else
-    {
-        screen->Clear(0, 0, screen->width, screen->height, 0);
-
-        if ((float)screen->width/screen->height < (float)4.0f/3.0f)
-        {
-            screen->DrawPatchStretched(p, 0, (screen->height / 2) - ((p->height() * RealYfac) / 2), screen->width, (p->height() * RealYfac));
-        }
-        else
-        {
-            screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
-        }
-    }
+	screen->DrawPatchFullScreen(p);
 }
 
 //
@@ -1159,24 +1104,7 @@ void M_DrawReadThis2 (void)
 void M_DrawReadThis3 (void)
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[2]);
-
-	if (screen->isProtectedRes())
-    {
-        screen->DrawPatchIndirect (p, 0, 0);
-    }
-    else
-    {
-        screen->Clear(0, 0, screen->width, screen->height, 0);
-
-        if ((float)screen->width/screen->height < (float)4.0f/3.0f)
-        {
-            screen->DrawPatchStretched(p, 0, (screen->height / 2) - ((p->height() * RealYfac) / 2), screen->width, (p->height() * RealYfac));
-        }
-        else
-        {
-            screen->DrawPatchStretched(p,(screen->width / 2) - ((p->width() * RealXfac) / 2), 0, (p->width() * RealXfac), screen->height);
-        }
-    }
+	screen->DrawPatchFullScreen(p);
 }
 
 //
@@ -2118,7 +2046,7 @@ bool M_Responder (event_t* ev)
 		return true;
 
 	  default:
-		if (ch2) {
+		if (ch2 && (ch < KEY_JOY1)) {
 			for (i = itemOn+1;i < currentMenu->numitems;i++)
 				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
 				{
@@ -2162,7 +2090,6 @@ void M_StartControlPanel (void)
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
-	I_PauseMouse ();				// [RH] Give the mouse back in windowed modes.
 	I_EnableKeyRepeat();
 }
 
@@ -2247,7 +2174,6 @@ void M_ClearMenus (void)
 	M_DemoNoPlay = false;
 	if (gamestate != GS_FULLCONSOLE)
 	{
-		I_ResumeMouse ();	// [RH] Recapture the mouse in windowed modes.
 		I_DisableKeyRepeat();
 	}
 }
@@ -2274,7 +2200,6 @@ void M_PopMenuStack (void)
 {
 	M_DemoNoPlay = false;
 	if (MenuStackDepth > 1) {
-		I_PauseMouse ();
 		MenuStackDepth -= 2;
 		if (MenuStack[MenuStackDepth].isNewStyle) {
 			OptionsActive = true;

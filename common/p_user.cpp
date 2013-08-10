@@ -642,6 +642,9 @@ void P_PlayerThink (player_t *player)
 		I_Error ("No player %d start\n", player->id);
 
 	player->xviewshift = 0;		// [RH] Make sure view is in right place
+	player->prevviewz = player->viewz;
+	player->mo->prevangle = player->mo->angle;
+	player->mo->prevpitch = player->mo->pitch;
 
 	// fixme: do this in the cheat code
 	if (player->cheats & CF_NOCLIP)
