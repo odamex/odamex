@@ -81,24 +81,40 @@ if(NOT NO_AG-ODALAUNCH_TARGET)
   add_subdirectory(ag-odalaunch)
 endif()
 
-# TODO: If deutex is available, use that to build the wad.
-install(FILES odamex.wad LICENSE README
-  DESTINATION share/odamex
-  COMPONENT common)
-file(GLOB CONFIG_SAMPLES config-samples/*)
-install(FILES ${CONFIG_SAMPLES}
-  DESTINATION share/odamex/config-samples
-  COMPONENT common)
-
 # Packaging options.
-if(APPLE)
-elseif(WIN32)
-else()
+# TODO: Integrate OSX stuff into here.
+if(NOT APPLE)
   set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-  set(CPACK_COMPONENTS_ALL client server common)
+  set(CPACK_PACKAGE_INSTALL_DIRECTORY Odamex)
+  set(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/LICENSE)
 
+  set(CPACK_COMPONENTS_ALL client server common)
   set(CPACK_COMPONENT_CLIENT_DEPENDS common)
+  set(CPACK_COMPONENT_CLIENT_DISPLAY_NAME "Odamex")
   set(CPACK_COMPONENT_SERVER_DEPENDS common)
+  set(CPACK_COMPONENT_SERVER_DISPLAY_NAME "Odamex Dedicated Server")
+  set(CPACK_COMPONENT_COMMON_DISPLAY_NAME "Support files")
+
+  # TODO: If deutex is available, use that to build the wad.
+  file(GLOB CONFIG_SAMPLES config-samples/*)
+  if(WIN32)
+    install(FILES odamex.wad LICENSE README
+      DESTINATION .
+      COMPONENT common)
+    install(FILES ${CONFIG_SAMPLES}
+      DESTINATION config-samples
+      COMPONENT common)
+
+      # Windows ZIP packages are "tarbombs" by default.
+      set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
+  else()
+    install(FILES odamex.wad LICENSE README
+      DESTINATION share/odamex
+      COMPONENT common)
+    install(FILES ${CONFIG_SAMPLES}
+      DESTINATION share/odamex/config-samples
+      COMPONENT common)
+  endif()
 
   # RPM
   set(CPACK_RPM_COMPONENT_INSTALL YES)

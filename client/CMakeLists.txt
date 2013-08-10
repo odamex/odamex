@@ -162,7 +162,9 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     endif()
 
   elseif(WIN32)
-    # TODO
+    install(TARGETS odamex
+      RUNTIME DESTINATION .
+      COMPONENT client)
   else()
     install(TARGETS odamex
       RUNTIME DESTINATION bin

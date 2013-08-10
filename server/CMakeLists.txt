@@ -60,6 +60,9 @@ endif()
 
 if(APPLE)
 elseif(WIN32)
+  install(TARGETS odasrv
+    RUNTIME DESTINATION .
+    COMPONENT server)
 else()
   install(TARGETS odasrv
     RUNTIME DESTINATION bin
