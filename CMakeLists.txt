@@ -119,10 +119,18 @@ if(NOT APPLE)
 
     option(ODAMEX_COMPONENT_PACKAGES "Create several rpm/deb packages for repository maintainers." OFF)
     if(ODAMEX_COMPONENT_PACKAGES)
+      # TODO: Dependencies for components
       set(CPACK_RPM_COMPONENT_INSTALL YES)
       set(CPACK_DEB_COMPONENT_INSTALL YES)
+    else()
+      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libsdl1.2debian, libsdl-mixer1.2")
     endif()
+
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A free, cross-platform modification of the Doom engine that allows players to easily join servers dedicated to playing Doom online.")
+
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Alex Mayfield <alexmax2742@gmail.com>")
+    set(CPACK_DEBIAN_PACKAGE_SECTION Games)
+    set(CPACK_DEBIAN_PACKAGE_SUGGESTS "boom-wad | doom-wad, libportmidi0")
 
   endif()
 endif()
