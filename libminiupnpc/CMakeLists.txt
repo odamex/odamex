@@ -156,22 +156,25 @@ if (UPNPC_BUILD_TESTS)
 # set (UPNPC_INSTALL_TARGETS ${UPNPC_INSTALL_TARGETS} testminixml minixmlvalid testupnpreplyparse testigddescparse testminiwget)
 endif (UPNPC_BUILD_TESTS)
 
-
-install (TARGETS ${UPNPC_INSTALL_TARGETS}
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib${LIB_SUFFIX}
-  ARCHIVE DESTINATION lib${LIB_SUFFIX}
-)
-install (FILES
-	miniupnpc.h
-  miniwget.h
-  upnpcommands.h
-  igd_desc_parse.h
-  upnpreplyparse.h
-  upnperrors.h
-  declspec.h
-  DESTINATION include/miniupnpc
-)
+# [AM] We don't want to install any libraries, we just need them to build Odamex.
+option (UPNPC_INSTALL "Install libraries" OFF)
+if (UPNPC_INSTALL)
+  install (TARGETS ${UPNPC_INSTALL_TARGETS}
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib${LIB_SUFFIX}
+    ARCHIVE DESTINATION lib${LIB_SUFFIX}
+  )
+  install (FILES
+    miniupnpc.h
+    miniwget.h
+    upnpcommands.h
+    igd_desc_parse.h
+    upnpreplyparse.h
+    upnperrors.h
+    declspec.h
+    DESTINATION include/miniupnpc
+  )
+endif()
 
 set (CONFIGURED YES CACHE INTERNAL "")
 
