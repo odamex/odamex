@@ -928,6 +928,11 @@ bool SV_SetupUserInfo(player_t &player)
 	team_t			old_team = static_cast<team_t>(player.userinfo.team);
 	team_t			new_team = static_cast<team_t>(MSG_ReadByte());
 
+	if ((new_team >= NUMTEAMS && new_team != TEAM_NONE) || new_team < 0) {
+		SV_InvalidateClient(player, "Team preference is invalid");
+		return false;
+	}
+
 	gender_t		gender = static_cast<gender_t>(MSG_ReadLong());
 	int				color = MSG_ReadLong();
 	std::string		skin(MSG_ReadString());
@@ -3573,7 +3578,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 {
 	team_t team = (team_t)MSG_ReadByte();
 
-	if(team >= NUMTEAMS)
+	if ((team >= NUMTEAMS && team != TEAM_NONE) || team < 0)
 		return;
 
 	if(sv_gametype == GM_CTF && team >= 2)
