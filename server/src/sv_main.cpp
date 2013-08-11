@@ -907,19 +907,23 @@ void SV_BroadcastUserInfo(player_t &player)
 		SV_SendUserInfo(player, &(players[i].client));
 }
 
-//
-//	SV_SetupUserInfo
-//
-//	Stores a players userinfo
-//
-void SV_SetupUserInfo (player_t &player)
+/**
+ * Stores a players userinfo.
+ *
+ * @param player Player to parse info for.
+ * @return False if the client was kicked because of something seriously
+ *         screwy going on with their info.
+ */
+bool SV_SetupUserInfo(player_t &player)
 {
 	// read in userinfo from packet
 	std::string		old_netname(player.userinfo.netname);
 	std::string		new_netname(MSG_ReadString());
 
-	if (!ValidString(new_netname))
+	if (!ValidString(new_netname)) {
 		SV_InvalidateClient(player, "Name contains invalid characters");
+		return false;
+	}
 
 	team_t			old_team = static_cast<team_t>(player.userinfo.team);
 	team_t			new_team = static_cast<team_t>(MSG_ReadByte());
@@ -928,8 +932,10 @@ void SV_SetupUserInfo (player_t &player)
 	int				color = MSG_ReadLong();
 	std::string		skin(MSG_ReadString());
 
-	if (!ValidString(skin))
+	if (!ValidString(skin)) {
 		SV_InvalidateClient(player, "Skin contains invalid characters");
+		return false;
+	}
 
 	fixed_t			aimdist = MSG_ReadLong();
 	bool			unlag = MSG_ReadBool();
@@ -978,7 +984,7 @@ void SV_SetupUserInfo (player_t &player)
 	{
 		// Send the client's actual userinfo back to them so they can reset it
 		SV_SendUserInfo (player, &player.client);
-		return;
+		return true;
 	}
 
 	player.userinfo.gender			= gender;
@@ -1079,6 +1085,8 @@ void SV_SetupUserInfo (player_t &player)
 
 	// [SL] 2011-12-02 - Player can update all preferences again in 5 seconds
 	player.userinfo.next_change_time = gametic + 5 * TICRATE;
+
+	return true;
 }
 
 //
@@ -1998,8 +2006,15 @@ void SV_ConnectClient (void)
 	}
 
 	// get client userinfo
-	MSG_ReadByte();  // clc_userinfo
-	SV_SetupUserInfo(players[n]);
+	clc_t userinfo = (clc_t)MSG_ReadByte();
+	if (userinfo != clc_userinfo)
+	{
+		SV_InvalidateClient(players[n], "Client didn't send any userinfo");
+		return;
+	}
+
+	if (!SV_SetupUserInfo(players[n]))
+		return;
 
 	// get rate value
 	SV_SetClientRate(*cl, MSG_ReadLong());
@@ -4114,8 +4129,8 @@ void SV_ParseCommands(player_t &player)
 			return;
 
 		case clc_userinfo:
-			SV_SetupUserInfo(player);
-			SV_BroadcastUserInfo(player);
+			if (SV_SetupUserInfo(player))
+				SV_BroadcastUserInfo(player);
 			break;
 
 		case clc_getplayerinfo:
