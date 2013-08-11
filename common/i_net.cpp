@@ -229,7 +229,7 @@ void upnp_add_redir (const char * addr, int port)
     {
         std::stringstream desc;
 
-        desc << "Odasrv " << "(" << addr << ":" << port_str << ")" << std::endl;
+        desc << "Odasrv " << "(" << addr << ":" << port_str << ")";
 
         sv_upnp_description.Set(desc.str().c_str());
     }
