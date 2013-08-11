@@ -478,6 +478,18 @@ std::string &TrimString(std::string &s)
 	return TrimStringStart(TrimStringEnd(s));
 }
 
+// Ensure that a string only has valid viewable ASCII in it.
+bool ValidString(const std::string& s)
+{
+	for (std::string::const_iterator it = s.begin();it != s.end();++it)
+	{
+		const char c = *it;
+		if (c < ' ' || c > '~')
+			return false;
+	}
+	return true;
+}
+
 //==========================================================================
 //
 // CheckWildcards

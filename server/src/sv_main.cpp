@@ -396,6 +396,23 @@ void SV_KickPlayer(player_t &player, const std::string &reason) {
 	SV_DropClient(player);
 }
 
+// Invalidate a player.
+//
+// Usually happens when corrupted messages are passed to the server by the
+// client.  Reasons should only be seen by the server admin.  Player and client
+// are both presumed unusable after function is done.
+void SV_InvalidateClient(player_t &player, const std::string& reason)
+{
+	if (&(player.client) == NULL)
+	{
+		Printf(PRINT_HIGH, "Player with NULL client fails security check (%s), client cannot be safely dropped.\n");
+		return;
+	}
+
+	Printf(PRINT_HIGH, "%s fails security check (%s), dropping client.\n", NET_AdrToString(player.client.address), reason.c_str());
+	SV_DropClient(player);
+}
+
 BEGIN_COMMAND (stepmode)
 {
     if (step_mode)
@@ -901,12 +918,18 @@ void SV_SetupUserInfo (player_t &player)
 	std::string		old_netname(player.userinfo.netname);
 	std::string		new_netname(MSG_ReadString());
 
+	if (!ValidString(new_netname))
+		SV_InvalidateClient(player, "Name contains invalid characters");
+
 	team_t			old_team = static_cast<team_t>(player.userinfo.team);
 	team_t			new_team = static_cast<team_t>(MSG_ReadByte());
 
 	gender_t		gender = static_cast<gender_t>(MSG_ReadLong());
 	int				color = MSG_ReadLong();
 	std::string		skin(MSG_ReadString());
+
+	if (!ValidString(skin))
+		SV_InvalidateClient(player, "Skin contains invalid characters");
 
 	fixed_t			aimdist = MSG_ReadLong();
 	bool			unlag = MSG_ReadBool();
