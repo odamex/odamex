@@ -2793,13 +2793,18 @@ void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 // SV_Say
 // Show a chat string and send it to others clients.
 //
-void SV_Say(player_t &player)
+bool SV_Say(player_t &player)
 {
 	byte who = MSG_ReadByte();
 	const char* s = MSG_ReadString();
 
+	if (!ValidString(s)) {
+		SV_InvalidateClient(player, "Chatstring contains invalid characters");
+		return false;
+	}
+
 	if (!strlen(s) || strlen(s) > MAX_CHATSTR_LEN)
-		return;
+		return true;
 
 	// Flood protection
 	if (player.LastMessage.Time)
@@ -2809,7 +2814,7 @@ void SV_Say(player_t &player)
 		float Delay = (float)(sv_flooddelay * TICRATE);
 
 		if (Difference <= Delay)
-			return;
+			return true;
 
 		player.LastMessage.Time = 0;
 	}
@@ -2840,26 +2845,33 @@ void SV_Say(player_t &player)
 		// Invalid destination
 		break;
 	}
+
+	return true;
 }
 
 //
 // SV_PrivMsg
 // Show a chat string and show it to a single other client.
 //
-void SV_PrivMsg(player_t &player)
+bool SV_PrivMsg(player_t &player)
 {
 	player_t& dplayer = idplayer(MSG_ReadByte());
 	const char* s = MSG_ReadString();
 
+	if (!ValidString(s)) {
+		SV_InvalidateClient(player, "Private Message contains invalid characters");
+		return false;
+	}
+
 	if (!validplayer(dplayer))
-		return;
+		return true;
 
 	if (!strlen(s) || strlen(s) > MAX_CHATSTR_LEN)
-		return;
+		return true;
 
 	// In competitive gamemodes, don't allow spectators to message players.
 	if (sv_gametype != GM_COOP && player.spectator && !dplayer.spectator)
-		return;
+		return true;
 
 	// Flood protection
 	if (player.LastMessage.Time)
@@ -2868,7 +2880,7 @@ void SV_PrivMsg(player_t &player)
 		float Delay = (float)(sv_flooddelay * TICRATE);
 
 		if (Difference <= Delay)
-			return;
+			return true;
 
 		player.LastMessage.Time = 0;
 	}
@@ -2880,6 +2892,8 @@ void SV_PrivMsg(player_t &player)
 	}
 
 	SVC_PrivMsg(player, dplayer, s);
+
+	return true;
 }
 
 //
@@ -4134,8 +4148,9 @@ void SV_ParseCommands(player_t &player)
 			return;
 
 		case clc_userinfo:
-			if (SV_SetupUserInfo(player))
-				SV_BroadcastUserInfo(player);
+			if (!SV_SetupUserInfo(player))
+				return;
+			SV_BroadcastUserInfo(player);
 			break;
 
 		case clc_getplayerinfo:
@@ -4143,11 +4158,13 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_say:
-			SV_Say(player);
+			if (!SV_Say(player))
+				return;
 			break;
 
 		case clc_privmsg:
-			SV_PrivMsg(player);
+			if (!SV_PrivMsg(player))
+				return;
 			break;
 
 		case clc_move:
