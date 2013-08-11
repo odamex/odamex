@@ -1021,9 +1021,10 @@ void SV_SetupUserInfo (player_t &player)
 		}
 	}
 
-	player.userinfo.netname = new_netname;
 	if (new_netname.length() > MAXPLAYERNAME)
 		new_netname.erase(MAXPLAYERNAME);
+
+	player.userinfo.netname = new_netname;
 
 	// Compare names and broadcast if different.
 	if (!old_netname.empty() && !iequals(new_netname, old_netname))
@@ -1049,7 +1050,7 @@ void SV_SetupUserInfo (player_t &player)
 			// kill player if team is changed
 			P_DamageMobj (player.mo, 0, 0, 1000, 0);
 			SV_BroadcastPrintf(PRINT_HIGH, "%s switched to the %s team.\n",
-				new_netname.c_str(), team_names[new_team]);
+				player.userinfo.netname.c_str(), team_names[new_team]);
 		}
 	}
 
