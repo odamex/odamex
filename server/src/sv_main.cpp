@@ -3604,7 +3604,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	team_t old_team = player.userinfo.team;
 	player.userinfo.team = team;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has joined the %s team.\n", team_names[team]);
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has joined the %s team.\n", player.userinfo.netname.c_str(), team_names[team]);
 
 	switch (player.userinfo.team)
 	{
