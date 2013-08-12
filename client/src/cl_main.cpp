@@ -178,43 +178,49 @@ int CL_GetPlayerColor(player_t *player)
 {
 	if (!player)
 		return 0;
-	
+
+	int color = player->userinfo.color;
+
+	// Adjust the shade of color for team games
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		int red = RPART(player->userinfo.color);
+		int green = GPART(player->userinfo.color);
+		int blue = BPART(player->userinfo.color);
+
+		int intensity = MAX(MAX(red, green), blue) / 3;
+
+		if (player->userinfo.team == TEAM_BLUE)
+			color = MAKERGB(0, 0,  0xAA + intensity);
+		else if (player->userinfo.team == TEAM_RED)
+			color = MAKERGB(0xAA + intensity, 0, 0);
+	}
+
+	// apply r_teamcolor & r_enemycolor overrides
 	if (!consoleplayer().spectator)
 	{
 		if (sv_gametype == GM_COOP)
 		{
 			if (r_forceteamcolor && player->id != consoleplayer_id)
-				return teamcolor;
+				color = teamcolor;
 		}
 		else if (sv_gametype == GM_DM)
 		{
 			if (r_forceenemycolor && player->id != consoleplayer_id)
-				return enemycolor;
+				color = enemycolor;
 		}
 		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		{
 			if (r_forceteamcolor && 
-						(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
-				return teamcolor;
+					(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
+				color = teamcolor;
 			if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
-						player->id != consoleplayer_id)
-				return enemycolor;
-
-			// Adjust the shade of color for team games
-			int red = RPART(player->userinfo.color);
-			int green = GPART(player->userinfo.color);
-			int blue = BPART(player->userinfo.color);
-
-			int intensity = MAX(MAX(red, green), blue) / 3;
-
-			if (player->userinfo.team == TEAM_BLUE)
-				return (0xAA + intensity);
-			if (player->userinfo.team == TEAM_RED)
-				return (0xAA + intensity) << 16;
+					player->id != consoleplayer_id)
+				color = enemycolor;
 		}
 	}
 
-	return player->userinfo.color;
+	return color;
 }
 
 static void CL_RebuildAllPlayerTranslations()
