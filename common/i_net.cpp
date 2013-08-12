@@ -525,7 +525,6 @@ std::string NET_GetLocalAddress (void)
 	static char buff[HOST_NAME_MAX];
     hostent *ent;
     struct in_addr addr;
-    std::string ret_str;
 
 	gethostname(buff, HOST_NAME_MAX);
 	buff[HOST_NAME_MAX - 1] = 0;
@@ -533,16 +532,19 @@ std::string NET_GetLocalAddress (void)
     ent = gethostbyname(buff);
 
     // Return the first, IPv4 address
-    if (ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
+    if (ent && ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
     {
         addr.s_addr = *(u_long *)ent->h_addr_list[0];
 
-        ret_str = inet_ntoa(addr);
+		std::string ipstr = inet_ntoa(addr);
+		Printf(PRINT_HIGH, "Bound to IP: %s\n", ipstr.c_str());
+		return ipstr;
     }
-
-	Printf(PRINT_HIGH, "Bound to IP: %s\n",ret_str.c_str());
-
-    return ret_str;
+	else
+	{
+		Printf(PRINT_HIGH, "Could not look up host IP address from hostname\n");
+		return "";
+	}
 }
 
 
