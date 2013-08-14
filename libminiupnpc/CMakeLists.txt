@@ -30,7 +30,9 @@ endif (NO_GETADDRINFO)
 
 if (NOT WIN32)
   add_definitions (-DMINIUPNPC_SET_SOCKET_TIMEOUT)
+if (NOT APPLE)
   add_definitions (-D_BSD_SOURCE -D_POSIX_C_SOURCE=1)
+endif (NOT APPLE)
 else (NOT WIN32)
   add_definitions (-D_WIN32_WINNT=0x0501) # XP or higher for getnameinfo and friends
 endif (NOT WIN32)
@@ -62,6 +64,7 @@ if (CMAKE_COMPILER_IS_GNUC)
   endif (NOT CONFIGURED)
 endif ()
 
+# [AM] Use PROJECT_*_DIR instead of CMAKE_*_DIR so it works as a subproject
 configure_file (${PROJECT_SOURCE_DIR}/miniupnpcstrings.h.cmake ${PROJECT_BINARY_DIR}/miniupnpcstrings.h)
 include_directories (${PROJECT_BINARY_DIR})
 
@@ -92,9 +95,10 @@ if (WIN32)
 endif (WIN32)
 
 if (WIN32)
-  find_library (WINSOCK2_LIBRARY NAMES ws2_32 WS2_32 Ws2_32)
-  find_library (IPHLPAPI_LIBRARY NAMES iphlpapi)
-  set (LDLIBS ${WINSOCK2_LIBRARY} ${IPHLPAPI_LIBRARY} ${LDLIBS})
+  # [AM] Unnecessary.  Plus it causes link errors with MinGW.
+  #find_library (WINSOCK2_LIBRARY NAMES ws2_32 WS2_32 Ws2_32)
+  #find_library (IPHLPAPI_LIBRARY NAMES iphlpapi)
+  set (LDLIBS ws2_32 iphlpapi ${LDLIBS})
 #elseif (CMAKE_SYSTEM_NAME STREQUAL "Solaris")
 #  find_library (SOCKET_LIBRARY NAMES socket)
 #  find_library (NSL_LIBRARY NAMES nsl)
@@ -152,22 +156,25 @@ if (UPNPC_BUILD_TESTS)
 # set (UPNPC_INSTALL_TARGETS ${UPNPC_INSTALL_TARGETS} testminixml minixmlvalid testupnpreplyparse testigddescparse testminiwget)
 endif (UPNPC_BUILD_TESTS)
 
-
-install (TARGETS ${UPNPC_INSTALL_TARGETS}
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib${LIB_SUFFIX}
-  ARCHIVE DESTINATION lib${LIB_SUFFIX}
-)
-install (FILES
-	miniupnpc.h
-  miniwget.h
-  upnpcommands.h
-  igd_desc_parse.h
-  upnpreplyparse.h
-  upnperrors.h
-  declspec.h
-  DESTINATION include/miniupnpc
-)
+# [AM] We don't want to install any libraries, we just need them to build Odamex.
+option (UPNPC_INSTALL "Install libraries" OFF)
+if (UPNPC_INSTALL)
+  install (TARGETS ${UPNPC_INSTALL_TARGETS}
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib${LIB_SUFFIX}
+    ARCHIVE DESTINATION lib${LIB_SUFFIX}
+  )
+  install (FILES
+    miniupnpc.h
+    miniwget.h
+    upnpcommands.h
+    igd_desc_parse.h
+    upnpreplyparse.h
+    upnperrors.h
+    declspec.h
+    DESTINATION include/miniupnpc
+  )
+endif()
 
 set (CONFIGURED YES CACHE INTERNAL "")
 

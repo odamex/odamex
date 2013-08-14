@@ -91,7 +91,7 @@ public:
 	virtual void debug() const { }
 };
 
-#if defined WIN32 && !defined _XBOX
+#if defined _WIN32 && !defined _XBOX
 	#define USE_RAW_WIN32_MOUSE
 #else
 	#undef USE_RAW_WIN32_MOUSE
@@ -129,7 +129,7 @@ private:
 
 	void backupMouseDevice(const RAWINPUTDEVICE& device);
 	void restoreMouseDevice(RAWINPUTDEVICE& device) const;
-	
+
 	static RawWin32Mouse*	mInstance;
 
 	bool					mActive;
@@ -137,7 +137,7 @@ private:
 
 	RAWINPUTDEVICE			mBackupDevice;
 	bool					mHasBackupDevice;
-	bool					mRegisteredMouseDevice;	
+	bool					mRegisteredMouseDevice;
 
 	HWND					mWindow;
 	WNDPROC					mBaseWindowProc;

@@ -35,6 +35,8 @@
 #include "r_state.h"
 #include "s_sound.h"
 
+EXTERN_CVAR(co_fixzerotags)
+
 extern bool predicting;
 
 void P_SetPlatDestroy(DPlat *plat)
@@ -390,7 +392,7 @@ BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 
 	// [RH] If tag is zero, use the sector on the back side
 	//		of the activating line (if any).
-	if (!tag)
+	if (co_fixzerotags && tag == 0)
 	{
 		if (!line || !(sec = line->backsector))
 			return false;
@@ -420,9 +422,9 @@ BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 manual_plat:
 		if (sec->floordata)
 		{
-			if (P_MovingFloorCompleted(sec))
-				sec->floordata->Destroy();
-			else
+			if (co_fixzerotags && manual)
+				return false;
+			else	
 				continue;
 		}
 		

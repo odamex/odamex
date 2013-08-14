@@ -229,7 +229,7 @@ void upnp_add_redir (const char * addr, int port)
     {
         std::stringstream desc;
 
-        desc << "Odasrv " << "(" << addr << ":" << port_str << ")" << std::endl;
+        desc << "Odasrv " << "(" << addr << ":" << port_str << ")";
 
         sv_upnp_description.Set(desc.str().c_str());
     }
@@ -525,7 +525,6 @@ std::string NET_GetLocalAddress (void)
 	static char buff[HOST_NAME_MAX];
     hostent *ent;
     struct in_addr addr;
-    std::string ret_str;
 
 	gethostname(buff, HOST_NAME_MAX);
 	buff[HOST_NAME_MAX - 1] = 0;
@@ -533,16 +532,19 @@ std::string NET_GetLocalAddress (void)
     ent = gethostbyname(buff);
 
     // Return the first, IPv4 address
-    if (ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
+    if (ent && ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
     {
         addr.s_addr = *(u_long *)ent->h_addr_list[0];
 
-        ret_str = inet_ntoa(addr);
+		std::string ipstr = inet_ntoa(addr);
+		Printf(PRINT_HIGH, "Bound to IP: %s\n", ipstr.c_str());
+		return ipstr;
     }
-
-	Printf(PRINT_HIGH, "Bound to IP: %s\n",ret_str.c_str());
-
-    return ret_str;
+	else
+	{
+		Printf(PRINT_HIGH, "Could not look up host IP address from hostname\n");
+		return "";
+	}
 }
 
 
@@ -1035,7 +1037,7 @@ bool NetWaitOrTimeout(size_t ms)
 	if(ret == 1)
 		return true;
 
-	#ifdef WIN32
+	#ifdef _WIN32
 		// handle SOCKET_ERROR
 		if(ret == SOCKET_ERROR)
 			Printf(PRINT_HIGH, "select returned SOCKET_ERROR: %d\n", WSAGetLastError());

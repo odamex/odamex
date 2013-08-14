@@ -27,7 +27,7 @@
 #include <string>
 
 #include "win32inc.h"
-#ifdef WIN32
+#ifdef _WIN32
     #include "resource.h"
 	#include "mmsystem.h"
 #endif
@@ -59,7 +59,7 @@ void AddCommandString(std::string cmd);
 
 DArgs Args;
 
-#ifdef WIN32
+#ifdef _WIN32
 extern UINT TimerPeriod;
 #endif
 
@@ -85,7 +85,7 @@ int PrintString (int printlevel, char const *outline)
 	return ret;
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 static HANDLE hEvent;
 
 int ShutdownNow()

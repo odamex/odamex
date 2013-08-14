@@ -1,3 +1,10 @@
+# Server flags. [AM] TODO: Test -O3 again sometime.
+if(NOT MSVC)
+  set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+endif()
+
+global_compile_options()
+
 # Common
 set(COMMON_DIR ../common)
 file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
@@ -34,6 +41,11 @@ if(WIN32 AND NOT MSVC)
 endif()
 include_directories(${JSONCPP_DIR} ${MINIUPNPC_DIR} ${COMMON_DIR} ${SERVER_DIR} ${SERVER_WIN32_DIR})
 
+# Set up FHS installation path
+if(NOT APPLE AND NOT WIN32)
+  add_definitions("-DINSTALL_PREFIX=\"${CMAKE_INSTALL_PREFIX}\"")
+endif()
+
 add_executable(odasrv
   ${JSONCPP_SOURCE} ${JSONCPP_HEADERS}
   ${COMMON_SOURCES} ${COMMON_HEADERS}
@@ -51,3 +63,13 @@ if(UNIX AND NOT APPLE)
   target_link_libraries(odasrv rt)
 endif()
 
+if(APPLE)
+elseif(WIN32)
+  install(TARGETS odasrv
+    RUNTIME DESTINATION .
+    COMPONENT server)
+else()
+  install(TARGETS odasrv
+    RUNTIME DESTINATION bin
+    COMPONENT server)
+endif()

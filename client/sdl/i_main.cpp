@@ -47,7 +47,7 @@
 
 #include <SDL.h>
 // [Russell] - Don't need SDLmain library
-#ifdef WIN32
+#ifdef _WIN32
 #undef main
 #endif // WIN32
 
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
         // [Russell] - No more double-tapping of capslock to enable autorun
         putenv((char*)"SDL_DISABLE_LOCK_KEYS=1");
 
-#if defined WIN32 && !defined _XBOX
+#if defined _WIN32 && !defined _XBOX
     	// From the SDL 1.2.10 release notes:
     	//
     	// > The "windib" video driver is the default now, to prevent

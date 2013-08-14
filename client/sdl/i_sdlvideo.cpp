@@ -235,7 +235,7 @@ bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 
 	int sbits = bits;
 
-	#ifdef WIN32
+	#ifdef _WIN32
 	// fullscreen directx requires a 32-bit mode to fix broken palette
 	// [Russell] - Use for gdi as well, fixes d2 map02 water
 	if (fullscreen)

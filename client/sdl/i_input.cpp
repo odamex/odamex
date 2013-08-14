@@ -44,7 +44,7 @@
 #include "i_xbox.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <SDL_syswm.h>
 #endif
 
@@ -59,6 +59,7 @@ static MouseInput* mouse_input = NULL;
 
 static bool window_focused = false;
 static bool nomouse = false;
+extern bool configuring_controls;
 
 EXTERN_CVAR (use_joystick)
 EXTERN_CVAR (joy_active)
@@ -194,6 +195,8 @@ static void I_UpdateInputGrabbing()
 		can_grab = true;
 	else if (nomouse)
 		can_grab = false;
+	else if (configuring_controls)
+		can_grab = true;
 	else if (menuactive || ConsoleState == c_down || paused)
 		can_grab = false;
 	else if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
@@ -479,7 +482,7 @@ bool I_InitInput (void)
 		EnableJoystickPolling();
 	}
 
-#ifdef WIN32
+#ifdef _WIN32
 	// denis - in fullscreen, prevent exit on accidental windows key press
 	// [Russell] - Disabled because it screws with the mouse
 	//g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
@@ -551,7 +554,7 @@ void I_GetEvent()
 	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
 	// process only non-mouse events, SDL_PumpEvents is necessary.
 	SDL_PumpEvents();
-	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, SDL_ALLEVENTS & ~SDL_MOUSEEVENTMASK); 
+	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, SDL_ALLEVENTS & ~SDL_MOUSEEVENTMASK);
 
 	for (int i = 0; i < num_events; i++)
 	{
@@ -610,7 +613,7 @@ void I_GetEvent()
 				event.data2 = event.data3 = '\r';
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 			//HeX9109: Alt+F4 for cheats! Thanks Spleen
 			if (event.data1 == SDLK_F4 && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
 				AddCommandString("quit");
@@ -856,7 +859,7 @@ void I_InitMouseDriver()
 // This is used to determine if the user's version of Windows has the necessary
 // functions availible.
 //
-#if defined(WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX)
 static bool I_CheckForProc(const char* dllname, const char* procname)
 {
 	bool avail = false;
@@ -884,7 +887,7 @@ static bool I_RawWin32MouseAvailible()
 			I_CheckForProc("user32.dll", "GetRegisteredRawInputDevices") &&
 			I_CheckForProc("user32.dll", "GetRawInputData");
 }
-#endif  // USE_RAW_WIN32_MOUSE 
+#endif  // USE_RAW_WIN32_MOUSE
 
 //
 // I_SDLMouseAvailible
@@ -922,7 +925,7 @@ END_COMMAND(debugmouse)
 //
 // ============================================================================
 
-#ifdef USE_RAW_WIN32_MOUSE 
+#ifdef USE_RAW_WIN32_MOUSE
 
 #ifndef HID_USAGE_PAGE_GENERIC
 #define HID_USAGE_PAGE_GENERIC  ((USHORT) 0x01)
@@ -1171,7 +1174,7 @@ void RawWin32Mouse::processEvents()
 
 	event_t movement_event;
 	movement_event.type = ev_mouse;
-	movement_event.data1 = movement_event.data2 = movement_event.data3 = 0; 
+	movement_event.data1 = movement_event.data2 = movement_event.data3 = 0;
 
 	const RAWMOUSE* mouse;
 	while (mouse = front())
@@ -1426,14 +1429,14 @@ void RawWin32Mouse::debug() const
 
 	// determine the hwndTarget parameter of the registered rawinput device
 	HWND hwndTarget = NULL;
-	
+
 	RAWINPUTDEVICE device;
 	if (getMouseRawInputDevice(device))
 	{
 		hwndTarget = device.hwndTarget;
 	}
 
-	Printf(PRINT_HIGH, "RawWin32Mouse: Current Window Address: 0x%x, mWindow: 0x%x, RAWINPUTDEVICE Window: 0x%x\n", 
+	Printf(PRINT_HIGH, "RawWin32Mouse: Current Window Address: 0x%x, mWindow: 0x%x, RAWINPUTDEVICE Window: 0x%x\n",
 			cur_window, mWindow, hwndTarget);
 
 	WNDPROC wndproc = (WNDPROC)GetWindowLongPtr(cur_window, GWLP_WNDPROC);
@@ -1638,7 +1641,7 @@ void SDLMouse::resume()
 //
 void SDLMouse::debug() const
 {
-#if defined(WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX)
 	// get a handle to the window
 	SDL_SysWMinfo wminfo;
 	SDL_VERSION(&wminfo.version)
@@ -1647,14 +1650,14 @@ void SDLMouse::debug() const
 
 	// determine the hwndTarget parameter of the registered rawinput device
 	HWND hwndTarget = NULL;
-	
+
 	RAWINPUTDEVICE device;
 	if (getMouseRawInputDevice(device))
 	{
 		hwndTarget = device.hwndTarget;
 	}
 
-	Printf(PRINT_HIGH, "SDLMouse: Current Window Address: 0x%x, RAWINPUTDEVICE Window: 0x%x\n", 
+	Printf(PRINT_HIGH, "SDLMouse: Current Window Address: 0x%x, RAWINPUTDEVICE Window: 0x%x\n",
 			cur_window, hwndTarget);
 
 	WNDPROC wndproc = (WNDPROC)GetWindowLongPtr(cur_window, GWLP_WNDPROC);

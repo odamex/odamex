@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -43,7 +43,7 @@
 #include <sys/time.h>
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock.h>
 #include <time.h>
 #define usleep(n) Sleep(n/1000)
@@ -161,7 +161,7 @@ void addServerInfo(netadr_t addr)
 
 		if(!s.key_sent)
 			continue;
-			
+
 		net_message.ReadLong();
 
 		// check key against one we issued
@@ -324,7 +324,7 @@ void writeServerData(void)
 	for (itr = servers.begin(); itr != servers.end(); ++itr)
 		if((*itr).verified)
 			num_verified++;
-	
+
 	message.WriteShort(num_verified);
 
 	for (itr = servers.begin(); itr != servers.end(); ++itr)
@@ -363,19 +363,19 @@ void pingServer(SServer &s)
 	{
 		return; // have already asked and got no answer
 	}
-	
-#ifdef WIN32
+
+#ifdef _WIN32
 	s.key_sent = rand() * (int)GetModuleHandle(0) * time(0);
 #else
 	s.key_sent = rand() * getpid() * time(0);
 #endif
-	
+
 	message.clear();
 	message.WriteLong(LAUNCHER_CHALLENGE);
 	message.WriteLong(s.key_sent);
-	
+
 	NET_SendPacket(message.cursize, message.data, s.addr);
-	
+
 	s.pinged = true;
 }
 

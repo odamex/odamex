@@ -31,6 +31,8 @@
 #include "doomstat.h"
 #include "r_state.h"
 
+EXTERN_CVAR(co_fixzerotags)
+
 extern bool predicting;
 
 //
@@ -264,7 +266,7 @@ BOOL EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 	rtn = false;
 
 	// check if a manual trigger, if so do just the sector on the backside
-	if (tag == 0)
+	if (co_fixzerotags && tag == 0)
 	{
 		if (!line || !(sec = line->backsector))
 			return rtn;
@@ -291,7 +293,12 @@ BOOL EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 manual_ceiling:
 		// if ceiling already moving, don't start a second function on it
 		if (sec->ceilingdata)
-			continue;
+		{
+			if (co_fixzerotags && manual)
+				return false;
+			else
+				continue;
+		}
 
 		fixed_t ceilingheight = P_CeilingHeight(sec);
 		fixed_t floorheight = P_FloorHeight(sec);

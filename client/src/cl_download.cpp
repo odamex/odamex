@@ -76,11 +76,11 @@ struct download_s
 		}
 
 		void clear()
-		{	
+		{
 			filename = "";
 			md5 = "";
 			got_bytes = 0;
-        	
+
 			if (buf != NULL)
 			{
 				delete buf;
@@ -162,7 +162,7 @@ void IntDownloadComplete(void)
     std::vector<std::string> dirs;
     std::string filename;
     size_t i;
-#ifdef WIN32
+#ifdef _WIN32
     const char separator = ';';
 #else
     const char separator = ':';
@@ -203,7 +203,7 @@ void IntDownloadComplete(void)
     {
 		download.clear();
         CL_QuitNetGame();
-        return;            
+        return;
     }
 
     Printf(PRINT_HIGH, "Saved download as \"%s\"\n", filename.c_str());
@@ -229,7 +229,7 @@ void CL_RequestDownload(std::string filename, std::string filehash)
         download.md5 = filehash;
         download.got_bytes = 0;
     }
-	
+
 	// denis todo clear previous downloads
 	MSG_WriteMarker(&net_buffer, clc_wantwad);
 	MSG_WriteString(&net_buffer, filename.c_str());
@@ -239,14 +239,14 @@ void CL_RequestDownload(std::string filename, std::string filehash)
 	NET_SendPacket(net_buffer, serveraddr);
 
 	Printf(PRINT_HIGH, "Requesting download...\n");
-	
+
 	// check for completion
 	// [Russell] - We go over the boundary, because sometimes the download will
-	// pause at 100% if the server disconnected you previously, you can 
+	// pause at 100% if the server disconnected you previously, you can
 	// reconnect a couple of times and this will let the checksum system do its
 	// work
 
-	if ((download.buf != NULL) && 
+	if ((download.buf != NULL) &&
         (download.got_bytes >= download.buf->maxsize()))
 	{
         IntDownloadComplete();
@@ -274,7 +274,7 @@ void CL_DownloadStart()
 		CL_QuitNetGame();
 		return;
 	}
-	
+
     // [Russell] - Allow resumeable downloads
 	if (download.got_bytes == 0)
     {
@@ -283,17 +283,17 @@ void CL_DownloadStart()
             delete download.buf;
             download.buf = NULL;
         }
-        
+
         download.buf = new buf_t ((size_t)file_len);
-        
+
         memset(download.buf->ptr(), 0, file_len);
     }
     else
         Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
-    
-    
-    
-	Printf(PRINT_HIGH, "Downloading %s bytes...\n", 
+
+
+
+	Printf(PRINT_HIGH, "Downloading %s bytes...\n",
         FormatNBytes(file_len).c_str());
 
 	// Make initial 0% show
@@ -327,8 +327,8 @@ void CL_Download()
 	if(offset + len > download.buf->maxsize() || len > left || p == NULL)
 	{
 		Printf(PRINT_HIGH, "Bad download packet (%d, %d) encountered (%d), aborting\n", (int)offset, (int)left, (int)download.buf->size());
-    	
-		download.clear();    
+
+		download.clear();
 		CL_QuitNetGame();
 		return;
 	}
@@ -364,7 +364,7 @@ void CL_Download()
 
 	// check for completion
 	// [Russell] - We go over the boundary, because sometimes the download will
-	// pause at 100% if the server disconnected you previously, you can 
+	// pause at 100% if the server disconnected you previously, you can
 	// reconnect a couple of times and this will let the checksum system do its
 	// work
 	if(download.got_bytes >= download.buf->maxsize())

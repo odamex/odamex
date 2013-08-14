@@ -197,7 +197,7 @@ static char *C_GetDefaultMouseDriver()
 
 	int driver_id = SDL_MOUSE_DRIVER;
 
-	#ifdef WIN32
+	#ifdef _WIN32
 	driver_id = RAW_WIN32_MOUSE_DRIVER;
 	#endif
 
@@ -312,7 +312,7 @@ static char *C_GetDefaultMusicSystem()
 	defaultmusicsystem = MS_AUDIOUNIT;
 	#endif
 
-	#if defined WIN32 && !defined _XBOX
+	#if defined _WIN32 && !defined _XBOX
 	defaultmusicsystem = MS_PORTMIDI;
 	#endif
 
@@ -371,6 +371,7 @@ CVAR (r_wipetype, "2", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (r_wipetype, "1", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
 CVAR (r_showendoom, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
+CVAR (r_loadicon, "1", "Display the disk icon when loading data from disk", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 // [ML] Value of red pain intensity shift
 CVAR_FUNC_DECL (r_painintensity, "1", "Value of red pain intensity shift",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)

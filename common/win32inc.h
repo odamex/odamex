@@ -23,7 +23,7 @@
 #ifndef __WIN32INC_H__
 #define __WIN32INC_H__
 
-#ifdef WIN32
+#ifdef _WIN32
 
     // DrawText macros in winuser.h interfere with v_video.h
     #ifndef NODRAWTEXT

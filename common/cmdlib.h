@@ -58,7 +58,7 @@ int		ParseHex (char *str);
 int 	ParseNum (char *str);
 BOOL	IsNum (char *str);		// [RH] added
 
-// [Russell] Returns 0 if strings are the same, optional parameter for case 
+// [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
 bool iequals(const std::string &, const std::string &);
 
@@ -77,6 +77,7 @@ std::string &TrimString(std::string &s);
 std::string &TrimStringStart(std::string &s);
 std::string &TrimStringEnd(std::string &s);
 
+bool ValidString(const std::string&);
 
 char	*COM_Parse (char *data);
 

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -26,7 +26,7 @@
 #ifndef __I_SYSTEM__
 #define __I_SYSTEM__
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <io.h>
 #endif
 
