@@ -584,8 +584,7 @@ static const int checkcoord[12][4] = // killough -- static const
 static bool R_CheckBBox(const fixed_t *bspcoord)
 {
 	const fixed_t clipdist = 0;
-	v2fixed_t t1, t2, diagpt1, diagpt2;
-	int32_t lclip, rclip;
+	v2fixed_t t1, t2;
 
 	// Find the corners of the box that define the edges from current viewpoint
 	int boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
@@ -599,51 +598,40 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	fixed_t xh = bspcoord[checkcoord[boxpos][2]];
 	fixed_t yh = bspcoord[checkcoord[boxpos][3]];
 
-	// translate the line endpoints from world-space to camera-space
+	// translate the bounding box vertices from world-space to camera-space
 	// and store in (t1.x, t1.y) and (t2.x, t2.y)
 	R_RotatePoint(xl - viewx, yl - viewy, ANG90 - viewangle, t1.x, t1.y);
 	R_RotatePoint(xh - viewx, yh - viewy, ANG90 - viewangle, t2.x, t2.y);
 
-	diagpt1.x = t1.x;	diagpt1.y = t1.y;	diagpt2.x = t2.x;	diagpt2.y = t2.y;
+	v2fixed_t box_pts[4][2] = {
+		{	{t1.x, t1.y},	{t2.x, t1.y}	},	// top line of box
+		{	{t1.x, t2.y},	{t2.x, t2.y}	},	// bottom line of box
+		{	{t1.x, t1.y},	{t1.x, t2.y}	},	// left line of box
+		{	{t2.x, t1.y},	{t2.x, t2.y}	}	// right line of box
+	};
 
-	// is the camera on the first diagonal?
-	if (R_PointOnLine(0, 0, diagpt1.x, diagpt1.y, diagpt2.x, diagpt2.y))
-		return true;
-
-	// check if the first bbox diagonal will occupy any non-solid screen columns
-	// a non-solid screen column is a column of the screen that has not yet had
-	// a 1s linedef drawn to it.
-	if (R_ClipLineToFrustum(&diagpt1, &diagpt2, clipdist, lclip, rclip))
+	// Check each of the four sides of the bounding box to see if
+	// any part is visible. Find the maximum range of columns the bounding box
+	// will project onto the screen.
+	for (int i = 0; i < 4; i++)
 	{
-		R_ClipLine(&diagpt1, &diagpt2, lclip, rclip, &diagpt1, &diagpt2);
+		v2fixed_t* p1 = &box_pts[i][0];
+		v2fixed_t* p2 = &box_pts[i][1];
+		
+		if (R_PointOnLine(0, 0, p1->x, p1->y, p2->x, p2->y))
+			return true;
 
-		int x1 = R_ProjectPointX(diagpt1.x, diagpt1.y);
-		int x2 = R_ProjectPointX(diagpt2.x, diagpt2.y) - 1;
-		if (R_CheckProjectionX(x1, x2))
+		int32_t lclip, rclip;
+		if (R_ClipLineToFrustum(p1, p2, clipdist, lclip, rclip))
 		{
-			// are any of the screen columns for this projected diagonal non-solid?
-			if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)	
-				return true;
-		}
-	}
-	
-	diagpt1.x = t1.x;	diagpt1.y = t2.y;	diagpt2.x = t2.x;	diagpt2.y = t1.y;
-	// is the camera on the second diagonal?
-	if (R_PointOnLine(0, 0, diagpt1.x, diagpt1.y, diagpt2.x, diagpt2.y))
-		return true;
-
-	// check if the second bbox diagonal will occupy any non-solid screen columns
-	if (R_ClipLineToFrustum(&diagpt1, &diagpt2, clipdist, lclip, rclip))
-	{
-		R_ClipLine(&diagpt1, &diagpt2, lclip, rclip, &diagpt1, &diagpt2);
-
-		int x1 = R_ProjectPointX(diagpt1.x, diagpt1.y);
-		int x2 = R_ProjectPointX(diagpt2.x, diagpt2.y) - 1;
-		if (R_CheckProjectionX(x1, x2))
-		{
-			// are any of the screen columns for this projected diagonal non-solid?
-			if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)	
-				return true;
+			R_ClipLine(p1, p2, lclip, rclip, p1, p2);
+			int x1 = R_ProjectPointX(p1->x, p1->y);
+			int x2 = R_ProjectPointX(p2->x, p2->y) - 1;
+			if (R_CheckProjectionX(x1, x2))
+			{
+				if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)	
+					return true;
+			}
 		}
 	}
 

@@ -150,7 +150,7 @@ bool R_CheckProjectionX(int &x1, int &x2);
 bool R_CheckProjectionY(int &y1, int &y2);
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty);
-bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, fixed_t& lclip, fixed_t& rclip);
+bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip);
 
 void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2, 
 				int32_t lclip, int32_t rclip,
