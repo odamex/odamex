@@ -539,6 +539,20 @@ void P_NewChaseDir (AActor *actor)
 // If allaround is false, only look 180 degrees in front.
 // Returns true if a player is targeted.
 //
+// This function can trip you up if you're not careful.  The piece of
+// functionality that is critical to vanilla compatibility is actor->lastlook.
+// In vanilla, it was randomly set to a number between 0 and 3 on mobj
+// creation, and this function is SUPPOSED to loop through all player numbers,
+// set the mobj target and leave lastlook at the last-looked at player, in
+// the hopes that not all monsters will immediately target the same player.
+//
+// However, the looping logic is _very_ tricky to get your head around, as
+// the function was written with a fixed array of players in mind and makes
+// some bad assumptions.  The ending sentinal (stop) can refer to a player
+// index that doesn't exist.  The hard-limit counter (c) is post-incremented,
+// so the loop will do at most two sight-checks, but lastlook is actually
+// incremented one more time than that.
+//
 BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 {
 	int				c;
