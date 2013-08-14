@@ -163,6 +163,10 @@ CVAR (co_allowdropoff, "0", "When enabled, monsters can get pushed or thrusted o
 CVAR (co_fixweaponimpacts, "0", "When enabled, activate correct impact of projectiles and bullets on surfaces (spawning puffs,explosions)",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+// Allow line specials with sector tags of 0 to be used for moving floors/ceilings.
+CVAR (co_fixzerotags, "0", "Allow line specials with sector tags of 0 to be used for moving floors/ceilings.",
+      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 // [ML] When enabled, additional checks are made on two-sided lines, allows additional
 // silent bfg tricks, and the player will "oof" on two-sided lines
 CVAR (co_boomlinecheck, "0", "additional checks are made on two-sided lines, allows additional silent bfg tricks, and the player will \"oof\" on two-sided lines",
