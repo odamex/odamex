@@ -451,12 +451,9 @@ int R_ProjectPointY(fixed_t z, fixed_t y)
 //
 bool R_CheckProjectionX(int &x1, int &x2)
 {
-	x1 = MAX<int>(x1, 0);
-	x2 = MIN<int>(x2, viewwidth - 1);
-
-	if (x1 > x2 || x2 < 0 || x1 >= viewwidth)
-		return false;
-	return true;
+	x1 = MAX(x1, 0);
+	x2 = MIN(x2, viewwidth - 1);
+	return (x1 <= x2);
 }
 
 //
@@ -467,12 +464,9 @@ bool R_CheckProjectionX(int &x1, int &x2)
 //
 bool R_CheckProjectionY(int &y1, int &y2)
 {
-	y1 = MAX<int>(y1, 0);
-	y2 = MIN<int>(y2, viewheight - 1);
-
-	if (y1 > y2 || y2 < 0 || y1 >= viewheight)
-		return false;
-	return true;
+	y1 = MAX(y1, 0);
+	y2 = MIN(y2, viewheight - 1);
+	return (y1 <= y2);
 }
 
 
