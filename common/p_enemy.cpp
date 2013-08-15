@@ -553,48 +553,57 @@ void P_NewChaseDir (AActor *actor)
 // so the loop will do at most two sight-checks, but lastlook is actually
 // incremented one more time than that.
 //
-BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
+bool P_LookForPlayers(AActor *actor, bool allaround)
 {
-	int				c;
-	unsigned int	stop;
-	player_t*		player;
-	sector_t*		sector;
-	angle_t			an;
-	fixed_t			dist;
+	sector_t* sector = actor->subsector->sector;
 
-	sector = actor->subsector->sector;
-
-	if(!sector)
+	if (!sector)
 		return false;
 
-	size_t s = players.size();
-	size_t realnum = 0;
-	for(size_t i = 0; i < s; i++)
-		if(players[i].ingame())
-			realnum = i + 1;
+	// Construct our table of ingame players
+	// [AM] TODO: Have the Players container handle this instead of having to
+	//            check every single tic.
+	static player_t* playeringame[MAXPLAYERS];
+	memset(playeringame, 0, sizeof(player_t*) * MAXPLAYERS);
 
-	if(!realnum)
+	short maxid = 0;
+	for (std::vector<player_t>::iterator it = players.begin();it != players.end();++it)
+	{
+		if (it->ingame() && !(it->spectator))
+		{
+			playeringame[(it->id) - 1] = &*it;
+			maxid = it->id;
+		}
+	}
+
+	// If there are no ingame players, we need to bug out now because
+	// otherwise we're going to cause an infinite loop.
+	if (maxid == 0)
 		return false;
 
-	// denis - vanilla sync
-	size_t num = realnum < MAXPLAYERS_VANILLA ? MAXPLAYERS_VANILLA : realnum;
+	// denis - vanilla sync, original code always looped over size-4 array.
+	if (maxid < MAXPLAYERS_VANILLA)
+		maxid = MAXPLAYERS_VANILLA;
 
 	// denis - prevents calling P_CheckSight twice on the same player
-	static char	sightcheckfailed[MAXPLAYERS];
-	memset(sightcheckfailed, 0, realnum);
+	static bool sightcheckfailed[MAXPLAYERS];
+	memset(sightcheckfailed, 0, sizeof(bool) * maxid);
 
-	c = 0;
-	stop = actor->lastlook > 0 ? actor->lastlook - 1 : num - 1;
+	int counter = 0;
 
-	for( ; ; actor->lastlook = (actor->lastlook+1)%num)
+	// [AM] Vanilla braindamage, "fixing" will lead to vanilla desyncs
+	unsigned int stop;
+	if (actor->lastlook > 0)
+		stop = actor->lastlook - 1;
+	else
+		stop = maxid - 1;
+
+	for ( ; ; actor->lastlook = (actor->lastlook + 1) % maxid)
 	{
-		if(actor->lastlook >= realnum)
+		if (playeringame[actor->lastlook] == NULL)
 			continue;
 
-		if (!players[actor->lastlook].ingame())
-			continue;
-
-		if (c++ == 2 || actor->lastlook == stop)
+		if (++counter == 3 || actor->lastlook == stop)
 		{
 			// done looking
 			// [RH] Use goal as a last resort
@@ -606,44 +615,37 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 			return false;
 		}
 
-		player = &players[actor->lastlook];
-
-		if (player->cheats & CF_NOTARGET)
-			continue;			// no target
-
-		// GhostlyDeath -- don't look for a spectator
-		if (player->spectator)
-			continue;
-
-		if (player->health <= 0)
-			continue;			// dead
-
-		if (!player->mo)
-			continue;			// out of game
-
 		if (sightcheckfailed[actor->lastlook])
 			continue;
-		else if (!P_CheckSight(actor, player->mo))
+
+		player_t* player = playeringame[actor->lastlook];
+
+		if (player->cheats & CF_NOTARGET)
+			continue; // no target
+
+		if (player->health <= 0)
+			continue; // dead
+
+		if (!player->mo)
+			continue; // out of game
+
+		if (!P_CheckSight(actor, player->mo))
 		{
 			sightcheckfailed[actor->lastlook] = true;
-			continue;			// out of sight
+			continue; // out of sight
 		}
 
 		if (!allaround)
 		{
-			an = P_PointToAngle (actor->x,
-								  actor->y,
-								  player->mo->x,
-								  player->mo->y)
-				- actor->angle;
-
+			angle_t an = P_PointToAngle(actor->x, actor->y,
+			                            player->mo->x, player->mo->y) - actor->angle;
 			if (an > ANG90 && an < ANG270)
 			{
-				dist = P_AproxDistance (player->mo->x - actor->x,
-										player->mo->y - actor->y);
+				fixed_t dist = P_AproxDistance(player->mo->x - actor->x,
+				                               player->mo->y - actor->y);
 				// if real close, react anyway
 				if (dist > MELEERANGE)
-					continue;	// behind back
+					continue; // behind back
 			}
 		}
 
