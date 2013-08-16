@@ -121,7 +121,7 @@ class player_s
 public:
 	void Serialize (FArchive &arc);
 
-	bool ingame()
+	bool ingame() const
 	{
 		return playerstate == PST_LIVE ||
 				playerstate == PST_DEAD ||
