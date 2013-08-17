@@ -592,17 +592,20 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 		if (sv_gametype == GM_CTF) //  [Toke - CTF]
 			CTF_CheckFlags(*it);
 
+		// [AM] AActor->Destroy() does not destroy the AActor for good, and also
+		//      does not null the player reference.  We have to do it here to
+		//      prevent actions on a zombie mobj from using a player that we
+		//      already erased from the players list.
+		it->mo->player = NULL;
+
 		it->mo->Destroy();
 		it->mo = AActor::AActorPtr();
 	}
 
 	// remove this player from the global players vector
 	Players::iterator next;
-	if (!players.empty())
-	{
-		next = players.erase(it);
-		free_player_ids.push(player_id);
-	}
+	next = players.erase(it);
+	free_player_ids.push(player_id);
 
 	Unlag::getInstance().unregisterPlayer(player_id);
 

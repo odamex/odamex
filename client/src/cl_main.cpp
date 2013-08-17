@@ -625,7 +625,10 @@ void CL_DisconnectClient(void)
 	if (player.mo)
 	{
 		P_DisconnectEffect(player.mo);
-		player.mo->Destroy();
+
+		// [AM] Destroying the player mobj is not our responsibility.  However, we do want to
+		//      make sure that the mobj->player doesn't point to an invalid player.
+		player.mo->player = NULL;
 	}
 
 	// Remove the player from the players list.

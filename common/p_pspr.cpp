@@ -199,15 +199,8 @@ void P_SetPsprite(player_t* player, int position, statenum_t stnum)
 		if (state->action)
 		{
 			if(!player->spectator)
-			{
-				// [AM] Trying to run actions on non-existant player mobjs will
-				//      crash the game.  This _never_ happens during normal
-				//      single-player gameplay, but sometimes a client gets
-				//      put into inconsistent gamestate.
-				AActor* player_mo = player->mo;
-				if (player_mo != NULL)
-					state->action(player_mo);
-			}
+				state->action(player->mo);
+
 			if (!psp->state)
 				break;
 		}
