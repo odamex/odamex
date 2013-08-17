@@ -60,6 +60,14 @@ static int crosshair_lump;
 static void R_InitCrosshair();
 static byte crosshair_trans[256];
 
+static int crosshair_color_custom = 0xb0;
+EXTERN_CVAR (hud_crosshaircolor)
+CVAR_FUNC_IMPL (hud_crosshaircolor)
+{
+	DWORD *palette = GetDefaultPalette()->colors;
+	crosshair_color_custom = V_GetColorFromString(palette, hud_crosshaircolor.cstring());
+}
+
 EXTERN_CVAR (hud_crosshairhealth)
 CVAR_FUNC_IMPL (hud_crosshair)
 {
@@ -91,7 +99,7 @@ EXTERN_CVAR (r_drawplayersprites)
 EXTERN_CVAR (r_particles)
 
 EXTERN_CVAR (hud_crosshairdim)
-EXTERN_CVAR (hud_crosshairscale) 
+EXTERN_CVAR (hud_crosshairscale)
 
 //
 // INITIALIZATION FUNCTIONS
@@ -1540,7 +1548,7 @@ static void R_DrawCrosshair (void)
 				crosshair_trans[crosshair_color] = health_colors[0];
 		}
 		else
-			crosshair_trans[crosshair_color] = crosshair_color;	// no trans
+			crosshair_trans[crosshair_color] = crosshair_color_custom;
 
 		V_ColorMap = crosshair_trans;
 
