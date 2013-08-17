@@ -830,21 +830,18 @@ int WI_fragSum (player_t &player)
 	return player.fragcount;
 }
 
-void WI_drawDeathmatchStats (void)
+void WI_drawDeathmatchStats()
 {
 	// draw animated background
 	WI_drawAnimatedBack();
 	WI_drawLF();
 
 	// [RH] Draw heads-up scores display
-	HU_DrawScores (&players[me]);
+	HU_DrawScores(&idplayer(me));
 }
 
-void WI_initNetgameStats (void)
+void WI_initNetgameStats()
 {
-
-	unsigned int i;
-
 	state = StatCount;
 	acceleratestage = 0;
 	ng_state = 1;
@@ -856,9 +853,9 @@ void WI_initNetgameStats (void)
 	cnt_secret_c.clear();
 	cnt_frags_c.clear();
 
-	for (i=0 ; i<players.size() ; i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (!players[i].ingame())
+		if (!(it->ingame()))
 			continue;
 
 		cnt_kills_c.push_back(0);
@@ -866,7 +863,7 @@ void WI_initNetgameStats (void)
 		cnt_secret_c.push_back(0);
 		cnt_frags_c.push_back(0);
 
-		dofrags += WI_fragSum(players[i]);
+		dofrags += WI_fragSum(*it);
 	}
 
 	dofrags = !!dofrags;
@@ -874,9 +871,8 @@ void WI_initNetgameStats (void)
 	WI_initAnimatedBack();
 }
 
-void WI_updateNetgameStats (void)
+void WI_updateNetgameStats()
 {
-
 	unsigned int i;
 	int fsum;
 	BOOL stillticking;
@@ -887,9 +883,10 @@ void WI_updateNetgameStats (void)
 	{
 		acceleratestage = 0;
 
-		for (i=0 ; i<players.size(); i++)
+		i = 0;
+		for (Players::iterator it = players.begin();it != players.end();++it,++i)
 		{
-			if (!players[i].ingame())
+			if (!(it->ingame()))
 				continue;
 
 			cnt_kills_c[i] = plrs[i].skills;
@@ -897,7 +894,7 @@ void WI_updateNetgameStats (void)
 			cnt_secret_c[i] = plrs[i].ssecret;
 
 			if (dofrags)
-				cnt_frags_c[i] = WI_fragSum (players[i]);
+				cnt_frags_c[i] = WI_fragSum(*it);
 		}
 		S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
 		ng_state = 10;
@@ -910,9 +907,10 @@ void WI_updateNetgameStats (void)
 
 		stillticking = false;
 
-		for (i=0 ; i<players.size() ; i++)
+		i = 0;
+		for (Players::iterator it = players.begin();it != players.end();++it,++i)
 		{
-			if (!players[i].ingame())
+			if (!(it->ingame()))
 				continue;
 
 			cnt_kills_c[i] += 2;
@@ -936,9 +934,10 @@ void WI_updateNetgameStats (void)
 
 		stillticking = false;
 
-		for (i=0 ; i<players.size() ; i++)
+		i = 0;
+		for (Players::iterator it = players.begin();it != players.end();++it,++i)
 		{
-			if (!players[i].ingame())
+			if (!(it->ingame()))
 				continue;
 
 			cnt_items_c[i] += 2;
@@ -960,9 +959,10 @@ void WI_updateNetgameStats (void)
 
 		stillticking = false;
 
-		for (i=0 ; i<players.size() ; i++)
+		i = 0;
+		for (Players::iterator it = players.begin();it != players.end();++it,++i)
 		{
-			if (!players[i].ingame())
+			if (!(it->ingame()))
 				continue;
 
 			cnt_secret_c[i] += 2;
@@ -986,14 +986,15 @@ void WI_updateNetgameStats (void)
 
 		stillticking = false;
 
-		for (i=0 ; i<players.size() ; i++)
+		i = 0;
+		for (Players::iterator it = players.begin();it != players.end();++it,++i)
 		{
-			if (!players[i].ingame())
+			if (!(it->ingame()))
 				continue;
 
 			cnt_frags_c[i] += 1;
 
-			if (cnt_frags_c[i] >= (fsum = WI_fragSum(players[i])))
+			if (cnt_frags_c[i] >= (fsum = WI_fragSum(*it)))
 				cnt_frags_c[i] = fsum;
 			else
 				stillticking = true;
@@ -1049,13 +1050,15 @@ void WI_drawNetgameStats(void)
 	// draw stats
 	y = NG_STATSY + kills->height();
 
-	for (i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		// [RH] Quick hack: Only show the first four players.
-		if (i >= 4)
+		if (it->id > 4)
 			break;
 
-		if (!players[i].ingame())
+		byte i = (it->id) - 1;
+
+		if (!it->ingame())
 			continue;
 
 		x = NG_STATSX;
@@ -1231,15 +1234,15 @@ void WI_drawStats (void)
 
 void WI_checkForAccelerate(void)
 {
-	if(!serverside)
+	if (!serverside)
 		return;
 
-    // check for button presses to skip delays
-    for (size_t i = 0; i < players.size() ; i++)
-    {
-		if (players[i].ingame())
+	// check for button presses to skip delays
+	for (Players::iterator it = players.begin();it != players.end();++it)
+	{
+		if (it->ingame())
 		{
-			player_t *player = &players[i];
+			player_t *player = &*it;
 
 			if (player->cmd.ucmd.buttons & BT_ATTACK)
 			{
@@ -1258,7 +1261,7 @@ void WI_checkForAccelerate(void)
 			else
 				player->usedown = false;
 		}
-    }
+	}
 }
 
 // Updates stuff each tick

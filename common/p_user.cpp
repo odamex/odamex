@@ -62,23 +62,14 @@ EXTERN_CVAR (cl_movebob)
 
 player_t &idplayer(byte id)
 {
-	static size_t translation[MAXPLAYERS];
+	// Put a cached lookup mechanism in here.
 
-	if (id >= MAXPLAYERS)
- 		return nullplayer;
-
-	// attempt a quick cached resolution
- 	size_t tid = translation[id];
-	if (tid < players.size() && players[tid].id == id)
- 		return players[tid];
-
- 	// full search
-	for(size_t i = 0; i < players.size(); i++)
- 	{
-		// cache any ids we come across while searching for the correct player
-		translation[players[i].id] = i;
-		if (players[i].id == id)
- 			return players[i];
+	// full search
+	for (Players::iterator it = players.begin();it != players.end();++it)
+	{
+		// Add to the cache while we search
+		if (it->id == id)
+			return *it;
 	}
 
 	return nullplayer;
@@ -92,8 +83,7 @@ player_t &idplayer(byte id)
  */
 player_t &nameplayer(const std::string &netname)
 {
-	std::vector<player_t>::iterator it;
-	for (it = players.begin(); it != players.end(); ++it)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (iequals(netname, it->userinfo.netname))
 			return *it;
@@ -123,10 +113,10 @@ size_t P_NumPlayersInGame()
 {
 	size_t num_players = 0;
 
-	for (size_t i = 0; i < players.size(); ++i)
+	for (Players::const_iterator it = players.begin();it != players.end();++it)
 	{
-		if (!players[i].spectator && players[i].ingame())
-			++num_players;
+		if (!(it->spectator) && it->ingame())
+			num_players += 1;
 	}
 
 	return num_players;
@@ -142,10 +132,10 @@ size_t P_NumReadyPlayersInGame()
 {
 	size_t num_players = 0;
 
-	for (size_t i = 0; i < players.size(); ++i)
+	for (Players::const_iterator it = players.begin();it != players.end();++it)
 	{
-		if (!players[i].spectator && players[i].ingame() && players[i].ready)
-			++num_players;
+		if (!(it->spectator) && it->ingame() && it->ready)
+			num_players += 1;
 	}
 
 	return num_players;
@@ -158,12 +148,12 @@ size_t P_NumPlayersOnTeam(team_t team)
 {
 	size_t num_players = 0;
 
-	for (size_t i = 0;i < players.size();++i)
+	for (Players::const_iterator it = players.begin();it != players.end();++it)
 	{
-		if (!players[i].spectator && players[i].ingame() &&
-		    players[i].userinfo.team == team)
-			++num_players;
+		if (!(it->spectator) && it->ingame() && it->userinfo.team == team)
+			num_players += 1;
 	}
+
 	return num_players;
 }
 

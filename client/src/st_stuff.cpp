@@ -865,19 +865,17 @@ BEGIN_COMMAND (chase)
 {
 	if (demoplayback)
 	{
-		size_t i;
-
 		if (chasedemo)
 		{
 			chasedemo.Set (0.0f);
-			for (i = 0; i < players.size(); i++)
-				players[i].cheats &= ~CF_CHASECAM;
+			for (Players::iterator it = players.begin();it != players.end();++it)
+				it->cheats &= ~CF_CHASECAM;
 		}
 		else
 		{
 			chasedemo.Set (1.0f);
-			for (i = 0; i < players.size(); i++)
-				players[i].cheats |= CF_CHASECAM;
+			for (Players::iterator it = players.begin();it != players.end();++it)
+				it->cheats |= CF_CHASECAM;
 		}
 	}
 	else

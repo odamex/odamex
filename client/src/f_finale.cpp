@@ -119,12 +119,12 @@ void F_Ticker (void)
 	if (serverside && finalecount > 50 && finalestage != 1) {
 		// go on to the next level
 		// [RH] or just reveal the entire message if we're still ticking it
-		size_t i;
-		for (i = 0; i < players.size(); i++)
-			if (players[i].cmd.ucmd.buttons)
+		Players::iterator it = players.begin();
+		for (;it != players.end();++it)
+			if (it->cmd.ucmd.buttons)
 				break;
 
-		if (i != players.size())
+		if (it != players.end())
 		{
 			/*if (finalecount < (signed)(strlen (finaletext)*TEXTSPEED))
 			{

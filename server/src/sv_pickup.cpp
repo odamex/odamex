@@ -52,12 +52,11 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	}
 
 	// Track all eligible players.
-	std::vector<size_t> eligible;
-
-	for (size_t i = 0;i < players.size();i++) {
-		if (validplayer(players[i]) && players[i].ingame() &&
-		    (!players[i].spectator || (players[i].spectator && players[i].ready))) {
-			eligible.push_back(i);
+	std::vector<player_t*> eligible;
+	for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+		if (validplayer(*it) && it->ingame() &&
+		    (!(it->spectator) || (it->spectator && it->ready))) {
+			eligible.push_back(&*it);
 		}
 	}
 
@@ -79,8 +78,9 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	// Rip through our eligible vector, forcing players in the vector
 	// onto alternating teams.
 	team_t dest_team = TEAM_BLUE;
-	for (size_t i = 0;i < eligible.size();i++) {
-		player_t &player = players[eligible[i]];
+	size_t i = 0;
+	for (std::vector<player_t*>::iterator it = eligible.begin();it != eligible.end();++it,++i) {
+		player_t &player = **it;
 
 		// Force-join the player if he's spectating.
 		SV_SetPlayerSpec(player, false, true);
@@ -101,8 +101,8 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 
 		SV_ForceSetTeam(player, dest_team);
 		SV_CheckTeam(player);
-		for (size_t j = 0;j< players.size();j++) {
-			SV_SendUserInfo(player, &clients[j]);
+		for (Players::iterator pit = players.begin();pit != players.end();++pit) {
+			SV_SendUserInfo(player, &(pit->client));
 		}
 
 		if (dest_team == TEAM_BLUE) {
@@ -113,9 +113,9 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	}
 
 	// Force-spectate everyone who is not eligible.
-	for (size_t i = 0;i < players.size();i++) {
-		if (std::find(eligible.begin(), eligible.end(), i) == eligible.end()) {
-			SV_SetPlayerSpec(players[i], true, true);
+	for (Players::iterator it = players.begin();it != players.end();++it) {
+		if (std::find(eligible.begin(), eligible.end(), &*it) == eligible.end()) {
+			SV_SetPlayerSpec(*it, true, true);
 		}
 	}
 

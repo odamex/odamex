@@ -2454,13 +2454,13 @@ void P_RailAttack (AActor *source, int damage, int offset)
 		P_DrawRailTrail (start, end);
 	else
 	{
-		for (size_t i = 0; i < players.size(); i++)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
-			AActor *mo = players[i].mo;
+			AActor *mo = it->mo;
 			if (!mo || mo == source)
 				continue;
 
-			buf_t* buf = &players[i].client.netbuf;
+			buf_t* buf = &(it->client.netbuf);
 			MSG_WriteMarker(buf, svc_railtrail);
 			MSG_WriteShort(buf, short(start.x));
 			MSG_WriteShort(buf, short(start.y));

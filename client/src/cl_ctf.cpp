@@ -65,9 +65,9 @@ void CTF_Connect()
 	size_t i;
 
 	// clear player flags client may have imagined
-	for(i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 		for(size_t j = 0; j < NUMFLAGS; j++)
-			players[i].flags[j] = false;
+			it->flags[j] = false;
 
 	for(i = 0; i < NUMFLAGS; i++)
 	{

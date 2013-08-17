@@ -161,9 +161,9 @@ void SV_SendServerInfo()
 	MSG_WriteString(&ml_message, (char *)sv_hostname.cstring());
 
 	byte playersingame = 0;
-	for (i = 0; i < players.size(); ++i)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (players[i].ingame())
+		if (it->ingame())
 			playersingame++;
 	}
 
@@ -185,16 +185,16 @@ void SV_SendServerInfo()
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_TEAMDM));
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_CTF));
 
-	for (i = 0; i < players.size(); ++i)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (players[i].ingame())
+		if (it->ingame())
 		{
-			MSG_WriteString(&ml_message, players[i].userinfo.netname.c_str());
-			MSG_WriteShort(&ml_message, players[i].fragcount);
-			MSG_WriteLong(&ml_message, players[i].ping);
+			MSG_WriteString(&ml_message, it->userinfo.netname.c_str());
+			MSG_WriteShort(&ml_message, it->fragcount);
+			MSG_WriteLong(&ml_message, it->ping);
 
 			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-				MSG_WriteByte(&ml_message, players[i].userinfo.team);
+				MSG_WriteByte(&ml_message, it->userinfo.team);
 			else
 				MSG_WriteByte(&ml_message, TEAM_NONE);
 		}
@@ -247,14 +247,14 @@ void SV_SendServerInfo()
 	MSG_WriteBool(&ml_message, (sv_cleanmaps ? true : false));
 	MSG_WriteBool(&ml_message, (sv_fragexitswitch ? true : false));
 
-	for (i = 0; i < players.size(); ++i)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (players[i].ingame())
+		if (it->ingame())
 		{
-			MSG_WriteShort(&ml_message, players[i].killcount);
-			MSG_WriteShort(&ml_message, players[i].deathcount);
+			MSG_WriteShort(&ml_message, it->killcount);
+			MSG_WriteShort(&ml_message, it->deathcount);
 			
-			int timeingame = (time(NULL) - players[i].JoinTime)/60;
+			int timeingame = (time(NULL) - it->JoinTime)/60;
 			if (timeingame<0) timeingame=0;
 				MSG_WriteShort(&ml_message, timeingame);
 		}
@@ -265,11 +265,11 @@ void SV_SendServerInfo()
     MSG_WriteLong(&ml_message, (DWORD)0x01020304);
     MSG_WriteShort(&ml_message, sv_maxplayers.asInt());
     
-    for (i = 0; i < players.size(); ++i)
+    for (Players::iterator it = players.begin();it != players.end();++it)
     {
-        if (players[i].ingame())
+        if (it->ingame())
         {
-            MSG_WriteBool(&ml_message, (players[i].spectator ? true : false));
+            MSG_WriteBool(&ml_message, (it->spectator ? true : false));
         }
     }
 

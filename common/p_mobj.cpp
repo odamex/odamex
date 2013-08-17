@@ -1851,9 +1851,9 @@ bool P_CheckMissileSpawn (AActor* th)
 	// [SL] 2011-06-02 - If a missile explodes immediatley upon firing,
 	// make sure we spawn the missile first, send it to all clients immediately
 	// instead of queueing it, then explode it.
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		SV_AwarenessUpdate(players[i], th);
+		SV_AwarenessUpdate(*it, th);
 	}
 
 	if (!P_TryMove (th, th->x, th->y, false))
@@ -2558,16 +2558,16 @@ bool P_VisibleToPlayers(AActor *mo)
 	if (!mo)
 		return false;
 
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		// players aren't considered visible to themselves
-		if (mo->player && mo->player->id == players[i].id)
+		if (mo->player && mo->player->id == it->id)
 			continue;
 
-		if (!players[i].mo || players[i].spectator)
+		if (!(it->mo) || it->spectator)
 			continue;
 
-		if (P_CheckSightEdges(players[i].mo, mo, 5.0))
+		if (P_CheckSightEdges(it->mo, mo, 5.0))
 			return true;
 	}
 

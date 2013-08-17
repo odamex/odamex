@@ -225,10 +225,10 @@ int CL_GetPlayerColor(player_t *player)
 
 static void CL_RebuildAllPlayerTranslations()
 {
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		int color = CL_GetPlayerColor(&players[i]);
-		R_BuildPlayerTranslation(players[i].id, color);
+		int color = CL_GetPlayerColor(&*it);
+		R_BuildPlayerTranslation(it->id, color);
 	}
 }
 
@@ -547,48 +547,71 @@ void CL_CheckDisplayPlayer()
 //
 void CL_SpyCycle(bool forward)
 {
-	int direction = forward ? 1 : -1;
-    extern bool st_firsttime;
+	extern bool st_firsttime;
 
-    // make sure players[0] is valid
-    if (players.empty())
-        return;
+	// Make sure we have players to iterate over
+	if (players.empty())
+		return;
 
-    if (!validplayer(displayplayer()))
-    {
-        CL_CheckDisplayPlayer();
-        return;
-    }
+	if (!validplayer(displayplayer()))
+	{
+		CL_CheckDisplayPlayer();
+		return;
+	}
 
-	// get the index of the displayplayer in the players[] vector
-    size_t curr = &displayplayer() - &players[0];
-    size_t numplayers = players.size();
+	Players::iterator it, sentinal, begin, end;
 
-    for (size_t i = 1; i < numplayers; i++)
-    {
-        curr = (curr + direction) % numplayers;
-        player_t &player = players[curr];
+	// Pick iterator set to use depending on if we're going forwards
+	// or backwards.
+	if (forward)
+	{
+		begin = players.begin();
+		end = players.end();
+	}
+	else
+	{
+		begin = players.rbegin().base();
+		end = players.rend().base();
+	}
 
-        if (P_CanSpy(consoleplayer(), player) || player.id == consoleplayer_id ||
-            demoplayback || netdemo.isPlaying() || netdemo.isPaused())
-        {
-            if (!player.mo)
-                continue;
+	it = sentinal = begin;
 
-            displayplayer_id = player.id;
-            CL_CheckDisplayPlayer();
+	for (;it != end;++it)
+	{
+		if (it->id == displayplayer_id)
+			break;
+	}
 
-            if (demoplayback)
-            {
-                consoleplayer_id = player.id;
-                st_firsttime = true;
-            }
+	// We can't find the displayplayer.  This is bad.
+	if (it == end)
+		return;
 
-            return;
-        }
-    }
+	while (it != sentinal)
+	{
+		if ((P_CanSpy(consoleplayer(), *it) ||
+		     it->id == consoleplayer_id ||
+		     demoplayback || netdemo.isPlaying() ||
+		     netdemo.isPaused()) && it->mo)
+		{
+			displayplayer_id = it->id;
+			CL_CheckDisplayPlayer();
+
+			if (demoplayback)
+			{
+				consoleplayer_id = it->id;
+				st_firsttime = true;
+			}
+
+			return;
+		}
+
+		++it;
+
+		// Wrap around if we hit the end.  The sentinal will stop us.
+		if (it == end)
+			it = begin;
+	}
 }
-
 
 //
 // CL_DisconnectClient
@@ -599,22 +622,22 @@ void CL_DisconnectClient(void)
 	if (players.empty() || !validplayer(player))
 		return;
 
-	if(player.mo)
+	if (player.mo)
 	{
-		P_DisconnectEffect (player.mo);
-		player.mo->Destroy();		
+		P_DisconnectEffect(player.mo);
+		player.mo->Destroy();
 	}
 
-	size_t index = &player - &players[0];
-	if (cl_disconnectalert && &player != &consoleplayer())
-		S_Sound (CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
-	players.erase(players.begin() + index);
-
-	// repair mo after player pointers are reset
-	for(size_t i = 0; i < players.size(); i++)
+	// Remove the player from the players list.
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if(players[i].mo)
-			players[i].mo->player = &players[i];
+		if (it->id == player.id)
+		{
+			if (cl_disconnectalert && &player != &consoleplayer())
+				S_Sound(CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
+			players.erase(it);
+			break;
+		}
 	}
 
 	// if this was our displayplayer, update camera
@@ -701,9 +724,9 @@ void CL_RunTics()
 
 			// debugging output
 			extern unsigned char prndindex;
-			if (players.size() && players[0].mo)
+			if (!(players.empty()) && players.begin()->mo)
 				Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n",
-						level.time, prndindex, players[0].mo->x, players[0].mo->y, players[0].mo->z);
+				       level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
  				Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
 		}
@@ -806,9 +829,9 @@ BEGIN_COMMAND (players)
 {
 	// Gather all ingame players
 	std::map<int, std::string> mplayers;
-	for (size_t i = 0; i < players.size(); ++i) {
-		if (players[i].ingame()) {
-			mplayers[players[i].id] = players[i].userinfo.netname;
+	for (Players::const_iterator it = players.begin();it != players.end();++it) {
+		if (it->ingame()) {
+			mplayers[it->id] = it->userinfo.netname;
 		}
 	}
 
@@ -1331,20 +1354,13 @@ player_t &CL_FindPlayer(size_t id)
 	// Totally new player?
 	if(!validplayer(*p))
 	{
-		if(players.size() >= MAXPLAYERS)
+		if (players.size() >= MAXPLAYERS)
 			return *p;
 
 		players.push_back(player_s());
 
 		p = &players.back();
 		p->id = id;
-
-		// repair mo after player pointers are reset
-		for(size_t i = 0; i < players.size(); i++)
-		{
-			if(players[i].mo)
-				players[i].mo->player = &players[i];
-		}
 	}
 
 	return *p;
@@ -3295,8 +3311,8 @@ void CL_LoadMap(void)
 	teleported_players.clear();
 
 	CL_ClearSectorSnapshots();	
-	for (size_t i = 0; i < players.size(); i++)
-		players[i].snapshots.clearSnapshots();
+	for (Players::iterator it = players.begin();it != players.end();++it)
+		it->snapshots.clearSnapshots();
 		
 	// reset the world_index (force it to sync)
 	CL_ResyncWorldIndex();
@@ -3651,12 +3667,12 @@ void CL_SendCmd(void)
 //
 // CL_PlayerTimes
 //
-void CL_PlayerTimes (void)
+void CL_PlayerTimes()
 {
-	for (size_t i = 0; i < players.size(); ++i)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (players[i].ingame())
-			players[i].GameTime++;
+		if (it->ingame())
+			it->GameTime++;
 	}
 }
 
@@ -3869,9 +3885,9 @@ void CL_SimulateSectors()
 //
 void CL_SimulatePlayers()
 {
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		player_t *player = &players[i];
+		player_t *player = &*it;
 		if (!player || !player->mo || player->spectator)
 			continue;
 		

@@ -999,7 +999,12 @@ FArchive &operator>> (FArchive &arc, player_s *&p)
 	if (ofs == 0xff)
 		p = NULL;
 	else
-		p = &players[ofs]; // denis - todo - security
+	{
+		if (validplayer(idplayer(ofs)))
+			p = &idplayer(ofs);
+		else
+			p = NULL;
+	}
 	return arc;
 }
 

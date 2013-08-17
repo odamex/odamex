@@ -100,7 +100,7 @@ BOOL			netgame;
 // Describes if this is a multiplayer game or not
 BOOL			multiplayer;
 // The player vector, contains all player information
-std::vector<player_t>		players;
+Players			players;
 // The null player
 player_t		nullplayer;
 
@@ -238,37 +238,37 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 //
 // G_WriteDemoTiccmd
 //
-void G_WriteDemoTiccmd ()
+void G_WriteDemoTiccmd()
 {
-    byte demo_tmp[8];
+	byte demo_tmp[8];
 
-    int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
+	int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
 
-    for(size_t i = 0; i < players.size(); i++)
-    {
-        byte *demo_p = demo_tmp;
-        usercmd_t *cmd = &players[i].cmd.ucmd;
+	for (Players::iterator it = players.begin();it != players.end();++it)
+	{
+		byte *demo_p = demo_tmp;
+		usercmd_t *cmd = &it->cmd.ucmd;
 
-        *demo_p++ = cmd->forwardmove >> 8;
-        *demo_p++ = cmd->sidemove >> 8;
+		*demo_p++ = cmd->forwardmove >> 8;
+		*demo_p++ = cmd->sidemove >> 8;
 
-        // If this is a longtics demo, record in higher resolution
+		// If this is a longtics demo, record in higher resolution
 
-        if (LMP_DOOM_1_9_1 == demoversion)
-        {
-            *demo_p++ = (cmd->yaw & 0xff);
-            *demo_p++ = (cmd->yaw >> 8) & 0xff;
-        }
-        else
-        {
-            *demo_p++ = cmd->yaw >> 8;
-            cmd->yaw = ((unsigned char)*(demo_p-1))<<8;
-        }
+		if (LMP_DOOM_1_9_1 == demoversion)
+		{
+			*demo_p++ = (cmd->yaw & 0xff);
+			*demo_p++ = (cmd->yaw >> 8) & 0xff;
+		}
+		else
+		{
+			*demo_p++ = cmd->yaw >> 8;
+			cmd->yaw = ((unsigned char)*(demo_p-1))<<8;
+		}
 
-        *demo_p++ = cmd->buttons;
+		*demo_p++ = cmd->buttons;
 
-        size_t res = fwrite(demo_tmp, demostep, 1, recorddemo_fp);
-    }
+		size_t res = fwrite(demo_tmp, demostep, 1, recorddemo_fp);
+	}
 }
 
 //
@@ -354,12 +354,12 @@ EXTERN_CVAR(sv_maxplayers)
 
 void RecordCommand(int argc, char **argv)
 {
-	if(argc > 2)
+	if (argc > 2)
 	{
 		int ingame = 0;
-		for(size_t i = 0; i < players.size(); i++)
+		for (Players::const_iterator it = players.begin();it != players.end();++it)
 		{
-			if(players[i].ingame())
+			if (it->ingame())
 				ingame++;
 		}
 
@@ -430,13 +430,13 @@ int mapchange;
 
 void G_Ticker (void)
 {
-	size_t i;
-
 	// do player reborns if needed
-	if(serverside)
-		for (i = 0; i < players.size(); i++)
-			if (players[i].ingame() && (players[i].playerstate == PST_REBORN || players[i].playerstate == PST_ENTER))
-				G_DoReborn (players[i]);
+	if (serverside)
+	{
+		for (Players::iterator it = players.begin();it != players.end();++it)
+			if (it->ingame() && (it->playerstate == PST_REBORN || it->playerstate == PST_ENTER))
+				G_DoReborn(*it);
+	}
 
 	// do things to change the game state
 	while (gameaction != ga_nothing)
@@ -606,9 +606,14 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	if (!player.mo)
 	{
 		// first spawn of level, before corpses
-		for (i = 0; i < players.size() && (&players[i] != &player); i++)
-			if (players[i].mo && players[i].mo->x == x && players[i].mo->y == y)
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (&*it != &player)
+				break;
+
+			if (it->mo && it->mo->x == x && it->mo->y == y)
 				return false;
+		}
 		return true;
 	}
 

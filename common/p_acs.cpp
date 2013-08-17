@@ -89,7 +89,7 @@ static void ClearInventory(AActor* activator)
 {
 	if (activator == NULL)
 	{
-		std::vector<player_t>::iterator it;
+		Players::iterator it;
 		for (it = players.begin();it != players.end();++it)
 		{
 			if (it->ingame() && !it->spectator)
@@ -229,7 +229,7 @@ static void GiveInventory(AActor* activator, const char* type, int amount)
 	{
 		for (int i = 0; i < MAXPLAYERS; ++i)
 		{
-			std::vector<player_t>::iterator it;
+			Players::iterator it;
 			for (it = players.begin();it != players.end();++it)
 			{
 				if (it->ingame() && !it->spectator) {
@@ -353,7 +353,7 @@ static void TakeInventory(AActor* activator, const char* type, int amount)
 	}
 	if (activator == NULL)
 	{
-		std::vector<player_t>::iterator it;
+		Players::iterator it;
 		for (it = players.begin();it != players.end();++it)
 		{
 			if (it->ingame() && !it->spectator) {
@@ -1366,15 +1366,11 @@ void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 	}
 }
 
-int DLevelScript::CountPlayers ()
+extern size_t P_NumPlayersInGame();
+
+int DLevelScript::CountPlayers()
 {
-	size_t count = 0, i;
-
-	for (i = 0; i < players.size(); i++)
-		if (players[i].ingame())
-			count++;
-
-	return count;
+	return static_cast<int>(P_NumPlayersInGame());
 }
 
 void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
@@ -1467,15 +1463,48 @@ void DLevelScript::DoFadeTo (int r, int g, int b, int a, fixed_t time)
 	DoFadeRange (0, 0, 0, -1, r, g, b, a, time);
 }
 
-void DLevelScript::DoFadeRange (int r1, int g1, int b1, int a1,
-								int r2, int g2, int b2, int a2, fixed_t time)
+static void DoActualFadeRange(player_s* viewer, float ftime, bool fadingFrom,
+                              float fr1, float fg1, float fb1, float fa1,
+                              float fr2, float fg2, float fb2, float fa2)
+{
+	if (ftime <= 0.f)
+	{
+		viewer->BlendR = fr2;
+		viewer->BlendG = fg2;
+		viewer->BlendB = fb2;
+		viewer->BlendA = fa2;
+	}
+	else
+	{
+		if (!fadingFrom)
+		{
+			if (viewer->BlendA <= 0.f)
+			{
+				fr1 = fr2;
+				fg1 = fg2;
+				fb1 = fb2;
+				fa1 = 0.f;
+			}
+			else
+			{
+				fr1 = viewer->BlendR;
+				fg1 = viewer->BlendG;
+				fb1 = viewer->BlendB;
+				fa1 = viewer->BlendA;
+			}
+		}
+		new DFlashFader (fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2, ftime, viewer->mo);
+	}
+}
+
+void DLevelScript::DoFadeRange(int r1, int g1, int b1, int a1,
+                               int r2, int g2, int b2, int a2, fixed_t time)
 {
 	player_t *viewer;
 	float ftime = (float)time / 65536.f;
 	bool fadingFrom = a1 >= 0;
 	float fr1 = 0.f, fg1 = 0.f, fb1 = 0.f, fa1 = 0.f;
 	float fr2, fg2, fb2, fa2;
-	size_t i;
 
 	fr2 = (float)r2 / 255.f;
 	fg2 = (float)g2 / 255.f;
@@ -1495,46 +1524,14 @@ void DLevelScript::DoFadeRange (int r1, int g1, int b1, int a1,
 		viewer = activator->player;
 		if (viewer == NULL)
 			return;
-		i = players.size();
-		goto showme;
+		DoActualFadeRange(viewer, ftime, fadingFrom, fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2);
 	}
 	else
 	{
-		for (i = 0; i < players.size(); ++i)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
-			if (players[i].ingame())
-			{
-				viewer = &players[i];
-showme:
-				if (ftime <= 0.f)
-				{
-					viewer->BlendR = fr2;
-					viewer->BlendG = fg2;
-					viewer->BlendB = fb2;
-					viewer->BlendA = fa2;
-				}
-				else
-				{
-					if (!fadingFrom)
-					{
-						if (viewer->BlendA <= 0.f)
-						{
-							fr1 = fr2;
-							fg1 = fg2;
-							fb1 = fb2;
-							fa1 = 0.f;
-						}
-						else
-						{
-							fr1 = viewer->BlendR;
-							fg1 = viewer->BlendG;
-							fb1 = viewer->BlendB;
-							fa1 = viewer->BlendA;
-						}
-					}
-					new DFlashFader (fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2, ftime, viewer->mo);
-				}
-			}
+			if (it->ingame())
+				DoActualFadeRange(&*it, ftime, fadingFrom, fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2);
 		}
 	}
 }
@@ -2418,9 +2415,9 @@ void DLevelScript::RunScript ()
 						player = activator->player;
 					}
 				}
-				else if (players[STACK(1)].ingame())
+				else if (idplayer(STACK(1)).ingame())
 				{
-					player = &players[STACK(1)];
+					player = &idplayer(STACK(1));
 				}
 				else
 				{

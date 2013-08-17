@@ -184,11 +184,11 @@ void G_InitNew (const char *mapname)
 	// [RH] Remove all particles
 	R_ClearParticles ();
 
-	for (i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		players[i].mo = AActor::AActorPtr();
-		players[i].camera = AActor::AActorPtr();
-		players[i].attacker = AActor::AActorPtr();
+		it->mo = AActor::AActorPtr();
+		it->camera = AActor::AActorPtr();
+		it->attacker = AActor::AActorPtr();
 	}
 
 	if (!savegamerestore)
@@ -268,8 +268,8 @@ void G_InitNew (const char *mapname)
 		level.inttimeleft = 0;
 
 		// force players to be initialized upon first level load
-		for (i = 0; i < players.size(); i++)
-			players[i].playerstate = PST_ENTER;	// [BC]
+		for (Players::iterator it = players.begin();it != players.end();++it)
+			it->playerstate = PST_ENTER; // [BC]
 	}
 
 	usergame = true;				// will be set false if a demo
@@ -343,9 +343,9 @@ void G_DoCompleted (void)
 
 	gameaction = ga_nothing;
 
-	for(i = 0; i < players.size(); i++)
-		if(players[i].ingame())
-			G_PlayerFinishLevel(players[i]);
+	for (Players::iterator it = players.begin();it != players.end();++it)
+		if (it->ingame())
+			G_PlayerFinishLevel(*it);
 
 	V_RestoreScreenPalette();
 
@@ -395,18 +395,19 @@ void G_DoCompleted (void)
 
 	wminfo.plyr.resize(players.size());
 
-	for (i=0 ; i < players.size(); i++)
+	i = 0;
+	for (Players::iterator it = players.begin();it != players.end();++it,++i)
 	{
-		wminfo.plyr[i].in = players[i].ingame();
-		wminfo.plyr[i].skills = players[i].killcount;
-		wminfo.plyr[i].sitems = players[i].itemcount;
-		wminfo.plyr[i].ssecret = players[i].secretcount;
+		wminfo.plyr[i].in = it->ingame();
+		wminfo.plyr[i].skills = it->killcount;
+		wminfo.plyr[i].sitems = it->itemcount;
+		wminfo.plyr[i].ssecret = it->secretcount;
 		wminfo.plyr[i].stime = level.time;
 		//memcpy (wminfo.plyr[i].frags, players[i].frags
 		//		, sizeof(wminfo.plyr[i].frags));
-		wminfo.plyr[i].fragcount = players[i].fragcount;
+		wminfo.plyr[i].fragcount = it->fragcount;
 
-		if(&players[i] == &consoleplayer())
+		if(&*it == &consoleplayer())
 			wminfo.pnum = i;
 	}
 
@@ -422,9 +423,9 @@ void G_DoCompleted (void)
 		if (thiscluster != nextcluster ||
 			sv_gametype == GM_DM ||
 			!(thiscluster->flags & CLUSTER_HUB)) {
-			for (i=0 ; i<players.size(); i++)
-				if (players[i].ingame())
-					G_PlayerFinishLevel (players[i]);	// take away cards and stuff
+			for (Players::iterator it = players.begin();it != players.end();++it)
+				if (it->ingame())
+					G_PlayerFinishLevel(*it); // take away cards and stuff
 
 				if (nextcluster->flags & CLUSTER_HUB) {
 					memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
@@ -510,22 +511,22 @@ void G_DoLoadLevel (int position)
 	// [RH] Set up details about sky rendering
 	R_InitSkyMap ();
 
-	for (i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (players[i].ingame() && players[i].playerstate == PST_DEAD)
-			players[i].playerstate = PST_REBORN;
+		if (it->ingame() && it->playerstate == PST_DEAD)
+			it->playerstate = PST_REBORN;
 
 		// [AM] If sv_keepkeys is on, players might still be carrying keys, so
 		//      make sure they're gone.
 		for (size_t j = 0; j < NUMCARDS; j++)
-			players[i].cards[j] = false;
+			it->cards[j] = false;
 
-		players[i].fragcount = 0;
-		players[i].itemcount = 0;
-		players[i].secretcount = 0;
-		players[i].deathcount = 0; // [Toke - Scores - deaths]
-		players[i].killcount = 0; // [deathz0r] Coop kills
-		players[i].points = 0;
+		it->fragcount = 0;
+		it->itemcount = 0;
+		it->secretcount = 0;
+		it->deathcount = 0; // [Toke - Scores - deaths]
+		it->killcount = 0; // [deathz0r] Coop kills
+		it->points = 0;
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98

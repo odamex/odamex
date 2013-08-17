@@ -44,7 +44,6 @@ class client_c
 public:
 
 	size_t size() { return players.size(); }
-	player_s::client_t &operator [](size_t n) { return players[n].client; }
 	client_c() {}
 };
 

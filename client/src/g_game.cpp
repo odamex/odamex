@@ -128,7 +128,7 @@ BOOL			netgame;
 // Describes if this is a multiplayer game or not
 BOOL			multiplayer;
 // The player vector, contains all player information
-std::vector<player_t>		players;
+Players			players;
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
@@ -856,13 +856,14 @@ extern int connecttimeout;
 void G_Ticker (void)
 {
 	int 		buf;
-	size_t i;
 
 	// do player reborns if needed
 	if(serverside)
-		for (i = 0; i < players.size(); i++)
-			if (players[i].ingame() && (players[i].playerstate == PST_REBORN || players[i].playerstate == PST_ENTER))
-				G_DoReborn (players[i]);
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame() && (it->playerstate == PST_REBORN || it->playerstate == PST_ENTER))
+				G_DoReborn(*it);
+		}
 
 	// do things to change the game state
 	while (gameaction != ga_nothing)
@@ -1174,9 +1175,14 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	if (!player.mo)
 	{
 		// first spawn of level, before corpses
-		for (i = 0; i < players.size() && (&players[i] != &player); i++)
-			if (players[i].mo && players[i].mo->x == x && players[i].mo->y == y)
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (&player == &*it)
+				continue;
+
+			if (it->mo && it->mo->x == x && it->mo->y == y)
 				return false;
+		}
 		return true;
 	}
 
@@ -1688,7 +1694,7 @@ void G_ReadDemoTiccmd ()
 	{
 		int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
 
-		for(size_t i = 0; i < players.size(); i++)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
 			if ((demo_e - demo_p < demostep) || (*demo_p == DEMOMARKER))
 			{
@@ -1697,7 +1703,7 @@ void G_ReadDemoTiccmd ()
 				return;
 			}
 
-			usercmd_t *ucmd = &players[i].cmd.ucmd;
+			usercmd_t *ucmd = &(it->cmd.ucmd);
 
 			ucmd->forwardmove = ((signed char)*demo_p++)<<8;
 			ucmd->sidemove = ((signed char)*demo_p++)<<8;
@@ -1717,11 +1723,11 @@ void G_ReadDemoTiccmd ()
 
 	if(demoversion == ZDOOM_FORM)
 	{
-		for(size_t i = 0; i < players.size(); i++)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
 			static int clonecount = 0;
 			int id = DEM_BAD;
-			ticcmd_t *cmd = &players[i].cmd;
+			ticcmd_t *cmd = &(it->cmd);
 
 			while (!clonecount && id != DEM_USERCMD && id != DEM_USERCMDCLONE)
 			{
@@ -1776,10 +1782,10 @@ void G_WriteDemoTiccmd ()
 
     int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
 
-    for(size_t i = 0; i < players.size(); i++)
+    for (Players::iterator it = players.begin();it != players.end();++it)
     {
         byte *demo_p = demo_tmp;
-        usercmd_t *cmd = &players[i].cmd.ucmd;
+        usercmd_t *cmd = &it->cmd.ucmd;
 
         *demo_p++ = cmd->forwardmove >> 8;
         *demo_p++ = cmd->sidemove >> 8;
@@ -2041,10 +2047,10 @@ BOOL G_ProcessIFFDemo (char *mapname)
 
 			case UINF_ID:
 				i = ReadByte (&demo_p);
-				if (!players[i].ingame()) {
+				//if (!players[i].ingame()) {
 					//players[i].state = player_t::playing;
-					numPlayers++;
-				}
+				//	numPlayers++;
+				//}
 				D_ReadUserInfoStrings (i, &demo_p, false);
 				break;
 
@@ -2202,13 +2208,13 @@ void G_DoPlayDemo (bool justStreamInput)
     		//int pcol[4] = {(0x0000FF00), (0x006060B0), (0x00B0B030), (0x00C00000)};
     		//char pnam[4][MAXPLAYERNAME] = {"GREEN", "INDIGO", "BROWN", "RED"};
 
-    		if(players.size() > 1)
+    		if (players.size() > 1)
     		{
     			netgame = true;
     			multiplayer = true;
 
-    			for (size_t i = 0; i < players.size(); i++) {
-    				if (players[i].ingame()) {
+    			for (Players::iterator it = players.begin();it != players.end();++it) {
+    				if (it->ingame()) {
     					//strcpy(players[i].userinfo.netname, pnam[i]);
     					//players[i].userinfo.team = TEAM_NONE;
     					//players[i].userinfo.gender = GENDER_NEUTER;
@@ -2216,7 +2222,7 @@ void G_DoPlayDemo (bool justStreamInput)
     					//players[i].userinfo.skin = 0;
     					//players[i].GameTime = 0;
     					//R_BuildPlayerTranslation (players[i].id, players[i].userinfo.color);
-    					R_BuildClassicPlayerTranslation (players[i].id, i);
+    					R_BuildClassicPlayerTranslation(it->id, it->id - 1);
     				}
     			}
     		}

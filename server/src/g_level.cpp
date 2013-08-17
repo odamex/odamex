@@ -284,14 +284,12 @@ void SV_CheckTeam(player_t &pl);
 //
 void G_DoNewGame (void)
 {
-	size_t i;
-
-	for(i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if(!players[i].ingame())
+		if(!(it->ingame()))
 			continue;
 
-		SV_SendLoadMap(wadfiles, patchfiles, d_mapname, &players[i]);
+		SV_SendLoadMap(wadfiles, patchfiles, d_mapname, &*it);
 	}
 
 	sv_curmap.ForceSet(d_mapname);
@@ -303,20 +301,20 @@ void G_DoNewGame (void)
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
-	if(strlen(sv_startmapscript.cstring()))
+	if (strlen(sv_startmapscript.cstring()))
 		AddCommandString(sv_startmapscript.cstring()/*,true*/);
 
-	for(i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if(!players[i].ingame())
+		if (!(it->ingame()))
 			continue;
 
 		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-			SV_CheckTeam(players[i]);
+			SV_CheckTeam(*it);
 		else
-			players[i].userinfo.color = players[i].prefcolor;
+			it->userinfo.color = it->prefcolor;
 
-		SV_ClientFullUpdate (players[i]);
+		SV_ClientFullUpdate(*it);
 	}
 }
 
@@ -349,26 +347,28 @@ void G_InitNew (const char *mapname)
 
 	cvar_t::UnlatchCVars ();
 
-	if(old_gametype != sv_gametype || sv_gametype != GM_COOP) {
+	if (old_gametype != sv_gametype || sv_gametype != GM_COOP) {
 		unnatural_level_progression = true;
 
 		// Nes - Force all players to be spectators when the sv_gametype is not now or previously co-op.
-		for (i = 0; i < players.size(); i++) {
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
 			// [SL] 2011-07-30 - Don't force downloading players to become spectators
 			// it stops their downloading
-			if (!players[i].ingame())
+			if (!(it->ingame()))
 				continue;
 
-			for (size_t j = 0; j < players.size(); j++) {
-				if (!players[j].ingame())
+			for (Players::iterator pit = players.begin();pit != players.end();++pit)
+			{
+				if (!(pit->ingame()))
 					continue;
-				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
-				MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
-				MSG_WriteByte (&(players[j].client.reliablebuf), true);
+				MSG_WriteMarker (&(pit->client.reliablebuf), svc_spectate);
+				MSG_WriteByte (&(pit->client.reliablebuf), it->id);
+				MSG_WriteByte (&(pit->client.reliablebuf), true);
 			}
-			players[i].spectator = true;
-			players[i].playerstate = PST_LIVE;
-			players[i].joinafterspectatortime = -(TICRATE*5);
+			it->spectator = true;
+			it->playerstate = PST_LIVE;
+			it->joinafterspectatortime = -(TICRATE * 5);
 		}
 	}
 
@@ -428,22 +428,22 @@ void G_InitNew (const char *mapname)
 		level.inttimeleft = 0;
 
 		// force players to be initialized upon first level load
-		for (size_t i = 0; i < players.size(); i++)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
 			// [SL] 2011-05-11 - Register the players in the reconciliation
 			// system for unlagging
-			Unlag::getInstance().registerPlayer(players[i].id);
+			Unlag::getInstance().registerPlayer(it->id);
 
-			if(!players[i].ingame())
+			if(!(it->ingame()))
 				continue;
 
 			// denis - dead players should have their stuff looted, otherwise they'd take their ammo into their afterlife!
-			if(players[i].playerstate == PST_DEAD)
-				G_PlayerReborn(players[i]);
+			if (it->playerstate == PST_DEAD)
+				G_PlayerReborn(*it);
 
-			players[i].playerstate = PST_ENTER; // [BC]
+			it->playerstate = PST_ENTER; // [BC]
 
-			players[i].joinafterspectatortime = -(TICRATE*5);
+			it->joinafterspectatortime = -(TICRATE * 5);
 		}
 	}
 
@@ -516,15 +516,13 @@ void G_SecretExitLevel (int position, int drawscores)
 	//G_WorldDone();
 }
 
-void G_DoCompleted (void)
+void G_DoCompleted()
 {
-	size_t i;
-
 	gameaction = ga_nothing;
 
-	for(i = 0; i < players.size(); i++)
-		if(players[i].ingame())
-			G_PlayerFinishLevel(players[i]);
+	for (Players::iterator it = players.begin();it != players.end();++it)
+		if (it->ingame())
+			G_PlayerFinishLevel(*it);
 }
 
 extern void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers);
@@ -558,7 +556,7 @@ void G_DoResetLevel(bool full_reset)
 	}
 
 	// Clear CTF state.
-	std::vector<player_t>::iterator it;
+	Players::iterator it;
 	if (sv_gametype == GM_CTF)
 	{
 		for (size_t i = 0;i < NUMFLAGS;i++)
@@ -588,12 +586,12 @@ void G_DoResetLevel(bool full_reset)
 	}
 
 	// Tell clients that a map reset is incoming.
-	for (size_t i = 0;i < players.size();i++)
+	for (it = players.begin();it != players.end();++it)
 	{
-		if (!players[i].ingame())
+		if (!(it->ingame()))
 			continue;
 
-		client_t *cl = &clients[i];
+		client_t *cl = &(it->client);
 		MSG_WriteMarker(&cl->reliablebuf, svc_resetmap);
 	}
 
@@ -730,34 +728,35 @@ void G_DoLoadLevel (int position)
 	else
 		sky2texture = 0;
 
-	for (i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (players[i].ingame() && players[i].playerstate == PST_DEAD)
-			players[i].playerstate = PST_REBORN;
+		if (it->ingame() && it->playerstate == PST_DEAD)
+			it->playerstate = PST_REBORN;
 
 		// [AM] If sv_keepkeys is on, players might still be carrying keys, so
 		//      make sure they're gone.
 		for (size_t j = 0; j < NUMCARDS; j++)
-			players[i].cards[j] = false;
+			it->cards[j] = false;
 
-		players[i].fragcount = 0;
-		players[i].itemcount = 0;
-		players[i].secretcount = 0;
-		players[i].deathcount = 0; // [Toke - Scores - deaths]
-		players[i].killcount = 0; // [deathz0r] Coop kills
-		players[i].points = 0;
+		it->fragcount = 0;
+		it->itemcount = 0;
+		it->secretcount = 0;
+		it->deathcount = 0; // [Toke - Scores - deaths]
+		it->killcount = 0; // [deathz0r] Coop kills
+		it->points = 0;
 
 		// [AM] Only touch ready state if warmup mode is enabled.
 		if (sv_warmup)
 		{
-			players[i].ready = false;
-			players[i].timeout_ready = 0;
+			it->ready = false;
+			it->timeout_ready = 0;
 
 			// [AM] Make sure the clients are updated on the new ready state
-			for (size_t j = 0;j < players.size();j++) {
-				MSG_WriteMarker(&(players[j].client.reliablebuf), svc_readystate);
-				MSG_WriteByte(&(players[j].client.reliablebuf), players[i].id);
-				MSG_WriteBool(&(players[j].client.reliablebuf), false);
+			for (Players::iterator pit = players.begin();pit != players.end();++pit)
+			{
+				MSG_WriteMarker(&(pit->client.reliablebuf), svc_readystate);
+				MSG_WriteByte(&(pit->client.reliablebuf), it->id);
+				MSG_WriteBool(&(pit->client.reliablebuf), false);
 			}
 		}
 	}
@@ -795,8 +794,8 @@ void G_DoLoadLevel (int position)
 	}
 
 	// For single-player servers.
-	for (i = 0; i < players.size(); i++)
-		players[i].joinafterspectatortime -= level.time;
+	for (Players::iterator it = players.begin();it != players.end();++it)
+		it->joinafterspectatortime -= level.time;
 
 	flagdata *tempflag;
 

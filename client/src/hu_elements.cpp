@@ -97,9 +97,9 @@ std::vector<player_t *> sortedPlayers(void) {
 		return sortedplayers;
 	}
 
-	sortedplayers.resize(players.size());
-	for (size_t i = 0;i < sortedplayers.size();i++) {
-		sortedplayers[i] = &players[i];
+	sortedplayers.clear();
+	for (Players::iterator it = players.begin();it != players.end();++it) {
+		sortedplayers.push_back(&*it);
 	}
 
 	if (sv_gametype == GM_COOP) {
@@ -307,23 +307,23 @@ std::string PersonalSpread(int& color) {
 		size_t maxplayer = 0;
 		size_t maxother = 0;
 		short maxfrags = -32768;
-		for (size_t i = 0;i < players.size();i++) {
-			if (!validplayer(players[i])) {
+		for (Players::iterator it = players.begin();it != players.end();++it) {
+			if (!validplayer(*it)) {
 				continue;
 			}
 
-			if (!players[i].ingame() || players[i].spectator) {
+			if (!(it->ingame()) || it->spectator) {
 				continue;
 			}
 
-			if (players[i].fragcount == maxfrags) {
-				maxplayer = players[i].id;
+			if (it->fragcount == maxfrags) {
+				maxplayer = it->id;
 				maxother++;
 			}
 
-			if (players[i].fragcount > maxfrags) {
-				maxplayer = players[i].id;
-				maxfrags = players[i].fragcount;
+			if (it->fragcount > maxfrags) {
+				maxplayer = it->id;
+				maxfrags = it->fragcount;
 				maxother = 0;
 			}
 
@@ -349,22 +349,21 @@ std::string PersonalSpread(int& color) {
 			// We have the maximum number of frags.  Calculate how
 			// far above the other players we are.
 			short nextfrags = -32768;
-
-			for (size_t i = 0;i < players.size();i++) {
-				if (!validplayer(players[i])) {
+			for (Players::iterator it = players.begin();it != players.end();++it) {
+				if (!validplayer(*it)) {
 					continue;
 				}
 
-				if (!players[i].ingame() || players[i].spectator) {
+				if (!(it->ingame()) || it->spectator) {
 					continue;
 				}
 
-				if (players[i].id == plyr->id) {
+				if (it->id == plyr->id) {
 					continue;
 				}
 
-				if (players[i].fragcount > nextfrags) {
-					nextfrags = players[i].fragcount;
+				if (it->fragcount > nextfrags) {
+					nextfrags = it->fragcount;
 				}
 			}
 
@@ -1200,31 +1199,31 @@ void EATargets(int x, int y, const float scale,
 	std::vector<TargetInfo_t> Targets;
 
 	// What players should be drawn?
-	for (size_t i = 0; i < players.size();i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (players[i].spectator || !players[i].mo || players[i].mo->health <= 0)
+		if (it->spectator || !(it->mo) || it->mo->health <= 0)
 			continue;
 
 		// We don't care about the player whose eyes we are looking through.
-		if (&(players[i]) == &(displayplayer()))
+		if (&*it == &(displayplayer()))
 			continue;
 
-		if (!P_ActorInFOV(displayplayer().mo, players[i].mo, 45.0f, 512*FRACUNIT))
+		if (!P_ActorInFOV(displayplayer().mo, it->mo, 45.0f, 512 * FRACUNIT))
 			continue;
 
 		// Pick a decent color for the player name.
 		int color;
 		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
 			// In teamgames, we want to use team colors for targets.
-			color = teamTextColor(players[i].userinfo.team);
+			color = teamTextColor(it->userinfo.team);
 		} else {
 			color = CR_GREY;
 		}
 
 		// Ok, make the temporary player info then add it
 		TargetInfo_t temp = {
-			&players[i],
-			P_AproxDistance2(displayplayer().mo, players[i].mo) >> FRACBITS,
+			&*it,
+			P_AproxDistance2(displayplayer().mo, it->mo) >> FRACBITS,
 			color
 		};
 		Targets.push_back(temp);

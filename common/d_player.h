@@ -25,6 +25,7 @@
 #ifndef __D_PLAYER_H__
 #define __D_PLAYER_H__
 
+#include <list>
 #include <vector>
 #include <queue>
 
@@ -377,7 +378,8 @@ typedef player_s player_t;
 typedef player_t::client_t client_t;
 
 // Bookkeeping on players - state.
-extern std::vector<player_t> players;
+typedef std::list<player_t> Players;
+extern Players players;
 
 // Player taking events, and displaying.
 player_t		&consoleplayer();

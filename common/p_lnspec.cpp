@@ -1581,21 +1581,21 @@ FUNC(LS_ChangeCamera)
 
 	if (!it || !it->player || arg1)
 	{
-		for (size_t i = 0; i < players.size(); i++)
+		for (Players::iterator itr = players.begin();itr != players.end();++itr)
 		{
-			if (!players[i].ingame())
+			if (!(itr->ingame()))
 				continue;
 
 			if (camera)
 			{
-				players[i].camera = camera->ptr();
+				itr->camera = camera->ptr();
 				if (arg2)
-					players[i].cheats |= CF_REVERTPLEASE;
+					itr->cheats |= CF_REVERTPLEASE;
 			}
 			else
 			{
-				players[i].camera = players[i].mo;
-				players[i].cheats &= ~CF_REVERTPLEASE;
+				itr->camera = itr->mo;
+				itr->cheats &= ~CF_REVERTPLEASE;
 			}
 		}
 	}
@@ -1646,15 +1646,15 @@ FUNC(LS_SetPlayerProperty)
 	}
 	else
 	{
-		for (size_t i = 0; i < players.size(); i++)
+		for (Players::iterator itr = players.begin();itr != players.end();++itr)
 		{
-			if (!players[i].ingame())
+			if (!(itr->ingame()))
 				continue;
 
 			if (arg1)
-				players[i].cheats |= mask;
+				itr->cheats |= mask;
 			else
-				players[i].cheats &= ~mask;
+				itr->cheats &= ~mask;
 		}
 	}
 

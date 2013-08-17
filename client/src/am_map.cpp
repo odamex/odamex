@@ -509,11 +509,11 @@ void AM_initVariables(void)
 	player_t *pl = &displayplayer();
 	if (!pl->ingame())
 	{
-		for (size_t pnum = 0; pnum < players.size(); pnum++)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
-			if (players[pnum].ingame())
+			if (it->ingame())
 			{
-				pl = &players[pnum];
+				pl = &*it;
 				break;
 			}
 		}
@@ -1505,7 +1505,6 @@ AM_drawLineCharacter
 void AM_drawPlayers(void)
 {
 	angle_t angle;
-	size_t i;
 	player_t &conplayer = displayplayer();
 	argb_t *palette;
 	palette = GetDefaultPalette()->colors;
@@ -1528,13 +1527,13 @@ void AM_drawPlayers(void)
 		return;
 	}
 
-	for (i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		player_t *p = &players[i];
+		player_t *p = &*it;
 		am_color_t color;
 		mpoint_t pt;
 
-		if (!players[i].ingame() || !p->mo ||
+		if (!(it->ingame()) || !p->mo ||
 			(((sv_gametype == GM_DM && p != &conplayer) ||
 			((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && p->userinfo.team != conplayer.userinfo.team))
 			&& !(netdemo.isPlaying() || netdemo.isPaused())
@@ -1546,11 +1545,11 @@ void AM_drawPlayers(void)
 		if (p->powers[pw_invisibility])
 			color = AlmostBackground;
 		else if (demoplayback && democlassic) {
-			switch (i) {
-				case 0: color = AM_GetColorFromString (palette, "00 FF 00"); break;
-				case 1: color = AM_GetColorFromString (palette, "60 60 B0"); break;
-				case 2: color = AM_GetColorFromString (palette, "B0 B0 30"); break;
-				case 3: color = AM_GetColorFromString (palette, "C0 00 00"); break;
+			switch (it->id) {
+				case 1: color = AM_GetColorFromString (palette, "00 FF 00"); break;
+				case 2: color = AM_GetColorFromString (palette, "60 60 B0"); break;
+				case 3: color = AM_GetColorFromString (palette, "B0 B0 30"); break;
+				case 4: color = AM_GetColorFromString (palette, "C0 00 00"); break;
 				default: break;
 			}
 		} else {
