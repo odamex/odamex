@@ -37,6 +37,11 @@ include_directories(${TEXTSCREEN_DIR})
 add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
 message(STATUS "Textscreen will be statically linked.")
 
+# Make sure we don't find libraries that are in Program Files/Odamex
+if(WIN32)
+  list(REMOVE_ITEM CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
+endif()
+
 # SDL configuration
 find_package(SDL)
 if(SDL_FOUND)
