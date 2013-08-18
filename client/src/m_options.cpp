@@ -1300,6 +1300,26 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
 	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
+void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, int color)
+{
+	if (leftval < rightval)
+		cur = clamp(cur, leftval, rightval);
+	else
+		cur = clamp(cur, rightval, leftval);
+
+	float dist = (cur - leftval) / (rightval - leftval);
+
+	screen->DrawPatchClean (W_CachePatch ("LSLIDE"), x, y);
+	for (int i = 1; i < 11; i++)
+		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
+	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
+
+	V_ColorFill = BestColor(GetDefaultPalette()->basecolors,
+	                        RPART(color), GPART(color), BPART(color),
+	                        GetDefaultPalette()->numcolors);
+	screen->DrawColoredPatchClean(W_CachePatch("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
+}
+
 int M_FindCurVal (float cur, value_t *values, int numvals)
 {
 	int v;
@@ -1450,19 +1470,19 @@ void M_OptDrawer (void)
 			case redslider:
 			{
 				int color = V_GetColorFromString(NULL, item->a.cvar->cstring());
-				M_DrawSlider(CurrentMenu->indent + 8, y, 0, 255, RPART(color));
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, RPART(color), color);
 			}
 			break;
 			case greenslider:
 			{
 				int color = V_GetColorFromString(NULL, item->a.cvar->cstring());
-				M_DrawSlider(CurrentMenu->indent + 8, y, 0, 255, GPART(color));
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, GPART(color), color);
 			}
 			break;
 			case blueslider:
 			{
 				int color = V_GetColorFromString(NULL, item->a.cvar->cstring());
-				M_DrawSlider(CurrentMenu->indent + 8, y, 0, 255, BPART(color));
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, BPART(color), color);
 			}
 			break;
 
