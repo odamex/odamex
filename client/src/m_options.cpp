@@ -1314,10 +1314,12 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
 	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
 
+	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + (int)(dist * 78.0), y);
+
 	V_ColorFill = BestColor(GetDefaultPalette()->basecolors,
 	                        RPART(color), GPART(color), BPART(color),
 	                        GetDefaultPalette()->numcolors);
-	screen->DrawColoredPatchClean(W_CachePatch("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)
