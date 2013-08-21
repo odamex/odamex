@@ -262,12 +262,7 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 //
 void SV_SetClientRate(client_t &client, int rate)
 {
-	if (rate < 1)
-		rate = 1;
-	else if (rate > sv_maxrate)
-		rate = sv_maxrate;
-
-	client.rate = rate;
+	client.rate = clamp(rate, 1, (int)sv_maxrate);
 }
 
 EXTERN_CVAR (sv_waddownloadcap)

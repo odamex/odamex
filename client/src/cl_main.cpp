@@ -918,7 +918,12 @@ END_COMMAND (serverinfo)
 // rate: takes a kbps value
 CVAR_FUNC_IMPL (rate)
 {
-	if (connected)
+	const float minrate = 7.0f, maxrate = 2000.0f;
+	if (var < minrate || var > maxrate)
+	{
+		var.Set(clamp((float)var, minrate, maxrate));
+	}
+	else if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_rate);
 		MSG_WriteLong(&net_buffer, (int)var);
