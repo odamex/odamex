@@ -107,12 +107,21 @@ static const char* uninstaller_string = "\\uninstl.exe /S ";
 // C:\Program Files\Path\uninstl.exe /S C:\Program Files\Path
 //
 // With some munging we can find where Doom was installed.
+
+// [AM] From the persepctive of a 64-bit executable, 32-bit registry keys are
+//      located in a different spot.
+#if _WIN64
+#define SOFTWARE_KEY "Software\\Wow6432Node"
+#else
+#define SOFTWARE_KEY "Software"
+#endif
+
 static registry_value_t uninstall_values[] =
 {
 	// Ultimate Doom, CD version (Depths of Doom trilogy)
 	{
 		HKEY_LOCAL_MACHINE,
-		"Software\\Microsoft\\Windows\\CurrentVersion\\"
+		SOFTWARE_KEY "\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Ultimate Doom for Windows 95",
 		"UninstallString",
 	},
@@ -120,7 +129,7 @@ static registry_value_t uninstall_values[] =
 	// Doom II, CD version (Depths of Doom trilogy)
 	{
 		HKEY_LOCAL_MACHINE,
-		"Software\\Microsoft\\Windows\\CurrentVersion\\"
+		SOFTWARE_KEY "\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Doom II for Windows 95",
 		"UninstallString",
 	},
@@ -128,7 +137,7 @@ static registry_value_t uninstall_values[] =
 	// Final Doom
 	{
 		HKEY_LOCAL_MACHINE,
-		"Software\\Microsoft\\Windows\\CurrentVersion\\"
+		SOFTWARE_KEY "\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Final Doom for Windows 95",
 		"UninstallString",
 	},
@@ -136,7 +145,7 @@ static registry_value_t uninstall_values[] =
 	// Shareware version
 	{
 		HKEY_LOCAL_MACHINE,
-		"Software\\Microsoft\\Windows\\CurrentVersion\\"
+		SOFTWARE_KEY "\\Microsoft\\Windows\\CurrentVersion\\"
 			"Uninstall\\Doom Shareware for Windows 95",
 		"UninstallString",
 	},
@@ -146,7 +155,7 @@ static registry_value_t uninstall_values[] =
 static registry_value_t collectors_edition_value =
 {
 	HKEY_LOCAL_MACHINE,
-	"Software\\Activision\\DOOM Collector's Edition\\v1.0",
+	SOFTWARE_KEY "\\Activision\\DOOM Collector's Edition\\v1.0",
 	"INSTALLPATH",
 };
 
@@ -162,7 +171,7 @@ static const char* collectors_edition_subdirs[] =
 static registry_value_t steam_install_location =
 {
 	HKEY_LOCAL_MACHINE,
-	"Software\\Valve\\Steam",
+	SOFTWARE_KEY "\\Valve\\Steam",
 	"InstallPath",
 };
 
