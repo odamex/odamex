@@ -545,7 +545,8 @@ void CL_CheckDisplayPlayer()
 // Cycles through the point-of-view of players in the game.  Checks
 // are made to ensure only spectators can view enemy players.
 //
-void CL_SpyCycle(bool forward)
+template<class Iterator>
+void CL_SpyCycle(Iterator begin, Iterator end)
 {
 	extern bool st_firsttime;
 
@@ -559,20 +560,7 @@ void CL_SpyCycle(bool forward)
 		return;
 	}
 
-	Players::iterator it, sentinal, begin, end;
-
-	// Pick iterator set to use depending on if we're going forwards
-	// or backwards.
-	if (forward)
-	{
-		begin = players.begin();
-		end = players.end();
-	}
-	else
-	{
-		begin = players.rbegin().base();
-		end = players.rend().base();
-	}
+	Iterator it, sentinal;
 
 	it = sentinal = begin;
 
@@ -586,8 +574,14 @@ void CL_SpyCycle(bool forward)
 	if (it == end)
 		return;
 
-	while (it != sentinal)
+	do
 	{
+		++it;
+
+		// Wrap around if we hit the end.  The sentinal will stop us.
+		if (it == end)
+			it = begin;
+
 		if ((P_CanSpy(consoleplayer(), *it) ||
 		     it->id == consoleplayer_id ||
 		     demoplayback || netdemo.isPlaying() ||
@@ -604,13 +598,8 @@ void CL_SpyCycle(bool forward)
 
 			return;
 		}
-
-		++it;
-
-		// Wrap around if we hit the end.  The sentinal will stop us.
-		if (it == end)
-			it = begin;
 	}
+	while (it != sentinal);
 }
 
 //
@@ -1060,13 +1049,13 @@ END_COMMAND (flagnext)
 
 BEGIN_COMMAND (spynext)
 {
-	CL_SpyCycle(true);
+	CL_SpyCycle(players.begin(), players.end());
 }
 END_COMMAND (spynext)
 
 BEGIN_COMMAND (spyprev)
 {
-	CL_SpyCycle(false);
+	CL_SpyCycle(players.rbegin(), players.rend());
 }
 END_COMMAND (spyprev)
 
