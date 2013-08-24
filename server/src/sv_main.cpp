@@ -3736,6 +3736,13 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 			MSG_WriteByte(&(players[j].client.reliablebuf), true);
 		}
 
+		// call CTF_CheckFlags _before_ the player becomes a spectator.
+		// Otherwise a flag carrier will drop his flag at (0,0), which
+		// is often right next to one of the bases...
+		if (sv_gametype == GM_CTF) {
+			CTF_CheckFlags(player);
+		}
+
 		player.spectator = true;
 
 		// [AM] Set player unready if we're in warmup mode.
@@ -3749,10 +3756,6 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		player.joinafterspectatortime = level.time;
 
 		P_SetSpectatorFlags(player);
-
-		if (sv_gametype == GM_CTF) {
-			CTF_CheckFlags(player);
-		}
 
 		if (!silent) {
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname.c_str());
