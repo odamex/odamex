@@ -1,6 +1,6 @@
-# Client flags [AM] TODO: Test -O3 again sometime.
+# Client flags
 if(NOT MSVC)
-  set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=pentium4")
 endif()
 
 global_compile_options()
