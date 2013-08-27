@@ -675,6 +675,11 @@ void G_DoResetLevel(bool full_reset)
 
 		// Set the respawning machinery in motion
 		it->playerstate = full_reset ? PST_ENTER : PST_REBORN;
+
+		// Do this here, otherwise players won't be reborn until next tic.
+		// [AM] Also, forgetting to do this will result in ticcmds that rely on
+		//      a players subsector to be valid (like use) to crash the server.
+		G_DoReborn(*it);
 	}
 }
 
