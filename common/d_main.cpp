@@ -270,7 +270,7 @@ static std::string BaseFileSearchDir(std::string dir, std::string file, std::str
 			if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 			{
 				std::string local_file = (dir + d_name).c_str();
-				std::string local_hash = W_MD5(local_file.c_str());
+				std::string local_hash = W_MD5(local_file);
 
 				if(!hash.length() || hash == local_hash)
 				{
@@ -308,7 +308,7 @@ static std::string BaseFileSearchDir(std::string dir, std::string file, std::str
 		if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 		{
 			std::string local_file = (dir + FindFileData.cFileName).c_str();
-			std::string local_hash = W_MD5(local_file.c_str());
+			std::string local_hash = W_MD5(local_file);
 
 			if(!hash.length() || hash == local_hash)
 			{
@@ -573,7 +573,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			iwad = found;
 		else
 		{
-			if(M_FileExists(suggestion.c_str()))
+			if(M_FileExists(suggestion))
 				iwad = suggestion;
 		}
 		/*	[ML] Removed 1/13/10: we can trust the user to provide an iwad

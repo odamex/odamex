@@ -195,7 +195,7 @@ BOOL M_ExtractFileExtension (std::string filename, std::string &dest)
 {
     QWORD last_dot = 0;
 
-    if (&dest == NULL || !filename.length())
+    if (!filename.length())
         return false;
 
     // find the last dot, iterating backwards
