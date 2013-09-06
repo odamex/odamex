@@ -270,12 +270,7 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 //
 void SV_SetClientRate(client_t &client, int rate)
 {
-	if (rate < 1)
-		rate = 1;
-	else if (rate > sv_maxrate)
-		rate = sv_maxrate;
-
-	client.rate = rate;
+	client.rate = clamp(rate, 1, (int)sv_maxrate);
 }
 
 EXTERN_CVAR (sv_waddownloadcap)
@@ -3715,6 +3710,13 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 			MSG_WriteByte(&(it->client.reliablebuf), true);
 		}
 
+		// call CTF_CheckFlags _before_ the player becomes a spectator.
+		// Otherwise a flag carrier will drop his flag at (0,0), which
+		// is often right next to one of the bases...
+		if (sv_gametype == GM_CTF) {
+			CTF_CheckFlags(player);
+		}
+
 		player.spectator = true;
 
 		// [AM] Set player unready if we're in warmup mode.
@@ -3728,10 +3730,6 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		player.joinafterspectatortime = level.time;
 
 		P_SetSpectatorFlags(player);
-
-		if (sv_gametype == GM_CTF) {
-			CTF_CheckFlags(player);
-		}
 
 		if (!silent) {
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname.c_str());

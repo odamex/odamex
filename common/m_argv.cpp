@@ -40,9 +40,9 @@ DArgs::DArgs (unsigned int argc, char **argv)
 		CopyArgs(argc, argv);
 }
 
-DArgs::DArgs (const DArgs &other)
+DArgs::DArgs (const DArgs &other) : args(other.args)
 {
-	args = other.args;
+
 }
 
 DArgs::DArgs (const char *cmdline)

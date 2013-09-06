@@ -78,9 +78,12 @@ void LstOdaServerList::OnCopyAddress(wxCommandEvent& event)
 
     if (wxTheClipboard->Open())
     {
+#ifdef __WXGTK__
+        wxTheClipboard->UsePrimarySelection(true);
+#endif
         wxTheClipboard->SetData( new wxTextDataObject(li.m_text) );
         wxTheClipboard->Close();
-    }   
+    }
 }
 
 void LstOdaServerList::OnOpenContextMenu(wxContextMenuEvent& event)
