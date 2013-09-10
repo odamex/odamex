@@ -363,6 +363,10 @@ bool C_DoNetDemoKey (event_t *ev)
 		return false;
 
 	std::string *binding = &NetDemoBindings[ev->data1];
+
+	// hardcode the pause key to also control netpause
+	if (iequals(Bindings[ev->data1], "pause"))
+		binding = &NetDemoBindings[GetKeyFromName("space")];
 	
 	// nothing bound to this key specific to netdemos?
 	if (binding->empty())
