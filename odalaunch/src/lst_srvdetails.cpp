@@ -190,7 +190,40 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     sort(In.Info.Cvars.begin(), In.Info.Cvars.end(), CvarCompare);
     
     for (size_t i = 0; i < In.Info.Cvars.size(); ++i)
-        InsertLine(stdstr_towxstr(In.Info.Cvars[i].Name), stdstr_towxstr(In.Info.Cvars[i].Value));
+    {
+        wxString Value = In.Info.Cvars[i].Value;
+
+        switch (In.Info.Cvars[i].Type)
+        {
+            case CVARTYPE_BOOL:
+            {
+                Value = (In.Info.Cvars[i].b == true) ? 
+                    wxT("True") : wxT("False");
+            }
+            break;
+
+            case CVARTYPE_BYTE:
+            case CVARTYPE_WORD:
+            case CVARTYPE_INT:
+            {
+                Value = wxString::Format(wxT("%d"), In.Info.Cvars[i].i32);
+            }
+            break;
+
+            case CVARTYPE_FLOAT:
+            case CVARTYPE_STRING:
+            case CVARTYPE_NONE:
+            case CVARTYPE_MAX:
+            default:
+            {
+
+            }
+            break;
+        }
+
+        InsertLine(stdstr_towxstr(In.Info.Cvars[i].Name), 
+                   Value);
+    }
 
     // Resize the columns
     ResizeNameValueColumns();
