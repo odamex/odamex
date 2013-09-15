@@ -91,7 +91,7 @@ struct Cvar_t
 	std::string Name;
     std::string Value;
 
-	int32_t Type;
+	int8_t Type;
 
 	union
 	{

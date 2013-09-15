@@ -290,6 +290,8 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 		m_BadRead = false;
 
 		// return bytes received
+		NET_ReportError("bytes received: %d", m_BufferSize);
+
 		return m_BufferSize;
 	}
 

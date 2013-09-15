@@ -256,7 +256,7 @@ bool Server::ReadCvars()
 
 		QRYNEWINFO(3)
         {
-            Socket.Read32(Cvar.Type);
+            Socket.Read8(Cvar.Type);
 
             switch (Cvar.Type)
             {
