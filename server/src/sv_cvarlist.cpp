@@ -166,7 +166,7 @@ CVAR (ctf_flagtimeout, "10",  "Time for a dropped flag to be returned automatica
 //      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR (sv_ticbuffer, "1", "Buffer controller input from players experiencing sudden latency spikes for smoother movement",
-	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 // Ban settings
 // ============
