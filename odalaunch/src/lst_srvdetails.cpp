@@ -191,7 +191,8 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     
     for (size_t i = 0; i < In.Info.Cvars.size(); ++i)
     {
-        wxString Value(In.Info.Cvars[i].Value.c_str());
+        wxString Value;
+        Value.FromAscii(In.Info.Cvars[i].Value.c_str());
 
         switch (In.Info.Cvars[i].Type)
         {

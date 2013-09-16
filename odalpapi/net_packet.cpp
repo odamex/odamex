@@ -30,7 +30,7 @@
 
 #include "net_packet.h"
 #include "net_error.h"
-#include "net_cvartable.h"
+//#include "net_cvartable.h"
 
 using namespace std;
 
