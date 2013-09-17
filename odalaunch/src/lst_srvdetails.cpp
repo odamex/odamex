@@ -181,27 +181,30 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
             Next = wxT("");
         }
     }
-    
-    // Gameplay variables (Cvars, others)
-    InsertLine(wxT(""), wxT(""));                            
-    InsertHeader(wxT("Game Settings"));
 
     // Sort cvars ascending
     sort(In.Info.Cvars.begin(), In.Info.Cvars.end(), CvarCompare);
-    
+
+    // Cvars that are enabled
+    InsertLine(wxT(""), wxT(""));
+    InsertHeader(wxT("Cvars Enabled"));
+
+    for (size_t i = 0; i < In.Info.Cvars.size(); ++i)
+    {
+        if (In.Info.Cvars[i].Type == CVARTYPE_BOOL)
+            InsertLine(stdstr_towxstr(In.Info.Cvars[i].Name), wxT(""));
+    }
+
+    // Gameplay settings
+    InsertLine(wxT(""), wxT(""));
+    InsertHeader(wxT("Gameplay Variables"));
+
     for (size_t i = 0; i < In.Info.Cvars.size(); ++i)
     {
         wxString Value = stdstr_towxstr(In.Info.Cvars[i].Value);
 
         switch (In.Info.Cvars[i].Type)
         {
-            case CVARTYPE_BOOL:
-            {
-                Value = (In.Info.Cvars[i].b == true) ? 
-                    wxT("True") : wxT("False");
-            }
-            break;
-
             case CVARTYPE_BYTE:
             case CVARTYPE_WORD:
             case CVARTYPE_INT:
@@ -212,6 +215,11 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
 
             case CVARTYPE_FLOAT:
             case CVARTYPE_STRING:
+            {
+
+            }
+            break;
+
             case CVARTYPE_NONE:
             case CVARTYPE_MAX:
             default:
@@ -220,9 +228,10 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
             }
             break;
         }
-
+        
+        // TODO: move above next release
         InsertLine(stdstr_towxstr(In.Info.Cvars[i].Name), 
-                   Value);
+            Value);
     }
 
     // Resize the columns

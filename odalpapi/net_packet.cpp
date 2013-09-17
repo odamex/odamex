@@ -262,7 +262,7 @@ bool Server::ReadCvars()
             {
                 case CVARTYPE_BOOL:
                 {
-                    Socket.ReadBool(Cvar.b);
+                    Cvar.b = true;
                 }
                 break;
 

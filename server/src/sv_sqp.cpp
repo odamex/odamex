@@ -136,7 +136,14 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
             CvarField.Type = var->type();
             CvarField.Value = var->cstring();
             
-            Cvars.push_back(CvarField);
+            // Skip non-true boolean fields
+            if (CvarField.Type == CVARTYPE_BOOL)
+            {
+                if ((bool)atoi(CvarField.Value.c_str()))
+                    Cvars.push_back(CvarField);
+            }
+            else
+                Cvars.push_back(CvarField);
         }
         
         var = var->GetNext();
@@ -148,21 +155,26 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
     // Write cvars
     for (size_t i = 0; i < Cvars.size(); ++i)
 	{              
-        MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
-
         // Type field
         QRYNEWINFO(3)
         {
+            // Skip non-true boolean fields
+            if (Cvars[i].Type == CVARTYPE_BOOL)
+            {
+                if ((bool)atoi(Cvars[i].Value.c_str()))
+                {
+                    MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
+                    MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
+                }
+
+                continue;
+            }
+
+            MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
             MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
 
             switch (Cvars[i].Type)
             {
-                case CVARTYPE_BOOL:
-                {
-                    MSG_WriteBool(&ml_message, (bool)atoi(Cvars[i].Value.c_str()));
-                }
-                break;
-
                 case CVARTYPE_BYTE:
                 {
                     MSG_WriteByte(&ml_message, (byte)atoi(Cvars[i].Value.c_str()));
