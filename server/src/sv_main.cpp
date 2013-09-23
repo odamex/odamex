@@ -2574,6 +2574,9 @@ void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...)
     for (size_t i=0; i < players.size(); i++)
     {
 		cl = &clients[i];
+		
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, level);
@@ -2597,6 +2600,9 @@ void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...)
     for (size_t i=0; i < players.size(); i++)
     {
 		cl = &clients[i];
+		
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
 
 		if (players[i].spectator)
 		{
@@ -2658,6 +2664,9 @@ void STACK_ARGS SV_TeamPrintf (int level, int who, const char *fmt, ...)
 			continue;
 
 		cl = &clients[i];
+		
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, level);
