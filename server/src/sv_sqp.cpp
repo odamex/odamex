@@ -158,18 +158,6 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
         // Type field
         QRYNEWINFO(3)
         {
-            // Skip non-true boolean fields
-            if (Cvars[i].Type == CVARTYPE_BOOL)
-            {
-                if ((bool)atoi(Cvars[i].Value.c_str()))
-                {
-                    MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
-                    MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
-                }
-
-                continue;
-            }
-
             MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
             MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
 
