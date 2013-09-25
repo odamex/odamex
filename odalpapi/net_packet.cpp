@@ -371,6 +371,7 @@ void Server::ReadInformation()
     // Read cvar data
     ReadCvars();
 
+    // TODO: Remove next release
     QRYNEWINFO(4)
         Socket.ReadHexString(Info.PasswordHash);
     else
@@ -379,22 +380,47 @@ void Server::ReadInformation()
 	Socket.ReadString(Info.CurrentMap);
 	Socket.Read16(Info.TimeLeft);
 
+	// TODO: Remove next release
 	// Teams
-	uint8_t TeamCount;
-
-	Socket.Read8(TeamCount);
-
-	for (size_t i = 0; i < TeamCount; ++i)
+	QRYNEWINFO(5)
 	{
-		Team_t Team;
+        if (Info.GameType == GT_TeamDeathmatch || 
+            Info.GameType == GT_CaptureTheFlag)
+        {
+            uint8_t TeamCount;
 
-		Socket.ReadString(Team.Name);
-		Socket.Read32(Team.Colour);
-		Socket.Read16(Team.Score);
+            Socket.Read8(TeamCount);
 
-		Info.Teams.push_back(Team);
+            for (size_t i = 0; i < TeamCount; ++i)
+            {
+                Team_t Team;
+
+                Socket.ReadString(Team.Name);
+                Socket.Read32(Team.Colour);
+                Socket.Read16(Team.Score);
+
+                Info.Teams.push_back(Team);
+            }
+        }
 	}
+	else
+    {
+        uint8_t TeamCount;
 
+        Socket.Read8(TeamCount);
+        
+        for (size_t i = 0; i < TeamCount; ++i)
+        {
+            Team_t Team;
+
+            Socket.ReadString(Team.Name);
+            Socket.Read32(Team.Colour);
+            Socket.Read16(Team.Score);
+
+            Info.Teams.push_back(Team);
+        }
+    }
+    
 	// Dehacked/Bex files
 	uint8_t PatchCount;
 
@@ -419,7 +445,8 @@ void Server::ReadInformation()
 		Wad_t Wad;
 
 		Socket.ReadString(Wad.Name);
-
+        
+        // TODO: Remove next release
 		QRYNEWINFO(4)
             Socket.ReadHexString(Wad.Hash);
         else
@@ -439,7 +466,17 @@ void Server::ReadInformation()
 
 		Socket.ReadString(Player.Name);
         Socket.Read32(Player.Colour);
-		Socket.Read8(Player.Team);
+
+        QRYNEWINFO(5)
+        {
+            if (Info.GameType == GT_TeamDeathmatch || 
+                Info.GameType == GT_CaptureTheFlag)
+            {
+                Socket.Read8(Player.Team);
+            }
+        }
+        else 
+            Socket.Read8(Player.Team);
 		Socket.Read16(Player.Ping);
 		Socket.Read16(Player.Time);
 		Socket.ReadBool(Player.Spectator);
