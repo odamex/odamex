@@ -155,10 +155,11 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
     // Write cvars
     for (size_t i = 0; i < Cvars.size(); ++i)
 	{              
+        MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
+
         // Type field
         QRYNEWINFO(3)
         {
-            MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
             MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
 
             switch (Cvars[i].Type)
