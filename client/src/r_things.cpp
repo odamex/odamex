@@ -91,6 +91,7 @@ int*			spritelights;
 #define SPRITE_NEEDS_INFO	MAXINT
 
 EXTERN_CVAR (r_drawplayersprites)
+EXTERN_CVAR (r_drawhitboxes)
 EXTERN_CVAR (r_particles)
 
 EXTERN_CVAR (hud_crosshairdim)
@@ -905,6 +906,72 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	return vis;
 }
 
+void R_DrawHitBox(AActor* thing)
+{
+	v3fixed_t vertices[8];
+	const byte color = 0x80;
+
+	// bottom front left
+	vertices[0].x = thing->x - thing->radius;
+	vertices[0].y = thing->y + thing->radius;
+	vertices[0].z = thing->z;
+
+	// bottom front right
+	vertices[1].x = thing->x + thing->radius;
+	vertices[1].y = thing->y + thing->radius;
+	vertices[1].z = thing->z;
+
+	// bottom back left
+	vertices[2].x = thing->x - thing->radius;
+	vertices[2].y = thing->y - thing->radius;
+	vertices[2].z = thing->z;
+
+	// bottom back right
+	vertices[3].x = thing->x + thing->radius;
+	vertices[3].y = thing->y - thing->radius;
+	vertices[3].z = thing->z;
+
+	// top front left
+	vertices[4].x = thing->x - thing->radius;
+	vertices[4].y = thing->y + thing->radius;
+	vertices[4].z = thing->z + thing->height;
+
+	// top front right
+	vertices[5].x = thing->x + thing->radius;
+	vertices[5].y = thing->y + thing->radius;
+	vertices[5].z = thing->z + thing->height;
+
+	// top back left
+	vertices[6].x = thing->x - thing->radius;
+	vertices[6].y = thing->y - thing->radius;
+	vertices[6].z = thing->z + thing->height;
+
+	// top back right
+	vertices[7].x = thing->x + thing->radius;
+	vertices[7].y = thing->y - thing->radius;
+	vertices[7].z = thing->z + thing->height;
+	
+	// draw bottom square
+	R_DrawLine(&vertices[0], &vertices[1], color);
+	R_DrawLine(&vertices[0], &vertices[2], color);
+	R_DrawLine(&vertices[2], &vertices[3], color);
+	R_DrawLine(&vertices[1], &vertices[3], color);
+
+	// draw top square
+	R_DrawLine(&vertices[4], &vertices[5], color);
+	R_DrawLine(&vertices[4], &vertices[6], color);
+	R_DrawLine(&vertices[6], &vertices[7], color);
+	R_DrawLine(&vertices[5], &vertices[7], color);
+
+	// connect the top and bottom squares
+	R_DrawLine(&vertices[0], &vertices[4], color);
+	R_DrawLine(&vertices[1], &vertices[5], color);
+	R_DrawLine(&vertices[2], &vertices[6], color);
+	R_DrawLine(&vertices[3], &vertices[7], color);
+}
+
+
+
 //
 // R_ProjectSprite
 // Generates a vissprite for a thing if it might be visible.
@@ -999,6 +1066,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
 	vis->patch = lump;
+	vis->mo = thing;
 
 	// get light level
 	if (fixedlightlev)
@@ -1135,6 +1203,7 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 	vis->yscale = pspriteyscale;
 	vis->translation = translationref_t();		// [RH] Use default colors
 	vis->translucency = FRACUNIT;
+	vis->mo = NULL;
 
 	if (flip)
 	{
@@ -1419,6 +1488,9 @@ void R_DrawSprite (vissprite_t *spr)
 	mfloorclip = clipbot;
 	mceilingclip = cliptop;
 	R_DrawVisSprite (spr, spr->x1, spr->x2);
+
+	if (r_drawhitboxes && spr->mo)
+		R_DrawHitBox(spr->mo);
 }
 
 
@@ -1588,6 +1660,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->startfrac = particle->color;
 	vis->patch = NO_PARTICLE;
 	vis->mobjflags = particle->trans;
+	vis->mo = NULL;
 
 	// get light level
 	if (fixedcolormap.isValid())

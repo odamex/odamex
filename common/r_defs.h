@@ -554,6 +554,8 @@ struct vissprite_s
 	sector_t*		heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
 	fixed_t			translucency;
 	byte			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
+
+	AActor*			mo;
 };
 typedef struct vissprite_s vissprite_t;
 

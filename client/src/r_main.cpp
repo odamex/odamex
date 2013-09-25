@@ -471,6 +471,103 @@ bool R_CheckProjectionY(int &y1, int &y2)
 
 
 //
+// R_DrawPixel
+//
+static inline void R_DrawPixel(int x, int y, byte color)
+{
+	*(ylookup[y] + columnofs[x]) = color;
+}
+
+
+//
+// R_DrawLine
+//
+// Draws a colored line between the two endpoints given in world coordinates.
+//
+void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
+{
+	// convert from world-space to camera-space
+	v3fixed_t pt1, pt2;
+	R_RotatePoint(inpt1->x - viewx, inpt1->y - viewy, ANG90 - viewangle, pt1.x, pt1.y);
+	R_RotatePoint(inpt2->x - viewx, inpt2->y - viewy, ANG90 - viewangle, pt2.x, pt2.y);
+	pt1.z = inpt1->z - viewz;
+	pt2.z = inpt2->z - viewz;
+
+	if (pt1.x > pt2.x)
+	{
+		std::swap(pt1.x, pt2.x);
+		std::swap(pt1.y, pt2.y);
+		std::swap(pt1.z, pt2.z);
+	}
+
+	// convert from camera-space to screen-space
+	int lclip, rclip;
+
+	if (!R_ClipLineToFrustum((v2fixed_t*)&pt1, (v2fixed_t*)&pt2, FRACUNIT, lclip, rclip))
+		return;
+
+	R_ClipLine((v2fixed_t*)&pt1, (v2fixed_t*)&pt2, lclip, rclip, (v2fixed_t*)&pt1, (v2fixed_t*)&pt2);
+
+	int x1 = clamp(R_ProjectPointX(pt1.x, pt1.y), 0, viewwidth - 1);
+	int x2 = clamp(R_ProjectPointX(pt2.x, pt2.y), 0, viewwidth - 1);
+	int y1 = clamp(R_ProjectPointY(pt1.z, pt1.y), 0, viewheight - 1);
+	int y2 = clamp(R_ProjectPointY(pt2.z, pt2.y), 0, viewheight - 1);
+
+	// draw the line to the framebuffer
+	int dx = x2 - x1;
+	int dy = y2 - y1;
+
+	int ax = 2 * (dx<0 ? -dx : dx);
+	int sx = dx < 0 ? -1 : 1;
+
+	int ay = 2 * (dy < 0 ? -dy : dy);
+	int sy = dy < 0 ? -1 : 1;
+
+	int x = x1;
+	int y = y1;
+	int d;
+
+	if (ax > ay)
+	{
+		d = ay - ax/2;
+
+		while (1)
+		{
+			R_DrawPixel(x, y, color);
+			if (x == x2)
+				return;
+
+			if (d >= 0)
+			{
+				y += sy;
+				d -= ax;
+			}
+			x += sx;
+			d += ay;
+		}
+	}
+	else
+	{
+		d = ax - ay/2;
+		while (1)
+		{
+			R_DrawPixel(x, y, color);
+			if (y == y2)
+				return;		
+
+			if (d >= 0)
+			{
+				x += sx;
+				d -= ay;
+			}
+			y += sy;
+			d += ax;
+		}
+	}
+}
+
+
+//
 //
 // R_InitTextureMapping
 //

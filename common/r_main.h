@@ -251,4 +251,7 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	return s;
 }
 
+
+void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color);
+
 #endif // __R_MAIN_H__
