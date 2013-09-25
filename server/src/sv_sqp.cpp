@@ -88,7 +88,7 @@ struct CvarField_t
 #define TAG_ID 0xAD0
 
 // When a change to the protocol is made, this value must be incremented
-#define PROTOCOL_VERSION 3
+#define PROTOCOL_VERSION 4
 
 /* 
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
@@ -212,7 +212,11 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
         }
 	}
 	
-	MSG_WriteString(&ml_message, (strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : ""));
+	QRYNEWINFO(4)
+        MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
+	else
+        MSG_WriteString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
+
 	MSG_WriteString(&ml_message, level.mapname);
 	
     int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
@@ -259,7 +263,11 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
 	for (size_t i = 0; i < wadfiles.size(); ++i)
     {
         MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
-        MSG_WriteString(&ml_message, wadhashes[i].c_str());
+
+        QRYNEWINFO(4)
+            MSG_WriteHexString(&ml_message, wadhashes[i].c_str());
+        else
+            MSG_WriteString(&ml_message, wadhashes[i].c_str());
     }
     
     MSG_WriteByte(&ml_message, players.size());

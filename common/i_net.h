@@ -553,6 +553,7 @@ void MSG_WriteLong (buf_t *b, int c);
 void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
+void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
 
 int MSG_BytesLeft(void);

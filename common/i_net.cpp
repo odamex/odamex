@@ -669,6 +669,47 @@ void MSG_WriteString (buf_t *b, const char *s)
 	b->WriteString(s);
 }
 
+unsigned int toInt(char c)
+{
+  if (c >= '0' && c <= '9') return      c - '0';
+  if (c >= 'A' && c <= 'F') return 10 + c - 'A';
+  if (c >= 'a' && c <= 'f') return 10 + c - 'a';
+  return -1;
+}
+
+//
+// MSG_WriteHexString
+//
+// Converts a hexidecimal string to its binary representation
+void MSG_WriteHexString(buf_t *b, const char *s)
+{
+    byte output[255];
+
+    // Nothing to write?
+    if (!(s && (*s)))
+    {
+        MSG_WriteByte(b, 0);
+        return;
+    }
+
+    const size_t numdigits = strlen(s) / 2;
+
+    if (numdigits > STACKARRAY_LENGTH(output))
+    {
+        Printf (PRINT_HIGH, "MSG_WriteHexString: too many digits\n");
+        return;
+    }
+
+    for (size_t i = 0; i < numdigits; ++i)
+    {
+        output[i] = (char)(16 * toInt(s[2*i]) + toInt(s[2*i+1]));
+    }
+
+    MSG_WriteByte(b, (byte)numdigits);
+
+    MSG_WriteChunk(b, output, numdigits);
+}
+
 int MSG_BytesLeft(void)
 {
 	return net_message.BytesLeftToRead();

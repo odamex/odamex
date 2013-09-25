@@ -54,7 +54,7 @@
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
 #define VERSION (0*256+64)
-#define PROTOCOL_VERSION 3
+#define PROTOCOL_VERSION 4
 
 #define TAG_ID 0xAD0
 

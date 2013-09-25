@@ -371,7 +371,11 @@ void Server::ReadInformation()
     // Read cvar data
     ReadCvars();
 
-	Socket.ReadString(Info.PasswordHash);
+    QRYNEWINFO(4)
+        Socket.ReadHexString(Info.PasswordHash);
+    else
+        Socket.ReadString(Info.PasswordHash);
+
 	Socket.ReadString(Info.CurrentMap);
 	Socket.Read16(Info.TimeLeft);
 
@@ -415,8 +419,12 @@ void Server::ReadInformation()
 		Wad_t Wad;
 
 		Socket.ReadString(Wad.Name);
-		Socket.ReadString(Wad.Hash);
 
+		QRYNEWINFO(4)
+            Socket.ReadHexString(Wad.Hash);
+        else
+            Socket.ReadString(Wad.Hash);
+        
 		Info.Wads.push_back(Wad);
 	}
 
