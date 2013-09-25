@@ -100,6 +100,8 @@ typedef int SOCKET;
 #include "upnpcommands.h"
 #endif
 
+#include "m_memio.h"	// for STACKARRAY_LENGTH
+
 unsigned int	inet_socket;
 int         	localport;
 netadr_t    	net_from;   // address of who sent the packet
