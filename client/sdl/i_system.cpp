@@ -292,7 +292,17 @@ uint64_t I_GetTime()
 
 QWORD I_MSTime()
 {
-	return I_GetTime() / (1000000LL);
+	return I_ConvertTimeToMs(I_GetTime());
+}
+
+uint64_t I_ConvertTimeToMs(uint64_t value)
+{
+	return value / 1000000LL;
+}
+
+uint64_t I_ConvertTimeFromMs(uint64_t value)
+{
+	return value * 1000000LL;
 }
 
 //

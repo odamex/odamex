@@ -64,6 +64,8 @@ void *I_ZoneBase (size_t *size);
 
 
 uint64_t I_GetTime();
+uint64_t I_ConvertTimeToMs(uint64_t value);
+uint64_t I_ConvertTimeFromMs(uint64_t value);
 void I_Sleep(uint64_t sleep_time);
 
 //
