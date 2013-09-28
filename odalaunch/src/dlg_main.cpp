@@ -738,7 +738,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 
         case mtrs_server_singletimeout:
         {
-            i = FindServerInList(stdstr_towxstr(QServer[Result->Index].GetAddress()));
+            i = m_LstCtrlServers->FindServer(stdstr_towxstr(QServer[Result->Index].GetAddress()));
 
             m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
 
@@ -791,7 +791,7 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
     {
         case 0: // server query timed out
         {
-            i = FindServerInList(stdstr_towxstr(QServer[event.GetInt()].GetAddress()));
+            i = m_LstCtrlServers->FindServer(stdstr_towxstr(QServer[event.GetInt()].GetAddress()));
 
             m_LstCtrlPlayers->DeleteAllItems();
 
@@ -933,7 +933,7 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
 {
     wxInt32 li, ai;
 
-    li = GetSelectedServerListIndex();
+    li = m_LstCtrlServers->GetSelectedServerIndex();
     ai = GetSelectedServerArrayIndex();
 
     if (li == -1 || ai == -1)
@@ -1058,51 +1058,13 @@ wxInt32 dlgMain::FindServer(wxString Address)
     return -1;
 }
 
-// Finds an index in the server list, via Address
-wxInt32 dlgMain::FindServerInList(wxString Address)
-{
-    if (!m_LstCtrlServers->GetItemCount())
-        return -1;
-
-    for (wxInt32 i = 0; i < m_LstCtrlServers->GetItemCount(); i++)
-    {
-        wxListItem item;
-        item.SetId(i);
-        item.SetColumn(7);
-        item.SetMask(wxLIST_MASK_TEXT);
-
-        m_LstCtrlServers->GetItem(item);
-
-        if (item.GetText().IsSameAs(Address))
-            return i;
-    }
-
-    return -1;
-}
-
-// Retrieves the currently selected server in list index form
-wxInt32 dlgMain::GetSelectedServerListIndex()
-{
-    wxInt32 i;
-
-    if (!m_LstCtrlServers->GetItemCount() ||
-        !m_LstCtrlServers->GetSelectedItemCount())
-    {
-        return -1;
-    }
-
-    i = m_LstCtrlServers->GetFirstSelected();
-
-    return i;
-}
-
 // Retrieves the currently selected server in array index form
 wxInt32 dlgMain::GetSelectedServerArrayIndex()
 {
     wxListItem item;
     wxInt32 i;
 
-    i = GetSelectedServerListIndex();
+    i = m_LstCtrlServers->GetSelectedServerIndex();
 
     if (i == -1)
         return -1;
