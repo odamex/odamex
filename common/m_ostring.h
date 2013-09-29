@@ -32,6 +32,25 @@
 #include <iostream>
 #include <memory>
 
+class OString;
+
+// Forward declarations for non-member friend functions
+namespace std {
+	void swap(::OString& x, ::OString& y);
+	void swap(::OString& x, string& y);
+	void swap(string& x, ::OString& y);
+
+	istream& getline(istream& is, ::OString& str);
+	istream& getline(istream& is, ::OString& str, char delim);
+};
+
+
+// ============================================================================
+//
+// OString
+//
+// ============================================================================
+
 class OString
 {
 public:
@@ -990,295 +1009,297 @@ private:
 	friend OString operator+(const OString& lhs, char rhs);
 	friend OString operator+(char lhs, const OString& rhs);
 
-	friend void swap(OString& x, OString& y);
-	friend void swap(OString& x, std::string& y);
-	friend void swap(std::string& x, OString& y);
+	friend void std::swap(OString& x, OString& y);
+	friend void std::swap(OString& x, std::string& y);
+	friend void std::swap(std::string& x, OString& y);
 
 	friend std::istream& operator>> (std::istream& is, OString& str);
 	friend std::ostream& operator<< (std::ostream& os, const OString& str);
 
-	friend std::istream& getline(std::istream& is, OString& str);
-	friend std::istream& getline(std::istream& is, OString& str, char delim);
+	friend std::istream& std::getline(std::istream& is, OString& str);
+	friend std::istream& std::getline(std::istream& is, OString& str, char delim);
 };
 
 
-// ------------------------------------------------------------------------
-// operator+
-// ------------------------------------------------------------------------
-
-OString operator+(const OString& lhs, const OString& rhs)
-{
-	return OString(operator+(lhs.mString, rhs.mString));
-}
-
-OString operator+(const OString& lhs, const std::string& rhs)
-{
-	return OString(operator+(lhs.mString, rhs));
-}
-
-OString operator+(const std::string& lhs, const OString& rhs)
-{
-	return OString(operator+(lhs, rhs.mString));
-}
-
-OString operator+(const OString& lhs, const char* rhs)
-{
-	return OString(operator+(lhs.mString, rhs));
-}
-
-OString operator+(const char* lhs, const OString& rhs)
-{
-	return OString(operator+(lhs, rhs.mString));
-}
-
-OString operator+(const OString& lhs, char rhs)
-{
-	return OString(operator+(lhs.mString, rhs));
-}
-
-OString operator+(char lhs, const OString& rhs)
-{
-	return OString(operator+(lhs, rhs.mString));
-}
-
-
-// ------------------------------------------------------------------------
-// operator==
-// ------------------------------------------------------------------------
-
-bool operator== (const OString& lhs, const OString& rhs)
-{
-	return lhs.equals(rhs);
-}
-
-bool operator== (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) == 0;
-}
-
-bool operator== (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) == 0;
-}
-
-bool operator== (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) == 0;
-}
-
-bool operator== (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) == 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator!=
-// ------------------------------------------------------------------------
-
-bool operator!= (const OString& lhs, const OString& rhs)
-{
-	return !(lhs.equals(rhs));
-}
-
-bool operator!= (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) != 0;
-}
-
-bool operator!= (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) != 0;
-}
-
-bool operator!= (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) != 0;
-}
-
-bool operator!= (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) != 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator<
-// ------------------------------------------------------------------------
-
-bool operator< (const OString& lhs, const OString& rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator< (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator< (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-bool operator< (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator< (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator<=
-// ------------------------------------------------------------------------
-
-bool operator<= (const OString& lhs, const OString& rhs)
-{
-	return lhs.equals(rhs) || lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-bool operator<= (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator>
-// ------------------------------------------------------------------------
-
-bool operator> (const OString& lhs, const OString& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-bool operator> (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator>=
-// ------------------------------------------------------------------------
-
-bool operator>= (const OString& lhs, const OString& rhs)
-{
-	return lhs.equals(rhs) || lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-bool operator>= (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-
-// ------------------------------------------------------------------------
-// swap 
-// ------------------------------------------------------------------------
-
-void swap(OString& x, OString& y)
-{
-	x.swap(y);
-}
-
-void swap(OString& x, std::string& y)
-{
-	x.swap(y);
-}
-
-void swap(std::string& x, OString& y)
-{
-	y.mDirty = true;
-	x.swap(y.mString);
-}
-
-
-// ------------------------------------------------------------------------
-// operator>> 
-// ------------------------------------------------------------------------
-
-std::istream& operator>> (std::istream& is, OString& str)
-{
-	str.mDirty = true;
-	return operator>> (is, str.mString);
-}
-
-
-// ------------------------------------------------------------------------
-// operator<< 
-// ------------------------------------------------------------------------
-
-std::ostream& operator<< (std::ostream& os, const OString& str)
-{
-	return operator<< (os, str.mString);
-}
-
-
-// ------------------------------------------------------------------------
-// getline
-// ------------------------------------------------------------------------
-
-std::istream& getline(std::istream& is, OString& str)
-{
-	str.mDirty = true;
-	return getline(is, str.mString);
-}
-
-std::istream& getline(std::istream& is, OString& str, char delim)
-{
-	str.mDirty = true;
-	return getline(is, str.mString, delim);
-}
+	// ------------------------------------------------------------------------
+	// operator+
+	// ------------------------------------------------------------------------
+
+	inline OString operator+(const OString& lhs, const OString& rhs)
+	{
+		return OString(operator+(lhs.mString, rhs.mString));
+	}
+
+	inline OString operator+(const OString& lhs, const std::string& rhs)
+	{
+		return OString(operator+(lhs.mString, rhs));
+	}
+
+	inline OString operator+(const std::string& lhs, const OString& rhs)
+	{
+		return OString(operator+(lhs, rhs.mString));
+	}
+
+	inline OString operator+(const OString& lhs, const char* rhs)
+	{
+		return OString(operator+(lhs.mString, rhs));
+	}
+
+	inline OString operator+(const char* lhs, const OString& rhs)
+	{
+		return OString(operator+(lhs, rhs.mString));
+	}
+
+	inline OString operator+(const OString& lhs, char rhs)
+	{
+		return OString(operator+(lhs.mString, rhs));
+	}
+
+	inline OString operator+(char lhs, const OString& rhs)
+	{
+		return OString(operator+(lhs, rhs.mString));
+	}
+
+
+	// ------------------------------------------------------------------------
+	// operator==
+	// ------------------------------------------------------------------------
+
+	inline bool operator== (const OString& lhs, const OString& rhs)
+	{
+		return lhs.equals(rhs);
+	}
+
+	inline bool operator== (const OString& lhs, const std::string& rhs)
+	{
+		return lhs.compare(rhs) == 0;
+	}
+
+	inline bool operator== (const std::string& lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) == 0;
+	}
+
+	inline bool operator== (const OString& lhs, const char* rhs)
+	{
+		return lhs.compare(rhs) == 0;
+	}
+
+	inline bool operator== (const char* lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) == 0;
+	}
+
+
+	// ------------------------------------------------------------------------
+	// operator!=
+	// ------------------------------------------------------------------------
+
+	inline bool operator!= (const OString& lhs, const OString& rhs)
+	{
+		return !(lhs.equals(rhs));
+	}
+
+	inline bool operator!= (const OString& lhs, const std::string& rhs)
+	{
+		return lhs.compare(rhs) != 0;
+	}
+
+	inline bool operator!= (const std::string& lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) != 0;
+	}
+
+	inline bool operator!= (const OString& lhs, const char* rhs)
+	{
+		return lhs.compare(rhs) != 0;
+	}
+
+	inline bool operator!= (const char* lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) != 0;
+	}
+
+
+	// ------------------------------------------------------------------------
+	// operator<
+	// ------------------------------------------------------------------------
+
+	inline bool operator< (const OString& lhs, const OString& rhs)
+	{
+		return lhs.compare(rhs) < 0;
+	}
+
+	inline bool operator< (const OString& lhs, const std::string& rhs)
+	{
+		return lhs.compare(rhs) < 0;
+	}
+
+	inline bool operator< (const std::string& lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) > 0;
+	}
+
+	inline bool operator< (const OString& lhs, const char* rhs)
+	{
+		return lhs.compare(rhs) < 0;
+	}
+
+	inline bool operator< (const char* lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) > 0;
+	}
+
+
+	// ------------------------------------------------------------------------
+	// operator<=
+	// ------------------------------------------------------------------------
+
+	inline bool operator<= (const OString& lhs, const OString& rhs)
+	{
+		return lhs.equals(rhs) || lhs.compare(rhs) < 0;
+	}
+
+	inline bool operator<= (const OString& lhs, const std::string& rhs)
+	{
+		return lhs.compare(rhs) < 0;
+	}
+
+	inline bool operator<= (const std::string& lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) > 0;
+	}
+
+	inline bool operator<= (const OString& lhs, const char* rhs)
+	{
+		return lhs.compare(rhs) < 0;
+	}
+
+	inline bool operator<= (const char* lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) > 0;
+	}
+
+
+	// ------------------------------------------------------------------------
+	// operator>
+	// ------------------------------------------------------------------------
+
+	inline bool operator> (const OString& lhs, const OString& rhs)
+	{
+		return lhs.compare(rhs) > 0;
+	}
+
+	inline bool operator> (const OString& lhs, const std::string& rhs)
+	{
+		return lhs.compare(rhs) > 0;
+	}
+
+	inline bool operator> (const std::string& lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) < 0;
+	}
+
+	inline bool operator> (const OString& lhs, const char* rhs)
+	{
+		return lhs.compare(rhs) > 0;
+	}
+
+	inline bool operator> (const char* lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) < 0;
+	}
+
+
+	// ------------------------------------------------------------------------
+	// operator>=
+	// ------------------------------------------------------------------------
+
+	inline bool operator>= (const OString& lhs, const OString& rhs)
+	{
+		return lhs.equals(rhs) || lhs.compare(rhs) > 0;
+	}
+
+	inline bool operator>= (const OString& lhs, const std::string& rhs)
+	{
+		return lhs.compare(rhs) > 0;
+	}
+
+	inline bool operator>= (const std::string& lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) < 0;
+	}
+
+	inline bool operator>= (const OString& lhs, const char* rhs)
+	{
+		return lhs.compare(rhs) > 0;
+	}
+
+	inline bool operator>= (const char* lhs, const OString& rhs)
+	{
+		return rhs.compare(lhs) < 0;
+	}
+
+	// ------------------------------------------------------------------------
+	// swap 
+	// ------------------------------------------------------------------------
+
+namespace std {
+	inline void swap(::OString& x, ::OString& y)
+	{
+		x.swap(y);
+	}
+
+	inline void swap(::OString& x, string& y)
+	{
+		x.swap(y);
+	}
+
+	inline void swap(string& x, ::OString& y)
+	{
+		y.mDirty = true;
+		x.swap(y.mString);
+	}
+};
+
+	// ------------------------------------------------------------------------
+	// operator>> 
+	// ------------------------------------------------------------------------
+
+	inline std::istream& operator>> (std::istream& is, ::OString& str)
+	{
+		str.mDirty = true;
+		return std::operator>> (is, str.mString);
+	}
+
+
+	// ------------------------------------------------------------------------
+	// operator<< 
+	// ------------------------------------------------------------------------
+
+	inline std::ostream& operator<< (std::ostream& os, const ::OString& str)
+	{
+		return std::operator<< (os, str.mString);
+	}
+
+
+	// ------------------------------------------------------------------------
+	// getline
+	// ------------------------------------------------------------------------
+
+namespace std {
+	inline istream& getline(istream& is, ::OString& str)
+	{
+		str.mDirty = true;
+		return getline(is, str.mString);
+	}
+
+	inline istream& getline(istream& is, ::OString& str, char delim)
+	{
+		str.mDirty = true;
+		return getline(is, str.mString, delim);
+	}
+};
 
 #endif	// __M_OSTRING_H__
 
