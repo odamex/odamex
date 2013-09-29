@@ -29,7 +29,7 @@
 /* Follow #ifdef __WIN32__ marks */
 
 #include <stdlib.h>
-#include <string.h>
+#include <cstring>
 #include <stdio.h>
 #include <stdarg.h>
 

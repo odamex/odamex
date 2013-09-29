@@ -23,7 +23,7 @@
 //
 
 
-#include <string.h>
+#include <cstring>
 #include <stddef.h>
 
 #include "stringtable.h"

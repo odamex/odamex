@@ -26,7 +26,7 @@
 #define __TARRAY_H__
 
 #include <stdlib.h>
-#include <string.h>
+#include <cstring>
 #include "m_alloc.h"
 
 template <class T>
