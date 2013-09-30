@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Needed for FRACUNIT.
+#include "doomstat.h"
 #include "m_fixed.h"
 #include "r_data.h"
 #include "c_cvars.h"

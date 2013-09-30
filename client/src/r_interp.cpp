@@ -22,6 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "doomstat.h"
 #include "m_fixed.h"
 #include "r_state.h"
 #include "p_local.h"

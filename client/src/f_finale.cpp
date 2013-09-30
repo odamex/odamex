@@ -121,7 +121,7 @@ void F_Ticker (void)
 		// [RH] or just reveal the entire message if we're still ticking it
 		size_t i;
 		for (i = 0; i < players.size(); i++)
-			if (players[i].cmd.ucmd.buttons)
+			if (players[i].cmd.buttons)
 				break;
 
 		if (i != players.size())

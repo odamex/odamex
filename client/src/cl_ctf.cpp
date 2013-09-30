@@ -20,6 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include	"doomstat.h"
 #include	"c_console.h"
 #include	"c_dispatch.h"
 #include	"cl_main.h"

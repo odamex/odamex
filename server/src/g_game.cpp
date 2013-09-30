@@ -27,7 +27,6 @@
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "d_protocol.h"
 #include "d_netinf.h"
 #include "z_zone.h"
 #include "m_argv.h"
@@ -247,25 +246,24 @@ void G_WriteDemoTiccmd ()
     for(size_t i = 0; i < players.size(); i++)
     {
         byte *demo_p = demo_tmp;
-        usercmd_t *cmd = &players[i].cmd.ucmd;
 
-        *demo_p++ = cmd->forwardmove >> 8;
-        *demo_p++ = cmd->sidemove >> 8;
+        *demo_p++ = players[i].cmd.forwardmove >> 8;
+        *demo_p++ = players[i].cmd.sidemove >> 8;
 
         // If this is a longtics demo, record in higher resolution
 
         if (LMP_DOOM_1_9_1 == demoversion)
         {
-            *demo_p++ = (cmd->yaw & 0xff);
-            *demo_p++ = (cmd->yaw >> 8) & 0xff;
+            *demo_p++ = (players[i].cmd.yaw & 0xff);
+            *demo_p++ = (players[i].cmd.yaw >> 8) & 0xff;
         }
         else
         {
-            *demo_p++ = cmd->yaw >> 8;
-            cmd->yaw = ((unsigned char)*(demo_p-1))<<8;
+            *demo_p++ = players[i].cmd.yaw >> 8;
+            players[i].cmd.yaw = ((unsigned char)*(demo_p-1))<<8;
         }
 
-        *demo_p++ = cmd->buttons;
+        *demo_p++ = players[i].cmd.buttons;
 
         size_t res = fwrite(demo_tmp, demostep, 1, recorddemo_fp);
     }

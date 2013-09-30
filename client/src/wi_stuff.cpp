@@ -1241,7 +1241,7 @@ void WI_checkForAccelerate(void)
 		{
 			player_t *player = &players[i];
 
-			if (player->cmd.ucmd.buttons & BT_ATTACK)
+			if (player->cmd.buttons & BT_ATTACK)
 			{
 				if (!player->attackdown)
 					acceleratestage = 1;
@@ -1249,7 +1249,7 @@ void WI_checkForAccelerate(void)
 			}
 			else
 				player->attackdown = false;
-			if (player->cmd.ucmd.buttons & BT_USE)
+			if (player->cmd.buttons & BT_USE)
 			{
 				if (!player->usedown)
 					acceleratestage = 1;
