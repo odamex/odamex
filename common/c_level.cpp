@@ -562,6 +562,11 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 	if (Reboot)
 	{
 		unnatural_level_progression = true;
+
+		// [SL] Stop any playing/recording demos before D_DoomWadReboot wipes out
+		// the zone memory heap and takes the demo data with it.
+		G_CheckDemoStatus();
+
 		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
 		if (!missingfiles.empty())
 			return false;
