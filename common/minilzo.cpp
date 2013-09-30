@@ -1947,7 +1947,7 @@ extern "C" {
 #  define ACC_WANT_ACC_INCE_H 1
 #  define ACC_WANT_ACC_INCI_H 1
 #elif 1
-#  include <string.h>
+#  include <cstring>
 #else
 #  define ACC_WANT_ACC_INCD_H 1
 #endif
@@ -1999,7 +1999,7 @@ LZO_COMPILE_TIME_ASSERT_HEADER(sizeof(lzo_uintptr_t) >= sizeof(lzo_voidp))
 #endif
 
 #if 1 && defined(HAVE_STRING_H)
-#include <string.h>
+#include <cstring>
 #endif
 
 #if (LZO_CFG_FREESTANDING)

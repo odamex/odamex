@@ -22,7 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include <string.h>
+#include <cstring>
 #include <math.h>
 #include <cstddef>
 

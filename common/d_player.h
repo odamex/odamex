@@ -35,6 +35,8 @@
 // as commands per game tick.
 #include "d_ticcmd.h"
 
+#include "d_net.h"
+
 // The player data structure depends on a number
 // of other structs: items (internal inventory),
 // animation states (closely tied to the sprites
@@ -121,7 +123,7 @@ class player_s
 public:
 	void Serialize (FArchive &arc);
 
-	bool ingame()
+	bool ingame() const
 	{
 		return playerstate == PST_LIVE ||
 				playerstate == PST_DEAD ||

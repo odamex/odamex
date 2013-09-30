@@ -25,6 +25,7 @@
 #ifndef __D_MAIN__
 #define __D_MAIN__
 
+#include "doomstat.h"
 #include "d_event.h"
 
 #include <vector>

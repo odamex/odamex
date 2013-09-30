@@ -27,7 +27,7 @@
 #define __DOOMDEF_H__
 
 #include <stdio.h>
-#include <string.h>
+#include <cstring>
 
 // GhostlyDeath -- MSVC++ 8+, remove "deprecated" warnings
 #if _MSC_VER >= 1400

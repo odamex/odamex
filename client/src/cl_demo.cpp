@@ -692,13 +692,13 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 	AActor *mo = player->mo;
 
 	MSG_WriteByte(netbuffer, svc_netdemocap);
-	MSG_WriteByte(netbuffer, player->cmd.ucmd.buttons);
-	MSG_WriteByte(netbuffer, player->cmd.ucmd.impulse);
-	MSG_WriteShort(netbuffer, player->cmd.ucmd.yaw);
-	MSG_WriteShort(netbuffer, player->cmd.ucmd.forwardmove);
-	MSG_WriteShort(netbuffer, player->cmd.ucmd.sidemove);
-	MSG_WriteShort(netbuffer, player->cmd.ucmd.upmove);
-	MSG_WriteShort(netbuffer, player->cmd.ucmd.pitch);
+	MSG_WriteByte(netbuffer, player->cmd.buttons);
+	MSG_WriteByte(netbuffer, player->cmd.impulse);
+	MSG_WriteShort(netbuffer, player->cmd.yaw);
+	MSG_WriteShort(netbuffer, player->cmd.forwardmove);
+	MSG_WriteShort(netbuffer, player->cmd.sidemove);
+	MSG_WriteShort(netbuffer, player->cmd.upmove);
+	MSG_WriteShort(netbuffer, player->cmd.pitch);
 
 	MSG_WriteByte(netbuffer, mo->waterlevel);
 	MSG_WriteLong(netbuffer, mo->x);

@@ -29,7 +29,7 @@
 /* Follow #ifdef __WIN32__ marks */
 
 #include <stdlib.h>
-#include <string.h>
+#include <cstring>
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -99,6 +99,8 @@ typedef int SOCKET;
 #include "miniupnpc.h"
 #include "upnpcommands.h"
 #endif
+
+#include "m_memio.h"	// for STACKARRAY_LENGTH
 
 unsigned int	inet_socket;
 int         	localport;
@@ -229,7 +231,7 @@ void upnp_add_redir (const char * addr, int port)
     {
         std::stringstream desc;
 
-        desc << "Odasrv " << "(" << addr << ":" << port_str << ")" << std::endl;
+        desc << "Odasrv " << "(" << addr << ":" << port_str << ")";
 
         sv_upnp_description.Set(desc.str().c_str());
     }
@@ -525,7 +527,6 @@ std::string NET_GetLocalAddress (void)
 	static char buff[HOST_NAME_MAX];
     hostent *ent;
     struct in_addr addr;
-    std::string ret_str;
 
 	gethostname(buff, HOST_NAME_MAX);
 	buff[HOST_NAME_MAX - 1] = 0;
@@ -533,16 +534,19 @@ std::string NET_GetLocalAddress (void)
     ent = gethostbyname(buff);
 
     // Return the first, IPv4 address
-    if (ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
+    if (ent && ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
     {
         addr.s_addr = *(u_long *)ent->h_addr_list[0];
 
-        ret_str = inet_ntoa(addr);
+		std::string ipstr = inet_ntoa(addr);
+		Printf(PRINT_HIGH, "Bound to IP: %s\n", ipstr.c_str());
+		return ipstr;
     }
-
-	Printf(PRINT_HIGH, "Bound to IP: %s\n",ret_str.c_str());
-
-    return ret_str;
+	else
+	{
+		Printf(PRINT_HIGH, "Could not look up host IP address from hostname\n");
+		return "";
+	}
 }
 
 
@@ -665,6 +669,47 @@ void MSG_WriteString (buf_t *b, const char *s)
 	if (simulated_connection)
 		return;
 	b->WriteString(s);
+}
+
+unsigned int toInt(char c)
+{
+  if (c >= '0' && c <= '9') return      c - '0';
+  if (c >= 'A' && c <= 'F') return 10 + c - 'A';
+  if (c >= 'a' && c <= 'f') return 10 + c - 'a';
+  return -1;
+}
+
+//
+// MSG_WriteHexString
+//
+// Converts a hexidecimal string to its binary representation
+void MSG_WriteHexString(buf_t *b, const char *s)
+{
+    byte output[255];
+
+    // Nothing to write?
+    if (!(s && (*s)))
+    {
+        MSG_WriteByte(b, 0);
+        return;
+    }
+
+    const size_t numdigits = strlen(s) / 2;
+
+    if (numdigits > STACKARRAY_LENGTH(output))
+    {
+        Printf (PRINT_HIGH, "MSG_WriteHexString: too many digits\n");
+        return;
+    }
+
+    for (size_t i = 0; i < numdigits; ++i)
+    {
+        output[i] = (char)(16 * toInt(s[2*i]) + toInt(s[2*i+1]));
+    }
+
+    MSG_WriteByte(b, (byte)numdigits);
+
+    MSG_WriteChunk(b, output, numdigits);
 }
 
 int MSG_BytesLeft(void)

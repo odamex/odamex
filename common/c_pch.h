@@ -24,7 +24,6 @@
 #include "d_net.h"           
 #include "d_netinf.h"
 #include "d_player.h"        
-#include "d_protocol.h"      
 #include "d_ticcmd.h"        
 #include "errors.h"
 #include "farchive.h"        

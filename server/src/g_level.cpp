@@ -35,7 +35,6 @@
 #include "d_event.h"
 #include "d_main.h"
 #include "doomstat.h"
-#include "d_protocol.h"
 #include "g_level.h"
 #include "g_game.h"
 #include "gstrings.h"
@@ -675,6 +674,11 @@ void G_DoResetLevel(bool full_reset)
 
 		// Set the respawning machinery in motion
 		it->playerstate = full_reset ? PST_ENTER : PST_REBORN;
+
+		// Do this here, otherwise players won't be reborn until next tic.
+		// [AM] Also, forgetting to do this will result in ticcmds that rely on
+		//      a players subsector to be valid (like use) to crash the server.
+		G_DoReborn(*it);
 	}
 }
 

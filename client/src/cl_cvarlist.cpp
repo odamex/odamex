@@ -234,6 +234,8 @@ CVAR (hud_crosshairdim, "0", "Crosshair transparency",
       CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (hud_crosshairscale, "0", "Crosshair scaling",
       CVARTYPE_WORD, CVAR_ARCHIVE)
+CVAR_FUNC_DECL (hud_crosshaircolor, "ff 00 00", "Crosshair color",
+                CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (hud_crosshairhealth, "0", "Color of crosshair represents health level",
       CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n// 1: New Odamex HUD",

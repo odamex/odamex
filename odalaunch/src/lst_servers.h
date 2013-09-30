@@ -49,6 +49,9 @@ class LstOdaServerList : public wxAdvancedListCtrl
 
         void AddServerToList(const odalpapi::Server &s, wxInt32 index, bool insert = true);
 
+        wxInt32 FindServer(wxString Address);
+        wxInt32 GetSelectedServerIndex();
+
     protected:
         
         void ClearItemCells(long item);

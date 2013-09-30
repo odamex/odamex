@@ -113,8 +113,6 @@ class dlgMain : public wxFrame, wxThreadHelper
 		void SetupToolbar();
 
 		wxInt32 FindServer(wxString);
-		wxInt32 FindServerInList(wxString);
-		wxInt32 GetSelectedServerListIndex();
 		wxInt32 GetSelectedServerArrayIndex();
 
 		_oda_iav_err_t IsAddressValid(wxString, wxString &, long &);

@@ -26,7 +26,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <cstring>
 #include <stdarg.h>
 #include <math.h>
 
@@ -219,7 +219,17 @@ uint64_t I_GetTime()
 
 QWORD I_MSTime()
 {
-	return I_GetTime() / (1000000LL);
+	return I_ConvertTimeToMs(I_GetTime());
+}
+
+uint64_t I_ConvertTimeToMs(uint64_t value)
+{
+	return value / 1000000LL;
+}
+
+uint64_t I_ConvertTimeFromMs(uint64_t value)
+{
+	return value * 1000000LL;
 }
 
 //
@@ -549,12 +559,13 @@ void STACK_ARGS I_FatalError (const char *error, ...)
     {
                 alreadyThrown = true;
                 char errortext[MAX_ERRORTEXT];
-                int index;
                 va_list argptr;
                 va_start (argptr, error);
-                index = vsprintf (errortext, error, argptr);
                 #ifdef _WIN32
+                int index = vsprintf (errortext, error, argptr);
                 sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
+				#else
+                vsprintf (errortext, error, argptr);
 				#endif
                 va_end (argptr);
 

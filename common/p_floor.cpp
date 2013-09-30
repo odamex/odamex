@@ -32,6 +32,8 @@
 #include "r_state.h"
 #include "tables.h"
 
+EXTERN_CVAR(co_fixzerotags)
+
 extern bool predicting;
 
 // ============================================================================
@@ -456,11 +458,10 @@ BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 	int 				secnum;
 	BOOL 				rtn = false;
 	sector_t*			sec;
-	DFloor*				floor;
 	BOOL				manual = false;
 
 	// check if a manual trigger; if so do just the sector on the backside
-	if (tag == 0)
+	if (co_fixzerotags && tag == 0)
 	{
 		if (!line || !(sec = line->backsector))
 			return rtn;
@@ -478,15 +479,15 @@ manual_floor:
 		// ALREADY MOVING?	IF SO, KEEP GOING...
 		if (sec->floordata)
 		{
-			if (P_MovingFloorCompleted(sec))
-				sec->floordata->Destroy();
-			else
+			if (co_fixzerotags && manual)
+				return false;
+			else	
 				continue;
 		}
 
 		// new floor thinker
 		rtn = true;
-		floor = new DFloor(sec, floortype, line, speed, height, crush, change);
+		new DFloor(sec, floortype, line, speed, height, crush, change);
 		P_AddMovingFloor(sec);
 		
 		if (manual)

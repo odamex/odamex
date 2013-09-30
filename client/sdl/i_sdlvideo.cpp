@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <functional>
 #include <string>
+#include "doomstat.h"
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
@@ -184,10 +185,7 @@ std::string SDLVideo::GetVideoDriverName()
 bool SDLVideo::FullscreenChanged (bool fs)
 {
    if(fs != infullscreen)
-   {
-      fs = infullscreen;
       return true;
-   }
 
    return false;
 }

@@ -61,6 +61,43 @@ void LstOdaServerList::OnCreateControl(wxWindowCreateEvent &event)
     event.Skip();
 }
 
+// Finds an index in the server list, via Address
+wxInt32 LstOdaServerList::FindServer(wxString Address)
+{
+    if (!GetItemCount())
+        return -1;
+
+    for (wxInt32 i = 0; i < GetItemCount(); i++)
+    {
+        wxListItem item;
+        item.SetId(i);
+        item.SetColumn(serverlist_field_address);
+        item.SetMask(wxLIST_MASK_TEXT);
+
+        GetItem(item);
+
+        if (item.GetText().IsSameAs(Address))
+            return i;
+    }
+
+    return -1;
+}
+
+// Retrieves the currently selected server in list index form
+wxInt32 LstOdaServerList::GetSelectedServerIndex()
+{
+    wxInt32 i;
+
+    if (!GetItemCount() || !GetSelectedItemCount())
+    {
+        return -1;
+    }
+
+    i = GetFirstSelected();
+
+    return i;
+}
+
 void LstOdaServerList::OnCopyAddress(wxCommandEvent& event)
 {
     wxListItem li;
@@ -78,9 +115,12 @@ void LstOdaServerList::OnCopyAddress(wxCommandEvent& event)
 
     if (wxTheClipboard->Open())
     {
+#ifdef __WXGTK__
+        wxTheClipboard->UsePrimarySelection(true);
+#endif
         wxTheClipboard->SetData( new wxTextDataObject(li.m_text) );
         wxTheClipboard->Close();
-    }   
+    }
 }
 
 void LstOdaServerList::OnOpenContextMenu(wxContextMenuEvent& event)

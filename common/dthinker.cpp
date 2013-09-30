@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "doomstat.h"
 #include "dthinker.h"
 #include "z_zone.h"
 #include "stats.h"

@@ -27,7 +27,6 @@
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "d_protocol.h"
 #include "d_netinf.h"
 #include "z_zone.h"
 #include "f_finale.h"
@@ -418,9 +417,9 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	else
 	{
 		if (Actions[ACTION_RIGHT])
-			cmd->ucmd.yaw -= angleturn[tspeed];
+			cmd->yaw -= angleturn[tspeed];
 		if (Actions[ACTION_LEFT])
-			cmd->ucmd.yaw += angleturn[tspeed];
+			cmd->yaw += angleturn[tspeed];
 	}
 
 	// Joystick analog strafing -- Hyper_Eye
@@ -467,24 +466,24 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 
 	// buttons
 	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && !headsupactive) // john - only add attack when console up
-		cmd->ucmd.buttons |= BT_ATTACK;
+		cmd->buttons |= BT_ATTACK;
 
 	if (Actions[ACTION_USE])
-		cmd->ucmd.buttons |= BT_USE;
+		cmd->buttons |= BT_USE;
 
 	if (Actions[ACTION_JUMP])
-		cmd->ucmd.buttons |= BT_JUMP;
+		cmd->buttons |= BT_JUMP;
 
 	// [RH] Handle impulses. If they are between 1 and 7,
 	//		they get sent as weapon change events.
 	if (Impulse >= 1 && Impulse <= 8)
 	{
-		cmd->ucmd.buttons |= BT_CHANGE;
-		cmd->ucmd.buttons |= (Impulse - 1) << BT_WEAPONSHIFT;
+		cmd->buttons |= BT_CHANGE;
+		cmd->buttons |= (Impulse - 1) << BT_WEAPONSHIFT;
 	}
 	else
 	{
-		cmd->ucmd.impulse = Impulse;
+		cmd->impulse = Impulse;
 	}
 	Impulse = 0;
 
@@ -492,15 +491,15 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	// weapon change due to a weapon pickup
 	if (!serverside && cl_predictpickup)
 	{
-		if (!cmd->ucmd.impulse && !(cmd->ucmd.buttons & BT_CHANGE) &&
+		if (!cmd->impulse && !(cmd->buttons & BT_CHANGE) &&
 			consoleplayer().pendingweapon != wp_nochange)
-			cmd->ucmd.impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
+			cmd->impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
 	}
 
 	if (strafe || lookstrafe)
 		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
 	else
-		cmd->ucmd.yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10));
+		cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10));
 
 	if (Actions[ACTION_MLOOK])
 	{
@@ -548,7 +547,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	if (strafe || lookstrafe)
 		side += (int)((float)mousex * m_side);
 	else
-		cmd->ucmd.yaw -= (int)((float)(mousex*0x8) * m_yaw) / ticdup;
+		cmd->yaw -= (int)((float)(mousex*0x8) * m_yaw) / ticdup;
 
 	mousex = mousey = 0;
 
@@ -561,31 +560,31 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	else if (side < -MAXPLMOVE)
 		side = -MAXPLMOVE;
 
-	cmd->ucmd.forwardmove += forward;
-	cmd->ucmd.sidemove += side;
-	cmd->ucmd.pitch = look;
-	cmd->ucmd.upmove = fly;
+	cmd->forwardmove += forward;
+	cmd->sidemove += side;
+	cmd->pitch = look;
+	cmd->upmove = fly;
 
 	// special buttons
 	if (sendpause)
 	{
 		sendpause = false;
-		cmd->ucmd.buttons = BT_SPECIAL | BTS_PAUSE;
+		cmd->buttons = BT_SPECIAL | BTS_PAUSE;
 	}
 
 	if (sendsave)
 	{
 		sendsave = false;
-		cmd->ucmd.buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot<<BTS_SAVESHIFT);
+		cmd->buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot<<BTS_SAVESHIFT);
 	}
 
-	cmd->ucmd.forwardmove <<= 8;
-	cmd->ucmd.sidemove <<= 8;
+	cmd->forwardmove <<= 8;
+	cmd->sidemove <<= 8;
 
 	// [RH] 180-degree turn overrides all other yaws
 	if (turntick) {
 		turntick--;
-		cmd->ucmd.yaw = (ANG180 / TURN180_TICKS) >> 16;
+		cmd->yaw = (ANG180 / TURN180_TICKS) >> 16;
 	}
 }
 
@@ -1011,9 +1010,9 @@ void G_Ticker (void)
     {
 		player_t &player = consoleplayer();
 
-		if (player.cmd.ucmd.buttons & BT_SPECIAL)
+		if (player.cmd.buttons & BT_SPECIAL)
 		{
-			switch (player.cmd.ucmd.buttons & BT_SPECIALMASK)
+			switch (player.cmd.buttons & BT_SPECIALMASK)
 			{
 			  case BTS_PAUSE:
 				paused ^= 1;
@@ -1026,7 +1025,7 @@ void G_Ticker (void)
 			  case BTS_SAVEGAME:
 				if (!savedescription[0])
 					strcpy (savedescription, "NET GAME");
-				savegameslot =  (player.cmd.ucmd.buttons & BTS_SAVEMASK)>>BTS_SAVESHIFT;
+				savegameslot =  (player.cmd.buttons & BTS_SAVEMASK)>>BTS_SAVESHIFT;
 				gameaction = ga_savegame;
 				break;
 			}
@@ -1674,13 +1673,7 @@ void G_DoSaveGame (void)
 // DEMO RECORDING
 //
 #define DEMOMARKER				0x80
-
-static usercmd_t LastUserCmd;
-
-static void MakeEmptyUserCmd (void)
-{
-	memset (&LastUserCmd, 0, sizeof(usercmd_t));
-}
+#define DEMOSTOP				0x07
 
 void G_ReadDemoTiccmd ()
 {
@@ -1697,73 +1690,20 @@ void G_ReadDemoTiccmd ()
 				return;
 			}
 
-			usercmd_t *ucmd = &players[i].cmd.ucmd;
-
-			ucmd->forwardmove = ((signed char)*demo_p++)<<8;
-			ucmd->sidemove = ((signed char)*demo_p++)<<8;
+			players[i].cmd.forwardmove = ((signed char)*demo_p++)<<8;
+			players[i].cmd.sidemove = ((signed char)*demo_p++)<<8;
 
 			if(demoversion == LMP_DOOM_1_9)
-				ucmd->yaw = ((unsigned char)*demo_p++)<<8;
+				players[i].cmd.yaw = ((unsigned char)*demo_p++)<<8;
 			else
 			{
-				ucmd->yaw = ((unsigned short)*demo_p++);
-				ucmd->yaw |= ((unsigned short)*demo_p++)<<8;
+				players[i].cmd.yaw = ((unsigned short)*demo_p++);
+				players[i].cmd.yaw |= ((unsigned short)*demo_p++)<<8;
 			}
-			ucmd->buttons = (unsigned char)*demo_p++;
+			players[i].cmd.buttons = (unsigned char)*demo_p++;
 		}
 
 		return;
-	}
-
-	if(demoversion == ZDOOM_FORM)
-	{
-		for(size_t i = 0; i < players.size(); i++)
-		{
-			static int clonecount = 0;
-			int id = DEM_BAD;
-			ticcmd_t *cmd = &players[i].cmd;
-
-			while (!clonecount && id != DEM_USERCMD && id != DEM_USERCMDCLONE)
-			{
-				if (!demorecording && demo_p >= zdembodyend)
-				{
-					// nothing left in the BODY chunk, so end playback.
-					G_CheckDemoStatus ();
-					break;
-				}
-
-				id = ReadByte (&demo_p);
-
-				switch (id)
-				{
-				case DEM_STOP:
-					// end of demo stream
-					G_CheckDemoStatus ();
-					break;
-				case DEM_USERCMD:
-					UnpackUserCmd (&cmd->ucmd, &demo_p);
-					memcpy (&LastUserCmd, &cmd->ucmd, sizeof(usercmd_t));
-					break;
-				case DEM_USERCMDCLONE:
-					clonecount = ReadByte (&demo_p) + 1;
-					break;
-
-				case DEM_DROPPLAYER:
-		//			i = ReadByte (&demo_p);
-		//			if (players.valid(i))
-		//				players[i].state = player_t::disconnected;
-
-				default:
-		//			Net_DoCommand (id, &demo_p, player);
-					break;
-				}
-			}
-			if (clonecount)
-			{
-				clonecount--;
-				memcpy (&cmd->ucmd, &LastUserCmd, sizeof(usercmd_t));
-			}
-		}
 	}
 }
 
@@ -1779,25 +1719,24 @@ void G_WriteDemoTiccmd ()
     for(size_t i = 0; i < players.size(); i++)
     {
         byte *demo_p = demo_tmp;
-        usercmd_t *cmd = &players[i].cmd.ucmd;
 
-        *demo_p++ = cmd->forwardmove >> 8;
-        *demo_p++ = cmd->sidemove >> 8;
+        *demo_p++ = players[i].cmd.forwardmove >> 8;
+        *demo_p++ = players[i].cmd.sidemove >> 8;
 
         // If this is a longtics demo, record in higher resolution
 
         if (LMP_DOOM_1_9_1 == demoversion)
         {
-            *demo_p++ = (cmd->yaw & 0xff);
-            *demo_p++ = (cmd->yaw >> 8) & 0xff;
+            *demo_p++ = (players[i].cmd.yaw & 0xff);
+            *demo_p++ = (players[i].cmd.yaw >> 8) & 0xff;
         }
         else
         {
-            *demo_p++ = cmd->yaw >> 8;
-            cmd->yaw = ((unsigned char)*(demo_p-1))<<8;
+            *demo_p++ = players[i].cmd.yaw >> 8;
+            players[i].cmd.yaw = ((unsigned char)*(demo_p-1))<<8;
         }
 
-        *demo_p++ = cmd->buttons;
+        *demo_p++ = players[i].cmd.buttons;
 
         fwrite(demo_tmp, demostep, 1, recorddemo_fp);
     }
@@ -1984,101 +1923,9 @@ BEGIN_COMMAND(streamdemo)
 }
 END_COMMAND(streamdemo)
 
-// [RH] Process all the information in a FORM ZDEM
-//		until a BODY chunk is entered.
-BOOL G_ProcessIFFDemo (char *mapname)
-{
-	BOOL bodyHit = false;
-	int numPlayers = 0;
-	int id, len;
-	size_t i;
-	byte *nextchunk;
-
-	demoplayback = true;
-
-	players.clear();
-
-	len = ReadLong (&demo_p);
-	zdemformend = demo_p + len + (len & 1);
-
-	// Check to make sure this is a ZDEM chunk file.
-	// TODO: Support multiple FORM ZDEMs in a CAT. Might be useful.
-
-	id = ReadLong (&demo_p);
-	if (id != ZDEM_ID) {
-		Printf (PRINT_HIGH, "Not an ZDEM demo file\n");
-		return true;
-	}
-
-	// Process all chunks until a BODY chunk is encountered.
-
-	while (demo_p < zdemformend && !bodyHit) {
-		id = ReadLong (&demo_p);
-		len = ReadLong (&demo_p);
-		nextchunk = demo_p + len + (len & 1);
-		if (nextchunk > zdemformend) {
-			Printf (PRINT_HIGH, "Demo is mangled\n");
-			return true;
-		}
-
-		switch (id) {
-			case ZDHD_ID:
-				iffdemover = ReadWord (&demo_p);	// ZDoom version demo was created with
-				if (ReadWord (&demo_p) > GAMEVER) {		// Minimum ZDoom version
-					Printf (PRINT_HIGH, "Demo requires newer software version\n");
-					return true;
-				}
-				memcpy (mapname, demo_p, 8);	// Read map name
-				mapname[8] = 0;
-				demo_p += 8;
-				//rngseed = ReadLong (&demo_p);
-				//consoleplayer = displayplayer = *demo_p++;
-				break;
-
-			case VARS_ID:
-				cvar_t::C_ReadCVars (&demo_p);
-				break;
-
-			case UINF_ID:
-				i = ReadByte (&demo_p);
-				if (!players[i].ingame()) {
-					//players[i].state = player_t::playing;
-					numPlayers++;
-				}
-				D_ReadUserInfoStrings (i, &demo_p, false);
-				break;
-
-			case BODY_ID:
-				bodyHit = true;
-				zdembodyend = demo_p + len;
-				break;
-		}
-
-		if (!bodyHit)
-			demo_p = nextchunk;
-	}
-
-	if (!numPlayers) {
-		Printf (PRINT_HIGH, "Demo has no players\n");
-		return true;
-	}
-
-	if (!bodyHit) {
-		zdembodyend = NULL;
-		Printf (PRINT_HIGH, "Demo has no BODY chunk\n");
-		return true;
-	}
-
-	if (numPlayers > 1)
-		multiplayer = netgame = true;
-
-	return false;
-}
 
 void G_DoPlayDemo (bool justStreamInput)
 {
-	char mapname[9];
-
 	if(!justStreamInput)
 		CL_QuitNetGame();
 
@@ -2117,7 +1964,6 @@ void G_DoPlayDemo (bool justStreamInput)
 	// of those cvars
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 	cvar_t::C_SetCVarsToDefaults(CVAR_SERVERINFO);
-	MakeEmptyUserCmd ();
 	demostartgametic = gametic;
 
 	if(demo_p[0] == DOOM_1_4_DEMO
@@ -2257,26 +2103,6 @@ void G_DoPlayDemo (bool justStreamInput)
         gameaction = ga_nothing;
         return;
 	}
-
-	if (ReadLong (&demo_p) != FORM_ID) {
-			Printf (PRINT_HIGH, "Unknown demo format.\n");
-			gameaction = ga_nothing;
-	} else if (G_ProcessIFFDemo (mapname)) {
-		gameaction = ga_nothing;
-		demoplayback = false;
-	} else {
-		demoversion = ZDOOM_FORM;
-		// don't spend a lot of time in loadlevel
-		precache = false;
-		demonew = true;
-		G_InitNew (mapname);
-		C_HideConsole ();
-		demonew = false;
-		precache = true;
-
-		usergame = false;
-		demoplayback = true;
-	}
 }
 
 //
@@ -2313,7 +2139,7 @@ void G_CleanupDemo()
 	{
 		if (recorddemo_fp)
 		{
-			fputc(DEM_STOP, recorddemo_fp);
+			fputc(DEMOSTOP, recorddemo_fp);
 			fclose(recorddemo_fp);
 			recorddemo_fp = NULL;
 		}

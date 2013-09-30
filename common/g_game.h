@@ -28,6 +28,7 @@
 #include "doomdef.h"
 #include "d_event.h"
 #include "d_player.h"
+#include "g_level.h"
 
 //
 // GAME

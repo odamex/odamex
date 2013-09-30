@@ -262,12 +262,7 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 //
 void SV_SetClientRate(client_t &client, int rate)
 {
-	if (rate < 1)
-		rate = 1;
-	else if (rate > sv_maxrate)
-		rate = sv_maxrate;
-
-	client.rate = rate;
+	client.rate = clamp(rate, 1, (int)sv_maxrate);
 }
 
 EXTERN_CVAR (sv_waddownloadcap)
@@ -393,6 +388,23 @@ void SV_KickPlayer(player_t &player, const std::string &reason) {
 	}
 
 	player.client.displaydisconnect = false;
+	SV_DropClient(player);
+}
+
+// Invalidate a player.
+//
+// Usually happens when corrupted messages are passed to the server by the
+// client.  Reasons should only be seen by the server admin.  Player and client
+// are both presumed unusable after function is done.
+void SV_InvalidateClient(player_t &player, const std::string& reason)
+{
+	if (&(player.client) == NULL)
+	{
+		Printf(PRINT_HIGH, "Player with NULL client fails security check (%s), client cannot be safely dropped.\n");
+		return;
+	}
+
+	Printf(PRINT_HIGH, "%s fails security check (%s), dropping client.\n", NET_AdrToString(player.client.address), reason.c_str());
 	SV_DropClient(player);
 }
 
@@ -890,23 +902,40 @@ void SV_BroadcastUserInfo(player_t &player)
 		SV_SendUserInfo(player, &(players[i].client));
 }
 
-//
-//	SV_SetupUserInfo
-//
-//	Stores a players userinfo
-//
-void SV_SetupUserInfo (player_t &player)
+/**
+ * Stores a players userinfo.
+ *
+ * @param player Player to parse info for.
+ * @return False if the client was kicked because of something seriously
+ *         screwy going on with their info.
+ */
+bool SV_SetupUserInfo(player_t &player)
 {
 	// read in userinfo from packet
 	std::string		old_netname(player.userinfo.netname);
 	std::string		new_netname(MSG_ReadString());
 
+	if (!ValidString(new_netname)) {
+		SV_InvalidateClient(player, "Name contains invalid characters");
+		return false;
+	}
+
 	team_t			old_team = static_cast<team_t>(player.userinfo.team);
 	team_t			new_team = static_cast<team_t>(MSG_ReadByte());
+
+	if ((new_team >= NUMTEAMS && new_team != TEAM_NONE) || new_team < 0) {
+		SV_InvalidateClient(player, "Team preference is invalid");
+		return false;
+	}
 
 	gender_t		gender = static_cast<gender_t>(MSG_ReadLong());
 	int				color = MSG_ReadLong();
 	std::string		skin(MSG_ReadString());
+
+	if (!ValidString(skin)) {
+		SV_InvalidateClient(player, "Skin contains invalid characters");
+		return false;
+	}
 
 	fixed_t			aimdist = MSG_ReadLong();
 	bool			unlag = MSG_ReadBool();
@@ -955,7 +984,7 @@ void SV_SetupUserInfo (player_t &player)
 	{
 		// Send the client's actual userinfo back to them so they can reset it
 		SV_SendUserInfo (player, &player.client);
-		return;
+		return true;
 	}
 
 	player.userinfo.gender			= gender;
@@ -1021,9 +1050,10 @@ void SV_SetupUserInfo (player_t &player)
 		}
 	}
 
-	player.userinfo.netname = new_netname;
 	if (new_netname.length() > MAXPLAYERNAME)
 		new_netname.erase(MAXPLAYERNAME);
+
+	player.userinfo.netname = new_netname;
 
 	// Compare names and broadcast if different.
 	if (!old_netname.empty() && !iequals(new_netname, old_netname))
@@ -1049,12 +1079,14 @@ void SV_SetupUserInfo (player_t &player)
 			// kill player if team is changed
 			P_DamageMobj (player.mo, 0, 0, 1000, 0);
 			SV_BroadcastPrintf(PRINT_HIGH, "%s switched to the %s team.\n",
-				new_netname.c_str(), team_names[new_team]);
+				player.userinfo.netname.c_str(), team_names[new_team]);
 		}
 	}
 
 	// [SL] 2011-12-02 - Player can update all preferences again in 5 seconds
 	player.userinfo.next_change_time = gametic + 5 * TICRATE;
+
+	return true;
 }
 
 //
@@ -1974,8 +2006,15 @@ void SV_ConnectClient (void)
 	}
 
 	// get client userinfo
-	MSG_ReadByte();  // clc_userinfo
-	SV_SetupUserInfo(players[n]);
+	clc_t userinfo = (clc_t)MSG_ReadByte();
+	if (userinfo != clc_userinfo)
+	{
+		SV_InvalidateClient(players[n], "Client didn't send any userinfo");
+		return;
+	}
+
+	if (!SV_SetupUserInfo(players[n]))
+		return;
 
 	// get rate value
 	SV_SetClientRate(*cl, MSG_ReadLong());
@@ -2535,6 +2574,9 @@ void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...)
     for (size_t i=0; i < players.size(); i++)
     {
 		cl = &clients[i];
+		
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, level);
@@ -2558,6 +2600,9 @@ void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...)
     for (size_t i=0; i < players.size(); i++)
     {
 		cl = &clients[i];
+		
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
 
 		if (players[i].spectator)
 		{
@@ -2619,6 +2664,9 @@ void STACK_ARGS SV_TeamPrintf (int level, int who, const char *fmt, ...)
 			continue;
 
 		cl = &clients[i];
+		
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, level);
@@ -2749,13 +2797,18 @@ void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 // SV_Say
 // Show a chat string and send it to others clients.
 //
-void SV_Say(player_t &player)
+bool SV_Say(player_t &player)
 {
 	byte who = MSG_ReadByte();
 	const char* s = MSG_ReadString();
 
+	if (!ValidString(s)) {
+		SV_InvalidateClient(player, "Chatstring contains invalid characters");
+		return false;
+	}
+
 	if (!strlen(s) || strlen(s) > MAX_CHATSTR_LEN)
-		return;
+		return true;
 
 	// Flood protection
 	if (player.LastMessage.Time)
@@ -2765,7 +2818,7 @@ void SV_Say(player_t &player)
 		float Delay = (float)(sv_flooddelay * TICRATE);
 
 		if (Difference <= Delay)
-			return;
+			return true;
 
 		player.LastMessage.Time = 0;
 	}
@@ -2796,26 +2849,33 @@ void SV_Say(player_t &player)
 		// Invalid destination
 		break;
 	}
+
+	return true;
 }
 
 //
 // SV_PrivMsg
 // Show a chat string and show it to a single other client.
 //
-void SV_PrivMsg(player_t &player)
+bool SV_PrivMsg(player_t &player)
 {
 	player_t& dplayer = idplayer(MSG_ReadByte());
 	const char* s = MSG_ReadString();
 
+	if (!ValidString(s)) {
+		SV_InvalidateClient(player, "Private Message contains invalid characters");
+		return false;
+	}
+
 	if (!validplayer(dplayer))
-		return;
+		return true;
 
 	if (!strlen(s) || strlen(s) > MAX_CHATSTR_LEN)
-		return;
+		return true;
 
 	// In competitive gamemodes, don't allow spectators to message players.
 	if (sv_gametype != GM_COOP && player.spectator && !dplayer.spectator)
-		return;
+		return true;
 
 	// Flood protection
 	if (player.LastMessage.Time)
@@ -2824,7 +2884,7 @@ void SV_PrivMsg(player_t &player)
 		float Delay = (float)(sv_flooddelay * TICRATE);
 
 		if (Difference <= Delay)
-			return;
+			return true;
 
 		player.LastMessage.Time = 0;
 	}
@@ -2836,6 +2896,8 @@ void SV_PrivMsg(player_t &player)
 	}
 
 	SVC_PrivMsg(player, dplayer, s);
+
+	return true;
 }
 
 //
@@ -3534,7 +3596,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 {
 	team_t team = (team_t)MSG_ReadByte();
 
-	if(team >= NUMTEAMS)
+	if ((team >= NUMTEAMS && team != TEAM_NONE) || team < 0)
 		return;
 
 	if(sv_gametype == GM_CTF && team >= 2)
@@ -3546,7 +3608,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	team_t old_team = player.userinfo.team;
 	player.userinfo.team = team;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has joined the %s team.\n", team_names[team]);
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has joined the %s team.\n", player.userinfo.netname.c_str(), team_names[team]);
 
 	switch (player.userinfo.team)
 	{
@@ -3683,6 +3745,13 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 			MSG_WriteByte(&(players[j].client.reliablebuf), true);
 		}
 
+		// call CTF_CheckFlags _before_ the player becomes a spectator.
+		// Otherwise a flag carrier will drop his flag at (0,0), which
+		// is often right next to one of the bases...
+		if (sv_gametype == GM_CTF) {
+			CTF_CheckFlags(player);
+		}
+
 		player.spectator = true;
 
 		// [AM] Set player unready if we're in warmup mode.
@@ -3696,10 +3765,6 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		player.joinafterspectatortime = level.time;
 
 		P_SetSpectatorFlags(player);
-
-		if (sv_gametype == GM_CTF) {
-			CTF_CheckFlags(player);
-		}
 
 		if (!silent) {
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname.c_str());
@@ -4090,7 +4155,8 @@ void SV_ParseCommands(player_t &player)
 			return;
 
 		case clc_userinfo:
-			SV_SetupUserInfo(player);
+			if (!SV_SetupUserInfo(player))
+				return;
 			SV_BroadcastUserInfo(player);
 			break;
 
@@ -4099,11 +4165,13 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_say:
-			SV_Say(player);
+			if (!SV_Say(player))
+				return;
 			break;
 
 		case clc_privmsg:
-			SV_PrivMsg(player);
+			if (!SV_PrivMsg(player))
+				return;
 			break;
 
 		case clc_move:

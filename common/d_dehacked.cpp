@@ -24,7 +24,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <cstring>
 #include <stddef.h>
 
 #include "doomtype.h"
@@ -1735,7 +1735,7 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 		if (deh) {
 			filelen = M_FileLength (deh);
 			if ( (PatchFile = new char[filelen + 1]) ) {
-				size_t res = fread (PatchFile, 1, filelen, deh);
+				fread (PatchFile, 1, filelen, deh);
 				fclose (deh);
 			}
 		}

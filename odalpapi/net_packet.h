@@ -54,7 +54,7 @@
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
 #define VERSION (0*256+64)
-#define PROTOCOL_VERSION 2
+#define PROTOCOL_VERSION 5
 
 #define TAG_ID 0xAD0
 
@@ -71,10 +71,38 @@ const uint32_t MASTER_RESPONSE  = 777123;
 const uint32_t SERVER_CHALLENGE = 0xAD011002;
 const uint32_t SERVER_VERSION_CHALLENGE = 0xAD011001;
 
+// Hints for network code optimization
+typedef enum
+{
+     CVARTYPE_NONE = 0 // Used for no sends
+
+    ,CVARTYPE_BOOL
+    ,CVARTYPE_BYTE
+    ,CVARTYPE_WORD
+    ,CVARTYPE_INT
+    ,CVARTYPE_FLOAT
+    ,CVARTYPE_STRING
+
+    ,CVARTYPE_MAX = 255
+} CvarType_t;
+
 struct Cvar_t
 {
 	std::string Name;
-	std::string Value;
+    std::string Value;
+
+	uint8_t Type;
+
+	union
+	{
+	    bool b;
+	    int8_t i8;
+	    uint8_t ui8;
+	    int16_t i16;
+	    uint16_t ui16;
+	    int32_t i32;
+	    uint32_t ui32;
+	};
 };
 
 struct Wad_t
@@ -380,10 +408,7 @@ public:
 
 	int32_t Query(int32_t Timeout);
 
-	void ReadInformation(const uint8_t &VersionMajor, 
-			const uint8_t &VersionMinor,
-			const uint8_t &VersionPatch,
-			const uint32_t &ProtocolVersion);
+	void ReadInformation();
 
 	int32_t TranslateResponse(const uint16_t &TagId, 
 			const uint8_t &TagApplication,
@@ -395,6 +420,8 @@ public:
 	int32_t Parse();
 
 protected:
+    bool ReadCvars();
+
 	bool m_ValidResponse;
 };
 
