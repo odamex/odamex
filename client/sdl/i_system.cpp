@@ -720,10 +720,9 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 	if (!alreadyThrown)		// ignore all but the first message -- killough
 	{
 		char errortext[MAX_ERRORTEXT];
-		int index;
 		va_list argptr;
 		va_start (argptr, error);
-		index = vsprintf (errortext, error, argptr);
+		int index = vsprintf (errortext, error, argptr);
 		sprintf (errortext + index, "\nSDL_GetError = %s", SDL_GetError());
 		va_end (argptr);
 

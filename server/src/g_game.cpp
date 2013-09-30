@@ -265,7 +265,7 @@ void G_WriteDemoTiccmd ()
 
         *demo_p++ = players[i].cmd.buttons;
 
-        size_t res = fwrite(demo_tmp, demostep, 1, recorddemo_fp);
+        fwrite(demo_tmp, demostep, 1, recorddemo_fp);
     }
 }
 
@@ -345,7 +345,7 @@ void G_BeginRecording (void)
     *demo_p++ = 0;
     *demo_p++ = 0;
 
-    size_t res = fwrite(demo_tmp, 13, 1, recorddemo_fp);
+    fwrite(demo_tmp, 13, 1, recorddemo_fp);
 }
 
 EXTERN_CVAR(sv_maxplayers)

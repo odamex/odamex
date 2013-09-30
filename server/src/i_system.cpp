@@ -559,12 +559,13 @@ void STACK_ARGS I_FatalError (const char *error, ...)
     {
                 alreadyThrown = true;
                 char errortext[MAX_ERRORTEXT];
-                int index;
                 va_list argptr;
                 va_start (argptr, error);
-                index = vsprintf (errortext, error, argptr);
                 #ifdef _WIN32
+                int index = vsprintf (errortext, error, argptr);
                 sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
+				#else
+                vsprintf (errortext, error, argptr);
 				#endif
                 va_end (argptr);
 

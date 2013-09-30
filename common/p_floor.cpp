@@ -458,7 +458,6 @@ BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 	int 				secnum;
 	BOOL 				rtn = false;
 	sector_t*			sec;
-	DFloor*				floor;
 	BOOL				manual = false;
 
 	// check if a manual trigger; if so do just the sector on the backside
@@ -488,7 +487,7 @@ manual_floor:
 
 		// new floor thinker
 		rtn = true;
-		floor = new DFloor(sec, floortype, line, speed, height, crush, change);
+		new DFloor(sec, floortype, line, speed, height, crush, change);
 		P_AddMovingFloor(sec);
 		
 		if (manual)
