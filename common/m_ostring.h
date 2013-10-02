@@ -17,7 +17,7 @@
 //
 // DESCRIPTION:
 //    
-// Drop-in replacement for std::string featuring string interning.
+// A limited replacement for std::string featuring string interning.
 // When an OString is compared for equality with another OString, an integer
 // hash of the string is used for extremely quick comparison rather than
 // the normal strcmp style of comparison.
@@ -31,17 +31,14 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include <cassert>
+
+#include "sarray.h"
+#include "hashtable.h"
 
 class OString;
 
-// Forward declarations for non-member friend functions
-OString operator+(const OString& lhs, const OString& rhs);
-OString operator+(const OString& lhs, const std::string& rhs);
-OString operator+(const std::string& lhs, const OString& rhs);
-OString operator+(const OString& lhs, const char* rhs);
-OString operator+(const char* lhs, const OString& rhs);
-OString operator+(const OString& lhs, char rhs);
-OString operator+(char lhs, const OString& rhs);
+// Forward declarations for non-member functions
 bool operator== (const OString& lhs, const OString& rhs);
 bool operator== (const OString& lhs, const std::string& rhs);
 bool operator== (const std::string& lhs, const OString& rhs);
@@ -72,17 +69,11 @@ bool operator>= (const OString& lhs, const std::string& rhs);
 bool operator>= (const std::string& lhs, const OString& rhs);
 bool operator>= (const OString& lhs, const char* rhs);
 bool operator>= (const char* lhs, const OString& rhs);
-std::istream& operator>> (std::istream& is, OString& str);
-std::ostream& operator<< (std::ostream& os, const OString& str);
 
 namespace std {
 	void swap(::OString& x, ::OString& y);
-	void swap(::OString& x, string& y);
-	void swap(string& x, ::OString& y);
-
-	istream& getline(istream& is, ::OString& str);
-	istream& getline(istream& is, ::OString& str, char delim);
 };
+
 
 
 // ============================================================================
@@ -111,9 +102,7 @@ public:
 	typedef ptrdiff_t							difference_type;
 	typedef size_t								size_type;
 
-	typedef std::string::iterator				iterator;
 	typedef std::string::const_iterator			const_iterator;
-	typedef std::string::reverse_iterator		reverse_iterator;
 	typedef std::string::const_reverse_iterator	const_reverse_iterator;
 
 
@@ -133,6 +122,12 @@ public:
 	template <class InputIterator>
 	OString(InputIterator first, InputIterator last);
 
+	
+	// ------------------------------------------------------------------------
+	// destructor 
+	// ------------------------------------------------------------------------
+
+	~OString();
 
 	// ------------------------------------------------------------------------
 	// operator=
@@ -150,7 +145,7 @@ public:
 
 	inline operator std::string() const
 	{
-		return mString;
+		return getString();
 	}
 
 
@@ -158,7 +153,6 @@ public:
 	// begin
 	// ------------------------------------------------------------------------
 
-	iterator begin();
 	const_iterator begin() const;
 
 
@@ -166,7 +160,6 @@ public:
 	// end
 	// ------------------------------------------------------------------------
 
-	iterator end();
 	const_iterator end() const;
 
 
@@ -174,7 +167,6 @@ public:
 	// rbegin
 	// ------------------------------------------------------------------------
 
-	reverse_iterator rbegin();
 	const_reverse_iterator rbegin() const;
 
 
@@ -182,7 +174,6 @@ public:
 	// rend
 	// ------------------------------------------------------------------------
 
-	reverse_iterator rend();
 	const_reverse_iterator rend() const;
 
 
@@ -208,32 +199,10 @@ public:
 
 
 	// ------------------------------------------------------------------------
-	// resize
-	// ------------------------------------------------------------------------
-
-	void resize(size_t n);
-	void resize(size_t n, char c);
-
-
-	// ------------------------------------------------------------------------
 	// capacity
 	// ------------------------------------------------------------------------
 
 	size_t capacity() const;
-
-
-	// ------------------------------------------------------------------------
-	// reserve
-	// ------------------------------------------------------------------------
-
-	void reserve(size_t n = 0);
-
-
-	// ------------------------------------------------------------------------
-	// clear
-	// ------------------------------------------------------------------------
-
-	void clear();
 
 
 	// ------------------------------------------------------------------------
@@ -247,7 +216,6 @@ public:
 	// operator[]
 	// ------------------------------------------------------------------------
 
-	char& operator[] (size_t pos);
 	const char& operator[] (size_t pos) const;
 
 
@@ -255,40 +223,8 @@ public:
 	// at 
 	// ------------------------------------------------------------------------
 
-	char& at(size_t pos);
 	const char& at(size_t pos) const;
 	
-
-	// ------------------------------------------------------------------------
-	// operator+= 
-	// ------------------------------------------------------------------------
-
-	OString& operator+= (const OString& other);
-	OString& operator+= (const std::string& str);
-	OString& operator+= (const char* s);
-	OString& operator+= (char c);
-	
-
-	// ------------------------------------------------------------------------
-	// append
-	// ------------------------------------------------------------------------
-
-	OString& append(const OString& other);
-	OString& append(const std::string& str);
-	OString& append(const char* s);
-	OString& append(const char* s, size_t n);
-	OString& append(size_t n, char c);
-
-	template <typename InputIterator>
-	OString& append(InputIterator first, InputIterator last);
-
-
-	// ------------------------------------------------------------------------
-	// push_back
-	// ------------------------------------------------------------------------
-
-	void push_back(char c);
-
 
 	// ------------------------------------------------------------------------
 	// assign
@@ -305,57 +241,10 @@ public:
 
 
 	// ------------------------------------------------------------------------
-	// insert
-	// ------------------------------------------------------------------------
-
-	OString& insert(size_t pos, const OString& other);
-	OString& insert(size_t pos, const std::string& str);
-	OString& insert(size_t pos, const char* s); 
-	OString& insert(size_t pos, const char* s, size_t n);
-	OString& insert(size_t pos, size_t n, char c);
-	void insert(iterator p, size_t n, char c);
-	iterator insert(iterator p, char c);
-
-	template <typename InputIterator>
-	void insert(iterator p, InputIterator first, InputIterator last);
-
-
-	// ------------------------------------------------------------------------
-	// erase
-	// ------------------------------------------------------------------------
-
-	OString& erase(size_t pos = 0, size_t len = npos);
-	OString& erase(iterator p);
-	iterator erase(iterator first, iterator last);
-
-
-	// ------------------------------------------------------------------------
-	// replace
-	// ------------------------------------------------------------------------
-
-	OString& replace(size_t pos, size_t len, const OString& other);
-	OString& replace(iterator it1, iterator it2, const OString& other);
-	OString& replace(size_t pos, size_t len, const std::string& str);
-	OString& replace(iterator it1, iterator it2, const std::string& str);
-	OString& replace(size_t pos, size_t len, const OString& other, size_t subpos, size_t sublen);
-	OString& replace(size_t pos, size_t len, const std::string& str, size_t subpos, size_t sublen);
-	OString& replace(size_t pos, size_t len, const char* s);
-	OString& replace(iterator it1, iterator it2, const char* s);
-	OString& replace(size_t pos, size_t len, const char* s, size_t n);
-	OString& replace(iterator it1, iterator it2, const char* s, size_t n);
-	OString& replace(size_t pos, size_t len, size_t n, char c);
-	OString& replace(iterator it1, iterator it2, size_t n, char c);
-
-	template <typename InputIterator>
-	OString& replace(iterator it1, iterator it2, InputIterator first, InputIterator last);
-
-
-	// ------------------------------------------------------------------------
 	// swap
 	// ------------------------------------------------------------------------
 
 	void swap(OString& other);
-	void swap(std::string& str);
 
 
 	// ------------------------------------------------------------------------
@@ -364,7 +253,7 @@ public:
 
 	inline const char* c_str() const
 	{
-		return mString.c_str();
+		return getString().c_str();
 	}
 
 
@@ -374,7 +263,7 @@ public:
 
 	inline const char* data() const
 	{
-		return mString.data();
+		return getString().data();
 	}
 
 
@@ -469,11 +358,9 @@ public:
 
 	inline int compare(const OString& other) const
 	{
-		storeHashValues();
-		other.storeHashValues();
-		if (mHashedId == other.mHashedId)
+		if (mId == other.mId)
 			return 0;
-		return mString.compare(other.mString);
+		return getString().compare(other.getString());
 	}
 
 	int compare(size_t pos, size_t len, const OString& other) const;
@@ -492,9 +379,7 @@ public:
 
 	inline bool equals(const OString& other) const
 	{
-		storeHashValues();
-		other.storeHashValues();
-		return mHashedId == other.mHashedId;
+		return mId == other.mId;
 	}
 
 	// ------------------------------------------------------------------------
@@ -503,9 +388,8 @@ public:
 
 	inline bool iequals(const OString& other) const
 	{
-		storeHashValues();
-		other.storeHashValues();
-		return mUpperHashedId == other.mUpperHashedId;
+		// TODO: actually do case insensitive comparison
+		return mId == other.mId; 
 	}
 
 
@@ -514,54 +398,183 @@ public:
 	// ------------------------------------------------------------------------
 
 	static const size_t npos = -1;
+	static const size_t MAX_STRINGS = 65536;
+
 
 private:
-	typedef unsigned int HashedIdType;
+	struct StringRecord {
+		StringRecord(const std::string& str = "") :
+			mString(str), mRefCount(0)
+		{ }
 
-	inline void storeHashValues() const
+		std::string				mString;
+		uint32_t				mRefCount;
+	};
+
+
+	// ------------------------------------------------------------------------
+	// internal typedefs
+	// ------------------------------------------------------------------------
+
+	typedef unsigned int StringIdType;
+	typedef unsigned int HashedStringType;
+
+	typedef SArray<StringRecord> StringTable;
+	typedef HashTable<HashedStringType, StringIdType> StringLookupTable;
+
+
+	// ------------------------------------------------------------------------
+	// private variables
+	// ------------------------------------------------------------------------
+
+	StringIdType				mId;
+	static StringTable			mStrings;
+	static StringLookupTable	mStringLookup;
+
+
+	// ------------------------------------------------------------------------
+	// hash
+	//
+	// Generates a 32-bit hash value from a string.
+	// ------------------------------------------------------------------------
+
+	inline HashedStringType hash(const std::string& str) const
 	{
-		if (mDirty)
-		{
-			const char* cstr = mString.c_str();
-			for (mHashedId = mUpperHashedId = 0; *cstr != 0; cstr++)
-			{
-				mHashedId = mHashedId * 101 + *cstr;
-				mUpperHashedId = mUpperHashedId * 101 + toupper(*cstr);
-			}
+		const char* cstr = str.c_str();
+		HashedStringType val = 0;
+		for (; *cstr != 0; cstr++)
+			val = val * 101 + *cstr;
+		return val;
+	}
 
-			mDirty = false;
+
+	// ------------------------------------------------------------------------
+	// lookupByString
+	//
+	// Checks if a string is already in the string table.
+	// ------------------------------------------------------------------------
+
+	inline StringRecord* lookupByString(const std::string& str)
+	{
+		HashedStringType hash_value = hash(str);
+		StringLookupTable::const_iterator lookupit = mStringLookup.find(hash_value);
+		if (lookupit != mStringLookup.end())
+		{
+			StringIdType id = lookupit->second;
+			StringTable::iterator it = mStrings.find(id);
+			if (it != mStrings.end())
+			{
+				assert(it->mString.compare(str) == 0);		// verify match
+				return &(*it);
+			}
+		}
+		return NULL;	// not_found
+	}
+
+
+	// ------------------------------------------------------------------------
+	// addString
+	//
+	// Adds a string entry to the string table.
+	// ------------------------------------------------------------------------
+
+	inline StringIdType addString(const std::string& str)
+	{
+		// is this string already in the table?
+		StringRecord* rec = lookupByString(str);
+		if (rec)
+		{
+			rec->mRefCount++;
+			return mStrings.getId(*rec);
+		}
+		else
+		{
+			StringIdType id = mStrings.insert(StringRecord(str));
+			rec = &(mStrings.get(id));
+			rec->mRefCount++;
+			return id;
+		}	
+	}
+
+	inline StringIdType addString(const OString& other)
+	{
+		mStrings.get(other.mId).mRefCount++;
+		return other.mId;
+	}
+
+	
+	// ------------------------------------------------------------------------
+	// removeString
+	//
+	// Removes a string entry from the string table.
+	// ------------------------------------------------------------------------
+
+	inline void removeString(StringIdType id)
+	{
+		StringTable::iterator it = mStrings.find(id);
+		if (it != mStrings.end())
+		{
+			StringRecord& rec = *it;
+			if (--rec.mRefCount == 0)
+			{
+				HashedStringType hash_value = hash(rec.mString);
+				mStringLookup.erase(hash_value);
+				mStrings.erase(id);	
+			}
 		}
 	}
 
-	std::string					mString;
-	mutable bool				mDirty;
 
-	mutable HashedIdType		mHashedId;
-	mutable HashedIdType		mUpperHashedId;
+	// ------------------------------------------------------------------------
+	// changeString
+	//
+	// Inserts a new string and remove the existing one.
+	// ------------------------------------------------------------------------
+
+	inline StringIdType changeString(const std::string& newstr, StringIdType oldid)
+	{
+		StringIdType newid = addString(newstr);
+		removeString(oldid);
+		return newid;
+	}
+
+
+	inline StringIdType changeString(const OString& other, StringIdType oldid)
+	{
+		mStrings.get(other.mId).mRefCount++;
+		removeString(oldid);
+		return other.mId;
+	}
+
+
+	inline std::string& getString()
+	{
+		assert(mStrings.find(mId) != mStrings.end());
+		return mStrings.get(mId).mString; 
+	}
+
+	inline const std::string& getString() const
+	{
+		assert(mStrings.find(mId) != mStrings.end());
+		return mStrings.get(mId).mString; 
+	}
 
 
 	// ------------------------------------------------------------------------
-	// non-member friends
+	// non-member friend functions
 	// ------------------------------------------------------------------------
 
-	friend OString operator+(const OString& lhs, const OString& rhs);
-	friend OString operator+(const OString& lhs, const std::string& rhs);
-	friend OString operator+(const std::string& lhs, const OString& rhs);
-	friend OString operator+(const OString& lhs, const char* rhs);
-	friend OString operator+(const char* lhs, const OString& rhs);
-	friend OString operator+(const OString& lhs, char rhs);
-	friend OString operator+(char lhs, const OString& rhs);
-
-	friend void std::swap(OString& x, OString& y);
-	friend void std::swap(OString& x, std::string& y);
-	friend void std::swap(std::string& x, OString& y);
-
-	friend std::istream& operator>> (std::istream& is, OString& str);
-	friend std::ostream& operator<< (std::ostream& os, const OString& str);
-
-	friend std::istream& std::getline(std::istream& is, OString& str);
-	friend std::istream& std::getline(std::istream& is, OString& str, char delim);
+	friend struct hashfunc<OString>;
 };
+
+
+// ----------------------------------------------------------------------------
+// hash function for HashTable class
+// ----------------------------------------------------------------------------
+
+template <> struct hashfunc<OString>
+{   size_t operator()(const OString& str) const { return str.mId; } };
+
 
 #endif	// __M_OSTRING_H__
 
