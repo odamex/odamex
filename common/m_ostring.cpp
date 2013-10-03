@@ -43,48 +43,48 @@ const std::string OString::mEmptyString;
 
 OString::OString()
 {
-	mId = addString(std::string());
+	addString("");
 }
 
 OString::OString(const OString& other)
 {
-	mId = addString(other);
+	addString(other);
 }
 
 OString::OString(const std::string& str)
 {
-	mId = addString(str);
+	addString(str);
 }
 
 OString::OString(const OString& other, size_t pos, size_t len)
 {
-	mId = addString(std::string(other.getString(), pos, len));
+	addString(std::string(other.getString(), pos, len));
 }
 
 OString::OString(const std::string& str, size_t pos, size_t len)
 {
-	mId = addString(std::string(str, pos, len));
+	addString(std::string(str, pos, len));
 }
 
 OString::OString(const char* s)
 {
-	mId = addString(std::string(s));
+	addString(s);
 }
 
 OString::OString(const char* s, size_t n)
 {
-	mId = addString(std::string(s, n));
+	addString(std::string(s, n));
 }
 
 OString::OString(size_t n, char c)
 {
-	mId = addString(std::string(n, c));
+	addString(std::string(n, c));
 }
 
 template <class InputIterator>
 OString::OString(InputIterator first, InputIterator last)
 {
-	mId = addString(std::string(first, last));
+	addString(std::string(first, last));
 }
 
 
@@ -94,7 +94,7 @@ OString::OString(InputIterator first, InputIterator last)
 
 OString::~OString()
 {
-	removeString(mId);
+	removeString();
 }
 
 // ------------------------------------------------------------------------
@@ -219,8 +219,8 @@ bool OString::empty() const
 
 void OString::clear()
 {
-	removeString(mId);
-	mId = addString(std::string());
+	removeString();
+	addString("");
 }
 
 
@@ -250,38 +250,44 @@ const char& OString::at(size_t pos) const
 
 OString& OString::assign(const OString& other)
 {
-	mId = changeString(other, mId);
+	removeString();
+	addString(other);
 	return *this;
 }
 
 OString& OString::assign(const std::string& str)
 {
-	mId = changeString(str, mId);
+	removeString();
+	addString(str);
 	return *this;
 }
 
 OString& OString::assign(const char* s)
 {
-	mId = changeString(std::string(s), mId);
+	removeString();
+	addString(s);
 	return *this;
 }
 
 OString& OString::assign(const char* s, size_t n)
 {
-	mId = changeString(std::string(s, n), mId);
+	removeString();
+	addString(std::string(s, n));
 	return *this;
 }
 
 OString& OString::assign(size_t n, char c)
 {
-	mId = changeString(std::string(n, c), mId);
+	removeString();
+	addString(std::string(n, c));
 	return *this;
 }
 
 template <typename InputIterator>
 OString& OString::assign(InputIterator first, InputIterator last)
 {
-	mId = changeString(std::string(first, last), mId);
+	removeString();
+	addString(std::string(first, last));
 	return *this;
 }
 
