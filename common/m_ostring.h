@@ -405,7 +405,7 @@ public:
 	// ------------------------------------------------------------------------
 
 	static const size_t npos = -1;
-	static const size_t MAX_STRINGS = 65536;
+	static const size_t MAX_STRINGS = 8192;
 
 
 private:
@@ -437,7 +437,9 @@ private:
 	StringIdType				mId;
 	static StringTable			mStrings;
 	static StringLookupTable	mStringLookup;
-
+	static const std::string	mEmptyString;
+	static const StringIdType	mEmptyStringId = 0;
+	
 
 	// ------------------------------------------------------------------------
 	// hash
@@ -487,6 +489,9 @@ private:
 
 	inline StringIdType addString(const std::string& str)
 	{
+		if (str.empty())
+			return mEmptyStringId;
+
 		// is this string already in the table?
 		StringRecord* rec = lookupByString(str);
 		if (rec)
@@ -505,7 +510,8 @@ private:
 
 	inline StringIdType addString(const OString& other)
 	{
-		mStrings.get(other.mId).mRefCount++;
+		if (other.mId != mEmptyStringId)
+			mStrings.get(other.mId).mRefCount++;
 		return other.mId;
 	}
 
@@ -518,6 +524,9 @@ private:
 
 	inline void removeString(StringIdType id)
 	{
+		if (id == mEmptyStringId)
+			return;
+
 		StringTable::iterator it = mStrings.find(id);
 		if (it != mStrings.end())
 		{
@@ -548,20 +557,23 @@ private:
 
 	inline StringIdType changeString(const OString& other, StringIdType oldid)
 	{
-		mStrings.get(other.mId).mRefCount++;
+		StringIdType newid = addString(other);
 		removeString(oldid);
-		return other.mId;
+		return newid;
 	}
 
 
-	inline std::string& getString()
-	{
-		assert(mStrings.find(mId) != mStrings.end());
-		return mStrings.get(mId).mString; 
-	}
+	// ------------------------------------------------------------------------
+	// getString
+	//
+	// Retrieves the string matching mId
+	// ------------------------------------------------------------------------
 
 	inline const std::string& getString() const
 	{
+		if (mId == mEmptyStringId)
+			return mEmptyString;
+
 		assert(mStrings.find(mId) != mStrings.end());
 		return mStrings.get(mId).mString; 
 	}
