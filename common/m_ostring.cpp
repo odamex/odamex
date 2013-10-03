@@ -32,9 +32,9 @@
 #include <iostream>
 
 // initialize static member variables
-OString::StringTable OString::mStrings(OString::MAX_STRINGS);
-OString::StringLookupTable OString::mStringLookup(OString::MAX_STRINGS);
-const std::string OString::mEmptyString;
+OString::StringTable* OString::mStrings = NULL;
+OString::StringLookupTable* OString::mStringLookup = NULL;
+std::string* OString::mEmptyString = NULL;
 
 
 // ------------------------------------------------------------------------

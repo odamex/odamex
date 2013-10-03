@@ -419,8 +419,8 @@ public:
 	{
 		printf("OString Table\n");
 		printf("=============\n");
-		for (StringTable::const_iterator it = mStrings.begin(); it != mStrings.end(); ++it)
-			printf("id 0x%08x hash 0x%08x (%u): %s\n", mStrings.getId(*it), hash(it->mString.c_str()),
+		for (StringTable::const_iterator it = mStrings->begin(); it != mStrings->end(); ++it)
+			printf("id 0x%08x hash 0x%08x (%u): %s\n", mStrings->getId(*it), hash(it->mString.c_str()),
 						it->mRefCount, it->mString.c_str());
 		printf("\n");
 	}
@@ -461,11 +461,31 @@ private:
 	// ------------------------------------------------------------------------
 
 	StringIdType				mId;
-	static StringTable			mStrings;
-	static StringLookupTable	mStringLookup;
-	static const std::string	mEmptyString;
+
+	static StringTable*			mStrings;
+	static StringLookupTable*	mStringLookup;
+	static std::string*			mEmptyString;
 	static const StringIdType	mEmptyStringId = 0;
 	
+
+	// ------------------------------------------------------------------------
+	// singleton initialization
+	// ------------------------------------------------------------------------
+
+	void init()
+	{
+		static StringTable lStrings(OString::MAX_STRINGS);
+		static StringLookupTable lStringLookup(OString::MAX_STRINGS);
+		static std::string lEmptyString;
+		static bool initialized = false;
+		if (!initialized)
+		{
+			mStrings = &lStrings;
+			mStringLookup = &lStringLookup;
+			mEmptyString = &lEmptyString;
+			initialized = true;
+		}
+	}
 
 	// ------------------------------------------------------------------------
 	// hash
@@ -490,12 +510,12 @@ private:
 
 	inline StringRecord* lookupByHash(HashedStringType hash_value) 
 	{
-		StringLookupTable::const_iterator lookupit = mStringLookup.find(hash_value);
-		if (lookupit != mStringLookup.end())
+		StringLookupTable::const_iterator lookupit = mStringLookup->find(hash_value);
+		if (lookupit != mStringLookup->end())
 		{
 			StringIdType id = lookupit->second;
-			StringTable::iterator it = mStrings.find(id);
-			if (it != mStrings.end())
+			StringTable::iterator it = mStrings->find(id);
+			if (it != mStrings->end())
 				return &(*it);
 		}
 		return NULL;	// not_found
@@ -507,6 +527,8 @@ private:
 		return lookupByHash(hash_value);
 	}
 
+	
+
 	// ------------------------------------------------------------------------
 	// addString
 	//
@@ -515,6 +537,8 @@ private:
 
 	inline void addString(const char* s)
 	{
+		init();
+
 		if (*s == '\0')
 		{
 			mId = mEmptyStringId;
@@ -527,13 +551,13 @@ private:
 
 		if (rec)
 		{
-			mId = mStrings.getId(*rec);
+			mId = mStrings->getId(*rec);
 		}
 		else
 		{
-			mId = mStrings.insert(StringRecord(s));
-			rec = &(mStrings.get(mId));
-			mStringLookup.insert(std::pair<HashedStringType, StringIdType>(hash_value, mId));
+			mId = mStrings->insert(StringRecord(s));
+			rec = &(mStrings->get(mId));
+			mStringLookup->insert(std::pair<HashedStringType, StringIdType>(hash_value, mId));
 		}	
 
 		rec->mRefCount++;
@@ -542,7 +566,7 @@ private:
 	inline void addString(const OString& other)
 	{
 		if (other.mId != mEmptyStringId)
-			mStrings.get(other.mId).mRefCount++;
+			mStrings->get(other.mId).mRefCount++;
 		mId = other.mId;
 	}
 
@@ -563,15 +587,15 @@ private:
 		if (mId == mEmptyStringId)
 			return;
 
-		StringTable::iterator it = mStrings.find(mId);
-		if (it != mStrings.end())
+		StringTable::iterator it = mStrings->find(mId);
+		if (it != mStrings->end())
 		{
 			StringRecord& rec = *it;
 			if (--rec.mRefCount == 0)
 			{
 				HashedStringType hash_value = hash(rec.mString.c_str());
-				mStringLookup.erase(hash_value);
-				mStrings.erase(mId);	
+				mStringLookup->erase(hash_value);
+				mStrings->erase(mId);	
 			}
 		}
 	}
@@ -586,10 +610,10 @@ private:
 	inline const std::string& getString() const
 	{
 		if (mId == mEmptyStringId)
-			return mEmptyString;
+			return *mEmptyString;
 
-		assert(mStrings.find(mId) != mStrings.end());
-		return mStrings.get(mId).mString; 
+		assert(mStrings->find(mId) != mStrings->end());
+		return mStrings->get(mId).mString; 
 	}
 
 
