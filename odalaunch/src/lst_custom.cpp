@@ -285,22 +285,14 @@ void wxAdvancedListCtrl::FlipRow(long Row, long NextRow)
         return; 
 
     // Retrieve data for the next item
-    wxListItem Item1, Item2;
+    long Mask = wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE;
+    
+    wxListItem Item;
     wxListItem Item1Flipped, Item2Flipped; 
-    
-    Item1.SetId(Row);
-    Item1.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
-    
-    Item2.SetId(NextRow);
-    Item2.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE); 
 
-    Item1Flipped.SetId(NextRow);
-    Item1Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA 
-        | wxLIST_MASK_IMAGE);
-
-    Item2Flipped.SetId(Row);
-    Item2Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA 
-        | wxLIST_MASK_IMAGE);
+    Item.SetMask(Mask);
+    Item1Flipped.SetMask(Mask);
+    Item2Flipped.SetMask(Mask);
 
     // Due to bugs/limitations with wxWidgets, certain stuff needs to be 
     // physically taken from the list control as GetItem is finicky
@@ -316,29 +308,28 @@ void wxAdvancedListCtrl::FlipRow(long Row, long NextRow)
          ColumnCounter < GetColumnCount(); 
          ++ColumnCounter) 
     {
-        Item1.SetColumn(ColumnCounter);
-        GetItem(Item1); 
-
-        Item2.SetColumn(ColumnCounter); 
-        GetItem(Item2);
+        Item.SetColumn(ColumnCounter);
 
         // Do the flip
+        Item.SetId(Row);
+
+        GetItem(Item); 
+
         // Set data for the first item
-        Item2Flipped.SetImage(Item2.GetImage()); 
-        Item2Flipped.SetData(Item2.GetData()); 
-        Item2Flipped.SetText(Item2.GetText());
-
-        // Now the second
-        Item1Flipped.SetImage(Item1.GetImage()); 
-        Item1Flipped.SetData(Item1.GetData()); 
-        Item1Flipped.SetText(Item1.GetText());
-
-        // Set them
-        Item1Flipped.SetColumn(ColumnCounter);
-        SetItem(Item1Flipped);
+        Item1Flipped = Item;
+        Item1Flipped.SetId(NextRow);
         
-        Item2Flipped.SetColumn(ColumnCounter);
-        SetItem(Item2Flipped);
+        // Now the second
+        Item.SetId(NextRow);
+        
+        GetItem(Item);
+
+        Item2Flipped = Item;
+        Item2Flipped.SetId(Row);
+        
+        // Update columns
+        SetItem(Item1Flipped);
+        SetItem(Item2Flipped);       
     }
 
     // Due to bugs/limitations with wxWidgets, certain stuff needs to be 
@@ -435,24 +426,7 @@ void wxAdvancedListCtrl::Sort(wxInt32 Column, wxInt32 Order, wxInt32 Lowest, wxI
 int wxCALLBACK wxListCompareFunction(wxIntPtr item1, wxIntPtr item2, 
         wxIntPtr sortData)
 {
-    if (sortData == 1)
-    {
-        if (item1 < item2)
-            return -1;
-        else if (item1 > item2)
-            return 1;
-        else 
-            return 0;
-    }
-    else
-    {
-        if (item2 < item1)
-            return -1;
-        else if (item2 > item1)
-            return 1;
-        else 
-            return 0;
-    }
+    return (sortData ? item2 - item1 : item1 - item2);
 }
 
 void wxAdvancedListCtrl::Sort()
