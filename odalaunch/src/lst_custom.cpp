@@ -210,8 +210,15 @@ wxInt32 NaturalCompare(wxString String1, wxString String2, bool CaseSensitive = 
         String1Char = String1[StringCounter1];
         String2Char = String2[StringCounter2];
 
+        // skip past non-alphanumeric characters
+        while (!wxIsalnum(String1Char))
+            String1Char = String1[++StringCounter1];
+
+        while (!wxIsalnum(String2Char))
+            String2Char = String2[++StringCounter2];
+
         // skip past whitespace or zeroes in first string
-        while (wxIsspace(String1Char) || String1Char == '0' ) 
+        while (wxIsspace(String1Char) || String1Char == '0') 
         {
             if (String1Char == '0') 
             {
@@ -303,7 +310,7 @@ int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
     
         Img2 = Item.GetImage();
         
-        return SortOrder ? Img1 - Img2 : Img2 - Img1;
+        return SortOrder ? Img2 - Img1 : Img1 - Img2;
     }
     
     Item.SetId(item1);
