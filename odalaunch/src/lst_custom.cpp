@@ -287,7 +287,7 @@ int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
     
     if (SortCol == ListCtrl->GetSpecialSortColumn())
     {
-        wxString Img1, Img2;
+        int Img1, Img2;
         
         Item.SetMask(wxLIST_MASK_IMAGE);
         
@@ -295,16 +295,15 @@ int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
     
         ListCtrl->GetItem(Item);
     
-        Img1 = wxString::Format(wxT("%d"), Item.GetImage());
+        Img1 = Item.GetImage();
     
         Item.SetId(item2);
     
         ListCtrl->GetItem(Item);
     
-        Img2 = wxString::Format(wxT("%d"), Item.GetImage());
+        Img2 = Item.GetImage();
         
-        return SortOrder ? NaturalCompare(Img1, Img2) : 
-            NaturalCompare(Img2, Img1);
+        return SortOrder ? Img1 - Img2 : Img2 - Img1;
     }
     
     Item.SetId(item1);
