@@ -555,6 +555,7 @@ private:
 		}
 		else
 		{
+			assert(mStrings->size() < OString::MAX_STRINGS);
 			mId = mStrings->insert(StringRecord(s));
 			rec = &(mStrings->get(mId));
 			mStringLookup->insert(std::pair<HashedStringType, StringIdType>(hash_value, mId));
@@ -588,15 +589,14 @@ private:
 			return;
 
 		StringTable::iterator it = mStrings->find(mId);
-		if (it != mStrings->end())
+		assert(it != mStrings->end());
+
+		StringRecord& rec = *it;
+		if (--rec.mRefCount == 0)
 		{
-			StringRecord& rec = *it;
-			if (--rec.mRefCount == 0)
-			{
-				HashedStringType hash_value = hash(rec.mString.c_str());
-				mStringLookup->erase(hash_value);
-				mStrings->erase(mId);	
-			}
+			HashedStringType hash_value = hash(rec.mString.c_str());
+			mStringLookup->erase(hash_value);
+			mStrings->erase(mId);	
 		}
 	}
 
