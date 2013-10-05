@@ -29,7 +29,7 @@
 #include <set>
 
 #include "m_alloc.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "m_argv.h"
 #include "z_zone.h"
 #include "m_swap.h"

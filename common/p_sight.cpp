@@ -30,7 +30,7 @@
 #include "p_local.h"
 #include "m_random.h"
 #include "m_bbox.h"
-#include "vectors.h"
+#include "m_vectors.h"
 
 // State.
 #include "r_state.h"

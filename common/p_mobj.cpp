@@ -33,7 +33,7 @@
 #include "doomstat.h"
 #include "v_video.h"
 #include "c_cvars.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "g_game.h"
 #include "p_mobj.h"
 #include "p_ctf.h"

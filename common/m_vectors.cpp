@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 
-#include "vectors.h"
+#include "m_vectors.h"
 #include "actor.h"
 #include "tables.h"
 
@@ -703,5 +703,5 @@ void M_TranslateVec3 (v3double_t *vec, const v3double_t *origin, angle_t ang)
 }
 
 
-VERSION_CONTROL (vectors_cpp, "$Id$")
+VERSION_CONTROL (m_vectors_cpp, "$Id$")
 

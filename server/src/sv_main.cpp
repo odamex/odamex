@@ -53,7 +53,7 @@
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "m_random.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "p_ctf.h"
 #include "w_wad.h"
 #include "md5.h"

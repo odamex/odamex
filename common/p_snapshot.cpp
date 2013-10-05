@@ -29,7 +29,7 @@
 #include "d_player.h"
 #include "p_local.h"
 #include "p_spec.h"
-#include "vectors.h"
+#include "m_vectors.h"
 
 #include "p_snapshot.h"
 

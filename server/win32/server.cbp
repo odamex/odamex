@@ -364,6 +364,8 @@
 		<Unit filename="../../common/m_random.h" />
 		<Unit filename="../../common/m_swap.cpp" />
 		<Unit filename="../../common/m_swap.h" />
+		<Unit filename="../../common/m_vectors.cpp" />
+		<Unit filename="../../common/m_vectors.h" />
 		<Unit filename="../../common/md5.cpp" />
 		<Unit filename="../../common/md5.h" />
 		<Unit filename="../../common/minilzo.cpp" />
@@ -440,8 +442,6 @@
 		<Unit filename="../../common/timegm.cpp" />
 		<Unit filename="../../common/v_palette.h" />
 		<Unit filename="../../common/v_video.h" />
-		<Unit filename="../../common/vectors.cpp" />
-		<Unit filename="../../common/vectors.h" />
 		<Unit filename="../../common/version.cpp" />
 		<Unit filename="../../common/version.h" />
 		<Unit filename="../../common/w_wad.cpp" />

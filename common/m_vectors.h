@@ -29,8 +29,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __VECTORS_H__
-#define __VECTORS_H__
+#ifndef __M_VECTORS_H__
+#define __M_VECTORS_H__
 
 #include "tables.h"
 
@@ -231,5 +231,5 @@ void M_RotatePointAroundVector(v3double_t *dest, const v3double_t *dir, const v3
 void M_TranslateVec3f(v3float_t *vec, const v3float_t *origin, angle_t ang);
 void M_TranslateVec3(v3double_t *vec, const v3double_t *origin, angle_t ang);
 
-#endif //__VECTORS_H__
+#endif //__M_VECTORS_H__
 

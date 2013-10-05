@@ -35,7 +35,7 @@
 #include "c_console.h"
 #include "cl_main.h"
 #include "cl_demo.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "cl_netgraph.h"
 
 #include "p_snapshot.h"

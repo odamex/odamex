@@ -41,7 +41,7 @@
 #include "stats.h"
 #include "z_zone.h"
 #include "i_video.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "f_wipe.h"
 
 void R_BeginInterpolation(fixed_t amount);
