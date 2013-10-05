@@ -1520,6 +1520,8 @@ void CL_RequestConnectInfo(void)
 std::string missing_file, missing_hash;
 bool CL_PrepareConnect(void)
 {
+	G_CleanupDemo();	// stop dmeos from playing before D_DoomWadReboot wipes out Zone memory
+
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
 	size_t i;
@@ -3755,14 +3757,14 @@ void CL_LocalDemoTic()
 	int jumpTics, reactiontime;
 	byte waterlevel;
 
-	memset(&clientPlayer->cmd, 0, sizeof(ticcmd_t));	
-	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
-	clientPlayer->cmd.ucmd.impulse = MSG_ReadByte();	
-	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.pitch = MSG_ReadShort();
+	clientPlayer->cmd.clear();
+	clientPlayer->cmd.buttons = MSG_ReadByte();
+	clientPlayer->cmd.impulse = MSG_ReadByte();	
+	clientPlayer->cmd.yaw = MSG_ReadShort();
+	clientPlayer->cmd.forwardmove = MSG_ReadShort();
+	clientPlayer->cmd.sidemove = MSG_ReadShort();
+	clientPlayer->cmd.upmove = MSG_ReadShort();
+	clientPlayer->cmd.pitch = MSG_ReadShort();
 
 	waterlevel = MSG_ReadByte();
 	x = MSG_ReadLong();

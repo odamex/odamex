@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "doomstat.h"
 #include "m_fixed.h"
 #include "r_data.h"
 #include "r_draw.h"

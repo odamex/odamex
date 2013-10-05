@@ -28,7 +28,7 @@
 #include "d_player.h"
 #include "r_data.h"
 #include "v_palette.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "v_video.h"
 
 // killough 10/98: special mask indicates sky flat comes from sidedef

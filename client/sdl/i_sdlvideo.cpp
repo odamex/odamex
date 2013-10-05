@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <functional>
 #include <string>
+#include "doomstat.h"
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display

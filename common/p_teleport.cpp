@@ -28,6 +28,7 @@
 
 #include "doomtype.h"
 #include "doomdef.h"
+#include "doomstat.h"
 
 #include "m_random.h"
 #include "s_sound.h"

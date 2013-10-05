@@ -41,7 +41,7 @@
 #include "doomtype.h"
 
 #include <stdio.h>
-#include <string.h>
+#include <cstring>
 #include <stdlib.h>
 #include <errno.h>
 #include <ctype.h>
@@ -102,7 +102,5 @@ bool StrToTime(std::string str, time_t &tim);
 
 bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (const char **ptr, const char *str);
-
-int RegexMatch(const char *regexp, const char *text, bool cis = false);
 
 #endif

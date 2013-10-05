@@ -56,6 +56,11 @@ class wxAdvancedListCtrl : public wxListView
             m_SpecialColumn = Column;
         }
 
+        wxInt32 GetSpecialSortColumn()
+        {
+            return m_SpecialColumn;
+        }
+
         void Sort();
                 
         int AddImageSmall(wxImage Image);

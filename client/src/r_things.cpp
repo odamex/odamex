@@ -45,7 +45,7 @@
 #include "cmdlib.h"
 #include "s_sound.h"
 
-#include "vectors.h"
+#include "m_vectors.h"
 
 extern fixed_t FocalLengthX, FocalLengthY;
 

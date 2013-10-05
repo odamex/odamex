@@ -30,6 +30,7 @@
 
 #include "net_packet.h"
 #include "net_error.h"
+//#include "net_cvartable.h"
 
 using namespace std;
 
@@ -226,6 +227,9 @@ void Server::ResetData()
    with every new major/minor version
    */
 
+static uint8_t VersionMajor, VersionMinor, VersionPatch;
+static uint32_t ProtocolVersion;
+
 // Specifies when data was added to the protocol, the parameter is the
 // introduced revision
 // NOTE: this one is different from the servers version for a reason
@@ -237,14 +241,118 @@ void Server::ResetData()
 #define QRYRANGEINFO(INTRODUCED,REMOVED) \
 	if (ProtocolVersion >= INTRODUCED && ProtocolVersion < REMOVED)
 
-//
-// Server::ReadInformation()
-//
+// Read cvar information
+bool Server::ReadCvars()
+{
+	uint8_t CvarCount;
+
+	Socket.Read8(CvarCount);
+
+	for (size_t i = 0; i < CvarCount; ++i)
+	{
+		Cvar_t Cvar;
+               
+        Socket.ReadString(Cvar.Name);
+
+		QRYNEWINFO(3)
+        {
+            Socket.Read8(Cvar.Type);
+
+            switch (Cvar.Type)
+            {
+                case CVARTYPE_BOOL:
+                {
+                    Cvar.b = true;
+                }
+                break;
+
+                case CVARTYPE_BYTE:
+                {
+                    Socket.Read8(Cvar.i8);
+                }
+                break;
+
+                case CVARTYPE_WORD:
+                {
+                    Socket.Read16(Cvar.i16);
+                }
+                break;
+
+                case CVARTYPE_INT:
+                {
+                    Socket.Read32(Cvar.i32);
+                }
+                break;
+
+                case CVARTYPE_FLOAT:
+                case CVARTYPE_STRING:
+                {
+                    Socket.ReadString(Cvar.Value);
+                }
+                break;
+
+                case CVARTYPE_NONE:
+                case CVARTYPE_MAX:
+                default:
+                    break;
+            }
+        }
+        else
+            Socket.ReadString(Cvar.Value);
+        
+		// Filter out important information for us to use, it'd be nicer to have
+		// a launcher-side cvar implementation though
+        if (Cvar.Name == "sv_hostname")
+        {
+            Info.Name = Cvar.Value;
+
+            continue;
+        }
+        else if (Cvar.Name == "sv_maxplayers")
+        {
+            QRYNEWINFO(3)
+                Info.MaxPlayers = Cvar.ui8;
+            else
+                Info.MaxPlayers = (uint8_t)atoi(Cvar.Value.c_str());
+
+            continue;
+        }
+        else if (Cvar.Name == "sv_maxclients")
+        {
+            QRYNEWINFO(3)
+                Info.MaxClients = Cvar.ui8;
+            else
+                Info.MaxClients = (uint8_t)atoi(Cvar.Value.c_str());
+
+            continue;
+        }
+        else if (Cvar.Name == "sv_gametype")
+        {
+            QRYNEWINFO(3)
+                Info.GameType = (GameType_t)Cvar.ui8;
+            else
+                Info.GameType = (GameType_t)atoi(Cvar.Value.c_str());
+
+            continue;
+        }
+        else if (Cvar.Name == "sv_scorelimit")
+        {
+            QRYNEWINFO(3)
+                Info.ScoreLimit = Cvar.ui16;
+            else
+                Info.ScoreLimit = atoi(Cvar.Value.c_str());
+
+            continue;
+        }
+
+		Info.Cvars.push_back(Cvar);
+	}
+	
+	return true;
+}
+
 // Read information built for us by the server
-void Server::ReadInformation(const uint8_t &VersionMajor,
-		const uint8_t &VersionMinor,
-		const uint8_t &VersionPatch,
-		const uint32_t &ProtocolVersion)
+void Server::ReadInformation()
 {
 	Info.VersionMajor = VersionMajor;
 	Info.VersionMinor = VersionMinor;
@@ -260,73 +368,59 @@ void Server::ReadInformation(const uint8_t &VersionMajor,
 
 	Socket.Read32(Info.VersionRevision);
 
-	uint8_t CvarCount;
+    // Read cvar data
+    ReadCvars();
 
-	Socket.Read8(CvarCount);
+    // TODO: Remove next release
+    QRYNEWINFO(4)
+        Socket.ReadHexString(Info.PasswordHash);
+    else
+        Socket.ReadString(Info.PasswordHash);
 
-	for (size_t i = 0; i < CvarCount; ++i)
-	{
-		Cvar_t Cvar;
-
-		Socket.ReadString(Cvar.Name);
-		Socket.ReadString(Cvar.Value);
-
-		// Filter out important information for us to use, it'd be nicer to have
-		// a launcher-side cvar implementation though
-		if (Cvar.Name == "sv_hostname")
-		{
-			Info.Name = Cvar.Value;
-
-			continue;
-		}
-		else if (Cvar.Name == "sv_maxplayers")
-		{
-			Info.MaxPlayers = (uint8_t)atoi(Cvar.Value.c_str());
-
-			continue;
-		}
-		else if (Cvar.Name == "sv_maxclients")
-		{
-			Info.MaxClients = (uint8_t)atoi(Cvar.Value.c_str());
-
-			continue;
-		}
-		else if (Cvar.Name == "sv_gametype")
-		{
-			Info.GameType = (GameType_t)atoi(Cvar.Value.c_str());
-
-			continue;
-		}
-		else if (Cvar.Name == "sv_scorelimit")
-		{
-			Info.ScoreLimit = atoi(Cvar.Value.c_str());
-
-			continue;
-		}
-
-		Info.Cvars.push_back(Cvar);
-	}
-
-	Socket.ReadString(Info.PasswordHash);
 	Socket.ReadString(Info.CurrentMap);
 	Socket.Read16(Info.TimeLeft);
 
+	// TODO: Remove next release
 	// Teams
-	uint8_t TeamCount;
-
-	Socket.Read8(TeamCount);
-
-	for (size_t i = 0; i < TeamCount; ++i)
+	QRYNEWINFO(5)
 	{
-		Team_t Team;
+        if (Info.GameType == GT_TeamDeathmatch || 
+            Info.GameType == GT_CaptureTheFlag)
+        {
+            uint8_t TeamCount;
 
-		Socket.ReadString(Team.Name);
-		Socket.Read32(Team.Colour);
-		Socket.Read16(Team.Score);
+            Socket.Read8(TeamCount);
 
-		Info.Teams.push_back(Team);
+            for (size_t i = 0; i < TeamCount; ++i)
+            {
+                Team_t Team;
+
+                Socket.ReadString(Team.Name);
+                Socket.Read32(Team.Colour);
+                Socket.Read16(Team.Score);
+
+                Info.Teams.push_back(Team);
+            }
+        }
 	}
+	else
+    {
+        uint8_t TeamCount;
 
+        Socket.Read8(TeamCount);
+        
+        for (size_t i = 0; i < TeamCount; ++i)
+        {
+            Team_t Team;
+
+            Socket.ReadString(Team.Name);
+            Socket.Read32(Team.Colour);
+            Socket.Read16(Team.Score);
+
+            Info.Teams.push_back(Team);
+        }
+    }
+    
 	// Dehacked/Bex files
 	uint8_t PatchCount;
 
@@ -351,8 +445,13 @@ void Server::ReadInformation(const uint8_t &VersionMajor,
 		Wad_t Wad;
 
 		Socket.ReadString(Wad.Name);
-		Socket.ReadString(Wad.Hash);
-
+        
+        // TODO: Remove next release
+		QRYNEWINFO(4)
+            Socket.ReadHexString(Wad.Hash);
+        else
+            Socket.ReadString(Wad.Hash);
+        
 		Info.Wads.push_back(Wad);
 	}
 
@@ -366,13 +465,18 @@ void Server::ReadInformation(const uint8_t &VersionMajor,
 		Player_t Player;
 
 		Socket.ReadString(Player.Name);
-		QRYNEWINFO(2)
-		{
-            Socket.Read32(Player.Colour);
-		}
-		else
-            Player.Colour = 0;
-		Socket.Read8(Player.Team);
+        Socket.Read32(Player.Colour);
+
+        QRYNEWINFO(5)
+        {
+            if (Info.GameType == GT_TeamDeathmatch || 
+                Info.GameType == GT_CaptureTheFlag)
+            {
+                Socket.Read8(Player.Team);
+            }
+        }
+        else 
+            Socket.Read8(Player.Team);
 		Socket.Read16(Player.Ping);
 		Socket.Read16(Player.Time);
 		Socket.ReadBool(Player.Spectator);
@@ -476,10 +580,12 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 		return 0;
 	}
 
-	ReadInformation(VERSIONMAJOR(SvVersion),
-			VERSIONMINOR(SvVersion),
-			VERSIONPATCH(SvVersion),
-			SvProtocolVersion);
+    VersionMajor = VERSIONMAJOR(SvVersion);
+    VersionMinor = VERSIONMINOR(SvVersion);
+    VersionPatch = VERSIONPATCH(SvVersion);
+    ProtocolVersion = SvProtocolVersion;
+
+	ReadInformation();
 
 	if (Socket.BadRead())
 	{

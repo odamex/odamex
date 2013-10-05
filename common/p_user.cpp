@@ -279,8 +279,6 @@ void P_CalcHeight (player_t *player)
 //
 void P_PlayerLookUpDown (player_t *p)
 {
-	ticcmd_t *cmd = &p->cmd;
-
 	// [RH] Look up/down stuff
 	if (!sv_freelook)
 	{
@@ -288,7 +286,7 @@ void P_PlayerLookUpDown (player_t *p)
 	}
 	else
 	{
-		int look = cmd->ucmd.pitch << 16;
+		int look = p->cmd.pitch << 16;
 
 		// The player's view pitch is clamped between -32 and +56 degrees,
 		// which translates to about half a screen height up and (more than)
@@ -330,7 +328,6 @@ void P_MovePlayer (player_t *player)
 	if (!player || !player->mo || player->playerstate == PST_DEAD)
 		return;
 
-	ticcmd_t *cmd = &player->cmd;
 	AActor *mo = player->mo;
 
 	mo->onground = (mo->z <= mo->floorz) || (mo->flags2 & MF2_ONMOBJ);
@@ -348,7 +345,7 @@ void P_MovePlayer (player_t *player)
 		return;
 	}
 
-	if (cmd->ucmd.upmove == -32768)
+	if (player->cmd.upmove == -32768)
 	{
 		// Only land if in the air
 		if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
@@ -357,11 +354,11 @@ void P_MovePlayer (player_t *player)
 			player->mo->flags &= ~MF_NOGRAVITY;
 		}
 	}
-	else if (cmd->ucmd.upmove != 0)
+	else if (player->cmd.upmove != 0)
 	{
 		if (player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY)
 		{
-			player->mo->momz = cmd->ucmd.upmove << 9;
+			player->mo->momz = player->cmd.upmove << 9;
 
 			if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
 			{
@@ -376,7 +373,7 @@ void P_MovePlayer (player_t *player)
 	// Look left/right
 	if(clientside || step_mode)
 	{
-		mo->angle += cmd->ucmd.yaw << 16;
+		mo->angle += player->cmd.yaw << 16;
 
 		// Look up/down stuff
 		P_PlayerLookUpDown(player);
@@ -389,7 +386,7 @@ void P_MovePlayer (player_t *player)
 	// ice, because the player still "works just as hard" to move, while the
 	// thrust applied to the movement varies with 'movefactor'.
 
-	if (cmd->ucmd.forwardmove | cmd->ucmd.sidemove)
+	if (player->cmd.forwardmove | player->cmd.sidemove)
 	{
 		fixed_t forwardmove, sidemove;
 		int bobfactor;
@@ -411,8 +408,8 @@ void P_MovePlayer (player_t *player)
 				bobfactor >>= 8;
 			}
 		}
-		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
-		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
+		forwardmove = (player->cmd.forwardmove * movefactor) >> 8;
+		sidemove = (player->cmd.sidemove * movefactor) >> 8;
 
 		// [ML] Check for these conditions unless advanced physics is on
 		if(co_zdoomphys ||
@@ -445,7 +442,7 @@ void P_MovePlayer (player_t *player)
 	if (player->jumpTics)
 		player->jumpTics--;
 
-	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
+	if ((player->cmd.buttons & BT_JUMP) == BT_JUMP)
 	{
 		if (player->mo->waterlevel >= 2)
 		{
@@ -583,7 +580,7 @@ void P_DeathThink (player_t *player)
 		bool delay_respawn =	(!clientside && level.time < respawn_time);
 
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && ((player->cmd.ucmd.buttons & BT_USE && !delay_respawn) || force_respawn))
+		if (player->ingame() && ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn))
 		{
 			player->playerstate = PST_REBORN;
 		}
@@ -616,7 +613,6 @@ void SV_SendPlayerInfo(player_t &);
 //
 void P_PlayerThink (player_t *player)
 {
-	ticcmd_t *cmd;
 	weapontype_t newweapon;
 
 	// [SL] 2011-10-31 - Thinker called before the client has received a message
@@ -648,12 +644,11 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags &= ~MF_NOGRAVITY, player->mo->flags2 &= ~MF2_FLY;
 
 	// chain saw run forward
-	cmd = &player->cmd;
 	if (player->mo->flags & MF_JUSTATTACKED)
 	{
-		cmd->ucmd.yaw = 0;
-		cmd->ucmd.forwardmove = 0xc800/2;
-		cmd->ucmd.sidemove = 0;
+		player->cmd.yaw = 0;
+		player->cmd.forwardmove = 0xc800/2;
+		player->cmd.sidemove = 0;
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
 
@@ -672,19 +667,19 @@ void P_PlayerThink (player_t *player)
 	// Check for weapon change.
 
 	// A special event has no other buttons.
-	if (cmd->ucmd.buttons & BT_SPECIAL)
-		cmd->ucmd.buttons = 0;
+	if (player->cmd.buttons & BT_SPECIAL)
+		player->cmd.buttons = 0;
 
-	if ((cmd->ucmd.buttons & BT_CHANGE) || cmd->ucmd.impulse >= 50)
+	if ((player->cmd.buttons & BT_CHANGE) || player->cmd.impulse >= 50)
 	{
 		// [RH] Support direct weapon changes
-		if (cmd->ucmd.impulse) {
-			newweapon = (weapontype_t)(cmd->ucmd.impulse - 50);
+		if (player->cmd.impulse) {
+			newweapon = (weapontype_t)(player->cmd.impulse - 50);
 		} else {
 			// The actual changing of the weapon is done
 			//	when the weapon psprite can do it
 			//	(read: not in the middle of an attack).
-			newweapon = (weapontype_t)((cmd->ucmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
+			newweapon = (weapontype_t)((player->cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
 
 			if (newweapon == wp_fist
 				&& player->weaponowned[wp_chainsaw]
@@ -717,7 +712,7 @@ void P_PlayerThink (player_t *player)
 	}
 
 	// check for use
-	if (cmd->ucmd.buttons & BT_USE)
+	if (player->cmd.buttons & BT_USE)
 	{
 		if (!player->usedown)
 		{
@@ -907,7 +902,7 @@ player_s::player_s()
 	id = 0;
 	playerstate = PST_LIVE;
 	mo = AActor::AActorPtr();
-	memset(&cmd, 0, sizeof(ticcmd_t));
+	cmd.clear();
 	fov = 90.0;
 	viewz = 0 << FRACBITS;
 	viewheight = 0 << FRACBITS;

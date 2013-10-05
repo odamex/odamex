@@ -697,6 +697,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\common\m_vectors.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\common\md5.h"
 					>
 				</File>
@@ -802,10 +806,6 @@
 				</File>
 				<File
 					RelativePath="..\..\common\v_video.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\common\vectors.h"
 					>
 				</File>
 				<File
@@ -926,6 +926,10 @@
 				</File>
 				<File
 					RelativePath="..\..\common\m_swap.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\common\m_vectors.cpp"
 					>
 				</File>
 				<File
@@ -1058,10 +1062,6 @@
 				</File>
 				<File
 					RelativePath="..\..\common\tables.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\common\vectors.cpp"
 					>
 				</File>
 				<File

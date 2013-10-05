@@ -26,14 +26,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <string.h>
+#include <cstring>
 
 #include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_netinf.h"
 #include "d_net.h"
-#include "d_protocol.h"
 #include "v_palette.h"
 #include "v_video.h"
 #include "i_system.h"

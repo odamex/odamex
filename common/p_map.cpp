@@ -22,8 +22,6 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "vectors.h"
-
 #include "m_alloc.h"
 #include "m_bbox.h"
 #include "m_random.h"
@@ -43,7 +41,7 @@
 
 #include "z_zone.h"
 #include "p_unlag.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include <math.h>
 #include <set>
 

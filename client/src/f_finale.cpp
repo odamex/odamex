@@ -121,7 +121,7 @@ void F_Ticker (void)
 		// [RH] or just reveal the entire message if we're still ticking it
 		Players::iterator it = players.begin();
 		for (;it != players.end();++it)
-			if (it->cmd.ucmd.buttons)
+			if (it->cmd.buttons)
 				break;
 
 		if (it != players.end())

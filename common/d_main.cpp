@@ -1130,73 +1130,74 @@ void D_AddCmdParameterFiles(void)
 // D_RunTics
 //
 // The core of the main game loop.
-// This loop allows the game logic timing to be decoupled from the renderer
+// This loop allows the game simulation timing to be decoupled from the renderer
 // timing. If the the user selects a capped framerate and isn't using the
-// -timedemo parameter, both the logic and render functions will be called
-// TICRATE times a second. If the framerate is uncapped, the logic function
+// -timedemo parameter, both the simulation and render functions will be called
+// TICRATE times a second. If the framerate is uncapped, the simulation function
 // will still be called TICRATE times a second but the render function will
 // be called as often as possible. After each iteration through the loop,
 // the program yields briefly to the operating system.
 //
-void D_RunTics(void (*logic_func)(), void(*render_func)())
+void D_RunTics(void (*sim_func)(), void(*render_func)())
 {
-	static const uint64_t logic_dt = 1000LL * 1000LL * 1000LL / TICRATE;
+	static const uint64_t sim_dt = I_ConvertTimeFromMs(1000) / TICRATE;
 
 	static uint64_t previous_time = I_GetTime();
-	static uint64_t accumulator = logic_dt;
-
-	// should the physics run at 35Hz?
-	const bool fixed_logic_ticrate = !timingdemo;
-	// should the renderer run at vid_maxfs (35Hz by default)?
-	const bool fixed_render_ticrate = !timingdemo && capfps;
-
 	uint64_t current_time = I_GetTime();
-	uint64_t frame_time = current_time - previous_time;
-	previous_time = current_time;
 
-	// prevent trying to run too many logic frames when we're already behind
-	frame_time = MIN(frame_time, 4 * logic_dt);
+	// reset the rendering interpolation
+	render_lerp_amount = FRACUNIT;
 
-	accumulator += frame_time;
+	static uint64_t accumulator = sim_dt;
 
-	if (fixed_logic_ticrate)
+	if (!timingdemo)	// run simulation function at 35Hz?
 	{
-		while (accumulator >= logic_dt)
+		// Run upto 4 simulation frames. Limit the number because there's already a
+		// slowdown and running more will only make things worse.
+		accumulator += MIN(current_time - previous_time, 4 * sim_dt);
+
+		// calculate how late the start of the frame is (for debugging)
+		uint64_t late_time_ms = current_time - previous_time > sim_dt ?
+			I_ConvertTimeToMs(current_time - previous_time - sim_dt) : 0;
+
+		if (late_time_ms > 2)
+			DPrintf("Warning: frame start is %ums late!\n", late_time_ms);
+
+		while (accumulator >= sim_dt)
 		{
-			logic_func();
-			accumulator -= logic_dt;
+			sim_func();
+			accumulator -= sim_dt;
 		}
+
+		// Use linear interpolation for rendering entities if the renderer
+		// framerate is not synced with the physics frequency.
+		if (maxfps != TICRATE && !(paused || menuactive || step_mode))
+			render_lerp_amount = (fixed_t)(accumulator * FRACUNIT / sim_dt);
 	}
-	else
+	else			// run simulation function as fast as possible
 	{
-		logic_func();
+		sim_func();
+		accumulator = 0;
 	}
-
-	// [SL] use linear interpolation for rendering entities if the renderer
-	// framerate is not synced with the physics frequency
-	if (fixed_render_ticrate && maxfps == TICRATE)
-		render_lerp_amount = FRACUNIT;
-	else
-		render_lerp_amount = clamp((fixed_t)(accumulator * FRACUNIT / logic_dt), 0, FRACUNIT);
-
-	// disable interpolation while paused since the physics aren't updated while paused
-	if (paused || menuactive || step_mode)
-		render_lerp_amount = FRACUNIT;
 
 	render_func();
 
 	static float previous_maxfps = -1;
 
-	if (fixed_render_ticrate)
+	if (!timingdemo && capfps)		// render at a capped framerate?
 	{
-		static uint64_t previous_block, current_block;
-		uint64_t render_dt = 1000LL * 1000LL * 1000LL / maxfps;
+		static uint64_t render_dt, previous_block;
+		uint64_t current_block;
 
+		// The capped framerate has changed so recalculate some stuff
 		if (maxfps != previous_maxfps)
+		{
+			render_dt = I_ConvertTimeFromMs(1000) / maxfps;
 			previous_block = current_time / render_dt;
+		}
 
-		// with fixed_render_ticrate, frames are rendered within fixed blocks of time
-		// and at the end of a frame, sleep until the start of the next block
+		// With capped framerates, frames are rendered within fixed blocks of time
+		// and at the end of a frame, sleep until the start of the next block.
 		do
 			I_Yield();
 		while ( (current_block = I_GetTime() / render_dt) <= previous_block);
@@ -1204,12 +1205,14 @@ void D_RunTics(void (*logic_func)(), void(*render_func)())
 		previous_block = current_block;
 		previous_maxfps = maxfps;
 	}
-	else if (!timingdemo)
+	else if (!timingdemo)			// render at an unlimited framerate (but still yield)
 	{
 		// sleep for 1ms to allow the operating system some time
 		I_Yield();
 		previous_maxfps = -1;
 	}
+
+	previous_time = current_time;
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id: d_main.cpp 3426 2012-11-19 17:25:28Z dr_sean $")

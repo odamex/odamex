@@ -53,7 +53,7 @@
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "m_random.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "p_ctf.h"
 #include "w_wad.h"
 #include "md5.h"
@@ -2536,6 +2536,9 @@ void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		cl = &(it->client);
+		
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, level);
@@ -2559,6 +2562,9 @@ void STACK_ARGS SV_SpectatorPrintf(int level, const char *fmt, ...)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		cl = &(it->client);
+		
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
 
 		if (it->spectator)
 		{
@@ -2620,6 +2626,9 @@ void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
 			continue;
 
 		cl = &(it->client);
+		
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, level);

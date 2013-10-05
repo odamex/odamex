@@ -774,7 +774,7 @@ void A_Look (AActor *actor)
 	if (actor->target)
 		P_SetMobjState (actor, actor->info->seestate, true);
 }
-#include "vectors.h"
+#include "m_vectors.h"
 
 //
 // A_Chase

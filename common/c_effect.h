@@ -23,7 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "vectors.h"
+#include "m_vectors.h"
 
 #define FX_ROCKET			0x00000001
 #define FX_GRENADE			0x00000002

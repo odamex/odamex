@@ -65,6 +65,9 @@ void *I_ZoneBase (size_t *size);
 // returns current time in nanoseconds.
 uint64_t I_GetTime();
 
+uint64_t I_ConvertTimeToMs(uint64_t value);
+uint64_t I_ConvertTimeFromMs(uint64_t value);
+
 // yields to the OS for the specified time (in nanoseconds)
 void I_Sleep(uint64_t);
 // yields to the OS for 1 millisecond

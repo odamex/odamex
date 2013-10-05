@@ -22,7 +22,7 @@
 //-----------------------------------------------------------------------------
 
 #include <stddef.h>
-#include <string.h>
+#include <cstring>
 #include <math.h>
 
 #include "v_video.h"

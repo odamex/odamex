@@ -295,7 +295,17 @@ uint64_t I_GetTime()
 
 QWORD I_MSTime()
 {
-	return I_GetTime() / (1000000LL);
+	return I_ConvertTimeToMs(I_GetTime());
+}
+
+uint64_t I_ConvertTimeToMs(uint64_t value)
+{
+	return value / 1000000LL;
+}
+
+uint64_t I_ConvertTimeFromMs(uint64_t value)
+{
+	return value * 1000000LL;
 }
 
 //
@@ -713,10 +723,9 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 	if (!alreadyThrown)		// ignore all but the first message -- killough
 	{
 		char errortext[MAX_ERRORTEXT];
-		int index;
 		va_list argptr;
 		va_start (argptr, error);
-		index = vsprintf (errortext, error, argptr);
+		int index = vsprintf (errortext, error, argptr);
 		sprintf (errortext + index, "\nSDL_GetError = \"%s\"", SDL_GetError());
 		va_end (argptr);
 

@@ -31,7 +31,7 @@
 #include "r_draw.h"
 #include "r_things.h"
 #include "p_local.h"
-#include "vectors.h"
+#include "m_vectors.h"
 
 // State.
 #include "doomstat.h"

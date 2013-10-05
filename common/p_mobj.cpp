@@ -33,7 +33,7 @@
 #include "doomstat.h"
 #include "v_video.h"
 #include "c_cvars.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "g_game.h"
 #include "p_mobj.h"
 #include "p_ctf.h"
@@ -1052,7 +1052,7 @@ void P_XYMovement(AActor *mo)
 					// slide against wall
 					if (BlockingLine != NULL &&
 						mo->player && mo->waterlevel && mo->waterlevel < 3 &&
-						(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove) &&
+						(mo->player->cmd.forwardmove | mo->player->cmd.sidemove) &&
 						BlockingLine->sidenum[1] != R_NOSIDE)
 					{
 						mo->momz = WATER_JUMP_SPEED;
@@ -1178,7 +1178,7 @@ void P_XYMovement(AActor *mo)
 	if (mo->momx > -STOPSPEED && mo->momx < STOPSPEED
 		&& mo->momy > -STOPSPEED && mo->momy < STOPSPEED
 		&& (!player || (player->mo != mo)
-		|| !(player->cmd.ucmd.forwardmove | player->cmd.ucmd.sidemove)))
+		|| !(player->cmd.forwardmove | player->cmd.sidemove)))
 	{
 		// if in a walking frame, stop moving
 		// killough 10/98:
@@ -1237,7 +1237,7 @@ void P_ZMovement(AActor *mo)
 		fixed_t startmomz = mo->momz;
 
 		if (!mo->waterlevel || mo->flags & MF_CORPSE ||
-			(mo->player && !(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove)))
+			(mo->player && !(mo->player->cmd.forwardmove | mo->player->cmd.sidemove)))
 		{
 			mo->momz -= (fixed_t)(level.gravity * mo->subsector->sector->gravity *
 						(mo->flags2 & MF2_LOGRAV ? 10.24 : 81.92));
@@ -1397,7 +1397,7 @@ void P_ZMovement(AActor *mo)
 			fixed_t startmomz = mo->momz;
 
 			if (!mo->waterlevel || (mo->player &&
-			   !(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove)))
+			   !(mo->player->cmd.forwardmove | mo->player->cmd.sidemove)))
 			{
 				if (mo->flags2 & MF2_LOGRAV)
 				{

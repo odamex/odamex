@@ -22,10 +22,11 @@
 //-----------------------------------------------------------------------------
 
 
-#include <string.h>
+#include <cstring>
 #include <math.h>
 #include <cstddef>
 
+#include "doomstat.h"
 #include "v_video.h"
 #include "v_gamma.h"
 #include "m_alloc.h"

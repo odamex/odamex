@@ -86,6 +86,7 @@ public:
 	float value() const { return m_Value; }
 	operator float () const { return m_Value; }
 	unsigned int flags() const { return m_Flags; }
+    cvartype_t type() const { return m_Type; }
 
 	// return m_Value as an int, rounded to the nearest integer because
 	// casting truncates instead of rounding

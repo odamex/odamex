@@ -42,7 +42,7 @@
 #include "cmdlib.h"
 #include "v_video.h"
 #include "v_text.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "m_fileio.h"
 #include "gi.h"
 

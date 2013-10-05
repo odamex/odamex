@@ -166,7 +166,7 @@ CVAR (ctf_flagtimeout, "10",  "Time for a dropped flag to be returned automatica
 //      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR (sv_ticbuffer, "1", "Buffer controller input from players experiencing sudden latency spikes for smoother movement",
-	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 // Ban settings
 // ============
@@ -240,6 +240,15 @@ CVAR (sv_countdown, "5", "Number of seconds to wait before starting the game fro
 // Do not run ticker functions when there are no players
 CVAR (sv_emptyfreeze,  "0", "Experimental: Does not progress the game when there are no players",
       CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+// Hacky abominations that should be purged with fire and brimstone
+// =================================================================
+
+// [SL] sv_padding is used to pad launcher packets to ensure that they are split by the
+// IP layer rather than being oversized and dropped by some routers
+CVAR (sv_padding, "                                                                                                                                                                                                        ", "",
+		CVARTYPE_STRING, CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_NOSET)
+
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
 

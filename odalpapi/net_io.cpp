@@ -24,12 +24,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <iostream>
-#include <sstream>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cstdarg>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 #include <time.h>
 #include <errno.h>
 
@@ -290,6 +292,8 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 		m_BadRead = false;
 
 		// return bytes received
+		NET_ReportError("bytes received: %d", m_BufferSize);
+
 		return m_BufferSize;
 	}
 
@@ -298,6 +302,46 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 
 
 	return -3;
+}
+
+bool BufferedSocket::ReadHexString(string &str)
+{
+    std::stringstream hash;
+
+    uint8_t size;
+
+    if (!Read8(size))
+        return false;
+
+    for (uint8_t i = 0; i < size; ++i)
+    {
+        uint8_t ch;
+
+        if (!CanRead(1))
+        {
+            NET_ReportError("End of buffer reached!");
+
+            str = "";
+
+            m_BadRead = true;
+
+            return false;
+        }
+
+        if (!Read8(ch))
+            return false;
+
+        hash 
+            << std::setw(2) 
+            << std::setfill('0') 
+            << std::hex 
+            << std::uppercase 
+            << (short)ch;
+    }
+
+    str = hash.str();
+
+    return true;
 }
 
 bool BufferedSocket::ReadString(string &str)

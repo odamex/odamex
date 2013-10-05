@@ -48,7 +48,7 @@
 #include "m_alloc.h"
 #include "v_video.h"
 
-#include "vectors.h"
+#include "m_vectors.h"
 #include <math.h>
 
 planefunction_t 		floorfunc;

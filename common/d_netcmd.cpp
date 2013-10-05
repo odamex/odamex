@@ -44,19 +44,18 @@ void NetCommand::fromPlayer(player_t *player)
 	clear();
 	setTic(player->cmd.tic);
 	
-	usercmd_t *ucmd = &player->cmd.ucmd;
-	setButtons(ucmd->buttons);
-	setImpulse(ucmd->impulse);
+	setButtons(player->cmd.buttons);
+	setImpulse(player->cmd.impulse);
 	
 	if (player->playerstate != PST_DEAD)
 	{
 		setAngle(player->mo->angle);
 		setPitch(player->mo->pitch);
-		setForwardMove(ucmd->forwardmove);
-		setSideMove(ucmd->sidemove);
-		setUpMove(ucmd->upmove);
-		setDeltaYaw(ucmd->yaw);
-		setDeltaPitch(ucmd->pitch);
+		setForwardMove(player->cmd.forwardmove);
+		setSideMove(player->cmd.sidemove);
+		setUpMove(player->cmd.upmove);
+		setDeltaYaw(player->cmd.yaw);
+		setDeltaPitch(player->cmd.pitch);
 	}
 }
 
@@ -65,20 +64,19 @@ void NetCommand::toPlayer(player_t *player) const
 	if (!player || !player->mo)
 		return;
 
-	memset(&player->cmd, 0, sizeof(ticcmd_t));
+	player->cmd.clear();
 	player->cmd.tic = getTic();
 	
-	usercmd_t *ucmd = &player->cmd.ucmd;
-	ucmd->buttons = getButtons();
-	ucmd->impulse = getImpulse();
+	player->cmd.buttons = getButtons();
+	player->cmd.impulse = getImpulse();
 	
 	if (player->playerstate != PST_DEAD)
 	{
-		ucmd->forwardmove = getForwardMove();
-		ucmd->sidemove = getSideMove();
-		ucmd->upmove = getUpMove();
-		ucmd->yaw = getDeltaYaw();
-		ucmd->pitch = getDeltaPitch();
+		player->cmd.forwardmove = getForwardMove();
+		player->cmd.sidemove = getSideMove();
+		player->cmd.upmove = getUpMove();
+		player->cmd.yaw = getDeltaYaw();
+		player->cmd.pitch = getDeltaPitch();
 		
 		player->mo->angle = getAngle();
 		player->mo->pitch = getPitch();

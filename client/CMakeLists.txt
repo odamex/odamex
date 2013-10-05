@@ -1,6 +1,6 @@
 # Client flags
 if(NOT MSVC)
-  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=pentium4")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
 endif()
 
 global_compile_options()
