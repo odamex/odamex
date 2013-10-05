@@ -37,9 +37,13 @@
 
 #include <cmath>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846		// matches value in gcc v2 math.h
+#endif
+
 static inline double DEG2RAD(double a)
 {
-	static const double factor = PI / 180.0;
+	static const double factor = M_PI / 180.0;
 	return a * factor;
 }
 
