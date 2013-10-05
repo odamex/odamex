@@ -2710,13 +2710,12 @@ void P_UseLines (player_t *player)
 //
 AActor* 		bombsource;
 AActor* 		bombspot;
-int 	        bombdamage;
-float	        bombdamagefloat;
-int		        bombdistance;
-float	        bombdistancefloat;
-bool	        DamageSource;
-int		        bombmod;
-vec3_t	        bombvec;
+int				bombdamage;
+float			bombdamagefloat;
+int				bombdistance;
+float			bombdistancefloat;
+bool			DamageSource;
+int				bombmod;
 
 //
 // PIT_ZdoomRadiusAttack
@@ -2882,7 +2881,6 @@ void P_RadiusAttack (AActor *spot, AActor *source, int damage, int distance,
 	DamageSource = hurtSource;
 	bombdamagefloat = (float)damage;	
 	bombmod = mod;
-	VectorPosition (spot, bombvec);
 
 	// decide which radius attack function to use
 	BOOL (*pAttackFunc)(AActor*) = co_zdoomphys ?

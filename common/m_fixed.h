@@ -22,8 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_FIXED__
-#define __M_FIXED__
+#ifndef __M_FIXED_H__
+#define __M_FIXED_H__
 
 #include <stdlib.h>
 #include "doomtype.h"
@@ -35,7 +35,33 @@
 #define FRACUNIT				(1<<FRACBITS)
 
 typedef int fixed_t;				// fixed 16.16
-typedef unsigned int dsfixed_t;	// fixedpt used by span drawer
+typedef unsigned int dsfixed_t;		// fixedpt used by span drawer
+
+//
+// Fixed Point / Floating Point Conversion
+//
+inline float FIXED2FLOAT(fixed_t x)
+{
+	static const float factor = 1.0f / float(FRACUNIT);
+	return x * factor;
+}
+
+inline double FIXED2DOUBLE(fixed_t x)
+{
+	static const double factor = 1.0 / double(FRACUNIT);
+	return x * factor;
+}
+
+inline fixed_t FLOAT2FIXED(float x)
+{
+	return fixed_t(x * float(FRACUNIT));
+}
+
+inline fixed_t DOUBLE2FIXED(double x)
+{
+	return fixed_t(x * double(FRACUNIT));
+}
+
 
 //
 // Fixed Point Multiplication
@@ -54,6 +80,6 @@ inline static fixed_t FixedDiv(fixed_t a, fixed_t b)
 		(fixed_t)(((int64_t)a << FRACBITS) / b);
 }
 
-#endif
+#endif	// __M_FIXED_H__
 
 

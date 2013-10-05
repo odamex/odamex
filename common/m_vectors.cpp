@@ -30,85 +30,17 @@
 
 #include <stdio.h>
 
+#include "m_fixed.h"
 #include "m_vectors.h"
 #include "actor.h"
 #include "tables.h"
 
-#include <math.h>
+#include <cmath>
 
-#ifndef M_PI
-#define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
-#endif
-
-#define DEG2RAD( a ) ( a * M_PI ) / 180.0F
-
-
-
-// [RH] Convert a thing's position into a vec3_t
-void VectorPosition (const AActor *thing, vec3_t out)
+static inline double DEG2RAD(double a)
 {
-	out[0] = (float)thing->x / 65536.0f;
-	out[1] = (float)thing->y / 65536.0f;
-	out[2] = (float)thing->z / 65536.0f;
-}
-
-void FixedAngleToVector (angle_t an, int pitch, vec3_t v)
-{
-	an >>= ANGLETOFINESHIFT;
-	v[0] = ((float)finecosine[an]) / 65536.0f;
-	v[1] = ((float)finesine[an]) / 65536.0f;
-	v[2] = ((float)finetangent[FINEANGLES/4-(pitch>>ANGLETOFINESHIFT)]) / 65536.0f;
-	VectorNormalize (v);
-}
-
-// Taken from Q2
-vec_t VectorLength (const vec3_t v)
-{
-	float	length;
-	
-	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];;
-	length = (float) sqrt (length);		// FIXME
-
-	return length;
-}
-
-
-vec_t VectorNormalize (vec3_t v)
-{
-	float length, ilength;
-
-	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
-	length = (float)sqrt (length);		// FIXME
-
-	if (length)
-	{
-		ilength = 1/length;
-		v[0] *= ilength;
-		v[1] *= ilength;
-		v[2] *= ilength;
-	}
-		
-	return length;
-
-}
-
-vec_t VectorNormalize2 (const vec3_t v, vec3_t out)
-{
-	float length, ilength;
-
-	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
-	length = (float)sqrt (length);		// FIXME
-
-	if (length)
-	{
-		ilength = 1/length;
-		out[0] = v[0]*ilength;
-		out[1] = v[1]*ilength;
-		out[2] = v[2]*ilength;
-	}
-		
-	return length;
-
+	static const double factor = PI / 180.0;
+	return a * factor;
 }
 
 //
@@ -647,10 +579,10 @@ void M_RotatePointAroundVector(v3double_t *dest, const v3double_t *dir, const v3
 	memset( zrot, 0, sizeof( zrot ) );
 	zrot[0][0] = zrot[1][1] = zrot[2][2] = 1.0;
 
-	zrot[0][0] = (float)cos( DEG2RAD( degrees ) );
-	zrot[0][1] = (float)sin( DEG2RAD( degrees ) );
-	zrot[1][0] = (float)-sin( DEG2RAD( degrees ) );
-	zrot[1][1] = (float)cos( DEG2RAD( degrees ) );
+	zrot[0][0] = (float)cos(DEG2RAD(degrees));
+	zrot[0][1] = (float)sin(DEG2RAD(degrees));
+	zrot[1][0] = (float)-sin(DEG2RAD(degrees));
+	zrot[1][1] = (float)cos(DEG2RAD(degrees));
 
 	M_ConcatRotations(tmpmat, m, zrot);
 	M_ConcatRotations(rot, tmpmat, im);
