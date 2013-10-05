@@ -314,8 +314,6 @@
 		<Unit filename="../../common/d_netcmd.h" />
 		<Unit filename="../../common/d_netinf.h" />
 		<Unit filename="../../common/d_player.h" />
-		<Unit filename="../../common/d_protocol.cpp" />
-		<Unit filename="../../common/d_protocol.h" />
 		<Unit filename="../../common/d_ticcmd.h" />
 		<Unit filename="../../common/dobject.cpp" />
 		<Unit filename="../../common/dobject.h" />
