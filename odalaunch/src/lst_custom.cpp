@@ -27,6 +27,7 @@
 #include <wx/settings.h>
 #include <wx/defs.h>
 #include <wx/regex.h>
+#include <wx/renderer.h>
 
 IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListView)
 
@@ -38,57 +39,6 @@ END_EVENT_TABLE()
 // Sort arrow
 static int ImageList_SortArrowUp = -1;
 static int ImageList_SortArrowDown = -1;
-
-// Sorting arrow XPM images
-static const char *SortArrowAscending[] =
-{
-    "16 16 3 1",
-    "  c None",
-    "0 c #808080",
-    "1 c #FFFFFF",
-    
-    "                ",
-    "                ",
-    "                ",
-    "                ",
-    "       01       ",
-    "      0011      ",
-    "      0  1      ",
-    "     00  11     ",
-    "     0    1     ",
-    "    00    11    ",
-    "    01111111    ",
-    "                ",
-    "                ",
-    "                ",
-    "                ",
-    "                "
-};
-
-static const char *SortArrowDescending[] =
-{
-    "16 16 3 1",
-    "  c None",
-    "0 c #808080",
-    "1 c #FFFFFF",
-    
-    "                ",
-    "                ",
-    "                ",
-    "                ",
-    "    00000000    ",
-    "    00    11    ",
-    "     0    1     ",
-    "     00  11     ",
-    "      0  1      ",
-    "      0011      ",
-    "       01       ",
-    "                ",
-    "                ",
-    "                ",
-    "                ",
-    "                "
-};
 
 wxAdvancedListCtrl::wxAdvancedListCtrl()
 {
@@ -115,9 +65,29 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
         wxImageList *ImageList = new wxImageList(16, 16, true);
         AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
         
-        // Add our sort icons by default.
-        ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowDescending));
-        ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowAscending));
+        wxBitmap sort_up(16, 16), sort_down(16, 16);
+        wxColour Mask = wxColour(255,255,255);
+        
+        // Draw sort arrows using the native renderer
+        {
+            wxMemoryDC renderer_dc;
+
+             // sort arrow up
+            renderer_dc.SelectObject(sort_up);
+            renderer_dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxSOLID));
+            renderer_dc.Clear();
+            wxRendererNative::Get().DrawHeaderButtonContents(this, renderer_dc, wxRect(0, 0, 16, 16), 0, wxHDR_SORT_ICON_UP);
+
+             // sort arrow down
+            renderer_dc.SelectObject(sort_down);
+            renderer_dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxSOLID));
+            renderer_dc.Clear();
+            wxRendererNative::Get().DrawHeaderButtonContents(this, renderer_dc, wxRect(0, 0, 16, 16), 0, wxHDR_SORT_ICON_DOWN);
+        }
+
+        // Add our sort icons to the image list
+        ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_down, Mask);
+        ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_up, Mask);
     }
     
     if (Image.IsOk())
