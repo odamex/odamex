@@ -298,7 +298,11 @@ bool Server::ReadCvars()
             }
         }
         else
+        {
+            Cvar.Type = CVARTYPE_NONE;
+
             Socket.ReadString(Cvar.Value);
+        }
         
 		// Filter out important information for us to use, it'd be nicer to have
 		// a launcher-side cvar implementation though
