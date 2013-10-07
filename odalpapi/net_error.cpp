@@ -85,6 +85,30 @@ static int _GetErrno()
     #endif
 }
 
+// We must lock the stderr stream for multiple thread access
+#ifdef _WIN32
+CRITICAL_SECTION STDERR_CRITICAL_SECTION;
+static bool Init = false;
+
+void InitLockStderr()
+{
+    if (!Init)
+        InitializeCriticalSection(&STDERR_CRITICAL_SECTION);
+
+    Init = true;
+}
+
+void LockStderr()
+{
+    EnterCriticalSection(&STDERR_CRITICAL_SECTION);
+}
+
+void UnlockStderr()
+{
+    LeaveCriticalSection(&STDERR_CRITICAL_SECTION);
+}
+#endif // _WIN32
+
 // Formatted debug output
 void _ReportError(const char *file, int line, const char *func,
     const char *fmt, ...)
@@ -93,6 +117,14 @@ void _ReportError(const char *file, int line, const char *func,
 
 	if(!func || !fmt)
 		return;
+
+    #if _WIN32 || _XBOX
+    InitLockStderr();
+
+    LockStderr();
+    #else
+    flockfile(stderr);
+    #endif
 
     char *syserrmsg = _GetStrError(_GetErrno());
 
@@ -112,9 +144,12 @@ void _ReportError(const char *file, int line, const char *func,
 #endif // _XBOX
 
 	va_end(ap);
-
-    #ifdef _WIN32
+	
+    #if _WIN32 || _XBOX
     LocalFree(syserrmsg);
+    UnlockStderr();
+    #else
+    funlockfile(stderr);
     #endif
 }
 

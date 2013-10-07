@@ -37,6 +37,8 @@ class wxAdvancedListCtrl : public wxListView
         wxAdvancedListCtrl();
         virtual ~wxAdvancedListCtrl() { };
         
+        void HeaderUsable(bool state) { m_HeaderUsable = state; }
+
         void SetSortColumnAndOrder(wxInt32 &Column, wxInt32 &Order)
         {
             SortCol = Column;
@@ -89,6 +91,8 @@ class wxAdvancedListCtrl : public wxListView
         wxColour BgColor;
 
         wxInt32 m_SpecialColumn;
+
+        bool m_HeaderUsable;
         
     protected:               
         DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)

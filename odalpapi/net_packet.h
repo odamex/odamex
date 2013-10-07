@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include <sstream>
 
 // todo: replace with a generic implementation
 #if 0
@@ -168,8 +169,7 @@ struct ServerInfo_t
 class ServerBase  // [Russell] - Defines an abstract class for all packets
 {
 protected:      
-	BufferedSocket Socket;
-
+	BufferedSocket *Socket;
 	// Magic numbers
 	uint32_t challenge;
 	uint32_t response;
@@ -178,6 +178,9 @@ protected:
 	uint64_t Ping;
 
     uint8_t m_RetryCount;
+
+    std::string m_Address;
+    uint16_t m_Port;
 
 //	AG_Mutex m_Mutex;
 public:
@@ -189,6 +192,10 @@ public:
 		response = 0;
 
         m_RetryCount = 2;
+
+        m_Port = 0;
+
+        Socket = NULL;
 
     // todo: replace with a generic implementation
 //		AG_MutexInit(&m_Mutex);
@@ -205,15 +212,30 @@ public:
 	// Query the server
 	int32_t Query(int32_t Timeout);
 
+    void SetSocket(BufferedSocket *s)
+    {
+        Socket = s;
+    }
+
 	void SetAddress(const std::string &Address, const uint16_t &Port) 
 	{ 
-		Socket.SetRemoteAddress(Address, Port);
+		m_Address = Address;
+		m_Port = Port;
 	}
 
-	std::string GetAddress() const { return Socket.GetRemoteAddress(); }
+	std::string GetAddress() const 
+	{
+        std::ostringstream Address;
+
+        Address << m_Address << ":" << m_Port;
+
+        return Address.str();
+    }
+    
 	void GetAddress(std::string &Address, uint16_t &Port) const
 	{
-        Socket.GetRemoteAddress(Address, Port);
+        Address = m_Address;
+        Port = m_Port;
 	}
 	uint64_t GetPing() const { return Ping; }
 
@@ -315,8 +337,9 @@ public:
 
 		for (size_t i = 0; i < masteraddresses.size(); ++i)
 		{
-			Socket.SetRemoteAddress(masteraddresses[i].ip, masteraddresses[i].port);
-
+			m_Address = masteraddresses[i].ip;
+			m_Port = masteraddresses[i].port;
+			
 			Query(Timeout);
 		}
 	}

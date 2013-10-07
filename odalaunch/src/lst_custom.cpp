@@ -46,6 +46,8 @@ wxAdvancedListCtrl::wxAdvancedListCtrl()
     SortCol = 0; 
 
     m_SpecialColumn = -1;
+
+    m_HeaderUsable = true;
 }
 
 void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
@@ -286,6 +288,9 @@ void wxAdvancedListCtrl::Sort()
 
 void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
 {
+    if (!m_HeaderUsable)
+        return;
+
     // invert sort order if need be (ascending/descending)
     if (SortCol != event.GetColumn())
         SortOrder = 1;
