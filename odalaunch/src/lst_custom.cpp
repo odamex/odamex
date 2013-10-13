@@ -165,6 +165,7 @@ wxInt32 NaturalCompareWorker(const wxString &String1, const wxString &String2)
 wxInt32 NaturalCompare(wxString String1, wxString String2, bool CaseSensitive = false) 
 {
     wxInt32 StringCounter1 = 0, StringCounter2 = 0;
+	wxInt32 String1Zeroes = 0, String2Zeroes = 0;
 	wxChar String1Char, String2Char;
 	wxInt32 Result;
 
@@ -174,15 +175,43 @@ wxInt32 NaturalCompare(wxString String1, wxString String2, bool CaseSensitive = 
         String2.MakeLower();
     }
 
-    wxRegEx Strip(wxT("[^[:alnum:]_.-]"));
-
-    Strip.Replace(&String1, wxT(""));
-    Strip.Replace(&String2, wxT(""));
-
     while (true)
     {
+        String1Zeroes = 0;
+        String2Zeroes = 0;
+
         String1Char = String1[StringCounter1];
         String2Char = String2[StringCounter2];
+
+        // skip past whitespace or zeroes in first string
+        while (wxIsspace(String1Char) || String1Char == '0' ) 
+        {
+            if (String1Char == '0') 
+            {
+                String1Zeroes++;
+            } 
+            else 
+            {
+                String1Zeroes = 0;
+            }
+
+            String1Char = String1[++StringCounter1];
+        }
+        
+        // skip past whitespace or zeroes in second string
+        while (wxIsspace(String2Char) || String2Char == '0') 
+        {
+            if (String2Char == '0') 
+            {
+                String2Zeroes++;
+            } 
+            else 
+            {
+                String2Zeroes = 0;
+            }
+
+            String2Char = String2[++StringCounter2];
+        }
 
         // We encountered some digits, compare these.
         if (wxIsdigit(String1Char) && wxIsdigit(String2Char)) 
@@ -197,7 +226,7 @@ wxInt32 NaturalCompare(wxString String1, wxString String2, bool CaseSensitive = 
 
         if ((String1Char == 0) && (String2Char == 0)) 
         {
-            return (String1Char - String2Char);
+            return (String1Zeroes - String2Zeroes);
         }
 
         if (String1Char < String2Char) 
