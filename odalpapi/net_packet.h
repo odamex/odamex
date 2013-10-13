@@ -92,8 +92,6 @@ struct Cvar_t
 	std::string Name;
     std::string Value;
 
-	uint8_t Type;
-
 	union
 	{
 	    bool b;
@@ -104,6 +102,8 @@ struct Cvar_t
 	    int32_t i32;
 	    uint32_t ui32;
 	};
+	
+	uint8_t Type;
 };
 
 struct Wad_t
@@ -123,12 +123,12 @@ struct Player_t
 {
 	std::string Name;
 	uint32_t    Colour;
-	int16_t     Frags;
-	uint16_t    Ping;
-	uint8_t     Team;
 	uint16_t    Kills;
 	uint16_t    Deaths;
 	uint16_t    Time;
+	int16_t     Frags;
+	uint16_t    Ping;
+	uint8_t     Team;
 	bool        Spectator;
 };
 
@@ -143,27 +143,27 @@ enum GameType_t
 
 struct ServerInfo_t
 {
+	std::vector<std::string> Patches;
+	std::vector<Cvar_t>      Cvars;
+	std::vector<Team_t>      Teams;
+	std::vector<Wad_t>       Wads;
+	std::vector<Player_t>    Players;
+	std::string              Name; // Launcher specific: Server name
+	std::string              PasswordHash;
+	std::string              CurrentMap;
+	GameType_t               GameType; // Launcher specific: Game type
 	uint32_t                 Response; // Launcher specific: Server response
-	uint8_t                  VersionMajor; // Launcher specific: Version fields
-	uint8_t                  VersionMinor;
-	uint8_t                  VersionPatch;
 	uint32_t                 VersionRevision;
 	uint32_t                 VersionProtocol;
 	uint32_t                 VersionRealProtocol;
 	uint32_t                 PTime;
-	std::string              Name; // Launcher specific: Server name
+	uint16_t                 ScoreLimit; // Launcher specific: Score limit
+	uint16_t                 TimeLeft;
+	uint8_t                  VersionMajor; // Launcher specific: Version fields
+	uint8_t                  VersionMinor;
+	uint8_t                  VersionPatch;
 	uint8_t                  MaxClients; // Launcher specific: Maximum clients
 	uint8_t                  MaxPlayers; // Launcher specific: Maximum players
-	GameType_t               GameType; // Launcher specific: Game type
-	uint16_t                 ScoreLimit; // Launcher specific: Score limit
-	std::vector<Cvar_t>      Cvars;
-	std::string              PasswordHash;
-	std::string              CurrentMap;
-	uint16_t                 TimeLeft;
-	std::vector<Team_t>      Teams;
-	std::vector<std::string> Patches;
-	std::vector<Wad_t>       Wads;
-	std::vector<Player_t>    Players;
 };
 
 class ServerBase  // [Russell] - Defines an abstract class for all packets
