@@ -879,11 +879,11 @@ void A_RailWait (AActor *mo)
 // Sets a slope so a near miss is at aproximately
 // the height of the intended target
 //
-fixed_t bulletslope;
 
-void P_BulletSlope (AActor *mo)
+fixed_t P_BulletSlope(AActor *mo)
 {
 	fixed_t pitchslope = finetangent[FINEANGLES/4 - (mo->pitch>>ANGLETOFINESHIFT)];
+	fixed_t bulletslope;
 
 	// see which target is to be aimed at
 	angle_t an = mo->angle;
@@ -903,24 +903,8 @@ void P_BulletSlope (AActor *mo)
 	{
 		bulletslope = pitchslope;
 	}
-}
 
-
-//
-// P_GunShot
-//
-void P_GunShot (AActor *mo, BOOL accurate)
-{
-	angle_t 	angle;
-	int 		damage;
-
-	damage = 5*(P_Random (mo)%3+1);
-	angle = mo->angle;
-
-	if (!accurate)
-		angle += P_RandomDiff(mo) << 18;
-
-	P_LineAttack (mo, angle, MISSILERANGE, bulletslope, damage);
+	return bulletslope;
 }
 
 //
@@ -967,7 +951,7 @@ void P_FireHitscan (player_t *player, size_t quantity, spreadtype_t spread)
 	if (serverside)
 		Unlag::getInstance().reconcile(player->id);
 
-	P_BulletSlope (player->mo);
+	fixed_t bulletslope = P_BulletSlope(player->mo);
 
 	for (size_t i=0; i<quantity; i++)
 	{
