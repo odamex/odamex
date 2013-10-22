@@ -236,7 +236,8 @@ bool P_EnoughAmmo(player_t *player, weapontype_t weapon, bool switching = false)
 	ammotype_t		ammotype = weaponinfo[weapon].ammotype;
 	int				count = 1;	// default amount of ammo for most weapons
 
-	count = weaponinfo[weapon].minammo;
+	// [SL] Fix for when DeHackEd doesn't patch minammo
+	count = MAX(weaponinfo[weapon].minammo, weaponinfo[weapon].ammouse);
 
 	// Vanilla Doom requires > 40 cells to switch to BFG and > 2 shells to
 	// switch to SSG when current weapon is out of ammo due to a bug.
