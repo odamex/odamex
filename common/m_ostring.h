@@ -472,20 +472,7 @@ private:
 	// singleton initialization
 	// ------------------------------------------------------------------------
 
-	void init()
-	{
-		static StringTable lStrings(OString::MAX_STRINGS);
-		static StringLookupTable lStringLookup(OString::MAX_STRINGS);
-		static std::string lEmptyString;
-		static bool initialized = false;
-		if (!initialized)
-		{
-			mStrings = &lStrings;
-			mStringLookup = &lStringLookup;
-			mEmptyString = &lEmptyString;
-			initialized = true;
-		}
-	}
+	void init();
 
 	// ------------------------------------------------------------------------
 	// hash
@@ -539,7 +526,7 @@ private:
 	{
 		init();
 
-		if (*s == '\0')
+		if (s[0] == '\0')
 		{
 			mId = mEmptyStringId;
 			return;
@@ -551,6 +538,8 @@ private:
 
 		if (rec)
 		{
+			// verify the string already in the table matches this one
+			assert(rec->mString == s);
 			mId = mStrings->getId(*rec);
 		}
 		else
