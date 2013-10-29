@@ -37,23 +37,22 @@ OString::StringLookupTable* OString::mStringLookup = NULL;
 std::string* OString::mEmptyString = NULL;
 
 // ------------------------------------------------------------------------
-// singleton initialization
+// startup / shutdown
 // ------------------------------------------------------------------------
 
-void OString::init()
+void OString::startup()
 {
-	static StringTable lStrings(OString::MAX_STRINGS);
-	static StringLookupTable lStringLookup(OString::MAX_STRINGS);
-	static std::string lEmptyString;
+	mStrings = new StringTable(OString::MAX_STRINGS);
+	mStringLookup = new StringLookupTable(OString::MAX_STRINGS);
+	mEmptyString = new std::string("");
+}
 
-	static bool initialized = false;
-	if (!initialized)
-	{
-		mStrings = &lStrings;
-		mStringLookup = &lStringLookup;
-		mEmptyString = &lEmptyString;
-		initialized = true;
-	}
+
+void OString::shutdown()
+{
+	delete mStrings;
+	delete mStringLookup;
+	delete mEmptyString;
 }
 
 // ------------------------------------------------------------------------

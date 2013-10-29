@@ -52,6 +52,7 @@
 #include "errors.h"
 #include "i_net.h"
 #include "sv_main.h"
+#include "m_ostring.h"
 
 using namespace std;
 
@@ -231,6 +232,10 @@ int main (int argc, char **argv)
 			I_FatalError("root user detected, quitting odamex immediately");
 
 	    seteuid (getuid ());
+
+		// ensure OString's string table is properly initialized and shutdown
+		OString::startup();
+		atterm(OString::shutdown);
 
 		Args.SetArgs (argc, argv);
 
