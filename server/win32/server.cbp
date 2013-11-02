@@ -358,6 +358,8 @@
 		<Unit filename="../../common/m_memio.cpp" />
 		<Unit filename="../../common/m_memio.h" />
 		<Unit filename="../../common/m_misc.h" />
+		<Unit filename="../../common/m_ostring.cpp" />
+		<Unit filename="../../common/m_ostring.h" />
 		<Unit filename="../../common/m_random.cpp" />
 		<Unit filename="../../common/m_random.h" />
 		<Unit filename="../../common/m_swap.cpp" />
