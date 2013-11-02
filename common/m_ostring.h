@@ -108,6 +108,14 @@ public:
 
 
 	// ------------------------------------------------------------------------
+	// startup / shutdown
+	// ------------------------------------------------------------------------
+
+	static void startup();
+	static void shutdown();
+
+
+	// ------------------------------------------------------------------------
 	// constructor
 	// ------------------------------------------------------------------------
 
@@ -469,25 +477,6 @@ private:
 	
 
 	// ------------------------------------------------------------------------
-	// singleton initialization
-	// ------------------------------------------------------------------------
-
-	void init()
-	{
-		static StringTable lStrings(OString::MAX_STRINGS);
-		static StringLookupTable lStringLookup(OString::MAX_STRINGS);
-		static std::string lEmptyString;
-		static bool initialized = false;
-		if (!initialized)
-		{
-			mStrings = &lStrings;
-			mStringLookup = &lStringLookup;
-			mEmptyString = &lEmptyString;
-			initialized = true;
-		}
-	}
-
-	// ------------------------------------------------------------------------
 	// hash
 	//
 	// Generates a 32-bit hash value from a string.
@@ -537,9 +526,7 @@ private:
 
 	inline void addString(const char* s)
 	{
-		init();
-
-		if (*s == '\0')
+		if (s[0] == '\0')
 		{
 			mId = mEmptyStringId;
 			return;
@@ -551,10 +538,13 @@ private:
 
 		if (rec)
 		{
+			// verify the string already in the table matches this one
+			assert(rec->mString == s);
 			mId = mStrings->getId(*rec);
 		}
 		else
 		{
+			assert(mStrings->size() < OString::MAX_STRINGS);
 			mId = mStrings->insert(StringRecord(s));
 			rec = &(mStrings->get(mId));
 			mStringLookup->insert(std::pair<HashedStringType, StringIdType>(hash_value, mId));
@@ -588,15 +578,14 @@ private:
 			return;
 
 		StringTable::iterator it = mStrings->find(mId);
-		if (it != mStrings->end())
+		assert(it != mStrings->end());
+
+		StringRecord& rec = *it;
+		if (--rec.mRefCount == 0)
 		{
-			StringRecord& rec = *it;
-			if (--rec.mRefCount == 0)
-			{
-				HashedStringType hash_value = hash(rec.mString.c_str());
-				mStringLookup->erase(hash_value);
-				mStrings->erase(mId);	
-			}
+			HashedStringType hash_value = hash(rec.mString.c_str());
+			mStringLookup->erase(hash_value);
+			mStrings->erase(mId);	
 		}
 	}
 

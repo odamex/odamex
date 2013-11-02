@@ -36,6 +36,24 @@ OString::StringTable* OString::mStrings = NULL;
 OString::StringLookupTable* OString::mStringLookup = NULL;
 std::string* OString::mEmptyString = NULL;
 
+// ------------------------------------------------------------------------
+// startup / shutdown
+// ------------------------------------------------------------------------
+
+void OString::startup()
+{
+	mStrings = new StringTable(OString::MAX_STRINGS);
+	mStringLookup = new StringLookupTable(OString::MAX_STRINGS);
+	mEmptyString = new std::string("");
+}
+
+
+void OString::shutdown()
+{
+	delete mStrings;
+	delete mStringLookup;
+	delete mEmptyString;
+}
 
 // ------------------------------------------------------------------------
 // OString Constructors 

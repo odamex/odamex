@@ -33,17 +33,9 @@
 #define __M_VECTORS_H__
 
 #include "tables.h"
-
-typedef float	vec_t;
-typedef vec_t	vec3_t[3];
+#include "m_fixed.h"
 
 class AActor;
-
-void VectorPosition (const class AActor *thing, vec3_t out);
-void FixedAngleToVector (angle_t an, fixed_t pitch, vec3_t v);
-vec_t VectorLength (const vec3_t v);
-vec_t VectorNormalize (vec3_t v);
-vec_t VectorNormalize2 (const vec3_t v, vec3_t out);
 
 struct v2fixed_t
 {

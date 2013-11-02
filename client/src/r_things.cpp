@@ -1146,6 +1146,9 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 	vissprite_t*		vis;
 	vissprite_t 		avis;
 
+	fixed_t sx = P_CalculateWeaponBobX();
+	fixed_t sy = P_CalculateWeaponBobY();
+
 	// decide which patch to use
 #ifdef RANGECHECK
 	if ( (unsigned)psp->state->sprite >= (unsigned)numsprites) {
@@ -1169,7 +1172,7 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
 
 	// calculate edges of the shape
-	tx = psp->sx-((320/2)<<FRACBITS);
+	tx = sx - ((320 / 2) << FRACBITS);
 
 	tx -= sprframe->offset[0];	// [RH] Moved out of spriteoffset[]
 	x1 = (centerxfrac + FixedMul (tx, pspritexscale)) >>FRACBITS;
@@ -1195,8 +1198,8 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 // denis - bump to 0x9000
 #define WEAPONTWEAK				(0x9000)
 
-	vis->texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-
-		(psp->sy+WEAPONTWEAK-sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
+	vis->texturemid = (BASEYCENTER << FRACBITS) + FRACUNIT / 2 -
+		(sy + WEAPONTWEAK - sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 	vis->xscale = pspritexscale;

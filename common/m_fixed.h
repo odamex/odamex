@@ -22,8 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_FIXED__
-#define __M_FIXED__
+#ifndef __M_FIXED_H__
+#define __M_FIXED_H__
 
 #include <stdlib.h>
 #include "doomtype.h"
@@ -35,10 +35,46 @@
 #define FRACUNIT				(1<<FRACBITS)
 
 typedef int fixed_t;				// fixed 16.16
-typedef unsigned int dsfixed_t;	// fixedpt used by span drawer
+typedef unsigned int dsfixed_t;		// fixedpt used by span drawer
 
 //
-// Fixed Point Multiplication
+// Fixed Point / Floating Point Conversion
+//
+inline float FIXED2FLOAT(fixed_t x)
+{
+	static const float factor = 1.0f / float(FRACUNIT);
+	return x * factor;
+}
+
+inline double FIXED2DOUBLE(fixed_t x)
+{
+	static const double factor = 1.0 / double(FRACUNIT);
+	return x * factor;
+}
+
+inline fixed_t FLOAT2FIXED(float x)
+{
+	return fixed_t(x * float(FRACUNIT));
+}
+
+inline fixed_t DOUBLE2FIXED(double x)
+{
+	return fixed_t(x * double(FRACUNIT));
+}
+
+inline int FIXED2INT(fixed_t x)
+{
+	return (x + FRACUNIT / 2) / FRACUNIT;
+}
+
+inline fixed_t INT2FIXED(int x)
+{
+	return x << FRACBITS;
+}
+
+
+//
+// Fixed Point Multiplication for 16.16 precision
 //
 inline static fixed_t FixedMul(fixed_t a, fixed_t b)
 {
@@ -46,7 +82,7 @@ inline static fixed_t FixedMul(fixed_t a, fixed_t b)
 }
 
 //
-// Fixed Point Division
+// Fixed Point Division for 16.16 precision
 //
 inline static fixed_t FixedDiv(fixed_t a, fixed_t b)
 {
@@ -54,20 +90,9 @@ inline static fixed_t FixedDiv(fixed_t a, fixed_t b)
 		(fixed_t)(((int64_t)a << FRACBITS) / b);
 }
 
-const double FIXEDTODOUBLE_FACTOR	= 1.0 / 65536.0;
-const float  FIXEDTOFLOAT_FACTOR	= 1.0f / 65536.0f;
-
-#define FIXED2FLOAT(f)			((float)(f) * FIXEDTOFLOAT_FACTOR)
-#define FLOAT2FIXED(f)			(fixed_t)((f) * (float)FRACUNIT)
-#define FIXED2DOUBLE(f)			((double)(f) * FIXEDTODOUBLE_FACTOR)
-#define DOUBLE2FIXED(f)			(fixed_t)((f) * (double)FRACUNIT)
-
-// Round when converting fixed_t to int
-#define FIXED2INT(f)			((int)((f + FRACUNIT/2) / FRACUNIT))
-#define INT2FIXED(f)			((fixed_t)(f << FRACBITS))
-
-
+//
 // Fixed-point muliplication for non 16.16 precision
+//
 static inline int32_t FixedMul1(int32_t a, int32_t b)
 {	return (int32_t)(((int64_t)a * b) >> 1);	}
 
@@ -261,5 +286,6 @@ static inline int32_t FixedDiv31(int32_t a, int32_t b)
 static inline int32_t FixedDiv32(int32_t a, int32_t b)
 {	return (int32_t)(((int64_t)a << 32) / b);	}
 
-#endif	// __M_FIXED__
+#endif	// __M_FIXED_H__
+
 

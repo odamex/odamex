@@ -27,20 +27,44 @@
 #include <wx/thread.h>
 #include <wx/event.h>
 
+#include "typedefs.h"
+
 #include "net_packet.h"
+
+// Thread multiplier value
+#define ODA_THRMULVAL 8
+
+// Default number of threads for single processor/core systems
+#define ODA_THRDEFVAL 10 
 
 DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1);
 
-#define NUM_THREADS 10
+typedef enum QueryThreadStatus
+{
+     QueryThread_MIN = 0
+    ,QueryThread_Running
+    ,QueryThread_Waiting
+    ,QueryThread_Exiting
+    ,QueryThread_MAX
+} QueryThreadStatus_t;
 
 class QueryThread : public wxThread
 {
     public:
 
-        QueryThread();
-        QueryThread(wxEvtHandler *EventHandler, odalpapi::Server *QueryServer, wxInt32 ServerIndex, wxUint32 ServerTimeout, wxInt8 Retries) : wxThread(wxTHREAD_JOINABLE),
-            m_EventHandler(EventHandler), m_QueryServer(QueryServer), m_ServerIndex(ServerIndex), m_ServerTimeout(ServerTimeout), m_Retries(Retries) {}
+        QueryThread(wxEvtHandler *EventHandler);
+        ~QueryThread() { delete m_Condition; }
+        inline QueryThreadStatus_t GetStatus() { return m_Status; };
 
+        void Signal(odalpapi::Server *QueryServer, 
+                    const std::string &Address, 
+                    const odalpapi::uint16_t &Port, 
+                    wxInt32 ServerIndex, 
+                    wxUint32 ServerTimeout, 
+                    wxInt8 Retries);
+
+        void GracefulExit();
+        
         virtual void *Entry();
 
     private:
@@ -49,6 +73,14 @@ class QueryThread : public wxThread
         wxInt32            m_ServerIndex;
         wxUint32           m_ServerTimeout;
         wxInt8             m_Retries;
+        std::string        m_Address;
+        odalpapi::uint16_t m_Port;
+
+
+        QueryThreadStatus_t m_Status;
+
+        wxMutex            m_Mutex;
+        wxCondition        *m_Condition;
 };
 
 #endif // QUERY_THREAD_H_INCLUDED

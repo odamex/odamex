@@ -581,10 +581,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\common\d_protocol.h"
-					>
-				</File>
-				<File
 					RelativePath="..\..\common\d_ticcmd.h"
 					>
 				</File>
@@ -846,10 +842,6 @@
 				</File>
 				<File
 					RelativePath="..\..\common\d_items.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\common\d_protocol.cpp"
 					>
 				</File>
 				<File
