@@ -32,6 +32,7 @@
 #include <iostream>
 
 // initialize static member variables
+bool OString::mInitialized = false;
 OString::StringTable* OString::mStrings = NULL;
 OString::StringLookupTable* OString::mStringLookup = NULL;
 std::string* OString::mEmptyString = NULL;
@@ -42,13 +43,12 @@ std::string* OString::mEmptyString = NULL;
 
 void OString::startup()
 {
-	static bool initialized = false;
-	if (!initialized)
+	if (!mInitialized)
 	{
 		mStrings = new StringTable(OString::MAX_STRINGS);
 		mStringLookup = new StringLookupTable(OString::MAX_STRINGS);
 		mEmptyString = new std::string("");
-		initialized = true;
+		mInitialized = true;
 	}
 }
 
@@ -58,6 +58,7 @@ void OString::shutdown()
 	delete mStrings;
 	delete mStringLookup;
 	delete mEmptyString;
+	mInitialized = false;
 }
 
 // ------------------------------------------------------------------------
