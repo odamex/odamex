@@ -526,6 +526,9 @@ private:
 
 	inline void addString(const char* s)
 	{
+		// ensure the string table is properly initalized
+		startup();
+
 		if (s[0] == '\0')
 		{
 			mId = mEmptyStringId;

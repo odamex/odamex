@@ -42,9 +42,14 @@ std::string* OString::mEmptyString = NULL;
 
 void OString::startup()
 {
-	mStrings = new StringTable(OString::MAX_STRINGS);
-	mStringLookup = new StringLookupTable(OString::MAX_STRINGS);
-	mEmptyString = new std::string("");
+	static bool initialized = false;
+	if (!initialized)
+	{
+		mStrings = new StringTable(OString::MAX_STRINGS);
+		mStringLookup = new StringLookupTable(OString::MAX_STRINGS);
+		mEmptyString = new std::string("");
+		initialized = true;
+	}
 }
 
 
