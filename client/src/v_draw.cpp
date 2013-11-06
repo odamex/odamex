@@ -488,9 +488,10 @@ void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int 
 	if (count <= 0)
 		return;
 
+	argb_t color = V_Palette.shade(V_ColorFill);
 	do
 	{
-		*((argb_t *)dest) = V_ColorFill;
+		*((argb_t *)dest) = color;
 		dest += pitch;
 	} while (--count);
 }
@@ -508,7 +509,7 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 	int alpha = (int)(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
-	argb_t fg = V_ColorFill;
+	argb_t fg = V_Palette.shade(V_ColorFill);
 
 	do
 	{
