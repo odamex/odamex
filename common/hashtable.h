@@ -45,28 +45,28 @@ struct hashfunc
 { };
 
 template <> struct hashfunc<unsigned char>
-{	size_t operator()(unsigned char val) const { return val; }	};
+{	size_t operator()(unsigned char val) const { return (size_t)val; }	};
 
 template <> struct hashfunc<signed char>
-{	size_t operator()(signed char val) const { return val; }	};
+{	size_t operator()(signed char val) const { return (size_t)val; }	};
 
 template <> struct hashfunc<unsigned short>
-{	size_t operator()(unsigned short val) const { return val; }	};
+{	size_t operator()(unsigned short val) const { return (size_t)val; }	};
 
 template <> struct hashfunc<signed short>
-{	size_t operator()(signed short val) const { return val; }	};
+{	size_t operator()(signed short val) const { return (size_t)val; }	};
 
 template <> struct hashfunc<unsigned int>
-{	size_t operator()(unsigned int val) const { return val; }	};
+{	size_t operator()(unsigned int val) const { return (size_t)val; }	};
 
 template <> struct hashfunc<signed int>
-{	size_t operator()(signed int val) const { return val; }		};
+{	size_t operator()(signed int val) const { return (size_t)val; }		};
 
 template <> struct hashfunc<unsigned long long>
-{	size_t operator()(unsigned long long val) const { return val; }	};
+{	size_t operator()(unsigned long long val) const { return (size_t)val; }	};
 
 template <> struct hashfunc<signed long long>
-{	size_t operator()(signed long long val) const { return val; }	};
+{	size_t operator()(signed long long val) const { return (size_t)val; }	};
 
 static inline size_t __hash_cstring(const char* str)
 {
@@ -120,8 +120,8 @@ public:
 	// ------------------------------------------------------------------------
 
 	template <typename IVT, typename IHTT, typename INT> class generic_iterator;
-	typedef generic_iterator<HashPairType, HashTableType, HashTableType::Node> iterator;
-	typedef generic_iterator<const HashPairType, const HashTableType, const HashTableType::Node> const_iterator;
+	typedef generic_iterator<HashPairType, HashTableType, typename HashTableType::Node> iterator;
+	typedef generic_iterator<const HashPairType, const HashTableType, const typename HashTableType::Node> const_iterator;
 
 	template <typename IVT, typename IHTT, typename INT>
 	class generic_iterator : public std::iterator<std::forward_iterator_tag, HashTable>
