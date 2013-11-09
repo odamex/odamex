@@ -22,6 +22,7 @@
 //-----------------------------------------------------------------------------
 
 #include "query_thread.h"
+#include "typedefs.h"
 
 int NUM_THREADS;
 

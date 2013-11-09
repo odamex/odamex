@@ -470,6 +470,7 @@ private:
 
 	StringIdType				mId;
 
+	static bool					mInitialized;
 	static StringTable*			mStrings;
 	static StringLookupTable*	mStringLookup;
 	static std::string*			mEmptyString;
@@ -526,6 +527,10 @@ private:
 
 	inline void addString(const char* s)
 	{
+		// ensure the string table is properly initalized
+		if (!mInitialized)
+			startup();
+
 		if (s[0] == '\0')
 		{
 			mId = mEmptyStringId;
@@ -577,15 +582,18 @@ private:
 		if (mId == mEmptyStringId)
 			return;
 
-		StringTable::iterator it = mStrings->find(mId);
-		assert(it != mStrings->end());
-
-		StringRecord& rec = *it;
-		if (--rec.mRefCount == 0)
+		if (mInitialized)
 		{
-			HashedStringType hash_value = hash(rec.mString.c_str());
-			mStringLookup->erase(hash_value);
-			mStrings->erase(mId);	
+			StringTable::iterator it = mStrings->find(mId);
+			assert(it != mStrings->end());
+
+			StringRecord& rec = *it;
+			if (--rec.mRefCount == 0)
+			{
+				HashedStringType hash_value = hash(rec.mString.c_str());
+				mStringLookup->erase(hash_value);
+				mStrings->erase(mId);	
+			}
 		}
 	}
 

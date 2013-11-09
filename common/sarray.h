@@ -299,6 +299,19 @@ public:
 	}
 
 private:
+	inline void resize(unsigned int newsize)
+	{
+		ItemRecord* newitemrecords = new ItemRecord[newsize];
+		for (unsigned int i = 0; i < mNextUnused; i++)
+		{
+			newitemrecords[i].mItem = mItemRecords[i].mItem;
+			newitemrecords[i].mId = mItemRecords[i].mId;
+		}
+		
+		delete [] mItemRecords;
+		mSize = newsize;
+		mItemRecords = newitemrecords;
+	}
 
 	inline unsigned int getSlot(const SArrayId id) const
 	{
@@ -336,7 +349,13 @@ private:
 	inline unsigned int insertSlot()
 	{
 		if (mUsed == mSize)
-			return SArray::NOT_FOUND;
+		{
+			unsigned int newsize = std::min<unsigned int>(2 * mSize, 65536);
+			if (mSize == newsize)
+				return SArray::NOT_FOUND;
+			else
+				resize(newsize);
+		}
 
 		unsigned int slot = mFreeHead;
 		if (slot != SArray::NOT_FOUND)
@@ -362,7 +381,7 @@ private:
 	inline void copyFrom(const SArrayType& other)
 	{
 		mSize = other.mSize;
-		for (unsigned int i = 0; i < mSize; i++)
+		for (unsigned int i = 0; i < mNextUnused; i++)
 		{
 			mItemRecords[i].mItem = other.mItemRecords[i].mItem;
 			mItemRecords[i].mId = other.mItemRecords[i].mId;
