@@ -104,7 +104,7 @@
 		<object class="wxToolBar" name="6">
 			<style>wxTB_FLAT</style>
 			<font>
-				<family>default</family>
+				
 				<style>normal</style>
 				<weight>normal</weight>
 				<underlined>0</underlined>
@@ -1112,7 +1112,6 @@
 											<object class="wxStaticText" name="1">
 												<font>
 													<size>14</size>
-													<family>default</family>
 													<style>normal</style>
 													<weight>bold</weight>
 													<underlined>0</underlined>
@@ -1167,7 +1166,7 @@
 									<object class="wxStaticText">
 										<font>
 											<size>10</size>
-											<family>default</family>
+											
 											<style>italic</style>
 											<weight>normal</weight>
 											<underlined>0</underlined>
@@ -1186,7 +1185,7 @@
 										<style>wxHL_DEFAULT_STYLE</style>
 										<font>
 											<size>10</size>
-											<family>default</family>
+											
 											<style>italic</style>
 											<weight>normal</weight>
 											<underlined>0</underlined>
@@ -1200,7 +1199,7 @@
 									<object class="wxStaticText" name="Id_StcTxtWxVer">
 										<font>
 											<size>10</size>
-											<family>default</family>
+											
 											<style>italic</style>
 											<weight>normal</weight>
 											<underlined>0</underlined>
