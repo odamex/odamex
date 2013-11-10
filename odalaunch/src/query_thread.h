@@ -58,7 +58,7 @@ class QueryThread : public wxThread
 
         void Signal(odalpapi::Server *QueryServer, 
                     const std::string &Address, 
-                    const odalpapi::uint16_t &Port, 
+                    const wxUint16 Port, 
                     wxInt32 ServerIndex, 
                     wxUint32 ServerTimeout, 
                     wxInt8 Retries);
@@ -74,7 +74,7 @@ class QueryThread : public wxThread
         wxUint32           m_ServerTimeout;
         wxInt8             m_Retries;
         std::string        m_Address;
-        odalpapi::uint16_t m_Port;
+        wxUint16 m_Port;
 
 
         QueryThreadStatus_t m_Status;
