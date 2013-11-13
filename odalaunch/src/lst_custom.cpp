@@ -24,6 +24,7 @@
 
 #include "lst_custom.h"
 
+#include <wx/dcmemory.h>
 #include <wx/settings.h>
 #include <wx/defs.h>
 #include <wx/regex.h>

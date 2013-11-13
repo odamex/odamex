@@ -27,8 +27,6 @@
 #include <wx/thread.h>
 #include <wx/event.h>
 
-#include "typedefs.h"
-
 #include "net_packet.h"
 
 // Thread multiplier value
