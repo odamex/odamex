@@ -157,7 +157,7 @@ public:
 
 		ThisClass& operator++ ()
 		{
-			if (++mElementIndex >= mHashTable.mUsed)
+			if (++mElementIndex >= mHashTable->mUsed)
 				mElementIndex = IHTT::NOT_FOUND;
 			return *this;
 		}
@@ -165,7 +165,7 @@ public:
 		ThisClass operator++ (int)
 		{
 			generic_iterator temp(*this);
-			if (++mElementIndex >= mHashTable.mUsed)
+			if (++mElementIndex >= mHashTable->mUsed)
 				mElementIndex = IHTT::NOT_FOUND;
 			return temp;
 		}
@@ -417,6 +417,7 @@ private:
 	void eraseElement(IndexType element_index)
 	{
 		IndexType bucket = findBucket(mElements[element_index].first);
+		assert(mHashTable[bucket] != NOT_FOUND);
 		mHashTable[bucket] = NOT_FOUND;
 
 		mUsed--;
@@ -428,11 +429,11 @@ private:
 
 			mElements[element_index] = mElements[mUsed];
 			mHashTable[bucket] = element_index;
-
-			// default initialize empty space (for reference counting objects)
-			mElements[mUsed].first = KT();
-			mElements[mUsed].second = VT();
 		}
+
+		// default initialize empty space (for reference counting objects)
+		mElements[mUsed].first = KT();
+		mElements[mUsed].second = VT();
 
 		// rehash sequential buckets until an empty one is found
 		// to ensure correct linear probing of existing data
