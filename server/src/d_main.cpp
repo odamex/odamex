@@ -325,8 +325,6 @@ int teamplayset;
 
 void D_DoomMain (void)
 {
-	const char *iwad;
-
 	M_ClearRandom();
 	// [AM] Init rand() PRNG, needed for non-deterministic maplist shuffling.
 	srand(time(NULL));
@@ -350,23 +348,22 @@ void D_DoomMain (void)
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
 
 	if (!RebootInit) {
-		iwad = Args.CheckValue("-iwad");
-		if(!iwad)
+		const char* iwad = Args.CheckValue("-iwad");
+		if (!iwad)
 			iwad = "";
 
-		D_AddDefWads(iwad);
-		D_AddCmdParameterFiles();
+		std::vector<std::string> newwadfiles, newpatchfiles;
+		newwadfiles.push_back(iwad);
+		D_AddWadCommandLineFiles(newwadfiles);
+		D_AddDehCommandLineFiles(newpatchfiles);
 
-		wadhashes = W_InitMultipleFiles (wadfiles);
-		for (size_t i = 0; i < wadfiles.size(); i++)
-			wadfiles[i] = D_CleanseFileName(wadfiles[i], "wad");
+		D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 		// [RH] Initialize localizable strings.
 		GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
 		GStrings.Compact ();
 
 		//D_InitStrings ();
-		D_DoDefDehackedPatch();
 	}
 
 	I_Init ();

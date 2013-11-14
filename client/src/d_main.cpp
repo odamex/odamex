@@ -678,7 +678,6 @@ void CL_NetDemoPlay(const std::string &filename);
 void D_DoomMain (void)
 {
 	unsigned p;
-	const char *iwad;
 	extern std::string defdemoname;
 
 	M_ClearRandom();
@@ -697,14 +696,16 @@ void D_DoomMain (void)
 	M_LoadDefaults ();					// load before initing other systems
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
 
-	iwad = Args.CheckValue("-iwad");
-	if(!iwad)
+	const char* iwad = Args.CheckValue("-iwad");
+	if (!iwad)
 		iwad = "";
 
-	D_AddDefWads(iwad);
-	D_AddCmdParameterFiles();
+	std::vector<std::string> newwadfiles, newpatchfiles;
+	newwadfiles.push_back(iwad);
+	D_AddWadCommandLineFiles(newwadfiles);
+	D_AddDehCommandLineFiles(newpatchfiles);
 
-	wadhashes = W_InitMultipleFiles (wadfiles);
+	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 	// [RH] Initialize localizable strings.
 	GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
@@ -712,7 +713,6 @@ void D_DoomMain (void)
 
 	// [RH] Initialize configurable strings.
 	//D_InitStrings ();
-	D_DoDefDehackedPatch ();
 
 	// [RH] Moved these up here so that we can do most of our
 	//		startup output in a fullscreen console.

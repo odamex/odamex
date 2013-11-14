@@ -41,6 +41,9 @@
 //
 // ============================================================================
 
+// forward declaration
+template <typename KT, typename VT, typename HF> class OHashTable;
+
 // Default hash functors for integer & string types
 template <typename KT>
 struct hashfunc
