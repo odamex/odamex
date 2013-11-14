@@ -21,8 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <wx/msgdlg.h>
+#include <wx/app.h>
+
 #include "query_thread.h"
-#include "typedefs.h"
 
 int NUM_THREADS;
 
@@ -57,7 +59,7 @@ void QueryThread::GracefulExit()
     Wait();
 }
 
-void QueryThread::Signal( odalpapi::Server *QueryServer, const std::string &Address, const odalpapi::uint16_t &Port, wxInt32 ServerIndex, wxUint32 ServerTimeout, wxInt8 Retries)
+void QueryThread::Signal( odalpapi::Server *QueryServer, const std::string &Address, const wxUint16 Port, wxInt32 ServerIndex, wxUint32 ServerTimeout, wxInt8 Retries)
 {
     m_QueryServer = QueryServer;
     m_ServerIndex = ServerIndex;

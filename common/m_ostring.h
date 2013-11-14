@@ -461,7 +461,7 @@ private:
 	typedef unsigned int HashedStringType;
 
 	typedef SArray<StringRecord> StringTable;
-	typedef HashTable<HashedStringType, StringIdType> StringLookupTable;
+	typedef OHashTable<HashedStringType, StringIdType> StringLookupTable;
 
 
 	// ------------------------------------------------------------------------
@@ -623,7 +623,7 @@ private:
 
 
 // ----------------------------------------------------------------------------
-// hash function for HashTable class
+// hash function for OHashTable class
 // ----------------------------------------------------------------------------
 
 template <> struct hashfunc<OString>
