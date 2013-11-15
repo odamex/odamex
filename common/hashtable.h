@@ -237,6 +237,15 @@ public:
 
 	void clear()
 	{
+		for (size_t i = 0; i < mSize; i++)
+			mHashTable[i] = NOT_FOUND;
+
+		for (size_t i = 0; i < mUsed; i++)
+		{
+			mElements[i].first = KT();
+			mElements[i].second = VT();
+		}
+
 		mUsed = 0;
 	}
 
@@ -419,33 +428,38 @@ private:
 
 	void eraseElement(IndexType element_index)
 	{
-		IndexType bucket = findBucket(mElements[element_index].first);
-		assert(mHashTable[bucket] != NOT_FOUND);
-		mHashTable[bucket] = NOT_FOUND;
+		IndexType last_element_index = mUsed - 1;
 
-		mUsed--;
-		if (element_index < mUsed)
+		IndexType old_bucket = findBucket(mElements[element_index].first);
+		assert(mHashTable[old_bucket] != NOT_FOUND);
+
+		IndexType last_bucket = findBucket(mElements[last_element_index].first);
+		assert(mHashTable[last_bucket] != NOT_FOUND);
+	
+		// Swap the key/value for the last element with the element being erased.
+		// This keeps mElements contiguous.
+		if (element_index < last_element_index)
 		{
-			// move the last element into element_index to keep mElements contiguous
-			bucket = findBucket(mElements[mUsed].first);
-			assert(mHashTable[bucket] != NOT_FOUND);
-
-			mElements[element_index] = mElements[mUsed];
-			mHashTable[bucket] = element_index;
+			mElements[element_index].first = mElements[last_element_index].first;
+			mElements[element_index].second = mElements[last_element_index].second;
+			mHashTable[last_bucket] = element_index;
 		}
 
-		// default initialize empty space (for reference counting objects)
-		mElements[mUsed].first = KT();
-		mElements[mUsed].second = VT();
+		// Set empty elements to their default values.
+		// This ensures accuracy with objects that have reference counting.
+		mElements[last_element_index].first = KT();
+		mElements[last_element_index].second = VT();
 
-		// rehash sequential buckets until an empty one is found
-		// to ensure correct linear probing of existing data
-		while (true)
+		mHashTable[old_bucket] = NOT_FOUND;
+
+		mUsed--;
+
+		// Rehash all of the non-empty buckets that follow the erased bucket.
+		IndexType bucket = (old_bucket + 1) % mSize;
+		while (mHashTable[bucket] != NOT_FOUND)
 		{
-			bucket = (bucket + 1) % mSize;
-			if (mHashTable[bucket] == NOT_FOUND)
-				break;
 			rehashBucket(bucket);
+			bucket = (bucket + 1) % mSize;
 		}
 	}
 
