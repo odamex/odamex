@@ -42,7 +42,7 @@
 				<Option use_console_runner="0" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-gdwarf-2" />
+					<Add option="-g" />
 					<Add option="-fno-inline" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
