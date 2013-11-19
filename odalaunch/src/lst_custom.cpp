@@ -30,8 +30,6 @@
 #include <wx/regex.h>
 #include <wx/renderer.h>
 
-#include <algorithm>
-
 IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListView)
 
 BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListView)
@@ -473,8 +471,8 @@ wxString CreateFilter(wxString s)
     // Uppercase
     s = s.Upper();
 
-    // Strip consecutive whitespace characters
-    s.erase(std::remove_if(s.begin(), s.end(), wxIsspace), s.end());
+    // Replace whitespace with kleene stars for better matching
+    s.Replace(wxT(' '), wxT('*'));
 
     s += wxT("*");
 

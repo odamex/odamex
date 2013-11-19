@@ -122,7 +122,7 @@
 									<border>5</border>
 									<object class="wxToolBar" name="61">
 										<font>
-											<family>default</family>
+											
 											<style>normal</style>
 											<weight>normal</weight>
 											<underlined>0</underlined>
@@ -175,13 +175,6 @@
 											<longhelp>About the Odamex Launcher</longhelp>
 											<bitmap>./icons/btnabout.png</bitmap>
 										</object>
-										<object class="tool" name="Id_MnuItmServerFilter1">
-											<label>Server Filter</label>
-											<tooltip>Server filter not available yet</tooltip>
-											<longhelp>Server filter not available yet</longhelp>
-											<bitmap>.\icons\btnfilter.png</bitmap>
-											<toggle>1</toggle>
-										</object>
 										<object class="separator" />
 										<object class="tool" name="wxID_EXIT">
 											<label>Exit</label>
@@ -190,6 +183,13 @@
 											<bitmap>./icons/btnexit.png</bitmap>
 										</object>
 										<object class="separator" />
+										<object class="tool" name="Id_MnuItmServerFilter1">
+											<label>Server Filter</label>
+											<tooltip>Server filter not available yet</tooltip>
+											<longhelp>Server filter not available yet</longhelp>
+											<bitmap>.\icons\btnfilter.png</bitmap>
+											<toggle>1</toggle>
+										</object>
 										<object class="wxTextCtrl" name="Id_SrchCtrlGlobal">
 											<tooltip>Search</tooltip>
 											<value></value>
@@ -1424,7 +1424,7 @@
 											<object class="wxStaticText" name="1">
 												<font>
 													<size>14</size>
-													<family>default</family>
+													
 													<style>normal</style>
 													<weight>bold</weight>
 													<underlined>0</underlined>
@@ -1479,7 +1479,7 @@
 									<object class="wxStaticText">
 										<font>
 											<size>10</size>
-											<family>default</family>
+											
 											<style>italic</style>
 											<weight>normal</weight>
 											<underlined>0</underlined>
@@ -1498,7 +1498,7 @@
 										<style>wxHL_DEFAULT_STYLE</style>
 										<font>
 											<size>10</size>
-											<family>default</family>
+											
 											<style>italic</style>
 											<weight>normal</weight>
 											<underlined>0</underlined>
@@ -1512,7 +1512,7 @@
 									<object class="wxStaticText" name="Id_StcTxtWxVer">
 										<font>
 											<size>10</size>
-											<family>default</family>
+											
 											<style>italic</style>
 											<weight>normal</weight>
 											<underlined>0</underlined>

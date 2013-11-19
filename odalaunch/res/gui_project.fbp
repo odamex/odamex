@@ -768,27 +768,6 @@
                                                 <event name="OnToolRClicked"></event>
                                                 <event name="OnUpdateUI"></event>
                                             </object>
-                                            <object class="tool" expanded="0">
-                                                <property name="bitmap">Load From File; .\icons\btnfilter.png</property>
-                                                <property name="context_menu">0</property>
-                                                <property name="id">wxID_ANY</property>
-                                                <property name="kind">wxITEM_CHECK</property>
-                                                <property name="label">Server Filter</property>
-                                                <property name="name">Id_MnuItmServerFilter1</property>
-                                                <property name="permission">protected</property>
-                                                <property name="statusbar">Server filter not available yet</property>
-                                                <property name="tooltip">Server filter not available yet</property>
-                                                <event name="OnAuiToolBarBeginDrag"></event>
-                                                <event name="OnAuiToolBarMiddleClick"></event>
-                                                <event name="OnAuiToolBarOverflowClick"></event>
-                                                <event name="OnAuiToolBarRightClick"></event>
-                                                <event name="OnAuiToolBarToolDropDown"></event>
-                                                <event name="OnMenuSelection"></event>
-                                                <event name="OnToolClicked"></event>
-                                                <event name="OnToolEnter"></event>
-                                                <event name="OnToolRClicked"></event>
-                                                <event name="OnUpdateUI"></event>
-                                            </object>
                                             <object class="toolSeparator" expanded="0">
                                                 <property name="permission">protected</property>
                                             </object>
@@ -815,6 +794,27 @@
                                             </object>
                                             <object class="toolSeparator" expanded="1">
                                                 <property name="permission">protected</property>
+                                            </object>
+                                            <object class="tool" expanded="0">
+                                                <property name="bitmap">Load From File; .\icons\btnfilter.png</property>
+                                                <property name="context_menu">0</property>
+                                                <property name="id">wxID_ANY</property>
+                                                <property name="kind">wxITEM_CHECK</property>
+                                                <property name="label">Server Filter</property>
+                                                <property name="name">Id_MnuItmServerFilter1</property>
+                                                <property name="permission">protected</property>
+                                                <property name="statusbar">Server filter not available yet</property>
+                                                <property name="tooltip">Server filter not available yet</property>
+                                                <event name="OnAuiToolBarBeginDrag"></event>
+                                                <event name="OnAuiToolBarMiddleClick"></event>
+                                                <event name="OnAuiToolBarOverflowClick"></event>
+                                                <event name="OnAuiToolBarRightClick"></event>
+                                                <event name="OnAuiToolBarToolDropDown"></event>
+                                                <event name="OnMenuSelection"></event>
+                                                <event name="OnToolClicked"></event>
+                                                <event name="OnToolEnter"></event>
+                                                <event name="OnToolRClicked"></event>
+                                                <event name="OnUpdateUI"></event>
                                             </object>
                                             <object class="wxTextCtrl" expanded="0">
                                                 <property name="BottomDockable">1</property>

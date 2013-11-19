@@ -899,16 +899,7 @@ void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 
 void dlgMain::OnTextSearch(wxCommandEvent& event)
 {
-    wxString Str = event.GetString();
-
-    if (Str.IsEmpty())
-    {
-        m_LstCtrlServers->ApplyFilter(wxEmptyString);
-
-        return;
-    }
-
-    m_LstCtrlServers->ApplyFilter(Str);
+    m_LstCtrlServers->ApplyFilter(event.GetString());
 }
 
 // Launch button click
