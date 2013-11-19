@@ -517,7 +517,7 @@ bool dlgMain::MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index,
         return false;
 
     // Create monitor thread
-    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
+    if (this->wxThreadHelper::CreateThread() != wxTHREAD_NO_ERROR)
     {
         wxMessageBox(_T("Could not create monitor thread!"),
                      _T("Error"),
