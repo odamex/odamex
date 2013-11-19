@@ -30,6 +30,8 @@
 #include <wx/regex.h>
 #include <wx/renderer.h>
 
+#include <algorithm>
+
 IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListView)
 
 BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListView)
@@ -408,4 +410,146 @@ long wxAdvancedListCtrl::ALCInsertItem(const wxString &Text)
     SetItemTextColour(ListItem.m_itemId, GetTextColour());
 
     return ListItem.m_itemId;
+}
+
+// Back up the entire list for filtering
+void wxAdvancedListCtrl::BackupList()
+{
+    size_t BackupItemsCount = GetItemCount();
+    size_t BackupColumnCount = GetColumnCount();
+
+    BackupItems.clear();
+
+    if (!BackupItemsCount || !BackupColumnCount)
+        return;
+
+    BackupItems.resize(BackupItemsCount);
+
+    for (size_t x = 0; x < BackupItemsCount; ++x)
+    {
+        wxListItem Item;
+
+        Item.SetId(x);
+
+        for (size_t y = 0; y < BackupColumnCount; ++y)
+        {
+            Item.SetColumn(y);
+
+            Item.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE
+                         | wxLIST_MASK_STATE | wxLIST_MASK_WIDTH | wxLIST_MASK_FORMAT);
+
+            GetItem(Item);
+
+            BackupItems[x].push_back(Item);
+        }
+    }
+}
+
+// Reloads everything into the current row
+void wxAdvancedListCtrl::DoRestoreRow(size_t row)
+{
+    long id = InsertItem(row, wxT(""));
+
+    for (size_t y = 0; y < BackupItems[row].size(); ++y)
+    {
+        wxListItem Item = BackupItems[row][y];
+
+        Item.SetId(id);
+
+        SetItem(Item);
+    }
+}
+
+wxString CreateFilter(wxString s)
+{
+    wxString Result;
+    size_t i;
+
+    if (s.IsEmpty())
+        return wxT("");
+
+    s.Prepend(wxT("*"));
+
+    // Uppercase
+    s = s.Upper();
+
+    // Strip consecutive whitespace characters
+    s.erase(std::remove_if(s.begin(), s.end(), wxIsspace), s.end());
+
+    s += wxT("*");
+
+    return s;
+}
+
+
+
+void wxAdvancedListCtrl::DoApplyFilter(const wxString &Filter)
+{
+    wxString FlatColumn;
+    wxString FilterReversed;
+    size_t xSize = BackupItems.size();
+    size_t ySize;
+
+    DeleteAllItems();
+
+    for (size_t x = 0; x < xSize; ++x)
+    {
+        ySize = BackupItems[x].size();
+
+        for (size_t y = 0; y < ySize; ++y)
+        {
+            // Creates a tokenized list of all the strings in individual columns
+            FlatColumn += BackupItems[x][y].GetText().Upper().Trim(false).Trim(true);
+            FlatColumn += wxT(' ');
+        }
+
+        if (FlatColumn.Matches(Filter))
+        {
+            DoRestoreRow(x);
+        }
+
+        FlatColumn.Empty();
+    }
+}
+
+// Restores the entire list if the filter is empty
+void wxAdvancedListCtrl::RestoreList()
+{
+    if (BackupItems.empty())
+        return;
+
+    DeleteAllItems();
+
+    for (size_t x = 0; x < BackupItems.size(); ++x)
+    {
+        InsertItem(x, wxT(""));
+
+        for (size_t y = 0; y < BackupItems[x].size(); ++y)
+        {
+            SetItem(BackupItems[x][y]);
+        }
+    }
+}
+
+void wxAdvancedListCtrl::ApplyFilter(wxString Filter)
+{
+    // Lock the control so searches are faster
+    Freeze();
+
+    // Restore list from last search result
+    RestoreList();
+
+    // Backup list from last search result
+    BackupList();
+
+    // Replace all non alphanumerics with ?, also prepend/append a *
+    Filter = ::CreateFilter(Filter);
+
+    // Run the filtering
+    if (Filter != wxEmptyString)
+        DoApplyFilter(Filter);
+
+    Sort();
+
+    Thaw();
 }

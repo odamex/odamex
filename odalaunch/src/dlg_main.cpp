@@ -95,6 +95,9 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     EVT_MENU(XRCID("Id_MnuItmSubmitBugReport"), dlgMain::OnOpenReportBug)
 	EVT_MENU(wxID_ABOUT, dlgMain::OnAbout)
 
+    EVT_MENU(XRCID("Id_MnuItmServerFilter"), dlgMain::OnShowServerFilter)
+    EVT_TEXT(XRCID("Id_SrchCtrlGlobal"), dlgMain::OnTextSearch)
+
 	EVT_SHOW(dlgMain::OnShow)
 	EVT_CLOSE(dlgMain::OnClose)
 
@@ -210,6 +213,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_LstCtrlServers = XRCCTRL(*this, "Id_LstCtrlServers", LstOdaServerList);
     m_LstCtrlPlayers = XRCCTRL(*this, "Id_LstCtrlPlayers", LstOdaPlayerList);
     m_LstOdaSrvDetails = XRCCTRL(*this, "Id_LstCtrlServerDetails", LstOdaSrvDetails);
+    m_PnlServerFilter = XRCCTRL(*this, "Id_PnlServerFilter", wxPanel);
+    m_SrchCtrlGlobal = XRCCTRL(*this, "Id_SrchCtrlGlobal", wxTextCtrl);
+
 
 	// set up the master server information
 	wxCmdLineParser CmdLineParser(wxTheApp->argc, wxTheApp->argv);
@@ -362,6 +368,13 @@ void dlgMain::OnClose(wxCloseEvent &event)
 void dlgMain::OnShow(wxShowEvent &event)
 {
 
+}
+
+void dlgMain::OnShowServerFilter(wxCommandEvent &event)
+{
+    m_PnlServerFilter->Show(event.IsChecked());
+    
+    Layout();
 }
 
 // manually connect to a server
@@ -881,6 +894,21 @@ void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 	LaunchGame(_T(""),
 				launchercfg_s.odamex_directory,
 				launchercfg_s.wad_paths);
+
+}
+
+void dlgMain::OnTextSearch(wxCommandEvent& event)
+{
+    wxString Str = event.GetString();
+
+    if (Str.IsEmpty())
+    {
+        m_LstCtrlServers->ApplyFilter(wxEmptyString);
+
+        return;
+    }
+
+    m_LstCtrlServers->ApplyFilter(Str);
 }
 
 // Launch button click
@@ -946,6 +974,9 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
 // Get Master List button click
 void dlgMain::OnGetList(wxCommandEvent &event)
 {
+    // Reset search results
+    m_SrchCtrlGlobal->SetValue(wxT(""));
+    
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
 
@@ -961,6 +992,9 @@ void dlgMain::OnGetList(wxCommandEvent &event)
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
 {
     wxInt32 li, ai;
+
+    // Reset search results
+    //m_SrchCtrlGlobal = wxT("");
 
     li = m_LstCtrlServers->GetSelectedServerIndex();
     ai = GetSelectedServerArrayIndex();
@@ -979,6 +1013,9 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
 {
     if (!MServer.GetServerCount())
         return;
+
+    // Reset search results
+    m_SrchCtrlGlobal->SetValue(wxT(""));
 
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
