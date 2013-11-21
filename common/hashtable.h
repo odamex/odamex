@@ -399,7 +399,7 @@ private:
 
 	inline IndexType findBucket(const KT& key) const
 	{
-		IndexType bucketnum = (mHashFunc(key) * 2654435761) & mSizeMask; 
+		IndexType bucketnum = (mHashFunc(key) * 2654435761u) & mSizeMask; 
 
 		// [SL] NOTE: this can loop infinitely if there is no match and the table is full!
 		while (!emptyBucket(bucketnum) && mElements[bucketnum].pair.first != key)
