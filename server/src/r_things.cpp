@@ -212,8 +212,6 @@ void R_InitSpriteDefs (const char **namelist)
 	int i;
 	int l;
 	int intname;
-	int start;
-	int end;
 	int realsprites;
 
 	// count the number of sprite names
@@ -227,9 +225,6 @@ void R_InitSpriteDefs (const char **namelist)
 		return;
 
 	sprites = (spritedef_t *)Z_Malloc (numsprites * sizeof(*sprites), PU_STATIC, NULL);
-
-	start = firstspritelump - 1;
-	end = lastspritelump + 1;
 
 	// scan all the lump names for each of the names,
 	//	noting the highest frame letter.

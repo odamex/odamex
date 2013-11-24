@@ -1117,7 +1117,8 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	} else if (blue_size > extra_rows + 4) {
 		blue_size = extra_rows + 4;
 	}
-	short ty[2] = {8, (blue_size * 8) + 22};
+
+	short ty[2] = {8, short(blue_size * 8 + 22) };
 
 	for (byte i = 0;i < 2;i++) {
 		// Line

@@ -304,7 +304,6 @@ std::string PersonalSpread(int& color) {
 	if (sv_gametype == GM_DM) {
 		// Seek the highest number of frags.
 		byte ingame = 0;
-		size_t maxplayer = 0;
 		size_t maxother = 0;
 		short maxfrags = -32768;
 		for (size_t i = 0;i < players.size();i++) {
@@ -317,12 +316,10 @@ std::string PersonalSpread(int& color) {
 			}
 
 			if (players[i].fragcount == maxfrags) {
-				maxplayer = players[i].id;
 				maxother++;
 			}
 
 			if (players[i].fragcount > maxfrags) {
-				maxplayer = players[i].id;
 				maxfrags = players[i].fragcount;
 				maxother = 0;
 			}

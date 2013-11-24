@@ -48,7 +48,7 @@
 #include <stdarg.h>
 
 // the dec offsetof macro doesnt work very well...
-#define myoffsetof(type,identifier) ((size_t)&((type *)0)->identifier)
+#define myoffsetof(type,identifier) ((uintptr_t)&((type *)0)->identifier)
 
 extern std::string progdir, startdir;
 

@@ -1069,7 +1069,7 @@ void InitNetCommon(void)
 //
 bool NetWaitOrTimeout(size_t ms)
 {
-	struct timeval timeout = {0, (1000*ms) + 1};
+	struct timeval timeout = {0, int(1000*ms) + 1};
 	fd_set fds;
 
 	FD_ZERO(&fds);

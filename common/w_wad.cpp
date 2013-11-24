@@ -261,7 +261,6 @@ std::string W_AddFile (std::string filename)
 	FILE			*handle;
 	size_t			length;
 	size_t			startlump;
-	size_t          res;
 	filelump_t*		fileinfo;
 
 	FixPathSeparator (filename);
@@ -279,7 +278,7 @@ std::string W_AddFile (std::string filename)
 
 	startlump = numlumps;
 
-	res = fread (&header, sizeof(header), 1, handle);
+	fread (&header, sizeof(header), 1, handle);
 	header.identification = LELONG(header.identification);
 
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
@@ -308,7 +307,7 @@ std::string W_AddFile (std::string filename)
 
 		fileinfo = new filelump_t[header.numlumps];
 		fseek (handle, header.infotableofs, SEEK_SET);
-		res = fread (fileinfo, length, 1, handle);
+		fread (fileinfo, length, 1, handle);
 		numlumps += header.numlumps;
 		Printf (PRINT_HIGH, " (%d lumps)\n", header.numlumps);
 	}
