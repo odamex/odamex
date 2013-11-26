@@ -195,16 +195,16 @@ void P_LoadSegs (int lump)
 		int side, linedef;
 		line_t *ldef;
 
-		short v = LESHORT(ml->v1);
+		unsigned short v = LESHORT(ml->v1);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex %d", v);
 		else
 			li->v1 = &vertexes[v];
 
 		v = LESHORT(ml->v2);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex %d", v);
 		else
 			li->v2 = &vertexes[v];
@@ -626,16 +626,16 @@ void P_LoadLineDefs (int lump)
 		//		compatible with the new format.
 		P_TranslateLineDef (ld, mld);
 
-		short v = LESHORT(mld->v1);
+		unsigned short v = LESHORT(mld->v1);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
@@ -679,16 +679,16 @@ void P_LoadLineDefs2 (int lump)
 		ld->flags = LESHORT(mld->flags);
 		ld->special = mld->special;
 
-		short v = LESHORT(mld->v1);
+		unsigned short v = LESHORT(mld->v1);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
