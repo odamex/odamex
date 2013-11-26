@@ -403,9 +403,18 @@ void P_LoadNodes (int lump)
 		no->dy = LESHORT(mn->dy)<<FRACBITS;
 		for (j = 0; j < 2; j++)
 		{
-			no->children[j] = LESHORT(mn->children[j]);
+			// account for children's promotion to 32 bits
+			unsigned int child = (unsigned short)LESHORT(mn->children[j]);
+
+			if (child == 0xffff)
+				child = 0xffffffff;
+			else if (child & 0x8000)
+				child = (child & ~0x8000) | NF_SUBSECTOR;
+
+			no->children[j] = child;
+
 			for (k = 0; k < 4; k++)
-				no->bbox[j][k] = LESHORT(mn->bbox[j][k])<<FRACBITS;
+				no->bbox[j][k] = LESHORT(mn->bbox[j][k]) << FRACBITS;
 		}
 	}
 
@@ -1224,8 +1233,8 @@ void P_GroupLines (void)
 	// look up sector number for each subsector
 	for (i = 0; i < numsubsectors; i++)
 	{
-		if(subsectors[i].firstline >= numsegs)
-			I_Error("subsector[%d].firstline exceeds numsegs (%d)", i, numlines);
+		if (subsectors[i].firstline >= (unsigned int)numsegs)
+			I_Error("subsector[%d].firstline exceeds numsegs (%u)", i, numlines);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
 	}
 

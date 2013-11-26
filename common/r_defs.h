@@ -414,23 +414,27 @@ typedef struct polyblock_s
 typedef struct subsector_s
 {
 	sector_t		*sector;
-	unsigned short	numlines;
-	unsigned short	firstline;
+	unsigned int	numlines;
+	unsigned int	firstline;
 	polyobj_t	    *poly;
 } subsector_t;
 
 //
 // BSP node.
 //
+
+// Indicate a leaf.
+#define NF_SUBSECTOR	0x80000000
+
 struct node_s
 {
 	// Partition line.
-	fixed_t		x;
-	fixed_t		y;
-	fixed_t		dx;
-	fixed_t		dy;
-	fixed_t		bbox[2][4];		// Bounding box for each child.
-	unsigned short children[2];	// If NF_SUBSECTOR its a subsector.
+	fixed_t			x;
+	fixed_t			y;
+	fixed_t			dx;
+	fixed_t			dy;
+	fixed_t			bbox[2][4];		// Bounding box for each child.
+	unsigned int	children[2];	// If NF_SUBSECTOR its a subsector.
 };
 typedef struct node_s node_t;
 
