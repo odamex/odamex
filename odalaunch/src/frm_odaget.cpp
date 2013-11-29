@@ -144,6 +144,7 @@ void frmOdaGet::OnClose(wxCloseEvent &event)
 
     m_LocationDisplay->Clear();
     m_DownloadURL->Clear();
+    m_DownloadGauge->SetValue(0);
 
     Hide();
 }
@@ -237,11 +238,22 @@ void frmOdaGet::OnFtpThreadMessage(wxCommandEvent &event)
 
         case FTP_GOTFILEINFO:
         {
-            String = wxString::Format(wxT("File size is %llu\n"),
-                                      (size_t)event.GetInt());
-
-            m_DownloadGauge->SetRange((size_t)event.GetInt());
-
+            m_FileSize = event.GetInt();
+            
+            if (m_FileSize > 0)
+            {
+                String = wxString::Format(wxT("File size is %d\n"),
+                                        m_FileSize);
+            
+                m_DownloadGauge->SetRange(event.GetInt());
+            }
+            else
+            {
+                String = wxT("File size not available\n");
+                
+                m_DownloadGauge->SetRange(10);
+            }
+            
             m_LocationDisplay->AppendText(String);
         }
         break;
@@ -274,9 +286,17 @@ void frmOdaGet::OnFtpThreadMessage(wxCommandEvent &event)
 
         case SIZE_UPDATE:
         {
-            int i = m_DownloadGauge->GetValue();
-            
-            m_DownloadGauge->SetValue((size_t)event.GetInt() + i);
+            if (m_FileSize > 0)
+            {
+                int i = m_DownloadGauge->GetValue();
+                
+                m_DownloadGauge->SetValue(event.GetInt() + i);
+            }
+            else
+            {               
+                // Our pseudo-progress indicator
+                m_DownloadGauge->SetValue(m_DownloadGauge->GetValue() ? 0 : 10);
+            }
         }
         break;
 
@@ -479,7 +499,7 @@ void *FTPThread::Entry()
 {
     wxCommandEvent Event(EVENT_FTP_THREAD, wxID_ANY );
     wxInputStream *InputStream;
-    size_t FileSize = 0;
+    int FileSize = 0;
 
     URIHandler URI(m_File);
 
@@ -544,6 +564,9 @@ void *FTPThread::Entry()
     IPV4address.Hostname(URI.GetServer());
     IPV4address.Service(Port);
 
+    // Stupid wxFTP..
+    wxLog::EnableLogging(false);
+
     // Try to connect to the server
     // Why can't this accept a port parameter? :'(
     if (m_FTP.Connect(IPV4address))
@@ -556,14 +579,30 @@ void *FTPThread::Entry()
     }
     else
     {
-        // We failed miserably
-        Event.SetId(FTP_DISCONNECTED);
-        Event.SetString(URI.GetServer());
-        Event.SetInt(Port);
-        wxPostEvent(m_EventHandler, Event);
-
-        return NULL;
+        // Try connecting again in Active mode
+        m_FTP.SetPassive(false);
+        
+        if (m_FTP.Connect(IPV4address))
+        {
+            Event.SetId(FTP_CONNECTED);
+            Event.SetString(URI.GetServer());
+            Event.SetInt(Port);
+            wxPostEvent(m_EventHandler, Event);
+        }
+        else
+        {
+            // We failed miserably
+            Event.SetId(FTP_DISCONNECTED);
+            Event.SetString(URI.GetServer());
+            Event.SetInt(Port);
+            wxPostEvent(m_EventHandler, Event);
+            
+            return NULL;
+        }
     }
+
+    // Binary transfer mode
+    m_FTP.SetBinary();
 
     // Change the directory
     m_FTP.ChDir(URI.GetDirectory());
