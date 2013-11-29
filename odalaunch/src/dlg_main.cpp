@@ -769,6 +769,8 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
         {
             wxMessageBox(wxT("There are no servers to query"),
                 wxT("Error"), wxOK | wxICON_ERROR);
+            
+            m_SrchCtrlGlobal->Enable(true);
         }
         break;
 
@@ -809,6 +811,8 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 
             // Allow items to be sorted by user
             m_LstCtrlServers->HeaderUsable(true);
+            
+            m_SrchCtrlGlobal->Enable(true);
         }
         break;
 
@@ -967,6 +971,7 @@ void dlgMain::OnGetList(wxCommandEvent &event)
 {
     // Reset search results
     m_SrchCtrlGlobal->SetValue(wxT(""));
+    m_SrchCtrlGlobal->Enable(false);
     
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
@@ -1007,6 +1012,7 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
 
     // Reset search results
     m_SrchCtrlGlobal->SetValue(wxT(""));
+    m_SrchCtrlGlobal->Enable(false);
 
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
