@@ -294,7 +294,9 @@ void SDLVideo::UpdateScreen(DCanvas *canvas)
 	// If not writing directly to the screen blit to the primary surface
 	if (canvas->m_Private != sdlScreen)
 	{
-		SDL_Rect dstrect = { (screenw - canvas->width) >> 1, (screenh - canvas->height) >> 1 };
+		short w = (screenw - canvas->width) >> 1;
+		short h = (screenh - canvas->height) >> 1;
+		SDL_Rect dstrect = { w, h };
 		SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, &dstrect);
 	}
 

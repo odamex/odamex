@@ -18,8 +18,6 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-O2" />
-					<Add option="-fexceptions" />
-					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_CONSOLE" />
 					<Add option="-D_MBCS" />
@@ -42,7 +40,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-gdwarf-2" />
+					<Add option="-g" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_DEBUG" />

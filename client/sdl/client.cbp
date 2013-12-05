@@ -17,7 +17,6 @@
 				<Compiler>
 					<Add option="-march=pentium4" />
 					<Add option="-O3" />
-					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -44,7 +43,7 @@
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-gdwarf-2" />
+					<Add option="-g" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />

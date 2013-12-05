@@ -24,6 +24,7 @@
 #ifndef __SARRAY_H__
 #define __SARRAY_H__
 
+#include <algorithm>
 #include <iterator>
 
 // ============================================================================

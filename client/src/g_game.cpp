@@ -93,6 +93,8 @@ void	G_DoSaveGame (void);
 bool	C_DoNetDemoKey(event_t *ev);
 bool	C_DoSpectatorKey(event_t *ev);
 
+void	CL_QuitCommand();
+
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
 EXTERN_CVAR (sv_monstersrespawn)
@@ -2189,12 +2191,14 @@ BOOL G_CheckDemoStatus (void)
 				extern uint64_t starttime;
 				uint64_t endtime = I_MSTime() - starttime;
 				int realtics = endtime * TICRATE / 1000;
+				float fps = float(gametic * TICRATE) / realtics;
 
-				// Trying to get back to a stable state after timing a demo
-				// seems to cause problems. I don't feel like fixing that
-				// right now.
-				I_FatalError ("timed %i gametics in %i realtics (%.1f fps)", gametic,
-							  realtics, (float)gametic/(float)realtics*(float)TICRATE);
+				Printf(PRINT_HIGH, "timed %i gametics in %i realtics (%.1f fps)\n",
+						gametic, realtics, fps); 
+
+				// exit the application
+				CL_QuitCommand();
+				return false;
 			}
 			else
 				Printf (PRINT_HIGH, "Demo ended.\n");

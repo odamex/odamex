@@ -628,7 +628,6 @@ void M_LoadGame (int choice)
 void M_ReadSaveStrings(void)
 {
 	FILE *handle;
-	int count;
 	int i;
 
 	for (i = 0; i < load_end; i++)
@@ -645,7 +644,7 @@ void M_ReadSaveStrings(void)
 		}
 		else
 		{
-			count = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
 			fclose (handle);
 			LoadMenu[i].status = 1;
 		}

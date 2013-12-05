@@ -67,7 +67,7 @@ BufferedSocket::~BufferedSocket()
 {
     DestroySocket();
 
-	delete m_SocketBuffer;
+	delete[] m_SocketBuffer;
 }
 
 // System-specific Initialize and shutdown functions

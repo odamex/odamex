@@ -188,9 +188,6 @@ typedef struct
 
 // BSP node structure.
 
-// Indicate a leaf.
-#define NF_SUBSECTOR	0x8000
-
 typedef struct
 {
   // Partition line from (x,y) to x+dx,y+dy)
@@ -203,7 +200,7 @@ typedef struct
   // clip against view frustum.
 	short		bbox[2][4];
 	
-  // If NF_SUBSECTOR its a subsector,
+  // If top bit is set, it's a subsector,
   // else it's a node of another subtree.
 	unsigned short	children[2];
 	

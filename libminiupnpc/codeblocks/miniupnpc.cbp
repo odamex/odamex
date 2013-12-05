@@ -74,7 +74,6 @@
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="-O2" />
-					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-DSTATICLIB" />
 					<Add option="-D_WIN32_WINNT=0x501" />

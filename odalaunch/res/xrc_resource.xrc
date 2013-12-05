@@ -2,7 +2,6 @@
 <resource xmlns="http://www.wxwindows.org/wxxrc" version="2.3.0.1">
 	<object class="wxFrame" name="dlgMain">
 		<style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
-		<size>845,505</size>
 		<title>The Odamex Launcher</title>
 		<centered>1</centered>
 		<aui_managed>0</aui_managed>
@@ -51,7 +50,6 @@
 					<object class="wxMenuItem" name="Id_MnuItmDownloadWad">
 						<label>Download WAD</label>
 						<help>Download a WAD file</help>
-						<enabled>0</enabled>
 					</object>
 					<object class="wxMenuItem" name="Id_MnuItmSetupOdaget">
 						<label>Setup</label>
@@ -101,8 +99,7 @@
 				</object>
 			</object>
 		</object>
-		<object class="wxToolBar" name="6">
-			<style>wxTB_FLAT</style>
+		<object class="wxToolBar" name="61">
 			<font>
 				
 				<style>normal</style>
@@ -164,91 +161,342 @@
 				<longhelp>Exit the launcher</longhelp>
 				<bitmap>./icons/btnexit.png</bitmap>
 			</object>
+			<object class="separator" />
+			<object class="tool" name="Id_MnuItmServerFilter1">
+				<label>Server Filter</label>
+				<tooltip>Server filter not available yet</tooltip>
+				<longhelp>Server filter not available yet</longhelp>
+				<bitmap>.\icons\btnfilter.png</bitmap>
+				<toggle>1</toggle>
+			</object>
+			<object class="wxTextCtrl" name="Id_SrchCtrlGlobal">
+				<tooltip>Search</tooltip>
+				<value></value>
+				<maxlength>0</maxlength>
+			</object>
+			<object class="wxStaticBitmap" name="m_bitmap6">
+				<tooltip>Search</tooltip>
+				<bitmap stock_id="wxART_FIND" stock_client="wxART_OTHER">undefined.png</bitmap>
+			</object>
 		</object>
-		<object class="wxPanel">
-			<style>wxTAB_TRAVERSAL</style>
-			<object class="wxBoxSizer">
-				<orient>wxVERTICAL</orient>
-				<object class="sizeritem">
-					<option>1</option>
-					<flag>wxEXPAND</flag>
-					<border>5</border>
-					<object class="wxSplitterWindow" name="1">
-						<style>wxSP_3DSASH|wxSP_NOBORDER</style>
-						<sashpos>0</sashpos>
-						<gravity>1</gravity>
-						<minsize>140</minsize>
-						<orientation>horizontal</orientation>
-						<object class="wxPanel" name="2">
-							<style>wxTAB_TRAVERSAL</style>
-							<object class="wxBoxSizer">
+		<object class="wxFlexGridSizer">
+			<rows>0</rows>
+			<cols>2</cols>
+			<vgap>0</vgap>
+			<hgap>0</hgap>
+			<growablecols>1</growablecols>
+			<growablerows>0</growablerows>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxEXPAND</flag>
+				<border>5</border>
+				<object class="wxPanel" name="Id_PnlServerFilter">
+					<style>wxTAB_TRAVERSAL</style>
+					<enabled>0</enabled>
+					<hidden>1</hidden>
+					<object class="wxBoxSizer">
+						<orient>wxVERTICAL</orient>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
 								<orient>wxVERTICAL</orient>
+								<label>Server Name</label>
 								<object class="sizeritem">
 									<option>1</option>
 									<flag>wxALL|wxEXPAND</flag>
-									<border>2</border>
-									<object class="wxListCtrl" name="Id_LstCtrlServers" subclass="LstOdaServerList">
-										<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+									<border>5</border>
+									<object class="wxTextCtrl" name="m_textCtrl7">
+										<value></value>
+										<maxlength>0</maxlength>
 									</object>
 								</object>
 							</object>
 						</object>
-						<object class="wxPanel" name="4">
-							<style>wxTAB_TRAVERSAL</style>
-							<object class="wxBoxSizer">
-								<orient>wxHORIZONTAL</orient>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>Ping Range</label>
 								<object class="sizeritem">
 									<option>1</option>
 									<flag>wxEXPAND</flag>
 									<border>5</border>
-									<object class="wxSplitterWindow" name="m_splitter3">
-										<style>wxSP_3DSASH|wxSP_NOBORDER</style>
-										<sashpos>0</sashpos>
-										<gravity>1</gravity>
-										<minsize>330</minsize>
-										<orientation>vertical</orientation>
-										<object class="wxPanel" name="m_panel7">
-											<style>wxTAB_TRAVERSAL</style>
-											<object class="wxBoxSizer">
-												<orient>wxVERTICAL</orient>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALIGN_CENTER|wxALL</flag>
-													<border>2</border>
-													<object class="wxStaticText" name="m_staticText81">
-														<label>Player List</label>
-														<wrap>-1</wrap>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>1</option>
-													<flag>wxALL|wxEXPAND</flag>
-													<border>2</border>
-													<object class="wxListCtrl" name="Id_LstCtrlPlayers" subclass="LstOdaPlayerList">
-														<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
-													</object>
-												</object>
+									<object class="wxBoxSizer">
+										<orient>wxHORIZONTAL</orient>
+										<object class="sizeritem">
+											<option>1</option>
+											<flag>wxALIGN_CENTER|wxALL</flag>
+											<border>5</border>
+											<object class="wxStaticText" name="m_staticText12">
+												<label>Start</label>
+												<wrap>-1</wrap>
 											</object>
 										</object>
-										<object class="wxPanel" name="m_panel17">
-											<style>wxTAB_TRAVERSAL</style>
-											<object class="wxBoxSizer">
-												<orient>wxVERTICAL</orient>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALIGN_CENTER|wxALL</flag>
-													<border>2</border>
-													<object class="wxStaticText" name="m_staticText8">
-														<label>Server Details</label>
-														<wrap>-1</wrap>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALL</flag>
+											<border>5</border>
+											<object class="wxSpinCtrl" name="m_spinCtrl9">
+												<style>wxSP_ARROW_KEYS</style>
+												<value>0</value>
+												<min>0</min>
+												<max>10</max>
+											</object>
+										</object>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxBoxSizer">
+										<orient>wxHORIZONTAL</orient>
+										<object class="sizeritem">
+											<option>1</option>
+											<flag>wxALIGN_CENTER|wxALL</flag>
+											<border>5</border>
+											<object class="wxStaticText" name="m_staticText121">
+												<label>End</label>
+												<wrap>-1</wrap>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALL</flag>
+											<border>5</border>
+											<object class="wxSpinCtrl" name="m_spinCtrl91">
+												<style>wxSP_ARROW_KEYS</style>
+												<value>0</value>
+												<min>0</min>
+												<max>10</max>
+											</object>
+										</object>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>Players</label>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxSpinCtrl" name="m_spinCtrl12">
+										<style>wxSP_ARROW_KEYS</style>
+										<value>0</value>
+										<min>0</min>
+										<max>10</max>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>WADs</label>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="m_textCtrl9">
+										<value></value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>Map</label>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="m_textCtrl10">
+										<value></value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>Game Type</label>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxComboBox" name="m_comboBox1">
+										<value></value>
+										<content>
+											<item>None</item>
+											<item>Cooperative</item>
+											<item>Deathmatch</item>
+											<item>Team Deathmatch</item>
+											<item>Capture The Flag</item>
+										</content>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>Game IWAD</label>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="m_textCtrl11">
+										<value></value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>Address : Port</label>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="m_textCtrl12">
+										<value></value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALIGN_CENTER|wxALL</flag>
+							<border>5</border>
+							<object class="wxButton" name="m_button7">
+								<label>Apply Filter</label>
+								<default>0</default>
+							</object>
+						</object>
+					</object>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxEXPAND</flag>
+				<border>5</border>
+				<object class="wxPanel" name="7">
+					<style>wxTAB_TRAVERSAL</style>
+					<object class="wxBoxSizer">
+						<orient>wxVERTICAL</orient>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxSplitterWindow" name="11">
+								<style>wxSP_3DSASH|wxSP_NOBORDER</style>
+								<sashpos>0</sashpos>
+								<gravity>1</gravity>
+								<minsize>140</minsize>
+								<orientation>horizontal</orientation>
+								<object class="wxPanel" name="21">
+									<style>wxTAB_TRAVERSAL</style>
+									<object class="wxBoxSizer">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<option>1</option>
+											<flag>wxALL|wxEXPAND</flag>
+											<border>2</border>
+											<object class="wxListCtrl" name="Id_LstCtrlServers" subclass="LstOdaServerList">
+												<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+											</object>
+										</object>
+									</object>
+								</object>
+								<object class="wxPanel" name="41">
+									<style>wxTAB_TRAVERSAL</style>
+									<object class="wxBoxSizer">
+										<orient>wxHORIZONTAL</orient>
+										<object class="sizeritem">
+											<option>1</option>
+											<flag>wxEXPAND</flag>
+											<border>5</border>
+											<object class="wxSplitterWindow" name="m_splitter3">
+												<style>wxSP_3DSASH|wxSP_NOBORDER</style>
+												<sashpos>0</sashpos>
+												<gravity>1</gravity>
+												<minsize>330</minsize>
+												<orientation>vertical</orientation>
+												<object class="wxPanel" name="m_panel7">
+													<style>wxTAB_TRAVERSAL</style>
+													<object class="wxBoxSizer">
+														<orient>wxVERTICAL</orient>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALIGN_CENTER|wxALL</flag>
+															<border>2</border>
+															<object class="wxStaticText" name="m_staticText81">
+																<label>Player List</label>
+																<wrap>-1</wrap>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>1</option>
+															<flag>wxALL|wxEXPAND</flag>
+															<border>2</border>
+															<object class="wxListCtrl" name="Id_LstCtrlPlayers" subclass="LstOdaPlayerList">
+																<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+															</object>
+														</object>
 													</object>
 												</object>
-												<object class="sizeritem">
-													<option>1</option>
-													<flag>wxALL|wxEXPAND</flag>
-													<border>2</border>
-													<object class="wxListCtrl" name="Id_LstCtrlServerDetails" subclass="LstOdaSrvDetails">
-														<style>wxLC_HRULES|wxLC_NO_HEADER|wxLC_REPORT|wxLC_SINGLE_SEL|wxALWAYS_SHOW_SB</style>
+												<object class="wxPanel" name="m_panel17">
+													<style>wxTAB_TRAVERSAL</style>
+													<object class="wxBoxSizer">
+														<orient>wxVERTICAL</orient>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALIGN_CENTER|wxALL</flag>
+															<border>2</border>
+															<object class="wxStaticText" name="m_staticText8">
+																<label>Server Details</label>
+																<wrap>-1</wrap>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>1</option>
+															<flag>wxALL|wxEXPAND</flag>
+															<border>2</border>
+															<object class="wxListCtrl" name="Id_LstCtrlServerDetails" subclass="LstOdaSrvDetails">
+																<style>wxLC_HRULES|wxLC_NO_HEADER|wxLC_REPORT|wxLC_SINGLE_SEL|wxALWAYS_SHOW_SB</style>
+															</object>
+														</object>
 													</object>
 												</object>
 											</object>
@@ -759,19 +1007,51 @@
 								</object>
 								<object class="notebookpage">
 									<label>Other Settings</label>
-									<selected>0</selected>
+									<selected>1</selected>
 									<object class="wxPanel" name="m_panel12">
 										<style>wxTAB_TRAVERSAL</style>
-										<object class="wxStaticBoxSizer">
-											<orient>wxVERTICAL</orient>
-											<label>Extra command line arguments</label>
+										<object class="wxFlexGridSizer">
+											<rows>0</rows>
+											<cols>1</cols>
+											<vgap>0</vgap>
+											<hgap>0</hgap>
+											<growablecols>0</growablecols>
+											<growablerows>1</growablerows>
 											<object class="sizeritem">
 												<option>1</option>
-												<flag>wxALL|wxEXPAND</flag>
+												<flag>wxEXPAND</flag>
 												<border>5</border>
-												<object class="wxTextCtrl" name="Id_TxtCtrlExtraCmdLineArgs">
-													<value></value>
-													<maxlength>0</maxlength>
+												<object class="wxStaticBoxSizer">
+													<orient>wxVERTICAL</orient>
+													<label>Advanced</label>
+													<object class="sizeritem">
+														<option>0</option>
+														<flag>wxALL</flag>
+														<border>5</border>
+														<object class="wxCheckBox" name="Id_ChkCtrlDisplayQueryErrors">
+															<tooltip>Displays querying errors in the servers name field</tooltip>
+															<label>Show querying errors</label>
+															<checked>0</checked>
+														</object>
+													</object>
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxEXPAND</flag>
+												<border>5</border>
+												<object class="wxStaticBoxSizer">
+													<orient>wxVERTICAL</orient>
+													<label>Extra command line arguments</label>
+													<object class="sizeritem">
+														<option>1</option>
+														<flag>wxALL|wxEXPAND</flag>
+														<border>5</border>
+														<object class="wxTextCtrl" name="Id_TxtCtrlExtraCmdLineArgs">
+															<value></value>
+															<maxlength>0</maxlength>
+														</object>
+													</object>
 												</object>
 											</object>
 										</object>
@@ -1112,6 +1392,7 @@
 											<object class="wxStaticText" name="1">
 												<font>
 													<size>14</size>
+													
 													<style>normal</style>
 													<weight>bold</weight>
 													<underlined>0</underlined>
@@ -1125,7 +1406,7 @@
 											<flag>wxALIGN_CENTER|wxALL</flag>
 											<border>5</border>
 											<object class="wxStaticText" name="Id_StcTxtCopyright">
-												<label>Copyright (C) 2006-2012 The Odamex Team</label>
+												<label>Copyright (C) 2006-2013 The Odamex Team</label>
 												<wrap>-1</wrap>
 											</object>
 										</object>

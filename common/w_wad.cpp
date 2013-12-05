@@ -258,14 +258,10 @@ std::string W_MD5(std::string filename)
 std::string W_AddFile (std::string filename)
 {
 	wadinfo_t		header;
-	lumpinfo_t*		lump_p;
-	size_t			i;
 	FILE			*handle;
 	size_t			length;
 	size_t			startlump;
-	size_t          res;
 	filelump_t*		fileinfo;
-	filelump_t		singleinfo;
 
 	FixPathSeparator (filename);
 	std::string name = filename;
@@ -282,16 +278,16 @@ std::string W_AddFile (std::string filename)
 
 	startlump = numlumps;
 
-	res = fread (&header, sizeof(header), 1, handle);
+	fread (&header, sizeof(header), 1, handle);
 	header.identification = LELONG(header.identification);
 
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
 	{
 		// raw lump file
-		fileinfo = &singleinfo;
-		singleinfo.filepos = 0;
-		singleinfo.size = M_FileLength(handle);
-		M_ExtractFileBase (filename, name);
+		fileinfo = new filelump_t[1];	
+		fileinfo->filepos = 0;
+		fileinfo->size = M_FileLength(handle);
+		M_ExtractFileBase(filename, name);
 		numlumps++;
 		Printf (PRINT_HIGH, " (single lump)\n", header.numlumps);
 	}
@@ -309,9 +305,9 @@ std::string W_AddFile (std::string filename)
 			return "";
 		}
 
-		fileinfo = (filelump_t *)Z_Malloc (length, PU_STATIC, 0);
+		fileinfo = new filelump_t[header.numlumps];
 		fseek (handle, header.infotableofs, SEEK_SET);
-		res = fread (fileinfo, length, 1, handle);
+		fread (fileinfo, length, 1, handle);
 		numlumps += header.numlumps;
 		Printf (PRINT_HIGH, " (%d lumps)\n", header.numlumps);
 	}
@@ -322,18 +318,21 @@ std::string W_AddFile (std::string filename)
 	if (!lumpinfo)
 		I_Error ("Couldn't realloc lumpinfo");
 
-	lump_p = &lumpinfo[startlump];
+	lumpinfo_t* lump_p = &lumpinfo[startlump];
+	filelump_t* fileinfo_p = fileinfo;
 
-	for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
+	for (size_t i = startlump; i < numlumps; i++, lump_p++, fileinfo_p++)
 	{
 		lump_p->handle = handle;
-		lump_p->position = LELONG(fileinfo->filepos);
-		lump_p->size = LELONG(fileinfo->size);
-		strncpy (lump_p->name, fileinfo->name, 8);
+		lump_p->position = LELONG(fileinfo_p->filepos);
+		lump_p->size = LELONG(fileinfo_p->size);
+		strncpy (lump_p->name, fileinfo_p->name, 8);
 
 		// W_CheckNumForName needs all lump names in upper case
 		std::transform(lump_p->name, lump_p->name+8, lump_p->name, toupper);
 	}
+
+	delete [] fileinfo;
 
 	return W_MD5(filename);
 }

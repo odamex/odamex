@@ -195,16 +195,16 @@ void P_LoadSegs (int lump)
 		int side, linedef;
 		line_t *ldef;
 
-		short v = LESHORT(ml->v1);
+		unsigned short v = LESHORT(ml->v1);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex %d", v);
 		else
 			li->v1 = &vertexes[v];
 
 		v = LESHORT(ml->v2);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex %d", v);
 		else
 			li->v2 = &vertexes[v];
@@ -407,13 +407,158 @@ void P_LoadNodes (int lump)
 		no->dy = LESHORT(mn->dy)<<FRACBITS;
 		for (j = 0; j < 2; j++)
 		{
-			no->children[j] = LESHORT(mn->children[j]);
+			// account for children's promotion to 32 bits
+			unsigned int child = (unsigned short)LESHORT(mn->children[j]);
+
+			if (child == 0xffff)
+				child = 0xffffffff;
+			else if (child & 0x8000)
+				child = (child & ~0x8000) | NF_SUBSECTOR;
+
+			no->children[j] = child;
+
 			for (k = 0; k < 4; k++)
-				no->bbox[j][k] = LESHORT(mn->bbox[j][k])<<FRACBITS;
+				no->bbox[j][k] = LESHORT(mn->bbox[j][k]) << FRACBITS;
 		}
 	}
 
 	Z_Free (data);
+}
+
+//
+// P_LoadXNOD - load ZDBSP extended nodes
+// returns false if nodes are not extended to fall back to original nodes
+//
+bool P_LoadXNOD(int lump)
+{
+	size_t len = W_LumpLength(lump);
+	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+
+	if (len < 4 || memcmp(data, "XNOD", 4) != 0)
+	{
+		Z_Free(data);
+		return false;
+	}
+
+	byte *p = data + 4; // skip the magic number
+
+	// Load vertices
+	unsigned int numorgvert = LELONG(*(unsigned int *)p); p += 4;
+	unsigned int numnewvert = LELONG(*(unsigned int *)p); p += 4;
+
+	vertex_t *newvert = (vertex_t *) Z_Malloc((numorgvert + numnewvert)*sizeof(*newvert), PU_LEVEL, 0);
+
+	memcpy(newvert, vertexes, numorgvert*sizeof(*newvert));
+	memset(&newvert[numorgvert], 0, numnewvert * sizeof(*newvert));
+
+	for (unsigned int i = 0; i < numnewvert; i++)
+	{
+		vertex_t *v = &newvert[numorgvert+i];
+		v->x = LELONG(*(int *)p); p += 4;
+		v->y = LELONG(*(int *)p); p += 4;
+	}
+
+	// Adjust linedefs - since we reallocated the vertex array,
+	// all vertex pointers in linedefs must be updated
+
+	for (int i = 0; i < numlines; i++)
+	{
+		lines[i].v1 = newvert + (lines[i].v1 - vertexes);
+		lines[i].v2 = newvert + (lines[i].v2 - vertexes);
+	}
+
+	// nuke the old list, update globals to point to the new list
+	Z_Free(vertexes);
+	vertexes = newvert;
+	numvertexes = numorgvert + numnewvert;
+
+	// Load subsectors
+
+	numsubsectors = LELONG(*(unsigned int *)p); p += 4;
+	subsectors = (subsector_t *) Z_Malloc(numsubsectors * sizeof(*subsectors), PU_LEVEL, 0);
+	memset(subsectors, 0, numsubsectors * sizeof(*subsectors));
+
+	unsigned int first_seg = 0;
+
+	for (int i = 0; i < numsubsectors; i++)
+	{
+		subsectors[i].firstline = first_seg;
+		subsectors[i].numlines = LELONG(*(unsigned int *)p); p += 4;
+		first_seg += subsectors[i].numlines;
+	}
+
+	// Load segs
+
+	numsegs = LELONG(*(unsigned int *)p); p += 4;
+	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
+	memset(segs, 0, numsegs * sizeof(*segs));
+
+	for (int i = 0; i < numsegs; i++)
+	{
+		unsigned int v1 = LELONG(*(unsigned int *)p); p += 4;
+		unsigned int v2 = LELONG(*(unsigned int *)p); p += 4;
+		unsigned short ld = LESHORT(*(unsigned short *)p); p += 2;
+		unsigned char side = *(unsigned char *)p; p += 1;
+
+		if (side != 0 && side != 1)
+			side = 1;
+
+		seg_t *seg = &segs[i];
+		line_t *line = &lines[ld];
+
+		seg->v1 = &vertexes[v1];
+		seg->v2 = &vertexes[v2];
+
+		seg->linedef = line;
+		seg->sidedef = &sides[line->sidenum[side]];
+
+		seg->frontsector = seg->sidedef->sector;
+		if (line->flags & ML_TWOSIDED && line->sidenum[side^1] != R_NOSIDE)
+			seg->backsector = sides[line->sidenum[side^1]].sector;
+		else
+			seg->backsector = NULL;
+
+		seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
+
+		// a short version of the offset calculation in P_LoadSegs
+		vertex_t *origin = (side == 0) ? line->v1 : line->v2;
+		float dx = FIXED2FLOAT(seg->v1->x - origin->x);
+		float dy = FIXED2FLOAT(seg->v1->y - origin->y);
+		seg->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
+	}
+
+	// Load nodes
+
+	numnodes = LELONG(*(unsigned int *)p); p += 4;
+	nodes = (node_t *) Z_Malloc(numnodes * sizeof(*nodes), PU_LEVEL, 0);
+	memset(nodes, 0, numnodes * sizeof(*nodes));
+
+	for (int i = 0; i < numnodes; i++)
+	{
+		node_t *node = &nodes[i];
+
+		node->x = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+		node->y = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+		node->dx = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+		node->dy = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+
+		for (int j = 0; j < 2; j++)
+		{
+			for (int k = 0; k < 4; k++)
+			{
+				node->bbox[j][k] = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+			}
+		}
+
+		for (int j = 0; j < 2; j++)
+		{
+			node->children[j] = LELONG(*(unsigned int *)p); p += 4;
+		}
+	}
+
+	Z_Free(data);
+
+	return true;
 }
 
 //
@@ -630,16 +775,16 @@ void P_LoadLineDefs (int lump)
 		//		compatible with the new format.
 		P_TranslateLineDef (ld, mld);
 
-		short v = LESHORT(mld->v1);
+		unsigned short v = LESHORT(mld->v1);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
@@ -683,16 +828,16 @@ void P_LoadLineDefs2 (int lump)
 		ld->flags = LESHORT(mld->flags);
 		ld->special = mld->special;
 
-		short v = LESHORT(mld->v1);
+		unsigned short v = LESHORT(mld->v1);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
@@ -1228,8 +1373,8 @@ void P_GroupLines (void)
 	// look up sector number for each subsector
 	for (i = 0; i < numsubsectors; i++)
 	{
-		if(subsectors[i].firstline >= numsegs)
-			I_Error("subsector[%d].firstline exceeds numsegs (%d)", i, numlines);
+		if (subsectors[i].firstline >= (unsigned int)numsegs)
+			I_Error("subsector[%d].firstline exceeds numsegs (%u)", i, numlines);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
 	}
 
@@ -1506,9 +1651,13 @@ void P_SetupLevel (char *lumpname, int position)
 	P_LoadSideDefs2 (lumpnum+ML_SIDEDEFS);
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
-	P_LoadSubsectors (lumpnum+ML_SSECTORS);
-	P_LoadNodes (lumpnum+ML_NODES);
-	P_LoadSegs (lumpnum+ML_SEGS);
+
+	if (!P_LoadXNOD(lumpnum+ML_NODES))
+	{
+		P_LoadSubsectors (lumpnum+ML_SSECTORS);
+		P_LoadNodes (lumpnum+ML_NODES);
+		P_LoadSegs (lumpnum+ML_SEGS);
+	}
 
 	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
 	{

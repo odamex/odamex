@@ -31,6 +31,8 @@
 #include <wx/image.h>
 #include <wx/imaglist.h>
 
+#include <vector>
+
 class wxAdvancedListCtrl : public wxListView
 {      
     public:
@@ -68,6 +70,8 @@ class wxAdvancedListCtrl : public wxListView
         int AddImageSmall(wxImage Image);
         long ALCInsertItem(const wxString &Text = wxT(""));
         
+        void ApplyFilter(wxString Filter = wxEmptyString);
+
         wxEvent *Clone(void);
 
     private:
@@ -84,6 +88,12 @@ class wxAdvancedListCtrl : public wxListView
         void FlipRow(long Row, long NextRow);
         void Sort(wxInt32 Column, wxInt32 Order = 0, wxInt32 Lowest = 0, wxInt32 Highest = -1);
         
+        // Filtering functions
+        void BackupList();
+        void DoRestoreRow(size_t row);
+        void DoApplyFilter(const wxString &);
+        void RestoreList();
+
         wxInt32 SortOrder;
         wxInt32 SortCol;
 
@@ -94,6 +104,7 @@ class wxAdvancedListCtrl : public wxListView
 
         bool m_HeaderUsable;
         
+        std::vector<std::vector<wxListItem> > BackupItems;
     protected:               
         DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
         DECLARE_EVENT_TABLE()

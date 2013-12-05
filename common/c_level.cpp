@@ -193,7 +193,7 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
-	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
+	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 }
 };
 
 static const char *MapInfoClusterLevel[] =
