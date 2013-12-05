@@ -439,21 +439,6 @@ BEGIN_COMMAND (say_to)
 }
 END_COMMAND (say_to)
 
-static bool STACK_ARGS compare_player_frags (const player_t *arg1, const player_t *arg2)
-{
-	return arg2->fragcount < arg1->fragcount;
-}
-
-static bool STACK_ARGS compare_player_kills (const player_t *arg1, const player_t *arg2)
-{
-	return arg2->killcount < arg1->killcount;
-}
-
-static bool STACK_ARGS compare_player_points (const player_t *arg1, const player_t *arg2)
-{
-	return arg2->points < arg1->points;
-}
-
 EXTERN_CVAR(hud_scalescoreboard)
 
 EXTERN_CVAR(sv_gametype)
@@ -1373,6 +1358,33 @@ void OdamexEffect (int xa, int ya, int xb, int yb)
 }
 
 
+//
+// Comparison functors for sorting vectors of players
+//
+struct compare_player_frags
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->fragcount < arg1->fragcount;
+	}
+};
+
+struct compare_player_kills
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->killcount < arg1->killcount;
+	}
+};
+
+struct compare_player_points
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->points < arg1->points;
+	}
+};
+
 
 //
 // HU_ConsoleScores
@@ -1393,7 +1405,7 @@ void HU_ConsoleScores (player_t *player)
 		sortedplayers[i] = &players[i];
 
     if (sv_gametype == GM_CTF) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("           CAPTURE THE FLAG\n");
@@ -1452,7 +1464,7 @@ void HU_ConsoleScores (player_t *player)
                 }
             }
     } else if (sv_gametype == GM_TEAMDM) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("           TEAM DEATHMATCH\n");
@@ -1518,7 +1530,7 @@ void HU_ConsoleScores (player_t *player)
                 }
             }
     } else if (sv_gametype == GM_DM) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("              DEATHMATCH\n");
@@ -1578,7 +1590,7 @@ void HU_ConsoleScores (player_t *player)
                 }
             }
     } else if (multiplayer) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("             COOPERATIVE\n");
