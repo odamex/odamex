@@ -78,64 +78,76 @@ static unsigned	stdisk_lumpnum;
 const gamewadinfo_t doomwadnames[] =
 {
     { "DOOM2F.WAD", 
-		{ "" }
+		{ "" },
+		true
 	},
 
-    { "DOOM2.WAD",
+    {	"DOOM2.WAD",
 		{ "25E1459CA71D321525F84628F45CA8CD",
 		  "C3BEA40570C23E511A7ED3EBCD9865F7",
 		  "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
 		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
-		  "0597B0937E9615A9667B98077332597D" }		// Freedoom 0.8beta1
+		  "0597B0937E9615A9667B98077332597D" },		// Freedoom 0.8beta1
+		true
 	},
 
-    { "DOOM2BFG.WAD",
-		{ "C3BEA40570C23E511A7ED3EBCD9865F7" }
+    {	"DOOM2BFG.WAD",
+		{ "C3BEA40570C23E511A7ED3EBCD9865F7" },
+		true
 	},
 
-    { "PLUTONIA.WAD",
-		{ "75C8CF89566741FA9D22447604053BD7" }
+    {	"PLUTONIA.WAD",
+		{ "75C8CF89566741FA9D22447604053BD7" },
+		true
 	},
 
-    { "TNT.WAD",
-		{ "4E158D9953C79CCF97BD0663244CC6B6" }
+    {	"TNT.WAD",
+		{ "4E158D9953C79CCF97BD0663244CC6B6" },
+		true
 	},
 
-    { "DOOMU.WAD",
-		{ "C4FE9FD920207691A9F493668E0A2083" }
+    {	"DOOMU.WAD",
+		{ "C4FE9FD920207691A9F493668E0A2083" },
+		true
 	},
 
-    { "DOOM.WAD",
+    {	"DOOM.WAD",
 		{ "C4FE9FD920207691A9F493668E0A2083",
 		  "1CD63C5DDFF1BF8CE844237F580E9CF3",
 		  "FB35C4A5A9FD49EC29AB6E900572C524",
 		  "2E1AF223CAD142E3487C4327CF0AC8BD",		// Freedoom 0.6.4
 		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Freedoom 0.7
-		  "2A24722C068D3A74CD16F770797FF198" }		// Freedoom 0.8beta1
+		  "2A24722C068D3A74CD16F770797FF198" },		// Freedoom 0.8beta1
+		true
 	},
 
-    { "DOOMBFG.WAD",
-		{ "FB35C4A5A9FD49EC29AB6E900572C524" }
+    {	"DOOMBFG.WAD",
+		{ "FB35C4A5A9FD49EC29AB6E900572C524" },
+		true
 	},
 
-	{ "DOOM1.WAD",
-		{ "F0CEFCA49926D00903CF57551D901ABE" }
+	{	"DOOM1.WAD",
+		{ "F0CEFCA49926D00903CF57551D901ABE" },
+		false
 	},
 
-    { "FREEDOOM.WAD",
-		{ "" }
+    {	"FREEDOOM.WAD",
+		{ "" },
+		false
 	},
 
-    { "FREEDM.WAD",
-		{ "" }
+    {	"FREEDM.WAD",
+		{ "" },
+		false
 	},
 
-    { "CHEX.WAD",
-		{ "25485721882b050afa96a56e5758dd52" }
+    {	"CHEX.WAD",
+		{ "25485721882b050afa96a56e5758dd52" },
+		true
 	},
 
 	// the entry below is used to indicate the end of the list
-    { "", { "" } }
+    { "", { "" }, false }
 };
 
 //
@@ -187,16 +199,16 @@ void W_HashLumps(void)
 }
 
 //
-// W_IsIWAD
+// W_GetIWADInfo
 //
-// Checks to see whether a given filename is an IWAD (Internal WAD), it can take
-// shortened (base name) versions of standard file names (eg doom2, plutonia),
-// it can also do an optional hash comparison against a correct hash list
-// for more "accurate" detection.
-bool W_IsIWAD(const std::string& filename, const std::string& hash)
+// Helper function that returns a pointer to the appropriate entry of
+// doomwadnames for a given file name if it is an IWAD.
+// Returns NULL if the given file name is not an IWAD.
+//
+static const gamewadinfo_t* W_GetIWADInfo(const std::string& filename, const std::string& hash)
 {
 	if (filename.empty())
-		return false;
+		return NULL;
 
 	// find our match if there is one
 	for (size_t i = 0; !doomwadnames[i].name.empty(); i++)
@@ -208,7 +220,7 @@ bool W_IsIWAD(const std::string& filename, const std::string& hash)
 			{
 				// the hash is always right! even if the name is wrong..
 				if (iequals(hash, doomwadnames[i].hash[j]))
-					return true;
+					return &doomwadnames[i];
 			}
 		}
 		else
@@ -219,11 +231,34 @@ bool W_IsIWAD(const std::string& filename, const std::string& hash)
 
 			if (iequals(filename, doomwadnames[i].name) ||
 				iequals(base_filename, base_iwadname))
-				return true;
+				return &doomwadnames[i];
 		}
 	}
 
-	return false;
+	return NULL;
+}
+
+//
+// W_IsIWAD
+//
+// Checks to see whether a given filename is an IWAD (Internal WAD), it can take
+// shortened (base name) versions of standard file names (eg doom2, plutonia),
+// it can also do an optional hash comparison against a correct hash list
+// for more "accurate" detection.
+bool W_IsIWAD(const std::string& filename, const std::string& hash)
+{
+	return W_GetIWADInfo(filename, hash) != NULL;
+}
+
+//
+// W_IsIWADCommercial
+//
+// Checks to see whether a given filename is an IWAD flagged as "commercial"
+//
+bool W_IsIWADCommercial(const std::string& filename, const std::string& hash)
+{
+	const gamewadinfo_t* entry = W_GetIWADInfo(filename, hash);
+	return entry && entry->commercial;
 }
 
 
