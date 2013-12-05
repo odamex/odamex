@@ -843,24 +843,6 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 	return newname;
 }
 
-//
-// D_GetDirectoryFromFileName
-//
-// Returns the directory portion of a file name with a trailing slash
-//
-std::string D_GetDirectoryFromFileName(const std::string& filename)
-{
-	std::string dir(filename);
-	FixPathSeparator(dir);
-
-	size_t slash = dir.find_last_of(PATHSEPCHAR);
-
-	if (slash != std::string::npos)
-		return dir.substr(0, slash + 1);
-	else
-		return std::string();
-}
-
 static bool VerifyFile(
 		const std::string &filename,
 		std::string &base_filename,
@@ -878,7 +860,8 @@ static bool VerifyFile(
 		return false;
 
 	// was a path to the file supplied?
-	std::string dir = D_GetDirectoryFromFileName(filename);
+	std::string dir;
+	M_ExtractFilePath(filename, dir);
 	if (!dir.empty())
 	{
 		std::string found = BaseFileSearchDir(dir, base_filename, ext, hash);

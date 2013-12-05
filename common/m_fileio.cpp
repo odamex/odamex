@@ -173,16 +173,16 @@ BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_ne
 // M_ExtractFilePath
 //
 // Extract the path from a filename that includes one
-void M_ExtractFilePath (std::string filename, std::string &dest)
+void M_ExtractFilePath(const std::string& filename, std::string &dest)
 {
-    FixPathSeparator(filename);
+	dest = filename;
+	FixPathSeparator(dest);
 
-	size_t l = filename.find_last_of(PATHSEPCHAR);
-	if(l == std::string::npos)
-		l = filename.length();
-
-    if(l < filename.length())
-        dest = filename.substr(0, l);
+	size_t l = dest.find_last_of(PATHSEPCHAR);
+	if (l == std::string::npos)
+		dest.clear();
+	else if (l < dest.length())
+		dest = dest.substr(0, l);
 }
 
 //
@@ -191,24 +191,19 @@ void M_ExtractFilePath (std::string filename, std::string &dest)
 // Extract the extension of a file, returns false if it can't find
 // extension seperator, true if succeeded, the extension is returned in
 // dest
-BOOL M_ExtractFileExtension (std::string filename, std::string &dest)
+bool M_ExtractFileExtension(const std::string& filename, std::string &dest)
 {
-    QWORD last_dot = 0;
+	if (!filename.length())
+		return false;
 
-    if (!filename.length())
-        return false;
+	// find the last dot, iterating backwards
+	size_t last_dot = filename.find_last_of('.', filename.length());
+	if (last_dot == std::string::npos)
+		dest.clear();
+	else
+		dest = filename.substr(last_dot + 1);
 
-    // find the last dot, iterating backwards
-    last_dot = filename.find_last_of('.', filename.length());
-
-    if (last_dot == std::string::npos)
-        return false;
-
-    // extract extension without leading dot
-    dest = filename.substr(last_dot + 1);
-
-    // fun in the sun
-    return true;
+	return (!dest.empty());
 }
 
 //
