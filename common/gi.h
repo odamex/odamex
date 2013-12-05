@@ -80,6 +80,8 @@ typedef struct
 	int maxSwitch;
 	char borderFlat[8];
 	gameborder_t *border;
+
+	char titleString[64];
 } gameinfo_t;
 
 extern gameinfo_t gameinfo;

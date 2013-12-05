@@ -81,7 +81,8 @@ gameinfo_t SharewareGameInfo =
 	quitsounds,
 	1,
 	{ 'F','L','O','O','R','7','_','2' },
-	&DoomBorder
+	&DoomBorder,
+	"DOOM Shareware"
 };
 
 gameinfo_t RegisteredGameInfo =
@@ -104,7 +105,8 @@ gameinfo_t RegisteredGameInfo =
 	quitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
-	&DoomBorder
+	&DoomBorder,
+	"DOOM Registered"
 };
 
 gameinfo_t RetailGameInfo =
@@ -127,7 +129,8 @@ gameinfo_t RetailGameInfo =
 	quitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
-	&DoomBorder
+	&DoomBorder,
+	"The Ultimate DOOM"
 };
 
 gameinfo_t RetailBFGGameInfo =
@@ -150,7 +153,8 @@ gameinfo_t RetailBFGGameInfo =
 	quitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
-	&DoomBorder
+	&DoomBorder,
+	"The Ultimate DOOM (BFG Edition)"
 };
 
 gameinfo_t CommercialGameInfo =
@@ -173,7 +177,8 @@ gameinfo_t CommercialGameInfo =
 	quitsounds2,
 	3,
 	"GRNROCK",
-	&DoomBorder
+	&DoomBorder,
+	"DOOM 2: Hell on Earth"
 };
 
 gameinfo_t CommercialBFGGameInfo =
@@ -196,7 +201,8 @@ gameinfo_t CommercialBFGGameInfo =
 	quitsounds2,
 	3,
 	"GRNROCK",
-	&DoomBorder
+	&DoomBorder,
+	"DOOM 2: Hell on Earth (BFG Edition)"
 };
 
 VERSION_CONTROL (gi_cpp, "$Id$")
