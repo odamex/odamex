@@ -858,12 +858,33 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 	return newname;
 }
 
+//
+// D_GetDirectoryFromFileName
+//
+// Returns the directory portion of a file name with a trailing slash
+//
+std::string D_GetDirectoryFromFileName(const std::string& filename)
+{
+	std::string dir(filename);
+	FixPathSeparator(dir);
+
+	size_t slash = dir.find_last_of(PATHSEPCHAR);
+
+	if (slash != std::string::npos)
+		return dir.substr(0, slash + 1);
+	else
+		return std::string();
+}
+
 static bool VerifyFile(
 		const std::string &filename,
 		std::string &base_filename,
 		std::string &full_filename,
 		const std::string &hash = "")
 {
+	base_filename.clear();
+	full_filename.clear();
+
 	std::string ext;
 	M_ExtractFileExtension(filename, ext);
 
@@ -871,12 +892,26 @@ static bool VerifyFile(
 	if (base_filename.empty())
 		return false;
 
-	// is there an exact match for the filename and hash?
+	// was a path to the file supplied?
+	std::string dir = D_GetDirectoryFromFileName(filename);
+	if (!dir.empty())
+	{
+		std::string found = BaseFileSearchDir(dir, base_filename, ext, hash);
+		if (!found.empty())
+		{
+			if (dir[dir.length() - 1] != PATHSEPCHAR)
+				dir += PATHSEP;
+			full_filename = dir + found;
+			return true;
+		}
+	}
+
+	// is there an exact match for the filename and hash in WADDIRS?
 	full_filename = BaseFileSearch(base_filename, "." + ext, hash);
 	if (!full_filename.empty())
 		return true;
 
-	// is there a file with matching name even if the hash is incorrect?
+	// is there a file with matching name even if the hash is incorrect in WADDIRS?
 	full_filename = BaseFileSearch(base_filename, "." + ext);
 	if (full_filename.empty())
 		return false;
