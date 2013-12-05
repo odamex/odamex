@@ -39,6 +39,17 @@
 // [RH] Remove limit on number of WAD files
 extern std::vector<std::string> wadfiles, wadhashes, patchfiles;
 
+// [SL] List of IWAD names and valid MD5 hashes
+#define MAX_HASHES 10
+
+typedef struct
+{
+    std::string name;
+    std::string hash[MAX_HASHES];
+} gamewadinfo_t;
+
+extern const gamewadinfo_t doomwadnames[];
+
 //
 // TYPES
 //

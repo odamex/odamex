@@ -544,38 +544,22 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 //
 static std::string D_CheckIWAD(std::string suggestion, std::string &titlestring)
 {
-	static const char *doomwadnames[] =
-	{
-		"doom2f.wad",
-		"doom2.wad",
-		"doom2bfg.wad",
-		"plutonia.wad",
-		"tnt.wad",
-		"doomu.wad", // Hack from original Linux version. Not necessary, but I threw it in anyway.
-		"doom.wad",
-		"doombfg.wad",
-		"doom1.wad",
-		"freedoom.wad",
-		"freedm.wad",
-		"chex.wad",		// [ML] 1/7/10: Hello Chex Quest!
-		NULL
-	};
-
 	std::string iwad;
 	std::string iwad_file;
 	int i;
 
-	if(suggestion.length())
+	if (suggestion.length())
 	{
 		std::string found = BaseFileSearch(suggestion, ".WAD");
 
-		if(found.length())
+		if (found.length())
 			iwad = found;
 		else
 		{
-			if(M_FileExists(suggestion))
+			if (M_FileExists(suggestion))
 				iwad = suggestion;
 		}
+
 		/*	[ML] Removed 1/13/10: we can trust the user to provide an iwad
 		if(iwad.length())
 		{
@@ -604,14 +588,14 @@ static std::string D_CheckIWAD(std::string suggestion, std::string &titlestring)
 		*/
 	}
 
-	if(!iwad.length())
+	if (!iwad.length())
 	{
 		// Search for a pre-defined IWAD from the list above
-		for (i = 0; doomwadnames[i]; i++)
+		for (i = 0; !doomwadnames[i].name.empty(); i++)
 		{
-			std::string found = BaseFileSearch(doomwadnames[i]);
+			std::string found = BaseFileSearch(doomwadnames[i].name);
 
-			if(found.length())
+			if (found.length())
 			{
 				iwad = found;
 				break;
@@ -630,6 +614,7 @@ static std::string D_CheckIWAD(std::string suggestion, std::string &titlestring)
 			{ 'E','X','T','E','N','D','E','D'},
 			{ 'D','M','E','N','U','P','I','C'}
 		};
+
 		int lumpsfound[NUM_CHECKLUMPS];
 		wadinfo_t header;
 		FILE *f;
