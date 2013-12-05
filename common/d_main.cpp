@@ -546,6 +546,8 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 //
 static void D_ConfigureGameInfo(const std::string& iwad_filename)
 {
+	gamemode = undetermined;
+
 	static const int NUM_CHECKLUMPS = 10;
 	static const char checklumps[NUM_CHECKLUMPS][8] = {
 		"E1M1", "E2M1", "E4M1", "MAP01",
@@ -564,7 +566,7 @@ static void D_ConfigureGameInfo(const std::string& iwad_filename)
 	{
 		fread(&header, sizeof(header), 1, f);
 		header.identification = LELONG(header.identification);
-		if (header.identification == IWAD_ID || header.identification == PWAD_ID)
+		if (header.identification == IWAD_ID)
 		{
 			header.numlumps = LELONG(header.numlumps);
 			if (0 == fseek(f, LELONG(header.infotableofs), SEEK_SET))
@@ -583,8 +585,6 @@ static void D_ConfigureGameInfo(const std::string& iwad_filename)
 		}
 		fclose(f);
 	}
-
-	gamemode = undetermined;
 
 	if (lumpsfound[3])
 	{
@@ -692,33 +692,6 @@ static std::string D_CheckIWAD(const std::string& suggestion)
 			if (M_FileExists(suggestion))
 				iwad = suggestion;
 		}
-
-		/*	[ML] Removed 1/13/10: we can trust the user to provide an iwad
-		if(iwad.length())
-		{
-			FILE *f;
-
-			if ( (f = fopen (iwad.c_str(), "rb")) )
-			{
-				wadinfo_t header;
-				fread (&header, sizeof(header), 1, f);
-				header.identification = LELONG(header.identification);
-				if (header.identification != IWAD_ID)
-				{
-					if(header.identification == PWAD_ID)
-					{
-						Printf(PRINT_HIGH, "Suggested file is a PWAD, not an IWAD: %s \n", iwad.c_str());
-					}
-					else
-					{
-						Printf(PRINT_HIGH, "Suggested file is not an IWAD: %s \n", iwad.c_str());
-					}
-					iwad = "";
-				}
-				fclose(f);
-			}
-		}
-		*/
 	}
 
 	if (iwad.empty())
