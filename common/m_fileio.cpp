@@ -58,14 +58,13 @@ SDWORD M_FileLength (FILE *f)
 // M_FileExists
 //
 // Checks to see whether a file exists or not
-BOOL M_FileExists (std::string filename)
+//
+bool M_FileExists(const std::string& filename)
 {
-	FILE *f;
-
-	f = fopen (filename.c_str(), "r");
+	FILE *f = fopen(filename.c_str(), "r");
 	if (!f)
 		return false;
-	fclose (f);
+	fclose(f);
 	return true;
 }
 

@@ -33,7 +33,7 @@
 #include "d_main.h"
 
 SDWORD M_FileLength (FILE *f);
-BOOL M_FileExists (std::string filename);
+bool M_FileExists(const std::string& filename);
 
 BOOL M_WriteFile(std::string filename, void *source, QWORD length);
 QWORD M_ReadFile(std::string filename, BYTE **buffer);

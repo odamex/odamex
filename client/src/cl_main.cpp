@@ -1131,7 +1131,27 @@ void CL_NetDemoRecord(const std::string &filename)
 
 void CL_NetDemoPlay(const std::string &filename)
 {
-	netdemo.startPlaying(filename);
+	std::string newfilename;
+
+	std::string dir;
+	M_ExtractFilePath(filename, dir);
+
+	// if no path is supplied, check the default path
+	if (dir.empty())
+		newfilename = I_GetUserFileName(filename.c_str());
+	else
+		newfilename = filename;
+	
+	if (!M_FileExists(newfilename))
+	{
+		// try adding .odd to the end of the file name
+		std::string ext;
+		M_ExtractFileExtension(newfilename, ext);
+		if (!iequals(ext, ".odd"))
+			M_AppendExtension(newfilename, ".odd", false);
+	}
+
+	netdemo.startPlaying(newfilename);
 }
 
 BEGIN_COMMAND(stopnetdemo)
