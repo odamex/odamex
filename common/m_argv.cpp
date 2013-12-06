@@ -179,7 +179,10 @@ static size_t FindNextParamArg(const char* param, const std::vector<std::string>
 
 		// matches param, return first argument for this param
 		if (stricmp(param, args[i].c_str()) == 0)
-			return i + 1;
+		{
+			i++;
+			continue;
+		}
 
 		// skip over any params that don't match and their arguments
 		for (i++; i < args.size() && !IsParam(args, i); i++)
