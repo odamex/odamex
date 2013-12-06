@@ -970,6 +970,12 @@ void D_LoadResourceFiles(
 
 	wadhashes = W_InitMultipleFiles(wadfiles);
 
+	// [RH] Initialize localizable strings.
+	// [SL] It is necessary to load the strings here since a dehacked patch
+	// might change the strings
+	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.Compact();
+
 	D_DoDefDehackedPatch(newpatchfiles);
 }
 
@@ -1042,10 +1048,6 @@ bool D_DoomWadReboot(
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
-	// [RH] Initialize localizable strings.
-	GStrings.ResetStrings ();
-	GStrings.Compact ();
-
 	D_NewWadInit();
 
 	// preserve state
@@ -1068,7 +1070,7 @@ static void D_AddCommandLineOptionFiles(
 	std::vector<std::string>& filenames,
 	const std::string& option, const std::string& ext)
 {
-	DArgs files = Args.GatherFiles(option.c_str(), ext.c_str(), true);
+	DArgs files = Args.GatherFiles(option.c_str(), ext.c_str(), false);
 	for (size_t i = 0; i < files.NumArgs(); i++)
 	{
 		std::string filename = BaseFileSearch(files.GetArg(i), ext);
@@ -1088,6 +1090,7 @@ static void D_AddCommandLineOptionFiles(
 void D_AddWadCommandLineFiles(std::vector<std::string>& filenames)
 {
 	D_AddCommandLineOptionFiles(filenames, "-file", ".WAD");
+	D_AddCommandLineOptionFiles(filenames, "-file", "");		// allow no ext
 }
 
 //

@@ -25,6 +25,7 @@
 #include <algorithm>
 
 #include "cmdlib.h"
+#include "m_fileio.h"
 #include "m_argv.h"
 #include "i_system.h"
 
@@ -153,25 +154,39 @@ void DArgs::AppendArg (const char *arg)
 		args.push_back(arg);
 }
 
-DArgs DArgs::GatherFiles (const char *param, const char *extension, bool acceptNoExt) const
+//
+// DArgs::GatherFiles
+//
+// Collects all of the arguments entered after param and returns them
+// if their file extension matches ext or if they have no extension and
+// acceptNoExt is true. This can handle param being specified multiple times
+// on the command lien.
+//
+DArgs DArgs::GatherFiles(const char* param, const char* ext, bool acceptNoExt) const
 {
 	DArgs out;
-	size_t i;
-	unsigned extlen = strlen (extension);
 
-	for (i = 1; i < args.size() && args[i].length() && args[i][0] != '-' && args[i][0] != '+'; i++)
+	for (size_t i = 1; i < args.size(); i++)
 	{
-		if (args[i].length() >= extlen && stricmp (args[i].c_str() + args[i].length() - extlen, extension) == 0)
-			out.AppendArg (args[i].c_str());
-		else if (acceptNoExt && !strrchr (args[i].c_str(), '.'))
-			out.AppendArg (args[i].c_str());
+		if (stricmp(param, args[i].c_str()) == 0)
+		{
+			for (i++; i < args.size() && !args[i].empty() && args[i][0] != '-' && args[i][0] != '+'; i++)
+			{
+				std::string argext;
+				M_ExtractFileExtension(args[i], argext);
+
+				if (ext[0] == '.' && stricmp(ext + 1, argext.c_str()) == 0)
+					out.AppendArg(args[i].c_str());
+				else if (ext[0] == 0 && argext.empty())
+					out.AppendArg(args[i].c_str());
+				else if (acceptNoExt && argext.empty())
+					out.AppendArg(args[i].c_str());
+			}
+
+			i--;
+		}
 	}
-	i = CheckParm (param);
-	if (i)
-	{
-		for (i++; i < args.size() && args[i].length() && args[i][0] != '-' && args[i][0] != '+'; i++)
-			out.AppendArg (args[i].c_str());
-	}
+
 	return out;
 }
 

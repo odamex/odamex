@@ -707,10 +707,6 @@ void D_DoomMain (void)
 
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
-	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact ();
-
 	// [RH] Initialize configurable strings.
 	//D_InitStrings ();
 
