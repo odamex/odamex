@@ -1070,12 +1070,15 @@ static void D_AddCommandLineOptionFiles(
 	std::vector<std::string>& filenames,
 	const std::string& option, const std::string& ext)
 {
-	DArgs files = Args.GatherFiles(option.c_str(), ext.c_str(), false);
+	DArgs files = Args.GatherFiles(option.c_str(), ext.c_str(), true);
 	for (size_t i = 0; i < files.NumArgs(); i++)
 	{
-		std::string filename = BaseFileSearch(files.GetArg(i), ext);
-		if (!filename.empty())
-			filenames.push_back(filename);
+		std::string filename(files.GetArg(i));
+		M_AppendExtension(filename, ext, true);
+
+		std::string base_filename, full_filename;
+		if (D_VerifyFile(filename, base_filename, full_filename))
+			filenames.push_back(full_filename);
 	}
 
 	files.FlushArgs();
@@ -1090,7 +1093,6 @@ static void D_AddCommandLineOptionFiles(
 void D_AddWadCommandLineFiles(std::vector<std::string>& filenames)
 {
 	D_AddCommandLineOptionFiles(filenames, "-file", ".WAD");
-	D_AddCommandLineOptionFiles(filenames, "-file", "");		// allow no ext
 }
 
 //
