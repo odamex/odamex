@@ -535,6 +535,140 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 	return "";
 }
 
+
+//
+// D_ConfigureGameInfo
+//
+// Opens the specified file name and sets gameinfo, gamemission, and gamemode
+// to the appropriate values for the IWAD file.
+//
+// gamemode will be set to undetermined if the file is not a valid IWAD.
+//
+static void D_ConfigureGameInfo(const std::string& iwad_filename)
+{
+	gamemode = undetermined;
+
+	static const int NUM_CHECKLUMPS = 10;
+	static const char checklumps[NUM_CHECKLUMPS][8] = {
+		"E1M1", "E2M1", "E4M1", "MAP01",
+		{ 'A','N','I','M','D','E','F','S'},
+		"FINAL2", "REDTNT2", "CAMO1",
+		{ 'E','X','T','E','N','D','E','D'},
+		{ 'D','M','E','N','U','P','I','C'}
+	};
+
+	int lumpsfound[NUM_CHECKLUMPS];
+	wadinfo_t header;
+	FILE *f;
+
+	memset(lumpsfound, 0, sizeof(lumpsfound));
+	if ( (f = fopen(iwad_filename.c_str(), "rb")) )
+	{
+		fread(&header, sizeof(header), 1, f);
+		header.identification = LELONG(header.identification);
+		if (header.identification == IWAD_ID)
+		{
+			header.numlumps = LELONG(header.numlumps);
+			if (0 == fseek(f, LELONG(header.infotableofs), SEEK_SET))
+			{
+				for (int i = 0; i < header.numlumps; i++)
+				{
+					filelump_t lump;
+
+					if (0 == fread(&lump, sizeof(lump), 1, f))
+						break;
+					for (int j = 0; j < NUM_CHECKLUMPS; j++)
+						if (!strnicmp(lump.name, checklumps[j], 8))
+							lumpsfound[j]++;
+				}
+			}
+		}
+		fclose(f);
+	}
+
+	if (lumpsfound[3])
+	{
+		if (lumpsfound[9])
+		{
+			gameinfo = CommercialBFGGameInfo;
+			gamemode = commercial_bfg;
+		}
+		else
+		{
+			gameinfo = CommercialGameInfo;
+			gamemode = commercial;
+		}
+
+		if (lumpsfound[6])
+			gamemission = pack_tnt;
+		else if (lumpsfound[7])
+			gamemission = pack_plut;
+		else
+			gamemission = doom2;
+	}
+	else if (lumpsfound[0])
+	{
+		gamemission = doom;
+		if (lumpsfound[1])
+		{
+			if (lumpsfound[2])
+			{
+				// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
+				// iwad.  It's ultimate doom with their stuff replacing most things.
+				std::string base_filename;
+				M_ExtractFileName(iwad_filename, base_filename);
+				if (iequals(base_filename, "chex.wad"))
+				{
+					gamemission = chex;
+					gamemode = retail_chex;
+					gameinfo = RetailGameInfo;
+				}
+				else
+				{
+					gamemode = retail;
+
+					if (lumpsfound[9])
+						gameinfo = RetailBFGGameInfo;
+					else
+						gameinfo = RetailGameInfo;
+				}
+			}
+			else
+			{
+				gamemode = registered;
+				gameinfo = RegisteredGameInfo;
+			}
+		}
+		else
+		{
+			gamemode = shareware;
+			gameinfo = SharewareGameInfo;
+		}
+	}
+
+	if (gamemode == undetermined)
+		gameinfo = SharewareGameInfo;
+}
+
+
+//
+// D_GetTitleString
+//
+// Returns the proper name of the game currently loaded into gameinfo & gamemission
+//
+static std::string D_GetTitleString()
+{
+	if (gamemission == pack_tnt)
+		return "DOOM 2: TNT - Evilution";
+	if (gamemission == pack_plut)
+		return "DOOM 2: Plutonia Experiment";
+	if (gamemission == chex)
+		return "Chex Quest";
+
+	return gameinfo.titleString;
+}
+
+
 //
 // D_CheckIWAD
 //
@@ -542,76 +676,32 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 // one found's contents to determine whether registered/commercial features
 // should be executed (notably loading PWAD's).
 //
-static std::string D_CheckIWAD(std::string suggestion, std::string &titlestring)
+static std::string D_CheckIWAD(const std::string& suggestion)
 {
-	static const char *doomwadnames[] =
-	{
-		"doom2f.wad",
-		"doom2.wad",
-		"doom2bfg.wad",
-		"plutonia.wad",
-		"tnt.wad",
-		"doomu.wad", // Hack from original Linux version. Not necessary, but I threw it in anyway.
-		"doom.wad",
-		"doombfg.wad",
-		"doom1.wad",
-		"freedoom.wad",
-		"freedm.wad",
-		"chex.wad",		// [ML] 1/7/10: Hello Chex Quest!
-		NULL
-	};
-
 	std::string iwad;
 	std::string iwad_file;
-	int i;
 
-	if(suggestion.length())
+	if (!suggestion.empty())
 	{
 		std::string found = BaseFileSearch(suggestion, ".WAD");
 
-		if(found.length())
+		if (!found.empty())
 			iwad = found;
 		else
 		{
-			if(M_FileExists(suggestion))
+			if (M_FileExists(suggestion))
 				iwad = suggestion;
 		}
-		/*	[ML] Removed 1/13/10: we can trust the user to provide an iwad
-		if(iwad.length())
-		{
-			FILE *f;
-
-			if ( (f = fopen (iwad.c_str(), "rb")) )
-			{
-				wadinfo_t header;
-				fread (&header, sizeof(header), 1, f);
-				header.identification = LELONG(header.identification);
-				if (header.identification != IWAD_ID)
-				{
-					if(header.identification == PWAD_ID)
-					{
-						Printf(PRINT_HIGH, "Suggested file is a PWAD, not an IWAD: %s \n", iwad.c_str());
-					}
-					else
-					{
-						Printf(PRINT_HIGH, "Suggested file is not an IWAD: %s \n", iwad.c_str());
-					}
-					iwad = "";
-				}
-				fclose(f);
-			}
-		}
-		*/
 	}
 
-	if(!iwad.length())
+	if (iwad.empty())
 	{
 		// Search for a pre-defined IWAD from the list above
-		for (i = 0; doomwadnames[i]; i++)
+		for (int i = 0; !doomwadnames[i].name.empty(); i++)
 		{
-			std::string found = BaseFileSearch(doomwadnames[i]);
+			std::string found = BaseFileSearch(doomwadnames[i].name);
 
-			if(found.length())
+			if (!found.empty())
 			{
 				iwad = found;
 				break;
@@ -620,166 +710,36 @@ static std::string D_CheckIWAD(std::string suggestion, std::string &titlestring)
 	}
 
 	// Now scan the contents of the IWAD to determine which one it is
-	if (iwad.length())
-	{
-		static const int NUM_CHECKLUMPS = 10;
-		static const char checklumps[NUM_CHECKLUMPS][8] = {
-			"E1M1", "E2M1", "E4M1", "MAP01",
-			{ 'A','N','I','M','D','E','F','S'},
-			"FINAL2", "REDTNT2", "CAMO1",
-			{ 'E','X','T','E','N','D','E','D'},
-			{ 'D','M','E','N','U','P','I','C'}
-		};
-		int lumpsfound[NUM_CHECKLUMPS];
-		wadinfo_t header;
-		FILE *f;
-		M_ExtractFileName(iwad,iwad_file);
-
-		memset (lumpsfound, 0, sizeof(lumpsfound));
-		if ( (f = fopen (iwad.c_str(), "rb")) )
-		{
-			fread (&header, sizeof(header), 1, f);
-			header.identification = LELONG(header.identification);
-			if (header.identification == IWAD_ID ||
-				header.identification == PWAD_ID)
-			{
-				header.numlumps = LELONG(header.numlumps);
-				if (0 == fseek (f, LELONG(header.infotableofs), SEEK_SET))
-				{
-					for (i = 0; i < header.numlumps; i++)
-					{
-						filelump_t lump;
-						int j;
-
-						if (0 == fread (&lump, sizeof(lump), 1, f))
-							break;
-						for (j = 0; j < NUM_CHECKLUMPS; j++)
-							if (!strnicmp (lump.name, checklumps[j], 8))
-								lumpsfound[j]++;
-					}
-				}
-			}
-			fclose (f);
-		}
-
-		gamemode = undetermined;
-
-		if (lumpsfound[3])
-		{
-            if (lumpsfound[9])
-            {
-                gameinfo = CommercialBFGGameInfo;
-                gamemode = commercial_bfg;
-            }
-            else
-            {
-                gameinfo = CommercialGameInfo;
-                gamemode = commercial;
-            }
-
-			if (lumpsfound[6])
-			{
-				gamemission = pack_tnt;
-				titlestring = "DOOM 2: TNT - Evilution";
-			}
-			else if (lumpsfound[7])
-			{
-				gamemission = pack_plut;
-				titlestring = "DOOM 2: Plutonia Experiment";
-			}
-			else
-			{
-				gamemission = doom2;
-
-				if (lumpsfound[9])
-                    titlestring = "DOOM 2: Hell on Earth (BFG Edition)";
-                else
-                    titlestring = "DOOM 2: Hell on Earth";
-			}
-		}
-		else if (lumpsfound[0])
-		{
-			gamemission = doom;
-			if (lumpsfound[1])
-			{
-				if (lumpsfound[2])
-				{
-					// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
-					// iwad.  It's ultimate doom with their stuff replacing most things.
-					if (iequals(iwad_file, "chex.wad"))
-					{
-						gamemission = chex;
-						gamemode = retail_chex;
-						gameinfo = RetailGameInfo;
-						titlestring = "Chex Quest";
-					}
-					else
-					{
-					    gamemode = retail;
-
-					    if (lumpsfound[9])
-                        {
-                            gameinfo = RetailBFGGameInfo;
-                            titlestring = "The Ultimate DOOM (BFG Edition)";
-                        }
-                        else
-                        {
-                            gameinfo = RetailGameInfo;
-                            titlestring = "The Ultimate DOOM";
-                        }
-					}
-				}
-				else
-				{
-					gamemode = registered;
-					gameinfo = RegisteredGameInfo;
-					titlestring = "DOOM Registered";
-				}
-			}
-			else
-			{
-				gamemode = shareware;
-				gameinfo = SharewareGameInfo;
-				titlestring = "DOOM Shareware";
-			}
-		}
-	}
-
-	if (gamemode == undetermined)
-	{
-		gameinfo = SharewareGameInfo;
-	}
+	D_ConfigureGameInfo(iwad);
 
 	return iwad;
 }
 
-//
-// IdentifyVersion
-//
-static std::string IdentifyVersion(std::string custwad)
-{
-	std::string titlestring = "Public DOOM - ";
 
+//
+// D_PrintIWADIdentity
+//
+static void D_PrintIWADIdentity()
+{
 	if (clientside)
 	{
 		Printf(PRINT_HIGH, "\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
     	                   "\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
 
-		if (D_CheckIWAD(custwad, titlestring).empty())
+		if (gamemode == undetermined)
 			Printf_Bold("Game mode indeterminate, no standard wad found.\n\n");
 		else
-			Printf_Bold("%s\n\n", titlestring.c_str());
+			Printf_Bold("%s\n\n", D_GetTitleString().c_str());
 	}
 	else
 	{
-		if (D_CheckIWAD(custwad, titlestring).empty())
-			Printf (PRINT_HIGH, "Game mode indeterminate, no standard wad found.\n");
+		if (gamemode == undetermined)
+			Printf(PRINT_HIGH, "Game mode indeterminate, no standard wad found.\n");
 		else 
-			Printf (PRINT_HIGH, "%s\n", titlestring.c_str());
+			Printf(PRINT_HIGH, "%s\n", D_GetTitleString().c_str()); 
 	}
-
-	return titlestring;
 }
+
 
 //
 // D_DoDefDehackedPatch
@@ -858,12 +818,22 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 	return newname;
 }
 
-static bool VerifyFile(
+//
+// D_VerifyFile
+//
+// Searches for a given file name, setting base_filename and full_filename
+// to the full path of the file. Returns true if the file was found and it
+// matched the supplied hash (or has was empty).
+//
+static bool D_VerifyFile(
 		const std::string &filename,
 		std::string &base_filename,
 		std::string &full_filename,
 		const std::string &hash = "")
 {
+	base_filename.clear();
+	full_filename.clear();
+
 	std::string ext;
 	M_ExtractFileExtension(filename, ext);
 
@@ -871,12 +841,27 @@ static bool VerifyFile(
 	if (base_filename.empty())
 		return false;
 
-	// is there an exact match for the filename and hash?
+	// was a path to the file supplied?
+	std::string dir;
+	M_ExtractFilePath(filename, dir);
+	if (!dir.empty())
+	{
+		std::string found = BaseFileSearchDir(dir, base_filename, ext, hash);
+		if (!found.empty())
+		{
+			if (dir[dir.length() - 1] != PATHSEPCHAR)
+				dir += PATHSEP;
+			full_filename = dir + found;
+			return true;
+		}
+	}
+
+	// is there an exact match for the filename and hash in WADDIRS?
 	full_filename = BaseFileSearch(base_filename, "." + ext, hash);
 	if (!full_filename.empty())
 		return true;
 
-	// is there a file with matching name even if the hash is incorrect?
+	// is there a file with matching name even if the hash is incorrect in WADDIRS?
 	full_filename = BaseFileSearch(base_filename, "." + ext);
 	if (full_filename.empty())
 		return false;
@@ -937,19 +922,22 @@ void D_LoadResourceFiles(
 
 	// add the IWAD to wadfiles
 	std::string titlestring;
-	iwad_filename = D_CheckIWAD(iwad_filename, titlestring);
+	iwad_filename = D_CheckIWAD(iwad_filename);
 	if (iwad_filename.empty())
 		I_Error("Cannot find IWAD (try -waddir)");
 
 	wadfiles.push_back(iwad_filename);
 
+	// print info about the IWAD to the console
+	D_PrintIWADIdentity();
+
 	// set the window title based on which IWAD we're using
-	I_SetTitleString(IdentifyVersion(iwad_filename).c_str());
+	I_SetTitleString(D_GetTitleString().c_str());
 
 	// check if the wad files exist and if they match the MD5SUM
 	std::string base_filename, full_filename;
 
-	if (!VerifyFile(iwad_filename, base_filename, full_filename, iwad_hash))
+	if (!D_VerifyFile(iwad_filename, base_filename, full_filename, iwad_hash))
 	{
 		Printf(PRINT_HIGH, "could not find WAD: %s\n", base_filename.c_str());
 		missingfiles.push_back(base_filename);
@@ -965,7 +953,7 @@ void D_LoadResourceFiles(
 		if (i == 0 && iwad_provided)
 			continue;
 
-		if (VerifyFile(newwadfiles[i], base_filename, full_filename, hash))
+		if (D_VerifyFile(newwadfiles[i], base_filename, full_filename, hash))
 			wadfiles.push_back(full_filename);
 		else
 		{
@@ -981,6 +969,12 @@ void D_LoadResourceFiles(
 		I_Error("\nYou cannot load additional WADs with the shareware version. Register!");
 
 	wadhashes = W_InitMultipleFiles(wadfiles);
+
+	// [RH] Initialize localizable strings.
+	// [SL] It is necessary to load the strings here since a dehacked patch
+	// might change the strings
+	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.Compact();
 
 	D_DoDefDehackedPatch(newpatchfiles);
 }
@@ -1054,10 +1048,6 @@ bool D_DoomWadReboot(
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
-	// [RH] Initialize localizable strings.
-	GStrings.ResetStrings ();
-	GStrings.Compact ();
-
 	D_NewWadInit();
 
 	// preserve state
@@ -1083,9 +1073,12 @@ static void D_AddCommandLineOptionFiles(
 	DArgs files = Args.GatherFiles(option.c_str(), ext.c_str(), true);
 	for (size_t i = 0; i < files.NumArgs(); i++)
 	{
-		std::string filename = BaseFileSearch(files.GetArg(i), ext);
-		if (!filename.empty())
-			filenames.push_back(filename);
+		std::string filename(files.GetArg(i));
+		M_AppendExtension(filename, ext, true);
+
+		std::string base_filename, full_filename;
+		if (D_VerifyFile(filename, base_filename, full_filename))
+			filenames.push_back(full_filename);
 	}
 
 	files.FlushArgs();

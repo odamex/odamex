@@ -358,12 +358,6 @@ void D_DoomMain (void)
 		D_AddDehCommandLineFiles(newpatchfiles);
 
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
-
-		// [RH] Initialize localizable strings.
-		GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
-		GStrings.Compact ();
-
-		//D_InitStrings ();
 	}
 
 	I_Init ();

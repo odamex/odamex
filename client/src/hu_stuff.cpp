@@ -439,21 +439,6 @@ BEGIN_COMMAND (say_to)
 }
 END_COMMAND (say_to)
 
-static bool STACK_ARGS compare_player_frags (const player_t *arg1, const player_t *arg2)
-{
-	return arg2->fragcount < arg1->fragcount;
-}
-
-static bool STACK_ARGS compare_player_kills (const player_t *arg1, const player_t *arg2)
-{
-	return arg2->killcount < arg1->killcount;
-}
-
-static bool STACK_ARGS compare_player_points (const player_t *arg1, const player_t *arg2)
-{
-	return arg2->points < arg1->points;
-}
-
 EXTERN_CVAR(hud_scalescoreboard)
 
 EXTERN_CVAR(sv_gametype)
@@ -1373,6 +1358,33 @@ void OdamexEffect (int xa, int ya, int xb, int yb)
 }
 
 
+//
+// Comparison functors for sorting vectors of players
+//
+struct compare_player_frags
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->fragcount < arg1->fragcount;
+	}
+};
+
+struct compare_player_kills
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->killcount < arg1->killcount;
+	}
+};
+
+struct compare_player_points
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->points < arg1->points;
+	}
+};
+
 
 //
 // HU_ConsoleScores
@@ -1394,9 +1406,8 @@ void HU_ConsoleScores (player_t *player)
 	C_ToggleConsole(); // One of these at each end prevents the following from
 	// drawing on the screen itself.
 
-	// Player list sorting
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		sortedplayers.push_back(&*it);
+    if (sv_gametype == GM_CTF) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points());
 
 	if (sv_gametype == GM_CTF) {
 		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points);
@@ -1437,16 +1448,17 @@ void HU_ConsoleScores (player_t *player)
 								sortedplayers[i]->fragcount,
 								sortedplayers[i]->GameTime / 60);
 
-					else
-						Printf_Bold("%-15s %-6d N/A  %-5d %4d\n",
-								player->userinfo.netname.c_str(),
-								player->points,
-								//player->captures,
-								player->fragcount,
-								player->GameTime / 60);
-				}
-			}
-		}
+        Printf_Bold("\n----------------------------SPECTATORS\n");
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->spectator) {
+                    if (sortedplayers[i] != player)
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname.c_str());
+                    else
+                        Printf_Bold("%-15s\n", player->userinfo.netname.c_str());
+                }
+            }
+    } else if (sv_gametype == GM_TEAMDM) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags());
 
 		Printf_Bold("\n----------------------------SPECTATORS\n");
 		for (i = 0; i < sortedplayers.size(); i++) {
@@ -1503,16 +1515,17 @@ void HU_ConsoleScores (player_t *player)
 								str,
 								sortedplayers[i]->GameTime / 60);
 
-					else
-						Printf_Bold("%-15s %-5d %-6d %4s %4d\n",
-								player->userinfo.netname.c_str(),
-								player->fragcount,
-								player->deathcount,
-								str,
-								player->GameTime / 60);
-				}
-			}
-		}
+        Printf_Bold("\n----------------------------SPECTATORS\n");
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->spectator) {
+                    if (sortedplayers[i] != player)
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname.c_str());
+                    else
+                        Printf_Bold("%-15s\n", player->userinfo.netname.c_str());
+                }
+            }
+    } else if (sv_gametype == GM_DM) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags());
 
 		Printf_Bold("\n----------------------------SPECTATORS\n");
 		for (i = 0; i < sortedplayers.size(); i++) {
@@ -1574,17 +1587,17 @@ void HU_ConsoleScores (player_t *player)
 			}
 		}
 
-		Printf_Bold("\n----------------------------SPECTATORS\n");
-		for (i = 0; i < sortedplayers.size(); i++) {
-			if (sortedplayers[i]->spectator) {
-				if (sortedplayers[i] != player)
-					Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname.c_str());
-				else
-					Printf_Bold("%-15s\n", player->userinfo.netname.c_str());
-			}
-		}
-	} else if (multiplayer) {
-		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
+        Printf_Bold("\n----------------------------SPECTATORS\n");
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->spectator) {
+                    if (sortedplayers[i] != player)
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname.c_str());
+                    else
+                        Printf_Bold("%-15s\n", player->userinfo.netname.c_str());
+                }
+            }
+    } else if (multiplayer) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills());
 
 		Printf_Bold("\n--------------------------------------\n");
 		Printf_Bold("             COOPERATIVE\n");

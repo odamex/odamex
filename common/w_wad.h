@@ -39,6 +39,18 @@
 // [RH] Remove limit on number of WAD files
 extern std::vector<std::string> wadfiles, wadhashes, patchfiles;
 
+// [SL] List of IWAD names and valid MD5 hashes
+#define MAX_HASHES 10
+
+typedef struct
+{
+	std::string name;
+	std::string hash[MAX_HASHES];
+	bool commercial;
+} gamewadinfo_t;
+
+extern const gamewadinfo_t doomwadnames[];
+
 //
 // TYPES
 //
@@ -128,6 +140,7 @@ int W_GetLumpFile (unsigned lump);
 
 // [Russell] Simple function to check whether the given string is an iwad name
 bool W_IsIWAD(const std::string& filename, const std::string& hash = "");
+bool W_IsIWADCommercial(const std::string& filename, const std::string& hash = "");
 
 // [RH] Put a lump in a certain namespace
 //void W_SetLumpNamespace (unsigned lump, int nmspace);
