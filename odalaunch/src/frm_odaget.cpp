@@ -567,6 +567,9 @@ void *FTPThread::Entry()
     // Stupid wxFTP..
     wxLog::EnableLogging(false);
 
+    // Try passive mode first
+    m_FTP.SetPassive(true);
+
     // Try to connect to the server
     // Why can't this accept a port parameter? :'(
     if (m_FTP.Connect(IPV4address))
@@ -601,20 +604,39 @@ void *FTPThread::Entry()
         }
     }
 
+    // Change the directory
+    m_FTP.ChDir(URI.GetDirectory());
+
     // Binary transfer mode
     m_FTP.SetBinary();
 
-    // Change the directory
-    m_FTP.ChDir(URI.GetDirectory());
+    // Try and get the file size first
+    int statuscode;
+    wxString Command;
+
+    Command.Printf(wxT("SIZE %s"), m_File);
+
+    char ret = m_FTP.SendCommand(Command);
+
+    if (ret == '2')
+    {
+        if ( wxSscanf(m_FTP.GetLastResult().c_str(), wxT("%i %i"),
+                          &statuscode, &FileSize) != 2)
+        {
+            // Try wx's version
+            if (!FileSize)
+                FileSize = m_FTP.GetFileSize(m_File);  
+        }
+    }
+    else
+    {
+        // Try wx's version
+        FileSize = m_FTP.GetFileSize(m_File);  
+    }
 
     // Try to locate the file
     if ((InputStream = m_FTP.GetInputStream(m_File)))
     {
-        FileSize = InputStream->GetSize();
-
-        if (!FileSize)
-            FileSize = m_FTP.GetFileSize(m_File);
-
         // We now got the stream for the file, return some data
         Event.SetId(FTP_GOTFILEINFO);
         Event.SetInt(FileSize);
