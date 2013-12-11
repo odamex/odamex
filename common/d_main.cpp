@@ -565,8 +565,11 @@ static void D_ConfigureGameInfo(const std::string& iwad_filename)
 	if ( (f = fopen(iwad_filename.c_str(), "rb")) )
 	{
 		fread(&header, sizeof(header), 1, f);
+
+		// [SL] Allow both IWAD & PWAD identifiers since chex.wad is a PWAD
 		header.identification = LELONG(header.identification);
-		if (header.identification == IWAD_ID)
+		if (header.identification == IWAD_ID ||
+			header.identification == PWAD_ID)
 		{
 			header.numlumps = LELONG(header.numlumps);
 			if (0 == fseek(f, LELONG(header.infotableofs), SEEK_SET))
@@ -708,9 +711,6 @@ static std::string D_CheckIWAD(const std::string& suggestion)
 			}
 		}
 	}
-
-	// Now scan the contents of the IWAD to determine which one it is
-	D_ConfigureGameInfo(iwad);
 
 	return iwad;
 }
@@ -927,6 +927,9 @@ void D_LoadResourceFiles(
 		I_Error("Cannot find IWAD (try -waddir)");
 
 	wadfiles.push_back(iwad_filename);
+
+	// Now scan the contents of the IWAD to determine which one it is
+	D_ConfigureGameInfo(iwad_filename);
 
 	// print info about the IWAD to the console
 	D_PrintIWADIdentity();
