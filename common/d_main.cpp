@@ -1111,6 +1111,64 @@ void D_AddDehCommandLineFiles(std::vector<std::string>& filenames)
 }
 
 //
+// D_RunSimulation
+//
+// Handles the timing of the game simulation.
+// This will simulate between 0 and 4 frames based on the time elapsed since
+// the last frame simulation.
+//
+void D_RunSimulation(uint64_t frame_start_time, void (*sim_func)())
+{
+	static bool needs_reset = false;
+
+	if (timingdemo)
+	{
+		// [SL] -timedemo cli switch should always run one simulation frame
+		sim_func();
+		render_lerp_amount = FRACUNIT;
+		needs_reset = true;
+	}
+	else
+	{
+		// [SL] If it's been at least 1/35 seconds since the last simulation
+		// frame, run one or more frames.
+		static const uint64_t sim_dt = I_ConvertTimeFromMs(1000) / TICRATE;
+		static uint64_t accumulator;
+		static uint64_t previous_frame_start_time;
+
+		if (needs_reset)
+		{
+			accumulator = sim_dt;
+			previous_frame_start_time = frame_start_time;
+		}
+
+		// Run upto 4 simulation frames. Limit the number because there's already a
+		// slowdown and running more will only make things worse.
+		accumulator += MIN(frame_start_time - previous_frame_start_time, 4 * sim_dt);
+
+		if (accumulator >= 2 * sim_dt)
+			DPrintf("Warning: simulating %i frames (gametic %i).\n", accumulator / sim_dt, gametic);
+
+		while (accumulator >= sim_dt)
+		{
+			sim_func();
+			accumulator -= sim_dt;
+		}
+
+		// Use linear interpolation for rendering entities if the renderer
+		// framerate is not synced with the physics frequency.
+		if (maxfps != TICRATE && !(paused || menuactive || step_mode))
+			render_lerp_amount = (fixed_t)(accumulator * FRACUNIT / sim_dt);
+		else
+			render_lerp_amount = FRACUNIT;
+
+		previous_frame_start_time = frame_start_time;
+		needs_reset = false;
+	}
+}
+
+
+//
 // D_RunTics
 //
 // The core of the main game loop.
@@ -1124,45 +1182,9 @@ void D_AddDehCommandLineFiles(std::vector<std::string>& filenames)
 //
 void D_RunTics(void (*sim_func)(), void(*render_func)())
 {
-	static const uint64_t sim_dt = I_ConvertTimeFromMs(1000) / TICRATE;
-
-	static uint64_t previous_time = I_GetTime();
 	uint64_t current_time = I_GetTime();
 
-	// reset the rendering interpolation
-	render_lerp_amount = FRACUNIT;
-
-	static uint64_t accumulator = sim_dt;
-
-	if (!timingdemo)	// run simulation function at 35Hz?
-	{
-		// Run upto 4 simulation frames. Limit the number because there's already a
-		// slowdown and running more will only make things worse.
-		accumulator += MIN(current_time - previous_time, 4 * sim_dt);
-
-		// calculate how late the start of the frame is (for debugging)
-		uint64_t late_time_ms = current_time - previous_time > sim_dt ?
-			I_ConvertTimeToMs(current_time - previous_time - sim_dt) : 0;
-
-		if (late_time_ms > 2)
-			DPrintf("Warning: frame start is %ums late!\n", late_time_ms);
-
-		while (accumulator >= sim_dt)
-		{
-			sim_func();
-			accumulator -= sim_dt;
-		}
-
-		// Use linear interpolation for rendering entities if the renderer
-		// framerate is not synced with the physics frequency.
-		if (maxfps != TICRATE && !(paused || menuactive || step_mode))
-			render_lerp_amount = (fixed_t)(accumulator * FRACUNIT / sim_dt);
-	}
-	else			// run simulation function as fast as possible
-	{
-		sim_func();
-		accumulator = 0;
-	}
+	D_RunSimulation(current_time, sim_func);
 
 	render_func();
 
@@ -1195,8 +1217,6 @@ void D_RunTics(void (*sim_func)(), void(*render_func)())
 		I_Yield();
 		previous_maxfps = -1;
 	}
-
-	previous_time = current_time;
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id: d_main.cpp 3426 2012-11-19 17:25:28Z dr_sean $")
