@@ -571,6 +571,12 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 	Socket->Read32(SvVersion);
 	Socket->Read32(SvProtocolVersion);
 
+    // Prevent possible divide by zero
+    if (!SvVersion)
+    {
+        return 0;
+    }
+
 	if ((VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION)) ||
 			(VERSIONMAJOR(SvVersion) <= VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
 	{
