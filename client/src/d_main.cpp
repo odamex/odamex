@@ -545,6 +545,8 @@ void STACK_ARGS D_Close (void)
 		I_FreeScreen(page);
 		page = NULL;
 	}
+
+	D_ClearTaskSchedulers();
 }
 
 //

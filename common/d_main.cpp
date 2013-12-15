@@ -1110,63 +1110,154 @@ void D_AddDehCommandLineFiles(std::vector<std::string>& filenames)
 	D_AddCommandLineOptionFiles(filenames, "-deh", ".BEX");
 }
 
+
+// ============================================================================
 //
-// D_RunSimulation
+// TaskScheduler class
 //
-// Handles the timing of the game simulation.
-// This will simulate between 0 and 4 frames based on the time elapsed since
-// the last frame simulation.
+// ============================================================================
 //
-void D_RunSimulation(uint64_t frame_start_time, void (*sim_func)())
+// Attempts to schedule a task (indicated by the function pointer passed to
+// the concrete constructor) at a specified interval. For uncapped rates, that
+// interval is simply as often as possible. For capped rates, the interval is
+// specified by the rate parameter.
+//
+
+class TaskScheduler
 {
-	static bool needs_reset = false;
+public:
+	virtual ~TaskScheduler() { }
+	virtual void run() = 0;
+	virtual uint64_t getNextTime() const = 0;
+	virtual float getRemainder() const = 0;
+};
 
-	if (timingdemo)
+class UncappedTaskScheduler : public TaskScheduler
+{
+public:
+	UncappedTaskScheduler(void (*task)()) :
+		mTask(task)
+	{ }
+
+	virtual ~UncappedTaskScheduler() { }
+
+	virtual void run()
 	{
-		// [SL] -timedemo cli switch should always run one simulation frame
-		sim_func();
-		render_lerp_amount = FRACUNIT;
-		needs_reset = true;
+		mTask();
 	}
-	else
+
+	virtual uint64_t getNextTime() const
 	{
-		// [SL] If it's been at least 1/35 seconds since the last simulation
-		// frame, run one or more frames.
-		static const uint64_t sim_dt = I_ConvertTimeFromMs(1000) / TICRATE;
-		static uint64_t accumulator;
-		static uint64_t previous_frame_start_time;
+		return I_GetTime();
+	}
 
-		if (needs_reset)
+	virtual float getRemainder() const
+	{
+		return 0.0f;
+	}
+
+private:
+	void				(*mTask)();
+};
+
+class CappedTaskScheduler : public TaskScheduler
+{
+public:
+	CappedTaskScheduler(void (*task)(), float rate, int max_count) :
+		mTask(task), mMaxCount(max_count),
+		mFrameDuration(I_ConvertTimeFromMs(1000) / rate),
+		mAccumulator(mFrameDuration),
+		mPreviousFrameStartTime(I_GetTime())
+	{
+	}
+
+	virtual ~CappedTaskScheduler() { }
+
+	virtual void run()
+	{
+		mFrameStartTime = I_GetTime();
+		mAccumulator += mFrameStartTime - mPreviousFrameStartTime;
+		mPreviousFrameStartTime = mFrameStartTime;
+
+		int count = mMaxCount;
+
+		while (mAccumulator >= mFrameDuration && count--)
 		{
-			accumulator = sim_dt;
-			previous_frame_start_time = frame_start_time;
+			mTask();
+			mAccumulator -= mFrameDuration;
 		}
+	}
 
-		// Run upto 4 simulation frames. Limit the number because there's already a
-		// slowdown and running more will only make things worse.
-		accumulator += MIN(frame_start_time - previous_frame_start_time, 4 * sim_dt);
+	virtual uint64_t getNextTime() const
+	{
+		return mFrameStartTime + mFrameDuration - mAccumulator;
+	}
 
-		if (accumulator >= 2 * sim_dt)
-			DPrintf("Warning: simulating %i frames (gametic %i).\n", accumulator / sim_dt, gametic);
+	virtual float getRemainder() const
+	{
+		return (float)(double(mAccumulator) / mFrameDuration);
+	}
 
-		while (accumulator >= sim_dt)
-		{
-			sim_func();
-			accumulator -= sim_dt;
-		}
+private:
+	void				(*mTask)();
+	const int			mMaxCount;
+	const uint64_t		mFrameDuration;
+	uint64_t			mAccumulator;
+	uint64_t			mFrameStartTime;
+	uint64_t			mPreviousFrameStartTime;
+};
 
-		// Use linear interpolation for rendering entities if the renderer
-		// framerate is not synced with the physics frequency.
-		if (maxfps != TICRATE && !(paused || menuactive || step_mode))
-			render_lerp_amount = (fixed_t)(accumulator * FRACUNIT / sim_dt);
+static TaskScheduler* simulation_scheduler;
+static TaskScheduler* rendering_scheduler;
+
+//
+// D_InitTaskSchedulers
+//
+// Checks for external changes to the rate for the simulation and rendering
+// tasks and instantiates the appropriate TaskSchedulers.
+//
+static void D_InitTaskSchedulers(void (*sim_func)(), void(*render_func)())
+{
+	bool capped_simulation = !timingdemo;
+	bool capped_rendering = !timingdemo && capfps;
+
+	static bool previous_capped_simulation = !capped_simulation;
+	static bool previous_capped_rendering = !capped_rendering;
+	static float previous_maxfps = -1.0f;
+
+	if (capped_simulation != previous_capped_simulation)
+	{
+		previous_capped_simulation = capped_simulation;
+
+		delete simulation_scheduler;
+
+		if (capped_simulation)
+			simulation_scheduler = new CappedTaskScheduler(sim_func, TICRATE, 4);
 		else
-			render_lerp_amount = FRACUNIT;
+			simulation_scheduler = new UncappedTaskScheduler(sim_func);
+	}
 
-		previous_frame_start_time = frame_start_time;
-		needs_reset = false;
+	if (capped_rendering != previous_capped_rendering || maxfps != previous_maxfps)
+	{
+		previous_capped_rendering = capped_rendering;
+		previous_maxfps = maxfps;
+
+		delete rendering_scheduler;
+
+		if (capped_rendering)
+			rendering_scheduler = new CappedTaskScheduler(render_func, maxfps, 1);
+		else
+			rendering_scheduler = new UncappedTaskScheduler(render_func);
 	}
 }
 
+void STACK_ARGS D_ClearTaskSchedulers()
+{
+	delete simulation_scheduler;
+	delete rendering_scheduler;
+	simulation_scheduler = NULL;
+	rendering_scheduler = NULL;
+}
 
 //
 // D_RunTics
@@ -1182,41 +1273,30 @@ void D_RunSimulation(uint64_t frame_start_time, void (*sim_func)())
 //
 void D_RunTics(void (*sim_func)(), void(*render_func)())
 {
-	uint64_t current_time = I_GetTime();
+	D_InitTaskSchedulers(sim_func, render_func);
 
-	D_RunSimulation(current_time, sim_func);
+	simulation_scheduler->run();
 
-	render_func();
+	// Use linear interpolation for rendering entities if the renderer
+	// framerate is not synced with the simulation frequency.
+	if ((maxfps == TICRATE && capfps) || timingdemo || paused || menuactive || step_mode)
+		render_lerp_amount = FRACUNIT;
+	else
+		render_lerp_amount = simulation_scheduler->getRemainder() * FRACUNIT;
 
-	static float previous_maxfps = -1;
+	rendering_scheduler->run();
 
-	if (!timingdemo && capfps)		// render at a capped framerate?
+	if (timingdemo)
+		return;
+
+	// Sleep until the next scheduled task.
+	uint64_t simulation_wake_time = simulation_scheduler->getNextTime();
+	uint64_t rendering_wake_time = rendering_scheduler->getNextTime();
+
+	do
 	{
-		static uint64_t render_dt, previous_block;
-		uint64_t current_block;
-
-		// The capped framerate has changed so recalculate some stuff
-		if (maxfps != previous_maxfps)
-		{
-			render_dt = I_ConvertTimeFromMs(1000) / maxfps;
-			previous_block = current_time / render_dt;
-		}
-
-		// With capped framerates, frames are rendered within fixed blocks of time
-		// and at the end of a frame, sleep until the start of the next block.
-		do
-			I_Yield();
-		while ( (current_block = I_GetTime() / render_dt) <= previous_block);
-
-		previous_block = current_block;
-		previous_maxfps = maxfps;
-	}
-	else if (!timingdemo)			// render at an unlimited framerate (but still yield)
-	{
-		// sleep for 1ms to allow the operating system some time
 		I_Yield();
-		previous_maxfps = -1;
-	}
+	} while (I_GetTime() < MIN(simulation_wake_time, rendering_wake_time));			
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id: d_main.cpp 3426 2012-11-19 17:25:28Z dr_sean $")

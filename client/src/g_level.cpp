@@ -279,6 +279,8 @@ void G_InitNew (const char *mapname)
 	shotclock = 0;
 
 	D_SetupUserInfo();
+	
+	D_ClearTaskSchedulers();
 
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);

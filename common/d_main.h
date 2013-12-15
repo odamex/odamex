@@ -78,6 +78,7 @@ extern std::vector<std::string> missingfiles, missinghashes;
 
 extern bool capfps;
 extern float maxfps;
+void STACK_ARGS D_ClearTaskSchedulers();
 void D_RunTics(void (*logic_func)(), void (*render_func)());
 
 void D_AddWadCommandLineFiles(std::vector<std::string>& filenames);
