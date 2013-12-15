@@ -455,8 +455,6 @@ void G_InitNew (const char *mapname)
 	viewactive = true;
 	shotclock = 0;
 
-	D_ClearTaskSchedulers();
-
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
 
