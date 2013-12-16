@@ -166,7 +166,7 @@
 				<label>Server Filter</label>
 				<tooltip>Server filter not available yet</tooltip>
 				<longhelp>Server filter not available yet</longhelp>
-				<bitmap>.\icons\btnfilter.png</bitmap>
+				<bitmap>./icons/btnfilter.png</bitmap>
 				<toggle>1</toggle>
 			</object>
 			<object class="wxTextCtrl" name="Id_SrchCtrlGlobal">
