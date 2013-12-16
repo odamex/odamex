@@ -181,7 +181,6 @@ static void M_SlidePlayerRed (int choice);
 static void M_SlidePlayerGreen (int choice);
 static void M_SlidePlayerBlue (int choice);
 static void M_ChangeGender (int choice);
-static void M_ChangeSkin (int choice);
 static void M_ChangeAutoAim (int choice);
 bool M_DemoNoPlay;
 
@@ -348,7 +347,6 @@ enum psetup_t
 	playergreen,
 	playerblue,
 	playersex,
-	playerskin,
 	playeraim,
 	psetup_end
 } psetup_e;
@@ -361,7 +359,6 @@ oldmenuitem_t PlayerSetupMenu[] =
 	{ 2,"", M_SlidePlayerGreen, 'G' },
 	{ 2,"", M_SlidePlayerBlue, 'B' },
 	{ 2,"", M_ChangeGender, 'E' },
-	{ 2,"", M_ChangeSkin, 'S' },
 	{ 2,"", M_ChangeAutoAim, 'A' }
 };
 
@@ -1202,7 +1199,6 @@ static int PlayerTics;
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_color)
-EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_autoaim)
 
@@ -1461,7 +1457,7 @@ static void M_PlayerSetupDrawer (void)
 		}
 	}
 	{
-		unsigned skin = R_FindSkin(cl_skin.cstring());
+		unsigned skin = R_FindSkin("base");
 		spriteframe_t *sprframe =
 			&sprites[skins[skin].sprite].spriteframes[PlayerState->frame & FF_FRAMEMASK];
 
@@ -1508,23 +1504,13 @@ static void M_PlayerSetupDrawer (void)
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*5, genders[gender]);
 	}
 
-	// Draw skin setting
-	{
-		if (sv_gametype != GM_CTF) // [Toke - CTF] Dont allow skin selection if in CTF or Teamplay mode
-		{
-			int x = V_StringWidth ("Skin") + 8 + PSetupDef.x;
-			screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Skin");
-			screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6, cl_skin.cstring());
-		}
-	}
-
 	// Draw autoaim setting
 	{
 		int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
 		float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Autoaim");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*7,
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Autoaim");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6,
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
@@ -1573,18 +1559,6 @@ static void M_ChangeGender (int choice)
 		gender = (gender == 2) ? 0 : gender + 1;
 
 	cl_gender = genders[gender];
-}
-
-static void M_ChangeSkin (int choice) // [Toke - Skins]
-{
-	unsigned skin = R_FindSkin(cl_skin.cstring());
-
-	if (!choice)
-		skin = (skin == 0) ? numskins - 1 : skin - 1;
-	else
-		skin = (skin + 1 < numskins) ? skin + 1 : 0;
-
-	cl_skin = skins[skin].name;
 }
 
 static void M_ChangeAutoAim (int choice)
@@ -1965,12 +1939,7 @@ bool M_Responder (event_t* ev)
 			if (itemOn+1 > currentMenu->numitems-1)
 				itemOn = 0;
 			else
-			{
-				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if (sv_gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 5)
-					itemOn = itemOn + 2;
-				else	itemOn++;
-			}
+				itemOn++;
 			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
@@ -1983,12 +1952,7 @@ bool M_Responder (event_t* ev)
 			if (!itemOn)
 				itemOn = currentMenu->numitems-1;
 			else
-			{
-				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if (sv_gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 7)
-					itemOn = itemOn - 2;
-				else itemOn--;
-			}
+				itemOn--;
 			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
@@ -2229,15 +2193,9 @@ void M_Ticker (void)
 		whichSkull ^= 1;
 		skullAnimCounter = 8;
 	}
-	if (currentMenu == &PSetupDef)
-	{
-		// [Toke - CTF] skip skins selection
-		if (sv_gametype == GM_CTF)
-			if (itemOn == 6)
-				itemOn = 5;
 
+	if (currentMenu == &PSetupDef)
 		M_PlayerSetupTicker ();
-	}
 }
 
 
