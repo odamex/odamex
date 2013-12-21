@@ -3030,7 +3030,7 @@ void SV_UpdateMonsters(player_t &pl)
 		if ((gametic+mo->netid) % 7)
 			continue;
 
-		if (SV_IsPlayerAllowedToSee(pl, mo))
+		if (SV_IsPlayerAllowedToSee(pl, mo) && mo->target)
 		{
 			client_t *cl = &pl.client;
 
@@ -3053,12 +3053,9 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteByte(&cl->netbuf, mo->movedir);
 			MSG_WriteLong(&cl->netbuf, mo->movecount);
 
-			if (mo->target)
-			{
-				MSG_WriteMarker(&cl->netbuf, svc_actor_target);
-				MSG_WriteShort(&cl->netbuf, mo->netid);
-				MSG_WriteShort(&cl->netbuf, mo->target->netid);
-			}
+			MSG_WriteMarker(&cl->netbuf, svc_actor_target);
+			MSG_WriteShort(&cl->netbuf, mo->netid);
+			MSG_WriteShort(&cl->netbuf, mo->target->netid);
 
 			if (cl->netbuf.cursize >= 1024)
 			{
