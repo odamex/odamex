@@ -45,7 +45,6 @@ EXTERN_CVAR(sv_maxplayers)
 
 extern std::string server_host;
 extern std::string digest;
-extern playerskin_t* skins;
 extern std::vector<std::string> wadfiles, wadhashes;
 
 int CL_GetPlayerColor(player_t *player);
@@ -1137,7 +1136,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, consoleplayer().userinfo.team);
 	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.gender);
 	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.color);
-	MSG_WriteString	(netbuffer, skins[consoleplayer().userinfo.skin].name);
+	MSG_WriteString	(netbuffer, "");	// [SL] place holder for deprecated skins
 	MSG_WriteShort	(netbuffer, consoleplayer().GameTime);
 	
 	// Server sends its settings

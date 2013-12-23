@@ -2055,18 +2055,9 @@ void G_DoPlayDemo (bool justStreamInput)
     			netgame = true;
     			multiplayer = true;
 
-    			for (size_t i = 0; i < players.size(); i++) {
-    				if (players[i].ingame()) {
-    					//strcpy(players[i].userinfo.netname, pnam[i]);
-    					//players[i].userinfo.team = TEAM_NONE;
-    					//players[i].userinfo.gender = GENDER_NEUTER;
-    					//players[i].userinfo.color = pcol[i];
-    					//players[i].userinfo.skin = 0;
-    					//players[i].GameTime = 0;
-    					//R_BuildPlayerTranslation (players[i].id, players[i].userinfo.color);
-    					R_BuildClassicPlayerTranslation (players[i].id, i);
-    				}
-    			}
+    			for (size_t i = 0; i < players.size(); i++)
+    				if (players[i].ingame())
+    					R_BuildClassicPlayerTranslation(players[i].id, i);
     		}
     		else
     		{

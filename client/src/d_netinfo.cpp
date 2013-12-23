@@ -60,7 +60,6 @@ EXTERN_CVAR (cl_autoaim)
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
-EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_updaterate)
@@ -81,7 +80,6 @@ enum
 	INFO_Name,
 	INFO_Autoaim,
 	INFO_Color,
-	INFO_Skin,
 	INFO_Team,
 	INFO_Gender,
     INFO_Unlag
@@ -154,7 +152,6 @@ void D_SetupUserInfo(void)
 	coninfo->netname			= netname;
 	coninfo->team				= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
 	coninfo->color				= V_GetColorFromString (NULL, cl_color.cstring());
-	coninfo->skin				= R_FindSkin (cl_skin.cstring());
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->unlag				= (cl_unlag != 0);
@@ -186,8 +183,15 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 
 	arc.Write(&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Write(&info.gender, sizeof(info.gender));
-	arc << info.aimdist << info.color << info.skin << info.unlag
-		<< info.update_rate;
+
+	arc << info.aimdist << info.color;
+
+	// [SL] place holder for deprecated skins
+	unsigned int skin = 0;
+	arc << skin;
+
+	arc << info.unlag << info.update_rate;
+
 	arc.Write(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Write(info.weapon_prefs, sizeof(info.weapon_prefs));
  	arc << 0;
@@ -205,8 +209,15 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 
 	arc.Read(&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Read(&info.gender, sizeof(info.gender));
-	arc >> info.aimdist >> info.color >> info.skin >> info.unlag
-		>> info.update_rate;
+
+	arc >> info.aimdist >> info.color;
+
+	// [SL] place holder for deprecated skins
+	unsigned int skin;
+	arc >> skin;
+
+	arc >> info.unlag >> info.update_rate;
+
 	arc.Read(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Read(info.weapon_prefs, sizeof(info.weapon_prefs));
 	arc >> dummy;

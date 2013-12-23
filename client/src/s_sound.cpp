@@ -805,7 +805,8 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 		return;
 	}
 	
-	if (*name == '*') {
+	if (*name == '*')
+	{
 		// Sexed sound
 		char nametemp[128];
 		const char templat[] = "player/%s/%s";
@@ -815,19 +816,23 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 		player_t *player;
 
 		sfx_id = -1;
-		if ( ent != (AActor *)(~0) && (player = ent->player) ) {
-			sprintf (nametemp, templat, skins[player->userinfo.skin].name, name + 1);
-			sfx_id = S_FindSound (nametemp);
-			if (sfx_id == -1) {
-				sprintf (nametemp, templat, genders[player->userinfo.gender], name + 1);
+		if (ent != (AActor *)(~0) && (player = ent->player))
+		{
+			sprintf(nametemp, templat, "base", name + 1);
+			sfx_id = S_FindSound(nametemp);
+			if (sfx_id == -1)
+			{
+				sprintf(nametemp, templat, genders[player->userinfo.gender], name + 1);
 				sfx_id = S_FindSound (nametemp);
 			}
 		}
-		if (sfx_id == -1) {
-			sprintf (nametemp, templat, "male", name + 1);
+		if (sfx_id == -1)
+		{
+			sprintf(nametemp, templat, "male", name + 1);
 			sfx_id = S_FindSound (nametemp);
 		}
-	} else
+	}
+	else
 		sfx_id = S_FindSound (name);
 
 	if (sfx_id == -1)

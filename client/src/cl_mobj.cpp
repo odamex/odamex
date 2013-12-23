@@ -87,12 +87,6 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	mobj->player = p;
 	mobj->health = p->health;
 
-	// [RH] Set player sprite based on skin
-	if(p->userinfo.skin >= numskins)
-		p->userinfo.skin = 0;
-
-	mobj->sprite = skins[p->userinfo.skin].sprite;
-
 	p->fov = 90.0f;
 	p->mo = p->camera = mobj->ptr();
 	p->playerstate = PST_LIVE;

@@ -48,8 +48,6 @@ extern NetDemo netdemo;
 
 extern byte		*demo_p;		// [RH] Special "ticcmds" get recorded in demos
 
-void CL_RememberSkin(void);
-
 //
 // NETWORKING
 //

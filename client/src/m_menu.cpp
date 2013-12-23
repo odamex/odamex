@@ -1457,9 +1457,8 @@ static void M_PlayerSetupDrawer (void)
 		}
 	}
 	{
-		unsigned skin = R_FindSkin("base");
-		spriteframe_t *sprframe =
-			&sprites[skins[skin].sprite].spriteframes[PlayerState->frame & FF_FRAMEMASK];
+		int spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
+		spriteframe_t* sprframe = &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
 
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
