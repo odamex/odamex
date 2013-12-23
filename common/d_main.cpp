@@ -548,13 +548,14 @@ static void D_ConfigureGameInfo(const std::string& iwad_filename)
 {
 	gamemode = undetermined;
 
-	static const int NUM_CHECKLUMPS = 10;
+	static const int NUM_CHECKLUMPS = 11;
 	static const char checklumps[NUM_CHECKLUMPS][8] = {
 		"E1M1", "E2M1", "E4M1", "MAP01",
 		{ 'A','N','I','M','D','E','F','S'},
 		"FINAL2", "REDTNT2", "CAMO1",
 		{ 'E','X','T','E','N','D','E','D'},
-		{ 'D','M','E','N','U','P','I','C'}
+		{ 'D','M','E','N','U','P','I','C'},
+		{ 'F','R','E','E','D','O','O','M'}
 	};
 
 	int lumpsfound[NUM_CHECKLUMPS];
@@ -589,6 +590,25 @@ static void D_ConfigureGameInfo(const std::string& iwad_filename)
 		fclose(f);
 	}
 
+	// [SL] Check for FreeDoom / Ultimate FreeDoom
+	if (lumpsfound[10])
+	{
+		if (lumpsfound[0])
+		{
+			gamemode = retail_freedoom;
+			gameinfo = RetailGameInfo;
+			gamemission = doom;
+		}
+		else
+		{
+			gamemode = commercial_freedoom;
+			gameinfo = CommercialGameInfo;
+			gamemission = doom2;
+		}
+		return;
+	}
+
+	// Check for Doom 2 or TNT / Plutonia
 	if (lumpsfound[3])
 	{
 		if (lumpsfound[9])
@@ -608,8 +628,12 @@ static void D_ConfigureGameInfo(const std::string& iwad_filename)
 			gamemission = pack_plut;
 		else
 			gamemission = doom2;
+
+		return;
 	}
-	else if (lumpsfound[0])
+
+	// Check for Registered Doom / Ultimate Doom / Chex Quest / Shareware Doom
+	if (lumpsfound[0])
 	{
 		gamemission = doom;
 		if (lumpsfound[1])
@@ -647,6 +671,8 @@ static void D_ConfigureGameInfo(const std::string& iwad_filename)
 			gamemode = shareware;
 			gameinfo = SharewareGameInfo;
 		}
+
+		return;
 	}
 
 	if (gamemode == undetermined)
@@ -667,6 +693,10 @@ static std::string D_GetTitleString()
 		return "DOOM 2: Plutonia Experiment";
 	if (gamemission == chex)
 		return "Chex Quest";
+	if (gamemode == retail_freedoom)
+		return "Ultimate FreeDoom";
+	if (gamemode == commercial_freedoom)
+		return "FreeDoom";
 
 	return gameinfo.titleString;
 }
