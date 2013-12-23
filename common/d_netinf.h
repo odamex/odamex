@@ -70,7 +70,6 @@ struct UserInfo
 	bool            predict_weapons;
 	byte            update_rate;
 	int             color;
-	unsigned int    skin;
 	gender_t        gender;
 	weaponswitch_t  switchweapon;
 	byte            weapon_prefs[NUMWEAPONS];
@@ -79,7 +78,7 @@ struct UserInfo
 
 	UserInfo() : next_change_time(0), netname(""), team(TEAM_NONE), aimdist(0),
 	             unlag(true), predict_weapons(true), update_rate(2), color(0),
-	             skin(0), gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
+	             gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
 	{
 		// default doom weapon ordering when player runs out of ammo
 		memcpy(weapon_prefs, UserInfo::weapon_prefs_default, sizeof(weapon_prefs));

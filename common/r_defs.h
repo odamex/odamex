@@ -611,19 +611,6 @@ struct spritedef_s
 typedef struct spritedef_s spritedef_t;
 
 //
-// [RH] Internal "skin" definition.
-//
-struct playerskin_s
-{
-	char		name[17];	// 16 chars + NULL
-	char		face[3];
-	spritenum_t	sprite;
-	int			namespc;	// namespace for this skin
-	int			gender;		// This skin's gender (not used)
-};
-typedef struct playerskin_s playerskin_t;
-
-//
 // The infamous visplane
 //
 struct visplane_s

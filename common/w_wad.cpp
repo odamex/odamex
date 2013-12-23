@@ -142,7 +142,7 @@ const gamewadinfo_t doomwadnames[] =
 	},
 
     {	"CHEX.WAD",
-		{ "25485721882b050afa96a56e5758dd52" },
+		{ "25485721882B050AFA96A56E5758DD52" },
 		true
 	},
 

@@ -95,7 +95,6 @@ typedef enum {
 	ns_sprites,
 	ns_flats,
 	ns_colormaps,
-	ns_skinbase = 0x80000000	// Each skin's status bar face gets own namespace
 } namespace_t;
 
 extern	void**		lumpcache;

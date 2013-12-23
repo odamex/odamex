@@ -62,11 +62,6 @@ extern int				firstspritelump;
 extern int				lastspritelump;
 extern int				numspritelumps;
 
-extern size_t			numskins;	// [RH]
-extern playerskin_t*	skins;		// [RH]
-
-
-
 //
 // Lookup tables for map data.
 //

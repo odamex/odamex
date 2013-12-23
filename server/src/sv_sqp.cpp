@@ -377,6 +377,12 @@ static DWORD IntQrySendResponse(const WORD &TagId,
     DWORD EqProtocolVersion = MSG_ReadLong();
     DWORD EqTime = MSG_ReadLong();
 
+    // Prevent possible divide by zero
+    if (!EqVersion)
+    {
+        return 0;
+    }
+
     // Override other packet types for older enquirer version response
     if (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) || 
         (VERSIONMAJOR(EqVersion) <= VERSIONMAJOR(GAMEVER) && VERSIONMINOR(EqVersion) < VERSIONMINOR(GAMEVER)))

@@ -24,6 +24,7 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/uri.h>
 #include <wx/wfstream.h>
+#include <wx/log.h>
 
 DEFINE_EVENT_TYPE(EVENT_HTTP_THREAD)
 DEFINE_EVENT_TYPE(EVENT_FTP_THREAD)
@@ -74,11 +75,11 @@ protected:
 
     size_t OnSysWrite(const void *buffer, size_t size)
     {
-        wxCommandEvent event(m_EventType, wxID_ANY);
+        wxCommandEvent Event(m_EventType, wxID_ANY);
         
-        event.SetId(SIZE_UPDATE);
-        event.SetInt((size_t)size);
-        wxPostEvent(m_EventHandler, event);
+        Event.SetId(SIZE_UPDATE);
+        Event.SetInt((size_t)size);
+        wxQueueEvent(m_EventHandler, Event.Clone());
         
         // This is needed so thread sunspension works on other platforms
         m_Thread->TestDestroy();
@@ -509,7 +510,7 @@ void *FTPThread::Entry()
         {
             Event.SetId(FTP_BADURL);
             Event.SetString(wxT("No domain specified"));
-            wxPostEvent(m_EventHandler, Event);
+            wxQueueEvent(m_EventHandler, Event.Clone());
 
             return NULL;
         }
@@ -519,7 +520,7 @@ void *FTPThread::Entry()
         {
             Event.SetId(FTP_BADURL);
             Event.SetString(wxT("Path to file not specified"));
-            wxPostEvent(m_EventHandler, Event);
+            wxQueueEvent(m_EventHandler, Event.Clone());
 
             return NULL;
         }
@@ -529,7 +530,7 @@ void *FTPThread::Entry()
         {
             Event.SetId(FTP_BADURL);
             Event.SetString(wxT("This is a directory, not a file"));
-            wxPostEvent(m_EventHandler, Event);
+            wxQueueEvent(m_EventHandler, Event.Clone());
 
             return NULL;
         }
@@ -567,6 +568,9 @@ void *FTPThread::Entry()
     // Stupid wxFTP..
     wxLog::EnableLogging(false);
 
+    // Try passive mode first
+    m_FTP.SetPassive(true);
+
     // Try to connect to the server
     // Why can't this accept a port parameter? :'(
     if (m_FTP.Connect(IPV4address))
@@ -575,7 +579,7 @@ void *FTPThread::Entry()
         Event.SetId(FTP_CONNECTED);
         Event.SetString(URI.GetServer());
         Event.SetInt(Port);
-        wxPostEvent(m_EventHandler, Event);
+        wxQueueEvent(m_EventHandler, Event.Clone());
     }
     else
     {
@@ -587,7 +591,7 @@ void *FTPThread::Entry()
             Event.SetId(FTP_CONNECTED);
             Event.SetString(URI.GetServer());
             Event.SetInt(Port);
-            wxPostEvent(m_EventHandler, Event);
+            wxQueueEvent(m_EventHandler, Event.Clone());
         }
         else
         {
@@ -595,37 +599,56 @@ void *FTPThread::Entry()
             Event.SetId(FTP_DISCONNECTED);
             Event.SetString(URI.GetServer());
             Event.SetInt(Port);
-            wxPostEvent(m_EventHandler, Event);
+            wxQueueEvent(m_EventHandler, Event.Clone());
             
             return NULL;
         }
     }
 
+    // Change the directory
+    m_FTP.ChDir(URI.GetDirectory());
+
     // Binary transfer mode
     m_FTP.SetBinary();
 
-    // Change the directory
-    m_FTP.ChDir(URI.GetDirectory());
+    // Try and get the file size first
+    int statuscode;
+    wxString Command;
+
+    Command.Printf(wxT("SIZE %s"), m_File);
+
+    char ret = m_FTP.SendCommand(Command);
+
+    if (ret == '2')
+    {
+        if ( wxSscanf(m_FTP.GetLastResult().c_str(), wxT("%i %i"),
+                          &statuscode, &FileSize) != 2)
+        {
+            // Try wx's version
+            if (!FileSize)
+                FileSize = m_FTP.GetFileSize(m_File);  
+        }
+    }
+    else
+    {
+        // Try wx's version
+        FileSize = m_FTP.GetFileSize(m_File);  
+    }
 
     // Try to locate the file
     if ((InputStream = m_FTP.GetInputStream(m_File)))
     {
-        FileSize = InputStream->GetSize();
-
-        if (!FileSize)
-            FileSize = m_FTP.GetFileSize(m_File);
-
         // We now got the stream for the file, return some data
         Event.SetId(FTP_GOTFILEINFO);
         Event.SetInt(FileSize);
-        wxPostEvent(m_EventHandler, Event);
+        wxQueueEvent(m_EventHandler, Event.Clone());
     }
     else
     {
         // Location of file is invalid
         Event.SetId(FTP_DOWNLOADERROR);
         Event.SetString(URI.GetPath());
-        wxPostEvent(m_EventHandler, Event);
+        wxQueueEvent(m_EventHandler, Event.Clone());
 
         return NULL;
     }
@@ -642,13 +665,13 @@ void *FTPThread::Entry()
     {
         Event.SetId(FTP_DOWNLOADING);
         Event.SetString(FileName.GetFullPath());
-        wxPostEvent(m_EventHandler, Event);
+        wxQueueEvent(m_EventHandler, Event.Clone());
     }
     else
     {
         Event.SetId(FTP_DOWNLOADERROR);
         Event.SetString(FileName.GetFullPath());
-        wxPostEvent(m_EventHandler, Event);
+        wxQueueEvent(m_EventHandler, Event.Clone());
 
         delete InputStream;
 
@@ -661,7 +684,7 @@ void *FTPThread::Entry()
     // Download done
     Event.SetId(FTP_DOWNLOADCOMPLETE);
     Event.SetString(FileName.GetFullPath());
-    wxPostEvent(m_EventHandler, Event);
+    wxQueueEvent(m_EventHandler, Event.Clone());
 
     delete InputStream;
 
@@ -686,7 +709,7 @@ void *HTTPThread::Entry()
         {
             Event.SetId(HTTP_BADURL);
             Event.SetString(wxT("No domain specified"));
-            wxPostEvent(m_EventHandler, Event);
+            wxQueueEvent(m_EventHandler, Event.Clone());
 
             return NULL;
         }
@@ -696,7 +719,7 @@ void *HTTPThread::Entry()
         {
             Event.SetId(HTTP_BADURL);
             Event.SetString(wxT("Path to file not specified"));
-            wxPostEvent(m_EventHandler, Event);
+            wxQueueEvent(m_EventHandler, Event.Clone());
 
             return NULL;
         }
@@ -706,7 +729,7 @@ void *HTTPThread::Entry()
         {
             Event.SetId(HTTP_BADURL);
             Event.SetString(wxT("This is a directory, not a file"));
-            wxPostEvent(m_EventHandler, Event);
+            wxQueueEvent(m_EventHandler, Event.Clone());
 
             return NULL;
         }
@@ -736,7 +759,7 @@ void *HTTPThread::Entry()
         Event.SetId(HTTP_CONNECTED);
         Event.SetString(URI.GetServer());
         Event.SetInt(Port);
-        wxPostEvent(m_EventHandler, Event);
+        wxQueueEvent(m_EventHandler, Event.Clone());
     }
     else
     {
@@ -744,7 +767,7 @@ void *HTTPThread::Entry()
         Event.SetId(HTTP_DISCONNECTED);
         Event.SetString(URI.GetServer());
         Event.SetInt(Port);
-        wxPostEvent(m_EventHandler, Event);
+        wxQueueEvent(m_EventHandler, Event.Clone());
 
         return NULL;
     }
@@ -757,14 +780,14 @@ void *HTTPThread::Entry()
         // We now got the stream for the file, return some data
         Event.SetId(HTTP_GOTFILEINFO);
         Event.SetInt((size_t)FileSize);
-        wxPostEvent(m_EventHandler, Event);
+        wxQueueEvent(m_EventHandler, Event.Clone());
     }
     else
     {
         // Location of file is invalid
         Event.SetId(HTTP_DOWNLOADERROR);
         Event.SetString(URI.GetPath());
-        wxPostEvent(m_EventHandler, Event);
+        wxQueueEvent(m_EventHandler, Event.Clone());
 
         return NULL;
     }
@@ -781,13 +804,13 @@ void *HTTPThread::Entry()
     {
         Event.SetId(HTTP_DOWNLOADING);
         Event.SetString(FileName.GetFullPath());
-        wxPostEvent(m_EventHandler, Event);
+        wxQueueEvent(m_EventHandler, Event.Clone());
     }
     else
     {
         Event.SetId(HTTP_DOWNLOADERROR);
         Event.SetString(FileName.GetFullPath());
-        wxPostEvent(m_EventHandler, Event);
+        wxQueueEvent(m_EventHandler, Event.Clone());
 
         delete InputStream;
 
@@ -799,7 +822,7 @@ void *HTTPThread::Entry()
     // Download done
     Event.SetId(HTTP_DOWNLOADCOMPLETE);
     Event.SetString(FileName.GetFullPath());
-    wxPostEvent(m_EventHandler, Event);
+    wxQueueEvent(m_EventHandler, Event.Clone());
 
     delete InputStream;
 

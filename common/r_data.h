@@ -120,8 +120,6 @@ unsigned int R_BlendForColormap (int map);		// [RH] return calculated blend for 
 extern shademap_t realcolormaps;				// [RH] make the colormaps externally visible
 extern size_t numfakecmaps;
 
-int R_FindSkin (const char *name);	// [RH] Find a skin
-
 unsigned int SlopeDiv(unsigned int num, unsigned int den);
 
 #endif

@@ -112,10 +112,6 @@ static const char*		spritename;
 
 static tallpost_t* spriteposts[MAXWIDTH];
 
-// [RH] skin globals
-playerskin_t	*skins;
-size_t			numskins;
-
 // [RH] particle globals
 extern int				NumParticles;
 extern int				ActiveParticles;
@@ -258,37 +254,29 @@ static void R_InstallSprite (const char *name, int num)
 //
 void R_InitSpriteDefs (const char **namelist)
 {
-	int i;
-	int l;
-	int intname;
-	int realsprites;
-
 	// count the number of sprite names
 	for (numsprites = 0; namelist[numsprites]; numsprites++)
 		;
-	// [RH] include skins in the count
-	realsprites = numsprites;
-	numsprites += numskins - 1;
 
 	if (!numsprites)
 		return;
 
-	sprites = (spritedef_t *)Z_Malloc (numsprites * sizeof(*sprites), PU_STATIC, NULL);
+	sprites = (spritedef_t *)Z_Malloc(numsprites * sizeof(*sprites), PU_STATIC, NULL);
 
 	// scan all the lump names for each of the names,
 	//	noting the highest frame letter.
 	// Just compare 4 characters as ints
-	for (i = 0; i < realsprites; i++)
+	for (int i = 0; i < numsprites; i++)
 	{
 		spritename = (const char *)namelist[i];
 		memset (sprtemp, -1, sizeof(sprtemp));
 
 		maxframe = -1;
-		intname = *(int *)namelist[i];
+		int intname = *(int *)namelist[i];
 
 		// scan the lumps,
 		//	filling in the frames for whatever is found
-		for (l = lastspritelump; l >= firstspritelump; l--)
+		for (int l = lastspritelump; l >= firstspritelump; l--)
 		{
 			if (*(int *)lumpinfo[l].name == intname)
 			{
@@ -305,215 +293,10 @@ void R_InitSpriteDefs (const char **namelist)
 			}
 		}
 
-		R_InstallSprite (namelist[i], i);
+		R_InstallSprite(namelist[i], i);
 	}
 }
 
-// [RH]
-// R_InitSkins
-// Reads in everything applicable to a skin. The skins should have already
-// been counted and had their identifiers assigned to namespaces.
-//
-static const char *skinsoundnames[8][2] = {
-	{ "dsplpain",	NULL },
-	{ "dspldeth",	NULL },
-	{ "dspdiehi",	"xdeath1" },
-	{ "dsoof",		"land1" },
-	{ "dsnoway",	"grunt1" },
-	{ "dsslop",		"gibbed" },
-	{ "dspunch",	"fist" },
-	{ "dsjump",		"jump1" }
-};
-
-static char facenames[8][8] = {
-	"xxxTR", "xxxTL", "xxxOUCH", "xxxEVL", "xxxKILL", "xxxGOD0",
-	"xxxST", { 'x','x','x','D','E','A','D','0' }
-};
-static const int facelens[8] = {
-	5, 5, 7, 6, 7, 7, 5, 8
-};
-
-void R_InitSkins (void)
-{
-	char sndname[128];
-	int sndlumps[8];
-	char key[10];
-	int intname;
-	size_t i;
-	int j, k, base;
-	int stop;
-	char *def;
-
-	key[9] = 0;
-
-	for (i = 1; i < numskins; i++)
-	{
-		for (j = 0; j < 8; j++)
-			sndlumps[j] = -1;
-		base = W_CheckNumForName ("S_SKIN", skins[i].namespc);
-		// The player sprite has 23 frames. This means that the S_SKIN
-		// marker needs a minimum of 23 lumps after it (probably more).
-		if (base + 23 >= (int)numlumps || base == -1)
-			continue;
-		def = (char *)W_CacheLumpNum (base, PU_CACHE);
-		intname = 0;
-
-		// Data is stored as "key = data".
-		while ( (def = COM_Parse (def)) )
-		{
-			strncpy (key, com_token, 9);
-			def = COM_Parse (def);
-			if (com_token[0] != '=')
-			{
-				Printf (PRINT_HIGH, "Bad format for skin %d: %s %s", i, key, com_token);
-				break;
-			}
-			def = COM_Parse (def);
-			if (!stricmp (key, "name")) {
-				strncpy (skins[i].name, com_token, 16);
-			} else if (!stricmp (key, "sprite")) {
-				for (j = 3; j >= 0; j--)
-					com_token[j] = toupper (com_token[j]);
-				intname = *((int *)com_token);
-			} else if (!stricmp (key, "face")) {
-				for (j = 2; j >= 0; j--)
-					skins[i].face[j] = toupper (com_token[j]);
-			} else {
-				for (j = 0; j < 8; j++) {
-					if (!stricmp (key, skinsoundnames[j][0])) {
-						// Can't use W_CheckNumForName because skin sounds
-						// haven't been assigned a namespace yet.
-						for (k = base + 1; k < (int)numlumps &&
-										   lumpinfo[k].handle == lumpinfo[base].handle; k++) {
-							if (!strnicmp (com_token, lumpinfo[k].name, 8)) {
-								//W_SetLumpNamespace (k, skins[i].namespc);
-								sndlumps[j] = k;
-								break;
-							}
-						}
-						if (sndlumps[j] == -1) {
-							// Replacement not found, try finding it in the global namespace
-							sndlumps[j] = W_CheckNumForName (com_token);
-						}
-						break;
-					}
-				}
-				//if (j == 8)
-				//	Printf (PRINT_HIGH, "Funny info for skin %i: %s = %s\n", i, key, com_token);
-			}
-		}
-
-		if (skins[i].name[0] == 0)
-			sprintf (skins[i].name, "skin%d", (unsigned)i);
-
-		// Register any sounds this skin provides
-		for (j = 0; j < 8; j++) {
-			if (sndlumps[j] != -1) {
-				if (j > 1) {
-					sprintf (sndname, "player/%s/%s", skins[i].name, skinsoundnames[j][1]);
-					S_AddSoundLump (sndname, sndlumps[j]);
-				} else if (j == 1) {
-					int r;
-
-					for (r = 1; r <= 4; r++) {
-						sprintf (sndname, "player/%s/death%d", skins[i].name, r);
-						S_AddSoundLump (sndname, sndlumps[j]);
-					}
-				} else {	// j == 0
-					int l, r;
-
-					for (l =  1; l <= 4; l++)
-						for (r = 1; r <= 2; r++) {
-							sprintf (sndname, "player/%s/pain%d_%d", skins[i].name, l*25, r);
-							S_AddSoundLump (sndname, sndlumps[j]);
-						}
-				}
-			}
-		}
-
-		// Now collect the sprite frames for this skin. If the sprite name was not
-		// specified, use whatever immediately follows the specifier lump.
-		if (intname == 0) {
-			intname = *(int *)(lumpinfo[base+1].name);
-			for (stop = base + 2; stop < (int)numlumps &&
-								  lumpinfo[stop].handle == lumpinfo[base].handle &&
-								  *(int *)lumpinfo[stop].name == intname; stop++)
-				;
-		} else {
-			stop = numlumps;
-		}
-
-		memset (sprtemp, -1, sizeof(sprtemp));
-		maxframe = -1;
-
-		for (k = base + 1;
-			 k < stop && lumpinfo[k].handle == lumpinfo[base].handle;
-			 k++) {
-			if (*(int *)lumpinfo[k].name == intname)
-			{
-				R_InstallSpriteLump (k,
-									 lumpinfo[k].name[4] - 'A', // denis - fixme - security
-									 lumpinfo[k].name[5] - '0',
-									 false);
-
-				if (lumpinfo[k].name[6])
-					R_InstallSpriteLump (k,
-									 lumpinfo[k].name[6] - 'A',
-									 lumpinfo[k].name[7] - '0',
-									 true);
-
-				//W_SetLumpNamespace (k, skins[i].namespc);
-			}
-		}
-		R_InstallSprite ((char *)&intname, (skins[i].sprite = (spritenum_t)(numsprites - numskins + i)));
-
-		// Now go back and check for face graphics (if necessary)
-		if (skins[i].face[0] == 0 || skins[i].face[1] == 0 || skins[i].face[2] == 0) {
-			// No face name specified, so this skin doesn't replace it
-			skins[i].face[0] = 0;
-		} else {
-			// Need to go through and find all face graphics for the skin
-			// and assign them to the skin's namespace.
-			for (j = 0; j < 8; j++)
-				strncpy (facenames[j], skins[i].face, 3);
-
-			for (k = base + 1;
-				 k < (int)numlumps && lumpinfo[k].handle == lumpinfo[base].handle;
-				 k++) {
-				for (j = 0; j < 8; j++)
-					if (!strncmp (facenames[j], lumpinfo[k].name, facelens[j])) {
-						//W_SetLumpNamespace (k, skins[i].namespc);
-						break;
-					}
-			}
-		}
-	}
-	// Grrk. May have changed sound table. Fix it.
-	if (numskins > 1)
-		S_HashSounds ();
-}
-
-// [RH] Find a skin by name
-int R_FindSkin (const char *name)
-{
-	int i;
-
-	for (i = 0; i < (int)numskins; i++)
-		if (!strnicmp (skins[i].name, name, 16))
-			return i;
-
-	return 0;
-}
-
-// [RH] List the names of all installed skins
-BEGIN_COMMAND (skins)
-{
-	int i;
-
-	for (i = 0; i < (int)numskins; i++)
-		Printf (PRINT_HIGH, "% 3d %s\n", i, skins[i].name);
-}
-END_COMMAND (skins)
 
 static void R_InitCrosshair()
 {
@@ -559,10 +342,6 @@ int 			newvissprite;
 //
 void R_InitSprites (const char **namelist)
 {
-	unsigned i;
-
-	numskins = 0; // [Toke - skins] Reset skin count
-
 	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
 
 	M_Free(vissprites);
@@ -570,39 +349,7 @@ void R_InitSprites (const char **namelist)
 	vissprites = (vissprite_t *)Malloc (MaxVisSprites * sizeof(vissprite_t));
 	lastvissprite = &vissprites[MaxVisSprites];
 
-	// [RH] Count the number of skins, rename each S_SKIN?? identifier
-	//		to just S_SKIN, and assign it a unique namespace.
-	for (i = 0; i < numlumps; i++)
-	{
-		if (!strncmp (lumpinfo[i].name, "S_SKIN", 6))
-		{
-			numskins++;
-			lumpinfo[i].name[6] = lumpinfo[i].name[7] = 0;
-			//W_SetLumpNamespace (i, ns_skinbase + numskins);
-		}
-	}
-
-	// [RH] We always have a default "base" skin.
-	numskins++;
-
-	// [RH] Do some preliminary setup
-	skins = (playerskin_t *)Z_Malloc (sizeof(*skins) * numskins, PU_STATIC, 0);
-	memset (skins, 0, sizeof(*skins) * numskins);
-	for (i = 1; i < numskins; i++)
-	{
-		skins[i].namespc = i + ns_skinbase;
-	}
-
 	R_InitSpriteDefs (namelist);
-	R_InitSkins ();		// [RH] Finish loading skin data
-
-	// [RH] Set up base skin
-	strcpy (skins[0].name, "Base");
-	skins[0].face[0] = 'S';
-	skins[0].face[1] = 'T';
-	skins[0].face[2] = 'F';
-	skins[0].sprite = SPR_PLAY;
-	skins[0].namespc = ns_global;
 
 	// set up the crosshair
 	R_InitCrosshair();

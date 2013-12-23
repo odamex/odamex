@@ -242,10 +242,12 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
         
         SetItem(li);
 
-        if (s.Info.Players[i].Kills != 0 && s.Info.Players[i].Deaths != 0)
-            kdr = (float)s.Info.Players[i].Kills / (float)s.Info.Players[i].Deaths;
-        else
+        if (s.Info.Players[i].Frags <= 0)
             kdr = 0;
+        else if (s.Info.Players[i].Frags >= 1 && !s.Info.Players[i].Deaths)
+            kdr = (float)s.Info.Players[i].Frags;
+        else
+            kdr = (float)s.Info.Players[i].Frags / (float)s.Info.Players[i].Deaths;
 
         li.SetColumn(playerlist_field_kdrcount);
         li.SetText(wxString::Format(_T("%2.1f"), kdr));

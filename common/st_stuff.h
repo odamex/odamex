@@ -60,7 +60,7 @@ void ST_Init (void);
 // Draw the HUD (only if old status bar is not drawn)
 void ST_newDraw (void);
 
-// Called on init and whenever player's skin changes
+// Called on init
 void ST_loadGraphics (void);
 
 // [ML] HUDified status bar

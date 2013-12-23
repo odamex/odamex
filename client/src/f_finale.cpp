@@ -268,14 +268,14 @@ castinfo_t		castorder[] = {
 	{NULL, MT_UNKNOWNTHING}
 };
 
-int 			castnum;
-int 			casttics;
-int				castsprite;	// [RH] For overriding the player sprite with a skin
-state_t*		caststate;
-BOOL	 		castdeath;
-int 			castframes;
-int 			castonmelee;
-BOOL	 		castattacking;
+static int 			castnum;
+static int 			casttics;
+static int			castsprite;
+static state_t*		caststate;
+static BOOL	 		castdeath;
+static int 			castframes;
+static int 			castonmelee;
+static BOOL	 		castattacking;
 
 
 //
@@ -308,10 +308,7 @@ void F_StartCast (void)
 	wipegamestate = GS_FORCEWIPE;
 	castnum = 0;
 	caststate = &states[mobjinfo[castorder[castnum].type].seestate];
-	if (castorder[castnum].type == MT_PLAYER)
-		castsprite = skins[consoleplayer().userinfo.skin].sprite;
-	else
-		castsprite = caststate->sprite;
+	castsprite = caststate->sprite;
 	casttics = caststate->tics;
 	castdeath = false;
 	finalestage = 2;
@@ -345,10 +342,7 @@ void F_CastTicker (void)
 			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].seesound, 1, atten);
 		}
 		caststate = &states[mobjinfo[castorder[castnum].type].seestate];
-		if (castorder[castnum].type == MT_PLAYER)
-			castsprite = skins[consoleplayer().userinfo.skin].sprite;
-		else
-			castsprite = caststate->sprite;
+		castsprite = caststate->sprite;
 		castframes = 0;
 	}
 	else
@@ -456,25 +450,8 @@ BOOL F_CastResponder (event_t* ev)
 	casttics = caststate->tics;
 	castframes = 0;
 	castattacking = false;
-	if (mobjinfo[castorder[castnum].type].deathsound) {
-		if (castorder[castnum].type == MT_PLAYER) {
-			static const char sndtemplate[] = "player/%s/death1";
-			static const char *genders[] = { "male", "female", "cyborg" };
-			char nametest[128];
-			int sndnum;
-
-			sprintf (nametest, sndtemplate, skins[consoleplayer().userinfo.skin].name);
-			sndnum = S_FindSound (nametest);
-			if (sndnum == -1) {
-				sprintf (nametest, sndtemplate, genders[consoleplayer().userinfo.gender]);
-				sndnum = S_FindSound (nametest);
-				if (sndnum == -1)
-					sndnum = S_FindSound ("player/male/death1");
-			}
-			S_SoundID (CHAN_VOICE, sndnum, 1, ATTN_NONE);
-		} else
-			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].deathsound, 1, ATTN_NONE);
-	}
+	if (mobjinfo[castorder[castnum].type].deathsound)
+		S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].deathsound, 1, ATTN_NONE);
 
 	return true;
 }

@@ -84,8 +84,9 @@ enum GameMode_t
   retail,		// DOOM 1 retail, E4, M36
   retail_chex,	// Chex Quest
   commercial_bfg,
+  commercial_freedoom,
+  retail_freedoom,
   undetermined	// Well, no IWAD found.
-
 };
 
 
