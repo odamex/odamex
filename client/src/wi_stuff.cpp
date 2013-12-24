@@ -1368,7 +1368,7 @@ void WI_loadData (void)
 		}
 	}
 
-	if (gamemode != commercial && gamemode != commercial_bfg )
+	if (gamemode != commercial && gamemode != commercial_bfg && gamemode != commercial_freedoom)
 	{
 		// you are here
 		yah[0] = W_CachePatch ("WIURH0", PU_STATIC);
