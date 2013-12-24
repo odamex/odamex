@@ -595,15 +595,15 @@ static void D_ConfigureGameInfo(const std::string& iwad_filename)
 	{
 		if (lumpsfound[0])
 		{
-			gamemode = retail_freedoom;
+			gamemode = retail;
 			gameinfo = RetailGameInfo;
-			gamemission = doom;
+			gamemission = retail_freedoom;
 		}
 		else
 		{
-			gamemode = commercial_freedoom;
+			gamemode = commercial;
 			gameinfo = CommercialGameInfo;
-			gamemission = doom2;
+			gamemission = commercial_freedoom;
 		}
 		return;
 	}
@@ -652,12 +652,16 @@ static void D_ConfigureGameInfo(const std::string& iwad_filename)
 				}
 				else
 				{
-					gamemode = retail;
-
 					if (lumpsfound[9])
+					{
+						gamemode = retail_bfg;
 						gameinfo = RetailBFGGameInfo;
+					}
 					else
+					{
+						gamemode = retail;
 						gameinfo = RetailGameInfo;
+					}
 				}
 			}
 			else
@@ -693,9 +697,9 @@ static std::string D_GetTitleString()
 		return "DOOM 2: Plutonia Experiment";
 	if (gamemission == chex)
 		return "Chex Quest";
-	if (gamemode == retail_freedoom)
+	if (gamemission == retail_freedoom)
 		return "Ultimate FreeDoom";
-	if (gamemode == commercial_freedoom)
+	if (gamemission == commercial_freedoom)
 		return "FreeDoom";
 
 	return gameinfo.titleString;

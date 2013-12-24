@@ -972,7 +972,7 @@ void M_NewGame(int choice)
     {
         M_SetupNextMenu(&NewDef);
     }
-    else if (gamemode == retail)
+    else if (gamemode == retail || gamemode == retail_bfg)
 	{
 	    EpiDef.numitems = ep_end;
 	    M_SetupNextMenu(&EpiDef);

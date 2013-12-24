@@ -680,8 +680,8 @@ bool ST_Responder (event_t *ev)
             if (CheckCheatmode ())
                 return false;
 
-            if ((gamemode != shareware) && (gamemode != registered) &&
-                (gamemode != retail))
+            if (gamemode != shareware && gamemode != registered &&
+                gamemode != retail && gamemode != retail_bfg)
                 return false;
 
             AddCommandString("noclip");

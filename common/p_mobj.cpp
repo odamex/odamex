@@ -1207,6 +1207,48 @@ void P_XYMovement(AActor *mo)
 	}
 }
 
+
+//
+// P_CorrectLostSoulBounce
+//
+// Note (id):
+//  somebody left this after the setting momz to 0,
+//  kinda useless there.
+//
+// cph - This was the a bug in the linuxdoom-1.10 source which
+//  caused it not to sync Doom 2 v1.9 demos. Someone
+//  added the above comment and moved up the following code. So
+//  demos would desync in close lost soul fights.
+// Note that this only applies to original Doom 1 or Doom2 demos - not
+//  Final Doom and Ultimate Doom.  So we test demo_compatibility *and*
+//  gamemission. (Note we assume that Doom1 is always Ult Doom, which
+//  seems to hold for most published demos.)
+//
+//  fraggle - cph got the logic here slightly wrong.  There are three
+//  versions of Doom 1.9:
+//
+//  * The version used in registered doom 1.9 + doom2 - no bounce
+//  * The version used in ultimate doom - has bounce
+//  * The version used in final doom - has bounce
+//
+// So we need to check that this is either retail or commercial
+// (but not doom2)
+//
+// [SL] The source code shows both Doom & Doom 2 BFG Editions also have bounce.
+//
+bool P_CorrectLostSoulBounce()
+{
+	if (co_zdoomphys)
+		return true;
+	if (gamemode == retail || gamemode == retail_bfg || gamemode == commercial_bfg)
+		return true;
+	if ((gamemode == commercial || gamemode == commercial_bfg)
+		&& (gamemission == pack_tnt || gamemission == pack_plut))
+		return true;
+	return false;
+}
+
+
 //
 // P_ZMovement
 // joek - from choco with love
@@ -1298,38 +1340,9 @@ void P_ZMovement(AActor *mo)
 			                mo, SECSPAC_HitFloor);
 		}
 
-		// Note (id):
-		//  somebody left this after the setting momz to 0,
-		//  kinda useless there.
-		//
-		// cph - This was the a bug in the linuxdoom-1.10 source which
-		//  caused it not to sync Doom 2 v1.9 demos. Someone
-		//  added the above comment and moved up the following code. So
-		//  demos would desync in close lost soul fights.
-		// Note that this only applies to original Doom 1 or Doom2 demos - not
-		//  Final Doom and Ultimate Doom.  So we test demo_compatibility *and*
-		//  gamemission. (Note we assume that Doom1 is always Ult Doom, which
-		//  seems to hold for most published demos.)
-		//
-		//  fraggle - cph got the logic here slightly wrong.  There are three
-		//  versions of Doom 1.9:
-		//
-		//  * The version used in registered doom 1.9 + doom2 - no bounce
-		//  * The version used in ultimate doom - has bounce
-		//  * The version used in final doom - has bounce
-		//
-		// So we need to check that this is either retail or commercial
-		// (but not doom2)
-
-		int correct_lost_soul_bounce = co_zdoomphys || gamemode == retail ||
-                                     ((gamemode == commercial
-                                     && (gamemission == pack_tnt || gamemission == pack_plut)));
-
-		if (correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
-		{
-			// the skull slammed into something
+		// the skull slammed into something
+		if (mo->flags & MF_SKULLFLY && P_CorrectLostSoulBounce())
 			mo->momz = -mo->momz;
-		}
 
 		mo->z = mo->floorz;
 
@@ -1363,7 +1376,7 @@ void P_ZMovement(AActor *mo)
 		// hit by a raising floor this incorrectly reverses its Y momentum.
 		//
 
-		if (!correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
+		if (mo->flags & MF_SKULLFLY && !P_CorrectLostSoulBounce())
 			mo->momz = -mo->momz;
 
 		if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
