@@ -255,11 +255,15 @@ public:
 
 	inline iterator begin()
 	{
+		if (empty())
+			return end();
 		return iterator(0, this);
 	}
 
 	inline const_iterator begin() const
 	{
+		if (empty())
+			return end();
 		return const_iterator(0, this);
 	}
 
