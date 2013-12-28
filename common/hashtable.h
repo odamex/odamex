@@ -188,6 +188,9 @@ public:
 		generic_iterator(IndexType bucketnum, IHTT* hashtable) :
 			mBucketNum(bucketnum), mHashTable(hashtable)
 		{
+			while (mBucketNum < mHashTable->mSize && mHashTable->emptyBucket(mBucketNum));
+				mBucketNum++;
+
 			if (mBucketNum >= mHashTable->mSize)
 				mBucketNum = IHTT::NOT_FOUND;
 		}
@@ -255,15 +258,11 @@ public:
 
 	inline iterator begin()
 	{
-		if (empty())
-			return end();
 		return iterator(0, this);
 	}
 
 	inline const_iterator begin() const
 	{
-		if (empty())
-			return end();
 		return const_iterator(0, this);
 	}
 
