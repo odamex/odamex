@@ -40,7 +40,6 @@
 
 #ifdef PORTMIDI
 #include "portmidi.h"
-#include "porttime.h"
 #endif	// PORTMIDI
 
 // [Russell] - define a temporary midi file, for consistency
@@ -1004,7 +1003,7 @@ PortMidiMusicSystem::~PortMidiMusicSystem()
 	if (mStream)
 	{
 		// Sleep to allow the All-Notes-Off events to be processed
-		Pt_Sleep(cLatency * 2);
+		I_Sleep(I_ConvertTimeFromMs(cLatency * 2));
 		
 		Pm_Close(mStream);
 		Pm_Terminate();
