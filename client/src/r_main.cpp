@@ -1338,12 +1338,6 @@ void R_MultiresInit (void)
 	// These get set in R_ExecuteSetViewSize()
 	xtoviewangle = (angle_t *)M_Malloc (sizeof(angle_t) * (screen->width + 1));
 
-	// GhostlyDeath -- Clean up the buffers
-	memset(ylookup, 0, screen->height * sizeof(byte*));
-	memset(columnofs, 0, screen->width * sizeof(int));
-
-    memset(xtoviewangle, 0, screen->width * sizeof(angle_t) + 1);
-
 	R_InitFuzzTable ();
 	R_OldBlend = ~0;
 }
