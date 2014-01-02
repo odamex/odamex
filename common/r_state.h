@@ -138,7 +138,6 @@ extern AActor*			camera;		// [RH] camera instead of viewplayer
 
 extern angle_t			clipangle;
 
-extern int				viewangletox[FINEANGLES/2];
 extern angle_t			*xtoviewangle;
 //extern fixed_t		finetangent[FINEANGLES/2];
 

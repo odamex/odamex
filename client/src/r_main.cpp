@@ -111,12 +111,6 @@ AActor			*camera;	// [RH] camera to draw from. doesn't have to be a player
 // precalculated math tables
 //
 
-// The viewangletox[viewangle + FINEANGLES/4] lookup
-// maps the visible view angles to screen X coordinates,
-// flattening the arc to a flat projection plane.
-// There will be many angles mapped to the same X.
-int 			viewangletox[FINEANGLES/2];
-
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
@@ -575,67 +569,35 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 
 void R_InitTextureMapping (void)
 {
-	int i, t, x;
-
-	// Use tangent table to generate viewangletox: viewangletox will give
-	// the next greatest x after the view angle.
-
 	const fixed_t hitan = finetangent[FINEANGLES/4+CorrectFieldOfView/2];
 	const fixed_t lotan = finetangent[FINEANGLES/4-CorrectFieldOfView/2];
 	const int highend = viewwidth + 1;
 	fovtan = hitan; 
 
 	// Calc focallength so FieldOfView angles covers viewwidth.
-	FocalLengthX = FixedDiv (centerxfrac, hitan);
-	FocalLengthY = FixedDiv (FixedMul (centerxfrac, yaspectmul), hitan);
+	FocalLengthX = FixedDiv(centerxfrac, hitan);
+	FocalLengthY = FixedDiv(FixedMul(centerxfrac, yaspectmul), hitan);
 	xfoc = FIXED2FLOAT(FocalLengthX);
 	yfoc = FIXED2FLOAT(FocalLengthY);
 
 	focratio = yfoc / xfoc;
 	ifocratio = xfoc / yfoc;
 
-	for (i = 0; i < FINEANGLES/2; i++)
-	{
-		fixed_t tangent = finetangent[i];
+	// Now generate xtoviewangle for sky texture mapping.
+	// [RH] Do not generate viewangletox, because texture mapping is no
+	// longer done with trig, so it's not needed.
+	const int t = MIN<int>((FocalLengthX >> FRACBITS) + centerx, viewwidth);
+	const fixed_t slopestep = hitan / centerx;
+	const fixed_t dfocus = FocalLengthX >> DBITS;
 
-		if (tangent > hitan)
-			t = -1;
-		else if (tangent < lotan)
-			t = highend;
-		else
-		{
-			t = (centerxfrac - FixedMul (tangent, FocalLengthX) + FRACUNIT - 1) >> FRACBITS;
+	for (int i = centerx, slope = 0; i <= t; i++, slope += slopestep)
+		xtoviewangle[i] = (angle_t)-(signed)tantoangle[slope >> DBITS];
 
-			if (t < -1)
-				t = -1;
-			else if (t > highend)
-				t = highend;
-		}
-		viewangletox[i] = t;
-	}
+	for (int i = t + 1; i <= viewwidth; i++)
+		xtoviewangle[i] = ANG270+tantoangle[dfocus / (i - centerx)];
 
-	// Scan viewangletox[] to generate xtoviewangle[]:
-	//	xtoviewangle will give the smallest view angle
-	//	that maps to x.
-	for (x = 0; x <= viewwidth; x++)
-	{
-		i = 0;
-		while (viewangletox[i] > x)
-			i++;
-		xtoviewangle[x] = (i<<ANGLETOFINESHIFT)-ANG90;
-	}
-
-	// Take out the fencepost cases from viewangletox.
-	for (i = 0; i < FINEANGLES/2; i++)
-	{
-		t = FixedMul (finetangent[i], FocalLengthX);
-		t = centerx - t;
-
-		if (viewangletox[i] == -1)
-			viewangletox[i] = 0;
-		else if (viewangletox[i] == highend)
-			viewangletox[i]--;
-	}
+	for (int i = 0; i < centerx; i++)
+		xtoviewangle[i] = (angle_t)(-(signed)xtoviewangle[viewwidth-i-1]);
 }
 
 //
