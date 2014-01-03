@@ -612,11 +612,10 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 	if (this == screen)
 		V_MarkRect(x0, y0, destwidth, destheight);
 
-	int col = 0;
 	byte* desttop = buffer + (y0 * pitch) + (x0 * colstep);
-	int w = destwidth * xinc;
+	int w = MIN(destwidth * xinc, patch->width() << FRACBITS);
 
-	for (;col < w;col += xinc, desttop += colstep)
+	for (int col = 0; col < w; col += xinc, desttop += colstep)
 	{
 		tallpost_t *post =
 				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col >> FRACBITS]));
