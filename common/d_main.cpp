@@ -1229,7 +1229,10 @@ public:
 
 	virtual float getRemainder() const
 	{
-		return (float)(double(mAccumulator) / mFrameDuration);
+		// mAccumulator can be greater than mFrameDuration so only get the
+		// time remaining until the next frame
+		uint64_t remaining_time = mAccumulator % mFrameDuration;
+		return (float)(double(remaining_time) / mFrameDuration);
 	}
 
 private:
