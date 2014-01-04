@@ -167,7 +167,7 @@ void D_DoomLoop (void)
 	{
 		try
 		{
-			D_RunTics(SV_RunTics, SV_RenderTics);
+			D_RunTics(SV_RunTics, SV_DisplayTics);
 		}
 		catch (CRecoverableError &error)
 		{

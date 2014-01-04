@@ -4574,11 +4574,11 @@ void SV_StepTics(QWORD count)
 }
 
 //
-// SV_RenderTics
+// SV_DisplayTics
 //
-// Nothing to render...
+// Nothing to display...
 //
-void SV_RenderTics()
+void SV_DisplayTics()
 {
 }
 

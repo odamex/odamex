@@ -662,9 +662,9 @@ void CL_StepTics(unsigned int count)
 }
 
 //
-// CL_RenderTics
+// CL_DisplayTics
 //
-void CL_RenderTics()
+void CL_DisplayTics()
 {
 	D_Display();
 }

@@ -1242,21 +1242,21 @@ private:
 };
 
 static TaskScheduler* simulation_scheduler;
-static TaskScheduler* rendering_scheduler;
+static TaskScheduler* display_scheduler;
 
 //
 // D_InitTaskSchedulers
 //
-// Checks for external changes to the rate for the simulation and rendering
+// Checks for external changes to the rate for the simulation and display
 // tasks and instantiates the appropriate TaskSchedulers.
 //
-static void D_InitTaskSchedulers(void (*sim_func)(), void(*render_func)())
+static void D_InitTaskSchedulers(void (*sim_func)(), void(*display_func)())
 {
 	bool capped_simulation = !timingdemo;
-	bool capped_rendering = !timingdemo && capfps;
+	bool capped_display = !timingdemo && capfps;
 
 	static bool previous_capped_simulation = !capped_simulation;
-	static bool previous_capped_rendering = !capped_rendering;
+	static bool previous_capped_display = !capped_display;
 	static float previous_maxfps = -1.0f;
 
 	if (capped_simulation != previous_capped_simulation)
@@ -1271,66 +1271,66 @@ static void D_InitTaskSchedulers(void (*sim_func)(), void(*render_func)())
 			simulation_scheduler = new UncappedTaskScheduler(sim_func);
 	}
 
-	if (capped_rendering != previous_capped_rendering || maxfps != previous_maxfps)
+	if (capped_display != previous_capped_display || maxfps != previous_maxfps)
 	{
-		previous_capped_rendering = capped_rendering;
+		previous_capped_display = capped_display;
 		previous_maxfps = maxfps;
 
-		delete rendering_scheduler;
+		delete display_scheduler;
 
-		if (capped_rendering)
-			rendering_scheduler = new CappedTaskScheduler(render_func, maxfps, 1);
+		if (capped_display)
+			display_scheduler = new CappedTaskScheduler(display_func, maxfps, 1);
 		else
-			rendering_scheduler = new UncappedTaskScheduler(render_func);
+			display_scheduler = new UncappedTaskScheduler(display_func);
 	}
 }
 
 void STACK_ARGS D_ClearTaskSchedulers()
 {
 	delete simulation_scheduler;
-	delete rendering_scheduler;
+	delete display_scheduler;
 	simulation_scheduler = NULL;
-	rendering_scheduler = NULL;
+	display_scheduler = NULL;
 }
 
 //
 // D_RunTics
 //
 // The core of the main game loop.
-// This loop allows the game simulation timing to be decoupled from the renderer
+// This loop allows the game simulation timing to be decoupled from the display
 // timing. If the the user selects a capped framerate and isn't using the
-// -timedemo parameter, both the simulation and render functions will be called
+// -timedemo parameter, both the simulation and display functions will be called
 // TICRATE times a second. If the framerate is uncapped, the simulation function
-// will still be called TICRATE times a second but the render function will
+// will still be called TICRATE times a second but the display function will
 // be called as often as possible. After each iteration through the loop,
 // the program yields briefly to the operating system.
 //
-void D_RunTics(void (*sim_func)(), void(*render_func)())
+void D_RunTics(void (*sim_func)(), void(*display_func)())
 {
-	D_InitTaskSchedulers(sim_func, render_func);
+	D_InitTaskSchedulers(sim_func, display_func);
 
 	simulation_scheduler->run();
 
-	// Use linear interpolation for rendering entities if the renderer
+	// Use linear interpolation for rendering entities if the display
 	// framerate is not synced with the simulation frequency.
 	if ((maxfps == TICRATE && capfps) || timingdemo || paused || menuactive || step_mode)
 		render_lerp_amount = FRACUNIT;
 	else
 		render_lerp_amount = simulation_scheduler->getRemainder() * FRACUNIT;
 
-	rendering_scheduler->run();
+	display_scheduler->run();
 
 	if (timingdemo)
 		return;
 
 	// Sleep until the next scheduled task.
 	uint64_t simulation_wake_time = simulation_scheduler->getNextTime();
-	uint64_t rendering_wake_time = rendering_scheduler->getNextTime();
+	uint64_t display_wake_time = display_scheduler->getNextTime();
 
 	do
 	{
 		I_Yield();
-	} while (I_GetTime() < MIN(simulation_wake_time, rendering_wake_time));			
+	} while (I_GetTime() < MIN(simulation_wake_time, display_wake_time));			
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id: d_main.cpp 3426 2012-11-19 17:25:28Z dr_sean $")

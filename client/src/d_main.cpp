@@ -360,7 +360,7 @@ void D_DoomLoop (void)
 	{
 		try
 		{
-			D_RunTics(CL_RunTics, CL_RenderTics);
+			D_RunTics(CL_RunTics, CL_DisplayTics);
 		}
 		catch (CRecoverableError &error)
 		{
