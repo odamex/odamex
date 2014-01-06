@@ -62,8 +62,8 @@ int cht_CheckCheat (cheatseq_t *cht, char key)
 
 	if (*cht->p == 0)
 		*(cht->p++) = key;
-	else if
-		(cheat_xlate_table[(unsigned char)key] == *cht->p) cht->p++;
+	else if (cheat_xlate_table[(unsigned char)tolower(key)] == *cht->p)
+		cht->p++;
 	else
 		cht->p = cht->sequence;
 
