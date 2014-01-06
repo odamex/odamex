@@ -1185,7 +1185,7 @@ BEGIN_COMMAND(netrecord)
 	else
 		filename = CL_GenerateNetDemoFileName();
 
-	CL_NetDemoRecord(filename.c_str());
+	CL_NetDemoRecord(filename);
 	netdemo.writeMapChange();
 }
 END_COMMAND(netrecord)

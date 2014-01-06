@@ -187,7 +187,7 @@ void IntDownloadComplete(void)
         filename += download.filename;
 
         // check for existing file
-   	    if(M_FileExists(filename.c_str()))
+   	    if(M_FileExists(filename))
    	    {
    	        // there is an existing file, so use a new file whose name includes the checksum
    	        filename += ".";
