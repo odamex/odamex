@@ -1672,35 +1672,35 @@ void G_DoSaveGame (void)
 #define DEMOMARKER				0x80
 #define DEMOSTOP				0x07
 
-void G_ReadDemoTiccmd ()
+void G_ReadDemoTiccmd()
 {
-	if(demoversion == LMP_DOOM_1_9 || demoversion == LMP_DOOM_1_9_1)
+	if (demoversion == LMP_DOOM_1_9 || demoversion == LMP_DOOM_1_9_1)
 	{
 		int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
 
-		for(size_t i = 0; i < players.size(); i++)
+		for (size_t i = 0; i < players.size(); i++)
 		{
 			if ((demo_e - demo_p < demostep) || (*demo_p == DEMOMARKER))
 			{
 				// end of demo data stream
-				G_CheckDemoStatus ();
+				G_CheckDemoStatus();
 				return;
 			}
 
-			players[i].cmd.forwardmove = ((signed char)*demo_p++)<<8;
-			players[i].cmd.sidemove = ((signed char)*demo_p++)<<8;
+			players[i].cmd.forwardmove = ((signed char)*demo_p++) << 8;
+			players[i].cmd.sidemove = ((signed char)*demo_p++) << 8;
 
-			if(demoversion == LMP_DOOM_1_9)
-				players[i].cmd.yaw = ((unsigned char)*demo_p++)<<8;
+			if (demoversion == LMP_DOOM_1_9)
+			{
+				players[i].cmd.yaw = ((unsigned char)*demo_p++) << 8;
+			}
 			else
 			{
 				players[i].cmd.yaw = ((unsigned short)*demo_p++);
-				players[i].cmd.yaw |= ((unsigned short)*demo_p++)<<8;
+				players[i].cmd.yaw |= ((unsigned short)*demo_p++) << 8;
 			}
 			players[i].cmd.buttons = (unsigned char)*demo_p++;
 		}
-
-		return;
 	}
 }
 
@@ -1709,115 +1709,131 @@ void G_ReadDemoTiccmd ()
 //
 void G_WriteDemoTiccmd ()
 {
-    byte demo_tmp[8];
+	byte demo_tmp[8];
 
-    int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
+	int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
 
-    for(size_t i = 0; i < players.size(); i++)
-    {
-        byte *demo_p = demo_tmp;
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		byte *demo_p = demo_tmp;
 
-        *demo_p++ = players[i].cmd.forwardmove >> 8;
-        *demo_p++ = players[i].cmd.sidemove >> 8;
+		*demo_p++ = players[i].cmd.forwardmove >> 8;
+		*demo_p++ = players[i].cmd.sidemove >> 8;
 
-        // If this is a longtics demo, record in higher resolution
-
+		// If this is a longtics demo, record in higher resolution
         if (LMP_DOOM_1_9_1 == demoversion)
-        {
-            *demo_p++ = (players[i].cmd.yaw & 0xff);
-            *demo_p++ = (players[i].cmd.yaw >> 8) & 0xff;
-        }
-        else
-        {
-            *demo_p++ = players[i].cmd.yaw >> 8;
-            players[i].cmd.yaw = ((unsigned char)*(demo_p-1))<<8;
-        }
+		{
+			*demo_p++ = (players[i].cmd.yaw & 0xff);
+			*demo_p++ = (players[i].cmd.yaw >> 8) & 0xff;
+		}
+		else
+		{
+			*demo_p++ = players[i].cmd.yaw >> 8;
+			players[i].cmd.yaw = ((unsigned char)*(demo_p - 1)) << 8;
+		}
 
-        *demo_p++ = players[i].cmd.buttons;
+		*demo_p++ = players[i].cmd.buttons;
 
-        fwrite(demo_tmp, demostep, 1, recorddemo_fp);
-    }
+		fwrite(demo_tmp, demostep, 1, recorddemo_fp);
+	}
 }
 
 //
 // G_RecordDemo
 //
-bool G_RecordDemo (const char* name)
-{
-    strcpy (demoname, name);
-    strcat (demoname, ".lmp");
+bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
+{	
+	std::string demoname = basedemoname + ".lmp";
 
-    if(recorddemo_fp)
+    if (recorddemo_fp)
     {
         fclose(recorddemo_fp);
         recorddemo_fp = NULL;
     }
 
-    recorddemo_fp = fopen(demoname, "w");
+    recorddemo_fp = fopen(demoname.c_str(), "w");
 
-    if(!recorddemo_fp)
+    if (!recorddemo_fp)
     {
-        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demoname);
+        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demoname.c_str());
         return false;
     }
+
+	CL_QuitNetGame();
 
     usergame = false;
     demorecording = true;
     demostartgametic = gametic;
 
-    return true;
-}
+	players.clear();
+	players.push_back(player_t());
+	players.back().playerstate = PST_REBORN;
+	players.back().id = 1;
 
-//
-// G_BeginRecording
-//
-void G_BeginRecording (void)
-{
+	player_t &con = idplayer(1);
+	consoleplayer_id = displayplayer_id = con.id;
+
+	serverside = true;
+
+	bool monstersrespawn = sv_monstersrespawn.asInt(); 
+	bool fastmonsters = sv_fastmonsters.asInt(); 
+	bool nomonsters = sv_nomonsters.asInt();
+
+	// [SL] 2014-01-07 - Backup any cvars that need to be set to default to
+	// ensure demo compatibility. CVAR_SERVERINFO cvars is a handy superset
+	// of those cvars
+	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
+	cvar_t::C_SetCVarsToDefaults(CVAR_SERVERINFO);
+
+	sv_monstersrespawn.Set(monstersrespawn);
+	sv_fastmonsters.Set(fastmonsters);
+	sv_nomonsters.Set(nomonsters);
+
+	G_InitNew(mapname.c_str());
+
     byte demo_tmp[32];
     demo_p = demo_tmp;
 
     // Save the right version code for this demo
-
-    if (demoversion == LMP_DOOM_1_9_1) // denis - TODO!!!
-    {
+    if (demoversion == LMP_DOOM_1_9_1)
         *demo_p++ = DOOM_1_9_1_DEMO;
-    }
     else
-    {
         *demo_p++ = DOOM_1_9_DEMO;
-    }
 
     democlassic = true;
 
-    int episode;
-    int mapid;
-    if(gameinfo.flags & GI_MAPxx)
-    {
-        episode = 1;
-        mapid = atoi(level.mapname + 3);
-    }
-    else
-    {
-        episode = level.mapname[1] - '0';
-        mapid = level.mapname[3] - '0';
-    }
+    int episode, mapid;
+    if (gameinfo.flags & GI_MAPxx)
+	{
+		episode = 1;
+		mapid = level.levelnum;
+	}
+	else
+	{
+		// convert levelnum from form of 24 to episode=3, mapid=4
+		episode = 1 + level.levelnum / 10;
+		mapid = level.levelnum % 10;
+	}
 
     *demo_p++ = sv_skill.asInt() - 1;
     *demo_p++ = episode;
     *demo_p++ = mapid;
-    *demo_p++ = sv_gametype.asInt();
+    *demo_p++ = 0;		// coop gametype only (actually single-player only) 
     *demo_p++ = sv_monstersrespawn.asInt();
     *demo_p++ = sv_fastmonsters.asInt();
     *demo_p++ = sv_nomonsters.asInt();
-    *demo_p++ = 0;
+    *demo_p++ = 0;		// player 1 POV
 
-    *demo_p++ = 1;
-    *demo_p++ = 0;
-    *demo_p++ = 0;
-    *demo_p++ = 0;
+    *demo_p++ = 1;		// player 1 is present
+    *demo_p++ = 0;		// player 2 is not present
+    *demo_p++ = 0;		// player 3 is not present
+    *demo_p++ = 0;		// player 4 is not present
 
     fwrite(demo_tmp, 13, 1, recorddemo_fp);
+
+    return true;
 }
+
 
 //
 // G_PlayDemo
@@ -1831,54 +1847,41 @@ void G_DeferedPlayDemo (const char *name)
 	gameaction = ga_playdemo;
 }
 
-void RecordCommand(int argc, char **argv)
+static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 {
-	if(argc > 2)
+	if (argc > 2)
 	{
-		demorecordfile = std::string(argv[2]);
+		demoversion = ver; 
 
 		if (gamestate != GS_STARTUP)
 		{
-			if(G_RecordDemo(demorecordfile.c_str()))
-			{
-				players.clear();
-				players.push_back(player_t());
-				players.back().playerstate = PST_REBORN;
-				players.back().id = 1;
-
-				player_t &con = idplayer(1);
-				consoleplayer_id = displayplayer_id = con.id;
-
-				serverside = true;
-
-				G_InitNew(argv[1]);
-				G_BeginRecording();
-			}
+			//G_CheckDemoStatus();
+			G_RecordDemo(argv[1], argv[2]);
 		}
 		else
 		{
-			strncpy (startmap, argv[1], 8);
+			strncpy(startmap, argv[1], 8);
+			demorecordfile = argv[2];
 			autostart = true;
 			autorecord = true;
 		}
 	}
 	else
-		Printf(PRINT_HIGH, "Usage: recordvanilla map file\n");
+	{
+		Printf(PRINT_HIGH, "Usage: record%s map file\n", 
+				ver == LMP_DOOM_1_9_1 ? "longtics" : "vanilla");
+	}
 }
 
 BEGIN_COMMAND(recordvanilla)
 {
-	//G_CheckDemoStatus();
-	demoversion = LMP_DOOM_1_9;
-	RecordCommand(argc, argv);
+	G_RecordCommand(argc, argv, LMP_DOOM_1_9);
 }
 END_COMMAND(recordvanilla)
 
 BEGIN_COMMAND(recordlongtics)
 {
-	//G_CheckDemoStatus();
-	demoversion = LMP_DOOM_1_9_1;
-	RecordCommand(argc, argv);
+	G_RecordCommand(argc, argv, LMP_DOOM_1_9_1);
 }
 END_COMMAND(recordlongtics)
 
@@ -2130,6 +2133,8 @@ void G_CleanupDemo()
 			fclose(recorddemo_fp);
 			recorddemo_fp = NULL;
 		}
+
+		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 
 		demorecording = false;
 		Printf(PRINT_HIGH, "Demo %s recorded\n", demoname);

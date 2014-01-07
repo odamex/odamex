@@ -48,10 +48,7 @@ void G_DoLoadGame(void);
 void G_BuildSaveName(std::string &name, int slot);
 void G_SaveGame(int slot, char* description);
 
-// Only called by startup code.
-bool G_RecordDemo(const char* name);
-
-void G_BeginRecording(void);
+bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname);
 
 void G_PlayDemo(char* name);
 void G_DoPlayDemo(bool justStreamInput = false);

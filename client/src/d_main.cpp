@@ -861,8 +861,7 @@ void D_DoomMain (void)
 
 				G_InitNew (startmap);
 				if (autorecord)
-					if (G_RecordDemo(demorecordfile.c_str()))
-						G_BeginRecording();
+					G_RecordDemo(startmap, demorecordfile);
 			}
 		}
         else
