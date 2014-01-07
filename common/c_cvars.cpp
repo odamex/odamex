@@ -556,6 +556,38 @@ void cvar_t::cvarlist()
 	Printf (PRINT_HIGH, "%d cvars\n", count);
 }
 
+
+static std::string C_GetValueString(const cvar_t* var)
+{
+	if (!var)
+		return "unset";
+
+	if (var->flags() & CVAR_NOENABLEDISABLE)
+		return '"' + var->str() + '"';
+
+	if (atof(var->cstring()) == 0.0f)
+		return "disabled";
+	else
+		return "enabled";	
+}
+
+static std::string C_GetLatchedValueString(const cvar_t* var)
+{
+	if (!var)
+		return "unset";
+
+	if (!(var->flags() & CVAR_LATCH))
+		return C_GetValueString(var);
+
+	if (var->flags() & CVAR_NOENABLEDISABLE)
+		return '"' + var->latched() + '"';
+
+	if (atof(var->latched()) == 0.0f)
+		return "disabled";
+	else
+		return "enabled";	
+}
+
 BEGIN_COMMAND (set)
 {
 	if (argc != 3)
@@ -600,9 +632,9 @@ BEGIN_COMMAND (set)
 
 		if (var->flags() & CVAR_LATCH)
 		{
-			if (strcmp(var->cstring(), argv[2])) // if different from current value
-				if (strcmp(var->latched(), argv[2])) // and if different from latched value
-					Printf(PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
+			// if new value is different from current value and latched value
+			if (strcmp(var->cstring(), argv[2]) && strcmp(var->latched(), argv[2]) && gamestate == GS_LEVEL)
+				Printf(PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
 		}
 
 		var->Set(argv[2]);
@@ -632,17 +664,12 @@ BEGIN_COMMAND (get)
 
 		// [Russell] - Don't make the user feel inadequate, tell
 		// them its either enabled, disabled or its other value
-		if (!(var->flags() & CVAR_NOENABLEDISABLE))
-		{
-			if (var->cstring()[0] == '0')
-				Printf(PRINT_HIGH, "\"%s\" is disabled%s.\n", var->name(), control.c_str());
-			else
-				Printf(PRINT_HIGH, "\"%s\" is enabled%s.\n", var->name(), control.c_str());
-		}
-		else
-		{
-			Printf(PRINT_HIGH, "\"%s\" is \"%s\"%s.\n", var->name(), var->cstring(), control.c_str());
-		}
+		Printf(PRINT_HIGH, "\"%s\" is %s%s.\n",
+				var->name(), C_GetValueString(var).c_str(), control.c_str());
+
+		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
+			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
+					var->name(), C_GetLatchedValueString(var).c_str());
 	}
 	else
 	{
@@ -671,16 +698,12 @@ BEGIN_COMMAND (toggle)
         }
         else
         {
-            var->Set ((float)(!var->value()));
+            var->Set((float)(!var->value()));
 
             // [Russell] - Don't make the user feel inadequate, tell
             // them its either enabled, disabled or its other value
-            if (var->cstring()[0] == '1')
-                Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-            else if (var->cstring()[0] == '0')
-                Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
-            else
-                Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+			Printf(PRINT_HIGH, "\"%s\" is %s.\n",
+					var->name(), C_GetValueString(var).c_str());
         }
     }
     else
