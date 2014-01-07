@@ -2081,18 +2081,12 @@ void G_DoPlayDemo (bool justStreamInput)
 		demoplayback = true;
 
 		return;
-	} else {
-		democlassic = false;
 	}
-
-	if(demo_p[0] >= DOOM_BOOM_DEMO_START ||
-	   demo_p[0] <= DOOM_BOOM_DEMO_END)
+	else
 	{
-		// [SL] 2011-08-03 - Version 1 of Odamex netdemos get detected by this
-		// code as a Boom format demo.  Since neither can be played using the
-		// -playdemo paramter, inform the user.  This could probably be handled
-		// more robustly.
-		Printf (PRINT_HIGH, "Unsupported demo format.  If you are trying to play an Odamex netdemo, please use the netplay command\n");
+		democlassic = false;
+		Printf(PRINT_HIGH, "Unsupported demo format.  If you are trying to play an Odamex " \
+						"netdemo, please use the netplay command\n");
         gameaction = ga_nothing;
         return;
 	}
