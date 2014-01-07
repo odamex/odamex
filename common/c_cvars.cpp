@@ -691,25 +691,30 @@ BEGIN_COMMAND (toggle)
 
     var = cvar_t::FindCVar (argv[1], &prev);
 
-    if (var)
-    {
-        if (var->flags() & CVAR_NOENABLEDISABLE) {
-            Printf (PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
-        }
-        else
-        {
-            var->Set((float)(!var->value()));
+	if (!var)
+	{
+		Printf(PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+	}
+	else if (var->flags() & CVAR_NOENABLEDISABLE)
+	{
+		Printf(PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
+	}
+	else
+	{
+		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
+			var->Set(!atof(var->latched()));
+		else
+			var->Set(!var->value());
 
-            // [Russell] - Don't make the user feel inadequate, tell
-            // them its either enabled, disabled or its other value
-			Printf(PRINT_HIGH, "\"%s\" is %s.\n",
-					var->name(), C_GetValueString(var).c_str());
-        }
-    }
-    else
-    {
-        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
-    }
+		// [Russell] - Don't make the user feel inadequate, tell
+		// them its either enabled, disabled or its other value
+		Printf(PRINT_HIGH, "\"%s\" is %s.\n",
+				var->name(), C_GetValueString(var).c_str());
+
+		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
+			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
+					var->name(), C_GetLatchedValueString(var).c_str());
+	}
 }
 END_COMMAND (toggle)
 
