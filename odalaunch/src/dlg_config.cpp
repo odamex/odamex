@@ -439,6 +439,9 @@ void dlgConfig::LoadSettings()
 {
     bool UseBroadcast;
 
+    // Allow $ in directory names
+    ConfigInfo.SetExpandEnvVars(false);
+
     ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
 
     m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
