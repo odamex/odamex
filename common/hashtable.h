@@ -188,7 +188,7 @@ public:
 		generic_iterator(IndexType bucketnum, IHTT* hashtable) :
 			mBucketNum(bucketnum), mHashTable(hashtable)
 		{
-			while (mBucketNum < mHashTable->mSize && mHashTable->emptyBucket(mBucketNum));
+			while (mBucketNum < mHashTable->mSize && mHashTable->emptyBucket(mBucketNum))
 				mBucketNum++;
 
 			if (mBucketNum >= mHashTable->mSize)
