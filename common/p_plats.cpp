@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,6 +34,8 @@
 #include "doomstat.h"
 #include "r_state.h"
 #include "s_sound.h"
+
+EXTERN_CVAR(co_fixzerotags)
 
 extern bool predicting;
 
@@ -390,7 +392,7 @@ BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 
 	// [RH] If tag is zero, use the sector on the back side
 	//		of the activating line (if any).
-	if (!tag)
+	if (co_fixzerotags && tag == 0)
 	{
 		if (!line || !(sec = line->backsector))
 			return false;
@@ -420,9 +422,9 @@ BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 manual_plat:
 		if (sec->floordata)
 		{
-			if (P_MovingFloorCompleted(sec))
-				sec->floordata->Destroy();
-			else
+			if (co_fixzerotags && manual)
+				return false;
+			else	
 				continue;
 		}
 		

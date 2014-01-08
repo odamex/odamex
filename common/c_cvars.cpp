@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include <string.h>
+#include <cstring>
 #include <stdio.h>
 
 #include "cmdlib.h"
@@ -140,9 +140,11 @@ cvar_t::~cvar_t ()
 
 void cvar_t::ForceSet (const char *val)
 {
-	if (m_Flags & CVAR_LATCH &&
-		 !(m_Flags & CVAR_SERVERINFO && baseapp != server) &&
-		 !(m_Flags & CVAR_CLIENTINFO && baseapp != client))
+	// [SL] 2013-04-16 - Latched CVARs do not change values until the next map.
+	// Servers and single-player games should abide by this behavior but
+	// multiplayer clients should just do what the server tells them.
+	if (m_Flags & CVAR_LATCH && serverside && 
+		(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION))
 	{
 		m_Flags |= CVAR_MODIFIED;
 		if(val)
@@ -154,10 +156,15 @@ void cvar_t::ForceSet (const char *val)
 	{
 		m_Flags |= CVAR_MODIFIED;
 		if(val)
+		{
 			m_String = val;
+            m_Value = atof(val);
+		}
 		else
+		{
 			m_String = "";
-		m_Value = atof (val);
+            m_Value = 0.0f;
+		}
 
 		if (m_Flags & CVAR_USERINFO)
 			D_UserInfoChanged (this);
@@ -206,7 +213,7 @@ void cvar_t::SetDefault (const char *val)
 
 void cvar_t::RestoreDefault ()
 {
-	Set(m_Default.c_str());	
+	Set(m_Default.c_str());
 	m_Flags |= CVAR_ISDEFAULT;
 }
 
@@ -394,21 +401,31 @@ void cvar_t::C_ReadCVars (byte **demo_p)
 static struct backup_s
 {
 	std::string name, string;
-} CVarBackups[MAX_DEMOCVARS];
+} CVarBackups[MAX_BACKUPCVARS];
 
 static int numbackedup = 0;
 
-void cvar_t::C_BackupCVars (void)
+//
+// C_BackupCVars
+//
+// Backup cvars for restoration later. Called before connecting to a server
+// or a demo starts playing to save all cvars which could be changed while
+// by the server or by playing a demo.
+// [SL] bitflag can be used to filter which cvars are set to default.
+// The default value for bitflag is 0xFFFFFFFF, which effectively disables
+// the filtering.
+//
+void cvar_t::C_BackupCVars (unsigned int bitflag)
 {
 	struct backup_s *backup = CVarBackups;
 	cvar_t *cvar = ad.GetCVars();
 
 	while (cvar)
 	{
-		if (((cvar->m_Flags & CVAR_DEMOSAVE)) && !(cvar->m_Flags & CVAR_LATCH))
+		if (cvar->m_Flags & bitflag)
 		{
-			if (backup == &CVarBackups[MAX_DEMOCVARS])
-				I_Error ("C_BackupDemoCVars: Too many cvars to save (%d)", MAX_DEMOCVARS);
+			if (backup == &CVarBackups[MAX_BACKUPCVARS])
+				I_Error ("C_BackupDemoCVars: Too many cvars to save (%d)", MAX_BACKUPCVARS);
 			backup->name = cvar->m_Name;
 			backup->string = cvar->m_String;
 			backup++;
@@ -429,6 +446,7 @@ void cvar_t::C_RestoreCVars (void)
 		backup->name = backup->string = "";
 	}
 	numbackedup = 0;
+	UnlatchCVars();
 }
 
 cvar_t *cvar_t::FindCVar (const char *var_name, cvar_t **prev)
@@ -442,7 +460,7 @@ cvar_t *cvar_t::FindCVar (const char *var_name, cvar_t **prev)
 	*prev = NULL;
 	while (var)
 	{
-		if (StdStringCompare(var->m_Name, var_name, true) == 0)
+		if (iequals(var->m_Name, var_name))
 			break;
 		*prev = var;
 		var = var->m_Next;
@@ -457,9 +475,7 @@ void cvar_t::UnlatchCVars (void)
 	var = ad.GetCVars();
 	while (var)
 	{
-		if (var->m_Flags & (CVAR_MODIFIED | CVAR_LATCH) &&
-		 !(var->m_Flags & CVAR_SERVERINFO && baseapp != server) &&
-		 !(var->m_Flags & CVAR_CLIENTINFO && baseapp != client))
+		if (var->m_Flags & (CVAR_MODIFIED | CVAR_LATCH))
 		{
 			unsigned oldflags = var->m_Flags & ~CVAR_MODIFIED;
 			var->m_Flags &= ~(CVAR_LATCH);
@@ -474,17 +490,26 @@ void cvar_t::UnlatchCVars (void)
 	}
 }
 
-void cvar_t::C_SetCVarsToDefaults (void)
+//
+// C_SetCvarsToDefault
+//
+// Initialize cvars to default values after they are created.
+// [SL] bitflag can be used to filter which cvars are set to default.
+// The default value for bitflag is 0xFFFFFFFF, which effectively disables
+// the filtering.
+//
+void cvar_t::C_SetCVarsToDefaults (unsigned int bitflag)
 {
 	cvar_t *cvar = ad.GetCVars();
 
 	while (cvar)
 	{
-		// Only default save-able cvars
-		if ((cvar->m_Flags & CVAR_ARCHIVE) || (baseapp == client && cvar->m_Flags & CVAR_CLIENTARCHIVE)
-			|| (baseapp == server && cvar->m_Flags & CVAR_SERVERARCHIVE))
-			if(cvar->m_Default.length())
-			cvar->Set (cvar->m_Default.c_str());
+		if (cvar->m_Flags & bitflag)
+		{
+			if (cvar->m_Default.length())
+				cvar->Set (cvar->m_Default.c_str());
+		}
+
 		cvar = cvar->m_Next;
 	}
 }
@@ -499,7 +524,7 @@ void cvar_t::C_ArchiveCVars (void *f)
 			|| (baseapp == server && cvar->m_Flags & CVAR_SERVERARCHIVE))
 		{
 			fprintf ((FILE *)f, "// %s\n", cvar->helptext());
-			fprintf ((FILE *)f, "set %s \"%s\"\n\n", cvar->name(), cvar->cstring());
+			fprintf ((FILE *)f, "set %s %s\n\n", C_QuoteString(cvar->name()).c_str(), C_QuoteString(cvar->cstring()).c_str());
 		}
 		cvar = cvar->m_Next;
 	}
@@ -516,12 +541,11 @@ void cvar_t::cvarlist()
 
 		count++;
 		Printf (PRINT_HIGH, "%c%c%c%c %s \"%s\"\n",
-				flags & CVAR_ARCHIVE ? 'A' : 
+				flags & CVAR_ARCHIVE ? 'A' :
 					flags & CVAR_CLIENTARCHIVE ? 'C' :
 					flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
 				flags & CVAR_USERINFO ? 'U' : ' ',
-				flags & CVAR_SERVERINFO ? 'S' : 
-					flags & CVAR_CLIENTINFO ? 'C' : ' ',
+				flags & CVAR_SERVERINFO ? 'S' : ' ',
 				flags & CVAR_NOSET ? '-' :
 					flags & CVAR_LATCH ? 'L' :
 					flags & CVAR_UNSETTABLE ? '*' : ' ',
@@ -530,6 +554,38 @@ void cvar_t::cvarlist()
 		var = var->m_Next;
 	}
 	Printf (PRINT_HIGH, "%d cvars\n", count);
+}
+
+
+static std::string C_GetValueString(const cvar_t* var)
+{
+	if (!var)
+		return "unset";
+
+	if (var->flags() & CVAR_NOENABLEDISABLE)
+		return '"' + var->str() + '"';
+
+	if (atof(var->cstring()) == 0.0f)
+		return "disabled";
+	else
+		return "enabled";	
+}
+
+static std::string C_GetLatchedValueString(const cvar_t* var)
+{
+	if (!var)
+		return "unset";
+
+	if (!(var->flags() & CVAR_LATCH))
+		return C_GetValueString(var);
+
+	if (var->flags() & CVAR_NOENABLEDISABLE)
+		return '"' + var->latched() + '"';
+
+	if (atof(var->latched()) == 0.0f)
+		return "disabled";
+	else
+		return "enabled";	
 }
 
 BEGIN_COMMAND (set)
@@ -544,43 +600,44 @@ BEGIN_COMMAND (set)
 
 		var = cvar_t::FindCVar (argv[1], &prev);
 		if (!var)
-			var = new cvar_t (argv[1], NULL, "", CVARTYPE_NONE,  CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
+			var = new cvar_t(argv[1], NULL, "", CVARTYPE_NONE,  CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
 
 		if (var->flags() & CVAR_NOSET)
-			Printf (PRINT_HIGH, "%s is write protected.\n", argv[1]);
+		{
+			Printf(PRINT_HIGH, "%s is write protected.\n", argv[1]);
+			return;
+		}
 		else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
 		{
-			Printf (PRINT_HIGH, "%s is under server control and hasn't been changed.\n", argv[1]);
+			Printf (PRINT_HIGH, "%s is under server control.\n", argv[1]);
 			return;
 		}
-		else if (baseapp == server && (var->flags() & CVAR_CLIENTINFO))
+
+		// [Russell] - Allow the user to specify either 'enable' and 'disable',
+		// this will get converted to either 1 or 0
+		// [AM] Introduce zdoom-standard "true" and "false"
+		if (!(var->flags() & CVAR_NOENABLEDISABLE))
 		{
-			Printf (PRINT_HIGH, "%s is under client control and hasn't been changed.\n", argv[1]);
-			return;
-		}		
-		else if (var->flags() & CVAR_LATCH)
-		{
-			if(strcmp(var->cstring(), argv[2])) // if different from current value
-				if(strcmp(var->latched(), argv[2])) // and if different from latched value
-					Printf (PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
+			if (strcmp("enabled", argv[2]) == 0 ||
+			    strcmp("true", argv[2]) == 0)
+			{
+				argv[2] = (char *)"1";
+			}
+			else if (strcmp("disabled", argv[2]) == 0 ||
+			         strcmp("false", argv[2]) == 0)
+			{
+				argv[2] = (char *)"0";
+			}
 		}
 
-        // [Russell] - Allow the user to specify either 'enable' and 'disable',
-        // this will get converted to either 1 or 0
-        if (!strcmp("enabled", argv[2]) && !(var->flags() & CVAR_NOENABLEDISABLE))
-        {
-            var->Set(1.0);
+		if (var->flags() & CVAR_LATCH)
+		{
+			// if new value is different from current value and latched value
+			if (strcmp(var->cstring(), argv[2]) && strcmp(var->latched(), argv[2]) && gamestate == GS_LEVEL)
+				Printf(PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
+		}
 
-            return;
-        }
-        else if (!strcmp("disabled", argv[2]) && !(var->flags() & CVAR_NOENABLEDISABLE))
-        {
-            var->Set(0.0);
-
-            return;
-        }
-
-		var->Set (argv[2]);
+		var->Set(argv[2]);
 	}
 }
 END_COMMAND (set)
@@ -595,24 +652,29 @@ BEGIN_COMMAND (get)
 		Printf (PRINT_HIGH, "usage: get <variable>\n");
         return;
 	}
-	
+
     var = cvar_t::FindCVar (argv[1], &prev);
 
-    if (var)
-    {
-        // [Russell] - Don't make the user feel inadequate, tell
-        // them its either enabled, disabled or its other value
-        if (var->flags() & CVAR_NOENABLEDISABLE)
-            Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
-        else if (var->cstring()[0] == '0')
-            Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
-        else
-            Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-    }
-    else
-    {
-        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
-    }
+	if (var)
+	{
+		// [AM] Determine whose control the cvar is under
+		std::string control;
+		if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
+			control = " (server)";
+
+		// [Russell] - Don't make the user feel inadequate, tell
+		// them its either enabled, disabled or its other value
+		Printf(PRINT_HIGH, "\"%s\" is %s%s.\n",
+				var->name(), C_GetValueString(var).c_str(), control.c_str());
+
+		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
+			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
+					var->name(), C_GetLatchedValueString(var).c_str());
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+	}
 }
 END_COMMAND (get)
 
@@ -628,30 +690,31 @@ BEGIN_COMMAND (toggle)
 	}
 
     var = cvar_t::FindCVar (argv[1], &prev);
-	
-    if (var)
-    {
-        if (var->flags() & CVAR_NOENABLEDISABLE) {
-            Printf (PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
-        }
-        else
-        {
-            var->Set ((float)(!var->value()));
 
-            // [Russell] - Don't make the user feel inadequate, tell
-            // them its either enabled, disabled or its other value
-            if (var->cstring()[0] == '1')
-                Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-            else if (var->cstring()[0] == '0')
-                Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
-            else
-                Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
-        }
-    }
-    else
-    {
-        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
-    }
+	if (!var)
+	{
+		Printf(PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+	}
+	else if (var->flags() & CVAR_NOENABLEDISABLE)
+	{
+		Printf(PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
+	}
+	else
+	{
+		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
+			var->Set(!atof(var->latched()));
+		else
+			var->Set(!var->value());
+
+		// [Russell] - Don't make the user feel inadequate, tell
+		// them its either enabled, disabled or its other value
+		Printf(PRINT_HIGH, "\"%s\" is %s.\n",
+				var->name(), C_GetValueString(var).c_str());
+
+		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
+			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
+					var->name(), C_GetLatchedValueString(var).c_str());
+	}
 }
 END_COMMAND (toggle)
 

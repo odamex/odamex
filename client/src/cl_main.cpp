@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,7 @@
 #include "g_game.h"
 #include "d_net.h"
 #include "p_local.h"
+#include "p_tick.h"
 #include "s_sound.h"
 #include "gi.h"
 #include "i_net.h"
@@ -62,6 +63,9 @@
 #include "p_mobj.h"
 #include "p_pspr.h"
 #include "d_netcmd.h"
+#include "g_warmup.h"
+#include "c_level.h"
+#include "v_text.h"
 
 #include <string>
 #include <vector>
@@ -141,12 +145,12 @@ EXTERN_CVAR (sv_weaponstay)
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_color)
-EXTERN_CVAR (cl_team)
-EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
-EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_predictsectors)
+
+EXTERN_CVAR (mute_spectators)
+EXTERN_CVAR (mute_enemies)
 
 CVAR_FUNC_IMPL (cl_autoaim)
 {
@@ -174,25 +178,11 @@ int CL_GetPlayerColor(player_t *player)
 	if (!player)
 		return 0;
 
-	if (sv_gametype == GM_COOP)
-	{
-		if (r_forceteamcolor && player->id != consoleplayer_id)
-			return teamcolor;
-	}
-	else if (sv_gametype == GM_DM)
-	{
-		if (r_forceenemycolor && player->id != consoleplayer_id)
-			return enemycolor;
-	}
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
-		if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player))
-			return enemycolor;
-		if (r_forceteamcolor &&
-			(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
-			return teamcolor;
+	int color = player->userinfo.color;
 
-		// Adjust the shade of color for team games
+	// Adjust the shade of color for team games
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
 		int red = RPART(player->userinfo.color);
 		int green = GPART(player->userinfo.color);
 		int blue = BPART(player->userinfo.color);
@@ -200,12 +190,36 @@ int CL_GetPlayerColor(player_t *player)
 		int intensity = MAX(MAX(red, green), blue) / 3;
 
 		if (player->userinfo.team == TEAM_BLUE)
-			return (0xAA + intensity);
-		if (player->userinfo.team == TEAM_RED)
-			return (0xAA + intensity) << 16;
+			color = MAKERGB(0, 0,  0xAA + intensity);
+		else if (player->userinfo.team == TEAM_RED)
+			color = MAKERGB(0xAA + intensity, 0, 0);
 	}
 
-	return player->userinfo.color;
+	// apply r_teamcolor & r_enemycolor overrides
+	if (!consoleplayer().spectator)
+	{
+		if (sv_gametype == GM_COOP)
+		{
+			if (r_forceteamcolor && player->id != consoleplayer_id)
+				color = teamcolor;
+		}
+		else if (sv_gametype == GM_DM)
+		{
+			if (r_forceenemycolor && player->id != consoleplayer_id)
+				color = enemycolor;
+		}
+		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		{
+			if (r_forceteamcolor && 
+					(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
+				color = teamcolor;
+			if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
+					player->id != consoleplayer_id)
+				color = enemycolor;
+		}
+	}
+
+	return color;
 }
 
 static void CL_RebuildAllPlayerTranslations()
@@ -241,60 +255,9 @@ CVAR_FUNC_IMPL (r_forceteamcolor)
 	CL_RebuildAllPlayerTranslations();
 }
 
-EXTERN_CVAR (cl_weaponpref1)
-EXTERN_CVAR (cl_weaponpref2)
-EXTERN_CVAR (cl_weaponpref3)
-EXTERN_CVAR (cl_weaponpref4)
-EXTERN_CVAR (cl_weaponpref5)
-EXTERN_CVAR (cl_weaponpref6)
-EXTERN_CVAR (cl_weaponpref7)
-EXTERN_CVAR (cl_weaponpref8)
-EXTERN_CVAR (cl_weaponpref9)
-
-static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
-	&cl_weaponpref1, &cl_weaponpref2, &cl_weaponpref3, &cl_weaponpref4,
-	&cl_weaponpref5, &cl_weaponpref6, &cl_weaponpref7, &cl_weaponpref8,
-	&cl_weaponpref9 };
-
-
-//
-// CL_SetWeaponPreferenceCvar
-//
-// Sets the value of one of the cl_weaponpref* cvars identified by slot
-//
-void CL_SetWeaponPreferenceCvar(int slot, weapontype_t weapon)
+CVAR_FUNC_IMPL (cl_team)
 {
-	if (slot < 0 || slot >= NUMWEAPONS)
-		return;
-
-	weaponpref_cvar_map[slot]->Set(static_cast<float>(weapon));
-}
-
-//
-// CL_RefreshWeaponPreferenceCvars
-//
-// Copies userinfo.weapon_prefs to the cl_weaponpref* cvars
-//
-void CL_RefreshWeaponPreferenceCvars()
-{
-	weapontype_t *prefs = consoleplayer().userinfo.weapon_prefs;
-
-	for (size_t i = 0; i < NUMWEAPONS; i++)
-		weaponpref_cvar_map[i]->Set(static_cast<float>(prefs[i]));
-}
-
-//
-// CL_PrepareWeaponPreferenceUserInfo
-//
-// Copies the weapon order preferences from the cl_weaponpref* cvars
-// to the userinfo struct for the consoleplayer.
-//
-void CL_PrepareWeaponPreferenceUserInfo()
-{
-	weapontype_t *prefs = consoleplayer().userinfo.weapon_prefs;
-
-	for (size_t i = 0; i < NUMWEAPONS; i++)
-		prefs[i] = static_cast<weapontype_t>(weaponpref_cvar_map[i]->asInt());
+	CL_RebuildAllPlayerTranslations();
 }
 
 EXTERN_CVAR (sv_maxplayers)
@@ -322,7 +285,6 @@ EXTERN_CVAR (cl_autorecord)
 EXTERN_CVAR (cl_splitnetdemos)
 EXTERN_CVAR (st_scale)
 
-void CL_RunTics (void);
 void CL_PlayerTimes (void);
 void CL_GetServerSettings(void);
 void CL_RequestDownload(std::string filename, std::string filehash = "");
@@ -340,6 +302,12 @@ void CL_SimulateWorld();
 void CalcTeamFrags (void);
 
 // some doom functions (not csDoom)
+void D_Display(void);
+void D_DoAdvanceDemo(void);
+void M_Ticker(void);
+
+void R_InterpolationTicker();
+
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
 void CL_SpawnPlayer ();
@@ -444,6 +412,9 @@ void CL_QuitNetGame(void)
 	sv_allowexit = 1;
 	sv_allowredscreen = 1;
 
+	mute_spectators = 0.f;
+	mute_enemies = 0.f;
+
 	P_ClearAllNetIds();
 	players.clear();
 
@@ -482,6 +453,8 @@ void CL_QuitNetGame(void)
 			}
 		}
 	}
+
+	cvar_t::C_RestoreCVars();
 }
 
 
@@ -538,6 +511,9 @@ void CL_CheckDisplayPlayer()
 	static byte previd = consoleplayer_id;
 	byte newid = 0;
 
+	if (displayplayer_id != previd)
+		newid = displayplayer_id;
+
 	if (!validplayer(displayplayer()) || !displayplayer().mo)
 		newid = consoleplayer_id;
 
@@ -545,8 +521,8 @@ void CL_CheckDisplayPlayer()
 		  netdemo.isPlaying() || netdemo.isPaused()))
 		newid = consoleplayer_id;
 
-	if (displayplayer_id != previd)
-		newid = displayplayer_id;
+	if (displayplayer().spectator)
+		newid = consoleplayer_id;
 
 	if (newid)
 	{
@@ -556,7 +532,7 @@ void CL_CheckDisplayPlayer()
 		MSG_WriteByte(&net_buffer, newid);
 		displayplayer_id = newid;
 
-		ST_AdjustStatusBarScale(st_scale);
+		ST_AdjustStatusBarScale(st_scale != 0);
 	}
 
 	previd = newid;
@@ -644,18 +620,121 @@ void CL_DisconnectClient(void)
 	CL_CheckDisplayPlayer();
 }
 
+extern BOOL advancedemo;
+QWORD nextstep = 0;
+int canceltics = 0;
+
+void CL_StepTics(unsigned int count)
+{
+	DObject::BeginFrame ();
+	
+	// run the realtics tics
+	while (count--)
+	{
+		if (canceltics && canceltics--)
+			continue;
+
+		NetUpdate();
+
+		if (advancedemo)
+			D_DoAdvanceDemo();
+		
+		C_Ticker ();
+		M_Ticker ();
+
+		if (P_AtInterval(TICRATE))
+			CL_PlayerTimes();
+
+		if (sv_gametype == GM_CTF)
+			CTF_RunTics ();
+
+		Maplist_Runtic();
+
+		R_InterpolationTicker();
+
+		G_Ticker ();
+		gametic++;
+		if (netdemo.isPlaying() && !netdemo.isPaused())
+			netdemo.ticker();
+	}
+	
+	DObject::EndFrame ();
+}
+
+//
+// CL_DisplayTics
+//
+void CL_DisplayTics()
+{
+	D_Display();
+}
+
+//
+// CL_RunTics
+//
+void CL_RunTics()
+{
+	std::string cmd = I_ConsoleInput();
+	if (cmd.length())
+		AddCommandString(cmd);
+
+	if (CON.is_open())
+	{
+		CON.clear();
+		if (!CON.eof())
+		{
+			std::getline(CON, cmd);
+			AddCommandString(cmd);
+		}
+	}
+
+	if (step_mode)
+	{
+		NetUpdate();
+
+		if (nextstep)
+		{
+			canceltics = 0;
+			CL_StepTics(nextstep);
+			nextstep = 0;
+
+			// debugging output
+			extern unsigned char prndindex;
+			if (players.size() && players[0].mo)
+				Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n",
+						level.time, prndindex, players[0].mo->x, players[0].mo->y, players[0].mo->z);
+			else
+ 				Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
+		}
+	}
+	else
+	{
+		CL_StepTics(1);
+	}
+
+	if (!connected)
+		CL_RequestConnectInfo();
+
+	// [RH] Use the consoleplayer's camera to update sounds
+	S_UpdateSounds(listenplayer().camera);	// move positional sounds
+	S_UpdateMusic();	// play another chunk of music
+
+	D_DisplayTicker();
+}
+
 /////// CONSOLE COMMANDS ///////
 
 BEGIN_COMMAND (stepmode)
 {
-    if (step_mode)
-        step_mode = false;
-    else
-        step_mode = true;
-        
-    return;
+	step_mode = !step_mode;
 }
 END_COMMAND (stepmode)
+
+BEGIN_COMMAND (step)
+{
+	nextstep = argc > 1 ? atoi(argv[1]) : 1;
+}
+END_COMMAND (step)
 
 BEGIN_COMMAND (connect)
 {
@@ -766,10 +845,9 @@ BEGIN_COMMAND (playerinfo)
 	}
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname);
+	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname.c_str());
 	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.color       - #%06x \n",	player->userinfo.color);
-	Printf (PRINT_HIGH, " userinfo.skin        - %s \n",	skins[player->userinfo.skin].name);
 	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);
 	Printf (PRINT_HIGH, " spectator            - %d \n",	player->spectator);
 	Printf (PRINT_HIGH, " time                 - %d \n",	player->GameTime);
@@ -838,15 +916,12 @@ END_COMMAND (serverinfo)
 // rate: takes a kbps value
 CVAR_FUNC_IMPL (rate)
 {
-/*  // [SL] 2011-09-02 - Commented out this code as it would force clients with
-	// a version that has rate in kbps to have a rate of < 5000 bps on an older
-	// server version that has rate in bps, resulting in an unplayable connection.
-
-	const int max_rate = 5000;	// 40Mbps, likely set erroneously
-	if (var > max_rate)
-		var.RestoreDefault();		
-*/
-	if (connected)
+	const float minrate = 7.0f, maxrate = 2000.0f;
+	if (var < minrate || var > maxrate)
+	{
+		var.Set(clamp((float)var, minrate, maxrate));
+	}
+	else if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_rate);
 		MSG_WriteLong(&net_buffer, (int)var);
@@ -979,11 +1054,17 @@ BEGIN_COMMAND (spy)
 	if (argc > 1)
 		id = atoi(argv[1]);
 
+	if (id == 0)
+	{
+		Printf(PRINT_HIGH, "Expecting player ID.  Try 'players' to list all of the player IDs.\n");
+		return;
+	}
+
 	displayplayer_id = id;
 	CL_CheckDisplayPlayer();
 
 	if (displayplayer_id != id)
-		Printf(PRINT_HIGH, "Unable to spy player id %i!\n", id);
+		Printf(PRINT_HIGH, "Unable to spy player ID %i!\n", id);
 }
 END_COMMAND (spy)
 
@@ -992,7 +1073,7 @@ void STACK_ARGS call_terms (void);
 void CL_QuitCommand()
 {
 	call_terms();
-	exit (0);
+	exit(EXIT_SUCCESS);
 }
 
 BEGIN_COMMAND (quit)
@@ -1048,7 +1129,27 @@ void CL_NetDemoRecord(const std::string &filename)
 
 void CL_NetDemoPlay(const std::string &filename)
 {
-	netdemo.startPlaying(filename);
+	std::string newfilename;
+
+	std::string dir;
+	M_ExtractFilePath(filename, dir);
+
+	// if no path is supplied, check the default path
+	if (dir.empty())
+		newfilename = I_GetUserFileName(filename.c_str());
+	else
+		newfilename = filename;
+	
+	if (!M_FileExists(newfilename))
+	{
+		// try adding .odd to the end of the file name
+		std::string ext;
+		M_ExtractFileExtension(newfilename, ext);
+		if (!iequals(ext, ".odd"))
+			M_AppendExtension(newfilename, ".odd", false);
+	}
+
+	netdemo.startPlaying(newfilename);
 }
 
 BEGIN_COMMAND(stopnetdemo)
@@ -1084,7 +1185,7 @@ BEGIN_COMMAND(netrecord)
 	else
 		filename = CL_GenerateNetDemoFileName();
 
-	CL_NetDemoRecord(filename.c_str());
+	CL_NetDemoRecord(filename);
 	netdemo.writeMapChange();
 }
 END_COMMAND(netrecord)
@@ -1215,22 +1316,26 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 void CL_SendUserInfo(void)
 {
-	userinfo_t *coninfo = &consoleplayer().userinfo;
+	UserInfo* coninfo = &consoleplayer().userinfo;
 	D_SetupUserInfo();
 
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
-	MSG_WriteString	(&net_buffer, coninfo->netname);
+	MSG_WriteString	(&net_buffer, coninfo->netname.c_str());
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
 	MSG_WriteLong	(&net_buffer, coninfo->gender);
 	MSG_WriteLong	(&net_buffer, coninfo->color);
-	MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
+
+	// [SL] place holder for deprecated skins
+	MSG_WriteString	(&net_buffer, "");
+
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
-	MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
+	MSG_WriteBool	(&net_buffer, coninfo->unlag);  // [SL] 2011-05-11
+	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->update_rate);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
-		MSG_WriteByte (&net_buffer, (char)coninfo->weapon_prefs[i]);
+		MSG_WriteByte (&net_buffer, coninfo->weapon_prefs[i]);
 	}
 }
 
@@ -1271,20 +1376,18 @@ void CL_SetupUserInfo(void)
 	byte who = MSG_ReadByte();
 	player_t *p = &CL_FindPlayer(who);
 
-	strncpy(p->userinfo.netname, MSG_ReadString(), sizeof(p->userinfo.netname));
-
+	p->userinfo.netname = MSG_ReadString();
 	p->userinfo.team	= (team_t)MSG_ReadByte();
 	p->userinfo.gender	= (gender_t)MSG_ReadLong();
 	p->userinfo.color	= MSG_ReadLong();
-	p->userinfo.skin	= R_FindSkin(MSG_ReadString());
+	
+	// [SL] place holder for deprecated skins
+	MSG_ReadString();
 
 	p->GameTime			= MSG_ReadShort();
 
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
-
-	if (p->mo)
-		p->mo->sprite = skins[p->userinfo.skin].sprite;
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?
@@ -1343,8 +1446,24 @@ void CL_MoveMobj(void)
 	if (!mo)
 		return;
 
-	CL_MoveThing (mo, x, y, z);
-	mo->rndindex = rndindex;
+	if (mo->player)
+	{
+		// [SL] 2013-07-21 - Save the position information to a snapshot
+		int snaptime = last_svgametic;
+		PlayerSnapshot newsnap(snaptime);
+		newsnap.setAuthoritative(true);
+		
+		newsnap.setX(x);
+		newsnap.setY(y);
+		newsnap.setZ(z);
+		
+		mo->player->snapshots.addSnapshot(newsnap);
+	}
+	else
+	{
+		CL_MoveThing (mo, x, y, z);
+		mo->rndindex = rndindex;
+	}
 }
 
 //
@@ -1405,6 +1524,10 @@ void CL_RequestConnectInfo(void)
 std::string missing_file, missing_hash;
 bool CL_PrepareConnect(void)
 {
+	G_CleanupDemo();	// stop dmeos from playing before D_DoomWadReboot wipes out Zone memory
+
+	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
+
 	size_t i;
 	DWORD server_token = MSG_ReadLong();
 	server_host = MSG_ReadString();
@@ -1422,9 +1545,9 @@ bool CL_PrepareConnect(void)
 	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
-	std::vector<std::string> wadnames(server_wads);
+	std::vector<std::string> newwadfiles(server_wads);
 	for(i = 0; i < server_wads; i++)
-		wadnames[i] = MSG_ReadString();
+		newwadfiles[i] = MSG_ReadString();
 
 	MSG_ReadBool();							// deathmatch
 	MSG_ReadByte();							// skill
@@ -1439,11 +1562,11 @@ bool CL_PrepareConnect(void)
 		MSG_ReadByte();
 	}
 
-	std::vector<std::string> wadhashes(server_wads);
+	std::vector<std::string> newwadhashes(server_wads);
 	for(i = 0; i < server_wads; i++)
 	{
-		wadhashes[i] = MSG_ReadString();
-		Printf(PRINT_HIGH, "> %s\n   %s\n", wadnames[i].c_str(), wadhashes[i].c_str());
+		newwadhashes[i] = MSG_ReadString();
+		Printf(PRINT_HIGH, "> %s\n   %s\n", newwadfiles[i].c_str(), newwadhashes[i].c_str());
 	}
 
 	MSG_ReadString();
@@ -1512,20 +1635,20 @@ bool CL_PrepareConnect(void)
     Printf(PRINT_HIGH, "\n");
 
     // DEH/BEX Patch files
-	std::vector<std::string> PatchFiles;
-    size_t PatchCount = MSG_ReadByte();
+    size_t patch_count = MSG_ReadByte();
+	std::vector<std::string> newpatchfiles(patch_count);
     
-    for (i = 0; i < PatchCount; ++i)
-        PatchFiles.push_back(MSG_ReadString());
+    for (i = 0; i < patch_count; ++i)
+        newpatchfiles[i] = MSG_ReadString();
 	
     // TODO: Allow deh/bex file downloads
-	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, PatchFiles, wadhashes);
+	D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
 
-	if(!missing_files.empty())
+	if (!missingfiles.empty())
 	{
 		// denis - download files
-		missing_file = wadnames[missing_files[0]];
-		missing_hash = wadhashes[missing_files[0]];
+		missing_file = missingfiles[0]; 
+		missing_hash = missinghashes[0];
 
 		if (netdemo.isPlaying())
 		{
@@ -1550,7 +1673,6 @@ bool CL_PrepareConnect(void)
 //
 //  Connecting to a server...
 //
-extern std::string missing_file, missing_hash;
 bool CL_Connect(void)
 {
 	players.clear();
@@ -1596,6 +1718,9 @@ bool CL_Connect(void)
 
 	noservermsgs = false;
 	last_received = gametic;
+	
+	if (gamestate != GS_DOWNLOAD)
+        gamestate = GS_CONNECTED;
 
 	return true;
 }
@@ -1722,6 +1847,58 @@ void CL_MidPrint (void)
     C_MidPrint(str,NULL,msgtime);
 }
 
+/**
+ * Handle the svc_say server message, which contains a message from another
+ * client with a player id attached to it.
+ */
+void CL_Say()
+{
+	byte who = MSG_ReadByte();
+	byte player_id = MSG_ReadByte();
+	const char* message = MSG_ReadString();
+
+	player_t &player = idplayer(player_id);
+	const char* name;
+
+	if (!validplayer(player))
+		return;
+
+	if (consoleplayer().id != player.id)
+	{
+		if (mute_spectators && player.spectator)
+			return;
+
+		if (mute_enemies && !player.spectator &&
+		    (sv_gametype == GM_DM ||
+		    ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+		     player.userinfo.team != consoleplayer().userinfo.team)))
+			return;
+	}
+
+	name = player.userinfo.netname.c_str();
+
+	switch (who)
+	{
+	case 0:
+		if (strnicmp(message, "/me ", 4) == 0)
+			Printf(PRINT_CHAT, "* %s %s\n", name, &message[4]);
+		else
+			Printf(PRINT_CHAT, "%s: %s\n", name, message);
+		if (show_messages)
+			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+		break;
+	case 1:
+		if (strnicmp(message, "/me ", 4) == 0)
+			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
+		else
+			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
+		if (show_messages)
+			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+		break;
+	}
+
+}
+
 //
 // CL_PlayerJustTeleported
 //
@@ -1756,31 +1933,15 @@ void CL_UpdatePlayer()
 	fixed_t y = MSG_ReadLong();
 	fixed_t z = MSG_ReadLong();
 
-	angle_t angle = 0, pitch = 0;
-
-	// [SL] 2012-06-15 - Netdemo compatibility with 0.6.0 and prior
-	if (gameversion <= 60)
-	{
-		angle = MSG_ReadLong();
-	}
-	else
-	{
-		angle = MSG_ReadShort() << FRACBITS;
-		pitch = MSG_ReadShort() << FRACBITS;
-	}
+	angle_t angle = MSG_ReadShort() << FRACBITS;
+	angle_t pitch = MSG_ReadShort() << FRACBITS;
 
 	int frame = MSG_ReadByte();
 	fixed_t momx = MSG_ReadLong();
 	fixed_t momy = MSG_ReadLong();
 	fixed_t momz = MSG_ReadLong();
 
-	int invisibility = 0;
-	
-	// [SL] 2012-06-15 - Netdemo compatibility with 0.6.0 and prior
-	if (gameversion <= 60)
-		invisibility = MSG_ReadLong();
-	else
-		invisibility = MSG_ReadByte();
+	int invisibility = MSG_ReadByte();
 
 	if	(!validplayer(*p) || !p->mo)
 		return;
@@ -2153,16 +2314,10 @@ void CL_SpawnPlayer()
 	// set color translations for player sprites
 	mobj->translation = translationtables + 256*playernum;
 	mobj->angle = angle;
-	mobj->pitch = mobj->roll = 0;
+	mobj->pitch = 0;
 	mobj->player = p;
 	mobj->health = p->health;
 	P_SetThingId(mobj, netid);
-
-	// [RH] Set player sprite based on skin
-	if(p->userinfo.skin >= numskins)
-		p->userinfo.skin = 0;
-
-	mobj->sprite = skins[p->userinfo.skin].sprite;
 
 	p->mo = p->camera = mobj->ptr();
 	p->fov = 90.0f;
@@ -2222,18 +2377,23 @@ void CL_PlayerInfo(void)
 {
 	player_t *p = &consoleplayer();
 
-	for(size_t j = 0; j < NUMWEAPONS; j++)
-		p->weaponowned[j] = MSG_ReadBool();
+	uint16_t booleans = MSG_ReadShort();
 
-	for(size_t j = 0; j < NUMAMMO; j++)
+	for (int i = 0; i < NUMWEAPONS; i++)
+		p->weaponowned[i] = booleans & 1 << i;
+	for (int i = 0; i < NUMCARDS; i++)
+		p->cards[i] = booleans & 1 << (i + NUMWEAPONS);
+	p->backpack = booleans & 1 << (NUMWEAPONS + NUMCARDS);
+
+	for (int i = 0; i < NUMAMMO; i++)
 	{
-		p->maxammo[j] = MSG_ReadShort ();
-		p->ammo[j] = MSG_ReadShort ();
+		p->maxammo[i] = MSG_ReadShort();
+		p->ammo[i] = MSG_ReadShort();
 	}
 
-	p->health = MSG_ReadByte ();
-	p->armorpoints = MSG_ReadByte ();
-	p->armortype = MSG_ReadByte ();
+	p->health = MSG_ReadByte();
+	p->armorpoints = MSG_ReadByte();
+	p->armortype = MSG_ReadByte();
 
 	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
 	if (newweapon >= NUMWEAPONS)	// bad weapon number, choose something else
@@ -2241,8 +2401,9 @@ void CL_PlayerInfo(void)
 
 	if (newweapon != p->readyweapon)
 		p->pendingweapon = newweapon;
-	
-	p->backpack = MSG_ReadBool();
+
+	for (int i = 0; i < NUMPOWERS; i++)
+		p->powers[i] = MSG_ReadShort();
 }
 
 //
@@ -2256,17 +2417,34 @@ void CL_SetMobjSpeedAndAngle(void)
 	netid = MSG_ReadShort();
 	mo = P_FindThingById(netid);
 
-	if (!mo)
-	{
-		for (int i=0; i<4; i++)
-			MSG_ReadLong();
-		return;
-	}
+	angle_t angle = MSG_ReadLong();
+	fixed_t momx = MSG_ReadLong();
+	fixed_t momy = MSG_ReadLong();
+	fixed_t momz = MSG_ReadLong();
 
-	mo->angle = MSG_ReadLong();
-	mo->momx = MSG_ReadLong();
-	mo->momy = MSG_ReadLong();
-	mo->momz = MSG_ReadLong();
+	if (!mo)
+		return;
+	
+	if (mo->player)
+	{
+		// [SL] 2013-07-21 - Save the position information to a snapshot
+		int snaptime = last_svgametic;
+		PlayerSnapshot newsnap(snaptime);
+		newsnap.setAuthoritative(true);
+		
+		newsnap.setMomX(momx);
+		newsnap.setMomY(momy);
+		newsnap.setMomZ(momz);
+		
+		mo->player->snapshots.addSnapshot(newsnap);
+	}
+	else
+	{
+		mo->angle = angle; 
+		mo->momx = momx;
+		mo->momy = momy;
+		mo->momz = momz; 
+	}
 }
 
 //
@@ -2328,7 +2506,13 @@ void CL_UpdateMobjInfo(void)
 //
 void CL_RemoveMobj(void)
 {
-	P_ClearId(MSG_ReadShort());
+	int netid = MSG_ReadShort();
+
+	AActor *mo = P_FindThingById(netid);
+	if (mo && mo->player && mo->player->id == displayplayer_id)
+		displayplayer_id = consoleplayer_id;
+
+	P_ClearId(netid);
 }
 
 
@@ -2383,7 +2567,7 @@ void CL_KillMobj(void)
 
 	MeansOfDeath = MSG_ReadLong();
 	
-	bool joinkill = MSG_ReadByte();
+	bool joinkill = ((MSG_ReadByte()) != 0);
 
 	if (!target)
 		return;
@@ -2531,17 +2715,6 @@ void CL_Sound(void)
 
 	float volume = vol/(float)255;
 
-	if(volume < 0.25f)
-	{
-		// so far away that it becomes directionless
-		AActor *mo = consoleplayer().mo;
-
-		if(mo)
-			S_SoundID (mo->x, mo->y, channel, sfx_id, volume, attenuation);
-
-		return;
-	}
-
 	if(mo)
 		S_SoundID (mo, channel, sfx_id, volume, attenuation); // play at thing location
 	else
@@ -2563,14 +2736,6 @@ void CL_SoundOrigin(void)
 
 	if(!mo)
 		return;
-
-	if(volume < 0.25f)
-	{
-		x = mo->x;
-		y = mo->y;
-		S_SoundID (x, y, channel, sfx_id, volume, attenuation);
-		return;
-	}
 
 	S_SoundID (x, y, channel, sfx_id, volume, attenuation);
 }
@@ -2852,34 +3017,40 @@ void CL_ReadPacketHeader(void)
 void CL_GetServerSettings(void)
 {
 	cvar_t *var = NULL, *prev = NULL;
-		
+
+	// TODO: REMOVE IN 0.7 - We don't need this loop anymore
 	while (MSG_ReadByte() != 2)
 	{
 		std::string CvarName = MSG_ReadString();
 		std::string CvarValue = MSG_ReadString();
-			
+
 		var = cvar_t::FindCVar (CvarName.c_str(), &prev);
-			
+
 		// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
 		if (var)
 		{
 			if (var->flags() & CVAR_SERVERINFO)
-                var->Set(CvarValue.c_str());
-        }
-        else
-        {
-            // [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
-            // for cleanup on program termination
-            var = new cvar_t (CvarName.c_str(), NULL, "", CVARTYPE_NONE,
-                CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
-                                  
-            var->Set(CvarValue.c_str());
-        }
-			
-    }
-    
+				var->Set(CvarValue.c_str());
+		}
+		else
+		{
+			// [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
+			// for cleanup on program termination
+			// [AM] We have no way of telling of cvars are CVAR_NOENABLEDISABLE,
+			//      so let's set it on all cvars.
+			var = new cvar_t(CvarName.c_str(), NULL, "", CVARTYPE_NONE,
+			                 CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE |
+			                 CVAR_NOENABLEDISABLE);
+			var->Set(CvarValue.c_str());
+		}
+	}
+
 	// Nes - update the skies in case sv_freelook is changed.
 	R_InitSkyMap ();
+
+	// [AM] - Adhere to sv_allowwidescreen setting.
+	ST_AdjustStatusBarScale(st_scale != 0);
+	setsizeneeded = true;
 }
 
 //
@@ -3071,21 +3242,62 @@ void CL_ConsolePlayer(void)
 	digest = MSG_ReadString();
 }
 
+//
+// CL_LoadMap
+//
+// Read wad & deh filenames and map name from the server and loads
+// the appropriate wads & map.
+//
 void CL_LoadMap(void)
 {
-	const char *mapname = MSG_ReadString ();
-
 	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
 	forcenetdemosplit = false;
 	
 	if (splitnetdemo)
 		netdemo.stopRecording();
 	
-	if(gamestate == GS_DOWNLOAD)
-		return;
+	std::vector<std::string> newwadfiles, newwadhashes;
+	std::vector<std::string> newpatchfiles, newpatchhashes;
 
-	if(gamestate == GS_LEVEL)
-		G_ExitLevel (0, 0);
+	int wadcount = (byte)MSG_ReadByte();
+	while (wadcount--)
+	{
+		newwadfiles.push_back(MSG_ReadString());
+		newwadhashes.push_back(MSG_ReadString());
+	}
+
+	int patchcount = (byte)MSG_ReadByte();
+	while (patchcount--)
+	{
+		newpatchfiles.push_back(MSG_ReadString());
+		newpatchhashes.push_back(MSG_ReadString());
+	}
+
+	const char *mapname = MSG_ReadString ();
+
+	if (gamestate == GS_DOWNLOAD)
+	{
+		CL_Reconnect();
+		return;
+	}	
+
+	// Load the specified WAD and DEH files and change the level.
+	// if any WADs are missing, reconnect to begin downloading.
+	G_LoadWad(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+
+	if (!missingfiles.empty())
+	{
+		missing_file = missingfiles[0]; 
+		missing_hash = missinghashes[0];
+
+		CL_Reconnect();
+		return;
+	}
+
+	// [SL] 2012-12-02 - Force the music to stop when the new map uses
+	// the same music lump name that is currently playing. Otherwise,
+	// the music from the old wad continues to play...
+	S_StopMusic();
 
 	G_InitNew (mapname);
 
@@ -3129,6 +3341,24 @@ void CL_LoadMap(void)
 		netdemo.writeMapChange();
 }
 
+void CL_ResetMap()
+{
+	// Destroy every actor with a netid that isn't a player.  We're going to
+	// get the contents of the map with a full update later on anyway.
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+		if (mo->netid && mo->type != MT_PLAYER)
+		{
+			mo->Destroy();
+		}
+	}
+
+	// write the map index to the netdemo
+	if (netdemo.isRecording() && recv_full_update)
+		netdemo.writeMapChange();
+}
 
 void CL_EndGame()
 {
@@ -3168,7 +3398,7 @@ void CL_Spectate()
 	player_t &player = CL_FindPlayer(MSG_ReadByte());
 
 	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
-	player.spectator = MSG_ReadByte();
+	player.spectator = ((MSG_ReadByte()) != 0);
 
 	if (player.spectator && wasalive)
 		P_DisconnectEffect(player.mo);
@@ -3181,7 +3411,14 @@ void CL_Spectate()
 			player.deltaviewheight = 1000 << FRACBITS;
 		} else {
 			displayplayer_id = consoleplayer_id; // get out of spynext
+			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
+
+		CL_RebuildAllPlayerTranslations();
+	}
+	else
+	{
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
 	}
 
 	// GhostlyDeath -- If the player matches our display player...
@@ -3191,6 +3428,26 @@ void CL_Spectate()
 void CL_ReadyState() {
 	player_t &player = CL_FindPlayer(MSG_ReadByte());
 	player.ready = MSG_ReadBool();
+}
+
+// Set local warmup state.
+void CL_WarmupState()
+{
+	warmup.set_client_status(static_cast<Warmup::status_t>(MSG_ReadByte()));
+	if (warmup.get_status() == Warmup::COUNTDOWN ||
+	    warmup.get_status() == Warmup::FORCE_COUNTDOWN)
+	{
+		// Read an extra countdown number off the wire
+		short count = MSG_ReadShort();
+		std::ostringstream buffer;
+		buffer << "Match begins in " << count << "...";
+		C_GMidPrint(buffer.str().c_str(), CR_GREEN, 0);
+	}
+	else
+	{
+		// Clear the midprint in other cases.
+		C_GMidPrint("", CR_GREY, 0);
+	}
 }
 
 // client source (once)
@@ -3203,8 +3460,9 @@ cmdmap cmds;
 //
 void CL_InitCommands(void)
 {
-	cmds[svc_abort]			= &CL_EndGame;
+	cmds[svc_abort]				= &CL_EndGame;
 	cmds[svc_loadmap]			= &CL_LoadMap;
+	cmds[svc_resetmap]			= &CL_ResetMap;
 	cmds[svc_playerinfo]		= &CL_PlayerInfo;
 	cmds[svc_consoleplayer]		= &CL_ConsolePlayer;
 	cmds[svc_updatefrags]		= &CL_UpdateFrags;
@@ -3244,6 +3502,7 @@ void CL_InitCommands(void)
 	cmds[svc_switch]			= &CL_Switch;
 	cmds[svc_print]				= &CL_Print;
     cmds[svc_midprint]          = &CL_MidPrint;
+	cmds[svc_say]				= &CL_Say;
     cmds[svc_pingrequest]       = &CL_SendPingReply;
 	cmds[svc_svgametic]			= &CL_SaveSvGametic;
 	cmds[svc_mobjtranslation]	= &CL_MobjTranslation;
@@ -3274,6 +3533,7 @@ void CL_InitCommands(void)
 	
 	cmds[svc_spectate]   		= &CL_Spectate;
 	cmds[svc_readystate]		= &CL_ReadyState;
+	cmds[svc_warmupstate]		= &CL_WarmupState;
 
 	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
 
@@ -3403,26 +3663,6 @@ void CL_PlayerTimes (void)
 	}
 }
 
-//
-//	CL_RunTics
-//
-void CL_RunTics (void)
-{
-	static char TicCount = 0;
-
-	// Only do this once a second.
-	if ( TicCount++ >= 35 )
-	{
-		CL_PlayerTimes ();
-		TicCount = 0;
-	}
-
-	if (sv_gametype == GM_CTF)
-		CTF_RunTics ();
-
-	Maplist_Runtic();
-}
-
 void PickupMessage (AActor *toucher, const char *message)
 {
 	// Some maps have multiple items stacked on top of each other.
@@ -3505,14 +3745,14 @@ void CL_LocalDemoTic()
 	int jumpTics, reactiontime;
 	byte waterlevel;
 
-	memset(&clientPlayer->cmd, 0, sizeof(ticcmd_t));	
-	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
-	clientPlayer->cmd.ucmd.impulse = MSG_ReadByte();	
-	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.pitch = MSG_ReadShort();
+	clientPlayer->cmd.clear();
+	clientPlayer->cmd.buttons = MSG_ReadByte();
+	clientPlayer->cmd.impulse = MSG_ReadByte();	
+	clientPlayer->cmd.yaw = MSG_ReadShort();
+	clientPlayer->cmd.forwardmove = MSG_ReadShort();
+	clientPlayer->cmd.sidemove = MSG_ReadShort();
+	clientPlayer->cmd.upmove = MSG_ReadShort();
+	clientPlayer->cmd.pitch = MSG_ReadShort();
 
 	waterlevel = MSG_ReadByte();
 	x = MSG_ReadLong();
@@ -3649,27 +3889,58 @@ void CL_SimulatePlayers()
 			// previous world_index, then old position was probably extrapolated
 			// and should be smoothly moved towards the corrected position instead
 			// of snapping to it.
-		
-			PlayerSnapshot prevsnap = player->snapshots.getSnapshot(world_index - 1);
-			v3fixed_t offset;
-			M_SetVec3Fixed(&offset, prevsnap.getX() - player->mo->x,
-									prevsnap.getY() - player->mo->y,
-									prevsnap.getZ() - player->mo->z);
+			
+			if (snap.isContinuous())
+			{
+				// [SL] Save the position prior to the new update so it can be
+				// used for rendering interpolation
+				player->mo->prevx = player->mo->x;
+				player->mo->prevy = player->mo->y;
+				player->mo->prevz = player->mo->z;
+				player->mo->prevangle = player->mo->angle;
+				player->mo->prevpitch = player->mo->pitch;
 
-			static const fixed_t correction_amount = FRACUNIT * 0.20f; 
-			M_ScaleVec3Fixed(&offset, &offset, correction_amount);
-		
-			#ifdef _SNAPSHOT_DEBUG_
-			if (offset.x != 0 || offset.y != 0 || offset.z != 0)
-				Printf(PRINT_HIGH, "Snapshot %i, Correcting extrapolation error\n", world_index);
-			#endif // _SNAPSHOT_DEBUG_
-	
-			// Apply the current snapshot to the player (with smoothing offset)
-			snap.setX(snap.getX() - offset.x);
-			snap.setY(snap.getY() - offset.y);
-			snap.setZ(snap.getZ() - offset.z);
+				PlayerSnapshot prevsnap = player->snapshots.getSnapshot(world_index - 1);
 
+				v3fixed_t offset;
+				M_SetVec3Fixed(&offset, prevsnap.getX() - player->mo->x,
+										prevsnap.getY() - player->mo->y,
+										prevsnap.getZ() - player->mo->z);
+
+				fixed_t dist = M_LengthVec3Fixed(&offset);
+				if (dist > 2 * FRACUNIT)
+				{
+					#ifdef _SNAPSHOT_DEBUG_
+					Printf(PRINT_HIGH, "Snapshot %i, Correcting extrapolation error of %i\n",
+							world_index, dist >> FRACBITS);
+					#endif	// _SNAPSHOT_DEBUG_
+
+					static const fixed_t correction_amount = FRACUNIT * 0.80f; 
+					M_ScaleVec3Fixed(&offset, &offset, correction_amount);
+					
+					// Apply a smoothing offset to the current snapshot
+					snap.setX(snap.getX() - offset.x);
+					snap.setY(snap.getY() - offset.y);
+					snap.setZ(snap.getZ() - offset.z);
+				}
+			}
+
+			int oldframe = player->mo->frame;
 			snap.toPlayer(player);
+
+			if (player->playerstate != PST_LIVE)
+				player->mo->frame = oldframe;
+
+			if (!snap.isContinuous())
+			{
+				// [SL] Save the position after to the new update so this position
+				// won't be interpolated.
+				player->mo->prevx = player->mo->x;
+				player->mo->prevy = player->mo->y;
+				player->mo->prevz = player->mo->z;
+				player->mo->prevangle = player->mo->angle;
+				player->mo->prevpitch = player->mo->pitch;
+			}
 		}
 	}
 }
@@ -3708,7 +3979,9 @@ void CL_SimulateWorld()
 		else if (world_index > upper_sync_limit)
 			reason = "too far ahead of server";
 		else if (world_index < lower_sync_limit)
-			reason == "too far behind server";
+			reason = "too far behind server";
+		else
+			reason = "invalid world_index";
 			
 		Printf(PRINT_HIGH, "Gametic %i, world_index %i, Resynching world index (%s).\n",
 			gametic, world_index, reason.c_str());

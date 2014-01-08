@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -104,7 +104,7 @@ enum svc_t
 	svc_reserved47,
 	svc_forceteam,			// [Toke] Allows server to change a clients team setting.
 	svc_switch,
-	svc_reserved50,
+	svc_say,				// [AM] Similar to a broadcast print except we know who said it.
 	svc_reserved51,
 	svc_spawnhiddenplayer,	// [denis] when client can't see player
 	svc_updatedeaths,		// [byte] [short]
@@ -121,6 +121,8 @@ enum svc_t
 	svc_railtrail,			// [SL] Draw railgun trail and play sound
 	svc_readystate,			// [AM] Broadcast ready state to client
 	svc_playerstate,		// [SL] Health, armor, and weapon of a player
+	svc_warmupstate,		// [AM] Broadcast warmup state to client
+	svc_resetmap,			// [AM] Server is resetting the map
 
 	// for co-op
 	svc_mobjstate = 70,
@@ -180,6 +182,7 @@ enum clc_t
 	clc_getplayerinfo,
 	clc_ready,				// [AM] Toggle ready state.
 	clc_spy,				// [SL] Tell server to send info about this player
+	clc_privmsg,			// [AM] Targeted chat to a specific player.
 
 	// for when launcher packets go astray
 	clc_launcher_challenge = 212,
@@ -387,7 +390,7 @@ public:
 
             case BT_SEND:
             {
-                if (readpos-offset < 0)
+                if ((int)(readpos-offset) < 0)
                 {
                     // lies, an underflow occured
                     overflowed = true;
@@ -550,6 +553,7 @@ void MSG_WriteLong (buf_t *b, int c);
 void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
+void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
 
 int MSG_BytesLeft(void);

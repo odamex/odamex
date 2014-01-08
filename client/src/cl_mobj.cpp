@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,7 +33,8 @@
 #include "doomtype.h"
 #include "v_video.h"
 #include "c_cvars.h"
-#include "vectors.h"
+#include "c_effect.h"
+#include "m_vectors.h"
 #include "p_mobj.h"
 #include "cl_main.h"
 #include "p_ctf.h"
@@ -44,6 +45,7 @@
 extern BOOL demonew;
 
 EXTERN_CVAR(sv_nomonsters)
+EXTERN_CVAR(cl_showspawns)
 EXTERN_CVAR(chasedemo)
 
 void G_PlayerReborn(player_t &player);
@@ -81,15 +83,9 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	mobj->translation = translationtables + 256*p->id;
 
 	mobj->angle = ANG45 * (mthing->angle/45);
-	mobj->pitch = mobj->roll = 0;
+	mobj->pitch = 0;
 	mobj->player = p;
 	mobj->health = p->health;
-
-	// [RH] Set player sprite based on skin
-	if(p->userinfo.skin >= numskins)
-		p->userinfo.skin = 0;
-
-	mobj->sprite = skins[p->userinfo.skin].sprite;
 
 	p->fov = 90.0f;
 	p->mo = p->camera = mobj->ptr();
@@ -111,6 +107,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		mobj->translucency = 0;
 		p->mo->flags |= MF_SPECTATOR;
 		p->mo->flags2 |= MF2_FLY;
+		p->mo->flags &= ~MF_SOLID;
 	}
 
 	// [RH] Allow chasecam for demo watching
@@ -151,8 +148,43 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
             }
         }
     }
+}
 
+std::vector<AActor*> spawnfountains;
+
+/**
+ * Show spawn points as particle fountains
+ */
+void P_ShowSpawns(mapthing2_t* mthing)
+{
+	if (clientside && cl_showspawns)
+	{
+		AActor* spawn = 0;
+
+		if (sv_gametype == GM_DM && mthing->type == 11)
+		{
+			spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
+			spawn->args[0] = 7; // White
+		}
+
+		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		{
+			if (mthing->type == 5080)
+			{
+				spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
+				spawn->args[0] = 3; // Blue
+			}
+			else if (mthing->type == 5081)
+			{
+				spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
+				spawn->args[0] = 1; // Red
+			}
+		}
+
+		if (spawn) {
+			spawn->effects = spawn->args[0] << FX_FOUNTAINSHIFT;
+		}
+	}
 }
 
 VERSION_CONTROL (cl_mobj_cpp, "$Id$")
-

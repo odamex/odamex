@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,6 +35,7 @@
 #include "gstrings.h"
 #include "hu_stuff.h"
 #include "cl_demo.h"
+#include "d_player.h"
 
 extern NetDemo netdemo;
 
@@ -104,7 +105,8 @@ char DefBindings[] =
 	"bind pause pause; "
 	"bind sysrq screenshot; "			// <- Also known as the Print Screen key
 	"bind t messagemode; "
-	"bind \\ +showscores; "				// <- Another new command
+	"bind y messagemode2; "
+	"bind \\\\ +showscores; "				// <- Another new command
 	"bind f11 bumpgamma; "
 	"bind f12 spynext; "
 	"bind pgup vote_yes; "				// <- New for voting
@@ -196,6 +198,7 @@ static std::string DoubleBindings[NUM_KEYS];
 static std::string NetDemoBindings[NUM_KEYS];
 static int DClickTime[NUM_KEYS];
 static byte DClicked[(NUM_KEYS+7)/8];
+static bool KeysDown[NUM_KEYS];
 
 static int GetKeyFromName (const char *name)
 {
@@ -246,7 +249,7 @@ BEGIN_COMMAND (unbind)
 		if ( (i = GetKeyFromName (argv[1])) )
 			Bindings[i] = "";
 		else
-			Printf (PRINT_HIGH, "Unknown key \"%s\"\n", argv[1]);
+			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
 }
 END_COMMAND (unbind)
@@ -258,11 +261,11 @@ BEGIN_COMMAND (bind)
 	if (argc > 1) {
 		i = GetKeyFromName (argv[1]);
 		if (!i) {
-			Printf (PRINT_HIGH, "Unknown key \"%s\"\n", argv[1]);
+			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 			return;
 		}
 		if (argc == 2) {
-			Printf (PRINT_HIGH, "\"%s\" = \"%s\"\n", argv[1], Bindings[i].c_str());
+			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(Bindings[i]).c_str());
 		} else {
 			Bindings[i] = argv[2];
 		}
@@ -271,7 +274,7 @@ BEGIN_COMMAND (bind)
 
 		for (i = 0; i < NUM_KEYS; i++) {
 			if (Bindings[i].length())
-				Printf (PRINT_HIGH, "%s \"%s\"\n", KeyName (i), Bindings[i].c_str());
+				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(Bindings[i]).c_str());
 		}
 	}
 }
@@ -286,7 +289,7 @@ BEGIN_COMMAND (undoublebind)
 		if ( (i = GetKeyFromName (argv[1])) )
 			DoubleBindings[i] = "";
 		else
-			Printf (PRINT_HIGH, "Unknown key \"%s\"\n", argv[1]);
+			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
 }
 END_COMMAND (undoublebind)
@@ -300,12 +303,12 @@ BEGIN_COMMAND (doublebind)
 		i = GetKeyFromName (argv[1]);
 		if (!i)
 		{
-			Printf (PRINT_HIGH, "Unknown key \"%s\"\n", argv[1]);
+			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 			return;
 		}
 		if (argc == 2)
 		{
-			Printf (PRINT_HIGH, "\"%s\" = \"%s\"\n", argv[1], DoubleBindings[i].c_str());
+			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(DoubleBindings[i]).c_str());
 		}
 		else
 		{
@@ -319,7 +322,7 @@ BEGIN_COMMAND (doublebind)
 		for (i = 0; i < NUM_KEYS; i++)
 		{
 			if (DoubleBindings[i].length())
-				Printf (PRINT_HIGH, "%s \"%s\"\n", KeyName (i), DoubleBindings[i].c_str());
+				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(DoubleBindings[i]).c_str());
 		}
 	}
 }
@@ -360,15 +363,45 @@ bool C_DoNetDemoKey (event_t *ev)
 		return false;
 
 	std::string *binding = &NetDemoBindings[ev->data1];
+
+	// hardcode the pause key to also control netpause
+	if (iequals(Bindings[ev->data1], "pause"))
+		binding = &NetDemoBindings[GetKeyFromName("space")];
 	
 	// nothing bound to this key specific to netdemos?
 	if (binding->empty())
 		return false;
 
 	if (ev->type == ev_keydown)
-		AddCommandString(binding->c_str());
+		AddCommandString(*binding);
 
 	return true;
+}
+
+//
+// C_DoSpectatorKey
+//
+// [SL] 2012-09-14 - Handles the hard-coded key bindings used while spectating
+// or during NetDemo playback.  Returns false if the key pressed is not
+// bound to any spectating command such as spynext.
+//
+bool C_DoSpectatorKey (event_t *ev)
+{
+	if (!consoleplayer().spectator && !netdemo.isPlaying() && !netdemo.isPaused())
+		return false;
+
+	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELUP)
+	{
+		AddCommandString("spyprev");
+		return true;
+	}
+	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELDOWN)
+	{
+		AddCommandString("spynext");
+		return true;
+	}
+
+	return false;	
 }
 
 BOOL C_DoKey (event_t *ev)
@@ -410,7 +443,8 @@ BOOL C_DoKey (event_t *ev)
 	{
 		if (ev->type == ev_keydown)
 		{
-			AddCommandString (binding->c_str());
+			AddCommandString (*binding);
+			KeysDown[ev->data1] = true;
 		}
 		else
 		{
@@ -422,13 +456,45 @@ BOOL C_DoKey (event_t *ev)
 			if (achar == 0 || (*binding)[achar - 1] <= ' ')
 			{
 				(*binding)[achar] = '-';
-				AddCommandString (binding->c_str());
+				AddCommandString (*binding);
 				(*binding)[achar] = '+';
 			}
+
+			KeysDown[ev->data1] = false;
 		}
 		return true;
 	}
 	return false;
+}
+
+//
+// C_ReleaseKeys
+//
+// Calls the key-release action for all bound keys that are currently
+// being held down.
+//
+void C_ReleaseKeys()
+{
+	for (int i = 0; i < NUM_KEYS; i++)
+	{
+		if (!KeysDown[i])
+			continue;
+
+		KeysDown[i] = false;
+		std::string *binding = &Bindings[i];
+		if (binding->empty())
+			continue;
+
+		size_t achar = binding->find_first_of('+');
+
+		if (achar != std::string::npos && 
+			(achar == 0 || (*binding)[achar - 1] <= ' '))
+		{
+			(*binding)[achar] = '-';
+			AddCommandString(*binding);
+			(*binding)[achar] = '+';
+		}
+	}
 }
 
 void C_ArchiveBindings (FILE *f)
@@ -437,11 +503,19 @@ void C_ArchiveBindings (FILE *f)
 
 	fprintf (f, "unbindall\n");
 	for (i = 0; i < NUM_KEYS; i++)
+	{
 		if (Bindings[i].length())
-			fprintf (f, "bind \"%s\" \"%s\"\n", KeyName (i), Bindings[i].c_str());
+			fprintf (f, "bind %s %s\n",
+					C_QuoteString(KeyName(i)).c_str(),
+					C_QuoteString(Bindings[i]).c_str());
+	}
 	for (i = 0; i < NUM_KEYS; i++)
+	{
 		if (DoubleBindings[i].length())
-			fprintf (f, "doublebind \"%s\" \"%s\"\n", KeyName (i), DoubleBindings[i].c_str());
+			fprintf (f, "doublebind %s %s\n", 
+					C_QuoteString(KeyName(i)).c_str(),
+					C_QuoteString(DoubleBindings[i]).c_str());
+	}
 }
 
 int C_GetKeysForCommand (const char *cmd, int *first, int *second)

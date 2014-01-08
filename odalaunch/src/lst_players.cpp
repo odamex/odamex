@@ -30,6 +30,11 @@ using namespace odalpapi;
 
 IMPLEMENT_DYNAMIC_CLASS(LstOdaPlayerList, wxAdvancedListCtrl)
 
+BEGIN_EVENT_TABLE(LstOdaPlayerList, wxAdvancedListCtrl)
+    
+    EVT_WINDOW_CREATE(LstOdaPlayerList::OnCreateControl)
+END_EVENT_TABLE()
+
 typedef enum
 {
      playerlist_field_attr
@@ -37,6 +42,7 @@ typedef enum
     ,playerlist_field_ping
     ,playerlist_field_timeingame
     ,playerlist_field_frags
+    ,playerlist_field_kdrcount
     ,playerlist_field_killcount
     ,playerlist_field_deathcount
     ,playerlist_field_team
@@ -52,6 +58,14 @@ static int ImageList_BlueBullet = -1;
 // Special case
 static wxInt32 WidthTeam, WidthTeamScore;
 
+void LstOdaPlayerList::OnCreateControl(wxWindowCreateEvent &event)
+{
+    SetupPlayerListColumns();
+    
+    // Propagate the event to the base class as well
+    event.Skip();
+}
+
 void LstOdaPlayerList::SetupPlayerListColumns()
 {
     DeleteAllItems();
@@ -61,14 +75,15 @@ void LstOdaPlayerList::SetupPlayerListColumns()
     wxInt32 PlayerListSortOrder, PlayerListSortColumn;
 
     // Read from the global configuration
-	wxInt32 WidthAttr, WidthName, WidthPing, WidthFrags, WidthKillCount, 
-        WidthDeathCount, WidthTime;
+	wxInt32 WidthAttr, WidthName, WidthPing, WidthFrags, WidthKDRCount,
+        WidthKillCount, WidthDeathCount, WidthTime;
 
     //ConfigInfo.Read(wxT("PlayerListWidthName"), &WidthName, 150);
     WidthAttr = 24; // fixed column size
     ConfigInfo.Read(wxT("PlayerListWidthName"), &WidthName, 150);
     ConfigInfo.Read(wxT("PlayerListWidthPing"), &WidthPing, 60);
     ConfigInfo.Read(wxT("PlayerListWidthFrags"), &WidthFrags, 70);
+    ConfigInfo.Read(wxT("PlayerListWidthKDRCount"), &WidthKDRCount, 85);
     ConfigInfo.Read(wxT("PlayerListWidthKillCount"), &WidthKillCount, 85);
     ConfigInfo.Read(wxT("PlayerListWidthDeathCount"), &WidthDeathCount, 100);
     ConfigInfo.Read(wxT("PlayerListWidthTime"), &WidthTime, 65);
@@ -98,6 +113,11 @@ void LstOdaPlayerList::SetupPlayerListColumns()
                 wxT("Frags"),
                 wxLIST_FORMAT_LEFT,
                 WidthFrags);
+
+    InsertColumn(playerlist_field_killcount,
+                wxT("K/D Ratio"),
+                wxLIST_FORMAT_LEFT,
+                WidthKDRCount);
 
     InsertColumn(playerlist_field_killcount,
                 wxT("Kill count"),
@@ -198,6 +218,8 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
     {
         wxListItem li;
         
+        float kdr;
+
         li.m_itemId = ALCInsertItem();
         
         li.SetMask(wxLIST_MASK_TEXT);
@@ -218,6 +240,18 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
         li.SetText(wxString::Format(_T("%d"),
                                     s.Info.Players[i].Frags));
         
+        SetItem(li);
+
+        if (s.Info.Players[i].Frags <= 0)
+            kdr = 0;
+        else if (s.Info.Players[i].Frags >= 1 && !s.Info.Players[i].Deaths)
+            kdr = (float)s.Info.Players[i].Frags;
+        else
+            kdr = (float)s.Info.Players[i].Frags / (float)s.Info.Players[i].Deaths;
+
+        li.SetColumn(playerlist_field_kdrcount);
+        li.SetText(wxString::Format(_T("%2.1f"), kdr));
+
         SetItem(li);
 
         li.SetColumn(playerlist_field_killcount);        

@@ -45,7 +45,7 @@ static const string license(
 			"This program is distributed in the hope that it will be"
 			" useful, but WITHOUT ANY WARRANTY; without even the"
 			" implied warranty of MERCHANTABILITY or FITNESS FOR"
-			" A PARTICULAR PURPOSE.  See the GNU General Public"
+			" A PARTICULAR PURPOSE. See the GNU General Public"
 			" License for more details.");
 
 AGOL_About::AGOL_About()
@@ -62,6 +62,7 @@ AGOL_About::AGOL_About()
 	CloseEventHandler = NULL;
 
 	LicenseCursorPos = 0;
+	LicenseDirty = false;
 
 	AG_WindowShow(AboutDialog);
 }
@@ -89,7 +90,7 @@ AG_Box *AGOL_About::CreateTopBox(void *parent)
 		AG_CloseDataSource(pngdata);
 	}
 
-	box = AG_BoxNewVert(tbox, 0);
+	box = AG_BoxNewVert(tbox, AG_BOX_HFILL);
 	label = AG_LabelNewS(box, AG_LABEL_HFILL, "The Odamex Launcher");
 	AG_LabelJustify(label, AG_TEXT_CENTER);
 	label = AG_LabelNewS(box, AG_LABEL_HFILL, "Copyright (C) 2010-2012 by The Odamex Team");
@@ -143,16 +144,25 @@ AG_Box *AGOL_About::CreateLicenseBox(void *parent)
 	AG_BoxSetPadding(lbox, 5);
 	AG_BoxSetSpacing(lbox, 5);
 
+#if !AG_VERSION_ATLEAST(1,4,2)
 	text = AG_TextboxNewS(lbox, AG_TEXTBOX_MULTILINE | AG_TEXTBOX_EXPAND, "");
+#else
+	text = AG_TextboxNewS(lbox, AG_TEXTBOX_READONLY | AG_TEXTBOX_MULTILINE | AG_TEXTBOX_EXPAND, "");
+#endif
+
 	AG_TextboxSetWordWrap(text, true);
 
 	AG_TextboxSetString(text, license.c_str());
 
+#if !AG_VERSION_ATLEAST(1,4,2)
 	AG_SetEvent(text, "textbox-prechg", EventReceiver, "%p",
 		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_About::OnLicensePrechg));
 
 	AG_SetEvent(text, "textbox-postchg", EventReceiver, "%p",
 		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_About::OnLicensePostchg));
+#else
+	AG_TextboxSetCursorPos(text, 0);
+#endif
 
 	return lbox;
 }
@@ -191,20 +201,21 @@ void AGOL_About::OnLicensePrechg(AG_Event *event)
 {
 	AG_Textbox *text = static_cast<AG_Textbox*>(AG_SELF());
 
-	// Lock to get valid cursor position
-	AG_ObjectLock(text);
-
 	// Store the cursor position before change
 	LicenseCursorPos = AG_TextboxGetCursorPos(text);
-
-	AG_ObjectUnlock(text);
 }
 
 void AGOL_About::OnLicensePostchg(AG_Event *event)
 {
-	AG_Textbox *text = static_cast<AG_Textbox*>(AG_SELF());
+	// Protect against recursion
+	if(LicenseDirty)
+	{
+		return;
+	}
 
-	AG_ObjectLock(text);
+	LicenseDirty = true;
+
+	AG_Textbox *text = static_cast<AG_Textbox*>(AG_SELF());
 
 	// Force the widget to use the unmodified license text
 	AG_TextboxSetString(text, license.c_str());
@@ -212,7 +223,7 @@ void AGOL_About::OnLicensePostchg(AG_Event *event)
 	// Return the cursor to the previous position so the view doesn't change
 	AG_TextboxSetCursorPos(text, LicenseCursorPos);
 
-	AG_ObjectUnlock(text);
+	LicenseDirty = false;
 }
 
 //******************//

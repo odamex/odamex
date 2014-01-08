@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -282,7 +282,12 @@ typedef enum {
 	dDamage_LavaWimpy = 82,
 	dDamage_LavaHefty = 83,
 	dScroll_EastLavaDamage = 84,
-
+	hDamage_Sludge = 85,
+	
+	sLight_Strobe_Hurt = 104,
+	sDamage_Hellslime = 105,
+	Damage_InstantDeath = 115,
+	sDamage_SuperHellslime = 116,
 
 	Light_IndoorLightning2 = 198,
 	Light_IndoorLightning1 = 199,

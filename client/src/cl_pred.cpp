@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,7 +35,7 @@
 #include "c_console.h"
 #include "cl_main.h"
 #include "cl_demo.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "cl_netgraph.h"
 
 #include "p_snapshot.h"
@@ -78,7 +78,7 @@ CVAR_FUNC_IMPL(cl_prednudge)
 static SectorSnapshotManager *CL_GetSectorSnapshotManager(sector_t *sector)
 {
 	unsigned short sectornum = sector - sectors;
-	if (!sector || sectornum < 0 || sectornum >= numsectors)
+	if (!sector || sectornum >= numsectors)
 		return NULL;
 
 	std::map<unsigned short, SectorSnapshotManager>::iterator mgr_itr;
@@ -132,7 +132,7 @@ static void CL_ResetSectors()
 	{
 		sector_t *sector = itr->sector;
 		unsigned short sectornum = sector - sectors;
-		if (sectornum < 0 || sectornum >= numsectors)
+		if (sectornum >= numsectors)
 			continue;
 		
 		// Find the most recent snapshot received from the server for this sector
@@ -200,6 +200,23 @@ static void CL_PredictSectors(int predtic)
 }
 
 //
+// CL_PredictSpying
+//
+// Handles calling the thinker routines for the player being spied with spynext.
+//
+static void CL_PredictSpying()
+{
+	player_t *player = &displayplayer();
+	if (consoleplayer_id == displayplayer_id)
+		return;
+
+	predicting = false;
+	
+	P_PlayerThink(player);
+	P_CalcHeight(player);
+}
+
+//
 // CL_PredictSpectator
 //
 //
@@ -213,12 +230,6 @@ static void CL_PredictSpectator()
 	
 	P_PlayerThink(player);
 	P_CalcHeight(player);
-	
-	if (consoleplayer_id != displayplayer_id)
-	{
-		P_PlayerThink(&displayplayer());
-		P_CalcHeight(&displayplayer());		
-	}
 	
 	predicting = false;
 }
@@ -279,6 +290,9 @@ void CL_PredictWorld(void)
 
 	// tenatively tell the netgraph that our prediction was successful
 	netgraph.setMisprediction(false);
+
+	if (consoleplayer_id != displayplayer_id)
+		CL_PredictSpying();
 
 	// [SL] 2012-03-10 - Spectators can predict their position without server
 	// correction.  Handle them as a special case and leave.
@@ -357,12 +371,6 @@ void CL_PredictWorld(void)
 	if (cl_predictsectors)
 		CL_PredictSectors(gametic);		
 	CL_PredictLocalPlayer(gametic);
-
-	if (consoleplayer_id != displayplayer_id)
-	{
-		P_PlayerThink(&displayplayer());
-		P_CalcHeight(&displayplayer());		
-	}
 }
 
 

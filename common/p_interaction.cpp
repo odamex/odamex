@@ -4,7 +4,7 @@
 // $Id: p_interaction.cpp 1920 2010-09-16 20:49:17Z ladna $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,12 +35,15 @@
 #include "p_lnspec.h"
 #include "p_ctf.h"
 #include "p_acs.h"
+#include "g_warmup.h"
 
 extern bool predicting;
 extern bool singleplayerjustdied;
 
 EXTERN_CVAR(sv_doubleammo)
 EXTERN_CVAR(sv_weaponstay)
+EXTERN_CVAR(sv_weapondamage)
+EXTERN_CVAR(sv_monsterdamage)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_fragexitswitch) // [ML] 04/4/06: Added compromise for older exit method
 EXTERN_CVAR(sv_friendlyfire)
@@ -78,6 +81,38 @@ void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 // GET STUFF
 //
 
+// Give frags to a player
+void P_GiveFrags(player_t* player, int num)
+{
+	if (!warmup.checkscorechange())
+		return;
+	player->fragcount += num;
+}
+
+// Give coop kills to a player
+void P_GiveKills(player_t* player, int num)
+{
+	if (!warmup.checkscorechange())
+		return;
+	player->killcount += num;
+}
+
+// Give coop kills to a player
+void P_GiveDeaths(player_t* player, int num)
+{
+	if (!warmup.checkscorechange())
+		return;
+	player->deathcount += num;
+}
+
+// Give a specific number of points to a player's team
+void P_GiveTeamPoints(player_t* player, int num)
+{
+	if (!warmup.checkscorechange())
+		return;
+	TEAMpoints[player->userinfo.team] += num;
+}
+
 //
 // P_GiveAmmo
 // Num is the number of clip loads,
@@ -85,32 +120,32 @@ void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 // Returns false if the ammo can't be picked up at all
 //
 
-BOOL P_GiveAmmo(player_t *player, ammotype_t ammo, int num)
+BOOL P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 {
-	int oldammo;
+	int oldammotype;
 
-	if (ammo == am_noammo)
+	if (ammotype == am_noammo)
     {
 		return false;
     }
 
-	if (ammo < 0 || ammo > NUMAMMO)
+	if (ammotype < 0 || ammotype > NUMAMMO)
     {
-		I_Error("P_GiveAmmo: bad type %i", ammo);
+		I_Error("P_GiveAmmo: bad type %i", ammotype);
     }
 
-	if (player->ammo[ammo] == player->maxammo[ammo])
+	if (player->ammo[ammotype] == player->maxammo[ammotype])
     {
 		return false;
     }
 
 	if (num)
     {
-		num *= clipammo[ammo];
+		num *= clipammo[ammotype];
     }
 	else
     {
-		num = clipammo[ammo]/2;
+		num = clipammo[ammotype]/2;
     }
 
 	if (sv_skill == sk_baby || sv_skill == sk_nightmare || sv_doubleammo)
@@ -120,18 +155,18 @@ BOOL P_GiveAmmo(player_t *player, ammotype_t ammo, int num)
 		num <<= 1;
 	}
 
-	oldammo = player->ammo[ammo];
-	player->ammo[ammo] += num;
+	oldammotype = player->ammo[ammotype];
+	player->ammo[ammotype] += num;
 
-	if (player->ammo[ammo] > player->maxammo[ammo])
+	if (player->ammo[ammotype] > player->maxammo[ammotype])
     {
-		player->ammo[ammo] = player->maxammo[ammo];
+		player->ammo[ammotype] = player->maxammo[ammotype];
     }
 
 	// If non zero ammo,
 	// don't change up weapons,
 	// player was lower on purpose.
-	if (oldammo)
+	if (oldammotype)
     {
 		return true;
     }
@@ -139,7 +174,7 @@ BOOL P_GiveAmmo(player_t *player, ammotype_t ammo, int num)
 	// We were down to zero,
 	// so select a new weapon.
 	// Preferences are not user selectable.
-	switch (ammo)
+	switch (ammotype)
 	{
         case am_clip:
             if (player->readyweapon == wp_fist)
@@ -224,11 +259,11 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 
 		if (sv_gametype != GM_COOP)
         {
-			P_GiveAmmo(player, weaponinfo[weapon].ammo, 5);
+			P_GiveAmmo(player, weaponinfo[weapon].ammotype, 5);
         }
 		else
         {
-			P_GiveAmmo(player, weaponinfo[weapon].ammo, 2);
+			P_GiveAmmo(player, weaponinfo[weapon].ammotype, 2);
         }
 
 		if (P_CheckSwitchWeapon(player, weapon))
@@ -241,17 +276,17 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 		return false;
 	}
 
-	if (weaponinfo[weapon].ammo != am_noammo)
+	if (weaponinfo[weapon].ammotype != am_noammo)
 	{
 		// give one clip with a dropped weapon,
 		// two clips with a found weapon
 		if (dropped)
         {
-			gaveammo = P_GiveAmmo(player, weaponinfo[weapon].ammo, 1);
+			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 1)) != 0);
         }
 		else
         {
-			gaveammo = P_GiveAmmo(player, weaponinfo[weapon].ammo, 2);
+			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 2)) != 0);
         }
 	}
 	else
@@ -394,7 +429,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 {
 	if (!player || !player->mo || !special)
 		return;
-		
+
 	AActor *toucher = player->mo;
 	int sound = 0;
 	bool firstgrab = false;
@@ -910,7 +945,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 	// out of reach?
 	fixed_t delta = special->z - toucher->z;
 	fixed_t lowerbound = co_zdoomphys ? -32*FRACUNIT : -8*FRACUNIT;
-	
+
 	if (delta > toucher->height || delta < lowerbound)
 		return;
 
@@ -957,7 +992,7 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 		else
 		{
 			int gendermsg = -1;
-			
+
 			switch (from[1])
 			{
 			case 'g':	gendermsg = 0;	break;
@@ -1060,11 +1095,11 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			{
 				if (target->player == source->player) // [RH] Cumulative frag count
 				{
-					splayer->fragcount--;
+					P_GiveFrags(splayer, -1);
 					// [Toke] Minus a team frag for suicide
 					if (sv_gametype == GM_TEAMDM)
 					{
-						TEAMpoints[splayer->userinfo.team]--;
+						P_GiveTeamPoints(splayer, -1);
 					}
 				}
 				// [Toke] Minus a team frag for killing teammate
@@ -1072,10 +1107,10 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 				         (splayer->userinfo.team == tplayer->userinfo.team))
 				{
 					// [Toke - Teamplay || deathz0r - updated]
-					splayer->fragcount--;
+					P_GiveFrags(splayer, -1);
 					if (sv_gametype == GM_TEAMDM)
 					{
-						TEAMpoints[splayer->userinfo.team]--;
+						P_GiveTeamPoints(splayer, -1);
 					}
 					else if (sv_gametype == GM_CTF)
 					{
@@ -1084,11 +1119,11 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 				}
 				else
 				{
-					splayer->fragcount++;
+					P_GiveFrags(splayer, 1);
 					// [Toke] Add a team frag
 					if (sv_gametype == GM_TEAMDM)
 					{
-						TEAMpoints[splayer->userinfo.team]++;
+						P_GiveTeamPoints(splayer, 1);
 					}
 					else if (sv_gametype == GM_CTF)
 					{
@@ -1109,22 +1144,20 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		if (sv_gametype == GM_COOP &&
             ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
 		{
-			splayer->killcount++;
+			P_GiveKills(splayer, 1);
 			SV_UpdateFrags(*splayer);
 		}
 	}
 
-	// [Toke - CTF]
-	if (sv_gametype == GM_CTF && target->player)
-	{
-		CTF_CheckFlags(*target->player);
-	}
-
 	if (target->player)
 	{
+		// [Toke - CTF]
+		if (sv_gametype == GM_CTF)
+			CTF_CheckFlags(*target->player);
+
 		if (!joinkill && !shotclock)
 		{
-			tplayer->deathcount++;
+			P_GiveDeaths(tplayer, 1);
 		}
 
 		// Death script execution, care of Skull Tag
@@ -1136,10 +1169,9 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		// count environment kills against you
 		if (!source && !joinkill && !shotclock)
 		{
-			tplayer->fragcount--; // [RH] Cumulative frag count
+			// [RH] Cumulative frag count
+			P_GiveFrags(tplayer, -1);
 		}
-
-		CTF_CheckFlags(*target->player);
 
 		// [NightFang] - Added this, thought it would be cooler
 		// [Fly] - No, it's not cooler
@@ -1155,14 +1187,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		{
 			singleplayerjustdied = true;
 		}
-		// [RH] Force a delay between death and respawn
-		// [Toke] Lets not fuck up deathmatch tactics ok randy?
-		if (!clientside) {
-			tplayer->respawn_time = level.time + sv_forcerespawntime.asInt() * TICRATE;
-		} else {
-			// vanilla immediate respawn
-			target->player->respawn_time = level.time;
-		}
+
+		tplayer->death_time = level.time;
 
 		if (target == consoleplayer().camera)
 		{
@@ -1206,13 +1232,13 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	{
 		// [Toke] Better sv_fraglimit
 		if (sv_gametype == GM_DM && sv_fraglimit &&
-            splayer->fragcount >= sv_fraglimit && !sv_fragexitswitch && !shotclock)
+            splayer->fragcount >= sv_fraglimit && !shotclock)
 		{
             // [ML] 04/4/06: Added !sv_fragexitswitch
             SV_BroadcastPrintf(
                 PRINT_HIGH,
                 "Frag limit hit. Game won by %s!\n",
-                splayer->userinfo.netname
+                splayer->userinfo.netname.c_str()
             );
             shotclock = TICRATE*2;
 		}
@@ -1332,6 +1358,12 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
     {
 		damage >>= 1;	// take half damage in trainer mode
     }
+
+	// [AM] Weapon and monster damage scaling.
+	if (source && source->player && target)
+		damage *= sv_weapondamage;
+	else if (source && target && target->player)
+		damage *= sv_monsterdamage;
 
 	// Some close combat weapons should not
 	// inflict thrust and push the victim out of reach,

@@ -77,7 +77,7 @@ proc main {} {
  wait 1
  # test classic csdoom string parsing mistake
  clear
- test "say %s%s%i%s\"\'" "Player: %s%s%i%s\"\'"
+ test "say %s%s%i%s\"\'" "Player: %s%s%i%s"
  wait 1
  test "say veryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstring" "Player: veryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstringve"
 

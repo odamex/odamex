@@ -1,14 +1,14 @@
-include(FindPortMidi)
+# Client flags [AM] TODO: Test -O3 again sometime.
+if(NOT MSVC)
+  set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+endif()
+
+global_compile_options()
 
 # Common
 set(COMMON_DIR ../common)
 file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
 file(GLOB COMMON_SOURCES ${COMMON_DIR}/*.cpp)
-
-# Textscreen
-set(TEXTSCREEN_DIR ../textscreen)
-file(GLOB TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/*.h)
-file(GLOB TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/*.cpp)
 
 # Client
 set(CLIENT_DIR sdl src)
@@ -25,13 +25,24 @@ endif()
 define_platform()
 
 # Client definitions
-add_definitions(-DNOASM)
-include_directories(${COMMON_DIR} ${TEXTSCREEN_DIR} ${CLIENT_DIR})
+include_directories(${COMMON_DIR} ${CLIENT_DIR})
+
+# Textscreen
+set(TEXTSCREEN_LIBRARY "textscreen")
+set(TEXTSCREEN_DIR ../textscreen)
+set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
+set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
+
+include_directories(${TEXTSCREEN_DIR})
+add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
+message(STATUS "Textscreen will be statically linked.")
+
+# Make sure we don't find libraries that are in Program Files/Odamex
+if(WIN32)
+  list(REMOVE_ITEM CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
+endif()
 
 # SDL configuration
-set(SDLDIR $ENV{SDLDIR} CACHE PATH
-  "Path to SDL (and optionally SDL_mixer) base directory.  Only necessary if you get errors about SDL not being found, or if you want to use a different installation of SDL.")
-set(ENV{SDLDIR} ${SDLDIR})
 find_package(SDL)
 if(SDL_FOUND)
   include_directories(${SDL_INCLUDE_DIR})
@@ -40,9 +51,6 @@ else()
 endif()
 
 # SDL_Mixer configuration
-set(SDLMIXERDIR $ENV{SDLMIXERDIR} CACHE PATH
-  "Path to SDL_mixer base directory.  Only necessary if you get errors about SDL not being found, or if you want to use a different installation of SDL_mixer.  If SDL_mixer is in the location specified by SDLMAIN then you can leave this blank.")
-set(ENV{SDLMIXERDIR} ${SDLMIXERDIR})
 find_package(SDL_mixer)
 if(SDLMIXER_FOUND)
   include_directories(${SDLMIXER_INCLUDE_DIR})
@@ -50,13 +58,18 @@ else()
   message(WARNING "SDL_mixer not found, client target not generated.")
 endif()
 
-# Portmidi configuration
-find_package(PortMidi)
-if(PortMidi_FOUND)
-  include_directories(${PortMidi_INCLUDE_DIR})
-  ADD_DEFINITIONS(-DPORTMIDI ${PortMidi_CFLAGS})
+# PortMidi configuration
+if(USE_INTREE_PORTMIDI)
+  include_directories(../portmidi/pm_common/ ../portmidi/porttime/)
+  add_definitions(-DPORTMIDI)
 else()
-  set(PortMidi_LIBRARIES "")
+  find_package(PortMidi)
+  if(PORTMIDI_FOUND)
+    include_directories(${PORTMIDI_INCLUDE_DIR})
+    add_definitions(-DPORTMIDI)
+  else()
+    message(WARNING "PortMidi not found, client will be built without PortMidi support.")
+  endif()
 endif()
 
 # Find Mac frameworks
@@ -68,20 +81,37 @@ if(APPLE)
     ${AUDIOUNIT_LIBRARY})
 endif()
 
+# Set up FHS installation path
+if(NOT APPLE AND NOT WIN32)
+  add_definitions("-DINSTALL_PREFIX=\"${CMAKE_INSTALL_PREFIX}\"")
+endif()
+
 # Client target
 if(SDL_FOUND AND SDLMIXER_FOUND)
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${COMMON_SOURCES} ${COMMON_HEADERS}
-    ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS}
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
     ${CLIENT_MAC_OBJC_SOURCES})
-  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${PortMidi_LIBRARIES})
+  target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
+  target_link_libraries(odamex ${SDL_LIBRARY})
+  target_link_libraries(odamex ${SDLMIXER_LIBRARY})
+
+  if(USE_INTREE_PORTMIDI)
+    target_link_libraries(odamex portmidi-static)
+  elseif(PORTMIDI_FOUND)
+    target_link_libraries(odamex ${PORTMIDI_LIBRARIES})
+  endif()
+
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 Shlwapi)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
+  endif()
+
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(odamex rt)
   endif()
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
@@ -119,7 +149,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     # Install the SDL framework into the bundle
     if(IS_DIRECTORY ${SDL_DIR})
       install(DIRECTORY ${SDL_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks)
-      install(CODE "execute_process(COMMAND 
+      install(CODE "execute_process(COMMAND
         install_name_tool -change @rpath/SDL.framework/Versions/A/SDL
         @executable_path/../Frameworks/SDL.framework/Versions/A/SDL
         ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
@@ -133,13 +163,21 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
 
     # If PortMidi was built in install the PortMidi library into the bundle
     if(PortMidi_FOUND)
-      install(FILES ${PortMidi_LIBRARIES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks/)
-      install(CODE "execute_process(COMMAND 
+      install(FILES ${PORTMIDI_LIBRARIES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks/)
+      install(CODE "execute_process(COMMAND
         install_name_tool -change libportmidi.dylib
         @executable_path/../Frameworks/libportmidi.dylib
         ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
         " )
     endif()
 
+  elseif(WIN32)
+    install(TARGETS odamex
+      RUNTIME DESTINATION .
+      COMPONENT client)
+  else()
+    install(TARGETS odamex
+      RUNTIME DESTINATION bin
+      COMPONENT client)
   endif()
 endif()

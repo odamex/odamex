@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,6 +38,7 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 #include "p_ctf.h"
+#include "cl_demo.h"
 
 // Needs access to LFB.
 #include "v_video.h"
@@ -332,6 +333,8 @@ cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
 
 static BOOL stopped = true;
 
+extern NetDemo netdemo;
+
 #define NUMALIASES		3
 #define WALLCOLORS		-1
 #define FDWALLCOLORS	-2
@@ -385,8 +388,8 @@ void AM_restoreScaleAndLoc(void)
     }
 	else
 	{
-		m_x = consoleplayer().camera->x - m_w/2; // denis - todo - consoleplayer
-		m_y = consoleplayer().camera->y - m_h/2;
+		m_x = displayplayer().camera->x - m_w/2;
+		m_y = displayplayer().camera->y - m_h/2;
     }
 	m_x2 = m_x + m_w;
 	m_y2 = m_y + m_h;
@@ -537,7 +540,7 @@ void AM_initColors (BOOL overlayed)
 {
 	DWORD *palette;
 
-	palette = DefaultPalette->colors;
+	palette = GetDefaultPalette()->colors;
 
 	if (overlayed && !am_ovshare)
 	{
@@ -584,8 +587,10 @@ void AM_initColors (BOOL overlayed)
 			if (b < 0)
 				b += 32;
 
+			palette_t *pal = GetDefaultPalette();
 			if (screen->is8bit())
-				AlmostBackground = BestColor (DefaultPalette->basecolors, r, g , b, DefaultPalette->numcolors);
+				AlmostBackground = BestColor(pal->basecolors,
+										r, g , b, pal->numcolors);
 			else
 				AlmostBackground = MAKERGB(r,g,b);
 		}
@@ -611,7 +616,6 @@ void AM_initColors (BOOL overlayed)
 	float backRed, backGreen, backBlue;
 
 	GetComponents (Background, palette, backRed, backGreen, backBlue);
-
 }
 
 //
@@ -899,7 +903,7 @@ void AM_changeWindowScale (void)
 //
 void AM_doFollowPlayer(void)
 {
-	player_t &p = consoleplayer();
+	player_t &p = displayplayer();
 
     if (f_oldloc.x != p.camera->x ||
 		f_oldloc.y != p.camera->y)
@@ -1236,6 +1240,8 @@ void AM_drawWalls(void)
 	int i, r, g, b;
 	static mline_t l;
 	float rdif, gdif, bdif;
+	palette_t *pal = GetDefaultPalette();
+
 
 	for (i=0;i<numlines;i++) {
 		l.a.x = lines[i].v1->x;
@@ -1305,20 +1311,20 @@ void AM_drawWalls(void)
                         }
 
                         if (lockglow < 30) {
-                            AM_drawMline (&l, BestColor (DefaultPalette->basecolors, r + ((int)rdif*lockglow),
+                            AM_drawMline (&l, BestColor(pal->basecolors, r + ((int)rdif*lockglow),
                                           g + ((int)gdif*lockglow), b + ((int)bdif*lockglow),
-                                          DefaultPalette->numcolors));
+                                          pal->numcolors));
                         } else if (lockglow < 60) {
-                            AM_drawMline (&l, BestColor (DefaultPalette->basecolors, r + ((int)rdif*(60-lockglow)),
+                            AM_drawMline (&l, BestColor(pal->basecolors, r + ((int)rdif*(60-lockglow)),
                                           g + ((int)gdif*(60-lockglow)), b + ((int)bdif*(60-lockglow)),
-                                          DefaultPalette->numcolors));
+                                          pal->numcolors));
                         } else {
-                            AM_drawMline (&l, BestColor (DefaultPalette->basecolors, r, g, b,
-                                          DefaultPalette->numcolors));
+                            AM_drawMline (&l, BestColor(pal->basecolors, r, g, b,
+                                          pal->numcolors));
                         }
 				    } else {
-                        AM_drawMline (&l, BestColor (DefaultPalette->basecolors, r, g, b,
-                                      DefaultPalette->numcolors));
+                        AM_drawMline (&l, BestColor(pal->basecolors, r, g, b,
+                                      pal->numcolors));
                     }
                 }
 				else if (lines[i].backsector->floorheight
@@ -1371,7 +1377,7 @@ AM_rotate
 
 void AM_rotatePoint (fixed_t *x, fixed_t *y)
 {
-	player_t &p = consoleplayer();
+	player_t &p = displayplayer();
 
 	*x -= p.camera->x;
 	*y -= p.camera->y;
@@ -1430,9 +1436,9 @@ void AM_drawPlayers(void)
 {
 	angle_t angle;
 	size_t i;
-	player_t &conplayer = consoleplayer();
+	player_t &conplayer = displayplayer();
 	DWORD *palette;
-	palette = DefaultPalette->colors;
+	palette = GetDefaultPalette()->colors;
 
 	if (!multiplayer)
 	{
@@ -1461,6 +1467,7 @@ void AM_drawPlayers(void)
 		if (!players[i].ingame() || !p->mo ||
 			(((sv_gametype == GM_DM && p != &conplayer) ||
 			((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && p->userinfo.team != conplayer.userinfo.team))
+			&& !(netdemo.isPlaying() || netdemo.isPaused())
 			&& !demoplayback && !(conplayer.spectator)) || p->spectator)
 		{
 			continue;
@@ -1478,11 +1485,11 @@ void AM_drawPlayers(void)
 			}
 		} else {
 			int playercolor = CL_GetPlayerColor(p);
-			color = BestColor (DefaultPalette->basecolors,
+			color = BestColor (GetDefaultPalette()->basecolors,
 							   RPART(playercolor),
 							   GPART(playercolor),
 							   BPART(playercolor),
-							   DefaultPalette->numcolors);
+							   GetDefaultPalette()->numcolors);
 		}
 
 		pt.x = p->mo->x;
@@ -1520,7 +1527,7 @@ void AM_drawThings (int color)
 			if (am_rotate)
 			{
 				AM_rotatePoint (&p.x, &p.y);
-				angle += ANG90 - consoleplayer().camera->angle;
+				angle += ANG90 - displayplayer().camera->angle;
 			}
 
 			AM_drawLineCharacter
@@ -1540,8 +1547,8 @@ void AM_drawMarks (void)
 	{
 		if (markpoints[i].x != -1)
 		{
-			//      w = SHORT(marknums[i]->width);
-			//      h = SHORT(marknums[i]->height);
+			//      w = LESHORT(marknums[i]->width);
+			//      h = LESHORT(marknums[i]->height);
 			w = 5; // because something's wrong with the wad, i guess
 			h = 6; // because something's wrong with the wad, i guess
 
@@ -1608,7 +1615,7 @@ void AM_Drawer (void)
 	if (!(viewactive && am_overlay < 2)) {
 
 		char line[64+10];
-		int OV_Y, i, time = level.time / TICRATE, height, epsub;
+		int OV_Y, i, time = level.time / TICRATE, height;
 
 		height = (hu_font[0]->height() + 1) * CleanYfac;
 		OV_Y = screen->height - ((32 * screen->height) / 200);
@@ -1642,28 +1649,37 @@ void AM_Drawer (void)
 			}
 		}
 
-		if (am_classicmapstring) {
-		    i = 0;
-		    epsub = 0;
-            if (gamemission == doom2)
-                i = 100;
-            else if (gamemission == pack_plut)
-                i = 132;
-            else if (gamemission == pack_tnt)
-                i = 164;
-            else {
-                i = 64;
-                epsub = level.cluster - 1;
-            }
+		if (am_classicmapstring)
+		{
+			int firstmap;
+			int mapoffset = 1;
+			switch (gamemission)
+			{
+				case doom2:
+				firstmap = HUSTR_1;
+				break;
+				case pack_plut:
+				firstmap = PHUSTR_1;
+				break;
+				case pack_tnt:
+				firstmap = THUSTR_1;
+				break;
+				default:
+				firstmap = HUSTR_E1M1;
+				mapoffset = level.cluster; // Episodes skip map numbers.
+				break;
+			}
+			strcpy(line, GStrings(firstmap + level.levelnum - mapoffset));
 
-            sprintf (line, GStrings(i+level.levelnum-epsub));
-            if (viewactive && screenblocks == 11)
-                FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
-            else if (viewactive && screenblocks == 12)
-                FB->DrawTextClean (CR_RED, 0, screen->height - (height * 1) + 1, line);
-            else
-                FB->DrawTextClean (CR_RED, 0, ST_Y - (height * 1) + 1, line);
-		} else {
+			if (viewactive && screenblocks == 11)
+				FB->DrawTextClean(CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
+			else if (viewactive && screenblocks == 12)
+				FB->DrawTextClean (CR_RED, 0, screen->height - (height * 1) + 1, line);
+			else
+				FB->DrawTextClean (CR_RED, 0, ST_Y - (height * 1) + 1, line);
+		}
+		else
+		{
             line[0] = '\x8a';
             line[1] = CR_RED + 'A';
             i = 0;

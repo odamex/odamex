@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,12 +27,7 @@
 #define __DOOMDEF_H__
 
 #include <stdio.h>
-#include <string.h>
-
-// GhostlyDeath -- Can't stand the warnings
-#if _MSC_VER == 1200
-#pragma warning(disable:4786)
-#endif
+#include <cstring>
 
 // GhostlyDeath -- MSVC++ 8+, remove "deprecated" warnings
 #if _MSC_VER >= 1400
@@ -82,25 +77,28 @@ extern baseapp_t baseapp;
 //	to handle IWAD dependend animations etc.
 enum GameMode_t
 {
-  shareware,	// DOOM 1 shareware, E1, M9
-  registered,	// DOOM 1 registered, E3, M27
-  commercial,	// DOOM 2 retail, E1 M34
-  // DOOM 2 german edition not handled
-  retail,		// DOOM 1 retail, E4, M36
-  retail_chex,	// Chex Quest
-  undetermined	// Well, no IWAD found.
-
+  shareware,			// DOOM 1 shareware, E1, M9
+  registered,			// DOOM 1 registered, E3, M27
+  commercial,			// DOOM 2 retail, E1 M34
+						// DOOM 2 german edition not handled
+  retail,				// DOOM 1 retail, E4, M36
+  retail_chex,			// Chex Quest
+  retail_bfg,			// Doom 1 BFG Edition
+  commercial_bfg,		// Doom 2 BFG Edition
+  undetermined			// Well, no IWAD found.
 };
 
 
 // Mission packs - might be useful for TC stuff?
 enum GameMission_t
 {
-  doom, 		// DOOM 1
-  doom2,		// DOOM 2
-  pack_tnt, 	// TNT mission pack
-  pack_plut,	// Plutonia pack
-  chex,			// Chex Quest
+  doom, 				// DOOM 1
+  doom2,				// DOOM 2
+  pack_tnt, 			// TNT mission pack
+  pack_plut,			// Plutonia pack
+  chex,					// Chex Quest
+  retail_freedoom,
+  commercial_freedoom,
   none
 };
 
@@ -111,6 +109,9 @@ enum GameMission_t
 // The maximum number of players, multiplayer/networking.
 #define MAXPLAYERS				255
 #define MAXPLAYERS_VANILLA		4
+
+// Margin of error used when calculating percentages against player numbers.
+#define MPEPSILON				(float)1 / (MAXPLAYERS * 2)
 
 // State updates, number of tics / second.
 #define TICRATE 		35
@@ -129,6 +130,7 @@ enum gamestate_t
 	GS_STARTUP,			// [RH] Console is fullscreen, and game is just starting
 	GS_DOWNLOAD,		// denis - wad downloading
 	GS_CONNECTING,		// denis - replace the old global "tryingtoconnect"
+	GS_CONNECTED,       // [ML] - For that brief time before GS_LEVEL But after GS_CONNECTING should be done
 
 	GS_FORCEWIPE = -1
 };
@@ -228,13 +230,6 @@ enum weapontype_t
 
 	// No pending weapon change.
 	wp_nochange
-};
-
-// The default preference ordering when the player runs out of one type of ammo
-const weapontype_t default_weaponprefs[NUMWEAPONS] =
-{
-	wp_plasma, wp_supershotgun, wp_chaingun, wp_shotgun, wp_pistol,
-	wp_chainsaw, wp_bfg, wp_missile, wp_fist
 };
 
 inline FArchive &operator<< (FArchive &arc, weapontype_t i)

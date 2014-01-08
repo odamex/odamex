@@ -4,7 +4,7 @@
 // $Id: p_snapshot.cpp 2785 2012-02-18 23:22:07Z dr_sean $
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,7 +29,7 @@
 #include "d_player.h"
 #include "p_local.h"
 #include "p_spec.h"
-#include "vectors.h"
+#include "m_vectors.h"
 
 #include "p_snapshot.h"
 
@@ -109,6 +109,47 @@ bool ActorSnapshot::operator==(const ActorSnapshot &other) const
 			mFlags == other.mFlags &&
 			mFlags2 == other.mFlags2 &&
 			mFrame == other.mFrame;
+}
+
+void ActorSnapshot::merge(const ActorSnapshot& other)
+{
+	if (other.mFields & ACT_POSITIONX)
+		setX(other.mX);
+	if (other.mFields & ACT_POSITIONY)
+		setY(other.mY);
+	if (other.mFields & ACT_POSITIONZ)
+		setZ(other.mZ);
+	if (other.mFields & ACT_MOMENTUMX)
+		setMomX(other.mMomX);
+	if (other.mFields & ACT_MOMENTUMY)
+		setMomY(other.mMomY);
+	if (other.mFields & ACT_MOMENTUMZ)
+		setMomZ(other.mMomZ);
+	if (other.mFields & ACT_ANGLE)
+		setAngle(other.mAngle);
+	if (other.mFields & ACT_PITCH)
+		setPitch(other.mPitch);
+	if (other.mFields & ACT_ONGROUND)
+		setOnGround(other.mOnGround);
+	if (other.mFields & ACT_CEILINGZ)
+		setCeilingZ(other.mCeilingZ);
+	if (other.mFields & ACT_FLOORZ)
+		setFloorZ(other.mFloorZ);
+	if (other.mFields & ACT_REACTIONTIME)
+		setReactionTime(other.mReactionTime);
+	if (other.mFields & ACT_WATERLEVEL)
+		setWaterLevel(other.mWaterLevel);
+	if (other.mFields & ACT_FLAGS)
+		setFlags(other.mFlags);
+	if (other.mFields & ACT_FLAGS2)
+		setFlags2(other.mFlags2);
+	if (other.mFields & ACT_FRAME)
+		setFrame(other.mFrame);
+
+	if (other.isContinuous())
+		setContinuous(true);
+	if (other.isAuthoritative())
+		setAuthoritative(true);
 }
 
 void ActorSnapshot::toActor(AActor *mo) const
@@ -212,6 +253,18 @@ bool PlayerSnapshot::operator==(const PlayerSnapshot &other) const
 			mViewHeight == other.mViewHeight &&
 			mDeltaViewHeight == other.mDeltaViewHeight &&
 			mJumpTime == other.mJumpTime;
+}
+
+void PlayerSnapshot::merge(const PlayerSnapshot& other)
+{
+	mActorSnap.merge(other.mActorSnap);
+	
+	if (other.mFields & PLY_VIEWHEIGHT)
+		setViewHeight(other.mViewHeight);
+	if (other.mFields & PLY_DELTAVIEWHEIGHT)
+		setDeltaViewHeight(other.mDeltaViewHeight);
+	if (other.mFields & PLY_JUMPTIME)
+		setJumpTime(other.mJumpTime);
 }
 
 void PlayerSnapshot::toPlayer(player_t *player) const
@@ -338,7 +391,16 @@ void PlayerSnapshotManager::addSnapshot(const PlayerSnapshot &snap)
 		return;
 	}
 
-	mSnaps[time % NUM_SNAPSHOTS] = snap;
+	PlayerSnapshot& dest = mSnaps[time % NUM_SNAPSHOTS];
+	if (dest.getTime() == time)
+	{
+		// A valid snapshot for this time already exists. Merge it with this one.
+		dest.merge(snap);
+	}
+	else
+	{
+		dest = snap;
+	}
 
 	if (time > mMostRecent)
 		mMostRecent = time;
@@ -618,7 +680,7 @@ SectorSnapshot::SectorSnapshot(int time) :
 	mCeilingTexture(0), mFloorTexture(0),
 	mNewCeilingSpecial(0), mNewFloorSpecial(0), mCeilingLow(0), mCeilingHigh(0),
 	mFloorLow(0), mFloorHigh(0), mCeilingCrush(false), mFloorCrush(false), mSilent(false),
-	mCeilingWait(0), mFloorWait(0), mCeilingCounter(0), mFloorCounter(0),
+	mCeilingWait(0), mFloorWait(0), mCeilingCounter(0), mFloorCounter(0), mResetCounter(0),
 	mCeilingStatus(0), mFloorStatus(0), mOldFloorStatus(0),
 	mCrusherSpeed1(0), mCrusherSpeed2(0), mStepTime(0), mPerStepTime(0), mPauseTime(0),
 	mOrgHeight(0), mDelay(0), mFloorLip(0), mFloorOffset(0), mCeilingChange(0), mFloorChange(0)
@@ -723,7 +785,7 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mCeilingStatus		= ceiling->m_Status;
 			mCeilingTag			= ceiling->m_Tag;
 			mCeilingCrush		= ceiling->m_Crush;
-			mSilent				= ceiling->m_Silent;
+			mSilent				= (ceiling->m_Silent != 0);
 			mCeilingLow			= ceiling->m_BottomHeight;
 			mCeilingHigh		= ceiling->m_TopHeight;
 			mCeilingSpeed		= ceiling->m_Speed;

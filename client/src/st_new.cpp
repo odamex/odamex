@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -590,14 +590,14 @@ void OdamexHUD() {
 	ST_DrawNumRight(48 * xscale, y, screen, plyr->health);
 
 	// Draw Ammo
-	ammotype_t ammo = weaponinfo[plyr->readyweapon].ammo;
-	if (ammo < NUMAMMO) {
+	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
+	if (ammotype < NUMAMMO) {
 		const patch_t *ammopatch;
 		// Use big ammo if the player has a backpack.
 		if (plyr->backpack) {
-			ammopatch = bigammos[ammo];
+			ammopatch = bigammos[ammotype];
 		} else {
-			ammopatch = ammos[ammo];
+			ammopatch = ammos[ammotype];
 		}
 
 		// Draw ammo.  We have a 16x16 box to the right of the ammo where the
@@ -616,14 +616,20 @@ void OdamexHUD() {
 			               hud::X_CENTER, hud::Y_MIDDLE,
 			               ammopatch);
 		}
-		ST_DrawNumRight(screen->width - 24 * xscale, y, screen, plyr->ammo[ammo]);
+		ST_DrawNumRight(screen->width - 24 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
 	int color;
 	std::string str;
 
-	// Draw Timer
-	if (hud_timer) {
+	// Draw warmup state or timer
+	str = hud::Warmup(color);
+	if (!str.empty()) {
+		hud::DrawText(0, 4, hud_scale,
+		              hud::X_CENTER, hud::Y_BOTTOM,
+		              hud::X_CENTER, hud::Y_BOTTOM,
+		              str.c_str(), color);
+	} else if (hud_timer) {
 		str = hud::Timer(color);
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
@@ -681,8 +687,14 @@ void SpectatorHUD() {
 	int color;
 	std::string str;
 
-	// Draw Timer
-	if (hud_timer) {
+	// Draw warmup state or timer
+	str = hud::Warmup(color);
+	if (!str.empty()) {
+		hud::DrawText(0, 4, hud_scale,
+		              hud::X_CENTER, hud::Y_BOTTOM,
+		              hud::X_CENTER, hud::Y_BOTTOM,
+		              str.c_str(), color);
+	} else if (hud_timer) {
 		str = hud::Timer(color);
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
@@ -722,7 +734,7 @@ void SpectatorHUD() {
 void ZDoomHUD() {
 	player_t *plyr = &displayplayer();
 	int y, i;
-	ammotype_t ammo = weaponinfo[plyr->readyweapon].ammo;
+	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
 
@@ -755,9 +767,9 @@ void ZDoomHUD() {
 	}
 
 	// Draw ammo
-	if (ammo < NUMAMMO)
+	if (ammotype < NUMAMMO)
 	{
-		const patch_t *ammopatch = ammos[weaponinfo[plyr->readyweapon].ammo];
+		const patch_t *ammopatch = ammos[weaponinfo[plyr->readyweapon].ammotype];
 
 		if (hud_scale)
 			screen->DrawLucentPatchCleanNoMove (ammopatch,
@@ -767,7 +779,7 @@ void ZDoomHUD() {
 			screen->DrawLucentPatch (ammopatch, screen->width - 14,
 							   screen->height - 4);
 		ST_DrawNumRight (screen->width - 25 * xscale, y, screen,
-						 plyr->ammo[ammo]);
+						 plyr->ammo[ammotype]);
 	}
 
 	// Draw top-right info. (Keys/Frags/Score)
@@ -800,8 +812,14 @@ void ZDoomHUD() {
 	int color;
 	std::string str;
 
-	// Draw Timer
-	if (hud_timer) {
+	// Draw warmup state or timer
+	str = hud::Warmup(color);
+	if (!str.empty()) {
+		hud::DrawText(0, 4, hud_scale,
+		              hud::X_CENTER, hud::Y_BOTTOM,
+		              hud::X_CENTER, hud::Y_BOTTOM,
+		              str.c_str(), color);
+	} else if (hud_timer) {
 		str = hud::Timer(color);
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
@@ -840,8 +858,14 @@ void DoomHUD() {
 		st_y = screen->height - ST_Y;
 	}
 
-	// Draw Timer
-	if (hud_timer) {
+	// Draw warmup state or timer
+	str = hud::Warmup(color);
+	if (!str.empty()) {
+		hud::DrawText(0, st_y + 4, hud_scale,
+		              hud::X_CENTER, hud::Y_BOTTOM,
+		              hud::X_CENTER, hud::Y_BOTTOM,
+		              str.c_str(), color);
+	} else if (hud_timer) {
 		str = hud::Timer(color);
 		hud::DrawText(0, st_y + 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,

@@ -1,0 +1,9 @@
+style=allman
+indent=tab=4
+indent-col1-comments
+pad-header
+unpad-paren
+convert-tabs
+align-pointer=type
+align-reference=name
+suffix=none

@@ -30,6 +30,7 @@
 #include "d_netinf.h"
 #include "d_player.h"
 #include "doomstat.h"
+#include "g_warmup.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
 #include "p_ctf.h"
@@ -56,30 +57,6 @@ EXTERN_CVAR (sv_allowtargetnames)
 
 size_t P_NumPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
-
-// GhostlyDeath -- From Strawberry-Doom
-// [AM] This doesn't belong here.
-#include <cmath>
-int MobjToMobjDistance(AActor *a, AActor *b) {
-	double x1, x2;
-	double y1, y2;
-	double z1, z2;
-
-	if (a && b) {
-		x1 = a->x >> FRACBITS;
-		x2 = b->x >> FRACBITS;
-		y1 = a->y >> FRACBITS;
-		y2 = b->y >> FRACBITS;
-		z1 = a->z >> FRACBITS;
-		z2 = b->z >> FRACBITS;
-
-		return (int)sqrt(pow(x2 - x1, 2) +
-		                 pow(y2 - y1, 2) +
-		                 pow(z2 - z1, 2));
-	}
-
-	return 0;
-}
 
 namespace hud {
 
@@ -188,7 +165,7 @@ std::string HelpText() {
 			if (players < min_players)
 				min_players = players;
 		}
-		if (min_players >= sv_maxplayersperteam) {
+		if (sv_maxplayersperteam && min_players >= sv_maxplayersperteam) {
 			return "Game is full";
 		}
 	}
@@ -213,8 +190,47 @@ std::string SpyPlayerName(int& color) {
 	return plyr->userinfo.netname;
 }
 
+// Returns a string that contains the current warmup state.
+std::string Warmup(int& color)
+{
+	color = CR_GREY;
+	player_t *dp = &displayplayer();
+	player_t *cp = &consoleplayer();
+
+	::Warmup::status_t wstatus = warmup.get_status();
+
+	if (wstatus == ::Warmup::WARMUP)
+	{
+		if (dp->spectator)
+			return "Warmup: You are spectating";
+		else if (dp->ready)
+		{
+			color = CR_GREEN;
+			if (dp == cp)
+				return "Warmup: You are ready";
+			else
+				return "Warmup: This player is ready";
+		}
+		else
+		{
+			color = CR_RED;
+			if (dp == cp)
+				return "Warmup: You are not ready";
+			else
+				return "Warmup: This player is not ready";
+		}
+	}
+	else if (wstatus == ::Warmup::COUNTDOWN || wstatus == ::Warmup::FORCE_COUNTDOWN)
+	{
+		color = CR_GOLD;
+		return "Match is about to start...";
+	}
+	return "";
+}
+
 // Return a string that contains the amount of time left in the map,
-// or a blank string if there is no timer needed.
+// or a blank string if there is no timer needed.  Can also display
+// warmup information if it exists.
 std::string Timer(int& color) {
 	color = CR_GREY;
 
@@ -223,9 +239,6 @@ std::string Timer(int& color) {
 	}
 
 	int timeleft = level.timeleft;
-	if (timeleft <= 60) {
-		color = CR_BRICK;
-	}
 
 	if (timeleft < 0) {
 		timeleft = 0;
@@ -238,6 +251,10 @@ std::string Timer(int& color) {
 
 	timeleft -= minutes * TICRATE * 60;
 	int seconds = timeleft / TICRATE;
+
+	if (minutes <= 0) {
+		color = CR_BRICK;
+	}
 
 	char str[9];
 	if (hours) {
@@ -282,12 +299,11 @@ std::string IntermissionTimer() {
 // current player or team is ahead or behind by.
 std::string PersonalSpread(int& color) {
 	color = CR_BRICK;
-	player_t *plyr = &consoleplayer();
+	player_t *plyr = &displayplayer();
 
 	if (sv_gametype == GM_DM) {
 		// Seek the highest number of frags.
 		byte ingame = 0;
-		size_t maxplayer = 0;
 		size_t maxother = 0;
 		short maxfrags = -32768;
 		for (size_t i = 0;i < players.size();i++) {
@@ -299,12 +315,13 @@ std::string PersonalSpread(int& color) {
 				continue;
 			}
 
+			if (players[i].fragcount == maxfrags) {
+				maxother++;
+			}
+
 			if (players[i].fragcount > maxfrags) {
-				maxplayer = players[i].id;
 				maxfrags = players[i].fragcount;
-				if (plyr->id != maxplayer) {
-					maxother += 1;
-				}
+				maxother = 0;
 			}
 
 			ingame += 1;
@@ -392,7 +409,7 @@ std::string PersonalSpread(int& color) {
 std::string PersonalScore(int& color) {
 	color = CR_GREY;
 	std::ostringstream buffer;
-	player_t *plyr = &consoleplayer();
+	player_t *plyr = &displayplayer();
 
 	if (sv_gametype == GM_DM) {
 		buffer << plyr->fragcount;
@@ -636,11 +653,11 @@ void EAPlayerColors(int x, int y,
 		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player)) {
 			int playercolor = CL_GetPlayerColor(player);
-			int color = BestColor(DefaultPalette->basecolors,
+			int color = BestColor(GetDefaultPalette()->basecolors,
 			                      RPART(playercolor),
 			                      GPART(playercolor),
 			                      BPART(playercolor),
-			                      DefaultPalette->numcolors);
+			                      GetDefaultPalette()->numcolors);
 
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
 			y += h + padding;
@@ -667,11 +684,11 @@ void EATeamPlayerColors(int x, int y,
 		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
 			int playercolor = CL_GetPlayerColor(player);
-			int color = BestColor(DefaultPalette->basecolors,
+			int color = BestColor(GetDefaultPalette()->basecolors,
 			                      RPART(playercolor),
 			                      GPART(playercolor),
 			                      BPART(playercolor),
-			                      DefaultPalette->numcolors);
+			                      GetDefaultPalette()->numcolors);
 
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
 			y += h + padding;
@@ -700,7 +717,7 @@ void EAPlayerNames(int x, int y, const float scale,
 				color = CR_GOLD;
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              player->userinfo.netname, color, force_opaque);
+			              player->userinfo.netname.c_str(), color, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
 		}
@@ -751,7 +768,7 @@ void EATeamPlayerNames(int x, int y, const float scale,
 				}
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              player->userinfo.netname, color, force_opaque);
+			              player->userinfo.netname.c_str(), color, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
 		}
@@ -787,7 +804,7 @@ void EASpectatorNames(int x, int y, const float scale,
 					}
 				}
 				hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-				              player->userinfo.netname, color, force_opaque);
+				              player->userinfo.netname.c_str(), color, force_opaque);
 				y += 7 + padding;
 				drawn += 1;
 			} else {
@@ -1176,90 +1193,34 @@ void EATargets(int x, int y, const float scale,
 	std::vector<TargetInfo_t> Targets;
 
 	// What players should be drawn?
-	for (size_t i = 0; i < players.size();i++) {
-		// We don't care about spectators.
-		if (players[i].spectator)
+	for (size_t i = 0; i < players.size();i++)
+	{
+		if (players[i].spectator || !players[i].mo || players[i].mo->health <= 0)
 			continue;
 
 		// We don't care about the player whose eyes we are looking through.
 		if (&(players[i]) == &(displayplayer()))
 			continue;
 
-		// Now if they are visible...
-		if (players[i].mo && players[i].mo->health > 0) {
-			// If they are beyond 512 units, ignore
-			if (MobjToMobjDistance(displayplayer().mo, players[i].mo) > 512)
-				continue;
+		if (!P_ActorInFOV(displayplayer().mo, players[i].mo, 45.0f, 512*FRACUNIT))
+			continue;
 
-			// Check to see if the other player is visible
-			if (HasBehavior) {
-				// Hexen format
-				if (!P_CheckSightEdges2(displayplayer().mo, players[i].mo, 0.0))
-					continue;
-			} else {
-				// Doom format
-				if (!P_CheckSightEdges(displayplayer().mo, players[i].mo, 0.0))
-					continue;
-			}
-
-			// GhostlyDeath -- Don't draw dead enemies
-			if (!consoleplayer().spectator && (players[i].mo->health <= 0)) {
-				if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-					if ((players[i].userinfo.team != displayplayer().userinfo.team) ||
-						(displayplayer().userinfo.team == TEAM_NONE) ||
-						(players[i].userinfo.team == TEAM_NONE))
-							continue;
-				} else {
-					if (sv_gametype != GM_COOP)
-						continue;
-				}
-			}
-
-			// Now we need to figure out if they are infront of us
-			// Taken from r_things.cpp and I have no clue what it does
-
-			// FIXME: This bit of code is way too generous with the target
-			//        names, needs to be narrower angle. [AM]
-			fixed_t tr_x, tr_y, gxt, gyt, tx, tz;
-
-			// transform the origin point
-			tr_x = players[i].mo->x - viewx;
-			tr_y = players[i].mo->y - viewy;
-
-			gxt = FixedMul (tr_x,viewcos);
-			gyt = -FixedMul (tr_y,viewsin);
-
-			tz = gxt-gyt;
-
-			// thing is behind view plane?
-			if (tz < (FRACUNIT*4))
-				continue;
-
-			gxt = -FixedMul (tr_x, viewsin);
-			gyt = FixedMul (tr_y, viewcos);
-			tx = -(gyt+gxt);
-
-			// too far off the side?
-			if (abs(tx)>(tz>>1))
-				continue;
-
-			// Pick a decent color for the player name.
-			int color;
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-				// In teamgames, we want to use team colors for targets.
-				color = teamTextColor(players[i].userinfo.team);
-			} else {
-				color = CR_GREY;
-			}
-
-			// Ok, make the temporary player info then add it
-			TargetInfo_t temp = {
-				&players[i],
-				MobjToMobjDistance(displayplayer().mo, players[i].mo),
-				color
-			};
-			Targets.push_back(temp);
+		// Pick a decent color for the player name.
+		int color;
+		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+			// In teamgames, we want to use team colors for targets.
+			color = teamTextColor(players[i].userinfo.team);
+		} else {
+			color = CR_GREY;
 		}
+
+		// Ok, make the temporary player info then add it
+		TargetInfo_t temp = {
+			&players[i],
+			P_AproxDistance2(displayplayer().mo, players[i].mo) >> FRACBITS,
+			color
+		};
+		Targets.push_back(temp);
 	}
 
 	// GhostlyDeath -- Now Sort (hopefully I got my selection sort working!)
@@ -1293,7 +1254,7 @@ void EATargets(int x, int y, const float scale,
 			              "You", Targets[i].Color);
 		} else {
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              Targets[i].PlayPtr->userinfo.netname,
+			              Targets[i].PlayPtr->userinfo.netname.c_str(),
 			              Targets[i].Color);
 		}
 

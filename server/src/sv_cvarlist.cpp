@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -52,16 +52,16 @@ CVAR (sv_waddownload,	"0", "Allow downloading of WAD files from this server",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Enables WAD file download cap
 CVAR (sv_waddownloadcap, "200", "Cap wad file downloading to a specific rate",
-      CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Reset the current map when the last player leaves
 CVAR (sv_emptyreset,   "0", "Reloads the current map when all players leave",
-      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Allow spectators talk to show to ingame players
 CVAR (sv_globalspectatorchat, "1", "Players can see spectator chat",
-      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Maximum corpses that can appear on a map
 CVAR (sv_maxcorpses, "200", "Maximum corpses to appear on map",
-      CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Unused (tracks number of connected players for scripting)
 CVAR (sv_clientcount,	"0", "Don't use",
       CVARTYPE_BYTE, CVAR_NOSET | CVAR_NOENABLEDISABLE)
@@ -70,7 +70,7 @@ CVAR (sv_cleanmaps, "", "Deprecated",
       CVARTYPE_NONE, CVAR_NULL)
 // Anti-wall hack code
 CVAR (sv_antiwallhack,	"0", "Experimental anti-wallkhack code",
-      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_LATCH)
 // Maximum number of clients that can connect to the server
 CVAR_FUNC_DECL (sv_maxclients, "4", "Maximum clients that can connect to a server",
       CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
@@ -116,7 +116,7 @@ CVAR_FUNC_DECL (sv_shufflemaplist,	"0", "Randomly shuffle the maplist",
 
 // Network compression (experimental)
 CVAR (sv_networkcompression, "1", "Network compression",
-      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
 // NAT firewall workaround port number
 CVAR (sv_natport,	"0", "NAT firewall workaround, this is a port number",
       CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -166,7 +166,15 @@ CVAR (ctf_flagtimeout, "10",  "Time for a dropped flag to be returned automatica
 //      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR (sv_ticbuffer, "1", "Buffer controller input from players experiencing sudden latency spikes for smoother movement",
-	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+// Ban settings
+// ============
+
+CVAR (sv_banfile, "banlist.json", "Default file to save and load the banlist.",
+      CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (sv_banfile_reload, "0", "Number of seconds to wait between automatically loading the banlist.",
+      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Vote settings
 // =============
@@ -177,6 +185,12 @@ CVAR (sv_vote_countabs, "1", "Count absent voters as 'no' if the vote timer runs
 // A percentage of players needed to pass a vote.
 CVAR (sv_vote_majority, "0.5", "Ratio of yes votes needed for vote to pass.",
 	  CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+// Spectators are allowed to vote.
+CVAR (sv_vote_speccall, "1", "Spectators are allowed to callvote.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+// Spectators are allowed to vote.
+CVAR (sv_vote_specvote, "1", "Spectators are allowed to vote.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 // Number of seconds that a countdown lasts.
 CVAR (sv_vote_timelimit, "30", "Amount of time a vote takes in seconds.",
 	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
@@ -190,6 +204,8 @@ CVAR (sv_callvote_coinflip, "0", "Clients can flip a coin.",
 CVAR (sv_callvote_kick, "0", "Clients can votekick other players.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 CVAR (sv_callvote_forcespec, "0", "Clients can vote to force a player to spectate.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_forcestart, "0", "Clients can vote to force the match to start.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 CVAR (sv_callvote_map, "0", "Clients can vote to switch to a specific map from the server's maplist.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
@@ -210,12 +226,29 @@ CVAR (sv_callvote_scorelimit, "0", "Clients can vote a new scorelimit.",
 CVAR (sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+// Warmup mode
+CVAR (sv_warmup, "0", "Enable a 'warmup mode' before the match starts.",
+      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
+CVAR (sv_warmup_autostart, "1.0", "Ratio of players needed for warmup to automatically start the game.",
+      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR (sv_countdown, "5", "Number of seconds to wait before starting the game from warmup or restarting the game.",
+      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+
 // Experimental settings (all categories)
 // =======================================
 
 // Do not run ticker functions when there are no players
 CVAR (sv_emptyfreeze,  "0", "Experimental: Does not progress the game when there are no players",
-      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+// Hacky abominations that should be purged with fire and brimstone
+// =================================================================
+
+// [SL] sv_padding is used to pad launcher packets to ensure that they are split by the
+// IP layer rather than being oversized and dropped by some routers
+CVAR (sv_padding, "                                                                                                                                                                                                        ", "",
+		CVARTYPE_STRING, CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_NOSET)
+
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
 

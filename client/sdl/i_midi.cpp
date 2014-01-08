@@ -3,7 +3,7 @@
 //
 // $Id: i_muidi.h 1788 2010-08-24 04:42:57Z russellrice $
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -354,7 +354,7 @@ static std::list<MidiEvent*> *I_ReadMidiTrack(MEMFILE *mf)
 	
     size_t res = mem_fread(&chunkheader, cTrackHeaderSize, 1, mf); 
 	if (!res)
-		return false;
+		return NULL;
 		
 	chunkheader.chunk_id = ntohl(chunkheader.chunk_id);
 	chunkheader.chunk_size = ntohl(chunkheader.chunk_size);

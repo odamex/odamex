@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -81,7 +81,8 @@ gameinfo_t SharewareGameInfo =
 	quitsounds,
 	1,
 	{ 'F','L','O','O','R','7','_','2' },
-	&DoomBorder
+	&DoomBorder,
+	"DOOM Shareware"
 };
 
 gameinfo_t RegisteredGameInfo =
@@ -104,7 +105,8 @@ gameinfo_t RegisteredGameInfo =
 	quitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
-	&DoomBorder
+	&DoomBorder,
+	"DOOM Registered"
 };
 
 gameinfo_t RetailGameInfo =
@@ -127,7 +129,32 @@ gameinfo_t RetailGameInfo =
 	quitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
-	&DoomBorder
+	&DoomBorder,
+	"The Ultimate DOOM"
+};
+
+gameinfo_t RetailBFGGameInfo =
+{
+	GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH,
+	{ 'T','I','T','L','E','P','I','C' },
+	"CREDIT",
+	"CREDIT",
+	"D_INTRO",
+	5,
+	0,
+	200/35,
+	"misc/chat2",
+	{ 'D','_','V','I','C','T','O','R' },
+	{ 'F','L','O','O','R','4','_','8' },
+	"CREDIT",
+	{ 'V','I','C','T','O','R','Y','2' },
+	"ENDPIC",
+	{ { "HELP1", "CREDIT", "CREDIT"  } },
+	quitsounds,
+	2,
+	{ 'F','L','O','O','R','7','_','2' },
+	&DoomBorder,
+	"The Ultimate DOOM (BFG Edition)"
 };
 
 gameinfo_t CommercialGameInfo =
@@ -150,7 +177,32 @@ gameinfo_t CommercialGameInfo =
 	quitsounds2,
 	3,
 	"GRNROCK",
-	&DoomBorder
+	&DoomBorder,
+	"DOOM 2: Hell on Earth"
+};
+
+gameinfo_t CommercialBFGGameInfo =
+{
+	GI_MAPxx | GI_MENUHACK_COMMERCIAL,
+	{ 'I','N','T','E','R','P','I','C' },
+	"CREDIT",
+	"CREDIT",
+	{ 'D','_','D','M','2','T','T','L' },
+	11,
+	0,
+	200/35,
+	"misc/chat",
+	{ 'D','_','R','E','A','D','_','M' },
+	"SLIME16",
+	"CREDIT",
+	"CREDIT",
+	"CREDIT",
+	{ { "HELP", "CREDIT", "CREDIT" } },
+	quitsounds2,
+	3,
+	"GRNROCK",
+	&DoomBorder,
+	"DOOM 2: Hell on Earth (BFG Edition)"
 };
 
 VERSION_CONTROL (gi_cpp, "$Id$")

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,9 +26,10 @@
 #include <map>
 #include <string>
 
-#ifdef WIN32
-#include <windows.h>
-#include "resource.h"
+#include "win32inc.h"
+#ifdef _WIN32
+    #include "resource.h"
+	#include "mmsystem.h"
 #endif
 
 #ifdef UNIX
@@ -51,6 +52,7 @@
 #include "errors.h"
 #include "i_net.h"
 #include "sv_main.h"
+#include "m_ostring.h"
 
 using namespace std;
 
@@ -58,7 +60,7 @@ void AddCommandString(std::string cmd);
 
 DArgs Args;
 
-#ifdef WIN32
+#ifdef _WIN32
 extern UINT TimerPeriod;
 #endif
 
@@ -84,7 +86,7 @@ int PrintString (int printlevel, char const *outline)
 	return ret;
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 static HANDLE hEvent;
 
 int ShutdownNow()
@@ -164,7 +166,7 @@ int __cdecl main(int argc, char *argv[])
             MessageBox(NULL, error.GetMsg().c_str(), "Odasrv Error", MB_OK);
         }
 
-		exit (-1);
+		exit(EXIT_FAILURE);
     }
     catch (...)
     {
@@ -206,16 +208,16 @@ void daemon_init(void)
     if ((pid = fork()) != 0)
     {
     	call_terms();
-    	exit(0);
+    	exit(EXIT_SUCCESS);
     }
 
 	const char *forkargs = Args.CheckValue("-fork");
-	if (forkargs)    
+	if (forkargs)
 		pidfile = string(forkargs);
 
     if(!pidfile.size() || pidfile[0] == '-')
     	pidfile = "doomsv.pid";
-	
+
     pid = getpid();
     fpid = fopen(pidfile.c_str(), "w");
     fprintf(fpid, "%d\n", pid);
@@ -230,6 +232,10 @@ int main (int argc, char **argv)
 			I_FatalError("root user detected, quitting odamex immediately");
 
 	    seteuid (getuid ());
+
+		// ensure OString's string table is properly initialized and shutdown
+		OString::startup();
+		atterm(OString::shutdown);
 
 		Args.SetArgs (argc, argv);
 
@@ -283,7 +289,7 @@ int main (int argc, char **argv)
         }
 
 	call_terms();
-	exit (-1);
+	exit(EXIT_FAILURE);
     }
     catch (...)
     {

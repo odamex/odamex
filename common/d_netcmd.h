@@ -4,7 +4,7 @@
 // $Id: d_netcmd.h 3174 2012-05-11 01:03:43Z dr_sean $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,8 +26,13 @@
 
 #include "doomtype.h"
 #include "i_net.h"
-#include "d_player.h"
+#include "m_fixed.h"
+ 
+// Forward declaration avoids circular reference
+class player_s;
+typedef player_s player_t;
 
+static const short CENTERVIEW = -32768;
 //
 // NetCommand
 //
@@ -42,15 +47,15 @@ class NetCommand
 public:
 	NetCommand();
 	
-	bool	hasButtons() const		{ return mFields & CMD_BUTTONS; }
-	bool	hasAngle() const		{ return mFields & CMD_ANGLE; }
-	bool	hasPitch() const		{ return mFields & CMD_PITCH; }
-	bool	hasForwardMove() const	{ return mFields & CMD_FORWARD; }
-	bool	hasSideMove() const		{ return mFields & CMD_SIDE; }
-	bool	hasUpMove() const		{ return mFields & CMD_UP; }
-	bool	hasImpulse() const		{ return mFields & CMD_IMPULSE; }
-	bool	hasDeltaYaw() const		{ return mFields & CMD_DELTAYAW; }
-	bool	hasDeltaPitch() const	{ return mFields & CMD_DELTAPITCH; }
+	bool	hasButtons() const		{ return ((mFields & CMD_BUTTONS) != 0); }
+	bool	hasAngle() const		{ return ((mFields & CMD_ANGLE) != 0); }
+	bool	hasPitch() const		{ return ((mFields & CMD_PITCH) != 0); }
+	bool	hasForwardMove() const	{ return ((mFields & CMD_FORWARD) != 0); }
+	bool	hasSideMove() const		{ return ((mFields & CMD_SIDE) != 0); }
+	bool	hasUpMove() const		{ return ((mFields & CMD_UP) != 0); }
+	bool	hasImpulse() const		{ return ((mFields & CMD_IMPULSE) != 0); }
+	bool	hasDeltaYaw() const		{ return ((mFields & CMD_DELTAYAW) != 0); }
+	bool	hasDeltaPitch() const	{ return ((mFields & CMD_DELTAPITCH) != 0); }
 	
 	int		getTic() const			{ return mTic; }
 	int		getWorldIndex() const	{ return mWorldIndex; }
@@ -158,6 +163,8 @@ private:
 	byte		mImpulse;
 	short		mDeltaYaw;
 	short		mDeltaPitch;
+
+	int getSerializedFields();
 
 	void updateFields(int flag, int value)
 	{

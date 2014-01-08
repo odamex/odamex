@@ -49,7 +49,7 @@
 #define VERSIONMINOR(V) ((V % 256) / 10)
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
-#define VERSION (0*256+60)
+#define VERSION (0*256+64)
 #define PROTOCOL_VERSION 1
 
 #define TAG_ID 0xAD0
@@ -59,11 +59,11 @@
 #endif
 
 /**
- * agOdalaunch namespace.
- *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
- * namespace.
- */
+agOdalaunch namespace.
+
+All code for the ag-odalaunch launcher is contained within the agOdalaunch
+namespace.
+*/
 namespace agOdalaunch {
 
 const uint32_t MASTER_CHALLENGE = 777123;
@@ -180,7 +180,7 @@ public:
 
 	void GetLock() { AG_MutexLock(&m_Mutex); }
 	void Unlock() { AG_MutexUnlock(&m_Mutex); }
-	int TryLock() { AG_MutexTryLock(&m_Mutex); return 0; }
+	int TryLock() { return AG_MutexTryLock(&m_Mutex); }
 };
 
 class MasterServer : public ServerBase  // [Russell] - A master server packet

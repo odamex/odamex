@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -60,6 +60,7 @@ bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 byte SV_PlayerHearingLoss(player_t &cl, fixed_t &x, fixed_t &y);
 
 void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...);
+void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
 void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
 void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...);
 void SV_CheckTimeouts (void);
@@ -68,7 +69,8 @@ void SV_WriteCommands(void);
 void SV_ClearClientsBPS(void);
 bool SV_SendPacket(player_t &pl);
 void SV_AcknowledgePacket(player_t &player);
-void SV_RunTics (void);
+void SV_DisplayTics();
+void SV_RunTics();
 void SV_ParseCommands(player_t &player);
 short SV_FindClientByAddr(void);
 void SV_UpdateFrags (player_t &player);
@@ -112,10 +114,17 @@ void CMD_CoinFlip(std::string &result);
 bool CMD_KickCheck(std::vector<std::string> arguments, std::string &error,
 				   size_t &pid, std::string &reason);
 void SV_KickPlayer(player_t &player, const std::string &reason = "");
-bool CMD_ForcespecCheck(const std::vector<std::string> arguments,
+bool CMD_ForcespecCheck(const std::vector<std::string> &arguments,
 						std::string &error, size_t &pid);
 void SV_SetPlayerSpec(player_t &player, bool setting, bool silent = false);
 void SV_SetReady(player_t &player, bool setting, bool silent = false);
+
+void SV_SendLoadMap(const std::vector<std::string> &wadnames,
+                    const std::vector<std::string> &patchnames,
+                    const std::string &mapname, player_t *player);
+
+
+
 
 extern bool unnatural_level_progression;
 

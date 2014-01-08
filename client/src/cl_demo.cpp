@@ -6,7 +6,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,14 +38,17 @@
 #include "version.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
+#include "c_level.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
 
 extern std::string server_host;
 extern std::string digest;
-extern playerskin_t* skins;
 extern std::vector<std::string> wadfiles, wadhashes;
+
+int CL_GetPlayerColor(player_t *player);
+
 
 NetDemo::NetDemo() :
 	state(st_stopped), oldstate(st_stopped), filename(""),
@@ -127,9 +130,28 @@ void NetDemo::cleanUp()
 	state = oldstate = NetDemo::st_stopped;
 }
 
-
-
+/**
+ * Error handler.
+ *
+ * Generic error handler for netdemo issues.
+ * 
+ * @param message Error message.
+ */
 void NetDemo::error(const std::string &message)
+{
+	cleanUp();
+	Printf(PRINT_HIGH, "%s\n", message.c_str());
+}
+
+/**
+ * Fatal error hendler.
+ *
+ * Error handler for netdemo issues that should blank out the view of
+ * the game.  Generally used for issues that come up during playback.
+ * 
+ * @param message Error message.
+ */
+void NetDemo::fatalError(const std::string &message)
 {
 	cleanUp();
 	gameaction = ga_nothing;
@@ -137,7 +159,6 @@ void NetDemo::error(const std::string &message)
 
 	Printf(PRINT_HIGH, "%s\n", message.c_str());
 }
-
 
 //
 // writeHeader()
@@ -157,13 +178,13 @@ bool NetDemo::writeHeader()
 	memcpy(&tmpheader, &header, sizeof(header));
 
 	// convert from native byte ordering to little-endian
-	tmpheader.snapshot_index_size	= SHORT(tmpheader.snapshot_index_size);
-	tmpheader.snapshot_index_offset	= LONG(tmpheader.snapshot_index_offset);
-	tmpheader.map_index_size		= SHORT(tmpheader.map_index_size);
-	tmpheader.map_index_offset		= LONG(tmpheader.map_index_offset);
-	tmpheader.snapshot_spacing		= SHORT(tmpheader.snapshot_spacing);
-	tmpheader.starting_gametic		= LONG(tmpheader.starting_gametic);
-	tmpheader.ending_gametic		= LONG(tmpheader.ending_gametic);
+	tmpheader.snapshot_index_size	= LESHORT(tmpheader.snapshot_index_size);
+	tmpheader.snapshot_index_offset	= LELONG(tmpheader.snapshot_index_offset);
+	tmpheader.map_index_size		= LESHORT(tmpheader.map_index_size);
+	tmpheader.map_index_offset		= LELONG(tmpheader.map_index_offset);
+	tmpheader.snapshot_spacing		= LESHORT(tmpheader.snapshot_spacing);
+	tmpheader.starting_gametic		= LELONG(tmpheader.starting_gametic);
+	tmpheader.ending_gametic		= LELONG(tmpheader.ending_gametic);
 	
 	fseek(demofp, 0, SEEK_SET);
 	size_t cnt = 0;
@@ -236,13 +257,13 @@ bool NetDemo::readHeader()
 		return false;
 
 	// convert from little-endian to native byte ordering
-	header.snapshot_index_size 		= SHORT(header.snapshot_index_size);
-	header.snapshot_index_offset 	= LONG(header.snapshot_index_offset);
-	header.map_index_size 			= SHORT(header.map_index_size);
-	header.map_index_offset 		= LONG(header.map_index_offset);
-	header.snapshot_spacing 		= SHORT(header.snapshot_spacing);
-	header.starting_gametic 		= LONG(header.starting_gametic);
-	header.ending_gametic			= LONG(header.ending_gametic);
+	header.snapshot_index_size 		= LESHORT(header.snapshot_index_size);
+	header.snapshot_index_offset 	= LELONG(header.snapshot_index_offset);
+	header.map_index_size 			= LESHORT(header.map_index_size);
+	header.map_index_offset 		= LELONG(header.map_index_offset);
+	header.snapshot_spacing 		= LESHORT(header.snapshot_spacing);
+	header.starting_gametic 		= LELONG(header.starting_gametic);
+	header.ending_gametic			= LELONG(header.ending_gametic);
 	
 	return true;
 }
@@ -265,8 +286,8 @@ bool NetDemo::writeSnapshotIndex()
 	{
 		netdemo_index_entry_t entry;
 		// convert to little-endian
-		entry.ticnum = LONG(snapshot_index[i].ticnum);
-		entry.offset = LONG(snapshot_index[i].offset);
+		entry.ticnum = LELONG(snapshot_index[i].ticnum);
+		entry.offset = LELONG(snapshot_index[i].offset);
 		
 		size_t cnt = 0;
 		cnt += sizeof(entry.ticnum) *
@@ -307,8 +328,8 @@ bool NetDemo::readSnapshotIndex()
 			return false;
 
 		// convert from little-endian to native
-		entry.ticnum = LONG(entry.ticnum);	
-		entry.offset = LONG(entry.offset);
+		entry.ticnum = LELONG(entry.ticnum);	
+		entry.offset = LELONG(entry.offset);
 
 		snapshot_index.push_back(entry);
 	}
@@ -325,8 +346,8 @@ bool NetDemo::writeMapIndex()
 	{
 		netdemo_index_entry_t entry;
 		// convert to little-endian
-		entry.ticnum = LONG(map_index[i].ticnum);
-		entry.offset = LONG(map_index[i].offset);
+		entry.ticnum = LELONG(map_index[i].ticnum);
+		entry.offset = LELONG(map_index[i].offset);
 		
 		size_t cnt = 0;
 		cnt += sizeof(entry.ticnum) *
@@ -359,8 +380,8 @@ bool NetDemo::readMapIndex()
 			return false;
 
 		// convert from little-endian to native
-		entry.ticnum = LONG(entry.ticnum);	
-		entry.offset = LONG(entry.offset);
+		entry.ticnum = LELONG(entry.ticnum);	
+		entry.offset = LELONG(entry.offset);
 
 		map_index.push_back(entry);
 	}
@@ -670,13 +691,13 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 	AActor *mo = player->mo;
 
 	MSG_WriteByte(netbuffer, svc_netdemocap);
-	MSG_WriteByte(netbuffer, player->cmd.ucmd.buttons);
-	MSG_WriteByte(netbuffer, player->cmd.ucmd.impulse);
-	MSG_WriteShort(netbuffer, player->cmd.ucmd.yaw);
-	MSG_WriteShort(netbuffer, player->cmd.ucmd.forwardmove);
-	MSG_WriteShort(netbuffer, player->cmd.ucmd.sidemove);
-	MSG_WriteShort(netbuffer, player->cmd.ucmd.upmove);
-	MSG_WriteShort(netbuffer, player->cmd.ucmd.pitch);
+	MSG_WriteByte(netbuffer, player->cmd.buttons);
+	MSG_WriteByte(netbuffer, player->cmd.impulse);
+	MSG_WriteShort(netbuffer, player->cmd.yaw);
+	MSG_WriteShort(netbuffer, player->cmd.forwardmove);
+	MSG_WriteShort(netbuffer, player->cmd.sidemove);
+	MSG_WriteShort(netbuffer, player->cmd.upmove);
+	MSG_WriteShort(netbuffer, player->cmd.pitch);
 
 	MSG_WriteByte(netbuffer, mo->waterlevel);
 	MSG_WriteLong(netbuffer, mo->x);
@@ -702,8 +723,8 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 	memset(&msgheader, 0, sizeof(msgheader));
 	
 	msgheader.type = static_cast<byte>(type);
-	msgheader.length = LONG((uint32_t)size);
-	msgheader.gametic = LONG(gametic);
+	msgheader.length = LELONG((uint32_t)size);
+	msgheader.gametic = LELONG(gametic);
 	
 	size_t cnt = 0;
 	cnt += sizeof(msgheader.type) *
@@ -824,8 +845,8 @@ bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t
 	}
 
 	// convert the values to native byte order
-	len = LONG(msgheader.length);
-	tic = LONG(msgheader.gametic);
+	len = LELONG(msgheader.length);
+	tic = LELONG(msgheader.gametic);
 	type = static_cast<netdemo_message_t>(msgheader.type);
 
 	return true;
@@ -847,7 +868,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 	if (cnt < len)
 	{
 		delete[] msgdata;
-		error("Can not read netdemo message.");
+		fatalError("Can not read netdemo message.");
 		return;
 	}
 
@@ -961,14 +982,11 @@ void NetDemo::capture(const buf_t* inputbuffer)
 
 void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 {
-	cvar_t *var = NULL, *prev_cvar = NULL;
-	
 	// Server sends launcher info
 	MSG_WriteLong	(netbuffer, CHALLENGE);
 	MSG_WriteLong	(netbuffer, 0);		// server_token
 	
 	// get sv_hostname and write it
-	var = cvar_t::FindCVar("sv_hostname", &prev_cvar);
 	MSG_WriteString (netbuffer, server_host.c_str());
 	
 	int playersingame = 0;
@@ -1114,11 +1132,11 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	// our userinfo
 	MSG_WriteMarker	(netbuffer, svc_userinfo);
 	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	MSG_WriteString	(netbuffer, consoleplayer().userinfo.netname);
+	MSG_WriteString	(netbuffer, consoleplayer().userinfo.netname.c_str());
 	MSG_WriteByte	(netbuffer, consoleplayer().userinfo.team);
 	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.gender);
 	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.color);
-	MSG_WriteString	(netbuffer, skins[consoleplayer().userinfo.skin].name);
+	MSG_WriteString	(netbuffer, "");	// [SL] place holder for deprecated skins
 	MSG_WriteShort	(netbuffer, consoleplayer().GameTime);
 	
 	// Server sends its settings
@@ -1141,9 +1159,26 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, consoleplayer().id);
 	MSG_WriteByte	(netbuffer, consoleplayer().spectator);
 
-	// Server sends map name
+	// Server sends wads & map name
 	MSG_WriteMarker	(netbuffer, svc_loadmap);
-	MSG_WriteString	(netbuffer, level.mapname);
+
+	// send list of wads (skip over wadnames[0] == odamex.wad)  
+	MSG_WriteByte(netbuffer, MIN<size_t>(wadfiles.size() - 1, 255));
+	for (size_t i = 1; i < MIN<size_t>(wadfiles.size(), 256); i++)
+	{
+		MSG_WriteString(netbuffer, D_CleanseFileName(wadfiles[i], "wad").c_str());
+		MSG_WriteString(netbuffer, wadhashes[i].c_str());
+	}
+
+    // send list of DEH/BEX patches
+    MSG_WriteByte(netbuffer, MIN<size_t>(patchfiles.size(), 255));
+    for (size_t i = 0; i < MIN<size_t>(patchfiles.size(), 255); i++)
+    {
+        MSG_WriteString(netbuffer, D_CleanseFileName(patchfiles[i]).c_str());
+        MSG_WriteString(netbuffer, patchfiles[i].c_str());
+    }
+
+	MSG_WriteString(netbuffer, level.mapname);
 
 	// Server spawns the player
 	MSG_WriteMarker	(netbuffer, svc_spawnplayer);
@@ -1333,14 +1368,14 @@ void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 
 	if (len > NetDemo::MAX_SNAPSHOT_SIZE)
 	{
-		error("Snapshot too large to read");
+		fatalError("Snapshot too large to read");
 		return;
 	}
 		
 	size_t cnt = fread(snapbuf, 1, len, demofp);
 	if (cnt < len)
 	{
-		error("Unable to read snapshot from data file");
+		fatalError("Unable to read snapshot from data file");
 		return;
 	}
 
@@ -1446,6 +1481,14 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	arc.WriteCount(vars_p - vars);
 	arc.Write(vars, vars_p - vars);
 
+	// write wad info
+	arc << (byte)(wadfiles.size() - 1);
+	for (size_t i = 1; i < wadfiles.size(); i++)
+		arc << D_CleanseFileName(wadfiles[i]).c_str();
+	arc << (byte)patchfiles.size();
+	for (size_t i = 0; i < patchfiles.size(); i++)
+		arc << D_CleanseFileName(patchfiles[i]).c_str();
+	// write map info
 	arc << level.mapname;
 	arc << (BYTE)(gamestate == GS_INTERMISSION);
 
@@ -1520,6 +1563,24 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	arc.Read(vars, len);
 	cvar_t::C_ReadCVars(&vars_p);
 
+	// read wad info
+	std::vector<std::string> newwadfiles, newpatchfiles;
+	byte numwads, numpatches;
+	std::string str;
+
+	arc >> numwads;
+	for (size_t i = 0; i < numwads; i++)
+	{
+		arc >> str;
+		newwadfiles.push_back(D_CleanseFileName(str));
+	}
+	arc >> numpatches;
+	for (size_t i = 0; i < numpatches; i++)
+	{
+		arc >> str;
+		newpatchfiles.push_back(D_CleanseFileName(str));
+	}
+
 	std::string mapname;
 	bool intermission;
 	arc >> mapname;
@@ -1550,6 +1611,9 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	// load a base level
 	savegamerestore = true;     // Use the player actors in the savegame
 	serverside = false;
+
+	G_LoadWad(newwadfiles, newpatchfiles);
+
 	G_InitNew(mapname.c_str());
 	displayplayer_id = consoleplayer_id = 1;
 	savegamerestore = false;
@@ -1561,7 +1625,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	arc.Close();
 
 	if (check != 0x1d)
-		error("Bad snapshot");
+		fatalError("Bad snapshot");
 	
 	consoleplayer_id = cid;
 	
@@ -1574,7 +1638,10 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 
 	// restore player colors
 	for (size_t i = 0; i < players.size(); i++)
-		R_BuildPlayerTranslation(players[i].id, players[i].userinfo.color);
+	{
+		int color = CL_GetPlayerColor(&players[i]);
+		R_BuildPlayerTranslation(players[i].id, color);
+	}
 
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;

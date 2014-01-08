@@ -24,9 +24,14 @@
 //-----------------------------------------------------------------------------
 
 #include <iostream>
+#include <sstream>
 
 #include <agar/core.h>
 #include <agar/gui.h>
+
+#ifdef AG_DEBUG
+#include <agar/dev.h>
+#endif
 
 #include <SDL/SDL.h>
 
@@ -42,46 +47,52 @@ using namespace std;
 
 namespace agOdalaunch {
 
-int AGOL_InitVideo(const string& drivers, const int width, const int height)
+#ifdef AG_DEBUG
+static void AGOL_StartDebugger(void)
 {
+	AG_Window *win;
+
+	if((win = (AG_Window*)AG_GuiDebugger(agWindowFocused)) != NULL)
+	{
+		AG_WindowShow(win);
+	}
+}
+#endif
+
+int AGOL_InitVideo(const string& drivers, const int width, const int height, const short depth)
+{
+	ostringstream spec;
+
 	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
 
-	if(!drivers.size() || drivers.compare(0, 3, "sdl"))
+	/* Initialize Agar-GUI. */
+	if(drivers.size())
 	{
-		/* Initialize Agar-GUI. */
-		if (AG_InitGraphics(drivers.c_str()) == -1) 
-		{
-			cerr << AG_GetError() << endl;
-			return -1;
-		}
-		if(agDriverSw)
-			AG_ResizeDisplay(width, height);
+		spec << drivers;
 	}
-	else // Alternative initialization. This will only initialize single-window display.
+	else
 	{
-		if(drivers.size() && drivers == "sdlfb")
-		{
-			if (AG_InitVideo(width, height, 32, AG_VIDEO_SDL | AG_VIDEO_RESIZABLE) == -1) 
-			{
-				cerr << AG_GetError() << endl;
-				return -1;
-			}
-		}
-		else
-		{
-			if (AG_InitVideo(width, height, 32, AG_VIDEO_OPENGL_OR_SDL | AG_VIDEO_RESIZABLE) == -1) 
-			{
-				cerr << AG_GetError() << endl;
-				return -1;
-			}
-		}
+		spec << "<OpenGL>";
+	}
+
+	spec << "(width=" << width << ":height=" << height << ":depth=" << depth << ")";
+
+	if (AG_InitGraphics(spec.str().c_str()) == -1) 
+	{
+		cerr << AG_GetError() << endl;
+		return -1;
 	}
 
 #ifdef _XBOX
 	// Software cursor only updates at the refresh rate so make it respectable
 	if(agDriverSw)
+	{
 		AG_SetRefreshRate(60);
+	}
 #endif
+
+	// Pick up GUI subsystem options
+	GuiConfig::Load();
 
 	return 0;
 }
@@ -109,6 +120,9 @@ int main(int argc, char *argv[])
 		return (-1);
 	}
 
+	// Initial config load
+	GuiConfig::Load();
+
 	while ((c = AG_Getopt(argc, argv, "?d:f", &optArg, NULL)) != -1) 
 	{
 		switch (c) 
@@ -118,13 +132,19 @@ int main(int argc, char *argv[])
 				break;
 			case 'f':
 				/* Force full screen */
-				AG_SetBool(agConfig, "view.full-screen", 1);
+				GuiConfig::Write("view.full-screen", true);
 				break;
 			case '?':
 			default:
 				cout << agProgName << "[-df] [-d driver] " << endl;
 				exit(0);
 		}
+	}
+
+	// Set the default font size
+	if(!GuiConfig::IsDefined("font.size"))
+	{
+		GuiConfig::Write("font.size", 10);
 	}
 
 #ifdef GCONSOLE
@@ -134,9 +154,13 @@ int main(int argc, char *argv[])
 #else
 	// Get the dimensions for initialization
 	if(GuiConfig::Read("MainWindow-Width", width) || width <= 0)
+	{
 		width = 640;
+	}
 	if(GuiConfig::Read("MainWindow-Height", height) || height <= 0)
+	{
 		height = 480;
+	}
 #endif
 
 	// Check if a video driver is specified in the config file
@@ -146,12 +170,16 @@ int main(int argc, char *argv[])
 
 #ifdef _XBOX
 		if(!drivers.size())
+		{
 			drivers = "sdlfb";
+		}
 #endif
 	}
 
-	if(AGOL_InitVideo(drivers, width, height))
+	if(AGOL_InitVideo(drivers, width, height, 32))
+	{
 		return (-1);
+	}
 
 	// Initialize socket API
 	BufferedSocket::InitializeSocketAPI();
@@ -162,6 +190,9 @@ int main(int argc, char *argv[])
 	// Set key bindings
 	AG_BindGlobalKey(AG_KEY_ESCAPE, AG_KEYMOD_ANY, AG_QuitGUI);
 	AG_BindGlobalKey(AG_KEY_F8, AG_KEYMOD_ANY, AG_ViewCapture);
+#ifdef AG_DEBUG
+	AG_BindGlobalKey(AG_KEY_F12,    AG_KEYMOD_ANY,  AGOL_StartDebugger);
+#endif
 
 #ifdef _XBOX
 	// Initialize the Xbox controller

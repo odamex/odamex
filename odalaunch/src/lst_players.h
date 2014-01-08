@@ -33,11 +33,16 @@ class LstOdaPlayerList : public wxAdvancedListCtrl
         virtual ~LstOdaPlayerList();
 
         void AddPlayersToList(const odalpapi::Server &s);
-        void SetupPlayerListColumns();
 
     protected:
+
+        void SetupPlayerListColumns();        
+        void OnCreateControl(wxWindowCreateEvent &event);
         
         DECLARE_DYNAMIC_CLASS(LstOdaPlayerList)
+
+    private:
+        DECLARE_EVENT_TABLE()
 };
 
 #endif // __LST_PLAYERS_H__

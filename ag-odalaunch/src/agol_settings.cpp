@@ -103,13 +103,11 @@ ODA_SrvOptionsBox *AGOL_Settings::CreateSrvOptionsBox(void *parent)
 	if(GuiConfig::Read("ServerTimeout", ServerTimeout) || ServerTimeout == 0)
 		ServerTimeout = 500;
 
-	obox->masterTimeoutSpin = AG_NumericalNewUint(obox->optionsBox, 0, NULL, 
-			"Master Timeout (ms)", &MasterTimeout);
-	AG_NumericalSetRangeInt(obox->masterTimeoutSpin, 1, 5000);
+	obox->masterTimeoutSpin = AG_NumericalNewUintR(obox->optionsBox, 0, NULL, 
+			"Master Timeout (ms)", &MasterTimeout, 1, 5000);
 
-	obox->serverTimeoutSpin = AG_NumericalNewUint(obox->optionsBox, 0, NULL, 
-			"Server Timeout (ms)", &ServerTimeout);
-	AG_NumericalSetRangeInt(obox->serverTimeoutSpin, 1, 5000);
+	obox->serverTimeoutSpin = AG_NumericalNewUintR(obox->optionsBox, 0, NULL, 
+			"Server Timeout (ms)", &ServerTimeout, 1, 5000);
 
 	return obox;
 }
@@ -564,11 +562,8 @@ void AGOL_Settings::DirectorySelectorCancel(AG_Event *event)
 
 void AGOL_Settings::SaveServerOptions()
 {
-	bool mos = MasterOnStart;
-	bool sb = ShowBlocked;
-
-	GuiConfig::Write("MasterOnStart", mos);
-	GuiConfig::Write("ShowBlockedServers", sb);
+	GuiConfig::Write("MasterOnStart", MasterOnStart);
+	GuiConfig::Write("ShowBlockedServers", ShowBlocked);
 	GuiConfig::Write("MasterTimeout", MasterTimeout);
 	GuiConfig::Write("ServerTimeout", ServerTimeout);
 }
@@ -617,7 +612,7 @@ void AGOL_Settings::SaveExtraParams()
 	extraParams = AG_TextboxDupString(ExtraCmdParamsEntry);
 
 	if(extraParams && strlen(extraParams) > 0)
-		GuiConfig::Write("ExtraParams", extraParams);
+		GuiConfig::Write("ExtraParams", string(extraParams));
 	else
 		GuiConfig::Unset("ExtraParams");
 

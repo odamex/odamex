@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,6 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "cmdlib.h"
 #include "doomdef.h"
 #include "d_event.h"
 #include "p_local.h"
@@ -30,6 +31,7 @@
 #include "s_sound.h"
 #include "i_system.h"
 #include "i_net.h"
+#include "gi.h"
 
 #include "p_snapshot.h"
 
@@ -49,10 +51,13 @@ EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (sv_forcerespawn)
+EXTERN_CVAR (sv_forcerespawntime)
+EXTERN_CVAR (sv_spawndelaytime)
 
 extern bool predicting, step_mode;
 
 static player_t nullplayer;		// used to indicate 'player not found' when searching
+EXTERN_CVAR (sv_allowmovebob)
 EXTERN_CVAR (cl_movebob)
 
 player_t &idplayer(byte id)
@@ -74,6 +79,24 @@ player_t &idplayer(byte id)
 		translation[players[i].id] = i;
 		if (players[i].id == id)
  			return players[i];
+	}
+
+	return nullplayer;
+}
+
+/**
+ * Find player by netname.  Note that this search is case-insensitive.
+ * 
+ * @param  netname Name of player to look for.
+ * @return         Player reference of found player, or nullplayer.
+ */
+player_t &nameplayer(const std::string &netname)
+{
+	std::vector<player_t>::iterator it;
+	for (it = players.begin(); it != players.end(); ++it)
+	{
+		if (iequals(netname, it->userinfo.netname))
+			return *it;
 	}
 
 	return nullplayer;
@@ -103,6 +126,25 @@ size_t P_NumPlayersInGame()
 	for (size_t i = 0; i < players.size(); ++i)
 	{
 		if (!players[i].spectator && players[i].ingame())
+			++num_players;
+	}
+
+	return num_players;
+}
+
+//
+// P_NumReadyPlayersInGame()
+//
+// Returns the number of players who are marked ready in the current game.
+// This does not include spectators or downloaders.
+//
+size_t P_NumReadyPlayersInGame()
+{
+	size_t num_players = 0;
+
+	for (size_t i = 0; i < players.size(); ++i)
+	{
+		if (!players[i].spectator && players[i].ingame() && players[i].ready)
 			++num_players;
 	}
 
@@ -230,7 +272,10 @@ void P_CalcHeight (player_t *player)
 		}
 	}
 
-	bob *= cl_movebob;
+	// [SL] Scale view-bobbing based on user's preference (if the server allows)
+	if (sv_allowmovebob)
+		bob *= cl_movebob;
+
 	player->viewz = player->mo->z + player->viewheight + bob;
 
 	if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
@@ -244,8 +289,6 @@ void P_CalcHeight (player_t *player)
 //
 void P_PlayerLookUpDown (player_t *p)
 {
-	ticcmd_t *cmd = &p->cmd;
-
 	// [RH] Look up/down stuff
 	if (!sv_freelook)
 	{
@@ -253,7 +296,7 @@ void P_PlayerLookUpDown (player_t *p)
 	}
 	else
 	{
-		int look = cmd->ucmd.pitch << 16;
+		int look = p->cmd.pitch << 16;
 
 		// The player's view pitch is clamped between -32 and +56 degrees,
 		// which translates to about half a screen height up and (more than)
@@ -295,7 +338,6 @@ void P_MovePlayer (player_t *player)
 	if (!player || !player->mo || player->playerstate == PST_DEAD)
 		return;
 
-	ticcmd_t *cmd = &player->cmd;
 	AActor *mo = player->mo;
 
 	mo->onground = (mo->z <= mo->floorz) || (mo->flags2 & MF2_ONMOBJ);
@@ -313,42 +355,27 @@ void P_MovePlayer (player_t *player)
 		return;
 	}
 
-	if (co_zdoomphys)
+	if (player->cmd.upmove == -32768)
 	{
-		if (cmd->ucmd.upmove &&
-			(player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY))
+		// Only land if in the air
+		if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
 		{
-			player->mo->momz = cmd->ucmd.upmove << 8;
+			player->mo->flags2 &= ~MF2_FLY;
+			player->mo->flags &= ~MF_NOGRAVITY;
 		}
 	}
-	else
+	else if (player->cmd.upmove != 0)
 	{
-		if (cmd->ucmd.upmove == -32768)
-		{ // Only land if in the air
-			if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
-			{
-				player->mo->flags2 &= ~MF2_FLY;
-				player->mo->flags &= ~MF_NOGRAVITY;
-			}
-		}
-		else if (cmd->ucmd.upmove != 0)
+		if (player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY)
 		{
-			if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
-			{
-				player->mo->momz = cmd->ucmd.upmove << 8;
-			}
-			else if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
+			player->mo->momz = player->cmd.upmove << 9;
+
+			if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
 			{
 				player->mo->flags2 |= MF2_FLY;
 				player->mo->flags |= MF_NOGRAVITY;
 				if (player->mo->momz <= -39*FRACUNIT)
-				{ // Stop falling scream
-					S_StopSound (player->mo, CHAN_VOICE);
-				}
-			}
-			else if (cmd->ucmd.upmove > 0)
-			{
-				//P_PlayerUseArtifact (player, arti_fly);
+					S_StopSound(player->mo, CHAN_VOICE);	// Stop falling scream
 			}
 		}
 	}
@@ -356,7 +383,7 @@ void P_MovePlayer (player_t *player)
 	// Look left/right
 	if(clientside || step_mode)
 	{
-		mo->angle += cmd->ucmd.yaw << 16;
+		mo->angle += player->cmd.yaw << 16;
 
 		// Look up/down stuff
 		P_PlayerLookUpDown(player);
@@ -369,7 +396,7 @@ void P_MovePlayer (player_t *player)
 	// ice, because the player still "works just as hard" to move, while the
 	// thrust applied to the movement varies with 'movefactor'.
 
-	if (cmd->ucmd.forwardmove | cmd->ucmd.sidemove)
+	if (player->cmd.forwardmove | player->cmd.sidemove)
 	{
 		fixed_t forwardmove, sidemove;
 		int bobfactor;
@@ -391,8 +418,8 @@ void P_MovePlayer (player_t *player)
 				bobfactor >>= 8;
 			}
 		}
-		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
-		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
+		forwardmove = (player->cmd.forwardmove * movefactor) >> 8;
+		sidemove = (player->cmd.sidemove * movefactor) >> 8;
 
 		// [ML] Check for these conditions unless advanced physics is on
 		if(co_zdoomphys ||
@@ -411,7 +438,7 @@ void P_MovePlayer (player_t *player)
 		if (mo->state == &states[S_PLAY])
 		{
 			// denis - fixme - this function might destoy player->mo without setting it to 0
-			P_SetMobjState (player->mo, S_PLAY_RUN1); 
+			P_SetMobjState (player->mo, S_PLAY_RUN1);
 		}
 
 		if (player->cheats & CF_REVERTPLEASE)
@@ -420,12 +447,12 @@ void P_MovePlayer (player_t *player)
 			player->camera = player->mo;
 		}
 	}
-	
+
 	// [RH] check for jump
 	if (player->jumpTics)
 		player->jumpTics--;
-		
-	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
+
+	if ((player->cmd.buttons & BT_JUMP) == BT_JUMP)
 	{
 		if (player->mo->waterlevel >= 2)
 		{
@@ -434,15 +461,15 @@ void P_MovePlayer (player_t *player)
 		else if (player->mo->flags2 & MF2_FLY)
 		{
 			player->mo->momz = 3*FRACUNIT;
-		}		
+		}
 		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
 		{
 			player->mo->momz += 8*FRACUNIT;
 			if(!player->spectator)
 				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
-				
+
             player->mo->flags2 &= ~MF2_ONMOBJ;
-            player->jumpTics = 18;				
+            player->jumpTics = 18;
 		}
 	}
 }
@@ -555,9 +582,15 @@ void P_DeathThink (player_t *player)
 
 	if(serverside)
 	{
+		bool force_respawn =	(!clientside && sv_forcerespawn &&
+								level.time >= player->death_time + sv_forcerespawntime * TICRATE);
+
+		// [SL] Can we respawn yet?
+		int respawn_time = player->death_time + sv_spawndelaytime * TICRATE;
+		bool delay_respawn =	(!clientside && level.time < respawn_time);
+
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE
-			|| (!clientside && sv_forcerespawn && level.time >= player->respawn_time)))
+		if (player->ingame() && ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn))
 		{
 			player->playerstate = PST_REBORN;
 		}
@@ -590,7 +623,6 @@ void SV_SendPlayerInfo(player_t &);
 //
 void P_PlayerThink (player_t *player)
 {
-	ticcmd_t *cmd;
 	weapontype_t newweapon;
 
 	// [SL] 2011-10-31 - Thinker called before the client has received a message
@@ -599,13 +631,16 @@ void P_PlayerThink (player_t *player)
 	if (!player->mo && clientside && multiplayer)
 	{
 		DPrintf("Warning: P_PlayerThink called for player %s without a valid Actor.\n",
-				player->userinfo.netname);
+				player->userinfo.netname.c_str());
 		return;
 	}
 	else if (!player->mo)
 		I_Error ("No player %d start\n", player->id);
 
 	player->xviewshift = 0;		// [RH] Make sure view is in right place
+	player->prevviewz = player->viewz;
+	player->mo->prevangle = player->mo->angle;
+	player->mo->prevpitch = player->mo->pitch;
 
 	// fixme: do this in the cheat code
 	if (player->cheats & CF_NOCLIP)
@@ -619,12 +654,11 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags &= ~MF_NOGRAVITY, player->mo->flags2 &= ~MF2_FLY;
 
 	// chain saw run forward
-	cmd = &player->cmd;
 	if (player->mo->flags & MF_JUSTATTACKED)
 	{
-		cmd->ucmd.yaw = 0;
-		cmd->ucmd.forwardmove = 0xc800/2;
-		cmd->ucmd.sidemove = 0;
+		player->cmd.yaw = 0;
+		player->cmd.forwardmove = 0xc800/2;
+		player->cmd.sidemove = 0;
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
 
@@ -643,19 +677,19 @@ void P_PlayerThink (player_t *player)
 	// Check for weapon change.
 
 	// A special event has no other buttons.
-	if (cmd->ucmd.buttons & BT_SPECIAL)
-		cmd->ucmd.buttons = 0;
+	if (player->cmd.buttons & BT_SPECIAL)
+		player->cmd.buttons = 0;
 
-	if ((cmd->ucmd.buttons & BT_CHANGE) || cmd->ucmd.impulse >= 50)
+	if ((player->cmd.buttons & BT_CHANGE) || player->cmd.impulse >= 50)
 	{
 		// [RH] Support direct weapon changes
-		if (cmd->ucmd.impulse) {
-			newweapon = (weapontype_t)(cmd->ucmd.impulse - 50);
+		if (player->cmd.impulse) {
+			newweapon = (weapontype_t)(player->cmd.impulse - 50);
 		} else {
 			// The actual changing of the weapon is done
 			//	when the weapon psprite can do it
 			//	(read: not in the middle of an attack).
-			newweapon = (weapontype_t)((cmd->ucmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
+			newweapon = (weapontype_t)((player->cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
 
 			if (newweapon == wp_fist
 				&& player->weaponowned[wp_chainsaw]
@@ -665,7 +699,7 @@ void P_PlayerThink (player_t *player)
 				newweapon = wp_chainsaw;
 			}
 
-			if (gamemode == commercial
+			if ((gameinfo.flags & GI_MAPxx)
 				&& newweapon == wp_shotgun
 				&& player->weaponowned[wp_supershotgun]
 				&& player->readyweapon != wp_supershotgun)
@@ -688,7 +722,7 @@ void P_PlayerThink (player_t *player)
 	}
 
 	// check for use
-	if (cmd->ucmd.buttons & BT_USE)
+	if (player->cmd.buttons & BT_USE)
 	{
 		if (!player->usedown)
 		{
@@ -798,7 +832,7 @@ void player_s::Serialize (FArchive &arc)
 			<< fixedcolormap
 			<< xviewshift
 			<< jumpTics
-			<< respawn_time
+			<< death_time
 			<< air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
 			arc << powers[i];
@@ -815,7 +849,7 @@ void player_s::Serialize (FArchive &arc)
 	}
 	else
 	{ // Restoring from archive
-		userinfo_t dummyuserinfo;
+		UserInfo dummyuserinfo;
 
 		arc >> id
 			>> playerstate
@@ -848,7 +882,7 @@ void player_s::Serialize (FArchive &arc)
 			>> fixedcolormap
 			>> xviewshift
 			>> jumpTics
-			>> respawn_time
+			>> death_time
 			>> air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
 			arc >> powers[i];
@@ -878,7 +912,7 @@ player_s::player_s()
 	id = 0;
 	playerstate = PST_LIVE;
 	mo = AActor::AActorPtr();
-	memset(&cmd, 0, sizeof(ticcmd_t));
+	cmd.clear();
 	fov = 90.0;
 	viewz = 0 << FRACBITS;
 	viewheight = 0 << FRACBITS;
@@ -919,11 +953,12 @@ player_s::player_s()
 	xviewshift = 0;
 	memset(psprites, 0, sizeof(pspdef_t) * NUMPSPRITES);
 	jumpTics = 0;
-	respawn_time = 0;
+	death_time = 0;
 	memset(oldvelocity, 0, sizeof(oldvelocity));
 	camera = AActor::AActorPtr();
 	air_finished = 0;
 	GameTime = 0;
+	JoinTime = 0;
 	ping = 0;
 	last_received = 0;
 	tic = 0;
@@ -946,7 +981,7 @@ player_s::player_s()
 	BlendG = 0;
 	BlendB = 0;
 	BlendA = 0;
-	
+
 	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
 }
 
@@ -1018,15 +1053,15 @@ player_s &player_s::operator =(const player_s &other)
 
     jumpTics = other.jumpTics;
 
-	respawn_time = other.respawn_time;
+	death_time = other.death_time;
 
 	memcpy(oldvelocity, other.oldvelocity, sizeof(oldvelocity));
 
 	camera = other.camera;
 	air_finished = other.air_finished;
 
-	JoinTime = other.JoinTime;
 	GameTime = other.GameTime;
+	JoinTime = other.JoinTime;
 	ping = other.ping;
 
 	last_received = other.last_received;
@@ -1057,7 +1092,7 @@ player_s &player_s::operator =(const player_s &other)
 	client = other.client;
 
 	snapshots = other.snapshots;
-	
+
 	to_spawn = other.to_spawn;
 
 	return *this;

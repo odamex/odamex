@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -59,7 +59,7 @@ typedef enum {false, true} dboolean;
 
 // Predefined with some OS.
 #ifndef UNIX
-#ifndef _MSC_VER
+#ifndef _WIN32
 #ifndef GEKKO
 #include <values.h>
 #endif
@@ -140,7 +140,7 @@ typedef unsigned short		WORD;
 typedef signed short		SWORD;
 
 // denis - todo - this 64 bit fix conflicts with windows' idea of long
-#ifndef WIN32
+#ifndef _WIN32
 typedef unsigned int		DWORD;
 typedef signed int			SDWORD;
 #else
@@ -152,16 +152,6 @@ typedef unsigned __int64	QWORD;
 typedef signed __int64		SQWORD;
 
 typedef DWORD				BITFIELD;
-
-#ifndef NOASM
-#ifndef USEASM
-#define USEASM 1
-#endif
-#else
-#ifdef USEASM
-#undef USEASM
-#endif
-#endif
 
 #ifdef _WIN32
 #define PATHSEP "\\"

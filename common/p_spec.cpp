@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -62,6 +62,9 @@
 
 // [RH] Needed for sky scrolling
 #include "r_sky.h"
+
+EXTERN_CVAR(sv_allowexit)
+EXTERN_CVAR(sv_fragexitswitch)
 
 std::list<movingsector_t> movingsectors;
 
@@ -357,6 +360,8 @@ static void P_SpawnScrollers(void);
 static void P_SpawnFriction(void);		// phares 3/16/98
 static void P_SpawnPushers(void);		// phares 3/20/98
 
+static void ParseAnim (byte istex);
+
 //
 //		Animating line specials
 //
@@ -370,21 +375,11 @@ static void P_SpawnPushers(void);		// phares 3/20/98
 //
 // This uses a Hexen ANIMDEFS lump to define the animation sequences
 //
-static void P_InitAnimDefs (void)
+static void P_InitAnimDefs ()
 {
-	int lump = W_CheckNumForName ("ANIMDEFS");
-	enum {
-		limbo,
-		newflat,
-		readingflat,
-		newtexture,
-		readingtexture,
-		warp
-	} state = limbo, newstate = limbo;
-	int frame = 0, min = 0, max = 0;
-	char name[9];
-
-	if (lump >= 0)
+	int lump = -1;
+	
+	while ((lump = W_FindLump ("ANIMDEFS", lump)) != -1)
 	{
 		SC_OpenLumpNum (lump, "ANIMDEFS");
 
@@ -392,15 +387,19 @@ static void P_InitAnimDefs (void)
 		{
 			if (SC_Compare ("flat"))
 			{
-				newstate = newflat;
+				ParseAnim (false);
 			}
 			else if (SC_Compare ("texture"))
 			{
-				newstate = newtexture;
+				ParseAnim (true);
+			}
+			else if (SC_Compare ("switch"))   // Don't support switchdef yet...
+			{
+				//P_ProcessSwitchDef ();
+				SC_ScriptError("switchdef not supported.");
 			}
 			else if (SC_Compare ("warp"))
 			{
-				newstate = warp;
 				SC_MustGetString ();
 				if (SC_Compare ("flat"))
 				{
@@ -418,91 +417,122 @@ static void P_InitAnimDefs (void)
 					SC_ScriptError (NULL, NULL);
 				}
 			}
-			else if (SC_Compare ("pic"))
-			{
-				SC_MustGetNumber ();
-				frame = sc_Number;
-				SC_MustGetString ();
-				if (SC_Compare ("tics"))
-				{
-					SC_MustGetNumber ();
-					min = max = sc_Number;
-				}
-				else if (SC_Compare ("rand"))
-				{
-					SC_MustGetNumber ();
-					min = sc_Number;
-					SC_MustGetNumber ();
-					max = sc_Number;
-				}
-				else
-				{
-					SC_ScriptError (NULL);
-				}
-			}
-
-			if (newstate == newtexture || newstate == newflat || newstate == warp)
-			{
-				if (state != limbo)
-				{
-					if (lastanim->numframes < 2)
-						I_FatalError ("P_InitAnimDefs: %s needs at least 2 frames", name);
-
-					lastanim->countdown = lastanim->speedmin[0];
-					lastanim++;
-				}
-
-				if (newstate != warp)
-				{
-					// 1/11/98 killough -- removed limit by array-doubling
-					if (lastanim >= anims + maxanims)
-					{
-						size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-						anims = (anim_t *)Realloc(anims, newmax*sizeof(*anims));   // killough
-						lastanim = anims + maxanims;
-						maxanims = newmax;
-					}
-
-					lastanim->uniqueframes = 1;
-					lastanim->curframe = 0;
-					lastanim->numframes = 0;
-					lastanim->istexture = (newstate == newtexture);
-					memset (lastanim->speedmin, 1, MAX_ANIM_FRAMES * sizeof(*lastanim->speedmin));
-					memset (lastanim->speedmax, 1, MAX_ANIM_FRAMES * sizeof(*lastanim->speedmax));
-
-					SC_MustGetString ();
-
-					if (lastanim->istexture)
-						lastanim->basepic = R_TextureNumForName (sc_String);
-					else
-						lastanim->basepic = R_FlatNumForName (sc_String);
-
-					strncpy (name, sc_String, 8);
-					name[8] = 0;
-				}
-
-				state = (newstate == newflat) ? readingflat :
-						(newstate == newtexture) ? readingtexture : limbo;
-				newstate = limbo;
-			}
-			else if (state == readingflat || state == readingtexture)
-			{
-				if (lastanim->numframes < MAX_ANIM_FRAMES)
-				{
-					lastanim->speedmin[lastanim->numframes] = min;
-					lastanim->speedmax[lastanim->numframes] = max;
-					lastanim->framepic[lastanim->numframes] = frame + lastanim->basepic - 1;
-					lastanim->numframes++;
-				}
-			}
-		}
-		if (state == readingflat || state == readingtexture)
-		{
-			lastanim->countdown = lastanim->speedmin[0];
-			lastanim++;
 		}
 		SC_Close ();
 	}
+}
+
+static void ParseAnim (byte istex)
+{
+	anim_t sink;
+	short picnum;
+	anim_t *place;
+	byte min, max;
+	int frame;
+
+	SC_MustGetString ();
+	picnum = istex ? R_CheckTextureNumForName (sc_String)
+		: W_CheckNumForName (sc_String, ns_flats) - firstflat;
+
+	if (picnum == -1)
+	{ // Base pic is not present, so skip this definition
+		place = &sink;
+	}
+	else
+	{
+		for (place = anims; place < lastanim; place++)
+		{
+			if (place->basepic == picnum && place->istexture == istex)
+			{
+				break;
+			}
+		}
+		if (place == lastanim)
+		{
+			lastanim++;
+			if (lastanim > anims + maxanims)
+			{
+				size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
+				anims = (anim_t *)Realloc (anims, newmax*sizeof(*anims));
+				place = anims + maxanims;
+				lastanim = place + 1;
+				maxanims = newmax;
+			}
+		}
+		// no decals on animating textures by default
+		//if (istex)
+		//{
+		//	texturenodecals[picnum] = 1;
+		//}
+	}
+
+	place->uniqueframes = true;
+	place->curframe = 0;
+	place->numframes = 0;
+	place->basepic = picnum;
+	place->istexture = istex;
+	memset (place->speedmin, 1, MAX_ANIM_FRAMES * sizeof(*place->speedmin));
+	memset (place->speedmax, 1, MAX_ANIM_FRAMES * sizeof(*place->speedmax));
+
+	while (SC_GetString ())
+	{
+		/*if (SC_Compare ("allowdecals"))
+		{
+			if (istex && picnum >= 0)
+			{
+				texturenodecals[picnum] = 0;
+			}
+			continue;
+		}
+		else*/ if (!SC_Compare ("pic"))
+		{
+			SC_UnGet ();
+			break;
+		}
+
+		if (place->numframes == MAX_ANIM_FRAMES)
+		{
+			SC_ScriptError ("Animation has too many frames");
+		}
+
+		min = max = 1;	// Shut up, GCC
+		
+		SC_MustGetNumber ();
+		frame = sc_Number;
+		SC_MustGetString ();
+		if (SC_Compare ("tics"))
+		{
+			SC_MustGetNumber ();
+			if (sc_Number < 0)
+				sc_Number = 0;
+			else if (sc_Number > 255)
+				sc_Number = 255;
+			min = max = sc_Number;
+		}
+		else if (SC_Compare ("rand"))
+		{
+			SC_MustGetNumber ();
+			min = sc_Number >= 0 ? sc_Number : 0;
+			SC_MustGetNumber ();
+			max = sc_Number <= 255 ? sc_Number : 255;
+		}
+		else
+		{
+			SC_ScriptError ("Must specify a duration for animation frame");
+		}
+
+		place->speedmin[place->numframes] = min;
+		place->speedmax[place->numframes] = max;
+		place->framepic[place->numframes] = frame + picnum - 1;
+		place->numframes++;
+	}
+
+	if (place->numframes < 2)
+	{
+		SC_ScriptError ("Animation needs at least 2 frames");
+	}
+
+	place->countdown = place->speedmin[0];
 }
 
 /*
@@ -552,57 +582,67 @@ void P_InitPicAnims (void)
 
 	// Init animation
 
-	for (anim_p = animdefs; *anim_p != 255; anim_p += 23)
-	{
-		// 1/11/98 killough -- removed limit by array-doubling
-		if (lastanim >= anims + maxanims)
+		for (anim_p = animdefs; *anim_p != 255; anim_p += 23)
 		{
-			size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-			anims = (anim_t *)Realloc(anims, newmax*sizeof(*anims));   // killough
-			lastanim = anims + maxanims;
-			maxanims = newmax;
+			// 1/11/98 killough -- removed limit by array-doubling
+			if (lastanim >= anims + maxanims)
+			{
+				size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
+				anims = (anim_t *)Realloc(anims, newmax*sizeof(*anims));   // killough
+				lastanim = anims + maxanims;
+				maxanims = newmax;
+			}
+
+			if (*anim_p /* .istexture */ & 1)
+			{
+				// different episode ?
+				if (R_CheckTextureNumForName (anim_p + 10 /* .startname */) == -1 ||
+					R_CheckTextureNumForName (anim_p + 1 /* .endname */) == -1)
+					continue;		
+
+				lastanim->basepic = R_TextureNumForName (anim_p + 10 /* .startname */);
+				lastanim->numframes = R_TextureNumForName (anim_p + 1 /* .endname */)
+									  - lastanim->basepic + 1;
+				/*if (*anim_p & 2)
+				{ // [RH] Bit 1 set means allow decals on walls with this texture
+					texturenodecals[lastanim->basepic] = 0;
+				}
+				else
+				{
+					texturenodecals[lastanim->basepic] = 1;
+				}*/
+			}
+			else
+			{
+				if (W_CheckNumForName ((char *)anim_p + 10 /* .startname */, ns_flats) == -1 ||
+					W_CheckNumForName ((char *)anim_p + 1 /* .startname */, ns_flats) == -1)
+					continue;
+
+				lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);
+				lastanim->numframes = R_FlatNumForName (anim_p + 1 /* .endname */)
+									  - lastanim->basepic + 1;
+			}
+
+			lastanim->istexture = *anim_p /* .istexture */;
+			lastanim->uniqueframes = false;
+			lastanim->curframe = 0;
+
+			if (lastanim->numframes < 2)
+				Printf (PRINT_HIGH,"P_InitPicAnims: bad cycle from %s to %s",
+						 anim_p + 10 /* .startname */,
+						 anim_p + 1 /* .endname */);
+			
+			lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
+						/* .speed */
+						(anim_p[19] << 0) |
+						(anim_p[20] << 8) |
+						(anim_p[21] << 16) |
+						(anim_p[22] << 24);
+
+			lastanim->countdown--;
+
+			lastanim++;
 		}
-
-		if (*anim_p /* .istexture */)
-		{
-			// different episode ?
-			if (R_CheckTextureNumForName (anim_p + 10 /* .startname */) == -1)
-				continue;
-
-			lastanim->basepic = R_TextureNumForName (anim_p + 10 /* .startname */);
-			lastanim->numframes = R_TextureNumForName (anim_p + 1 /* .endname */)
-								  - lastanim->basepic + 1;
-		}
-		else
-		{
-			if (W_CheckNumForName ((char *)anim_p + 10 /* .startname */, ns_flats) == -1)
-				continue;
-
-			lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);
-			lastanim->numframes = R_FlatNumForName (anim_p + 1 /* .endname */)
-								  - lastanim->basepic + 1;
-		}
-
-		lastanim->istexture = *anim_p /* .istexture */;
-		lastanim->uniqueframes = 0;
-		lastanim->curframe = 0;
-
-		if (lastanim->numframes < 2)
-			I_FatalError ("P_InitPicAnims: bad cycle from %s to %s",
-					 anim_p + 10 /* .startname */,
-					 anim_p + 1 /* .endname */);
-
-		lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
-					/* .speed */
-					(anim_p[19] << 0) |
-					(anim_p[20] << 8) |
-					(anim_p[21] << 16) |
-					(anim_p[22] << 24);
-
-		lastanim->countdown--;
-
-		lastanim++;
-	}
 	Z_Free (animdefs);
 }
 
@@ -1284,6 +1324,27 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType);
 //
 
 //
+// P_HandleSpecialRepeat
+//
+// If a line's special function is not supposed to be repeatable,
+// remove the line special function from the line. This takes
+// into account special circumstances like exit specials that are
+// supposed to frag the triggering player during online play.
+//
+void P_HandleSpecialRepeat(line_t* line)
+{
+	// [SL] Don't remove specials from fragging exit line specials
+	if ((line->special == Exit_Normal || line->special == Exit_Secret || 
+		 line->special == Teleport_EndGame || line->special == Teleport_NewMap) &&
+		(!sv_allowexit && sv_fragexitswitch))
+		return;
+
+	if (!(line->flags & ML_REPEAT_SPECIAL))
+		line->special = 0;
+}
+
+
+//
 // P_CrossSpecialLine - TRIGGER
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special.
@@ -1390,7 +1451,8 @@ P_CrossSpecialLine
 	LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
 					line->args[3], line->args[4]);
-	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
+
+	P_HandleSpecialRepeat(line);
 
 	OnActivatedLine(line, thing, side, 0);
 }
@@ -1426,7 +1488,8 @@ P_ShootSpecialLine
 					line->args[1], line->args[2],
 					line->args[3], line->args[4]);
 
-	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
+	P_HandleSpecialRepeat(line);
+
 	OnActivatedLine(line, thing, 0, 2);
 
 	if(serverside)
@@ -1502,7 +1565,8 @@ P_UseSpecialLine
 					line->args[1], line->args[2],
 					line->args[3], line->args[4]))
 	{
-		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
+		P_HandleSpecialRepeat(line);
+
 		OnActivatedLine(line, thing, side, 1);
 
 		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
@@ -1567,7 +1631,8 @@ P_PushSpecialLine
 					line->args[1], line->args[2],
 					line->args[3], line->args[4]))
 	{
-		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
+		P_HandleSpecialRepeat(line);
+
 		OnActivatedLine(line, thing, side, 3);
 
 		if(serverside)
@@ -1598,10 +1663,14 @@ void P_PlayerInSpecialSector (player_t *player)
 
 	// Has hitten ground.
 	// [RH] Normal DOOM special or BOOM specialized?
-	if (special >= dLight_Flicker && special <= dDamage_LavaHefty)
+	if (special >= dLight_Flicker && special <= 255)
 	{
 		switch (special)
 		{
+		  case Damage_InstantDeath:
+			P_DamageMobj (player->mo, NULL, NULL, 999, MOD_UNKNOWN);
+			break;
+
 		  case dDamage_Hellslime:
 			// HELLSLIME DAMAGE
 			if (!player->powers[pw_ironfeet])
@@ -1614,6 +1683,11 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (!player->powers[pw_ironfeet])
 				if (!(level.time&0x1f))
 					P_DamageMobj (player->mo, NULL, NULL, 5, MOD_LAVA);
+			break;
+
+		  case hDamage_Sludge:
+			if (!player->powers[pw_ironfeet] && !(level.time&0x1f))
+				P_DamageMobj (player->mo, NULL, NULL, 4, MOD_SLIME);
 			break;
 
 		  case dDamage_SuperHellslime:
@@ -1728,7 +1802,8 @@ void P_UpdateSpecials (void)
 		{
 			int speedframe;
 
-			anim->curframe = (anim->curframe + 1) % anim->numframes;
+			anim->curframe = (anim->numframes) ? 
+					(anim->curframe + 1) % anim->numframes : 0;
 
 			speedframe = (anim->uniqueframes) ? anim->curframe : 0;
 
@@ -1802,12 +1877,6 @@ void P_SpawnSpecials (void)
 {
 	sector_t*	sector;
 	int 		i;
-	int 		episode;
-
-	episode = 1;
-	if (W_CheckNumForName("texture2") >= 0)
-		episode = 2;
-
 
 	//	Init special SECTORs.
 	sector = sectors;
@@ -2578,8 +2647,7 @@ BOOL PIT_PushThing (AActor *thing)
 		// If speed <= 0, you're outside the effective radius. You also have
 		// to be able to see the push/pull source point.
 
-		if ((speed > 0) && ((HasBehavior && P_CheckSight2 (thing, tmpusher->m_Source, true))
-			|| (!HasBehavior && P_CheckSight (thing, tmpusher->m_Source, true))))
+		if (speed > 0 && P_CheckSight(thing, tmpusher->m_Source))
 		{
 			angle_t pushangle = P_PointToAngle (thing->x, thing->y, sx, sy);
 			if (tmpusher->m_Source->type == MT_PUSH)
@@ -2816,9 +2884,9 @@ bool A_CheckTrigger(AActor *mo, AActor *triggerer) {
 		 ((mo->flags2 & MF2_DORMANT) && (triggerer->flags2 & MF2_PCROSS)))) {
 		int savedSide = TeleportSide;
 		TeleportSide = 0;
-		bool res = LineSpecials[mo->special](NULL, triggerer, mo->args[0],
+		bool res = (LineSpecials[mo->special](NULL, triggerer, mo->args[0],
 											 mo->args[1], mo->args[2],
-											 mo->args[3], mo->args[4]);
+											 mo->args[3], mo->args[4]) != 0);
 		TeleportSide = savedSide;
 		return res;
 	}
@@ -2833,34 +2901,34 @@ bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType) {
 	// The mobj type must agree with the activation type.
 	switch (mo->type) {
 	case MT_SECACTENTER:
-		trigger_action = activationType & SECSPAC_Enter;
+		trigger_action = ((activationType & SECSPAC_Enter) != 0);
 		break;
 	case MT_SECACTEXIT:
-		trigger_action = activationType & SECSPAC_Exit;
+		trigger_action = ((activationType & SECSPAC_Exit) != 0);
 		break;
 	case MT_SECACTHITFLOOR:
-		trigger_action = activationType & SECSPAC_HitFloor;
+		trigger_action = ((activationType & SECSPAC_HitFloor) != 0);
 		break;
 	case MT_SECACTHITCEIL:
-		trigger_action = activationType & SECSPAC_HitCeiling;
+		trigger_action = ((activationType & SECSPAC_HitCeiling) != 0);
 		break;
 	case MT_SECACTUSE:
-		trigger_action = activationType & SECSPAC_Use;
+		trigger_action = ((activationType & SECSPAC_Use) != 0);
 		break;
 	case MT_SECACTUSEWALL:
-		trigger_action = activationType & SECSPAC_UseWall;
+		trigger_action = ((activationType & SECSPAC_UseWall) != 0);
 		break;
 	case MT_SECACTEYESDIVE:
-		trigger_action = activationType & SECSPAC_EyesDive;
+		trigger_action = ((activationType & SECSPAC_EyesDive) != 0);
 		break;
 	case MT_SECACTEYESSURFACE:
-		trigger_action = activationType & SECSPAC_EyesSurface;
+		trigger_action = ((activationType & SECSPAC_EyesSurface) != 0);
 		break;
 	case MT_SECACTEYESBELOWC:
-		trigger_action = activationType & SECSPAC_EyesBelowC;
+		trigger_action = ((activationType & SECSPAC_EyesBelowC) != 0);
 		break;
 	case MT_SECACTEYESABOVEC:
-		trigger_action = activationType & SECSPAC_EyesAboveC;
+		trigger_action = ((activationType & SECSPAC_EyesAboveC) != 0);
 		break;
 	default:
 		// This isn't a sector action mobj.

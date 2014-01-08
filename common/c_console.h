@@ -4,7 +4,7 @@
 // $Id: c_console.h 1847 2010-09-04 05:16:08Z ladna $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -71,6 +71,8 @@ void C_SetTicker (unsigned int at);
 
 void C_MidPrint (const char *msg, player_t *p = NULL, int msgtime=0);
 void C_DrawMid (void);
+void C_GMidPrint(const char* msg, int color, int msgtime);
+void C_DrawGMid (void);
 
 BOOL C_Responder (event_t *ev);
 

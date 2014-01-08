@@ -4,7 +4,7 @@
 // $Id: d_player.h 1870 2010-09-06 21:00:47Z mike $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,6 +34,8 @@
 // is buffered within the player data struct,
 // as commands per game tick.
 #include "d_ticcmd.h"
+
+#include "d_net.h"
 
 // The player data structure depends on a number
 // of other structs: items (internal inventory),
@@ -121,7 +123,7 @@ class player_s
 public:
 	void Serialize (FArchive &arc);
 
-	bool ingame()
+	bool ingame() const
 	{
 		return playerstate == PST_LIVE ||
 				playerstate == PST_DEAD ||
@@ -138,15 +140,16 @@ public:
 	AActor::AActorPtr	mo;
 
 	struct ticcmd_t cmd;	// the ticcmd currently being processed
-	std::queue<struct NetCommand> cmdqueue;	// all received ticcmds
+	std::queue<NetCommand> cmdqueue;	// all received ticcmds
 
 	// [RH] who is this?
-	userinfo_t	userinfo;
+	UserInfo	userinfo;
 
 	// FOV in degrees
 	float		fov;
 	// Focal origin above r.z
 	fixed_t		viewz;
+	fixed_t		prevviewz;
 	// Base height above floor for viewz.
 	fixed_t		viewheight;
     // Bob/squat speed.
@@ -212,7 +215,7 @@ public:
 
 	int			jumpTics;				// delay the next jump for a moment
 
-	int			respawn_time;			// [RH] delay respawning until this tic
+	int			death_time;				// [SL] Record time of death to enforce respawn delay if needed 
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
 
 	AActor::AActorPtr camera;			// [RH] Whose eyes this player sees through
@@ -383,6 +386,7 @@ player_t		&consoleplayer();
 player_t		&displayplayer();
 player_t		&listenplayer();
 player_t		&idplayer(byte id);
+player_t		&nameplayer(const std::string &netname);
 bool			validplayer(player_t &ref);
 
 extern byte consoleplayer_id;

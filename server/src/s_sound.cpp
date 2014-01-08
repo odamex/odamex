@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@
 #include "doomstat.h"
 #include "cmdlib.h"
 #include "v_video.h"
-#include "vectors.h"
+#include "m_vectors.h"
 
 #include <algorithm>
 
@@ -44,26 +44,6 @@
 
 #define S_PITCH_PERTURB 		1
 #define S_STEREO_SWING			(96<<FRACBITS)
-
-fixed_t P_AproxDistance2 (fixed_t *listener, fixed_t x, fixed_t y)
-{
-	// calculate the distance to sound origin
-	//	and clip it if necessary
-	if (listener)
-	{
-		fixed_t adx = abs (listener[0] - x);
-		fixed_t ady = abs (listener[1] - y);
-		// From _GG1_ p.428. Appox. eucledian distance fast.
-		return adx + ady - ((adx < ady ? adx : ady)>>1);
-	}
-	else
-		return 0;
-}
-
-fixed_t P_AproxDistance2 (AActor *listener, fixed_t x, fixed_t y)
-{
-	return P_AproxDistance2 (&listener->x, x, y);
-}
 
 //
 // [RH] Print sound debug info. Called from D_Display()
@@ -89,6 +69,10 @@ void S_Init (float sfxVolume, float musicVolume)
 }
 
 void S_Start (void)
+{
+}
+
+void S_Stop (void)
 {
 }
 
@@ -338,14 +322,14 @@ int S_AddSound (char *logicalname, char *lumpname)
 // Parses all loaded SNDINFO lumps.
 void S_ParseSndInfo (void)
 {
-	int lastlump, lump;
 	char *sndinfo;
 	char *data;
 
 	S_ClearSoundLumps();
 
-	lastlump = 0;
-	while ((lump = W_FindLump ("SNDINFO", &lastlump)) != -1) {
+	int lump = -1;
+	while ((lump = W_FindLump ("SNDINFO", lump)) != -1)
+	{
 		sndinfo = (char *)W_CacheLumpNum (lump, PU_CACHE);
 
 		while ( (data = COM_Parse (sndinfo)) ) {

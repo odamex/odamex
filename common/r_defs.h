@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -53,10 +53,9 @@
 
 extern int MaxDrawSegs;
 
-#define MAXWIDTH				2048
-#define MAXHEIGHT				1536
-
-
+// [AM] The size of a Macbook Pro Retina display.
+#define MAXWIDTH				2880
+#define MAXHEIGHT				1800
 
 //
 // INTERNAL MAP TYPES
@@ -96,7 +95,7 @@ enum
 	SECSPAC_EyesDive	= 64,	// Trigger when player eyes go below fake floor
 	SECSPAC_EyesSurface = 128,	// Trigger when player eyes go above fake floor
 	SECSPAC_EyesBelowC	= 256,	// Trigger when player eyes go below fake ceiling
-	SECSPAC_EyesAboveC	= 512,	// Triggen when player eyes go above fake ceiling
+	SECSPAC_EyesAboveC	= 512	// Triggen when player eyes go above fake ceiling
 };
 
 // Ceiling/floor flags
@@ -165,10 +164,10 @@ struct sector_s
 
     // if == validcount, already checked
 	int 		validcount;
-	
+
     // list of mobjs in sector
 	AActor* 	thinglist;
-	int			seqType;		// this sector's sound sequence	
+	int			seqType;		// this sector's sound sequence
 	int sky;
 
 	// killough 8/28/98: friction is a sector property, not an mobj property.
@@ -252,19 +251,19 @@ struct side_s
 {
     // add this to the calculated texture column
     fixed_t	textureoffset;
-    
+
     // add this to the calculated texture top
     fixed_t	rowoffset;
-	
+
     // Texture indices.
-    // We do not maintain names here. 
+    // We do not maintain names here.
     short	toptexture;
     short	bottomtexture;
     short	midtexture;
 
     // Sector the SideDef is facing.
     sector_t*	sector;
-	
+
 	// [RH] Bah. Had to add these for BOOM stuff
 	short		linenum;
 	short		special;
@@ -284,29 +283,31 @@ typedef enum
 	ST_NEGATIVE
 } slopetype_t;
 
+#define R_NOSIDE ((unsigned short)(-1))
+
 struct line_s
 {
     // Vertices, from v1 to v2.
     vertex_t*	v1;
     vertex_t*	v2;
-	
+
     // Precalculated v2 - v1 for side checking.
     fixed_t	dx;
     fixed_t	dy;
-	
+
     // Animation related.
     short		flags;
 	byte		special;	// [RH] specials are only one byte (like Hexen)
 	byte		lucency;	// <--- translucency (0-255/255=opaque)
-	
+
 	// Visual appearance: SideDefs.
-    //  sidenum[1] will be -1 if one sided
-	short		sidenum[2];
+    //  sidenum[1] will be R_NOSIDE if one sided
+	unsigned short sidenum[2];
 
     // Neat. Another bounding box, for the extent
     //  of the LineDef.
     fixed_t	bbox[4];
-	
+
     // To aid move clipping.
     slopetype_t	slopetype;
 
@@ -314,7 +315,7 @@ struct line_s
     // Note: redundant? Can be retrieved from SideDefs.
     sector_t*	frontsector;
     sector_t*	backsector;
-	
+
     // if == validcount, already checked
     int		validcount;
 
@@ -323,7 +324,7 @@ struct line_s
 							//		note that these are shorts in order to support
 							//		the tag parameter from DOOM.
 	int			firstid, nextid;
-	
+
 	// denis - has this switch ever been pressed?
 	bool wastoggled;
 };
@@ -375,9 +376,6 @@ struct seg_s
 	// Could be retrieved from linedef, too.
 	sector_t*	frontsector;
 	sector_t*	backsector;		// NULL for one-sided lines
-	
-	fixed_t		length;
-
 };
 typedef struct seg_s seg_t;
 
@@ -416,23 +414,27 @@ typedef struct polyblock_s
 typedef struct subsector_s
 {
 	sector_t		*sector;
-	unsigned short	numlines;
-	unsigned short	firstline;
+	unsigned int	numlines;
+	unsigned int	firstline;
 	polyobj_t	    *poly;
 } subsector_t;
 
 //
 // BSP node.
 //
+
+// Indicate a leaf.
+#define NF_SUBSECTOR	0x80000000
+
 struct node_s
 {
 	// Partition line.
-	fixed_t		x;
-	fixed_t		y;
-	fixed_t		dx;
-	fixed_t		dy;
-	fixed_t		bbox[2][4];		// Bounding box for each child.
-	unsigned short children[2];	// If NF_SUBSECTOR its a subsector.
+	fixed_t			x;
+	fixed_t			y;
+	fixed_t			dx;
+	fixed_t			dy;
+	fixed_t			bbox[2][4];		// Bounding box for each child.
+	unsigned int	children[2];	// If NF_SUBSECTOR its a subsector.
 };
 typedef struct node_s node_t;
 
@@ -449,6 +451,17 @@ typedef struct post_s post_t;
 // column_t is a list of 0 or more post_t, (byte)-1 terminated
 typedef post_t	column_t;
 
+struct tallpost_s
+{
+	unsigned short		topdelta;
+	unsigned short		length;
+	
+	byte *data() const { return (byte*)(this) + 4; }
+	tallpost_s *next() const { return (tallpost_s*)((byte*)(this) + 4 + length); }
+	bool end() const { return topdelta == 0xFFFF; }
+	void writeend() { topdelta = 0xFFFF; }
+};
+typedef struct tallpost_s tallpost_t;
 
 //
 // OTHER TYPES
@@ -466,28 +479,17 @@ struct drawseg_s
     fixed_t		scale1;
     fixed_t		scale2;
     fixed_t		scalestep;
-	
+
 	fixed_t		light, lightstep;
 
     // 0=none, 1=bottom, 2=top, 3=both
     int			silhouette;
-	
-    // do not clip sprites above this
-    fixed_t		bsilheight;
-	
-    // do not clip sprites below this
-    fixed_t		tsilheight;
-    
+
     // Pointers to lists for sprite clipping,
     //  all three adjusted so [x1] is first value.
-    int*		sprtopclip;		
-    int*		sprbottomclip;	
+    int*		sprtopclip;
+    int*		sprbottomclip;
     int*		maskedtexturecol;
-    
-    fixed_t		topclipstart;
-    fixed_t		topclipstep;
-    fixed_t		bottomclipstart;
-    fixed_t		bottomclipstep;
 };
 typedef struct drawseg_s drawseg_t;
 
@@ -506,10 +508,10 @@ private:
 
 public:
 
-	short width() const { return SHORT(_width); }
-	short height() const { return SHORT(_height); }
-	short leftoffset() const { return SHORT(_leftoffset); }
-	short topoffset() const { return SHORT(_topoffset); }
+	short width() const { return LESHORT(_width); }
+	short height() const { return LESHORT(_height); }
+	short leftoffset() const { return LESHORT(_leftoffset); }
+	short topoffset() const { return LESHORT(_topoffset); }
 
 	int columnofs[8]; // only [width] used
 	// the [0] is &columnofs[width]
@@ -527,7 +529,7 @@ struct vissprite_s
 
     // for line side calculation
     fixed_t		gx;
-    fixed_t		gy;		
+    fixed_t		gy;
 
     // global bottom / top for silhouette clipping
     fixed_t		gz;
@@ -539,7 +541,7 @@ struct vissprite_s
 	fixed_t			xscale, yscale;
 
     // negative if flipped
-    fixed_t		xiscale;	
+    fixed_t		xiscale;
 
 	fixed_t			depth;
 	fixed_t			texturemid;
@@ -550,7 +552,7 @@ struct vissprite_s
     lighttable_t*	colormap;
 
 	int 			mobjflags;
-	
+
 	byte			*translation;	// [RH] for translation;
 	sector_t		*heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
 	fixed_t			translucency;
@@ -558,7 +560,7 @@ struct vissprite_s
 };
 typedef struct vissprite_s vissprite_t;
 
-//	
+//
 // Sprites are patches with a special naming convention
 //  so they can be recognized by R_InitSprites.
 // The base name is NNNNFx or NNNNFxFx, with
@@ -582,7 +584,7 @@ struct spriteframe_s
 
     // Lump to use for view angles 0-7.
     short	lump[8];
-	
+
     // Flip bit (1 = flip) to use for view angles 0-7.
     byte	flip[8];
 
@@ -606,19 +608,6 @@ struct spritedef_s
 typedef struct spritedef_s spritedef_t;
 
 //
-// [RH] Internal "skin" definition.
-//
-struct playerskin_s
-{
-	char		name[17];	// 16 chars + NULL
-	char		face[3];
-	spritenum_t	sprite;
-	int			namespc;	// namespace for this skin
-	int			gender;		// This skin's gender (not used)
-};
-typedef struct playerskin_s playerskin_t;
-
-//
 // The infamous visplane
 //
 struct visplane_s
@@ -632,7 +621,7 @@ struct visplane_s
 	fixed_t		xoffs, yoffs;		// killough 2/28/98: Support scrolling flats
 	int			minx;
 	int			maxx;
-	
+
 	byte		*colormap;			// [RH] Support multiple colormaps
 	fixed_t		xscale, yscale;		// [RH] Support flat scaling
 	angle_t		angle;				// [RH] Support flat rotation

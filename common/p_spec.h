@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -429,6 +429,8 @@ typedef struct
 void	P_ChangeSwitchTexture (line_t *line, int useAgain);
 
 void	P_InitSwitchList ();
+
+void	P_ProcessSwitchDef ();
 
 bool	P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
@@ -972,7 +974,7 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag);
 //
 // P_TELEPT
 //
-BOOL EV_Teleport (int tid, int side, AActor *thing);
+BOOL EV_Teleport (int tid, int tag, int side, AActor *thing);
 BOOL EV_LineTeleport (line_t *line, int side, AActor *thing);
 BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing);
 BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,

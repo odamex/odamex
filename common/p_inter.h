@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@ BOOL P_GiveWeapon(player_s*, weapontype_t, BOOL);
 BOOL P_GiveArmor(player_s*, int);
 void P_GiveCard(player_s*, card_t);
 BOOL P_GivePower(player_s*, int);
-
+void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 
 #endif
 

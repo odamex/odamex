@@ -27,6 +27,7 @@ const char* vote_type_cmd[] = {
 	"???",
 	"kick",
 	"forcespec",
+	"forcestart",
 	"randcaps",
 	"randpickup",
 	"map",

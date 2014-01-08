@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,6 +27,7 @@
 
 #include "doomtype.h"
 #include "doomstat.h"
+#include "d_main.h"
 #include "d_player.h"
 #include "p_local.h"
 #include "sv_main.h"
@@ -37,8 +38,6 @@
 #include "md5.h"
 #include "p_ctf.h"
 
-std::vector<std::string> wadnames, wadhashes;
-extern std::vector<std::string> patchfiles;
 static buf_t ml_message(MAX_UDP_PACKET);
 
 EXTERN_CVAR (sv_scorelimit) // [CG] Should this go below in //bond ?
@@ -97,7 +96,7 @@ static std::vector<token_t> connect_tokens;
 //
 DWORD SV_NewToken()
 {
-	QWORD now = I_GetTime();
+	QWORD now = I_MSTime() * TICRATE / 1000;
 
 	token_t token;
 	token.id = rand()*time(0);
@@ -124,7 +123,7 @@ DWORD SV_NewToken()
 //
 bool SV_IsValidToken(DWORD token)
 {
-	QWORD now = I_GetTime();
+	QWORD now = I_MSTime() * TICRATE / 1000;
 
 	for(size_t i = 0; i < connect_tokens.size(); i++)
 	{
@@ -173,13 +172,13 @@ void SV_SendServerInfo()
 
 	MSG_WriteString(&ml_message, level.mapname);
 
-	size_t numwads = wadnames.size();
+	size_t numwads = wadfiles.size();
 	if(numwads > 0xff)numwads = 0xff;
 
 	MSG_WriteByte(&ml_message, numwads - 1);
 
 	for (i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, wadnames[i].c_str());
+		MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
 
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM));
 	MSG_WriteByte(&ml_message, sv_skill.asInt());
@@ -190,7 +189,7 @@ void SV_SendServerInfo()
 	{
 		if (players[i].ingame())
 		{
-			MSG_WriteString(&ml_message, players[i].userinfo.netname);
+			MSG_WriteString(&ml_message, players[i].userinfo.netname.c_str());
 			MSG_WriteShort(&ml_message, players[i].fragcount);
 			MSG_WriteLong(&ml_message, players[i].ping);
 
@@ -283,7 +282,7 @@ void SV_SendServerInfo()
     MSG_WriteByte(&ml_message, patchfiles.size());
     
     for (size_t i = 0; i < patchfiles.size(); ++i)
-        MSG_WriteString(&ml_message, patchfiles[i].c_str());
+        MSG_WriteString(&ml_message, D_CleanseFileName(patchfiles[i]).c_str());
 
 	NET_SendPacket(ml_message, net_from);
 }

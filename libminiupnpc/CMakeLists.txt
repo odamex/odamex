@@ -1,8 +1,8 @@
 cmake_minimum_required (VERSION 2.6)
 
 project (miniupnpc C)
-set (MINIUPNPC_VERSION 1.5)
-set (MINIUPNPC_API_VERSION 8)
+set (MINIUPNPC_VERSION 1.7)
+set (MINIUPNPC_API_VERSION 9)
 
 if (NOT CMAKE_BUILD_TYPE)
   if (WIN32)
@@ -30,6 +30,9 @@ endif (NO_GETADDRINFO)
 
 if (NOT WIN32)
   add_definitions (-DMINIUPNPC_SET_SOCKET_TIMEOUT)
+if (NOT APPLE)
+  add_definitions (-D_BSD_SOURCE -D_POSIX_C_SOURCE=1)
+endif (NOT APPLE)
 else (NOT WIN32)
   add_definitions (-D_WIN32_WINNT=0x0501) # XP or higher for getnameinfo and friends
 endif (NOT WIN32)
@@ -61,8 +64,9 @@ if (CMAKE_COMPILER_IS_GNUC)
   endif (NOT CONFIGURED)
 endif ()
 
-configure_file (${CMAKE_SOURCE_DIR}/miniupnpcstrings.h.cmake ${CMAKE_BINARY_DIR}/miniupnpcstrings.h)
-include_directories (${CMAKE_BINARY_DIR})
+# [AM] Use PROJECT_*_DIR instead of CMAKE_*_DIR so it works as a subproject
+configure_file (${PROJECT_SOURCE_DIR}/miniupnpcstrings.h.cmake ${PROJECT_BINARY_DIR}/miniupnpcstrings.h)
+include_directories (${PROJECT_BINARY_DIR})
 
 set (MINIUPNPC_SOURCES
   igd_desc_parse.c
@@ -76,6 +80,7 @@ set (MINIUPNPC_SOURCES
   upnperrors.c
   connecthostport.c
   portlistingparse.c
+  receivedata.c
 )
 
 if (NOT WIN32 AND NOT CMAKE_SYSTEM_NAME STREQUAL "AmigaOS")
@@ -90,9 +95,10 @@ if (WIN32)
 endif (WIN32)
 
 if (WIN32)
-  find_library (WINSOCK2_LIBRARY NAMES ws2_32 WS2_32 Ws2_32)
-  find_library (IPHLPAPI_LIBRARY NAMES iphlpapi)
-  set (LDLIBS ${WINSOCK2_LIBRARY} ${IPHLPAPI_LIBRARY} ${LDLIBS})
+  # [AM] Unnecessary.  Plus it causes link errors with MinGW.
+  #find_library (WINSOCK2_LIBRARY NAMES ws2_32 WS2_32 Ws2_32)
+  #find_library (IPHLPAPI_LIBRARY NAMES iphlpapi)
+  set (LDLIBS ws2_32 iphlpapi ${LDLIBS})
 #elseif (CMAKE_SYSTEM_NAME STREQUAL "Solaris")
 #  find_library (SOCKET_LIBRARY NAMES socket)
 #  find_library (NSL_LIBRARY NAMES nsl)
@@ -136,36 +142,39 @@ if (UPNPC_BUILD_TESTS)
   add_executable (testigddescparse testigddescparse.c
                                    igd_desc_parse.c minixml.c miniupnpc.c miniwget.c minissdpc.c
                                    upnpcommands.c upnpreplyparse.c minisoap.c connecthostport.c
-                                   portlistingparse.c
+                                   portlistingparse.c receivedata.c
   )
   target_link_libraries (testigddescparse ${LDLIBS})
 
   add_executable (testminiwget testminiwget.c
                                miniwget.c miniupnpc.c minisoap.c upnpcommands.c minissdpc.c
                                upnpreplyparse.c minixml.c igd_desc_parse.c connecthostport.c
-                               portlistingparse.c
+                               portlistingparse.c receivedata.c
   )
   target_link_libraries (testminiwget ${LDLIBS})
 
 # set (UPNPC_INSTALL_TARGETS ${UPNPC_INSTALL_TARGETS} testminixml minixmlvalid testupnpreplyparse testigddescparse testminiwget)
 endif (UPNPC_BUILD_TESTS)
 
-
-install (TARGETS ${UPNPC_INSTALL_TARGETS}
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib${LIB_SUFFIX}
-  ARCHIVE DESTINATION lib${LIB_SUFFIX}
-)
-install (FILES
-	miniupnpc.h
-  miniwget.h
-  upnpcommands.h
-  igd_desc_parse.h
-  upnpreplyparse.h
-  upnperrors.h
-  declspec.h
-  DESTINATION include/miniupnpc
-)
+# [AM] We don't want to install any libraries, we just need them to build Odamex.
+option (UPNPC_INSTALL "Install libraries" OFF)
+if (UPNPC_INSTALL)
+  install (TARGETS ${UPNPC_INSTALL_TARGETS}
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib${LIB_SUFFIX}
+    ARCHIVE DESTINATION lib${LIB_SUFFIX}
+  )
+  install (FILES
+    miniupnpc.h
+    miniwget.h
+    upnpcommands.h
+    igd_desc_parse.h
+    upnpreplyparse.h
+    upnperrors.h
+    declspec.h
+    DESTINATION include/miniupnpc
+  )
+endif()
 
 set (CONFIGURED YES CACHE INTERNAL "")
 

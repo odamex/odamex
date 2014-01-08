@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,6 +42,7 @@
 #include "c_console.h"
 #include "hu_stuff.h"
 #include "v_palette.h"
+#include "gi.h"
 
 void WI_unloadData(void);
 
@@ -508,9 +509,9 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 		right = left + c[i]->width();
 		bottom = top + c[i]->height();
 
-		if (left >= 0 && 
-            right < screen->width && 
-            top >= 0 && 
+		if (left >= 0 &&
+            right < screen->width &&
+            top >= 0 &&
             bottom < screen->height)
 		{
 			fits = true;
@@ -539,7 +540,7 @@ void WI_initAnimatedBack (void)
 	int i;
 	anim_t *a;
 
-	if (gamemode == commercial || wbs->epsd > 2)
+	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
 		return;
 
 	for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
@@ -563,7 +564,7 @@ void WI_updateAnimatedBack (void)
 	int i;
 	anim_t *a;
 
-	if (gamemode == commercial || wbs->epsd > 2)
+	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
 		return;
 
 	for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
@@ -615,7 +616,7 @@ void WI_drawAnimatedBack (void)
 	int i;
 	anim_t *a;
 
-	if (gamemode != commercial && wbs->epsd <= 2)
+	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2)
 	{
 		background->Lock ();
 		for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
@@ -733,7 +734,7 @@ void WI_drawTime (int t, int x, int y)
 void WI_End (void)
 {
 	WI_unloadData();
-	
+
 	if(background)
 	{
 		I_FreeScreen(background);
@@ -794,7 +795,7 @@ void WI_drawShowNextLoc (void)
 	// draw animated background
 	WI_drawAnimatedBack ();
 
-	if (gamemode != commercial)
+	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
 		if (wbs->epsd > 2)
 		{
@@ -849,7 +850,7 @@ void WI_initNetgameStats (void)
 	ng_state = 1;
 
 	cnt_pause = TICRATE;
-	
+
 	cnt_kills_c.clear();
 	cnt_items_c.clear();
 	cnt_secret_c.clear();
@@ -869,7 +870,7 @@ void WI_initNetgameStats (void)
 	}
 
 	dofrags = !!dofrags;
-	
+
 	WI_initAnimatedBack();
 }
 
@@ -921,7 +922,7 @@ void WI_updateNetgameStats (void)
 			else
 				stillticking = true;
 		}
-		
+
 		if (!stillticking)
 		{
 			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
@@ -971,7 +972,7 @@ void WI_updateNetgameStats (void)
 			else
 				stillticking = true;
 		}
-		
+
 		if (!stillticking)
 		{
 			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
@@ -997,7 +998,7 @@ void WI_updateNetgameStats (void)
 			else
 				stillticking = true;
 		}
-		
+
 		if (!stillticking)
 		{
 			S_Sound (CHAN_INTERFACE, "player/male/death1", 1, ATTN_NONE);
@@ -1009,7 +1010,7 @@ void WI_updateNetgameStats (void)
 		if (acceleratestage)
 		{
 			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
-			if ( gamemode == commercial )
+			if ( (gameinfo.flags & GI_MAPxx) )
 				WI_initNoState();
 			else
 				WI_initShowNextLoc();
@@ -1031,7 +1032,7 @@ void WI_drawNetgameStats(void)
 	short pwidth = percent->width();
 
 	// draw animated background
-	WI_drawAnimatedBack(); 
+	WI_drawAnimatedBack();
 
 	WI_drawLF();
 
@@ -1041,7 +1042,7 @@ void WI_drawNetgameStats(void)
 	screen->DrawPatchClean (items, NG_STATSX+2*NG_SPACINGX-items->width(), NG_STATSY);
 
 	screen->DrawPatchClean (scrt, NG_STATSX+3*NG_SPACINGX-scrt->width(), NG_STATSY);
-	
+
 	if (dofrags)
 		screen->DrawPatchClean (frags, NG_STATSX+4*NG_SPACINGX-frags->width(), NG_STATSY);
 
@@ -1182,7 +1183,7 @@ void WI_updateStats(void)
 	{
 	    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
 
-	    if (gamemode == commercial)
+	    if ((gameinfo.flags & GI_MAPxx))
 		WI_initNoState();
 	    else
 		WI_initShowNextLoc();
@@ -1220,7 +1221,7 @@ void WI_drawStats (void)
     screen->DrawPatchClean(timepatch, SP_TIMEX, SP_TIMEY);
     WI_drawTime(cnt_time, 160 - SP_TIMEX, SP_TIMEY);
 
-	if (gamemode == commercial || wbs->epsd < 3)
+	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd < 3)
     {
     	screen->DrawPatchClean(par, SP_TIMEX + 160, SP_TIMEY);
     	WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
@@ -1232,15 +1233,15 @@ void WI_checkForAccelerate(void)
 {
 	if(!serverside)
 		return;
-	
+
     // check for button presses to skip delays
     for (size_t i = 0; i < players.size() ; i++)
     {
 		if (players[i].ingame())
 		{
 			player_t *player = &players[i];
-			
-			if (player->cmd.ucmd.buttons & BT_ATTACK)
+
+			if (player->cmd.buttons & BT_ATTACK)
 			{
 				if (!player->attackdown)
 					acceleratestage = 1;
@@ -1248,7 +1249,7 @@ void WI_checkForAccelerate(void)
 			}
 			else
 				player->attackdown = false;
-			if (player->cmd.ucmd.buttons & BT_USE)
+			if (player->cmd.buttons & BT_USE)
 			{
 				if (!player->usedown)
 					acceleratestage = 1;
@@ -1269,14 +1270,14 @@ void WI_Ticker (void)
 	if (bcnt == 1)
 	{
 		// intermission music
-		if (gamemode == commercial)
+		if ((gameinfo.flags & GI_MAPxx))
 			S_ChangeMusic ("d_dm2int", true);
 		else
 			S_ChangeMusic ("d_inter", true);
 	}
 
     WI_checkForAccelerate();
-	
+
 	switch (state)
 	{
 		case StatCount:
@@ -1333,8 +1334,8 @@ void WI_loadData (void)
 	anim_t *a;
 	patch_t *bg;
 
-	if ((gamemode == commercial) ||
-		(gamemode == retail && wbs->epsd >= 3))
+	if ((gameinfo.flags & GI_MAPxx) ||
+		((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
 		strcpy (name, "INTERPIC");
 	else
 		sprintf (name, "WIMAP%d", wbs->epsd);
@@ -1367,7 +1368,7 @@ void WI_loadData (void)
 		}
 	}
 
-	if (gamemode != commercial)
+	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
 		// you are here
 		yah[0] = W_CachePatch ("WIURH0", PU_STATIC);
@@ -1428,16 +1429,16 @@ void WI_loadData (void)
 
 	// "items"
     items = W_CachePatch ("WIOSTI", PU_STATIC);
-    
+
     // "scrt"
     scrt = W_CachePatch ("WIOSTS", PU_STATIC);
-    
+
 	// "secret"
     secret = W_CachePatch ("WISCRT2", PU_STATIC);
-    
+
 	// "frgs"
-	frags = (patch_t *)W_CacheLumpName ("WIFRGS", PU_STATIC);	 
-	
+	frags = (patch_t *)W_CachePatch ("WIFRGS", PU_STATIC);
+
 	// "time"
     timepatch = W_CachePatch ("WITIME", PU_STATIC);
 
@@ -1448,13 +1449,13 @@ void WI_loadData (void)
     par = W_CachePatch ("WIPAR", PU_STATIC);
 
 	// "total"
-	total = (patch_t *)W_CacheLumpName ("WIMSTT", PU_STATIC);	
+	total = (patch_t *)W_CachePatch ("WIMSTT", PU_STATIC);
 
 	// your face
-	star = (patch_t *)W_CacheLumpName ("STFST01", PU_STATIC);
+	star = (patch_t *)W_CachePatch ("STFST01", PU_STATIC);
 
 	// dead face
-	bstar = (patch_t *)W_CacheLumpName("STFDEAD0", PU_STATIC);
+	bstar = (patch_t *)W_CachePatch("STFDEAD0", PU_STATIC);
 
 	p = W_CachePatch ("STPBANY", PU_STATIC);
 
@@ -1462,7 +1463,7 @@ void WI_loadData (void)
 	for (i = 0; i < 4; i++) {
 		sprintf(name, "STPB%d", i);
 		faceclassic[i] = W_CachePatch(name, PU_STATIC);
-	}	
+	}
 }
 
 void WI_unloadData (void)
@@ -1481,7 +1482,7 @@ void WI_unloadData (void)
 		}
 	}
 
-	if (gamemode != commercial)
+	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
 		Z_ChangeTag (yah[0], PU_CACHE);
 		Z_ChangeTag (yah[1], PU_CACHE);
@@ -1514,7 +1515,7 @@ void WI_unloadData (void)
     Z_ChangeTag(colon, PU_CACHE);
 	Z_ChangeTag(kills, PU_CACHE);
 	Z_ChangeTag(secret, PU_CACHE);
-	Z_ChangeTag(frags, PU_CACHE);	
+	Z_ChangeTag(frags, PU_CACHE);
 	Z_ChangeTag(items, PU_CACHE);
     Z_ChangeTag(finished, PU_CACHE);
     Z_ChangeTag(entering, PU_CACHE);
@@ -1527,7 +1528,7 @@ void WI_unloadData (void)
     Z_ChangeTag(p, PU_CACHE);
 
 	for (i=0 ; i<4 ; i++)
-		Z_ChangeTag(faceclassic[i], PU_CACHE);    
+		Z_ChangeTag(faceclassic[i], PU_CACHE);
 }
 
 void WI_Drawer (void)

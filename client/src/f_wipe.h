@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,9 +29,10 @@
 //						 SCREEN WIPE PACKAGE
 //
 
-int wipe_StartScreen (void);
-int wipe_EndScreen (void);
-int wipe_ScreenWipe (int ticks);
+void Wipe_Stop();
+void Wipe_Start();
+bool Wipe_Ticker();
+void Wipe_Drawer();
 
 #endif
 

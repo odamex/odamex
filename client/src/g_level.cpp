@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,7 +32,6 @@
 #include "d_event.h"
 #include "d_main.h"
 #include "doomstat.h"
-#include "d_protocol.h"
 #include "f_finale.h"
 #include "g_level.h"
 #include "g_game.h"
@@ -71,8 +70,6 @@
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 
-extern int timingdemo;
-
 extern int shotclock;
 
 EXTERN_CVAR(sv_fastmonsters)
@@ -81,13 +78,16 @@ EXTERN_CVAR(sv_gravity)
 EXTERN_CVAR(sv_aircontrol)
 
 // Start time for timing demos
-int starttime;
+uint64_t starttime;
 
 // ACS variables with world scope
 int ACS_WorldVars[NUM_WORLDVARS];
 
 // ACS variables with global scope
 int ACS_GlobalVars[NUM_GLOBALVARS];
+
+// [AM] Stores the reset snapshot
+FLZOMemFile	*reset_snapshot = NULL;
 
 extern bool r_underwater;
 BOOL savegamerestore;
@@ -107,6 +107,7 @@ static char d_mapname[9];
 
 void G_DeferedInitNew (char *mapname)
 {
+	G_CleanupDemo();
 	strncpy (d_mapname, mapname, 8);
 	gameaction = ga_newgame;
 }
@@ -114,8 +115,6 @@ void G_DeferedInitNew (char *mapname)
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
-	std::vector<std::string> wads, patch_files, hashes;
-
 	// [Russell] print out some useful info
 	if (argc == 1)
 	{
@@ -136,31 +135,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 
 	C_HideConsole();
 
-    // add our iwad if it is one
-    // [ML] 7/26/2010: otherwise reload the currently-loaded iwad
-    if (W_IsIWAD(argv[1]))
-        wads.push_back(argv[1]);
-    else
-        wads.push_back(wadfiles[1].c_str());
-
-    // check whether they are wads or patch files
-	for (QWORD i = 1; i < argc; i++)
-	{
-		std::string ext;
-
-		if (M_ExtractFileExtension(argv[i], ext))
-		{
-		    // don't allow subsequent iwads to be loaded
-		    if ((ext == "wad") && !W_IsIWAD(argv[i]))
-                wads.push_back(argv[i]);
-            else if (ext == "deh" || ext == "bex")
-                patch_files.push_back(argv[i]);
-		}
-	}
-
-    hashes.resize(wads.size());
-
-	D_DoomWadReboot(wads, patch_files, hashes);
+	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
+	G_LoadWad(str);
 
 	D_StartTitle ();
 	CL_QuitNetGame();
@@ -220,7 +196,7 @@ void G_InitNew (const char *mapname)
 	// [RH] Mark all levels as not visited
 	if (!savegamerestore)
 	{
-		for (i = 0; i < numwadlevelinfos; i++)
+		for (i = 0; i < wadlevelinfos.size(); i++)
 			wadlevelinfos[i].flags &= ~LEVEL_VISITED;
 
 		for (i = 0; LevelInfos[i].mapname[0]; i++)
@@ -303,7 +279,7 @@ void G_InitNew (const char *mapname)
 	shotclock = 0;
 
 	D_SetupUserInfo();
-
+	
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
 }
@@ -348,7 +324,7 @@ void G_ExitLevel (int position, int drawscores)
 void G_SecretExitLevel (int position, int drawscores)
 {
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	if ( (gamemode == commercial)
+	if ( (gameinfo.flags & GI_MAPxx)
 		 && (W_CheckNumForName("map31")<0))
 		secretexit = false;
 	else
@@ -495,6 +471,8 @@ void G_DoLoadLevel (int position)
 	else
 		lastposition = position;
 
+	cvar_t::UnlatchCVars();
+
 	G_InitLevelLocals ();
 
     Printf_Bold ("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
@@ -504,10 +482,11 @@ void G_DoLoadLevel (int position)
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;
 
+	if(gamestate != GS_DEMOSCREEN && ConsoleState == c_down)
+		C_HideConsole();
+
 	gamestate = GS_LEVEL;
 
-	if(ConsoleState == c_down)
-		C_HideConsole();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
@@ -534,6 +513,11 @@ void G_DoLoadLevel (int position)
 	{
 		if (players[i].ingame() && players[i].playerstate == PST_DEAD)
 			players[i].playerstate = PST_REBORN;
+
+		// [AM] If sv_keepkeys is on, players might still be carrying keys, so
+		//      make sure they're gone.
+		for (size_t j = 0; j < NUMCARDS; j++)
+			players[i].cards[j] = false;
 
 		players[i].fragcount = 0;
 		players[i].itemcount = 0;
@@ -612,16 +596,18 @@ void G_DoLoadLevel (int position)
 	mousex = mousey = 0;
 	sendpause = sendsave = paused = sendcenterview = false;
 
-	if (timingdemo) {
+	if (timingdemo)
+	{
 		static BOOL firstTime = true;
 
-		if (firstTime) {
-			starttime = I_GetTimePolled ();
+		if (firstTime)
+		{
+			starttime = I_MSTime();
 			firstTime = false;
 		}
 	}
 
-	level.starttime = I_GetTime ();
+	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
 

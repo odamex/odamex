@@ -95,11 +95,14 @@ class dlgMain : public wxFrame, wxThreadHelper
         void OnOpenReportBug(wxCommandEvent &event);
 		void OnAbout(wxCommandEvent& event);
 		
+		void OnTextSearch(wxCommandEvent& event);
+
 		void OnQuickLaunch(wxCommandEvent &event);
 		void OnLaunch(wxCommandEvent &event);
 		void OnRefreshAll(wxCommandEvent &event);
 		void OnGetList(wxCommandEvent &event);
 		void OnRefreshServer(wxCommandEvent& event);
+		void OnShowServerFilter(wxCommandEvent &event);
 		
 		void OnServerListClick(wxListEvent& event);
 		void OnServerListDoubleClick(wxListEvent& event);
@@ -113,8 +116,6 @@ class dlgMain : public wxFrame, wxThreadHelper
 		void SetupToolbar();
 
 		wxInt32 FindServer(wxString);
-		wxInt32 FindServerInList(wxString);
-		wxInt32 GetSelectedServerListIndex();
 		wxInt32 GetSelectedServerArrayIndex();
 
 		_oda_iav_err_t IsAddressValid(wxString, wxString &, long &);
@@ -130,6 +131,9 @@ class dlgMain : public wxFrame, wxThreadHelper
         dlgServers *server_dlg;
         dlgAbout *AboutDialog;
         frmOdaGet *OdaGet;
+        
+        wxPanel *m_PnlServerFilter;
+        wxTextCtrl *m_SrchCtrlGlobal;
         
 		wxInt32 TotalPlayers;
         wxInt32 QueriedServers;

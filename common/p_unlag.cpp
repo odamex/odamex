@@ -4,7 +4,7 @@
 // $Id: p_unlag.cpp $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,7 +36,7 @@
 
 #include "doomdef.h"
 #include "doomstat.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "r_main.h"
 #include "p_unlag.h"
 #include "p_local.h"
@@ -48,6 +48,7 @@ void SV_SendDestroyActor(AActor *mo);
 #endif	// _UNLAG_DEBUG_
 
 EXTERN_CVAR(sv_unlag)
+EXTERN_CVAR(sv_maxunlagtime)
 
 Unlag::SectorHistoryRecord::SectorHistoryRecord()
 	:	sector(NULL), history_size(0),
@@ -177,6 +178,10 @@ void Unlag::reconcilePlayerPositions(byte shooter_id, size_t ticsago)
 			dest_x = player_history[i].history_x[cur];
 			dest_y = player_history[i].history_y[cur];
 			dest_z = player_history[i].history_z[cur];
+
+			player_history[i].offset_x = player_history[i].backup_x - dest_x;
+			player_history[i].offset_y = player_history[i].backup_y - dest_y;
+			player_history[i].offset_z = player_history[i].backup_z - dest_z;
 
 			if (player_history[i].history_size < ticsago)
 			{
@@ -394,9 +399,6 @@ void Unlag::unregisterPlayer(byte player_id)
 	if (!Unlag::enabled())
 		return;
 
-	if (!validplayer(idplayer(player_id)))
-		return;
-
 	size_t history_index = player_id_map[player_id];
 	if (history_index >= player_history.size())
 		return;
@@ -504,7 +506,7 @@ void Unlag::reconcile(byte shooter_id)
 				gametic & 0xFF, shooter_id, lag);
 	#endif	// _UNLAG_DEBUG_
 
-	if (lag > 0 && lag <= Unlag::MAX_HISTORY_TICS) 
+	if (lag > 0 && lag < Unlag::MAX_HISTORY_TICS) 
 	{
 		reconcileSectorPositions(lag);
 		reconcilePlayerPositions(shooter_id, lag);
@@ -553,11 +555,15 @@ void Unlag::setRoundtripDelay(byte player_id, byte svgametic)
 {
 	if (!Unlag::enabled())
 		return;
-	
+
+	size_t maxdelay = TICRATE * sv_maxunlagtime;
+	if (maxdelay > Unlag::MAX_HISTORY_TICS)
+		maxdelay = Unlag::MAX_HISTORY_TICS;
+
 	size_t delay = ((gametic & 0xFF) + 256 - svgametic) & 0xFF;
 	
 	size_t player_index = player_id_map[player_id];
-	player_history[player_index].current_lag = delay;
+	player_history[player_index].current_lag = MIN(delay, maxdelay);
 	
 	#ifdef _UNLAG_DEBUG_
 	DPrintf("Unlag (%03d): received gametic %d from player %d, lag = %d\n",
@@ -572,25 +578,52 @@ void Unlag::setRoundtripDelay(byte player_id, byte svgametic)
 // Changes the x, y, z parameters to reflect how much a player was moved
 // during reconciliation.
 
-void Unlag::getReconciliationOffset(	byte shooter_id, byte target_id,
+void Unlag::getReconciliationOffset(	byte target_id,
 			   	 			   			fixed_t &x, fixed_t &y, fixed_t &z)
 {  
-	if (!reconciled)	// reconciled will only be true if sv_unlag is 1)
+	x = y = z = 0;
+
+	if (!reconciled)	// reconciled will only be true if sv_unlag is 1
 		return;
 
 	size_t target_index  = player_id_map[target_id];
-	size_t shooter_index = player_id_map[shooter_id];
 
-	// how many tics was the target reconciled?
-	size_t ticsago = player_history[shooter_index].current_lag;
-    size_t cur = (gametic - ticsago) % Unlag::MAX_HISTORY_TICS;
 	// calculate how far the target was moved during reconciliation
-	x = player_history[target_index].backup_x 
-		- player_history[target_index].history_x[cur];
-	y = player_history[target_index].backup_y 
-		- player_history[target_index].history_y[cur];
-	z =	player_history[target_index].backup_z 
-		- player_history[target_index].history_z[cur];
+	x = player_history[target_index].offset_x;
+	y = player_history[target_index].offset_y;
+	z = player_history[target_index].offset_z;
+}
+
+
+//
+// Unlag::getCurrentPlayerPosition
+//
+// Changes the x, y, z parameters to the position of a player that
+// was saved prior to reconciliation.
+//
+void Unlag::getCurrentPlayerPosition(	byte player_id,
+										fixed_t &x, fixed_t &y, fixed_t &z)
+{
+	x = y = z = 0;
+
+	size_t cur = player_id_map[player_id];
+	player_t* player = player_history[cur].player;
+
+	if (!player || !player->mo || player->spectator)
+		return;
+
+	if (Unlag::enabled() && reconciled)
+	{
+		x = player_history[cur].backup_x;
+		y = player_history[cur].backup_y;
+		z = player_history[cur].backup_z;
+	}
+	else
+	{
+		x = player->mo->x;
+		y = player->mo->y;
+		z = player->mo->z;
+	}
 }
 
 

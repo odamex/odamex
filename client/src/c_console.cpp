@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,6 +32,7 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
+#include "i_input.h"
 #include "hu_stuff.h"
 #include "i_system.h"
 #include "i_video.h"
@@ -60,8 +61,6 @@ static BOOL TabbedLast;		// Last key pressed was tab
 
 static DCanvas *conback;
 
-extern int KeyRepeatRate, KeyRepeatDelay;
-
 extern int		gametic;
 extern BOOL		automapactive;	// in AM_map.c
 extern BOOL		advancedemo;
@@ -76,8 +75,6 @@ int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
 char		VersionString[8];
 
-event_t		RepeatEvent;		// always type ev_keydown
-int			RepeatCountdown;
 BOOL		KeysShifted;
 BOOL		KeysCtrl;
 
@@ -668,29 +665,15 @@ void C_Ticker (void)
 
 	if (ConsoleState != c_up)
 	{
-		// Handle repeating keys
-		switch (ScrollState)
+		if (ScrollState == SCROLLUP)
 		{
-			case SCROLLUP:
-				if (RowAdjust < ConRows - SkipRows - ConBottom/8)
-					RowAdjust++;
-				break;
-
-			case SCROLLDN:
-				if (RowAdjust)
-					RowAdjust--;
-				break;
-
-			default:
-				if (RepeatCountdown)
-				{
-					if (--RepeatCountdown == 0)
-					{
-						RepeatCountdown = KeyRepeatRate;
-						C_HandleKey (&RepeatEvent, CmdLine, 255);
-					}
-				}
-				break;
+			if (RowAdjust < ConRows - SkipRows - ConBottom/8)
+				RowAdjust++;
+		}
+		else if (ScrollState == SCROLLDN)
+		{
+			if (RowAdjust)
+				RowAdjust--;
 		}
 
 		if (ConsoleState == c_falling)
@@ -810,7 +793,7 @@ void C_DrawConsole (void)
 
 		visheight = ConBottom;
 
-		if(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+		if(gamestate == GS_LEVEL || gamestate == GS_DEMOSCREEN || gamestate == GS_INTERMISSION)
 		{
 			screen->Dim(0, 0, screen->width, visheight);
 		}
@@ -924,7 +907,7 @@ void C_FullConsole (void)
 		S_Start ();
  		SN_StopAllSequences ();
 		V_SetBlend (0,0,0,0);
-		I_PauseMouse ();
+		I_EnableKeyRepeat();
 	} else
 		C_AdjustBottom ();
 }
@@ -933,13 +916,13 @@ void C_ToggleConsole (void)
 {
 	if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull))
 	{
-		if (gamestate == GS_DEMOSCREEN || demoplayback)
+		if (gamestate == GS_CONNECTING)
 			ConsoleState = c_fallfull;
 		else
 			ConsoleState = c_falling;
 		HistPos = NULL;
 		TabbedLast = false;
-		I_PauseMouse ();
+		I_EnableKeyRepeat();
 	}
 	else if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP
             && gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
@@ -949,7 +932,7 @@ void C_ToggleConsole (void)
 		else
 			ConsoleState = c_rising;
 		C_FlushDisplay ();
-		I_ResumeMouse ();
+		I_DisableKeyRepeat();
 	}
 }
 
@@ -963,7 +946,9 @@ void C_HideConsole (void)
 		ConBottom = 0;
 		HistPos = NULL;
 		if (!menuactive)
-			I_ResumeMouse ();
+		{
+			I_DisableKeyRepeat();
+		}
 	}
 }
 
@@ -1270,7 +1255,8 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			// Close console, clear command line, but if we're in the
 			// fullscreen console mode, there's nothing to fall back on
 			// if it's closed.
-			if (gamestate == GS_FULLCONSOLE || gamestate == GS_CONNECTING || gamestate == GS_DOWNLOAD)
+			if (gamestate == GS_FULLCONSOLE || gamestate == GS_CONNECTING 
+                || gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTED)
 			{
 				C_HideConsole();
 
@@ -1382,9 +1368,6 @@ BOOL C_Responder (event_t *ev)
 
 	if (ev->type == ev_keyup)
 	{
-		if (ev->data1 == RepeatEvent.data1)
-			RepeatCountdown = 0;
-
 		switch (ev->data1)
 		{
 #ifdef _XBOX
@@ -1407,38 +1390,6 @@ BOOL C_Responder (event_t *ev)
 	}
 	else if (ev->type == ev_keydown)
 	{
-		// Okay, fine. Most keys don't repeat
-		switch (ev->data1)
-		{
-		case KEY_RIGHTARROW:
-		case KEY_LEFTARROW:
-		case KEY_UPARROW:
-		case KEY_DOWNARROW:
-		case KEY_SPACE:
-		case KEY_BACKSPACE:
-		case KEY_DEL:
-			RepeatCountdown = KeyRepeatDelay;
-			break;
-		default:
-			RepeatCountdown = 0;
-//			RepeatCountdown = KeyRepeatDelay; // denis - all keys repeat in console [Toke] Repeating keys caused some problems
-			break;
-		}
-
-		/*
-		if (ev->data1 == KEY_PGUP ||
-			ev->data1 == KEY_PGDN ||
-			ev->data1 == KEY_RSHIFT ||
-			ev->data1 == KEY_TAB ||
-			ev->data1 == KEY_ENTER ||
-			ev->data1 == KEY_ESCAPE ||
-			ev->data2 == '`')
-			RepeatCountdown = 0;
-		else
-		// Others do.
-			RepeatCountdown = KeyRepeatDelay;
-			*/
-		RepeatEvent = *ev;
 		return C_HandleKey (ev, CmdLine, 255);
 	}
 
@@ -1476,8 +1427,8 @@ BEGIN_COMMAND (echo)
 {
 	if (argc > 1)
 	{
-		std::string str = BuildString (argc - 1, (const char **)(argv + 1));
-		Printf (PRINT_HIGH, "%s\n", str.c_str());
+		std::string str = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		Printf(PRINT_HIGH, "%s\n", str.c_str());
 	}
 }
 END_COMMAND (echo)
@@ -1562,6 +1513,83 @@ void C_DrawMid (void)
 		{
 			V_FreeBrokenLines (MidMsg);
 			MidMsg = NULL;
+		}
+	}
+}
+
+static brokenlines_t *GameMsg = NULL;
+static int GameTicker = 0, GameColor = CR_GREY, GameLines;
+
+// [AM] This is literally the laziest excuse of a copy-paste job I have ever
+//      done, but I really want CTF messages in time for 0.6.2.  Please replace
+//      me eventually.  The two statics above, the two functions below, and
+//      any direct calls to these two functions are all you need to remove.
+void C_GMidPrint(const char* msg, int color, int msgtime)
+{
+	unsigned int i;
+
+	if (!msgtime)
+		msgtime = con_midtime.asInt();
+
+	if (GameMsg)
+		V_FreeBrokenLines(GameMsg);
+
+	if (msg)
+	{
+		// [Russell] - convert textual "\n" into the binary representation for
+		// line breaking
+		std::string str = msg;
+
+		for (size_t pos = str.find("\\n");pos != std::string::npos;pos = str.find("\\n", pos))
+		{
+			str[pos] = '\n';
+			str.erase(pos + 1, 1);
+		}
+
+		char *newmsg = strdup(str.c_str());
+
+		if ((GameMsg = V_BreakLines(screen->width / V_TextScaleXAmount(), (byte *)newmsg)) )
+		{
+			GameTicker = (int)(msgtime * TICRATE) + gametic;
+
+			for (i = 0;GameMsg[i].width != -1;i++)
+				;
+
+			GameLines = i;
+		}
+
+		GameColor = color;
+		free(newmsg);
+	}
+	else
+	{
+		GameMsg = NULL;
+		GameColor = CR_GREY;
+	}
+}
+
+void C_DrawGMid()
+{
+	if (GameMsg)
+	{
+		int i, line, x, y, xscale, yscale;
+
+		xscale = V_TextScaleXAmount();
+		yscale = V_TextScaleYAmount();
+
+		y = 8 * yscale;
+		x = screen->width >> 1;
+		for (i = 0, line = (ST_Y * 2) / 8 - GameLines * 4 * yscale;i < GameLines; i++, line += y)
+		{
+			screen->DrawTextStretched(GameColor,
+			                          x - (GameMsg[i].width >> 1) * xscale,
+			                          line, (byte *)GameMsg[i].string, xscale, yscale);
+		}
+
+		if (gametic >= GameTicker)
+		{
+			V_FreeBrokenLines(GameMsg);
+			GameMsg = NULL;
 		}
 	}
 }

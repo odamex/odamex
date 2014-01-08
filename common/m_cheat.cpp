@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -62,8 +62,8 @@ int cht_CheckCheat (cheatseq_t *cht, char key)
 
 	if (*cht->p == 0)
 		*(cht->p++) = key;
-	else if
-		(cheat_xlate_table[(unsigned char)key] == *cht->p) cht->p++;
+	else if (cheat_xlate_table[(unsigned char)tolower(key)] == *cht->p)
+		cht->p++;
 	else
 		cht->p = cht->sequence;
 
@@ -244,7 +244,7 @@ void cht_DoCheat (player_t *player, int cheat)
 	if (player == &consoleplayer())
 		Printf (PRINT_HIGH, "%s\n", msg);
 	else
-		Printf (PRINT_HIGH, "%s is a cheater: %s\n", player->userinfo.netname, msg);
+		Printf (PRINT_HIGH, "%s is a cheater: %s\n", player->userinfo.netname.c_str(), msg);
 }
 
 void cht_Give (player_t *player, const char *name)
@@ -254,7 +254,7 @@ void cht_Give (player_t *player, const char *name)
 	gitem_t *it;
 
 	if (player != &consoleplayer())
-		Printf (PRINT_HIGH, "%s is a cheater: give %s\n", player->userinfo.netname, name);
+		Printf (PRINT_HIGH, "%s is a cheater: give %s\n", player->userinfo.netname.c_str(), name);
 
 	if (stricmp (name, "all") == 0)
 		giveall = true;

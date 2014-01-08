@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "doomstat.h"
 #include "dthinker.h"
 #include "z_zone.h"
 #include "stats.h"
@@ -47,11 +48,26 @@ void DThinker::Serialize (FArchive &arc)
 	// constructor handles them for us.
 }
 
-void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
+void DThinker::SerializeAll (FArchive &arc, bool hubLoad, bool noStorePlayers)
 {
 	DThinker *thinker;
-
-	if (arc.IsStoring ())
+	if (arc.IsStoring () && noStorePlayers)
+	{
+		thinker = FirstThinker;
+		while (thinker)
+		{
+			// Don't store player mobjs.
+			if (!(thinker->IsKindOf(RUNTIME_CLASS(AActor)) &&
+			    static_cast<AActor *>(thinker)->type == MT_PLAYER))
+			{
+				arc << (BYTE)1;
+				arc << thinker;
+			}
+			thinker = thinker->m_Next;
+		}
+		arc << (BYTE)0;
+	}
+	else if (arc.IsStoring ())
 	{
 		thinker = FirstThinker;
 		while (thinker)
@@ -64,7 +80,7 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 	}
 	else
 	{
-		if (hubLoad)
+		if (hubLoad || noStorePlayers)
 			DestroyMostThinkers ();
 		else
 			DestroyAllThinkers ();

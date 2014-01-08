@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,6 +29,7 @@
 #include "d_main.h"
 #include "i_system.h"
 #include "i_video.h"
+#include "i_input.h"
 #include "z_zone.h"
 #include "v_video.h"
 #include "w_wad.h"
@@ -47,9 +48,11 @@
 #include "r_sky.h"
 #include "cl_main.h"
 #include "c_bind.h"
+#include "c_level.h"
 
 #include "gi.h"
 #include "m_memio.h"
+#include "m_fileio.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -124,6 +127,7 @@ oldmenu_t *currentMenu;
 //
 void M_NewGame(int choice);
 void M_Episode(int choice);
+void M_Expansion(int choice);
 void M_ChooseSkill(int choice);
 void M_LoadGame(int choice);
 void M_SaveGame(int choice);
@@ -177,7 +181,6 @@ static void M_SlidePlayerRed (int choice);
 static void M_SlidePlayerGreen (int choice);
 static void M_SlidePlayerBlue (int choice);
 static void M_ChangeGender (int choice);
-static void M_ChangeSkin (int choice);
 static void M_ChangeAutoAim (int choice);
 bool M_DemoNoPlay;
 
@@ -275,6 +278,32 @@ oldmenu_t EpiDef =
 };
 
 //
+// EXPANSION SELECT (DOOM2 BFG)
+//
+enum expansions_t
+{
+	hoe,
+	nrftl,
+	exp_end
+} expansions_e;
+
+oldmenuitem_t ExpansionMenu[]=
+{
+	{1,"M_EPI1", M_Expansion,'h'},
+	{1,"M_EPI2", M_Expansion,'n'},
+};
+
+oldmenu_t ExpDef =
+{
+	exp_end,	 		// # of menu items
+	ExpansionMenu,		// oldmenuitem_t ->
+	M_DrawEpisode,		// drawing routine ->
+	48,63,				// x,y
+	hoe 				// lastOn
+};
+
+
+//
 // NEW GAME
 //
 enum newgame_t
@@ -318,7 +347,6 @@ enum psetup_t
 	playergreen,
 	playerblue,
 	playersex,
-	playerskin,
 	playeraim,
 	psetup_end
 } psetup_e;
@@ -331,7 +359,6 @@ oldmenuitem_t PlayerSetupMenu[] =
 	{ 2,"", M_SlidePlayerGreen, 'G' },
 	{ 2,"", M_SlidePlayerBlue, 'B' },
 	{ 2,"", M_ChangeGender, 'E' },
-	{ 2,"", M_ChangeSkin, 'S' },
 	{ 2,"", M_ChangeAutoAim, 'A' }
 };
 
@@ -577,27 +604,6 @@ BEGIN_COMMAND (menu_player)
 }
 END_COMMAND (menu_player)
 
-BEGIN_COMMAND (bumpgamma)
-{
-    // F11
-	// [RH] Gamma correction tables are now generated
-	// on the fly for *any* gamma level.
-	// Q: What are reasonable limits to use here?
-
-	float newgamma = gammalevel + 1;
-
-	if (newgamma > 5.0)
-		newgamma = 1.0;
-
-	gammalevel.Set (newgamma);
-
-	if (gammalevel.value() == 1.0)
-        Printf (PRINT_HIGH, "Gamma correction off\n");
-    else
-        Printf (PRINT_HIGH, "Gamma correction level %g\n", gammalevel.value() - 1);
-}
-END_COMMAND (bumpgamma)
-
 /*
 void M_LoadSaveResponse(int choice)
 {
@@ -619,7 +625,6 @@ void M_LoadGame (int choice)
 void M_ReadSaveStrings(void)
 {
 	FILE *handle;
-	int count;
 	int i;
 
 	for (i = 0; i < load_end; i++)
@@ -636,7 +641,7 @@ void M_ReadSaveStrings(void)
 		}
 		else
 		{
-			count = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
 			fclose (handle);
 			LoadMenu[i].status = 1;
 		}
@@ -651,7 +656,7 @@ void M_DrawLoad (void)
 {
 	int i;
 
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("M_LOADG",PU_CACHE), 72, 28);
+	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_LOADG"), 72, 28);
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
@@ -702,7 +707,7 @@ void M_DrawSave(void)
 {
 	int i;
 
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_SAVEG",PU_CACHE), 72, 28);
+	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SAVEG"), 72, 28);
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
@@ -940,8 +945,8 @@ void M_DrawMainMenu (void)
 
 void M_DrawNewGame(void)
 {
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_NEWG",PU_CACHE), 96, 14);
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_SKILL",PU_CACHE), 54, 38);
+	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_NEWG"), 96, 14);
+	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SKILL"), 54, 38);
 }
 
 void M_NewGame(int choice)
@@ -953,10 +958,21 @@ void M_NewGame(int choice)
 	}
 */
 	if (gameinfo.flags & GI_MAPxx)
-		M_SetupNextMenu(&NewDef);
+    {
+        if (gamemode == commercial_bfg)
+        {
+            M_SetupNextMenu(&ExpDef);
+        }
+        else
+        {
+            M_SetupNextMenu(&NewDef);
+        }
+    }
 	else if (gamemode == retail_chex)			// [ML] Don't show the episode selection in chex mode
-		M_SetupNextMenu(&NewDef);
-	else if (gameinfo.flags & GI_MENUHACK_RETAIL)
+    {
+        M_SetupNextMenu(&NewDef);
+    }
+    else if (gamemode == retail || gamemode == retail_bfg)
 	{
 	    EpiDef.numitems = ep_end;
 	    M_SetupNextMenu(&EpiDef);
@@ -977,7 +993,7 @@ int 	epi;
 
 void M_DrawEpisode(void)
 {
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_EPISOD",PU_CACHE), 54, 38);
+	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_EPISOD"), 54, 38);
 }
 
 void M_VerifyNightmare(int ch)
@@ -995,8 +1011,36 @@ void M_StartGame(int choice)
 	sv_skill.Set ((float)(choice+1));
 	sv_gametype = GM_COOP;
 
-	G_DeferedInitNew (CalcMapName (epi+1, 1));
-	M_ClearMenus ();
+    if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
+    {
+        std::string str = "nerve.wad";
+
+        if (epi)
+        {
+            // Load No Rest for The Living Externally
+            epi = 0;
+            G_LoadWad(str);
+        }
+        else
+        {
+            // Check for nerve.wad, if it's loaded re-load with just iwad (DOOM 2 BFG)
+            for (unsigned int i = 2; i < wadfiles.size(); i++)
+            {
+                if (iequals(str, M_ExtractFileName(wadfiles[i])))
+                {
+                    G_LoadWad(wadfiles[1]);
+                }
+            }
+
+            G_DeferedInitNew (CalcMapName (epi+1, 1));
+        }
+    }
+    else
+    {
+        G_DeferedInitNew (CalcMapName (epi+1, 1));
+    }
+
+    M_ClearMenus ();
 }
 
 void M_ChooseSkill(int choice)
@@ -1024,23 +1068,30 @@ void M_Episode (int choice)
 	M_SetupNextMenu(&NewDef);
 }
 
+void M_Expansion (int choice)
+{
+	epi = choice;
+	M_SetupNextMenu(&NewDef);
+}
+
+
 //
 // Read This Menus
 // Had a "quick hack to fix romero bug"
 //
 void M_DrawReadThis1 (void)
 {
-	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[0], PU_CACHE), 0, 0);
+	patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
+	screen->DrawPatchFullScreen(p);
 }
-
-
 
 //
 // Read This Menus - optional second page.
 //
 void M_DrawReadThis2 (void)
 {
-	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[1], PU_CACHE), 0, 0);
+	patch_t *p = W_CachePatch(gameinfo.info.infoPage[1]);
+	screen->DrawPatchFullScreen(p);
 }
 
 //
@@ -1048,7 +1099,8 @@ void M_DrawReadThis2 (void)
 //
 void M_DrawReadThis3 (void)
 {
-	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[2], PU_CACHE), 0, 0);
+	patch_t *p = W_CachePatch(gameinfo.info.infoPage[2]);
+	screen->DrawPatchFullScreen(p);
 }
 
 //
@@ -1118,7 +1170,7 @@ void M_QuitResponse(int ch)
 
     call_terms();
 
-	exit (0);
+	exit(EXIT_SUCCESS);
 }
 
 void M_QuitDOOM (int choice)
@@ -1147,7 +1199,6 @@ static int PlayerTics;
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_color)
-EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_autoaim)
 
@@ -1359,7 +1410,6 @@ static void M_PlayerSetupDrawer (void)
 				break;
 
 			case 4:
-			default:
 				for (b = 0; b < FireScreen->height; b++)
 				{
 					byte *to = screen->buffer + y * screen->pitch + x;
@@ -1379,14 +1429,36 @@ static void M_PlayerSetupDrawer (void)
 					}
 				}
 				break;
+
+				case 5:
+				default:
+					for (b = 0; b < FireScreen->height; b++)
+					{
+						byte *to = screen->buffer + y * screen->pitch + x;
+						from = FireScreen->buffer + b * FireScreen->pitch;
+						y += CleanYfac;
+
+						for (a = 0; a < FireScreen->width; a++, to += 5, from++)
+						{
+							int c;
+							for (c = CleanYfac; c; c--)
+							{
+								*(to + pitch*c) = FireRemap[*from];
+								*(to + pitch*c + 1) = FireRemap[*from];
+								*(to + pitch*c + 2) = FireRemap[*from];
+								*(to + pitch*c + 3) = FireRemap[*from];
+								*(to + pitch*c + 4) = FireRemap[*from];
+							}
+						}
+					}
+                break;
 			}
 			FireScreen->Unlock ();
 		}
 	}
 	{
-		unsigned skin = R_FindSkin(cl_skin.cstring());
-		spriteframe_t *sprframe =
-			&sprites[skins[skin].sprite].spriteframes[PlayerState->frame & FF_FRAMEMASK];
+		int spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
+		spriteframe_t* sprframe = &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
 
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
@@ -1431,23 +1503,13 @@ static void M_PlayerSetupDrawer (void)
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*5, genders[gender]);
 	}
 
-	// Draw skin setting
-	{
-		if (sv_gametype != GM_CTF) // [Toke - CTF] Dont allow skin selection if in CTF or Teamplay mode
-		{
-			int x = V_StringWidth ("Skin") + 8 + PSetupDef.x;
-			screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Skin");
-			screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6, cl_skin.cstring());
-		}
-	}
-
 	// Draw autoaim setting
 	{
 		int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
 		float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Autoaim");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*7,
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Autoaim");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6,
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
@@ -1496,18 +1558,6 @@ static void M_ChangeGender (int choice)
 		gender = (gender == 2) ? 0 : gender + 1;
 
 	cl_gender = genders[gender];
-}
-
-static void M_ChangeSkin (int choice) // [Toke - Skins]
-{
-	unsigned skin = R_FindSkin(cl_skin.cstring());
-
-	if (!choice)
-		skin = (skin == 0) ? numskins - 1 : skin - 1;
-	else
-		skin = (skin + 1 < numskins) ? skin + 1 : 0;
-
-	cl_skin = skins[skin].name;
 }
 
 static void M_ChangeAutoAim (int choice)
@@ -1809,10 +1859,7 @@ bool M_Responder (event_t* ev)
 			break;
 
 		  default:
-			ch = toupper(ev->data3);	// [RH] Use user keymap
-			if (ch != 32)
-				if (ch-HU_FONTSTART < 0 || ch-HU_FONTSTART >= HU_FONTSIZE)
-					break;
+			ch = ev->data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
 				V_StringWidth(savegamestrings[saveSlot]) <
@@ -1891,12 +1938,7 @@ bool M_Responder (event_t* ev)
 			if (itemOn+1 > currentMenu->numitems-1)
 				itemOn = 0;
 			else
-			{
-				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if (sv_gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 5)
-					itemOn = itemOn + 2;
-				else	itemOn++;
-			}
+				itemOn++;
 			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
@@ -1909,12 +1951,7 @@ bool M_Responder (event_t* ev)
 			if (!itemOn)
 				itemOn = currentMenu->numitems-1;
 			else
-			{
-				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if (sv_gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 7)
-					itemOn = itemOn - 2;
-				else itemOn--;
-			}
+				itemOn--;
 			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
@@ -1971,7 +2008,7 @@ bool M_Responder (event_t* ev)
 		return true;
 
 	  default:
-		if (ch2) {
+		if (ch2 && (ch < KEY_JOY1)) {
 			for (i = itemOn+1;i < currentMenu->numitems;i++)
 				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
 				{
@@ -2015,7 +2052,7 @@ void M_StartControlPanel (void)
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
-	I_PauseMouse ();				// [RH] Give the mouse back in windowed modes.
+	I_EnableKeyRepeat();
 }
 
 
@@ -2098,7 +2135,9 @@ void M_ClearMenus (void)
 	drawSkull = true;
 	M_DemoNoPlay = false;
 	if (gamestate != GS_FULLCONSOLE)
-		I_ResumeMouse ();	// [RH] Recapture the mouse in windowed modes.
+	{
+		I_DisableKeyRepeat();
+	}
 }
 
 
@@ -2123,7 +2162,6 @@ void M_PopMenuStack (void)
 {
 	M_DemoNoPlay = false;
 	if (MenuStackDepth > 1) {
-		I_PauseMouse ();
 		MenuStackDepth -= 2;
 		if (MenuStack[MenuStackDepth].isNewStyle) {
 			OptionsActive = true;
@@ -2154,15 +2192,9 @@ void M_Ticker (void)
 		whichSkull ^= 1;
 		skullAnimCounter = 8;
 	}
-	if (currentMenu == &PSetupDef)
-	{
-		// [Toke - CTF] skip skins selection
-		if (sv_gametype == GM_CTF)
-			if (itemOn == 6)
-				itemOn = 5;
 
+	if (currentMenu == &PSetupDef)
 		M_PlayerSetupTicker ();
-	}
 }
 
 
@@ -2198,7 +2230,7 @@ void M_Init (void)
 	messageString = NULL;
 	messageLastMenuActive = menuactive;
 
-    if (gamemode == commercial)
+    if (gameinfo.flags & GI_MAPxx)
     {
         // Commercial has no "read this" entry.
         MainDef.numitems = d2_main_end;
@@ -2210,8 +2242,10 @@ void M_Init (void)
 	M_OptInit ();
 
 	// [RH] Build a palette translation table for the fire
+	palette_t *pal = GetDefaultPalette();
+
 	for (i = 0; i < 255; i++)
-		FireRemap[i] = BestColor (DefaultPalette->basecolors, i, 0, 0, DefaultPalette->numcolors);
+		FireRemap[i] = BestColor(pal->basecolors, i, 0, 0, pal->numcolors);
 }
 
 //

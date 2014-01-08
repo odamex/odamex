@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,7 +46,7 @@ sector_t*		frontsector;
 sector_t*		backsector;
 
 // killough 4/7/98: indicates doors closed wrt automap bugfix:
-int				doorclosed;
+bool			doorclosed;
 
 bool			r_fakingunderwater;
 bool			r_underwater;
@@ -94,15 +94,25 @@ typedef struct {
 	short first, last;		// killough
 } cliprange_t;
 
-
-int				MaxSegs;
+// 1/11/98: Lee Killough
+//
+// This fixes many strange venetian blinds crashes, which occurred when a scan
+// line had too many "posts" of alternating non-transparent and transparent
+// regions. Using a doubly-linked list to represent the posts is one way to
+// do it, but it has increased overhead and poor spatial locality, which hurts
+// cache performance on modern machines. Since the maximum number of posts
+// theoretically possible is a function of screen width, a static limit is
+// okay in this case. It used to be 32, which was way too small.
+//
+// This limit was frequently mistaken for the visplane limit in some Doom
+// editing FAQs, where visplanes were said to "double" if a pillar or other
+// object split the view's space into two pieces horizontally. That did not
+// have anything to do with visplanes, but it had everything to do with these
+// clip posts.
 
 // newend is one past the last valid seg
-cliprange_t*	newend;
-cliprange_t		*solidsegs;
-cliprange_t		*lastsolidseg;
-
-
+static cliprange_t *newend;
+static cliprange_t solidsegs[MAXWIDTH / 2 + 2];
 
 //
 // R_ClipSolidWallSegment
@@ -116,24 +126,6 @@ R_ClipSolidWallSegment
   int			last )
 {
 	cliprange_t *next, *start;
-
-	if(newend + 1 >= lastsolidseg)
-	{
-		// denis - out of solidsegs, this would crash vanilla
-		DPrintf("warning: exceeded %d solidsegs\n", MaxSegs);
-		if(MaxSegs >= 1024*1024)
-		{
-			// not that crazy, though
-			I_FatalError("R_ClipSolidWallSegment: refusing to extend solidsegs over %d", MaxSegs);
-		}
-		cliprange_t *old = solidsegs;
-		solidsegs = (cliprange_t *)Malloc (2 * MaxSegs * sizeof(cliprange_t));
-		memcpy(solidsegs, old,  (sizeof(cliprange_t)*MaxSegs));
-		MaxSegs *= 2;
-		lastsolidseg = &solidsegs[MaxSegs];
-		newend = newend - old + solidsegs;
-		M_Free(old);
-	}
 
 	// Find the first range that touches the range
 	//	(adjacent pixels are touching).
@@ -265,44 +257,12 @@ R_ClipPassWallSegment
 //
 void R_ClearClipSegs (void)
 {
-	if (!solidsegs)
-	{
-		MaxSegs = 32;	// [RH] Default. Increased as needed.
-		solidsegs = (cliprange_t *)Malloc (MaxSegs * sizeof(cliprange_t));
-		lastsolidseg = &solidsegs[MaxSegs];
-	}
 	solidsegs[0].first = -0x7fff;	// new short limit --  killough
 	solidsegs[0].last = -1;
 	solidsegs[1].first = viewwidth;
 	solidsegs[1].last = 0x7fff;		// new short limit --  killough
 	newend = solidsegs+2;
 }
-
-// killough 1/18/98 -- This function is used to fix the automap bug which
-// showed lines behind closed doors simply because the door had a dropoff.
-//
-// It assumes that Doom has already ruled out a door being closed because
-// of front-back closure (e.g. front floor is taller than back ceiling).
-
-bool R_DoorClosed()
-{
-	return
-		(backsector->ceilingpic != skyflatnum ||
-		 frontsector->ceilingpic != skyflatnum)
-
-		// if door is closed because back is shut:
-		&& rw_backcz1 <= rw_backfz1 && rw_backcz2 <= rw_backfz2
-
-		// preserve a kind of transparent door/lift special effect:
-		&& rw_backcz1 >= rw_frontcz1 && rw_backcz2 >= rw_frontcz2
-
-		&& ((rw_backcz1 >= rw_frontcz1 && rw_backcz2 >= rw_frontcz2) ||
-			curline->sidedef->toptexture != 0)
-			
-		&& ((rw_backfz1 <= rw_frontfz1 && rw_backfz2 <= rw_frontfz2) ||
-			curline->sidedef->bottomtexture != 0);
-}
-
 
 bool CopyPlaneIfValid (plane_t *dest, const plane_t *source, const plane_t *opp)
 {
@@ -638,26 +598,50 @@ void R_AddLine (seg_t *line)
 	// Single sided line?
 	if (!backsector)
 		goto clipsolid;
+
+	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
+	backsector = R_FakeFlat (backsector, &tempsec, NULL, NULL, true);
 		
 	rw_backcz1 = P_CeilingHeight(line->v1->x, line->v1->y, backsector);
 	rw_backfz1 = P_FloorHeight(line->v1->x, line->v1->y, backsector);
 	rw_backcz2 = P_CeilingHeight(line->v2->x, line->v2->y, backsector);
 	rw_backfz2 = P_FloorHeight(line->v2->x, line->v2->y, backsector);
 
-	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
-	backsector = R_FakeFlat (backsector, &tempsec, NULL, NULL, true);
-
-	doorclosed = 0;		// killough 4/16/98
-
-	// Closed door.
-	if ((rw_backcz1 <= rw_frontfz1 && rw_backfz1 >= rw_frontcz1) ||
-		(rw_backcz2 <= rw_frontfz2 && rw_backfz2 >= rw_frontcz2))
-		goto clipsolid;
-
+	// [SL] Check for closed doors or other scenarios that would make this
+	// line seg solid.
+	//
 	// This fixes the automap floor height bug -- killough 1/18/98:
 	// killough 4/7/98: optimize: save result in doorclosed for use in r_segs.c
-	if ((doorclosed = R_DoorClosed()))
+	if (!(line->linedef->flags & ML_TWOSIDED) ||
+		 (rw_backcz1 <= rw_frontfz1 && rw_backcz2 <= rw_frontfz2) ||
+		 (rw_backfz1 >= rw_frontcz1 && rw_backfz2 >= rw_frontcz2) ||
+
+		// handle a case where the backsector slopes one direction
+		// and the frontsector slopes the opposite:
+		(rw_backcz1 <= rw_frontfz1 && rw_backfz1 >= rw_frontcz1) ||
+		(rw_backcz2 <= rw_frontfz2 && rw_backfz2 >= rw_frontcz2) ||
+
+		// if door is closed because back is shut:
+		((rw_backcz1 <= rw_backfz1 && rw_backcz2 <= rw_backfz2) &&
+		
+		// preserve a kind of transparent door/lift special effect:
+		((rw_backcz1 >= rw_frontcz1 && rw_backcz2 >= rw_frontcz2) ||
+		 line->sidedef->toptexture) &&
+		
+		((rw_backfz1 <= rw_frontfz1 && rw_backfz2 <= rw_frontfz2) ||
+		 line->sidedef->bottomtexture) &&
+
+		// properly render skies (consider door "open" if both ceilings are sky):
+		 (backsector->ceilingpic !=skyflatnum || 
+		  frontsector->ceilingpic!=skyflatnum)))
+	{
+		doorclosed = true;
 		goto clipsolid;
+	}
+	else
+	{
+		doorclosed = false;
+	}
 
 	// Window.
 	if (!P_IdenticalPlanes(&frontsector->ceilingplane, &backsector->ceilingplane) ||

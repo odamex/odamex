@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -406,29 +406,45 @@ static const xlat_t SpecialTranslation[] = {
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 {
-	short special = SHORT(mld->special);
-	short tag = SHORT(mld->tag);
-	short flags = SHORT(mld->flags);
-	bool passthrough;
+	short special = LESHORT(mld->special);
+	short tag = LESHORT(mld->tag);
+	short flags = LESHORT(mld->flags);
+	bool passthrough = (flags & ML_PASSUSE_BOOM);
 	int i;
 	
-	passthrough = (flags & ML_PASSUSE_BOOM);
-	
-	flags = flags & 0x01ff;	// Ignore flags unknown to DOOM
+	flags &= 0x01ff;	// Ignore flags unknown to DOOM
 
 	if (special <= NUM_SPECIALS)
 	{
 		// This is a regular special; translate thru LUT
 		flags = flags | (SpecialTranslation[special].flags << 8);
-		if (passthrough && (GET_SPAC(flags) == SPAC_USE))
-		{
-			flags &= ~ML_SPAC_MASK;
-			flags |= SPAC_USETHROUGH << ML_SPAC_SHIFT;
+		if (passthrough)
+		{	
+			if (GET_SPAC(flags) == SPAC_USE)
+			{
+				flags &= ~ML_SPAC_MASK;
+				flags |= SPAC_USETHROUGH << ML_SPAC_SHIFT;
+			}
+			if (GET_SPAC(flags) == SPAC_CROSS)
+			{
+				flags &= ~ML_SPAC_MASK;
+				flags |= SPAC_CROSSTHROUGH << ML_SPAC_SHIFT;
+			}
+			
+			// TODO: what to do with gun-activated lines with passthrough?
 		}
+
 		ld->special = SpecialTranslation[special].newspecial;
 		for (i = 0; i < 5; i++)
 			ld->args[i] = SpecialTranslation[special].args[i] == TAG ? tag :
 						  SpecialTranslation[special].args[i];
+	}
+	else if (special == 337)
+	{
+		ld->special = Line_Horizon;
+		ld->flags = flags;
+		ld->id = tag;
+		memset(ld->args, 0, sizeof(ld->args));
 	}
 	else if (special >= 340 && special <= 347)
 	{

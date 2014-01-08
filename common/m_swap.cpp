@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,10 +24,7 @@
 // ONLY for msvc! these make gcc debug builds GARGANTUAN
 // eg: 30mb compared to 13mb!
 #if defined(_MSC_VER)
-#define WIN32_LEAN_AND_MEAN
-#ifndef _XBOX
-#include <windows.h>
-#endif // !_XBOX
+#include "win32inc.h"
 #endif // MSC_VER
 
 #include "version.h"
@@ -38,19 +35,19 @@
 #ifdef __BIG_ENDIAN__
 
 // Swap 16bit, that is, MSB and LSB byte.
-// No masking with 0xFF should be necessary. 
-short SHORT (short x)
+// No masking with 0xFF should be necessary.
+short LESHORT (short x)
 {
 	return (short)((((unsigned short)x)>>8) | (((unsigned short)x)<<8));
 }
 
-unsigned short SHORT (unsigned short x)
+unsigned short LESHORT (unsigned short x)
 {
 	return (unsigned short)((x>>8) | (x<<8));
 }
 
 // Swapping 32bit.
-unsigned int LONG (unsigned int x)
+unsigned int LELONG (unsigned int x)
 {
 	return (unsigned int)(
 		(x>>24)
@@ -59,7 +56,7 @@ unsigned int LONG (unsigned int x)
 		| (x<<24));
 }
 
-int LONG (int x)
+int LELONG (int x)
 {
 	return (int)(
 		(((unsigned int)x)>>24)
@@ -68,7 +65,27 @@ int LONG (int x)
 		| (((unsigned int)x)<<24));
 }
 
+short BESHORT(short x)
+{
+	return x;
+}
+
+long BELONG(long x)
+{
+	return x;
+}
+
 #else
+
+short LESHORT(short x)
+{
+	return x;
+}
+
+long LELONG(long x)
+{
+	return x;
+}
 
 short BESHORT (short x)
 {

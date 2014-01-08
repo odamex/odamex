@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <cstring>
 #include <stddef.h>
 
 #include "doomtype.h"
@@ -61,7 +61,7 @@ struct DehInfo deh = {
 	  2,	// .FAAC
 	200,	// .KFAArmor
 	  2,	// .KFAAC
-	 40,	// .BFGCells
+	 40,	// .BFGCells (No longer used)
 	  0,	// .Infight
 };
 
@@ -351,6 +351,9 @@ void A_SpawnSound(AActor*);
 void A_SpawnFly(AActor*);
 void A_BrainExplode(AActor*);
 void A_MonsterRail(AActor*);
+void A_Die(AActor*);
+void A_Detonate(AActor*);
+void A_Mushroom(AActor*);
 
 struct CodePtr {
 	const char *name;
@@ -438,6 +441,9 @@ static const struct CodePtr CodePtrs[] = {
 	{ "SpawnSound",		A_SpawnSound },
 	{ "SpawnFly",		A_SpawnFly },
 	{ "BrainExplode",	A_BrainExplode },
+	{ "Die",	        A_Die },
+	{ "Detonate",	    A_Detonate },
+    { "Mushroom",	    A_Mushroom },
 	{ NULL, NULL }
 };
 
@@ -1219,12 +1225,15 @@ static int PatchAmmo (int ammoNum)
 static int PatchWeapon (int weapNum)
 {
 	static const struct Key keys[] = {
-		{ "Ammo type",			myoffsetof(weaponinfo_t,ammo) },
+		{ "Ammo type",			myoffsetof(weaponinfo_t,ammotype) },
 		{ "Deselect frame",		myoffsetof(weaponinfo_t,upstate) },
 		{ "Select frame",		myoffsetof(weaponinfo_t,downstate) },
 		{ "Bobbing frame",		myoffsetof(weaponinfo_t,readystate) },
 		{ "Shooting frame",		myoffsetof(weaponinfo_t,atkstate) },
 		{ "Firing frame",		myoffsetof(weaponinfo_t,flashstate) },
+		{ "Ammo use",			myoffsetof(weaponinfo_t,ammouse) },		// ZDoom 1.23b33
+		{ "Ammo per shot",		myoffsetof(weaponinfo_t,ammouse) },		// Eternity
+		{ "Min ammo",			myoffsetof(weaponinfo_t,minammo) },		// ZDoom 1.23b33
 		{ NULL, 0}
 	};
 	int result;
@@ -1347,8 +1356,18 @@ static int PatchMisc (int dummy)
 	DPrintf ("Misc\n");
 
 	while ((result = GetLine()) == 1)
+	{
 		if (HandleKey (keys, &deh, Line1, atoi (Line2)))
 			DPrintf ("Unknown miscellaneous info %s.\n", Line2);
+		
+		// [SL] manually check if BFG Cells/Shot is being changed and
+		// update weaponinfo accordingly. BFGCells should be considered depricated.
+		if (Line1 != NULL && stricmp(Line1, "BFG Cells/Shot") == 0)
+		{
+			weaponinfo[wp_bfg].ammouse = deh.BFGCells;
+			weaponinfo[wp_bfg].minammo = deh.BFGCells;
+		}
+	}
 
 	if ( (item = FindItem ("Basic Armor")) )
 		item->offset = deh.GreenAC;

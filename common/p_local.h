@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -106,7 +106,7 @@ extern int				iquetail;
 void 	P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move);
 void	P_RespawnSpecials (void);
 
-bool	P_SetMobjState (AActor* mobj, statenum_t state);
+bool	P_SetMobjState (AActor* mobj, statenum_t state, bool cl_update = false);
 
 void	P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z);
 void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage);
@@ -114,6 +114,7 @@ AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 void	P_SpawnPlayerMissile (AActor* source, mobjtype_t type);
 
 void	P_RailAttack (AActor *source, int damage, int offset);	// [RH] Shoot a railgun
+bool	P_HitFloor (AActor *thing);
 //
 // [RH] P_THINGS
 //
@@ -166,6 +167,12 @@ extern TArray<intercept_t> intercepts;
 typedef BOOL (*traverser_t) (intercept_t *in);
 
 fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
+fixed_t P_AproxDistance2 (fixed_t *pos_array, fixed_t x, fixed_t y);
+fixed_t P_AproxDistance2 (AActor *mo, fixed_t x, fixed_t y);
+fixed_t P_AproxDistance2 (AActor *a, AActor *b);
+
+bool P_ActorInFOV(AActor* origin, AActor* mo , float f, fixed_t dist);
+
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
 void	P_MakeDivline (const line_t *li, divline_t *dl);
@@ -178,7 +185,6 @@ extern fixed_t			openrange;
 extern fixed_t			lowfloor;
 
 void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=MINFIXED, fixed_t refy=0);
-void P_LineOpeningIntercept(const line_t *line, const intercept_t *in);
 
 BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*) );
 BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*), AActor *start=NULL);
@@ -215,9 +221,7 @@ extern AActor			*BlockingMobj;
 extern line_t			*BlockingLine;		// Used only by P_Move
 											// This is not necessarily a *blocking* line
 
-//Added by MC: tmsectortype
 extern fixed_t			tmdropoffz; //Needed in b_move.c
-extern sector_t			*tmsector;
 extern sector_t			*tmfloorsector;
 
 extern	line_t* 		ceilingline;
@@ -233,8 +237,7 @@ bool	P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);
 BOOL	P_TryMove (AActor* thing, fixed_t x, fixed_t y, bool dropoff, bool onfloor = false);
 BOOL	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);
-bool	P_CheckSight (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
-bool	P_CheckSight2 (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
+bool	P_CheckSight (const AActor* t1, const AActor* t2);
 void	P_UseLines (player_t* player);
 void	P_ApplyTorque(AActor *mo);
 void	P_CopySector(sector_t *dest, sector_t *src);
@@ -267,15 +270,14 @@ struct v3fixed_t;
 v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg, const v3fixed_t &linedir);
 
 
-// GhostlyDeath -- I put this here
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);
-bool P_CheckSightEdges2(const AActor* t1, const AActor* t2, float radius_boost);
 
 bool	P_ChangeSector (sector_t* sector, bool crunch);
 
 extern	AActor*	linetarget; 	// who got hit (or NULL)
 
 fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance);
+fixed_t P_AutoAimLineAttack(AActor* actor, angle_t& angle, const angle_t spread, const int tracers, fixed_t distance);
 void	P_LineAttack (AActor *t1, angle_t angle, fixed_t distance, fixed_t slope, int damage);
 
 // [RH] Position the chasecam
@@ -283,7 +285,7 @@ void	P_AimCamera (AActor *t1);
 extern	fixed_t CameraX, CameraY, CameraZ;
 
 // [RH] Means of death
-void	P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod);
+void	P_RadiusAttack (AActor *spot, AActor *source, int damage, int distance, bool hurtSelf, int mod);
 
 void	P_DelSeclist(msecnode_t *);							// phares 3/16/98
 void	P_CreateSecNodeList(AActor*,fixed_t,fixed_t);		// phares 3/14/98

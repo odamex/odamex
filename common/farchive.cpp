@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <string.h>
+#include <cstring>
 
 #include "doomtype.h"
 #include "farchive.h"
@@ -46,7 +46,7 @@
 #define SWAP_SIZE(x,y)
 #else
 #define SWAP_WORD(x)		{ x = (((x)<<8) | ((x)>>8)); }
-#define SWAP_DWORD(x)		{ x = (((x)>>24) | (((x)>>8)&0xff00) | ((x)<<8)&0xff0000 | ((x)<<24)); }
+#define SWAP_DWORD(x)		{ x = (((x)>>24) | (((x)>>8)&0xff00) | (((x)<<8)&0xff0000) | ((x)<<24)); }
 // Swap any kind of data based on size - x = pointer to data, y = number of bytes
 #define SWAP_SIZE(x, y)		{ std::reverse((unsigned char*)x, (unsigned char*)x+(size_t)y); }
 
@@ -71,6 +71,7 @@ void FLZOFile::BeEmpty ()
 	m_Buffer = NULL;
 	m_File = NULL;
 	m_NoCompress = false;
+	m_Mode = ENotOpen;
 }
 
 static const char LZOSig[4] = { 'F', 'L', 'Z', 'O' };
@@ -247,7 +248,7 @@ FFile &FLZOFile::Seek (int pos, ESeekPos ofs)
 
 void FLZOFile::Implode ()
 {
-	lzo_uint outlen;
+	lzo_uint outlen = 0;
 	unsigned int len = m_BufferSize;
 	lzo_byte *compressed = NULL;
 	lzo_byte *wrkmem;
@@ -335,7 +336,8 @@ void FLZOFile::Explode ()
 	}
 }
 
-FLZOMemFile::FLZOMemFile ()
+FLZOMemFile::FLZOMemFile () :
+	FLZOFile()
 {
 	m_SourceFromMem = false;
 	m_ImplodedBuffer = NULL;

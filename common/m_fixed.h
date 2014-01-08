@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,8 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_FIXED__
-#define __M_FIXED__
+#ifndef __M_FIXED_H__
+#define __M_FIXED_H__
 
 #include <stdlib.h>
 #include "doomtype.h"
@@ -34,84 +34,258 @@
 #define FRACBITS				16
 #define FRACUNIT				(1<<FRACBITS)
 
-typedef int fixed_t;		// fixed 16.16
-typedef unsigned int dsfixed_t;	// fixedpt used by span drawer
+typedef int fixed_t;				// fixed 16.16
+typedef unsigned int dsfixed_t;		// fixedpt used by span drawer
 
-extern "C" fixed_t FixedMul_ASM				(fixed_t a, fixed_t b);
-extern "C" fixed_t STACK_ARGS FixedDiv_ASM	(fixed_t a, fixed_t b);
-fixed_t FixedMul_C				(fixed_t a, fixed_t b);
-fixed_t FixedDiv_C				(fixed_t a, fixed_t b);
-
-#ifdef ALPHA
-inline fixed_t FixedMul (fixed_t a, fixed_t b)
+//
+// Fixed Point / Floating Point Conversion
+//
+inline float FIXED2FLOAT(fixed_t x)
 {
-    return (fixed_t)(((long)a * (long)b) >> 16);
+	static const float factor = 1.0f / float(FRACUNIT);
+	return x * factor;
 }
 
-inline fixed_t FixedDiv (fixed_t a, fixed_t b)
+inline double FIXED2DOUBLE(fixed_t x)
 {
-    if (abs(a) >> 14 >= abs(b))
-	    return (a^b)<0 ? MININT : MAXINT;
-	return (fixed_t)((((long)a) << 16) / b);
+	static const double factor = 1.0 / double(FRACUNIT);
+	return x * factor;
 }
 
-#else
-
-#ifdef USEASM
-
-#if defined(_MSC_VER)
-
-__inline fixed_t FixedMul (fixed_t a, fixed_t b)
+inline fixed_t FLOAT2FIXED(float x)
 {
-	fixed_t result;
-	__asm {
-		mov		eax,[a]
-		imul	[b]
-		shrd	eax,edx,16
-		mov		[result],eax
-	}
-	return result;
+	return fixed_t(x * float(FRACUNIT));
 }
 
-#if 1
-// Inlining FixedDiv with VC++ generates too many bad optimizations.
-#define FixedDiv(a,b)			FixedDiv_ASM(a,b)
-#else
-__inline fixed_t FixedDiv (fixed_t a, fixed_t b)
+inline fixed_t DOUBLE2FIXED(double x)
 {
-	if (abs(a) >> 14 >= abs(b))
-		return (a^b)<0 ? MININT : MAXINT;
-	else
-	{
-		fixed_t result;
-
-		__asm {
-			mov		eax,[a]
-			mov		edx,[a]
-			sar		edx,16
-			shl		eax,16
-			idiv	[b]
-			mov		[result],eax
-		}
-		return result;
-	}
+	return fixed_t(x * double(FRACUNIT));
 }
-#endif
 
-#else
+inline int FIXED2INT(fixed_t x)
+{
+	return (x + FRACUNIT / 2) / FRACUNIT;
+}
 
-#define FixedMul(a,b)			FixedMul_ASM(a,b)
-#define FixedDiv(a,b)			FixedDiv_ASM(a,b)
+inline fixed_t INT2FIXED(int x)
+{
+	return x << FRACBITS;
+}
 
-#endif
 
-#else // !USEASM
-#define FixedMul(a,b)			FixedMul_C(a,b)
-#define FixedDiv(a,b)			FixedDiv_C(a,b)
-#endif
+//
+// Fixed Point Multiplication for 16.16 precision
+//
+inline static fixed_t FixedMul(fixed_t a, fixed_t b)
+{
+	return (fixed_t)(((int64_t)a * b) >> FRACBITS);
+}
 
-#endif // !ALPHA
+//
+// Fixed Point Division for 16.16 precision
+//
+inline static fixed_t FixedDiv(fixed_t a, fixed_t b)
+{
+	return (abs(a) >> 14) >= abs(b) ? ((a ^ b) >> 31) ^ MAXINT :
+		(fixed_t)(((int64_t)a << FRACBITS) / b);
+}
 
-#endif
+//
+// Fixed-point muliplication for non 16.16 precision
+//
+static inline int32_t FixedMul1(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 1);	}
+
+static inline int32_t FixedMul2(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 2);	}
+
+static inline int32_t FixedMul3(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 3);	}
+
+static inline int32_t FixedMul4(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 4);	}
+
+static inline int32_t FixedMul5(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 5);	}
+
+static inline int32_t FixedMul6(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 6);	}
+
+static inline int32_t FixedMul7(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 7);	}
+
+static inline int32_t FixedMul8(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 8);	}
+
+static inline int32_t FixedMul9(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 9);	}
+
+static inline int32_t FixedMul10(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 10);	}
+
+static inline int32_t FixedMul11(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 11);	}
+
+static inline int32_t FixedMul12(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 12);	}
+
+static inline int32_t FixedMul13(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 13);	}
+
+static inline int32_t FixedMul14(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 14);	}
+
+static inline int32_t FixedMul15(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 15);	}
+
+static inline int32_t FixedMul16(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 16);	}
+
+static inline int32_t FixedMul17(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 17);	}
+
+static inline int32_t FixedMul18(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 18);	}
+
+static inline int32_t FixedMul19(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 19);	}
+
+static inline int32_t FixedMul20(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 20);	}
+
+static inline int32_t FixedMul21(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 21);	}
+
+static inline int32_t FixedMul22(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 22);	}
+
+static inline int32_t FixedMul23(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 23);	}
+
+static inline int32_t FixedMul24(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 24);	}
+
+static inline int32_t FixedMul25(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 25);	}
+
+static inline int32_t FixedMul26(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 26);	}
+
+static inline int32_t FixedMul27(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 27);	}
+
+static inline int32_t FixedMul28(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 28);	}
+
+static inline int32_t FixedMul29(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 29);	}
+
+static inline int32_t FixedMul30(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 30);	}
+
+static inline int32_t FixedMul31(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 31);	}
+
+static inline int32_t FixedMul32(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a * b) >> 32);	}
+
+// Fixed-point division for non 16.16 precision
+static inline int32_t FixedDiv1(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 1) / b);	}
+
+static inline int32_t FixedDiv2(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 2) / b);	}
+
+static inline int32_t FixedDiv3(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 3) / b);	}
+
+static inline int32_t FixedDiv4(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 4) / b);	}
+
+static inline int32_t FixedDiv5(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 5) / b);	}
+
+static inline int32_t FixedDiv6(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 6) / b);	}
+
+static inline int32_t FixedDiv7(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 7) / b);	}
+
+static inline int32_t FixedDiv8(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 8) / b);	}
+
+static inline int32_t FixedDiv9(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 9) / b);	}
+
+static inline int32_t FixedDiv10(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 10) / b);	}
+
+static inline int32_t FixedDiv11(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 11) / b);	}
+
+static inline int32_t FixedDiv12(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 12) / b);	}
+
+static inline int32_t FixedDiv13(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 13) / b);	}
+
+static inline int32_t FixedDiv14(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 14) / b);	}
+
+static inline int32_t FixedDiv15(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 15) / b);	}
+
+static inline int32_t FixedDiv16(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 16) / b);	}
+
+static inline int32_t FixedDiv17(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 17) / b);	}
+
+static inline int32_t FixedDiv18(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 18) / b);	}
+
+static inline int32_t FixedDiv19(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 19) / b);	}
+
+static inline int32_t FixedDiv20(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 20) / b);	}
+
+static inline int32_t FixedDiv21(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 21) / b);	}
+
+static inline int32_t FixedDiv22(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 22) / b);	}
+
+static inline int32_t FixedDiv23(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 23) / b);	}
+
+static inline int32_t FixedDiv24(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 24) / b);	}
+
+static inline int32_t FixedDiv25(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 25) / b);	}
+
+static inline int32_t FixedDiv26(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 26) / b);	}
+
+static inline int32_t FixedDiv27(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 27) / b);	}
+
+static inline int32_t FixedDiv28(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 28) / b);	}
+
+static inline int32_t FixedDiv29(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 29) / b);	}
+
+static inline int32_t FixedDiv30(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 30) / b);	}
+
+static inline int32_t FixedDiv31(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 31) / b);	}
+
+static inline int32_t FixedDiv32(int32_t a, int32_t b)
+{	return (int32_t)(((int64_t)a << 32) / b);	}
+
+#endif	// __M_FIXED_H__
 
 

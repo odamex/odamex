@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
 //
 
 
-#include <string.h>
+#include <cstring>
 #include <stddef.h>
 
 #include "stringtable.h"
@@ -98,9 +98,9 @@ void FStringTable::FreeStandardStrings ()
 void FStringTable::LoadStrings (int lump, int expectedSize, bool enuOnly)
 {
 	BYTE *strData = (BYTE *)W_CacheLumpNum (lump, PU_CACHE);
-	int lumpLen = LONG(((Header *)strData)->FileSize);
-	int nameCount = SHORT(((Header *)strData)->NameCount);
-	int nameLen = SHORT(((Header *)strData)->NameLen);
+	int lumpLen = LELONG(((Header *)strData)->FileSize);
+	int nameCount = LESHORT(((Header *)strData)->NameCount);
+	int nameLen = LESHORT(((Header *)strData)->NameLen);
 
 	int languageStart = sizeof(Header) + nameCount*4 + nameLen;
 	languageStart += (4 - languageStart) & 3;
@@ -184,7 +184,7 @@ int FStringTable::LoadLanguage (DWORD code, bool exactMatch, BYTE *start, BYTE *
 
 	while (start < end)
 	{
-		const DWORD langLen = LONG(*(DWORD *)&start[4]);
+		const DWORD langLen = LELONG(*(DWORD *)&start[4]);
 
 		if (((*(DWORD *)start) | orMask) == code)
 		{
@@ -216,7 +216,7 @@ void FStringTable::DoneLoading (BYTE *start, BYTE *end)
 	while (start < end)
 	{
 		start[3] = 0;
-		start += LONG(*(DWORD *)&start[4]) + 8;
+		start += LELONG(*(DWORD *)&start[4]) + 8;
 		start += (4 - (ptrdiff_t)start) & 3;
 	}
 }
@@ -281,7 +281,7 @@ int FStringTable::SumStringSizes () const
 void FStringTable::LoadNames () const
 {
 	BYTE *lump = (BYTE *)W_CacheLumpNum (LumpNum, PU_CACHE);
-	int nameLen = SHORT(((Header *)lump)->NameLen);
+	int nameLen = LESHORT(((Header *)lump)->NameLen);
 
 	FlushNames ();
 	Names = new BYTE[nameLen + 4*NumStrings];
@@ -314,7 +314,7 @@ int FStringTable::FindString (const char *name) const
 	while (min <= max)
 	{
 		const int mid = (min + max) / 2;
-		const char *const tablename = SHORT(nameOfs[mid*2]) + nameBase;
+		const char *const tablename = LESHORT(nameOfs[mid*2]) + nameBase;
 		const int lex = stricmp (name, tablename);
 		if (lex == 0)
 			return nameOfs[mid*2+1];

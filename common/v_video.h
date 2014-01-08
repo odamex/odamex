@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -37,11 +37,12 @@
 // Needed because we are refering to patches.
 #include "r_data.h"
 
-extern int CleanWidth, CleanHeight, CleanXfac, CleanYfac;
+extern int CleanXfac, CleanYfac;
 
 extern BOOL    gotconback;
 
 extern int DisplayWidth, DisplayHeight, DisplayBits;
+extern int SquareWidth;
 
 //
 // VIDEO
@@ -81,6 +82,13 @@ public:
 	int pitch;
 	inline bool is8bit() const { return bits == 8; };
 
+	// [ML] If this is 320x200 or 640x400, the resolutions
+	// "protected" from aspect ratio correction.
+	inline bool isProtectedRes() const
+	{
+		return (width == 320 && height == 200) || (width == 640 && height == 400);
+	};
+
 	int m_LockCount;
 	palette_t *m_Palette;
 	void *m_Private;
@@ -92,10 +100,14 @@ public:
 	// Draw a linear block of pixels into the view buffer.
 	void DrawBlock (int x, int y, int width, int height, const byte *src) const;
 
-	// Reads a linear block of pixels into the view buffer.
+	// Reads a linear block of pixels from the view buffer.
 	void GetBlock (int x, int y, int width, int height, byte *dest) const;
 
+	// Reads a transposed block of pixels from the view buffer
+	void GetTransposedBlock(int x, int y, int _width, int _height, byte* dest) const;
+
 	// Darken a rectangle of th canvas
+	void Dim (int x, int y, int width, int height, const char* color, float amount) const;
 	void Dim (int x, int y, int width, int height) const;
 
 	// Fill an area with a 64x64 flat texture
@@ -143,6 +155,8 @@ public:
 	inline void DrawPatchIndirect (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
+
+	void DrawPatchFullScreen(const patch_t* patch) const;
 
 	inline void DrawLucentPatch (const patch_t *patch, int x, int y) const;
 	inline void DrawLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
@@ -445,8 +459,6 @@ inline void DCanvas::DrawColoredLucentPatchCleanNoMove (const patch_t *patch, in
 	DrawCNMWrapper (EWrapper_ColoredLucent, patch, x, y);
 }
 
-extern "C" palette_t *DefaultPalette;
-
 // This is the screen updated by I_FinishUpdate.
 extern	DCanvas *screen;
 
@@ -483,13 +495,11 @@ int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 std::string V_GetColorStringByName (const char *name);
 
 
-BOOL V_SetResolution (int width, int height, int bpp);
+bool V_SetResolution (int width, int height, int bpp);
 
-
-#ifdef USEASM
-extern "C" void ASM_PatchPitch (void);
-extern "C" void ASM_PatchColSize (void);
-#endif
+bool V_UsePillarBox();
+bool V_UseLetterBox();
+bool V_UseWidescreen();
 
 #endif // __V_VIDEO_H__
 

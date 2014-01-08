@@ -37,6 +37,8 @@ BEGIN_EVENT_TABLE(LstOdaServerList, wxAdvancedListCtrl)
     EVT_CONTEXT_MENU(LstOdaServerList::OnOpenContextMenu)
 
     EVT_MENU(XRCID("Id_mnuServersCopyAddress"), LstOdaServerList::OnCopyAddress)
+    
+    EVT_WINDOW_CREATE(LstOdaServerList::OnCreateControl)
 END_EVENT_TABLE()
 
 
@@ -49,6 +51,51 @@ static int ImageList_PingGray = -1;
 LstOdaServerList::LstOdaServerList()
 {
      m_mnuPopup = wxXmlResource::Get()->LoadMenu(wxT("Id_mnuServersPopup"));
+}
+
+void LstOdaServerList::OnCreateControl(wxWindowCreateEvent &event)
+{
+    SetupServerListColumns();
+    
+    // Propagate the event to the base class as well
+    event.Skip();
+}
+
+// Finds an index in the server list, via Address
+wxInt32 LstOdaServerList::FindServer(wxString Address)
+{
+    if (!GetItemCount())
+        return -1;
+
+    for (wxInt32 i = 0; i < GetItemCount(); i++)
+    {
+        wxListItem item;
+        item.SetId(i);
+        item.SetColumn(serverlist_field_address);
+        item.SetMask(wxLIST_MASK_TEXT);
+
+        GetItem(item);
+
+        if (item.GetText().IsSameAs(Address))
+            return i;
+    }
+
+    return -1;
+}
+
+// Retrieves the currently selected server in list index form
+wxInt32 LstOdaServerList::GetSelectedServerIndex()
+{
+    wxInt32 i;
+
+    if (!GetItemCount() || !GetSelectedItemCount())
+    {
+        return -1;
+    }
+
+    i = GetFirstSelected();
+
+    return i;
 }
 
 void LstOdaServerList::OnCopyAddress(wxCommandEvent& event)
@@ -68,9 +115,12 @@ void LstOdaServerList::OnCopyAddress(wxCommandEvent& event)
 
     if (wxTheClipboard->Open())
     {
+#ifdef __WXGTK__
+        wxTheClipboard->UsePrimarySelection(true);
+#endif
         wxTheClipboard->SetData( new wxTextDataObject(li.m_text) );
         wxTheClipboard->Close();
-    }   
+    }
 }
 
 void LstOdaServerList::OnOpenContextMenu(wxContextMenuEvent& event)
@@ -282,7 +332,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
     Ping = s.GetPing();
 
     li.m_col = serverlist_field_ping;
-    li.m_text = wxString::Format(_T("%llu"), Ping);
+    li.m_text = wxString::Format(_T("%lu"), (wxInt32)Ping);
 
     SetItem(li);
 
@@ -290,7 +340,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
     // TODO: acquire max players, max clients and spectators from these 2 and
     // create some kind of graphical column maybe
     li.m_col = serverlist_field_players;
-    li.m_text = wxString::Format(_T("%d/%d"),s.Info.Players.size(),s.Info.MaxClients);
+    li.m_text = wxString::Format(_T("%d/%d"),(wxInt32)s.Info.Players.size(),(wxInt32)s.Info.MaxClients);
     
     // Colour the entire text row if there are players
     // TODO: Allow the user to select prefered colours

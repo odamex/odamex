@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,8 +30,6 @@
 #include <string>
 #include <vector>
 
-#define HASH_SIZE	251				// I think this is prime
-
 void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 
 // add commands to the console as if they were typed in
@@ -41,9 +39,12 @@ void AddCommandString (const std::string &cmd, bool onlycvar = false);
 // parse a command string
 const char *ParseString (const char *data);
 
-// build a single string out of multiple strings
-std::string BuildString (size_t argc, const char **argv);
+// combine many arguments into one valid argument.
+std::string C_ArgCombine(size_t argc, const char **argv);
 std::string BuildString (size_t argc, std::vector<std::string> args);
+
+// quote a string
+std::string C_QuoteString(const std::string &argstr);
 
 class DConsoleCommand : public DObject
 {
@@ -92,6 +93,9 @@ public:
 
 	// Write out alias commands to a file for all current aliases.
 	static void C_ArchiveAliases (FILE *f);
+
+	// Destroy all aliases (used on shutdown)
+	static void DestroyAll();
 protected:
 	std::string m_Command;
 	std::string m_CommandParam;

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,6 +24,7 @@
 #include "c_cvars.h"
 #include "s_sound.h"
 #include "i_music.h"
+#include "i_input.h"
 #include "d_netinf.h"
 
 // Automap
@@ -79,7 +80,7 @@ CVAR_FUNC_DECL (msg0color, "6", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABL
 CVAR_FUNC_DECL (msg1color, "5", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (msg2color, "2", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (msg3color, "3", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_FUNC_DECL (msg4color, "3", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (msg4color, "8", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (msgmidcolor, "5", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Intermission
@@ -107,15 +108,15 @@ CVAR (cl_connectalert, "1", "Plays a sound when a player joins", CVARTYPE_BOOL, 
 CVAR (cl_disconnectalert, "1", "Plays a sound when a player quits", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 CVAR (cl_switchweapon, "1", "", CVARTYPE_BOOL, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	// WPSW_ALWAYS
-CVAR (cl_weaponpref1, "5", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref2, "8", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref3, "3", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref4, "2", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref5, "1", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref6, "7", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref7, "4", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref8, "6", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref9, "0", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref_fst,	"0", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref_csw,	"3", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref_pis,	"4", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref_sg,		"5", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref_ssg,	"7", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref_cg,		"6", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref_rl,		"1", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref_pls,	"8", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref_bfg,	"2", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 #ifdef GCONSOLE
 	CVAR_FUNC_DECL (use_joystick, "1", "", CVARTYPE_BOOL, CVAR_ARCHIVE)
@@ -142,14 +143,17 @@ CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_ARCHIVE)
 
 CVAR (show_messages, "1", "", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
+CVAR (mute_spectators, "0", "Mute spectators chat until next disconnect", CVARTYPE_BOOL, 0)
+CVAR (mute_enemies, "0", "Mute enemy players chat until next disconnect", CVARTYPE_BOOL, 0)
+
 // Rate of client updates
 CVAR_FUNC_DECL (rate, "200", "Rate of client updates in multiplayer mode", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Maximum number of clients who can connect to the server
-CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Maximum amount of players who can join the game, others are spectators
-CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Maximum number of players that can be on a team
-CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL (cl_autoaim,	"5000", "", CVARTYPE_INT,		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -159,9 +163,10 @@ CVAR_FUNC_DECL (cl_autoaim,	"5000", "", CVARTYPE_INT,		CVAR_USERINFO | CVAR_ARCH
 CVAR (cl_unlag,				"1", "client opt-in/out for server unlagging", CVARTYPE_BOOL,		CVAR_USERINFO | CVAR_ARCHIVE)
 CVAR_FUNC_DECL (cl_updaterate, "1",	"Update players every N tics", CVARTYPE_BYTE,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (cl_interp,	"1", "Interpolate enemy player positions", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_FUNC_DECL (cl_prednudge,	"0.30", "Smooth out the collisions", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (cl_prednudge,	"0.70", "Smooth out the collisions", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_predictlocalplayer, "1", "Predict local player position", CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (cl_netgraph,				"0", "Show a graph of network related statistics", CVARTYPE_BOOL, CVAR_NULL)
+CVAR (cl_predictweapons, "1", "Draw weapon effects immediately", CVARTYPE_BOOL, CVAR_USERINFO | CVAR_ARCHIVE)
 
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
 	CVAR (cl_name,		"Xbox Player", "", CVARTYPE_STRING,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -170,19 +175,41 @@ CVAR (cl_netgraph,				"0", "Show a graph of network related statistics", CVARTYP
 #endif
 CVAR (cl_color,		"40 cf 00", "", CVARTYPE_STRING,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_gender,	"male", "",	CVARTYPE_STRING,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_skin,		"base", "",	CVARTYPE_STRING,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_team,		"blue", "",	CVARTYPE_STRING,		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (cl_team,	"blue", "",	CVARTYPE_STRING,		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR (chasedemo, "0", "",	CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR (cl_run,		"1", "Always run",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// Always run? // [Toke - Defaults]
+CVAR (cl_run,		"0", "Always run",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// Always run? // [Toke - Defaults]
 
 // Mouse settings
 // --------------
-CVAR (mouse_type,			"0", 	"",	CVARTYPE_BYTE,	CVAR_ARCHIVE)
+
+//
+// C_GetDefaultMouseDriver()
+//
+// Allows the default value for music_driver to change depending on
+// compile-time factors (eg, OS)
+//
+static char *C_GetDefaultMouseDriver()
+{
+	static char str[4];
+
+	int driver_id = SDL_MOUSE_DRIVER;
+
+	#ifdef _WIN32
+	driver_id = RAW_WIN32_MOUSE_DRIVER;
+	#endif
+
+	sprintf(str, "%i", driver_id);
+	return str;
+}
+
+CVAR_FUNC_DECL (mouse_driver, C_GetDefaultMouseDriver(), "Mouse driver backend",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (mouse_type,			"0", 	"",	CVARTYPE_BYTE,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_sensitivity,	"35.0", "",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL (cl_mouselook, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
+CVAR_FUNC_DECL (cl_mouselook, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 CVAR (m_pitch,				"0.25",	"",	CVARTYPE_FLOAT,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (m_yaw,				"1.0",	"",	CVARTYPE_FLOAT,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -196,8 +223,7 @@ CVAR (mouse_threshold,		"0", 	"",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDI
 CVAR (m_filter,				"0",	"Smooth mouse input",	CVARTYPE_STRING, CVAR_ARCHIVE)
 CVAR (dynres_state,			"0", 	"",	CVARTYPE_FLOAT,	CVAR_ARCHIVE)
 CVAR (dynresval,			"1.0",	"",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (displaymouse,			"0",	"Display mouse values",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
-
+CVAR (hud_mousegraph,			"0",	"Display mouse values",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
 
 CVAR (idmypos, "0", "Shows current player position on map",	CVARTYPE_BOOL, CVAR_NULL)
 
@@ -207,10 +233,13 @@ CVAR (hud_crosshairdim, "0", "Crosshair transparency",
       CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (hud_crosshairscale, "0", "Crosshair scaling",
       CVARTYPE_WORD, CVAR_ARCHIVE)
+CVAR_FUNC_DECL (hud_crosshaircolor, "ff 00 00", "Crosshair color",
+                CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (hud_crosshairhealth, "0", "Color of crosshair represents health level",
       CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n// 1: New Odamex HUD",
       CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (hud_gamemsgtype, "2", "Game message type", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (hud_revealsecrets, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (hud_scale, "0", "HUD scaling", CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (hud_scalescoreboard, "0", "Scoreboard scaling", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -224,6 +253,7 @@ CVAR (hud_timer, "1", "Show the HUD timer", CVARTYPE_BOOL,
       CVAR_ARCHIVE)
 CVAR (hud_transparency, "0.5", "HUD transparency",	CVARTYPE_FLOAT,
       CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (hud_heldflag, "1", "Show the held flag border", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                       // A
@@ -255,7 +285,9 @@ CVAR (chatmacro0, "No", "",	CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE
 
 CVAR_FUNC_DECL (snd_sfxvolume, "0.5", "Sound volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)      // Sound volume
 CVAR_FUNC_DECL (snd_musicvolume, "0.5", "Music volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // Music volume
-CVAR_FUNC_DECL (snd_announcervolume, "0.5", "Announcer volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // CTF announcer volume
+CVAR_FUNC_DECL (snd_announcervolume, "1.0", "Announcer volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // CTF announcer volume
+CVAR (snd_voxtype, "2", "Voice announcer type", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (snd_gamesfx, "1", "Game SFX", CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_ARCHIVE)                                         // Stereo switch
 CVAR (snd_samplerate, "22050", "Samplerate",	CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)             // Sample rate
 CVAR (snd_timeout, "0", "",	CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)					// Clean up finished sounds
@@ -275,13 +307,13 @@ END_CUSTOM_CVAR (snd_channels)
 static char *C_GetDefaultMusicSystem()
 {
 	static char str[4];
-	
+
 	MusicSystemType defaultmusicsystem = MS_SDLMIXER;
 	#ifdef OSX
 	defaultmusicsystem = MS_AUDIOUNIT;
 	#endif
 
-	#if defined WIN32 && !defined _XBOX
+	#if defined _WIN32 && !defined _XBOX
 	defaultmusicsystem = MS_PORTMIDI;
 	#endif
 
@@ -305,22 +337,26 @@ CVAR_FUNC_DECL (st_scale, "1", "",	CVARTYPE_BYTE, CVAR_ARCHIVE)
 // Video and Renderer
 // ------------------
 
-// Gamma correction level, 1 - 4
-CVAR_FUNC_DECL (gammalevel, "1", "Gamma correction level, 1 - 4",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Gamma correction level, 1 - 8
+CVAR_FUNC_DECL (gammalevel, "1", "Gamma correction level, 1 - 8",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// ZDoom style gamma correction?
+CVAR_FUNC_DECL (vid_gammatype, "0", "Select between Doom and ZDoom gamma correction",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Type of crosshair, 0 means none
 CVAR_FUNC_DECL (hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Column optimization method
-CVAR (r_columnmethod, "1", "Column optimization method",	CVARTYPE_BYTE, CVAR_CLIENTINFO | CVAR_ARCHIVE)
+CVAR (r_columnmethod, "1", "Column optimization method",	CVARTYPE_BYTE, CVAR_ARCHIVE)
 // Detail level (affects performance)
-CVAR_FUNC_DECL (r_detail, "0", "Detail level (affects performance)",	CVARTYPE_BYTE, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (r_detail, "0", "Detail level (affects performance)",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Draws flashing colors where there is HOM
+CVAR (r_flashhom, "0", "Draws flashing colors where there is HOM", CVARTYPE_BOOL, 0)
 // Disables all texturing of walls
-CVAR (r_drawflat, "0", "Disables all texturing of walls",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
+CVAR (r_drawflat, "0", "Disables all texturing of walls",	CVARTYPE_BOOL, 0)
 // Draw player sprites
-CVAR (r_drawplayersprites, "1", "Draw player sprites",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
+CVAR (r_drawplayersprites, "1", "Draw player sprites",	CVARTYPE_BOOL, 0)
 // Draw particles
-CVAR (r_particles, "1","Draw particles",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
+CVAR (r_particles, "1","Draw particles",	CVARTYPE_BOOL, 0)
 // Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)
-CVAR_FUNC_DECL (r_stretchsky, "2", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (r_stretchsky, "2", "",	CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Invulnerability sphere changes the palette of the sky
 CVAR (r_skypalette, "0", "Invulnerability sphere changes the palette of the sky",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Enemy sprite coloring
@@ -336,41 +372,42 @@ CVAR (r_wipetype, "2", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (r_wipetype, "1", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
 CVAR (r_showendoom, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
+CVAR (r_loadicon, "1", "Display the disk icon when loading data from disk", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 // [ML] Value of red pain intensity shift
 CVAR_FUNC_DECL (r_painintensity, "1", "Value of red pain intensity shift",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // TODO: document
-CVAR (r_viewsize, "0", "",	CVARTYPE_BYTE, CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)
-#ifdef GCONSOLE
-	// Standard SDTV resolution is the default on game consoles
-	CVAR (vid_defwidth, "640", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-	CVAR (vid_defheight, "480", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-#else
-	// Default video dimensions
-	CVAR (vid_defwidth, "320", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-	CVAR (vid_defheight, "200", "",	CVARTYPE_WORD, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-#endif
+CVAR (r_viewsize, "0", "",	CVARTYPE_BYTE, CVAR_NOSET | CVAR_NOENABLEDISABLE)
+// Default video dimensions. [AM] Bumped up from 320x200.
+CVAR (vid_defwidth, "640", "",	CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (vid_defheight, "480", "",	CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Default bitdepth
-CVAR (vid_defbits, "8", "",	CVARTYPE_BYTE, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (vid_defbits, "8", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Use wide field-of-view with widescreen video modes.
+CVAR_FUNC_DECL (vid_widescreen, "0", "Use wide field-of-view with widescreen video modes.", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Force video mode
-CVAR (autoadjust_video_settings, "1", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
-// Frames per second counter
-CVAR (vid_fps, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
+CVAR (vid_autoadjust, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
+// Frames per second on screen display
+CVAR (vid_displayfps, "0", "",	CVARTYPE_BOOL, 0)
+// maximum fps with 0 indicating completely uncapped fps
+CVAR_FUNC_DECL (vid_maxfps, "35", "Maximum framerate (0 indicates unlimited framerate)", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// enable/disable vertical refresh sync (vsync)
+CVAR_FUNC_DECL(vid_vsync, "0", "Enable/Disable vertical refresh sync (vsync)", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Fullscreen mode
 #ifdef GCONSOLE
-	CVAR_FUNC_DECL (vid_fullscreen, "1", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
+	CVAR_FUNC_DECL (vid_fullscreen, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 #else
-	CVAR_FUNC_DECL (vid_fullscreen, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHIVE)
+	CVAR_FUNC_DECL (vid_fullscreen, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 #endif
 // TODO: document
 CVAR_FUNC_DECL (screenblocks, "10", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Older (Doom-style) FPS counter
-CVAR (vid_ticker, "0", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO)
+CVAR (vid_ticker, "0", "",	CVARTYPE_BOOL, 0)
 // Resizes the window by a scale factor
-CVAR_FUNC_DECL (vid_winscale, "1.0", "",	CVARTYPE_FLOAT, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (vid_winscale, "1.0", "",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Overscan
-CVAR_FUNC_DECL (vid_overscan, "1.0", "Overscan",	CVARTYPE_FLOAT, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (vid_overscan, "1.0", "Overscan",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Netdemo format string
 CVAR_FUNC_DECL (cl_netdemoname, "Odamex_%g_%d_%t_%w_%m",
@@ -381,6 +418,8 @@ CVAR_FUNC_DECL (cl_netdemoname, "Odamex_%g_%d_%t_%w_%m",
 CVAR_FUNC_DECL (cl_screenshotname, "Odamex_%g_%d_%t",
 				"Default screenshot name.  Parses the following tokens:\n// %d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// %n: player name\n// %g: gametype\n// %w: WAD file loaded; either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
 				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(cl_showspawns, "0", "Show spawn points as particle fountains", CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_LATCH)
 
 // Record netdemos automatically
 CVAR (cl_autorecord, "0", "Automatically record netdemos", CVARTYPE_BOOL, CVAR_ARCHIVE)

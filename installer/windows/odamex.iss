@@ -3,21 +3,21 @@
 
 [Setup]
 AppName=Odamex
-AppVerName=Odamex 0.6.0
+AppVerName=Odamex 0.6.4
 AppPublisher=Odamex Dev Team
 AppPublisherURL=http://odamex.net
 AppSupportURL=http://odamex.net
 AppUpdatesURL=http://odamex.net
-DefaultDirName={pf}\odamex
+DefaultDirName={userpf}\odamex
 DefaultGroupName=Odamex
 AllowNoIcons=true
 LicenseFile=..\..\LICENSE
 ;InfoBeforeFile=..\..\CHANGES
-OutputBaseFilename=odamex-win32-0.6.0
+OutputBaseFilename=odamex-win32-0.6.4
 Compression=zip
 SolidCompression=true
 VersionInfoProductName=Odamex Win32 Installer
-VersionInfoProductVersion=0.6.0
+VersionInfoProductVersion=0.6.4
 AlwaysShowDirOnReadyPage=true
 ChangesEnvironment=true
 AppID={{2E517BBB-916F-4AB6-80E0-D4A292513F7A}
@@ -25,6 +25,10 @@ PrivilegesRequired=none
 ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
+AppVersion=0.6.4
+EnableDirDoesntExistWarning=true
+DirExistsWarning=no
+VersionInfoVersion=0.6.4
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -45,7 +49,7 @@ Name: base; Description: Base data; Types: full compact custom; Flags: fixed
 Name: client; Description: Odamex Client; Types: full compact custom
 Name: server; Description: Odamex Server; Types: full
 Name: launcher; Description: Odalaunch (Game Launcher); Types: full compact custom
-Name: libs; Description: Libraries (SDL, SDL_Mixer); Types: full compact
+Name: libs; Description: Libraries (SDL 1.2.15, SDL_Mixer 1.2.12); Types: full compact
 
 
 [Files]
@@ -54,7 +58,10 @@ Source: ..\..\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: clie
 Source: ..\..\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server
 Source: ..\..\odasrv.cfg; DestDir: {app}; Flags: ignoreversion; Components: server
 Source: ..\..\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher
+Source: ..\..\config-samples\*; DestDir: {app}; Flags: ignoreversion; Components: server
 Source: ..\..\odamex.wad; DestDir: {app}; Flags: ignoreversion; Components: client server
+Source: ..\..\libgcc_s_dw2-1.dll; DestDir: {app}; Flags: ignoreversion; Components: base
+Source: ..\..\libstdc++-6.dll; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\mingwm10.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher libs
 Source: ..\..\SDL.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\SDL_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
@@ -62,7 +69,7 @@ Source: ..\..\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: li
 Source: ..\..\smpeg.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
-Source: ..\..\mikmod.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
+Source: ..\..\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\CHANGELOG; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\LICENSE; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\MAINTAINERS; DestDir: {app}; Flags: ignoreversion; Components: base
@@ -91,4 +98,8 @@ Type: files; Name: {app}\odamex.out
 Root: HKCR; Subkey: odamex; ValueType: string; ValueData: URL:Odamex Protocol; Flags: uninsdeletekey noerror
 Root: HKCR; Subkey: odamex; ValueType: string; ValueName: Url Protocol; Flags: createvalueifdoesntexist uninsdeletekey noerror
 Root: HKCR; Subkey: odamex\DefaultIcon; ValueData: odamex.exe,1; Flags: createvalueifdoesntexist uninsdeletekey noerror
-Root: HKCR; Subkey: odamex\shell\open\command; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: createvalueifdoesntexist uninsdeletekey; ValueType: string
+Root: HKCR; Subkey: odamex\shell\open\command; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: createvalueifdoesntexist uninsdeletekey noerror; ValueType: string
+Root: HKCR; SubKey: .odd; ValueType: string; ValueData: Odamex Demo; Flags: uninsdeletekey noerror
+Root: HKCR; SubKey: Odamex Demo; ValueType: string; ValueData: Odamex Net Demo; Flags: uninsdeletekey noerror
+Root: HKCR; SubKey: Odamex Demo\Shell\Open\Command; ValueType: string; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletevalue noerror
+Root: HKCR; Subkey: Odamex Demo\DefaultIcon; ValueType: string; ValueData: {app}\odamex.exe,0; Flags: uninsdeletevalue noerror

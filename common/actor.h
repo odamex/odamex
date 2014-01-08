@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -145,7 +145,7 @@ public:
 		int bytenum = id >> 3;
 		int bitnum = id & bytemask;	
 	
-		return (bitfield[bytenum] & (1 << bitnum));
+		return ((bitfield[bytenum] & (1 << bitnum)) != 0);
 	}
 	
 private:
@@ -341,13 +341,19 @@ public:
     fixed_t		y;
     fixed_t		z;
 
+	fixed_t		prevx;
+	fixed_t		prevy;
+	fixed_t		prevz;
+
 	AActor			*snext, **sprev;	// links in sector (if needed)
 
     //More drawing info: to determine current sprite.
     angle_t		angle;	// orientation
+	angle_t		prevangle;
     spritenum_t		sprite;	// used to find patch_t and flip value
     int			frame;	// might be ORed with FF_FULLBRIGHT
-	fixed_t		pitch, roll;
+	fixed_t		pitch;
+	angle_t		prevpitch;
 
 	DWORD			effects;			// [RH] see p_effect.h
 
@@ -377,6 +383,7 @@ public:
     mobjinfo_t*		info;	// &mobjinfo[mobj->type]
     int				tics;	// state tic counter
 	state_t			*state;
+	int				damage;			// For missiles	
 	int				flags;
 	int				flags2;	// Heretic flags
 	int				special1;		// Special info
@@ -451,8 +458,10 @@ public:
 	short			tid;			// thing identifier
 
 private:
-	static AActor *TIDHash[128];
-	static inline int TIDHASH (int key) { return key & 127; }
+	static const size_t TIDHashSize = 256;
+	static const size_t TIDHashMask = TIDHashSize - 1;
+	static AActor *TIDHash[TIDHashSize];
+	static inline int TIDHASH (int key) { return key & TIDHashMask; }
 
 	friend class FActorIterator;
 
@@ -517,7 +526,7 @@ public:
 		if (id == 0)
 			return NULL;
 		if (!base)
-			base = AActor::TIDHash[id & 127];
+			base = AActor::FindByTID(NULL, id);
 		else
 			base = base->inext;
 

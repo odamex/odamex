@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,6 +39,10 @@ class IVideo
 	virtual bool CanBlit ();
 
 	virtual bool SetOverscan (float scale);
+
+	virtual int GetWidth() const;
+	virtual int GetHeight() const;
+	virtual int GetBitDepth() const;
 
 	virtual bool SetMode (int width, int height, int bits, bool fs);
 	virtual void SetPalette (DWORD *palette);

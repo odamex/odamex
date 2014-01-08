@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -106,9 +106,9 @@ void CTF_SpawnDroppedFlag(flag_t f, int x, int y, int z);
 void CTF_RememberFlagPos(mapthing2_t *mthing);
 void CTF_CheckFlags(player_t &player);
 void CTF_Sound(flag_t f, flag_score_t event);
+void CTF_Message(flag_t f, flag_score_t event);
 // void CTF_TossFlag(player_t &player);  [ML] 04/4/06: Removed buggy flagtoss
 // void CTF_SpawnPlayer(player_t &player);	// denis - todo - where's the implementation!?
-mapthing2_t *CTF_SelectTeamPlaySpot(player_t &player, int selections);
 
 //	Externals
 // EXTERN_CVAR (sv_scorelimit)

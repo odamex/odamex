@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -26,7 +26,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #else
 #include <sys/types.h>
@@ -42,7 +42,7 @@
 
 #include "i_net.h"
 
-#ifndef WIN32
+#ifndef _WIN32
 typedef int SOCKET;
 #define SOCKET_ERROR -1
 #define INVALID_SOCKET -1
@@ -97,7 +97,7 @@ void BindToLocalPort(SOCKET s, u_short port)
 void CloseNetwork(void)
 {
 	closesocket(net_socket);
-#ifdef WIN32
+#ifdef _WIN32
 	WSACleanup();
 #endif
 }
@@ -188,7 +188,7 @@ int NET_GetPacket(void)
 
     if (ret == -1)
     {
-#ifdef WIN32
+#ifdef _WIN32
 		errno = WSAGetLastError();
 
 		if (errno == WSAEWOULDBLOCK)
@@ -231,7 +231,7 @@ void NET_SendPacket(int length, byte *data, netadr_t to)
 
     if (ret == -1)
     {
-#ifdef WIN32
+#ifdef _WIN32
 		  int err = WSAGetLastError();
 
 		  if (err == WSAEWOULDBLOCK)
@@ -253,7 +253,7 @@ void InitNetCommon(void)
 {
    unsigned long _true = true;
 
-#ifdef WIN32
+#ifdef _WIN32
    WSADATA wsad;
    WSAStartup(0x0101, &wsad);
 #endif

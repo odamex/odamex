@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -113,7 +113,6 @@ int 			dccount;
 /*									*/
 /************************************/
 
-#ifndef	USEASM
 //
 // A column is a vertical slice/span from a wall texture that,
 //	given the DOOM style restrictions on the view orientation,
@@ -202,7 +201,6 @@ void R_DrawColumnP_C (void)
 		}
 	}
 } 
-#endif	// USEASM
 
 
 // [RH] Same as R_DrawColumnP_C except that it doesn't do any colormapping.
@@ -271,6 +269,16 @@ void R_StretchColumnP_C (void)
 		}
 	}
 } 
+
+//
+// R_BlankColumn
+//
+// [SL] - Does nothing (obviously). Used when a column drawing function
+// pointer should not draw anything.
+//
+void R_BlankColumn (void)
+{
+}
 
 // [RH] Just fills a column with a color
 void R_FillColumnP (void)
@@ -354,7 +362,6 @@ void R_InitFuzzTable (void)
 		fuzzoffset[i] = fuzzinit[i] * fuzzoff;
 }
 
-#ifndef USEASM
 //
 // Framebuffer postprocessing.
 // Creates a fuzzy image by copying pixels
@@ -404,7 +411,7 @@ void R_DrawFuzzColumnP_C (void)
 		//		the optimizations made by the compiler.
 		int pitch = dc_pitch;
 		int fuzz = fuzzpos;
-		byte *map = DefaultPalette->maps.colormaps + 6*256;
+		byte *map = GetDefaultPalette()->maps.colormaps + 6*256;
 
 		do 
 		{
@@ -423,7 +430,6 @@ void R_DrawFuzzColumnP_C (void)
 		fuzzpos = (fuzz + 3) & (FUZZTABLE - 1);
 	}
 } 
-#endif	// USEASM
 
 //
 // R_DrawTranlucentColumn
@@ -783,7 +789,6 @@ byte					*slopelighting[MAXWIDTH];
 
 //
 // Draws the actual span.
-#ifndef USEASM
 void R_DrawSpanP_C (void)
 {
 	dsfixed_t			xfrac;
@@ -832,7 +837,7 @@ void R_DrawSpanP_C (void)
 		yfrac += ystep;
 	} while (--count);
 }
-#endif
+
 // [RH] Just fill a span with a color
 void R_FillSpan (void)
 {
@@ -1687,21 +1692,6 @@ void R_InitColumnDrawers (BOOL is8bit)
 {
 	if (is8bit)
 	{
-#ifdef USEASM
-		if (screen->height <= 240)
-			R_DrawColumn		= R_DrawColumnP_Unrolled;
-		else
-			R_DrawColumn		= R_DrawColumnP_ASM;
-		R_DrawColumnHoriz		= R_DrawColumnHorizP_ASM;
-		R_DrawFuzzColumn		= R_DrawFuzzColumnP_ASM;
-		R_DrawTranslucentColumn = R_DrawTranslucentColumnP_C;
-		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP_C;
-		R_DrawSpan				= R_DrawSpanP_ASM;
-		if (CPUFamily <= 5)
-			rt_map4cols			= rt_map4cols_asm2;
-		else
-			rt_map4cols			= rt_map4cols_asm1;
-#else
 		R_DrawColumnHoriz		= R_DrawColumnHorizP_C;
 		R_DrawColumn			= R_DrawColumnP_C;
 		R_DrawFuzzColumn		= R_DrawFuzzColumnP_C;
@@ -1710,21 +1700,14 @@ void R_InitColumnDrawers (BOOL is8bit)
 		R_DrawSpan				= R_DrawSpanP_C;
 		rt_map4cols				= rt_map4cols_c;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanP_C;
-#endif
+
 	} else {
-#ifdef USEASM
-		R_DrawColumnHoriz		= R_DrawColumnHorizP_ASM;
-		R_DrawColumn			= R_DrawColumnD_C;
-		R_DrawFuzzColumn		= R_DrawFuzzColumnD_C;
-		R_DrawTranslucentColumn = R_DrawTranslucentColumnD_C;
-		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD_C;
-#else
 		R_DrawColumnHoriz		= R_DrawColumnHorizP_C;
 		R_DrawColumn			= R_DrawColumnD_C;
 		R_DrawFuzzColumn		= R_DrawFuzzColumnD_C;
 		R_DrawTranslucentColumn = R_DrawTranslucentColumnD_C;
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD_C;
-#endif
+
 		R_DrawSpan				= R_DrawSpanD;
 		
 		// [SL] 2012-03-30 - TODO: A 32bit color version of R_DrawSlopeSpan

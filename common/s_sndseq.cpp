@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <string.h>
+#include <cstring>
 #include <stdio.h>
 
 #include "doomtype.h"
@@ -391,7 +391,6 @@ static void AssignHexenTranslations (void)
 
 void S_ParseSndSeq (void)
 {
-	int lastlump, lump;
 	char name[MAX_SNDNAME+1];
 	int stopsound;
 	int cursize;
@@ -410,12 +409,12 @@ void S_ParseSndSeq (void)
 	stopsound = -1;
 
 	memset (SeqTrans, -1, sizeof(SeqTrans));
-	lastlump = 0;
 	name[MAX_SNDNAME] = 0;
 	ScriptTemp = (unsigned int *)Malloc (MAX_SEQSIZE * sizeof(*ScriptTemp));
 	ScriptTempSize = MAX_SEQSIZE;
 
-	while ((lump = W_FindLump ("SNDSEQ", &lastlump)) != -1)
+	int lump = -1;
+	while ((lump = W_FindLump("SNDSEQ", lump)) != -1)
 	{
 		SC_OpenLumpNum (lump, "SNDSEQ");
 		while (SC_GetString ())

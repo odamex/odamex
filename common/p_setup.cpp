@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,7 +29,7 @@
 #include <set>
 
 #include "m_alloc.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "m_argv.h"
 #include "z_zone.h"
 #include "m_swap.h"
@@ -128,6 +128,7 @@ mapthing2_t		*deathmatchstarts;
 mapthing2_t		*deathmatch_p;
 
 std::vector<mapthing2_t> playerstarts;
+std::vector<mapthing2_t> voodoostarts;
 
 //	[Toke - CTF - starts] Teamplay starts
 size_t			MaxBlueTeamStarts;
@@ -161,8 +162,8 @@ void P_LoadVertexes (int lump)
 	// internal representation as fixed.
 	for (i = 0; i < numvertexes; i++)
 	{
-		vertexes[i].x = SHORT(((mapvertex_t *)data)[i].x)<<FRACBITS;
-		vertexes[i].y = SHORT(((mapvertex_t *)data)[i].y)<<FRACBITS;
+		vertexes[i].x = LESHORT(((mapvertex_t *)data)[i].x)<<FRACBITS;
+		vertexes[i].y = LESHORT(((mapvertex_t *)data)[i].y)<<FRACBITS;
 	}
 
 	// Free buffer memory.
@@ -180,31 +181,11 @@ void P_LoadSegs (int lump)
 {
 	int  i;
 	byte *data;
-	byte *vertchanged = (byte *)Z_Malloc (numvertexes,PU_LEVEL,0);	// phares 10/4/98
-	line_t* line;		// phares 10/4/98
-   // SoM: Changed variables to the correct types.
-	angle_t ptp_angle;		// phares 10/4/98
-	angle_t delta_angle;	// phares 10/4/98
-	fixed_t dis;			// phares 10/4/98
-	fixed_t dx,dy;			// phares 10/4/98
-	int vnum1,vnum2;	// phares 10/4/98
-
-	memset (vertchanged,0,numvertexes); // phares 10/4/98
 
 	numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
 	segs = (seg_t *)Z_Malloc (numsegs*sizeof(seg_t), PU_LEVEL, 0);
 	memset (segs, 0, numsegs*sizeof(seg_t));
 	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-
-	// phares: 10/4/98: Vertchanged is an array that represents the vertices.
-	// Mark those used by linedefs. A marked vertex is one that is not a
-	// candidate for movement further down.
-
-	line = lines;
-	for (i = 0; i < numlines ; i++, line++)
-	{
-		vertchanged[line->v1 - vertexes] = vertchanged[line->v2 - vertexes] = 1;
-	}
 
 	for (i = 0; i < numsegs; i++)
 	{
@@ -214,81 +195,24 @@ void P_LoadSegs (int lump)
 		int side, linedef;
 		line_t *ldef;
 
-		short v = SHORT(ml->v1);
+		unsigned short v = LESHORT(ml->v1);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex %d", v);
 		else
 			li->v1 = &vertexes[v];
 
-		v = SHORT(ml->v2);
+		v = LESHORT(ml->v2);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex %d", v);
 		else
 			li->v2 = &vertexes[v];
 
-		li->angle = (SHORT(ml->angle))<<16;
+		li->angle = (LESHORT(ml->angle))<<16;
 
-// phares 10/4/98: In the case of a lineseg that was created by splitting
-// another line, it appears that the line angle is inherited from the
-// father line. Due to roundoff, the new vertex may have been placed 'off
-// the line'. When you get close to such a line, and it is very short,
-// it's possible that the roundoff error causes 'firelines', the thin
-// lines that can draw from screen top to screen bottom occasionally. This
-// is due to all the angle calculations that are done based on the line
-// angle, the angles from the viewer to the vertices, and the viewer's
-// angle in the world. In the case of firelines, the rounded-off position
-// of one of the vertices determines one of these angles, and introduces
-// an error in the scaling factor for mapping textures and determining
-// where on the screen the ceiling and floor spans should be shown. For a
-// fireline, the engine thinks the ceiling bottom and floor top are at the
-// midpoint of the screen. So you get ceilings drawn all the way down to the
-// screen midpoint, and floors drawn all the way up. Thus 'firelines'. The
-// name comes from the original sighting, which involved a fire texture.
-//
-// To correct this, reset the vertex that was added so that it sits ON the
-// split line.
-//
-// To know which of the two vertices was added, its number is greater than
-// that of the last of the author-created vertices. If both vertices of the
-// line were added by splitting, pick the higher-numbered one. Once you've
-// changed a vertex, don't change it again if it shows up in another seg.
-//
-// To determine if there's an error in the first place, find the
-// angle of the line between the two seg vertices. If it's one degree or more
-// off, then move one vertex. This may seem insignificant, but one degree
-// errors _can_ cause firelines.
-
-		ptp_angle = R_PointToAngle2(li->v1->x,li->v1->y,li->v2->x,li->v2->y);
-		dis = 0;
-		delta_angle = ((ptp_angle-li->angle) >> ANGLETOFINESHIFT) * 360 / 8192;
-
-		if (delta_angle != 0)
-		{
-			dx = (li->v1->x - li->v2->x)>>FRACBITS;
-			dy = (li->v1->y - li->v2->y)>>FRACBITS;
-			dis = ((int)sqrt((float)dx*(float)dx + (float)dy*(float)dy))<<FRACBITS;
-			dx = finecosine[li->angle>>ANGLETOFINESHIFT];
-			dy = finesine[li->angle>>ANGLETOFINESHIFT];
-			vnum1 = li->v1 - vertexes;
-			vnum2 = li->v2 - vertexes;
-			if ((vnum2 > vnum1) && (vertchanged[vnum2] == 0))
-			{
-				li->v2->x = li->v1->x + FixedMul(dis,dx);
-				li->v2->y = li->v1->y + FixedMul(dis,dy);
-				vertchanged[vnum2] = 1; // this was changed
-			}
-			else if (vertchanged[vnum1] == 0)
-			{
-				li->v1->x = li->v2->x - FixedMul(dis,dx);
-				li->v1->y = li->v2->y - FixedMul(dis,dy);
-				vertchanged[vnum1] = 1; // this was changed
-			}
-		}
-
-		li->offset = (SHORT(ml->offset))<<16;
-		linedef = SHORT(ml->linedef);
+		li->offset = (LESHORT(ml->offset))<<16;
+		linedef = LESHORT(ml->linedef);
 
 		if(linedef < 0 || linedef >= numlines)
 			I_Error("P_LoadSegs: invalid linedef %d", linedef);
@@ -296,31 +220,35 @@ void P_LoadSegs (int lump)
 		ldef = &lines[linedef];
 		li->linedef = ldef;
 
-		side = SHORT(ml->side);
+		side = LESHORT(ml->side);
 
-		if(side < 0 || side >= numsides)
-			I_Error("P_LoadSegs: invalid side %d", side);
+		if (side != 0 && side != 1)
+			side = 1;	// assume invalid value means back
 
 		li->sidedef = &sides[ldef->sidenum[side]];
 		li->frontsector = sides[ldef->sidenum[side]].sector;
 
 		// killough 5/3/98: ignore 2s flag if second sidedef missing:
-		if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side^1]!=-1)
+		if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side^1]!=R_NOSIDE)
 			li->backsector = sides[ldef->sidenum[side^1]].sector;
 		else
 		{
 			li->backsector = 0;
 			ldef->flags &= ~ML_TWOSIDED;
 		}
-		
-		// [SL] 2012-01-25 - Calculate and store the seg's length
-		float dx = li->v2->x - li->v1->x;
-		float dy = li->v2->y - li->v1->y;
-		li->length = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
+	
+		// recalculate seg offsets. values in wads are untrustworthy.
+		vertex_t *from = (side == 0)
+			? ldef->v1			// right side: offset is from start of linedef
+			: ldef->v2;			// left side: offset is from end of linedef
+		vertex_t *to = li->v1;	// end point is start of seg, in both cases
+
+		float dx = FIXED2FLOAT(to->x - from->x);
+		float dy = FIXED2FLOAT(to->y - from->y);
+		li->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
 	}
 
 	Z_Free (data);
-	Z_Free(vertchanged); // phares 10/4/98
 }
 
 
@@ -340,8 +268,8 @@ void P_LoadSubsectors (int lump)
 
 	for (i = 0; i < numsubsectors; i++)
 	{
-		subsectors[i].numlines = SHORT(((mapsubsector_t *)data)[i].numsegs);
-		subsectors[i].firstline = SHORT(((mapsubsector_t *)data)[i].firstseg);
+		subsectors[i].numlines = LESHORT(((mapsubsector_t *)data)[i].numsegs);
+		subsectors[i].firstline = LESHORT(((mapsubsector_t *)data)[i].firstseg);
 	}
 
 	Z_Free (data);
@@ -380,16 +308,16 @@ void P_LoadSectors (int lump)
 	ss = sectors;
 	for (i = 0; i < numsectors; i++, ss++, ms++)
 	{
-		ss->floorheight = SHORT(ms->floorheight)<<FRACBITS;
-		ss->ceilingheight = SHORT(ms->ceilingheight)<<FRACBITS;
+		ss->floorheight = LESHORT(ms->floorheight)<<FRACBITS;
+		ss->ceilingheight = LESHORT(ms->ceilingheight)<<FRACBITS;
 		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
 		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
-		ss->lightlevel = SHORT(ms->lightlevel);
+		ss->lightlevel = LESHORT(ms->lightlevel);
 		if (HasBehavior)
-			ss->special = SHORT(ms->special);
+			ss->special = LESHORT(ms->special);
 		else	// [RH] Translate to new sector special
-			ss->special = P_TranslateSectorSpecial (SHORT(ms->special));
-		ss->tag = SHORT(ms->tag);
+			ss->special = P_TranslateSectorSpecial (LESHORT(ms->special));
+		ss->tag = LESHORT(ms->tag);
 		ss->thinglist = NULL;
 		ss->touching_thinglist = NULL;		// phares 3/14/98
 		ss->seqType = defSeqType;
@@ -469,19 +397,164 @@ void P_LoadNodes (int lump)
 
 	for (i = 0; i < numnodes; i++, no++, mn++)
 	{
-		no->x = SHORT(mn->x)<<FRACBITS;
-		no->y = SHORT(mn->y)<<FRACBITS;
-		no->dx = SHORT(mn->dx)<<FRACBITS;
-		no->dy = SHORT(mn->dy)<<FRACBITS;
+		no->x = LESHORT(mn->x)<<FRACBITS;
+		no->y = LESHORT(mn->y)<<FRACBITS;
+		no->dx = LESHORT(mn->dx)<<FRACBITS;
+		no->dy = LESHORT(mn->dy)<<FRACBITS;
 		for (j = 0; j < 2; j++)
 		{
-			no->children[j] = SHORT(mn->children[j]);
+			// account for children's promotion to 32 bits
+			unsigned int child = (unsigned short)LESHORT(mn->children[j]);
+
+			if (child == 0xffff)
+				child = 0xffffffff;
+			else if (child & 0x8000)
+				child = (child & ~0x8000) | NF_SUBSECTOR;
+
+			no->children[j] = child;
+
 			for (k = 0; k < 4; k++)
-				no->bbox[j][k] = SHORT(mn->bbox[j][k])<<FRACBITS;
+				no->bbox[j][k] = LESHORT(mn->bbox[j][k]) << FRACBITS;
 		}
 	}
 
 	Z_Free (data);
+}
+
+//
+// P_LoadXNOD - load ZDBSP extended nodes
+// returns false if nodes are not extended to fall back to original nodes
+//
+bool P_LoadXNOD(int lump)
+{
+	size_t len = W_LumpLength(lump);
+	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+
+	if (len < 4 || memcmp(data, "XNOD", 4) != 0)
+	{
+		Z_Free(data);
+		return false;
+	}
+
+	byte *p = data + 4; // skip the magic number
+
+	// Load vertices
+	unsigned int numorgvert = LELONG(*(unsigned int *)p); p += 4;
+	unsigned int numnewvert = LELONG(*(unsigned int *)p); p += 4;
+
+	vertex_t *newvert = (vertex_t *) Z_Malloc((numorgvert + numnewvert)*sizeof(*newvert), PU_LEVEL, 0);
+
+	memcpy(newvert, vertexes, numorgvert*sizeof(*newvert));
+	memset(&newvert[numorgvert], 0, numnewvert * sizeof(*newvert));
+
+	for (unsigned int i = 0; i < numnewvert; i++)
+	{
+		vertex_t *v = &newvert[numorgvert+i];
+		v->x = LELONG(*(int *)p); p += 4;
+		v->y = LELONG(*(int *)p); p += 4;
+	}
+
+	// Adjust linedefs - since we reallocated the vertex array,
+	// all vertex pointers in linedefs must be updated
+
+	for (int i = 0; i < numlines; i++)
+	{
+		lines[i].v1 = newvert + (lines[i].v1 - vertexes);
+		lines[i].v2 = newvert + (lines[i].v2 - vertexes);
+	}
+
+	// nuke the old list, update globals to point to the new list
+	Z_Free(vertexes);
+	vertexes = newvert;
+	numvertexes = numorgvert + numnewvert;
+
+	// Load subsectors
+
+	numsubsectors = LELONG(*(unsigned int *)p); p += 4;
+	subsectors = (subsector_t *) Z_Malloc(numsubsectors * sizeof(*subsectors), PU_LEVEL, 0);
+	memset(subsectors, 0, numsubsectors * sizeof(*subsectors));
+
+	unsigned int first_seg = 0;
+
+	for (int i = 0; i < numsubsectors; i++)
+	{
+		subsectors[i].firstline = first_seg;
+		subsectors[i].numlines = LELONG(*(unsigned int *)p); p += 4;
+		first_seg += subsectors[i].numlines;
+	}
+
+	// Load segs
+
+	numsegs = LELONG(*(unsigned int *)p); p += 4;
+	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
+	memset(segs, 0, numsegs * sizeof(*segs));
+
+	for (int i = 0; i < numsegs; i++)
+	{
+		unsigned int v1 = LELONG(*(unsigned int *)p); p += 4;
+		unsigned int v2 = LELONG(*(unsigned int *)p); p += 4;
+		unsigned short ld = LESHORT(*(unsigned short *)p); p += 2;
+		unsigned char side = *(unsigned char *)p; p += 1;
+
+		if (side != 0 && side != 1)
+			side = 1;
+
+		seg_t *seg = &segs[i];
+		line_t *line = &lines[ld];
+
+		seg->v1 = &vertexes[v1];
+		seg->v2 = &vertexes[v2];
+
+		seg->linedef = line;
+		seg->sidedef = &sides[line->sidenum[side]];
+
+		seg->frontsector = seg->sidedef->sector;
+		if (line->flags & ML_TWOSIDED && line->sidenum[side^1] != R_NOSIDE)
+			seg->backsector = sides[line->sidenum[side^1]].sector;
+		else
+			seg->backsector = NULL;
+
+		seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
+
+		// a short version of the offset calculation in P_LoadSegs
+		vertex_t *origin = (side == 0) ? line->v1 : line->v2;
+		float dx = FIXED2FLOAT(seg->v1->x - origin->x);
+		float dy = FIXED2FLOAT(seg->v1->y - origin->y);
+		seg->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
+	}
+
+	// Load nodes
+
+	numnodes = LELONG(*(unsigned int *)p); p += 4;
+	nodes = (node_t *) Z_Malloc(numnodes * sizeof(*nodes), PU_LEVEL, 0);
+	memset(nodes, 0, numnodes * sizeof(*nodes));
+
+	for (int i = 0; i < numnodes; i++)
+	{
+		node_t *node = &nodes[i];
+
+		node->x = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+		node->y = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+		node->dx = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+		node->dy = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+
+		for (int j = 0; j < 2; j++)
+		{
+			for (int k = 0; k < 4; k++)
+			{
+				node->bbox[j][k] = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+			}
+		}
+
+		for (int j = 0; j < 2; j++)
+		{
+			node->children[j] = LELONG(*(unsigned int *)p); p += 4;
+		}
+	}
+
+	Z_Free(data);
+
+	return true;
 }
 
 //
@@ -495,6 +568,7 @@ void P_LoadThings (int lump)
 	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
 
 	playerstarts.clear();
+	voodoostarts.clear();
 
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
@@ -509,16 +583,16 @@ void P_LoadThings (int lump)
 		//		everything and let it decide what to do with them.
 
 		// [RH] Need to translate the spawn flags to Hexen format.
-		short flags = SHORT(mt->options);
+		short flags = LESHORT(mt->options);
 		mt2.flags = (short)((flags & 0xf) | 0x7e0);
 		if (flags & BTF_NOTSINGLE)			mt2.flags &= ~MTF_SINGLE;
 		if (flags & BTF_NOTDEATHMATCH)		mt2.flags &= ~MTF_DEATHMATCH;
 		if (flags & BTF_NOTCOOPERATIVE)		mt2.flags &= ~MTF_COOPERATIVE;
 
-		mt2.x = SHORT(mt->x);
-		mt2.y = SHORT(mt->y);
-		mt2.angle = SHORT(mt->angle);
-		mt2.type = SHORT(mt->type);
+		mt2.x = LESHORT(mt->x);
+		mt2.y = LESHORT(mt->y);
+		mt2.angle = LESHORT(mt->angle);
+		mt2.type = LESHORT(mt->type);
 
 		P_SpawnMapThing (&mt2, 0);
 	}
@@ -541,6 +615,7 @@ void P_LoadThings2 (int lump, int position)
 	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
 
 	playerstarts.clear();
+	voodoostarts.clear();
 
 	for ( ; mt < lastmt; mt++)
 	{
@@ -549,13 +624,13 @@ void P_LoadThings2 (int lump, int position)
 		//		handle these and more cases better, so we just pass it
 		//		everything and let it decide what to do with them.
 
-		mt->thingid = SHORT(mt->thingid);
-		mt->x = SHORT(mt->x);
-		mt->y = SHORT(mt->y);
-		mt->z = SHORT(mt->z);
-		mt->angle = SHORT(mt->angle);
-		mt->type = SHORT(mt->type);
-		mt->flags = SHORT(mt->flags);
+		mt->thingid = LESHORT(mt->thingid);
+		mt->x = LESHORT(mt->x);
+		mt->y = LESHORT(mt->y);
+		mt->z = LESHORT(mt->z);
+		mt->angle = LESHORT(mt->angle);
+		mt->type = LESHORT(mt->type);
+		mt->flags = LESHORT(mt->flags);
 
 		P_SpawnMapThing (mt, position);
 	}
@@ -620,7 +695,7 @@ void P_AdjustLine (line_t *ld)
 	}
 
 	// denis - prevent buffer overrun
-	if(*ld->sidenum == -1)
+	if(*ld->sidenum == R_NOSIDE)
 		return;
 
 	// killough 4/4/98: support special sidedef interpretation below
@@ -642,11 +717,11 @@ void P_FinishLoadingLineDefs (void)
 
 	for (i = numlines, linenum = 0; i--; ld++, linenum++)
 	{
-		ld->frontsector = ld->sidenum[0]!=-1 ? sides[ld->sidenum[0]].sector : 0;
-		ld->backsector  = ld->sidenum[1]!=-1 ? sides[ld->sidenum[1]].sector : 0;
-		if (ld->sidenum[0] != -1)
+		ld->frontsector = ld->sidenum[0]!=R_NOSIDE ? sides[ld->sidenum[0]].sector : 0;
+		ld->backsector  = ld->sidenum[1]!=R_NOSIDE ? sides[ld->sidenum[1]].sector : 0;
+		if (ld->sidenum[0] != R_NOSIDE)
 			sides[ld->sidenum[0]].linenum = linenum;
-		if (ld->sidenum[1] != -1)
+		if (ld->sidenum[1] != R_NOSIDE)
 			sides[ld->sidenum[1]].linenum = linenum;
 
 		switch (ld->special)
@@ -696,27 +771,27 @@ void P_LoadLineDefs (int lump)
 		//		compatible with the new format.
 		P_TranslateLineDef (ld, mld);
 
-		short v = SHORT(mld->v1);
+		unsigned short v = LESHORT(mld->v1);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
-		v = SHORT(mld->v2);
+		v = LESHORT(mld->v2);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
 
-		ld->sidenum[0] = SHORT(mld->sidenum[0]);
-		ld->sidenum[1] = SHORT(mld->sidenum[1]);
+		ld->sidenum[0] = LESHORT(mld->sidenum[0]);
+		ld->sidenum[1] = LESHORT(mld->sidenum[1]);
 
-		if(ld->sidenum[0] >= numsides || ld->sidenum[0] < 0)
-			ld->sidenum[0] = -1;
-		if(ld->sidenum[1] >= numsides || ld->sidenum[1] < 0)
-			ld->sidenum[1] = -1;
+		if(ld->sidenum[0] >= numsides)
+			ld->sidenum[0] = R_NOSIDE;
+		if(ld->sidenum[1] >= numsides)
+			ld->sidenum[1] = R_NOSIDE;
 
 		P_AdjustLine (ld);
 	}
@@ -746,30 +821,30 @@ void P_LoadLineDefs2 (int lump)
 		for (j = 0; j < 5; j++)
 			ld->args[j] = mld->args[j];
 
-		ld->flags = SHORT(mld->flags);
+		ld->flags = LESHORT(mld->flags);
 		ld->special = mld->special;
 
-		short v = SHORT(mld->v1);
+		unsigned short v = LESHORT(mld->v1);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
-		v = SHORT(mld->v2);
+		v = LESHORT(mld->v2);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
 
-		ld->sidenum[0] = SHORT(mld->sidenum[0]);
-		ld->sidenum[1] = SHORT(mld->sidenum[1]);
+		ld->sidenum[0] = LESHORT(mld->sidenum[0]);
+		ld->sidenum[1] = LESHORT(mld->sidenum[1]);
 
-		if(ld->sidenum[0] >= numsides || ld->sidenum[0] < 0)
-			ld->sidenum[0] = -1;
-		if(ld->sidenum[1] >= numsides || ld->sidenum[1] < 0)
-			ld->sidenum[1] = -1;
+		if(ld->sidenum[0] >= numsides)
+			ld->sidenum[0] = R_NOSIDE;
+		if(ld->sidenum[1] >= numsides)
+			ld->sidenum[1] = R_NOSIDE;
 
 		P_AdjustLine (ld);
 	}
@@ -834,15 +909,15 @@ void P_LoadSideDefs2 (int lump)
 		register side_t *sd = sides + i;
 		register sector_t *sec;
 
-		sd->textureoffset = SHORT(msd->textureoffset)<<FRACBITS;
-		sd->rowoffset = SHORT(msd->rowoffset)<<FRACBITS;
+		sd->textureoffset = LESHORT(msd->textureoffset)<<FRACBITS;
+		sd->rowoffset = LESHORT(msd->rowoffset)<<FRACBITS;
 		sd->linenum = -1;
 
 		// killough 4/4/98: allow sidedef texture names to be overloaded
 		// killough 4/11/98: refined to allow colormaps to work as wall
 		// textures if invalid as colormaps but valid as textures.
 
-		sd->sector = sec = &sectors[SHORT(msd->sector)];
+		sd->sector = sec = &sectors[LESHORT(msd->sector)];
 		switch (sd->special)
 		{
 		  case Transfer_Heights:	// variable colormap via 242 linedef
@@ -1247,14 +1322,14 @@ void P_LoadBlockMap (int lump)
 		// them. This potentially doubles the size of blockmaps allowed,
 		// because Doom originally considered the offsets as always signed.
 
-		blockmaplump[0] = SHORT(wadblockmaplump[0]);
-		blockmaplump[1] = SHORT(wadblockmaplump[1]);
-		blockmaplump[2] = (DWORD)(SHORT(wadblockmaplump[2])) & 0xffff;
-		blockmaplump[3] = (DWORD)(SHORT(wadblockmaplump[3])) & 0xffff;
+		blockmaplump[0] = LESHORT(wadblockmaplump[0]);
+		blockmaplump[1] = LESHORT(wadblockmaplump[1]);
+		blockmaplump[2] = (DWORD)(LESHORT(wadblockmaplump[2])) & 0xffff;
+		blockmaplump[3] = (DWORD)(LESHORT(wadblockmaplump[3])) & 0xffff;
 
 		for (i=4 ; i<count ; i++)
 		{
-			short t = SHORT(wadblockmaplump[i]);          // killough 3/1/98
+			short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
 			blockmaplump[i] = t == -1 ? (DWORD)0xffffffff : (DWORD) t & 0xffff;
 		}
 
@@ -1294,8 +1369,8 @@ void P_GroupLines (void)
 	// look up sector number for each subsector
 	for (i = 0; i < numsubsectors; i++)
 	{
-		if(subsectors[i].firstline >= numsegs)
-			I_Error("subsector[%d].firstline exceeds numsegs (%d)", i, numlines);
+		if (subsectors[i].firstline >= (unsigned int)numsegs)
+			I_Error("subsector[%d].firstline exceeds numsegs (%u)", i, numlines);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
 	}
 
@@ -1365,6 +1440,89 @@ void P_GroupLines (void)
 		sector->blockbox[BOXLEFT]=block;
 	}
 
+}
+
+//
+// P_RemoveSlimeTrails()
+//
+// killough 10/98
+//
+// Slime trails are inherent to Doom's coordinate system -- i.e. there is
+// nothing that a node builder can do to prevent slime trails ALL of the time,
+// because it's a product of the integer coodinate system, and just because
+// two lines pass through exact integer coordinates, doesn't necessarily mean
+// that they will intersect at integer coordinates. Thus we must allow for
+// fractional coordinates if we are to be able to split segs with node lines,
+// as a node builder must do when creating a BSP tree.
+//
+// A wad file does not allow fractional coordinates, so node builders are out
+// of luck except that they can try to limit the number of splits (they might
+// also be able to detect the degree of roundoff error and try to avoid splits
+// with a high degree of roundoff error). But we can use fractional coordinates
+// here, inside the engine. It's like the difference between square inches and
+// square miles, in terms of granularity.
+//
+// For each vertex of every seg, check to see whether it's also a vertex of
+// the linedef associated with the seg (i.e, it's an endpoint). If it's not
+// an endpoint, and it wasn't already moved, move the vertex towards the
+// linedef by projecting it using the law of cosines. Formula:
+//
+//      2        2                         2        2
+//    dx  x0 + dy  x1 + dx dy (y0 - y1)  dy  y0 + dx  y1 + dx dy (x0 - x1)
+//   {---------------------------------, ---------------------------------}
+//                  2     2                            2     2
+//                dx  + dy                           dx  + dy
+//
+// (x0,y0) is the vertex being moved, and (x1,y1)-(x1+dx,y1+dy) is the
+// reference linedef.
+//
+// Segs corresponding to orthogonal linedefs (exactly vertical or horizontal
+// linedefs), which comprise at least half of all linedefs in most wads, don't
+// need to be considered, because they almost never contribute to slime trails
+// (because then any roundoff error is parallel to the linedef, which doesn't
+// cause slime). Skipping simple orthogonal lines lets the code finish quicker.
+//
+// Please note: This section of code is not interchangable with TeamTNT's
+// code which attempts to fix the same problem.
+//
+// Firelines (TM) is a Rezistered Trademark of MBF Productions
+//
+
+static void P_RemoveSlimeTrails()
+{
+	byte* hit = (byte *)Z_Malloc(numvertexes, PU_LEVEL, 0);
+	memset(hit, 0, numvertexes * sizeof(byte));
+
+	for (int i = 0; i < numsegs; i++)
+	{
+		const line_t *l = segs[i].linedef;		// The parent linedef
+
+		// We can ignore orthogonal lines
+		if (l->slopetype != ST_VERTICAL && l->slopetype != ST_HORIZONTAL)
+		{
+			vertex_t *v = segs[i].v1;
+			do
+			{
+				if (!hit[v - vertexes])				// If we haven't processed vertex
+				{
+					hit[v - vertexes] = 1;			// Mark this vertex as processed
+					if (v != l->v1 && v != l->v2)	// Exclude endpoints of linedefs
+					{ 
+						// Project the vertex back onto the parent linedef
+						int64_t dx2 = (l->dx >> FRACBITS) * (l->dx >> FRACBITS);
+						int64_t dy2 = (l->dy >> FRACBITS) * (l->dy >> FRACBITS);
+						int64_t dxy = (l->dx >> FRACBITS) * (l->dy >> FRACBITS);
+						int64_t s = dx2 + dy2;
+						fixed_t x0 = v->x, y0 = v->y, x1 = l->v1->x, y1 = l->v1->y;
+						v->x = (fixed_t)((dx2 * x0 + dy2 * x1 + dxy * (y0 - y1)) / s);
+						v->y = (fixed_t)((dy2 * y0 + dx2 * y1 + dxy * (x0 - x1)) / s);
+					}
+				}  // Obsfucated C contest entry:   :)
+			} while ((v != segs[i].v2) && (v = segs[i].v2));
+		}
+	}
+
+	Z_Free(hit);
 }
 
 //
@@ -1490,9 +1648,13 @@ void P_SetupLevel (char *lumpname, int position)
 	P_LoadSideDefs2 (lumpnum+ML_SIDEDEFS);
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
-	P_LoadSubsectors (lumpnum+ML_SSECTORS);
-	P_LoadNodes (lumpnum+ML_NODES);
-	P_LoadSegs (lumpnum+ML_SEGS);
+
+	if (!P_LoadXNOD(lumpnum+ML_NODES))
+	{
+		P_LoadSubsectors (lumpnum+ML_SSECTORS);
+		P_LoadNodes (lumpnum+ML_NODES);
+		P_LoadSegs (lumpnum+ML_SEGS);
+	}
 
 	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
 	{
@@ -1506,6 +1668,11 @@ void P_SetupLevel (char *lumpname, int position)
 		}
 	}
 	P_GroupLines ();
+
+	// [SL] don't move seg vertices if compatibility is cruical
+	if (!demoplayback && !demorecording)
+		P_RemoveSlimeTrails();
+
 	P_SetupSlopes();
 
     po_NumPolyobjs = 0;
@@ -1524,14 +1691,15 @@ void P_SetupLevel (char *lumpname, int position)
 
     if (serverside)
     {
-		for (i=0 ; i<players.size() ; i++)
+		for (i = 0 ; i < players.size() ; i++)
 		{
 			SV_PreservePlayer(players[i]);
 
-    		// if deathmatch, randomly spawn the active players
 			if (players[i].ingame())
 			{
-				G_DeathMatchSpawnPlayer (players[i]); // denis - this function checks for deathmatch internally
+				// if deathmatch, randomly spawn the active players
+				// denis - this function checks for deathmatch internally
+				G_DeathMatchSpawnPlayer (players[i]); 
 			}
 		}
     }
@@ -1551,7 +1719,7 @@ void P_SetupLevel (char *lumpname, int position)
 	R_OldBlend = ~0;
 
 	// preload graphics
-	if (precache)
+	if (clientside && precache)
 		R_PrecacheLevel ();
 }
 
@@ -1627,110 +1795,70 @@ static void P_SetupLevelCeilingPlane(sector_t *sector)
 // ceiling of this sector.  The equation coefficients are stored in a plane_t
 // structure and saved either to the sector's ceilingplan or floorplane.
 //
-void P_SetupPlane(sector_t *refsector, line_t *refline, bool floor)
+void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
 {
-	if (!refsector || !refline || !refline->backsector)
+	if (!sec || !line || !line->backsector)
 		return;
-
-	float refv1x = FIXED2FLOAT(refline->v1->x);
-	float refv1y = FIXED2FLOAT(refline->v1->y);
-
-	float refdx = FIXED2FLOAT(refline->dx);
-	float refdy = FIXED2FLOAT(refline->dy);
-	
-	vertex_t *farthest_vertex = NULL;
-	float farthest_distance = 0.0f;
 
 	// Find the vertex comprising the sector that is farthest from the
 	// slope's reference line
-	for (int linenum = 0; linenum < refsector->linecount; linenum++)
+
+	int bestdist = 0;
+	line_t** probe = sec->lines;
+	vertex_t *refvert = (*sec->lines)->v1;
+
+	for (int i = sec->linecount*2; i > 0; i--)
 	{
-		line_t *line = refsector->lines[linenum];
-		if (!line)
-			continue;
-		
-		// Calculate distance from vertex 1 of this line
-		float dist = abs((refv1y - FIXED2FLOAT(line->v1->y)) * refdx -
-						 (refv1x - FIXED2FLOAT(line->v1->x)) * refdy);
-		if (dist > farthest_distance)
+		int dist;
+		vertex_t *vert;
+
+		// Do calculations with only the upper bits, because the lower ones
+		// are all zero, and we would overflow for a lot of distances if we
+		// kept them around.
+
+		if (i & 1)
+			vert = (*probe++)->v2;
+		else
+			vert = (*probe)->v1;
+		dist = abs (((line->v1->y - vert->y) >> FRACBITS) * (line->dx >> FRACBITS) -
+					((line->v1->x - vert->x) >> FRACBITS) * (line->dy >> FRACBITS));
+
+		if (dist > bestdist)
 		{
-			farthest_distance = dist;
-			farthest_vertex = line->v1;
+			bestdist = dist;
+			refvert = vert;
 		}
-	
-		// Calculate distance from vertex 2 of this line
-		dist = abs((refv1y - FIXED2FLOAT(line->v2->y)) * refdx -
-				   (refv1x - FIXED2FLOAT(line->v2->x)) * refdy);
-		if (dist > farthest_distance)
-		{
-			farthest_distance = dist;
-			farthest_vertex = line->v2;
-		}	
 	}
-	
-	if (farthest_distance <= 0.0f)
-		return;
 
-	sector_t *align_sector = (refsector == refline->frontsector) ?
-		refline->backsector : refline->frontsector;
+	const sector_t* refsec = line->frontsector == sec ? line->backsector : line->frontsector;
+	plane_t* srcplane = floor ? &sec->floorplane : &sec->ceilingplane;
+	fixed_t srcheight = floor ? sec->floorheight : sec->ceilingheight;
+	fixed_t destheight = floor ? refsec->floorheight : refsec->ceilingheight;
 
-	// Now we have three points, which can define a plane:
-	// The two vertices making up refline and farthest_vertex
-	
-	float z1 = floor ? 
-		FIXED2FLOAT(align_sector->floorheight) : 
-		FIXED2FLOAT(align_sector->ceilingheight);
-	
-	float z2 = floor ?
-		FIXED2FLOAT(refsector->floorheight) :
-		FIXED2FLOAT(refsector->ceilingheight);
-	
-	// bail if the plane is perfectly level
-	if (z1 == z2)
-		return;
+	v3float_t p, v1, v2, cross;
+	M_SetVec3f(&p, line->v1->x, line->v1->y, destheight);
+	M_SetVec3f(&v1, line->dx, line->dy, 0);
+	M_SetVec3f(&v2, refvert->x - line->v1->x, refvert->y - line->v1->y, srcheight - destheight);
 
-	v3double_t p1, p2, p3;
-	M_SetVec3(&p1, FIXED2FLOAT(refline->v1->x), FIXED2FLOAT(refline->v1->y), z1);
-	M_SetVec3(&p2, FIXED2FLOAT(refline->v2->x), FIXED2FLOAT(refline->v2->y), z1);
-	M_SetVec3(&p3, FIXED2FLOAT(farthest_vertex->x), FIXED2FLOAT(farthest_vertex->y), z2);
+	M_CrossProductVec3f(&cross, &v1, &v2);
+	M_NormalizeVec3f(&cross, &cross);
 
-	// Define the plane by drawing two vectors originating from
-	// point p2:  the vector from p2 to p1 and from p2 to p3
-	// Then take the crossproduct of those vectors to get the normal vector
-	// for the plane, which provides the planar equation's coefficients
-	v3double_t vector1, vector2;
-	M_SubVec3(&vector1, &p1, &p2);
-	M_SubVec3(&vector2, &p3, &p2);
-
-	v3double_t normal;
-	M_CrossProductVec3(&normal, &vector1, &vector2);
-	M_NormalizeVec3(&normal, &normal);
-	
-	plane_t *plane = floor ? &refsector->floorplane : &refsector->ceilingplane;
-	plane->a = FLOAT2FIXED(normal.x);
-	plane->b = FLOAT2FIXED(normal.y);
-	plane->c = FLOAT2FIXED(normal.z);
-	plane->invc = FLOAT2FIXED(1.0f / normal.z);
-	plane->d = -FLOAT2FIXED(M_DotProductVec3(&normal, &p1));
-
-	// Flip inverted normals
-	if ((floor && normal.z < 0.0f) || (!floor && normal.z > 0.0f))
-		P_InvertPlane(plane);
-
-	// determine the point that can be used for aligning wall textures
-	// we use the point on the plane that has the same Z value as
-	// ceilingheight/floorheight
-	plane->texx = refline->v1->x;
-	plane->texy = refline->v1->y;
-
-	if ((floor && refsector->floorheight != align_sector->floorheight) ||
-	   (!floor && refsector->ceilingheight != align_sector->ceilingheight))
+	// Fix backward normals
+	if ((cross.z < 0 && floor == true) || (cross.z > 0 && floor == false)) 
 	{
-		plane->texx = farthest_vertex->x;
-		plane->texy = farthest_vertex->y;
+		cross.x = -cross.x;
+		cross.y = -cross.y;
+		cross.z = -cross.z;
 	}
-}
 
+	srcplane->a = FLOAT2FIXED(cross.x);
+	srcplane->b = FLOAT2FIXED(cross.y);
+	srcplane->c = FLOAT2FIXED(cross.z);
+	srcplane->invc = FLOAT2FIXED(1.f/cross.z);
+	srcplane->d = -FixedMul(srcplane->a, line->v1->x) - FixedMul(srcplane->b, line->v1->y) - FixedMul(srcplane->c, destheight);
+	srcplane->texx = refvert->x;
+	srcplane->texy = refvert->y;
+}
 
 static void P_SetupSlopes()
 {

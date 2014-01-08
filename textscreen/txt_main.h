@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // Copyright(C) 2005,2006 Simon Howard
@@ -27,18 +27,48 @@
 #ifndef TXT_MAIN_H
 #define TXT_MAIN_H
 
-// For the moment, txt_sdl.c is the only implementation of the base
+// For the moment, txt_sdl.c is the only implementation of the base 
 // text mode screen API:
 
 #include "txt_sdl.h"
 
+// textscreen key values:
+// Key values are difficult because we have to support multiple conflicting
+// address spaces.
+// First, Doom's key constants use 0-127 as ASCII and extra values from
+// 128-255 to represent special keys. Second, mouse buttons are represented
+// as buttons. Finally, we want to be able to support Unicode.
+//
+// So we define different ranges:
+// 0-255:    Doom key constants, including ASCII.
+// 256-511:  Mouse buttons and other reserved.
+// >=512:    Unicode values greater than 127 are offset up into this range.
+
 // Special keypress values that correspond to mouse button clicks
 
-#define TXT_MOUSE_BASE   0x10000
-#define TXT_MOUSE_LEFT   (TXT_MOUSE_BASE + 0)
-#define TXT_MOUSE_RIGHT  (TXT_MOUSE_BASE + 1)
-#define TXT_MOUSE_MIDDLE (TXT_MOUSE_BASE + 2)
+#define TXT_MOUSE_BASE         256
+#define TXT_MOUSE_LEFT         (TXT_MOUSE_BASE + 0)
+#define TXT_MOUSE_RIGHT        (TXT_MOUSE_BASE + 1)
+#define TXT_MOUSE_MIDDLE       (TXT_MOUSE_BASE + 2)
+#define TXT_MOUSE_SCROLLUP     (TXT_MOUSE_BASE + 3)
+#define TXT_MOUSE_SCROLLDOWN   (TXT_MOUSE_BASE + 4)
 #define TXT_MAX_MOUSE_BUTTONS  16
+
+#define TXT_KEY_TO_MOUSE_BUTTON(x)                                        \
+        ( (x) >= TXT_MOUSE_BASE                                           \
+       && (x) < TXT_MOUSE_BASE + TXT_MAX_MOUSE_BUTTONS ?                  \
+          (x) - TXT_MOUSE_BASE : -1 )
+
+// Unicode offset. Unicode values from 128 onwards are offset up into
+// this range, so TXT_UNICODE_BASE = Unicode character #128, and so on.
+
+#define TXT_UNICODE_BASE       512
+
+// Convert a key value to a Unicode character:
+
+#define TXT_KEY_TO_UNICODE(x)                                             \
+        ( (x) < 128 ? (x) :                                               \
+          (x) >= TXT_UNICODE_BASE ? ((x) - TXT_UNICODE_BASE + 128) : 0 )
 
 // Screen size
 
@@ -64,8 +94,18 @@ typedef enum
     TXT_COLOR_BRIGHT_RED,
     TXT_COLOR_BRIGHT_MAGENTA,
     TXT_COLOR_YELLOW,
-    TXT_COLOR_BRIGHT_WHITE
+    TXT_COLOR_BRIGHT_WHITE,
 } txt_color_t;
+
+// Modifier keys.
+
+typedef enum
+{
+    TXT_MOD_SHIFT,
+    TXT_MOD_CTRL,
+    TXT_MOD_ALT,
+    TXT_NUM_MODIFIERS
+} txt_modifier_t;
 
 // Initialize the screen
 // Returns 1 if successful, 0 if failed.
@@ -92,7 +132,11 @@ void TXT_UpdateScreen(void);
 
 int TXT_GetChar(void);
 
-// Provides a short description of a key code, placing into the
+// Read the current state of modifier keys that are held down.
+
+int TXT_GetModifierState(txt_modifier_t mod);
+
+// Provides a short description of a key code, placing into the 
 // provided buffer.
 
 void TXT_GetKeyDescription(int key, char *buf);

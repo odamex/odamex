@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,6 +27,7 @@
 
 #include "doomtype.h"
 #include "doomstat.h"
+#include "d_main.h"
 #include "d_player.h"
 #include "p_local.h"
 #include "sv_main.h"
@@ -37,42 +38,10 @@
 #include "md5.h"
 #include "p_ctf.h"
 
-extern std::vector<std::string> patchfiles, wadnames, wadhashes;
 static buf_t ml_message(MAX_UDP_PACKET);
 
-EXTERN_CVAR (sv_usemasters)
-EXTERN_CVAR (sv_hostname)
-EXTERN_CVAR (sv_maxclients)
-
-EXTERN_CVAR (port)
-
-//bond===========================
-EXTERN_CVAR (sv_timelimit)			
-EXTERN_CVAR (sv_fraglimit)			
-EXTERN_CVAR (sv_email)
-EXTERN_CVAR (sv_itemsrespawn)
-EXTERN_CVAR (sv_weaponstay)
-EXTERN_CVAR (sv_friendlyfire)
-EXTERN_CVAR (sv_allowexit)
-EXTERN_CVAR (sv_infiniteammo)
-EXTERN_CVAR (sv_nomonsters)
-EXTERN_CVAR (sv_monstersrespawn)
-EXTERN_CVAR (sv_fastmonsters)
-EXTERN_CVAR (sv_allowjump)
-EXTERN_CVAR (sv_freelook)
-EXTERN_CVAR (sv_waddownload)
-EXTERN_CVAR (sv_emptyreset)
-EXTERN_CVAR (sv_cleanmaps)
-EXTERN_CVAR (sv_fragexitswitch)
-//bond===========================
-
-EXTERN_CVAR (sv_teamsinplay)
-
-EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (join_password)
-EXTERN_CVAR (sv_website)
-
-EXTERN_CVAR (sv_natport)
+EXTERN_CVAR (sv_timelimit)
 
 extern unsigned int last_revision;
 
@@ -80,6 +49,7 @@ struct CvarField_t
 { 
     std::string Name;
     std::string Value;
+    cvartype_t Type;
 } CvarField;
 
 // The TAG identifier, changing this to a new value WILL break any application 
@@ -87,7 +57,7 @@ struct CvarField_t
 #define TAG_ID 0xAD0
 
 // When a change to the protocol is made, this value must be incremented
-#define PROTOCOL_VERSION 2
+#define PROTOCOL_VERSION 5
 
 /* 
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
@@ -132,11 +102,22 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
         if (var->flags() & CVAR_SERVERINFO)
         {
             CvarField.Name = var->name();
+            CvarField.Type = var->type();
             CvarField.Value = var->cstring();
+
+            // Skip empty strings
+            if (CvarField.Type == CVARTYPE_STRING && var->cstring()[0] != '\0')
+            {
+                Cvars.push_back(CvarField);
+                goto next;
+            }
             
-            Cvars.push_back(CvarField);
+            // Skip other types with 0
+            if (var->value() != 0.0f)
+                Cvars.push_back(CvarField);
         }
         
+        next:
         var = var->GetNext();
     }
     
@@ -145,12 +126,60 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
     
     // Write cvars
     for (size_t i = 0; i < Cvars.size(); ++i)
-	{
+	{              
         MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
-		MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
+
+        // TODO: Remove next release
+        QRYNEWINFO(3)
+        {
+            // Type field
+            MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
+
+            switch (Cvars[i].Type)
+            {
+                case CVARTYPE_BYTE:
+                {
+                    MSG_WriteByte(&ml_message, (byte)atoi(Cvars[i].Value.c_str()));
+                }
+                break;
+
+                case CVARTYPE_WORD:
+                {
+                    MSG_WriteShort(&ml_message, (short)atoi(Cvars[i].Value.c_str()));
+                }
+                break;
+
+                case CVARTYPE_INT:
+                {
+                    MSG_WriteLong(&ml_message, (int)atoi(Cvars[i].Value.c_str()));
+                }
+                break;
+
+                case CVARTYPE_FLOAT:               
+                case CVARTYPE_STRING:
+                {
+                    MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
+                }
+                break;
+
+                case CVARTYPE_NONE:
+                case CVARTYPE_MAX:
+                default:
+                break;
+            }
+        }
+        else
+        {
+            MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
+        }
 	}
 	
-	MSG_WriteString(&ml_message, (strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : ""));
+	// TODO: Remove next release
+	QRYNEWINFO(4)
+        MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
+	else
+        MSG_WriteString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
+
 	MSG_WriteString(&ml_message, level.mapname);
 	
     int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
@@ -159,17 +188,38 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
         
     MSG_WriteShort(&ml_message, timeleft);
     
-    // Team data
-    MSG_WriteByte(&ml_message, 2);
+    // TODO: Remove next release
+    QRYNEWINFO(5)
+    {
+        if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+        {
+            // Team data
+            MSG_WriteByte(&ml_message, 2);
     
-    // Blue
-    MSG_WriteString(&ml_message, "Blue");
-    MSG_WriteLong(&ml_message, 0x000000FF);
-    MSG_WriteShort(&ml_message, (short)TEAMpoints[it_blueflag]);
+            // Blue
+            MSG_WriteString(&ml_message, "Blue");
+            MSG_WriteLong(&ml_message, 0x000000FF);
+            MSG_WriteShort(&ml_message, (short)TEAMpoints[it_blueflag]);
 
-    MSG_WriteString(&ml_message, "Red");
-    MSG_WriteLong(&ml_message, 0x00FF0000);
-    MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
+            MSG_WriteString(&ml_message, "Red");
+            MSG_WriteLong(&ml_message, 0x00FF0000);
+            MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
+        }
+    }
+    else
+    {
+        // Team data
+        MSG_WriteByte(&ml_message, 2);
+
+        // Blue
+        MSG_WriteString(&ml_message, "Blue");
+        MSG_WriteLong(&ml_message, 0x000000FF);
+        MSG_WriteShort(&ml_message, (short)TEAMpoints[it_blueflag]);
+
+        MSG_WriteString(&ml_message, "Red");
+        MSG_WriteLong(&ml_message, 0x00FF0000);
+        MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
+    }
 
     // TODO: When real dynamic teams are implemented
     //byte TeamCount = (byte)sv_teamsinplay;
@@ -188,16 +238,21 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
 	
 	for (size_t i = 0; i < patchfiles.size(); ++i)
 	{
-        MSG_WriteString(&ml_message, patchfiles[i].c_str());
+        MSG_WriteString(&ml_message, D_CleanseFileName(patchfiles[i]).c_str());
 	}
 	
 	// Wad files
-	MSG_WriteByte(&ml_message, wadnames.size());
+	MSG_WriteByte(&ml_message, wadfiles.size());
 	
-	for (size_t i = 0; i < wadnames.size(); ++i)
+	for (size_t i = 0; i < wadfiles.size(); ++i)
     {
-        MSG_WriteString(&ml_message, wadnames[i].c_str());
-        MSG_WriteString(&ml_message, wadhashes[i].c_str());
+        MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
+        
+        // TODO: Remove next release
+        QRYNEWINFO(4)
+            MSG_WriteHexString(&ml_message, wadhashes[i].c_str());
+        else
+            MSG_WriteString(&ml_message, wadhashes[i].c_str());
     }
     
     MSG_WriteByte(&ml_message, players.size());
@@ -205,12 +260,18 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
     // Player info
     for (size_t i = 0; i < players.size(); ++i)
     {
-        MSG_WriteString(&ml_message, players[i].userinfo.netname);
-        QRYNEWINFO(2)
+        MSG_WriteString(&ml_message, players[i].userinfo.netname.c_str());
+
+        MSG_WriteLong(&ml_message, players[i].userinfo.color);
+        // TODO: Remove next release
+        QRYNEWINFO(5)
         {
-            MSG_WriteLong(&ml_message, players[i].userinfo.color);
+            if (sv_gametype == GM_TEAMDM)
+                MSG_WriteByte(&ml_message, players[i].userinfo.team);
         }
-        MSG_WriteByte(&ml_message, players[i].userinfo.team);
+        else
+            MSG_WriteByte(&ml_message, players[i].userinfo.team);
+
         MSG_WriteShort(&ml_message, players[i].ping);
 
         int timeingame = (time(NULL) - players[i].JoinTime)/60;
@@ -314,9 +375,13 @@ static DWORD IntQrySendResponse(const WORD &TagId,
     // Begin enquirer version translation
     DWORD EqVersion = MSG_ReadLong();
     DWORD EqProtocolVersion = MSG_ReadLong();
-    DWORD EqTime = 0;
+    DWORD EqTime = MSG_ReadLong();
 
-    EqTime = MSG_ReadLong();
+    // Prevent possible divide by zero
+    if (!EqVersion)
+    {
+        return 0;
+    }
 
     // Override other packet types for older enquirer version response
     if (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) || 

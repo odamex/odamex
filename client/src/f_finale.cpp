@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -121,7 +121,7 @@ void F_Ticker (void)
 		// [RH] or just reveal the entire message if we're still ticking it
 		size_t i;
 		for (i = 0; i < players.size(); i++)
-			if (players[i].cmd.ucmd.buttons)
+			if (players[i].cmd.buttons)
 				break;
 
 		if (i != players.size())
@@ -268,14 +268,14 @@ castinfo_t		castorder[] = {
 	{NULL, MT_UNKNOWNTHING}
 };
 
-int 			castnum;
-int 			casttics;
-int				castsprite;	// [RH] For overriding the player sprite with a skin
-state_t*		caststate;
-BOOL	 		castdeath;
-int 			castframes;
-int 			castonmelee;
-BOOL	 		castattacking;
+static int 			castnum;
+static int 			casttics;
+static int			castsprite;
+static state_t*		caststate;
+static BOOL	 		castdeath;
+static int 			castframes;
+static int 			castonmelee;
+static BOOL	 		castattacking;
 
 
 //
@@ -308,10 +308,7 @@ void F_StartCast (void)
 	wipegamestate = GS_FORCEWIPE;
 	castnum = 0;
 	caststate = &states[mobjinfo[castorder[castnum].type].seestate];
-	if (castorder[castnum].type == MT_PLAYER)
-		castsprite = skins[consoleplayer().userinfo.skin].sprite;
-	else
-		castsprite = caststate->sprite;
+	castsprite = caststate->sprite;
 	casttics = caststate->tics;
 	castdeath = false;
 	finalestage = 2;
@@ -345,10 +342,7 @@ void F_CastTicker (void)
 			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].seesound, 1, atten);
 		}
 		caststate = &states[mobjinfo[castorder[castnum].type].seestate];
-		if (castorder[castnum].type == MT_PLAYER)
-			castsprite = skins[consoleplayer().userinfo.skin].sprite;
-		else
-			castsprite = caststate->sprite;
+		castsprite = caststate->sprite;
 		castframes = 0;
 	}
 	else
@@ -456,25 +450,8 @@ BOOL F_CastResponder (event_t* ev)
 	casttics = caststate->tics;
 	castframes = 0;
 	castattacking = false;
-	if (mobjinfo[castorder[castnum].type].deathsound) {
-		if (castorder[castnum].type == MT_PLAYER) {
-			static const char sndtemplate[] = "player/%s/death1";
-			static const char *genders[] = { "male", "female", "cyborg" };
-			char nametest[128];
-			int sndnum;
-
-			sprintf (nametest, sndtemplate, skins[consoleplayer().userinfo.skin].name);
-			sndnum = S_FindSound (nametest);
-			if (sndnum == -1) {
-				sprintf (nametest, sndtemplate, genders[consoleplayer().userinfo.gender]);
-				sndnum = S_FindSound (nametest);
-				if (sndnum == -1)
-					sndnum = S_FindSound ("player/male/death1");
-			}
-			S_SoundID (CHAN_VOICE, sndnum, 1, ATTN_NONE);
-		} else
-			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].deathsound, 1, ATTN_NONE);
-	}
+	if (mobjinfo[castorder[castnum].type].deathsound)
+		S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].deathsound, 1, ATTN_NONE);
 
 	return true;
 }
@@ -516,7 +493,6 @@ void F_CastDrawer (void)
 //
 void F_DrawPatchCol (int x, const patch_t *patch, int col, const DCanvas *scrn)
 {
-	column_t*	column;
 	byte*		source;
 	byte*		dest;
 	byte*		desttop;
@@ -545,16 +521,16 @@ void F_DrawPatchCol (int x, const patch_t *patch, int col, const DCanvas *scrn)
 	step = (200<<16) / scrn->height;
 	invstep = (scrn->height<<16) / 200;
 
-	column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
+	tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
 	desttop = scrn->buffer + x;
 	pitch = scrn->pitch;
 
 	// step through the posts in a column
-	while (column->topdelta != 0xff )
+	while (!post->end())
 	{
-		source = (byte *)column + 3;
-		dest = desttop + ((column->topdelta*invstep)>>16)*pitch;
-		count = (column->length * invstep) >> 16;
+		source = post->data();
+		dest = desttop + ((post->topdelta*invstep)>>16)*pitch;
+		count = (post->length * invstep) >> 16;
 		c = 0;
 
 		switch (repeat) {
@@ -610,7 +586,8 @@ void F_DrawPatchCol (int x, const patch_t *patch, int col, const DCanvas *scrn)
 				}
 				break;
 		}
-		column = (column_t *)(	(byte *)column + column->length + 4 );
+
+		post = post->next();
 	}
 }
 

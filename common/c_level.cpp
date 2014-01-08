@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,7 +32,6 @@
 #include "d_event.h"
 #include "d_main.h"
 #include "doomstat.h"
-#include "d_protocol.h"
 #include "g_level.h"
 #include "g_game.h"
 #include "gstrings.h"
@@ -64,10 +63,8 @@
 
 level_locals_t level;			// info about current level
 
-level_pwad_info_t *wadlevelinfos;
-cluster_info_t *wadclusterinfos;
-size_t numwadlevelinfos = 0;
-size_t numwadclusterinfos = 0;
+std::vector<level_pwad_info_t> wadlevelinfos;
+std::vector<cluster_info_t> wadclusterinfos;
 
 BOOL HexenHack;
 
@@ -196,7 +193,7 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
-	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
+	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 }
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -226,7 +223,7 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 
 int FindWadLevelInfo (char *name)
 {
-	for (size_t i = 0; i < numwadlevelinfos; i++)
+	for (size_t i = 0; i < wadlevelinfos.size(); i++)
 		if (!strnicmp (name, wadlevelinfos[i].mapname, 8))
 			return i;
 
@@ -235,7 +232,7 @@ int FindWadLevelInfo (char *name)
 
 int FindWadClusterInfo (int cluster)
 {
-	for (size_t i = 0; i < numwadclusterinfos; i++)
+	for (size_t i = 0; i < wadclusterinfos.size(); i++)
 		if (wadclusterinfos[i].cluster == cluster)
 			return i;
 
@@ -257,7 +254,6 @@ static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 //
 void G_ParseMapInfo (void)
 {
-	int lump, lastlump = 0;
 	level_pwad_info_t defaultinfo;
 	level_pwad_info_t *levelinfo;
 	int levelindex;
@@ -265,7 +261,8 @@ void G_ParseMapInfo (void)
 	int clusterindex;
 	DWORD levelflags;
 
-	while ((lump = W_FindLump ("MAPINFO", &lastlump)) != -1)
+	int lump = -1;
+	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
 	{
 		SetLevelDefaults (&defaultinfo);
 		SC_OpenLumpNum (lump, "MAPINFO");
@@ -297,11 +294,11 @@ void G_ParseMapInfo (void)
 				levelindex = FindWadLevelInfo (sc_String);
 				if (levelindex == -1)
 				{
-					levelindex = numwadlevelinfos++;
-					wadlevelinfos = (level_pwad_info_t *)Realloc (wadlevelinfos, sizeof(level_pwad_info_t)*numwadlevelinfos);
+					wadlevelinfos.push_back(level_pwad_info_t());
+					levelindex = wadlevelinfos.size() - 1;
 				}
-				levelinfo = wadlevelinfos + levelindex;
-				memcpy (levelinfo, &defaultinfo, sizeof(*levelinfo));
+				levelinfo = &wadlevelinfos[levelindex];
+				memcpy (levelinfo, &defaultinfo, sizeof(level_pwad_info_t));
 				uppercopy (levelinfo->mapname, sc_String);
 				SC_MustGetString ();
 				ReplaceString (&levelinfo->level_name, sc_String);
@@ -322,11 +319,11 @@ void G_ParseMapInfo (void)
 				clusterindex = FindWadClusterInfo (sc_Number);
 				if (clusterindex == -1)
 				{
-					clusterindex = numwadclusterinfos++;
-					wadclusterinfos = (cluster_info_t *)Realloc (wadclusterinfos, sizeof(cluster_info_t)*numwadclusterinfos);
-					memset (wadclusterinfos + clusterindex, 0, sizeof(cluster_info_t));
+					wadclusterinfos.push_back(cluster_info_t());
+					clusterindex = wadclusterinfos.size() - 1;
+					memset(&wadclusterinfos[clusterindex], 0, sizeof(cluster_info_t));
 				}
-				clusterinfo = wadclusterinfos + clusterindex;
+				clusterinfo = &wadclusterinfos[clusterindex];
 				clusterinfo->cluster = sc_Number;
 				ParseMapInfoLower (ClusterHandlers, MapInfoClusterLevel, NULL, clusterinfo, 0);
 				break;
@@ -473,7 +470,7 @@ void P_RemoveDefereds (void)
 	unsigned int i;
 
 	// Remove any existing defereds
-	for (i = 0; i < numwadlevelinfos; i++)
+	for (i = 0; i < wadlevelinfos.size(); i++)
 		if (wadlevelinfos[i].defered) {
 			zapDefereds (wadlevelinfos[i].defered);
 			wadlevelinfos[i].defered = NULL;
@@ -493,6 +490,139 @@ void G_ParseMusInfo(void)
 	// Nothing yet...
 }
 
+//
+// G_LoadWad
+//
+// Determines if the vectors of wad & patch filenames differs from the currently
+// loaded ones and calls D_DoomWadReboot if so.
+//
+bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
+				const std::vector<std::string> &newpatchfiles,
+				const std::vector<std::string> &newwadhashes,
+				const std::vector<std::string> &newpatchhashes,
+				const std::string &mapname)
+{
+	bool AddedIWAD = false;
+	bool Reboot = false;
+	size_t i, j;
+
+	// Did we pass an IWAD?
+	if (!newwadfiles.empty() && W_IsIWAD(newwadfiles[0]))
+		AddedIWAD = true;
+
+	// Check our environment, if the same WADs are used, ignore this command.
+
+	// Did we switch IWAD files?
+	if (AddedIWAD && !wadfiles.empty())
+	{
+		if (!iequals(M_ExtractFileName(newwadfiles[0]), M_ExtractFileName(wadfiles[1])))
+			Reboot = true;
+	}
+
+	// Do the sizes of the WAD lists not match up?
+	if (!Reboot)
+	{
+		if (wadfiles.size() - 2 != newwadfiles.size() - (AddedIWAD ? 1 : 0))
+			Reboot = true;
+	}
+
+	// Do our WAD lists match up exactly?
+	if (!Reboot)
+	{
+		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < newwadfiles.size(); i++, j++)
+		{
+			if (!iequals(M_ExtractFileName(newwadfiles[j]), M_ExtractFileName(wadfiles[i])))
+			{
+				Reboot = true;
+				break;
+			}
+		}
+	}
+
+	// Do the sizes of the patch lists not match up?
+	if (!Reboot)
+	{
+		if (patchfiles.size() != newpatchfiles.size())
+			Reboot = true;
+	}
+
+	// Do our patchfile lists match up exactly?
+	if (!Reboot)
+	{
+		for (i = 0, j = 0; i < patchfiles.size() && j < newpatchfiles.size(); i++, j++)
+		{
+			if (!iequals(M_ExtractFileName(newpatchfiles[j]), M_ExtractFileName(patchfiles[i])))
+			{
+				Reboot = true;
+				break;
+			}
+		}
+	}
+
+	if (Reboot)
+	{
+		unnatural_level_progression = true;
+
+		// [SL] Stop any playing/recording demos before D_DoomWadReboot wipes out
+		// the zone memory heap and takes the demo data with it.
+		G_CheckDemoStatus();
+
+		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+		if (!missingfiles.empty())
+			return false;
+	}
+
+	if (mapname.length())
+		G_DeferedInitNew((char *)mapname.c_str());
+	else
+		G_DeferedInitNew(startmap);
+
+	return true;
+}
+
+const char *ParseString2(const char *data);
+
+//
+// G_LoadWad
+//
+// Takes a space-separated string list of wad and patch names, which is parsed
+// into a vector of wad filenames and patch filenames and then calls
+// D_DoomWadReboot.
+//
+bool G_LoadWad(const std::string &str, const std::string &mapname)
+{
+	std::vector<std::string> newwadfiles;
+	std::vector<std::string> newpatchfiles;
+	std::vector<std::string> nohashes;	// intentionally empty
+
+	const char *data = str.c_str();
+
+	for (size_t argv = 0; (data = ParseString2(data)); argv++)
+	{
+		std::string ext;
+
+		if (argv == 0 && W_IsIWAD(com_token))
+		{
+			// Add an IWAD
+			std::string iwad_name(com_token);
+
+			// The first argument in the string can be the name of an IWAD
+			// with the WAD extension omitted
+			M_AppendExtension(iwad_name, ".wad");
+
+			newwadfiles.push_back(iwad_name);
+		}
+		else if (M_ExtractFileExtension(com_token, ext))
+		{
+			if (ext == "wad" && !W_IsIWAD(com_token))
+				newwadfiles.push_back(com_token);
+			else if (ext == "deh" || ext == "bex")
+				newpatchfiles.push_back(com_token);		// Patch file
+		}
+	}
+
+	return G_LoadWad(newwadfiles, newpatchfiles, nohashes, nohashes, mapname);
+}
 
 BEGIN_COMMAND (map)
 {
@@ -509,7 +639,7 @@ BEGIN_COMMAND (map)
             // [Russell] - gamemode is always the better option compared to above
 			if ( argc == 2 )
 			{
-				if (gamemode == commercial)
+				if ((gameinfo.flags & GI_MAPxx))
                     sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
                 else
                     sprintf( mapname, "E%cM%c", argv[1][0], argv[1][1]);
@@ -539,7 +669,6 @@ BEGIN_COMMAND (map)
 	}
 }
 END_COMMAND (map)
-
 
 char *CalcMapName (int episode, int level)
 {
@@ -578,7 +707,7 @@ level_info_t *FindLevelInfo (char *mapname)
 	int i;
 
 	if ((i = FindWadLevelInfo (mapname)) > -1)
-		return (level_info_t *)(wadlevelinfos + i);
+		return (level_info_t *)(&wadlevelinfos[i]);
 	else
 		return FindDefLevelInfo (mapname);
 }
@@ -586,9 +715,9 @@ level_info_t *FindLevelInfo (char *mapname)
 level_info_t *FindLevelByNum (int num)
 {
 	{
-		for (size_t i = 0; i < numwadlevelinfos; i++)
+		for (size_t i = 0; i < wadlevelinfos.size(); i++)
 			if (wadlevelinfos[i].levelnum == num)
-				return (level_info_t *)(wadlevelinfos + i);
+				return (level_info_t *)(&wadlevelinfos[i]);
 	}
 	{
 		level_info_t *i = LevelInfos;
@@ -617,7 +746,7 @@ cluster_info_t *FindClusterInfo (int cluster)
 	int i;
 
 	if ((i = FindWadClusterInfo (cluster)) > -1)
-		return wadclusterinfos + i;
+		return &wadclusterinfos[i];
 	else
 		return FindDefClusterInfo (cluster);
 }
@@ -709,7 +838,12 @@ void G_AirControlChanged ()
 	}
 }
 
-void G_SerializeLevel (FArchive &arc, bool hubLoad)
+// Serialize or unserialize the state of the level depending on the state of
+// the first parameter.  Second parameter is true if you need to deal with hub
+// playerstate.  Third parameter is true if you want to handle playerstate
+// yourself (map resets), just make sure you set it the same for both
+// serialization and unserialization.
+void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 {
 	if (arc.IsStoring ())
 	{
@@ -722,12 +856,13 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			<< level.gravity
 			<< level.aircontrol;
 
-		G_AirControlChanged ();
+		G_AirControlChanged();
 
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc << level.vars[i];
 
-		arc << playernum;
+		if (!noStorePlayers)
+			arc << playernum;
 	}
 	else
 	{
@@ -740,23 +875,25 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			>> level.gravity
 			>> level.aircontrol;
 
-		G_AirControlChanged ();
+		G_AirControlChanged();
 
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc >> level.vars[i];
 
-       	arc >> playernum;
-
-		players.resize(playernum);
+		if (!noStorePlayers)
+		{
+			arc >> playernum;
+			players.resize(playernum);
+		}
 	}
 
-	if (!hubLoad)
-		P_SerializePlayers (arc);
+	if (!(hubLoad || noStorePlayers))
+		P_SerializePlayers(arc);
 
-	P_SerializeThinkers (arc, hubLoad);
-	P_SerializeWorld (arc);
-	P_SerializePolyobjs (arc);
-	P_SerializeSounds (arc);
+	P_SerializeThinkers(arc, hubLoad, noStorePlayers);
+	P_SerializeWorld(arc);
+	P_SerializePolyobjs(arc);
+	P_SerializeSounds(arc);
 }
 
 // Archives the current level
@@ -769,7 +906,7 @@ void G_SnapshotLevel ()
 
 	FArchive arc (*level.info->snapshot);
 
-	G_SerializeLevel (arc, false);
+	G_SerializeLevel (arc, false, false);
 }
 
 // Unarchives the current level based on its snapshot
@@ -783,7 +920,7 @@ void G_UnSnapshotLevel (bool hubLoad)
 	FArchive arc (*level.info->snapshot);
 	if (hubLoad)
 		arc.SetHubTravel (); // denis - hexen?
-	G_SerializeLevel (arc, hubLoad);
+	G_SerializeLevel (arc, hubLoad, false);
 	arc.Close ();
 	// No reason to keep the snapshot around once the level's been entered.
 	delete level.info->snapshot;
@@ -794,7 +931,7 @@ void G_ClearSnapshots (void)
 {
 	size_t i;
 
-	for (i = 0; i < numwadlevelinfos; i++)
+	for (i = 0; i < wadlevelinfos.size(); i++)
 		if (wadlevelinfos[i].snapshot)
 		{
 			delete wadlevelinfos[i].snapshot;
@@ -821,7 +958,7 @@ void G_SerializeSnapshots (FArchive &arc)
 	{
 		size_t i;
 
-		for (i = 0; i < numwadlevelinfos; i++)
+		for (i = 0; i < wadlevelinfos.size(); i++)
 			if (wadlevelinfos[i].snapshot)
 				writeSnapShot (arc, (level_info_s *)&wadlevelinfos[i]);
 
@@ -862,7 +999,7 @@ void P_SerializeACSDefereds (FArchive &arc)
 	{
 		unsigned int i;
 
-		for (i = 0; i < numwadlevelinfos; i++)
+		for (i = 0; i < wadlevelinfos.size(); i++)
 			if (wadlevelinfos[i].defered)
 				writeDefereds (arc, (level_info_s *)&wadlevelinfos[i]);
 
@@ -939,9 +1076,12 @@ void G_InitLevelLocals ()
 	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
 	G_AirControlChanged();
 
+	// clear all ACS variables
+	memset(level.vars, 0, sizeof(level.vars));
+
 	if ((i = FindWadLevelInfo (level.mapname)) > -1)
 	{
-		level_pwad_info_t *pinfo = wadlevelinfos + i;
+		level_pwad_info_t *pinfo = &wadlevelinfos[i];
 
 		// [ML] 5/11/06 - Remove sky scrolling and sky2
 		// [SL] 2012-03-19 - Add sky2 back
@@ -950,7 +1090,7 @@ void G_InitLevelLocals ()
 		strncpy (level.skypic2, pinfo->skypic2, 8);
 		level.fadeto = pinfo->fadeto;
 		if (level.fadeto) {
-			NormalLight.maps = DefaultPalette->maps.colormaps;
+			NormalLight.maps = GetDefaultPalette()->maps.colormaps;
 		} else {
 			R_SetDefaultColormap (pinfo->fadetable);
 		}

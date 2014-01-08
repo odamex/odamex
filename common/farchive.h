@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,7 +38,8 @@ public:
 		enum EOpenMode
 		{
 			EReading,
-			EWriting
+			EWriting,
+			ENotOpen
 		};
 
 		enum ESeekPos
@@ -120,7 +121,7 @@ public:
 
 	size_t Length() const;
 	void WriteToBuffer(void *buf, size_t length) const;
-	
+
 protected:
 	bool FreeOnExplode () { return !m_SourceFromMem; }
 
@@ -138,7 +139,7 @@ public:
 		inline bool IsLoading () const { return m_Loading; }
 		inline bool IsStoring () const { return m_Storing; }
 		inline bool IsPeristent () const { return m_Persistent; }
-		
+
 		void SetHubTravel () { m_HubTravel = true; }
 
 		void Close ();
@@ -167,7 +168,7 @@ inline	FArchive& operator<< (const unsigned char *str) { return operator<< ((con
 inline	FArchive& operator<< (const signed char *str) { return operator<< ((const char *)str); }
 inline	FArchive& operator<< (bool b) { return operator<< ((BYTE)b); }
 
-#ifdef WIN32
+#ifdef _WIN32
 inline	FArchive& operator<< (int i) { return operator<< ((SDWORD)i); }
 inline	FArchive& operator<< (unsigned int i) { return operator<< ((DWORD)i); }
 #endif
@@ -188,10 +189,10 @@ inline	FArchive& operator>> (SDWORD &i) { DWORD in; operator>> (in); i = (SDWORD
 inline	FArchive& operator>> (SQWORD &i) { QWORD in; operator>> (in); i = (SQWORD)in; return *this; }
 //inline	FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
 //inline	FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
-inline	FArchive& operator>> (bool &b) { BYTE in; operator>> (in); b = (bool)in; return *this; }
+inline	FArchive& operator>> (bool &b) { BYTE in; operator>> (in); b = (in != 0); return *this; }
 inline  FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
 
-#ifdef WIN32
+#ifdef _WIN32
 inline	FArchive& operator>> (int &i) { DWORD in; operator>> (in); i = (int)in; return *this; }
 inline	FArchive& operator>> (unsigned int &i) { DWORD in; operator>> (in); i = (unsigned int)in; return *this; }
 #endif

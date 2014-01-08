@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,15 +22,15 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <ctime>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sstream>
+#include <functional>
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#ifndef _XBOX
-#include <windows.h>
-#endif // _XBOX
+#include "win32inc.h"
+#ifdef _WIN32
+    #include "win32time.h"
 #endif // WIN32
 
 #include "doomtype.h"
@@ -211,16 +211,9 @@ BOOL IsNum (char *str)
 
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
-int StdStringCompare(const std::string &s1, const std::string &s2,
-    bool CIS = false)
+bool iequals(const std::string &s1, const std::string &s2)
 {
-	// Convert to upper case
-	if (CIS)
-	{
-		return StdStringToUpper(s1).compare(StdStringToUpper(s2));
-	}
-
-    return s1.compare(s2);
+	return StdStringToUpper(s1).compare(StdStringToUpper(s2)) == 0;
 }
 
 size_t StdStringFind(const std::string& haystack, const std::string& needle,
@@ -314,7 +307,152 @@ std::string JoinStrings(const std::vector<std::string> &pieces, const std::strin
 	return result.str();
 }
 
-// [SL] Reimplement std::isspace 
+// Tokenize a string
+StringTokens TokenizeString(const std::string& str, const std::string& delim) {
+	StringTokens tokens;
+	size_t delimPos = 0;
+	size_t prevDelim = 0;
+
+	while (delimPos != std::string::npos) {
+		delimPos = str.find(delim, prevDelim);
+		tokens.push_back(str.substr(prevDelim, delimPos - prevDelim));
+		prevDelim = delimPos + 1;
+	}
+
+	return tokens;
+}
+
+// [AM] Format a tm struct as an ISO8601-compliant extended format string.
+//      Assume that the input time is in UTC.
+bool StrFormatISOTime(std::string& s, const tm* utc_tm) {
+	char buffer[21];
+	if (!strftime(buffer, 21, "%Y-%m-%dT%H:%M:%SZ", utc_tm)) {
+		return false;
+	}
+	s = buffer;
+	return true;
+}
+
+// [AM] Parse an ISO8601-formatted string time into a tm* struct.
+bool StrParseISOTime(const std::string& s, tm* utc_tm) {
+	if (!strptime(s.c_str(), "%Y-%m-%dT%H:%M:%SZ", utc_tm)) {
+		return false;
+	}
+	return true;
+}
+
+// [AM] Turn a string representation of a length of time into a time_t
+//      relative to the current time.
+bool StrToTime(std::string str, time_t &tim) {
+	tim = time(NULL);
+	str = TrimString(str);
+	str = StdStringToLower(str);
+
+	if (str.empty()) {
+		return false;
+	}
+
+	// We use 0 as a synonym for forever.
+	if (str.compare(std::string("eternity").substr(0, str.size())) == 0 ||
+		str.compare(std::string("forever").substr(0, str.size())) == 0 ||
+		str.compare(std::string("permanent").substr(0, str.size())) == 0) {
+		tim = 0;
+		return true;
+	}
+
+	// Gather tokens from string representation.
+	typedef std::pair<unsigned short, std::string> token_t;
+	typedef std::vector<token_t> tokens_t;
+	tokens_t tokens;
+
+	size_t i, j;
+	size_t size = str.size();
+	i = j = 0;
+
+	while (i < size) {
+		unsigned short num = 0;
+		std::string timeword;
+
+		// Grab a number.
+		j = i;
+		while (str[j] >= '0' && str[j] <= '9' && j < size) {
+			j++;
+		}
+
+		if (i == j) {
+			// There is no number.
+			return false;
+		}
+
+		if (!(j < size)) {
+			// We were expecting a number but ran off the end of the string.
+			return false;
+		}
+
+		std::istringstream num_buffer(str.substr(i, j - i));
+		num_buffer >> num;
+
+		i = j;
+
+		// Skip whitespace
+		while ((str[i] == ' ') && i < size) {
+			i++; j++;
+		}
+
+		// Grab a time word
+		while (str[j] >= 'a' && str[j] <= 'z' && j < size) {
+			j++;
+		}
+
+		if (i == j) {
+			// There is no time word.
+			return false;
+		}
+
+		timeword = str.substr(i, j - i);
+		i = j;
+
+		// Push to tokens vector
+		token_t token;
+		token.first = num;
+		token.second = timeword;
+		tokens.push_back(token);
+
+		// Skip whitespace and commas.
+		while ((str[i] == ' ' || str[i] == ',') && i < size) {
+			i++;
+		}
+	}
+
+	for (tokens_t::iterator it = tokens.begin();it != tokens.end();++it) {
+		if (it->second.compare(std::string("seconds").substr(0, it->second.size())) == 0) {
+			tim += it->first;
+		} else if (it->second.compare("secs") == 0) {
+			tim += it->first;
+		} else if (it->second.compare(std::string("minutes").substr(0, it->second.size())) == 0) {
+			tim += it->first * 60;
+		} else if (it->second.compare("mins") == 0) {
+			tim += it->first * 60;
+		} else if (it->second.compare(std::string("hours").substr(0, it->second.size())) == 0) {
+			tim += it->first * 3600;
+		} else if (it->second.compare(std::string("days").substr(0, it->second.size())) == 0) {
+			tim += it->first * 86400;
+		} else if (it->second.compare(std::string("weeks").substr(0, it->second.size())) == 0) {
+			tim += it->first * 604800;
+		} else if (it->second.compare(std::string("months").substr(0, it->second.size())) == 0) {
+			tim += it->first * 2592000;
+		} else if (it->second.compare(std::string("years").substr(0, it->second.size())) == 0) {
+			tim += it->first * 31536000;
+		} else {
+			// Unrecognized timeword
+			return false;
+		}
+	}
+
+	return true;
+}
+
+// [SL] Reimplement std::isspace
 static int _isspace(int c)
 {
 	return (c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\f' || c == '\r');
@@ -326,18 +464,30 @@ std::string &TrimStringStart(std::string &s)
 	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(_isspace))));
 	return s;
 }
- 
+
 // Trim whitespace from the end of a string
 std::string &TrimStringEnd(std::string &s)
 {
 	s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(_isspace))).base(), s.end());
 	return s;
 }
- 
+
 // Trim whitespace from the start and end of a string
 std::string &TrimString(std::string &s)
 {
 	return TrimStringStart(TrimStringEnd(s));
+}
+
+// Ensure that a string only has valid viewable ASCII in it.
+bool ValidString(const std::string& s)
+{
+	for (std::string::const_iterator it = s.begin();it != s.end();++it)
+	{
+		const char c = *it;
+		if (c < ' ' || c > '~')
+			return false;
+	}
+	return true;
 }
 
 //==========================================================================

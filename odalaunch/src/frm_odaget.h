@@ -103,6 +103,15 @@ class FTPThread : public wxThread
         
         ~FTPThread() { }
     
+        void CloseConnection() 
+        { 
+            Pause();
+            m_FTP.Close();
+            // Have to forcefully terminate the socket connection as well
+            m_FTP.wxSocketBase::Close(); 
+            Resume(); 
+        }
+    
     private:
         virtual void *Entry();
         
@@ -148,6 +157,8 @@ class HTTPThread : public wxThread
         
         ~HTTPThread() { }
    
+        void CloseConnection() { Pause(); m_HTTP.Close(); Resume(); }
+   
     private:
         virtual void *Entry();
         
@@ -171,6 +182,8 @@ class frmOdaGet : public wxFrame
         void OnHttpThreadMessage(wxCommandEvent &event);
         void OnFtpThreadMessage(wxCommandEvent &event);
         
+        void DeleteThreads();
+        
         FTPThread *m_FTPThread;
         HTTPThread *m_HTTPThread;
         
@@ -178,6 +191,8 @@ class frmOdaGet : public wxFrame
         wxTextCtrl *m_LocationDisplay;
         wxGauge *m_DownloadGauge;
         
+        int m_FileSize;
+
         wxString m_SaveLocation;
         
         DECLARE_EVENT_TABLE()

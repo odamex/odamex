@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,7 +41,12 @@
 #include "stats.h"
 #include "z_zone.h"
 #include "i_video.h"
-#include "vectors.h"
+#include "m_vectors.h"
+#include "f_wipe.h"
+
+void R_BeginInterpolation(fixed_t amount);
+void R_EndInterpolation();
+void R_InterpolateCamera(fixed_t amount);
 
 #define DISTMAP			2
 
@@ -53,11 +58,15 @@ extern int *walllights;
 extern dyncolormap_t NormalLight;
 extern bool r_fakingunderwater;
 
+EXTERN_CVAR (r_flashhom)
 EXTERN_CVAR (r_viewsize)
+EXTERN_CVAR (sv_allowwidescreen)
 
-static float	LastFOV = 90.0f;
+static float	LastFOV = 0.0f;
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
+double			focratio;
+double			ifocratio;
 int 			viewangleoffset = 0;
 
 // increment every time a check is made
@@ -145,7 +154,11 @@ void (*hcolfunc_post2) (int hx, int sx, int yl, int yh);
 void (*hcolfunc_post4) (int sx, int yl, int yh);
 
 static int lastcenteryfrac;
-int FieldOfView = 2048;	// Fineangles in the SCREENWIDTH wide window
+// [AM] Number of fineangles in a default 90 degree FOV at a 4:3 resolution.
+int FieldOfView = 2048;
+int CorrectFieldOfView = 2048;
+
+fixed_t			render_lerp_amount;
 
 //
 //
@@ -536,13 +549,16 @@ void R_InitTextureMapping (void)
 	// Use tangent table to generate viewangletox: viewangletox will give
 	// the next greatest x after the view angle.
 
-	const fixed_t hitan = finetangent[FINEANGLES/4+FieldOfView/2];
-	const fixed_t lotan = finetangent[FINEANGLES/4-FieldOfView/2];
+	const fixed_t hitan = finetangent[FINEANGLES/4+CorrectFieldOfView/2];
+	const fixed_t lotan = finetangent[FINEANGLES/4-CorrectFieldOfView/2];
 	const int highend = viewwidth + 1;
 
 	// Calc focallength so FieldOfView angles covers viewwidth.
 	FocalLengthX = FixedDiv (centerxfrac, hitan);
 	FocalLengthY = FixedDiv (FixedMul (centerxfrac, yaspectmul), hitan);
+
+	focratio = double(FocalLengthY) / double(FocalLengthX);
+	ifocratio = double(FocalLengthX) / double(FocalLengthY);
 
 	for (i = 0; i < FINEANGLES/2; i++)
 	{
@@ -591,25 +607,32 @@ void R_InitTextureMapping (void)
 }
 
 //
-//
 // R_SetFOV
 //
-// Changes the field of view
+// Changes the field of view based on widescreen mode availibility.
 //
-//
-
-void R_SetFOV (float fov)
+void R_SetFOV(float fov, bool force = false)
 {
-	if (fov == LastFOV)
+	fov = clamp(fov, 1.0f, 179.0f);
+
+	if (fov == LastFOV && force == false)
 		return;
-
-	if (fov < 1)
-		fov = 1;
-	else if (fov > 179)
-		fov = 179;
-
+ 
 	LastFOV = fov;
-	FieldOfView = (int)(fov * (float)FINEANGLES / 360.0f);
+	FieldOfView = int(fov * FINEANGLES / 360.0f);
+
+	if (V_UseWidescreen() || V_UseLetterBox())
+	{
+		float am = float(screen->width) / float(screen->height) / (4.0f / 3.0f);
+		float radfov = fov * PI / 180.0f;
+		float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
+		CorrectFieldOfView = int(widefov * FINEANGLES / 360.0f);
+	}
+	else
+ 	{
+		CorrectFieldOfView = FieldOfView;
+ 	}
+
 	setsizeneeded = true;
 }
 
@@ -727,7 +750,6 @@ void R_ExecuteSetViewSize (void)
 	int i, j;
 	int level;
 	int startmap;
-	int virtheight, virtwidth;
 	int lightmapsize = 8 + (screen->is8bit() ? 0 : 2);
 
 	setsizeneeded = false;
@@ -783,10 +805,10 @@ void R_ExecuteSetViewSize (void)
 	centerxfrac = centerx<<FRACBITS;
 	centeryfrac = centery<<FRACBITS;
 
-	virtwidth = screen->width >> detailxshift;
-	virtheight = screen->height >> detailyshift;
-
-	yaspectmul = (fixed_t)(65536.0f*(320.0f*(float)virtheight/(200.0f*(float)virtwidth)));
+	// calculate the vertical stretching factor to emulate 320x200
+	// it's a 5:4 ratio = (320 / 200) / (4 / 3)
+	// also take r_detail into account
+	yaspectmul = (320.0f / 200.0f) / (4.0f / 3.0f) * ((FRACUNIT << detailxshift) >> detailyshift);
 
 	colfunc = basecolfunc = R_DrawColumn;
 	lucentcolfunc = R_DrawTranslucentColumn;
@@ -806,9 +828,19 @@ void R_ExecuteSetViewSize (void)
 	R_InitTextureMapping ();
 
 	// psprite scales
-	pspritexscale = centerxfrac / 160;
-	pspriteyscale = FixedMul (pspritexscale, yaspectmul);
-	pspritexiscale = FixedDiv (FRACUNIT, pspritexscale);
+	// [AM] Using centerxfrac will make our sprite too fat, so we
+	//      generate a corrected 4:3 screen width based on our
+	//      height, then generate the x-scale based on that.
+	int cswidth, crvwidth;
+	cswidth = (4 * screen->height) / 3;
+	if (setblocks < 10)
+		crvwidth = ((setblocks * cswidth) / 10) & (~(15 >> (screen->is8bit() ? 0 : 2)));
+	else
+		crvwidth = cswidth;
+	pspritexscale = (((crvwidth >> detailxshift) / 2) << FRACBITS) / 160;
+
+	pspriteyscale = FixedMul(pspritexscale, yaspectmul);
+	pspritexiscale = FixedDiv(FRACUNIT, pspritexscale);
 
 	// [RH] Sky height fix for screens not 200 (or 240) pixels tall
 	R_InitSkyMap ();
@@ -964,15 +996,22 @@ void R_SetupFrame (player_t *player)
 		viewx = CameraX;
 		viewy = CameraY;
 		viewz = CameraZ;
+		viewangle = viewangleoffset + camera->angle;
 	}
 	else
 	{
-		viewx = camera->x;
-		viewy = camera->y;
-		viewz = camera->player ? camera->player->viewz : camera->z;
+		if (render_lerp_amount < FRACUNIT)
+		{
+			R_InterpolateCamera(render_lerp_amount);
+		}
+		else
+		{
+			viewx = camera->x;
+			viewy = camera->y;
+			viewz = camera->player ? camera->player->viewz : camera->z;
+			viewangle = viewangleoffset + camera->angle;
+		}
 	}
-
-	viewangle = camera->angle + viewangleoffset;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
@@ -1032,24 +1071,22 @@ void R_SetupFrame (player_t *player)
 
 	fixedcolormap = NULL;
 	fixedlightlev = 0;
+	palette_t *pal = GetDefaultPalette();
 
 	if (camera == player->mo && player->fixedcolormap)
 	{
 		if (player->fixedcolormap < NUMCOLORMAPS)
 		{
 			fixedlightlev = player->fixedcolormap*256;
-			fixedcolormap = DefaultPalette->maps.colormaps;
+			fixedcolormap = pal->maps.colormaps;
 		}
 		else
 		{
 			if (screen->is8bit())
 				fixedcolormap =
-					DefaultPalette->maps.colormaps
-					+ player->fixedcolormap*256;
+					pal->maps.colormaps + player->fixedcolormap*256;
 			else
-				fixedcolormap = (lighttable_t *)
-					(DefaultPalette->maps.shades
-					+ player->fixedcolormap*256);
+				fixedcolormap = (lighttable_t *)(pal->maps.shades + player->fixedcolormap*256);
 		}
 
 		walllights = scalelightfixed;
@@ -1059,7 +1096,8 @@ void R_SetupFrame (player_t *player)
 
 	// [RH] freelook stuff
 	{
-		fixed_t dy = FixedMul (FocalLengthY, finetangent[(ANG90-camera->pitch)>>ANGLETOFINESHIFT]);
+		fixed_t pitch = camera->prevpitch + FixedMul(render_lerp_amount, camera->pitch - camera->prevpitch);
+		fixed_t dy = FixedMul (FocalLengthY, finetangent[(ANG90 - pitch)>>ANGLETOFINESHIFT]);
 
 		centeryfrac = (viewheight << (FRACBITS-1)) + dy;
 		centery = centeryfrac >> FRACBITS;
@@ -1160,6 +1198,124 @@ void R_SetupFrame (player_t *player)
 }
 
 //
+// R_SetFlatDrawFuncs
+//
+// Sets the drawing function pointers to functions that floodfill with
+// flat colors instead of texture mapping.
+//
+void R_SetFlatDrawFuncs()
+{
+	colfunc = R_FillColumnP;
+	hcolfunc_pre = R_FillColumnHorizP;
+	hcolfunc_post1 = rt_copy1col;
+	hcolfunc_post2 = rt_copy2cols;
+	hcolfunc_post4 = rt_copy4cols;
+	spanfunc = R_FillSpan;
+	spanslopefunc = R_FillSpan;
+}
+
+//
+// R_SetBlankDrawFuncs
+//
+// Sets the drawing function pointers to functions that draw nothing.
+// These can be used instead of the flat color functions for lucent midtex.
+//
+void R_SetBlankDrawFuncs()
+{
+	colfunc = R_BlankColumn;
+	hcolfunc_pre = R_BlankColumn; 
+	hcolfunc_post1 = rt_copy1col;
+	hcolfunc_post2 = rt_copy2cols;
+	hcolfunc_post4 = rt_copy4cols;
+	spanfunc = spanslopefunc = R_BlankColumn;
+}
+
+//
+// R_ResetDrawFuncs
+//
+void R_ResetDrawFuncs()
+{
+	if (r_drawflat)
+	{
+		R_SetFlatDrawFuncs();
+	}
+	else if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else
+	{
+		colfunc = basecolfunc;
+		hcolfunc_pre = R_DrawColumnHoriz;
+		hcolfunc_post1 = rt_map1col;
+		hcolfunc_post2 = rt_map2cols;
+		hcolfunc_post4 = rt_map4cols;
+		spanfunc = R_DrawSpan;
+		spanslopefunc = R_DrawSlopeSpan;
+	}
+}
+
+void R_SetLucentDrawFuncs()
+{
+	if (r_drawflat)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else
+	{
+		colfunc = lucentcolfunc;
+		hcolfunc_pre = R_DrawColumnHoriz;
+		hcolfunc_post1 = rt_lucent1col;
+		hcolfunc_post2 = rt_lucent2cols;
+		hcolfunc_post4 = rt_lucent4cols;
+	}
+}
+
+void R_SetTranslatedDrawFuncs()
+{
+	if (r_drawflat)
+	{
+		R_SetFlatDrawFuncs();
+	}
+	else if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else
+	{
+		colfunc = transcolfunc;
+		hcolfunc_pre = R_DrawColumnHoriz;
+		hcolfunc_post1 = rt_tlate1col;
+		hcolfunc_post2 = rt_tlate2cols;
+		hcolfunc_post4 = rt_tlate4cols;
+	}
+}
+
+void R_SetTranslatedLucentDrawFuncs()
+{
+	if (r_drawflat)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else
+	{
+		colfunc = tlatedlucentcolfunc;
+		hcolfunc_pre = R_DrawColumnHoriz;
+		hcolfunc_post1 = rt_tlatelucent1col;
+		hcolfunc_post2 = rt_tlatelucent2cols;
+		hcolfunc_post4 = rt_tlatelucent4cols;
+	}
+}
+
+//
 //
 // R_RenderView
 //
@@ -1175,30 +1331,25 @@ void R_RenderPlayerView (player_t *player)
 	R_ClearPlanes ();
 	R_ClearSprites ();
 
-	// [RH] Show off segs if r_drawflat is 1
-	if (r_drawflat)
-	{
-		hcolfunc_pre = R_FillColumnHorizP;
-		hcolfunc_post1 = rt_copy1col;
-		hcolfunc_post2 = rt_copy2cols;
-		hcolfunc_post4 = rt_copy4cols;
-		colfunc = R_FillColumnP;
-		spanfunc = R_FillSpan;
-		spanslopefunc = R_FillSpan;
-	}
-	else
-	{
-		hcolfunc_pre = R_DrawColumnHoriz;
-		colfunc = basecolfunc;
-		hcolfunc_post1 = rt_map1col;
-		hcolfunc_post2 = rt_map2cols;
-		hcolfunc_post4 = rt_map4cols;
-		spanfunc = R_DrawSpan;
-		spanslopefunc = R_DrawSlopeSpan;
-	}
+	R_ResetDrawFuncs();
 
 	// [RH] Hack to make windows into underwater areas possible
 	r_fakingunderwater = false;
+
+	// [SL] fill the screen with a blinking solid color to make HOM more visible
+	if (r_flashhom)
+	{
+		int color = gametic & 8 ? 0 : 200;
+
+		int x1 = viewwindowx;
+		int y1 = viewwindowy;
+		int x2 = viewwindowx + viewwidth - 1;
+		int y2 = viewwindowy + viewheight - 1;
+
+		screen->Clear(x1, y1, x2, y2, color);
+	}
+
+	R_BeginInterpolation(render_lerp_amount);
 
 	// [RH] Setup particles for this frame
 	R_FindParticleSubsectors();
@@ -1220,6 +1371,8 @@ void R_RenderPlayerView (player_t *player)
 
 	// [RH] Apply detail mode doubling
 	R_DetailDouble ();
+
+	R_EndInterpolation();
 }
 
 //
@@ -1234,8 +1387,6 @@ void R_MultiresInit (void)
 {
 	int i;
 
-	// in r_things.c
-	extern int *r_dscliptop, *r_dsclipbot;
 	// in r_draw.c
 	extern byte **ylookup;
 	extern int *columnofs;
@@ -1243,16 +1394,12 @@ void R_MultiresInit (void)
 	// [Russell] - Possible bug, ylookup is 2 star.
     M_Free(ylookup);
     M_Free(columnofs);
-    M_Free(r_dscliptop);
-    M_Free(r_dsclipbot);
     M_Free(negonearray);
     M_Free(screenheightarray);
     M_Free(xtoviewangle);
 
 	ylookup = (byte **)M_Malloc (screen->height * sizeof(byte *));
 	columnofs = (int *)M_Malloc (screen->width * sizeof(int));
-	r_dscliptop = (int *)M_Malloc (screen->width * sizeof(int));
-	r_dsclipbot = (int *)M_Malloc (screen->width * sizeof(int));
 
 	// Moved from R_InitSprites()
 	negonearray = (int *)M_Malloc (sizeof(int) * screen->width);
@@ -1264,8 +1411,6 @@ void R_MultiresInit (void)
 	// GhostlyDeath -- Clean up the buffers
 	memset(ylookup, 0, screen->height * sizeof(byte*));
 	memset(columnofs, 0, screen->width * sizeof(int));
-	memset(r_dscliptop, 0, screen->width * sizeof(int));
-	memset(r_dsclipbot, 0, screen->width * sizeof(int));
 
 	for(i = 0; i < screen->width; i++)
 	{

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -86,7 +86,7 @@ void SV_InitMasters(void)
         // [Russell] - Add some default masters
         // so we can dump them to the server cfg file if
         // one does not exist
-        if (!masters.size())
+        if (masters.empty())
 		{
 			int i = 0;
             while(def_masterlist[i])

@@ -47,8 +47,10 @@ class LstOdaServerList : public wxAdvancedListCtrl
         LstOdaServerList();
         virtual ~LstOdaServerList();
 
-        void SetupServerListColumns();
         void AddServerToList(const odalpapi::Server &s, wxInt32 index, bool insert = true);
+
+        wxInt32 FindServer(wxString Address);
+        wxInt32 GetSelectedServerIndex();
 
     protected:
         
@@ -57,6 +59,10 @@ class LstOdaServerList : public wxAdvancedListCtrl
         void OnOpenContextMenu(wxContextMenuEvent& event);
 
         void OnCopyAddress(wxCommandEvent& event);
+
+        void SetupServerListColumns();
+
+        void OnCreateControl(wxWindowCreateEvent &event);
 
         DECLARE_DYNAMIC_CLASS(LstOdaServerList)
 

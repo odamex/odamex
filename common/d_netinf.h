@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -60,36 +60,33 @@ enum weaponswitch_t
 	WPSW_NUMTYPES
 };
 
-struct userinfo_s
+struct UserInfo
 {
-	int				next_change_time;
-	char			netname[MAXPLAYERNAME+1];
-	team_t			team; // [Toke - Teams] 
-	fixed_t			aimdist;
-	bool			unlag;
-	byte			update_rate;
-	int				color;
-	unsigned int	skin;
-	gender_t		gender;
+	int             next_change_time;
+	std::string     netname;
+	team_t          team; // [Toke - Teams]
+	fixed_t         aimdist;
+	bool            unlag;
+	bool            predict_weapons;
+	byte            update_rate;
+	int             color;
+	gender_t        gender;
+	weaponswitch_t  switchweapon;
+	byte            weapon_prefs[NUMWEAPONS];
 
-	weaponswitch_t	switchweapon;
-	weapontype_t	weapon_prefs[NUMWEAPONS];
+	static const byte weapon_prefs_default[NUMWEAPONS];
 
-	userinfo_s() :
-		next_change_time(0),
-		team(TEAM_NONE), aimdist(0), unlag(true), update_rate(2), color(0),
-		skin(0), gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
- 	{
-		*netname = 0;
-
+	UserInfo() : next_change_time(0), team(TEAM_NONE), aimdist(0),
+	             unlag(true), predict_weapons(true), update_rate(2), color(0),
+	             gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
+	{
 		// default doom weapon ordering when player runs out of ammo
-		memcpy(weapon_prefs, default_weaponprefs, sizeof(weapon_prefs));
+		memcpy(weapon_prefs, UserInfo::weapon_prefs_default, sizeof(weapon_prefs));
 	}
 };
-typedef userinfo_s userinfo_t;
 
-FArchive &operator<< (FArchive &arc, userinfo_t &info);
-FArchive &operator>> (FArchive &arc, userinfo_t &info);
+FArchive &operator<< (FArchive &arc, UserInfo &info);
+FArchive &operator>> (FArchive &arc, UserInfo &info);
 
 void D_SetupUserInfo (void);
 

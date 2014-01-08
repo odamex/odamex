@@ -29,7 +29,7 @@
 #include <wx/version.h>
 #include <wx/xrc/xmlres.h>
 
-#define _ODA_COPYRIGHT_ "Copyright (C) 2006-2012 The Odamex Team"
+#define _ODA_COPYRIGHT_ "Copyright (C) 2006-2013 The Odamex Team"
 
 BEGIN_EVENT_TABLE(dlgAbout, wxDialog)
     EVT_TEXT_URL(XRCID("Id_TxtCtrlDevelopers"), dlgAbout::OnTxtCtrlUrlClick)

@@ -3,7 +3,7 @@
 //
 // $Id: i_musicsystem.cpp 2541 2011-10-27 02:36:31Z dr_sean $
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include <string>
+#include <math.h>
 #include "i_system.h"
 #include "m_fileio.h"
 #include "cmdlib.h"
@@ -39,7 +40,6 @@
 
 #ifdef PORTMIDI
 #include "portmidi.h"
-#include "porttime.h"
 #endif	// PORTMIDI
 
 // [Russell] - define a temporary midi file, for consistency
@@ -803,9 +803,19 @@ void MidiMusicSystem::resumeSong()
 void MidiMusicSystem::setVolume(float volume)
 {
 	MusicSystem::setVolume(volume);
+	_RefreshVolume();
+}
 
-	for (int i = 0; i < _GetNumChannels(); i ++)
-		_RefreshVolume(i);
+//
+// MidiMusicSystem::_GetScaledVolume
+//
+// Returns the volume scaled logrithmically so that the for each unit the volume
+// increases, the perceived volume increases linearly.
+//
+float MidiMusicSystem::_GetScaledVolume()
+{
+	// [SL] mimic the volume curve of midiOutSetVolume, as used by SDL_Mixer
+	return pow(MusicSystem::getVolume(), 0.5f);
 }
 
 //
@@ -821,42 +831,18 @@ void MidiMusicSystem::_SetChannelVolume(int channel, int volume)
 }
 
 //
-// _GetChannelVolume()
-//
-// Returns the value of the last channel volume event or -1 if there was
-// an error.  Note that channel is 0-indexed (0 - 15).
-//
-int MidiMusicSystem::_GetChannelVolume(int channel) const
-{
-	if (channel < 0 || channel >= _GetNumChannels())
-		return -1;
-		
-	return mChannelVolume[channel];
-}
-
-//
 // _RefreshVolume()
 //
-// Scales the cached midi channel volume by the cached master volume for the
-// music system and sends out a volume controller event to change the volume.
+// Sends out a volume controller event to change the volume to the current
+// cached volume for the indicated channel.
 //
-void MidiMusicSystem::_RefreshVolume(int channel)
+void MidiMusicSystem::_RefreshVolume()
 {
-	if (channel < 0 || channel >= _GetNumChannels())
-		return;
-		
-	// backup mChannelVolume since playEvent() will modify it
-	int oldchanvol = _GetChannelVolume(channel);
-	if (oldchanvol == -1)
-		return;
-		
-	// existing channel volume (0-127) scaled by the master volume (0-1)
-	int scaledvol = _GetChannelVolume(channel) * getVolume();
-	MidiControllerEvent event(0, MIDI_CONTROLLER_MAIN_VOLUME, channel, scaledvol);
-	playEvent(&event);
-		
-	// restore mChannelVolume
-	_SetChannelVolume(channel, oldchanvol);
+	for (int i = 0; i < _GetNumChannels(); i++)
+	{
+		MidiControllerEvent event(0, MIDI_CONTROLLER_MAIN_VOLUME, i, mChannelVolume[i]);
+		playEvent(&event);
+	}
 }
 
 //
@@ -877,14 +863,16 @@ void MidiMusicSystem::_InitializePlayback()
 	mSongItr = mMidiSong->begin();
 	mPrevClockTime = 0;
 	
-	// initialize all channel volumes to 100%
-	for (int i = 0; i < _GetNumChannels(); i++)
-		mChannelVolume[i] = 127;
-		
 	// shut off all notes and reset all controllers
 	_AllNotesOff();
 
 	setTempo(120.0);
+
+	// initialize all channel volumes to 100%
+	for (int i = 0; i < _GetNumChannels(); i++)
+		mChannelVolume[i] = 127;
+
+	_RefreshVolume();
 }
 
 void MidiMusicSystem::playChunk()
@@ -959,7 +947,7 @@ PortMidiMusicSystem::PortMidiMusicSystem() :
 	MidiMusicSystem(), mIsInitialized(false),
 	mOutputDevice(-1), mStream(NULL)
 {
-	const int output_buffer_size = 100;
+	const int output_buffer_size = 1024;
 	
 	if (Pm_Initialize() != pmNoError)
 	{
@@ -978,7 +966,7 @@ PortMidiMusicSystem::PortMidiMusicSystem() :
 			continue;
 			
 		std::string curdevicename(info->name);
-		if (!prefdevicename.empty() && StdStringCompare(prefdevicename, curdevicename, true) == 0)
+		if (!prefdevicename.empty() && iequals(prefdevicename, curdevicename))
 			mOutputDevice = i;
 
 		Printf(PRINT_HIGH, "%d: %s, %s\n", i, info->interf, info->name);
@@ -1015,7 +1003,7 @@ PortMidiMusicSystem::~PortMidiMusicSystem()
 	if (mStream)
 	{
 		// Sleep to allow the All-Notes-Off events to be processed
-		Pt_Sleep(cLatency * 2);
+		I_Sleep(I_ConvertTimeFromMs(cLatency * 2));
 		
 		Pm_Close(mStream);
 		Pm_Terminate();
@@ -1090,7 +1078,7 @@ void PortMidiMusicSystem::_PlayEvent(MidiEvent *event, int time)
 			_SetChannelVolume(channel, param1);
 			
 			// scale the channel's volume by the master music volume
-			param1 *= getVolume();
+			param1 *= _GetScaledVolume();
 		}
 			
 		PmMessage msg = Pm_Message(event->getEventType() | channel, controltype, param1);

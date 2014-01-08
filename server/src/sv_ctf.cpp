@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,8 +25,9 @@
 #include "sv_main.h"
 #include "m_random.h"
 #include "p_ctf.h"
-#include "s_sound.h"
 #include "i_system.h"
+#include "g_warmup.h"
+#include "p_unlag.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
@@ -77,7 +78,7 @@ void SV_CTFEvent (flag_t f, flag_score_t event, player_t &who)
 	if(event == SCORE_NONE)
 		return;
 
-	if(validplayer(who))
+	if(validplayer(who) && warmup.checkscorechange())
 		who.points += ctf_points[event];
 
 	for (size_t i = 0; i < players.size(); ++i)
@@ -105,8 +106,6 @@ void SV_CTFEvent (flag_t f, flag_score_t event, player_t &who)
 		for(size_t j = 0; j < NUMFLAGS; j++)
 			MSG_WriteLong (&cl->reliablebuf, TEAMpoints[j]);
 	}
-
-	CTF_Sound (f, event);
 }
 
 //
@@ -143,14 +142,14 @@ void SV_FlagGrab (player_t &player, flag_t f, bool firstgrab)
 
 	if (player.userinfo.team != (team_t)f) {
 		if (firstgrab) {
-			SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag\n", player.userinfo.netname, team_names[f]);
+			SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
 			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
 		} else {
-			SV_BroadcastPrintf (PRINT_HIGH, "%s picked up the %s flag\n", player.userinfo.netname, team_names[f]);
+			SV_BroadcastPrintf (PRINT_HIGH, "%s picked up the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
 			SV_CTFEvent (f, SCORE_GRAB, player);
 		}
 	} else {
-		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag\n", player.userinfo.netname, team_names[f]);
+		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
 		SV_CTFEvent (f, SCORE_MANUALRETURN, player);
 	}
 }
@@ -165,7 +164,7 @@ void SV_FlagReturn (player_t &player, flag_t f)
 
 	CTF_SpawnFlag (f);
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has returned the %s flag\n", player.userinfo.netname, team_names[f]);
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has returned the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
 }
 
 //
@@ -190,19 +189,21 @@ static const char *CTF_TimeMSG(unsigned int milliseconds)
 	return msg;
 }
 
+extern void P_GiveTeamPoints(player_t* player, int num);
+
 //
 //	[Toke - CTF] SV_FlagScore
 //	Event of a player capturing the flag
 //
 void SV_FlagScore (player_t &player, flag_t f)
 {
-	TEAMpoints[player.userinfo.team]++;
+	P_GiveTeamPoints(&player, 1);
 
 	SV_CTFEvent (f, SCORE_CAPTURE, player);
 
 	int time_held = I_MSTime() - CTFdata[f].pickup_time;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has captured the %s flag (held for %s)\n", player.userinfo.netname, team_names[f], CTF_TimeMSG(time_held));
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has captured the %s flag (held for %s)\n", player.userinfo.netname.c_str(), team_names[f], CTF_TimeMSG(time_held));
 
 	player.flags[f] = false; // take scoring player's flag
 	CTFdata[f].flagger = 0;
@@ -290,15 +291,14 @@ void SV_FlagDrop (player_t &player, flag_t f)
 
 	int time_held = I_MSTime() - CTFdata[f].pickup_time;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has dropped the %s flag (held for %s)\n", player.userinfo.netname, team_names[f], CTF_TimeMSG(time_held));
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has dropped the %s flag (held for %s)\n", player.userinfo.netname.c_str(), team_names[f], CTF_TimeMSG(time_held));
 
 	player.flags[f] = false; // take ex-carrier's flag
 	CTFdata[f].flagger = 0;
 
-	CTF_SpawnDroppedFlag (f,
-				   player.mo->x,
-				   player.mo->y,
-				   player.mo->z);
+	fixed_t x, y, z;
+	Unlag::getInstance().getCurrentPlayerPosition(player.id, x, y, z);
+	CTF_SpawnDroppedFlag(f, x, y, z);
 }
 
 //
@@ -307,7 +307,7 @@ void SV_FlagDrop (player_t &player, flag_t f)
 //
 void CTF_RunTics (void)
 {
-	if (shotclock)
+	if (shotclock || gamestate != GS_LEVEL)
 		return;
 
 	for(size_t i = 0; i < NUMFLAGS; i++)
@@ -404,98 +404,6 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 
 	data->flaglocated = true;
 }
-
-//
-//	[Toke - CTF] CTF_SelectTeamPlaySpot
-//	Randomly selects a team spawn point
-//
-mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
-{
-    switch (player.userinfo.team)
-    {
-        case TEAM_BLUE:
-        {
-            if (sv_gametype != GM_CTF && sv_teamsinplay < 1)
-                break;
-
-            for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
-            {
-                size_t i = M_Random () % selections;
-                if (G_CheckSpot (player, &blueteamstarts[i]) )
-                {
-                    return &blueteamstarts[i];
-                }
-            }
-        }
-        break;
-
-        case TEAM_RED:
-        {
-            if (sv_gametype != GM_CTF && sv_teamsinplay < 2)
-                break;
-
-            for (size_t j = 0; j < MaxRedTeamStarts; ++j)
-            {
-                size_t i = M_Random () % selections;
-                if (G_CheckSpot (player, &redteamstarts[i]) )
-                {
-                    return &redteamstarts[i];
-                }
-            }
-		}
-		break;
-
-        default:
-        {
-
-        }
-        break;
-    }
-
-	if (sv_gametype == GM_CTF) {
-		if (MaxBlueTeamStarts) return &blueteamstarts[0];
-		else if (MaxRedTeamStarts) return &redteamstarts[0];
-	} else {
-		if (sv_teamsinplay >= 1 && MaxBlueTeamStarts)
-			return &blueteamstarts[0];
-		else
-		if (sv_teamsinplay >= 2 && MaxRedTeamStarts)
-			return &redteamstarts[0];
-	}
-
-	return NULL;
-}
-
-// sounds played differ depending on your team, [0] for event on own team, [1] for others
-static const char *flag_sound[NUM_CTF_SCORE][2] =
-{
-	{"", ""}, // NONE
-	{"", ""}, // REFRESH
-	{"", ""}, // KILL
-	{"", ""}, // BETRAYAL
-	{"ctf/f-flaggrab", "ctf/e-flaggrab"}, // GRAB
-	{"ctf/f-flaggrab", "ctf/e-flaggrab"}, // FIRSTGRAB
-	{"", ""}, // CARRIERKILL
-	{"ctf/f-flagreturn", "ctf/e-flagreturn"}, // RETURN
-	{"ctf/f-flagscore", "ctf/e-flagscore"}, // CAPTURE
-	{"ctf/f-flagdrop", "ctf/e-flagdrop"}, // DROP
-	{"ctf/f-flagmanualreturn", "ctf/e-flagmanualreturn"}, // MANUALRETURN
-};
-
-//
-//	[Toke - CTF] CTF_Sound
-//	Plays the flag event sounds
-//
-void CTF_Sound (flag_t f, flag_score_t event)
-{
-	for(size_t i = 0; i < NUMTEAMS; i++)
-	{
-		const char *snd = flag_sound[event][f == (flag_t)i];
-		if(snd && *snd)
-			SV_SoundTeam ((f == (flag_t)i) ? CHAN_ANNOUNCERF : CHAN_ANNOUNCERE, snd, ATTN_NONE, i);
-	}
-}
-
 
 FArchive &operator<< (FArchive &arc, flagdata &flag)
 {

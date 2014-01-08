@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -82,13 +82,22 @@ CVAR_FUNC_IMPL (r_painintensity)
 		var.Set (1.f);
 }
 
+extern int SquareWidth;
+
 void ST_AdjustStatusBarScale(bool scale)
 {
 	if (scale)
 	{
-		// Stretch status bar to fill width of screen
-		ST_WIDTH = screen->width;
-   		ST_HEIGHT = (32 * screen->height) / 200;
+		// Scale status bar height to screen.
+		ST_HEIGHT = (32 * screen->height) / 200;
+		// [AM] Scale status bar width according to height, unless there isn't
+		//      enough room for it.  Fixes widescreen status bar scaling.
+		// [ML] A couple of minor changes for true 4:3 correctness...
+		ST_WIDTH = ST_HEIGHT*10;
+		if (!screen->isProtectedRes())
+        {
+            ST_WIDTH = SquareWidth;
+        }
 	}
 	else
 	{
@@ -115,7 +124,7 @@ void ST_AdjustStatusBarScale(bool scale)
 
 CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
 {
-	ST_AdjustStatusBarScale(var);
+	ST_AdjustStatusBarScale(var != 0);
 }
 
 // [RH] Needed when status bar scale changes
@@ -671,8 +680,8 @@ bool ST_Responder (event_t *ev)
             if (CheckCheatmode ())
                 return false;
 
-            if ((gamemode != shareware) && (gamemode != registered) &&
-                (gamemode != retail))
+            if (gamemode != shareware && gamemode != registered &&
+                gamemode != retail && gamemode != retail_bfg)
                 return false;
 
             AddCommandString("noclip");
@@ -686,7 +695,7 @@ bool ST_Responder (event_t *ev)
             if (CheckCheatmode ())
                 return false;
 
-            if (gamemode != commercial)
+            if (gamemode != commercial && gamemode != commercial_bfg)
                 return false;
 
             AddCommandString("noclip");
@@ -747,9 +756,6 @@ bool ST_Responder (event_t *ev)
         // 'clev' change-level cheat
         else if (cht_CheckCheat(&cheat_clev, (char)ev->data2))
         {
-            if (CheckCheatmode ())
-                return false;
-
             char buf[16];
 			//char *bb;
 
@@ -827,7 +833,7 @@ END_COMMAND (notarget)
 
 BEGIN_COMMAND (fly)
 {
-	if (CheckCheatmode ())
+	if (!consoleplayer().spectator && CheckCheatmode ())
 		return;
 
 	consoleplayer().cheats ^= CF_FLY;
@@ -837,8 +843,11 @@ BEGIN_COMMAND (fly)
     else
         Printf(PRINT_HIGH, "Fly mode off\n");
 
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	if (!consoleplayer().spectator)
+	{
+		MSG_WriteMarker(&net_buffer, clc_cheat);
+		MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	}
 }
 END_COMMAND (fly)
 
@@ -938,7 +947,7 @@ BEGIN_COMMAND (give)
 	if (argc < 2)
 		return;
 
-	std::string name = BuildString (argc - 1, (const char **)(argv + 1));
+	std::string name = C_ArgCombine(argc - 1, (const char **)(argv + 1));
 	if (name.length())
 	{
 		//Net_WriteByte (DEM_GIVECHEAT);
@@ -1172,16 +1181,16 @@ void ST_updateWidgets(void)
 	// must redirect the pointer if the ready weapon has changed.
 	//	if (w_ready.data != plyr->readyweapon)
 	//	{
-	if (weaponinfo[plyr->readyweapon].ammo == am_noammo)
+	if (weaponinfo[plyr->readyweapon].ammotype == am_noammo)
 		w_ready.num = &largeammo;
 	else
-		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammo];
+		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 	//{
 	// static int tic=0;
 	// static int dir=-1;
 	// if (!(tic&15))
-	//	 plyr->ammo[weaponinfo[plyr->readyweapon].ammo]+=dir;
-	// if (plyr->ammo[weaponinfo[plyr->readyweapon].ammo] == -100)
+	//	 plyr->ammo[weaponinfo[plyr->readyweapon].ammotype]+=dir;
+	// if (plyr->ammo[weaponinfo[plyr->readyweapon].ammotype] == -100)
 	//	 dir = 1;
 	// tic++;
 	// }
@@ -1204,7 +1213,7 @@ void ST_updateWidgets(void)
 			st_weaponowned[i] = 0;
 	}
 
-	st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammo];
+	st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 	// if (*w_ready.on)
 	//	STlib_updateNum(&w_ready, true);
 	// refresh weapon change
@@ -1583,19 +1592,12 @@ static patch_t *LoadFaceGraphic (char *name, int namespc)
 
 void ST_loadGraphics(void)
 {
-	playerskin_t *skin;
 	int i, j;
 	int namespc;
 	int facenum;
 	char namebuf[9];
 
-	player_t *plyr = &displayplayer();
-
 	namebuf[8] = 0;
-	if (plyr)
-		skin = &skins[plyr->userinfo.skin];
-	else
-		skin = &skins[consoleplayer().userinfo.skin];
 
 	// Load the numbers, tall and short
 	for (i=0;i<10;i++)
@@ -1662,16 +1664,8 @@ void ST_loadGraphics(void)
 	// face states
 	facenum = 0;
 
-	// [RH] Use face specified by "skin"
-	if (skin->face[0]) {
-		// The skin has its own face
-		strncpy (namebuf, skin->face, 3);
-		namespc = skin->namespc;
-	} else {
-		// The skin doesn't have its own face; use the normal one
-		namebuf[0] = 'S'; namebuf[1] = 'T'; namebuf[2] = 'F';
-		namespc = ns_global;
-	}
+	namebuf[0] = 'S'; namebuf[1] = 'T'; namebuf[2] = 'F';
+	namespc = ns_global;
 
 	for (i = 0; i < ST_NUMPAINFACES; i++)
 	{

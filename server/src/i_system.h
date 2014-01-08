@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -63,14 +63,10 @@ void I_ExpandHomeDir (std::string &path);
 void *I_ZoneBase (size_t *size);
 
 
-// Called by D_DoomLoop,
-// returns current time in tics.
-extern QWORD (*I_GetTime) (void);
-
-// like I_GetTime, except it waits for a new tic before returning
-extern QWORD (*I_WaitForTic) (QWORD);
-
-QWORD I_GetTimePolled (void);
+uint64_t I_GetTime();
+uint64_t I_ConvertTimeToMs(uint64_t value);
+uint64_t I_ConvertTimeFromMs(uint64_t value);
+void I_Sleep(uint64_t sleep_time);
 
 //
 // Called by D_DoomLoop,

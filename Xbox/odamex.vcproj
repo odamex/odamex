@@ -371,10 +371,16 @@
 				RelativePath="..\client\src\g_level.cpp">
 			</File>
 			<File
+				RelativePath="..\client\src\g_warmup.cpp">
+			</File>
+			<File
 				RelativePath="..\client\src\hu_drawers.cpp">
 			</File>
 			<File
 				RelativePath="..\client\src\hu_elements.cpp">
+			</File>
+			<File
+				RelativePath="..\client\src\hu_mousegraph.cpp">
 			</File>
 			<File
 				RelativePath="..\client\src\hu_stuff.cpp">
@@ -399,6 +405,9 @@
 			</File>
 			<File
 				RelativePath="..\client\src\r_drawt.cpp">
+			</File>
+			<File
+				RelativePath="..\client\src\r_interp.cpp">
 			</File>
 			<File
 				RelativePath="..\client\src\r_main.cpp">
@@ -487,6 +496,9 @@
 				RelativePath="..\client\src\hu_elements.h">
 			</File>
 			<File
+				RelativePath="..\client\src\hu_mousegraph.h">
+			</File>
+			<File
 				RelativePath="..\client\src\hu_stuff.h">
 			</File>
 			<File
@@ -494,6 +506,9 @@
 			</File>
 			<File
 				RelativePath="..\client\src\st_lib.h">
+			</File>
+			<File
+				RelativePath="..\client\src\v_gamma.h">
 			</File>
 			<File
 				RelativePath="..\client\src\v_text.h">
@@ -572,10 +587,49 @@
 				RelativePath="..\common\d_items.h">
 			</File>
 			<File
+				RelativePath="..\common\d_main.cpp">
+				<FileConfiguration
+					Name="Debug|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile_FastCap|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_LTCG|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\common\d_main.h">
 			</File>
 			<File
 				RelativePath="..\common\d_net.h">
+			</File>
+			<File
+				RelativePath="..\common\d_netcmd.cpp">
+			</File>
+			<File
+				RelativePath="..\common\d_netcmd.h">
 			</File>
 			<File
 				RelativePath="..\common\d_netinf.h">
@@ -644,6 +698,9 @@
 				RelativePath="..\common\g_level.h">
 			</File>
 			<File
+				RelativePath="..\common\g_warmup.h">
+			</File>
+			<File
 				RelativePath="..\common\gi.cpp">
 			</File>
 			<File
@@ -705,9 +762,6 @@
 			</File>
 			<File
 				RelativePath="..\common\m_fileio.h">
-			</File>
-			<File
-				RelativePath="..\common\m_fixed.cpp">
 			</File>
 			<File
 				RelativePath="..\common\m_fixed.h">
@@ -941,6 +995,9 @@
 				RelativePath="..\common\stringtable.h">
 			</File>
 			<File
+				RelativePath="..\common\strptime.cpp">
+			</File>
+			<File
 				RelativePath="..\common\szp.h">
 			</File>
 			<File
@@ -951,6 +1008,9 @@
 			</File>
 			<File
 				RelativePath="..\common\tarray.h">
+			</File>
+			<File
+				RelativePath="..\common\timegm.cpp">
 			</File>
 			<File
 				RelativePath="..\common\v_palette.h">
@@ -975,6 +1035,12 @@
 			</File>
 			<File
 				RelativePath="..\common\w_wad.h">
+			</File>
+			<File
+				RelativePath="..\common\win32inc.h">
+			</File>
+			<File
+				RelativePath="..\common\win32time.h">
 			</File>
 			<File
 				RelativePath="..\common\z_zone.cpp">

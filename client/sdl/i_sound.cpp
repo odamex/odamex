@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -111,9 +111,8 @@ static void ExpandSoundData(byte *data,
     else
     {
         Sint16 *expanded = (Sint16 *) destination->abuf;
-        int expanded_length;
+        size_t expanded_length;
         int expand_ratio;
-        int i;
 
         // Generic expansion if conversion does not work:
         //
@@ -123,10 +122,10 @@ static void ExpandSoundData(byte *data,
 
         // number of samples in the converted sound
 
-        expanded_length = ((uint64_t) length * mixer_freq) / samplerate;
+        expanded_length = (size_t)((int64_t(length) * mixer_freq) / samplerate);
         expand_ratio = (length << 8) / expanded_length;
 
-        for (i=0; i<expanded_length; ++i)
+        for (size_t i = 0; i < expanded_length; ++i)
         {
             Sint16 sample;
             int src;

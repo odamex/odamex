@@ -4,7 +4,7 @@
 // $Id: r_draw.h 1837 2010-09-02 04:21:09Z spleen $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
 #ifndef __R_DRAW__
 #define __R_DRAW__
 
-
+#include "r_defs.h"
 
 extern "C" byte**		ylookup;
 extern "C" int*			columnofs;
@@ -47,7 +47,7 @@ extern "C" int			dc_color;		// [RH] For flat colors (no texturing)
 extern "C" byte*			dc_source;
 
 // [RH] Temporary buffer for column drawing
-extern "C" byte			dc_temp[1536*4];
+extern "C" byte			dc_temp[MAXHEIGHT * 4];
 extern "C" unsigned int	dc_tspans[4][256];
 extern "C" unsigned int	*dc_ctspan[4];
 extern "C" unsigned int	horizspans[4];
@@ -78,7 +78,7 @@ extern void (*R_DrawSlopeSpan)(void);
 
 // [RH] Span blit into an interleaved intermediate buffer
 extern void (*R_DrawColumnHoriz)(void);
-void R_DrawMaskedColumnHoriz (column_t *column);
+void R_DrawMaskedColumnHoriz(tallpost_t *post);
 
 // [RH] Initialize the above five pointers
 void R_InitColumnDrawers (BOOL is8bit);
@@ -99,29 +99,14 @@ void rt_tlate4cols (int sx, int yl, int yh);
 void rt_tlatelucent1col (int hx, int sx, int yl, int yh);
 void rt_tlatelucent2cols (int hx, int sx, int yl, int yh);
 void rt_tlatelucent4cols (int sx, int yl, int yh);
-extern "C" void rt_copy1col_asm (int hx, int sx, int yl, int yh);
-extern "C" void rt_copy2cols_asm (int hx, int sx, int yl, int yh);
-extern "C" void rt_copy4cols_asm (int sx, int yl, int yh);
-extern "C" void rt_map1col_asm (int hx, int sx, int yl, int yh);
-extern "C" void rt_map2cols_asm (int hx, int sx, int yl, int yh);
-extern "C" void rt_map4cols_asm1 (int sx, int yl, int yh);
-extern "C" void rt_map4cols_asm2 (int sx, int yl, int yh);
 
 extern void (*rt_map4cols)(int sx, int yl, int yh);
 
-#ifdef USEASM
-#define rt_copy1col		rt_copy1col_asm
-#define rt_copy2cols	rt_copy2cols_asm
-#define rt_copy4cols	rt_copy4cols_asm
-#define rt_map1col		rt_map1col_asm
-#define rt_map2cols		rt_map2cols_asm
-#else
 #define rt_copy1col		rt_copy1col_c
 #define rt_copy2cols	rt_copy2cols_c
 #define rt_copy4cols	rt_copy4cols_c
 #define rt_map1col		rt_map1col_c
 #define rt_map2cols		rt_map2cols_c
-#endif
 
 void rt_draw1col (int hx, int sx);
 void rt_draw2cols (int hx, int sx);
@@ -131,7 +116,6 @@ void rt_draw4cols (int sx);
 void rt_initcols (void);
 
 
-#ifndef USEASM
 void	R_DrawColumnHorizP_C (void);
 void	R_DrawColumnP_C (void);
 void	R_DrawFuzzColumnP_C (void);
@@ -146,30 +130,12 @@ void	R_DrawTranslucentColumnD_C (void);
 void	R_DrawTranslatedColumnD_C (void);
 void	R_DrawSpanD (void);
 
-#else	/* USEASM */
-
-extern "C" void	R_DrawColumnP_Unrolled (void);
-
-extern "C" void	R_DrawColumnHorizP_ASM (void);
-extern "C" void	R_DrawColumnP_ASM (void);
-extern "C" void	R_DrawFuzzColumnP_ASM (void);
-void	R_DrawTranslucentColumnP_C (void);
-void	R_DrawTranslatedColumnP_C (void);
-extern "C" void	R_DrawSpanP_ASM (void);
-void	R_DrawSlopeSpanIdealP_C (void);		// [SL] NO ASM version yet
-
-void	R_DrawColumnD_C (void);
-void	R_DrawFuzzColumnD_C (void);
-void	R_DrawTranslucentColumnD_C (void);
-void	R_DrawTranslatedColumnD_C (void);
-void	R_DrawSpanD (void);
-#endif
-
 void	R_DrawTlatedLucentColumnP_C (void);
 #define R_DrawTlatedLucentColumn R_DrawTlatedLucentColumnP_C
 void	R_StretchColumnP_C (void);
 #define R_StretchColumn R_StretchColumnP_C
 
+void	R_BlankColumn (void);
 void	R_FillColumnP (void);
 void	R_FillColumnHorizP (void);
 void	R_FillSpan (void);

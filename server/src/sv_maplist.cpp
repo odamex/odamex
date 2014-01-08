@@ -667,6 +667,7 @@ BEGIN_COMMAND (maplist) {
 BEGIN_COMMAND (addmap) {
 	if (argc < 2) {
 		Printf(PRINT_HIGH, "Usage: addmap <map lump> [wad name] [...]\n");
+		return;
 	}
 
 	std::vector<std::string> arguments = VectorArgs(argc, argv);

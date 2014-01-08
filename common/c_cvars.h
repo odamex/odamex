@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,24 +38,23 @@ CVARS (console variables)
 ==========================================================
 */
 
-#define CVAR_NULL 0		// [deathz0r] no special properties
-#define CVAR_ARCHIVE	1	// set to cause it to be saved to vars.rc
-#define CVAR_USERINFO	2	// added to userinfo  when changed
-#define CVAR_SERVERINFO	4	// [Toke - todo] Changed the meaning of this flag
-							// it now describes cvars that clients will be
-							// informed if changed
-#define CVAR_NOSET		8	// don't allow change from console at all,
-							// but can be set from the command line
-#define CVAR_LATCH		16	// save changes until server restart
-#define CVAR_UNSETTABLE	32	// can unset this var from console
-#define CVAR_DEMOSAVE	64	// save the value of this cvar_t in a demo
-#define CVAR_MODIFIED	128	// set each time the cvar_t is changed
-#define CVAR_ISDEFAULT	256	// is cvar unchanged since creation?
-#define CVAR_AUTO		512	// allocated, needs to be freed when destroyed
+#define CVAR_NULL               0 // [deathz0r] no special properties
+#define CVAR_ARCHIVE            1 // set to cause it to be saved to vars.rc
+#define CVAR_USERINFO           2 // added to userinfo  when changed
+#define CVAR_SERVERINFO         4 // [Toke - todo] Changed the meaning of this flag
+                                  // it now describes cvars that clients will be
+                                  // informed if changed
+#define CVAR_NOSET              8 // don't allow change from console at all,
+                                  // but can be set from the command line
+#define CVAR_LATCH             16 // save changes until server restart
+#define CVAR_UNSETTABLE        32 // can unset this var from console
+#define CVAR_DEMOSAVE          64 // save the value of this cvar_t in a demo
+#define CVAR_MODIFIED         128 // set each time the cvar_t is changed
+#define CVAR_ISDEFAULT        256 // is cvar unchanged since creation?
+#define CVAR_AUTO             512 // allocated, needs to be freed when destroyed
 #define CVAR_NOENABLEDISABLE 1024 // [Nes] No substitution (0=disable, 1=enable)
-#define CVAR_CLIENTINFO 2048 // [Russell] client version of CVAR_SERVERINFO
-#define CVAR_SERVERARCHIVE 4096 // [Nes] Server version of CVAR_ARCHIVE
-#define CVAR_CLIENTARCHIVE 8192 // [Nes] Client version of CVAR_ARCHIVE
+#define CVAR_SERVERARCHIVE   4096 // [Nes] Server version of CVAR_ARCHIVE
+#define CVAR_CLIENTARCHIVE   8192 // [Nes] Client version of CVAR_ARCHIVE
 
 // Hints for network code optimization
 typedef enum
@@ -80,12 +79,14 @@ public:
 	virtual ~cvar_t ();
 
 	const char *cstring() const {return m_String.c_str(); }
+	const std::string& str() const { return m_String; }
 	const char *name() const { return m_Name.c_str(); }
 	const char *helptext() const {return m_HelpText.c_str(); }
 	const char *latched() const { return m_LatchedString.c_str(); }
 	float value() const { return m_Value; }
 	operator float () const { return m_Value; }
 	unsigned int flags() const { return m_Flags; }
+    cvartype_t type() const { return m_Type; }
 
 	// return m_Value as an int, rounded to the nearest integer because
 	// casting truncates instead of rounding
@@ -114,9 +115,13 @@ public:
 	// Read all cvars from *demo_p and set them appropriately.
 	static void C_ReadCVars (byte **demo_p);
 
-	// Backup demo cvars. Called before a demo starts playing to save all
-	// cvars the demo might change.
-	static void C_BackupCVars (void);
+	// Backup cvars for restoration later. Called before connecting to a server
+	// or a demo starts playing to save all cvars which could be changed while
+	// by the server or by playing a demo.
+	// [SL] bitflag can be used to filter which cvars are set to default.
+	// The default value for bitflag is 0xFFFFFFFF, which effectively disables
+	// the filtering.
+	static void C_BackupCVars (unsigned int bitflag = 0xFFFFFFFF);
 
 	// Restore demo cvars. Called after demo playback to restore all cvars
 	// that might possibly have been changed during the course of demo playback.
@@ -131,8 +136,11 @@ public:
 	// archive cvars to FILE f
 	static void C_ArchiveCVars (void *f);
 
-	// initialize cvars to default values after they are created
-	static void C_SetCVarsToDefaults (void);
+	// Initialize cvars to default values after they are created.
+	// [SL] bitflag can be used to filter which cvars are set to default.
+	// The default value for bitflag is 0xFFFFFFFF, which effectively disables
+	// the filtering.
+	static void C_SetCVarsToDefaults (unsigned int bitflag = 0xFFFFFFFF);
 
 	static bool SetServerVar (const char *name, const char *value);
 
@@ -172,14 +180,13 @@ private:
 
  protected:
 
-	cvar_t () : m_Flags(0), m_Name(0), m_String(0), m_Value(0.f) {}
+	cvar_t () : m_Flags(0), m_Callback(NULL), m_Next(NULL), m_Type(CVARTYPE_NONE), m_Value(0.f) {}
 };
 
 cvar_t* GetFirstCvar(void);
 
-// Maximum number of cvars that can be saved across a demo. If you need
-// to save more, bump this up.
-#define MAX_DEMOCVARS 32
+// Maximum number of cvars that can be saved.
+#define MAX_BACKUPCVARS 128 
 
 #define BEGIN_CUSTOM_CVAR(name,def,help,type,flags) \
 	static void cvarfunc_##name(cvar_t &); \

@@ -24,8 +24,11 @@
 
 #include "lst_custom.h"
 
+#include <wx/dcmemory.h>
 #include <wx/settings.h>
 #include <wx/defs.h>
+#include <wx/regex.h>
+#include <wx/renderer.h>
 
 IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListView)
 
@@ -38,63 +41,14 @@ END_EVENT_TABLE()
 static int ImageList_SortArrowUp = -1;
 static int ImageList_SortArrowDown = -1;
 
-// Sorting arrow XPM images
-static const char *SortArrowAscending[] =
-{
-    "16 16 3 1",
-    "  c None",
-    "0 c #808080",
-    "1 c #FFFFFF",
-    
-    "                ",
-    "                ",
-    "                ",
-    "                ",
-    "       01       ",
-    "      0011      ",
-    "      0  1      ",
-    "     00  11     ",
-    "     0    1     ",
-    "    00    11    ",
-    "    01111111    ",
-    "                ",
-    "                ",
-    "                ",
-    "                ",
-    "                "
-};
-
-static const char *SortArrowDescending[] =
-{
-    "16 16 3 1",
-    "  c None",
-    "0 c #808080",
-    "1 c #FFFFFF",
-    
-    "                ",
-    "                ",
-    "                ",
-    "                ",
-    "    00000000    ",
-    "    00    11    ",
-    "     0    1     ",
-    "     00  11     ",
-    "      0  1      ",
-    "      0011      ",
-    "       01       ",
-    "                ",
-    "                ",
-    "                ",
-    "                ",
-    "                "
-};
-
 wxAdvancedListCtrl::wxAdvancedListCtrl()
 {
     SortOrder = 0; 
     SortCol = 0; 
 
     m_SpecialColumn = -1;
+
+    m_HeaderUsable = true;
 }
 
 void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
@@ -114,9 +68,29 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
         wxImageList *ImageList = new wxImageList(16, 16, true);
         AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
         
-        // Add our sort icons by default.
-        ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowAscending));
-        ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowDescending));
+        wxBitmap sort_up(16, 16), sort_down(16, 16);
+        wxColour Mask = wxColour(255,255,255);
+        
+        // Draw sort arrows using the native renderer
+        {
+            wxMemoryDC renderer_dc;
+
+             // sort arrow up
+            renderer_dc.SelectObject(sort_up);
+            renderer_dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxSOLID));
+            renderer_dc.Clear();
+            wxRendererNative::Get().DrawHeaderButtonContents(this, renderer_dc, wxRect(0, 0, 16, 16), 0, wxHDR_SORT_ICON_UP);
+
+             // sort arrow down
+            renderer_dc.SelectObject(sort_down);
+            renderer_dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxSOLID));
+            renderer_dc.Clear();
+            wxRendererNative::Get().DrawHeaderButtonContents(this, renderer_dc, wxRect(0, 0, 16, 16), 0, wxHDR_SORT_ICON_DOWN);
+        }
+
+        // Add our sort icons to the image list
+        ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_down, Mask);
+        ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_up, Mask);
     }
     
     if (Image.IsOk())
@@ -270,220 +244,83 @@ wxInt32 NaturalCompare(wxString String1, wxString String2, bool CaseSensitive = 
     }
 }
 
-wxInt32 SortRoutine(wxInt32 Order, wxListItem &Item1, wxListItem &Item2) 
-{   
-    if (Order == 1) 
-        return NaturalCompare(Item1.GetText(), Item2.GetText());
-
-    return NaturalCompare(Item2.GetText(), Item1.GetText());
-}
-
-// Makes a row exchange places
-void wxAdvancedListCtrl::FlipRow(long Row, long NextRow) 
-{ 
-    if(Row == NextRow) 
-        return; 
-
-    // Retrieve data for the next item
-    wxListItem Item1, Item2;
-    wxListItem Item1Flipped, Item2Flipped; 
-    
-    Item1.SetId(Row);
-    Item1.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
-    
-    Item2.SetId(NextRow);
-    Item2.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE); 
-
-    Item1Flipped.SetId(NextRow);
-    Item1Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA 
-        | wxLIST_MASK_IMAGE);
-
-    Item2Flipped.SetId(Row);
-    Item2Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA 
-        | wxLIST_MASK_IMAGE);
-
-    // Due to bugs/limitations with wxWidgets, certain stuff needs to be 
-    // physically taken from the list control as GetItem is finicky
-    wxColour Item1Colour = GetItemTextColour(Row);
-    wxColour Item2Colour = GetItemTextColour(NextRow);
-    wxInt32 Item1State = GetItemState(Row, wxLIST_STATE_SELECTED 
-        | wxLIST_STATE_FOCUSED);
-    wxInt32 Item2State = GetItemState(NextRow, wxLIST_STATE_SELECTED 
-        | wxLIST_STATE_FOCUSED);
-    
-    // Flip the data for columns.
-    for (wxInt32 ColumnCounter = 0; 
-         ColumnCounter < GetColumnCount(); 
-         ++ColumnCounter) 
-    {
-        Item1.SetColumn(ColumnCounter);
-        GetItem(Item1); 
-
-        Item2.SetColumn(ColumnCounter); 
-        GetItem(Item2);
-
-        // Do the flip
-        // Set data for the first item
-        Item2Flipped.SetImage(Item2.GetImage()); 
-        Item2Flipped.SetData(Item2.GetData()); 
-        Item2Flipped.SetText(Item2.GetText());
-
-        // Now the second
-        Item1Flipped.SetImage(Item1.GetImage()); 
-        Item1Flipped.SetData(Item1.GetData()); 
-        Item1Flipped.SetText(Item1.GetText());
-
-        // Set them
-        Item1Flipped.SetColumn(ColumnCounter);
-        SetItem(Item1Flipped);
-        
-        Item2Flipped.SetColumn(ColumnCounter);
-        SetItem(Item2Flipped);
-    }
-
-    // Due to bugs/limitations with wxWidgets, certain stuff needs to be 
-    // physically taken from the list control as GetItem is finicky
-    SetItemState(NextRow, Item1State, wxLIST_STATE_SELECTED 
-        | wxLIST_STATE_FOCUSED);
-    SetItemState(Row, Item2State, wxLIST_STATE_SELECTED 
-        | wxLIST_STATE_FOCUSED);
-    SetItemTextColour(NextRow, Item1Colour);
-    SetItemTextColour(Row, Item2Colour);
-}
-
-// A custom sort routine, we do our own sorting.
-void wxAdvancedListCtrl::Sort(wxInt32 Column, wxInt32 Order, wxInt32 Lowest, wxInt32 Highest) 
-{ 
-    if (Highest == -1) 
-        Highest = GetItemCount() - 1; 
-
-    wxInt32 LowSection = Lowest; 
-    wxInt32 HighSection = Highest; 
-
-    if (HighSection <= LowSection) 
-        return;
-
-    // First item.
-    wxListItem Item1Check;
-    Item1Check.SetColumn(Column); 
-    Item1Check.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
-
-    // Second item
-    wxListItem Item2Check;
-    Item2Check.SetColumn(Column); 
-    Item2Check.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
-
-    // Middle Item
-    wxListItem MiddleItem;        
-    MiddleItem.SetId((LowSection + HighSection) / 2); 
-    MiddleItem.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE); 
-    MiddleItem.SetColumn(Column); 
-    GetItem(MiddleItem);
-
-    // Loop through the list until indices cross 
-    while (LowSection <= HighSection) 
-    {
-        Item1Check.SetId(LowSection);
-        GetItem(Item1Check);
-        
-        while ((LowSection <= HighSection) && 
-               (SortRoutine(Order, Item1Check, MiddleItem) < 0)) 
-        {
-            ++LowSection;
-            Item1Check.SetId(LowSection);
-            GetItem(Item1Check);
-        }
-
-        Item2Check.SetId(HighSection);
-        GetItem(Item2Check);
-
-        while ((LowSection <= HighSection) && 
-               (SortRoutine(Order, Item2Check, MiddleItem) > 0))
-        { 
-            --HighSection;
-            Item2Check.SetId(HighSection);
-            GetItem(Item2Check);
-        }
-
-        // If the indexes have not crossed
-        if (LowSection <= HighSection)
-        { 
-            // Swap only if the items are not equal 
-            if (SortRoutine(Order, Item1Check, Item2Check) != 0)
-            {
-                FlipRow(LowSection, HighSection);
-            }           
-
-            ++LowSection;
-            --HighSection;
-        } 
-    }
-
-    // Recursion magic!
-
-    // Sort the lowest section of the array
-    if (Lowest < HighSection) 
-        Sort(Column, Order, Lowest, HighSection); 
-
-    // Sort the highest section of the array
-    if (Highest > LowSection) 
-        Sort(Column, Order, LowSection, Highest);
-}
-
-
-// Numerical sort function for special columns
-int wxCALLBACK wxListCompareFunction(wxIntPtr item1, wxIntPtr item2, 
-        wxIntPtr sortData)
+int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2, 
+                                 wxIntPtr sortData)
 {
-    if (sortData == 1)
+    wxInt32 SortCol, SortOrder;
+    wxListItem Item;
+    wxString Str1, Str2;
+    wxAdvancedListCtrl *ListCtrl;
+    
+    ListCtrl = (wxAdvancedListCtrl *)sortData; 
+    
+    ListCtrl->GetSortColumnAndOrder(SortCol, SortOrder);
+    
+    Item.SetColumn(SortCol);
+    Item.SetMask(wxLIST_MASK_TEXT);
+    
+    if (SortCol == ListCtrl->GetSpecialSortColumn())
     {
-        if (item1 < item2)
-            return -1;
-        else if (item1 > item2)
-            return 1;
-        else 
-            return 0;
+        int Img1, Img2;
+        
+        Item.SetMask(wxLIST_MASK_IMAGE);
+        
+        Item.SetId(item1);
+    
+        ListCtrl->GetItem(Item);
+    
+        Img1 = Item.GetImage();
+    
+        Item.SetId(item2);
+    
+        ListCtrl->GetItem(Item);
+    
+        Img2 = Item.GetImage();
+        
+        return SortOrder ? Img2 - Img1 : Img1 - Img2;
     }
-    else
-    {
-        if (item2 < item1)
-            return -1;
-        else if (item2 > item1)
-            return 1;
-        else 
-            return 0;
-    }
+    
+    Item.SetId(item1);
+    
+    ListCtrl->GetItem(Item);
+    
+    Str1 = Item.GetText();
+    
+    Item.SetId(item2);
+    
+    ListCtrl->GetItem(Item);
+    
+    Str2 = Item.GetText();
+    
+    return SortOrder ? NaturalCompare(Str1, Str2) : NaturalCompare(Str2, Str1);
 }
 
 void wxAdvancedListCtrl::Sort()
 {
     SetSortArrow(SortCol, SortOrder);
     
-    if (SortCol == m_SpecialColumn)
-    {
-        SortItems(wxListCompareFunction, SortOrder);
+    long itemid = GetNextItem(-1);
 
-        ColourList();
-
-        return;
-    }
-#if 0
     // prime 'er up
-    long item = GetNextItem(-1);
-      
-    while(item != -1) 
-    {                    
-        SetItemData(item, item); 
- 
-        item = GetNextItem(item);
+    while (itemid != -1)
+    {                        
+        SetItemData(itemid, itemid);
+        
+        itemid = GetNextItem(itemid);
     }
-#endif
-    // sort the list by column
-    Sort(SortCol, SortOrder);
+
+    SortItems(wxCompareFunction, (wxIntPtr)this);
+
+    ColourList();
+
+    return;
 }
 
 void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
 {
+    if (!m_HeaderUsable)
+        return;
+
     // invert sort order if need be (ascending/descending)
     if (SortCol != event.GetColumn())
         SortOrder = 1;
@@ -571,4 +408,146 @@ long wxAdvancedListCtrl::ALCInsertItem(const wxString &Text)
     SetItemTextColour(ListItem.m_itemId, GetTextColour());
 
     return ListItem.m_itemId;
+}
+
+// Back up the entire list for filtering
+void wxAdvancedListCtrl::BackupList()
+{
+    size_t BackupItemsCount = GetItemCount();
+    size_t BackupColumnCount = GetColumnCount();
+
+    BackupItems.clear();
+
+    if (!BackupItemsCount || !BackupColumnCount)
+        return;
+
+    BackupItems.resize(BackupItemsCount);
+
+    for (size_t x = 0; x < BackupItemsCount; ++x)
+    {
+        wxListItem Item;
+
+        Item.SetId(x);
+
+        for (size_t y = 0; y < BackupColumnCount; ++y)
+        {
+            Item.SetColumn(y);
+
+            Item.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE
+                         | wxLIST_MASK_STATE | wxLIST_MASK_WIDTH | wxLIST_MASK_FORMAT);
+
+            GetItem(Item);
+
+            BackupItems[x].push_back(Item);
+        }
+    }
+}
+
+// Reloads everything into the current row
+void wxAdvancedListCtrl::DoRestoreRow(size_t row)
+{
+    long id = InsertItem(row, wxT(""));
+
+    for (size_t y = 0; y < BackupItems[row].size(); ++y)
+    {
+        wxListItem Item = BackupItems[row][y];
+
+        Item.SetId(id);
+
+        SetItem(Item);
+    }
+}
+
+wxString CreateFilter(wxString s)
+{
+    wxString Result;
+    size_t i;
+
+    if (s.IsEmpty())
+        return wxT("");
+
+    s.Prepend(wxT("*"));
+
+    // Uppercase
+    s = s.Upper();
+
+    // Replace whitespace with kleene stars for better matching
+    s.Replace(wxT(' '), wxT('*'));
+
+    s += wxT("*");
+
+    return s;
+}
+
+
+
+void wxAdvancedListCtrl::DoApplyFilter(const wxString &Filter)
+{
+    wxString FlatColumn;
+    wxString FilterReversed;
+    size_t xSize = BackupItems.size();
+    size_t ySize;
+
+    DeleteAllItems();
+
+    for (size_t x = 0; x < xSize; ++x)
+    {
+        ySize = BackupItems[x].size();
+
+        for (size_t y = 0; y < ySize; ++y)
+        {
+            // Creates a tokenized list of all the strings in individual columns
+            FlatColumn += BackupItems[x][y].GetText().Upper().Trim(false).Trim(true);
+            FlatColumn += wxT(' ');
+        }
+
+        if (FlatColumn.Matches(Filter))
+        {
+            DoRestoreRow(x);
+        }
+
+        FlatColumn.Empty();
+    }
+}
+
+// Restores the entire list if the filter is empty
+void wxAdvancedListCtrl::RestoreList()
+{
+    if (BackupItems.empty())
+        return;
+
+    DeleteAllItems();
+
+    for (size_t x = 0; x < BackupItems.size(); ++x)
+    {
+        InsertItem(x, wxT(""));
+
+        for (size_t y = 0; y < BackupItems[x].size(); ++y)
+        {
+            SetItem(BackupItems[x][y]);
+        }
+    }
+}
+
+void wxAdvancedListCtrl::ApplyFilter(wxString Filter)
+{
+    // Lock the control so searches are faster
+    Freeze();
+
+    // Restore list from last search result
+    RestoreList();
+
+    // Backup list from last search result
+    BackupList();
+
+    // Replace all non alphanumerics with ?, also prepend/append a *
+    Filter = ::CreateFilter(Filter);
+
+    // Run the filtering
+    if (Filter != wxEmptyString)
+        DoApplyFilter(Filter);
+
+    Sort();
+
+    Thaw();
 }

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Needed for FRACUNIT.
+#include "doomstat.h"
 #include "m_fixed.h"
 #include "r_data.h"
 #include "c_cvars.h"
@@ -79,7 +79,7 @@ void R_InitSkyMap ()
 {
 	texpatch_t *texpatch;
 	patch_t *wpatch;
-	int p_height, t_height,i,j,count;
+	int p_height, t_height,i,count;
 
 	if (textureheight == NULL)
 		return;
@@ -111,7 +111,6 @@ void R_InitSkyMap ()
 	textures[sky1texture]->height = MAX(t_height,p_height);
 	textureheight[sky1texture] = textures[sky1texture]->height << FRACBITS;
 	
-	textureheightmask[sky1texture] = (textureheight[sky1texture] & (textureheight[sky1texture] - 1)) - 1;
 	skystretch = 0;
 
 	if (textureheight[sky1texture] <= (128 << FRACBITS))

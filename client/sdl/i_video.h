@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,6 +32,9 @@
 // [RH] True if the display is not in a window
 extern BOOL Fullscreen;
 
+int I_GetVideoWidth();
+int I_GetVideoHeight();
+int I_GetVideoBitDepth();
 
 // [RH] Set the display mode
 void I_SetMode (int &width, int &height, int &bits);

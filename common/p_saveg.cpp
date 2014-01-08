@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -127,6 +127,7 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec->ceilingcolormap->fade
 				<< sec->alwaysfake
 				<< sec->waterzone
+				<< sec->SecActTarget
 				<< sec->MoreFlags;
 		}
 
@@ -141,7 +142,7 @@ void P_SerializeWorld (FArchive &arc)
 
 			for (j = 0; j < 2; j++)
 			{
-				if (li->sidenum[j] == -1)
+				if (li->sidenum[j] == R_NOSIDE)
 					continue;
 
 				side_t *si = &sides[li->sidenum[j]];
@@ -161,6 +162,7 @@ void P_SerializeWorld (FArchive &arc)
 		{
 
 			unsigned int color=0, fade=0;
+			AActor* SecActTarget;
 
 			arc >> sec->floorheight
 				>> sec->ceilingheight
@@ -211,12 +213,14 @@ void P_SerializeWorld (FArchive &arc)
 				RPART(fade), GPART(fade), BPART(fade));
 			arc >> sec->alwaysfake
 				>> sec->waterzone
+				>> SecActTarget
 				>> sec->MoreFlags;
 
 			sec->floorplane.invc = FixedDiv(FRACUNIT, sec->floorplane.c);
 			sec->floorplane.sector = sec;
 			sec->ceilingplane.invc = FixedDiv(FRACUNIT, sec->ceilingplane.c);
 			sec->ceilingplane.sector = sec;
+			sec->SecActTarget.init(SecActTarget);
 		}
 
 		// do lines
@@ -231,7 +235,7 @@ void P_SerializeWorld (FArchive &arc)
 
 			for (j = 0; j < 2; j++)
 			{
-				if (li->sidenum[j] == -1)
+				if (li->sidenum[j] == R_NOSIDE)
 					continue;
 
 				side_t *si = &sides[li->sidenum[j]];
@@ -248,9 +252,9 @@ void P_SerializeWorld (FArchive &arc)
 //
 // P_ArchiveThinkers
 //
-void P_SerializeThinkers (FArchive &arc, bool hubLoad)
+void P_SerializeThinkers (FArchive &arc, bool hubLoad, bool noStorePlayers)
 {
-	DThinker::SerializeAll (arc, hubLoad);
+	DThinker::SerializeAll (arc, hubLoad, noStorePlayers);
 }
 
 //

@@ -4,7 +4,7 @@
 // $Id: m_misc.h 1839 2010-09-03 01:48:16Z spleen $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,11 +29,11 @@
 
 #include "doomtype.h"
 
-void M_LoadDefaults (void);
+void M_LoadDefaults(void);
 
-void STACK_ARGS M_SaveDefaults (void);
+void STACK_ARGS M_SaveDefaults(std::string filename = "");
 
-std::string GetConfigPath (void);
+std::string M_GetConfigPath(void);
 std::string M_ExpandTokens(const std::string &str);
 
 #endif

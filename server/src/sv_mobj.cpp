@@ -4,7 +4,7 @@
 // $Id: sv_mobj.cpp 1832 2010-09-01 23:59:33Z mike $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@
 #include "doomtype.h"
 #include "v_video.h"
 #include "c_cvars.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "p_mobj.h"
 #include "sv_main.h"
 #include "p_ctf.h"
@@ -46,7 +46,17 @@ EXTERN_CVAR(sv_maxplayers)
 void G_PlayerReborn(player_t &player);
 void CTF_RememberFlagPos(mapthing2_t *mthing);
 
-//
+void P_SetSpectatorFlags(player_t &player)
+{
+	player.spectator = true;
+
+	if (player.mo)
+	{
+		player.mo->flags |= MF_SPECTATOR;
+		player.mo->flags &= ~MF_SOLID;
+		player.mo->flags2 |= MF2_FLY;
+	}
+}
 
 //
 // P_SpawnPlayer
@@ -79,15 +89,9 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	//		  mobj->translation = translationtables + 256*playernum;
 
 	mobj->angle = ANG45 * (mthing->angle/45);
-	mobj->pitch = mobj->roll = 0;
+	mobj->pitch = 0;
 	mobj->player = p;
 	mobj->health = p->health;
-
-	// [RH] Set player sprite based on skin
-	if(p->userinfo.skin >= numskins)
-		p->userinfo.skin = 0;
-
-	mobj->sprite = skins[p->userinfo.skin].sprite;
 
 	p->fov = 90.0f;
 	p->mo = p->camera = mobj->ptr();
@@ -103,11 +107,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	// Set up some special spectator stuff
 	if (p->spectator)
-	{
-		mobj->translucency = 0;
-		p->mo->flags |= MF_SPECTATOR;
-		p->mo->flags2 |= MF2_FLY;
-	}
+		P_SetSpectatorFlags(player);
 
 	// [RH] Allow chasecam for demo watching
 	//if ((demoplayback || demonew) && chasedemo)
@@ -145,6 +145,11 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		SV_SpawnMobj(mobj);
 	}
 }
+
+/**
+ * Stub
+ */
+void P_ShowSpawns(mapthing2_t* mthing) { }
 
 VERSION_CONTROL (sv_mobj_cpp, "$Id: sv_mobj.cpp 1832 2010-09-01 23:59:33Z mike $")
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,23 +28,25 @@
 #include <stdlib.h>
 
 #ifdef OSX
+#include <mach/clock.h>
+#include <mach/mach.h>
+
 #include <Carbon/Carbon.h>
 #endif
 
-#ifdef WIN32
-#include <Shlwapi.h>
-#include <io.h>
-#include <direct.h>
-#include <process.h>
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#ifdef _XBOX
-#include <xtl.h>
-#else
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif // !_XBOX
+#include "win32inc.h"
+#ifdef _WIN32
+    #include <io.h>
+    #include <direct.h>
+    #include <process.h>
+
+    #ifdef _XBOX
+        #include <xtl.h>
+    #else
+        #include <shlwapi.h>
+		#include <winsock2.h>
+		#include <mmsystem.h>
+    #endif // !_XBOX
 #endif // WIN32
 
 #ifdef UNIX
@@ -53,6 +55,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <limits.h>
+#include <time.h>
 #endif
 
 #ifdef HAVE_PWD_H
@@ -98,15 +101,17 @@
 #endif
 
 #ifndef GCONSOLE // I will add this back later -- Hyper_Eye
+// For libtextscreen to link properly
+extern "C"
+{
 #include "txt_main.h"
+}
 #define ENDOOM_W 80
 #define ENDOOM_H 25
 #endif // _XBOX
 
+EXTERN_CVAR (r_loadicon)
 EXTERN_CVAR (r_showendoom)
-
-QWORD (*I_GetTime) (void);
-QWORD (*I_WaitForTic) (QWORD);
 
 ticcmd_t emptycmd;
 ticcmd_t *I_BaseTiccmd(void)
@@ -116,7 +121,7 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-#ifdef _XBOX
+#ifdef GCONSOLE
 size_t def_heapsize = 16;
 #else
 size_t def_heapsize = 128;
@@ -199,88 +204,154 @@ void *I_ZoneBase (size_t *size)
 
 void I_BeginRead(void)
 {
-	patch_t *diskpatch = W_CachePatch("STDISK");
+	if (r_loadicon)
+	{
+		patch_t *diskpatch = W_CachePatch("STDISK");
 
-	if (!screen || !diskpatch || in_endoom)
-		return;
+		if (!screen || !diskpatch || in_endoom)
+			return;
 
-	screen->Lock();
+		screen->Lock();
 
-	int scale = MIN(CleanXfac, CleanYfac);
-	int w = diskpatch->width() * scale;
-	int h = diskpatch->height() * scale;
-	// offset x and y for the lower right corner of the screen
-	int ofsx = screen->width - w + (scale * diskpatch->leftoffset());
-	int ofsy = screen->height - h + (scale * diskpatch->topoffset());
+		int scale = MIN(CleanXfac, CleanYfac);
+		int w = diskpatch->width() * scale;
+		int h = diskpatch->height() * scale;
+		// offset x and y for the lower right corner of the screen
+		int ofsx = screen->width - w + (scale * diskpatch->leftoffset());
+		int ofsy = screen->height - h + (scale * diskpatch->topoffset());
 
-	screen->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
+		screen->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
 
-	screen->Unlock();
+		screen->Unlock();
+	}
 }
 
 void I_EndRead(void)
 {
 }
 
-// denis - use this unless you want your program
-// to get confused every 49 days due to DWORD limit
-QWORD I_UnwrapTime(DWORD now32)
-{
-	static QWORD last = 0;
-	QWORD now = now32;
-	static QWORD max = std::numeric_limits<DWORD>::max();
-
-	if(now < last%max)
-		last += (max-(last%max)) + now;
-	else
-		last = now;
-
-	return last;
-}
-
-// [RH] Returns time in milliseconds
-QWORD I_MSTime (void)
-{
-   return I_UnwrapTime(SDL_GetTicks());
-}
-
 //
 // I_GetTime
-// returns time in 1/35th second tics
 //
-QWORD I_GetTimePolled (void)
+// [SL] Retrieve an arbitrarily-based time from a high-resolution timer with
+// nanosecond accuracy.
+//
+uint64_t I_GetTime()
 {
-	return (I_MSTime()*TICRATE)/1000;
-}
+#if defined OSX
+	clock_serv_t cclock;
+	mach_timespec_t mts;
 
-QWORD I_WaitForTicPolled (QWORD prevtic)
-{
-	QWORD time;
+	host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
+	clock_get_time(cclock, &mts);
+	mach_port_deallocate(mach_task_self(), cclock);
+	return mts.tv_sec * 1000LL * 1000LL * 1000LL + mts.tv_nsec;
 
-	do
+#elif defined UNIX
+	timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
+
+#elif defined WIN32 && !defined _XBOX
+	static bool initialized = false;
+	static uint64_t initial_count;
+	static double nanoseconds_per_count;
+
+	if (!initialized)
 	{
-		I_Yield();
-	}while ((time = I_GetTimePolled()) <= prevtic);
+		QueryPerformanceCounter((LARGE_INTEGER*)&initial_count);
 
-	return time;
+		uint64_t temp;
+		QueryPerformanceFrequency((LARGE_INTEGER*)&temp);
+		nanoseconds_per_count = 1000.0 * 1000.0 * 1000.0 / double(temp);
+
+		initialized = true;
+	}
+
+	uint64_t current_count;
+	QueryPerformanceCounter((LARGE_INTEGER*)&current_count);
+
+	return nanoseconds_per_count * (current_count - initial_count);
+
+#else
+	// [SL] use SDL_GetTicks, but account for the fact that after
+	// 49 days, it wraps around since it returns a 32-bit int
+	static const uint64_t mask = 0xFFFFFFFFLL;
+	static uint64_t last_time = 0LL;
+	uint64_t current_time = SDL_GetTicks();
+
+	if (current_time < (last_time & mask))      // just wrapped around
+		last_time += mask + 1 - (last_time & mask) + current_time;
+	else
+		last_time = current_time;
+
+	return last_time * 1000000LL;
+
+#endif
 }
 
-void I_Yield(void)
+QWORD I_MSTime()
 {
-	SDL_Delay(1);
+	return I_ConvertTimeToMs(I_GetTime());
 }
 
-void I_WaitVBL (int count)
+uint64_t I_ConvertTimeToMs(uint64_t value)
 {
-	// I_WaitVBL is never used to actually synchronize to the
-	// vertical blank. Instead, it's used for delay purposes.
-	SDL_Delay (1000 * count / 70);
+	return value / 1000000LL;
+}
+
+uint64_t I_ConvertTimeFromMs(uint64_t value)
+{
+	return value * 1000000LL;
+}
+
+//
+// I_Sleep
+//
+// Sleeps for the specified number of nanoseconds, yielding control to the
+// operating system. In actuality, the highest resolution availible with
+// the select() function is 1 microsecond, but the nanosecond parameter
+// is used for consistency with I_GetTime().
+//
+void I_Sleep(uint64_t sleep_time)
+{
+#if defined UNIX
+	usleep(sleep_time / 1000LL);
+
+#elif defined(WIN32) && !defined(_XBOX)
+	Sleep(sleep_time / 1000000LL);
+
+#else
+	SDL_Delay(sleep_time / 1000000LL);
+
+#endif
+}
+
+//
+// I_Yield
+//
+// Sleeps for 1 millisecond
+//
+void I_Yield()
+{
+	I_Sleep(1000LL * 1000LL);		// sleep for 1ms
+}
+
+//
+// I_WaitVBL
+//
+// I_WaitVBL is never used to actually synchronize to the
+// vertical blank. Instead, it's used for delay purposes.
+//
+void I_WaitVBL(int count)
+{
+	I_Sleep(1000000LL * 1000LL * count / 70);
 }
 
 //
 // SubsetLanguageIDs
 //
-#if defined WIN32 && !defined _XBOX
+#if defined _WIN32 && !defined _XBOX
 static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 {
 	char buf[8];
@@ -318,7 +389,7 @@ void SetLanguageIDs ()
 
 	if (langid == 0 || langid > 3)
 	{
-    #if defined WIN32 && !defined _XBOX
+    #if defined _WIN32 && !defined _XBOX
 		memset (LanguageIDs, 0, sizeof(LanguageIDs));
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
@@ -348,12 +419,8 @@ void SetLanguageIDs ()
 //
 void I_Init (void)
 {
-	I_GetTime = I_GetTimePolled;
-	I_WaitForTic = I_WaitForTicPolled;
-
 	I_InitSound ();
 	I_InitHardware ();
-	I_InitInput ();
 }
 
 std::string I_GetCWD ()
@@ -585,7 +652,6 @@ void I_Endoom(void)
 	}
 
 	// Wait for a keypress
-
 	while (true)
 	{
 		TXT_UpdateScreen();
@@ -623,8 +689,17 @@ void STACK_ARGS I_Quit (void)
 
     CloseNetwork();
 
-	if (r_showendoom && !Args.CheckParm ("-novideo"))
-		I_Endoom();
+	DConsoleAlias::DestroyAll();
+
+	try
+	{
+		if (r_showendoom && !Args.CheckParm ("-novideo"))
+			I_Endoom();
+	}
+	catch (CRecoverableError &error)
+	{
+		// [AM] ENDOOM does not exist, but at this point we don't care.
+	}
 }
 
 
@@ -645,10 +720,9 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 	if (!alreadyThrown)		// ignore all but the first message -- killough
 	{
 		char errortext[MAX_ERRORTEXT];
-		int index;
 		va_list argptr;
 		va_start (argptr, error);
-		index = vsprintf (errortext, error, argptr);
+		int index = vsprintf (errortext, error, argptr);
 		sprintf (errortext + index, "\nSDL_GetError = %s", SDL_GetError());
 		va_end (argptr);
 
@@ -661,7 +735,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 
 		call_terms();
 
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -785,7 +859,7 @@ std::string I_GetClipboardText (void)
 	return ret;
 #endif
 
-#if defined WIN32 && !defined _XBOX
+#if defined _WIN32 && !defined _XBOX
 	std::string ret;
 
 	if(!IsClipboardFormatAvailable(CF_TEXT))
@@ -874,7 +948,7 @@ void I_PrintStr (int xp, const char *cp, int count, BOOL scroll)
 	// used in the DOS version
 }
 
-#ifdef WIN32 // denis - fixme - make this work on POSIX
+#ifdef _WIN32 // denis - fixme - make this work on POSIX
 
 long I_FindFirst (char *filespec, findstate_t *fileinfo)
 {
@@ -905,7 +979,7 @@ int I_FindClose (long handle) {return 0;}
 //
 // I_ConsoleInput
 //
-#ifdef WIN32
+#ifdef _WIN32
 std::string I_ConsoleInput (void)
 {
 	// denis - todo - implement this properly!!!

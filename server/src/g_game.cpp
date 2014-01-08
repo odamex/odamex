@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,7 +27,6 @@
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "d_protocol.h"
 #include "d_netinf.h"
 #include "z_zone.h"
 #include "m_argv.h"
@@ -73,6 +72,7 @@ void	G_DoWorldDone (void);
 void	G_DoSaveGame (void);
 
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (co_nosilentspawns)
 
 gameaction_t	gameaction;
@@ -86,9 +86,9 @@ BOOL 			usergame;				// ok to save / end game
 BOOL			sendcenterview;			// send a center view event next tic
 BOOL			menuactive;				// only to make sure p_tick doesn't bitch
 
-BOOL			timingdemo; 			// if true, exit with report on completion
-BOOL 			nodrawers;				// for comparative timing purposes
-BOOL 			noblit; 				// for comparative timing purposes
+bool			timingdemo; 			// if true, exit with report on completion
+bool 			nodrawers;				// for comparative timing purposes
+bool 			noblit; 				// for comparative timing purposes
 
 BOOL	 		viewactive;
 
@@ -239,177 +239,18 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 //
 void G_WriteDemoTiccmd ()
 {
-    byte demo_tmp[8];
-
-    int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
-
-    for(size_t i = 0; i < players.size(); i++)
-    {
-        byte *demo_p = demo_tmp;
-        usercmd_t *cmd = &players[i].cmd.ucmd;
-
-        *demo_p++ = cmd->forwardmove >> 8;
-        *demo_p++ = cmd->sidemove >> 8;
-
-        // If this is a longtics demo, record in higher resolution
-
-        if (LMP_DOOM_1_9_1 == demoversion)
-        {
-            *demo_p++ = (cmd->yaw & 0xff);
-            *demo_p++ = (cmd->yaw >> 8) & 0xff;
-        }
-        else
-        {
-            *demo_p++ = cmd->yaw >> 8;
-            cmd->yaw = ((unsigned char)*(demo_p-1))<<8;
-        }
-
-        *demo_p++ = cmd->buttons;
-
-        fwrite(demo_tmp, demostep, 1, recorddemo_fp);
-    }
 }
 
 //
 // G_RecordDemo
 //
-bool G_RecordDemo (char* name)
+bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 {
-    strcpy (demoname, name);
-    strcat (demoname, ".lmp");
-
-    if(recorddemo_fp)
-    {
-        fclose(recorddemo_fp);
-        recorddemo_fp = NULL;
-    }
-
-    recorddemo_fp = fopen(demoname, "w");
-
-    if(!recorddemo_fp)
-    {
-        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demoname);
-        return false;
-    }
-
-    usergame = false;
-    demorecording = true;
-    demostartgametic = gametic;
-
-    return true;
-}
-//
-// G_BeginRecording
-//
-void G_BeginRecording (void)
-{
-    byte demo_tmp[32];
-    demo_p = demo_tmp;
-
-    // Save the right version code for this demo
-
-    if (demoversion == LMP_DOOM_1_9_1) // denis - TODO!!!
-    {
-        *demo_p++ = DOOM_1_9_1_DEMO;
-    }
-    else
-    {
-        *demo_p++ = DOOM_1_9_DEMO;
-    }
-
-    democlassic = true;
-
-    int episode;
-    int mapid;
-    if(gameinfo.flags & GI_MAPxx)
-    {
-        episode = 1;
-        mapid = atoi(level.mapname + 3);
-    }
-    else
-    {
-        episode = level.mapname[1] - '0';
-        mapid = level.mapname[3] - '0';
-    }
-
-    *demo_p++ = sv_skill.asInt() - 1;
-    *demo_p++ = episode;
-    *demo_p++ = mapid;
-    *demo_p++ = sv_gametype.asInt();
-    *demo_p++ = sv_monstersrespawn.asInt();
-    *demo_p++ = sv_fastmonsters.asInt();
-    *demo_p++ = sv_nomonsters.asInt();
-    *demo_p++ = 0;
-
-    *demo_p++ = 1;
-    *demo_p++ = 0;
-    *demo_p++ = 0;
-    *demo_p++ = 0;
-
-    fwrite(demo_tmp, 13, 1, recorddemo_fp);
+	return false;
 }
 
 EXTERN_CVAR(sv_maxplayers)
 
-void RecordCommand(int argc, char **argv)
-{
-	if(argc > 2)
-	{
-		int ingame = 0;
-		for(size_t i = 0; i < players.size(); i++)
-		{
-			if(players[i].ingame())
-				ingame++;
-		}
-
-		if(!ingame)
-		{
-			Printf(PRINT_HIGH, "cannot record with no players");
-			return;
-		}
-
-		sv_maxplayers.Set(4.0f);
-
-		if(G_RecordDemo(argv[2]))
-		{
-			G_InitNew(argv[1]);
-			G_BeginRecording();
-		}
-	}
-	else
-		Printf(PRINT_HIGH, "Usage: recordvanilla map file\n");
-}
-/*
-BEGIN_COMMAND(recordvanilla)
-{
-	//G_CheckDemoStatus();
-	demoversion = LMP_DOOM_1_9;
-	RecordCommand(argc, argv);
-}
-END_COMMAND(recordvanilla)
-
-BEGIN_COMMAND(recordlongtics)
-{
-	//G_CheckDemoStatus();
-	demoversion = LMP_DOOM_1_9_1;
-	RecordCommand(argc, argv);
-}
-END_COMMAND(recordlongtics)
-
-BEGIN_COMMAND(stopdemo)
-{
-	G_CheckDemoStatus ();
-}
-END_COMMAND(stopdemo)
-*/
-
-// [RH] Spy mode has been separated into two console commands.
-//		One goes forward; the other goes backward.
-/*
-static void ChangeSpy (void)
-{
-}
-*/
 
 //
 // G_Responder
@@ -444,6 +285,12 @@ void G_Ticker (void)
 		{
 		case ga_loadlevel:
 			G_DoLoadLevel (-1);
+			break;
+		case ga_fullresetlevel:
+			G_DoResetLevel(true);
+			break;
+		case ga_resetlevel:
+			G_DoResetLevel(false);
 			break;
 		case ga_newgame:
 			G_DoNewGame ();
@@ -549,8 +396,11 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	}
 	for (i = 0; i < NUMWEAPONS; i++)
 		p.weaponowned[i] = false;
-	for (i = 0; i < NUMCARDS; i++)
-		p.cards[i] = false;
+	if (!sv_keepkeys)
+	{
+		for (i = 0; i < NUMCARDS; i++)
+			p.cards[i] = false;
+	}
 	for (i = 0; i < NUMPOWERS; i++)
 		p.powers[i] = false;
 	for (i = 0; i < NUMFLAGS; i++)
@@ -567,7 +417,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.weaponowned[wp_pistol] = true;
 	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 
-	p.respawn_time = level.time;
+	p.death_time = 0;
 	p.tic = 0;
 }
 
@@ -757,7 +607,44 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 	return &deathmatchstarts[i];
 }
 
-void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this function to accept teamplay starts
+// [Toke] Randomly selects a team spawn point
+// [AM] Moved out of CTF gametype and cleaned up.
+static mapthing2_t *SelectRandomTeamSpot(player_t &player, int selections)
+{
+	size_t i;
+
+	switch (player.userinfo.team)
+	{
+	case TEAM_BLUE:
+		for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
+		{
+			i = M_Random() % selections;
+			if (G_CheckSpot(player, &blueteamstarts[i]))
+			{
+				return &blueteamstarts[i];
+			}
+		}
+		return &blueteamstarts[i];
+	case TEAM_RED:
+		for (size_t j = 0; j < MaxRedTeamStarts; ++j)
+		{
+			i = M_Random() % selections;
+			if (G_CheckSpot(player, &redteamstarts[i]))
+			{
+				return &redteamstarts[i];
+			}
+		}
+		return &redteamstarts[i];
+	default:
+		// This team doesn't have a dedicated spawn point.  Fallthrough
+		// to using a deathmatch spawn point.
+		break;
+	}
+
+	return SelectRandomDeathmatchSpot(player, selections);
+}
+
+void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this function to accept teamplay starts
 {
 	int selections;
 	mapthing2_t *spot = NULL;
@@ -775,14 +662,14 @@ void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this
 	{
 		selections = deathmatch_p - deathmatchstarts;
 
-		if(selections)
+		if (selections)
 		{
-			spot = SelectRandomDeathmatchSpot (player, selections);
+			spot = SelectRandomDeathmatchSpot(player, selections);
 		}
 	}
 	else
 	{
-		spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
+		spot = SelectRandomTeamSpot(player, selections);  // [Toke - Teams]
 	}
 
 	if (selections < 1)
@@ -978,42 +865,6 @@ BOOL G_CheckDemoStatus (void)
 	return false;
 }
 
-EXTERN_CVAR (sv_fraglimit)
-EXTERN_CVAR (sv_allowexit)
-EXTERN_CVAR (sv_fragexitswitch)
-
-BOOL CheckIfExitIsGood (AActor *self)
-{
-	if (self == NULL)
-		return false;
-
-	// [Toke - dmflags] Old location of DF_NO_EXIT
-    // [ML] 04/4/06: Check for sv_fragexitswitch - seems a bit hacky
-
-    unsigned int i;
-
-    for(i = 0; i < players.size(); i++)
-        if(players[i].fragcount >= sv_fraglimit)
-            break;
-
-    if (sv_gametype != GM_COOP && self)
-    {
-        if (!sv_allowexit && sv_fragexitswitch && i == players.size())
-            return false;
-
-        if (!sv_allowexit && !sv_fragexitswitch)
-            return false;
-    }
-
-	if (self->player)
-		Printf (PRINT_HIGH, "%s exited the level.\n", self->player->userinfo.netname);
-
-    return true;
-}
-
 
 VERSION_CONTROL (g_game_cpp, "$Id$")
-
-
-
 

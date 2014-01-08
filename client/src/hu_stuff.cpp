@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,19 +37,22 @@
 #include "c_dispatch.h"
 #include "c_cvars.h"
 #include "v_text.h"
-#include "v_video.h"
+
 #include "cl_main.h"
 #include "p_ctf.h"
 #include "i_video.h"
 #include "i_input.h"
 #include "cl_netgraph.h"
+#include "hu_mousegraph.h"
 
 #include "hu_drawers.h"
 #include "hu_elements.h"
 
+#include "v_video.h"
+
 #define QUEUESIZE		128
 #define HU_INPUTX		0
-#define HU_INPUTY		(0 + (SHORT(hu_font[0]->height) +1))
+#define HU_INPUTY		(0 + (LESHORT(hu_font[0]->height) +1))
 
 #define CTFBOARDWIDTH	236
 #define CTFBOARDHEIGHT	40
@@ -69,6 +72,7 @@ EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (cl_netgraph)
+EXTERN_CVAR (hud_mousegraph)
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
@@ -94,6 +98,7 @@ extern bool HasBehavior;
 extern inline int V_StringWidth (const char *str);
 size_t P_NumPlayersInGame();
 static void ShoveChatStr (std::string str, byte who);
+void C_ReleaseKeys();
 
 static std::string input_text;
 int headsupactive;
@@ -194,7 +199,7 @@ BOOL HU_Responder (event_t *ev)
 			else
 				ShoveChatStr (chat_macros[ev->data2 - '0']->cstring(), headsupactive - 1);
 
-			I_ResumeMouse();
+			I_DisableKeyRepeat();
 			headsupactive = 0;
 			return true;
 		}
@@ -202,13 +207,13 @@ BOOL HU_Responder (event_t *ev)
 	if (ev->data3 == KEY_ENTER)
 	{
 		ShoveChatStr (input_text, headsupactive - 1);
-        I_ResumeMouse();
+		I_DisableKeyRepeat();
 		headsupactive = 0;
 		return true;
 	}
 	else if (ev->data1 == KEY_ESCAPE || ev->data1 == KEY_JOY2)
 	{
-        I_ResumeMouse();
+		I_DisableKeyRepeat();
 		headsupactive = 0;
 		return true;
 	}
@@ -338,6 +343,9 @@ void HU_Drawer (void)
 
 	if (cl_netgraph)
 		netgraph.draw();
+
+	if (hud_mousegraph)
+		mousegraph.draw(hud_mousegraph);
 }
 
 static void ShoveChatStr (std::string str, byte who)
@@ -354,6 +362,20 @@ static void ShoveChatStr (std::string str, byte who)
 	MSG_WriteString (&net_buffer, str.c_str());
 }
 
+static void ShovePrivMsg(byte pid, std::string str)
+{
+	// Do not send this chat message if the chat string is empty
+	if (str.length() == 0)
+		return;
+
+	if (str.length() > MAX_CHATSTR_LEN)
+		str.resize(MAX_CHATSTR_LEN);
+
+	MSG_WriteMarker(&net_buffer, clc_privmsg);
+	MSG_WriteByte(&net_buffer, pid);
+	MSG_WriteString(&net_buffer, str.c_str());
+}
+
 BEGIN_COMMAND (messagemode)
 {
 	if(!connected)
@@ -361,8 +383,9 @@ BEGIN_COMMAND (messagemode)
 
 	headsupactive = 1;
 	C_HideConsole ();
-    I_PauseMouse();
+	I_EnableKeyRepeat();
 	input_text = "";
+	C_ReleaseKeys();
 }
 END_COMMAND (messagemode)
 
@@ -370,8 +393,8 @@ BEGIN_COMMAND (say)
 {
 	if (argc > 1)
 	{
-		std::string chat = BuildString (argc - 1, (const char **)(argv + 1));
-		ShoveChatStr (chat, 0);
+		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		ShoveChatStr(chat, 0);
 	}
 }
 END_COMMAND (say)
@@ -383,8 +406,9 @@ BEGIN_COMMAND (messagemode2)
 
 	headsupactive = 2;
 	C_HideConsole ();
-	I_PauseMouse();
+	I_EnableKeyRepeat();
 	input_text = "";
+	C_ReleaseKeys();
 }
 END_COMMAND (messagemode2)
 
@@ -392,26 +416,28 @@ BEGIN_COMMAND (say_team)
 {
 	if (argc > 1)
 	{
-		std::string chat = BuildString (argc - 1, (const char **)(argv + 1));
-		ShoveChatStr (chat, 1);
+		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		ShoveChatStr(chat, 1);
 	}
 }
 END_COMMAND (say_team)
 
-static bool STACK_ARGS compare_player_frags (const player_t *arg1, const player_t *arg2)
+BEGIN_COMMAND (say_to)
 {
-	return arg2->fragcount < arg1->fragcount;
-}
+	if (argc > 2)
+	{
+		player_t &player = nameplayer(argv[1]);
+		if (!validplayer(player))
+		{
+			Printf(PRINT_HIGH, "%s isn't the name of anybody on the server.\n", argv[1]);
+			return;
+		}
 
-static bool STACK_ARGS compare_player_kills (const player_t *arg1, const player_t *arg2)
-{
-	return arg2->killcount < arg1->killcount;
+		std::string chat = C_ArgCombine(argc - 2, (const char **)(argv + 2));
+		ShovePrivMsg(player.id, chat);
+	}
 }
-
-static bool STACK_ARGS compare_player_points (const player_t *arg1, const player_t *arg2)
-{
-	return arg2->points < arg1->points;
-}
+END_COMMAND (say_to)
 
 EXTERN_CVAR(hud_scalescoreboard)
 
@@ -1076,7 +1102,8 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	} else if (blue_size > extra_rows + 4) {
 		blue_size = extra_rows + 4;
 	}
-	short ty[2] = {8, (blue_size * 8) + 22};
+
+	short ty[2] = {8, short(blue_size * 8 + 22) };
 
 	for (byte i = 0;i < 2;i++) {
 		// Line
@@ -1331,6 +1358,33 @@ void OdamexEffect (int xa, int ya, int xb, int yb)
 }
 
 
+//
+// Comparison functors for sorting vectors of players
+//
+struct compare_player_frags
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->fragcount < arg1->fragcount;
+	}
+};
+
+struct compare_player_kills
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->killcount < arg1->killcount;
+	}
+};
+
+struct compare_player_points
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->points < arg1->points;
+	}
+};
+
 
 //
 // HU_ConsoleScores
@@ -1351,7 +1405,7 @@ void HU_ConsoleScores (player_t *player)
 		sortedplayers[i] = &players[i];
 
     if (sv_gametype == GM_CTF) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("           CAPTURE THE FLAG\n");
@@ -1383,7 +1437,7 @@ void HU_ConsoleScores (player_t *player)
                 && sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD) {
                     if (sortedplayers[i] != player)
                         Printf(PRINT_HIGH, "%-15s %-6d N/A  %-5d %4d\n",
-                            sortedplayers[i]->userinfo.netname,
+                            sortedplayers[i]->userinfo.netname.c_str(),
                             sortedplayers[i]->points,
                             //sortedplayers[i]->captures,
                             sortedplayers[i]->fragcount,
@@ -1391,7 +1445,7 @@ void HU_ConsoleScores (player_t *player)
 
                     else
                         Printf_Bold("%-15s %-6d N/A  %-5d %4d\n",
-                            player->userinfo.netname,
+                            player->userinfo.netname.c_str(),
                             player->points,
                             //player->captures,
                             player->fragcount,
@@ -1404,13 +1458,13 @@ void HU_ConsoleScores (player_t *player)
             for (i = 0; i < sortedplayers.size(); i++) {
                 if (sortedplayers[i]->spectator) {
                     if (sortedplayers[i] != player)
-                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname.c_str());
                     else
-                        Printf_Bold("%-15s\n", player->userinfo.netname);
+                        Printf_Bold("%-15s\n", player->userinfo.netname.c_str());
                 }
             }
     } else if (sv_gametype == GM_TEAMDM) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("           TEAM DEATHMATCH\n");
@@ -1449,7 +1503,7 @@ void HU_ConsoleScores (player_t *player)
 
                     if (sortedplayers[i] != player)
                         Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s %4d\n",
-                            sortedplayers[i]->userinfo.netname,
+                            sortedplayers[i]->userinfo.netname.c_str(),
                             sortedplayers[i]->fragcount,
                             sortedplayers[i]->deathcount,
                             str,
@@ -1457,7 +1511,7 @@ void HU_ConsoleScores (player_t *player)
 
                     else
                         Printf_Bold("%-15s %-5d %-6d %4s %4d\n",
-                            player->userinfo.netname,
+                            player->userinfo.netname.c_str(),
                             player->fragcount,
                             player->deathcount,
                             str,
@@ -1470,13 +1524,13 @@ void HU_ConsoleScores (player_t *player)
             for (i = 0; i < sortedplayers.size(); i++) {
                 if (sortedplayers[i]->spectator) {
                     if (sortedplayers[i] != player)
-                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname.c_str());
                     else
-                        Printf_Bold("%-15s\n", player->userinfo.netname);
+                        Printf_Bold("%-15s\n", player->userinfo.netname.c_str());
                 }
             }
     } else if (sv_gametype == GM_DM) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("              DEATHMATCH\n");
@@ -1510,7 +1564,7 @@ void HU_ConsoleScores (player_t *player)
 
 				if (sortedplayers[i] != player)
 					Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s %4d\n",
-						sortedplayers[i]->userinfo.netname,
+						sortedplayers[i]->userinfo.netname.c_str(),
 						sortedplayers[i]->fragcount,
 						sortedplayers[i]->deathcount,
 						str,
@@ -1518,7 +1572,7 @@ void HU_ConsoleScores (player_t *player)
 
 				else
 					Printf_Bold("%-15s %-5d %-6d %4s %4d\n",
-						player->userinfo.netname,
+						player->userinfo.netname.c_str(),
 						player->fragcount,
 						player->deathcount,
 						str,
@@ -1530,13 +1584,13 @@ void HU_ConsoleScores (player_t *player)
             for (i = 0; i < sortedplayers.size(); i++) {
                 if (sortedplayers[i]->spectator) {
                     if (sortedplayers[i] != player)
-                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname.c_str());
                     else
-                        Printf_Bold("%-15s\n", player->userinfo.netname);
+                        Printf_Bold("%-15s\n", player->userinfo.netname.c_str());
                 }
             }
     } else if (multiplayer) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("             COOPERATIVE\n");
@@ -1555,7 +1609,7 @@ void HU_ConsoleScores (player_t *player)
 
 				if (sortedplayers[i] != player)
 					Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s %4d\n",
-						sortedplayers[i]->userinfo.netname,
+						sortedplayers[i]->userinfo.netname.c_str(),
 						sortedplayers[i]->killcount,
 						sortedplayers[i]->deathcount,
 						str,
@@ -1563,7 +1617,7 @@ void HU_ConsoleScores (player_t *player)
 
 				else
 					Printf_Bold("%-15s %-5d %-6d %4s %4d\n",
-						player->userinfo.netname,
+						player->userinfo.netname.c_str(),
 						player->killcount,
 						player->deathcount,
 						str,
@@ -1575,9 +1629,9 @@ void HU_ConsoleScores (player_t *player)
             for (i = 0; i < sortedplayers.size(); i++) {
                 if (sortedplayers[i]->spectator) {
                     if (sortedplayers[i] != player)
-                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname.c_str());
                     else
-                        Printf_Bold("%-15s\n", player->userinfo.netname);
+                        Printf_Bold("%-15s\n", player->userinfo.netname.c_str());
                 }
             }
     } else {

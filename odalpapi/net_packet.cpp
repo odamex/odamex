@@ -30,6 +30,7 @@
 
 #include "net_packet.h"
 #include "net_error.h"
+//#include "net_cvartable.h"
 
 using namespace std;
 
@@ -47,29 +48,29 @@ int32_t ServerBase::Query(int32_t Timeout)
 {
 	int8_t Retry = m_RetryCount;
 
-	string Address = Socket.GetRemoteAddress();
-
-	if (Address.empty())
+	if (m_Address.empty() || !m_Port)
         return 0;
 
-    Socket.ClearBuffer();
+    Socket->SetRemoteAddress(m_Address, m_Port);
+
+    Socket->ClearBuffer();
 
     // If we didn't get it the first time, try again
     while (Retry)
     {
-        Socket.Write32(challenge);
+        Socket->Write32(challenge);
 
-        if (!Socket.SendData(Timeout))
+        if (!Socket->SendData(Timeout))
             return 0;
 
-        int32_t err = Socket.GetData(Timeout);
+        int32_t err = Socket->GetData(Timeout);
 
         switch (err)
         {
             case -1:
             case -3: 
             {
-                Socket.ClearBuffer();
+                Socket->ClearBuffer();
                 --Retry;
                 continue;
             };
@@ -87,7 +88,7 @@ int32_t ServerBase::Query(int32_t Timeout)
 
     ok:
 
-    Ping = Socket.GetPing();
+    Ping = Socket->GetPing();
 
     if (!Parse())
         return 0;
@@ -108,22 +109,22 @@ int32_t MasterServer::Parse()
 
 	uint32_t temp_response;
 
-	Socket.Read32(temp_response);
+	Socket->Read32(temp_response);
 
 	if (temp_response != response)
 	{
-		Socket.ClearBuffer();
+		Socket->ClearBuffer();
 
 		return 0;
 	}
 
 	int16_t server_count;
 
-	Socket.Read16(server_count);
+	Socket->Read16(server_count);
 
 	if (!server_count)
 	{
-		Socket.ClearBuffer();
+		Socket->ClearBuffer();
 
 		return 0;
 	}
@@ -135,17 +136,17 @@ int32_t MasterServer::Parse()
 			addr_t address;
 			uint8_t ip1, ip2, ip3, ip4;
 
-			Socket.Read8(ip1);
-			Socket.Read8(ip2);
-			Socket.Read8(ip3);
-			Socket.Read8(ip4);
+			Socket->Read8(ip1);
+			Socket->Read8(ip2);
+			Socket->Read8(ip3);
+			Socket->Read8(ip4);
 
 			ostringstream stream;
 
 			stream << (int)ip1 << "." << (int)ip2 << "." << (int)ip3 << "." << (int)ip4;
 			address.ip = stream.str();
 
-			Socket.Read16(address.port);
+			Socket->Read16(address.port);
 
 			address.custom = false;
 
@@ -166,14 +167,14 @@ int32_t MasterServer::Parse()
 				addresses.push_back(address);
 		}
 
-	if (Socket.BadRead())
+	if (Socket->BadRead())
 	{
-		Socket.ClearBuffer();
+		Socket->ClearBuffer();
 
 		return 0;
 	}
 
-	Socket.ClearBuffer();
+	Socket->ClearBuffer();
 
 	return 1;
 }
@@ -226,6 +227,9 @@ void Server::ResetData()
    with every new major/minor version
    */
 
+static uint8_t VersionMajor, VersionMinor, VersionPatch;
+static uint32_t ProtocolVersion;
+
 // Specifies when data was added to the protocol, the parameter is the
 // introduced revision
 // NOTE: this one is different from the servers version for a reason
@@ -237,14 +241,122 @@ void Server::ResetData()
 #define QRYRANGEINFO(INTRODUCED,REMOVED) \
 	if (ProtocolVersion >= INTRODUCED && ProtocolVersion < REMOVED)
 
-//
-// Server::ReadInformation()
-//
+// Read cvar information
+bool Server::ReadCvars()
+{
+	uint8_t CvarCount;
+
+	Socket->Read8(CvarCount);
+
+	for (size_t i = 0; i < CvarCount; ++i)
+	{
+		Cvar_t Cvar;
+               
+        Socket->ReadString(Cvar.Name);
+
+		QRYNEWINFO(3)
+        {
+            Socket->Read8(Cvar.Type);
+
+            switch (Cvar.Type)
+            {
+                case CVARTYPE_BOOL:
+                {
+                    Cvar.b = true;
+                }
+                break;
+
+                case CVARTYPE_BYTE:
+                {
+                    Socket->Read8(Cvar.i8);
+                }
+                break;
+
+                case CVARTYPE_WORD:
+                {
+                    Socket->Read16(Cvar.i16);
+                }
+                break;
+
+                case CVARTYPE_INT:
+                {
+                    Socket->Read32(Cvar.i32);
+                }
+                break;
+
+                case CVARTYPE_FLOAT:
+                case CVARTYPE_STRING:
+                {
+                    Socket->ReadString(Cvar.Value);
+                }
+                break;
+
+                case CVARTYPE_NONE:
+                case CVARTYPE_MAX:
+                default:
+                    break;
+            }
+        }
+        else
+        {
+            Cvar.Type = CVARTYPE_NONE;
+
+            Socket->ReadString(Cvar.Value);
+        }
+        
+		// Filter out important information for us to use, it'd be nicer to have
+		// a launcher-side cvar implementation though
+        if (Cvar.Name == "sv_hostname")
+        {
+            Info.Name = Cvar.Value;
+
+            continue;
+        }
+        else if (Cvar.Name == "sv_maxplayers")
+        {
+            QRYNEWINFO(3)
+                Info.MaxPlayers = Cvar.ui8;
+            else
+                Info.MaxPlayers = (uint8_t)atoi(Cvar.Value.c_str());
+
+            continue;
+        }
+        else if (Cvar.Name == "sv_maxclients")
+        {
+            QRYNEWINFO(3)
+                Info.MaxClients = Cvar.ui8;
+            else
+                Info.MaxClients = (uint8_t)atoi(Cvar.Value.c_str());
+
+            continue;
+        }
+        else if (Cvar.Name == "sv_gametype")
+        {
+            QRYNEWINFO(3)
+                Info.GameType = (GameType_t)Cvar.ui8;
+            else
+                Info.GameType = (GameType_t)atoi(Cvar.Value.c_str());
+
+            continue;
+        }
+        else if (Cvar.Name == "sv_scorelimit")
+        {
+            QRYNEWINFO(3)
+                Info.ScoreLimit = Cvar.ui16;
+            else
+                Info.ScoreLimit = atoi(Cvar.Value.c_str());
+
+            continue;
+        }
+
+		Info.Cvars.push_back(Cvar);
+	}
+	
+	return true;
+}
+
 // Read information built for us by the server
-void Server::ReadInformation(const uint8_t &VersionMajor,
-		const uint8_t &VersionMinor,
-		const uint8_t &VersionPatch,
-		const uint32_t &ProtocolVersion)
+void Server::ReadInformation()
 {
 	Info.VersionMajor = VersionMajor;
 	Info.VersionMinor = VersionMinor;
@@ -252,91 +364,77 @@ void Server::ReadInformation(const uint8_t &VersionMajor,
 	Info.VersionProtocol = ProtocolVersion;
 
     // bond - time
-    Socket.Read32(Info.PTime);
+    Socket->Read32(Info.PTime);
 
     // The servers real protocol version
     // bond - real protocol
-    Socket.Read32(Info.VersionRealProtocol);
+    Socket->Read32(Info.VersionRealProtocol);
 
-	Socket.Read32(Info.VersionRevision);
+	Socket->Read32(Info.VersionRevision);
 
-	uint8_t CvarCount;
+    // Read cvar data
+    ReadCvars();
 
-	Socket.Read8(CvarCount);
+    // TODO: Remove next release
+    QRYNEWINFO(4)
+        Socket->ReadHexString(Info.PasswordHash);
+    else
+        Socket->ReadString(Info.PasswordHash);
 
-	for (size_t i = 0; i < CvarCount; ++i)
-	{
-		Cvar_t Cvar;
+	Socket->ReadString(Info.CurrentMap);
+	Socket->Read16(Info.TimeLeft);
 
-		Socket.ReadString(Cvar.Name);
-		Socket.ReadString(Cvar.Value);
-
-		// Filter out important information for us to use, it'd be nicer to have
-		// a launcher-side cvar implementation though
-		if (Cvar.Name == "sv_hostname")
-		{
-			Info.Name = Cvar.Value;
-
-			continue;
-		}
-		else if (Cvar.Name == "sv_maxplayers")
-		{
-			Info.MaxPlayers = (uint8_t)atoi(Cvar.Value.c_str());
-
-			continue;
-		}
-		else if (Cvar.Name == "sv_maxclients")
-		{
-			Info.MaxClients = (uint8_t)atoi(Cvar.Value.c_str());
-
-			continue;
-		}
-		else if (Cvar.Name == "sv_gametype")
-		{
-			Info.GameType = (GameType_t)atoi(Cvar.Value.c_str());
-
-			continue;
-		}
-		else if (Cvar.Name == "sv_scorelimit")
-		{
-			Info.ScoreLimit = atoi(Cvar.Value.c_str());
-
-			continue;
-		}
-
-		Info.Cvars.push_back(Cvar);
-	}
-
-	Socket.ReadString(Info.PasswordHash);
-	Socket.ReadString(Info.CurrentMap);
-	Socket.Read16(Info.TimeLeft);
-
+	// TODO: Remove next release
 	// Teams
-	uint8_t TeamCount;
-
-	Socket.Read8(TeamCount);
-
-	for (size_t i = 0; i < TeamCount; ++i)
+	QRYNEWINFO(5)
 	{
-		Team_t Team;
+        if (Info.GameType == GT_TeamDeathmatch || 
+            Info.GameType == GT_CaptureTheFlag)
+        {
+            uint8_t TeamCount;
 
-		Socket.ReadString(Team.Name);
-		Socket.Read32(Team.Colour);
-		Socket.Read16(Team.Score);
+            Socket->Read8(TeamCount);
 
-		Info.Teams.push_back(Team);
+            for (size_t i = 0; i < TeamCount; ++i)
+            {
+                Team_t Team;
+
+                Socket->ReadString(Team.Name);
+                Socket->Read32(Team.Colour);
+                Socket->Read16(Team.Score);
+
+                Info.Teams.push_back(Team);
+            }
+        }
 	}
+	else
+    {
+        uint8_t TeamCount;
 
+        Socket->Read8(TeamCount);
+        
+        for (size_t i = 0; i < TeamCount; ++i)
+        {
+            Team_t Team;
+
+            Socket->ReadString(Team.Name);
+            Socket->Read32(Team.Colour);
+            Socket->Read16(Team.Score);
+
+            Info.Teams.push_back(Team);
+        }
+    }
+    
 	// Dehacked/Bex files
 	uint8_t PatchCount;
 
-	Socket.Read8(PatchCount);
+	Socket->Read8(PatchCount);
 
 	for (size_t i = 0; i < PatchCount; ++i)
 	{
 		string Patch;
 
-		Socket.ReadString(Patch);
+		Socket->ReadString(Patch);
 
 		Info.Patches.push_back(Patch);
 	}
@@ -344,41 +442,51 @@ void Server::ReadInformation(const uint8_t &VersionMajor,
 	// Wad files
 	uint8_t WadCount;
 
-	Socket.Read8(WadCount);
+	Socket->Read8(WadCount);
 
 	for (size_t i = 0; i < WadCount; ++i)
 	{
 		Wad_t Wad;
 
-		Socket.ReadString(Wad.Name);
-		Socket.ReadString(Wad.Hash);
-
+		Socket->ReadString(Wad.Name);
+        
+        // TODO: Remove next release
+		QRYNEWINFO(4)
+            Socket->ReadHexString(Wad.Hash);
+        else
+            Socket->ReadString(Wad.Hash);
+        
 		Info.Wads.push_back(Wad);
 	}
 
 	// Player information
 	uint8_t PlayerCount;
 
-	Socket.Read8(PlayerCount);
+	Socket->Read8(PlayerCount);
 
 	for (size_t i = 0; i < PlayerCount; ++i)
 	{
 		Player_t Player;
 
-		Socket.ReadString(Player.Name);
-		QRYNEWINFO(2)
-		{
-            Socket.Read32(Player.Colour);
-		}
-		else
-            Player.Colour = 0;
-		Socket.Read8(Player.Team);
-		Socket.Read16(Player.Ping);
-		Socket.Read16(Player.Time);
-		Socket.ReadBool(Player.Spectator);
-		Socket.Read16(Player.Frags);
-		Socket.Read16(Player.Kills);
-		Socket.Read16(Player.Deaths);
+		Socket->ReadString(Player.Name);
+        Socket->Read32(Player.Colour);
+
+        QRYNEWINFO(5)
+        {
+            if (Info.GameType == GT_TeamDeathmatch || 
+                Info.GameType == GT_CaptureTheFlag)
+            {
+                Socket->Read8(Player.Team);
+            }
+        }
+        else 
+            Socket->Read8(Player.Team);
+		Socket->Read16(Player.Ping);
+		Socket->Read16(Player.Time);
+		Socket->ReadBool(Player.Spectator);
+		Socket->Read16(Player.Frags);
+		Socket->Read16(Player.Kills);
+		Socket->Read16(Player.Deaths);
 
 		Info.Players.push_back(Player);
 	}
@@ -452,7 +560,7 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 	{
 		// Launcher is an old version
 		NET_ReportError("Launcher is too old to parse the data from Server %s",
-              Socket.GetRemoteAddress().c_str());
+              Socket->GetRemoteAddress().c_str());
 
 		return 0;
 	}
@@ -460,15 +568,21 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 	uint32_t SvVersion;
 	uint32_t SvProtocolVersion;
 
-	Socket.Read32(SvVersion);
-	Socket.Read32(SvProtocolVersion);
+	Socket->Read32(SvVersion);
+	Socket->Read32(SvProtocolVersion);
+
+    // Prevent possible divide by zero
+    if (!SvVersion)
+    {
+        return 0;
+    }
 
 	if ((VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION)) ||
 			(VERSIONMAJOR(SvVersion) <= VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
 	{
 		// Server is an older version
 		NET_ReportError("Server %s is version %d.%d.%d which is not supported\n",
-              Socket.GetRemoteAddress().c_str(),
+              Socket->GetRemoteAddress().c_str(),
               VERSIONMAJOR(SvVersion),
               VERSIONMINOR(SvVersion),
               VERSIONPATCH(SvVersion));
@@ -476,16 +590,18 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 		return 0;
 	}
 
-	ReadInformation(VERSIONMAJOR(SvVersion),
-			VERSIONMINOR(SvVersion),
-			VERSIONPATCH(SvVersion),
-			SvProtocolVersion);
+    VersionMajor = VERSIONMAJOR(SvVersion);
+    VersionMinor = VERSIONMINOR(SvVersion);
+    VersionPatch = VERSIONPATCH(SvVersion);
+    ProtocolVersion = SvProtocolVersion;
 
-	if (Socket.BadRead())
+	ReadInformation();
+
+	if (Socket->BadRead())
 	{
 		// Bad packet data encountered
 		NET_ReportError("Data from Server %s was out of sequence, please report!\n",
-              Socket.GetRemoteAddress().c_str());
+              Socket->GetRemoteAddress().c_str());
 
 		return 0;
 	}
@@ -496,7 +612,7 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 
 int32_t Server::Parse()
 {
-	Socket.Read32(Info.Response);
+	Socket->Read32(Info.Response);
 
 	// Decode the tag into its fields
 	// TODO: this may not be 100% correct
@@ -512,7 +628,7 @@ int32_t Server::Parse()
 				TagQRId,
 				TagPacketType);
 
-		Socket.ClearBuffer();
+		Socket->ClearBuffer();
 
 		m_ValidResponse = Result ? true : false;
 
@@ -523,7 +639,7 @@ int32_t Server::Parse()
 
 	Info.Response = 0;
 
-	Socket.ClearBuffer();
+	Socket->ClearBuffer();
 
 	return 0;
 }
@@ -532,36 +648,36 @@ int32_t Server::Query(int32_t Timeout)
 {
     int8_t Retry = m_RetryCount;
 
-	string Address = Socket.GetRemoteAddress();
-
-	if (Address.empty())
+	if (m_Address.empty() || !m_Port)
         return 0;
 
-	Socket.ClearBuffer();
+    Socket->SetRemoteAddress(m_Address, m_Port);
+
+	Socket->ClearBuffer();
 
 	ResetData();
 
     // If we didn't get it the first time, try again
     while (Retry)
     {
-        Socket.Write32(challenge);
-        Socket.Write32(VERSION);
-        Socket.Write32(PROTOCOL_VERSION);
+        Socket->Write32(challenge);
+        Socket->Write32(VERSION);
+        Socket->Write32(PROTOCOL_VERSION);
         // bond - time
-        Socket.Write32(Info.PTime);
+        Socket->Write32(Info.PTime);
 
-        if (!Socket.SendData(Timeout))
+        if (!Socket->SendData(Timeout))
             return 0;
 
-        int32_t err = Socket.GetData(Timeout);
+        int32_t err = Socket->GetData(Timeout);
 
         switch (err)
         {
             case -1:
             case -3: 
             {
-                Socket.ResetBuffer();
-                Socket.ResetSize();
+                Socket->ResetBuffer();
+                Socket->ResetSize();
                 --Retry;
                 continue;
             };
@@ -579,7 +695,7 @@ int32_t Server::Query(int32_t Timeout)
 
     ok:
 
-    Ping = Socket.GetPing();
+    Ping = Socket->GetPing();
 
     if (!Parse())
         return 0;

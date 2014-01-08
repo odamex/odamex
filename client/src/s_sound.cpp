@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,8 +42,9 @@
 #include "cmdlib.h"
 #include "v_video.h"
 #include "v_text.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "m_fileio.h"
+#include "gi.h"
 
 #define NORM_PITCH				128
 #define NORM_PRIORITY				64
@@ -136,32 +137,12 @@ static struct mus_playing_t
 EXTERN_CVAR (snd_timeout)
 EXTERN_CVAR (snd_channels)
 EXTERN_CVAR (co_zdoomsoundcurve)
+EXTERN_CVAR (snd_musicsystem)
+EXTERN_CVAR (co_level8soundfeature)
+
 size_t			numChannels;
 
 static int		nextcleanup;
-
-static fixed_t P_AproxDistance2 (fixed_t *listener, fixed_t x, fixed_t y)
-{
-	// calculate the distance to sound origin
-	//	and clip it if necessary
-	if (listener)
-	{
-		fixed_t adx = abs (listener[0] - x);
-		fixed_t ady = abs (listener[1] - y);
-		// From _GG1_ p.428. Appox. eucledian distance fast.
-		return adx + ady - ((adx < ady ? adx : ady)>>1);
-	}
-	else
-		return 0;
-}
-
-static fixed_t P_AproxDistance2 (AActor *listener, fixed_t x, fixed_t y)
-{
-	if (listener)
-		return P_AproxDistance2 (&listener->x, x, y);
-	else
-		return 0;
-}
 
 //
 // [RH] Print sound debug info. Called from D_Display()
@@ -233,6 +214,32 @@ void S_NoiseDebug (void)
 	}
 }
 
+//
+// S_UseMap8Volume
+//
+// Determines if it is appropriate to use the special ExM8 attentuation
+// based on the current map number and the status of co_level8soundfeature
+//
+static bool S_UseMap8Volume()
+{
+	if (!co_level8soundfeature)
+		return false;
+
+    if (gameinfo.flags & GI_MAPxx)
+	{
+		// Doom2 style map naming (MAPxy)
+		if (level.mapname[3] == '0' && level.mapname[4] == '8')
+			return true;
+	}
+	else
+	{
+		// Doom1 style map naming (ExMy)
+		if (level.mapname[3] == '8')
+			return true;
+	}
+
+	return false;
+}
 
 //
 // Internals.
@@ -325,28 +332,23 @@ void S_Start (void)
 }
 
 
-//
-// S_CompareChannels
-//
-// A comparison function that determines which sound channel should
-// take priority.  Can be used with std::sort.  Returns true if 
-// channel a has less priority than channel b.
-//
-// Note: this implicitly gives preference to channel b if
-// channel a and b are equal.  The more recent sound should
-// therefore be in channel b to give preference to newer sounds.
-//
+/**
+ * A comparison function that determines which sound channel should
+ * take priority.  Can be used with std::sort.  Note that this implicitly
+ * gives preference to channel b if channel a and b are equal.  The more
+ * recent sound should therefore be in channel b to give preference to
+ * newer sounds.
+ *
+ * @param a The first channel being compared.
+ * @param b The second channel being compared.
+ * @return true if the first channel should precede the second.
+ */
 bool S_CompareChannels(const channel_t &a, const channel_t &b)
 {
-	if (a.sfxinfo == NULL)	// empty channel
+	if (a.sfxinfo == NULL || b.sfxinfo == NULL)
+		return b.sfxinfo != NULL;
+	if (a.priority < b.priority || (a.priority == b.priority && a.volume < b.volume))
 		return true;
-
-	if (b.sfxinfo == NULL)
-		return false;
-
-	if (a.priority < b.priority || (a.priority == b.priority && a.volume <= b.volume))
-		return true;
-
 	return false;
 }
 
@@ -428,8 +430,6 @@ int S_getChannel (void*	origin, sfxinfo_t* sfxinfo, float volume, int priority)
 	return cnum;
 }
 
-EXTERN_CVAR (co_level8soundfeature)
-
 
 //
 // S_AdjustZdoomSoundParams
@@ -455,7 +455,7 @@ int S_AdjustZdoomSoundParams(	AActor*	listener,
 		
 	if (dist >= MAX_SND_DIST)
 	{
-		if (co_level8soundfeature && level.levelnum == 8)
+		if (S_UseMap8Volume())
 		{
 			dist = MAX_SND_DIST;
 		}
@@ -524,7 +524,7 @@ int S_AdjustSoundParams(AActor*		listener,
 	// GhostlyDeath <November 16, 2008> -- ExM8 has the full volume effect
 	// [Russell] - Change this to an option and remove the dependence on
 	// we run doom 1 or not
-	if ((multiplayer && !co_level8soundfeature) && level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
+	if (!S_UseMap8Volume() && approx_dist > S_CLIPPING_DIST)
 		return 0;
 
     // angle of source to listener
@@ -546,7 +546,7 @@ int S_AdjustSoundParams(AActor*		listener,
 		*vol = snd_sfxvolume;
 		*sep = NORM_SEP;
 	}
-	else if (co_level8soundfeature && level.levelnum == 8)
+	else if (S_UseMap8Volume())
 	{
 		if (approx_dist > S_CLIPPING_DIST)
 			approx_dist = S_CLIPPING_DIST;
@@ -643,7 +643,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	{
 		sep = NORM_SEP;
 
-		if (channel == CHAN_ANNOUNCERE || channel == CHAN_ANNOUNCERF)
+		if (channel == CHAN_ANNOUNCER)
 			volume = snd_announcervolume;
 		else
 			volume = snd_sfxvolume;
@@ -652,8 +652,8 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	// Set up the sound channel's priority
 	switch (channel)
 	{
-		case CHAN_ANNOUNCERE:
-		case CHAN_ANNOUNCERF:
+		case CHAN_ANNOUNCER:
+		case CHAN_GAMEINFO:
 			priority = 1000;
 			break;
 		case CHAN_INTERFACE:
@@ -698,12 +698,16 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		}
 	}
 
-	S_StopSound (pt, channel);
+	// [AM] Announcers take longer to mentally parse than other SFX, so don't
+	//      let them cut each other off.  We run the risk of it turning into a
+	//      muddled mess, but cutting it off is indecipherable in every case.
+	if (channel != CHAN_ANNOUNCER)
+		S_StopSound(pt, channel);
 
-  	// try to find a channel
+	// try to find a channel
 	cnum = S_getChannel(pt, sfx, volume, priority);
 
-  	// no channel found
+	// no channel found
 	if (cnum < 0)
 		return;
 
@@ -801,7 +805,8 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 		return;
 	}
 	
-	if (*name == '*') {
+	if (*name == '*')
+	{
 		// Sexed sound
 		char nametemp[128];
 		const char templat[] = "player/%s/%s";
@@ -811,19 +816,23 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 		player_t *player;
 
 		sfx_id = -1;
-		if ( ent != (AActor *)(~0) && (player = ent->player) ) {
-			sprintf (nametemp, templat, skins[player->userinfo.skin].name, name + 1);
-			sfx_id = S_FindSound (nametemp);
-			if (sfx_id == -1) {
-				sprintf (nametemp, templat, genders[player->userinfo.gender], name + 1);
+		if (ent != (AActor *)(~0) && (player = ent->player))
+		{
+			sprintf(nametemp, templat, "base", name + 1);
+			sfx_id = S_FindSound(nametemp);
+			if (sfx_id == -1)
+			{
+				sprintf(nametemp, templat, genders[player->userinfo.gender], name + 1);
 				sfx_id = S_FindSound (nametemp);
 			}
 		}
-		if (sfx_id == -1) {
-			sprintf (nametemp, templat, "male", name + 1);
+		if (sfx_id == -1)
+		{
+			sprintf(nametemp, templat, "male", name + 1);
 			sfx_id = S_FindSound (nametemp);
 		}
-	} else
+	}
+	else
 		sfx_id = S_FindSound (name);
 
 	if (sfx_id == -1)
@@ -1026,9 +1035,8 @@ void S_UpdateSounds (void *listener_p)
 				// initialize parameters
 				sep = NORM_SEP;
 
-				float maxvolume;	
-				if (Channel[cnum].entchannel == CHAN_ANNOUNCERE ||
-					Channel[cnum].entchannel == CHAN_ANNOUNCERF)
+				float maxvolume;
+				if (Channel[cnum].entchannel == CHAN_ANNOUNCER)
 					maxvolume = snd_announcervolume;
 				else
 					maxvolume = snd_sfxvolume;
@@ -1137,6 +1145,10 @@ void S_StartMusic (const char *m_id)
 // It's up to the caller to figure out what that name is.
 void S_ChangeMusic (std::string musicname, int looping)
 {
+	// [SL] Avoid caching music lumps if we're not playing music
+	if (snd_musicsystem == MS_NONE)
+		return;
+
 	if (mus_playing.name == musicname)
 		return;
 
@@ -1162,7 +1174,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 
 		data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
 		length = W_LumpLength(lumpnum);
-		I_PlaySong(data, length, bool(looping));
+		I_PlaySong(data, length, (looping != 0));
     }
     else
 	{
@@ -1173,7 +1185,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 		fclose(f);
 	
 		if (result == 1)
-			I_PlaySong(data, length, bool(looping));
+			I_PlaySong(data, length, (looping != 0));
 		M_Free(data);
 	}		
 		
@@ -1192,7 +1204,7 @@ static void S_StopChannel (unsigned int cnum)
 	unsigned int i;
 	channel_t* c;
 
-	if(cnum > numChannels - 1 || cnum < 0)
+	if(cnum >= numChannels)
 	{
 		printf("Trying to stop invalid channel %d\n", cnum);
 		return;
@@ -1342,14 +1354,14 @@ int S_AddSound (char *logicalname, char *lumpname)
 // Parses all loaded SNDINFO lumps.
 void S_ParseSndInfo (void)
 {
-	int lastlump, lump;
 	char *sndinfo;
 	char *data;
 
 	S_ClearSoundLumps ();
 
-	lastlump = 0;
-	while ((lump = W_FindLump ("SNDINFO", &lastlump)) != -1) {
+	int lump = -1;
+	while ((lump = W_FindLump ("SNDINFO", lump)) != -1)
+	{
 		sndinfo = (char *)W_CacheLumpNum (lump, PU_CACHE);
 
 		while ( (data = COM_Parse (sndinfo)) ) {

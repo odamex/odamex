@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,8 @@
 #include "s_sndseq.h"
 #include "doomstat.h"
 #include "r_state.h"
+
+EXTERN_CVAR(co_fixzerotags)
 
 extern bool predicting;
 
@@ -264,7 +266,7 @@ BOOL EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 	rtn = false;
 
 	// check if a manual trigger, if so do just the sector on the backside
-	if (tag == 0)
+	if (co_fixzerotags && tag == 0)
 	{
 		if (!line || !(sec = line->backsector))
 			return rtn;
@@ -291,7 +293,12 @@ BOOL EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 manual_ceiling:
 		// if ceiling already moving, don't start a second function on it
 		if (sec->ceilingdata)
-			continue;
+		{
+			if (co_fixzerotags && manual)
+				return false;
+			else
+				continue;
+		}
 
 		fixed_t ceilingheight = P_CeilingHeight(sec);
 		fixed_t floorheight = P_FloorHeight(sec);

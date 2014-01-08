@@ -29,11 +29,11 @@
 #define _GUI_CONFIG_H
 
 /**
- * agOdalaunch namespace.
- *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
- * namespace.
- */
+agOdalaunch namespace.
+
+All code for the ag-odalaunch launcher is contained within the agOdalaunch
+namespace.
+*/
 namespace agOdalaunch {
 
 #ifdef _WIN32
@@ -53,6 +53,15 @@ class GuiConfig
 {
 public:
 	/**
+	Load the configuration.
+
+	Requests that Agar load the configuration settings.
+
+	@return True if an error occurred, False if successful.
+	*/
+	static bool Load();
+
+	/**
 	Save the configuration.
 
 	Requests that Agar save the current configuration settings.
@@ -70,6 +79,17 @@ public:
 	@param option The name of the option to unset.
 	*/
 	static void Unset(const std::string &option);
+
+	/**
+	Query the existence of a configuration option.
+
+	This method queries the agar configuration for the existence of the
+	specified configuration option.
+
+	@param option The name of the configuration option.
+	@return True if the option is defined, False if it is not.
+	*/
+	static bool IsDefined(const std::string &option);
 
 	/**
 	Write a configuration option with a string value.

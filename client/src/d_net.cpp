@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,8 +47,6 @@
 extern NetDemo netdemo;
 
 extern byte		*demo_p;		// [RH] Special "ticcmds" get recorded in demos
-
-void CL_RememberSkin(void);
 
 //
 // NETWORKING
@@ -93,98 +91,8 @@ void D_CheckNetGame (void)
 
     ticdup = 1;
 
-    step_mode = Args.CheckParm ("-stepmode");
+    step_mode = ((Args.CheckParm ("-stepmode")) != 0);
 }
-
-
-//
-// TryRunTics
-//
-extern	BOOL	 advancedemo;
-int canceltics = 0;
-
-void TryStepTics(QWORD tics)
-{
-	DObject::BeginFrame ();
-	
-	// run the realtics tics
-	while (tics--)
-	{
-		if(canceltics && canceltics--)
-			continue;
-
-		NetUpdate ();
-
-		if (advancedemo)
-			D_DoAdvanceDemo ();
-		
-		C_Ticker ();
-		M_Ticker ();
-		G_Ticker ();
-		gametic++;
-		if (netdemo.isPlaying() && !netdemo.isPaused())
-			netdemo.ticker();
-	}
-	
-	DObject::EndFrame ();
-
-}
-
-QWORD nextstep = 0;
-
-void TryRunTics (void)
-{
-	// get real tics
-	static QWORD oldentertics = 0;
-
-	QWORD entertic = I_WaitForTic (oldentertics);
-	QWORD realtics = entertic - oldentertics;
-	oldentertics = entertic;
-
-	std::string cmd = I_ConsoleInput();
-	if (cmd.length())
-	{
-		AddCommandString (cmd.c_str());
-	}
-
-	if(CON.is_open())
-	{
-		CON.clear();
-		if(!CON.eof())
-		{
-			std::getline(CON, cmd);
-			AddCommandString (cmd.c_str());
-		}
-	}
-	
-	// run the realtics tics
-	if(!step_mode)
-		TryStepTics(realtics);
-	else
-	{
-		NetUpdate();
-
-		if(nextstep)
-		{
-			canceltics = 0;
-			TryStepTics(nextstep);
-			nextstep = 0;
-
-			// debugging output
-			extern unsigned char prndindex;
-			if(players.size() && players[0].mo)
-				Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n", level.time, prndindex, players[0].mo->x, players[0].mo->y, players[0].mo->z);
-			else
- 				Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
-		}
-	}
-}
-
-BEGIN_COMMAND(step)
-{
-        nextstep = argc > 1 ? atoi(argv[1]) : 1;
-}
-END_COMMAND(step)
 
 
 VERSION_CONTROL (d_net_cpp, "$Id$")

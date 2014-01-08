@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,7 +35,6 @@
 #include "d_event.h"
 #include "d_main.h"
 #include "doomstat.h"
-#include "d_protocol.h"
 #include "g_level.h"
 #include "g_game.h"
 #include "gstrings.h"
@@ -65,6 +64,7 @@
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
+#include "g_warmup.h"
 
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
@@ -82,21 +82,23 @@ EXTERN_CVAR (sv_curmap)
 EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_intermissionlimit)
-
-
-extern int timingdemo;
+EXTERN_CVAR (sv_warmup)
+EXTERN_CVAR (sv_timelimit)
 
 extern int mapchange;
 extern int shotclock;
 
 // Start time for timing demos
-int starttime;
+uint64_t starttime;
 
 // ACS variables with world scope
 int ACS_WorldVars[NUM_WORLDVARS];
 
 // ACS variables with global scope
 int ACS_GlobalVars[NUM_GLOBALVARS];
+
+// [AM] Stores the reset snapshot
+FLZOMemFile	*reset_snapshot = NULL;
 
 BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
 
@@ -125,8 +127,15 @@ void G_DeferedInitNew (char *mapname)
 	sv_nextmap.ForceSet(d_mapname);
 }
 
+void G_DeferedFullReset()
+{
+	gameaction = ga_fullresetlevel;
+}
 
-
+void G_DeferedReset()
+{
+	gameaction = ga_resetlevel;
+}
 
 const char* GetBase(const char* in)
 {
@@ -140,11 +149,6 @@ const char* GetBase(const char* in)
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
-	std::vector<std::string> wads, patches, hashes;
-	bool AddedIWAD = false;
-	bool Reboot = false;
-	QWORD i, j;
-
 	// [Russell] print out some useful info
 	if (argc == 1)
 	{
@@ -157,85 +161,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
-	// Did we pass an IWAD?
-	if (W_IsIWAD(argv[1])) {
-		std::string ext;
-
-		if (!M_ExtractFileExtension(argv[1], ext)) {
-			wads.push_back(std::string(argv[1]) + ".wad");
-		} else {
-			wads.push_back(argv[1]);
-		}
-		AddedIWAD = true;
-	}
-
-	// Are the passed params WAD files or patch files?
-	for (i = 1; i < argc; i++) {
-		std::string ext;
-
-		if (M_ExtractFileExtension(argv[i], ext)) {
-			if ((ext == "wad") && !W_IsIWAD(argv[i])) {
-				// Wad that isn't an IWAD
-				wads.push_back(argv[i]);
-			} else if  (ext == "deh" || ext == "bex") {
-				// Patch file
-				patches.push_back(argv[i]);
-			}
-		}
-	}
-
-	// Check our environment, if the same WADs are used, ignore this command.
-
-	// Did we switch IWAD files?
-	if (AddedIWAD && !wadfiles.empty()) {
-		if (StdStringCompare(M_ExtractFileName(wads[0]), M_ExtractFileName(wadfiles[1]), true) != 0) {
-			Reboot = true;
-		}
-	}
-
-	// Do the sizes of the WAD lists not match up?
-	if (!Reboot) {
-		if (wadfiles.size() - 2 != wads.size() - (AddedIWAD ? 1 : 0)) {
-			Reboot = true;
-		}
-	}
-
-	// Do our WAD lists match up exactly?
-	if (!Reboot) {
-		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < wads.size(); i++, j++) {
-			if (StdStringCompare(M_ExtractFileName(wads[j]), M_ExtractFileName(wadfiles[i]), true) != 0) {
-				Reboot = true;
-				break;
-			}
-		}
-	}
-
-	// Do the sizes of the patch lists not match up?
-	if (!Reboot) {
-		if (patchfiles.size() != patches.size()) {
-			Reboot = true;
-		}
-	}
-
-	// Do our patchfile lists match up exactly?
-	if (!Reboot) {
-		for (i = 0, j = 0; i < patchfiles.size() && j < patches.size(); i++, j++) {
-			if (StdStringCompare(M_ExtractFileName(patches[j]), M_ExtractFileName(patchfiles[i]), true) != 0) {
-				Reboot = true;
-				break;
-			}
-		}
-	}
-
-	if (Reboot) {
-		if (!AddedIWAD) {
-			wads.insert(wads.begin(), wadfiles[1]);
-		}
-
-		D_DoomWadReboot(wads, patches);
-		unnatural_level_progression = true;
-		G_DeferedInitNew(startmap);
-	}
+	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
+	G_LoadWad(str);
 }
 END_COMMAND (wad)
 
@@ -261,7 +188,7 @@ std::string G_NextMap(void) {
 	if (!strncmp(next.c_str(), "EndGame", 7) ||
 		(gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4))) {
 		if (gameinfo.flags & GI_MAPxx || gamemode == shareware ||
-			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) || (gamemode == retail && level.cluster == 4)))) {
+			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4)))) {
 			next = CalcMapName(1, 1);
 		} else if (sv_loopepisode) {
 			next = CalcMapName(level.cluster, 1);
@@ -285,11 +212,7 @@ void G_ChangeMap() {
 		maplist_entry_t maplist_entry;
 		Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-		// Change the map and bump the position of the next maplist entry.
-		// FIXME: AddCommandString is evil, kill it and call a Wad-changing
-		//        function directly.
-		AddCommandString("wad " + JoinStrings(maplist_entry.wads, " "));
-		G_DeferedInitNew((char *)maplist_entry.map.c_str());
+		G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
 
 		// Set the new map as the current map
 		Maplist::instance().set_index(next_index);
@@ -312,11 +235,7 @@ void G_ChangeMap(size_t index) {
 		return;
 	}
 
-	// Change the map and bump the position of the next maplist entry.
-	// FIXME: AddCommandString is evil, kill it and call a Wad-changing
-	//        function directly.
-	AddCommandString("wad " + JoinStrings(maplist_entry.wads, " "));
-	G_DeferedInitNew((char *)maplist_entry.map.c_str());
+	G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);
@@ -351,12 +270,11 @@ BEGIN_COMMAND (forcenextmap) {
 } END_COMMAND (forcenextmap)
 
 BEGIN_COMMAND (restart) {
-	G_RestartMap();
+	warmup.restart();
 } END_COMMAND (restart)
 
 void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);
-void G_DoReborn(player_t &playernum);
 
 //
 // G_DoNewGame
@@ -372,10 +290,7 @@ void G_DoNewGame (void)
 		if(!players[i].ingame())
 			continue;
 
-		client_t *cl = &clients[i];
-
-		MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);
-		MSG_WriteString (&cl->reliablebuf, d_mapname);
+		SV_SendLoadMap(wadfiles, patchfiles, d_mapname, &players[i]);
 	}
 
 	sv_curmap.ForceSet(d_mapname);
@@ -422,7 +337,7 @@ void G_InitNew (const char *mapname)
 	// [RH] Mark all levels as not visited
 	if (!savegamerestore)
 	{
-		for (i = 0; i < numwadlevelinfos; i++)
+		for (i = 0; i < wadlevelinfos.size(); i++)
 			wadlevelinfos[i].flags &= ~LEVEL_VISITED;
 
 		for (i = 0; LevelInfos[i].mapname[0]; i++)
@@ -588,7 +503,7 @@ void G_SecretExitLevel (int position, int drawscores)
 	mapchange = TICRATE*intlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	if ( (gamemode == commercial)
+	if ( (gameinfo.flags & GI_MAPxx)
 		 && (W_CheckNumForName("map31")<0))
 		secretexit = false;
 	else
@@ -609,6 +524,162 @@ void G_DoCompleted (void)
 	for(i = 0; i < players.size(); i++)
 		if(players[i].ingame())
 			G_PlayerFinishLevel(players[i]);
+}
+
+extern void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers);
+
+// [AM] - Save the state of the level that can be reset to
+void G_DoSaveResetState()
+{
+	if (reset_snapshot != NULL)
+	{
+		// An existing reset snapshot exists.  Kill it and replace it with
+		// a new one.
+		delete reset_snapshot;
+	}
+	reset_snapshot = new FLZOMemFile;
+	reset_snapshot->Open();
+	FArchive arc(*reset_snapshot);
+	G_SerializeLevel(arc, false, true);
+	arc << level.time;
+}
+
+// [AM] - Reset the state of the level.  Second parameter is true if you want
+//        to zero-out gamestate as well (i.e. resetting scores, RNG, etc.).
+void G_DoResetLevel(bool full_reset)
+{
+	gameaction = ga_nothing;
+	if (reset_snapshot == NULL)
+	{
+		// No saved state to reload to
+		DPrintf("G_DoResetLevel: No saved state to reload.");
+		return;
+	}
+
+	// Clear CTF state.
+	std::vector<player_t>::iterator it;
+	if (sv_gametype == GM_CTF)
+	{
+		for (size_t i = 0;i < NUMFLAGS;i++)
+		{
+			for (it = players.begin();it != players.end();++it)
+			{
+				it->flags[i] = false;
+			}
+			CTFdata[i].flagger = 0;
+			CTFdata[i].state = flag_home;
+		}
+	}
+
+	// Clear netids of every non-player actor so we don't spam the
+	// destruction message of actors to clients.
+	{
+		AActor* mo;
+		TThinkerIterator<AActor> iterator;
+		while ((mo = iterator.Next()))
+		{
+			if (mo->netid && mo->type != MT_PLAYER)
+			{
+				ServerNetID.ReleaseNetID(mo->netid);
+				mo->netid = 0;
+			}
+		}
+	}
+
+	// Tell clients that a map reset is incoming.
+	for (size_t i = 0;i < players.size();i++)
+	{
+		if (!players[i].ingame())
+			continue;
+
+		client_t *cl = &clients[i];
+		MSG_WriteMarker(&cl->reliablebuf, svc_resetmap);
+	}
+
+	// Unserialize saved snapshot
+	reset_snapshot->Reopen();
+	FArchive arc(*reset_snapshot);
+	G_SerializeLevel(arc, false, true);
+	int level_time;
+	arc >> level_time;
+	reset_snapshot->Seek(0, FFile::ESeekSet);
+
+	// Assign new netids to every non-player actor to make sure we don't have
+	// any weird destruction of any items post-reset.
+	{
+		AActor* mo;
+		TThinkerIterator<AActor> iterator;
+		while ((mo = iterator.Next()))
+		{
+			if (mo->netid && mo->type != MT_PLAYER)
+			{
+				mo->netid = ServerNetID.ObtainNetID();
+			}
+		}
+	}
+
+	// Clear the item respawn queue, otherwise all those actors we just
+	// destroyed and replaced with the serialized items will start respawning.
+	iquehead = iquetail = 0;
+	// Potentially clear out gamestate as well.
+	if (full_reset)
+	{
+		// Set time to the initial tic
+		level.time = level_time;
+		// Clear global goals.
+		for (size_t i = 0; i < NUMTEAMS; i++)
+			TEAMpoints[i] = 0;
+		// Clear player information.
+		for (it = players.begin();it != players.end();++it)
+		{
+			it->fragcount = 0;
+			it->itemcount = 0;
+			it->secretcount = 0;
+			it->deathcount = 0;
+			it->killcount = 0;
+			it->points = 0;
+			it->joinafterspectatortime = level.time;
+
+			// [AM] Only touch ready state if warmup mode is enabled.
+			if (sv_warmup)
+				it->ready = false;
+		}
+		// For predictable first spawns.
+		M_ClearRandom();
+	}
+
+	// [SL] always reset the time (for now at least)
+	level.time = 0;
+	level.timeleft = sv_timelimit * TICRATE * 60;
+	level.inttimeleft = mapchange / TICRATE;
+
+	// Send information about the newly reset map.
+	for (it = players.begin();it != players.end();++it)
+	{
+		// Player needs to actually be ingame
+		if (!it->ingame())
+			continue;
+
+		SV_ClientFullUpdate(*it);
+	}
+	// Force every ingame player to be reborn.
+	for (it = players.begin();it != players.end();++it)
+	{
+		// Spectators aren't reborn.
+		if (!it->ingame() || it->spectator)
+			continue;
+
+		// Destroy the attached mobj, otherwise we leave a ghost.
+		it->mo->Destroy();
+
+		// Set the respawning machinery in motion
+		it->playerstate = full_reset ? PST_ENTER : PST_REBORN;
+
+		// Do this here, otherwise players won't be reborn until next tic.
+		// [AM] Also, forgetting to do this will result in ticcmds that rely on
+		//      a players subsector to be valid (like use) to crash the server.
+		G_DoReborn(*it);
+	}
 }
 
 //
@@ -668,12 +739,31 @@ void G_DoLoadLevel (int position)
 		if (players[i].ingame() && players[i].playerstate == PST_DEAD)
 			players[i].playerstate = PST_REBORN;
 
+		// [AM] If sv_keepkeys is on, players might still be carrying keys, so
+		//      make sure they're gone.
+		for (size_t j = 0; j < NUMCARDS; j++)
+			players[i].cards[j] = false;
+
 		players[i].fragcount = 0;
 		players[i].itemcount = 0;
 		players[i].secretcount = 0;
 		players[i].deathcount = 0; // [Toke - Scores - deaths]
 		players[i].killcount = 0; // [deathz0r] Coop kills
 		players[i].points = 0;
+
+		// [AM] Only touch ready state if warmup mode is enabled.
+		if (sv_warmup)
+		{
+			players[i].ready = false;
+			players[i].timeout_ready = 0;
+
+			// [AM] Make sure the clients are updated on the new ready state
+			for (size_t j = 0;j < players.size();j++) {
+				MSG_WriteMarker(&(players[j].client.reliablebuf), svc_readystate);
+				MSG_WriteByte(&(players[j].client.reliablebuf), players[i].id);
+				MSG_WriteBool(&(players[j].client.reliablebuf), false);
+			}
+		}
 	}
 
 	// [deathz0r] It's a smart idea to reset the team points
@@ -751,18 +841,26 @@ void G_DoLoadLevel (int position)
 	mousex = mousey = 0;
 	sendpause = sendsave = paused = sendcenterview = false;
 
-	if (timingdemo) {
+	if (timingdemo)
+	{
 		static BOOL firstTime = true;
 
-		if (firstTime) {
-			starttime = I_GetTimePolled ();
+		if (firstTime)
+		{
+			starttime = I_MSTime();
 			firstTime = false;
 		}
 	}
 
-	level.starttime = I_GetTime ();
-	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
-	P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
+	level.starttime = I_MSTime() * TICRATE / 1000;
+	// [RH] Restore the state of the level.
+	G_UnSnapshotLevel (!savegamerestore);
+	// [RH] Do script actions that were triggered on another map.
+	P_DoDeferedScripts ();
+	// [AM] Save the state of the level on the first tic.
+	G_DoSaveResetState();
+	// [AM] Handle warmup init.
+	warmup.reset();
 	//	C_FlushDisplay ();
 }
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,7 +38,7 @@
 #ifdef ALPHA
 #define SAFESHORT(s)	((short)(((byte *)&(s))[0] + ((byte *)&(s))[1] * 256))
 #else
-#define SAFESHORT(s)	SHORT(s)
+#define SAFESHORT(s)	LESHORT(s)
 #endif
 
 
@@ -82,9 +82,12 @@ typedef struct
 
 extern texture_t **textures;
 extern byte* textureheightmask;
+extern fixed_t* texturescalex;
+extern fixed_t* texturescaley;
 
 // Retrieve column data for span blitting.
-byte* R_GetColumn (int tex, int col);
+tallpost_t* R_GetColumn(int tex, int col);
+byte* R_GetColumnData(int tex, int col);
 
 
 // I/O, setting up the stuff.
@@ -113,12 +116,7 @@ unsigned int R_BlendForColormap (int map);		// [RH] return calculated blend for 
 extern byte *realcolormaps;						// [RH] make the colormaps externally visible
 extern size_t numfakecmaps;
 
-int R_FindSkin (const char *name);	// [RH] Find a skin
-
 unsigned int SlopeDiv(unsigned int num, unsigned int den);
-
-// [RH] Tutti-Frutti fix
-extern "C" unsigned int		dc_mask;
 
 #endif
 

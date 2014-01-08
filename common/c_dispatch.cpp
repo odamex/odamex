@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,14 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#if _MSC_VER == 1200
-// MSVC6, disable broken warnings about truncated stl lines
-#pragma warning(disable:4786)
-#endif
-
 #include <string>
 #include <vector>
 #include <fstream>
+#include <sstream>
 #include <algorithm>
 
 #include "doomtype.h"
@@ -229,26 +225,31 @@ void C_DoCommand (const char *cmd)
 				if (argc >= 2)
 				{
 					c = Commands().find("set");
-
-					if(c != Commands().end())
+					if (c != Commands().end())
 					{
 						com = c->second;
-
 						com->argc = argc + 1;
 						com->argv = argv - 1;	// Hack
 						com->m_Instigator = consoleplayer().mo;
-						com->Run ();
+						com->Run();
 					}
-					else Printf (PRINT_HIGH, "set command not found\n");
+					else
+						Printf(PRINT_HIGH, "set command not found\n");
 				}
-                // [Russell] - Don't make the user feel inadequate, tell
-                // them its either enabled, disabled or its other value
-                else if (var->cstring()[0] == '1' && !(var->m_Flags & CVAR_NOENABLEDISABLE))
-                    Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-                else if (var->cstring()[0] == '0' && !(var->m_Flags & CVAR_NOENABLEDISABLE))
-                    Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
-                else
-                    Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+				else
+				{
+					c = Commands().find("get");
+					if (c != Commands().end())
+					{
+						com = c->second;
+						com->argc = argc + 1;
+						com->argv = argv - 1;	// Hack
+						com->m_Instigator = consoleplayer().mo;
+						com->Run();
+					}
+					else
+						Printf(PRINT_HIGH, "get command not found\n");
+				}
 			}
 			else
 			{
@@ -275,20 +276,47 @@ void AddCommandString(const std::string &str, bool onlycvars)
 	// stores a copy of the current substring
 	char *command = new char[totallen + 1];
 
+	// scan for a command ending
 	while (*cstart)
 	{
 		const char *cp = cstart;
 
-		while (*cp != ';' && *cp != '\0')
+		while (*cp != ';' && *cp != 0)
 		{
-			// ignore ';' if it is inside a pair of quotes
-			if (*cp == '\"')
+			if (cp[0] == '\\' && cp[1] != 0)
 			{
-				cp++;
-				while (*cp != '\"' && *cp != '\0')
-					cp++;
+				// [AM] Skip two chars if escaped.
+				cp += 2;
 			}
-			cp++;
+			else if (*cp == '"')
+			{
+				// Ignore ';' if it is inside a pair of quotes.
+				while (1)
+				{
+					cp++;
+					if (*cp == 0)
+					{
+						// End of string.
+						break;
+					}
+					if (cp[0] == '\\' && cp[1] == '"')
+					{
+						// [AM] Skip over escaped quote.
+						cp++;
+					}
+					else if (*cp == '"')
+					{
+						// End of quote.  Skip over ending quote.
+						cp++;
+						break;
+					}
+				}
+			}
+			else
+			{
+				// Advance to next char.
+				cp++;
+			}
 		}
 
 		safemode |= onlycvars;
@@ -441,7 +469,7 @@ BEGIN_COMMAND (if)
 	}
 	else if(op == "ne")
 	{
-		if_command_result = strcmp(var->cstring(), argv[3]);
+		if_command_result = ((strcmp(var->cstring(), argv[3])) != 0);
 	}
 	else
 	{
@@ -452,61 +480,103 @@ BEGIN_COMMAND (if)
 
 	if(if_command_result && argc > 4)
 	{
-		std::string param = BuildString (argc - 4, (const char **)&argv[4]);
+		std::string param = C_ArgCombine(argc - 4, (const char **)&argv[4]);
 		AddCommandString(param);
 	}
 }
 END_COMMAND (if)
 
+// Returns true if the character is a valid escape char, false otherwise.
+bool ValidEscape(char data)
+{
+	return (data == '"' || data == ';' || data == '\\');
+}
+
 // ParseString2 is adapted from COM_Parse
 // found in the Quake2 source distribution
-const char *ParseString2 (const char *data)
+const char *ParseString2(const char *data)
 {
-	int c;
 	int len;
 
 	len = 0;
 	com_token[0] = 0;
 
-	if (!data)
-		return NULL;
-
-// skip whitespace
-	while ( (c = *data) <= ' ')
+	// Skip whitespace.
+	while (*data <= ' ')
 	{
-		if (c == 0)
+		if (*data == 0)
 		{
-			return NULL;			// end of string encountered
+			// End of string encountered.
+			return NULL;
 		}
 		data++;
 	}
 
-// handle quoted strings specially
-	if (c == '\"')
+	if (data[0] == '\\' && ValidEscape(data[1]))
 	{
-		data++;
+		// [AM] Handle escaped chars.
+		com_token[len] = data[1];
+		data += 2;
+		len++;
+	}
+	else if (*data == '"')
+	{
+		// Quoted strings count as one large token.
 		while (1) {
-			c = *data++;
-			if (c == '\"' || c == '\0')
+			data++;
+			if (*data == 0)
 			{
-				if (c == '\0')
-					data--;
+				// [AM] Unclosed quote, show no mercy.
+				return NULL;
+			}
+			if (data[0] == '\\' && ValidEscape(data[1]))
+			{
+				// [AM] Handle escaped chars.
+				com_token[len] = data[1];
+				data++; // Skip one _additional_ char.
+				len++;
+				continue;
+			}
+			else if (*data == '"')
+			{
+				// Closing quote, that's the entire token.
 				com_token[len] = 0;
+				data++; // Skip the closing quote.
 				return data;
 			}
-			com_token[len] = c;
+			// None of the above, copy the char and continue.
+			com_token[len] = *data;
 			len++;
 		}
 	}
 
-// parse a regular word
-	do {
-		com_token[len] = c;
+	while (1) {
+		// Parse a regular word.
+		if (*data <= 32)
+		{
+			// End of word.
+			break;
+		}
+		if (data[0] == '\\' && ValidEscape(data[1]))
+		{
+			// [AM] Handle escaped chars.
+			com_token[len] = data[1];
+			data += 2; // Skip two chars.
+			len++;
+			continue;
+		}
+		else if (*data == '"')
+		{
+			// End of word.
+			break;
+		}
+		// None of the above, copy the char and continue.
+		com_token[len] = *data;
 		data++;
 		len++;
-		c = *data;
-	} while (c>32);
-
+	}
+	// We're done, cap the token with a null and
+	// return the remaining data to parse.
 	com_token[len] = 0;
 	return data;
 }
@@ -593,7 +663,7 @@ void DConsoleAlias::Run()
             }
         }
 
-        AddCommandString (m_CommandParam.c_str());
+        AddCommandString (m_CommandParam);
 
 		state_lock = false;
 	}
@@ -603,30 +673,19 @@ void DConsoleAlias::Run()
 	}
 }
 
-std::string BuildString (size_t argc, const char **argv)
+// [AM] Combine many arguments into one valid argument.  Since this
+//      function is called after we parse arguments, we don't need to
+//      escape the output.
+std::string C_ArgCombine(size_t argc, const char **argv)
 {
-	std::string out;
-
-	for(size_t i = 0; i < argc; i++)
+	std::ostringstream buffer;
+	for (size_t i = 0;i < argc;i++)
 	{
-		if(strchr(argv[i], ' '))
-		{
-			out += "\"";
-			out += argv[i];
-			out += "\"";
-		}
-		else
-		{
-			out += argv[i];
-		}
-
-		if(i + 1 < argc)
-		{
-			out += " ";
-		}
+		buffer << argv[i];
+		if (i + 1 < argc)
+			buffer << " ";
 	}
-
-	return out;
+	return buffer.str();
 }
 
 std::string BuildString (size_t argc, std::vector<std::string> args)
@@ -655,6 +714,28 @@ std::string BuildString (size_t argc, std::vector<std::string> args)
 	return out;
 }
 
+// [AM] Take a string, quote it, and escape it, making it suitable for parsing
+//      as an argument.
+std::string C_QuoteString(const std::string &argstr)
+{
+	std::ostringstream buffer;
+	buffer << "\"";
+	for (std::string::const_iterator it = argstr.begin();it != argstr.end();++it)
+	{
+		if (ValidEscape(*it))
+		{
+			// Escape this char.
+			buffer << '\\' << *it;
+		}
+		else
+		{
+			buffer << *it;
+		}
+	}
+	buffer << "\"";
+	return buffer.str();
+}
+
 static int DumpHash (BOOL aliases)
 {
 	int count = 0;
@@ -676,9 +757,9 @@ static int DumpHash (BOOL aliases)
 	return count;
 }
 
-void DConsoleAlias::Archive (FILE *f)
+void DConsoleAlias::Archive(FILE *f)
 {
-	fprintf (f, "alias \"%s\" \"%s\"\n", m_Name.c_str(), m_Command.c_str());
+	fprintf(f, "alias %s %s\n", C_QuoteString(m_Name).c_str(), C_QuoteString(m_Command).c_str());
 }
 
 void DConsoleAlias::C_ArchiveAliases (FILE *f)
@@ -689,6 +770,17 @@ void DConsoleAlias::C_ArchiveAliases (FILE *f)
 
 		if (alias->IsAlias())
 			static_cast<DConsoleAlias *>(alias)->Archive (f);
+	}
+}
+
+void DConsoleAlias::DestroyAll()
+{
+	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; ++i)
+	{
+		DConsoleCommand *alias = i->second;
+
+		if (alias->IsAlias())
+			delete alias;
 	}
 }
 
@@ -726,7 +818,7 @@ BEGIN_COMMAND (alias)
 		if(argc > 2)
 		{
 			// Build the new alias
-			std::string param = BuildString (argc - 2, (const char **)&argv[2]);
+			std::string param = C_ArgCombine(argc - 2, (const char **)&argv[2]);
 			new DConsoleAlias (argv[1], param.c_str());
 		}
 	}
@@ -889,7 +981,7 @@ END_COMMAND (puke)
 
 BEGIN_COMMAND (error)
 {
-	std::string text = BuildString (argc - 1, (const char **)(argv + 1));
+	std::string text = C_ArgCombine(argc - 1, (const char **)(argv + 1));
 	I_Error (text.c_str());
 }
 END_COMMAND (error)

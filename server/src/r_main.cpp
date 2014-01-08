@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -118,6 +118,8 @@ int			extralight;
 BOOL		foggy;
 
 fixed_t			freelookviewheight;
+
+fixed_t		render_lerp_amount;
 
 unsigned int	R_OldBlend = ~0;
 
@@ -299,6 +301,7 @@ R_PointToAngle
     return R_PointToAngle2 (viewx, viewy, x, y);
 }
 
+
 //
 // R_InitPointToAngle
 //
@@ -317,6 +320,14 @@ void R_InitPointToAngle (void)
 	}
 }
 */
+
+void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
+{
+	int index = ang >> ANGLETOFINESHIFT;
+	
+	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
+	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
+}
 
 //
 //

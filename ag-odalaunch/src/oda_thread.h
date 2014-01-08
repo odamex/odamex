@@ -127,8 +127,8 @@ public:
 	}
 
 	void Cancel() { AG_ThreadCancel(m_Thread); }
-	int Join(void **exitVal) { return AG_ThreadJoin(m_Thread, exitVal); }
-	int Kill(int signal) { return AG_ThreadKill(m_Thread, signal); }
+	void Join(void **exitVal) { AG_ThreadJoin(m_Thread, exitVal); }
+	void Kill(int signal) { AG_ThreadKill(m_Thread, signal); }
 
 private:
 	AG_Thread  m_Thread;

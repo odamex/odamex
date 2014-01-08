@@ -1,3 +1,5 @@
+global_compile_options()
+
 # Master
 file(GLOB MASTER_HEADERS *.h)
 file(GLOB MASTER_SOURCES *.cpp)

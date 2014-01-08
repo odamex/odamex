@@ -93,6 +93,7 @@ public:
         
 	// Read values
 	bool ReadString(std::string &);
+	bool ReadHexString(std::string &);
 	bool ReadBool(bool &);
 	// Signed reads
 	bool Read32(int32_t &);

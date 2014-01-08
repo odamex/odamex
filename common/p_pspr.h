@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,8 +47,6 @@
 #define FF_FULLBRIGHT	0x8000	// flag in thing->frame
 #define FF_FRAMEMASK	0x7fff
 
-
-
 //
 // Overlay psprites are scaled shapes
 // drawn directly on the view screen,
@@ -63,6 +61,8 @@ typedef enum
 } psprnum_t;
 
 void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic);
+fixed_t P_CalculateWeaponBobX();
+fixed_t P_CalculateWeaponBobY();
 
 inline FArchive &operator<< (FArchive &arc, psprnum_t i)
 {
@@ -77,9 +77,9 @@ typedef struct pspdef_s
 {
 	state_t*	state;	// a NULL state means not active
 	int 		tics;
+
 	fixed_t 	sx;
 	fixed_t 	sy;
-
 } pspdef_t;
 
 FArchive &operator<< (FArchive &, pspdef_t &);

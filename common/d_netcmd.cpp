@@ -4,7 +4,7 @@
 // $Id: d_netcmd.cpp 3174 2012-05-11 01:03:43Z dr_sean $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,19 +44,18 @@ void NetCommand::fromPlayer(player_t *player)
 	clear();
 	setTic(player->cmd.tic);
 	
-	usercmd_t *ucmd = &player->cmd.ucmd;
-	setButtons(ucmd->buttons);
-	setImpulse(ucmd->impulse);
+	setButtons(player->cmd.buttons);
+	setImpulse(player->cmd.impulse);
 	
 	if (player->playerstate != PST_DEAD)
 	{
 		setAngle(player->mo->angle);
 		setPitch(player->mo->pitch);
-		setForwardMove(ucmd->forwardmove);
-		setSideMove(ucmd->sidemove);
-		setUpMove(ucmd->upmove);
-		setDeltaYaw(ucmd->yaw);
-		setDeltaPitch(ucmd->pitch);
+		setForwardMove(player->cmd.forwardmove);
+		setSideMove(player->cmd.sidemove);
+		setUpMove(player->cmd.upmove);
+		setDeltaYaw(player->cmd.yaw);
+		setDeltaPitch(player->cmd.pitch);
 	}
 }
 
@@ -65,47 +64,52 @@ void NetCommand::toPlayer(player_t *player) const
 	if (!player || !player->mo)
 		return;
 
-	memset(&player->cmd, 0, sizeof(ticcmd_t));
+	player->cmd.clear();
 	player->cmd.tic = getTic();
 	
-	usercmd_t *ucmd = &player->cmd.ucmd;
-	ucmd->buttons = getButtons();
-	ucmd->impulse = getImpulse();
+	player->cmd.buttons = getButtons();
+	player->cmd.impulse = getImpulse();
 	
 	if (player->playerstate != PST_DEAD)
 	{
-		ucmd->forwardmove = getForwardMove();
-		ucmd->sidemove = getSideMove();
-		ucmd->upmove = getUpMove();
-		ucmd->yaw = getDeltaYaw();
-		ucmd->pitch = getDeltaPitch();
+		player->cmd.forwardmove = getForwardMove();
+		player->cmd.sidemove = getSideMove();
+		player->cmd.upmove = getUpMove();
+		player->cmd.yaw = getDeltaYaw();
+		player->cmd.pitch = getDeltaPitch();
 		
-		if (hasAngle())
-			player->mo->angle = getAngle();
-		if (hasPitch())
-			player->mo->pitch = getPitch();
+		player->mo->angle = getAngle();
+		player->mo->pitch = getPitch();
 	}
 }
 
 void NetCommand::write(buf_t *buf)
 {
 	// Let the recipient know which cmd fields are being sent
-	buf->WriteByte(mFields);
+	int serialized_fields = getSerializedFields();
+	buf->WriteByte(serialized_fields);
 	buf->WriteLong(mWorldIndex);
 		
-	if (hasButtons())
+	if (serialized_fields & CMD_BUTTONS)
 		buf->WriteByte(mButtons);
-	if (hasAngle())
+	if (serialized_fields & CMD_ANGLE)
 		buf->WriteShort((mAngle >> FRACBITS) + mDeltaYaw);
-	if (hasPitch())
-		buf->WriteShort((mPitch >> FRACBITS) + mDeltaPitch);
-	if (hasForwardMove())
+	if (serialized_fields & CMD_PITCH)
+	{
+		// ZDoom uses a hack to center the view when toggling cl_mouselook
+		bool centerview = (mDeltaPitch == CENTERVIEW);
+		if (centerview)
+			buf->WriteShort(0);
+		else
+			buf->WriteShort((mPitch >> FRACBITS) + mDeltaPitch);
+	}
+	if (serialized_fields & CMD_FORWARD)
 		buf->WriteShort(mForwardMove);
-	if (hasSideMove())
+	if (serialized_fields & CMD_SIDE)
 		buf->WriteShort(mSideMove);
-	if (hasUpMove())
+	if (serialized_fields & CMD_UP)
 		buf->WriteShort(mUpMove);
-	if (hasImpulse())
+	if (serialized_fields & CMD_IMPULSE)
 		buf->WriteByte(mImpulse);
 }
 
@@ -128,9 +132,31 @@ void NetCommand::read(buf_t *buf)
 	if (hasUpMove())
 		mUpMove = buf->ReadShort();
 	if (hasImpulse())
-		mImpulse = buf->ReadByte();		
+		mImpulse = buf->ReadByte();
 }
 
+
+int NetCommand::getSerializedFields()
+{
+	int serialized_fields = 0;
+
+	if (hasButtons())
+		serialized_fields |= CMD_BUTTONS;
+	if (hasAngle() || hasDeltaYaw())
+		serialized_fields |= CMD_ANGLE;
+	if (hasPitch() || hasDeltaPitch())
+		serialized_fields |= CMD_PITCH;
+	if (hasForwardMove())
+		serialized_fields |= CMD_FORWARD;
+	if (hasSideMove())
+		serialized_fields |= CMD_SIDE;
+	if (hasUpMove())
+		serialized_fields |= CMD_UP;
+	if (hasImpulse())
+		serialized_fields |= CMD_IMPULSE;
+
+	return serialized_fields;
+}
 
 VERSION_CONTROL (d_netcmd_cpp, "$Id: d_netcmd.cpp 3174 2012-05-11 01:03:43Z dr_sean $")
 

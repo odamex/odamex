@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,7 +37,7 @@
 #include "c_dispatch.h"
 #include "s_sndseq.h"
 #include "i_system.h"
-#include "vectors.h"
+#include "m_vectors.h"
 
 #define CLAMPCOLOR(c)	(EColorRange)((unsigned)(c)>CR_UNTRANSLATED?CR_UNTRANSLATED:(c))
 #define LANGREGIONMASK	MAKE_ID(0,0,0xff,0xff)
@@ -60,6 +60,349 @@ struct FBehavior::ArrayInfo
 	int ArraySize;
 	SDWORD *Elements;
 };
+
+// Inventory shim for Doom.
+#include "gi.h"
+
+void SV_SendPlayerInfo(player_t &player);
+
+static void DoClearInv(player_t* player)
+{
+	memset(player->weaponowned, 0, sizeof(player->weaponowned));
+	memset(player->powers, 0, sizeof(player->powers));
+	memset(player->cards, 0, sizeof(player->cards));
+	memset(player->ammo, 0, sizeof(player->ammo));
+
+	if (player->backpack)
+	{
+		player->backpack = false;
+		for (int i = 0; i < NUMAMMO; i++)
+		{
+			player->maxammo[i] /= 2;
+		}
+	}
+
+	player->pendingweapon = NUMWEAPONS;
+}
+
+static void ClearInventory(AActor* activator)
+{
+	if (activator == NULL)
+	{
+		std::vector<player_t>::iterator it;
+		for (it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame() && !it->spectator)
+				DoClearInv(&(*it));
+				SV_SendPlayerInfo(*it);
+		}
+	}
+	else if (activator->player != NULL)
+	{
+		DoClearInv(activator->player);
+		SV_SendPlayerInfo(*(activator->player));
+	}
+}
+
+static const char* DoomAmmoNames[4] =
+{
+	"Clip", "Shell", "Cell", "RocketAmmo"
+};
+static const char* DoomWeaponNames[9] =
+{
+	"Fist", "Pistol", "Shotgun", "Chaingun", "RocketLauncher",
+	"PlasmaRifle", "BFG9000", "Chainsaw", "SuperShotgun"
+};
+static const char* DoomKeyNames[6] =
+{
+	"BlueCard", "YellowCard", "RedCard",
+	"BlueSkull", "YellowSkull", "RedSkull"
+};
+static const char* DoomPowerNames[7] =
+{
+	"InvulnerabilitySphere", "Berserk", "BlurSphere",
+	"RadSuit", "Allmap", "Infrared"
+};
+
+extern BOOL P_GiveAmmo(player_t *player, ammotype_t ammo, int num);
+extern BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
+extern void P_GiveCard(player_t *player, card_t card);
+extern BOOL P_GivePower(player_t *player, int  power);
+
+static void GiveBackpack(player_t* player)
+{
+	if (!player->backpack)
+	{
+		for (int i=0 ; i<NUMAMMO ; i++)
+		{
+			player->maxammo[i] *= 2;
+		}
+		player->backpack = true;
+	}
+	for (int i=0 ; i<NUMAMMO ; i++)
+	{
+		P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
+	}
+	SV_SendPlayerInfo(*player);
+}
+
+static void DoGiveInv(player_t* player, const char* type, int amount)
+{
+	weapontype_t savedpendingweap = player->pendingweapon;
+
+	// Give ammo
+	for (int i = 0; i < NUMAMMO; i++)
+	{
+		if (strcmp(DoomAmmoNames[i], type) == 0)
+		{
+			player->ammo[i] = MIN(player->ammo[i]+amount, player->maxammo[i]);
+			return;
+		}
+	}
+
+	// Give weapon
+	for (int i = 0; i < NUMWEAPONS; i++)
+	{
+		if (strcmp(DoomWeaponNames[i], type) == 0)
+		{
+			do
+			{
+				P_GiveWeapon(player, static_cast<weapontype_t>(i), false);
+			}
+			while (--amount > 0);
+
+			// Don't bring it up automatically
+			player->pendingweapon = savedpendingweap;
+			return;
+		}
+	}
+
+	// Give keycard
+	for (int i = 0; i < NUMCARDS; i++)
+	{
+		if (strcmp(DoomKeyNames[i], type) == 0)
+		{
+			do
+			{
+				P_GiveCard(player, static_cast<card_t>(i));
+			}
+			while (--amount > 0);
+			return;
+		}
+	}
+
+	// Give power
+	for (int i = 0; i < NUMPOWERS; i++)
+	{
+		if (strcmp(DoomPowerNames[i], type) == 0)
+		{
+			do
+			{
+				P_GivePower(player, i);
+			}
+			while (--amount > 0);
+			return;
+		}
+	}
+
+	// Give backpack
+	if (strcmp("Backpack", type) == 0)
+	{
+		do
+		{
+			GiveBackpack(player);
+		}
+		while (--amount > 0);
+		return;
+	}
+
+	// Unknown item.
+	Printf(PRINT_HIGH, "I don't know what %s is\n", type);
+}
+
+static void GiveInventory(AActor* activator, const char* type, int amount)
+{
+	if (amount <= 0)
+	{
+	}
+	if (activator == NULL)
+	{
+		for (int i = 0; i < MAXPLAYERS; ++i)
+		{
+			std::vector<player_t>::iterator it;
+			for (it = players.begin();it != players.end();++it)
+			{
+				if (it->ingame() && !it->spectator) {
+					DoGiveInv(&(*it), type, amount);
+					SV_SendPlayerInfo(*it);
+				}
+			}
+		}
+	}
+	else if (activator->player != NULL)
+	{
+		DoGiveInv(activator->player, type, amount);
+		SV_SendPlayerInfo(*(activator->player));
+	}
+}
+
+extern void P_SwitchWeapon(player_t *player);
+
+static void TakeWeapon(player_t* player, int weapon)
+{
+	player->weaponowned[weapon] = false;
+	if (player->readyweapon == weapon || player->pendingweapon == weapon)
+	{
+		P_SwitchWeapon(player);
+	}
+	SV_SendPlayerInfo(*player);
+}
+
+extern BOOL P_CheckAmmo (player_t *player);
+
+static void TakeAmmo(player_t* player, int ammo, int amount)
+{
+	if (amount == 0)
+	{
+		player->ammo[ammo] = 0;
+	}
+	else
+	{
+		player->ammo[ammo] = MAX(player->ammo[ammo]-amount, 0);
+	}
+	if (player->pendingweapon != wp_nochange)
+	{
+		// Make sure we have the ammo for the weapon being switched to
+		weapontype_t readynow = player->readyweapon;
+		player->readyweapon = player->pendingweapon;
+		player->pendingweapon = wp_nochange;
+		if (P_CheckAmmo(player))
+		{
+			// There was enough ammo for the pending weapon, so keep switching
+			player->pendingweapon = player->readyweapon;
+			player->readyweapon = readynow;
+		}
+		else
+		{
+			player->pendingweapon = player->readyweapon = readynow;
+			P_CheckAmmo(player);
+		}
+	}
+	else
+	{
+		// Make sure we still have enough ammo for the current weapon
+		P_CheckAmmo(player);
+	}
+	SV_SendPlayerInfo(*player);
+}
+
+static void TakeBackpack(player_t* player)
+{
+	if (!player->backpack)
+		return;
+
+	player->backpack = false;
+	for (int i = 0; i < NUMAMMO; ++i)
+	{
+		player->maxammo[i] /= 2;
+		if (player->ammo[i] > player->maxammo[i])
+		{
+			player->ammo[i] = player->maxammo[i];
+		}
+	}
+	SV_SendPlayerInfo(*player);
+}
+
+static void DoTakeInv(player_t* player, const char* type, int amount)
+{
+	int i;
+
+	for (i = 0; i < NUMAMMO; ++i)
+	{
+		if (strcmp(DoomAmmoNames[i], type) == 0)
+		{
+			TakeAmmo(player, i, amount);
+			return;
+		}
+	}
+	for (i = 0; i < NUMWEAPONS; ++i)
+	{
+		if (strcmp(DoomWeaponNames[i], type) == 0)
+		{
+			TakeWeapon(player, i);
+			return;
+		}
+	}
+	for (i = 0; i < NUMCARDS; ++i)
+	{
+		if (strcmp(DoomKeyNames[i], type) == 0)
+		{
+			player->cards[i] = 0;
+		}
+	}
+	if (strcmp("Backpack", type) == 0)
+	{
+		TakeBackpack(player);
+	}
+}
+
+static void TakeInventory(AActor* activator, const char* type, int amount)
+{
+	if (amount < 0)
+	{
+	}
+	if (activator == NULL)
+	{
+		std::vector<player_t>::iterator it;
+		for (it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame() && !it->spectator) {
+				DoTakeInv(&(*it), type, amount);
+				SV_SendPlayerInfo(*it);
+			}
+		}
+	}
+	else if (activator->player != NULL)
+	{
+		DoTakeInv(activator->player, type, amount);
+		SV_SendPlayerInfo(*(activator->player));
+	}
+}
+
+static int CheckInventory(AActor* activator, const char* type)
+{
+	if (activator == NULL || activator->player == NULL)
+		return 0;
+
+	player_t* player = activator->player;
+
+	for (int i = 0; i < NUMAMMO; ++i)
+	{
+		if (strcmp(DoomAmmoNames[i], type) == 0)
+		{
+			return player->ammo[i];
+		}
+	}
+	for (int i = 0; i < NUMWEAPONS; ++i)
+	{
+		if (strcmp(DoomWeaponNames[i], type) == 0)
+		{
+			return player->weaponowned[i] ? 1 : 0;
+		}
+	}
+	for (int i = 0; i < NUMCARDS; ++i)
+	{
+		if (strcmp(DoomKeyNames[i], type) == 0)
+		{
+			return player->cards[i] ? 1 : 0;
+		}
+	}
+	if (strcmp("Backpack", type) == 0)
+	{
+		return player->backpack ? 1 : 0;
+	}
+	return 0;
+}
 
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (sv_gametype)
@@ -184,31 +527,31 @@ FBehavior::FBehavior (BYTE *object, int len)
 		Functions = FindChunk(MAKE_ID('F','U','N','C'));
 		if (Functions != NULL)
 		{
-			NumFunctions = LONG(((DWORD *)Functions)[1]);
+			NumFunctions = LELONG(((DWORD *)Functions)[1]);
 			Functions += 8;
 		}
 
 		chunk = (DWORD *)FindChunk(MAKE_ID('M','I','N','I'));
 		if (chunk != NULL)
 		{
-			int numvars = LONG(chunk[1])/4;
-			int firstvar = LONG(chunk[2]);
+			int numvars = LELONG(chunk[1])/4;
+			int firstvar = LELONG(chunk[2]);
 			for (i = 0; i < numvars; ++i)
 			{
-				level.vars[i+firstvar] = LONG(chunk[3+i]);
+				level.vars[i+firstvar] = LELONG(chunk[3+i]);
 			}
 		}
 
 		chunk = (DWORD *)FindChunk(MAKE_ID('A','R','A','Y'));
 		if (chunk != NULL)
 		{
-			NumArrays = LONG(chunk[1])/8;
+			NumArrays = LELONG(chunk[1])/8;
 			Arrays = new ArrayInfo[NumArrays];
 			memset (Arrays, 0, sizeof(*Arrays)*NumArrays);
 			for (i = 0; i < NumArrays; ++i)
 			{
-				level.vars[LONG(chunk[2+i*2])] = i;
-				Arrays[i].ArraySize = LONG(chunk[3+i*2]);
+				level.vars[LELONG(chunk[2+i*2])] = i;
+				Arrays[i].ArraySize = LELONG(chunk[3+i*2]);
 				Arrays[i].Elements = new SDWORD[Arrays[i].ArraySize];
 				memset(Arrays[i].Elements, 0, Arrays[i].ArraySize*sizeof(DWORD));
 			}
@@ -217,14 +560,14 @@ FBehavior::FBehavior (BYTE *object, int len)
 		chunk = (DWORD *)FindChunk(MAKE_ID('A','I','N','I'));
 		while (chunk != NULL)
 		{
-			int arraynum = level.vars[LONG(chunk[2])];
+			int arraynum = level.vars[LELONG(chunk[2])];
 			if ((unsigned)arraynum < (unsigned)NumArrays)
 			{
-				int initsize = MIN<int> (Arrays[arraynum].ArraySize, (LONG(chunk[1])-4)/4);
+				int initsize = MIN<int> (Arrays[arraynum].ArraySize, (LELONG(chunk[1])-4)/4);
 				SDWORD *elems = Arrays[arraynum].Elements;
 				for (i = 0; i < initsize; ++i)
 				{
-					elems[i] = LONG(chunk[3+i]);
+					elems[i] = LELONG(chunk[3+i]);
 				}
 			}
 			chunk = (DWORD *)NextChunk((BYTE *)chunk);
@@ -514,7 +857,7 @@ void FBehavior::StartTypedScripts (WORD type, AActor *activator) const
 
 
 
-#define NEXTWORD	(LONG(*pc++))
+#define NEXTWORD	(LELONG(*pc++))
 #define NEXTBYTE	(fmt==ACS_LittleEnhanced?getbyte(pc):NEXTWORD)
 #define STACK(a)	(Stack[sp - (a)])
 #define PushToStack(a)	(Stack[sp++] = (a))
@@ -1049,7 +1392,7 @@ void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 	while ((linenum = P_FindLineFromID (lineid, linenum)) >= 0) {
 		side_t *sidedef;
 
-		if (lines[linenum].sidenum[side] == -1)
+		if (lines[linenum].sidenum[side] == R_NOSIDE)
 			continue;
 		sidedef = sides + lines[linenum].sidenum[side];
 
@@ -1069,6 +1412,54 @@ void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 
 	}
 }
+
+/*int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle)
+{
+	const char* typestr = level.behavior->LookupString(type);
+	if (typestr == NULL)
+		return 0;
+	char name[64];
+	name[0] = 'A';
+	name[63] = 0;
+	strncpy(name+1, typestr, 62);
+
+	const TypeInfo* info = TypeInfo::FindType(name);
+	AActor* actor = NULL;
+
+	if (info != NULL)
+	{
+		actor = Spawn(info, x, y, z);
+		if (actor != NULL)
+		{
+			if (P_TestMobjLocation(actor))
+			{
+				actor->angle = angle << 24;
+				actor->tid = tid;
+				actor->AddToHash();
+				actor->flags |= MF_DROPPED;  // Don't respawn
+			}
+			else
+			{
+				actor->Destroy();
+				actor = NULL;
+			}
+		}
+	}
+	return (int)actor;
+}
+
+int DLevelScript::DoSpawnSpot(int type, int spot, int tid, int angle)
+{
+	FActorIterator iterator(tid);
+	AActor* aspot;
+	int spawned = 0;
+
+	while ((aspot = iterator.Next()))
+	{
+		spawned = DoSpawn(type, aspot->x, aspot->y, aspot->z, tid, angle);
+	}
+	return spawned;
+}*/
 
 void DLevelScript::DoFadeTo (int r, int g, int b, int a, fixed_t time)
 {
@@ -2041,7 +2432,7 @@ void DLevelScript::RunScript ()
 				if (player)
 				{
 					workwhere += sprintf (workwhere, "%s",
-						activator->player->userinfo.netname);
+						activator->player->userinfo.netname.c_str());
 				}
 				else if (activator)
 				{
@@ -2411,9 +2802,9 @@ void DLevelScript::RunScript ()
 		case PCD_SPAWNSPOTDIRECT:
 			PushToStack (DoSpawnSpot (pc[0], pc[1], pc[2], pc[3]));
 			pc += 4;
-			break;
-        */
-		/*case PCD_CLEARINVENTORY:
+			break;*/
+
+		case PCD_CLEARINVENTORY:
 			ClearInventory (activator);
 			break;
 
@@ -2445,7 +2836,6 @@ void DLevelScript::RunScript ()
 			PushToStack (CheckInventory (activator, level.behavior->LookupString (pc[0])));
 			pc += 1;
 			break;
-        */
 
 		case PCD_SETMUSIC:
 			S_ChangeMusic (level.behavior->LookupString (STACK(3)), STACK(2));

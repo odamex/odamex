@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -64,7 +64,9 @@ typedef enum
 	ga_victory,
 	ga_worlddone,
 	ga_screenshot,
-	ga_fullconsole
+	ga_fullconsole,
+	ga_fullresetlevel,
+	ga_resetlevel
 } gameaction_t;
 
 

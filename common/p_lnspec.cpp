@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,7 +51,7 @@ extern bool HasBehavior;
 BOOL InScript;
 
 // 9/11/10: Add poly action definitions here, even though they're in p_local...
-// Why are these needed here?  Linux won't compile without these definitions?? 
+// Why are these needed here?  Linux won't compile without these definitions??
 //
 BOOL EV_MovePoly (line_t *line, int polyNum, int speed, angle_t angle, fixed_t dist, BOOL overRide);
 BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle, int delay, int distance, podoortype_t type);
@@ -67,16 +67,16 @@ bool P_LineSpecialMovesSector(line_t *line)
 {
 	if (!line)
 		return false;
-		
+
 	static bool initialized = false;
 	static bool specials[256];
-	
+
 	if (!initialized)
 	{
 		// generate a lookup table for line specials
 		initialized = true;
 		memset(specials, 0, sizeof(specials));
-		
+
 		specials[Door_Close]					= true;		// 10
 		specials[Door_Open]						= true;		// 11
 		specials[Door_Raise]					= true;		// 12
@@ -96,7 +96,7 @@ bool P_LineSpecialMovesSector(line_t *line)
 		specials[Stairs_BuildUpSync]			= true;		// 32
 		specials[Floor_RaiseByValueTimes8]		= true;		// 35
 		specials[Floor_LowerByValueTimes8]		= true;		// 36
-		specials[Ceiling_LowerByValue]			= true;		// 40			
+		specials[Ceiling_LowerByValue]			= true;		// 40
 		specials[Ceiling_RaiseByValue]			= true;		// 41
 		specials[Ceiling_CrushAndRaise]			= true;		// 42
 		specials[Ceiling_LowerAndCrush]			= true;		// 43
@@ -150,7 +150,7 @@ bool P_LineSpecialMovesSector(line_t *line)
 		specials[Ceiling_RaiseToNearest]		= true;		// 252
 		specials[Ceiling_LowerToLowest]			= true;		// 253
 		specials[Ceiling_LowerToFloor]			= true;		// 254
-		specials[Ceiling_CrushRaiseAndStaySilA]	= true;		// 255								
+		specials[Ceiling_CrushRaiseAndStaySilA]	= true;		// 255
 	}
 
 	return specials[line->special];
@@ -320,7 +320,7 @@ FUNC(LS_Floor_RaiseToNearest)
 FUNC(LS_Floor_RaiseAndCrush)
 // Floor_RaiseAndCrush (tag, speed, crush)
 {
-	return EV_DoFloor (DFloor::floorRaiseAndCrush, ln, arg0, SPEED(arg1), 0, arg2, 0);
+	return EV_DoFloor (DFloor::floorRaiseAndCrush, ln, arg0, SPEED(arg1), 0, (arg2 != 0), 0);
 }
 
 FUNC(LS_Floor_RaiseByValueTimes8)
@@ -535,13 +535,13 @@ FUNC(LS_Ceiling_RaiseByValueTimes8)
 FUNC(LS_Ceiling_CrushAndRaise)
 // Ceiling_CrushAndRaise (tag, speed, crush)
 {
-	return EV_DoCeiling (DCeiling::ceilCrushAndRaise, ln, arg0, SPEED(arg1), SPEED(arg1)/2, 0, arg2, 0, 0);
+	return EV_DoCeiling (DCeiling::ceilCrushAndRaise, ln, arg0, SPEED(arg1), SPEED(arg1)/2, 0, (arg2 != 0), 0, 0);
 }
 
 FUNC(LS_Ceiling_LowerAndCrush)
 // Ceiling_LowerAndCrush (tag, speed, crush)
 {
-	return EV_DoCeiling (DCeiling::ceilLowerAndCrush, ln, arg0, SPEED(arg1), SPEED(arg1)/2, 0, arg2, 0, 0);
+	return EV_DoCeiling (DCeiling::ceilLowerAndCrush, ln, arg0, SPEED(arg1), SPEED(arg1)/2, 0, (arg2 != 0), 0, 0);
 }
 
 FUNC(LS_Ceiling_CrushStop)
@@ -553,7 +553,7 @@ FUNC(LS_Ceiling_CrushStop)
 FUNC(LS_Ceiling_CrushRaiseAndStay)
 // Ceiling_CrushRaiseAndStay (tag, speed, crush)
 {
-	return EV_DoCeiling (DCeiling::ceilCrushRaiseAndStay, ln, arg0, SPEED(arg1), SPEED(arg1)/2, 0, arg2, 0, 0);
+	return EV_DoCeiling (DCeiling::ceilCrushRaiseAndStay, ln, arg0, SPEED(arg1), SPEED(arg1)/2, 0, (arg2 != 0), 0, 0);
 }
 
 FUNC(LS_Ceiling_MoveToValueTimes8)
@@ -584,25 +584,25 @@ FUNC(LS_Ceiling_RaiseInstant)
 FUNC(LS_Ceiling_CrushRaiseAndStayA)
 // Ceiling_CrushRaiseAndStayA (tag, dnspeed, upspeed, damage)
 {
-	return EV_DoCeiling (DCeiling::ceilCrushRaiseAndStay, ln, arg0, SPEED(arg1), SPEED(arg2), 0, arg3, 0, 0);
+	return EV_DoCeiling (DCeiling::ceilCrushRaiseAndStay, ln, arg0, SPEED(arg1), SPEED(arg2), 0, (arg3 != 0), 0, 0);
 }
 
 FUNC(LS_Ceiling_CrushRaiseAndStaySilA)
 // Ceiling_CrushRaiseAndStaySilA (tag, dnspeed, upspeed, damage)
 {
-	return EV_DoCeiling (DCeiling::ceilCrushRaiseAndStay, ln, arg0, SPEED(arg1), SPEED(arg2), 0, arg3, 1, 0);
+	return EV_DoCeiling (DCeiling::ceilCrushRaiseAndStay, ln, arg0, SPEED(arg1), SPEED(arg2), 0, (arg3 != 0), 1, 0);
 }
 
 FUNC(LS_Ceiling_CrushAndRaiseA)
 // Ceiling_CrushAndRaiseA (tag, dnspeed, upspeed, damage)
 {
-	return EV_DoCeiling (DCeiling::ceilCrushAndRaise, ln, arg0, SPEED(arg1), SPEED(arg2), 0, arg3, 0, 0);
+	return EV_DoCeiling (DCeiling::ceilCrushAndRaise, ln, arg0, SPEED(arg1), SPEED(arg2), 0, (arg3 != 0), 0, 0);
 }
 
 FUNC(LS_Ceiling_CrushAndRaiseSilentA)
 // Ceiling_CrushAndRaiseSilentA (tag, dnspeed, upspeed, damage)
 {
-	return EV_DoCeiling (DCeiling::ceilCrushAndRaise, ln, arg0, SPEED(arg1), SPEED(arg2), 0, arg3, 1, 0);
+	return EV_DoCeiling (DCeiling::ceilCrushAndRaise, ln, arg0, SPEED(arg1), SPEED(arg2), 0, (arg3 != 0), 1, 0);
 }
 
 FUNC(LS_Ceiling_RaiseToNearest)
@@ -659,7 +659,7 @@ FUNC(LS_Generic_Crusher)
 // Generic_Crusher (tag, dnspeed, upspeed, silent, damage)
 {
 	return EV_DoCeiling (DCeiling::ceilCrushAndRaise, ln, arg0, SPEED(arg1),
-						 SPEED(arg2), 0, arg4, arg3 ? 2 : 0, 0);
+						 SPEED(arg2), 0, (arg4 != 0), arg3 ? 2 : 0, 0);
 }
 
 FUNC(LS_Plat_PerpetualRaise)
@@ -782,7 +782,7 @@ FUNC(LS_Teleport_NewMap)
 // Teleport_NewMap (map, position)
 {
    	if (!TeleportSide)
-	{ 
+	{
         level_info_t *info = FindLevelByNum (arg0);
 
         if (it && (info && CheckIfExitIsGood (it)))
@@ -796,14 +796,18 @@ FUNC(LS_Teleport_NewMap)
 }
 
 FUNC(LS_Teleport)
-// Teleport (tid)
+// Teleport (tid, tag)
 {
 	if(!it) return false;
 	BOOL result;
-	
-	if ((result = EV_Teleport (arg0, TeleportSide, it)) == false && !HasBehavior)
-		result = EV_LineTeleport (ln, TeleportSide, it);
-		
+
+	if (HasBehavior)
+		// [AM] Use ZDoom-style teleport for Hexen-format maps
+		result = EV_Teleport(arg0, arg1, TeleportSide, it);
+	else
+		// [AM] Use Vanilla-style teleport for Doom-format maps
+		result = EV_LineTeleport(ln, TeleportSide, it);
+
 	return result;
 }
 
@@ -1409,7 +1413,7 @@ FUNC(LS_Sector_SetColor)
 // Sector_SetColor (tag, r, g, b)
 {
 	int secnum = -1;
-	
+
 	if (clientside)
 	{
         while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0)
@@ -1431,7 +1435,7 @@ FUNC(LS_Sector_SetFade)
 // Sector_SetFade (tag, r, g, b)
 {
 	int secnum = -1;
-	
+
 	if (clientside)
 	{
         while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0)
@@ -1446,7 +1450,7 @@ FUNC(LS_Sector_SetFade)
                 GPART(sectors[secnum].ceilingcolormap->color),
                 BPART(sectors[secnum].ceilingcolormap->color),
                 arg1, arg2, arg3);
-        }	    
+        }
 	}
 	return true;
 }
@@ -1931,6 +1935,35 @@ lnSpecFunc LineSpecials[256] =
 	LS_Ceiling_LowerToFloor,
 	LS_Ceiling_CrushRaiseAndStaySilA
 };
+
+
+EXTERN_CVAR (sv_fraglimit)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_fragexitswitch)
+
+BOOL CheckIfExitIsGood (AActor *self)
+{
+	if (self == NULL)
+		return false;
+
+	// [Toke - dmflags] Old location of DF_NO_EXIT
+
+	if (sv_gametype != GM_COOP && self)
+	{
+        if (!sv_allowexit)
+        {
+			if (sv_fragexitswitch && serverside)
+				P_DamageMobj(self, NULL, NULL, 10000, MOD_SUICIDE);
+
+			return false;
+		}
+	}
+
+	if (self->player)
+		Printf (PRINT_HIGH, "%s exited the level.\n", self->player->userinfo.netname.c_str());
+
+	return true;
+}
 
 VERSION_CONTROL (p_lnspec_cpp, "$Id$")
 

@@ -31,11 +31,11 @@
 #include "typedefs.h"
 
 /**
- * agOdalaunch namespace.
- *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
- * namespace.
- */
+agOdalaunch namespace.
+
+All code for the ag-odalaunch launcher is contained within the agOdalaunch
+namespace.
+*/
 namespace agOdalaunch {
 
 typedef struct
@@ -55,30 +55,30 @@ typedef struct
 } ODA_GuiOptionsBox;
 
 /**
- * The settings dialog.
- *
- * This class provides a settings dialog with configurable options.
- */
+The settings dialog.
+
+This class provides a settings dialog with configurable options.
+*/
 class AGOL_Settings : public ODA_EventRegister
 {
 public:
 	/**
-	 * Constructor.
-	 */
+	Constructor.
+	*/
 	AGOL_Settings();
 
 	/**
-	 * Destructor.
-	 */
+	Destructor.
+	*/
 	~AGOL_Settings();
 
 	/**
-	 * Set the window close event.
-	 *
-	 * The provided event handler will be called when the window closes.
-	 *
-	 * @param handler The event handler.
-	 */
+	Set the window close event.
+
+	The provided event handler will be called when the window closes.
+
+	@param handler The event handler.
+	*/
 	void SetWindowCloseEvent(EventHandler *handler);
 
 private:

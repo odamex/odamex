@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,18 +24,13 @@
 #ifndef __VERSION_H__
 #define __VERSION_H__
 
-#if _MSC_VER == 1200
-// MSVC6, disable broken warnings about truncated stl lines
-#pragma warning(disable:4786)
-#endif
-
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "60"
-#define GAMEVER (0*256+60)
+#define CONFIGVERSIONSTR "64"
+#define GAMEVER (0*256+64)
 
-#define DOTVERSIONSTR "0.6.0"
+#define DOTVERSIONSTR "0.6.4"
 
-#define COPYRIGHTSTR "Copyright (C) 2006-2012 The Odamex Team"
+#define COPYRIGHTSTR "Copyright (C) 2006-2013 The Odamex Team"
 
 #define SERVERMAJ (gameversion / 256)
 #define SERVERMIN ((gameversion % 256) / 10)
@@ -47,9 +42,9 @@
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
 // earlier than this version.
-#define SAVESIG "ODAMEXSAVE060   "	// Needs to be exactly 16 chars long
+#define SAVESIG "ODAMEXSAVE064   "	// Needs to be exactly 16 chars long
 
-#define NETDEMOVER 2
+#define NETDEMOVER 3
 
 // denis - per-file svn version stamps
 class file_version
