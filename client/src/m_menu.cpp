@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -972,7 +972,7 @@ void M_NewGame(int choice)
     {
         M_SetupNextMenu(&NewDef);
     }
-    else if (gamemode == retail)
+    else if (gamemode == retail || gamemode == retail_bfg)
 	{
 	    EpiDef.numitems = ep_end;
 	    M_SetupNextMenu(&EpiDef);

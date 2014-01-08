@@ -4,7 +4,7 @@
 // $Id: d_main.h 1852 2010-09-04 23:53:26Z ladna $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,7 +79,7 @@ extern std::vector<std::string> missingfiles, missinghashes;
 extern bool capfps;
 extern float maxfps;
 void STACK_ARGS D_ClearTaskSchedulers();
-void D_RunTics(void (*logic_func)(), void (*render_func)());
+void D_RunTics(void (*sim_func)(), void(*display_func)());
 
 void D_AddWadCommandLineFiles(std::vector<std::string>& filenames);
 void D_AddDehCommandLineFiles(std::vector<std::string>& filenames);

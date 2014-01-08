@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -188,6 +188,9 @@ public:
 		generic_iterator(IndexType bucketnum, IHTT* hashtable) :
 			mBucketNum(bucketnum), mHashTable(hashtable)
 		{
+			while (mBucketNum < mHashTable->mSize && mHashTable->emptyBucket(mBucketNum));
+				mBucketNum++;
+
 			if (mBucketNum >= mHashTable->mSize)
 				mBucketNum = IHTT::NOT_FOUND;
 		}

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -373,7 +373,7 @@ bool C_DoNetDemoKey (event_t *ev)
 		return false;
 
 	if (ev->type == ev_keydown)
-		AddCommandString(binding->c_str());
+		AddCommandString(*binding);
 
 	return true;
 }
@@ -443,7 +443,7 @@ BOOL C_DoKey (event_t *ev)
 	{
 		if (ev->type == ev_keydown)
 		{
-			AddCommandString (binding->c_str());
+			AddCommandString (*binding);
 			KeysDown[ev->data1] = true;
 		}
 		else
@@ -456,7 +456,7 @@ BOOL C_DoKey (event_t *ev)
 			if (achar == 0 || (*binding)[achar - 1] <= ' ')
 			{
 				(*binding)[achar] = '-';
-				AddCommandString (binding->c_str());
+				AddCommandString (*binding);
 				(*binding)[achar] = '+';
 			}
 
@@ -491,7 +491,7 @@ void C_ReleaseKeys()
 			(achar == 0 || (*binding)[achar - 1] <= ' '))
 		{
 			(*binding)[achar] = '-';
-			AddCommandString(binding->c_str());
+			AddCommandString(*binding);
 			(*binding)[achar] = '+';
 		}
 	}

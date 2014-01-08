@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -677,9 +677,9 @@ void CL_StepTics(unsigned int count)
 }
 
 //
-// CL_RenderTics
+// CL_DisplayTics
 //
-void CL_RenderTics()
+void CL_DisplayTics()
 {
 	D_Display();
 }
@@ -1188,7 +1188,8 @@ BEGIN_COMMAND(netrecord)
 {
 	if (netdemo.isRecording())
 	{
-		Printf(PRINT_HIGH, "Already recording a netdemo.  Please stop recording before beginning a new netdemo recording.\n");
+		Printf(PRINT_HIGH, "Already recording a netdemo.  Please stop recording before "\
+				"beginning a new netdemo recording.\n");
 		return;
 	}
 
@@ -1204,11 +1205,7 @@ BEGIN_COMMAND(netrecord)
 	else
 		filename = CL_GenerateNetDemoFileName();
 
-	// NOTE(jsd): Presumably a warning is already printed.
-	if (filename.empty())
-		return;
-
-	CL_NetDemoRecord(filename.c_str());
+	CL_NetDemoRecord(filename);
 	netdemo.writeMapChange();
 }
 END_COMMAND(netrecord)
