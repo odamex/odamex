@@ -1236,7 +1236,7 @@ void P_XYMovement(AActor *mo)
 //
 // [SL] The source code shows both Doom & Doom 2 BFG Editions also have bounce.
 //
-bool P_CorrectLostSoulBounce()
+static bool P_CorrectLostSoulBounce()
 {
 	if (co_zdoomphys)
 		return true;
@@ -1250,97 +1250,154 @@ bool P_CorrectLostSoulBounce()
 
 
 //
-// P_ZMovement
-// joek - from choco with love
+// P_PlayerSmoothStepUp
 //
-void P_ZMovement(AActor *mo)
+// Smooths large changes in the viewheight due to stepping up stairs.
+//
+static void P_PlayerSmoothStepUp(AActor* mo)
 {
-	fixed_t	dist;
-	fixed_t	delta;
-	fixed_t oldz = mo->z;
-
-	// check for smooth step up
 	if (mo->player && mo->z < mo->floorz)
 	{
 		mo->player->viewheight -= mo->floorz-mo->z;
-
-		mo->player->deltaviewheight	= (VIEWHEIGHT - mo->player->viewheight)>>3;
+		mo->player->deltaviewheight	= (VIEWHEIGHT - mo->player->viewheight) >> 3;
 	}
+}
 
-	// apply gravity (if in zdoomland)
-	if (co_zdoomphys && (mo->z > mo->floorz && !(mo->flags & MF_NOGRAVITY)))
+//
+// P_CalculateActorGravityDoom
+//
+// Calculates the change in velocity in the z-direction for an actor due to
+// vanilla Doom's gravity calculation. Note that the effect of gravity is
+// twice as strong for the first tic that a player walks over a ledge (momz == 0).
+//
+static fixed_t P_CalculateActorGravityDoom(AActor* mo)
+{
+	fixed_t velocity_change = FLOAT2FIXED(level.gravity * mo->subsector->sector->gravity) / 800;
+			
+	if (mo->momz == 0)
+		velocity_change *= 2;
+	if (mo->flags2 & MF2_LOGRAV)
+		velocity_change >>= 3;
+
+	return velocity_change;
+}
+
+
+//
+// P_CalculateActorGravityZDoom
+//
+// Calculates the change in velocity in the z-direction for an actor due to
+// ZDoom 1.23b33's gravity calculation. ZDoom alters vanilla Doom behavior
+// with regards vanilla's special case when momz == 0.
+//
+static fixed_t P_CalculateActorGravityZDoom(AActor* mo)
+{
+	fixed_t velocity_change = (fixed_t)(level.gravity * mo->subsector->sector->gravity * 81.92f);
+
+	if (mo->flags2 & MF2_LOGRAV)
+		velocity_change >>= 3;
+ 
+	return velocity_change;
+}
+
+
+//
+// P_ApplyGravity
+//
+static void P_ApplyGravity(AActor* mo, fixed_t momz_change)
+{
+	if (mo->z > mo->floorz && !(mo->flags & MF_NOGRAVITY))
 	{
 		fixed_t startmomz = mo->momz;
+		bool stationary_player = mo->player && !(mo->player->cmd.forwardmove | mo->player->cmd.sidemove);
 
-		if (!mo->waterlevel || mo->flags & MF_CORPSE ||
-			(mo->player && !(mo->player->cmd.forwardmove | mo->player->cmd.sidemove)))
-		{
-			mo->momz -= (fixed_t)(level.gravity * mo->subsector->sector->gravity *
-						(mo->flags2 & MF2_LOGRAV ? 10.24 : 81.92));
-		}
+		if (mo->waterlevel == 0 || mo->flags & MF_CORPSE || stationary_player)
+			mo->momz -= momz_change;
+
 		if (mo->waterlevel > 1)
 		{
 			fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
 
 			if (mo->momz < sinkspeed)
-			{
-				mo->momz = (startmomz < sinkspeed) ? startmomz : sinkspeed;
-			}
+				mo->momz = MIN(startmomz, sinkspeed);
 			else
-			{
-				mo->momz = startmomz + ((mo->momz - startmomz) >>
-						   (mo->waterlevel == 1 ? WATER_SINK_SMALL_FACTOR : WATER_SINK_FACTOR));
-			}
+				mo->momz = startmomz + ((mo->momz - startmomz) >> WATER_SINK_FACTOR);
 		}
 	}
+}
 
-	// adjust height
-	mo->z += mo->momz;
 
-	// GhostlyDeath <Jun, 4 2008> -- Floating monsters shouldn't adjust to spectator height
-
-	if (mo->flags & MF_FLOAT && mo->target &&
-	  !(mo->target->player && mo->target->player->spectator))
+//
+// P_AdjustMonsterFloat
+//
+// Makes floating monsters adjust their z-position to be closer to the
+// z-position of their target.
+//
+static void P_AdjustMonsterFloat(AActor* mo)
+{
+	if (mo->flags & MF_FLOAT && mo->target)
 	{
 		// float down towards target if too close
-		if ( !(mo->flags & MF_SKULLFLY) && !(mo->flags & MF_INFLOAT) )
+		if (!(mo->flags & MF_SKULLFLY) && !(mo->flags & MF_INFLOAT))
 		{
-			dist = P_AproxDistance(mo->x - mo->target->x, mo->y - mo->target->y);
+			fixed_t dist = P_AproxDistance(mo->x - mo->target->x, mo->y - mo->target->y);
+			fixed_t delta = (mo->target->z + (mo->height >> 1)) - mo->z;
 
-			delta = (mo->target->z + (mo->height>>1)) - mo->z;
-
-			if (delta<0 && dist < -(delta*3))
+			if (delta < 0 && dist < -(delta * 3))
 				mo->z -= FLOATSPEED;
-			else if (delta>0 && dist < (delta*3) )
+			else if (delta > 0 && dist < (delta * 3))
 				mo->z += FLOATSPEED;
 		}
 	}
+}
 
-	if (mo->player && (mo->flags2 & MF2_FLY) && (mo->z > mo->floorz))
+
+//
+// P_PlayerFlyBob
+//
+// Bobs flying players up and down.
+//
+static void P_PlayerFlyBob(AActor* mo)
+{
+	if ((mo->flags2 & MF2_FLY) && mo->z > mo->floorz)
 	{
-		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
-		mo->momz = FixedMul (mo->momz, FRICTION_FLY);
+		mo->z += finesine[(FINEANGLES / 80 * level.time) & FINEMASK] / 8;
+		mo->momz = FixedMul(mo->momz, FRICTION_FLY);
 	}
+}
 
-	if (mo->waterlevel && !(mo->flags & MF_NOGRAVITY))
+
+//
+// P_PlayerHitGround
+//
+static void P_PlayerHitGround(AActor* mo)
+{
+	mo->player->jumpTics = 7;	// delay any jumping for a short while
+	if (mo->momz < P_CalculateMinMom(mo) && !(mo->player->spectator) && !(mo->flags2 & MF2_FLY))
 	{
-		mo->momz = FixedMul (mo->momz, mo->subsector->sector->friction);
+		// Squat down. Decrease viewheight for a moment after hitting the
+		// ground (hard), and utter appropriate sound.
+		PlayerLandedOnThing(mo, NULL);
 	}
+}
 
-	// clip movement
+
+//
+// P_ClipMovementToFloor
+//
+// Clips the z-position of the actor to the floor. Returns false if
+// the actor has been destroyed, as is the case with missiles exploding.
+//
+static bool P_ClipMovementToFloor(AActor* mo)
+{
 	if (mo->z <= mo->floorz)
 	{
-		// hit the floor
+		// [AM] If there is a actor special for hitting the floor, activate it.
+		if (mo->subsector->sector->SecActTarget &&
+		    P_FloorHeight(mo->x, mo->y, mo->subsector->sector) == mo->floorz)
+			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_HitFloor);
 
-		// [AM] If there is a actor special for hitting the floor,
-		//      activate it.
-		if (mo->subsector->sector->SecActTarget != NULL &&
-		    P_FloorHeight(mo->x, mo->y, mo->subsector->sector) == mo->floorz) {
-			A_TriggerAction(mo->subsector->sector->SecActTarget,
-			                mo, SECSPAC_HitFloor);
-		}
-
-		// the skull slammed into something
+		// Lost Soul hit the floor
 		if (mo->flags & MF_SKULLFLY && P_CorrectLostSoulBounce())
 			mo->momz = -mo->momz;
 
@@ -1349,177 +1406,153 @@ void P_ZMovement(AActor *mo)
 		if (mo->momz < 0)
 		{
 			if (mo->player)
-			{
-				bool momsquat = false;
-
-				fixed_t minmom = P_CalculateMinMom(mo);
-				if (mo->momz < minmom)
-					momsquat = true;
-
-				mo->player->jumpTics = 7;	// delay any jumping for a short while
-				if (momsquat && !(mo->player->spectator) && !(mo->flags2 & MF2_FLY))
-				{
-					// Squat down.
-					// Decrease viewheight for a moment
-					// after hitting the ground (hard),
-					// and utter appropriate sound.
-					PlayerLandedOnThing(mo, NULL);
-				}
-			}
+				P_PlayerHitGround(mo);
 
 			mo->momz = 0;
 		}
 
-		// cph 2001/05/26 -
-		// See lost soul bouncing comment above. We need this here for bug
-		// compatibility with original Doom2 v1.9 - if a soul is charging and
-		// hit by a raising floor this incorrectly reverses its Y momentum.
-		//
-
+		// cph 2001/05/26 - See lost soul bouncing comment above. We need this here
+		// for bug compatibility with original Doom2 v1.9 - if a soul is charging
+		// and hit by a raising floor this incorrectly reverses its Y momentum.
 		if (mo->flags & MF_SKULLFLY && !P_CorrectLostSoulBounce())
 			mo->momz = -mo->momz;
 
+		// Explode missiles
 		if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
 		{
-			if ((HasBehavior || co_fixweaponimpacts) &&
-				mo->subsector->sector->floorpic == skyflatnum)
-			{
+			if (co_fixweaponimpacts && mo->subsector->sector->floorpic == skyflatnum)
 				mo->Destroy();
-				return;
-			}
-
-			// [SL] 2011-06-02 - Only server should control explosions
-			if (serverside)
-				P_ExplodeMissile (mo);
-			return;
+			else if (serverside)
+				P_ExplodeMissile(mo);
+			return false;
 		}
 	}
-	else
-	{
-		// actor is above the floor
+	return true;
+}
 
-		// apply gravity (if standard or boom)
-		if (!co_zdoomphys)
-		{
-			fixed_t startmomz = mo->momz;
 
-			if (!mo->waterlevel || (mo->player &&
-			   !(mo->player->cmd.forwardmove | mo->player->cmd.sidemove)))
-			{
-				if (mo->flags2 & MF2_LOGRAV)
-				{
-					if (mo->momz == 0)
-						mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -0.2);
-					else
-						mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity * 0.1);
-				}
-				else if (! (mo->flags & MF_NOGRAVITY) )
-				{
-					if (mo->momz == 0)
-						mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -2);
-					else
-						mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity);
-				}
-
-				if (mo->waterlevel > 1)
-				{
-					fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
-
-					if (mo->momz < sinkspeed)
-						mo->momz = (startmomz < sinkspeed) ? startmomz : sinkspeed;
-					else
-						mo->momz = startmomz + ((mo->momz - startmomz) >>
-							(mo->waterlevel == 1 ? WATER_SINK_SMALL_FACTOR : WATER_SINK_FACTOR));
-				}
-			}
-		}
-	}
-
+//
+// P_ClipMovementToCeiling
+//
+// Clips the z-position of the actor to the ceiling. Returns false if
+// the actor has been destroyed, as is the case with missiles exploding.
+//
+static bool P_ClipMovementToCeiling(AActor* mo)
+{
 	if (mo->z + mo->height > mo->ceilingz)
 	{
-		// hit the ceiling
-
-		// [AM] If there is a actor special for hitting the floor,
-		//      activate it.
-		if (mo->subsector->sector->SecActTarget != NULL &&
-		    P_CeilingHeight(mo->x, mo->y, mo->subsector->sector) == mo->ceilingz) {
-			A_TriggerAction(mo->subsector->sector->SecActTarget,
-			                mo, SECSPAC_HitCeiling);
-		}
-
-		if (mo->flags2 & MF2_FLOORBOUNCE)
-		{
-			// reverse momentum here for ceiling bounce
-			mo->momz = FixedMul (mo->momz, (fixed_t)(-0.75*FRACUNIT));
-			if (mo->info->seesound)
-				S_Sound(mo, CHAN_BODY, mo->info->seesound, 1, ATTN_IDLE);
-
-			return;
-		}
+		// [AM] If there is a actor special for hitting the floor, activate it.
+		if (mo->subsector->sector->SecActTarget &&
+			P_CeilingHeight(mo->x, mo->y, mo->subsector->sector) == mo->ceilingz)
+			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_HitCeiling);
 
 		if (mo->momz > 0)
 			mo->momz = 0;
 
 		mo->z = mo->ceilingz - mo->height;
 
+		// Lost Soul hit the ceiling
 		if (mo->flags & MF_SKULLFLY)
-		{
-			// the skull slammed into something
 			mo->momz = -mo->momz;
-		}
 
-		if (mo->flags & MF_MISSILE && !(mo->flags & MF_NOCLIP))
+		// Explode missiles
+		if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
 		{
-			if ((HasBehavior || co_fixweaponimpacts) &&
-				 mo->subsector->sector->ceilingpic == skyflatnum)
-			{
-				mo->Destroy ();
-				return;
-			}
-
-			// [SL] 2011-06-02 - Only server should control explosions
-			if (serverside)
-				P_ExplodeMissile (mo);
-			return;
+			if (co_fixweaponimpacts && mo->subsector->sector->ceilingpic == skyflatnum)
+				mo->Destroy();
+			else if (serverside)
+				P_ExplodeMissile(mo);
+			return false;
 		}
 	}
+	return true;
+}
 
-	// [AM] Handle actor specials that deal with fake floors and ceilings.
-	if (mo->subsector->sector->heightsec != NULL && mo->subsector->sector->SecActTarget != NULL) {
-		sector_t *hs = mo->subsector->sector->heightsec;
+
+//
+// P_ActorFakeSectorTriggers
+//
+// [AM] Handle actor specials that deal with fake floors and ceilings.
+//
+static void P_ActorFakeSectorTriggers(AActor* mo, fixed_t oldz)
+{
+	if (mo->subsector->sector->heightsec && mo->subsector->sector->SecActTarget)
+	{
+		const sector_t* hs = mo->subsector->sector->heightsec;
 		fixed_t waterz = P_FloorHeight(mo->x, mo->y, hs);
-		fixed_t newz;
 		fixed_t viewheight;
 
-		if (mo->player != NULL) {
+		if (mo->player)
 			viewheight = mo->player->viewheight;
-		} else {
+		else
 			viewheight = mo->height / 2;
-		}
 
-		newz = mo->z + viewheight;
+		fixed_t newz = mo->z + viewheight;
 		oldz += viewheight;
 
-		if (oldz <= waterz && newz > waterz) {
-			// View went above fake floor
+		if (oldz <= waterz && newz > waterz)		// view above fake floor
 			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_EyesSurface);
-		} else if (oldz > waterz && newz <= waterz) {
+		else if (oldz > waterz && newz <= waterz)	// view below fake floor
 			// View went below fake floor
 			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_EyesDive);
-		}
 
-		if (!(hs->MoreFlags & SECF_FAKEFLOORONLY)) {
+		if (!(hs->MoreFlags & SECF_FAKEFLOORONLY))
+		{
 			waterz = P_CeilingHeight(mo->x, mo->y, hs);
-			if (oldz <= waterz && newz > waterz) {
-				// View went above fake ceiling
+			if (oldz <= waterz && newz > waterz)		// view above fake ceiling
 				A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_EyesAboveC);
-			} else if (oldz > waterz && newz <= waterz) {
-				// View went below fake ceiling
+			else if (oldz > waterz && newz <= waterz)	// view below fake ceiling
 				A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_EyesBelowC);
-			}
 		}
 	}
 }
+
+
+//
+// P_ZMovement
+//
+// Handles the movement of an actor in the z-direction, including gravity
+// and clipping movement against the floor and ceiling.
+//
+// [SL] 2014-01-11 - Refactored significantly for clarity.
+//
+void P_ZMovement(AActor *mo)
+{
+	fixed_t oldz = mo->z;
+
+	if (mo->player)
+		P_PlayerSmoothStepUp(mo);
+
+	// ZDoom applies gravity earlier in the function than vanilla
+	if (co_zdoomphys)
+		P_ApplyGravity(mo, P_CalculateActorGravityZDoom(mo));
+
+	mo->z += mo->momz;
+
+	if (mo->flags & MF_FLOAT)
+		P_AdjustMonsterFloat(mo);
+
+	if (mo->player)
+		P_PlayerFlyBob(mo);
+
+	// apply friction in the z-direction in water
+	if (mo->waterlevel && !(mo->flags & MF_NOGRAVITY))
+		mo->momz = FixedMul(mo->momz, mo->subsector->sector->friction);
+
+	if (!P_ClipMovementToFloor(mo))
+		return;
+
+	// Apply vanilla gravity
+	if (!co_zdoomphys)
+		P_ApplyGravity(mo, P_CalculateActorGravityDoom(mo));
+
+	if (!P_ClipMovementToCeiling(mo))
+		return;
+
+	// [AM] Handle actor specials that deal with fake floors and ceilings.
+	P_ActorFakeSectorTriggers(mo, oldz);
+}
+
 
 //
 // PlayerLandedOnThing
