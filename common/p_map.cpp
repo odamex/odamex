@@ -2708,24 +2708,16 @@ void P_UseLines (player_t *player)
 //
 // RADIUS ATTACK
 //
-AActor* 		bombsource;
-AActor* 		bombspot;
-int				bombdamage;
-float			bombdamagefloat;
-int				bombdistance;
-float			bombdistancefloat;
-bool			DamageSource;
-int				bombmod;
+static AActor* 		bombsource;
+static AActor* 		bombspot;
+static int			bombdamage;
+static float		bombdamagefloat;
+static int			bombdistance;
+static float		bombdistancefloat;
+static bool			DamageSource;
+static int			bombmod;
 
-//
-// PIT_ZdoomRadiusAttack
-// "bombsource" is the creature
-// that caused the explosion at "bombspot".
-// [RH] Now it knows about vertical distances and
-//      can thrust things vertically, too.
-// [ML] 2/12/11: Restoring ZDoom 1.22 PIT_RadiusAttack for 3D thrusting
-
-// [RH] Damage scale to apply to thing that shot the missile.
+// [RH] Damage scale to apply to thing that shot the missile. (co_zdoomphys)
 static float selfthrustscale;
 
 CVAR_FUNC_IMPL (sv_splashfactor)
@@ -2738,47 +2730,47 @@ CVAR_FUNC_IMPL (sv_splashfactor)
 
 
 //
-// PIT_RadiusAttack
-// "bombsource" is the creature
-// that caused the explosion at "bombspot".
+// PIT_DoomRadiusAttack
 //
-BOOL PIT_RadiusAttack (AActor *thing)
+// "bombsource" is the creature that caused the explosion at "bombspot".
+//
+static BOOL PIT_DoomRadiusAttack(AActor* thing)
 {
-    fixed_t	dx;
-    fixed_t	dy;
-    fixed_t	dist;
-
 	if (!serverside || !(thing->flags & MF_SHOOTABLE))
 		return true;
 
-    // Boss spider and cyborg
-    // take no damage from concussion.
-    if (thing->type == MT_CYBORG
-	|| thing->type == MT_SPIDER)
-	return true;
+	// Boss spider and cyborg
+	// take no damage from concussion.
+	if (thing->type == MT_CYBORG || thing->type == MT_SPIDER)
+		return true;
 
-    dx = abs(thing->x - bombspot->x);
-    dy = abs(thing->y - bombspot->y);
+	fixed_t dx = abs(thing->x - bombspot->x);
+	fixed_t dy = abs(thing->y - bombspot->y);
+	fixed_t dist = (MAX(dx, dy) - thing->radius) >> FRACBITS;
 
-    dist = dx>dy ? dx : dy;
-    dist = (dist - thing->radius) >> FRACBITS;
+	if (dist < 0)
+		dist = 0;
 
-    if (dist < 0)
-	dist = 0;
-
-    if (dist >= bombdamage)
-	return true;	// out of range
+	if (dist >= bombdamage)
+		return true;	// out of range
 
 	if (P_CheckSight(thing, bombspot))
-    {
+	{
 		// must be in direct path
-		P_DamageMobj (thing, bombspot, bombsource, bombdamage - dist, bombmod);
-    }
+		P_DamageMobj(thing, bombspot, bombsource, (bombdamage - dist) * sv_splashfactor, bombmod);
+	}
 
-    return true;
+	return true;
 }
 
-BOOL PIT_ZdoomRadiusAttack (AActor *thing)
+
+//
+// PIT_ZDoomRadiusAttack
+//
+// "bombsource" is the creature that caused the explosion at "bombspot".
+// [RH] Now it knows about vertical distances and can thrust things vertically, too.
+//
+static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 {
 	if (!serverside || !(thing->flags & MF_SHOOTABLE))
 		return true;
@@ -2795,7 +2787,7 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 	if (bombspot->type == MT_BARREL || thing->type == MT_BARREL ||
 		thing->type == MT_BOSSBRAIN)
 	{
-		return PIT_RadiusAttack(thing);
+		return PIT_DoomRadiusAttack(thing);
 	}
 	
 	// [RH] New code. The bounding box only covers the
@@ -2865,7 +2857,7 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 // P_RadiusAttack
 // Source is the creature that caused the explosion at spot.
 //
-void P_RadiusAttack (AActor *spot, AActor *source, int damage, int distance,
+void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bool hurtSource, int mod)
 {
 	fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
@@ -2884,7 +2876,7 @@ void P_RadiusAttack (AActor *spot, AActor *source, int damage, int distance,
 
 	// decide which radius attack function to use
 	BOOL (*pAttackFunc)(AActor*) = co_zdoomphys ?
-		PIT_ZdoomRadiusAttack : PIT_RadiusAttack;
+		PIT_ZDoomRadiusAttack : PIT_DoomRadiusAttack;
 
 	if (co_blockmapfix)
 	{
