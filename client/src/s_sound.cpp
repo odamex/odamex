@@ -52,20 +52,36 @@
 
 static const fixed_t S_STEREO_SWING = 96 * FRACUNIT;
 
-typedef struct
+struct channel_t
 {
-	fixed_t		*pt;		// origin of sound
-	fixed_t		x,y;		// Origin if pt is NULL
-	sfxinfo_t*	sfxinfo;	// sound information (if null, channel avail.)
-	int 		handle;		// handle of the sound being played
+public:
+	fixed_t*	pt;				// origin of sound
+	fixed_t		x, y;			// origin if pt is NULL
+	sfxinfo_t*	sfxinfo;		// sound information (if null, channel avail.)
+	int 		handle;			// handle of the sound being played
 	int			sound_id;
-	int			entchannel;	// entity's sound channel
+	int			entchannel;		// entity's sound channel
 	float		attenuation;
 	float		volume;
 	int			priority;
-	BOOL		loop;
-	int			timer;		// countdown until sound is destroyed
-} channel_t;
+	bool		loop;
+	int			start_time;		// gametic the sound started in
+
+	void clear()
+	{
+		pt = NULL;
+		x = y = 0;
+		sfxinfo = NULL;
+		handle = -1;
+		sound_id = -1;
+		entchannel = CHAN_VOICE;
+		attenuation = 0.0f;
+		volume = 0.0f;
+		priority = MININT;
+		loop = false;
+		start_time = 0;
+	}
+};
 
 int sfx_empty;
 
@@ -85,32 +101,26 @@ static byte		*SoundCurve;
 // Internal default is max out of 0-15.
 CVAR_FUNC_IMPL (snd_sfxvolume)
 {
-	if (var > 1.0f)
-		var = 1.0f;
-	if (var < 0.0f)
-		var = 0.0f;
-
-	S_SetSfxVolume (var);
+	if (var.value() < 0.0f || var.value() > 1.0f)
+		var.Set(clamp(var.value(), 0.0f, 1.0f));
+	else
+		S_SetSfxVolume(var);
 }
 
 // Maximum volume of Music.
 CVAR_FUNC_IMPL (snd_musicvolume)
 {
-	if (var > 1.0f)
-		var = 1.0f;
-	if (var < 0.0f)
-		var = 0.0f;
-
-	S_SetMusicVolume (var);
+	if (var.value() < 0.0f || var.value() > 1.0f)
+		var.Set(clamp(var.value(), 0.0f, 1.0f));
+	else
+		S_SetMusicVolume(var);
 }
 
 // Maximum volume of announcer sounds.
 CVAR_FUNC_IMPL (snd_announcervolume)
 {
-	if (var > 1.0f)
-		var = 1.0f;
-	if (var < 0.0f)
-		var = 0.0f;
+	if (var.value() < 0.0f || var.value() > 1.0f)
+		var.Set(clamp(var.value(), 0.0f, 1.0f));
 }
 
 // whether songs are mus_paused
@@ -123,7 +133,6 @@ static struct mus_playing_t
 	int   handle;
 } mus_playing;
 
-EXTERN_CVAR (snd_timeout)
 EXTERN_CVAR (snd_channels)
 EXTERN_CVAR (co_zdoomsoundcurve)
 EXTERN_CVAR (snd_musicsystem)
@@ -243,10 +252,7 @@ static void S_StopChannel (unsigned int cnum);
 //
 void S_Init (float sfxVolume, float musicVolume)
 {
-	int curvelump = W_GetNumForName ("SNDCURVE");
-	SoundCurve = (byte *)W_CacheLumpNum (curvelump, PU_STATIC);
-
-	//Printf (PRINT_HIGH, "S_Init: default sfx volume %f\n", sfxVolume);
+	SoundCurve = (byte *)W_CacheLumpNum(W_GetNumForName("SNDCURVE"), PU_STATIC);
 
 	// [RH] Read in sound sequences
 	NumSequences = 0;
@@ -259,16 +265,10 @@ void S_Init (float sfxVolume, float musicVolume)
 	// (the maximum numer of sounds rendered
 	// simultaneously) within zone memory.
 	numChannels = snd_channels.asInt();
-	Channel = (channel_t *) Z_Malloc (numChannels*sizeof(channel_t), PU_STATIC, 0);
-	for (unsigned int i = 0; i < numChannels; i++)
-	{
-		// Initialize the channel's variables
-		memset(&Channel[i], 0, sizeof(Channel[i]));
-		Channel[i].sound_id = -1;
-		Channel[i].handle = -1;
-		Channel[i].attenuation = 0.0f;
-		Channel[i].volume = 0.0f;
-	}
+	Channel = (channel_t*)Z_Malloc(numChannels * sizeof(channel_t), PU_STATIC, 0);
+	for (size_t i = 0; i < numChannels; i++)
+		Channel[i].clear();
+
 	I_SetChannels (numChannels);
 
 	// no sounds are playing, and they are not mus_paused
@@ -279,18 +279,16 @@ void S_Init (float sfxVolume, float musicVolume)
 		S_sfx[j].usefulness = -1;
 }
 
+
 //
 // Kills playing sounds
 //
 void S_Stop (void)
 {
-	unsigned int cnum;
-
 	// kill all playing sounds at start of level
 	//	(trust me - a good idea)
-	for (cnum = 0; cnum < numChannels; cnum++)
-		if (Channel[cnum].sfxinfo)
-			S_StopChannel (cnum);
+	for (size_t i = 0; i < numChannels; i++)
+		S_StopChannel(i);
 
 	// start new music for the level
 	mus_paused = 0;
@@ -321,102 +319,71 @@ void S_Start (void)
 }
 
 
-/**
- * A comparison function that determines which sound channel should
- * take priority.  Can be used with std::sort.  Note that this implicitly
- * gives preference to channel b if channel a and b are equal.  The more
- * recent sound should therefore be in channel b to give preference to
- * newer sounds.
- *
- * @param a The first channel being compared.
- * @param b The second channel being compared.
- * @return true if the first channel should precede the second.
- */
+//
+// S_CompareChannels
+//
+// A comparison function that determines which sound channel should
+// take priority. Can be used with std::sort. 
+//
+// Returns true if the first channel should precede the second.
+// 
 bool S_CompareChannels(const channel_t &a, const channel_t &b)
 {
-	if (a.sfxinfo == NULL || b.sfxinfo == NULL)
-		return b.sfxinfo != NULL;
-	if (a.priority < b.priority || (a.priority == b.priority && a.volume < b.volume))
+	if (a.priority > b.priority || (a.priority == b.priority && a.volume > b.volume))
 		return true;
-	return false;
+	return a.start_time > b.start_time;
 }
 
 
 //
-// S_getChannel :
-//   If none available, return -1.  Otherwise channel #.
+// S_GetChannel
 //
-//   joek - added from choco, editied slightly
-int S_getChannel (void*	origin, sfxinfo_t* sfxinfo, float volume, int priority)
+// Attempts to find an unused channel or a channel playing a sound with a
+// lower priority than sound about to be played.
+//
+// Returns -1 if no channels are availible.
+// Returns the number of the availible channel otherwise.
+//
+int S_GetChannel(void*	origin, sfxinfo_t* sfxinfo, float volume, int priority)
 {
-    // channel number to use
-	int cnum = -1;
-
 	// not a valid sound	
 	if (!sfxinfo)
 		return -1;
 
-	// Sort the sound channels by ascending priority levels
+	// Sort the sound channels by descending priority levels
 	std::sort(Channel, Channel + numChannels, S_CompareChannels);
 
 	// store priority and volume in a temp channel to use with S_CompareChannels
 	channel_t tempchan;
 	tempchan.priority = priority;
 	tempchan.volume = volume;
-	tempchan.sfxinfo = sfxinfo;
+	tempchan.start_time = gametic;
 
-	int sound_id = S_FindSound (sfxinfo->name);
+	int sound_id = S_FindSound(sfxinfo->name);
 
 	// Limit the number of identical sounds playing at once
 	// tries to keep the plasma rifle from hogging all the channels
 	static const int max_duplicates = 3;
-	int duplicates = 0;
-	for (int i = (int)numChannels - 1; i >= 0; i--)
+	for (size_t i = 0, duplicates = 0; i < numChannels; i++)
 	{
 		if (Channel[i].sound_id == sound_id)
 		{
-			// if we're over our limit, we may kick this channel
 			if (++duplicates >= max_duplicates)
-				cnum = i;
+				return S_CompareChannels(tempchan, Channel[i]) ? i : -1;
 		}
 	}
 
-	// if the quietest duplicate sound is louder than this
-	// new sound, don't play the new sound
-	if (cnum != -1 && !S_CompareChannels(Channel[cnum], tempchan))
-		return -1;
+	// try to find the first empty channel
+	for (size_t i = 0; i < numChannels; i++)
+		if (Channel[i].sfxinfo == NULL)
+			return i;
 
-   	// Find an open channel or a channel with lower priority
-	if (cnum == -1)
-	{
-		for (int i = 0 ; i < (int)numChannels ; i++)
-		{
-			if (S_CompareChannels(Channel[i], tempchan))
-			{
-				// Channel[i] is either empty or has a lower priority
-				cnum = i;
-				break;
-			}
-		}
-	}
+	// Find a channel with lower priority
+	for (size_t i = numChannels - 1; i >= 0; i--)
+		if (S_CompareChannels(tempchan, Channel[i]))
+			return i;
 
-	// Still no channels we can use, don't bother with that sound
-	if (cnum == -1)
-		return -1;
-	    		
-	// kick out lower priority.
-	S_StopChannel(cnum);
-
-    // channel is decided to be cnum.
-	Channel[cnum].sfxinfo = sfxinfo;
-	Channel[cnum].pt = (fixed_t *) origin;
-	if (Channel[cnum].pt)
-	{
-		Channel[cnum].x = Channel[cnum].pt[0];
-		Channel[cnum].y = Channel[cnum].pt[1];
-	}
-
-	return cnum;
+	return -1;
 }
 
 
@@ -558,9 +525,10 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 {
 	int		sep;
 	int		priority = 0;
-	sfxinfo_t*	sfx;
-	int		cnum;
-	int handle;
+
+	// check volume +ve
+	if (volume <= 0.0f)
+		return;
 
 	if (!consoleplayer().mo && channel != CHAN_INTERFACE)
 		return;
@@ -568,21 +536,16 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
   	// check for bogus sound #
 	if (sfx_id < 1 || sfx_id > numsfx)
 	{
-		Printf(PRINT_HIGH,"Bad sfx #: %d\n", sfx_id);
+		DPrintf("Bad sfx #: %d\n", sfx_id);
 		return;
 	}
 
-	// check volume +ve
-	if(volume <= 0)
-		return;
-
-	sfx = &S_sfx[sfx_id];
+	sfxinfo_t* sfxinfo = &S_sfx[sfx_id];
 
   	// check for bogus sound lump
-	if (sfx->lumpnum < 0 || sfx->lumpnum > (int)numlumps)
+	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > (int)numlumps)
 	{
-		// [ML] We don't have to announce it though do we?
-		//Printf(PRINT_HIGH,"Bad sfx lump #: %d\n", sfx->lumpnum);
+		DPrintf("Bad sfx lump #: %d\n", sfxinfo->lumpnum);
 		return;
 	}
 
@@ -596,13 +559,14 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		y = pt[1];
 	}
 
-	if (sfx->link)
-		sfx = sfx->link;
+	if (sfxinfo->link)
+		sfxinfo = sfxinfo->link;
 
-	if (!sfx->data) {
-		I_LoadSound (sfx);
-		if (sfx->link)
-			sfx = sfx->link;
+	if (!sfxinfo->data)
+	{
+		I_LoadSound(sfxinfo);
+		if (sfxinfo->link)
+			sfxinfo = sfxinfo->link;
 	}
 	
 	if (listenplayer().camera && attenuation != ATTN_NONE)
@@ -654,19 +618,16 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	if (listenplayer().camera && pt == &listenplayer().camera->x)
 		priority += 20;
 
-	if (sfx->lumpnum == sfx_empty)
+	if (sfxinfo->lumpnum == sfx_empty)
 		priority = -1000;
 
 	// joek - hack for silent bfg - stop player's weapon sounds if grunting
-	if(sfx_id == sfx_noway || sfx_id == sfx_oof)
+	if (sfx_id == sfx_noway || sfx_id == sfx_oof)
 	{
 		for (size_t i = 0; i < numChannels; i++)
 		{
-			if (Channel[i].sfxinfo && (Channel[i].pt == pt) 
-				&& Channel[i].entchannel == CHAN_WEAPON)
-			{
-				S_StopChannel (i);
-			}
+			if (Channel[i].sfxinfo && (Channel[i].pt == pt) && Channel[i].entchannel == CHAN_WEAPON)
+				S_StopChannel(i);
 		}
 	}
 
@@ -677,39 +638,29 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		S_StopSound(pt, channel);
 
 	// try to find a channel
-	cnum = S_getChannel(pt, sfx, volume, priority);
+	int cnum = S_GetChannel(pt, sfxinfo, volume, priority);
 
 	// no channel found
 	if (cnum < 0)
 		return;
 
-	handle = I_StartSound(sfx_id,
-			     volume,
-			     sep,
-			     NORM_PITCH,
-			     looping);
+	// make sure the channel isn't playing anything
+	S_StopChannel(cnum);
 
-	// I_StartSound can not find an empty channel.  Make sure this channel is clear
+	int handle = I_StartSound(sfx_id, volume, sep, NORM_PITCH, looping);
+
+	// I_StartSound can not find an empty channel
 	if (handle < 0)
-	{
-		Channel[cnum].handle = -1;
-		Channel[cnum].sfxinfo = NULL;
-		Channel[cnum].pt = NULL;
-		S_StopChannel(cnum);
 		return;
-	}
 
-  // Assigns the handle to one of the channels in the
-  //  mix/output buffer.
+	// increase the usefulness
+	if (sfxinfo->usefulness++ < 0)
+		sfxinfo->usefulness = 1;
+
 	Channel[cnum].handle = handle;
-
-  // increase the usefulness
-	if (sfx->usefulness++ < 0)
-		sfx->usefulness = 1;
-
+	Channel[cnum].sfxinfo = sfxinfo;
 	Channel[cnum].sound_id = sfx_id;
 	Channel[cnum].pt = pt;
-	Channel[cnum].sfxinfo = sfx;
 	Channel[cnum].priority = priority;
 	Channel[cnum].entchannel = channel;
 	Channel[cnum].attenuation = attenuation;
@@ -717,7 +668,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	Channel[cnum].x = x;
 	Channel[cnum].y = y;
 	Channel[cnum].loop = looping;
-	Channel[cnum].timer = 0;		// used to time-out sounds that don't stop
+	Channel[cnum].start_time = gametic;
 }
 
 void S_SoundID (int channel, int sound_id, float volume, int attenuation)
@@ -861,12 +812,39 @@ void S_Sound (fixed_t x, fixed_t y, int channel, const char *name, float volume,
 	S_StartNamedSound ((AActor *)(~0), NULL, x, y, channel, name, volume, attenuation, false);
 }
 
+
+//
+// S_StopChannel
+//
+static void S_StopChannel(unsigned int cnum)
+{
+	if (cnum >= numChannels)
+	{
+		DPrintf("Trying to stop invalid channel %d\n", cnum);
+		return;
+	}
+
+	channel_t* c = &Channel[cnum];
+
+	if (c->sfxinfo && c->handle >= 0)
+	{
+		// stop the sound playing
+		I_StopSound(c->handle);
+
+		// degrade usefulness of sound data
+		c->sfxinfo->usefulness--;
+	}	
+
+	c->clear();
+}
+
+
 void S_StopSound (fixed_t *pt)
 {
 	for (unsigned int i = 0; i < numChannels; i++)
 		if (Channel[i].sfxinfo && (Channel[i].pt == pt))
 		{
-			S_StopChannel (i);
+			S_StopChannel(i);
 		}
 }
 
@@ -876,7 +854,7 @@ void S_StopSound (fixed_t *pt, int channel)
 		if (Channel[i].sfxinfo
 			&& Channel[i].pt == pt // denis - fixme - security - wouldn't this cause invalid access elsewhere, if an object was destroyed?
 			&& Channel[i].entchannel == channel)
-			S_StopChannel (i);
+			S_StopChannel(i);
 }
 
 void S_StopSound (AActor *ent, int channel)
@@ -884,13 +862,10 @@ void S_StopSound (AActor *ent, int channel)
 	S_StopSound (&ent->x, channel);
 }
 
-void S_StopAllChannels (void)
+void S_StopAllChannels(void)
 {
-	unsigned int i;
-
-	for (i = 0; i < numChannels; i++)
-		if (Channel[i].sfxinfo)
-			S_StopChannel (i);
+	for (size_t i = 0; i < numChannels; i++)
+		S_StopChannel(i);
 }
 
 
@@ -991,13 +966,6 @@ void S_UpdateSounds (void *listener_p)
 	{
 		c = &Channel[cnum];
 		sfx = c->sfxinfo;
-
-		// [SL] 2011-06-30 - Stop a sound if it hasn't stopped yet
-		if (++c->timer > snd_timeout * TICRATE && snd_timeout > 0)
-		{
-			S_StopChannel(cnum);	
-			continue;
-		}
 
 		if (c->sfxinfo)
 		{
@@ -1153,44 +1121,6 @@ void S_StopMusic (void)
 	mus_playing.name = "";
 }
 
-static void S_StopChannel (unsigned int cnum)
-{
-	unsigned int i;
-	channel_t* c;
-
-	if(cnum >= numChannels)
-	{
-		printf("Trying to stop invalid channel %d\n", cnum);
-		return;
-	}
-
-	c = &Channel[cnum];
-
-	if (c->sfxinfo && c->handle >= 0)
-	{
-		// stop the sound playing
-		I_StopSound (c->handle);
-
-		// check to see
-		//	if other channels are playing the sound
-		for (i = 0; i < numChannels; i++)
-		{
-			if (cnum != i && c->sfxinfo == Channel[i].sfxinfo)
-			{
-				break;
-			}
-		}
-
-		// degrade usefulness of sound data
-		c->sfxinfo->usefulness--;
-
-		c->sfxinfo = NULL;
-		c->handle = -1;
-		c->sound_id = -1;
-		c->pt = NULL;
-		c->priority = 0;
-	}
-}
 
 
 // [RH] ===============================
