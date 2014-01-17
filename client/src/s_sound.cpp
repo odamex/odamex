@@ -50,16 +50,7 @@
 #define NORM_PRIORITY	64
 #define NORM_SEP		128
 
-#define S_STEREO_SWING	(96<<FRACBITS)
-
-// Distance to origin when sounds should be maxed out.
-// This should relate to movement clipping resolution
-// (see BLOCKMAP handling).
-// In the source code release: (160*0x10000).  Changed back to the
-// Vanilla value of 200 (why was this changed?)
-#define S_CLOSE_DIST	(200*0x10000)
-
-#define S_ATTENUATOR	((S_CLIPPING_DIST - S_CLOSE_DIST) >> FRACBITS)
+static const fixed_t S_STEREO_SWING = 96 * FRACUNIT;
 
 typedef struct
 {
@@ -441,8 +432,8 @@ bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
 								float*			vol,
 								int*			sep)
 {
-	static const int MAX_SND_DIST = 2025 * FRACUNIT;
-	static const int MIN_SND_DIST = 1 * FRACUNIT;
+	static const fixed_t MAX_SND_DIST = 2025 * FRACUNIT;
+	static const fixed_t MIN_SND_DIST = 1 * FRACUNIT;
 	int approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 		
 	if (S_UseMap8Volume())
@@ -475,7 +466,7 @@ bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
 		*sep = NORM_SEP - (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
 	}
 	
-	return (*vol > 0);
+	return (*vol > 0.0f);
 }
 
 
@@ -496,6 +487,8 @@ bool S_AdjustSoundParamsDoom(	const AActor*	listener,
 								float*			vol,
 								int*			sep)
 {
+	static const fixed_t S_CLIPPING_DIST = 1200 * FRACUNIT;
+	static const fixed_t S_CLOSE_DIST = 200 * FRACUNIT;
 	fixed_t approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 
 	if (S_UseMap8Volume())
@@ -511,7 +504,7 @@ bool S_AdjustSoundParamsDoom(	const AActor*	listener,
 	}
 	else
 	{
-		float attenuation = float((S_CLIPPING_DIST - approx_dist) >> FRACBITS) / S_ATTENUATOR;
+		float attenuation = FIXED2FLOAT(FixedDiv(S_CLIPPING_DIST - approx_dist, S_CLIPPING_DIST - S_CLOSE_DIST));
 		if (S_UseMap8Volume())
 			*vol = 1.0f + (snd_sfxvolume - 1.0f) * attenuation;
 		else
@@ -528,7 +521,7 @@ bool S_AdjustSoundParamsDoom(	const AActor*	listener,
 		*sep = NORM_SEP - (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
 	}
 
-	return (*vol > 0);
+	return (*vol > 0.0f);
 }
 
 

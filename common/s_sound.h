@@ -25,18 +25,10 @@
 #ifndef __S_SOUND__
 #define __S_SOUND__
 
+#include "m_fixed.h"
 #include <string>
 
-#include "m_fixed.h"
-
-
 #define MAX_SNDNAME			63
-
-//joek - choco goodness below
-// when to clip out sounds
-// Does not fit the large outdoor areas.
-#define S_CLIPPING_DIST		(1200*0x10000)
-
 
 class AActor;
 
@@ -181,10 +173,6 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 // [RH] Prints sound debug info to the screen.
 //		Modelled after Hexen's noise cheat.
 void S_NoiseDebug (void);
-
-class cvar_t;
-extern cvar_t noisedebug;
-
 
 #endif
 

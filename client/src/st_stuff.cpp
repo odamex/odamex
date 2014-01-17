@@ -70,6 +70,7 @@ bool		st_firsttime;
 static int		lu_palette;
 
 EXTERN_CVAR (idmypos)
+EXTERN_CVAR (noisedebug)
 EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (hud_fullhudtype)
