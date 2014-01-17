@@ -258,30 +258,26 @@ void I_SetSfxVolume (float volume)
 	basevolume = volume;
 }
 
+
 //
-// Starting a sound means adding it
-//	to the current list of active sounds
-//  in the internal channels.
-// As the SFX info struct contains
-//  e.g. a pointer to the raw data,
-//  it is ignored.
-// As our sound handling does not handle
-//  priority, it is ignored.
-// Pitching (that is, increased speed of playback)
-//  is set, but currently not used by mixing.
+// I_StartSound
 //
-int I_StartSound (int id, float vol, int sep, int pitch, bool loop)
+// Starting a sound means adding it to the current list of active sounds
+// in the internal channels. As the SFX info struct contains  e.g. a pointer
+// to the raw data, it is ignored. As our sound handling does not handle
+// priority, it is ignored. Pitching (that is, increased speed of playback)
+// is set, but currently not used by mixing.
+//
+int I_StartSound(int id, float vol, int sep, int pitch, bool loop)
 {
-	if(!sound_initialized)
-		return 0;
+	if (!sound_initialized)
+		return -1;
 
 	Mix_Chunk *chunk = (Mix_Chunk *)S_sfx[id].data;
-	int channel;
 	
 	// find a free channel, starting from the first after
 	// the last channel we used
-
-	channel = nextchannel;
+	int channel = nextchannel;
 
 	do
 	{
@@ -297,7 +293,6 @@ int I_StartSound (int id, float vol, int sep, int pitch, bool loop)
 	nextchannel = channel;
 
 	// play sound
-
 	Mix_PlayChannelTimed(channel, chunk, loop ? -1 : 0, -1);
 
 	channel_in_use[channel] = true;
