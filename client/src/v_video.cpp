@@ -571,8 +571,8 @@ bool V_UsePillarBox()
 	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
 		return false;
 	
-	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
-	return (!vid_widescreen || (!serverside && !sv_allowwidescreen)) && ratio > (4.0f / 3.0f);
+	return (!vid_widescreen || (!serverside && !sv_allowwidescreen))
+		&& (3 * I_GetVideoWidth() > 4 * I_GetVideoHeight());
 }
 
 //
@@ -592,8 +592,8 @@ bool V_UseLetterBox()
 	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
 		return false;
 	
-	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
-	return (vid_widescreen && (serverside || sv_allowwidescreen)) && ratio <= (4.0f / 3.0f);
+	return (vid_widescreen && (serverside || sv_allowwidescreen))
+		&& (3 * I_GetVideoWidth() <= 4 * I_GetVideoHeight());
 }
 
 //
@@ -610,8 +610,8 @@ bool V_UseWidescreen()
 	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
 		return false;
 	
-	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
-	return (vid_widescreen && (serverside || sv_allowwidescreen)) && ratio > (4.0f / 3.0f);
+	return (vid_widescreen && (serverside || sv_allowwidescreen))
+		&& (3 * I_GetVideoWidth() > 4 * I_GetVideoHeight());
 }
 
 //
@@ -633,9 +633,9 @@ static bool V_DoModeSetup(int width, int height, int bits)
 	I_SetOverscan (vid_overscan);
 
 	if (V_UsePillarBox())
-		width = 4.0f * height / 3.0f;
+		width = (4 * height) / 3;
 	else if (V_UseLetterBox())
-		height = 9.0f * width / 16.0f;
+		height = (9 * width) / 16;
 
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows con_scaletext to have some purpose...
@@ -657,7 +657,7 @@ static bool V_DoModeSetup(int width, int height, int bits)
 	DisplayHeight = height;
 	DisplayBits = bits;
 
-	SquareWidth = 4.0f * DisplayHeight / 3.0f;
+	SquareWidth = (4 * DisplayHeight) / 3;
 	
 	if (SquareWidth > DisplayWidth)
         SquareWidth = DisplayWidth;
