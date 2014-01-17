@@ -661,11 +661,7 @@ void A_Punch (AActor *mo)
 	if (linetarget)
 	{
 		A_FireSound (player, "player/male/fist");
-		//S_Sound (player->mo, CHAN_VOICE, "*fist", 1, ATTN_NORM);
-		player->mo->angle = P_PointToAngle (player->mo->x,
-											player->mo->y,
-											linetarget->x,
-											linetarget->y);
+		player->mo->angle = P_PointToAngle (player->mo->x, player->mo->y, linetarget->x, linetarget->y);
 	}
 }
 
