@@ -46,22 +46,20 @@
 #include "m_fileio.h"
 #include "gi.h"
 
-#define NORM_PITCH				128
-#define NORM_PRIORITY				64
-#define NORM_SEP				128
+#define NORM_PITCH		128
+#define NORM_PRIORITY	64
+#define NORM_SEP		128
 
-#define S_PITCH_PERTURB 		1
-#define S_STEREO_SWING			(96<<FRACBITS)
+#define S_STEREO_SWING	(96<<FRACBITS)
 
-// Distance tp origin when sounds should be maxed out.
+// Distance to origin when sounds should be maxed out.
 // This should relate to movement clipping resolution
 // (see BLOCKMAP handling).
 // In the source code release: (160*0x10000).  Changed back to the
 // Vanilla value of 200 (why was this changed?)
-#define S_CLOSE_DIST		(200*0x10000)
+#define S_CLOSE_DIST	(200*0x10000)
 
-#define S_ATTENUATOR		((S_CLIPPING_DIST-S_CLOSE_DIST)>>FRACBITS)
-// choco goodness endeth
+#define S_ATTENUATOR	((S_CLIPPING_DIST - S_CLOSE_DIST) >> FRACBITS)
 
 typedef struct
 {
@@ -436,133 +434,124 @@ int S_getChannel (void*	origin, sfxinfo_t* sfxinfo, float volume, int priority)
 //
 // Utilizes the sndcurve lump to mimic volume and stereo separation
 // calculations from ZDoom 1.22
-
-int S_AdjustZdoomSoundParams(	AActor*	listener,
-								fixed_t	x,
-								fixed_t	y,
-								float*	vol,
-								int*	sep)
+//
+bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
+								fixed_t			x,
+								fixed_t			y,
+								float*			vol,
+								int*			sep)
 {
-	const int MAX_SND_DIST = 2025;
-	
-	fixed_t* listener_pt;
-	if (listener)
-		listener_pt = &(listener->x);
-	else
-		listener_pt = NULL;
+	static const int MAX_SND_DIST = 2025 * FRACUNIT;
+	static const int MIN_SND_DIST = 1 * FRACUNIT;
+	int approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 		
-	int dist = (int)(FIXED2FLOAT(P_AproxDistance2 (listener_pt, x, y)));
-		
-	if (dist >= MAX_SND_DIST)
-	{
-		if (S_UseMap8Volume())
-		{
-			dist = MAX_SND_DIST;
-		}
-		else
-		{
-			*vol = 0.0f;	// too far away to hear
-			return 0;
-		}
-	}
-	else if (dist < 0)
-	{
-		dist = 0;
-	}
+	if (S_UseMap8Volume())
+		approx_dist = MIN(approx_dist, MAX_SND_DIST);
 
-	*vol = (SoundCurve[dist] * snd_sfxvolume) / 128.0f;
-	if (dist > 0 && listener)
+	if (approx_dist > MAX_SND_DIST)
+		return false;
+
+	if (approx_dist < MIN_SND_DIST)
 	{
+		*vol = snd_sfxvolume;
+		*sep = NORM_SEP;
+	}
+	else
+	{
+		float attenuation = float(SoundCurve[approx_dist >> FRACBITS]) / 128.0f;
+		if (S_UseMap8Volume())
+			*vol = 1.0f + (snd_sfxvolume - 1.0f) * attenuation;
+		else
+			*vol = snd_sfxvolume * attenuation;
+
+		// angle of source to listener
 		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
 		if (angle > listener->angle)
 			angle = angle - listener->angle;
 		else
 			angle = angle + (0xffffffff - listener->angle);
-		angle >>= ANGLETOFINESHIFT;
-		*sep = NORM_SEP - (FixedMul (S_STEREO_SWING, finesine[angle])>>FRACBITS);
-	}
-	else
-	{
-		*sep = NORM_SEP;
+
+		// stereo separation
+		*sep = NORM_SEP - (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
 	}
 	
 	return (*vol > 0);
 }
 
+
 //
-// Changes volume and stereo-separation
-//  from the norm of a sound effect to be played.
-// If the sound is not audible, returns a 0.
-// Otherwise, modifies parameters and returns 1.
+// S_AdjustSoundParamsDoom
+//
+// Changes volume and stereo-separation from the norm of a sound effect to
+// be played. If the sound is not audible, returns false.
 //
 // joek - from Choco Doom
 //
-// [SL] 2011-05-26 - Changed function parameters to accept x,y instead
+// [SL] 2011-05-26 - Changed function parameters to accept x, y instead
 // of a fixed_t* for the sound origin
-int S_AdjustSoundParams(AActor*		listener,
-		  				fixed_t		x,
-		  				fixed_t		y,
-		  				float*		vol,
-		  				int*		sep)
+//
+bool S_AdjustSoundParamsDoom(	const AActor*	listener,
+								fixed_t			x,
+								fixed_t			y,
+								float*			vol,
+								int*			sep)
 {
-	fixed_t	approx_dist;
-	fixed_t	adx;
-	fixed_t	ady;
-	angle_t	angle;
+	fixed_t approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 
-	if(!listener)
-		return 0;
+	if (S_UseMap8Volume())
+		approx_dist = MIN(approx_dist, S_CLIPPING_DIST);
 
-    // calculate the distance to sound origin
-    //  and clip it if necessary
-	adx = abs(listener->x - x);
-	ady = abs(listener->y - y);
+	if (approx_dist > S_CLIPPING_DIST)
+		return false;
 
-    // From _GG1_ p.428. Appox. eucledian distance fast.
-	approx_dist = adx + ady - ((adx < ady ? adx : ady)>>1);
-
-	// GhostlyDeath <November 16, 2008> -- ExM8 has the full volume effect
-	// [Russell] - Change this to an option and remove the dependence on
-	// we run doom 1 or not
-	if (!S_UseMap8Volume() && approx_dist > S_CLIPPING_DIST)
-		return 0;
-
-    // angle of source to listener
-	angle = R_PointToAngle2(listener->x, listener->y, x, y);
-
-	if (angle > listener->angle)
-		angle = angle - listener->angle;
-	else
-		angle = angle + (0xffffffff - listener->angle);
-
-	angle >>= ANGLETOFINESHIFT;
-
-    // stereo separation
-	*sep = 128 - (FixedMul(S_STEREO_SWING,finesine[angle])>>FRACBITS);
-
-    // volume calculation
 	if (approx_dist < S_CLOSE_DIST)
 	{
 		*vol = snd_sfxvolume;
 		*sep = NORM_SEP;
 	}
-	else if (S_UseMap8Volume())
-	{
-		if (approx_dist > S_CLIPPING_DIST)
-			approx_dist = S_CLIPPING_DIST;
-
-		*vol = 15+ ((snd_sfxvolume-15)
-				*((S_CLIPPING_DIST - approx_dist)>>FRACBITS)) / S_ATTENUATOR;
-	}
 	else
 	{
-	// distance effect
-		*vol = (snd_sfxvolume
-				* ((S_CLIPPING_DIST - approx_dist)>>FRACBITS))
-	    / S_ATTENUATOR;
+		float attenuation = float((S_CLIPPING_DIST - approx_dist) >> FRACBITS) / S_ATTENUATOR;
+		if (S_UseMap8Volume())
+			*vol = 1.0f + (snd_sfxvolume - 1.0f) * attenuation;
+		else
+			*vol = snd_sfxvolume * attenuation;
+
+		// angle of source to listener
+		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
+		if (angle > listener->angle)
+			angle = angle - listener->angle;
+		else
+			angle = angle + (0xffffffff - listener->angle);
+
+		// stereo separation
+		*sep = NORM_SEP - (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
 	}
 
 	return (*vol > 0);
+}
+
+
+
+//
+// S_AdjustSoundParams
+//
+bool S_AdjustSoundParams(	const AActor*	listener,
+		  					fixed_t			x,
+		  					fixed_t			y,
+		  					float*			vol,
+		  					int*			sep)
+{
+	*vol = 0.0f;
+	*sep = NORM_SEP;
+
+	if (!listener)
+		return false;
+
+	if (co_zdoomsoundcurve)
+		return S_AdjustSoundParamsZDoom(listener, x, y, vol, sep);
+	else
+		return S_AdjustSoundParamsDoom(listener, x, y, vol, sep); 
 }
 
 
@@ -574,8 +563,6 @@ int S_AdjustSoundParams(AActor*		listener,
 static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	                  int sfx_id, float volume, int attenuation, bool looping)
 {
-
-	int		rc;
 	int		sep;
 	int		priority = 0;
 	sfxinfo_t*	sfx;
@@ -628,15 +615,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	if (listenplayer().camera && attenuation != ATTN_NONE)
 	{
   		// Check to see if it is audible, and if not, modify the params
-		if (co_zdoomsoundcurve)
-			rc = S_AdjustZdoomSoundParams(listenplayer().camera, x, y, &volume, &sep);
-		else
-			rc = S_AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep);
-
-		if (x == listenplayer().camera->x && y == listenplayer().camera->y)
-			sep = NORM_SEP;
-		
-		if (!rc)
+		if (!S_AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep))
 			return;
 	}
 	else
@@ -987,7 +966,6 @@ void S_ResumeSound (void)
 // joek - from choco again
 void S_UpdateSounds (void *listener_p)
 {
-	int		audible;
 	int		cnum;
 	float		volume;
 	int		sep;
@@ -1073,28 +1051,11 @@ void S_UpdateSounds (void *listener_p)
 						x = c->x;
 						y = c->y;
 					}
-					
-					if (co_zdoomsoundcurve)
-					{
-						audible = S_AdjustZdoomSoundParams(	listener, 
-															x, y,
-															&volume,
-															&sep);
-					}
-					else
-					{					
-						audible = S_AdjustSoundParams(	listener, 
-														x, y,
-														&volume,
-														&sep);
-					}
-
-					if (!audible)
-					{
-						S_StopChannel(cnum);
-					}
-					else
+				
+					if (S_AdjustSoundParams(listener, x, y, &volume, &sep))	
 						I_UpdateSoundParams(c->handle, volume, sep, NORM_PITCH);
+					else
+						S_StopChannel(cnum);
 				}
 			}
 			else
