@@ -334,7 +334,7 @@ bool S_CompareChannels(const channel_t &a, const channel_t &b)
 // Returns -1 if no channels are availible.
 // Returns the number of the availible channel otherwise.
 //
-int S_GetChannel(void*	origin, sfxinfo_t* sfxinfo, float volume, int priority)
+int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_instances)
 {
 	// not a valid sound	
 	if (!sfxinfo)
@@ -353,12 +353,11 @@ int S_GetChannel(void*	origin, sfxinfo_t* sfxinfo, float volume, int priority)
 
 	// Limit the number of identical sounds playing at once
 	// tries to keep the plasma rifle from hogging all the channels
-	static const int max_duplicates = 3;
-	for (size_t i = 0, duplicates = 0; i < numChannels; i++)
+	for (size_t i = 0, instances = 0; i < numChannels; i++)
 	{
 		if (Channel[i].sound_id == sound_id)
 		{
-			if (++duplicates >= max_duplicates)
+			if (++instances >= max_instances)
 				return S_CompareChannels(tempchan, Channel[i]) ? i : -1;
 		}
 	}
@@ -506,17 +505,61 @@ bool S_AdjustSoundParams(	const AActor*	listener,
 
 
 //
+// S_CalculateSoundPriority
+//
+// Determines a priority number for the sound effect, where the higher number
+// indicates greater priority should be given to this sound effect.
+//
+int S_CalculateSoundPriority(const fixed_t* pt, int channel, int attenuation)
+{
+	if (channel == CHAN_ANNOUNCER || channel == CHAN_GAMEINFO)
+		return 1000;
+	if (channel == CHAN_INTERFACE)
+		return 800;
+
+	int priority = 0;
+
+	// Set up the sound channel's priority
+	switch (channel)
+	{
+		case CHAN_WEAPON:
+			priority = 150;
+			break;
+		case CHAN_VOICE:
+			priority = 100;
+			break;
+		case CHAN_BODY:
+			priority = 75;
+			break;
+		case CHAN_ITEM:
+			priority = 0;
+			break;
+	}
+
+	if (attenuation == ATTN_NONE)
+		priority += 50;
+	else if (attenuation == ATTN_IDLE || attenuation == ATTN_STATIC)
+		priority -= 50;
+
+	// Give extra priority to sounds made by the player we're viewing
+	if (listenplayer().camera && pt == &listenplayer().camera->x)
+		priority += 500;
+
+	return priority;
+}
+
+
+//
+// S_StartSound
+//
 // joek - choco's S_StartSoundAtVolume with some zdoom code
 // a bit of a whore of a funtion but she works ok
 //
-
-static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
+static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	                  int sfx_id, float volume, int attenuation, bool looping)
 {
 	int		sep;
-	int		priority = 0;
 
-	// check volume +ve
 	if (volume <= 0.0f)
 		return;
 
@@ -558,6 +601,9 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		if (sfxinfo->link)
 			sfxinfo = sfxinfo->link;
 	}
+
+	if (sfxinfo->lumpnum == sfx_empty)
+		return;
 	
 	if (listenplayer().camera && attenuation != ATTN_NONE)
 	{
@@ -575,41 +621,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			volume = snd_sfxvolume;
 	}
 
-	// Set up the sound channel's priority
-	switch (channel)
-	{
-		case CHAN_ANNOUNCER:
-		case CHAN_GAMEINFO:
-			priority = 1000;
-			break;
-		case CHAN_INTERFACE:
-			priority = 800;
-			break;
-		case CHAN_WEAPON:
-			priority = 150;
-			break;
-		case CHAN_VOICE:
-			priority = 100;
-			break;
-		case CHAN_BODY:
-			priority = 75;
-			break;
-		case CHAN_ITEM:
-			priority = 0;
-			break;
-	}
-
-	if (attenuation == ATTN_NONE)
-		priority += 50;
-	else if (attenuation == ATTN_IDLE || attenuation == ATTN_STATIC)
-		priority -= 50;
-
-	// Give extra priority to sounds made by the player we're viewing
-	if (listenplayer().camera && pt == &listenplayer().camera->x)
-		priority += 20;
-
-	if (sfxinfo->lumpnum == sfx_empty)
-		priority = -1000;
+	int priority = S_CalculateSoundPriority(pt, channel, attenuation);
 
 	// joek - hack for silent bfg - stop player's weapon sounds if grunting
 	if (sfx_id == sfx_noway || sfx_id == sfx_oof)
@@ -627,8 +639,12 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	if (channel != CHAN_ANNOUNCER)
 		S_StopSound(pt, channel);
 
+	// How many instances of the same sfx can be playing concurrently
+	// Allow 3 of all sounds except announcer sfx
+	unsigned int max_instances = (channel == CHAN_ANNOUNCER) ? 1 : 3;
+
 	// try to find a channel
-	int cnum = S_GetChannel(pt, sfxinfo, volume, priority);
+	int cnum = S_GetChannel(sfxinfo, volume, priority, max_instances);
 
 	// no channel found
 	if (cnum < 0)
