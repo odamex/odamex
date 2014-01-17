@@ -140,8 +140,6 @@ EXTERN_CVAR (co_level8soundfeature)
 
 size_t			numChannels;
 
-static int		nextcleanup;
-
 //
 // [RH] Print sound debug info. Called from D_Display()
 //
@@ -273,10 +271,6 @@ void S_Init (float sfxVolume, float musicVolume)
 
 	// no sounds are playing, and they are not mus_paused
 	mus_paused = 0;
-
-	// Note that sounds have not been cached (yet).
-	for (int j = 1; j < numsfx; j++)
-		S_sfx[j].usefulness = -1;
 }
 
 
@@ -295,8 +289,6 @@ void S_Stop (void)
 
 	// [RH] This is a lot simpler now.
 	S_ChangeMusic (std::string(level.music, 8), true);
-
-	nextcleanup = 15;
 }
 
 
@@ -314,8 +306,6 @@ void S_Start (void)
 
 	// [RH] This is a lot simpler now.
 	S_ChangeMusic (std::string(level.music, 8), true);
-
-	nextcleanup = 15;
 }
 
 
@@ -653,10 +643,6 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	if (handle < 0)
 		return;
 
-	// increase the usefulness
-	if (sfxinfo->usefulness++ < 0)
-		sfxinfo->usefulness = 1;
-
 	Channel[cnum].handle = handle;
 	Channel[cnum].sfxinfo = sfxinfo;
 	Channel[cnum].sound_id = sfx_id;
@@ -827,13 +813,7 @@ static void S_StopChannel(unsigned int cnum)
 	channel_t* c = &Channel[cnum];
 
 	if (c->sfxinfo && c->handle >= 0)
-	{
-		// stop the sound playing
 		I_StopSound(c->handle);
-
-		// degrade usefulness of sound data
-		c->sfxinfo->usefulness--;
-	}	
 
 	c->clear();
 }
@@ -941,26 +921,6 @@ void S_UpdateSounds (void *listener_p)
 	channel_t*	c;
 
 	AActor *listener = (AActor *)listener_p;
-
-    // Clean up unused data.
-    // This is currently not done for 16bit (sounds cached static).
-    // DOS 8bit remains.
-    /*if (gametic > nextcleanup)
-	{
-	for (i=1 ; i<NUMSFX ; i++)
-	{
-	if (S_sfx[i].usefulness < 1
-	&& S_sfx[i].usefulness > -1)
-	{
-	if (--S_sfx[i].usefulness == -1)
-	{
-	Z_ChangeTag(S_sfx[i].data, PU_CACHE);
-	S_sfx[i].data = 0;
-}
-}
-}
-	nextcleanup = gametic + 15;
-}*/
 
 	for (cnum=0 ; cnum < (int)numChannels ; cnum++)
 	{
@@ -1201,7 +1161,6 @@ int S_AddSoundLump (char *logicalname, int lump)
 	strcpy (S_sfx[numsfx].name, logicalname);
 	S_sfx[numsfx].data = NULL;
 	S_sfx[numsfx].link = NULL;
-	S_sfx[numsfx].usefulness = 0;
 	S_sfx[numsfx].lumpnum = lump;
 	return numsfx++;
 }

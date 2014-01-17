@@ -46,11 +46,6 @@ struct sfxinfo_struct
 
 	struct sfxinfo_struct *link;
 
-	// this is checked every second to see if sound
-	// can be thrown out (if 0, then decrement, if -1,
-	// then throw out, if > 0, then it is in use)
-	int 		usefulness;
-
 	int 		lumpnum;				// lump number of sfx
 	unsigned int ms;					// [RH] length of sfx in milliseconds
 	unsigned int next, index;			// [RH] For hashing
