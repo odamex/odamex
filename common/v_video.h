@@ -501,6 +501,9 @@ bool V_UsePillarBox();
 bool V_UseLetterBox();
 bool V_UseWidescreen();
 
+void V_DrawFPSWidget();
+void V_DrawFPSTicker();
+
 #endif // __V_VIDEO_H__
 
 

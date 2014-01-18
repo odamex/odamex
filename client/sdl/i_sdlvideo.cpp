@@ -48,6 +48,8 @@
 
 EXTERN_CVAR (vid_autoadjust)
 EXTERN_CVAR (vid_vsync)
+EXTERN_CVAR (vid_displayfps)
+EXTERN_CVAR (vid_ticker)
 
 CVAR_FUNC_IMPL(vid_vsync)
 {
@@ -281,6 +283,14 @@ void SDLVideo::SetOldPalette(byte *doompalette)
 
 void SDLVideo::UpdateScreen(DCanvas *canvas)
 {
+	// Draws frame time and cumulative fps
+	if (vid_displayfps)
+		V_DrawFPSWidget();
+
+    // draws little dots on the bottom of the screen
+    if (vid_ticker)
+		V_DrawFPSTicker();
+
 	if (palettechanged)
 	{
 		// m_Private may or may not be the primary surface (sdlScreen)
