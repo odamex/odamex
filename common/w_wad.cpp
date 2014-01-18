@@ -135,8 +135,39 @@ const gamewadinfo_t doomwadnames[] =
 		false
 	},
 
-    {	"FREEDOOM.WAD",
-		{ "" },
+	{	"FREEDOOM1.WAD",
+		{ "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
+		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
+		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
+		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
+		},
+		false
+	},
+
+	{	"FREEDOOMU.WAD",							// old alias for FREEDOOM1.WAD
+		{ "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
+		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
+		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
+		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
+		},
+		false
+	},
+
+    {	"FREEDOOM2.WAD",
+		{ "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
+		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
+		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
+		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
+		},
+		false
+	},
+
+    {	"FREEDOOM.WAD",								// old alias for FREEDOOM2.WAD
+		{ "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
+		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
+		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
+		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
+		},
 		false
 	},
 
