@@ -249,40 +249,42 @@ size_t StdStringRFind(const std::string& haystack, const std::string& needle,
     return StdStringFind(haystack, needle, pos, n, CIS, true);
 }
 
-static std::string& StdStringToLowerBase(std::string& lower)
+static std::string& StdStringToLowerBase(std::string& lower, size_t n)
 {
-	std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+	std::string::iterator itend = lower.begin() + std::min(lower.length(), n);
+	std::transform(lower.begin(), itend, lower.begin(), ::tolower);
 	return lower;
 }
 
-std::string StdStringToLower(const std::string& str)
+std::string StdStringToLower(const std::string& str, size_t n)
 {
-	std::string lower(str);
-	return StdStringToLowerBase(lower);
+	std::string lower(str, n);
+	return StdStringToLowerBase(lower, n);
 }
 
-std::string StdStringToLower(const char* str)
+std::string StdStringToLower(const char* str, size_t n)
 {
-	std::string lower(str);
-	return StdStringToLowerBase(lower);
+	std::string lower(str, n);
+	return StdStringToLowerBase(lower, n);
 }
 
-static std::string& StdStringToUpperBase(std::string& upper)
+static std::string& StdStringToUpperBase(std::string& upper, size_t n)
 {
-	std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+	std::string::iterator itend = upper.begin() + std::min(upper.length(), n);
+	std::transform(upper.begin(), itend, upper.begin(), ::toupper);
     return upper;
 }
 
-std::string StdStringToUpper(const std::string& str)
+std::string StdStringToUpper(const std::string& str, size_t n)
 {
-	std::string upper(str);
-	return StdStringToUpperBase(upper);
+	std::string upper(str, n);
+	return StdStringToUpperBase(upper, n);
 }
 
-std::string StdStringToUpper(const char* str)
+std::string StdStringToUpper(const char* str, size_t n)
 {
-	std::string upper(str);
-	return StdStringToUpperBase(upper);
+	std::string upper(str, n);
+	return StdStringToUpperBase(upper, n);
 }
 
 // [AM] Convert an argc/argv into a vector of strings.
