@@ -251,39 +251,39 @@ size_t StdStringRFind(const std::string& haystack, const std::string& needle,
 
 static std::string& StdStringToLowerBase(std::string& lower, size_t n)
 {
-	std::string::iterator itend = lower.begin() + std::min(lower.length(), n);
+	std::string::iterator itend = n >= lower.length() ? lower.end() : lower.begin() + n;
 	std::transform(lower.begin(), itend, lower.begin(), ::tolower);
 	return lower;
 }
 
 std::string StdStringToLower(const std::string& str, size_t n)
 {
-	std::string lower(str, n);
+	std::string lower(str, 0, n);
 	return StdStringToLowerBase(lower, n);
 }
 
 std::string StdStringToLower(const char* str, size_t n)
 {
-	std::string lower(str, n);
+	std::string lower(str, 0, n);
 	return StdStringToLowerBase(lower, n);
 }
 
 static std::string& StdStringToUpperBase(std::string& upper, size_t n)
 {
-	std::string::iterator itend = upper.begin() + std::min(upper.length(), n);
+	std::string::iterator itend = n >= upper.length() ? upper.end() : upper.begin() + n;
 	std::transform(upper.begin(), itend, upper.begin(), ::toupper);
-    return upper;
+	return upper;
 }
 
 std::string StdStringToUpper(const std::string& str, size_t n)
 {
-	std::string upper(str, n);
+	std::string upper(str, 0, n);
 	return StdStringToUpperBase(upper, n);
 }
 
 std::string StdStringToUpper(const char* str, size_t n)
 {
-	std::string upper(str, n);
+	std::string upper(str, 0, n);
 	return StdStringToUpperBase(upper, n);
 }
 
