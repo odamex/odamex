@@ -114,13 +114,6 @@ static int HistSize;
 #define NUMNOTIFIES 4
 
 EXTERN_CVAR (con_notifytime)
-CVAR_FUNC_IMPL (hud_scaletext)
-{
-	if (var < 1.0f)
-		var.Set(1.0f);
-	if (var > 4.0f)
-		var.Set(4.0f);
-}
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();

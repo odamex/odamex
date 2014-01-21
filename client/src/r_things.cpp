@@ -61,7 +61,6 @@ static void R_InitCrosshair();
 static byte crosshair_trans[256];
 
 static int crosshair_color_custom = 0xb0;
-EXTERN_CVAR (hud_crosshaircolor)
 CVAR_FUNC_IMPL (hud_crosshaircolor)
 {
 	DWORD *palette = GetDefaultPalette()->colors;

@@ -23,6 +23,7 @@
 
 
 #include <cstring>
+#include <cmath>
 #include <stdio.h>
 
 #include "cmdlib.h"
@@ -151,7 +152,7 @@ cvar_t::~cvar_t ()
 	}
 }
 
-void cvar_t::ForceSet(const char* val)
+void cvar_t::ForceSet(const char* valstr)
 {
 	// [SL] 2013-04-16 - Latched CVARs do not change values until the next map.
 	// Servers and single-player games should abide by this behavior but
@@ -160,40 +161,49 @@ void cvar_t::ForceSet(const char* val)
 		(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION))
 	{
 		m_Flags |= CVAR_MODIFIED;
-		if (val)
-			m_LatchedString = val;
+		if (valstr)
+			m_LatchedString = valstr;
 		else
 			m_LatchedString.clear();
 	}
 	else
 	{
 		m_Flags |= CVAR_MODIFIED;
-		if (val)
+
+		bool numerical_value = IsRealNum(valstr);
+		bool integral_type = m_Type == CVARTYPE_BOOL || m_Type == CVARTYPE_BYTE ||
+					m_Type == CVARTYPE_WORD || m_Type == CVARTYPE_INT;
+		bool floating_type = m_Type == CVARTYPE_FLOAT;
+		float valf = numerical_value ? atof(valstr) : 0.0f;
+
+		// perform rounding to nearest integer for integral types
+		if (integral_type)
+			valf = floor(valf + 0.5f);
+
+		valf = clamp(valf, m_MinValue, m_MaxValue);
+
+		if (numerical_value || integral_type || floating_type)
 		{
-			if (IsRealNum(val))
-			{
-				// [SL] clamp the float value to the min/max range and update m_String
-				m_Value = clamp((float)atof(val), m_MinValue, m_MaxValue);
-				char str[32];
-				sprintf(str, "%g", m_Value);
-				m_String = str;
-			}
-			else
-			{
-				m_String = val;
-				m_Value = clamp(0.0f, m_MinValue, m_MaxValue);
-			}
+			// generate m_String based on the clamped valf value
+			char tmp[32];
+			sprintf(tmp, "%g", valf);
+			m_String = tmp;
 		}
 		else
 		{
-			m_String.clear();
-			m_Value = clamp(0.0f, m_MinValue, m_MaxValue);
+			// just set m_String to valstr
+			if (valstr)
+				m_String = valstr;
+			else
+				m_String.clear();
 		}
+
+		m_Value = valf;
 
 		if (m_Flags & CVAR_USERINFO)
 			D_UserInfoChanged(this);
 		if (m_Flags & CVAR_SERVERINFO)
-			D_SendServerInfoChange(this, val);
+			D_SendServerInfoChange(this, m_String.c_str());
 
 		if (m_UseCallback)
 			Callback();

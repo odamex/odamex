@@ -49,17 +49,11 @@ extern byte *Ranges;
 
 int V_TextScaleXAmount()
 {
-	if (hud_scaletext < 1.0f)
-		return 1;
-
 	return int(hud_scaletext);
 }
 
 int V_TextScaleYAmount()
 {
-	if (hud_scaletext < 1.0f)
-		return 1;
-
 	return int(hud_scaletext);
 }
 

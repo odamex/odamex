@@ -70,8 +70,12 @@ CVAR (am_ovteleportcolor,	"ff a3 00", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_N
 // -------
 
 CVAR (print_stdout, "0", "", CVARTYPE_BOOL, CVAR_ARCHIVE)
+
 CVAR (con_notifytime, "3", "", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_RANGE(con_scrlock, "1", "", CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
+CVAR_RANGE(			con_scrlock, "1", "",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
 CVAR (con_midtime, "3", "", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 
@@ -229,31 +233,50 @@ CVAR (idmypos, "0", "Shows current player position on map",	CVARTYPE_BOOL, CVAR_
 
 // Heads up display
 // ----------------
-CVAR (hud_crosshairdim, "0", "Crosshair transparency",
-      CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (hud_crosshairscale, "0", "Crosshair scaling",
-      CVARTYPE_WORD, CVAR_ARCHIVE)
-CVAR_FUNC_DECL (hud_crosshaircolor, "ff 00 00", "Crosshair color",
+CVAR(			hud_crosshairdim, "0", "Crosshair transparency",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			hud_crosshairscale, "0", "Crosshair scaling",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_FUNC_DECL(	hud_crosshaircolor, "ff 00 00", "Crosshair color",
                 CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (hud_crosshairhealth, "0", "Color of crosshair represents health level",
-      CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n// 1: New Odamex HUD",
-      CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (hud_gamemsgtype, "2", "Game message type", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (hud_revealsecrets, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (hud_scale, "0", "HUD scaling", CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (hud_scalescoreboard, "0", "Scoreboard scaling", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_FUNC_DECL (hud_scaletext, "2", "Scaling multiplier for chat and midprint",
-                CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_FUNC_DECL (hud_targetcount, "2", "Number of players to reveal",
-                CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (hud_targetnames, "1", "Show names of players you're aiming at",
-      CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (hud_timer, "1", "Show the HUD timer", CVARTYPE_BOOL,
-      CVAR_ARCHIVE)
-CVAR (hud_transparency, "0.5", "HUD transparency",	CVARTYPE_FLOAT,
-      CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (hud_heldflag, "1", "Show the held flag border", CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			hud_crosshairhealth, "0", "Color of crosshair represents health level",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_RANGE(		hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n// 1: New Odamex HUD",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(		hud_gamemsgtype, "2", "Game message type",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 2.0f)
+
+CVAR(			hud_revealsecrets, "0", "Print HUD message when secrets are discovered",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			hud_scale, "0", "HUD scaling",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			hud_scalescoreboard, "0", "Scoreboard scaling",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE(		hud_scaletext, "2", "Scaling multiplier for chat and midprint",
+                CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 4.0f)
+
+CVAR_RANGE(		hud_targetcount, "2", "Number of players to reveal",
+                CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 32.0f)
+
+CVAR(			hud_targetnames, "1", "Show names of players you're aiming at",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			hud_timer, "1", "Show the HUD timer",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_RANGE(		hud_transparency, "0.5", "HUD transparency",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR(			hud_heldflag, "1", "Show the held flag border",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                       // A
@@ -283,14 +306,27 @@ CVAR (chatmacro0, "No", "",	CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE
 // Sound and music
 // ---------------
 
-CVAR_FUNC_DECL (snd_sfxvolume, "0.5", "Sound volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)      // Sound volume
-CVAR_FUNC_DECL (snd_musicvolume, "0.5", "Music volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // Music volume
-CVAR_FUNC_DECL (snd_announcervolume, "1.0", "Announcer volume",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // CTF announcer volume
-CVAR (snd_voxtype, "2", "Voice announcer type", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (snd_gamesfx, "1", "Game SFX", CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_ARCHIVE)                                         // Stereo switch
-CVAR (snd_samplerate, "22050", "Samplerate",	CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)             // Sample rate
-CVAR_FUNC_DECL (snd_channels, "12", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)     // Number of channels available
+CVAR_RANGE_FUNC_DECL(snd_sfxvolume, "0.5", "Sound effect volume",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE_FUNC_DECL(snd_musicvolume, "0.5", "Music volume",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(		snd_announcervolume, "1.0", "Announcer volume",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(		snd_voxtype, "2", "Voice announcer type",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 2.0f)
+
+CVAR(			snd_gamesfx, "1", "Game SFX", CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_RANGE(		snd_samplerate, "22050", "Audio samplerate",
+				CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 11025.0f, 192000.0f)
+
+CVAR_RANGE_FUNC_DECL(snd_channels, "12", "Number of channels for sound effects",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 4.0f, 32.0f)
 
 //
 // C_GetDefaultMuiscSystem()
@@ -319,9 +355,12 @@ static char *C_GetDefaultMusicSystem()
 	return str;
 }
 
-CVAR_FUNC_DECL (snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
-		CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (snd_musicdevice, "", "Music output device for the chosen music subsystem", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(			snd_musicdevice, "", "Music output device for the chosen music subsystem",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 
 // Status bar
 // ----------
@@ -333,8 +372,11 @@ CVAR_FUNC_DECL (st_scale, "1", "",	CVARTYPE_BYTE, CVAR_ARCHIVE)
 
 // Gamma correction level, 1 - 8
 CVAR_FUNC_DECL (gammalevel, "1", "Gamma correction level, 1 - 8",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 // ZDoom style gamma correction?
-CVAR_FUNC_DECL (vid_gammatype, "0", "Select between Doom and ZDoom gamma correction",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_RANGE(	vid_gammatype, "0", "Select between Doom and ZDoom gamma correction",
+			CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
 // Type of crosshair, 0 means none
 CVAR_FUNC_DECL (hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Column optimization method

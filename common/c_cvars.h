@@ -209,6 +209,10 @@ cvar_t* GetFirstCvar(void);
     extern void cvarfunc_##name(cvar_t &); \
     cvar_t name (#name, def, help, type, flags, cvarfunc_##name);
 
+#define CVAR_RANGE_FUNC_DECL(name,def,help,type,flags,minval,maxval) \
+    extern void cvarfunc_##name(cvar_t &); \
+    cvar_t name (#name, def, help, type, flags, cvarfunc_##name, minval, maxval);
+
 #define CVAR_FUNC_IMPL(name) \
     EXTERN_CVAR(name) \
     void cvarfunc_##name(cvar_t &var)
