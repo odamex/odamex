@@ -119,6 +119,13 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 		}
 	}
 
+	// capitalize the map name and WAD file names
+	maplist_entry.map = StdStringToUpper(maplist_entry.map);
+
+	for (std::vector<std::string>::iterator it = maplist_entry.wads.begin();
+		it != maplist_entry.wads.end(); ++it)
+		*it = StdStringToUpper(*it);
+
 	// Puts the map into its proper place
 	this->maplist.insert(this->maplist.begin() + position, maplist_entry);
 

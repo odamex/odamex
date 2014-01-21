@@ -614,15 +614,16 @@ bool G_LoadWad(const std::string &str, const std::string &mapname)
 		}
 		else if (M_ExtractFileExtension(com_token, ext))
 		{
-			if (ext == "wad" && !W_IsIWAD(com_token))
+			if (iequals(ext, "wad") && !W_IsIWAD(com_token))
 				newwadfiles.push_back(com_token);
-			else if (ext == "deh" || ext == "bex")
+			else if (iequals(ext, "deh") || iequals(ext, "bex"))
 				newpatchfiles.push_back(com_token);		// Patch file
 		}
 	}
 
 	return G_LoadWad(newwadfiles, newpatchfiles, nohashes, nohashes, mapname);
 }
+
 
 BEGIN_COMMAND (map)
 {

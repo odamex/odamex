@@ -237,12 +237,12 @@ static std::string BaseFileSearchDir(std::string dir, std::string file, std::str
 {
 	std::string found;
 
-	if(dir[dir.length() - 1] != PATHSEPCHAR)
+	if (dir[dir.length() - 1] != PATHSEPCHAR)
 		dir += PATHSEP;
 
-	std::transform(hash.begin(), hash.end(), hash.begin(), toupper);
+	hash = StdStringToUpper(hash);
 	std::string dothash = ".";
-	if(hash.length())
+	if (hash.length())
 		dothash += hash;
 	else
 		dothash = "";
@@ -253,30 +253,29 @@ static std::string BaseFileSearchDir(std::string dir, std::string file, std::str
 	struct dirent **namelist = 0;
 	int n = scandir(dir.c_str(), &namelist, 0, alphasort);
 
-	for(int i = 0; i < n && namelist[i]; i++)
+	for (int i = 0; i < n && namelist[i]; i++)
 	{
 		std::string d_name = namelist[i]->d_name;
 
 		M_Free(namelist[i]);
 
-		if(!found.length())
+		if (found.empty())
 		{
-			if(d_name == "." || d_name == "..")
+			if (d_name == "." || d_name == "..")
 				continue;
 
-			std::string tmp = d_name;
-			std::transform(tmp.begin(), tmp.end(), tmp.begin(), toupper);
+			std::string tmp = StdStringToUpper(d_name);
 
-			if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
+			if (file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 			{
-				std::string local_file = (dir + d_name).c_str();
-				std::string local_hash = W_MD5(local_file);
+				std::string local_file(dir + d_name);
+				std::string local_hash(W_MD5(local_file));
 
-				if(!hash.length() || hash == local_hash)
+				if (hash.empty() || hash == local_hash)
 				{
 					found = d_name;
 				}
-				else if(hash.length())
+				else if (!hash.empty())
 				{
 					Printf (PRINT_HIGH, "WAD at %s does not match required copy\n", local_file.c_str());
 					Printf (PRINT_HIGH, "Local MD5: %s\n", local_hash.c_str());
@@ -299,30 +298,29 @@ static std::string BaseFileSearchDir(std::string dir, std::string file, std::str
 
 	do
 	{
-		if(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
 
-		std::string tmp = FindFileData.cFileName;
-		std::transform(tmp.begin(), tmp.end(), tmp.begin(), toupper);
+		std::string tmp = StdStringToUpper(FindFileData.cFileName);
 
-		if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
+		if (file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 		{
-			std::string local_file = (dir + FindFileData.cFileName).c_str();
-			std::string local_hash = W_MD5(local_file);
+			std::string local_file(dir + FindFileData.cFileName);
+			std::string local_hash(W_MD5(local_file));
 
-			if(!hash.length() || hash == local_hash)
+			if (hash.empty() || hash == local_hash)
 			{
 				found = FindFileData.cFileName;
 				break;
 			}
-			else if(hash.length())
+			else if (!hash.empty())
 			{
 				Printf (PRINT_HIGH, "WAD at %s does not match required copy\n", local_file.c_str());
 				Printf (PRINT_HIGH, "Local MD5: %s\n", local_hash.c_str());
 				Printf (PRINT_HIGH, "Required MD5: %s\n\n", hash.c_str());
 			}
 		}
-	} while(FindNextFile(hFind, &FindFileData));
+	} while (FindNextFile(hFind, &FindFileData));
 
 	FindClose(hFind);
 #endif
@@ -480,13 +478,13 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 {
 	#ifdef _WIN32
 		// absolute path?
-		if(file.find(':') != std::string::npos)
+		if (file.find(':') != std::string::npos)
 			return file;
 
 		const char separator = ';';
 	#else
 		// absolute path?
-		if(file[0] == PATHSEPCHAR || file[0] == '~')
+		if (file[0] == PATHSEPCHAR || file[0] == '~')
 			return file;
 
 		const char separator = ':';
@@ -497,8 +495,8 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 	if (M_FileExists(file))
 		return file;
 
-	std::transform(file.begin(), file.end(), file.begin(), toupper);
-	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
+	file = StdStringToUpper(file);
+	ext = StdStringToUpper(ext);
 	std::vector<std::string> dirs;
 
 	dirs.push_back(startdir);
@@ -516,15 +514,15 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
-	for(size_t i = 0; i < dirs.size(); i++)
+	for (size_t i = 0; i < dirs.size(); i++)
 	{
 		std::string found = BaseFileSearchDir(dirs[i], file, ext, hash);
 
-		if(found.length())
+		if (!found.empty())
 		{
 			std::string &dir = dirs[i];
 
-			if(dir[dir.length() - 1] != PATHSEPCHAR)
+			if (dir[dir.length() - 1] != PATHSEPCHAR)
 				dir += PATHSEP;
 
 			return dir + found;
