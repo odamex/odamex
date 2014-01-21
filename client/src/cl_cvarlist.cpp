@@ -69,15 +69,17 @@ CVAR (am_ovteleportcolor,	"ff a3 00", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_N
 // Console
 // -------
 
-CVAR (print_stdout, "0", "", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR(				print_stdout, "0", "Print console text to stdout",
+					CVARTYPE_BOOL, CVAR_ARCHIVE)
 
-CVAR (con_notifytime, "3", "", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_RANGE(			con_notifytime, "3", "Number of seconds to display messages to top of the HUD",
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
+
+CVAR_RANGE(			con_midtime, "3", "Number of seconds to display messages in the middle of the screen",
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
 
 CVAR_RANGE(			con_scrlock, "1", "",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
-
-CVAR (con_midtime, "3", "", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
 
 
 CVAR_FUNC_DECL (msg0color, "6", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -91,43 +93,80 @@ CVAR_FUNC_DECL (msgmidcolor, "5", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENA
 // ------------
 
 // Determines whether to draw the scores on intermission.
-CVAR (wi_newintermission, "0", "whether to draw the scores on intermission", CVARTYPE_STRING, CVAR_ARCHIVE)
+CVAR(				wi_newintermission, "0", "Draw the scores on intermission",
+					CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 
 // Menus
 // -----
 
-CVAR (ui_dimamount, "0.7", "", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (ui_dimcolor, "00 00 00", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_FUNC_DECL (ui_transred, "0", "", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_FUNC_DECL (ui_transgreen, "0", "", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_FUNC_DECL (ui_transblue, "0", "", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_RANGE(			ui_dimamount, "0.7", "",
+					CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR(				ui_dimcolor, "00 00 00", "",
+					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE_FUNC_DECL(ui_transred, "0", "",
+					CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
+
+CVAR_RANGE_FUNC_DECL(ui_transgreen, "0", "",
+					CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
+
+CVAR_RANGE_FUNC_DECL(ui_transblue, "0", "",
+					CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
+
 
 // Gameplay/Other
 // --------------
 
-// GhostlyDeath <August 1, 2008> -- Join/Part Sound
-// [ML] 8/20/2010 - Join sound, part sound
-CVAR (cl_connectalert, "1", "Plays a sound when a player joins", CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (cl_disconnectalert, "1", "Plays a sound when a player quits", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR(				cl_connectalert, "1", "Plays a sound when a player joins",
+					CVARTYPE_BOOL, CVAR_ARCHIVE)
 
-CVAR (cl_switchweapon, "1", "", CVARTYPE_BOOL, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	// WPSW_ALWAYS
-CVAR (cl_weaponpref_fst,	"0", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref_csw,	"3", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref_pis,	"4", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref_sg,		"5", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref_ssg,	"7", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref_cg,		"6", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref_rl,		"1", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref_pls,	"8", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_weaponpref_bfg,	"2", "", CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR(				cl_disconnectalert, "1", "Plays a sound when a player quits",
+					CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_RANGE(			cl_switchweapon, "1", "Switch upon weapon pickup (0 = never, 1 = always, " \
+					"2 = use weapon preferences)",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)	
+
+CVAR_RANGE(			cl_weaponpref_fst, "0", "Weapon preference level for fists",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
+
+CVAR_RANGE(			cl_weaponpref_csw, "3", "Weapon preference level for chainsaw",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
+
+CVAR_RANGE(			cl_weaponpref_pis, "4", "Weapon preference level for pistol",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
+
+CVAR_RANGE(			cl_weaponpref_sg, "5", "Weapon preference level for shotgun",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
+
+CVAR_RANGE(			cl_weaponpref_ssg, "7", "Weapon preference level for super shotgun",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
+
+CVAR_RANGE(			cl_weaponpref_cg, "6", "Weapon preference level for chaingun",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
+
+CVAR_RANGE(			cl_weaponpref_rl, "1", "Weapon preference level for rocket launcher",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
+
+CVAR_RANGE(			cl_weaponpref_pls, "8", "Weapon preference level for plasma rifle",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
+
+CVAR_RANGE(			cl_weaponpref_bfg, "2", "Weapon preference level for BFG9000",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
 
 #ifdef GCONSOLE
-	CVAR_FUNC_DECL (use_joystick, "1", "", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR_FUNC_DECL(		use_joystick, "1", "",
+					CVARTYPE_BOOL, CVAR_ARCHIVE)
 #else
-	CVAR_FUNC_DECL (use_joystick, "0", "", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR_FUNC_DECL(		use_joystick, "0", "",
+					CVARTYPE_BOOL, CVAR_ARCHIVE)
 #endif
-CVAR_FUNC_DECL (joy_active, "0", "", CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_FUNC_DECL(		joy_active, "0", "Selects the joystick device to use",
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 CVAR (joy_strafeaxis, "0", "", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_forwardaxis, "1", "", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_turnaxis, "2", "", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -136,22 +175,17 @@ CVAR (joy_sensitivity, "10.0", "", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLED
 CVAR (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_ARCHIVE)
 CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_ARCHIVE)
 
-// NES - Currently unused. Make some use of these if possible.
-//CVAR (i_remapkeypad, "1", CVAR_ARCHIVE)
-//CVAR (use_mouse, "1", CVAR_ARCHIVE)
-//CVAR (joy_speedmultiplier, "1", CVAR_ARCHIVE)
-//CVAR (joy_xsensitivity, "1", CVAR_ARCHIVE)
-//CVAR (joy_ysensitivity, "-1", CVAR_ARCHIVE)
-//CVAR (joy_xthreshold, "0.15", CVAR_ARCHIVE)
-//CVAR (joy_ythreshold, "0.15", CVAR_ARCHIVE)
 
-CVAR (show_messages, "1", "", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR(				show_messages, "1", "",
+					CVARTYPE_BOOL, CVAR_ARCHIVE)
 
-CVAR (mute_spectators, "0", "Mute spectators chat until next disconnect", CVARTYPE_BOOL, 0)
-CVAR (mute_enemies, "0", "Mute enemy players chat until next disconnect", CVARTYPE_BOOL, 0)
+CVAR(				mute_spectators, "0", "Mute spectators chat until next disconnect",
+					CVARTYPE_BOOL, CVAR_NULL)
 
-// Rate of client updates
-CVAR_FUNC_DECL (rate, "200", "Rate of client updates in multiplayer mode", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR(				mute_enemies, "0", "Mute enemy players chat until next disconnect",
+					CVARTYPE_BOOL, CVAR_NULL)
+
+
 // Maximum number of clients who can connect to the server
 CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Maximum amount of players who can join the game, others are spectators
@@ -159,31 +193,90 @@ CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are sp
 // Maximum number of players that can be on a team
 CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL (cl_autoaim,	"5000", "", CVARTYPE_INT,		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Netcode Settings
 // --------------
 
-CVAR (cl_unlag,				"1", "client opt-in/out for server unlagging", CVARTYPE_BOOL,		CVAR_USERINFO | CVAR_ARCHIVE)
-CVAR_FUNC_DECL (cl_updaterate, "1",	"Update players every N tics", CVARTYPE_BYTE,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_FUNC_DECL (cl_interp,	"1", "Interpolate enemy player positions", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_FUNC_DECL (cl_prednudge,	"0.70", "Smooth out the collisions", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_predictlocalplayer, "1", "Predict local player position", CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (cl_netgraph,				"0", "Show a graph of network related statistics", CVARTYPE_BOOL, CVAR_NULL)
-CVAR (cl_predictweapons, "1", "Draw weapon effects immediately", CVARTYPE_BOOL, CVAR_USERINFO | CVAR_ARCHIVE)
+CVAR_RANGE_FUNC_DECL(rate, "200", "Rate of client updates in multiplayer mode",
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 2000.0f)
+
+CVAR(				cl_unlag, "1", "client opt-in/out for server unlagging",
+					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_ARCHIVE)
+
+CVAR_RANGE(			cl_updaterate, "1",	"Update players every N tics",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 3.0f)
+
+CVAR_RANGE_FUNC_DECL(cl_interp, "1", "Interpolate enemy player positions",
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
+
+CVAR_RANGE(			cl_prednudge,	"0.70", "Smooth out collisions",
+					CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.05f, 1.0f)
+
+CVAR(				cl_predictlocalplayer, "1", "Predict local player position",
+					CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(				cl_predictweapons, "1", "Draw weapon effects immediately",
+					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_ARCHIVE)
+
+CVAR(				cl_netgraph, "0", "Show a graph of network related statistics",
+					CVARTYPE_BOOL, CVAR_NULL)
+
+// Client Preferences
+// ------------------
 
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
-	CVAR (cl_name,		"Xbox Player", "", CVARTYPE_STRING,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR(				cl_name, "Xbox Player", "",
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #else
-	CVAR (cl_name,		"Player", "", CVARTYPE_STRING,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR(				cl_name, "Player", "",
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
-CVAR (cl_color,		"40 cf 00", "", CVARTYPE_STRING,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_gender,	"male", "",	CVARTYPE_STRING,	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR_FUNC_DECL (cl_team,	"blue", "",	CVARTYPE_STRING,		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR (chasedemo, "0", "",	CVARTYPE_BOOL, CVAR_NULL)
+CVAR(				cl_color, "40 cf 00", "",
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR (cl_run,		"0", "Always run",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// Always run? // [Toke - Defaults]
+CVAR(				cl_gender, "male", "",
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_FUNC_DECL(		cl_team, "blue", "",
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE(			cl_autoaim,	"5000", "",
+					CVARTYPE_INT, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 5000.0f)
+
+CVAR(				chasedemo, "0", "",
+					CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(				cl_run, "0", "Always run",
+					CVARTYPE_BOOL, CVAR_ARCHIVE)		// Always run? // [Toke - Defaults]
+
+CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_LATCH)
+
+// Netdemo Preferences
+// --------------------
+
+// Netdemo format string
+CVAR_FUNC_DECL(		cl_netdemoname, "Odamex_%g_%d_%t_%w_%m",
+					"Default netdemo name.  Parses the following tokens:\n// " \
+					"%d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// " \
+					"%n: player name\n// %g: gametype\n// %w: WAD file loaded; " \
+					"either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
+					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+// Screenshot format string
+CVAR_FUNC_DECL(		cl_screenshotname, "Odamex_%g_%d_%t",
+					"Default screenshot name.  Parses the following tokens:\n// " \
+					"%d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// " \
+					"%n: player name\n// %g: gametype\n// %w: WAD file loaded; " \
+					"either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
+					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(				cl_autorecord, "0", "Automatically record netdemos",
+					CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(				cl_splitnetdemos, "0", "Create separate netdemos for each map",
+					CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 // Mouse settings
 // --------------
@@ -510,22 +603,5 @@ CVAR_RANGE_FUNC_DECL(vid_winscale, "1.0", "Resizes the window by a scale factor"
 CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan",
 				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
 
-
-// Netdemo format string
-CVAR_FUNC_DECL (cl_netdemoname, "Odamex_%g_%d_%t_%w_%m",
-				"Default netdemo name.  Parses the following tokens:\n// %d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// %n: player name\n// %g: gametype\n// %w: WAD file loaded; either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
-				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-// Screenshot format string
-CVAR_FUNC_DECL (cl_screenshotname, "Odamex_%g_%d_%t",
-				"Default screenshot name.  Parses the following tokens:\n// %d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// %n: player name\n// %g: gametype\n// %w: WAD file loaded; either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
-				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR(cl_showspawns, "0", "Show spawn points as particle fountains", CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_LATCH)
-
-// Record netdemos automatically
-CVAR (cl_autorecord, "0", "Automatically record netdemos", CVARTYPE_BOOL, CVAR_ARCHIVE)
-// Splits netdemos at the start of everymap
-CVAR (cl_splitnetdemos, "0", "Create separate netdemos for each map", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 VERSION_CONTROL (cl_cvarlist_cpp, "$Id$")

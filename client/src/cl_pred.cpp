@@ -59,16 +59,6 @@ bool predicting;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 
-CVAR_FUNC_IMPL(cl_prednudge)
-{
-	// [SL] 2012-03-23 - Don't allow the client to set it to 0
-	// That would ignore position updates from the server
-	if (var < 0.05f)
-		var.Set(0.05f);
-	if (var > 1.0f)
-		var.Set(1.0f);
-}
-
 //
 // CL_GetSnapshotManager
 //

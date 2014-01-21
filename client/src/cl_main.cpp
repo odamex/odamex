@@ -146,27 +146,15 @@ EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
-EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_predictsectors)
 
 EXTERN_CVAR (mute_spectators)
 EXTERN_CVAR (mute_enemies)
 
-CVAR_FUNC_IMPL (cl_autoaim)
-{
-	if (var < 0)
-		var.Set(0.0f);
-	else if (var > 5000.0f)
-		var.Set(5000.0f);
-}
+EXTERN_CVAR(cl_autoaim)
 
-CVAR_FUNC_IMPL (cl_updaterate)
-{
-	if (var < 1.0f)
-		var.Set(1.0f);
-	else if (var > 3.0f)
-		var.Set(3.0f);
-}
+EXTERN_CVAR(cl_updaterate)
+EXTERN_CVAR(cl_interp)
 
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
@@ -916,12 +904,7 @@ END_COMMAND (serverinfo)
 // rate: takes a kbps value
 CVAR_FUNC_IMPL (rate)
 {
-	const float minrate = 7.0f, maxrate = 2000.0f;
-	if (var < minrate || var > maxrate)
-	{
-		var.Set(clamp((float)var, minrate, maxrate));
-	}
-	else if (connected)
+	if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_rate);
 		MSG_WriteLong(&net_buffer, (int)var);
@@ -3809,14 +3792,8 @@ void CL_RemoveCompletedMovingSectors()
 
 CVAR_FUNC_IMPL (cl_interp)
 {
-	if (var < 0.0f)
-		var.Set(0.0f);
-	if (var > 4.0f)
-		var.Set(4.0f);
-
 	// Resync the world index since the sync offset has changed	
 	CL_ResyncWorldIndex();	
-	
 	netgraph.setInterpolation(var);
 }
 

@@ -807,34 +807,16 @@ int dummy = 0;
 
 CVAR_FUNC_IMPL (ui_transred)
 {
-    if (var > 255)
-        var.Set(255);
-
-    if (var < 0)
-        var.Set(0.0f);
-
     M_SlideUIRed((int)var);
 }
 
 CVAR_FUNC_IMPL (ui_transgreen)
 {
-    if (var > 255)
-        var.Set(255);
-
-    if (var < 0)
-        var.Set(0.0f);
-
     M_SlideUIGreen((int)var);
 }
 
 CVAR_FUNC_IMPL (ui_transblue)
 {
-    if (var > 255)
-        var.Set(255);
-
-    if (var < 0)
-        var.Set(0.0f);
-
     M_SlideUIBlue((int)var);
 }
 
