@@ -211,79 +211,14 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	{
 		if (!gotconback)
 		{
-			BOOL stylize = false;
-			BOOL isRaw = false;
-			patch_t *bg;
-			int num;
-
-			num = W_CheckNumForName ("CONBACK");
-			//num2 = W_CheckNumForName ("M_DOOM");
-			if (num == -1)
-			{
-				stylize = true;
-				num = W_GetNumForName ("CONBACK");
-				isRaw = gameinfo.flags & GI_PAGESARERAW;
-			}
-
-			bg = W_CachePatch (num);
-			//gg = W_CachePatch (num2);
+			patch_t* bg = W_CachePatch(W_GetNumForName("CONBACK"));
 
 			delete conback;
-			if (isRaw)
-				conback = I_AllocateScreen (320, 200, 8);
-			else
-				conback = I_AllocateScreen (screen->width, screen->height, 8);
+			conback = I_AllocateScreen (screen->width, screen->height, 8);
 
 			conback->Lock ();
 
-			if (isRaw)
-				conback->DrawBlock (0, 0, 320, 200, (byte *)bg);
-			else
-				conback->DrawPatch (bg, (screen->width/2)-(bg->width()/2), (screen->height/2)-(bg->height()/2));
-				//conback->DrawPatch (gg, ((screen->width/2)-(gg->width()/2))+3*CleanXfac, ((screen->height/2)-(gg->height()/2)) + 15*CleanYfac);
-
-			if (stylize)
-			{
-				int x, y;
-				byte f = 0, *v = NULL, *i = NULL;
-				byte *fadetable;
-
-				fadetable = (byte *)W_CacheLumpName ("COLORMAP", PU_CACHE);
-
-				for (y = 0; y < conback->height; y++)
-				{
-					i = conback->buffer + conback->pitch * y;
-					if (y < 8 || y > 191)
-					{
-						if (y < 8)
-							f = y;
-						else
-							f = 199 - y;
-						v = fadetable + (30 - f) * 256;
-						for (x = 0; x < conback->width; x++)
-						{
-							*i = v[*i];
-							i++;
-						}
-					}
-					else
-					{
-						for (x = 0; x < conback->width; x++)
-						{
-							if (x <= 8)
-								v = fadetable + (30 - x) * 256;
-							else if (x > 312)
-								v = fadetable + (x - 289) * 256;
-
-							if (v == NULL)
-                                I_FatalError("COuld not stylize the console\n");
-
-							*i = v[*i];
-							i++;
-						}
-					}
-				}
-			}
+			conback->DrawPatch (bg, (screen->width/2)-(bg->width()/2), (screen->height/2)-(bg->height()/2));
 
 			VersionString[0] = 0x11;
 			size_t i;
@@ -857,15 +792,11 @@ void C_DrawConsole (void)
 		}
 		if (ConBottom >= 20)
 		{
-//			if (gamestate == GS_STARTUP)
-//				screen->PrintStr (8, ConBottom - 20, DoomStartupTitle, strlen (DoomStartupTitle));
-//			else
 			screen->PrintStr (left, ConBottom - 20, "\x8c", 1);
-#define MIN(a,b) (((a)<(b))?(a):(b))
 			screen->PrintStr (left + 8, ConBottom - 20,
 						(char *)&CmdLine[2+CmdLine[259]],
-						MIN(CmdLine[0] - CmdLine[259], ConCols - 1));
-#undef MIN
+						MIN(CmdLine[0] - CmdLine[259], (int)ConCols - 1));
+
 			if (cursoron)
 			{
 				screen->PrintStr (left + 8 + (CmdLine[1] - CmdLine[259])* 8,
