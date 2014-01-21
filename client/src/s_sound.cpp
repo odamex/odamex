@@ -123,6 +123,13 @@ CVAR_FUNC_IMPL (snd_announcervolume)
 		var.Set(clamp(var.value(), 0.0f, 1.0f));
 }
 
+CVAR_FUNC_IMPL (snd_channels)
+{
+	S_Stop();
+	S_Init (snd_sfxvolume, snd_musicvolume);
+}
+
+
 // whether songs are mus_paused
 static BOOL		mus_paused;
 

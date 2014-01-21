@@ -195,18 +195,54 @@ int ParseNum (char *str)
 
 // [RH] Returns true if the specified string is a valid decimal number
 
-BOOL IsNum (char *str)
+bool IsNum(const char* str)
 {
-	BOOL result = true;
+	bool result = true;
 
-	while (*str) {
-		if (((*str < '0') || (*str > '9')) && (*str != '-')) {
+	while (*str)
+	{
+		if (((*str < '0') || (*str > '9')) && (*str != '-'))
+		{
 			result = false;
 			break;
 		}
 		str++;
 	}
 	return result;
+}
+
+
+//
+// IsRealNum
+//
+// [SL] Returns true if the specified string is a valid real number
+//
+bool IsRealNum(const char* str)
+{
+	bool seen_decimal = false;
+
+	if (str == NULL)
+		return false;
+
+	if (str[0] == '+' || str[0] == '-')
+		str++;
+
+	while (*str)
+	{
+		if (*str == '.')
+		{
+			if (seen_decimal)
+				return false;		// second decimal point
+			else
+				seen_decimal = true;
+		}
+		else if (*str < '0' || *str > '9')
+			return false;
+
+		str++;
+	}
+
+	return true;
 }
 
 // [Russell] Returns 0 if strings are the same, optional parameter for case

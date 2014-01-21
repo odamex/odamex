@@ -71,7 +71,7 @@ CVAR (am_ovteleportcolor,	"ff a3 00", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_N
 
 CVAR (print_stdout, "0", "", CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (con_notifytime, "3", "", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (con_scrlock, "1", "", CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_RANGE(con_scrlock, "1", "", CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 CVAR (con_midtime, "3", "", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 
@@ -290,12 +290,7 @@ CVAR (snd_voxtype, "2", "Voice announcer type", CVARTYPE_BYTE, CVAR_ARCHIVE | CV
 CVAR (snd_gamesfx, "1", "Game SFX", CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_ARCHIVE)                                         // Stereo switch
 CVAR (snd_samplerate, "22050", "Samplerate",	CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)             // Sample rate
-BEGIN_CUSTOM_CVAR (snd_channels, "12", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)     // Number of channels available
-{
-	S_Stop();
-	S_Init (snd_sfxvolume, snd_musicvolume);
-}
-END_CUSTOM_CVAR (snd_channels)
+CVAR_FUNC_DECL (snd_channels, "12", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)     // Number of channels available
 
 //
 // C_GetDefaultMuiscSystem()

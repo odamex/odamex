@@ -244,6 +244,10 @@ CVAR_FUNC_DECL (sv_splashfactor, "1.0", "Rocket explosion thrust effect?",
 // debugging mode
 CVAR (developer, "0", "debugging mode",
       CVARTYPE_BOOL, CVAR_NULL)
+
+// Language.
+CVAR_FUNC_DECL (language, "0", "", CVARTYPE_INT, CVAR_ARCHIVE)
+
 // Port (???)
 CVAR (port, "0", "Display currently used port number",
       CVARTYPE_INT, CVAR_NOSET | CVAR_NOENABLEDISABLE)

@@ -58,7 +58,7 @@ public:
 			cvar = next;
 		}
 	}
-}ad;
+} ad;
 
 cvar_t* GetFirstCvar(void)
 {
@@ -67,21 +67,23 @@ cvar_t* GetFirstCvar(void)
 
 int cvar_defflags;
 
-cvar_t::cvar_t (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD flags)
+cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
+		DWORD flags, float minval, float maxval)
 {
-	InitSelf (var_name, def, help, type, flags, NULL);
+	InitSelf(var_name, def, help, type, flags, NULL, minval, maxval);
 }
 
-cvar_t::cvar_t (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD flags, void (*callback)(cvar_t &))
+cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
+		DWORD flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
-	InitSelf (var_name, def, help, type, flags, callback);
+	InitSelf(var_name, def, help, type, flags, callback, minval, maxval);
 }
 
-void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD var_flags, void (*callback)(cvar_t &))
+void cvar_t::InitSelf(const char* var_name, const char* def, const char* help, cvartype_t type,
+		DWORD var_flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
-	cvar_t *var, *dummy;
-
-	var = FindCVar (var_name, &dummy);
+	cvar_t* dummy;
+	cvar_t* var = FindCVar(var_name, &dummy);
 
 	m_Callback = callback;
 	m_String = "";
@@ -91,6 +93,17 @@ void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, 
     m_HelpText = help;
     m_Type = type;
 
+	if (var_flags & CVAR_NOENABLEDISABLE)
+	{
+		m_MinValue = minval;
+		m_MaxValue = maxval;
+	}
+	else
+	{
+		m_MinValue = 0.0f;
+		m_MaxValue = 1.0f;
+	}
+
 	if (def)
 		m_Default = def;
 	else
@@ -98,7 +111,7 @@ void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, 
 
 	if (var_name)
 	{
-		C_AddTabCommand (var_name);
+		C_AddTabCommand(var_name);
 		m_Name = var_name;
 		m_Next = ad.GetCVars();
 		ad.GetCVars() = this;
@@ -108,14 +121,14 @@ void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, 
 
 	if (var)
 	{
-		ForceSet (var->m_String.c_str());
+		ForceSet(var->m_String.c_str());
 		if (var->m_Flags & CVAR_AUTO)
 			delete var;
 		else
 			var->~cvar_t();
 	}
 	else if (def)
-		ForceSet (def);
+		ForceSet(def);
 
 	m_Flags = var_flags | CVAR_ISDEFAULT;
 }
@@ -138,7 +151,7 @@ cvar_t::~cvar_t ()
 	}
 }
 
-void cvar_t::ForceSet (const char *val)
+void cvar_t::ForceSet(const char* val)
 {
 	// [SL] 2013-04-16 - Latched CVARs do not change values until the next map.
 	// Servers and single-player games should abide by this behavior but
@@ -147,42 +160,54 @@ void cvar_t::ForceSet (const char *val)
 		(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION))
 	{
 		m_Flags |= CVAR_MODIFIED;
-		if(val)
+		if (val)
 			m_LatchedString = val;
 		else
-			m_LatchedString = "";
+			m_LatchedString.clear();
 	}
 	else
 	{
 		m_Flags |= CVAR_MODIFIED;
-		if(val)
+		if (val)
 		{
-			m_String = val;
-            m_Value = atof(val);
+			if (IsRealNum(val))
+			{
+				// [SL] clamp the float value to the min/max range and update m_String
+				m_Value = clamp((float)atof(val), m_MinValue, m_MaxValue);
+				char str[32];
+				sprintf(str, "%g", m_Value);
+				m_String = str;
+			}
+			else
+			{
+				m_String = val;
+				m_Value = clamp(0.0f, m_MinValue, m_MaxValue);
+			}
 		}
 		else
 		{
-			m_String = "";
-            m_Value = 0.0f;
+			m_String.clear();
+			m_Value = clamp(0.0f, m_MinValue, m_MaxValue);
 		}
 
 		if (m_Flags & CVAR_USERINFO)
-			D_UserInfoChanged (this);
+			D_UserInfoChanged(this);
 		if (m_Flags & CVAR_SERVERINFO)
-			D_SendServerInfoChange (this, val);
+			D_SendServerInfoChange(this, val);
 
 		if (m_UseCallback)
-			Callback ();
+			Callback();
 	}
+
 	m_Flags &= ~CVAR_ISDEFAULT;
 }
 
-void cvar_t::ForceSet (float val)
+
+void cvar_t::ForceSet(float val)
 {
 	char string[32];
-
-	sprintf (string, "%g", val);
-	ForceSet (string);
+	sprintf(string, "%g", val);
+	ForceSet(string);
 }
 
 void cvar_t::Set (const char *val)

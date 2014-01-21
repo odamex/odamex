@@ -28,6 +28,7 @@
 #include "doomtype.h"
 #include "tarray.h"
 
+#include <cfloat>
 #include <string>
 
 /*
@@ -74,8 +75,10 @@ typedef enum
 class cvar_t
 {
 public:
-	cvar_t (const char *name, const char *def, const char *help, cvartype_t, DWORD flags);
-	cvar_t (const char *name, const char *def, const char *help, cvartype_t, DWORD flags, void (*callback)(cvar_t &));
+	cvar_t(const char* name, const char* def, const char* help, cvartype_t,
+			DWORD flags, float minval = -FLT_MAX, float maxval = FLT_MAX);
+	cvar_t(const char* name, const char* def, const char* help, cvartype_t,
+			DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
 	virtual ~cvar_t ();
 
 	const char *cstring() const {return m_String.c_str(); }
@@ -92,7 +95,7 @@ public:
 	// casting truncates instead of rounding
 	int asInt() const { return static_cast<int>(m_Value >= 0.0f ? m_Value + 0.5f : m_Value - 0.5f); }
 
-	inline void Callback () { if (m_Callback) m_Callback (*this); }
+	inline void Callback (){ if (m_Callback) m_Callback (*this); }
 
 	void SetDefault (const char *value);
 	void RestoreDefault ();
@@ -160,9 +163,11 @@ public:
 
 private:
 
-	cvar_t (const cvar_t &var) {}
+	cvar_t(const cvar_t &var) { }
 
-	void InitSelf (const char *name, const char *def, const char *help, cvartype_t, DWORD flags, void (*callback)(cvar_t &));
+	void InitSelf(const char* name, const char* def, const char* help, cvartype_t,
+				DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
+
 	void (*m_Callback)(cvar_t &);
 	cvar_t *m_Next;
 
@@ -172,6 +177,7 @@ private:
 	std::string m_HelpText;
 
 	float m_Value;
+	float m_MinValue, m_MaxValue;
 
 	std::string m_LatchedString, m_Default;
 
@@ -180,28 +186,22 @@ private:
 
  protected:
 
-	cvar_t () : m_Flags(0), m_Callback(NULL), m_Next(NULL), m_Type(CVARTYPE_NONE), m_Value(0.f) {}
+	cvar_t () :
+			m_Flags(0), m_Callback(NULL), m_Next(NULL), m_Type(CVARTYPE_NONE), m_Value(0.f),
+			m_MinValue(-FLT_MAX), m_MaxValue(FLT_MAX)
+	 { }
 };
 
 cvar_t* GetFirstCvar(void);
 
 // Maximum number of cvars that can be saved.
-#define MAX_BACKUPCVARS 128 
-
-#define BEGIN_CUSTOM_CVAR(name,def,help,type,flags) \
-	static void cvarfunc_##name(cvar_t &); \
-	cvar_t name (#name, def, help, type, flags, cvarfunc_##name); \
-	static void cvarfunc_##name(cvar_t &var)
-
-#define END_CUSTOM_CVAR(name)
-
-#define CUSTOM_CVAR(type,name,def,help,t,flags) \
-	static void cvarfunc_##name(F##type##CVar &); \
-	F##type##CVar name (#name, def, help, t, flags, cvarfunc_##name); \
-	static void cvarfunc_##name(F##type##CVar &self)
+#define MAX_BACKUPCVARS 512 
 
 #define CVAR(name,def,help,type,flags) \
-	cvar_t name (#name, def, help, type, flags);
+	cvar_t name(#name, def, help, type, flags);
+
+#define CVAR_RANGE(name,def,help,type,flags,minval,maxval) \
+	cvar_t name(#name, def, help, type, flags, minval, maxval);
 
 #define EXTERN_CVAR(name) extern cvar_t name;
 

@@ -61,6 +61,7 @@ extern bool r_fakingunderwater;
 EXTERN_CVAR (r_flashhom)
 EXTERN_CVAR (r_viewsize)
 EXTERN_CVAR (sv_allowwidescreen)
+EXTERN_CVAR (r_columnmethod)
 
 static float	LastFOV = 0.0f;
 fixed_t			FocalLengthX;
@@ -895,28 +896,6 @@ CVAR_FUNC_IMPL (screenblocks)
 		R_SetViewSize ((int)var);
 }
 
-//
-//
-// CVAR r_columnmethod
-//
-// Selects which version of the seg renderers to use.
-//
-//
-
-// [ML] Disabled 16/3/06, now always 0 (Original)
-// [Russell] Reenabled 14/3/07, fixes smudging of graphics
-//BEGIN_CUSTOM_CVAR (r_columnmethod, "1", CVAR_ARCHIVE)
-//{
-    /*
-	if (var != 0 && var != 1)
-		var.Set (1);
-	else
-		// Trigger the change
-		r_detail.Callback ();
-    */
-//}
-//END_CUSTOM_CVAR (r_columnmethod)
-EXTERN_CVAR (r_columnmethod)
 //
 //
 // R_Init

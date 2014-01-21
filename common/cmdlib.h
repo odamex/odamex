@@ -56,7 +56,8 @@ void	FixPathSeparator (std::string &path);
 
 int		ParseHex (char *str);
 int 	ParseNum (char *str);
-BOOL	IsNum (char *str);		// [RH] added
+bool	IsNum(const char* str);		// [RH] added
+bool	IsRealNum(const char* str);
 
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
