@@ -208,28 +208,59 @@ static char *C_GetDefaultMouseDriver()
 	return str;
 }
 
-CVAR_FUNC_DECL (mouse_driver, C_GetDefaultMouseDriver(), "Mouse driver backend",
+CVAR_FUNC_DECL(	mouse_driver, C_GetDefaultMouseDriver(), "Mouse driver backend",
 				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (mouse_type,			"0", 	"",	CVARTYPE_BYTE,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (mouse_sensitivity,	"35.0", "",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL (cl_mouselook, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR_RANGE(		mouse_type, "0", "Use vanilla Doom mouse sensitivity or ZDoom mouse sensitivity",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR (m_pitch,				"0.25",	"",	CVARTYPE_FLOAT,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (m_yaw,				"1.0",	"",	CVARTYPE_FLOAT,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (m_forward,			"1.0",	"",	CVARTYPE_FLOAT,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (m_side,				"2.0", 	"",	CVARTYPE_FLOAT,	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (novert,				"0", 	"",	CVARTYPE_BOOL,	CVAR_ARCHIVE)
-CVAR (invertmouse,			"0",	"Invert mouse",	CVARTYPE_BOOL,	CVAR_ARCHIVE)
-CVAR (lookstrafe,			"0",	"Strafe with mouse",	CVARTYPE_BOOL,	CVAR_ARCHIVE)
-CVAR (mouse_acceleration,	"0", 	"",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (mouse_threshold,		"0", 	"",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (m_filter,				"0",	"Smooth mouse input",	CVARTYPE_STRING, CVAR_ARCHIVE)
-CVAR (dynres_state,			"0", 	"",	CVARTYPE_FLOAT,	CVAR_ARCHIVE)
-CVAR (dynresval,			"1.0",	"",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (hud_mousegraph,			"0",	"Display mouse values",	CVARTYPE_BOOL,	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
+CVAR_RANGE(		mouse_sensitivity, "35.0", "Overall mouse sensitivity",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
 
-CVAR (idmypos, "0", "Shows current player position on map",	CVARTYPE_BOOL, CVAR_NULL)
+CVAR_FUNC_DECL(	cl_mouselook, "0", "Look up or down with mouse",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_RANGE(		m_pitch, "0.25", "Vertical mouse sensitivity",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
+
+CVAR_RANGE(		m_yaw, "1.0", "",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
+
+CVAR_RANGE(		m_forward, "1.0", "",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
+
+CVAR_RANGE(		m_side, "2.0", "",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
+
+CVAR(			novert, "0", "Disable vertical mouse movement",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			invertmouse, "0", "Invert vertical mouse movement",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			lookstrafe, "0", "Strafe with mouse",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_RANGE(		mouse_acceleration, "0", "",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
+
+CVAR_RANGE(		mouse_threshold, "0", "",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
+
+CVAR(			m_filter, "0", "Smooth mouse input",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			dynres_state, "0", "",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_RANGE(		dynresval, "1.0", "",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
+
+CVAR(			hud_mousegraph, "0", "Display mouse values",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			idmypos, "0", "Shows current player position on map",
+				CVARTYPE_BOOL, CVAR_NULL)
 
 // Heads up display
 // ----------------
@@ -359,7 +390,7 @@ CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem pre
 				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(			snd_musicdevice, "", "Music output device for the chosen music subsystem",
-				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 
 // Status bar
@@ -370,80 +401,115 @@ CVAR_FUNC_DECL (st_scale, "1", "",	CVARTYPE_BYTE, CVAR_ARCHIVE)
 // Video and Renderer
 // ------------------
 
-// Gamma correction level, 1 - 8
-CVAR_FUNC_DECL (gammalevel, "1", "Gamma correction level, 1 - 8",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL(	gammalevel, "1", "Gamma correction level",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-// ZDoom style gamma correction?
-CVAR_RANGE(	vid_gammatype, "0", "Select between Doom and ZDoom gamma correction",
-			CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+CVAR_RANGE(		vid_gammatype, "0", "Select between Doom and ZDoom gamma correction",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-// Type of crosshair, 0 means none
-CVAR_FUNC_DECL (hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Column optimization method
-CVAR (r_columnmethod, "1", "Column optimization method",	CVARTYPE_BYTE, CVAR_ARCHIVE)
-// Detail level (affects performance)
-CVAR_FUNC_DECL (r_detail, "0", "Detail level (affects performance)",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Draws flashing colors where there is HOM
-CVAR (r_flashhom, "0", "Draws flashing colors where there is HOM", CVARTYPE_BOOL, 0)
-// Disables all texturing of walls
-CVAR (r_drawflat, "0", "Disables all texturing of walls",	CVARTYPE_BOOL, 0)
-// Draw player sprites
-CVAR (r_drawplayersprites, "1", "Draw player sprites",	CVARTYPE_BOOL, 0)
-// Draw particles
-CVAR (r_particles, "1","Draw particles",	CVARTYPE_BOOL, 0)
-// Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)
-CVAR_FUNC_DECL (r_stretchsky, "2", "",	CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Invulnerability sphere changes the palette of the sky
-CVAR (r_skypalette, "0", "Invulnerability sphere changes the palette of the sky",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-// Enemy sprite coloring
-CVAR_FUNC_DECL (r_forceenemycolor, "0", "Changes the color of all enemies to the specified color", CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR_FUNC_DECL (r_enemycolor, "40 cf 00", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Teammate sprite coloring
-CVAR_FUNC_DECL (r_forceteamcolor, "0", "Changes the color of all teammates to the specified color", CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR_FUNC_DECL (r_teamcolor, "40 cf 00", "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_RANGE_FUNC_DECL(hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 255.0f) 
+
+CVAR(			r_columnmethod, "1", "Column optimization method",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_RANGE_FUNC_DECL(r_detail, "0", "Detail level (affects performance)",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
+
+CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
+				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(			r_drawflat, "0", "Disables all texturing of walls",
+				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(			r_drawplayersprites, "1", "Draw player sprites (weapons)",
+				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(			r_particles, "1", "Draw particles",
+				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR_RANGE_FUNC_DECL(r_stretchsky, "2", "Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
+CVAR(			r_skypalette, "0", "Invulnerability sphere changes the palette of the sky",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_FUNC_DECL(	r_forceenemycolor, "0", "Changes the color of all enemies to the color specified by r_enemycolor",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_FUNC_DECL(	r_enemycolor, "40 cf 00", "",
+				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_FUNC_DECL(	r_forceteamcolor, "0", "Changes the color of all teammates to the color specified by r_teamcolor",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_FUNC_DECL(	r_teamcolor, "40 cf 00", "",
+				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 #ifdef _XBOX // The burn wipe works better in 720p
-CVAR (r_wipetype, "2", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_RANGE(		r_wipetype, "2", "",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 #else
-CVAR (r_wipetype, "1", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_RANGE(		r_wipetype, "1", "",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 #endif
-CVAR (r_showendoom, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
-CVAR (r_loadicon, "1", "Display the disk icon when loading data from disk", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
-// [ML] Value of red pain intensity shift
-CVAR_FUNC_DECL (r_painintensity, "1", "Value of red pain intensity shift",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR(			r_showendoom, "1", "Display the ENDDOOM text after quitting",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
 
-// TODO: document
-CVAR (r_viewsize, "0", "",	CVARTYPE_BYTE, CVAR_NOSET | CVAR_NOENABLEDISABLE)
-// Default video dimensions. [AM] Bumped up from 320x200.
-CVAR (vid_defwidth, "640", "",	CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (vid_defheight, "480", "",	CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Default bitdepth
-CVAR (vid_defbits, "8", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Use wide field-of-view with widescreen video modes.
-CVAR_FUNC_DECL (vid_widescreen, "0", "Use wide field-of-view with widescreen video modes.", CVARTYPE_BOOL, CVAR_ARCHIVE)
-// Force video mode
-CVAR (vid_autoadjust, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-// Frames per second on screen display
-CVAR (vid_displayfps, "0", "",	CVARTYPE_BOOL, 0)
-// maximum fps with 0 indicating completely uncapped fps
-CVAR_FUNC_DECL (vid_maxfps, "35", "Maximum framerate (0 indicates unlimited framerate)", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// enable/disable vertical refresh sync (vsync)
-CVAR_FUNC_DECL(vid_vsync, "0", "Enable/Disable vertical refresh sync (vsync)", CVARTYPE_BOOL, CVAR_ARCHIVE)
-// Fullscreen mode
+CVAR(			r_loadicon, "1", "Display the disk icon when loading data from disk",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR_RANGE(		r_painintensity, "1", "Intensity of red pain effect",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR(			r_viewsize, "0", "Set to the current video resolution",
+				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
+
+CVAR(			vid_defwidth, "640", "",
+				CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(			vid_defheight, "480", "",
+				CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(			vid_defbits, "8", "",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen video modes",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			vid_autoadjust, "1", "Force video mode",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			vid_displayfps, "0", "Display frames per second",
+				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR_FUNC_DECL(	vid_maxfps, "35", "Maximum framerate (0 indicates unlimited framerate)",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_FUNC_DECL(	vid_vsync, "0", "Enable/Disable vertical refresh sync (vsync)",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
 #ifdef GCONSOLE
-	CVAR_FUNC_DECL (vid_fullscreen, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR_FUNC_DECL(	vid_fullscreen, "1", "Full screen video mode",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
 #else
-	CVAR_FUNC_DECL (vid_fullscreen, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR_FUNC_DECL(	vid_fullscreen, "0", "Full screen video mode",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
 #endif
-// TODO: document
-CVAR_FUNC_DECL (screenblocks, "10", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Older (Doom-style) FPS counter
-CVAR (vid_ticker, "0", "",	CVARTYPE_BOOL, 0)
-// Resizes the window by a scale factor
-CVAR_FUNC_DECL (vid_winscale, "1.0", "",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Overscan
-CVAR_FUNC_DECL (vid_overscan, "1.0", "Overscan",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE_FUNC_DECL(screenblocks, "10", "Selects the size of the visible window",
+				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 3.0f, 12.0f)
+
+CVAR(			vid_ticker, "0", "Vanilla Doom frames per second indicator",
+				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR_RANGE_FUNC_DECL(vid_winscale, "1.0", "Resizes the window by a scale factor",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
+
+CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
+
 
 // Netdemo format string
 CVAR_FUNC_DECL (cl_netdemoname, "Odamex_%g_%d_%t_%w_%m",

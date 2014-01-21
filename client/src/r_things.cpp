@@ -67,8 +67,9 @@ CVAR_FUNC_IMPL (hud_crosshaircolor)
 	crosshair_color_custom = V_GetColorFromString(palette, hud_crosshaircolor.cstring());
 }
 
+
 EXTERN_CVAR (hud_crosshairhealth)
-CVAR_FUNC_IMPL (hud_crosshair)
+CVAR_FUNC_IMPL(hud_crosshair)
 {
 	R_InitCrosshair();
 }
@@ -305,18 +306,13 @@ static void R_InitCrosshair()
 
 	if (xhairnum)
 	{
-		if (xhairnum < 0)
-			xhairnum = -xhairnum;
-
 		char xhairname[16];
 		int xhair;
 
 		sprintf (xhairname, "XHAIR%d", xhairnum);
 
 		if ((xhair = W_CheckNumForName (xhairname)) == -1)
-		{
 			xhair = W_CheckNumForName ("XHAIR1");
-		}
 
 		if(xhair != -1)
 			crosshair_lump = xhair;

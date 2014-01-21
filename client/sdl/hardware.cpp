@@ -64,13 +64,9 @@ EXTERN_CVAR (vid_ticker)
 
 CVAR_FUNC_IMPL (vid_winscale)
 {
-	if (var < 1.f)
+	if (Video)
 	{
-		var.Set (1.f);
-	}
-	else if (Video)
-	{
-		Video->SetWindowedScale (var);
+		Video->SetWindowedScale(var);
 		NewWidth = I_GetVideoWidth();
 		NewHeight = I_GetVideoHeight(); 
 		NewBits = I_GetVideoBitDepth(); 
@@ -80,9 +76,6 @@ CVAR_FUNC_IMPL (vid_winscale)
 
 CVAR_FUNC_IMPL (vid_overscan)
 {
-	if(var > 1.0)
-		var = 1.0;
-
 	if (Video)
 		Video->SetOverscan(var);
 }

@@ -888,12 +888,7 @@ void R_ExecuteSetViewSize (void)
 
 CVAR_FUNC_IMPL (screenblocks)
 {
-	if (var > 12.0)
-		var.Set (12.0);
-	else if (var < 3.0)
-		var.Set (3.0);
-	else
-		R_SetViewSize ((int)var);
+	R_SetViewSize((int)var);
 }
 
 //
