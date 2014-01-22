@@ -27,88 +27,97 @@
 // ---------------
 
 // Game mode
-CVAR (sv_gametype, "0", "Sets the game mode, values are:\n" \
-                        "// 0 = Cooperative\n" \
-                        "// 1 = Deathmatch\n" \
-                        "// 2 = Team Deathmatch\n" \
-                        "// 3 = Capture The Flag",
-      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR_RANGE(			sv_gametype, "0", "Sets the game mode, values are:\n" \
+					"// 0 = Cooperative\n" \
+					"// 1 = Deathmatch\n" \
+					"// 2 = Team Deathmatch\n" \
+					"// 3 = Capture The Flag",
+					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE,
+					0.0f, 3.0f)
 
-// (Coop/Teamplay/CTF): Players can injure others on the same team
-CVAR (sv_friendlyfire, "1", "When set, players can injure others on the same team, it is ignored in deathmatch",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// (Teamplay/CTF): Game ends when team score is reached
-CVAR (sv_scorelimit, "5", "Game ends when team score is reached in Teamplay/CTF",
-      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-// (Teamplay/CTF) When disabled, treat team spawns like normal deathmatch spawns.
-CVAR (sv_teamspawns, "1", "When disabled, treat team spawns like normal deathmatch spawns in Teamplay/CTF",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
-// Cheat code usage is allowed
-CVAR (sv_allowcheats, "0", "Allow usage of cheats in all game modes",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// Exit switch/teleports are usable
-CVAR (sv_allowexit, "1", "Allow use of Exit switch/teleports in all game modes",
-     CVARTYPE_BOOL,  CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// Players can jump
-CVAR (sv_allowjump, "0", "Allows players to jump when set in all game modes",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// Give double ammo regardless of difficulty
-CVAR (sv_doubleammo, "0", "Give double ammo regardless of difficulty",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// Multiplier for player weapon damage
-CVAR (sv_weapondamage, "1.0", "Amount to multiply player weapon damage by",
-      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-// Makes water movement more realistic
-CVAR_FUNC_DECL (sv_forcewater, "0", "Makes water more realistic (boom maps at the moment)",
-                CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-// Look up/down is allowed
-CVAR (sv_freelook,      "0", "Allow Looking up and down",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// Names of players appear in the FOV
-CVAR (sv_allowtargetnames, "0", "When set, names of players appear in the FOV",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// Game ends on frag limit being reached
-CVAR (sv_fraglimit,     "0", "Sets the amount of frags a player can accumulate before the game ends",
-      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-// Monsters are at nightmare speed
-CVAR (sv_fastmonsters,     "0", "Monsters are at nightmare speed",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// Multiplier for monster damage
-CVAR (sv_monsterdamage, "1.0", "Amount to multiply monster weapon damage by",
-      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \
+					"it is ignored in deathmatch",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR_RANGE(			sv_scorelimit, "5", "Game ends when team score is reached in Teamplay/CTF",
+					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
+
+CVAR(				sv_teamspawns, "1", "When disabled, treat team spawns like normal deathmatch " \
+					"spawns in Teamplay/CTF",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
+
+CVAR(				sv_allowcheats, "0", "Allow usage of cheats in all game modes",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_allowexit, "1", "Allow use of Exit switch/teleports in all game modes",
+					CVARTYPE_BOOL,  CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_allowjump, "0", "Allows players to jump when set in all game modes",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_doubleammo, "0", "Give double ammo regardless of difficulty",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR_RANGE(			sv_weapondamage, "1.0", "Amount to multiply player weapon damage by",
+					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE,
+					0.0f, 100.0f)
+
+CVAR_FUNC_DECL(		sv_forcewater, "0", "Makes water more realistic (boom maps at the moment)",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(				sv_freelook, "0", "Allow Looking up and down",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_allowtargetnames, "0", "When set, names of players appear in the FOV",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR_RANGE(			sv_fraglimit,     "0", "Sets the amount of frags a player can accumulate before the game ends",
+					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 65536.0f)
+
+CVAR(				sv_fastmonsters, "0", "Monsters are at nightmare speed",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR_RANGE(			sv_monsterdamage, "1.0", "Amount to multiply monster weapon damage by",
+					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE,
+					0.0f, 100.0f)
+
 // OLD: Allow exit switch at maxfrags, must click to exit
 // NEW: When enabled, exit switch will kill the player who flips it
 // [ML] NOTE: Behavior was changed October 2012, see bug
-CVAR (sv_fragexitswitch,   "0", "When enabled, exit switch will kill the player who flips it",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// Players will have infinite ammunition
-CVAR (sv_infiniteammo,     "0", "Infinite ammo for all players",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// Items will respawn after time
-CVAR (sv_itemsrespawn,     "0", "Items will respawn after a fixed period, see sv_itemrespawntime",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
-// If itemrespawn is on, items will respawn after this time. (in seconds)
-CVAR (sv_itemrespawntime,  "30", "If sv_itemsrespawn is set, items will respawn after this time (in seconds)",
-      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-// Monsters will respawn after time
-CVAR (sv_monstersrespawn,  "0", "Monsters will respawn after a period of time",
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// Monsters are not present
-CVAR (sv_nomonsters,    "0", "No monsters will be present",
-     CVARTYPE_BOOL,  CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
-// Monsters have a specific percentage of their normal health
-CVAR (sv_monstershealth, "1.0", "Amount to multiply monster health by",
-      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-// Skill level
-CVAR (sv_skill,             "3", "Sets the skill level, values are:\n" \
-                                 "// 0 - No things mode\n" \
-                                 "// 1 - I'm Too Young To Die\n" \
-                                 "// 2 - Hey, Not Too Rough\n" \
-                                 "// 3 - Hurt Me Plenty\n" \
-                                 "// 4 - Ultra-Violence\n" \
-                                 "// 5 - Nightmare",
-      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-// Game ends on time limit being reached
+CVAR(				sv_fragexitswitch, "0", "When enabled, exit switch will kill the player who flips it",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_infiniteammo, "0", "Infinite ammo for all players",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_itemsrespawn, "0", "Items will respawn after a fixed period, see sv_itemrespawntime",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+CVAR_RANGE(			sv_itemrespawntime, "30", "If sv_itemsrespawn is set, items will respawn after this " \
+					"time (in seconds)",
+					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
+
+CVAR(				sv_monstersrespawn,  "0", "Monsters will respawn after a period of time",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_nomonsters, "0", "No monsters will be present",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+
+CVAR_RANGE(			sv_monstershealth, "1.0", "Amount to multiply monster health by",
+					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE,
+					0.0f, 100.0f)
+
+CVAR_RANGE(			sv_skill,"3", "Sets the skill level, values are:\n" \
+					"// 0 - No things mode\n" \
+					"// 1 - I'm Too Young To Die\n" \
+					"// 2 - Hey, Not Too Rough\n" \
+					"// 3 - Hurt Me Plenty\n" \
+					"// 4 - Ultra-Violence\n" \
+					"// 5 - Nightmare",
+					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
+
+
 CVAR_FUNC_DECL (sv_timelimit,    "0", "Sets the time limit for the game to end, must be greater than 1",
       CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
