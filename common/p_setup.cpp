@@ -1736,29 +1736,13 @@ void P_Init (void)
 
 // [ML] Do stuff when the timelimit is reset
 // Where else can I put this??
-CVAR_FUNC_IMPL (sv_timelimit)
+CVAR_FUNC_IMPL(sv_timelimit)
 {
-	if (var < 0)
-		var.Set(0.0f);
-
-	// timeleft is transmitted as a short so cap the sv_timelimit at the maximum
-	// for timeleft, which is 9.1 hours
-	if (var > MAXSHORT / 60)
-		var.Set(MAXSHORT / 60);
-
 	level.timeleft = var * TICRATE * 60;
 }
 
-CVAR_FUNC_IMPL (sv_intermissionlimit)
+CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
-	if (var < 0)
-		var.Set(0.0f);
-
-	// intermissionleft is transmitted as a short so cap the sv_timelimit at the maximum
-	// for timeleft, which is 9.1 hours
-	if (var > MAXSHORT)
-		var.Set(MAXSHORT);
-
 	level.inttimeleft = (var < 1 ? DEFINTSECS : var);
 }
 

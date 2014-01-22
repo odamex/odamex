@@ -555,8 +555,8 @@ void cvar_t::C_ArchiveCVars (void *f)
 
 	while (cvar)
 	{
-		if ((cvar->m_Flags & CVAR_ARCHIVE) || (baseapp == client && cvar->m_Flags & CVAR_CLIENTARCHIVE)
-			|| (baseapp == server && cvar->m_Flags & CVAR_SERVERARCHIVE))
+		if ((baseapp == client && (cvar->m_Flags & CVAR_CLIENTARCHIVE))
+			|| (baseapp == server && (cvar->m_Flags & CVAR_SERVERARCHIVE)))
 		{
 			fprintf ((FILE *)f, "// %s\n", cvar->helptext());
 			fprintf ((FILE *)f, "set %s %s\n\n", C_QuoteString(cvar->name()).c_str(), C_QuoteString(cvar->cstring()).c_str());

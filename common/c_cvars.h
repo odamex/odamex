@@ -40,7 +40,6 @@ CVARS (console variables)
 */
 
 #define CVAR_NULL               0 // [deathz0r] no special properties
-#define CVAR_ARCHIVE            1 // set to cause it to be saved to vars.rc
 #define CVAR_USERINFO           2 // added to userinfo  when changed
 #define CVAR_SERVERINFO         4 // [Toke - todo] Changed the meaning of this flag
                                   // it now describes cvars that clients will be
@@ -56,6 +55,9 @@ CVARS (console variables)
 #define CVAR_NOENABLEDISABLE 1024 // [Nes] No substitution (0=disable, 1=enable)
 #define CVAR_SERVERARCHIVE   4096 // [Nes] Server version of CVAR_ARCHIVE
 #define CVAR_CLIENTARCHIVE   8192 // [Nes] Client version of CVAR_ARCHIVE
+
+// [SL] CVAR_ARCHIVE enables both CVAR_CLIENTARCHIVE & CVAR_SERVERARCHIVE 
+#define CVAR_ARCHIVE	(CVAR_CLIENTARCHIVE | CVAR_SERVERARCHIVE)
 
 // Hints for network code optimization
 typedef enum

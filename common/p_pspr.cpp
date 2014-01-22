@@ -54,14 +54,7 @@ EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(co_fineautoaim)
-
-CVAR_FUNC_IMPL(cl_movebob)
-{
-	if (var > 1.0f)
-		var.Set(1.0f);
-	if (var < 0.0f)
-		var.Set(0.0f);
-}
+EXTERN_CVAR(cl_movebob)
 
 const char *weaponnames[] =
 {
