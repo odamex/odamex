@@ -350,6 +350,59 @@ std::string W_MD5(std::string filename)
 // LUMP BASED ROUTINES.
 //
 
+
+//
+// Names of lumps that can't be overridden by client-only PWADs
+//
+static const char* NonOverrideNames [] =
+{
+	"THINGS",
+	"LINEDEFS",
+	"SIDEDEFS",
+	"VERTEXES",
+	"SEGS",
+	"SSECTORS",
+	"NODES",
+	"SECTORS",
+	"REJECT",
+	"BLOCKMAP",
+	"BEHAVIOR",
+	"DECORATE",
+	"MAPINFO",
+	"PLAYPAL",
+	"COLORMAP",
+	""
+};
+
+
+//
+// W_AddLumps
+//
+// Adds lumps from the array of filelump_t. If clientonly is true,
+// only certain lumps will be added.
+//
+void W_AddLumps(FILE* handle, filelump_t* fileinfo, size_t newlumps, bool clientonly)
+{
+	lumpinfo = (lumpinfo_t*)Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t));
+	if (!lumpinfo)
+		I_Error("Couldn't realloc lumpinfo");
+
+	lumpinfo_t* lump = &lumpinfo[numlumps];
+	filelump_t* info = &fileinfo[0];
+
+	for (size_t i = 0; i < newlumps; i++, info++)
+	{
+		lump->handle = handle;
+		lump->position = info->filepos;
+		lump->size = info->size;
+		strncpy(lump->name, info->name, 8);
+
+		lump++;
+		numlumps++;
+	}
+}
+
+
 //
 // W_AddFile
 //
@@ -363,7 +416,6 @@ std::string W_MD5(std::string filename)
 //
 std::string W_AddFile(std::string filename)
 {
-	wadinfo_t		header;
 	FILE*			handle;
 	filelump_t*		fileinfo;
 
@@ -377,8 +429,9 @@ std::string W_AddFile(std::string filename)
 
 	Printf(PRINT_HIGH, "adding %s", filename.c_str());
 
-	size_t startlump = numlumps;
+	size_t newlumps;
 
+	wadinfo_t header;
 	fread(&header, sizeof(header), 1, handle);
 	header.identification = LELONG(header.identification);
 
@@ -391,10 +444,9 @@ std::string W_AddFile(std::string filename)
 		fileinfo = new filelump_t[1];	
 		fileinfo->filepos = 0;
 		fileinfo->size = M_FileLength(handle);
-		strncpy(fileinfo->name, lumpname.c_str(), 8);
-		std::transform(fileinfo->name, fileinfo->name+8, fileinfo->name, toupper);
+		std::transform(lumpname.c_str(), lumpname.c_str() + 8, fileinfo->name, toupper);
 
-		numlumps++;
+		newlumps = 1;
 		Printf(PRINT_HIGH, " (single lump)\n");
 	}
 	else
@@ -420,34 +472,20 @@ std::string W_AddFile(std::string filename)
 		{
 			fileinfo[i].filepos = LELONG(fileinfo[i].filepos);
 			fileinfo[i].size = LELONG(fileinfo[i].size);
-			std::transform(fileinfo[i].name, fileinfo[i].name+8, fileinfo[i].name, toupper);
+			std::transform(fileinfo[i].name, fileinfo[i].name + 8, fileinfo[i].name, toupper);
 		}
 
-		numlumps += header.numlumps;
+		newlumps = header.numlumps;	
 		Printf(PRINT_HIGH, " (%d lumps)\n", header.numlumps);
 	}
 
-	// Fill in lumpinfo
-	lumpinfo = (lumpinfo_t*)Realloc(lumpinfo, numlumps * sizeof(lumpinfo_t));
-
-	if (!lumpinfo)
-		I_Error("Couldn't realloc lumpinfo");
-
-	lumpinfo_t* lump_p = &lumpinfo[startlump];
-	filelump_t* fileinfo_p = fileinfo;
-
-	for (size_t i = startlump; i < numlumps; i++, lump_p++, fileinfo_p++)
-	{
-		lump_p->handle = handle;
-		lump_p->position = fileinfo_p->filepos;
-		lump_p->size = fileinfo_p->size;
-		strncpy(lump_p->name, fileinfo_p->name, 8);
-	}
+	W_AddLumps(handle, fileinfo, newlumps, false);
 
 	delete [] fileinfo;
 
 	return W_MD5(filename);
 }
+
 
 //
 //
