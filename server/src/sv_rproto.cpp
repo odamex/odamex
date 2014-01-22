@@ -34,7 +34,6 @@
 
 QWORD I_MSTime (void);
 
-EXTERN_CVAR (sv_networkcompression)
 EXTERN_CVAR (log_packetdebug)
 
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
@@ -160,7 +159,7 @@ bool SV_SendPacket(player_t &pl)
 	SZ_Clear(&cl->reliablebuf);
 	
 	// compress the packet, but not the sequence id
-	if(sv_networkcompression && sendd.size() > sizeof(int))
+	if (sendd.size() > sizeof(int))
 		SV_CompressPacket(sendd, sizeof(int), cl);
 
 	if (log_packetdebug)

@@ -221,7 +221,7 @@ bool IsRealNum(const char* str)
 {
 	bool seen_decimal = false;
 
-	if (str == NULL)
+	if (str == NULL || *str == 0)
 		return false;
 
 	if (str[0] == '+' || str[0] == '-')

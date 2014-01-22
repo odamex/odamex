@@ -113,13 +113,7 @@ void SV_RemoveDisconnectedPlayer(player_t &player);
 
 CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
-	if(var > MAXPLAYERS)
-		var.Set(MAXPLAYERS);
-
-	if(var < 0)
-		var.Set((float)0);
-
-	while(players.size() > sv_maxclients)
+	while (players.size() > sv_maxclients)
 	{
 		int last = players.size() - 1;
 		MSG_WriteMarker (&players[last].client.reliablebuf, svc_print);
@@ -135,12 +129,6 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 {
 	// [Nes] - Force extras to become spectators.
 	int normalcount = 0;
-
-	if (var < 0)
-		var.Set((float)0);
-
-	if (var > MAXPLAYERS)
-		var.Set(MAXPLAYERS);
 
 	for (size_t i = 0; i < players.size(); i++)
 	{
@@ -170,16 +158,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 // [AM] - Force extras on a team to become spectators.
 CVAR_FUNC_IMPL (sv_maxplayersperteam)
 {
-	if (var == 0)
-		return;
-
-	if (var < 0)
-		var.Set((float)0);
-
-	if (var > MAXPLAYERS)
-		var.Set(MAXPLAYERS);
-
-	for (int i = 0;i < NUMTEAMS;i++)
+	for (int i = 0; i < NUMTEAMS;i++)
 	{
 		int normalcount = 0;
 		for (size_t j = 0; j < players.size(); j++)
@@ -231,14 +210,6 @@ CVAR_FUNC_IMPL (join_password)
 		Printf(PRINT_HIGH, "join password cleared");
 }
 
-CVAR_FUNC_IMPL (spectate_password)
-{
-	if (strlen(var.cstring()))
-		Printf(PRINT_HIGH, "spectate password set");
-	else
-		Printf(PRINT_HIGH, "spectate password cleared");
-}
-
 CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 {
 	if(strlen(var.cstring()) < 5)
@@ -265,13 +236,10 @@ void SV_SetClientRate(client_t &client, int rate)
 	client.rate = clamp(rate, 1, (int)sv_maxrate);
 }
 
-EXTERN_CVAR (sv_waddownloadcap)
-CVAR_FUNC_IMPL (sv_maxrate)
+EXTERN_CVAR(sv_waddownloadcap)
+CVAR_FUNC_IMPL(sv_maxrate)
 {
-	// impose a minimum rate of 10kbps/client
-	if (var < 10)
-		var.Set(10);
-
+	// sv_waddownloadcap can not be larger than sv_maxrate
 	if (sv_waddownloadcap > var)
 		sv_waddownloadcap.Set(var);
 
@@ -285,7 +253,7 @@ CVAR_FUNC_IMPL (sv_maxrate)
 CVAR_FUNC_IMPL (sv_waddownloadcap)
 {
 	// sv_waddownloadcap can not be larger than sv_maxrate
-	if (var > sv_maxrate || var <= 0)
+	if (var > sv_maxrate)
 		var.Set(sv_maxrate);
 }
 

@@ -752,9 +752,9 @@ BEGIN_COMMAND(clearmaplist) {
 	}
 } END_COMMAND(clearmaplist)
 
-CVAR_FUNC_IMPL(sv_shufflemaplist) {
-	bool setting = var.cstring()[0] != '0';
-	Maplist::instance().set_shuffle(setting);
+CVAR_FUNC_IMPL(sv_shufflemaplist)
+{
+	Maplist::instance().set_shuffle(var);
 }
 
 BEGIN_COMMAND (gotomap) {
