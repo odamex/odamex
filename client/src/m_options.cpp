@@ -753,7 +753,6 @@ void ResetCustomColors (void);
 
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
-EXTERN_CVAR (am_ovshare)
 EXTERN_CVAR (am_showmonsters)
 EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showtime)

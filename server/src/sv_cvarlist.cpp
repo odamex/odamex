@@ -28,64 +28,64 @@
 // -----------------
 
 CVAR(			log_fulltimestamps, "0", "Extended timestamp info (dd/mm/yyyy hh:mm:ss)",
-				CVARTYPE_BOOL, CVAR_ARCHIVE)
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 CVAR(			log_packetdebug, "0", "Print debugging messages for each packet sent",
-				CVARTYPE_BOOL, CVAR_ARCHIVE)
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 // Server administrative settings
 // ------------------------------
 
 CVAR(			sv_motd, "Welcome to Odamex", "Message Of The Day to display to clients upon connecting",
-				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 CVAR(			sv_email, "email@domain.com", "Administrator email address",
-				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 CVAR(			sv_website, "http://odamex.net/", "Server or Admin website",
-				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 CVAR(			sv_waddownload,	"0", "Allow downloading of WAD files from this server",
-				CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR(			sv_emptyreset, "0", "Reloads the current map when all players leave",
-				CVARTYPE_BOOL, CVAR_ARCHIVE)
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 CVAR(			sv_globalspectatorchat, "1", "Players can see spectator chat",
-				CVARTYPE_BOOL, CVAR_ARCHIVE)
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 CVAR_RANGE(		sv_maxcorpses, "200", "Maximum corpses to appear on map",
-				CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 65536.0f)
+				CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 65536.0f)
 
 CVAR(			sv_clientcount,	"0", "Set to the number of connected players (for scripting)",
 				CVARTYPE_BYTE, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
 CVAR(			sv_antiwallhack, "0", "Experimental anti-wallkhack code",
-				CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_LATCH)
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
 
 CVAR_RANGE_FUNC_DECL(sv_maxclients, "4", "Maximum clients that can connect to a server",
-				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
+				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
 
 CVAR_RANGE_FUNC_DECL(sv_maxplayers, "4", "Maximum players that can join the game, the rest are spectators",
-				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
+				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
 
 CVAR_RANGE_FUNC_DECL(sv_maxplayersperteam, "3", "Maximum number of players that can be on a team",
-				CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
+				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
 
 CVAR_FUNC_DECL(	join_password, "", "Clients can connect if they have this password",
-				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	rcon_password, "", "Remote console password",
-				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	sv_usemasters, "1", "Advertise on master servers",
-				CVARTYPE_BOOL, CVAR_ARCHIVE)
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 CVAR(			sv_endmapscript, "",  "Script to run at end of each map (e.g. to choose next map)",
-				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)	
 
 CVAR(			sv_startmapscript, "", "Script to run at start of each map (e.g. to override cvars)",
-				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)	
 
 CVAR(			sv_curmap, "", "Set to the last played map",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
@@ -94,35 +94,35 @@ CVAR(			sv_nextmap, "", "Set to the next map to be played",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)	
 
 CVAR(			sv_loopepisode, "0", "Determines whether Doom 1 episodes carry over",
-				CVARTYPE_BOOL, CVAR_ARCHIVE)	
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)	
 
 CVAR_FUNC_DECL(	sv_shufflemaplist, "0", "Randomly shuffle the maplist",
-				CVARTYPE_BOOL, CVAR_ARCHIVE)
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 // Network settings
 // ----------------
 
 CVAR_RANGE(		sv_natport,	"0", "NAT firewall workaround, this is a port number",
-				CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 65536.0f)
+				CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 65536.0f)
 
 CVAR_RANGE(		sv_flooddelay, "1.5", "Chat flood protection time (in seconds)",
-				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
+				CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
 
 CVAR_RANGE_FUNC_DECL(sv_maxrate, "200", "Forces clients to be on or below this rate",
-				CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 100000.0f)
+				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 100000.0f)
 
 CVAR_RANGE_FUNC_DECL(sv_waddownloadcap, "200", "Cap wad file downloading to a specific rate",
-				CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 100000.0f)
+				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 100000.0f)
 
 #ifdef ODA_HAVE_MINIUPNP
 CVAR(			sv_upnp, "1", "Enable UPnP support",
-				CVARTYPE_BOOL, CVAR_ARCHIVE)
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 CVAR_RANGE(		sv_upnp_discovertimeout, "2000", "UPnP Router discovery timeout",
-				CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 500.0f, 10000.0f)
+				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 500.0f, 10000.0f)
 
 CVAR(			sv_upnp_description, "",  "Router-side description of port mapping",
-				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(			sv_upnp_internalip, "", "Set to the local machine IP address",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
@@ -238,7 +238,7 @@ CVAR_RANGE(		sv_countdown, "5", "Number of seconds to wait before starting the g
 // =======================================
 
 CVAR(			sv_emptyfreeze,  "0", "Experimental: Does not progress the game when there are no players",
-				CVARTYPE_BOOL, CVAR_ARCHIVE)
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 // Hacky abominations that should be purged with fire and brimstone
 // =================================================================
