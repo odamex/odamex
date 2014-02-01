@@ -143,12 +143,13 @@ public:
 			return temp;
 		}
 
-	private:
 		friend class SArray<VT>;
 
 		generic_iterator(unsigned int slot, ISAT* sarray) :
 			mSlot(slot), mSArray(sarray)
 		{ }
+
+	private:
 
 		unsigned int	mSlot;
 		ISAT*			mSArray;
