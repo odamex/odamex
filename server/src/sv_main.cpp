@@ -196,6 +196,7 @@ EXTERN_CVAR (sv_fragexitswitch)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_infiniteammo)
+EXTERN_CVAR (sv_keepkeys)
 
 // Teamplay/CTF
 EXTERN_CVAR (sv_scorelimit)
@@ -2541,7 +2542,7 @@ void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...)
     for (size_t i=0; i < players.size(); i++)
     {
 		cl = &clients[i];
-		
+
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
@@ -2567,7 +2568,7 @@ void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...)
     for (size_t i=0; i < players.size(); i++)
     {
 		cl = &clients[i];
-		
+
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
@@ -2631,7 +2632,7 @@ void STACK_ARGS SV_TeamPrintf (int level, int who, const char *fmt, ...)
 			continue;
 
 		cl = &clients[i];
-		
+
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
@@ -4185,7 +4186,7 @@ void SV_ParseCommands(player_t &player)
 		case clc_kill:
 			if(player.mo &&
                level.time > player.death_time + TICRATE*10 &&
-               sv_allowcheats)
+               (sv_allowcheats || (sv_gametype == GM_COOP && !sv_keepkeys)))
             {
 				SV_Suicide (player);
             }
