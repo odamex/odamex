@@ -1,0 +1,86 @@
+Odamex 32bpp color README
+-------------------------
+
+Feature by James S. Dunne <james.jdunne@gmail.com>
+https://github.com/JamesDunne/
+
+Changes
+-------
+ * Added 32bpp rendering mode to increase visual fidelity of lighting and remove
+   color aliasing. Odamex should also integrate more seamlessly with 32bpp
+   desktop modes instead of forcing the desktop bit mode down to 8bpp like on Windows
+   Vista and above.
+ * Removed `vid_defbits` cvar in favor of `vid_32bpp` which is '0' or '1'.
+   vid_32bpp: 1 means 32bpp color (default), 0 means 8bpp palettized color.
+   There's no reason to make the bitness setting any more complex than this since
+   I don't think anyone's interested in 16bpp color or 24bpp color. Technically, this
+   is only 24bpp color where the alpha channel is unused, but we use 32bpp modes for
+   DWORD-alignment speed.
+ * Video menu option "32-bit color"
+
+Planned Changes
+---------------
+ * Remove the 32 light levels in favor of smooth lighting.
+
+Fixed Issues
+------------
+ * Invulnerability does not reveal player colors in 32bpp
+ * Gamma-corrected status alpha-blending in 32bpp
+ * Gamma-corrected invulnerability in 32bpp
+ * Gamma level is maintained across client restarts
+ * Player colors are properly lit in 32bpp
+ * Player colors are properly colored under colored lighting in 32bpp
+ * Player colors are properly lit in 8bpp
+ * Span rendering in 32bpp is now vector accelerated (SSE2, MMX)
+ * Translucent walls in 32bpp are now vector accelerated (SSE2, MMX)
+ * Fixed alphablending code in 32bpp
+ * Fixed regression with underwater areas i.e. custom colormaps
+ * Now rendering true 32bpp colors for player in player setup menu in 32bpp mode
+ * Gamma not being maintained between map changes
+ * 32bpp player color translation
+ * Invulnerability effect in 32bpp now correct (doors in map32 had a white strip in the middle where it should be black)
+
+Code Changes
+------------
+ * Removed `vid_defbits` cvar in favor of `vid_32bpp` and new menu option.
+ * `vid_32bpp` cvar forces a mode switch when set.
+ * Added '32-bit color' menu option which controls `vid_32bpp` cvar.
+ * Removed all force 8bpp mode settings.
+ * Blit functions updated to correctly copy and translate colors between 8bpp and 32bpp modes.
+ * Disabled `I_BeginRead` which rendered a disk icon during disk loads; basic cyclic dependency problem with palette initialization and caused a crash.
+ * Forced gamma table initialization in palette setup code. Without this the screen would simply turn black in 32bpp because newgamma[] contained nothing but 0s.
+ * In general, code prefers to preserve 32bpp calculated colors and use `BestColor` function to do palette mapping.
+ * Invented `shaderef_t` and `shademap_t` to more sanely track colormap/shademap pair for 8bpp and 32bpp support.
+ * Using `am_color_t` to represent both 32bpp and 8bpp values for automap colors.
+ * 32bpp alpha blending for status/pain effects.
+ * SSE2, MMX, AltiVec optimizations for all 4-col rendering functions to do status alpha-blending.
+ * Introduced `r_intrin.h` to sanely detect MMX, SSE2, AltiVec availability.
+ * Added tech-specific optimization files for SSE2, MMX, and AltiVec.
+ * `r_optimize` cvar introduced to detect and switch between CPU rendering optimizations.
+ * Made sure MMX is not included in Win64 build; Win64 does not support MMX.
+ * Using function pointers for all rendering functions to easily switch modes.
+ * Fixed wipes for 32bpp.
+ * Fixed 8bpp vs 32bpp SDL screen mode switching snafu.
+ * Fixed dim effect for 32bpp.
+ * Fixed automap for 32bpp.
+ * Fixed screenshot for 32bpp.
+ * Fixed view window resizing in 32bpp mode.
+ * Fixed particle rendering for 32bpp.
+ * Fixed player setup screen's fire rendering in 32bpp.
+ * Fixed blend for 32bpp modes to be 50% alpha instead of 100% alpha.
+ * Fixed bunny scroll to work in 32bpp.
+ * Fixed CTF border when carrying flag in 32bpp.
+ * Refactored palette setup code.
+ * Generating custom shademaps for default light levels.
+ * Separating shademap construction from colormap.
+ * Much better logarithmic scale for lighting in 32bpp.
+ * Fixed forced 50% alpha for HUD in 32bpp; now repsects menu setting.
+ * Disabled `blend4vs4_sse2` because it produces incorrect colors.
+ * Ramped up red pain effect.
+ * More graceful mode switching failure handling.
+ * Removed ASM code for rendering.
+ * Switched `r_*D` functions to pointers.
+ * `DCanvas::Dim()` vectorized.
+ * `R_DrawSpanD()` vectorized.
+ * Don't use vectorization if `BlendA == 0`; just slows things down.
+ * 32bpp player color translation.
