@@ -226,7 +226,7 @@ BOOL HU_Responder (event_t *ev)
 	}
 	else
 	{
-		if(!c)
+		if (c < ' ' || c > '~') // ASCII only please
 			return false;
 
 		if(input_text.length() < MAX_CHATSTR_LEN)
