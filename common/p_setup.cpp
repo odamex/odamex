@@ -268,8 +268,8 @@ void P_LoadSubsectors (int lump)
 
 	for (i = 0; i < numsubsectors; i++)
 	{
-		subsectors[i].numlines = LESHORT(((mapsubsector_t *)data)[i].numsegs);
-		subsectors[i].firstline = LESHORT(((mapsubsector_t *)data)[i].firstseg);
+		subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].numsegs);
+		subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].firstseg);
 	}
 
 	Z_Free (data);
