@@ -29,6 +29,7 @@ AppVersion=0.6.4
 EnableDirDoesntExistWarning=true
 DirExistsWarning=no
 VersionInfoVersion=0.6.4
+MinVersion=0,5.0
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -60,9 +61,7 @@ Source: ..\..\odasrv.cfg; DestDir: {app}; Flags: ignoreversion; Components: serv
 Source: ..\..\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher
 Source: ..\..\config-samples\*; DestDir: {app}; Flags: ignoreversion; Components: server
 Source: ..\..\odamex.wad; DestDir: {app}; Flags: ignoreversion; Components: client server
-Source: ..\..\libgcc_s_dw2-1.dll; DestDir: {app}; Flags: ignoreversion; Components: base
-Source: ..\..\libstdc++-6.dll; DestDir: {app}; Flags: ignoreversion; Components: base
-Source: ..\..\mingwm10.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher libs
+Source: ..\..\libwinpthread-1.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\SDL.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\SDL_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
@@ -70,6 +69,7 @@ Source: ..\..\smpeg.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
+; Source: ..\..\COPYING.winpthreads.txt; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\CHANGELOG; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\LICENSE; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\MAINTAINERS; DestDir: {app}; Flags: ignoreversion; Components: base
@@ -94,6 +94,7 @@ Filename: {app}\odalaunch.exe; Description: {cm:LaunchProgram,Odalaunch}; Flags:
 Type: files; Name: {app}\Odamex Website.url
 Type: files; Name: {app}\Releases Changelog.url
 Type: files; Name: {app}\odamex.out
+
 [Registry]
 Root: HKCR; Subkey: odamex; ValueType: string; ValueData: URL:Odamex Protocol; Flags: uninsdeletekey noerror
 Root: HKCR; Subkey: odamex; ValueType: string; ValueName: Url Protocol; Flags: createvalueifdoesntexist uninsdeletekey noerror
@@ -103,3 +104,7 @@ Root: HKCR; SubKey: .odd; ValueType: string; ValueData: Odamex Demo; Flags: unin
 Root: HKCR; SubKey: Odamex Demo; ValueType: string; ValueData: Odamex Net Demo; Flags: uninsdeletekey noerror
 Root: HKCR; SubKey: Odamex Demo\Shell\Open\Command; ValueType: string; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletevalue noerror
 Root: HKCR; Subkey: Odamex Demo\DefaultIcon; ValueType: string; ValueData: {app}\odamex.exe,0; Flags: uninsdeletevalue noerror
+Root: HKCR; SubKey: ".odd"; ValueType: string; ValueData: "Odamex Data Demo"; Flags: uninsdeletekey
+Root: HKCR; SubKey: "Odamex Data Demo"; ValueType: string; ValueData: "Odamex Game Demo Format"; Flags: uninsdeletekey
+Root: HKCR; SubKey: "Odamex Data Demo\Shell\Open\Command"; ValueType: string; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletekey
+Root: HKCR; Subkey: "Odamex Data Demo\DefaultIcon"; ValueType: string; ValueData: "{app}\odamex.exe,1"; Flags: uninsdeletevalue
