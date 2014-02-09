@@ -850,8 +850,8 @@ static bool P_CheckSightDoom
     // First check for trivial rejection.
 	
     // Determine subsector entries in REJECT table.
-    s1 = (R_PointInSubsector(x1, y1)->sector - sectors);
-    s2 = (R_PointInSubsector(x2, y2)->sector - sectors);
+    s1 = (P_PointInSubsector(x1, y1)->sector - sectors);
+    s2 = (P_PointInSubsector(x2, y2)->sector - sectors);
     pnum = s1*numsectors + s2;
     bytenum = pnum>>3;
     bitnum = 1 << (pnum&7);

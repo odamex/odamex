@@ -82,7 +82,7 @@
 //
 // Every actor is linked into a single sector
 // based on its origin coordinates.
-// The subsector_t is found with R_PointInSubsector(x,y),
+// The subsector_t is found with P_PointInSubsector(x,y),
 // and the sector_t can be found with subsector->sector.
 // The sector links are only used by the rendering code,
 // the play simulation does not care about them at all.
@@ -430,7 +430,7 @@ public:
 	PlayerBitField	players_aware;
 
 	AActorPtr		goal;			// Monster's goal if not chasing anything
-	byte			*translation;	// Translation table (or NULL)
+	translationref_t translation;	// Translation table (or NULL)
 	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
 	byte			waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
 	SWORD			gear;			// killough 11/98: used in torque simulation

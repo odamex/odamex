@@ -109,16 +109,19 @@ SDLVideo::SDLVideo(int parm)
    screenw = screenh = screenbits = 0;
    palettechanged = false;
 
-   SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_SWSURFACE);
-
+   // Get Video modes
    vidModeIterator = 0;
-   vidModeIteratorBits = 8;
    vidModeList.clear();
+
+	// NOTE(jsd): We only support 32-bit and 8-bit color modes. No 24-bit or 16-bit.
+
+	// Fetch the list of fullscreen modes for this bpp setting:
+	SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_SWSURFACE);
 
    if(!sdllist)
    {
 	  // no fullscreen modes, but we could still try windowed
-	  Printf(PRINT_HIGH, "SDL_ListModes returned NULL. No fullscreen video modes are available.\n");
+		Printf(PRINT_HIGH, "No fullscreen video modes are available.\n");
 	  return;
    }
    else if(sdllist == (SDL_Rect **)-1)
@@ -130,10 +133,10 @@ SDLVideo::SDLVideo(int parm)
    {
       vidMode_t CustomVidModes[] =
       {
-         { 640, 480, 8 }
-        ,{ 640, 400, 8 }
-        ,{ 320, 240, 8 }
-        ,{ 320, 200, 8 }
+			 { 640, 480 }
+			,{ 640, 400 }
+			,{ 320, 240 }
+			,{ 320, 200 }
       };
 
       // Add in generic video modes reported by SDL
@@ -143,7 +146,6 @@ SDLVideo::SDLVideo(int parm)
 
         vm.width = sdllist[i]->w;
         vm.height = sdllist[i]->h;
-        vm.bits = 8;
 
         vidModeList.push_back(vm);
       }
@@ -151,6 +153,7 @@ SDLVideo::SDLVideo(int parm)
       // Now custom video modes to be added
       for (size_t i = 0; i < STACKARRAY_LENGTH(CustomVidModes); ++i)
         vidModeList.push_back(CustomVidModes[i]);
+	}
 
       // Reverse sort the modes
       std::sort(vidModeList.begin(), vidModeList.end(), std::greater<vidMode_t>());
@@ -158,7 +161,6 @@ SDLVideo::SDLVideo(int parm)
       // Get rid of any duplicates (SDL some times reports duplicates as well)
       vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end()), vidModeList.end());
    }
-}
 
 std::string SDLVideo::GetVideoDriverName()
 {
@@ -259,7 +261,7 @@ bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 }
 
 
-void SDLVideo::SetPalette(DWORD *palette)
+void SDLVideo::SetPalette(argb_t *palette)
 {
 	for (size_t i = 0; i < sizeof(newPalette)/sizeof(SDL_Color); i++)
 	{
@@ -308,7 +310,10 @@ void SDLVideo::UpdateScreen(DCanvas *canvas)
 		SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, &dstrect);
 	}
 
-	SDL_Flip(sdlScreen);
+	if (vid_vsync)
+		SDL_Flip(sdlScreen);
+	else
+		SDL_UpdateRect(sdlScreen, 0, 0, 0, 0);
 }
 
 
@@ -348,36 +353,25 @@ int SDLVideo::GetModeCount ()
 }
 
 
-void SDLVideo::StartModeIterator (int bits)
+void SDLVideo::StartModeIterator ()
 {
    vidModeIterator = 0;
-   vidModeIteratorBits = bits;
 }
-
 
 bool SDLVideo::NextMode (int *width, int *height)
 {
-   std::vector<vidMode_t>::iterator it;
+	std::vector<vidMode_t>::iterator it;
 
-   it = vidModeList.begin() + vidModeIterator;
+	it = vidModeList.begin() + vidModeIterator;
+	if (it == vidModeList.end())
+		return false;
 
-   while(it != vidModeList.end())
-   {
-      vidMode_t vm = *it;
+	vidMode_t vm = *it;
 
-      if(vm.bits == vidModeIteratorBits)
-      {
-         *width = vm.width;
-         *height = vm.height;
-         vidModeIterator++;
-         return true;
-      }
-
-      vidModeIterator++;
-
-      ++it;
-   }
-   return false;
+	*width = vm.width;
+	*height = vm.height;
+	vidModeIterator++;
+	return true;
 }
 
 
@@ -387,41 +381,39 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 
 	scrn->width = width;
 	scrn->height = height;
-	scrn->bits = screenbits;
+	scrn->bits = bits;
 	scrn->m_LockCount = 0;
 	scrn->m_Palette = NULL;
 	scrn->buffer = NULL;
 
 	SDL_Surface* new_surface;
-
-	unsigned int rmask = 0;
-	unsigned int gmask = 0;
-	unsigned int bmask = 0;
-
-	if (bits == 32)
-	{
-		// SDL interprets each pixel as a 32-bit number, so our masks must depend
-		// on the endianness (byte order) of the machine
-		#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-		rmask = 0x00ff0000;
-		gmask = 0x0000ff00;
-		bmask = 0x000000ff;
-		#else
-		rmask = 0x0000ff00;
-		gmask = 0x00ff0000;
-		bmask = 0xff000000;
-		#endif
-	}
-
 	Uint32 flags = SDL_SWSURFACE;
 
-	new_surface = SDL_CreateRGBSurface(flags, width, height, bits, rmask, gmask, bmask, 0);
+	new_surface = SDL_CreateRGBSurface(flags, width, height, bits, 0, 0, 0, 0);
 
 	if (!new_surface)
 		I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
 
 	if (new_surface->pitch != (width * (bits / 8)) && vid_autoadjust)
 		Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
+
+	// determine format of 32bpp pixels
+	if (bits == 32)
+	{
+		SDL_PixelFormat* fmt = new_surface->format;
+		// find which byte is not used and use it for alpha (SDL always reports 0 for alpha)
+		scrn->setAlphaShift(48 - (fmt->Rshift + fmt->Gshift + fmt->Bshift));
+		scrn->setRedShift(fmt->Rshift);
+		scrn->setGreenShift(fmt->Gshift);
+		scrn->setBlueShift(fmt->Bshift);
+	}
+	else
+	{
+		scrn->setAlphaShift(24);
+		scrn->setRedShift(16);
+		scrn->setGreenShift(8);
+		scrn->setBlueShift(0);
+	}
 
 	scrn->m_Private = new_surface;
 	scrn->pitch = new_surface->pitch;
@@ -449,7 +441,6 @@ void SDLVideo::ReleaseSurface(DCanvas *scrn)
 
 	delete scrn;
 }
-
 
 
 void SDLVideo::LockSurface (DCanvas *scrn)

@@ -65,7 +65,7 @@ particle_t *NewParticle (void);
 #endif
 void R_InitParticles (void);
 void R_ClearParticles (void);
-void R_DrawParticle (vissprite_t *, int, int);
+void R_DrawParticle(vissprite_t*);
 void R_ProjectParticle (particle_t *, const sector_t* sector, int fakeside);
 void R_FindParticleSubsectors();
 
@@ -74,11 +74,6 @@ extern int MaxVisSprites;
 extern vissprite_t		*vissprites;
 extern vissprite_t* 	vissprite_p;
 extern vissprite_t		vsprsortedhead;
-
-// Constant arrays used for psprite clipping
-//	and initializing clipping.
-extern int			*negonearray;
-extern int			*screenheightarray;
 
 // vars for R_DrawMaskedColumn
 extern int*			mfloorclip;
@@ -89,10 +84,6 @@ extern fixed_t		sprtopscreen;
 extern fixed_t		pspritexscale;
 extern fixed_t		pspriteyscale;
 extern fixed_t		pspritexiscale;
-
-
-void R_DrawMaskedColumn(tallpost_t* post);
-
 
 void R_CacheSprite (spritedef_t *sprite);
 void R_SortVisSprites (void);

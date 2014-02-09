@@ -24,6 +24,11 @@
 //-----------------------------------------------------------------------------
 
 #include <stddef.h>
+#include <assert.h>
+#include <algorithm>
+
+#include "SDL_cpuinfo.h"
+#include "r_intrin.h"
 
 #include "m_alloc.h"
 #include "doomdef.h"
@@ -52,6 +57,12 @@ extern	int		ST_Y;
 //	and the total size == width*height*depth/8.,
 //
 
+extern "C" {
+drawcolumn_t dcol;
+drawspan_t dspan;
+}
+
+
 
 byte*			viewimage;
 extern "C" {
@@ -74,269 +85,50 @@ int				detailyshift;		// [RH] Y shift for vertical detail level
 // [RH] Pointers to the different column drawers.
 //		These get changed depending on the current
 //		screen depth.
-void (*R_DrawColumnHoriz)(void);
 void (*R_DrawColumn)(void);
+void (*R_DrawColumnHoriz)(void);
 void (*R_DrawFuzzColumn)(void);
 void (*R_DrawTranslucentColumn)(void);
 void (*R_DrawTranslatedColumn)(void);
 void (*R_DrawSpan)(void);
 void (*R_DrawSlopeSpan)(void);
-void (*rt_map4cols)(int,int,int);
+void (*R_FillColumn)(void);
+void (*R_FillSpan)(void);
+void (*R_FillTranslucentSpan)(void);
+void (*rt_copy1col) (int hx, int sx, int yl, int yh);
+void (*rt_copy4cols) (int sx, int yl, int yh);
+void (*rt_map1col) (int hx, int sx, int yl, int yh);
+void (*rt_map4cols) (int sx, int yl, int yh);
+void (*rt_lucent1col) (int hx, int sx, int yl, int yh);
+void (*rt_lucent4cols) (int sx, int yl, int yh);
+void (*rt_tlate1col) (int hx, int sx, int yl, int yh);
+void (*rt_tlate4cols) (int sx, int yl, int yh);
+void (*rt_tlatelucent1col) (int hx, int sx, int yl, int yh);
+void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
 
+// Possibly vectorized functions:
+void (*R_DrawSpanD)(void);
+void (*R_DrawSlopeSpanD)(void);
+void (*r_dimpatchD)(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
 
+// ============================================================================
 //
-// R_DrawColumn
-// Source is the top of the column to scale.
+// Fuzz Table
 //
-extern "C" {
-int				dc_pitch=0x12345678;	// [RH] Distance between rows
-
-lighttable_t*	dc_colormap; 
-int 			dc_x; 
-int 			dc_yl; 
-int 			dc_yh; 
-fixed_t 		dc_iscale; 
-fixed_t 		dc_texturemid;
-fixed_t			dc_texturefrac;
-int				dc_color;				// [RH] Color for column filler
-
-// first pixel in a column (possibly virtual) 
-byte*			dc_source;				
-
-// just for profiling 
-int 			dccount;
-}
-
-/************************************/
-/*									*/
-/* Palettized drawers (C versions)	*/
-/*									*/
-/************************************/
-
+// Framebuffer postprocessing.
+// Creates a fuzzy image by copying pixels
+// from adjacent ones to left and right.
+// Used with an all black colormap, this
+// could create the SHADOW effect,
+// i.e. spectres and invisible players.
 //
-// A column is a vertical slice/span from a wall texture that,
-//	given the DOOM style restrictions on the view orientation,
-//	will always have constant z depth.
-// Thus a special case loop for very fast rendering can
-//	be used. It has also been used with Wolfenstein 3D.
-// 
-void R_DrawColumnP_C (void)
-{
-	int 				count;
-	byte*				dest;
-	fixed_t 			frac;
-	fixed_t 			fracstep;
+// ============================================================================
 
-	count = dc_yh - dc_yl;
-
-	// Zero length, column does not exceed a pixel.
-	if (count < 0)
-		return;
-
-	count++;
-
-#ifdef RANGECHECK 
-	if (dc_x >= screen->width
-		|| dc_yl < 0
-		|| dc_yh >= screen->height) {
-		Printf (PRINT_HIGH, "R_DrawColumnP_C: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
-		return;
-	}
-#endif
-
-	// Framebuffer destination address.
-	// Use ylookup LUT to avoid multiply with ScreenWidth.
-	// Use columnofs LUT for subwindows?
-	dest = ylookup[dc_yl] + columnofs[dc_x];
-
-	// Determine scaling,
-	//	which is the only mapping to be done.
-	fracstep = dc_iscale; 
-	frac = dc_texturefrac;
-
-	{
-		// [RH] Get local copies of these variables so that the compiler
-		//		has a better chance of optimizing this well.
-		byte *colormap = dc_colormap;
-		int texheight = dc_textureheight;
-		int mask = (texheight >> FRACBITS) - 1;
-		byte *source = dc_source;
-		int pitch = dc_pitch;
-
-		// [SL] Properly tile textures whose heights are not a power-of-2,
-		// avoiding a tutti-frutti effect.  From Eternity Engine.
-		if (texheight & (texheight - 1))
-		{
-			// texture height is not a power-of-2
-			if (frac < 0)
-				while((frac += texheight) < 0);
-			else
-				while(frac >= texheight)
-					frac -= texheight;
-
-			do
-			{
-				*dest = colormap[source[frac>>FRACBITS]];
-				dest += pitch;
-				if ((frac += fracstep) >= texheight)
-					frac -= texheight;
-			} while(--count);
-		}
-		else
-		{
-			// texture height is a power-of-2
-			
-			// Inner loop that does the actual texture mapping,
-			//	e.g. a DDA-lile scaling.
-			// This is as fast as it gets.
-			do
-			{
-				// Re-map color indices from wall texture column
-				//	using a lighting/special effects LUT.
-				*dest = colormap[source[(frac>>FRACBITS)&mask]];
-
-				dest += pitch;
-				frac += fracstep;
-			} while (--count);
-		}
-	}
-} 
-
-
-// [RH] Same as R_DrawColumnP_C except that it doesn't do any colormapping.
-//		Used by the sky drawer because the sky is always fullbright.
-void R_StretchColumnP_C (void)
-{
-	int 				count;
-	byte*				dest;
-	fixed_t 			frac;
-	fixed_t 			fracstep;
-
-	count = dc_yh - dc_yl;
-
-	if (count < 0)
-		return;
-
-	count++;
-
-#ifdef RANGECHECK 
-	if (dc_x >= screen->width
-		|| dc_yl < 0
-		|| dc_yh >= screen->height) {
-		Printf (PRINT_HIGH, "R_StretchColumnP_C: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
-		return;
-	}
-#endif
-
-	dest = ylookup[dc_yl] + columnofs[dc_x];
-	fracstep = dc_iscale; 
-	frac = dc_texturefrac;
-
-	{
-		int texheight = dc_textureheight;
-		int mask = (texheight >> FRACBITS) - 1;
-		byte *source = dc_source;
-		int pitch = dc_pitch;
-
-		// [SL] Properly tile textures whose heights are not a power-of-2,
-		// avoiding a tutti-frutti effect.  From Eternity Engine.
-		if (texheight & (texheight - 1))
-		{
-			// texture height is not a power-of-2
-			if (frac < 0)
-				while((frac += texheight) < 0);
-			else
-				while(frac >= texheight)
-					frac -= texheight;
-
-			do
-			{
-				*dest = source[frac>>FRACBITS];
-				dest += pitch;
-				if ((frac += fracstep) >= texheight)
-					frac -= texheight;
-			} while(--count);
-		}
-		else
-		{		
-			// texture height is a power-of-2
-			do
-			{
-				*dest = source[(frac>>FRACBITS)&mask];
-				dest += pitch;
-				frac += fracstep;
-			} while (--count);
-		}
-	}
-} 
-
-//
-// R_BlankColumn
-//
-// [SL] - Does nothing (obviously). Used when a column drawing function
-// pointer should not draw anything.
-//
-void R_BlankColumn (void)
-{
-}
-
-// [RH] Just fills a column with a color
-void R_FillColumnP (void)
-{
-	int 				count;
-	byte*				dest;
-
-	count = dc_yh - dc_yl;
-
-	if (count < 0)
-		return;
-
-	count++;
-
-#ifdef RANGECHECK 
-	if (dc_x >= screen->width
-		|| dc_yl < 0
-		|| dc_yh >= screen->height) {
-		Printf (PRINT_HIGH, "R_StretchColumnP_C: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
-		return;
-	}
-#endif
-
-	dest = ylookup[dc_yl] + columnofs[dc_x];
-
-	{
-		int pitch = dc_pitch;
-		byte color = dc_color;
-
-		do
-		{
-			*dest = color;
-			dest += pitch;
-		} while (--count);
-	}
-} 
-
-//
-// Spectre/Invisibility.
-//
-// [RH] FUZZTABLE changed from 50 to 64
-#define FUZZTABLE	64
+#define FUZZTABLE	64		// [RH] FUZZTABLE changed from 50 to 64
 #define FUZZOFF		(screen->pitch)
 
-extern "C"
-{
-int 	fuzzoffset[FUZZTABLE];
-int 	fuzzpos = 0; 
-}
-/*
-	FUZZOFF,-FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-	FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-	FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,
-	FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-	FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,
-	FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,
-	FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF 
-*/
+static int fuzzoffset[FUZZTABLE];
+static int fuzzpos = 0;
 
 static const signed char fuzzinit[FUZZTABLE] = {
 	1,-1, 1,-1, 1, 1,-1, 1,
@@ -362,79 +154,12 @@ void R_InitFuzzTable (void)
 		fuzzoffset[i] = fuzzinit[i] * fuzzoff;
 }
 
+
+// ============================================================================
 //
-// Framebuffer postprocessing.
-// Creates a fuzzy image by copying pixels
-//	from adjacent ones to left and right.
-// Used with an all black colormap, this
-//	could create the SHADOW effect,
-//	i.e. spectres and invisible players.
+// Translucency Table
 //
-void R_DrawFuzzColumnP_C (void)
-{
-	int count;
-	byte *dest;
-
-	// Adjust borders. Low...
-	if (!dc_yl)
-		dc_yl = 1;
-
-	// .. and high.
-	if (dc_yh == realviewheight-1)
-		dc_yh = realviewheight - 2;
-
-	count = dc_yh - dc_yl;
-
-	// Zero length.
-	if (count < 0)
-		return;
-
-	count++;
-
-#ifdef RANGECHECK
-	if (dc_x >= screen->width
-		|| dc_yl < 0 || dc_yh >= screen->height)
-	{
-		I_Error ("R_DrawFuzzColumnP_C: %i to %i at %i",
-				 dc_yl, dc_yh, dc_x);
-	}
-#endif
-
-
-	dest = ylookup[dc_yl] + columnofs[dc_x];
-
-	// Looks like an attempt at dithering,
-	//	using the colormap #6 (of 0-31, a bit
-	//	brighter than average).
-	{
-		// [RH] Make local copies of global vars to try and improve
-		//		the optimizations made by the compiler.
-		int pitch = dc_pitch;
-		int fuzz = fuzzpos;
-		byte *map = GetDefaultPalette()->maps.colormaps + 6*256;
-
-		do 
-		{
-			// Lookup framebuffer, and retrieve
-			//	a pixel that is either one column
-			//	left or right of the current one.
-			// Add index from colormap to index.
-			*dest = map[dest[fuzzoffset[fuzz]]]; 
-
-			// Clamp table lookup index.
-			fuzz = (fuzz + 1) & (FUZZTABLE - 1);
-			
-			dest += pitch;
-		} while (--count);
-
-		fuzzpos = (fuzz + 3) & (FUZZTABLE - 1);
-	}
-} 
-
-//
-// R_DrawTranlucentColumn
-//
-fixed_t dc_translevel;
+// ============================================================================
 
 /*
 [RH] This translucency algorithm is based on DOSDoom 0.65's, but uses
@@ -475,894 +200,33 @@ all the frac bits and the four upper zero bits to 1. It's now possible
 to get the RGB table index by anding the current value >> 5 with the
 current value >> 19. When asm-optimised, this should be the fastest
 algorithm that uses RGB tables.
-
 */
 
-void R_DrawTranslucentColumnP_C (void)
-{
-	int count;
-	byte *dest;
-	fixed_t frac;
-	fixed_t fracstep;
-	unsigned int *fg2rgb, *bg2rgb;
 
-	count = dc_yh - dc_yl;
-	if (count < 0)
-		return;
-	count++;
-
-#ifdef RANGECHECK
-	if (dc_x >= screen->width
-		|| dc_yl < 0
-		|| dc_yh >= screen->height)
-	{
-		I_Error ( "R_DrawTranslucentColumnP_C: %i to %i at %i",
-				  dc_yl, dc_yh, dc_x);
-	}
-#endif 
-
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT-fglevel;
-		fg2rgb = Col2RGB8[fglevel>>10];
-		bg2rgb = Col2RGB8[bglevel>>10];
-	}
-
-	dest = ylookup[dc_yl] + columnofs[dc_x];
-
-	fracstep = dc_iscale;
-	frac = dc_texturefrac;
-
-	{
-		byte *colormap = dc_colormap;
-		byte *source = dc_source;
-		int texheight = dc_textureheight;
-		int mask = (texheight >> FRACBITS) - 1;
-		int pitch = dc_pitch;
-
-		// [SL] Properly tile textures whose heights are not a power-of-2,
-		// avoiding a tutti-frutti effect.  From Eternity Engine.
-		if (texheight & (texheight - 1))
-		{
-			// texture height is not a power-of-2
-			if (frac < 0)
-				while((frac += texheight) < 0);
-			else
-				while(frac >= texheight)
-					frac -= texheight;
-
-			do
-			{
-				unsigned int fg = colormap[source[(frac>>FRACBITS)]];
-				unsigned int bg = *dest;
-				
-				fg = fg2rgb[fg];
-				bg = bg2rgb[bg];
-				fg = (fg+bg) | 0x1f07c1f;
-				*dest = RGB32k[0][0][fg & (fg>>15)];
-				dest += pitch;
-				if ((frac += fracstep) >= texheight)
-					frac -= texheight;
-			} while(--count);
-		}
-		else
-		{		
-			// texture height is a power-of-2
-			do
-			{
-				unsigned int fg = colormap[source[(frac>>FRACBITS)&mask]];
-				unsigned int bg = *dest;
-
-				fg = fg2rgb[fg];
-				bg = bg2rgb[bg];
-				fg = (fg+bg) | 0x1f07c1f;
-				*dest = RGB32k[0][0][fg & (fg>>15)];
-				dest += pitch;
-				frac += fracstep;
-			} while (--count);
-		}
-	}
-}
-
+// ============================================================================
 //
-// R_DrawTranslatedColumn
-// Used to draw player sprites
-//	with the green colorramp mapped to others.
-// Could be used with different translation
-//	tables, e.g. the lighter colored version
-//	of the BaronOfHell, the HellKnight, uses
-//	identical sprites, kinda brightened up.
+// Indexed-color Translation Table
 //
-byte*	dc_translation;
-byte*	translationtables;
-
-void R_DrawTranslatedColumnP_C (void)
-{ 
-	int 				count;
-	byte*				dest;
-	fixed_t 			frac;
-	fixed_t 			fracstep;
-
-	count = dc_yh - dc_yl;
-	if (count < 0) 
-		return;
-	count++;
-
-#ifdef RANGECHECK 
-	if (dc_x >= screen->width
-		|| dc_yl < 0
-		|| dc_yh >= screen->height)
-	{
-		I_Error ( "R_DrawTranslatedColumnP_C: %i to %i at %i",
-				  dc_yl, dc_yh, dc_x);
-	}
-	
-#endif 
-
-	dest = ylookup[dc_yl] + columnofs[dc_x];
-
-	fracstep = dc_iscale;
-	frac = dc_texturefrac;
-
-	{
-		// [RH] Local copies of global vars to improve compiler optimizations
-		byte *colormap = dc_colormap;
-		byte *translation = dc_translation;
-
-		int texheight = dc_textureheight;
-		int mask = (texheight >> FRACBITS) - 1;
-		byte *source = dc_source;
-		int pitch = dc_pitch;
-
-		// [SL] Properly tile textures whose heights are not a power-of-2,
-		// avoiding a tutti-frutti effect.  From Eternity Engine.
-		if (texheight & (texheight - 1))
-		{
-			// texture height is not a power-of-2
-			if (frac < 0)
-				while((frac += texheight) < 0);
-			else
-				while(frac >= texheight)
-					frac -= texheight;
-
-			do
-			{
-				*dest = colormap[translation[source[(frac>>FRACBITS)]]];
-				dest += pitch;
-				
-				if ((frac += fracstep) >= texheight)
-					frac -= texheight;
-			} while(--count);
-		}
-		else
-		{		
-			// texture height is a power-of-2
-			do
-			{
-				*dest = colormap[translation[source[(frac>>FRACBITS) & mask]]];
-				dest += pitch;
-
-				frac += fracstep;
-			} while (--count);
-		}
-	}
-}
-
-// Draw a column that is both translated and translucent
-void R_DrawTlatedLucentColumnP_C (void)
-{
-	int count;
-	byte *dest;
-	fixed_t frac;
-	fixed_t fracstep;
-	unsigned int *fg2rgb, *bg2rgb;
-
-	count = dc_yh - dc_yl;
-	if (count < 0)
-		return;
-	count++;
-
-#ifdef RANGECHECK
-	if (dc_x >= screen->width
-		|| dc_yl < 0
-		|| dc_yh >= screen->height)
-	{
-		I_Error ( "R_DrawTlatedLucentColumnP_C: %i to %i at %i",
-				  dc_yl, dc_yh, dc_x);
-	}
-	
-#endif 
-
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT-fglevel;
-		fg2rgb = Col2RGB8[fglevel>>10];
-		bg2rgb = Col2RGB8[bglevel>>10];
-	}
-
-	dest = ylookup[dc_yl] + columnofs[dc_x];
-
-	fracstep = dc_iscale;
-	frac = dc_texturefrac;
-
-	{
-		byte *translation = dc_translation;
-		byte *colormap = dc_colormap;
-
-		int texheight = dc_textureheight;
-		int mask = (texheight >> FRACBITS) - 1;
-		byte *source = dc_source;
-		int pitch = dc_pitch;
-
-		// [SL] Properly tile textures whose heights are not a power-of-2,
-		// avoiding a tutti-frutti effect.  From Eternity Engine.
-		if (texheight & (texheight - 1))
-		{
-			// texture height is not a power-of-2
-			if (frac < 0)
-				while((frac += texheight) < 0);
-			else
-				while(frac >= texheight)
-					frac -= texheight;
-
-			do
-			{
-				unsigned int fg = colormap[translation[source[(frac>>FRACBITS)]]];
-				unsigned int bg = *dest;
-
-				fg = fg2rgb[fg];
-				bg = bg2rgb[bg];
-				fg = (fg+bg) | 0x1f07c1f;
-				*dest = RGB32k[0][0][fg & (fg>>15)];
-				dest += pitch;
-				
-				if ((frac += fracstep) >= texheight)
-					frac -= texheight;
-			} while(--count);
-		}
-		else
-		{		
-			// texture height is a power-of-2
-			do
-			{
-				unsigned int fg = colormap[translation[source[(frac>>FRACBITS)&mask]]];
-				unsigned int bg = *dest;
-
-				fg = fg2rgb[fg];
-				bg = bg2rgb[bg];
-				fg = (fg+bg) | 0x1f07c1f;
-				*dest = RGB32k[0][0][fg & (fg>>15)];
-				dest += pitch;
-				frac += fracstep;
-			} while (--count);
-		}
-	}
-}
-
-
+// Used to draw player sprites with the green colorramp mapped to others.
+// Could be used with different translation tables, e.g. the lighter colored
+// version of the BaronOfHell, the HellKnight, uses identical sprites, kinda
+// brightened up.
 //
-// R_DrawSpan 
-// With DOOM style restrictions on view orientation,
-//	the floors and ceilings consist of horizontal slices
-//	or spans with constant z depth.
-// However, rotation around the world z axis is possible,
-//	thus this mapping, while simpler and faster than
-//	perspective correct texture mapping, has to traverse
-//	the texture at an angle in all but a few cases.
-// In consequence, flats are not stored by column (like walls),
-//	and the inner loop has to step in texture space u and v.
-//
-extern "C" {
-int						ds_colsize=0xdeadbeef;	// [RH] Distance between columns
-int						ds_color;				// [RH] color for non-textured spans
-
-int 					ds_y; 
-int 					ds_x1; 
-int 					ds_x2;
-
-lighttable_t*			ds_colormap; 
-
-dsfixed_t 				ds_xfrac; 
-dsfixed_t 				ds_yfrac; 
-dsfixed_t 				ds_xstep; 
-dsfixed_t 				ds_ystep;
-
-// start of a 64*64 tile image 
-byte*					ds_source;		
-
-// just for profiling
-int 					dscount;
-
-// [SL] 2012-03-19 - For sloped planes
-double					ds_iu;
-double					ds_iv;
-double					ds_iustep;
-double					ds_ivstep;
-double					ds_id;
-double					ds_idstep;
-byte					*slopelighting[MAXWIDTH];
-}
-
-//
-// Draws the actual span.
-void R_DrawSpanP_C (void)
-{
-	dsfixed_t			xfrac;
-	dsfixed_t			yfrac;
-	dsfixed_t			xstep;
-	dsfixed_t			ystep;
-	byte*				dest;
-	int 				count;
-	int 				spot;
-
-#ifdef RANGECHECK 
-	if (ds_x2 < ds_x1
-		|| ds_x1<0
-		|| ds_x2>=screen->width
-		|| ds_y>screen->height)
-	{
-		I_Error ("R_DrawSpan: %i to %i at %i",
-				 ds_x1,ds_x2,ds_y);
-	}
-//		dscount++;
-#endif
-
-	
-	xfrac = ds_xfrac;
-	yfrac = ds_yfrac;
-
-	dest = ylookup[ds_y] + columnofs[ds_x1];
-
-	// We do not check for zero spans here?
-	count = ds_x2 - ds_x1 + 1;
-
-	xstep = ds_xstep;
-	ystep = ds_ystep;
-
-	do {
-		// Current texture index in u,v.
-		spot = ((yfrac>>(32-6-6))&(63*64)) + (xfrac>>(32-6));
-
-		// Lookup pixel from flat texture tile,
-		//  re-index using light/colormap.
-		*dest = ds_colormap[ds_source[spot]];
-		dest += ds_colsize;
-
-		// Next step in u,v.
-		xfrac += xstep;
-		yfrac += ystep;
-	} while (--count);
-}
-
-// [RH] Just fill a span with a color
-void R_FillSpan (void)
-{
-#ifdef RANGECHECK
-	if (ds_x2 < ds_x1
-		|| ds_x1<0
-		|| ds_x2>=screen->width
-		|| ds_y>screen->height)
-	{
-		I_Error( "R_FillSpan: %i to %i at %i",
-				 ds_x1,ds_x2,ds_y);
-	}
-//		dscount++;
-#endif
-
-	memset (ylookup[ds_y] + columnofs[ds_x1], ds_color, (ds_x2 - ds_x1 + 1) * ds_colsize);
-}
-
-
-//
-// R_DrawSlopeSpan
-//
-// Texture maps a sloped surface using affine texturemapping for each row of
-// the span.  Not as pretty as a perfect texturemapping but should be much
-// faster.
-//
-// Based on R_DrawSlope_8_64 from Eternity Engine, written by SoM/Quasar
-//
-#define SPANJUMP 16
-#define INTERPSTEP (0.0625f)
-
-void R_DrawSlopeSpanP_C(void)
-{
-	int count = ds_x2 - ds_x1 + 1;
-	if (count <= 0)
-		return;
-		
-#ifdef RANGECHECK 
-	if (ds_x2 < ds_x1
-		|| ds_x1<0
-		|| ds_x2>=screen->width
-		|| ds_y>screen->height)
-	{
-		I_Error ("R_DrawSlopeSpan: %i to %i at %i",
-				 ds_x1,ds_x2,ds_y);
-	}
-#endif
-
-	double iu = ds_iu, iv = ds_iv;
-	double ius = ds_iustep, ivs = ds_ivstep;
-	double id = ds_id, ids = ds_idstep;
-	
-	// framebuffer	
-	byte *dest = ylookup[ds_y] + columnofs[ds_x1];
-	
-	// texture data
-	byte *src = (byte *)ds_source;
-
-	int colsize = ds_colsize;
-	lighttable_t* colormap;
-	int ltindex = 0;		// index into the lighting table
-
-   while(count >= SPANJUMP)
-   {
-      double ustart, uend;
-      double vstart, vend;
-      double mulstart, mulend;
-      unsigned int ustep, vstep, ufrac, vfrac;
-      int incount;
-
-      mulstart = 65536.0f / id;
-      id += ids * SPANJUMP;
-      mulend = 65536.0f / id;
-
-      ufrac = (int)(ustart = iu * mulstart);
-      vfrac = (int)(vstart = iv * mulstart);
-      iu += ius * SPANJUMP;
-      iv += ivs * SPANJUMP;
-      uend = iu * mulend;
-      vend = iv * mulend;
-
-      ustep = (int)((uend - ustart) * INTERPSTEP);
-      vstep = (int)((vend - vstart) * INTERPSTEP);
-
-      incount = SPANJUMP;
-      while(incount--)
-      {
-         colormap = slopelighting[ltindex++];
-         *dest = colormap[src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]];
-         dest += colsize;
-         ufrac += ustep;
-         vfrac += vstep;
-      }
-
-      count -= SPANJUMP;
-   }
-   if (count > 0)
-   {
-      double ustart, uend;
-      double vstart, vend;
-      double mulstart, mulend;
-      unsigned int ustep, vstep, ufrac, vfrac;
-      int incount;
-
-      mulstart = 65536.0f / id;
-      id += ids * count;
-      mulend = 65536.0f / id;
-
-      ufrac = (int)(ustart = iu * mulstart);
-      vfrac = (int)(vstart = iv * mulstart);
-      iu += ius * count;
-      iv += ivs * count;
-      uend = iu * mulend;
-      vend = iv * mulend;
-
-      ustep = (int)((uend - ustart) / count);
-      vstep = (int)((vend - vstart) / count);
-
-      incount = count;
-      while(incount--)
-      {
-         colormap = slopelighting[ltindex++];
-         *dest = colormap[src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]];
-         dest += colsize;
-         ufrac += ustep;
-         vfrac += vstep;
-      }
-   }
-}
-
-//
-// R_DrawSlopeSpanIdeal
-//
-// Texture maps a sloped surface using an ideal method of texturemapping.
-// This is likely slower than desired and therefore useful mostly as
-// a reference only.
-//
-// Based on R_DrawSlope_8_64 from Eternity Engine, written by SoM/Quasar
-//
-void R_DrawSlopeSpanIdealP_C(void)
-{
-	int count = ds_x2 - ds_x1 + 1;
-	if (count <= 0)
-		return;
-		
-#ifdef RANGECHECK 
-	if (ds_x2 < ds_x1
-		|| ds_x1<0
-		|| ds_x2>=screen->width
-		|| ds_y>screen->height)
-	{
-		I_Error ("R_DrawSlopeSpan: %i to %i at %i",
-				 ds_x1,ds_x2,ds_y);
-	}
-#endif
-
-	double iu = ds_iu, iv = ds_iv;
-	double ius = ds_iustep, ivs = ds_ivstep;
-	double id = ds_id, ids = ds_idstep;
-	
-	// framebuffer	
-	byte *dest = ylookup[ds_y] + columnofs[ds_x1];
-	
-	// texture data
-	byte *src = (byte *)ds_source;
-
-	int colsize = ds_colsize;
-	lighttable_t* colormap;
-	int ltindex = 0;		// index into the lighting table
-
-	do
-	{
-		float mul = 1.0f / id;
-
-		int u = (int)(iu * mul);
-		int v = (int)(iv * mul);
-		unsigned texl = (v & 63) * 64 + (u & 63);
-
-		colormap = slopelighting[ltindex++];
-		*dest = colormap[src[texl]];
-		dest += colsize;
-
-		iu += ius;
-		iv += ivs;
-		id += ids;	
-	} while (--count);
-}
-
-/****************************************/
-/*										*/
-/* [RH] ARGB8888 drawers (C versions)	*/
-/*										*/
-/****************************************/
-
-#define dc_shademap ((unsigned int *)dc_colormap)
-
-void R_DrawColumnD_C (void) 
-{ 
-	int 				count;
-	unsigned int*		dest;
-	fixed_t 			frac;
-	fixed_t 			fracstep;
-
-	count = dc_yh - dc_yl;
-
-	// Zero length, column does not exceed a pixel.
-	if (count < 0)
-		return;
-	count++;
-
-#ifdef RANGECHECK 
-	if (dc_x >= screen->width
-		|| dc_yl < 0
-		|| dc_yh >= screen->height) {
-		Printf (PRINT_HIGH, "R_DrawColumnD_C: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
-		return;
-	}
-#endif
-
-	dest = (unsigned int *)(ylookup[dc_yl] + columnofs[dc_x]);
-
-	fracstep = dc_iscale;
-	frac = dc_texturefrac;
-
-	{
-		unsigned int *shademap = dc_shademap;
-		byte *source = dc_source;
-		int pitch = dc_pitch >> 2;
-		int texheight = dc_textureheight;
-		int mask = (texheight >> FRACBITS) - 1;
-
-		// [SL] Properly tile textures whose heights are not a power-of-2,
-		// avoiding a tutti-frutti effect.  From Eternity Engine.
-		if (texheight & (texheight - 1))
-		{
-			// texture height is not a power-of-2
-			if (frac < 0)
-				while((frac += texheight) < 0);
-			else
-				while(frac >= texheight)
-					frac -= texheight;
-
-			do
-			{
-				*dest = shademap[source[(frac>>FRACBITS)]];
-				dest += pitch;
-				if ((frac += fracstep) >= texheight)
-					frac -= texheight;
-			} while(--count);
-		}
-		else
-		{		
-			// texture height is a power-of-2
-			do
-			{
-				*dest = shademap[source[(frac>>FRACBITS)&mask]];
-
-				dest += pitch;
-				frac += fracstep;
-
-			} while (--count);
-		}
-	}
-}
-
-void R_DrawFuzzColumnD_C (void)
-{
-	int 				count;
-	unsigned int*		dest;
-
-	// Adjust borders. Low...
-	if (!dc_yl)
-		dc_yl = 1;
-
-	// .. and high.
-	if (dc_yh == realviewheight-1)
-		dc_yh = realviewheight - 2;
-
-	count = dc_yh - dc_yl;
-
-	// Zero length.
-	if (count < 0)
-		return;
-	count++;
-
-#ifdef RANGECHECK
-	if (dc_x >= screen->width
-		|| dc_yl < 0 || dc_yh >= screen->height)
-	{
-		I_Error ("R_DrawFuzzColumnD_C: %i to %i at %i",
-				 dc_yl, dc_yh, dc_x);
-	}
-#endif
-
-	dest = (unsigned int *)(ylookup[dc_yl] + columnofs[dc_x]);
-
-	// [RH] This is actually slightly brighter than
-	//		the indexed version, but it's close enough.
-	{
-		int fuzz = fuzzpos;
-		int pitch = dc_pitch >> 2;
-
-		do
-		{
-			unsigned int work = dest[fuzzoffset[fuzz]>>2];
-			*dest = work - ((work >> 2) & 0x3f3f3f);
-
-			// Clamp table lookup index.
-			fuzz = (fuzz + 1) & (FUZZTABLE - 1);
-			
-			dest += pitch;
-		} while (--count);
-
-		fuzzpos = (fuzz + 3) & (FUZZTABLE - 1);
-	}
-}
-
-void R_DrawTranslucentColumnD_C (void)
-{
-	int 				count;
-	unsigned int*		dest;
-	fixed_t 			frac;
-	fixed_t 			fracstep;
-
-	count = dc_yh - dc_yl;
-	if (count < 0)
-		return;
-	count++;
-
-#ifdef RANGECHECK
-	if (dc_x >= screen->width
-		|| dc_yl < 0
-		|| dc_yh >= screen->height)
-	{
-		I_Error ( "R_DrawTranslucentColumnD_C: %i to %i at %i",
-				  dc_yl, dc_yh, dc_x);
-	}
-	
-#endif 
-
-	dest = (unsigned int *)(ylookup[dc_yl] + columnofs[dc_x]);
-
-	fracstep = dc_iscale;
-	frac = dc_texturefrac;
-
-	{
-		unsigned int *shademap = dc_shademap;
-		byte *source = dc_source;
-		int pitch = dc_pitch >> 2;
-		int texheight = dc_textureheight;
-		int mask = (texheight >> FRACBITS) - 1;
-
-		// [SL] Properly tile textures whose heights are not a power-of-2,
-		// avoiding a tutti-frutti effect.  From Eternity Engine.
-		if (texheight & (texheight - 1))
-		{
-			// texture height is not a power-of-2
-			if (frac < 0)
-				while((frac += texheight) < 0);
-			else
-				while(frac >= texheight)
-					frac -= texheight;
-
-			do
-			{
-				*dest = ((*dest >> 1) & 0x7f7f7f) +
-						((shademap[source[(frac>>FRACBITS)]] >> 1) & 0x7f7f7f);
-				dest += pitch;
-				
-				if ((frac += fracstep) >= texheight)
-					frac -= texheight;
-			} while(--count);
-		}
-		else
-		{		
-			// texture height is a power-of-2
-			do
-			{
-				*dest = ((*dest >> 1) & 0x7f7f7f) +
-						((shademap[source[(frac>>FRACBITS)&mask]] >> 1) & 0x7f7f7f);
-				dest += pitch;
-
-				frac += fracstep;
-			} while (--count);
-		}
-	}
-}
-
-void R_DrawTranslatedColumnD_C (void)
-{
-	int 				count;
-	unsigned int*		dest;
-	fixed_t 			frac;
-	fixed_t 			fracstep;
-
-	count = dc_yh - dc_yl;
-	if (count < 0)
-		return;
-	count++;
-
-#ifdef RANGECHECK
-	if (dc_x >= screen->width
-		|| dc_yl < 0
-		|| dc_yh >= screen->height)
-	{
-		I_Error ( "R_DrawTranslatedColumnD_C: %i to %i at %i",
-				  dc_yl, dc_yh, dc_x);
-	}
-	
-#endif
-
-
-	dest = (unsigned int *)(ylookup[dc_yl] + columnofs[dc_x]);
-
-	fracstep = dc_iscale;
-	frac = dc_texturefrac;
-
-	// Here we do an additional index re-mapping.
-	{
-		byte *source = dc_source;
-		unsigned int *shademap = dc_shademap;
-		byte *translation = dc_translation;
-		int pitch = dc_pitch >> 2;
-		int texheight = dc_textureheight;
-		int mask = (texheight >> FRACBITS) - 1;
-
-		// [SL] Properly tile textures whose heights are not a power-of-2,
-		// avoiding a tutti-frutti effect.  From Eternity Engine.
-		if (texheight & (texheight - 1))
-		{
-			// texture height is not a power-of-2
-			if (frac < 0)
-				while((frac += texheight) < 0);
-			else
-				while(frac >= texheight)
-					frac -= texheight;
-
-			do
-			{
-				*dest = shademap[translation[source[(frac>>FRACBITS)]]];
-				dest += pitch;
-				if ((frac += fracstep) >= texheight)
-					frac -= texheight;
-			} while(--count);
-		}
-		else
-		{		
-			// texture height is a power-of-2
-			do
-			{
-				*dest = shademap[translation[source[(frac>>FRACBITS) & mask]]];
-				dest += pitch;
-			
-				frac += fracstep;
-			} while (--count);
-		}
-	}
-}
-
-void R_DrawSpanD (void)
-{ 
-	fixed_t 			xfrac;
-	fixed_t 			yfrac;
-	unsigned int*		dest;
-	int 				count;
-	int 				spot;
-
-#ifdef RANGECHECK 
-	if (ds_x2 < ds_x1
-		|| ds_x1<0
-		|| ds_x2>=screen->width
-		|| ds_y>screen->height)
-	{
-		I_Error( "R_DrawSpan: %i to %i at %i",
-				 ds_x1,ds_x2,ds_y);
-	}
-//		dscount++;
-#endif
-
-	
-	xfrac = ds_xfrac;
-	yfrac = ds_yfrac;
-
-	dest = (unsigned int *)(ylookup[ds_y] + columnofs[ds_x1]);
-
-	count = ds_x2 - ds_x1 + 1;
-
-	{
-		byte *source = ds_source;
-		unsigned int *shademap = (unsigned int *)ds_colormap;
-		int colsize = ds_colsize >> 2;
-		int xstep = ds_xstep;
-		int ystep = ds_ystep;
-
-		do {
-			spot = ((yfrac>>(16-6))&(63*64)) + ((xfrac>>16)&63);
-
-			// Lookup pixel from flat texture tile,
-			//  re-index using light/colormap.
-			*dest = shademap[source[spot]];
-			dest += colsize;
-
-			// Next step in u,v.
-			xfrac += xstep; 
-			yfrac += ystep;
-		} while (--count);
-	}
-}
-
-
-
-/****************************************************/
-/****************************************************/
+// ============================================================================
+
+byte* translationtables;
+argb_t translationRGB[MAXPLAYERS+1][16];
+byte *Ranges;
+static byte *translationtablesmem = NULL;
 
 //
 // R_InitTranslationTables
+//
 // Creates the translation tables to map
 //	the green color ramp to gray, brown, red.
 // Assumes a given structure of the PLAYPAL.
 // Could be read from a lump instead.
 //
-byte *Ranges;
-
-static byte *translationtablesmem = NULL;
-
 void R_InitTranslationTables (void)
 {
 	static const char ranges[23][8] = {
@@ -1389,7 +253,6 @@ void R_InitTranslationTables (void)
 		"CRGRAY", // "Dark Gray"
 		"CRBLUE" // "Cyan"
 	};
-	int i;
 	
     R_FreeTranslationTables();
 	
@@ -1405,14 +268,22 @@ void R_InitTranslationTables (void)
 	//		in here. We do, however load some text translation
 	//		tables from our PWAD (ala BOOM).
 
-	for (i = 0; i < 256; i++)
+	for (int i = 0; i < 256; i++)
 		translationtables[i] = i;
 
-	for (i = 1; i < MAXPLAYERS+3; i++)
+	// Set up default translationRGB tables:
+	palette_t *pal = GetDefaultPalette();
+	for (int i = 0; i < MAXPLAYERS; ++i)
+	{
+		for (int j = 0x70; j < 0x80; ++j)
+			translationRGB[i][j - 0x70] = pal->basecolors[j];
+	}
+
+	for (int i = 1; i < MAXPLAYERS+3; i++)
 		memcpy (translationtables + i*256, translationtables, 256);
 
 	// create translation tables for dehacked patches that expect them
-	for (i = 0x70; i < 0x80; i++) {
+	for (int i = 0x70; i < 0x80; i++) {
 		// map green ramp to gray, brown, red
 		translationtables[i+(MAXPLAYERS+0)*256] = 0x60 + (i&0xf);
 		translationtables[i+(MAXPLAYERS+1)*256] = 0x40 + (i&0xf);
@@ -1420,7 +291,7 @@ void R_InitTranslationTables (void)
 	}
 
 	Ranges = translationtables + (MAXPLAYERS+3)*256;
-	for (i = 0; i < 22; i++)
+	for (int i = 0; i < 22; i++)
 		W_ReadLump (W_GetNumForName (ranges[i]), Ranges + 256 * i);
 
 }
@@ -1434,17 +305,36 @@ void R_FreeTranslationTables (void)
 // [Nes] Vanilla player translation table.
 void R_BuildClassicPlayerTranslation (int player, int color)
 {
+	palette_t *pal = GetDefaultPalette();
 	int i;
 	
 	if (color == 1) // Indigo
 		for (i = 0x70; i < 0x80; i++)
+		{
 			translationtables[i+(player * 256)] = 0x60 + (i&0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
 	else if (color == 2) // Brown
 		for (i = 0x70; i < 0x80; i++)
+		{
 			translationtables[i+(player * 256)] = 0x40 + (i&0xf);	
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
 	else if (color == 3) // Red
 		for (i = 0x70; i < 0x80; i++)
+		{
 			translationtables[i+(player * 256)] = 0x20 + (i&0xf);	
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
+}
+
+void R_CopyTranslationRGB (int fromplayer, int toplayer)
+{
+	for (int i = 0x70; i < 0x80; ++i)
+	{
+		translationRGB[toplayer][i - 0x70] = translationRGB[fromplayer][i - 0x70];
+		translationtables[i+(toplayer * 256)] = translationtables[i+(fromplayer * 256)];
+	}
 }
 
 // [RH] Create a player's translation table based on
@@ -1474,6 +364,14 @@ void R_BuildPlayerTranslation (int player, int color)
 
 	for (i = 0x70; i < 0x80; i++) {
 		HSVtoRGB (&r, &g, &b, h, s, v);
+
+		// Set up RGB values for 32bpp translation:
+		translationRGB[player][i - 0x70] = MAKERGB(
+			(int)(r * 255.0f),
+			(int)(g * 255.0f),
+			(int)(b * 255.0f)
+		);
+
 		table[i] = BestColor (pal->basecolors,
 							  (int)(r * 255.0f),
 							  (int)(g * 255.0f),
@@ -1493,6 +391,1034 @@ void R_BuildPlayerTranslation (int player, int color)
 	}
 }
 
+
+// ============================================================================
+//
+// Spans
+//
+// With DOOM style restrictions on view orientation,
+// the floors and ceilings consist of horizontal slices
+// or spans with constant z depth.
+// However, rotation around the world z axis is possible,
+// thus this mapping, while simpler and faster than
+// perspective correct texture mapping, has to traverse
+// the texture at an angle in all but a few cases.
+// In consequence, flats are not stored by column (like walls),
+// and the inner loop has to step in texture space u and v.
+//
+// ============================================================================
+
+
+// ============================================================================
+//
+// Generic Drawers
+//
+// Templated versions of column and span drawing functions
+//
+// ============================================================================
+
+//
+// R_BlankColumn
+//
+// [SL] - Does nothing (obviously). Used when a column drawing function
+// pointer should not draw anything.
+//
+void R_BlankColumn()
+{
+}
+
+//
+// R_BlankSpan
+//
+// [SL] - Does nothing (obviously). Used when a span drawing function
+// pointer should not draw anything.
+//
+void R_BlankSpan()
+{
+}
+
+//
+// R_FillColumnGeneric
+//
+// Templated version of a function to fill a column with a solid color. 
+// The data type of the destination pixels and a color-remapping functor
+// are passed as template parameters.
+//
+template<typename PIXEL_T, typename COLORFUNC>
+static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
+{
+#ifdef RANGECHECK 
+	if (drawcolumn.x >= screen->width || drawcolumn.yl < 0 || drawcolumn.yh >= screen->height)
+	{
+		Printf (PRINT_HIGH, "R_FillColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
+		return;
+	}
+#endif
+
+	int color = drawcolumn.color;
+	int pitch = drawcolumn.pitch / sizeof(PIXEL_T);
+	int count = drawcolumn.yh - drawcolumn.yl + 1;
+	if (count <= 0)
+		return;
+
+	COLORFUNC colorfunc(drawcolumn);
+
+	do {
+		colorfunc(color, dest);
+		dest += pitch;
+	} while (--count);
+} 
+
+
+//
+// R_DrawColumnGeneric
+//
+// A column is a vertical slice/span from a wall texture that,
+// given the DOOM style restrictions on the view orientation,
+// will always have constant z depth.
+// Thus a special case loop for very fast rendering can
+// be used. It has also been used with Wolfenstein 3D.
+//
+// Templated version of a column mapping function.
+// The data type of the destination pixels and a color-remapping functor
+// are passed as template parameters.
+//
+template<typename PIXEL_T, typename COLORFUNC>
+static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
+{
+#ifdef RANGECHECK 
+	if (drawcolumn.x >= screen->width || drawcolumn.yl < 0 || drawcolumn.yh >= screen->height)
+	{
+		Printf (PRINT_HIGH, "R_DrawColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
+		return;
+	}
+#endif
+
+	palindex_t* source = drawcolumn.source;
+	int pitch = drawcolumn.pitch / sizeof(PIXEL_T);
+	int count = drawcolumn.yh - drawcolumn.yl + 1;
+	if (count <= 0)
+		return;
+
+	const fixed_t fracstep = drawcolumn.iscale; 
+	fixed_t frac = drawcolumn.texturefrac;
+
+	const int texheight = drawcolumn.textureheight;
+	const int mask = (texheight >> FRACBITS) - 1;
+
+	COLORFUNC colorfunc(drawcolumn);
+
+	// [SL] Properly tile textures whose heights are not a power-of-2,
+	// avoiding a tutti-frutti effect.  From Eternity Engine.
+	if (texheight & (texheight - 1))
+	{
+		// texture height is NOT a power-of-2
+		// just do a simple blit to the dest buffer (I'm lazy)
+
+		if (frac < 0)
+			while ((frac += texheight) < 0);
+		else
+			while (frac >= texheight)
+				frac -= texheight;
+
+		while (count--)
+		{
+			colorfunc(source[frac >> FRACBITS], dest);
+			dest += pitch;
+			if ((frac += fracstep) >= texheight)
+				frac -= texheight;
+		}
+	}
+	else
+	{
+		// texture height is a power-of-2
+		// do some loop unrolling
+		while (count >= 8)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			count -= 8;
+		}
+
+		if (count & 1)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+		}
+
+		if (count & 2)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+		}
+
+		if (count & 4)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+		}
+	}
+}
+
+
+//
+// R_FillSpanGeneric
+//
+// Templated version of a function to fill a span with a solid color.
+// The data type of the destination pixels and a color-remapping functor
+// are passed as template parameters.
+//
+template<typename PIXEL_T, typename COLORFUNC>
+static forceinline void R_FillSpanGeneric(PIXEL_T* dest, const drawspan_t& drawspan)
+{
+#ifdef RANGECHECK
+	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
+		drawspan.y >= viewheight || drawspan.y < 0)
+	{
+		Printf(PRINT_HIGH, "R_FillSpan: %i to %i at %i", drawspan.x1, drawspan.x2, drawspan.y);
+		return;
+	}
+#endif
+
+	int color = drawspan.color;
+	int colsize = drawspan.colsize;
+	int count = drawspan.x2 - drawspan.x1 + 1;
+	if (count <= 0)
+		return;
+
+	COLORFUNC colorfunc(drawspan);
+
+	do {
+		colorfunc(color, dest);
+		dest += colsize;
+	} while (--count);
+}
+
+
+//
+// R_DrawLevelSpanGeneric
+//
+// Templated version of a function to fill a horizontal span with a texture map.
+// The data type of the destination pixels and a color-remapping functor
+// are passed as template parameters.
+//
+template<typename PIXEL_T, typename COLORFUNC>
+static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& drawspan)
+{
+#ifdef RANGECHECK
+	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
+		drawspan.y >= viewheight || drawspan.y < 0)
+	{
+		Printf(PRINT_HIGH, "R_DrawLevelSpan: %i to %i at %i", drawspan.x1, drawspan.x2, drawspan.y);
+		return;
+	}
+#endif
+
+	palindex_t* source = drawspan.source;
+	int colsize = drawspan.colsize;
+	int count = drawspan.x2 - drawspan.x1 + 1;
+	if (count <= 0)
+		return;
+	
+	dsfixed_t xfrac = drawspan.xfrac;
+	dsfixed_t yfrac = drawspan.yfrac;
+	const dsfixed_t xstep = drawspan.xstep;
+	const dsfixed_t ystep = drawspan.ystep;
+
+	COLORFUNC colorfunc(drawspan);
+
+	do {
+		// Current texture index in u,v.
+		const int spot = ((yfrac >> (32-6-6)) & (63*64)) + (xfrac >> (32-6));
+
+		// Lookup pixel from flat texture tile,
+		//  re-index using light/colormap.
+
+		colorfunc(source[spot], dest);
+		dest += colsize;
+
+		// Next step in u,v.
+		xfrac += xstep;
+		yfrac += ystep;
+	} while (--count);
+}
+
+
+//
+// R_DrawSlopedSpanGeneric
+//
+// Texture maps a sloped surface using affine texturemapping for each row of
+// the span.  Not as pretty as a perfect texturemapping but should be much
+// faster.
+//
+// Based on R_DrawSlope_8_64 from Eternity Engine, written by SoM/Quasar
+//
+// The data type of the destination pixels and a color-remapping functor
+// are passed as template parameters.
+//
+template<typename PIXEL_T, typename COLORFUNC>
+static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t& drawspan)
+{
+#ifdef RANGECHECK
+	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
+		drawspan.y >= viewheight || drawspan.y < 0)
+	{
+		Printf(PRINT_HIGH, "R_DrawSlopedSpan: %i to %i at %i", drawspan.x1, drawspan.x2, drawspan.y);
+		return;
+	}
+#endif
+
+	palindex_t* source = drawspan.source;
+	int colsize = drawspan.colsize;
+	int count = drawspan.x2 - drawspan.x1 + 1;
+	if (count <= 0)
+		return;
+	
+	float iu = drawspan.iu, iv = drawspan.iv;
+	const float ius = drawspan.iustep, ivs = drawspan.ivstep;
+	float id = drawspan.id, ids = drawspan.idstep;
+	
+	int ltindex = 0;
+
+	shaderef_t colormap;
+	COLORFUNC colorfunc(drawspan);
+
+	while (count >= SPANJUMP)
+	{
+		const float mulstart = 65536.0f / id;
+		id += ids * SPANJUMP;
+		const float mulend = 65536.0f / id;
+
+		const float ustart = iu * mulstart;
+		const float vstart = iv * mulstart;
+
+		fixed_t ufrac = (fixed_t)ustart;
+		fixed_t vfrac = (fixed_t)vstart;
+
+		iu += ius * SPANJUMP;
+		iv += ivs * SPANJUMP;
+
+		const float uend = iu * mulend;
+		const float vend = iv * mulend;
+
+		fixed_t ustep = (fixed_t)((uend - ustart) * INTERPSTEP);
+		fixed_t vstep = (fixed_t)((vend - vstart) * INTERPSTEP);
+
+		int incount = SPANJUMP;
+		while (incount--)
+		{
+			colormap = drawspan.slopelighting[ltindex++];
+
+			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
+			colorfunc(source[spot], dest);
+			dest += colsize;
+			ufrac += ustep;
+			vfrac += vstep;
+		}
+
+		count -= SPANJUMP;
+	}
+
+	if (count > 0)
+	{
+		const float mulstart = 65536.0f / id;
+		id += ids * count;
+		const float mulend = 65536.0f / id;
+
+		const float ustart = iu * mulstart;
+		const float vstart = iv * mulstart;
+
+		fixed_t ufrac = (fixed_t)ustart;
+		fixed_t vfrac = (fixed_t)vstart;
+
+		iu += ius * count;
+		iv += ivs * count;
+
+		const float uend = iu * mulend;
+		const float vend = iv * mulend;
+
+		fixed_t ustep = (fixed_t)((uend - ustart) / count);
+		fixed_t vstep = (fixed_t)((vend - vstart) / count);
+
+		int incount = count;
+		while (incount--)
+		{
+			colormap = drawspan.slopelighting[ltindex++];
+
+			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
+			colorfunc(source[spot], dest);
+			dest += colsize;
+			ufrac += ustep;
+			vfrac += vstep;
+		}
+	}
+}
+
+
+/************************************/
+/*									*/
+/* Palettized drawers (C versions)	*/
+/*									*/
+/************************************/
+
+// ----------------------------------------------------------------------------
+//
+// 8bpp color remapping functors
+//
+// These functors provide a variety of ways to manipulate a source pixel
+// color (given by 8bpp palette index) and write the result to the destination
+// buffer.
+//
+// The functors are instantiated with a shaderef_t* parameter (typically
+// dcol.colormap or ds_colormap) that will be used to shade the pixel.
+//
+// ----------------------------------------------------------------------------
+
+class PaletteFunc
+{
+public:
+	PaletteFunc(const drawcolumn_t& drawcolumn) { }
+	PaletteFunc(const drawspan_t& drawspan) { }
+
+	forceinline void operator()(byte c, palindex_t* dest) const
+	{
+		*dest = c;
+	}
+};
+
+class PaletteColormapFunc
+{
+public:
+	PaletteColormapFunc(const drawcolumn_t& drawcolumn) :
+			colormap(drawcolumn.colormap) { }
+	PaletteColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.colormap) { }
+
+	forceinline void operator()(byte c, palindex_t* dest) const
+	{
+		*dest = colormap.index(c);
+	}
+
+private:
+	const shaderef_t& colormap;
+};
+
+class PaletteFuzzyFunc
+{
+public:
+	PaletteFuzzyFunc(const drawcolumn_t& drawcolum) :
+			colormap(&GetDefaultPalette()->maps, 6) { }
+
+	forceinline void operator()(byte c, palindex_t* dest) const
+	{
+		*dest = colormap.index(dest[fuzzoffset[fuzzpos]]);
+		fuzzpos = (fuzzpos + 1) & (FUZZTABLE - 1);
+	}
+
+private:
+	shaderef_t colormap;
+};
+
+class PaletteTranslucentColormapFunc
+{
+public:
+	PaletteTranslucentColormapFunc(const drawcolumn_t& drawcolumn) :
+			colormap(drawcolumn.colormap)
+	{
+		calculate_alpha(drawcolumn.translevel);
+	}
+
+	PaletteTranslucentColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.colormap)
+	{
+		calculate_alpha(drawspan.translevel);
+	}
+
+	forceinline void operator()(byte c, palindex_t* dest) const
+	{
+		const palindex_t fg = colormap.index(c);
+		const palindex_t bg = *dest;
+				
+		*dest = rt_blend2<palindex_t>(bg, bga, fg, fga);
+	}
+
+private:
+	void calculate_alpha(fixed_t translevel)
+	{
+		fga = (translevel & ~0x03FF) >> 8;
+		bga = 255 - fga;
+	}
+
+	const shaderef_t& colormap;
+	int fga, bga;
+};
+
+class PaletteTranslatedColormapFunc
+{
+public:
+	PaletteTranslatedColormapFunc(const drawcolumn_t& drawcolumn) : 
+			colormap(drawcolumn.colormap), translation(drawcolumn.translation) { }
+
+	forceinline void operator()(byte c, palindex_t* dest) const
+	{
+		*dest = colormap.index(translation.tlate(c));
+	}
+
+private:
+	const shaderef_t& colormap;
+	const translationref_t& translation;
+};
+
+class PaletteTranslatedTranslucentColormapFunc
+{
+public:
+	PaletteTranslatedTranslucentColormapFunc(const drawcolumn_t& drawcolumn) :
+			tlatefunc(drawcolumn), translation(drawcolumn.translation) { }
+
+	forceinline void operator()(byte c, palindex_t* dest) const
+	{
+		tlatefunc(translation.tlate(c), dest);
+	}
+
+private:
+	PaletteTranslucentColormapFunc tlatefunc;
+	const translationref_t& translation;
+};
+
+class PaletteSlopeColormapFunc
+{
+public:
+	PaletteSlopeColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.slopelighting) { }
+
+	forceinline void operator()(byte c, palindex_t* dest)
+	{
+		*dest = colormap->index(c);
+		colormap++;
+	}
+
+private:
+	const shaderef_t* colormap;
+};
+
+
+// ----------------------------------------------------------------------------
+//
+// 8bpp color column drawing wrappers
+//
+// ----------------------------------------------------------------------------
+
+#define FB_COLDEST_P ((palindex_t*)(ylookup[dcol.yl] + columnofs[dcol.x]))
+
+//
+// R_FillColumnP
+//
+// Fills a column in the 8bpp palettized screen buffer with a solid color,
+// determined by dcol.color. Performs no shading.
+//
+void R_FillColumnP()
+{
+	R_FillColumnGeneric<palindex_t, PaletteFunc>(FB_COLDEST_P, dcol);
+}
+
+//
+// R_DrawColumnP
+//
+// Renders a column to the 8bpp palettized screen buffer from the source buffer
+// dcol.source and scaled by dcol.iscale. Shading is performed using dcol.colormap.
+//
+void R_DrawColumnP()
+{
+	R_DrawColumnGeneric<palindex_t, PaletteColormapFunc>(FB_COLDEST_P, dcol);
+}
+
+//
+// R_StretchColumnP
+//
+// Renders a column to the 8bpp palettized screen buffer from the source buffer
+// dcol.source and scaled by dcol.iscale. Performs no shading.
+//
+void R_StretchColumnP()
+{
+	R_DrawColumnGeneric<palindex_t, PaletteFunc>(FB_COLDEST_P, dcol);
+}
+
+//
+// R_DrawFuzzColumnP
+//
+// Alters a column in the 8bpp palettized screen buffer using Doom's partial
+// invisibility effect, which shades the column and rearranges the ordering
+// the pixels to create distortion. Shading is performed using colormap 6.
+//
+void R_DrawFuzzColumnP()
+{
+	// adjust the borders (prevent buffer over/under-reads)
+	if (dcol.yl <= 0)
+		dcol.yl = 1;
+	if (dcol.yh >= realviewheight - 1)
+		dcol.yh = realviewheight - 2;
+
+	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>(FB_COLDEST_P, dcol);
+}
+
+//
+// R_DrawTranslucentColumnP
+//
+// Renders a translucent column to the 8bpp palettized screen buffer from the
+// source buffer dcol.source and scaled by dcol.iscale. The amount of
+// translucency is controlled by dcol.translevel. Shading is performed using
+// dcol.colormap.
+//
+void R_DrawTranslucentColumnP()
+{
+	R_DrawColumnGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_COLDEST_P, dcol);
+}
+
+//
+// R_DrawTranslatedColumnP
+//
+// Renders a column to the 8bpp palettized screen buffer with color-remapping
+// from the source buffer dcol.source and scaled by dcol.iscale. The translation
+// table is supplied by dcol.translation. Shading is performed using dcol.colormap.
+//
+void R_DrawTranslatedColumnP()
+{
+	R_DrawColumnGeneric<palindex_t, PaletteTranslatedColormapFunc>(FB_COLDEST_P, dcol);
+}
+
+//
+// R_DrawTlatedLucentColumnP
+//
+// Renders a translucent column to the 8bpp palettized screen buffer with
+// color-remapping from the source buffer dcol.source and scaled by dcol.iscale. 
+// The translation table is supplied by dcol.translation and the amount of
+// translucency is controlled by dcol.translevel. Shading is performed using
+// dcol.colormap.
+//
+void R_DrawTlatedLucentColumnP()
+{
+	R_DrawColumnGeneric<palindex_t, PaletteTranslatedTranslucentColormapFunc>(FB_COLDEST_P, dcol);
+}
+
+//
+// R_FillColumnHorizP
+//
+// Fills a column in an 8bpp palettized buffer dcol.temp with a solid color,
+// determined by dcol.color. Performs no shading.
+//
+void R_FillColumnHorizP()
+{
+	if (dcol.yl > dcol.yh)
+		return;
+
+	const int x = dcol.x & 3;
+	unsigned int **span = &dc_ctspan[x];
+
+	(*span)[0] = dcol.yl;
+	(*span)[1] = dcol.yh;
+	*span += 2;
+	palindex_t* dest = &dc_temp[x + 4*dcol.yl];
+
+	int oldpitch = dcol.pitch;
+	dcol.pitch = 4;
+	
+	R_FillColumnGeneric<palindex_t, PaletteFunc>(dest, dcol);
+
+	dcol.pitch = oldpitch;
+}
+
+//
+// R_DrawColumnHorizP
+//
+// Renders a column to an 8bpp palettized buffer dcol.temp from the source buffer
+// dcol.source and scaled by dcol.iscale. The column is rendered to the buffer in
+// an interleaved format, writing to every 4th byte of the buffer. Performs
+// no shading. 
+//
+void R_DrawColumnHorizP()
+{
+	if (dcol.yl > dcol.yh)
+		return;
+
+	const int x = dcol.x & 3;
+	unsigned int **span = &dc_ctspan[x];
+
+	(*span)[0] = dcol.yl;
+	(*span)[1] = dcol.yh;
+	*span += 2;
+	palindex_t* dest = &dc_temp[x + 4*dcol.yl];
+
+	int oldpitch = dcol.pitch;
+	dcol.pitch = 4;
+
+	R_DrawColumnGeneric<palindex_t, PaletteFunc>(dest, dcol);
+
+	dcol.pitch = oldpitch;
+}
+
+
+// ----------------------------------------------------------------------------
+//
+// 8bpp color span drawing wrappers
+//
+// ----------------------------------------------------------------------------
+
+#define FB_SPANDEST_P ((palindex_t*)(ylookup[dspan.y] + columnofs[dspan.x1]))
+
+//
+// R_FillSpanP
+//
+// Fills a span in the 8bpp palettized screen buffer with a solid color,
+// determined by ds_color. Performs no shading.
+//
+void R_FillSpanP()
+{
+	R_FillSpanGeneric<palindex_t, PaletteFunc>(FB_SPANDEST_P, dspan);
+}
+
+//
+// R_FillTranslucentSpanP
+//
+// Fills a span in the 8bpp palettized screen buffer with a solid color,
+// determined by ds_color using translucency. Shading is performed 
+// using ds_colormap.
+//
+void R_FillTranslucentSpanP()
+{
+	R_FillSpanGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_SPANDEST_P, dspan);
+}
+
+//
+// R_DrawSpanP
+//
+// Renders a span for a level plane to the 8bpp palettized screen buffer from
+// the source buffer ds_source. Shading is performed using ds_colormap.
+//
+void R_DrawSpanP()
+{
+	R_DrawLevelSpanGeneric<palindex_t, PaletteColormapFunc>(FB_SPANDEST_P, dspan);
+}
+
+//
+// R_DrawSlopeSpanP
+//
+// Renders a span for a sloped plane to the 8bpp palettized screen buffer from
+// the source buffer ds_source. Shading is performed using ds_colormap.
+//
+void R_DrawSlopeSpanP()
+{
+	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeColormapFunc>(FB_SPANDEST_P, dspan);
+}
+
+
+/****************************************/
+/*										*/
+/* [RH] ARGB8888 drawers (C versions)	*/
+/*										*/
+/****************************************/
+
+// ----------------------------------------------------------------------------
+//
+// 32bpp color remapping functors
+//
+// These functors provide a variety of ways to manipulate a source pixel
+// color (given by 8bpp palette index) and write the result to the destination
+// buffer.
+//
+// The functors are instantiated with a shaderef_t* parameter (typically
+// dcol.colormap or ds_colormap) that will be used to shade the pixel.
+//
+// ----------------------------------------------------------------------------
+
+class DirectFunc
+{
+public:
+	DirectFunc(const drawcolumn_t& drawcolumn) { }
+	DirectFunc(const drawspan_t& drawspan) { }
+
+	forceinline void operator()(byte c, argb_t* dest) const
+	{
+		*dest = basecolormap.shade(c);
+	}
+};
+
+class DirectColormapFunc
+{
+public:
+	DirectColormapFunc(const drawcolumn_t& drawcolumn) :
+			colormap(drawcolumn.colormap) { }
+	DirectColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.colormap) { }
+
+	forceinline void operator()(byte c, argb_t* dest) const
+	{
+		*dest = colormap.shade(c);
+	}
+
+private:
+	const shaderef_t& colormap;
+};
+
+class DirectFuzzyFunc
+{
+public:
+	DirectFuzzyFunc(const drawcolumn_t& drawcolumn) { }
+
+	forceinline void operator()(byte c, argb_t* dest) const
+	{
+		argb_t work = dest[fuzzoffset[fuzzpos] >> 2];
+		*dest = work - ((work >> 2) & 0x3f3f3f);
+		fuzzpos = (fuzzpos + 1) & (FUZZTABLE - 1);
+	}
+};
+
+class DirectTranslucentColormapFunc
+{
+public:
+	DirectTranslucentColormapFunc(const drawcolumn_t& drawcolumn) :
+			colormap(drawcolumn.colormap)
+	{
+		calculate_alpha(drawcolumn.translevel);
+	}
+
+	DirectTranslucentColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.colormap)
+	{
+		calculate_alpha(drawspan.translevel);
+	}
+
+	forceinline void operator()(byte c, argb_t* dest) const
+	{
+		argb_t fg = colormap.shade(c);
+		argb_t bg = *dest;
+		*dest = alphablend2a(bg, bga, fg, fga);	
+	}
+
+private:
+	void calculate_alpha(fixed_t translevel)
+	{
+		fga = (translevel & ~0x03FF) >> 8;
+		bga = 255 - fga;
+	}
+
+	const shaderef_t& colormap;
+	int fga, bga;
+};
+
+class DirectTranslatedColormapFunc
+{
+public:
+	DirectTranslatedColormapFunc(const drawcolumn_t& drawcolumn) :
+			colormap(drawcolumn.colormap), translation(drawcolumn.translation) { }
+
+	forceinline void operator()(byte c, argb_t* dest) const
+	{
+		*dest = colormap.tlate(translation, c);
+	}
+
+private:
+	const shaderef_t& colormap;
+	const translationref_t& translation;
+};
+
+class DirectTranslatedTranslucentColormapFunc
+{
+public:
+	DirectTranslatedTranslucentColormapFunc(const drawcolumn_t& drawcolumn) :
+			tlatefunc(drawcolumn), translation(drawcolumn.translation) { }
+
+	forceinline void operator()(byte c, argb_t* dest) const
+	{
+		tlatefunc(translation.tlate(c), dest);
+	}
+
+private:
+	DirectTranslucentColormapFunc tlatefunc;
+	const translationref_t& translation;
+};
+
+class DirectSlopeColormapFunc
+{
+public:
+	DirectSlopeColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.slopelighting) { }
+
+	forceinline void operator()(byte c, argb_t* dest)
+	{
+		*dest = colormap->shade(c);
+		colormap++;
+	}
+
+private:
+	const shaderef_t* colormap;
+};
+
+
+// ----------------------------------------------------------------------------
+//
+// 32bpp color drawing wrappers
+//
+// ----------------------------------------------------------------------------
+
+#define FB_COLDEST_D ((argb_t*)(ylookup[dcol.yl] + columnofs[dcol.x]))
+
+//
+// R_FillColumnD
+//
+// Fills a column in the 32bpp ARGB8888 screen buffer with a solid color,
+// determined by dcol.color. Performs no shading.
+//
+void R_FillColumnD()
+{
+	R_FillColumnGeneric<argb_t, DirectFunc>(FB_COLDEST_D, dcol);
+}
+
+//
+// R_DrawColumnD
+//
+// Renders a column to the 32bpp ARGB8888 screen buffer from the source buffer
+// dcol.source and scaled by dcol.iscale. Shading is performed using dcol.colormap.
+//
+void R_DrawColumnD()
+{
+	R_DrawColumnGeneric<argb_t, DirectColormapFunc>(FB_COLDEST_D, dcol);
+}
+
+//
+// R_DrawFuzzColumnD
+//
+// Alters a column in the 32bpp ARGB8888 screen buffer using Doom's partial
+// invisibility effect, which shades the column and rearranges the ordering
+// the pixels to create distortion. Shading is performed using colormap 6.
+//
+void R_DrawFuzzColumnD()
+{
+	// adjust the borders (prevent buffer over/under-reads)
+	if (dcol.yl <= 0)
+		dcol.yl = 1;
+	if (dcol.yh >= realviewheight - 1)
+		dcol.yh = realviewheight - 2;
+
+	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>(FB_COLDEST_D, dcol);
+}
+
+//
+// R_DrawTranslucentColumnD
+//
+// Renders a translucent column to the 32bpp ARGB8888 screen buffer from the
+// source buffer dcol.source and scaled by dcol.iscale. The amount of
+// translucency is controlled by dcol.translevel. Shading is performed using
+// dcol.colormap.
+//
+void R_DrawTranslucentColumnD()
+{
+	R_DrawColumnGeneric<argb_t, DirectTranslucentColormapFunc>(FB_COLDEST_D, dcol);
+}
+
+//
+// R_DrawTranslatedColumnD
+//
+// Renders a column to the 32bpp ARGB8888 screen buffer with color-remapping
+// from the source buffer dcol.source and scaled by dcol.iscale. The translation
+// table is supplied by dcol.translation. Shading is performed using dcol.colormap.
+//
+void R_DrawTranslatedColumnD()
+{
+	R_DrawColumnGeneric<argb_t, DirectTranslatedColormapFunc>(FB_COLDEST_D, dcol);
+}
+
+//
+// R_DrawTlatedLucentColumnD
+//
+// Renders a translucent column to the 32bpp ARGB8888 screen buffer with
+// color-remapping from the source buffer dcol.source and scaled by dcol.iscale. 
+// The translation table is supplied by dcol.translation and the amount of
+// translucency is controlled by dcol.translevel. Shading is performed using
+// dcol.colormap.
+//
+void R_DrawTlatedLucentColumnD()
+{
+	R_DrawColumnGeneric<argb_t, DirectTranslatedTranslucentColormapFunc>(FB_COLDEST_D, dcol);
+}
+
+
+// ----------------------------------------------------------------------------
+//
+// 32bpp color span drawing wrappers
+//
+// ----------------------------------------------------------------------------
+
+#define FB_SPANDEST_D ((argb_t*)(ylookup[dspan.y] + columnofs[dspan.x1]))
+
+//
+// R_FillSpanD
+//
+// Fills a span in the 32bpp ARGB8888 screen buffer with a solid color,
+// determined by ds_color. Performs no shading.
+//
+void R_FillSpanD()
+{
+	R_FillSpanGeneric<argb_t, DirectFunc>(FB_SPANDEST_D, dspan);
+}
+
+//
+// R_FillTranslucentSpanD
+//
+// Fills a span in the 32bpp ARGB8888 screen buffer with a solid color,
+// determined by ds_color using translucency. Shading is performed 
+// using ds_colormap.
+//
+void R_FillTranslucentSpanD()
+{
+	R_FillSpanGeneric<argb_t, DirectTranslucentColormapFunc>(FB_SPANDEST_D, dspan);
+}
+
+//
+// R_DrawSpanD
+//
+// Renders a span for a level plane to the 32bpp ARGB8888 screen buffer from
+// the source buffer ds_source. Shading is performed using ds_colormap.
+//
+void R_DrawSpanD_c()
+{
+	R_DrawLevelSpanGeneric<argb_t, DirectColormapFunc>(FB_SPANDEST_D, dspan);
+}
+
+//
+// R_DrawSlopeSpanD
+//
+// Renders a span for a sloped plane to the 32bpp ARGB8888 screen buffer from
+// the source buffer ds_source. Shading is performed using ds_colormap.
+//
+void R_DrawSlopeSpanD_c()
+{
+	R_DrawSlopedSpanGeneric<argb_t, DirectSlopeColormapFunc>(FB_SPANDEST_D, dspan);
+}
+
+
+/****************************************************/
 
 //
 // R_InitBuffer 
@@ -1523,7 +1449,7 @@ R_InitBuffer
 
 	// Column offset. For windows
 	for (i = 0; i < width; i++)
-		columnofs[i] = viewwindowx + (i << xshift);
+		columnofs[i] = (viewwindowx + i) << xshift;
 
 	// Same with base row offset.
 	if ((width<<detailxshift) == screen->width)
@@ -1687,32 +1613,260 @@ void R_DetailDouble (void)
 	}
 }
 
-// [RH] Initialize the column drawer pointers
-void R_InitColumnDrawers (BOOL is8bit)
+enum r_optimize_kind {
+	OPTIMIZE_NONE,
+	OPTIMIZE_SSE2,
+	OPTIMIZE_MMX,
+	OPTIMIZE_ALTIVEC
+};
+
+static r_optimize_kind optimize_kind = OPTIMIZE_NONE;
+static std::vector<r_optimize_kind> optimizations_available;
+
+static const char *get_optimization_name(r_optimize_kind kind)
 {
-	if (is8bit)
+	switch (kind)
 	{
-		R_DrawColumnHoriz		= R_DrawColumnHorizP_C;
-		R_DrawColumn			= R_DrawColumnP_C;
-		R_DrawFuzzColumn		= R_DrawFuzzColumnP_C;
-		R_DrawTranslucentColumn = R_DrawTranslucentColumnP_C;
-		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP_C;
-		R_DrawSpan				= R_DrawSpanP_C;
-		rt_map4cols				= rt_map4cols_c;
-		R_DrawSlopeSpan			= R_DrawSlopeSpanP_C;
+		case OPTIMIZE_SSE2:    return "sse2";
+		case OPTIMIZE_MMX:     return "mmx";
+		case OPTIMIZE_ALTIVEC: return "altivec";
+		case OPTIMIZE_NONE:
+		default:
+			return "none";
+	}
+}
 
-	} else {
-		R_DrawColumnHoriz		= R_DrawColumnHorizP_C;
-		R_DrawColumn			= R_DrawColumnD_C;
-		R_DrawFuzzColumn		= R_DrawFuzzColumnD_C;
-		R_DrawTranslucentColumn = R_DrawTranslucentColumnD_C;
-		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD_C;
+static std::string get_optimization_name_list(const bool includeNone)
+{
+	std::string list;
+	std::vector<r_optimize_kind>::iterator it = optimizations_available.begin();
+	if (!includeNone) ++it;
+	for (; it != optimizations_available.end(); ++it)
+	{
+		list.append(get_optimization_name(*it));
+		if (it+1 != optimizations_available.end())
+			list.append(", ");
+	}
+	return list;
+}
 
+static void print_optimizations()
+{
+	Printf(PRINT_HIGH, "r_optimize detected \"%s\"\n", get_optimization_name_list(false).c_str());
+}
+
+static bool detect_optimizations()
+{
+	if (optimizations_available.size() != 0)
+		return false;
+
+	optimizations_available.clear();
+
+	// Start with default non-optimized:
+	optimizations_available.push_back(OPTIMIZE_NONE);
+
+	// Detect CPU features in ascending order of preference:
+#ifdef __MMX__
+	if (SDL_HasMMX())
+	{
+		optimizations_available.push_back(OPTIMIZE_MMX);
+	}
+#endif
+
+#ifdef __SSE2__
+	if (SDL_HasSSE2())
+	{
+		optimizations_available.push_back(OPTIMIZE_SSE2);
+	}
+#endif
+
+#ifdef __ALTIVEC__
+	if (SDL_HasAltiVec())
+	{
+		optimizations_available.push_back(OPTIMIZE_ALTIVEC);
+	}
+#endif
+
+	return true;
+}
+
+CVAR_FUNC_IMPL (r_optimize)
+{
+	// NOTE(jsd): Stupid hack to prevent stack overflow when trying to set the value from within this callback.
+	static bool resetting = false;
+	if (resetting)
+	{
+		resetting = false;
+		return;
+	}
+
+	const char *val = var.cstring();
+	//Printf(PRINT_HIGH, "r_optimize called with \"%s\"\n", val);
+
+	// Only print the detected list the first time:
+	if (detect_optimizations())
+		print_optimizations();
+
+	// Set the optimization based on availability:
+	r_optimize_kind trykind = optimize_kind;
+	if (stricmp(val, "none") == 0)
+		trykind = OPTIMIZE_NONE;
+	else if (stricmp(val, "sse2") == 0)
+		trykind = OPTIMIZE_SSE2;
+	else if (stricmp(val, "mmx") == 0)
+		trykind = OPTIMIZE_MMX;
+	else if (stricmp(val, "altivec") == 0)
+		trykind = OPTIMIZE_ALTIVEC;
+	else if (stricmp(val, "detect") == 0)
+		// Default to the most preferred:
+		trykind = optimizations_available.back();
+	else
+	{
+		Printf(PRINT_HIGH, "Invalid value for r_optimize. Try one of \"%s, detect\"\n", get_optimization_name_list(true).c_str());
+
+		// Restore the original setting:
+		resetting = true;
+		var.Set(get_optimization_name(optimize_kind));
+		R_InitDrawers();
+		R_InitColumnDrawers();
+		return;
+	}
+
+	// If we found the CPU feature, use it:
+	std::vector<r_optimize_kind>::iterator it = std::find(optimizations_available.begin(), optimizations_available.end(), trykind);
+	if (it != optimizations_available.end())
+	{
+		optimize_kind = trykind;
+		R_InitDrawers();
+		R_InitColumnDrawers();
+	}
+
+	// Update the cvar string:
+	const char *resetname = get_optimization_name(optimize_kind);
+	Printf(PRINT_HIGH, "r_optimize set to \"%s\" based on availability\n", resetname);
+	resetting = true;
+	var.Set(resetname);
+}
+
+// Sets up the r_*D function pointers based on CPU optimization selected
+void R_InitDrawers ()
+{
+	if (optimize_kind == OPTIMIZE_SSE2)
+	{
+#ifdef __SSE2__
+		rtv_lucent4colsP        = rtv_lucent4cols_SSE2;
+		rtv_lucent4colsD        = rtv_lucent4cols_SSE2;
+		R_DrawSpanD				= R_DrawSpanD_SSE2;
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_SSE2;
+		r_dimpatchD             = r_dimpatchD_SSE2;
+#else
+		// No SSE2 support compiled in.
+		optimize_kind = OPTIMIZE_NONE;
+		goto setNone;
+#endif
+	}
+	else if (optimize_kind == OPTIMIZE_MMX)
+	{
+#ifdef __MMX__
+		rtv_lucent4colsP        = rtv_lucent4cols_MMX;
+		rtv_lucent4colsD        = rtv_lucent4cols_MMX;
+		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
+		r_dimpatchD             = r_dimpatchD_MMX;
+#else
+		// No MMX support compiled in.
+		optimize_kind = OPTIMIZE_NONE;
+		goto setNone;
+#endif
+	}
+	else if (optimize_kind == OPTIMIZE_ALTIVEC)
+	{
+#ifdef __ALTIVEC__
+		rtv_lucent4colsP        = rtv_lucent4cols_ALTIVEC;
+		rtv_lucent4colsD        = rtv_lucent4cols_ALTIVEC;
+		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
+		r_dimpatchD             = r_dimpatchD_ALTIVEC;
+#else
+		// No ALTIVEC support compiled in.
+		optimize_kind = OPTIMIZE_NONE;
+		goto setNone;
+#endif
+	}
+	else
+	{
+		// No CPU vectorization available.
+setNone:
+		rtv_lucent4colsP        = rtv_lucent4cols_c;
+		rtv_lucent4colsD        = rtv_lucent4cols_c;
+		R_DrawSpanD				= R_DrawSpanD_c;
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;
+		r_dimpatchD             = r_dimpatchD_c;
+	}
+
+	// Check that all pointers are definitely assigned!
+	assert(rtv_lucent4colsP != NULL);
+	assert(rtv_lucent4colsD != NULL);
+	assert(R_DrawSpanD != NULL);
+	assert(R_DrawSlopeSpanD != NULL);
+	assert(r_dimpatchD != NULL);
+}
+
+// [RH] Initialize the column drawer pointers
+void R_InitColumnDrawers ()
+{
+	if (!screen)
+		return;
+
+	// NOTE(jsd): It's okay to use R_DrawColumnHorizP because it renders to a temp buffer first.
+	R_DrawColumnHoriz		= R_DrawColumnHorizP;
+
+	if (screen->is8bit())
+	{
+		R_DrawColumn			= R_DrawColumnP;
+		R_DrawFuzzColumn		= R_DrawFuzzColumnP;
+		R_DrawTranslucentColumn	= R_DrawTranslucentColumnP;
+		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP;
+		R_DrawSlopeSpan			= R_DrawSlopeSpanP;
+		R_DrawSpan				= R_DrawSpanP;
+		R_FillColumn			= R_FillColumnP;
+		R_FillSpan				= R_FillSpanP;
+		R_FillTranslucentSpan	= R_FillTranslucentSpanP;
+
+		rt_copy1col				= rt_copy1colP;
+		rt_copy4cols			= rt_copy4colsP;
+		rt_map1col				= rt_map1colP;
+		rt_map4cols				= rt_map4colsP;
+		rt_lucent1col			= rt_lucent1colP;
+		rt_lucent4cols			= rt_lucent4colsP;
+		rt_tlate1col			= rt_tlate1colP;
+		rt_tlate4cols			= rt_tlate4colsP;
+		rt_tlatelucent1col		= rt_tlatelucent1colP;
+		rt_tlatelucent4cols		= rt_tlatelucent4colsP;
+	}
+	else
+	{
+		// 32bpp rendering functions:
+		R_DrawColumn			= R_DrawColumnD;
+		R_DrawFuzzColumn		= R_DrawFuzzColumnD;
+		R_DrawTranslucentColumn	= R_DrawTranslucentColumnD;
+		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD;
+		R_DrawSlopeSpan			= R_DrawSlopeSpanD;
 		R_DrawSpan				= R_DrawSpanD;
+		R_FillColumn			= R_FillColumnD;
+		R_FillSpan				= R_FillSpanD;
+		R_FillTranslucentSpan	= R_FillTranslucentSpanD;
 		
-		// [SL] 2012-03-30 - TODO: A 32bit color version of R_DrawSlopeSpan
-		// will be needed if > 8bit color is supported again.
-		R_DrawSlopeSpan			= R_DrawSlopeSpanP_C;
+		rt_copy1col				= rt_copy1colD;
+		rt_copy4cols			= rt_copy4colsD;
+		rt_map1col				= rt_map1colD;
+		rt_map4cols				= rt_map4colsD;
+		rt_lucent1col			= rt_lucent1colD;
+		rt_lucent4cols			= rt_lucent4colsD;
+		rt_tlate1col			= rt_tlate1colD;
+		rt_tlate4cols			= rt_tlate4colsD;
+		rt_tlatelucent1col		= rt_tlatelucent1colD;
+		rt_tlatelucent4cols		= rt_tlatelucent4colsD;
 	}
 }
 

@@ -233,12 +233,11 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		str += '\n';
 
 	// send to any rcon players
-	client_t *cl;
-	for (i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		cl = &clients[i];
+		client_t* cl = &(it->client);
 
-		if(!clients[i].allow_rcon)
+		if(!(cl->allow_rcon))
 			continue;
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);

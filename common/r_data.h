@@ -86,8 +86,10 @@ extern fixed_t* texturescalex;
 extern fixed_t* texturescaley;
 
 // Retrieve column data for span blitting.
-tallpost_t* R_GetColumn(int tex, int col);
-byte* R_GetColumnData(int tex, int col);
+tallpost_t* R_GetPatchColumn(int lumpnum, int colnum);
+byte* R_GetPatchColumnData(int lumpnum, int colnum);
+tallpost_t* R_GetTextureColumn(int texnum, int colnum);
+byte* R_GetTextureColumnData(int texnum, int colnum);
 
 
 // I/O, setting up the stuff.
@@ -111,9 +113,11 @@ inline int R_TextureNumForName (const byte *name) { return R_TextureNumForName (
 inline int R_CheckTextureNumForName (const byte *name) { return R_CheckTextureNumForName ((const char *)name); }
 
 int R_ColormapNumForName(const char *name);		// killough 4/4/98
+void R_ReinitColormap();
+void R_ForceDefaultColormap (const char *name);
 void R_SetDefaultColormap (const char *name);	// [RH] change normal fadetable
 unsigned int R_BlendForColormap (int map);		// [RH] return calculated blend for a colormap
-extern byte *realcolormaps;						// [RH] make the colormaps externally visible
+extern shademap_t realcolormaps;				// [RH] make the colormaps externally visible
 extern size_t numfakecmaps;
 
 unsigned int SlopeDiv(unsigned int num, unsigned int den);

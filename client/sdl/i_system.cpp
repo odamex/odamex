@@ -204,6 +204,8 @@ void *I_ZoneBase (size_t *size)
 
 void I_BeginRead(void)
 {
+	// NOTE(jsd): This is called before V_Palette is set causing crash in 32bpp mode.
+#if 0
 	if (r_loadicon)
 	{
 		patch_t *diskpatch = W_CachePatch("STDISK");
@@ -224,6 +226,7 @@ void I_BeginRead(void)
 
 		screen->Unlock();
 	}
+#endif
 }
 
 void I_EndRead(void)
@@ -723,7 +726,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 		va_list argptr;
 		va_start (argptr, error);
 		int index = vsprintf (errortext, error, argptr);
-		sprintf (errortext + index, "\nSDL_GetError = %s", SDL_GetError());
+		sprintf (errortext + index, "\nSDL_GetError = \"%s\"", SDL_GetError());
 		va_end (argptr);
 
 		throw CFatalError (errortext);
@@ -749,6 +752,18 @@ void STACK_ARGS I_Error (const char *error, ...)
 	va_end (argptr);
 
 	throw CRecoverableError (errortext);
+}
+
+void STACK_ARGS I_Warning(const char *warning, ...)
+{
+	va_list argptr;
+	char warningtext[MAX_ERRORTEXT];
+
+	va_start (argptr, warning);
+	vsprintf (warningtext, warning, argptr);
+	va_end (argptr);
+
+	Printf_Bold ("\n%s\n", warningtext);
 }
 
 char DoomStartupTitle[256] = { 0 };

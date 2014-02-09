@@ -567,7 +567,7 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 	memset(playeringame, 0, sizeof(player_t*) * MAXPLAYERS);
 
 	short maxid = 0;
-	for (std::vector<player_t>::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (it->ingame() && !(it->spectator))
 		{
@@ -1899,8 +1899,6 @@ void A_Explode (AActor *thing)
 //
 void A_BossDeath (AActor *actor)
 {
-	size_t i;
-
 	// [RH] These all depend on the presence of level flags now
 	//		rather than being hard-coded to specific levels.
 
@@ -1920,11 +1918,14 @@ void A_BossDeath (AActor *actor)
 	else return;
 
 	// make sure there is a player alive for victory
-	for (i = 0; i < players.size(); i++)
-		if (players[i].ingame() && players[i].health > 0)
+	Players::const_iterator it = players.begin();
+	for (;it != players.end();++it)
+	{
+		if (it->ingame() && it->health > 0)
 			break;
+	}
 
-	if (i == players.size())
+	if (it == players.end())
 		return; // no one left alive, so do not end game
 
 	// scan the remaining thinkers to see if all bosses are dead

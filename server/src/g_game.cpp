@@ -99,7 +99,7 @@ BOOL			netgame;
 // Describes if this is a multiplayer game or not
 BOOL			multiplayer;
 // The player vector, contains all player information
-std::vector<player_t>		players;
+Players			players;
 // The null player
 player_t		nullplayer;
 
@@ -237,7 +237,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 //
 // G_WriteDemoTiccmd
 //
-void G_WriteDemoTiccmd ()
+void G_WriteDemoTiccmd()
 {
 }
 
@@ -250,7 +250,6 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 }
 
 EXTERN_CVAR(sv_maxplayers)
-
 
 //
 // G_Responder
@@ -270,13 +269,13 @@ int mapchange;
 
 void G_Ticker (void)
 {
-	size_t i;
-
 	// do player reborns if needed
-	if(serverside)
-		for (i = 0; i < players.size(); i++)
-			if (players[i].ingame() && (players[i].playerstate == PST_REBORN || players[i].playerstate == PST_ENTER))
-				G_DoReborn (players[i]);
+	if (serverside)
+	{
+		for (Players::iterator it = players.begin();it != players.end();++it)
+			if (it->ingame() && (it->playerstate == PST_REBORN || it->playerstate == PST_ENTER))
+				G_DoReborn(*it);
+	}
 
 	// do things to change the game state
 	while (gameaction != ga_nothing)
@@ -446,9 +445,14 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	if (!player.mo)
 	{
 		// first spawn of level, before corpses
-		for (i = 0; i < players.size() && (&players[i] != &player); i++)
-			if (players[i].mo && players[i].mo->x == x && players[i].mo->y == y)
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (&*it != &player)
+				break;
+
+			if (it->mo && it->mo->x == x && it->mo->y == y)
 				return false;
+		}
 		return true;
 	}
 

@@ -138,21 +138,12 @@ extern AActor*			camera;		// [RH] camera instead of viewplayer
 
 extern angle_t			clipangle;
 
-extern int				viewangletox[FINEANGLES/2];
 extern angle_t			*xtoviewangle;
 //extern fixed_t		finetangent[FINEANGLES/2];
 
-extern fixed_t			rw_distance;
-extern angle_t			rw_normalangle;
-
-
-
-// angle to line origin
-extern int				rw_angle1;
-
-
 extern visplane_t*		floorplane;
 extern visplane_t*		ceilingplane;
+extern visplane_t*		skyplane;
 
 // [AM] 4:3 Field of View
 extern int				FieldOfView;

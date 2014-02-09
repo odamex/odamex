@@ -37,9 +37,10 @@ extern planefunction_t	ceilingfunc_t;
 
 extern int  			*floorclip;
 extern int  			*ceilingclip;
+extern int				*floorclipinitial;
+extern int				*ceilingclipinitial;
 
 extern fixed_t			*yslope;
-extern fixed_t			*distscale;
 
 void R_InitPlanes (void);
 void R_ClearPlanes (void);

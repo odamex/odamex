@@ -25,6 +25,7 @@
 
 
 #include <stdio.h>
+#include <assert.h>
 
 #include "minilzo.h"
 // [RH] Output buffer size for LZO compression.
@@ -68,8 +69,8 @@ IMPLEMENT_CLASS (DCanvas, DObject)
 int DisplayWidth, DisplayHeight, DisplayBits;
 int SquareWidth;
 
-unsigned int Col2RGB8[65][256];
-byte RGB32k[32][32][32];
+argb_t Col2RGB8[65][256];
+palindex_t RGB32k[32][32][32];
 
 void I_FlushInput();
 
@@ -81,7 +82,7 @@ DBoundingBox dirtybox;
 
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
-EXTERN_CVAR (vid_defbits)
+EXTERN_CVAR (vid_32bpp)
 EXTERN_CVAR (vid_autoadjust)
 EXTERN_CVAR (vid_overscan)
 
@@ -120,6 +121,12 @@ CVAR_FUNC_IMPL (vid_fullscreen)
 	NewBits = I_GetVideoBitDepth();
 }
 
+CVAR_FUNC_IMPL (vid_32bpp)
+{
+	setmodeneeded = true;
+	NewBits = (int)vid_32bpp ? 32 : 8;
+}
+
 
 //
 // V_MarkRect
@@ -130,17 +137,6 @@ void V_MarkRect (int x, int y, int width, int height)
 	dirtybox.AddToBox (x+width-1, y+height-1);
 }
 
-
-DCanvas::DCanvas ()
-{
-	buffer = NULL;
-	m_LockCount = 0;
-	m_Private = NULL;
-}
-
-DCanvas::~DCanvas ()
-{
-}
 
 // [RH] Fill an area with a 64x64 flat texture
 //		right and bottom are one pixel *past* the boundaries they describe.
@@ -194,10 +190,10 @@ void DCanvas::FlatFill (int left, int top, int right, int bottom, const byte *sr
 				{
 					// Try and let the optimizer pair this on a Pentium
 					// (even though VC++ doesn't anyway)
-					dest[0] = V_Palette[l[z]];
-					dest[1] = V_Palette[l[z+1]];
-					dest[2] = V_Palette[l[z+2]];
-					dest[3] = V_Palette[l[z+3]];
+					dest[0] = V_Palette.shade(l[z+0]);
+					dest[1] = V_Palette.shade(l[z+1]);
+					dest[2] = V_Palette.shade(l[z+2]);
+					dest[3] = V_Palette.shade(l[z+3]);
 				}
 			}
 
@@ -205,13 +201,13 @@ void DCanvas::FlatFill (int left, int top, int right, int bottom, const byte *sr
 			{
 				// Do any odd pixel left over
 				if (width & 1)
-					*dest++ = V_Palette[l[0]];
+					*dest++ = V_Palette.shade(l[0]);
 
 				// Do the rest of the pixels
 				for (z = 1; z < (width & 63); z += 2, dest += 2)
 				{
-					dest[0] = V_Palette[l[z]];
-					dest[1] = V_Palette[l[z+1]];
+					dest[0] = V_Palette.shade(l[z+0]);
+					dest[1] = V_Palette.shade(l[z+1]);
 				}
 			}
 
@@ -301,10 +297,9 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color, float famount
 		int x, y;
 
 		fixed_t amount = (fixed_t)(famount * 64.0f);
-		unsigned int *fg2rgb = Col2RGB8[amount];
-		unsigned int *bg2rgb = Col2RGB8[64-amount];
-		unsigned int fg =
-				fg2rgb[V_GetColorFromString(GetDefaultPalette()->basecolors, color)];
+		argb_t *fg2rgb = Col2RGB8[amount];
+		argb_t *bg2rgb = Col2RGB8[64-amount];
+		unsigned int fg = fg2rgb[V_GetColorFromString(GetDefaultPalette()->basecolors, color)];
 
 		byte *dest = buffer + y1 * pitch + x1;
 		int gap = pitch - w;
@@ -345,48 +340,8 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color, float famount
 	}
 	else
 	{
-		int x, y;
-		int *line;
 		int fill = V_GetColorFromString (NULL, color);
-
-		line = (int *)(screen->buffer);
-
-		if (famount == 1.0f)
-		{
-			fill = (fill >> 2) & 0x3f3f3f;
-			for (y = y1; y < y1 + h; y++)
-			{
-				for (x = x1; x < x1 + w; x++)
-				{
-					line[x] = (line[x] - ((line[x] >> 2) & 0x3f3f3f)) + fill;
-				}
-				line += pitch >> 2;
-			}
-		}
-		else if (famount == 2.0)
-		{
-			fill = (fill >> 1) & 0x7f7f7f;
-			for (y = y1; y < y1 + h; y++)
-			{
-				for (x = x1; x < x1 + w; x++)
-				{
-					line[x] = ((line[x] >> 1) & 0x7f7f7f) + fill;
-				}
-				line += pitch >> 2;
-			}
-		}
-		else if (famount == 3.0)
-		{
-			fill = fill - ((fill >> 2) & 0x3f3f3f);
-			for (y = y1; y < y1 + h; y++)
-			{
-				for (x = x1; x < x1 + w; x++)
-				{
-					line[x] = ((line[x] >> 2) & 0x3f3f3f) + fill;
-				}
-				line += pitch >> 2;
-			}
-		}
+		r_dimpatchD(this, fill, (int)(famount * 256.0f), x1, y1, w, h);
 	}
 }
 
@@ -474,7 +429,7 @@ BEGIN_COMMAND (setcolor)
 END_COMMAND (setcolor)
 
 // Build the tables necessary for translucency
-static void BuildTransTable (DWORD *palette)
+static void BuildTransTable (argb_t *palette)
 {
 	{
 		int r, g, b;
@@ -507,15 +462,15 @@ void DCanvas::Lock ()
 
 		if (this == screen)
 		{
-			if (dc_pitch != pitch << detailyshift)
+			if (dcol.pitch != pitch << detailyshift)
 			{
-				dc_pitch = pitch << detailyshift;
+				dcol.pitch = pitch << detailyshift;
 				R_InitFuzzTable ();
 			}
 
-			if ((is8bit() ? 1 : 4) << detailxshift != ds_colsize)
+			if (1 << detailxshift != dspan.colsize)
 			{
-				ds_colsize = (is8bit() ? 1 : 4) << detailxshift;
+				dspan.colsize = 1 << detailxshift;
 			}
 		}
 	}
@@ -628,7 +583,8 @@ static bool V_DoModeSetup(int width, int height, int bits)
 		screen = NULL;
 	}
 
-	I_SetMode(width, height, bits);
+	if (!I_SetMode(width, height, bits))
+		return false;
 
 	I_SetOverscan (vid_overscan);
 
@@ -672,10 +628,11 @@ static bool V_DoModeSetup(int width, int height, int bits)
 	screen = I_AllocateScreen(width + cache_fudge, height, bits, primary);
 
 	V_ForceBlend (0,0,0,0);
-	if (bits == 8)
+	GammaAdjustPalettes ();
 		RefreshPalettes ();
+	R_ReinitColormap ();
 
-	R_InitColumnDrawers(screen->is8bit());
+	R_InitColumnDrawers();
 	R_MultiresInit();
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
@@ -714,14 +671,14 @@ bool V_SetResolution(int width, int height, int bits)
 		if (vid_fullscreen)
 		{
 			// Fullscreen needs to check for a valid resolution.
-			I_ClosestResolution(&width, &height, bits);
+			I_ClosestResolution(&width, &height);
 		}
 
-		// Try the desired resolution
-		if (!I_CheckResolution (width, height, bits))
-		{				
+		// Try specified resolution
+		if (!I_CheckResolution(width, height))
+		{
 			// Try the previous resolution (if any)
-			if (!I_CheckResolution (oldwidth, oldheight, oldbits))
+			if (!I_CheckResolution(oldwidth, oldheight))
 		   		return false;
 
 			width = oldwidth;
@@ -753,8 +710,8 @@ BEGIN_COMMAND (vid_setmode)
 	if (height == 0)
 		height = I_GetVideoHeight(); 
 
-	// Bits (always 8-bit for now)
-	bits = 8;
+	// Bits
+	bits = (int)vid_32bpp ? 32 : 8;
 
 	if (width < 320 || height < 200) 
 		Printf(PRINT_HIGH, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
@@ -762,7 +719,7 @@ BEGIN_COMMAND (vid_setmode)
 	if (width > MAXWIDTH || height > MAXHEIGHT)
 		Printf(PRINT_HIGH, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
 
-	if (I_CheckResolution(width, height, bits))
+	if (I_CheckResolution(width, height))
 	{
 		// The actual change of resolution will take place
 		// near the beginning of D_Display().
@@ -799,14 +756,15 @@ void V_InitPalette (void)
 	if (!(InitPalettes ("PLAYPAL")))
 		I_FatalError ("Could not initialize palette");
 
-	V_Palette = (unsigned int *)GetDefaultPalette()->colors;
-
 	BuildTransTable(GetDefaultPalette()->basecolors);
 
 	V_ForceBlend (0, 0, 0, 0);
 
-	if(DisplayBits == 8)
 		RefreshPalettes ();
+
+	assert(GetDefaultPalette()->maps.colormap != NULL);
+	assert(GetDefaultPalette()->maps.shademap != NULL);
+	V_Palette = shaderef_t(&GetDefaultPalette()->maps, 0); // (unsigned int *)DefaultPalette->colors;
 }
 
 //
@@ -868,13 +826,11 @@ void V_Init (void)
 
 	if (bits == 0)
 	{
-      // SoM: We have to enforce 8-bit for now
-		//bits = (int)(vid_defbits);
-      bits = 8;
+		bits = (int)vid_32bpp ? 32 : 8;
 	}
 
     if ((int)(vid_autoadjust))
-        I_ClosestResolution (&width, &height, bits);
+        I_ClosestResolution (&width, &height);
 
 	if (!V_SetResolution (width, height, bits))
 		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,
@@ -882,10 +838,10 @@ void V_Init (void)
 	else
         AddCommandString("checkres");
 
+	V_InitPalette ();
+
 	V_InitConChars (0xf7);
 	C_InitConsole (screen->width, screen->height, true);
-
-	V_InitPalette ();
 }
 
 void DCanvas::AttachPalette (palette_t *pal)
