@@ -82,7 +82,7 @@
 #include "s_sound.h"
 #include "tables.h"          
 #include "tarray.h"          
-#include "vectors.h"         
+#include "m_vectors.h"         
 #include "version.h"
 #include "v_palette.h"       
 #include "v_video.h"         

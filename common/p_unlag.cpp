@@ -4,7 +4,7 @@
 // $Id: p_unlag.cpp $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,7 +36,7 @@
 
 #include "doomdef.h"
 #include "doomstat.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "r_main.h"
 #include "p_unlag.h"
 #include "p_local.h"

@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -239,176 +239,18 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 //
 void G_WriteDemoTiccmd ()
 {
-    byte demo_tmp[8];
-
-    int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
-
-    for(size_t i = 0; i < players.size(); i++)
-    {
-        byte *demo_p = demo_tmp;
-
-        *demo_p++ = players[i].cmd.forwardmove >> 8;
-        *demo_p++ = players[i].cmd.sidemove >> 8;
-
-        // If this is a longtics demo, record in higher resolution
-
-        if (LMP_DOOM_1_9_1 == demoversion)
-        {
-            *demo_p++ = (players[i].cmd.yaw & 0xff);
-            *demo_p++ = (players[i].cmd.yaw >> 8) & 0xff;
-        }
-        else
-        {
-            *demo_p++ = players[i].cmd.yaw >> 8;
-            players[i].cmd.yaw = ((unsigned char)*(demo_p-1))<<8;
-        }
-
-        *demo_p++ = players[i].cmd.buttons;
-
-        fwrite(demo_tmp, demostep, 1, recorddemo_fp);
-    }
 }
 
 //
 // G_RecordDemo
 //
-bool G_RecordDemo (char* name)
+bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 {
-    strcpy (demoname, name);
-    strcat (demoname, ".lmp");
-
-    if(recorddemo_fp)
-    {
-        fclose(recorddemo_fp);
-        recorddemo_fp = NULL;
-    }
-
-    recorddemo_fp = fopen(demoname, "w");
-
-    if(!recorddemo_fp)
-    {
-        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demoname);
-        return false;
-    }
-
-    usergame = false;
-    demorecording = true;
-    demostartgametic = gametic;
-
-    return true;
-}
-//
-// G_BeginRecording
-//
-void G_BeginRecording (void)
-{
-    byte demo_tmp[32];
-    demo_p = demo_tmp;
-
-    // Save the right version code for this demo
-
-    if (demoversion == LMP_DOOM_1_9_1) // denis - TODO!!!
-    {
-        *demo_p++ = DOOM_1_9_1_DEMO;
-    }
-    else
-    {
-        *demo_p++ = DOOM_1_9_DEMO;
-    }
-
-    democlassic = true;
-
-    int episode;
-    int mapid;
-    if(gameinfo.flags & GI_MAPxx)
-    {
-        episode = 1;
-        mapid = atoi(level.mapname + 3);
-    }
-    else
-    {
-        episode = level.mapname[1] - '0';
-        mapid = level.mapname[3] - '0';
-    }
-
-    *demo_p++ = sv_skill.asInt() - 1;
-    *demo_p++ = episode;
-    *demo_p++ = mapid;
-    *demo_p++ = sv_gametype.asInt();
-    *demo_p++ = sv_monstersrespawn.asInt();
-    *demo_p++ = sv_fastmonsters.asInt();
-    *demo_p++ = sv_nomonsters.asInt();
-    *demo_p++ = 0;
-
-    *demo_p++ = 1;
-    *demo_p++ = 0;
-    *demo_p++ = 0;
-    *demo_p++ = 0;
-
-    fwrite(demo_tmp, 13, 1, recorddemo_fp);
+	return false;
 }
 
 EXTERN_CVAR(sv_maxplayers)
 
-void RecordCommand(int argc, char **argv)
-{
-	if(argc > 2)
-	{
-		int ingame = 0;
-		for(size_t i = 0; i < players.size(); i++)
-		{
-			if(players[i].ingame())
-				ingame++;
-		}
-
-		if(!ingame)
-		{
-			Printf(PRINT_HIGH, "cannot record with no players");
-			return;
-		}
-
-		sv_maxplayers.Set(4.0f);
-
-		if(G_RecordDemo(argv[2]))
-		{
-			G_InitNew(argv[1]);
-			G_BeginRecording();
-		}
-	}
-	else
-		Printf(PRINT_HIGH, "Usage: recordvanilla map file\n");
-}
-/*
-BEGIN_COMMAND(recordvanilla)
-{
-	//G_CheckDemoStatus();
-	demoversion = LMP_DOOM_1_9;
-	RecordCommand(argc, argv);
-}
-END_COMMAND(recordvanilla)
-
-BEGIN_COMMAND(recordlongtics)
-{
-	//G_CheckDemoStatus();
-	demoversion = LMP_DOOM_1_9_1;
-	RecordCommand(argc, argv);
-}
-END_COMMAND(recordlongtics)
-
-BEGIN_COMMAND(stopdemo)
-{
-	G_CheckDemoStatus ();
-}
-END_COMMAND(stopdemo)
-*/
-
-// [RH] Spy mode has been separated into two console commands.
-//		One goes forward; the other goes backward.
-/*
-static void ChangeSpy (void)
-{
-}
-*/
 
 //
 // G_Responder

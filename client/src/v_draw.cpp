@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -612,11 +612,10 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 	if (this == screen)
 		V_MarkRect(x0, y0, destwidth, destheight);
 
-	int col = 0;
 	byte* desttop = buffer + (y0 * pitch) + (x0 * colstep);
-	int w = destwidth * xinc;
+	int w = MIN(destwidth * xinc, patch->width() << FRACBITS);
 
-	for (;col < w;col += xinc, desttop += colstep)
+	for (int col = 0; col < w; col += xinc, desttop += colstep)
 	{
 		tallpost_t *post =
 				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col >> FRACBITS]));

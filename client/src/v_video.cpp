@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -571,8 +571,8 @@ bool V_UsePillarBox()
 	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
 		return false;
 	
-	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
-	return (!vid_widescreen || (!serverside && !sv_allowwidescreen)) && ratio > (4.0f / 3.0f);
+	return (!vid_widescreen || (!serverside && !sv_allowwidescreen))
+		&& (3 * I_GetVideoWidth() > 4 * I_GetVideoHeight());
 }
 
 //
@@ -592,8 +592,8 @@ bool V_UseLetterBox()
 	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
 		return false;
 	
-	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
-	return (vid_widescreen && (serverside || sv_allowwidescreen)) && ratio <= (4.0f / 3.0f);
+	return (vid_widescreen && (serverside || sv_allowwidescreen))
+		&& (3 * I_GetVideoWidth() <= 4 * I_GetVideoHeight());
 }
 
 //
@@ -610,8 +610,8 @@ bool V_UseWidescreen()
 	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
 		return false;
 	
-	float ratio = float(I_GetVideoWidth()) / float(I_GetVideoHeight());
-	return (vid_widescreen && (serverside || sv_allowwidescreen)) && ratio > (4.0f / 3.0f);
+	return (vid_widescreen && (serverside || sv_allowwidescreen))
+		&& (3 * I_GetVideoWidth() > 4 * I_GetVideoHeight());
 }
 
 //
@@ -633,9 +633,9 @@ static bool V_DoModeSetup(int width, int height, int bits)
 	I_SetOverscan (vid_overscan);
 
 	if (V_UsePillarBox())
-		width = 4.0f * height / 3.0f;
+		width = (4 * height) / 3;
 	else if (V_UseLetterBox())
-		height = 9.0f * width / 16.0f;
+		height = (9 * width) / 16;
 
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows con_scaletext to have some purpose...
@@ -657,7 +657,7 @@ static bool V_DoModeSetup(int width, int height, int bits)
 	DisplayHeight = height;
 	DisplayBits = bits;
 
-	SquareWidth = 4.0f * DisplayHeight / 3.0f;
+	SquareWidth = (4 * DisplayHeight) / 3;
 	
 	if (SquareWidth > DisplayWidth)
         SquareWidth = DisplayWidth;
@@ -907,6 +907,63 @@ void DCanvas::DetachPalette ()
 		FreePalette (m_Palette);
 		m_Palette = NULL;
 	}
+}
+
+
+//
+// V_DrawFPSWidget
+//
+void V_DrawFPSWidget()
+{
+	static const uint64_t ONE_SECOND = I_ConvertTimeFromMs(1000);
+
+	static uint64_t last_time = I_GetTime();
+	static uint64_t time_accum = 0;
+	static unsigned int frame_count = 0;
+
+	uint64_t current_time = I_GetTime();
+	uint64_t delta_time = current_time - last_time;
+	last_time = current_time;
+	frame_count++;
+
+	if (delta_time > 0)
+	{
+		static double last_fps = 0.0;
+		static char fpsbuff[40];
+
+		double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
+		int chars = sprintf(fpsbuff, "% 3.1fms (%.2f fps)", delta_time_ms, last_fps);
+		screen->Clear(0, screen->height - 8, chars * 8, screen->height, 0);
+		screen->PrintStr(0, screen->height - 8, fpsbuff, chars);
+
+		time_accum += delta_time;
+
+		// calculate last_fps every 1000ms
+		if (time_accum > ONE_SECOND)
+		{
+			last_fps = double(ONE_SECOND * frame_count) / time_accum;
+			time_accum = 0;
+			frame_count = 0;
+		}
+	}
+}
+
+
+//
+// V_DrawFPSTicker
+//
+void V_DrawFPSTicker()
+{
+	static QWORD lasttic = 0;
+	QWORD i = I_MSTime() * TICRATE / 1000;
+	QWORD tics = i - lasttic;
+	lasttic = i;
+	if (tics > 20) tics = 20;
+
+	for (i = 0; i < tics*2; i += 2)
+		screen->buffer[(screen->height - 1) * screen->pitch + i] = 0xff;
+	for ( ; i < 20*2; i += 2)
+		screen->buffer[(screen->height - 1) * screen->pitch + i] = 0x0;
 }
 
 VERSION_CONTROL (v_video_cpp, "$Id$")

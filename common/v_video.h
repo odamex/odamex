@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -500,6 +500,9 @@ bool V_SetResolution (int width, int height, int bpp);
 bool V_UsePillarBox();
 bool V_UseLetterBox();
 bool V_UseWidescreen();
+
+void V_DrawFPSWidget();
+void V_DrawFPSTicker();
 
 #endif // __V_VIDEO_H__
 

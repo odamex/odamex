@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -193,7 +193,7 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
-	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
+	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 }
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -562,6 +562,11 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 	if (Reboot)
 	{
 		unnatural_level_progression = true;
+
+		// [SL] Stop any playing/recording demos before D_DoomWadReboot wipes out
+		// the zone memory heap and takes the demo data with it.
+		G_CheckDemoStatus();
+
 		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
 		if (!missingfiles.empty())
 			return false;
@@ -609,15 +614,16 @@ bool G_LoadWad(const std::string &str, const std::string &mapname)
 		}
 		else if (M_ExtractFileExtension(com_token, ext))
 		{
-			if (ext == "wad" && !W_IsIWAD(com_token))
+			if (iequals(ext, "wad") && !W_IsIWAD(com_token))
 				newwadfiles.push_back(com_token);
-			else if (ext == "deh" || ext == "bex")
+			else if (iequals(ext, "deh") || iequals(ext, "bex"))
 				newpatchfiles.push_back(com_token);		// Patch file
 		}
 	}
 
 	return G_LoadWad(newwadfiles, newpatchfiles, nohashes, nohashes, mapname);
 }
+
 
 BEGIN_COMMAND (map)
 {

@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include <sstream>
 
 // todo: replace with a generic implementation
 #if 0
@@ -91,8 +92,6 @@ struct Cvar_t
 	std::string Name;
     std::string Value;
 
-	uint8_t Type;
-
 	union
 	{
 	    bool b;
@@ -103,6 +102,8 @@ struct Cvar_t
 	    int32_t i32;
 	    uint32_t ui32;
 	};
+	
+	uint8_t Type;
 };
 
 struct Wad_t
@@ -122,12 +123,12 @@ struct Player_t
 {
 	std::string Name;
 	uint32_t    Colour;
-	int16_t     Frags;
-	uint16_t    Ping;
-	uint8_t     Team;
 	uint16_t    Kills;
 	uint16_t    Deaths;
 	uint16_t    Time;
+	int16_t     Frags;
+	uint16_t    Ping;
+	uint8_t     Team;
 	bool        Spectator;
 };
 
@@ -142,34 +143,33 @@ enum GameType_t
 
 struct ServerInfo_t
 {
+	std::vector<std::string> Patches;
+	std::vector<Cvar_t>      Cvars;
+	std::vector<Team_t>      Teams;
+	std::vector<Wad_t>       Wads;
+	std::vector<Player_t>    Players;
+	std::string              Name; // Launcher specific: Server name
+	std::string              PasswordHash;
+	std::string              CurrentMap;
+	GameType_t               GameType; // Launcher specific: Game type
 	uint32_t                 Response; // Launcher specific: Server response
-	uint8_t                  VersionMajor; // Launcher specific: Version fields
-	uint8_t                  VersionMinor;
-	uint8_t                  VersionPatch;
 	uint32_t                 VersionRevision;
 	uint32_t                 VersionProtocol;
 	uint32_t                 VersionRealProtocol;
 	uint32_t                 PTime;
-	std::string              Name; // Launcher specific: Server name
+	uint16_t                 ScoreLimit; // Launcher specific: Score limit
+	uint16_t                 TimeLeft;
+	uint8_t                  VersionMajor; // Launcher specific: Version fields
+	uint8_t                  VersionMinor;
+	uint8_t                  VersionPatch;
 	uint8_t                  MaxClients; // Launcher specific: Maximum clients
 	uint8_t                  MaxPlayers; // Launcher specific: Maximum players
-	GameType_t               GameType; // Launcher specific: Game type
-	uint16_t                 ScoreLimit; // Launcher specific: Score limit
-	std::vector<Cvar_t>      Cvars;
-	std::string              PasswordHash;
-	std::string              CurrentMap;
-	uint16_t                 TimeLeft;
-	std::vector<Team_t>      Teams;
-	std::vector<std::string> Patches;
-	std::vector<Wad_t>       Wads;
-	std::vector<Player_t>    Players;
 };
 
 class ServerBase  // [Russell] - Defines an abstract class for all packets
 {
 protected:      
-	BufferedSocket Socket;
-
+	BufferedSocket *Socket;
 	// Magic numbers
 	uint32_t challenge;
 	uint32_t response;
@@ -178,6 +178,9 @@ protected:
 	uint64_t Ping;
 
     uint8_t m_RetryCount;
+
+    std::string m_Address;
+    uint16_t m_Port;
 
 //	AG_Mutex m_Mutex;
 public:
@@ -189,6 +192,10 @@ public:
 		response = 0;
 
         m_RetryCount = 2;
+
+        m_Port = 0;
+
+        Socket = NULL;
 
     // todo: replace with a generic implementation
 //		AG_MutexInit(&m_Mutex);
@@ -205,15 +212,30 @@ public:
 	// Query the server
 	int32_t Query(int32_t Timeout);
 
+    void SetSocket(BufferedSocket *s)
+    {
+        Socket = s;
+    }
+
 	void SetAddress(const std::string &Address, const uint16_t &Port) 
 	{ 
-		Socket.SetRemoteAddress(Address, Port);
+		m_Address = Address;
+		m_Port = Port;
 	}
 
-	std::string GetAddress() const { return Socket.GetRemoteAddress(); }
+	std::string GetAddress() const 
+	{
+        std::ostringstream Address;
+
+        Address << m_Address << ":" << m_Port;
+
+        return Address.str();
+    }
+    
 	void GetAddress(std::string &Address, uint16_t &Port) const
 	{
-        Socket.GetRemoteAddress(Address, Port);
+        Address = m_Address;
+        Port = m_Port;
 	}
 	uint64_t GetPing() const { return Ping; }
 
@@ -315,8 +337,9 @@ public:
 
 		for (size_t i = 0; i < masteraddresses.size(); ++i)
 		{
-			Socket.SetRemoteAddress(masteraddresses[i].ip, masteraddresses[i].port);
-
+			m_Address = masteraddresses[i].ip;
+			m_Port = masteraddresses[i].port;
+			
 			Query(Timeout);
 		}
 	}

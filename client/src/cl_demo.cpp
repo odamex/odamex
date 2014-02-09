@@ -6,7 +6,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -45,7 +45,6 @@ EXTERN_CVAR(sv_maxplayers)
 
 extern std::string server_host;
 extern std::string digest;
-extern playerskin_t* skins;
 extern std::vector<std::string> wadfiles, wadhashes;
 
 int CL_GetPlayerColor(player_t *player);
@@ -1137,7 +1136,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, consoleplayer().userinfo.team);
 	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.gender);
 	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.color);
-	MSG_WriteString	(netbuffer, skins[consoleplayer().userinfo.skin].name);
+	MSG_WriteString	(netbuffer, "");	// [SL] place holder for deprecated skins
 	MSG_WriteShort	(netbuffer, consoleplayer().GameTime);
 	
 	// Server sends its settings

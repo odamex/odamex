@@ -4,7 +4,7 @@
 // $Id: g_game.h 1854 2010-09-05 00:44:20Z ladna $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -48,10 +48,7 @@ void G_DoLoadGame(void);
 void G_BuildSaveName(std::string &name, int slot);
 void G_SaveGame(int slot, char* description);
 
-// Only called by startup code.
-bool G_RecordDemo(const char* name);
-
-void G_BeginRecording(void);
+bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname);
 
 void G_PlayDemo(char* name);
 void G_DoPlayDemo(bool justStreamInput = false);

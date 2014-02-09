@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,6 +23,7 @@
 
 
 #include <cstring>
+#include <cmath>
 #include <stdio.h>
 
 #include "cmdlib.h"
@@ -58,7 +59,7 @@ public:
 			cvar = next;
 		}
 	}
-}ad;
+} ad;
 
 cvar_t* GetFirstCvar(void)
 {
@@ -67,21 +68,23 @@ cvar_t* GetFirstCvar(void)
 
 int cvar_defflags;
 
-cvar_t::cvar_t (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD flags)
+cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
+		DWORD flags, float minval, float maxval)
 {
-	InitSelf (var_name, def, help, type, flags, NULL);
+	InitSelf(var_name, def, help, type, flags, NULL, minval, maxval);
 }
 
-cvar_t::cvar_t (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD flags, void (*callback)(cvar_t &))
+cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
+		DWORD flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
-	InitSelf (var_name, def, help, type, flags, callback);
+	InitSelf(var_name, def, help, type, flags, callback, minval, maxval);
 }
 
-void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD var_flags, void (*callback)(cvar_t &))
+void cvar_t::InitSelf(const char* var_name, const char* def, const char* help, cvartype_t type,
+		DWORD var_flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
-	cvar_t *var, *dummy;
-
-	var = FindCVar (var_name, &dummy);
+	cvar_t* dummy;
+	cvar_t* var = FindCVar(var_name, &dummy);
 
 	m_Callback = callback;
 	m_String = "";
@@ -91,6 +94,17 @@ void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, 
     m_HelpText = help;
     m_Type = type;
 
+	if (var_flags & CVAR_NOENABLEDISABLE)
+	{
+		m_MinValue = minval;
+		m_MaxValue = maxval;
+	}
+	else
+	{
+		m_MinValue = 0.0f;
+		m_MaxValue = 1.0f;
+	}
+
 	if (def)
 		m_Default = def;
 	else
@@ -98,7 +112,7 @@ void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, 
 
 	if (var_name)
 	{
-		C_AddTabCommand (var_name);
+		C_AddTabCommand(var_name);
 		m_Name = var_name;
 		m_Next = ad.GetCVars();
 		ad.GetCVars() = this;
@@ -108,14 +122,14 @@ void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, 
 
 	if (var)
 	{
-		ForceSet (var->m_String.c_str());
+		ForceSet(var->m_String.c_str());
 		if (var->m_Flags & CVAR_AUTO)
 			delete var;
 		else
 			var->~cvar_t();
 	}
 	else if (def)
-		ForceSet (def);
+		ForceSet(def);
 
 	m_Flags = var_flags | CVAR_ISDEFAULT;
 }
@@ -138,7 +152,7 @@ cvar_t::~cvar_t ()
 	}
 }
 
-void cvar_t::ForceSet (const char *val)
+void cvar_t::ForceSet(const char* valstr)
 {
 	// [SL] 2013-04-16 - Latched CVARs do not change values until the next map.
 	// Servers and single-player games should abide by this behavior but
@@ -147,42 +161,63 @@ void cvar_t::ForceSet (const char *val)
 		(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION))
 	{
 		m_Flags |= CVAR_MODIFIED;
-		if(val)
-			m_LatchedString = val;
+		if (valstr)
+			m_LatchedString = valstr;
 		else
-			m_LatchedString = "";
+			m_LatchedString.clear();
 	}
 	else
 	{
 		m_Flags |= CVAR_MODIFIED;
-		if(val)
+
+		bool numerical_value = IsRealNum(valstr);
+		bool integral_type = m_Type == CVARTYPE_BOOL || m_Type == CVARTYPE_BYTE ||
+					m_Type == CVARTYPE_WORD || m_Type == CVARTYPE_INT;
+		bool floating_type = m_Type == CVARTYPE_FLOAT;
+		float valf = numerical_value ? atof(valstr) : 0.0f;
+
+		// perform rounding to nearest integer for integral types
+		if (integral_type)
+			valf = floor(valf + 0.5f);
+
+		valf = clamp(valf, m_MinValue, m_MaxValue);
+
+		if (numerical_value || integral_type || floating_type)
 		{
-			m_String = val;
-            m_Value = atof(val);
+			// generate m_String based on the clamped valf value
+			char tmp[32];
+			sprintf(tmp, "%g", valf);
+			m_String = tmp;
 		}
 		else
 		{
-			m_String = "";
-            m_Value = 0.0f;
+			// just set m_String to valstr
+			if (valstr)
+				m_String = valstr;
+			else
+				m_String.clear();
 		}
 
+		m_Value = valf;
+
 		if (m_Flags & CVAR_USERINFO)
-			D_UserInfoChanged (this);
+			D_UserInfoChanged(this);
 		if (m_Flags & CVAR_SERVERINFO)
-			D_SendServerInfoChange (this, val);
+			D_SendServerInfoChange(this, m_String.c_str());
 
 		if (m_UseCallback)
-			Callback ();
+			Callback();
 	}
+
 	m_Flags &= ~CVAR_ISDEFAULT;
 }
 
-void cvar_t::ForceSet (float val)
+
+void cvar_t::ForceSet(float val)
 {
 	char string[32];
-
-	sprintf (string, "%g", val);
-	ForceSet (string);
+	sprintf(string, "%g", val);
+	ForceSet(string);
 }
 
 void cvar_t::Set (const char *val)
@@ -520,8 +555,8 @@ void cvar_t::C_ArchiveCVars (void *f)
 
 	while (cvar)
 	{
-		if ((cvar->m_Flags & CVAR_ARCHIVE) || (baseapp == client && cvar->m_Flags & CVAR_CLIENTARCHIVE)
-			|| (baseapp == server && cvar->m_Flags & CVAR_SERVERARCHIVE))
+		if ((baseapp == client && (cvar->m_Flags & CVAR_CLIENTARCHIVE))
+			|| (baseapp == server && (cvar->m_Flags & CVAR_SERVERARCHIVE)))
 		{
 			fprintf ((FILE *)f, "// %s\n", cvar->helptext());
 			fprintf ((FILE *)f, "set %s %s\n\n", C_QuoteString(cvar->name()).c_str(), C_QuoteString(cvar->cstring()).c_str());
@@ -554,6 +589,38 @@ void cvar_t::cvarlist()
 		var = var->m_Next;
 	}
 	Printf (PRINT_HIGH, "%d cvars\n", count);
+}
+
+
+static std::string C_GetValueString(const cvar_t* var)
+{
+	if (!var)
+		return "unset";
+
+	if (var->flags() & CVAR_NOENABLEDISABLE)
+		return '"' + var->str() + '"';
+
+	if (atof(var->cstring()) == 0.0f)
+		return "disabled";
+	else
+		return "enabled";	
+}
+
+static std::string C_GetLatchedValueString(const cvar_t* var)
+{
+	if (!var)
+		return "unset";
+
+	if (!(var->flags() & CVAR_LATCH))
+		return C_GetValueString(var);
+
+	if (var->flags() & CVAR_NOENABLEDISABLE)
+		return '"' + var->latched() + '"';
+
+	if (atof(var->latched()) == 0.0f)
+		return "disabled";
+	else
+		return "enabled";	
 }
 
 BEGIN_COMMAND (set)
@@ -600,9 +667,9 @@ BEGIN_COMMAND (set)
 
 		if (var->flags() & CVAR_LATCH)
 		{
-			if (strcmp(var->cstring(), argv[2])) // if different from current value
-				if (strcmp(var->latched(), argv[2])) // and if different from latched value
-					Printf(PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
+			// if new value is different from current value and latched value
+			if (strcmp(var->cstring(), argv[2]) && strcmp(var->latched(), argv[2]) && gamestate == GS_LEVEL)
+				Printf(PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
 		}
 
 		var->Set(argv[2]);
@@ -632,17 +699,12 @@ BEGIN_COMMAND (get)
 
 		// [Russell] - Don't make the user feel inadequate, tell
 		// them its either enabled, disabled or its other value
-		if (!(var->flags() & CVAR_NOENABLEDISABLE))
-		{
-			if (var->cstring()[0] == '0')
-				Printf(PRINT_HIGH, "\"%s\" is disabled%s.\n", var->name(), control.c_str());
-			else
-				Printf(PRINT_HIGH, "\"%s\" is enabled%s.\n", var->name(), control.c_str());
-		}
-		else
-		{
-			Printf(PRINT_HIGH, "\"%s\" is \"%s\"%s.\n", var->name(), var->cstring(), control.c_str());
-		}
+		Printf(PRINT_HIGH, "\"%s\" is %s%s.\n",
+				var->name(), C_GetValueString(var).c_str(), control.c_str());
+
+		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
+			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
+					var->name(), C_GetLatchedValueString(var).c_str());
 	}
 	else
 	{
@@ -664,29 +726,30 @@ BEGIN_COMMAND (toggle)
 
     var = cvar_t::FindCVar (argv[1], &prev);
 
-    if (var)
-    {
-        if (var->flags() & CVAR_NOENABLEDISABLE) {
-            Printf (PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
-        }
-        else
-        {
-            var->Set ((float)(!var->value()));
+	if (!var)
+	{
+		Printf(PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+	}
+	else if (var->flags() & CVAR_NOENABLEDISABLE)
+	{
+		Printf(PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
+	}
+	else
+	{
+		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
+			var->Set(!atof(var->latched()));
+		else
+			var->Set(!var->value());
 
-            // [Russell] - Don't make the user feel inadequate, tell
-            // them its either enabled, disabled or its other value
-            if (var->cstring()[0] == '1')
-                Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-            else if (var->cstring()[0] == '0')
-                Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
-            else
-                Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
-        }
-    }
-    else
-    {
-        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
-    }
+		// [Russell] - Don't make the user feel inadequate, tell
+		// them its either enabled, disabled or its other value
+		Printf(PRINT_HIGH, "\"%s\" is %s.\n",
+				var->name(), C_GetValueString(var).c_str());
+
+		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
+			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
+					var->name(), C_GetLatchedValueString(var).c_str());
+	}
 }
 END_COMMAND (toggle)
 

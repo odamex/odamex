@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -74,31 +74,116 @@ void**			lumpcache;
 
 static unsigned	stdisk_lumpnum;
 
-#define MAX_HASHES 10
-
-typedef struct
-{
-    std::string name;
-    std::string hash[MAX_HASHES];
-} gamewadinfo_t;
-
 // Valid IWAD file names
-static const gamewadinfo_t doomwadnames[] =
+const gamewadinfo_t doomwadnames[] =
 {
-    { "DOOM2F.WAD", { "" } },
-// Last 3 DOOM2.WAD hashes are Freedoom 0.6.4, 0.7, and 0.8beta1
-    { "DOOM2.WAD", { "25E1459CA71D321525F84628F45CA8CD", "C3BEA40570C23E511A7ED3EBCD9865F7", "5292a1275340798acf9cee07081718e8", "21ea277fa5612267eb7985493b33150e", "0597b0937e9615a9667b98077332597d" } },
-    { "DOOM2BFG.WAD", { "C3BEA40570C23E511A7ED3EBCD9865F7" } },
-    { "PLUTONIA.WAD", { "75C8CF89566741FA9D22447604053BD7" } },
-    { "TNT.WAD", { "4E158D9953C79CCF97BD0663244CC6B6" } },
-    { "DOOMU.WAD", { "C4FE9FD920207691A9F493668E0A2083" } },
-// Last 3 DOOM.WAD hashes are Freedoom 0.6.4, 0.7, and 0.8beta1
-    { "DOOM.WAD", { "C4FE9FD920207691A9F493668E0A2083", "1CD63C5DDFF1BF8CE844237F580E9CF3","FB35C4A5A9FD49EC29AB6E900572C524", "2e1af223cad142e3487c4327cf0ac8bd", "7b7720fc9c1a20fb8ebb3e9532c089af", "2a24722c068d3a74cd16f770797ff198" } },
-    { "DOOMBFG.WAD", { "FB35C4A5A9FD49EC29AB6E900572C524" } },
-    { "FREEDOOM.WAD", { "" } },
-    { "FREEDM.WAD", { "" } },
-    { "CHEX.WAD", { "25485721882b050afa96a56e5758dd52" } },
-    { "", { "" } }
+    { "DOOM2F.WAD", 
+		{ "" },
+		true
+	},
+
+    {	"DOOM2.WAD",
+		{ "25E1459CA71D321525F84628F45CA8CD",		// Doom 2 1.9
+		  "C3BEA40570C23E511A7ED3EBCD9865F7",		// Doom 2 BFG Edition
+		  "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
+		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
+		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
+		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
+		},
+		true
+	},
+
+    {	"DOOM2BFG.WAD",
+		{ "C3BEA40570C23E511A7ED3EBCD9865F7" },
+		true
+	},
+
+    {	"PLUTONIA.WAD",
+		{ "75C8CF89566741FA9D22447604053BD7" },
+		true
+	},
+
+    {	"TNT.WAD",
+		{ "4E158D9953C79CCF97BD0663244CC6B6" },
+		true
+	},
+
+    {	"DOOMU.WAD",
+		{ "C4FE9FD920207691A9F493668E0A2083" },
+		true
+	},
+
+    {	"DOOM.WAD",
+		{ "C4FE9FD920207691A9F493668E0A2083",		// Ultimate Doom 1.9
+		  "1CD63C5DDFF1BF8CE844237F580E9CF3",		// Doom Registered 1.9
+		  "FB35C4A5A9FD49EC29AB6E900572C524",		// Ultimate Doom BFG Edition
+		  "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
+		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
+		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
+		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
+		},
+		true
+	},
+
+    {	"DOOMBFG.WAD",
+		{ "FB35C4A5A9FD49EC29AB6E900572C524" },
+		true
+	},
+
+	{	"DOOM1.WAD",
+		{ "F0CEFCA49926D00903CF57551D901ABE" },
+		false
+	},
+
+	{	"FREEDOOM1.WAD",
+		{ "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
+		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
+		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
+		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
+		},
+		false
+	},
+
+	{	"FREEDOOMU.WAD",							// old alias for FREEDOOM1.WAD
+		{ "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
+		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
+		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
+		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
+		},
+		false
+	},
+
+    {	"FREEDOOM2.WAD",
+		{ "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
+		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
+		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
+		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
+		},
+		false
+	},
+
+    {	"FREEDOOM.WAD",								// old alias for FREEDOOM2.WAD
+		{ "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
+		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
+		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
+		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
+		},
+		false
+	},
+
+    {	"FREEDM.WAD",
+		{ "05859098BF191899903EF343AFBA369D"		// FreeDM 0.8
+		},
+		false
+	},
+
+    {	"CHEX.WAD",
+		{ "25485721882B050AFA96A56E5758DD52" },
+		true
+	},
+
+	// the entry below is used to indicate the end of the list
+    { "", { "" }, false }
 };
 
 //
@@ -150,16 +235,16 @@ void W_HashLumps(void)
 }
 
 //
-// W_IsIWAD
+// W_GetIWADInfo
 //
-// Checks to see whether a given filename is an IWAD (Internal WAD), it can take
-// shortened (base name) versions of standard file names (eg doom2, plutonia),
-// it can also do an optional hash comparison against a correct hash list
-// for more "accurate" detection.
-bool W_IsIWAD(const std::string& filename, const std::string& hash)
+// Helper function that returns a pointer to the appropriate entry of
+// doomwadnames for a given file name if it is an IWAD.
+// Returns NULL if the given file name is not an IWAD.
+//
+static const gamewadinfo_t* W_GetIWADInfo(const std::string& filename, const std::string& hash)
 {
 	if (filename.empty())
-		return false;
+		return NULL;
 
 	// find our match if there is one
 	for (size_t i = 0; !doomwadnames[i].name.empty(); i++)
@@ -171,7 +256,7 @@ bool W_IsIWAD(const std::string& filename, const std::string& hash)
 			{
 				// the hash is always right! even if the name is wrong..
 				if (iequals(hash, doomwadnames[i].hash[j]))
-					return true;
+					return &doomwadnames[i];
 			}
 		}
 		else
@@ -182,11 +267,34 @@ bool W_IsIWAD(const std::string& filename, const std::string& hash)
 
 			if (iequals(filename, doomwadnames[i].name) ||
 				iequals(base_filename, base_iwadname))
-				return true;
+				return &doomwadnames[i];
 		}
 	}
 
-	return false;
+	return NULL;
+}
+
+//
+// W_IsIWAD
+//
+// Checks to see whether a given filename is an IWAD (Internal WAD), it can take
+// shortened (base name) versions of standard file names (eg doom2, plutonia),
+// it can also do an optional hash comparison against a correct hash list
+// for more "accurate" detection.
+bool W_IsIWAD(const std::string& filename, const std::string& hash)
+{
+	return W_GetIWADInfo(filename, hash) != NULL;
+}
+
+//
+// W_IsIWADCommercial
+//
+// Checks to see whether a given filename is an IWAD flagged as "commercial"
+//
+bool W_IsIWADCommercial(const std::string& filename, const std::string& hash)
+{
+	const gamewadinfo_t* entry = W_GetIWADInfo(filename, hash);
+	return entry && entry->commercial;
 }
 
 
@@ -242,101 +350,142 @@ std::string W_MD5(std::string filename)
 // LUMP BASED ROUTINES.
 //
 
+
+//
+// Names of lumps that can't be overridden by client-only PWADs
+//
+static const char* NonOverrideNames [] =
+{
+	"THINGS",
+	"LINEDEFS",
+	"SIDEDEFS",
+	"VERTEXES",
+	"SEGS",
+	"SSECTORS",
+	"NODES",
+	"SECTORS",
+	"REJECT",
+	"BLOCKMAP",
+	"BEHAVIOR",
+	"DECORATE",
+	"MAPINFO",
+	"PLAYPAL",
+	"COLORMAP",
+	""
+};
+
+
+//
+// W_AddLumps
+//
+// Adds lumps from the array of filelump_t. If clientonly is true,
+// only certain lumps will be added.
+//
+void W_AddLumps(FILE* handle, filelump_t* fileinfo, size_t newlumps, bool clientonly)
+{
+	lumpinfo = (lumpinfo_t*)Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t));
+	if (!lumpinfo)
+		I_Error("Couldn't realloc lumpinfo");
+
+	lumpinfo_t* lump = &lumpinfo[numlumps];
+	filelump_t* info = &fileinfo[0];
+
+	for (size_t i = 0; i < newlumps; i++, info++)
+	{
+		lump->handle = handle;
+		lump->position = info->filepos;
+		lump->size = info->size;
+		strncpy(lump->name, info->name, 8);
+
+		lump++;
+		numlumps++;
+	}
+}
+
+
 //
 // W_AddFile
-// All files are optional, but at least one file must be
-//  found (PWAD, if all required lumps are present).
-// Files with a .wad extension are wadlink files
-//  with multiple lumps.
-// Other files are single lumps with the base filename
-//  for the lump name.
 //
-// Map reloads are supported through WAD reload
-// so no need for vanilla tilde reload hack here
+// All files are optional, but at least one file must be found
+// (PWAD, if all required lumps are present).
+// Files with a .wad extension are wadlink files with multiple lumps.
+// Other files are single lumps with the base filename for the lump name.
 //
-
-std::string W_AddFile (std::string filename)
+// Map reloads are supported through WAD reload so no need for vanilla tilde
+// reload hack here
+//
+std::string W_AddFile(std::string filename)
 {
-	wadinfo_t		header;
-	lumpinfo_t*		lump_p;
-	size_t			i;
-	FILE			*handle;
-	size_t			length;
-	size_t			startlump;
-	size_t          res;
+	FILE*			handle;
 	filelump_t*		fileinfo;
-	filelump_t		singleinfo;
 
-	FixPathSeparator (filename);
-	std::string name = filename;
-	M_AppendExtension (name, ".wad");
+	FixPathSeparator(filename);
 
-    // open the file
-	if ( (handle = fopen (filename.c_str(), "rb")) == NULL)
+	if ( (handle = fopen(filename.c_str(), "rb")) == NULL)
 	{
-		Printf (PRINT_HIGH, " couldn't open %s\n", filename.c_str());
+		Printf(PRINT_HIGH, "couldn't open %s\n", filename.c_str());
 		return "";
 	}
 
-	Printf (PRINT_HIGH, "adding %s\n", filename.c_str());
+	Printf(PRINT_HIGH, "adding %s", filename.c_str());
 
-	startlump = numlumps;
+	size_t newlumps;
 
-	res = fread (&header, sizeof(header), 1, handle);
+	wadinfo_t header;
+	fread(&header, sizeof(header), 1, handle);
 	header.identification = LELONG(header.identification);
 
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
 	{
 		// raw lump file
-		fileinfo = &singleinfo;
-		singleinfo.filepos = 0;
-		singleinfo.size = M_FileLength(handle);
-		M_ExtractFileBase (filename, name);
-		numlumps++;
-		Printf (PRINT_HIGH, " (single lump)\n", header.numlumps);
+		std::string lumpname;
+		M_ExtractFileBase(filename, lumpname);
+
+		fileinfo = new filelump_t[1];	
+		fileinfo->filepos = 0;
+		fileinfo->size = M_FileLength(handle);
+		std::transform(lumpname.c_str(), lumpname.c_str() + 8, fileinfo->name, toupper);
+
+		newlumps = 1;
+		Printf(PRINT_HIGH, " (single lump)\n");
 	}
 	else
 	{
 		// WAD file
 		header.numlumps = LELONG(header.numlumps);
 		header.infotableofs = LELONG(header.infotableofs);
-		length = header.numlumps*sizeof(filelump_t);
+		size_t length = header.numlumps * sizeof(filelump_t);
 
-		if(length > (unsigned)M_FileLength(handle))
+		if (length > (unsigned)M_FileLength(handle))
 		{
-			Printf (PRINT_HIGH, " bad number of lumps for %s\n", filename.c_str());
+			Printf(PRINT_HIGH, "\nbad number of lumps for %s\n", filename.c_str());
 			fclose(handle);
 			return "";
 		}
 
-		fileinfo = (filelump_t *)Z_Malloc (length, PU_STATIC, 0);
-		fseek (handle, header.infotableofs, SEEK_SET);
-		res = fread (fileinfo, length, 1, handle);
-		numlumps += header.numlumps;
-		Printf (PRINT_HIGH, " (%d lumps)\n", header.numlumps);
+		fileinfo = new filelump_t[header.numlumps];
+		fseek(handle, header.infotableofs, SEEK_SET);
+		fread(fileinfo, length, 1, handle);
+
+		// convert from little-endian to target arch and capitalize lump name
+		for (int i = 0; i < header.numlumps; i++)
+		{
+			fileinfo[i].filepos = LELONG(fileinfo[i].filepos);
+			fileinfo[i].size = LELONG(fileinfo[i].size);
+			std::transform(fileinfo[i].name, fileinfo[i].name + 8, fileinfo[i].name, toupper);
+		}
+
+		newlumps = header.numlumps;	
+		Printf(PRINT_HIGH, " (%d lumps)\n", header.numlumps);
 	}
 
-    // Fill in lumpinfo
-	lumpinfo = (lumpinfo_t *)Realloc (lumpinfo, numlumps*sizeof(lumpinfo_t));
+	W_AddLumps(handle, fileinfo, newlumps, false);
 
-	if (!lumpinfo)
-		I_Error ("Couldn't realloc lumpinfo");
-
-	lump_p = &lumpinfo[startlump];
-
-	for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
-	{
-		lump_p->handle = handle;
-		lump_p->position = LELONG(fileinfo->filepos);
-		lump_p->size = LELONG(fileinfo->size);
-		strncpy (lump_p->name, fileinfo->name, 8);
-
-		// W_CheckNumForName needs all lump names in upper case
-		std::transform(lump_p->name, lump_p->name+8, lump_p->name, toupper);
-	}
+	delete [] fileinfo;
 
 	return W_MD5(filename);
 }
+
 
 //
 //

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -77,26 +77,28 @@ extern baseapp_t baseapp;
 //	to handle IWAD dependend animations etc.
 enum GameMode_t
 {
-  shareware,	// DOOM 1 shareware, E1, M9
-  registered,	// DOOM 1 registered, E3, M27
-  commercial,	// DOOM 2 retail, E1 M34
-  // DOOM 2 german edition not handled
-  retail,		// DOOM 1 retail, E4, M36
-  retail_chex,	// Chex Quest
-  commercial_bfg,
-  undetermined	// Well, no IWAD found.
-
+  shareware,			// DOOM 1 shareware, E1, M9
+  registered,			// DOOM 1 registered, E3, M27
+  commercial,			// DOOM 2 retail, E1 M34
+						// DOOM 2 german edition not handled
+  retail,				// DOOM 1 retail, E4, M36
+  retail_chex,			// Chex Quest
+  retail_bfg,			// Doom 1 BFG Edition
+  commercial_bfg,		// Doom 2 BFG Edition
+  undetermined			// Well, no IWAD found.
 };
 
 
 // Mission packs - might be useful for TC stuff?
 enum GameMission_t
 {
-  doom, 		// DOOM 1
-  doom2,		// DOOM 2
-  pack_tnt, 	// TNT mission pack
-  pack_plut,	// Plutonia pack
-  chex,			// Chex Quest
+  doom, 				// DOOM 1
+  doom2,				// DOOM 2
+  pack_tnt, 			// TNT mission pack
+  pack_plut,			// Plutonia pack
+  chex,					// Chex Quest
+  retail_freedoom,
+  commercial_freedoom,
   none
 };
 

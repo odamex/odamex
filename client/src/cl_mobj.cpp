@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@
 #include "v_video.h"
 #include "c_cvars.h"
 #include "c_effect.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "p_mobj.h"
 #include "cl_main.h"
 #include "p_ctf.h"
@@ -86,12 +86,6 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	mobj->pitch = 0;
 	mobj->player = p;
 	mobj->health = p->health;
-
-	// [RH] Set player sprite based on skin
-	if(p->userinfo.skin >= numskins)
-		p->userinfo.skin = 0;
-
-	mobj->sprite = skins[p->userinfo.skin].sprite;
 
 	p->fov = 90.0f;
 	p->mo = p->camera = mobj->ptr();

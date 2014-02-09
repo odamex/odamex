@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -48,6 +48,8 @@
 
 EXTERN_CVAR (vid_autoadjust)
 EXTERN_CVAR (vid_vsync)
+EXTERN_CVAR (vid_displayfps)
+EXTERN_CVAR (vid_ticker)
 
 CVAR_FUNC_IMPL(vid_vsync)
 {
@@ -106,12 +108,6 @@ SDLVideo::SDLVideo(int parm)
    infullscreen = false;
    screenw = screenh = screenbits = 0;
    palettechanged = false;
-
-   // Get Video modes
-   SDL_PixelFormat fmt;
-   fmt.palette = NULL;
-   fmt.BitsPerPixel = 8;
-   fmt.BytesPerPixel = 1;
 
    SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_SWSURFACE);
 
@@ -287,6 +283,14 @@ void SDLVideo::SetOldPalette(byte *doompalette)
 
 void SDLVideo::UpdateScreen(DCanvas *canvas)
 {
+	// Draws frame time and cumulative fps
+	if (vid_displayfps)
+		V_DrawFPSWidget();
+
+    // draws little dots on the bottom of the screen
+    if (vid_ticker)
+		V_DrawFPSTicker();
+
 	if (palettechanged)
 	{
 		// m_Private may or may not be the primary surface (sdlScreen)
@@ -298,7 +302,9 @@ void SDLVideo::UpdateScreen(DCanvas *canvas)
 	// If not writing directly to the screen blit to the primary surface
 	if (canvas->m_Private != sdlScreen)
 	{
-		SDL_Rect dstrect = { (screenw - canvas->width) >> 1, (screenh - canvas->height) >> 1 };
+		short w = (screenw - canvas->width) >> 1;
+		short h = (screenh - canvas->height) >> 1;
+		SDL_Rect dstrect = { w, h };
 		SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, &dstrect);
 	}
 

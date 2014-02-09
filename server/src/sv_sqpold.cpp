@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -64,7 +64,6 @@ EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_waddownload)
 EXTERN_CVAR (sv_emptyreset)
-EXTERN_CVAR (sv_cleanmaps)
 EXTERN_CVAR (sv_fragexitswitch)
 //bond===========================
 
@@ -244,7 +243,7 @@ void SV_SendServerInfo()
 	MSG_WriteBool(&ml_message, (sv_freelook ? true : false));
 	MSG_WriteBool(&ml_message, (sv_waddownload ? true : false));
 	MSG_WriteBool(&ml_message, (sv_emptyreset ? true : false));
-	MSG_WriteBool(&ml_message, (sv_cleanmaps ? true : false));
+	MSG_WriteBool(&ml_message, false);		// used to be sv_cleanmaps
 	MSG_WriteBool(&ml_message, (sv_fragexitswitch ? true : false));
 
 	for (i = 0; i < players.size(); ++i)

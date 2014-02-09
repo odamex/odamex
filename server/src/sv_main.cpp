@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -53,7 +53,7 @@
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "m_random.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "p_ctf.h"
 #include "w_wad.h"
 #include "md5.h"
@@ -113,13 +113,7 @@ void SV_RemoveDisconnectedPlayer(player_t &player);
 
 CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
-	if(var > MAXPLAYERS)
-		var.Set(MAXPLAYERS);
-
-	if(var < 0)
-		var.Set((float)0);
-
-	while(players.size() > sv_maxclients)
+	while (players.size() > sv_maxclients)
 	{
 		int last = players.size() - 1;
 		MSG_WriteMarker (&players[last].client.reliablebuf, svc_print);
@@ -135,12 +129,6 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 {
 	// [Nes] - Force extras to become spectators.
 	int normalcount = 0;
-
-	if (var < 0)
-		var.Set((float)0);
-
-	if (var > MAXPLAYERS)
-		var.Set(MAXPLAYERS);
 
 	for (size_t i = 0; i < players.size(); i++)
 	{
@@ -170,16 +158,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 // [AM] - Force extras on a team to become spectators.
 CVAR_FUNC_IMPL (sv_maxplayersperteam)
 {
-	if (var == 0)
-		return;
-
-	if (var < 0)
-		var.Set((float)0);
-
-	if (var > MAXPLAYERS)
-		var.Set(MAXPLAYERS);
-
-	for (int i = 0;i < NUMTEAMS;i++)
+	for (int i = 0; i < NUMTEAMS;i++)
 	{
 		int normalcount = 0;
 		for (size_t j = 0; j < players.size(); j++)
@@ -217,6 +196,7 @@ EXTERN_CVAR (sv_fragexitswitch)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_infiniteammo)
+EXTERN_CVAR (sv_keepkeys)
 
 // Teamplay/CTF
 EXTERN_CVAR (sv_scorelimit)
@@ -229,14 +209,6 @@ CVAR_FUNC_IMPL (join_password)
 		Printf(PRINT_HIGH, "join password set");
 	else
 		Printf(PRINT_HIGH, "join password cleared");
-}
-
-CVAR_FUNC_IMPL (spectate_password)
-{
-	if (strlen(var.cstring()))
-		Printf(PRINT_HIGH, "spectate password set");
-	else
-		Printf(PRINT_HIGH, "spectate password cleared");
 }
 
 CVAR_FUNC_IMPL (rcon_password) // Remote console password.
@@ -265,13 +237,10 @@ void SV_SetClientRate(client_t &client, int rate)
 	client.rate = clamp(rate, 1, (int)sv_maxrate);
 }
 
-EXTERN_CVAR (sv_waddownloadcap)
-CVAR_FUNC_IMPL (sv_maxrate)
+EXTERN_CVAR(sv_waddownloadcap)
+CVAR_FUNC_IMPL(sv_maxrate)
 {
-	// impose a minimum rate of 10kbps/client
-	if (var < 10)
-		var.Set(10);
-
+	// sv_waddownloadcap can not be larger than sv_maxrate
 	if (sv_waddownloadcap > var)
 		sv_waddownloadcap.Set(var);
 
@@ -285,7 +254,7 @@ CVAR_FUNC_IMPL (sv_maxrate)
 CVAR_FUNC_IMPL (sv_waddownloadcap)
 {
 	// sv_waddownloadcap can not be larger than sv_maxrate
-	if (var > sv_maxrate || var <= 0)
+	if (var > sv_maxrate)
 		var.Set(sv_maxrate);
 }
 
@@ -892,7 +861,10 @@ void SV_SendUserInfo (player_t &player, client_t* cl)
 	MSG_WriteByte	(&cl->reliablebuf, p->userinfo.team);
 	MSG_WriteLong	(&cl->reliablebuf, p->userinfo.gender);
 	MSG_WriteLong	(&cl->reliablebuf, p->userinfo.color);
-	MSG_WriteString	(&cl->reliablebuf, skins[p->userinfo.skin].name);  // [Toke - skins]
+
+	// [SL] place holder for deprecated skins
+	MSG_WriteString	(&cl->reliablebuf, "");
+
 	MSG_WriteShort	(&cl->reliablebuf, time(NULL) - p->JoinTime);
 }
 
@@ -930,12 +902,9 @@ bool SV_SetupUserInfo(player_t &player)
 
 	gender_t		gender = static_cast<gender_t>(MSG_ReadLong());
 	int				color = MSG_ReadLong();
-	std::string		skin(MSG_ReadString());
 
-	if (!ValidString(skin)) {
-		SV_InvalidateClient(player, "Skin contains invalid characters");
-		return false;
-	}
+	// [SL] place holder for deprecated skins
+	MSG_ReadString();
 
 	fixed_t			aimdist = MSG_ReadLong();
 	bool			unlag = MSG_ReadBool();
@@ -988,7 +957,6 @@ bool SV_SetupUserInfo(player_t &player)
 	}
 
 	player.userinfo.gender			= gender;
-	player.userinfo.skin			= R_FindSkin(skin.c_str());
 	player.userinfo.team			= new_team;
 	player.userinfo.color			= color;
 	player.prefcolor				= color;
@@ -2574,7 +2542,7 @@ void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...)
     for (size_t i=0; i < players.size(); i++)
     {
 		cl = &clients[i];
-		
+
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
@@ -2600,7 +2568,7 @@ void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...)
     for (size_t i=0; i < players.size(); i++)
     {
 		cl = &clients[i];
-		
+
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
@@ -2664,7 +2632,7 @@ void STACK_ARGS SV_TeamPrintf (int level, int who, const char *fmt, ...)
 			continue;
 
 		cl = &clients[i];
-		
+
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
@@ -3030,7 +2998,7 @@ void SV_UpdateMonsters(player_t &pl)
 		if ((gametic+mo->netid) % 7)
 			continue;
 
-		if (SV_IsPlayerAllowedToSee(pl, mo))
+		if (SV_IsPlayerAllowedToSee(pl, mo) && mo->target)
 		{
 			client_t *cl = &pl.client;
 
@@ -3053,12 +3021,9 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteByte(&cl->netbuf, mo->movedir);
 			MSG_WriteLong(&cl->netbuf, mo->movecount);
 
-			if (mo->target)
-			{
-				MSG_WriteMarker(&cl->netbuf, svc_actor_target);
-				MSG_WriteShort(&cl->netbuf, mo->netid);
-				MSG_WriteShort(&cl->netbuf, mo->target->netid);
-			}
+			MSG_WriteMarker(&cl->netbuf, svc_actor_target);
+			MSG_WriteShort(&cl->netbuf, mo->netid);
+			MSG_WriteShort(&cl->netbuf, mo->target->netid);
 
 			if (cl->netbuf.cursize >= 1024)
 			{
@@ -3609,20 +3574,6 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	player.userinfo.team = team;
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has joined the %s team.\n", player.userinfo.netname.c_str(), team_names[team]);
-
-	switch (player.userinfo.team)
-	{
-		case TEAM_BLUE:
-			player.userinfo.skin = R_FindSkin ("BlueTeam");
-			break;
-
-		case TEAM_RED:
-			player.userinfo.skin = R_FindSkin ("RedTeam");
-			break;
-
-		default:
-			break;
-	}
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		if (player.mo && player.userinfo.team != old_team)
@@ -4235,7 +4186,7 @@ void SV_ParseCommands(player_t &player)
 		case clc_kill:
 			if(player.mo &&
                level.time > player.death_time + TICRATE*10 &&
-               sv_allowcheats)
+               (sv_allowcheats || (sv_gametype == GM_COOP && !sv_keepkeys)))
             {
 				SV_Suicide (player);
             }
@@ -4592,11 +4543,11 @@ void SV_StepTics(QWORD count)
 }
 
 //
-// SV_RenderTics
+// SV_DisplayTics
 //
-// Nothing to render...
+// Nothing to display...
 //
-void SV_RenderTics()
+void SV_DisplayTics()
 {
 }
 
@@ -4683,7 +4634,6 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, " userinfo.aimdist - %d \n",		  player->userinfo.aimdist);
 	Printf (PRINT_HIGH, " userinfo.unlag   - %d \n",          player->userinfo.unlag);
 	Printf (PRINT_HIGH, " userinfo.color   - %d \n",		  player->userinfo.color);
-	Printf (PRINT_HIGH, " userinfo.skin    - %s \n",		  skins[player->userinfo.skin].name);
 	Printf (PRINT_HIGH, " userinfo.gender  - %d \n",		  player->userinfo.gender);
 	Printf (PRINT_HIGH, " time             - %d \n",		  player->GameTime);
 	Printf (PRINT_HIGH, "--------------------------------------- \n");

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -414,23 +414,27 @@ typedef struct polyblock_s
 typedef struct subsector_s
 {
 	sector_t		*sector;
-	unsigned short	numlines;
-	unsigned short	firstline;
+	unsigned int	numlines;
+	unsigned int	firstline;
 	polyobj_t	    *poly;
 } subsector_t;
 
 //
 // BSP node.
 //
+
+// Indicate a leaf.
+#define NF_SUBSECTOR	0x80000000
+
 struct node_s
 {
 	// Partition line.
-	fixed_t		x;
-	fixed_t		y;
-	fixed_t		dx;
-	fixed_t		dy;
-	fixed_t		bbox[2][4];		// Bounding box for each child.
-	unsigned short children[2];	// If NF_SUBSECTOR its a subsector.
+	fixed_t			x;
+	fixed_t			y;
+	fixed_t			dx;
+	fixed_t			dy;
+	fixed_t			bbox[2][4];		// Bounding box for each child.
+	unsigned int	children[2];	// If NF_SUBSECTOR its a subsector.
 };
 typedef struct node_s node_t;
 
@@ -602,19 +606,6 @@ struct spritedef_s
 	spriteframe_t	*spriteframes;
 };
 typedef struct spritedef_s spritedef_t;
-
-//
-// [RH] Internal "skin" definition.
-//
-struct playerskin_s
-{
-	char		name[17];	// 16 chars + NULL
-	char		face[3];
-	spritenum_t	sprite;
-	int			namespc;	// namespace for this skin
-	int			gender;		// This skin's gender (not used)
-};
-typedef struct playerskin_s playerskin_t;
 
 //
 // The infamous visplane

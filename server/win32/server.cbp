@@ -17,7 +17,6 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-O2" />
-					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -45,7 +44,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-gdwarf-2" />
+					<Add option="-g" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
@@ -314,8 +313,6 @@
 		<Unit filename="../../common/d_netcmd.h" />
 		<Unit filename="../../common/d_netinf.h" />
 		<Unit filename="../../common/d_player.h" />
-		<Unit filename="../../common/d_protocol.cpp" />
-		<Unit filename="../../common/d_protocol.h" />
 		<Unit filename="../../common/d_ticcmd.h" />
 		<Unit filename="../../common/dobject.cpp" />
 		<Unit filename="../../common/dobject.h" />
@@ -360,10 +357,14 @@
 		<Unit filename="../../common/m_memio.cpp" />
 		<Unit filename="../../common/m_memio.h" />
 		<Unit filename="../../common/m_misc.h" />
+		<Unit filename="../../common/m_ostring.cpp" />
+		<Unit filename="../../common/m_ostring.h" />
 		<Unit filename="../../common/m_random.cpp" />
 		<Unit filename="../../common/m_random.h" />
 		<Unit filename="../../common/m_swap.cpp" />
 		<Unit filename="../../common/m_swap.h" />
+		<Unit filename="../../common/m_vectors.cpp" />
+		<Unit filename="../../common/m_vectors.h" />
 		<Unit filename="../../common/md5.cpp" />
 		<Unit filename="../../common/md5.h" />
 		<Unit filename="../../common/minilzo.cpp" />
@@ -440,8 +441,6 @@
 		<Unit filename="../../common/timegm.cpp" />
 		<Unit filename="../../common/v_palette.h" />
 		<Unit filename="../../common/v_video.h" />
-		<Unit filename="../../common/vectors.cpp" />
-		<Unit filename="../../common/vectors.h" />
 		<Unit filename="../../common/version.cpp" />
 		<Unit filename="../../common/version.h" />
 		<Unit filename="../../common/w_wad.cpp" />

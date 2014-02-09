@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +34,6 @@
 
 QWORD I_MSTime (void);
 
-EXTERN_CVAR (sv_networkcompression)
 EXTERN_CVAR (log_packetdebug)
 
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
@@ -160,7 +159,7 @@ bool SV_SendPacket(player_t &pl)
 	SZ_Clear(&cl->reliablebuf);
 	
 	// compress the packet, but not the sequence id
-	if(sv_networkcompression && sendd.size() > sizeof(int))
+	if (sendd.size() > sizeof(int))
 		SV_CompressPacket(sendd, sizeof(int), cl);
 
 	if (log_packetdebug)

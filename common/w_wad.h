@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,6 +38,18 @@
 
 // [RH] Remove limit on number of WAD files
 extern std::vector<std::string> wadfiles, wadhashes, patchfiles;
+
+// [SL] List of IWAD names and valid MD5 hashes
+#define MAX_HASHES 10
+
+typedef struct
+{
+	std::string name;
+	std::string hash[MAX_HASHES];
+	bool commercial;
+} gamewadinfo_t;
+
+extern const gamewadinfo_t doomwadnames[];
 
 //
 // TYPES
@@ -83,7 +95,6 @@ typedef enum {
 	ns_sprites,
 	ns_flats,
 	ns_colormaps,
-	ns_skinbase = 0x80000000	// Each skin's status bar face gets own namespace
 } namespace_t;
 
 extern	void**		lumpcache;
@@ -128,6 +139,7 @@ int W_GetLumpFile (unsigned lump);
 
 // [Russell] Simple function to check whether the given string is an iwad name
 bool W_IsIWAD(const std::string& filename, const std::string& hash = "");
+bool W_IsIWADCommercial(const std::string& filename, const std::string& hash = "");
 
 // [RH] Put a lump in a certain namespace
 //void W_SetLumpNamespace (unsigned lump, int nmspace);

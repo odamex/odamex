@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -64,20 +64,12 @@ GammaStrategy* gammastrat = &doomgammastrat;
 
 CVAR_FUNC_IMPL(vid_gammatype)
 {
-	int sanitized_var = clamp(var.value(), 0.0f, 1.0f);
-	if (var == sanitized_var)
-	{
-		if (vid_gammatype == GAMMA_ZDOOM)
-			gammastrat = &zdoomgammastrat;
-		else
-			gammastrat = &doomgammastrat;
-
-		gammalevel.Set(gammalevel);
-	}
+	if (vid_gammatype == GAMMA_ZDOOM)
+		gammastrat = &zdoomgammastrat;
 	else
-	{
-		var.Set(sanitized_var);
-	}
+		gammastrat = &doomgammastrat;
+
+	gammalevel.Set(gammalevel);
 }
 
 byte newgamma[256];

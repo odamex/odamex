@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,7 +41,7 @@
 #include "stats.h"
 #include "z_zone.h"
 #include "i_video.h"
-#include "vectors.h"
+#include "m_vectors.h"
 #include "f_wipe.h"
 
 void R_BeginInterpolation(fixed_t amount);
@@ -61,6 +61,7 @@ extern bool r_fakingunderwater;
 EXTERN_CVAR (r_flashhom)
 EXTERN_CVAR (r_viewsize)
 EXTERN_CVAR (sv_allowwidescreen)
+EXTERN_CVAR (r_columnmethod)
 
 static float	LastFOV = 0.0f;
 fixed_t			FocalLengthX;
@@ -887,36 +888,9 @@ void R_ExecuteSetViewSize (void)
 
 CVAR_FUNC_IMPL (screenblocks)
 {
-	if (var > 12.0)
-		var.Set (12.0);
-	else if (var < 3.0)
-		var.Set (3.0);
-	else
-		R_SetViewSize ((int)var);
+	R_SetViewSize((int)var);
 }
 
-//
-//
-// CVAR r_columnmethod
-//
-// Selects which version of the seg renderers to use.
-//
-//
-
-// [ML] Disabled 16/3/06, now always 0 (Original)
-// [Russell] Reenabled 14/3/07, fixes smudging of graphics
-//BEGIN_CUSTOM_CVAR (r_columnmethod, "1", CVAR_ARCHIVE)
-//{
-    /*
-	if (var != 0 && var != 1)
-		var.Set (1);
-	else
-		// Trigger the change
-		r_detail.Callback ();
-    */
-//}
-//END_CUSTOM_CVAR (r_columnmethod)
-EXTERN_CVAR (r_columnmethod)
 //
 //
 // R_Init

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -115,8 +115,6 @@ void R_SetDefaultColormap (const char *name);	// [RH] change normal fadetable
 unsigned int R_BlendForColormap (int map);		// [RH] return calculated blend for a colormap
 extern byte *realcolormaps;						// [RH] make the colormaps externally visible
 extern size_t numfakecmaps;
-
-int R_FindSkin (const char *name);	// [RH] Find a skin
 
 unsigned int SlopeDiv(unsigned int num, unsigned int den);
 

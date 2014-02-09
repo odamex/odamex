@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@
 #include "doomstat.h"
 #include "cmdlib.h"
 #include "v_video.h"
-#include "vectors.h"
+#include "m_vectors.h"
 
 #include <algorithm>
 
@@ -285,7 +285,6 @@ int S_AddSoundLump (char *logicalname, int lump)
 	strcpy (S_sfx[numsfx].name, logicalname);
 	S_sfx[numsfx].data = NULL;
 	S_sfx[numsfx].link = NULL;
-	S_sfx[numsfx].usefulness = 0;
 	S_sfx[numsfx].lumpnum = lump;
 	return numsfx++;
 }

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -753,7 +753,6 @@ void ResetCustomColors (void);
 
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
-EXTERN_CVAR (am_ovshare)
 EXTERN_CVAR (am_showmonsters)
 EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showtime)
@@ -807,34 +806,16 @@ int dummy = 0;
 
 CVAR_FUNC_IMPL (ui_transred)
 {
-    if (var > 255)
-        var.Set(255);
-
-    if (var < 0)
-        var.Set(0.0f);
-
     M_SlideUIRed((int)var);
 }
 
 CVAR_FUNC_IMPL (ui_transgreen)
 {
-    if (var > 255)
-        var.Set(255);
-
-    if (var < 0)
-        var.Set(0.0f);
-
     M_SlideUIGreen((int)var);
 }
 
 CVAR_FUNC_IMPL (ui_transblue)
 {
-    if (var > 255)
-        var.Set(255);
-
-    if (var < 0)
-        var.Set(0.0f);
-
     M_SlideUIBlue((int)var);
 }
 

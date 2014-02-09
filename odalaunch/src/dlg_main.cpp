@@ -57,6 +57,8 @@
 
 using namespace odalpapi;
 
+extern int NUM_THREADS;
+
 // Control ID assignments for events
 // application icon
 
@@ -92,6 +94,9 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     EVT_MENU(XRCID("Id_MnuItmViewChangelog"), dlgMain::OnOpenChangeLog)
     EVT_MENU(XRCID("Id_MnuItmSubmitBugReport"), dlgMain::OnOpenReportBug)
 	EVT_MENU(wxID_ABOUT, dlgMain::OnAbout)
+
+    EVT_MENU(XRCID("Id_MnuItmServerFilter"), dlgMain::OnShowServerFilter)
+    EVT_TEXT(XRCID("Id_SrchCtrlGlobal"), dlgMain::OnTextSearch)
 
 	EVT_SHOW(dlgMain::OnShow)
 	EVT_CLOSE(dlgMain::OnClose)
@@ -208,6 +213,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_LstCtrlServers = XRCCTRL(*this, "Id_LstCtrlServers", LstOdaServerList);
     m_LstCtrlPlayers = XRCCTRL(*this, "Id_LstCtrlPlayers", LstOdaPlayerList);
     m_LstOdaSrvDetails = XRCCTRL(*this, "Id_LstCtrlServerDetails", LstOdaSrvDetails);
+    m_PnlServerFilter = XRCCTRL(*this, "Id_PnlServerFilter", wxPanel);
+    m_SrchCtrlGlobal = XRCCTRL(*this, "Id_SrchCtrlGlobal", wxTextCtrl);
+
 
 	// set up the master server information
 	wxCmdLineParser CmdLineParser(wxTheApp->argc, wxTheApp->argv);
@@ -240,6 +248,20 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     OdaGet = new frmOdaGet(this, -1, FirstDirectory);
 
     QServer = NULL;
+
+    // Base number of threads on cpu count in the system (including cores)
+    // and multiply that by a fixed value
+    NUM_THREADS = wxThread::GetCPUCount();
+
+    if (NUM_THREADS == -1)
+        NUM_THREADS = ODA_THRDEFVAL;
+    else
+        NUM_THREADS *= ODA_THRMULVAL;
+
+    for (size_t i = 0; i < NUM_THREADS; ++i)
+    {
+        threadVector.push_back(new QueryThread(this));
+    }
 
     // get master list on application start
     if (launchercfg_s.get_list_on_start)
@@ -314,7 +336,19 @@ void dlgMain::OnExit(wxCommandEvent& event)
 void dlgMain::OnClose(wxCloseEvent &event)
 {
     if (GetThread() && GetThread()->IsRunning())
-        GetThread()->Delete();
+        GetThread()->Wait();
+
+    // Gracefully terminate all running threads
+    for (size_t j = 0; j < threadVector.size(); ++j)
+    {
+        QueryThread *OdaQT = threadVector[j];
+
+        if (OdaQT->IsRunning())
+        {
+            OdaQT->GracefulExit();
+            delete OdaQT;
+        }
+    }
 
     // Save GUI layout
     wxFileConfig ConfigInfo;
@@ -334,6 +368,13 @@ void dlgMain::OnClose(wxCloseEvent &event)
 void dlgMain::OnShow(wxShowEvent &event)
 {
 
+}
+
+void dlgMain::OnShowServerFilter(wxCommandEvent &event)
+{
+    m_PnlServerFilter->Show(event.IsChecked());
+    
+    Layout();
 }
 
 // manually connect to a server
@@ -476,7 +517,7 @@ bool dlgMain::MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index,
         return false;
 
     // Create monitor thread
-    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
+    if (this->wxThreadHelper::CreateThread() != wxTHREAD_NO_ERROR)
     {
         wxMessageBox(_T("Could not create monitor thread!"),
                      _T("Error"),
@@ -519,11 +560,14 @@ bool dlgMain::MonThrGetMasterList()
     bool UseBroadcast;
     size_t ServerCount;
     mtrs_t Signal;
+    odalpapi::BufferedSocket Socket;
 
     // Get the masters timeout from the config file
     ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
     ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
     ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
+
+    MServer.SetSocket(&Socket);
 
     // Query the masters with the timeout
     MServer.QueryMasters(MasterTimeout, UseBroadcast, RetryCount);
@@ -560,6 +604,8 @@ void dlgMain::MonThrGetServerList()
     std::string Address;
     uint16_t Port = 0;
 
+    wxThread *OdaTH = GetThread();
+
     // [Russell] - This includes custom servers.
     if (!(ServerCount = MServer.GetServerCount()))
     {
@@ -582,60 +628,50 @@ void dlgMain::MonThrGetServerList()
         gets executed with a different server, eventually all the way
         down to 0 servers.
     */
+
+    size_t thrvec_size = threadVector.size();
+
     while(count < ServerCount)
     {
-        for(size_t i = 0; i < NUM_THREADS; i++)
+        for(size_t i = 0; i < thrvec_size; ++i)
         {
-            if((!threadVector.empty()) && ((threadVector.size() - 1) >= i))
-            {
-                // monitor our thread vector, delete ONLY if the thread is
-                // finished
-                if(threadVector[i]->IsRunning())
-                    continue;
-                else
-                {
-                    threadVector[i]->Wait();
-                    delete threadVector[i];
-                    threadVector.erase(threadVector.begin() + i);
-                    count++;
-                }
-            }
+            QueryThread *OdaQT = threadVector[i];
+            
+            if(OdaQT->GetStatus() == QueryThread_Running)
+                continue;
+            else
+                ++count;
+            
             if(serverNum < ServerCount)
             {
                 MServer.GetServerAddress(serverNum, Address, Port);
-                QServer[serverNum].SetAddress(Address, Port);
 
-                // add the thread to the vector
-                threadVector.push_back(new QueryThread(this,
-                    &QServer[serverNum], serverNum, ServerTimeout, RetryCount));
+                // Internally sets the arguments, signals the
+                // condition variable and runs the thread with
+                // the args
+                OdaQT->Signal(&QServer[serverNum], Address, Port, serverNum, 
+                    ServerTimeout, RetryCount);
 
-                // create and run the thread
-                if(threadVector.back()->Create() == wxTHREAD_NO_ERROR)
-                    threadVector.back()->Run();
-
-                // DUMB: our next server will be this incremented value
-                serverNum++;
+                ++serverNum;
             }
-
-            // Let other threads get some time
-            GetThread()->Sleep(20);
-
+            
             // We got told to exit, so we should wait for these worker threads
             // to gracefully exit
-            if (GetThread()->TestDestroy())
+            if (OdaTH->TestDestroy())
             {
-                for (size_t j = 0; j < threadVector.size(); ++j)
-                {
-                    if (threadVector[j]->IsRunning())
-                    {
-                        threadVector[j]->Wait();
-                        delete threadVector[j];
-                    }
-                }
-
                 return;
             }
         }
+        
+        // Let other threads get some time
+        OdaTH->Sleep(15);
+    }               
+
+    // Wait until all threads have finished before posting an event
+    for (size_t i = 0; i < thrvec_size; ++i)
+    {
+        while(threadVector[i]->GetStatus() == QueryThread_Running)
+            OdaTH->Sleep(15);
     }
 
     MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1,
@@ -733,6 +769,8 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
         {
             wxMessageBox(wxT("There are no servers to query"),
                 wxT("Error"), wxOK | wxICON_ERROR);
+            
+            m_SrchCtrlGlobal->Enable(true);
         }
         break;
 
@@ -769,7 +807,12 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
         case mtrs_servers_querydone:
         {
             // Sort server list after everything has been queried
-            m_LstCtrlServers->Sort();
+            m_LstCtrlServers->Sort();           
+
+            // Allow items to be sorted by user
+            m_LstCtrlServers->HeaderUsable(true);
+            
+            m_SrchCtrlGlobal->Enable(true);
         }
         break;
 
@@ -855,6 +898,12 @@ void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 	LaunchGame(_T(""),
 				launchercfg_s.odamex_directory,
 				launchercfg_s.wad_paths);
+
+}
+
+void dlgMain::OnTextSearch(wxCommandEvent& event)
+{
+    m_LstCtrlServers->ApplyFilter(event.GetString());
 }
 
 // Launch button click
@@ -920,11 +969,18 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
 // Get Master List button click
 void dlgMain::OnGetList(wxCommandEvent &event)
 {
+    // Reset search results
+    m_SrchCtrlGlobal->SetValue(wxT(""));
+    m_SrchCtrlGlobal->Enable(false);
+    
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
 
     QueriedServers = 0;
     TotalPlayers = 0;
+
+    // Disable sorting of items by user during a query
+    m_LstCtrlServers->HeaderUsable(false);
 
     MainThrPostEvent(mtcs_getmaster);
 }
@@ -932,6 +988,9 @@ void dlgMain::OnGetList(wxCommandEvent &event)
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
 {
     wxInt32 li, ai;
+
+    // Reset search results
+    //m_SrchCtrlGlobal = wxT("");
 
     li = m_LstCtrlServers->GetSelectedServerIndex();
     ai = GetSelectedServerArrayIndex();
@@ -951,11 +1010,18 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
     if (!MServer.GetServerCount())
         return;
 
+    // Reset search results
+    m_SrchCtrlGlobal->SetValue(wxT(""));
+    m_SrchCtrlGlobal->Enable(false);
+
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
 
     QueriedServers = 0;
     TotalPlayers = 0;
+
+    // Disable sorting of items by user during a query
+    m_LstCtrlServers->HeaderUsable(false);
 
     MainThrPostEvent(mtcs_getservers, -1, -1);
 }

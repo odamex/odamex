@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,29 +29,13 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __VECTORS_H__
-#define __VECTORS_H__
+#ifndef __M_VECTORS_H__
+#define __M_VECTORS_H__
 
 #include "tables.h"
-
-typedef float	vec_t;
-typedef vec_t	vec3_t[3];
+#include "m_fixed.h"
 
 class AActor;
-
-void VectorPosition (const class AActor *thing, vec3_t out);
-void FixedAngleToVector (angle_t an, fixed_t pitch, vec3_t v);
-vec_t VectorLength (const vec3_t v);
-vec_t VectorNormalize (vec3_t v);
-vec_t VectorNormalize2 (const vec3_t v, vec3_t out);
-
-const double FIXEDTODOUBLE_FACTOR	= 1.0 / 65536.0;
-const float  FIXEDTOFLOAT_FACTOR	= 1.0f / 65536.0f;
-
-#define FIXED2FLOAT(f)			((float)(f) * FIXEDTOFLOAT_FACTOR)
-#define FLOAT2FIXED(f)			(fixed_t)((f) * (float)FRACUNIT)
-#define FIXED2DOUBLE(f)			((double)(f) * FIXEDTODOUBLE_FACTOR)
-#define DOUBLE2FIXED(f)			(fixed_t)((f) * (double)FRACUNIT)
 
 struct v2fixed_t
 {
@@ -231,5 +215,5 @@ void M_RotatePointAroundVector(v3double_t *dest, const v3double_t *dir, const v3
 void M_TranslateVec3f(v3float_t *vec, const v3float_t *origin, angle_t ang);
 void M_TranslateVec3(v3double_t *vec, const v3double_t *origin, angle_t ang);
 
-#endif //__VECTORS_H__
+#endif //__M_VECTORS_H__
 

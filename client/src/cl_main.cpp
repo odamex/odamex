@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -145,29 +145,16 @@ EXTERN_CVAR (sv_weaponstay)
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_color)
-EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
-EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_predictsectors)
 
 EXTERN_CVAR (mute_spectators)
 EXTERN_CVAR (mute_enemies)
 
-CVAR_FUNC_IMPL (cl_autoaim)
-{
-	if (var < 0)
-		var.Set(0.0f);
-	else if (var > 5000.0f)
-		var.Set(5000.0f);
-}
+EXTERN_CVAR(cl_autoaim)
 
-CVAR_FUNC_IMPL (cl_updaterate)
-{
-	if (var < 1.0f)
-		var.Set(1.0f);
-	else if (var > 3.0f)
-		var.Set(3.0f);
-}
+EXTERN_CVAR(cl_updaterate)
+EXTERN_CVAR(cl_interp)
 
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
@@ -211,7 +198,7 @@ int CL_GetPlayerColor(player_t *player)
 		}
 		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		{
-			if (r_forceteamcolor && 
+			if (r_forceteamcolor &&
 					(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
 				color = teamcolor;
 			if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
@@ -277,6 +264,7 @@ EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_allowcheats)
 EXTERN_CVAR (sv_allowtargetnames)
+EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (cl_connectalert)
@@ -354,15 +342,15 @@ static int CL_CalculateWorldIndexDriftCorrection()
 		world_index_accum = 0.0f;
 	else
 		world_index_accum += CORRECTION_PERIOD * delta;
-	
-	// truncate the decimal portion of world_index_accum	
+
+	// truncate the decimal portion of world_index_accum
 	int correction = int(world_index_accum);
-	
+
 	// reset world_index_accum if our correction will affect world_index
 	if (correction != 0)
 		world_index_accum = 0.0f;
-		
-	return correction;	
+
+	return correction;
 }
 
 //
@@ -392,7 +380,7 @@ void CL_QuitNetGame(void)
 		SZ_Clear(&net_buffer);
 		sv_gametype = GM_COOP;
 	}
-	
+
 	if (paused)
 	{
 		paused = false;
@@ -407,7 +395,7 @@ void CL_QuitNetGame(void)
 
 	serverside = clientside = true;
 	network_game = false;
-	
+
 	sv_freelook = 1;
 	sv_allowjump = 1;
 	sv_allowexit = 1;
@@ -420,7 +408,7 @@ void CL_QuitNetGame(void)
 	players.clear();
 
 	recv_full_update = false;
-	
+
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
 
@@ -462,10 +450,10 @@ void CL_QuitNetGame(void)
 void CL_Reconnect(void)
 {
 	recv_full_update = false;
-	
+
 	if (netdemo.isRecording())
-		forcenetdemosplit = true;	
-		
+		forcenetdemosplit = true;
+
 	if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
@@ -490,14 +478,14 @@ void CL_Reconnect(void)
 void CL_ConnectClient(void)
 {
 	player_t &player = idplayer(MSG_ReadByte());
-	
+
 	if (!cl_connectalert)
 		return;
-	
+
 	// GhostlyDeath <August 1, 2008> -- Play connect sound
 	if (&player == &consoleplayer())
 		return;
-		
+
 	S_Sound (CHAN_INTERFACE, "misc/pljoin", 1, ATTN_NONE);
 }
 
@@ -568,8 +556,11 @@ void CL_SpyCycle(bool forward)
     {
         curr = (curr + direction) % numplayers;
         player_t &player = players[curr];
+		player_t &self = consoleplayer();
 
-        if (P_CanSpy(consoleplayer(), player) || player.id == consoleplayer_id ||
+        if (P_CanSpy(self, player) ||
+            // spectators only cycle between active players
+            (player.id == consoleplayer_id && !self.spectator) ||
             demoplayback || netdemo.isPlaying() || netdemo.isPaused())
         {
             if (!player.mo)
@@ -602,7 +593,7 @@ void CL_DisconnectClient(void)
 	if(player.mo)
 	{
 		P_DisconnectEffect (player.mo);
-		player.mo->Destroy();		
+		player.mo->Destroy();
 	}
 
 	size_t index = &player - &players[0];
@@ -628,7 +619,7 @@ int canceltics = 0;
 void CL_StepTics(unsigned int count)
 {
 	DObject::BeginFrame ();
-	
+
 	// run the realtics tics
 	while (count--)
 	{
@@ -639,7 +630,7 @@ void CL_StepTics(unsigned int count)
 
 		if (advancedemo)
 			D_DoAdvanceDemo();
-		
+
 		C_Ticker ();
 		M_Ticker ();
 
@@ -658,14 +649,14 @@ void CL_StepTics(unsigned int count)
 		if (netdemo.isPlaying() && !netdemo.isPaused())
 			netdemo.ticker();
 	}
-	
+
 	DObject::EndFrame ();
 }
 
 //
-// CL_RenderTics
+// CL_DisplayTics
 //
-void CL_RenderTics()
+void CL_DisplayTics()
 {
 	D_Display();
 }
@@ -747,10 +738,10 @@ BEGIN_COMMAND (connect)
 	    Printf(PRINT_HIGH, " and/or password\n");
 	    Printf(PRINT_HIGH, "eg: connect 127.0.0.1\n");
 	    Printf(PRINT_HIGH, "eg: connect 192.168.0.1:12345 secretpass\n");
-	    
+
 	    return;
 	}
-	
+
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
 
@@ -849,7 +840,6 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname.c_str());
 	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.color       - #%06x \n",	player->userinfo.color);
-	Printf (PRINT_HIGH, " userinfo.skin        - %s \n",	skins[player->userinfo.skin].name);
 	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);
 	Printf (PRINT_HIGH, " spectator            - %d \n",	player->spectator);
 	Printf (PRINT_HIGH, " time                 - %d \n",	player->GameTime);
@@ -860,35 +850,35 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (sv_allowcheats)
+    if (sv_allowcheats || (sv_gametype == GM_COOP && !sv_keepkeys))
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
+        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
 }
 END_COMMAND (kill)
 
 
 BEGIN_COMMAND (serverinfo)
-{   
+{
 	std::vector<std::string> server_cvars;
 
     cvar_t *Cvar = GetFirstCvar();
     size_t MaxFieldLength = 0;
-    
+
     // [Russell] - Find the largest cvar name, used for formatting
     while (Cvar)
-	{			
+	{
         if (Cvar->flags() & CVAR_SERVERINFO)
         {
             size_t FieldLength = strlen(Cvar->name());
-            
+
             if (FieldLength > MaxFieldLength)
-                MaxFieldLength = FieldLength;                
+                MaxFieldLength = FieldLength;
 
 			// store this cvar name in our vector to be sorted later
 			server_cvars.push_back(Cvar->name());
         }
-        
+
         Cvar = Cvar->GetNext();
     }
 
@@ -897,20 +887,20 @@ BEGIN_COMMAND (serverinfo)
 
     // Heading
     Printf (PRINT_HIGH,	"\n%*s - Value\n", MaxFieldLength, "Name");
-    
+
     // Data
 	for (size_t i = 0; i < server_cvars.size(); i++)
 	{
 		cvar_t *dummy;
 		Cvar = cvar_t::FindCVar(server_cvars[i].c_str(), &dummy);
 
-		Printf(PRINT_HIGH, 
-				"%*s - %s\n", 
+		Printf(PRINT_HIGH,
+				"%*s - %s\n",
 				MaxFieldLength,
-				Cvar->name(), 
-				Cvar->cstring());          
+				Cvar->name(),
+				Cvar->cstring());
 	}
-    
+
     Printf (PRINT_HIGH,	"\n");
 }
 END_COMMAND (serverinfo)
@@ -918,12 +908,7 @@ END_COMMAND (serverinfo)
 // rate: takes a kbps value
 CVAR_FUNC_IMPL (rate)
 {
-	const float minrate = 7.0f, maxrate = 2000.0f;
-	if (var < minrate || var > maxrate)
-	{
-		var.Set(clamp((float)var, minrate, maxrate));
-	}
-	else if (connected)
+	if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_rate);
 		MSG_WriteLong(&net_buffer, (int)var);
@@ -997,6 +982,14 @@ END_COMMAND (changeteams)
 
 BEGIN_COMMAND (spectate)
 {
+	if (consoleplayer().spectator)
+	{
+		// reset camera to self, do not send any messages
+		displayplayer_id = consoleplayer_id;
+		CL_CheckDisplayPlayer();
+		return;
+	}
+
 	MSG_WriteMarker(&net_buffer, clc_spectate);
 	MSG_WriteByte(&net_buffer, true);
 }
@@ -1105,17 +1098,17 @@ CVAR_FUNC_IMPL (cl_netdemoname)
 //
 // CL_GenerateNetDemoFileName
 //
-// 
+//
 std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemoname.cstring())
 {
-	const std::string expanded_filename(M_ExpandTokens(filename));	
+	const std::string expanded_filename(M_ExpandTokens(filename));
 	std::string newfilename(expanded_filename);
 	newfilename = I_GetUserFileName(newfilename.c_str());
 
 	// keep trying to find a filename that doesn't yet exist
 	if (!M_FindFreeName(newfilename, "odd"))
 		I_Error("Unable to generate netdemo file name.  Please delete some netdemos.");
-	
+
 	return newfilename;
 }
 
@@ -1131,7 +1124,27 @@ void CL_NetDemoRecord(const std::string &filename)
 
 void CL_NetDemoPlay(const std::string &filename)
 {
-	netdemo.startPlaying(filename);
+	std::string newfilename;
+
+	std::string dir;
+	M_ExtractFilePath(filename, dir);
+
+	// if no path is supplied, check the default path
+	if (dir.empty())
+		newfilename = I_GetUserFileName(filename.c_str());
+	else
+		newfilename = filename;
+
+	if (!M_FileExists(newfilename))
+	{
+		// try adding .odd to the end of the file name
+		std::string ext;
+		M_ExtractFileExtension(newfilename, ext);
+		if (!iequals(ext, ".odd"))
+			M_AppendExtension(newfilename, ".odd", false);
+	}
+
+	netdemo.startPlaying(newfilename);
 }
 
 BEGIN_COMMAND(stopnetdemo)
@@ -1139,7 +1152,7 @@ BEGIN_COMMAND(stopnetdemo)
 	if (netdemo.isRecording())
 	{
 		netdemo.stopRecording();
-	} 
+	}
 	else if (netdemo.isPlaying())
 	{
 		netdemo.stopPlaying();
@@ -1167,7 +1180,7 @@ BEGIN_COMMAND(netrecord)
 	else
 		filename = CL_GenerateNetDemoFileName();
 
-	CL_NetDemoRecord(filename.c_str());
+	CL_NetDemoRecord(filename);
 	netdemo.writeMapChange();
 }
 END_COMMAND(netrecord)
@@ -1179,7 +1192,7 @@ BEGIN_COMMAND(netpause)
 		netdemo.resume();
 		paused = false;
 		Printf(PRINT_HIGH, "Demo resumed.\n");
-	} 
+	}
 	else if (netdemo.isPlaying())
 	{
 		netdemo.pause();
@@ -1306,7 +1319,10 @@ void CL_SendUserInfo(void)
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
 	MSG_WriteLong	(&net_buffer, coninfo->gender);
 	MSG_WriteLong	(&net_buffer, coninfo->color);
-	MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
+
+	// [SL] place holder for deprecated skins
+	MSG_WriteString	(&net_buffer, "");
+
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
 	MSG_WriteBool	(&net_buffer, coninfo->unlag);  // [SL] 2011-05-11
 	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
@@ -1359,15 +1375,14 @@ void CL_SetupUserInfo(void)
 	p->userinfo.team	= (team_t)MSG_ReadByte();
 	p->userinfo.gender	= (gender_t)MSG_ReadLong();
 	p->userinfo.color	= MSG_ReadLong();
-	p->userinfo.skin	= R_FindSkin(MSG_ReadString());
+
+	// [SL] place holder for deprecated skins
+	MSG_ReadString();
 
 	p->GameTime			= MSG_ReadShort();
 
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
-
-	if (p->mo)
-		p->mo->sprite = skins[p->userinfo.skin].sprite;
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?
@@ -1432,11 +1447,11 @@ void CL_MoveMobj(void)
 		int snaptime = last_svgametic;
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
-		
+
 		newsnap.setX(x);
 		newsnap.setY(y);
 		newsnap.setZ(z);
-		
+
 		mo->player->snapshots.addSnapshot(newsnap);
 	}
 	else
@@ -1504,6 +1519,8 @@ void CL_RequestConnectInfo(void)
 std::string missing_file, missing_hash;
 bool CL_PrepareConnect(void)
 {
+	G_CleanupDemo();	// stop dmeos from playing before D_DoomWadReboot wipes out Zone memory
+
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
 	size_t i;
@@ -1571,13 +1588,13 @@ bool CL_PrepareConnect(void)
 		version = VERSION;
 	if(version < 62)
 		version = 62;
-		
+
 	/* GhostlyDeath -- Need the actual version info */
 	if (version == 65)
 	{
 		size_t l;
 		MSG_ReadString();
-		
+
 		for (l = 0; l < 3; l++)
 			MSG_ReadShort();
 		for (l = 0; l < 14; l++)
@@ -1588,19 +1605,19 @@ bool CL_PrepareConnect(void)
 			MSG_ReadShort();
 			MSG_ReadShort();
 		}
-		
+
 		MSG_ReadLong();
 		MSG_ReadShort();
-		
+
 		for (l = 0; l < playercount; l++)
 			MSG_ReadBool();
-		
+
 		MSG_ReadLong();
 		MSG_ReadShort();
 
 		gameversion = MSG_ReadLong();
-		
-		// GhostlyDeath -- Assume 40 for compatibility and fake it 
+
+		// GhostlyDeath -- Assume 40 for compatibility and fake it
 		if (((gameversion % 256) % 10) == -1)
 		{
 			gameversion = 40;
@@ -1615,17 +1632,17 @@ bool CL_PrepareConnect(void)
     // DEH/BEX Patch files
     size_t patch_count = MSG_ReadByte();
 	std::vector<std::string> newpatchfiles(patch_count);
-    
+
     for (i = 0; i < patch_count; ++i)
         newpatchfiles[i] = MSG_ReadString();
-	
+
     // TODO: Allow deh/bex file downloads
 	D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
 
 	if (!missingfiles.empty())
 	{
 		// denis - download files
-		missing_file = missingfiles[0]; 
+		missing_file = missingfiles[0];
 		missing_hash = missinghashes[0];
 
 		if (netdemo.isPlaying())
@@ -1641,7 +1658,7 @@ bool CL_PrepareConnect(void)
 	}
 
 	recv_full_update = false;
-	
+
 	connecttimeout = 0;
 	CL_TryToConnect(server_token);
 
@@ -1696,7 +1713,7 @@ bool CL_Connect(void)
 
 	noservermsgs = false;
 	last_received = gametic;
-	
+
 	if (gamestate != GS_DOWNLOAD)
         gamestate = GS_CONNECTED;
 
@@ -1726,7 +1743,7 @@ void CL_InitNetwork (void)
     SZ_Clear(&net_buffer);
 
     size_t ParamIndex = Args.CheckParm ("-connect");
-    
+
     if (ParamIndex)
     {
 		const char *ipaddress = Args.GetArg(ParamIndex + 1);
@@ -1739,7 +1756,7 @@ void CL_InitNetwork (void)
 
 			if (passhash && passhash[0] != '-' && passhash[0] != '+')
 			{
-				connectpasshash = MD5SUM(passhash);            
+				connectpasshash = MD5SUM(passhash);
 			}
 
 			if (!serveraddr.port)
@@ -1775,7 +1792,7 @@ void CL_TryToConnect(DWORD server_token)
 			MSG_WriteByte(&net_buffer, 1); // send type of connection (play/spectate/rcon/download)
 		else
 			MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
-			
+
 		// GhostlyDeath -- Send more version info
 		if (gameversiontosend)
 			MSG_WriteLong(&net_buffer, gameversiontosend);
@@ -1785,9 +1802,9 @@ void CL_TryToConnect(DWORD server_token)
 		CL_SendUserInfo(); // send userinfo
 
 		MSG_WriteLong(&net_buffer, (int)rate);
-        
-        MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());            
-        
+
+        MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());
+
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
 	}
@@ -1806,7 +1823,7 @@ void CL_Print (void)
 	const char *str = MSG_ReadString();
 
 	Printf (level, "%s", str);
-	
+
 	if (show_messages)
 	{
 		if (level == PRINT_CHAT)
@@ -1821,7 +1838,7 @@ void CL_MidPrint (void)
 {
     const char *str = MSG_ReadString();
     int msgtime = MSG_ReadShort();
-    
+
     C_MidPrint(str,NULL,msgtime);
 }
 
@@ -1926,7 +1943,7 @@ void CL_UpdatePlayer()
 
 	// Mark the gametic this update arrived in for prediction code
 	p->tic = gametic;
-	
+
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
@@ -1948,12 +1965,12 @@ void CL_UpdatePlayer()
 
 	p->last_received = gametic;
 	last_player_update = gametic;
-	
+
 	// [SL] 2012-02-21 - Save the position information to a snapshot
 	int snaptime = last_svgametic;
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
-	
+
 	newsnap.setX(x);
 	newsnap.setY(y);
 	newsnap.setZ(z);
@@ -1968,7 +1985,7 @@ void CL_UpdatePlayer()
 	// and lerping should be disabled
 	newsnap.setContinuous(!CL_PlayerJustTeleported(p));
 	CL_ClearPlayerJustTeleported(p);
-	
+
 	p->snapshots.addSnapshot(newsnap);
 }
 
@@ -1996,7 +2013,7 @@ void CL_UpdatePlayerState(void)
 		else
 			stnum[i] = static_cast<statenum_t>(n);
 	}
-		
+
 	player_t &player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -2010,7 +2027,7 @@ void CL_UpdatePlayerState(void)
 
 	if (!player.weaponowned[weap])
 		P_GiveWeapon(&player, weap, false);
-	
+
 	for (int i = 0; i < NUMAMMO; i++)
 		player.ammo[i] = ammo[i];
 
@@ -2036,7 +2053,7 @@ void CL_UpdateLocalPlayer(void)
 	fixed_t momx = MSG_ReadLong();
 	fixed_t momy = MSG_ReadLong();
 	fixed_t momz = MSG_ReadLong();
-	
+
 	byte waterlevel = MSG_ReadByte();
 
 	int snaptime = last_svgametic;
@@ -2046,7 +2063,7 @@ void CL_UpdateLocalPlayer(void)
 	newsnapshot.setY(y);
 	newsnapshot.setZ(z);
 	newsnapshot.setMomX(momx);
-	newsnapshot.setMomY(momy);	
+	newsnapshot.setMomY(momy);
 	newsnapshot.setMomZ(momz);
 	newsnapshot.setWaterLevel(waterlevel);
 
@@ -2061,7 +2078,7 @@ void CL_UpdateLocalPlayer(void)
 
 //
 // CL_SaveSvGametic
-// 
+//
 // Receives the server's gametic at the time the packet was sent.  It will be
 // sent back to the server with the next cmd.
 //
@@ -2069,18 +2086,18 @@ void CL_UpdateLocalPlayer(void)
 void CL_SaveSvGametic(void)
 {
 	byte t = MSG_ReadByte();
-	
+
 	int newtic = (last_svgametic & 0xFFFFFF00) + t;
 
 	if (last_svgametic > newtic + 127)
 		newtic += 256;
 
 	last_svgametic = newtic;
-	
+
 	#ifdef _WORLD_INDEX_DEBUG_
 	Printf(PRINT_HIGH, "Gametic %i, received world index %i\n", gametic, last_svgametic);
 	#endif	// _WORLD_INDEX_DEBUG_
-}    
+}
 
 //
 // CL_SendPingReply
@@ -2211,7 +2228,7 @@ void CL_Corpse(void)
 	AActor *mo = P_FindThingById(MSG_ReadShort());
 	int frame = MSG_ReadByte();
 	int tics = MSG_ReadByte();
-	
+
 	if(tics == 0xFF)
 		tics = -1;
 
@@ -2233,7 +2250,7 @@ void CL_Corpse(void)
 
 	if (mo->player)
 		mo->player->playerstate = PST_DEAD;
-		
+
     if (mo->flags & MF_COUNTKILL)
 		level.killed_monsters++;
 }
@@ -2286,7 +2303,7 @@ void CL_SpawnPlayer()
 	G_PlayerReborn (*p);
 
 	mobj = new AActor (x, y, z, MT_PLAYER);
-	
+
 	mobj->momx = mobj->momy = mobj->momz = 0;
 
 	// set color translations for player sprites
@@ -2296,12 +2313,6 @@ void CL_SpawnPlayer()
 	mobj->player = p;
 	mobj->health = p->health;
 	P_SetThingId(mobj, netid);
-
-	// [RH] Set player sprite based on skin
-	if(p->userinfo.skin >= numskins)
-		p->userinfo.skin = 0;
-
-	mobj->sprite = skins[p->userinfo.skin].sprite;
 
 	p->mo = p->camera = mobj->ptr();
 	p->fov = 90.0f;
@@ -2333,13 +2344,13 @@ void CL_SpawnPlayer()
 	{
 		// denis - if this concerns the local player, restart the status bar
 		ST_Start ();
-		
+
 		// [SL] 2012-04-23 - Clear predicted sectors
 		movingsectors.clear();
 	}
-	
+
 	if (p->id == displayplayer().id)
-	{	
+	{
 		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
 		// about players/sectors jumping to new positions when the displayplayer spawns
 		CL_ResyncWorldIndex();
@@ -2408,26 +2419,26 @@ void CL_SetMobjSpeedAndAngle(void)
 
 	if (!mo)
 		return;
-	
+
 	if (mo->player)
 	{
 		// [SL] 2013-07-21 - Save the position information to a snapshot
 		int snaptime = last_svgametic;
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
-		
+
 		newsnap.setMomX(momx);
 		newsnap.setMomY(momy);
 		newsnap.setMomZ(momz);
-		
+
 		mo->player->snapshots.addSnapshot(newsnap);
 	}
 	else
 	{
-		mo->angle = angle; 
+		mo->angle = angle;
 		mo->momx = momx;
 		mo->momy = momy;
-		mo->momz = momz; 
+		mo->momz = momz;
 	}
 }
 
@@ -2455,7 +2466,7 @@ void CL_ExplodeMissile(void)
 void CL_RailTrail()
 {
 	v3double_t start, end;
-	
+
 	start.x = double(MSG_ReadShort());
 	start.y = double(MSG_ReadShort());
 	start.z = double(MSG_ReadShort());
@@ -2550,7 +2561,7 @@ void CL_KillMobj(void)
 	int health = MSG_ReadShort();
 
 	MeansOfDeath = MSG_ReadLong();
-	
+
 	bool joinkill = ((MSG_ReadByte()) != 0);
 
 	if (!target)
@@ -2564,7 +2575,7 @@ void CL_KillMobj(void)
 	if (target->player == &consoleplayer())
 		for (size_t i = 0; i < MAXSAVETICS; i++)
 			localcmds[i].clear();
-			
+
 	P_KillMobj (source, target, inflictor, joinkill);
 }
 
@@ -2587,7 +2598,7 @@ void CL_FireWeapon (void)
 	{
 		DPrintf("CL_FireWeapon: weapon misprediction\n");
 		A_ForceWeaponFire(p->mo, firedweap, servertic);
-		
+
 		// Request the player's ammo status from the server
 		MSG_WriteMarker (&net_buffer, clc_getplayerinfo);
 	}
@@ -2751,7 +2762,7 @@ void CL_UpdateSector(void)
 		return;
 
 	sector_t *sector = &sectors[sectornum];
-	P_SetCeilingHeight(sector, ceilingheight << FRACBITS);	
+	P_SetCeilingHeight(sector, ceilingheight << FRACBITS);
 	P_SetFloorHeight(sector, floorheight << FRACBITS);
 
 	if(fp >= numflats)
@@ -2766,7 +2777,7 @@ void CL_UpdateSector(void)
 	sector->moveable = true;
 
 	P_ChangeSector(sector, false);
-	
+
 	SectorSnapshot snap(last_svgametic, sector);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
@@ -2785,14 +2796,14 @@ void CL_UpdateMovingSector(void)
 	byte movers = MSG_ReadByte();
 	movertype_t ceiling_mover = static_cast<movertype_t>(movers & 0x0F);
 	movertype_t floor_mover = static_cast<movertype_t>((movers & 0xF0) >> 4);
-	
+
 	if (ceiling_mover == SEC_ELEVATOR)
 		floor_mover = SEC_INVALID;
 	if (ceiling_mover == SEC_PILLAR)
 		floor_mover = SEC_INVALID;
 
 	SectorSnapshot snap(last_svgametic);
-	
+
 	snap.setCeilingHeight(ceilingheight);
 	snap.setFloorHeight(floorheight);
 
@@ -2802,7 +2813,7 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorMoverType(SEC_FLOOR);
 		snap.setFloorType(static_cast<DFloor::EFloor>(MSG_ReadByte()));
 		snap.setFloorStatus(MSG_ReadByte());
-		snap.setFloorCrush(MSG_ReadBool());        
+		snap.setFloorCrush(MSG_ReadBool());
 		snap.setFloorDirection(char(MSG_ReadByte()));
 		snap.setFloorSpecial(MSG_ReadShort());
 		snap.setFloorTexture(MSG_ReadShort());
@@ -2812,23 +2823,23 @@ void CL_UpdateMovingSector(void)
 		snap.setOrgHeight(MSG_ReadShort() << FRACBITS);
 		snap.setDelay(MSG_ReadLong());
 		snap.setPauseTime(MSG_ReadLong());
-		snap.setStepTime(MSG_ReadLong());          
+		snap.setStepTime(MSG_ReadLong());
 		snap.setPerStepTime(MSG_ReadLong());
 		snap.setFloorOffset(MSG_ReadShort() << FRACBITS);
 		snap.setFloorChange(MSG_ReadByte());
-		
+
 		int LineIndex = MSG_ReadLong();
-		
+
 		if (!lines || LineIndex >= numlines || LineIndex < 0)
 			snap.setFloorLine(NULL);
 		else
 			snap.setFloorLine(&lines[LineIndex]);
 	}
-	
+
 	if (floor_mover == SEC_PLAT)
 	{
 		// Platforms/Lifts
-		snap.setFloorMoverType(SEC_PLAT);		
+		snap.setFloorMoverType(SEC_PLAT);
 		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
 		snap.setFloorLow(MSG_ReadShort() << FRACBITS);
 		snap.setFloorHigh(MSG_ReadShort() << FRACBITS);
@@ -2840,7 +2851,7 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorTag(MSG_ReadShort());
 		snap.setFloorType(MSG_ReadByte());
 		snap.setFloorOffset(MSG_ReadShort() << FRACBITS);
-		snap.setFloorLip(MSG_ReadShort() << FRACBITS);		
+		snap.setFloorLip(MSG_ReadShort() << FRACBITS);
 	}
 
 	if (ceiling_mover == SEC_CEILING)
@@ -2865,14 +2876,14 @@ void CL_UpdateMovingSector(void)
 	if (ceiling_mover == SEC_DOOR)
 	{
 		// Doors
-		snap.setCeilingMoverType(SEC_DOOR);		
+		snap.setCeilingMoverType(SEC_DOOR);
 		snap.setCeilingType(static_cast<DDoor::EVlDoor>(MSG_ReadByte()));
 		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingWait(MSG_ReadLong());
 		snap.setCeilingCounter(MSG_ReadLong());
 		snap.setCeilingStatus(MSG_ReadByte());
-		
+
 		int LineIndex = MSG_ReadLong();
 
 		// If the moving sector's line is -1, it is likely a type 666 door
@@ -2885,8 +2896,8 @@ void CL_UpdateMovingSector(void)
 	if (ceiling_mover == SEC_ELEVATOR)
     {
 		// Elevators
-		snap.setCeilingMoverType(SEC_ELEVATOR);			
-		snap.setFloorMoverType(SEC_ELEVATOR);	
+		snap.setCeilingMoverType(SEC_ELEVATOR);
+		snap.setFloorMoverType(SEC_ELEVATOR);
 		snap.setCeilingType(static_cast<DElevator::EElevator>(MSG_ReadByte()));
 		snap.setFloorType(snap.getCeilingType());
 		snap.setCeilingStatus(MSG_ReadByte());
@@ -2902,12 +2913,12 @@ void CL_UpdateMovingSector(void)
 	if (ceiling_mover == SEC_PILLAR)
 	{
 		// Pillars
-		snap.setCeilingMoverType(SEC_PILLAR);		
-		snap.setFloorMoverType(SEC_PILLAR);		
+		snap.setCeilingMoverType(SEC_PILLAR);
+		snap.setFloorMoverType(SEC_PILLAR);
 		snap.setCeilingType(static_cast<DPillar::EPillar>(MSG_ReadByte()));
 		snap.setFloorType(snap.getCeilingType());
 		snap.setCeilingStatus(MSG_ReadByte());
-		snap.setFloorStatus(snap.getCeilingStatus());		
+		snap.setFloorStatus(snap.getCeilingStatus());
 		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
@@ -2915,12 +2926,12 @@ void CL_UpdateMovingSector(void)
 		snap.setCeilingCrush(MSG_ReadBool());
 		snap.setFloorCrush(snap.getCeilingCrush());
 	}
-	
+
 	if (!sectors || sectornum >= numsectors)
 		return;
 
 	snap.setSector(&sectors[sectornum]);
-	
+
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -3010,7 +3021,7 @@ void CL_GetServerSettings(void)
 
 		var = cvar_t::FindCVar (CvarName.c_str(), &prev);
 
-		// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
+		// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it
 		if (var)
 		{
 			if (var->flags() & CVAR_SERVERINFO)
@@ -3101,7 +3112,7 @@ void CL_Actor_Movedir()
 	AActor *actor = P_FindThingById (MSG_ReadShort());
 	BYTE movedir = MSG_ReadByte();
     SDWORD movecount = MSG_ReadLong();
-    
+
 	if (!actor || movedir >= 8)
 		return;
 
@@ -3187,12 +3198,12 @@ void CL_ActivateLine(void)
 	// [SL] 2012-03-07 - If this is a player teleporting, add this player to
 	// the set of recently teleported players.  This is used to flush past
 	// positions since they cannot be used for interpolation.
-	if ((mo && mo->player) && 
+	if ((mo && mo->player) &&
 		(lines[l].special == Teleport || lines[l].special == Teleport_NoFog ||
 		 lines[l].special == Teleport_Line))
-	{	
+	{
 		teleported_players.insert(mo->player->id);
-		
+
 		// [SL] 2012-03-21 - Server takes care of moving players that teleport.
 		// Don't allow client to process it since it screws up interpolation.
 		return;
@@ -3202,7 +3213,7 @@ void CL_ActivateLine(void)
 	// need to create moving sectors on their own in response to svc_activateline
 	if (P_LineSpecialMovesSector(&lines[l]))
 		return;
-		
+
 	switch (activationType)
 	{
 	case 0:
@@ -3236,10 +3247,10 @@ void CL_LoadMap(void)
 {
 	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
 	forcenetdemosplit = false;
-	
+
 	if (splitnetdemo)
 		netdemo.stopRecording();
-	
+
 	std::vector<std::string> newwadfiles, newwadhashes;
 	std::vector<std::string> newpatchfiles, newpatchhashes;
 
@@ -3263,7 +3274,7 @@ void CL_LoadMap(void)
 	{
 		CL_Reconnect();
 		return;
-	}	
+	}
 
 	// Load the specified WAD and DEH files and change the level.
 	// if any WADs are missing, reconnect to begin downloading.
@@ -3271,7 +3282,7 @@ void CL_LoadMap(void)
 
 	if (!missingfiles.empty())
 	{
-		missing_file = missingfiles[0]; 
+		missing_file = missingfiles[0];
 		missing_hash = missinghashes[0];
 
 		CL_Reconnect();
@@ -3288,10 +3299,10 @@ void CL_LoadMap(void)
 	movingsectors.clear();
 	teleported_players.clear();
 
-	CL_ClearSectorSnapshots();	
+	CL_ClearSectorSnapshots();
 	for (size_t i = 0; i < players.size(); i++)
 		players[i].snapshots.clearSnapshots();
-		
+
 	// reset the world_index (force it to sync)
 	CL_ResyncWorldIndex();
 	last_svgametic = 0;
@@ -3514,7 +3525,7 @@ void CL_InitCommands(void)
 
 	cmds[svc_challenge]			= &CL_Clear;
 	cmds[svc_launcher_challenge]= &CL_Clear;
-	
+
 	cmds[svc_spectate]   		= &CL_Spectate;
 	cmds[svc_readystate]		= &CL_ReadyState;
 	cmds[svc_warmupstate]		= &CL_WarmupState;
@@ -3548,7 +3559,7 @@ void CL_ParseCommands(void)
 	{
 		cmd = (svc_t)MSG_ReadByte();
 		history.push_back(cmd);
-		
+
 		if(cmd == (svc_t)-1)
 			break;
 
@@ -3578,7 +3589,7 @@ void CL_ParseCommands(void)
 			for(size_t j = 0; j < history.size(); j++)
 				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
 		}
-		
+
 	}
 }
 
@@ -3620,7 +3631,7 @@ void CL_SendCmd(void)
 
 	// Write current client-tic.  Server later sends this back to client
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
-	// need to be used for client's positional prediction. 
+	// need to be used for client's positional prediction.
     MSG_WriteLong(&net_buffer, gametic);
 
 	NetCommand *netcmd;
@@ -3713,7 +3724,7 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
             PickupMessage(toucher, GStrings(GOTSHOTGUN2));
         }
         break;
-        
+
         default:
         break;
     }
@@ -3731,7 +3742,7 @@ void CL_LocalDemoTic()
 
 	clientPlayer->cmd.clear();
 	clientPlayer->cmd.buttons = MSG_ReadByte();
-	clientPlayer->cmd.impulse = MSG_ReadByte();	
+	clientPlayer->cmd.impulse = MSG_ReadByte();
 	clientPlayer->cmd.yaw = MSG_ReadShort();
 	clientPlayer->cmd.forwardmove = MSG_ReadShort();
 	clientPlayer->cmd.sidemove = MSG_ReadShort();
@@ -3777,12 +3788,12 @@ void CL_RemoveCompletedMovingSectors()
 {
 	std::map<unsigned short, SectorSnapshotManager>::iterator itr;
 	itr = sector_snaps.begin();
-	
+
 	while (itr != sector_snaps.end())
 	{
 		SectorSnapshotManager *mgr = &(itr->second);
 		int time = mgr->getMostRecentTime();
-		
+
 		// are all the snapshots in the container invalid or too old?
 		if (world_index - time > NUM_SNAPSHOTS || mgr->empty())
 			sector_snaps.erase(itr++);
@@ -3793,14 +3804,8 @@ void CL_RemoveCompletedMovingSectors()
 
 CVAR_FUNC_IMPL (cl_interp)
 {
-	if (var < 0.0f)
-		var.Set(0.0f);
-	if (var > 4.0f)
-		var.Set(4.0f);
-
-	// Resync the world index since the sync offset has changed	
-	CL_ResyncWorldIndex();	
-	
+	// Resync the world index since the sync offset has changed
+	CL_ResyncWorldIndex();
 	netgraph.setInterpolation(var);
 }
 
@@ -3816,14 +3821,14 @@ void CL_SimulateSectors()
 	// Get rid of snapshots for sectors that are done moving
 	CL_RemoveCompletedMovingSectors();
 
-	// Move sectors	
+	// Move sectors
 	std::map<unsigned short, SectorSnapshotManager>::iterator itr;
 	for (itr = sector_snaps.begin(); itr != sector_snaps.end(); ++itr)
 	{
 		unsigned short sectornum = itr->first;
 		if (sectornum >= numsectors)
 			continue;
-			
+
 		sector_t *sector = &sectors[sectornum];
 
 		// will this sector be handled when predicting sectors?
@@ -3843,7 +3848,7 @@ void CL_SimulateSectors()
 				sector->floordata->RunThink();
 
 			snap.toSector(sector);
-		}				
+		}
 	}
 }
 
@@ -3861,16 +3866,11 @@ void CL_SimulatePlayers()
 		player_t *player = &players[i];
 		if (!player || !player->mo || player->spectator)
 			continue;
-		
+
 		// Consoleplayer is handled in CL_PredictWorld
 		if (player->id == consoleplayer_id)
 			continue;
 
-		// [SL] 2013-04-30 - Let the animation ticker update frames, etc for
-		// dying players. This leads to less jittery animation when cl_interp is used.	
-		if (player->mo->health <= 0)
-			continue;
-	
 		PlayerSnapshot snap = player->snapshots.getSnapshot(world_index);
 		if (snap.isValid())
 		{
@@ -3878,7 +3878,7 @@ void CL_SimulatePlayers()
 			// previous world_index, then old position was probably extrapolated
 			// and should be smoothly moved towards the corrected position instead
 			// of snapping to it.
-			
+
 			if (snap.isContinuous())
 			{
 				// [SL] Save the position prior to the new update so it can be
@@ -3904,9 +3904,9 @@ void CL_SimulatePlayers()
 							world_index, dist >> FRACBITS);
 					#endif	// _SNAPSHOT_DEBUG_
 
-					static const fixed_t correction_amount = FRACUNIT * 0.80f; 
+					static const fixed_t correction_amount = FRACUNIT * 0.80f;
 					M_ScaleVec3Fixed(&offset, &offset, correction_amount);
-					
+
 					// Apply a smoothing offset to the current snapshot
 					snap.setX(snap.getX() - offset.x);
 					snap.setY(snap.getY() - offset.y);
@@ -3946,17 +3946,17 @@ void CL_SimulateWorld()
 {
 	if (gamestate != GS_LEVEL || netdemo.isPaused())
 		return;
-		
+
 	// if the world_index falls outside this range, resync it
 	static const int MAX_BEHIND = 16;
 	static const int MAX_AHEAD = 16;
 
 	int lower_sync_limit = CL_CalculateWorldIndexSync() - MAX_BEHIND;
 	int upper_sync_limit = CL_CalculateWorldIndexSync() + MAX_AHEAD;
-	
+
 	// Was the displayplayer just teleported?
 	bool continuous = displayplayer().snapshots.getSnapshot(world_index).isContinuous();
-	
+
 	// Reset the synchronization with the server if needed
 	if (world_index <= 0 || !continuous ||
 		world_index > upper_sync_limit || world_index < lower_sync_limit)
@@ -3971,18 +3971,18 @@ void CL_SimulateWorld()
 			reason = "too far behind server";
 		else
 			reason = "invalid world_index";
-			
+
 		Printf(PRINT_HIGH, "Gametic %i, world_index %i, Resynching world index (%s).\n",
 			gametic, world_index, reason.c_str());
 		#endif // _WORLD_INDEX_DEBUG_
-		
+
 		CL_ResyncWorldIndex();
 	}
-	
+
 	// Not using interpolation?  Use the last update always
 	if (!cl_interp)
 		world_index = last_svgametic;
-		
+
 	#ifdef _WORLD_INDEX_DEBUG_
 	Printf(PRINT_HIGH, "Gametic %i, simulating world_index %i\n",
 		gametic, world_index);
@@ -3992,12 +3992,12 @@ void CL_SimulateWorld()
 	netgraph.setWorldIndexSync(world_index - (last_svgametic - cl_interp));
 
 	CL_SimulateSectors();
-	CL_SimulatePlayers();		
+	CL_SimulatePlayers();
 
 	// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
 	// slowing down or speeding up world_index
 	int drift_correction = CL_CalculateWorldIndexDriftCorrection();
-	
+
 	#ifdef _WORLD_INDEX_DEBUG_
 	if (drift_correction != 0)
 		Printf(PRINT_HIGH, "Gametic %i, increasing world index by %i.\n",

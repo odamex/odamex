@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -226,7 +226,7 @@ BOOL HU_Responder (event_t *ev)
 	}
 	else
 	{
-		if(!c)
+		if (c < ' ' || c > '~') // ASCII only please
 			return false;
 
 		if(input_text.length() < MAX_CHATSTR_LEN)
@@ -238,15 +238,7 @@ BOOL HU_Responder (event_t *ev)
 	return false;
 }
 
-CVAR_FUNC_IMPL(hud_targetcount)
-{
-	if (var < 0)
-		var.Set((float)0);
-
-	if (var > 64)
-		var.Set((float)64);
-}
-
+EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR (sv_maxplayers)
 
 //
@@ -438,21 +430,6 @@ BEGIN_COMMAND (say_to)
 	}
 }
 END_COMMAND (say_to)
-
-static bool STACK_ARGS compare_player_frags (const player_t *arg1, const player_t *arg2)
-{
-	return arg2->fragcount < arg1->fragcount;
-}
-
-static bool STACK_ARGS compare_player_kills (const player_t *arg1, const player_t *arg2)
-{
-	return arg2->killcount < arg1->killcount;
-}
-
-static bool STACK_ARGS compare_player_points (const player_t *arg1, const player_t *arg2)
-{
-	return arg2->points < arg1->points;
-}
 
 EXTERN_CVAR(hud_scalescoreboard)
 
@@ -1117,7 +1094,8 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	} else if (blue_size > extra_rows + 4) {
 		blue_size = extra_rows + 4;
 	}
-	short ty[2] = {8, (blue_size * 8) + 22};
+
+	short ty[2] = {8, short(blue_size * 8 + 22) };
 
 	for (byte i = 0;i < 2;i++) {
 		// Line
@@ -1372,6 +1350,33 @@ void OdamexEffect (int xa, int ya, int xb, int yb)
 }
 
 
+//
+// Comparison functors for sorting vectors of players
+//
+struct compare_player_frags
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->fragcount < arg1->fragcount;
+	}
+};
+
+struct compare_player_kills
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->killcount < arg1->killcount;
+	}
+};
+
+struct compare_player_points
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->points < arg1->points;
+	}
+};
+
 
 //
 // HU_ConsoleScores
@@ -1392,7 +1397,7 @@ void HU_ConsoleScores (player_t *player)
 		sortedplayers[i] = &players[i];
 
     if (sv_gametype == GM_CTF) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("           CAPTURE THE FLAG\n");
@@ -1451,7 +1456,7 @@ void HU_ConsoleScores (player_t *player)
                 }
             }
     } else if (sv_gametype == GM_TEAMDM) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("           TEAM DEATHMATCH\n");
@@ -1517,7 +1522,7 @@ void HU_ConsoleScores (player_t *player)
                 }
             }
     } else if (sv_gametype == GM_DM) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("              DEATHMATCH\n");
@@ -1577,7 +1582,7 @@ void HU_ConsoleScores (player_t *player)
                 }
             }
     } else if (multiplayer) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills());
 
         Printf_Bold("\n--------------------------------------\n");
         Printf_Bold("             COOPERATIVE\n");

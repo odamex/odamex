@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -60,7 +60,7 @@ void ST_Init (void);
 // Draw the HUD (only if old status bar is not drawn)
 void ST_newDraw (void);
 
-// Called on init and whenever player's skin changes
+// Called on init
 void ST_loadGraphics (void);
 
 // [ML] HUDified status bar

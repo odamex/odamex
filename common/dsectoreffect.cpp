@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,8 @@
 #include "dsectoreffect.h"
 
 
+
+EXTERN_CVAR(co_boomsectortouch)
 
 IMPLEMENT_SERIAL (DSectorEffect, DThinker)
 
@@ -156,7 +158,9 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 			{
 				P_ChangeFloorHeight(m_Sector, -speed);
 				flag = P_ChangeSector (m_Sector, crush);
-				if (flag == true)
+				// comp_floors: co_boomsectortouch enables Boom behaviour which
+				// allows floor to lower when actors on it are stuck in ceiling
+				if (flag == true && !co_boomsectortouch)
 				{
 					P_ChangeFloorHeight(m_Sector, speed);	// should be lastpos
 					P_ChangeSector (m_Sector, crush);
@@ -168,6 +172,15 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 		case 1:
 			// UP
 			lastpos = P_FloorHeight(m_Sector);
+			// comp_floors: jff 02/04/98 keep floor from moving thru ceilings
+			// co_boomsectortouch enables Boom behaviour where a rising floor
+			// is prevented from moving higher than the ceiling above it
+			if (co_boomsectortouch)
+			{
+				fixed_t h = P_CeilingHeight(m_Sector);
+				if (dest > h) // floor is trying to rise through ceiling
+					dest = h;
+			}
 
 			if (lastpos + speed > dest)
 			{
@@ -187,7 +200,10 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 				flag = P_ChangeSector (m_Sector, crush);
 				if (flag == true)
 				{
-					if (crush)
+					// comp_floors: jff 1/25/98 fix floor crusher
+					// co_boomsectortouch enables Boom behaviour where rising
+					// floor holds in place until victim moves or is crushed
+					if (crush && !co_boomsectortouch)
 						return crushed;
 					P_ChangeFloorHeight(m_Sector, -speed);
 					P_ChangeSector (m_Sector, crush);
@@ -205,6 +221,15 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 		case -1:
 			// DOWN
 			lastpos = P_CeilingHeight(m_Sector);
+			// comp_floors: jff 02/04/98 keep ceiling from moving thru floors
+			// co_boomsectortouch enables Boom behaviour where a lowering
+			// ceiling is prevented from moving lower than the floor below it
+			if (co_boomsectortouch)
+			{
+				fixed_t h = P_FloorHeight(m_Sector);
+				if (dest < h) // ceiling is trying to lower through floor
+					dest = h;
+			}
 
 			if (lastpos - speed < dest)
 			{
@@ -229,7 +254,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 					if (crush)
 						return crushed;
 
-					P_SetCeilingHeight(m_Sector, lastpos); 
+					P_SetCeilingHeight(m_Sector, lastpos);
 					P_ChangeSector (m_Sector, crush);
 					return crushed;
 				}

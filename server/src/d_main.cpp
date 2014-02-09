@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -167,7 +167,7 @@ void D_DoomLoop (void)
 	{
 		try
 		{
-			D_RunTics(SV_RunTics, SV_RenderTics);
+			D_RunTics(SV_RunTics, SV_DisplayTics);
 		}
 		catch (CRecoverableError &error)
 		{
@@ -231,76 +231,6 @@ void D_StartTitle (void)
 	D_AdvanceDemo ();
 }
 
-//
-//D D_AddDefSkins
-//
-/*void D_AddDefSkins (void)
-{
-	// [RH] Add any .wad files in the skins directory
-#ifndef UNIX // denis - fixme - 1) _findnext not implemented on linux or osx, use opendir 2) server does not need skins, does it?
-	{
-		char curdir[256];
-
-		if (getcwd (curdir, 256))
-		{
-			char skindir[256];
-			findstate_t findstate; // denis - fixme - win32 dependency == BAD!!! this is solved in later csdooms with BaseFileSearch - that could be implemented better with posix opendir stuff
-			long handle;
-			int stuffstart;
-
-			std::string pd = progdir;
-			if(pd[pd.length() - 1] != PATHSEPCHAR)
-				pd += PATHSEPCHAR;
-
-			stuffstart = sprintf (skindir, "%sskins", pd.c_str());
-
-			if (!chdir (skindir))
-			{
-				skindir[stuffstart++] = PATHSEPCHAR;
-				if ((handle = I_FindFirst ("*.wad", &findstate)) != -1)
-				{
-					do
-					{
-						if (!(I_FindAttr (&findstate) & FA_DIREC))
-						{
-							strcpy (skindir + stuffstart,
-									I_FindName (&findstate));
-							wadfiles.push_back(skindir);
-						}
-					} while (I_FindNext (handle, &findstate) == 0);
-					I_FindClose (handle);
-				}
-			}
-
-			const char *home = getenv ("HOME");
-			if (home)
-			{
-				stuffstart = sprintf (skindir, "%s%s.odamex/skins", home,
-									  home[strlen(home)-1] == PATHSEPCHAR ? "" : PATHSEP);
-				if (!chdir (skindir))
-				{
-					skindir[stuffstart++] = PATHSEPCHAR;
-					if ((handle = I_FindFirst ("*.wad", &findstate)) != -1)
-					{
-						do
-						{
-							if (!(I_FindAttr (&findstate) & FA_DIREC))
-							{
-								strcpy (skindir + stuffstart,
-										I_FindName (&findstate));
-								wadfiles.push_back(skindir);
-							}
-						} while (I_FindNext (handle, &findstate) == 0);
-						I_FindClose (handle);
-					}
-				}
-			}
-			chdir (curdir);
-		}
-	}
-#endif
-}*/
-
 void D_NewWadInit()
 {
 	if (DefaultsLoaded)	{		// [ML] This is being called while loading defaults,
@@ -325,8 +255,6 @@ int teamplayset;
 
 void D_DoomMain (void)
 {
-	const char *iwad;
-
 	M_ClearRandom();
 	// [AM] Init rand() PRNG, needed for non-deterministic maplist shuffling.
 	srand(time(NULL));
@@ -350,23 +278,16 @@ void D_DoomMain (void)
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
 
 	if (!RebootInit) {
-		iwad = Args.CheckValue("-iwad");
-		if(!iwad)
+		const char* iwad = Args.CheckValue("-iwad");
+		if (!iwad)
 			iwad = "";
 
-		D_AddDefWads(iwad);
-		D_AddCmdParameterFiles();
+		std::vector<std::string> newwadfiles, newpatchfiles;
+		newwadfiles.push_back(iwad);
+		D_AddWadCommandLineFiles(newwadfiles);
+		D_AddDehCommandLineFiles(newpatchfiles);
 
-		wadhashes = W_InitMultipleFiles (wadfiles);
-		for (size_t i = 0; i < wadfiles.size(); i++)
-			wadfiles[i] = D_CleanseFileName(wadfiles[i], "wad");
-
-		// [RH] Initialize localizable strings.
-		GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
-		GStrings.Compact ();
-
-		//D_InitStrings ();
-		D_DoDefDehackedPatch();
+		D_LoadResourceFiles(newwadfiles, newpatchfiles);
 	}
 
 	I_Init ();

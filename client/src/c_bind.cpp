@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -347,6 +347,7 @@ bool C_DoNetDemoKey (event_t *ev)
 		return false;
 
 	static bool initialized = false;
+	std::string *binding;
 
 	if (!initialized)
 	{
@@ -362,18 +363,18 @@ bool C_DoNetDemoKey (event_t *ev)
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
 		return false;
 
-	std::string *binding = &NetDemoBindings[ev->data1];
+	binding = &NetDemoBindings[ev->data1];
 
 	// hardcode the pause key to also control netpause
 	if (iequals(Bindings[ev->data1], "pause"))
 		binding = &NetDemoBindings[GetKeyFromName("space")];
-	
+
 	// nothing bound to this key specific to netdemos?
 	if (binding->empty())
 		return false;
 
 	if (ev->type == ev_keydown)
-		AddCommandString(binding->c_str());
+		AddCommandString(*binding);
 
 	return true;
 }
@@ -401,7 +402,7 @@ bool C_DoSpectatorKey (event_t *ev)
 		return true;
 	}
 
-	return false;	
+	return false;
 }
 
 BOOL C_DoKey (event_t *ev)
@@ -443,7 +444,7 @@ BOOL C_DoKey (event_t *ev)
 	{
 		if (ev->type == ev_keydown)
 		{
-			AddCommandString (binding->c_str());
+			AddCommandString (*binding);
 			KeysDown[ev->data1] = true;
 		}
 		else
@@ -456,7 +457,7 @@ BOOL C_DoKey (event_t *ev)
 			if (achar == 0 || (*binding)[achar - 1] <= ' ')
 			{
 				(*binding)[achar] = '-';
-				AddCommandString (binding->c_str());
+				AddCommandString (*binding);
 				(*binding)[achar] = '+';
 			}
 
@@ -487,11 +488,11 @@ void C_ReleaseKeys()
 
 		size_t achar = binding->find_first_of('+');
 
-		if (achar != std::string::npos && 
+		if (achar != std::string::npos &&
 			(achar == 0 || (*binding)[achar - 1] <= ' '))
 		{
 			(*binding)[achar] = '-';
-			AddCommandString(binding->c_str());
+			AddCommandString(*binding);
 			(*binding)[achar] = '+';
 		}
 	}
@@ -512,7 +513,7 @@ void C_ArchiveBindings (FILE *f)
 	for (i = 0; i < NUM_KEYS; i++)
 	{
 		if (DoubleBindings[i].length())
-			fprintf (f, "doublebind %s %s\n", 
+			fprintf (f, "doublebind %s %s\n",
 					C_QuoteString(KeyName(i)).c_str(),
 					C_QuoteString(DoubleBindings[i]).c_str());
 	}

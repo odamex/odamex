@@ -215,10 +215,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\common\d_protocol.h"
-					>
-				</File>
-				<File
 					RelativePath="..\..\common\d_ticcmd.h"
 					>
 				</File>
@@ -324,6 +320,10 @@
 				</File>
 				<File
 					RelativePath="..\..\common\m_swap.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\common\m_vectors.h"
 					>
 				</File>
 				<File
@@ -463,10 +463,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\common\vectors.h"
-					>
-				</File>
-				<File
 					RelativePath="..\..\common\version.h"
 					>
 				</File>
@@ -500,10 +496,6 @@
 				</File>
 				<File
 					RelativePath="..\..\common\d_items.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\common\d_protocol.cpp"
 					>
 				</File>
 				<File
@@ -572,6 +564,10 @@
 				</File>
 				<File
 					RelativePath="..\..\common\m_random.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\common\m_vectors.cpp"
 					>
 				</File>
 				<File
@@ -704,10 +700,6 @@
 				</File>
 				<File
 					RelativePath="..\..\common\tables.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\common\vectors.cpp"
 					>
 				</File>
 				<File

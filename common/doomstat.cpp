@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,7 +38,7 @@ GameMode_t		gamemode = undetermined;
 GameMission_t	gamemission = doom;
 
 // Language.
-BEGIN_CUSTOM_CVAR (language, "0", "", CVARTYPE_INT, CVAR_ARCHIVE)
+CVAR_FUNC_IMPL (language)
 {
 	SetLanguageIDs ();
 	if (level.behavior != NULL)
@@ -51,14 +51,9 @@ BEGIN_CUSTOM_CVAR (language, "0", "", CVARTYPE_INT, CVAR_ARCHIVE)
 	GStrings.Compact ();
 	G_SetLevelStrings ();
 }
-END_CUSTOM_CVAR (language)
 
 // Set if homebrew PWAD stuff has been added.
 BOOL			modifiedgame;
-
-// Show developer messages if true.
-EXTERN_CVAR (developer)
-
 
 VERSION_CONTROL (doomstat_cpp, "$Id$")
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -49,17 +49,11 @@ extern byte *Ranges;
 
 int V_TextScaleXAmount()
 {
-	if (hud_scaletext < 1.0f)
-		return 1;
-
 	return int(hud_scaletext);
 }
 
 int V_TextScaleYAmount()
 {
-	if (hud_scaletext < 1.0f)
-		return 1;
-
 	return int(hud_scaletext);
 }
 

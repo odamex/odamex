@@ -3,7 +3,7 @@
 //
 // $Id: i_musicsystem.cpp 2541 2011-10-27 02:36:31Z dr_sean $
 //
-// Copyright (C) 2006-2013 by The Odamex Team.
+// Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,7 +40,6 @@
 
 #ifdef PORTMIDI
 #include "portmidi.h"
-#include "porttime.h"
 #endif	// PORTMIDI
 
 // [Russell] - define a temporary midi file, for consistency
@@ -1004,7 +1003,7 @@ PortMidiMusicSystem::~PortMidiMusicSystem()
 	if (mStream)
 	{
 		// Sleep to allow the All-Notes-Off events to be processed
-		Pt_Sleep(cLatency * 2);
+		I_Sleep(I_ConvertTimeFromMs(cLatency * 2));
 		
 		Pm_Close(mStream);
 		Pm_Terminate();
