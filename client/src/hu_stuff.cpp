@@ -226,7 +226,7 @@ BOOL HU_Responder (event_t *ev)
 	}
 	else
 	{
-		if(!c)
+		if (c < ' ' || c > '~') // ASCII only please
 			return false;
 
 		if(input_text.length() < MAX_CHATSTR_LEN)
@@ -238,15 +238,7 @@ BOOL HU_Responder (event_t *ev)
 	return false;
 }
 
-CVAR_FUNC_IMPL(hud_targetcount)
-{
-	if (var < 0)
-		var.Set((float)0);
-
-	if (var > 64)
-		var.Set((float)64);
-}
-
+EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR (sv_maxplayers)
 
 //

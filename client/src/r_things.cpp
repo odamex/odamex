@@ -61,15 +61,15 @@ static void R_InitCrosshair();
 static byte crosshair_trans[256];
 
 static int crosshair_color_custom = 0xb0;
-EXTERN_CVAR (hud_crosshaircolor)
 CVAR_FUNC_IMPL (hud_crosshaircolor)
 {
 	DWORD *palette = GetDefaultPalette()->colors;
 	crosshair_color_custom = V_GetColorFromString(palette, hud_crosshaircolor.cstring());
 }
 
+
 EXTERN_CVAR (hud_crosshairhealth)
-CVAR_FUNC_IMPL (hud_crosshair)
+CVAR_FUNC_IMPL(hud_crosshair)
 {
 	R_InitCrosshair();
 }
@@ -91,7 +91,6 @@ int*			spritelights;
 #define SPRITE_NEEDS_INFO	MAXINT
 
 EXTERN_CVAR (r_drawplayersprites)
-EXTERN_CVAR (r_drawhitboxes)
 EXTERN_CVAR (r_particles)
 
 EXTERN_CVAR (hud_crosshairdim)
@@ -304,18 +303,13 @@ static void R_InitCrosshair()
 
 	if (xhairnum)
 	{
-		if (xhairnum < 0)
-			xhairnum = -xhairnum;
-
 		char xhairname[16];
 		int xhair;
 
 		sprintf (xhairname, "XHAIR%d", xhairnum);
 
 		if ((xhair = W_CheckNumForName (xhairname)) == -1)
-		{
 			xhair = W_CheckNumForName ("XHAIR1");
-		}
 
 		if(xhair != -1)
 			crosshair_lump = xhair;
@@ -1239,8 +1233,11 @@ void R_DrawSprite (vissprite_t *spr)
 	mceilingclip = cliptop;
 	R_DrawVisSprite (spr, spr->x1, spr->x2);
 
+	#if 0
+	EXTERN_CVAR (r_drawhitboxes)
 	if (r_drawhitboxes && spr->mo)
 		R_DrawHitBox(spr->mo);
+	#endif
 }
 
 

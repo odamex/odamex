@@ -98,30 +98,26 @@ static channel_t *Channel;
 static byte		*SoundCurve;
 
 // Maximum volume of a sound effect.
-// Internal default is max out of 0-15.
-CVAR_FUNC_IMPL (snd_sfxvolume)
+CVAR_FUNC_IMPL(snd_sfxvolume)
 {
-	if (var.value() < 0.0f || var.value() > 1.0f)
-		var.Set(clamp(var.value(), 0.0f, 1.0f));
-	else
-		S_SetSfxVolume(var);
+	S_SetSfxVolume(var);
 }
 
 // Maximum volume of Music.
-CVAR_FUNC_IMPL (snd_musicvolume)
+CVAR_FUNC_IMPL(snd_musicvolume)
 {
-	if (var.value() < 0.0f || var.value() > 1.0f)
-		var.Set(clamp(var.value(), 0.0f, 1.0f));
-	else
-		S_SetMusicVolume(var);
+	S_SetMusicVolume(var);
 }
 
 // Maximum volume of announcer sounds.
-CVAR_FUNC_IMPL (snd_announcervolume)
+EXTERN_CVAR(snd_announcervolume)
+
+CVAR_FUNC_IMPL (snd_channels)
 {
-	if (var.value() < 0.0f || var.value() > 1.0f)
-		var.Set(clamp(var.value(), 0.0f, 1.0f));
+	S_Stop();
+	S_Init (snd_sfxvolume, snd_musicvolume);
 }
+
 
 // whether songs are mus_paused
 static BOOL		mus_paused;
@@ -133,7 +129,6 @@ static struct mus_playing_t
 	int   handle;
 } mus_playing;
 
-EXTERN_CVAR (snd_channels)
 EXTERN_CVAR (co_zdoomsoundcurve)
 EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (co_level8soundfeature)

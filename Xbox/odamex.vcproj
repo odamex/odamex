@@ -638,12 +638,6 @@
 				RelativePath="..\common\d_player.h">
 			</File>
 			<File
-				RelativePath="..\common\d_protocol.cpp">
-			</File>
-			<File
-				RelativePath="..\common\d_protocol.h">
-			</File>
-			<File
 				RelativePath="..\common\d_ticcmd.h">
 			</File>
 			<File
@@ -708,6 +702,9 @@
 			</File>
 			<File
 				RelativePath="..\common\gstrings.h">
+			</File>
+			<File
+				RelativePath="..\common\hashtable.h">
 			</File>
 			<File
 				RelativePath="..\common\huffman.cpp">
@@ -776,6 +773,12 @@
 				RelativePath="..\common\m_misc.h">
 			</File>
 			<File
+				RelativePath="..\common\m_ostring.cpp">
+			</File>
+			<File
+				RelativePath="..\common\m_ostring.h">
+			</File>
+			<File
 				RelativePath="..\common\m_random.cpp">
 			</File>
 			<File
@@ -786,6 +789,12 @@
 			</File>
 			<File
 				RelativePath="..\common\m_swap.h">
+			</File>
+			<File
+				RelativePath="..\common\m_vectors.cpp">
+			</File>
+			<File
+				RelativePath="..\common\m_vectors.h">
 			</File>
 			<File
 				RelativePath="..\common\md5.cpp">
@@ -971,6 +980,9 @@
 				RelativePath="..\common\s_sound.h">
 			</File>
 			<File
+				RelativePath="..\common\sarray.h">
+			</File>
+			<File
 				RelativePath="..\common\sc_man.cpp">
 			</File>
 			<File
@@ -1017,12 +1029,6 @@
 			</File>
 			<File
 				RelativePath="..\common\v_video.h">
-			</File>
-			<File
-				RelativePath="..\common\vectors.cpp">
-			</File>
-			<File
-				RelativePath="..\common\vectors.h">
 			</File>
 			<File
 				RelativePath="..\common\version.cpp">

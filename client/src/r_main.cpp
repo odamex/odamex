@@ -65,6 +65,7 @@ EXTERN_CVAR (r_columnmethod)
 EXTERN_CVAR (r_flashhom)
 EXTERN_CVAR (r_viewsize)
 EXTERN_CVAR (sv_allowwidescreen)
+EXTERN_CVAR (r_columnmethod)
 
 static float	LastFOV = 0.0f;
 fixed_t			FocalLengthX;
@@ -866,12 +867,7 @@ void R_ExecuteSetViewSize (void)
 
 CVAR_FUNC_IMPL (screenblocks)
 {
-	if (var > 12.0)
-		var.Set (12.0);
-	else if (var < 3.0)
-		var.Set (3.0);
-	else
-		R_SetViewSize ((int)var);
+	R_SetViewSize((int)var);
 }
 
 //

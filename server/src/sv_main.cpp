@@ -113,6 +113,7 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 
 CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
+<<<<<<< .working
 	if (var > MAXPLAYERS)
 		var.Set(MAXPLAYERS);
 
@@ -121,6 +122,9 @@ CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are a
 
 	int count = var.asInt();
 	for (Players::iterator it = players.begin();it != players.end();)
+=======
+	while (players.size() > sv_maxclients)
+>>>>>>> .merge-right.r4536
 	{
 		if (count <= 0)
 		{
@@ -143,12 +147,6 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 {
 	// [Nes] - Force extras to become spectators.
 	int normalcount = 0;
-
-	if (var < 0)
-		var.Set((float)0);
-
-	if (var > MAXPLAYERS)
-		var.Set(MAXPLAYERS);
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -179,16 +177,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 // [AM] - Force extras on a team to become spectators.
 CVAR_FUNC_IMPL (sv_maxplayersperteam)
 {
-	if (var == 0)
-		return;
-
-	if (var < 0)
-		var.Set((float)0);
-
-	if (var > MAXPLAYERS)
-		var.Set(MAXPLAYERS);
-
-	for (int i = 0;i < NUMTEAMS;i++)
+	for (int i = 0; i < NUMTEAMS;i++)
 	{
 		int normalcount = 0;
 		for (Players::iterator it = players.begin();it != players.end();++it)
@@ -225,6 +214,7 @@ EXTERN_CVAR (sv_fragexitswitch)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_infiniteammo)
+EXTERN_CVAR (sv_keepkeys)
 
 // Teamplay/CTF
 EXTERN_CVAR (sv_scorelimit)
@@ -237,14 +227,6 @@ CVAR_FUNC_IMPL (join_password)
 		Printf(PRINT_HIGH, "join password set");
 	else
 		Printf(PRINT_HIGH, "join password cleared");
-}
-
-CVAR_FUNC_IMPL (spectate_password)
-{
-	if (strlen(var.cstring()))
-		Printf(PRINT_HIGH, "spectate password set");
-	else
-		Printf(PRINT_HIGH, "spectate password cleared");
 }
 
 CVAR_FUNC_IMPL (rcon_password) // Remote console password.
@@ -273,13 +255,10 @@ void SV_SetClientRate(client_t &client, int rate)
 	client.rate = clamp(rate, 1, (int)sv_maxrate);
 }
 
-EXTERN_CVAR (sv_waddownloadcap)
-CVAR_FUNC_IMPL (sv_maxrate)
+EXTERN_CVAR(sv_waddownloadcap)
+CVAR_FUNC_IMPL(sv_maxrate)
 {
-	// impose a minimum rate of 10kbps/client
-	if (var < 10)
-		var.Set(10);
-
+	// sv_waddownloadcap can not be larger than sv_maxrate
 	if (sv_waddownloadcap > var)
 		sv_waddownloadcap.Set(var);
 
@@ -293,7 +272,7 @@ CVAR_FUNC_IMPL (sv_maxrate)
 CVAR_FUNC_IMPL (sv_waddownloadcap)
 {
 	// sv_waddownloadcap can not be larger than sv_maxrate
-	if (var > sv_maxrate || var <= 0)
+	if (var > sv_maxrate)
 		var.Set(sv_maxrate);
 }
 
@@ -2535,7 +2514,7 @@ void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		cl = &(it->client);
-		
+
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
@@ -2561,7 +2540,7 @@ void STACK_ARGS SV_SpectatorPrintf(int level, const char *fmt, ...)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		cl = &(it->client);
-		
+
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
@@ -2625,7 +2604,7 @@ void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
 			continue;
 
 		cl = &(it->client);
-		
+
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
@@ -4192,7 +4171,7 @@ void SV_ParseCommands(player_t &player)
 		case clc_kill:
 			if(player.mo &&
                level.time > player.death_time + TICRATE*10 &&
-               sv_allowcheats)
+               (sv_allowcheats || (sv_gametype == GM_COOP && !sv_keepkeys)))
             {
 				SV_Suicide (player);
             }

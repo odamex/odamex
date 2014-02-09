@@ -23,6 +23,7 @@
 
 
 #include <cstring>
+#include <cmath>
 #include <stdio.h>
 
 #include "cmdlib.h"
@@ -58,7 +59,7 @@ public:
 			cvar = next;
 		}
 	}
-}ad;
+} ad;
 
 cvar_t* GetFirstCvar(void)
 {
@@ -67,21 +68,23 @@ cvar_t* GetFirstCvar(void)
 
 int cvar_defflags;
 
-cvar_t::cvar_t (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD flags)
+cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
+		DWORD flags, float minval, float maxval)
 {
-	InitSelf (var_name, def, help, type, flags, NULL);
+	InitSelf(var_name, def, help, type, flags, NULL, minval, maxval);
 }
 
-cvar_t::cvar_t (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD flags, void (*callback)(cvar_t &))
+cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
+		DWORD flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
-	InitSelf (var_name, def, help, type, flags, callback);
+	InitSelf(var_name, def, help, type, flags, callback, minval, maxval);
 }
 
-void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD var_flags, void (*callback)(cvar_t &))
+void cvar_t::InitSelf(const char* var_name, const char* def, const char* help, cvartype_t type,
+		DWORD var_flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
-	cvar_t *var, *dummy;
-
-	var = FindCVar (var_name, &dummy);
+	cvar_t* dummy;
+	cvar_t* var = FindCVar(var_name, &dummy);
 
 	m_Callback = callback;
 	m_String = "";
@@ -91,6 +94,17 @@ void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, 
     m_HelpText = help;
     m_Type = type;
 
+	if (var_flags & CVAR_NOENABLEDISABLE)
+	{
+		m_MinValue = minval;
+		m_MaxValue = maxval;
+	}
+	else
+	{
+		m_MinValue = 0.0f;
+		m_MaxValue = 1.0f;
+	}
+
 	if (def)
 		m_Default = def;
 	else
@@ -98,7 +112,7 @@ void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, 
 
 	if (var_name)
 	{
-		C_AddTabCommand (var_name);
+		C_AddTabCommand(var_name);
 		m_Name = var_name;
 		m_Next = ad.GetCVars();
 		ad.GetCVars() = this;
@@ -108,14 +122,14 @@ void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, 
 
 	if (var)
 	{
-		ForceSet (var->m_String.c_str());
+		ForceSet(var->m_String.c_str());
 		if (var->m_Flags & CVAR_AUTO)
 			delete var;
 		else
 			var->~cvar_t();
 	}
 	else if (def)
-		ForceSet (def);
+		ForceSet(def);
 
 	m_Flags = var_flags | CVAR_ISDEFAULT;
 }
@@ -138,7 +152,7 @@ cvar_t::~cvar_t ()
 	}
 }
 
-void cvar_t::ForceSet (const char *val)
+void cvar_t::ForceSet(const char* valstr)
 {
 	// [SL] 2013-04-16 - Latched CVARs do not change values until the next map.
 	// Servers and single-player games should abide by this behavior but
@@ -147,42 +161,63 @@ void cvar_t::ForceSet (const char *val)
 		(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION))
 	{
 		m_Flags |= CVAR_MODIFIED;
-		if(val)
-			m_LatchedString = val;
+		if (valstr)
+			m_LatchedString = valstr;
 		else
-			m_LatchedString = "";
+			m_LatchedString.clear();
 	}
 	else
 	{
 		m_Flags |= CVAR_MODIFIED;
-		if(val)
+
+		bool numerical_value = IsRealNum(valstr);
+		bool integral_type = m_Type == CVARTYPE_BOOL || m_Type == CVARTYPE_BYTE ||
+					m_Type == CVARTYPE_WORD || m_Type == CVARTYPE_INT;
+		bool floating_type = m_Type == CVARTYPE_FLOAT;
+		float valf = numerical_value ? atof(valstr) : 0.0f;
+
+		// perform rounding to nearest integer for integral types
+		if (integral_type)
+			valf = floor(valf + 0.5f);
+
+		valf = clamp(valf, m_MinValue, m_MaxValue);
+
+		if (numerical_value || integral_type || floating_type)
 		{
-			m_String = val;
-            m_Value = atof(val);
+			// generate m_String based on the clamped valf value
+			char tmp[32];
+			sprintf(tmp, "%g", valf);
+			m_String = tmp;
 		}
 		else
 		{
-			m_String = "";
-            m_Value = 0.0f;
+			// just set m_String to valstr
+			if (valstr)
+				m_String = valstr;
+			else
+				m_String.clear();
 		}
 
+		m_Value = valf;
+
 		if (m_Flags & CVAR_USERINFO)
-			D_UserInfoChanged (this);
+			D_UserInfoChanged(this);
 		if (m_Flags & CVAR_SERVERINFO)
-			D_SendServerInfoChange (this, val);
+			D_SendServerInfoChange(this, m_String.c_str());
 
 		if (m_UseCallback)
-			Callback ();
+			Callback();
 	}
+
 	m_Flags &= ~CVAR_ISDEFAULT;
 }
 
-void cvar_t::ForceSet (float val)
+
+void cvar_t::ForceSet(float val)
 {
 	char string[32];
-
-	sprintf (string, "%g", val);
-	ForceSet (string);
+	sprintf(string, "%g", val);
+	ForceSet(string);
 }
 
 void cvar_t::Set (const char *val)
@@ -520,8 +555,8 @@ void cvar_t::C_ArchiveCVars (void *f)
 
 	while (cvar)
 	{
-		if ((cvar->m_Flags & CVAR_ARCHIVE) || (baseapp == client && cvar->m_Flags & CVAR_CLIENTARCHIVE)
-			|| (baseapp == server && cvar->m_Flags & CVAR_SERVERARCHIVE))
+		if ((baseapp == client && (cvar->m_Flags & CVAR_CLIENTARCHIVE))
+			|| (baseapp == server && (cvar->m_Flags & CVAR_SERVERARCHIVE)))
 		{
 			fprintf ((FILE *)f, "// %s\n", cvar->helptext());
 			fprintf ((FILE *)f, "set %s %s\n\n", C_QuoteString(cvar->name()).c_str(), C_QuoteString(cvar->cstring()).c_str());

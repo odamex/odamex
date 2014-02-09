@@ -59,19 +59,12 @@ bool		st_firsttime;
 // lump number for PLAYPAL
 static int		lu_palette;
 
-EXTERN_CVAR (idmypos)
-EXTERN_CVAR (noisedebug)
-EXTERN_CVAR (sv_allowredscreen)
-EXTERN_CVAR (screenblocks)
-EXTERN_CVAR (hud_fullhudtype)
-
-CVAR_FUNC_IMPL (r_painintensity)
-{
-	if (var < 0.f)
-		var.Set (0.f);
-	if (var > 1.f)
-		var.Set (1.f);
-}
+EXTERN_CVAR(idmypos)
+EXTERN_CVAR(noisedebug)
+EXTERN_CVAR(sv_allowredscreen)
+EXTERN_CVAR(screenblocks)
+EXTERN_CVAR(hud_fullhudtype)
+EXTERN_CVAR(r_painintensity)
 
 extern int SquareWidth;
 

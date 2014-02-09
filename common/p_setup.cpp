@@ -236,7 +236,7 @@ void P_LoadSegs (int lump)
 			li->backsector = 0;
 			ldef->flags &= ~ML_TWOSIDED;
 		}
-	
+
 		// recalculate seg offsets. values in wads are untrustworthy.
 		vertex_t *from = (side == 0)
 			? ldef->v1			// right side: offset is from start of linedef
@@ -272,8 +272,8 @@ void P_LoadSubsectors (int lump)
 
 	for (i = 0; i < numsubsectors; i++)
 	{
-		subsectors[i].numlines = LESHORT(((mapsubsector_t *)data)[i].numsegs);
-		subsectors[i].firstline = LESHORT(((mapsubsector_t *)data)[i].firstseg);
+		subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].numsegs);
+		subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].firstseg);
 	}
 
 	Z_Free (data);
@@ -357,7 +357,7 @@ void P_LoadSectors (int lump)
 		// Slopes will be setup later
 		P_SetupLevelFloorPlane(ss);
 		P_SetupLevelCeilingPlane(ss);
-		
+
 		ss->gravity = 1.0f;	// [RH] Default sector gravity of 1.0
 
 		// [RH] Sectors default to white light with the default fade.
@@ -1313,7 +1313,7 @@ void P_LoadBlockMap (int lump)
 {
 	int count;
 
-	if (Args.CheckParm("-blockmap") || (count = W_LumpLength(lump)/2) >= 0x10000 || count < 4) 
+	if (Args.CheckParm("-blockmap") || (count = W_LumpLength(lump)/2) >= 0x10000 || count < 4)
 		P_CreateBlockMap();
 	else
 	{
@@ -1374,7 +1374,7 @@ void P_GroupLines (void)
 	for (i = 0; i < numsubsectors; i++)
 	{
 		if (subsectors[i].firstline >= (unsigned int)numsegs)
-			I_Error("subsector[%d].firstline exceeds numsegs (%u)", i, numlines);
+			I_Error("subsector[%d].firstline exceeds numsegs (%u)", i, numsegs);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
 	}
 
@@ -1511,7 +1511,7 @@ static void P_RemoveSlimeTrails()
 				{
 					hit[v - vertexes] = 1;			// Mark this vertex as processed
 					if (v != l->v1 && v != l->v2)	// Exclude endpoints of linedefs
-					{ 
+					{
 						// Project the vertex back onto the parent linedef
 						int64_t dx2 = (l->dx >> FRACBITS) * (l->dx >> FRACBITS);
 						int64_t dy2 = (l->dy >> FRACBITS) * (l->dy >> FRACBITS);
@@ -1739,29 +1739,13 @@ void P_Init (void)
 
 // [ML] Do stuff when the timelimit is reset
 // Where else can I put this??
-CVAR_FUNC_IMPL (sv_timelimit)
+CVAR_FUNC_IMPL(sv_timelimit)
 {
-	if (var < 0)
-		var.Set(0.0f);
-
-	// timeleft is transmitted as a short so cap the sv_timelimit at the maximum
-	// for timeleft, which is 9.1 hours
-	if (var > MAXSHORT / 60)
-		var.Set(MAXSHORT / 60);
-
 	level.timeleft = var * TICRATE * 60;
 }
 
-CVAR_FUNC_IMPL (sv_intermissionlimit)
+CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
-	if (var < 0)
-		var.Set(0.0f);
-
-	// intermissionleft is transmitted as a short so cap the sv_timelimit at the maximum
-	// for timeleft, which is 9.1 hours
-	if (var > MAXSHORT)
-		var.Set(MAXSHORT);
-
 	level.inttimeleft = (var < 1 ? DEFINTSECS : var);
 }
 
@@ -1770,7 +1754,7 @@ static void P_SetupLevelFloorPlane(sector_t *sector)
 {
 	if (!sector)
 		return;
-	
+
 	sector->floorplane.a = sector->floorplane.b = 0;
 	sector->floorplane.c = sector->floorplane.invc = FRACUNIT;
 	sector->floorplane.d = -sector->floorheight;
@@ -1782,7 +1766,7 @@ static void P_SetupLevelCeilingPlane(sector_t *sector)
 {
 	if (!sector)
 		return;
-	
+
 	sector->ceilingplane.a = sector->ceilingplane.b = 0;
 	sector->ceilingplane.c = sector->ceilingplane.invc = -FRACUNIT;
 	sector->ceilingplane.d = sector->ceilingheight;
@@ -1847,7 +1831,7 @@ void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
 	M_NormalizeVec3f(&cross, &cross);
 
 	// Fix backward normals
-	if ((cross.z < 0 && floor == true) || (cross.z > 0 && floor == false)) 
+	if ((cross.z < 0 && floor == true) || (cross.z > 0 && floor == false))
 	{
 		cross.x = -cross.x;
 		cross.y = -cross.y;
@@ -1873,19 +1857,19 @@ static void P_SetupSlopes()
 		{
 			line->special = 0;
 			line->id = line->args[2];
-			
+
 			// Floor plane?
 			int align_side = line->args[0] & 3;
 			if (align_side == 1)
 				P_SetupPlane(line->frontsector, line, true);
 			else if (align_side == 2)
 				P_SetupPlane(line->backsector, line, true);
-				
+
 			// Ceiling plane?
 			align_side = line->args[1] & 3;
 			if (align_side == 0)
 				align_side = (line->args[0] >> 2) & 3;
-			
+
 			if (align_side == 1)
 				P_SetupPlane(line->frontsector, line, false);
 			else if (align_side == 2)

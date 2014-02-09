@@ -611,6 +611,8 @@ forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t
 	);
 }
 
+void V_DrawFPSWidget();
+void V_DrawFPSTicker();
 
 #endif // __V_VIDEO_H__
 

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -45,25 +45,25 @@ EXTERN_CVAR (sv_timelimit)
 
 extern unsigned int last_revision;
 
-struct CvarField_t 
-{ 
+struct CvarField_t
+{
     std::string Name;
     std::string Value;
     cvartype_t Type;
 } CvarField;
 
-// The TAG identifier, changing this to a new value WILL break any application 
+// The TAG identifier, changing this to a new value WILL break any application
 // trying to contact this one that does not have the exact same value
 #define TAG_ID 0xAD0
 
 // When a change to the protocol is made, this value must be incremented
 #define PROTOCOL_VERSION 5
 
-/* 
+/*
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
     with every new major/minor version
 */
-   
+
 // Specifies when data was added to the protocol, the parameter is the
 // introduced revision
 // NOTE: this one is different from the launchers version for a reason
@@ -79,7 +79,7 @@ struct CvarField_t
 // IntQryBuildInformation()
 //
 // Protocol building routine, the passed parameter is the enquirer version
-static void IntQryBuildInformation(const DWORD &EqProtocolVersion, 
+static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
     const DWORD &EqTime)
 {
     std::vector<CvarField_t> Cvars;
@@ -95,7 +95,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
     MSG_WriteLong(&ml_message, last_revision);
 
     cvar_t *var = GetFirstCvar();
-    
+
     // Count our cvars and add them
     while (var)
     {
@@ -111,22 +111,22 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
                 Cvars.push_back(CvarField);
                 goto next;
             }
-            
+
             // Skip other types with 0
             if (var->value() != 0.0f)
                 Cvars.push_back(CvarField);
         }
-        
+
         next:
         var = var->GetNext();
     }
-    
+
     // Cvar count
     MSG_WriteByte(&ml_message, (BYTE)Cvars.size());
-    
+
     // Write cvars
     for (size_t i = 0; i < Cvars.size(); ++i)
-	{              
+	{
         MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
 
         // TODO: Remove next release
@@ -155,7 +155,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
                 }
                 break;
 
-                case CVARTYPE_FLOAT:               
+                case CVARTYPE_FLOAT:
                 case CVARTYPE_STRING:
                 {
                     MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
@@ -173,7 +173,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
             MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
         }
 	}
-	
+
 	// TODO: Remove next release
 	QRYNEWINFO(4)
         MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
@@ -181,13 +181,13 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
         MSG_WriteString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
 
 	MSG_WriteString(&ml_message, level.mapname);
-	
+
     int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
-	if (timeleft < 0) 
+	if (timeleft < 0)
         timeleft = 0;
-        
+
     MSG_WriteShort(&ml_message, timeleft);
-    
+
     // TODO: Remove next release
     QRYNEWINFO(5)
     {
@@ -195,7 +195,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
         {
             // Team data
             MSG_WriteByte(&ml_message, 2);
-    
+
             // Blue
             MSG_WriteString(&ml_message, "Blue");
             MSG_WriteLong(&ml_message, 0x000000FF);
@@ -224,39 +224,39 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
     // TODO: When real dynamic teams are implemented
     //byte TeamCount = (byte)sv_teamsinplay;
     //MSG_WriteByte(&ml_message, TeamCount);
-    
+
     //for (byte i = 0; i < TeamCount; ++i)
     //{
         // TODO - Figure out where the info resides
         //MSG_WriteString(&ml_message, "");
         //MSG_WriteLong(&ml_message, 0);
-        //MSG_WriteShort(&ml_message, TEAMpoints[i]);        
+        //MSG_WriteShort(&ml_message, TEAMpoints[i]);
     //}
 
-	// Patch files	
+	// Patch files
 	MSG_WriteByte(&ml_message, patchfiles.size());
-	
+
 	for (size_t i = 0; i < patchfiles.size(); ++i)
 	{
         MSG_WriteString(&ml_message, D_CleanseFileName(patchfiles[i]).c_str());
 	}
-	
+
 	// Wad files
 	MSG_WriteByte(&ml_message, wadfiles.size());
-	
+
 	for (size_t i = 0; i < wadfiles.size(); ++i)
     {
         MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
-        
+
         // TODO: Remove next release
         QRYNEWINFO(4)
             MSG_WriteHexString(&ml_message, wadhashes[i].c_str());
         else
             MSG_WriteString(&ml_message, wadhashes[i].c_str());
     }
-    
+
     MSG_WriteByte(&ml_message, players.size());
-    
+
     // Player info
     for (Players::iterator it = players.begin();it != players.end();++it)
     {
@@ -266,7 +266,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
         // TODO: Remove next release
         QRYNEWINFO(5)
         {
-            if (sv_gametype == GM_TEAMDM)
+            if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
                 MSG_WriteByte(&ml_message, it->userinfo.team);
         }
         else
@@ -275,7 +275,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
         MSG_WriteShort(&ml_message, it->ping);
 
         int timeingame = (time(NULL) - it->JoinTime) / 60;
-        if (timeingame < 0) 
+        if (timeingame < 0)
             timeingame = 0;
 
         MSG_WriteShort(&ml_message, timeingame);
@@ -299,10 +299,10 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
 
 //
 // IntQrySendResponse()
-// 
+//
 // Sends information regarding the type of information we received (ie: it will
 // send data that is wanted by the enquirer program)
-static DWORD IntQrySendResponse(const WORD &TagId, 
+static DWORD IntQrySendResponse(const WORD &TagId,
                                 const BYTE &TagApplication,
                                 const BYTE &TagQRId,
                                 const WORD &TagPacketType)
@@ -311,7 +311,7 @@ static DWORD IntQrySendResponse(const WORD &TagId,
     if (TagQRId != 1)
     {
         //Printf("Query/Response Id is not valid");
-        
+
         return 0;
     }
 
@@ -323,7 +323,7 @@ static DWORD IntQrySendResponse(const WORD &TagId,
             //Printf(PRINT_HIGH, "Application is Enquirer");
         }
         break;
-        
+
         case 2:
         {
             //Printf(PRINT_HIGH, "Application is Client");
@@ -341,20 +341,20 @@ static DWORD IntQrySendResponse(const WORD &TagId,
             //Printf(PRINT_HIGH, "Application is Master Server");
         }
         break;
-        
+
         default:
         {
             //Printf("Application is Unknown");
         }
         break;
     }
-       
+
     DWORD ReTag = 0;
     WORD ReId = TAG_ID;
     BYTE ReApplication = 3;
     BYTE ReQRId = 2;
-    WORD RePacketType = 0;    
-    
+    WORD RePacketType = 0;
+
     switch (TagPacketType)
     {
         // Request version
@@ -384,52 +384,52 @@ static DWORD IntQrySendResponse(const WORD &TagId,
     }
 
     // Override other packet types for older enquirer version response
-    if (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) || 
+    if (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) ||
         (VERSIONMAJOR(EqVersion) <= VERSIONMAJOR(GAMEVER) && VERSIONMINOR(EqVersion) < VERSIONMINOR(GAMEVER)))
     {
         RePacketType = 2;
     }
-    
+
     // Encode our tag
-    ReTag = (((ReId << 20) & 0xFFF00000) | 
-             ((ReApplication << 16) & 0x000F0000) | 
-             ((ReQRId << 12) & 0x0000F000) | (RePacketType & 0x00000FFF));   
-           
+    ReTag = (((ReId << 20) & 0xFFF00000) |
+             ((ReApplication << 16) & 0x000F0000) |
+             ((ReQRId << 12) & 0x0000F000) | (RePacketType & 0x00000FFF));
+
     // Clear our message buffer for a response
     SZ_Clear(&ml_message);
 
     MSG_WriteLong(&ml_message, ReTag);
     MSG_WriteLong(&ml_message, GAMEVER);
-    
+
     // Enquirer requested the version info of the server or the server
     // determined it is an old version
     if (RePacketType == 1 || RePacketType == 2)
-    {       
+    {
         // bond - real protocol
         MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
 
         MSG_WriteLong(&ml_message, EqTime);
 
         NET_SendPacket(ml_message, net_from);
-        
+
         //Printf(PRINT_HIGH, "Application is old version\n");
-        
+
         return 0;
     }
-    
+
     // If the enquirer protocol is newer, send the latest information the
     // server supports, otherwise send information built to the their version
     if (EqProtocolVersion > PROTOCOL_VERSION)
     {
         EqProtocolVersion = PROTOCOL_VERSION;
-        
+
         MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
     }
     else
         MSG_WriteLong(&ml_message, EqProtocolVersion);
-    
+
     IntQryBuildInformation(EqProtocolVersion, EqTime);
-    
+
     NET_SendPacket(ml_message, net_from);
 
     //Printf(PRINT_HIGH, "Success, data sent\n");
@@ -442,20 +442,20 @@ static DWORD IntQrySendResponse(const WORD &TagId,
 //
 // This decodes the Tag field
 DWORD SV_QryParseEnquiry(const DWORD &Tag)
-{   
+{
     // Decode the tag into its fields
     // TODO: this may not be 100% correct
     WORD TagId = ((Tag >> 20) & 0x0FFF);
     BYTE TagApplication = ((Tag >> 16) & 0x0F);
     BYTE TagQRId = ((Tag >> 12) & 0x0F);
     WORD TagPacketType = (Tag & 0xFFFF0FFF);
-    
-    // It is not ours 
+
+    // It is not ours
     if (TagId != TAG_ID)
     {
         return 1;
     }
-    
+
     return IntQrySendResponse(TagId, TagApplication, TagQRId, TagPacketType);
 }
 

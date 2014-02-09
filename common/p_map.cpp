@@ -2720,12 +2720,9 @@ static int			bombmod;
 // [RH] Damage scale to apply to thing that shot the missile. (co_zdoomphys)
 static float selfthrustscale;
 
-CVAR_FUNC_IMPL (sv_splashfactor)
+CVAR_FUNC_IMPL(sv_splashfactor)
 {
-	if (var <= 0.0f)
-		var.Set (1.0f);
-	else
-		selfthrustscale = 1.0f / var;
+	selfthrustscale = 1.0f / var;
 }
 
 
