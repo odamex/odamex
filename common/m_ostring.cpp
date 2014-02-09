@@ -786,7 +786,7 @@ OString OStringToUpper(const OString& str, size_t n)
 		char* out = ustr;
 		const char* in = str.c_str();
 
-		for (int i = 0; i < length; i++)
+		for (size_t i = 0; i < length; i++)
 			*out++	= toupper(*in++);
 		ustr[length] = 0;
 	
@@ -798,7 +798,7 @@ OString OStringToUpper(const OString& str, size_t n)
 		char* out = ustr;
 		const char* in = str.c_str();
 
-		for (int i = 0; i < length; i++)
+		for (size_t i = 0; i < length; i++)
 			*out++	= toupper(*in++);
 		ustr[length] = 0;
 
@@ -819,7 +819,7 @@ OString OStringToLower(const OString& str, size_t n)
 		char* out = ustr;
 		const char* in = str.c_str();
 
-		for (int i = 0; i < length; i++)
+		for (size_t i = 0; i < length; i++)
 			*out++	= tolower(*in++);
 		ustr[length] = 0;
 	
@@ -831,7 +831,7 @@ OString OStringToLower(const OString& str, size_t n)
 		char* out = ustr;
 		const char* in = str.c_str();
 
-		for (int i = 0; i < length; i++)
+		for (size_t i = 0; i < length; i++)
 			*out++	= tolower(*in++);
 		ustr[length] = 0;
 

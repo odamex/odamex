@@ -571,8 +571,6 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 void R_InitTextureMapping (void)
 {
 	const fixed_t hitan = finetangent[FINEANGLES/4+CorrectFieldOfView/2];
-	const fixed_t lotan = finetangent[FINEANGLES/4-CorrectFieldOfView/2];
-	const int highend = viewwidth + 1;
 	fovtan = hitan; 
 
 	// Calc focallength so FieldOfView angles covers viewwidth.
