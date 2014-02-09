@@ -556,8 +556,11 @@ void CL_SpyCycle(bool forward)
     {
         curr = (curr + direction) % numplayers;
         player_t &player = players[curr];
+		player_t &self = consoleplayer();
 
-        if (P_CanSpy(consoleplayer(), player) || player.id == consoleplayer_id ||
+        if (P_CanSpy(self, player) ||
+            // spectators only cycle between active players
+            (player.id == consoleplayer_id && !self.spectator) ||
             demoplayback || netdemo.isPlaying() || netdemo.isPaused())
         {
             if (!player.mo)
@@ -979,6 +982,14 @@ END_COMMAND (changeteams)
 
 BEGIN_COMMAND (spectate)
 {
+	if (consoleplayer().spectator)
+	{
+		// reset camera to self, do not send any messages
+		displayplayer_id = consoleplayer_id;
+		CL_CheckDisplayPlayer();
+		return;
+	}
+
 	MSG_WriteMarker(&net_buffer, clc_spectate);
 	MSG_WriteByte(&net_buffer, true);
 }
