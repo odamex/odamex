@@ -1,6 +1,6 @@
 # Client flags
 if(NOT MSVC)
-  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -mtune=native")
 endif()
 
 global_compile_options()
