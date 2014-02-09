@@ -111,20 +111,12 @@ void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 
-CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
+CVAR_FUNC_IMPL (sv_maxclients)
 {
-<<<<<<< .working
-	if (var > MAXPLAYERS)
-		var.Set(MAXPLAYERS);
-
-	if (var < 0)
-		var.Set((float)0);
-
+	// Describes the max number of clients that are allowed to connect.
 	int count = var.asInt();
-	for (Players::iterator it = players.begin();it != players.end();)
-=======
-	while (players.size() > sv_maxclients)
->>>>>>> .merge-right.r4536
+	Players::iterator it = players.begin(); 
+	while (it != players.end())
 	{
 		if (count <= 0)
 		{
@@ -142,6 +134,7 @@ CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are a
 		}
 	}
 }
+
 
 CVAR_FUNC_IMPL (sv_maxplayers)
 {
@@ -165,7 +158,8 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 				SV_BroadcastPrintf (PRINT_HIGH, "%s became a spectator.\n", it->userinfo.netname.c_str());
 				MSG_WriteMarker (&(it->client.reliablebuf), svc_print);
 				MSG_WriteByte (&(it->client.reliablebuf), PRINT_CHAT);
-				MSG_WriteString (&(it->client.reliablebuf), "Active player limit reduced. You are now a spectator!\n");
+				MSG_WriteString (&(it->client.reliablebuf),
+								"Active player limit reduced. You are now a spectator!\n");
 				it->spectator = true;
 				it->playerstate = PST_LIVE;
 				it->joinafterspectatortime = level.time;
