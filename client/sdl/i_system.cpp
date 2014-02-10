@@ -239,7 +239,7 @@ void I_EndRead(void)
 // [SL] Retrieve an arbitrarily-based time from a high-resolution timer with
 // nanosecond accuracy.
 //
-uint64_t I_GetTime()
+dtime_t I_GetTime()
 {
 #if defined OSX
 	clock_serv_t cclock;
@@ -293,17 +293,17 @@ uint64_t I_GetTime()
 #endif
 }
 
-QWORD I_MSTime()
+dtime_t I_MSTime()
 {
 	return I_ConvertTimeToMs(I_GetTime());
 }
 
-uint64_t I_ConvertTimeToMs(uint64_t value)
+dtime_t I_ConvertTimeToMs(dtime_t value)
 {
 	return value / 1000000LL;
 }
 
-uint64_t I_ConvertTimeFromMs(uint64_t value)
+dtime_t I_ConvertTimeFromMs(dtime_t value)
 {
 	return value * 1000000LL;
 }
@@ -316,7 +316,7 @@ uint64_t I_ConvertTimeFromMs(uint64_t value)
 // the select() function is 1 microsecond, but the nanosecond parameter
 // is used for consistency with I_GetTime().
 //
-void I_Sleep(uint64_t sleep_time)
+void I_Sleep(dtime_t sleep_time)
 {
 #if defined UNIX
 	usleep(sleep_time / 1000LL);

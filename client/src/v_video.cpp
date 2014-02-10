@@ -871,14 +871,14 @@ void DCanvas::DetachPalette ()
 //
 void V_DrawFPSWidget()
 {
-	static const uint64_t ONE_SECOND = I_ConvertTimeFromMs(1000);
+	static const dtime_t ONE_SECOND = I_ConvertTimeFromMs(1000);
 
-	static uint64_t last_time = I_GetTime();
-	static uint64_t time_accum = 0;
+	static dtime_t last_time = I_GetTime();
+	static dtime_t time_accum = 0;
 	static unsigned int frame_count = 0;
 
-	uint64_t current_time = I_GetTime();
-	uint64_t delta_time = current_time - last_time;
+	dtime_t current_time = I_GetTime();
+	dtime_t delta_time = current_time - last_time;
 	last_time = current_time;
 	frame_count++;
 

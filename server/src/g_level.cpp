@@ -89,7 +89,7 @@ extern int mapchange;
 extern int shotclock;
 
 // Start time for timing demos
-uint64_t starttime;
+dtime_t starttime;
 
 // ACS variables with world scope
 int ACS_WorldVars[NUM_WORLDVARS];

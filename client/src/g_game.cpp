@@ -2178,8 +2178,8 @@ BOOL G_CheckDemoStatus (void)
 		{
 			if (timingdemo)
 			{
-				extern uint64_t starttime;
-				uint64_t endtime = I_MSTime() - starttime;
+				extern dtime_t starttime;
+				dtime_t endtime = I_MSTime() - starttime;
 				int realtics = endtime * TICRATE / 1000;
 				float fps = float(gametic * TICRATE) / realtics;
 

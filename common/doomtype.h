@@ -158,6 +158,8 @@ typedef byte                palindex_t;
 // 32bpp ARGB color (A is usually 0)
 typedef DWORD               argb_t;
 
+typedef uint64_t			dtime_t;
+
 #ifdef _WIN32
 #define PATHSEP "\\"
 #define PATHSEPCHAR '\\'
