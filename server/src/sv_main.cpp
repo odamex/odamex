@@ -3108,14 +3108,14 @@ void SV_UpdatePing(client_t* cl)
 	if (!P_AtInterval(101))
 		return;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
 			continue;
 
-		MSG_WriteMarker(&(it->client.reliablebuf), svc_updateping);
-		MSG_WriteByte(&(it->client.reliablebuf), it->id);  // player
-		MSG_WriteLong(&(it->client.reliablebuf), it->ping);
+		MSG_WriteMarker(&cl->reliablebuf, svc_updateping);
+		MSG_WriteByte(&cl->reliablebuf, it->id);  // player
+		MSG_WriteLong(&cl->reliablebuf, it->ping);
 	}
 }
 
@@ -3253,7 +3253,7 @@ void SV_WriteCommands(void)
 	Unlag::getInstance().recordPlayerPositions();
 	Unlag::getInstance().recordSectorPositions();
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t *cl = &(it->client);
 
@@ -3341,7 +3341,8 @@ void SV_WriteCommands(void)
 		SV_UpdateMonsters(*it);
 
 		SV_SendPingRequest(cl);     // request ping reply
-		SV_UpdatePing(cl);          // client returns it
+
+		SV_UpdatePing(cl);          // send the ping value of all cients to this client
 	}
 
 	SV_UpdateDeadPlayers(); // Update dying players.
