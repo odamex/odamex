@@ -924,7 +924,7 @@ void V_DoPaletteEffects()
 		if (plyr->powers[pw_strength])
 			cnt = MAX(cnt, 12.0f - float(plyr->powers[pw_strength] >> 6));
 
-		if (cnt)
+		if (cnt > 0.0f)
 		{
 			palette = ((int)cnt + 7) >> 3;
 
@@ -965,39 +965,60 @@ void V_DoPaletteEffects()
 	else
 	{
 		float blend[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-		float cnt;
 
 		V_AddBlend(BaseBlendR / 255.0f, BaseBlendG / 255.0f, BaseBlendB / 255.0f, BaseBlendA, blend);
-
-		// 32bpp gets color blending approximated to the original palettes:
-		if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet] & 8)
-			V_AddBlend(0.0f, 1.0f, 0.0f, 0.125f, blend);
-
-		if (plyr->bonuscount)
-		{
-			cnt = (float)(plyr->bonuscount << 3);
-			V_AddBlend(0.8431f, 0.7294f, 0.2706f, cnt > 128 ? 0.5f : cnt / 255.0f, blend);
-		}
-
-		// NOTE(jsd): rewritten to better match 8bpp behavior
-		// 0 <= damagecount <= 100
-		cnt = (float)plyr->damagecount*3.5f;
-		if (!multiplayer || sv_allowredscreen)
-			cnt *= r_painintensity;
-
-		// slowly fade the berzerk out
-		if (plyr->powers[pw_strength])
-			cnt = MAX(cnt, 128.0f - float((plyr->powers[pw_strength]>>3) & (~0x1f)));
-	
-		cnt = clamp(cnt, 0.0f, 237.0f);
-
-		if (cnt > 0.0f)
-			V_AddBlend (1.0f, 0.0f, 0.0f, (cnt + 18.0f) / 255.0f, blend);
-
 		V_AddBlend(plyr->BlendR, plyr->BlendG, plyr->BlendB, plyr->BlendA, blend);
 
-		if (memcmp(blend, current_blend, sizeof(blend)))
-	        memcpy(current_blend, blend, sizeof(blend));
+		// red tint for pain / berzerk power
+		if (plyr->damagecount || plyr->powers[pw_strength])
+		{
+			float amount = (float)plyr->damagecount;
+			if (!multiplayer || sv_allowredscreen)
+				amount *= r_painintensity;
+
+			// slowly fade the berzerk out
+			if (plyr->powers[pw_strength])
+				amount = MAX(amount, 12.0f - float(plyr->powers[pw_strength]) / 64.0f);
+
+			if (amount > 0.0f)
+			{
+				amount = MIN(amount, 56.0f);
+				float alpha = (amount + 8.0f) / 72.0f;
+
+				static const float red = 255.0f / 255.0f;
+				static const float green = 0.0f;
+				static const float blue = 0.0f;
+				V_AddBlend(red, green, blue, alpha, blend);
+			}
+		}
+
+		// yellow tint for item pickup
+		if (plyr->bonuscount)
+		{
+			float amount = (float)plyr->bonuscount;
+			if (amount > 0.0f)
+			{
+				amount = MIN(amount, 24.0f);
+				float alpha = (amount + 8.0f) / 64.0f;				
+
+				static const float red = 215.0f / 255.0f;
+				static const float green = 186.0f / 255.0f;
+				static const float blue = 69.0f / 255.0f;
+				V_AddBlend(red, green, blue, alpha, blend);
+			}
+		}
+
+		// green tint for radiation suit
+		if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet] & 8)
+		{
+			static const float alpha = 1.0f / 8.0f;
+			static const float red = 0.0f;
+			static const float green = 255.0f / 255.0f;
+			static const float blue = 0.0f;
+			V_AddBlend(red, green, blue, alpha, blend);
+		}
+
+		memcpy(current_blend, blend, sizeof(blend));
 
 		V_SetBlend ((int)(blend[0] * 255.0f), (int)(blend[1] * 255.0f),
 					(int)(blend[2] * 255.0f), (int)(blend[3] * 256.0f));
