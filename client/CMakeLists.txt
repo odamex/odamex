@@ -58,6 +58,22 @@ else()
   message(WARNING "SDL_mixer not found, client target not generated.")
 endif()
 
+# zlib configuration
+find_package(ZLIB)
+if(ZLIB_FOUND)
+  include_directories(${ZLIB_INCLUDE_DIRS})
+else()
+  message(WARNING "zlib not found, client will be built without zlib support.")
+endif()
+
+# libpng configuration
+find_package(PNG)
+if(PNG_FOUND)
+  include_directories(${PNG_INCLUDE_DIRS})
+else()
+  message(WARNING "libpng not found, client will be built without PNG support.")
+endif()
+
 # PortMidi configuration
 if(USE_INTREE_PORTMIDI)
   include_directories(../portmidi/pm_common/ ../portmidi/porttime/)
@@ -95,6 +111,14 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
   target_link_libraries(odamex ${SDL_LIBRARY})
   target_link_libraries(odamex ${SDLMIXER_LIBRARY})
+
+  if(ZLIB_FOUND)
+    target_link_libraries(odamex ${ZLIB_LIBRARY})
+  endif()
+
+  if(PNG_FOUND)
+    target_link_libraries(odamex ${PNG_LIBRARY})
+  endif()
 
   if(USE_INTREE_PORTMIDI)
     target_link_libraries(odamex portmidi-static)
