@@ -3280,7 +3280,7 @@ void SV_WriteCommands(void)
 					continue;
 
 				// GhostlyDeath -- Screw spectators
-				if (it->spectator)
+				if (pit->spectator)
 					continue;
 
 				if(!SV_IsPlayerAllowedToSee(*it, pit->mo))
