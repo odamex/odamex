@@ -34,8 +34,10 @@
 #include <cassert>
 #include <stdio.h>
 
+#include "doomtype.h"
 #include "sarray.h"
 #include "hashtable.h"
+
 
 class OString;
 
