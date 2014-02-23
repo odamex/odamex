@@ -46,6 +46,47 @@
 #include "g_game.h"
 #include "i_input.h"
 
+#ifdef USE_PNG
+	#define PNG_SKIP_SETJMP_CHECK
+	#include <setjmp.h>		// used for error handling by libpng
+
+	#include <zlib.h>
+	#include <png.h>
+
+	#if (PNG_LIBPNG_VER < 10400)
+		// [SL] add data types to support versions of libpng prior to 1.4.0
+
+		/* png_alloc_size_t is guaranteed to be no smaller than png_size_t,
+		 * and no smaller than png_uint_32.  Casts from png_size_t or png_uint_32
+		 * to png_alloc_size_t are not necessary; in fact, it is recommended
+		 * not to use them at all so that the compiler can complain when something
+		 * turns out to be problematic.
+		 * Casts in the other direction (from png_alloc_size_t to png_size_t or
+		 * png_uint_32) should be explicitly applied; however, we do not expect
+		 * to encounter practical situations that require such conversions.
+		 */
+
+		#if defined(__TURBOC__) && !defined(__FLAT__)
+		   typedef unsigned long png_alloc_size_t;
+		#else
+		#  if defined(_MSC_VER) && defined(MAXSEG_64K)
+			 typedef unsigned long    png_alloc_size_t;
+		#  else
+			 /* This is an attempt to detect an old Windows system where (int) is
+			  * actually 16 bits, in that case png_malloc must have an argument with a
+			  * bigger size to accomodate the requirements of the library.
+			  */
+		#    if (defined(_Windows) || defined(_WINDOWS) || defined(_WINDOWS_)) && \
+				(!defined(INT_MAX) || INT_MAX <= 0x7ffffffeL)
+			   typedef DWORD         png_alloc_size_t;
+		#    else
+			   typedef png_size_t    png_alloc_size_t;
+		#    endif
+		#  endif
+		#endif
+	#endif	// PNG_LIBPNG_VER < 10400
+#endif	// USE_PNG
+
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 extern constate_e ConsoleState;
@@ -182,26 +223,330 @@ void I_SetWindowIcon(void)
 
 extern DWORD IndexedPalette[256];
 EXTERN_CVAR(cl_screenshotname)
+EXTERN_CVAR(gammalevel)
+EXTERN_CVAR(vid_gammatype)
 
-/*
-    Dump a screenshot as a bitmap (BMP) file
-*/
+
+//
+// I_SaveBMP
+//
+// Converts the SDL_Surface to BMP format and saves it to filename.
+//
+static int I_SaveBMP(const std::string& filename, SDL_Surface* surface, SDL_Color* colors)
+{
+	int result = SDL_SaveBMP(surface, filename.c_str());
+	return result;
+}
+
+
+#ifdef USE_PNG	// was libpng included in the build?
+//
+// I_SetPNGPalette
+//
+// Compose a palette of png_color from a palette of SDL_Color,
+// then set the png's PLTE chunk appropriately
+// Note: sdlpalette is assumed to contain 256 colors
+//
+static void I_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const SDL_Color* sdlpalette)
+{
+	if (!screen->is8bit())
+	{
+		Printf(PRINT_HIGH, "I_SetPNGPalette: Cannot create PNG PLTE chunk in 32-bit mode\n");
+		return;
+	}
+
+	png_color pngpalette[256];
+
+	for (int i = 0; i < 256; i++)
+	{
+		pngpalette[i].red   = (png_byte)sdlpalette[i].r;
+		pngpalette[i].green = (png_byte)sdlpalette[i].g;
+		pngpalette[i].blue  = (png_byte)sdlpalette[i].b;
+	}
+
+	png_set_PLTE(png_ptr, info_ptr, pngpalette, 256);
+}
+
+
+//
+// I_SetPNGComments
+//
+// Write comment lines to PNG file's tEXt chunk
+//
+static void I_SetPNGComments(png_struct *png_ptr, png_info *info_ptr, time_t *now)
+{
+	#ifdef PNG_TEXT_SUPPORTED
+	const int PNG_TEXT_LINES = 6;
+	png_text pngtext[PNG_TEXT_LINES];
+	int text_line = 0;
+	
+	// write text lines uncompressed
+	for (int i = 0; i < PNG_TEXT_LINES; i++)
+		pngtext[i].compression = PNG_TEXT_COMPRESSION_NONE;
+	
+	pngtext[text_line].key = "Description";
+	pngtext[text_line].text = "Odamex " DOTVERSIONSTR " Screenshot";
+	text_line++;
+	
+	char datebuf[80];
+	const char *dateformat = "%A, %B %d, %Y, %I:%M:%S %p GMT";
+	strftime(datebuf, sizeof(datebuf) / sizeof(char), dateformat, gmtime(now));
+	
+	pngtext[text_line].key = "Created Time";
+	pngtext[text_line].text = (png_charp)datebuf;
+	text_line++;
+	
+	pngtext[text_line].key = "Game Mode";
+	pngtext[text_line].text = (png_charp)(M_ExpandTokens("%g").c_str());
+	text_line++;
+	
+	pngtext[text_line].key = "In-Game Video Mode";
+	pngtext[text_line].text =
+		(screen->is8bit()) ? (png_charp)"8bpp" : (png_charp)"32bpp";
+	text_line++;
+	
+	char gammabuf[20];	// large enough to not overflow with three digits of precision
+	int gammabuflen = sprintf(gammabuf, "%#.3f", gammalevel.value());
+	
+	pngtext[text_line].key = "In-game Gamma Correction Level";
+	pngtext[text_line].text = (png_charp)gammabuf;
+	text_line++;
+	
+	pngtext[text_line].key = "In-Game Gamma Correction Type";
+	pngtext[text_line].text =
+		(vid_gammatype == 0) ? (png_charp)"Classic Doom" : (png_charp)"ZDoom";
+	text_line++;
+	
+	png_set_text(png_ptr, info_ptr, pngtext, PNG_TEXT_LINES);
+	#else
+	Printf(PRINT_HIGH, "I_SetPNGComments: Skipping PNG tEXt chunk\n");
+	#endif // PNG_TEXT_SUPPORTED
+}
+
+
+//
+// I_SavePNG
+//
+// Converts the SDL_Surface to PNG format and saves it to filename.
+// Supporting function for I_ScreenShot to output PNG files.
+//
+static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Color* colors)
+{
+	FILE* fp = fopen(filename.c_str(), "wb");
+	png_struct *png_ptr;
+	png_info *info_ptr;
+	SDL_PixelFormat *fmt = surface->format;
+	time_t now = time(NULL); // used for PNG text comments
+
+	if (fp == NULL)
+	{
+		Printf(PRINT_HIGH, "I_SavePNG: Could not open %s for writing\n", filename.c_str());
+		return -1;
+	}
+
+	// Initialize png_struct for writing
+	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (png_ptr == NULL)
+	{
+		fclose(fp);
+		Printf(PRINT_HIGH, "I_SavePNG: png_create_write_struct failed\n");
+		return -1;
+	}
+
+	// Init png_info struct
+	info_ptr = png_create_info_struct(png_ptr);
+	if (info_ptr == NULL)
+	{
+		fclose(fp);
+		png_destroy_write_struct(&png_ptr, (png_infop*)NULL);
+		Printf(PRINT_HIGH, "I_SavePNG: png_create_info_struct failed\n");
+		return -1;
+	}
+	
+	// libpng instances compiled without PNG_NO_SETJMP expect this;
+	// PNG_ABORT() is invoked instead if PNG_SETJMP_SUPPORTED was not defined
+	// see include/pnglibconf.h for libpng feature support macros
+	#ifdef PNG_SETJMP_SUPPORTED
+	int setjmp_result = setjmp(png_jmpbuf(png_ptr));
+	if (setjmp_result != 0)
+	{
+		fclose(fp);
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+		Printf(PRINT_HIGH, "I_SavePNG: setjmp failed with error code %d\n", setjmp_result);
+		return -1;
+	}
+	#endif // PNG_SETJMP_SUPPORTED
+
+	SDL_LockSurface(surface);
+
+	// is the screen paletted or 32-bit RGBA?
+	// note: we don't want to the preserve A channel in the screenshot if screen is RGBA
+	int png_colortype = screen->is8bit() ? PNG_COLOR_TYPE_PALETTE : PNG_COLOR_TYPE_RGB;
+	// write image dimensions to png file's IHDR chunk
+	png_set_IHDR
+		(png_ptr, info_ptr,
+		(png_uint_32)screen->width, (png_uint_32)screen->height,
+		8, // per channel; this is valid regardless of whether we're using 8bpp or 32bpp
+		png_colortype,
+		PNG_INTERLACE_NONE,
+		PNG_COMPRESSION_TYPE_DEFAULT,
+		PNG_FILTER_TYPE_DEFAULT);
+
+	// determine bpp mode, allocate memory space for PNG pixel data
+	int surface_bpp = fmt->BytesPerPixel;
+	int png_bpp = (screen->is8bit()) ? 1 : 3;
+	png_byte **row_ptrs = (png_byte**)png_malloc(png_ptr,
+		(png_alloc_size_t)(screen->height * sizeof(png_byte*)));
+	png_byte *row;
+	
+	for (int rownum = 0; rownum < screen->height; rownum++)
+	{
+		row = (png_byte*)png_malloc(png_ptr,
+			(png_alloc_size_t)(sizeof(uint8_t) * screen->width * png_bpp));
+		
+		if (row != NULL)
+		{
+			row_ptrs[rownum] = row;
+		}
+		else
+		{
+			for (int i = 0; i < rownum; i++)
+				png_free(png_ptr, row_ptrs[i]);
+
+			png_free(png_ptr, row_ptrs);
+			png_destroy_write_struct(&png_ptr, &info_ptr);
+			fclose(fp);
+			
+			Printf(PRINT_HIGH, "I_SavePNG: Not enough RAM to create PNG file\n");
+			return -1;
+		}
+	}
+	
+	Uint32 sdl_pixel32; // RGBA format SDL pixel (32bpp mode)
+	Uint8 r, g, b; // color components of an SDL pixel (32bpp mode)
+	Uint8 sdl_pixel8; // palette indexed SDA pixel (8bpp mdoe)
+	int x, y;
+	
+	// write PNG in either paletted or RGB form, according to the current screen mode
+	if (screen->is8bit())
+	{
+		I_SetPNGPalette(png_ptr, info_ptr, colors);
+		
+		for (y = 0; y < screen->height; y++)
+		{
+			row = row_ptrs[y];
+
+			for (x = 0; x < screen->width; x++)
+			{
+				// gather color index from current pixel of SDL surface,
+				// copy it to current pixel of PNG row
+				// note: this assumes that the PNG and SDL surface palettes match
+				sdl_pixel8 =
+					*((Uint8*)surface->pixels
+					+ (y * surface->pitch)
+					+ (x * surface_bpp));
+				*row++ = (png_byte)sdl_pixel8;
+			}
+		}
+	}
+	else
+	{
+		for (y = 0; y < screen->height; y++)
+		{
+			row = row_ptrs[y];
+			
+			for (x = 0; x < screen->width; x++)
+			{
+				// gather color components from current pixel of SDL surface
+				// note: SDL surface's alpha channel is ignored if present
+				void *position =
+					(surface->pixels
+					+ (y * surface->pitch)
+					+ (x * surface_bpp));
+				sdl_pixel32 = *((Uint32*)position); // this is silly
+				// these masks/shifts should be endianess independent?
+				// R/G/Bmask and R/G/Bshift are defined differently
+				// depending on endianess in the SDL source
+				r = (Uint8)((sdl_pixel32 & fmt->Rmask) >> fmt->Rshift);
+				g = (Uint8)((sdl_pixel32 & fmt->Gmask) >> fmt->Gshift);
+				b = (Uint8)((sdl_pixel32 & fmt->Bmask) >> fmt->Bshift);
+				
+				// write color components to current pixel of PNG row
+				// note: PNG is a big-endian file format
+				*row++ = (png_byte)r;
+				*row++ = (png_byte)g;
+				*row++ = (png_byte)b;
+			}
+		}
+	}
+	
+	// commit PNG image data to file
+	SDL_UnlockSurface(surface);
+	png_init_io(png_ptr, fp);
+	I_SetPNGComments(png_ptr, info_ptr, &now);
+	
+	// set PNG timestamp
+	#ifdef PNG_tIME_SUPPORTED
+	png_time pngtime;
+	png_convert_from_time_t(&pngtime, now);
+	png_set_tIME(png_ptr, info_ptr, &pngtime);
+	#else
+	Printf(PRINT_HIGH, "I_SavePNG: Skipping PNG tIME chunk\n");
+	#endif // PNG_tIME_SUPPORTED
+	
+	png_set_rows(png_ptr, info_ptr, row_ptrs);
+	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+	
+	// free allocated PNG image data
+	for (y = 0; y < screen->height; y++)
+		png_free(png_ptr, row_ptrs[y]);
+
+	png_free(png_ptr, row_ptrs);
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+	
+	fclose(fp);
+	return 0;
+}
+
+#endif // USE_PNG
+
+
+CVAR_FUNC_IMPL(cl_pngscreenshots)
+{
+	#ifndef USE_PNG 
+	// [SL] always force cl_pngscreenshots to be disabled if libpng support
+	// is not compiled-in.
+	if (var)
+	{
+		Printf(PRINT_HIGH, "Unable to set cl_pngscreenshots to %i. PNG support is disabled.\n", var.asInt());
+		var.Set(0.0f);
+	}
+	#endif	// USE_PNG
+}
+
+//
+// I_ScreenShot
+//
+// Dumps the contents of the screen framebuffer to a file. The default output
+// format is PNG (if libpng is found at compile-time) with BMP as the fallback.
+//
 void I_ScreenShot(std::string filename)
 {
-	SDL_Surface *surface;
 	SDL_Color colors[256];
-	DWORD *pal;
+	
+	// is PNG supported?
+	const std::string extension(cl_pngscreenshots ? "png" : "bmp");
 
 	// If no filename was passed, use the screenshot format variable.
-	if (filename.empty()) {
+	if (filename.empty())
 		filename = cl_screenshotname.cstring();
-	}
 
 	// Expand tokens
 	filename = M_ExpandTokens(filename).c_str();
 
 	// If the file already exists, append numbers.
-	if (!M_FindFreeName(filename, "bmp")) {
+	if (!M_FindFreeName(filename, extension))
+	{
 		Printf(PRINT_HIGH, "I_ScreenShot: Delete some screenshots\n");
 		return;
 	}
@@ -209,58 +554,78 @@ void I_ScreenShot(std::string filename)
 	// Create an SDL_Surface object from our screen buffer
 	screen->Lock();
 
-	surface = SDL_CreateRGBSurfaceFrom(screen->buffer, screen->width,
+	SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(screen->buffer, screen->width,
 									   screen->height, screen->bits, screen->pitch,
 									   0, 0, 0, 0);
 
 	screen->Unlock();
 
-	if (surface == NULL) {
+	if (surface == NULL)
+	{
 		Printf(PRINT_HIGH, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
 		return;
 	}
 
 	if (screen->is8bit())
 	{
-	// Set up the palette for our screen shot
-	pal = IndexedPalette;
+		// Set up the palette for our screen shot
+		const argb_t* pal = IndexedPalette;
 
-	for (int i = 0;i < 256;i += 1, pal++) {
-		colors[i].r = RPART(*pal);
-		colors[i].g = GPART(*pal);
-		colors[i].b = BPART(*pal);
-		colors[i].unused = 0;
+		for (int i = 0; i < 256; i += 1, pal++)
+		{
+			colors[i].r = RPART(*pal);
+			colors[i].g = GPART(*pal);
+			colors[i].b = BPART(*pal);
+			colors[i].unused = 0;
+		}
+
+		SDL_SetColors(surface, colors, 0, 256);
 	}
 
-	SDL_SetColors(surface, colors, 0, 256);
+	// [SL] note that cl_pngscreenshots will always be disabled if PNG support
+	// is not compiled-in (via the cl_pngscreenshots callback function).
+	if (cl_pngscreenshots)
+	{
+		#ifdef USE_PNG
+		int result = I_SavePNG(filename, surface, colors);
+		if (result != 0)
+		{
+			Printf(PRINT_HIGH, "I_SavePNG Error: Returned error code %d\n", result);
+			SDL_FreeSurface(surface);
+			return;
+		}
+		#endif	// USE_PNG
 	}
-
-	// save the bmp file
-	if(SDL_SaveBMP(surface, filename.c_str()) == -1) {
-		Printf(PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
-		SDL_FreeSurface(surface);
-		return;
+	else
+	{
+		int result = I_SaveBMP(filename, surface, colors);
+		if (result != 0)
+		{
+			Printf(PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
+			SDL_FreeSurface(surface);
+			return;
+		}
 	}
 
 	SDL_FreeSurface(surface);
 	Printf(PRINT_HIGH, "Screenshot taken: %s\n", filename.c_str());
 }
 
+
 BEGIN_COMMAND (screenshot)
 {
 	if (argc == 1)
-		G_ScreenShot (NULL);
+		G_ScreenShot(NULL);
 	else
-		G_ScreenShot (argv[1]);
+		G_ScreenShot(argv[1]);
 }
 END_COMMAND (screenshot)
 
 CVAR_FUNC_IMPL (cl_screenshotname)
 {
 	// No empty format strings allowed.
-	if (strlen(var.cstring()) == 0) {
+	if (strlen(var.cstring()) == 0)
 		var.RestoreDefault();
-	}
 }
 
 //
