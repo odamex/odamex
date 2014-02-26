@@ -284,23 +284,23 @@ static void I_SetPNGComments(png_struct *png_ptr, png_info *info_ptr, time_t *no
 	for (int i = 0; i < PNG_TEXT_LINES; i++)
 		pngtext[i].compression = PNG_TEXT_COMPRESSION_NONE;
 	
-	pngtext[text_line].key = "Description";
-	pngtext[text_line].text = "Odamex " DOTVERSIONSTR " Screenshot";
+	pngtext[text_line].key = (png_charp)"Description";
+	pngtext[text_line].text = (png_charp)("Odamex " DOTVERSIONSTR " Screenshot");
 	text_line++;
 	
 	char datebuf[80];
 	const char *dateformat = "%A, %B %d, %Y, %I:%M:%S %p GMT";
 	strftime(datebuf, sizeof(datebuf) / sizeof(char), dateformat, gmtime(now));
 	
-	pngtext[text_line].key = "Created Time";
+	pngtext[text_line].key = (png_charp)"Created Time";
 	pngtext[text_line].text = (png_charp)datebuf;
 	text_line++;
 	
-	pngtext[text_line].key = "Game Mode";
+	pngtext[text_line].key = (png_charp)"Game Mode";
 	pngtext[text_line].text = (png_charp)(M_ExpandTokens("%g").c_str());
 	text_line++;
 	
-	pngtext[text_line].key = "In-Game Video Mode";
+	pngtext[text_line].key = (png_charp)"In-Game Video Mode";
 	pngtext[text_line].text =
 		(screen->is8bit()) ? (png_charp)"8bpp" : (png_charp)"32bpp";
 	text_line++;
@@ -308,11 +308,11 @@ static void I_SetPNGComments(png_struct *png_ptr, png_info *info_ptr, time_t *no
 	char gammabuf[20];	// large enough to not overflow with three digits of precision
 	int gammabuflen = sprintf(gammabuf, "%#.3f", gammalevel.value());
 	
-	pngtext[text_line].key = "In-game Gamma Correction Level";
+	pngtext[text_line].key = (png_charp)"In-game Gamma Correction Level";
 	pngtext[text_line].text = (png_charp)gammabuf;
 	text_line++;
 	
-	pngtext[text_line].key = "In-Game Gamma Correction Type";
+	pngtext[text_line].key = (png_charp)"In-Game Gamma Correction Type";
 	pngtext[text_line].text =
 		(vid_gammatype == 0) ? (png_charp)"Classic Doom" : (png_charp)"ZDoom";
 	text_line++;
@@ -422,61 +422,53 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 		}
 	}
 	
-	Uint32 sdl_pixel32; // RGBA format SDL pixel (32bpp mode)
-	Uint8 r, g, b; // color components of an SDL pixel (32bpp mode)
-	Uint8 sdl_pixel8; // palette indexed SDA pixel (8bpp mdoe)
-	int x, y;
-	
 	// write PNG in either paletted or RGB form, according to the current screen mode
 	if (screen->is8bit())
 	{
 		I_SetPNGPalette(png_ptr, info_ptr, colors);
 		
-		for (y = 0; y < screen->height; y++)
+		const palindex_t* source = (palindex_t*)surface->pixels;
+		const int pitch_remainder = surface->pitch / sizeof(palindex_t) - screen->width;
+
+		for (int y = 0; y < screen->height; y++)
 		{
 			row = row_ptrs[y];
 
-			for (x = 0; x < screen->width; x++)
+			for (int x = 0; x < screen->width; x++)
 			{
 				// gather color index from current pixel of SDL surface,
 				// copy it to current pixel of PNG row
 				// note: this assumes that the PNG and SDL surface palettes match
-				sdl_pixel8 =
-					*((Uint8*)surface->pixels
-					+ (y * surface->pitch)
-					+ (x * surface_bpp));
-				*row++ = (png_byte)sdl_pixel8;
+				palindex_t pixel = *source++;
+				*row++ = (png_byte)pixel;
 			}
+
+			source += pitch_remainder;
 		}
 	}
 	else
 	{
-		for (y = 0; y < screen->height; y++)
+		const argb_t* source = (argb_t*)surface->pixels;
+		const int pitch_remainder = surface->pitch / sizeof(argb_t) - screen->width;
+
+		for (int y = 0; y < screen->height; y++)
 		{
 			row = row_ptrs[y];
 			
-			for (x = 0; x < screen->width; x++)
+			for (int x = 0; x < screen->width; x++)
 			{
 				// gather color components from current pixel of SDL surface
 				// note: SDL surface's alpha channel is ignored if present
-				void *position =
-					(surface->pixels
-					+ (y * surface->pitch)
-					+ (x * surface_bpp));
-				sdl_pixel32 = *((Uint32*)position); // this is silly
-				// these masks/shifts should be endianess independent?
-				// R/G/Bmask and R/G/Bshift are defined differently
-				// depending on endianess in the SDL source
-				r = (Uint8)((sdl_pixel32 & fmt->Rmask) >> fmt->Rshift);
-				g = (Uint8)((sdl_pixel32 & fmt->Gmask) >> fmt->Gshift);
-				b = (Uint8)((sdl_pixel32 & fmt->Bmask) >> fmt->Bshift);
-				
+				argb_t pixel = *source++;
+
 				// write color components to current pixel of PNG row
 				// note: PNG is a big-endian file format
-				*row++ = (png_byte)r;
-				*row++ = (png_byte)g;
-				*row++ = (png_byte)b;
+				*row++ = (png_byte)RPART(pixel);
+				*row++ = (png_byte)GPART(pixel);
+				*row++ = (png_byte)BPART(pixel);
 			}
+
+			source += pitch_remainder;
 		}
 	}
 	
@@ -498,7 +490,7 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
 	
 	// free allocated PNG image data
-	for (y = 0; y < screen->height; y++)
+	for (int y = 0; y < screen->height; y++)
 		png_free(png_ptr, row_ptrs[y]);
 
 	png_free(png_ptr, row_ptrs);
