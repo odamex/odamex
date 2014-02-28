@@ -40,10 +40,6 @@
 
 #include "dthinker.h"
 
-
-
-
-
 // Silhouette, needed for clipping Segs (mainly)
 // and sprites representing things.
 #define SIL_NONE				0
@@ -244,6 +240,7 @@ typedef struct sector_s sector_t;
 
 
 
+
 //
 // The SideDef.
 //
@@ -376,6 +373,8 @@ struct seg_s
 	// Could be retrieved from linedef, too.
 	sector_t*	frontsector;
 	sector_t*	backsector;		// NULL for one-sided lines
+
+	fixed_t		length;
 };
 typedef struct seg_s seg_t;
 
@@ -467,29 +466,27 @@ typedef struct tallpost_s tallpost_t;
 // OTHER TYPES
 //
 
-typedef byte lighttable_t;	// This could be wider for >8 bit display.
-
 struct drawseg_s
 {
-	seg_t*		curline;
+	seg_t*			curline;
 
-    int			x1;
-    int			x2;
+    int				x1;
+    int				x2;
 
-    fixed_t		scale1;
-    fixed_t		scale2;
-    fixed_t		scalestep;
+    fixed_t			scale1;
+    fixed_t			scale2;
+    fixed_t			scalestep;
 
-	fixed_t		light, lightstep;
+	fixed_t			light, lightstep;
 
     // 0=none, 1=bottom, 2=top, 3=both
-    int			silhouette;
+    int				silhouette;
 
     // Pointers to lists for sprite clipping,
     //  all three adjusted so [x1] is first value.
-    int*		sprtopclip;
-    int*		sprbottomclip;
-    int*		maskedtexturecol;
+    int*			sprtopclip;
+    int*			sprbottomclip;
+	tallpost_t**	midposts;
 };
 typedef struct drawseg_s drawseg_t;
 
@@ -519,29 +516,33 @@ public:
 typedef struct patch_s patch_t;
 
 
+
+
 // A vissprite_t is a thing
 //	that will be drawn during a refresh.
 // I.e. a sprite object that is partly visible.
 struct vissprite_s
 {
-    int			x1;
-    int			x2;
+    int				x1;
+    int				x2;
+	int				y1;
+	int				y2;
 
     // for line side calculation
-    fixed_t		gx;
-    fixed_t		gy;
+    fixed_t			gx;
+    fixed_t			gy;
 
     // global bottom / top for silhouette clipping
-    fixed_t		gz;
-    fixed_t		gzt;
+    fixed_t			gzb;
+    fixed_t			gzt;
 
     // horizontal position of x1
-    fixed_t		startfrac;
+    fixed_t			startfrac;
 
 	fixed_t			xscale, yscale;
 
     // negative if flipped
-    fixed_t		xiscale;
+    fixed_t			xiscale;
 
 	fixed_t			depth;
 	fixed_t			texturemid;
@@ -549,14 +550,16 @@ struct vissprite_s
 
     // for color translation and shadow draw,
     //  maxbright frames as well
-    lighttable_t*	colormap;
+    shaderef_t		colormap;
 
 	int 			mobjflags;
 
-	byte			*translation;	// [RH] for translation;
-	sector_t		*heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
+	translationref_t translation;	// [RH] for translation;
+	sector_t*		heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
 	fixed_t			translucency;
-	BYTE			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
+	byte			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
+
+	AActor*			mo;
 };
 typedef struct vissprite_s vissprite_t;
 
@@ -622,7 +625,7 @@ struct visplane_s
 	int			minx;
 	int			maxx;
 
-	byte		*colormap;			// [RH] Support multiple colormaps
+	shaderef_t	colormap;			// [RH] Support multiple colormaps
 	fixed_t		xscale, yscale;		// [RH] Support flat scaling
 	angle_t		angle;				// [RH] Support flat rotation
 

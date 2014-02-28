@@ -34,8 +34,10 @@
 #include <cassert>
 #include <stdio.h>
 
+#include "doomtype.h"
 #include "sarray.h"
 #include "hashtable.h"
+
 
 class OString;
 
@@ -629,6 +631,14 @@ private:
 template <> struct hashfunc<OString>
 {   size_t operator()(const OString& str) const { return str.mId; } };
 
+
+
+// ----------------------------------------------------------------------------
+// utility functions 
+// ----------------------------------------------------------------------------
+
+OString OStringToUpper(const OString& str, size_t n = OString::npos);
+OString OStringToLower(const OString& str, size_t n = OString::npos);
 
 #endif	// __M_OSTRING_H__
 

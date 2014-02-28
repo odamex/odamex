@@ -184,7 +184,6 @@ public:
 
 		friend class OHashTable<KT, VT, HF>;
 
-	private:
 		generic_iterator(IndexType bucketnum, IHTT* hashtable) :
 			mBucketNum(bucketnum), mHashTable(hashtable)
 		{
@@ -194,6 +193,8 @@ public:
 			if (mBucketNum >= mHashTable->mSize)
 				mBucketNum = IHTT::NOT_FOUND;
 		}
+
+	private:
 
 		IndexType	mBucketNum;
 		IHTT*		mHashTable;

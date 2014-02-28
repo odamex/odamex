@@ -52,7 +52,7 @@ void P_Ticker (void)
 	if(paused)
 		return;
 
-	if (!multiplayer && !demoplayback && menuactive && players[0].viewz != 1)
+	if (!multiplayer && !demoplayback && menuactive && players.begin()->viewz != 1)
 		return;
 
 	if (clientside)
@@ -60,18 +60,18 @@ void P_Ticker (void)
 
 	if((serverside && sv_speedhackfix) || (clientside && serverside))
 	{
-		for(size_t i = 0; i < players.size(); i++)
-			if(players[i].ingame())
-				P_PlayerThink (&players[i]);
+		for (Players::iterator it = players.begin();it != players.end();++it)
+			if (it->ingame())
+				P_PlayerThink(&*(it));
 	}
 
 	// [SL] 2011-06-05 - Tick player actor animations here since P_Ticker is
 	// called only once per tick.  AActor::RunThink is called whenever the
 	// server receives a cmd from the client, which can happen multiple times
 	// in a single gametic.
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		P_AnimationTick(players[i].mo);
+		P_AnimationTick(it->mo);
 	}
 
 	DThinker::RunThinkers ();

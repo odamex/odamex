@@ -771,5 +771,76 @@ void swap(::OString& x, ::OString& y)
 }
 };
 
+
+// ----------------------------------------------------------------------------
+// utility functions
+// ----------------------------------------------------------------------------
+
+OString OStringToUpper(const OString& str, size_t n)
+{
+	size_t length = std::min(str.length(), n);
+
+	if (length < 1024)
+	{
+		char ustr[1024];
+		char* out = ustr;
+		const char* in = str.c_str();
+
+		for (size_t i = 0; i < length; i++)
+			*out++	= toupper(*in++);
+		ustr[length] = 0;
+	
+		return OString(ustr);	
+	}
+	else
+	{
+		char* ustr = new char[length + 1];
+		char* out = ustr;
+		const char* in = str.c_str();
+
+		for (size_t i = 0; i < length; i++)
+			*out++	= toupper(*in++);
+		ustr[length] = 0;
+
+		OString result(ustr);
+		delete [] ustr;
+
+		return result;
+	}
+}
+
+OString OStringToLower(const OString& str, size_t n)
+{
+	size_t length = std::min(str.length(), n);
+
+	if (length < 1024)
+	{
+		char ustr[1024];
+		char* out = ustr;
+		const char* in = str.c_str();
+
+		for (size_t i = 0; i < length; i++)
+			*out++	= tolower(*in++);
+		ustr[length] = 0;
+	
+		return OString(ustr);	
+	}
+	else
+	{
+		char* ustr = new char[length + 1];
+		char* out = ustr;
+		const char* in = str.c_str();
+
+		for (size_t i = 0; i < length; i++)
+			*out++	= tolower(*in++);
+		ustr[length] = 0;
+
+		OString result(ustr);
+		delete [] ustr;
+
+		return result;
+	}
+}
+
 VERSION_CONTROL (m_ostring_cpp, "$Id:$")
 

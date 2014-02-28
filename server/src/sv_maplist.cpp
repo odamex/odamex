@@ -119,6 +119,13 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 		}
 	}
 
+	// capitalize the map name and WAD file names
+	maplist_entry.map = StdStringToUpper(maplist_entry.map);
+
+	for (std::vector<std::string>::iterator it = maplist_entry.wads.begin();
+		it != maplist_entry.wads.end(); ++it)
+		*it = StdStringToUpper(*it);
+
 	// Puts the map into its proper place
 	this->maplist.insert(this->maplist.begin() + position, maplist_entry);
 
@@ -745,9 +752,9 @@ BEGIN_COMMAND(clearmaplist) {
 	}
 } END_COMMAND(clearmaplist)
 
-CVAR_FUNC_IMPL(sv_shufflemaplist) {
-	bool setting = var.cstring()[0] != '0';
-	Maplist::instance().set_shuffle(setting);
+CVAR_FUNC_IMPL(sv_shufflemaplist)
+{
+	Maplist::instance().set_shuffle(var);
 }
 
 BEGIN_COMMAND (gotomap) {

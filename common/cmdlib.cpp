@@ -195,18 +195,54 @@ int ParseNum (char *str)
 
 // [RH] Returns true if the specified string is a valid decimal number
 
-BOOL IsNum (char *str)
+bool IsNum(const char* str)
 {
-	BOOL result = true;
+	bool result = true;
 
-	while (*str) {
-		if (((*str < '0') || (*str > '9')) && (*str != '-')) {
+	while (*str)
+	{
+		if (((*str < '0') || (*str > '9')) && (*str != '-'))
+		{
 			result = false;
 			break;
 		}
 		str++;
 	}
 	return result;
+}
+
+
+//
+// IsRealNum
+//
+// [SL] Returns true if the specified string is a valid real number
+//
+bool IsRealNum(const char* str)
+{
+	bool seen_decimal = false;
+
+	if (str == NULL || *str == 0)
+		return false;
+
+	if (str[0] == '+' || str[0] == '-')
+		str++;
+
+	while (*str)
+	{
+		if (*str == '.')
+		{
+			if (seen_decimal)
+				return false;		// second decimal point
+			else
+				seen_decimal = true;
+		}
+		else if (*str < '0' || *str > '9')
+			return false;
+
+		str++;
+	}
+
+	return true;
 }
 
 // [Russell] Returns 0 if strings are the same, optional parameter for case
@@ -249,40 +285,42 @@ size_t StdStringRFind(const std::string& haystack, const std::string& needle,
     return StdStringFind(haystack, needle, pos, n, CIS, true);
 }
 
-static std::string& StdStringToLowerBase(std::string& lower)
+static std::string& StdStringToLowerBase(std::string& lower, size_t n)
 {
-	std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+	std::string::iterator itend = n >= lower.length() ? lower.end() : lower.begin() + n;
+	std::transform(lower.begin(), itend, lower.begin(), ::tolower);
 	return lower;
 }
 
-std::string StdStringToLower(const std::string& str)
+std::string StdStringToLower(const std::string& str, size_t n)
 {
-	std::string lower(str);
-	return StdStringToLowerBase(lower);
+	std::string lower(str, 0, n);
+	return StdStringToLowerBase(lower, n);
 }
 
-std::string StdStringToLower(const char* str)
+std::string StdStringToLower(const char* str, size_t n)
 {
-	std::string lower(str);
-	return StdStringToLowerBase(lower);
+	std::string lower(str, 0, n);
+	return StdStringToLowerBase(lower, n);
 }
 
-static std::string& StdStringToUpperBase(std::string& upper)
+static std::string& StdStringToUpperBase(std::string& upper, size_t n)
 {
-	std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
-    return upper;
+	std::string::iterator itend = n >= upper.length() ? upper.end() : upper.begin() + n;
+	std::transform(upper.begin(), itend, upper.begin(), ::toupper);
+	return upper;
 }
 
-std::string StdStringToUpper(const std::string& str)
+std::string StdStringToUpper(const std::string& str, size_t n)
 {
-	std::string upper(str);
-	return StdStringToUpperBase(upper);
+	std::string upper(str, 0, n);
+	return StdStringToUpperBase(upper, n);
 }
 
-std::string StdStringToUpper(const char* str)
+std::string StdStringToUpper(const char* str, size_t n)
 {
-	std::string upper(str);
-	return StdStringToUpperBase(upper);
+	std::string upper(str, 0, n);
+	return StdStringToUpperBase(upper, n);
 }
 
 // [AM] Convert an argc/argv into a vector of strings.

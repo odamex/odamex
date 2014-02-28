@@ -285,7 +285,6 @@ int S_AddSoundLump (char *logicalname, int lump)
 	strcpy (S_sfx[numsfx].name, logicalname);
 	S_sfx[numsfx].data = NULL;
 	S_sfx[numsfx].link = NULL;
-	S_sfx[numsfx].usefulness = 0;
 	S_sfx[numsfx].lumpnum = lump;
 	return numsfx++;
 }

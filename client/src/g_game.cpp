@@ -128,7 +128,7 @@ BOOL			netgame;
 // Describes if this is a multiplayer game or not
 BOOL			multiplayer;
 // The player vector, contains all player information
-std::vector<player_t>		players;
+Players			players;
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
@@ -852,13 +852,14 @@ extern int connecttimeout;
 void G_Ticker (void)
 {
 	int 		buf;
-	size_t i;
 
 	// do player reborns if needed
 	if(serverside)
-		for (i = 0; i < players.size(); i++)
-			if (players[i].ingame() && (players[i].playerstate == PST_REBORN || players[i].playerstate == PST_ENTER))
-				G_DoReborn (players[i]);
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame() && (it->playerstate == PST_REBORN || it->playerstate == PST_ENTER))
+				G_DoReborn(*it);
+		}
 
 	// do things to change the game state
 	while (gameaction != ga_nothing)
@@ -1170,9 +1171,14 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	if (!player.mo)
 	{
 		// first spawn of level, before corpses
-		for (i = 0; i < players.size() && (&players[i] != &player); i++)
-			if (players[i].mo && players[i].mo->x == x && players[i].mo->y == y)
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (&player == &*it)
+				continue;
+
+			if (it->mo && it->mo->x == x && it->mo->y == y)
 				return false;
+		}
 		return true;
 	}
 
@@ -1678,7 +1684,7 @@ void G_ReadDemoTiccmd()
 	{
 		int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
 
-		for (size_t i = 0; i < players.size(); i++)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			if ((demo_e - demo_p < demostep) || (*demo_p == DEMOMARKER))
 			{
@@ -1687,19 +1693,19 @@ void G_ReadDemoTiccmd()
 				return;
 			}
 
-			players[i].cmd.forwardmove = ((signed char)*demo_p++) << 8;
-			players[i].cmd.sidemove = ((signed char)*demo_p++) << 8;
+			it->cmd.forwardmove = ((signed char)*demo_p++) << 8;
+			it->cmd.sidemove = ((signed char)*demo_p++) << 8;
 
 			if (demoversion == LMP_DOOM_1_9)
 			{
-				players[i].cmd.yaw = ((unsigned char)*demo_p++) << 8;
+				it->cmd.yaw = ((unsigned char)*demo_p++) << 8;
 			}
 			else
 			{
-				players[i].cmd.yaw = ((unsigned short)*demo_p++);
-				players[i].cmd.yaw |= ((unsigned short)*demo_p++) << 8;
+				it->cmd.yaw = ((unsigned short)*demo_p++);
+				it->cmd.yaw |= ((unsigned short)*demo_p++) << 8;
 			}
-			players[i].cmd.buttons = (unsigned char)*demo_p++;
+			it->cmd.buttons = (unsigned char)*demo_p++;
 		}
 	}
 }
@@ -1713,26 +1719,26 @@ void G_WriteDemoTiccmd ()
 
 	int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
 
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		byte *demo_p = demo_tmp;
+		byte* demo_p = demo_tmp;
 
-		*demo_p++ = players[i].cmd.forwardmove >> 8;
-		*demo_p++ = players[i].cmd.sidemove >> 8;
+		*demo_p++ = it->cmd.forwardmove >> 8;
+		*demo_p++ = it->cmd.sidemove >> 8;
 
 		// If this is a longtics demo, record in higher resolution
         if (LMP_DOOM_1_9_1 == demoversion)
 		{
-			*demo_p++ = (players[i].cmd.yaw & 0xff);
-			*demo_p++ = (players[i].cmd.yaw >> 8) & 0xff;
+			*demo_p++ = (it->cmd.yaw & 0xff);
+			*demo_p++ = (it->cmd.yaw >> 8) & 0xff;
 		}
 		else
 		{
-			*demo_p++ = players[i].cmd.yaw >> 8;
-			players[i].cmd.yaw = ((unsigned char)*(demo_p - 1)) << 8;
+			*demo_p++ = it->cmd.yaw >> 8;
+			it->cmd.yaw = ((unsigned char)*(demo_p - 1)) << 8;
 		}
 
-		*demo_p++ = players[i].cmd.buttons;
+		*demo_p++ = it->cmd.buttons;
 
 		fwrite(demo_tmp, demostep, 1, recorddemo_fp);
 	}
@@ -2034,9 +2040,9 @@ void G_DoPlayDemo(bool justStreamInput)
 				netgame = true;
 				multiplayer = true;
 
-				for (size_t i = 0; i < players.size(); i++)
-					if (players[i].ingame())
-						R_BuildClassicPlayerTranslation(players[i].id, i);
+				for (Players::iterator it = players.begin(); it != players.end(); ++it)
+					if (it->ingame())
+						R_BuildClassicPlayerTranslation(it->id, it->id - 1);
 			}
 			else
 			{
@@ -2172,8 +2178,8 @@ BOOL G_CheckDemoStatus (void)
 		{
 			if (timingdemo)
 			{
-				extern uint64_t starttime;
-				uint64_t endtime = I_MSTime() - starttime;
+				extern dtime_t starttime;
+				dtime_t endtime = I_MSTime() - starttime;
 				int realtics = endtime * TICRATE / 1000;
 				float fps = float(gametic * TICRATE) / realtics;
 

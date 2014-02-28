@@ -204,6 +204,8 @@ void *I_ZoneBase (size_t *size)
 
 void I_BeginRead(void)
 {
+	// NOTE(jsd): This is called before V_Palette is set causing crash in 32bpp mode.
+#if 0
 	if (r_loadicon)
 	{
 		patch_t *diskpatch = W_CachePatch("STDISK");
@@ -224,6 +226,7 @@ void I_BeginRead(void)
 
 		screen->Unlock();
 	}
+#endif
 }
 
 void I_EndRead(void)
@@ -236,7 +239,7 @@ void I_EndRead(void)
 // [SL] Retrieve an arbitrarily-based time from a high-resolution timer with
 // nanosecond accuracy.
 //
-uint64_t I_GetTime()
+dtime_t I_GetTime()
 {
 #if defined OSX
 	clock_serv_t cclock;
@@ -290,17 +293,17 @@ uint64_t I_GetTime()
 #endif
 }
 
-QWORD I_MSTime()
+dtime_t I_MSTime()
 {
 	return I_ConvertTimeToMs(I_GetTime());
 }
 
-uint64_t I_ConvertTimeToMs(uint64_t value)
+dtime_t I_ConvertTimeToMs(dtime_t value)
 {
 	return value / 1000000LL;
 }
 
-uint64_t I_ConvertTimeFromMs(uint64_t value)
+dtime_t I_ConvertTimeFromMs(dtime_t value)
 {
 	return value * 1000000LL;
 }
@@ -313,7 +316,7 @@ uint64_t I_ConvertTimeFromMs(uint64_t value)
 // the select() function is 1 microsecond, but the nanosecond parameter
 // is used for consistency with I_GetTime().
 //
-void I_Sleep(uint64_t sleep_time)
+void I_Sleep(dtime_t sleep_time)
 {
 #if defined UNIX
 	usleep(sleep_time / 1000LL);
@@ -723,7 +726,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 		va_list argptr;
 		va_start (argptr, error);
 		int index = vsprintf (errortext, error, argptr);
-		sprintf (errortext + index, "\nSDL_GetError = %s", SDL_GetError());
+		sprintf (errortext + index, "\nSDL_GetError = \"%s\"", SDL_GetError());
 		va_end (argptr);
 
 		throw CFatalError (errortext);
@@ -749,6 +752,18 @@ void STACK_ARGS I_Error (const char *error, ...)
 	va_end (argptr);
 
 	throw CRecoverableError (errortext);
+}
+
+void STACK_ARGS I_Warning(const char *warning, ...)
+{
+	va_list argptr;
+	char warningtext[MAX_ERRORTEXT];
+
+	va_start (argptr, warning);
+	vsprintf (warningtext, warning, argptr);
+	va_end (argptr);
+
+	Printf_Bold ("\n%s\n", warningtext);
 }
 
 char DoomStartupTitle[256] = { 0 };

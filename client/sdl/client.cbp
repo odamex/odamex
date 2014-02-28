@@ -15,10 +15,12 @@
 				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
-					<Add option="-O2" />
+					<Add option="-O3" />
+					<Add option="-mtune=native" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
+					<Add option="-DUSE_PNG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -47,6 +49,7 @@
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
+					<Add option="-DUSE_PNG" />
 				</Compiler>
 				<Linker>
 					<Add library="mingw32" />
@@ -72,6 +75,7 @@
 					<Add option="-DUNIX" />
 					<Add option="-DLINUX" />
 					<Add option="-DNDEBUG" />
+					<Add option="-DUSE_PNG" />
 					<Add directory="/usr/include/SDL" />
 				</Compiler>
 				<Linker>
@@ -95,6 +99,7 @@
 					<Add option="-DUNIX" />
 					<Add option="-DLINUX" />
 					<Add option="-D_DEBUG" />
+					<Add option="-DUSE_PNG" />
 					<Add directory="/usr/include/SDL" />
 				</Compiler>
 				<Linker>
@@ -116,6 +121,7 @@
 					<Add option="-DUNIX" />
 					<Add option="-DLINUX" />
 					<Add option="-DNDEBUG" />
+					<Add option="-DUSE_PNG" />
 					<Add directory="/usr/include/SDL" />
 				</Compiler>
 				<Linker>
@@ -138,6 +144,7 @@
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
+					<Add option="-DUSE_PNG" />
 				</Compiler>
 				<Linker>
 					<Add library="mingw32" />
@@ -174,6 +181,7 @@
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DPORTMIDI" />
+					<Add option="/DUSE_PNG" />
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
@@ -249,6 +257,7 @@
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DPORTMIDI" />
+					<Add option="/DUSE_PNG" />
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
@@ -308,6 +317,7 @@
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-DPORTMIDI" />
+			<Add option="-DUSE_PNG" />
 			<Add directory="." />
 			<Add directory="../src" />
 			<Add directory="../../common" />
@@ -534,6 +544,9 @@
 		<Unit filename="../src/r_bsp.cpp" />
 		<Unit filename="../src/r_draw.cpp" />
 		<Unit filename="../src/r_drawt.cpp" />
+		<Unit filename="../src/r_drawt_altivec.cpp" />
+		<Unit filename="../src/r_drawt_mmx.cpp" />
+		<Unit filename="../src/r_drawt_sse2.cpp" />
 		<Unit filename="../src/r_interp.cpp" />
 		<Unit filename="../src/r_main.cpp" />
 		<Unit filename="../src/r_plane.cpp" />

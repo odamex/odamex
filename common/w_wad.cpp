@@ -135,8 +135,39 @@ const gamewadinfo_t doomwadnames[] =
 		false
 	},
 
-    {	"FREEDOOM.WAD",
-		{ "" },
+	{	"FREEDOOM1.WAD",
+		{ "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
+		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
+		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
+		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
+		},
+		false
+	},
+
+	{	"FREEDOOMU.WAD",							// old alias for FREEDOOM1.WAD
+		{ "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
+		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
+		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
+		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
+		},
+		false
+	},
+
+    {	"FREEDOOM2.WAD",
+		{ "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
+		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
+		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
+		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
+		},
+		false
+	},
+
+    {	"FREEDOOM.WAD",								// old alias for FREEDOOM2.WAD
+		{ "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
+		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
+		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
+		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
+		},
 		false
 	},
 
@@ -319,100 +350,142 @@ std::string W_MD5(std::string filename)
 // LUMP BASED ROUTINES.
 //
 
+
+//
+// Names of lumps that can't be overridden by client-only PWADs
+//
+static const char* NonOverrideNames [] =
+{
+	"THINGS",
+	"LINEDEFS",
+	"SIDEDEFS",
+	"VERTEXES",
+	"SEGS",
+	"SSECTORS",
+	"NODES",
+	"SECTORS",
+	"REJECT",
+	"BLOCKMAP",
+	"BEHAVIOR",
+	"DECORATE",
+	"MAPINFO",
+	"PLAYPAL",
+	"COLORMAP",
+	""
+};
+
+
+//
+// W_AddLumps
+//
+// Adds lumps from the array of filelump_t. If clientonly is true,
+// only certain lumps will be added.
+//
+void W_AddLumps(FILE* handle, filelump_t* fileinfo, size_t newlumps, bool clientonly)
+{
+	lumpinfo = (lumpinfo_t*)Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t));
+	if (!lumpinfo)
+		I_Error("Couldn't realloc lumpinfo");
+
+	lumpinfo_t* lump = &lumpinfo[numlumps];
+	filelump_t* info = &fileinfo[0];
+
+	for (size_t i = 0; i < newlumps; i++, info++)
+	{
+		lump->handle = handle;
+		lump->position = info->filepos;
+		lump->size = info->size;
+		strncpy(lump->name, info->name, 8);
+
+		lump++;
+		numlumps++;
+	}
+}
+
+
 //
 // W_AddFile
-// All files are optional, but at least one file must be
-//  found (PWAD, if all required lumps are present).
-// Files with a .wad extension are wadlink files
-//  with multiple lumps.
-// Other files are single lumps with the base filename
-//  for the lump name.
 //
-// Map reloads are supported through WAD reload
-// so no need for vanilla tilde reload hack here
+// All files are optional, but at least one file must be found
+// (PWAD, if all required lumps are present).
+// Files with a .wad extension are wadlink files with multiple lumps.
+// Other files are single lumps with the base filename for the lump name.
 //
-
-std::string W_AddFile (std::string filename)
+// Map reloads are supported through WAD reload so no need for vanilla tilde
+// reload hack here
+//
+std::string W_AddFile(std::string filename)
 {
-	wadinfo_t		header;
-	FILE			*handle;
-	size_t			length;
-	size_t			startlump;
+	FILE*			handle;
 	filelump_t*		fileinfo;
 
-	FixPathSeparator (filename);
-	std::string name = filename;
-	M_AppendExtension (name, ".wad");
+	FixPathSeparator(filename);
 
-    // open the file
-	if ( (handle = fopen (filename.c_str(), "rb")) == NULL)
+	if ( (handle = fopen(filename.c_str(), "rb")) == NULL)
 	{
-		Printf (PRINT_HIGH, " couldn't open %s\n", filename.c_str());
+		Printf(PRINT_HIGH, "couldn't open %s\n", filename.c_str());
 		return "";
 	}
 
-	Printf (PRINT_HIGH, "adding %s\n", filename.c_str());
+	Printf(PRINT_HIGH, "adding %s", filename.c_str());
 
-	startlump = numlumps;
+	size_t newlumps;
 
-	fread (&header, sizeof(header), 1, handle);
+	wadinfo_t header;
+	fread(&header, sizeof(header), 1, handle);
 	header.identification = LELONG(header.identification);
 
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
 	{
 		// raw lump file
+		std::string lumpname;
+		M_ExtractFileBase(filename, lumpname);
+
 		fileinfo = new filelump_t[1];	
 		fileinfo->filepos = 0;
 		fileinfo->size = M_FileLength(handle);
-		M_ExtractFileBase(filename, name);
-		numlumps++;
-		Printf (PRINT_HIGH, " (single lump)\n", header.numlumps);
+		std::transform(lumpname.c_str(), lumpname.c_str() + 8, fileinfo->name, toupper);
+
+		newlumps = 1;
+		Printf(PRINT_HIGH, " (single lump)\n");
 	}
 	else
 	{
 		// WAD file
 		header.numlumps = LELONG(header.numlumps);
 		header.infotableofs = LELONG(header.infotableofs);
-		length = header.numlumps*sizeof(filelump_t);
+		size_t length = header.numlumps * sizeof(filelump_t);
 
-		if(length > (unsigned)M_FileLength(handle))
+		if (length > (unsigned)M_FileLength(handle))
 		{
-			Printf (PRINT_HIGH, " bad number of lumps for %s\n", filename.c_str());
+			Printf(PRINT_HIGH, "\nbad number of lumps for %s\n", filename.c_str());
 			fclose(handle);
 			return "";
 		}
 
 		fileinfo = new filelump_t[header.numlumps];
-		fseek (handle, header.infotableofs, SEEK_SET);
-		fread (fileinfo, length, 1, handle);
-		numlumps += header.numlumps;
-		Printf (PRINT_HIGH, " (%d lumps)\n", header.numlumps);
+		fseek(handle, header.infotableofs, SEEK_SET);
+		fread(fileinfo, length, 1, handle);
+
+		// convert from little-endian to target arch and capitalize lump name
+		for (int i = 0; i < header.numlumps; i++)
+		{
+			fileinfo[i].filepos = LELONG(fileinfo[i].filepos);
+			fileinfo[i].size = LELONG(fileinfo[i].size);
+			std::transform(fileinfo[i].name, fileinfo[i].name + 8, fileinfo[i].name, toupper);
+		}
+
+		newlumps = header.numlumps;	
+		Printf(PRINT_HIGH, " (%d lumps)\n", header.numlumps);
 	}
 
-    // Fill in lumpinfo
-	lumpinfo = (lumpinfo_t *)Realloc (lumpinfo, numlumps*sizeof(lumpinfo_t));
-
-	if (!lumpinfo)
-		I_Error ("Couldn't realloc lumpinfo");
-
-	lumpinfo_t* lump_p = &lumpinfo[startlump];
-	filelump_t* fileinfo_p = fileinfo;
-
-	for (size_t i = startlump; i < numlumps; i++, lump_p++, fileinfo_p++)
-	{
-		lump_p->handle = handle;
-		lump_p->position = LELONG(fileinfo_p->filepos);
-		lump_p->size = LELONG(fileinfo_p->size);
-		strncpy (lump_p->name, fileinfo_p->name, 8);
-
-		// W_CheckNumForName needs all lump names in upper case
-		std::transform(lump_p->name, lump_p->name+8, lump_p->name, toupper);
-	}
+	W_AddLumps(handle, fileinfo, newlumps, false);
 
 	delete [] fileinfo;
 
 	return W_MD5(filename);
 }
+
 
 //
 //

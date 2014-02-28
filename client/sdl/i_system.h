@@ -63,13 +63,13 @@ void *I_ZoneBase (size_t *size);
 
 
 // returns current time in nanoseconds.
-uint64_t I_GetTime();
+dtime_t I_GetTime();
 
-uint64_t I_ConvertTimeToMs(uint64_t value);
-uint64_t I_ConvertTimeFromMs(uint64_t value);
+dtime_t I_ConvertTimeToMs(dtime_t value);
+dtime_t I_ConvertTimeFromMs(dtime_t value);
 
 // yields to the OS for the specified time (in nanoseconds)
-void I_Sleep(uint64_t);
+void I_Sleep(dtime_t);
 // yields to the OS for 1 millisecond
 void I_Yield();
 
@@ -106,7 +106,7 @@ ticcmd_t *I_BaseTiccmd (void);
 // Clean exit, displays sell blurb.
 void STACK_ARGS I_Quit (void);
 
-
+void STACK_ARGS I_Warning(const char *warning, ...);
 void STACK_ARGS I_Error (const char *error, ...);
 void STACK_ARGS I_FatalError (const char *error, ...);
 
@@ -131,7 +131,7 @@ void I_PauseMouse (void);
 void I_ResumeMouse (void);
 
 // [RH] Returns millisecond-accurate time
-QWORD I_MSTime (void);
+dtime_t I_MSTime (void);
 
 // [RH] Title string to display at bottom of console during startup
 extern char DoomStartupTitle[256];

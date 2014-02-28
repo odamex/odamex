@@ -25,18 +25,10 @@
 #ifndef __S_SOUND__
 #define __S_SOUND__
 
+#include "m_fixed.h"
 #include <string>
 
-#include "m_fixed.h"
-
-
 #define MAX_SNDNAME			63
-
-//joek - choco goodness below
-// when to clip out sounds
-// Does not fit the large outdoor areas.
-#define S_CLIPPING_DIST		(1200*0x10000)
-
 
 class AActor;
 
@@ -53,11 +45,6 @@ struct sfxinfo_struct
 	void*		data;
 
 	struct sfxinfo_struct *link;
-
-	// this is checked every second to see if sound
-	// can be thrown out (if 0, then decrement, if -1,
-	// then throw out, if > 0, then it is in use)
-	int 		usefulness;
 
 	int 		lumpnum;				// lump number of sfx
 	unsigned int ms;					// [RH] length of sfx in milliseconds
@@ -181,10 +168,6 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 // [RH] Prints sound debug info to the screen.
 //		Modelled after Hexen's noise cheat.
 void S_NoiseDebug (void);
-
-class cvar_t;
-extern cvar_t noisedebug;
-
 
 #endif
 

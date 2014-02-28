@@ -63,10 +63,10 @@ void I_ExpandHomeDir (std::string &path);
 void *I_ZoneBase (size_t *size);
 
 
-uint64_t I_GetTime();
-uint64_t I_ConvertTimeToMs(uint64_t value);
-uint64_t I_ConvertTimeFromMs(uint64_t value);
-void I_Sleep(uint64_t sleep_time);
+dtime_t I_GetTime();
+dtime_t I_ConvertTimeToMs(dtime_t value);
+dtime_t I_ConvertTimeFromMs(dtime_t value);
+void I_Sleep(dtime_t sleep_time);
 
 //
 // Called by D_DoomLoop,
@@ -125,7 +125,7 @@ void I_PauseMouse (void);
 void I_ResumeMouse (void);
 
 // [RH] Returns millisecond-accurate time
-QWORD I_MSTime (void);
+dtime_t I_MSTime (void);
 
 void I_Yield(void);
 

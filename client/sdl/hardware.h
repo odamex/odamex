@@ -45,7 +45,7 @@ class IVideo
 	virtual int GetBitDepth() const;
 
 	virtual bool SetMode (int width, int height, int bits, bool fs);
-	virtual void SetPalette (DWORD *palette);
+	virtual void SetPalette (argb_t *palette);
 	
 	/* 12/3/06: HACK - Add SetOldPalette to accomodate classic redscreen - ML*/
 	virtual void SetOldPalette (byte *doompalette);
@@ -54,7 +54,7 @@ class IVideo
 	virtual void ReadScreen (byte *block);
 
 	virtual int GetModeCount ();
-	virtual void StartModeIterator (int bits);
+	virtual void StartModeIterator ();
 	virtual bool NextMode (int *width, int *height);
 
 	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false);

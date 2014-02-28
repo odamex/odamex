@@ -292,7 +292,7 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 		}
 	}
 
-	V_ColorMap = Ranges + normalcolor * 256;
+	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
 	for (int i = 0;i < bar_width;i++) {
 		const patch_t* linepatch;
 		if (!reverse) {

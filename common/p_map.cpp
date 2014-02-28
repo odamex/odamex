@@ -192,7 +192,7 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
 	tmbbox[BOXLEFT] = x - tmthing->radius;
 
-	newsubsec = R_PointInSubsector (x,y);
+	newsubsec = P_PointInSubsector (x,y);
 	ceilingline = NULL;
 
 	// The base floor/ceiling is from the subsector
@@ -749,7 +749,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	AActor *thingblocker = NULL;
 	fixed_t realheight = thing->height;
 	bool spectator = thing->player && thing->player->spectator;
-	subsector_t *subsec = R_PointInSubsector(x,y);
+	subsector_t *subsec = P_PointInSubsector(x,y);
 	// NOTE(jsd): NULL check here fixes crash while awaiting download in an active game.
 	if (subsec == NULL)
 		return false;
@@ -2237,7 +2237,7 @@ void P_LineAttack (AActor *t1, angle_t angle, fixed_t distance,
 			x2 = t1->x + FixedMul (x2 - t1->x, frac);
 			y2 = t1->y + FixedMul (y2 - t1->y, frac);
 			updown = 1;
-			if ( (subsector = R_PointInSubsector (x2, y2)) ) {
+			if ( (subsector = P_PointInSubsector (x2, y2)) ) {
 				if (subsector->sector->ceilingpic == skyflatnum)
 					return;	// disappeared in the clouds
 			} else
@@ -2452,13 +2452,13 @@ void P_RailAttack (AActor *source, int damage, int offset)
 		P_DrawRailTrail (start, end);
 	else
 	{
-		for (size_t i = 0; i < players.size(); i++)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
-			AActor *mo = players[i].mo;
+			AActor *mo = it->mo;
 			if (!mo || mo == source)
 				continue;
 
-			buf_t* buf = &players[i].client.netbuf;
+			buf_t* buf = &(it->client.netbuf);
 			MSG_WriteMarker(buf, svc_railtrail);
 			MSG_WriteShort(buf, short(start.x));
 			MSG_WriteShort(buf, short(start.y));
@@ -2559,7 +2559,7 @@ void P_AimCamera (AActor *t1)
 	aimslope = finetangent[FINEANGLES/4+(t1->pitch>>ANGLETOFINESHIFT)];
 
 	CameraZ = shootz + (fixed_t)(chase_dist * aimslope);
-	subsector = R_PointInSubsector (x2, y2);
+	subsector = P_PointInSubsector (x2, y2);
 	if (subsector) {
 		fixed_t ceilingheight = P_CeilingHeight(x2, y2, subsector->sector) - CAMERA_DIST;
 		fixed_t floorheight = P_FloorHeight(x2, y2, subsector->sector) + CAMERA_DIST;		
@@ -2708,77 +2708,66 @@ void P_UseLines (player_t *player)
 //
 // RADIUS ATTACK
 //
-AActor* 		bombsource;
-AActor* 		bombspot;
-int				bombdamage;
-float			bombdamagefloat;
-int				bombdistance;
-float			bombdistancefloat;
-bool			DamageSource;
-int				bombmod;
+static AActor* 		bombsource;
+static AActor* 		bombspot;
+static int			bombdamage;
+static float		bombdamagefloat;
+static int			bombdistance;
+static float		bombdistancefloat;
+static bool			DamageSource;
+static int			bombmod;
 
-//
-// PIT_ZdoomRadiusAttack
-// "bombsource" is the creature
-// that caused the explosion at "bombspot".
-// [RH] Now it knows about vertical distances and
-//      can thrust things vertically, too.
-// [ML] 2/12/11: Restoring ZDoom 1.22 PIT_RadiusAttack for 3D thrusting
-
-// [RH] Damage scale to apply to thing that shot the missile.
+// [RH] Damage scale to apply to thing that shot the missile. (co_zdoomphys)
 static float selfthrustscale;
 
-CVAR_FUNC_IMPL (sv_splashfactor)
+CVAR_FUNC_IMPL(sv_splashfactor)
 {
-	if (var <= 0.0f)
-		var.Set (1.0f);
-	else
-		selfthrustscale = 1.0f / var;
+	selfthrustscale = 1.0f / var;
 }
 
 
 //
-// PIT_RadiusAttack
-// "bombsource" is the creature
-// that caused the explosion at "bombspot".
+// PIT_DoomRadiusAttack
 //
-BOOL PIT_RadiusAttack (AActor *thing)
+// "bombsource" is the creature that caused the explosion at "bombspot".
+//
+static BOOL PIT_DoomRadiusAttack(AActor* thing)
 {
-    fixed_t	dx;
-    fixed_t	dy;
-    fixed_t	dist;
-
 	if (!serverside || !(thing->flags & MF_SHOOTABLE))
 		return true;
 
-    // Boss spider and cyborg
-    // take no damage from concussion.
-    if (thing->type == MT_CYBORG
-	|| thing->type == MT_SPIDER)
-	return true;
+	// Boss spider and cyborg
+	// take no damage from concussion.
+	if (thing->type == MT_CYBORG || thing->type == MT_SPIDER)
+		return true;
 
-    dx = abs(thing->x - bombspot->x);
-    dy = abs(thing->y - bombspot->y);
+	fixed_t dx = abs(thing->x - bombspot->x);
+	fixed_t dy = abs(thing->y - bombspot->y);
+	fixed_t dist = (MAX(dx, dy) - thing->radius) >> FRACBITS;
 
-    dist = dx>dy ? dx : dy;
-    dist = (dist - thing->radius) >> FRACBITS;
+	if (dist < 0)
+		dist = 0;
 
-    if (dist < 0)
-	dist = 0;
-
-    if (dist >= bombdamage)
-	return true;	// out of range
+	if (dist >= bombdamage)
+		return true;	// out of range
 
 	if (P_CheckSight(thing, bombspot))
-    {
+	{
 		// must be in direct path
-		P_DamageMobj (thing, bombspot, bombsource, bombdamage - dist, bombmod);
-    }
+		P_DamageMobj(thing, bombspot, bombsource, (bombdamage - dist) * sv_splashfactor, bombmod);
+	}
 
-    return true;
+	return true;
 }
 
-BOOL PIT_ZdoomRadiusAttack (AActor *thing)
+
+//
+// PIT_ZDoomRadiusAttack
+//
+// "bombsource" is the creature that caused the explosion at "bombspot".
+// [RH] Now it knows about vertical distances and can thrust things vertically, too.
+//
+static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 {
 	if (!serverside || !(thing->flags & MF_SHOOTABLE))
 		return true;
@@ -2795,7 +2784,7 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 	if (bombspot->type == MT_BARREL || thing->type == MT_BARREL ||
 		thing->type == MT_BOSSBRAIN)
 	{
-		return PIT_RadiusAttack(thing);
+		return PIT_DoomRadiusAttack(thing);
 	}
 	
 	// [RH] New code. The bounding box only covers the
@@ -2865,7 +2854,7 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 // P_RadiusAttack
 // Source is the creature that caused the explosion at spot.
 //
-void P_RadiusAttack (AActor *spot, AActor *source, int damage, int distance,
+void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bool hurtSource, int mod)
 {
 	fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
@@ -2884,7 +2873,7 @@ void P_RadiusAttack (AActor *spot, AActor *source, int damage, int distance,
 
 	// decide which radius attack function to use
 	BOOL (*pAttackFunc)(AActor*) = co_zdoomphys ?
-		PIT_ZdoomRadiusAttack : PIT_RadiusAttack;
+		PIT_ZDoomRadiusAttack : PIT_DoomRadiusAttack;
 
 	if (co_blockmapfix)
 	{
@@ -3393,7 +3382,7 @@ double P_PlaneZ(double x, double y, const plane_t *plane)
 //
 // Returns the height of a floor plane at the point (x, y).  The subsector
 // parameter is optional but provides a speedup if used because P_PlaneZ
-// can avoid a call to R_PointInSubsector().
+// can avoid a call to P_PointInSubsector().
 //
 // Note that there is no check made to ensure the point (x, y) is actually
 // within the subsector.
@@ -3402,7 +3391,7 @@ double P_PlaneZ(double x, double y, const plane_t *plane)
 //
 fixed_t P_FloorHeight(fixed_t x, fixed_t y, const sector_t *sector)
 {
-	if (!sector && !(sector = R_PointInSubsector(x, y)->sector))
+	if (!sector && !(sector = P_PointInSubsector(x, y)->sector))
 		return MAXINT;
 
 	return P_PlaneZ(x, y, &sector->floorplane);
@@ -3430,7 +3419,7 @@ fixed_t P_FloorHeight(const sector_t *sector)
 //
 // Returns the height of a ceiling plane at the point (x, y).  The subsector
 // parameter is optional but provides a speedup if used because P_PlaneZ
-// can avoid a call to R_PointInSubsector().
+// can avoid a call to P_PointInSubsector().
 //
 // Note that there is no check made to ensure the point (x, y) is actually
 // within the subsector.
@@ -3439,7 +3428,7 @@ fixed_t P_FloorHeight(const sector_t *sector)
 //
 fixed_t P_CeilingHeight(fixed_t x, fixed_t y, const sector_t *sector)
 {
-	if (!sector && !(sector = R_PointInSubsector(x, y)->sector))
+	if (!sector && !(sector = P_PointInSubsector(x, y)->sector))
 		return MAXINT;
 
 	return P_PlaneZ(x, y, &sector->ceilingplane);

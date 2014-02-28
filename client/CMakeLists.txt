@@ -1,6 +1,6 @@
-# Client flags [AM] TODO: Test -O3 again sometime.
+# Client flags
 if(NOT MSVC)
-  set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -mtune=native")
 endif()
 
 global_compile_options()
@@ -64,6 +64,23 @@ else()
   endif()
 endif()
 
+# zlib configuration
+find_package(ZLIB)
+if(ZLIB_FOUND)
+  include_directories(${ZLIB_INCLUDE_DIRS})
+else()
+  message(WARNING "zlib not found, client will be built without zlib support.")
+endif()
+
+# libpng configuration
+find_package(PNG)
+if(PNG_FOUND)
+  include_directories(${PNG_INCLUDE_DIRS})
+  add_definitions(-DUSE_PNG)
+else()
+  message(WARNING "libpng not found, client will be built without PNG support.")
+endif()
+
 # PortMidi configuration
 if(USE_INTREE_PORTMIDI)
   include_directories(../portmidi/pm_common/ ../portmidi/porttime/)
@@ -101,6 +118,14 @@ if(SDL_VERSION)
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
 
   target_link_libraries(odamex ${SDL_LINK_LIBRARIES})
+
+  if(ZLIB_FOUND)
+    target_link_libraries(odamex ${ZLIB_LIBRARY})
+  endif()
+
+  if(PNG_FOUND)
+    target_link_libraries(odamex ${PNG_LIBRARY})
+  endif()
 
   if(USE_INTREE_PORTMIDI)
     target_link_libraries(odamex portmidi-static)

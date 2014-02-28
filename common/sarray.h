@@ -143,12 +143,13 @@ public:
 			return temp;
 		}
 
-	private:
 		friend class SArray<VT>;
 
 		generic_iterator(unsigned int slot, ISAT* sarray) :
 			mSlot(slot), mSArray(sarray)
 		{ }
+
+	private:
 
 		unsigned int	mSlot;
 		ISAT*			mSArray;
@@ -266,6 +267,12 @@ public:
 	const SArrayId getId(const VT& item) const
 	{
 		return mItemRecords[getSlot(item)].mId;
+	}
+
+	const SArrayId insert()
+	{
+		unsigned int slot = insertSlot();
+		return mItemRecords[slot].mId;
 	}
 
 	const SArrayId insert(const VT& item)

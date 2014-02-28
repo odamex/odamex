@@ -54,14 +54,7 @@ EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(co_fineautoaim)
-
-CVAR_FUNC_IMPL(cl_movebob)
-{
-	if (var > 1.0f)
-		var.Set(1.0f);
-	if (var < 0.0f)
-		var.Set(0.0f);
-}
+EXTERN_CVAR(cl_movebob)
 
 const char *weaponnames[] =
 {
@@ -170,15 +163,8 @@ void P_SetPsprite(player_t* player, int position, statenum_t stnum)
 		if (state->action)
 		{
 			if(!player->spectator)
-			{
-				// [AM] Trying to run actions on non-existant player mobjs will
-				//      crash the game.  This _never_ happens during normal
-				//      single-player gameplay, but sometimes a client gets
-				//      put into inconsistent gamestate.
-				AActor* player_mo = player->mo;
-				if (player_mo != NULL)
-					state->action(player_mo);
-			}
+				state->action(player->mo);
+
 			if (!psp->state)
 				break;
 		}
@@ -661,11 +647,7 @@ void A_Punch (AActor *mo)
 	if (linetarget)
 	{
 		A_FireSound (player, "player/male/fist");
-		//S_Sound (player->mo, CHAN_VOICE, "*fist", 1, ATTN_NORM);
-		player->mo->angle = P_PointToAngle (player->mo->x,
-											player->mo->y,
-											linetarget->x,
-											linetarget->y);
+		player->mo->angle = P_PointToAngle (player->mo->x, player->mo->y, linetarget->x, linetarget->y);
 	}
 }
 

@@ -56,7 +56,8 @@ void	FixPathSeparator (std::string &path);
 
 int		ParseHex (char *str);
 int 	ParseNum (char *str);
-BOOL	IsNum (char *str);		// [RH] added
+bool	IsNum(const char* str);		// [RH] added
+bool	IsRealNum(const char* str);
 
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
@@ -68,10 +69,10 @@ size_t  StdStringFind(const std::string& haystack, const std::string& needle,
 size_t  StdStringRFind(const std::string& haystack, const std::string& needle,
     size_t pos, size_t n, bool CIS);
 
-std::string StdStringToLower(const std::string&);
-std::string StdStringToLower(const char*);
-std::string StdStringToUpper(const std::string&);
-std::string StdStringToUpper(const char*);
+std::string StdStringToLower(const std::string&, size_t n = std::string::npos);
+std::string StdStringToLower(const char*, size_t n = std::string::npos);
+std::string StdStringToUpper(const std::string&, size_t n = std::string::npos);
+std::string StdStringToUpper(const char*, size_t n = std::string::npos);
 
 std::string &TrimString(std::string &s);
 std::string &TrimStringStart(std::string &s);
