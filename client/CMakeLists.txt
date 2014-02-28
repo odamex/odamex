@@ -43,19 +43,25 @@ if(WIN32)
 endif()
 
 # SDL configuration
-find_package(SDL)
-if(SDL_FOUND)
-  include_directories(${SDL_INCLUDE_DIR})
+# try to use SDL2 first but fall back on SDL 1.2 if necessary
+find_package(SDL2)
+find_package(SDL2_mixer)
+if(SDL2_FOUND AND SDL2_MIXER_FOUND)
+  set(SDL_VERSION "2")
+  include_directories(${SDL2_INCLUDE_DIR})
+  include_directories(${SDL2_MIXER_INCLUDE_DIR})
+  set(SDL_LINK_LIBRARIES ${SDL2_LIBRARY} ${SDL_2MIXER_LIBRARY})
 else()
-  message(WARNING "SDL not found, client target not generated.")
-endif()
-
-# SDL_Mixer configuration
-find_package(SDL_mixer)
-if(SDLMIXER_FOUND)
-  include_directories(${SDLMIXER_INCLUDE_DIR})
-else()
-  message(WARNING "SDL_mixer not found, client target not generated.")
+  find_package(SDL)
+  find_package(SDL_mixer)
+  if(SDL_FOUND AND SDLMIXER_FOUND)
+    set(SDL_VERSION "1")
+    include_directories(${SDL_INCLUDE_DIR})
+    include_directories(${SDL_MIXER_INCLUDE_DIR})
+    set(SDL_LINK_LIBRARIES ${SDL_LIBRARY} ${SDL_MIXER_LIBRARY})
+  else()
+    message(WARNING "SDL not found, client target not generated.")
+  endif()
 endif()
 
 # PortMidi configuration
@@ -87,14 +93,14 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 # Client target
-if(SDL_FOUND AND SDLMIXER_FOUND)
+if(SDL_VERSION)
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${COMMON_SOURCES} ${COMMON_HEADERS}
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
     ${CLIENT_MAC_OBJC_SOURCES})
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
-  target_link_libraries(odamex ${SDL_LIBRARY})
-  target_link_libraries(odamex ${SDLMIXER_LIBRARY})
+
+  target_link_libraries(odamex ${SDL_LINK_LIBRARIES})
 
   if(USE_INTREE_PORTMIDI)
     target_link_libraries(odamex portmidi-static)
