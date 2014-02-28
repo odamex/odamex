@@ -122,6 +122,34 @@ static SDL_Color ega_colors[] =
 
 #endif
 
+#ifdef _WIN32
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+// Examine system DPI settings to determine whether to use the large font.
+
+static int Win32_UseLargeFont(void)
+{
+    HDC hdc = GetDC(NULL);
+    int dpix;
+
+    if (!hdc)
+    {
+        return 0;
+    }
+
+    dpix = GetDeviceCaps(hdc, LOGPIXELSX);
+    ReleaseDC(NULL, hdc);
+
+    // 144 is the DPI when using "150%" scaling. If the user has this set
+    // then consider this an appropriate threshold for using the large font.
+
+    return dpix >= 144;
+}
+
+#endif
+
 static txt_font_t *FontForName(char *name)
 {
     if (!strcmp(name, "small"))
@@ -151,9 +179,8 @@ static txt_font_t *FontForName(char *name)
 
 static void ChooseFont(void)
 {
-    SDL_Rect **modes;
+    const SDL_VideoInfo *info;
     char *env;
-    int i;
 
     // Allow normal selection to be overridden from an environment variable:
 
@@ -169,41 +196,45 @@ static void ChooseFont(void)
         }
     }
 
-    // Check all modes
+    // Get desktop resolution:
 
-    modes = SDL_ListModes(NULL, SDL_FULLSCREEN);
+    info = SDL_GetVideoInfo();
 
     // If in doubt and we can't get a list, always prefer to
     // fall back to the normal font:
 
-    if (modes == NULL || modes == (SDL_Rect **) -1 || *modes == NULL)
+    if (info == NULL)
     {
-#ifdef _WIN32_WCE
-        font = &small_font;
-#else
         font = &main_font;
-#endif
         return;
     }
 
-    // Scan through the list of modes. If we find no modes that are at
-    // least 640x480 in side, default to the small font. If we find one
-    // mode that is at least 1920x1080, this is a modern high-resolution
-    // display, and we can use the large font.
+    // On tiny low-res screens (eg. palmtops) use the small font.
+    // If the screen resolution is at least 1920x1080, this is
+    // a modern high-resolution display, and we can use the
+    // large font.
 
-    font = &small_font;
-
-    for (i=0; modes[i] != NULL; ++i)
+    if (info->current_w < 640 || info->current_h < 480)
     {
-        if (modes[i]->w >= 1920 && modes[i]->h >= 1080)
-        {
-            font = &large_font;
-            break;
-        }
-        else if (modes[i]->w >= 640 && modes[i]->h >= 480)
-        {
-            font = &main_font;
-        }
+        font = &small_font;
+    }
+#ifdef _WIN32
+    // On Windows we can use the system DPI settings to make a
+    // more educated guess about whether to use the large font.
+
+    else if (Win32_UseLargeFont())
+    {
+        font = &large_font;
+    }
+#else
+    else if (info->current_w >= 1920 && info->current_h >= 1080)
+    {
+        font = &large_font;
+    }
+#endif
+    else
+    {
+        font = &main_font;
     }
 }
 
@@ -215,15 +246,19 @@ static void ChooseFont(void)
 
 int TXT_Init(void)
 {
+    int flags;
+
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
     {
         return 0;
     }
 
+    flags = SDL_SWSURFACE | SDL_HWPALETTE | SDL_DOUBLEBUF;
+
     ChooseFont();
 
     screen = SDL_SetVideoMode(TXT_SCREEN_W * font->w,
-                              TXT_SCREEN_H * font->h, 8, 0);
+                              TXT_SCREEN_H * font->h, 8, flags);
 
     if (screen == NULL)
         return 0;
@@ -249,6 +284,7 @@ int TXT_Init(void)
 void TXT_Shutdown(void)
 {
     free(screendata);
+    screendata = NULL;
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
