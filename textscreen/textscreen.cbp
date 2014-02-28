@@ -149,6 +149,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_dropdown.h" />
+		<Unit filename="txt_fileselect.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="txt_fileselect.h" />
 		<Unit filename="txt_font.h" />
 		<Unit filename="txt_gui.c">
 			<Option compilerVar="CC" />
