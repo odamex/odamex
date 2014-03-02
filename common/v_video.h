@@ -52,6 +52,26 @@ extern int SquareWidth;
 #define MAKERGB(r, g, b)		(screen->makeRGB(r, g, b))
 #define MAKEARGB(a, r, g, b)	(screen->makeARGB(a, r, g, b))
 
+
+// ============================================================================
+//
+// DCanvasDevice base class interface
+//
+// Virtual base class to provide implementation specific data and functions
+// to the DCanvas class.
+//
+// ============================================================================
+
+class DCanvasDevice
+{
+public:
+
+	virtual ~DCanvasDevice() { }
+private:
+
+};
+
+
 //
 // VIDEO
 //
@@ -81,7 +101,7 @@ public:
 	};
 
 	DCanvas() :
-		buffer(NULL), m_LockCount(0), m_Private(NULL),
+		buffer(NULL), m_LockCount(0), m_Private(NULL), m_Device(NULL),
 		ashift(24), rshift(16), gshift(8), bshift(0)
 	{ }
 
@@ -151,6 +171,7 @@ public:
 	int m_LockCount;
 	palette_t *m_Palette;
 	void *m_Private;
+	DCanvasDevice* m_Device;
 
 	// Copy blocks from one canvas to another
 	void Blit (int srcx, int srcy, int srcwidth, int srcheight, DCanvas *dest, int destx, int desty, int destwidth, int destheight);

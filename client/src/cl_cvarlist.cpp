@@ -362,29 +362,6 @@ CVAR(				cl_splitnetdemos, "0", "Create separate netdemos for each map",
 // Mouse settings
 // --------------
 
-//
-// C_GetDefaultMouseDriver()
-//
-// Allows the default value for music_driver to change depending on
-// compile-time factors (eg, OS)
-//
-static char *C_GetDefaultMouseDriver()
-{
-	static char str[4];
-
-	int driver_id = SDL_MOUSE_DRIVER;
-
-	#ifdef _WIN32
-	driver_id = RAW_WIN32_MOUSE_DRIVER;
-	#endif
-
-	sprintf(str, "%i", driver_id);
-	return str;
-}
-
-CVAR_FUNC_DECL(	mouse_driver, C_GetDefaultMouseDriver(), "Mouse driver backend",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
-
 CVAR_RANGE(		mouse_type, "0", "Use vanilla Doom mouse sensitivity or ZDoom mouse sensitivity",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 

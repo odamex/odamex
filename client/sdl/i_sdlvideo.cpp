@@ -60,8 +60,7 @@ SDLVideo::SDLVideo(int parm)
 {
 	const SDL_version *SDLVersion = SDL_Linked_Version();
 
-	if(SDLVersion->major != SDL_MAJOR_VERSION
-		|| SDLVersion->minor != SDL_MINOR_VERSION)
+	if (SDLVersion->major != SDL_MAJOR_VERSION || SDLVersion->minor != SDL_MINOR_VERSION)
 	{
 		I_FatalError("SDL version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
 			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
@@ -69,126 +68,129 @@ SDLVideo::SDLVideo(int parm)
 		return;
 	}
 
-	if (SDL_InitSubSystem (SDL_INIT_VIDEO) == -1)
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) == -1)
 	{
 		I_FatalError("Could not initialize SDL video.\n");
 		return;
 	}
 
-	if(SDLVersion->patch != SDL_PATCHLEVEL)
+	if (SDLVersion->patch != SDL_PATCHLEVEL)
 	{
 		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
 			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
 			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
 	}
 
-    // [Russell] - Just for windows, display the icon in the system menu and
-    // alt-tab display
-    #if WIN32 && !_XBOX
-    HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+	// [Russell] - Just for windows, display the icon in the system menu and
+	// alt-tab display
+	#if WIN32 && !_XBOX
+	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
 
-    if (hIcon)
-    {
-        HWND WindowHandle;
+	if (hIcon)
+	{
+		HWND WindowHandle;
 
-        SDL_SysWMinfo wminfo;
-        SDL_VERSION(&wminfo.version)
-        SDL_GetWMInfo(&wminfo);
+		SDL_SysWMinfo wminfo;
+		SDL_VERSION(&wminfo.version)
+		SDL_GetWMInfo(&wminfo);
 
-        WindowHandle = wminfo.window;
+		WindowHandle = wminfo.window;
 
-        SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-        SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-    }
-    #endif
+		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+	}
+	#endif
 
-    I_SetWindowCaption();
+	I_SetWindowCaption();
 
-   sdlScreen = NULL;
-   infullscreen = false;
-   screenw = screenh = screenbits = 0;
-   palettechanged = false;
+#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
 
-   // Get Video modes
-   vidModeIterator = 0;
-   vidModeList.clear();
+#else							// SDL 1.2
+	
+#endif	// SDL_MAJOR_VERSION
+
+	sdlScreen = NULL;
+	infullscreen = false;
+	screenw = screenh = screenbits = 0;
+	palettechanged = false;
+
+	// Get Video modes
+	vidModeIterator = 0;
+	vidModeList.clear();
 
 	// NOTE(jsd): We only support 32-bit and 8-bit color modes. No 24-bit or 16-bit.
 
 	// Fetch the list of fullscreen modes for this bpp setting:
 	SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_SWSURFACE);
 
-   if(!sdllist)
-   {
-	  // no fullscreen modes, but we could still try windowed
+	if (sdllist == NULL)
+	{
+		// no fullscreen modes, but we could still try windowed
 		Printf(PRINT_HIGH, "No fullscreen video modes are available.\n");
-	  return;
-   }
-   else if(sdllist == (SDL_Rect **)-1)
-   {
-      I_FatalError("SDL_ListModes returned -1. Internal error.\n");
-      return;
-   }
-   else
-   {
-      vidMode_t CustomVidModes[] =
-      {
-			 { 640, 480 }
-			,{ 640, 400 }
-			,{ 320, 240 }
-			,{ 320, 200 }
-      };
+		return;
+	}
+	else if (sdllist == (SDL_Rect **)-1)
+	{
+		I_FatalError("SDL_ListModes returned -1. Internal error.\n");
+		return;
+	}
+	else
+	{
+		vidMode_t CustomVidModes[] =
+		{
+			{ 640, 480 },
+			{ 640, 400 },
+			{ 320, 240 },
+			{ 320, 200 }
+		};
 
-      // Add in generic video modes reported by SDL
-      for(int i = 0; sdllist[i]; ++i)
-      {
-        vidMode_t vm;
+		// Add in generic video modes reported by SDL
+		for(int i = 0; sdllist[i]; ++i)
+		{
+			vidMode_t vm;
 
-        vm.width = sdllist[i]->w;
-        vm.height = sdllist[i]->h;
+			vm.width = sdllist[i]->w;
+			vm.height = sdllist[i]->h;
 
-        vidModeList.push_back(vm);
-      }
+			vidModeList.push_back(vm);
+		}
 
-      // Now custom video modes to be added
-      for (size_t i = 0; i < STACKARRAY_LENGTH(CustomVidModes); ++i)
-        vidModeList.push_back(CustomVidModes[i]);
+		// Now custom video modes to be added
+		for (size_t i = 0; i < STACKARRAY_LENGTH(CustomVidModes); ++i)
+			vidModeList.push_back(CustomVidModes[i]);
 	}
 
-      // Reverse sort the modes
-      std::sort(vidModeList.begin(), vidModeList.end(), std::greater<vidMode_t>());
+	// Reverse sort the modes
+	std::sort(vidModeList.begin(), vidModeList.end(), std::greater<vidMode_t>());
 
-      // Get rid of any duplicates (SDL some times reports duplicates as well)
-      vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end()), vidModeList.end());
-   }
+	// Get rid of any duplicates (SDL some times reports duplicates as well)
+	vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end()), vidModeList.end());
+}
+
 
 std::string SDLVideo::GetVideoDriverName()
 {
-  char driver[128];
+	char driver[128];
 
-  if((SDL_VideoDriverName(driver, 128)) == NULL)
-  {
-    char *pdrv; // Don't modify or free this
+	if ((SDL_VideoDriverName(driver, 128)) == NULL)
+	{
+		const char* pdrv = getenv("SDL_VIDEODRIVER");
+		if (pdrv = NULL)
+			return "";					// Can't determine driver
+		else
+			return std::string(pdrv);	// Return the environment variable
+	}
 
-    if((pdrv = getenv("SDL_VIDEODRIVER")) == NULL)
-      return ""; // Can't determine driver
-
-    return std::string(pdrv); // Return the environment variable
-  }
-
-  return std::string(driver); // Return the name as provided by SDL
+	return std::string(driver);			// Return the name as provided by SDL
 }
 
 
-bool SDLVideo::FullscreenChanged (bool fs)
+bool SDLVideo::FullscreenChanged(bool fs)
 {
-   if(fs != infullscreen)
-      return true;
-
-   return false;
+	return (fs != infullscreen);
 }
 
-void SDLVideo::SetWindowedScale (float scale)
+void SDLVideo::SetWindowedScale(float scale)
 {
    /// HAHA FIXME
 }

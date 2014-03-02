@@ -57,8 +57,18 @@ typedef struct
 
 #define BLINK_PERIOD 250
 
-static SDL_Surface *screen;
-static unsigned char *screendata;
+#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+static SDL_Window* window;
+static SDL_Renderer* renderer;
+static SDL_Texture* texture;
+static SDL_Surface* surface;
+#else							// SDL 1.2
+static SDL_Surface* surface;
+#endif	// SDL_VERSION_MAJOR
+
+static int screen_width, screen_height;
+
+static unsigned char *character_data;
 static int key_mapping = 1;
 
 static TxtSDLEventCallbackFunc event_callback;
@@ -179,26 +189,50 @@ static txt_font_t *FontForName(char *name)
 
 static void ChooseFont(void)
 {
-    const SDL_VideoInfo *info;
-    char *env;
+	// Allow normal selection to be overridden from an environment variable:
 
-    // Allow normal selection to be overridden from an environment variable:
+	char* env = getenv("TEXTSCREEN_FONT");
 
-    env = getenv("TEXTSCREEN_FONT");
+	if (env != NULL)
+	{
+		font = FontForName(env);
 
-    if (env != NULL)
-    {
-        font = FontForName(env);
+		if (font != NULL)
+		{
+			return;
+		}
+	}
 
-        if (font != NULL)
-        {
-            return;
-        }
-    }
+#if (SDL_MAJOR_VERSION >= 2)		// SDL 2.0
+	SDL_DisplayMode current_mode;
+
+	int width = 0;
+	int height = 0;
+	int i;
+
+	for (i = 0; i < SDL_GetNumVideoDisplays(); i++)
+	{
+		int res = SDL_GetCurrentDisplayMode(i, &current_mode);
+		if (res == 0)
+		{
+			if (current_mode.w > width)
+				width = current_mode.w;
+			if (current_mode.h > height)
+				height = current_mode.h;
+		}
+	}
+
+	if (width == 0 || height == 0)
+	{
+		font = &main_font;
+		return;
+	}
+
+#else								// SDL 1.2
 
     // Get desktop resolution:
 
-    info = SDL_GetVideoInfo();
+    const SDL_VideoInfo *info = SDL_GetVideoInfo();
 
     // If in doubt and we can't get a list, always prefer to
     // fall back to the normal font:
@@ -209,16 +243,21 @@ static void ChooseFont(void)
         return;
     }
 
+	int width = info->current_w;
+	int height = info->current_h;
+
+#endif	// SDL_MAJOR_VERSION
+
     // On tiny low-res screens (eg. palmtops) use the small font.
     // If the screen resolution is at least 1920x1080, this is
     // a modern high-resolution display, and we can use the
     // large font.
 
-    if (info->current_w < 640 || info->current_h < 480)
+    if (width < 640 || height < 480)
     {
         font = &small_font;
     }
-#ifdef _WIN32
+	#ifdef _WIN32
     // On Windows we can use the system DPI settings to make a
     // more educated guess about whether to use the large font.
 
@@ -226,12 +265,12 @@ static void ChooseFont(void)
     {
         font = &large_font;
     }
-#else
-    else if (info->current_w >= 1920 && info->current_h >= 1080)
+	#else
+    else if (width >= 1920 && height >= 1080)
     {
         font = &large_font;
     }
-#endif
+	#endif	// _WIN32
     else
     {
         font = &main_font;
@@ -246,51 +285,100 @@ static void ChooseFont(void)
 
 int TXT_Init(void)
 {
-    int flags;
-
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
     {
         return 0;
     }
 
-    flags = SDL_SWSURFACE | SDL_HWPALETTE | SDL_DOUBLEBUF;
-
     ChooseFont();
 
-    screen = SDL_SetVideoMode(TXT_SCREEN_W * font->w,
-                              TXT_SCREEN_H * font->h, 8, flags);
+	int screen_width = TXT_SCREEN_W * font->w;
+	int screen_height = TXT_SCREEN_H * font->h;
 
-    if (screen == NULL)
-        return 0;
+#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	window = SDL_CreateWindow("",
+							SDL_WINDOWPOS_CENTERED,
+							SDL_WINDOWPOS_CENTERED,
+							screen_width, screen_height,
+							SDL_WINDOW_SHOWN);
 
-    SDL_SetColors(screen, ega_colors, 0, 16);
-    SDL_EnableUNICODE(1);
+	if (window == NULL)
+		return 0;
 
-    screendata = malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
-    memset(screendata, 0, TXT_SCREEN_W * TXT_SCREEN_H * 2);
+	renderer = SDL_CreateRenderer(window, -1, 0);
 
-    // Ignore all mouse motion events
+	if (renderer == NULL)
+		return 0;
 
-//    SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
+	SDL_RenderSetLogicalSize(renderer, screen_width, screen_height);
+
+	texture = SDL_CreateTexture(renderer,
+								SDL_PIXELFORMAT_INDEX8,
+								SDL_TEXTUREACCESS_STREAMING,
+								screen_width, screen_height);
+
+	if (texture == NULL)
+		return 0;
+								
+	surface = SDL_CreateRGBSurface(0, screen_width, screen_height, 8, 0, 0, 0, 0);
+	
+	if (surface == NULL)
+		return 0;
+
+#else							// SDL 1.2
+    int flags = SDL_SWSURFACE | SDL_HWPALETTE | SDL_DOUBLEBUF;
+    surface = SDL_SetVideoMode(screen_width, screen_height, 8, flags);
+
+	if (surface == NULL)
+		return 0;
 
     // Repeat key presses so we can hold down arrows to scroll down the
     // menu, for example. This is what setup.exe does.
-
     SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+
+    SDL_EnableUNICODE(1);
+
+#endif	// SDL_MAJOR_VERSION
+
+	// apply the palette
+	SDL_SetPaletteColors(surface->format->palette, ega_colors, 0, 16);
+
+    character_data = malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
+    memset(character_data, 0, TXT_SCREEN_W * TXT_SCREEN_H * 2);
 
     return 1;
 }
 
 void TXT_Shutdown(void)
 {
-    free(screendata);
-    screendata = NULL;
+    free(character_data);
+    character_data = NULL;
+
+#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	SDL_DestroyTexture(texture);
+	texture = NULL;
+
+	SDL_DestroyRenderer(renderer);
+	renderer = NULL;
+
+	SDL_DestroyWindow(window);
+	window = NULL;
+
+	SDL_FreeSurface(surface);
+	surface = NULL;
+
+#else							// SDL 1.2
+	SDL_FreeSurface(surface);
+	surface = NULL;
+
+#endif	// SDL_MAJOR_VERSION
+
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
 unsigned char *TXT_GetScreenData(void)
 {
-    return screendata;
+    return character_data;
 }
 
 static inline void UpdateCharacter(int x, int y)
@@ -302,7 +390,7 @@ static inline void UpdateCharacter(int x, int y)
     int bg, fg;
     unsigned int x1, y1;
 
-    p = &screendata[(y * TXT_SCREEN_W + x) * 2];
+    p = &character_data[(y * TXT_SCREEN_W + x) * 2];
     character = p[0];
 
     fg = p[1] & 0xf;
@@ -324,8 +412,8 @@ static inline void UpdateCharacter(int x, int y)
     bytes = (font->w + 7) / 8;
     p = &font->data[character * font->h * bytes];
 
-    s = ((unsigned char *) screen->pixels)
-      + (y * font->h * screen->pitch)
+    s = ((unsigned char *) surface->pixels)
+      + (y * font->h * surface->pitch)
       + (x * font->w);
 
     for (y1=0; y1<font->h; ++y1)
@@ -357,7 +445,7 @@ static inline void UpdateCharacter(int x, int y)
             ++p;
         }
 
-        s += screen->pitch;
+        s += surface->pitch;
     }
 }
 
@@ -396,9 +484,17 @@ void TXT_UpdateScreenArea(int x, int y, int w, int h)
         }
     }
 
-    SDL_UpdateRect(screen,
+#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	SDL_Rect area_rect = { x * font->w, y * font->h,
+							(x_end - x) * font->w, (y_end - y) * font->h };
+	SDL_UpdateTexture(texture, &area_rect, surface->pixels, surface->pitch);
+
+#else							// SDL 1.2
+    SDL_UpdateRect(surface,
                    x * font->w, y * font->h,
                    (x_end - x) * font->w, (y_end - y) * font->h);
+
+#endif	// SDL_MAJOR_VERSION
 }
 
 void TXT_UpdateScreen(void)
@@ -408,11 +504,7 @@ void TXT_UpdateScreen(void)
 
 void TXT_GetMousePosition(int *x, int *y)
 {
-#if SDL_VERSION_ATLEAST(1, 3, 0)
-    SDL_GetMouseState(0, x, y);
-#else
     SDL_GetMouseState(x, y);
-#endif
 
     *x /= font->w;
     *y /= font->h;
@@ -421,10 +513,10 @@ void TXT_GetMousePosition(int *x, int *y)
 //
 // Translates the SDL key
 //
-
-static int TranslateKey(SDL_keysym *sym)
+#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+static int TranslateKey(SDL_Keysym *keysym)
 {
-    switch(sym->sym)
+    switch(keysym->sym)
     {
         case SDLK_LEFT:        return KEY_LEFTARROW;
         case SDLK_RIGHT:       return KEY_RIGHTARROW;
@@ -461,10 +553,128 @@ static int TranslateKey(SDL_keysym *sym)
 
         case SDLK_LALT:
         case SDLK_RALT:
-#if !SDL_VERSION_ATLEAST(1, 3, 0)
+        case SDLK_LGUI:
+        case SDLK_RGUI:
+                               return KEY_RALT;
+
+        case SDLK_CAPSLOCK:    return KEY_CAPSLOCK;
+        case SDLK_SCROLLLOCK:  return KEY_SCRLCK;
+
+        case SDLK_HOME:        return KEY_HOME;
+        case SDLK_INSERT:      return KEY_INS;
+        case SDLK_END:         return KEY_END;
+        case SDLK_PAGEUP:      return KEY_PGUP;
+        case SDLK_PAGEDOWN:    return KEY_PGDN;
+
+		#ifdef SDL_HAVE_APP_KEYS
+        case SDLK_APP1:        return KEY_F1;
+        case SDLK_APP2:        return KEY_F2;
+        case SDLK_APP3:        return KEY_F3;
+        case SDLK_APP4:        return KEY_F4;
+        case SDLK_APP5:        return KEY_F5;
+        case SDLK_APP6:        return KEY_F6;
+		#endif
+
+        default:               break;
+    }
+
+    // Returned value is different, depending on whether key mapping is
+    // enabled.  Key mapping is preferable most of the time, for typing
+    // in text, etc.  However, when we want to read raw keyboard codes
+    // for the setup keyboard configuration dialog, we want the raw
+    // key code.
+
+/*
+    if (key_mapping)
+    {
+        // Unicode characters beyond the ASCII range need to be
+        // mapped up into textscreen's Unicode range.
+
+        if (keysym->unicode < 128)
+        {
+            return keysym->unicode;
+        }
+        else
+        {
+            return keysym->unicode - 128 + TXT_UNICODE_BASE;
+        }
+    }
+    else
+*/
+    {
+        // Keypad mapping is only done when we want a raw value:
+        // most of the time, the keypad should behave as it normally
+        // does.
+
+        switch (keysym->sym)
+        {
+            case SDLK_KP_0:        return KEYP_0;
+            case SDLK_KP_1:        return KEYP_1;
+            case SDLK_KP_2:        return KEYP_2;
+            case SDLK_KP_3:        return KEYP_3;
+            case SDLK_KP_4:        return KEYP_4;
+            case SDLK_KP_5:        return KEYP_5;
+            case SDLK_KP_6:        return KEYP_6;
+            case SDLK_KP_7:        return KEYP_7;
+            case SDLK_KP_8:        return KEYP_8;
+            case SDLK_KP_9:        return KEYP_9;
+
+            case SDLK_KP_PERIOD:   return KEYP_PERIOD;
+            case SDLK_KP_MULTIPLY: return KEYP_MULTIPLY;
+            case SDLK_KP_PLUS:     return KEYP_PLUS;
+            case SDLK_KP_MINUS:    return KEYP_MINUS;
+            case SDLK_KP_DIVIDE:   return KEYP_DIVIDE;
+            case SDLK_KP_EQUALS:   return KEYP_EQUALS;
+            case SDLK_KP_ENTER:    return KEYP_ENTER;
+
+            default:
+                return tolower(keysym->sym);
+        }
+    }
+}
+
+#else							// SDL 1.2
+static int TranslateKey(SDL_keysym *keysym)
+{
+    switch(keysym->sym)
+    {
+        case SDLK_LEFT:        return KEY_LEFTARROW;
+        case SDLK_RIGHT:       return KEY_RIGHTARROW;
+        case SDLK_DOWN:        return KEY_DOWNARROW;
+        case SDLK_UP:          return KEY_UPARROW;
+        case SDLK_ESCAPE:      return KEY_ESCAPE;
+        case SDLK_RETURN:      return KEY_ENTER;
+        case SDLK_TAB:         return KEY_TAB;
+        case SDLK_F1:          return KEY_F1;
+        case SDLK_F2:          return KEY_F2;
+        case SDLK_F3:          return KEY_F3;
+        case SDLK_F4:          return KEY_F4;
+        case SDLK_F5:          return KEY_F5;
+        case SDLK_F6:          return KEY_F6;
+        case SDLK_F7:          return KEY_F7;
+        case SDLK_F8:          return KEY_F8;
+        case SDLK_F9:          return KEY_F9;
+        case SDLK_F10:         return KEY_F10;
+        case SDLK_F11:         return KEY_F11;
+        case SDLK_F12:         return KEY_F12;
+
+        case SDLK_BACKSPACE:   return KEY_BACKSPACE;
+        case SDLK_DELETE:      return KEY_DEL;
+
+        case SDLK_PAUSE:       return KEY_PAUSE;
+
+        case SDLK_LSHIFT:
+        case SDLK_RSHIFT:
+                               return KEY_RSHIFT;
+
+        case SDLK_LCTRL:
+        case SDLK_RCTRL:
+                               return KEY_RCTRL;
+
+        case SDLK_LALT:
+        case SDLK_RALT:
         case SDLK_LMETA:
         case SDLK_RMETA:
-#endif
                                return KEY_RALT;
 
         case SDLK_CAPSLOCK:    return KEY_CAPSLOCK;
@@ -476,14 +686,14 @@ static int TranslateKey(SDL_keysym *sym)
         case SDLK_PAGEUP:      return KEY_PGUP;
         case SDLK_PAGEDOWN:    return KEY_PGDN;
 
-#ifdef SDL_HAVE_APP_KEYS
+		#ifdef SDL_HAVE_APP_KEYS
         case SDLK_APP1:        return KEY_F1;
         case SDLK_APP2:        return KEY_F2;
         case SDLK_APP3:        return KEY_F3;
         case SDLK_APP4:        return KEY_F4;
         case SDLK_APP5:        return KEY_F5;
         case SDLK_APP6:        return KEY_F6;
-#endif
+		#endif
 
         default:               break;
     }
@@ -499,13 +709,13 @@ static int TranslateKey(SDL_keysym *sym)
         // Unicode characters beyond the ASCII range need to be
         // mapped up into textscreen's Unicode range.
 
-        if (sym->unicode < 128)
+        if (keysym->unicode < 128)
         {
-            return sym->unicode;
+            return keysym->unicode;
         }
         else
         {
-            return sym->unicode - 128 + TXT_UNICODE_BASE;
+            return keysym->unicode - 128 + TXT_UNICODE_BASE;
         }
     }
     else
@@ -514,7 +724,7 @@ static int TranslateKey(SDL_keysym *sym)
         // most of the time, the keypad should behave as it normally
         // does.
 
-        switch (sym->sym)
+        switch (keysym->sym)
         {
             case SDLK_KP0:         return KEYP_0;
             case SDLK_KP1:         return KEYP_1;
@@ -536,10 +746,11 @@ static int TranslateKey(SDL_keysym *sym)
             case SDLK_KP_ENTER:    return KEYP_ENTER;
 
             default:
-                return tolower(sym->sym);
+                return tolower(keysym->sym);
         }
     }
 }
+#endif	// SDL_MAJOR_VERSION
 
 // Convert an SDL button index to textscreen button index.
 //
@@ -580,12 +791,12 @@ static int MouseHasMoved(void)
 
 // Examine a key press/release and update the modifier key state
 // if necessary.
-
-static void UpdateModifierState(SDL_keysym *sym, int pressed)
+#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+static void UpdateModifierState(SDL_Keysym *keysym, int pressed)
 {
     txt_modifier_t mod;
 
-    switch (sym->sym)
+    switch (keysym->sym)
     {
         case SDLK_LSHIFT:
         case SDLK_RSHIFT:
@@ -599,10 +810,8 @@ static void UpdateModifierState(SDL_keysym *sym, int pressed)
 
         case SDLK_LALT:
         case SDLK_RALT:
-#if !SDL_VERSION_ATLEAST(1, 3, 0)
-        case SDLK_LMETA:
-        case SDLK_RMETA:
-#endif
+        case SDLK_LGUI:
+        case SDLK_RGUI:
             mod = TXT_MOD_ALT;
             break;
 
@@ -619,6 +828,45 @@ static void UpdateModifierState(SDL_keysym *sym, int pressed)
         --modifier_state[mod];
     }
 }
+
+#else							// SDL 1.2
+static void UpdateModifierState(SDL_keysym *keysym, int pressed)
+{
+    txt_modifier_t mod;
+
+    switch (keysym->sym)
+    {
+        case SDLK_LSHIFT:
+        case SDLK_RSHIFT:
+            mod = TXT_MOD_SHIFT;
+            break;
+
+        case SDLK_LCTRL:
+        case SDLK_RCTRL:
+            mod = TXT_MOD_CTRL;
+            break;
+
+        case SDLK_LALT:
+        case SDLK_RALT:
+        case SDLK_LMETA:
+        case SDLK_RMETA:
+            mod = TXT_MOD_ALT;
+            break;
+
+        default:
+            return;
+    }
+
+    if (pressed)
+    {
+        ++modifier_state[mod];
+    }
+    else
+    {
+        --modifier_state[mod];
+    }
+}
+#endif	// SDL_MAJOR_VERSION
 
 signed int TXT_GetChar(void)
 {
@@ -769,7 +1017,7 @@ void TXT_GetKeyDescription(int key, char *buf)
     }
 }
 
-// Searches the desktop screen buffer to determine whether there are any
+// Searches the desktop character buffer to determine whether there are any
 // blinking characters.
 
 int TXT_ScreenHasBlinkingChars(void)
@@ -777,13 +1025,13 @@ int TXT_ScreenHasBlinkingChars(void)
     int x, y;
     unsigned char *p;
 
-    // Check all characters in screen buffer
+    // Check all characters in character buffer
 
     for (y=0; y<TXT_SCREEN_H; ++y)
     {
         for (x=0; x<TXT_SCREEN_W; ++x) 
         {
-            p = &screendata[(y * TXT_SCREEN_W + x) * 2];
+            p = &character_data[(y * TXT_SCREEN_W + x) * 2];
 
             if (p[1] & 0x80)
             {
@@ -859,7 +1107,11 @@ void TXT_EnableKeyMapping(int enable)
 
 void TXT_SetWindowTitle(char *title)
 {
+#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	SDL_SetWindowTitle(window, title);
+#else							// SDL 1.2
     SDL_WM_SetCaption(title, NULL);
+#endif	// SDL_MAJOR_VERSION
 }
 
 void TXT_SDL_SetEventCallback(TxtSDLEventCallbackFunc callback, void *user_data)

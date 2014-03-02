@@ -30,9 +30,26 @@
 #include "i_video.h"
 #include "c_console.h"
 
+
+class SDLDevice : public DCanvasDevice
+{
+public:
+	virtual ~SDLDevice() { }
+
+private:
+#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	SDL_Window*		window;
+	SDL_Renderer*	renderer;
+	SDL_Texture*	texture;
+	SDL_Surface*	surface;
+#else							// SDL 1.2
+	SDL_Surface*	surface;
+#endif	// SDL_MAJOR_VERSION
+};
+
 class SDLVideo : public IVideo
 {
-   public:
+public:
 	SDLVideo(int parm);
 	virtual ~SDLVideo (void) {};
 
@@ -69,48 +86,39 @@ class SDLVideo : public IVideo
 	virtual bool Blit (DCanvas *src, int sx, int sy, int sw, int sh,
 					   DCanvas *dst, int dx, int dy, int dw, int dh);
 
-   protected:
+protected:
 
    struct vidMode_t
    {
 		int width, height;
 
-      bool operator<(const vidMode_t& right) const
-      {
-            if (width < right.width)
-               return true;
-            else if (width == right.width && height < right.height)
-               return true;
-         return false;
-      }
+		bool operator<(const vidMode_t& other) const
+		{
+			return (width < other.width || (width == other.width && height < other.height));
+		}
 
-      bool operator>(const vidMode_t& right) const
-      {
-            if (width > right.width)
-               return true;
-			else if (width == right.width && height > right.height)
-               return true;
-         return false;
-      }
+		bool operator>(const vidMode_t& other) const
+		{
+			return (width > other.width || (width == other.width && height > other.height));
+		}
 
-      bool operator==(const vidMode_t& right) const
-      {
-         return (width == right.width &&
-					height == right.height);
-      }
-   };
+		bool operator==(const vidMode_t& other) const
+		{
+			return (width == other.width && height == other.height);
+		}
+	};
 
-   std::vector<vidMode_t> vidModeList;
-   size_t vidModeIterator;
+	std::vector<vidMode_t> vidModeList;
+	size_t vidModeIterator;
 
-   SDL_Surface *sdlScreen;
-   bool infullscreen;
-   int screenw, screenh;
-   int screenbits;
+	bool infullscreen;
+	int screenw, screenh;
+	int screenbits;
 
-   SDL_Color newPalette[256];
-   SDL_Color palette[256];
-   bool palettechanged;
+	SDL_Color newPalette[256];
+	SDL_Color palette[256];
+	bool palettechanged;
 };
+
 #endif
 

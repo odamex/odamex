@@ -207,7 +207,13 @@ void I_SetWindowCaption(const std::string& caption)
 	}
 
 	// [Russell] - Update window caption with name
-	SDL_WM_SetCaption (title.str().c_str(), title.str().c_str());
+	const char* title_cstr = title.str().c_str();
+
+#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+//	SDL_SetWindowTitle(window, title_cstr);
+#else							// SDL 1.2
+	SDL_WM_SetCaption(title_cstr, title_cstr);
+#endif	// SDL_MAJOR_VERSION
 }
 
 void I_SetWindowCaption(void)
@@ -568,10 +574,14 @@ void I_ScreenShot(std::string filename)
 			colors[i].r = RPART(*pal);
 			colors[i].g = GPART(*pal);
 			colors[i].b = BPART(*pal);
+			#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+			colors[i].a = 255;
+			#else							// SDL 1.2
 			colors[i].unused = 0;
+			#endif	// SDL_MAJOR_VERSION
 		}
 
-		SDL_SetColors(surface, colors, 0, 256);
+		SDL_SetPaletteColors(surface->format->palette, colors, 0, 256);
 	}
 
 	// [SL] note that cl_pngscreenshots will always be disabled if PNG support

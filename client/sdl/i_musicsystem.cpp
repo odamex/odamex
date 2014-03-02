@@ -329,22 +329,28 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	mRegisteredSong.Track = Mix_LoadMUS(TEMP_MIDI);
 	unlink(TEMP_MIDI);	// remove the temporary file
 
+	if (!mRegisteredSong.Track)
+	{
+		Printf(PRINT_HIGH, "Mix_LoadMUSW: %s\n", Mix_GetError());
+		return;
+	}
+
 	#else
+
 	// We can read the midi data directly from memory
+	#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	mRegisteredSong.Track = Mix_LoadMUS_RW(mRegisteredSong.Data, 0);
+	#else							// SDL 1.2
 	mRegisteredSong.Track = Mix_LoadMUS_RW(mRegisteredSong.Data);
-	
-	#endif	// TEMP_MIDI
+	#endif	// SDL_MAJOR_VERSION
 	
 	if (!mRegisteredSong.Track)
 	{
-		#ifdef TEMP_MIDI
-		Printf(PRINT_HIGH, "Mix_LoadMUS: %s\n", Mix_GetError());
-		#else
 		Printf(PRINT_HIGH, "Mix_LoadMUS_RW: %s\n", Mix_GetError());
-		#endif	// TEMP_MIDI
-
 		return;
 	}
+
+	#endif	// TEMP_MIDI
 }
 
 
