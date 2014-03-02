@@ -24,7 +24,7 @@
 
 #include <limits>
 
-#include <SDL.h>
+#include "i_sdl.h" 
 #include <stdlib.h>
 
 #ifdef OSX

@@ -209,11 +209,11 @@ void I_SetWindowCaption(const std::string& caption)
 	// [Russell] - Update window caption with name
 	const char* title_cstr = title.str().c_str();
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 //	SDL_SetWindowTitle(window, title_cstr);
-#else							// SDL 1.2
+	#elif defined SDL12
 	SDL_WM_SetCaption(title_cstr, title_cstr);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 }
 
 void I_SetWindowCaption(void)
@@ -574,11 +574,11 @@ void I_ScreenShot(std::string filename)
 			colors[i].r = RPART(*pal);
 			colors[i].g = GPART(*pal);
 			colors[i].b = BPART(*pal);
-			#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+			#ifdef SDL20
 			colors[i].a = 255;
-			#else							// SDL 1.2
+			#elif defined SDL12
 			colors[i].unused = 0;
-			#endif	// SDL_MAJOR_VERSION
+			#endif	// SDL12
 		}
 
 		SDL_SetPaletteColors(surface->format->palette, colors, 0, 256);

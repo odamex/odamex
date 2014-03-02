@@ -23,7 +23,7 @@
 #ifndef __I_MUSIC_H__
 #define __I_MUSIC_H__
 
-#include "SDL_mixer.h"
+#include <SDL_mixer.h>
 #include "doomstat.h"
 
 typedef struct

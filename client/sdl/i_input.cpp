@@ -27,7 +27,7 @@
 #include <list>
 #include <sstream>
 
-#include <SDL.h>
+#include "i_sdl.h" 
 #include "win32inc.h"
 
 #include "doomstat.h"
@@ -115,10 +115,9 @@ void I_EnableKeyRepeat()
 {
 	key_repeat_enabled = true;
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
-#else							// SDL 1.2
+	#ifdef SDL12
 	SDL_EnableKeyRepeat(key_repeat_delay, key_repeat_interval);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 }
 
 
@@ -129,10 +128,9 @@ void I_DisableKeyRepeat()
 {
 	key_repeat_enabled = false;
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
-#else							// SDL 1.2
+	#ifdef SDL12
 	SDL_EnableKeyRepeat(0, 0);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 }
 
 
@@ -143,10 +141,9 @@ void I_ResetKeyRepeat()
 {
 	key_repeat_enabled = true;
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
-#else							// SDL 1.2
+	#ifdef SDL12
 	SDL_EnableKeyRepeat(key_repeat_delay, key_repeat_interval);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 }
 
 
@@ -158,14 +155,14 @@ void I_ResetKeyRepeat()
 //
 static bool I_CheckFocusState()
 {
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	SDL_Window* window = I_GetSDLWindow();
 	return (SDL_GetWindowFlags(window) & (SDL_WINDOW_SHOWN | SDL_WINDOW_MINIMIZED)) == SDL_WINDOW_SHOWN;
-#else							// SDL 1.2
+	#elif defined SDL12
 	SDL_PumpEvents();
 	Uint8 state = SDL_GetAppState();
 	return (state & SDL_APPACTIVE) && (state & SDL_APPINPUTFOCUS);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 }
 
 
@@ -174,12 +171,12 @@ static bool I_CheckFocusState()
 //
 static void I_GrabInput()
 {
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	SDL_Window* window = I_GetSDLWindow();
 	SDL_SetWindowGrab(window, SDL_TRUE);
-#else							// SDL 1.2
+	#elif defined SDL12
 	SDL_WM_GrabInput(SDL_GRAB_ON);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 }
 
 
@@ -188,12 +185,12 @@ static void I_GrabInput()
 //
 static void I_UngrabInput()
 {
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	SDL_Window* window = I_GetSDLWindow();
 	SDL_SetWindowGrab(window, SDL_FALSE);
-#else							// SDL 1.2
+	#elif defined SDL12
 	SDL_WM_GrabInput(SDL_GRAB_OFF);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 }
 
 
@@ -202,12 +199,12 @@ static void I_UngrabInput()
 //
 static bool I_IsInputGrabbed()
 {
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	SDL_Window* window = I_GetSDLWindow();
 	return SDL_GetWindowGrab(window);
-#else							// SDL 1.2
+	#elif defined SDL12
 	return SDL_WM_GrabInput(SDL_GRAB_QUERY);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 }
 
 
@@ -481,11 +478,11 @@ int I_GetJoystickCount()
 //
 std::string I_GetJoystickNameFromIndex(int index)
 {
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	const char* joyname = SDL_JoystickNameForIndex(index);
-#else							// SDL 1.2
+	#elif defined SDL12
 	const char* joyname = SDL_JoystickName(index);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 
 	if (!joyname)
 		return "";
@@ -505,19 +502,15 @@ bool I_OpenJoystick()
 	if (joy_active.asInt() > numjoy)
 		joy_active.Set(0.0);
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	if (!openedjoy || !SDL_JoystickGetAttached(openedjoy))	
 		openedjoy = SDL_JoystickOpen(joy_active.asInt());
-
 	return SDL_JoystickGetAttached(openedjoy);
-
-#else							// SDL 1.2
+	#elif defined SDL12
 	if (!SDL_JoystickOpened(joy_active.asInt()))
 		openedjoy = SDL_JoystickOpen(joy_active.asInt());
-
 	return SDL_JoystickOpened(joy_active.asInt());
-
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 }
 
 //
@@ -529,13 +522,13 @@ void I_CloseJoystick()
 	if (I_GetJoystickCount() == 0 || !openedjoy)
 		return;
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	if (SDL_JoystickGetAttached(openedjoy))
 		SDL_JoystickClose(openedjoy);
-#else							// SDL 1.2
+	#elif defined SDL12
 	if (SDL_JoystickOpened(SDL_JoystickIndex(openedjoy)))
 		SDL_JoystickClose(openedjoy);
-#endif	// SDJ_MAJOR_VERSION
+	#endif	// SDL12
 
 	openedjoy = NULL;
 #endif	// _XBOX
@@ -556,9 +549,9 @@ bool I_InitInput (void)
 
 	atterm (I_ShutdownInput);
 
-#if (SDL_MAJOR_VERSION < 2)		// SDL 1.2
+	#ifdef SDL12
 	SDL_EnableUNICODE(true);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 
 	I_DisableKeyRepeat();
 
@@ -599,12 +592,12 @@ void I_CenterMouse()
 	int x = I_GetVideoWidth() / 2;
 	int y = I_GetVideoHeight() / 2;
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	SDL_Window* window = I_GetSDLWindow();
 	SDL_WarpMouseInWindow(window, x, y);
-#else							// SDL 1.2
+	#elif defined SDL12
 	SDL_WarpMouse(x, y);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 
 	// SDL_WarpMouse inserts a mouse event to warp the cursor to the center of the screen
 	// we need to filter out this event
@@ -613,11 +606,11 @@ void I_CenterMouse()
 	static const int MAX_EVENTS = 512;
 	SDL_Event sdl_events[MAX_EVENTS];
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEMOTION);
-#else							// SDL 1.2
+	#elif defined SDL12
 	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, SDL_MOUSEMOTIONMASK);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 
 	for (int i = 0; i < num_events; i++)
 	{
@@ -680,11 +673,11 @@ void I_GetEvent()
 	// Force SDL to gather events from input devices. 
 	SDL_PumpEvents();
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
-#else							// SDL 1.2
+	#elif defined SDL12
 	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, SDL_ALLEVENTS & ~SDL_MOUSEEVENTMASK);
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 
 	for (int i = 0; i < num_events; i++)
 	{
@@ -695,7 +688,7 @@ void I_GetEvent()
 			AddCommandString("quit");
 			break;
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+		#ifdef SDL20
 		case SDL_WINDOWEVENT:
 		{
 			if (sdl_ev->window.event == SDL_WINDOWEVENT_RESIZED)
@@ -728,7 +721,7 @@ void I_GetEvent()
 			break;
 		}
 
-#else							// SDL 1.2
+		#elif defined SDL12
 		case SDL_VIDEORESIZE:
 		{
 			// Resizable window mode resolutions
@@ -757,26 +750,25 @@ void I_GetEvent()
 			break;
 		}
 
-#endif	// SDL_MAJOR_VERSION
+		#endif	// SDL12
 
 		case SDL_KEYDOWN:
 		{
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+			#ifdef SDL20
 			if (!key_repeat_enabled && sdl_ev->key.repeat)
 				break;
-#endif	// SDL_MAJOR_VERSION
+			#endif	// SDL20
 
 			event_t event(ev_keydown);
 			event.data1 = sdl_ev->key.keysym.sym;
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
-			int keypad0 = SDLK_KP_0, keypad9 = SDLK_KP_9;
-#else							// SDL 1.2
-			int keypad0 = SDLK_KP0, keypad9 = SDLK_KP9;
-#endif	// SDL_MAJOR_VERSION
-
-			if (event.data1 >= keypad0 && event.data1 <= keypad9)
-				event.data2 = event.data3 = '0' + (event.data1 - keypad0);
+			#ifdef SDL20
+			if (event.data1 >= SDLK_KP_0 && event.data1 <= SDLK_KP_9)
+				event.data2 = event.data3 = '0' + (event.data1 - SDLK_KP_0);
+			#elif defined SDL12
+			if (event.data1 >= SDLK_KP0 && event.data1 <= SDLK_KP9)
+				event.data2 = event.data3 = '0' + (event.data1 - SDLK_KP0);
+			#endif	// SDL12
 			else if (event.data1 == SDLK_KP_PERIOD)
 				event.data2 = event.data3 = '.';
 			else if (event.data1 == SDLK_KP_DIVIDE)
@@ -784,17 +776,19 @@ void I_GetEvent()
 			else if (event.data1 == SDLK_KP_ENTER)
 				event.data2 = event.data3 = '\r';
 
-// TODO: handle unicode
-//			else if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
-//				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
+			// TODO: handle unicode for SDL20
+			#ifdef SDL12
+			else if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
+				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
+			#endif	// SDL12
 
-#ifdef _XBOX
+			#ifdef _XBOX
 			// Fix for ENTER key on Xbox
 			if (event.data1 == SDLK_RETURN)
 				event.data2 = event.data3 = '\r';
-#endif
+			#endif	// _XBOX
 
-#ifdef _WIN32
+			#ifdef _WIN32
 			//HeX9109: Alt+F4 for cheats! Thanks Spleen
 			if (event.data1 == SDLK_F4 && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
 				AddCommandString("quit");
@@ -802,27 +796,31 @@ void I_GetEvent()
 			// [AM] Windows 7 seems to preempt this check.
 			if (event.data1 == SDLK_TAB && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
 				event.data1 = event.data2 = event.data3 = 0;
-			else
-#endif
-			D_PostEvent(&event);
+			#endif	// _WIN32
+
+			if (event.data1)
+				D_PostEvent(&event);
 			break;
 		}
 
 		case SDL_KEYUP:
 		{
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+			#ifdef SDL20
 			if (!key_repeat_enabled && sdl_ev->key.repeat)
 				break;
-#endif	// SDL_MAJOR_VERSION
+			#endif	// SDL20
 
 			event_t event(ev_keyup);
 			event.data1 = sdl_ev->key.keysym.sym;
 
-// TODO: handle unicode
-//			if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
-//				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
+			// TODO: handle unicode for SDL20
+			#ifdef SDL12
+			if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
+				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
+			#endif	// SDL12
 
-			D_PostEvent(&event);
+			if (event.data1)
+				D_PostEvent(&event);
 			break;
 		}
 
@@ -895,12 +893,12 @@ void I_GetEvent()
 			else if (sdl_ev->button.button == SDL_BUTTON_X2)
 				event.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
 
-#if (SDL_MAJOR_VERSION < 2)		// SDL 1.2
+			#ifdef SDL12
 			else if (sdl_ev->button.button == SDL_BUTTON_WHEELUP)
 				event.data1 = KEY_MWHEELUP;
 			else if (sdl_ev->button.button == SDL_BUTTON_WHEELDOWN)
 				event.data1 = KEY_MWHEELDOWN;
-#endif	// SDL_MAJOR_VERSION
+			#endif	// SDL12
 
 			if (event.data1)
 				D_PostEvent(&event);
@@ -927,7 +925,7 @@ void I_GetEvent()
 			break;
 		}
 
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+		#ifdef SDL20
 		case SDL_MOUSEWHEEL:
 		{
 			event_t event(ev_keydown);
@@ -941,7 +939,7 @@ void I_GetEvent()
 				D_PostEvent(&event);
 			break;
 		}
-#endif	// SDL_MAJOR_VERSION
+		#endif	// SDL20
 
 		default:
 			// do nothing

@@ -27,7 +27,7 @@
 #include <assert.h>
 #include <algorithm>
 
-#include "SDL_cpuinfo.h"
+#include <SDL_cpuinfo.h>
 #include "r_intrin.h"
 
 #include "m_alloc.h"

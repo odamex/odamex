@@ -31,7 +31,7 @@
 #include "mus2midi.h"
 #include "i_musicsystem.h"
 
-#include "SDL_mixer.h"
+#include <SDL_mixer.h>
 
 #ifdef OSX
 #include <AudioToolbox/AudioToolbox.h>
@@ -338,11 +338,11 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	#else
 
 	// We can read the midi data directly from memory
-	#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	mRegisteredSong.Track = Mix_LoadMUS_RW(mRegisteredSong.Data, 0);
-	#else							// SDL 1.2
+	#elif defined SDL12
 	mRegisteredSong.Track = Mix_LoadMUS_RW(mRegisteredSong.Data);
-	#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 	
 	if (!mRegisteredSong.Track)
 	{

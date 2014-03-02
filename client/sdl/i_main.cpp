@@ -45,7 +45,7 @@
 #include <stack>
 #include <iostream>
 
-#include <SDL.h>
+#include "i_sdl.h" 
 // [Russell] - Don't need SDLmain library
 #ifdef _WIN32
 #undef main

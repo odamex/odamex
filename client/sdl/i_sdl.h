@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
+// $Id: i_sdl.h 4483 2014-01-08 01:02:21Z dr_sean $
 //
 // Copyright (C) 2006-2014 by The Odamex Team.
 //
@@ -16,33 +16,20 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	SDL input handler
+//
+// SDL header wrapper
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __I_INPUT_H__
-#define __I_INPUT_H__
+#ifndef __I_SDL_H__
+#define __I_SDL_H__
 
-#include "doomtype.h"
+#include <SDL.h>
 
-#define MOUSE_DOOM 0
-#define MOUSE_ODAMEX 1
-#define MOUSE_ZDOOM_DI 2
+#if (SDL_MAJOR_VERSION == 2 && SDL_MINOR_VERSION == 0)
+	#define SDL20
+#elif (SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION == 2)
+	#define SDL12
+#endif
 
-bool I_InitInput (void);
-void STACK_ARGS I_ShutdownInput (void);
-void I_PauseMouse();
-void I_ResumeMouse();
-
-int I_GetJoystickCount();
-std::string I_GetJoystickNameFromIndex (int index);
-bool I_OpenJoystick();
-void I_CloseJoystick();
-
-void I_GetEvent (void);
-
-void I_EnableKeyRepeat();
-void I_DisableKeyRepeat();
-
-
-#endif  // __I_INPUT_H__
+#endif  // __I_SDL_H__

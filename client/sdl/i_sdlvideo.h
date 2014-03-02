@@ -24,7 +24,7 @@
 #ifndef __SDLVIDEO_H__
 #define __SDLVIDEO_H__
 
-#include <SDL.h>
+#include "i_sdl.h" 
 #include <list>
 #include "hardware.h"
 #include "i_video.h"
@@ -37,14 +37,14 @@ public:
 	virtual ~SDLDevice() { }
 
 private:
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
+	#ifdef SDL20
 	SDL_Window*		window;
 	SDL_Renderer*	renderer;
 	SDL_Texture*	texture;
 	SDL_Surface*	surface;
-#else							// SDL 1.2
+	#elif defined SDL12
 	SDL_Surface*	surface;
-#endif	// SDL_MAJOR_VERSION
+	#endif	// SDL12
 };
 
 class SDLVideo : public IVideo

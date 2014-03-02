@@ -24,7 +24,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include <SDL.h>
+#include "i_sdl.h" 
 #include <SDL_mixer.h>
 #include <stdio.h>
 #include <stdlib.h>

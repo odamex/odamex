@@ -20,7 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
+#include "i_sdl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
@@ -32,7 +32,7 @@
 // alt-tab display
 #include "win32inc.h"
 #if defined(_WIN32) && !defined(_XBOX)
-    #include "SDL_syswm.h"
+    #include <SDL_syswm.h>
     #include "resource.h"
 #endif // WIN32
 
@@ -58,13 +58,18 @@ CVAR_FUNC_IMPL(vid_vsync)
 
 SDLVideo::SDLVideo(int parm)
 {
-	const SDL_version *SDLVersion = SDL_Linked_Version();
+	#ifdef SDL20
+	SDL_version linked_version;
+	SDL_GetVersion(&linked_version);
+	#elif defined SDL12
+	const SDL_version& linked_version = *SDL_Linked_Version();
+	#endif	// SDL12
 
-	if (SDLVersion->major != SDL_MAJOR_VERSION || SDLVersion->minor != SDL_MINOR_VERSION)
+	if (linked_version.major != SDL_MAJOR_VERSION || linked_version.minor != SDL_MINOR_VERSION)
 	{
 		I_FatalError("SDL version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
 			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
-			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
+			linked_version.major, linked_version.minor, linked_version.patch);
 		return;
 	}
 
@@ -74,11 +79,11 @@ SDLVideo::SDLVideo(int parm)
 		return;
 	}
 
-	if (SDLVersion->patch != SDL_PATCHLEVEL)
+	if (linked_version.patch != SDL_PATCHLEVEL)
 	{
 		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
 			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
-			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
+			linked_version.major, linked_version.minor, linked_version.patch);
 	}
 
 	// [Russell] - Just for windows, display the icon in the system menu and
@@ -102,12 +107,6 @@ SDLVideo::SDLVideo(int parm)
 	#endif
 
 	I_SetWindowCaption();
-
-#if (SDL_MAJOR_VERSION >= 2)	// SDL 2.0
-
-#else							// SDL 1.2
-	
-#endif	// SDL_MAJOR_VERSION
 
 	sdlScreen = NULL;
 	infullscreen = false;
