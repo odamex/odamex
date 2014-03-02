@@ -583,6 +583,7 @@
 		<Unit filename="i_music.h" />
 		<Unit filename="i_musicsystem.cpp" />
 		<Unit filename="i_musicsystem.h" />
+		<Unit filename="i_sdl.h" />
 		<Unit filename="i_sdlvideo.cpp" />
 		<Unit filename="i_sdlvideo.h" />
 		<Unit filename="i_sound.cpp" />
