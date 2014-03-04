@@ -94,36 +94,6 @@
 					<Add option="/DEBUG" />
 				</Linker>
 			</Target>
-			<Target title="Unix Release">
-				<Option platforms="Unix;" />
-				<Option output="../../lib/libtextscreen.a" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="" />
-				<Option object_output="../../obj/libtextscreen/gcc/release" />
-				<Option type="2" />
-				<Option compiler="gcc" />
-				<Option createDefFile="1" />
-				<Compiler>
-					<Add option="-O2" />
-					<Add directory="/usr/include/SDL" />
-				</Compiler>
-				<Linker>
-					<Add option="-s" />
-				</Linker>
-			</Target>
-			<Target title="Unix Debug">
-				<Option platforms="Unix;" />
-				<Option output="../../lib/libtextscreen-dbg.a" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="" />
-				<Option object_output="../../obj/libtextscreen/gcc/debug" />
-				<Option type="2" />
-				<Option compiler="gcc" />
-				<Option createDefFile="1" />
-				<Compiler>
-					<Add option="-W" />
-					<Add option="-gdwarf-2" />
-					<Add directory="/usr/include/SDL" />
-				</Compiler>
-			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
