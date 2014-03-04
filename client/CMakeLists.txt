@@ -29,7 +29,7 @@ include_directories(${COMMON_DIR} ${CLIENT_DIR})
 
 # Textscreen
 set(TEXTSCREEN_LIBRARY "textscreen")
-set(TEXTSCREEN_DIR ../textscreen)
+set(TEXTSCREEN_DIR ../libraries/textscreen)
 set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
 set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
 
@@ -77,7 +77,7 @@ endif()
 
 # PortMidi configuration
 if(USE_INTREE_PORTMIDI)
-  include_directories(../portmidi/pm_common/ ../portmidi/porttime/)
+  include_directories(../libraries/portmidi/pm_common/ ../libraries/portmidi/porttime/)
   add_definitions(-DPORTMIDI)
 else()
   find_package(PortMidi)

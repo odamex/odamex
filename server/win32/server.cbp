@@ -21,7 +21,7 @@
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
 					<Add option="-DODA_HAVE_MINIUPNP" />
-					<Add directory="../../libminiupnpc" />
+					<Add directory="../../libraries/libminiupnpc" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -50,7 +50,7 @@
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
 					<Add option="-DODA_HAVE_MINIUPNP" />
-					<Add directory="../../libminiupnpc" />
+					<Add directory="../../libraries/libminiupnpc" />
 				</Compiler>
 				<Linker>
 					<Add library="..\..\lib\libminiupnpc-dbg.a" />
@@ -171,8 +171,8 @@
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
-					<Add directory="../../libminiupnpc" />
-					<Add directory="../../jsoncpp" />
+					<Add directory="../../libraries/libminiupnpc" />
+					<Add directory="../../libraries/jsoncpp" />
 				</Compiler>
 				<Linker>
 					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
@@ -235,8 +235,8 @@
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
-					<Add directory="../../libminiupnpc" />
-					<Add directory="../../jsoncpp" />
+					<Add directory="../../libraries/libminiupnpc" />
+					<Add directory="../../libraries/jsoncpp" />
 				</Compiler>
 				<Linker>
 					<Add option="/DEBUG" />
@@ -282,7 +282,8 @@
 			<Add directory="." />
 			<Add directory="../src" />
 			<Add directory="../../common" />
-			<Add directory="../../jsoncpp" />
+			<Add directory="../../libraries/jsoncpp" />
+			<Add directory="../../libraries/libminiupnpc" />
 		</Compiler>
 		<Unit filename="../../common/actor.h" />
 		<Unit filename="../../common/c_console.h" />
@@ -448,9 +449,9 @@
 		<Unit filename="../../common/win32time.h" />
 		<Unit filename="../../common/z_zone.cpp" />
 		<Unit filename="../../common/z_zone.h" />
-		<Unit filename="../../jsoncpp/json/json-forwards.h" />
-		<Unit filename="../../jsoncpp/json/json.h" />
-		<Unit filename="../../jsoncpp/jsoncpp.cpp" />
+		<Unit filename="../../libraries/jsoncpp/json/json-forwards.h" />
+		<Unit filename="../../libraries/jsoncpp/json/json.h" />
+		<Unit filename="../../libraries/jsoncpp/jsoncpp.cpp" />
 		<Unit filename="../src/c_console.cpp" />
 		<Unit filename="../src/d_main.cpp" />
 		<Unit filename="../src/d_netinfo.cpp" />

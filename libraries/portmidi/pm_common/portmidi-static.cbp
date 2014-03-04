@@ -7,9 +7,9 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Win Debug (GCC)">
-				<Option output="../../lib/portmidi-dbg" prefix_auto="1" extension_auto="1" />
+				<Option output="../../../lib/portmidi-dbg" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
-				<Option object_output="../../obj/libportmidi/gcc/debug" />
+				<Option object_output="../../../obj/libportmidi/gcc/debug" />
 				<Option type="2" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -34,9 +34,9 @@
 				</Linker>
 			</Target>
 			<Target title="Win Release (GCC)">
-				<Option output="../../lib/portmidi" prefix_auto="1" extension_auto="1" />
+				<Option output="../../../lib/portmidi" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
-				<Option object_output="../../obj/libportmidi/gcc/release" />
+				<Option object_output="../../../obj/libportmidi/gcc/release" />
 				<Option type="2" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -57,9 +57,9 @@
 				</ResourceCompiler>
 			</Target>
 			<Target title="Win Debug (VC)">
-				<Option output="../../lib/libportmidi-dbg" prefix_auto="1" extension_auto="1" />
+				<Option output="../../../lib/libportmidi-dbg" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
-				<Option object_output="../../obj/libportmidi/vc/debug" />
+				<Option object_output="../../../obj/libportmidi/vc/debug" />
 				<Option type="2" />
 				<Option compiler="msvc10" />
 				<Option createDefFile="1" />
@@ -73,20 +73,16 @@
 					<Add option="-O0" />
 					<Add directory="../pm_common" />
 					<Add directory="../porttime" />
-					<Add directory="C:/Program Files/Java/jdk1.6.0_16/include" />
-					<Add directory="C:/Program Files/Java/jdk1.6.0_16/include/win32" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="../pm_common" />
 					<Add directory="../porttime" />
-					<Add directory="C:/Program Files/Java/jdk1.6.0_16/include" />
-					<Add directory="C:/Program Files/Java/jdk1.6.0_16/include/win32" />
 				</ResourceCompiler>
 			</Target>
 			<Target title="Win Release (VC)">
-				<Option output="../../lib/libportmidi" prefix_auto="1" extension_auto="1" />
+				<Option output="../../../lib/libportmidi" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
-				<Option object_output="../../obj/libportmidi/vc/release" />
+				<Option object_output="../../../obj/libportmidi/vc/release" />
 				<Option type="2" />
 				<Option compiler="msvc10" />
 				<Option createDefFile="1" />

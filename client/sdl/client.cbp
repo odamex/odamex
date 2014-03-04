@@ -28,6 +28,8 @@
 					<Add library="ws2_32" />
 					<Add library="libtextscreen" />
 					<Add library="libportmidi" />
+					<Add library="libpng" />
+					<Add library="z" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
 					<Add directory="../../lib" />
@@ -56,6 +58,8 @@
 					<Add library="ws2_32" />
 					<Add library="libtextscreen-dbg" />
 					<Add library="libportmidi-dbg" />
+					<Add library="libpng-dbg" />
+					<Add library="zlib-dbg" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
 					<Add directory="../../lib" />
@@ -185,15 +189,19 @@
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
-					<Add directory="../../textscreen" />
-					<Add directory="../../portmidi/pm_common" />
-					<Add directory="../../portmidi/porttime" />
+					<Add directory="../../libraries/textscreen" />
+					<Add directory="../../libraries/portmidi/pm_common" />
+					<Add directory="../../libraries/portmidi/porttime" />
+					<Add directory="../../libraries/zlib" />
+					<Add directory="../../libraries/libpng" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
-					<Add directory="../../libtextscreen" />
+					<Add directory="../../libraries/textscreen" />
+					<Add directory="../../libraries/zlib" />
+					<Add directory="../../libraries/libpng" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
@@ -216,6 +224,8 @@
 					<Add library="libtextscreen" />
 					<Add library="libportmidi" />
 					<Add library="shlwapi" />
+					<Add library="zlib" />
+					<Add library="libpng" />
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
@@ -261,15 +271,19 @@
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
-					<Add directory="../../textscreen" />
-					<Add directory="../../portmidi/pm_common" />
-					<Add directory="../../portmidi/porttime" />
+					<Add directory="../../libraries/textscreen" />
+					<Add directory="../../libraries/portmidi/pm_common" />
+					<Add directory="../../libraries/portmidi/porttime" />
+					<Add directory="../../libraries/zlib" />
+					<Add directory="../../libraries/libpng" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
-					<Add directory="../../libtextscreen" />
+					<Add directory="../../libraries/textscreen" />
+					<Add directory="../../libraries/zlib" />
+					<Add directory="../../libraries/libpng" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
@@ -293,6 +307,8 @@
 					<Add library="libtextscreen-dbg" />
 					<Add library="libportmidi-dbg" />
 					<Add library="shlwapi" />
+					<Add library="zlib-dbg" />
+					<Add library="libpng-dbg" />
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />
@@ -321,9 +337,11 @@
 			<Add directory="." />
 			<Add directory="../src" />
 			<Add directory="../../common" />
-			<Add directory="../../textscreen" />
-			<Add directory="../../portmidi/pm_common" />
-			<Add directory="../../portmidi/porttime" />
+			<Add directory="../../libraries/textscreen" />
+			<Add directory="../../libraries/portmidi/pm_common" />
+			<Add directory="../../libraries/portmidi/porttime" />
+			<Add directory="../../libraries/zlib" />
+			<Add directory="../../libraries/libpng" />
 		</Compiler>
 		<Linker>
 			<Add library="SDL" />

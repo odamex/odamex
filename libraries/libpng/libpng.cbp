@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="libpng" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Win Debug (GCC)">
+				<Option output="../../lib/png-dbg" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../../obj/libpng/gcc/debug" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-O0" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_DEBUG" />
+					<Add option="-DPM_CHECK_ERRORS=1" />
+					<Add option='-DCMAKE_INTDIR=\&quot;Debug\&quot;' />
+					<Add directory="." />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="." />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Win Release (GCC)">
+				<Option output="../../lib/png" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../../obj/libpng/gcc/release" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-W" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-DNDEBUG" />
+					<Add option='-DCMAKE_INTDIR=\&quot;Release\&quot;' />
+					<Add directory="." />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="." />
+				</ResourceCompiler>
+			</Target>
+			<Target title="Win Debug (VC)">
+				<Option output="../../lib/libpng-dbg" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../../obj/libpng/vc/debug" />
+				<Option type="2" />
+				<Option compiler="msvc10" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="/W3" />
+					<Add option="-O0" />
+					<Add option="-fno-inline" />
+					<Add option="/DWIN32" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/D_DEBUG" />
+					<Add option="/DPM_CHECK_ERRORS=1" />
+					<Add option='/DCMAKE_INTDIR=\&quot;Debug\&quot;' />
+					<Add directory="." />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="." />
+				</ResourceCompiler>
+			</Target>
+			<Target title="Win Release (VC)">
+				<Option output="../../lib/libpng" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../../obj/libpng/vc/release" />
+				<Option type="2" />
+				<Option compiler="msvc10" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="/O2" />
+					<Add option="/W2" />
+					<Add option="-fno-inline" />
+					<Add option="/DWIN32" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNDEBUG" />
+					<Add option='/DCMAKE_INTDIR=\&quot;Release\&quot;' />
+					<Add directory="." />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="." />
+				</ResourceCompiler>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
+		</VirtualTargets>
+		<Compiler>
+			<Add directory="../zlib" />
+		</Compiler>
+		<Linker>
+			<Add directory="../lib" />
+		</Linker>
+		<Unit filename="png.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="png.h" />
+		<Unit filename="pngconf.h" />
+		<Unit filename="pngdebug.h" />
+		<Unit filename="pngerror.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngget.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pnginfo.h" />
+		<Unit filename="pnglibconf.h" />
+		<Unit filename="pngmem.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngpread.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngread.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngrio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngrtran.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngrutil.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngset.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngstruct.h" />
+		<Unit filename="pngtrans.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngwio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngwrite.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngwtran.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pngwutil.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="scripts/pngwin.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

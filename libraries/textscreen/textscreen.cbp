@@ -8,9 +8,9 @@
 		<Build>
 			<Target title="Win Release (GCC)">
 				<Option platforms="Windows;" />
-				<Option output="../lib/libtextscreen.a" prefix_auto="0" extension_auto="0" />
+				<Option output="../../lib/libtextscreen.a" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="" />
-				<Option object_output="../obj/libtextscreen/gcc/release" />
+				<Option object_output="../../obj/libtextscreen/gcc/release" />
 				<Option type="2" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -23,9 +23,9 @@
 			</Target>
 			<Target title="Win Debug (GCC)">
 				<Option platforms="Windows;" />
-				<Option output="../lib/libtextscreen-dbg.a" prefix_auto="0" extension_auto="0" />
+				<Option output="../../lib/libtextscreen-dbg.a" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="" />
-				<Option object_output="../obj/libtextscreen/gcc/debug" />
+				<Option object_output="../../obj/libtextscreen/gcc/debug" />
 				<Option type="2" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -37,9 +37,9 @@
 			</Target>
 			<Target title="Win Release (VC)">
 				<Option platforms="Windows;" />
-				<Option output="../lib/libtextscreen.lib" prefix_auto="0" extension_auto="0" />
+				<Option output="../../lib/libtextscreen.lib" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="" />
-				<Option object_output="../obj/libtextscreen/vc/release" />
+				<Option object_output="../../obj/libtextscreen/vc/release" />
 				<Option type="2" />
 				<Option compiler="msvc10" />
 				<Option createDefFile="1" />
@@ -63,9 +63,9 @@
 			</Target>
 			<Target title="Win Debug (VC)">
 				<Option platforms="Windows;" />
-				<Option output="../lib/libtextscreen-dbg.lib" prefix_auto="0" extension_auto="0" />
+				<Option output="../../lib/libtextscreen-dbg.lib" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="" />
-				<Option object_output="../obj/libtextscreen/vc/debug" />
+				<Option object_output="../../obj/libtextscreen/vc/debug" />
 				<Option type="2" />
 				<Option compiler="msvc10" />
 				<Option createDefFile="1" />
@@ -96,9 +96,9 @@
 			</Target>
 			<Target title="Unix Release">
 				<Option platforms="Unix;" />
-				<Option output="../lib/libtextscreen.a" prefix_auto="0" extension_auto="0" />
+				<Option output="../../lib/libtextscreen.a" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="" />
-				<Option object_output="../obj/libtextscreen/gcc/release" />
+				<Option object_output="../../obj/libtextscreen/gcc/release" />
 				<Option type="2" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -112,9 +112,9 @@
 			</Target>
 			<Target title="Unix Debug">
 				<Option platforms="Unix;" />
-				<Option output="../lib/libtextscreen-dbg.a" prefix_auto="0" extension_auto="0" />
+				<Option output="../../lib/libtextscreen-dbg.a" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="" />
-				<Option object_output="../obj/libtextscreen/gcc/debug" />
+				<Option object_output="../../obj/libtextscreen/gcc/debug" />
 				<Option type="2" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -130,7 +130,7 @@
 			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
 		</VirtualTargets>
 		<Compiler>
-			<Add directory="../common" />
+			<Add directory="../../common" />
 		</Compiler>
 		<Unit filename="textscreen.h" />
 		<Unit filename="txt_button.c">
