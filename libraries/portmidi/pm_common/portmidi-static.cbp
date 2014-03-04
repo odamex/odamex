@@ -64,13 +64,11 @@
 				<Option compiler="msvc10" />
 				<Option createDefFile="1" />
 				<Compiler>
-					<Add option="-DWIN32" />
-					<Add option="-D_WINDOWS" />
-					<Add option="-D_DEBUG" />
-					<Add option="-DPM_CHECK_ERRORS=1" />
-					<Add option='-DCMAKE_INTDIR=\&quot;Debug\&quot;' />
-					<Add option="-W" />
-					<Add option="-O0" />
+					<Add option="/DWIN32" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/D_DEBUG" />
+					<Add option="/DPM_CHECK_ERRORS=1" />
+					<Add option='/DCMAKE_INTDIR=\&quot;Debug\&quot;' />
 					<Add directory="../pm_common" />
 					<Add directory="../porttime" />
 				</Compiler>
@@ -87,12 +85,12 @@
 				<Option compiler="msvc10" />
 				<Option createDefFile="1" />
 				<Compiler>
+					<Add option="/O2" />
 					<Add option="/W2" />
-					<Add option="-O2" />
-					<Add option="-DWIN32" />
-					<Add option="-D_WINDOWS" />
-					<Add option="-DNDEBUG" />
-					<Add option='-DCMAKE_INTDIR=\&quot;Release\&quot;' />
+					<Add option="/DWIN32" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNDEBUG" />
+					<Add option='/DCMAKE_INTDIR=\&quot;Release\&quot;' />
 					<Add directory="../pm_common" />
 					<Add directory="../porttime" />
 				</Compiler>

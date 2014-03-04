@@ -61,8 +61,6 @@
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="/W3" />
-					<Add option="-O0" />
-					<Add option="-fno-inline" />
 					<Add option="/DWIN32" />
 					<Add option="/D_WINDOWS" />
 					<Add option="/D_DEBUG" />
@@ -84,7 +82,6 @@
 				<Compiler>
 					<Add option="/O2" />
 					<Add option="/W2" />
-					<Add option="-fno-inline" />
 					<Add option="/DWIN32" />
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNDEBUG" />
