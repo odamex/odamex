@@ -75,7 +75,7 @@ bool operator>= (const char* lhs, const OString& rhs);
 
 namespace std {
 	void swap(::OString& x, ::OString& y);
-};
+}
 
 
 
