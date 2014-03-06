@@ -30,6 +30,8 @@ EnableDirDoesntExistWarning=true
 DirExistsWarning=no
 VersionInfoVersion=0.6.4
 MinVersion=0,5.0
+AllowRootDirectory=True
+ChangesAssociations=Yes
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -100,10 +102,6 @@ Root: HKCR; Subkey: odamex; ValueType: string; ValueData: URL:Odamex Protocol; F
 Root: HKCR; Subkey: odamex; ValueType: string; ValueName: Url Protocol; Flags: createvalueifdoesntexist uninsdeletekey noerror
 Root: HKCR; Subkey: odamex\DefaultIcon; ValueData: odamex.exe,1; Flags: createvalueifdoesntexist uninsdeletekey noerror
 Root: HKCR; Subkey: odamex\shell\open\command; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: createvalueifdoesntexist uninsdeletekey noerror; ValueType: string
-Root: HKCR; SubKey: .odd; ValueType: string; ValueData: Odamex Demo; Flags: uninsdeletekey noerror
-Root: HKCR; SubKey: Odamex Demo; ValueType: string; ValueData: Odamex Net Demo; Flags: uninsdeletekey noerror
-Root: HKCR; SubKey: Odamex Demo\Shell\Open\Command; ValueType: string; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletevalue noerror
-Root: HKCR; Subkey: Odamex Demo\DefaultIcon; ValueType: string; ValueData: {app}\odamex.exe,0; Flags: uninsdeletevalue noerror
 Root: HKCR; SubKey: ".odd"; ValueType: string; ValueData: "Odamex Data Demo"; Flags: uninsdeletekey
 Root: HKCR; SubKey: "Odamex Data Demo"; ValueType: string; ValueData: "Odamex Game Demo Format"; Flags: uninsdeletekey
 Root: HKCR; SubKey: "Odamex Data Demo\Shell\Open\Command"; ValueType: string; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletekey

@@ -60,84 +60,6 @@
 					<Variable name="WX_PLAT" value="msw" />
 				</Environment>
 			</Target>
-			<Target title="Unix Release">
-				<Option platforms="Unix;" />
-				<Option output="../odalaunch" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="../" />
-				<Option object_output="../obj/odalaunch/release" />
-				<Option type="0" />
-				<Option compiler="gcc" />
-				<Compiler>
-					<Add option="-Os" />
-				</Compiler>
-				<Linker>
-					<Add option="-s" />
-				</Linker>
-				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
-				</ExtraCommands>
-				<Environment>
-					<Variable name="WX_PLAT" value="unix" />
-				</Environment>
-			</Target>
-			<Target title="Unix Debug">
-				<Option platforms="Unix;" />
-				<Option output="../odalaunch-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="../" />
-				<Option object_output="../obj/odalaunch/debug" />
-				<Option type="0" />
-				<Option compiler="gcc" />
-				<Compiler>
-					<Add option="-Wall" />
-					<Add option="-gdwarf-2" />
-				</Compiler>
-				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
-				</ExtraCommands>
-				<Environment>
-					<Variable name="WX_CFG" value="" />
-					<Variable name="WX_PLAT" value="unix" />
-				</Environment>
-			</Target>
-			<Target title="Mac Release">
-				<Option platforms="Mac;" />
-				<Option output="../odalaunch" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="../" />
-				<Option object_output="../obj/odalaunch/release" />
-				<Option type="0" />
-				<Option compiler="gcc" />
-				<Compiler>
-					<Add option="-Os" />
-				</Compiler>
-				<Linker>
-					<Add option="-s" />
-				</Linker>
-				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
-				</ExtraCommands>
-				<Environment>
-					<Variable name="WX_PLAT" value="unix" />
-				</Environment>
-			</Target>
-			<Target title="Mac Debug">
-				<Option platforms="Mac;" />
-				<Option output="../odalaunch-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="../" />
-				<Option object_output="../obj/odalaunch/debug" />
-				<Option type="0" />
-				<Option compiler="gcc" />
-				<Compiler>
-					<Add option="-Wall" />
-					<Add option="-gdwarf-2" />
-				</Compiler>
-				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
-				</ExtraCommands>
-				<Environment>
-					<Variable name="WX_CFG" value="" />
-					<Variable name="WX_PLAT" value="unix" />
-				</Environment>
-			</Target>
 			<Target title="Win Release (VC)">
 				<Option platforms="Windows;" />
 				<Option output="../odalaunch.exe" prefix_auto="0" extension_auto="0" />
@@ -313,8 +235,6 @@
 			</Environment>
 		</Build>
 		<VirtualTargets>
-			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
-			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
 			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
 			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
 		</VirtualTargets>
@@ -375,17 +295,8 @@
 		<Unit filename="res/icons.xrc" />
 		<Unit filename="res/odalaunch.rc">
 			<Option compilerVar="WINDRES" />
-			<Option target="Win Release (GCC)" />
-			<Option target="Win Debug (GCC)" />
-			<Option target="Win Release (VC)" />
-			<Option target="Win Debug (VC)" />
 		</Unit>
-		<Unit filename="res/resource.h">
-			<Option target="Win Release (GCC)" />
-			<Option target="Win Debug (GCC)" />
-			<Option target="Win Release (VC)" />
-			<Option target="Win Debug (VC)" />
-		</Unit>
+		<Unit filename="res/resource.h" />
 		<Unit filename="res/xrc_resource.h" />
 		<Unit filename="res/xrc_resource.xrc" />
 		<Unit filename="src/dlg_about.cpp">
@@ -439,10 +350,6 @@
 			<Option weight="0" />
 			<Option target="Win Release (GCC)" />
 			<Option target="Win Debug (GCC)" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-			<Option target="Mac Release" />
-			<Option target="Mac Debug" />
 		</Unit>
 		<Extensions>
 			<code_completion />

@@ -8,9 +8,9 @@
 		<Build>
 			<Target title="Win Debug (VC)">
 				<Option platforms="Windows;" />
-				<Option output="../../lib/libminiupnpc-dbg.lib" prefix_auto="0" extension_auto="0" />
+				<Option output="../../../lib/libminiupnpc-dbg.lib" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="" />
-				<Option object_output="../obj/libminiupnpc/vc/debug" />
+				<Option object_output="../../../obj/libminiupnpc/vc/debug" />
 				<Option type="2" />
 				<Option compiler="msvc10" />
 				<Option createDefFile="1" />
@@ -27,9 +27,9 @@
 			</Target>
 			<Target title="Win Release (VC)">
 				<Option platforms="Windows;" />
-				<Option output="../../lib/libminiupnpc.lib" prefix_auto="0" extension_auto="0" />
+				<Option output="../../../lib/libminiupnpc.lib" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="" />
-				<Option object_output="../obj/libminiupnpc/vc/release" />
+				<Option object_output="../../../obj/libminiupnpc/vc/release" />
 				<Option type="2" />
 				<Option compiler="msvc10" />
 				<Option createDefFile="1" />
@@ -49,9 +49,9 @@
 			</Target>
 			<Target title="Win Debug (GCC)">
 				<Option platforms="Windows;" />
-				<Option output="../../lib/libminiupnpc-dbg.a" prefix_auto="0" extension_auto="0" />
+				<Option output="../../../lib/libminiupnpc-dbg.a" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="" />
-				<Option object_output="../obj/libminiupnpc/gcc/debug" />
+				<Option object_output="../../../obj/libminiupnpc/gcc/debug" />
 				<Option type="2" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -66,9 +66,9 @@
 			</Target>
 			<Target title="Win Release (GCC)">
 				<Option platforms="Windows;" />
-				<Option output="../../lib/libminiupnpc.a" prefix_auto="0" extension_auto="0" />
+				<Option output="../../../lib/libminiupnpc.a" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="" />
-				<Option object_output="../obj/libminiupnpc/gcc/release" />
+				<Option object_output="../../../obj/libminiupnpc/gcc/release" />
 				<Option type="2" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -77,37 +77,6 @@
 					<Add option="-DWIN32" />
 					<Add option="-DSTATICLIB" />
 					<Add option="-D_WIN32_WINNT=0x501" />
-					<Add directory="../../libminiupnpc" />
-				</Compiler>
-			</Target>
-			<Target title="Unix Debug">
-				<Option platforms="Unix;" />
-				<Option output="../../lib/libminiupnpc-dbg.a" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="" />
-				<Option object_output="../obj/libminiupnpc/gcc/debug" />
-				<Option type="2" />
-				<Option compiler="gcc" />
-				<Option createDefFile="1" />
-				<Compiler>
-					<Add option="-O2" />
-					<Add option="-fno-inline" />
-					<Add option="-DWIN32" />
-					<Add option="-DSTATICLIB" />
-					<Add option="-D_WIN32_WINNT=0x501" />
-					<Add directory="../../libminiupnpc" />
-				</Compiler>
-			</Target>
-			<Target title="Unix Release">
-				<Option platforms="Unix;" />
-				<Option output="../../lib/libminiupnpc.a" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="" />
-				<Option object_output="../obj/libminiupnpc/gcc/release" />
-				<Option type="2" />
-				<Option compiler="gcc" />
-				<Option createDefFile="1" />
-				<Compiler>
-					<Add option="-O2" />
-					<Add option="-DSTATICLIB" />
 					<Add directory="../../libminiupnpc" />
 				</Compiler>
 			</Target>
