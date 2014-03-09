@@ -115,7 +115,7 @@ CVAR_FUNC_IMPL (sv_maxclients)
 {
 	// Describes the max number of clients that are allowed to connect.
 	int count = var.asInt();
-	Players::iterator it = players.begin(); 
+	Players::iterator it = players.begin();
 	while (it != players.end())
 	{
 		if (count <= 0)
@@ -4390,7 +4390,7 @@ void SV_TimelimitCheck()
 						drawgame = false;
 						winplayer = &*it;
 					}
-					else if (it->fragcount == winplayer->fragcount)
+					else if (it->id != winplayer->id && it->fragcount == winplayer->fragcount)
 					{
 						drawgame = true;
 					}
