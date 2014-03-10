@@ -192,10 +192,10 @@ CVAR(				co_boomsectortouch, "0", "Use a finer-grained, faster, and more accurat
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 CVAR(				co_level8soundfeature, "0", "Enable/disable the \"level 8 full sound at far distances\" feature",
-					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_LATCH)
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR(				co_blockmapfix, "0", "Fix the blockmap collision bug",
-					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_LATCH)
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR(				co_zdoomphys, "0", "Enable/disable ZDoom-based gravity and physics interactions",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)

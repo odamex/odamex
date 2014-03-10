@@ -66,9 +66,9 @@ void CTF_Connect()
 	size_t i;
 
 	// clear player flags client may have imagined
-	for(i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 		for(size_t j = 0; j < NUMFLAGS; j++)
-			players[i].flags[j] = false;
+			it->flags[j] = false;
 
 	for(i = 0; i < NUMFLAGS; i++)
 	{
@@ -406,20 +406,26 @@ void CTF_DrawHud (void)
 		else
 			tintglowtype = 0;
 
-		if (hasflags[0] && hasflags[1]) {
+		DWORD tintColor = 0;
+		if (hasflags[0] && hasflags[1])
+		{
 			if (tintglow < 15 || tintglow > 60)
-				TintScreen(BestColor(pal->basecolors, (int)(255/15)*tintglowtype,
-					(int)(255/15)*tintglowtype, 255, pal->numcolors));
+				tintColor = MAKERGB((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
 			else
-				TintScreen(BestColor(pal->basecolors, 255,
-					(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, pal->numcolors));
+				tintColor = MAKERGB(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
 		}
 		else if (hasflags[0])
-			TintScreen(BestColor(pal->basecolors, (int)(255/15)*tintglowtype,
-				(int)(255/15)*tintglowtype, 255, pal->numcolors));
+			tintColor = MAKERGB((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
 		else if (hasflags[1])
-			TintScreen(BestColor(pal->basecolors, 255,
-				(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, pal->numcolors));
+			tintColor = MAKERGB(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
+
+		if (tintColor != 0)
+		{
+			if (screen->is8bit())
+				TintScreen(BestColor2(pal->basecolors, tintColor, pal->numcolors));
+			else
+				TintScreen(tintColor);
+		}
 	}
 }
 

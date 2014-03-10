@@ -21,12 +21,12 @@ if(WIN32)
 endif()
 
 # JsonCpp
-set(JSONCPP_DIR ../jsoncpp)
+set(JSONCPP_DIR ../libraries/jsoncpp)
 file(GLOB JSONCPP_HEADERS ${JSONCPP_DIR}/json/*.h)
 set(JSONCPP_SOURCE ${JSONCPP_DIR}/jsoncpp.cpp)
 
 # MiniUPnPc
-set(MINIUPNPC_DIR ../libminiupnpc)
+set(MINIUPNPC_DIR ../libraries/libminiupnpc)
 set(MINIUPNPC_STATIC_LIBRARIES upnpc-static)
 
 # Platform definitions

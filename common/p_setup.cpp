@@ -246,6 +246,10 @@ void P_LoadSegs (int lump)
 		float dx = FIXED2FLOAT(to->x - from->x);
 		float dy = FIXED2FLOAT(to->y - from->y);
 		li->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
+
+		dx = FIXED2FLOAT(li->v2->x - li->v1->x);
+		dy = FIXED2FLOAT(li->v2->y - li->v1->y);
+		li->length = FLOAT2FIXED(sqrt(dx * dx + dy* dy));
 	}
 
 	Z_Free (data);
@@ -1578,7 +1582,7 @@ extern polyblock_t **PolyBlockMap;
 // [RH] position indicates the start spot to spawn at
 void P_SetupLevel (char *lumpname, int position)
 {
-	size_t i, lumpnum;
+	size_t lumpnum;
 
 	level.total_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
@@ -1587,10 +1591,9 @@ void P_SetupLevel (char *lumpname, int position)
 
 	if (!savegamerestore)
 	{
-		for (i = 0; i < players.size(); i++)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
-			players[i].killcount = players[i].secretcount
-				= players[i].itemcount = 0;
+			it->killcount = it->secretcount = it->itemcount = 0;
 		}
 	}
 
@@ -1691,15 +1694,15 @@ void P_SetupLevel (char *lumpname, int position)
 
     if (serverside)
     {
-		for (i = 0 ; i < players.size() ; i++)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
-			SV_PreservePlayer(players[i]);
+			SV_PreservePlayer(*it);
 
-			if (players[i].ingame())
+			if (it->ingame())
 			{
 				// if deathmatch, randomly spawn the active players
 				// denis - this function checks for deathmatch internally
-				G_DeathMatchSpawnPlayer (players[i]);
+				G_DeathMatchSpawnPlayer(*it);
 			}
 		}
     }

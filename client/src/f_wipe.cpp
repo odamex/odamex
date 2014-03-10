@@ -51,6 +51,17 @@ EXTERN_CVAR (r_wipetype)
 
 static byte* wipe_screen = NULL;
 
+static inline void Wipe_Blend(palindex_t* to, const palindex_t* from, int fglevel, int bglevel)
+{
+	*to = rt_blend2<palindex_t>(*from, bglevel << 2, *to, fglevel << 2);
+}
+
+static inline void Wipe_Blend(argb_t* to, const argb_t* from, int fglevel, int bglevel)
+{
+	*to = alphablend2a(*from, bglevel << 2, *to, fglevel << 2);
+}
+
+
 // Melt -------------------------------------------------------------
 
 // [SL] The standard Doom screen wipe. This implementation borrows
@@ -72,7 +83,7 @@ static void Wipe_StartMelt()
 
 	// copy each column of the current screen image to wipe_screen
 	// each column is transposed and stored in row-major form for ease of use
-	screen->GetTransposedBlock(0, 0, screen->width, screen->height, (byte*)wipe_screen);
+	screen->GetTransposedBlock(0, 0, screen->width, screen->height, wipe_screen);
 }
 
 static void Wipe_StopMelt()
@@ -104,6 +115,22 @@ static bool Wipe_TickMelt()
 	return done;
 }
 
+template<typename PIXEL_T>
+static inline void Wipe_DrawMeltLoop(int x, int starty)
+{
+	const int pitch = screen->pitch / sizeof(PIXEL_T);
+	PIXEL_T* to = (PIXEL_T*)screen->buffer + pitch * starty + x;
+	const PIXEL_T* from = (PIXEL_T*)wipe_screen + screen->height * x;
+
+	int y = screen->height - starty;
+	while (y--)
+	{
+		*to = *from;
+		to += pitch;
+		from++; 
+	}
+}
+
 static void Wipe_DrawMelt()
 {
 	for (int x = 0; x < screen->width; x++)
@@ -113,15 +140,10 @@ static void Wipe_DrawMelt()
 
 		wormy = wormy * screen->height / 200;
 
-		byte* source = wipe_screen + screen->height * x;
-		byte* dest = screen->buffer + screen->pitch * wormy + x;
-
-		for (int y = screen->height - wormy; y--; )
-		{
-			*dest = *source;
-			dest += screen->pitch;
-			source++;
-		}
+		if (screen->is8bit())
+			Wipe_DrawMeltLoop<palindex_t>(x, wormy);
+		else
+			Wipe_DrawMeltLoop<argb_t>(x, wormy);
 	}
 }
 
@@ -263,15 +285,18 @@ static bool Wipe_TickBurn()
 	return true;
 }
 
-static void Wipe_DrawBurn()
+template <typename PIXEL_T>
+static inline void Wipe_DrawBurnGeneric()
 {
+	const int pitch = screen->pitch / sizeof(PIXEL_T);
+	PIXEL_T* to = (PIXEL_T*)screen->buffer;
+	const PIXEL_T* from = (PIXEL_T*)wipe_screen;
+
 	fixed_t firex, firey;
 	int x, y;
 
 	const fixed_t xstep = (FIREWIDTH * FRACUNIT) / screen->width;
 	const fixed_t ystep = (FIREHEIGHT * FRACUNIT) / screen->height;
-	byte* to = screen->buffer;
-	byte* from = (byte *)wipe_screen;
 
 	for (y = 0, firey = 0; y < screen->height; y++, firey += ystep)
 	{
@@ -283,24 +308,26 @@ static void Wipe_DrawBurn()
 
 			if (fglevel > 0 && fglevel < 63)
 			{
-				int bglevel = 64-fglevel;
-				unsigned int *fg2rgb = Col2RGB8[fglevel];
-				unsigned int *bg2rgb = Col2RGB8[bglevel];
-				unsigned int fg = fg2rgb[to[x]];
-				unsigned int bg = bg2rgb[from[x]];
-				fg = (fg+bg) | 0x1f07c1f;
-				to[x] = RGB32k[0][0][fg & (fg>>15)];
+				int bglevel = 64 - fglevel;
+				Wipe_Blend(&to[x], &from[x], fglevel, bglevel);
 			}
 			else if (fglevel == 0)
 			{
 				to[x] = from[x];
 			}
-
-			
 		}
+
 		from += screen->width;
-		to += screen->pitch;
+		to += pitch;
 	}
+} 
+
+static void Wipe_DrawBurn()
+{
+	if (screen->is8bit())
+		Wipe_DrawBurnGeneric<palindex_t>();
+	else
+		Wipe_DrawBurnGeneric<argb_t>();
 }
 
 
@@ -311,7 +338,7 @@ static int fade = 0;
 static void Wipe_StartFade()
 {
 	fade = 0;
-	screen->GetBlock(0, 0, screen->width, screen->height, (byte*)wipe_screen);
+	screen->GetBlock(0, 0, screen->width, screen->height, wipe_screen);
 }
 
 static void Wipe_StopFade()
@@ -324,29 +351,32 @@ static bool Wipe_TickFade()
 	return (fade > 64);
 }
 
-static void Wipe_DrawFade()
+template <typename PIXEL_T>
+static inline void Wipe_DrawFadeGeneric()
 {
-	fixed_t bglevel = MAX(64 - fade, 0);
-	unsigned int *fg2rgb = Col2RGB8[fade];
-	unsigned int *bg2rgb = Col2RGB8[bglevel];
-	byte *from = (byte *)wipe_screen;
-	byte *to = screen->buffer;
+	const int pitch = screen->pitch / sizeof(PIXEL_T);
+	PIXEL_T* to = (PIXEL_T*)screen->buffer;
+	const PIXEL_T* from = (PIXEL_T*)wipe_screen;
+
+	const fixed_t bglevel = MAX(64 - fade, 0);
 
 	for (int y = 0; y < screen->height; y++)
 	{
 		for (int x = 0; x < screen->width; x++)
-		{
-			unsigned int fg = fg2rgb[to[x]];
-			unsigned int bg = bg2rgb[from[x]];
-			fg = (fg+bg) | 0x1f07c1f;
-			to[x] = RGB32k[0][0][fg & (fg>>15)];
-		}
+			Wipe_Blend(&to[x], &from[x], fade, bglevel);
 
 		from += screen->width;
-		to += screen->pitch;
+		to += pitch;
 	}
 }
 
+static void Wipe_DrawFade()
+{
+	if (screen->is8bit())
+		Wipe_DrawFadeGeneric<palindex_t>();
+	else
+		Wipe_DrawFadeGeneric<argb_t>();
+}
 
 
 // General Wipe Functions -------------------------------------------
@@ -416,7 +446,7 @@ void Wipe_Start()
 	}	
 
 	//  allocate data for the temporary screens
-	int pixel_size = screen->is8bit() ? sizeof(byte) : sizeof(int);
+	int pixel_size = screen->is8bit() ? sizeof(palindex_t) : sizeof(argb_t);
 	wipe_screen = new byte[screen->width * screen->height * pixel_size];
 	
 	in_progress = true;

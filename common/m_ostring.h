@@ -34,8 +34,10 @@
 #include <cassert>
 #include <stdio.h>
 
+#include "doomtype.h"
 #include "sarray.h"
 #include "hashtable.h"
+
 
 class OString;
 
@@ -73,7 +75,7 @@ bool operator>= (const char* lhs, const OString& rhs);
 
 namespace std {
 	void swap(::OString& x, ::OString& y);
-};
+}
 
 
 

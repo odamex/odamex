@@ -1074,7 +1074,7 @@
 				D369BC9C1409ABB100D149BF /* txt_window.cpp */,
 				D369BC9D1409ABB100D149BF /* txt_window.h */,
 			);
-			path = textscreen;
+			path = libraries/textscreen;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

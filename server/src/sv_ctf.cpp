@@ -81,12 +81,12 @@ void SV_CTFEvent (flag_t f, flag_score_t event, player_t &who)
 	if(validplayer(who) && warmup.checkscorechange())
 		who.points += ctf_points[event];
 
-	for (size_t i = 0; i < players.size(); ++i)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (!players[i].ingame())
+		if (!(it->ingame()))
 			continue;
 
-		client_t *cl = &players[i].client;
+		client_t *cl = &(it->client);
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_ctfevent);
 		MSG_WriteByte (&cl->reliablebuf, event);

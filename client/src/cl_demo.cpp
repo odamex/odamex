@@ -421,7 +421,8 @@ bool NetDemo::startRecording(const std::string &filename)
 	demofp = fopen(filename.c_str(), "wb");
 	if (!demofp)
 	{
-		error("Unable to create netdemo file " + filename + ".");
+		//error("Unable to create netdemo file " + filename + ".");
+		I_Warning("Unable to create netdemo file %s", filename.c_str());
 		return false;
 	}
 
@@ -990,9 +991,9 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	MSG_WriteString (netbuffer, server_host.c_str());
 	
 	int playersingame = 0;
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::const_iterator it = players.begin();it != players.end();++it)
 	{
-		if (players[i].ingame())
+		if (it->ingame())
 			playersingame++;
 	}
 	MSG_WriteByte	(netbuffer, playersingame);
@@ -1023,15 +1024,15 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	MSG_WriteBool	(netbuffer, (sv_gametype == GM_TEAMDM));
 	MSG_WriteBool	(netbuffer, (sv_gametype == GM_CTF));
 
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::const_iterator it = players.begin();it != players.end();++it)
 	{
 		// Notes: client just ignores this data but still expects to parse it
-		if (players[i].ingame())
+		if (it->ingame())
 		{
-			MSG_WriteString	(netbuffer, "");	// player's netname
-			MSG_WriteShort	(netbuffer, 0);		// player's fragcount
-			MSG_WriteLong	(netbuffer, 0);		// player's ping
-			MSG_WriteByte	(netbuffer, 0);		// player's team
+			MSG_WriteString(netbuffer, ""); // player's netname
+			MSG_WriteShort(netbuffer, 0); // player's fragcount
+			MSG_WriteLong(netbuffer, 0); // player's ping
+			MSG_WriteByte(netbuffer, 0); // player's team
 		}
 	}
 
@@ -1075,27 +1076,27 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	MSG_WriteBool	(netbuffer, false);	// sv_cleanmaps
 	MSG_WriteBool	(netbuffer, false);	// sv_fragexitswitch
 	
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::const_iterator it = players.begin();it != players.end();++it)
 	{
-		if (players[i].ingame())
+		if (it->ingame())
 		{
-			MSG_WriteShort	(netbuffer, players[i].killcount);
-			MSG_WriteShort	(netbuffer, players[i].deathcount);
+			MSG_WriteShort(netbuffer, it->killcount);
+			MSG_WriteShort(netbuffer, it->deathcount);
 			
-			int timeingame = (time(NULL) - players[i].JoinTime)/60;
+			int timeingame = (time(NULL) - it->JoinTime) / 60;
 			if (timeingame < 0)
 				timeingame = 0;
-			MSG_WriteShort	(netbuffer, timeingame);
+			MSG_WriteShort(netbuffer, timeingame);
 		}
 	}
 	
 	MSG_WriteLong(netbuffer, (DWORD)0x01020304);
 	MSG_WriteShort(netbuffer, sv_maxplayers);
     
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (players[i].ingame())
-			MSG_WriteBool	(netbuffer, players[i].spectator);
+		if (it->ingame())
+			MSG_WriteBool(netbuffer, it->spectator);
 	}
 	
 	MSG_WriteLong	(netbuffer, (DWORD)0x01020305);
@@ -1637,11 +1638,13 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 		displayplayer_id = cid;
 
 	// restore player colors
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		int color = CL_GetPlayerColor(&players[i]);
-		R_BuildPlayerTranslation(players[i].id, color);
+		int color = CL_GetPlayerColor(&*it);
+		R_BuildPlayerTranslation(it->id, color);
 	}
+
+	R_CopyTranslationRGB (0, consoleplayer_id);
 
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;

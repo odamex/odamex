@@ -145,7 +145,7 @@ void D_SetupUserInfo(void)
 {
 	UserInfo* coninfo = &consoleplayer().userinfo;
 
-	std::string netname(cl_name.str());
+	std::string netname = cl_name.str();
 	if (netname.length() > MAXPLAYERNAME)
 		netname.erase(MAXPLAYERNAME);
 

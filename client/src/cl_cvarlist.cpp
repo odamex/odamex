@@ -347,6 +347,12 @@ CVAR_FUNC_DECL(		cl_screenshotname, "Odamex_%g_%d_%t",
 					"either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+// Screenshot output file format
+CVAR_FUNC_DECL(		cl_pngscreenshots, "1",
+					"Output screenshots in PNG format if enabled, or BMP format if disabled." \
+					"If Odamex was compiled without libpng support, this always falls back to BMP.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(				cl_autorecord, "0", "Automatically record netdemos",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -572,14 +578,11 @@ CVAR_FUNC_DECL (st_scale, "1", "",	CVARTYPE_BYTE, CVAR_CLIENTARCHIVE)
 CVAR_FUNC_DECL(	gammalevel, "1", "Gamma correction level",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE(		vid_gammatype, "0", "Select between Doom and ZDoom gamma correction",
+CVAR_RANGE_FUNC_DECL(vid_gammatype, "0", "Select between Doom and ZDoom gamma correction",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR_RANGE_FUNC_DECL(hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
-
-CVAR(			r_columnmethod, "1", "Column optimization method",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE_FUNC_DECL(r_detail, "0", "Detail level (affects performance)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
@@ -587,8 +590,16 @@ CVAR_RANGE_FUNC_DECL(r_detail, "0", "Detail level (affects performance)",
 CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
 				CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(			r_drawflat, "0", "Disables all texturing of walls",
+CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(			r_columnmethod, "1", "Deprecated",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+#if 0
+CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",
+				CVARTYPE_BOOL, CVAR_NULL)
+#endif
 
 CVAR(			r_drawplayersprites, "1", "Draw player sprites (weapons)",
 				CVARTYPE_BOOL, CVAR_NULL)
@@ -622,7 +633,7 @@ CVAR_RANGE(		r_wipetype, "1", "",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 #endif
 
-CVAR(			r_showendoom, "1", "Display the ENDDOOM text after quitting",
+CVAR(			r_showendoom, "0", "Display the ENDDOOM text after quitting",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)   // [ML] 1/5/10: Add endoom support
 
 CVAR(			r_loadicon, "1", "Display the disk icon when loading data from disk",
@@ -652,6 +663,9 @@ CVAR(			vid_autoadjust, "1", "Force video mode",
 CVAR(			vid_displayfps, "0", "Display frames per second",
 				CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(			vid_ticker, "0", "Vanilla Doom frames per second indicator",
+				CVARTYPE_BOOL, CVAR_NULL)
+
 CVAR_FUNC_DECL(	vid_maxfps, "35", "Maximum framerate (0 indicates unlimited framerate)",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -666,11 +680,16 @@ CVAR_FUNC_DECL(	vid_fullscreen, "0", "Full screen video mode",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 #endif
 
+CVAR_FUNC_DECL(	vid_32bpp, "0", "Enable 32-bit color rendering",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+// Optimize rendering functions based on CPU vectorization support
+// Can be of "detect" or "none" or "mmx","sse2","altivec" depending on availability; case-insensitive.
+CVAR_FUNC_DECL(	r_optimize, "detect", "Rendering optimizations",
+				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
 CVAR_RANGE_FUNC_DECL(screenblocks, "10", "Selects the size of the visible window",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 3.0f, 12.0f)
-
-CVAR(			vid_ticker, "0", "Vanilla Doom frames per second indicator",
-				CVARTYPE_BOOL, CVAR_NULL)
 
 CVAR_RANGE_FUNC_DECL(vid_winscale, "1.0", "Resizes the window by a scale factor",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
@@ -680,3 +699,4 @@ CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan",
 
 
 VERSION_CONTROL (cl_cvarlist_cpp, "$Id$")
+

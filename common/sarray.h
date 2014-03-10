@@ -269,6 +269,12 @@ public:
 		return mItemRecords[getSlot(item)].mId;
 	}
 
+	const SArrayId insert()
+	{
+		unsigned int slot = insertSlot();
+		return mItemRecords[slot].mId;
+	}
+
 	const SArrayId insert(const VT& item)
 	{
 		unsigned int slot = insertSlot();

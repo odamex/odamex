@@ -21,7 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
+#include <math.h>
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "m_bbox.h"
@@ -31,6 +31,7 @@
 #include "r_draw.h"
 #include "r_things.h"
 #include "p_local.h"
+#include "m_vectors.h"
 
 // State.
 #include "doomstat.h"
@@ -51,10 +52,6 @@ bool			doorclosed;
 bool			r_fakingunderwater;
 bool			r_underwater;
 
-int				MaxDrawSegs;
-drawseg_t		*drawsegs;
-drawseg_t*		ds_p;
-
 // Floor and ceiling heights at the end points of a seg_t
 fixed_t			rw_backcz1, rw_backcz2;
 fixed_t			rw_backfz1, rw_backfz2;
@@ -65,203 +62,95 @@ int rw_start, rw_stop;
 
 static BYTE		FakeSide;
 
-void R_StoreWallRange(int start, int stop);
+const fixed_t NEARCLIP = FRACUNIT/4;
 
-//
-// R_ClearDrawSegs
-//
-void R_ClearDrawSegs (void)
-{
-	if (!drawsegs)
-	{
-		MaxDrawSegs = 256;		// [RH] Default. Increased as needed.
-		drawsegs = (drawseg_t *)Malloc (MaxDrawSegs * sizeof(drawseg_t));
-	}
-	ds_p = drawsegs;
-}
+drawseg_t*		ds_p;
+drawseg_t*		drawsegs;
+unsigned		maxdrawsegs;
 
-//
-// ClipWallSegment
-// Clips the given range of columns
-// and includes it in the new clip list.
-//
-//
-// 1/11/98 killough: Since a type "short" is sufficient, we
-// should use it, since smaller arrays fit better in cache.
-//
-
-typedef struct {
-	short first, last;		// killough
-} cliprange_t;
-
-// 1/11/98: Lee Killough
-//
-// This fixes many strange venetian blinds crashes, which occurred when a scan
-// line had too many "posts" of alternating non-transparent and transparent
-// regions. Using a doubly-linked list to represent the posts is one way to
-// do it, but it has increased overhead and poor spatial locality, which hurts
-// cache performance on modern machines. Since the maximum number of posts
-// theoretically possible is a function of screen width, a static limit is
-// okay in this case. It used to be 32, which was way too small.
-//
-// This limit was frequently mistaken for the visplane limit in some Doom
-// editing FAQs, where visplanes were said to "double" if a pillar or other
-// object split the view's space into two pieces horizontally. That did not
-// have anything to do with visplanes, but it had everything to do with these
-// clip posts.
-
-// newend is one past the last valid seg
-static cliprange_t *newend;
-static cliprange_t solidsegs[MAXWIDTH / 2 + 2];
-
-//
-// R_ClipSolidWallSegment
-// Does handle solid walls,
-//	e.g. single sided LineDefs (middle texture)
-//	that entirely block the view.
-//
-void
-R_ClipSolidWallSegment
-( int			first,
-  int			last )
-{
-	cliprange_t *next, *start;
-
-	// Find the first range that touches the range
-	//	(adjacent pixels are touching).
-	start = solidsegs;
-	while (start->last < first-1)
-		start++;
-
-	if (first < start->first)
-	{
-		if (last < start->first-1)
-		{
-			// Post is entirely visible (above start), so insert a new clippost.
-			R_StoreWallRange (first, last);
-
-			// 1/11/98 killough: performance tuning using fast memmove
-			memmove (start+1, start, (++newend-start)*sizeof(*start));
-			start->first = first;
-			start->last = last;
-			return;
-		}
-
-		// There is a fragment above *start.
-		R_StoreWallRange (first, start->first - 1);
-
-		// Now adjust the clip size.
-		start->first = first;
-	}
-
-	// Bottom contained in start?
-	if (last <= start->last)
-		return;
-
-	next = start;
-	while (last >= (next+1)->first-1)
-	{
-		// There is a fragment between two posts.
-		R_StoreWallRange (next->last + 1, (next+1)->first - 1);
-		next++;
-
-		if (last <= next->last)
-		{
-			// Bottom is contained in next. Adjust the clip size.
-			start->last = next->last;
-			goto crunch;
-		}
-	}
-
-	// There is a fragment after *next.
-	R_StoreWallRange (next->last + 1, last);
-	// Adjust the clip size.
-	start->last = last;
-
-	// Remove start+1 to next from the clip list,
-	// because start now covers their area.
-  crunch:
-	if (next == start)
-	{
-		// Post just extended past the bottom of one post.
-		return;
-	}
-
-
-	while (next++ != newend)
-	{
-		// Remove a post.
-		*++start = *next;
-	}
-
-	newend = start+1;
-}
-
-
-
-//
-// R_ClipPassWallSegment
-// Clips the given range of columns,
-//	but does not includes it in the clip list.
-// Does handle windows,
-//	e.g. LineDefs with upper and lower texture.
-//
-void
-R_ClipPassWallSegment
-( int	first,
-  int	last )
-{
-	cliprange_t *start;
-
-	// Find the first range that touches the range
-	//	(adjacent pixels are touching).
-	start = solidsegs;
-	while (start->last < first-1)
-		start++;
-
-	if (first < start->first)
-	{
-		if (last < start->first-1)
-		{
-			// Post is entirely visible (above start).
-			R_StoreWallRange (first, last);
-			return;
-		}
-
-		// There is a fragment above *start.
-		R_StoreWallRange (first, start->first - 1);
-	}
-
-	// Bottom contained in start?
-	if (last <= start->last)
-		return;
-
-	while (last >= (start+1)->first-1)
-	{
-		// There is a fragment between two posts.
-		R_StoreWallRange (start->last + 1, (start+1)->first - 1);
-		start++;
-
-		if (last <= start->last)
-			return;
-	}
-
-	// There is a fragment after *next.
-	R_StoreWallRange (start->last + 1, last);
-}
-
-
+// CPhipps -
+// Instead of clipsegs, let's try using an array with one entry for each column,
+// indicating whether it's blocked by a solid wall yet or not.
+// e6y: resolution limitation is removed
+byte *solidcol;
 
 //
 // R_ClearClipSegs
 //
 void R_ClearClipSegs (void)
 {
-	solidsegs[0].first = -0x7fff;	// new short limit --  killough
-	solidsegs[0].last = -1;
-	solidsegs[1].first = viewwidth;
-	solidsegs[1].last = 0x7fff;		// new short limit --  killough
-	newend = solidsegs+2;
+	memset(solidcol, 0, viewwidth);
+}
+
+//
+// R_ReallocDrawSegs
+//
+// [SL] From prboom-plus. Moved out of R_StoreWallRange()
+void R_ReallocDrawSegs(void)
+{
+	if (ds_p == drawsegs+maxdrawsegs)		// killough 1/98 -- fix 2s line HOM
+	{
+		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
+		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
+		drawsegs = (drawseg_t*)realloc(drawsegs, newmax*sizeof(*drawsegs));
+		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
+		maxdrawsegs = newmax;
+		DPrintf("MaxDrawSegs increased to %d\n", maxdrawsegs);
+	}
+}
+
+//
+// R_ClearDrawSegs
+//
+void R_ClearDrawSegs(void)
+{
+	ds_p = drawsegs;
+}
+
+//
+// R_ClipWallSegment
+//
+// [SL] From prboom-plus. Modified for clarity.
+//
+// Calls R_StoreWallRange for each span of non-solid range of columns that
+// is within the range of first to (and including) last. Non-solid columns
+// are those which have not yet had a 1s lineseg drawn to them. If makesolid
+// is specified, any range of non-solid columns found will be marked as solid.
+//
+static void R_ClipWallSegment(int first, int last, bool makesolid)
+{
+	while (first <= last)
+	{
+		if (solidcol[first])
+		{
+			// find the first remaining non-solid column
+			// if all columns remaining are solid, we're done
+			byte* p = (byte*)memchr(solidcol + first, 0, last - first + 1);
+			if (p == NULL)
+				return; 
+
+			first = p - solidcol;
+		}
+		else
+		{
+			int to;
+			// find where the span of non-solid columns ends
+			byte* p = (byte*)memchr(solidcol + first, 1, last - first + 1);
+			if (p == NULL)
+				to = last;
+			else
+				to = p - solidcol - 1;
+
+			// set the range for this wall to the range of non-solid columns
+			R_StoreWallRange(first, to);
+
+			// mark the  columns as solid
+			if (makesolid)
+				memset(solidcol + first, 1, to - first + 1);
+
+			first = to + 1;
+		}
+	}
 }
 
 bool CopyPlaneIfValid (plane_t *dest, const plane_t *source, const plane_t *opp)
@@ -309,7 +198,7 @@ bool CopyPlaneIfValid (plane_t *dest, const plane_t *source, const plane_t *opp)
 
 sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 					 int *floorlightlevel, int *ceilinglightlevel,
-					 BOOL back)
+					 bool back)
 {
 	// [RH] allow per-plane lighting
 	if (floorlightlevel != NULL)
@@ -326,195 +215,222 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 	FakeSide = FAKED_Center;
 
-	if (sec->heightsec && !(sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
+	if (!sec->heightsec || sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
+		return sec;
+	if (!camera || !camera->subsector || !camera->subsector->sector)
+		return sec;
+
+	const sector_t* s = sec->heightsec;
+	sector_t *heightsec = camera->subsector->sector->heightsec;
+
+	bool underwater = r_fakingunderwater ||
+		(heightsec && viewz <= P_FloorHeight(viewx, viewy, heightsec));
+	bool doorunderwater = false;
+	int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
+
+	// Replace sector being drawn with a copy to be hacked
+	*tempsec = *sec;
+
+	// Replace floor and ceiling height with control sector's heights.
+	if (diffTex)
 	{
-		if (!camera || !camera->subsector || !camera->subsector->sector)
+		if (CopyPlaneIfValid (&tempsec->floorplane, &s->floorplane, &sec->ceilingplane))
+			tempsec->floorpic = s->floorpic;
+		else if (s->MoreFlags & SECF_FAKEFLOORONLY)
+		{
+			if (underwater)
+			{
+				tempsec->floorcolormap = s->floorcolormap;
+				tempsec->ceilingcolormap = s->ceilingcolormap;
+
+				if (!(s->MoreFlags & SECF_NOFAKELIGHT))
+				{
+					tempsec->lightlevel = s->lightlevel;
+
+					if (floorlightlevel != NULL)
+					{
+						*floorlightlevel = s->floorlightsec == NULL ?
+							s->lightlevel : s->floorlightsec->lightlevel;
+					}
+
+					if (ceilinglightlevel != NULL)
+					{
+						*ceilinglightlevel = s->ceilinglightsec == NULL ?
+							s->lightlevel : s->ceilinglightsec->lightlevel;
+					}
+				}
+
+				FakeSide = FAKED_BelowFloor;
+				return tempsec;
+			}
 			return sec;
-		sector_t *heightsec = camera->subsector->sector->heightsec;
+		}
+	}
+	else
+	{
+		tempsec->floorplane = s->floorplane;
+	}
 
-		const sector_t *s = sec->heightsec;
-
-		bool underwater = r_fakingunderwater ||
-			(heightsec && viewz <= P_FloorHeight(viewx, viewy, heightsec));
-		bool doorunderwater = false;
-		int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
-
-		// Replace sector being drawn with a copy to be hacked
-		*tempsec = *sec;
-
-		// Replace floor and ceiling height with control sector's heights.
+	if (!(s->MoreFlags & SECF_FAKEFLOORONLY))
+	{
 		if (diffTex)
 		{
-			
-			if (CopyPlaneIfValid (&tempsec->floorplane, &s->floorplane, &sec->ceilingplane))
-				tempsec->floorpic = s->floorpic;
-			else if (s->MoreFlags & SECF_FAKEFLOORONLY)
-				return sec;
+			if (CopyPlaneIfValid (&tempsec->ceilingplane, &s->ceilingplane, &sec->floorplane))
+				tempsec->ceilingpic = s->ceilingpic;
 		}
 		else
 		{
-			tempsec->floorplane = s->floorplane;
+			tempsec->ceilingplane  = s->ceilingplane;
 		}
+	}
 
-		if (!(s->MoreFlags & SECF_FAKEFLOORONLY))
+	fixed_t refceilz = P_CeilingHeight(viewx, viewy, s);
+	fixed_t orgceilz = P_CeilingHeight(viewx, viewy, sec);
+
+	// [RH] Allow viewing underwater areas through doors/windows that
+	// are underwater but not in a water sector themselves.
+	// Only works if you cannot see the top surface of any deep water
+	// sectors at the same time.
+
+	if (back && !r_fakingunderwater && curline->frontsector->heightsec == NULL)
+	{
+		fixed_t fcz1 = P_CeilingHeight(curline->v1->x, curline->v1->y, frontsector);
+		fixed_t fcz2 = P_CeilingHeight(curline->v2->x, curline->v2->y, frontsector);
+
+		if (fcz1 <= P_FloorHeight(curline->v1->x, curline->v1->y, s) &&
+			fcz2 <= P_FloorHeight(curline->v2->x, curline->v2->y, s))
 		{
-			if (diffTex)
-			{
-				if (CopyPlaneIfValid (&tempsec->ceilingplane, &s->ceilingplane, &sec->floorplane))
-					tempsec->ceilingpic = s->ceilingpic;
-			}
-			else
-			{
-				tempsec->ceilingplane  = s->ceilingplane;
+			// will any columns of this window be visible or will they be blocked
+			// by 1s lines and closed doors?
+			if (memchr(solidcol + rw_start, 0, rw_stop - rw_start + 1) != NULL)
+			{	
+				doorunderwater = true;
+				r_fakingunderwater = true;
 			}
 		}
+	}
 
-		fixed_t refceilz = P_CeilingHeight(viewx, viewy, s);
-		fixed_t orgceilz = P_CeilingHeight(viewx, viewy, sec);
+	if (underwater || doorunderwater)
+	{
+		tempsec->floorplane = sec->floorplane;
+		tempsec->ceilingplane = s->floorplane;
+		P_InvertPlane(&tempsec->ceilingplane);
+		P_ChangeCeilingHeight(tempsec, -1);
+		tempsec->floorcolormap = s->floorcolormap;
+		tempsec->ceilingcolormap = s->ceilingcolormap;
+	}
 
-		// [RH] Allow viewing underwater areas through doors/windows that
-		// are underwater but not in a water sector themselves.
-		// Only works if you cannot see the top surface of any deep water
-		// sectors at the same time.
-		if (back && !r_fakingunderwater && curline->frontsector->heightsec == NULL)
+	// killough 11/98: prevent sudden light changes from non-water sectors:
+	if ((underwater && !back) || doorunderwater)
+	{					// head-below-floor hack
+		tempsec->floorpic			= diffTex ? sec->floorpic : s->floorpic;
+		tempsec->floor_xoffs		= s->floor_xoffs;
+		tempsec->floor_yoffs		= s->floor_yoffs;
+		tempsec->floor_xscale		= s->floor_xscale;
+		tempsec->floor_yscale		= s->floor_yscale;
+		tempsec->floor_angle		= s->floor_angle;
+		tempsec->base_floor_angle	= s->base_floor_angle;
+		tempsec->base_floor_yoffs	= s->base_floor_yoffs;
+
+		tempsec->ceilingplane		= s->floorplane;
+		P_InvertPlane(&tempsec->ceilingplane);
+		P_ChangeCeilingHeight(tempsec, -1);
+		if (s->ceilingpic == skyflatnum)
 		{
-			if (rw_frontcz1 <= P_FloorHeight(curline->v1->x, curline->v1->y, s) &&
-				rw_frontcz2 <= P_FloorHeight(curline->v2->x, curline->v2->y, s))
-			{
-				// Check that the window is actually visible
-				for (int z = rw_start; z < rw_stop; z++)
-				{
-					if (floorclip[z] > ceilingclip[z])
-					{
-						doorunderwater = true;
-						r_fakingunderwater = true;
-						break;
-					}
-				}
-			}
-		}
-
-		if (underwater || doorunderwater)
-		{
-			tempsec->floorplane = sec->floorplane;
-			tempsec->ceilingplane = s->floorplane;
-			P_InvertPlane(&tempsec->ceilingplane);
-			P_ChangeCeilingHeight(tempsec, -1);
-			tempsec->floorcolormap = s->floorcolormap;
-			tempsec->ceilingcolormap = s->ceilingcolormap;
-		}
-
-		// killough 11/98: prevent sudden light changes from non-water sectors:
-		if ((underwater && !back) || doorunderwater)
-		{					// head-below-floor hack
-			tempsec->floorpic			= diffTex ? sec->floorpic : s->floorpic;
-			tempsec->floor_xoffs		= s->floor_xoffs;
-			tempsec->floor_yoffs		= s->floor_yoffs;
-			tempsec->floor_xscale		= s->floor_xscale;
-			tempsec->floor_yscale		= s->floor_yscale;
-			tempsec->floor_angle		= s->floor_angle;
-			tempsec->base_floor_angle	= s->base_floor_angle;
-			tempsec->base_floor_yoffs	= s->base_floor_yoffs;
-
-			tempsec->ceilingplane		= s->floorplane;
-			P_InvertPlane(&tempsec->ceilingplane);
-			P_ChangeCeilingHeight(tempsec, -1);
-			if (s->ceilingpic == skyflatnum)
-			{
-				tempsec->floorplane			= tempsec->ceilingplane;
-				P_InvertPlane(&tempsec->floorplane);
-				P_ChangeFloorHeight(tempsec, +1);
-				tempsec->ceilingpic			= tempsec->floorpic;
-				tempsec->ceiling_xoffs		= tempsec->floor_xoffs;
-				tempsec->ceiling_yoffs		= tempsec->floor_yoffs;
-				tempsec->ceiling_xscale		= tempsec->floor_xscale;
-				tempsec->ceiling_yscale		= tempsec->floor_yscale;
-				tempsec->ceiling_angle		= tempsec->floor_angle;
-				tempsec->base_ceiling_angle	= tempsec->base_floor_angle;
-				tempsec->base_ceiling_yoffs	= tempsec->base_floor_yoffs;
-			}
-			else
-			{
-				tempsec->ceilingpic			= diffTex ? s->floorpic : s->ceilingpic;
-				tempsec->ceiling_xoffs		= s->ceiling_xoffs;
-				tempsec->ceiling_yoffs		= s->ceiling_yoffs;
-				tempsec->ceiling_xscale		= s->ceiling_xscale;
-				tempsec->ceiling_yscale		= s->ceiling_yscale;
-				tempsec->ceiling_angle		= s->ceiling_angle;
-				tempsec->base_ceiling_angle	= s->base_ceiling_angle;
-				tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
-			}
-
-			if (!(s->MoreFlags & SECF_NOFAKELIGHT))
-			{
-				tempsec->lightlevel = s->lightlevel;
-
-				if (floorlightlevel != NULL)
-				{
-					*floorlightlevel = s->floorlightsec == NULL ?
-						s->lightlevel : s->floorlightsec->lightlevel;
-				}
-
-				if (ceilinglightlevel != NULL)
-				{
-					*ceilinglightlevel = s->ceilinglightsec == NULL ?
-						s->lightlevel : s->ceilinglightsec->lightlevel;
-				}
-			}
-			FakeSide = FAKED_BelowFloor;
-		}
-		else if (heightsec && viewz >= P_CeilingHeight(viewx, viewy, heightsec) &&
-				 orgceilz > refceilz && !(s->MoreFlags & SECF_FAKEFLOORONLY))
-		{	// Above-ceiling hack
-			tempsec->ceilingplane		= s->ceilingplane;
-			tempsec->floorplane			= s->ceilingplane;
+			tempsec->floorplane			= tempsec->ceilingplane;
 			P_InvertPlane(&tempsec->floorplane);
 			P_ChangeFloorHeight(tempsec, +1);
-
-			tempsec->ceilingcolormap	= s->ceilingcolormap;
-			tempsec->floorcolormap		= s->floorcolormap;
-
-			tempsec->ceilingpic = diffTex ? sec->ceilingpic : s->ceilingpic;
-			tempsec->floorpic											= s->ceilingpic;
-			tempsec->floor_xoffs		= tempsec->ceiling_xoffs		= s->ceiling_xoffs;
-			tempsec->floor_yoffs		= tempsec->ceiling_yoffs		= s->ceiling_yoffs;
-			tempsec->floor_xscale		= tempsec->ceiling_xscale		= s->ceiling_xscale;
-			tempsec->floor_yscale		= tempsec->ceiling_yscale		= s->ceiling_yscale;
-			tempsec->floor_angle		= tempsec->ceiling_angle		= s->ceiling_angle;
-			tempsec->base_floor_angle	= tempsec->base_ceiling_angle	= s->base_ceiling_angle;
-			tempsec->base_floor_yoffs	= tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
-
-			if (s->floorpic != skyflatnum)
-			{
-				tempsec->ceilingplane	= sec->ceilingplane;
-				tempsec->floorpic		= s->floorpic;
-				tempsec->floor_xoffs	= s->floor_xoffs;
-				tempsec->floor_yoffs	= s->floor_yoffs;
-				tempsec->floor_xscale	= s->floor_xscale;
-				tempsec->floor_yscale	= s->floor_yscale;
-				tempsec->floor_angle	= s->floor_angle;
-			}
-
-			if (!(s->MoreFlags & SECF_NOFAKELIGHT))
-			{
-				tempsec->lightlevel  = s->lightlevel;
-
-				if (floorlightlevel != NULL)
-				{
-					*floorlightlevel = s->floorlightsec == NULL ?
-						s->lightlevel : s->floorlightsec->lightlevel;
-				}
-
-				if (ceilinglightlevel != NULL)
-				{
-					*ceilinglightlevel = s->ceilinglightsec == NULL ?
-						s->lightlevel : s->ceilinglightsec->lightlevel;
-				}
-			}
-			FakeSide = FAKED_AboveCeiling;
+			tempsec->ceilingpic			= tempsec->floorpic;
+			tempsec->ceiling_xoffs		= tempsec->floor_xoffs;
+			tempsec->ceiling_yoffs		= tempsec->floor_yoffs;
+			tempsec->ceiling_xscale		= tempsec->floor_xscale;
+			tempsec->ceiling_yscale		= tempsec->floor_yscale;
+			tempsec->ceiling_angle		= tempsec->floor_angle;
+			tempsec->base_ceiling_angle	= tempsec->base_floor_angle;
+			tempsec->base_ceiling_yoffs	= tempsec->base_floor_yoffs;
 		}
-		sec = tempsec;					// Use other sector
+		else
+		{
+			tempsec->ceilingpic			= diffTex ? s->floorpic : s->ceilingpic;
+			tempsec->ceiling_xoffs		= s->ceiling_xoffs;
+			tempsec->ceiling_yoffs		= s->ceiling_yoffs;
+			tempsec->ceiling_xscale		= s->ceiling_xscale;
+			tempsec->ceiling_yscale		= s->ceiling_yscale;
+			tempsec->ceiling_angle		= s->ceiling_angle;
+			tempsec->base_ceiling_angle	= s->base_ceiling_angle;
+			tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
+		}
+
+		if (!(s->MoreFlags & SECF_NOFAKELIGHT))
+		{
+			tempsec->lightlevel = s->lightlevel;
+
+			if (floorlightlevel != NULL)
+			{
+				*floorlightlevel = s->floorlightsec == NULL ?
+					s->lightlevel : s->floorlightsec->lightlevel;
+			}
+
+			if (ceilinglightlevel != NULL)
+			{
+				*ceilinglightlevel = s->ceilinglightsec == NULL ?
+					s->lightlevel : s->ceilinglightsec->lightlevel;
+			}
+		}
+		FakeSide = FAKED_BelowFloor;
 	}
+	else if (heightsec && viewz >= P_CeilingHeight(viewx, viewy, heightsec) &&
+			 orgceilz > refceilz && !(s->MoreFlags & SECF_FAKEFLOORONLY))
+	{	// Above-ceiling hack
+		tempsec->ceilingplane		= s->ceilingplane;
+		tempsec->floorplane			= s->ceilingplane;
+		P_InvertPlane(&tempsec->floorplane);
+		P_ChangeFloorHeight(tempsec, +1);
+
+		tempsec->ceilingcolormap	= s->ceilingcolormap;
+		tempsec->floorcolormap		= s->floorcolormap;
+
+		tempsec->ceilingpic = diffTex ? sec->ceilingpic : s->ceilingpic;
+		tempsec->floorpic											= s->ceilingpic;
+		tempsec->floor_xoffs		= tempsec->ceiling_xoffs		= s->ceiling_xoffs;
+		tempsec->floor_yoffs		= tempsec->ceiling_yoffs		= s->ceiling_yoffs;
+		tempsec->floor_xscale		= tempsec->ceiling_xscale		= s->ceiling_xscale;
+		tempsec->floor_yscale		= tempsec->ceiling_yscale		= s->ceiling_yscale;
+		tempsec->floor_angle		= tempsec->ceiling_angle		= s->ceiling_angle;
+		tempsec->base_floor_angle	= tempsec->base_ceiling_angle	= s->base_ceiling_angle;
+		tempsec->base_floor_yoffs	= tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
+
+		if (s->floorpic != skyflatnum)
+		{
+			tempsec->ceilingplane	= sec->ceilingplane;
+			tempsec->floorpic		= s->floorpic;
+			tempsec->floor_xoffs	= s->floor_xoffs;
+			tempsec->floor_yoffs	= s->floor_yoffs;
+			tempsec->floor_xscale	= s->floor_xscale;
+			tempsec->floor_yscale	= s->floor_yscale;
+			tempsec->floor_angle	= s->floor_angle;
+		}
+
+		if (!(s->MoreFlags & SECF_NOFAKELIGHT))
+		{
+			tempsec->lightlevel  = s->lightlevel;
+
+			if (floorlightlevel != NULL)
+			{
+				*floorlightlevel = s->floorlightsec == NULL ?
+					s->lightlevel : s->floorlightsec->lightlevel;
+			}
+
+			if (ceilinglightlevel != NULL)
+			{
+				*ceilinglightlevel = s->ceilinglightsec == NULL ?
+					s->lightlevel : s->ceilinglightsec->lightlevel;
+			}
+		}
+		FakeSide = FAKED_AboveCeiling;
+	}
+	sec = tempsec;					// Use other sector
+
 	return sec;
 }
 
@@ -526,100 +442,57 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 //
 void R_AddLine (seg_t *line)
 {
-	int 			x1;
-	int 			x2;
-	angle_t 		angle1;
-	angle_t 		angle2;
-	angle_t 		span;
-	angle_t 		tspan;
-	static sector_t tempsec;	// killough 3/8/98: ceiling/water hack
-
 	curline = line;
 
-	// [RH] Color if not texturing line
-	dc_color = ((line - segs) & 31) * 4;
-
-	// OPTIMIZE: quickly reject orthogonal back sides.
-	angle1 = R_PointToAngle (line->v1->x, line->v1->y);
-	angle2 = R_PointToAngle (line->v2->x, line->v2->y);
-
-	// Clip to view edges.
-	// OPTIMIZE: make constant out of 2*clipangle (FIELDOFVIEW).
-	span = angle1 - angle2;
-
-	// Back side? I.e. backface culling?
-	if (span >= ANG180)
+	// skip this line if it's not facing the camera
+	if (R_PointOnSegSide(viewx, viewy, line) != 0)
 		return;
 
-	// Global angle needed by segcalc.
-	rw_angle1 = angle1;
-	angle1 -= viewangle;
-	angle2 -= viewangle;
+	dcol.color = ((line - segs) & 31) * 4;	// [RH] Color if not texturing line
 
-	tspan = angle1 + clipangle;
-	if (tspan > 2*clipangle)
-	{
-		// Totally off the left edge?
-		if (tspan - 2*clipangle >= span)
-			return;
+	// translate the line seg endpoints from world-space to camera-space
+	// and store in (t1.x, t1.y) and (t2.x, t2.y)
+	v2fixed_t t1, t2;
+	R_RotatePoint(line->v1->x - viewx, line->v1->y - viewy, ANG90 - viewangle, t1.x, t1.y);
+	R_RotatePoint(line->v2->x - viewx, line->v2->y - viewy, ANG90 - viewangle, t2.x, t2.y);
 
-		angle1 = clipangle;
-	}
-	tspan = clipangle - angle2;
-	if (tspan > 2*clipangle)
-	{
-		// Totally off the left edge?
-		if (tspan - 2*clipangle >= span)
-			return;
-		angle2 = (unsigned) (-(int)clipangle);
-	}
+	// Clip the line seg to the viewing window
+	int32_t lclip, rclip;
+	if (!R_ClipLineToFrustum(&t1, &t2, NEARCLIP, lclip, rclip))
+		return;
 
-	// The seg is in the view range, but not necessarily visible.
-	angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
-	angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
+	// apply the view frustum clipping to t1 & t2
+	R_ClipLine(&t1, &t2, lclip, rclip, &t1, &t2);
 
-	// killough 1/31/98: Here is where "slime trails" can SOMETIMES occur:
-	x1 = viewangletox[angle1];
-	x2 = viewangletox[angle2];
-
-	// Does not cross a pixel?
-	if (x1 >= x2)	// killough 1/31/98 -- change == to >= for robustness
+	// project the line endpoints to determine which columns the line seg occupies
+	int x1 = R_ProjectPointX(t1.x, t1.y);
+	int x2 = R_ProjectPointX(t2.x, t2.y) - 1;
+	if (!R_CheckProjectionX(x1, x2))
 		return;
 
 	rw_start = x1;
-	rw_stop = x2 - 1;
-	
-	rw_frontcz1 = P_CeilingHeight(line->v1->x, line->v1->y, frontsector);
-	rw_frontfz1 = P_FloorHeight(line->v1->x, line->v1->y, frontsector);
-	rw_frontcz2 = P_CeilingHeight(line->v2->x, line->v2->y, frontsector);
-	rw_frontfz2 = P_FloorHeight(line->v2->x, line->v2->y, frontsector);	
-	
-	backsector = line->backsector;
-	// Single sided line?
-	if (!backsector)
-		goto clipsolid;
+	rw_stop = x2;
+
+	// clip the line seg endpoints in world-space
+	// and store in (w1.x, w1.y) and (w2.x, w2.y)
+	v2fixed_t w1, w2;
+	R_ClipLine(line->v1, line->v2, lclip, rclip, &w1, &w2);
 
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
-	backsector = R_FakeFlat (backsector, &tempsec, NULL, NULL, true);
-		
-	rw_backcz1 = P_CeilingHeight(line->v1->x, line->v1->y, backsector);
-	rw_backfz1 = P_FloorHeight(line->v1->x, line->v1->y, backsector);
-	rw_backcz2 = P_CeilingHeight(line->v2->x, line->v2->y, backsector);
-	rw_backfz2 = P_FloorHeight(line->v2->x, line->v2->y, backsector);
+	static sector_t tempsec;
+	backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
 
-	// [SL] Check for closed doors or other scenarios that would make this
-	// line seg solid.
+	R_PrepWall(w1.x, w1.y, w2.x, w2.y, t1.y, t2.y, x1, x2);
+
+	// [SL] Check for single-sided line, closed doors or other scenarios that
+	// would make this line seg solid.
 	//
 	// This fixes the automap floor height bug -- killough 1/18/98:
 	// killough 4/7/98: optimize: save result in doorclosed for use in r_segs.c
-	if (!(line->linedef->flags & ML_TWOSIDED) ||
-		 (rw_backcz1 <= rw_frontfz1 && rw_backcz2 <= rw_frontfz2) ||
-		 (rw_backfz1 >= rw_frontcz1 && rw_backfz2 >= rw_frontcz2) ||
 
-		// handle a case where the backsector slopes one direction
-		// and the frontsector slopes the opposite:
-		(rw_backcz1 <= rw_frontfz1 && rw_backfz1 >= rw_frontcz1) ||
-		(rw_backcz2 <= rw_frontfz2 && rw_backfz2 >= rw_frontcz2) ||
+	if (!backsector || !(line->linedef->flags & ML_TWOSIDED) ||
+		(rw_backcz1 <= rw_frontfz1 && rw_backcz2 <= rw_frontfz2) ||
+		(rw_backfz1 >= rw_frontcz1 && rw_backfz2 >= rw_frontcz2) ||
 
 		// if door is closed because back is shut:
 		((rw_backcz1 <= rw_backfz1 && rw_backcz2 <= rw_backfz2) &&
@@ -632,28 +505,19 @@ void R_AddLine (seg_t *line)
 		 line->sidedef->bottomtexture) &&
 
 		// properly render skies (consider door "open" if both ceilings are sky):
-		 (backsector->ceilingpic !=skyflatnum || 
-		  frontsector->ceilingpic!=skyflatnum)))
+		(backsector->ceilingpic !=skyflatnum || frontsector->ceilingpic!=skyflatnum)))
 	{
 		doorclosed = true;
-		goto clipsolid;
-	}
-	else
-	{
-		doorclosed = false;
+		R_ClipWallSegment(x1, x2, true);
+		return;
 	}
 
-	// Window.
-	if (!P_IdenticalPlanes(&frontsector->ceilingplane, &backsector->ceilingplane) ||
-		!P_IdenticalPlanes(&frontsector->floorplane, &backsector->floorplane))
-		goto clippass;
-
-	// Reject empty lines used for triggers
-	//	and special events.
+	// Reject empty lines used for triggers and special events.
 	// Identical floor and ceiling on both sides,
-	// identical light levels on both sides,
-	// and no middle texture.
-	if (backsector->lightlevel == frontsector->lightlevel
+	// identical light levels on both sides, and no middle texture.
+	if (P_IdenticalPlanes(&frontsector->ceilingplane, &backsector->ceilingplane)
+		&& P_IdenticalPlanes(&frontsector->floorplane, &backsector->floorplane)
+		&& backsector->lightlevel == frontsector->lightlevel
 		&& backsector->floorpic == frontsector->floorpic
 		&& backsector->ceilingpic == frontsector->ceilingpic
 		&& curline->sidedef->midtexture == 0
@@ -686,21 +550,11 @@ void R_AddLine (seg_t *line)
 		return;
 	}
 
-  clippass:
-	R_ClipPassWallSegment (x1, x2-1);
-	return;
-
-  clipsolid:
-	R_ClipSolidWallSegment (x1, x2-1);
+	doorclosed = false;
+	R_ClipWallSegment(x1, x2, false);
 }
 
 
-//
-// R_CheckBBox
-// Checks BSP node/subtree bounding box.
-// Returns true
-//	if some part of the bbox might be visible.
-//
 static const int checkcoord[12][4] = // killough -- static const
 {
 	{3,0,2,1},
@@ -716,112 +570,72 @@ static const int checkcoord[12][4] = // killough -- static const
 	{2,1,3,0}
 };
 
-
-static BOOL R_CheckBBox (fixed_t *bspcoord)	// killough 1/28/98: static
+//
+// R_CheckBBox
+//
+// Checks BSP node/subtree bounding box.
+// Returns true if some part of the bbox might be visible.
+//
+// killough 1/28/98: static
+// CPhipps - const parameter, reformatted
+// [SL] Rewritten to use R_ClipLineToFrustum to determine if any part of the
+//      bbox's two diagonals would be drawn in a non-solid screen column.
+//
+static bool R_CheckBBox(const fixed_t *bspcoord)
 {
-	int 				boxx;
-	int 				boxy;
-	int 				boxpos;
+	const fixed_t clipdist = 0;
+	v2fixed_t t1, t2;
 
-	fixed_t 			x1;
-	fixed_t 			y1;
-	fixed_t 			x2;
-	fixed_t 			y2;
+	// Find the corners of the box that define the edges from current viewpoint
+	int boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
+				(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
 
-	angle_t 			angle1;
-	angle_t 			angle2;
-	angle_t 			span;
-	angle_t 			tspan;
-
-	cliprange_t*		start;
-
-	int 				sx1;
-	int 				sx2;
-
-	// Find the corners of the box
-	// that define the edges from current viewpoint.
-	if (viewx <= bspcoord[BOXLEFT])
-		boxx = 0;
-	else if (viewx < bspcoord[BOXRIGHT])
-		boxx = 1;
-	else
-		boxx = 2;
-
-	if (viewy >= bspcoord[BOXTOP])
-		boxy = 0;
-	else if (viewy > bspcoord[BOXBOTTOM])
-		boxy = 1;
-	else
-		boxy = 2;
-
-	boxpos = (boxy<<2)+boxx;
 	if (boxpos == 5)
 		return true;
 
-	x1 = bspcoord[checkcoord[boxpos][0]];
-	y1 = bspcoord[checkcoord[boxpos][1]];
-	x2 = bspcoord[checkcoord[boxpos][2]];
-	y2 = bspcoord[checkcoord[boxpos][3]];
+	fixed_t xl = bspcoord[checkcoord[boxpos][0]];
+	fixed_t yl = bspcoord[checkcoord[boxpos][1]];
+	fixed_t xh = bspcoord[checkcoord[boxpos][2]];
+	fixed_t yh = bspcoord[checkcoord[boxpos][3]];
 
-	// check clip list for an open space
-	angle1 = R_PointToAngle (x1, y1) - viewangle;
-	angle2 = R_PointToAngle (x2, y2) - viewangle;
+	// translate the bounding box vertices from world-space to camera-space
+	// and store in (t1.x, t1.y) and (t2.x, t2.y)
+	R_RotatePoint(xl - viewx, yl - viewy, ANG90 - viewangle, t1.x, t1.y);
+	R_RotatePoint(xh - viewx, yh - viewy, ANG90 - viewangle, t2.x, t2.y);
 
-	span = angle1 - angle2;
+	v2fixed_t box_pts[4][2] = {
+		{	{t1.x, t1.y},	{t2.x, t1.y}	},	// top line of box
+		{	{t1.x, t2.y},	{t2.x, t2.y}	},	// bottom line of box
+		{	{t1.x, t1.y},	{t1.x, t2.y}	},	// left line of box
+		{	{t2.x, t1.y},	{t2.x, t2.y}	}	// right line of box
+	};
 
-	// Sitting on a line?
-	if (span >= ANG180)
-		return true;
-
-	tspan = angle1 + clipangle;
-
-	if (tspan > 2*clipangle)
+	// Check each of the four sides of the bounding box to see if
+	// any part is visible. Find the maximum range of columns the bounding box
+	// will project onto the screen.
+	for (int i = 0; i < 4; i++)
 	{
-		tspan -= 2*clipangle;
+		v2fixed_t* p1 = &box_pts[i][0];
+		v2fixed_t* p2 = &box_pts[i][1];
+		
+		if (R_PointOnLine(0, 0, p1->x, p1->y, p2->x, p2->y))
+			return true;
 
-		// Totally off the left edge?
-		if (tspan >= span)
-			return false;
-
-		angle1 = clipangle;
-	}
-	tspan = clipangle - angle2;
-	if (tspan > 2*clipangle)
-	{
-		tspan -= 2*clipangle;
-
-		// Totally off the left edge?
-		if (tspan >= span)
-			return false;
-
-		angle2 = (unsigned)(-(int)clipangle);
-	}
-
-	// Find the first clippost
-	//	that touches the source post
-	//	(adjacent pixels are touching).
-	angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
-	angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
-	sx1 = viewangletox[angle1];
-	sx2 = viewangletox[angle2];
-
-	// Does not cross a pixel.
-	if (sx1 == sx2)
-		return false;
-	sx2--;
-
-	start = solidsegs;
-	while (start->last < sx2)
-		start++;
-
-        if (sx1 >= start->first
-            && sx2 <= start->last)
-	{
-		// The clippost contains the new span.
-		return false;
+		int32_t lclip, rclip;
+		if (R_ClipLineToFrustum(p1, p2, clipdist, lclip, rclip))
+		{
+			R_ClipLine(p1, p2, lclip, rclip, p1, p2);
+			int x1 = R_ProjectPointX(p1->x, p1->y);
+			int x2 = R_ProjectPointX(p2->x, p2->y) - 1;
+			if (R_CheckProjectionX(x1, x2))
+			{
+				if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)	
+					return true;
+			}
+		}
 	}
 
-	return true;
+	return false;
 }
 
 //
@@ -916,27 +730,21 @@ void R_Subsector (int num)
 		int polyCount = sub->poly->numsegs;
 		seg_t **polySeg = sub->poly->segs;
 		while (polyCount--)
-		{
 			R_AddLine (*polySeg++);
-		}
 	}
 	
 	while (count--)
-	{
 		R_AddLine (line++);
-	}
 }
-
-
 
 
 //
 // RenderBSPNode
-// Renders all subsectors below a given node,
-//	traversing subtree recursively.
+//
+// Renders all subsectors below a given node, traversing subtree recursively.
 // Just call with BSP root.
 // killough 5/2/98: reformatted, removed tail recursion
-
+//
 void R_RenderBSPNode (int bspnum)
 {
 	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
@@ -944,19 +752,22 @@ void R_RenderBSPNode (int bspnum)
 		node_t *bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
-		int side = R_PointOnSide(viewx, viewy, bsp);
+		int frontside = R_PointOnSide(viewx, viewy, bsp);
+		int backside = frontside ^ 1;
 
 		// Recursively divide front space.
-		R_RenderBSPNode(bsp->children[side]);
+		R_RenderBSPNode(bsp->children[frontside]);
 
 		// Possibly divide back space.
-		if (!R_CheckBBox(bsp->bbox[side^1]))
+		if (!R_CheckBBox(bsp->bbox[backside]))
 			return;
 
-		bspnum = bsp->children[side^1];
+		bspnum = bsp->children[backside];
 	}
+
 	R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
+
 
 VERSION_CONTROL (r_bsp_cpp, "$Id$")
 

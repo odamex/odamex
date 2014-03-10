@@ -55,8 +55,7 @@ void SV_SendWarmupState(player_t &player, Warmup::status_t status, short count =
 // Broadcast warmup state to all clients.
 void SV_BroadcastWarmupState(Warmup::status_t status, short count = 0)
 {
-	std::vector<player_t>::iterator it;
-	for (it = players.begin(); it != players.end(); ++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (!it->ingame())
 			continue;

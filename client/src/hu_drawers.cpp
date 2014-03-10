@@ -241,7 +241,7 @@ void DrawTranslatedPatch(int x, int y, const float scale,
 		y += patch->topoffset() * y_scale;
 	}
 
-	V_ColorMap = translation;
+	V_ColorMap = translationref_t(translation);
 
 	if (force_opaque) {
 		screen->DrawTranslatedPatchStretched(patch, x, y,

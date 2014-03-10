@@ -52,18 +52,16 @@ void DEarthquake::Serialize (FArchive &arc)
 
 void DEarthquake::RunThink ()
 {
-	unsigned int i;
-
 	if (level.time % 48 == 0)
 		S_Sound (m_Spot, CHAN_BODY, "world/quake", 1, ATTN_NORM);
 		
 	if (serverside)
 	{
-		for (i = 0; i < players.size(); i++)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
-			if (players[i].ingame() && !(players[i].cheats & CF_NOCLIP))
+			if (it->ingame() && !(it->cheats & CF_NOCLIP))
 			{
-				AActor *mo = players[i].mo;
+				AActor *mo = it->mo;
 
 				if (!(level.time & 7) &&
 					 mo->x >= m_DamageBox[BOXLEFT] && mo->x < m_DamageBox[BOXRIGHT] &&
@@ -78,7 +76,7 @@ void DEarthquake::RunThink ()
 				if (mo->x >= m_TremorBox[BOXLEFT] && mo->x < m_TremorBox[BOXRIGHT] &&
 					 mo->y >= m_TremorBox[BOXTOP] && mo->y < m_TremorBox[BOXBOTTOM])
 				{
-					players[i].xviewshift = m_Intensity;
+					it->xviewshift = m_Intensity;
 				}
 			}
 		}

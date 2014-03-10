@@ -27,11 +27,17 @@
 
 #include "d_player.h"
 #include "r_data.h"
+#include "v_palette.h"
+#include "m_vectors.h"
+#include "v_video.h"
 
 // killough 10/98: special mask indicates sky flat comes from sidedef
 #define PL_SKYFLAT (0x80000000)
 
 BOOL R_AlignFlat (int linenum, int side, int fc);
+
+extern int negonearray[MAXWIDTH];
+extern int viewheightarray[MAXWIDTH];
 
 //
 // POV related.
@@ -54,7 +60,7 @@ extern fixed_t			centerxfrac;
 extern fixed_t			centeryfrac;
 extern fixed_t			yaspectmul;
 
-extern byte*			basecolormap;	// [RH] Colormap for sector currently being drawn
+extern shaderef_t		basecolormap;	// [RH] Colormap for sector currently being drawn
 
 extern int				validcount;
 
@@ -80,7 +86,7 @@ extern fixed_t			render_lerp_amount;
 #define MAXLIGHTZ			   128
 #define LIGHTZSHIFT 			20
 
-// [RH] Changed from lighttable_t* to int.
+// [RH] Changed from shaderef_t* to int.
 extern int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 extern int				scalelightfixed[MAXLIGHTSCALE];
 extern int				zlight[LIGHTLEVELS][MAXLIGHTZ];
@@ -88,7 +94,7 @@ extern int				zlight[LIGHTLEVELS][MAXLIGHTZ];
 extern int				extralight;
 extern BOOL				foggy;
 extern int				fixedlightlev;
-extern lighttable_t*	fixedcolormap;
+extern shaderef_t		fixedcolormap;
 
 extern int				lightscalexmul;	// [RH] for hires lighting fix
 extern int				lightscaleymul;
@@ -106,40 +112,24 @@ extern "C" int			detailyshift;
 
 //
 // Function pointers to switch refresh/drawing functions.
-// Used to select shadow mode etc.
 //
 extern void 			(*colfunc) (void);
-extern void 			(*basecolfunc) (void);
-extern void 			(*fuzzcolfunc) (void);
-extern void				(*lucentcolfunc) (void);
-extern void				(*transcolfunc) (void);
-extern void				(*tlatedlucentcolfunc) (void);
-// No shadow effects on floors.
 extern void 			(*spanfunc) (void);
 extern void				(*spanslopefunc) (void);
 
 // [RH] Function pointers for the horizontal column drawers.
 extern void (*hcolfunc_pre) (void);
 extern void (*hcolfunc_post1) (int hx, int sx, int yl, int yh);
-extern void (*hcolfunc_post2) (int hx, int sx, int yl, int yh);
 extern void (*hcolfunc_post4) (int sx, int yl, int yh);
-
 
 
 //
 // Utility functions.
 
-int
-R_PointOnSide
-( fixed_t	x,
-  fixed_t	y,
-  node_t*	node );
-
-int
-R_PointOnSegSide
-( fixed_t	x,
-  fixed_t	y,
-  seg_t*	line );
+int R_PointOnSide(fixed_t x, fixed_t y, const node_t* node);
+int R_PointOnSide(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh);
+int R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t* line);
+bool R_PointOnLine(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh);
 
 angle_t
 R_PointToAngle
@@ -154,10 +144,20 @@ R_PointToDist
 ( fixed_t	x,
   fixed_t	y );
 
-
-fixed_t R_ScaleFromGlobalAngle (angle_t visangle);
+int R_ProjectPointX(fixed_t x, fixed_t y);
+int R_ProjectPointY(fixed_t z, fixed_t y);
+bool R_CheckProjectionX(int &x1, int &x2);
+bool R_CheckProjectionY(int &y1, int &y2);
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty);
+bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip);
+
+void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2, 
+				int32_t lclip, int32_t rclip,
+				v2fixed_t* out1, v2fixed_t* out2);
+void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
+				int32_t lclip, int32_t rclip,
+				v2fixed_t* out1, v2fixed_t* out2);
 
 subsector_t*
 R_PointInSubsector
@@ -199,11 +199,59 @@ void R_SetViewSize (int blocks);
 // [RH] Initialize multires stuff for renderer
 void R_MultiresInit (void);
 
-void R_ResetDrawFuncs(void);
-void R_SetLucentDrawFuncs(void);
-void R_SetTranslatedDrawFuncs(void);
-void R_SetTranslatedLucentDrawFuncs(void);
+void R_ResetDrawFuncs();
+void R_SetFuzzDrawFuncs();
+void R_SetLucentDrawFuncs();
+void R_SetTranslatedDrawFuncs();
+void R_SetTranslatedLucentDrawFuncs();
+
+inline const byte shaderef_t::ramp() const
+{
+	if (m_mapnum >= NUMCOLORMAPS)
+		return 0;
+
+	int index = clamp(m_mapnum * 256 / NUMCOLORMAPS, 0, 255);
+	return m_colors->ramp[index];
+}
+
+extern argb_t translationRGB[MAXPLAYERS+1][16];
+
+inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte c) const
+{
+	int pid = translation.getPlayerID();
+
+	// Not a player color translation:
+	if (pid == -1)
+		return shade(translation.tlate(c));
+
+	// Special effect:
+	if (m_mapnum >= NUMCOLORMAPS)
+		return shade(translation.tlate(c));
+
+	// Is a player color translation, but not a player color index:
+	if (!(c >= 0x70 && c < 0x80))
+		return shade(c);
+
+	// Default to white light:
+	argb_t lightcolor = MAKERGB(255, 255, 255);
+
+	// Use the dynamic lighting's light color if we have one:
+	if (m_dyncolormap != NULL)
+		lightcolor = m_dyncolormap->color;
+
+	// Find the shading for the custom player colors:
+	byte a = 255 - ramp();
+	argb_t t = translationRGB[pid][c - 0x70];
+	argb_t s = MAKERGB(
+		newgamma[RPART(t) * RPART(lightcolor) * a / (255 * 255)],
+		newgamma[GPART(t) * GPART(lightcolor) * a / (255 * 255)],
+		newgamma[BPART(t) * BPART(lightcolor) * a / (255 * 255)]
+	);
+
+	return s;
+}
 
 
+void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color);
 
 #endif // __R_MAIN_H__

@@ -113,7 +113,7 @@ AActor::AActor () :
     momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
     damage(0), flags(0), flags2(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
     visdir(0), reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), gear(0), onground(false),
+    iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
     tid(0), bmapnode(this)
 {
@@ -224,7 +224,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
     special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
     reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), gear(0), onground(false),
+    iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
     tid(0), bmapnode(this)
 {
@@ -788,8 +788,9 @@ void AActor::Serialize (FArchive &arc)
 			<< waterlevel
 			<< gear;
 
+		// NOTE(jsd): This is pretty awful right here:
 		if (translation)
-			arc << (DWORD)(translation - translationtables);
+			arc << (DWORD)(translation.getTable() - translationtables);
 		else
 			arc << (DWORD)0xffffffff;
 		spawnpoint.Serialize (arc);
@@ -861,9 +862,14 @@ void AActor::Serialize (FArchive &arc)
 		DWORD trans;
 		arc >> trans;
 		if (trans == (DWORD)0xffffffff)
-			translation = NULL;
+			translation = translationref_t();
 		else
-			translation = translationtables + trans;
+		{
+			if ((trans / 256) <= MAXPLAYERS)
+				translation = translationref_t(translationtables + trans, trans / 256);
+			else
+				translation = translationref_t(translationtables + trans);
+		}
 		spawnpoint.Serialize (arc);
 		if(type >= NUMMOBJTYPES)
 			I_Error("Unknown object type in saved game");
@@ -1665,7 +1671,7 @@ void P_NightmareRespawn (AActor *mobj)
         S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 
     // spawn a teleport fog at the new spot
-    ss = R_PointInSubsector (x,y);
+    ss = P_PointInSubsector (x,y);
 
 	// spawn a teleport fog at the new spot
     mo = new AActor (x, y,  P_FloorHeight(x, y, ss->sector), MT_TFOG);
@@ -1937,9 +1943,9 @@ bool P_CheckMissileSpawn (AActor* th)
 	// [SL] 2011-06-02 - If a missile explodes immediatley upon firing,
 	// make sure we spawn the missile first, send it to all clients immediately
 	// instead of queueing it, then explode it.
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		SV_AwarenessUpdate(players[i], th);
+		SV_AwarenessUpdate(*it, th);
 	}
 
 	if (!P_TryMove (th, th->x, th->y, false))
@@ -2409,7 +2415,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// [RH] sound sequence overrides
 	if (mthing->type >= 1400 && mthing->type < 1410)
 	{
-		R_PointInSubsector (mthing->x<<FRACBITS,
+		P_PointInSubsector (mthing->x<<FRACBITS,
 			mthing->y<<FRACBITS)->sector->seqType = mthing->type - 1400;
 		return;
 	}
@@ -2428,7 +2434,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		}
 		else
 		{
-			R_PointInSubsector (mthing->x << FRACBITS,
+			P_PointInSubsector (mthing->x << FRACBITS,
 				mthing->y << FRACBITS)->sector->seqType = type;
 		}
 		return;
@@ -2533,7 +2539,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (i == MT_WATERZONE)
 	{
-		sector_t *sec = R_PointInSubsector (x, y)->sector;
+		sector_t *sec = P_PointInSubsector (x, y)->sector;
 		sec->waterzone = 1;
 		return;
 	}
@@ -2644,16 +2650,16 @@ bool P_VisibleToPlayers(AActor *mo)
 	if (!mo)
 		return false;
 
-	for (size_t i = 0; i < players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		// players aren't considered visible to themselves
-		if (mo->player && mo->player->id == players[i].id)
+		if (mo->player && mo->player->id == it->id)
 			continue;
 
-		if (!players[i].mo || players[i].spectator)
+		if (!(it->mo) || it->spectator)
 			continue;
 
-		if (P_CheckSightEdges(players[i].mo, mo, 5.0))
+		if (P_CheckSightEdges(it->mo, mo, 5.0))
 			return true;
 	}
 

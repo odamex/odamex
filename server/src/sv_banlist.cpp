@@ -998,7 +998,7 @@ void SV_InitBanlist()
 
 // Check to see if a client is on the banlist, and kick them out of the server
 // if they are.  Returns true if the player was banned.
-bool SV_BanCheck(client_t* cl, int n)
+bool SV_BanCheck(client_t* cl)
 {
 	Ban ban;
 	if (!banlist.check(cl->address, ban))

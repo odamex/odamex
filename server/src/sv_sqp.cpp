@@ -258,23 +258,23 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
     MSG_WriteByte(&ml_message, players.size());
 
     // Player info
-    for (size_t i = 0; i < players.size(); ++i)
+    for (Players::iterator it = players.begin();it != players.end();++it)
     {
-        MSG_WriteString(&ml_message, players[i].userinfo.netname.c_str());
+        MSG_WriteString(&ml_message, it->userinfo.netname.c_str());
 
-        MSG_WriteLong(&ml_message, players[i].userinfo.color);
+        MSG_WriteLong(&ml_message, it->userinfo.color);
         // TODO: Remove next release
         QRYNEWINFO(5)
         {
             if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-                MSG_WriteByte(&ml_message, players[i].userinfo.team);
+                MSG_WriteByte(&ml_message, it->userinfo.team);
         }
         else
-            MSG_WriteByte(&ml_message, players[i].userinfo.team);
+            MSG_WriteByte(&ml_message, it->userinfo.team);
 
-        MSG_WriteShort(&ml_message, players[i].ping);
+        MSG_WriteShort(&ml_message, it->ping);
 
-        int timeingame = (time(NULL) - players[i].JoinTime)/60;
+        int timeingame = (time(NULL) - it->JoinTime) / 60;
         if (timeingame < 0)
             timeingame = 0;
 
@@ -284,16 +284,16 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
         // now
         bool spectator;
 
-        spectator = (players[i].spectator ||
-            ((players[i].playerstate != PST_LIVE) &&
-            (players[i].playerstate != PST_DEAD) &&
-            (players[i].playerstate != PST_REBORN)));
+        spectator = (it->spectator || 
+            ((it->playerstate != PST_LIVE) &&
+            (it->playerstate != PST_DEAD) &&
+            (it->playerstate != PST_REBORN)));
 
         MSG_WriteBool(&ml_message, spectator);
 
-        MSG_WriteShort(&ml_message, players[i].fragcount);
-        MSG_WriteShort(&ml_message, players[i].killcount);
-        MSG_WriteShort(&ml_message, players[i].deathcount);
+        MSG_WriteShort(&ml_message, it->fragcount);
+        MSG_WriteShort(&ml_message, it->killcount);
+        MSG_WriteShort(&ml_message, it->deathcount);
     }
 }
 

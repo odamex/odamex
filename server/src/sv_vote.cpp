@@ -847,26 +847,18 @@ bool Vote::init(const std::vector<std::string> &args, const player_t &player)
 	this->countdown = sv_vote_timelimit.asInt() * TICRATE;
 
 	// Give everybody an "undecided" vote except the current player.
-	for (std::vector<player_t>::size_type i = 0; i != players.size(); i++)
+	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (!players[i].ingame())
-		{
+		if (!(it->ingame()))
 			continue;
-		}
 
-		if (!sv_vote_specvote && players[i].spectator)
-		{
+		if (!sv_vote_specvote && it->spectator)
 			continue;
-		}
 
-		if (players[i].id == this->caller_id)
-		{
+		if (it->id == this->caller_id)
 			this->tally[this->caller_id] = VOTE_YES;
-		}
 		else
-		{
-			this->tally[players[i].id] = VOTE_UNDEC;
-		}
+			this->tally[it->id] = VOTE_UNDEC;
 	}
 
 	SV_BroadcastPrintf(PRINT_HIGH, "%s has called a vote for %s.\n", player.userinfo.netname.c_str(), this->get_votestring().c_str());
@@ -883,13 +875,9 @@ void Vote::parse(vote_result_t vote_result)
 	// Make sure the clients have the final state of the vote
 	// before we do anything else.
 	SVC_GlobalVoteUpdate();
-	for (size_t i = 0; i < players.size(); i++)
-	{
-		if (validplayer(players[i]))
-		{
-			SV_SendPacket(players[i]);
-		}
-	}
+	for (Players::iterator it = players.begin();it != players.end();++it)
+		if (validplayer(*it))
+			SV_SendPacket(*it);
 
 	if (this->tally.empty() || vote_result == VOTE_ABANDON)
 	{
@@ -1031,10 +1019,8 @@ void SVC_VoteUpdate(player_t &player)
 // Send a full vote update to everybody
 void SVC_GlobalVoteUpdate(void)
 {
-	for (size_t i=0; i < players.size(); i++)
-	{
-		SVC_VoteUpdate(players[i]);
-	}
+	for (Players::iterator it = players.begin();it != players.end();++it)
+		SVC_VoteUpdate(*it);
 }
 
 //////// COMMANDS FROM CLIENT ////////
@@ -1192,21 +1178,21 @@ void Vote_Disconnect(player_t &player)
 }
 
 // Handles tic-by-tic maintenance of voting.
-void Vote_Runtic(void)
+void Vote_Runtic()
 {
 	// Special housekeeping for intermission or a new map.
 	if (level.time == 1)
 	{
 		// Every player has a clean slate in terms of timeouts.
-		for (size_t i = 0; i < players.size(); i++)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
-			if (!validplayer(players[i]))
+			if (!validplayer(*it))
 			{
 				continue;
 			}
 
-			players[i].timeout_callvote = 0;
-			players[i].timeout_vote = 0;
+			it->timeout_callvote = 0;
+			it->timeout_vote = 0;
 		}
 	}
 

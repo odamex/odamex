@@ -1,17 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_workspace_file>
 	<Workspace title="odamex">
-		<Project filename="client/sdl/client.cbp" active="1">
-			<Depends filename="textscreen/textscreen.cbp" />
-			<Depends filename="portmidi/pm_common/portmidi-static.cbp" />
+		<Project filename="client/sdl/client.cbp">
+			<Depends filename="libraries/textscreen/textscreen.cbp" />
+			<Depends filename="libraries/portmidi/pm_common/portmidi-static.cbp" />
+			<Depends filename="libraries/zlib/zlib.cbp" />
+			<Depends filename="libraries/libpng/libpng.cbp" />
 		</Project>
 		<Project filename="server/win32/server.cbp">
-			<Depends filename="libminiupnpc/codeblocks/miniupnpc.cbp" />
+			<Depends filename="libraries/libminiupnpc/codeblocks/miniupnpc.cbp" />
 		</Project>
 		<Project filename="master/master.cbp" />
 		<Project filename="odalaunch/odalaunch.cbp" />
-		<Project filename="textscreen/textscreen.cbp" />
-		<Project filename="libminiupnpc/codeblocks/miniupnpc.cbp" />
-		<Project filename="portmidi/pm_common/portmidi-static.cbp" />
+		<Project filename="libraries/textscreen/textscreen.cbp" />
+		<Project filename="libraries/libminiupnpc/codeblocks/miniupnpc.cbp" />
+		<Project filename="libraries/portmidi/pm_common/portmidi-static.cbp" />
+		<Project filename="libraries/zlib/zlib.cbp" />
+		<Project filename="libraries/libpng/libpng.cbp">
+			<Depends filename="libraries/zlib/zlib.cbp" />
+		</Project>
 	</Workspace>
 </CodeBlocks_workspace_file>

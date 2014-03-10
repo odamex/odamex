@@ -26,6 +26,11 @@
 #include "d_player.h"
 #include "doomdef.h"
 #include "v_palette.h"
+#include "v_video.h"
+
+IMPLEMENT_CLASS (DCanvas, DObject)
+DCanvas _screen;
+DCanvas* screen = &_screen;
 
 float BaseBlendA;
 bool r_underwater;
