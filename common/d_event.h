@@ -92,10 +92,7 @@ typedef enum
 	BT_WEAPONMASK		= (8+16+32),
 	BT_WEAPONSHIFT		= 3,
 
-    //new stuff - bit 6 indicates its a new thing
-    BT_DOSDOOM          = 64,
-    BT_JUMP             = (64+8),
-    BT_DUCK             = (64+16),
+    BT_JUMP             = 64,
 
 	// Pause the game.
 	BTS_PAUSE			= 1,
