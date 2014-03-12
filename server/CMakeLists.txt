@@ -5,6 +5,9 @@ endif()
 
 global_compile_options()
 
+# #define SERVER_APP for use in the source code
+add_definitions(-DSERVER_APP)
+
 # Common
 set(COMMON_DIR ../common)
 file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)

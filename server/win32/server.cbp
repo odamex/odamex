@@ -20,6 +20,7 @@
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
+					<Add option="-DSERVER_APP" />
 					<Add option="-DODA_HAVE_MINIUPNP" />
 					<Add directory="../../libraries/libminiupnpc" />
 				</Compiler>
@@ -49,6 +50,7 @@
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
+					<Add option="-DSERVER_APP" />
 					<Add option="-DODA_HAVE_MINIUPNP" />
 					<Add directory="../../libraries/libminiupnpc" />
 				</Compiler>
@@ -90,6 +92,7 @@
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DSERVER_APP" />
 					<Add option="/DODA_HAVE_MINIUPNP" />
 					<Add option="/DJSON_IS_AMALGAMATION" />
 					<Add directory="." />
@@ -154,6 +157,7 @@
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DSERVER_APP" />
 					<Add option="/DODA_HAVE_MINIUPNP" />
 					<Add option="/DJSON_IS_AMALGAMATION" />
 					<Add directory="." />
@@ -200,6 +204,7 @@
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-D_WIN32_WINNT=0x0500" />
+			<Add option="/DSERVER_APP" />
 			<Add option="-DJSON_IS_AMALGAMATION" />
 			<Add directory="." />
 			<Add directory="../src" />
