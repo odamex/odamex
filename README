@@ -114,29 +114,31 @@ For BSD, TBA
 
 2.3 - Installation - source download
 
-The source code of release versions are available from 
-http://downloads.sourceforge.net/odamex/odamex-src-0.4.4.tar.bz2. If
+The source code of release versions are available from http://odamex.net. If
 you are interested in the bleeding edge development of Odamex, you can access
-the SVN at http://odamex.net/svn/root with anonymous read access. Be warned
-however that it might be incompatible with current release versions, and 
-stability is not guaranteed.
+the SVN repository at http://odamex.net/svn/root with anonymous read access.
+Be warned however that it might be incompatible with current release versions,
+and stability is not guaranteed.
 
 The following libraries are required:
 	
 	* SDL v1.2.9+ (http://libsdl.org/)
 	* SDL_mixer v1.2.6+ (http://libsdl.org/projects/SDL_mixer/)
 
-For Windows, you will need Microsoft Visual C++ 6 or later with nasm
-(http://nasm.sourceforge.net/), or MingW32 (http://mingw.org/) with MSYS,
-Codeblocks (http://codeblocks.org/) or any other program that can be used to
-assist compiling Odamex with MingW. There is a Win32 makefile and a Codeblocks
-project available for Odamex compilation.
+For Windows, you will need Microsoft Visual C++ 8 or later, or
+MingW32 (http://mingw.org/), Codeblocks (http://codeblocks.org/) or any other
+program that can be used to assist compiling Odamex with MingW. There is a
+Codeblocks project available for Odamex compilation. Other compiler platforms
+can make use of the CMake to generate platform-specific project files.
 
-For MacOS, you can use the makefile with gcc.
+For MacOS, you can use CMake to generate a makefile for use with gcc.
 
-For Linux, you can use the makefile with gcc.
+For Linux, you can use CMake to generate a makefile for use with gcc.
 
-For BSD, you can use the makefile with gcc.
+For BSD, you can use CMake to generate a makefile for use with gcc.
+
+For additional information on generating a project makefile using CMake, please
+see the wiki entry at http://odamex.net/wiki/Compiling_using_CMake.
 
 ===============================================================================
 
