@@ -548,33 +548,33 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 		return;
 	}
 
-	player_t& self = consoleplayer();
-
-	Iterator it = begin, sentinal = begin;
-	for (;it != end;++it)
-	{
-		if (it->id == displayplayer_id)
-			break;
-	}
+	// set the sentinal iterator to point to displayplayer
+	Iterator sentinal = begin;
+	while (sentinal != end && sentinal->id != displayplayer_id)
+		++sentinal;
 
 	// We can't find the displayplayer.  This is bad.
-	if (it == end)
+	if (sentinal == end)
 		return;
+
+	// iterate through all of the players until we reach sentinal again
+	Iterator it = sentinal;
 
 	do
 	{
-		++it;
-		player_t& player = *it;
-
-		// Wrap around if we hit the end.  The sentinal will stop us.
-		if (it == end)
+		// Increment iterator and wrap around if we hit end.
+		// The sentinal will stop the lop.
+		if (++it == end)
 			it = begin;
+
+		player_t& self = consoleplayer();
+		player_t& player = *it;
 
 		// spectators only cycle between active players
 		if (P_CanSpy(self, player) ||
 			(player.id == consoleplayer_id && !self.spectator) ||
 			demoplayback || netdemo.isPlaying() || netdemo.isPaused())
-        {
+		{
 			displayplayer_id = player.id;
 			CL_CheckDisplayPlayer();
 
@@ -586,8 +586,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 
 			return;
 		}
-	}
-	while (it != sentinal);
+	} while (it != sentinal);
 }
 
 //
