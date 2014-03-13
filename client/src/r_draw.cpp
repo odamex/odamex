@@ -1427,44 +1427,43 @@ void R_DrawSlopeSpanD_c()
 //  for getting the framebuffer address
 //  of a pixel to draw.
 //
-void
-R_InitBuffer
-( int		width,
-  int		height ) 
+void R_InitBuffer(int width, int height) 
 { 
 	int 		i;
 	byte		*buffer;
 	int			pitch;
 	int			xshift;
 
+	int windowwidth = width << detailxshift;
+	int windowheight = height << detailyshift;
+
 	// Handle resize,
 	//	e.g. smaller view windows
 	//	with border and/or status bar.
-	viewwindowx = (screen->width-(width<<detailxshift))>>1;
+	viewwindowx = (screen->width - windowwidth) >> 1;
 
 	// [RH] Adjust column offset according to bytes per pixel
 	//		and detail mode
-	xshift = (screen->is8bit()) ? 0 : 2;
-	xshift += detailxshift;
+	xshift = detailxshift + (screen->is8bit() ? 0 : 2);
 
 	// Column offset. For windows
 	for (i = 0; i < width; i++)
 		columnofs[i] = (viewwindowx + i) << xshift;
 
 	// Same with base row offset.
-	if ((width<<detailxshift) == screen->width)
+	if (windowwidth == screen->width)
 		viewwindowy = 0;
 	else
-		viewwindowy = (ST_Y-(height<<detailyshift)) >> 1;
+		viewwindowy = (ST_Y - windowheight) >> 1;
 
-	screen->Lock ();
+	screen->Lock();
 	buffer = screen->buffer;
 	pitch = screen->pitch;
-	screen->Unlock ();
+	screen->Unlock();
 
 	// Precalculate all row offsets.
-	for (i=0 ; i<height ; i++)
-		ylookup[i] = buffer + ((i<<detailyshift)+viewwindowy)*pitch;
+	for (i = 0; i < height; i++)
+		ylookup[i] = buffer + ((i << detailyshift) + viewwindowy) * pitch;
 }
 
 
@@ -1541,77 +1540,88 @@ void R_DrawViewBorder (void)
 	V_MarkRect (0, 0, screen->width, ST_Y);
 }
 
+// ============================================================================
+//
+// Horizontal and vertical pixel doubling functions
+//
+// ============================================================================
+
+static void R_DoubleX8()
+{
+	int rowsize = realviewwidth >> 2;
+	int pitch = screen->pitch >> (2 - detailyshift);
+
+	unsigned int* line = (unsigned int*)(screen->buffer + viewwindowy * screen->pitch + viewwindowx);
+	for (int y = 0; y < viewheight; y++, line += pitch)
+	{
+		for (int x = 0; x < rowsize; x += 2)
+		{
+			unsigned int a = line[x + 0];
+			unsigned int b = line[x + 1];
+			a &= 0x00ff00ff;
+			b &= 0x00ff00ff;
+			line[x + 0] = a | (a << 8);
+			line[x + 1] = b | (b << 8);
+		}
+	}
+}
+
+static void R_DoubleX32()
+{
+	int rowsize = realviewwidth;
+	int pitch = screen->pitch >> (2 - detailyshift);
+
+	argb_t* line = (argb_t*)(screen->buffer + viewwindowy * screen->pitch + viewwindowx);
+	for (int y = 0; y < viewheight; y++, line += pitch)
+	{
+		for (int x = 0; x < rowsize; x += 2)
+			line[x + 1] = line[x];
+	}
+}
+
+static void R_DoubleY8()
+{
+	int rowsize = realviewwidth;
+	int pitch = screen->pitch;
+
+	byte* line = screen->buffer + viewwindowy * pitch + viewwindowx;
+
+	for (int y = 0; y < viewheight; y++, line += pitch << 1)
+		memcpy(line + pitch, line, rowsize);
+}
+
+static void R_DoubleY32()
+{
+	int rowsize = realviewwidth << 2;
+	int pitch = screen->pitch;
+
+	byte* line = screen->buffer + viewwindowy * pitch + viewwindowx;
+
+	for (int y = 0; y < viewheight; y++, line += pitch << 1)
+		memcpy(line + pitch, line, rowsize);
+}
+
+
 // [RH] Double pixels in the view window horizontally
 //		and/or vertically (or not at all).
 void R_DetailDouble (void)
 {
-	switch ((detailxshift << 1) | detailyshift)
+	if (screen->is8bit())
 	{
-		case 1:		// y-double
-		{
-			int rowsize = realviewwidth << ((screen->is8bit()) ? 0 : 2);
-			int pitch = screen->pitch;
-			int y;
-			byte *line;
-
-			line = screen->buffer + viewwindowy*pitch + viewwindowx;
-			for (y = 0; y < viewheight; y++, line += pitch<<1)
-			{
-				memcpy (line+pitch, line, rowsize);
-			}
-		}
-		break;
-
-		case 2:		// x-double
-		{
-			int rowsize = realviewwidth >> 2;
-			int pitch = screen->pitch >> (2-detailyshift);
-			int y,x;
-			unsigned *line,a,b;
-
-			line = (unsigned *)(screen->buffer + viewwindowy*screen->pitch + viewwindowx);
-			for (y = 0; y < viewheight; y++, line += pitch)
-			{
-				for (x = 0; x < rowsize; x += 2)
-				{
-					a = line[x+0];
-					b = line[x+1];
-					a &= 0x00ff00ff;
-					b &= 0x00ff00ff;
-					line[x+0] = a | (a << 8);
-					line[x+1] = b | (b << 8);
-				}
-			}
-		}
-		break;
-
-		case 3:		// x- and y-double
-		{
-			int rowsize = realviewwidth >> 2;
-			int pitch = screen->pitch >> (2-detailyshift);
-			int realpitch = screen->pitch >> 2;
-			int y,x;
-			unsigned *line,a,b;
-
-			line = (unsigned *)(screen->buffer + viewwindowy*screen->pitch + viewwindowx);
-			for (y = 0; y < viewheight; y++, line += pitch)
-			{
-				for (x = 0; x < rowsize; x += 2)
-				{
-					a = line[x+0];
-					b = line[x+1];
-					a &= 0x00ff00ff;
-					b &= 0x00ff00ff;
-					line[x+0] = a | (a << 8);
-					line[x+0+realpitch] = a | (a << 8);
-					line[x+1] = b | (b << 8);
-					line[x+1+realpitch] = b | (b << 8);
-				}
-			}
-		}
-		break;
+		if (detailxshift)
+			R_DoubleX8();
+		if (detailyshift)
+			R_DoubleY8();
+	}
+	else
+	{
+		if (detailxshift)
+			R_DoubleX32();
+		if (detailyshift)
+			R_DoubleY32();
 	}
 }
+
 
 enum r_optimize_kind {
 	OPTIMIZE_NONE,
