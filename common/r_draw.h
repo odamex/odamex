@@ -128,7 +128,7 @@ extern void (*R_DrawColumnHoriz)(void);
 // [RH] Initialize the above function pointers
 void R_InitColumnDrawers ();
 
-void R_InitDrawers ();
+void R_InitVectorizedDrawers();
 
 void	R_DrawColumnHorizP (void);
 void	R_DrawColumnP (void);
