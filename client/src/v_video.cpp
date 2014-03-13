@@ -278,7 +278,7 @@ void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
 }
 
 
-void DCanvas::Dim(int x1, int y1, int w, int h, const char* color, float famount) const
+void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float famount) const
 {
 	if (!buffer)
 		return;
@@ -299,7 +299,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color, float famount
 		fixed_t amount = (fixed_t)(famount * 64.0f);
 		argb_t *fg2rgb = Col2RGB8[amount];
 		argb_t *bg2rgb = Col2RGB8[64-amount];
-		unsigned int fg = fg2rgb[V_GetColorFromString(GetDefaultPalette()->basecolors, color)];
+		unsigned int fg = fg2rgb[V_GetColorFromString(GetDefaultPalette()->basecolors, color_str)];
 
 		byte *dest = buffer + y1 * pitch + x1;
 		int gap = pitch - w;
@@ -340,8 +340,9 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color, float famount
 	}
 	else
 	{
-		int fill = V_GetColorFromString (NULL, color);
-		r_dimpatchD(this, fill, (int)(famount * 256.0f), x1, y1, w, h);
+		argb_t color = V_GetColorFromString(NULL, color_str);
+		color = MAKERGB(newgamma[RPART(color)], newgamma[GPART(color)], newgamma[BPART(color)]);
+		r_dimpatchD(this, color, (int)(famount * 256.0f), x1, y1, w, h);
 	}
 }
 
