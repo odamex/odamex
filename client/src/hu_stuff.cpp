@@ -1377,6 +1377,14 @@ struct compare_player_points
 	}
 };
 
+struct compare_player_names
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg1->userinfo.netname < arg2->userinfo.netname;
+	}
+};
+
 
 static float HU_CalculateKillDeathRatio(const player_t* player)
 {
@@ -1411,9 +1419,15 @@ void HU_ConsoleScores(player_t *player)
 
 	typedef std::list<const player_t*> PlayerPtrList;
 	PlayerPtrList sortedplayers;
+	PlayerPtrList sortedspectators;
 
 	for (Players::const_iterator it = players.begin(); it != players.end(); ++it)
-		sortedplayers.push_back(&*it);
+		if (!it->spectator && it->playerstate != PST_CONTACT && it->playerstate != PST_DOWNLOAD)
+			sortedplayers.push_back(&*it);
+
+	for (Players::const_iterator it = players.begin(); it != players.end(); ++it)
+		if (it->spectator && it->playerstate != PST_CONTACT && it->playerstate != PST_DOWNLOAD)
+			sortedspectators.push_back(&*it);
 
 	// One of these at each end prevents the following from
 	// drawing on the screen itself.
@@ -1456,9 +1470,7 @@ void HU_ConsoleScores(player_t *player)
 			for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
 			{
 				const player_t* itplayer = *it;
-				if (itplayer->userinfo.team == team_num && !itplayer->spectator
-						&& itplayer->playerstate != PST_CONTACT
-						&& itplayer->playerstate != PST_DOWNLOAD)
+				if (itplayer->userinfo.team == team_num)
 				{
 					sprintf(str, "%-15s %-6d N/A  %-5d %4d\n",
 							itplayer->userinfo.netname.c_str(),
@@ -1472,20 +1484,6 @@ void HU_ConsoleScores(player_t *player)
 					else
 						Printf(PRINT_HIGH, str);
 				}
-			}
-		}
-
-		Printf_Bold("\n----------------------------SPECTATORS\n");
-		for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
-		{
-			const player_t* itplayer = *it;
-			if (itplayer->spectator)
-			{
-				sprintf(str, "%-15s\n", itplayer->userinfo.netname.c_str());
-				if (itplayer == player)
-					Printf_Bold(str);
-				else
-					Printf(PRINT_HIGH, str);
 			}
 		}
 	}
@@ -1527,9 +1525,7 @@ void HU_ConsoleScores(player_t *player)
 			for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
 			{
 				const player_t* itplayer = *it;
-				if (itplayer->userinfo.team == team_num && !itplayer->spectator
-						&& itplayer->playerstate != PST_CONTACT
-						&& itplayer->playerstate != PST_DOWNLOAD)
+				if (itplayer->userinfo.team == team_num)
 				{
 					sprintf(str, "%-15s %-5d %-6d %2.1f %4d\n",
 							itplayer->userinfo.netname.c_str(),
@@ -1543,22 +1539,6 @@ void HU_ConsoleScores(player_t *player)
 					else
 						Printf(PRINT_HIGH, str);
 				}
-			}
-		}
-
-		Printf_Bold("\n----------------------------SPECTATORS\n");
-
-		for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
-		{
-			const player_t* itplayer = *it;
-			if (itplayer->spectator)
-			{
-				sprintf(str, "%-15s\n", itplayer->userinfo.netname.c_str());
-
-				if (itplayer == player)
-					Printf_Bold(str);
-				else
-					Printf(PRINT_HIGH, str);
 			}
 		}
 	}
@@ -1591,39 +1571,19 @@ void HU_ConsoleScores(player_t *player)
 		for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
 		{
 			const player_t* itplayer = *it;
-			if (!itplayer->spectator
-					&& itplayer->playerstate != PST_CONTACT
-					&& itplayer->playerstate != PST_DOWNLOAD)
-			{
-				sprintf(str, "%-15s %-5d %-6d %2.1f %4d\n",
-						itplayer->userinfo.netname.c_str(),
-						itplayer->fragcount,
-						itplayer->deathcount,
-						HU_CalculateFragDeathRatio(itplayer),
-						itplayer->GameTime / 60);
+			sprintf(str, "%-15s %-5d %-6d %2.1f %4d\n",
+					itplayer->userinfo.netname.c_str(),
+					itplayer->fragcount,
+					itplayer->deathcount,
+					HU_CalculateFragDeathRatio(itplayer),
+					itplayer->GameTime / 60);
 
-				if (itplayer == player)
-					Printf_Bold(str);
-				else
-					Printf(PRINT_HIGH, str);
-			}
+			if (itplayer == player)
+				Printf_Bold(str);
+			else
+				Printf(PRINT_HIGH, str);
 		}
 
-		Printf_Bold("\n----------------------------SPECTATORS\n");
-
-		for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
-		{
-			const player_t* itplayer = *it;
-			if (itplayer->spectator)
-			{
-				sprintf(str, "%-15s\n", itplayer->userinfo.netname.c_str());
-
-				if (itplayer == player)
-					Printf_Bold(str);
-				else
-					Printf(PRINT_HIGH, str);
-			}
-		}
 	}
 
 	else if (sv_gametype == GM_COOP)
@@ -1639,38 +1599,35 @@ void HU_ConsoleScores(player_t *player)
 		for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
 		{
 			const player_t* itplayer = *it;
-			if (!itplayer->spectator
-					&& itplayer->playerstate != PST_CONTACT
-					&& itplayer->playerstate != PST_DOWNLOAD)
-			{
-				sprintf(str,"%-15s %-5d %-6d %2.1f %4d\n",
-						itplayer->userinfo.netname.c_str(),
-						itplayer->killcount,
-						itplayer->deathcount,
-						HU_CalculateKillDeathRatio(itplayer),
-						itplayer->GameTime / 60);
+			sprintf(str,"%-15s %-5d %-6d %2.1f %4d\n",
+					itplayer->userinfo.netname.c_str(),
+					itplayer->killcount,
+					itplayer->deathcount,
+					HU_CalculateKillDeathRatio(itplayer),
+					itplayer->GameTime / 60);
 
-				if (itplayer == player)
-					Printf_Bold(str);
-				else
-					Printf(PRINT_HIGH, str);
-			}
+			if (itplayer == player)
+				Printf_Bold(str);
+			else
+				Printf(PRINT_HIGH, str);
 		}
+	}
+
+	if (!sortedspectators.empty())
+	{
+		compare_player_names comparison_functor;
+		sortedspectators.sort(comparison_functor);
 
 		Printf_Bold("\n----------------------------SPECTATORS\n");
 
-		for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
+		for (PlayerPtrList::const_iterator it = sortedspectators.begin(); it != sortedspectators.end(); ++it)
 		{
 			const player_t* itplayer = *it;
-			if (itplayer->spectator)
-			{
-				sprintf(str, "%-15s\n", itplayer->userinfo.netname.c_str());
-
-				if (itplayer == player)
-					Printf_Bold(str);
-				else
-					Printf(PRINT_HIGH, str);
-			}
+			sprintf(str, "%-15s\n", itplayer->userinfo.netname.c_str());
+			if (itplayer == player)
+				Printf_Bold(str);
+			else
+				Printf(PRINT_HIGH, str);
 		}
 	}
 
