@@ -61,72 +61,55 @@ int V_TextScaleYAmount()
 // the console font drawer.
 void V_InitConChars (byte transcolor)
 {
-	byte *d, *s, v, *src;
-	patch_t *chars;
-	int x, y, z, a;
-	DCanvas *scrn = I_AllocateScreen(128, 128, 8);
-	DCanvas &temp = *scrn;
+	// Load the CONCHARS lump and convert it from patch_t format
+	// to a raw linear byte buffer with a background color of 'transcolor'
+	DCanvas* temp_screen = I_AllocateScreen(128, 128, 8);
 
-	if (temp.is8bit())
+	patch_t* chars_patch = W_CachePatch("CONCHARS");
+	temp_screen->Lock();
+
+	// fill with color 'transcolor'
+	for (int y = 0; y < 128; y++)
+		memset(temp_screen->buffer + temp_screen->pitch * y, transcolor, 128);
+
+	// paste the patch into the linear byte bufer
+	temp_screen->DrawPatch(chars_patch, 0, 0);
+
+	ConChars = new byte[256*8*8*2];
+
+	byte* dest = ConChars;	
+
+	for (int y = 0; y < 16; y++)
 	{
-	chars = W_CachePatch ("CONCHARS");
-	temp.Lock ();
-
-	{
-			argb_t *scrn, fill;
-
-		fill = (transcolor << 24) | (transcolor << 16) | (transcolor << 8) | transcolor;
-		for (y = 0; y < 128; y++)
+		for (int x = 0; x < 16; x++)
 		{
-				scrn = (argb_t *)(temp.buffer + temp.pitch * y);
-			for (x = 0; x < 128/4; x++)
+			const byte* source = temp_screen->buffer + x * 8 + (y * 8 * temp_screen->pitch);
+			for (int z = 0; z < 8; z++)
 			{
-				*scrn++ = fill;
-			}
-		}
-		temp.DrawPatch (chars, 0, 0);
-	}
-
-	src = temp.buffer;
-
-	if ( (ConChars = new byte[256*8*8*2]) )
-	{
-		d = ConChars;
-		for (y = 0; y < 16; y++)
-		{
-			for (x = 0; x < 16; x++)
-			{
-				s = src + x * 8 + (y * 8 * temp.pitch);
-				for (z = 0; z < 8; z++)
+				for (int a = 0; a < 8; a++)
 				{
-					for (a = 0; a < 8; a++)
+					byte val = source[a];
+					if (val == transcolor)
 					{
-						v = s[a];
-						if (v == transcolor)
-						{
-							d[a] = 0x00;
-							d[a+8] = 0xff;
-						}
-						else
-						{
-							d[a] = v;
-							d[a+8] = 0x00;
-						}
+						dest[a] = 0x00;
+						dest[a + 8] = 0xff;
 					}
-					d += 16;
-					s += temp.pitch;
+					else
+					{
+						dest[a] = val;
+						dest[a + 8] = 0x00;
+					}
 				}
+
+				dest += 16;
+				source += temp_screen->pitch;
 			}
 		}
 	}
 
-	temp.Unlock ();
-	}
-	else
-	{
-		ConChars = new byte[256*8*8*2];
-	}
-	I_FreeScreen(scrn);
+	temp_screen->Unlock();
+
+	I_FreeScreen(temp_screen);
 }
 
 
@@ -140,9 +123,7 @@ extern "C" void STACK_ARGS PrintChar2P_MMX (DWORD *charimg, byte *dest, int scre
 
 void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 {
-	const byte *str = (const byte *)s;
-	byte *temp;
-	argb_t *charimg;
+	const byte* str = (const byte*)s;
 
 	if (!buffer)
 		return;
@@ -157,18 +138,14 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 		skip = -(x - 7) / 8;
 		x += skip * 8;
 		if (count <= skip)
-		{
 			return;
-		}
-		else
-		{
-			count -= skip;
-			str += skip;
-		}
+
+		count -= skip;
+		str += skip;
 	}
 
 	x &= ~3;
-	temp = buffer + y * pitch;
+	byte* destline = buffer + y * pitch;
 
 	while (count && x <= (width - 8))
 	{
@@ -181,50 +158,40 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 	        continue;
 	    }
 
-		charimg = (argb_t *)&ConChars[(*str) * 128];
 		if (is8bit())
 		{
-			int z;
-			argb_t *writepos;
-
-			writepos = (argb_t *)(temp + x);
-			for (z = 0; z < 8; z++)
+			unsigned int* source = (unsigned int*)&ConChars[(*str) * 128];
+			unsigned int* dest = (unsigned int*)(destline + x);
+			for (int z = 0; z < 8; z++)
 			{
-				*writepos = (*writepos & charimg[2]) ^ charimg[0];
-				writepos++;
-				*writepos = (*writepos & charimg[3]) ^ charimg[1];
-				writepos += (pitch >> 2) - 1;
-				charimg += 4;
+				*dest = (*dest & source[2]) ^ source[0];
+				dest++;
+				*dest = (*dest & source[3]) ^ source[1];
+				dest += (pitch >> 2) - 1;
+				source += 4;
 			}
 		}
 		else
 		{
-			int z;
-			argb_t *writepos;
-
-			writepos = (argb_t *)(temp + (x << 2));
-			for (z = 0; z < 8; z++)
+			byte* source = (byte*)&ConChars[(*str) * 128];
+			argb_t* dest = (argb_t*)(destline + (x << 2));
+			for (int z = 0; z < 8; z++)
 			{
-#define BYTEIMG ((byte *)charimg)
-#define SPOT(a) \
-	writepos[a] = (writepos[a] & \
-				 ((BYTEIMG[a+8]<<16)|(BYTEIMG[a+8]<<8)|(BYTEIMG[a+8]))) \
-				 ^ V_Palette.shade(BYTEIMG[a])
+				for (int a = 0; a < 8; a++)
+				{
+					const argb_t mask = (source[a+8] << 24) | (source[a+8] << 16)
+										| (source[a+8] << 8) | source[a+8];
 
-				SPOT(0);
-				SPOT(1);
-				SPOT(2);
-				SPOT(3);
-				SPOT(4);
-				SPOT(5);
-				SPOT(6);
-				SPOT(7);
-#undef SPOT
-#undef BYTEIMG
-				writepos += pitch >> 2;
-				charimg += 4;
+					argb_t color = V_Palette.shade(source[a]) & ~mask;
+
+					dest[a] = (dest[a] & mask) ^ color; 
+				}
+
+				dest += pitch >> 2;
+				source += 16;
 			}
 		}
+
 		str++;
 		count--;
 		x += 8;
