@@ -2491,7 +2491,7 @@ void SV_DrawScores()
 		for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
 		{
 			const player_t* itplayer = *it;
-			Printf_Bold("%-3d %-16s %-15s %-5d %-6d %4s %-3d",
+			Printf_Bold("%-3d %-16s %-15s %-5d %-6d %2.1f %-3d",
 					itplayer->id,
 					NET_AdrToString(itplayer->client.address),
 					itplayer->userinfo.netname.c_str(),
