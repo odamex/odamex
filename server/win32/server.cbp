@@ -204,7 +204,7 @@
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-D_WIN32_WINNT=0x0500" />
-			<Add option="/DSERVER_APP" />
+			<Add option="-DSERVER_APP" />
 			<Add option="-DJSON_IS_AMALGAMATION" />
 			<Add directory="." />
 			<Add directory="../src" />
