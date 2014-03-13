@@ -46,7 +46,9 @@ while { ![eof $file] } {
 
 	set demotest "CRASHED"
 	catch {
-		if [file exists ./odamex] {
+		if [file exists odamex.exe] {
+			eval exec odamex.exe [split $args] > tmp
+		} elseif [file exists ./odamex] {
 			eval exec ./odamex [split $args] > tmp
 		} else {
 			eval exec ./build/client/odamex [split $args] > tmp
