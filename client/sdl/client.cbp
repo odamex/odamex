@@ -16,7 +16,7 @@
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-O3" />
-					<Add option="-mtune=native" />
+					<Add option="-march=native" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -46,6 +46,8 @@
 				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
+					<Add option="-O0" />
+					<Add option="-march=native" />
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fno-inline" />
