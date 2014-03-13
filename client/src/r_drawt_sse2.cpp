@@ -138,6 +138,12 @@ void R_DrawSpanD_SSE2 (void)
 	int 				count;
 	int 				spot;
 
+	if (dspan.colsize > 1)
+	{
+		R_DrawSpanD_c();
+		return;
+	}
+
 #ifdef RANGECHECK
 	if (dspan.x2 < dspan.x1
 		|| dspan.x1<0
@@ -160,9 +166,6 @@ void R_DrawSpanD_SSE2 (void)
 
 	xstep = dspan.xstep;
 	ystep = dspan.ystep;
-
-	// NOTE(jsd): Can this just die already?
-	assert(dspan.colsize == 1);
 
 	// Blit until we align ourselves with a 16-byte offset for SSE2:
 	while (((size_t)dest) & 15)
@@ -231,6 +234,12 @@ void R_DrawSpanD_SSE2 (void)
 
 void R_DrawSlopeSpanD_SSE2 (void)
 {
+	if (dspan.colsize > 1)
+	{
+		R_DrawSlopeSpanD_c();
+		return;
+	}
+
 	int count = dspan.x2 - dspan.x1 + 1;
 	if (count <= 0)
 		return;
@@ -256,7 +265,6 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	// texture data
 	byte *src = (byte *)dspan.source;
 
-	assert (dspan.colsize == 1);
 	const int colsize = dspan.colsize;
 	int ltindex = 0;		// index into the lighting table
 
