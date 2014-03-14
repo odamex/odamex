@@ -138,12 +138,12 @@ public:
 	inline argb_t bluePart(argb_t color) const
 	{	return (color >> bshift) & 0xFF;	}
 
-	inline argb_t makeRGB(byte r, byte g, byte b) const
+	inline argb_t makeRGB(unsigned int r, unsigned int g, unsigned int b) const
 	{
 		return (r << rshift) | (g << gshift) | (b << bshift);
 	}
 
-	inline argb_t makeARGB(byte a, byte r, byte g, byte b) const
+	inline argb_t makeARGB(unsigned int a, unsigned int r, unsigned int g, unsigned int b) const
 	{
 		return (a << ashift) | (r << rshift) | (g << gshift) | (b << bshift);
 	}
