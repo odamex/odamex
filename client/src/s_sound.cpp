@@ -314,9 +314,16 @@ void S_Start (void)
 // 
 bool S_CompareChannels(const channel_t &a, const channel_t &b)
 {
-	if (a.priority > b.priority || (a.priority == b.priority && a.volume > b.volume))
-		return true;
-	return a.start_time > b.start_time;
+	if (a.priority != b.priority)
+		return a.priority > b.priority;
+
+	if (a.volume != b.volume)
+		return a.volume > b.volume;
+
+	if (a.start_time != b.start_time)
+		return a.start_time > b.start_time;
+
+	return false;
 }
 
 
