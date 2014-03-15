@@ -2888,20 +2888,15 @@ void SV_UpdateMissiles(player_t &pl)
 			continue;
 
 		// update missile position every 30 tics
-		if (((gametic+mo->netid) % 30) && mo->type != MT_TRACER)
+		if (((gametic+mo->netid) % 30) && (mo->type != MT_TRACER) && (mo->type != MT_FATSHOT))
 			continue;
-        // this is a hack for revenant tracers, so they get updated frequently
-        // in coop, this will need to be changed later for a more "smoother"
-        // tracer
-        else if (((gametic+mo->netid) % 10) && mo->type == MT_TRACER)
-            continue;
-
+		// Revenant tracers and Mancubus fireballs need to be  updated more often
+		else if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT))
+			continue;
+		
 		if(SV_IsPlayerAllowedToSee(pl, mo))
 		{
 			client_t *cl = &pl.client;
-
-            statenum_t mostate = (statenum_t)(mo->state - states);
-            mobjinfo_t moinfo = mobjinfo[mo->type];
 
 			MSG_WriteMarker (&cl->netbuf, svc_movemobj);
 			MSG_WriteShort (&cl->netbuf, mo->netid);
@@ -2917,41 +2912,12 @@ void SV_UpdateMissiles(player_t &pl)
 			MSG_WriteLong (&cl->netbuf, mo->momy);
 			MSG_WriteLong (&cl->netbuf, mo->momz);
 
-			MSG_WriteMarker (&cl->netbuf, svc_actor_movedir);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
-			MSG_WriteByte (&cl->netbuf, mo->movedir);
-			MSG_WriteLong (&cl->netbuf, mo->movecount);
-
-
-            if (mo->target)
-            {
-                MSG_WriteMarker (&cl->netbuf, svc_actor_target);
-                MSG_WriteShort(&cl->netbuf, mo->netid);
-                MSG_WriteShort (&cl->netbuf, mo->target->netid);
-            }
-
-            if (mo->tracer)
-            {
-                MSG_WriteMarker (&cl->netbuf, svc_actor_tracer);
-                MSG_WriteShort(&cl->netbuf, mo->netid);
-                MSG_WriteShort (&cl->netbuf, mo->tracer->netid);
-            }
-
-            // This code is designed to send the 'starting' state, not inbetween
-            // ones
-			if ((moinfo.spawnstate == mostate) ||
-                (moinfo.seestate == mostate) ||
-                (moinfo.painstate == mostate) ||
-                (moinfo.meleestate == mostate) ||
-                (moinfo.missilestate == mostate) ||
-                (moinfo.deathstate == mostate) ||
-                (moinfo.xdeathstate == mostate) ||
-                (moinfo.raisestate == mostate))
-            {
-                MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
-                MSG_WriteShort (&cl->netbuf, mo->netid);
-                MSG_WriteShort (&cl->netbuf, (short)mostate);
-            }
+			if (mo->tracer)
+			{
+				MSG_WriteMarker (&cl->netbuf, svc_actor_tracer);
+				MSG_WriteShort(&cl->netbuf, mo->netid);
+				MSG_WriteShort (&cl->netbuf, mo->tracer->netid);
+			}
 
             if (cl->netbuf.cursize >= 1024)
                 if(!SV_SendPacket(pl))
