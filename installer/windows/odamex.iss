@@ -21,7 +21,8 @@ VersionInfoProductVersion=0.6.4
 AlwaysShowDirOnReadyPage=true
 ChangesEnvironment=true
 AppID={{2E517BBB-916F-4AB6-80E0-D4A292513F7A}
-PrivilegesRequired=none
+;PrivilegesRequired=none
+PrivilegesRequired=lowest
 ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
@@ -33,6 +34,9 @@ MinVersion=0,5.0
 AllowRootDirectory=True
 ChangesAssociations=Yes
 ArchitecturesInstallIn64BitMode=x64
+UninstallDisplaySize=8912896
+UsePreviousAppDir = yes
+WizardImageFile=..\..\media\wininstall_largeback.bmp
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -113,6 +117,8 @@ Filename: {app}\odalaunch.exe; Description: {cm:LaunchProgram,Odalaunch}; Flags:
 Type: files; Name: {app}\Odamex Website.url
 Type: files; Name: {app}\Releases Changelog.url
 Type: files; Name: {app}\odamex.out
+Type: files; Name: {app}\*.log
+Type: dirifempty; Name: "{app}"
 
 [Registry]
 Root: HKCR; Subkey: odamex; ValueType: string; ValueData: URL:Odamex Protocol; Flags: uninsdeletekey noerror
