@@ -35,13 +35,26 @@ while { ![eof $file] } {
 		foreach item $pwad {
 			set parts [split $item .]
 			if { [lindex $parts 1] == "deh" || [lindex $parts 1] == "DEH" } {
-				append args " -deh $item"
+				if [file exists tests/$item] {
+					append args " -deh tests/$item"
+				} else {
+					append args " -deh $item"
+				}
 			} else {
-				append args " -file $item"
+				if [file exists tests/$lump] {
+					append args " -file tests/$item"
+				} else {
+					append args " -file $item"
+				}
 			}			
 		}
 	}
-	append args " +demotest $lump"
+	
+	if [file exists tests/$lump] {
+		append args " +demotest tests/$lump"
+	} else {
+		append args " +demotest $lump"
+	}
 	append args " +logfile odamex.log"
 
 	set demotest "CRASHED"
