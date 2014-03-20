@@ -46,10 +46,10 @@
 				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
-					<Add option="-O0" />
-					<Add option="-march=native" />
 					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-O0" />
+					<Add option="-march=native" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
@@ -63,7 +63,7 @@
 					<Add library="libtextscreen-dbg" />
 					<Add library="libportmidi-dbg" />
 					<Add library="libpng-dbg" />
-					<Add library="zlib-dbg" />
+					<Add library="z-dbg" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
 					<Add directory="../../lib" />
@@ -138,7 +138,7 @@
 					<Add library="libtextscreen" />
 					<Add library="libportmidi" />
 					<Add library="shlwapi" />
-					<Add library="zlib" />
+					<Add library="z" />
 					<Add library="libpng" />
 					<Add directory="." />
 					<Add directory="../src" />
@@ -222,7 +222,7 @@
 					<Add library="libtextscreen-dbg" />
 					<Add library="libportmidi-dbg" />
 					<Add library="shlwapi" />
-					<Add library="zlib-dbg" />
+					<Add library="z-dbg" />
 					<Add library="libpng-dbg" />
 					<Add directory="." />
 					<Add directory="../src" />
