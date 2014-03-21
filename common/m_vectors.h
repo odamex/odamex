@@ -39,22 +39,46 @@ class AActor;
 
 struct v2fixed_t
 {
-   fixed_t x, y;
+	v2fixed_t() {}
+
+	v2fixed_t(fixed_t _x, fixed_t _y) : x(_x), y(_y) { }
+
+	v2fixed_t(const v2fixed_t& other) : x(other.x), y(other.y) { }
+
+	fixed_t x, y;
 };
 
 struct v3fixed_t
 {
-   fixed_t x, y, z;
+	v3fixed_t() {}
+
+	v3fixed_t(fixed_t _x, fixed_t _y, fixed_t _z) : x(_x), y(_y), z(_z) { }
+
+	v3fixed_t(const v3fixed_t& other) : x(other.x), y(other.y), z(other.z) { }
+	
+	fixed_t x, y, z;
 };
 
 struct v3float_t
 {
-   float x, y, z;
+	v3float_t() {}
+
+	v3float_t(float _x, float _y, float _z) : x(_x), y(_y), z(_z) { }
+
+	v3float_t(const v3float_t& other) : x(other.x), y(other.y), z(other.z) { }
+	
+	float x, y, z;
 };
 
 struct v3double_t
 {
-   double x, y, z;
+	v3double_t() {}
+
+	v3double_t(double _x, double _y, double _z) : x(_x), y(_y), z(_z) { }
+
+	v3double_t(const v3float_t& other) : x(other.x), y(other.y), z(other.z) { }
+	
+	double x, y, z;
 };
 
 
@@ -143,10 +167,22 @@ fixed_t M_LengthVec3Fixed(const v3fixed_t *v);
 // Multiplies each element in the vector by scalar value a
 // and stores in dest
 //
-void M_ScaleVec3f(v3float_t *dest, const v3float_t *v1, float a);
-void M_ScaleVec3 (v3double_t *dest, const v3double_t *v1, double a);
-void M_ScaleVec2Fixed(v2fixed_t *dest, const v2fixed_t *v1, fixed_t a);
-void M_ScaleVec3Fixed(v3fixed_t *dest, const v3fixed_t *v1, fixed_t a);
+void M_ScaleVec3f(v3float_t *dest, const v3float_t *v, float a);
+void M_ScaleVec3 (v3double_t *dest, const v3double_t *v, double a);
+void M_ScaleVec2Fixed(v2fixed_t *dest, const v2fixed_t *v, fixed_t a);
+void M_ScaleVec3Fixed(v3fixed_t *dest, const v3fixed_t *v, fixed_t a);
+
+
+//
+// M_ScaleVec3fToLength
+//
+// Scales each element in the vector such that the vector length equals a
+// and stores the resulting vector in dest.
+//
+void M_ScaleVec3fToLength(v3float_t* dest, const v3float_t* v, float a);
+void M_ScaleVec3ToLength (v3double_t* dest, const v3double_t* v, double a);
+void M_ScaleVec2FixedToLength(v2fixed_t * dest, const v2fixed_t* v, fixed_t a);
+void M_ScaleVec3FixedToLength(v3fixed_t * dest, const v3fixed_t* v, fixed_t a);
 
 // 
 // M_DotVec3
@@ -173,6 +209,8 @@ void M_CrossProductVec3 (v3double_t *dest, const v3double_t *v1, const v3double_
 //
 void M_NormalizeVec3f(v3float_t *dest, const v3float_t *v);
 void M_NormalizeVec3 (v3double_t *dest, const v3double_t *v);
+void M_NormalizeVec2Fixed(v2fixed_t *dest, const v2fixed_t *v);
+void M_NormalizeVec3Fixed(v3fixed_t *dest, const v3fixed_t *v);
 
 //
 // M_ActorToVec3f
