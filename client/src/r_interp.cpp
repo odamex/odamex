@@ -62,6 +62,21 @@ void R_InterpolationTicker()
 
 
 //
+// R_ResetInterpolation
+//
+// Clears any saved interpolation related data. This should be called whenever
+// a map is loaded.
+//
+void R_ResetInterpolation()
+{
+	prev_ceilingheight.clear();
+	prev_floorheight.clear();
+	saved_ceilingheight.clear();
+	saved_floorheight.clear();
+}
+
+
+//
 // R_BeginInterpolation
 //
 // Saves the current height of all moving planes and position of scrolling
