@@ -407,6 +407,15 @@
 				RelativePath="..\client\src\r_drawt.cpp">
 			</File>
 			<File
+				RelativePath="..\client\src\r_drawt_altivec.cpp">
+			</File>
+			<File
+				RelativePath="..\client\src\r_drawt_mmx.cpp">
+			</File>
+			<File
+				RelativePath="..\client\src\r_drawt_sse2.cpp">
+			</File>
+			<File
 				RelativePath="..\client\src\r_interp.cpp">
 			</File>
 			<File
@@ -770,6 +779,9 @@
 				RelativePath="..\common\m_memio.h">
 			</File>
 			<File
+				RelativePath="..\common\m_mempool.h">
+			</File>
+			<File
 				RelativePath="..\common\m_misc.h">
 			</File>
 			<File
@@ -948,6 +960,9 @@
 			</File>
 			<File
 				RelativePath="..\common\r_draw.h">
+			</File>
+			<File
+				RelativePath="..\common\r_intrin.h">
 			</File>
 			<File
 				RelativePath="..\common\r_local.h">
