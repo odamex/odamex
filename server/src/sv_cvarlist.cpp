@@ -243,11 +243,7 @@ CVAR(			sv_emptyfreeze,  "0", "Experimental: Does not progress the game when the
 // Hacky abominations that should be purged with fire and brimstone
 // =================================================================
 
-// [SL] sv_padding is used to pad launcher packets to ensure that they are split by the
-// IP layer rather than being oversized and dropped by some routers
-CVAR(			sv_padding, "                                                                                                                                                                                                        ", "",
-				CVARTYPE_STRING, CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_NOSET)
-
+// None currently
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
 
