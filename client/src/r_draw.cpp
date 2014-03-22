@@ -1796,8 +1796,8 @@ void R_InitVectorizedDrawers()
 	#ifdef __ALTIVEC__
 	else if (optimize_kind == OPTIMIZE_ALTIVEC)
 	{
-		rtv_lucent4colsP        = rtv_lucent4cols_ALTIVEC;
-		rtv_lucent4colsD        = rtv_lucent4cols_ALTIVEC;
+		rtv_lucent4colsP        = rtv_lucent4cols_c;    // TODO
+		rtv_lucent4colsD        = rtv_lucent4cols_c;    // TODO
 		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
 		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;

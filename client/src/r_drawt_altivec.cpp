@@ -36,8 +36,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Compile on g++-4.0.1 with -faltivec, not -maltivec
+#if !defined(__APPLE_ALTIVEC__)
 #include <altivec.h>
+#endif
 
 #define ALTIVEC_ALIGNED(x) x __attribute__((aligned(16)))
 
