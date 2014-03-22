@@ -761,7 +761,7 @@ void V_InitPalette (void)
 
 	V_ForceBlend (0, 0, 0, 0);
 
-		RefreshPalettes ();
+	RefreshPalettes ();
 
 	assert(GetDefaultPalette()->maps.colormap != NULL);
 	assert(GetDefaultPalette()->maps.shademap != NULL);
