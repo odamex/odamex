@@ -157,17 +157,22 @@ void BufferedSocket::DestroySocket()
 
 void BufferedSocket::SetRemoteAddress(const string &Address, const uint16_t &Port)
 {
-	struct hostent *he;
+	addrinfo  hints = {sizeof(addrinfo)};
+	addrinfo *result = NULL;
 
-	if((he = gethostbyname((const char *)Address.c_str())) == NULL)
+	hints.ai_flags = AI_ALL;
+	hints.ai_family = PF_INET;
+	hints.ai_protocol = 4;
+
+	if((getaddrinfo(Address.c_str(), NULL, &hints, &result)) != 0)
 	{
 		NET_ReportError(REPERR_NO_ARGS);
 		return;
-    }
+	}
 
 	m_RemoteAddress.sin_family = PF_INET;
 	m_RemoteAddress.sin_port = htons(Port);
-	m_RemoteAddress.sin_addr = *((struct in_addr *)he->h_addr);
+	m_RemoteAddress.sin_addr.s_addr = *((unsigned long*)&(((sockaddr_in*)result->ai_addr)->sin_addr));
 	memset(m_RemoteAddress.sin_zero, '\0', sizeof m_RemoteAddress.sin_zero);
 }
 
