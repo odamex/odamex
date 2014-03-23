@@ -227,18 +227,6 @@ EXTERN_CVAR(gammalevel)
 EXTERN_CVAR(vid_gammatype)
 
 
-//
-// I_SaveBMP
-//
-// Converts the SDL_Surface to BMP format and saves it to filename.
-//
-static int I_SaveBMP(const std::string& filename, SDL_Surface* surface, SDL_Color* colors)
-{
-	int result = SDL_SaveBMP(surface, filename.c_str());
-	return result;
-}
-
-
 #ifdef USE_PNG	// was libpng included in the build?
 //
 // I_SetPNGPalette
@@ -306,7 +294,7 @@ static void I_SetPNGComments(png_struct *png_ptr, png_info *info_ptr, time_t *no
 	text_line++;
 	
 	char gammabuf[20];	// large enough to not overflow with three digits of precision
-	int gammabuflen = sprintf(gammabuf, "%#.3f", gammalevel.value());
+	sprintf(gammabuf, "%#.3f", gammalevel.value());
 	
 	pngtext[text_line].key = (png_charp)"In-game Gamma Correction Level";
 	pngtext[text_line].text = (png_charp)gammabuf;
@@ -335,7 +323,6 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 	FILE* fp = fopen(filename.c_str(), "wb");
 	png_struct *png_ptr;
 	png_info *info_ptr;
-	SDL_PixelFormat *fmt = surface->format;
 	time_t now = time(NULL); // used for PNG text comments
 
 	if (fp == NULL)
@@ -393,11 +380,9 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 		PNG_FILTER_TYPE_DEFAULT);
 
 	// determine bpp mode, allocate memory space for PNG pixel data
-	int surface_bpp = fmt->BytesPerPixel;
 	int png_bpp = (screen->is8bit()) ? 1 : 3;
-	png_byte **row_ptrs = (png_byte**)png_malloc(png_ptr,
-		(png_alloc_size_t)(screen->height * sizeof(png_byte*)));
-	png_byte *row;
+	png_byte** row_ptrs = (png_byte**)png_malloc(png_ptr, (png_alloc_size_t)(screen->height * sizeof(png_byte*)));
+	png_byte* row;
 	
 	for (int rownum = 0; rownum < screen->height; rownum++)
 	{
@@ -500,21 +485,21 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 	return 0;
 }
 
+#else	// USE_PNG
+
+//
+// I_SaveBMP
+//
+// Converts the SDL_Surface to BMP format and saves it to filename.
+//
+static int I_SaveBMP(const std::string& filename, SDL_Surface* surface, SDL_Color* colors)
+{
+	int result = SDL_SaveBMP(surface, filename.c_str());
+	return result;
+}
+
 #endif // USE_PNG
 
-
-CVAR_FUNC_IMPL(cl_pngscreenshots)
-{
-	#ifndef USE_PNG 
-	// [SL] always force cl_pngscreenshots to be disabled if libpng support
-	// is not compiled-in.
-	if (var)
-	{
-		Printf(PRINT_HIGH, "Unable to set cl_pngscreenshots to %i. PNG support is disabled.\n", var.asInt());
-		var.Set(0.0f);
-	}
-	#endif	// USE_PNG
-}
 
 //
 // I_ScreenShot
@@ -527,7 +512,11 @@ void I_ScreenShot(std::string filename)
 	SDL_Color colors[256];
 	
 	// is PNG supported?
-	const std::string extension(cl_pngscreenshots ? "png" : "bmp");
+	#ifdef USE_PNG
+	const std::string extension("png");
+	#else
+	const std::string extension("bmp");
+	#endif	// USE_PNG
 
 	// If no filename was passed, use the screenshot format variable.
 	if (filename.empty())
@@ -574,30 +563,23 @@ void I_ScreenShot(std::string filename)
 		SDL_SetColors(surface, colors, 0, 256);
 	}
 
-	// [SL] note that cl_pngscreenshots will always be disabled if PNG support
-	// is not compiled-in (via the cl_pngscreenshots callback function).
-	if (cl_pngscreenshots)
+	#ifdef USE_PNG
+	int result = I_SavePNG(filename, surface, colors);
+	if (result != 0)
 	{
-		#ifdef USE_PNG
-		int result = I_SavePNG(filename, surface, colors);
-		if (result != 0)
-		{
-			Printf(PRINT_HIGH, "I_SavePNG Error: Returned error code %d\n", result);
-			SDL_FreeSurface(surface);
-			return;
-		}
-		#endif	// USE_PNG
+		Printf(PRINT_HIGH, "I_SavePNG Error: Returned error code %d\n", result);
+		SDL_FreeSurface(surface);
+		return;
 	}
-	else
+	#else
+	int result = I_SaveBMP(filename, surface, colors);
+	if (result != 0)
 	{
-		int result = I_SaveBMP(filename, surface, colors);
-		if (result != 0)
-		{
-			Printf(PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
-			SDL_FreeSurface(surface);
-			return;
-		}
+		Printf(PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
+		SDL_FreeSurface(surface);
+		return;
 	}
+	#endif	// USE_PNG
 
 	SDL_FreeSurface(surface);
 	Printf(PRINT_HIGH, "Screenshot taken: %s\n", filename.c_str());

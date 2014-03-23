@@ -347,12 +347,6 @@ CVAR_FUNC_DECL(		cl_screenshotname, "Odamex_%g_%d_%t",
 					"either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-// Screenshot output file format
-CVAR_FUNC_DECL(		cl_pngscreenshots, "1",
-					"Output screenshots in PNG format if enabled, or BMP format if disabled." \
-					"If Odamex was compiled without libpng support, this always falls back to BMP.",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
 CVAR(				cl_autorecord, "0", "Automatically record netdemos",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
