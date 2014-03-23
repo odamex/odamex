@@ -42,10 +42,12 @@
 
 namespace odalpapi {
 
-#ifndef _WIN32
-#include <unistd.h>
-#define closesocket close
-const int INVALID_SOCKET = -1;
+#ifdef _WIN32
+	#define AI_ALL 0x00000100
+#else
+	#include <unistd.h>
+	#define closesocket close
+	const int INVALID_SOCKET = -1;
 #endif
 
 using namespace std;
