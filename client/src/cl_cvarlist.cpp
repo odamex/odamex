@@ -350,6 +350,9 @@ CVAR_FUNC_DECL(		cl_screenshotname, "Odamex_%g_%d_%t",
 CVAR(				cl_autorecord, "0", "Automatically record netdemos",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(				cl_autoscreenshot, "0", "Automatically capture a screenshot at the end of a match.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(				cl_splitnetdemos, "0", "Create separate netdemos for each map",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 

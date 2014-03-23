@@ -365,7 +365,7 @@ static DCanvas			*background;
 
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_newintermission)
-
+EXTERN_CVAR (cl_autoscreenshot)
 //
 // CODE
 //
@@ -1264,6 +1264,8 @@ void WI_checkForAccelerate(void)
 	}
 }
 
+
+
 // Updates stuff each tick
 void WI_Ticker (void)
 {
@@ -1302,6 +1304,13 @@ void WI_Ticker (void)
 		case NoState:
 			WI_updateNoState();
 			break;
+	}
+
+	// [ML] If cl_autoscreenshot is on, take a screenshot 3 seconds
+	//		after the level end. (Multiplayer only)
+	if (multiplayer && bcnt == (3 * TICRATE))
+	{
+		AddCommandString("screenshot");
 	}
 }
 
