@@ -540,7 +540,7 @@
 							<object class="wxNotebook" name="m_notebook1">
 								<object class="notebookpage">
 									<label>Network Options</label>
-									<selected>0</selected>
+									<selected>1</selected>
 									<object class="wxPanel" name="m_panel91">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxBoxSizer">
@@ -1007,7 +1007,7 @@
 								</object>
 								<object class="notebookpage">
 									<label>Other Settings</label>
-									<selected>1</selected>
+									<selected>0</selected>
 									<object class="wxPanel" name="m_panel12">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxFlexGridSizer">
