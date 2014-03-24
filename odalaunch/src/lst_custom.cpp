@@ -265,13 +265,13 @@ int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
         
         Item.SetMask(wxLIST_MASK_IMAGE);
         
-        Item.SetId(item1);
+        Item.SetId(ListCtrl->FindItem(-1, item1));
     
         ListCtrl->GetItem(Item);
     
         Img1 = Item.GetImage();
     
-        Item.SetId(item2);
+        Item.SetId(ListCtrl->FindItem(-1, item2));
     
         ListCtrl->GetItem(Item);
     
@@ -280,13 +280,13 @@ int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
         return SortOrder ? Img2 - Img1 : Img1 - Img2;
     }
     
-    Item.SetId(item1);
+    Item.SetId(ListCtrl->FindItem(-1, item1));
     
     ListCtrl->GetItem(Item);
     
     Str1 = Item.GetText();
     
-    Item.SetId(item2);
+    Item.SetId(ListCtrl->FindItem(-1, item2));
     
     ListCtrl->GetItem(Item);
     
