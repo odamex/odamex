@@ -1682,7 +1682,9 @@ static bool detect_optimizations()
 
 	// Detect CPU features in ascending order of preference:
 	#ifdef __MMX__
+	#ifndef _XBOX // Until SDLx is updated
 	if (SDL_HasMMX())
+	#endif
 		optimizations_available.push_back(OPTIMIZE_MMX);
 	#endif
 	#ifdef __SSE2__
