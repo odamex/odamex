@@ -159,12 +159,12 @@ void BufferedSocket::DestroySocket()
 
 void BufferedSocket::SetRemoteAddress(const string &Address, const uint16_t &Port)
 {
-	addrinfo  hints = {sizeof(addrinfo)};
+	addrinfo  hints;
 	addrinfo *result = NULL;
 
+	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_flags = AI_ALL;
 	hints.ai_family = PF_INET;
-	hints.ai_protocol = 4;
 
 	if((getaddrinfo(Address.c_str(), NULL, &hints, &result)) != 0)
 	{
@@ -176,6 +176,8 @@ void BufferedSocket::SetRemoteAddress(const string &Address, const uint16_t &Por
 	m_RemoteAddress.sin_port = htons(Port);
 	m_RemoteAddress.sin_addr.s_addr = *((unsigned long*)&(((sockaddr_in*)result->ai_addr)->sin_addr));
 	memset(m_RemoteAddress.sin_zero, '\0', sizeof m_RemoteAddress.sin_zero);
+
+	freeaddrinfo(result);
 }
 
 bool BufferedSocket::SetRemoteAddress(const string &Address)
