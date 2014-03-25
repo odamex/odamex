@@ -212,7 +212,11 @@ int CL_GetPlayerColor(player_t *player)
 
 static void CL_RebuildAllPlayerTranslations()
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	// [SL] vanilla demo colors override
+	if (demoplayback)
+		return;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		int color = CL_GetPlayerColor(&*it);
 		R_BuildPlayerTranslation(it->id, color);

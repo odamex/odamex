@@ -2016,8 +2016,9 @@ void G_DoPlayDemo(bool justStreamInput)
 			if (*demo_p++ && !justStreamInput)
 			{
 				players.push_back(player_t());
-				players.back().playerstate = PST_REBORN;
-				players.back().id = i + 1;
+				player_t* player = &players.back();
+				player->playerstate = PST_REBORN;
+				player->id = i + 1;
 			}
 		}
 
@@ -2039,10 +2040,6 @@ void G_DoPlayDemo(bool justStreamInput)
 			{
 				netgame = true;
 				multiplayer = true;
-
-				for (Players::iterator it = players.begin(); it != players.end(); ++it)
-					if (it->ingame())
-						R_BuildClassicPlayerTranslation(it->id, it->id - 1);
 			}
 			else
 			{
@@ -2091,6 +2088,17 @@ void G_DoPlayDemo(bool justStreamInput)
 		}
 
 		demoplayback = true;
+
+		// Set up the colors and names for the demo players
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		{
+			R_BuildClassicPlayerTranslation(it->id, it->id - 1);
+			it->userinfo.color = translationRGB[it->id][0];
+
+			char tmpname[16];
+			sprintf(tmpname, "Player %i", it->id);
+			it->userinfo.netname = tmpname; 
+		}
 	}
 	else
 	{
