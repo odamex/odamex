@@ -475,87 +475,86 @@ void BuildLightRamp (shademap_t &maps)
 	}
 }
 
-void BuildDefaultColorAndShademap (palette_t *pal, shademap_t &maps)
+void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 {
-	byte  *color;
-	argb_t *shade;
-	argb_t colors[256];
-
-	unsigned int r = RPART (level.fadeto);
-	unsigned int g = GPART (level.fadeto);
-	unsigned int b = BPART (level.fadeto);
-
+	const int numcolors = 256;
 	BuildLightRamp(maps);
 
-	// build normal light mappings
-	for (unsigned int i = 0; i < NUMCOLORMAPS; i++)
+	// [SL] Modified algorithm from RF_BuildLights in dcolors.c
+	// from Doom Utilities. Now accomodates fading to non-black colors.
+
+	const argb_t* palette = pal->basecolors;
+	argb_t fadecolor = level.fadeto;
+	
+	palindex_t* colormap = maps.colormap;
+	argb_t* shademap = maps.shademap;
+
+	for (int i = 0; i < NUMCOLORMAPS; i++, colormap += numcolors, shademap += numcolors)
 	{
-		byte a = maps.ramp[i * 255 / NUMCOLORMAPS];
-
-		DoBlending          (pal->basecolors, colors, pal->numcolors, r, g, b, a);
-		DoBlendingWithGamma (colors, maps.shademap + (i << pal->shadeshift), pal->numcolors, r, g, b, a);
-
-		color = maps.colormap + (i << pal->shadeshift);
-		for (unsigned int j = 0; j < pal->numcolors; j++)
+		for (int c = 0; c < numcolors; c++)
 		{
-			color[j] = BestColor(
-					pal->basecolors,
-			  		RPART(colors[j]),
-					GPART(colors[j]),
-					BPART(colors[j]),
-					pal->numcolors);
+			unsigned int r = (RPART(palette[c]) * (NUMCOLORMAPS - i) + RPART(fadecolor) * i
+					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
+			unsigned int g = (GPART(palette[c]) * (NUMCOLORMAPS - i) + GPART(fadecolor) * i
+					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
+			unsigned int b = (BPART(palette[c]) * (NUMCOLORMAPS - i) + BPART(fadecolor) * i
+					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
+
+			colormap[c] = BestColor(palette, r, g, b, numcolors);
+			shademap[c] = MAKERGB(newgamma[r], newgamma[g], newgamma[b]);
 		}
 	}
 
 	// build special maps (e.g. invulnerability)
-	int grayint;
-	color = maps.colormap + (NUMCOLORMAPS << pal->shadeshift);
-	shade = maps.shademap + (NUMCOLORMAPS << pal->shadeshift);
-
-	for (unsigned int i = 0; i < pal->numcolors; i++)
+	for (int c = 0; c < numcolors; c++)
 	{
-		grayint = (int)(255.0f * clamp(1.0f -
-						(RPART(pal->basecolors[i]) * 0.00116796875f +
-						 GPART(pal->basecolors[i]) * 0.00229296875f +
-			 			 BPART(pal->basecolors[i]) * 0.0005625f), 0.0f, 1.0f));
-		const int graygammaint = newgamma[grayint];
-		color[i] = BestColor (pal->basecolors, grayint, grayint, grayint, pal->numcolors);
-		shade[i] = MAKERGB(graygammaint, graygammaint, graygammaint);
+		int grayint = (int)(255.0f * clamp(1.0f -
+						(RPART(palette[c]) * 0.00116796875f +
+						 GPART(palette[c]) * 0.00229296875f +
+			 			 BPART(palette[c]) * 0.0005625f), 0.0f, 1.0f));
+
+		colormap[c] = BestColor(palette, grayint, grayint, grayint, numcolors);
+		shademap[c] = MAKERGB(newgamma[grayint], newgamma[grayint], newgamma[grayint]);
 	}
 }
 
-void BuildDefaultShademap (palette_t *pal, shademap_t &maps)
+void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 {
-	argb_t *shade;
-	argb_t colors[256];
-
-	unsigned int r = RPART(level.fadeto);
-	unsigned int g = GPART(level.fadeto);
-	unsigned int b = BPART(level.fadeto);
-
+	const int numcolors = 256;
 	BuildLightRamp(maps);
 
-	// build normal light mappings
-	for (unsigned int i = 0; i < NUMCOLORMAPS; i++)
-	{
-		byte a = maps.ramp[i * 255 / NUMCOLORMAPS];
+	// [SL] Modified algorithm from RF_BuildLights in dcolors.c
+	// from Doom Utilities. Now accomodates fading to non-black colors.
 
-		DoBlending          (pal->basecolors, colors, pal->numcolors, r, g, b, a);
-		DoBlendingWithGamma (colors, maps.shademap + (i << pal->shadeshift), pal->numcolors, r, g, b, a);
+	const argb_t* palette = pal->basecolors;
+	argb_t fadecolor = level.fadeto;
+	
+	argb_t* shademap = maps.shademap;
+
+	for (int i = 0; i < NUMCOLORMAPS; i++, shademap += numcolors)
+	{
+		for (int c = 0; c < numcolors; c++)
+		{
+			unsigned int r = (RPART(palette[c]) * (NUMCOLORMAPS - i) + RPART(fadecolor) * i
+					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
+			unsigned int g = (GPART(palette[c]) * (NUMCOLORMAPS - i) + GPART(fadecolor) * i
+					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
+			unsigned int b = (BPART(palette[c]) * (NUMCOLORMAPS - i) + BPART(fadecolor) * i
+					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
+
+			shademap[c] = MAKERGB(newgamma[r], newgamma[g], newgamma[b]);
+		}
 	}
 
 	// build special maps (e.g. invulnerability)
-	int grayint;
-	shade = maps.shademap + (NUMCOLORMAPS << pal->shadeshift);
-
-	for (unsigned int i = 0; i < pal->numcolors; i++)
+	for (int c = 0; c < numcolors; c++)
 	{
-		grayint = (int)(255.0f * clamp(1.0f -
-			(RPART(pal->basecolors[i]) * 0.00116796875f +
-			 GPART(pal->basecolors[i]) * 0.00229296875f +
-			 BPART(pal->basecolors[i]) * 0.0005625f), 0.0f, 1.0f));
-		const int graygammaint = newgamma[grayint];
-		shade[i] = MAKERGB(graygammaint, graygammaint, graygammaint);
+		int grayint = (int)(255.0f * clamp(1.0f -
+						(RPART(palette[c]) * 0.00116796875f +
+						 GPART(palette[c]) * 0.00229296875f +
+			 			 BPART(palette[c]) * 0.0005625f), 0.0f, 1.0f));
+
+		shademap[c] = MAKERGB(newgamma[grayint], newgamma[grayint], newgamma[grayint]);
 	}
 }
 
