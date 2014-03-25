@@ -984,6 +984,8 @@ void R_DrawFuzzColumnP()
 		dcol.yh = realviewheight - 2;
 
 	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>(FB_COLDEST_P, dcol);
+
+	fuzzpos = (fuzzpos + 3) & (FUZZTABLE - 1);
 }
 
 //
@@ -1325,6 +1327,8 @@ void R_DrawFuzzColumnD()
 		dcol.yh = realviewheight - 2;
 
 	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>(FB_COLDEST_D, dcol);
+
+	fuzzpos = (fuzzpos + 3) & (FUZZTABLE - 1);
 }
 
 //
