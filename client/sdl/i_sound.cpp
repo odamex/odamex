@@ -204,8 +204,17 @@ static void getsfx (struct sfxinfo_struct *sfx)
     {
         chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
         chunk->allocated = 1;
-        chunk->abuf = perform_sdlmix_conv(data, sfx->length, &new_size);
-        chunk->alen = new_size;
+        if (sfx->length < 8) // too short to be anything of interest
+        {
+            // Let's hope SDL_Mixer checks alen before dereferencing abuf!
+            chunk->abuf = NULL;
+            chunk->alen = 0;
+        }
+        else
+        {
+            chunk->abuf = perform_sdlmix_conv(data, sfx->length, &new_size);
+            chunk->alen = new_size;
+        }
         chunk->volume = MIX_MAX_VOLUME;
 
         sfx->data = chunk;

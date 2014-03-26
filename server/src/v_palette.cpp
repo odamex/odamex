@@ -43,6 +43,29 @@ palette_t DefPal;
 /****************************/
 palette_t *GetDefaultPalette (void)
 {
+	static bool initialized = false;
+	if (!initialized)
+	{
+		const int numcolors = 256;
+		palette_t* palette = &DefPal;
+
+		strncpy(palette->name.name, "PLAYPAL", 8);
+		palette->flags = 0;
+		palette->usecount = 1;
+		palette->maps.colormap = NULL;
+		palette->maps.shademap = NULL;
+
+		palette->basecolors = (argb_t *)Malloc(numcolors * 2 * sizeof(argb_t));
+		palette->colors = palette->basecolors + numcolors;
+		palette->numcolors = numcolors;
+		palette->shadeshift = 8;
+
+		memset(palette->basecolors, 0, numcolors * sizeof(*palette->basecolors));
+		memset(palette->colors, 0, numcolors * sizeof(*palette->colors));
+
+		initialized = true;
+	}
+
 	return &DefPal;
 }
 

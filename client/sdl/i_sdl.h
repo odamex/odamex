@@ -32,4 +32,8 @@
 	#define SDL12
 #endif
 
+#if (SDL_VERSION > SDL_VERSIONNUM(1, 2, 7))
+	#include "SDL_cpuinfo.h"
+#endif
+
 #endif  // __I_SDL_H__

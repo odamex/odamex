@@ -115,7 +115,7 @@ CVAR_FUNC_IMPL (sv_maxclients)
 {
 	// Describes the max number of clients that are allowed to connect.
 	int count = var.asInt();
-	Players::iterator it = players.begin(); 
+	Players::iterator it = players.begin();
 	while (it != players.end())
 	{
 		if (count <= 0)
@@ -2253,6 +2253,63 @@ void SV_SendLoadMap(const std::vector<std::string> &wadnames,
 	MSG_WriteString(buf, mapname.c_str());
 }
 
+
+//
+// Comparison functors for sorting vectors of players
+//
+struct compare_player_frags
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->fragcount < arg1->fragcount;
+	}
+};
+
+struct compare_player_kills
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->killcount < arg1->killcount;
+	}
+};
+
+struct compare_player_points
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg2->points < arg1->points;
+	}
+};
+
+struct compare_player_names
+{
+	bool operator()(const player_t* arg1, const player_t* arg2) const
+	{
+		return arg1->userinfo.netname < arg2->userinfo.netname;
+	}
+};
+
+
+static float SV_CalculateKillDeathRatio(const player_t* player)
+{
+	if (player->killcount <= 0)	// Copied from HU_DMScores1.
+		return 0.0f;
+	else if (player->killcount >= 1 && player->deathcount == 0)
+		return float(player->killcount);
+	else
+		return float(player->killcount) / float(player->deathcount);
+}
+
+static float SV_CalculateFragDeathRatio(const player_t* player)
+{
+	if (player->fragcount <= 0)	// Copied from HU_DMScores1.
+		return 0.0f;
+	else if (player->fragcount >= 1 && player->deathcount == 0)
+		return float(player->fragcount);
+	else
+		return float(player->fragcount) / float(player->deathcount);
+}
+
 //
 // SV_DrawScores
 // Draws scoreboard to console. Used during level exit or a command.
@@ -2261,226 +2318,208 @@ void SV_SendLoadMap(const std::vector<std::string> &wadnames,
 //
 void SV_DrawScores()
 {
-/*    char str[80], str2[80], ip[16];
-    std::vector<player_t *> sortedplayers(players.size());
-    size_t i, j;
+	char str[1024];
 
-    // Player list sorting
-	for (i = 0; i < sortedplayers.size(); i++)
-		sortedplayers[i] = &players[i];
+	typedef std::list<const player_t*> PlayerPtrList;
+	PlayerPtrList sortedplayers;
+	PlayerPtrList sortedspectators;
 
-    if (sv_gametype == GM_CTF) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points);
+	for (Players::const_iterator it = players.begin(); it != players.end(); ++it)
+		if (!it->spectator && it->playerstate != PST_CONTACT && it->playerstate != PST_DOWNLOAD)
+			sortedplayers.push_back(&*it);
 
-        Printf (PRINT_HIGH, "\n");
+	for (Players::const_iterator it = players.begin(); it != players.end(); ++it)
+		if (it->spectator && it->playerstate != PST_CONTACT && it->playerstate != PST_DOWNLOAD)
+			sortedspectators.push_back(&*it);
+
+	Printf(PRINT_HIGH, "\n");
+
+	if (sv_gametype == GM_CTF)
+	{
+		compare_player_points comparison_functor;
+		sortedplayers.sort(comparison_functor);
+
         Printf_Bold("                    CAPTURE THE FLAG");
         Printf_Bold("-----------------------------------------------------------");
 
-        if (sv_scorelimit)
-            sprintf (str, "Scorelimit: %-6d", sv_scorelimit.asInt());
-        else
-            sprintf (str, "Scorelimit: N/A    ");
+		if (sv_scorelimit)
+			sprintf(str, "Scorelimit: %-6d", sv_scorelimit.asInt());
+		else
+			sprintf(str, "Scorelimit: N/A   ");
 
-        if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
-        else
-            sprintf (str2, "Timelimit: N/A");
+		Printf_Bold("%s  ", str);
 
-        Printf_Bold("%s  %35s", str, str2);
+		if (sv_timelimit)
+			sprintf(str, "Timelimit: %-7d", sv_timelimit.asInt());
+		else
+			sprintf(str, "Timelimit: N/A");
 
-        for (j = 0; j < 2; j++) {
-            if (j == 0) {
-                Printf (PRINT_HIGH, "\n");
+		Printf_Bold("%18s\n", str);
+
+		for (int team_num = 0; team_num < NUMTEAMS; team_num++)
+		{
+			if (team_num == TEAM_BLUE)
                 Printf_Bold("--------------------------------------------------BLUE TEAM");
-            } else {
-                Printf (PRINT_HIGH, "\n");
+			else if (team_num == TEAM_RED)
                 Printf_Bold("---------------------------------------------------RED TEAM");
-            }
+			else		// shouldn't happen
+                Printf_Bold("-----------------------------------------------UNKNOWN TEAM");
+				
             Printf_Bold("ID  Address          Name            Points Caps Frags Time");
             Printf_Bold("-----------------------------------------------------------");
 
-            for (i = 0; i < sortedplayers.size(); i++) {
-                if ((unsigned)sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
+			for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
+			{
+				const player_t* itplayer = *it;
+				if (itplayer->userinfo.team == team_num)
+				{
+					Printf_Bold("%-3d %-16s %-15s %-6d N/A  %-5d %-3d",
+							itplayer->id,
+							NET_AdrToString(itplayer->client.address),
+							itplayer->userinfo.netname.c_str(),
+							itplayer->points,
+							//itplayer->captures,
+							itplayer->fragcount,
+							itplayer->GameTime / 60);
+				}
+			}
+		}
+	}
 
-					sprintf(ip,"%u.%u.%u.%u",
-						(int)sortedplayers[i]->client.address.ip[0],
-						(int)sortedplayers[i]->client.address.ip[1],
-						(int)sortedplayers[i]->client.address.ip[2],
-						(int)sortedplayers[i]->client.address.ip[3]);
+	else if (sv_gametype == GM_TEAMDM)
+	{
+		compare_player_frags comparison_functor;
+		sortedplayers.sort(comparison_functor);
 
-                    Printf(PRINT_HIGH, "%-3d %-16s %-15s %-6d N/A  %-5d %-3d",
-						i+1,
-						ip,
-                        sortedplayers[i]->userinfo.netname.c_str(),
-                        sortedplayers[i]->points,
-                        //sortedplayers[i]->captures,
-                        sortedplayers[i]->fragcount,
-                        sortedplayers[i]->GameTime / 60);
-                }
-            }
-        }
-
-    } else if (sv_gametype == GM_TEAMDM) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
-
-        Printf (PRINT_HIGH, "\n");
         Printf_Bold("                     TEAM DEATHMATCH");
         Printf_Bold("-----------------------------------------------------------");
 
-        if (sv_fraglimit)
-            sprintf (str, "Fraglimit: %-7d", sv_fraglimit.asInt());
-        else
-            sprintf (str, "Fraglimit: N/A    ");
+		if (sv_fraglimit)
+			sprintf(str, "Fraglimit: %-7d", sv_fraglimit.asInt());
+		else
+			sprintf(str, "Fraglimit: N/A    ");
 
-        if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
-        else
-            sprintf (str2, "Timelimit: N/A");
+		Printf_Bold("%s  ", str);
 
-        Printf_Bold("%s  %35s", str, str2);
+		if (sv_timelimit)
+			sprintf(str, "Timelimit: %-7d", sv_timelimit.asInt());
+		else
+			sprintf(str, "Timelimit: N/A");
 
-        for (j = 0; j < 2; j++) {
-            if (j == 0) {
-                Printf (PRINT_HIGH, "\n");
+		Printf_Bold("%18s\n", str);
+
+		for (int team_num = 0; team_num < NUMTEAMS; team_num++)
+		{
+			if (team_num == TEAM_BLUE)
                 Printf_Bold("--------------------------------------------------BLUE TEAM");
-            } else {
-                Printf (PRINT_HIGH, "\n");
+			else if (team_num == TEAM_RED)
                 Printf_Bold("---------------------------------------------------RED TEAM");
-            }
+			else		// shouldn't happen
+                Printf_Bold("-----------------------------------------------UNKNOWN TEAM");
+
             Printf_Bold("ID  Address          Name            Frags Deaths  K/D Time");
             Printf_Bold("-----------------------------------------------------------");
 
-            for (i = 0; i < sortedplayers.size(); i++) {
-                if ((unsigned)sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
-                    if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
-                        sprintf (str, "0.0");
-                    else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
-                        sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
-                    else
-                        sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
+			for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
+			{
+				const player_t* itplayer = *it;
+				if (itplayer->userinfo.team == team_num)
+				{
+					Printf_Bold("%-3d %-16s %-15s %-5d %-6d %2.1f %-3d",
+							itplayer->id,
+							NET_AdrToString(itplayer->client.address),
+							itplayer->userinfo.netname.c_str(),
+							itplayer->fragcount,
+							itplayer->deathcount,
+							SV_CalculateFragDeathRatio(itplayer),
+							itplayer->GameTime / 60);
+				}
+			}
+		}
+	}
+	
+	else if (sv_gametype == GM_DM)
+	{
+		compare_player_frags comparison_functor;
+		sortedplayers.sort(comparison_functor);
 
-					sprintf(ip,"%u.%u.%u.%u",
-						(int)sortedplayers[i]->client.address.ip[0],
-						(int)sortedplayers[i]->client.address.ip[1],
-						(int)sortedplayers[i]->client.address.ip[2],
-						(int)sortedplayers[i]->client.address.ip[3]);
-
-					Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d",
-						i+1,
-						ip,
-						sortedplayers[i]->userinfo.netname.c_str(),
-						sortedplayers[i]->fragcount,
-						sortedplayers[i]->deathcount,
-						str,
-						sortedplayers[i]->GameTime / 60);
-                }
-            }
-        }
-
-		Printf (PRINT_HIGH, "\n");
-
-    } else if (sv_gametype != GM_COOP) {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
-
-        Printf (PRINT_HIGH, "\n");
         Printf_Bold("                        DEATHMATCH");
         Printf_Bold("-----------------------------------------------------------");
 
-        if (sv_fraglimit)
-            sprintf (str, "Fraglimit: %-7d", sv_fraglimit.asInt());
-        else
-            sprintf (str, "Fraglimit: N/A    ");
+		if (sv_fraglimit)
+			sprintf(str, "Fraglimit: %-7d", sv_fraglimit.asInt());
+		else
+			sprintf(str, "Fraglimit: N/A    ");
 
-        if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
-        else
-            sprintf (str2, "Timelimit: N/A   ");
+		Printf_Bold("%s  ", str);
 
-        Printf_Bold("%s  %35s", str, str2);
+		if (sv_timelimit)
+			sprintf(str, "Timelimit: %-7d", sv_timelimit.asInt());
+		else
+			sprintf(str, "Timelimit: N/A");
+
+		Printf_Bold("%18s\n", str);
 
         Printf_Bold("ID  Address          Name            Frags Deaths  K/D Time");
         Printf_Bold("-----------------------------------------------------------");
 
-        for (i = 0; i < sortedplayers.size(); i++) {
-        	if (!sortedplayers[i]->spectator) {
-				if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
-					sprintf (str, "0.0");
-				else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
-					sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
-				else
-					sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
+		for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
+		{
+			const player_t* itplayer = *it;
+			Printf_Bold("%-3d %-16s %-15s %-5d %-6d %2.1f %-3d",
+					itplayer->id,
+					NET_AdrToString(itplayer->client.address),
+					itplayer->userinfo.netname.c_str(),
+					itplayer->fragcount,
+					itplayer->deathcount,
+					SV_CalculateFragDeathRatio(itplayer),
+					itplayer->GameTime / 60);
+		}
 
-				sprintf(ip,"%u.%u.%u.%u",
-					(int)sortedplayers[i]->client.address.ip[0],
-					(int)sortedplayers[i]->client.address.ip[1],
-					(int)sortedplayers[i]->client.address.ip[2],
-					(int)sortedplayers[i]->client.address.ip[3]);
+	}
 
-				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d",
-					i+1,
-					ip,
-					sortedplayers[i]->userinfo.netname.c_str(),
-					sortedplayers[i]->fragcount,
-					sortedplayers[i]->deathcount,
-					str,
-					sortedplayers[i]->GameTime / 60);
-			}
-        }
+	else if (sv_gametype == GM_COOP)
+	{
+		compare_player_kills comparison_functor;
+		sortedplayers.sort(comparison_functor);
 
-		Printf (PRINT_HIGH, "\n");
-    } else {
-        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
-
-        Printf (PRINT_HIGH, "\n");
         Printf_Bold("                       COOPERATIVE");
         Printf_Bold("-----------------------------------------------------------");
         Printf_Bold("ID  Address          Name            Kills Deaths  K/D Time");
         Printf_Bold("-----------------------------------------------------------");
 
-        for (i = 0; i < sortedplayers.size(); i++) {
-        	if (!sortedplayers[i]->spectator) {
-				if (sortedplayers[i]->killcount <= 0) // Copied from HU_DMScores1.
-					sprintf (str, "0.0");
-				else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0)
-					sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount);
-				else
-					sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
+		for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
+		{
+			const player_t* itplayer = *it;
+			Printf_Bold("%-3d %-16s %-15s %-5d %-6d %2.1f %-3d",
+					itplayer->id,
+					NET_AdrToString(itplayer->client.address),
+					itplayer->userinfo.netname.c_str(),
+					itplayer->killcount,
+					itplayer->deathcount,
+					SV_CalculateKillDeathRatio(itplayer),
+					itplayer->GameTime / 60);
+		}
+	}
 
-				sprintf(ip,"%u.%u.%u.%u",
-					(int)sortedplayers[i]->client.address.ip[0],
-					(int)sortedplayers[i]->client.address.ip[1],
-					(int)sortedplayers[i]->client.address.ip[2],
-					(int)sortedplayers[i]->client.address.ip[3]);
+	if (!sortedspectators.empty())
+	{
+		compare_player_names comparison_functor;
+		sortedspectators.sort(comparison_functor);
 
-				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s %-3d",
-					i+1,
-					ip,
-					sortedplayers[i]->userinfo.netname.c_str(),
-					sortedplayers[i]->killcount,
-					sortedplayers[i]->deathcount,
-					str,
-					sortedplayers[i]->GameTime / 60);
-        	}
-        }
+    	Printf_Bold("-------------------------------------------------SPECTATORS");
 
-		Printf (PRINT_HIGH, "\n");
-    }
+		for (PlayerPtrList::const_iterator it = sortedspectators.begin(); it != sortedspectators.end(); ++it)
+		{
+			const player_t* itplayer = *it;
+			Printf_Bold("%-3d %-16s %-15s\n",
+					itplayer->id,
+					NET_AdrToString(itplayer->client.address),
+					itplayer->userinfo.netname.c_str());
+		}
+	}
 
-    Printf_Bold("-------------------------------------------------SPECTATORS");
-        for (i = 0; i < sortedplayers.size(); i++) {
-            if (sortedplayers[i]->spectator) {
-
-				sprintf(ip,"%u.%u.%u.%u",
-					(int)sortedplayers[i]->client.address.ip[0],
-					(int)sortedplayers[i]->client.address.ip[1],
-					(int)sortedplayers[i]->client.address.ip[2],
-					(int)sortedplayers[i]->client.address.ip[3]);
-
-				Printf(PRINT_HIGH, "%-3d %-16s %-15s\n", i+1,ip,sortedplayers[i]->userinfo.netname.c_str());
-            }
-        }
-
-    Printf (PRINT_HIGH, "\n");*/
+	Printf(PRINT_HIGH, "\n");
 }
 
 BEGIN_COMMAND (showscores)
@@ -2849,20 +2888,15 @@ void SV_UpdateMissiles(player_t &pl)
 			continue;
 
 		// update missile position every 30 tics
-		if (((gametic+mo->netid) % 30) && mo->type != MT_TRACER)
+		if (((gametic+mo->netid) % 30) && (mo->type != MT_TRACER) && (mo->type != MT_FATSHOT))
 			continue;
-        // this is a hack for revenant tracers, so they get updated frequently
-        // in coop, this will need to be changed later for a more "smoother"
-        // tracer
-        else if (((gametic+mo->netid) % 10) && mo->type == MT_TRACER)
-            continue;
-
+		// Revenant tracers and Mancubus fireballs need to be  updated more often
+		else if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT))
+			continue;
+		
 		if(SV_IsPlayerAllowedToSee(pl, mo))
 		{
 			client_t *cl = &pl.client;
-
-            statenum_t mostate = (statenum_t)(mo->state - states);
-            mobjinfo_t moinfo = mobjinfo[mo->type];
 
 			MSG_WriteMarker (&cl->netbuf, svc_movemobj);
 			MSG_WriteShort (&cl->netbuf, mo->netid);
@@ -2878,41 +2912,12 @@ void SV_UpdateMissiles(player_t &pl)
 			MSG_WriteLong (&cl->netbuf, mo->momy);
 			MSG_WriteLong (&cl->netbuf, mo->momz);
 
-			MSG_WriteMarker (&cl->netbuf, svc_actor_movedir);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
-			MSG_WriteByte (&cl->netbuf, mo->movedir);
-			MSG_WriteLong (&cl->netbuf, mo->movecount);
-
-
-            if (mo->target)
-            {
-                MSG_WriteMarker (&cl->netbuf, svc_actor_target);
-                MSG_WriteShort(&cl->netbuf, mo->netid);
-                MSG_WriteShort (&cl->netbuf, mo->target->netid);
-            }
-
-            if (mo->tracer)
-            {
-                MSG_WriteMarker (&cl->netbuf, svc_actor_tracer);
-                MSG_WriteShort(&cl->netbuf, mo->netid);
-                MSG_WriteShort (&cl->netbuf, mo->tracer->netid);
-            }
-
-            // This code is designed to send the 'starting' state, not inbetween
-            // ones
-			if ((moinfo.spawnstate == mostate) ||
-                (moinfo.seestate == mostate) ||
-                (moinfo.painstate == mostate) ||
-                (moinfo.meleestate == mostate) ||
-                (moinfo.missilestate == mostate) ||
-                (moinfo.deathstate == mostate) ||
-                (moinfo.xdeathstate == mostate) ||
-                (moinfo.raisestate == mostate))
-            {
-                MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
-                MSG_WriteShort (&cl->netbuf, mo->netid);
-                MSG_WriteShort (&cl->netbuf, (short)mostate);
-            }
+			if (mo->tracer)
+			{
+				MSG_WriteMarker (&cl->netbuf, svc_actor_tracer);
+				MSG_WriteShort(&cl->netbuf, mo->netid);
+				MSG_WriteShort (&cl->netbuf, mo->tracer->netid);
+			}
 
             if (cl->netbuf.cursize >= 1024)
                 if(!SV_SendPacket(pl))
@@ -4390,7 +4395,7 @@ void SV_TimelimitCheck()
 						drawgame = false;
 						winplayer = &*it;
 					}
-					else if (it->fragcount == winplayer->fragcount)
+					else if (it->id != winplayer->id && it->fragcount == winplayer->fragcount)
 					{
 						drawgame = true;
 					}

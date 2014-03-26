@@ -27,7 +27,7 @@
 #include <assert.h>
 #include <algorithm>
 
-#include <SDL_cpuinfo.h>
+#include "i_sdl.h"
 #include "r_intrin.h"
 
 #include "m_alloc.h"
@@ -981,6 +981,8 @@ void R_DrawFuzzColumnP()
 		dcol.yh = realviewheight - 2;
 
 	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>(FB_COLDEST_P, dcol);
+
+	fuzzpos = (fuzzpos + 3) & (FUZZTABLE - 1);
 }
 
 //
@@ -1322,6 +1324,8 @@ void R_DrawFuzzColumnD()
 		dcol.yh = realviewheight - 2;
 
 	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>(FB_COLDEST_D, dcol);
+
+	fuzzpos = (fuzzpos + 3) & (FUZZTABLE - 1);
 }
 
 //
@@ -1427,44 +1431,43 @@ void R_DrawSlopeSpanD_c()
 //  for getting the framebuffer address
 //  of a pixel to draw.
 //
-void
-R_InitBuffer
-( int		width,
-  int		height ) 
+void R_InitBuffer(int width, int height) 
 { 
 	int 		i;
 	byte		*buffer;
 	int			pitch;
 	int			xshift;
 
+	int windowwidth = width << detailxshift;
+	int windowheight = height << detailyshift;
+
 	// Handle resize,
 	//	e.g. smaller view windows
 	//	with border and/or status bar.
-	viewwindowx = (screen->width-(width<<detailxshift))>>1;
+	viewwindowx = (screen->width - windowwidth) >> 1;
 
 	// [RH] Adjust column offset according to bytes per pixel
 	//		and detail mode
-	xshift = (screen->is8bit()) ? 0 : 2;
-	xshift += detailxshift;
+	xshift = detailxshift + (screen->is8bit() ? 0 : 2);
 
 	// Column offset. For windows
 	for (i = 0; i < width; i++)
 		columnofs[i] = (viewwindowx + i) << xshift;
 
 	// Same with base row offset.
-	if ((width<<detailxshift) == screen->width)
+	if (windowwidth == screen->width)
 		viewwindowy = 0;
 	else
-		viewwindowy = (ST_Y-(height<<detailyshift)) >> 1;
+		viewwindowy = (ST_Y - windowheight) >> 1;
 
-	screen->Lock ();
+	screen->Lock();
 	buffer = screen->buffer;
 	pitch = screen->pitch;
-	screen->Unlock ();
+	screen->Unlock();
 
 	// Precalculate all row offsets.
-	for (i=0 ; i<height ; i++)
-		ylookup[i] = buffer + ((i<<detailyshift)+viewwindowy)*pitch;
+	for (i = 0; i < height; i++)
+		ylookup[i] = buffer + ((i << detailyshift) + viewwindowy) * pitch;
 }
 
 
@@ -1541,77 +1544,88 @@ void R_DrawViewBorder (void)
 	V_MarkRect (0, 0, screen->width, ST_Y);
 }
 
+// ============================================================================
+//
+// Horizontal and vertical pixel doubling functions
+//
+// ============================================================================
+
+static void R_DoubleX8()
+{
+	int rowsize = realviewwidth >> 2;
+	int pitch = screen->pitch >> (2 - detailyshift);
+
+	unsigned int* line = (unsigned int*)(screen->buffer + viewwindowy * screen->pitch + viewwindowx);
+	for (int y = 0; y < viewheight; y++, line += pitch)
+	{
+		for (int x = 0; x < rowsize; x += 2)
+		{
+			unsigned int a = line[x + 0];
+			unsigned int b = line[x + 1];
+			a &= 0x00ff00ff;
+			b &= 0x00ff00ff;
+			line[x + 0] = a | (a << 8);
+			line[x + 1] = b | (b << 8);
+		}
+	}
+}
+
+static void R_DoubleX32()
+{
+	int rowsize = realviewwidth;
+	int pitch = screen->pitch >> (2 - detailyshift);
+
+	argb_t* line = (argb_t*)(screen->buffer + viewwindowy * screen->pitch + viewwindowx);
+	for (int y = 0; y < viewheight; y++, line += pitch)
+	{
+		for (int x = 0; x < rowsize; x += 2)
+			line[x + 1] = line[x];
+	}
+}
+
+static void R_DoubleY8()
+{
+	int rowsize = realviewwidth;
+	int pitch = screen->pitch;
+
+	byte* line = screen->buffer + viewwindowy * pitch + viewwindowx;
+
+	for (int y = 0; y < viewheight; y++, line += pitch << 1)
+		memcpy(line + pitch, line, rowsize);
+}
+
+static void R_DoubleY32()
+{
+	int rowsize = realviewwidth << 2;
+	int pitch = screen->pitch;
+
+	byte* line = screen->buffer + viewwindowy * pitch + viewwindowx;
+
+	for (int y = 0; y < viewheight; y++, line += pitch << 1)
+		memcpy(line + pitch, line, rowsize);
+}
+
+
 // [RH] Double pixels in the view window horizontally
 //		and/or vertically (or not at all).
 void R_DetailDouble (void)
 {
-	switch ((detailxshift << 1) | detailyshift)
+	if (screen->is8bit())
 	{
-		case 1:		// y-double
-		{
-			int rowsize = realviewwidth << ((screen->is8bit()) ? 0 : 2);
-			int pitch = screen->pitch;
-			int y;
-			byte *line;
-
-			line = screen->buffer + viewwindowy*pitch + viewwindowx;
-			for (y = 0; y < viewheight; y++, line += pitch<<1)
-			{
-				memcpy (line+pitch, line, rowsize);
-			}
-		}
-		break;
-
-		case 2:		// x-double
-		{
-			int rowsize = realviewwidth >> 2;
-			int pitch = screen->pitch >> (2-detailyshift);
-			int y,x;
-			unsigned *line,a,b;
-
-			line = (unsigned *)(screen->buffer + viewwindowy*screen->pitch + viewwindowx);
-			for (y = 0; y < viewheight; y++, line += pitch)
-			{
-				for (x = 0; x < rowsize; x += 2)
-				{
-					a = line[x+0];
-					b = line[x+1];
-					a &= 0x00ff00ff;
-					b &= 0x00ff00ff;
-					line[x+0] = a | (a << 8);
-					line[x+1] = b | (b << 8);
-				}
-			}
-		}
-		break;
-
-		case 3:		// x- and y-double
-		{
-			int rowsize = realviewwidth >> 2;
-			int pitch = screen->pitch >> (2-detailyshift);
-			int realpitch = screen->pitch >> 2;
-			int y,x;
-			unsigned *line,a,b;
-
-			line = (unsigned *)(screen->buffer + viewwindowy*screen->pitch + viewwindowx);
-			for (y = 0; y < viewheight; y++, line += pitch)
-			{
-				for (x = 0; x < rowsize; x += 2)
-				{
-					a = line[x+0];
-					b = line[x+1];
-					a &= 0x00ff00ff;
-					b &= 0x00ff00ff;
-					line[x+0] = a | (a << 8);
-					line[x+0+realpitch] = a | (a << 8);
-					line[x+1] = b | (b << 8);
-					line[x+1+realpitch] = b | (b << 8);
-				}
-			}
-		}
-		break;
+		if (detailxshift)
+			R_DoubleX8();
+		if (detailyshift)
+			R_DoubleY8();
+	}
+	else
+	{
+		if (detailxshift)
+			R_DoubleX32();
+		if (detailyshift)
+			R_DoubleY32();
 	}
 }
+
 
 enum r_optimize_kind {
 	OPTIMIZE_NONE,
@@ -1638,16 +1652,18 @@ static const char *get_optimization_name(r_optimize_kind kind)
 
 static std::string get_optimization_name_list(const bool includeNone)
 {
-	std::string list;
-	std::vector<r_optimize_kind>::iterator it = optimizations_available.begin();
-	if (!includeNone) ++it;
+	std::string str;
+	std::vector<r_optimize_kind>::const_iterator it = optimizations_available.begin();
+	if (!includeNone)
+		++it;
+
 	for (; it != optimizations_available.end(); ++it)
 	{
-		list.append(get_optimization_name(*it));
+		str.append(get_optimization_name(*it));
 		if (it+1 != optimizations_available.end())
-			list.append(", ");
+			str.append(", ");
 	}
-	return list;
+	return str;
 }
 
 static void print_optimizations()
@@ -1657,7 +1673,7 @@ static void print_optimizations()
 
 static bool detect_optimizations()
 {
-	if (optimizations_available.size() != 0)
+	if (!optimizations_available.empty())
 		return false;
 
 	optimizations_available.clear();
@@ -1666,143 +1682,130 @@ static bool detect_optimizations()
 	optimizations_available.push_back(OPTIMIZE_NONE);
 
 	// Detect CPU features in ascending order of preference:
-#ifdef __MMX__
+	#ifdef __MMX__
+	#ifndef _XBOX // Until SDLx is updated
 	if (SDL_HasMMX())
-	{
+	#endif
 		optimizations_available.push_back(OPTIMIZE_MMX);
-	}
-#endif
-
-#ifdef __SSE2__
+	#endif
+	#ifdef __SSE2__
 	if (SDL_HasSSE2())
-	{
 		optimizations_available.push_back(OPTIMIZE_SSE2);
-	}
-#endif
-
-#ifdef __ALTIVEC__
+	#endif
+	#ifdef __ALTIVEC__
 	if (SDL_HasAltiVec())
-	{
 		optimizations_available.push_back(OPTIMIZE_ALTIVEC);
-	}
-#endif
+	#endif
 
 	return true;
 }
 
-CVAR_FUNC_IMPL (r_optimize)
-{
-	// NOTE(jsd): Stupid hack to prevent stack overflow when trying to set the value from within this callback.
-	static bool resetting = false;
-	if (resetting)
-	{
-		resetting = false;
-		return;
-	}
+//
+// R_IsOptimizationAvailable
+//
+// Returns true if Odamex was compiled with support for the optimization
+// and the current CPU also supports it.
+//
+static bool R_IsOptimizationAvailable(r_optimize_kind kind)
+{ 
+	return std::find(optimizations_available.begin(), optimizations_available.end(), kind)
+			!= optimizations_available.end();
+}
 
-	const char *val = var.cstring();
-	//Printf(PRINT_HIGH, "r_optimize called with \"%s\"\n", val);
+
+CVAR_FUNC_IMPL(r_optimize)
+{
+	const char* val = var.cstring();
 
 	// Only print the detected list the first time:
 	if (detect_optimizations())
 		print_optimizations();
 
 	// Set the optimization based on availability:
-	r_optimize_kind trykind = optimize_kind;
 	if (stricmp(val, "none") == 0)
-		trykind = OPTIMIZE_NONE;
-	else if (stricmp(val, "sse2") == 0)
-		trykind = OPTIMIZE_SSE2;
-	else if (stricmp(val, "mmx") == 0)
-		trykind = OPTIMIZE_MMX;
-	else if (stricmp(val, "altivec") == 0)
-		trykind = OPTIMIZE_ALTIVEC;
+		optimize_kind = OPTIMIZE_NONE;
+	else if (stricmp(val, "sse2") == 0 && R_IsOptimizationAvailable(OPTIMIZE_SSE2))
+		optimize_kind = OPTIMIZE_SSE2;
+	else if (stricmp(val, "mmx") == 0 && R_IsOptimizationAvailable(OPTIMIZE_MMX))
+		optimize_kind = OPTIMIZE_MMX;
+	else if (stricmp(val, "altivec") == 0 && R_IsOptimizationAvailable(OPTIMIZE_ALTIVEC))
+		optimize_kind = OPTIMIZE_ALTIVEC;
 	else if (stricmp(val, "detect") == 0)
 		// Default to the most preferred:
-		trykind = optimizations_available.back();
+		optimize_kind = optimizations_available.back();
 	else
 	{
-		Printf(PRINT_HIGH, "Invalid value for r_optimize. Try one of \"%s, detect\"\n", get_optimization_name_list(true).c_str());
+		Printf(PRINT_HIGH, "Invalid value for r_optimize. Availible options are \"%s, detect\"\n",
+				get_optimization_name_list(true).c_str());
 
 		// Restore the original setting:
-		resetting = true;
 		var.Set(get_optimization_name(optimize_kind));
-		R_InitDrawers();
-		R_InitColumnDrawers();
 		return;
 	}
 
-	// If we found the CPU feature, use it:
-	std::vector<r_optimize_kind>::iterator it = std::find(optimizations_available.begin(), optimizations_available.end(), trykind);
-	if (it != optimizations_available.end())
+	const char* optimize_name = get_optimization_name(optimize_kind);
+	if (stricmp(val, optimize_name) != 0)
 	{
-		optimize_kind = trykind;
-		R_InitDrawers();
-		R_InitColumnDrawers();
-	}
-
-	// Update the cvar string:
-	const char *resetname = get_optimization_name(optimize_kind);
-	Printf(PRINT_HIGH, "r_optimize set to \"%s\" based on availability\n", resetname);
-	resetting = true;
-	var.Set(resetname);
-}
-
-// Sets up the r_*D function pointers based on CPU optimization selected
-void R_InitDrawers ()
-{
-	if (optimize_kind == OPTIMIZE_SSE2)
-	{
-#ifdef __SSE2__
-		rtv_lucent4colsP        = rtv_lucent4cols_SSE2;
-		rtv_lucent4colsD        = rtv_lucent4cols_SSE2;
-		R_DrawSpanD				= R_DrawSpanD_SSE2;
-		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_SSE2;
-		r_dimpatchD             = r_dimpatchD_SSE2;
-#else
-		// No SSE2 support compiled in.
-		optimize_kind = OPTIMIZE_NONE;
-		goto setNone;
-#endif
-	}
-	else if (optimize_kind == OPTIMIZE_MMX)
-	{
-#ifdef __MMX__
-		rtv_lucent4colsP        = rtv_lucent4cols_MMX;
-		rtv_lucent4colsD        = rtv_lucent4cols_MMX;
-		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
-		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
-		r_dimpatchD             = r_dimpatchD_MMX;
-#else
-		// No MMX support compiled in.
-		optimize_kind = OPTIMIZE_NONE;
-		goto setNone;
-#endif
-	}
-	else if (optimize_kind == OPTIMIZE_ALTIVEC)
-	{
-#ifdef __ALTIVEC__
-		rtv_lucent4colsP        = rtv_lucent4cols_ALTIVEC;
-		rtv_lucent4colsD        = rtv_lucent4cols_ALTIVEC;
-		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
-		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
-		r_dimpatchD             = r_dimpatchD_ALTIVEC;
-#else
-		// No ALTIVEC support compiled in.
-		optimize_kind = OPTIMIZE_NONE;
-		goto setNone;
-#endif
+		// update the cvar string
+		// this will trigger the callback to run a second time
+		Printf(PRINT_HIGH, "r_optimize set to \"%s\" based on availability\n", optimize_name);
+		var.Set(optimize_name);
 	}
 	else
 	{
-		// No CPU vectorization available.
-setNone:
+		// cvar string is current, now intialize the drawing function pointers
+		R_InitVectorizedDrawers();
+		R_InitColumnDrawers();
+	}
+}
+
+
+//
+// R_InitVectorizedDrawers
+//
+// Sets up the function pointers based on CPU optimization selected.
+//
+void R_InitVectorizedDrawers()
+{
+	if (optimize_kind == OPTIMIZE_NONE)
+	{
+		// [SL] set defaults to non-vectorized drawers
 		rtv_lucent4colsP        = rtv_lucent4cols_c;
 		rtv_lucent4colsD        = rtv_lucent4cols_c;
 		R_DrawSpanD				= R_DrawSpanD_c;
 		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;
 		r_dimpatchD             = r_dimpatchD_c;
 	}
+	#ifdef __SSE2__
+	if (optimize_kind == OPTIMIZE_SSE2)
+	{
+		rtv_lucent4colsP        = rtv_lucent4cols_SSE2;
+		rtv_lucent4colsD        = rtv_lucent4cols_SSE2;
+		R_DrawSpanD				= R_DrawSpanD_SSE2;
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_SSE2;
+		r_dimpatchD             = r_dimpatchD_SSE2;
+	}
+	#endif
+	#ifdef __MMX__
+	else if (optimize_kind == OPTIMIZE_MMX)
+	{
+		rtv_lucent4colsP        = rtv_lucent4cols_MMX;
+		rtv_lucent4colsD        = rtv_lucent4cols_MMX;
+		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
+		r_dimpatchD             = r_dimpatchD_MMX;
+	}
+	#endif
+	#ifdef __ALTIVEC__
+	else if (optimize_kind == OPTIMIZE_ALTIVEC)
+	{
+		rtv_lucent4colsP        = rtv_lucent4cols_c;    // TODO
+		rtv_lucent4colsD        = rtv_lucent4cols_c;    // TODO
+		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
+		r_dimpatchD             = r_dimpatchD_ALTIVEC;
+	}
+	#endif
 
 	// Check that all pointers are definitely assigned!
 	assert(rtv_lucent4colsP != NULL);

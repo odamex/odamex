@@ -603,30 +603,33 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	R_RotatePoint(xl - viewx, yl - viewy, ANG90 - viewangle, t1.x, t1.y);
 	R_RotatePoint(xh - viewx, yh - viewy, ANG90 - viewangle, t2.x, t2.y);
 
-	v2fixed_t box_pts[4][2] = {
-		{	{t1.x, t1.y},	{t2.x, t1.y}	},	// top line of box
-		{	{t1.x, t2.y},	{t2.x, t2.y}	},	// bottom line of box
-		{	{t1.x, t1.y},	{t1.x, t2.y}	},	// left line of box
-		{	{t2.x, t1.y},	{t2.x, t2.y}	}	// right line of box
-	};
+	v2fixed_t box_pts[4][2];
+	// top line of box
+	box_pts[0][0].x = t1.x;	box_pts[0][0].y = t1.y;	box_pts[0][1].x = t2.x;	box_pts[0][1].y = t1.y;
+	// bottom line of box
+	box_pts[1][0].x = t1.x;	box_pts[1][0].y = t2.y;	box_pts[1][1].x = t2.x;	box_pts[1][1].y = t2.y;
+	// left line of box;
+	box_pts[2][0].x = t1.x;	box_pts[2][0].y = t1.y;	box_pts[2][1].x = t1.x;	box_pts[2][1].y = t2.y;
+	// right line of box
+	box_pts[3][0].x = t2.x;	box_pts[3][0].y = t1.y;	box_pts[3][1].x = t2.x;	box_pts[3][1].y = t2.y;
 
 	// Check each of the four sides of the bounding box to see if
 	// any part is visible. Find the maximum range of columns the bounding box
 	// will project onto the screen.
 	for (int i = 0; i < 4; i++)
 	{
-		v2fixed_t* p1 = &box_pts[i][0];
-		v2fixed_t* p2 = &box_pts[i][1];
+		v2fixed_t p1 = box_pts[i][0];
+		v2fixed_t p2 = box_pts[i][1];
 		
-		if (R_PointOnLine(0, 0, p1->x, p1->y, p2->x, p2->y))
+		if (R_PointOnLine(0, 0, p1.x, p1.y, p2.x, p2.y))
 			return true;
 
 		int32_t lclip, rclip;
-		if (R_ClipLineToFrustum(p1, p2, clipdist, lclip, rclip))
+		if (R_ClipLineToFrustum(&p1, &p2, clipdist, lclip, rclip))
 		{
-			R_ClipLine(p1, p2, lclip, rclip, p1, p2);
-			int x1 = R_ProjectPointX(p1->x, p1->y);
-			int x2 = R_ProjectPointX(p2->x, p2->y) - 1;
+			R_ClipLine(&p1, &p2, lclip, rclip, &p1, &p2);
+			int x1 = R_ProjectPointX(p1.x, p1.y);
+			int x2 = R_ProjectPointX(p2.x, p2.y) - 1;
 			if (R_CheckProjectionX(x1, x2))
 			{
 				if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)	

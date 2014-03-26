@@ -26,6 +26,7 @@
 #define __R_MAIN_H__
 
 #include "d_player.h"
+#include "g_level.h"
 #include "r_data.h"
 #include "v_palette.h"
 #include "m_vectors.h"
@@ -218,6 +219,9 @@ extern argb_t translationRGB[MAXPLAYERS+1][16];
 
 inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte c) const
 {
+	const palindex_t range_start = 0x70;
+	const palindex_t range_stop = 0x7F;
+
 	int pid = translation.getPlayerID();
 
 	// Not a player color translation:
@@ -229,26 +233,31 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 		return shade(translation.tlate(c));
 
 	// Is a player color translation, but not a player color index:
-	if (!(c >= 0x70 && c < 0x80))
+	if (c < range_start || c > range_stop)
 		return shade(c);
 
 	// Default to white light:
 	argb_t lightcolor = MAKERGB(255, 255, 255);
+	argb_t fadecolor = level.fadeto; 
 
 	// Use the dynamic lighting's light color if we have one:
 	if (m_dyncolormap != NULL)
+	{
 		lightcolor = m_dyncolormap->color;
+		fadecolor = m_dyncolormap->fade;
+	}
 
 	// Find the shading for the custom player colors:
-	byte a = 255 - ramp();
-	argb_t t = translationRGB[pid][c - 0x70];
-	argb_t s = MAKERGB(
-		newgamma[RPART(t) * RPART(lightcolor) * a / (255 * 255)],
-		newgamma[GPART(t) * GPART(lightcolor) * a / (255 * 255)],
-		newgamma[BPART(t) * BPART(lightcolor) * a / (255 * 255)]
-	);
+	argb_t trancolor = translationRGB[pid][c - range_start];
 
-	return s;
+	unsigned int r = (RPART(trancolor) * RPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
+					+ RPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
+	unsigned int g = (GPART(trancolor) * GPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
+					+ GPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
+	unsigned int b = (BPART(trancolor) * BPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
+					+ BPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
+
+	return MAKERGB(newgamma[r], newgamma[g], newgamma[b]);
 }
 
 

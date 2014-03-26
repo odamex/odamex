@@ -61,11 +61,9 @@ extern int *walllights;
 extern dyncolormap_t NormalLight;
 extern bool r_fakingunderwater;
 
-EXTERN_CVAR (r_columnmethod)
 EXTERN_CVAR (r_flashhom)
 EXTERN_CVAR (r_viewsize)
 EXTERN_CVAR (sv_allowwidescreen)
-EXTERN_CVAR (r_columnmethod)
 
 static float	LastFOV = 0.0f;
 fixed_t			FocalLengthX;
@@ -701,6 +699,8 @@ void R_SetViewSize (int blocks)
 	setblocks = blocks;
 }
 
+
+
 //
 //
 // CVAR r_detail
@@ -709,7 +709,7 @@ void R_SetViewSize (int blocks)
 //
 //
 
-CVAR_FUNC_IMPL (r_detail)
+CVAR_FUNC_IMPL(r_detail)
 {
 	static BOOL badrecovery = false;
 
@@ -723,7 +723,7 @@ CVAR_FUNC_IMPL (r_detail)
 	{
 		Printf (PRINT_HIGH, "Bad detail mode. (Use 0-3)\n");
 		badrecovery = true;
-		var.Set ((float)((detailyshift << 1)|detailxshift));
+		var.Set((float)((detailyshift << 1) | detailxshift));
 		return;
 	}
 
@@ -744,31 +744,21 @@ void R_ExecuteSetViewSize (void)
 	int startmap;
 
 	setsizeneeded = false;
-/*
+
 	if (setdetail >= 0)
 	{
-		if (!r_columnmethod)
-		{
-			R_RenderSegLoop = R_RenderSegLoop1;
-			// [RH] x-doubling only works with the standard column drawer
-			detailxshift = setdetail & 1;
-		}
-		else
-		{
-			R_RenderSegLoop = R_RenderSegLoop2;
-			detailxshift = 0;
-		}
+		detailxshift = setdetail & 1;
 		detailyshift = (setdetail >> 1) & 1;
 		setdetail = -1;
 	}
-*/
 
 	if (setblocks == 11 || setblocks == 12)
 	{
 		realviewwidth = screen->width;
 		freelookviewheight = realviewheight = screen->height;
 	}
-	else if (setblocks == 10) {
+	else if (setblocks == 10)
+	{
 		realviewwidth = screen->width;
 		realviewheight = ST_Y;
 		freelookviewheight = screen->height;

@@ -16,10 +16,11 @@
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-O3" />
-					<Add option="-mtune=native" />
+					<Add option="-march=native" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
+					<Add option="-DCLIENT_APP" />
 					<Add option="-DUSE_PNG" />
 				</Compiler>
 				<Linker>
@@ -47,10 +48,13 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-O0" />
+					<Add option="-march=native" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
+					<Add option="-DCLIENT_APP" />
 					<Add option="-DUSE_PNG" />
 				</Compiler>
 				<Linker>
@@ -59,7 +63,7 @@
 					<Add library="libtextscreen-dbg" />
 					<Add library="libportmidi-dbg" />
 					<Add library="libpng-dbg" />
-					<Add library="zlib-dbg" />
+					<Add library="z-dbg" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
 					<Add directory="../../lib" />
@@ -93,6 +97,7 @@
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DCLIENT_APP" />
 					<Add option="/DPORTMIDI" />
 					<Add option="/DUSE_PNG" />
 					<Add directory="." />
@@ -133,7 +138,7 @@
 					<Add library="libtextscreen" />
 					<Add library="libportmidi" />
 					<Add library="shlwapi" />
-					<Add library="zlib" />
+					<Add library="z" />
 					<Add library="libpng" />
 					<Add directory="." />
 					<Add directory="../src" />
@@ -175,6 +180,7 @@
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DCLIENT_APP" />
 					<Add option="/DPORTMIDI" />
 					<Add option="/DUSE_PNG" />
 					<Add directory="." />
@@ -216,7 +222,7 @@
 					<Add library="libtextscreen-dbg" />
 					<Add library="libportmidi-dbg" />
 					<Add library="shlwapi" />
-					<Add library="zlib-dbg" />
+					<Add library="z-dbg" />
 					<Add library="libpng-dbg" />
 					<Add directory="." />
 					<Add directory="../src" />
@@ -239,6 +245,7 @@
 			<Add option="-fexceptions" />
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
+			<Add option="-DCLIENT_APP" />
 			<Add option="-DPORTMIDI" />
 			<Add option="-DUSE_PNG" />
 			<Add directory="." />

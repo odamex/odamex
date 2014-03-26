@@ -430,33 +430,26 @@ void P_SpawnPlayer (player_t &player, mapthing2_t* mthing);
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 {
-	fixed_t 			x;
-	fixed_t 			y;
-	fixed_t				z, oldz;
 	unsigned			an;
 	AActor* 			mo;
-	size_t 				i;
 	fixed_t 			xa,ya;
 
-	x = mthing->x << FRACBITS;
-	y = mthing->y << FRACBITS;
-	z = P_FloorHeight(x, y);
+	fixed_t x = mthing->x << FRACBITS;
+	fixed_t y = mthing->y << FRACBITS;
+	fixed_t z = P_FloorHeight(x, y);
 
 	if (!player.mo)
 	{
 		// first spawn of level, before corpses
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			if (&*it != &player)
-				break;
-
 			if (it->mo && it->mo->x == x && it->mo->y == y)
 				return false;
 		}
 		return true;
 	}
 
-	oldz = player.mo->z;	// [RH] Need to save corpse's z-height
+	fixed_t oldz = player.mo->z;	// [RH] Need to save corpse's z-height
 	player.mo->z = z;		// [RH] Checks are now full 3-D
 
 	// killough 4/2/98: fix bug where P_CheckPosition() uses a non-solid
@@ -467,10 +460,10 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	//    return false;
 
 	player.mo->flags |=  MF_SOLID;
-	i = P_CheckPosition(player.mo, x, y);
+	bool valid_position = P_CheckPosition(player.mo, x, y);
 	player.mo->flags &= ~MF_SOLID;
 	player.mo->z = oldz;	// [RH] Restore corpse's height
-	if (!i)
+	if (!valid_position)
 		return false;
 
 	// spawn a teleport fog

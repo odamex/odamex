@@ -347,13 +347,10 @@ CVAR_FUNC_DECL(		cl_screenshotname, "Odamex_%g_%d_%t",
 					"either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-// Screenshot output file format
-CVAR_FUNC_DECL(		cl_pngscreenshots, "1",
-					"Output screenshots in PNG format if enabled, or BMP format if disabled." \
-					"If Odamex was compiled without libpng support, this always falls back to BMP.",
+CVAR(				cl_autorecord, "0", "Automatically record netdemos",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_autorecord, "0", "Automatically record netdemos",
+CVAR(				cl_autoscreenshot, "0", "Automatically capture a screenshot at the end of a match.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(				cl_splitnetdemos, "0", "Create separate netdemos for each map",
@@ -610,7 +607,7 @@ CVAR_RANGE(		r_wipetype, "1", "",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 #endif
 
-CVAR(			r_showendoom, "1", "Display the ENDDOOM text after quitting",
+CVAR(			r_showendoom, "0", "Display the ENDDOOM text after quitting",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)   // [ML] 1/5/10: Add endoom support
 
 CVAR(			r_loadicon, "1", "Display the disk icon when loading data from disk",

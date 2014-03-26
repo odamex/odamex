@@ -540,7 +540,7 @@
 							<object class="wxNotebook" name="m_notebook1">
 								<object class="notebookpage">
 									<label>Network Options</label>
-									<selected>0</selected>
+									<selected>1</selected>
 									<object class="wxPanel" name="m_panel91">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxBoxSizer">
@@ -1007,7 +1007,7 @@
 								</object>
 								<object class="notebookpage">
 									<label>Other Settings</label>
-									<selected>1</selected>
+									<selected>0</selected>
 									<object class="wxPanel" name="m_panel12">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxFlexGridSizer">
@@ -1364,7 +1364,7 @@
 						<vgap>0</vgap>
 						<hgap>0</hgap>
 						<growablecols>0</growablecols>
-						<growablerows>0,1,2,3</growablerows>
+						<growablerows>2,3</growablerows>
 						<object class="sizeritem">
 							<option>1</option>
 							<flag>wxEXPAND</flag>
@@ -1500,8 +1500,9 @@
 								<label>Developed by</label>
 								<object class="sizeritem">
 									<option>1</option>
-									<flag>wxALL|wxEXPAND</flag>
+									<flag>wxALL|wxEXPAND|wxFIXED_MINSIZE</flag>
 									<border>5</border>
+									<minsize>75</minsize>
 									<object class="wxTextCtrl" name="Id_TxtCtrlDevelopers">
 										<style>wxTE_AUTO_URL|wxTE_CENTRE|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2</style>
 										<value>Russell Rice (mailto:russell@odamex.net)\nMichael Wood (mailto:mwoodj@huntsvegas.org)\nJohn D Corrado</value>
@@ -1519,8 +1520,9 @@
 								<label>License</label>
 								<object class="sizeritem">
 									<option>1</option>
-									<flag>wxALL|wxEXPAND</flag>
+									<flag>wxALL|wxEXPAND|wxFIXED_MINSIZE</flag>
 									<border>5</border>
+									<minsize>100</minsize>
 									<object class="wxTextCtrl" name="Id_TxtCtrlLicense">
 										<style>wxTE_AUTO_URL|wxTE_CENTRE|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2</style>
 										<value>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.</value>

@@ -165,6 +165,10 @@ void D_SetupUserInfo(void)
 
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
 	D_PrepareWeaponPreferenceUserInfo();
+
+	// update color translation
+	if (!demoplayback && !connected)
+		R_BuildPlayerTranslation(consoleplayer_id, coninfo->color);
 }
 
 void D_UserInfoChanged (cvar_t *cvar)

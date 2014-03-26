@@ -205,8 +205,9 @@ void *I_ZoneBase (size_t *size)
 void I_BeginRead(void)
 {
 	// NOTE(jsd): This is called before V_Palette is set causing crash in 32bpp mode.
-#if 0
-	if (r_loadicon)
+	// [SL] Check that V_Palette has been properly initalized to work around this
+
+	if (r_loadicon && V_Palette.isValid())
 	{
 		patch_t *diskpatch = W_CachePatch("STDISK");
 
@@ -226,7 +227,6 @@ void I_BeginRead(void)
 
 		screen->Unlock();
 	}
-#endif
 }
 
 void I_EndRead(void)
