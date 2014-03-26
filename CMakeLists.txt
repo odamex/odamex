@@ -3,8 +3,8 @@ include(CMakeDependentOption)
 project(Odamex)
 cmake_minimum_required(VERSION 2.8)
 
-set(PROJECT_VERSION 0.6.4)
-set(PROJECT_COPYRIGHT "2006-2013")
+set(PROJECT_VERSION 0.7.0)
+set(PROJECT_COPYRIGHT "2006-2014")
 
 # Default build type
 if(NOT MSVC)
