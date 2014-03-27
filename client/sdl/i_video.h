@@ -27,10 +27,18 @@
 #define __I_VIDEO_H__
 
 #include "doomtype.h"
-#include "v_video.h"
+
+class DCanvas;
 
 // [RH] True if the display is not in a window
 extern BOOL Fullscreen;
+
+void I_InitHardware ();
+void STACK_ARGS I_ShutdownHardware ();
+
+// [RH] M_ScreenShot now accepts a filename parameter.
+//		Pass a NULL to get the original behavior.
+void I_ScreenShot(std::string filename);
 
 int I_GetVideoWidth();
 int I_GetVideoHeight();
@@ -42,15 +50,8 @@ bool I_SetMode (int &width, int &height, int &bits);
 // Returns true if the Video object has been set up and not yet destroyed
 bool I_HardwareInitialized();
 
-// Takes full 8 bit values.
-void I_SetPalette (argb_t *palette);
-
-/*
-    12/3/06: Old Timey Palette method, used for red screen only as of
-             this writing.  It accepts a byte instead of a DWORD.  It
-             is restricted only to the red screen because of that.
-*/
-void I_SetOldPalette (byte *doompalette);
+void I_SetPalette(argb_t* palette);
+void I_SetOldPalette(palindex_t* doompalette);
 
 void I_BeginUpdate (void);		// [RH] Locks screen[0]
 void I_FinishUpdate (void);
@@ -80,13 +81,13 @@ bool I_SetOverscan (float scale);
 void I_StartModeIterator ();
 bool I_NextMode (int *width, int *height);
 
-DCanvas *I_AllocateScreen (int width, int height, int bits, bool primary = false);
-void I_FreeScreen (DCanvas *canvas);
+DCanvas* I_AllocateScreen(int width, int height, int bits, bool primary = false);
+void I_FreeScreen(DCanvas* canvas);
 
-void I_LockScreen (DCanvas *canvas);
-void I_UnlockScreen (DCanvas *canvas);
-void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
-			 DCanvas *dest, int destx, int desty, int destwidth, int destheight);
+void I_LockScreen(DCanvas* canvas);
+void I_UnlockScreen(DCanvas* canvas);
+void I_Blit(DCanvas* src, int srcx, int srcy, int srcwidth, int srcheight,
+			DCanvas* dest, int destx, int desty, int destwidth, int destheight);
 
 enum EDisplayType
 {
@@ -123,67 +124,20 @@ class IVideo
 	/* 12/3/06: HACK - Add SetOldPalette to accomodate classic redscreen - ML*/
 	virtual void SetOldPalette (byte *doompalette);
 		
-	virtual void UpdateScreen (DCanvas *canvas);
+	virtual void UpdateScreen(DCanvas* canvas);
 	virtual void ReadScreen (byte *block);
 
 	virtual int GetModeCount ();
 	virtual void StartModeIterator ();
 	virtual bool NextMode (int *width, int *height);
 
-	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false);
-	virtual void ReleaseSurface (DCanvas *scrn);
-	virtual void LockSurface (DCanvas *scrn);
-	virtual void UnlockSurface (DCanvas *scrn);
-	virtual bool Blit (DCanvas *src, int sx, int sy, int sw, int sh,
-					   DCanvas *dst, int dx, int dy, int dw, int dh);
+	virtual DCanvas* AllocateSurface(int width, int height, int bits, bool primary = false);
+	virtual void ReleaseSurface(DCanvas* scrn);
+	virtual void LockSurface(DCanvas* scrn);
+	virtual void UnlockSurface(DCanvas* scrn);
+	virtual bool Blit(DCanvas* src, int sx, int sy, int sw, int sh,
+					DCanvas* dst, int dx, int dy, int dw, int dh);
 };
-
-class IInputDevice
-{
- public:
-	virtual ~IInputDevice () {}
-	virtual void ProcessInput (bool parm) = 0;
-};
-
-class IKeyboard : public IInputDevice
-{
- public:
-	virtual void ProcessInput (bool consoleOpen) = 0;
-	virtual void SetKeypadRemapping (bool remap) = 0;
-	virtual void GetKeyRepeats (int &delay, int &rate)
-		{
-			delay = (250*TICRATE)/1000;
-			rate = TICRATE / 15;
-		}
-};
-
-class IMouse : public IInputDevice
-{
- public:
-	virtual void SetGrabbed (bool grabbed) = 0;
-	virtual void ProcessInput (bool active) = 0;
-};
-
-class IJoystick : public IInputDevice
-{
- public:
-	enum EJoyProp
-	{
-		JOYPROP_SpeedMultiplier,
-		JOYPROP_XSensitivity,
-		JOYPROP_YSensitivity,
-		JOYPROP_XThreshold,
-		JOYPROP_YThreshold
-	};
-	virtual void SetProperty (EJoyProp prop, float val) = 0;
-};
-
-void I_InitHardware ();
-void STACK_ARGS I_ShutdownHardware ();
-
-// [RH] M_ScreenShot now accepts a filename parameter.
-//		Pass a NULL to get the original behavior.
-void I_ScreenShot(std::string filename);
 
 
 #endif // __I_VIDEO_H__

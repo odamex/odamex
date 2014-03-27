@@ -27,13 +27,18 @@
 #include <sstream>
 #include <string>
 
+#if 0
 #undef MINCHAR
 #undef MAXCHAR
 #undef MINSHORT
 #undef MAXSHORT
 #undef MINLONG
 #undef MAXLONG
+#endif
+
 #include "i_video.h"
+#include "v_video.h"
+
 #include "i_system.h"
 #include "c_console.h"
 #include "c_cvars.h"
@@ -43,7 +48,6 @@
 #include "i_sdlvideo.h"
 #include "m_fileio.h"
 #include "g_game.h"
-#include "i_input.h"
 
 #ifdef USE_PNG
 	#define PNG_SKIP_SETJMP_CHECK
@@ -91,12 +95,7 @@ bool M_FindFreeName(std::string &filename, const std::string &extension);
 extern constate_e ConsoleState;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 
-//static bool MouseShouldBeGrabbed ();
-
 static IVideo *Video;
-//static IKeyboard *Keyboard;
-//static IMouse *Mouse;
-//static IJoystick *Joystick;
 
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_overscan)
@@ -606,9 +605,9 @@ CVAR_FUNC_IMPL (cl_screenshotname)
 //
 // I_SetOldPalette - Just for the red screen for now I guess
 //
-void I_SetOldPalette (byte *doompalette)
+void I_SetOldPalette(palindex_t* doompalette)
 {
-    Video->SetOldPalette (doompalette);
+    Video->SetOldPalette(doompalette);
 }
 
 EDisplayType I_DisplayType ()

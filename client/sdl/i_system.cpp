@@ -81,6 +81,7 @@
 #include "m_argv.h"
 #include "m_misc.h"
 #include "i_video.h"
+#include "v_video.h"
 #include "i_sound.h"
 
 #include "d_main.h"

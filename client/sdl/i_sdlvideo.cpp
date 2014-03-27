@@ -36,6 +36,9 @@
     #include "resource.h"
 #endif // WIN32
 
+#include "i_video.h"
+#include "v_video.h"
+
 #include "v_palette.h"
 #include "i_sdlvideo.h"
 #include "i_system.h"
