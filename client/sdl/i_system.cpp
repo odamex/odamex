@@ -70,7 +70,6 @@
 
 #include <sys/stat.h>
 
-#include "hardware.h"
 #include "errors.h"
 #include <math.h>
 

@@ -27,7 +27,6 @@
 #include <sstream>
 #include <string>
 
-#include "hardware.h"
 #undef MINCHAR
 #undef MAXCHAR
 #undef MINSHORT
@@ -1000,6 +999,6 @@ BEGIN_COMMAND (vid_currentmode)
 }
 END_COMMAND (vid_currentmode)
 
-VERSION_CONTROL (hardware_cpp, "$Id$")
+VERSION_CONTROL (i_video_cpp, "$Id$")
 
 

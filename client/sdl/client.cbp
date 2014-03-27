@@ -500,8 +500,6 @@
 		<Unit filename="client.rc">
 			<Option compilerVar="WINDRES" />
 		</Unit>
-		<Unit filename="hardware.cpp" />
-		<Unit filename="hardware.h" />
 		<Unit filename="i_input.cpp" />
 		<Unit filename="i_input.h" />
 		<Unit filename="i_main.cpp" />
@@ -517,6 +515,7 @@
 		<Unit filename="i_sound.h" />
 		<Unit filename="i_system.cpp" />
 		<Unit filename="i_system.h" />
+		<Unit filename="i_video.cpp" />
 		<Unit filename="i_video.h" />
 		<Unit filename="mus2midi.cpp" />
 		<Unit filename="mus2midi.h" />

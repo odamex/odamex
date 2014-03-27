@@ -26,7 +26,6 @@
 
 #include <SDL.h>
 #include <list>
-#include "hardware.h"
 #include "i_video.h"
 #include "c_console.h"
 
