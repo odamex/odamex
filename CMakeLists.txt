@@ -57,9 +57,7 @@ endmacro(define_platform)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
-if (WIN32 OR APPLE)
-  set(USE_MINIUPNP 1)
-endif()
+cmake_dependent_option(USE_MINIUPNP "Compile with miniUPnPc included in the source tree." ON "WIN32;APPLE" OFF)
 
 # MiniUPnPc
 if (USE_MINIUPNP)
