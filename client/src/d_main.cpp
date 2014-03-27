@@ -324,7 +324,7 @@ void D_Display (void)
 		int y;
 
 		y = (automapactive && !viewactive) ? 4 : viewwindowy + 4;
-		screen->DrawPatchCleanNoMove (pause, (screen->width-(pause->width())*CleanXfac)/2, y);
+		screen->DrawPatchCleanNoMove (pause, (I_GetVideoWidth()-(pause->width())*CleanXfac)/2, y);
 	}
 
 	// [RH] Draw icon, if any
@@ -398,11 +398,11 @@ void D_PageDrawer (void)
 	if (page)
 	{
 		page->Blit (0, 0, page->width, page->height,
-			screen, 0, 0, screen->width, screen->height);
+			screen, 0, 0, I_GetVideoWidth(), I_GetVideoHeight());
 	}
 	else
 	{
-		screen->Clear (0, 0, screen->width, screen->height, 0);
+		screen->Clear (0, 0, I_GetVideoWidth(), I_GetVideoHeight(), 0);
 		//screen->PrintStr (0, 0, "Page graphic goes here", 22);
 	}
 }
@@ -509,7 +509,7 @@ void D_DoAdvanceDemo (void)
 		const int width = 320, height = 200;
 		patch_t *data;
 
-		if (page && (page->width != screen->width || page->height != screen->height))
+		if (page && (page->width != I_GetVideoWidth() || page->height != I_GetVideoHeight()))
 		{
 			I_FreeScreen(page);
 			page = NULL;
@@ -522,7 +522,7 @@ void D_DoAdvanceDemo (void)
             if (screen->isProtectedRes())
                 page = I_AllocateScreen(data->width(), data->height(), 8);
             else
-                page = I_AllocateScreen(screen->width, screen->height, 8);
+                page = I_AllocateScreen(I_GetVideoWidth(), I_GetVideoHeight(), 8);
         }
 
 		page->Lock ();

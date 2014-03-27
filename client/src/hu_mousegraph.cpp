@@ -25,6 +25,7 @@
 #include "hu_mousegraph.h"
 
 #include "v_text.h"
+#include "i_video.h"
 #include "v_video.h"
 
 MouseGraph mousegraph;
@@ -47,7 +48,7 @@ void MouseGraph::append(int x, int y)
 
 void MouseGraph::draw(int type)
 {
-	int x = screen->width - MAX_HISTORY_TICS - 10;
+	int x = I_GetVideoWidth() - MAX_HISTORY_TICS - 10;
 	int y = 100;
 
 	screen->DrawText(CR_GREY, x, y, "Mouse X/Y");

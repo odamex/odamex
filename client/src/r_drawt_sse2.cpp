@@ -51,6 +51,7 @@
 #include "r_draw.h"
 #include "r_main.h"
 #include "r_things.h"
+#include "i_video.h"
 #include "v_video.h"
 
 // SSE2 alpha-blending functions.
@@ -150,8 +151,8 @@ void R_DrawSpanD_SSE2 (void)
 #ifdef RANGECHECK
 	if (dspan.x2 < dspan.x1
 		|| dspan.x1<0
-		|| dspan.x2>=screen->width
-		|| dspan.y>screen->height)
+		|| dspan.x2>=I_GetVideoWidth()
+		|| dspan.y>I_GetVideoHeight())
 	{
 		I_Error ("R_DrawSpan: %i to %i at %i",
 				 dspan.x1, dspan.x2, dspan.y);
@@ -250,8 +251,8 @@ void R_DrawSlopeSpanD_SSE2 (void)
 #ifdef RANGECHECK 
 	if (dspan.x2 < dspan.x1
 		|| dspan.x1<0
-		|| dspan.x2>=screen->width
-		|| dspan.y>screen->height)
+		|| dspan.x2>=I_GetVideoWidth()
+		|| dspan.y>I_GetVideoHeight())
 	{
 		I_Error ("R_DrawSlopeSpan: %i to %i at %i",
 				 dspan.x1, dspan.x2, dspan.y);

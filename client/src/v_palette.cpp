@@ -192,7 +192,7 @@ static void V_UpdateGammaLevel(float level)
 
 		if (!screen)
 			return;
-		if (screen->is8bit())
+		if (I_GetVideoBitDepth() == 8)
 			V_ForceBlend(BlendR, BlendG, BlendB, BlendA);
 		else
 			RefreshPalettes();
@@ -223,7 +223,7 @@ END_COMMAND(bumpgamma)
 // [Russell] - Restore original screen palette from current gamma level
 void V_RestoreScreenPalette(void)
 {
-    if (screen && screen->is8bit())
+    if (screen && I_GetVideoBitDepth() == 8)
 		V_ForceBlend(BlendR, BlendG, BlendB, BlendA);
 }
 
@@ -665,7 +665,7 @@ void V_ForceBlend (int blendr, int blendg, int blendb, int blenda)
 	// shademap_t::shade takes care of blending
 	// [SL] actually, an alpha overlay is drawn on top of the rendered screen
 	// in R_RenderPlayerView
-	if (screen->is8bit())
+	if (I_GetVideoBitDepth() == 8)
 	{
 		DoBlending(DefPal.colors, IndexedPalette, DefPal.numcolors,
 					newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
@@ -911,7 +911,7 @@ void V_DoPaletteEffects()
 {
 	player_t* plyr = &displayplayer();
 
-	if (screen->is8bit())
+	if (I_GetVideoBitDepth() == 8)
 	{
 		int		palette;
 

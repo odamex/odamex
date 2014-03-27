@@ -20,20 +20,21 @@
 //
 //-----------------------------------------------------------------------------
 
-#include	"doomstat.h"
-#include	"c_console.h"
-#include	"c_dispatch.h"
-#include	"cl_main.h"
-#include	"w_wad.h"
-#include	"z_zone.h"
-#include	"v_video.h"
-#include	"p_local.h"
-#include	"p_inter.h"
-#include	"p_ctf.h"
-#include	"p_mobj.h"
-#include    "st_stuff.h"
-#include	"s_sound.h"
-#include	"v_text.h"
+#include "doomstat.h"
+#include "c_console.h"
+#include "c_dispatch.h"
+#include "cl_main.h"
+#include "w_wad.h"
+#include "z_zone.h"
+#include "i_video.h"
+#include "v_video.h"
+#include "p_local.h"
+#include "p_inter.h"
+#include "p_ctf.h"
+#include "p_mobj.h"
+#include "st_stuff.h"
+#include "s_sound.h"
+#include "v_text.h"
 
 flagdata CTFdata[NUMFLAGS];
 int TEAMpoints[NUMFLAGS];
@@ -280,26 +281,26 @@ void TintScreen(int color)
 	{
 			screen->Clear (0,
 						   0,
-						   screen->width / 100,
-						   screen->height - ST_HEIGHT,
+						   I_GetVideoWidth() / 100,
+						   I_GetVideoHeight() - ST_HEIGHT,
 						   color);
 
 			screen->Clear (0,
 						   0,
-						   screen->width,
-						   screen->height / 100,
+						   I_GetVideoWidth(),
+						   I_GetVideoHeight() / 100,
 						   color);
 
-			screen->Clear (screen->width - (screen->width / 100),
+			screen->Clear (I_GetVideoWidth() - (I_GetVideoWidth() / 100),
 						   0,
-						   screen->width,
-						   screen->height - ST_HEIGHT,
+						   I_GetVideoWidth(),
+						   I_GetVideoHeight() - ST_HEIGHT,
 						   color);
 
 			screen->Clear (0,
-						   (screen->height - ST_HEIGHT) - (screen->height / 100),
-						   screen->width,
-						   screen->height - ST_HEIGHT,
+						   (I_GetVideoHeight() - ST_HEIGHT) - (I_GetVideoHeight() / 100),
+						   I_GetVideoWidth(),
+						   I_GetVideoHeight() - ST_HEIGHT,
 						   color);
 	}
 
@@ -308,26 +309,26 @@ void TintScreen(int color)
 	{
 			screen->Clear (0,
 						   0,
-						   screen->width / 100,
-						   screen->height,
+						   I_GetVideoWidth() / 100,
+						   I_GetVideoHeight(),
 						   color);
 
 			screen->Clear (0,
 						   0,
-						   screen->width,
-						   screen->height / 100,
+						   I_GetVideoWidth(),
+						   I_GetVideoHeight() / 100,
 						   color);
 
-			screen->Clear (screen->width - (screen->width / 100),
+			screen->Clear (I_GetVideoWidth() - (I_GetVideoWidth() / 100),
 						   0,
-						   screen->width,
-						   screen->height,
+						   I_GetVideoWidth(),
+						   I_GetVideoHeight(),
 						   color);
 
 			screen->Clear (0,
-						   (screen->height) - (screen->height / 100),
-						   screen->width,
-						   screen->height,
+						   (I_GetVideoHeight()) - (I_GetVideoHeight() / 100),
+						   I_GetVideoWidth(),
+						   I_GetVideoHeight(),
 						   color);
 	}
 }
@@ -421,7 +422,7 @@ void CTF_DrawHud (void)
 
 		if (tintColor != 0)
 		{
-			if (screen->is8bit())
+			if (I_GetVideoBitDepth() == 8)
 				TintScreen(BestColor2(pal->basecolors, tintColor, pal->numcolors));
 			else
 				TintScreen(tintColor);

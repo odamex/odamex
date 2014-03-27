@@ -220,8 +220,8 @@ void I_BeginRead(void)
 		int w = diskpatch->width() * scale;
 		int h = diskpatch->height() * scale;
 		// offset x and y for the lower right corner of the screen
-		int ofsx = screen->width - w + (scale * diskpatch->leftoffset());
-		int ofsy = screen->height - h + (scale * diskpatch->topoffset());
+		int ofsx = I_GetVideoWidth() - w + (scale * diskpatch->leftoffset());
+		int ofsy = I_GetVideoHeight() - h + (scale * diskpatch->topoffset());
 
 		screen->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
 

@@ -1283,11 +1283,11 @@ static void M_PlayerSetupDrawer (void)
 {
 	int x1,x2,y1,y2;
 
-	x1 = (screen->width / 2)-(160*CleanXfac);
-	y1 = (screen->height / 2)-(100*CleanYfac);
+	x1 = (I_GetVideoWidth() / 2)-(160*CleanXfac);
+	y1 = (I_GetVideoHeight() / 2)-(100*CleanYfac);
 
-    x2 = (screen->width / 2)+(160*CleanXfac);
-	y2 = (screen->height / 2)+(100*CleanYfac);
+    x2 = (I_GetVideoWidth() / 2)+(160*CleanXfac);
+	y2 = (I_GetVideoHeight() / 2)+(100*CleanYfac);
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
@@ -1320,8 +1320,8 @@ static void M_PlayerSetupDrawer (void)
 	{
 		int x = 320 - 88 - 32, y = PSetupDef.y + LINEHEIGHT*3 - 14;
 
-		x = (x-160)*CleanXfac+(screen->width>>1);
-		y = (y-100)*CleanYfac+(screen->height>>1);
+		x = (x-160)*CleanXfac+(I_GetVideoWidth() / 2);
+		y = (y-100)*CleanYfac+(I_GetVideoHeight() / 2);
 		if (!FireScreen)
 		{
 			screen->Clear (x, y, x + 72 * CleanXfac, y + 72 * CleanYfac, 34);
@@ -1396,7 +1396,7 @@ static void M_PlayerSetupDrawer (void)
 			}
 
 			y--;
-			if (screen->is8bit())
+			if (I_GetVideoBitDepth() == 8)
 				{
 				// 8bpp rendering:
 				     if (CleanXfac == 1) R_RenderFire<1, byte>(x, y);

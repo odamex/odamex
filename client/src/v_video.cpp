@@ -850,7 +850,7 @@ void V_Init (void)
 	V_InitPalette ();
 
 	V_InitConChars (0xf7);
-	C_InitConsole (screen->width, screen->height, true);
+	C_InitConsole(I_GetVideoWidth(), I_GetVideoHeight(), true);
 }
 
 void DCanvas::AttachPalette (palette_t *pal)
@@ -898,8 +898,8 @@ void V_DrawFPSWidget()
 
 		double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
 		int chars = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
-		screen->Clear(0, screen->height - 8, chars * 8, screen->height, 0);
-		screen->PrintStr(0, screen->height - 8, fpsbuff, chars);
+		screen->Clear(0, I_GetVideoHeight() - 8, chars * 8, I_GetVideoHeight(), 0);
+		screen->PrintStr(0, I_GetVideoHeight() - 8, fpsbuff, chars);
 
 		time_accum += delta_time;
 
@@ -926,9 +926,9 @@ void V_DrawFPSTicker()
 	if (tics > 20) tics = 20;
 
 	for (i = 0; i < tics*2; i += 2)
-		screen->buffer[(screen->height - 1) * screen->pitch + i] = 0xff;
+		screen->buffer[(I_GetVideoHeight() - 1) * screen->pitch + i] = 0xff;
 	for ( ; i < 20*2; i += 2)
-		screen->buffer[(screen->height - 1) * screen->pitch + i] = 0x0;
+		screen->buffer[(I_GetVideoHeight() - 1) * screen->pitch + i] = 0x0;
 }
 
 VERSION_CONTROL (v_video_cpp, "$Id$")

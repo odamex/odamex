@@ -510,10 +510,8 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 		right = left + c[i]->width();
 		bottom = top + c[i]->height();
 
-		if (left >= 0 &&
-            right < screen->width &&
-            top >= 0 &&
-            bottom < screen->height)
+		if (left >= 0 && right < I_GetVideoWidth() &&
+            top >= 0 && bottom < I_GetVideoHeight())
 		{
 			fits = true;
 		}

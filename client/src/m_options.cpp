@@ -1314,11 +1314,11 @@ void M_OptDrawer (void)
 	menuitem_t *item;
 	patch_t *title;
 	
-	x1 = (screen->width / 2)-(160*CleanXfac);
-	y1 = (screen->height / 2)-(100*CleanYfac);
+	x1 = (I_GetVideoWidth() / 2)-(160*CleanXfac);
+	y1 = (I_GetVideoHeight() / 2)-(100*CleanYfac);
 	
-    x2 = (screen->width / 2)+(160*CleanXfac);
-	y2 = (screen->height / 2)+(100*CleanYfac);
+    x2 = (I_GetVideoWidth() / 2)+(160*CleanXfac);
+	y2 = (I_GetVideoHeight() / 2)+(100*CleanYfac);
 	
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);

@@ -237,7 +237,7 @@ EXTERN_CVAR(vid_gammatype)
 //
 static void I_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const SDL_Color* sdlpalette)
 {
-	if (!screen->is8bit())
+	if (!I_GetVideoBitDepth() == 8)
 	{
 		Printf(PRINT_HIGH, "I_SetPNGPalette: Cannot create PNG PLTE chunk in 32-bit mode\n");
 		return;
@@ -290,7 +290,7 @@ static void I_SetPNGComments(png_struct *png_ptr, png_info *info_ptr, time_t *no
 	
 	pngtext[text_line].key = (png_charp)"In-Game Video Mode";
 	pngtext[text_line].text =
-		(screen->is8bit()) ? (png_charp)"8bpp" : (png_charp)"32bpp";
+		(I_GetVideoBitDepth() == 8) ? (png_charp)"8bpp" : (png_charp)"32bpp";
 	text_line++;
 	
 	char gammabuf[20];	// large enough to not overflow with three digits of precision
@@ -366,13 +366,16 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 
 	SDL_LockSurface(surface);
 
+	png_uint_32 width = I_GetVideoWidth();
+	png_uint_32 height = I_GetVideoHeight();
+
 	// is the screen paletted or 32-bit RGBA?
 	// note: we don't want to the preserve A channel in the screenshot if screen is RGBA
-	int png_colortype = screen->is8bit() ? PNG_COLOR_TYPE_PALETTE : PNG_COLOR_TYPE_RGB;
+	int png_colortype = I_GetVideoBitDepth() == 8 ? PNG_COLOR_TYPE_PALETTE : PNG_COLOR_TYPE_RGB;
 	// write image dimensions to png file's IHDR chunk
 	png_set_IHDR
 		(png_ptr, info_ptr,
-		(png_uint_32)screen->width, (png_uint_32)screen->height,
+		width, height,
 		8, // per channel; this is valid regardless of whether we're using 8bpp or 32bpp
 		png_colortype,
 		PNG_INTERLACE_NONE,
@@ -380,14 +383,13 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 		PNG_FILTER_TYPE_DEFAULT);
 
 	// determine bpp mode, allocate memory space for PNG pixel data
-	int png_bpp = (screen->is8bit()) ? 1 : 3;
-	png_byte** row_ptrs = (png_byte**)png_malloc(png_ptr, (png_alloc_size_t)(screen->height * sizeof(png_byte*)));
+	int png_bpp = (I_GetVideoBitDepth() == 8) ? 1 : 3;
+	png_byte** row_ptrs = (png_byte**)png_malloc(png_ptr, (png_alloc_size_t)(height * sizeof(png_byte*)));
 	png_byte* row;
 	
-	for (int rownum = 0; rownum < screen->height; rownum++)
+	for (unsigned int rownum = 0; rownum < height; rownum++)
 	{
-		row = (png_byte*)png_malloc(png_ptr,
-			(png_alloc_size_t)(sizeof(uint8_t) * screen->width * png_bpp));
+		row = (png_byte*)png_malloc(png_ptr, (png_alloc_size_t)(sizeof(uint8_t) * width * png_bpp));
 		
 		if (row != NULL)
 		{
@@ -395,7 +397,7 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 		}
 		else
 		{
-			for (int i = 0; i < rownum; i++)
+			for (unsigned int i = 0; i < rownum; i++)
 				png_free(png_ptr, row_ptrs[i]);
 
 			png_free(png_ptr, row_ptrs);
@@ -408,18 +410,18 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 	}
 	
 	// write PNG in either paletted or RGB form, according to the current screen mode
-	if (screen->is8bit())
+	if (I_GetVideoBitDepth() == 8)
 	{
 		I_SetPNGPalette(png_ptr, info_ptr, colors);
 		
 		const palindex_t* source = (palindex_t*)surface->pixels;
-		const int pitch_remainder = surface->pitch / sizeof(palindex_t) - screen->width;
+		const int pitch_remainder = surface->pitch / sizeof(palindex_t) - width;
 
-		for (int y = 0; y < screen->height; y++)
+		for (unsigned int y = 0; y < height; y++)
 		{
 			row = row_ptrs[y];
 
-			for (int x = 0; x < screen->width; x++)
+			for (unsigned int x = 0; x < width; x++)
 			{
 				// gather color index from current pixel of SDL surface,
 				// copy it to current pixel of PNG row
@@ -434,13 +436,13 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 	else
 	{
 		const argb_t* source = (argb_t*)surface->pixels;
-		const int pitch_remainder = surface->pitch / sizeof(argb_t) - screen->width;
+		const int pitch_remainder = surface->pitch / sizeof(argb_t) - width;
 
-		for (int y = 0; y < screen->height; y++)
+		for (unsigned int y = 0; y < height; y++)
 		{
 			row = row_ptrs[y];
 			
-			for (int x = 0; x < screen->width; x++)
+			for (unsigned int x = 0; x < width; x++)
 			{
 				// gather color components from current pixel of SDL surface
 				// note: SDL surface's alpha channel is ignored if present
@@ -475,7 +477,7 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
 	
 	// free allocated PNG image data
-	for (int y = 0; y < screen->height; y++)
+	for (unsigned int y = 0; y < height; y++)
 		png_free(png_ptr, row_ptrs[y]);
 
 	png_free(png_ptr, row_ptrs);
@@ -547,7 +549,7 @@ void I_ScreenShot(std::string filename)
 		return;
 	}
 
-	if (screen->is8bit())
+	if (I_GetVideoBitDepth() == 8)
 	{
 		// Set up the palette for our screen shot
 		const argb_t* pal = IndexedPalette;

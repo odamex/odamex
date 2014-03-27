@@ -260,7 +260,7 @@ void HU_Drawer (void)
 		int i, x, c, y, promptwidth;
 
 		// Determine what Y height to display the chat prompt at.
-		// * screen->height is the "actual" screen height.
+		// * I_GetVideoHeight() is the "actual" screen height.
 		// * realviewheight is how big the view is, taking into account the
 		//   status bar and current "screen size".
 		// * viewactive is false if you have a fullscreen automap or
@@ -270,12 +270,12 @@ void HU_Drawer (void)
 		if (!viewactive && gamestate != GS_INTERMISSION) {
 			// Fullscreen automap is visible
 			y = ST_Y - (20 * scaledyfac);
-		} else if (viewactive && screen->height != realviewheight) {
+		} else if (viewactive && I_GetVideoHeight() != realviewheight) {
 			// Status bar is visible
 			y = ST_Y - (10 * scaledyfac);
 		} else {
 			// Must be fullscreen HUD or intermission
-			y = screen->height - (10 * scaledyfac);
+			y = I_GetVideoHeight() - (10 * scaledyfac);
 		}
 
 		if (headsupactive == 2)
@@ -288,7 +288,7 @@ void HU_Drawer (void)
 
 		// figure out if the text is wider than the screen->
 		// if so, only draw the right-most portion of it.
-		for (i = input_text.length() - 1; i >= 0 && x < screen->width; i--)
+		for (i = input_text.length() - 1; i >= 0 && x < I_GetVideoWidth(); i--)
 		{
 			c = toupper(input_text[i] & 0x7f) - HU_FONTSTART;
 			if (c < 0 || c >= HU_FONTSIZE)
@@ -1343,7 +1343,7 @@ void HU_DrawScores(player_t *player) {
 //
 void OdamexEffect (int xa, int ya, int xb, int yb)
 {
-	if (xa < 0 || ya < 0 || xb > screen->width || yb > screen->height)
+	if (xa < 0 || ya < 0 || xb > I_GetVideoWidth() || yb > I_GetVideoHeight())
 		return;
 
 	screen->Dim(xa, ya, xb - xa, yb - ya);

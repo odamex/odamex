@@ -39,6 +39,7 @@
 #include "z_zone.h"
 #include "w_wad.h"
 #include "r_local.h"
+#include "i_video.h"
 #include "v_video.h"
 #include "doomstat.h"
 #include "st_stuff.h"
@@ -451,7 +452,7 @@ template<typename PIXEL_T, typename COLORFUNC>
 static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
 #ifdef RANGECHECK 
-	if (drawcolumn.x >= screen->width || drawcolumn.yl < 0 || drawcolumn.yh >= screen->height)
+	if (drawcolumn.x >= I_GetVideoWidth() || drawcolumn.yl < 0 || drawcolumn.yh >= I_GetVideoHeight())
 	{
 		Printf (PRINT_HIGH, "R_FillColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
 		return;
@@ -490,7 +491,7 @@ template<typename PIXEL_T, typename COLORFUNC>
 static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
 #ifdef RANGECHECK 
-	if (drawcolumn.x >= screen->width || drawcolumn.yl < 0 || drawcolumn.yh >= screen->height)
+	if (drawcolumn.x >= I_GetVideoWidth() || drawcolumn.yl < 0 || drawcolumn.yh >= I_GetVideoHeight())
 	{
 		Printf (PRINT_HIGH, "R_DrawColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
 		return;
@@ -1447,18 +1448,18 @@ void R_InitBuffer(int width, int height)
 	// Handle resize,
 	//	e.g. smaller view windows
 	//	with border and/or status bar.
-	viewwindowx = (screen->width - windowwidth) >> 1;
+	viewwindowx = (I_GetVideoWidth() - windowwidth) >> 1;
 
 	// [RH] Adjust column offset according to bytes per pixel
 	//		and detail mode
-	xshift = detailxshift + (screen->is8bit() ? 0 : 2);
+	xshift = detailxshift + (I_GetVideoBitDepth() == 8 ? 0 : 2);
 
 	// Column offset. For windows
 	for (i = 0; i < width; i++)
 		columnofs[i] = (viewwindowx + i) << xshift;
 
 	// Same with base row offset.
-	if (windowwidth == screen->width)
+	if (windowwidth == I_GetVideoWidth())
 		viewwindowy = 0;
 	else
 		viewwindowy = (ST_Y - windowheight) >> 1;
@@ -1504,7 +1505,7 @@ void R_DrawViewBorder (void)
 	int offset, size;
 	gameborder_t *border;
 
-	if (realviewwidth == screen->width) {
+	if (realviewwidth == I_GetVideoWidth()) {
 		return;
 	}
 
@@ -1512,10 +1513,10 @@ void R_DrawViewBorder (void)
 	offset = border->offset;
 	size = border->size;
 
-	R_DrawBorder (0, 0, screen->width, viewwindowy);
-	R_DrawBorder (0, viewwindowy, viewwindowx, realviewheight + viewwindowy);
-	R_DrawBorder (viewwindowx + realviewwidth, viewwindowy, screen->width, realviewheight + viewwindowy);
-	R_DrawBorder (0, viewwindowy + realviewheight, screen->width, ST_Y);
+	R_DrawBorder(0, 0, I_GetVideoWidth(), viewwindowy);
+	R_DrawBorder(0, viewwindowy, viewwindowx, realviewheight + viewwindowy);
+	R_DrawBorder(viewwindowx + realviewwidth, viewwindowy, I_GetVideoWidth(), realviewheight + viewwindowy);
+	R_DrawBorder(0, viewwindowy + realviewheight, I_GetVideoWidth(), ST_Y);
 
 	for (x = viewwindowx; x < viewwindowx + realviewwidth; x += size)
 	{
@@ -1544,7 +1545,7 @@ void R_DrawViewBorder (void)
 	screen->DrawPatch (W_CachePatch (border->br),
 		viewwindowx+realviewwidth, viewwindowy+realviewheight);
 
-	V_MarkRect (0, 0, screen->width, ST_Y);
+	V_MarkRect(0, 0, I_GetVideoWidth(), ST_Y);
 }
 
 // ============================================================================
@@ -1613,7 +1614,7 @@ static void R_DoubleY32()
 //		and/or vertically (or not at all).
 void R_DetailDouble (void)
 {
-	if (screen->is8bit())
+	if (I_GetVideoBitDepth() == 8)
 	{
 		if (detailxshift)
 			R_DoubleX8();
@@ -1827,7 +1828,7 @@ void R_InitColumnDrawers ()
 	// NOTE(jsd): It's okay to use R_DrawColumnHorizP because it renders to a temp buffer first.
 	R_DrawColumnHoriz		= R_DrawColumnHorizP;
 
-	if (screen->is8bit())
+	if (I_GetVideoBitDepth() == 8)
 	{
 		R_DrawColumn			= R_DrawColumnP;
 		R_DrawFuzzColumn		= R_DrawFuzzColumnP;

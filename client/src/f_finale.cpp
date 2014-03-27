@@ -30,6 +30,7 @@
 #include "i_system.h"
 #include "m_swap.h"
 #include "z_zone.h"
+#include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
 #include "w_wad.h"
@@ -188,15 +189,15 @@ void F_TextWrite (void)
 		int lump = W_CheckNumForName (finaleflat, ns_flats);
 		if (lump >= 0)
 		{
-			screen->FlatFill (0,0, screen->width, screen->height,
+			screen->FlatFill (0,0, I_GetVideoWidth(), I_GetVideoHeight(),
 						(byte *)W_CacheLumpNum (lump, PU_CACHE));
 		}
 		else
 		{
-			screen->Clear (0, 0, screen->width, screen->height, 0);
+			screen->Clear (0, 0, I_GetVideoWidth(), I_GetVideoHeight(), 0);
 		}
 	}
-	V_MarkRect (0, 0, screen->width, screen->height);
+	V_MarkRect (0, 0, I_GetVideoWidth(), I_GetVideoHeight());
 
 	// draw some of the text onto the screen
 	cx = 10;
@@ -227,7 +228,7 @@ void F_TextWrite (void)
 		}
 
 		w = hu_font[c]->width();
-		if (cx+w > screen->width)
+		if (cx+w > I_GetVideoWidth())
 			break;
 		screen->DrawPatchClean (hu_font[c], cx, cy);
 		cx+=w;
@@ -471,8 +472,8 @@ void F_CastDrawer (void)
 	screen->DrawPatchIndirect (W_CachePatch ("BOSSBACK"), 0, 0);
 
 	screen->DrawTextClean (CR_RED,
-		(screen->width - V_StringWidth (castorder[castnum].name) * CleanXfac)/2,
-		(screen->height * 180) / 200, castorder[castnum].name);
+		(I_GetVideoWidth() - V_StringWidth (castorder[castnum].name) * CleanXfac)/2,
+		(I_GetVideoHeight() * 180) / 200, castorder[castnum].name);
 
 	// draw the current frame in the middle of the screen
 	sprdef = &sprites[castsprite];
@@ -715,7 +716,7 @@ void F_BunnyScroll (void)
 	p1 = W_CachePatch ("PFUB2");
 	p2 = W_CachePatch ("PFUB1");
 
-	V_MarkRect (0, 0, screen->width, screen->height);
+	V_MarkRect (0, 0, I_GetVideoWidth(), I_GetVideoHeight());
 
 	scrolled = 320 - (finalecount-230)/2;
 	if (scrolled > 320)
@@ -723,7 +724,7 @@ void F_BunnyScroll (void)
 	if (scrolled < 0)
 		scrolled = 0;
 
-	if (screen->is8bit())
+	if (I_GetVideoBitDepth() == 8)
 	{
 		for ( x=0 ; x<320 ; x++)
 		{

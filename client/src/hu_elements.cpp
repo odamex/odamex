@@ -35,6 +35,7 @@
 #include "hu_elements.h"
 #include "p_ctf.h"
 #include "v_text.h"
+#include "i_video.h"
 #include "v_video.h"
 
 size_t P_NumPlayersInGame(void);
@@ -658,7 +659,7 @@ void EAPlayerColors(int x, int y,
 			                      BPART(playercolor),
 			                      GetDefaultPalette()->numcolors);
 
-			if (!screen->is8bit()) color = playercolor;
+			if (!I_GetVideoBitDepth() == 8) color = playercolor;
 
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
 			y += h + padding;
@@ -691,7 +692,7 @@ void EATeamPlayerColors(int x, int y,
 			                      BPART(playercolor),
 			                      GetDefaultPalette()->numcolors);
 
-			if (!screen->is8bit()) color = playercolor;
+			if (!I_GetVideoBitDepth() == 8) color = playercolor;
 
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
 			y += h + padding;
