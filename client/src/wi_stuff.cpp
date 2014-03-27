@@ -1309,7 +1309,7 @@ void WI_Ticker (void)
 
 	// [ML] If cl_autoscreenshot is on, take a screenshot 3 seconds
 	//		after the level end. (Multiplayer only)
-	if (multiplayer && bcnt == (3 * TICRATE))
+	if (cl_autoscreenshot && multiplayer && bcnt == (3 * TICRATE))
 	{
 		AddCommandString("screenshot");
 	}
