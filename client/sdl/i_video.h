@@ -28,6 +28,9 @@
 
 #include "doomtype.h"
 
+#include <string>
+#include <vector>
+
 class DCanvas;
 
 // [RH] True if the display is not in a window
@@ -139,5 +142,212 @@ class IVideo
 					DCanvas* dst, int dx, int dy, int dw, int dh);
 };
 
+
+// ****************************************************************************
+
+// forward declarations
+class IWindow;
+
+// ============================================================================
+//
+// IWindowSurface abstract base class interface
+//
+// Wraps the raw device surface and provides methods to access the raw surface
+// buffer.
+//
+// ============================================================================
+
+class IWindowSurface
+{
+public:
+	IWindowSurface(IWindow* window);
+	virtual ~IWindowSurface();
+
+	IWindow* getWindow()
+	{	return mWindow;	}
+
+	DCanvas* createCanvas();
+	void releaseCanvas(DCanvas* canvas);
+
+	virtual byte* getBuffer() = 0;
+	virtual const byte* getBuffer() const = 0;
+
+	virtual int getWidth() const = 0;
+	virtual int getHeight() const = 0;
+	virtual int getPitch() const = 0;
+
+	virtual int getBitsPerPixel() const = 0;
+
+	virtual int getBytesPerPixel() const
+	{	return getBitsPerPixel() / 8;	}
+
+	virtual void setPalette(const argb_t* palette) = 0;
+	virtual const argb_t* getPalette() const = 0;
+
+	virtual void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
+			int destx, int desty, int destw, int desth);
+
+private:
+	IWindow*			mWindow;
+
+	// Storage for all DCanvas objects allocated by this surface
+	typedef std::vector<DCanvas*> DCanvasCollection;
+	DCanvasCollection	mCanvasStore;
+};
+
+
+// ============================================================================
+//
+// IDummyWindowSurface class interface
+//
+// Implementation of IWindowSurface that is useful for headless clients. The
+// contents of the buffer are never used.
+//
+// ============================================================================
+
+class IDummyWindowSurface : public IWindowSurface
+{
+public:
+	IDummyWindowSurface(IWindow* window);
+	virtual ~IDummyWindowSurface();
+
+	virtual byte* getBuffer()
+	{	return mSurfaceBuffer;	}
+
+	virtual const byte* getBuffer() const
+	{	return mSurfaceBuffer;	}
+
+	virtual int getWidth() const
+	{	return 320;	}
+
+	virtual int getHeight() const
+	{	return 240;	}
+
+	virtual int getPitch() const
+	{	return 320;	}
+
+	virtual int getBitsPerPixel() const
+	{	return 8;	}
+
+	virtual void setPalette(const argb_t* palette)
+	{ }
+
+	virtual const argb_t* getPalette() const
+	{	return mPalette;	}	
+
+	virtual void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
+			int destx, int desty, int destw, int desth)
+	{ }
+
+private:
+	byte*			mSurfaceBuffer;
+	argb_t			mPalette[256];
+};
+
+
+// ****************************************************************************
+
+
+// ============================================================================
+//
+// IWindow abstract base class interface
+//
+// Defines an interface for video windows (including both windowed and
+// full-screen modes).
+// ============================================================================
+
+class IWindow
+{
+public:
+	IWindow(IWindowSurface* surface = NULL) :
+		mPrimarySurface(surface)
+	{ }
+
+	virtual ~IWindow()
+	{
+		delete mPrimarySurface;
+	}
+
+	IWindowSurface* getPrimarySurface()
+	{	return mPrimarySurface;	}
+
+	virtual int getWidth() const = 0;
+
+	virtual int getHeight() const = 0;
+
+	virtual int getBitsPerPixel() const = 0;
+
+	virtual int getBytesPerPixel() const
+	{	return getBitsPerPixel() / 8;	}
+
+	virtual void setWindowed() = 0;
+
+	virtual void setFullScreen() = 0;
+
+	virtual bool isFullScreen() const = 0;
+
+	virtual void resize(int width, int height) = 0;
+
+	virtual void setWindowTitle(const std::string& caption = "")
+	{ }
+
+	virtual std::string getVideoDriverName()
+	{	return "";	}
+
+	virtual void setPalette(const argb_t* palette)
+	{	mPrimarySurface->setPalette(palette);	}
+
+	virtual const argb_t* getPalette() const
+	{	return mPrimarySurface->getPalette();	}	
+	
+private:
+	IWindowSurface*		mPrimarySurface;
+};
+
+
+// ============================================================================
+//
+// IDummyWindow abstract base class interface
+//
+// denis - here is a blank implementation of IWindow that allows the client
+// to run without actual video output (e.g. script-controlled demo testing)
+//
+// ============================================================================
+
+class IDummyWindow : public IWindow
+{
+public:
+	IDummyWindow() :
+		IWindow(new IDummyWindowSurface(this))
+	{ }
+
+	virtual ~IDummyWindow()
+	{}
+
+	virtual int getWidth() const
+	{	return 0;	}
+
+	virtual int getHeight() const
+	{	return 0;	}
+
+	virtual int getBitsPerPixel() const
+	{	return 8;	}
+
+	virtual int getBytesPerPixel() const
+	{	return 1;	}
+
+	virtual void setWindowed()
+	{ }
+
+	virtual void setFullScreen()
+	{ }
+
+	virtual bool isFullScreen() const
+	{	return true;	}
+
+	virtual void resize(int width, int height)
+	{ }
+
+};
 
 #endif // __I_VIDEO_H__

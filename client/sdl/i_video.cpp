@@ -998,6 +998,265 @@ BEGIN_COMMAND (vid_currentmode)
 }
 END_COMMAND (vid_currentmode)
 
+
+
+
+
+
+
+
+// ****************************************************************************
+
+// Global IWindow instance for the game window
+static IWindow* window;
+
+
+// ============================================================================
+//
+// IWindowSurface abstract base class implementation
+//
+// Default implementation for the IWindowSurface base class.
+//
+// ============================================================================
+
+//
+// IWindowSurface::IWindowSurface
+//
+// Assigns the pointer to the window that owns this surface.
+//
+IWindowSurface::IWindowSurface(IWindow* window) :
+	mWindow(window)
+{ }
+
+
+//
+// IWindowSurface::~IWindowSurface
+//
+// Frees all of the DCanvas objects that were instantiated by this surface.
+//
+IWindowSurface::~IWindowSurface()
+{
+	// free all DCanvas objects allocated by this surface
+	for (DCanvasCollection::iterator it = mCanvasStore.begin(); it != mCanvasStore.end(); ++it)
+		delete *it;
+}
+
+
+template <typename SOURCE_PIXEL, typename DEST_PIXEL>
+void I_Blit(DEST_PIXEL* dest, SOURCE_PIXEL* source, int dest_pitch, int source_pitch, fixed_t stepx, fixed_t stepy)
+{
+	// we can't quickly convert from 32bpp source to 8bpp dest so don't bother
+	if (sizeof(SOURCE_PIXEL) == 4 && sizeof(DEST_PIXEL) == 1)
+		return;
+
+}
+
+
+//
+// Pixel format conversion function used by IWindowSurface::blit
+//
+template <typename SOURCE_PIXEL_T, typename DEST_PIXEL_T>
+static inline DEST_PIXEL_T ConvertPixel(SOURCE_PIXEL_T value, const argb_t* palette);
+
+template <>
+inline palindex_t ConvertPixel(palindex_t value, const argb_t* palette)
+{	return value;	}
+
+template <>
+inline argb_t ConvertPixel(palindex_t value, const argb_t* palette)
+{	return palette[value];	}
+
+template <>
+inline palindex_t ConvertPixel(argb_t value, const argb_t* palette)
+{	return 0;	}
+
+template <>
+inline argb_t ConvertPixel(argb_t value, const argb_t* palette)
+{	return value;	}
+
+
+template <typename SOURCE_PIXEL_T, typename DEST_PIXEL_T>
+static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
+					int destpitch, int srcpitch, int destw, int desth,
+					int xstep, int ystep, const argb_t* palette)
+{
+	fixed_t yfrac = 0;
+	for (int y = 0; y < desth; y++)
+	{
+		fixed_t xfrac = 0;
+
+		for (int x = 0; x < destw; x++)
+		{
+
+			dest[x] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
+			xfrac += xstep;
+		}
+
+		dest += destpitch;
+		yfrac += ystep;
+		
+		source += srcpitch * (yfrac >> FRACBITS);
+		yfrac -= (yfrac >> FRACBITS);
+	}
+}
+
+
+//
+// IWindowSurface::blit
+//
+// Blits a surface into this surface, automatically scaling the source image
+// to fit the destination dimensions.
+//
+void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int srcy, int srcw, int srch,
+			int destx, int desty, int destw, int desth)
+{
+	// clamp to source surface edges
+	srcw = std::min(srcx + srcw, srcx + source_surface->getWidth());
+	srch = std::min(srcy + srch, srcy + source_surface->getHeight());
+
+	if (srcw == 0 || srch == 0)
+		return;
+
+	// clamp to destination surface edges
+	destw = std::min(destx + destw, destx + getWidth());
+	desth = std::min(desty + desth, desty + getHeight());
+	
+	if (destw == 0 || desth == 0)
+		return;
+
+	fixed_t xstep = FixedDiv(srcw << FRACBITS, destw << FRACBITS);
+	fixed_t ystep = FixedDiv(srch << FRACBITS, desth << FRACBITS);
+
+	int srcbits = source_surface->getBitsPerPixel();
+	int destbits = getBitsPerPixel();
+	int srcpitch = source_surface->getPitch() * 8 / srcbits;
+	int destpitch = getPitch() * 8 / destbits;
+
+	if (srcbits == 8 && destbits == 8)
+	{
+		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitch + srcx;
+		palindex_t* dest = (palindex_t*)getBuffer() + desty * destpitch + destx;
+
+		BlitLoop(dest, source, destpitch, srcpitch, destw, desth, xstep, ystep, getPalette());
+	}
+	else if (srcbits == 8 && destbits == 32)
+	{
+		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitch + srcx;
+		argb_t* dest = (argb_t*)getBuffer() + desty * destpitch + destx;
+
+		BlitLoop(dest, source, destpitch, srcpitch, destw, desth, xstep, ystep, getPalette());
+	}
+	else if (srcbits == 32 && destbits == 8)
+	{
+		// we can't quickly convert from 32bpp source to 8bpp dest so don't bother
+		return;
+	}
+	else if (srcbits == 32 && destbits == 32)
+	{
+		const argb_t* source = (argb_t*)source_surface->getBuffer() + srcy * srcpitch + srcx;
+		argb_t* dest = (argb_t*)getBuffer() + desty * destpitch + destx;
+
+		BlitLoop(dest, source, destpitch, srcpitch, destw, desth, xstep, ystep, getPalette());
+	}
+}
+
+
+//
+// IWindowSurface::createCanvas
+//
+// Generic factory function to instantiate a DCanvas object capable of drawing
+// to this surface.
+//
+DCanvas* IWindowSurface::createCanvas()
+{
+	DCanvas* canvas = new DCanvas;
+
+	canvas->width = getWidth();
+	canvas->height = getHeight();
+	canvas->bits = getBitsPerPixel();
+	canvas->pitch = getPitch();
+
+	canvas->buffer = getBuffer();
+
+	canvas->m_LockCount = 0;
+	canvas->m_Palette = NULL;
+
+	mCanvasStore.push_back(canvas);
+
+	return canvas;
+}
+
+
+//
+// IWindowSurface::releaseCanvas
+//
+// Manually frees a DCanvas object that was instantiated by this surface
+// via the createCanvas function. Note that the destructor takes care of
+// freeing all of the instantiated DCanvas objects.
+//
+void IWindowSurface::releaseCanvas(DCanvas* canvas)
+{
+	if (canvas->buffer != getBuffer())
+		I_Error("IWindowSurface::releaseCanvas: releasing canvas not owned by this surface\n");	
+
+	// Remove the DCanvas pointer from the surface's list of allocated canvases
+	DCanvasCollection::iterator it = std::find(mCanvasStore.begin(), mCanvasStore.end(), canvas);
+	if (it != mCanvasStore.end())
+		mCanvasStore.erase(it);
+
+	delete canvas;
+}
+
+
+
+// ============================================================================
+//
+// IDummyWindowSurface class implementation
+//
+// Simple implementation of IWindowSurface for headless clients. 
+//
+// ============================================================================
+
+//
+// IDummyWindowSurface::IDummyWindowSurface
+//
+IDummyWindowSurface::IDummyWindowSurface(IWindow* window) :
+	IWindowSurface(window)
+{
+	// TODO: make mSurfaceBuffer aligned to 16-byte boundary
+	mSurfaceBuffer = new byte[getPitch() * getHeight() * getBytesPerPixel()];
+	memset(mPalette, 0, 256 * sizeof(argb_t));
+}
+
+
+//
+// IDummyWindowSurface::~IDummyWindowSurface
+//
+IDummyWindowSurface::~IDummyWindowSurface()
+{
+	delete [] mSurfaceBuffer;
+}
+
+
+// ****************************************************************************
+
+
+// ============================================================================
+//
+// IWindow abstract base class implementation
+//
+// ============================================================================
+
+
+
+
+
+
+
+
+
+
+
 VERSION_CONTROL (i_video_cpp, "$Id$")
 
 
