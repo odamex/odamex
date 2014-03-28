@@ -95,9 +95,6 @@ static void P_BobWeapon(player_t *player)
 fixed_t P_CalculateWeaponBobX()
 {
 	player_t* player = &displayplayer();
-	struct pspdef_s *psp = &player->psprites[player->psprnum];
-	if (psp->state != &states[weaponinfo[player->readyweapon].readystate])
-		return psp->sx;
 
 	float scale_amount = 1.0f;
 	if ((clientside && sv_allowmovebob) || (clientside && serverside))
@@ -110,8 +107,11 @@ fixed_t P_CalculateWeaponBobX()
 fixed_t P_CalculateWeaponBobY()
 {
 	player_t* player = &displayplayer();
+
+	// return real weapon height when raising / lowering weapon
 	struct pspdef_s *psp = &player->psprites[player->psprnum];
-	if (psp->state != &states[weaponinfo[player->readyweapon].readystate])
+	if (psp->state == &states[weaponinfo[player->readyweapon].upstate] ||
+		psp->state == &states[weaponinfo[player->readyweapon].downstate])
 		return psp->sy;
 
 	float scale_amount = 1.0f;
