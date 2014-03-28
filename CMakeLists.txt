@@ -57,9 +57,8 @@ endmacro(define_platform)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
-cmake_dependent_option(USE_MINIUPNP "Compile with miniUPnPc included in the source tree." ON "WIN32;APPLE" OFF)
-
 # MiniUPnPc
+cmake_dependent_option(USE_MINIUPNP "Compile with miniUPnPc included in the source tree." ON "WIN32;APPLE" OFF)
 if (USE_MINIUPNP)
   set(UPNPC_BUILD_STATIC ON CACHE INTERNAL "" FORCE)
   set(UPNPC_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
