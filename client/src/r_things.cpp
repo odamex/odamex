@@ -560,7 +560,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 
 	// clip the sprite to the left & right screen edges
 	int32_t lclip, rclip;
-	if (!R_ClipLineToFrustum(&t1, &t2, FRACUNIT, lclip, rclip))
+	if (!R_ClipLineToFrustum(&t1, &t2, NEARCLIP, lclip, rclip))
 		return NULL;
 
 	// calculate how much of the sprite was clipped from the left side

@@ -71,6 +71,8 @@ s|(\s*VALUE\s*"ProductVersion",\s*")\d*\.?\d*\.?\d*(\\0")|$1$version$2|
 
 [installer/windows/odamex.iss]
 s|(AppVerName=Odamex\s*)\d*\.?\d*\.?\d*|$1$version|
+s|(AppVersion=)\d*\.?\d*\.?\d*|$1$version|
+s|(VersionInfoVersion=)\d*\.?\d*\.?\d*|$1$version|
 s|(OutputBaseFilename=odamex-win32-)\d*\.?\d*\.?\d*|$1$version|
 s|(VersionInfoProductVersion=)\d*\.?\d*\.?\d*|$1$version|
 
