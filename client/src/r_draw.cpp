@@ -980,8 +980,8 @@ void R_DrawFuzzColumnP()
 	// adjust the borders (prevent buffer over/under-reads)
 	if (dcol.yl <= 0)
 		dcol.yl = 1;
-	if (dcol.yh >= realviewheight - 1)
-		dcol.yh = realviewheight - 2;
+	if (dcol.yh >= viewheight - 1)
+		dcol.yh = viewheight - 2;
 
 	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>(FB_COLDEST_P, dcol);
 
@@ -1323,8 +1323,8 @@ void R_DrawFuzzColumnD()
 	// adjust the borders (prevent buffer over/under-reads)
 	if (dcol.yl <= 0)
 		dcol.yl = 1;
-	if (dcol.yh >= realviewheight - 1)
-		dcol.yh = realviewheight - 2;
+	if (dcol.yh >= viewheight - 1)
+		dcol.yh = viewheight - 2;
 
 	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>(FB_COLDEST_D, dcol);
 
