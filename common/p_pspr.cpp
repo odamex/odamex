@@ -95,6 +95,9 @@ static void P_BobWeapon(player_t *player)
 fixed_t P_CalculateWeaponBobX()
 {
 	player_t* player = &displayplayer();
+	struct pspdef_s *psp = &player->psprites[player->psprnum];
+	if (psp->state != &states[weaponinfo[player->readyweapon].readystate])
+		return psp->sx;
 
 	float scale_amount = 1.0f;
 	if ((clientside && sv_allowmovebob) || (clientside && serverside))
@@ -103,15 +106,14 @@ fixed_t P_CalculateWeaponBobX()
 	angle_t angle = (128 * level.time) & FINEMASK;
 	return FRACUNIT + scale_amount * FixedMul(player->bob, finecosine[angle]);
 }
-	
+
 fixed_t P_CalculateWeaponBobY()
 {
 	player_t* player = &displayplayer();
 
 	// return real weapon height when raising / lowering weapon
 	struct pspdef_s *psp = &player->psprites[player->psprnum];
-	if (psp->state == &states[weaponinfo[player->readyweapon].upstate] ||
-		psp->state == &states[weaponinfo[player->readyweapon].downstate])
+	if (psp->state != &states[weaponinfo[player->readyweapon].readystate])
 		return psp->sy;
 
 	float scale_amount = 1.0f;
@@ -121,7 +123,7 @@ fixed_t P_CalculateWeaponBobY()
 	angle_t angle = ((128 * level.time) & FINEMASK) & (FINEANGLES / 2 - 1);
 	return WEAPONTOP + scale_amount * FixedMul(player->bob, finesine[angle]);
 }
-	
+
 
 
 //
@@ -859,7 +861,7 @@ fixed_t P_BulletSlope(AActor *mo)
 // shooter's network lag.
 //
 
-typedef enum 
+typedef enum
 {
 	SPREAD_NONE,
 	SPREAD_NORMAL,
