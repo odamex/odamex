@@ -57,10 +57,6 @@ class SDLVideo : public IVideo
 	virtual void UpdateScreen (DCanvas *canvas);
 	virtual void ReadScreen (byte *block);
 
-	virtual int GetModeCount (void);
-	virtual void StartModeIterator ();
-	virtual bool NextMode (int *width, int *height);
-
 	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false);
 	virtual void ReleaseSurface (DCanvas *scrn);
 	virtual void LockSurface (DCanvas *scrn);

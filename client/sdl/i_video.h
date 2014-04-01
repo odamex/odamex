@@ -78,8 +78,7 @@ void I_ReadScreen (byte *scr);
 void I_BeginRead (void);
 void I_EndRead (void);
 
-void I_SetWindowCaption(const std::string& caption);
-void I_SetWindowCaption(void);
+void I_SetWindowCaption(const std::string& caption = "");
 void I_SetWindowIcon(void);
 
 bool I_CheckResolution (int width, int height);
@@ -138,10 +137,6 @@ class IVideo
 		
 	virtual void UpdateScreen(DCanvas* canvas);
 	virtual void ReadScreen (byte *block);
-
-	virtual int GetModeCount ();
-	virtual void StartModeIterator ();
-	virtual bool NextMode (int *width, int *height);
 
 	virtual DCanvas* AllocateSurface(int width, int height, int bits, bool primary = false);
 	virtual void ReleaseSurface(DCanvas* scrn);

@@ -107,65 +107,11 @@ SDLVideo::SDLVideo(int parm)
     }
     #endif
 
-    I_SetWindowCaption();
-
    sdlScreen = NULL;
    infullscreen = false;
    screenw = screenh = screenbits = 0;
    palettechanged = false;
-
-   // Get Video modes
-   vidModeIterator = 0;
-   vidModeList.clear();
-
-	// NOTE(jsd): We only support 32-bit and 8-bit color modes. No 24-bit or 16-bit.
-
-	// Fetch the list of fullscreen modes for this bpp setting:
-	SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_SWSURFACE);
-
-   if(!sdllist)
-   {
-	  // no fullscreen modes, but we could still try windowed
-		Printf(PRINT_HIGH, "No fullscreen video modes are available.\n");
-	  return;
-   }
-   else if(sdllist == (SDL_Rect **)-1)
-   {
-      I_FatalError("SDL_ListModes returned -1. Internal error.\n");
-      return;
-   }
-   else
-   {
-      vidMode_t CustomVidModes[] =
-      {
-			 { 640, 480 }
-			,{ 640, 400 }
-			,{ 320, 240 }
-			,{ 320, 200 }
-      };
-
-      // Add in generic video modes reported by SDL
-      for(int i = 0; sdllist[i]; ++i)
-      {
-        vidMode_t vm;
-
-        vm.width = sdllist[i]->w;
-        vm.height = sdllist[i]->h;
-
-        vidModeList.push_back(vm);
-      }
-
-      // Now custom video modes to be added
-      for (size_t i = 0; i < STACKARRAY_LENGTH(CustomVidModes); ++i)
-        vidModeList.push_back(CustomVidModes[i]);
-	}
-
-      // Reverse sort the modes
-      std::sort(vidModeList.begin(), vidModeList.end(), std::greater<vidMode_t>());
-
-      // Get rid of any duplicates (SDL some times reports duplicates as well)
-      vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end()), vidModeList.end());
-   }
+}
 
 std::string SDLVideo::GetVideoDriverName()
 {
@@ -222,7 +168,7 @@ bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 {
 	Uint32 flags = (vid_vsync ? SDL_HWSURFACE | SDL_DOUBLEBUF : SDL_SWSURFACE);
 
-	if (fullscreen && !vidModeList.empty())
+	if (fullscreen)
 		flags |= SDL_FULLSCREEN;
 	else
 		flags |= SDL_RESIZABLE;
@@ -349,34 +295,6 @@ void SDLVideo::ReadScreen (byte *block)
 
    if(unlock)
       SDL_UnlockSurface(sdlScreen);
-}
-
-
-int SDLVideo::GetModeCount ()
-{
-   return vidModeList.size();
-}
-
-
-void SDLVideo::StartModeIterator ()
-{
-   vidModeIterator = 0;
-}
-
-bool SDLVideo::NextMode (int *width, int *height)
-{
-	std::vector<vidMode_t>::iterator it;
-
-	it = vidModeList.begin() + vidModeIterator;
-	if (it == vidModeList.end())
-		return false;
-
-	vidMode_t vm = *it;
-
-	*width = vm.width;
-	*height = vm.height;
-	vidModeIterator++;
-	return true;
 }
 
 
@@ -842,9 +760,9 @@ void ISDL12Window::buildVideoModeList()
 	else if (sdlmodes == (SDL_Rect**)-1)
 	{
 		// SDL 1.2 documentation indicates the following
-		// -1: Any dimension is okay for the given format 
-		//
-		// Should this be handled properly?
+		// "-1: Any dimension is okay for the given format"
+		// Shouldn't happen with SDL_FULLSCREEN flag though
+
 		I_FatalError("SDL_ListModes returned -1. Internal error.\n");
 		return;
 	}
@@ -858,7 +776,9 @@ void ISDL12Window::buildVideoModeList()
 	// add the full screen video modes reported by SDL	
 	while (*sdlmodes)
 	{
-		mVideoModes.push_back(IVideoMode((*sdlmodes)->w, (*sdlmodes)->h));
+		int width = (*sdlmodes)->w, height = (*sdlmodes)->h;
+		if (width > 0 && width <= MAXWIDTH && height > 0 && height <= MAXHEIGHT)
+			mVideoModes.push_back(IVideoMode(width, height));
 		++sdlmodes;
 	}
 

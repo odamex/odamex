@@ -850,7 +850,6 @@ void V_Init (void)
 	V_InitPalette ();
 
 	V_InitConChars (0xf7);
-	int wi = I_GetSurfaceWidth();
 	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight(), true);
 }
 

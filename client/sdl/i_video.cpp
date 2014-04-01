@@ -124,7 +124,7 @@ CVAR_FUNC_IMPL (vid_overscan)
 		Video->SetOverscan(var);
 }
 
-void STACK_ARGS I_ShutdownHardware ()
+void STACK_ARGS I_ShutdownHardware()
 {
 	if (Video)
 		delete Video, Video = NULL;
@@ -159,17 +159,14 @@ void I_InitHardware()
 	int height = I_GetParmValue("-height");
 	int bpp = I_GetParmValue("-bits");
 	
-	if (width == 0)
+	if (width == 0 && height == 0)
 	{
-		if (height == 0)
-		{
-			width = vid_defwidth.asInt();
-			height = vid_defheight.asInt();
-		}
-		else
-		{
-			width = (height * 8) / 6;
-		}
+		width = vid_defwidth.asInt();
+		height = vid_defheight.asInt();
+	}
+	else if (width == 0)
+	{
+		width = (height * 8) / 6;
 	}
 	else if (height == 0)
 	{
@@ -195,20 +192,21 @@ void I_InitHardware()
 
 	if (Args.CheckParm("-novideo"))
 	{
-		Video = new IVideo();
 		window = new IDummyWindow();
+		Video = new IVideo();
 	}
 	else
 	{
-		Video = new SDLVideo(0);
 		window = new ISDL12Window(width, height, bpp, fullscreen, vsync);
+		Video = new SDLVideo(0);
 	}
 
-	if (Video == NULL)
+	if (Video == NULL || window == NULL)
 		I_FatalError ("Failed to initialize display");
 
 	atterm(I_ShutdownHardware);
 
+	I_SetWindowCaption();
 	Video->SetWindowedScale(vid_winscale);
 }
 
@@ -239,7 +237,10 @@ void I_TempUpdate ()
 void I_FinishUpdate ()
 {
 	if (noblit == false)
+	{
+		window->refresh();
 		Video->UpdateScreen(screen);
+	}
 
 	screen->Unlock(); // SoM: we should probably do this, eh?
 }
@@ -249,9 +250,10 @@ void I_ReadScreen (byte *block)
 	Video->ReadScreen (block);
 }
 
-void I_SetPalette (DWORD *pal)
+void I_SetPalette(argb_t* palette)
 {
-	Video->SetPalette (pal);
+	window->setPalette(palette);
+	Video->SetPalette(palette);
 }
 
 
@@ -260,23 +262,17 @@ void I_SetWindowCaption(const std::string& caption)
 {
 	// [Russell] - A basic version string that will eventually get replaced
 	//             better than "Odamex SDL Alpha Build 001" or something :P    
-	std::ostringstream title;
 
-	title << "Odamex - " << DOTVERSIONSTR;
+	std::string title("Odamex - ");
+	title += DOTVERSIONSTR;
 		
-	if(caption.size())
-	{
-		title << " " << caption;
-	}
+	if (!caption.empty())
+		title += " " + caption;
 
-	// [Russell] - Update window caption with name
-	SDL_WM_SetCaption (title.str().c_str(), title.str().c_str());
+//	SDL_WM_SetCaption (title.str().c_str(), title.str().c_str());
+	window->setWindowTitle(title);
 }
 
-void I_SetWindowCaption(void)
-{
-	I_SetWindowCaption("");
-}
 
 // Set the window icon
 void I_SetWindowIcon(void)
@@ -689,26 +685,38 @@ bool I_SetOverscan (float scale)
 
 int I_GetVideoWidth()
 {
+	return window->getWidth();
+
+/*
 	if (Video)
 		return Video->GetWidth();
 	else
 		return 0;
+*/
 }
 
 int I_GetVideoHeight()
 {
+	return window->getHeight();
+
+/*
 	if (Video)
 		return Video->GetHeight();
 	else
 		return 0;
+*/
 }
 
 int I_GetVideoBitDepth()
 {
+	return window->getBitsPerPixel();
+
+/*
 	if (Video)
 		return Video->GetBitDepth();
 	else
 		return 0;
+*/
 }
 
 bool I_SetMode(int &width, int &height, int &bits)
@@ -746,7 +754,7 @@ bool I_SetMode(int &width, int &height, int &bits)
 	tbits = bits;
 
 	// Try the closest resolution:
-	I_ClosestResolution (&width, &height);
+	I_ClosestResolution(&width, &height);
 	if (Video->SetMode(width, height, tbits, fs))
 		return true;
 
@@ -761,77 +769,74 @@ bool I_SetMode(int &width, int &height, int &bits)
 	//			width, height, bits);
 }
 
+
+//
+// I_CheckResolution
+//
+// Returns true if the application window can be resized to the specified
+// dimensions. For full-screen windows, this is limited to supported
+// video modes only.
+//
 bool I_CheckResolution(int width, int height)
 {
-	int twidth, theight;
-
-	Video->FullscreenChanged(vid_fullscreen ? true : false);
-	Video->StartModeIterator();
-	while (Video->NextMode (&twidth, &theight))
+	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
+	for (IVideoModeList::const_iterator it = modes->begin(); it != modes->end(); ++it)
 	{
-		if (width == twidth && height == theight)
+		if (it->getWidth() == width && it->getHeight() == height)
 			return true;
 	}
 
 	// [AM] We only care about correct resolutions if we're fullscreen.
-	return !vid_fullscreen;
+	return !(I_GetWindow()->isFullScreen());
 }
 
-void I_ClosestResolution (int *width, int *height)
-{
-	int twidth, theight;
-	int cwidth = 0, cheight = 0;
-	int iteration;
-	DWORD closest = 4294967295u;
 
-	Video->FullscreenChanged (vid_fullscreen ? true : false);
-	for (iteration = 0; iteration < 2; iteration++)
+void I_ClosestResolution(int* width, int* height)
+{
+	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
+
+	unsigned int closest_dist = MAXWIDTH * MAXWIDTH + MAXHEIGHT * MAXHEIGHT;
+	int closest_width = 0, closest_height = 0;
+
+//	Video->FullscreenChanged (vid_fullscreen ? true : false);
+
+	for (int iteration = 0; iteration < 2; iteration++)
 	{
-		Video->StartModeIterator ();
-		while (Video->NextMode (&twidth, &theight))
+		for (IVideoModeList::const_iterator it = modes->begin(); it != modes->end(); ++it)
 		{
-			if (twidth == *width && theight == *height)
+			if (it->getWidth() == *width && it->getHeight() == *height)
 				return;
 
-			if (iteration == 0 && (twidth < *width || theight < *height))
+			if (iteration == 0 && (it->getWidth() < *width || it->getHeight() < *height))
 				continue;
 
-			DWORD dist = (twidth - *width) * (twidth - *width)
-				+ (theight - *height) * (theight - *height);
-
-			if (dist < closest)
+			unsigned int dist = (it->getWidth() - *width) * (it->getWidth() - *width)
+					+ (it->getHeight() - *height) * (it->getHeight() - *height);
+			
+			if (dist < closest_dist)
 			{
-				closest = dist;
-				cwidth = twidth;
-				cheight = theight;
+				closest_dist = dist;
+				closest_width = it->getWidth();
+				closest_height = it->getHeight();
 			}
 		}
-		if (closest != 4294967295u)
+	
+		if (closest_width > 0 && closest_height > 0)
 		{
-			*width = cwidth;
-			*height = cheight;
+			*width = closest_width;
+			*height = closest_height;
 			return;
 		}
 	}
 }
 
-bool I_CheckVideoDriver (const char *name)
+bool I_CheckVideoDriver(const char* name)
 {
-	if(!name)
+	if (!name)
 		return false;
-
-	return (std::string(name) == Video->GetVideoDriverName());
+	return iequals(I_GetWindow()->getVideoDriverName(), name);
 }
 
-void I_StartModeIterator ()
-{
-	Video->StartModeIterator ();
-}
-
-bool I_NextMode (int *width, int *height)
-{
-	return Video->NextMode (width, height);
-}
 
 DCanvas *I_AllocateScreen (int width, int height, int bits, bool primary)
 {
@@ -1015,10 +1020,6 @@ void IVideo::SetOldPalette (byte *doompalette) {}
 void IVideo::UpdateScreen (DCanvas *canvas) {}
 void IVideo::ReadScreen (byte *block) {}
 
-int IVideo::GetModeCount () { return 1; }
-void IVideo::StartModeIterator () {}
-bool IVideo::NextMode (int *width, int *height) { static int w = 320, h = 240; width = &w; height = &h; return false; }
-
 DCanvas *IVideo::AllocateSurface (int width, int height, int bits, bool primary)
 {
 	DCanvas *scrn = new DCanvas;
@@ -1046,24 +1047,27 @@ void IVideo::UnlockSurface (DCanvas *scrn)  {}
 bool IVideo::Blit (DCanvas *src, int sx, int sy, int sw, int sh,
 			   DCanvas *dst, int dx, int dy, int dw, int dh) { return true; }
 
-BEGIN_COMMAND (vid_listmodes)
+BEGIN_COMMAND(vid_listmodes)
 {
-	int width, height;
+	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
 
-	Video->StartModeIterator ();
-		while (Video->NextMode (&width, &height))
-		if (width == DisplayWidth && height == DisplayHeight)
-			Printf_Bold ("%4d x%5d\n", width, height);
-			else
-			Printf (PRINT_HIGH, "%4d x%5d\n", width, height);
+	for (IVideoModeList::const_iterator it = modes->begin(); it != modes->end(); ++it)
+	{
+		if (it->getWidth() == I_GetWindow()->getWidth() && it->getHeight() == I_GetWindow()->getHeight())
+			Printf_Bold("%4d x%5d\n", it->getWidth(), it->getHeight());
+		else
+			Printf(PRINT_HIGH, "%4d x%5d\n", it->getWidth(), it->getHeight());
+	}
 }
-END_COMMAND (vid_listmodes)
+END_COMMAND(vid_listmodes)
 
-BEGIN_COMMAND (vid_currentmode)
+BEGIN_COMMAND(vid_currentmode)
 {
-	Printf (PRINT_HIGH, "%dx%dx%d\n", DisplayWidth, DisplayHeight, DisplayBits);
+	Printf(PRINT_HIGH, "%dx%dx%d\n",
+			I_GetWindow()->getWidth(), I_GetWindow()->getHeight(),
+			I_GetWindow()->getBitsPerPixel());
 }
-END_COMMAND (vid_currentmode)
+END_COMMAND(vid_currentmode)
 
 
 
@@ -1322,10 +1326,7 @@ IWindow* I_GetWindow()
 //
 byte* I_GetFrameBuffer()
 {
-	if (!window)
-		return NULL;
-
-	return window->getPrimarySurface()->getBuffer();
+	return I_GetWindow()->getPrimarySurface()->getBuffer();
 }
 
 
@@ -1334,10 +1335,7 @@ byte* I_GetFrameBuffer()
 //
 int I_GetSurfaceWidth()
 {
-//	return surface_width;
-	if (!window)
-		return 0;
-	return window->getPrimarySurface()->getWidth();
+	return I_GetWindow()->getPrimarySurface()->getWidth();
 }
 
 
@@ -1346,10 +1344,7 @@ int I_GetSurfaceWidth()
 //
 int I_GetSurfaceHeight()
 {
-//	return surface_height;
-	if (!window)
-		return 0;
-	return window->getPrimarySurface()->getHeight();
+	return I_GetWindow()->getPrimarySurface()->getHeight();
 }
 
 
@@ -1360,8 +1355,7 @@ int I_GetSurfaceHeight()
 //
 void I_SetWindowSize(int width, int height)
 {
-	if (window)
-		window->resize(width, height);
+	I_GetWindow()->resize(width, height);
 }
 
 
@@ -1373,8 +1367,7 @@ void I_SetWindowSize(int width, int height)
 //
 void I_SetSurfaceSize(int width, int height)
 {
-	if (window)
-		window->resize(width, height);
+	I_GetWindow()->resize(width, height);
 }
 
 
