@@ -1334,7 +1334,10 @@ byte* I_GetFrameBuffer()
 //
 int I_GetSurfaceWidth()
 {
-	return surface_width;
+//	return surface_width;
+	if (!window)
+		return 0;
+	return window->getPrimarySurface()->getWidth();
 }
 
 
@@ -1343,7 +1346,10 @@ int I_GetSurfaceWidth()
 //
 int I_GetSurfaceHeight()
 {
-	return surface_height;
+//	return surface_height;
+	if (!window)
+		return 0;
+	return window->getPrimarySurface()->getHeight();
 }
 
 

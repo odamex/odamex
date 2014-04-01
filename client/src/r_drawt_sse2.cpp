@@ -150,9 +150,9 @@ void R_DrawSpanD_SSE2 (void)
 
 #ifdef RANGECHECK
 	if (dspan.x2 < dspan.x1
-		|| dspan.x1<0
-		|| dspan.x2>=I_GetVideoWidth()
-		|| dspan.y>I_GetVideoHeight())
+		|| dspan.x1 < 0
+		|| dspan.x2 >= I_GetSurfaceWidth()
+		|| dspan.y >= I_GetSurfaceHeight())
 	{
 		I_Error ("R_DrawSpan: %i to %i at %i",
 				 dspan.x1, dspan.x2, dspan.y);
@@ -250,9 +250,9 @@ void R_DrawSlopeSpanD_SSE2 (void)
 
 #ifdef RANGECHECK 
 	if (dspan.x2 < dspan.x1
-		|| dspan.x1<0
-		|| dspan.x2>=I_GetVideoWidth()
-		|| dspan.y>I_GetVideoHeight())
+		|| dspan.x1 < 0
+		|| dspan.x2 >= I_GetSurfaceWidth()
+		|| dspan.y >= I_GetSurfaceHeight())
 	{
 		I_Error ("R_DrawSlopeSpan: %i to %i at %i",
 				 dspan.x1, dspan.x2, dspan.y);

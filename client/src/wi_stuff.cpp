@@ -510,8 +510,8 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 		right = left + c[i]->width();
 		bottom = top + c[i]->height();
 
-		if (left >= 0 && right < I_GetVideoWidth() &&
-            top >= 0 && bottom < I_GetVideoHeight())
+		if (left >= 0 && right < I_GetSurfaceWidth() &&
+            top >= 0 && bottom < I_GetSurfaceHeight())
 		{
 			fits = true;
 		}
@@ -523,7 +523,7 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 
 	if (fits && i < numpatches) // haleyjd: bug fix
 	{
-		FB->DrawPatchIndirect (c[i], lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
+		FB->DrawPatchIndirect(c[i], lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
 	}
 	else
 	{

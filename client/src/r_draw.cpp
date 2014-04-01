@@ -452,7 +452,7 @@ template<typename PIXEL_T, typename COLORFUNC>
 static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
 #ifdef RANGECHECK 
-	if (drawcolumn.x >= I_GetVideoWidth() || drawcolumn.yl < 0 || drawcolumn.yh >= I_GetVideoHeight())
+	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
 	{
 		Printf (PRINT_HIGH, "R_FillColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
 		return;
@@ -491,7 +491,7 @@ template<typename PIXEL_T, typename COLORFUNC>
 static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
 #ifdef RANGECHECK 
-	if (drawcolumn.x >= I_GetVideoWidth() || drawcolumn.yl < 0 || drawcolumn.yh >= I_GetVideoHeight())
+	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
 	{
 		Printf (PRINT_HIGH, "R_DrawColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
 		return;
@@ -1448,7 +1448,7 @@ void R_InitBuffer(int width, int height)
 	// Handle resize,
 	//	e.g. smaller view windows
 	//	with border and/or status bar.
-	viewwindowx = (I_GetVideoWidth() - windowwidth) >> 1;
+	viewwindowx = (I_GetSurfaceWidth() - windowwidth) >> 1;
 
 	// [RH] Adjust column offset according to bytes per pixel
 	//		and detail mode
@@ -1459,7 +1459,7 @@ void R_InitBuffer(int width, int height)
 		columnofs[i] = (viewwindowx + i) << xshift;
 
 	// Same with base row offset.
-	if (windowwidth == I_GetVideoWidth())
+	if (windowwidth == I_GetSurfaceWidth())
 		viewwindowy = 0;
 	else
 		viewwindowy = (ST_Y - windowheight) >> 1;
@@ -1505,7 +1505,7 @@ void R_DrawViewBorder (void)
 	int offset, size;
 	gameborder_t *border;
 
-	if (realviewwidth == I_GetVideoWidth()) {
+	if (realviewwidth == I_GetSurfaceWidth()) {
 		return;
 	}
 
@@ -1513,10 +1513,10 @@ void R_DrawViewBorder (void)
 	offset = border->offset;
 	size = border->size;
 
-	R_DrawBorder(0, 0, I_GetVideoWidth(), viewwindowy);
+	R_DrawBorder(0, 0, I_GetSurfaceWidth(), viewwindowy);
 	R_DrawBorder(0, viewwindowy, viewwindowx, realviewheight + viewwindowy);
-	R_DrawBorder(viewwindowx + realviewwidth, viewwindowy, I_GetVideoWidth(), realviewheight + viewwindowy);
-	R_DrawBorder(0, viewwindowy + realviewheight, I_GetVideoWidth(), ST_Y);
+	R_DrawBorder(viewwindowx + realviewwidth, viewwindowy, I_GetSurfaceWidth(), realviewheight + viewwindowy);
+	R_DrawBorder(0, viewwindowy + realviewheight, I_GetSurfaceWidth(), ST_Y);
 
 	for (x = viewwindowx; x < viewwindowx + realviewwidth; x += size)
 	{
@@ -1545,7 +1545,7 @@ void R_DrawViewBorder (void)
 	screen->DrawPatch (W_CachePatch (border->br),
 		viewwindowx+realviewwidth, viewwindowy+realviewheight);
 
-	V_MarkRect(0, 0, I_GetVideoWidth(), ST_Y);
+	V_MarkRect(0, 0, I_GetSurfaceWidth(), ST_Y);
 }
 
 // ============================================================================

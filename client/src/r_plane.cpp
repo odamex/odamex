@@ -277,8 +277,8 @@ static visplane_t *new_visplane(unsigned hash)
 
 	if (!check)
 	{
-		check = (visplane_t *)Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetVideoWidth());
-		check->bottom = &check->top[I_GetVideoWidth() + 2];
+		check = (visplane_t *)Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetSurfaceWidth());
+		check->bottom = &check->top[I_GetSurfaceWidth() + 2];
 	}
 	else
 		if (!(freetail = freetail->next))
@@ -524,7 +524,7 @@ void R_DrawSlopedPlane(visplane_t *pl)
 
 	angle_t fovang = ANG(consoleplayer().fov / 2.0f);
 	float slopetan = FIXED2FLOAT(finetangent[fovang >> ANGLETOFINESHIFT]);
-	float slopevis = 8.0 * slopetan * 16.0 * 320.0 / float(I_GetVideoWidth());
+	float slopevis = 8.0 * slopetan * 16.0 * 320.0 / float(I_GetSurfaceWidth());
 	
 	plight = (slopevis * ixscale * iyscale) / (zat - viewpos.z);
 	shade = 256.0 * 2.0 - (pl->lightlevel + 16.0) * 256.0 / 128.0;
@@ -690,21 +690,24 @@ BOOL R_PlaneInitData (void)
 	delete[] spanstart;
 	delete[] yslope;
 
-	floorclip = new int[I_GetVideoWidth()];
-	ceilingclip = new int[I_GetVideoWidth()];
+	int surface_width = I_GetSurfaceWidth();
+	int surface_height = I_GetSurfaceHeight();
 
-	floorclipinitial = new int[I_GetVideoWidth()];
-	ceilingclipinitial = new int[I_GetVideoWidth()];
+	floorclip = new int[surface_width];
+	ceilingclip = new int[surface_width];
 
-	for (int i = 0; i < I_GetVideoWidth(); i++)
+	floorclipinitial = new int[surface_width];
+	ceilingclipinitial = new int[surface_width];
+
+	for (int i = 0; i < surface_width; i++)
 	{
 		ceilingclipinitial[i] = -1;
 		floorclipinitial[i] = viewheight;
 	}
 
-	spanstart = new int[I_GetVideoHeight()];
+	spanstart = new int[surface_height];
 
-	yslope = new fixed_t[I_GetVideoHeight()];
+	yslope = new fixed_t[surface_height];
 
 	// Free all visplanes and let them be re-allocated as needed.
 	pl = freetail;

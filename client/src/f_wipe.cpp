@@ -84,7 +84,7 @@ static void Wipe_StartMelt()
 
 	// copy each column of the current screen image to wipe_screen
 	// each column is transposed and stored in row-major form for ease of use
-	screen->GetTransposedBlock(0, 0, I_GetVideoWidth(), I_GetVideoHeight(), wipe_screen);
+	screen->GetTransposedBlock(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), wipe_screen);
 }
 
 static void Wipe_StopMelt()
@@ -121,9 +121,9 @@ static inline void Wipe_DrawMeltLoop(int x, int starty)
 {
 	const int pitch = screen->pitch / sizeof(PIXEL_T);
 	PIXEL_T* to = (PIXEL_T*)screen->buffer + pitch * starty + x;
-	const PIXEL_T* from = (PIXEL_T*)wipe_screen + I_GetVideoHeight() * x;
+	const PIXEL_T* from = (PIXEL_T*)wipe_screen + I_GetSurfaceHeight() * x;
 
-	int y = I_GetVideoHeight() - starty;
+	int y = I_GetSurfaceHeight() - starty;
 	while (y--)
 	{
 		*to = *from;
@@ -134,12 +134,12 @@ static inline void Wipe_DrawMeltLoop(int x, int starty)
 
 static void Wipe_DrawMelt()
 {
-	for (int x = 0; x < I_GetVideoWidth(); x++)
+	for (int x = 0; x < I_GetSurfaceWidth(); x++)
 	{
-		int wormx = x * 320 / I_GetVideoWidth();
+		int wormx = x * 320 / I_GetSurfaceWidth();
 		int wormy = worms[wormx] > 0 ? worms[wormx] : 0;
 
-		wormy = wormy * I_GetVideoHeight() / 200;
+		wormy = wormy * I_GetSurfaceHeight() / 200;
 
 		if (I_GetVideoBitDepth() == 8)
 			Wipe_DrawMeltLoop<palindex_t>(x, wormy);
@@ -170,7 +170,7 @@ static void Wipe_StartBurn()
 	density = 4;
 	burntime = 0;
 	voop = 0;
-	screen->GetBlock(0, 0, I_GetVideoWidth(), I_GetVideoHeight(), (byte*)wipe_screen);
+	screen->GetBlock(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), (byte*)wipe_screen);
 }
 
 static void Wipe_StopBurn()
@@ -269,12 +269,12 @@ static bool Wipe_TickBurn()
 
 	int x, y;
 	fixed_t firex, firey;
-	const fixed_t xstep = (FIREWIDTH * FRACUNIT) / I_GetVideoWidth();
-	const fixed_t ystep = (FIREHEIGHT * FRACUNIT) / I_GetVideoHeight();
+	const fixed_t xstep = (FIREWIDTH * FRACUNIT) / I_GetSurfaceWidth();
+	const fixed_t ystep = (FIREHEIGHT * FRACUNIT) / I_GetSurfaceHeight();
 
-	for (y = 0, firey = 0; y < I_GetVideoHeight(); y++, firey += ystep)
+	for (y = 0, firey = 0; y < I_GetSurfaceHeight(); y++, firey += ystep)
 	{
-		for (x = 0, firex = 0; x < I_GetVideoWidth(); x++, firex += xstep)
+		for (x = 0, firex = 0; x < I_GetSurfaceWidth(); x++, firex += xstep)
 		{
 			int fglevel = burnarray[(firex>>FRACBITS)+(firey>>FRACBITS)*FIREWIDTH] / 2;
 
@@ -296,12 +296,12 @@ static inline void Wipe_DrawBurnGeneric()
 	fixed_t firex, firey;
 	int x, y;
 
-	const fixed_t xstep = (FIREWIDTH * FRACUNIT) / I_GetVideoWidth();
-	const fixed_t ystep = (FIREHEIGHT * FRACUNIT) / I_GetVideoHeight();
+	const fixed_t xstep = (FIREWIDTH * FRACUNIT) / I_GetSurfaceWidth();
+	const fixed_t ystep = (FIREHEIGHT * FRACUNIT) / I_GetSurfaceHeight();
 
-	for (y = 0, firey = 0; y < I_GetVideoHeight(); y++, firey += ystep)
+	for (y = 0, firey = 0; y < I_GetSurfaceHeight(); y++, firey += ystep)
 	{
-		for (x = 0, firex = 0; x < I_GetVideoWidth(); x++, firex += xstep)
+		for (x = 0, firex = 0; x < I_GetSurfaceWidth(); x++, firex += xstep)
 		{
 			int fglevel;
 
@@ -318,7 +318,7 @@ static inline void Wipe_DrawBurnGeneric()
 			}
 		}
 
-		from += I_GetVideoWidth();
+		from += I_GetSurfaceWidth();
 		to += pitch;
 	}
 } 
@@ -339,7 +339,7 @@ static int fade = 0;
 static void Wipe_StartFade()
 {
 	fade = 0;
-	screen->GetBlock(0, 0, I_GetVideoWidth(), I_GetVideoHeight(), wipe_screen);
+	screen->GetBlock(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), wipe_screen);
 }
 
 static void Wipe_StopFade()
@@ -361,12 +361,12 @@ static inline void Wipe_DrawFadeGeneric()
 
 	const fixed_t bglevel = MAX(64 - fade, 0);
 
-	for (int y = 0; y < I_GetVideoHeight(); y++)
+	for (int y = 0; y < I_GetSurfaceHeight(); y++)
 	{
-		for (int x = 0; x < I_GetVideoWidth(); x++)
+		for (int x = 0; x < I_GetSurfaceWidth(); x++)
 			Wipe_Blend(&to[x], &from[x], fade, bglevel);
 
-		from += I_GetVideoWidth();
+		from += I_GetSurfaceWidth();
 		to += pitch;
 	}
 }
@@ -448,7 +448,7 @@ void Wipe_Start()
 
 	//  allocate data for the temporary screens
 	int pixel_size = I_GetVideoBitDepth() == 8 ? sizeof(palindex_t) : sizeof(argb_t);
-	wipe_screen = new byte[I_GetVideoWidth() * I_GetVideoHeight() * pixel_size];
+	wipe_screen = new byte[I_GetSurfaceWidth() * I_GetSurfaceHeight() * pixel_size];
 	
 	in_progress = true;
 	if (wipe_start_func)
@@ -491,7 +491,7 @@ void Wipe_Drawer()
 	{
 		if (wipe_draw_func)
 			wipe_draw_func();	
-		V_MarkRect(0, 0, I_GetVideoWidth(), I_GetVideoHeight());
+		V_MarkRect(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 	}
 }
 

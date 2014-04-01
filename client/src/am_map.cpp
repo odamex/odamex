@@ -451,11 +451,11 @@ void AM_findMinMaxBoundaries(void)
 	min_w = 2*PLAYERRADIUS; // const? never changed?
 	min_h = 2*PLAYERRADIUS;
 
-	a = FixedDiv((I_GetVideoWidth())<<FRACBITS, max_w);
-	b = FixedDiv((I_GetVideoHeight())<<FRACBITS, max_h);
+	a = FixedDiv((I_GetSurfaceWidth())<<FRACBITS, max_w);
+	b = FixedDiv((I_GetSurfaceHeight())<<FRACBITS, max_h);
 
 	min_scale_mtof = a < b ? a : b;
-	max_scale_mtof = FixedDiv((I_GetVideoHeight())<<FRACBITS, 2*PLAYERRADIUS);
+	max_scale_mtof = FixedDiv((I_GetSurfaceHeight())<<FRACBITS, 2*PLAYERRADIUS);
 }
 
 
@@ -503,8 +503,8 @@ void AM_initVariables(void)
 	ftom_zoommul = FRACUNIT;
 	mtof_zoommul = FRACUNIT;
 
-	m_w = FTOM(I_GetVideoWidth());
-	m_h = FTOM(I_GetVideoHeight());
+	m_w = FTOM(I_GetSurfaceWidth());
+	m_h = FTOM(I_GetSurfaceHeight());
 
 	// find player to center on initially
 	player_t *pl = &displayplayer();
@@ -1660,7 +1660,7 @@ void AM_Drawer (void)
 		// [RH] Set f_? here now to handle automap overlaying
 		// and view size adjustments.
 		f_x = f_y = 0;
-		f_w = I_GetVideoWidth();
+		f_w = I_GetSurfaceWidth();
 		f_h = ST_Y;
 		f_p = screen->pitch;
 
@@ -1695,7 +1695,7 @@ void AM_Drawer (void)
 		int OV_Y, i, time = level.time / TICRATE, height;
 
 		height = (hu_font[0]->height() + 1) * CleanYfac;
-		OV_Y = I_GetVideoHeight() - ((32 * I_GetVideoHeight()) / 200);
+		OV_Y = I_GetSurfaceHeight() - ((32 * I_GetSurfaceHeight()) / 200);
 
 		if (sv_gametype == GM_COOP)
 		{
@@ -1705,9 +1705,9 @@ void AM_Drawer (void)
 							   TEXTCOLOR_NORMAL " %d / %d",
 							   level.killed_monsters, level.total_monsters);
                 if (viewactive && screenblocks == 11)
-                    FB->DrawTextClean (CR_GREY, I_GetVideoWidth() - V_StringWidth (line) * CleanXfac, OV_Y - (height * 4) + 1, line);
+                    FB->DrawTextClean (CR_GREY, I_GetSurfaceWidth() - V_StringWidth (line) * CleanXfac, OV_Y - (height * 4) + 1, line);
                 else if (viewactive && screenblocks == 12)
-                    FB->DrawTextClean (CR_GREY, 0, I_GetVideoHeight() - (height * 2) + 1, line);
+                    FB->DrawTextClean (CR_GREY, 0, I_GetSurfaceHeight() - (height * 2) + 1, line);
                 else
                     FB->DrawTextClean (CR_GREY, 0, ST_Y - (height * 2) + 1, line);
 			}
@@ -1718,11 +1718,11 @@ void AM_Drawer (void)
 							   TEXTCOLOR_NORMAL " %d / %d",
 							   level.found_secrets, level.total_secrets);
                 if (viewactive && screenblocks == 11)
-                    FB->DrawTextClean (CR_GREY, I_GetVideoWidth() - V_StringWidth (line) * CleanXfac, OV_Y - (height * 3) + 1, line);
+                    FB->DrawTextClean (CR_GREY, I_GetSurfaceWidth() - V_StringWidth (line) * CleanXfac, OV_Y - (height * 3) + 1, line);
                 else if (viewactive && screenblocks == 12)
-                    FB->DrawTextClean (CR_GREY, I_GetVideoWidth() - V_StringWidth (line) * CleanXfac, I_GetVideoHeight() - (height * 2) + 1, line);
+                    FB->DrawTextClean (CR_GREY, I_GetSurfaceWidth() - V_StringWidth (line) * CleanXfac, I_GetSurfaceHeight() - (height * 2) + 1, line);
                 else
-                    FB->DrawTextClean (CR_GREY, I_GetVideoWidth() - V_StringWidth (line) * CleanXfac, ST_Y - (height * 2) + 1, line);
+                    FB->DrawTextClean (CR_GREY, I_GetSurfaceWidth() - V_StringWidth (line) * CleanXfac, ST_Y - (height * 2) + 1, line);
 			}
 		}
 
@@ -1749,9 +1749,9 @@ void AM_Drawer (void)
 			strcpy(line, GStrings(firstmap + level.levelnum - mapoffset));
 
 			if (viewactive && screenblocks == 11)
-				FB->DrawTextClean(CR_RED, I_GetVideoWidth() - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
+				FB->DrawTextClean(CR_RED, I_GetSurfaceWidth() - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
 			else if (viewactive && screenblocks == 12)
-				FB->DrawTextClean (CR_RED, 0, I_GetVideoHeight() - (height * 1) + 1, line);
+				FB->DrawTextClean (CR_RED, 0, I_GetSurfaceHeight() - (height * 1) + 1, line);
 			else
 				FB->DrawTextClean (CR_RED, 0, ST_Y - (height * 1) + 1, line);
 		}
@@ -1771,9 +1771,9 @@ void AM_Drawer (void)
             line[i++] = '-';
             strcpy (&line[i], level.level_name);
             if (viewactive && screenblocks == 11)
-                FB->DrawTextClean (CR_GREY, I_GetVideoWidth() - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
+                FB->DrawTextClean (CR_GREY, I_GetSurfaceWidth() - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
             else if (viewactive && screenblocks == 12)
-                FB->DrawTextClean (CR_GREY, 0, I_GetVideoHeight() - (height * 1) + 1, line);
+                FB->DrawTextClean (CR_GREY, 0, I_GetSurfaceHeight() - (height * 1) + 1, line);
             else
                 FB->DrawTextClean (CR_GREY, 0, ST_Y - (height * 1) + 1, line);
 		}
@@ -1781,11 +1781,11 @@ void AM_Drawer (void)
 		if (am_showtime) {
 			sprintf (line, " %02d:%02d:%02d", time/3600, (time%3600)/60, time%60);	// Time
             if (viewactive && screenblocks == 11)
-                FB->DrawTextClean (CR_RED, I_GetVideoWidth() - V_StringWidth (line) * CleanXfac, OV_Y - (height * 2) + 1, line);
+                FB->DrawTextClean (CR_RED, I_GetSurfaceWidth() - V_StringWidth (line) * CleanXfac, OV_Y - (height * 2) + 1, line);
             else if (viewactive && screenblocks == 12)
-                FB->DrawTextClean (CR_RED, I_GetVideoWidth() - V_StringWidth (line) * CleanXfac, I_GetVideoHeight() - (height * 1) + 1, line);
+                FB->DrawTextClean (CR_RED, I_GetSurfaceWidth() - V_StringWidth (line) * CleanXfac, I_GetSurfaceHeight() - (height * 1) + 1, line);
             else
-                FB->DrawTextClean (CR_RED, I_GetVideoWidth() - V_StringWidth (line) * CleanXfac, ST_Y - (height * 1) + 1, line);
+                FB->DrawTextClean (CR_RED, I_GetSurfaceWidth() - V_StringWidth (line) * CleanXfac, ST_Y - (height * 1) + 1, line);
 		}
 
 	}

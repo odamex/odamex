@@ -212,8 +212,8 @@ void C_InitConsole(int width, int height, BOOL ingame)
 			patch_t* bg = W_CachePatch(W_GetNumForName("CONBACK"));
 
 			delete conback;
-			int conback_width = std::max((int)bg->width(), I_GetVideoWidth());
-			int conback_height = std::max((int)bg->width(), I_GetVideoWidth());
+			int conback_width = std::max((int)bg->width(), I_GetSurfaceWidth());
+			int conback_height = std::max((int)bg->width(), I_GetSurfaceWidth());
 
 			conback = I_AllocateScreen(conback_width, conback_height, 8);
 
@@ -574,14 +574,14 @@ void C_FlushDisplay (void)
 void C_AdjustBottom (void)
 {
 	if (gamestate == GS_FULLCONSOLE || gamestate == GS_STARTUP)
-		ConBottom = I_GetVideoHeight();
-	else if (ConBottom > I_GetVideoHeight() / 2 || ConsoleState == c_down)
-		ConBottom = I_GetVideoHeight() / 2;
+		ConBottom = I_GetSurfaceHeight();
+	else if (ConBottom > I_GetSurfaceHeight() / 2 || ConsoleState == c_down)
+		ConBottom = I_GetSurfaceHeight() / 2;
 }
 
 void C_NewModeAdjust (void)
 {
-	C_InitConsole (I_GetVideoWidth(), I_GetVideoHeight(), true);
+	C_InitConsole (I_GetSurfaceWidth(), I_GetSurfaceHeight(), true);
 	C_FlushDisplay ();
 	C_AdjustBottom ();
 }
@@ -608,25 +608,25 @@ void C_Ticker (void)
 
 		if (ConsoleState == c_falling)
 		{
-			ConBottom += (gametic - lasttic) * (I_GetVideoHeight()*2/25);
-			if (ConBottom >= I_GetVideoHeight() / 2)
+			ConBottom += (gametic - lasttic) * (I_GetSurfaceHeight()*2/25);
+			if (ConBottom >= I_GetSurfaceHeight() / 2)
 			{
-				ConBottom = I_GetVideoHeight() / 2;
+				ConBottom = I_GetSurfaceHeight() / 2;
 				ConsoleState = c_down;
 			}
 		}
 		else if (ConsoleState == c_fallfull)
 		{
-			ConBottom += (gametic - lasttic) * (I_GetVideoHeight()*2/15);
-			if (ConBottom >= I_GetVideoHeight())
+			ConBottom += (gametic - lasttic) * (I_GetSurfaceHeight()*2/15);
+			if (ConBottom >= I_GetSurfaceHeight())
 			{
-				ConBottom = I_GetVideoHeight();
+				ConBottom = I_GetSurfaceHeight();
 				ConsoleState = c_down;
 			}
 		}
 		else if (ConsoleState == c_rising)
 		{
-			ConBottom -= (gametic - lasttic) * (I_GetVideoHeight()*2/25);
+			ConBottom -= (gametic - lasttic) * (I_GetSurfaceHeight()*2/25);
 			if (ConBottom <= 0)
 			{
 				ConsoleState = c_up;
@@ -635,7 +635,7 @@ void C_Ticker (void)
 		}
 		else if (ConsoleState == c_risefull)
 		{
-			ConBottom -= (gametic - lasttic) * (I_GetVideoHeight()*2/15);
+			ConBottom -= (gametic - lasttic) * (I_GetSurfaceHeight()*2/15);
 			if (ConBottom <= 0)
 			{
 				ConsoleState = c_up;
@@ -725,17 +725,17 @@ void C_DrawConsole (void)
 
 		if(gamestate == GS_LEVEL || gamestate == GS_DEMOSCREEN || gamestate == GS_INTERMISSION)
 		{
-			screen->Dim(0, 0, I_GetVideoWidth(), visheight);
+			screen->Dim(0, 0, I_GetSurfaceWidth(), visheight);
 		}
 		else
 		{
 			conback->Blit (0, 0, conback->width, conback->height,
-						screen, 0, 0, I_GetVideoWidth(), I_GetVideoHeight());
+						screen, 0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 		}
 
 		if (ConBottom >= 12)
 		{
-			screen->PrintStr (I_GetVideoWidth() - 8 - strlen(VersionString) * 8,
+			screen->PrintStr(I_GetSurfaceWidth() - 8 - strlen(VersionString) * 8,
 						ConBottom - 12,
 						VersionString, strlen (VersionString));
 
@@ -750,7 +750,7 @@ void C_DrawConsole (void)
 			if (TickerMax)
 			{
 				char tickstr[256];
-				unsigned int i, tickend = ConCols - I_GetVideoWidth() / 90 - 6;
+				unsigned int i, tickend = ConCols - I_GetSurfaceWidth() / 90 - 6;
 				unsigned int tickbegin = 0;
 
 				if (TickerLabel)
@@ -853,7 +853,7 @@ void C_ToggleConsole (void)
 	else if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP
             && gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
 	{
-		if (ConBottom == I_GetVideoHeight())
+		if (ConBottom == I_GetSurfaceHeight())
 			ConsoleState = c_risefull;
 		else
 			ConsoleState = c_rising;
@@ -884,7 +884,7 @@ void C_HideConsole (void)
 // Setup the server disconnect effect.
 void C_ServerDisconnectEffect(void)
 {
-   screen->Dim(0, 0, I_GetVideoWidth(), I_GetVideoHeight());
+   screen->Dim(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 }
 
 
@@ -1401,7 +1401,7 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
 		Printf (PRINT_HIGH, "%s\n", newmsg);
 		midprinting = false;
 
-		if ( (MidMsg = V_BreakLines(I_GetVideoWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
+		if ( (MidMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
 			MidTicker = (int)(msgtime * TICRATE) + gametic;
 
@@ -1427,7 +1427,7 @@ void C_DrawMid (void)
 		yscale = V_TextScaleYAmount();
 
 		y = 8 * yscale;
-		x = I_GetVideoWidth() >> 1;
+		x = I_GetSurfaceWidth() / 2;
 		for (i = 0, line = (ST_Y * 3) / 8 - MidLines * 4 * yscale; i < MidLines; i++, line += y)
 		{
 			screen->DrawTextStretched (PrintColors[PRINTLEVELS],
@@ -1474,7 +1474,7 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 
 		char *newmsg = strdup(str.c_str());
 
-		if ((GameMsg = V_BreakLines(I_GetVideoWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
+		if ((GameMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
 			GameTicker = (int)(msgtime * TICRATE) + gametic;
 
@@ -1504,7 +1504,7 @@ void C_DrawGMid()
 		yscale = V_TextScaleYAmount();
 
 		y = 8 * yscale;
-		x = I_GetVideoWidth() >> 1;
+		x = I_GetSurfaceWidth() / 2;
 		for (i = 0, line = (ST_Y * 2) / 8 - GameLines * 4 * yscale;i < GameLines; i++, line += y)
 		{
 			screen->DrawTextStretched(GameColor,

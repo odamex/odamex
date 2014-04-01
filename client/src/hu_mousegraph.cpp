@@ -48,7 +48,7 @@ void MouseGraph::append(int x, int y)
 
 void MouseGraph::draw(int type)
 {
-	int x = I_GetVideoWidth() - MAX_HISTORY_TICS - 10;
+	int x = I_GetSurfaceWidth() - MAX_HISTORY_TICS - 10;
 	int y = 100;
 
 	screen->DrawText(CR_GREY, x, y, "Mouse X/Y");

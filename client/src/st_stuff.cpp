@@ -73,7 +73,7 @@ void ST_AdjustStatusBarScale(bool scale)
 	if (scale)
 	{
 		// Scale status bar height to screen.
-		ST_HEIGHT = (32 * I_GetVideoHeight()) / 200;
+		ST_HEIGHT = (32 * I_GetSurfaceHeight()) / 200;
 		// [AM] Scale status bar width according to height, unless there isn't
 		//      enough room for it.  Fixes widescreen status bar scaling.
 		// [ML] A couple of minor changes for true 4:3 correctness...
@@ -93,12 +93,12 @@ void ST_AdjustStatusBarScale(bool scale)
 	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
 	{
 		ST_X = 0;
-		ST_Y = I_GetVideoHeight();
+		ST_Y = I_GetSurfaceHeight();
 	}
 	else
 	{
-		ST_X = (I_GetVideoWidth() - ST_WIDTH)/2;
-		ST_Y = I_GetVideoHeight() - ST_HEIGHT;
+		ST_X = (I_GetSurfaceWidth() - ST_WIDTH)/2;
+		ST_Y = I_GetSurfaceHeight() - ST_HEIGHT;
 	}
 
 	setsizeneeded = true;
@@ -1355,7 +1355,7 @@ void ST_Drawer (void)
 
 	bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
 
-	if ((realviewheight == I_GetVideoHeight() && viewactive) || spechud)
+	if ((realviewheight == I_GetSurfaceHeight() && viewactive) || spechud)
 	{
 		if (screenblocks < 12)
 		{

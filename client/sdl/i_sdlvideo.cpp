@@ -513,11 +513,13 @@ ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, int width, int height,
 // Constructs the surface using an existing SDL_Surface handle.
 //
 ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, SDL_Surface* sdlsurface) :
-	IWindowSurface(window), mSDLSurface(sdlsurface), mSurfaceBuffer(NULL),
-	mWidth(sdlsurface->w), mHeight(sdlsurface->h), mPitch(sdlsurface->pitch)
+	IWindowSurface(window), mSDLSurface(sdlsurface), mSurfaceBuffer(NULL)
 {
 	lock();
 	mSurfaceBuffer = (byte*)mSDLSurface->pixels;
+	mWidth = mSDLSurface->w;
+	mHeight = mSDLSurface->h;
+	mPitch = mSDLSurface->pitch;
 	mBitsPerPixel = mSDLSurface->format->BitsPerPixel;
 	mBytesPerPixel = mBitsPerPixel / 8;
 	unlock();
@@ -622,9 +624,9 @@ const argb_t* ISDL12WindowSurface::getPalette() const
 ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool vsync) :
 	IWindow(),
 	mPrimarySurface(NULL),
-	mWidth(width), mHeight(height), mBitsPerPixel(bpp),
 	mIsFullScreen(fullscreen), mUseVSync(vsync)
 {
+
 	const SDL_version* SDLVersion = SDL_Linked_Version();
 
 	if (SDLVersion->major != SDL_MAJOR_VERSION || SDLVersion->minor != SDL_MINOR_VERSION)

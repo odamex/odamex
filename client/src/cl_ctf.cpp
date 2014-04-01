@@ -281,26 +281,26 @@ void TintScreen(int color)
 	{
 			screen->Clear (0,
 						   0,
-						   I_GetVideoWidth() / 100,
-						   I_GetVideoHeight() - ST_HEIGHT,
+						   I_GetSurfaceWidth() / 100,
+						   I_GetSurfaceHeight() - ST_HEIGHT,
 						   color);
 
 			screen->Clear (0,
 						   0,
-						   I_GetVideoWidth(),
-						   I_GetVideoHeight() / 100,
+						   I_GetSurfaceWidth(),
+						   I_GetSurfaceHeight() / 100,
 						   color);
 
-			screen->Clear (I_GetVideoWidth() - (I_GetVideoWidth() / 100),
+			screen->Clear (I_GetSurfaceWidth() - (I_GetSurfaceWidth() / 100),
 						   0,
-						   I_GetVideoWidth(),
-						   I_GetVideoHeight() - ST_HEIGHT,
+						   I_GetSurfaceWidth(),
+						   I_GetSurfaceHeight() - ST_HEIGHT,
 						   color);
 
 			screen->Clear (0,
-						   (I_GetVideoHeight() - ST_HEIGHT) - (I_GetVideoHeight() / 100),
-						   I_GetVideoWidth(),
-						   I_GetVideoHeight() - ST_HEIGHT,
+						   (I_GetSurfaceHeight() - ST_HEIGHT) - (I_GetSurfaceHeight() / 100),
+						   I_GetSurfaceWidth(),
+						   I_GetSurfaceHeight() - ST_HEIGHT,
 						   color);
 	}
 
@@ -309,26 +309,26 @@ void TintScreen(int color)
 	{
 			screen->Clear (0,
 						   0,
-						   I_GetVideoWidth() / 100,
-						   I_GetVideoHeight(),
+						   I_GetSurfaceWidth() / 100,
+						   I_GetSurfaceHeight(),
 						   color);
 
 			screen->Clear (0,
 						   0,
-						   I_GetVideoWidth(),
-						   I_GetVideoHeight() / 100,
+						   I_GetSurfaceWidth(),
+						   I_GetSurfaceHeight() / 100,
 						   color);
 
-			screen->Clear (I_GetVideoWidth() - (I_GetVideoWidth() / 100),
+			screen->Clear (I_GetSurfaceWidth() - (I_GetSurfaceWidth() / 100),
 						   0,
-						   I_GetVideoWidth(),
-						   I_GetVideoHeight(),
+						   I_GetSurfaceWidth(),
+						   I_GetSurfaceHeight(),
 						   color);
 
 			screen->Clear (0,
-						   (I_GetVideoHeight()) - (I_GetVideoHeight() / 100),
-						   I_GetVideoWidth(),
-						   I_GetVideoHeight(),
+						   (I_GetSurfaceHeight()) - (I_GetSurfaceHeight() / 100),
+						   I_GetSurfaceWidth(),
+						   I_GetSurfaceHeight(),
 						   color);
 	}
 }

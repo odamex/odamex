@@ -614,7 +614,7 @@ void R_SetFOV(float fov, bool force = false)
 
 	if (V_UseWidescreen() || V_UseLetterBox())
 	{
-		float am = float(I_GetVideoWidth()) / float(I_GetVideoHeight()) / (4.0f / 3.0f);
+		float am = float(I_GetSurfaceWidth()) / float(I_GetSurfaceHeight()) / (4.0f / 3.0f);
 		float radfov = fov * PI / 180.0f;
 		float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
 		CorrectFieldOfView = int(widefov * FINEANGLES / 360.0f);
@@ -681,7 +681,7 @@ void R_InitLightTables (void)
 		}
 	}
 
-	lightscalexmul = ((320<<detailyshift) * (1<<LIGHTSCALEMULBITS)) / I_GetVideoHeight();
+	lightscalexmul = ((320<<detailyshift) * (1<<LIGHTSCALEMULBITS)) / I_GetSurfaceHeight();
 }
 
 //
@@ -754,20 +754,20 @@ void R_ExecuteSetViewSize (void)
 
 	if (setblocks == 11 || setblocks == 12)
 	{
-		realviewwidth = I_GetVideoWidth();
-		freelookviewheight = realviewheight = I_GetVideoHeight();
+		realviewwidth = I_GetSurfaceWidth();
+		freelookviewheight = realviewheight = I_GetSurfaceHeight();
 	}
 	else if (setblocks == 10)
 	{
-		realviewwidth = I_GetVideoWidth();
+		realviewwidth = I_GetSurfaceWidth();
 		realviewheight = ST_Y;
-		freelookviewheight = I_GetVideoHeight();
+		freelookviewheight = I_GetSurfaceHeight();
 	}
 	else
 	{
-		realviewwidth = ((setblocks*I_GetVideoWidth())/10) & (~(15>>(I_GetVideoBitDepth() == 8 ? 0 : 2)));
+		realviewwidth = ((setblocks*I_GetSurfaceWidth())/10) & (~(15>>(I_GetVideoBitDepth() == 8 ? 0 : 2)));
 		realviewheight = ((setblocks*ST_Y)/10)&~7;
-		freelookviewheight = ((setblocks*I_GetVideoHeight())/10)&~7;
+		freelookviewheight = ((setblocks*I_GetSurfaceHeight())/10)&~7;
 	}
 
 	viewwidth = realviewwidth >> detailxshift;
@@ -791,7 +791,7 @@ void R_ExecuteSetViewSize (void)
 	// also take r_detail into account
 	yaspectmul = (320.0f / 200.0f) / (4.0f / 3.0f) * ((FRACUNIT << detailxshift) >> detailyshift);
 
-	for (int i = 0; i < I_GetVideoWidth(); i++)
+	for (int i = 0; i < I_GetSurfaceWidth(); i++)
 	{
 		negonearray[i] = -1;
 		viewheightarray[i] = (int)viewheight;
@@ -805,7 +805,7 @@ void R_ExecuteSetViewSize (void)
 	//      generate a corrected 4:3 screen width based on our
 	//      height, then generate the x-scale based on that.
 	int cswidth, crvwidth;
-	cswidth = (4 * I_GetVideoHeight()) / 3;
+	cswidth = (4 * I_GetSurfaceHeight()) / 3;
 	if (setblocks < 10)
 		crvwidth = ((setblocks * cswidth) / 10) & (~(15 >> (I_GetVideoBitDepth() == 8 ? 0 : 2)));
 	else
@@ -831,7 +831,7 @@ void R_ExecuteSetViewSize (void)
 		startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
 		for (j = 0; j < MAXLIGHTSCALE; j++)
 		{
-			level = startmap - (j*(I_GetVideoWidth() >> detailxshift))/((viewwidth*DISTMAP));
+			level = startmap - (j*(I_GetSurfaceWidth() >> detailxshift))/((viewwidth*DISTMAP));
 			if (level < 0)
 				level = 0;
 			else if (level >= NUMCOLORMAPS)
@@ -1291,7 +1291,7 @@ void R_RenderPlayerView (player_t *player)
 	if (BlendA != 0)
 	{
 		unsigned int blend_rgb = MAKERGB(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]);
-		r_dimpatchD(screen, blend_rgb, BlendA, 0, 0, I_GetVideoWidth(), I_GetVideoHeight());
+		r_dimpatchD(screen, blend_rgb, BlendA, 0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 	}
 
 	R_EndInterpolation();
@@ -1316,11 +1316,11 @@ void R_MultiresInit (void)
     M_Free(columnofs);
     M_Free(xtoviewangle);
 
-	ylookup = (byte **)M_Malloc(I_GetVideoHeight() * sizeof(byte *));
-	columnofs = (int *)M_Malloc(I_GetVideoWidth() * sizeof(int));
+	ylookup = (byte **)M_Malloc(I_GetSurfaceHeight() * sizeof(byte *));
+	columnofs = (int *)M_Malloc(I_GetSurfaceWidth() * sizeof(int));
 
 	// These get set in R_ExecuteSetViewSize()
-	xtoviewangle = (angle_t *)M_Malloc (sizeof(angle_t) * (I_GetVideoWidth() + 1));
+	xtoviewangle = (angle_t *)M_Malloc(sizeof(angle_t) * (I_GetSurfaceWidth() + 1));
 
 	R_InitFuzzTable ();
 	R_OldBlend = ~0;

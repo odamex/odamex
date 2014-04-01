@@ -59,13 +59,13 @@ void calculateOrigin(int& x, int& y,
 		x = x * x_scale;
 		break;
 	case X_CENTER:
-		x = (I_GetVideoWidth() >> 1) + (x * x_scale);
+		x = (I_GetSurfaceWidth() >> 1) + (x * x_scale);
 		break;
 	case X_RIGHT:
-		x = I_GetVideoWidth() - (x * x_scale);
+		x = I_GetSurfaceWidth() - (x * x_scale);
 		break;
 	case X_ABSOLUTE:
-		x = (x * I_GetVideoWidth()) / (320 * x_scale);
+		x = (x * I_GetSurfaceWidth()) / (320 * x_scale);
 		break;
 	}
 
@@ -74,13 +74,13 @@ void calculateOrigin(int& x, int& y,
 		y = y * y_scale;
 		break;
 	case Y_MIDDLE:
-		y = (I_GetVideoHeight() >> 1) + (y * y_scale);
+		y = (I_GetSurfaceHeight() >> 1) + (y * y_scale);
 		break;
 	case Y_BOTTOM:
-		y = I_GetVideoHeight() - (y * y_scale);
+		y = I_GetSurfaceHeight() - (y * y_scale);
 		break;
 	case Y_ABSOLUTE:
-		y = (y * I_GetVideoHeight()) / (200 * y_scale);
+		y = (y * I_GetSurfaceHeight()) / (200 * y_scale);
 		break;
 	}
 
@@ -125,7 +125,7 @@ int XSize(const float scale) {
 	if (x_scale < 1) {
 		x_scale = 1;
 	}
-	return I_GetVideoWidth() / x_scale;
+	return I_GetSurfaceWidth() / x_scale;
 }
 
 // Return the number of scaled available horizontal pixels to draw on.
@@ -134,7 +134,7 @@ int YSize(const float scale) {
 	if (y_scale < 1) {
 		y_scale = 1;
 	}
-	return I_GetVideoHeight() / y_scale;
+	return I_GetSurfaceHeight() / y_scale;
 }
 
 // Fill an area with a solid color.
