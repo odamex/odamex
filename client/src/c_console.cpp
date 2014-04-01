@@ -66,7 +66,7 @@ extern BOOL		automapactive;	// in AM_map.c
 extern BOOL		advancedemo;
 
 unsigned int	ConRows, ConCols, PhysRows;
-unsigned char	*Lines, *Last = NULL;
+unsigned char	*Lines = NULL, *Last = NULL;
 BOOL		vidactive = false, gotconback = false;
 BOOL		cursoron = false;
 int			SkipRows, ConBottom;
@@ -189,16 +189,21 @@ void STACK_ARGS C_Close()
 //
 // C_InitConsole
 //
-void C_InitConsole (int width, int height, BOOL ingame)
+void C_InitConsole(int width, int height, BOOL ingame)
 {
-	int row;
-	unsigned char *zap;
-	unsigned char *old;
+	unsigned char* zap;
+	unsigned char* oldLines;
 	int cols, rows;
 
 	bool firstTime = true;
 	if(firstTime)
 		atterm (C_Close);
+
+	VersionString[0] = 0x11;
+	for (size_t i = 0; i < strlen(DOTVERSIONSTR); i++)
+		VersionString[i+1] = ((DOTVERSIONSTR[i] >= '0' && DOTVERSIONSTR[i] <= '9') || DOTVERSIONSTR[i] == '.')
+				? DOTVERSIONSTR[i] - 30 : DOTVERSIONSTR[i] ^ 0x80;
+	VersionString[strlen(DOTVERSIONSTR) + 1] = 0;
 
 	if ( (vidactive = ingame) )
 	{
@@ -207,19 +212,14 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			patch_t* bg = W_CachePatch(W_GetNumForName("CONBACK"));
 
 			delete conback;
-			conback = I_AllocateScreen (I_GetVideoWidth(), I_GetVideoHeight(), 8);
+			int conback_width = std::max((int)bg->width(), I_GetVideoWidth());
+			int conback_height = std::max((int)bg->width(), I_GetVideoWidth());
 
-			conback->Lock ();
+			conback = I_AllocateScreen(conback_width, conback_height, 8);
 
-			conback->DrawPatch (bg, (I_GetVideoWidth()/2)-(bg->width()/2), (I_GetVideoHeight()/2)-(bg->height()/2));
-
-			VersionString[0] = 0x11;
-			size_t i;
-			for (i = 0; i < strlen(DOTVERSIONSTR); i++)
-				VersionString[i+1] = ((DOTVERSIONSTR[i]>='0'&&DOTVERSIONSTR[i]<='9')||DOTVERSIONSTR[i]=='.')?DOTVERSIONSTR[i]-30:DOTVERSIONSTR[i] ^ 0x80;
-			VersionString[i+1] = 0;
-
-			conback->Unlock ();
+			conback->Lock();
+			conback->DrawPatch(bg, (conback_width - bg->width()) / 2, (conback_height - bg->height()) / 2);
+			conback->Unlock();
 
 			gotconback = true;
 		}
@@ -231,10 +231,11 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	ConCols = width / 8 - 2;
 	PhysRows = height / 8;
 
-	old = Lines;
-	Lines = (unsigned char *)Malloc (CONSOLEBUFFER * (ConCols + 2) + 1);
+	oldLines = Lines;
+	Lines = (unsigned char *)Malloc(CONSOLEBUFFER * (ConCols + 2) + 1);
 
-	for (row = 0, zap = Lines; row < CONSOLEBUFFER; row++, zap += ConCols + 2)
+	zap = Lines;
+	for (int row = 0; row < CONSOLEBUFFER; row++, zap += ConCols + 2)
 	{
 		zap[0] = 0;
 		zap[1] = 0;
@@ -242,16 +243,17 @@ void C_InitConsole (int width, int height, BOOL ingame)
 
 	Last = Lines + (CONSOLEBUFFER - 1) * (ConCols + 2);
 
-	if (old)
+	if (oldLines)
 	{
 		char string[256];
 		gamestate_t oldstate = gamestate;	// Don't print during reformatting
 
 		gamestate = GS_FORCEWIPE;
 
-		for (row = 0, zap = old; row < rows - 1; row++, zap += cols + 2)
+		zap = oldLines;
+		for (int row = 0; row < rows - 1; row++, zap += cols + 2)
 		{
-			memcpy (string, &zap[2], zap[1]);
+			memcpy(string, &zap[2], zap[1]);
 			if (!zap[0])
 			{
 				string[(int)zap[1]] = '\n';
@@ -264,7 +266,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			Printf (PRINT_HIGH, "%s", string);
 		}
 
-		M_Free(old);
+		M_Free(oldLines);
 		C_FlushDisplay ();
 
 		gamestate = oldstate;

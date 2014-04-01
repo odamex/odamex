@@ -90,7 +90,6 @@
 	#endif	// PNG_LIBPNG_VER < 10400
 #endif	// USE_PNG
 
-
 // Global IWindow instance for the application window
 static IWindow* window;
 
@@ -100,9 +99,12 @@ extern int NewWidth, NewHeight, NewBits, DisplayBits;
 
 static IVideo *Video;
 
-EXTERN_CVAR (vid_fullscreen)
-EXTERN_CVAR (vid_overscan)
-EXTERN_CVAR (vid_ticker)
+EXTERN_CVAR(vid_fullscreen)
+EXTERN_CVAR(vid_overscan)
+EXTERN_CVAR(vid_ticker)
+EXTERN_CVAR(vid_32bpp)
+EXTERN_CVAR(vid_defwidth)
+EXTERN_CVAR(vid_defheight)
 
 CVAR_FUNC_IMPL (vid_winscale)
 {
@@ -126,10 +128,21 @@ void STACK_ARGS I_ShutdownHardware ()
 {
 	if (Video)
 		delete Video, Video = NULL;
+
+	delete window;
+	window = NULL;
 		
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
+
+static int I_GetParmValue(const char* name)
+{
+	const char* valuestr = Args.CheckValue(name);
+	if (valuestr)
+		return atoi(valuestr);
+	return 0;
+}
 
 //
 // I_InitHardware
@@ -142,9 +155,41 @@ void I_InitHardware()
 	str[0] = '1' - !Args.CheckParm("-devparm");
 	vid_ticker.SetDefault(str);
 
-	int width = 640;
-	int height = 480;
-	int bpp = 8;
+	int width = I_GetParmValue("-width");
+	int height = I_GetParmValue("-height");
+	int bpp = I_GetParmValue("-bits");
+	
+	if (width == 0)
+	{
+		if (height == 0)
+		{
+			width = vid_defwidth.asInt();
+			height = vid_defheight.asInt();
+		}
+		else
+		{
+			width = (height * 8) / 6;
+		}
+	}
+	else if (height == 0)
+	{
+		height = (width * 6) / 8;
+	}
+
+	if (bpp == 0 || (bpp != 8 && bpp != 32))
+		bpp = vid_32bpp ? 32 : 8;
+
+/*
+	if (vid_autoadjust)
+		I_ClosestResolution(&width, &height);
+
+	if (!V_SetResolution (width, height, bits))
+		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,
+            (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"));
+	else
+        AddCommandString("checkres");
+*/
+
 	bool fullscreen = false;
 	bool vsync = false;
 
@@ -1237,7 +1282,7 @@ IDummyWindowSurface::IDummyWindowSurface(IWindow* window) :
 {
 	// TODO: make mSurfaceBuffer aligned to 16-byte boundary
 	mSurfaceBuffer = new byte[getPitch() * getHeight() * getBytesPerPixel()];
-	memset(mPalette, 0, 256 * sizeof(argb_t));
+	memset(mPalette, 0, 256 * sizeof(*mPalette));
 }
 
 

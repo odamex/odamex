@@ -384,7 +384,7 @@ public:
 	{	delete mPrimarySurface;	}
 
 	virtual const IVideoModeList* getSupportedVideoModes() const
-	{	static IVideoModeList videomodes; return &videomodes;	}
+	{	return &mVideoModes;	}
 
 	virtual IWindowSurface* getPrimarySurface()
 	{	return mPrimarySurface;	}

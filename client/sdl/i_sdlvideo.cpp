@@ -620,6 +620,7 @@ const argb_t* ISDL12WindowSurface::getPalette() const
 // A ISDL12WindowSurface object is instantiated for frame rendering.
 //
 ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool vsync) :
+	IWindow(),
 	mPrimarySurface(NULL),
 	mWidth(width), mHeight(height), mBitsPerPixel(bpp),
 	mIsFullScreen(fullscreen), mUseVSync(vsync)
@@ -647,10 +648,10 @@ ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool
 			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
 	}
 
+	// TODO: call SDL_Init?
+
 	buildVideoModeList();
 
-
-	// TODO: call SDL_Init?
 	setMode(width, height, bpp, fullscreen, vsync);
 }
 
