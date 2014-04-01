@@ -32,6 +32,7 @@
 #include <vector>
 
 class DCanvas;
+class IWindow;
 
 // [RH] True if the display is not in a window
 extern BOOL Fullscreen;
@@ -43,9 +44,17 @@ void STACK_ARGS I_ShutdownHardware ();
 //		Pass a NULL to get the original behavior.
 void I_ScreenShot(std::string filename);
 
+IWindow* I_GetWindow();
+
 int I_GetVideoWidth();
 int I_GetVideoHeight();
 int I_GetVideoBitDepth();
+
+byte* I_GetFrameBuffer();
+int I_GetSurfaceWidth();
+int I_GetSurfaceHeight();
+void I_SetWindowSize(int width, int height);
+void I_SetSurfaceSize(int width, int height);
 
 // [RH] Set the display mode
 bool I_SetMode (int &width, int &height, int &bits);
@@ -166,11 +175,17 @@ public:
 	IWindow* getWindow()
 	{	return mWindow;	}
 
+	const IWindow* getWindow() const
+	{	return mWindow;	}
+
 	DCanvas* createCanvas();
 	void releaseCanvas(DCanvas* canvas);
 
 	virtual byte* getBuffer() = 0;
 	virtual const byte* getBuffer() const = 0;
+
+	virtual void lock() { }
+	virtual void unlock() { } 
 
 	virtual int getWidth() const = 0;
 	virtual int getHeight() const = 0;
@@ -247,6 +262,57 @@ private:
 
 // ****************************************************************************
 
+// ============================================================================
+//
+// IVideoMode class interface
+//
+// ============================================================================
+
+class IVideoMode
+{
+public:
+	IVideoMode(int width, int height) :
+		mWidth(width), mHeight(height)
+	{ }
+
+	int getWidth() const
+	{	return mWidth;	}
+
+	int getHeight() const
+	{	return mHeight;	}
+
+	bool operator<(const IVideoMode& other) const
+	{
+		if (mWidth != other.mWidth)
+			return mWidth < other.mWidth;
+		if (mHeight != other.mHeight)
+			return mHeight < other.mHeight;
+		return false;
+	}
+
+	bool operator>(const IVideoMode& other) const
+	{
+		if (mWidth != other.mWidth)
+			return mWidth > other.mWidth;
+		if (mHeight != other.mHeight)
+			return mHeight > other.mHeight;
+		return false;
+	}
+
+	bool operator==(const IVideoMode& other) const
+	{
+		return mWidth == other.mWidth && mHeight == other.mHeight;
+	}
+	
+private:
+	int mWidth;
+	int mHeight;
+};
+
+typedef std::vector<IVideoMode> IVideoModeList;
+
+
+// ****************************************************************************
 
 // ============================================================================
 //
@@ -259,17 +325,13 @@ private:
 class IWindow
 {
 public:
-	IWindow(IWindowSurface* surface = NULL) :
-		mPrimarySurface(surface)
+	virtual ~IWindow()
 	{ }
 
-	virtual ~IWindow()
-	{
-		delete mPrimarySurface;
-	}
+	virtual const IVideoModeList* getSupportedVideoModes() const = 0;
 
-	IWindowSurface* getPrimarySurface()
-	{	return mPrimarySurface;	}
+	virtual IWindowSurface* getPrimarySurface() = 0;
+	virtual const IWindowSurface* getPrimarySurface() const = 0;
 
 	virtual int getWidth() const = 0;
 
@@ -286,22 +348,20 @@ public:
 
 	virtual bool isFullScreen() const = 0;
 
+	virtual void refresh() { }
+
 	virtual void resize(int width, int height) = 0;
 
-	virtual void setWindowTitle(const std::string& caption = "")
-	{ }
+	virtual void setWindowTitle(const std::string& caption = "") { }
 
-	virtual std::string getVideoDriverName()
+	virtual std::string getVideoDriverName() const
 	{	return "";	}
 
 	virtual void setPalette(const argb_t* palette)
-	{	mPrimarySurface->setPalette(palette);	}
+	{	getPrimarySurface()->setPalette(palette);	}
 
 	virtual const argb_t* getPalette() const
-	{	return mPrimarySurface->getPalette();	}	
-	
-private:
-	IWindowSurface*		mPrimarySurface;
+	{	return getPrimarySurface()->getPalette();	}	
 };
 
 
@@ -317,12 +377,20 @@ private:
 class IDummyWindow : public IWindow
 {
 public:
-	IDummyWindow() :
-		IWindow(new IDummyWindowSurface(this))
-	{ }
+	IDummyWindow() : IWindow()
+	{	mPrimarySurface = new IDummyWindowSurface(this); }
 
 	virtual ~IDummyWindow()
-	{}
+	{	delete mPrimarySurface;	}
+
+	virtual const IVideoModeList* getSupportedVideoModes() const
+	{	static IVideoModeList videomodes; return &videomodes;	}
+
+	virtual IWindowSurface* getPrimarySurface()
+	{	return mPrimarySurface;	}
+
+	virtual const IWindowSurface* getPrimarySurface() const
+	{	return mPrimarySurface;	}
 
 	virtual int getWidth() const
 	{	return 0;	}
@@ -336,18 +404,19 @@ public:
 	virtual int getBytesPerPixel() const
 	{	return 1;	}
 
-	virtual void setWindowed()
-	{ }
+	virtual void setWindowed() { }
 
-	virtual void setFullScreen()
-	{ }
+	virtual void setFullScreen() { }
 
 	virtual bool isFullScreen() const
 	{	return true;	}
 
-	virtual void resize(int width, int height)
-	{ }
+	virtual void resize(int width, int height) { }
 
+private:
+	IVideoModeList		mVideoModes;
+	IWindowSurface*		mPrimarySurface;
 };
+
 
 #endif // __I_VIDEO_H__

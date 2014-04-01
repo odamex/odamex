@@ -1042,16 +1042,6 @@ IWindowSurface::~IWindowSurface()
 }
 
 
-template <typename SOURCE_PIXEL, typename DEST_PIXEL>
-void I_Blit(DEST_PIXEL* dest, SOURCE_PIXEL* source, int dest_pitch, int source_pitch, fixed_t stepx, fixed_t stepy)
-{
-	// we can't quickly convert from 32bpp source to 8bpp dest so don't bother
-	if (sizeof(SOURCE_PIXEL) == 4 && sizeof(DEST_PIXEL) == 1)
-		return;
-
-}
-
-
 //
 // Pixel format conversion function used by IWindowSurface::blit
 //
@@ -1220,6 +1210,8 @@ void IWindowSurface::releaseCanvas(DCanvas* canvas)
 //
 // IDummyWindowSurface::IDummyWindowSurface
 //
+// Allocates a fixed-size buffer.
+//
 IDummyWindowSurface::IDummyWindowSurface(IWindow* window) :
 	IWindowSurface(window)
 {
@@ -1238,23 +1230,81 @@ IDummyWindowSurface::~IDummyWindowSurface()
 }
 
 
+
 // ****************************************************************************
 
+// cached values of window->getPrimarySurface()->getWidth() and getHeight()
+// these should be updated every time the window or surface are resized
+static int surface_width, surface_height;
 
-// ============================================================================
+
 //
-// IWindow abstract base class implementation
+// I_GetWindow
 //
-// ============================================================================
+// Returns a pointer to the application window object.
+//
+IWindow* I_GetWindow()
+{
+	return window;
+}
 
 
+//
+// I_GetFrameBuffer
+//
+// Returns a pointer to the raw frame buffer for the game window's primary
+// surface.
+//
+byte* I_GetFrameBuffer()
+{
+	if (!window)
+		return NULL;
+
+	return window->getPrimarySurface()->getBuffer();
+}
 
 
+//
+// I_GetSurfaceWidth
+//
+int I_GetSurfaceWidth()
+{
+	return surface_width;
+}
 
 
+//
+// I_GetSurfaceHeight
+//
+int I_GetSurfaceHeight()
+{
+	return surface_height;
+}
 
 
+//
+// I_SetWindowSize
+//
+// Resizes the application window to the specified size.
+//
+void I_SetWindowSize(int width, int height)
+{
+	if (window)
+		window->resize(width, height);
+}
 
+
+//
+// I_SetSurfaceSize
+//
+// Resizes the drawing surface to the specified size.
+// TODO: Surface size should be completely independent of window size.
+//
+void I_SetSurfaceSize(int width, int height)
+{
+	if (window)
+		window->resize(width, height);
+}
 
 
 VERSION_CONTROL (i_video_cpp, "$Id$")

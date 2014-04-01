@@ -111,5 +111,130 @@ class SDLVideo : public IVideo
    SDL_Color palette[256];
    bool palettechanged;
 };
+
+
+
+
+// ============================================================================
+//
+// ISDL12WindowSurface class interface
+//
+// Wraps the raw device surface and provides methods to access the raw surface
+// buffer.
+//
+// ============================================================================
+
+class ISDL12WindowSurface : public IWindowSurface
+{
+public:
+	ISDL12WindowSurface(IWindow* window, int width, int height, int bpp);
+
+	ISDL12WindowSurface(IWindow* window, SDL_Surface* sdlsurface);
+
+	virtual ~ISDL12WindowSurface();
+
+	virtual byte* getBuffer()
+	{	return mSurfaceBuffer;	}
+
+	virtual const byte* getBuffer() const
+	{	return mSurfaceBuffer;	}
+
+	virtual void lock();
+	virtual void unlock();
+
+	virtual int getWidth() const
+	{	return mWidth;	}
+
+	virtual int getHeight() const
+	{	return mHeight;	}
+
+	virtual int getPitch() const
+	{	return mPitch;	}
+
+	virtual int getBitsPerPixel() const
+	{	return mBitsPerPixel;	}
+
+	virtual int getBytesPerPixel() const
+	{	return mBytesPerPixel;	}
+
+	virtual void setPalette(const argb_t* palette);
+	virtual const argb_t* getPalette() const;
+
+private:
+	SDL_Surface*		mSDLSurface;
+	byte*				mSurfaceBuffer;
+
+	argb_t				mPalette[256];
+
+	int					mWidth;
+	int					mHeight;
+	int					mPitch;
+	int					mBitsPerPixel;
+	int					mBytesPerPixel;		// optimization: pre-calculate
+};
+
+
+
+// ============================================================================
+//
+// ISDL12Window class interface
+//
+// ============================================================================
+
+class ISDL12Window : public IWindow
+{
+public:
+	ISDL12Window(int width, int height, int bpp, bool fullscreen, bool vsync);
+
+	virtual ~ISDL12Window();
+
+	virtual const IVideoModeList* getSupportedVideoModes() const
+	{	return &mVideoModes;	}
+
+	virtual IWindowSurface* getPrimarySurface()
+	{	return mPrimarySurface;	}
+
+	virtual const IWindowSurface* getPrimarySurface() const
+	{	return mPrimarySurface;	}
+
+	virtual int getWidth() const
+	{	return mWidth;	}
+
+	virtual int getHeight() const
+	{	return mHeight;	}
+
+	virtual int getBitsPerPixel() const
+	{	return mBitsPerPixel;	}
+
+	virtual void setWindowed();
+
+	virtual void setFullScreen();
+
+	virtual bool isFullScreen() const
+	{	return mIsFullScreen;	}
+
+	virtual void resize(int width, int height);
+
+	virtual void refresh();
+
+	virtual void setWindowTitle(const std::string& str = "");
+
+	virtual std::string getVideoDriverName() const;
+
+private:
+	bool setMode(int width, int height, int bpp, bool fullscreen, bool vsync);
+	void buildVideoModeList();
+
+	IVideoModeList		mVideoModes;
+	IWindowSurface*		mPrimarySurface;
+
+	int					mWidth;
+	int					mHeight;
+	int					mBitsPerPixel;
+
+	bool				mIsFullScreen;
+	bool				mUseVSync;
+};
+
 #endif
 
