@@ -853,7 +853,7 @@ void ISDL12Window::buildVideoModeList()
 	mVideoModes.push_back(IVideoMode(640, 480));
 
 	// add the full screen video modes reported by SDL	
-	while (sdlmodes)
+	while (*sdlmodes)
 	{
 		mVideoModes.push_back(IVideoMode((*sdlmodes)->w, (*sdlmodes)->h));
 		++sdlmodes;

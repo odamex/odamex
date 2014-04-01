@@ -90,7 +90,10 @@
 	#endif	// PNG_LIBPNG_VER < 10400
 #endif	// USE_PNG
 
-bool M_FindFreeName(std::string &filename, const std::string &extension);
+
+// Global IWindow instance for the application window
+static IWindow* window;
+
 
 extern constate_e ConsoleState;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
@@ -127,24 +130,41 @@ void STACK_ARGS I_ShutdownHardware ()
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-void I_InitHardware ()
-{
-	char num[4];
-	num[0] = '1' - !Args.CheckParm ("-devparm");
-	num[1] = 0;
-	vid_ticker.SetDefault (num);
 
-	if(Args.CheckParm ("-novideo"))
+//
+// I_InitHardware
+//
+// Initializes the application window and a few miscellaneous video functions.
+//
+void I_InitHardware()
+{
+	char str[2] = { 0, 0 };
+	str[0] = '1' - !Args.CheckParm("-devparm");
+	vid_ticker.SetDefault(str);
+
+	int width = 640;
+	int height = 480;
+	int bpp = 8;
+	bool fullscreen = false;
+	bool vsync = false;
+
+	if (Args.CheckParm("-novideo"))
+	{
 		Video = new IVideo();
+		window = new IDummyWindow();
+	}
 	else
-		Video = new SDLVideo (0);
+	{
+		Video = new SDLVideo(0);
+		window = new ISDL12Window(width, height, bpp, fullscreen, vsync);
+	}
 
 	if (Video == NULL)
 		I_FatalError ("Failed to initialize display");
 
-	atterm (I_ShutdownHardware);
+	atterm(I_ShutdownHardware);
 
-	Video->SetWindowedScale (vid_winscale);
+	Video->SetWindowedScale(vid_winscale);
 }
 
 bool I_HardwareInitialized()
@@ -500,6 +520,8 @@ static int I_SaveBMP(const std::string& filename, SDL_Surface* surface, SDL_Colo
 
 #endif // USE_PNG
 
+
+bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 //
 // I_ScreenShot
@@ -1007,8 +1029,6 @@ END_COMMAND (vid_currentmode)
 
 // ****************************************************************************
 
-// Global IWindow instance for the game window
-static IWindow* window;
 
 
 // ============================================================================
