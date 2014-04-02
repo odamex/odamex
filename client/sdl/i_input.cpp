@@ -35,6 +35,7 @@
 #include "i_input.h"
 #include "i_video.h"
 #include "d_main.h"
+#include "c_bind.h"
 #include "c_console.h"
 #include "c_cvars.h"
 #include "i_system.h"
@@ -97,7 +98,9 @@ extern constate_e ConsoleState;
 void I_FlushInput()
 {
 	SDL_Event ev;
-	while (SDL_PollEvent(&ev));
+
+	while (SDL_PollEvent(&ev)) {}
+
 	if (mouse_input)
 		mouse_input->flushEvents();
 }
@@ -160,30 +163,43 @@ static void I_InitFocus()
 // We try to make ourselves be well-behaved: the grab on the mouse
 // is removed if we lose focus (such as a popup window appearing),
 // and we dont move the mouse around if we aren't focused either.
+// [ML] 4-2-14: Make more in line with EE and choco, handle alt+tab focus better
 //
 static void I_UpdateFocus()
 {
+	SDL_Event  ev;
 	bool new_window_focused = I_CheckFocusState();
 
-	if (new_window_focused && !window_focused)
+	// [CG][EE] Handle focus changes, this is all necessary to avoid repeat events.
+	if (window_focused != new_window_focused)
 	{
-		I_FlushInput();
-	}
-	else if (!new_window_focused && window_focused)
-	{
-	}
+		if(new_window_focused)
+		{
+			while(SDL_PollEvent(&ev)) {}
+			I_EnableKeyRepeat();
+		}
+		else
+		{
+			I_DisableKeyRepeat();
+		}
 
-	window_focused = new_window_focused;
+		C_ReleaseKeys();
+
+		window_focused = new_window_focused;
+
+		if (mouse_input)
+		mouse_input->flushEvents();
+	}
 }
 
 
 //
-// I_UpdateInputGrabbing
+// I_UpdateGrab
 //
 // Determines if SDL should grab the mouse based on the game window having
 // focus and the status of the menu and console.
 //
-static void I_UpdateInputGrabbing()
+static void I_UpdateGrab()
 {
 #ifndef GCONSOLE
 	bool can_grab = false;
@@ -213,7 +229,6 @@ static void I_UpdateInputGrabbing()
 	{
 		SDL_WM_GrabInput(SDL_GRAB_ON);
 		I_ResumeMouse();
-		I_FlushInput();
 	}
 	else if (grabbed && !can_grab)
 	{
@@ -546,6 +561,9 @@ void I_GetEvent()
 	static SDL_Event sdl_events[MAX_EVENTS];
 	event_t event;
 
+	I_UpdateFocus();
+	I_UpdateGrab();
+
 	// Process mouse movement and button events
 	if (mouse_input)
 		mouse_input->processEvents();
@@ -585,6 +603,7 @@ void I_GetEvent()
 		case SDL_ACTIVEEVENT:
 			// need to update our focus state
 			I_UpdateFocus();
+			I_UpdateGrab();
 			// pause the mouse when the focus goes away (eg, alt-tab)
 			if (!window_focused)
 				I_PauseMouse();
@@ -619,9 +638,9 @@ void I_GetEvent()
 				AddCommandString("quit");
 			// SoM: Ignore the tab portion of alt-tab presses
 			// [AM] Windows 7 seems to preempt this check.
-			if (event.data1 == SDLK_TAB && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
+			if (event.data1 == SDLK_TAB && SDL_GetModState() & (KMOD_LALT | KMOD_RALT)) {
 				event.data1 = event.data2 = event.data3 = 0;
-			else
+			}
 #endif
 			D_PostEvent(&event);
 			break;
@@ -701,8 +720,6 @@ void I_GetEvent()
 //
 void I_StartTic (void)
 {
-	I_UpdateFocus();
-	I_UpdateInputGrabbing();
 	I_GetEvent();
 }
 

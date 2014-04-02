@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -42,6 +42,8 @@ void C_ChangeBinding (const char *str, int newone);
 
 // Returns string bound to given key (NULL if none)
 const char *C_GetBinding (int key);
+
+void C_ReleaseKeys();
 
 #endif //__C_BINDINGS_H__
 
