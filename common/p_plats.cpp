@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -35,7 +35,7 @@
 #include "r_state.h"
 #include "s_sound.h"
 
-EXTERN_CVAR(co_fixzerotags)
+EXTERN_CVAR(co_zdoomphys)
 
 extern bool predicting;
 
@@ -45,7 +45,7 @@ void P_SetPlatDestroy(DPlat *plat)
 		return;
 
 	plat->m_Status = DPlat::destroy;
-	
+
 	if (clientside && plat->m_Sector)
 	{
 		plat->m_Sector->floordata = NULL;
@@ -99,7 +99,7 @@ void DPlat::PlayPlatSound ()
 {
 	if (predicting)
 		return;
-		
+
 	const char *snd = NULL;
 	switch (m_Status)
 	{
@@ -132,13 +132,13 @@ void DPlat::PlayPlatSound ()
 void DPlat::RunThink ()
 {
 	EResult res;
-		
+
 	switch (m_Status)
 	{
 	case midup:
 	case up:
 		res = MoveFloor (m_Speed, m_High, m_Crush, 1);
-										
+
 		if (res == crushed && !m_Crush)
 		{
 			m_Count = m_Wait;
@@ -168,13 +168,13 @@ void DPlat::RunThink ()
 			}
 			else
 			{
-				m_OldStatus = m_Status;		//jff 3/14/98 after action wait  
+				m_OldStatus = m_Status;		//jff 3/14/98 after action wait
 				m_Status = in_stasis;		//for reactivation of toggle
 			}
 			PlayPlatSound();
 		}
 		break;
-		
+
 	case middown:
 	case down:
 		res = MoveFloor (m_Speed, m_Low, false, -1);
@@ -200,10 +200,10 @@ void DPlat::RunThink ()
 			}
 			else
 			{	// instant toggles go into stasis awaiting next activation
-				m_OldStatus = m_Status;		//jff 3/14/98 after action wait  
+				m_OldStatus = m_Status;		//jff 3/14/98 after action wait
 				m_Status = in_stasis;		//for reactivation of toggle
 			}
-			
+
 			PlayPlatSound();
 		}
 		//jff 1/26/98 remove the plat if it bounced so it can be tried again
@@ -222,7 +222,7 @@ void DPlat::RunThink ()
 		}
 
 		break;
-		
+
 	case waiting:
 		if (!--m_Count)
 		{
@@ -240,13 +240,13 @@ void DPlat::RunThink ()
 	default:
 		break;
 	}
-		
+
 	if (m_Status == finished)
 	{
 		PlayPlatSound();
 		m_Status = destroy;
 	}
-	
+
 	if (m_Status == destroy)
 		P_SetPlatDestroy(this);
 }
@@ -298,7 +298,7 @@ DPlat::DPlat(sector_t *sec, DPlat::EPlatType type, fixed_t height,
 		m_Status = DPlat::midup;
 		PlayPlatSound();
 		break;
-	
+
 	case DPlat::platDownByValue:
 		m_Low = P_FloorHeight(sec) - height;
 		m_Status = DPlat::middown;
@@ -315,7 +315,7 @@ DPlat::DPlat(sector_t *sec, DPlat::EPlatType type, fixed_t height,
 		m_Status = DPlat::down;
 		PlayPlatSound();
 		break;
-	
+
 	case DPlat::platUpWaitDownStay:
 		m_High = P_FindHighestFloorSurrounding(sec);
 
@@ -372,7 +372,7 @@ DPlat::DPlat(sector_t *sec, DPlat::EPlatType type, fixed_t height,
 
 	default:
 		break;
-	}	
+	}
 }
 
 
@@ -392,7 +392,7 @@ BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 
 	// [RH] If tag is zero, use the sector on the back side
 	//		of the activating line (if any).
-	if (co_fixzerotags && tag == 0)
+	if (co_zdoomphys && tag == 0)
 	{
 		if (!line || !(sec = line->backsector))
 			return false;
@@ -409,11 +409,11 @@ BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 	case DPlat::platPerpetualRaise:
 		P_ActivateInStasis (tag);
 		break;
-	
+
 	default:
 		break;
 	}
-		
+
 	secnum = -1;
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
@@ -422,12 +422,12 @@ BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 manual_plat:
 		if (sec->floordata)
 		{
-			if (co_fixzerotags && manual)
+			if (co_zdoomphys && manual)
 				return false;
-			else	
+			else
 				continue;
 		}
-		
+
 		// Find lowest & highest floors around sector
 		rtn = true;
 		plat = new DPlat(sec,type, height, speed, delay, lip);

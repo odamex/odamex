@@ -175,7 +175,7 @@ CVAR_RANGE(			sv_maxlives, "0", "Prevent a player from respawing into the game i
 
 	// Fixes to Vanilla
 	//------------------------------
-	CVAR(			co_level8soundfeature, "0", "Enable/disable the \"level 8 full sound at far distances\" feature",
+	CVAR(			co_level8soundfeature, "1", "Enable/disable the \"level 8 full sound at far distances\" feature",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 	CVAR(			co_realactorheight, "0", "Enable/Disable infinitely tall actors",
@@ -185,9 +185,6 @@ CVAR_RANGE(			sv_maxlives, "0", "Prevent a player from respawing into the game i
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	CVAR(			co_fixweaponimpacts, "0", "Corrected behavior for impact of projectiles and bullets on surfaces",
-					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
-
-	CVAR(			co_fixzerotags, "0", "Allow line specials with sector tag 0 to be used for moving floors/ceilings.",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	CVAR(			co_blockmapfix, "0", "Fix the blockmap collision bug",
@@ -203,14 +200,6 @@ CVAR_RANGE(			sv_maxlives, "0", "Prevent a player from respawing into the game i
 	CVAR(			co_allowdropoff, "0", "Allow monsters can get pushed or thrusted off of ledges",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
-	// [ML] DEPRECATED 0.7
-	CVAR(			co_boomlinecheck, "0", "Make additional checks on two-sided lines, allowing two-sided " \
-					"lines to be used for the silent BFG trick",
-					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
-	// [ML] DEPRECATED 0.7
-	CVAR(			co_boomsectortouch, "0", "Use a finer-grained, faster, and more accurate test for actors " \
-					"that are touching a sector (i.e. those affected if it moves)",
-					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 
 	// ZDoom-compatibility changes
@@ -218,12 +207,8 @@ CVAR_RANGE(			sv_maxlives, "0", "Prevent a player from respawing into the game i
 	CVAR(			co_zdoomphys, "0", "Enable/disable ZDoom-based gravity and physics interactions",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
-	CVAR(			co_zdoomswitches, "0", "Enable attenuation of switch sounds with distance",
+	CVAR(			co_zdoomsound, "0", "Enable sound attenuation curve + attenuation of switch sounds with distance",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
-
-	CVAR(			co_zdoomsoundcurve, "0", "Use ZDoom's sound attenuation curve instead of vanilla Doom's",
-					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
-
 
 	CVAR(			co_fineautoaim, "0", "Increase precision of vertical auto-aim",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)

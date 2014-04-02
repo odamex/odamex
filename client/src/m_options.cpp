@@ -117,9 +117,8 @@ EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (wi_newintermission)
 EXTERN_CVAR (co_zdoomphys)
-EXTERN_CVAR (co_zdoomswitches)
+EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (co_fixweaponimpacts)
-EXTERN_CVAR (co_zdoomsoundcurve)
 EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (co_fineautoaim)
 EXTERN_CVAR (co_nosilentspawns)
@@ -635,9 +634,8 @@ static menuitem_t CompatItems[] ={
 	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{bricktext, "Sound",                           {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{discrete,  "Fix silent west spawns",          {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Louder sounds on map 8",          {&co_level8soundfeature},{2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Positional switch sounds",        {&co_zdoomswitches},     {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "ZDOOM 1.23 extended sound curve", {&co_zdoomsoundcurve},   {2.0}, {0.0}, {0.0}, {OnOff}},
+	{discrete,  "Normal sound levels on 8th level",	{&co_level8soundfeature},{2.0}, {0.0}, {0.0}, {OffOn}},
+	{discrete,  "ZDoom Sound Response",        		{&co_zdoomsound},     {2.0}, {0.0}, {0.0}, {OnOff}},
 };
 
 menu_t CompatMenu = {

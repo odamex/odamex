@@ -129,7 +129,7 @@ static struct mus_playing_t
 	int   handle;
 } mus_playing;
 
-EXTERN_CVAR (co_zdoomsoundcurve)
+EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (co_level8soundfeature)
 
@@ -308,10 +308,10 @@ void S_Start (void)
 // S_CompareChannels
 //
 // A comparison function that determines which sound channel should
-// take priority. Can be used with std::sort. 
+// take priority. Can be used with std::sort.
 //
 // Returns true if the first channel should precede the second.
-// 
+//
 bool S_CompareChannels(const channel_t &a, const channel_t &b)
 {
 	if (a.priority != b.priority)
@@ -338,7 +338,7 @@ bool S_CompareChannels(const channel_t &a, const channel_t &b)
 //
 int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_instances)
 {
-	// not a valid sound	
+	// not a valid sound
 	if (!sfxinfo)
 		return -1;
 
@@ -393,7 +393,7 @@ bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
 	static const fixed_t MAX_SND_DIST = 2025 * FRACUNIT;
 	static const fixed_t MIN_SND_DIST = 1 * FRACUNIT;
 	int approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
-		
+
 	if (S_UseMap8Volume())
 		approx_dist = MIN(approx_dist, MAX_SND_DIST);
 
@@ -423,7 +423,7 @@ bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
 		// stereo separation
 		*sep = NORM_SEP - (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
 	}
-	
+
 	return (*vol > 0.0f);
 }
 
@@ -499,10 +499,10 @@ bool S_AdjustSoundParams(	const AActor*	listener,
 	if (!listener)
 		return false;
 
-	if (co_zdoomsoundcurve)
+	if (co_zdoomsound)
 		return S_AdjustSoundParamsZDoom(listener, x, y, vol, sep);
 	else
-		return S_AdjustSoundParamsDoom(listener, x, y, vol, sep); 
+		return S_AdjustSoundParamsDoom(listener, x, y, vol, sep);
 }
 
 
@@ -606,7 +606,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 	if (sfxinfo->lumpnum == sfx_empty)
 		return;
-	
+
 	if (listenplayer().camera && attenuation != ATTN_NONE)
 	{
   		// Check to see if it is audible, and if not, modify the params
@@ -692,7 +692,7 @@ void S_SoundID (AActor *ent, int channel, int sound_id, float volume, int attenu
 
 	if (ent->subsector && ent->subsector->sector &&
 		ent->subsector->sector->MoreFlags & SECF_SILENT)
-		return;	
+		return;
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, false);
 }
 
@@ -708,7 +708,7 @@ void S_LoopedSoundID (AActor *ent, int channel, int sound_id, float volume, int 
 
 	if (ent->subsector && ent->subsector->sector &&
 		ent->subsector->sector->MoreFlags & SECF_SILENT)
-		return;	
+		return;
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, true);
 }
 
@@ -721,17 +721,17 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
                                const char *name, float volume, int attenuation, bool looping)
 {
 	int sfx_id = -1;
-	
+
 	if (!consoleplayer().mo && channel != CHAN_INTERFACE)
 		return;
 
 	if (name == NULL || strlen(name) == 0 ||
-			(ent && ent != (AActor *)(~0) && ent->subsector && ent->subsector->sector && 
+			(ent && ent != (AActor *)(~0) && ent->subsector && ent->subsector->sector &&
 			ent->subsector->sector->MoreFlags & SECF_SILENT))
 	{
 		return;
 	}
-	
+
 	if (*name == '*')
 	{
 		// Sexed sound
@@ -977,7 +977,7 @@ void S_UpdateSounds (void *listener_p)
 
 				// check non-local sounds for distance clipping
 				//  or modify their params
-				if (listener && &(listener->x) != c->pt && c->attenuation != ATTN_NONE)	
+				if (listener && &(listener->x) != c->pt && c->attenuation != ATTN_NONE)
 				{
 					fixed_t x, y;
 					if (c->pt)		// [SL] 2011-05-29
@@ -990,8 +990,8 @@ void S_UpdateSounds (void *listener_p)
 						x = c->x;
 						y = c->y;
 					}
-				
-					if (S_AdjustSoundParams(listener, x, y, &volume, &sep))	
+
+					if (S_AdjustSoundParams(listener, x, y, &volume, &sep))
 						I_UpdateSoundParams(c->handle, volume, sep, NORM_PITCH);
 					else
 						S_StopChannel(cnum);
@@ -1063,7 +1063,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 	size_t length = 0;
 	int lumpnum;
 	FILE *f;
-		
+
 	if (!(f = fopen (musicname.c_str(), "rb")))
 	{
 		if ((lumpnum = W_CheckNumForName (musicname.c_str())) == -1)
@@ -1083,19 +1083,19 @@ void S_ChangeMusic (std::string musicname, int looping)
 		data = static_cast<byte*>(Malloc(length));
 		size_t result = fread(data, length, 1, f);
 		fclose(f);
-	
+
 		if (result == 1)
 			I_PlaySong(data, length, (looping != 0));
 		M_Free(data);
-	}		
-		
+	}
+
 	mus_playing.name = musicname;
 }
 
 void S_StopMusic (void)
 {
 	I_StopSong();
-	
+
 	mus_playing.name = "";
 }
 
@@ -1366,7 +1366,7 @@ void A_Ambient (AActor *actor)
 {
 	if (!actor)
 		return;
-		
+
 	struct AmbientSound *ambient = &Ambients[actor->args[0]];
 
 	if ((ambient->type & CONTINUOUS) == CONTINUOUS)
@@ -1474,12 +1474,12 @@ BEGIN_COMMAND (changemus)
 	    Printf(PRINT_HIGH, "Plays music from an internal lump, loop\n");
 	    Printf(PRINT_HIGH, "parameter determines if the music should play\n");
 	    Printf(PRINT_HIGH, "continuously or not, (1 or 0, default: 1)\n");
-	    
+
 	    return;
 	}
 
 	const std::string musicname(argv[1]);
-	
+
 	if (argc > 2)
 	{
 		loopmus = (atoi(argv[2]) != 0);
