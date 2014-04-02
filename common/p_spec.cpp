@@ -1561,19 +1561,18 @@ P_UseSpecialLine
 
     TeleportSide = side;
 
-	if(LineSpecials[line->special] (line, thing, line->args[0],
+	LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
-					line->args[3], line->args[4]))
+					line->args[3], line->args[4]);
+
+	P_HandleSpecialRepeat(line);
+
+	OnActivatedLine(line, thing, side, 1);
+
+	if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
 	{
-		P_HandleSpecialRepeat(line);
-
-		OnActivatedLine(line, thing, side, 1);
-
-		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
-		{
-			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
-			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
-		}
+		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 	}
 
     return true;

@@ -111,7 +111,7 @@ fixed_t P_CalculateWeaponBobY()
 {
 	player_t* player = &displayplayer();
 
-	// return real weapon height when raising / lowering weapon
+	// return real weapon height when raising / lowering weapon / firing weapon
 	struct pspdef_s *psp = &player->psprites[player->psprnum];
 	if (psp->state != &states[weaponinfo[player->readyweapon].readystate])
 		return psp->sy;
