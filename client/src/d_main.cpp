@@ -397,7 +397,7 @@ void D_PageDrawer (void)
 {
 	if (page)
 	{
-		page->Blit (0, 0, page->width, page->height,
+		page->Blit(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(),
 			screen, 0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 	}
 	else
@@ -509,7 +509,7 @@ void D_DoAdvanceDemo (void)
 		const int width = 320, height = 200;
 		patch_t *data;
 
-		if (page && (page->width != I_GetSurfaceWidth() || page->height != I_GetSurfaceHeight()))
+		if (page)
 		{
 			I_FreeScreen(page);
 			page = NULL;
@@ -518,12 +518,7 @@ void D_DoAdvanceDemo (void)
 		data = W_CachePatch (pagename);
 
 		if (page == NULL)
-        {
-            if (screen->isProtectedRes())
-                page = I_AllocateScreen(data->width(), data->height(), 8);
-            else
-                page = I_AllocateScreen(I_GetSurfaceWidth(), I_GetSurfaceHeight(), 8);
-        }
+			page = I_AllocateScreen(I_GetSurfaceWidth(), I_GetSurfaceHeight(), 8);
 
 		page->Lock ();
 

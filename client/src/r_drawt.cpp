@@ -401,17 +401,19 @@ void rt_tlatelucent4colsD (int sx, int yl, int yh)
 
 // Functions for v_video.cpp support
 
-void r_dimpatchD_c(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h)
+void r_dimpatchD_c(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	int dpitch = cvs->pitch / sizeof(argb_t);
-	argb_t* line = (argb_t *)cvs->buffer + y1 * dpitch;
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	int surface_pitch_pixels = surface->getPitchInPixels();
+
+	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
 
 	for (int y = y1; y < y1 + h; y++)
 	{
 		for (int x = x1; x < x1 + w; x++)
 			line[x] = alphablend1a(line[x], color, alpha);
 
-		line += dpitch;
+		line += surface_pitch_pixels;
 	}
 }
 

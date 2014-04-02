@@ -140,53 +140,46 @@ void V_MarkRect (int x, int y, int width, int height)
 
 // [RH] Fill an area with a 64x64 flat texture
 //		right and bottom are one pixel *past* the boundaries they describe.
-void DCanvas::FlatFill (int left, int top, int right, int bottom, const byte *src) const
+void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src) const
 {
-	int x, y;
-	int advance;
-	int width;
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
 
-	width = right - left;
-	right = width >> 6;
+	int fill_width = right - left;
+	right = fill_width >> 6;
 
-	if (is8bit())
+	if (mSurface->getBitsPerPixel() == 8)
 	{
-		byte *dest;
+		palindex_t* dest = (palindex_t*)(mSurface->getBuffer() + top * surface_pitch + left * sizeof(palindex_t));
+		int advance = mSurface->getPitchInPixels() - surface_width;
 
-		advance = pitch - width;
-		dest = buffer + top * pitch + left;
-
-		for (y = top; y < bottom; y++)
+		for (int y = top; y < bottom; y++)
 		{
-			for (x = 0; x < right; x++)
+			for (int x = 0; x < right; x++)
 			{
-				memcpy (dest, src + ((y&63)<<6), 64);
+				memcpy(dest, src + ((y & 63) << 6), 64);
 				dest += 64;
 			}
 
-			if (width & 63)
+			if (fill_width & 63)
 			{
-				memcpy (dest, src + ((y&63)<<6), width & 63);
-				dest += width & 63;
+				memcpy(dest, src + ((y & 63) << 6), fill_width & 63);
+				dest += fill_width & 63;
 			}
 			dest += advance;
 		}
 	}
 	else
 	{
-		unsigned int *dest;
-		int z;
-		const byte *l;
+		argb_t* dest = (argb_t*)(mSurface->getBuffer() + top * surface_pitch + left * sizeof(argb_t));
+		int advance = mSurface->getPitchInPixels() - surface_width;
 
-		advance = (pitch - (width << 2)) >> 2;
-		dest = (unsigned int *)(buffer + top * pitch + (left << 2));
-
-		for (y = top; y < bottom; y++)
+		for (int y = top; y < bottom; y++)
 		{
-			l = src + ((y&63)<<6);
-			for (x = 0; x < right; x++)
+			const byte* l = src + ((y&63)<<6);
+			for (int x = 0; x < right; x++)
 			{
-				for (z = 0; z < 64; z += 4, dest += 4)
+				for (int z = 0; z < 64; z += 4, dest += 4)
 				{
 					// Try and let the optimizer pair this on a Pentium
 					// (even though VC++ doesn't anyway)
@@ -197,14 +190,14 @@ void DCanvas::FlatFill (int left, int top, int right, int bottom, const byte *sr
 				}
 			}
 
-			if (width & 63)
+			if (fill_width & 63)
 			{
 				// Do any odd pixel left over
-				if (width & 1)
+				if (fill_width & 1)
 					*dest++ = V_Palette.shade(l[0]);
 
 				// Do the rest of the pixels
-				for (z = 1; z < (width & 63); z += 2, dest += 2)
+				for (int z = 1; z < (fill_width & 63); z += 2, dest += 2)
 				{
 					dest[0] = V_Palette.shade(l[z+0]);
 					dest[1] = V_Palette.shade(l[z+1]);
@@ -221,9 +214,10 @@ void DCanvas::FlatFill (int left, int top, int right, int bottom, const byte *sr
 // aspect ratio. Pillarboxing is used in widescreen resolutions.
 void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 {
+	int width = mSurface->getWidth(), height = mSurface->getHeight();
 	Clear(0, 0, width, height, 0);
 
-	if (isProtectedRes())
+	if (I_IsProtectedResolution())
 	{
 		DrawPatch(patch, 0, 0);
 	}
@@ -243,36 +237,33 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 
 
 // [RH] Set an area to a specified color
-void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
+void DCanvas::Clear(int left, int top, int right, int bottom, int color) const
 {
-	int x, y;
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch_pixels = mSurface->getPitchInPixels();
 
-	if (is8bit())
+	if (mSurface->getBitsPerPixel() == 8)
 	{
-		byte *dest;
+		palindex_t* dest = (palindex_t*)mSurface->getBuffer()
+					+ top * surface_pitch_pixels + left;
 
-		dest = buffer + top * pitch + left;
-		x = right - left;
-		for (y = top; y < bottom; y++)
+		int line_length = (right - left) * sizeof(palindex_t);
+		for (int y = top; y < bottom; y++)
 		{
-			memset (dest, color, x);
-			dest += pitch;
+			memset(dest, color, line_length);
+			dest += surface_pitch_pixels;
 		}
 	}
 	else
 	{
-		unsigned int *dest;
+		argb_t* dest = (argb_t*)mSurface->getBuffer()
+					+ top * surface_pitch_pixels + left;
 
-		dest = (unsigned int *)(buffer + top * pitch + (left << 2));
-		right -= left;
-
-		for (y = top; y < bottom; y++)
+		for (int y = top; y < bottom; y++)
 		{
-			for (x = 0; x < right; x++)
-			{
+			for (int x = 0; x < right - left; x++)
 				dest[x] = color;
-			}
-			dest += pitch >> 2;
+			dest += surface_pitch_pixels;
 		}
 	}
 }
@@ -280,10 +271,10 @@ void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
 
 void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float famount) const
 {
-	if (!buffer)
-		return;
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch_pixels = mSurface->getPitchInPixels();
 
-	if (x1 < 0 || x1 + w > width || y1 < 0 || y1 + h > height)
+	if (x1 < 0 || x1 + w > surface_width || y1 < 0 || y1 + h > surface_height)
 		return;
 
 	if (famount <= 0.0f)
@@ -291,7 +282,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 	else if (famount > 1.0f)
 		famount = 1.0f;
 
-	if (is8bit())
+	if (mSurface->getBitsPerPixel() == 8)
 	{
 		int bg;
 		int x, y;
@@ -301,8 +292,8 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		argb_t *bg2rgb = Col2RGB8[64-amount];
 		unsigned int fg = fg2rgb[V_GetColorFromString(GetDefaultPalette()->basecolors, color_str)];
 
-		byte *dest = buffer + y1 * pitch + x1;
-		int gap = pitch - w;
+		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + y1 * surface_pitch_pixels + x1;
+		int advance = surface_pitch_pixels - w;
 
 		int xcount = w / 4;
 		int xcount_remainder = w % 4;
@@ -335,14 +326,14 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 				bg = (fg+bg) | 0x1f07c1f;
 				*dest++ = RGB32k[0][0][bg&(bg>>15)];
 			}
-			dest += gap;
+			dest += advance;
 		}
 	}
 	else
 	{
 		argb_t color = V_GetColorFromString(NULL, color_str);
 		color = MAKERGB(newgamma[RPART(color)], newgamma[GPART(color)], newgamma[BPART(color)]);
-		r_dimpatchD(this, color, (int)(famount * 256.0f), x1, y1, w, h);
+		r_dimpatchD(mSurface, color, (int)(famount * 256.0f), x1, y1, w, h);
 	}
 }
 
@@ -459,14 +450,15 @@ void DCanvas::Lock ()
 	m_LockCount++;
 	if (m_LockCount == 1)
 	{
-		I_LockScreen (this);
+		mSurface->lock();
+//		I_LockScreen(this);
 
-		if (this == screen)
+		if (mSurface == I_GetPrimarySurface())
 		{
-			if (dcol.pitch != pitch << detailyshift)
+			if (dcol.pitch != mSurface->getPitch() << detailyshift)
 			{
-				dcol.pitch = pitch << detailyshift;
-				R_InitFuzzTable ();
+				dcol.pitch = mSurface->getPitch() << detailyshift;
+				R_InitFuzzTable();
 			}
 
 			if (1 << detailxshift != dspan.colsize)
@@ -481,7 +473,8 @@ void DCanvas::Unlock ()
 {
 	if (m_LockCount)
 		if (--m_LockCount == 0)
-			I_UnlockScreen (this);
+			mSurface->unlock();
+//			I_UnlockScreen(this);
 }
 
 void DCanvas::Blit (int srcx, int srcy, int srcwidth, int srcheight,
@@ -898,8 +891,8 @@ void V_DrawFPSWidget()
 
 		double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
 		int chars = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
-		screen->Clear(0, I_GetVideoHeight() - 8, chars * 8, I_GetVideoHeight(), 0);
-		screen->PrintStr(0, I_GetVideoHeight() - 8, fpsbuff, chars);
+		screen->Clear(0, I_GetSurfaceHeight() - 8, chars * 8, I_GetSurfaceHeight(), 0);
+		screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, chars);
 
 		time_accum += delta_time;
 
@@ -923,12 +916,31 @@ void V_DrawFPSTicker()
 	QWORD i = I_MSTime() * TICRATE / 1000;
 	QWORD tics = i - lasttic;
 	lasttic = i;
-	if (tics > 20) tics = 20;
+	if (tics > 20)
+		tics = 20;
 
-	for (i = 0; i < tics*2; i += 2)
-		screen->buffer[(I_GetVideoHeight() - 1) * screen->pitch + i] = 0xff;
-	for ( ; i < 20*2; i += 2)
-		screen->buffer[(I_GetVideoHeight() - 1) * screen->pitch + i] = 0x0;
+	IWindowSurface* surface = I_GetPrimarySurface();
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	int surface_pitch = surface->getPitch();
+
+	if (surface->getBitsPerPixel() == 8)
+	{
+		palindex_t* dest = (palindex_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
+
+		for (i = 0; i < tics*2; i += 2)
+			dest[i] = 0xFF;
+		for ( ; i < 20*2; i += 2)
+			dest[i] = 0x00;
+	}
+	else
+	{
+		argb_t* dest = (argb_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
+
+		for (i = 0; i < tics*2; i += 2)
+			dest[i] = MAKEARGB(255, 255, 255, 255);
+		for ( ; i < 20*2; i += 2)
+			dest[i] = MAKEARGB(255, 0, 0, 0);
+	}
 }
 
 VERSION_CONTROL (v_video_cpp, "$Id$")

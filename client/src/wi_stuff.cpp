@@ -377,8 +377,8 @@ EXTERN_CVAR (cl_autoscreenshot)
 
 void WI_slamBackground (void)
 {
-	background->Blit (0, 0, background->width, background->height,
-		FB, 0, 0, FB->width, FB->height);
+	background->Blit(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(),
+		FB, 0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 }
 
 static int WI_DrawName (const char *str, int x, int y)

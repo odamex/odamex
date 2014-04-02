@@ -729,8 +729,8 @@ void C_DrawConsole (void)
 		}
 		else
 		{
-			conback->Blit (0, 0, conback->width, conback->height,
-						screen, 0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
+			conback->Blit (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(),
+					screen, 0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 		}
 
 		if (ConBottom >= 12)

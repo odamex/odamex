@@ -147,6 +147,9 @@ public:
 	virtual int getPitch() const
 	{	return mPitch;	}
 
+	virtual int getPitchInPixels() const
+	{	return mPitchInPixels;	}
+
 	virtual int getBitsPerPixel() const
 	{	return mBitsPerPixel;	}
 
@@ -157,6 +160,12 @@ public:
 	virtual const argb_t* getPalette() const;
 
 private:
+	// disable copy constructor and assignment operator
+	ISDL12WindowSurface(const ISDL12WindowSurface&);
+	ISDL12WindowSurface& operator=(const ISDL12WindowSurface&);
+
+	void initializeFromSDLSurface(SDL_Surface* sdlsurface);
+
 	SDL_Surface*		mSDLSurface;
 	byte*				mSurfaceBuffer;
 
@@ -165,8 +174,11 @@ private:
 	int					mWidth;
 	int					mHeight;
 	int					mPitch;
+	int					mPitchInPixels;
 	int					mBitsPerPixel;
 	int					mBytesPerPixel;		// optimization: pre-calculate
+
+	int					mLocks;
 };
 
 
@@ -218,6 +230,10 @@ public:
 	virtual std::string getVideoDriverName() const;
 
 private:
+	// disable copy constructor and assignment operator
+	ISDL12Window(const ISDL12Window&);
+	ISDL12Window& operator=(const ISDL12Window&);
+
 	bool setMode(int width, int height, int bpp, bool fullscreen, bool vsync);
 	void buildVideoModeList();
 

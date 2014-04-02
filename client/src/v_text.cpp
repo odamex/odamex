@@ -59,21 +59,25 @@ int V_TextScaleYAmount()
 
 // Convert the CONCHARS patch into the internal format used by
 // the console font drawer.
-void V_InitConChars (byte transcolor)
+void V_InitConChars(palindex_t transcolor)
 {
+	patch_t* chars_patch = W_CachePatch("CONCHARS");
+
 	// Load the CONCHARS lump and convert it from patch_t format
 	// to a raw linear byte buffer with a background color of 'transcolor'
-	DCanvas* temp_screen = I_AllocateScreen(128, 128, 8);
+	IWindowSurface* temp_surface = I_AllocateSurface(128, 128, 8);
 
-	patch_t* chars_patch = W_CachePatch("CONCHARS");
-	temp_screen->Lock();
+	temp_surface->lock();
+	palindex_t* temp_surface_buffer = (palindex_t*)temp_surface->getBuffer();
 
 	// fill with color 'transcolor'
 	for (int y = 0; y < 128; y++)
-		memset(temp_screen->buffer + temp_screen->pitch * y, transcolor, 128);
+		memset(temp_surface_buffer + y * temp_surface->getPitch(), transcolor, 128);
 
 	// paste the patch into the linear byte bufer
-	temp_screen->DrawPatch(chars_patch, 0, 0);
+	DCanvas* temp_canvas = temp_surface->createCanvas();
+	temp_canvas->DrawPatch(chars_patch, 0, 0);
+	temp_surface->releaseCanvas(temp_canvas);
 
 	ConChars = new byte[256*8*8*2];
 
@@ -83,12 +87,12 @@ void V_InitConChars (byte transcolor)
 	{
 		for (int x = 0; x < 16; x++)
 		{
-			const byte* source = temp_screen->buffer + x * 8 + (y * 8 * temp_screen->pitch);
+			const palindex_t* source = temp_surface_buffer + y * 8 * temp_surface->getPitch() + x * 8;
 			for (int z = 0; z < 8; z++)
 			{
 				for (int a = 0; a < 8; a++)
 				{
-					byte val = source[a];
+					palindex_t val = source[a];
 					if (val == transcolor)
 					{
 						dest[a] = 0x00;
@@ -102,14 +106,13 @@ void V_InitConChars (byte transcolor)
 				}
 
 				dest += 16;
-				source += temp_screen->pitch;
+				source += temp_surface->getPitch();
 			}
 		}
 	}
 
-	temp_screen->Unlock();
-
-	I_FreeScreen(temp_screen);
+	temp_surface->unlock();
+	I_FreeSurface(temp_surface);
 }
 
 
@@ -121,14 +124,14 @@ void V_InitConChars (byte transcolor)
 extern "C" void STACK_ARGS PrintChar1P (DWORD *charimg, byte *dest, int screenpitch);
 extern "C" void STACK_ARGS PrintChar2P_MMX (DWORD *charimg, byte *dest, int screenpitch);
 
-void DCanvas::PrintStr (int x, int y, const char *s, int count) const
+void DCanvas::PrintStr(int x, int y, const char *s, int count) const
 {
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
+
 	const byte* str = (const byte*)s;
 
-	if (!buffer)
-		return;
-
-	if (y > (height - 8) || y<0)
+	if (y > (surface_height - 8) || y < 0)
 		return;
 
 	if (x < 0)
@@ -145,9 +148,9 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 	}
 
 	x &= ~3;
-	byte* destline = buffer + y * pitch;
+	byte* destline = mSurface->getBuffer() + y * surface_pitch;
 
-	while (count && x <= (width - 8))
+	while (count && x <= (surface_width - 8))
 	{
 	    // john - tab 4 spaces
 	    if (*str == '\t')
@@ -158,7 +161,7 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 	        continue;
 	    }
 
-		if (is8bit())
+		if (mSurface->getBitsPerPixel() == 8)
 		{
 			unsigned int* source = (unsigned int*)&ConChars[(*str) * 128];
 			unsigned int* dest = (unsigned int*)(destline + x);
@@ -167,7 +170,7 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 				*dest = (*dest & source[2]) ^ source[0];
 				dest++;
 				*dest = (*dest & source[3]) ^ source[1];
-				dest += (pitch >> 2) - 1;
+				dest += (surface_pitch >> 2) - 1;
 				source += 4;
 			}
 		}
@@ -187,7 +190,7 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 					dest[a] = (dest[a] & mask) ^ color; 
 				}
 
-				dest += pitch >> 2;
+				dest += surface_pitch >> 2;
 				source += 16;
 			}
 		}
@@ -202,13 +205,18 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 // V_PrintStr2
 // Same as V_PrintStr but doubles the size of every character.
 //
+// [SL] This isn't used and is probably very broken.
+//
 void DCanvas::PrintStr2 (int x, int y, const char *s, int count) const
 {
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
+
 	const byte *str = (const byte *)s;
 	byte *temp;
 	argb_t *charimg;
 
-	if (y > (height - 16))
+	if (y > (surface_height - 16))
 		return;
 
 	if (x < 0)
@@ -229,9 +237,9 @@ void DCanvas::PrintStr2 (int x, int y, const char *s, int count) const
 	}
 
 	x &= ~3;
-	temp = buffer + y * pitch;
+	temp = mSurface->getBuffer() + y * surface_pitch;
 
-	while (count && x <= (width - 16))
+	while (count && x <= (surface_width - 16))
 	{
 	    // john - tab 4 spaces
         if (*str == '\t')
@@ -262,30 +270,30 @@ void DCanvas::PrintStr2 (int x, int y, const char *s, int count) const
 				buildbits[0] = buildbits[1] = image[0];
 				buildbits[2] = buildbits[3] = image[1];
 				writepos[0] = (writepos[0] & m1) ^ s1;
-				writepos[pitch/4] = (writepos[pitch/4] & m1) ^ s1;
+				writepos[surface_pitch/4] = (writepos[surface_pitch/4] & m1) ^ s1;
 
 				buildmask[0] = buildmask[1] = image[10];
 				buildmask[2] = buildmask[3] = image[11];
 				buildbits[0] = buildbits[1] = image[2];
 				buildbits[2] = buildbits[3] = image[3];
 				writepos[1] = (writepos[1] & m1) ^ s1;
-				writepos[1+pitch/4] = (writepos[1+pitch/4] & m1) ^ s1;
+				writepos[1+surface_pitch/4] = (writepos[1+surface_pitch/4] & m1) ^ s1;
 
 				buildmask[0] = buildmask[1] = image[12];
 				buildmask[2] = buildmask[3] = image[13];
 				buildbits[0] = buildbits[1] = image[4];
 				buildbits[2] = buildbits[3] = image[5];
 				writepos[2] = (writepos[2] & m1) ^ s1;
-				writepos[2+pitch/4] = (writepos[2+pitch/4] & m1) ^ s1;
+				writepos[2+surface_pitch/4] = (writepos[2+surface_pitch/4] & m1) ^ s1;
 
 				buildmask[0] = buildmask[1] = image[14];
 				buildmask[2] = buildmask[3] = image[15];
 				buildbits[0] = buildbits[1] = image[6];
 				buildbits[2] = buildbits[3] = image[7];
 				writepos[3] = (writepos[3] & m1) ^ s1;
-				writepos[3+pitch/4] = (writepos[3+pitch/4] & m1) ^ s1;
+				writepos[3+surface_pitch/4] = (writepos[3+surface_pitch/4] & m1) ^ s1;
 
-				writepos += pitch >> 1;
+				writepos += surface_pitch >> 1;
 				image += 16;
 			}
 
@@ -305,10 +313,6 @@ void DCanvas::PrintStr2 (int x, int y, const char *s, int count) const
 void DCanvas::TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
 {
 	int 		w;
-	const byte *ch;
-	int 		c;
-	int 		cx;
-	int 		cy;
 	int			boldcolor;
 
 	if (normalcolor > NUM_TEXT_COLORS)
@@ -317,13 +321,13 @@ void DCanvas::TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, c
 
 	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
 
-	ch = string;
-	cx = x;
-	cy = y;
+	const byte* ch = string;
+	int cx = x;
+	int cy = y;
 
 	while (1)
 	{
-		c = *ch++;
+		int c = *ch++;
 		if (!c)
 			break;
 
@@ -332,25 +336,16 @@ void DCanvas::TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, c
 			int newcolor = toupper(*ch++);
 
 			if (newcolor == 0)
-			{
 				return;
-			}
 			else if (newcolor == '-')
-			{
 				newcolor = normalcolor;
-			}
 			else if (newcolor >= 'A' && newcolor < 'A' + NUM_TEXT_COLORS)
-			{
 				newcolor -= 'A';
-			}
 			else if (newcolor == '+')
-			{
 				newcolor = boldcolor;
-			}
 			else
-			{
 				continue;
-			}
+
 			V_ColorMap = translationref_t(Ranges + newcolor * 256);
 			continue;
 		}
@@ -370,27 +365,23 @@ void DCanvas::TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, c
 		}
 
 		w = hu_font[c]->width();
-		if (cx+w > width)
+		if (cx + w > mSurface->getWidth())
 			break;
 
-		DrawWrapper (drawer, hu_font[c], cx, cy);
+		DrawWrapper(drawer, hu_font[c], cx, cy);
 		cx+=w;
 	}
 }
 
-void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
+void DCanvas::TextSWrapper(EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
 {
 	TextSWrapper(drawer, normalcolor, x, y, string, CleanXfac, CleanYfac);
 }
 
-void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
+void DCanvas::TextSWrapper(EWrapperCode drawer, int normalcolor, int x, int y, 
 							const byte *string, int scalex, int scaley) const
 {
 	int 		w;
-	const byte *ch;
-	int 		c;
-	int 		cx;
-	int 		cy;
 	int			boldcolor;
 
 	if (normalcolor > NUM_TEXT_COLORS)
@@ -399,13 +390,13 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 
 	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
 
-	ch = string;
-	cx = x;
-	cy = y;
+	const byte* ch = string;
+	int cx = x;
+	int cy = y;
 
 	while (1)
 	{
-		c = *ch++;
+		int c = *ch++;
 		if (!c)
 			break;
 
@@ -414,25 +405,16 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 			int newcolor = toupper(*ch++);
 
 			if (newcolor == 0)
-			{
 				return;
-			}
 			else if (newcolor == '-')
-			{
 				newcolor = normalcolor;
-			}
 			else if (newcolor >= 'A' && newcolor < 'A' + NUM_TEXT_COLORS)
-			{
 				newcolor -= 'A';
-			}
 			else if (newcolor == '+')
-			{
 				newcolor = boldcolor;
-			}
 			else
-			{
 				continue;
-			}
+
 			V_ColorMap = translationref_t(Ranges + newcolor * 256);
 			continue;
 		}
@@ -452,10 +434,10 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		}
 
 		w = hu_font[c]->width() * scalex;
-		if (cx+w > width)
+		if (cx + w > mSurface->getWidth())
 			break;
 
-        DrawSWrapper (drawer, hu_font[c], cx, cy,
+        DrawSWrapper(drawer, hu_font[c], cx, cy,
                         hu_font[c]->width() * scalex,
                         hu_font[c]->height() * scaley);
 
@@ -466,7 +448,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 //
 // Find string width from hu_font chars
 //
-int V_StringWidth (const byte *string)
+int V_StringWidth(const byte* string)
 {
 	int w = 0, c;
 	

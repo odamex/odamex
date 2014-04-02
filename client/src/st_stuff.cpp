@@ -78,10 +78,8 @@ void ST_AdjustStatusBarScale(bool scale)
 		//      enough room for it.  Fixes widescreen status bar scaling.
 		// [ML] A couple of minor changes for true 4:3 correctness...
 		ST_WIDTH = ST_HEIGHT*10;
-		if (!screen->isProtectedRes())
-        {
+		if (!I_IsProtectedResolution())
             ST_WIDTH = SquareWidth;
-        }
 	}
 	else
 	{
@@ -497,40 +495,48 @@ void ST_refreshBackground(void)
 {
 	if (st_statusbaron)
 	{
+		IWindowSurface* surface = I_GetPrimarySurface();
+
 		// [RH] If screen is wider than the status bar,
 		//      draw stuff around status bar.
-		if (FG->width > ST_WIDTH)
+		if (surface->getWidth() > ST_WIDTH)
 		{
-			R_DrawBorder (0, ST_Y, ST_X, FG->height);
-			R_DrawBorder (FG->width - ST_X, ST_Y, FG->width, FG->height);
+			R_DrawBorder(0, ST_Y, ST_X, surface->getHeight());
+			R_DrawBorder(surface->getWidth() - ST_X, ST_Y, surface->getWidth(), surface->getHeight());
 		}
 
-		BG->DrawPatch (sbar, 0, 0);
+		BG->DrawPatch(sbar, 0, 0);
 
-		if (sv_gametype == GM_CTF) {
-			BG->DrawPatch (flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
-			BG->DrawPatch (flagbox, ST_FLGBOXX, ST_FLGBOXY);
-		} else if (sv_gametype == GM_COOP)
-			BG->DrawPatch (armsbg, ST_ARMSBGX, ST_ARMSBGY);
+		if (sv_gametype == GM_CTF)
+		{
+			BG->DrawPatch(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
+			BG->DrawPatch(flagbox, ST_FLGBOXX, ST_FLGBOXY);
+		}
+		else if (sv_gametype == GM_COOP)
+		{
+			BG->DrawPatch(armsbg, ST_ARMSBGX, ST_ARMSBGY);
+		}
 
 		if (multiplayer)
 		{
-			if (!demoplayback || !democlassic) {
+			if (!demoplayback || !democlassic)
+			{
 				// [RH] Always draw faceback with the player's color
 				//		using a translation rather than a different patch.
 				//V_ColorMap = translationtables + (displayplayer_id) * 256;
 				V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
-				BG->DrawTranslatedPatch (faceback, ST_FX, ST_FY);
-			} else {
-				BG->DrawPatch (faceclassic[displayplayer_id-1], ST_FX, ST_FY);
+				BG->DrawTranslatedPatch(faceback, ST_FX, ST_FY);
+			}
+			else
+			{
+				BG->DrawPatch(faceclassic[displayplayer_id-1], ST_FX, ST_FY);
 			}
 		}
 
-		BG->Blit (0, 0, 320, 32, stnumscreen, 0, 0, 320, 32);
+		BG->Blit(0, 0, 320, 32, stnumscreen, 0, 0, 320, 32);
 
 		if (!st_scale)
-			stnumscreen->Blit (0, 0, 320, 32,
-				FG, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
+			stnumscreen->Blit(0, 0, 320, 32, FG, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 	}
 }
 

@@ -33,6 +33,7 @@
 
 class DCanvas;
 class IWindow;
+class IWindowSurface;
 
 // [RH] True if the display is not in a window
 extern BOOL Fullscreen;
@@ -45,6 +46,10 @@ void STACK_ARGS I_ShutdownHardware ();
 void I_ScreenShot(std::string filename);
 
 IWindow* I_GetWindow();
+IWindowSurface* I_GetPrimarySurface();
+
+IWindowSurface* I_AllocateSurface(int width, int height, int bpp);
+void I_FreeSurface(IWindowSurface* surface);
 
 int I_GetVideoWidth();
 int I_GetVideoHeight();
@@ -56,6 +61,7 @@ int I_GetSurfaceHeight();
 void I_SetWindowSize(int width, int height);
 void I_SetSurfaceSize(int width, int height);
 
+bool I_IsProtectedResolution();
 // [RH] Set the display mode
 bool I_SetMode (int &width, int &height, int &bits);
 
@@ -95,8 +101,11 @@ bool I_NextMode (int *width, int *height);
 DCanvas* I_AllocateScreen(int width, int height, int bits, bool primary = false);
 void I_FreeScreen(DCanvas* canvas);
 
+/*
 void I_LockScreen(DCanvas* canvas);
 void I_UnlockScreen(DCanvas* canvas);
+*/
+
 void I_Blit(DCanvas* src, int srcx, int srcy, int srcwidth, int srcheight,
 			DCanvas* dest, int destx, int desty, int destwidth, int destheight);
 
@@ -186,6 +195,9 @@ public:
 	virtual int getHeight() const = 0;
 	virtual int getPitch() const = 0;
 
+	virtual int getPitchInPixels() const
+	{	return getPitch() / getBytesPerPixel();	}
+
 	virtual int getBitsPerPixel() const = 0;
 
 	virtual int getBytesPerPixel() const
@@ -250,6 +262,10 @@ public:
 	{ }
 
 private:
+	// disable copy constructor and assignment operator
+	IDummyWindowSurface(const IDummyWindowSurface&);
+	IDummyWindowSurface& operator=(const IDummyWindowSurface&);
+
 	byte*			mSurfaceBuffer;
 	argb_t			mPalette[256];
 };
@@ -409,6 +425,10 @@ public:
 	virtual void resize(int width, int height) { }
 
 private:
+	// disable copy constructor and assignment operator
+	IDummyWindow(const IDummyWindow&);
+	IDummyWindow& operator=(const IDummyWindow&);
+
 	IVideoModeList		mVideoModes;
 	IWindowSurface*		mPrimarySurface;
 };

@@ -388,14 +388,14 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	}
 }
 
-void r_dimpatchD_SSE2(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h)
+void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	int x, y, i;
-	argb_t *line;
-	int invAlpha = 256 - alpha;
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	int surface_pitch_pixels = surface->getPitchInPixels();
 
-	int dpitch = cvs->pitch / sizeof(argb_t);
-	line = (argb_t *)cvs->buffer + y1 * dpitch;
+	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
+
+	int invAlpha = 256 - alpha;
 
 	int batches = w / 4;
 	int remainder = w & 3;
@@ -407,10 +407,12 @@ void r_dimpatchD_SSE2(const DCanvas *const cvs, argb_t color, int alpha, int x1,
 	const __m128i blendColor = _mm_set_epi16(0, RPART(color), GPART(color), BPART(color), 0, RPART(color), GPART(color), BPART(color));
 	const __m128i blendMult = _mm_mullo_epi16(blendColor, blendAlpha);
 
-	for (y = y1; y < y1 + h; y++)
+	for (int y = y1; y < y1 + h; y++)
 	{
+		int x = x1;
+
 		// SSE2 optimize the bulk in batches of 4 colors:
-		for (i = 0, x = x1; i < batches; ++i, x += 4)
+		for (int i = 0; i < batches; ++i, x += 4)
 		{
 			const __m128i input = _mm_setr_epi32(line[x + 0], line[x + 1], line[x + 2], line[x + 3]);
 			_mm_storeu_si128((__m128i *)&line[x], blend4vs1_sse2(input, blendMult, blendInvAlpha, upper8mask));
@@ -425,7 +427,7 @@ void r_dimpatchD_SSE2(const DCanvas *const cvs, argb_t color, int alpha, int x1,
 			}
 		}
 
-		line += dpitch;
+		line += surface_pitch_pixels;
 	}
 }
 

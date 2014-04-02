@@ -206,14 +206,16 @@ void rtv_lucent4cols_c(byte *source, pixel_t *dest, int bga, int fga)
 	}
 }
 
-void r_dimpatchD_c(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
+class IWindowSurface;
+
+void r_dimpatchD_c(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 #ifdef __SSE2__
 template<typename pixel_t>
 void rtv_lucent4cols_SSE2(byte *source, pixel_t *dest, int bga, int fga);
 void R_DrawSpanD_SSE2(void);
 void R_DrawSlopeSpanD_SSE2(void);
-void r_dimpatchD_SSE2(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
+void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
 #ifdef __MMX__
@@ -221,7 +223,7 @@ template<typename pixel_t>
 void rtv_lucent4cols_MMX(byte *source, pixel_t *dest, int bga, int fga);
 void R_DrawSpanD_MMX(void);
 void R_DrawSlopeSpanD_MMX(void);
-void r_dimpatchD_MMX(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
+void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
 #ifdef __ALTIVEC__
@@ -229,7 +231,7 @@ template<typename pixel_t>
 void rtv_lucent4cols_ALTIVEC(byte *source, pixel_t *dest, int bga, int fga);
 void R_DrawSpanD_ALTIVEC(void);
 void R_DrawSlopeSpanD_ALTIVEC(void);
-void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
+void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
 // Palettized (8bpp) vs. Direct (32bpp) switchable function pointers:
@@ -249,7 +251,7 @@ extern void (*rtv_lucent4colsP)(byte *source, palindex_t *dest, int bga, int fga
 extern void (*rtv_lucent4colsD)(byte *source, argb_t *dest, int bga, int fga);
 extern void (*R_DrawSpanD)(void);
 extern void (*R_DrawSlopeSpanD)(void);
-extern void (*r_dimpatchD)(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
+extern void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 extern "C" int				ds_colsize;		// [RH] Distance between columns
 

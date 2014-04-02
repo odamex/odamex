@@ -221,12 +221,14 @@ bool I_HardwareInitialized()
 
 void I_BeginUpdate ()
 {
+	I_GetPrimarySurface()->lock();
 	screen->Lock ();
 }
 
 void I_FinishUpdateNoBlit ()
 {
 	screen->Unlock ();
+	I_GetPrimarySurface()->unlock();
 }
 
 void I_TempUpdate ()
@@ -598,13 +600,16 @@ void I_ScreenShot(std::string filename)
 	// Create an SDL_Surface object from our screen buffer
 	screen->Lock();
 
-	SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(screen->buffer, screen->width,
-									   screen->height, screen->bits, screen->pitch,
-									   0, 0, 0, 0);
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	
+	SDL_Surface* sdlsurface = SDL_CreateRGBSurfaceFrom(primary_surface->getBuffer(),
+								primary_surface->getWidth(), primary_surface->getHeight(),
+								primary_surface->getBitsPerPixel(), primary_surface->getPitch(),
+								0, 0, 0, 0);
 
 	screen->Unlock();
 
-	if (surface == NULL)
+	if (sdlsurface == NULL)
 	{
 		Printf(PRINT_HIGH, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
 		return;
@@ -623,28 +628,28 @@ void I_ScreenShot(std::string filename)
 			colors[i].unused = 0;
 		}
 
-		SDL_SetColors(surface, colors, 0, 256);
+		SDL_SetColors(sdlsurface, colors, 0, 256);
 	}
 
 	#ifdef USE_PNG
-	int result = I_SavePNG(filename, surface, colors);
+	int result = I_SavePNG(filename, sdlsurface, colors);
 	if (result != 0)
 	{
 		Printf(PRINT_HIGH, "I_SavePNG Error: Returned error code %d\n", result);
-		SDL_FreeSurface(surface);
+		SDL_FreeSurface(sdlsurface);
 		return;
 	}
 	#else
-	int result = I_SaveBMP(filename, surface, colors);
+	int result = I_SaveBMP(filename, sdlsurface, colors);
 	if (result != 0)
 	{
 		Printf(PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
-		SDL_FreeSurface(surface);
+		SDL_FreeSurface(sdlsurface);
 		return;
 	}
 	#endif	// USE_PNG
 
-	SDL_FreeSurface(surface);
+	SDL_FreeSurface(sdlsurface);
 	Printf(PRINT_HIGH, "Screenshot taken: %s\n", filename.c_str());
 }
 
@@ -856,6 +861,7 @@ void I_FreeScreen (DCanvas *canvas)
 	Video->ReleaseSurface (canvas);
 }
 
+/*
 void I_LockScreen (DCanvas *canvas)
 {
 	Video->LockSurface (canvas);
@@ -865,10 +871,12 @@ void I_UnlockScreen (DCanvas *canvas)
 {
 	Video->UnlockSurface (canvas);
 }
+*/
 
 void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 			 DCanvas *dest, int destx, int desty, int destwidth, int destheight)
 {
+/*
     if (!src->m_Private || !dest->m_Private)
 		return;
 
@@ -995,6 +1003,7 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 		I_UnlockScreen (src);
     if (!dest->m_LockCount)
 		I_UnlockScreen (dest);
+*/
 }
 
 // denis - here is a blank implementation of IVideo that allows the client
@@ -1020,25 +1029,19 @@ void IVideo::SetOldPalette (byte *doompalette) {}
 void IVideo::UpdateScreen (DCanvas *canvas) {}
 void IVideo::ReadScreen (byte *block) {}
 
-DCanvas *IVideo::AllocateSurface (int width, int height, int bits, bool primary)
+DCanvas *IVideo::AllocateSurface(int width, int height, int bits, bool primary)
 {
-	DCanvas *scrn = new DCanvas;
+	DCanvas *scrn = new DCanvas(I_GetPrimarySurface());
 
-	scrn->width = width;
-	scrn->height = height;
-	scrn->bits = bits;
 	scrn->m_LockCount = 0;
 	scrn->m_Palette = NULL;
 	// TODO(jsd): Align to 16-byte boundaries for SSE2 optimization!
-	scrn->buffer = new byte[width*height*(bits/8)];
-	scrn->pitch = width * (bits / 8);
 
 	return scrn;
 }
 
-void IVideo::ReleaseSurface (DCanvas *scrn)
+void IVideo::ReleaseSurface(DCanvas *scrn)
 {
-	delete[] scrn->buffer;
 	delete scrn;
 }
 
@@ -1228,14 +1231,7 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 //
 DCanvas* IWindowSurface::createCanvas()
 {
-	DCanvas* canvas = new DCanvas;
-
-	canvas->width = getWidth();
-	canvas->height = getHeight();
-	canvas->bits = getBitsPerPixel();
-	canvas->pitch = getPitch();
-
-	canvas->buffer = getBuffer();
+	DCanvas* canvas = new DCanvas(this);
 
 	canvas->m_LockCount = 0;
 	canvas->m_Palette = NULL;
@@ -1255,8 +1251,9 @@ DCanvas* IWindowSurface::createCanvas()
 //
 void IWindowSurface::releaseCanvas(DCanvas* canvas)
 {
-	if (canvas->buffer != getBuffer())
-		I_Error("IWindowSurface::releaseCanvas: releasing canvas not owned by this surface\n");	
+	// TODO: check if the canvas's mSurface == this
+//	if (canvas->buffer != getBuffer())
+//		I_Error("IWindowSurface::releaseCanvas: releasing canvas not owned by this surface\n");	
 
 	// Remove the DCanvas pointer from the surface's list of allocated canvases
 	DCanvasCollection::iterator it = std::find(mCanvasStore.begin(), mCanvasStore.end(), canvas);
@@ -1319,6 +1316,37 @@ IWindow* I_GetWindow()
 
 
 //
+// I_GetPrimarySurface
+//
+// Returns a pointer to the application window's primary surface object.
+//
+IWindowSurface* I_GetPrimarySurface()
+{
+	return window->getPrimarySurface();
+}
+
+
+//
+// I_AllocateSurface
+//
+// Creates a new (non-primary) surface and returns it.
+//
+IWindowSurface* I_AllocateSurface(int width, int height, int bpp)
+{
+	return new ISDL12WindowSurface(I_GetWindow(), width, height, bpp);
+}
+
+
+//
+// I_FreeSurface
+//
+void I_FreeSurface(IWindowSurface* surface)
+{
+	delete surface;
+}
+
+
+//
 // I_GetFrameBuffer
 //
 // Returns a pointer to the raw frame buffer for the game window's primary
@@ -1326,7 +1354,7 @@ IWindow* I_GetWindow()
 //
 byte* I_GetFrameBuffer()
 {
-	return I_GetWindow()->getPrimarySurface()->getBuffer();
+	return I_GetPrimarySurface()->getBuffer();
 }
 
 
@@ -1335,7 +1363,7 @@ byte* I_GetFrameBuffer()
 //
 int I_GetSurfaceWidth()
 {
-	return I_GetWindow()->getPrimarySurface()->getWidth();
+	return I_GetPrimarySurface()->getWidth();
 }
 
 
@@ -1344,7 +1372,7 @@ int I_GetSurfaceWidth()
 //
 int I_GetSurfaceHeight()
 {
-	return I_GetWindow()->getPrimarySurface()->getHeight();
+	return I_GetPrimarySurface()->getHeight();
 }
 
 
@@ -1370,6 +1398,20 @@ void I_SetSurfaceSize(int width, int height)
 	I_GetWindow()->resize(width, height);
 }
 
+
+//
+// I_IsProtectedReslotuion
+//
+// [ML] If this is 320x200 or 640x400, the resolutions
+// "protected" from aspect ratio correction.
+//
+bool I_IsProtectedResolution()
+{
+	int width = I_GetPrimarySurface()->getWidth();
+	int height = I_GetPrimarySurface()->getHeight();
+ 
+	return (width == 320 && height == 200) || (width == 640 && height == 400);
+}
 
 VERSION_CONTROL (i_video_cpp, "$Id$")
 

@@ -312,18 +312,14 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 		return;
 
 	argb_t *bg2rgb;
-	unsigned int fg;
 
 	{
-		argb_t *fg2rgb;
 		fixed_t fglevel, bglevel, translevel;
 
 		translevel = (fixed_t)(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
-		fg2rgb = Col2RGB8[fglevel>>10];
 		bg2rgb = Col2RGB8[bglevel>>10];
-		fg = fg2rgb[V_ColorFill];
 	}
 
 	do
@@ -531,21 +527,18 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 // V_DrawWrapper
 // Masks a column based masked pic to the screen.
 //
-void DCanvas::DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const
+void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int y) const
 {
-	int 		col;
-	int			colstep;
-	byte*		desttop;
-	int 		w;
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
+	int colstep = mSurface->getBytesPerPixel();
 	vdrawfunc	drawfunc;
 
 	y -= patch->topoffset();
 	x -= patch->leftoffset();
+
 #ifdef RANGECHECK
-	if (x<0
-		||x+patch->width() > width
-		|| y<0
-		|| y+patch->height()>height)
+	if (x < 0 ||x + patch->width() > surface_width || y < 0 || y + patch->height() > surface_height)
 	{
 	  // Printf (PRINT_HIGH, "Patch at %d,%d exceeds LFB\n", x,y );
 	  // No I_Error abort - what is up with TNT.WAD?
@@ -554,26 +547,20 @@ void DCanvas::DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int
 	}
 #endif
 
-	if (is8bit())
-	{
+	if (mSurface->getBitsPerPixel() == 8)
 		drawfunc = Pfuncs[drawer];
-		colstep = 1;
-	}
 	else
-	{
 		drawfunc = Dfuncs[drawer];
-		colstep = 4;
-	}
 
-	if (this == screen)
-		V_MarkRect (x, y, patch->width(), patch->height());
+	// mark if this is the primary drawing surface
+	if (mSurface == I_GetPrimarySurface())
+		V_MarkRect(x, y, patch->width(), patch->height());
 
-	col = 0;
-	desttop = buffer + y*pitch + x * colstep;
+	byte* desttop = mSurface->getBuffer() + y * surface_pitch + x * colstep;
 
-	w = patch->width();
+	int patchwidth = patch->width();
 
-	for ( ; col<w ; x++, col++, desttop += colstep)
+	for (int col = 0; col < patchwidth; x++, col++, desttop += colstep)
 	{
 		tallpost_t *post =
 				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
@@ -581,9 +568,7 @@ void DCanvas::DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int
 		// step through the posts in a column
 		while (!post->end())
 		{
-			drawfunc (post->data(), desttop + post->topdelta * pitch,
-					  post->length, pitch);
-
+			drawfunc(post->data(), desttop + post->topdelta * surface_pitch, post->length, surface_pitch);
 			post = post->next();
 		}
 	}
@@ -608,6 +593,11 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 		return;
 	}
 
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
+	int colstep = mSurface->getBytesPerPixel();
+	vdrawsfunc drawfunc;
+
 	// [AM] Adding 1 to the inc variables leads to fewer weird scaling
 	//      artifacts since it forces col to roll over to the next real number
 	//      a column-of-real-pixels sooner.
@@ -620,27 +610,23 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 	x0 -= (patch->leftoffset() * xmul) >> FRACBITS;
 
 #ifdef RANGECHECK
-	if (x0 < 0 || x0 + destwidth > width || y0 < 0 || y0 + destheight > height)
+	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
 	{
 		DPrintf("DCanvas::DrawSWrapper: bad patch (ignored)\n");
 		return;
 	}
 #endif
 
-	vdrawsfunc drawfunc;
-	int colstep;
-	if (is8bit()) {
+	if (mSurface->getBitsPerPixel() == 8)
 		drawfunc = Psfuncs[drawer];
-		colstep = 1;
-	} else {
+	else
 		drawfunc = Dsfuncs[drawer];
-		colstep = 4;
-	}
 
-	if (this == screen)
+	// mark if this is the primary drawing surface
+	if (mSurface == I_GetPrimarySurface())
 		V_MarkRect(x0, y0, destwidth, destheight);
 
-	byte* desttop = buffer + (y0 * pitch) + (x0 * colstep);
+	byte* desttop = mSurface->getBuffer()+ (y0 * surface_pitch) + (x0 * colstep);
 	int w = MIN(destwidth * xinc, patch->width() << FRACBITS);
 
 	for (int col = 0; col < w; col += xinc, desttop += colstep)
@@ -652,9 +638,9 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 		while (!post->end())
 		{
 			drawfunc(post->data(),
-			         desttop + (((post->topdelta * ymul)) >> FRACBITS) * pitch,
+			         desttop + (((post->topdelta * ymul)) >> FRACBITS) * surface_pitch,
 			         (post->length * ymul) >> FRACBITS,
-			         pitch, yinc);
+			         surface_pitch, yinc);
 
 			post = post->next();
 		}
@@ -666,27 +652,31 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 // Like V_DrawWrapper except it will stretch the patches as
 // needed for non-320x200 screens.
 //
-void DCanvas::DrawIWrapper (EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawIWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
-	if (width == 320 && height == 200)
-		DrawWrapper (drawer, patch, x0, y0);
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+
+	if (surface_width == 320 && surface_height == 200)
+		DrawWrapper(drawer, patch, x0, y0);
 	else
-		DrawSWrapper (drawer, patch,
-			 (width * x0) / 320, (height * y0) / 200,
-			 (width * patch->width()) / 320, (height * patch->height()) / 200);
+		DrawSWrapper(drawer, patch,
+			 (surface_width * x0) / 320, (surface_height * y0) / 200,
+			 (surface_width * patch->width()) / 320, (surface_height * patch->height()) / 200);
 }
 
 //
 // V_DrawCWrapper
 // Like V_DrawIWrapper, except it only uses integral multipliers.
 //
-void DCanvas::DrawCWrapper (EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+
 	if (CleanXfac == 1 && CleanYfac == 1)
-		DrawWrapper (drawer, patch, (x0-160) + (width/2), (y0-100) + (height/2));
+		DrawWrapper(drawer, patch, (x0-160) + (surface_width/2), (y0-100) + (surface_height/2));
 	else
-		DrawSWrapper (drawer, patch,
-			(x0-160)*CleanXfac+(width/2), (y0-100)*CleanYfac+(height/2),
+		DrawSWrapper(drawer, patch,
+			(x0-160)*CleanXfac+(surface_width/2), (y0-100)*CleanYfac+(surface_height/2),
 			patch->width() * CleanXfac, patch->height() * CleanYfac);
 }
 
@@ -694,12 +684,12 @@ void DCanvas::DrawCWrapper (EWrapperCode drawer, const patch_t *patch, int x0, i
 // V_DrawCNMWrapper
 // Like V_DrawCWrapper, except it doesn't adjust the x and y coordinates.
 //
-void DCanvas::DrawCNMWrapper (EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
 	if (CleanXfac == 1 && CleanYfac == 1)
-		DrawWrapper (drawer, patch, x0, y0);
+		DrawWrapper(drawer, patch, x0, y0);
 	else
-		DrawSWrapper (drawer, patch, x0, y0,
+		DrawSWrapper(drawer, patch, x0, y0,
 						patch->width() * CleanXfac,
 						patch->height() * CleanYfac);
 }
@@ -714,7 +704,7 @@ void DCanvas::DrawCNMWrapper (EWrapperCode drawer, const patch_t *patch, int x0,
 //
 // V_CopyRect
 //
-void DCanvas::CopyRect (int srcx, int srcy, int _width, int _height,
+void DCanvas::CopyRect (int srcx, int srcy, int width, int height,
 						int destx, int desty, DCanvas *destscrn)
 {
 	#ifdef RANGECHECK
@@ -737,13 +727,13 @@ void DCanvas::CopyRect (int srcx, int srcy, int _width, int _height,
 	// Rectangle going outside of the source buffer's width and height
 	// means we reduce the size of the rectangle until it fits into the source
 	// buffer.
-	if (srcx + _width > this->width)
+	if (srcx + width > mSurface->getWidth())
 	{
-		_width = this->width - srcx;
+		width = mSurface->getWidth() - srcx;
 	}
-	if (srcy + _height > this->height)
+	if (srcy + height > mSurface->getHeight())
 	{
-		_height = this->height - srcy;
+		height = mSurface->getHeight() - srcy;
 	}
 	// Destination coordinates OOB means we offset our source coordinates by
 	// the same amount, effectively cutting off the top or left hand corner.
@@ -760,24 +750,24 @@ void DCanvas::CopyRect (int srcx, int srcy, int _width, int _height,
 	// Rectangle going outside of the destination buffer's width and height
 	// means we reduce the size of the rectangle (again?) so it fits into the
 	// destination buffer.
-	if (destx + _width > destscrn->width)
+	if (destx + width > destscrn->mSurface->getWidth())
 	{
-		_width = destscrn->width - destx;
+		width = destscrn->mSurface->getWidth() - destx;
 	}
-	if (desty + _height > destscrn->height)
+	if (desty + height > destscrn->mSurface->getHeight())
 	{
-		_height = destscrn->height - desty;
+		height = destscrn->mSurface->getHeight() - desty;
 	}
 	// If rectangle width or height is 0 or less, our blit is useless.
-	if (_width <= 0 || _height <= 0)
+	if (width <= 0 || height <= 0)
 	{
 		DPrintf("DCanvas::CopyRect: Bad copy (ignored)\n");
 		return;
 	}
 	#endif
 
-	V_MarkRect (destx, desty, _width, _height);
-	Blit (srcx, srcy, _width, _height, destscrn, destx, desty, _width, _height);
+	V_MarkRect(destx, desty, width, height);
+	Blit(srcx, srcy, width, height, destscrn, destx, desty, width, height);
 }
 
 //
@@ -788,37 +778,33 @@ void DCanvas::CopyRect (int srcx, int srcy, int _width, int _height,
 // Like V_DrawIWrapper except it only uses one drawing function and draws
 // the patch flipped horizontally.
 //
-void DCanvas::DrawPatchFlipped (const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
 {
-	byte*		desttop;
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
+	int colstep = mSurface->getBytesPerPixel();
+
 	vdrawsfunc	drawfunc;
-	int			colstep;
 	int			destwidth, destheight;
 
-	int			xinc, yinc, col, w, ymul, xmul;
+	x0 = (surface_width * x0) / 320;
+	y0 = (surface_height * y0) / 200;
+	destwidth = (surface_width * patch->width()) / 320;
+	destheight = (surface_height * patch->height()) / 200;
 
-	x0 = (width * x0) / 320;
-	y0 = (height * y0) / 200;
-	destwidth = (width * patch->width()) / 320;
-	destheight = (height * patch->height()) / 200;
-
-	if (!patch || patch->width() <= 0 || patch->height() <= 0 ||
-		destwidth <= 0 || destheight <= 0)
+	if (!patch || patch->width() <= 0 || patch->height() <= 0 || destwidth <= 0 || destheight <= 0)
 		return;
 
-	xinc = (patch->width() << 16) / destwidth + 1;
-	yinc = (patch->height() << 16) / destheight + 1;
-	xmul = (destwidth << 16) / patch->width();
-	ymul = (destheight << 16) / patch->height();
+	int xinc = (patch->width() << 16) / destwidth + 1;
+	int yinc = (patch->height() << 16) / destheight + 1;
+	int xmul = (destwidth << 16) / patch->width();
+	int ymul = (destheight << 16) / patch->height();
 
 	y0 -= (patch->topoffset() * ymul) >> 16;
 	x0 -= (patch->leftoffset() * xmul) >> 16;
 
 #ifdef RANGECHECK
-	if (x0<0
-		|| x0+destwidth > width
-		|| y0<0
-		|| y0+destheight> height)
+	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
 	{
 		//Printf ("Patch at %d,%d exceeds LFB\n", x0,y0 );
 		DPrintf ("DCanvas::DrawPatchFlipped: bad patch (ignored)\n");
@@ -826,22 +812,17 @@ void DCanvas::DrawPatchFlipped (const patch_t *patch, int x0, int y0) const
 	}
 #endif
 
-	if (is8bit()) {
+	if (mSurface->getBitsPerPixel() == 8)
 		drawfunc = Psfuncs[EWrapper_Normal];
-		colstep = 1;
-	} else {
+	else
 		drawfunc = Dsfuncs[EWrapper_Normal];
-		colstep = 4;
-	}
 
-	if (this == screen)
-		V_MarkRect (x0, y0, destwidth, destheight);
+	if (mSurface == I_GetPrimarySurface())
+		V_MarkRect(x0, y0, destwidth, destheight);
 
-	w = destwidth * xinc;
-	col = w - xinc;
-	desttop = buffer + y0*pitch + x0 * colstep;
+	byte* desttop = mSurface->getBuffer()+ y0 * surface_pitch + x0 * colstep;
 
-	for ( ; col >= 0 ; col -= xinc, desttop += colstep)
+	for (int col = (destwidth - 1) * xinc; col >= 0 ; col -= xinc, desttop += colstep)
 	{
 		tallpost_t *post =
 				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col >> 16]));
@@ -849,8 +830,8 @@ void DCanvas::DrawPatchFlipped (const patch_t *patch, int x0, int y0) const
 		// step through the posts in a column
 		while (!post->end())
 		{
-			drawfunc (post->data(), desttop + (((post->topdelta * ymul)) >> 16) * pitch,
-					  (post->length * ymul) >> 16, pitch, yinc);
+			drawfunc (post->data(), desttop + (((post->topdelta * ymul)) >> 16) * surface_pitch,
+					  (post->length * ymul) >> 16, surface_pitch, yinc);
 
 			post = post->next();
 		}
@@ -862,33 +843,28 @@ void DCanvas::DrawPatchFlipped (const patch_t *patch, int x0, int y0) const
 // V_DrawBlock
 // Draw a linear block of pixels into the view buffer.
 //
-void DCanvas::DrawBlock (int x, int y, int _width, int _height, const byte *src) const
+void DCanvas::DrawBlock(int x, int y, int width, int height, const byte *src) const
 {
-	byte *dest;
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
+	int colstep = mSurface->getBytesPerPixel();
+	int line_length = surface_width * colstep;
 
 #ifdef RANGECHECK
-	if (x<0
-		||x+_width > width
-		|| y<0
-		|| y+_height>height)
-	{
-		I_Error ("Bad DCanvas::DrawBlock");
-	}
+	if (x < 0 || x + width > surface_width || y < 0 || y + height > surface_height)
+		I_Error("Bad DCanvas::DrawBlock");
 #endif
 
-	V_MarkRect (x, y, _width, _height);
+	V_MarkRect(x, y, width, height);
 
-	x <<= (is8bit()) ? 0 : 2;
-	_width <<= (is8bit()) ? 0 : 2;
+	byte* dest = mSurface->getBuffer() + y * surface_pitch + x * colstep;
 
-	dest = buffer + y*pitch + x;
-
-	while (_height--)
+	while (height--)
 	{
-		memcpy (dest, src, _width);
-		src += _width;
-		dest += pitch;
-	};
+		memcpy(dest, src, line_length);
+		src += line_length;
+		dest += surface_pitch;
+	}
 }
 
 
@@ -898,25 +874,25 @@ void DCanvas::DrawBlock (int x, int y, int _width, int _height, const byte *src)
 //
 // Gets a linear block of pixels from the view buffer.
 //
-void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
+void DCanvas::GetBlock(int x, int y, int width, int height, byte *dest) const
 {
-	const byte *src;
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
+	int colstep = mSurface->getBytesPerPixel();
+	int line_length = surface_width * colstep;
 
 #ifdef RANGECHECK
-	if (x < 0 ||x + _width > width || y < 0 || y + _height > height)
-		I_Error ("Bad V_GetBlock");
+	if (x < 0 || x + width > surface_width || y < 0 || y + height > surface_height)
+		I_Error("Bad V_GetBlock");
 #endif
 
-	x <<= (is8bit()) ? 0 : 2;
-	_width <<= (is8bit()) ? 0 : 2;
+	const byte* src = mSurface->getBuffer() + y * surface_pitch + x * colstep;
 
-	src = buffer + y*pitch + x;
-
-	while (_height--)
+	while (height--)
 	{
-		memcpy (dest, src, _width);
-		src += pitch;
-		dest += _width;
+		memcpy(dest, src, line_length);
+		src += surface_pitch;
+		dest += line_length;
 	}
 }
 
@@ -928,10 +904,10 @@ void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
 //
 
 template<typename PIXEL_T>
-static inline void V_GetTransposedBlockGeneric(const DCanvas* canvas, int x, int y, int width, int height, byte* destbuffer)
+static inline void V_GetTransposedBlockGeneric(byte* destbuffer, const byte* sourcebuffer,
+			int x, int y, int width, int height, int sourcepitchpixels)
 {
-	const int pitch = canvas->pitch / sizeof(PIXEL_T);
-	const PIXEL_T* source = (PIXEL_T*)canvas->buffer + y * pitch + x;
+	const PIXEL_T* source = (PIXEL_T*)sourcebuffer + y * sourcepitchpixels + x;
 	PIXEL_T* dest = (PIXEL_T*)destbuffer;
 
 	for (int col = x; col < x + width; col++)
@@ -940,22 +916,26 @@ static inline void V_GetTransposedBlockGeneric(const DCanvas* canvas, int x, int
 		for (int row = y; row < y + height; row++)
 		{
 			*dest++ = *sourceptr;
-			sourceptr += pitch;
+			sourceptr += sourcepitchpixels;
 		}
 	}
 }
 
-void DCanvas::GetTransposedBlock(int x, int y, int _width, int _height, byte* destbuffer) const
+void DCanvas::GetTransposedBlock(int x, int y, int width, int height, byte* destbuffer) const
 {
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+
 #ifdef RANGECHECK
-	if (x < 0 ||x + _width > width || y < 0 || y + _height > height)
+	if (x < 0 ||x + width > surface_width || y < 0 || y + height > surface_height)
 		I_Error ("Bad V_GetTransposedBlock");
 #endif
 
-	if (is8bit())
-		V_GetTransposedBlockGeneric<palindex_t>(this, x, y, _width, _height, destbuffer);
+	if (mSurface->getBitsPerPixel() == 8)
+		V_GetTransposedBlockGeneric<palindex_t>(destbuffer, mSurface->getBuffer(),
+				x, y, width, height, mSurface->getPitchInPixels());
 	else
-		V_GetTransposedBlockGeneric<argb_t>(this, x, y, _width, _height, destbuffer);
+		V_GetTransposedBlockGeneric<argb_t>(destbuffer, mSurface->getBuffer(),
+				x, y, width, height, mSurface->getPitchInPixels());
 }
 
 int V_GetColorFromString (const argb_t *palette, const char *cstr)

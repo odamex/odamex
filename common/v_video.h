@@ -29,13 +29,14 @@
 #include <string>
 
 #include "doomtype.h"
-
+#include "i_video.h"
 #include "v_palette.h"
-
 #include "doomdef.h"
 
 // Needed because we are refering to patches.
 #include "r_data.h"
+
+class IWindowSurface;
 
 extern int CleanXfac, CleanYfac;
 
@@ -80,27 +81,20 @@ public:
 		EWrapper_ColoredLucent = 5	// Mixes a solid color in the patch area with the background
 	};
 
-	DCanvas() :
-		buffer(NULL), m_LockCount(0), m_Private(NULL),
-		ashift(24), rshift(16), gshift(8), bshift(0)
+	DCanvas(IWindowSurface* surface) :
+		m_LockCount(0), m_Private(NULL),
+		ashift(24), rshift(16), gshift(8), bshift(0),
+		mSurface(surface)
 	{ }
 
 	virtual ~DCanvas ()
 	{ }
 
-	int bits;
-	byte *buffer;
-	int width;
-	int height;
-	int pitch;
-	inline bool is8bit() const { return bits == 8; }
+	IWindowSurface* getSurface()
+	{	return mSurface;	}
 
-	// [ML] If this is 320x200 or 640x400, the resolutions
-	// "protected" from aspect ratio correction.
-	inline bool isProtectedRes() const
-	{
-		return (width == 320 && height == 200) || (width == 640 && height == 400);
-	}
+	const IWindowSurface* getSurface() const
+	{	return mSurface;	}
 
 	inline void setAlphaShift(byte n)
 	{	ashift = n;	}
@@ -306,6 +300,9 @@ protected:
 	byte rshift;
 	byte gshift;
 	byte bshift;
+
+private:
+	IWindowSurface*			mSurface;
 };
 
 inline void DCanvas::DrawText (int normalcolor, int x, int y, const byte *string) const
@@ -327,8 +324,8 @@ inline void DCanvas::DrawTextCleanLuc (int normalcolor, int x, int y, const byte
 inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const byte *string) const
 {
 	TextSWrapper (EWrapper_Translated, normalcolor,
-		(x - 160) * CleanXfac + width / 2,
-		(y - 100) * CleanYfac + height / 2,
+		(x - 160) * CleanXfac + mSurface->getWidth()/ 2,
+		(y - 100) * CleanYfac + mSurface->getHeight() / 2,
 		string);
 }
 inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const
@@ -360,8 +357,8 @@ inline void DCanvas::DrawTextCleanLuc (int normalcolor, int x, int y, const char
 inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const char *string) const
 {
 	TextSWrapper (EWrapper_Translated, normalcolor,
-		(x - 160) * CleanXfac + width / 2,
-		(y - 100) * CleanYfac + height / 2,
+		(x - 160) * CleanXfac + mSurface->getWidth()/ 2,
+		(y - 100) * CleanYfac + mSurface->getHeight()/ 2,
 		(const byte *)string);
 }
 inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const

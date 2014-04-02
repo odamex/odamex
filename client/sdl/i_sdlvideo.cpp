@@ -255,8 +255,8 @@ void SDLVideo::UpdateScreen(DCanvas *canvas)
 	// If not writing directly to the screen blit to the primary surface
 	if (canvas->m_Private != sdlScreen)
 	{
-		short w = (screenw - canvas->width) >> 1;
-		short h = (screenh - canvas->height) >> 1;
+		short w = (screenw - I_GetSurfaceWidth()) / 2;
+		short h = (screenh - I_GetSurfaceHeight()) / 2;
 		SDL_Rect dstrect = { w, h };
 		SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, &dstrect);
 	}
@@ -300,19 +300,14 @@ void SDLVideo::ReadScreen (byte *block)
 
 DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary)
 {
-	DCanvas *scrn = new DCanvas;
+	DCanvas *scrn = new DCanvas(I_GetPrimarySurface());
 
-	scrn->width = width;
-	scrn->height = height;
-	scrn->bits = bits;
 	scrn->m_LockCount = 0;
 	scrn->m_Palette = NULL;
-	scrn->buffer = NULL;
 
-	SDL_Surface* new_surface;
 	Uint32 flags = SDL_SWSURFACE;
 
-	new_surface = SDL_CreateRGBSurface(flags, width, height, bits, 0, 0, 0, 0);
+	SDL_Surface* new_surface = SDL_CreateRGBSurface(flags, width, height, bits, 0, 0, 0, 0);
 
 	if (!new_surface)
 		I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
@@ -339,7 +334,6 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 	}
 
 	scrn->m_Private = new_surface;
-	scrn->pitch = new_surface->pitch;
 
 	return scrn;
 }
@@ -368,6 +362,7 @@ void SDLVideo::ReleaseSurface(DCanvas *scrn)
 
 void SDLVideo::LockSurface (DCanvas *scrn)
 {
+/*
    SDL_Surface *s = (SDL_Surface *)scrn->m_Private;
 
    if(SDL_MUSTLOCK(s))
@@ -379,16 +374,19 @@ void SDLVideo::LockSurface (DCanvas *scrn)
    }
 
    scrn->buffer = (byte*)s->pixels;
+*/
 }
 
 
 void SDLVideo::UnlockSurface (DCanvas *scrn)
 {
+/*
    if(!scrn->m_Private)
       return;
 
    SDL_UnlockSurface((SDL_Surface *)scrn->m_Private);
    scrn->buffer = NULL;
+*/
 }
 
 bool SDLVideo::Blit (DCanvas *src, int sx, int sy, int sw, int sh, DCanvas *dst, int dx, int dy, int dw, int dh)
@@ -412,16 +410,12 @@ bool SDLVideo::Blit (DCanvas *src, int sx, int sy, int sw, int sh, DCanvas *dst,
 // ISDL12WindowSurface::ISDL12WindowSurface
 //
 ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, int width, int height, int bpp) :
-	IWindowSurface(window), mSDLSurface(NULL), mSurfaceBuffer(NULL),
-	mWidth(width), mHeight(height), mPitch(0), mBitsPerPixel(bpp), mBytesPerPixel(bpp / 8)
+	IWindowSurface(window), mSDLSurface(NULL), mLocks(0)
 {
-	memset(mPalette, 0, 256 * sizeof(*mPalette));
+	Uint32 flags = SDL_SWSURFACE;
+	SDL_Surface* sdlsurface = SDL_CreateRGBSurface(flags, width, height, bpp, 0, 0, 0, 0);
 
-	// TODO: create mSDLSurface
-
-	assert(mWidth <= MAXWIDTH);
-	assert(mHeight <= MAXHEIGHT);
-	assert(mBitsPerPixel == 8 || mBitsPerPixel == 32);
+	initializeFromSDLSurface(sdlsurface);
 }
 
 
@@ -431,15 +425,32 @@ ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, int width, int height,
 // Constructs the surface using an existing SDL_Surface handle.
 //
 ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, SDL_Surface* sdlsurface) :
-	IWindowSurface(window), mSDLSurface(sdlsurface), mSurfaceBuffer(NULL)
+	IWindowSurface(window), mSDLSurface(NULL), mLocks(0)
 {
+	initializeFromSDLSurface(sdlsurface);
+}
+
+
+//
+// ISDL12WindowSurface::initializeFromSDLSurface
+//
+// Private helper function for the constructors.
+//
+void ISDL12WindowSurface::initializeFromSDLSurface(SDL_Surface* sdlsurface)
+{
+	if (mSDLSurface)
+		SDL_FreeSurface(mSDLSurface);
+
+	mSDLSurface = sdlsurface;
+
 	lock();
 	mSurfaceBuffer = (byte*)mSDLSurface->pixels;
 	mWidth = mSDLSurface->w;
 	mHeight = mSDLSurface->h;
-	mPitch = mSDLSurface->pitch;
 	mBitsPerPixel = mSDLSurface->format->BitsPerPixel;
 	mBytesPerPixel = mBitsPerPixel / 8;
+	mPitch = mSDLSurface->pitch;
+	mPitchInPixels = mPitch / mBytesPerPixel;
 	unlock();
 
 	memset(mPalette, 0, 256 * sizeof(*mPalette));
@@ -458,7 +469,8 @@ ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, SDL_Surface* sdlsurfac
 //
 ISDL12WindowSurface::~ISDL12WindowSurface()
 {
-	SDL_FreeSurface(mSDLSurface);
+	if (mSDLSurface)
+		SDL_FreeSurface(mSDLSurface);
 	mSDLSurface = NULL;
 
 	// delete mSurfaceBuffer;
@@ -473,7 +485,11 @@ ISDL12WindowSurface::~ISDL12WindowSurface()
 //
 void ISDL12WindowSurface::lock()
 {
-	SDL_LockSurface(mSDLSurface);
+	if (++mLocks == 1)
+		SDL_LockSurface(mSDLSurface);
+
+	assert(mLocks >= 1);
+	assert(mLocks < 10);
 }
 
 
@@ -485,7 +501,10 @@ void ISDL12WindowSurface::lock()
 //
 void ISDL12WindowSurface::unlock()
 {
-	SDL_UnlockSurface(mSDLSurface);
+	if (--mLocks == 0)
+		SDL_UnlockSurface(mSDLSurface);
+
+	assert(mLocks >= 0);
 }
 
 

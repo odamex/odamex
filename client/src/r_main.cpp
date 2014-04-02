@@ -1291,7 +1291,8 @@ void R_RenderPlayerView (player_t *player)
 	if (BlendA != 0)
 	{
 		unsigned int blend_rgb = MAKERGB(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]);
-		r_dimpatchD(screen, blend_rgb, BlendA, 0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
+		IWindowSurface* surface = I_GetPrimarySurface();
+		r_dimpatchD(surface, blend_rgb, BlendA, 0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 	}
 
 	R_EndInterpolation();
