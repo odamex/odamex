@@ -104,7 +104,6 @@ EXTERN_CVAR (r_detail)
 EXTERN_CVAR (language)
 
 // [Ralphis - Menu] Compatibility Menu
-EXTERN_CVAR (co_level8soundfeature)
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_scale)
@@ -634,7 +633,6 @@ static menuitem_t CompatItems[] ={
 	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{bricktext, "Sound",                           {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{discrete,  "Fix silent west spawns",          {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Normal sound levels on 8th level",	{&co_level8soundfeature},{2.0}, {0.0}, {0.0}, {OffOn}},
 	{discrete,  "ZDoom Sound Response",        		{&co_zdoomsound},     {2.0}, {0.0}, {0.0}, {OnOff}},
 };
 

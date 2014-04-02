@@ -175,9 +175,6 @@ CVAR_RANGE(			sv_maxlives, "0", "Prevent a player from respawing into the game i
 
 	// Fixes to Vanilla
 	//------------------------------
-	CVAR(			co_level8soundfeature, "1", "Enable/disable the \"level 8 full sound at far distances\" feature",
-					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
-
 	CVAR(			co_realactorheight, "0", "Enable/Disable infinitely tall actors",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 

@@ -131,7 +131,6 @@ static struct mus_playing_t
 
 EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (snd_musicsystem)
-EXTERN_CVAR (co_level8soundfeature)
 
 size_t			numChannels;
 
@@ -210,10 +209,11 @@ void S_NoiseDebug (void)
 //
 // Determines if it is appropriate to use the special ExM8 attentuation
 // based on the current map number and the status of co_level8soundfeature
+// [ML] Now based on whether co_zdoomsound is on or it's a multiplayer not-coop game
 //
 static bool S_UseMap8Volume()
 {
-	if (!co_level8soundfeature)
+	if (co_zdoomsound || (multiplayer && sv_gametype != GM_COOP))
 		return false;
 
     if (gameinfo.flags & GI_MAPxx)
