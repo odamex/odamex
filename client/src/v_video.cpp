@@ -448,7 +448,11 @@ static void BuildTransTable (argb_t *palette)
 void DCanvas::Blit (int srcx, int srcy, int srcwidth, int srcheight,
 			 DCanvas *dest, int destx, int desty, int destwidth, int destheight)
 {
-	I_Blit (this, srcx, srcy, srcwidth, srcheight, dest, destx, desty, destwidth, destheight);
+	IWindowSurface* dest_surface = dest->getSurface();
+	IWindowSurface* source_surface = getSurface();
+
+	dest_surface->blit(source_surface, srcx, srcy, srcwidth, srcheight,
+			destx, desty, destwidth, destheight);
 }
 
 CVAR_FUNC_IMPL (vid_widescreen)

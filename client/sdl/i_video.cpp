@@ -199,55 +199,8 @@ void I_InitHardware()
 //	Video->SetWindowedScale(vid_winscale);
 }
 
-/** Remaining code is common to Win32 and Linux **/
 
 // VIDEO WRAPPERS ---------------------------------------------------------
-
-void I_BeginUpdate()
-{
-	I_GetPrimarySurface()->lock();
-}
-
-void I_FinishUpdateNoBlit()
-{
-	I_GetPrimarySurface()->unlock();
-}
-
-void I_FinishUpdate()
-{
-	if (noblit == false)
-	{
-		// Draws frame time and cumulative fps
-		if (vid_displayfps)
-			V_DrawFPSWidget();
-
-		// draws little dots on the bottom of the screen
-		if (vid_ticker)
-			V_DrawFPSTicker();
-
-		window->refresh();
-	}
-
-	I_FinishUpdateNoBlit();
-}
-
-void I_ReadScreen(byte *block)
-{
-//	Video->ReadScreen (block);
-}
-
-void I_SetPalette(const argb_t* palette)
-{
-	window->setPalette(palette);
-}
-
-//
-// I_SetOldPalette - Just for the red screen for now I guess
-//
-void I_SetOldPalette(const palindex_t* palette)
-{
-	window->setPalette(palette);
-}
 
 
 // Set the window caption
@@ -794,140 +747,6 @@ bool I_CheckVideoDriver(const char* name)
 }
 
 
-void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
-			 DCanvas *dest, int destx, int desty, int destwidth, int destheight)
-{
-/*
-    if (!src->m_Private || !dest->m_Private)
-		return;
-
-    if (!src->m_LockCount)
-		src->Lock ();
-    if (!dest->m_LockCount)
-		dest->Lock ();
-
-	if (//!Video->CanBlit() ||
-		!Video->Blit (src, srcx, srcy, srcwidth, srcheight,
-					  dest, destx, desty, destwidth, destheight))
-	{
-		fixed_t fracxstep, fracystep;
-		fixed_t fracx, fracy;
-		int x, y;
-
-		if(!destheight || !destwidth)
-			return;
-
-		fracy = srcy << FRACBITS;
-		fracystep = (srcheight << FRACBITS) / destheight;
-		fracxstep = (srcwidth << FRACBITS) / destwidth;
-
-		if (src->is8bit() == dest->is8bit())
-		{
-			// INDEX8 -> INDEX8 or ARGB8888 -> ARGB8888
-
-			if (dest->is8bit())
-			{
-				// INDEX8 -> INDEX8
-				byte *destline, *srcline;
-
-			if (fracxstep == FRACUNIT)
-			{
-				for (y = desty; y < desty + destheight; y++, fracy += fracystep)
-				{
-					memcpy (dest->buffer + y * dest->pitch + destx,
-							src->buffer + (fracy >> FRACBITS) * src->pitch + srcx,
-							destwidth);
-				}
-			}
-			else
-			{
-				for (y = desty; y < desty + destheight; y++, fracy += fracystep)
-				{
-					srcline = src->buffer + (fracy >> FRACBITS) * src->pitch + srcx;
-					destline = dest->buffer + y * dest->pitch + destx;
-					for (x = fracx = 0; x < destwidth; x++, fracx += fracxstep)
-					{
-						destline[x] = srcline[fracx >> FRACBITS];
-					}
-				}
-			}
-		}
-			else
-			{
-				// ARGB8888 -> ARGB8888
-				argb_t *destline, *srcline;
-
-				if (fracxstep == FRACUNIT)
-				{
-					for (y = desty; y < desty + destheight; y++, fracy += fracystep)
-					{
-						memcpy ((argb_t *)(dest->buffer + y * dest->pitch) + destx,
-								(argb_t *)(src->buffer + (fracy >> FRACBITS) * src->pitch) + srcx,
-								destwidth * (dest->bits / 8));
-					}
-				}
-				else
-				{
-					for (y = desty; y < desty + destheight; y++, fracy += fracystep)
-					{
-						srcline = (argb_t *)(src->buffer + (fracy >> FRACBITS) * src->pitch) + srcx;
-						destline = (argb_t *)(dest->buffer + y * dest->pitch) + destx;
-						for (x = fracx = 0; x < destwidth; x++, fracx += fracxstep)
-						{
-							destline[x] = srcline[fracx >> FRACBITS];
-						}
-					}
-				}
-			}
-		}
-		else if (!src->is8bit() && dest->is8bit())
-		{
-			// ARGB8888 -> INDEX8
-			I_FatalError ("Can't I_Blit() an ARGB8888 source to\nan INDEX8 destination");
-		}
-		else
-		{
-			// INDEX8 -> ARGB8888 (Palette set in V_Palette)
-			argb_t *destline;
-			byte *srcline;
-
-			if (fracxstep == FRACUNIT)
-			{
-				// No X-scaling
-				for (y = desty; y < desty + destheight; y++, fracy += fracystep)
-				{
-					srcline = src->buffer + (fracy >> FRACBITS) * src->pitch + srcx;
-					destline = (argb_t *)(dest->buffer + y * dest->pitch) + destx;
-					for (x = 0; x < destwidth; x++)
-					{
-						destline[x] = V_Palette.shade(srcline[x]);
-					}
-				}
-			}
-			else
-			{
-				// With X-scaling
-				for (y = desty; y < desty + destheight; y++, fracy += fracystep)
-				{
-					srcline = src->buffer + (fracy >> FRACBITS) * src->pitch + srcx;
-					destline = (argb_t *)(dest->buffer + y * dest->pitch) + destx;
-					for (x = fracx = 0; x < destwidth; x++, fracx += fracxstep)
-					{
-						destline[x] = V_Palette.shade(srcline[fracx >> FRACBITS]);
-					}
-				}
-			}
-		}
-	}
-
-    if (!src->m_LockCount)
-		I_UnlockScreen (src);
-    if (!dest->m_LockCount)
-		I_UnlockScreen (dest);
-*/
-}
-
-
 BEGIN_COMMAND(vid_listmodes)
 {
 	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
@@ -1017,8 +836,8 @@ inline argb_t ConvertPixel(argb_t value, const argb_t* palette)
 
 template <typename SOURCE_PIXEL_T, typename DEST_PIXEL_T>
 static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
-					int destpitch, int srcpitch, int destw, int desth,
-					int xstep, int ystep, const argb_t* palette)
+					int destpitchpixels, int srcpitchpixels, int destw, int desth,
+					fixed_t xstep, fixed_t ystep, const argb_t* palette)
 {
 	fixed_t yfrac = 0;
 	for (int y = 0; y < desth; y++)
@@ -1027,15 +846,14 @@ static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 
 		for (int x = 0; x < destw; x++)
 		{
-
 			dest[x] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
 			xfrac += xstep;
 		}
 
-		dest += destpitch;
+		dest += destpitchpixels;
 		yfrac += ystep;
 		
-		source += srcpitch * (yfrac >> FRACBITS);
+		source += srcpitchpixels * (yfrac >> FRACBITS);
 		yfrac -= (yfrac >> FRACBITS);
 	}
 }
@@ -1051,40 +869,68 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 			int destx, int desty, int destw, int desth)
 {
 	// clamp to source surface edges
-	srcw = std::min(srcx + srcw, srcx + source_surface->getWidth());
-	srch = std::min(srcy + srch, srcy + source_surface->getHeight());
+	if (srcx < 0)
+	{
+		srcw += srcx;
+		srcx = 0;
+	}
+
+	if (srcy < 0)
+	{
+		srch += srcy;
+		srcy = 0;
+	}
+
+	if (srcx + srcw > source_surface->getWidth())
+		srcw = source_surface->getWidth() - srcx;
+	if (srcy + srch > source_surface->getHeight())
+		srch = source_surface->getHeight() - srcy;
 
 	if (srcw == 0 || srch == 0)
 		return;
 
-	// clamp to destination surface edges
-	destw = std::min(destx + destw, destx + getWidth());
-	desth = std::min(desty + desth, desty + getHeight());
-	
+	// clamp to dest surface edges
+	if (destx < 0)
+	{
+		destw += destx;
+		destx = 0;
+	}
+
+	if (desty < 0)
+	{
+		desth += desty;
+		desty = 0;
+	}
+
+	if (destx + destw > getWidth())
+		destw = getWidth() - destx;
+	if (desty + desth > getHeight())
+		desth = getHeight() - desty;
+
 	if (destw == 0 || desth == 0)
 		return;
 
-	fixed_t xstep = FixedDiv(srcw << FRACBITS, destw << FRACBITS);
-	fixed_t ystep = FixedDiv(srch << FRACBITS, desth << FRACBITS);
+	fixed_t xstep = FixedDiv((srcw + 1) << FRACBITS, destw << FRACBITS);
+	fixed_t ystep = FixedDiv((srch + 1)<< FRACBITS, desth << FRACBITS);
 
 	int srcbits = source_surface->getBitsPerPixel();
 	int destbits = getBitsPerPixel();
-	int srcpitch = source_surface->getPitch() * 8 / srcbits;
-	int destpitch = getPitch() * 8 / destbits;
+	int srcpitchpixels = source_surface->getPitchInPixels();
+	int destpitchpixels = getPitchInPixels();
 
 	if (srcbits == 8 && destbits == 8)
 	{
-		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitch + srcx;
-		palindex_t* dest = (palindex_t*)getBuffer() + desty * destpitch + destx;
+		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
+		palindex_t* dest = (palindex_t*)getBuffer() + desty * destpitchpixels + destx;
 
-		BlitLoop(dest, source, destpitch, srcpitch, destw, desth, xstep, ystep, getPalette());
+		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, getPalette());
 	}
 	else if (srcbits == 8 && destbits == 32)
 	{
-		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitch + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + desty * destpitch + destx;
+		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
+		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
 
-		BlitLoop(dest, source, destpitch, srcpitch, destw, desth, xstep, ystep, getPalette());
+		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, getPalette());
 	}
 	else if (srcbits == 32 && destbits == 8)
 	{
@@ -1093,10 +939,10 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	}
 	else if (srcbits == 32 && destbits == 32)
 	{
-		const argb_t* source = (argb_t*)source_surface->getBuffer() + srcy * srcpitch + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + desty * destpitch + destx;
+		const argb_t* source = (argb_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
+		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
 
-		BlitLoop(dest, source, destpitch, srcpitch, destw, desth, xstep, ystep, getPalette());
+		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, getPalette());
 	}
 }
 
@@ -1332,6 +1178,69 @@ int I_GetSurfaceWidth()
 int I_GetSurfaceHeight()
 {
 	return I_GetPrimarySurface()->getHeight();
+}
+
+
+//
+// I_BeginUpdate
+//
+// Called at the start of drawing a new video frame. This locks the primary
+// surface for drawing.
+//
+void I_BeginUpdate()
+{
+	I_GetPrimarySurface()->lock();
+}
+
+
+//
+// I_FinishUpdate
+//
+// Called at the end of drawing a video frame. This unlocks the primary
+// surface for drawing and blits the contents to the video screen.
+//
+void I_FinishUpdate()
+{
+	if (noblit == false)
+	{
+		// Draws frame time and cumulative fps
+		if (vid_displayfps)
+			V_DrawFPSWidget();
+
+		// draws little dots on the bottom of the screen
+		if (vid_ticker)
+			V_DrawFPSTicker();
+
+		window->refresh();
+	}
+
+	I_GetPrimarySurface()->unlock();
+}
+
+
+void I_ReadScreen(byte *block)
+{
+//	Video->ReadScreen (block);
+}
+
+
+//
+// I_SetPalette
+//
+void I_SetPalette(const argb_t* palette)
+{
+	window->setPalette(palette);
+}
+
+
+//
+// I_SetOldPalette
+//
+// Sets the window's palette using a raw PLAYPAL palette.
+//
+void I_SetOldPalette(const palindex_t* palette)
+{
+	window->setPalette(palette);
 }
 
 

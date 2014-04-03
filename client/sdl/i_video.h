@@ -75,7 +75,6 @@ void I_SetOldPalette(const palindex_t* palette);
 
 void I_BeginUpdate();			// [RH] Locks primary surface
 void I_FinishUpdate();			// Unlocks primary surface
-void I_FinishUpdateNoBlit();	// Unlocks primary surface
 
 // Wait for vertical retrace or pause a bit.
 void I_WaitVBL(int count);
@@ -98,9 +97,6 @@ bool I_SetOverscan (float scale);
 
 void I_StartModeIterator ();
 bool I_NextMode (int *width, int *height);
-
-void I_Blit(DCanvas* src, int srcx, int srcy, int srcwidth, int srcheight,
-			DCanvas* dest, int destx, int desty, int destwidth, int destheight);
 
 enum EDisplayType
 {
