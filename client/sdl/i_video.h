@@ -42,6 +42,8 @@ extern BOOL Fullscreen;
 void I_InitHardware();
 void STACK_ARGS I_ShutdownHardware();
 
+void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync);
+
 bool I_VideoInitialized();
 
 // [RH] M_ScreenShot now accepts a filename parameter.
@@ -68,16 +70,12 @@ bool I_IsProtectedResolution();
 // [RH] Set the display mode
 bool I_SetMode (int &width, int &height, int &bits);
 
-// Returns true if the Video object has been set up and not yet destroyed
-bool I_HardwareInitialized();
-
 void I_SetPalette(const argb_t* palette);
 void I_SetOldPalette(const palindex_t* palette);
 
-void I_BeginUpdate (void);		// [RH] Locks screen[0]
-void I_FinishUpdate (void);
-void I_FinishUpdateNoBlit (void);
-void I_TempUpdate (void);
+void I_BeginUpdate();			// [RH] Locks primary surface
+void I_FinishUpdate();			// Unlocks primary surface
+void I_FinishUpdateNoBlit();	// Unlocks primary surface
 
 // Wait for vertical retrace or pause a bit.
 void I_WaitVBL(int count);
@@ -111,50 +109,9 @@ enum EDisplayType
 	DISPLAY_Both
 };
 
-EDisplayType I_DisplayType ();
-
-
-
-class IVideo
-{
- public:
-	virtual ~IVideo () {}
-
-	virtual std::string GetVideoDriverName();
-
-	virtual EDisplayType GetDisplayType ();
-	virtual bool FullscreenChanged (bool fs);
-	virtual void SetWindowedScale (float scale);
-	virtual bool CanBlit ();
-
-	virtual bool SetOverscan (float scale);
-
-	virtual int GetWidth() const;
-	virtual int GetHeight() const;
-	virtual int GetBitDepth() const;
-
-	virtual bool SetMode (int width, int height, int bits, bool fs);
-	virtual void SetPalette (argb_t *palette);
-	
-	/* 12/3/06: HACK - Add SetOldPalette to accomodate classic redscreen - ML*/
-	virtual void SetOldPalette (byte *doompalette);
-		
-	virtual void UpdateScreen(DCanvas* canvas);
-	virtual void ReadScreen (byte *block);
-
-	virtual DCanvas* AllocateSurface(int width, int height, int bits, bool primary = false);
-	virtual void ReleaseSurface(DCanvas* scrn);
-	virtual void LockSurface(DCanvas* scrn);
-	virtual void UnlockSurface(DCanvas* scrn);
-	virtual bool Blit(DCanvas* src, int sx, int sy, int sw, int sh,
-					DCanvas* dst, int dx, int dy, int dw, int dh);
-};
-
+EDisplayType I_DisplayType();
 
 // ****************************************************************************
-
-// forward declarations
-class IWindow;
 
 // ============================================================================
 //
@@ -339,21 +296,19 @@ public:
 	{ }
 
 	virtual const IVideoModeList* getSupportedVideoModes() const = 0;
+	virtual const EDisplayType getDisplayType() const = 0;
 
 	virtual IWindowSurface* getPrimarySurface() = 0;
 	virtual const IWindowSurface* getPrimarySurface() const = 0;
 
 	virtual int getWidth() const = 0;
-
 	virtual int getHeight() const = 0;
-
 	virtual int getBitsPerPixel() const = 0;
 
 	virtual int getBytesPerPixel() const
 	{	return getBitsPerPixel() / 8;	}
 
 	virtual void setWindowed() = 0;
-
 	virtual void setFullScreen() = 0;
 
 	virtual bool isFullScreen() const = 0;
@@ -398,6 +353,9 @@ public:
 
 	virtual const IVideoModeList* getSupportedVideoModes() const
 	{	return &mVideoModes;	}
+
+	virtual const EDisplayType getDisplayType() const
+	{	return DISPLAY_Both;	}
 
 	virtual IWindowSurface* getPrimarySurface()
 	{	return mPrimarySurface;	}

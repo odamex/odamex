@@ -420,30 +420,14 @@ void CL_QuitNetGame(void)
 		netdemo.stopPlaying();
 
 	// Reset the palette to default
-	if (I_HardwareInitialized())
+	if (I_VideoInitialized())
 	{
 		int lu_palette = W_GetNumForName("PLAYPAL");
 		if (lu_palette != -1)
 		{
-			byte *pal = (byte *)W_CacheLumpNum(lu_palette, PU_CACHE);
+			byte *pal = (byte*)W_CacheLumpNum(lu_palette, PU_CACHE);
 			if (pal)
-			{
 				I_SetOldPalette(pal);
-			}
-		}
-	}
-
-	// Reset the palette to default
-	if (I_HardwareInitialized())
-	{
-		int lu_palette = W_GetNumForName("PLAYPAL");
-		if (lu_palette != -1)
-		{
-			byte *pal = (byte *)W_CacheLumpNum(lu_palette, PU_CACHE);
-			if (pal)
-			{
-				I_SetOldPalette(pal);
-			}
 		}
 	}
 

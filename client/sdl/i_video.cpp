@@ -97,9 +97,8 @@ static IWindow* window;
 extern constate_e ConsoleState;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 
-static IVideo *Video;
-
 EXTERN_CVAR(vid_fullscreen)
+EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_overscan)
 EXTERN_CVAR(vid_displayfps)
 EXTERN_CVAR(vid_ticker)
@@ -109,6 +108,7 @@ EXTERN_CVAR(vid_defheight)
 
 CVAR_FUNC_IMPL (vid_winscale)
 {
+/*
 	if (Video)
 	{
 		Video->SetWindowedScale(var);
@@ -117,23 +117,21 @@ CVAR_FUNC_IMPL (vid_winscale)
 		NewBits = I_GetVideoBitDepth(); 
 		setmodeneeded = true;
 	}
+*/
 }
 
 CVAR_FUNC_IMPL (vid_overscan)
 {
+/*
 	if (Video)
 		Video->SetOverscan(var);
+*/
 }
 
 void STACK_ARGS I_ShutdownHardware()
 {
-	if (Video)
-		delete Video, Video = NULL;
-
 	delete window;
 	window = NULL;
-		
-    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
 
@@ -188,54 +186,31 @@ void I_InitHardware()
         AddCommandString("checkres");
 */
 
-	bool fullscreen = false;
-	bool vsync = false;
+	bool fullscreen = vid_fullscreen;
+	bool vsync = vid_vsync;
 
-	if (Args.CheckParm("-novideo"))
-	{
-		window = new IDummyWindow();
-		Video = new IVideo();
-	}
-	else
-	{
-		window = new ISDL12Window(width, height, bpp, fullscreen, vsync);
-		Video = new SDLVideo(0);
-	}
-
-	if (Video == NULL || window == NULL)
-		I_FatalError ("Failed to initialize display");
+	I_SetVideoMode(width, height, bpp, fullscreen, vsync);
+	if (!I_VideoInitialized())
+		I_FatalError("Failed to initialize display");
 
 	atterm(I_ShutdownHardware);
 
 	I_SetWindowCaption();
-	Video->SetWindowedScale(vid_winscale);
-}
-
-bool I_HardwareInitialized()
-{
-	return (Video != NULL);
+//	Video->SetWindowedScale(vid_winscale);
 }
 
 /** Remaining code is common to Win32 and Linux **/
 
 // VIDEO WRAPPERS ---------------------------------------------------------
 
-void I_BeginUpdate ()
+void I_BeginUpdate()
 {
-	IWindowSurface* surface = I_GetPrimarySurface();
-	surface->lock();
+	I_GetPrimarySurface()->lock();
 }
 
 void I_FinishUpdateNoBlit()
 {
-	IWindowSurface* surface = I_GetPrimarySurface();
-	surface->unlock();
-}
-
-void I_TempUpdate ()
-{
-	window->refresh();
-//	Video->UpdateScreen (screen);
+	I_GetPrimarySurface()->unlock();
 }
 
 void I_FinishUpdate()
@@ -251,15 +226,14 @@ void I_FinishUpdate()
 			V_DrawFPSTicker();
 
 		window->refresh();
-//		Video->UpdateScreen(screen);
 	}
 
 	I_FinishUpdateNoBlit();
 }
 
-void I_ReadScreen (byte *block)
+void I_ReadScreen(byte *block)
 {
-	Video->ReadScreen (block);
+//	Video->ReadScreen (block);
 }
 
 void I_SetPalette(const argb_t* palette)
@@ -288,7 +262,6 @@ void I_SetWindowCaption(const std::string& caption)
 	if (!caption.empty())
 		title += " " + caption;
 
-//	SDL_WM_SetCaption (title.str().c_str(), title.str().c_str());
 	window->setWindowTitle(title);
 }
 
@@ -686,100 +659,70 @@ CVAR_FUNC_IMPL (cl_screenshotname)
 		var.RestoreDefault();
 }
 
-EDisplayType I_DisplayType ()
+EDisplayType I_DisplayType()
 {
-	return Video->GetDisplayType ();
+	return window->getDisplayType();
 }
 
 bool I_SetOverscan (float scale)
 {
-	return Video->SetOverscan (scale);
+	return false;
+//	return Video->SetOverscan (scale);
 }
 
-int I_GetVideoWidth()
+
+
+bool I_SetMode(int& width, int& height, int& bpp)
 {
-	return window->getWidth();
+	bool fullscreen = false;
+	int temp_bpp = bpp;
 
-/*
-	if (Video)
-		return Video->GetWidth();
-	else
-		return 0;
-*/
-}
-
-int I_GetVideoHeight()
-{
-	return window->getHeight();
-
-/*
-	if (Video)
-		return Video->GetHeight();
-	else
-		return 0;
-*/
-}
-
-int I_GetVideoBitDepth()
-{
-	return window->getBitsPerPixel();
-
-/*
-	if (Video)
-		return Video->GetBitDepth();
-	else
-		return 0;
-*/
-}
-
-bool I_SetMode(int &width, int &height, int &bits)
-{
-	bool fs = false;
-	int tbits = bits;
-
-	switch (Video->GetDisplayType ())
+	switch (I_DisplayType())
 	{
 	case DISPLAY_WindowOnly:
-		fs = false;
+		fullscreen = false;
 		I_PauseMouse();
 		break;
 	case DISPLAY_FullscreenOnly:
-		fs = true;
+		fullscreen = true;
 		I_ResumeMouse();
 		break;
 	case DISPLAY_Both:
-		fs = vid_fullscreen ? true : false;
-
-		fs ? I_ResumeMouse() : I_PauseMouse();
-
+		fullscreen = vid_fullscreen ? true : false;
+		fullscreen ? I_ResumeMouse() : I_PauseMouse();
 		break;
 	}
 
-	if (Video->SetMode(width, height, tbits, fs))
+	I_SetVideoMode(width, height, temp_bpp, fullscreen, vid_vsync);
+	if (I_VideoInitialized())
 		return true;
 
 	// Try the opposite bit mode:
-	tbits = bits == 32 ? 8 : 32;
-	if (Video->SetMode(width, height, tbits, fs))
+	temp_bpp = bpp == 32 ? 8 : 32;
+	I_SetVideoMode(width, height, temp_bpp, fullscreen, vid_vsync);
+	if (I_VideoInitialized())
 		return true;
 
 	// Switch the bit mode back:
-	tbits = bits;
+	temp_bpp = bpp;
 
 	// Try the closest resolution:
 	I_ClosestResolution(&width, &height);
-	if (Video->SetMode(width, height, tbits, fs))
+	I_SetVideoMode(width, height, temp_bpp, fullscreen, vid_vsync);
+	if (I_VideoInitialized())
 		return true;
 
 	// Try the opposite bit mode:
-	tbits = bits == 32 ? 8 : 32;
-	if (Video->SetMode(width, height, tbits, fs))
+	temp_bpp = bpp == 32 ? 8 : 32;
+	I_SetVideoMode(width, height, temp_bpp, fullscreen, vid_vsync);
+	if (I_VideoInitialized())
 		return true;
 
 	// Just couldn't get it:
 	return false;
+
 	//I_FatalError ("Mode %dx%dx%d is unavailable\n",
-	//			width, height, bits);
+	//			width, height, bpp);
 }
 
 
@@ -984,47 +927,6 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 */
 }
 
-// denis - here is a blank implementation of IVideo that allows the client
-// to run without actual video output (e.g. script-controlled demo testing)
-EDisplayType IVideo::GetDisplayType () { return DISPLAY_Both; }
-
-std::string IVideo::GetVideoDriverName () { return ""; }
-
-bool IVideo::FullscreenChanged (bool fs) { return true; }
-void IVideo::SetWindowedScale (float scale) {}
-bool IVideo::CanBlit () { return true; }
-
-bool IVideo::SetOverscan (float scale) { return true; }
-
-int IVideo::GetWidth() const { return 0; }
-int IVideo::GetHeight() const { return 0; }
-int IVideo::GetBitDepth() const { return 0; }
-
-bool IVideo::SetMode (int width, int height, int bits, bool fs) { return true; }
-void IVideo::SetPalette (argb_t *palette) {}
-
-void IVideo::SetOldPalette (byte *doompalette) {}
-void IVideo::UpdateScreen (DCanvas *canvas) {}
-void IVideo::ReadScreen (byte *block) {}
-
-DCanvas *IVideo::AllocateSurface(int width, int height, int bits, bool primary)
-{
-	DCanvas *scrn = new DCanvas(I_GetPrimarySurface());
-
-	// TODO(jsd): Align to 16-byte boundaries for SSE2 optimization!
-
-	return scrn;
-}
-
-void IVideo::ReleaseSurface(DCanvas *scrn)
-{
-	delete scrn;
-}
-
-void IVideo::LockSurface (DCanvas *scrn) {}
-void IVideo::UnlockSurface (DCanvas *scrn)  {}
-bool IVideo::Blit (DCanvas *src, int sx, int sy, int sw, int sh,
-			   DCanvas *dst, int dx, int dy, int dw, int dh) { return true; }
 
 BEGIN_COMMAND(vid_listmodes)
 {
@@ -1293,6 +1195,28 @@ IDummyWindowSurface::~IDummyWindowSurface()
 static int surface_width, surface_height;
 
 
+void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
+{
+	if (window != NULL)
+		delete window;
+
+/*
+	if (vid_autoadjust)
+		I_ClosestResolution(&width, &height);
+
+	if (!V_SetResolution (width, height, bits))
+		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,
+            (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"));
+	else
+        AddCommandString("checkres");
+*/
+
+	if (Args.CheckParm("-novideo"))
+		window = new IDummyWindow();
+	else
+		window = new ISDL12Window(width, height, bpp, fullscreen, vsync);
+}
+
 //
 // I_VideoInitialized
 //
@@ -1311,6 +1235,42 @@ bool I_VideoInitialized()
 IWindow* I_GetWindow()
 {
 	return window;
+}
+
+
+//
+// I_GetVideoWidth
+//
+// Returns the width of the current video mode. Assumes that the video
+// window has already been created.
+//
+int I_GetVideoWidth()
+{
+	return window->getWidth();
+}
+
+
+//
+// I_GetVideoHeight
+//
+// Returns the height of the current video mode. Assumes that the video
+// window has already been created.
+//
+int I_GetVideoHeight()
+{
+	return window->getHeight();
+}
+
+
+//
+// I_GetVideoBitDepth
+//
+// Returns the bits per pixelof the current video mode. Assumes that the video
+// window has already been created.
+//
+int I_GetVideoBitDepth()
+{
+	return window->getBitsPerPixel();
 }
 
 

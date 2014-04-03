@@ -29,88 +29,6 @@
 #include "i_video.h"
 #include "c_console.h"
 
-class SDLVideo : public IVideo
-{
-   public:
-	SDLVideo(int parm);
-	virtual ~SDLVideo (void) {};
-
-	virtual std::string GetVideoDriverName();
-
-	virtual bool CanBlit (void) {return false;}
-	virtual EDisplayType GetDisplayType (void) {return DISPLAY_Both;}
-
-	virtual bool FullscreenChanged (bool fs);
-	virtual void SetWindowedScale (float scale);
-	virtual bool SetOverscan (float scale);
-
-	virtual int GetWidth() const { return screenw; }
-	virtual int GetHeight() const { return screenh; }
-	virtual int GetBitDepth() const { return screenbits; }
-
-	virtual bool SetMode (int width, int height, int bits, bool fs);
-	virtual void SetPalette (DWORD *palette);
-
-	/* 12/3/06: HACK - Add SetOldPalette to accomodate classic redscreen - ML*/
-	virtual void SetOldPalette (byte *doompalette);
-
-	virtual void UpdateScreen (DCanvas *canvas);
-	virtual void ReadScreen (byte *block);
-
-	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false);
-	virtual void ReleaseSurface (DCanvas *scrn);
-	virtual void LockSurface (DCanvas *scrn);
-	virtual void UnlockSurface (DCanvas *scrn);
-	virtual bool Blit (DCanvas *src, int sx, int sy, int sw, int sh,
-					   DCanvas *dst, int dx, int dy, int dw, int dh);
-
-   protected:
-
-   struct vidMode_t
-   {
-		int width, height;
-
-      bool operator<(const vidMode_t& right) const
-      {
-            if (width < right.width)
-               return true;
-            else if (width == right.width && height < right.height)
-               return true;
-         return false;
-      }
-
-      bool operator>(const vidMode_t& right) const
-      {
-            if (width > right.width)
-               return true;
-			else if (width == right.width && height > right.height)
-               return true;
-         return false;
-      }
-
-      bool operator==(const vidMode_t& right) const
-      {
-         return (width == right.width &&
-					height == right.height);
-      }
-   };
-
-   std::vector<vidMode_t> vidModeList;
-   size_t vidModeIterator;
-
-   SDL_Surface *sdlScreen;
-   bool infullscreen;
-   int screenw, screenh;
-   int screenbits;
-
-   SDL_Color newPalette[256];
-   SDL_Color palette[256];
-   bool palettechanged;
-};
-
-
-
-
 // ============================================================================
 //
 // ISDL12WindowSurface class interface
@@ -199,6 +117,9 @@ public:
 
 	virtual const IVideoModeList* getSupportedVideoModes() const
 	{	return &mVideoModes;	}
+
+	virtual const EDisplayType getDisplayType() const
+	{	return DISPLAY_Both;	}
 
 	virtual IWindowSurface* getPrimarySurface()
 	{	return mPrimarySurface;	}
