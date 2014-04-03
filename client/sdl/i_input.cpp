@@ -47,6 +47,7 @@
 
 #ifdef _WIN32
 #include <SDL_syswm.h>
+bool tab_keydown = false;	// [ML] Actual status of tab key
 #endif
 
 #define JOY_DEADZONE 6000
@@ -99,7 +100,13 @@ void I_FlushInput()
 {
 	SDL_Event ev;
 
+	I_DisableKeyRepeat();
+
 	while (SDL_PollEvent(&ev)) {}
+
+	C_ReleaseKeys();
+
+	I_EnableKeyRepeat();
 
 	if (mouse_input)
 		mouse_input->flushEvents();
@@ -183,12 +190,17 @@ static void I_UpdateFocus()
 			I_DisableKeyRepeat();
 		}
 
+#ifdef _WIN32
+		tab_keydown = false;
+#endif
 		C_ReleaseKeys();
 
 		window_focused = new_window_focused;
 
 		if (mouse_input)
-		mouse_input->flushEvents();
+		{
+			mouse_input->flushEvents();
+		}
 	}
 }
 
@@ -610,6 +622,8 @@ void I_GetEvent()
 			break;
 
 		case SDL_KEYDOWN:
+// [ML] Send windows users' trapped tab back here
+keyitdown:
 			event.type = ev_keydown;
 			event.data1 = sdl_ev->key.keysym.sym;
 
@@ -638,8 +652,13 @@ void I_GetEvent()
 				AddCommandString("quit");
 			// SoM: Ignore the tab portion of alt-tab presses
 			// [AM] Windows 7 seems to preempt this check.
-			if (event.data1 == SDLK_TAB && SDL_GetModState() & (KMOD_LALT | KMOD_RALT)) {
-				event.data1 = event.data2 = event.data3 = 0;
+			if (event.data1 == SDLK_TAB)
+			{
+				tab_keydown = true;
+				if (SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
+				{
+					event.data1 = event.data2 = event.data3 = 0;
+				}
 			}
 #endif
 			D_PostEvent(&event);
@@ -648,6 +667,17 @@ void I_GetEvent()
 		case SDL_KEYUP:
 			event.type = ev_keyup;
 			event.data1 = sdl_ev->key.keysym.sym;
+#ifdef _WIN32
+			// [ML] SDL 1.2 directx dumbness - when returning from alt-tab, even with
+			// best practices from other ports, the tab key will get trapped for one key press,
+			// only registering an SDL_KEYUP event.  If this is the case, send them back to the
+			// SDL_KEYDOWN case.  This issue only occurs when the video driver is set to directx
+			// (the default in Odamex).
+			if (event.data1 == SDLK_TAB && tab_keydown == false)
+			{
+				goto keyitdown;
+			}
+#endif
 			if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
 				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
 			else
