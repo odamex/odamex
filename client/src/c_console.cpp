@@ -59,7 +59,7 @@ std::string DownloadStr;
 static void C_TabComplete (void);
 static BOOL TabbedLast;		// Last key pressed was tab
 
-static DCanvas *conback;
+static IWindowSurface*	background_surface;
 
 extern int		gametic;
 extern BOOL		automapactive;	// in AM_map.c
@@ -179,10 +179,10 @@ EXTERN_CVAR (con_scrlock)
 //
 void STACK_ARGS C_Close()
 {
-	if(conback)
+	if (background_surface)
 	{
-		I_FreeScreen(conback);
-		conback = NULL;
+		I_FreeSurface(background_surface);
+		background_surface = NULL;
 	}
 }
 
@@ -207,19 +207,16 @@ void C_InitConsole(int width, int height, BOOL ingame)
 
 	if ( (vidactive = ingame) )
 	{
-		if (!gotconback)
+		if (background_surface == NULL)
 		{
-			patch_t* bg = W_CachePatch(W_GetNumForName("CONBACK"));
+			const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
 
-			delete conback;
-			int conback_width = std::max((int)bg->width(), I_GetSurfaceWidth());
-			int conback_height = std::max((int)bg->width(), I_GetSurfaceWidth());
+			background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+			DCanvas* canvas = background_surface->getDefaultCanvas();
 
-			conback = I_AllocateScreen(conback_width, conback_height, 8);
-
-			conback->Lock();
-			conback->DrawPatch(bg, (conback_width - bg->width()) / 2, (conback_height - bg->height()) / 2);
-			conback->Unlock();
+			background_surface->lock();
+			canvas->DrawPatch(bg_patch, 0, 0);
+			background_surface->unlock();
 
 			gotconback = true;
 		}
@@ -701,6 +698,10 @@ void C_SetTicker (unsigned int at)
 
 void C_DrawConsole (void)
 {
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	int primary_surface_width = primary_surface->getWidth();
+	int primary_surface_height = primary_surface->getHeight();
+
 	unsigned char *zap;
 	int lines, left, offset;
 
@@ -719,38 +720,34 @@ void C_DrawConsole (void)
 	}
 	else if (ConBottom)
 	{
-		int visheight;//, realheight;
+		int visheight = ConBottom;
 
-		visheight = ConBottom;
-
-		if(gamestate == GS_LEVEL || gamestate == GS_DEMOSCREEN || gamestate == GS_INTERMISSION)
+		if (gamestate == GS_LEVEL || gamestate == GS_DEMOSCREEN || gamestate == GS_INTERMISSION)
 		{
-			screen->Dim(0, 0, I_GetSurfaceWidth(), visheight);
+			screen->Dim(0, 0, primary_surface_width, visheight);
 		}
 		else
 		{
-			conback->Blit (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(),
-					screen, 0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
+			primary_surface->blit(background_surface, 0, 0,
+						background_surface->getWidth(), background_surface->getHeight(),
+						0, 0, primary_surface_width, primary_surface_height);
 		}
 
 		if (ConBottom >= 12)
 		{
-			screen->PrintStr(I_GetSurfaceWidth() - 8 - strlen(VersionString) * 8,
-						ConBottom - 12,
-						VersionString, strlen (VersionString));
+			screen->PrintStr(primary_surface_width - 8 - strlen(VersionString) * 8,
+						ConBottom - 12, VersionString, strlen (VersionString));
 
             // Download progress bar hack
             if (gamestate == GS_DOWNLOAD)
             {
-                screen->PrintStr (left + 2,
-						ConBottom - 10,
-						DownloadStr.c_str(), DownloadStr.length());
+                screen->PrintStr (left + 2, ConBottom - 10, DownloadStr.c_str(), DownloadStr.length());
             }
 
 			if (TickerMax)
 			{
 				char tickstr[256];
-				unsigned int i, tickend = ConCols - I_GetSurfaceWidth() / 90 - 6;
+				unsigned int i, tickend = ConCols - primary_surface_width / 90 - 6;
 				unsigned int tickbegin = 0;
 
 				if (TickerLabel)

@@ -45,14 +45,6 @@ extern BOOL    gotconback;
 extern int DisplayWidth, DisplayHeight, DisplayBits;
 extern int SquareWidth;
 
-#define APART(c)				(screen->alphaPart(c))
-#define RPART(c)				(screen->redPart(c))
-#define GPART(c)				(screen->greenPart(c))
-#define BPART(c)				(screen->bluePart(c))
-
-#define MAKERGB(r, g, b)		(screen->makeRGB(r, g, b))
-#define MAKEARGB(a, r, g, b)	(screen->makeARGB(a, r, g, b))
-
 //
 // VIDEO
 //
@@ -82,8 +74,6 @@ public:
 	};
 
 	DCanvas(IWindowSurface* surface) :
-		m_LockCount(0), m_Private(NULL),
-		ashift(24), rshift(16), gshift(8), bshift(0),
 		mSurface(surface)
 	{ }
 
@@ -95,56 +85,6 @@ public:
 
 	const IWindowSurface* getSurface() const
 	{	return mSurface;	}
-
-	inline void setAlphaShift(byte n)
-	{	ashift = n;	}
-
-	inline void setRedShift(byte n)
-	{	rshift = n;	}
-
-	inline void setGreenShift(byte n)
-	{	gshift = n;	}
-
-	inline void setBlueShift(byte n)
-	{	bshift = n;	}
-
-	inline byte getAlphaShift() const
-	{	return ashift;	}
-
-	inline byte getRedShift() const
-	{	return rshift;	}
-
-	inline byte getGreenShift() const
-	{	return gshift;	}
-
-	inline byte getBlueShift() const
-	{	return bshift;	}
-
-	inline argb_t alphaPart(argb_t color) const
-	{	return (color >> ashift) & 0xFF;	}
-
-	inline argb_t redPart(argb_t color) const
-	{	return (color >> rshift) & 0xFF;	}
-
-	inline argb_t greenPart(argb_t color) const
-	{	return (color >> gshift) & 0xFF;	}
-
-	inline argb_t bluePart(argb_t color) const
-	{	return (color >> bshift) & 0xFF;	}
-
-	inline argb_t makeRGB(unsigned int r, unsigned int g, unsigned int b) const
-	{
-		return (r << rshift) | (g << gshift) | (b << bshift);
-	}
-
-	inline argb_t makeARGB(unsigned int a, unsigned int r, unsigned int g, unsigned int b) const
-	{
-		return (a << ashift) | (r << rshift) | (g << gshift) | (b << bshift);
-	}
-
-	int m_LockCount;
-	palette_t *m_Palette;
-	void *m_Private;
 
 	// Copy blocks from one canvas to another
 	void Blit (int srcx, int srcy, int srcwidth, int srcheight, DCanvas *dest, int destx, int desty, int destwidth, int destheight);
@@ -168,14 +108,6 @@ public:
 
 	// Set an area to a specified color
 	void Clear (int left, int top, int right, int bottom, int color) const;
-
-	// Access control
-	void Lock ();
-	void Unlock ();
-
-	// Palette control (unused)
-	void AttachPalette (palette_t *pal);
-	void DetachPalette ();
 
 	// Text drawing functions
 	// Output a line of text using the console font
@@ -295,11 +227,6 @@ protected:
 	// The current set of column drawers (set in V_SetResolution)
 	static vdrawfunc *m_Drawfuncs;
 	static vdrawsfunc *m_Drawsfuncs;
-
-	byte ashift;
-	byte rshift;
-	byte gshift;
-	byte bshift;
 
 private:
 	IWindowSurface*			mSurface;

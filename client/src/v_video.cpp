@@ -445,38 +445,6 @@ static void BuildTransTable (argb_t *palette)
 	}
 }
 
-void DCanvas::Lock ()
-{
-	m_LockCount++;
-	if (m_LockCount == 1)
-	{
-		mSurface->lock();
-//		I_LockScreen(this);
-
-		if (mSurface == I_GetPrimarySurface())
-		{
-			if (dcol.pitch != mSurface->getPitch() << detailyshift)
-			{
-				dcol.pitch = mSurface->getPitch() << detailyshift;
-				R_InitFuzzTable();
-			}
-
-			if (1 << detailxshift != dspan.colsize)
-			{
-				dspan.colsize = 1 << detailxshift;
-			}
-		}
-	}
-}
-
-void DCanvas::Unlock ()
-{
-	if (m_LockCount)
-		if (--m_LockCount == 0)
-			mSurface->unlock();
-//			I_UnlockScreen(this);
-}
-
 void DCanvas::Blit (int srcx, int srcy, int srcwidth, int srcheight,
 			 DCanvas *dest, int destx, int desty, int destwidth, int destheight)
 {
@@ -570,17 +538,10 @@ static bool V_DoModeSetup(int width, int height, int bits)
 {
 	int basew = 320, baseh = 200;
 
-	// Free the virtual framebuffer
-	if (screen)
-	{
-		I_FreeScreen(screen);
-		screen = NULL;
-	}
-
 	if (!I_SetMode(width, height, bits))
 		return false;
 
-	I_SetOverscan (vid_overscan);
+	I_SetOverscan(vid_overscan);
 
 	if (V_UsePillarBox())
 		width = (4 * height) / 3;
@@ -619,12 +580,12 @@ static bool V_DoModeSetup(int width, int height, int bits)
 	// cache thrashing
 	int cache_fudge = (width % 256) == 0 ? 4 : 0;
 
-	screen = I_AllocateScreen(width + cache_fudge, height, bits, primary);
+	screen = I_GetPrimarySurface()->getDefaultCanvas();
 
 	V_ForceBlend (0,0,0,0);
-	GammaAdjustPalettes ();
-		RefreshPalettes ();
-	R_ReinitColormap ();
+	GammaAdjustPalettes();
+	RefreshPalettes();
+	R_ReinitColormap();
 
 	R_InitColumnDrawers();
 	R_MultiresInit();
@@ -641,7 +602,7 @@ bool V_SetResolution(int width, int height, int bits)
 {
 	int oldwidth, oldheight, oldbits;
 
-	if (screen)
+	if (I_VideoInitialized())
 	{
 		oldwidth = I_GetVideoWidth();
 		oldheight = I_GetVideoHeight();
@@ -767,11 +728,9 @@ void V_InitPalette (void)
 //
 void STACK_ARGS V_Close()
 {
-	if(screen)
-	{
-		I_FreeScreen(screen);
+	// screen is automatically free'd by the primary surface
+	if (screen)
 		screen = NULL;
-	}
 }
 
 //
@@ -846,27 +805,6 @@ void V_Init (void)
 	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight(), true);
 }
 
-void DCanvas::AttachPalette (palette_t *pal)
-{
-	if (m_Palette == pal)
-		return;
-
-	DetachPalette ();
-
-	pal->usecount++;
-	m_Palette = pal;
-}
-
-
-void DCanvas::DetachPalette ()
-{
-	if (m_Palette)
-	{
-		FreePalette (m_Palette);
-		m_Palette = NULL;
-	}
-}
-
 
 //
 // V_DrawFPSWidget
@@ -912,12 +850,11 @@ void V_DrawFPSWidget()
 //
 void V_DrawFPSTicker()
 {
-	static QWORD lasttic = 0;
-	QWORD i = I_MSTime() * TICRATE / 1000;
-	QWORD tics = i - lasttic;
-	lasttic = i;
-	if (tics > 20)
-		tics = 20;
+	int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
+	static int last_tic = current_tic;
+	
+	int tics = clamp(current_tic - last_tic, 0, 20);
+	last_tic = current_tic;
 
 	IWindowSurface* surface = I_GetPrimarySurface();
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
@@ -927,6 +864,7 @@ void V_DrawFPSTicker()
 	{
 		palindex_t* dest = (palindex_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
 
+		int i = 0;
 		for (i = 0; i < tics*2; i += 2)
 			dest[i] = 0xFF;
 		for ( ; i < 20*2; i += 2)
@@ -936,6 +874,7 @@ void V_DrawFPSTicker()
 	{
 		argb_t* dest = (argb_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
 
+		int i = 0;
 		for (i = 0; i < tics*2; i += 2)
 			dest[i] = MAKEARGB(255, 255, 255, 255);
 		for ( ; i < 20*2; i += 2)

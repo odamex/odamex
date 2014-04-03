@@ -360,9 +360,9 @@ static patch_t*			lnames[2];
 
 // [RH] Info to dynamically generate the level name graphics
 static int				lnamewidths[2];
-static const char			*lnametexts[2];
+static const char*		lnametexts[2];
 
-static DCanvas			*background;
+static IWindowSurface*	background_surface;
 
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_newintermission)
@@ -377,8 +377,14 @@ EXTERN_CVAR (cl_autoscreenshot)
 
 void WI_slamBackground (void)
 {
-	background->Blit(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(),
-		FB, 0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+
+	background_surface->lock();
+
+	primary_surface->blit(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
+				0, 0, primary_surface->getWidth(), primary_surface->getHeight());
+
+	background_surface->unlock();
 }
 
 static int WI_DrawName (const char *str, int x, int y)
@@ -610,25 +616,25 @@ void WI_updateAnimatedBack (void)
 
 }
 
-void WI_drawAnimatedBack (void)
+void WI_drawAnimatedBack()
 {
-	int i;
-	anim_t *a;
-
-	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2)
+	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2 && NUMANIMS[wbs->epsd] > 0)
 	{
-		background->Lock ();
-		for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
-		{
-			a = &anims[wbs->epsd][i];
+		DCanvas* canvas = background_surface->getDefaultCanvas();
 
+		background_surface->lock();
+
+		for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
+		{
+			anim_t* a = &anims[wbs->epsd][i];
 			if (a->ctr >= 0)
-				background->DrawPatch (a->p[a->ctr], a->loc.x, a->loc.y);
+				canvas->DrawPatch(a->p[a->ctr], a->loc.x, a->loc.y);
 		}
-		background->Unlock ();
+
+		background_surface->unlock();
 	}
 
-	WI_slamBackground ();
+	WI_slamBackground();
 }
 
 int WI_drawNum (int n, int x, int y, int digits)
@@ -730,14 +736,14 @@ void WI_drawTime (int t, int x, int y)
     }
 }
 
-void WI_End (void)
+void WI_End()
 {
 	WI_unloadData();
 
-	if(background)
+	if (background_surface)
 	{
-		I_FreeScreen(background);
-		background = NULL;
+		I_FreeSurface(background_surface);
+		background_surface = NULL;
 	}
 }
 
@@ -792,7 +798,7 @@ void WI_drawShowNextLoc (void)
 	int i;
 
 	// draw animated background
-	WI_drawAnimatedBack ();
+	WI_drawAnimatedBack();
 
 	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
@@ -1343,20 +1349,20 @@ void WI_loadData (void)
 	int i, j;
 	char name[9];
 	anim_t *a;
-	patch_t *bg;
 
-	if ((gameinfo.flags & GI_MAPxx) ||
-		((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
-		strcpy (name, "INTERPIC");
+	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
+		strcpy(name, "INTERPIC");
 	else
-		sprintf (name, "WIMAP%d", wbs->epsd);
+		sprintf(name, "WIMAP%d", wbs->epsd);
 
 	// background
-	bg = W_CachePatch (name);
-	background = I_AllocateScreen (bg->width(), bg->height(), 8);
-	background->Lock ();
-	background->DrawPatch (bg, 0, 0);
-	background->Unlock ();
+	const patch_t* bg_patch = W_CachePatch(name);
+	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+	DCanvas* canvas = background_surface->getDefaultCanvas();
+
+	background_surface->lock();
+	canvas->DrawPatch(bg_patch, 0, 0);
+	background_surface->unlock();
 
 	for (i = 0; i < 2; i++)
 	{
@@ -1546,7 +1552,7 @@ void WI_Drawer (void)
 {
 	// If the background screen has been freed, then we really shouldn't
 	// be in here. (But it happens anyway.)
-	if (background)
+	if (background_surface)
 	{
 		switch (state)
 		{

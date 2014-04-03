@@ -114,9 +114,8 @@ extern BOOL setsizeneeded;
 extern BOOL automapactive;
 
 // [RH] Status bar background
-DCanvas *stbarscreen;
-// [RH] Active status bar
-DCanvas *stnumscreen;
+IWindowSurface* stbar_surface;
+IWindowSurface* stnum_surface;
 
 // functions in st_new.c
 void ST_initNew (void);
@@ -495,26 +494,28 @@ void ST_refreshBackground(void)
 {
 	if (st_statusbaron)
 	{
-		IWindowSurface* surface = I_GetPrimarySurface();
+		IWindowSurface* primary_surface = I_GetPrimarySurface();
 
 		// [RH] If screen is wider than the status bar,
 		//      draw stuff around status bar.
-		if (surface->getWidth() > ST_WIDTH)
+		if (primary_surface->getWidth() > ST_WIDTH)
 		{
-			R_DrawBorder(0, ST_Y, ST_X, surface->getHeight());
-			R_DrawBorder(surface->getWidth() - ST_X, ST_Y, surface->getWidth(), surface->getHeight());
+			R_DrawBorder(0, ST_Y, ST_X, primary_surface->getHeight());
+			R_DrawBorder(primary_surface->getWidth() - ST_X, ST_Y,
+						primary_surface->getWidth(), primary_surface->getHeight());
 		}
 
-		BG->DrawPatch(sbar, 0, 0);
+		DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
+		stbar_canvas->DrawPatch(sbar, 0, 0);
 
 		if (sv_gametype == GM_CTF)
 		{
-			BG->DrawPatch(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
-			BG->DrawPatch(flagbox, ST_FLGBOXX, ST_FLGBOXY);
+			stbar_canvas->DrawPatch(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
+			stbar_canvas->DrawPatch(flagbox, ST_FLGBOXX, ST_FLGBOXY);
 		}
 		else if (sv_gametype == GM_COOP)
 		{
-			BG->DrawPatch(armsbg, ST_ARMSBGX, ST_ARMSBGY);
+			stbar_canvas->DrawPatch(armsbg, ST_ARMSBGX, ST_ARMSBGY);
 		}
 
 		if (multiplayer)
@@ -525,18 +526,20 @@ void ST_refreshBackground(void)
 				//		using a translation rather than a different patch.
 				//V_ColorMap = translationtables + (displayplayer_id) * 256;
 				V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
-				BG->DrawTranslatedPatch(faceback, ST_FX, ST_FY);
+				stbar_canvas->DrawTranslatedPatch(faceback, ST_FX, ST_FY);
 			}
 			else
 			{
-				BG->DrawPatch(faceclassic[displayplayer_id-1], ST_FX, ST_FY);
+				stbar_canvas->DrawPatch(faceclassic[displayplayer_id-1], ST_FX, ST_FY);
 			}
 		}
 
-		BG->Blit(0, 0, 320, 32, stnumscreen, 0, 0, 320, 32);
+		stnum_surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
+				0, 0, stnum_surface->getWidth(), stnum_surface->getHeight());
 
 		if (!st_scale)
-			stnumscreen->Blit(0, 0, 320, 32, FG, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
+			primary_surface->blit(stnum_surface, 0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
+					ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 	}
 }
 
@@ -1331,9 +1334,10 @@ void ST_drawWidgets(bool refresh)
 		STlib_updateBinIcon (&w_flagboxred, refresh);
 	}
 
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	if (st_scale && st_statusbaron)
-		stnumscreen->Blit (0, 0, 320, 32,
-			FG, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
+		primary_surface->blit(stnum_surface, 0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
+				ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);	
 }
 
 void ST_doRefresh(void)
@@ -1377,20 +1381,16 @@ void ST_Drawer (void)
 	}
 	else
 	{
-		stbarscreen->Lock ();
-		stnumscreen->Lock ();
+		stbar_surface->lock();
+		stnum_surface->lock();
 
 		if (st_firsttime)
-		{
-			ST_doRefresh ();
-		}
+			ST_doRefresh();
 		else
-		{
-			ST_diffDraw ();
-		}
+			ST_diffDraw();
 
-		stnumscreen->Unlock ();
-		stbarscreen->Unlock ();
+		stbar_surface->unlock();
+		stnum_surface->unlock();
 
 		hud::DoomHUD();
 	}
@@ -1798,11 +1798,10 @@ void ST_Stop (void)
 
 void ST_Init (void)
 {
-	if(!stbarscreen)
-		stbarscreen = I_AllocateScreen (320, 32, 8);
-
-	if(!stnumscreen)
-		stnumscreen = I_AllocateScreen (320, 32, 8);
+	if (stbar_surface == NULL)
+		stbar_surface = I_AllocateSurface(320, 32, 8);
+	if (stnum_surface == NULL)
+		stnum_surface = I_AllocateSurface(320, 32, 8);
 
 	ST_loadData();
 }

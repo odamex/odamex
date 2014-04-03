@@ -35,11 +35,8 @@
 //
 // [RH] Status bar is another screen allocated
 // by status bar code instead of video code.
-extern DCanvas *stbarscreen;
-extern DCanvas *stnumscreen;
-#define BG (stbarscreen)
-#define FG (screen)
-
+extern IWindowSurface* stbar_surface;
+extern IWindowSurface* stnum_surface;
 
 
 //

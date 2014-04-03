@@ -101,6 +101,7 @@ static IVideo *Video;
 
 EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_overscan)
+EXTERN_CVAR(vid_displayfps)
 EXTERN_CVAR(vid_ticker)
 EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_defwidth)
@@ -221,30 +222,39 @@ bool I_HardwareInitialized()
 
 void I_BeginUpdate ()
 {
-	I_GetPrimarySurface()->lock();
-	screen->Lock ();
+	IWindowSurface* surface = I_GetPrimarySurface();
+	surface->lock();
 }
 
-void I_FinishUpdateNoBlit ()
+void I_FinishUpdateNoBlit()
 {
-	screen->Unlock ();
-	I_GetPrimarySurface()->unlock();
+	IWindowSurface* surface = I_GetPrimarySurface();
+	surface->unlock();
 }
 
 void I_TempUpdate ()
 {
-	Video->UpdateScreen (screen);
+	window->refresh();
+//	Video->UpdateScreen (screen);
 }
 
-void I_FinishUpdate ()
+void I_FinishUpdate()
 {
 	if (noblit == false)
 	{
+		// Draws frame time and cumulative fps
+		if (vid_displayfps)
+			V_DrawFPSWidget();
+
+		// draws little dots on the bottom of the screen
+		if (vid_ticker)
+			V_DrawFPSTicker();
+
 		window->refresh();
-		Video->UpdateScreen(screen);
+//		Video->UpdateScreen(screen);
 	}
 
-	screen->Unlock(); // SoM: we should probably do this, eh?
+	I_FinishUpdateNoBlit();
 }
 
 void I_ReadScreen (byte *block)
@@ -252,10 +262,17 @@ void I_ReadScreen (byte *block)
 	Video->ReadScreen (block);
 }
 
-void I_SetPalette(argb_t* palette)
+void I_SetPalette(const argb_t* palette)
 {
 	window->setPalette(palette);
-	Video->SetPalette(palette);
+}
+
+//
+// I_SetOldPalette - Just for the red screen for now I guess
+//
+void I_SetOldPalette(const palindex_t* palette)
+{
+	window->setPalette(palette);
 }
 
 
@@ -598,16 +615,15 @@ void I_ScreenShot(std::string filename)
 	}
 
 	// Create an SDL_Surface object from our screen buffer
-	screen->Lock();
-
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	primary_surface->lock();
 	
 	SDL_Surface* sdlsurface = SDL_CreateRGBSurfaceFrom(primary_surface->getBuffer(),
 								primary_surface->getWidth(), primary_surface->getHeight(),
 								primary_surface->getBitsPerPixel(), primary_surface->getPitch(),
 								0, 0, 0, 0);
 
-	screen->Unlock();
+	primary_surface->unlock();
 
 	if (sdlsurface == NULL)
 	{
@@ -668,14 +684,6 @@ CVAR_FUNC_IMPL (cl_screenshotname)
 	// No empty format strings allowed.
 	if (strlen(var.cstring()) == 0)
 		var.RestoreDefault();
-}
-
-//
-// I_SetOldPalette - Just for the red screen for now I guess
-//
-void I_SetOldPalette(palindex_t* doompalette)
-{
-    Video->SetOldPalette(doompalette);
 }
 
 EDisplayType I_DisplayType ()
@@ -843,36 +851,6 @@ bool I_CheckVideoDriver(const char* name)
 }
 
 
-DCanvas *I_AllocateScreen (int width, int height, int bits, bool primary)
-{
-	DCanvas *scrn = Video->AllocateSurface (width, height, bits, primary);
-
-	if (!scrn)
-	{
-		I_FatalError ("Failed to allocate a %dx%dx%d surface",
-					  width, height, bits);
-	}
-
-	return scrn;
-}
-
-void I_FreeScreen (DCanvas *canvas)
-{
-	Video->ReleaseSurface (canvas);
-}
-
-/*
-void I_LockScreen (DCanvas *canvas)
-{
-	Video->LockSurface (canvas);
-}
-
-void I_UnlockScreen (DCanvas *canvas)
-{
-	Video->UnlockSurface (canvas);
-}
-*/
-
 void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 			 DCanvas *dest, int destx, int desty, int destwidth, int destheight)
 {
@@ -1033,8 +1011,6 @@ DCanvas *IVideo::AllocateSurface(int width, int height, int bits, bool primary)
 {
 	DCanvas *scrn = new DCanvas(I_GetPrimarySurface());
 
-	scrn->m_LockCount = 0;
-	scrn->m_Palette = NULL;
 	// TODO(jsd): Align to 16-byte boundaries for SSE2 optimization!
 
 	return scrn;
@@ -1097,7 +1073,7 @@ END_COMMAND(vid_currentmode)
 // Assigns the pointer to the window that owns this surface.
 //
 IWindowSurface::IWindowSurface(IWindow* window) :
-	mWindow(window)
+	mWindow(window), mCanvas(NULL)
 { }
 
 
@@ -1232,13 +1208,24 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 DCanvas* IWindowSurface::createCanvas()
 {
 	DCanvas* canvas = new DCanvas(this);
-
-	canvas->m_LockCount = 0;
-	canvas->m_Palette = NULL;
-
 	mCanvasStore.push_back(canvas);
 
 	return canvas;
+}
+
+
+//
+// IWindowSurface::getDefaultCanvas
+//
+// Returns the default DCanvas object for the surface, creating it if it
+// has not yet been instantiated.
+//
+DCanvas* IWindowSurface::getDefaultCanvas()
+{
+	if (mCanvas == NULL)
+		mCanvas = createCanvas();
+
+	return mCanvas;
 }
 
 
@@ -1251,14 +1238,16 @@ DCanvas* IWindowSurface::createCanvas()
 //
 void IWindowSurface::releaseCanvas(DCanvas* canvas)
 {
-	// TODO: check if the canvas's mSurface == this
-//	if (canvas->buffer != getBuffer())
-//		I_Error("IWindowSurface::releaseCanvas: releasing canvas not owned by this surface\n");	
+	if (canvas->getSurface() != this)
+		I_Error("IWindowSurface::releaseCanvas: releasing canvas not owned by this surface\n");	
 
 	// Remove the DCanvas pointer from the surface's list of allocated canvases
 	DCanvasCollection::iterator it = std::find(mCanvasStore.begin(), mCanvasStore.end(), canvas);
 	if (it != mCanvasStore.end())
 		mCanvasStore.erase(it);
+
+	if (canvas == mCanvas)
+		mCanvas = NULL;
 
 	delete canvas;
 }
@@ -1303,6 +1292,16 @@ IDummyWindowSurface::~IDummyWindowSurface()
 // these should be updated every time the window or surface are resized
 static int surface_width, surface_height;
 
+
+//
+// I_VideoInitialized
+//
+// Returns true if the video subsystem has been initialized.
+//
+bool I_VideoInitialized()
+{
+	return window != NULL && window->getPrimarySurface() != NULL;
+}
 
 //
 // I_GetWindow

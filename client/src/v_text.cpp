@@ -66,6 +66,7 @@ void V_InitConChars(palindex_t transcolor)
 	// Load the CONCHARS lump and convert it from patch_t format
 	// to a raw linear byte buffer with a background color of 'transcolor'
 	IWindowSurface* temp_surface = I_AllocateSurface(128, 128, 8);
+	DCanvas* temp_canvas = temp_surface->getDefaultCanvas();
 
 	temp_surface->lock();
 	palindex_t* temp_surface_buffer = (palindex_t*)temp_surface->getBuffer();
@@ -75,9 +76,7 @@ void V_InitConChars(palindex_t transcolor)
 		memset(temp_surface_buffer + y * temp_surface->getPitch(), transcolor, 128);
 
 	// paste the patch into the linear byte bufer
-	DCanvas* temp_canvas = temp_surface->createCanvas();
 	temp_canvas->DrawPatch(chars_patch, 0, 0);
-	temp_surface->releaseCanvas(temp_canvas);
 
 	ConChars = new byte[256*8*8*2];
 

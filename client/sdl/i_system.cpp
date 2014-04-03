@@ -211,21 +211,25 @@ void I_BeginRead(void)
 	{
 		patch_t *diskpatch = W_CachePatch("STDISK");
 
-		if (!screen || !diskpatch || in_endoom)
+		if (!I_VideoInitialized())
 			return;
 
-		screen->Lock();
+		if (!diskpatch || in_endoom)
+			return;
 
-		int scale = MIN(CleanXfac, CleanYfac);
+		IWindowSurface* surface = I_GetPrimarySurface();
+		surface->lock();
+
+		int scale = std::min(CleanXfac, CleanYfac);
 		int w = diskpatch->width() * scale;
 		int h = diskpatch->height() * scale;
 		// offset x and y for the lower right corner of the screen
-		int ofsx = I_GetVideoWidth() - w + (scale * diskpatch->leftoffset());
-		int ofsy = I_GetVideoHeight() - h + (scale * diskpatch->topoffset());
+		int ofsx = surface->getWidth() - w + (scale * diskpatch->leftoffset());
+		int ofsy = surface->getHeight() - h + (scale * diskpatch->topoffset());
 
 		screen->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
 
-		screen->Unlock();
+		surface->unlock();
 	}
 }
 

@@ -236,6 +236,7 @@ void SDLVideo::SetOldPalette(byte *doompalette)
 
 void SDLVideo::UpdateScreen(DCanvas *canvas)
 {
+/*
 	// Draws frame time and cumulative fps
 	if (vid_displayfps)
 		V_DrawFPSWidget();
@@ -265,6 +266,7 @@ void SDLVideo::UpdateScreen(DCanvas *canvas)
 		SDL_Flip(sdlScreen);
 	else
 		SDL_UpdateRect(sdlScreen, 0, 0, 0, 0);
+*/
 }
 
 
@@ -302,6 +304,7 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 {
 	DCanvas *scrn = new DCanvas(I_GetPrimarySurface());
 
+/*
 	scrn->m_LockCount = 0;
 	scrn->m_Palette = NULL;
 
@@ -334,6 +337,7 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 	}
 
 	scrn->m_Private = new_surface;
+*/
 
 	return scrn;
 }
@@ -342,6 +346,7 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 
 void SDLVideo::ReleaseSurface(DCanvas *scrn)
 {
+/*
 	if(scrn->m_Private == sdlScreen) // primary stays
 		return;
 
@@ -357,6 +362,7 @@ void SDLVideo::ReleaseSurface(DCanvas *scrn)
 	scrn->DetachPalette ();
 
 	delete scrn;
+*/
 }
 
 
@@ -455,8 +461,8 @@ void ISDL12WindowSurface::initializeFromSDLSurface(SDL_Surface* sdlsurface)
 
 	memset(mPalette, 0, 256 * sizeof(*mPalette));
 
-	assert(mWidth <= MAXWIDTH);
-	assert(mHeight <= MAXHEIGHT);
+	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
+	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
 	assert(mBitsPerPixel == 8 || mBitsPerPixel == 32);
 }
 
@@ -464,16 +470,13 @@ void ISDL12WindowSurface::initializeFromSDLSurface(SDL_Surface* sdlsurface)
 //
 // ISDL12WindowSurface::~ISDL12WindowSurface
 //
-// Frees the SDL_Surface handle and frees mSurfaceBuffer if it was manually
-// allocated.
+// Frees the SDL_Surface handle.
 //
 ISDL12WindowSurface::~ISDL12WindowSurface()
 {
 	if (mSDLSurface)
 		SDL_FreeSurface(mSDLSurface);
 	mSDLSurface = NULL;
-
-	// delete mSurfaceBuffer;
 }
 
 
@@ -488,8 +491,7 @@ void ISDL12WindowSurface::lock()
 	if (++mLocks == 1)
 		SDL_LockSurface(mSDLSurface);
 
-	assert(mLocks >= 1);
-	assert(mLocks < 10);
+	assert(mLocks >= 1 && mLocks < 100);
 }
 
 
@@ -504,12 +506,14 @@ void ISDL12WindowSurface::unlock()
 	if (--mLocks == 0)
 		SDL_UnlockSurface(mSDLSurface);
 
-	assert(mLocks >= 0);
+	assert(mLocks >= 0 && mLocks < 100);
 }
 
 
 //
 // ISDL12WindowSurface::setPalette
+//
+// Accepts an array of 256 argb_t values.
 //
 void ISDL12WindowSurface::setPalette(const argb_t* palette)
 {
@@ -527,6 +531,34 @@ void ISDL12WindowSurface::setPalette(const argb_t* palette)
 			sdlcolors[c].r = RPART(palette[c]);
 			sdlcolors[c].g = GPART(palette[c]);
 			sdlcolors[c].b = BPART(palette[c]);
+		}
+
+		unlock();
+	}
+}
+
+
+//
+// ISDL12WindowSurface::setPalette
+//
+// Accepts an array of 768 palindex_t values, laid out as 256 groups
+// of red, green, and blue values.
+//
+void ISDL12WindowSurface::setPalette(const palindex_t* palette)
+{
+	if (mBitsPerPixel == 8)
+	{
+		lock();
+
+		assert(mSDLSurface->format->palette != NULL);
+		assert(mSDLSurface->format->palette->ncolors == 256);
+		SDL_Color* sdlcolors = mSDLSurface->format->palette->colors;
+		for (int c = 0; c < 256; c++)
+		{
+			sdlcolors[c].r = *palette++;
+			sdlcolors[c].g = *palette++;
+			sdlcolors[c].b = *palette++;
+			mPalette[c] = MAKEARGB(255, sdlcolors[c].r, sdlcolors[c].g, sdlcolors[c].b);
 		}
 
 		unlock();
@@ -563,7 +595,6 @@ ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool
 	mPrimarySurface(NULL),
 	mIsFullScreen(fullscreen), mUseVSync(vsync)
 {
-
 	const SDL_version* SDLVersion = SDL_Linked_Version();
 
 	if (SDLVersion->major != SDL_MAJOR_VERSION || SDLVersion->minor != SDL_MINOR_VERSION)
@@ -574,12 +605,6 @@ ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool
 		return;
 	}
 
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) == -1)
-	{
-		I_FatalError("Could not initialize SDL video.\n");
-		return;
-	}
-
 	if (SDLVersion->patch != SDL_PATCHLEVEL)
 	{
 		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
@@ -587,7 +612,11 @@ ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool
 			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
 	}
 
-	// TODO: call SDL_Init?
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) == -1)
+	{
+		I_FatalError("Could not initialize SDL video.\n");
+		return;
+	}
 
 	buildVideoModeList();
 
@@ -601,7 +630,7 @@ ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool
 ISDL12Window::~ISDL12Window()
 {
 	delete mPrimarySurface;
-	// TODO: call SDL_Quit?
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
 
@@ -640,12 +669,15 @@ void ISDL12Window::resize(int width, int height)
 //
 void ISDL12Window::refresh()
 {
+	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
+
 	if (mBitsPerPixel == 8)
 	{
-		// TODO: possibly update the palette with SDL_SetPalette
+		Uint32 flags = SDL_LOGPAL | SDL_PHYSPAL;
+		SDL_Color* sdlcolors = sdlsurface->format->palette->colors;
+		SDL_SetPalette(sdlsurface, flags, sdlcolors, 0, 256);
 	}
 
-	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
 
 	// TODO: possibly blit from a software surface to the video screen
 

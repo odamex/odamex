@@ -67,17 +67,30 @@ EXTERN_CVAR (st_scale)
 void STlib_scaleRect (int x, int y, int w, int h)
 {
 	if (st_scale)
-		stbarscreen->CopyRect (x, y, w, h, x, y, stnumscreen);
+	{
+		DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
+		DCanvas* stnum_canvas = stnum_surface->getDefaultCanvas();
+
+		stbar_canvas->CopyRect (x, y, w, h, x, y, stnum_canvas);
+	}
 	else
-		stbarscreen->CopyRect (x, y, w, h, x + ST_X, y + ST_Y, FG);
+	{
+		DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
+		stbar_canvas->CopyRect (x, y, w, h, x + ST_X, y + ST_Y, screen);
+	}
 }
 
-void STlib_scalePatch (int x, int y, patch_t *p)
+void STlib_scalePatch(int x, int y, patch_t* p)
 {
 	if (st_scale)
-		stnumscreen->DrawPatch (p, x, y);
+	{
+		DCanvas* canvas = stnum_surface->getDefaultCanvas();
+		canvas->DrawPatch(p, x, y);
+	}
 	else
-		FG->DrawPatch (p, x + ST_X, y + ST_Y);
+	{
+		screen->DrawPatch(p, x + ST_X, y + ST_Y);
+	}
 }
 
 // ?

@@ -157,6 +157,7 @@ public:
 	{	return mBytesPerPixel;	}
 
 	virtual void setPalette(const argb_t* palette);
+	virtual void setPalette(const palindex_t* palette);
 	virtual const argb_t* getPalette() const;
 
 private:

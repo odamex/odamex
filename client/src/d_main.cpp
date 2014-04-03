@@ -99,7 +99,7 @@
 extern size_t got_heapsize;
 
 //extern void M_RestoreMode (void); // [Toke - Menu]
-extern void R_ExecuteSetViewSize (void);
+extern void R_ExecuteSetViewSize();
 void V_InitPalette (void);
 
 void D_CheckNetGame (void);
@@ -133,8 +133,9 @@ event_t events[MAXEVENTS];
 int eventhead;
 int eventtail;
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
-DCanvas *page;
 bool demotest;
+
+IWindowSurface* page_surface;
 
 static int demosequence;
 static int pagetic;
@@ -224,7 +225,7 @@ void D_Display (void)
 	if (setmodeneeded)
 	{
 		// Change screen mode.
-		if (!V_SetResolution (NewWidth, NewHeight, NewBits))
+		if (!V_SetResolution(NewWidth, NewHeight, NewBits))
 			I_FatalError ("Could not change screen mode");
 
 		// Recalculate various view parameters.
@@ -247,7 +248,7 @@ void D_Display (void)
 	// change the view size if needed
 	if (setsizeneeded)
 	{
-		R_ExecuteSetViewSize ();
+		R_ExecuteSetViewSize();
 		setmodeneeded = false;
 	}
 
@@ -395,15 +396,16 @@ void D_PageTicker (void)
 //
 void D_PageDrawer (void)
 {
-	if (page)
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+
+	if (page_surface)
 	{
-		page->Blit(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(),
-			screen, 0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
+		primary_surface->blit(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
+				0, 0, primary_surface->getWidth(), primary_surface->getHeight());	
 	}
 	else
 	{
-		screen->Clear (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), 0);
-		//screen->PrintStr (0, 0, "Page graphic goes here", 22);
+		screen->Clear(0, 0, primary_surface->getWidth(), primary_surface->getHeight(), 0);
 	}
 }
 
@@ -506,28 +508,32 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		const int width = 320, height = 200;
-		patch_t *data;
+		const patch_t* patch = W_CachePatch(pagename);
 
-		if (page)
+		if (page_surface)
 		{
-			I_FreeScreen(page);
-			page = NULL;
+			I_FreeSurface(page_surface);
+			page_surface = NULL;
 		}
 
-		data = W_CachePatch (pagename);
-
-		if (page == NULL)
-			page = I_AllocateScreen(I_GetSurfaceWidth(), I_GetSurfaceHeight(), 8);
-
-		page->Lock ();
-
 		if (gameinfo.flags & GI_PAGESARERAW)
-            page->DrawBlock (0, 0, width, height, (byte *)data);
-		else
-			page->DrawPatchFullScreen(data);
+		{
+			page_surface = I_AllocateSurface(320, 200, 8);
+			DCanvas* canvas = page_surface->getDefaultCanvas();
 
-		page->Unlock ();
+			page_surface->lock();
+            canvas->DrawBlock(0, 0, 320, 200, (byte*)patch);
+			page_surface->unlock();
+		}
+		else
+		{
+			page_surface = I_AllocateSurface(patch->width(), patch->height(), 8);
+			DCanvas* canvas = page_surface->getDefaultCanvas();
+
+			page_surface->lock();
+			canvas->DrawPatchFullScreen(patch);
+			page_surface->unlock();
+		}
 	}
 }
 
@@ -536,10 +542,10 @@ void D_DoAdvanceDemo (void)
 //
 void STACK_ARGS D_Close (void)
 {
-	if(page)
+	if(page_surface)
 	{
-		I_FreeScreen(page);
-		page = NULL;
+		I_FreeSurface(page_surface);
+		page_surface = NULL;
 	}
 
 	D_ClearTaskSchedulers();

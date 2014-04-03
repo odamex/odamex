@@ -737,11 +737,10 @@ CVAR_FUNC_IMPL(r_detail)
 //
 //
 
-void R_ExecuteSetViewSize (void)
+void R_ExecuteSetViewSize()
 {
-	int i, j;
-	int level;
-	int startmap;
+	IWindowSurface* surface = I_GetPrimarySurface();
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	setsizeneeded = false;
 
@@ -754,60 +753,60 @@ void R_ExecuteSetViewSize (void)
 
 	if (setblocks == 11 || setblocks == 12)
 	{
-		realviewwidth = I_GetSurfaceWidth();
-		freelookviewheight = realviewheight = I_GetSurfaceHeight();
+		realviewwidth = surface_width; 
+		freelookviewheight = realviewheight = surface_height; 
 	}
 	else if (setblocks == 10)
 	{
-		realviewwidth = I_GetSurfaceWidth();
+		realviewwidth = surface_width;
 		realviewheight = ST_Y;
-		freelookviewheight = I_GetSurfaceHeight();
+		freelookviewheight = surface_height;
 	}
 	else
 	{
-		realviewwidth = ((setblocks*I_GetSurfaceWidth())/10) & (~(15>>(I_GetVideoBitDepth() == 8 ? 0 : 2)));
-		realviewheight = ((setblocks*ST_Y)/10)&~7;
-		freelookviewheight = ((setblocks*I_GetSurfaceHeight())/10)&~7;
+		realviewwidth = ((setblocks * surface_width) / 10) & ~(15 / surface->getBytesPerPixel());
+		realviewheight = ((setblocks * ST_Y)/10) & ~7;
+		freelookviewheight = ((setblocks * surface_height) / 10) & ~7;
 	}
 
 	viewwidth = realviewwidth >> detailxshift;
 	viewheight = realviewheight >> detailyshift;
 	freelookviewheight >>= detailyshift;
 
-	{
-		char temp[16];
+	char temp_str[16];
+	sprintf(temp_str, "%d x %d", viewwidth, viewheight);
+	r_viewsize.ForceSet(temp_str);
 
-		sprintf (temp, "%d x %d", viewwidth, viewheight);
-		r_viewsize.ForceSet (temp);
-	}
+	dcol.pitch = surface->getPitch() << detailyshift;
+	dspan.colsize = 1 << detailxshift;
 
-	centery = viewheight/2;
-	centerx = viewwidth/2;
-	centerxfrac = centerx<<FRACBITS;
-	centeryfrac = centery<<FRACBITS;
+	centerx = viewwidth / 2;
+	centery = viewheight / 2;
+	centerxfrac = (viewwidth << FRACBITS) / 2;
+	centeryfrac = (viewheight << FRACBITS) / 2;
 
 	// calculate the vertical stretching factor to emulate 320x200
 	// it's a 5:4 ratio = (320 / 200) / (4 / 3)
 	// also take r_detail into account
 	yaspectmul = (320.0f / 200.0f) / (4.0f / 3.0f) * ((FRACUNIT << detailxshift) >> detailyshift);
 
-	for (int i = 0; i < I_GetSurfaceWidth(); i++)
+	for (int i = 0; i < surface_width; i++)
 	{
 		negonearray[i] = -1;
 		viewheightarray[i] = (int)viewheight;
 	}
 
-	R_InitBuffer (viewwidth, viewheight);
-	R_InitTextureMapping ();
+	R_InitBuffer(viewwidth, viewheight);
+	R_InitTextureMapping();
 
 	// psprite scales
 	// [AM] Using centerxfrac will make our sprite too fat, so we
 	//      generate a corrected 4:3 screen width based on our
 	//      height, then generate the x-scale based on that.
 	int cswidth, crvwidth;
-	cswidth = (4 * I_GetSurfaceHeight()) / 3;
+	cswidth = (4 * surface_height) / 3;
 	if (setblocks < 10)
-		crvwidth = ((setblocks * cswidth) / 10) & (~(15 >> (I_GetVideoBitDepth() == 8 ? 0 : 2)));
+		crvwidth = ((setblocks * cswidth) / 10) & ~(15 / surface->getBytesPerPixel());
 	else
 		crvwidth = cswidth;
 	pspritexscale = (((crvwidth >> detailxshift) / 2) << FRACBITS) / 160;
@@ -816,34 +815,30 @@ void R_ExecuteSetViewSize (void)
 	pspritexiscale = FixedDiv(FRACUNIT, pspritexscale);
 
 	// [RH] Sky height fix for screens not 200 (or 240) pixels tall
-	R_InitSkyMap ();
+	R_InitSkyMap();
 
 	// allocate for the array that indicates if a screen column is fully solid
 	delete [] solidcol;
 	solidcol = new byte[viewwidth];
 
-	R_PlaneInitData ();
+	R_PlaneInitData();
 
 	// Calculate the light levels to use for each level / scale combination.
 	// [RH] This just stores indices into the colormap rather than pointers to a specific one.
-	for (i = 0; i < LIGHTLEVELS; i++)
+	for (int i = 0; i < LIGHTLEVELS; i++)
 	{
-		startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
-		for (j = 0; j < MAXLIGHTSCALE; j++)
+		int startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
+		for (int j = 0; j < MAXLIGHTSCALE; j++)
 		{
-			level = startmap - (j*(I_GetSurfaceWidth() >> detailxshift))/((viewwidth*DISTMAP));
-			if (level < 0)
-				level = 0;
-			else if (level >= NUMCOLORMAPS)
-				level = NUMCOLORMAPS-1;
-
-			scalelight[i][j] = level;
+			int level = startmap - (j*(surface_width >> detailxshift))/((viewwidth*DISTMAP));
+			scalelight[i][j] = clamp(level, 0, NUMCOLORMAPS - 1);
 		}
 	}
 
 	// [RH] Initialize z-light tables here
-	R_InitLightTables ();
+	R_InitLightTables();
 }
+
 
 //
 //
@@ -1299,32 +1294,34 @@ void R_RenderPlayerView (player_t *player)
 }
 
 //
-//
 // R_MultiresInit
 //
 // Called from V_SetResolution()
 //
-//
-
-void R_MultiresInit (void)
+void R_MultiresInit()
 {
+	IWindowSurface* surface = I_GetPrimarySurface();
+
 	// in r_draw.c
-	extern byte **ylookup;
-	extern int *columnofs;
+	extern byte** ylookup;
+	extern int* columnofs;
 
 	// [Russell] - Possible bug, ylookup is 2 star.
     M_Free(ylookup);
     M_Free(columnofs);
     M_Free(xtoviewangle);
 
-	ylookup = (byte **)M_Malloc(I_GetSurfaceHeight() * sizeof(byte *));
-	columnofs = (int *)M_Malloc(I_GetSurfaceWidth() * sizeof(int));
+	ylookup = (byte**)M_Malloc(surface->getHeight() * sizeof(byte*));
+	columnofs = (int*)M_Malloc(surface->getWidth() * sizeof(int));
 
 	// These get set in R_ExecuteSetViewSize()
-	xtoviewangle = (angle_t *)M_Malloc(sizeof(angle_t) * (I_GetSurfaceWidth() + 1));
+	xtoviewangle = (angle_t*)M_Malloc(sizeof(angle_t) * (surface->getWidth() + 1));
 
-	R_InitFuzzTable ();
+	R_InitFuzzTable();
 	R_OldBlend = ~0;
+
+	dcol.pitch = surface->getPitch() << detailyshift;
+	dspan.colsize = 1 << detailxshift;
 }
 
 VERSION_CONTROL (r_main_cpp, "$Id$")

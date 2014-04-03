@@ -27,6 +27,7 @@
 #define __I_VIDEO_H__
 
 #include "doomtype.h"
+#include "m_swap.h"
 
 #include <string>
 #include <vector>
@@ -38,8 +39,10 @@ class IWindowSurface;
 // [RH] True if the display is not in a window
 extern BOOL Fullscreen;
 
-void I_InitHardware ();
-void STACK_ARGS I_ShutdownHardware ();
+void I_InitHardware();
+void STACK_ARGS I_ShutdownHardware();
+
+bool I_VideoInitialized();
 
 // [RH] M_ScreenShot now accepts a filename parameter.
 //		Pass a NULL to get the original behavior.
@@ -68,8 +71,8 @@ bool I_SetMode (int &width, int &height, int &bits);
 // Returns true if the Video object has been set up and not yet destroyed
 bool I_HardwareInitialized();
 
-void I_SetPalette(argb_t* palette);
-void I_SetOldPalette(palindex_t* doompalette);
+void I_SetPalette(const argb_t* palette);
+void I_SetOldPalette(const palindex_t* palette);
 
 void I_BeginUpdate (void);		// [RH] Locks screen[0]
 void I_FinishUpdate (void);
@@ -97,14 +100,6 @@ bool I_SetOverscan (float scale);
 
 void I_StartModeIterator ();
 bool I_NextMode (int *width, int *height);
-
-DCanvas* I_AllocateScreen(int width, int height, int bits, bool primary = false);
-void I_FreeScreen(DCanvas* canvas);
-
-/*
-void I_LockScreen(DCanvas* canvas);
-void I_UnlockScreen(DCanvas* canvas);
-*/
 
 void I_Blit(DCanvas* src, int srcx, int srcy, int srcwidth, int srcheight,
 			DCanvas* dest, int destx, int desty, int destwidth, int destheight);
@@ -182,6 +177,7 @@ public:
 	const IWindow* getWindow() const
 	{	return mWindow;	}
 
+	DCanvas* getDefaultCanvas();
 	DCanvas* createCanvas();
 	void releaseCanvas(DCanvas* canvas);
 
@@ -204,6 +200,7 @@ public:
 	{	return getBitsPerPixel() / 8;	}
 
 	virtual void setPalette(const argb_t* palette) = 0;
+	virtual void setPalette(const palindex_t* palette) = 0;
 	virtual const argb_t* getPalette() const = 0;
 
 	virtual void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
@@ -215,6 +212,8 @@ private:
 	// Storage for all DCanvas objects allocated by this surface
 	typedef std::vector<DCanvas*> DCanvasCollection;
 	DCanvasCollection	mCanvasStore;
+
+	DCanvas*			mCanvas;
 };
 
 
@@ -251,8 +250,8 @@ public:
 	virtual int getBitsPerPixel() const
 	{	return 8;	}
 
-	virtual void setPalette(const argb_t* palette)
-	{ }
+	virtual void setPalette(const argb_t* palette) { }
+	virtual void setPalette(const palindex_t* palette) { }
 
 	virtual const argb_t* getPalette() const
 	{	return mPalette;	}	
@@ -371,6 +370,9 @@ public:
 	virtual void setPalette(const argb_t* palette)
 	{	getPrimarySurface()->setPalette(palette);	}
 
+	virtual void setPalette(const palindex_t* palette)
+	{	getPrimarySurface()->setPalette(palette);	}
+
 	virtual const argb_t* getPalette() const
 	{	return getPrimarySurface()->getPalette();	}	
 };
@@ -433,5 +435,35 @@ private:
 	IWindowSurface*		mPrimarySurface;
 };
 
+
+#ifdef __BIG_ENDIAN__
+static const int ashift = 0;
+static const int rshift = 8;
+static const int gshift = 16;
+static const int bshift = 24;
+#else
+static const int ashift = 24;
+static const int rshift = 16;
+static const int gshift = 8;
+static const int bshift = 0;
+#endif
+
+static inline unsigned int APART(argb_t color)
+{	return (color >> ashift) & 0xFF;	}
+
+static inline unsigned int RPART(argb_t color)
+{	return (color >> rshift) & 0xFF;	}
+
+static inline unsigned int GPART(argb_t color)
+{	return (color >> gshift) & 0xFF;	}
+
+static inline unsigned int BPART(argb_t color)
+{	return (color >> bshift) & 0xFF;	}
+
+static inline argb_t MAKERGB(unsigned int r, unsigned int g, unsigned int b)
+{	return (r << rshift) | (g << gshift) | (b << bshift);	}
+
+static inline argb_t MAKEARGB(unsigned int a, unsigned int r, unsigned int g, unsigned int b)
+{	return (a << ashift) | (r << rshift) | (g << gshift) | (b << bshift);	}
 
 #endif // __I_VIDEO_H__
