@@ -653,15 +653,12 @@ void I_GetEvent()
 			if (event.data1 == SDLK_TAB)
 			{
 				//tab_keydown = true;
-				//DPrintf("tab keydown is true. \n");
 
 				if (SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
 				{
 					event.data1 = event.data2 = event.data3 = 0;
-					DPrintf("ALT KEY DOWN WITH TAB");
 				} else {
 					tab_keydown = true;
-					DPrintf("tab keydown is true. \n");
 				}
 			}
 #endif
@@ -671,21 +668,8 @@ void I_GetEvent()
 		case SDL_KEYUP:
 
 			event.type = ev_keyup;
-
-#ifdef _WIN32
-			// [ML] SDL 1.2 directx dumbness - when returning from alt-tab, even with
-			// best practices from other ports, the tab key will get trapped for one key press,
-			// only registering an SDL_KEYUP event.  If this is the case, send them back to the
-			// SDL_KEYDOWN case.  This issue only occurs when the video driver is set to directx
-			// (the default in Odamex).
-			DPrintf("FOCUS STATUS: %u \n",I_CheckFocusState());
-			if (sdl_ev->key.keysym.sym == SDLK_TAB && tab_keydown == false)
-			{
-				DPrintf("GOT IN THE KEYUP TRAP \n");
-				event.type = ev_keydown;
-			}
-#endif
 			event.data1 = sdl_ev->key.keysym.sym;
+
 			if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
 				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
 			else
@@ -693,6 +677,18 @@ void I_GetEvent()
 			D_PostEvent(&event);
 
 #ifdef _WIN32
+			// [ML] SDL 1.2 directx dumbness - when returning from alt-tab, even with
+			// best practices from other ports, the tab key will get trapped for one key press,
+			// only registering an SDL_KEYUP event.  If this is the case, send down another keydown
+			// event.  This issue only occurs when the video driver is set to directx (the default in Odamex).
+			if (sdl_ev->key.keysym.sym == SDLK_TAB && tab_keydown == false && I_CheckFocusState())
+			{
+				//DPrintf("FOCUS STATUS: %u \n",I_CheckFocusState());
+				//DPrintf("GOT IN THE KEYUP TRAP \n");
+				event.type = ev_keydown;
+				D_PostEvent(&event);
+			}
+
 			tab_keydown = false;
 #endif
 			break;
