@@ -236,6 +236,8 @@ static void I_UpdateGrab()
 		grabbed = !can_grab;
 	prev_vid_fullscreen = vid_fullscreen;
 
+
+
 	// check if the window focus changed (or menu/console status changed)
 	if (can_grab && !grabbed)
 	{
@@ -652,12 +654,11 @@ void I_GetEvent()
 			// [AM] Windows 7 seems to preempt this check.
 			if (event.data1 == SDLK_TAB)
 			{
-				//tab_keydown = true;
-
-				if (SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
+				if ((vid_fullscreen && num_events > 1) || (SDL_GetModState() & (KMOD_LALT | KMOD_RALT)))
 				{
 					event.data1 = event.data2 = event.data3 = 0;
 				} else {
+
 					tab_keydown = true;
 				}
 			}
@@ -681,10 +682,10 @@ void I_GetEvent()
 			// best practices from other ports, the tab key will get trapped for one key press,
 			// only registering an SDL_KEYUP event.  If this is the case, send down another keydown
 			// event.  This issue only occurs when the video driver is set to directx (the default in Odamex).
-			if (sdl_ev->key.keysym.sym == SDLK_TAB && tab_keydown == false && I_CheckFocusState())
+			if (event.data1 == SDLK_TAB && tab_keydown == false && I_CheckFocusState())
 			{
-				//DPrintf("FOCUS STATUS: %u \n",I_CheckFocusState());
-				//DPrintf("GOT IN THE KEYUP TRAP \n");
+				DPrintf("FOCUS STATUS: %u \n",I_CheckFocusState());
+				DPrintf("GOT IN THE KEYUP TRAP \n");
 				event.type = ev_keydown;
 				D_PostEvent(&event);
 			}
