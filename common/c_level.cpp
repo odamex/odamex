@@ -660,8 +660,16 @@ BEGIN_COMMAND (map)
 		}
 		else
 		{
-			unnatural_level_progression = true;
-			G_DeferedInitNew (argv[1]);
+			// Ch0wW - Map was still not found, so don't bother trying loading the map.
+			if (W_CheckNumForName (argv[1]) == -1)
+			{
+				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
+			}
+			else
+			{
+				unnatural_level_progression = true;
+				G_DeferedInitNew (argv[1]);
+			}
 		}
 	}
 	else
