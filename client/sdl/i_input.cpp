@@ -622,8 +622,6 @@ void I_GetEvent()
 			break;
 
 		case SDL_KEYDOWN:
-// [ML] Send windows users' trapped tab back here
-keyitdown:
 			event.type = ev_keydown;
 			event.data1 = sdl_ev->key.keysym.sym;
 
@@ -654,10 +652,16 @@ keyitdown:
 			// [AM] Windows 7 seems to preempt this check.
 			if (event.data1 == SDLK_TAB)
 			{
-				tab_keydown = true;
+				//tab_keydown = true;
+				//DPrintf("tab keydown is true. \n");
+
 				if (SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
 				{
 					event.data1 = event.data2 = event.data3 = 0;
+					DPrintf("ALT KEY DOWN WITH TAB");
+				} else {
+					tab_keydown = true;
+					DPrintf("tab keydown is true. \n");
 				}
 			}
 #endif
@@ -665,24 +669,32 @@ keyitdown:
 			break;
 
 		case SDL_KEYUP:
+
 			event.type = ev_keyup;
-			event.data1 = sdl_ev->key.keysym.sym;
+
 #ifdef _WIN32
 			// [ML] SDL 1.2 directx dumbness - when returning from alt-tab, even with
 			// best practices from other ports, the tab key will get trapped for one key press,
 			// only registering an SDL_KEYUP event.  If this is the case, send them back to the
 			// SDL_KEYDOWN case.  This issue only occurs when the video driver is set to directx
 			// (the default in Odamex).
-			if (event.data1 == SDLK_TAB && tab_keydown == false)
+			DPrintf("FOCUS STATUS: %u \n",I_CheckFocusState());
+			if (sdl_ev->key.keysym.sym == SDLK_TAB && tab_keydown == false)
 			{
-				goto keyitdown;
+				DPrintf("GOT IN THE KEYUP TRAP \n");
+				event.type = ev_keydown;
 			}
 #endif
+			event.data1 = sdl_ev->key.keysym.sym;
 			if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
 				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
 			else
 				event.data2 = event.data3 = 0;
 			D_PostEvent(&event);
+
+#ifdef _WIN32
+			tab_keydown = false;
+#endif
 			break;
 
 		case SDL_JOYBUTTONDOWN:
