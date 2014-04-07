@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Query protocol for server
+//  Query protocol for server
 //
 //-----------------------------------------------------------------------------
 
@@ -40,16 +40,16 @@
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
-EXTERN_CVAR (join_password)
-EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR(join_password)
+EXTERN_CVAR(sv_timelimit)
 
 extern unsigned int last_revision;
 
 struct CvarField_t
 {
-    std::string Name;
-    std::string Value;
-    cvartype_t Type;
+	std::string Name;
+	std::string Value;
+	cvartype_t Type;
 } CvarField;
 
 // The TAG identifier, changing this to a new value WILL break any application
@@ -79,183 +79,185 @@ struct CvarField_t
 // IntQryBuildInformation()
 //
 // Protocol building routine, the passed parameter is the enquirer version
-static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
-    const DWORD &EqTime)
+static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
+                                   const DWORD& EqTime)
 {
-    std::vector<CvarField_t> Cvars;
+	std::vector<CvarField_t> Cvars;
 
-    // bond - time
-    MSG_WriteLong(&ml_message, EqTime);
+	// bond - time
+	MSG_WriteLong(&ml_message, EqTime);
 
-    // The servers real protocol version
-    // bond - real protocol
-    MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
+	// The servers real protocol version
+	// bond - real protocol
+	MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
 
-    // Built revision of server
-    MSG_WriteLong(&ml_message, last_revision);
+	// Built revision of server
+	MSG_WriteLong(&ml_message, last_revision);
 
-    cvar_t *var = GetFirstCvar();
+	cvar_t* var = GetFirstCvar();
 
-    // Count our cvars and add them
-    while (var)
-    {
-        if (var->flags() & CVAR_SERVERINFO)
-        {
-            CvarField.Name = var->name();
-            CvarField.Type = var->type();
-            CvarField.Value = var->cstring();
-
-            // Skip empty strings
-            if (CvarField.Type == CVARTYPE_STRING && var->cstring()[0] != '\0')
-            {
-                Cvars.push_back(CvarField);
-                goto next;
-            }
-
-            // Skip other types with 0
-            if (var->value() != 0.0f)
-                Cvars.push_back(CvarField);
-        }
-
-        next:
-        var = var->GetNext();
-    }
-
-    // Cvar count
-    MSG_WriteByte(&ml_message, (BYTE)Cvars.size());
-
-    // Write cvars
-    for (size_t i = 0; i < Cvars.size(); ++i)
+	// Count our cvars and add them
+	while(var)
 	{
-        MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
+		if(var->flags() & CVAR_SERVERINFO)
+		{
+			CvarField.Name = var->name();
+			CvarField.Type = var->type();
+			CvarField.Value = var->cstring();
 
-            // Type field
-            MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
+			// Skip empty strings
+			if(CvarField.Type == CVARTYPE_STRING && var->cstring()[0] != '\0')
+			{
+				Cvars.push_back(CvarField);
+				goto next;
+			}
 
-            switch (Cvars[i].Type)
-            {
-                case CVARTYPE_BYTE:
-                {
-                    MSG_WriteByte(&ml_message, (byte)atoi(Cvars[i].Value.c_str()));
-                }
-                break;
+			// Skip other types with 0
+			if(var->value() != 0.0f)
+				Cvars.push_back(CvarField);
+		}
 
-                case CVARTYPE_WORD:
-                {
-                    MSG_WriteShort(&ml_message, (short)atoi(Cvars[i].Value.c_str()));
-                }
-                break;
-
-                case CVARTYPE_INT:
-                {
-                    MSG_WriteLong(&ml_message, (int)atoi(Cvars[i].Value.c_str()));
-                }
-                break;
-
-                case CVARTYPE_FLOAT:
-                case CVARTYPE_STRING:
-                {
-                    MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
-                }
-                break;
-
-                case CVARTYPE_NONE:
-                case CVARTYPE_MAX:
-                default:
-                break;
-            }
+next:
+		var = var->GetNext();
 	}
 
-    MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
+	// Cvar count
+	MSG_WriteByte(&ml_message, (BYTE)Cvars.size());
+
+	// Write cvars
+	for(size_t i = 0; i < Cvars.size(); ++i)
+	{
+		MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
+
+		// Type field
+		MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
+
+		switch(Cvars[i].Type)
+		{
+		case CVARTYPE_BYTE:
+		{
+			MSG_WriteByte(&ml_message, (byte)atoi(Cvars[i].Value.c_str()));
+		}
+		break;
+
+		case CVARTYPE_WORD:
+		{
+			MSG_WriteShort(&ml_message, (short)atoi(Cvars[i].Value.c_str()));
+		}
+		break;
+
+		case CVARTYPE_INT:
+		{
+			MSG_WriteLong(&ml_message, (int)atoi(Cvars[i].Value.c_str()));
+		}
+		break;
+
+		case CVARTYPE_FLOAT:
+		case CVARTYPE_STRING:
+		{
+			MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
+		}
+		break;
+
+		case CVARTYPE_NONE:
+		case CVARTYPE_MAX:
+		default:
+			break;
+		}
+	}
+
+	MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
 
 	MSG_WriteString(&ml_message, level.mapname);
 
-    int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
-	if (timeleft < 0)
-        timeleft = 0;
+	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
 
-    MSG_WriteShort(&ml_message, timeleft);
+	if(timeleft < 0)
+		timeleft = 0;
 
-    // Teams
-        if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-        {
-            // Team data
-            MSG_WriteByte(&ml_message, 2);
+	MSG_WriteShort(&ml_message, timeleft);
 
-            // Blue
-            MSG_WriteString(&ml_message, "Blue");
-            MSG_WriteLong(&ml_message, 0x000000FF);
-            MSG_WriteShort(&ml_message, (short)TEAMpoints[it_blueflag]);
+	// Teams
+	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		// Team data
+		MSG_WriteByte(&ml_message, 2);
 
-            MSG_WriteString(&ml_message, "Red");
-            MSG_WriteLong(&ml_message, 0x00FF0000);
-            MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
-        }
+		// Blue
+		MSG_WriteString(&ml_message, "Blue");
+		MSG_WriteLong(&ml_message, 0x000000FF);
+		MSG_WriteShort(&ml_message, (short)TEAMpoints[it_blueflag]);
 
-    // TODO: When real dynamic teams are implemented
-    //byte TeamCount = (byte)sv_teamsinplay;
-    //MSG_WriteByte(&ml_message, TeamCount);
+		MSG_WriteString(&ml_message, "Red");
+		MSG_WriteLong(&ml_message, 0x00FF0000);
+		MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
+	}
 
-    //for (byte i = 0; i < TeamCount; ++i)
-    //{
-        // TODO - Figure out where the info resides
-        //MSG_WriteString(&ml_message, "");
-        //MSG_WriteLong(&ml_message, 0);
-        //MSG_WriteShort(&ml_message, TEAMpoints[i]);
-    //}
+	// TODO: When real dynamic teams are implemented
+	//byte TeamCount = (byte)sv_teamsinplay;
+	//MSG_WriteByte(&ml_message, TeamCount);
+
+	//for (byte i = 0; i < TeamCount; ++i)
+	//{
+	// TODO - Figure out where the info resides
+	//MSG_WriteString(&ml_message, "");
+	//MSG_WriteLong(&ml_message, 0);
+	//MSG_WriteShort(&ml_message, TEAMpoints[i]);
+	//}
 
 	// Patch files
 	MSG_WriteByte(&ml_message, patchfiles.size());
 
-	for (size_t i = 0; i < patchfiles.size(); ++i)
+	for(size_t i = 0; i < patchfiles.size(); ++i)
 	{
-        MSG_WriteString(&ml_message, D_CleanseFileName(patchfiles[i]).c_str());
+		MSG_WriteString(&ml_message, D_CleanseFileName(patchfiles[i]).c_str());
 	}
 
 	// Wad files
 	MSG_WriteByte(&ml_message, wadfiles.size());
 
-	for (size_t i = 0; i < wadfiles.size(); ++i)
-    {
-        MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
-        MSG_WriteHexString(&ml_message, wadhashes[i].c_str());
-    }
+	for(size_t i = 0; i < wadfiles.size(); ++i)
+	{
+		MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
+		MSG_WriteHexString(&ml_message, wadhashes[i].c_str());
+	}
 
-    MSG_WriteByte(&ml_message, players.size());
+	MSG_WriteByte(&ml_message, players.size());
 
-    // Player info
-    for (Players::iterator it = players.begin();it != players.end();++it)
-    {
-        MSG_WriteString(&ml_message, it->userinfo.netname.c_str());
+	// Player info
+	for(Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		MSG_WriteString(&ml_message, it->userinfo.netname.c_str());
 
-        MSG_WriteLong(&ml_message, it->userinfo.color);
+		MSG_WriteLong(&ml_message, it->userinfo.color);
 
-        if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-                MSG_WriteByte(&ml_message, it->userinfo.team);
+		if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			MSG_WriteByte(&ml_message, it->userinfo.team);
 
-        MSG_WriteShort(&ml_message, it->ping);
+		MSG_WriteShort(&ml_message, it->ping);
 
-        int timeingame = (time(NULL) - it->JoinTime) / 60;
-        if (timeingame < 0)
-            timeingame = 0;
+		int timeingame = (time(NULL) - it->JoinTime) / 60;
 
-        MSG_WriteShort(&ml_message, timeingame);
+		if(timeingame < 0)
+			timeingame = 0;
 
-        // FIXME - Treat non-players (downloaders/others) as spectators too for
-        // now
-        bool spectator;
+		MSG_WriteShort(&ml_message, timeingame);
 
-        spectator = (it->spectator || 
-            ((it->playerstate != PST_LIVE) &&
-            (it->playerstate != PST_DEAD) &&
-            (it->playerstate != PST_REBORN)));
+		// FIXME - Treat non-players (downloaders/others) as spectators too for
+		// now
+		bool spectator;
 
-        MSG_WriteBool(&ml_message, spectator);
+		spectator = (it->spectator ||
+		             ((it->playerstate != PST_LIVE) &&
+		              (it->playerstate != PST_DEAD) &&
+		              (it->playerstate != PST_REBORN)));
 
-        MSG_WriteShort(&ml_message, it->fragcount);
-        MSG_WriteShort(&ml_message, it->killcount);
-        MSG_WriteShort(&ml_message, it->deathcount);
-    }
+		MSG_WriteBool(&ml_message, spectator);
+
+		MSG_WriteShort(&ml_message, it->fragcount);
+		MSG_WriteShort(&ml_message, it->killcount);
+		MSG_WriteShort(&ml_message, it->deathcount);
+	}
 }
 
 //
@@ -263,161 +265,161 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
 //
 // Sends information regarding the type of information we received (ie: it will
 // send data that is wanted by the enquirer program)
-static DWORD IntQrySendResponse(const WORD &TagId,
-                                const BYTE &TagApplication,
-                                const BYTE &TagQRId,
-                                const WORD &TagPacketType)
+static DWORD IntQrySendResponse(const WORD& TagId,
+                                const BYTE& TagApplication,
+                                const BYTE& TagQRId,
+                                const WORD& TagPacketType)
 {
-    // It isn't a query, throw it away
-    if (TagQRId != 1)
-    {
-        //Printf("Query/Response Id is not valid");
+	// It isn't a query, throw it away
+	if(TagQRId != 1)
+	{
+		//Printf("Query/Response Id is not valid");
 
-        return 0;
-    }
+		return 0;
+	}
 
-    // Decipher the program that sent the query
-    switch (TagApplication)
-    {
-        case 1:
-        {
-            //Printf(PRINT_HIGH, "Application is Enquirer");
-        }
-        break;
+	// Decipher the program that sent the query
+	switch(TagApplication)
+	{
+	case 1:
+	{
+		//Printf(PRINT_HIGH, "Application is Enquirer");
+	}
+	break;
 
-        case 2:
-        {
-            //Printf(PRINT_HIGH, "Application is Client");
-        }
-        break;
+	case 2:
+	{
+		//Printf(PRINT_HIGH, "Application is Client");
+	}
+	break;
 
-        case 3:
-        {
-            //Printf(PRINT_HIGH, "Application is Server");
-        }
-        break;
+	case 3:
+	{
+		//Printf(PRINT_HIGH, "Application is Server");
+	}
+	break;
 
-        case 4:
-        {
-            //Printf(PRINT_HIGH, "Application is Master Server");
-        }
-        break;
+	case 4:
+	{
+		//Printf(PRINT_HIGH, "Application is Master Server");
+	}
+	break;
 
-        default:
-        {
-            //Printf("Application is Unknown");
-        }
-        break;
-    }
+	default:
+	{
+		//Printf("Application is Unknown");
+	}
+	break;
+	}
 
-    DWORD ReTag = 0;
-    WORD ReId = TAG_ID;
-    BYTE ReApplication = 3;
-    BYTE ReQRId = 2;
-    WORD RePacketType = 0;
+	DWORD ReTag = 0;
+	WORD ReId = TAG_ID;
+	BYTE ReApplication = 3;
+	BYTE ReQRId = 2;
+	WORD RePacketType = 0;
 
-    switch (TagPacketType)
-    {
-        // Request version
-        case 1:
-        {
-            RePacketType = 1;
-        }
-        break;
+	switch(TagPacketType)
+	{
+	// Request version
+	case 1:
+	{
+		RePacketType = 1;
+	}
+	break;
 
-        // Information request
-        case 2:
-        {
-            RePacketType = 3;
-        }
-        break;
-    }
+	// Information request
+	case 2:
+	{
+		RePacketType = 3;
+	}
+	break;
+	}
 
-    // Begin enquirer version translation
-    DWORD EqVersion = MSG_ReadLong();
-    DWORD EqProtocolVersion = MSG_ReadLong();
-    DWORD EqTime = MSG_ReadLong();
+	// Begin enquirer version translation
+	DWORD EqVersion = MSG_ReadLong();
+	DWORD EqProtocolVersion = MSG_ReadLong();
+	DWORD EqTime = MSG_ReadLong();
 
-    // Prevent possible divide by zero
-    if (!EqVersion)
-    {
-        return 0;
-    }
+	// Prevent possible divide by zero
+	if(!EqVersion)
+	{
+		return 0;
+	}
 
-    // Override other packet types for older enquirer version response
-    if (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) ||
-        (VERSIONMAJOR(EqVersion) <= VERSIONMAJOR(GAMEVER) && VERSIONMINOR(EqVersion) < VERSIONMINOR(GAMEVER)))
-    {
-        RePacketType = 2;
-    }
+	// Override other packet types for older enquirer version response
+	if(VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) ||
+	        (VERSIONMAJOR(EqVersion) <= VERSIONMAJOR(GAMEVER) && VERSIONMINOR(EqVersion) < VERSIONMINOR(GAMEVER)))
+	{
+		RePacketType = 2;
+	}
 
-    // Encode our tag
-    ReTag = (((ReId << 20) & 0xFFF00000) |
-             ((ReApplication << 16) & 0x000F0000) |
-             ((ReQRId << 12) & 0x0000F000) | (RePacketType & 0x00000FFF));
+	// Encode our tag
+	ReTag = (((ReId << 20) & 0xFFF00000) |
+	         ((ReApplication << 16) & 0x000F0000) |
+	         ((ReQRId << 12) & 0x0000F000) | (RePacketType & 0x00000FFF));
 
-    // Clear our message buffer for a response
-    SZ_Clear(&ml_message);
+	// Clear our message buffer for a response
+	SZ_Clear(&ml_message);
 
-    MSG_WriteLong(&ml_message, ReTag);
-    MSG_WriteLong(&ml_message, GAMEVER);
+	MSG_WriteLong(&ml_message, ReTag);
+	MSG_WriteLong(&ml_message, GAMEVER);
 
-    // Enquirer requested the version info of the server or the server
-    // determined it is an old version
-    if (RePacketType == 1 || RePacketType == 2)
-    {
-        // bond - real protocol
-        MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
+	// Enquirer requested the version info of the server or the server
+	// determined it is an old version
+	if(RePacketType == 1 || RePacketType == 2)
+	{
+		// bond - real protocol
+		MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
 
-        MSG_WriteLong(&ml_message, EqTime);
+		MSG_WriteLong(&ml_message, EqTime);
 
-        NET_SendPacket(ml_message, net_from);
+		NET_SendPacket(ml_message, net_from);
 
-        //Printf(PRINT_HIGH, "Application is old version\n");
+		//Printf(PRINT_HIGH, "Application is old version\n");
 
-        return 0;
-    }
+		return 0;
+	}
 
-    // If the enquirer protocol is newer, send the latest information the
-    // server supports, otherwise send information built to the their version
-    if (EqProtocolVersion > PROTOCOL_VERSION)
-    {
-        EqProtocolVersion = PROTOCOL_VERSION;
+	// If the enquirer protocol is newer, send the latest information the
+	// server supports, otherwise send information built to the their version
+	if(EqProtocolVersion > PROTOCOL_VERSION)
+	{
+		EqProtocolVersion = PROTOCOL_VERSION;
 
-        MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
-    }
-    else
-        MSG_WriteLong(&ml_message, EqProtocolVersion);
+		MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
+	}
+	else
+		MSG_WriteLong(&ml_message, EqProtocolVersion);
 
-    IntQryBuildInformation(EqProtocolVersion, EqTime);
+	IntQryBuildInformation(EqProtocolVersion, EqTime);
 
-    NET_SendPacket(ml_message, net_from);
+	NET_SendPacket(ml_message, net_from);
 
-    //Printf(PRINT_HIGH, "Success, data sent\n");
+	//Printf(PRINT_HIGH, "Success, data sent\n");
 
-    return 0;
+	return 0;
 }
 
 //
 // SV_QryParseEnquiry()
 //
 // This decodes the Tag field
-DWORD SV_QryParseEnquiry(const DWORD &Tag)
+DWORD SV_QryParseEnquiry(const DWORD& Tag)
 {
-    // Decode the tag into its fields
-    // TODO: this may not be 100% correct
-    WORD TagId = ((Tag >> 20) & 0x0FFF);
-    BYTE TagApplication = ((Tag >> 16) & 0x0F);
-    BYTE TagQRId = ((Tag >> 12) & 0x0F);
-    WORD TagPacketType = (Tag & 0xFFFF0FFF);
+	// Decode the tag into its fields
+	// TODO: this may not be 100% correct
+	WORD TagId = ((Tag >> 20) & 0x0FFF);
+	BYTE TagApplication = ((Tag >> 16) & 0x0F);
+	BYTE TagQRId = ((Tag >> 12) & 0x0F);
+	WORD TagPacketType = (Tag & 0xFFFF0FFF);
 
-    // It is not ours
-    if (TagId != TAG_ID)
-    {
-        return 1;
-    }
+	// It is not ours
+	if(TagId != TAG_ID)
+	{
+		return 1;
+	}
 
-    return IntQrySendResponse(TagId, TagApplication, TagQRId, TagPacketType);
+	return IntQrySendResponse(TagId, TagApplication, TagQRId, TagPacketType);
 }
 
-VERSION_CONTROL (sv_sqp_cpp, "$Id$")
+VERSION_CONTROL(sv_sqp_cpp, "$Id$")
