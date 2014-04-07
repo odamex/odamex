@@ -254,8 +254,6 @@ bool Server::ReadCvars()
                
         Socket->ReadString(Cvar.Name);
 
-		QRYNEWINFO(3)
-        {
             Socket->Read8(Cvar.Type);
 
             switch (Cvar.Type)
@@ -296,13 +294,6 @@ bool Server::ReadCvars()
                 default:
                     break;
             }
-        }
-        else
-        {
-            Cvar.Type = CVARTYPE_NONE;
-
-            Socket->ReadString(Cvar.Value);
-        }
         
 		// Filter out important information for us to use, it'd be nicer to have
 		// a launcher-side cvar implementation though
@@ -314,37 +305,25 @@ bool Server::ReadCvars()
         }
         else if (Cvar.Name == "sv_maxplayers")
         {
-            QRYNEWINFO(3)
                 Info.MaxPlayers = Cvar.ui8;
-            else
-                Info.MaxPlayers = (uint8_t)atoi(Cvar.Value.c_str());
 
             continue;
         }
         else if (Cvar.Name == "sv_maxclients")
         {
-            QRYNEWINFO(3)
                 Info.MaxClients = Cvar.ui8;
-            else
-                Info.MaxClients = (uint8_t)atoi(Cvar.Value.c_str());
 
             continue;
         }
         else if (Cvar.Name == "sv_gametype")
         {
-            QRYNEWINFO(3)
                 Info.GameType = (GameType_t)Cvar.ui8;
-            else
-                Info.GameType = (GameType_t)atoi(Cvar.Value.c_str());
 
             continue;
         }
         else if (Cvar.Name == "sv_scorelimit")
         {
-            QRYNEWINFO(3)
                 Info.ScoreLimit = Cvar.ui16;
-            else
-                Info.ScoreLimit = atoi(Cvar.Value.c_str());
 
             continue;
         }
@@ -375,21 +354,14 @@ void Server::ReadInformation()
     // Read cvar data
     ReadCvars();
 
-    // TODO: Remove next release
-    QRYNEWINFO(4)
-        Socket->ReadHexString(Info.PasswordHash);
-    else
-        Socket->ReadString(Info.PasswordHash);
+    Socket->ReadHexString(Info.PasswordHash);
 
 	Socket->ReadString(Info.CurrentMap);
 	Socket->Read16(Info.TimeLeft);
-
-	// TODO: Remove next release
-	// Teams
-	QRYNEWINFO(5)
-	{
-        if (Info.GameType == GT_TeamDeathmatch || 
-            Info.GameType == GT_CaptureTheFlag)
+    
+    // Teams
+    if (Info.GameType == GT_TeamDeathmatch || 
+        Info.GameType == GT_CaptureTheFlag)
         {
             uint8_t TeamCount;
 
@@ -406,24 +378,6 @@ void Server::ReadInformation()
                 Info.Teams.push_back(Team);
             }
         }
-	}
-	else
-    {
-        uint8_t TeamCount;
-
-        Socket->Read8(TeamCount);
-        
-        for (size_t i = 0; i < TeamCount; ++i)
-        {
-            Team_t Team;
-
-            Socket->ReadString(Team.Name);
-            Socket->Read32(Team.Colour);
-            Socket->Read16(Team.Score);
-
-            Info.Teams.push_back(Team);
-        }
-    }
     
 	// Dehacked/Bex files
 	uint8_t PatchCount;
@@ -449,12 +403,7 @@ void Server::ReadInformation()
 		Wad_t Wad;
 
 		Socket->ReadString(Wad.Name);
-        
-        // TODO: Remove next release
-		QRYNEWINFO(4)
-            Socket->ReadHexString(Wad.Hash);
-        else
-            Socket->ReadString(Wad.Hash);
+        Socket->ReadHexString(Wad.Hash);
         
 		Info.Wads.push_back(Wad);
 	}
@@ -471,16 +420,12 @@ void Server::ReadInformation()
 		Socket->ReadString(Player.Name);
         Socket->Read32(Player.Colour);
 
-        QRYNEWINFO(5)
+        if (Info.GameType == GT_TeamDeathmatch || 
+            Info.GameType == GT_CaptureTheFlag)
         {
-            if (Info.GameType == GT_TeamDeathmatch || 
-                Info.GameType == GT_CaptureTheFlag)
-            {
-                Socket->Read8(Player.Team);
-            }
-        }
-        else 
             Socket->Read8(Player.Team);
+        }
+
 		Socket->Read16(Player.Ping);
 		Socket->Read16(Player.Time);
 		Socket->ReadBool(Player.Spectator);

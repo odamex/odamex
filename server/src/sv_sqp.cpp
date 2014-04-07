@@ -129,9 +129,6 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
 	{
         MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
 
-        // TODO: Remove next release
-        QRYNEWINFO(3)
-        {
             // Type field
             MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
 
@@ -167,18 +164,9 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
                 default:
                 break;
             }
-        }
-        else
-        {
-            MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
-        }
 	}
 
-	// TODO: Remove next release
-	QRYNEWINFO(4)
-        MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
-	else
-        MSG_WriteString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
+    MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
 
 	MSG_WriteString(&ml_message, level.mapname);
 
@@ -188,9 +176,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
 
     MSG_WriteShort(&ml_message, timeleft);
 
-    // TODO: Remove next release
-    QRYNEWINFO(5)
-    {
+    // Teams
         if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
         {
             // Team data
@@ -205,21 +191,6 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
             MSG_WriteLong(&ml_message, 0x00FF0000);
             MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
         }
-    }
-    else
-    {
-        // Team data
-        MSG_WriteByte(&ml_message, 2);
-
-        // Blue
-        MSG_WriteString(&ml_message, "Blue");
-        MSG_WriteLong(&ml_message, 0x000000FF);
-        MSG_WriteShort(&ml_message, (short)TEAMpoints[it_blueflag]);
-
-        MSG_WriteString(&ml_message, "Red");
-        MSG_WriteLong(&ml_message, 0x00FF0000);
-        MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
-    }
 
     // TODO: When real dynamic teams are implemented
     //byte TeamCount = (byte)sv_teamsinplay;
@@ -247,12 +218,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
 	for (size_t i = 0; i < wadfiles.size(); ++i)
     {
         MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
-
-        // TODO: Remove next release
-        QRYNEWINFO(4)
-            MSG_WriteHexString(&ml_message, wadhashes[i].c_str());
-        else
-            MSG_WriteString(&ml_message, wadhashes[i].c_str());
+        MSG_WriteHexString(&ml_message, wadhashes[i].c_str());
     }
 
     MSG_WriteByte(&ml_message, players.size());
@@ -263,14 +229,9 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
         MSG_WriteString(&ml_message, it->userinfo.netname.c_str());
 
         MSG_WriteLong(&ml_message, it->userinfo.color);
-        // TODO: Remove next release
-        QRYNEWINFO(5)
-        {
-            if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+
+        if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
                 MSG_WriteByte(&ml_message, it->userinfo.team);
-        }
-        else
-            MSG_WriteByte(&ml_message, it->userinfo.team);
 
         MSG_WriteShort(&ml_message, it->ping);
 
