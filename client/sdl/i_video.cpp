@@ -16,24 +16,15 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	SDL hardware access for Video Rendering (?)
+//
+// Low-level video hardware management.
 //
 //-----------------------------------------------------------------------------
 
 
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <string>
-
-#if 0
-#undef MINCHAR
-#undef MAXCHAR
-#undef MINSHORT
-#undef MAXSHORT
-#undef MINLONG
-#undef MAXLONG
-#endif
 
 #include "i_video.h"
 #include "v_video.h"
@@ -51,7 +42,6 @@
 static IWindow* window;
 
 
-extern constate_e ConsoleState;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 
 EXTERN_CVAR(vid_fullscreen)
@@ -114,6 +104,13 @@ void I_InitHardware()
 	int width = I_GetParmValue("-width");
 	int height = I_GetParmValue("-height");
 	int bpp = I_GetParmValue("-bits");
+
+	// ensure the width & height cvars are sane
+	if (vid_defwidth.asInt() <= 0 || vid_defheight.asInt() <= 0)
+	{
+		vid_defwidth.RestoreDefault();
+		vid_defheight.RestoreDefault();
+	}
 	
 	if (width == 0 && height == 0)
 	{
@@ -157,20 +154,17 @@ void I_InitHardware()
 }
 
 
-// VIDEO WRAPPERS ---------------------------------------------------------
-
 
 // Set the window caption
 void I_SetWindowCaption(const std::string& caption)
 {
 	// [Russell] - A basic version string that will eventually get replaced
-	//             better than "Odamex SDL Alpha Build 001" or something :P    
 
-	std::string title("Odamex - ");
+	std::string title("Odamex ");
 	title += DOTVERSIONSTR;
 		
 	if (!caption.empty())
-		title += " " + caption;
+		title += " - " + caption;
 
 	window->setWindowTitle(title);
 }
@@ -612,11 +606,6 @@ IDummyWindowSurface::~IDummyWindowSurface()
 
 
 // ****************************************************************************
-
-// cached values of window->getPrimarySurface()->getWidth() and getHeight()
-// these should be updated every time the window or surface are resized
-static int surface_width, surface_height;
-
 
 void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 {

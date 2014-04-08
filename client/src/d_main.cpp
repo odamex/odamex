@@ -601,6 +601,8 @@ void D_NewWadInit()
 
 	S_Init (snd_sfxvolume, snd_musicvolume);
 	ST_Init();
+
+	I_SetWindowCaption(D_GetTitleString());
 }
 
 void CL_NetDemoRecord(const std::string &filename);
@@ -653,6 +655,8 @@ void D_DoomMain (void)
 
     // SDL needs video mode set up first before input code can be used
     I_InitInput();
+
+	I_SetWindowCaption(D_GetTitleString());
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks ();

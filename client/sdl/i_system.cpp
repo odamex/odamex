@@ -642,7 +642,7 @@ void I_Endoom(void)
 
 	TXT_Init();
 
-    I_SetWindowCaption();
+	I_SetWindowCaption(D_GetTitleString());
     I_SetWindowIcon();
 
 	// Write the data to the screen memory
