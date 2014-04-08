@@ -217,7 +217,7 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 	int width = mSurface->getWidth(), height = mSurface->getHeight();
 	Clear(0, 0, width, height, 0);
 
-	if (I_IsProtectedResolution())
+	if (width == 320 && height == 200)
 	{
 		DrawPatch(patch, 0, 0);
 	}

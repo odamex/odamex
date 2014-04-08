@@ -311,7 +311,7 @@ void D_Display (void)
 			break;
 
 		case GS_DEMOSCREEN:
-			D_PageDrawer ();
+			D_PageDrawer();
 			break;
 
 	default:
@@ -394,14 +394,28 @@ void D_PageTicker (void)
 //
 // D_PageDrawer
 //
-void D_PageDrawer (void)
+void D_PageDrawer()
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 
 	if (page_surface)
 	{
+		int destw, desth;
+
+		if (primary_surface->getWidth() * 3 >= primary_surface->getHeight() * 4)
+		{
+			desth = primary_surface->getHeight();
+			destw = desth * 8 / 6;
+		}
+		else
+		{
+			destw = primary_surface->getWidth();
+			desth = destw * 6 / 8;
+		}
+
 		primary_surface->blit(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
-				0, 0, primary_surface->getWidth(), primary_surface->getHeight());	
+				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
+				destw, desth);
 	}
 	else
 	{
@@ -519,6 +533,7 @@ void D_DoAdvanceDemo (void)
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
 			page_surface = I_AllocateSurface(320, 200, 8);
+			page_surface->setPalette(GetDefaultPalette()->colors);
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
@@ -528,6 +543,7 @@ void D_DoAdvanceDemo (void)
 		else
 		{
 			page_surface = I_AllocateSurface(patch->width(), patch->height(), 8);
+			page_surface->setPalette(GetDefaultPalette()->colors);
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
@@ -542,7 +558,7 @@ void D_DoAdvanceDemo (void)
 //
 void STACK_ARGS D_Close (void)
 {
-	if(page_surface)
+	if (page_surface)
 	{
 		I_FreeSurface(page_surface);
 		page_surface = NULL;

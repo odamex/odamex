@@ -212,6 +212,7 @@ void C_InitConsole(int width, int height, BOOL ingame)
 			const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
 
 			background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+			background_surface->setPalette(GetDefaultPalette()->colors);
 			DCanvas* canvas = background_surface->getDefaultCanvas();
 
 			background_surface->lock();

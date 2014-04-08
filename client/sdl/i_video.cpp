@@ -425,7 +425,7 @@ static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 		yfrac += ystep;
 		
 		source += srcpitchpixels * (yfrac >> FRACBITS);
-		yfrac -= (yfrac >> FRACBITS);
+		yfrac &= (FRACUNIT - 1);
 	}
 }
 
@@ -481,8 +481,8 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	if (destw == 0 || desth == 0)
 		return;
 
-	fixed_t xstep = FixedDiv((srcw + 1) << FRACBITS, destw << FRACBITS);
-	fixed_t ystep = FixedDiv((srch + 1)<< FRACBITS, desth << FRACBITS);
+	fixed_t xstep = FixedDiv(srcw << FRACBITS, destw << FRACBITS) + 1;
+	fixed_t ystep = FixedDiv(srch << FRACBITS, desth << FRACBITS) + 1;
 
 	int srcbits = source_surface->getBitsPerPixel();
 	int destbits = getBitsPerPixel();
@@ -493,15 +493,17 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	{
 		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
 		palindex_t* dest = (palindex_t*)getBuffer() + desty * destpitchpixels + destx;
+		const argb_t* palette = source_surface->getPalette();
 
-		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, getPalette());
+		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
 	else if (srcbits == 8 && destbits == 32)
 	{
 		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
 		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
+		const argb_t* palette = source_surface->getPalette();
 
-		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, getPalette());
+		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
 	else if (srcbits == 32 && destbits == 8)
 	{
@@ -512,8 +514,9 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	{
 		const argb_t* source = (argb_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
 		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
+		const argb_t* palette = source_surface->getPalette();
 
-		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, getPalette());
+		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
 }
 
