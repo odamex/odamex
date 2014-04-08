@@ -46,10 +46,6 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 
 bool I_VideoInitialized();
 
-// [RH] M_ScreenShot now accepts a filename parameter.
-//		Pass a NULL to get the original behavior.
-void I_ScreenShot(std::string filename);
-
 IWindow* I_GetWindow();
 IWindowSurface* I_GetPrimarySurface();
 

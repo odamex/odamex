@@ -776,10 +776,8 @@ void G_DoReborn (player_t &player)
 }
 
 
-void G_ScreenShot (char *filename)
+void G_ScreenShot(const char *filename)
 {
-//	shotfile = filename;
-//	gameaction = ga_screenshot;
 }
 
 

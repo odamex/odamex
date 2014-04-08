@@ -38,6 +38,7 @@
 #include "i_system.h"
 #include "i_input.h"
 #include "i_video.h"
+#include "v_screenshot.h"
 #include "p_setup.h"
 #include "p_saveg.h"
 #include "p_tick.h"
@@ -897,7 +898,7 @@ void G_Ticker (void)
 			G_DoWorldDone ();
 			break;
 		case ga_screenshot:
-			I_ScreenShot(shotfile);
+			V_ScreenShot(shotfile);
 			gameaction = ga_nothing;
 			break;
 		case ga_fullconsole:
@@ -1463,10 +1464,10 @@ void G_DoReborn (player_t &player)
 }
 
 
-void G_ScreenShot (char *filename)
+void G_ScreenShot(const char* filename)
 {
    // SoM: THIS CRASHES A LOT
-   if(filename && *filename)
+   if (filename && *filename)
 	   shotfile = filename;
    else
       shotfile = "";
