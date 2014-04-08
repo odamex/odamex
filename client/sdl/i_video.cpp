@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <sstream>
 #include <string>
 
 #if 0
@@ -225,7 +224,6 @@ void I_SetWindowIcon(void)
 
 }
 
-extern DWORD IndexedPalette[256];
 EXTERN_CVAR(cl_screenshotname)
 EXTERN_CVAR(gammalevel)
 EXTERN_CVAR(vid_gammatype)
@@ -235,13 +233,13 @@ EXTERN_CVAR(vid_gammatype)
 //
 // I_SetPNGPalette
 //
-// Compose a palette of png_color from a palette of SDL_Color,
+// Compose a palette of png_color from a palette of argb_t colors,
 // then set the png's PLTE chunk appropriately
-// Note: sdlpalette is assumed to contain 256 colors
+// Note: palette is assumed to contain 256 colors
 //
-static void I_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const SDL_Color* sdlpalette)
+static void I_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_t* palette)
 {
-	if (!I_GetVideoBitDepth() == 8)
+	if (png_get_color_type(png_ptr, info_ptr) != 3)
 	{
 		Printf(PRINT_HIGH, "I_SetPNGPalette: Cannot create PNG PLTE chunk in 32-bit mode\n");
 		return;
@@ -251,9 +249,9 @@ static void I_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const SDL_C
 
 	for (int i = 0; i < 256; i++)
 	{
-		pngpalette[i].red   = (png_byte)sdlpalette[i].r;
-		pngpalette[i].green = (png_byte)sdlpalette[i].g;
-		pngpalette[i].blue  = (png_byte)sdlpalette[i].b;
+		pngpalette[i].red   = (png_byte)RPART(palette[i]);
+		pngpalette[i].green = (png_byte)GPART(palette[i]);
+		pngpalette[i].blue  = (png_byte)BPART(palette[i]);
 	}
 
 	png_set_PLTE(png_ptr, info_ptr, pngpalette, 256);
@@ -319,10 +317,10 @@ static void I_SetPNGComments(png_struct *png_ptr, png_info *info_ptr, time_t *no
 //
 // I_SavePNG
 //
-// Converts the SDL_Surface to PNG format and saves it to filename.
+// Converts the surface to PNG format and saves it to filename.
 // Supporting function for I_ScreenShot to output PNG files.
 //
-static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Color* colors)
+static int I_SavePNG(const std::string& filename, IWindowSurface* surface)
 {
 	FILE* fp = fopen(filename.c_str(), "wb");
 	png_struct *png_ptr;
@@ -368,14 +366,13 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 	}
 	#endif // PNG_SETJMP_SUPPORTED
 
-	SDL_LockSurface(surface);
-
-	png_uint_32 width = I_GetVideoWidth();
-	png_uint_32 height = I_GetVideoHeight();
+	surface->lock();
+	png_uint_32 width = surface->getWidth();
+	png_uint_32 height = surface->getHeight();
 
 	// is the screen paletted or 32-bit RGBA?
 	// note: we don't want to the preserve A channel in the screenshot if screen is RGBA
-	int png_colortype = I_GetVideoBitDepth() == 8 ? PNG_COLOR_TYPE_PALETTE : PNG_COLOR_TYPE_RGB;
+	int png_colortype = surface->getBitsPerPixel() == 8 ? PNG_COLOR_TYPE_PALETTE : PNG_COLOR_TYPE_RGB;
 	// write image dimensions to png file's IHDR chunk
 	png_set_IHDR
 		(png_ptr, info_ptr,
@@ -387,7 +384,7 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 		PNG_FILTER_TYPE_DEFAULT);
 
 	// determine bpp mode, allocate memory space for PNG pixel data
-	int png_bpp = (I_GetVideoBitDepth() == 8) ? 1 : 3;
+	int png_bpp = (surface->getBitsPerPixel() == 8) ? 1 : 3;
 	png_byte** row_ptrs = (png_byte**)png_malloc(png_ptr, (png_alloc_size_t)(height * sizeof(png_byte*)));
 	png_byte* row;
 	
@@ -414,12 +411,12 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 	}
 	
 	// write PNG in either paletted or RGB form, according to the current screen mode
-	if (I_GetVideoBitDepth() == 8)
+	if (surface->getBitsPerPixel() == 8)
 	{
-		I_SetPNGPalette(png_ptr, info_ptr, colors);
+		I_SetPNGPalette(png_ptr, info_ptr, surface->getPalette());
 		
-		const palindex_t* source = (palindex_t*)surface->pixels;
-		const int pitch_remainder = surface->pitch / sizeof(palindex_t) - width;
+		const palindex_t* source = (palindex_t*)surface->getBuffer();
+		const int pitch_remainder = surface->getPitchInPixels() - width;
 
 		for (unsigned int y = 0; y < height; y++)
 		{
@@ -439,8 +436,8 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 	}
 	else
 	{
-		const argb_t* source = (argb_t*)surface->pixels;
-		const int pitch_remainder = surface->pitch / sizeof(argb_t) - width;
+		const argb_t* source = (argb_t*)surface->getBuffer();
+		const int pitch_remainder = surface->getPitchInPixels() - width;
 
 		for (unsigned int y = 0; y < height; y++)
 		{
@@ -464,7 +461,7 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 	}
 	
 	// commit PNG image data to file
-	SDL_UnlockSurface(surface);
+	surface->unlock();
 	png_init_io(png_ptr, fp);
 	I_SetPNGComments(png_ptr, info_ptr, &now);
 	
@@ -496,11 +493,45 @@ static int I_SavePNG(const std::string& filename, SDL_Surface* surface, SDL_Colo
 //
 // I_SaveBMP
 //
-// Converts the SDL_Surface to BMP format and saves it to filename.
+// Converts the surface to BMP format and saves it to filename.
+// Note: this uses SDL 1.2 for writing to BMP format and may be deprecated
+// in the future.
 //
-static int I_SaveBMP(const std::string& filename, SDL_Surface* surface, SDL_Color* colors)
+static int I_SaveBMP(const std::string& filename, IWindowSurface* surface)
 {
-	int result = SDL_SaveBMP(surface, filename.c_str());
+	surface->lock();
+	
+	SDL_Surface* sdlsurface = SDL_CreateRGBSurfaceFrom(surface->getBuffer(),
+								surface->getWidth(), surface->getHeight(),
+								surface->getBitsPerPixel(), surface->getPitch(),
+								0, 0, 0, 0);
+
+	surface->unlock();
+
+	if (sdlsurface == NULL)
+	{
+		Printf(PRINT_HIGH, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
+		return;
+	}
+
+	if (surface->getBitsPerPixel() == 8)
+	{
+		const argb_t* palette = surface->getPalette();
+		SDL_Color colors[256];
+
+		for (int i = 0; i < 256; i ++, palette++)
+		{
+			colors[i].r = RPART(*palette);
+			colors[i].g = GPART(*palette);
+			colors[i].b = BPART(*palette);
+			colors[i].unused = 0;
+		}
+
+		SDL_SetColors(sdlsurface, colors, 0, 256);
+	}
+
+	int result = SDL_SaveBMP(sdlsurface, filename.c_str());
+
 	return result;
 }
 
@@ -542,56 +573,23 @@ void I_ScreenShot(std::string filename)
 
 	// Create an SDL_Surface object from our screen buffer
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
-	primary_surface->lock();
-	
-	SDL_Surface* sdlsurface = SDL_CreateRGBSurfaceFrom(primary_surface->getBuffer(),
-								primary_surface->getWidth(), primary_surface->getHeight(),
-								primary_surface->getBitsPerPixel(), primary_surface->getPitch(),
-								0, 0, 0, 0);
-
-	primary_surface->unlock();
-
-	if (sdlsurface == NULL)
-	{
-		Printf(PRINT_HIGH, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
-		return;
-	}
-
-	if (I_GetVideoBitDepth() == 8)
-	{
-		// Set up the palette for our screen shot
-		const argb_t* pal = IndexedPalette;
-
-		for (int i = 0; i < 256; i += 1, pal++)
-		{
-			colors[i].r = RPART(*pal);
-			colors[i].g = GPART(*pal);
-			colors[i].b = BPART(*pal);
-			colors[i].unused = 0;
-		}
-
-		SDL_SetColors(sdlsurface, colors, 0, 256);
-	}
 
 	#ifdef USE_PNG
-	int result = I_SavePNG(filename, sdlsurface, colors);
+	int result = I_SavePNG(filename, primary_surface); 
 	if (result != 0)
 	{
 		Printf(PRINT_HIGH, "I_SavePNG Error: Returned error code %d\n", result);
-		SDL_FreeSurface(sdlsurface);
 		return;
 	}
 	#else
-	int result = I_SaveBMP(filename, sdlsurface, colors);
+	int result = I_SaveBMP(filename, primary_surface); 
 	if (result != 0)
 	{
-		Printf(PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
-		SDL_FreeSurface(sdlsurface);
+		Printf(PRINT_HIGH, "I_SaveBMP Error: Returned error code %d\n", result);
 		return;
 	}
 	#endif	// USE_PNG
 
-	SDL_FreeSurface(sdlsurface);
 	Printf(PRINT_HIGH, "Screenshot taken: %s\n", filename.c_str());
 }
 
@@ -842,12 +840,18 @@ static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 	fixed_t yfrac = 0;
 	for (int y = 0; y < desth; y++)
 	{
-		fixed_t xfrac = 0;
-
-		for (int x = 0; x < destw; x++)
+		if (sizeof(DEST_PIXEL_T) == sizeof(SOURCE_PIXEL_T) && xstep == FRACUNIT)
 		{
-			dest[x] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
-			xfrac += xstep;
+			memcpy(dest, source, srcpitchpixels * sizeof(SOURCE_PIXEL_T));
+		}
+		else
+		{
+			fixed_t xfrac = 0;
+			for (int x = 0; x < destw; x++)
+			{
+				dest[x] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
+				xfrac += xstep;
+			}
 		}
 
 		dest += destpitchpixels;
