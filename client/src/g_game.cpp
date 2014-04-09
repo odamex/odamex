@@ -834,7 +834,7 @@ int outrate;
 
 BEGIN_COMMAND(netstat)
 {
-    Printf (PRINT_HIGH, "in = %d  out = %d", netin, netout);
+    Printf (PRINT_HIGH, "in = %d  out = %d \n", netin, netout);
 }
 END_COMMAND(netstat)
 
@@ -1748,7 +1748,7 @@ void G_WriteDemoTiccmd ()
 // G_RecordDemo
 //
 bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
-{	
+{
 	std::string demoname = basedemoname + ".lmp";
 
     if (recorddemo_fp)
@@ -1781,8 +1781,8 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 
 	serverside = true;
 
-	bool monstersrespawn = sv_monstersrespawn.asInt(); 
-	bool fastmonsters = sv_fastmonsters.asInt(); 
+	bool monstersrespawn = sv_monstersrespawn.asInt();
+	bool fastmonsters = sv_fastmonsters.asInt();
 	bool nomonsters = sv_nomonsters.asInt();
 
 	// [SL] 2014-01-07 - Backup any cvars that need to be set to default to
@@ -1824,7 +1824,7 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
     *demo_p++ = sv_skill.asInt() - 1;
     *demo_p++ = episode;
     *demo_p++ = mapid;
-    *demo_p++ = 0;		// coop gametype only (actually single-player only) 
+    *demo_p++ = 0;		// coop gametype only (actually single-player only)
     *demo_p++ = sv_monstersrespawn.asInt();
     *demo_p++ = sv_fastmonsters.asInt();
     *demo_p++ = sv_nomonsters.asInt();
@@ -1857,7 +1857,7 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 {
 	if (argc > 2)
 	{
-		demoversion = ver; 
+		demoversion = ver;
 
 		if (gamestate != GS_STARTUP)
 		{
@@ -1874,7 +1874,7 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "Usage: record%s map file\n", 
+		Printf(PRINT_HIGH, "Usage: record%s map file\n",
 				ver == LMP_DOOM_1_9_1 ? "longtics" : "vanilla");
 	}
 }
@@ -2097,7 +2097,7 @@ void G_DoPlayDemo(bool justStreamInput)
 
 			char tmpname[16];
 			sprintf(tmpname, "Player %i", it->id);
-			it->userinfo.netname = tmpname; 
+			it->userinfo.netname = tmpname;
 		}
 	}
 	else
@@ -2192,7 +2192,7 @@ BOOL G_CheckDemoStatus (void)
 				float fps = float(gametic * TICRATE) / realtics;
 
 				Printf(PRINT_HIGH, "timed %i gametics in %i realtics (%.1f fps)\n",
-						gametic, realtics, fps); 
+						gametic, realtics, fps);
 
 				// exit the application
 				CL_QuitCommand();
