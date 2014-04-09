@@ -61,8 +61,6 @@ typedef enum
 } psprnum_t;
 
 void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic);
-fixed_t P_CalculateWeaponBobX();
-fixed_t P_CalculateWeaponBobY();
 
 inline FArchive &operator<< (FArchive &arc, psprnum_t i)
 {
