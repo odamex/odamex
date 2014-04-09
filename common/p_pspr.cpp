@@ -142,11 +142,14 @@ fixed_t P_CalculateWeaponBobX(player_t* player)
 		return FRACUNIT + scale_amount * FixedMul(player->bob, finecosine[angle_idx]);
 	}
 
+	// upstate, downstate, or atkstate
 	fixed_t weapon_sx = player->psprites[player->psprnum].sx;
 
 	// scale the weapon's distance away from center
 	struct pspdef_s *psp = &player->psprites[player->psprnum];
-	fixed_t center_sx = psp->state ? psp->state->misc1 << FRACBITS : FRACUNIT;
+	fixed_t center_sx = psp->state && psp->state->misc1 ?
+			psp->state->misc1 << FRACBITS :
+			FRACUNIT;
 	return center_sx + scale_amount * (weapon_sx - center_sx);
 }
 
@@ -177,9 +180,12 @@ fixed_t P_CalculateWeaponBobY(player_t* player)
 	if (weaponstate == upstate || weaponstate == downstate)
 		return weapon_sy;
 
+	// atkstate
 	// scale the weapon's distance away from center
 	struct pspdef_s *psp = &player->psprites[player->psprnum];
-	fixed_t center_sy = psp->state ? psp->state->misc2 << FRACBITS : WEAPONTOP;
+	fixed_t center_sy = psp->state && psp->state->misc1 ?
+			psp->state->misc2 << FRACBITS :
+			WEAPONTOP;
 	return center_sy + scale_amount * (weapon_sy - center_sy);
 }
 
