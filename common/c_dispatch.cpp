@@ -512,6 +512,11 @@ const char *ParseString2(const char *data)
 		data++;
 	}
 
+	// Ch0wW : If having a comment, break immediately the line!
+	if (data[0] == '/' && data[1] == '/') {
+		return NULL;
+	}
+
 	if (data[0] == '\\' && ValidEscape(data[1]))
 	{
 		// [AM] Handle escaped chars.
