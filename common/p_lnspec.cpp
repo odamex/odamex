@@ -272,7 +272,7 @@ FUNC(LS_Generic_Door)
 		case 3: type = DDoor::doorClose;			break;
 		default: return false;
 	}
-        return EV_DoDoor (type, ln, it, arg0, SPEED(arg1), OCTICS(arg3), (card_t)arg4);
+	return EV_DoDoor (type, ln, it, arg0, SPEED(arg1), OCTICS(arg3), (card_t)arg4);
 }
 
 FUNC(LS_Floor_LowerByValue)
