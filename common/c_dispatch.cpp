@@ -387,19 +387,15 @@ BEGIN_COMMAND (exec)
 		std::string line;
 		std::getline(ifs, line);
 
-		if(!line.length())
+		if (line.empty())
 			continue;
 
-        size_t QuoteIndex = line.find_first_of('"');
-        size_t CommentIndex = line.find_first_of("//");
+		size_t QuoteIndex = line.find_first_of('"');
+		size_t CommentIndex = line.find("//");
 
 		// commented line
-		if(line.length() > 1 &&
-           ((line[0] == '/' && line[1] == '/') ||
-           (QuoteIndex > CommentIndex)))
-        {
+		if (line.length() > 1 && ((line[0] == '/' && line[1] == '/') || (QuoteIndex > CommentIndex)))
             continue;
-        }
 
 		// start tag
 		if(line.substr(0, 3) == "#if")
