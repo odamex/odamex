@@ -270,18 +270,19 @@ void AddCommandString(const std::string &str, bool onlycvars)
 		return;
 
 	// pointers to the start and end of the current substring in str.c_str()
-	const char *cstart = str.c_str();
-	const char *cend;
+	const char* cstart = str.c_str();
+	const char* cend;
 
 	// stores a copy of the current substring
-	char *command = new char[totallen + 1];
+	char* command = new char[totallen + 1];
 
 	// scan for a command ending
 	while (*cstart)
 	{
-		const char *cp = cstart;
+		const char* cp = cstart;
 
-		while (*cp != ';' && *cp != 0)
+		// read until the next command (separated by semicolon) or until comment (two slashes)
+		while (*cp != ';' && !(cp[0] == '/' && cp[1] == '/') && *cp != 0)
 		{
 			if (cp[0] == '\\' && cp[1] != 0)
 			{
@@ -338,6 +339,10 @@ void AddCommandString(const std::string &str, bool onlycvars)
 		if (onlycvars)
 			safemode = false;
 
+		// don't parse anymore if there's a comment
+		if (cp[0] == '/' && cp[1] == '/')
+			break;
+
 		// are there more commands following this one?
 		if (*cp == ';')
 			cstart = cp + 1;
@@ -386,16 +391,10 @@ BEGIN_COMMAND (exec)
 	{
 		std::string line;
 		std::getline(ifs, line);
+		line = TrimString(line);
 
 		if (line.empty())
 			continue;
-
-		size_t QuoteIndex = line.find_first_of('"');
-		size_t CommentIndex = line.find("//");
-
-		// commented line
-		if (line.length() > 1 && ((line[0] == '/' && line[1] == '/') || (QuoteIndex > CommentIndex)))
-            continue;
 
 		// start tag
 		if(line.substr(0, 3) == "#if")
