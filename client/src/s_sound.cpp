@@ -743,7 +743,7 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 		player_t *player;
 
 		sfx_id = -1;
-		if (ent != (AActor *)(~0) && (player = ent->player))
+		if (ent && ent != (AActor *)(~0) && (player = ent->player))
 		{
 			sprintf(nametemp, templat, "base", name + 1);
 			sfx_id = S_FindSound(nametemp);
