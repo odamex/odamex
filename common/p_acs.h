@@ -7,7 +7,7 @@
 #include "doomtype.h"
 #include "r_defs.h"
 
-#define LOCAL_SIZE	10
+#define LOCAL_SIZE	20
 #define STACK_SIZE 4096
 
 struct ScriptPtr
