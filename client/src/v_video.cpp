@@ -142,16 +142,14 @@ void V_MarkRect (int x, int y, int width, int height)
 //		right and bottom are one pixel *past* the boundaries they describe.
 void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src) const
 {
-	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	int surface_pitch = mSurface->getPitch();
-
 	int fill_width = right - left;
 	right = fill_width >> 6;
 
+	int surface_advance = mSurface->getPitchInPixels() - fill_width;
+
 	if (mSurface->getBitsPerPixel() == 8)
 	{
-		palindex_t* dest = (palindex_t*)(mSurface->getBuffer() + top * surface_pitch + left * sizeof(palindex_t));
-		int advance = mSurface->getPitchInPixels() - surface_width;
+		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + top * mSurface->getPitchInPixels() + left;
 
 		for (int y = top; y < bottom; y++)
 		{
@@ -166,17 +164,16 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 				memcpy(dest, src + ((y & 63) << 6), fill_width & 63);
 				dest += fill_width & 63;
 			}
-			dest += advance;
+			dest += surface_advance;
 		}
 	}
 	else
 	{
-		argb_t* dest = (argb_t*)(mSurface->getBuffer() + top * surface_pitch + left * sizeof(argb_t));
-		int advance = mSurface->getPitchInPixels() - surface_width;
+		argb_t* dest = (argb_t*)mSurface->getBuffer() + top * mSurface->getPitchInPixels() + left;
 
 		for (int y = top; y < bottom; y++)
 		{
-			const byte* l = src + ((y&63)<<6);
+			const byte* l = src + ((y & 63) << 6);
 			for (int x = 0; x < right; x++)
 			{
 				for (int z = 0; z < 64; z += 4, dest += 4)
@@ -204,7 +201,7 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 				}
 			}
 
-			dest += advance;
+			dest += surface_advance;
 		}
 	}
 }

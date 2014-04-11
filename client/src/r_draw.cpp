@@ -1466,19 +1466,17 @@ void R_InitBuffer(int width, int height)
 }
 
 
-void R_DrawBorder (int x1, int y1, int x2, int y2)
+void R_DrawBorder(int x1, int y1, int x2, int y2)
 {
-	int lump;
-
-	lump = W_CheckNumForName (gameinfo.borderFlat, ns_flats);
-	if (lump >= 0)
+	int lumpnum = W_CheckNumForName(gameinfo.borderFlat, ns_flats);
+	if (lumpnum >= 0)
 	{
-		screen->FlatFill (x1 & ~63, y1, x2, y2,
-			(byte *)W_CacheLumpNum (lump, PU_CACHE));
+		const byte* patch_data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+		screen->FlatFill(x1 & ~63, y1, x2, y2, patch_data);
 	}
 	else
 	{
-		screen->Clear (x1, y1, x2, y2, 0);
+		screen->Clear(x1, y1, x2, y2, 0);
 	}
 }
 
@@ -1490,51 +1488,46 @@ void R_DrawBorder (int x1, int y1, int x2, int y2)
 //
 void V_MarkRect (int x, int y, int width, int height);
 
-void R_DrawViewBorder (void)
+void R_DrawViewBorder()
 {
-	int x, y;
-	int offset, size;
-	gameborder_t *border;
+	IWindowSurface* surface = I_GetPrimarySurface();
+	int surface_width = surface->getWidth();
 
-	if (realviewwidth == I_GetSurfaceWidth()) {
+	if (realviewwidth == surface_width)
 		return;
-	}
 
-	border = gameinfo.border;
-	offset = border->offset;
-	size = border->size;
+	const gameborder_t* border = gameinfo.border;
+	const int offset = border->offset;
+	const int size = border->size;
 
-	R_DrawBorder(0, 0, I_GetSurfaceWidth(), viewwindowy);
-	R_DrawBorder(0, viewwindowy, viewwindowx, realviewheight + viewwindowy);
-	R_DrawBorder(viewwindowx + realviewwidth, viewwindowy, I_GetSurfaceWidth(), realviewheight + viewwindowy);
-	R_DrawBorder(0, viewwindowy + realviewheight, I_GetSurfaceWidth(), ST_Y);
+	// draw top border
+	R_DrawBorder(0, 0, surface_width, viewwindowy);
+	// draw bottom border
+	R_DrawBorder(0, viewwindowy + realviewheight, surface_width, ST_Y);
+	// draw left border
+	R_DrawBorder(0, viewwindowy, viewwindowx, viewwindowy + realviewheight);
+	// draw right border
+	R_DrawBorder(viewwindowx + realviewwidth, viewwindowy, surface_width, viewwindowy + realviewheight);
 
-	for (x = viewwindowx; x < viewwindowx + realviewwidth; x += size)
+	// draw beveled edge for the viewing window's top and bottom edges
+	for (int x = viewwindowx; x < viewwindowx + realviewwidth; x += size)
 	{
-		screen->DrawPatch (W_CachePatch (border->t),
-			x, viewwindowy - offset);
-		screen->DrawPatch (W_CachePatch (border->b),
-			x, viewwindowy + realviewheight);
+		screen->DrawPatch(W_CachePatch(border->t), x, viewwindowy - offset);
+		screen->DrawPatch(W_CachePatch(border->b), x, viewwindowy + realviewheight);
 	}
-	for (y = viewwindowy; y < viewwindowy + realviewheight; y += size)
+
+	// draw beveled edge for the viewing window's left and right edges
+	for (int y = viewwindowy; y < viewwindowy + realviewheight; y += size)
 	{
-		screen->DrawPatch (W_CachePatch (border->l),
-			viewwindowx - offset, y);
-		screen->DrawPatch (W_CachePatch (border->r),
-			viewwindowx + realviewwidth, y);
+		screen->DrawPatch(W_CachePatch(border->l), viewwindowx - offset, y);
+		screen->DrawPatch(W_CachePatch(border->r), viewwindowx + realviewwidth, y);
 	}
-	// Draw beveled edge.
-	screen->DrawPatch (W_CachePatch (border->tl),
-		viewwindowx-offset, viewwindowy-offset);
-	
-	screen->DrawPatch (W_CachePatch (border->tr),
-		viewwindowx+realviewwidth, viewwindowy-offset);
-	
-	screen->DrawPatch (W_CachePatch (border->bl),
-		viewwindowx-offset, viewwindowy+realviewheight);
-	
-	screen->DrawPatch (W_CachePatch (border->br),
-		viewwindowx+realviewwidth, viewwindowy+realviewheight);
+
+	// draw beveled edge for the viewing window's corners
+	screen->DrawPatch(W_CachePatch(border->tl), viewwindowx-offset, viewwindowy-offset);
+	screen->DrawPatch(W_CachePatch(border->tr), viewwindowx+realviewwidth, viewwindowy-offset);
+	screen->DrawPatch(W_CachePatch(border->bl), viewwindowx-offset, viewwindowy+realviewheight);
+	screen->DrawPatch(W_CachePatch(border->br), viewwindowx+realviewwidth, viewwindowy+realviewheight);
 
 	V_MarkRect(0, 0, I_GetSurfaceWidth(), ST_Y);
 }
