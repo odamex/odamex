@@ -1803,6 +1803,9 @@ void ST_Init (void)
 	if (stnum_surface == NULL)
 		stnum_surface = I_AllocateSurface(320, 32, 8);
 
+	stbar_surface->setPalette(GetDefaultPalette()->colors);
+	stnum_surface->setPalette(GetDefaultPalette()->colors);
+
 	ST_loadData();
 }
 
