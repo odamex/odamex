@@ -223,6 +223,15 @@ void D_Display (void)
 	// [RH] change the screen mode if needed
 	if (setmodeneeded)
 	{
+		// [SL] surface buffer address will be changing
+		// so just end the screen-wipe
+		if (wiping_screen)
+		{
+			Wipe_Stop();
+			wiping_screen = false;
+			NoWipe = 0;
+		}
+
 		// Change screen mode.
 		if (!V_SetResolution (NewWidth, NewHeight, NewBits))
 			I_FatalError ("Could not change screen mode");
