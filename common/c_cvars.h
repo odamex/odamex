@@ -48,7 +48,7 @@ CVARS (console variables)
                                   // but can be set from the command line
 #define CVAR_LATCH             16 // save changes until server restart
 #define CVAR_UNSETTABLE        32 // can unset this var from console
-#define CVAR_DEMOSAVE          64 // save the value of this cvar_t in a demo
+
 #define CVAR_MODIFIED         128 // set each time the cvar_t is changed
 #define CVAR_ISDEFAULT        256 // is cvar unchanged since creation?
 #define CVAR_AUTO             512 // allocated, needs to be freed when destroyed
@@ -56,21 +56,21 @@ CVARS (console variables)
 #define CVAR_SERVERARCHIVE   4096 // [Nes] Server version of CVAR_ARCHIVE
 #define CVAR_CLIENTARCHIVE   8192 // [Nes] Client version of CVAR_ARCHIVE
 
-// [SL] CVAR_ARCHIVE enables both CVAR_CLIENTARCHIVE & CVAR_SERVERARCHIVE 
+// [SL] CVAR_ARCHIVE enables both CVAR_CLIENTARCHIVE & CVAR_SERVERARCHIVE
 #define CVAR_ARCHIVE	(CVAR_CLIENTARCHIVE | CVAR_SERVERARCHIVE)
 
 // Hints for network code optimization
 typedef enum
 {
      CVARTYPE_NONE = 0 // Used for no sends
-    
+
     ,CVARTYPE_BOOL
     ,CVARTYPE_BYTE
     ,CVARTYPE_WORD
     ,CVARTYPE_INT
     ,CVARTYPE_FLOAT
     ,CVARTYPE_STRING
-    
+
     ,CVARTYPE_MAX = 255
 } cvartype_t;
 
@@ -197,7 +197,7 @@ private:
 cvar_t* GetFirstCvar(void);
 
 // Maximum number of cvars that can be saved.
-#define MAX_BACKUPCVARS 512 
+#define MAX_BACKUPCVARS 512
 
 #define CVAR(name,def,help,type,flags) \
 	cvar_t name(#name, def, help, type, flags);

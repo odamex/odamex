@@ -35,6 +35,7 @@
 #include "i_input.h"
 #include "i_video.h"
 #include "d_main.h"
+#include "c_bind.h"
 #include "c_console.h"
 #include "c_cvars.h"
 #include "i_system.h"
@@ -46,6 +47,7 @@
 
 #ifdef _WIN32
 #include <SDL_syswm.h>
+bool tab_keydown = false;	// [ML] Actual status of tab key
 #endif
 
 #define JOY_DEADZONE 6000
@@ -97,7 +99,15 @@ extern constate_e ConsoleState;
 void I_FlushInput()
 {
 	SDL_Event ev;
-	while (SDL_PollEvent(&ev));
+
+	I_DisableKeyRepeat();
+
+	while (SDL_PollEvent(&ev)) {}
+
+	C_ReleaseKeys();
+
+	I_EnableKeyRepeat();
+
 	if (mouse_input)
 		mouse_input->flushEvents();
 }
@@ -160,30 +170,48 @@ static void I_InitFocus()
 // We try to make ourselves be well-behaved: the grab on the mouse
 // is removed if we lose focus (such as a popup window appearing),
 // and we dont move the mouse around if we aren't focused either.
+// [ML] 4-2-14: Make more in line with EE and choco, handle alt+tab focus better
 //
 static void I_UpdateFocus()
 {
+	SDL_Event  ev;
 	bool new_window_focused = I_CheckFocusState();
 
-	if (new_window_focused && !window_focused)
+	// [CG][EE] Handle focus changes, this is all necessary to avoid repeat events.
+	if (window_focused != new_window_focused)
 	{
-		I_FlushInput();
-	}
-	else if (!new_window_focused && window_focused)
-	{
-	}
+		if(new_window_focused)
+		{
+			while(SDL_PollEvent(&ev)) {}
+			I_EnableKeyRepeat();
+		}
+		else
+		{
+			I_DisableKeyRepeat();
+		}
 
-	window_focused = new_window_focused;
+#ifdef _WIN32
+		tab_keydown = false;
+#endif
+		C_ReleaseKeys();
+
+		window_focused = new_window_focused;
+
+		if (mouse_input)
+		{
+			mouse_input->flushEvents();
+		}
+	}
 }
 
 
 //
-// I_UpdateInputGrabbing
+// I_UpdateGrab
 //
 // Determines if SDL should grab the mouse based on the game window having
 // focus and the status of the menu and console.
 //
-static void I_UpdateInputGrabbing()
+static void I_UpdateGrab()
 {
 #ifndef GCONSOLE
 	bool can_grab = false;
@@ -208,12 +236,13 @@ static void I_UpdateInputGrabbing()
 		grabbed = !can_grab;
 	prev_vid_fullscreen = vid_fullscreen;
 
+
+
 	// check if the window focus changed (or menu/console status changed)
 	if (can_grab && !grabbed)
 	{
 		SDL_WM_GrabInput(SDL_GRAB_ON);
 		I_ResumeMouse();
-		I_FlushInput();
 	}
 	else if (grabbed && !can_grab)
 	{
@@ -546,6 +575,9 @@ void I_GetEvent()
 	static SDL_Event sdl_events[MAX_EVENTS];
 	event_t event;
 
+	I_UpdateFocus();
+	I_UpdateGrab();
+
 	// Process mouse movement and button events
 	if (mouse_input)
 		mouse_input->processEvents();
@@ -585,6 +617,7 @@ void I_GetEvent()
 		case SDL_ACTIVEEVENT:
 			// need to update our focus state
 			I_UpdateFocus();
+			I_UpdateGrab();
 			// pause the mouse when the focus goes away (eg, alt-tab)
 			if (!window_focused)
 				I_PauseMouse();
@@ -619,21 +652,46 @@ void I_GetEvent()
 				AddCommandString("quit");
 			// SoM: Ignore the tab portion of alt-tab presses
 			// [AM] Windows 7 seems to preempt this check.
-			if (event.data1 == SDLK_TAB && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
-				event.data1 = event.data2 = event.data3 = 0;
-			else
+			if (event.data1 == SDLK_TAB)
+			{
+				if ((vid_fullscreen && num_events > 1) || (SDL_GetModState() & (KMOD_LALT | KMOD_RALT)))
+				{
+					event.data1 = event.data2 = event.data3 = 0;
+				} else {
+
+					tab_keydown = true;
+				}
+			}
 #endif
 			D_PostEvent(&event);
 			break;
 
 		case SDL_KEYUP:
+
 			event.type = ev_keyup;
 			event.data1 = sdl_ev->key.keysym.sym;
+
 			if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
 				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
 			else
 				event.data2 = event.data3 = 0;
 			D_PostEvent(&event);
+
+#ifdef _WIN32
+			// [ML] SDL 1.2 directx dumbness - when returning from alt-tab, even with
+			// best practices from other ports, the tab key will get trapped for one key press,
+			// only registering an SDL_KEYUP event.  If this is the case, send down another keydown
+			// event.  This issue only occurs when the video driver is set to directx (the default in Odamex).
+			if (event.data1 == SDLK_TAB && tab_keydown == false && I_CheckFocusState())
+			{
+				DPrintf("FOCUS STATUS: %u \n",I_CheckFocusState());
+				DPrintf("GOT IN THE KEYUP TRAP \n");
+				event.type = ev_keydown;
+				D_PostEvent(&event);
+			}
+
+			tab_keydown = false;
+#endif
 			break;
 
 		case SDL_JOYBUTTONDOWN:
@@ -701,8 +759,6 @@ void I_GetEvent()
 //
 void I_StartTic (void)
 {
-	I_UpdateFocus();
-	I_UpdateInputGrabbing();
 	I_GetEvent();
 }
 

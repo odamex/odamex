@@ -32,7 +32,7 @@
 #include "r_state.h"
 #include "tables.h"
 
-EXTERN_CVAR(co_fixzerotags)
+EXTERN_CVAR(co_zdoomphys)
 
 extern bool predicting;
 
@@ -46,7 +46,7 @@ void P_SetFloorDestroy(DFloor *floor)
 		return;
 
 	floor->m_Status = DFloor::destroy;
-	
+
 	if (clientside && floor->m_Sector)
 	{
 		floor->m_Sector->floordata = NULL;
@@ -106,11 +106,11 @@ void DFloor::PlayFloorSound()
 		return;
 
 	S_StopSound(m_Sector->soundorg);
-		
+
 	if (m_Status == init)
 		S_LoopedSound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
 	if (m_Status == finished)
-		S_Sound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);	
+		S_Sound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
 }
 
 //
@@ -121,9 +121,9 @@ void DFloor::RunThink ()
 	if (m_Status == finished)
 	{
 		PlayFloorSound();
-		P_SetFloorDestroy(this);	
+		P_SetFloorDestroy(this);
 	}
-	
+
 	if (m_Status == destroy)
 		return;
 
@@ -242,7 +242,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 	: DMovingFloor (sec), m_Status(init)
 {
 	int secnum = sec - sectors;
-	
+
 	fixed_t floorheight = P_FloorHeight(sec);
 	fixed_t ceilingheight = P_CeilingHeight(sec);
 
@@ -255,7 +255,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 	m_Height = height;
 	m_Change = change;
 	m_Line = line;
-	
+
 	PlayFloorSound();
 
 	switch (floortype)
@@ -390,7 +390,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 	  default:
 		break;
 	}
-	
+
 	if (m_Direction == 1)
 		m_Status = up;
 	else if (m_Direction == -1)
@@ -445,7 +445,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 					break;
 			}
 		}
-	}	
+	}
 }
 
 //
@@ -461,7 +461,7 @@ BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 	BOOL				manual = false;
 
 	// check if a manual trigger; if so do just the sector on the backside
-	if (co_fixzerotags && tag == 0)
+	if (co_zdoomphys && tag == 0)
 	{
 		if (!line || !(sec = line->backsector))
 			return rtn;
@@ -479,9 +479,9 @@ manual_floor:
 		// ALREADY MOVING?	IF SO, KEEP GOING...
 		if (sec->floordata)
 		{
-			if (co_fixzerotags && manual)
+			if (co_zdoomphys && manual)
 				return false;
-			else	
+			else
 				continue;
 		}
 
@@ -489,7 +489,7 @@ manual_floor:
 		rtn = true;
 		new DFloor(sec, floortype, line, speed, height, crush, change);
 		P_AddMovingFloor(sec);
-		
+
 		if (manual)
 			return rtn;
 	}
@@ -615,7 +615,7 @@ manual_stair:
 		rtn = true;
 		floor = new DFloor (sec);
 		P_AddMovingFloor(sec);
-		
+
 		floor->m_Direction = (type == DFloor::buildUp) ? 1 : -1;
 		floor->m_Type = DFloor::buildStair;	//jff 3/31/98 do not leave uninited
 		floor->m_ResetCount = reset;	// [RH] Tics until reset (0 if never)
@@ -713,7 +713,7 @@ manual_stair:
 				// create and initialize a thinker for the next step
 				floor = new DFloor (sec);
 				P_AddMovingFloor(sec);
-				
+
 				floor->PlayFloorSound();
 				floor->m_Direction = (type == DFloor::buildUp) ? 1 : -1;
 				floor->m_FloorDestHeight = height;
@@ -783,7 +783,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			//	Spawn rising slime
 			floor = new DFloor (s2);
 			P_AddMovingFloor(s2);
-						
+
 			floor->m_Type = DFloor::donutRaise;
 			floor->m_Crush = false;
 			floor->m_Direction = 1;
@@ -800,7 +800,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			//	Spawn lowering donut-hole
 			floor = new DFloor (s1);
 			P_AddMovingFloor(s1);
-			
+
 			floor->m_Type = DFloor::floorLowerToNearest;
 			floor->m_Crush = false;
 			floor->m_Direction = -1;
@@ -809,7 +809,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			floor->m_FloorDestHeight = P_FloorHeight(s3);
 			floor->m_Change = 0;
 			floor->m_Height = 0;
-			floor->m_Line = NULL;			
+			floor->m_Line = NULL;
 			floor->PlayFloorSound();
 			break;
 		}
@@ -827,10 +827,10 @@ void P_SetElevatorDestroy(DElevator *elevator)
 		return;
 
 	elevator->m_Status = DElevator::destroy;
-	
+
 	if (clientside && elevator->m_Sector)
 	{
-		elevator->m_Sector->ceilingdata = NULL;	
+		elevator->m_Sector->ceilingdata = NULL;
 		elevator->m_Sector->floordata = NULL;
 		elevator->Destroy();
 	}
@@ -872,11 +872,11 @@ void DElevator::PlayElevatorSound()
 		return;
 
 	S_StopSound(m_Sector->soundorg);
-		
+
 	if (m_Status == init)
 		S_LoopedSound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
 	else
-		S_Sound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);	
+		S_Sound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
 }
 
 //
@@ -895,7 +895,7 @@ void DElevator::RunThink ()
 {
 	if (m_Status == destroy)
 		return;
-		
+
 	EResult res;
 
 	if (m_Direction < 0)	// moving down
@@ -964,21 +964,21 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 			sec->floordata->Destroy();
 			sec->floordata = NULL;
 		}
-		
+
 		if (sec->floordata || sec->ceilingdata) //jff 2/22/98
 			continue;
-		
+
 		fixed_t floorheight = P_FloorHeight(sec);
 		fixed_t ceilingheight = P_CeilingHeight(sec);
 
 		// create and initialize new elevator thinker
 		rtn = true;
 		elevator = new DElevator (sec);
-		
+
 		// [SL] 2012-04-19 - Elevators have both moving ceilings and floors.
 		// Consider them as moving ceilings for consistency sake.
 		P_AddMovingCeiling(sec);
-		
+
 		elevator->m_Type = elevtype;
 		elevator->m_Speed = speed;
 		elevator->PlayElevatorSound();

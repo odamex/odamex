@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -31,7 +31,7 @@
 #include "doomstat.h"
 #include "r_state.h"
 
-EXTERN_CVAR(co_fixzerotags)
+EXTERN_CVAR(co_zdoomphys)
 
 extern bool predicting;
 
@@ -45,7 +45,7 @@ void P_SetCeilingDestroy(DCeiling *ceiling)
 		return;
 
 	ceiling->m_Status = DCeiling::destroy;
-	
+
 	if (clientside && ceiling->m_Sector)
 	{
 		ceiling->m_Sector->ceilingdata = NULL;
@@ -102,13 +102,13 @@ void DCeiling::PlayCeilingSound ()
 {
 	if (predicting || !m_Sector)
 		return;
-	
+
 	if (m_Sector->seqType >= 0)
 	{
 		SN_StartSequence (m_Sector, m_Sector->seqType, SEQ_PLATFORM);
 	}
 	else
-	{	
+	{
 		if (m_Silent == 2)
 			SN_StartSequence (m_Sector, "Silence");
 		else if (m_Silent == 1)
@@ -266,7 +266,8 @@ BOOL EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 	rtn = false;
 
 	// check if a manual trigger, if so do just the sector on the backside
-	if (co_fixzerotags && tag == 0)
+	//
+	if (co_zdoomphys && tag == 0)
 	{
 		if (!line || !(sec = line->backsector))
 			return rtn;
@@ -294,7 +295,7 @@ manual_ceiling:
 		// if ceiling already moving, don't start a second function on it
 		if (sec->ceilingdata)
 		{
-			if (co_fixzerotags && manual)
+			if (co_zdoomphys && manual)
 				return false;
 			else
 				continue;

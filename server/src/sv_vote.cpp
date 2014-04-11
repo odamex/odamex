@@ -28,6 +28,7 @@
 #include "sv_maplist.h"
 #include "sv_pickup.h"
 #include "sv_vote.h"
+#include "d_main.h"
 
 #include <algorithm>
 #include <cmath>
@@ -365,7 +366,13 @@ public:
 
 		// Construct our argstring from the map index.
 		std::ostringstream vsbuffer;
-		vsbuffer << "map " << JoinStrings(maplist_entry.wads, " ") << " " << maplist_entry.map;
+		vsbuffer << "map ";
+
+		for (std::vector<std::string>::const_iterator it = maplist_entry.wads.begin();
+			it!= maplist_entry.wads.end(); ++it)
+			vsbuffer << D_CleanseFileName(*it) << " ";
+
+		vsbuffer << maplist_entry.map;
 		this->votestring = vsbuffer.str();
 		return true;
 	}

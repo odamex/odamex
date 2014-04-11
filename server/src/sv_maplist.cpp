@@ -529,33 +529,38 @@ void SVC_MaplistUpdate(player_t &player, maplist_status_t status) {
 	MSG_WriteByte(&cl->reliablebuf, MAPLIST_OUTDATED);
 	MSG_WriteShort(&cl->reliablebuf, maplist.size()); // total size
 	MSG_WriteShort(&cl->reliablebuf, 0); // starting index
-	for (std::vector<std::pair<size_t, maplist_entry_t*> >::iterator it = maplist.begin();
-		 it != maplist.end();++it) {
+	for (std::vector<std::pair<size_t, maplist_entry_t*> >::iterator it = maplist.begin(); it != maplist.end(); ++it)
+	{
 		MSG_WriteString(&cl->reliablebuf, it->second->map.c_str());
 		MSG_WriteShort(&cl->reliablebuf, it->second->wads.size());
-		for (std::vector<std::string>::iterator itr = it->second->wads.begin();
-			 itr != it->second->wads.end();++itr) {
-			MSG_WriteString(&cl->reliablebuf, itr->c_str());
+		for (std::vector<std::string>::iterator itr = it->second->wads.begin(); itr != it->second->wads.end(); ++itr)
+		{
+			std::string filename = D_CleanseFileName(*itr);
+			MSG_WriteString(&cl->reliablebuf, filename.c_str());
 		}
 
 		// If we're at the end of the maplist, we don't want to continue the
 		// message any longer and we don't need to start a new packet, so we
 		// need this check before the fragmenting logic below.
-		if (it == maplist.end() - 1) {
+		if (it == maplist.end() - 1)
+		{
 			MSG_WriteBool(&cl->reliablebuf, false); // end packet for good
 			break;
 		}
 
 		// This message could get huge, so send it
 		// when it grows to a specific size.
-		if (cl->reliablebuf.cursize >= 1024) {
+		if (cl->reliablebuf.cursize >= 1024)
+		{
 			MSG_WriteBool(&cl->reliablebuf, false); // end packet
 			SV_SendPacket(player);
 			MSG_WriteMarker(&cl->reliablebuf, svc_maplist_update); // new packet
 			MSG_WriteByte(&cl->reliablebuf, MAPLIST_OUTDATED);
 			MSG_WriteShort(&cl->reliablebuf, maplist.size()); // total size
 			MSG_WriteShort(&cl->reliablebuf, it->first + 1); // next index
-		} else {
+		}
+		else
+		{
 			MSG_WriteBool(&cl->reliablebuf, true); // continue packet
 		}
 	}

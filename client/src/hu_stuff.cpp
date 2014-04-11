@@ -33,6 +33,7 @@
 #include "doomstat.h"
 #include "st_stuff.h"
 #include "gstrings.h"
+#include "c_bind.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "c_cvars.h"
@@ -98,7 +99,6 @@ extern bool HasBehavior;
 extern inline int V_StringWidth (const char *str);
 size_t P_NumPlayersInGame();
 static void ShoveChatStr (std::string str, byte who);
-void C_ReleaseKeys();
 
 static std::string input_text;
 int headsupactive;
@@ -1463,7 +1463,7 @@ void HU_ConsoleScores(player_t *player)
 				Printf_Bold("\n------------------------------RED TEAM\n");
 			else		// shouldn't happen
 				Printf_Bold("\n--------------------------UNKNOWN TEAM\n");
-				
+
 			Printf_Bold("Name            Points Caps Frags Time\n");
 			Printf_Bold("--------------------------------------\n");
 
@@ -1542,7 +1542,7 @@ void HU_ConsoleScores(player_t *player)
 			}
 		}
 	}
-	
+
 	else if (sv_gametype == GM_DM)
 	{
 		compare_player_frags comparison_functor;

@@ -207,9 +207,17 @@ void Warmup::forcestart()
 // Handle tic-by-tic maintenance of the warmup.
 void Warmup::tic()
 {
+	// If warmup isn't enabled, return
+	if (this->status == Warmup::DISABLED)
+		return;
+
 	// If autostart is zeroed out, start immediately.
 	if (this->status == Warmup::WARMUP && sv_warmup_autostart == 0.0f)
 		this->set_status(Warmup::COUNTDOWN);
+
+	// If there aren't any more active players, go back to warm up mode [tm512 2014/04/08]
+	if (this->status != Warmup::WARMUP && P_NumPlayersInGame () == 0)
+		this->set_status (Warmup::WARMUP);
 
 	// If we're not advancing the countdown, we don't care.
 	if (!(this->status == Warmup::COUNTDOWN || this->status == Warmup::FORCE_COUNTDOWN))

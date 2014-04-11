@@ -339,7 +339,7 @@ void R_InitSprites (const char **namelist)
 	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
 
 	M_Free(vissprites);
-    
+
 	vissprites = (vissprite_t *)Malloc (MaxVisSprites * sizeof(vissprite_t));
 	lastvissprite = &vissprites[MaxVisSprites];
 
@@ -420,7 +420,7 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 
 		const fixed_t endfrac = dcol.texturefrac + (dcol.yh - dcol.yl) * dcol.iscale;
 		const fixed_t maxfrac = post->length << FRACBITS;
-		
+
 		if (endfrac >= maxfrac)
 		{
 			int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
@@ -431,7 +431,7 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 
 		if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
 			drawfunc();
-		
+
 		post = post->next();
 	}
 }
@@ -544,15 +544,15 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 // coordinates onto the screen. Returns NULL if the projection is completely
 // clipped off the screen.
 //
-static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside, 
-		fixed_t x, fixed_t y, fixed_t z, fixed_t height, fixed_t width, 
+static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
+		fixed_t x, fixed_t y, fixed_t z, fixed_t height, fixed_t width,
 		fixed_t topoffs, fixed_t sideoffs, bool flip)
 {
 	// translate the sprite edges from world-space to camera-space
 	// and store in t1 & t2
 	fixed_t tx, ty, t1xold;
 	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
-	
+
 	v2fixed_t t1, t2;
 	t1.x = t1xold = tx - sideoffs;
 	t2.x = t1.x + width;
@@ -560,7 +560,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 
 	// clip the sprite to the left & right screen edges
 	int32_t lclip, rclip;
-	if (!R_ClipLineToFrustum(&t1, &t2, FRACUNIT, lclip, rclip))
+	if (!R_ClipLineToFrustum(&t1, &t2, NEARCLIP, lclip, rclip))
 		return NULL;
 
 	// calculate how much of the sprite was clipped from the left side
@@ -586,10 +586,10 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	// from the viewer, by either water or fake ceilings
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
 	sector_t* heightsec = sector->heightsec;
-	
+
 	if (heightsec && heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
 		heightsec = NULL;
-	
+
 	if (heightsec)	// only clip things which are in special sectors
 	{
 		if (fakeside == FAKED_AboveCeiling)
@@ -691,7 +691,7 @@ void R_DrawHitBox(AActor* thing)
 	vertices[7].x = thing->x + thing->radius;
 	vertices[7].y = thing->y - thing->radius;
 	vertices[7].z = thing->z + thing->height;
-	
+
 	// draw bottom square
 	R_DrawLine(&vertices[0], &vertices[1], color);
 	R_DrawLine(&vertices[0], &vertices[2], color);
@@ -872,10 +872,13 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 }
 
 
+fixed_t P_CalculateWeaponBobX(player_t* player);
+fixed_t P_CalculateWeaponBobY(player_t* player);
+
 //
 // R_DrawPSprite
 //
-void R_DrawPSprite (pspdef_t* psp, unsigned flags)
+void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 {
 	fixed_t 			tx;
 	int 				x1;
@@ -887,8 +890,8 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 	vissprite_t*		vis;
 	vissprite_t 		avis;
 
-	fixed_t sx = P_CalculateWeaponBobX();
-	fixed_t sy = P_CalculateWeaponBobY();
+	fixed_t sx = P_CalculateWeaponBobX(&displayplayer());
+	fixed_t sy = P_CalculateWeaponBobY(&displayplayer());
 
 	// decide which patch to use
 #ifdef RANGECHECK
@@ -1137,7 +1140,7 @@ void R_DrawSprite (vissprite_t *spr)
 	// [RH] rewrote this to be based on which part of the sector is really visible
 
 	if (spr->heightsec && !(spr->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
-	{ 
+	{
 		if (spr->FakeFlat != FAKED_AboveCeiling)
 		{
 			fixed_t h = P_FloorHeight(spr->heightsec);
@@ -1254,7 +1257,7 @@ static void R_DrawCrosshair (void)
     // Don't draw the crosshair in overlay mode
     if (automapactive && viewactive)
         return;
-        
+
 	// Don't draw the crosshair in spectator mode
 	if (camera->player && camera->player->spectator)
 		return;
@@ -1264,7 +1267,7 @@ static void R_DrawCrosshair (void)
 		static const byte crosshair_color = 0xB0;
 		if (hud_crosshairhealth)
 		{
-			byte health_colors[4] = { 0xB0, 0xDF, 0xE7, 0x77 }; 
+			byte health_colors[4] = { 0xB0, 0xDF, 0xE7, 0x77 };
 
 			if (camera->health > 75)
 				crosshair_trans[crosshair_color] = health_colors[3];
@@ -1327,9 +1330,9 @@ void R_DrawMasked (void)
 	//	but does not draw on side views
 	if (!viewangleoffset)
 	{
-		R_DrawCrosshair (); // [RH] Draw crosshair (if active)
 		R_DrawPlayerSprites ();
-	}
+		R_DrawCrosshair (); // [RH] Draw crosshair (if active)
+	}						// Ch0wW: Crosshair is always the last element drawn on the screen.
 }
 
 void R_InitParticles (void)
@@ -1359,7 +1362,7 @@ void R_ClearParticles (void)
 	InactiveParticles = 0;
 	for (i = 0; i < NumParticles-1; i++)
 		Particles[i].next = i + 1;
-	
+
 	Particles[i].next = NO_PARTICLE;
 }
 
@@ -1374,14 +1377,14 @@ void R_FindParticleSubsectors ()
 
 	if (!r_particles)
 		return;
-	
+
 	for (int i = ActiveParticles; i != NO_PARTICLE; i = Particles[i].next)
 	{
 		subsector_t *ssec = R_PointInSubsector(Particles[i].x, Particles[i].y);
-		int ssnum = ssec - subsectors;	
-		
+		int ssnum = ssec - subsectors;
+
 		Particles[i].nextinsubsector = ParticlesInSubsec[ssnum];
-		ParticlesInSubsec[ssnum] = i;	
+		ParticlesInSubsec[ssnum] = i;
 	}
 }
 

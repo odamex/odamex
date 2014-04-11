@@ -496,7 +496,7 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 	// convert from camera-space to screen-space
 	int lclip, rclip;
 
-	if (!R_ClipLineToFrustum((v2fixed_t*)&pt1, (v2fixed_t*)&pt2, FRACUNIT, lclip, rclip))
+	if (!R_ClipLineToFrustum((v2fixed_t*)&pt1, (v2fixed_t*)&pt2, NEARCLIP, lclip, rclip))
 		return;
 
 	R_ClipLine((v2fixed_t*)&pt1, (v2fixed_t*)&pt2, lclip, rclip, (v2fixed_t*)&pt1, (v2fixed_t*)&pt2);

@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Launcher packet structure file
+//  Launcher packet structure file
 //
 // AUTHORS:
 //  Russell Rice (russell at odamex dot net)
@@ -34,7 +34,8 @@
 
 using namespace std;
 
-namespace odalpapi {
+namespace odalpapi
+{
 
 /*
    Create a packet to send, which in turn will
@@ -48,52 +49,52 @@ int32_t ServerBase::Query(int32_t Timeout)
 {
 	int8_t Retry = m_RetryCount;
 
-	if (m_Address.empty() || !m_Port)
-        return 0;
+	if(m_Address.empty() || !m_Port)
+		return 0;
 
-    Socket->SetRemoteAddress(m_Address, m_Port);
+	Socket->SetRemoteAddress(m_Address, m_Port);
 
-    Socket->ClearBuffer();
+	Socket->ClearBuffer();
 
-    // If we didn't get it the first time, try again
-    while (Retry)
-    {
-        Socket->Write32(challenge);
+	// If we didn't get it the first time, try again
+	while(Retry)
+	{
+		Socket->Write32(challenge);
 
-        if (!Socket->SendData(Timeout))
-            return 0;
+		if(!Socket->SendData(Timeout))
+			return 0;
 
-        int32_t err = Socket->GetData(Timeout);
+		int32_t err = Socket->GetData(Timeout);
 
-        switch (err)
-        {
-            case -1:
-            case -3: 
-            {
-                Socket->ClearBuffer();
-                --Retry;
-                continue;
-            };
+		switch(err)
+		{
+		case -1:
+		case -3:
+		{
+			Socket->ClearBuffer();
+			--Retry;
+			continue;
+		};
 
-            case -2:
-                return 0;
+		case -2:
+			return 0;
 
-            default:
-                goto ok;
-        }
-    }
+		default:
+			goto ok;
+		}
+	}
 
-    if (!Retry)
-        return 0;
+	if(!Retry)
+		return 0;
 
-    ok:
+ok:
 
-    Ping = Socket->GetPing();
+	Ping = Socket->GetPing();
 
-    if (!Parse())
-        return 0;
+	if(!Parse())
+		return 0;
 
-    return 1;
+	return 1;
 }
 
 /*
@@ -111,7 +112,7 @@ int32_t MasterServer::Parse()
 
 	Socket->Read32(temp_response);
 
-	if (temp_response != response)
+	if(temp_response != response)
 	{
 		Socket->ClearBuffer();
 
@@ -122,7 +123,7 @@ int32_t MasterServer::Parse()
 
 	Socket->Read16(server_count);
 
-	if (!server_count)
+	if(!server_count)
 	{
 		Socket->ClearBuffer();
 
@@ -130,8 +131,8 @@ int32_t MasterServer::Parse()
 	}
 
 	// Add on to any servers already in the list
-	if (server_count)
-		for (int16_t i = 0; i < server_count; i++)
+	if(server_count)
+		for(int16_t i = 0; i < server_count; i++)
 		{
 			addr_t address;
 			uint8_t ip1, ip2, ip3, ip4;
@@ -153,21 +154,21 @@ int32_t MasterServer::Parse()
 			size_t j = 0;
 
 			// Don't add the same address more than once.
-			for (j = 0; j < addresses.size(); ++j)
+			for(j = 0; j < addresses.size(); ++j)
 			{
-				if (addresses[j].ip == address.ip &&
-						addresses[j].port == address.port)
+				if(addresses[j].ip == address.ip &&
+				        addresses[j].port == address.port)
 				{
 					break;
 				}
 			}
 
 			// didn't find it, so add it
-			if (j == addresses.size())
+			if(j == addresses.size())
 				addresses.push_back(address);
 		}
 
-	if (Socket->BadRead())
+	if(Socket->BadRead())
 	{
 		Socket->ClearBuffer();
 
@@ -234,12 +235,12 @@ static uint32_t ProtocolVersion;
 // introduced revision
 // NOTE: this one is different from the servers version for a reason
 #define QRYNEWINFO(INTRODUCED) \
-	if (ProtocolVersion >= INTRODUCED)
+    if (ProtocolVersion >= INTRODUCED)
 
 // Specifies when data was removed from the protocol, first parameter is the
 // introduced revision and the last one is the removed revision
 #define QRYRANGEINFO(INTRODUCED,REMOVED) \
-	if (ProtocolVersion >= INTRODUCED && ProtocolVersion < REMOVED)
+    if (ProtocolVersion >= INTRODUCED && ProtocolVersion < REMOVED)
 
 // Read cvar information
 bool Server::ReadCvars()
@@ -248,110 +249,89 @@ bool Server::ReadCvars()
 
 	Socket->Read8(CvarCount);
 
-	for (size_t i = 0; i < CvarCount; ++i)
+	for(size_t i = 0; i < CvarCount; ++i)
 	{
 		Cvar_t Cvar;
-               
-        Socket->ReadString(Cvar.Name);
 
-		QRYNEWINFO(3)
-        {
-            Socket->Read8(Cvar.Type);
+		Socket->ReadString(Cvar.Name);
 
-            switch (Cvar.Type)
-            {
-                case CVARTYPE_BOOL:
-                {
-                    Cvar.b = true;
-                }
-                break;
+		Socket->Read8(Cvar.Type);
 
-                case CVARTYPE_BYTE:
-                {
-                    Socket->Read8(Cvar.i8);
-                }
-                break;
+		switch(Cvar.Type)
+		{
+		case CVARTYPE_BOOL:
+		{
+			Cvar.b = true;
+		}
+		break;
 
-                case CVARTYPE_WORD:
-                {
-                    Socket->Read16(Cvar.i16);
-                }
-                break;
+		case CVARTYPE_BYTE:
+		{
+			Socket->Read8(Cvar.i8);
+		}
+		break;
 
-                case CVARTYPE_INT:
-                {
-                    Socket->Read32(Cvar.i32);
-                }
-                break;
+		case CVARTYPE_WORD:
+		{
+			Socket->Read16(Cvar.i16);
+		}
+		break;
 
-                case CVARTYPE_FLOAT:
-                case CVARTYPE_STRING:
-                {
-                    Socket->ReadString(Cvar.Value);
-                }
-                break;
+		case CVARTYPE_INT:
+		{
+			Socket->Read32(Cvar.i32);
+		}
+		break;
 
-                case CVARTYPE_NONE:
-                case CVARTYPE_MAX:
-                default:
-                    break;
-            }
-        }
-        else
-        {
-            Cvar.Type = CVARTYPE_NONE;
+		case CVARTYPE_FLOAT:
+		case CVARTYPE_STRING:
+		{
+			Socket->ReadString(Cvar.Value);
+		}
+		break;
 
-            Socket->ReadString(Cvar.Value);
-        }
-        
+		case CVARTYPE_NONE:
+		case CVARTYPE_MAX:
+		default:
+			break;
+		}
+
 		// Filter out important information for us to use, it'd be nicer to have
 		// a launcher-side cvar implementation though
-        if (Cvar.Name == "sv_hostname")
-        {
-            Info.Name = Cvar.Value;
+		if(Cvar.Name == "sv_hostname")
+		{
+			Info.Name = Cvar.Value;
 
-            continue;
-        }
-        else if (Cvar.Name == "sv_maxplayers")
-        {
-            QRYNEWINFO(3)
-                Info.MaxPlayers = Cvar.ui8;
-            else
-                Info.MaxPlayers = (uint8_t)atoi(Cvar.Value.c_str());
+			continue;
+		}
+		else if(Cvar.Name == "sv_maxplayers")
+		{
+			Info.MaxPlayers = Cvar.ui8;
 
-            continue;
-        }
-        else if (Cvar.Name == "sv_maxclients")
-        {
-            QRYNEWINFO(3)
-                Info.MaxClients = Cvar.ui8;
-            else
-                Info.MaxClients = (uint8_t)atoi(Cvar.Value.c_str());
+			continue;
+		}
+		else if(Cvar.Name == "sv_maxclients")
+		{
+			Info.MaxClients = Cvar.ui8;
 
-            continue;
-        }
-        else if (Cvar.Name == "sv_gametype")
-        {
-            QRYNEWINFO(3)
-                Info.GameType = (GameType_t)Cvar.ui8;
-            else
-                Info.GameType = (GameType_t)atoi(Cvar.Value.c_str());
+			continue;
+		}
+		else if(Cvar.Name == "sv_gametype")
+		{
+			Info.GameType = (GameType_t)Cvar.ui8;
 
-            continue;
-        }
-        else if (Cvar.Name == "sv_scorelimit")
-        {
-            QRYNEWINFO(3)
-                Info.ScoreLimit = Cvar.ui16;
-            else
-                Info.ScoreLimit = atoi(Cvar.Value.c_str());
+			continue;
+		}
+		else if(Cvar.Name == "sv_scorelimit")
+		{
+			Info.ScoreLimit = Cvar.ui16;
 
-            continue;
-        }
+			continue;
+		}
 
 		Info.Cvars.push_back(Cvar);
 	}
-	
+
 	return true;
 }
 
@@ -363,74 +343,49 @@ void Server::ReadInformation()
 	Info.VersionPatch = VersionPatch;
 	Info.VersionProtocol = ProtocolVersion;
 
-    // bond - time
-    Socket->Read32(Info.PTime);
+	// bond - time
+	Socket->Read32(Info.PTime);
 
-    // The servers real protocol version
-    // bond - real protocol
-    Socket->Read32(Info.VersionRealProtocol);
+	// The servers real protocol version
+	// bond - real protocol
+	Socket->Read32(Info.VersionRealProtocol);
 
 	Socket->Read32(Info.VersionRevision);
 
-    // Read cvar data
-    ReadCvars();
+	// Read cvar data
+	ReadCvars();
 
-    // TODO: Remove next release
-    QRYNEWINFO(4)
-        Socket->ReadHexString(Info.PasswordHash);
-    else
-        Socket->ReadString(Info.PasswordHash);
+	Socket->ReadHexString(Info.PasswordHash);
 
 	Socket->ReadString(Info.CurrentMap);
 	Socket->Read16(Info.TimeLeft);
 
-	// TODO: Remove next release
 	// Teams
-	QRYNEWINFO(5)
+	if(Info.GameType == GT_TeamDeathmatch ||
+	        Info.GameType == GT_CaptureTheFlag)
 	{
-        if (Info.GameType == GT_TeamDeathmatch || 
-            Info.GameType == GT_CaptureTheFlag)
-        {
-            uint8_t TeamCount;
+		uint8_t TeamCount;
 
-            Socket->Read8(TeamCount);
+		Socket->Read8(TeamCount);
 
-            for (size_t i = 0; i < TeamCount; ++i)
-            {
-                Team_t Team;
+		for(size_t i = 0; i < TeamCount; ++i)
+		{
+			Team_t Team;
 
-                Socket->ReadString(Team.Name);
-                Socket->Read32(Team.Colour);
-                Socket->Read16(Team.Score);
+			Socket->ReadString(Team.Name);
+			Socket->Read32(Team.Colour);
+			Socket->Read16(Team.Score);
 
-                Info.Teams.push_back(Team);
-            }
-        }
+			Info.Teams.push_back(Team);
+		}
 	}
-	else
-    {
-        uint8_t TeamCount;
 
-        Socket->Read8(TeamCount);
-        
-        for (size_t i = 0; i < TeamCount; ++i)
-        {
-            Team_t Team;
-
-            Socket->ReadString(Team.Name);
-            Socket->Read32(Team.Colour);
-            Socket->Read16(Team.Score);
-
-            Info.Teams.push_back(Team);
-        }
-    }
-    
 	// Dehacked/Bex files
 	uint8_t PatchCount;
 
 	Socket->Read8(PatchCount);
 
-	for (size_t i = 0; i < PatchCount; ++i)
+	for(size_t i = 0; i < PatchCount; ++i)
 	{
 		string Patch;
 
@@ -444,18 +399,13 @@ void Server::ReadInformation()
 
 	Socket->Read8(WadCount);
 
-	for (size_t i = 0; i < WadCount; ++i)
+	for(size_t i = 0; i < WadCount; ++i)
 	{
 		Wad_t Wad;
 
 		Socket->ReadString(Wad.Name);
-        
-        // TODO: Remove next release
-		QRYNEWINFO(4)
-            Socket->ReadHexString(Wad.Hash);
-        else
-            Socket->ReadString(Wad.Hash);
-        
+		Socket->ReadHexString(Wad.Hash);
+
 		Info.Wads.push_back(Wad);
 	}
 
@@ -464,23 +414,19 @@ void Server::ReadInformation()
 
 	Socket->Read8(PlayerCount);
 
-	for (size_t i = 0; i < PlayerCount; ++i)
+	for(size_t i = 0; i < PlayerCount; ++i)
 	{
 		Player_t Player;
 
 		Socket->ReadString(Player.Name);
-        Socket->Read32(Player.Colour);
+		Socket->Read32(Player.Colour);
 
-        QRYNEWINFO(5)
-        {
-            if (Info.GameType == GT_TeamDeathmatch || 
-                Info.GameType == GT_CaptureTheFlag)
-            {
-                Socket->Read8(Player.Team);
-            }
-        }
-        else 
-            Socket->Read8(Player.Team);
+		if(Info.GameType == GT_TeamDeathmatch ||
+		        Info.GameType == GT_CaptureTheFlag)
+		{
+			Socket->Read8(Player.Team);
+		}
+
 		Socket->Read16(Player.Ping);
 		Socket->Read16(Player.Time);
 		Socket->ReadBool(Player.Spectator);
@@ -497,70 +443,70 @@ void Server::ReadInformation()
 //
 // Figures out the response from the server, deciding whether to use this data
 // or not
-int32_t Server::TranslateResponse(const uint16_t &TagId,
-		const uint8_t &TagApplication,
-		const uint8_t &TagQRId,
-		const uint16_t &TagPacketType)
+int32_t Server::TranslateResponse(const uint16_t& TagId,
+                                  const uint8_t& TagApplication,
+                                  const uint8_t& TagQRId,
+                                  const uint16_t& TagPacketType)
 {
 	// It isn't a response
-	if (TagQRId != 2)
+	if(TagQRId != 2)
 	{
 		//wxLogDebug(wxT("Query/Response Id is not valid"));
 
 		return 0;
 	}
 
-	switch (TagApplication)
+	switch(TagApplication)
 	{
-		// Enquirer
-		case 1:
-			{
-				//wxLogDebug(wxT("Application is Enquirer"));
+	// Enquirer
+	case 1:
+	{
+		//wxLogDebug(wxT("Application is Enquirer"));
 
-				return 0;
-			}
-			break;
+		return 0;
+	}
+	break;
 
-			// Client
-		case 2:
-			{
-				//wxLogDebug(wxT("Application is Client"));
+	// Client
+	case 2:
+	{
+		//wxLogDebug(wxT("Application is Client"));
 
-				return 0;
-			}
-			break;
+		return 0;
+	}
+	break;
 
-			// Server
-		case 3:
-			{
-				//wxLogDebug(wxT("Application is Server"));
-			}
-			break;
+	// Server
+	case 3:
+	{
+		//wxLogDebug(wxT("Application is Server"));
+	}
+	break;
 
-			// Master Server
-		case 4:
-			{
-				//wxLogDebug(wxT("Application is Master Server"));
+	// Master Server
+	case 4:
+	{
+		//wxLogDebug(wxT("Application is Master Server"));
 
-				return 0;
-			}
-			break;
+		return 0;
+	}
+	break;
 
-			// Unknown
-		default:
-			{
-				//wxLogDebug(wxT("Application is Unknown"));
+	// Unknown
+	default:
+	{
+		//wxLogDebug(wxT("Application is Unknown"));
 
-				return 0;
-			}
-			break;
+		return 0;
+	}
+	break;
 	}
 
-	if (TagPacketType == 2)
+	if(TagPacketType == 2)
 	{
 		// Launcher is an old version
 		NET_ReportError("Launcher is too old to parse the data from Server %s",
-              Socket->GetRemoteAddress().c_str());
+		                Socket->GetRemoteAddress().c_str());
 
 		return 0;
 	}
@@ -571,37 +517,37 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 	Socket->Read32(SvVersion);
 	Socket->Read32(SvProtocolVersion);
 
-    // Prevent possible divide by zero
-    if (!SvVersion)
-    {
-        return 0;
-    }
+	// Prevent possible divide by zero
+	if(!SvVersion)
+	{
+		return 0;
+	}
 
-	if ((VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION)) ||
-			(VERSIONMAJOR(SvVersion) <= VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
+	if((VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION)) ||
+	        (VERSIONMAJOR(SvVersion) <= VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
 	{
 		// Server is an older version
 		NET_ReportError("Server %s is version %d.%d.%d which is not supported\n",
-              Socket->GetRemoteAddress().c_str(),
-              VERSIONMAJOR(SvVersion),
-              VERSIONMINOR(SvVersion),
-              VERSIONPATCH(SvVersion));
+		                Socket->GetRemoteAddress().c_str(),
+		                VERSIONMAJOR(SvVersion),
+		                VERSIONMINOR(SvVersion),
+		                VERSIONPATCH(SvVersion));
 
 		return 0;
 	}
 
-    VersionMajor = VERSIONMAJOR(SvVersion);
-    VersionMinor = VERSIONMINOR(SvVersion);
-    VersionPatch = VERSIONPATCH(SvVersion);
-    ProtocolVersion = SvProtocolVersion;
+	VersionMajor = VERSIONMAJOR(SvVersion);
+	VersionMinor = VERSIONMINOR(SvVersion);
+	VersionPatch = VERSIONPATCH(SvVersion);
+	ProtocolVersion = SvProtocolVersion;
 
 	ReadInformation();
 
-	if (Socket->BadRead())
+	if(Socket->BadRead())
 	{
 		// Bad packet data encountered
 		NET_ReportError("Data from Server %s was out of sequence, please report!\n",
-              Socket->GetRemoteAddress().c_str());
+		                Socket->GetRemoteAddress().c_str());
 
 		return 0;
 	}
@@ -621,12 +567,12 @@ int32_t Server::Parse()
 	uint8_t TagQRId = ((Info.Response >> 12) & 0x0F);
 	uint16_t TagPacketType = (Info.Response & 0xFFFF0FFF);
 
-	if (TagId == TAG_ID)
+	if(TagId == TAG_ID)
 	{
 		int32_t Result = TranslateResponse(TagId,
-				TagApplication,
-				TagQRId,
-				TagPacketType);
+		                                   TagApplication,
+		                                   TagQRId,
+		                                   TagPacketType);
 
 		Socket->ClearBuffer();
 
@@ -646,107 +592,108 @@ int32_t Server::Parse()
 
 int32_t Server::Query(int32_t Timeout)
 {
-    int8_t Retry = m_RetryCount;
+	int8_t Retry = m_RetryCount;
 
-	if (m_Address.empty() || !m_Port)
-        return 0;
+	if(m_Address.empty() || !m_Port)
+		return 0;
 
-    Socket->SetRemoteAddress(m_Address, m_Port);
+	Socket->SetRemoteAddress(m_Address, m_Port);
 
 	Socket->ClearBuffer();
 
 	ResetData();
 
-    // If we didn't get it the first time, try again
-    while (Retry)
-    {
-        Socket->Write32(challenge);
-        Socket->Write32(VERSION);
-        Socket->Write32(PROTOCOL_VERSION);
-        // bond - time
-        Socket->Write32(Info.PTime);
+	// If we didn't get it the first time, try again
+	while(Retry)
+	{
+		Socket->Write32(challenge);
+		Socket->Write32(VERSION);
+		Socket->Write32(PROTOCOL_VERSION);
+		// bond - time
+		Socket->Write32(Info.PTime);
 
-        if (!Socket->SendData(Timeout))
-            return 0;
+		if(!Socket->SendData(Timeout))
+			return 0;
 
-        int32_t err = Socket->GetData(Timeout);
+		int32_t err = Socket->GetData(Timeout);
 
-        switch (err)
-        {
-            case -1:
-            case -3: 
-            {
-                Socket->ResetBuffer();
-                Socket->ResetSize();
-                --Retry;
-                continue;
-            };
+		switch(err)
+		{
+		case -1:
+		case -3:
+		{
+			Socket->ResetBuffer();
+			Socket->ResetSize();
+			--Retry;
+			continue;
+		};
 
-            case -2:
-                return 0;
+		case -2:
+			return 0;
 
-            default:
-                goto ok;
-        }
-    }
+		default:
+			goto ok;
+		}
+	}
 
-    if (!Retry)
-        return 0;
+	if(!Retry)
+		return 0;
 
-    ok:
+ok:
 
-    Ping = Socket->GetPing();
+	Ping = Socket->GetPing();
 
-    if (!Parse())
-        return 0;
+	if(!Parse())
+		return 0;
 
-    return 1;
+	return 1;
 }
 
 // Send network-wide broadcasts
-void MasterServer::QueryBC(const uint32_t &Timeout)
+void MasterServer::QueryBC(const uint32_t& Timeout)
 {
-    BufferedSocket BCSocket;
+	BufferedSocket BCSocket;
 
-    BCSocket.ClearBuffer();
+	BCSocket.ClearBuffer();
 
-    BCSocket.SetRemoteAddress("255.255.255.255", 10666);
+	BCSocket.SetRemoteAddress("255.255.255.255", 10666);
 
-    // TODO: it might be better to create actual Server objects so we do not
-    // have to requery when we get past this stage
-    BCSocket.Write32(SERVER_VERSION_CHALLENGE);
-    BCSocket.Write32(VERSION);
-    BCSocket.Write32(PROTOCOL_VERSION);
+	// TODO: it might be better to create actual Server objects so we do not
+	// have to requery when we get past this stage
+	BCSocket.Write32(SERVER_VERSION_CHALLENGE);
+	BCSocket.Write32(VERSION);
+	BCSocket.Write32(PROTOCOL_VERSION);
 
-    BCSocket.Write32(0);
+	BCSocket.Write32(0);
 
-    BCSocket.SetBroadcast(true);
+	BCSocket.SetBroadcast(true);
 
-    BCSocket.SendData(Timeout);
+	BCSocket.SendData(Timeout);
 
-    while (BCSocket.GetData(Timeout) > 0)
-    {
-        addr_t address = { "", 0, false};
-        size_t j = 0;
+	while(BCSocket.GetData(Timeout) > 0)
+	{
+		addr_t address = { "", 0, false};
+		size_t j = 0;
 
-        address.custom = false;
+		address.custom = false;
 
-        BCSocket.GetRemoteAddress(address.ip, address.port);
+		BCSocket.GetRemoteAddress(address.ip, address.port);
 
-        // Don't add the same address more than once.
-        for (; j < addresses.size(); ++j)
-        {
-            if (addresses[j].ip == address.ip &&
-                addresses[j].port == address.port)
-            {
-                break;
-            }
-        }
+		// Don't add the same address more than once.
+		for(; j < addresses.size(); ++j)
+		{
+			if(addresses[j].ip == address.ip &&
+			        addresses[j].port == address.port)
+			{
+				break;
+			}
+		}
 
-        // didn't find it, so add it
-        if (j == addresses.size())
-            addresses.push_back(address);
-    }
+		// didn't find it, so add it
+		if(j == addresses.size())
+			addresses.push_back(address);
+	}
 }
 
 } // namespace
+

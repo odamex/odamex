@@ -660,8 +660,16 @@ BEGIN_COMMAND (map)
 		}
 		else
 		{
-			unnatural_level_progression = true;
-			G_DeferedInitNew (argv[1]);
+			// Ch0wW - Map was still not found, so don't bother trying loading the map.
+			if (W_CheckNumForName (argv[1]) == -1)
+			{
+				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
+			}
+			else
+			{
+				unnatural_level_progression = true;
+				G_DeferedInitNew (argv[1]);
+			}
 		}
 	}
 	else
@@ -888,13 +896,13 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 		}
 	}
 
-	if (!(hubLoad || noStorePlayers))
-		P_SerializePlayers(arc);
-
 	P_SerializeThinkers(arc, hubLoad, noStorePlayers);
 	P_SerializeWorld(arc);
 	P_SerializePolyobjs(arc);
 	P_SerializeSounds(arc);
+
+	if (!(hubLoad || noStorePlayers))
+		P_SerializePlayers(arc);
 }
 
 // Archives the current level

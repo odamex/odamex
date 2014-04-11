@@ -29,20 +29,30 @@ file(GLOB JSONCPP_HEADERS ${JSONCPP_DIR}/json/*.h)
 set(JSONCPP_SOURCE ${JSONCPP_DIR}/jsoncpp.cpp)
 
 # MiniUPnPc
-set(MINIUPNPC_DIR ../libraries/libminiupnpc)
-set(MINIUPNPC_STATIC_LIBRARIES upnpc-static)
+if (USE_MINIUPNP)
+  set(MINIUPNPC_DIR ../libraries/libminiupnpc)
+  set(MINIUPNPC_STATIC_LIBRARIES upnpc-static)
+endif()
 
 # Platform definitions
 define_platform()
 
 # Server definitions
 add_definitions(-DJSON_IS_AMALGAMATION)
-add_definitions(-DODA_HAVE_MINIUPNP)
+
+if (USE_MINIUPNP)
+  add_definitions(-DODA_HAVE_MINIUPNP)
+endif()
 
 if(WIN32 AND NOT MSVC)
   add_definitions(-DWINVER=0x0500)
 endif()
-include_directories(${JSONCPP_DIR} ${MINIUPNPC_DIR} ${COMMON_DIR} ${SERVER_DIR} ${SERVER_WIN32_DIR})
+include_directories(${JSONCPP_DIR} ${COMMON_DIR} ${SERVER_DIR} ${SERVER_WIN32_DIR})
+
+# Include miniupnpc if we want it
+if (USE_MINIUPNP)
+  include_directories(${MINIUPNPC_DIR})
+endif()
 
 # Set up FHS installation path
 if(NOT APPLE AND NOT WIN32)
@@ -54,7 +64,10 @@ add_executable(odasrv
   ${COMMON_SOURCES} ${COMMON_HEADERS}
   ${SERVER_SOURCES} ${SERVER_HEADERS}
   ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
-target_link_libraries(odasrv ${MINIUPNPC_STATIC_LIBRARIES})
+
+if (USE_MINIUPNP)
+  target_link_libraries(odasrv ${MINIUPNPC_STATIC_LIBRARIES})
+endif()
 
 if(WIN32)
   target_link_libraries(odasrv winmm wsock32)
