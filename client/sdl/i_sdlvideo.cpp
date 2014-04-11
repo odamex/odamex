@@ -77,7 +77,7 @@ CVAR_FUNC_IMPL(vid_vsync)
 // ISDL12WindowSurface::ISDL12WindowSurface
 //
 ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, int width, int height, int bpp) :
-	IWindowSurface(window), mSDLSurface(NULL), mLocks(0)
+	IWindowSurface(window), mSDLSurface(NULL), mPalette(NULL), mLocks(0)
 {
 	Uint32 flags = SDL_SWSURFACE;
 	SDL_Surface* sdlsurface = SDL_CreateRGBSurface(flags, width, height, bpp, 0, 0, 0, 0);
@@ -92,7 +92,7 @@ ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, int width, int height,
 // Constructs the surface using an existing SDL_Surface handle.
 //
 ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, SDL_Surface* sdlsurface) :
-	IWindowSurface(window), mSDLSurface(NULL), mLocks(0)
+	IWindowSurface(window), mSDLSurface(NULL), mPalette(NULL), mLocks(0)
 {
 	initializeFromSDLSurface(sdlsurface);
 }
@@ -119,8 +119,6 @@ void ISDL12WindowSurface::initializeFromSDLSurface(SDL_Surface* sdlsurface)
 	mPitch = mSDLSurface->pitch;
 	mPitchInPixels = mPitch / mBytesPerPixel;
 	unlock();
-
-	memset(mPalette, 0, 256 * sizeof(*mPalette));
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
@@ -178,7 +176,7 @@ void ISDL12WindowSurface::unlock()
 //
 void ISDL12WindowSurface::setPalette(const argb_t* palette)
 {
-	memcpy(mPalette, palette, 256 * sizeof(*mPalette));
+	mPalette = palette;
 
 	if (mBitsPerPixel == 8)
 	{
@@ -189,37 +187,9 @@ void ISDL12WindowSurface::setPalette(const argb_t* palette)
 		SDL_Color* sdlcolors = mSDLSurface->format->palette->colors;
 		for (int c = 0; c < 256; c++)
 		{
-			sdlcolors[c].r = RPART(palette[c]);
-			sdlcolors[c].g = GPART(palette[c]);
-			sdlcolors[c].b = BPART(palette[c]);
-		}
-
-		unlock();
-	}
-}
-
-
-//
-// ISDL12WindowSurface::setPalette
-//
-// Accepts an array of 768 palindex_t values, laid out as 256 groups
-// of red, green, and blue values.
-//
-void ISDL12WindowSurface::setPalette(const palindex_t* palette)
-{
-	if (mBitsPerPixel == 8)
-	{
-		lock();
-
-		assert(mSDLSurface->format->palette != NULL);
-		assert(mSDLSurface->format->palette->ncolors == 256);
-		SDL_Color* sdlcolors = mSDLSurface->format->palette->colors;
-		for (int c = 0; c < 256; c++)
-		{
-			sdlcolors[c].r = *palette++;
-			sdlcolors[c].g = *palette++;
-			sdlcolors[c].b = *palette++;
-			mPalette[c] = MAKEARGB(255, sdlcolors[c].r, sdlcolors[c].g, sdlcolors[c].b);
+			sdlcolors[c].r = RPART(mPalette[c]);
+			sdlcolors[c].g = GPART(mPalette[c]);
+			sdlcolors[c].b = BPART(mPalette[c]);
 		}
 
 		unlock();

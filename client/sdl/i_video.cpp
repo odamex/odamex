@@ -488,20 +488,22 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	int destbits = getBitsPerPixel();
 	int srcpitchpixels = source_surface->getPitchInPixels();
 	int destpitchpixels = getPitchInPixels();
+	const argb_t* palette = source_surface->getPalette();
 
 	if (srcbits == 8 && destbits == 8)
 	{
 		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
 		palindex_t* dest = (palindex_t*)getBuffer() + desty * destpitchpixels + destx;
-		const argb_t* palette = source_surface->getPalette();
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
 	else if (srcbits == 8 && destbits == 32)
 	{
+		if (palette == NULL)
+			return;
+
 		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
 		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
-		const argb_t* palette = source_surface->getPalette();
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
@@ -514,7 +516,6 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	{
 		const argb_t* source = (argb_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
 		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
-		const argb_t* palette = source_surface->getPalette();
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
@@ -578,30 +579,31 @@ void IWindowSurface::releaseCanvas(DCanvas* canvas)
 
 // ============================================================================
 //
-// IDummyWindowSurface class implementation
+// IGenericWindowSurface class implementation
 //
 // Simple implementation of IWindowSurface for headless clients. 
 //
 // ============================================================================
 
 //
-// IDummyWindowSurface::IDummyWindowSurface
+// IGenericWindowSurface::IGenericWindowSurface
 //
 // Allocates a fixed-size buffer.
 //
-IDummyWindowSurface::IDummyWindowSurface(IWindow* window) :
-	IWindowSurface(window)
+IGenericWindowSurface::IGenericWindowSurface(IWindow* window, int width, int height, int bpp) :
+	IWindowSurface(window), mPalette(NULL), mWidth(width), mHeight(height), mBitsPerPixel(bpp)
 {
 	// TODO: make mSurfaceBuffer aligned to 16-byte boundary
-	mSurfaceBuffer = new byte[getPitch() * getHeight() * getBytesPerPixel()];
-	memset(mPalette, 0, 256 * sizeof(*mPalette));
+	mPitch = mWidth;
+
+	mSurfaceBuffer = new byte[mPitch * mHeight * getBytesPerPixel()];
 }
 
 
 //
-// IDummyWindowSurface::~IDummyWindowSurface
+// IGenericWindowSurface::~IGenericWindowSurface
 //
-IDummyWindowSurface::~IDummyWindowSurface()
+IGenericWindowSurface::~IGenericWindowSurface()
 {
 	delete [] mSurfaceBuffer;
 }
@@ -707,7 +709,7 @@ IWindowSurface* I_GetPrimarySurface()
 //
 IWindowSurface* I_AllocateSurface(int width, int height, int bpp)
 {
-	return new ISDL12WindowSurface(I_GetWindow(), width, height, bpp);
+	return new IGenericWindowSurface(I_GetWindow(), width, height, bpp);
 }
 
 
@@ -797,17 +799,6 @@ void I_ReadScreen(byte *block)
 // I_SetPalette
 //
 void I_SetPalette(const argb_t* palette)
-{
-	window->setPalette(palette);
-}
-
-
-//
-// I_SetOldPalette
-//
-// Sets the window's palette using a raw PLAYPAL palette.
-//
-void I_SetOldPalette(const palindex_t* palette)
 {
 	window->setPalette(palette);
 }

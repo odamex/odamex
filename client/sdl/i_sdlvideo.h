@@ -75,7 +75,6 @@ public:
 	{	return mBytesPerPixel;	}
 
 	virtual void setPalette(const argb_t* palette);
-	virtual void setPalette(const palindex_t* palette);
 	virtual const argb_t* getPalette() const;
 
 private:
@@ -88,7 +87,7 @@ private:
 	SDL_Surface*		mSDLSurface;
 	byte*				mSurfaceBuffer;
 
-	argb_t				mPalette[256];
+	const argb_t*		mPalette;
 
 	int					mWidth;
 	int					mHeight;

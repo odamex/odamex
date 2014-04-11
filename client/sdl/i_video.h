@@ -67,7 +67,6 @@ bool I_IsProtectedResolution();
 bool I_SetMode (int &width, int &height, int &bits);
 
 void I_SetPalette(const argb_t* palette);
-void I_SetOldPalette(const palindex_t* palette);
 
 void I_BeginUpdate();			// [RH] Locks primary surface
 void I_FinishUpdate();			// Unlocks primary surface
@@ -149,7 +148,6 @@ public:
 	{	return getBitsPerPixel() / 8;	}
 
 	virtual void setPalette(const argb_t* palette) = 0;
-	virtual void setPalette(const palindex_t* palette) = 0;
 	virtual const argb_t* getPalette() const = 0;
 
 	virtual void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
@@ -168,18 +166,18 @@ private:
 
 // ============================================================================
 //
-// IDummyWindowSurface class interface
+// IGenericWindowSurface class interface
 //
 // Implementation of IWindowSurface that is useful for headless clients. The
 // contents of the buffer are never used.
 //
 // ============================================================================
 
-class IDummyWindowSurface : public IWindowSurface
+class IGenericWindowSurface : public IWindowSurface
 {
 public:
-	IDummyWindowSurface(IWindow* window);
-	virtual ~IDummyWindowSurface();
+	IGenericWindowSurface(IWindow* window, int width, int height, int bpp);
+	virtual ~IGenericWindowSurface();
 
 	virtual byte* getBuffer()
 	{	return mSurfaceBuffer;	}
@@ -188,34 +186,35 @@ public:
 	{	return mSurfaceBuffer;	}
 
 	virtual int getWidth() const
-	{	return 320;	}
+	{	return mWidth;	}
 
 	virtual int getHeight() const
-	{	return 240;	}
+	{	return mHeight;	}
 
 	virtual int getPitch() const
-	{	return 320;	}
+	{	return mPitch;	}
 
 	virtual int getBitsPerPixel() const
-	{	return 8;	}
+	{	return mBitsPerPixel;	}
 
-	virtual void setPalette(const argb_t* palette) { }
-	virtual void setPalette(const palindex_t* palette) { }
+	virtual void setPalette(const argb_t* palette)
+	{	mPalette = palette;	}
 
 	virtual const argb_t* getPalette() const
 	{	return mPalette;	}	
 
-	virtual void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
-			int destx, int desty, int destw, int desth)
-	{ }
-
 private:
 	// disable copy constructor and assignment operator
-	IDummyWindowSurface(const IDummyWindowSurface&);
-	IDummyWindowSurface& operator=(const IDummyWindowSurface&);
+	IGenericWindowSurface(const IGenericWindowSurface&);
+	IGenericWindowSurface& operator=(const IGenericWindowSurface&);
 
 	byte*			mSurfaceBuffer;
-	argb_t			mPalette[256];
+	const argb_t*	mPalette;
+
+	int				mWidth;
+	int				mHeight;
+	int				mBitsPerPixel;
+	int				mPitch;
 };
 
 
@@ -317,9 +316,6 @@ public:
 	virtual void setPalette(const argb_t* palette)
 	{	getPrimarySurface()->setPalette(palette);	}
 
-	virtual void setPalette(const palindex_t* palette)
-	{	getPrimarySurface()->setPalette(palette);	}
-
 	virtual const argb_t* getPalette() const
 	{	return getPrimarySurface()->getPalette();	}	
 };
@@ -338,7 +334,7 @@ class IDummyWindow : public IWindow
 {
 public:
 	IDummyWindow() : IWindow()
-	{	mPrimarySurface = new IDummyWindowSurface(this); }
+	{	mPrimarySurface = new IGenericWindowSurface(this, 320, 200, 8); }
 
 	virtual ~IDummyWindow()
 	{	delete mPrimarySurface;	}

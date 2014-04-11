@@ -421,15 +421,7 @@ void CL_QuitNetGame(void)
 
 	// Reset the palette to default
 	if (I_VideoInitialized())
-	{
-		int lu_palette = W_GetNumForName("PLAYPAL");
-		if (lu_palette != -1)
-		{
-			byte *pal = (byte*)W_CacheLumpNum(lu_palette, PU_CACHE);
-			if (pal)
-				I_SetOldPalette(pal);
-		}
-	}
+		I_SetPalette(GetDefaultPalette()->colors);
 
 	cvar_t::C_RestoreCVars();
 }

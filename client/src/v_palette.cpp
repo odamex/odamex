@@ -61,7 +61,7 @@ void V_ForceBlend (int blendr, int blendg, int blendb, int blenda);
 dyncolormap_t NormalLight;
 
 static int lu_palette;
-static int current_palette;
+static int current_palette_num;
 static float current_blend[4];
 
 palette_t DefPal;
@@ -287,7 +287,7 @@ palette_t *InitPalettes (const char *name)
 	//if (DefPal.usecount)
 	//	return &DefPal;
 
-	current_palette = -1;
+	current_palette_num = -1;
 	current_blend[0] = current_blend[1] = current_blend[2] = current_blend[3] = 255.0f;
 
     lu_palette = W_GetNumForName ("PLAYPAL");
@@ -909,11 +909,13 @@ END_COMMAND (testcolor)
 //
 void V_DoPaletteEffects()
 {
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+
 	player_t* plyr = &displayplayer();
 
-	if (I_GetVideoBitDepth() == 8)
+	if (primary_surface->getBitsPerPixel() == 8)
 	{
-		int		palette;
+		int palette_num;
 
 		float cnt = (float)plyr->damagecount;
 		if (!multiplayer || sv_allowredscreen)
@@ -925,40 +927,49 @@ void V_DoPaletteEffects()
 
 		if (cnt > 0.0f)
 		{
-			palette = ((int)cnt + 7) >> 3;
+			palette_num = ((int)cnt + 7) >> 3;
 
 			if (gamemode == retail_chex)
-				palette = RADIATIONPAL;
+				palette_num = RADIATIONPAL;
 			else
 			{
-				if (palette >= NUMREDPALS)
-					palette = NUMREDPALS-1;
+				if (palette_num >= NUMREDPALS)
+					palette_num = NUMREDPALS - 1;
 
-				palette += STARTREDPALS;
+				palette_num += STARTREDPALS;
 
-				if (palette < 0)
-					palette = 0;
+				if (palette_num < 0)
+					palette_num = 0;
 			}
 		}
 		else if (plyr->bonuscount)
 		{
-			palette = (plyr->bonuscount+7)>>3;
+			palette_num = (plyr->bonuscount+7)>>3;
 
-			if (palette >= NUMBONUSPALS)
-				palette = NUMBONUSPALS-1;
+			if (palette_num >= NUMBONUSPALS)
+				palette_num = NUMBONUSPALS - 1;
 
-			palette += STARTBONUSPALS;
+			palette_num += STARTBONUSPALS;
 		}
 		else if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet] & 8)
-			palette = RADIATIONPAL;
+			palette_num = RADIATIONPAL;
 		else
-			palette = 0;
+			palette_num = 0;
 
-		if (palette != current_palette)
+		if (palette_num != current_palette_num)
 		{
-			current_palette = palette;
-			byte* pal = (byte *)W_CacheLumpNum(lu_palette, PU_CACHE) + palette * 768;
-			I_SetOldPalette(pal);
+			current_palette_num = palette_num;
+			const byte* pal = (byte*)W_CacheLumpNum(lu_palette, PU_CACHE) + palette_num * 768;
+
+			for (int i = 0; i < 256; i++)
+			{
+				int r = *pal++;
+				int g = *pal++;
+				int b = *pal++;
+				IndexedPalette[i] = MAKERGB(r, g, b);
+			}
+
+			I_SetPalette(IndexedPalette);
 		}
 	}
 	else
