@@ -3421,6 +3421,19 @@ void CL_Spectate()
 	if (player.spectator && wasalive)
 		P_DisconnectEffect(player.mo);
 
+	// [tm512 2014/04/11] Do as the server does when unspectating a player.
+	// If the player has a "valid" mo upon going to PST_LIVE, any enemies
+	// that are still targeting the spectating player will cause a stack
+	// overflow in P_SetMobjState.
+
+	if (!player.spectator)
+	{
+		if (player.mo)
+			P_KillMobj(NULL, player.mo, NULL, true);
+
+		player.playerstate = PST_REBORN;
+	}
+
 	if (&player == &consoleplayer()) {
 		st_scale.Callback (); // refresh status bar size
 		if (player.spectator) {
