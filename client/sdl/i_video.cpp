@@ -40,7 +40,8 @@
 
 // Global IWindow instance for the application window
 static IWindow* window;
-
+static IWindowSurface* primary_surface = NULL;
+static IWindowSurface* matted_surface = NULL;
 
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 
@@ -67,12 +68,29 @@ CVAR_FUNC_IMPL (vid_winscale)
 */
 }
 
-CVAR_FUNC_IMPL (vid_overscan)
+CVAR_FUNC_IMPL(vid_overscan)
 {
-/*
-	if (Video)
-		Video->SetOverscan(var);
-*/
+	if (I_VideoInitialized())
+	{
+		delete matted_surface;
+		matted_surface = NULL;
+		primary_surface = I_GetWindow()->getPrimarySurface();
+
+		if (var < 1.0f)
+		{
+			DCanvas* canvas = primary_surface->getDefaultCanvas();
+			canvas->Clear(0, 0, primary_surface->getWidth(), primary_surface->getHeight(), 0);
+
+			int width = primary_surface->getWidth() * var;
+			int height = primary_surface->getHeight() * var;
+		
+			matted_surface = new IGenericWindowSurface(primary_surface, width, height);
+			primary_surface = matted_surface;
+		}
+
+		setsizeneeded = true;
+		screen = primary_surface->getDefaultCanvas();
+	}
 }
 
 void STACK_ARGS I_ShutdownHardware()
@@ -618,7 +636,7 @@ IGenericWindowSurface::IGenericWindowSurface(IWindow* window, int width, int hei
 // inside the existing surface.
 //
 IGenericWindowSurface::IGenericWindowSurface(IWindowSurface* base_surface, int width, int height) :
-	IWindowSurface(window), mPalette(base_surface->getPalette()),
+	IWindowSurface(base_surface->getWindow()), mPalette(base_surface->getPalette()),
 	mBitsPerPixel(base_surface->getBitsPerPixel()), mPitch(base_surface->getPitch())
 {
 	mWidth = std::min(base_surface->getWidth(), width);
@@ -669,6 +687,8 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 		window = new IDummyWindow();
 	else
 		window = new ISDL12Window(width, height, bpp, fullscreen, vsync);
+
+	primary_surface = window->getPrimarySurface();
 }
 
 //
@@ -735,7 +755,18 @@ int I_GetVideoBitDepth()
 //
 IWindowSurface* I_GetPrimarySurface()
 {
-	return window->getPrimarySurface();
+	return primary_surface;
+}
+
+
+//
+// I_GetPrimaryCanvas
+//
+// Returns a pointer to the primary surface's default canvas.
+//
+DCanvas* I_GetPrimaryCanvas()
+{
+	return I_GetPrimarySurface()->getDefaultCanvas();
 }
 
 
