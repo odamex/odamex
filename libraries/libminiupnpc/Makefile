@@ -1,9 +1,9 @@
-# $Id: Makefile,v 1.104 2013/05/03 09:05:38 nanard Exp $
+# $Id: Makefile,v 1.107 2014/01/31 14:19:12 nanard Exp $
 # MiniUPnP Project
 # http://miniupnp.free.fr/
 # http://miniupnp.tuxfamily.org/
 # https://github.com/miniupnp/miniupnp
-# (c) 2005-2013 Thomas Bernard
+# (c) 2005-2014 Thomas Bernard
 # to install use :
 # $ make DESTDIR=/tmp/dummylocation install
 # or
@@ -55,7 +55,7 @@ ifeq (SunOS, $(OS))
 endif
 
 # APIVERSION is used to build SONAME
-APIVERSION = 9
+APIVERSION = 10
 
 SRCS = igd_desc_parse.c miniupnpc.c minixml.c minisoap.c miniwget.c \
        upnpc.c upnpcommands.c upnpreplyparse.c testminixml.c \
@@ -139,7 +139,7 @@ all:	$(LIBRARY) $(EXECUTABLES)
 
 test:	check
 
-check:	validateminixml validateminiwget
+check:	validateminixml validateminiwget validateupnpreplyparse
 
 everything:	all $(EXECUTABLES_ADDTESTS)
 
@@ -167,10 +167,16 @@ validateminiwget:	testminiwget minihttptestserver testminiwget.sh
 	./testminiwget.sh
 	touch $@
 
+validateupnpreplyparse:	testupnpreplyparse testupnpreplyparse.sh
+	@echo "upnpreplyparse validation test"
+	./testupnpreplyparse.sh
+	touch $@
+
 clean:
 	$(RM) $(LIBRARY) $(SHAREDLIBRARY) $(EXECUTABLES) $(OBJS) miniupnpcstrings.h
 	# clean python stuff
-	$(RM) pythonmodule pythonmodule3 validateminixml validateminiwget
+	$(RM) pythonmodule pythonmodule3
+	$(RM) validateminixml validateminiwget validateupnpreplyparse
 	$(RM) -r build/ dist/
 	#python setup.py clean
 	# clean jnaerator stuff

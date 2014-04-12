@@ -26,10 +26,10 @@ PrivilegesRequired=none
 ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
-AppVersion=0.6.4
+AppVersion=0.7.0
 EnableDirDoesntExistWarning=true
 DirExistsWarning=no
-VersionInfoVersion=0.6.4
+VersionInfoVersion=0.7.0
 MinVersion=0,5.0
 AllowRootDirectory=True
 ChangesAssociations=Yes
@@ -73,7 +73,7 @@ Name: libs; Description: Libraries (SDL 1.2.15, SDL_Mixer 1.2.12); Types: full c
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Source: ..\..\m64\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 Source: ..\..\m64\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
-Source: ..\..\m64\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+;Source: ..\..\m64\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
 Source: ..\..\m64\SDL.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
 Source: ..\..\m64\SDL_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
 Source: ..\..\m64\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
@@ -87,7 +87,7 @@ Source: ..\..\m64\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Compone
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Source: ..\..\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
 Source: ..\..\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: not Is64BitInstallMode
-Source: ..\..\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
+;Source: ..\..\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
 Source: ..\..\SDL.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
 Source: ..\..\SDL_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
 Source: ..\..\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
@@ -95,10 +95,12 @@ Source: ..\..\smpeg.dll; DestDir: {app}; Flags: ignoreversion; Components: libs;
 Source: ..\..\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
 Source: ..\..\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
 Source: ..\..\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
+;Source: ..\..\libwinpthread-1.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
 
-Source: ..\..\config-samples\*; DestDir: {app}; Flags: ignoreversion; Components: server
+Source: ..\..\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher
+Source: ..\..\config-samples\*; DestDir: {app}\config-samples; Flags: ignoreversion; Components: server
 Source: ..\..\odamex.wad; DestDir: {app}; Flags: ignoreversion; Components: client server
-; Source: ..\..\COPYING.winpthreads.txt; DestDir: {app}; Flags: ignoreversion; Components: libs
+;Source: ..\..\COPYING.winpthreads.txt; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\CHANGELOG; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\LICENSE; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\MAINTAINERS; DestDir: {app}; Flags: ignoreversion; Components: base

@@ -396,7 +396,7 @@ DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary
 		I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
 
 	if (new_surface->pitch != (width * (bits / 8)) && vid_autoadjust)
-		Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
+		DPrintf("Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
 
 	// determine format of 32bpp pixels
 	if (bits == 32)

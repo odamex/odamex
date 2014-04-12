@@ -1179,7 +1179,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			// Close console, clear command line, but if we're in the
 			// fullscreen console mode, there's nothing to fall back on
 			// if it's closed.
-			if (gamestate == GS_FULLCONSOLE || gamestate == GS_CONNECTING 
+			if (gamestate == GS_FULLCONSOLE || gamestate == GS_CONNECTING
                 || gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTED)
 			{
 				C_HideConsole();

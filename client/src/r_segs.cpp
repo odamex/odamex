@@ -278,7 +278,7 @@ inline void R_ColumnSetup(int x, int* top, int* bottom, tallpost_t** posts, bool
 {
 	if (calc_light)
 	{
-		int index = MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1);
+		int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
 		dcol.colormap = basecolormap.with(walllights[index]);
 	}
 
@@ -418,7 +418,8 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		{
 			for (int x = start; x <= stop; x++)
 			{
-				light_lookup[x] = walllights[MIN(rw_light >> LIGHTSCALESHIFT, MAXLIGHTSCALE - 1)];
+				int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+				light_lookup[x] = walllights[index];
 				rw_light += rw_lightstep;
 			}
 		}
@@ -1083,12 +1084,8 @@ void R_StoreWallRange(int start, int stop)
 
 			lightnum += R_OrthogonalLightnumAdjustment();
 
-			if (lightnum < 0)
-				walllights = scalelight[0];
-			else if (lightnum >= LIGHTLEVELS)
-				walllights = scalelight[LIGHTLEVELS-1];
-			else
-				walllights = scalelight[lightnum];
+			lightnum = clamp(lightnum, 0, LIGHTLEVELS - 1);
+			walllights = scalelight[lightnum];
 		}
 	}
 

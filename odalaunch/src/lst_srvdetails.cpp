@@ -201,22 +201,44 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
 
     for (size_t i = 0; i < In.Info.Cvars.size(); ++i)
     {
-        wxString Value = stdstr_towxstr(In.Info.Cvars[i].Value);
-
+        wxString Name = stdstr_towxstr(In.Info.Cvars[i].Name);
+        
         switch (In.Info.Cvars[i].Type)
         {
             case CVARTYPE_BYTE:
+            {
+                wxString Value;
+                
+                Value = wxString::Format(wxT("%d"), In.Info.Cvars[i].i8);
+                
+                InsertLine(Name, Value);
+            }
+            break;
+            
             case CVARTYPE_WORD:
+            {
+                wxString Value;
+                        
+                Value = wxString::Format(wxT("%d"), In.Info.Cvars[i].i16);
+                
+                InsertLine(Name, Value);
+            }
+            break;
+            
             case CVARTYPE_INT:
             {
+                wxString Value;
+                        
                 Value = wxString::Format(wxT("%d"), In.Info.Cvars[i].i32);
+                
+                InsertLine(Name, Value);
             }
             break;
 
             case CVARTYPE_FLOAT:
             case CVARTYPE_STRING:
             {
-
+                InsertLine(Name, stdstr_towxstr(In.Info.Cvars[i].Value));
             }
             break;
 
@@ -228,10 +250,6 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
             }
             break;
         }
-        
-        // TODO: move above next release
-        InsertLine(stdstr_towxstr(In.Info.Cvars[i].Name), 
-            Value);
     }
 
     // Resize the columns

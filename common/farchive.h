@@ -216,11 +216,15 @@ protected:
 		DWORD m_ObjectCount;	// # of objects currently serialized
 		DWORD m_MaxObjectCount;
 		DWORD m_ClassCount;		// # of unique classes currently serialized
+
 		struct TypeMap
 		{
 			const TypeInfo *toCurrent;	// maps archive type index to execution type index
 			DWORD toArchive;		// maps execution type index to archive type index
+
+			enum { NO_INDEX = 0xffffffff };
 		} *m_TypeMap;
+
 		struct ObjectMap
 		{
 			const DObject *object;

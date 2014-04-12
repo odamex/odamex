@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -37,7 +37,7 @@
 #include "w_wad.h"
 #include "gi.h"
 
-EXTERN_CVAR(co_zdoomswitches)
+EXTERN_CVAR(co_zdoomsound)
 
 //
 // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE
@@ -133,7 +133,7 @@ static void P_StartButton (line_t *line, DActiveButton::EWhere w, int texture,
 {
 	DActiveButton *button;
 	TThinkerIterator<DActiveButton> iterator;
-	
+
 	// See if button is already pressed
 	while ( (button = iterator.Next ()) )
 	{
@@ -149,7 +149,7 @@ bool P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time)
 {
 	DActiveButton *button;
 	TThinkerIterator<DActiveButton> iterator;
-	
+
 	// See if button is already pressed
 	while ( (button = iterator.Next ()) )
 	{
@@ -160,7 +160,7 @@ bool P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time)
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -168,7 +168,7 @@ bool P_SetButtonInfo (line_t *line, unsigned state, unsigned time)
 {
 	DActiveButton *button;
 	TThinkerIterator<DActiveButton> iterator;
-	
+
 	// See if button is already pressed
 	while ( (button = iterator.Next ()) )
 	{
@@ -179,7 +179,7 @@ bool P_SetButtonInfo (line_t *line, unsigned state, unsigned time)
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -197,7 +197,7 @@ P_ChangeSwitchTexture
 	int texBot;
 	int i;
 	const char *sound;
-	
+
 	if (!useAgain)
 		line->special = 0;
 
@@ -238,15 +238,15 @@ P_ChangeSwitchTexture
 		if (texture)
 		{
 			// [RH] The original code played the sound at buttonlist->soundorg,
-			//		which wasn't necessarily anywhere near the switch if 
+			//		which wasn't necessarily anywhere near the switch if
 			//		it was facing a big sector.
 			fixed_t x = line->v1->x + (line->dx >> 1);
 			fixed_t y = line->v1->y + (line->dy >> 1);
 
-			if (co_zdoomswitches)
+			if (co_zdoomsound)
 			{
 				// [SL] 2011-05-27 - Play at a normal volume in the center
-				// of the switch's linedef 
+				// of the switch's linedef
 				S_Sound (x, y, CHAN_BODY, sound, 1, ATTN_NORM);
 			}
 			else
@@ -255,7 +255,7 @@ P_ChangeSwitchTexture
 				// volume anywhere on the map to emulate vanilla doom behavior
 				S_Sound (CHAN_BODY, sound, 1, ATTN_NONE);
 			}
-				
+
 			*texture = (short)switchlist[i^1];
 			if (useAgain)
 				P_StartButton (line, where, switchlist[i], BUTTONTIME, x, y);
@@ -309,11 +309,11 @@ void DActiveButton::RunThink ()
 		case BUTTON_Top:
 			sides[m_Line->sidenum[0]].toptexture = m_Texture;
 			break;
-			
+
 		case BUTTON_Middle:
 			sides[m_Line->sidenum[0]].midtexture = m_Texture;
 			break;
-			
+
 		case BUTTON_Bottom:
 			sides[m_Line->sidenum[0]].bottomtexture = m_Texture;
 			break;
@@ -321,14 +321,14 @@ void DActiveButton::RunThink ()
 		default:
 			break;
 		}
-	
-		if (co_zdoomswitches)
+
+		if (co_zdoomsound)
 		{
 			// [SL] 2011-05-27 - Play at a normal volume in the center of the
 			//  switch's linedef
 			fixed_t x = m_Line->v1->x + (m_Line->dx >> 1);
 			fixed_t y = m_Line->v1->y + (m_Line->dy >> 1);
-			S_Sound (x, y, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);			
+			S_Sound (x, y, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);
 		}
 		else
 		{

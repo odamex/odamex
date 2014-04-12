@@ -1,12 +1,14 @@
 # Client flags
 if(NOT MSVC)
-  if(GCC_VERSION VERSION_GREATER 4.2)
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
-  else(GCC_VERSION VERSION_GREATER 4.2)
-    if(APPLE)
-      set(CMAKE_CXX_FLAGS_RELEASE "-faltivec")
-    endif()
-  endif()
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
+			set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+		else(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
+			if(APPLE)
+				set(CMAKE_CXX_FLAGS_RELEASE "-faltivec")
+			endif()
+		endif()
+	endif()
 endif()
 
 
