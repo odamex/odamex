@@ -325,9 +325,9 @@ void AddCommandString(const std::string &str, bool onlycvars)
 		cend = cp - 1;
 
 		// remove leading and trailing whitespace
-		while (*cstart == ' ' && cstart < cend)
+		while (cstart < cend && *cstart == ' ')
 			cstart++;
-		while (*cend == ' ' && cend > cstart)
+		while (cend > cstart && *cend == ' ')
 			cend--;
 
 		size_t clength = cend - cstart + 1;
