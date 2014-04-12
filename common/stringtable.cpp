@@ -30,8 +30,8 @@
 #include "cmdlib.h"
 #include "m_swap.h"
 #include "w_wad.h"
-#include "z_zone.h"
 #include "i_system.h"
+#include "errors.h"
 
 struct FStringTable::Header
 {
@@ -43,13 +43,14 @@ struct FStringTable::Header
 void FStringTable::FreeData ()
 {
 	if (Strings != NULL)
-	{
-		FreeStrings ();
-	}
+		FreeStrings();
 
-	if (StringStatus)	delete[] StringStatus;
-	if (Strings)		delete[] Strings;
-	if (Names)			delete[] Names;
+	if (StringStatus)
+		delete [] StringStatus;
+	if (Strings)
+		delete [] Strings;
+	if (Names)
+		delete [] Names;
 
 	StringStatus = NULL;
 	Strings = NULL;
@@ -94,37 +95,55 @@ void FStringTable::FreeStandardStrings ()
 	}
 }
 
-#include "errors.h"
-void FStringTable::LoadStrings (int lump, int expectedSize, bool enuOnly)
+void FStringTable::LoadStrings(int lumpnum, int expectedSize, bool enuOnly)
 {
-	BYTE *strData = (BYTE *)W_CacheLumpNum (lump, PU_CACHE);
-	int lumpLen = LELONG(((Header *)strData)->FileSize);
-	int nameCount = LESHORT(((Header *)strData)->NameCount);
-	int nameLen = LESHORT(((Header *)strData)->NameLen);
+	if (lumpnum < 0)
+		return;
 
-	int languageStart = sizeof(Header) + nameCount*4 + nameLen;
+	char lumpname[9];
+	W_GetLumpName(lumpname, lumpnum);
+	lumpname[8] = 0;
+
+	byte* strData = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+
+	// lump is not long enough for the expected header
+	if (W_LumpLength(lumpnum) < 8)
+	{
+		Printf(PRINT_HIGH, "Warning: unsupported string table %s.\n", lumpname);
+		return;
+	}
+
+	int lumpLen = LELONG(*(DWORD*)(strData + 0));
+	int nameCount = LESHORT(*(WORD*)(strData + 4));
+	int nameLen = LESHORT(*(WORD*)(strData + 6));
+
+	// invalid language lump
+	if (W_LumpLength(lumpnum) != (unsigned)lumpLen)
+	{
+		Printf(PRINT_HIGH, "Warning: unsupported string table %s.\n", lumpname);
+		return;
+	}
+
+	int languageStart = 8 + nameCount*4 + nameLen;
 	languageStart += (4 - languageStart) & 3;
 
 	if (expectedSize >= 0 && nameCount != expectedSize)
 	{
-		char name[9];
-
-		W_GetLumpName (name, lump);
-		name[8] = 0;
-		I_FatalError ("%s had %d strings.\nThis version of ZDoom expects it to have %d.",
-			name, nameCount, expectedSize);
+		I_FatalError("%s had %d strings.\nThis version of Odamex expects it to have %d.",
+			lumpname, nameCount, expectedSize);
 	}
 
-	FreeStandardStrings ();
+	FreeStandardStrings();
 
+	LumpNum = lumpnum;
 	NumStrings = nameCount;
-	LumpNum = lump;
+
 	if (Strings == NULL)
 	{
 		Strings = new char *[nameCount];
 		StringStatus = new BYTE[(nameCount+7)/8];
-		memset (StringStatus, 0, (nameCount+7)/8);	// 0 means: from wad (standard)
-		memset (Strings, 0, sizeof(char *)*nameCount);
+		memset(StringStatus, 0, (nameCount+7)/8);	// 0 means: from wad (standard)
+		memset(Strings, 0, sizeof(char *)*nameCount);
 	}
 
 	BYTE *const start = strData + languageStart;
@@ -134,48 +153,44 @@ void FStringTable::LoadStrings (int lump, int expectedSize, bool enuOnly)
 	for (loadedCount = i = 0; i < NumStrings; ++i)
 	{
 		if (Strings[i] != NULL)
-		{
 			++loadedCount;
-		}
 	}
 
 	if (!enuOnly)
 	{
 		for (i = 0; i < 4 && loadedCount != nameCount; ++i)
 		{
-			loadedCount += LoadLanguage (LanguageIDs[i], true, start, end);
-			loadedCount += LoadLanguage (LanguageIDs[i] & MAKE_ID(0xff,0xff,0,0), true, start, end);
-			loadedCount += LoadLanguage (LanguageIDs[i], false, start, end);
+			loadedCount += LoadLanguage(LanguageIDs[i], true, start, end);
+			loadedCount += LoadLanguage(LanguageIDs[i] & MAKE_ID(0xff,0xff,0,0), true, start, end);
+			loadedCount += LoadLanguage(LanguageIDs[i], false, start, end);
 		}
 	}
 
 	// Fill in any missing strings with the default language (enu)
 	if (loadedCount != nameCount)
-	{
-		loadedCount += LoadLanguage (MAKE_ID('e','n','u',0), true, start, end);
-	}
+		loadedCount += LoadLanguage(MAKE_ID('e','n','u',0), true, start, end);
 
-	DoneLoading (start, end);
+	DoneLoading(start, end);
 
 	if (loadedCount != nameCount)
-	{
 		I_FatalError ("Loaded %d strings (expected %d)", loadedCount, nameCount);
-	}
 }
 
-void FStringTable::ReloadStrings ()
+void FStringTable::ReloadStrings()
 {
-	LoadStrings (LumpNum, -1, false);
+	if (LumpNum >= 0)
+		LoadStrings(LumpNum, -1, false);
 }
 
 // Like ReloadStrings, but clears all the strings before reloading
-void FStringTable::ResetStrings ()
+void FStringTable::ResetStrings()
 {
-	FreeData ();
-	LoadStrings (LumpNum, -1, false);
+	FreeData();
+	if (LumpNum >= 0)
+		LoadStrings(LumpNum, -1, false);
 }
 
-int FStringTable::LoadLanguage (DWORD code, bool exactMatch, BYTE *start, BYTE *end)
+int FStringTable::LoadLanguage(DWORD code, bool exactMatch, BYTE *start, BYTE *end)
 {
 	const DWORD orMask = exactMatch ? 0 : MAKE_ID(0,0,0xff,0);
 	int count = 0;
@@ -221,22 +236,20 @@ void FStringTable::DoneLoading (BYTE *start, BYTE *end)
 	}
 }
 
-void FStringTable::SetString (int index, const char *newString)
+void FStringTable::SetString(int index, const char *newString)
 {
-	if ((unsigned)index >= (unsigned)NumStrings)
-		return;
-
-	if (Strings[index] < CompactBase ||
-		Strings[index] >= CompactBase + CompactSize)
+	if (index >= 0 && index < NumStrings)
 	{
-		delete[] Strings[index];
+		if (Strings[index] < CompactBase || Strings[index] >= CompactBase + CompactSize)
+			delete[] Strings[index];
+
+		Strings[index] = copystring(newString);
+		StringStatus[index/8] |= 1<<(index&7);
 	}
-	Strings[index] = copystring (newString);
-	StringStatus[index/8] |= 1<<(index&7);
 }
 
 // Compact all strings into a single block of memory
-void FStringTable::Compact ()
+void FStringTable::Compact()
 {
 	if (NumStrings == 0)
 		return;
@@ -278,17 +291,20 @@ int FStringTable::SumStringSizes () const
 }
 
 
-void FStringTable::LoadNames () const
+void FStringTable::LoadNames() const
 {
-	BYTE *lump = (BYTE *)W_CacheLumpNum (LumpNum, PU_CACHE);
-	int nameLen = LESHORT(((Header *)lump)->NameLen);
+	if (LumpNum >= 0)
+	{
+		const byte* lumpdata = (byte*)W_CacheLumpNum(LumpNum, PU_CACHE);
+		int nameLen = LESHORT(*(WORD*)(lumpdata + 6));
 
-	FlushNames ();
-	Names = new BYTE[nameLen + 4*NumStrings];
-	memcpy (Names, lump + sizeof(Header), nameLen + 4*NumStrings);
+		FlushNames();
+		Names = new byte[nameLen + 4*NumStrings];
+		memcpy(Names, lumpdata + 8, nameLen + 4*NumStrings);
+	}
 }
 
-void FStringTable::FlushNames () const
+void FStringTable::FlushNames() const
 {
 	if (Names != NULL)
 	{
@@ -298,12 +314,13 @@ void FStringTable::FlushNames () const
 }
 
 // Find a string by name
-int FStringTable::FindString (const char *name) const
+int FStringTable::FindString(const char* name) const
 {
 	if (Names == NULL)
-	{
-		LoadNames ();
-	}
+		LoadNames();
+	
+	if (NumStrings == 0)
+		return -1;
 
 	const WORD *nameOfs = (WORD *)Names;
 	const char *nameBase = (char *)Names + NumStrings*4;
