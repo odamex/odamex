@@ -129,13 +129,13 @@ void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
 			other = sides[ check->sidenum[1] ] .sector;
 		else
 			other = sides[ check->sidenum[0] ].sector;
-		
+
 		// [SL] 2012-02-08 - FIXME: Currently only checks for a line opening at
 		// midpoint of a sloped linedef.  P_RecursiveSound() in ZDoom 1.23 causes
 		// demo desyncs.
 		P_LineOpening(check, (check->v1->x >> 1) + (check->v2->x >> 1),
 							 (check->v1->y >> 1) + (check->v2->y >> 1));
-		
+
 		if (openrange <= 0)
 			continue;	// closed door
 
@@ -197,7 +197,7 @@ BOOL P_CheckMeleeRange (AActor *actor)
 		if (pl->z + pl->height < actor->z)
 			return false;
 	}
-	
+
 	if (!P_CheckSight(actor, pl))
 		return false;
 
@@ -210,7 +210,7 @@ BOOL P_CheckMeleeRange (AActor *actor)
 BOOL P_CheckMissileRange (AActor *actor)
 {
 	fixed_t dist;
-    
+
 	if (!P_CheckSight (actor, actor->target))
 		return false;
 
@@ -290,7 +290,7 @@ BOOL P_Move (AActor *actor)
 
 	if (actor->flags2 & MF2_BLASTED)
 		return true;
-		
+
 	if (actor->movedir == DI_NODIR)
 		return false;
 
@@ -308,7 +308,7 @@ BOOL P_Move (AActor *actor)
 			actor->z = actor->floorz;
 		}
 	}
-	
+
 	if ((unsigned)actor->movedir >= 8)
 		I_Error ("Weird actor->movedir!");
 
@@ -377,7 +377,7 @@ BOOL P_Move (AActor *actor)
 	{
 		actor->flags &= ~MF_INFLOAT;
 	}
-	
+
 	if (!co_zdoomphys && !(actor->flags & MF_FLOAT))
 		actor->z = actor->floorz;
 
@@ -707,7 +707,7 @@ void A_Look (AActor *actor)
 		return;
 
 	// [RH] Set goal now if appropriate
-	if (actor->special == Thing_SetGoal && actor->args[0] == 0) 
+	if (actor->special == Thing_SetGoal && actor->args[0] == 0)
 	{
 		actor->special = 0;
 		newgoal = AActor::FindGoal (NULL, actor->args[1], MT_PATHNODE);
@@ -723,7 +723,10 @@ void A_Look (AActor *actor)
 
 	// GhostlyDeath -- can't hear spectators
 	if (targ && targ->player && targ->player->spectator)
-		return;
+	{
+		actor->target = AActor::AActorPtr();
+		//return;
+	}
 
 	if (targ && (targ->flags & MF_SHOOTABLE))
 	{
@@ -747,8 +750,10 @@ void A_Look (AActor *actor)
 
   	// GhostlyDeath -- Can't see spectators
   	if (actor->target->player && actor->target->player->spectator)
-  		return;
-
+	{
+		actor->target = AActor::AActorPtr();
+  		//return;
+	}
 	// [RH] Don't start chasing after a goal if it isn't time yet.
 	if (actor->target == actor->goal)
 	{
@@ -788,7 +793,10 @@ void A_Chase (AActor *actor)
 
 	// GhostlyDeath -- Don't chase spectators at all
 	if (actor->target && actor->target->player && actor->target->player->spectator)
-		return;
+	{
+		actor->target = AActor::AActorPtr();
+		//return;
+	}
 
 	if (actor->reactiontime)
 		actor->reactiontime--;
@@ -825,7 +833,7 @@ void A_Chase (AActor *actor)
 		// look for a new target
 		if (P_LookForPlayers (actor, true) && actor->target != actor->goal)
 			return; 	// got a new target
-		
+
 		if (!actor->target)
 		{
 			P_SetMobjState (actor, actor->info->spawnstate, true); // denis - todo - this sometimes leads to a stack overflow due to infinite recursion: A_Chase->SetMobjState->A_Look->SetMobjState
@@ -841,7 +849,7 @@ void A_Chase (AActor *actor)
 			P_NewChaseDir (actor);
 		return;
 	}
-	
+
 	// [RH] Don't attack if just moving toward goal
 	if (actor->target == actor->goal)
 	{
@@ -854,14 +862,14 @@ void A_Chase (AActor *actor)
 				actor->goal = ngoal->ptr();
 			else
 				actor->goal = AActor::AActorPtr();
-				
+
 			actor->target = AActor::AActorPtr();
 			P_SetMobjState (actor, actor->info->spawnstate, true);
 			return;
 		}
 		goto nomissile;
 	}
-	
+
 	// check for melee attack
 	if (actor->info->meleestate && P_CheckMeleeRange (actor))
 	{
@@ -1888,7 +1896,7 @@ void A_Explode (AActor *thing)
 			break;
 	}
 
-	P_RadiusAttack (thing, thing->target, damage, distance, hurtSource, mod);	
+	P_RadiusAttack (thing, thing->target, damage, distance, hurtSource, mod);
 }
 
 #define SPEED(a)		((a)*(FRACUNIT/8))
