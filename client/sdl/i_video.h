@@ -87,6 +87,8 @@ void I_ClosestResolution (int *width, int *height);
 //bool I_SetResolution (int width, int height, int bpp);
 
 bool I_CheckVideoDriver (const char *name);
+std::string I_GetVideoDriverName();
+
 
 bool I_SetOverscan (float scale);
 
@@ -177,6 +179,9 @@ class IGenericWindowSurface : public IWindowSurface
 {
 public:
 	IGenericWindowSurface(IWindow* window, int width, int height, int bpp);
+
+	IGenericWindowSurface(IWindowSurface* base_surface, int width, int height);
+
 	virtual ~IGenericWindowSurface();
 
 	virtual byte* getBuffer()
@@ -209,6 +214,8 @@ private:
 	IGenericWindowSurface& operator=(const IGenericWindowSurface&);
 
 	byte*			mSurfaceBuffer;
+	bool			mAllocatedSurfaceBuffer;
+
 	const argb_t*	mPalette;
 
 	int				mWidth;

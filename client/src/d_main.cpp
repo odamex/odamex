@@ -793,10 +793,9 @@ void D_DoomMain (void)
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_Error ("You cannot -file with the shareware version. Register!");
 
-#ifdef _WIN32
-	const char *sdlv = getenv("SDL_VIDEODRIVER");
-	Printf (PRINT_HIGH, "Using %s video driver.\n",sdlv);
-#endif
+	std::string video_driver = I_GetVideoDriverName();
+	if (!video_driver.empty())
+		Printf(PRINT_HIGH, "Using %s video driver.\n", video_driver.c_str());
 
 	Printf (PRINT_HIGH, "M_Init: Init miscellaneous info.\n");
 	M_Init ();

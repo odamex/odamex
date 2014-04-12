@@ -312,6 +312,14 @@ bool I_CheckVideoDriver(const char* name)
 }
 
 
+std::string I_GetVideoDriverName()
+{
+	if (I_VideoInitialized())
+		return I_GetWindow()->getVideoDriverName();
+	return std::string();
+}
+
+
 BEGIN_COMMAND(vid_listmodes)
 {
 	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
@@ -597,6 +605,34 @@ IGenericWindowSurface::IGenericWindowSurface(IWindow* window, int width, int hei
 	mPitch = mWidth;
 
 	mSurfaceBuffer = new byte[mPitch * mHeight * getBytesPerPixel()];
+	mAllocatedSurfaceBuffer = true;
+}
+
+
+//
+// IGenericWindowSurface::IGenericWindowSurface
+//
+// Initializes the IGenericWindowSurface from an existing IWindowSurface, but
+// with possibly different values for width and height. If width or height
+// are less than that of the existing surface, the new surface will be centered
+// inside the existing surface.
+//
+IGenericWindowSurface::IGenericWindowSurface(IWindowSurface* base_surface, int width, int height) :
+	IWindowSurface(window), mPalette(base_surface->getPalette()),
+	mBitsPerPixel(base_surface->getBitsPerPixel()), mPitch(base_surface->getPitch())
+{
+	mWidth = std::min(base_surface->getWidth(), width);
+	mHeight = std::min(base_surface->getHeight(), height);
+	
+	// adjust mSurfaceBuffer so that the new surface is centered in base_surface
+	int x = (base_surface->getWidth() - mWidth) / 2;
+	int y = (base_surface->getHeight() - mHeight) / 2;
+
+	mSurfaceBuffer = base_surface->getBuffer() +
+			base_surface->getPitch() * y +
+			base_surface->getBytesPerPixel() * x;
+
+	mAllocatedSurfaceBuffer = false;
 }
 
 
@@ -605,7 +641,8 @@ IGenericWindowSurface::IGenericWindowSurface(IWindow* window, int width, int hei
 //
 IGenericWindowSurface::~IGenericWindowSurface()
 {
-	delete [] mSurfaceBuffer;
+	if (mAllocatedSurfaceBuffer)
+		delete [] mSurfaceBuffer;
 }
 
 

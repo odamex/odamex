@@ -252,6 +252,10 @@ ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool
 	buildVideoModeList();
 
 	setMode(width, height, bpp, fullscreen, vsync);
+
+	// fill the primary surface with black
+	DCanvas* canvas = mPrimarySurface->getDefaultCanvas();
+	canvas->Clear(0, 0, mPrimarySurface->getWidth(), mPrimarySurface->getHeight(), 0);
 }
 
 
