@@ -101,13 +101,27 @@ void I_AdjustPrimarySurface()
 	delete emulated_surface;
 	emulated_surface = NULL;
 
-
 	primary_surface = I_GetWindow()->getPrimarySurface();
 	// clear window's surface to all black
 	DCanvas* canvas = primary_surface->getDefaultCanvas();
 	canvas->Clear(0, 0, primary_surface->getWidth(), primary_surface->getHeight(), 0);
 
-	if (vid_overscan < 1.0f)
+	// handle matting (pillar-box/letter-box/overscan)
+	if (V_UsePillarBox())
+	{
+		int width = vid_overscan * primary_surface->getHeight() * 4 / 3; 
+		int height = vid_overscan * primary_surface->getHeight();
+		matted_surface = new IGenericWindowSurface(primary_surface, width, height);
+		primary_surface = matted_surface;
+	}
+	else if (V_UseLetterBox())
+	{
+		int width = vid_overscan * primary_surface->getWidth();
+		int height = vid_overscan * primary_surface->getWidth() * 9 / 16;
+		matted_surface = new IGenericWindowSurface(primary_surface, width, height);
+		primary_surface = matted_surface;
+	}
+	else if (vid_overscan < 1.0f)
 	{
 		int width = primary_surface->getWidth() * vid_overscan;
 		int height = primary_surface->getHeight() * vid_overscan;
@@ -115,6 +129,7 @@ void I_AdjustPrimarySurface()
 		primary_surface = matted_surface;
 	}
 
+	// handle emulating low resolution modes
 	if (vid_320x200)
 	{
 		int width = 320, height = 200, bpp = primary_surface->getBitsPerPixel();
@@ -729,7 +744,7 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 	else
 		window = new ISDL12Window(width, height, bpp, fullscreen, vsync);
 
-	primary_surface = window->getPrimarySurface();
+	I_AdjustPrimarySurface();
 }
 
 //
@@ -896,9 +911,9 @@ void I_FinishUpdate()
 
 			int w = surface_width, h = surface_height;
 			if (surface_width * 3 > surface_height * 4)
-				w = 4 * surface_height / 3;
+				w = surface_height * 4 / 3;
 			else
-				h = 3 * surface_width / 4;
+				h = surface_width * 3 / 4;
 
 			int x = (surface_width - w) / 2;
 			int y = (surface_height - h) / 2;
