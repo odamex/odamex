@@ -2287,7 +2287,7 @@ static bool GetSelectedSize(int line, int* width, int* height)
 	if (ModesItems[line].type != screenres)
 		return false;
 
-	int mode_num = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode + 1;
+	int mode_num = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode;
 
 	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
 	IVideoModeList::const_iterator mode_it = modes->begin() + mode_num;

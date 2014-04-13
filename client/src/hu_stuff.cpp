@@ -288,17 +288,13 @@ void HU_Drawer (void)
 
 		// figure out if the text is wider than the screen->
 		// if so, only draw the right-most portion of it.
-		for (i = input_text.length() - 1; i >= 0 && x < I_GetVideoWidth(); i--)
+		for (i = input_text.length() - 1; i >= 0 && x < I_GetSurfaceWidth(); i--)
 		{
 			c = toupper(input_text[i] & 0x7f) - HU_FONTSTART;
 			if (c < 0 || c >= HU_FONTSIZE)
-			{
 				x += 4 * scaledxfac;
-			}
 			else
-			{
 				x += hu_font[c]->width() * scaledxfac;
-			}
 		}
 
 		if (i >= 0)
