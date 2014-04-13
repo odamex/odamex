@@ -50,6 +50,8 @@ IWindow* I_GetWindow();
 IWindowSurface* I_GetPrimarySurface();
 DCanvas* I_GetPrimaryCanvas();
 
+void I_AdjustPrimarySurface();
+
 IWindowSurface* I_AllocateSurface(int width, int height, int bpp);
 void I_FreeSurface(IWindowSurface* surface);
 

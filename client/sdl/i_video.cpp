@@ -42,6 +42,7 @@
 static IWindow* window;
 static IWindowSurface* primary_surface = NULL;
 static IWindowSurface* matted_surface = NULL;
+static IWindowSurface* emulated_surface = NULL;
 
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 
@@ -70,28 +71,66 @@ CVAR_FUNC_IMPL (vid_winscale)
 
 CVAR_FUNC_IMPL(vid_overscan)
 {
-	if (I_VideoInitialized())
-	{
-		delete matted_surface;
-		matted_surface = NULL;
-		primary_surface = I_GetWindow()->getPrimarySurface();
-
-		if (var < 1.0f)
-		{
-			DCanvas* canvas = primary_surface->getDefaultCanvas();
-			canvas->Clear(0, 0, primary_surface->getWidth(), primary_surface->getHeight(), 0);
-
-			int width = primary_surface->getWidth() * var;
-			int height = primary_surface->getHeight() * var;
-		
-			matted_surface = new IGenericWindowSurface(primary_surface, width, height);
-			primary_surface = matted_surface;
-		}
-
-		setsizeneeded = true;
-		screen = primary_surface->getDefaultCanvas();
-	}
+	setsizeneeded = true;
 }
+
+CVAR_FUNC_IMPL(vid_320x200)
+{
+	setsizeneeded = true;
+}
+
+CVAR_FUNC_IMPL(vid_640x400)
+{
+	setsizeneeded = true;
+}
+
+
+//
+// I_AdjustPrimarySurface
+//
+// This is called by D_Display whenever the viewing screen size changes
+// and setsizeneeded == true.
+//
+void I_AdjustPrimarySurface()
+{
+	if (!I_VideoInitialized())
+		return;
+
+	delete matted_surface;
+	matted_surface = NULL;
+	delete emulated_surface;
+	emulated_surface = NULL;
+
+
+	primary_surface = I_GetWindow()->getPrimarySurface();
+	// clear window's surface to all black
+	DCanvas* canvas = primary_surface->getDefaultCanvas();
+	canvas->Clear(0, 0, primary_surface->getWidth(), primary_surface->getHeight(), 0);
+
+	if (vid_overscan < 1.0f)
+	{
+		int width = primary_surface->getWidth() * vid_overscan;
+		int height = primary_surface->getHeight() * vid_overscan;
+		matted_surface = new IGenericWindowSurface(primary_surface, width, height);
+		primary_surface = matted_surface;
+	}
+
+	if (vid_320x200)
+	{
+		int width = 320, height = 200, bpp = primary_surface->getBitsPerPixel();
+		emulated_surface = new IGenericWindowSurface(I_GetWindow(), width, height, bpp);
+		primary_surface = emulated_surface;
+	}
+	else if (vid_640x400)
+	{
+		int width = 640, height = 400, bpp = primary_surface->getBitsPerPixel();
+		emulated_surface = new IGenericWindowSurface(I_GetWindow(), width, height, bpp);
+		primary_surface = emulated_surface;
+	}
+
+	screen = primary_surface->getDefaultCanvas();
+}
+
 
 void STACK_ARGS I_ShutdownHardware()
 {
@@ -164,6 +203,8 @@ void I_InitHardware()
 	I_SetVideoMode(width, height, bpp, fullscreen, vsync);
 	if (!I_VideoInitialized())
 		I_FatalError("Failed to initialize display");
+
+	setsizeneeded = true;
 
 	atterm(I_ShutdownHardware);
 
@@ -620,9 +661,9 @@ IGenericWindowSurface::IGenericWindowSurface(IWindow* window, int width, int hei
 	IWindowSurface(window), mPalette(NULL), mWidth(width), mHeight(height), mBitsPerPixel(bpp)
 {
 	// TODO: make mSurfaceBuffer aligned to 16-byte boundary
-	mPitch = mWidth;
+	mPitch = mWidth * getBytesPerPixel();
 
-	mSurfaceBuffer = new byte[mPitch * mHeight * getBytesPerPixel()];
+	mSurfaceBuffer = new byte[mPitch * mHeight];
 	mAllocatedSurfaceBuffer = true;
 }
 
@@ -842,6 +883,31 @@ void I_FinishUpdate()
 {
 	if (noblit == false)
 	{
+		IWindowSurface* dest_surface = I_GetWindow()->getPrimarySurface();
+		if (matted_surface)
+			dest_surface = matted_surface;
+
+		if (emulated_surface)
+		{
+			emulated_surface->setPalette(GetDefaultPalette()->colors);
+
+			int surface_width = dest_surface->getWidth();
+			int surface_height = dest_surface->getHeight();
+
+			int w = surface_width, h = surface_height;
+			if (surface_width * 3 > surface_height * 4)
+				w = 4 * surface_height / 3;
+			else
+				h = 3 * surface_width / 4;
+
+			int x = (surface_width - w) / 2;
+			int y = (surface_height - h) / 2;
+
+			dest_surface->blit(emulated_surface, 0, 0,
+					emulated_surface->getWidth(), emulated_surface->getHeight(),
+					x, y, w, h); 
+		}
+
 		// Draws frame time and cumulative fps
 		if (vid_displayfps)
 			V_DrawFPSWidget();
