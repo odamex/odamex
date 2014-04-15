@@ -131,8 +131,6 @@ int PrintColors[PRINTLEVELS+1] = { CR_RED, CR_GOLD, CR_GRAY, CR_GREEN, CR_GREEN,
 static void setmsgcolor (int index, const char *color);
 
 
-BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
-
 cvar_t msglevel ("msg", "0", "", CVARTYPE_STRING, CVAR_ARCHIVE);
 
 CVAR_FUNC_IMPL (msg0color)
@@ -352,18 +350,20 @@ void C_AddNotifyString (int printlevel, const char *source)
 	}
 }
 
-/* Provide our own Printf() that is sensitive of the
- * console status (in or out of game)
- */
-int PrintString (int printlevel, const char *outline)
-{
-	const char *cp, *newcp;
-	static unsigned int xp = 0;
-	unsigned int newxp;
-	int mask;
-	BOOL scroll;
 
-	if(print_stdout && gamestate != GS_FORCEWIPE)
+//
+// C_PrintString
+//
+// Provide our own Printf() that is sensitive of the
+// console status (in or out of game).
+// 
+static int C_PrintString(int printlevel, const char* outline)
+{
+	static unsigned int col_left = 0;
+	unsigned int col_right;
+	bool scroll;
+
+	if (print_stdout && gamestate != GS_FORCEWIPE)
 	{
 		printf("%s", outline);
 		fflush(stdout);
@@ -373,116 +373,108 @@ int PrintString (int printlevel, const char *outline)
 		return 0;
 
 	if (vidactive && !midprinting)
-		C_AddNotifyString (printlevel, outline);
+		C_AddNotifyString(printlevel, outline);
 
+	int mask;
 	if (printlevel >= PRINT_CHAT && printlevel < 64)
 		mask = 0x80;
 	else
 		mask = printxormask;
 
-	cp = outline;
-	while (*cp)
+	const char* line_start = outline;
+	const char* line_end = line_start;
+
+	while (*line_start)
 	{
-		for (newcp = cp, newxp = xp;
-			 *newcp != '\n' && *newcp != '\0' && *newcp != '\x8a' && newxp < ConCols;
-			 newcp++, newxp++)
+		// Find the next line-breaking character (\n or \0) and set
+		// line_end to point to it. Also find the range of columns occupied
+		// by this line of text.
+		for (line_end = line_start, col_right = col_left;
+			 *line_end != '\n' && *line_end != '\0' && *line_end != '\x8a' && col_right < ConCols;
+			 line_end++, col_right++)
 			;
 
-		if (*cp)
+		const int len = line_end - line_start;
+
+		for (int i = 0, x = col_left + 2; i < len; i++, x++)
+			if (line_start[i] < 32)
+				Last[x] = line_start[i];
+			else
+				Last[x] = line_start[i] ^ mask;	
+				
+		if (Last[1] < col_left + len)
+			Last[1] = col_left + len;
+
+		if (*line_end == '\n' || col_left == ConCols)
 		{
-			const char *poop;
-			int x;
+			if (*line_end != '\n')
+				Last[0] = 1;
 
-			for (x = xp, poop = cp; poop < newcp; poop++, x++)
-			{
-				Last[x+2] = ((*poop) < 32) ? (*poop) : ((*poop) ^ mask);
-			}
-
-			if (Last[1] < xp + (newcp - cp))
-				Last[1] = xp + (newcp - cp);
-
-			if (*newcp == '\n' || xp == ConCols)
-			{
-				if (*newcp != '\n')
-				{
-					Last[0] = 1;
-				}
-				memmove (Lines, Lines + (ConCols + 2), (ConCols + 2) * (CONSOLEBUFFER - 1));
-				Last[0] = 0;
-				Last[1] = 0;
-				newxp = 0;
-				scroll = true;
-			}
-			else
-			{
-				if (*newcp == '\x8a')
-				{
-					switch (newcp[1])
-					{
-					case 0:
-						break;
-					case '+':
-						mask = printxormask ^ 0x80;
-						break;
-					default:
-						mask = printxormask;
-						break;
-					}
-				}
-				scroll = false;
-			}
-
-			if (!vidactive)
-			{
-				I_PrintStr (xp, cp, newcp - cp, scroll);
-			}
-
-			if (scroll)
-			{
-				SkipRows = 1;
-
-				if (con_scrlock > 0 && RowAdjust != 0)
-					RowAdjust++;
-				else
-					RowAdjust = 0;
-			}
-			else
-			{
-				SkipRows = 0;
-			}
-
-			xp = newxp;
-
-			if (*newcp == '\n')
-				cp = newcp + 1;
-			else if (*newcp == '\x8a' && newcp[1])
-				cp = newcp + 2;
-			else
-				cp = newcp;
+			memmove(Lines, Lines + (ConCols + 2), (ConCols + 2) * (CONSOLEBUFFER - 1));
+			Last[0] = 0;
+			Last[1] = 0;
+			col_right = 0;
+			scroll = true;
 		}
+		else
+		{
+			if (*line_end == '\x8a')
+			{
+				switch (line_end[1])
+				{
+				case 0:
+					break;
+				case '+':
+					mask = printxormask ^ 0x80;
+					break;
+				default:
+					mask = printxormask;
+					break;
+				}
+			}
+			scroll = false;
+		}
+
+		SkipRows = scroll ? 1 : 0;
+
+		if (scroll)
+		{
+			if (con_scrlock > 0 && RowAdjust != 0)
+				RowAdjust++;
+			else
+				RowAdjust = 0;
+		}
+
+		col_left = col_right;
+
+		if (*line_end == '\n')
+			line_start = line_end + 1;
+		else if (*line_end == '\x8a' && line_end[1] != '\0')
+			line_start = line_end + 2;
+		else
+			line_start = line_end;
 	}
 
 	printxormask = 0;
 
-	return strlen (outline);
+	return strlen(outline);
 }
 
-extern BOOL gameisdead;
 
-int VPrintf (int printlevel, const char *format, va_list parms)
+int VPrintf(int printlevel, const char *format, va_list parms)
 {
 	char outline[8192], outlinelog[8192];
-	int len, i;
 
+	extern BOOL gameisdead;
 	if (gameisdead)
 		return 0;
 
-	vsprintf (outline, format, parms);
+	vsprintf(outline, format, parms);
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
-	len = strlen(outline);
-	for(i = 0; i < len; i++)
-		if(outline[i] == 0x07)
+	int len = strlen(outline);
+	for (int i = 0; i < len; i++)
+		if (outline[i] == 0x07)
 			outline[i] = '.';
 
 	// Prevents writing a whole lot of new lines to the log file
@@ -491,13 +483,14 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		strcpy(outlinelog, outline);
 
 		// [Nes] - Horizontal line won't show up as-is in the logfile.
-		for(i = 0; i < len; i++)
+		for(int i = 0; i < len; i++)
 		{
 			if (outlinelog[i] == '\35' || outlinelog[i] == '\36' || outlinelog[i] == '\37')
 				outlinelog[i] = '=';
 		}
 
-		if (LOG.is_open()) {
+		if (LOG.is_open())
+		{
 			LOG << outlinelog;
 			LOG.flush();
 		}
@@ -509,13 +502,13 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		// We need to know if there were any new lines being printed
 		// in our string.
 
-		int newLineCount = std::count(outline, outline + strlen(outline),'\n');
+		int newLineCount = std::count(outline, outline + strlen(outline), '\n');
 
 		if (ConRows < CONSOLEBUFFER)
 			ConRows+=(newLineCount > 1 ? newLineCount+1 : 1);
 	}
 
-	return PrintString (printlevel, outline);
+	return C_PrintString(printlevel, outline);
 }
 
 int STACK_ARGS Printf (int printlevel, const char *format, ...)
@@ -886,7 +879,7 @@ void C_ServerDisconnectEffect(void)
 }
 
 
-static void makestartposgood (void)
+static void makestartposgood()
 {
 	int n;
 	int pos = CmdLine[259];
@@ -912,15 +905,43 @@ static void makestartposgood (void)
 	CmdLine[259] = n;
 }
 
-BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
+
+static void C_AddCharacterToBuffer(char c, byte* buffer, int len)
 {
-	const char *cmd = C_GetBinding (ev->data1);
+	if (buffer[0] < len)
+	{
+		if (buffer[1] == buffer[0])
+		{
+			buffer[buffer[0] + 2] = c;
+		}
+		else
+		{
+			char* e = (char*)&buffer[buffer[0] + 1];
+			char* f = (char*)&buffer[buffer[1] + 2];
+
+			for (; e >= f; e--)
+				*(e + 1) = *e;
+
+			*f = c;
+		}
+
+		buffer[0]++;
+		buffer[1]++;
+		makestartposgood();
+		HistPos = NULL;
+	}
+	TabbedLast = false;
+}
+
+static bool C_HandleKey(const event_t* ev, byte* buffer, int len)
+{
+	const char *cmd = C_GetBinding(ev->data1);
 
 	switch (ev->data1)
 	{
 	case KEY_TAB:
 		// Try to do tab-completion
-		C_TabComplete ();
+		C_TabComplete();
 		break;
 #ifdef _XBOX
 	case KEY_JOY7: // Left Trigger
@@ -949,7 +970,6 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		break;
 	case KEY_HOME:
 		// Move cursor to start of line
-
 		buffer[1] = buffer[len+4] = 0;
 		break;
 	case KEY_END:
@@ -959,43 +979,38 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		makestartposgood ();
 		break;
 	case KEY_LEFTARROW:
-		if(KeysCtrl)
+		if (KeysCtrl)
 		{
 			// Move cursor to beginning of word
-			if(buffer[1])
+			if (buffer[1])
 				buffer[1]--;
-			while(buffer[1] && buffer[1+buffer[1]] != ' ')
+			while (buffer[1] && buffer[1+buffer[1]] != ' ')
 				buffer[1]--;
 		}
 		else
 		{
 			// Move cursor left one character
 			if (buffer[1])
-			{
 				buffer[1]--;
-			}
 		}
-		makestartposgood ();
+		makestartposgood();
 		break;
 	case KEY_RIGHTARROW:
-		if(KeysCtrl)
+		if (KeysCtrl)
 		{
-			while(buffer[1] < buffer[0]+1 && buffer[2+buffer[1]] != ' ')
+			while (buffer[1] < buffer[0]+1 && buffer[2+buffer[1]] != ' ')
 				buffer[1]++;
 		}
 		else
 		{
 			// Move cursor right one character
 			if (buffer[1] < buffer[0])
-			{
 				buffer[1]++;
-			}
 		}
-		makestartposgood ();
+		makestartposgood();
 		break;
 	case KEY_BACKSPACE:
 		// Erase character to left of cursor
-
 		if (buffer[0] && buffer[1])
 		{
 			char *c, *e;
@@ -1048,13 +1063,9 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		// Move to previous entry in the command history
 
 		if (HistPos == NULL)
-		{
 			HistPos = HistHead;
-		}
 		else if (HistPos->Older)
-		{
 			HistPos = HistPos->Older;
-		}
 
 		if (HistPos)
 		{
@@ -1072,8 +1083,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		if (HistPos && HistPos->Newer)
 		{
 			HistPos = HistPos->Newer;
-
-			strcpy ((char *)&buffer[2], HistPos->String);
+			strcpy((char *)&buffer[2], HistPos->String);
 			buffer[0] = buffer[1] = (BYTE)strlen ((char *)&buffer[2]);
 		}
 		else
@@ -1081,45 +1091,17 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			HistPos = NULL;
 			buffer[0] = buffer[1] = 0;
 		}
+
 		buffer[len+4] = 0;
 		makestartposgood();
 		TabbedLast = false;
 		break;
 	case KEY_MOUSE3:
-		// Paste from clipboard
+		// Paste from clipboard - add each character to command line
 		{
-			std::string text = I_GetClipboardText();
-
-			for(size_t i = 0; i < text.length(); i++)
-			{
-				// Add each character to command line
-				if (buffer[0] < len)
-				{
-					char data = text[i];
-
-					if (buffer[1] == buffer[0])
-					{
-						buffer[buffer[0] + 2] = data;
-					}
-					else
-					{
-						char *c, *e;
-
-						e = (char *)&buffer[buffer[0] + 1];
-						c = (char *)&buffer[buffer[1] + 2];
-
-						for (; e >= c; e--)
-							*(e + 1) = *e;
-
-						*c = data;
-					}
-					buffer[0]++;
-					buffer[1]++;
-					makestartposgood ();
-					HistPos = NULL;
-				}
-				TabbedLast = false;
-			}
+			const std::string& text = I_GetClipboardText();
+			for (size_t i = 0; i < text.length(); i++)
+				C_AddCharacterToBuffer(text[i], buffer, len);
 		}
 		break;
 	default:
@@ -1131,7 +1113,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			if (con_scrlock == 1) // NES - If con_scrlock = 1, send console scroll to bottom.
 				RowAdjust = 0;   // con_scrlock = 0 does it automatically.
 
-			if (HistHead && stricmp (HistHead->String, (char *)&buffer[2]) == 0)
+			if (HistHead && stricmp(HistHead->String, (char *)&buffer[2]) == 0)
 			{
 				// Command line was the same as the previous one,
 				// so leave the history list alone
@@ -1142,21 +1124,18 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 				// or there is nothing in the history list,
 				// so add it to the history list.
 
-				History *temp = (History *)Malloc (sizeof(struct History) + buffer[0]);
+				History *temp = (History *)Malloc(sizeof(struct History) + buffer[0]);
 
-				strcpy (temp->String, (char *)&buffer[2]);
+				strcpy(temp->String, (char*)&buffer[2]);
 				temp->Older = HistHead;
 				if (HistHead)
-				{
 					HistHead->Newer = temp;
-				}
+				
 				temp->Newer = NULL;
 				HistHead = temp;
 
 				if (!HistTail)
-				{
 					HistTail = temp;
-				}
 
 				if (HistSize == MAXHISTSIZE)
 				{
@@ -1168,13 +1147,14 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 					HistSize++;
 				}
 			}
+
 			HistPos = NULL;
-			Printf (127, "]%s\n", &buffer[2]);
+			Printf(127, "]%s\n", &buffer[2]);
 			buffer[0] = buffer[1] = buffer[len+4] = 0;
 			AddCommandString ((char *)&buffer[2]);
 			TabbedLast = false;
 		}
-		else if (ev->data1 == KEY_ESCAPE || (cmd && !strcmp(cmd, "toggleconsole")))
+		else if (ev->data1 == KEY_ESCAPE || (cmd && strcmp(cmd, "toggleconsole") == 0))
 		{
 			// Close console, clear command line, but if we're in the
 			// fullscreen console mode, there's nothing to fall back on
@@ -1200,83 +1180,25 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		else if (ev->data3 < 32 || ev->data3 > 126)
 		{
 			// Go to beginning of line
- 			if(KeysCtrl && (ev->data1 == 'a' || ev->data1 == 'A'))
-			{
+ 			if (KeysCtrl && (ev->data1 == 'a' || ev->data1 == 'A'))
 				buffer[1] = 0;
-			}
 
 			// Go to end of line
- 			if(KeysCtrl && (ev->data1 == 'e' || ev->data1 == 'E'))
-			{
+ 			if (KeysCtrl && (ev->data1 == 'e' || ev->data1 == 'E'))
 				buffer[1] = buffer[0];
-			}
 
-			// Paste from clipboard
- 			if(KeysCtrl && (ev->data1 == 'v' || ev->data1 == 'V'))
+			// Paste from clipboard - add each character to command line
+ 			if (KeysCtrl && (ev->data1 == 'v' || ev->data1 == 'V'))
 			{
-				std::string text = I_GetClipboardText();
-
-				for(size_t i = 0; i < text.length(); i++)
-				{
-					// Add each character to command line
-					if (buffer[0] < len)
-					{
-						char data = text[i];
-
-						if (buffer[1] == buffer[0])
-						{
-							buffer[buffer[0] + 2] = data;
-						}
-						else
-						{
-							char *c, *e;
-
-							e = (char *)&buffer[buffer[0] + 1];
-							c = (char *)&buffer[buffer[1] + 2];
-
-							for (; e >= c; e--)
-								*(e + 1) = *e;
-
-							*c = data;
-						}
-						buffer[0]++;
-						buffer[1]++;
-						makestartposgood ();
-						HistPos = NULL;
-					}
-					TabbedLast = false;
-				}
+				const std::string& text = I_GetClipboardText();
+				for (size_t i = 0; i < text.length(); i++)
+					C_AddCharacterToBuffer(text[i], buffer, len);
 			}
 		}
 		else
 		{
 			// Add keypress to command line
-			if (buffer[0] < len)
-			{
-				char data = ev->data3;
-
-				if (buffer[1] == buffer[0])
-				{
-					buffer[buffer[0] + 2] = data;
-				}
-				else
-				{
-					char *c, *e;
-
-					e = (char *)&buffer[buffer[0] + 1];
-					c = (char *)&buffer[buffer[1] + 2];
-
-					for (; e >= c; e--)
-						*(e + 1) = *e;
-
-					*c = data;
-				}
-				buffer[0]++;
-				buffer[1]++;
-				makestartposgood ();
-				HistPos = NULL;
-			}
-			TabbedLast = false;
+			C_AddCharacterToBuffer(ev->data3, buffer, len);
 		}
 		break;
 	}
