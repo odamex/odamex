@@ -3426,7 +3426,7 @@ void CL_Spectate()
 	// that are still targeting the spectating player will cause a stack
 	// overflow in P_SetMobjState.
 
-	if (!player.spectator)
+	if (!player.spectator && !wasalive)
 	{
 		if (player.mo)
 			P_KillMobj(NULL, player.mo, NULL, true);
