@@ -70,11 +70,12 @@ extern BOOL		automapactive;	// in AM_map.c
 extern BOOL		advancedemo;
 
 unsigned int	ConRows, ConCols, PhysRows;
-//unsigned char	*Lines, *Last = NULL;
-BOOL		vidactive = false, gotconback = false;
-BOOL		cursoron = false;
-int			SkipRows, ConBottom;
+
+BOOL			vidactive = false, gotconback = false;
+BOOL			cursoron = false;
+int				ConBottom;
 unsigned int	RowAdjust;
+
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
 char		VersionString[8];
@@ -395,8 +396,6 @@ void C_AddNotifyString(int printlevel, const char *source)
 // 
 static int C_PrintString(int printlevel, const char* outline)
 {
-	bool scroll;
-
 	if (print_stdout && gamestate != GS_FORCEWIPE)
 	{
 		printf("%s", outline);
@@ -458,21 +457,12 @@ static int C_PrintString(int printlevel, const char* outline)
 
 		if (*line_end == '\x8a')
 		{
-			scroll = false;
-
 			if (line_end[1] == '+')
 				mask = printxormask ^ 0x80;
 			else if (line_end[1] != 0)
 				mask = printxormask;
 		}
 		else
-		{
-			scroll = true;
-		}
-
-		SkipRows = scroll ? 1 : 0;
-
-		if (scroll)
 		{
 			if (con_scrlock > 0 && RowAdjust != 0)
 				RowAdjust++;
@@ -614,7 +604,7 @@ void C_Ticker()
 	{
 		if (ScrollState == SCROLLUP)
 		{
-			if (RowAdjust < ConRows - SkipRows - ConBottom/8)
+			if (RowAdjust < ConRows - ConBottom/8)
 				RowAdjust++;
 		}
 		else if (ScrollState == SCROLLDN)
@@ -660,8 +650,8 @@ void C_Ticker()
 			}
 		}
 
-		if (SkipRows + RowAdjust + (ConBottom/8) + 1 > CONSOLEBUFFER)
-			RowAdjust = CONSOLEBUFFER - SkipRows - ConBottom;
+		if (RowAdjust + (ConBottom/8) + 1 > CONSOLEBUFFER)
+			RowAdjust = CONSOLEBUFFER - ConBottom;
 	}
 
 	if (--CursorTicker <= 0)
@@ -782,7 +772,7 @@ void C_DrawConsole()
 	{
 		// find the ConsoleLine that will be printed to bottom of the console
 		ConsoleLineList::reverse_iterator current_line_it = Lines.rbegin();
-		for (unsigned i = 0; i < SkipRows + RowAdjust && current_line_it != Lines.rend(); i++)
+		for (unsigned i = 0; i < RowAdjust && current_line_it != Lines.rend(); i++)
 			++current_line_it;
 	
 		// print as many ConsoleLines as will fit in the screen, starting at the bottom
@@ -808,7 +798,7 @@ void C_DrawConsole()
 			{
 				// Indicate that the view has been scrolled up (10)
 				// and if we can scroll no further (12)
-				char c = (SkipRows + RowAdjust + ConBottom/8 < ConRows) ? 10 : 12;
+				char c = (RowAdjust + ConBottom/8 < ConRows) ? 10 : 12;
 				screen->PrintStr(0, ConBottom - 28, &c, 1);
 			}
 		}
@@ -968,7 +958,7 @@ static bool C_HandleKey(const event_t* ev, byte* buffer, int len)
 		{
 			if (KeysShifted)
 				// Move to top of console buffer
-				RowAdjust = ConRows - SkipRows - ConBottom/8;
+				RowAdjust = ConRows - ConBottom/8;
 			else
 				// Start scrolling console buffer up
 				ScrollState = SCROLLUP;
