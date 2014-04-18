@@ -221,80 +221,9 @@ void DCanvas::PrintStr(int x, int y, const char* str, int count) const
 // Write a string using the hu_font
 //
 
-void DCanvas::TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
+void DCanvas::TextWrapper(EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
 {
-	int 		w;
-	const byte *ch;
-	int 		c;
-	int 		cx;
-	int 		cy;
-	int			boldcolor;
-
-	if (normalcolor > NUM_TEXT_COLORS)
-		normalcolor = CR_RED;
-	boldcolor = normalcolor ? normalcolor - 1 : NUM_TEXT_COLORS - 1;
-
-	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
-
-	ch = string;
-	cx = x;
-	cy = y;
-
-	while (1)
-	{
-		c = *ch++;
-		if (!c)
-			break;
-
-		if (c == 0x8a)
-		{
-			int newcolor = toupper(*ch++);
-
-			if (newcolor == 0)
-			{
-				return;
-			}
-			else if (newcolor == '-')
-			{
-				newcolor = normalcolor;
-			}
-			else if (newcolor >= 'A' && newcolor < 'A' + NUM_TEXT_COLORS)
-			{
-				newcolor -= 'A';
-			}
-			else if (newcolor == '+')
-			{
-				newcolor = boldcolor;
-			}
-			else
-			{
-				continue;
-			}
-			V_ColorMap = translationref_t(Ranges + newcolor * 256);
-			continue;
-		}
-
-		if (c == '\n')
-		{
-			cx = x;
-			cy += 9;
-			continue;
-		}
-
-		c = toupper(c) - HU_FONTSTART;
-		if (c < 0 || c>= HU_FONTSIZE)
-		{
-			cx += 4;
-			continue;
-		}
-
-		w = hu_font[c]->width();
-		if (cx+w > width)
-			break;
-
-		DrawWrapper (drawer, hu_font[c], cx, cy);
-		cx+=w;
-	}
+	TextSWrapper(drawer, normalcolor, x, y, string, 1, 1);
 }
 
 void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
@@ -305,116 +234,82 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 							const byte *string, int scalex, int scaley) const
 {
-	int 		w;
-	const byte *ch;
-	int 		c;
-	int 		cx;
-	int 		cy;
-	int			boldcolor;
-
-	if (normalcolor > NUM_TEXT_COLORS)
+	if (normalcolor < 0 || normalcolor > NUM_TEXT_COLORS)
 		normalcolor = CR_RED;
-	boldcolor = normalcolor ? normalcolor - 1 : NUM_TEXT_COLORS - 1;
 
 	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
 
-	ch = string;
-	cx = x;
-	cy = y;
+	int cx = x;
+	int cy = y;
+
+	const char*	str = (const char*)string;
 
 	while (1)
 	{
-		c = *ch++;
-		if (!c)
+		if (str[0] == '\0')
 			break;
 
-		if (c == 0x8a)
+		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
 		{
-			int newcolor = toupper(*ch++);
-
-			if (newcolor == 0)
-			{
-				return;
-			}
-			else if (newcolor == '-')
-			{
-				newcolor = normalcolor;
-			}
-			else if (newcolor >= 'A' && newcolor < 'A' + NUM_TEXT_COLORS)
-			{
-				newcolor -= 'A';
-			}
-			else if (newcolor == '+')
-			{
-				newcolor = boldcolor;
-			}
-			else
-			{
-				continue;
-			}
-			V_ColorMap = translationref_t(Ranges + newcolor * 256);
+			int new_color = V_GetTextColor(str);
+			V_ColorMap = translationref_t(Ranges + new_color * 256);
+			str += 3;	
 			continue;
 		}
 
-		if (c == '\n')
+		if (str[0] == '\n')
 		{
 			cx = x;
 			cy += 9 * scalex;
+			str++;
 			continue;
 		}
 
-		c = toupper(c) - HU_FONTSTART;
-		if (c < 0 || c>= HU_FONTSIZE)
+		int c = toupper(str[0]) - HU_FONTSTART;
+		str++;
+
+		if (c < 0 || c >= HU_FONTSIZE)
 		{
 			cx += 4 * scaley;
 			continue;
 		}
 
-		w = hu_font[c]->width() * scalex;
-		if (cx+w > width)
+		int w = hu_font[c]->width() * scalex;
+		if (cx + w > width)
 			break;
 
-        DrawSWrapper (drawer, hu_font[c], cx, cy,
+        DrawSWrapper(drawer, hu_font[c], cx, cy,
                         hu_font[c]->width() * scalex,
                         hu_font[c]->height() * scaley);
 
-		cx+=w;
+		cx += w;
 	}
 }
 
 //
 // Find string width from hu_font chars
 //
-int V_StringWidth (const byte *string)
+int V_StringWidth(const byte* str)
 {
-	int w = 0, c;
+	int width = 0;
 	
-	if(!string)
-		return 0;
-
-	while (*string)
+	while (*str)
 	{
-		if (*string == 0x8a)
+		// skip over color markup escape codes
+		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
 		{
-			if (*(++string))
-				string++;
+			str += 3;
 			continue;
 		}
+
+		int c = toupper((*str++) & 0x7f) - HU_FONTSTART;
+		if (c < 0 || c >= HU_FONTSIZE)
+			width += 4;
 		else
-		{
-			c = toupper((*string++) & 0x7f) - HU_FONTSTART;
-			if (c < 0 || c >= HU_FONTSIZE)
-			{
-				w += 4;
-			}
-			else
-			{
-				w += hu_font[c]->width();
-			}
-		}
+			width += hu_font[c]->width();
 	}
 
-	return w;
+	return width;
 }
 
 //
