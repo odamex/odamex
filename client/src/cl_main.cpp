@@ -1835,14 +1835,19 @@ void CL_Print (void)
 	byte level = MSG_ReadByte();
 	const char *str = MSG_ReadString();
 
-	Printf (level, "%s", str);
+	if (level == PRINT_CHAT)
+		Printf(level, "\\c*%s", str);
+	else if (level == PRINT_TEAMCHAT)
+		Printf(level, "\\c!%s", str);
+	else
+		Printf(level, "%s", str);
 
 	if (show_messages)
 	{
 		if (level == PRINT_CHAT)
-			S_Sound (CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 		else if (level == PRINT_TEAMCHAT)
-			S_Sound (CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }
 
@@ -1889,17 +1894,19 @@ void CL_Say()
 	{
 	case 0:
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_CHAT, "* %s %s\n", name, &message[4]);
+			Printf(PRINT_CHAT, "\\c** %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_CHAT, "%s: %s\n", name, message);
+			Printf(PRINT_CHAT, "\\c*%s: %s\n", name, message);
+
 		if (show_messages)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 		break;
+
 	case 1:
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
+			Printf(PRINT_TEAMCHAT, "\\c!* %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
+			Printf(PRINT_TEAMCHAT, "\\c!%s: %s\n", name, message);
 		if (show_messages)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 		break;

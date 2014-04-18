@@ -487,11 +487,13 @@ static int C_PrintString(int printlevel, const char* outline)
 	if (vidactive && !midprinting)
 		C_AddNotifyString(printlevel, outline);
 
-	int mask;
+	int mask = printxormask;
+/*
 	if (printlevel >= PRINT_CHAT && printlevel < 64)
 		mask = 0x80;
 	else
 		mask = printxormask;
+*/
 
 	const char* line_start = outline;
 	const char* line_end = line_start;

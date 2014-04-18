@@ -38,6 +38,12 @@
 
 #include "doomstat.h"
 
+EXTERN_CVAR(msg0color)
+EXTERN_CVAR(msg1color)
+EXTERN_CVAR(msg2color)
+EXTERN_CVAR(msg3color)
+EXTERN_CVAR(msg4color)
+
 EXTERN_CVAR(hud_scaletext)
 
 extern patch_t *hu_font[HU_FONTSIZE];
@@ -59,12 +65,63 @@ int V_TextScaleYAmount()
 
 
 //
+// V_GetTextColor
+//
+// Decodes a \c escape sequence and returns the index of the appropriate
+// color translation to use. This assumes that str is at least three characters
+// in length.
+//
+int V_GetTextColor(const char* str)
+{
+	static int table[128];
+	static bool initialized = false;
+
+	if (!initialized)
+	{
+		for (int i = 0; i < 128; i++)
+			table[i] = -1;
+
+		table['A'] = table['a'] = CR_BRICK;
+		table['B'] = table['b'] = CR_TAN;
+		table['C'] = table['c'] = CR_GRAY;
+		table['D'] = table['d'] = CR_GREEN;
+		table['E'] = table['e'] = CR_BROWN;
+		table['F'] = table['f'] = CR_GOLD;
+		table['G'] = table['g'] = CR_RED;
+		table['H'] = table['h'] = CR_BLUE;
+		table['I'] = table['i'] = CR_ORANGE;
+		table['J'] = table['j'] = CR_WHITE;
+		table['K'] = table['k'] = CR_YELLOW;
+
+
+		initialized = true;
+	}
+
+	if (str[0] == '\\' && str[1] == 'c' && str[2] < 128)
+	{
+		int c = str[2];
+		if (c == '-')
+			return CR_GRAY;			// use print color
+		if (c == '+')
+			return CR_GREEN;		// use print bold color
+		if (c == '*')
+			return msg3color;		// use chat color
+		if (c == '!')
+			return msg4color;		// use team chat color
+
+		return table[c];
+	}
+	return -1;
+}
+
+//
 // V_PrintStr
 // Print a line of text using the console font
 //
-void DCanvas::PrintStr(int x, int y, const char *s, int count) const
+void DCanvas::PrintStr(int x, int y, const char* str, int count) const
 {
-	const byte* str = (const byte*)s;
+	const int default_color = CR_GRAY;
+	translationref_t trans = translationref_t(Ranges + default_color * 256);
 
 	if (!buffer)
 		return;
@@ -88,8 +145,6 @@ void DCanvas::PrintStr(int x, int y, const char *s, int count) const
 	x &= ~3;
 	byte* destline = buffer + y * pitch;
 
-	translationref_t trans = translationref_t(Ranges + CR_GRAY * 256);
-
 	while (count && x <= (width - 8))
 	{
 	    // john - tab 4 spaces
@@ -101,9 +156,25 @@ void DCanvas::PrintStr(int x, int y, const char *s, int count) const
 	        continue;
 	    }
 
+		// [SL] parse color escape codes (\cX)
+		if (count >= 3 && str[0] == '\\' && str[1] == 'c')
+		{
+			int new_color = V_GetTextColor(str);
+			if (new_color == -1)
+				new_color = default_color; 
+
+			trans = translationref_t(Ranges + new_color * 256);
+
+			str += 3;
+			count -= 3;
+			continue;
+		}
+
+		int c = *(byte*)str;
+
 		if (is8bit())
 		{
-			const byte* source = (byte*)&ConChars[(*str) * 128];
+			const byte* source = (byte*)&ConChars[c * 128];
 			palindex_t* dest = (palindex_t*)(destline + x);
 			for (int z = 0; z < 8; z++)
 			{
@@ -120,7 +191,7 @@ void DCanvas::PrintStr(int x, int y, const char *s, int count) const
 		}
 		else
 		{
-			byte* source = (byte*)&ConChars[(*str) * 128];
+			byte* source = (byte*)&ConChars[c * 128];
 			argb_t* dest = (argb_t*)(destline + (x << 2));
 			for (int z = 0; z < 8; z++)
 			{
