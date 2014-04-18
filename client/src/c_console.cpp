@@ -504,6 +504,32 @@ void C_AddNotifyString(int printlevel, const char *source)
 	}
 }
 
+//
+// C_PrintStringStdOut
+//
+// Prints the given string to stdout, stripping away any color markup
+// escape codes.
+//
+static int C_PrintStringStdOut(const char* str)
+{
+	// strip away any color escape codes from outline and store in tempstr
+	char tempstr[MAX_LINE_LENGTH + 1];
+	int len = 0;
+	while (*str)
+	{
+		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+			str += 3;
+		else
+			tempstr[len++] = *str++;
+	}
+	tempstr[len] = '\0';
+
+	printf("%s", tempstr);
+	fflush(stdout);
+
+	return len;
+}
+
 
 //
 // C_PrintString
@@ -513,12 +539,6 @@ void C_AddNotifyString(int printlevel, const char *source)
 // 
 static int C_PrintString(int printlevel, const char* outline)
 {
-	if (print_stdout && gamestate != GS_FORCEWIPE)
-	{
-		printf("%s", outline);
-		fflush(stdout);
-	}
-
 	if (printlevel < (int)msglevel)
 		return 0;
 
@@ -623,6 +643,9 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 		if (ConRows < CONSOLEBUFFER)
 			ConRows += (newLineCount > 1) ? newLineCount + 1 : 1;
 	}
+
+	if (print_stdout && gamestate != GS_FORCEWIPE)
+		C_PrintStringStdOut(outline);
 
 	return C_PrintString(printlevel, outline);
 }
