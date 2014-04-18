@@ -57,6 +57,7 @@
 #include <algorithm>
 
 static const int MAX_LINE_LENGTH = 8192;
+static const int COLOR_MARKUP = 0x8A;
 
 std::string DownloadStr;
 
@@ -79,6 +80,8 @@ unsigned int	RowAdjust;
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
 char		VersionString[8];
+
+extern byte *ConChars;
 
 BOOL		KeysShifted;
 BOOL		KeysCtrl;
@@ -235,7 +238,80 @@ void STACK_ARGS C_Close()
 		I_FreeScreen(conback);
 		conback = NULL;
 	}
+
+	delete ConChars;
+	ConChars = NULL;
 }
+
+
+//
+// C_InitConCharsFont
+//
+// Loads the CONCHARS lump from disk and converts it to the format used by
+// the console for printing text.
+//
+void C_InitConCharsFont()
+{
+	static palindex_t transcolor = 0xF7;
+
+	// Load the CONCHARS lump and convert it from patch_t format
+	// to a raw linear byte buffer with a background color of 'transcolor'
+	DCanvas* temp_screen = I_AllocateScreen(128, 128, 8);
+
+	patch_t* chars_patch = W_CachePatch("CONCHARS");
+	temp_screen->Lock();
+
+	// fill with color 'transcolor'
+	for (int y = 0; y < 128; y++)
+		memset(temp_screen->buffer + temp_screen->pitch * y, transcolor, 128);
+
+	// paste the patch into the linear byte bufer
+	temp_screen->DrawPatch(chars_patch, 0, 0);
+
+	ConChars = new byte[256*8*8*2];
+
+	byte* dest = ConChars;	
+
+	for (int y = 0; y < 16; y++)
+	{
+		for (int x = 0; x < 16; x++)
+		{
+			const byte* source = temp_screen->buffer + x * 8 + (y * 8 * temp_screen->pitch);
+			for (int z = 0; z < 8; z++)
+			{
+				for (int a = 0; a < 8; a++)
+				{
+					byte val = source[a];
+					if (val == transcolor)
+					{
+						dest[a] = 0x00;
+						dest[a + 8] = 0xff;
+					}
+					else
+					{
+						// [SL] translate the gray range (0x50 - 0x5F) into red (0x80 - 0x8F)
+						const int range_source = 80;
+						const int range_dest = 176;
+						if (val >= range_source && val < range_source + 16)
+							dest[a] = (int)val - range_source + range_dest;
+						else
+							dest[a] = val;
+
+						dest[a + 8] = 0x00;
+					}
+				}
+
+				dest += 16;
+				source += temp_screen->pitch;
+			}
+		}
+	}
+
+	temp_screen->Unlock();
+
+	I_FreeScreen(temp_screen);
+}
+
 
 //
 // C_InitConsole
@@ -246,7 +322,9 @@ void C_InitConsole(int width, int height, BOOL ingame)
 	if (firstTime)
 		atterm(C_Close);
 
-	if ( (vidactive = ingame) )
+	vidactive = ingame;
+
+	if (ingame)
 	{
 		if (!gotconback)
 		{
@@ -256,8 +334,8 @@ void C_InitConsole(int width, int height, BOOL ingame)
 			conback = I_AllocateScreen(screen->width, screen->height, 8);
 
 			conback->Lock();
-
 			conback->DrawPatch(bg, (screen->width/2)-(bg->width()/2), (screen->height/2)-(bg->height()/2));
+			conback->Unlock();
 
 			VersionString[0] = 0x11;
 			size_t i;
@@ -266,10 +344,11 @@ void C_InitConsole(int width, int height, BOOL ingame)
 						DOTVERSIONSTR[i] - 30 : DOTVERSIONSTR[i] ^ 0x80;
 			VersionString[i+1] = 0;
 
-			conback->Unlock();
-
 			gotconback = true;
 		}
+
+		delete ConChars;
+		C_InitConCharsFont();
 	}
 
 	ConCols = width / 8 - 2;
@@ -422,7 +501,7 @@ static int C_PrintString(int printlevel, const char* outline)
 		// Find the next line-breaking character (\n or \0) and set
 		// line_end to point to it.
 		line_end = line_start;
-		while (*line_end != '\n' && *line_end != '\0' && *line_end != '\x8a')
+		while (*line_end != '\n' && *line_end != '\0' && *line_end != COLOR_MARKUP)
 			 line_end++;
 
 		const size_t len = line_end - line_start;
@@ -455,7 +534,7 @@ static int C_PrintString(int printlevel, const char* outline)
 			Lines.push_back(new_line);
 		}
 
-		if (*line_end == '\x8a')
+		if (*line_end == COLOR_MARKUP)
 		{
 			if (line_end[1] == '+')
 				mask = printxormask ^ 0x80;
@@ -472,7 +551,7 @@ static int C_PrintString(int printlevel, const char* outline)
 
 		if (*line_end == '\n')
 			line_start = line_end + 1;
-		else if (*line_end == '\x8a' && line_end[1] != '\0')
+		else if (*line_end == COLOR_MARKUP && line_end[1] != '\0')
 			line_start = line_end + 2;
 		else
 			line_start = line_end;
@@ -484,14 +563,16 @@ static int C_PrintString(int printlevel, const char* outline)
 }
 
 
-int VPrintf(int printlevel, const char *format, va_list parms)
+int VPrintf(int printlevel, const char* format, va_list parms)
 {
-	char outline[MAX_LINE_LENGTH], outlinelog[MAX_LINE_LENGTH];
+	char outline[MAX_LINE_LENGTH + 1], outlinelog[MAX_LINE_LENGTH + 1];
 
 	extern BOOL gameisdead;
 	if (gameisdead)
 		return 0;
 
+	// [SL] security TODO: switch to vsnprintf to prevent overruns
+	// and ensure outline is null-terminated.
 	vsprintf(outline, format, parms);
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)

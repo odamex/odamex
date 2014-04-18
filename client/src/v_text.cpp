@@ -43,7 +43,7 @@ EXTERN_CVAR(hud_scaletext)
 extern patch_t *hu_font[HU_FONTSIZE];
 
 
-static byte *ConChars;
+byte *ConChars;
 
 extern byte *Ranges;
 
@@ -57,78 +57,19 @@ int V_TextScaleYAmount()
 	return int(hud_scaletext);
 }
 
-// Convert the CONCHARS patch into the internal format used by
-// the console font drawer.
-void V_InitConChars (byte transcolor)
-{
-	// Load the CONCHARS lump and convert it from patch_t format
-	// to a raw linear byte buffer with a background color of 'transcolor'
-	DCanvas* temp_screen = I_AllocateScreen(128, 128, 8);
-
-	patch_t* chars_patch = W_CachePatch("CONCHARS");
-	temp_screen->Lock();
-
-	// fill with color 'transcolor'
-	for (int y = 0; y < 128; y++)
-		memset(temp_screen->buffer + temp_screen->pitch * y, transcolor, 128);
-
-	// paste the patch into the linear byte bufer
-	temp_screen->DrawPatch(chars_patch, 0, 0);
-
-	ConChars = new byte[256*8*8*2];
-
-	byte* dest = ConChars;	
-
-	for (int y = 0; y < 16; y++)
-	{
-		for (int x = 0; x < 16; x++)
-		{
-			const byte* source = temp_screen->buffer + x * 8 + (y * 8 * temp_screen->pitch);
-			for (int z = 0; z < 8; z++)
-			{
-				for (int a = 0; a < 8; a++)
-				{
-					byte val = source[a];
-					if (val == transcolor)
-					{
-						dest[a] = 0x00;
-						dest[a + 8] = 0xff;
-					}
-					else
-					{
-						dest[a] = val;
-						dest[a + 8] = 0x00;
-					}
-				}
-
-				dest += 16;
-				source += temp_screen->pitch;
-			}
-		}
-	}
-
-	temp_screen->Unlock();
-
-	I_FreeScreen(temp_screen);
-}
-
 
 //
 // V_PrintStr
 // Print a line of text using the console font
 //
-
-extern "C" void STACK_ARGS PrintChar1P (DWORD *charimg, byte *dest, int screenpitch);
-extern "C" void STACK_ARGS PrintChar2P_MMX (DWORD *charimg, byte *dest, int screenpitch);
-
-void DCanvas::PrintStr (int x, int y, const char *s, int count) const
+void DCanvas::PrintStr(int x, int y, const char *s, int count) const
 {
 	const byte* str = (const byte*)s;
 
 	if (!buffer)
 		return;
 
-	if (y > (height - 8) || y<0)
+	if (y > (height - 8) || y < 0)
 		return;
 
 	if (x < 0)
@@ -147,6 +88,8 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 	x &= ~3;
 	byte* destline = buffer + y * pitch;
 
+	translationref_t trans = translationref_t(Ranges + CR_GRAY * 256);
+
 	while (count && x <= (width - 8))
 	{
 	    // john - tab 4 spaces
@@ -160,15 +103,19 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 
 		if (is8bit())
 		{
-			unsigned int* source = (unsigned int*)&ConChars[(*str) * 128];
-			unsigned int* dest = (unsigned int*)(destline + x);
+			const byte* source = (byte*)&ConChars[(*str) * 128];
+			palindex_t* dest = (palindex_t*)(destline + x);
 			for (int z = 0; z < 8; z++)
 			{
-				*dest = (*dest & source[2]) ^ source[0];
-				dest++;
-				*dest = (*dest & source[3]) ^ source[1];
-				dest += (pitch >> 2) - 1;
-				source += 4;
+				for (int a = 0; a < 8; a++)
+				{
+					const palindex_t mask = source[a+8];
+					palindex_t color = trans.tlate(source[a]);
+					dest[a] = (dest[a] & mask) ^ color;
+				}
+
+				dest += pitch;
+				source += 16;
 			}
 		}
 		else
@@ -182,8 +129,7 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 					const argb_t mask = (source[a+8] << 24) | (source[a+8] << 16)
 										| (source[a+8] << 8) | source[a+8];
 
-					argb_t color = V_Palette.shade(source[a]) & ~mask;
-
+					argb_t color = V_Palette.shade(trans.tlate(source[a])) & ~mask;
 					dest[a] = (dest[a] & mask) ^ color; 
 				}
 
@@ -195,104 +141,6 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 		str++;
 		count--;
 		x += 8;
-	}
-}
-
-//
-// V_PrintStr2
-// Same as V_PrintStr but doubles the size of every character.
-//
-void DCanvas::PrintStr2 (int x, int y, const char *s, int count) const
-{
-	const byte *str = (const byte *)s;
-	byte *temp;
-	argb_t *charimg;
-
-	if (y > (height - 16))
-		return;
-
-	if (x < 0)
-	{
-		int skip;
-
-		skip = -(x - 15) / 16;
-		x += skip * 16;
-		if (count <= skip)
-		{
-			return;
-		}
-		else
-		{
-			count -= skip;
-			str += skip;
-		}
-	}
-
-	x &= ~3;
-	temp = buffer + y * pitch;
-
-	while (count && x <= (width - 16))
-	{
-	    // john - tab 4 spaces
-        if (*str == '\t')
-	    {
-	        str++;
-	        count--;
-	        x += 16 * 4;
-	        continue;
-	    }
-
-		charimg = (argb_t *)&ConChars[(*str) * 128];
-
-		{
-			int z;
-			byte *buildmask, *buildbits, *image;
-			unsigned int m1, s1;
-			unsigned int *writepos;
-
-			writepos = (unsigned int *)(temp + x);
-			buildbits = (byte *)&s1;
-			buildmask = (byte *)&m1;
-			image = (byte *)charimg;
-
-			for (z = 0; z < 8; z++)
-			{
-				buildmask[0] = buildmask[1] = image[8];
-				buildmask[2] = buildmask[3] = image[9];
-				buildbits[0] = buildbits[1] = image[0];
-				buildbits[2] = buildbits[3] = image[1];
-				writepos[0] = (writepos[0] & m1) ^ s1;
-				writepos[pitch/4] = (writepos[pitch/4] & m1) ^ s1;
-
-				buildmask[0] = buildmask[1] = image[10];
-				buildmask[2] = buildmask[3] = image[11];
-				buildbits[0] = buildbits[1] = image[2];
-				buildbits[2] = buildbits[3] = image[3];
-				writepos[1] = (writepos[1] & m1) ^ s1;
-				writepos[1+pitch/4] = (writepos[1+pitch/4] & m1) ^ s1;
-
-				buildmask[0] = buildmask[1] = image[12];
-				buildmask[2] = buildmask[3] = image[13];
-				buildbits[0] = buildbits[1] = image[4];
-				buildbits[2] = buildbits[3] = image[5];
-				writepos[2] = (writepos[2] & m1) ^ s1;
-				writepos[2+pitch/4] = (writepos[2+pitch/4] & m1) ^ s1;
-
-				buildmask[0] = buildmask[1] = image[14];
-				buildmask[2] = buildmask[3] = image[15];
-				buildbits[0] = buildbits[1] = image[6];
-				buildbits[2] = buildbits[3] = image[7];
-				writepos[3] = (writepos[3] & m1) ^ s1;
-				writepos[3+pitch/4] = (writepos[3+pitch/4] & m1) ^ s1;
-
-				writepos += pitch >> 1;
-				image += 16;
-			}
-
-		}
-		str++;
-		count--;
-		x += 16;
 	}
 }
 

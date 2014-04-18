@@ -849,7 +849,6 @@ void V_Init (void)
 
 	V_InitPalette ();
 
-	V_InitConChars (0xf7);
 	C_InitConsole (screen->width, screen->height, true);
 }
 
