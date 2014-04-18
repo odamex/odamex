@@ -315,55 +315,75 @@ int V_StringWidth(const byte* str)
 //
 // Break long lines of text into multiple lines no longer than maxwidth pixels
 //
-static void breakit (brokenlines_t *line, const byte *start, const byte *string)
+static void breakit(brokenlines_t* line, const byte* start, const byte* string, const char* prefix = NULL)
 {
 	// Leave out trailing white space
-	while (string > start && isspace (*(string - 1)))
+	while (string > start && isspace(*(string - 1)))
 		string--;
 
-	line->string = new char[string - start + 1];
-	strncpy (line->string, (char *)start, string - start);
-	line->string[string - start] = 0;
-	line->width = V_StringWidth (line->string);
+	int prefix_len = prefix ? strlen(prefix) : 0;
+
+	line->string = new char[string - start + 1 + prefix_len];
+
+	if (prefix_len)
+		strncpy(line->string + 0, prefix, prefix_len);
+
+	strncpy(line->string + prefix_len, (char*)start, string - start);
+	line->string[string - start + prefix_len] = 0;
+	line->width = V_StringWidth(line->string);
 }
 
-brokenlines_t *V_BreakLines (int maxwidth, const byte *string)
+brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 {
 	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)
 
-	const byte *space = NULL, *start = string;
-	int i, c, w, nw;
-	BOOL lastWasSpace = false;
+	const byte* space = NULL;
+	const byte* start = str;
+	int i, w, nw;
+	bool lastWasSpace = false;
 
 	i = w = 0;
 
-	while ( (c = *string++) ) {
-		if (c == 0x8a) {
-			if (*string)
-				string++;
+	char color_code_str[4] = { 0 };
+
+	while (*str)
+	{
+		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		{
+			sprintf(color_code_str, "\\c%c", str[2]);
+			str += 3;
 			continue;
 		}
 
-		if (isspace(c)) {
-			if (!lastWasSpace) {
-				space = string - 1;
+		int c = *str++;
+
+		if (isspace(c))
+		{
+			if (!lastWasSpace)
+			{
+				space = str - 1;
 				lastWasSpace = true;
 			}
-		} else
+		}
+		else
+		{
 			lastWasSpace = false;
+		}
 
-		c = toupper (c & 0x7f) - HU_FONTSTART;
+		c = toupper(c & 0x7F) - HU_FONTSTART;
 
 		if (c < 0 || c >= HU_FONTSIZE)
 			nw = 4;
 		else
 			nw = hu_font[c]->width();
 
-		if (w + nw > maxwidth || c == '\n' - HU_FONTSTART) {	// Time to break the line
+		if (w + nw > maxwidth || c == '\n' - HU_FONTSTART)
+		{
+			// Time to break the line
 			if (!space)
-				space = string - 1;
+				space = str - 1;
 
-			breakit (&lines[i], start, space);
+			breakit(&lines[i], start, space, color_code_str);
 
 			i++;
 			w = 0;
@@ -371,24 +391,32 @@ brokenlines_t *V_BreakLines (int maxwidth, const byte *string)
 			start = space;
 			space = NULL;
 
-			while (*start && isspace (*start) && *start != '\n')
+			while (*start && isspace(*start) && *start != '\n')
 				start++;
+
 			if (*start == '\n')
 				start++;
 			else
-				while (*start && isspace (*start))
+				while (*start && isspace(*start))
 					start++;
-			string = start;
-		} else
+
+			str = start;
+		}
+		else
+		{
 			w += nw;
+		}
 	}
 
-	if (string - start > 1) {
-		const byte *s = start;
+	if (str - start > 1)
+	{
+		const byte* s = start;
 
-		while (s < string) {
-			if (!isspace (*s++)) {
-				breakit (&lines[i++], start, string);
+		while (s < str)
+		{
+			if (!isspace (*s++))
+			{
+				breakit(&lines[i++], start, str, color_code_str);
 				break;
 			}
 		}
@@ -396,9 +424,9 @@ brokenlines_t *V_BreakLines (int maxwidth, const byte *string)
 
 	{
 		// Make a copy of the broken lines and return them
-		brokenlines_t *broken = new brokenlines_t[i+1];
+		brokenlines_t* broken = new brokenlines_t[i + 1];
 
-		memcpy (broken, lines, sizeof(brokenlines_t) * i);
+		memcpy(broken, lines, sizeof(brokenlines_t) * i);
 		broken[i].string = NULL;
 		broken[i].width = -1;
 
@@ -406,19 +434,17 @@ brokenlines_t *V_BreakLines (int maxwidth, const byte *string)
 	}
 }
 
-void V_FreeBrokenLines (brokenlines_t *lines)
+void V_FreeBrokenLines(brokenlines_t* lines)
 {
 	if (lines)
 	{
-		int i = 0;
-
-		while (lines[i].width != -1)
+		for (int i = 0; lines[i].width != -1; i++)
 		{
-			delete[] lines[i].string;
+			delete [] lines[i].string;
 			lines[i].string = NULL;
-			i++;
 		}
-		delete[] lines;
+
+		delete [] lines;
 	}
 }
 

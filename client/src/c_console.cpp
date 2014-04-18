@@ -148,8 +148,20 @@ static void C_JoinConsoleLines(ConsoleLine& line1, const ConsoleLine& line2)
 //
 static void C_SplitConsoleLines(ConsoleLine& line1, ConsoleLine& line2, size_t length)
 {
-	line2.text = line1.text.substr(length, std::string::npos);
-	line1.text = line1.text.substr(0, length);
+	brokenlines_t* lines = V_BreakLines(length, line1.text.c_str());
+
+	line1.text = lines[0].string;
+
+	line2.text.clear();
+	for (int i = 1; lines[i].width != -1; i++)
+	{
+		if (i > 1)
+			line2.text.append(" ");
+		line2.text.append(lines[i].string);
+	}
+
+	V_FreeBrokenLines(lines);
+
 	line2.wrapped = line1.wrapped;
 	line1.wrapped = true;
 }
@@ -310,6 +322,32 @@ void C_InitConCharsFont()
 	temp_screen->Unlock();
 
 	I_FreeScreen(temp_screen);
+}
+
+
+//
+// C_StringWidth
+//
+// Determines the width of a string in the CONCHARS font
+//
+static int C_StringWidth(const char* str)
+{
+	int width = 0;
+	
+	while (*str)
+	{
+		// skip over color markup escape codes
+		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		{
+			str += 3;
+			continue;
+		}
+
+		width += 8; 
+		str++;
+	}
+
+	return width;
 }
 
 
@@ -487,14 +525,6 @@ static int C_PrintString(int printlevel, const char* outline)
 	if (vidactive && !midprinting)
 		C_AddNotifyString(printlevel, outline);
 
-	int mask = printxormask;
-/*
-	if (printlevel >= PRINT_CHAT && printlevel < 64)
-		mask = 0x80;
-	else
-		mask = printxormask;
-*/
-
 	const char* line_start = outline;
 	const char* line_end = line_start;
 
@@ -503,19 +533,13 @@ static int C_PrintString(int printlevel, const char* outline)
 		// Find the next line-breaking character (\n or \0) and set
 		// line_end to point to it.
 		line_end = line_start;
-		while (*line_end != '\n' && *line_end != '\0' && *line_end != COLOR_MARKUP)
+		while (*line_end != '\n' && *line_end != '\0')
 			 line_end++;
 
 		const size_t len = line_end - line_start;
 
 		char str[MAX_LINE_LENGTH + 1];
-
-		// copy from line_start into str, translating special characters
-		for (size_t i = 0; i < len; i++)
-			if (line_start[i] < 32)
-				str[i] = line_start[i];
-			else
-				str[i] = line_start[i] ^ mask;
+		strncpy(str, line_start, len);
 		str[len] = '\0';
 
 		bool wrap_new_line = *line_end != '\n';
@@ -529,37 +553,23 @@ static int C_PrintString(int printlevel, const char* outline)
 			Lines.push_back(new_line);
  
 		// Wrap the current line if it's too long.
-		if (Lines.back().text.length() > ConCols)
+		int line_width = C_StringWidth(Lines.back().text.c_str());
+		if (line_width > ConCols*8)
 		{
 			new_line = ConsoleLine();
 			C_SplitConsoleLines(Lines.back(), new_line, ConCols);
 			Lines.push_back(new_line);
 		}
-
-		if (*line_end == COLOR_MARKUP)
-		{
-			if (line_end[1] == '+')
-				mask = printxormask ^ 0x80;
-			else if (line_end[1] != 0)
-				mask = printxormask;
-		}
+		
+		if (con_scrlock > 0 && RowAdjust != 0)
+			RowAdjust++;
 		else
-		{
-			if (con_scrlock > 0 && RowAdjust != 0)
-				RowAdjust++;
-			else
-				RowAdjust = 0;
-		}
+			RowAdjust = 0;
 
+		line_start = line_end;
 		if (*line_end == '\n')
-			line_start = line_end + 1;
-		else if (*line_end == COLOR_MARKUP && line_end[1] != '\0')
-			line_start = line_end + 2;
-		else
-			line_start = line_end;
+			line_start++;
 	}
-
-	printxormask = 0;
 
 	return strlen(outline);
 }
