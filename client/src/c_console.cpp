@@ -57,7 +57,6 @@
 #include <algorithm>
 
 static const int MAX_LINE_LENGTH = 8192;
-static const int COLOR_MARKUP = 0x8A;
 
 std::string DownloadStr;
 
@@ -79,7 +78,6 @@ unsigned int	RowAdjust;
 
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
-char		VersionString[8];
 
 extern byte *ConChars;
 
@@ -172,8 +170,6 @@ static void C_SplitConsoleLines(ConsoleLine& line1, ConsoleLine& line2, size_t l
 // CmdLine[2+] = command line (max 255 chars + NULL)
 // CmdLine[259]= offset from beginning of cmdline to display
 static byte CmdLine[260];
-
-static byte printxormask;
 
 #define MAXHISTSIZE 50
 static struct History *HistHead = NULL, *HistTail = NULL, *HistPos = NULL;
@@ -374,13 +370,6 @@ void C_InitConsole(int width, int height, BOOL ingame)
 			conback->Lock();
 			conback->DrawPatch(bg, (screen->width/2)-(bg->width()/2), (screen->height/2)-(bg->height()/2));
 			conback->Unlock();
-
-			VersionString[0] = 0x11;
-			size_t i;
-			for (i = 0; i < strlen(DOTVERSIONSTR); i++)
-				VersionString[i+1] = ((DOTVERSIONSTR[i]>='0' && DOTVERSIONSTR[i]<='9') || DOTVERSIONSTR[i]=='.') ?
-						DOTVERSIONSTR[i] - 30 : DOTVERSIONSTR[i] ^ 0x80;
-			VersionString[i+1] = 0;
 
 			gotconback = true;
 		}
@@ -595,7 +584,7 @@ static int C_PrintString(int printlevel, const char* outline)
 }
 
 
-int VPrintf(int printlevel, const char* format, va_list parms)
+static int VPrintf(int printlevel, const char* format, va_list parms)
 {
 	char outline[MAX_LINE_LENGTH + 1], outlinelog[MAX_LINE_LENGTH + 1];
 
@@ -666,7 +655,6 @@ int STACK_ARGS Printf_Bold(const char *format, ...)
 	va_list argptr;
 
 	va_start(argptr, format);
-	printxormask = 0x80;
 	int count = VPrintf(PRINT_HIGH, format, argptr);
 	va_end(argptr);
 
@@ -779,6 +767,13 @@ void C_Ticker()
 	lasttic = gametic;
 }
 
+
+//
+// C_DrawNotifyText
+//
+// Prints the HUD notification messages to the top of the HUD. Each of these
+// messages will be displayed for a fixed amount of time before being removed.
+//
 static void C_DrawNotifyText()
 {
 	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || menuactive)
@@ -804,6 +799,7 @@ static void C_DrawNotifyText()
 		}
 	}
 }
+
 
 void C_InitTicker(const char *label, unsigned int max)
 {
@@ -842,9 +838,11 @@ void C_DrawConsole()
 
 	if (ConBottom >= 12)
 	{
-		screen->PrintStr(screen->width - 8 - strlen(VersionString) * 8,
-					ConBottom - 12,
-					VersionString, strlen(VersionString));
+		// print the Odamex version in gold in the bottom right corner of console
+		char version_str[16];
+		sprintf(version_str, "\\ciV%s.%u", DOTVERSIONSTR, GetRevision());
+		screen->PrintStr(screen->width - 8 - C_StringWidth(version_str),
+					ConBottom - 12, version_str, strlen(version_str));
 
 		// Download progress bar hack
 		if (gamestate == GS_DOWNLOAD)
