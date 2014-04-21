@@ -94,6 +94,7 @@ static bool midprinting;
 
 EXTERN_CVAR(show_messages)
 EXTERN_CVAR(print_stdout)
+EXTERN_CVAR(con_notifytime)
 
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
@@ -106,14 +107,103 @@ struct History
 };
 
 
-struct ConsoleLine
+class ConsoleLine
 {
-	ConsoleLine() : wrapped(false) { }
-	ConsoleLine(const std::string& t, const std::string& c, bool w = false) : text(t), color_code(c), wrapped(w) { }
+public:
+	ConsoleLine() :
+		color_code("\\c-"), wrapped(false), print_level(PRINT_HIGH),
+		timeout(gametic + con_notifytime.asInt() * TICRATE)
+	{ }
+
+	ConsoleLine(const std::string& _text, const std::string& _color_code = "\\c-",
+			int _print_level = PRINT_HIGH) :
+		text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
+		timeout(gametic + con_notifytime.asInt() * TICRATE)
+	{ }
+
+
+	//
+	// join
+	//
+	// Appends the other console line to this line.
+	//
+	void join(const ConsoleLine& other)
+	{
+		text.append(other.text);
+		wrapped = other.wrapped;
+	}
+
+	//
+	// split
+	//
+	// Splits this line into a second line with this line having a maximum
+	// pixel width of max_width.
+	//
+	ConsoleLine split(size_t max_width)
+	{
+		char wrapped_color_code[4] = { 0 };
+		size_t width = 0;
+		size_t break_pos = 0;
+
+		const char* s = text.c_str();
+		while (s)
+		{
+			if (s[0] == '\\' && s[1] == 'c' && s[2] != '\0')
+			{
+				strncpy(wrapped_color_code, s, 3);
+				s += 3;
+				continue;
+			}
+
+			if (*s == ' ' || *s == '\n' || *s == '\t')
+				break_pos = s - text.c_str();
+			else if (*s == '-')
+				break_pos = s + 1 - text.c_str();
+
+			const size_t character_width = 8;
+			if (width + character_width > max_width)
+			{
+				// Is this word is too long to fit on the line?
+				// Breaking it here is the only option.
+				if (break_pos == 0)
+					break_pos = s - text.c_str();
+
+				ConsoleLine new_line(text.substr(break_pos, std::string::npos));
+				TrimStringStart(new_line.text);
+
+				// continue the color markup onto the next line
+				if (*wrapped_color_code)
+					new_line.text = wrapped_color_code + new_line.text;
+
+				new_line.wrapped = wrapped;
+				new_line.print_level = print_level;
+				new_line.timeout = timeout;
+				new_line.color_code = color_code;
+
+				text = text.substr(0, break_pos);
+				wrapped = true;
+
+				return new_line;
+			}
+
+			s++;
+			width += character_width;
+		}
+
+		// didn't have to wrap
+		return ConsoleLine();
+	}
+
+	bool expired() const
+	{
+		return gametic > timeout;
+	}
 
 	std::string		text;
 	std::string		color_code;
 	bool			wrapped;
+	int				print_level;
+	int				timeout;
 };
 
 struct ConsoleCommandLine
@@ -127,44 +217,6 @@ struct ConsoleCommandLine
 typedef std::list<ConsoleLine> ConsoleLineList;
 ConsoleLineList Lines;
 
-//
-// C_JoinConsoleLines
-//
-// Appends the line2 ConsoleLine to the line1 ConsoleLine.
-//
-static void C_JoinConsoleLines(ConsoleLine& line1, const ConsoleLine& line2)
-{
-	line1.text.append(line2.text);
-	line1.wrapped = line2.wrapped;
-}
-
-
-//
-// C_SplitConsoleLines
-//
-// Splits line1 into two ConsoleLines with the first 'length' characters in
-// line1 and the remaining characters into line2.
-//
-static void C_SplitConsoleLines(ConsoleLine& line1, ConsoleLine& line2, size_t length)
-{
-	brokenlines_t* lines = V_BreakLines(length, line1.text.c_str());
-
-	line1.text = lines[0].string;
-
-	line2.text.clear();
-	for (int i = 1; lines[i].width != -1; i++)
-	{
-		if (i > 1)
-			line2.text.append(" ");
-		line2.text.append(lines[i].string);
-	}
-
-	V_FreeBrokenLines(lines);
-
-	line2.wrapped = line1.wrapped;
-	line1.wrapped = true;
-	line2.color_code = line1.color_code;
-}
 
 
 // CmdLine[0]  = # of chars on command line
@@ -179,7 +231,6 @@ static int HistSize;
 
 #define NUMNOTIFIES 4
 
-EXTERN_CVAR(con_notifytime)
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
@@ -398,18 +449,18 @@ void C_InitConsole(int width, int height, BOOL ingame)
 
 			if (next_line_it != Lines.end())
 			{
-				C_JoinConsoleLines(*current_line_it, *next_line_it);
+				current_line_it->join(*next_line_it);
 				Lines.erase(next_line_it);
 			}
 		}
 
-		if (current_line_it->text.length() > ConCols)
+		if (C_StringWidth(current_line_it->text.c_str()) > ConCols*8)
 		{
 			ConsoleLineList::iterator next_line_it = current_line_it;
 			++next_line_it;
 
-			next_line_it = Lines.insert(next_line_it, ConsoleLine());
-			C_SplitConsoleLines(*current_line_it, *next_line_it, ConCols);
+			ConsoleLine new_line = current_line_it->split(ConCols*8);
+			Lines.insert(next_line_it, new_line);
 		}
 	}
 
@@ -559,7 +610,7 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 		// Add a new line to ConsoleLineList if the last line in ConsoleLineList
 		// ends in \n, or add onto the last line if does not.
 		if (!Lines.empty() && Lines.back().wrapped)
-			C_JoinConsoleLines(Lines.back(), new_line);
+			Lines.back().join(new_line);
 		else
 			Lines.push_back(new_line);
  
@@ -567,8 +618,7 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 		int line_width = C_StringWidth(Lines.back().text.c_str());
 		if (line_width > ConCols*8)
 		{
-			new_line = ConsoleLine();
-			C_SplitConsoleLines(Lines.back(), new_line, ConCols);
+			new_line = Lines.back().split(ConCols*8);
 			Lines.push_back(new_line);
 		}
 		
