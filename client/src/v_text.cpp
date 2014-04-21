@@ -118,9 +118,11 @@ int V_GetTextColor(const char* str)
 // V_PrintStr
 // Print a line of text using the console font
 //
-void DCanvas::PrintStr(int x, int y, const char* str, int count) const
+void DCanvas::PrintStr(int x, int y, const char* str, int count, int default_color) const
 {
-	const int default_color = CR_GRAY;
+	if (default_color < 0)
+		default_color = CR_GRAY;
+
 	translationref_t trans = translationref_t(Ranges + default_color * 256);
 
 	if (!buffer)

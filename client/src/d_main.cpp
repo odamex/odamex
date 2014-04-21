@@ -412,7 +412,7 @@ void D_PageDrawer (void)
 	else
 	{
 		screen->Clear (0, 0, screen->width, screen->height, 0);
-		//screen->PrintStr (0, 0, "Page graphic goes here", 22);
+		//screen->PrintStr(0, 0, "Page graphic goes here", 22, CR_GRAY);
 	}
 }
 

@@ -109,9 +109,10 @@ struct History
 struct ConsoleLine
 {
 	ConsoleLine() : wrapped(false) { }
-	ConsoleLine(const std::string& t, bool w = false) : text(t), wrapped(w) { }
+	ConsoleLine(const std::string& t, const std::string& c, bool w = false) : text(t), color_code(c), wrapped(w) { }
 
 	std::string		text;
+	std::string		color_code;
 	bool			wrapped;
 };
 
@@ -162,6 +163,7 @@ static void C_SplitConsoleLines(ConsoleLine& line1, ConsoleLine& line2, size_t l
 
 	line2.wrapped = line1.wrapped;
 	line1.wrapped = true;
+	line2.color_code = line1.color_code;
 }
 
 
@@ -433,7 +435,7 @@ extern int DisplayWidth;
 // Prioritise messages on top of screen
 // Break up the lines so that they wrap around the screen boundary
 //
-void C_AddNotifyString(int printlevel, const char *source)
+void C_AddNotifyString(int printlevel, const char* color_code, const char* source)
 {
 	static enum
 	{
@@ -526,13 +528,13 @@ static int C_PrintStringStdOut(const char* str)
 // Provide our own Printf() that is sensitive of the
 // console status (in or out of game).
 // 
-static int C_PrintString(int printlevel, const char* outline)
+static int C_PrintString(int printlevel, const char* color_code, const char* outline)
 {
 	if (printlevel < (int)msglevel)
 		return 0;
 
 	if (vidactive && !midprinting)
-		C_AddNotifyString(printlevel, outline);
+		C_AddNotifyString(printlevel, color_code, outline);
 
 	const char* line_start = outline;
 	const char* line_end = line_start;
@@ -552,7 +554,7 @@ static int C_PrintString(int printlevel, const char* outline)
 		str[len] = '\0';
 
 		bool wrap_new_line = *line_end != '\n';
-		ConsoleLine new_line(str, wrap_new_line); 
+		ConsoleLine new_line(str, color_code, wrap_new_line); 
 		
 		// Add a new line to ConsoleLineList if the last line in ConsoleLineList
 		// ends in \n, or add onto the last line if does not.
@@ -584,7 +586,7 @@ static int C_PrintString(int printlevel, const char* outline)
 }
 
 
-static int VPrintf(int printlevel, const char* format, va_list parms)
+static int VPrintf(int printlevel, const char* color_code, const char* format, va_list parms)
 {
 	char outline[MAX_LINE_LENGTH + 1], outlinelog[MAX_LINE_LENGTH + 1];
 
@@ -636,15 +638,16 @@ static int VPrintf(int printlevel, const char* format, va_list parms)
 	if (print_stdout && gamestate != GS_FORCEWIPE)
 		C_PrintStringStdOut(outline);
 
-	return C_PrintString(printlevel, outline);
+	return C_PrintString(printlevel, color_code, outline);
 }
 
 int STACK_ARGS Printf(int printlevel, const char *format, ...)
 {
+	static const char color_code[4] = "\\c-";
 	va_list argptr;
 
 	va_start(argptr, format);
-	int count = VPrintf(printlevel, format, argptr);
+	int count = VPrintf(printlevel, color_code, format, argptr);
 	va_end(argptr);
 
 	return count;
@@ -652,10 +655,11 @@ int STACK_ARGS Printf(int printlevel, const char *format, ...)
 
 int STACK_ARGS Printf_Bold(const char *format, ...)
 {
+	static const char color_code[4] = "\\c+";
 	va_list argptr;
 
 	va_start(argptr, format);
-	int count = VPrintf(PRINT_HIGH, format, argptr);
+	int count = VPrintf(PRINT_HIGH, color_code, format, argptr);
 	va_end(argptr);
 
 	return count;
@@ -665,10 +669,11 @@ int STACK_ARGS DPrintf(const char *format, ...)
 {
 	if (developer)
 	{
+		static const char color_code[4] = "\\c+";
 		va_list argptr;
 
 		va_start(argptr, format);
-		int count = VPrintf(PRINT_HIGH, format, argptr);
+		int count = VPrintf(PRINT_HIGH, color_code, format, argptr);
 		va_end(argptr);
 		return count;
 	}
@@ -840,16 +845,15 @@ void C_DrawConsole()
 	{
 		// print the Odamex version in gold in the bottom right corner of console
 		char version_str[16];
-		sprintf(version_str, "\\ciV%s.%u", DOTVERSIONSTR, GetRevision());
+		sprintf(version_str, "%s.%u", DOTVERSIONSTR, GetRevision());
 		screen->PrintStr(screen->width - 8 - C_StringWidth(version_str),
-					ConBottom - 12, version_str, strlen(version_str));
+					ConBottom - 12, version_str, strlen(version_str), CR_ORANGE);
 
 		// Download progress bar hack
 		if (gamestate == GS_DOWNLOAD)
 		{
-			screen->PrintStr(left + 2,
-					ConBottom - 10,
-					DownloadStr.c_str(), DownloadStr.length());
+			screen->PrintStr(left + 2, ConBottom - 10,
+					DownloadStr.c_str(), DownloadStr.length(), CR_GRAY);
 		}
 
 		if (TickerMax)
@@ -894,7 +898,9 @@ void C_DrawConsole()
 		{
 			const char* str = current_line_it->text.c_str();
 			size_t len = current_line_it->text.length();
-			screen->PrintStr(left, offset + lines * 8, str, len);
+			const char* color_code = current_line_it->color_code.c_str();
+			int color = color_code[0] != '\0' ? V_GetTextColor(color_code) : CR_GRAY;
+			screen->PrintStr(left, offset + lines * 8, str, len, color);
 		}
 
 		if (ConBottom >= 20)
