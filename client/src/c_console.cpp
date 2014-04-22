@@ -693,11 +693,10 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 
 int STACK_ARGS Printf(int printlevel, const char *format, ...)
 {
-	static const char color_code[4] = "\\c-";
 	va_list argptr;
 
 	va_start(argptr, format);
-	int count = VPrintf(printlevel, color_code, format, argptr);
+	int count = VPrintf(printlevel, TEXTCOLOR_NORMAL, format, argptr);
 	va_end(argptr);
 
 	return count;
@@ -705,11 +704,10 @@ int STACK_ARGS Printf(int printlevel, const char *format, ...)
 
 int STACK_ARGS Printf_Bold(const char *format, ...)
 {
-	static const char color_code[4] = "\\c+";
 	va_list argptr;
 
 	va_start(argptr, format);
-	int count = VPrintf(PRINT_HIGH, color_code, format, argptr);
+	int count = VPrintf(PRINT_HIGH, TEXTCOLOR_BOLD, format, argptr);
 	va_end(argptr);
 
 	return count;
@@ -719,11 +717,10 @@ int STACK_ARGS DPrintf(const char *format, ...)
 {
 	if (developer)
 	{
-		static const char color_code[4] = "\\c+";
 		va_list argptr;
 
 		va_start(argptr, format);
-		int count = VPrintf(PRINT_HIGH, color_code, format, argptr);
+		int count = VPrintf(PRINT_HIGH, TEXTCOLOR_BOLD, format, argptr);
 		va_end(argptr);
 		return count;
 	}

@@ -64,40 +64,38 @@ enum EColorRange
 	NUM_TEXT_COLORS
 };
 
-#define TEXTCOLOR_ESCAPE	'\x8a'
-
-#define TEXTCOLOR_BRICK		"\x8aA"
-#define TEXTCOLOR_TAN		"\x8aB"
-#define TEXTCOLOR_GRAY		"\x8aC"
-#define TEXTCOLOR_GREY		"\x8aC"
-#define TEXTCOLOR_GREEN		"\x8aD"
-#define TEXTCOLOR_BROWN		"\x8aE"
-#define TEXTCOLOR_GOLD		"\x8aF"
-#define TEXTCOLOR_RED		"\x8aG"
-#define TEXTCOLOR_BLUE		"\x8aH"
-#define TEXTCOLOR_ORANGE	"\x8aI"
-#define TEXTCOLOR_WHITE		"\x8aJ"
-#define TEXTCOLOR_YELLOW	"\x8aK"
+#define TEXTCOLOR_BRICK			"\\ca"
+#define TEXTCOLOR_TAN			"\\cb"
+#define TEXTCOLOR_GRAY			"\\cc"
+#define TEXTCOLOR_GREY			"\\cc"
+#define TEXTCOLOR_GREEN			"\\cd"
+#define TEXTCOLOR_BROWN			"\\ce"
+#define TEXTCOLOR_GOLD			"\\cf"
+#define TEXTCOLOR_RED			"\\cg"
+#define TEXTCOLOR_BLUE			"\\ch"
+#define TEXTCOLOR_ORANGE		"\\ci"
+#define TEXTCOLOR_WHITE			"\\cj"
+#define TEXTCOLOR_YELLOW		"\\ck"
 
 // [AM] Extended ZDoom colors.  Not all of these actually work yet.
-#define TEXTCOLOR_UNTRANSLATED	"\x8aL"
-#define TEXTCOLOR_BLACK		"\x8aM"
-#define TEXTCOLOR_LIGHTBLUE	"\x8aN"
-#define TEXTCOLOR_CREAM		"\x8aO"
-#define TEXTCOLOR_OLIVE		"\x8aP"
-#define TEXTCOLOR_DARKGREEN	"\x8aQ"
-#define TEXTCOLOR_DARKRED	"\x8aR"
-#define TEXTCOLOR_DARKBROWN	"\x8aS"
-#define TEXTCOLOR_PURPLE	"\x8aT"
-#define TEXTCOLOR_DARKGRAY	"\x8aU"
-#define TEXTCOLOR_DARKGREY	"\x8aU"
-#define TEXTCOLOR_CYAN		"\x8aV"
+#define TEXTCOLOR_UNTRANSLATED	"\\cl"
+#define TEXTCOLOR_BLACK			"\\cm"
+#define TEXTCOLOR_LIGHTBLUE		"\\cn"
+#define TEXTCOLOR_CREAM			"\\co"
+#define TEXTCOLOR_OLIVE			"\\cp"
+#define TEXTCOLOR_DARKGREEN		"\\cq"
+#define TEXTCOLOR_DARKRED		"\\cr"
+#define TEXTCOLOR_DARKBROWN		"\\cs"
+#define TEXTCOLOR_PURPLE		"\\ct"
+#define TEXTCOLOR_DARKGRAY		"\\cu"
+#define TEXTCOLOR_DARKGREY		"\\cu"
+#define TEXTCOLOR_CYAN			"\\cv"
 
-#define TEXTCOLOR_NORMAL	"\x8a-"
-#define TEXTCOLOR_BOLD		"\x8a+"
+#define TEXTCOLOR_NORMAL		"\\c-"
+#define TEXTCOLOR_BOLD			"\\c+"
 
-int V_StringWidth (const byte *str);
-inline int V_StringWidth (const char *str) { return V_StringWidth ((const byte *)str); }
+int V_StringWidth(const byte* str);
+inline int V_StringWidth(const char* str) { return V_StringWidth((const byte*)str); }
 
 brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);
