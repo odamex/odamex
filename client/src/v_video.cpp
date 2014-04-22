@@ -896,9 +896,9 @@ void V_DrawFPSWidget()
 		static char fpsbuff[40];
 
 		double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
-		int chars = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
-		screen->Clear(0, screen->height - 8, chars * 8, screen->height, 0);
-		screen->PrintStr(0, screen->height - 8, fpsbuff, chars, CR_GRAY);
+		int len = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
+		screen->Clear(0, screen->height - 8, len * 8, screen->height, 0);
+		screen->PrintStr(0, screen->height - 8, fpsbuff, CR_GRAY);
 
 		time_accum += delta_time;
 

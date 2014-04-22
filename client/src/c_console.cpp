@@ -894,13 +894,13 @@ void C_DrawConsole()
 		char version_str[16];
 		sprintf(version_str, "%s.%u", DOTVERSIONSTR, GetRevision());
 		screen->PrintStr(screen->width - 8 - C_StringWidth(version_str),
-					ConBottom - 12, version_str, strlen(version_str), CR_ORANGE);
+					ConBottom - 12, version_str, CR_ORANGE);
 
 		// Download progress bar hack
 		if (gamestate == GS_DOWNLOAD)
 		{
 			screen->PrintStr(left + 2, ConBottom - 10,
-					DownloadStr.c_str(), DownloadStr.length(), CR_GRAY);
+					DownloadStr.c_str(), CR_GRAY);
 		}
 
 		if (TickerMax)
@@ -926,7 +926,7 @@ void C_DrawConsole()
 				i = tickend;
 			tickstr[i] = -125;
 			sprintf(tickstr + tickend + 3, "%u%%", (TickerAt * 100) / TickerMax);
-			screen->PrintStr(8, ConBottom - 12, tickstr, strlen(tickstr));
+			screen->PrintStr(8, ConBottom - 12, tickstr);
 		}
 	}
 
@@ -944,29 +944,38 @@ void C_DrawConsole()
 		for (; lines > 1 && current_line_it != Lines.rend(); lines--, ++current_line_it)
 		{
 			const char* str = current_line_it->text.c_str();
-			size_t len = current_line_it->text.length();
 			const char* color_code = current_line_it->color_code.c_str();
 			int color = color_code[0] != '\0' ? V_GetTextColor(color_code) : CR_GRAY;
-			screen->PrintStr(left, offset + lines * 8, str, len, color);
+			screen->PrintStr(left, offset + lines * 8, str, color);
 		}
 
 		if (ConBottom >= 20)
 		{
-			screen->PrintStr(left, ConBottom - 20, "\x8c", 1);
-			screen->PrintStr(left + 8, ConBottom - 20,
-						(char *)&CmdLine[2+CmdLine[259]],
-						MIN(CmdLine[0] - CmdLine[259], (int)ConCols - 1));
+			screen->PrintStr(left, ConBottom - 20, "]", CR_TAN);
+
+			int cmdline_len = MIN(CmdLine[0] - CmdLine[259], (int)ConCols - 1);
+			if (cmdline_len)
+			{
+				char str[MAX_LINE_LENGTH];
+				strncpy(str, (char*)&CmdLine[2 + CmdLine[259]], cmdline_len);
+				str[cmdline_len] = '\0';
+				screen->PrintStr(left + 8, ConBottom - 20, str);
+			}
 
 			if (cursoron)
-				screen->PrintStr(left + 8 + (CmdLine[1] - CmdLine[259])* 8,
-							ConBottom - 20, "\xb", 1);
+			{
+				const char str[] = "_";
+				screen->PrintStr(left + 8 + (CmdLine[1] - CmdLine[259]) * 8, ConBottom - 20, str, CR_TAN);
+			}
 
 			if (RowAdjust && ConBottom >= 28)
 			{
 				// Indicate that the view has been scrolled up (10)
 				// and if we can scroll no further (12)
-				char c = (RowAdjust + ConBottom/8 < ConRows) ? 10 : 12;
-				screen->PrintStr(0, ConBottom - 28, &c, 1);
+				const char scrolled_up_str[] = "\012";		// 10 = \012 octal
+				const char no_scroll_str[] = "\014";		// 12 = \014 octal
+				const char* str = (RowAdjust + ConBottom/8 < ConRows) ? scrolled_up_str : no_scroll_str;
+				screen->PrintStr(0, ConBottom - 28, str);
 			}
 		}
 	}

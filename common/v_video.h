@@ -185,7 +185,7 @@ public:
 
 	// Text drawing functions
 	// Output a line of text using the console font
-	void PrintStr(int x, int y, const char *s, int count, int default_color = -1) const;
+	void PrintStr(int x, int y, const char *s, int default_color = -1) const;
 
 	// Output some text with wad heads-up font
 	inline void DrawText (int normalcolor, int x, int y, const byte *string) const;

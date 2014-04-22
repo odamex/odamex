@@ -118,7 +118,7 @@ int V_GetTextColor(const char* str)
 // V_PrintStr
 // Print a line of text using the console font
 //
-void DCanvas::PrintStr(int x, int y, const char* str, int count, int default_color) const
+void DCanvas::PrintStr(int x, int y, const char* str, int default_color) const
 {
 	if (default_color < 0)
 		default_color = CR_GRAY;
@@ -137,29 +137,27 @@ void DCanvas::PrintStr(int x, int y, const char* str, int count, int default_col
 
 		skip = -(x - 7) / 8;
 		x += skip * 8;
-		if (count <= skip)
+		if (strlen(str) <= skip)
 			return;
 
-		count -= skip;
 		str += skip;
 	}
 
 	x &= ~3;
 	byte* destline = buffer + y * pitch;
 
-	while (count && x <= (width - 8))
+	while (*str && x <= (width - 8))
 	{
 	    // john - tab 4 spaces
 	    if (*str == '\t')
 	    {
 	        str++;
-	        count--;
 	        x += 8 * 4;
 	        continue;
 	    }
 
 		// [SL] parse color escape codes (\cX)
-		if (count >= 3 && str[0] == '\\' && str[1] == 'c')
+		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
 		{
 			int new_color = V_GetTextColor(str);
 			if (new_color == -1)
@@ -168,7 +166,6 @@ void DCanvas::PrintStr(int x, int y, const char* str, int count, int default_col
 			trans = translationref_t(Ranges + new_color * 256);
 
 			str += 3;
-			count -= 3;
 			continue;
 		}
 
@@ -212,7 +209,6 @@ void DCanvas::PrintStr(int x, int y, const char* str, int count, int default_col
 		}
 
 		str++;
-		count--;
 		x += 8;
 	}
 }
