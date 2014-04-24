@@ -61,7 +61,7 @@ static const int MAX_LINE_LENGTH = 8192;
 std::string DownloadStr;
 
 static void C_TabComplete();
-static BOOL TabbedLast;		// Last key pressed was tab
+static bool TabbedLast;		// Last key pressed was tab
 
 static DCanvas* conback;
 
@@ -99,138 +99,7 @@ EXTERN_CVAR(con_notifytime)
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
 
-struct History
-{
-	struct History *Older;
-	struct History *Newer;
-	char String[1];
-};
-
-
-class ConsoleLine
-{
-public:
-	ConsoleLine() :
-		color_code("\\c-"), wrapped(false), print_level(PRINT_HIGH),
-		timeout(gametic + con_notifytime.asInt() * TICRATE)
-	{ }
-
-	ConsoleLine(const std::string& _text, const std::string& _color_code = "\\c-",
-			int _print_level = PRINT_HIGH) :
-		text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
-		timeout(gametic + con_notifytime.asInt() * TICRATE)
-	{ }
-
-
-	//
-	// join
-	//
-	// Appends the other console line to this line.
-	//
-	void join(const ConsoleLine& other)
-	{
-		text.append(other.text);
-		wrapped = other.wrapped;
-	}
-
-	//
-	// split
-	//
-	// Splits this line into a second line with this line having a maximum
-	// pixel width of max_width.
-	//
-	ConsoleLine split(size_t max_width)
-	{
-		char wrapped_color_code[4] = { 0 };
-		size_t width = 0;
-		size_t break_pos = 0;
-
-		const char* s = text.c_str();
-		while (s)
-		{
-			if (s[0] == '\\' && s[1] == 'c' && s[2] != '\0')
-			{
-				strncpy(wrapped_color_code, s, 3);
-				s += 3;
-				continue;
-			}
-
-			if (*s == ' ' || *s == '\n' || *s == '\t')
-				break_pos = s - text.c_str();
-			else if (*s == '-')
-				break_pos = s + 1 - text.c_str();
-
-			const size_t character_width = 8;
-			if (width + character_width > max_width)
-			{
-				// Is this word is too long to fit on the line?
-				// Breaking it here is the only option.
-				if (break_pos == 0)
-					break_pos = s - text.c_str();
-
-				ConsoleLine new_line(text.substr(break_pos, std::string::npos));
-				TrimStringStart(new_line.text);
-
-				// continue the color markup onto the next line
-				if (*wrapped_color_code)
-					new_line.text = wrapped_color_code + new_line.text;
-
-				new_line.wrapped = wrapped;
-				new_line.print_level = print_level;
-				new_line.timeout = timeout;
-				new_line.color_code = color_code;
-
-				text = text.substr(0, break_pos);
-				wrapped = true;
-
-				return new_line;
-			}
-
-			s++;
-			width += character_width;
-		}
-
-		// didn't have to wrap
-		return ConsoleLine();
-	}
-
-	bool expired() const
-	{
-		return gametic > timeout;
-	}
-
-	std::string		text;
-	std::string		color_code;
-	bool			wrapped;
-	int				print_level;
-	int				timeout;
-};
-
-struct ConsoleCommandLine
-{
-	OString			text;
-	size_t			cursor_position;
-	size_t			scrolled_columns;
-};
-
-
-typedef std::list<ConsoleLine> ConsoleLineList;
-ConsoleLineList Lines;
-
-
-
-// CmdLine[0]  = # of chars on command line
-// CmdLine[1]  = cursor position
-// CmdLine[2+] = command line (max 255 chars + NULL)
-// CmdLine[259]= offset from beginning of cmdline to display
-static byte CmdLine[260];
-
-#define MAXHISTSIZE 50
-static struct History *HistHead = NULL, *HistTail = NULL, *HistPos = NULL;
-static int HistSize;
-
 #define NUMNOTIFIES 4
-
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
@@ -244,6 +113,396 @@ static struct NotifyText
 
 #define PRINTLEVELS 5
 int PrintColors[PRINTLEVELS+1] = { CR_RED, CR_GOLD, CR_GRAY, CR_GREEN, CR_GREEN, CR_GOLD };
+
+
+// ============================================================================
+//
+// ConsoleLine class interface
+//
+// Stores the console's output text.
+//
+// ============================================================================
+
+class ConsoleLine
+{
+public:
+	ConsoleLine();
+	ConsoleLine(const std::string& _text, const std::string& _color_code = "\\c-",
+			int _print_level = PRINT_HIGH);
+
+	void join(const ConsoleLine& other);
+	ConsoleLine split(size_t max_width);
+	bool expired() const;
+
+	std::string		text;
+	std::string		color_code;
+	bool			wrapped;
+	int				print_level;
+	int				timeout;
+};
+
+
+// ============================================================================
+//
+// ConsoleLine class implementation
+//
+// ============================================================================
+
+ConsoleLine::ConsoleLine() :
+	color_code("\\c-"), wrapped(false), print_level(PRINT_HIGH),
+	timeout(gametic + con_notifytime.asInt() * TICRATE)
+{ }
+
+ConsoleLine::ConsoleLine(const std::string& _text, const std::string& _color_code,
+			int _print_level) :
+	text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
+	timeout(gametic + con_notifytime.asInt() * TICRATE)
+{ }
+
+
+//
+// ConsoleLine::join
+//
+// Appends the other console line to this line.
+//
+void ConsoleLine::join(const ConsoleLine& other)
+{
+	text.append(other.text);
+	wrapped = other.wrapped;
+}
+
+//
+// ConsoleLine::split
+//
+// Splits this line into a second line with this line having a maximum
+// pixel width of max_width.
+//
+ConsoleLine ConsoleLine::split(size_t max_width)
+{
+	char wrapped_color_code[4] = { 0 };
+	size_t width = 0;
+	size_t break_pos = 0;
+
+	const char* s = text.c_str();
+	while (s)
+	{
+		if (s[0] == '\\' && s[1] == 'c' && s[2] != '\0')
+		{
+			strncpy(wrapped_color_code, s, 3);
+			s += 3;
+			continue;
+		}
+
+		if (*s == ' ' || *s == '\n' || *s == '\t')
+			break_pos = s - text.c_str();
+		else if (*s == '-')
+			break_pos = s + 1 - text.c_str();
+
+		const size_t character_width = 8;
+		if (width + character_width > max_width)
+		{
+			// Is this word is too long to fit on the line?
+			// Breaking it here is the only option.
+			if (break_pos == 0)
+				break_pos = s - text.c_str();
+
+			ConsoleLine new_line(text.substr(break_pos, std::string::npos));
+			TrimStringStart(new_line.text);
+
+			// continue the color markup onto the next line
+			if (*wrapped_color_code)
+				new_line.text = wrapped_color_code + new_line.text;
+
+			new_line.wrapped = wrapped;
+			new_line.print_level = print_level;
+			new_line.timeout = timeout;
+			new_line.color_code = color_code;
+
+			text = text.substr(0, break_pos);
+			wrapped = true;
+
+			return new_line;
+		}
+
+		s++;
+		width += character_width;
+	}
+
+	// didn't have to wrap
+	return ConsoleLine();
+}
+
+bool ConsoleLine::expired() const
+{
+	return gametic > timeout;
+}
+
+
+
+// ============================================================================
+//
+// ConsoleCommandLine class interface
+//
+// Stores the text and cursor position for the console's command line. Also
+// provides basic functions to manipulate the cursor or insert and remove
+// characters.
+//
+// ============================================================================
+
+class ConsoleCommandLine
+{
+public:
+	ConsoleCommandLine() : cursor_position(0), scrolled_columns(0) { }
+
+	void clear();
+	void moveCursorLeft();
+	void moveCursorRight();
+	void moveCursorLeftWord();
+	void moveCursorRightWord();
+	void moveCursorHome();
+	void moveCursorEnd();
+
+	void insertCharacter(char c);
+	void insertString(const std::string& str);
+	void deleteCharacter();
+	void backspace();
+
+	std::string		text;
+	size_t			cursor_position;
+	size_t			scrolled_columns;
+
+private:
+	void doScrolling();
+};
+
+
+// ============================================================================
+//
+// ConsoleCommandLine class implementation
+//
+// ============================================================================
+
+//
+// ConsoleCommandLine::doScrolling
+//
+// Helper function that recalculates the scrolled_columns variable after
+// the cursor has been moved or text has been inserted or deleted.
+//
+void ConsoleCommandLine::doScrolling()
+{
+	int n = scrolled_columns;
+
+	// Start of visible line is beyond end of line
+	if (scrolled_columns >= text.length())
+		n = cursor_position - ConCols + 2;
+
+	// The cursor_position is beyond the visible part of the line
+	if (((int)cursor_position - (int)scrolled_columns) >= (int)(ConCols - 2))
+		n = cursor_position - ConCols + 2;
+
+	// The cursor_positionor is in front of the visible part of the line
+	if (scrolled_columns > cursor_position)
+		n = cursor_position;
+
+	if (n < 0)
+		n = 0;
+
+	scrolled_columns = n;
+}
+
+void ConsoleCommandLine::clear()
+{
+	text.clear();
+	cursor_position = 0;
+	scrolled_columns = 0;
+}
+
+void ConsoleCommandLine::moveCursorLeft()
+{
+	if (cursor_position > 0)
+		cursor_position--;
+	doScrolling();
+}
+
+void ConsoleCommandLine::moveCursorRight()
+{
+	if (cursor_position < text.length())
+		cursor_position++;
+	doScrolling();
+}
+
+void ConsoleCommandLine::moveCursorLeftWord()
+{
+	if (cursor_position > 0)
+		cursor_position--;
+
+	const char* str = text.c_str();
+	while (cursor_position > 0 && str[cursor_position - 1] != ' ')
+		cursor_position--;
+
+	doScrolling();
+}
+
+void ConsoleCommandLine::moveCursorRightWord()
+{
+	// find first non-space character after the next space(s)
+	cursor_position = text.find_first_not_of(' ', text.find_first_of(' ', cursor_position));
+
+	if (cursor_position == std::string::npos)
+		cursor_position = text.length();
+	
+	doScrolling();
+}
+
+void ConsoleCommandLine::moveCursorHome()
+{
+	cursor_position = 0;
+	doScrolling();
+}
+
+void ConsoleCommandLine::moveCursorEnd()
+{
+	cursor_position = text.length();
+	doScrolling();
+}
+
+void ConsoleCommandLine::insertCharacter(char c)
+{
+	text.insert(cursor_position, &c, 1);
+
+	cursor_position++;
+	doScrolling();
+}
+
+void ConsoleCommandLine::insertString(const std::string& str)
+{
+	text.insert(cursor_position, str);
+
+	cursor_position += str.length();
+	doScrolling();
+}
+
+void ConsoleCommandLine::deleteCharacter()
+{
+	if (cursor_position < text.length())
+	{
+		text.erase(cursor_position, 1);
+		doScrolling();
+	}
+}
+
+void ConsoleCommandLine::backspace()
+{
+	if (cursor_position > 0)
+	{
+		text.erase(cursor_position - 1, 1);
+		moveCursorLeft();
+	}
+}
+
+
+// ============================================================================
+//
+// ConsoleHistory class interface
+//
+// Stores a copy of each line of text entered on the command line and provides
+// iteration functions to recall previous command lines entered. 
+//
+// ============================================================================
+
+class ConsoleHistory
+{
+public:
+	ConsoleHistory();
+
+	void resetPosition();
+
+	void addString(const std::string& str);
+	const std::string& getString() const;
+
+	void movePositionUp();
+	void movePositionDown();
+
+	void dump();
+
+private:
+	static const size_t MAX_HISTORY_ITEMS = 50;
+
+	typedef std::list<std::string> ConsoleHistoryList;
+	ConsoleHistoryList					history;
+
+	ConsoleHistoryList::const_iterator	history_it;
+};
+
+// ============================================================================
+//
+// ConsoleHistory class implementation
+//
+// ============================================================================
+
+ConsoleHistory::ConsoleHistory()
+{
+	resetPosition();
+}
+
+void ConsoleHistory::resetPosition()
+{
+	history_it = history.end();
+}
+
+void ConsoleHistory::addString(const std::string& str)
+{
+	// only add the string if it's different from the most recent in history
+	if (!str.empty() && str.compare(history.back()) != 0)
+	{
+		while (history.size() >= MAX_HISTORY_ITEMS)
+			history.pop_front();
+		history.push_back(str);
+	}
+}
+
+const std::string& ConsoleHistory::getString() const
+{
+	if (history_it == history.end())
+	{
+		static std::string blank_string;
+		return blank_string;
+	}
+
+	return *history_it;
+}
+
+void ConsoleHistory::movePositionUp()
+{
+	if (history_it != history.begin())
+		--history_it;
+}
+
+void ConsoleHistory::movePositionDown()
+{
+	if (history_it != history.end())
+		++history_it;
+}
+		
+void ConsoleHistory::dump()
+{
+	for (ConsoleHistoryList::const_iterator it = history.begin(); it != history.end(); ++it)
+		Printf(PRINT_HIGH, "   %s\n", it->c_str());
+}
+
+
+// ============================================================================
+//
+// Console object definitions
+//
+// ============================================================================
+
+typedef std::list<ConsoleLine> ConsoleLineList;
+static ConsoleLineList Lines;
+
+static ConsoleCommandLine CmdLine;
+
+static ConsoleHistory History;
 
 static void setmsgcolor(int index, const char *color);
 
@@ -953,19 +1212,21 @@ void C_DrawConsole()
 		{
 			screen->PrintStr(left, ConBottom - 20, "]", CR_TAN);
 
-			int cmdline_len = MIN(CmdLine[0] - CmdLine[259], (int)ConCols - 1);
+			size_t cmdline_len = std::min<size_t>(CmdLine.text.length() - CmdLine.scrolled_columns, ConCols - 1);
 			if (cmdline_len)
 			{
 				char str[MAX_LINE_LENGTH];
-				strncpy(str, (char*)&CmdLine[2 + CmdLine[259]], cmdline_len);
+				strncpy(str, CmdLine.text.c_str() + CmdLine.scrolled_columns, cmdline_len);
 				str[cmdline_len] = '\0';
-				screen->PrintStr(left + 8, ConBottom - 20, str);
+				bool use_color_codes = false;
+				screen->PrintStr(left + 8, ConBottom - 20, str, CR_GRAY, use_color_codes);
 			}
 
 			if (cursoron)
 			{
 				const char str[] = "_";
-				screen->PrintStr(left + 8 + (CmdLine[1] - CmdLine[259]) * 8, ConBottom - 20, str, CR_TAN);
+				size_t cursor_offset = CmdLine.cursor_position - CmdLine.scrolled_columns;
+				screen->PrintStr(left + 8 + 8 * cursor_offset, ConBottom - 20, str, CR_TAN);
 			}
 
 			if (RowAdjust && ConBottom >= 28)
@@ -995,7 +1256,6 @@ void C_FullConsole()
 		G_CheckDemoStatus();
 	advancedemo = false;
 	ConsoleState = c_down;
-	HistPos = NULL;
 	TabbedLast = false;
 	if (gamestate != GS_STARTUP)
 	{
@@ -1020,7 +1280,6 @@ void C_ToggleConsole()
 			ConsoleState = c_fallfull;
 		else
 			ConsoleState = c_falling;
-		HistPos = NULL;
 		TabbedLast = false;
 		I_EnableKeyRepeat();
 	}
@@ -1044,11 +1303,8 @@ void C_HideConsole()
 	{
 		ConsoleState = c_up;
 		ConBottom = 0;
-		HistPos = NULL;
 		if (!menuactive)
-		{
 			I_DisableKeyRepeat();
-		}
 	}
 }
 
@@ -1062,63 +1318,9 @@ void C_ServerDisconnectEffect()
 }
 
 
-static void makestartposgood()
+static bool C_HandleKey(const event_t* ev)
 {
-	int pos = CmdLine[259];
-	int curs = CmdLine[1];
-	int len = CmdLine[0];
-
-	int n = pos;
-
-	// Start of visible line is beyond end of line
-	if (pos >= len)
-		n = curs - ConCols + 2;
-
-	// The cursor is beyond the visible part of the line
-	if ((int)(curs - pos) >= (int)(ConCols - 2))
-		n = curs - ConCols + 2;
-
-	// The cursor is in front of the visible part of the line
-	if (pos > curs)
-		n = curs;
-
-	if (n < 0)
-		n = 0;
-
-	CmdLine[259] = n;
-}
-
-
-static void C_AddCharacterToBuffer(char c, byte* buffer, int len)
-{
-	if (buffer[0] < len)
-	{
-		if (buffer[1] == buffer[0])
-		{
-			buffer[buffer[0] + 2] = c;
-		}
-		else
-		{
-			char* e = (char*)&buffer[buffer[0] + 1];
-			char* f = (char*)&buffer[buffer[1] + 2];
-
-			for (; e >= f; e--)
-				*(e + 1) = *e;
-
-			*f = c;
-		}
-
-		buffer[0]++;
-		buffer[1]++;
-		makestartposgood();
-		HistPos = NULL;
-	}
-	TabbedLast = false;
-}
-
-static bool C_HandleKey(const event_t* ev, byte* buffer, int len)
-{
-	const char *cmd = C_GetBinding(ev->data1);
+	const char* cmd = C_GetBinding(ev->data1);
 
 	switch (ev->data1)
 	{
@@ -1152,84 +1354,29 @@ static bool C_HandleKey(const event_t* ev, byte* buffer, int len)
 			ScrollState = SCROLLDN;
 		break;
 	case KEY_HOME:
-		// Move cursor to start of line
-		buffer[1] = buffer[len+4] = 0;
+		CmdLine.moveCursorHome();
 		break;
 	case KEY_END:
-		// Move cursor to end of line
-
-		buffer[1] = buffer[0];
-		makestartposgood();
+		CmdLine.moveCursorEnd();
 		break;
 	case KEY_LEFTARROW:
 		if (KeysCtrl)
-		{
-			// Move cursor to beginning of word
-			if (buffer[1])
-				buffer[1]--;
-			while (buffer[1] && buffer[1+buffer[1]] != ' ')
-				buffer[1]--;
-		}
+			CmdLine.moveCursorLeftWord();
 		else
-		{
-			// Move cursor left one character
-			if (buffer[1])
-				buffer[1]--;
-		}
-		makestartposgood();
+			CmdLine.moveCursorLeft();
 		break;
 	case KEY_RIGHTARROW:
 		if (KeysCtrl)
-		{
-			while (buffer[1] < buffer[0]+1 && buffer[2+buffer[1]] != ' ')
-				buffer[1]++;
-		}
+			CmdLine.moveCursorRightWord();
 		else
-		{
-			// Move cursor right one character
-			if (buffer[1] < buffer[0])
-				buffer[1]++;
-		}
-		makestartposgood();
+			CmdLine.moveCursorRight();
 		break;
 	case KEY_BACKSPACE:
-		// Erase character to left of cursor
-		if (buffer[0] && buffer[1])
-		{
-			char *c, *e;
-
-			e = (char *)&buffer[buffer[0] + 2];
-			c = (char *)&buffer[buffer[1] + 2];
-
-			for (; c < e; c++)
-				*(c - 1) = *c;
-
-			buffer[0]--;
-			buffer[1]--;
-			if (buffer[len+4])
-				buffer[len+4]--;
-			makestartposgood();
-		}
-
+		CmdLine.backspace();
 		TabbedLast = false;
 		break;
 	case KEY_DEL:
-		// Erase charater under cursor
-
-		if (buffer[1] < buffer[0])
-		{
-			char *c, *e;
-
-			e = (char *)&buffer[buffer[0] + 2];
-			c = (char *)&buffer[buffer[1] + 3];
-
-			for (; c < e; c++)
-				*(c - 1) = *c;
-
-			buffer[0]--;
-			makestartposgood();
-		}
-
+		CmdLine.deleteCharacter();
 		TabbedLast = false;
 		break;
 	case KEY_RALT:
@@ -1244,97 +1391,38 @@ static bool C_HandleKey(const event_t* ev, byte* buffer, int len)
 		break;
 	case KEY_UPARROW:
 		// Move to previous entry in the command history
-
-		if (HistPos == NULL)
-			HistPos = HistHead;
-		else if (HistPos->Older)
-			HistPos = HistPos->Older;
-
-		if (HistPos)
-		{
-			strcpy((char *)&buffer[2], HistPos->String);
-			buffer[0] = buffer[1] = (BYTE)strlen((char *)&buffer[2]);
-			buffer[len+4] = 0;
-			makestartposgood();
-		}
-
+		History.movePositionUp();
+		CmdLine.clear();
+		CmdLine.insertString(History.getString());
 		TabbedLast = false;
 		break;
 	case KEY_DOWNARROW:
 		// Move to next entry in the command history
-
-		if (HistPos && HistPos->Newer)
-		{
-			HistPos = HistPos->Newer;
-			strcpy((char *)&buffer[2], HistPos->String);
-			buffer[0] = buffer[1] = (BYTE)strlen((char *)&buffer[2]);
-		}
-		else
-		{
-			HistPos = NULL;
-			buffer[0] = buffer[1] = 0;
-		}
-
-		buffer[len+4] = 0;
-		makestartposgood();
+		History.movePositionDown();
+		CmdLine.clear();
+		CmdLine.insertString(History.getString());
 		TabbedLast = false;
 		break;
 	case KEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
-		{
-			const std::string& text = I_GetClipboardText();
-			for (size_t i = 0; i < text.length(); i++)
-				C_AddCharacterToBuffer(text[i], buffer, len);
-		}
+		CmdLine.insertString(I_GetClipboardText());
+		TabbedLast = false;
 		break;
 	default:
+		// Execute command line (ENTER)
 		if (ev->data2 == '\r')
 		{
-			// Execute command line (ENTER)
-			buffer[2 + buffer[0]] = 0;
-
 			if (con_scrlock == 1) // NES - If con_scrlock = 1, send console scroll to bottom.
 				RowAdjust = 0;   // con_scrlock = 0 does it automatically.
 
-			if (HistHead && stricmp(HistHead->String, (char *)&buffer[2]) == 0)
-			{
-				// Command line was the same as the previous one,
-				// so leave the history list alone
-			}
-			else
-			{
-				// Command line is different from last command line,
-				// or there is nothing in the history list,
-				// so add it to the history list.
+			// add command line text to history
+			History.addString(CmdLine.text);
+			History.resetPosition();
+	
+			Printf(127, "]%s\n", CmdLine.text.c_str());
+			AddCommandString(CmdLine.text.c_str());
+			CmdLine.clear();
 
-				History *temp = (History *)Malloc(sizeof(struct History) + buffer[0]);
-
-				strcpy(temp->String, (char*)&buffer[2]);
-				temp->Older = HistHead;
-				if (HistHead)
-					HistHead->Newer = temp;
-				
-				temp->Newer = NULL;
-				HistHead = temp;
-
-				if (!HistTail)
-					HistTail = temp;
-
-				if (HistSize == MAXHISTSIZE)
-				{
-					HistTail = HistTail->Newer;
-					M_Free(HistTail->Older);
-				}
-				else
-				{
-					HistSize++;
-				}
-			}
-
-			HistPos = NULL;
-			Printf(127, "]%s\n", &buffer[2]);
-			buffer[0] = buffer[1] = buffer[len+4] = 0;
-			AddCommandString((char *)&buffer[2]);
 			TabbedLast = false;
 		}
 		else if (ev->data1 == KEY_ESCAPE || (cmd && strcmp(cmd, "toggleconsole") == 0))
@@ -1356,32 +1444,33 @@ static bool C_HandleKey(const event_t* ev, byte* buffer, int len)
 					return true;
 				return false;
 			}
-			buffer[0] = buffer[1] = buffer[len+4] = 0;
-			HistPos = NULL;
+			
+			History.resetPosition();
+			CmdLine.clear();
 			C_ToggleConsole();
 		}
 		else if (ev->data3 < 32 || ev->data3 > 126)
 		{
 			// Go to beginning of line
  			if (KeysCtrl && (ev->data1 == 'a' || ev->data1 == 'A'))
-				buffer[1] = 0;
+				CmdLine.moveCursorHome();
 
 			// Go to end of line
  			if (KeysCtrl && (ev->data1 == 'e' || ev->data1 == 'E'))
-				buffer[1] = buffer[0];
+				CmdLine.moveCursorEnd();
 
 			// Paste from clipboard - add each character to command line
  			if (KeysCtrl && (ev->data1 == 'v' || ev->data1 == 'V'))
 			{
-				const std::string& text = I_GetClipboardText();
-				for (size_t i = 0; i < text.length(); i++)
-					C_AddCharacterToBuffer(text[i], buffer, len);
+				CmdLine.insertString(I_GetClipboardText());
+				TabbedLast = false;
 			}
 		}
 		else
 		{
 			// Add keypress to command line
-			C_AddCharacterToBuffer(ev->data3, buffer, len);
+			CmdLine.insertCharacter(ev->data3);
+			TabbedLast = false;
 		}
 		break;
 	}
@@ -1417,7 +1506,7 @@ BOOL C_Responder(event_t *ev)
 	}
 	else if (ev->type == ev_keydown)
 	{
-		return C_HandleKey(ev, CmdLine, 255);
+		return C_HandleKey(ev);
 	}
 
 	if(ev->type == ev_mouse)
@@ -1428,13 +1517,7 @@ BOOL C_Responder(event_t *ev)
 
 BEGIN_COMMAND(history)
 {
-	struct History *hist = HistTail;
-
-	while (hist)
-	{
-		Printf(PRINT_HIGH, "   %s\n", hist->String);
-		hist = hist->Newer;
-	}
+	History.dump();
 }
 END_COMMAND(history)
 
@@ -1443,6 +1526,8 @@ BEGIN_COMMAND(clear)
 	RowAdjust = 0;
 	C_FlushDisplay();
 	Lines.clear();
+	History.resetPosition();
+	CmdLine.clear();
 }
 END_COMMAND(clear)
 
@@ -1658,38 +1743,35 @@ void C_RemoveTabCommand(const char *name)
 
 static void C_TabComplete()
 {
-	static unsigned int	TabStart;			// First char in CmdLine to use for tab completion
-	static unsigned int	TabSize;			// Size of tab string
+	static size_t TabStart;			// First char in CmdLine to use for tab completion
+	static size_t TabSize;			// Size of tab string
 
 	if (!TabbedLast)
 	{
 		// Skip any spaces at beginning of command line
-		for (TabStart = 2; TabStart < CmdLine[0]; TabStart++)
-			if (CmdLine[TabStart] != ' ')
-				break;
-
-		TabSize = CmdLine[0] - TabStart + 2;
+		TabStart = CmdLine.text.find_first_not_of(' ', 0);
+		if (TabStart == std::string::npos)
+			TabStart = 0;
+		TabSize = CmdLine.text.length() - TabStart;
 		TabbedLast = true;
 	}
 
 	// Find next near match
-	std::string TabPos = StdStringToLower(std::string((char *)(CmdLine + TabStart), CmdLine[0] - TabStart + 2));
+	std::string TabPos = StdStringToLower(CmdLine.text.substr(TabStart));
 	tabcommand_map_t::iterator i = TabCommands().lower_bound(TabPos);
 
 	// Does this near match fail to actually match what the user typed in?
-	if(i == TabCommands().end() || strnicmp((char *)(CmdLine + TabStart), i->first.c_str(), TabSize) != 0)
+	if (i == TabCommands().end() || strnicmp(TabPos.c_str(), i->first.c_str(), TabSize) != 0)
 	{
 		TabbedLast = false;
-		CmdLine[0] = CmdLine[1] = TabSize + TabStart - 2;
+		CmdLine.moveCursorEnd();
 		return;
 	}
 
 	// Found a valid replacement
-	strcpy((char *)(CmdLine + TabStart), i->first.c_str());
-	CmdLine[0] = CmdLine[1] = (BYTE)strlen((char *)(CmdLine + 2)) + 1;
-	CmdLine[CmdLine[0] + 1] = ' ';
-
-	makestartposgood();
+	CmdLine.text.replace(TabStart, std::string::npos, i->first);
+	CmdLine.text.append(" ");
+	CmdLine.moveCursorEnd();
 }
 
 VERSION_CONTROL (c_console_cpp, "$Id$")

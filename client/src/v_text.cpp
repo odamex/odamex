@@ -118,7 +118,7 @@ int V_GetTextColor(const char* str)
 // V_PrintStr
 // Print a line of text using the console font
 //
-void DCanvas::PrintStr(int x, int y, const char* str, int default_color) const
+void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool use_color_codes) const
 {
 	if (default_color < 0)
 		default_color = CR_GRAY;
@@ -157,7 +157,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color) const
 	    }
 
 		// [SL] parse color escape codes (\cX)
-		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		if (use_color_codes && str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
 		{
 			int new_color = V_GetTextColor(str);
 			if (new_color == -1)
