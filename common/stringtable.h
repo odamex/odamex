@@ -50,18 +50,28 @@ public:
 		LumpNum (-1) {}
 	~FStringTable () { FreeData (); }
 
-	void LoadStrings (int lump, int expectedSize, bool enuOnly);
-	void ReloadStrings ();
-	void ResetStrings ();
+	void LoadStrings(int lumpnum, int expectedSize, bool enuOnly);
+	void ReloadStrings();
+	void ResetStrings();
 
-	void LoadNames () const;
-	void FlushNames () const;
-	int FindString (const char *stringName) const;
-	int MatchString (const char *string) const;
+	void LoadNames() const;
+	void FlushNames() const;
+	int FindString(const char* stringName) const;
+	int MatchString(const char* string) const;
 
-	void SetString (int index, const char *newString);
-	void Compact ();
-	const char *operator() (int index) { return Strings[index]; }
+	void SetString(int index, const char *newString);
+	void Compact();
+
+	const char *operator() (int index)
+	{
+		// [SL] ensure index is sane
+		if (index >= 0 && index < NumStrings)
+			return Strings[index];
+
+		// invalid index, return an empty cstring
+		static const char emptystr = 0;
+		return &emptystr;
+	}
 
 private:
 	struct Header;

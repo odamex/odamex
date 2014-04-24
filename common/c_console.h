@@ -55,7 +55,6 @@ void C_NewModeAdjust (void);
 void C_Ticker (void);
 
 int PrintString (int printlevel, const char *string);
-int VPrintf (int printlevel, const char *format, va_list parms);
 int STACK_ARGS Printf_Bold (const char *format, ...);
 
 void C_AddNotifyString (int printlevel, const char *s);

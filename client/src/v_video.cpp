@@ -236,7 +236,6 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 // [RH] Set an area to a specified color
 void DCanvas::Clear(int left, int top, int right, int bottom, int color) const
 {
-	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch_pixels = mSurface->getPitchInPixels();
 
 	if (mSurface->getBitsPerPixel() == 8)
@@ -802,7 +801,6 @@ void V_Init (void)
 
 	V_InitPalette ();
 
-	V_InitConChars (0xf7);
 	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight(), true);
 }
 
@@ -829,9 +827,9 @@ void V_DrawFPSWidget()
 		static char fpsbuff[40];
 
 		double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
-		int chars = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
-		screen->Clear(0, I_GetSurfaceHeight() - 8, chars * 8, I_GetSurfaceHeight(), 0);
-		screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, chars);
+		int len = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
+		screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), 0);
+		screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, CR_GRAY);
 
 		time_accum += delta_time;
 
@@ -858,7 +856,7 @@ void V_DrawFPSTicker()
 	last_tic = current_tic;
 
 	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	int surface_height = surface->getHeight();
 	int surface_pitch = surface->getPitch();
 
 	if (surface->getBitsPerPixel() == 8)

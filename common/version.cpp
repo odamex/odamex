@@ -65,9 +65,14 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 		last_revision = rev;
 }
 
+
+unsigned int GetRevision()
+{
+	return last_revision;
+}
+
 BEGIN_COMMAND (version)
 {
-
 	if (argc == 1)
 	{
 		// distribution

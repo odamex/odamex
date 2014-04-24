@@ -1811,14 +1811,19 @@ void CL_Print (void)
 	byte level = MSG_ReadByte();
 	const char *str = MSG_ReadString();
 
-	Printf (level, "%s", str);
+	if (level == PRINT_CHAT)
+		Printf(level, "\\c*%s", str);
+	else if (level == PRINT_TEAMCHAT)
+		Printf(level, "\\c!%s", str);
+	else
+		Printf(level, "%s", str);
 
 	if (show_messages)
 	{
 		if (level == PRINT_CHAT)
-			S_Sound (CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 		else if (level == PRINT_TEAMCHAT)
-			S_Sound (CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }
 
@@ -1865,17 +1870,19 @@ void CL_Say()
 	{
 	case 0:
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_CHAT, "* %s %s\n", name, &message[4]);
+			Printf(PRINT_CHAT, "\\c** %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_CHAT, "%s: %s\n", name, message);
+			Printf(PRINT_CHAT, "\\c*%s: %s\n", name, message);
+
 		if (show_messages)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 		break;
+
 	case 1:
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
+			Printf(PRINT_TEAMCHAT, "\\c!* %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
+			Printf(PRINT_TEAMCHAT, "\\c!%s: %s\n", name, message);
 		if (show_messages)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 		break;
@@ -3396,6 +3403,19 @@ void CL_Spectate()
 
 	if (player.spectator && wasalive)
 		P_DisconnectEffect(player.mo);
+
+	// [tm512 2014/04/11] Do as the server does when unspectating a player.
+	// If the player has a "valid" mo upon going to PST_LIVE, any enemies
+	// that are still targeting the spectating player will cause a stack
+	// overflow in P_SetMobjState.
+
+	if (!player.spectator && !wasalive)
+	{
+		if (player.mo)
+			P_KillMobj(NULL, player.mo, NULL, true);
+
+		player.playerstate = PST_REBORN;
+	}
 
 	if (&player == &consoleplayer()) {
 		st_scale.Callback (); // refresh status bar size
