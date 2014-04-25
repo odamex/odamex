@@ -1147,11 +1147,21 @@ void C_DrawConsole()
 	}
 
 	if (gamestate == GS_LEVEL || gamestate == GS_DEMOSCREEN || gamestate == GS_INTERMISSION)
+	{
+		// Non-fullscreen console. Overlay a translucent background.
 		screen->Dim(0, 0, primary_surface_width, ConBottom);
+	}
 	else
+	{
+		// Fullscreen console. Blit the image in the center of a black background.
+		screen->Clear(0, 0, primary_surface_width, primary_surface_height, 0);
+
+		int x = (primary_surface_width - background_surface->getWidth()) / 2;
+		int y = (primary_surface_height - background_surface->getHeight()) / 2;
 		primary_surface->blit(background_surface, 0, 0,
 				background_surface->getWidth(), background_surface->getHeight(),
-				0, 0, primary_surface_width, primary_surface_height);
+				x, y, background_surface->getWidth(), background_surface->getHeight());
+	}
 
 	if (ConBottom >= 12)
 	{
