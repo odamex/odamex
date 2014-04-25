@@ -111,7 +111,7 @@ void D_DoomLoop (void);
 extern QWORD testingmode;
 extern BOOL setsizeneeded;
 extern BOOL setmodeneeded;
-extern int NewWidth, NewHeight, NewBits, DisplayBits;
+extern int NewWidth, NewHeight, NewBits;
 EXTERN_CVAR (st_scale)
 extern BOOL gameisdead;
 extern BOOL demorecording;
@@ -235,14 +235,14 @@ void D_Display (void)
 
 		// Change screen mode.
 		if (!V_SetResolution(NewWidth, NewHeight, NewBits))
-			I_FatalError ("Could not change screen mode");
+			I_FatalError("Could not change screen mode");
 
 		// Recalculate various view parameters.
 		setsizeneeded = true;
 		// Trick status bar into rethinking its position
 		st_scale.Callback ();
 		// Refresh the console.
-		C_NewModeAdjust ();
+		C_NewModeAdjust();
 	}
 
 	// [AM] Moved to below setmodeneeded so we have accurate screen size info.
@@ -257,7 +257,6 @@ void D_Display (void)
 	// change the view size if needed
 	if (setsizeneeded)
 	{
-		I_AdjustPrimarySurface();
 		R_ExecuteSetViewSize();
 		setmodeneeded = false;
 	}

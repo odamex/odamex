@@ -1001,7 +1001,7 @@ menu_t AutomapMenu = {
 
 extern BOOL setmodeneeded;
 extern int NewWidth, NewHeight, NewBits;
-extern int DisplayBits;
+extern int I_GetVideoBitDepth();
 
 QWORD testingmode;		// Holds time to revert to old mode
 int OldWidth, OldHeight, OldBits;
@@ -1833,7 +1833,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -1957,7 +1957,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -2056,7 +2056,7 @@ void M_OptResponder (event_t *ev)
 
 				// Hack hack. Rebuild list of resolutions
 				if (item->e.values == Depths)
-					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
+					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
 
 				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
@@ -2112,7 +2112,7 @@ void M_OptResponder (event_t *ev)
 					}
 					OldWidth = I_GetVideoWidth();
 					OldHeight = I_GetVideoHeight();
-					OldBits = DisplayBits;
+					OldBits = I_GetVideoBitDepth();
 					NewBits = (int)vid_32bpp ? 32 : 8;
 					setmodeneeded = true;
 					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
@@ -2279,7 +2279,7 @@ static void BuildModesList(int hiwidth, int hiheight, int hi_bits)
 
 void M_RefreshModesList()
 {
-	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
+	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
 }
 
 static bool GetSelectedSize(int line, int* width, int* height)
@@ -2343,7 +2343,7 @@ void M_RestoreMode (void)
 
 static void SetVidMode()
 {
-	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
+	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
 	if (ModesMenu.items[ModesMenu.lastOn].type == screenres)
 	{
 		if (ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)

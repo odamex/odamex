@@ -735,7 +735,6 @@ static void setmsgcolor(int index, const char *color)
 	PrintColors[index] = i;
 }
 
-extern int DisplayWidth;
 
 //
 // C_AddNotifyString
@@ -761,7 +760,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
 		return;
 
-	int width = DisplayWidth / V_TextScaleXAmount();
+	int width = I_GetSurfaceWidth() / V_TextScaleXAmount();
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
 	{

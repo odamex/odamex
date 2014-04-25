@@ -1301,6 +1301,8 @@ void R_RenderPlayerView (player_t *player)
 void R_MultiresInit()
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
+	int surface_width = surface->getWidth();
+	int surface_height = surface->getHeight();
 
 	// in r_draw.c
 	extern byte** ylookup;
@@ -1311,11 +1313,11 @@ void R_MultiresInit()
     M_Free(columnofs);
     M_Free(xtoviewangle);
 
-	ylookup = (byte**)M_Malloc(surface->getHeight() * sizeof(byte*));
-	columnofs = (int*)M_Malloc(surface->getWidth() * sizeof(int));
+	ylookup = (byte**)M_Malloc(surface_height * sizeof(byte*));
+	columnofs = (int*)M_Malloc(surface_width * sizeof(int));
 
 	// These get set in R_ExecuteSetViewSize()
-	xtoviewangle = (angle_t*)M_Malloc(sizeof(angle_t) * (surface->getWidth() + 1));
+	xtoviewangle = (angle_t*)M_Malloc(sizeof(angle_t) * (surface_width + 1));
 
 	R_InitFuzzTable();
 	R_OldBlend = ~0;

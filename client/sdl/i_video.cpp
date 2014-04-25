@@ -71,25 +71,22 @@ CVAR_FUNC_IMPL (vid_winscale)
 
 CVAR_FUNC_IMPL(vid_overscan)
 {
-	setsizeneeded = true;
+	setmodeneeded = true;
 }
 
 CVAR_FUNC_IMPL(vid_320x200)
 {
-	setsizeneeded = true;
+	setmodeneeded = true;
 }
 
 CVAR_FUNC_IMPL(vid_640x400)
 {
-	setsizeneeded = true;
+	setmodeneeded = true;
 }
 
 
 //
 // I_AdjustPrimarySurface
-//
-// This is called by D_Display whenever the viewing screen size changes
-// and setsizeneeded == true.
 //
 void I_AdjustPrimarySurface()
 {

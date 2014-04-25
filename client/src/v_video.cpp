@@ -66,7 +66,6 @@
 
 IMPLEMENT_CLASS (DCanvas, DObject)
 
-int DisplayWidth, DisplayHeight, DisplayBits;
 int SquareWidth;
 
 argb_t Col2RGB8[65][256];
@@ -536,49 +535,19 @@ bool V_UseWidescreen()
 //
 static bool V_DoModeSetup(int width, int height, int bits)
 {
-	int basew = 320, baseh = 200;
-
 	if (!I_SetMode(width, height, bits))
 		return false;
 
-	I_SetOverscan(vid_overscan);
-
-	if (V_UsePillarBox())
-		width = (4 * height) / 3;
-	else if (V_UseLetterBox())
-		height = (9 * width) / 16;
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 	// This uses the smaller of the two results. It's still not ideal but at least
-	// this allows con_scaletext to have some purpose...
+	// this allows hud_scaletext to have some purpose...
+	CleanXfac = CleanYfac = std::max(1, std::min(surface_width / 320, surface_height / 200));
 
-    CleanXfac = width / basew;
-    CleanYfac = height / baseh;
+	SquareWidth = (4 * surface_width) / 3;
 
-	if (CleanXfac == 0 || CleanYfac == 0)
-		CleanXfac = CleanYfac = 1;
-	else
-	{
-		if (CleanXfac < CleanYfac)
-			CleanYfac = CleanXfac;
-		else
-			CleanXfac = CleanYfac;
-	}
-
-	DisplayWidth = width;
-	DisplayHeight = height;
-	DisplayBits = bits;
-
-	SquareWidth = (4 * DisplayHeight) / 3;
-
-	if (SquareWidth > DisplayWidth)
-        SquareWidth = DisplayWidth;
-
-	// Allocate a new virtual framebuffer
-	bool primary = (vid_fullscreen == 0);
-
-	// [SL] Add a bit to the screen width if it's a power-of-two to avoid
-	// cache thrashing
-	int cache_fudge = (width % 256) == 0 ? 4 : 0;
+	if (SquareWidth > surface_width)
+        SquareWidth = surface_width;
 
 	screen = I_GetPrimarySurface()->getDefaultCanvas();
 
@@ -645,10 +614,10 @@ bool V_SetResolution(int width, int height, int bits)
 	return V_DoModeSetup(width, height, bits);
 }
 
-BEGIN_COMMAND (vid_setmode)
+BEGIN_COMMAND(vid_setmode)
 {
-	int		width = 0, height = 0;
-	int		bits = DisplayBits;
+	int width = 0, height = 0;
+	int bits = I_GetVideoBitDepth();
 
 	// No arguments
 	if (argc == 1) {

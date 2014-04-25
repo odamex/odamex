@@ -42,7 +42,6 @@ extern int CleanXfac, CleanYfac;
 
 extern BOOL    gotconback;
 
-extern int DisplayWidth, DisplayHeight, DisplayBits;
 extern int SquareWidth;
 
 //
