@@ -131,12 +131,14 @@ void I_AdjustPrimarySurface()
 	{
 		int width = 320, height = 200, bpp = primary_surface->getBitsPerPixel();
 		emulated_surface = new IGenericWindowSurface(I_GetWindow(), width, height, bpp);
+		emulated_surface->getDefaultCanvas()->Clear(0, 0, width, height, 0);
 		primary_surface = emulated_surface;
 	}
 	else if (vid_640x400)
 	{
 		int width = 640, height = 400, bpp = primary_surface->getBitsPerPixel();
 		emulated_surface = new IGenericWindowSurface(I_GetWindow(), width, height, bpp);
+		emulated_surface->getDefaultCanvas()->Clear(0, 0, width, height, 0);
 		primary_surface = emulated_surface;
 	}
 
