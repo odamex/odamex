@@ -256,7 +256,7 @@ EDisplayType I_DisplayType()
 	return window->getDisplayType();
 }
 
-bool I_SetOverscan (float scale)
+bool I_SetOverscan(float scale)
 {
 	return false;
 //	return Video->SetOverscan (scale);
@@ -776,7 +776,9 @@ IWindow* I_GetWindow()
 //
 int I_GetVideoWidth()
 {
-	return window->getWidth();
+	if (I_VideoInitialized())
+		return window->getWidth();
+	return 0;
 }
 
 
@@ -788,7 +790,9 @@ int I_GetVideoWidth()
 //
 int I_GetVideoHeight()
 {
-	return window->getHeight();
+	if (I_VideoInitialized())
+		return window->getHeight();
+	return 0;
 }
 
 
@@ -800,7 +804,9 @@ int I_GetVideoHeight()
 //
 int I_GetVideoBitDepth()
 {
-	return window->getBitsPerPixel();
+	if (I_VideoInitialized())
+		return window->getBitsPerPixel();
+	return 0;
 }
 
 
@@ -822,7 +828,9 @@ IWindowSurface* I_GetPrimarySurface()
 //
 DCanvas* I_GetPrimaryCanvas()
 {
-	return I_GetPrimarySurface()->getDefaultCanvas();
+	if (I_VideoInitialized())
+		return I_GetPrimarySurface()->getDefaultCanvas();
+	return NULL;
 }
 
 
@@ -854,7 +862,9 @@ void I_FreeSurface(IWindowSurface* surface)
 //
 byte* I_GetFrameBuffer()
 {
-	return I_GetPrimarySurface()->getBuffer();
+	if (I_VideoInitialized())
+		return I_GetPrimarySurface()->getBuffer();
+	return NULL;
 }
 
 
@@ -863,7 +873,9 @@ byte* I_GetFrameBuffer()
 //
 int I_GetSurfaceWidth()
 {
-	return I_GetPrimarySurface()->getWidth();
+	if (I_VideoInitialized())
+		return I_GetPrimarySurface()->getWidth();
+	return 0;
 }
 
 
@@ -872,7 +884,9 @@ int I_GetSurfaceWidth()
 //
 int I_GetSurfaceHeight()
 {
-	return I_GetPrimarySurface()->getHeight();
+	if (I_VideoInitialized())
+		return I_GetPrimarySurface()->getHeight();
+	return 0;
 }
 
 
@@ -884,7 +898,8 @@ int I_GetSurfaceHeight()
 //
 void I_BeginUpdate()
 {
-	I_GetPrimarySurface()->lock();
+	if (I_VideoInitialized())
+		I_GetPrimarySurface()->lock();
 }
 
 
@@ -896,6 +911,9 @@ void I_BeginUpdate()
 //
 void I_FinishUpdate()
 {
+	if (!I_VideoInitialized())
+		return;
+
 	if (noblit == false)
 	{
 		IWindowSurface* dest_surface = I_GetWindow()->getPrimarySurface();
@@ -949,7 +967,8 @@ void I_ReadScreen(byte *block)
 //
 void I_SetPalette(const argb_t* palette)
 {
-	window->setPalette(palette);
+	if (I_VideoInitialized())
+		window->setPalette(palette);
 }
 
 
@@ -960,7 +979,8 @@ void I_SetPalette(const argb_t* palette)
 //
 void I_SetWindowSize(int width, int height)
 {
-	I_GetWindow()->resize(width, height);
+	if (I_VideoInitialized())
+		I_GetWindow()->resize(width, height);
 }
 
 
@@ -972,7 +992,8 @@ void I_SetWindowSize(int width, int height)
 //
 void I_SetSurfaceSize(int width, int height)
 {
-	I_GetWindow()->resize(width, height);
+	if (I_VideoInitialized())
+		I_GetWindow()->resize(width, height);
 }
 
 
