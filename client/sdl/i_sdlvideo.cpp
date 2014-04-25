@@ -83,6 +83,7 @@ ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, int width, int height,
 	SDL_Surface* sdlsurface = SDL_CreateRGBSurface(flags, width, height, bpp, 0, 0, 0, 0);
 
 	initializeFromSDLSurface(sdlsurface);
+	mFreeSDLSurface = true;
 }
 
 
@@ -95,6 +96,9 @@ ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, SDL_Surface* sdlsurfac
 	IWindowSurface(window), mSDLSurface(NULL), mPalette(NULL), mLocks(0)
 {
 	initializeFromSDLSurface(sdlsurface);
+
+	// shouldn't free sdlsurface if it was obtained from SDL_SetVideoMode
+	mFreeSDLSurface = false;
 }
 
 
@@ -133,9 +137,8 @@ void ISDL12WindowSurface::initializeFromSDLSurface(SDL_Surface* sdlsurface)
 //
 ISDL12WindowSurface::~ISDL12WindowSurface()
 {
-	if (mSDLSurface)
+	if (mSDLSurface && mFreeSDLSurface)
 		SDL_FreeSurface(mSDLSurface);
-	mSDLSurface = NULL;
 }
 
 
@@ -266,36 +269,6 @@ ISDL12Window::~ISDL12Window()
 {
 	delete mPrimarySurface;
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
-}
-
-
-//
-// ISDL12Window::setWindowed
-//
-void ISDL12Window::setWindowed()
-{
-	setMode(mWidth, mHeight, mBitsPerPixel, false, mUseVSync);
-}
-
-
-//
-// ISDL12Window::setFullScreen
-//
-void ISDL12Window::setFullScreen()
-{
-	setMode(mWidth, mHeight, mBitsPerPixel, true, mUseVSync);
-}
-
-
-//
-// ISDL12Window::resize
-//
-// Resizes the window to the specified dimensions, instantiating a new
-// surface object.
-//
-void ISDL12Window::resize(int width, int height)
-{
-	setMode(width, height, mBitsPerPixel, mIsFullScreen, mUseVSync);
 }
 
 

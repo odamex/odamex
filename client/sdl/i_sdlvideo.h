@@ -97,6 +97,7 @@ private:
 	int					mBytesPerPixel;		// optimization: pre-calculate
 
 	int					mLocks;
+	bool				mFreeSDLSurface;
 };
 
 
@@ -135,14 +136,10 @@ public:
 	virtual int getBitsPerPixel() const
 	{	return mBitsPerPixel;	}
 
-	virtual void setWindowed();
-
-	virtual void setFullScreen();
+	virtual bool setMode(int width, int height, int bpp, bool fullscreen, bool vsync);
 
 	virtual bool isFullScreen() const
 	{	return mIsFullScreen;	}
-
-	virtual void resize(int width, int height);
 
 	virtual void refresh();
 
@@ -155,7 +152,6 @@ private:
 	ISDL12Window(const ISDL12Window&);
 	ISDL12Window& operator=(const ISDL12Window&);
 
-	bool setMode(int width, int height, int bpp, bool fullscreen, bool vsync);
 	void buildVideoModeList();
 
 	IVideoModeList		mVideoModes;

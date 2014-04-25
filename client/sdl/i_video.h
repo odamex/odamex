@@ -309,14 +309,11 @@ public:
 	virtual int getBytesPerPixel() const
 	{	return getBitsPerPixel() / 8;	}
 
-	virtual void setWindowed() = 0;
-	virtual void setFullScreen() = 0;
-
 	virtual bool isFullScreen() const = 0;
 
-	virtual void refresh() { }
+	virtual bool setMode(int width, int height, int bpp, bool fullscreen, bool vsync) = 0;
 
-	virtual void resize(int width, int height) = 0;
+	virtual void refresh() { }
 
 	virtual void setWindowTitle(const std::string& caption = "") { }
 
@@ -373,14 +370,11 @@ public:
 	virtual int getBytesPerPixel() const
 	{	return 1;	}
 
-	virtual void setWindowed() { }
-
-	virtual void setFullScreen() { }
+	virtual bool setMode(int width, int height, int bpp, bool fullscreen, bool vsync)
+	{	return true;	}
 
 	virtual bool isFullScreen() const
 	{	return true;	}
-
-	virtual void resize(int width, int height) { }
 
 private:
 	// disable copy constructor and assignment operator

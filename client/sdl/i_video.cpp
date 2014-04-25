@@ -725,8 +725,18 @@ IGenericWindowSurface::~IGenericWindowSurface()
 
 void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 {
-	if (window != NULL)
-		delete window;
+	if (window)
+	{
+		window->setMode(width, height, bpp, fullscreen, vsync);
+	}
+	else
+	{
+		if (Args.CheckParm("-novideo"))
+			window = new IDummyWindow();
+		else
+			window = new ISDL12Window(width, height, bpp, fullscreen, vsync);
+	}
+
 
 /*
 	if (vid_autoadjust)
@@ -738,11 +748,6 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 	else
         AddCommandString("checkres");
 */
-
-	if (Args.CheckParm("-novideo"))
-		window = new IDummyWindow();
-	else
-		window = new ISDL12Window(width, height, bpp, fullscreen, vsync);
 
 	I_AdjustPrimarySurface();
 }
@@ -980,7 +985,10 @@ void I_SetPalette(const argb_t* palette)
 void I_SetWindowSize(int width, int height)
 {
 	if (I_VideoInitialized())
-		I_GetWindow()->resize(width, height);
+	{
+		int bpp = vid_32bpp ? 32 : 8;
+		I_SetVideoMode(width, height, bpp, vid_fullscreen, vid_vsync);
+	}
 }
 
 
@@ -993,7 +1001,10 @@ void I_SetWindowSize(int width, int height)
 void I_SetSurfaceSize(int width, int height)
 {
 	if (I_VideoInitialized())
-		I_GetWindow()->resize(width, height);
+	{
+		int bpp = vid_32bpp ? 32 : 8;
+		I_SetVideoMode(width, height, bpp, vid_fullscreen, vid_vsync);
+	}
 }
 
 
