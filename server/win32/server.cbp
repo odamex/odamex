@@ -416,6 +416,8 @@
 		<Unit filename="../src/sv_sqp.h" />
 		<Unit filename="../src/sv_sqpold.cpp" />
 		<Unit filename="../src/sv_sqpold.h" />
+		<Unit filename="../src/sv_stats.cpp" />
+		<Unit filename="../src/sv_stats.h" />
 		<Unit filename="../src/sv_stubs.cpp" />
 		<Unit filename="../src/sv_vote.cpp" />
 		<Unit filename="../src/sv_vote.h" />
