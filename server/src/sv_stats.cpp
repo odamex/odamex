@@ -21,4 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "sv_stats.h"
+#include "version.h"
+
 VERSION_CONTROL (sv_stats_cpp, "$Id$")
