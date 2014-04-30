@@ -82,6 +82,8 @@ DBoundingBox dirtybox;
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_32bpp)
+EXTERN_CVAR (vid_vsync)
+EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_320x200)
 EXTERN_CVAR (vid_640x400)
 EXTERN_CVAR (vid_autoadjust)
@@ -544,9 +546,28 @@ bool V_UseWidescreen()
 //
 // V_SetResolution
 //
-static bool V_DoModeSetup(int width, int height, int bits)
+static bool V_DoModeSetup(int width, int height, int bpp)
 {
-	if (!I_SetMode(width, height, bits))
+	bool fullscreen = false;
+
+	if (I_DisplayType() == DISPLAY_WindowOnly)
+	{
+		fullscreen = false;
+		I_PauseMouse();
+	}
+	else if (I_DisplayType() == DISPLAY_FullscreenOnly)
+	{
+		fullscreen = true;
+		I_ResumeMouse();
+	}
+	else
+	{
+		fullscreen = vid_fullscreen ? true : false;
+		fullscreen ? I_ResumeMouse() : I_PauseMouse();
+	}
+
+	I_SetVideoMode(width, height, bpp, fullscreen, vid_vsync);
+	if (!I_VideoInitialized())
 		return false;
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
@@ -572,27 +593,25 @@ static bool V_DoModeSetup(int width, int height, int bits)
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
 	I_FlushInput();
 
-    gotconback = false;
-
 	return true;
 }
 
-bool V_SetResolution(int width, int height, int bits)
+bool V_SetResolution(int width, int height, int bpp)
 {
-	int oldwidth, oldheight, oldbits;
+	int oldwidth, oldheight, oldbpp;
 
 	if (I_VideoInitialized())
 	{
 		oldwidth = I_GetVideoWidth();
 		oldheight = I_GetVideoHeight();
-		oldbits = I_GetVideoBitDepth();
+		oldbpp = I_GetVideoBitDepth();
 	}
 	else
 	{
 		// Harmless if screen wasn't allocated
 		oldwidth = width;
 		oldheight = height;
-		oldbits = bits;
+		oldbpp = bpp;
 	}
 
 	// Make sure we don't set the resolution smaller than Doom's original 320x200
@@ -617,23 +636,25 @@ bool V_SetResolution(int width, int height, int bits)
 
 			width = oldwidth;
 			height = oldheight;
-			bits = oldbits;
+			bpp = oldbpp;
 		}
 	}
 
-	return V_DoModeSetup(width, height, bits);
+	return V_DoModeSetup(width, height, bpp);
 }
 
 BEGIN_COMMAND(vid_setmode)
 {
 	int width = 0, height = 0;
-	int bits = I_GetVideoBitDepth();
+	int bpp = (int)vid_32bpp ? 32 : 8;
 
 	// No arguments
-	if (argc == 1) {
+	if (argc == 1)
+	{
 		Printf(PRINT_HIGH, "Usage: vid_setmode <width> <height>\n");
 		return;
 	}
+
 	// Width
 	if (argc > 1)
 		width = atoi(argv[1]);
@@ -643,9 +664,6 @@ BEGIN_COMMAND(vid_setmode)
 		height = atoi(argv[2]);
 	if (height == 0)
 		height = I_GetVideoHeight();
-
-	// Bits
-	bits = (int)vid_32bpp ? 32 : 8;
 
 	if (width < 320 || height < 200)
 		Printf(PRINT_HIGH, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
@@ -662,7 +680,7 @@ BEGIN_COMMAND(vid_setmode)
 			setmodeneeded = true;
 			NewWidth = width;
 			NewHeight = height;
-			NewBits = bits;
+			NewBits = bpp;
 		}
 	}
 	else
@@ -683,7 +701,6 @@ END_COMMAND (checkres)
 //
 // V_InitPalette
 //
-
 void V_InitPalette (void)
 {
 	// [RH] Initialize palette subsystem
@@ -715,72 +732,15 @@ void STACK_ARGS V_Close()
 //
 // V_Init
 //
-
-void V_Init (void)
+void V_Init()
 {
-	int width, height, bits;
-
 	bool firstTime = true;
-	if(firstTime)
-		atterm (V_Close);
+	if (firstTime)
+		atterm(V_Close);
 
-	width = height = bits = 0;
+	V_InitPalette();
 
-	const char *w = Args.CheckValue ("-width");
-	const char *h = Args.CheckValue ("-height");
-	const char *b = Args.CheckValue ("-bits");
-
-	if (w)
-		width = atoi (w);
-
-	if (h)
-		height = atoi (h);
-
-	if (b)
-	{
-		bits = atoi (b);
-		bits = (bits < 32 ? 8 : 32);
-
-		std::string bppcmd = "vid_32bpp ";
-		bppcmd += (bits == 32 ? "1":"0");
-
-		AddCommandString(bppcmd);
-	}
-
-	if (width == 0)
-	{
-		if (height == 0)
-		{
-			width = (int)(vid_defwidth);
-			height = (int)(vid_defheight);
-		}
-		else
-		{
-			width = (height * 8) / 6;
-		}
-	}
-	else if (height == 0)
-	{
-		height = (width * 6) / 8;
-	}
-
-	if (bits == 0)
-	{
-		bits = (int)vid_32bpp ? 32 : 8;
-	}
-
-    if ((int)(vid_autoadjust))
-        I_ClosestResolution (&width, &height);
-
-	if (!V_SetResolution (width, height, bits))
-		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,
-            (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"));
-	else
-        AddCommandString("checkres");
-
-	V_InitPalette ();
-
-	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight(), true);
+	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight());
 }
 
 

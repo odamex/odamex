@@ -86,7 +86,7 @@ int				fixedlightlev;
 shaderef_t		fixedcolormap;
 
 int 			centerx;
-extern "C" {int	centery; }
+int				centery;
 
 fixed_t 		centerxfrac;
 fixed_t 		centeryfrac;

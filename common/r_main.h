@@ -55,7 +55,7 @@ extern bool				r_fakingunderwater;
 extern bool				r_underwater;
 
 extern int				centerx;
-extern "C" int			centery;
+extern int				centery;
 
 extern fixed_t			centerxfrac;
 extern fixed_t			centeryfrac;

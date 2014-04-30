@@ -69,8 +69,6 @@ void I_SetWindowSize(int width, int height);
 void I_SetSurfaceSize(int width, int height);
 
 bool I_IsProtectedResolution();
-// [RH] Set the display mode
-bool I_SetMode (int &width, int &height, int &bits);
 
 void I_SetPalette(const argb_t* palette);
 

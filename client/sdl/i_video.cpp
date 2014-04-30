@@ -132,14 +132,12 @@ void I_AdjustPrimarySurface()
 		int width = 320, height = 200, bpp = primary_surface->getBitsPerPixel();
 		emulated_surface = new IGenericWindowSurface(I_GetWindow(), width, height, bpp);
 		emulated_surface->getDefaultCanvas()->Clear(0, 0, width, height, 0);
-//		primary_surface = emulated_surface;
 	}
 	else if (vid_640x400)
 	{
 		int width = 640, height = 400, bpp = primary_surface->getBitsPerPixel();
 		emulated_surface = new IGenericWindowSurface(I_GetWindow(), width, height, bpp);
 		emulated_surface->getDefaultCanvas()->Clear(0, 0, width, height, 0);
-//		primary_surface = emulated_surface;
 	}
 
 	screen = primary_surface->getDefaultCanvas();
@@ -722,7 +720,12 @@ IGenericWindowSurface::~IGenericWindowSurface()
 
 // ****************************************************************************
 
-void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
+//
+// I_DoSetVideoMode
+//
+// Helper function for I_SetVideoMode.
+//
+static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 {
 	if (window)
 	{
@@ -736,7 +739,6 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 			window = new ISDL12Window(width, height, bpp, fullscreen, vsync);
 	}
 
-
 /*
 	if (vid_autoadjust)
 		I_ClosestResolution(&width, &height);
@@ -749,6 +751,46 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 */
 
 	I_AdjustPrimarySurface();
+}
+
+
+//
+// I_SetVideoMode
+//
+// Main function to set the video mode at the hardware level.
+//
+void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
+{
+	int temp_bpp = bpp;
+
+	I_DoSetVideoMode(width, height, temp_bpp, fullscreen, vsync);
+	if (I_VideoInitialized())
+		return;
+
+	// Try the opposite bit mode:
+	temp_bpp = bpp == 32 ? 8 : 32;
+	I_DoSetVideoMode(width, height, temp_bpp, fullscreen, vsync);
+	if (I_VideoInitialized())
+		return;
+
+	// Switch the bit mode back:
+	temp_bpp = bpp;
+
+	// Try the closest resolution:
+	I_ClosestResolution(&width, &height);
+	I_DoSetVideoMode(width, height, temp_bpp, fullscreen, vsync);
+	if (I_VideoInitialized())
+		return;
+
+	// Try the opposite bit mode:
+	temp_bpp = bpp == 32 ? 8 : 32;
+	I_DoSetVideoMode(width, height, temp_bpp, fullscreen, vsync);
+	if (I_VideoInitialized())
+		return;
+
+	// Just couldn't get it:
+	//I_FatalError ("Mode %dx%dx%d is unavailable\n",
+	//			width, height, bpp);
 }
 
 //

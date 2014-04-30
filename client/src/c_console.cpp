@@ -71,7 +71,6 @@ extern BOOL		advancedemo;
 
 unsigned int	ConRows, ConCols, PhysRows;
 
-BOOL			vidactive = false, gotconback = false;
 BOOL			cursoron = false;
 int				ConBottom;
 unsigned int	RowAdjust;
@@ -659,30 +658,25 @@ static int C_StringWidth(const char* str)
 //
 // C_InitConsole
 //
-void C_InitConsole(int width, int height, BOOL ingame)
+void C_InitConsole(int width, int height)
 {
 	bool firstTime = true;
 	if (firstTime)
 		atterm(C_Close);
 
-	vidactive = ingame;
+	if (background_surface)
+		I_FreeSurface(background_surface);
 
-	if (ingame)
+	if (I_VideoInitialized())
 	{
-		if (background_surface == NULL)
-		{
-			const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
+		const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
 
-			background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
-			background_surface->setPalette(GetDefaultPalette()->colors);
-			DCanvas* canvas = background_surface->getDefaultCanvas();
+		background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+		background_surface->setPalette(GetDefaultPalette()->colors);
 
-			background_surface->lock();
-			canvas->DrawPatch(bg_patch, 0, 0);
-			background_surface->unlock();
-
-			gotconback = true;
-		}
+		background_surface->lock();
+		background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
+		background_surface->unlock();
 
 		delete ConChars;
 		C_InitConCharsFont();
@@ -723,7 +717,7 @@ void C_InitConsole(int width, int height, BOOL ingame)
 
 	C_FlushDisplay();
 
-	if (ingame && gamestate == GS_STARTUP)
+	if (I_VideoInitialized() && gamestate == GS_STARTUP)
 		C_FullConsole();
 }
 
@@ -840,7 +834,7 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	if (printlevel < (int)msglevel)
 		return 0;
 
-	if (vidactive && !midprinting)
+	if (I_VideoInitialized() && !midprinting)
 		C_AddNotifyString(printlevel, color_code, outline);
 
 	const char* line_start = outline;
@@ -944,7 +938,10 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	if (print_stdout && gamestate != GS_FORCEWIPE)
 		C_PrintStringStdOut(outline);
 
-	return C_PrintString(printlevel, color_code, outline);
+	if (I_VideoInitialized())
+		C_PrintString(printlevel, color_code, outline);
+
+	return len;
 }
 
 int STACK_ARGS Printf(int printlevel, const char *format, ...)
@@ -1001,7 +998,7 @@ void C_AdjustBottom()
 
 void C_NewModeAdjust()
 {
-	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight(), true);
+	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight());
 	C_FlushDisplay();
 	C_AdjustBottom();
 }
