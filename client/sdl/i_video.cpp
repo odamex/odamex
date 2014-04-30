@@ -562,8 +562,8 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	if (destw == 0 || desth == 0)
 		return;
 
-	fixed_t xstep = FixedDiv(srcw << FRACBITS, destw << FRACBITS) + 1;
-	fixed_t ystep = FixedDiv(srch << FRACBITS, desth << FRACBITS) + 1;
+	fixed_t xstep = FixedDiv(srcw << FRACBITS, destw << FRACBITS);
+	fixed_t ystep = FixedDiv(srch << FRACBITS, desth << FRACBITS);
 
 	int srcbits = source_surface->getBitsPerPixel();
 	int destbits = getBitsPerPixel();
@@ -924,6 +924,7 @@ void I_FinishUpdate()
 		if (matted_surface)
 			dest_surface = matted_surface;
 
+		// Handle scaling 320x200 or 640x400 emulated surface to full screen size
 		if (emulated_surface)
 		{
 			emulated_surface->setPalette(GetDefaultPalette()->colors);
@@ -931,11 +932,15 @@ void I_FinishUpdate()
 			int surface_width = dest_surface->getWidth();
 			int surface_height = dest_surface->getHeight();
 
-			int w = surface_width, h = surface_height;
-			if (surface_width * 3 > surface_height * 4)
-				w = surface_height * 4 / 3;
+			int w, h;
+			if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+				w = 320, h = 200;
+			else if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
+				w = 640, h = 400;
+			else if (surface_width * 3 > surface_height * 4)
+				w = surface_height * 4 / 3, h = surface_height;
 			else
-				h = surface_width * 3 / 4;
+				w = surface_width, h = surface_width * 3 / 4;
 
 			int x = (surface_width - w) / 2;
 			int y = (surface_height - h) / 2;

@@ -82,6 +82,8 @@ DBoundingBox dirtybox;
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_32bpp)
+EXTERN_CVAR (vid_320x200)
+EXTERN_CVAR (vid_640x400)
 EXTERN_CVAR (vid_autoadjust)
 EXTERN_CVAR (vid_overscan)
 
@@ -479,16 +481,19 @@ CVAR_FUNC_IMPL (sv_allowwidescreen)
 //
 bool V_UsePillarBox()
 {
-	if (I_GetVideoWidth() == 0 || I_GetVideoHeight() == 0)
+	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+
+	if (width == 0 || height == 0)
 		return false;
 
-	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+	if ((width == 320 && height == 200) || (width == 640 && height == 400))
 		return false;
-	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
-		return false;
+
+	if (vid_320x200 || vid_640x400)
+		return 3 * width > 4 * height;
 
 	return (!vid_widescreen || (!serverside && !sv_allowwidescreen))
-		&& (3 * I_GetVideoWidth() > 4 * I_GetVideoHeight());
+		&& (3 * width > 4 * height);
 }
 
 //
@@ -500,16 +505,19 @@ bool V_UsePillarBox()
 //
 bool V_UseLetterBox()
 {
-	if (I_GetVideoWidth() == 0 || I_GetVideoHeight() == 0)
+	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+
+	if (width == 0 || height == 0)
 		return false;
 
-	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+	if ((width == 320 && height == 200) || (width == 640 && height == 400))
 		return false;
-	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
-		return false;
+
+	if (vid_320x200 || vid_640x400)
+		return 3 * width <= 4 * height;
 
 	return (vid_widescreen && (serverside || sv_allowwidescreen))
-		&& (3 * I_GetVideoWidth() <= 4 * I_GetVideoHeight());
+		&& (3 * width <= 4 * height);
 }
 
 //
@@ -518,16 +526,19 @@ bool V_UseLetterBox()
 //
 bool V_UseWidescreen()
 {
-	if (I_GetVideoWidth() == 0 || I_GetVideoHeight() == 0)
+	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+
+	if (width == 0 || height == 0)
 		return false;
 
-	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+	if ((width == 320 && height == 200) || (width == 640 && height == 400))
 		return false;
-	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
-		return false;
+
+	if (vid_320x200 || vid_640x400)
+		return 3 * width > 4 * height;
 
 	return (vid_widescreen && (serverside || sv_allowwidescreen))
-		&& (3 * I_GetVideoWidth() > 4 * I_GetVideoHeight());
+		&& (3 * width > 4 * height);
 }
 
 //
