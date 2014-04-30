@@ -74,12 +74,37 @@ EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (cl_netgraph)
 EXTERN_CVAR (hud_mousegraph)
+EXTERN_CVAR(hud_targetcount)
+EXTERN_CVAR (sv_maxplayers)
+
+
+static int crosshair_lump;
+
+static void HU_InitCrosshair();
+static byte crosshair_trans[256];
+
+static int crosshair_color_custom = 0xb0;
+CVAR_FUNC_IMPL (hud_crosshaircolor)
+{
+	DWORD *palette = GetDefaultPalette()->colors;
+	crosshair_color_custom = V_GetColorFromString(palette, hud_crosshaircolor.cstring());
+}
+
+
+EXTERN_CVAR (hud_crosshairhealth)
+EXTERN_CVAR (hud_crosshairdim)
+EXTERN_CVAR (hud_crosshairscale)
+
+CVAR_FUNC_IMPL(hud_crosshair)
+{
+	HU_InitCrosshair();
+}
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 
 // Chat
-void HU_Init (void);
+void HU_Init(void);
 void HU_Drawer (void);
 BOOL HU_Responder (event_t *ev);
 
@@ -155,6 +180,8 @@ void HU_Init (void)
 
 	// Load the status bar line
 	sbline = W_CachePatch("SBLINE", PU_STATIC);
+
+	HU_InitCrosshair();
 }
 
 //
@@ -238,8 +265,86 @@ BOOL HU_Responder (event_t *ev)
 	return false;
 }
 
-EXTERN_CVAR(hud_targetcount)
-EXTERN_CVAR (sv_maxplayers)
+
+static void HU_InitCrosshair()
+{
+	int xhairnum = (int)hud_crosshair;
+
+	if (xhairnum)
+	{
+		char xhairname[16];
+		int xhair;
+
+		sprintf (xhairname, "XHAIR%d", xhairnum);
+
+		if ((xhair = W_CheckNumForName (xhairname)) == -1)
+			xhair = W_CheckNumForName ("XHAIR1");
+
+		if(xhair != -1)
+			crosshair_lump = xhair;
+	}
+
+	// set up translation table for the crosshair's color
+	// initialize to default colors
+	for (size_t i = 0; i < 256; i++)
+		crosshair_trans[i] = i;
+}
+
+
+//
+// HU_DrawCrosshair
+//
+static void HU_DrawCrosshair()
+{
+	if(!camera)
+		return;
+
+	// Don't draw the crosshair in chasecam mode
+	if (camera->player && (camera->player->cheats & CF_CHASECAM))
+		return;
+
+    // Don't draw the crosshair in overlay mode
+    if (automapactive && viewactive)
+        return;
+
+	// Don't draw the crosshair in spectator mode
+	if (camera->player && camera->player->spectator)
+		return;
+
+	if (hud_crosshair && crosshair_lump)
+	{
+		static const byte crosshair_color = 0xB0;
+		if (hud_crosshairhealth)
+		{
+			byte health_colors[4] = { 0xB0, 0xDF, 0xE7, 0x77 };
+
+			if (camera->health > 75)
+				crosshair_trans[crosshair_color] = health_colors[3];
+			else if (camera->health > 50)
+				crosshair_trans[crosshair_color] = health_colors[2];
+			else if (camera->health > 25)
+				crosshair_trans[crosshair_color] = health_colors[1];
+			else
+				crosshair_trans[crosshair_color] = health_colors[0];
+		}
+		else
+			crosshair_trans[crosshair_color] = crosshair_color_custom;
+
+		V_ColorMap = translationref_t(crosshair_trans);
+
+		int x = I_GetSurfaceWidth() / 2;
+		int y = I_GetSurfaceHeight() / 2;
+
+		if (hud_crosshairdim && hud_crosshairscale)
+			screen->DrawTranslatedLucentPatchCleanNoMove(W_CachePatch(crosshair_lump), x, y);
+        else if (hud_crosshairscale)
+			screen->DrawTranslatedPatchCleanNoMove(W_CachePatch(crosshair_lump), x, y);
+        else if (hud_crosshairdim)
+			screen->DrawTranslatedLucentPatch(W_CachePatch(crosshair_lump), x, y);
+		else
+			screen->DrawTranslatedPatch (W_CachePatch (crosshair_lump), x, y);
+	}
+}
 
 //
 // HU_Drawer
@@ -337,6 +442,9 @@ void HU_Drawer (void)
 
 	if (hud_mousegraph)
 		mousegraph.draw(hud_mousegraph);
+
+	// Ch0wW: Crosshair is always the last element drawn on the screen
+	HU_DrawCrosshair();
 }
 
 static void ShoveChatStr (std::string str, byte who)
