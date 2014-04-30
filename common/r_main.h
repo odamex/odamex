@@ -184,18 +184,19 @@ int R_GetWidescreen(void);
 void R_RenderPlayerView (player_t *player);
 
 // Called by startup code.
-void R_Init (void);
+void R_Init();
 
 // Called by exit code.
-void STACK_ARGS R_Shutdown (void);
+void STACK_ARGS R_Shutdown();
 
 // Called by M_Responder.
-void R_SetViewSize (int blocks);
+void R_SetViewSize(int blocks);
 
-// [RH] Initialize multires stuff for renderer
-class IWindowSurface;
-void R_MultiresInit(IWindowSurface* surface);
-void R_ExecuteSetViewSize(IWindowSurface* surface);
+bool R_BorderVisible();
+bool R_StatusBarVisible();
+
+// Initialize multires stuff for renderer
+void R_InitViewWindow();
 
 void R_ResetDrawFuncs();
 void R_SetFuzzDrawFuncs();

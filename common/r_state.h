@@ -42,9 +42,7 @@
 extern fixed_t* 		textureheight;
 
 extern "C" int			viewwidth;
-extern "C" int			realviewwidth;
 extern "C" int			viewheight;
-extern "C" int			realviewheight;
 
 extern int				firstflat;
 extern int				numflats;
@@ -138,7 +136,6 @@ extern AActor*			camera;		// [RH] camera instead of viewplayer
 
 extern angle_t			clipangle;
 
-extern angle_t			*xtoviewangle;
 //extern fixed_t		finetangent[FINEANGLES/2];
 
 extern visplane_t*		floorplane;

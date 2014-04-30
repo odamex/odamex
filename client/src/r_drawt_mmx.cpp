@@ -54,6 +54,9 @@
 #include "r_things.h"
 #include "v_video.h"
 
+extern byte** ylookup;
+extern int* columnofs;
+
 // With MMX we can process 4 16-bit words at a time.
 
 // Blend 2 colors against 1 color using MMX:
@@ -179,7 +182,7 @@ void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, i
 
 	int invAlpha = 256 - alpha;
 
-	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
+	argb_t* line = (argb_t*)(ylookup[y1] + columnofs[0]);
 
 	int batches = w / 2;
 	int remainder = w & 1;

@@ -1365,7 +1365,7 @@ void ST_Drawer (void)
 
 	bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
 
-	if ((realviewheight == I_GetSurfaceHeight() && viewactive) || spechud)
+	if ((viewactive && !R_StatusBarVisible()) || spechud)
 	{
 		if (screenblocks < 12)
 		{

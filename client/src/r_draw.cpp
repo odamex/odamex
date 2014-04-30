@@ -77,11 +77,6 @@ int 			scaledviewwidth;
 int 			viewwindowx;
 int 			viewwindowy;
 
-extern "C" {
-int				realviewwidth;		// [RH] Physical width of view window
-int				realviewheight;		// [RH] Physical height of view window
-}
-
 extern byte** ylookup;
 extern int* columnofs;
 
@@ -1452,7 +1447,7 @@ void R_DrawViewBorder()
 	IWindowSurface* surface = I_GetPrimarySurface();
 	int surface_width = surface->getWidth();
 
-	if (realviewwidth == surface_width)
+	if (viewwidth == surface_width)
 		return;
 
 	const gameborder_t* border = gameinfo.border;
@@ -1462,31 +1457,31 @@ void R_DrawViewBorder()
 	// draw top border
 	R_DrawBorder(0, 0, surface_width, viewwindowy);
 	// draw bottom border
-	R_DrawBorder(0, viewwindowy + realviewheight, surface_width, ST_Y);
+	R_DrawBorder(0, viewwindowy + viewheight, surface_width, ST_Y);
 	// draw left border
-	R_DrawBorder(0, viewwindowy, viewwindowx, viewwindowy + realviewheight);
+	R_DrawBorder(0, viewwindowy, viewwindowx, viewwindowy + viewheight);
 	// draw right border
-	R_DrawBorder(viewwindowx + realviewwidth, viewwindowy, surface_width, viewwindowy + realviewheight);
+	R_DrawBorder(viewwindowx + viewwidth, viewwindowy, surface_width, viewwindowy + viewheight);
 
 	// draw beveled edge for the viewing window's top and bottom edges
-	for (int x = viewwindowx; x < viewwindowx + realviewwidth; x += size)
+	for (int x = viewwindowx; x < viewwindowx + viewwidth; x += size)
 	{
 		screen->DrawPatch(W_CachePatch(border->t), x, viewwindowy - offset);
-		screen->DrawPatch(W_CachePatch(border->b), x, viewwindowy + realviewheight);
+		screen->DrawPatch(W_CachePatch(border->b), x, viewwindowy + viewheight);
 	}
 
 	// draw beveled edge for the viewing window's left and right edges
-	for (int y = viewwindowy; y < viewwindowy + realviewheight; y += size)
+	for (int y = viewwindowy; y < viewwindowy + viewheight; y += size)
 	{
 		screen->DrawPatch(W_CachePatch(border->l), viewwindowx - offset, y);
-		screen->DrawPatch(W_CachePatch(border->r), viewwindowx + realviewwidth, y);
+		screen->DrawPatch(W_CachePatch(border->r), viewwindowx + viewwidth, y);
 	}
 
 	// draw beveled edge for the viewing window's corners
 	screen->DrawPatch(W_CachePatch(border->tl), viewwindowx-offset, viewwindowy-offset);
-	screen->DrawPatch(W_CachePatch(border->tr), viewwindowx+realviewwidth, viewwindowy-offset);
-	screen->DrawPatch(W_CachePatch(border->bl), viewwindowx-offset, viewwindowy+realviewheight);
-	screen->DrawPatch(W_CachePatch(border->br), viewwindowx+realviewwidth, viewwindowy+realviewheight);
+	screen->DrawPatch(W_CachePatch(border->tr), viewwindowx+viewwidth, viewwindowy-offset);
+	screen->DrawPatch(W_CachePatch(border->bl), viewwindowx-offset, viewwindowy+viewheight);
+	screen->DrawPatch(W_CachePatch(border->br), viewwindowx+viewwidth, viewwindowy+viewheight);
 
 	V_MarkRect(0, 0, I_GetSurfaceWidth(), ST_Y);
 }

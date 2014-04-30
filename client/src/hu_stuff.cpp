@@ -261,19 +261,22 @@ void HU_Drawer (void)
 
 		// Determine what Y height to display the chat prompt at.
 		// * I_GetSurfaceHeight() is the "actual" screen height.
-		// * realviewheight is how big the view is, taking into account the
-		//   status bar and current "screen size".
 		// * viewactive is false if you have a fullscreen automap or
 		//   intermission on-screen.
 		// * ST_Y is the current Y height of the status bar.
 
-		if (!viewactive && gamestate != GS_INTERMISSION) {
+		if (!viewactive && gamestate != GS_INTERMISSION)
+		{
 			// Fullscreen automap is visible
 			y = ST_Y - (20 * scaledyfac);
-		} else if (viewactive && I_GetSurfaceHeight() != realviewheight) {
+		}
+		else if (viewactive && R_StatusBarVisible())
+		{
 			// Status bar is visible
 			y = ST_Y - (10 * scaledyfac);
-		} else {
+		}
+		else
+		{
 			// Must be fullscreen HUD or intermission
 			y = I_GetSurfaceHeight() - (10 * scaledyfac);
 		}

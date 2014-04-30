@@ -1674,8 +1674,8 @@ void AM_Drawer (void)
 	{
 		f_x = viewwindowx;
 		f_y = viewwindowy;
-		f_w = realviewwidth;
-		f_h = realviewheight;
+		f_w = viewwidth;
+		f_h = viewheight;
 		f_p = surface->getPitch();
 	}
 	AM_activateNewScale();

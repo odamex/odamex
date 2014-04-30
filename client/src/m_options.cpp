@@ -1028,13 +1028,6 @@ static char VMEnterText[] = "Press ENTER to set mode";
 static char VMTestText[] = "Press T to test mode for 5 seconds";
 #endif
 
-static value_t DetailModes[] = {
-	{ 0.0, "Normal" },
-	{ 1.0, "Double Horizontal" },
-	{ 2.0, "Double Vertical" },
-	{ 3.0, "Double Horiz & Vert" }
-};
-
 static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
 	{ 60.0,		"60fps" },

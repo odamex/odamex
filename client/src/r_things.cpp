@@ -1285,20 +1285,20 @@ static void R_DrawCrosshair (void)
 
 		if (hud_crosshairdim && hud_crosshairscale)
 			screen->DrawTranslatedLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
-				realviewwidth / 2 + viewwindowx,
-				realviewheight / 2 + viewwindowy);
+				viewwidth / 2 + viewwindowx,
+				viewheight / 2 + viewwindowy);
         else if (hud_crosshairscale)
 			screen->DrawTranslatedPatchCleanNoMove (W_CachePatch (crosshair_lump),
-				realviewwidth / 2 + viewwindowx,
-				realviewheight / 2 + viewwindowy);
+				viewwidth / 2 + viewwindowx,
+				viewheight / 2 + viewwindowy);
         else if (hud_crosshairdim)
 			screen->DrawTranslatedLucentPatch (W_CachePatch (crosshair_lump),
-				realviewwidth / 2 + viewwindowx,
-				realviewheight / 2 + viewwindowy);
+				viewwidth / 2 + viewwindowx,
+				viewheight / 2 + viewwindowy);
 		else
 			screen->DrawTranslatedPatch (W_CachePatch (crosshair_lump),
-				realviewwidth / 2 + viewwindowx,
-				realviewheight / 2 + viewwindowy);
+				viewwidth / 2 + viewwindowx,
+				viewheight / 2 + viewwindowy);
 	}
 }
 

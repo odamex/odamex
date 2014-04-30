@@ -568,7 +568,6 @@ static bool V_DoModeSetup(int width, int height, int bits)
 	R_ReinitColormap();
 
 	R_InitColumnDrawers();
-	R_MultiresInit(I_GetPrimarySurface());
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
 	I_FlushInput();

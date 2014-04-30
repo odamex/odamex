@@ -123,11 +123,6 @@ extern	int 			viewwindowy;
 extern	"C" int 		viewheight;
 extern	"C" int 		viewwidth;
 
-extern	"C" int			realviewwidth;		// [RH] Physical width of view window
-extern	"C" int			realviewheight;		// [RH] Physical height of view window
-
-
-
 
 
 // This one is related to the 3-screen display mode.

@@ -51,6 +51,9 @@
 #include "r_things.h"
 #include "v_video.h"
 
+extern byte** ylookup;
+extern int* columnofs;
+
 // Useful vector shorthand typedefs:
 typedef vector signed char vs8;
 typedef vector unsigned char vu8;
@@ -87,7 +90,7 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 
 	int invAlpha = 256 - alpha;
 
-	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
+	argb_t* line = (argb_t*)(ylookup[y1] + columnofs[0]);
 
 	int batches = w / 4;
 	int remainder = w & 3;

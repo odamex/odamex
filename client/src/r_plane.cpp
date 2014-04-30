@@ -678,10 +678,10 @@ void R_DrawPlanes (void)
 //
 // R_PlaneInitData
 //
-BOOL R_PlaneInitData (void)
+bool R_PlaneInitData(IWindowSurface* surface)
 {
-	int i;
-	visplane_t *pl;
+	int surface_width = surface->getWidth();
+	int surface_height = surface->getHeight();
 
 	delete[] floorclip;
 	delete[] ceilingclip;
@@ -690,12 +690,8 @@ BOOL R_PlaneInitData (void)
 	delete[] spanstart;
 	delete[] yslope;
 
-	int surface_width = I_GetSurfaceWidth();
-	int surface_height = I_GetSurfaceHeight();
-
 	floorclip = new int[surface_width];
 	ceilingclip = new int[surface_width];
-
 	floorclipinitial = new int[surface_width];
 	ceilingclipinitial = new int[surface_width];
 
@@ -706,11 +702,10 @@ BOOL R_PlaneInitData (void)
 	}
 
 	spanstart = new int[surface_height];
-
 	yslope = new fixed_t[surface_height];
 
 	// Free all visplanes and let them be re-allocated as needed.
-	pl = freetail;
+	visplane_t* pl = freetail;
 
 	while (pl)
 	{
@@ -721,7 +716,7 @@ BOOL R_PlaneInitData (void)
 	freetail = NULL;
 	freehead = &freetail;
 
-	for (i = 0; i < MAXVISPLANES; i++)
+	for (int i = 0; i < MAXVISPLANES; i++)
 	{
 		pl = visplanes[i];
 		visplanes[i] = NULL;

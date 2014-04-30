@@ -256,7 +256,7 @@ void D_Display()
 	// change the view size if needed
 	if (setsizeneeded)
 	{
-		R_ExecuteSetViewSize(I_GetPrimarySurface());
+		R_InitViewWindow();
 		setmodeneeded = false;
 	}
 
