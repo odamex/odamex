@@ -1164,8 +1164,11 @@ void R_InitViewWindow()
 
 	// calculate the vertical stretching factor to emulate 320x200
 	// it's a 5:4 ratio = (320 / 200) / (4 / 3)
-	// [SL] TODO: should 320x200 or 640x400 surfaces be handled differently?
-	yaspectmul = FixedDiv(320 * 3 * FRACUNIT, 200 * 4 * FRACUNIT);
+
+	if ((surface_width == 320 && surface_height == 200) || (surface_width == 640 && surface_height == 400))
+		yaspectmul = FRACUNIT;
+	else
+		yaspectmul = 320 * 3 * FRACUNIT / (200 * 4);
 
 	// Calculate focal length so FieldOfView angles covers viewwidth.
 	fovtan = finetangent[FINEANGLES/4 + CorrectFieldOfView/2];
@@ -1182,7 +1185,11 @@ void R_InitViewWindow()
 	//      generate a corrected 4:3 screen width based on our
 	//      height, then generate the x-scale based on that.
 	int cswidth, crvwidth;
-	cswidth = (4 * surface_height) / 3;
+	if ((surface_width == 320 && surface_height == 200) || (surface_width == 640 && surface_height == 400))
+		cswidth = 320 * surface_height / 200;
+	else
+		cswidth = (4 * surface_height) / 3;
+
 	if (setblocks < 10)
 		crvwidth = ((setblocks * cswidth) / 10) & ~(15 / surface->getBytesPerPixel());
 	else
