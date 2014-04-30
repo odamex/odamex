@@ -694,7 +694,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	// draw the columns
 	// TODO: change negonearray to the actual top/bottom
-	bool render_multiple_columns = r_columnmethod && !detailxshift;
+	bool render_multiple_columns = r_columnmethod;
 
 	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts,
 			MaskedColumnBlaster, MaskedHColumnBlaster, true, render_multiple_columns);

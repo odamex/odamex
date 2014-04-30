@@ -132,14 +132,14 @@ void I_AdjustPrimarySurface()
 		int width = 320, height = 200, bpp = primary_surface->getBitsPerPixel();
 		emulated_surface = new IGenericWindowSurface(I_GetWindow(), width, height, bpp);
 		emulated_surface->getDefaultCanvas()->Clear(0, 0, width, height, 0);
-		primary_surface = emulated_surface;
+//		primary_surface = emulated_surface;
 	}
 	else if (vid_640x400)
 	{
 		int width = 640, height = 400, bpp = primary_surface->getBitsPerPixel();
 		emulated_surface = new IGenericWindowSurface(I_GetWindow(), width, height, bpp);
 		emulated_surface->getDefaultCanvas()->Clear(0, 0, width, height, 0);
-		primary_surface = emulated_surface;
+//		primary_surface = emulated_surface;
 	}
 
 	screen = primary_surface->getDefaultCanvas();
@@ -839,6 +839,57 @@ DCanvas* I_GetPrimaryCanvas()
 
 
 //
+// I_GetEmulatedSurface
+//
+IWindowSurface* I_GetEmulatedSurface()
+{
+	return emulated_surface;
+}
+
+
+//
+// I_BlitEmulatedSurface
+//
+// Blits the emulated surface (320x200 or 640x400) to the primary surface,
+// stretching it to fill the entire screen.
+//
+void I_BlitEmulatedSurface()
+{
+	IWindowSurface* dest_surface = I_GetWindow()->getPrimarySurface();
+	if (matted_surface)
+		dest_surface = matted_surface;
+
+	if (emulated_surface)
+	{
+		emulated_surface->setPalette(GetDefaultPalette()->colors);
+
+		int surface_width = dest_surface->getWidth();
+		int surface_height = dest_surface->getHeight();
+
+		int w, h;
+
+		// [SL] handle 320x200 or 640x400 video modes as special cases
+		// since they're not 4:3 or widescreen modes.
+		if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+			w = 320, h = 200;
+		else if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
+			w = 640, h = 400;
+		else if (surface_width * 3 > surface_height * 4)
+			w = surface_height * 4 / 3, h = surface_height;
+		else
+			w = surface_width, h = surface_width * 3 / 4;
+
+		int x = (surface_width - w) / 2;
+		int y = (surface_height - h) / 2;
+
+		dest_surface->blit(emulated_surface, 0, 0,
+				emulated_surface->getWidth(), emulated_surface->getHeight(),
+				x, y, w, h); 
+	}
+}
+
+
+//
 // I_AllocateSurface
 //
 // Creates a new (non-primary) surface and returns it.
@@ -920,35 +971,7 @@ void I_FinishUpdate()
 
 	if (noblit == false)
 	{
-		IWindowSurface* dest_surface = I_GetWindow()->getPrimarySurface();
-		if (matted_surface)
-			dest_surface = matted_surface;
-
-		// Handle scaling 320x200 or 640x400 emulated surface to full screen size
-		if (emulated_surface)
-		{
-			emulated_surface->setPalette(GetDefaultPalette()->colors);
-
-			int surface_width = dest_surface->getWidth();
-			int surface_height = dest_surface->getHeight();
-
-			int w, h;
-			if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
-				w = 320, h = 200;
-			else if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
-				w = 640, h = 400;
-			else if (surface_width * 3 > surface_height * 4)
-				w = surface_height * 4 / 3, h = surface_height;
-			else
-				w = surface_width, h = surface_width * 3 / 4;
-
-			int x = (surface_width - w) / 2;
-			int y = (surface_height - h) / 2;
-
-			dest_surface->blit(emulated_surface, 0, 0,
-					emulated_surface->getWidth(), emulated_surface->getHeight(),
-					x, y, w, h); 
-		}
+//		I_BlitEmulatedSurface();
 
 		// Draws frame time and cumulative fps
 		if (vid_displayfps)

@@ -28,9 +28,6 @@
 #include "r_intrin.h"
 #include "r_defs.h"
 
-extern "C" byte**		ylookup;
-extern "C" int*			columnofs;
-
 typedef struct 
 {
 	int					x;
@@ -305,12 +302,6 @@ const int MAX_ACS_TRANSLATIONS = 32;
 
 // [RH] Double view pixels by detail mode
 void R_DetailDouble (void);
-
-void
-R_InitBuffer
-( int		width,
-  int		height );
-
 
 // Initialize color translation tables,
 //	for player rendering etc.

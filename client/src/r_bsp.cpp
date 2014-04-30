@@ -72,7 +72,7 @@ unsigned		maxdrawsegs;
 // Instead of clipsegs, let's try using an array with one entry for each column,
 // indicating whether it's blocked by a solid wall yet or not.
 // e6y: resolution limitation is removed
-byte *solidcol;
+byte			solidcol[MAXWIDTH];
 
 //
 // R_ClearClipSegs

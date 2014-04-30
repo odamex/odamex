@@ -66,25 +66,24 @@ drawcolumn_t dcol;
 drawspan_t dspan;
 }
 
-
-
 byte*			viewimage;
+
 extern "C" {
 int 			viewwidth;
 int 			viewheight;
 }
+
 int 			scaledviewwidth;
 int 			viewwindowx;
 int 			viewwindowy;
-byte**			ylookup;
-int* 			columnofs;
 
 extern "C" {
 int				realviewwidth;		// [RH] Physical width of view window
 int				realviewheight;		// [RH] Physical height of view window
-int				detailxshift;		// [RH] X shift for horizontal detail level
-int				detailyshift;		// [RH] Y shift for vertical detail level
 }
+
+extern byte** ylookup;
+extern int* columnofs;
 
 // [RH] Pointers to the different column drawers.
 //		These get changed depending on the current
@@ -148,7 +147,7 @@ void R_InitFuzzTable (void)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
 	surface->lock();
-	int fuzzoff = surface->getPitch() << detailyshift;
+	int fuzzoff = surface->getPitch();
 	surface->unlock();
 
 	for (int i = 0; i < FUZZTABLE; i++)
@@ -1425,46 +1424,6 @@ void R_DrawSlopeSpanD_c()
 
 /****************************************************/
 
-//
-// R_InitBuffer 
-// Creats lookup tables that avoid
-//  multiplies and other hazzles
-//  for getting the framebuffer address
-//  of a pixel to draw.
-//
-void R_InitBuffer(int width, int height) 
-{ 
-	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_width = surface->getWidth();
-
-	int windowwidth = width << detailxshift;
-	int windowheight = height << detailyshift;
-
-	// Handle resize, e.g. smaller view windows with border and/or status bar.
-	viewwindowx = (surface_width - windowwidth) / 2;
-
-	// [RH] Adjust column offset according to bytes per pixel and detail mode
-	int xshift = detailxshift;
-	if (surface->getBitsPerPixel() == 32)
-		xshift += 2;
-
-	// Column offset. For windows
-	for (int i = 0; i < width; i++)
-		columnofs[i] = (viewwindowx + i) << xshift;
-
-	// Same with base row offset.
-	if (windowwidth == surface_width)
-		viewwindowy = 0;
-	else
-		viewwindowy = (ST_Y - windowheight) >> 1;
-
-	// Precalculate all row offsets.
-	surface->lock();
-	for (int i = 0; i < height; i++)
-		ylookup[i] = surface->getBuffer() + ((i << detailyshift) + viewwindowy) * surface->getPitch();
-	surface->unlock();
-}
-
 
 void R_DrawBorder(int x1, int y1, int x2, int y2)
 {
@@ -1532,97 +1491,6 @@ void R_DrawViewBorder()
 	V_MarkRect(0, 0, I_GetSurfaceWidth(), ST_Y);
 }
 
-// ============================================================================
-//
-// Horizontal and vertical pixel doubling functions
-//
-// ============================================================================
-
-static void R_DoubleX8()
-{
-	IWindowSurface* surface = I_GetPrimarySurface();
-
-	int rowsize = realviewwidth >> 2;
-	int line_advance = surface->getPitch() >> (2 - detailyshift);
-
-	unsigned int* line = (unsigned int*)(surface->getBuffer() + viewwindowy * surface->getPitch() + viewwindowx);
-	for (int y = 0; y < viewheight; y++, line += line_advance)
-	{
-		for (int x = 0; x < rowsize; x += 2)
-		{
-			unsigned int a = line[x + 0];
-			unsigned int b = line[x + 1];
-			a &= 0x00ff00ff;
-			b &= 0x00ff00ff;
-			line[x + 0] = a | (a << 8);
-			line[x + 1] = b | (b << 8);
-		}
-	}
-}
-
-static void R_DoubleX32()
-{
-	IWindowSurface* surface = I_GetPrimarySurface();
-
-	int rowsize = realviewwidth;
-	int line_advance = surface->getPitch() >> (2 - detailyshift);
-
-	argb_t* line = (argb_t*)(surface->getBuffer() + viewwindowy * surface->getPitch() + viewwindowx);
-	for (int y = 0; y < viewheight; y++, line += line_advance)
-	{
-		for (int x = 0; x < rowsize; x += 2)
-			line[x + 1] = line[x];
-	}
-}
-
-static void R_DoubleY8()
-{
-	IWindowSurface* surface = I_GetPrimarySurface();
-
-	int rowsize = realviewwidth;
-	int line_advance = surface->getPitch() << 1;
-
-	byte* line = surface->getBuffer() + viewwindowy * surface->getPitch() + viewwindowx;
-
-	for (int y = 0; y < viewheight; y++, line += line_advance)
-		memcpy(line + surface->getPitch(), line, rowsize);
-}
-
-static void R_DoubleY32()
-{
-	IWindowSurface* surface = I_GetPrimarySurface();
-
-	int rowsize = realviewwidth << 2;
-	int line_advance = surface->getPitch() << 1;
-
-	byte* line = surface->getBuffer() + viewwindowy * surface->getPitch() + viewwindowx;
-
-	for (int y = 0; y < viewheight; y++, line += line_advance)
-		memcpy(line + surface->getPitch(), line, rowsize);
-}
-
-
-// [RH] Double pixels in the view window horizontally
-//		and/or vertically (or not at all).
-void R_DetailDouble()
-{
-	IWindowSurface* surface = I_GetPrimarySurface();
-
-	if (surface->getBitsPerPixel() == 8)
-	{
-		if (detailxshift)
-			R_DoubleX8();
-		if (detailyshift)
-			R_DoubleY8();
-	}
-	else
-	{
-		if (detailxshift)
-			R_DoubleX32();
-		if (detailyshift)
-			R_DoubleY32();
-	}
-}
 
 
 enum r_optimize_kind {

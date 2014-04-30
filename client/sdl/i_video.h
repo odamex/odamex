@@ -50,6 +50,9 @@ IWindow* I_GetWindow();
 IWindowSurface* I_GetPrimarySurface();
 DCanvas* I_GetPrimaryCanvas();
 
+IWindowSurface* I_GetEmulatedSurface();
+void I_BlitEmulatedSurface();
+
 void I_AdjustPrimarySurface();
 
 IWindowSurface* I_AllocateSurface(int width, int height, int bpp);

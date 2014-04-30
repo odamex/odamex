@@ -99,7 +99,6 @@
 extern size_t got_heapsize;
 
 //extern void M_RestoreMode (void); // [Toke - Menu]
-extern void R_ExecuteSetViewSize();
 void V_InitPalette (void);
 
 void D_CheckNetGame (void);
@@ -214,7 +213,7 @@ void D_DisplayTicker()
 // D_Display
 //  draw current display, possibly wiping it from the previous
 //
-void D_Display (void)
+void D_Display()
 {
 	if (nodrawers)
 		return; 				// for comparative timing / profiling
@@ -257,11 +256,11 @@ void D_Display (void)
 	// change the view size if needed
 	if (setsizeneeded)
 	{
-		R_ExecuteSetViewSize();
+		R_ExecuteSetViewSize(I_GetPrimarySurface());
 		setmodeneeded = false;
 	}
 
-	I_BeginUpdate ();
+	I_BeginUpdate();
 
 	// [RH] Allow temporarily disabling wipes
 	if (NoWipe)
@@ -282,9 +281,9 @@ void D_Display (void)
 		case GS_DOWNLOAD:
 		case GS_CONNECTING:
         case GS_CONNECTED:
-			C_DrawConsole ();
-			M_Drawer ();
-			I_FinishUpdate ();
+			C_DrawConsole();
+			M_Drawer();
+			I_FinishUpdate();
 			return;
 
 		case GS_LEVEL:
@@ -292,31 +291,31 @@ void D_Display (void)
 				break;
 
 			// denis - freshen the borders (ffs..)
-			R_DrawViewBorder ();    // erase old menu stuff
+			R_DrawViewBorder();    // erase old menu stuff
 
 			if (viewactive)
-				R_RenderPlayerView (&displayplayer());
+				R_RenderPlayerView(&displayplayer());
 			if (automapactive)
-				AM_Drawer ();
-			C_DrawMid ();
+				AM_Drawer();
+			C_DrawMid();
 			C_DrawGMid();
-			CTF_DrawHud ();
-			ST_Drawer ();
-			HU_Drawer ();
+			CTF_DrawHud();
+			ST_Drawer();
+			HU_Drawer();
 			V_DoPaletteEffects();
 			break;
 
 		case GS_INTERMISSION:
 			if (viewactive)
-				R_RenderPlayerView (&displayplayer());
-			C_DrawMid ();
-			CTF_DrawHud ();
-			WI_Drawer ();
-			HU_Drawer ();
+				R_RenderPlayerView(&displayplayer());
+			C_DrawMid();
+			CTF_DrawHud();
+			WI_Drawer();
+			HU_Drawer();
 			break;
 
 		case GS_FINALE:
-			F_Drawer ();
+			F_Drawer();
 			break;
 
 		case GS_DEMOSCREEN:

@@ -59,9 +59,6 @@ void NetGraph::setInterpolation(int val)
 	mInterpolation = val;
 }
 
-extern "C" byte **ylookup;
-extern "C" int *columnofs;
-
 static void NetGraphDrawBar(int startx, int starty, int width, int height, int color)
 {
 	dspan.color = color;

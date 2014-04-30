@@ -54,6 +54,9 @@
 #include "i_video.h"
 #include "v_video.h"
 
+extern byte** ylookup;
+extern int* columnofs;
+
 // SSE2 alpha-blending functions.
 // NOTE(jsd): We can only blend two colors per 128-bit register because we need 16-bit resolution for multiplication.
 

@@ -125,8 +125,6 @@ extern	"C" int 		viewwidth;
 
 extern	"C" int			realviewwidth;		// [RH] Physical width of view window
 extern	"C" int			realviewheight;		// [RH] Physical height of view window
-extern	"C" int			detailxshift;		// [RH] X shift for horizontal detail level
-extern	"C" int			detailyshift;		// [RH] Y shift for vertical detail level
 
 
 

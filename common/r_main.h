@@ -106,11 +106,6 @@ extern int				lightscaleymul;
 #define NUMCOLORMAPS			32
 
 
-// [RH] New detail modes
-extern "C" int			detailxshift;
-extern "C" int			detailyshift;
-
-
 //
 // Function pointers to switch refresh/drawing functions.
 //
@@ -198,7 +193,9 @@ void STACK_ARGS R_Shutdown (void);
 void R_SetViewSize (int blocks);
 
 // [RH] Initialize multires stuff for renderer
-void R_MultiresInit (void);
+class IWindowSurface;
+void R_MultiresInit(IWindowSurface* surface);
+void R_ExecuteSetViewSize(IWindowSurface* surface);
 
 void R_ResetDrawFuncs();
 void R_SetFuzzDrawFuncs();
