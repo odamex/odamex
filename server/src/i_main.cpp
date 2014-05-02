@@ -79,11 +79,24 @@ void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
-int PrintString (int printlevel, char const *outline)
+int PrintString(int printlevel, char const* str)
 {
-	int ret = printf("%s", outline);
+	// strip away any color escape codes from outline and store in tempstr
+	char tempstr[8192 + 1];
+	int len = 0;
+	while (*str)
+	{
+		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+			str += 3;
+		else
+			tempstr[len++] = *str++;
+	}
+	tempstr[len] = '\0';
+
+	printf("%s", tempstr);
 	fflush(stdout);
-	return ret;
+
+	return len;
 }
 
 #ifdef _WIN32
