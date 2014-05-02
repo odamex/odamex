@@ -138,32 +138,10 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		// Set SDL video centering
-		SDL_putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
-		SDL_putenv((char*)"SDL_VIDEO_CENTERED=1");
-
         // [Russell] - No more double-tapping of capslock to enable autorun
         SDL_putenv((char*)"SDL_DISABLE_LOCK_KEYS=1");
 
 #if defined _WIN32 && !defined _XBOX
-    	// From the SDL 1.2.10 release notes:
-    	//
-    	// > The "windib" video driver is the default now, to prevent
-    	// > problems with certain laptops, 64-bit Windows, and Windows
-    	// > Vista.
-    	//
-    	// The hell with that.
-
-   		// SoM: the gdi interface is much faster for windowed modes which are more
-   		// commonly used. Thus, GDI is default.
-		//
-		// GDI mouse issues fill many users with great sadness. We are going back
-		// to directx as defulat for now and the people will rejoice. --Hyper_Eye
-     	if (Args.CheckParm ("-gdi"))
-        	SDL_putenv((char*)"SDL_VIDEODRIVER=windib");
-    	else if (SDL_getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-directx") > 0)
-        	SDL_putenv((char*)"SDL_VIDEODRIVER=directx");
-
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in
         // SDL_mixer that causes occasional crashes.  Thanks to entryway and fraggle for this.

@@ -52,14 +52,8 @@
 #endif
 
 EXTERN_CVAR (vid_autoadjust)
+EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
-EXTERN_CVAR (vid_displayfps)
-EXTERN_CVAR (vid_ticker)
-
-CVAR_FUNC_IMPL(vid_vsync)
-{
-	setmodeneeded = true;
-}
 
 
 // ****************************************************************************
@@ -252,6 +246,30 @@ ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool
 		return;
 	}
 
+	// Set SDL video centering
+	SDL_putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
+	SDL_putenv((char*)"SDL_VIDEO_CENTERED=1");
+
+	#if defined _WIN32 && !defined _XBOX
+	// From the SDL 1.2.10 release notes:
+	//
+	// > The "windib" video driver is the default now, to prevent
+	// > problems with certain laptops, 64-bit Windows, and Windows
+	// > Vista.
+	//
+	// The hell with that.
+
+	// SoM: the gdi interface is much faster for windowed modes which are more
+	// commonly used. Thus, GDI is default.
+	//
+	// GDI mouse issues fill many users with great sadness. We are going back
+	// to directx as defulat for now and the people will rejoice. --Hyper_Eye
+	if (Args.CheckParm ("-gdi"))
+		SDL_putenv((char*)"SDL_VIDEODRIVER=windib");
+	else if (SDL_getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-directx") > 0)
+		SDL_putenv((char*)"SDL_VIDEODRIVER=directx");
+	#endif	// _WIN32 && !_XBOX
+
 	buildVideoModeList();
 
 	setMode(width, height, bpp, fullscreen, vsync);
@@ -285,9 +303,6 @@ void ISDL12Window::refresh()
 		SDL_Color* sdlcolors = sdlsurface->format->palette->colors;
 		SDL_SetPalette(sdlsurface, flags, sdlcolors, 0, 256);
 	}
-
-
-	// TODO: possibly blit from a software surface to the video screen
 
 	if (mUseVSync)
 		SDL_Flip(sdlsurface);
@@ -372,6 +387,22 @@ bool ISDL12Window::setMode(int width, int height, int bpp, bool fullscreen, bool
 	#ifdef SDL_GL_SWAP_CONTROL
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
 	#endif
+
+	// Make sure we don't set the resolution smaller than Doom's original 320x200
+	// resolution. Bad things might happen.
+	width = clamp(width, 320, MAXWIDTH);
+	height = clamp(height, 200, MAXHEIGHT);
+
+	// find the closest fullscreen mode to the desired dimensions
+	if (vid_autoadjust && vid_fullscreen)
+	{
+		IVideoMode closest_mode = getClosestMode(width, height);
+		width = closest_mode.getWidth();
+		height = closest_mode.getHeight();
+	}
+
+	if (width == 0 || height == 0)
+		return false;
 
 	SDL_Surface* sdlsurface = SDL_SetVideoMode(width, height, sbits, flags);
 

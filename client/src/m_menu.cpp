@@ -101,8 +101,6 @@ BOOL 				menuactive;
 int                 repeatKey;
 int                 repeatCount;
 
-extern bool st_firsttime;
-
 extern bool			sendpause;
 char				savegamestrings[10][SAVESTRINGSIZE];
 
@@ -187,8 +185,6 @@ bool M_DemoNoPlay;
 static IWindowSurface* fire_surface;
 static const int fire_surface_width = 72;
 static const int fire_surface_height = 77;
-
-EXTERN_CVAR (hud_targetnames)
 
 //
 // DOOM MENU
@@ -2019,11 +2015,14 @@ void M_StartControlPanel (void)
 // Called after the view has been rendered,
 // but before it has been blitted.
 //
-void M_Drawer (void)
+void M_Drawer()
 {
 	int i, x, y, max;
 
-	st_firsttime = true;
+	// [SL] force the status bar to be redrawn in case the menu
+	// draws over a portion of the status bar background
+	ST_ForceRefresh();
+
 	//screen->Dim (); // denis - removed, see bug 388
 
 	// Horiz. & Vertically center string and print it.

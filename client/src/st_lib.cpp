@@ -64,256 +64,210 @@ void STlib_init(void)
 // [RH] Routines to stretch status bar graphics depending on st_scale cvar.
 EXTERN_CVAR (st_scale)
 
-void STlib_scaleRect (int x, int y, int w, int h)
+//
+// STlib_ClearRect
+//
+// Copies a rectangular portion of the status bar background surface onto
+// the drawing surface. This is used prior to drawing a widget (number or patch)
+// onto the surface.
+//
+static void STlib_ClearRect(int x, int y, int w, int h)
 {
 	if (st_scale)
 	{
-		DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
-		DCanvas* stnum_canvas = stnum_surface->getDefaultCanvas();
-
-		stbar_canvas->CopyRect (x, y, w, h, x, y, stnum_canvas);
+		// draw onto stnum_surface, which will be stretched and blitted
+		// onto the rendering surface at the end of the frame.
+		stnum_surface->blit(stbar_surface, x, y, w, h, x, y, w, h);
 	}
 	else
 	{
-		DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
-		stbar_canvas->CopyRect (x, y, w, h, x + ST_X, y + ST_Y, screen);
+		// draw directly onto the rendering surface since stretching isn't being used.
+		R_GetRenderingSurface()->blit(stbar_surface, x, y, w, h, x + ST_X, y + ST_Y, w, h);
 	}
 }
 
-void STlib_scalePatch(int x, int y, patch_t* p)
+
+//
+// STlib_DrawPatch
+//
+// Draws a patch onto the drawing surface. STlib_ClearRect should be used to
+// draw a fresh copy of the background prior to drawing the patch.
+//
+static void STlib_DrawPatch(int x, int y, patch_t* p)
 {
 	if (st_scale)
 	{
+		// draw onto stnum_surface, which will be stretched and blitted
+		// onto the rendering surface at the end of the frame.
 		DCanvas* canvas = stnum_surface->getDefaultCanvas();
 		canvas->DrawPatch(p, x, y);
 	}
 	else
 	{
-		screen->DrawPatch(p, x + ST_X, y + ST_Y);
+		// draw directly onto the rendering surface since stretching isn't being used.
+		DCanvas* canvas = R_GetRenderingSurface()->getDefaultCanvas();
+		canvas->DrawPatch(p, x + ST_X, y + ST_Y);
 	}
 }
 
-// ?
-void
-STlib_initNum
-( st_number_t*			n,
-  int					x,
-  int					y,
-  patch_t** 			pl,
-  int*					num,
-  bool*					on,
-  int					width )
+void STlib_initNum(st_number_t* n, int x, int y, patch_t** pl, int* num, bool* on, int maxdigits)
 {
-	n->x		= x;
-	n->y		= y;
-	n->oldnum	= 0;
-	n->width	= width;
-	n->num		= num;
-	n->on		= on;
-	n->p		= pl;
+	n->x			= x;
+	n->y			= y;
+	n->oldnum		= 0;
+	n->maxdigits	= maxdigits;
+	n->num			= num;
+	n->on			= on;
+	n->p			= pl;
 }
 
 
 //
-// A fairly efficient way to draw a number
-//	based on differences from the old number.
-// Note: worth the trouble?
+// STlib_drawNum
 //
-void STlib_drawNum (st_number_t *n, bool refresh)
+// A fairly efficient way to draw a number based on differences from the
+// old number. Worth the trouble?
+//
+void STlib_drawNum(st_number_t* n, bool force_refresh)
 {
-
-	int 		numdigits = n->width;
-	int 		num = *n->num;
-
-	int 		w = n->p[0]->width();
-	int 		h = n->p[0]->height();
-	int 		x = n->x;
-
-	int 		neg;
-
-	n->oldnum = *n->num;
-
-	neg = num < 0;
-
-	if (neg)
+	// only draw if the number is different or refresh is forced
+	if ((force_refresh || n->oldnum != *n->num) && *n->on)
 	{
-		if (numdigits == 2 && num < -9)
-			num = -9;
-		else if (numdigits == 3 && num < -99)
-			num = -99;
+		int 		num = *n->num;
 
-		num = -num;
+		int 		w = n->p[0]->width();
+		int 		h = n->p[0]->height();
+		int 		x = n->x;
+
+		n->oldnum = *n->num;
+
+		bool negative = num < 0;
+
+		if (negative)
+		{
+			if (n->maxdigits == 2 && num < -9)
+				num = -9;
+			else if (n->maxdigits == 3 && num < -99)
+				num = -99;
+
+			num = -num;
+		}
+
+		// clear the area
+		STlib_ClearRect(n->x - w * n->maxdigits, n->y, w * n->maxdigits, h);
+
+		// if non-number, do not draw it
+		if (num == 1994)
+			return;
+
+		x = n->x;
+
+		// in the special case of 0, you draw 0
+		if (num == 0)
+			STlib_DrawPatch(x - w, n->y, n->p[0]);
+
+		// draw the new number
+		for (int numdigits = n->maxdigits; num && numdigits; numdigits--)
+		{
+			x -= w;
+			STlib_DrawPatch(x, n->y, n->p[num % 10]);
+			num /= 10;
+		}
+
+		// draw a minus sign if necessary
+		if (negative)
+			STlib_DrawPatch(x - 8, n->y, sttminus);
 	}
-
-	// clear the area
-	x = n->x - numdigits*w;
-
-	STlib_scaleRect (x, n->y, w*numdigits, h);
-
-	// if non-number, do not draw it
-	if (num == 1994)
-		return;
-
-	x = n->x;
-
-	// in the special case of 0, you draw 0
-	if (!num)
-		STlib_scalePatch (x - w, n->y, n->p[ 0 ]);
-
-	// draw the new number
-	while (num && numdigits--)
-	{
-		x -= w;
-		STlib_scalePatch (x, n->y, n->p[ num % 10 ]);
-		num /= 10;
-	}
-
-	// draw a minus sign if necessary
-	if (neg)
-		STlib_scalePatch (x - 8, n->y, sttminus);
 }
 
 
-//
-void
-STlib_updateNum
-( st_number_t*			n,
-  bool				refresh )
+void STlib_updateNum(st_number_t* n, bool force_refresh)
 {
-	if (*n->on) STlib_drawNum(n, refresh);
+	if (*n->on)
+		STlib_drawNum(n, force_refresh);
 }
 
 
-//
-void
-STlib_initPercent
-( st_percent_t* 		p,
-  int					x,
-  int					y,
-  patch_t** 			pl,
-  int*					num,
-  bool*					on,
-  patch_t*				percent )
+void STlib_initPercent(st_percent_t* p, int x, int y, patch_t** pl, int* num, bool* on, patch_t* percent_patch)
 {
 	STlib_initNum(&p->n, x, y, pl, num, on, 3);
-	p->p = percent;
+	p->p = percent_patch;
+}
+
+
+void STlib_updatePercent(st_percent_t* percent, bool force_refresh)
+{
+	if (force_refresh && *percent->n.on)
+		STlib_DrawPatch(percent->n.x, percent->n.y, percent->p);
+
+	STlib_updateNum(&percent->n, force_refresh);
 }
 
 
 
-
-void
-STlib_updatePercent
-( st_percent_t* 		per,
-  bool					refresh )
+void STlib_initMultIcon(st_multicon_t* icon, int x, int y, patch_t** il, int* inum, bool* on)
 {
-	if (refresh && *per->n.on) {
-		STlib_scalePatch (per->n.x, per->n.y, per->p);
-	}
-
-	STlib_updateNum(&per->n, refresh);
+	icon->x			= x;
+	icon->y			= y;
+	icon->oldinum	= -1;
+	icon->inum 		= inum;
+	icon->on		= on;
+	icon->p			= il;
 }
 
 
 
-void
-STlib_initMultIcon
-( st_multicon_t*		i,
-  int					x,
-  int					y,
-  patch_t** 			il,
-  int*					inum,
-  bool*				on )
+void STlib_updateMultIcon(st_multicon_t* icon, bool force_refresh)
 {
-	i->x		= x;
-	i->y		= y;
-	i->oldinum	= -1;
-	i->inum 	= inum;
-	i->on		= on;
-	i->p		= il;
-}
-
-
-
-void
-STlib_updateMultIcon
-( st_multicon_t*		mi,
-  bool				refresh )
-{
-	int 				w;
-	int 				h;
-	int 				x;
-	int 				y;
-
-	if (*mi->on
-		&& (mi->oldinum != *mi->inum || refresh)
-		&& (*mi->inum!=-1))
+	if (*icon->on && (force_refresh || icon->oldinum != *icon->inum)
+		&& (*icon->inum != -1))
 	{
-		if (mi->oldinum != -1)
+		// clear the background area
+		if (icon->oldinum != -1)
 		{
-			x = mi->x - mi->p[mi->oldinum]->leftoffset();
-			y = mi->y - mi->p[mi->oldinum]->topoffset();
-			w = mi->p[mi->oldinum]->width();
-			h = mi->p[mi->oldinum]->height();
+			int x = icon->x - icon->p[icon->oldinum]->leftoffset();
+			int y = icon->y - icon->p[icon->oldinum]->topoffset();
+			int w = icon->p[icon->oldinum]->width();
+			int h = icon->p[icon->oldinum]->height();
 
-			STlib_scaleRect (x, y, w, h);
-		} else {
-			w = h = 0;
-			x = 0;
-			y = 0;
+			STlib_ClearRect(x, y, w, h);
 		}
-		STlib_scalePatch (mi->x, mi->y, mi->p[*mi->inum]);
-		mi->oldinum = *mi->inum;
+
+		STlib_DrawPatch(icon->x, icon->y, icon->p[*icon->inum]);
+		icon->oldinum = *icon->inum;
 	}
 }
 
 
 
-void
-STlib_initBinIcon
-( st_binicon_t* 		b,
-  int					x,
-  int					y,
-  patch_t*				i,
-  bool*				val,
-  bool*				on )
+void STlib_initBinIcon(st_binicon_t* icon, int x, int y, patch_t* patch, bool* val, bool* on)
 {
-	b->x		= x;
-	b->y		= y;
-	b->oldval	= 0;
-	b->val		= val;
-	b->on		= on;
-	b->p		= i;
+	icon->x			= x;
+	icon->y			= y;
+	icon->oldval	= 0;
+	icon->val		= val;
+	icon->on		= on;
+	icon->p			= patch;
 }
 
 
 
-void
-STlib_updateBinIcon
-( st_binicon_t* 		bi,
-  bool				refresh )
+void STlib_updateBinIcon(st_binicon_t* icon, bool force_refresh)
 {
-	int 				x;
-	int 				y;
-	int 				w;
-	int 				h;
-
-	if (*bi->on
-		&& ((bi->oldval != *bi->val) || refresh))
+	if (*icon->on && (force_refresh || icon->oldval != *icon->val))
 	{
-		x = bi->x - bi->p->leftoffset();
-		y = bi->y - bi->p->topoffset();
-		w = bi->p->width();
-		h = bi->p->height();
+		int x = icon->x - icon->p->leftoffset();
+		int y = icon->y - icon->p->topoffset();
+		int w = icon->p->width();
+		int h = icon->p->height();
 
-		if (*bi->val)
-			STlib_scalePatch (bi->x, bi->y, bi->p);
+		if (*icon->val)
+			STlib_DrawPatch(icon->x, icon->y, icon->p);
 		else
-			STlib_scaleRect (x, y, w, h);
+			STlib_ClearRect(x, y, w, h);
 
-		bi->oldval = *bi->val;
+		icon->oldval = *icon->val;
 	}
-
 }
 
 VERSION_CONTROL (st_lib_cpp, "$Id$")

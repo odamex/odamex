@@ -84,6 +84,11 @@ CVAR_FUNC_IMPL(vid_640x400)
 	setmodeneeded = true;
 }
 
+CVAR_FUNC_IMPL(vid_vsync)
+{
+	setmodeneeded = true;
+}
+
 
 //
 // I_AdjustPrimarySurface
@@ -144,87 +149,6 @@ void I_AdjustPrimarySurface()
 }
 
 
-void STACK_ARGS I_ShutdownHardware()
-{
-	delete window;
-	window = NULL;
-}
-
-
-static int I_GetParmValue(const char* name)
-{
-	const char* valuestr = Args.CheckValue(name);
-	if (valuestr)
-		return atoi(valuestr);
-	return 0;
-}
-
-//
-// I_InitHardware
-//
-// Initializes the application window and a few miscellaneous video functions.
-//
-void I_InitHardware()
-{
-	char str[2] = { 0, 0 };
-	str[0] = '1' - !Args.CheckParm("-devparm");
-	vid_ticker.SetDefault(str);
-
-	int width = I_GetParmValue("-width");
-	int height = I_GetParmValue("-height");
-	int bpp = I_GetParmValue("-bits");
-
-	// ensure the width & height cvars are sane
-	if (vid_defwidth.asInt() <= 0 || vid_defheight.asInt() <= 0)
-	{
-		vid_defwidth.RestoreDefault();
-		vid_defheight.RestoreDefault();
-	}
-	
-	if (width == 0 && height == 0)
-	{
-		width = vid_defwidth.asInt();
-		height = vid_defheight.asInt();
-	}
-	else if (width == 0)
-	{
-		width = (height * 8) / 6;
-	}
-	else if (height == 0)
-	{
-		height = (width * 6) / 8;
-	}
-
-	if (bpp == 0 || (bpp != 8 && bpp != 32))
-		bpp = vid_32bpp ? 32 : 8;
-
-/*
-	if (vid_autoadjust)
-		I_ClosestResolution(&width, &height);
-
-	if (!V_SetResolution (width, height, bits))
-		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,
-            (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"));
-	else
-        AddCommandString("checkres");
-*/
-
-	bool fullscreen = vid_fullscreen;
-	bool vsync = vid_vsync;
-
-	I_SetVideoMode(width, height, bpp, fullscreen, vsync);
-	if (!I_VideoInitialized())
-		I_FatalError("Failed to initialize display");
-
-	setsizeneeded = true;
-
-	atterm(I_ShutdownHardware);
-
-	I_SetWindowCaption();
-//	Video->SetWindowedScale(vid_winscale);
-}
-
-
 
 // Set the window caption
 void I_SetWindowCaption(const std::string& caption)
@@ -260,61 +184,6 @@ bool I_SetOverscan(float scale)
 }
 
 
-
-bool I_SetMode(int& width, int& height, int& bpp)
-{
-	bool fullscreen = false;
-	int temp_bpp = bpp;
-
-	switch (I_DisplayType())
-	{
-	case DISPLAY_WindowOnly:
-		fullscreen = false;
-		I_PauseMouse();
-		break;
-	case DISPLAY_FullscreenOnly:
-		fullscreen = true;
-		I_ResumeMouse();
-		break;
-	case DISPLAY_Both:
-		fullscreen = vid_fullscreen ? true : false;
-		fullscreen ? I_ResumeMouse() : I_PauseMouse();
-		break;
-	}
-
-	I_SetVideoMode(width, height, temp_bpp, fullscreen, vid_vsync);
-	if (I_VideoInitialized())
-		return true;
-
-	// Try the opposite bit mode:
-	temp_bpp = bpp == 32 ? 8 : 32;
-	I_SetVideoMode(width, height, temp_bpp, fullscreen, vid_vsync);
-	if (I_VideoInitialized())
-		return true;
-
-	// Switch the bit mode back:
-	temp_bpp = bpp;
-
-	// Try the closest resolution:
-	I_ClosestResolution(&width, &height);
-	I_SetVideoMode(width, height, temp_bpp, fullscreen, vid_vsync);
-	if (I_VideoInitialized())
-		return true;
-
-	// Try the opposite bit mode:
-	temp_bpp = bpp == 32 ? 8 : 32;
-	I_SetVideoMode(width, height, temp_bpp, fullscreen, vid_vsync);
-	if (I_VideoInitialized())
-		return true;
-
-	// Just couldn't get it:
-	return false;
-
-	//I_FatalError ("Mode %dx%dx%d is unavailable\n",
-	//			width, height, bpp);
-}
-
-
 //
 // I_CheckResolution
 //
@@ -335,6 +204,7 @@ bool I_CheckResolution(int width, int height)
 	return !(I_GetWindow()->isFullScreen());
 }
 
+/*
 
 void I_ClosestResolution(int* width, int* height)
 {
@@ -374,6 +244,7 @@ void I_ClosestResolution(int* width, int* height)
 		}
 	}
 }
+*/
 
 bool I_CheckVideoDriver(const char* name)
 {
@@ -488,7 +359,7 @@ static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 	{
 		if (sizeof(DEST_PIXEL_T) == sizeof(SOURCE_PIXEL_T) && xstep == FRACUNIT)
 		{
-			memcpy(dest, source, srcpitchpixels * sizeof(SOURCE_PIXEL_T));
+			memcpy(dest, source, destw * sizeof(SOURCE_PIXEL_T));
 		}
 		else
 		{
@@ -718,6 +589,54 @@ IGenericWindowSurface::~IGenericWindowSurface()
 
 
 
+// ============================================================================
+//
+// IWindow class implementation
+//
+// ============================================================================
+
+//
+// IWindow::getClosestMode
+//
+// Returns the closest video mode to the specified dimensions. Note that this
+// requires
+
+IVideoMode IWindow::getClosestMode(int width, int height)
+{
+	const IVideoModeList* modes = getSupportedVideoModes();
+
+	unsigned int closest_dist = MAXWIDTH * MAXWIDTH + MAXHEIGHT * MAXHEIGHT;
+	int closest_width = 0, closest_height = 0;
+
+	for (int iteration = 0; iteration < 2; iteration++)
+	{
+		for (IVideoModeList::const_iterator it = modes->begin(); it != modes->end(); ++it)
+		{
+			if (it->getWidth() == width && it->getHeight() == height)
+				return *it;
+
+			if (iteration == 0 && (it->getWidth() < width || it->getHeight() < height))
+				continue;
+
+			unsigned int dist = (it->getWidth() - width) * (it->getWidth() - width)
+					+ (it->getHeight() - height) * (it->getHeight() - height);
+			
+			if (dist < closest_dist)
+			{
+				closest_dist = dist;
+				closest_width = it->getWidth();
+				closest_height = it->getHeight();
+			}
+		}
+	
+		if (closest_width > 0 && closest_height > 0)
+			return IVideoMode(closest_width, closest_height);
+	}
+
+	return IVideoMode(closest_width, closest_height);
+}
+
+
 // ****************************************************************************
 
 //
@@ -773,6 +692,7 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 	if (I_VideoInitialized())
 		return;
 
+/*
 	// Switch the bit mode back:
 	temp_bpp = bpp;
 
@@ -787,11 +707,13 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 	I_DoSetVideoMode(width, height, temp_bpp, fullscreen, vsync);
 	if (I_VideoInitialized())
 		return;
+*/
 
-	// Just couldn't get it:
-	//I_FatalError ("Mode %dx%dx%d is unavailable\n",
-	//			width, height, bpp);
+	// Just couldn't get it
+	//I_FatalError("Mode %dx%dx%d is unavailable\n", width, height, bpp);
+	I_ShutdownHardware();		// ensure I_VideoInitialized returns false
 }
+
 
 //
 // I_VideoInitialized
@@ -802,6 +724,29 @@ bool I_VideoInitialized()
 {
 	return window != NULL && window->getPrimarySurface() != NULL;
 }
+
+
+
+void STACK_ARGS I_ShutdownHardware()
+{
+	delete window;
+	window = NULL;
+}
+
+
+//
+// I_InitHardware
+//
+// Initializes the application window and a few miscellaneous video functions.
+//
+void I_InitHardware()
+{
+	atterm(I_ShutdownHardware);
+
+	// set up a temporary video window that will be resized later
+	I_DoSetVideoMode(320, 200, 8, false, false);
+}
+
 
 //
 // I_GetWindow
@@ -912,10 +857,8 @@ void I_BlitEmulatedSurface()
 
 		// [SL] handle 320x200 or 640x400 video modes as special cases
 		// since they're not 4:3 or widescreen modes.
-		if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
-			w = 320, h = 200;
-		else if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
-			w = 640, h = 400;
+		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+			w = surface_width, h = surface_height;
 		else if (surface_width * 3 > surface_height * 4)
 			w = surface_height * 4 / 3, h = surface_height;
 		else
@@ -1013,8 +956,6 @@ void I_FinishUpdate()
 
 	if (noblit == false)
 	{
-//		I_BlitEmulatedSurface();
-
 		// Draws frame time and cumulative fps
 		if (vid_displayfps)
 			V_DrawFPSWidget();
@@ -1083,12 +1024,14 @@ void I_SetSurfaceSize(int width, int height)
 // [ML] If this is 320x200 or 640x400, the resolutions
 // "protected" from aspect ratio correction.
 //
-bool I_IsProtectedResolution()
+bool I_IsProtectedResolution(int width, int height)
 {
-	int width = I_GetPrimarySurface()->getWidth();
-	int height = I_GetPrimarySurface()->getHeight();
- 
 	return (width == 320 && height == 200) || (width == 640 && height == 400);
+}
+
+bool I_IsProtectedResolution(const IWindowSurface* surface)
+{
+	return I_IsProtectedResolution(surface->getWidth(), surface->getHeight());
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")

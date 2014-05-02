@@ -406,8 +406,7 @@ void rt_tlatelucent4colsD (int sx, int yl, int yh)
 
 void r_dimpatchD_c(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
-	int surface_pitch_pixels = surface->getPitchInPixels();
+	const int surface_pitch_pixels = surface->getPitchInPixels();
 
 	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
 

@@ -491,5 +491,19 @@ static long ParseCommandLine (const char *args, int *argc, char **argv)
 	return (long)(buffplace - (char *)0);
 }
 
+
+//
+// M_GetParmValue
+//
+// Easy way of retrieving an integer parameter value.
+//
+int M_GetParmValue(const char* name)
+{
+	const char* valuestr = Args.CheckValue(name);
+	if (valuestr)
+		return atoi(valuestr);
+	return 0;
+}
+
 VERSION_CONTROL (m_argv_cpp, "$Id$")
 

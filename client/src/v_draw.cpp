@@ -751,13 +751,10 @@ void DCanvas::CopyRect (int srcx, int srcy, int width, int height,
 	// means we reduce the size of the rectangle (again?) so it fits into the
 	// destination buffer.
 	if (destx + width > destscrn->mSurface->getWidth())
-	{
 		width = destscrn->mSurface->getWidth() - destx;
-	}
 	if (desty + height > destscrn->mSurface->getHeight())
-	{
 		height = destscrn->mSurface->getHeight() - desty;
-	}
+
 	// If rectangle width or height is 0 or less, our blit is useless.
 	if (width <= 0 || height <= 0)
 	{

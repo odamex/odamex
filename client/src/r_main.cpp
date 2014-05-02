@@ -153,6 +153,21 @@ fixed_t			render_lerp_amount;
 byte**			ylookup;
 int* 			columnofs;
 
+
+
+//
+// R_GetRenderingSurface
+//
+// Returns a pointer to the surface that the rendered scene is drawn on.
+//
+IWindowSurface* R_GetRenderingSurface()
+{
+	if (vid_320x200 || vid_640x400)
+		return I_GetEmulatedSurface();
+	else
+		return I_GetPrimarySurface();
+}
+
 //
 //
 // R_PointOnSide
@@ -1013,7 +1028,7 @@ void R_SetTranslatedLucentDrawFuncs()
 //
 void R_RenderPlayerView(player_t *player)
 {
-	IWindowSurface* surface = (vid_320x200 || vid_640x400) ? I_GetEmulatedSurface() : I_GetPrimarySurface();
+	IWindowSurface* surface = R_GetRenderingSurface();
 
 	R_SetupFrame(player);
 
@@ -1030,7 +1045,6 @@ void R_RenderPlayerView(player_t *player)
 	if (r_flashhom)
 	{
 		int color = gametic & 8 ? 0 : 200;
-
 		int x1 = viewwindowx, y1 = viewwindowy;
 		int x2 = viewwindowx + viewwidth - 1, y2 = viewwindowy + viewheight - 1; 
 
@@ -1071,9 +1085,6 @@ void R_RenderPlayerView(player_t *player)
 	}
 
 	R_EndInterpolation();
-
-	if (I_GetEmulatedSurface())
-		I_BlitEmulatedSurface();
 }
 
 
@@ -1123,13 +1134,14 @@ static void R_InitLightTables(int surface_width, int surface_height)
 //
 void R_InitViewWindow()
 {
-	IWindowSurface* surface = I_GetPrimarySurface();
-	if (I_GetEmulatedSurface() != NULL)
-		surface = I_GetEmulatedSurface();
+	IWindowSurface* surface = R_GetRenderingSurface();
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+
+	// using a 320x200/640x400 surface or video mode
+	bool protected_res = vid_320x200 || vid_640x400
+					|| I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight());
 
 	surface->lock();
-
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// Calculate viewwidth & viewheight based on the amount of window border 
 	if (setblocks == 11 || setblocks == 12)
@@ -1143,18 +1155,18 @@ void R_InitViewWindow()
 	else if (setblocks == 10)
 	{
 		viewwidth = surface_width;
-		viewheight = ST_Y;
+		viewheight = ST_StatusBarY(surface_width, surface_height);
 		freelookviewheight = surface_height;
 		viewwindowx = (surface_width - viewwidth) / 2;
 		viewwindowy = 0;
 	}
 	else
 	{
-		viewwidth = ((setblocks * surface_width) / 10) & ~(15 / surface->getBytesPerPixel());
-		viewheight = ((setblocks * ST_Y)/10) & ~7;
+		viewwidth = (setblocks * surface_width / 10) & ~15;
+		viewheight = (setblocks * ST_StatusBarY(surface_width, surface_height) / 10) & ~7;
 		freelookviewheight = ((setblocks * surface_height) / 10) & ~7;
 		viewwindowx = (surface_width - viewwidth) / 2;
-		viewwindowy = (ST_Y - viewheight) / 2;
+		viewwindowy = (ST_StatusBarY(surface_width, surface_height) - viewheight) / 2;
 	}
 
 	centerx = viewwidth / 2;
@@ -1164,8 +1176,7 @@ void R_InitViewWindow()
 
 	// calculate the vertical stretching factor to emulate 320x200
 	// it's a 5:4 ratio = (320 / 200) / (4 / 3)
-
-	if ((surface_width == 320 && surface_height == 200) || (surface_width == 640 && surface_height == 400))
+	if (protected_res)
 		yaspectmul = FRACUNIT;
 	else
 		yaspectmul = 320 * 3 * FRACUNIT / (200 * 4);
@@ -1185,13 +1196,13 @@ void R_InitViewWindow()
 	//      generate a corrected 4:3 screen width based on our
 	//      height, then generate the x-scale based on that.
 	int cswidth, crvwidth;
-	if ((surface_width == 320 && surface_height == 200) || (surface_width == 640 && surface_height == 400))
+	if (protected_res)
 		cswidth = 320 * surface_height / 200;
 	else
-		cswidth = (4 * surface_height) / 3;
+		cswidth = 4 * surface_height / 3;
 
 	if (setblocks < 10)
-		crvwidth = ((setblocks * cswidth) / 10) & ~(15 / surface->getBytesPerPixel());
+		crvwidth = ((setblocks * cswidth) / 10) & ~15;
 	else
 		crvwidth = cswidth;
 

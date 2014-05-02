@@ -192,6 +192,9 @@ void STACK_ARGS R_Shutdown();
 // Called by M_Responder.
 void R_SetViewSize(int blocks);
 
+class IWindowSurface;
+IWindowSurface* R_GetRenderingSurface();
+
 bool R_BorderVisible();
 bool R_StatusBarVisible();
 

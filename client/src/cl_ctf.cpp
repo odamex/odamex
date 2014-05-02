@@ -54,7 +54,6 @@ static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 };
 
 EXTERN_CVAR (screenblocks)
-EXTERN_CVAR (st_scale)
 EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_heldflag)
 

@@ -318,8 +318,6 @@ gender_t D_GenderByName (const char *gender);
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 void AM_Stop();
 
-void ST_AdjustStatusBarScale(bool scale);
-
 //
 // CL_CalculateWorldIndexSync
 //
@@ -501,7 +499,7 @@ void CL_CheckDisplayPlayer()
 		MSG_WriteByte(&net_buffer, newid);
 		displayplayer_id = newid;
 
-		ST_AdjustStatusBarScale(st_scale != 0);
+		ST_ForceRefresh();
 	}
 
 	previd = newid;
@@ -516,8 +514,6 @@ void CL_CheckDisplayPlayer()
 template<class Iterator>
 void CL_SpyCycle(Iterator begin, Iterator end)
 {
-	extern bool st_firsttime;
-
 	// Make sure we have players to iterate over
 	if (players.empty())
 		return;
@@ -561,7 +557,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 			if (demoplayback)
 			{
 				consoleplayer_id = player.id;
-				st_firsttime = true;
+				ST_ForceRefresh();
 			}
 
 			return;
@@ -1381,8 +1377,7 @@ void CL_SetupUserInfo(void)
 	int color = CL_GetPlayerColor(p);
 	R_BuildPlayerTranslation (p->id, color);
 
-	extern bool st_firsttime;
-	st_firsttime = true;
+	ST_ForceRefresh();
 }
 
 
@@ -3040,7 +3035,7 @@ void CL_GetServerSettings(void)
 	R_InitSkyMap ();
 
 	// [AM] - Adhere to sv_allowwidescreen setting.
-	ST_AdjustStatusBarScale(st_scale != 0);
+	ST_ForceRefresh();
 	setsizeneeded = true;
 }
 
@@ -3417,13 +3412,18 @@ void CL_Spectate()
 		player.playerstate = PST_REBORN;
 	}
 
-	if (&player == &consoleplayer()) {
-		st_scale.Callback (); // refresh status bar size
-		if (player.spectator) {
+	if (&player == &consoleplayer())
+	{
+		ST_ForceRefresh();
+
+		if (player.spectator)
+		{
 			player.playerstate = PST_LIVE; // resurrect dead spectators
 			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
 			player.deltaviewheight = 1000 << FRACBITS;
-		} else {
+		}
+		else
+		{
 			displayplayer_id = consoleplayer_id; // get out of spynext
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}

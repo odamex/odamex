@@ -239,7 +239,7 @@ void D_Display()
 		// Recalculate various view parameters.
 		setsizeneeded = true;
 		// Trick status bar into rethinking its position
-		st_scale.Callback ();
+		st_scale.Callback();
 		// Refresh the console.
 		C_NewModeAdjust();
 	}
@@ -290,17 +290,21 @@ void D_Display()
 			if (!gametic)
 				break;
 
-			// denis - freshen the borders (ffs..)
-			R_DrawViewBorder();    // erase old menu stuff
-
+			// Drawn to R_GetRenderingSurface()
 			if (viewactive)
 				R_RenderPlayerView(&displayplayer());
+			R_DrawViewBorder();
+			ST_Drawer();
+
+			if (I_GetEmulatedSurface())
+				I_BlitEmulatedSurface();
+
 			if (automapactive)
 				AM_Drawer();
+
 			C_DrawMid();
 			C_DrawGMid();
 			CTF_DrawHud();
-			ST_Drawer();
 			HU_Drawer();
 			V_DoPaletteEffects();
 			break;
@@ -673,9 +677,9 @@ void D_DoomMain (void)
 	// [RH] Moved these up here so that we can do most of our
 	//		startup output in a fullscreen console.
 
-	HU_Init ();
-	I_Init ();
-	V_Init ();
+	I_Init();
+	V_Init();
+	HU_Init();
 
     // SDL needs video mode set up first before input code can be used
     I_InitInput();

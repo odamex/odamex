@@ -68,7 +68,8 @@ int I_GetSurfaceHeight();
 void I_SetWindowSize(int width, int height);
 void I_SetSurfaceSize(int width, int height);
 
-bool I_IsProtectedResolution();
+bool I_IsProtectedResolution(const IWindowSurface* surface = I_GetPrimarySurface());
+bool I_IsProtectedResolution(int width, int height);
 
 void I_SetPalette(const argb_t* palette);
 
@@ -299,6 +300,8 @@ public:
 
 	virtual const IVideoModeList* getSupportedVideoModes() const = 0;
 	virtual const EDisplayType getDisplayType() const = 0;
+
+	virtual IVideoMode getClosestMode(int width, int height);
 
 	virtual IWindowSurface* getPrimarySurface() = 0;
 	virtual const IWindowSurface* getPrimarySurface() const = 0;

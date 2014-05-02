@@ -1422,15 +1422,18 @@ void R_DrawSlopeSpanD_c()
 
 void R_DrawBorder(int x1, int y1, int x2, int y2)
 {
+	IWindowSurface* surface = R_GetRenderingSurface();
+	DCanvas* canvas = surface->getDefaultCanvas();
+
 	int lumpnum = W_CheckNumForName(gameinfo.borderFlat, ns_flats);
 	if (lumpnum >= 0)
 	{
 		const byte* patch_data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
-		screen->FlatFill(x1 & ~63, y1, x2, y2, patch_data);
+		canvas->FlatFill(x1 & ~63, y1, x2, y2, patch_data);
 	}
 	else
 	{
-		screen->Clear(x1, y1, x2, y2, 0);
+		canvas->Clear(x1, y1, x2, y2, 0);
 	}
 }
 
@@ -1444,11 +1447,14 @@ void V_MarkRect (int x, int y, int width, int height);
 
 void R_DrawViewBorder()
 {
-	IWindowSurface* surface = I_GetPrimarySurface();
+	if (!R_BorderVisible())
+		return;
+
+	IWindowSurface* surface = R_GetRenderingSurface();
+	DCanvas* canvas = surface->getDefaultCanvas();
 	int surface_width = surface->getWidth();
 
-	if (viewwidth == surface_width)
-		return;
+	surface->lock();
 
 	const gameborder_t* border = gameinfo.border;
 	const int offset = border->offset;
@@ -1466,24 +1472,26 @@ void R_DrawViewBorder()
 	// draw beveled edge for the viewing window's top and bottom edges
 	for (int x = viewwindowx; x < viewwindowx + viewwidth; x += size)
 	{
-		screen->DrawPatch(W_CachePatch(border->t), x, viewwindowy - offset);
-		screen->DrawPatch(W_CachePatch(border->b), x, viewwindowy + viewheight);
+		canvas->DrawPatch(W_CachePatch(border->t), x, viewwindowy - offset);
+		canvas->DrawPatch(W_CachePatch(border->b), x, viewwindowy + viewheight);
 	}
 
 	// draw beveled edge for the viewing window's left and right edges
 	for (int y = viewwindowy; y < viewwindowy + viewheight; y += size)
 	{
-		screen->DrawPatch(W_CachePatch(border->l), viewwindowx - offset, y);
-		screen->DrawPatch(W_CachePatch(border->r), viewwindowx + viewwidth, y);
+		canvas->DrawPatch(W_CachePatch(border->l), viewwindowx - offset, y);
+		canvas->DrawPatch(W_CachePatch(border->r), viewwindowx + viewwidth, y);
 	}
 
 	// draw beveled edge for the viewing window's corners
-	screen->DrawPatch(W_CachePatch(border->tl), viewwindowx-offset, viewwindowy-offset);
-	screen->DrawPatch(W_CachePatch(border->tr), viewwindowx+viewwidth, viewwindowy-offset);
-	screen->DrawPatch(W_CachePatch(border->bl), viewwindowx-offset, viewwindowy+viewheight);
-	screen->DrawPatch(W_CachePatch(border->br), viewwindowx+viewwidth, viewwindowy+viewheight);
+	canvas->DrawPatch(W_CachePatch(border->tl), viewwindowx - offset, viewwindowy - offset);
+	canvas->DrawPatch(W_CachePatch(border->tr), viewwindowx + viewwidth, viewwindowy - offset);
+	canvas->DrawPatch(W_CachePatch(border->bl), viewwindowx - offset, viewwindowy + viewheight);
+	canvas->DrawPatch(W_CachePatch(border->br), viewwindowx + viewwidth, viewwindowy + viewheight);
 
-	V_MarkRect(0, 0, I_GetSurfaceWidth(), ST_Y);
+	V_MarkRect(0, 0, surface_width, ST_Y);
+
+	surface->unlock();
 }
 
 

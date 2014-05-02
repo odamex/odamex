@@ -88,6 +88,7 @@ EXTERN_CVAR (vid_320x200)
 EXTERN_CVAR (vid_640x400)
 EXTERN_CVAR (vid_autoadjust)
 EXTERN_CVAR (vid_overscan)
+EXTERN_CVAR (vid_ticker)
 
 CVAR_FUNC_IMPL (vid_maxfps)
 {
@@ -134,10 +135,10 @@ CVAR_FUNC_IMPL (vid_32bpp)
 //
 // V_MarkRect
 //
-void V_MarkRect (int x, int y, int width, int height)
+void V_MarkRect(int x, int y, int width, int height)
 {
-	dirtybox.AddToBox (x, y);
-	dirtybox.AddToBox (x+width-1, y+height-1);
+	dirtybox.AddToBox(x, y);
+	dirtybox.AddToBox(x + width - 1, y + height - 1);
 }
 
 
@@ -488,7 +489,7 @@ bool V_UsePillarBox()
 	if (width == 0 || height == 0)
 		return false;
 
-	if ((width == 320 && height == 200) || (width == 640 && height == 400))
+	if (I_IsProtectedResolution(width, height))
 		return false;
 
 	if (vid_320x200 || vid_640x400)
@@ -512,7 +513,7 @@ bool V_UseLetterBox()
 	if (width == 0 || height == 0)
 		return false;
 
-	if ((width == 320 && height == 200) || (width == 640 && height == 400))
+	if (I_IsProtectedResolution(width, height))
 		return false;
 
 	if (vid_320x200 || vid_640x400)
@@ -533,7 +534,7 @@ bool V_UseWidescreen()
 	if (width == 0 || height == 0)
 		return false;
 
-	if ((width == 320 && height == 200) || (width == 640 && height == 400))
+	if (I_IsProtectedResolution(width, height))
 		return false;
 
 	if (vid_320x200 || vid_640x400)
@@ -550,6 +551,7 @@ static bool V_DoModeSetup(int width, int height, int bpp)
 {
 	bool fullscreen = false;
 
+/*
 	if (I_DisplayType() == DISPLAY_WindowOnly)
 	{
 		fullscreen = false;
@@ -565,6 +567,7 @@ static bool V_DoModeSetup(int width, int height, int bpp)
 		fullscreen = vid_fullscreen ? true : false;
 		fullscreen ? I_ResumeMouse() : I_PauseMouse();
 	}
+*/
 
 	I_SetVideoMode(width, height, bpp, fullscreen, vid_vsync);
 	if (!I_VideoInitialized())
@@ -619,6 +622,7 @@ bool V_SetResolution(int width, int height, int bpp)
 	width = clamp(width, 320, MAXWIDTH);
 	height = clamp(height, 200, MAXHEIGHT);
 
+/*
 	if ((int)(vid_autoadjust))
 	{
 		if (vid_fullscreen)
@@ -639,6 +643,7 @@ bool V_SetResolution(int width, int height, int bpp)
 			bpp = oldbpp;
 		}
 	}
+*/
 
 	return V_DoModeSetup(width, height, bpp);
 }
@@ -729,6 +734,8 @@ void STACK_ARGS V_Close()
 		screen = NULL;
 }
 
+
+
 //
 // V_Init
 //
@@ -737,6 +744,61 @@ void V_Init()
 	bool firstTime = true;
 	if (firstTime)
 		atterm(V_Close);
+
+	// set the default value for vid_ticker based on the presence of -devparm
+	char str[2] = { 0, 0 };
+	str[0] = '1' - !Args.CheckParm("-devparm");
+	vid_ticker.SetDefault(str);
+
+	int width = M_GetParmValue("-width");
+	int height = M_GetParmValue("-height");
+	int bpp = M_GetParmValue("-bits");
+
+	// ensure the width & height cvars are sane
+	if (vid_defwidth.asInt() <= 0 || vid_defheight.asInt() <= 0)
+	{
+		vid_defwidth.RestoreDefault();
+		vid_defheight.RestoreDefault();
+	}
+	
+	if (width == 0 && height == 0)
+	{
+		width = vid_defwidth.asInt();
+		height = vid_defheight.asInt();
+	}
+	else if (width == 0)
+	{
+		width = (height * 8) / 6;
+	}
+	else if (height == 0)
+	{
+		height = (width * 6) / 8;
+	}
+
+	if (bpp == 0 || (bpp != 8 && bpp != 32))
+		bpp = vid_32bpp ? 32 : 8;
+
+/*
+	if (vid_autoadjust)
+		I_ClosestResolution(&width, &height);
+
+	if (!V_SetResolution (width, height, bits))
+		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,
+            (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"));
+	else
+        AddCommandString("checkres");
+*/
+
+	V_SetResolution(width, height, bpp);
+	if (!I_VideoInitialized())
+		I_FatalError("Failed to initialize display");
+
+	setsizeneeded = true;
+
+	I_SetWindowCaption();
+//	Video->SetWindowedScale(vid_winscale);
+
+
 
 	V_InitPalette();
 
