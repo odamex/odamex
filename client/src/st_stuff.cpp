@@ -63,9 +63,6 @@ EXTERN_CVAR(idmypos)
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
 
-extern int SquareWidth;
-
-
 // [RH] Needed when status bar scale changes
 extern BOOL setsizeneeded;
 extern BOOL automapactive;
@@ -448,6 +445,9 @@ void ST_createWidgets(void);
 
 int ST_StatusBarHeight(int surface_width, int surface_height)
 {
+	if (!R_StatusBarVisible())
+		return 0;
+
 	if (st_scale)
 		return 32 * surface_height / 200;
 	else
@@ -456,6 +456,9 @@ int ST_StatusBarHeight(int surface_width, int surface_height)
 
 int ST_StatusBarWidth(int surface_width, int surface_height)
 {
+	if (!R_StatusBarVisible())
+		return 0;
+
 	if (!st_scale)
 		return 320;
 
@@ -465,11 +468,14 @@ int ST_StatusBarWidth(int surface_width, int surface_height)
 	if (I_IsProtectedResolution(surface_width, surface_height))
 		return 10 * ST_StatusBarHeight(surface_width, surface_height);
 	else
-		return SquareWidth;
+		return 4 * surface_width / 3;
 }
 
 int ST_StatusBarX(int surface_width, int surface_height)
 {
+	if (!R_StatusBarVisible())
+		return 0;
+
 	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
 		return 0;
 	else
@@ -478,6 +484,9 @@ int ST_StatusBarX(int surface_width, int surface_height)
 
 int ST_StatusBarY(int surface_width, int surface_height)
 {
+	if (!R_StatusBarVisible())
+		return surface_height;
+
 	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
 		return surface_height;
 	else

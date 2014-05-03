@@ -83,10 +83,6 @@ public:
 	const IWindowSurface* getSurface() const
 	{	return mSurface;	}
 
-	// Copy blocks from one canvas to another
-	void Blit (int srcx, int srcy, int srcwidth, int srcheight, DCanvas *dest, int destx, int desty, int destwidth, int destheight);
-	void CopyRect (int srcx, int srcy, int width, int height, int destx, int desty, DCanvas *destscrn);
-
 	// Draw a linear block of pixels into the view buffer.
 	void DrawBlock (int x, int y, int width, int height, const byte *src) const;
 
