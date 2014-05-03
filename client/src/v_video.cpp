@@ -146,10 +146,7 @@ void V_MarkRect(int x, int y, int width, int height)
 //		right and bottom are one pixel *past* the boundaries they describe.
 void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src) const
 {
-	int fill_width = right - left;
-	right = fill_width >> 6;
-
-	int surface_advance = mSurface->getPitchInPixels() - fill_width;
+	int surface_advance = mSurface->getPitchInPixels() - right + left;
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
@@ -157,17 +154,15 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 
 		for (int y = top; y < bottom; y++)
 		{
-			for (int x = 0; x < right; x++)
+			int x = left;
+			while (x < right)
 			{
-				memcpy(dest, src + ((y & 63) << 6), 64);
-				dest += 64;
+				int amount = std::min(64 - (x & 63), right - x);
+				memcpy(dest, src + ((y & 63) << 6) + (x & 63), amount);
+				dest += amount;
+				x += amount;
 			}
 
-			if (fill_width & 63)
-			{
-				memcpy(dest, src + ((y & 63) << 6), fill_width & 63);
-				dest += fill_width & 63;
-			}
 			dest += surface_advance;
 		}
 	}
@@ -177,33 +172,9 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 
 		for (int y = top; y < bottom; y++)
 		{
-			const byte* l = src + ((y & 63) << 6);
-			for (int x = 0; x < right; x++)
-			{
-				for (int z = 0; z < 64; z += 4, dest += 4)
-				{
-					// Try and let the optimizer pair this on a Pentium
-					// (even though VC++ doesn't anyway)
-					dest[0] = V_Palette.shade(l[z+0]);
-					dest[1] = V_Palette.shade(l[z+1]);
-					dest[2] = V_Palette.shade(l[z+2]);
-					dest[3] = V_Palette.shade(l[z+3]);
-				}
-			}
-
-			if (fill_width & 63)
-			{
-				// Do any odd pixel left over
-				if (fill_width & 1)
-					*dest++ = V_Palette.shade(l[0]);
-
-				// Do the rest of the pixels
-				for (int z = 1; z < (fill_width & 63); z += 2, dest += 2)
-				{
-					dest[0] = V_Palette.shade(l[z+0]);
-					dest[1] = V_Palette.shade(l[z+1]);
-				}
-			}
+			const byte* src_line = src + ((y & 63) << 6);
+			for (int x = left; x < right; x++)
+				*dest++ = V_Palette.shade(src_line[x & 63]);
 
 			dest += surface_advance;
 		}

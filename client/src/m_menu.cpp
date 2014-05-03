@@ -1750,7 +1750,7 @@ bool M_Responder (event_t* ev)
 		ch2 = ev->data2;		// ASCII
 	}
 
-	if (ch == -1 || headsupactive)
+	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
 		return false;
 
 	if (menuactive && OptionsActive) {

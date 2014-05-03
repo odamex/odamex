@@ -1429,7 +1429,7 @@ void R_DrawBorder(int x1, int y1, int x2, int y2)
 	if (lumpnum >= 0)
 	{
 		const byte* patch_data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
-		canvas->FlatFill(x1 & ~63, y1, x2, y2, patch_data);
+		canvas->FlatFill(x1, y1, x2, y2, patch_data);
 	}
 	else
 	{

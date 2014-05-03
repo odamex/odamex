@@ -1286,7 +1286,8 @@ void C_FullConsole()
 
 void C_ToggleConsole()
 {
-	if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull))
+	if (HU_ChatMode() == CHAT_INACTIVE &&
+		(ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull))
 	{
 		if (gamestate == GS_CONNECTING)
 			ConsoleState = c_fallfull;

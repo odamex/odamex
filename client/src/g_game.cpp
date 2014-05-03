@@ -463,7 +463,8 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		side -= sidemove[speed];
 
 	// buttons
-	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && !headsupactive) // john - only add attack when console up
+	// john - only add attack when console up
+	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && HU_ChatMode() == CHAT_INACTIVE)
 		cmd->buttons |= BT_ATTACK;
 
 	if (Actions[ACTION_USE])

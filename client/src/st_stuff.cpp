@@ -60,79 +60,11 @@ static bool st_needrefresh = true;
 static int		lu_palette;
 
 EXTERN_CVAR(idmypos)
-EXTERN_CVAR(noisedebug)
 EXTERN_CVAR(sv_allowredscreen)
-EXTERN_CVAR(screenblocks)
-EXTERN_CVAR(hud_fullhudtype)
 EXTERN_CVAR(st_scale)
 
 extern int SquareWidth;
 
-
-int ST_StatusBarHeight(int surface_width, int surface_height)
-{
-	if (st_scale)
-		return 32 * surface_height / 200;
-	else
-		return 32;
-}
-
-int ST_StatusBarWidth(int surface_width, int surface_height)
-{
-	if (!st_scale)
-		return 320;
-
-	// [AM] Scale status bar width according to height, unless there isn't
-	//      enough room for it.  Fixes widescreen status bar scaling.
-	// [ML] A couple of minor changes for true 4:3 correctness...
-	if (I_IsProtectedResolution(surface_width, surface_height))
-		return 10 * ST_StatusBarHeight(surface_width, surface_height);
-	else
-		return SquareWidth;
-}
-
-int ST_StatusBarX(int surface_width, int surface_height)
-{
-	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
-		return 0;
-	else
-		return (surface_width - ST_StatusBarWidth(surface_width, surface_height)) / 2;
-}
-
-int ST_StatusBarY(int surface_width, int surface_height)
-{
-	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
-		return surface_height;
-	else
-		return surface_height - ST_StatusBarHeight(surface_width, surface_height);
-}
-
-
-//
-// ST_ForceRefresh
-//
-// Recalculate the status bar dimensions and refresh the status bar graphics.
-//
-void ST_ForceRefresh()
-{
-	IWindowSurface* surface = R_GetRenderingSurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
-
-	ST_WIDTH = ST_StatusBarWidth(surface_width, surface_height);
-	ST_HEIGHT = ST_StatusBarHeight(surface_width, surface_height);
-
-	ST_X = ST_StatusBarX(surface_width, surface_height);
-	ST_Y = ST_StatusBarY(surface_width, surface_height);
-
-	setsizeneeded = true;
-	st_needrefresh = true;
-}
-
-
-CVAR_FUNC_IMPL (st_scale)
-{
-	ST_ForceRefresh();
-}
 
 // [RH] Needed when status bar scale changes
 extern BOOL setsizeneeded;
@@ -145,7 +77,6 @@ IWindowSurface* stnum_surface;
 // functions in st_new.c
 void ST_initNew (void);
 void ST_unloadNew (void);
-void ST_voteDraw (int y);
 void ST_newDraw (void);
 void ST_newDrawCTF (void);
 
@@ -514,6 +445,72 @@ cheatseq_t		cheat_mypos = { cheat_mypos_seq, 0 };
 //
 void ST_Stop(void);
 void ST_createWidgets(void);
+
+int ST_StatusBarHeight(int surface_width, int surface_height)
+{
+	if (st_scale)
+		return 32 * surface_height / 200;
+	else
+		return 32;
+}
+
+int ST_StatusBarWidth(int surface_width, int surface_height)
+{
+	if (!st_scale)
+		return 320;
+
+	// [AM] Scale status bar width according to height, unless there isn't
+	//      enough room for it.  Fixes widescreen status bar scaling.
+	// [ML] A couple of minor changes for true 4:3 correctness...
+	if (I_IsProtectedResolution(surface_width, surface_height))
+		return 10 * ST_StatusBarHeight(surface_width, surface_height);
+	else
+		return SquareWidth;
+}
+
+int ST_StatusBarX(int surface_width, int surface_height)
+{
+	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
+		return 0;
+	else
+		return (surface_width - ST_StatusBarWidth(surface_width, surface_height)) / 2;
+}
+
+int ST_StatusBarY(int surface_width, int surface_height)
+{
+	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
+		return surface_height;
+	else
+		return surface_height - ST_StatusBarHeight(surface_width, surface_height);
+}
+
+
+//
+// ST_ForceRefresh
+//
+// Recalculate the status bar dimensions and refresh the status bar graphics.
+//
+void ST_ForceRefresh()
+{
+	IWindowSurface* surface = R_GetRenderingSurface();
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+
+	ST_WIDTH = ST_StatusBarWidth(surface_width, surface_height);
+	ST_HEIGHT = ST_StatusBarHeight(surface_width, surface_height);
+
+	ST_X = ST_StatusBarX(surface_width, surface_height);
+	ST_Y = ST_StatusBarY(surface_width, surface_height);
+
+	setsizeneeded = true;
+	st_needrefresh = true;
+	st_statusbaron = R_StatusBarVisible();
+}
+
+
+CVAR_FUNC_IMPL (st_scale)
+{
+	ST_ForceRefresh();
+}
 
 
 EXTERN_CVAR (sv_allowcheats)
@@ -1348,65 +1345,38 @@ static void ST_refreshBackground()
 //
 void ST_Drawer()
 {
-	if (noisedebug)
-		S_NoiseDebug();
-
-	bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
-
-	if ((viewactive && !R_StatusBarVisible()) || spechud)
+	if (st_statusbaron)
 	{
-		if (screenblocks < 12)
+		stbar_surface->lock();
+		stnum_surface->lock();
+
+		if (st_needrefresh)
 		{
-			if (spechud)
-				hud::SpectatorHUD();
-			else if (hud_fullhudtype >= 1)
-				hud::OdamexHUD();
-			else
-				hud::ZDoomHUD();
-		}
-
-		st_needrefresh = true;
-	}
-	else
-	{
-		if (st_statusbaron)
-		{
-			stbar_surface->lock();
-			stnum_surface->lock();
-
-			if (st_needrefresh)
-			{
-				// draw status bar background to off-screen buffer then blit to surface
-				ST_refreshBackground();
-
-				if (st_scale)
-					stnum_surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
-							0, 0, stnum_surface->getWidth(), stnum_surface->getHeight());
-				else
-					R_GetRenderingSurface()->blit(stbar_surface,
-							0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
-							ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
-			}
-			
-			// refresh all widgets
-			ST_drawWidgets(st_needrefresh);
+			// draw status bar background to off-screen buffer then blit to surface
+			ST_refreshBackground();
 
 			if (st_scale)
-				R_GetRenderingSurface()->blit(stnum_surface,
-						0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
-						ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);	
-
-			st_needrefresh = false;
-
-			stbar_surface->unlock();
-			stnum_surface->unlock();
+				stnum_surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
+						0, 0, stnum_surface->getWidth(), stnum_surface->getHeight());
+			else
+				R_GetRenderingSurface()->blit(stbar_surface,
+						0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
+						ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 		}
+		
+		// refresh all widgets
+		ST_drawWidgets(st_needrefresh);
 
-		hud::DoomHUD();
+		if (st_scale)
+			R_GetRenderingSurface()->blit(stnum_surface,
+					0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
+					ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);	
+
+		st_needrefresh = false;
+
+		stbar_surface->unlock();
+		stnum_surface->unlock();
 	}
-
-	// [AM] Voting HUD!
-	ST_voteDraw(11 * CleanYfac);
 
 	// [RH] Hey, it's somewhere to put the idmypos stuff!
 	if (idmypos)
