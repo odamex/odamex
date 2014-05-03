@@ -512,7 +512,6 @@ static bool V_DoModeSetup(int width, int height, int bpp)
 {
 	bool fullscreen = false;
 
-/*
 	if (I_DisplayType() == DISPLAY_WindowOnly)
 	{
 		fullscreen = false;
@@ -528,7 +527,6 @@ static bool V_DoModeSetup(int width, int height, int bpp)
 		fullscreen = vid_fullscreen ? true : false;
 		fullscreen ? I_ResumeMouse() : I_PauseMouse();
 	}
-*/
 
 	I_SetVideoMode(width, height, bpp, fullscreen, vid_vsync);
 	if (!I_VideoInitialized())
@@ -562,49 +560,10 @@ static bool V_DoModeSetup(int width, int height, int bpp)
 
 bool V_SetResolution(int width, int height, int bpp)
 {
-	int oldwidth, oldheight, oldbpp;
-
-	if (I_VideoInitialized())
-	{
-		oldwidth = I_GetVideoWidth();
-		oldheight = I_GetVideoHeight();
-		oldbpp = I_GetVideoBitDepth();
-	}
-	else
-	{
-		// Harmless if screen wasn't allocated
-		oldwidth = width;
-		oldheight = height;
-		oldbpp = bpp;
-	}
-
 	// Make sure we don't set the resolution smaller than Doom's original 320x200
 	// resolution. Bad things might happen.
 	width = clamp(width, 320, MAXWIDTH);
 	height = clamp(height, 200, MAXHEIGHT);
-
-/*
-	if ((int)(vid_autoadjust))
-	{
-		if (vid_fullscreen)
-		{
-			// Fullscreen needs to check for a valid resolution.
-			I_ClosestResolution(&width, &height);
-		}
-
-		// Try specified resolution
-		if (!I_CheckResolution(width, height))
-		{
-			// Try the previous resolution (if any)
-			if (!I_CheckResolution(oldwidth, oldheight))
-		   		return false;
-
-			width = oldwidth;
-			height = oldheight;
-			bpp = oldbpp;
-		}
-	}
-*/
 
 	return V_DoModeSetup(width, height, bpp);
 }
@@ -637,21 +596,14 @@ BEGIN_COMMAND(vid_setmode)
 	if (width > MAXWIDTH || height > MAXHEIGHT)
 		Printf(PRINT_HIGH, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
 
-	if (I_CheckResolution(width, height))
+	// The actual change of resolution will take place
+	// near the beginning of D_Display().
+	if (gamestate != GS_STARTUP)
 	{
-		// The actual change of resolution will take place
-		// near the beginning of D_Display().
-		if (gamestate != GS_STARTUP)
-		{
-			setmodeneeded = true;
-			NewWidth = width;
-			NewHeight = height;
-			NewBits = bpp;
-		}
-	}
-	else
-	{
-		Printf(PRINT_HIGH, "Unknown resolution %dx%d\n", width, height);
+		setmodeneeded = true;
+		NewWidth = width;
+		NewHeight = height;
+		NewBits = bpp;
 	}
 }
 END_COMMAND (vid_setmode)
@@ -706,60 +658,17 @@ void V_Init()
 	if (firstTime)
 		atterm(V_Close);
 
-	// set the default value for vid_ticker based on the presence of -devparm
-	char str[2] = { 0, 0 };
-	str[0] = '1' - !Args.CheckParm("-devparm");
-	vid_ticker.SetDefault(str);
-
-	int width = M_GetParmValue("-width");
-	int height = M_GetParmValue("-height");
-	int bpp = M_GetParmValue("-bits");
-
-	// ensure the width & height cvars are sane
-	if (vid_defwidth.asInt() <= 0 || vid_defheight.asInt() <= 0)
-	{
-		vid_defwidth.RestoreDefault();
-		vid_defheight.RestoreDefault();
-	}
-	
-	if (width == 0 && height == 0)
-	{
-		width = vid_defwidth.asInt();
-		height = vid_defheight.asInt();
-	}
-	else if (width == 0)
-	{
-		width = (height * 8) / 6;
-	}
-	else if (height == 0)
-	{
-		height = (width * 6) / 8;
-	}
-
-	if (bpp == 0 || (bpp != 8 && bpp != 32))
-		bpp = vid_32bpp ? 32 : 8;
-
-/*
-	if (vid_autoadjust)
-		I_ClosestResolution(&width, &height);
-
-	if (!V_SetResolution (width, height, bits))
-		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,
-            (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"));
-	else
-        AddCommandString("checkres");
-*/
-
-	V_SetResolution(width, height, bpp);
 	if (!I_VideoInitialized())
 		I_FatalError("Failed to initialize display");
+
+	// TODO: [SL] set up CleanXfac/CleanYfac without calling V_SetResolution
+	IWindow* window = I_GetWindow();
+	V_SetResolution(window->getWidth(), window->getHeight(), window->getBitsPerPixel());
 
 	setsizeneeded = true;
 
 	I_SetWindowCaption();
 //	Video->SetWindowedScale(vid_winscale);
-
-
 
 	V_InitPalette();
 

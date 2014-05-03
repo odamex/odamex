@@ -646,6 +646,9 @@ IVideoMode IWindow::getClosestMode(int width, int height)
 //
 static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 {
+	width = clamp(width, 320, MAXWIDTH);
+	height = clamp(height, 200, MAXHEIGHT);
+
 	if (window)
 	{
 		window->setMode(width, height, bpp, fullscreen, vsync);
@@ -658,18 +661,14 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 			window = new ISDL12Window(width, height, bpp, fullscreen, vsync);
 	}
 
-/*
-	if (vid_autoadjust)
-		I_ClosestResolution(&width, &height);
-
-	if (!V_SetResolution (width, height, bits))
-		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,
-            (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"));
-	else
-        AddCommandString("checkres");
-*/
-
 	I_AdjustPrimarySurface();
+
+	if (I_GetVideoWidth() != width || I_GetVideoHeight() != height)
+		Printf(PRINT_HIGH, "Could not set resolution to %dx%dx%d %s. Using resolution " \
+							"%dx%dx%d %s instead.\n",
+							width, height, bpp, (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"),
+							I_GetVideoWidth(), I_GetVideoHeight(), window->getBitsPerPixel(),
+							window->isFullScreen() ? "FULLSCREEN" : "WINDOWED");
 }
 
 
@@ -692,25 +691,7 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 	if (I_VideoInitialized())
 		return;
 
-/*
-	// Switch the bit mode back:
-	temp_bpp = bpp;
-
-	// Try the closest resolution:
-	I_ClosestResolution(&width, &height);
-	I_DoSetVideoMode(width, height, temp_bpp, fullscreen, vsync);
-	if (I_VideoInitialized())
-		return;
-
-	// Try the opposite bit mode:
-	temp_bpp = bpp == 32 ? 8 : 32;
-	I_DoSetVideoMode(width, height, temp_bpp, fullscreen, vsync);
-	if (I_VideoInitialized())
-		return;
-*/
-
-	// Just couldn't get it
-	//I_FatalError("Mode %dx%dx%d is unavailable\n", width, height, bpp);
+	// Couldn't find a suitable resolution
 	I_ShutdownHardware();		// ensure I_VideoInitialized returns false
 }
 
@@ -742,9 +723,6 @@ void STACK_ARGS I_ShutdownHardware()
 void I_InitHardware()
 {
 	atterm(I_ShutdownHardware);
-
-	// set up a temporary video window that will be resized later
-	I_DoSetVideoMode(320, 200, 8, false, false);
 }
 
 

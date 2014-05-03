@@ -149,6 +149,13 @@ EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
 EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
 
+EXTERN_CVAR (vid_ticker)
+EXTERN_CVAR (vid_defwidth)
+EXTERN_CVAR (vid_defheight)
+EXTERN_CVAR (vid_32bpp)
+EXTERN_CVAR (vid_fullscreen)
+EXTERN_CVAR (vid_vsync)
+
 const char *LOG_FILE;
 
 void M_RestoreMode (void);
@@ -671,13 +678,40 @@ void D_DoomMain (void)
 
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
-	// [RH] Initialize configurable strings.
-	//D_InitStrings ();
+	int video_width = M_GetParmValue("-width");
+	int video_height = M_GetParmValue("-height");
+	int video_bpp = M_GetParmValue("-bits");
+
+	// ensure the width & height cvars are sane
+	if (vid_defwidth.asInt() <= 0 || vid_defheight.asInt() <= 0)
+	{
+		vid_defwidth.RestoreDefault();
+		vid_defheight.RestoreDefault();
+	}
+	
+	if (video_width == 0 && video_height == 0)
+	{
+		video_width = vid_defwidth.asInt();
+		video_height = vid_defheight.asInt();
+	}
+	else if (video_width == 0)
+	{
+		video_width = video_height * 4 / 3;
+	}
+	else if (video_height == 0)
+	{
+		video_height = video_width * 3 / 4;
+	}
+
+	if (video_bpp == 0 || (video_bpp != 8 && video_bpp != 32))
+		video_bpp = vid_32bpp ? 32 : 8;
 
 	// [RH] Moved these up here so that we can do most of our
 	//		startup output in a fullscreen console.
 
 	I_Init();
+	I_SetVideoMode(video_width, video_height, video_bpp, vid_fullscreen, vid_vsync);
+
 	V_Init();
 	HU_Init();
 
@@ -706,8 +740,12 @@ void D_DoomMain (void)
 	sv_fastmonsters = Args.CheckParm("-fast");
 
     // developer mode
-	devparm = Args.CheckParm ("-devparm");
-
+	devparm = Args.CheckParm("-devparm");
+ 
+	// set the default value for vid_ticker based on the presence of -devparm
+	if (devparm)
+		vid_ticker.SetDefault("1");
+ 
 	// Record a vanilla demo
 	p = Args.CheckParm ("-record");
 	if (p)
