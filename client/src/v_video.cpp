@@ -27,11 +27,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "minilzo.h"
-// [RH] Output buffer size for LZO compression.
-//		Extra space in case uncompressable.
-#define OUT_LEN(a)		((a) + (a) / 64 + 16 + 3)
-
 #include "m_alloc.h"
 
 #include "i_system.h"
@@ -65,8 +60,6 @@
 #include "cmdlib.h"
 
 IMPLEMENT_CLASS (DCanvas, DObject)
-
-int SquareWidth;
 
 argb_t Col2RGB8[65][256];
 palindex_t RGB32k[32][32][32];
@@ -538,11 +531,6 @@ static bool V_DoModeSetup(int width, int height, int bpp)
 	// this allows hud_scaletext to have some purpose...
 	CleanXfac = CleanYfac = std::max(1, std::min(surface_width / 320, surface_height / 200));
 
-	SquareWidth = (4 * surface_width) / 3;
-
-	if (SquareWidth > surface_width)
-        SquareWidth = surface_width;
-
 	screen = I_GetPrimarySurface()->getDefaultCanvas();
 
 	V_ForceBlend (0,0,0,0);
@@ -668,6 +656,8 @@ void V_Init()
 	setsizeneeded = true;
 
 	I_SetWindowCaption();
+	I_SetWindowIcon();
+
 //	Video->SetWindowedScale(vid_winscale);
 
 	V_InitPalette();

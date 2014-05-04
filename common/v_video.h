@@ -40,8 +40,6 @@ class IWindowSurface;
 
 extern int CleanXfac, CleanYfac;
 
-extern int SquareWidth;
-
 //
 // VIDEO
 //

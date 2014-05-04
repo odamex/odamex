@@ -651,7 +651,7 @@ CVAR(			vid_defbits, "8", "",
 CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen video modes",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			vid_autoadjust, "1", "Force video mode",
+CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest availible video mode.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			vid_displayfps, "0", "Display frames per second",
@@ -694,7 +694,7 @@ CVAR_RANGE_FUNC_DECL(screenblocks, "10", "Selects the size of the visible window
 CVAR_RANGE_FUNC_DECL(vid_winscale, "1.0", "Resizes the window by a scale factor",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
 
-CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan",
+CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan matting",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.5f, 1.0f)
 
 

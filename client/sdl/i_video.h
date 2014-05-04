@@ -22,7 +22,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __I_VIDEO_H__
 #define __I_VIDEO_H__
 
@@ -32,19 +31,24 @@
 #include <string>
 #include <vector>
 
+enum EDisplayType
+{
+	DISPLAY_WindowOnly,
+	DISPLAY_FullscreenOnly,
+	DISPLAY_Both
+};
+
+// forward definitions
 class DCanvas;
 class IWindow;
 class IWindowSurface;
 
-// [RH] True if the display is not in a window
-extern BOOL Fullscreen;
-
 void I_InitHardware();
 void STACK_ARGS I_ShutdownHardware();
+bool I_VideoInitialized();
 
 void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync);
-
-bool I_VideoInitialized();
+void I_SetWindowSize(int width, int height);
 
 IWindow* I_GetWindow();
 IWindowSurface* I_GetPrimarySurface();
@@ -53,8 +57,6 @@ DCanvas* I_GetPrimaryCanvas();
 IWindowSurface* I_GetEmulatedSurface();
 void I_BlitEmulatedSurface();
 
-void I_AdjustPrimarySurface();
-
 IWindowSurface* I_AllocateSurface(int width, int height, int bpp);
 void I_FreeSurface(IWindowSurface* surface);
 
@@ -62,52 +64,57 @@ int I_GetVideoWidth();
 int I_GetVideoHeight();
 int I_GetVideoBitDepth();
 
-byte* I_GetFrameBuffer();
 int I_GetSurfaceWidth();
 int I_GetSurfaceHeight();
-void I_SetWindowSize(int width, int height);
-void I_SetSurfaceSize(int width, int height);
 
 bool I_IsProtectedResolution(const IWindowSurface* surface = I_GetPrimarySurface());
 bool I_IsProtectedResolution(int width, int height);
 
 void I_SetPalette(const argb_t* palette);
 
-void I_BeginUpdate();			// [RH] Locks primary surface
-void I_FinishUpdate();			// Unlocks primary surface
+void I_BeginUpdate();
+void I_FinishUpdate();
 
-// Wait for vertical retrace or pause a bit.
 void I_WaitVBL(int count);
 
-void I_ReadScreen (byte *scr);
-
-void I_BeginRead (void);
-void I_EndRead (void);
-
 void I_SetWindowCaption(const std::string& caption = "");
-void I_SetWindowIcon(void);
+void I_SetWindowIcon();
 
-bool I_CheckResolution (int width, int height);
-void I_ClosestResolution (int *width, int *height);
-//bool I_SetResolution (int width, int height, int bpp);
-
-bool I_CheckVideoDriver (const char *name);
 std::string I_GetVideoDriverName();
 
-
-bool I_SetOverscan (float scale);
-
-void I_StartModeIterator ();
-bool I_NextMode (int *width, int *height);
-
-enum EDisplayType
-{
-	DISPLAY_WindowOnly,
-	DISPLAY_FullscreenOnly,
-	DISPLAY_Both
-};
-
 EDisplayType I_DisplayType();
+
+
+#ifdef __BIG_ENDIAN__
+static const int ashift = 0;
+static const int rshift = 8;
+static const int gshift = 16;
+static const int bshift = 24;
+#else
+static const int ashift = 24;
+static const int rshift = 16;
+static const int gshift = 8;
+static const int bshift = 0;
+#endif
+
+static inline unsigned int APART(argb_t color)
+{	return (color >> ashift) & 0xFF;	}
+
+static inline unsigned int RPART(argb_t color)
+{	return (color >> rshift) & 0xFF;	}
+
+static inline unsigned int GPART(argb_t color)
+{	return (color >> gshift) & 0xFF;	}
+
+static inline unsigned int BPART(argb_t color)
+{	return (color >> bshift) & 0xFF;	}
+
+static inline argb_t MAKERGB(unsigned int r, unsigned int g, unsigned int b)
+{	return (r << rshift) | (g << gshift) | (b << bshift);	}
+
+static inline argb_t MAKEARGB(unsigned int a, unsigned int r, unsigned int g, unsigned int b)
+{	return (a << ashift) | (r << rshift) | (g << gshift) | (b << bshift);	}
+
 
 // ****************************************************************************
 
@@ -390,34 +397,6 @@ private:
 };
 
 
-#ifdef __BIG_ENDIAN__
-static const int ashift = 0;
-static const int rshift = 8;
-static const int gshift = 16;
-static const int bshift = 24;
-#else
-static const int ashift = 24;
-static const int rshift = 16;
-static const int gshift = 8;
-static const int bshift = 0;
-#endif
-
-static inline unsigned int APART(argb_t color)
-{	return (color >> ashift) & 0xFF;	}
-
-static inline unsigned int RPART(argb_t color)
-{	return (color >> rshift) & 0xFF;	}
-
-static inline unsigned int GPART(argb_t color)
-{	return (color >> gshift) & 0xFF;	}
-
-static inline unsigned int BPART(argb_t color)
-{	return (color >> bshift) & 0xFF;	}
-
-static inline argb_t MAKERGB(unsigned int r, unsigned int g, unsigned int b)
-{	return (r << rshift) | (g << gshift) | (b << bshift);	}
-
-static inline argb_t MAKEARGB(unsigned int a, unsigned int r, unsigned int g, unsigned int b)
-{	return (a << ashift) | (r << rshift) | (g << gshift) | (b << bshift);	}
+// ****************************************************************************
 
 #endif // __I_VIDEO_H__

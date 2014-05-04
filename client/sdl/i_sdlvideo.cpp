@@ -357,6 +357,9 @@ bool ISDL12Window::setMode(int width, int height, int bpp, bool fullscreen, bool
 	assert(height <= MAXHEIGHT);
 	assert(bpp == 8 || bpp == 32);
 
+	delete mPrimarySurface;
+	mPrimarySurface = NULL;
+
 	uint32_t flags = vsync ? SDL_HWSURFACE | SDL_DOUBLEBUF : SDL_SWSURFACE;
 
 	if (fullscreen && !mVideoModes.empty())
@@ -394,7 +397,7 @@ bool ISDL12Window::setMode(int width, int height, int bpp, bool fullscreen, bool
 	height = clamp(height, 200, MAXHEIGHT);
 
 	// find the closest fullscreen mode to the desired dimensions
-	if (vid_autoadjust && vid_fullscreen)
+	if (vid_autoadjust && fullscreen)
 	{
 		IVideoMode closest_mode = getClosestMode(width, height);
 		width = closest_mode.getWidth();
@@ -421,7 +424,6 @@ bool ISDL12Window::setMode(int width, int height, int bpp, bool fullscreen, bool
 
 	// create a new IWindowSurface for the SDL_Surface handle that
 	// was returned by SDL_SetVideoMode
-	delete mPrimarySurface;
 	mPrimarySurface = new ISDL12WindowSurface(this, sdlsurface);	
 
 	return true;

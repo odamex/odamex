@@ -21,7 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -38,10 +37,27 @@
 #include "i_sdlvideo.h"
 #include "m_fileio.h"
 
+// [Russell] - Just for windows, display the icon in the system menu and
+// alt-tab display
+#if defined(_WIN32) && !defined(_XBOX)
+	#include "win32inc.h"
+    #include "SDL_syswm.h"
+    #include "resource.h"
+#endif	// _WIN32
+
 // Global IWindow instance for the application window
-static IWindow* window;
+static IWindow* window = NULL;
+
+// Global IWindowSurface instance for the application window
 static IWindowSurface* primary_surface = NULL;
+
+// Global IWindowSurface instance constructed from primary_surface.
+// Used when matting is required (letter-boxing/pillar-boxing)
 static IWindowSurface* matted_surface = NULL;
+
+// Global IWindowSurface instance of size 320x200 or 640x400.
+// Emulates low-resolution video modes by rendering to a small surface
+// and then stretch it to the primary surface after rendering is complete. 
 static IWindowSurface* emulated_surface = NULL;
 
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
@@ -55,18 +71,10 @@ EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_defwidth)
 EXTERN_CVAR(vid_defheight)
 
-CVAR_FUNC_IMPL (vid_winscale)
+// TODO: [SL] Is this used/needed?
+CVAR_FUNC_IMPL(vid_winscale)
 {
-/*
-	if (Video)
-	{
-		Video->SetWindowedScale(var);
-		NewWidth = I_GetVideoWidth();
-		NewHeight = I_GetVideoHeight(); 
-		NewBits = I_GetVideoBitDepth(); 
-		setmodeneeded = true;
-	}
-*/
+	setmodeneeded = true;
 }
 
 CVAR_FUNC_IMPL(vid_overscan)
@@ -91,177 +99,11 @@ CVAR_FUNC_IMPL(vid_vsync)
 
 
 //
-// I_AdjustPrimarySurface
+// vid_listmodes
 //
-void I_AdjustPrimarySurface()
-{
-	if (!I_VideoInitialized())
-		return;
-
-	delete matted_surface;
-	matted_surface = NULL;
-	delete emulated_surface;
-	emulated_surface = NULL;
-
-	primary_surface = I_GetWindow()->getPrimarySurface();
-	// clear window's surface to all black
-	DCanvas* canvas = primary_surface->getDefaultCanvas();
-	canvas->Clear(0, 0, primary_surface->getWidth(), primary_surface->getHeight(), 0);
-
-	// handle matting (pillar-box/letter-box/overscan)
-	if (V_UsePillarBox())
-	{
-		int width = vid_overscan * primary_surface->getHeight() * 4 / 3; 
-		int height = vid_overscan * primary_surface->getHeight();
-		matted_surface = new IGenericWindowSurface(primary_surface, width, height);
-		primary_surface = matted_surface;
-	}
-	else if (V_UseLetterBox())
-	{
-		int width = vid_overscan * primary_surface->getWidth();
-		int height = vid_overscan * primary_surface->getWidth() * 9 / 16;
-		matted_surface = new IGenericWindowSurface(primary_surface, width, height);
-		primary_surface = matted_surface;
-	}
-	else if (vid_overscan < 1.0f)
-	{
-		int width = primary_surface->getWidth() * vid_overscan;
-		int height = primary_surface->getHeight() * vid_overscan;
-		matted_surface = new IGenericWindowSurface(primary_surface, width, height);
-		primary_surface = matted_surface;
-	}
-
-	// handle emulating low resolution modes
-	if (vid_320x200)
-	{
-		int width = 320, height = 200, bpp = primary_surface->getBitsPerPixel();
-		emulated_surface = new IGenericWindowSurface(I_GetWindow(), width, height, bpp);
-		emulated_surface->getDefaultCanvas()->Clear(0, 0, width, height, 0);
-	}
-	else if (vid_640x400)
-	{
-		int width = 640, height = 400, bpp = primary_surface->getBitsPerPixel();
-		emulated_surface = new IGenericWindowSurface(I_GetWindow(), width, height, bpp);
-		emulated_surface->getDefaultCanvas()->Clear(0, 0, width, height, 0);
-	}
-
-	screen = primary_surface->getDefaultCanvas();
-}
-
-
-
-// Set the window caption
-void I_SetWindowCaption(const std::string& caption)
-{
-	// [Russell] - A basic version string that will eventually get replaced
-
-	std::string title("Odamex ");
-	title += DOTVERSIONSTR;
-		
-	if (!caption.empty())
-		title += " - " + caption;
-
-	window->setWindowTitle(title);
-}
-
-
-// Set the window icon
-void I_SetWindowIcon(void)
-{
-
-}
-
-
-EDisplayType I_DisplayType()
-{
-	return window->getDisplayType();
-}
-
-bool I_SetOverscan(float scale)
-{
-	return false;
-//	return Video->SetOverscan (scale);
-}
-
-
+// Prints a list of all supported video modes, highlighting the current
+// video mode. Requires I_VideoInitialized() to be true.
 //
-// I_CheckResolution
-//
-// Returns true if the application window can be resized to the specified
-// dimensions. For full-screen windows, this is limited to supported
-// video modes only.
-//
-bool I_CheckResolution(int width, int height)
-{
-	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
-	for (IVideoModeList::const_iterator it = modes->begin(); it != modes->end(); ++it)
-	{
-		if (it->getWidth() == width && it->getHeight() == height)
-			return true;
-	}
-
-	// [AM] We only care about correct resolutions if we're fullscreen.
-	return !(I_GetWindow()->isFullScreen());
-}
-
-/*
-
-void I_ClosestResolution(int* width, int* height)
-{
-	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
-
-	unsigned int closest_dist = MAXWIDTH * MAXWIDTH + MAXHEIGHT * MAXHEIGHT;
-	int closest_width = 0, closest_height = 0;
-
-//	Video->FullscreenChanged (vid_fullscreen ? true : false);
-
-	for (int iteration = 0; iteration < 2; iteration++)
-	{
-		for (IVideoModeList::const_iterator it = modes->begin(); it != modes->end(); ++it)
-		{
-			if (it->getWidth() == *width && it->getHeight() == *height)
-				return;
-
-			if (iteration == 0 && (it->getWidth() < *width || it->getHeight() < *height))
-				continue;
-
-			unsigned int dist = (it->getWidth() - *width) * (it->getWidth() - *width)
-					+ (it->getHeight() - *height) * (it->getHeight() - *height);
-			
-			if (dist < closest_dist)
-			{
-				closest_dist = dist;
-				closest_width = it->getWidth();
-				closest_height = it->getHeight();
-			}
-		}
-	
-		if (closest_width > 0 && closest_height > 0)
-		{
-			*width = closest_width;
-			*height = closest_height;
-			return;
-		}
-	}
-}
-*/
-
-bool I_CheckVideoDriver(const char* name)
-{
-	if (!name)
-		return false;
-	return iequals(I_GetWindow()->getVideoDriverName(), name);
-}
-
-
-std::string I_GetVideoDriverName()
-{
-	if (I_VideoInitialized())
-		return I_GetWindow()->getVideoDriverName();
-	return std::string();
-}
-
-
 BEGIN_COMMAND(vid_listmodes)
 {
 	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
@@ -276,6 +118,12 @@ BEGIN_COMMAND(vid_listmodes)
 }
 END_COMMAND(vid_listmodes)
 
+
+//
+// vid_currentmode
+//
+// Prints the current video mode. Requires I_VideoInitialized() to be true.
+//
 BEGIN_COMMAND(vid_currentmode)
 {
 	Printf(PRINT_HIGH, "%dx%dx%d\n",
@@ -287,13 +135,7 @@ END_COMMAND(vid_currentmode)
 
 
 
-
-
-
-
 // ****************************************************************************
-
-
 
 // ============================================================================
 //
@@ -588,7 +430,6 @@ IGenericWindowSurface::~IGenericWindowSurface()
 }
 
 
-
 // ============================================================================
 //
 // IWindow class implementation
@@ -640,28 +481,73 @@ IVideoMode IWindow::getClosestMode(int width, int height)
 // ****************************************************************************
 
 //
+// I_ClampVideoMode
+//
+// Sanitizes the given video mode dimensions, preventing them from being smaller
+// than 320x200 and larger than MAXWIDTH, MAXHEIGHT.
+//
+static IVideoMode I_ClampVideoMode(int width, int height)
+{
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+	{
+		if (width < 320 || width < 200)
+			width = 320, height = 200;
+	}
+	else
+	{
+		if (width < 320 || height < 240)
+			width = 320, height = 240;
+	}
+
+	if (width > MAXWIDTH || height > MAXHEIGHT)
+	{
+		bool widescreen = width * 3 > height * 4;
+		if (widescreen && MAXHEIGHT * 16 / 9 <= MAXWIDTH)
+			width = MAXHEIGHT * 9 / 16, height = MAXHEIGHT;
+		else if (widescreen && MAXWIDTH * 9 / 16 <= MAXHEIGHT)
+			width = MAXWIDTH, height = MAXWIDTH * 9 / 16;
+		else if (!widescreen && MAXHEIGHT * 4 / 3 <= MAXWIDTH)
+			width = MAXHEIGHT * 4 / 3, height = MAXHEIGHT;
+		else if (!widescreen && MAXWIDTH * 3 / 4 <= MAXHEIGHT)
+			width = MAXWIDTH, height = MAXWIDTH * 3 / 4;
+	}
+
+	return IVideoMode(width, height);
+}
+
+
+//
 // I_DoSetVideoMode
 //
 // Helper function for I_SetVideoMode.
 //
 static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 {
-	width = clamp(width, 320, MAXWIDTH);
-	height = clamp(height, 200, MAXHEIGHT);
+	I_FreeSurface(matted_surface);
+	matted_surface = NULL;
+	I_FreeSurface(emulated_surface);
+	emulated_surface = NULL;
+//	I_FreeSurface(primary_surface);
+//	primary_surface = NULL;
+
+	if (Args.CheckParm("-novideo"))
+	{
+		delete window;
+		window = new IDummyWindow();
+		primary_surface = window->getPrimarySurface();
+		screen = primary_surface->getDefaultCanvas();
+		return;
+	}
+
+	IVideoMode mode = I_ClampVideoMode(width, height);
 
 	if (window)
-	{
-		window->setMode(width, height, bpp, fullscreen, vsync);
-	}
+		window->setMode(mode.getWidth(), mode.getHeight(), bpp, fullscreen, vsync);
 	else
-	{
-		if (Args.CheckParm("-novideo"))
-			window = new IDummyWindow();
-		else
-			window = new ISDL12Window(width, height, bpp, fullscreen, vsync);
-	}
+		window = new ISDL12Window(mode.getWidth(), mode.getHeight(), bpp, fullscreen, vsync);
 
-	I_AdjustPrimarySurface();
+	if (!I_VideoInitialized())
+		return;
 
 	if (I_GetVideoWidth() != width || I_GetVideoHeight() != height)
 		Printf(PRINT_HIGH, "Could not set resolution to %dx%dx%d %s. Using resolution " \
@@ -669,6 +555,65 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 							width, height, bpp, (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"),
 							I_GetVideoWidth(), I_GetVideoHeight(), window->getBitsPerPixel(),
 							window->isFullScreen() ? "FULLSCREEN" : "WINDOWED");
+
+	// Set up the primary and emulated surfaces
+	primary_surface = window->getPrimarySurface();
+	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
+
+	// clear window's surface to all black
+	primary_surface->getDefaultCanvas()->Clear(0, 0, surface_width, surface_height, 0);
+
+	// [SL] Determine the size of the matted surface.
+	// A matted surface will be used if pillar-boxing or letter-boxing are used, or
+	// if vid_320x200/vid_640x400 are being used in a wide-screen video mode, or
+	// if vid_overscan is used to create a matte around the entire screen.
+	//
+	// Only vid_overscan creates a matted surface if the video mode is 320x200 or 640x400.
+	//
+
+	if (vid_overscan < 1.0f)
+	{
+		surface_width *= vid_overscan;
+		surface_height *= vid_overscan;
+	}
+
+	if (!I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+	{
+		if (vid_320x200 || vid_640x400)
+			surface_width = surface_height * 4 / 3;
+		else if (V_UsePillarBox())
+			surface_width = surface_height * 4 / 3; 
+		else if (V_UseLetterBox())
+			surface_height = surface_width * 9 / 16;
+	}
+
+	// Ensure matted surface dimensions are sane and sanitized.
+	IVideoMode surface_mode = I_ClampVideoMode(surface_width, surface_height);
+	surface_width = surface_mode.getWidth(), surface_height = surface_mode.getHeight();
+
+	// Is matting being used? Create matted_surface based on the primary_surface.
+	if (surface_width != primary_surface->getWidth() ||
+		surface_height != primary_surface->getHeight())
+	{
+		matted_surface = new IGenericWindowSurface(primary_surface, surface_width, surface_height);
+		primary_surface = matted_surface;
+	}
+
+	// Create emulated_surface for emulating low resolution modes.
+	if (vid_320x200)
+	{
+		int bpp = primary_surface->getBitsPerPixel();
+		emulated_surface = new IGenericWindowSurface(I_GetWindow(), 320, 200, bpp);
+		emulated_surface->getDefaultCanvas()->Clear(0, 0, 320, 200, 0);
+	}
+	else if (vid_640x400)
+	{
+		int bpp = primary_surface->getBitsPerPixel();
+		emulated_surface = new IGenericWindowSurface(I_GetWindow(), 640, 400, bpp);
+		emulated_surface->getDefaultCanvas()->Clear(0, 0, 640, 400, 0);
+	}
+
+	screen = primary_surface->getDefaultCanvas();
 }
 
 
@@ -707,7 +652,11 @@ bool I_VideoInitialized()
 }
 
 
-
+//
+// I_ShutdownHardware
+//
+// Destroys the application window and frees its memory.
+//
 void STACK_ARGS I_ShutdownHardware()
 {
 	delete window;
@@ -718,11 +667,14 @@ void STACK_ARGS I_ShutdownHardware()
 //
 // I_InitHardware
 //
-// Initializes the application window and a few miscellaneous video functions.
-//
 void I_InitHardware()
 {
-	atterm(I_ShutdownHardware);
+	static bool initialized = false;
+	if (!initialized)
+	{
+		atterm(I_ShutdownHardware);
+		initialized = true;
+	}
 }
 
 
@@ -820,34 +772,13 @@ IWindowSurface* I_GetEmulatedSurface()
 //
 void I_BlitEmulatedSurface()
 {
-	IWindowSurface* dest_surface = I_GetWindow()->getPrimarySurface();
-	if (matted_surface)
-		dest_surface = matted_surface;
-
 	if (emulated_surface)
 	{
 		emulated_surface->setPalette(GetDefaultPalette()->colors);
 
-		int surface_width = dest_surface->getWidth();
-		int surface_height = dest_surface->getHeight();
-
-		int w, h;
-
-		// [SL] handle 320x200 or 640x400 video modes as special cases
-		// since they're not 4:3 or widescreen modes.
-		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
-			w = surface_width, h = surface_height;
-		else if (surface_width * 3 > surface_height * 4)
-			w = surface_height * 4 / 3, h = surface_height;
-		else
-			w = surface_width, h = surface_width * 3 / 4;
-
-		int x = (surface_width - w) / 2;
-		int y = (surface_height - h) / 2;
-
-		dest_surface->blit(emulated_surface, 0, 0,
+		primary_surface->blit(emulated_surface, 0, 0,
 				emulated_surface->getWidth(), emulated_surface->getHeight(),
-				x, y, w, h); 
+				0, 0, primary_surface->getWidth(), primary_surface->getHeight());
 	}
 }
 
@@ -873,20 +804,6 @@ void I_FreeSurface(IWindowSurface* surface)
 
 
 //
-// I_GetFrameBuffer
-//
-// Returns a pointer to the raw frame buffer for the game window's primary
-// surface.
-//
-byte* I_GetFrameBuffer()
-{
-	if (I_VideoInitialized())
-		return I_GetPrimarySurface()->getBuffer();
-	return NULL;
-}
-
-
-//
 // I_GetSurfaceWidth
 //
 int I_GetSurfaceWidth()
@@ -906,6 +823,24 @@ int I_GetSurfaceHeight()
 		return I_GetPrimarySurface()->getHeight();
 	return 0;
 }
+
+
+//
+// I_IsProtectedReslotuion
+//
+// [ML] If this is 320x200 or 640x400, the resolutions
+// "protected" from aspect ratio correction.
+//
+bool I_IsProtectedResolution(int width, int height)
+{
+	return (width == 320 && height == 200) || (width == 640 && height == 400);
+}
+
+bool I_IsProtectedResolution(const IWindowSurface* surface)
+{
+	return I_IsProtectedResolution(surface->getWidth(), surface->getHeight());
+}
+
 
 
 //
@@ -949,12 +884,6 @@ void I_FinishUpdate()
 }
 
 
-void I_ReadScreen(byte *block)
-{
-//	Video->ReadScreen (block);
-}
-
-
 //
 // I_SetPalette
 //
@@ -981,35 +910,72 @@ void I_SetWindowSize(int width, int height)
 
 
 //
-// I_SetSurfaceSize
+// I_SetWindowCaption
 //
-// Resizes the drawing surface to the specified size.
-// TODO: Surface size should be completely independent of window size.
+// Set the window caption.
 //
-void I_SetSurfaceSize(int width, int height)
+void I_SetWindowCaption(const std::string& caption)
+{
+	// [Russell] - A basic version string that will eventually get replaced
+
+	std::string title("Odamex ");
+	title += DOTVERSIONSTR;
+		
+	if (!caption.empty())
+		title += " - " + caption;
+
+	window->setWindowTitle(title);
+}
+
+
+//
+// I_SetWindowIcon
+//
+// Set the window icon (currently Windows only).
+//
+void I_SetWindowIcon()
+{
+	// [Russell] - Just for windows, display the icon in the system menu and
+	// alt-tab display
+	#if WIN32 && !_XBOX
+	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+
+	if (hIcon)
+	{
+		HWND WindowHandle;
+
+		SDL_SysWMinfo wminfo;
+		SDL_VERSION(&wminfo.version)
+		SDL_GetWMInfo(&wminfo);
+
+		WindowHandle = wminfo.window;
+
+		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+	}
+	#endif
+}
+
+
+//
+// I_DisplayType
+//
+EDisplayType I_DisplayType()
+{
+	return window->getDisplayType();
+}
+
+
+//
+// I_GetVideoDriverName
+//
+// Returns the name of the current video driver in-use.
+//
+std::string I_GetVideoDriverName()
 {
 	if (I_VideoInitialized())
-	{
-		int bpp = vid_32bpp ? 32 : 8;
-		I_SetVideoMode(width, height, bpp, vid_fullscreen, vid_vsync);
-	}
-}
-
-
-//
-// I_IsProtectedReslotuion
-//
-// [ML] If this is 320x200 or 640x400, the resolutions
-// "protected" from aspect ratio correction.
-//
-bool I_IsProtectedResolution(int width, int height)
-{
-	return (width == 320 && height == 200) || (width == 640 && height == 400);
-}
-
-bool I_IsProtectedResolution(const IWindowSurface* surface)
-{
-	return I_IsProtectedResolution(surface->getWidth(), surface->getHeight());
+		return I_GetWindow()->getVideoDriverName();
+	return std::string();
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")
