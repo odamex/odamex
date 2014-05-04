@@ -1665,7 +1665,7 @@ void AM_Drawer (void)
 		// and view size adjustments.
 		f_x = f_y = 0;
 		f_w = surface_width;
-		f_h = ST_Y;
+		f_h = ST_StatusBarY(surface_width, surface_height);
 		f_p = surface->getPitch();
 
 		AM_clearFB(Background);
@@ -1693,13 +1693,13 @@ void AM_Drawer (void)
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2)) {
-
+	if (!(viewactive && am_overlay < 2))
+	{
 		char line[64+10];
-		int OV_Y, time = level.time / TICRATE, height;
+		int time = level.time / TICRATE;
 
-		height = (hu_font[0]->height() + 1) * CleanYfac;
-		OV_Y = surface_height - ((32 * surface_height) / 200);
+		int text_height = (hu_font[0]->height() + 1) * CleanYfac;
+		int OV_Y = ST_StatusBarY(surface_width, surface_height);
 
 		if (sv_gametype == GM_COOP)
 		{
@@ -1708,13 +1708,18 @@ void AM_Drawer (void)
 				sprintf(line, TEXTCOLOR_RED "MONSTERS:"
 								TEXTCOLOR_NORMAL " %d / %d",
 								level.killed_monsters, level.total_monsters);
+
+				int x, y;
+				int text_width = V_StringWidth(line) * CleanXfac;
+
 				if (viewactive && screenblocks == 11)
-					FB->DrawTextClean(CR_GREY, surface_width - V_StringWidth(line) * CleanXfac,
-							OV_Y - (height * 4) + 1, line);
+					x = surface_width - text_width, y = OV_Y - (text_height * 4) + 1;
 				else if (viewactive && screenblocks == 12)
-					FB->DrawTextClean(CR_GREY, 0, surface_height - (height * 2) + 1, line);
+					x = 0, y = OV_Y - (text_height * 2) + 1;
 				else
-					FB->DrawTextClean(CR_GREY, 0, ST_Y - (height * 2) + 1, line);
+					x = 0, y = OV_Y - (text_height * 2) + 1;
+	 
+				FB->DrawTextClean(CR_GREY, x, y, line);
 			}
 
 			if (am_showsecrets)
@@ -1722,15 +1727,17 @@ void AM_Drawer (void)
 				sprintf(line, TEXTCOLOR_RED "SECRETS:"
 								TEXTCOLOR_NORMAL " %d / %d",
 								level.found_secrets, level.total_secrets);
-                if (viewactive && screenblocks == 11)
-                    FB->DrawTextClean(CR_GREY, surface_width - V_StringWidth(line) * CleanXfac,
-							OV_Y - (height * 3) + 1, line);
-                else if (viewactive && screenblocks == 12)
-                    FB->DrawTextClean(CR_GREY, surface_width - V_StringWidth(line) * CleanXfac,
-							surface_height - (height * 2) + 1, line);
-                else
-                    FB->DrawTextClean(CR_GREY, surface_width - V_StringWidth(line) * CleanXfac,
-							ST_Y - (height * 2) + 1, line);
+				int x, y;
+				int text_width = V_StringWidth(line) * CleanXfac;
+
+				if (viewactive && screenblocks == 11)
+					x = surface_width - text_width, y = OV_Y - (text_height * 3) + 1;
+				else if (viewactive && screenblocks == 12)
+					x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
+				else
+					x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
+
+				FB->DrawTextClean(CR_GREY, x, y, line);
 			}
 		}
 
@@ -1754,15 +1761,20 @@ void AM_Drawer (void)
 					mapoffset = level.cluster; // Episodes skip map numbers.
 					break;
 			}
+
 			strcpy(line, GStrings(firstmap + level.levelnum - mapoffset));
 
+			int x, y;
+			int text_width = V_StringWidth(line) * CleanXfac;
+
 			if (viewactive && screenblocks == 11)
-				FB->DrawTextClean(CR_RED, surface_width - V_StringWidth(line) * CleanXfac,
-						OV_Y - (height * 1) + 1, line);
+				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
 			else if (viewactive && screenblocks == 12)
-				FB->DrawTextClean(CR_RED, 0, surface_height - (height * 1) + 1, line);
+				x = 0, y = OV_Y - (text_height * 1) + 1;
 			else
-				FB->DrawTextClean(CR_RED, 0, ST_Y - (height * 1) + 1, line);
+				x = 0, y = OV_Y - (text_height * 1) + 1;
+
+			FB->DrawTextClean(CR_RED, x, y, line);
 		}
 		else
 		{
@@ -1775,29 +1787,36 @@ void AM_Drawer (void)
 			strcpy(line + pos, TEXTCOLOR_NORMAL);
 			pos = strlen(line);
 			line[pos++] = ' ';
-
 			strcpy(&line[pos], level.level_name);
+
+			int x, y;
+			int text_width = V_StringWidth(line) * CleanXfac;
+
 			if (viewactive && screenblocks == 11)
-				FB->DrawTextClean(CR_GREY, surface_width - V_StringWidth(line) * CleanXfac,
-						OV_Y - (height * 1) + 1, line);
+				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
 			else if (viewactive && screenblocks == 12)
-				FB->DrawTextClean(CR_GREY, 0, surface_height - (height * 1) + 1, line);
+				x = 0, y = OV_Y - (text_height * 1) + 1;
 			else
-				FB->DrawTextClean(CR_GREY, 0, ST_Y - (height * 1) + 1, line);
+				x = 0, y = OV_Y - (text_height * 1) + 1;
+
+			FB->DrawTextClean(CR_GREY, x, y, line);
 		}
 
 		if (am_showtime)
 		{
 			sprintf(line, " %02d:%02d:%02d", time/3600, (time%3600)/60, time%60);	// Time
+
+			int x, y;
+			int text_width = V_StringWidth(line) * CleanXfac;
+
 			if (viewactive && screenblocks == 11)
-				FB->DrawTextClean(CR_RED, surface_width - V_StringWidth(line) * CleanXfac,
-						OV_Y - (height * 2) + 1, line);
+				x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
 			else if (viewactive && screenblocks == 12)
-				FB->DrawTextClean(CR_RED, surface_width - V_StringWidth(line) * CleanXfac,
-						surface_height - (height * 1) + 1, line);
+				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
 			else
-				FB->DrawTextClean(CR_RED, surface_width - V_StringWidth (line) * CleanXfac,
-						ST_Y - (height * 1) + 1, line);
+				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
+
+			FB->DrawTextClean(CR_GREY, x, y, line);
 		}
 	}
 }
