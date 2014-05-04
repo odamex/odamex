@@ -492,6 +492,8 @@
 		<Unit filename="../src/st_stuff.cpp" />
 		<Unit filename="../src/v_draw.cpp" />
 		<Unit filename="../src/v_palette.cpp" />
+		<Unit filename="../src/v_screenshot.cpp" />
+		<Unit filename="../src/v_screenshot.h" />
 		<Unit filename="../src/v_text.cpp" />
 		<Unit filename="../src/v_text.h" />
 		<Unit filename="../src/v_video.cpp" />
