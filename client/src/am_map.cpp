@@ -359,6 +359,17 @@ extern NetDemo netdemo;
 
 void AM_rotatePoint (fixed_t *x, fixed_t *y);
 
+bool AM_ClassicAutomapVisible()
+{
+	return automapactive && !viewactive;
+}
+
+bool AM_OverlayAutomapVisible()
+{
+	return automapactive && viewactive;
+}
+
+
 //
 //
 //
@@ -684,18 +695,17 @@ void AM_LevelInit(void)
 //
 //
 //
-void AM_Stop (void)
+void AM_Stop()
 {
-	static event_t st_notify = { ev_keyup, AM_MSGEXITED, 0, 0 };
-
     if (!automapactive)
-    {
         return;
-    }
 
 	AM_unloadPics ();
 	automapactive = false;
-	ST_Responder (&st_notify);
+
+	static event_t st_notify = { ev_keyup, AM_MSGEXITED, 0, 0 };
+	ST_Responder(&st_notify);
+
 	stopped = true;
 	viewactive = true;
 }
@@ -703,17 +713,20 @@ void AM_Stop (void)
 //
 //
 //
-void AM_Start (void)
+void AM_Start()
 {
-	static char lastmap[8] = "";
+	if (!stopped)
+		AM_Stop();
 
-	if (!stopped) AM_Stop();
 	stopped = false;
-	if (strncmp (lastmap, level.mapname, 8))
+
+	static char lastmap[8] = "";
+	if (strncmp(lastmap, level.mapname, 8))
 	{
 		AM_LevelInit();
-		strncpy (lastmap, level.mapname, 8);
+		strncpy(lastmap, level.mapname, 8);
 	}
+
 	AM_initVariables();
 	AM_loadPics();
 }
@@ -744,26 +757,19 @@ BEGIN_COMMAND (togglemap)
 
 	if (!automapactive)
 	{
-		AM_Start ();
-		if (am_overlay)
-			viewactive = true;
-		else
-			viewactive = false;
+		AM_Start();
+		viewactive = am_overlay != 0;
 	}
 	else
 	{
 		if (am_overlay > 0 && am_overlay < 3 && viewactive)
-		{
 			viewactive = false;
-		}
 		else
-		{
-			AM_Stop ();
-		}
+			AM_Stop();
 	}
 
 	if (automapactive)
-		AM_initColors (viewactive);
+		AM_initColors(viewactive);
 }
 END_COMMAND (togglemap)
 
@@ -1699,7 +1705,7 @@ void AM_Drawer (void)
 		int time = level.time / TICRATE;
 
 		int text_height = (hu_font[0]->height() + 1) * CleanYfac;
-		int OV_Y = ST_StatusBarY(surface_width, surface_height);
+		int OV_Y = surface_height - (surface_height * 32 / 200);
 
 		if (sv_gametype == GM_COOP)
 		{
@@ -1712,10 +1718,8 @@ void AM_Drawer (void)
 				int x, y;
 				int text_width = V_StringWidth(line) * CleanXfac;
 
-				if (viewactive && screenblocks == 11)
+				if (AM_OverlayAutomapVisible())
 					x = surface_width - text_width, y = OV_Y - (text_height * 4) + 1;
-				else if (viewactive && screenblocks == 12)
-					x = 0, y = OV_Y - (text_height * 2) + 1;
 				else
 					x = 0, y = OV_Y - (text_height * 2) + 1;
 	 
@@ -1730,10 +1734,8 @@ void AM_Drawer (void)
 				int x, y;
 				int text_width = V_StringWidth(line) * CleanXfac;
 
-				if (viewactive && screenblocks == 11)
+				if (AM_OverlayAutomapVisible())
 					x = surface_width - text_width, y = OV_Y - (text_height * 3) + 1;
-				else if (viewactive && screenblocks == 12)
-					x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
 				else
 					x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
 
@@ -1767,10 +1769,8 @@ void AM_Drawer (void)
 			int x, y;
 			int text_width = V_StringWidth(line) * CleanXfac;
 
-			if (viewactive && screenblocks == 11)
+			if (AM_OverlayAutomapVisible())
 				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
-			else if (viewactive && screenblocks == 12)
-				x = 0, y = OV_Y - (text_height * 1) + 1;
 			else
 				x = 0, y = OV_Y - (text_height * 1) + 1;
 
@@ -1792,10 +1792,8 @@ void AM_Drawer (void)
 			int x, y;
 			int text_width = V_StringWidth(line) * CleanXfac;
 
-			if (viewactive && screenblocks == 11)
+			if (AM_OverlayAutomapVisible())
 				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
-			else if (viewactive && screenblocks == 12)
-				x = 0, y = OV_Y - (text_height * 1) + 1;
 			else
 				x = 0, y = OV_Y - (text_height * 1) + 1;
 
@@ -1809,10 +1807,8 @@ void AM_Drawer (void)
 			int x, y;
 			int text_width = V_StringWidth(line) * CleanXfac;
 
-			if (viewactive && screenblocks == 11)
+			if (AM_OverlayAutomapVisible())
 				x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
-			else if (viewactive && screenblocks == 12)
-				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
 			else
 				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
 

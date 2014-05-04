@@ -1250,6 +1250,8 @@ void R_InitViewWindow()
 }
 
 
+bool AM_ClassicAutomapVisible();
+
 //
 // R_BorderVisible
 //
@@ -1257,7 +1259,7 @@ void R_InitViewWindow()
 //
 bool R_BorderVisible()
 {
-	return setblocks < 10 && !automapactive;
+	return setblocks < 10 && !AM_ClassicAutomapVisible();
 }
 
 
@@ -1268,7 +1270,7 @@ bool R_BorderVisible()
 //
 bool R_StatusBarVisible()
 {
-	return setblocks <= 10 || automapactive;
+	return setblocks <= 10 || AM_ClassicAutomapVisible();
 }
 
 
