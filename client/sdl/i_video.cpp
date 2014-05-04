@@ -71,12 +71,6 @@ EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_defwidth)
 EXTERN_CVAR(vid_defheight)
 
-// TODO: [SL] Is this used/needed?
-CVAR_FUNC_IMPL(vid_winscale)
-{
-	setmodeneeded = true;
-}
-
 CVAR_FUNC_IMPL(vid_overscan)
 {
 	setmodeneeded = true;

@@ -658,8 +658,6 @@ void V_Init()
 	I_SetWindowCaption();
 	I_SetWindowIcon();
 
-//	Video->SetWindowedScale(vid_winscale);
-
 	V_InitPalette();
 
 	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight());

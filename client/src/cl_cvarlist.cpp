@@ -691,10 +691,7 @@ CVAR_FUNC_DECL(	r_optimize, "detect", "Rendering optimizations",
 CVAR_RANGE_FUNC_DECL(screenblocks, "10", "Selects the size of the visible window",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 3.0f, 12.0f)
 
-CVAR_RANGE_FUNC_DECL(vid_winscale, "1.0", "Resizes the window by a scale factor",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
-
-CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan matting",
+CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan matting (as a percentage of the screen area)",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.5f, 1.0f)
 
 
