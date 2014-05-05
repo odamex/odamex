@@ -998,9 +998,8 @@ menu_t AutomapMenu = {
  *
  *=======================================*/
 
-extern BOOL setmodeneeded;
+extern bool setmodeneeded;
 extern int NewWidth, NewHeight, NewBits;
-extern int I_GetVideoBitDepth();
 
 QWORD testingmode;		// Holds time to revert to old mode
 int OldWidth, OldHeight, OldBits;

@@ -108,8 +108,8 @@ void D_DoAdvanceDemo (void);
 void D_DoomLoop (void);
 
 extern QWORD testingmode;
-extern BOOL setsizeneeded;
-extern BOOL setmodeneeded;
+extern bool setsizeneeded;
+extern bool setmodeneeded;
 extern int NewWidth, NewHeight, NewBits;
 EXTERN_CVAR (st_scale)
 extern BOOL gameisdead;

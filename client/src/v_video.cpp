@@ -106,7 +106,7 @@ EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (ui_dimcolor)
 
 // [RH] Set true when vid_setmode command has been executed
-BOOL	setmodeneeded = false;
+bool	setmodeneeded = false;
 // [RH] Resolution to change to when setmodeneeded is true
 int		NewWidth, NewHeight, NewBits;
 
@@ -621,8 +621,6 @@ void V_Init()
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
 	I_FlushInput();
-
-	setsizeneeded = true;
 
 	I_SetWindowCaption();
 	I_SetWindowIcon();

@@ -64,7 +64,7 @@ EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
 
 // [RH] Needed when status bar scale changes
-extern BOOL setsizeneeded;
+extern bool setsizeneeded;
 extern BOOL automapactive;
 
 // [RH] Status bar background

@@ -128,7 +128,7 @@ int 			extralight;
 // [RH] ignore extralight and fullbright
 BOOL			foggy;
 
-BOOL			setsizeneeded;
+bool			setsizeneeded;
 int				setblocks;
 
 fixed_t			freelookviewheight;

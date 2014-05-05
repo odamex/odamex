@@ -212,8 +212,8 @@ extern	BOOL	 		precache;
 extern gamestate_t wipegamestate;
 
 // denis - is this from hexen?
-extern BOOL setsizeneeded;
-extern BOOL setmodeneeded;
+extern bool setsizeneeded;
+extern bool setmodeneeded;
 
 EXTERN_CVAR (mouse_sensitivity) // removeme // ?
 
