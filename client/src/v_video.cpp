@@ -498,62 +498,19 @@ bool V_UseWidescreen()
 		&& (3 * width > 4 * height);
 }
 
+
 //
 // V_SetResolution
 //
-static bool V_DoModeSetup(int width, int height, int bpp)
+bool V_SetResolution(int width, int height, int bpp)
 {
-	bool fullscreen = false;
-
-	if (I_DisplayType() == DISPLAY_WindowOnly)
-	{
-		fullscreen = false;
-		I_PauseMouse();
-	}
-	else if (I_DisplayType() == DISPLAY_FullscreenOnly)
-	{
-		fullscreen = true;
-		I_ResumeMouse();
-	}
-	else
-	{
-		fullscreen = vid_fullscreen ? true : false;
-		fullscreen ? I_ResumeMouse() : I_PauseMouse();
-	}
-
-	I_SetVideoMode(width, height, bpp, fullscreen, vid_vsync);
+	I_SetVideoMode(width, height, bpp, vid_fullscreen, vid_vsync);
 	if (!I_VideoInitialized())
 		return false;
 
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-
-	// This uses the smaller of the two results. It's still not ideal but at least
-	// this allows hud_scaletext to have some purpose...
-	CleanXfac = CleanYfac = std::max(1, std::min(surface_width / 320, surface_height / 200));
-
-	screen = I_GetPrimarySurface()->getDefaultCanvas();
-
-	V_ForceBlend (0,0,0,0);
-	GammaAdjustPalettes();
-	RefreshPalettes();
-	R_ReinitColormap();
-
-	R_InitColumnDrawers();
-
-	// [SL] 2011-11-30 - Prevent the player's view angle from moving
-	I_FlushInput();
+	V_Init();
 
 	return true;
-}
-
-bool V_SetResolution(int width, int height, int bpp)
-{
-	// Make sure we don't set the resolution smaller than Doom's original 320x200
-	// resolution. Bad things might happen.
-	width = clamp(width, 320, MAXWIDTH);
-	height = clamp(height, 200, MAXHEIGHT);
-
-	return V_DoModeSetup(width, height, bpp);
 }
 
 BEGIN_COMMAND(vid_setmode)
@@ -604,6 +561,7 @@ BEGIN_COMMAND (checkres)
 }
 END_COMMAND (checkres)
 
+
 //
 // V_InitPalette
 //
@@ -624,9 +582,9 @@ void V_InitPalette (void)
 	V_Palette = shaderef_t(&GetDefaultPalette()->maps, 0); // (unsigned int *)DefaultPalette->colors;
 }
 
+
 //
 // V_Close
-//
 //
 void STACK_ARGS V_Close()
 {
@@ -634,7 +592,6 @@ void STACK_ARGS V_Close()
 	if (screen)
 		screen = NULL;
 }
-
 
 
 //
@@ -649,9 +606,21 @@ void V_Init()
 	if (!I_VideoInitialized())
 		I_FatalError("Failed to initialize display");
 
-	// TODO: [SL] set up CleanXfac/CleanYfac without calling V_SetResolution
-	IWindow* window = I_GetWindow();
-	V_SetResolution(window->getWidth(), window->getHeight(), window->getBitsPerPixel());
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+
+	// This uses the smaller of the two results. It's still not ideal but at least
+	// this allows hud_scaletext to have some purpose...
+	CleanXfac = CleanYfac = std::max(1, std::min(surface_width / 320, surface_height / 200));
+
+	V_ForceBlend(0,0,0,0);
+	GammaAdjustPalettes();
+	RefreshPalettes();
+	R_ReinitColormap();
+
+	R_InitColumnDrawers();
+
+	// [SL] 2011-11-30 - Prevent the player's view angle from moving
+	I_FlushInput();
 
 	setsizeneeded = true;
 

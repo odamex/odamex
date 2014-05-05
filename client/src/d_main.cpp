@@ -712,6 +712,10 @@ void D_DoomMain (void)
 	I_Init();
 	I_SetVideoMode(video_width, video_height, video_bpp, vid_fullscreen, vid_vsync);
 
+	std::string video_driver = I_GetVideoDriverName();
+	if (!video_driver.empty())
+		Printf(PRINT_HIGH, "Using %s video driver.\n", video_driver.c_str());
+
 	V_Init();
 	HU_Init();
 
@@ -833,10 +837,6 @@ void D_DoomMain (void)
 	// Check for -file in shareware
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_Error ("You cannot -file with the shareware version. Register!");
-
-	std::string video_driver = I_GetVideoDriverName();
-	if (!video_driver.empty())
-		Printf(PRINT_HIGH, "Using %s video driver.\n", video_driver.c_str());
 
 	Printf (PRINT_HIGH, "M_Init: Init miscellaneous info.\n");
 	M_Init ();

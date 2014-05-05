@@ -533,6 +533,17 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 		return;
 	}
 
+	// Ensure the display type is adhered to
+//	if (I_DisplayType() == DISPLAY_WindowOnly)
+//		fullscreen = false;
+//	else if (I_DisplayType() == DISPLAY_FullscreenOnly)
+//		fullscreen = true;
+
+	if (fullscreen)
+		I_ResumeMouse();
+	else
+		I_PauseMouse();
+
 	IVideoMode mode = I_ClampVideoMode(width, height);
 
 	if (window)
@@ -542,13 +553,6 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 
 	if (!I_VideoInitialized())
 		return;
-
-	if (I_GetVideoWidth() != width || I_GetVideoHeight() != height)
-		Printf(PRINT_HIGH, "Could not set resolution to %dx%dx%d %s. Using resolution " \
-							"%dx%dx%d %s instead.\n",
-							width, height, bpp, (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"),
-							I_GetVideoWidth(), I_GetVideoHeight(), window->getBitsPerPixel(),
-							window->isFullScreen() ? "FULLSCREEN" : "WINDOWED");
 
 	// Set up the primary and emulated surfaces
 	primary_surface = window->getPrimarySurface();
@@ -612,6 +616,20 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 
 
 //
+// I_CheckVideoModeMessage
+//
+static void I_CheckVideoModeMessage(int width, int height, int bpp, bool fullscreen)
+{
+	if (I_GetVideoWidth() != width || I_GetVideoHeight() != height)
+		Printf(PRINT_HIGH, "Could not set resolution to %dx%dx%d %s. Using resolution \
+							%dx%dx%d %s instead.\n",
+							width, height, bpp, (fullscreen ? "FULLSCREEN" : "WINDOWED"),
+							I_GetVideoWidth(), I_GetVideoHeight(), I_GetWindow()->getBitsPerPixel(),
+							I_GetWindow()->isFullScreen() ? "FULLSCREEN" : "WINDOWED");
+}
+
+
+//
 // I_SetVideoMode
 //
 // Main function to set the video mode at the hardware level.
@@ -622,13 +640,19 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 
 	I_DoSetVideoMode(width, height, temp_bpp, fullscreen, vsync);
 	if (I_VideoInitialized())
+	{
+		I_CheckVideoModeMessage(width, height, bpp, fullscreen);
 		return;
+	}
 
 	// Try the opposite bit mode:
 	temp_bpp = bpp == 32 ? 8 : 32;
 	I_DoSetVideoMode(width, height, temp_bpp, fullscreen, vsync);
 	if (I_VideoInitialized())
+	{
+		I_CheckVideoModeMessage(width, height, bpp, fullscreen);
 		return;
+	}
 
 	// Couldn't find a suitable resolution
 	I_ShutdownHardware();		// ensure I_VideoInitialized returns false
