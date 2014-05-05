@@ -68,9 +68,9 @@ typedef struct palette_s palette_t;
 
 
 struct dyncolormap_s {
-	shaderef_t   maps;
-	unsigned int color;
-	unsigned int fade;
+	shaderef_t		maps;
+	argb_t			color;
+	argb_t			fade;
 	struct dyncolormap_s *next;
 };
 typedef struct dyncolormap_s dyncolormap_t;

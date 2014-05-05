@@ -273,7 +273,7 @@ bool InternalCreatePalette (palette_t *palette, const char *name, byte *colors,
 		palette->shadeshift = 8;
 
 	for (i = 0; i < numcolors; i++, colors += 3)
-		palette->basecolors[i] = MAKERGB(colors[0],colors[1],colors[2]);
+		palette->basecolors[i] = argb_t(colors[0],colors[1],colors[2]);
 
 	GammaAdjustPalette (palette);
 
@@ -411,7 +411,7 @@ palette_t *FindPalette (char *name, unsigned flags)
 
 // This is based (loosely) on the ColorShiftPalette()
 // function from the dcolors.c file in the Doom utilities.
-static void DoBlending (argb_t *from, argb_t *to, unsigned count, int tor, int tog, int tob, int toa)
+static void DoBlending(argb_t *from, argb_t *to, unsigned count, int tor, int tog, int tob, int toa)
 {
 	if (toa == 0)
 	{
@@ -420,36 +420,38 @@ static void DoBlending (argb_t *from, argb_t *to, unsigned count, int tor, int t
 	}
 	else
 	{
-		for (unsigned i = 0; i < count; i++)
+		for (unsigned i = 0; i < count; i++, from++, to++)
 		{
-			int r = RPART(*from);
-			int g = GPART(*from);
-			int b = BPART(*from);
-			from++;
+			int r = from->r;
+			int g = from->g;
+			int b = from->b;
+
 			int dr = tor - r;
 			int dg = tog - g;
 			int db = tob - b;
-			*to++ = MAKERGB (r + ((dr*toa)>>8),
-							 g + ((dg*toa)>>8),
-							 b + ((db*toa)>>8));
+
+			to->r = r + ((dr * toa) >> 8);
+			to->g = g + ((dg * toa) >> 8);
+			to->b = b + ((db * toa) >> 8);
 		}
 	}
 }
 
-static void DoBlendingWithGamma (DWORD *from, DWORD *to, unsigned count, int tor, int tog, int tob, int toa)
+static void DoBlendingWithGamma(argb_t* from, argb_t* to, unsigned count, int tor, int tog, int tob, int toa)
 {
-	for (unsigned i = 0; i < count; i++)
+	for (unsigned i = 0; i < count; i++, from++, to++)
 	{
-		int r = RPART(*from);
-		int g = GPART(*from);
-		int b = BPART(*from);
-		from++;
+		int r = from->r;
+		int g = from->g;
+		int b = from->b;
+
 		int dr = tor - r;
 		int dg = tog - g;
 		int db = tob - b;
-		*to++ = MAKERGB (newgamma[r + ((dr*toa)>>8)],
-						 newgamma[g + ((dg*toa)>>8)],
-						 newgamma[b + ((db*toa)>>8)]);
+
+		to->r = newgamma[r + ((dr * toa) >> 8)];
+		to->g = newgamma[g + ((dg * toa) >> 8)];
+		to->b = newgamma[b + ((db * toa) >> 8)];
 	}
 }
 
@@ -493,15 +495,15 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 	{
 		for (int c = 0; c < numcolors; c++)
 		{
-			unsigned int r = (RPART(palette[c]) * (NUMCOLORMAPS - i) + RPART(fadecolor) * i
+			unsigned int r = (palette[c].r * (NUMCOLORMAPS - i) + fadecolor.r * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int g = (GPART(palette[c]) * (NUMCOLORMAPS - i) + GPART(fadecolor) * i
+			unsigned int g = (palette[c].g * (NUMCOLORMAPS - i) + fadecolor.g * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int b = (BPART(palette[c]) * (NUMCOLORMAPS - i) + BPART(fadecolor) * i
+			unsigned int b = (palette[c].b * (NUMCOLORMAPS - i) + fadecolor.b * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
 			colormap[c] = BestColor(palette, r, g, b, numcolors);
-			shademap[c] = MAKERGB(newgamma[r], newgamma[g], newgamma[b]);
+			shademap[c] = argb_t(newgamma[r], newgamma[g], newgamma[b]);
 		}
 	}
 
@@ -509,12 +511,12 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 	for (int c = 0; c < numcolors; c++)
 	{
 		int grayint = (int)(255.0f * clamp(1.0f -
-						(RPART(palette[c]) * 0.00116796875f +
-						 GPART(palette[c]) * 0.00229296875f +
-			 			 BPART(palette[c]) * 0.0005625f), 0.0f, 1.0f));
+						(palette[c].r * 0.00116796875f +
+						 palette[c].g * 0.00229296875f +
+			 			 palette[c].b * 0.0005625f), 0.0f, 1.0f));
 
 		colormap[c] = BestColor(palette, grayint, grayint, grayint, numcolors);
-		shademap[c] = MAKERGB(newgamma[grayint], newgamma[grayint], newgamma[grayint]);
+		shademap[c] = argb_t(newgamma[grayint], newgamma[grayint], newgamma[grayint]);
 	}
 }
 
@@ -535,14 +537,14 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 	{
 		for (int c = 0; c < numcolors; c++)
 		{
-			unsigned int r = (RPART(palette[c]) * (NUMCOLORMAPS - i) + RPART(fadecolor) * i
+			unsigned int r = (palette[c].r * (NUMCOLORMAPS - i) + fadecolor.r * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int g = (GPART(palette[c]) * (NUMCOLORMAPS - i) + GPART(fadecolor) * i
+			unsigned int g = (palette[c].g * (NUMCOLORMAPS - i) + fadecolor.g * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int b = (BPART(palette[c]) * (NUMCOLORMAPS - i) + BPART(fadecolor) * i
+			unsigned int b = (palette[c].b * (NUMCOLORMAPS - i) + fadecolor.b * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
-			shademap[c] = MAKERGB(newgamma[r], newgamma[g], newgamma[b]);
+			shademap[c] = argb_t(newgamma[r], newgamma[g], newgamma[b]);
 		}
 	}
 
@@ -550,11 +552,11 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 	for (int c = 0; c < numcolors; c++)
 	{
 		int grayint = (int)(255.0f * clamp(1.0f -
-						(RPART(palette[c]) * 0.00116796875f +
-						 GPART(palette[c]) * 0.00229296875f +
-			 			 BPART(palette[c]) * 0.0005625f), 0.0f, 1.0f));
+						(palette[c].r * 0.00116796875f +
+						 palette[c].g * 0.00229296875f +
+			 			 palette[c].b * 0.0005625f), 0.0f, 1.0f));
 
-		shademap[c] = MAKERGB(newgamma[grayint], newgamma[grayint], newgamma[grayint]);
+		shademap[c] = argb_t(newgamma[grayint], newgamma[grayint], newgamma[grayint]);
 	}
 }
 
@@ -575,7 +577,7 @@ void RefreshPalette (palette_t *pal)
 	if (pal == &DefPal)
 	{
 		NormalLight.maps = shaderef_t(&DefPal.maps, 0);
-		NormalLight.color = MAKERGB(255,255,255);
+		NormalLight.color = argb_t(255,255,255);
 		NormalLight.fade = level.fadeto;
 	}
 }
@@ -594,18 +596,17 @@ void RefreshPalettes (void)
 
 void GammaAdjustPalette (palette_t *pal)
 {
-	unsigned i, color;
-
 	if (!(pal->colors && pal->basecolors))
 		return;
 
 	if (!gamma_initialized)
 		V_UpdateGammaLevel(gammalevel);
 
-	for (i = 0; i < pal->numcolors; i++)
+	for (unsigned int i = 0; i < pal->numcolors; i++)
 	{
-		color = pal->basecolors[i];
-		pal->colors[i] = MAKERGB(newgamma[RPART(color)], newgamma[GPART(color)], newgamma[BPART(color)]);
+		pal->colors[i].r = newgamma[pal->basecolors[i].r];
+		pal->colors[i].g = newgamma[pal->basecolors[i].g];
+		pal->colors[i].b = newgamma[pal->basecolors[i].b];
 	}
 }
 
@@ -675,31 +676,25 @@ void V_ForceBlend (int blendr, int blendg, int blendb, int blenda)
 
 BEGIN_COMMAND (testblend)
 {
-	int color;
-	float amt;
-
 	if (argc < 3)
 	{
 		Printf (PRINT_HIGH, "testblend <color> <amount>\n");
 	}
 	else
 	{
-		std::string colorstring = V_GetColorStringByName (argv[1]);
+		std::string colorstring = V_GetColorStringByName(argv[1]);
+		argb_t color;
 
-		if (colorstring.length())
-			color = V_GetColorFromString (NULL, colorstring.c_str());
+		if (!colorstring.empty())
+			color = (argb_t)V_GetColorFromString(NULL, colorstring.c_str());
 		else
-			color = V_GetColorFromString (NULL, argv[1]);
+			color = (argb_t)V_GetColorFromString(NULL, argv[1]);
 
-		amt = (float)atof (argv[2]);
-		if (amt > 1.0f)
-			amt = 1.0f;
-		else if (amt < 0.0f)
-			amt = 0.0f;
-		//V_SetBlend (RPART(color), GPART(color), BPART(color), (int)(amt * 256.0f));
-		BaseBlendR = RPART(color);
-		BaseBlendG = GPART(color);
-		BaseBlendB = BPART(color);
+		float amt = clamp((float)atof(argv[2]), 0.0f, 1.0f);
+
+		BaseBlendR = color.r;
+		BaseBlendG = color.g;
+		BaseBlendB = color.b;
 		BaseBlendA = amt;
 	}
 }
@@ -707,20 +702,19 @@ END_COMMAND (testblend)
 
 BEGIN_COMMAND (testfade)
 {
-
-	int color;
-
 	if (argc < 2)
 	{
 		Printf (PRINT_HIGH, "testfade <color>\n");
 	}
 	else
 	{
-		std::string colorstring = V_GetColorStringByName (argv[1]);
-		if (colorstring.length())
-			color = V_GetColorFromString (NULL, colorstring.c_str());
+		std::string colorstring = V_GetColorStringByName(argv[1]);
+		argb_t color;
+
+		if (!colorstring.empty())
+			color = (argb_t)V_GetColorFromString(NULL, colorstring.c_str());
 		else
-			color = V_GetColorFromString (NULL, argv[1]);
+			color = (argb_t)V_GetColorFromString(NULL, argv[1]);
 
 		level.fadeto = color;
 		RefreshPalettes();
@@ -807,7 +801,6 @@ void HSVtoRGB (float *r, float *g, float *b, float h, float s, float v)
 // Builds NUMCOLORMAPS colormaps lit with the specified color
 void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g, int b)
 {
-	unsigned int l,c;
 	byte	*color;
 	argb_t  *shade;
 
@@ -818,7 +811,7 @@ void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g,
 	BuildLightRamp(*maps);
 
 	// build normal (but colored) light mappings
-	for (l = 0; l < NUMCOLORMAPS; l++) {
+	for (unsigned int l = 0; l < NUMCOLORMAPS; l++) {
 		byte a = maps->ramp[l * 255 / NUMCOLORMAPS];
 
 		// Write directly to the shademap for blending:
@@ -828,31 +821,25 @@ void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g,
 		// Build the colormap and shademap:
 		color = maps->colormap + 256*l;
 		shade = maps->shademap + 256*l;
-		for (c = 0; c < 256; c++) {
-			shade[c] = MAKERGB(
-				newgamma[(RPART(colors[c])*lr)/255],
-				newgamma[(GPART(colors[c])*lg)/255],
-				newgamma[(BPART(colors[c])*lb)/255]
-			);
-			color[c] = BestColor(
-				DefPal.basecolors,
-				RPART(shade[c]),
-				GPART(shade[c]),
-				BPART(shade[c]),
-				256
-			);
+		for (unsigned int c = 0; c < 256; c++)
+		{
+			shade[c].r = newgamma[colors[c].r * lr / 255];
+			shade[c].g = newgamma[colors[c].g * lg / 255];
+			shade[c].b = newgamma[colors[c].b * lb / 255];
+			color[c] = BestColor(DefPal.basecolors, shade[c].r, shade[c].g, shade[c].b, 256);
 		}
 	}
 }
 
 dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 {
-	unsigned int color = MAKERGB (lr, lg, lb);
-	unsigned int fade = MAKERGB (fr, fg, fb);
+	argb_t color(lr, lg, lb);
+	argb_t fade(fr, fg, fb);
 	dyncolormap_t *colormap = &NormalLight;
 
 	// Bah! Simple linear search because I want to get this done.
-	while (colormap) {
+	while (colormap)
+	{
 		if (color == colormap->color && fade == colormap->fade)
 			return colormap;
 		else
@@ -880,23 +867,23 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 
 BEGIN_COMMAND (testcolor)
 {
-	int color;
-
 	if (argc < 2)
 	{
 		Printf (PRINT_HIGH, "testcolor <color>\n");
 	}
 	else
 	{
-		std::string colorstring = V_GetColorStringByName (argv[1]);
+		std::string colorstring = V_GetColorStringByName(argv[1]);
+		argb_t color;
 
-		if (colorstring.length())
-			color = V_GetColorFromString (NULL, colorstring.c_str());
+		if (!colorstring.empty())
+			color = (argb_t)V_GetColorFromString(NULL, colorstring.c_str());
 		else
-			color = V_GetColorFromString (NULL, argv[1]);
+			color = (argb_t)V_GetColorFromString(NULL, argv[1]);
 
-		BuildColoredLights ((shademap_t *)NormalLight.maps.map(), RPART(color), GPART(color), BPART(color),
-			RPART(level.fadeto), GPART(level.fadeto), BPART(level.fadeto));
+		BuildColoredLights((shademap_t*)NormalLight.maps.map(),
+				color.r, color.g, color.b,
+				level.fadeto.r, level.fadeto.g, level.fadeto.b);
 	}
 }
 END_COMMAND (testcolor)
@@ -963,10 +950,9 @@ void V_DoPaletteEffects()
 
 			for (int i = 0; i < 256; i++)
 			{
-				int r = *pal++;
-				int g = *pal++;
-				int b = *pal++;
-				IndexedPalette[i] = MAKERGB(r, g, b);
+				IndexedPalette[i].r = *pal++;
+				IndexedPalette[i].g = *pal++;
+				IndexedPalette[i].b = *pal++;
 			}
 
 			I_SetPalette(IndexedPalette);

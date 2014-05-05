@@ -158,8 +158,6 @@ void P_SerializeWorld (FArchive &arc)
 		// do sectors
 		for (i = 0, sec = sectors; i < numsectors; i++, sec++)
 		{
-
-			unsigned int color=0, fade=0;
 			AActor* SecActTarget;
 
 			arc >> sec->floorheight
@@ -199,16 +197,19 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec->bottommap >> sec->midmap >> sec->topmap
 				>> sec->gravity
 				>> sec->damage
-				>> sec->mod
-                >> color
-				>> fade;
-			sec->floorcolormap = GetSpecialLights (
-				RPART(color), GPART(color), BPART(color),
-				RPART(fade), GPART(fade), BPART(fade));
-			arc >> color >> fade;
-			sec->ceilingcolormap = GetSpecialLights (
-				RPART(color), GPART(color), BPART(color),
-				RPART(fade), GPART(fade), BPART(fade));
+				>> sec->mod;
+
+			unsigned int colortemp, fadetemp;
+			argb_t color, fade;
+
+			arc >> colortemp >> fadetemp;
+			color = colortemp, fade = fadetemp;
+			sec->floorcolormap = GetSpecialLights(color.r, color.g, color.b, fade.r, fade.g, fade.b);
+
+			arc >> colortemp >> fadetemp;
+			color = colortemp, fade = fadetemp;
+			sec->ceilingcolormap = GetSpecialLights(color.r, color.g, color.b, fade.r, fade.g, fade.b);
+
 			arc >> sec->alwaysfake
 				>> sec->waterzone
 				>> SecActTarget

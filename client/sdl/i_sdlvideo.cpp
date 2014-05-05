@@ -184,9 +184,9 @@ void ISDL12WindowSurface::setPalette(const argb_t* palette)
 		SDL_Color* sdlcolors = mSDLSurface->format->palette->colors;
 		for (int c = 0; c < 256; c++)
 		{
-			sdlcolors[c].r = RPART(mPalette[c]);
-			sdlcolors[c].g = GPART(mPalette[c]);
-			sdlcolors[c].b = BPART(mPalette[c]);
+			sdlcolors[c].r = mPalette[c].r;
+			sdlcolors[c].g = mPalette[c].g;
+			sdlcolors[c].b = mPalette[c].b;
 		}
 
 		unlock();

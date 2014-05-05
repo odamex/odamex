@@ -498,19 +498,18 @@ bool V_UseWidescreen();
 // 0 <=   toa <= 255
 forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int toa)
 {
-	const int fr = RPART(from);
-	const int fg = GPART(from);
-	const int fb = BPART(from);
+	const int fr = from.r;
+	const int fg = from.g;
+	const int fb = from.b;
 
-	const int dr = RPART(to) - fr;
-	const int dg = GPART(to) - fg;
-	const int db = BPART(to) - fb;
+	const int dr = to.r - fr;
+	const int dg = to.g - fg;
+	const int db = to.b - fb;
 
-	return MAKERGB(
+	return argb_t(
 		fr + ((dr * toa) >> 8),
 		fg + ((dg * toa) >> 8),
-		fb + ((db * toa) >> 8)
-	);
+		fb + ((db * toa) >> 8));
 }
 
 // Alpha blend between two RGB colors with two alpha values
@@ -518,11 +517,10 @@ forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int to
 // 0 <=   toa <= 255
 forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa)
 {
-	return MAKERGB(
-		(RPART(from) * froma + RPART(to) * toa) >> 8,
-		(GPART(from) * froma + GPART(to) * toa) >> 8,
-		(BPART(from) * froma + BPART(to) * toa) >> 8
-	);
+	return argb_t(
+		(from.r * froma + to.r * toa) >> 8,
+		(from.g * froma + to.g * toa) >> 8,
+		(from.b * froma + to.b * toa) >> 8);
 }
 
 void V_DrawFPSWidget();

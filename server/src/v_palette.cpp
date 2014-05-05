@@ -231,8 +231,8 @@ void BuildDefaultShademap (palette_t *pal, shademap_t &maps)
 
 dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 {
-	unsigned int color = MAKERGB (lr, lg, lb);
-	unsigned int fade = MAKERGB (fr, fg, fb);
+	argb_t color(lr, lg, lb);
+	argb_t fade(fr, fg, fb);
 	dyncolormap_t *colormap = &NormalLight;
 
 	// Bah! Simple linear search because I want to get this done.

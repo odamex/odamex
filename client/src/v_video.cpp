@@ -296,7 +296,11 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 	else
 	{
 		argb_t color = V_GetColorFromString(NULL, color_str);
-		color = MAKERGB(newgamma[RPART(color)], newgamma[GPART(color)], newgamma[BPART(color)]);
+
+		color.r = newgamma[color.r];
+		color.g = newgamma[color.g];
+		color.b = newgamma[color.b];
+
 		r_dimpatchD(mSurface, color, (int)(famount * 256.0f), x1, y1, w, h);
 	}
 }
@@ -403,9 +407,9 @@ static void BuildTransTable (argb_t *palette)
 
 		for (x = 0; x < 65; x++)
 			for (y = 0; y < 256; y++)
-				Col2RGB8[x][y] = (((RPART(palette[y])*x)>>4)<<20)  |
-								  ((GPART(palette[y])*x)>>4) |
-								 (((BPART(palette[y])*x)>>4)<<10);
+				Col2RGB8[x][y] = (((palette[y].r * x) >> 4) << 20)  |
+								  ((palette[y].g * x )>> 4) |
+								 (((palette[y].b * x) >> 4) << 10);
 	}
 }
 
@@ -687,23 +691,28 @@ void V_DrawFPSTicker()
 
 	if (surface->getBitsPerPixel() == 8)
 	{
+		const palindex_t oncolor = 255;
+		const palindex_t offcolor = 0;
 		palindex_t* dest = (palindex_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
 
 		int i = 0;
 		for (i = 0; i < tics*2; i += 2)
-			dest[i] = 0xFF;
+			dest[i] = oncolor;
 		for ( ; i < 20*2; i += 2)
-			dest[i] = 0x00;
+			dest[i] = offcolor;
 	}
 	else
 	{
+		const argb_t oncolor(255, 255, 255);
+		const argb_t offcolor(0, 0, 0);
+
 		argb_t* dest = (argb_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
 
 		int i = 0;
 		for (i = 0; i < tics*2; i += 2)
-			dest[i] = MAKEARGB(255, 255, 255, 255);
+			dest[i] = oncolor;
 		for ( ; i < 20*2; i += 2)
-			dest[i] = MAKEARGB(255, 0, 0, 0);
+			dest[i] = offcolor;
 	}
 }
 

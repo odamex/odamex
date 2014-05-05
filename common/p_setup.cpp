@@ -363,11 +363,11 @@ void P_LoadSectors (int lump)
 		// [RH] Sectors default to white light with the default fade.
 		//		If they are outside (have a sky ceiling), they use the outside fog.
 		if (level.outsidefog != 0xff000000 && ss->ceilingpic == skyflatnum)
-			ss->ceilingcolormap = ss->floorcolormap = GetSpecialLights (255,255,255,
-				RPART(level.outsidefog),GPART(level.outsidefog),BPART(level.outsidefog));
+			ss->ceilingcolormap = ss->floorcolormap =
+				GetSpecialLights(255, 255, 255, level.outsidefog.r, level.outsidefog.g, level.outsidefog.b);
 		else
-			ss->ceilingcolormap = ss->floorcolormap = GetSpecialLights (255,255,255,
-				RPART(level.fadeto),GPART(level.fadeto),BPART(level.fadeto));
+			ss->ceilingcolormap = ss->floorcolormap =
+				GetSpecialLights(255, 255, 255, level.fadeto.r, level.fadeto.g, level.fadeto.b);
 
 		ss->sky = 0;
 
@@ -945,13 +945,14 @@ void P_LoadSideDefs2 (int lump)
 				SetTextureNoErr (&sd->toptexture, &color, msd->toptexture);
 				sd->midtexture = R_TextureNumForName (msd->midtexture);
 
-				if (fog != 0x000000 || color != 0xffffff) {
-					int s;
-					dyncolormap_t *colormap = GetSpecialLights
-						(RPART(color),	GPART(color),	BPART(color),
-						 RPART(fog),	GPART(fog),		BPART(fog));
+				if (fog != 0x000000 || color != 0xffffff)
+				{
+					dyncolormap_t *colormap = GetSpecialLights(
+						((argb_t)color).r, ((argb_t)color).g, ((argb_t)color).b,
+						((argb_t)fog).r, ((argb_t)fog).g, ((argb_t)fog).b);
 
-					for (s = 0; s < numsectors; s++) {
+					for (int s = 0; s < numsectors; s++)
+					{
 						if (sectors[s].tag == sd->tag)
 							sectors[s].ceilingcolormap =
 								sectors[s].floorcolormap = colormap;

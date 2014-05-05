@@ -118,9 +118,9 @@ static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_
 
 	for (int i = 0; i < 256; i++)
 	{
-		pngpalette[i].red   = (png_byte)RPART(palette[i]);
-		pngpalette[i].green = (png_byte)GPART(palette[i]);
-		pngpalette[i].blue  = (png_byte)BPART(palette[i]);
+		pngpalette[i].red   = (png_byte)palette[i].r;
+		pngpalette[i].green = (png_byte)palette[i].g;
+		pngpalette[i].blue  = (png_byte)palette[i].b;
 	}
 
 	png_set_PLTE(png_ptr, info_ptr, pngpalette, 256);
@@ -320,9 +320,9 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 				// write color components to current pixel of PNG row
 				// note: PNG is a big-endian file format
-				*row++ = (png_byte)RPART(pixel);
-				*row++ = (png_byte)GPART(pixel);
-				*row++ = (png_byte)BPART(pixel);
+				*row++ = (png_byte)pixel.r;
+				*row++ = (png_byte)pixel.g;
+				*row++ = (png_byte)pixel.b;
 			}
 
 			source += pitch_remainder;
@@ -392,9 +392,9 @@ static int V_SaveBMP(const std::string& filename, IWindowSurface* surface)
 
 		for (int i = 0; i < 256; i ++, palette++)
 		{
-			colors[i].r = RPART(*palette);
-			colors[i].g = GPART(*palette);
-			colors[i].b = BPART(*palette);
+			colors[i].r = palette->r;
+			colors[i].g = palette->g;
+			colors[i].b = palette->b;
 			colors[i].unused = 0;
 		}
 

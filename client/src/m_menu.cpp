@@ -1244,7 +1244,7 @@ forceinline byte R_FirePixel<byte>(const byte c)
 template<>
 forceinline argb_t R_FirePixel<argb_t>(const byte c)
 {
-	return MAKERGB(c, 0, 0);
+	return argb_t(c, 0, 0);
 }
 
 template<int xscale, typename PIXEL_T>
@@ -1252,7 +1252,6 @@ static forceinline void R_RenderFire(int x, int y)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
 	int surface_pitch = surface->getPitchInPixels();
-
 
 	for (int b = 0; b < fire_surface_height; b++)
 	{
@@ -1384,20 +1383,20 @@ static void M_PlayerSetupDrawer (void)
 			if (I_GetVideoBitDepth() == 8)
 			{
 				// 8bpp rendering:
-				     if (CleanXfac == 1) R_RenderFire<1, byte>(x, y);
-				else if (CleanXfac == 2) R_RenderFire<2, byte>(x, y);
-				else if (CleanXfac == 3) R_RenderFire<3, byte>(x, y);
-				else if (CleanXfac == 4) R_RenderFire<4, byte>(x, y);
-				else if (CleanXfac == 5) R_RenderFire<5, byte>(x, y);
+				     if (CleanXfac == 1) R_RenderFire<1, palindex_t>(x, y);
+				else if (CleanXfac == 2) R_RenderFire<2, palindex_t>(x, y);
+				else if (CleanXfac == 3) R_RenderFire<3, palindex_t>(x, y);
+				else if (CleanXfac == 4) R_RenderFire<4, palindex_t>(x, y);
+				else if (CleanXfac == 5) R_RenderFire<5, palindex_t>(x, y);
 			}
 			else
 			{
 				// 32bpp rendering:
-				     if (CleanXfac == 1) R_RenderFire<1, DWORD>(x, y);
-				else if (CleanXfac == 2) R_RenderFire<2, DWORD>(x, y);
-				else if (CleanXfac == 3) R_RenderFire<3, DWORD>(x, y);
-				else if (CleanXfac == 4) R_RenderFire<4, DWORD>(x, y);
-				else if (CleanXfac == 5) R_RenderFire<5, DWORD>(x, y);
+				     if (CleanXfac == 1) R_RenderFire<1, argb_t>(x, y);
+				else if (CleanXfac == 2) R_RenderFire<2, argb_t>(x, y);
+				else if (CleanXfac == 3) R_RenderFire<3, argb_t>(x, y);
+				else if (CleanXfac == 4) R_RenderFire<4, argb_t>(x, y);
+				else if (CleanXfac == 5) R_RenderFire<5, argb_t>(x, y);
 			}
 
 			fire_surface->unlock();
@@ -1428,12 +1427,12 @@ static void M_PlayerSetupDrawer (void)
 	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Blue");
 
 	{
-		int x = V_StringWidth ("Green") + 8 + PSetupDef.x;
-		int color = V_GetColorFromString(NULL, cl_color.cstring());
+		int x = V_StringWidth("Green") + 8 + PSetupDef.x;
+		argb_t playercolor = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
 
-		M_DrawSlider (x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, RPART(color));
-		M_DrawSlider (x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, GPART(color));
-		M_DrawSlider (x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, BPART(color));
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.r);
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.g);
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, playercolor.b);
 	}
 
 	// Draw team setting
@@ -1580,75 +1579,79 @@ static void SendNewColor (int red, int green, int blue)
 	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
 
 	if (consoleplayer().ingame())
-	{
-		R_CopyTranslationRGB (0, consoleplayer_id);
-	}
+		R_CopyTranslationRGB(0, consoleplayer_id);
 }
 
-static void M_SlidePlayerRed (int choice)
+static void M_SlidePlayerRed(int choice)
 {
-	int color = V_GetColorFromString(NULL, cl_color.cstring());
-	int red = RPART(color);
+	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
 	int accel = 0;
 
-	if(repeatCount >= 10)
+	if (repeatCount >= 10)
 		accel = 5;
 
-	if (choice == 0) {
-		red -= 1 + accel;
-		if (red < 0)
-			red = 0;
-	} else {
-		red += 1 + accel;
-		if (red > 255)
-			red = 255;
+	if (choice == 0)
+	{
+		color.r -= 1 + accel;
+		if (color.r < 0)
+			color.r = 0;
+	}
+	else
+	{
+		color.r += 1 + accel;
+		if (color.r > 255)
+			color.r = 255;
 	}
 
-	SendNewColor (red, GPART(color), BPART(color));
+	SendNewColor(color.r, color.g, color.b);
 }
 
 static void M_SlidePlayerGreen (int choice)
 {
-	int color = V_GetColorFromString(NULL, cl_color.cstring());
-	int green = GPART(color);
+	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
 	int accel = 0;
 
-	if(repeatCount >= 10)
+	if (repeatCount >= 10)
 		accel = 5;
 
-	if (choice == 0) {
-		green -= 1 + accel;
-		if (green < 0)
-			green = 0;
-	} else {
-		green += 1 + accel;
-		if (green > 255)
-			green = 255;
+	if (choice == 0)
+	{
+		color.g -= 1 + accel;
+		if (color.g < 0)
+			color.g = 0;
+	}
+	else
+	{
+		color.g += 1 + accel;
+		if (color.g > 255)
+			color.g = 255;
 	}
 
-	SendNewColor (RPART(color), green, BPART(color));
+	SendNewColor(color.r, color.g, color.b);
 }
 
 static void M_SlidePlayerBlue (int choice)
 {
-	int color = V_GetColorFromString(NULL, cl_color.cstring());
-	int blue = BPART(color);
+	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
 	int accel = 0;
 
-	if(repeatCount >= 10)
+	if (repeatCount >= 10)
 		accel = 5;
 
-	if (choice == 0) {
-		blue -= 1 + accel;
-		if (blue < 0)
-			blue = 0;
-	} else {
-		blue += 1 + accel;
-		if (blue > 255)
-			blue = 255;
+	if (choice == 0)
+	{
+		color.b -= 1 + accel;
+		if (color.b < 0)
+			color.b = 0;
+	}
+	else
+	{
+		color.b += 1 + accel;
+		if (color.b > 255)
+			color.b = 255;
 	}
 
-	SendNewColor (RPART(color), GPART(color), blue);
+	SendNewColor(color.r, color.g, color.b);
 }
 
 

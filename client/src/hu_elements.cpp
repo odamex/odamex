@@ -642,26 +642,32 @@ void EAPlayerColors(int x, int y,
                     const float scale,
                     const x_align_t x_align, const y_align_t y_align,
                     const x_align_t x_origin, const y_align_t y_origin,
-                    const short padding, const short limit) {
+                    const short padding, const short limit)
+{
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	{
 		// Make sure we're not overrunning our limit.
-		if (limit != 0 && drawn >= limit) {
+		if (limit != 0 && drawn >= limit)
 			break;
-		}
 
 		player_t* player = sortedPlayers()[i];
-		if (ingamePlayer(player)) {
-			int playercolor = CL_GetPlayerColor(player);
-			int color = BestColor(GetDefaultPalette()->basecolors,
-			                      RPART(playercolor),
-			                      GPART(playercolor),
-			                      BPART(playercolor),
-			                      GetDefaultPalette()->numcolors);
+		if (ingamePlayer(player))
+		{
+			argb_t playercolor = (argb_t)CL_GetPlayerColor(player);
 
-			if (!I_GetVideoBitDepth() == 8) color = playercolor;
+			if (I_GetVideoBitDepth() == 8)
+			{
+				palindex_t colorindex = BestColor(GetDefaultPalette()->basecolors,
+			                      				playercolor.r, playercolor.g, playercolor.b,
+			                      				GetDefaultPalette()->numcolors);
+				hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, colorindex);
+			}
+			else
+			{
+				hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
+			}
 
-			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
 			y += h + padding;
 			drawn += 1;
 		}
@@ -675,26 +681,32 @@ void EATeamPlayerColors(int x, int y,
                         const x_align_t x_align, const y_align_t y_align,
                         const x_align_t x_origin, const y_align_t y_origin,
                         const short padding, const short limit,
-                        const byte team) {
+                        const byte team)
+{
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	{
 		// Make sure we're not overrunning our limit.
-		if (limit != 0 && drawn >= limit) {
+		if (limit != 0 && drawn >= limit)
 			break;
-		}
 
 		player_t* player = sortedPlayers()[i];
-		if (inTeamPlayer(player, team)) {
-			int playercolor = CL_GetPlayerColor(player);
-			int color = BestColor(GetDefaultPalette()->basecolors,
-			                      RPART(playercolor),
-			                      GPART(playercolor),
-			                      BPART(playercolor),
-			                      GetDefaultPalette()->numcolors);
+		if (inTeamPlayer(player, team))
+		{
+			argb_t playercolor = (argb_t)CL_GetPlayerColor(player);
 
-			if (!I_GetVideoBitDepth() == 8) color = playercolor;
+			if (I_GetVideoBitDepth() == 8)
+			{
+				palindex_t colorindex = BestColor(GetDefaultPalette()->basecolors,
+			                      				playercolor.r, playercolor.g, playercolor.b,
+			                      				GetDefaultPalette()->numcolors);
+				hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, colorindex);
+			}
+			else
+			{
+				hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
+			}
 
-			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
 			y += h + padding;
 			drawn += 1;
 		}

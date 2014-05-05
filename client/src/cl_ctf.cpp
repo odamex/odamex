@@ -410,14 +410,14 @@ void CTF_DrawHud (void)
 		if (hasflags[0] && hasflags[1])
 		{
 			if (tintglow < 15 || tintglow > 60)
-				tintColor = MAKERGB((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
+				tintColor = argb_t((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
 			else
-				tintColor = MAKERGB(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
+				tintColor = argb_t(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
 		}
 		else if (hasflags[0])
-			tintColor = MAKERGB((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
+			tintColor = argb_t((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
 		else if (hasflags[1])
-			tintColor = MAKERGB(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
+			tintColor = argb_t(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
 
 		if (tintColor != 0)
 		{

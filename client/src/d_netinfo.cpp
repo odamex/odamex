@@ -214,7 +214,12 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 	arc.Read(&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Read(&info.gender, sizeof(info.gender));
 
-	arc >> info.aimdist >> info.color;
+	arc >> info.aimdist;
+
+	// [SL] can't read argb_t directly so read unsigned and convert
+	unsigned int colortemp;
+	arc >> colortemp;
+	info.color = colortemp;
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin;

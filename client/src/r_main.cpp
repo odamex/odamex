@@ -768,8 +768,6 @@ static void R_ViewShear(angle_t pitch)
 //
 void R_SetupFrame (player_t *player)
 {
-	unsigned int newblend;
-
 	camera = player->camera;	// [RH] Use camera instead of viewplayer
 
 	if (!camera || !camera->subsector)
@@ -815,6 +813,8 @@ void R_SetupFrame (player_t *player)
 
 	// killough 3/20/98, 4/4/98: select colormap based on player status
 	// [RH] Can also select a blend
+	argb_t newblend;
+
 	if (camera->subsector->sector->heightsec &&
 		!(camera->subsector->sector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
@@ -823,8 +823,8 @@ void R_SetupFrame (player_t *player)
 					viewz > P_CeilingHeight(viewx, viewy, s) ? s->topmap : s->midmap;
 
 		if (!I_GetVideoBitDepth() == 8)
-			newblend = R_BlendForColormap (newblend);
-		else if (APART(newblend) == 0 && newblend >= numfakecmaps)
+			newblend = R_BlendForColormap(newblend);
+		else if (newblend.a == 0 && newblend >= numfakecmaps)
 			newblend = 0;
 	}
 	else
@@ -838,12 +838,12 @@ void R_SetupFrame (player_t *player)
 	if (R_OldBlend != newblend)
 	{
 		R_OldBlend = newblend;
-		if (APART(newblend))
+		if (newblend.a != 0)
 		{
-			BaseBlendR = RPART(newblend);
-			BaseBlendG = GPART(newblend);
-			BaseBlendB = BPART(newblend);
-			BaseBlendA = APART(newblend) / 255.0f;
+			BaseBlendR = newblend.r;
+			BaseBlendG = newblend.g;
+			BaseBlendB = newblend.b;
+			BaseBlendA = float(newblend.a) / 255.0f;
 			NormalLight.maps = shaderef_t(&realcolormaps, 0);
 		}
 		else
@@ -1079,9 +1079,8 @@ void R_RenderPlayerView(player_t *player)
 	extern int BlendA, BlendR, BlendG, BlendB;
 	if (BlendA != 0)
 	{
-		unsigned int blend_rgb = MAKERGB(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]);
-		r_dimpatchD(surface, blend_rgb, BlendA,
-					0, 0, surface->getWidth(), surface->getHeight());
+		argb_t blend_color = argb_t(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]);
+		r_dimpatchD(surface, blend_color, BlendA, 0, 0, surface->getWidth(), surface->getHeight());
 	}
 
 	R_EndInterpolation();

@@ -100,7 +100,7 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 	const vu16 upper8mask = {0, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff};
 	const vu16 blendAlpha = {0, alpha, alpha, alpha, 0, alpha, alpha, alpha};
 	const vu16 blendInvAlpha = {0, invAlpha, invAlpha, invAlpha, 0, invAlpha, invAlpha, invAlpha};
-	const vu16 blendColor = {0, RPART(color), GPART(color), BPART(color), 0, RPART(color), GPART(color), BPART(color)};
+	const vu16 blendColor = {0, color.r, color.g, color.b, 0, color.r, color.g, color.b};
 	const vu16 blendMult = vec_mladd(blendColor, blendAlpha, zero);
 
 	for (int y = y1; y < y1 + h; y++)

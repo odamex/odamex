@@ -841,53 +841,46 @@ void R_InitColormaps (void)
 
 	if (numfakecmaps > 1)
 	{
-		int i;
-		size_t j;
-		palette_t *pal = GetDefaultPalette ();
+		palette_t *pal = GetDefaultPalette();
 		shaderef_t defpal = shaderef_t(&pal->maps, 0);
 
-		for (i = ++firstfakecmap, j = 1; j < numfakecmaps; i++, j++)
+		for (unsigned i = ++firstfakecmap, j = 1; j < numfakecmaps; i++, j++)
 		{
-			if (W_LumpLength (i) >= (NUMCOLORMAPS+1)*256)
+			if (W_LumpLength(i) >= (NUMCOLORMAPS+1)*256)
 			{
-				int k, r, g, b;
-				byte *map = (byte *)W_CacheLumpNum (i, PU_CACHE);
-
-				byte  *colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*j;
-				argb_t *shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
+				byte* map = (byte*)W_CacheLumpNum(i, PU_CACHE);
+				byte* colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*j;
+				argb_t* shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
 
 				// Copy colormap data:
-				memcpy (colormap, map, (NUMCOLORMAPS+1)*256);
+				memcpy(colormap, map, (NUMCOLORMAPS+1)*256);
 
-				if(pal->basecolors)
+				if (pal->basecolors)
 				{
-					r = RPART(pal->basecolors[*map]);
-					g = GPART(pal->basecolors[*map]);
-					b = BPART(pal->basecolors[*map]);
+					int r = pal->basecolors[*map].r;
+					int g = pal->basecolors[*map].g;
+					int b = pal->basecolors[*map].b;
 
 					W_GetLumpName (fakecmaps[j].name, i);
-					for (k = 1; k < 256; k++) {
-						r = (r + RPART(pal->basecolors[map[k]])) >> 1;
-						g = (g + GPART(pal->basecolors[map[k]])) >> 1;
-						b = (b + BPART(pal->basecolors[map[k]])) >> 1;
+					for (int k = 1; k < 256; k++)
+					{
+						r = (r + pal->basecolors[map[k]].r) >> 1;
+						g = (g + pal->basecolors[map[k]].g) >> 1;
+						b = (b + pal->basecolors[map[k]].b) >> 1;
 					}
 					// NOTE(jsd): This alpha value is used for 32bpp in water areas.
-					fakecmaps[j].blend = MAKEARGB (64, r, g, b);
+					argb_t color = argb_t(64, r, g, b);
+					fakecmaps[j].blend = color;
 
 					// Set up shademap for the colormap:
-					for (k = 0; k < 256; ++k)
-					{
-						argb_t c = pal->basecolors[map[0]];
-						shademap[k] = alphablend1a(c, MAKERGB(r,g,b), j * (256 / numfakecmaps));
-					}
+					for (int k = 0; k < 256; ++k)
+						shademap[k] = alphablend1a(pal->basecolors[map[0]], color, j * (256 / numfakecmaps));
 				}
 				else
 				{
 					// Set up shademap for the colormap:
-					for (k = 0; k < 256; ++k)
-					{
+					for (int k = 0; k < 256; ++k)
 						shademap[k] = defpal.shade(colormap[k]);
-					}
 				}
 			}
 		}
@@ -906,16 +899,22 @@ int R_ColormapNumForName (const char *name)
 		if (-1 != (lump = W_CheckNumForName (name, ns_colormaps)) )
 			blend = lump - firstfakecmap + 1;
 		else if (!strnicmp (name, "WATERMAP", 8))
-			blend = MAKEARGB (128,0,0x4f,0xa5);
+			blend = argb_t(128, 0, 0x4f, 0xa5);
 	}
 
 	return blend;
 }
 
-unsigned int R_BlendForColormap (int map)
+unsigned int R_BlendForColormap(int map)
 {
-	return APART(map) ? map :
-		   (unsigned)map < numfakecmaps ? fakecmaps[map].blend : 0;
+	argb_t color(map);
+	if (color.a != 0)
+		return map;
+
+	if ((unsigned)map < numfakecmaps)
+		return fakecmaps[map].blend;
+
+	return 0;
 }
 
 //
@@ -1143,9 +1142,9 @@ byte BestColor (const argb_t *palette, const int r, const int g, const int b, co
 
 	for (i = 0; i < numcolors; i++)
 	{
-		dr = r - RPART(palette[i]);
-		dg = g - GPART(palette[i]);
-		db = b - BPART(palette[i]);
+		dr = r - palette[i].r;
+		dg = g - palette[i].g;
+		db = b - palette[i].b;
 		distortion = dr*dr + dg*dg + db*db;
 		if (distortion < bestdistortion)
 		{
@@ -1162,7 +1161,7 @@ byte BestColor (const argb_t *palette, const int r, const int g, const int b, co
 
 byte BestColor2 (const argb_t *palette, const argb_t color, const int numcolors)
 {
-	return BestColor(palette, RPART(color), GPART(color), BPART(color), numcolors);
+	return BestColor(palette, color.r, color.g, color.b, numcolors);
 }
 
 VERSION_CONTROL (r_data_cpp, "$Id$")

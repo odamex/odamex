@@ -560,7 +560,7 @@ am_color_t AM_GetColorFromString(argb_t *palette, const char *colorstring)
 am_color_t AM_BestColor(argb_t *palette, const int r, const int g, const int b, const int numcolors)
 {
 	am_color_t c;
-	c.rgb = MAKERGB(r,g,b);
+	c.rgb = argb_t(r,g,b);
 	c.index = BestColor2(palette, c.rgb, 256);
 	return c;
 }
@@ -605,13 +605,14 @@ void AM_initColors (BOOL overlayed)
 		TeleportColor = AM_GetColorFromString(palette, am_teleportcolor.cstring());
 		{
 			argb_t ba = AM_GetColorFromString(palette, am_backcolor.cstring()).rgb;
-			int r = RPART(ba) - 16;
-			int g = GPART(ba) - 16;
-			int b = BPART(ba) - 16;
-			if (r < 0) r += 32;
-			if (g < 0) g += 32;
-			if (b < 0) b += 32;
-			AlmostBackground.rgb = MAKERGB(r,g,b);
+			if (ba.r < 16)
+				ba.r += 32;
+			if (ba.g < 16)
+				ba.g += 32;
+			if (ba.b < 16)
+				ba.b += 32;
+
+			AlmostBackground.rgb = argb_t(ba.r - 16, ba.g - 16, ba.b - 16);
 			AlmostBackground.index = BestColor2(palette, AlmostBackground.rgb, 256);
 		}
 	}
@@ -1370,7 +1371,7 @@ void AM_drawWalls(void)
 				else if (lines[i].special == Door_LockedRaise)
 				{
 				    // NES - Locked doors glow from a predefined color to either blue, yellow, or red.
-                    r = RPART(LockedColor.rgb), g = GPART(LockedColor.rgb), b = BPART(LockedColor.rgb);
+                    r = LockedColor.rgb.r, g = LockedColor.rgb.g, b = LockedColor.rgb.b;
 
                     if (am_usecustomcolors) {
                         if (lines[i].args[3] == (BCard | CardIsSkull)) {
@@ -1387,18 +1388,16 @@ void AM_drawWalls(void)
                             bdif = (0 - b)/30;
                         }
 
-                        if (lockglow < 30) {
+                        if (lockglow < 30)
                             AM_drawMline (&l, AM_BestColor (pal->basecolors, r + ((int)rdif*lockglow),
                                           g + ((int)gdif*lockglow), b + ((int)bdif*lockglow),
                                           pal->numcolors));
-                        } else if (lockglow < 60) {
+                        else if (lockglow < 60)
                             AM_drawMline (&l, AM_BestColor (pal->basecolors, r + ((int)rdif*(60-lockglow)),
                                           g + ((int)gdif*(60-lockglow)), b + ((int)bdif*(60-lockglow)),
                                           pal->numcolors));
-                        } else {
-                            AM_drawMline (&l, AM_BestColor (pal->basecolors, r, g, b,
-                                          pal->numcolors));
-                        }
+                        else
+                            AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b, pal->numcolors));
 				    } else {
                         AM_drawMline (&l, AM_BestColor (pal->basecolors, r, g, b,
                                       pal->numcolors));
@@ -1562,11 +1561,9 @@ void AM_drawPlayers(void)
 		} else {
 			int playercolor = CL_GetPlayerColor(p);
 			color.rgb = (argb_t)playercolor;
-			color.index = BestColor (GetDefaultPalette()->basecolors,
-							   RPART(playercolor),
-							   GPART(playercolor),
-							   BPART(playercolor),
-							   GetDefaultPalette()->numcolors);
+			color.index = BestColor(GetDefaultPalette()->basecolors,
+							color.rgb.r, color.rgb.g, color.rgb.b,
+							GetDefaultPalette()->numcolors);
 		}
 
 		pt.x = p->mo->x;

@@ -334,14 +334,13 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 
 // [RH] Create a player's translation table based on
 //		a given mid-range color.
-void R_BuildPlayerTranslation (int player, int color)
+void R_BuildPlayerTranslation(int player, argb_t dest_color)
 {
-	palette_t *pal = GetDefaultPalette();
+	const palette_t *pal = GetDefaultPalette();
 	byte *table = &translationtables[player * 256];
-	int i;
-	float r = (float)RPART(color) / 255.0f;
-	float g = (float)GPART(color) / 255.0f;
-	float b = (float)BPART(color) / 255.0f;
+	float r = float(dest_color.r) / 255.0f;
+	float g = float(dest_color.g) / 255.0f;
+	float b = float(dest_color.b) / 255.0f;
 	float h, s, v;
 	float sdelta, vdelta;
 
@@ -357,29 +356,25 @@ void R_BuildPlayerTranslation (int player, int color)
 		v = 1.0f;
 	vdelta = -0.05882f;
 
-	for (i = 0x70; i < 0x80; i++) {
+	for (int i = 0x70; i < 0x80; i++)
+	{
 		HSVtoRGB (&r, &g, &b, h, s, v);
 
 		// Set up RGB values for 32bpp translation:
-		translationRGB[player][i - 0x70] = MAKERGB(
-			(int)(r * 255.0f),
-			(int)(g * 255.0f),
-			(int)(b * 255.0f)
-		);
+		argb_t color(r * 255.0f, g * 255.0f, b * 255.0f);
+		translationRGB[player][i - 0x70] = color;
+		table[i] = BestColor(pal->basecolors, color.r, color.g, color.b, pal->numcolors);
 
-		table[i] = BestColor (pal->basecolors,
-							  (int)(r * 255.0f),
-							  (int)(g * 255.0f),
-							  (int)(b * 255.0f),
-							  pal->numcolors);
 		s += sdelta;
-		if (s > 1.0f) {
+		if (s > 1.0f)
+		{
 			s = 1.0f;
 			sdelta = 0.0f;
 		}
 
 		v += vdelta;
-		if (v < 0.0f) {
+		if (v < 0.0f)
+		{
 			v = 0.0f;
 			vdelta = 0.0f;
 		}

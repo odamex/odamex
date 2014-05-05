@@ -191,7 +191,7 @@ void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, i
 	const __m64 upper8mask = _mm_set_pi16(0, 0xff, 0xff, 0xff);
 	const __m64 blendAlpha = _mm_set_pi16(0, alpha, alpha, alpha);
 	const __m64 blendInvAlpha = _mm_set_pi16(0, invAlpha, invAlpha, invAlpha);
-	const __m64 blendColor = _mm_set_pi16(0, RPART(color), GPART(color), BPART(color));
+	const __m64 blendColor = _mm_set_pi16(0, color.r, color.g, color.b);
 	const __m64 blendMult = _mm_mullo_pi16(blendColor, blendAlpha);
 
 	for (int y = y1; y < y1 + h; y++)

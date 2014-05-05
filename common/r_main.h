@@ -238,7 +238,7 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 		return shade(c);
 
 	// Default to white light:
-	argb_t lightcolor = MAKERGB(255, 255, 255);
+	argb_t lightcolor = argb_t(255, 255, 255);
 	argb_t fadecolor = level.fadeto; 
 
 	// Use the dynamic lighting's light color if we have one:
@@ -251,14 +251,14 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	// Find the shading for the custom player colors:
 	argb_t trancolor = translationRGB[pid][c - range_start];
 
-	unsigned int r = (RPART(trancolor) * RPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
-					+ RPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
-	unsigned int g = (GPART(trancolor) * GPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
-					+ GPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
-	unsigned int b = (BPART(trancolor) * BPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
-					+ BPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
+	unsigned int r = (trancolor.r * lightcolor.r * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.r * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int g = (trancolor.g * lightcolor.g * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.g * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int b = (trancolor.b * lightcolor.b * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.b * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
 
-	return MAKERGB(newgamma[r], newgamma[g], newgamma[b]);
+	return argb_t(newgamma[r], newgamma[g], newgamma[b]);
 }
 
 

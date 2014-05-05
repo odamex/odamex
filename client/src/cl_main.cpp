@@ -159,28 +159,28 @@ EXTERN_CVAR(cl_interp)
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
-static int enemycolor = 0, teamcolor = 0;
+static argb_t enemycolor = 0, teamcolor = 0;
 
 int CL_GetPlayerColor(player_t *player)
 {
 	if (!player)
 		return 0;
 
-	int color = player->userinfo.color;
+	argb_t color = player->userinfo.color;
 
 	// Adjust the shade of color for team games
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		int red = RPART(player->userinfo.color);
-		int green = GPART(player->userinfo.color);
-		int blue = BPART(player->userinfo.color);
+		int red = player->userinfo.color.r;
+		int green = player->userinfo.color.g;
+		int blue = player->userinfo.color.b;
 
 		int intensity = MAX(MAX(red, green), blue) / 3;
 
 		if (player->userinfo.team == TEAM_BLUE)
-			color = MAKERGB(0, 0,  0xAA + intensity);
+			color = argb_t(0, 0,  0xAA + intensity);
 		else if (player->userinfo.team == TEAM_RED)
-			color = MAKERGB(0xAA + intensity, 0, 0);
+			color = argb_t(0xAA + intensity, 0, 0);
 	}
 
 	// apply r_teamcolor & r_enemycolor overrides

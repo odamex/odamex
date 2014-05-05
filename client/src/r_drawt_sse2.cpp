@@ -406,7 +406,7 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 	const __m128i upper8mask = _mm_set_epi16(0, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff);
 	const __m128i blendAlpha = _mm_set_epi16(0, alpha, alpha, alpha, 0, alpha, alpha, alpha);
 	const __m128i blendInvAlpha = _mm_set_epi16(0, invAlpha, invAlpha, invAlpha, 0, invAlpha, invAlpha, invAlpha);
-	const __m128i blendColor = _mm_set_epi16(0, RPART(color), GPART(color), BPART(color), 0, RPART(color), GPART(color), BPART(color));
+	const __m128i blendColor = _mm_set_epi16(0, color.r, color.g, color.b, 0, color.r, color.g, color.b);
 	const __m128i blendMult = _mm_mullo_epi16(blendColor, blendAlpha);
 
 	for (int y = y1; y < y1 + h; y++)
@@ -424,9 +424,7 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 		{
 			// Pick up the remainder:
 			for (; x < x1 + w; x++)
-			{
 				line[x] = alphablend1a(line[x], color, alpha);
-			}
 		}
 
 		line += surface_pitch_pixels;

@@ -84,38 +84,6 @@ std::string I_GetVideoDriverName();
 
 EDisplayType I_DisplayType();
 
-
-#ifdef __BIG_ENDIAN__
-static const int ashift = 0;
-static const int rshift = 8;
-static const int gshift = 16;
-static const int bshift = 24;
-#else
-static const int ashift = 24;
-static const int rshift = 16;
-static const int gshift = 8;
-static const int bshift = 0;
-#endif
-
-static inline unsigned int APART(argb_t color)
-{	return (color >> ashift) & 0xFF;	}
-
-static inline unsigned int RPART(argb_t color)
-{	return (color >> rshift) & 0xFF;	}
-
-static inline unsigned int GPART(argb_t color)
-{	return (color >> gshift) & 0xFF;	}
-
-static inline unsigned int BPART(argb_t color)
-{	return (color >> bshift) & 0xFF;	}
-
-static inline argb_t MAKERGB(unsigned int r, unsigned int g, unsigned int b)
-{	return (r << rshift) | (g << gshift) | (b << bshift);	}
-
-static inline argb_t MAKEARGB(unsigned int a, unsigned int r, unsigned int g, unsigned int b)
-{	return (a << ashift) | (r << rshift) | (g << gshift) | (b << bshift);	}
-
-
 // ****************************************************************************
 
 // ============================================================================
@@ -396,7 +364,5 @@ private:
 	IWindowSurface*		mPrimarySurface;
 };
 
-
-// ****************************************************************************
 
 #endif // __I_VIDEO_H__

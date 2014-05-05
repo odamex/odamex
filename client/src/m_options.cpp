@@ -1089,29 +1089,27 @@ static void M_SendUINewColor (int red, int green, int blue)
 	AddCommandString (command);
 }
 
-static void M_SlideUIRed (int val)
+static void M_SlideUIRed(int val)
 {
-	int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
-	int red = val;
-
-	M_SendUINewColor (red, GPART(color), BPART(color));
+	argb_t color = (argb_t)V_GetColorFromString(NULL, ui_dimcolor.cstring());
+	color.r = val;
+	M_SendUINewColor(color.r, color.g, color.b);
 }
 
 static void M_SlideUIGreen (int val)
 {
-    int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
-	int green = val;
-
-	M_SendUINewColor (RPART(color), green, BPART(color));
+	argb_t color = (argb_t)V_GetColorFromString(NULL, ui_dimcolor.cstring());
+	color.g = val;
+	M_SendUINewColor(color.r, color.g, color.b);
 }
 
 static void M_SlideUIBlue (int val)
 {
-    int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
-	int blue = val;
-
-	M_SendUINewColor (RPART(color), GPART(color), blue);
+	argb_t color = (argb_t)V_GetColorFromString(NULL, ui_dimcolor.cstring());
+	color.b = val;
+	M_SendUINewColor(color.r, color.g, color.b);
 }
+
 
 //
 //		Set some stuff up for the video modes menu
@@ -1256,7 +1254,7 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
 	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
-void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, int color)
+void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
 {
 	if (leftval < rightval)
 		cur = clamp(cur, leftval, rightval);
@@ -1265,16 +1263,19 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchClean (W_CachePatch ("LSLIDE"), x, y);
+	screen->DrawPatchClean(W_CachePatch ("LSLIDE"), x, y);
+
 	for (int i = 1; i < 11; i++)
 		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
+
 	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
 
 	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + (int)(dist * 78.0), y);
 
 	V_ColorFill = BestColor(GetDefaultPalette()->basecolors,
-	                        RPART(color), GPART(color), BPART(color),
+	                        color.r, color.g, color.b,
 	                        GetDefaultPalette()->numcolors);
+
 	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
@@ -1427,20 +1428,20 @@ void M_OptDrawer (void)
 
 			case redslider:
 			{
-				int color = V_GetColorFromString(NULL, item->a.cvar->cstring());
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, RPART(color), color);
+				argb_t color = (argb_t)V_GetColorFromString(NULL, item->a.cvar->cstring());
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.r, color);
 			}
 			break;
 			case greenslider:
 			{
-				int color = V_GetColorFromString(NULL, item->a.cvar->cstring());
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, GPART(color), color);
+				argb_t color = (argb_t)V_GetColorFromString(NULL, item->a.cvar->cstring());
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.g, color);
 			}
 			break;
 			case blueslider:
 			{
-				int color = V_GetColorFromString(NULL, item->a.cvar->cstring());
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, BPART(color), color);
+				argb_t color = (argb_t)V_GetColorFromString(NULL, item->a.cvar->cstring());
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.b, color);
 			}
 			break;
 
@@ -1779,15 +1780,15 @@ void M_OptResponder (event_t *ev)
 						else
 							memcpy(newcolor, "00 00 00", 9);
 
-						int color = V_GetColorFromString(NULL, oldcolor);
+						argb_t color = (argb_t)V_GetColorFromString(NULL, oldcolor);
 						int part = 0;
 
 						if (item->type == redslider)
-							part = RPART(color);
+							part = color.r;
 						else if (item->type == greenslider)
-							part = GPART(color);
+							part = color.g;
 						else if (item->type == blueslider)
-							part = BPART(color);
+							part = color.b;
 
 						if (part > 0x00)
 							part -= 0x11;
@@ -1903,15 +1904,15 @@ void M_OptResponder (event_t *ev)
 						else
 							memcpy(newcolor, "00 00 00", 9);
 
-						int color = V_GetColorFromString(NULL, oldcolor);
+						argb_t color = (argb_t)V_GetColorFromString(NULL, oldcolor);
 						int part = 0;
 
 						if (item->type == redslider)
-							part = RPART(color);
+							part = color.r;
 						else if (item->type == greenslider)
-							part = GPART(color);
+							part = color.g;
 						else if (item->type == blueslider)
-							part = BPART(color);
+							part = color.b;
 
 						if (part < 0xff)
 							part += 0x11;

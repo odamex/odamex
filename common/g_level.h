@@ -105,9 +105,9 @@ struct level_pwad_info_s
 
 	// level_pwad_info_s				[ML] 5/11/06 Removed sky scrolling/sky2
 	char		skypic2[9];
-	DWORD		fadeto;
+	argb_t		fadeto;
 	char		fadetable[8];
-	DWORD		outsidefog;
+	argb_t		outsidefog;
 	float		gravity;
 	float		aircontrol;
 };
@@ -131,8 +131,8 @@ struct level_locals_s {
 
 	DWORD		flags;
 
-	DWORD		fadeto;					// The color the palette fades to (usually black)
-	DWORD		outsidefog;				// The fog for sectors with sky ceilings
+	argb_t		fadeto;					// The color the palette fades to (usually black)
+	argb_t		outsidefog;				// The fog for sectors with sky ceilings
 
 	char		music[8];
 	char		skypic[8];
