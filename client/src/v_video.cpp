@@ -569,21 +569,22 @@ END_COMMAND (checkres)
 //
 // V_InitPalette
 //
-void V_InitPalette (void)
+void V_InitPalette()
 {
 	// [RH] Initialize palette subsystem
-	if (!(InitPalettes ("PLAYPAL")))
-		I_FatalError ("Could not initialize palette");
+	if (!(InitPalettes("PLAYPAL")))
+		I_FatalError("Could not initialize palette");
 
-	BuildTransTable(GetDefaultPalette()->basecolors);
+	palette_t* palette = GetDefaultPalette();
+	BuildTransTable(palette->basecolors);
 
-	V_ForceBlend (0, 0, 0, 0);
+	V_ForceBlend(0, 0, 0, 0);
 
-	RefreshPalettes ();
+	RefreshPalette(palette);
 
-	assert(GetDefaultPalette()->maps.colormap != NULL);
-	assert(GetDefaultPalette()->maps.shademap != NULL);
-	V_Palette = shaderef_t(&GetDefaultPalette()->maps, 0); // (unsigned int *)DefaultPalette->colors;
+	assert(palette->maps.colormap != NULL);
+	assert(palette->maps.shademap != NULL);
+	V_Palette = shaderef_t(&palette->maps, 0); // (unsigned int *)DefaultPalette->colors;
 }
 
 
@@ -617,8 +618,10 @@ void V_Init()
 	CleanXfac = CleanYfac = std::max(1, std::min(surface_width / 320, surface_height / 200));
 
 	V_ForceBlend(0,0,0,0);
-	GammaAdjustPalettes();
-	RefreshPalettes();
+
+	palette_t* palette = GetDefaultPalette();
+	GammaAdjustPalette(palette);
+	RefreshPalette(palette);
 	R_ReinitColormap();
 
 	R_InitColumnDrawers();

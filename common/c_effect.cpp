@@ -87,10 +87,10 @@ void P_InitEffects (void)
 {
 	const struct ColorList *color = Colors;
 	const argb_t* palette = GetDefaultPalette()->basecolors;
-	int numcolors = GetDefaultPalette()->numcolors;
 
-	while (color->color) {
-		*(color->color) = BestColor (palette, color->r, color->g, color->b, numcolors);
+	while (color->color)
+	{
+		*(color->color) = BestColor(palette, color->r, color->g, color->b, 256);
 		color++;
 	}
 }

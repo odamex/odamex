@@ -2205,7 +2205,7 @@ void M_Init (void)
 	palette_t *pal = GetDefaultPalette();
 
 	for (i = 0; i < 255; i++)
-		FireRemap[i] = BestColor(pal->basecolors, i, 0, 0, pal->numcolors);
+		FireRemap[i] = BestColor(pal->basecolors, i, 0, 0, 256);
 }
 
 //

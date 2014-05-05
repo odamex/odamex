@@ -65,7 +65,6 @@ static int current_palette_num;
 static float current_blend[4];
 
 palette_t DefPal;
-palette_t *FirstPal;
 
 argb_t IndexedPalette[256];
 
@@ -188,14 +187,14 @@ static void V_UpdateGammaLevel(float level)
 		lasttype = type;
 
 		gammastrat->generateGammaTable(newgamma, level);
-		GammaAdjustPalettes();
+		GammaAdjustPalette(GetDefaultPalette());
 
 		if (!screen)
 			return;
 		if (I_GetVideoBitDepth() == 8)
 			V_ForceBlend(BlendR, BlendG, BlendB, BlendA);
 		else
-			RefreshPalettes();
+			RefreshPalette(GetDefaultPalette());
 	}
 }
 
@@ -231,181 +230,53 @@ void V_RestoreScreenPalette(void)
 /* Palette management stuff */
 /****************************/
 
-bool InternalCreatePalette (palette_t *palette, const char *name, byte *colors,
-							unsigned numcolors, unsigned flags)
+static void InternalCreatePalette(palette_t* palette, const byte* data)
 {
-	unsigned i;
-
-	if (numcolors > 256)
-		numcolors = 256;
-	else if (numcolors == 0)
-		return false;
-
-	strncpy (palette->name.name, name, 8);
-	palette->flags = flags;
-	palette->usecount = 1;
 	palette->maps.colormap = NULL;
 	palette->maps.shademap = NULL;
 
-	M_Free(palette->basecolors);
+	const int alpha = 255;
 
-	palette->basecolors = (argb_t *)Malloc (numcolors * 2 * sizeof(argb_t));
-	palette->colors = palette->basecolors + numcolors;
-	palette->numcolors = numcolors;
-
-	if (numcolors == 1)
-		palette->shadeshift = 0;
-	else if (numcolors <= 2)
-		palette->shadeshift = 1;
-	else if (numcolors <= 4)
-		palette->shadeshift = 2;
-	else if (numcolors <= 8)
-		palette->shadeshift = 3;
-	else if (numcolors <= 16)
-		palette->shadeshift = 4;
-	else if (numcolors <= 32)
-		palette->shadeshift = 5;
-	else if (numcolors <= 64)
-		palette->shadeshift = 6;
-	else if (numcolors <= 128)
-		palette->shadeshift = 7;
-	else
-		palette->shadeshift = 8;
-
-	for (i = 0; i < numcolors; i++, colors += 3)
-		palette->basecolors[i] = argb_t(colors[0],colors[1],colors[2]);
-
-	GammaAdjustPalette (palette);
-
-	return true;
+	for (int i = 0; i < 256; i++, data += 3)
+	{
+		argb_t color(alpha, data[0], data[1], data[2]);
+		palette->basecolors[i] = color; 
+		palette->colors[i].a = alpha;
+		palette->colors[i].r = newgamma[color.r];
+		palette->colors[i].g = newgamma[color.g];
+		palette->colors[i].b = newgamma[color.b];
+	}
 }
 
-palette_t *InitPalettes (const char *name)
+palette_t* InitPalettes(const char* lumpname)
 {
-	byte *colors;
-
-	//if (DefPal.usecount)
-	//	return &DefPal;
-
 	current_palette_num = -1;
 	current_blend[0] = current_blend[1] = current_blend[2] = current_blend[3] = 255.0f;
 
-    lu_palette = W_GetNumForName ("PLAYPAL");
+    lu_palette = W_GetNumForName(lumpname);
+	if (lu_palette != -1)
+	{
+		const byte* data = (byte*)W_CacheLumpName(lumpname, PU_CACHE);
+		InternalCreatePalette(&DefPal, data);
+		return &DefPal;
+	}
 
-	if ( (colors = (byte *)W_CacheLumpName (name, PU_CACHE)) )
-		if (InternalCreatePalette (&DefPal, name, colors, 256,
-									PALETTEF_SHADE|PALETTEF_BLEND|PALETTEF_DEFAULT)) {
-			return &DefPal;
-		}
 	return NULL;
 }
 
-palette_t *GetDefaultPalette (void)
+palette_t* GetDefaultPalette()
 {
 	return &DefPal;
 }
-
-// MakePalette()
-//	input: colors: ptr to 256 3-byte RGB values
-//		   flags:  the flags for the new palette
-//
-palette_t *MakePalette (byte *colors, char *name, unsigned flags)
-{
-	palette_t *pal;
-
-	pal = (palette_t *)Malloc (sizeof (palette_t));
-
-	if (InternalCreatePalette (pal, name, colors, 256, flags)) {
-		pal->next = FirstPal;
-		pal->prev = NULL;
-		FirstPal = pal;
-
-		return pal;
-	} else {
-		M_Free(pal);
-		return NULL;
-	}
-}
-
-// LoadPalette()
-//	input: name:  the name of the palette lump
-//		   flags: the flags for the palette
-//
-//	This function will try and find an already loaded
-//	palette and return that if possible.
-palette_t *LoadPalette (char *name, unsigned flags)
-{
-	palette_t *pal;
-
-	if (!(pal = FindPalette (name, flags))) {
-		// Palette doesn't already exist. Create a new one.
-		byte *colors = (byte *)W_CacheLumpName (name, PU_CACHE);
-
-		pal = MakePalette (colors, name, flags);
-	} else {
-		pal->usecount++;
-	}
-	return pal;
-}
-
-// LoadAttachedPalette()
-//	input: name:  the name of a graphic whose palette should be loaded
-//		   type:  the type of graphic whose palette is being requested
-//		   flags: the flags for the palette
-//
-//	This function looks through the PALETTES lump for a palette
-//	associated with the given graphic and returns that if possible.
-palette_t *LoadAttachedPalette (char *name, int type, unsigned flags);
 
 // FreePalette()
 //	input: palette: the palette to free
 //
 //	This function decrements the palette's usecount and frees it
 //	when it hits zero.
-void FreePalette (palette_t *palette)
+void FreePalette(palette_t* palette)
 {
-	if (!(--palette->usecount)) {
-		if (!(palette->flags & PALETTEF_DEFAULT)) {
-			if (!palette->prev)
-				FirstPal = palette->next;
-			else
-				palette->prev->next = palette->next;
-
-			M_Free(palette->basecolors);
-
-			M_Free(palette->colormapsbase);
-
-			M_Free(palette);
-		}
-	}
-}
-
-
-palette_t *FindPalette (char *name, unsigned flags)
-{
-	palette_t *pal = FirstPal;
-	union {
-		char	s[9];
-		int		x[2];
-	} name8;
-
-	int			v1;
-	int			v2;
-
-	// make the name into two integers for easy compares
-	strncpy (name8.s,name,8);
-
-	v1 = name8.x[0];
-	v2 = name8.x[1];
-
-	while (pal) {
-		if (pal->name.nameint[0] == v1 && pal->name.nameint[1] == v2) {
-			if ((flags == (unsigned)~0) || (flags == pal->flags))
-				return pal;
-		}
-		pal = pal->next;
-	}
-	return NULL;
+	M_Free(palette);
 }
 
 
@@ -479,7 +350,6 @@ void BuildLightRamp (shademap_t &maps)
 
 void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 {
-	const int numcolors = 256;
 	BuildLightRamp(maps);
 
 	// [SL] Modified algorithm from RF_BuildLights in dcolors.c
@@ -491,9 +361,9 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 	palindex_t* colormap = maps.colormap;
 	argb_t* shademap = maps.shademap;
 
-	for (int i = 0; i < NUMCOLORMAPS; i++, colormap += numcolors, shademap += numcolors)
+	for (int i = 0; i < NUMCOLORMAPS; i++, colormap += 256, shademap += 256)
 	{
-		for (int c = 0; c < numcolors; c++)
+		for (int c = 0; c < 256; c++)
 		{
 			unsigned int r = (palette[c].r * (NUMCOLORMAPS - i) + fadecolor.r * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
@@ -502,27 +372,26 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 			unsigned int b = (palette[c].b * (NUMCOLORMAPS - i) + fadecolor.b * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
-			colormap[c] = BestColor(palette, r, g, b, numcolors);
+			colormap[c] = BestColor(palette, r, g, b, 256);
 			shademap[c] = argb_t(newgamma[r], newgamma[g], newgamma[b]);
 		}
 	}
 
 	// build special maps (e.g. invulnerability)
-	for (int c = 0; c < numcolors; c++)
+	for (int c = 0; c < 256; c++)
 	{
 		int grayint = (int)(255.0f * clamp(1.0f -
 						(palette[c].r * 0.00116796875f +
 						 palette[c].g * 0.00229296875f +
 			 			 palette[c].b * 0.0005625f), 0.0f, 1.0f));
 
-		colormap[c] = BestColor(palette, grayint, grayint, grayint, numcolors);
+		colormap[c] = BestColor(palette, grayint, grayint, grayint, 256);
 		shademap[c] = argb_t(newgamma[grayint], newgamma[grayint], newgamma[grayint]);
 	}
 }
 
 void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 {
-	const int numcolors = 256;
 	BuildLightRamp(maps);
 
 	// [SL] Modified algorithm from RF_BuildLights in dcolors.c
@@ -533,9 +402,9 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 	
 	argb_t* shademap = maps.shademap;
 
-	for (int i = 0; i < NUMCOLORMAPS; i++, shademap += numcolors)
+	for (int i = 0; i < NUMCOLORMAPS; i++, shademap += 256)
 	{
-		for (int c = 0; c < numcolors; c++)
+		for (int c = 0; c < 256; c++)
 		{
 			unsigned int r = (palette[c].r * (NUMCOLORMAPS - i) + fadecolor.r * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
@@ -549,7 +418,7 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 	}
 
 	// build special maps (e.g. invulnerability)
-	for (int c = 0; c < numcolors; c++)
+	for (int c = 0; c < 256; c++)
 	{
 		int grayint = (int)(255.0f * clamp(1.0f -
 						(palette[c].r * 0.00116796875f +
@@ -560,49 +429,33 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 	}
 }
 
-void RefreshPalette (palette_t *pal)
+void RefreshPalette(palette_t* pal)
 {
-	if (pal->flags & PALETTEF_SHADE)
+	if (pal->maps.colormap && pal->maps.colormap - pal->colormapsbase >= 256)
 	{
-		if (pal->maps.colormap && pal->maps.colormap - pal->colormapsbase >= 256) {
-			M_Free(pal->maps.colormap);
-		}
-		pal->colormapsbase = (byte *)Realloc (pal->colormapsbase, (NUMCOLORMAPS + 1) * 256 + 255);
-		pal->maps.colormap = (byte *)(((ptrdiff_t)(pal->colormapsbase) + 255) & ~0xff);
-		pal->maps.shademap = (argb_t *)Realloc (pal->maps.shademap, (NUMCOLORMAPS + 1)*256*sizeof(argb_t) + 255);
-
-		BuildDefaultColorAndShademap(pal, pal->maps);
+		M_Free(pal->maps.colormap);
 	}
+
+	pal->colormapsbase = (byte*)Realloc(pal->colormapsbase, (NUMCOLORMAPS + 1) * 256 + 255);
+	pal->maps.colormap = (byte*)(((ptrdiff_t)(pal->colormapsbase) + 255) & ~0xff);
+	pal->maps.shademap = (argb_t*)Realloc(pal->maps.shademap, (NUMCOLORMAPS + 1)*256*sizeof(argb_t) + 255);
+
+	BuildDefaultColorAndShademap(pal, pal->maps);
 
 	if (pal == &DefPal)
 	{
 		NormalLight.maps = shaderef_t(&DefPal.maps, 0);
-		NormalLight.color = argb_t(255,255,255);
+		NormalLight.color = argb_t(255, 255, 255);
 		NormalLight.fade = level.fadeto;
 	}
 }
 
-void RefreshPalettes (void)
+void GammaAdjustPalette(palette_t* pal)
 {
-	palette_t *pal = FirstPal;
-
-	RefreshPalette (&DefPal);
-	while (pal) {
-		RefreshPalette (pal);
-		pal = pal->next;
-	}
-}
-
-
-void GammaAdjustPalette (palette_t *pal)
-{
-	if (!(pal->colors && pal->basecolors))
-		return;
-
 	if (!gamma_initialized)
 		V_UpdateGammaLevel(gammalevel);
 
-	for (unsigned int i = 0; i < pal->numcolors; i++)
+	for (int i = 0; i < 256; i++)
 	{
 		pal->colors[i].r = newgamma[pal->basecolors[i].r];
 		pal->colors[i].g = newgamma[pal->basecolors[i].g];
@@ -610,17 +463,6 @@ void GammaAdjustPalette (palette_t *pal)
 	}
 }
 
-void GammaAdjustPalettes (void)
-{
-	palette_t *pal = FirstPal;
-
-	GammaAdjustPalette(&DefPal);
-	while (pal)
-	{
-		GammaAdjustPalette(pal);
-		pal = pal->next;
-	}
-}
 
 //
 // V_AddBlend
@@ -668,7 +510,7 @@ void V_ForceBlend (int blendr, int blendg, int blendb, int blenda)
 	// in R_RenderPlayerView
 	if (I_GetVideoBitDepth() == 8)
 	{
-		DoBlending(DefPal.colors, IndexedPalette, DefPal.numcolors,
+		DoBlending(DefPal.colors, IndexedPalette, 256,
 					newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
 		I_SetPalette(IndexedPalette);
 	}
@@ -717,7 +559,7 @@ BEGIN_COMMAND (testfade)
 			color = (argb_t)V_GetColorFromString(NULL, argv[1]);
 
 		level.fadeto = color;
-		RefreshPalettes();
+		RefreshPalette(GetDefaultPalette());
 		NormalLight.maps = shaderef_t(&DefPal.maps, 0);
 	}
 }
@@ -816,7 +658,7 @@ void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g,
 
 		// Write directly to the shademap for blending:
 		argb_t *colors = maps->shademap + (256 * l);
-		DoBlending (DefPal.basecolors, colors, DefPal.numcolors, r, g, b, a);
+		DoBlending (DefPal.basecolors, colors, 256, r, g, b, a);
 
 		// Build the colormap and shademap:
 		color = maps->colormap + 256*l;

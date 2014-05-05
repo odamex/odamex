@@ -557,7 +557,7 @@ am_color_t AM_GetColorFromString(argb_t *palette, const char *colorstring)
 	return c;
 }
 
-am_color_t AM_BestColor(argb_t *palette, const int r, const int g, const int b, const int numcolors)
+am_color_t AM_BestColor(const argb_t *palette, const int r, const int g, const int b)
 {
 	am_color_t c;
 	c.rgb = argb_t(r,g,b);
@@ -1373,7 +1373,8 @@ void AM_drawWalls(void)
 				    // NES - Locked doors glow from a predefined color to either blue, yellow, or red.
                     r = LockedColor.rgb.r, g = LockedColor.rgb.g, b = LockedColor.rgb.b;
 
-                    if (am_usecustomcolors) {
+                    if (am_usecustomcolors)
+					{
                         if (lines[i].args[3] == (BCard | CardIsSkull)) {
                             rdif = (0 - r)/30;
                             gdif = (0 - g)/30;
@@ -1388,20 +1389,21 @@ void AM_drawWalls(void)
                             bdif = (0 - b)/30;
                         }
 
-                        if (lockglow < 30)
-                            AM_drawMline (&l, AM_BestColor (pal->basecolors, r + ((int)rdif*lockglow),
-                                          g + ((int)gdif*lockglow), b + ((int)bdif*lockglow),
-                                          pal->numcolors));
-                        else if (lockglow < 60)
-                            AM_drawMline (&l, AM_BestColor (pal->basecolors, r + ((int)rdif*(60-lockglow)),
-                                          g + ((int)gdif*(60-lockglow)), b + ((int)bdif*(60-lockglow)),
-                                          pal->numcolors));
-                        else
-                            AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b, pal->numcolors));
-				    } else {
-                        AM_drawMline (&l, AM_BestColor (pal->basecolors, r, g, b,
-                                      pal->numcolors));
-                    }
+						if (lockglow < 30)
+						{
+							r += (int)rdif * lockglow;
+							g += (int)gdif * lockglow;
+							b += (int)bdif * lockglow;
+						}
+						else if (lockglow < 60)
+						{
+							r += (int)rdif * (60 - lockglow);
+							g += (int)gdif * (60 - lockglow);
+							b += (int)bdif * (60 - lockglow);
+						}
+				    }
+
+					AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
                 }
 				else if (lines[i].backsector->floorheight
 					  != lines[i].frontsector->floorheight)
@@ -1562,8 +1564,7 @@ void AM_drawPlayers(void)
 			int playercolor = CL_GetPlayerColor(p);
 			color.rgb = (argb_t)playercolor;
 			color.index = BestColor(GetDefaultPalette()->basecolors,
-							color.rgb.r, color.rgb.g, color.rgb.b,
-							GetDefaultPalette()->numcolors);
+							color.rgb.r, color.rgb.g, color.rgb.b, 256);
 		}
 
 		pt.x = p->mo->x;
