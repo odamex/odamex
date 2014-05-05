@@ -938,8 +938,7 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	if (print_stdout && gamestate != GS_FORCEWIPE)
 		C_PrintStringStdOut(outline);
 
-	if (I_VideoInitialized())
-		C_PrintString(printlevel, color_code, outline);
+	C_PrintString(printlevel, color_code, outline);
 
 	return len;
 }
