@@ -418,8 +418,7 @@ void CL_QuitNetGame(void)
 		netdemo.stopPlaying();
 
 	// Reset the palette to default
-	if (I_VideoInitialized())
-		I_SetPalette(GetDefaultPalette()->colors);
+	V_ResetPalette();
 
 	cvar_t::C_RestoreCVars();
 }

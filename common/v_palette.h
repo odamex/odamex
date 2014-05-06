@@ -72,13 +72,6 @@ palette_t* GetDefaultPalette();
 // Restore original screen palette from current gamma level
 void V_RestoreScreenPalette();
 
-// FreePalette()
-//	input: palette: the palette to free
-//
-//	This function decrements the palette's usecount and frees it
-//	when it hits zero.
-void FreePalette(palette_t* palette);
-
 // RefreshPalette()
 //	input: pal: the palette to refresh
 //
@@ -114,6 +107,8 @@ void V_SetBlend (int blendr, int blendg, int blendb, int blenda);
 void V_ForceBlend (int blendr, int blendg, int blendb, int blenda);
 
 void V_DoPaletteEffects();
+
+void V_ResetPalette();
 
 // Colorspace conversion RGB <-> HSV
 void RGBtoHSV (float r, float g, float b, float *h, float *s, float *v);

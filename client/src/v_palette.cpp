@@ -38,8 +38,6 @@
 #include "g_level.h"
 #include "st_stuff.h"
 
-/* Reimplement old way of doing red/gold colors, from Chocolate Doom - ML */
-
 // Palette indices.
 // For damage/bonus red-/gold-shifts
 #define STARTREDPALS		1
@@ -55,7 +53,7 @@ EXTERN_CVAR(r_painintensity)
 EXTERN_CVAR(sv_allowredscreen)
 
 void BuildColoredLights (byte *maps, int lr, int lg, int lb, int fr, int fg, int fb);
-static void DoBlending (argb_t *from, argb_t *to, unsigned count, int tor, int tog, int tob, int toa);
+static void DoBlending(argb_t *from, argb_t *to, int tor, int tog, int tob, int toa);
 void V_ForceBlend (int blendr, int blendg, int blendb, int blenda);
 
 dyncolormap_t NormalLight;
@@ -64,10 +62,7 @@ static int lu_palette;
 static int current_palette_num;
 static float current_blend[4];
 
-palette_t DefPal;
-
-argb_t IndexedPalette[256];
-
+static palette_t DefPal;
 
 /* Current color blending values */
 int		BlendR, BlendG, BlendB, BlendA;
@@ -230,6 +225,28 @@ void V_RestoreScreenPalette(void)
 /* Palette management stuff */
 /****************************/
 
+//
+// V_SetPalette
+//
+// Sets the video adapter's palette to the given 768 byte palette lump.
+//
+static void V_SetPalette(const byte* data)
+{
+	const int alpha = 255;
+	argb_t palette_colors[256];
+
+	for (int i = 0; i < 256; i++, data += 3)
+	{
+		palette_colors[i].a = alpha;
+		palette_colors[i].r = newgamma[data[0]];
+		palette_colors[i].g = newgamma[data[1]];
+		palette_colors[i].b = newgamma[data[2]];
+	}
+
+	I_SetPalette(palette_colors);
+}
+
+
 static void InternalCreatePalette(palette_t* palette, const byte* data)
 {
 	palette->maps.colormap = NULL;
@@ -248,6 +265,7 @@ static void InternalCreatePalette(palette_t* palette, const byte* data)
 	}
 }
 
+
 palette_t* InitPalettes(const char* lumpname)
 {
 	current_palette_num = -1;
@@ -264,34 +282,25 @@ palette_t* InitPalettes(const char* lumpname)
 	return NULL;
 }
 
+
 palette_t* GetDefaultPalette()
 {
 	return &DefPal;
 }
 
-// FreePalette()
-//	input: palette: the palette to free
-//
-//	This function decrements the palette's usecount and frees it
-//	when it hits zero.
-void FreePalette(palette_t* palette)
-{
-	M_Free(palette);
-}
-
 
 // This is based (loosely) on the ColorShiftPalette()
 // function from the dcolors.c file in the Doom utilities.
-static void DoBlending(argb_t *from, argb_t *to, unsigned count, int tor, int tog, int tob, int toa)
+static void DoBlending(argb_t *from, argb_t *to, int tor, int tog, int tob, int toa)
 {
 	if (toa == 0)
 	{
 		if (from != to)
-			memcpy(to, from, count * sizeof(argb_t));
+			memcpy(to, from, 256 * sizeof(argb_t));
 	}
 	else
 	{
-		for (unsigned i = 0; i < count; i++, from++, to++)
+		for (int i = 0; i < 256; i++, from++, to++)
 		{
 			int r = from->r;
 			int g = from->g;
@@ -308,9 +317,9 @@ static void DoBlending(argb_t *from, argb_t *to, unsigned count, int tor, int to
 	}
 }
 
-static void DoBlendingWithGamma(argb_t* from, argb_t* to, unsigned count, int tor, int tog, int tob, int toa)
+static void DoBlendingWithGamma(argb_t* from, argb_t* to, int tor, int tog, int tob, int toa)
 {
-	for (unsigned i = 0; i < count; i++, from++, to++)
+	for (int i = 0; i < 256; i++, from++, to++)
 	{
 		int r = from->r;
 		int g = from->g;
@@ -432,9 +441,7 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 void RefreshPalette(palette_t* pal)
 {
 	if (pal->maps.colormap && pal->maps.colormap - pal->colormapsbase >= 256)
-	{
 		M_Free(pal->maps.colormap);
-	}
 
 	pal->colormapsbase = (byte*)Realloc(pal->colormapsbase, (NUMCOLORMAPS + 1) * 256 + 255);
 	pal->maps.colormap = (byte*)(((ptrdiff_t)(pal->colormapsbase) + 255) & ~0xff);
@@ -484,7 +491,7 @@ void V_AddBlend(float r, float g, float b, float a, float* v_blend)
 	v_blend[3] = a2;
 }
 
-void V_SetBlend (int blendr, int blendg, int blendb, int blenda)
+void V_SetBlend(int blendr, int blendg, int blendb, int blenda)
 {
 	// Don't do anything if the new blend is the same as the old
 	if ((blenda == 0 && BlendA == 0) ||
@@ -497,7 +504,7 @@ void V_SetBlend (int blendr, int blendg, int blendb, int blenda)
 	V_ForceBlend(blendr, blendg, blendb, blenda);
 }
 
-void V_ForceBlend (int blendr, int blendg, int blendb, int blenda)
+void V_ForceBlend(int blendr, int blendg, int blendb, int blenda)
 {
 	BlendR = blendr;
 	BlendG = blendg;
@@ -510,9 +517,9 @@ void V_ForceBlend (int blendr, int blendg, int blendb, int blenda)
 	// in R_RenderPlayerView
 	if (I_GetVideoBitDepth() == 8)
 	{
-		DoBlending(DefPal.colors, IndexedPalette, 256,
-					newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
-		I_SetPalette(IndexedPalette);
+		argb_t palette_colors[256];
+		DoBlending(DefPal.colors, palette_colors, newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
+		I_SetPalette(palette_colors);
 	}
 }
 
@@ -653,12 +660,13 @@ void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g,
 	BuildLightRamp(*maps);
 
 	// build normal (but colored) light mappings
-	for (unsigned int l = 0; l < NUMCOLORMAPS; l++) {
+	for (unsigned int l = 0; l < NUMCOLORMAPS; l++)
+	{
 		byte a = maps->ramp[l * 255 / NUMCOLORMAPS];
 
 		// Write directly to the shademap for blending:
-		argb_t *colors = maps->shademap + (256 * l);
-		DoBlending (DefPal.basecolors, colors, 256, r, g, b, a);
+		argb_t* colors = maps->shademap + 256 * l;
+		DoBlending(DefPal.basecolors, colors, r, g, b, a);
 
 		// Build the colormap and shademap:
 		color = maps->colormap + 256*l;
@@ -744,19 +752,19 @@ void V_DoPaletteEffects()
 
 	if (primary_surface->getBitsPerPixel() == 8)
 	{
-		int palette_num;
+		int palette_num = 0;
 
-		float cnt = (float)plyr->damagecount;
+		float red_count = (float)plyr->damagecount;
 		if (!multiplayer || sv_allowredscreen)
-			cnt *= r_painintensity;
+			red_count *= r_painintensity;
 
 		// slowly fade the berzerk out
 		if (plyr->powers[pw_strength])
-			cnt = MAX(cnt, 12.0f - float(plyr->powers[pw_strength] >> 6));
+			red_count = MAX(red_count, 12.0f - float(plyr->powers[pw_strength] >> 6));
 
-		if (cnt > 0.0f)
+		if (red_count > 0.0f)
 		{
-			palette_num = ((int)cnt + 7) >> 3;
+			palette_num = ((int)red_count + 7) >> 3;
 
 			if (gamemode == retail_chex)
 				palette_num = RADIATIONPAL;
@@ -782,22 +790,12 @@ void V_DoPaletteEffects()
 		}
 		else if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet] & 8)
 			palette_num = RADIATIONPAL;
-		else
-			palette_num = 0;
 
 		if (palette_num != current_palette_num)
 		{
 			current_palette_num = palette_num;
-			const byte* pal = (byte*)W_CacheLumpNum(lu_palette, PU_CACHE) + palette_num * 768;
-
-			for (int i = 0; i < 256; i++)
-			{
-				IndexedPalette[i].r = *pal++;
-				IndexedPalette[i].g = *pal++;
-				IndexedPalette[i].b = *pal++;
-			}
-
-			I_SetPalette(IndexedPalette);
+			const byte* data = (byte*)W_CacheLumpNum(lu_palette, PU_CACHE) + palette_num * 768;
+			V_SetPalette(data);
 		}
 	}
 	else
@@ -810,18 +808,18 @@ void V_DoPaletteEffects()
 		// red tint for pain / berzerk power
 		if (plyr->damagecount || plyr->powers[pw_strength])
 		{
-			float amount = (float)plyr->damagecount;
+			float red_amount = (float)plyr->damagecount;
 			if (!multiplayer || sv_allowredscreen)
-				amount *= r_painintensity;
+				red_amount *= r_painintensity;
 
 			// slowly fade the berzerk out
 			if (plyr->powers[pw_strength])
-				amount = MAX(amount, 12.0f - float(plyr->powers[pw_strength]) / 64.0f);
+				red_amount = MAX(red_amount, 12.0f - float(plyr->powers[pw_strength]) / 64.0f);
 
-			if (amount > 0.0f)
+			if (red_amount > 0.0f)
 			{
-				amount = MIN(amount, 56.0f);
-				float alpha = (amount + 8.0f) / 72.0f;
+				red_amount = MIN(red_amount, 56.0f);
+				float alpha = (red_amount + 8.0f) / 72.0f;
 
 				static const float red = 255.0f / 255.0f;
 				static const float green = 0.0f;
@@ -833,11 +831,11 @@ void V_DoPaletteEffects()
 		// yellow tint for item pickup
 		if (plyr->bonuscount)
 		{
-			float amount = (float)plyr->bonuscount;
-			if (amount > 0.0f)
+			float bonus_amount = (float)plyr->bonuscount;
+			if (bonus_amount > 0.0f)
 			{
-				amount = MIN(amount, 24.0f);
-				float alpha = (amount + 8.0f) / 64.0f;				
+				bonus_amount = MIN(bonus_amount, 24.0f);
+				float alpha = (bonus_amount + 8.0f) / 64.0f;				
 
 				static const float red = 215.0f / 255.0f;
 				static const float green = 186.0f / 255.0f;
@@ -862,6 +860,23 @@ void V_DoPaletteEffects()
 					(int)(blend[2] * 255.0f), (int)(blend[3] * 256.0f));
 	}
 }
+
+
+//
+// V_ResetPalette
+//
+// Resets the palette back to the default palette.
+//
+void V_ResetPalette()
+{
+	if (I_VideoInitialized())
+	{
+		const palette_t* palette = GetDefaultPalette();
+		I_SetPalette(palette->colors);
+	}
+}
+
+
 
 VERSION_CONTROL (v_palette_cpp, "$Id$")
 

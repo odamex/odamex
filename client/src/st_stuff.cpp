@@ -1253,7 +1253,7 @@ void ST_updateWidgets(void)
 
 }
 
-void ST_Ticker (void)
+void ST_Ticker()
 {
 	st_randomnumber = M_Random();
 	ST_updateWidgets();
@@ -1358,6 +1358,11 @@ void ST_Drawer()
 	{
 		stbar_surface->lock();
 		stnum_surface->lock();
+
+		// update the palette prior to blitting surfaces
+		const argb_t* palette_colors = R_GetRenderingSurface()->getPalette();
+		stbar_surface->setPalette(palette_colors);
+		stnum_surface->setPalette(palette_colors);	
 
 		if (st_needrefresh)
 		{
@@ -1787,9 +1792,6 @@ void ST_Init (void)
 		stbar_surface = I_AllocateSurface(320, 32, 8);
 	if (stnum_surface == NULL)
 		stnum_surface = I_AllocateSurface(320, 32, 8);
-
-	stbar_surface->setPalette(GetDefaultPalette()->colors);
-	stnum_surface->setPalette(GetDefaultPalette()->colors);
 
 	ST_loadData();
 }

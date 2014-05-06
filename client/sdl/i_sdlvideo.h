@@ -87,7 +87,7 @@ private:
 	SDL_Surface*		mSDLSurface;
 	byte*				mSurfaceBuffer;
 
-	const argb_t*		mPalette;
+	argb_t				mPalette[256];
 
 	int					mWidth;
 	int					mHeight;

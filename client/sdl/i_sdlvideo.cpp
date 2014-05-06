@@ -71,13 +71,15 @@ EXTERN_CVAR (vid_vsync)
 // ISDL12WindowSurface::ISDL12WindowSurface
 //
 ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, int width, int height, int bpp) :
-	IWindowSurface(window), mSDLSurface(NULL), mPalette(NULL), mLocks(0)
+	IWindowSurface(window), mSDLSurface(NULL), mLocks(0)
 {
 	Uint32 flags = SDL_SWSURFACE;
 	SDL_Surface* sdlsurface = SDL_CreateRGBSurface(flags, width, height, bpp, 0, 0, 0, 0);
 
 	initializeFromSDLSurface(sdlsurface);
 	mFreeSDLSurface = true;
+
+	memset(mPalette, 255, 256 * sizeof(*mPalette));
 }
 
 
@@ -87,12 +89,14 @@ ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, int width, int height,
 // Constructs the surface using an existing SDL_Surface handle.
 //
 ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, SDL_Surface* sdlsurface) :
-	IWindowSurface(window), mSDLSurface(NULL), mPalette(NULL), mLocks(0)
+	IWindowSurface(window), mSDLSurface(NULL), mLocks(0)
 {
 	initializeFromSDLSurface(sdlsurface);
 
 	// shouldn't free sdlsurface if it was obtained from SDL_SetVideoMode
 	mFreeSDLSurface = false;
+
+	memset(mPalette, 255, 256 * sizeof(*mPalette));
 }
 
 
@@ -173,7 +177,7 @@ void ISDL12WindowSurface::unlock()
 //
 void ISDL12WindowSurface::setPalette(const argb_t* palette)
 {
-	mPalette = palette;
+	memcpy(mPalette, palette, 256 * sizeof(*mPalette));
 
 	if (mBitsPerPixel == 8)
 	{

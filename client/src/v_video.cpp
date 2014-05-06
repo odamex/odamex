@@ -582,6 +582,8 @@ void V_InitPalette()
 
 	RefreshPalette(palette);
 
+	V_ResetPalette();
+
 	assert(palette->maps.colormap != NULL);
 	assert(palette->maps.shademap != NULL);
 	V_Palette = shaderef_t(&palette->maps, 0); // (unsigned int *)DefaultPalette->colors;
@@ -611,18 +613,14 @@ void V_Init()
 	if (!I_VideoInitialized())
 		I_FatalError("Failed to initialize display");
 
+	V_InitPalette();
+	R_ReinitColormap();
+
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows hud_scaletext to have some purpose...
 	CleanXfac = CleanYfac = std::max(1, std::min(surface_width / 320, surface_height / 200));
-
-	V_ForceBlend(0,0,0,0);
-
-	palette_t* palette = GetDefaultPalette();
-	GammaAdjustPalette(palette);
-	RefreshPalette(palette);
-	R_ReinitColormap();
 
 	R_InitColumnDrawers();
 
@@ -631,8 +629,6 @@ void V_Init()
 
 	I_SetWindowCaption();
 	I_SetWindowIcon();
-
-	V_InitPalette();
 
 	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight());
 }

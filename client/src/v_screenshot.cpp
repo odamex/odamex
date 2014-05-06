@@ -106,7 +106,7 @@ END_COMMAND(screenshot)
 // then set the png's PLTE chunk appropriately
 // Note: palette is assumed to contain 256 colors
 //
-static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_t* palette)
+static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_t* palette_colors)
 {
 	if (png_get_color_type(png_ptr, info_ptr) != 3)
 	{
@@ -118,9 +118,9 @@ static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_
 
 	for (int i = 0; i < 256; i++)
 	{
-		pngpalette[i].red   = (png_byte)palette[i].r;
-		pngpalette[i].green = (png_byte)palette[i].g;
-		pngpalette[i].blue  = (png_byte)palette[i].b;
+		pngpalette[i].red   = (png_byte)(palette_colors[i].r);
+		pngpalette[i].green = (png_byte)(palette_colors[i].g);
+		pngpalette[i].blue  = (png_byte)(palette_colors[i].b);
 	}
 
 	png_set_PLTE(png_ptr, info_ptr, pngpalette, 256);

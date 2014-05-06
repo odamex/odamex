@@ -792,8 +792,6 @@ void I_BlitEmulatedSurface()
 {
 	if (emulated_surface)
 	{
-		emulated_surface->setPalette(GetDefaultPalette()->colors);
-
 		primary_surface->blit(emulated_surface, 0, 0,
 				emulated_surface->getWidth(), emulated_surface->getHeight(),
 				0, 0, primary_surface->getWidth(), primary_surface->getHeight());
@@ -908,7 +906,16 @@ void I_FinishUpdate()
 void I_SetPalette(const argb_t* palette)
 {
 	if (I_VideoInitialized())
+	{
 		window->setPalette(palette);
+
+		if (primary_surface)
+			primary_surface->setPalette(palette);
+		if (matted_surface)
+			matted_surface->setPalette(palette);
+		if (emulated_surface)
+			emulated_surface->setPalette(palette);
+	}
 }
 
 
