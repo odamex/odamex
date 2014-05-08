@@ -1079,7 +1079,7 @@ void R_RenderPlayerView(player_t *player)
 	extern int BlendA, BlendR, BlendG, BlendB;
 	if (BlendA != 0)
 	{
-		argb_t blend_color = argb_t(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]);
+		argb_t blend_color = argb_t(gammatable[BlendR], gammatable[BlendG], gammatable[BlendB]);
 		r_dimpatchD(surface, blend_color, BlendA, 0, 0, surface->getWidth(), surface->getHeight());
 	}
 

@@ -258,7 +258,7 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	unsigned int b = (trancolor.b * lightcolor.b * (NUMCOLORMAPS - m_mapnum) / 255
 					+ fadecolor.b * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
 
-	return argb_t(newgamma[r], newgamma[g], newgamma[b]);
+	return argb_t(gammatable[r], gammatable[g], gammatable[b]);
 }
 
 

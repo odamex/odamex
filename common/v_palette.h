@@ -33,7 +33,7 @@ struct palette_t
 	argb_t			colors[256];			// gamma corrected colors
 
 	shademap_t      maps;
-	byte			*colormapsbase;
+	byte*			colormapsbase;
 };
 
 struct dyncolormap_s {
@@ -44,7 +44,16 @@ struct dyncolormap_s {
 };
 typedef struct dyncolormap_s dyncolormap_t;
 
-extern byte newgamma[256];
+extern byte gammatable[256];
+float V_GetMinimumGammaLevel();
+float V_GetMaximumGammaLevel();
+void V_IncrementGammaLevel();
+
+static inline argb_t V_GammaCorrect(const argb_t value)
+{
+	extern byte gammatable[256];
+	return argb_t(value.a, gammatable[value.r], gammatable[value.g], gammatable[value.b]);
+}
 
 // Alpha blend between two RGB colors with only dest alpha value
 // 0 <=   toa <= 256
@@ -54,12 +63,7 @@ argb_t alphablend1a(const argb_t from, const argb_t to, const int toa);
 // 0 <=   toa <= 256
 argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa);
 
-// InitPalettes()
-//	input: name:  the name of the default palette lump
-//				  (normally GAMEPAL)
-//
-// Returns a pointer to the default palette.
-palette_t* InitPalettes(const char *name);
+void V_InitPalette(const char* lumpname);
 
 // GetDefaultPalette()
 //
@@ -72,24 +76,16 @@ palette_t* GetDefaultPalette();
 // Restore original screen palette from current gamma level
 void V_RestoreScreenPalette();
 
-// RefreshPalette()
-//	input: pal: the palette to refresh
+// V_RefreshColormaps()
 //
-// Generates all colormaps or shadings for the specified palette
+// Generates all colormaps or shadings for the default palette
 // with the current blending levels.
-void RefreshPalette(palette_t* pal);
+void V_RefreshColormaps();
 
 // Sets up the default colormaps and shademaps based on the given palette:
 void BuildDefaultColorAndShademap (palette_t *pal, shademap_t &maps);
 // Sets up the default shademaps (no colormaps) based on the given palette:
 void BuildDefaultShademap (palette_t *pal, shademap_t &maps);
-
-// GammaAdjustPalette()
-//
-// Builds the colors table for the specified palette based
-// on the current gamma correction setting. It will not rebuild
-// the shading table if the palette has one.
-void GammaAdjustPalette(palette_t* pal);
 
 // V_SetBlend()
 //	input: blendr: red component of blend

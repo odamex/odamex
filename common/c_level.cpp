@@ -1155,7 +1155,7 @@ void G_InitLevelLocals ()
 //	memset (level.vars, 0, sizeof(level.vars));
 
 	if (oldfade != level.fadeto)
-		RefreshPalette(GetDefaultPalette());
+		V_RefreshColormaps();
 
 	movingsectors.clear();
 }

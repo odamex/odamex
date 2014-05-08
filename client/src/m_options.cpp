@@ -56,7 +56,6 @@
 #include "m_argv.h"
 #include "m_swap.h"
 #include "m_memio.h"
-#include "v_gamma.h"
 
 #include "s_sound.h"
 #include "i_musicsystem.h"
@@ -866,9 +865,9 @@ static void M_UpdateDisplayOptions()
 	const static size_t gamma_index = M_FindCvarInMenu(gammalevel, VideoItems, menu_length);
 
 	// update the parameters for gammalevel based on vid_gammatype (doom or zdoom gamma)
-	VideoItems[gamma_index].b.leftval = gammastrat->min();
-	VideoItems[gamma_index].c.rightval = gammastrat->max();
-	VideoItems[gamma_index].d.step = gammastrat->increment(gammastrat->min()) - gammastrat->min();
+	VideoItems[gamma_index].b.leftval = V_GetMinimumGammaLevel();
+	VideoItems[gamma_index].c.rightval = V_GetMaximumGammaLevel();
+	VideoItems[gamma_index].d.step = 0.1f;
 }
 
 menu_t VideoMenu = {

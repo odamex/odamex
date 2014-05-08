@@ -295,11 +295,8 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 	}
 	else
 	{
-		argb_t color = V_GetColorFromString(NULL, color_str);
-
-		color.r = newgamma[color.r];
-		color.g = newgamma[color.g];
-		color.b = newgamma[color.b];
+		argb_t color = (argb_t)V_GetColorFromString(NULL, color_str);
+		color = V_GammaCorrect(color);
 
 		r_dimpatchD(mSurface, color, (int)(famount * 256.0f), x1, y1, w, h);
 	}
@@ -567,30 +564,6 @@ END_COMMAND (checkres)
 
 
 //
-// V_InitPalette
-//
-void V_InitPalette()
-{
-	// [RH] Initialize palette subsystem
-	if (!(InitPalettes("PLAYPAL")))
-		I_FatalError("Could not initialize palette");
-
-	palette_t* palette = GetDefaultPalette();
-	BuildTransTable(palette->basecolors);
-
-	V_ForceBlend(0, 0, 0, 0);
-
-	RefreshPalette(palette);
-
-	V_ResetPalette();
-
-	assert(palette->maps.colormap != NULL);
-	assert(palette->maps.shademap != NULL);
-	V_Palette = shaderef_t(&palette->maps, 0); // (unsigned int *)DefaultPalette->colors;
-}
-
-
-//
 // V_Close
 //
 void STACK_ARGS V_Close()
@@ -613,7 +586,7 @@ void V_Init()
 	if (!I_VideoInitialized())
 		I_FatalError("Failed to initialize display");
 
-	V_InitPalette();
+	V_InitPalette("PLAYPAL");
 	R_ReinitColormap();
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
@@ -631,6 +604,8 @@ void V_Init()
 	I_SetWindowIcon();
 
 	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight());
+
+	BuildTransTable(GetDefaultPalette()->basecolors);
 }
 
 

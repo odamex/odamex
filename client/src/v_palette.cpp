@@ -25,10 +25,11 @@
 #include <cstring>
 #include <math.h>
 #include <cstddef>
+#include <cassert>
 
 #include "doomstat.h"
+#include "i_system.h"
 #include "v_video.h"
-#include "v_gamma.h"
 #include "m_alloc.h"
 #include "r_main.h"		// For lighting constants
 #include "w_wad.h"
@@ -37,6 +38,8 @@
 #include "c_dispatch.h"
 #include "g_level.h"
 #include "st_stuff.h"
+
+#include "v_palette.h"
 
 // Palette indices.
 // For damage/bonus red-/gold-shifts
@@ -53,16 +56,17 @@ EXTERN_CVAR(r_painintensity)
 EXTERN_CVAR(sv_allowredscreen)
 
 void BuildColoredLights (byte *maps, int lr, int lg, int lb, int fr, int fg, int fb);
-static void DoBlending(argb_t *from, argb_t *to, int tor, int tog, int tob, int toa);
+static void DoBlending(const argb_t *from, argb_t *to, int tor, int tog, int tob, int toa);
 void V_ForceBlend (int blendr, int blendg, int blendb, int blenda);
 
 dyncolormap_t NormalLight;
 
-static int lu_palette;
+static char palette_lumpname[9];
+
 static int current_palette_num;
 static float current_blend[4];
 
-static palette_t DefPal;
+static palette_t default_palette;
 
 /* Current color blending values */
 int		BlendR, BlendG, BlendB, BlendA;
@@ -120,8 +124,8 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_co
 		// Detect if the colormap is dynamic:
 		m_dyncolormap = NULL;
 
-		extern palette_t DefPal;
-		if (m_colors != &(DefPal.maps))
+		extern palette_t default_palette;
+		if (m_colors != &(default_palette.maps))
 		{
 			// Find the dynamic colormap by the `m_colors` pointer:
 			extern dyncolormap_t NormalLight;
@@ -146,27 +150,155 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_co
 	}
 }
 
-/**************************/
-/* Gamma correction stuff */
-/**************************/
+
+// ----------------------------------------------------------------------------
+//
+// Gamma Correction
+//
+// ----------------------------------------------------------------------------
+
+byte gammatable[256];
+
+enum {
+	GAMMA_DOOM = 0,
+	GAMMA_ZDOOM = 1
+};
+
+
+EXTERN_CVAR(vid_gammatype)
+EXTERN_CVAR(gammalevel)
+
+
+//
+// GammaStrategy
+//
+// Encapsulate the differences of the Doom and ZDoom gamma types with
+// a strategy pattern. Provides a common interface for generation of gamma
+// tables.
+//
+class GammaStrategy
+{
+public:
+	virtual float min() const = 0;
+	virtual float max() const = 0;
+	virtual float increment(float level) const = 0;
+	virtual void generateGammaTable(byte* table, float level) const = 0;
+};
+
+class DoomGammaStrategy : public GammaStrategy
+{
+public:
+	float min() const
+	{
+		return 0.0f;
+	}
+
+	float max() const
+	{
+		return 7.0f;
+	}
+
+	float increment(float level) const
+	{
+		level += 1.0f;
+		if (level > max())
+			level = min();
+		return level;
+	}
+
+	void generateGammaTable(byte* table, float level) const
+	{
+		// [SL] Use vanilla Doom's gamma table
+		//
+		// This was derived from the original Doom gammatable after some
+		// trial and error and several beers.  The +0.5 is used to round
+		// while the 255/256 is to scale to ensure 255 isn't exceeded.
+		// This generates a 1:1 match with the original gammatable but also
+		// allows for intermediate values.
+
+		const double basefac = pow(2.0, (double)level) * (255.0/256.0);
+		const double exp = 1.0 - 0.125 * level;
+
+		for (int i = 0; i < 256; i++)
+			table[i] = (byte)(0.5 + basefac * pow(double(i) + 1.0, exp));
+	}
+};
+
+class ZDoomGammaStrategy : public GammaStrategy
+{
+public:
+	float min() const
+	{
+		return 0.5f;
+	}
+
+	float max() const
+	{
+		return 3.0f;
+	}
+
+	float increment(float level) const
+	{
+		level += 0.1f;
+		if (level > max())
+			level = min();
+		return level;
+	}
+
+	void generateGammaTable(byte* table, float level) const
+	{
+		// [SL] Use ZDoom 1.22 gamma correction
+
+		// [RH] I found this formula on the web at
+		// http://panda.mostang.com/sane/sane-gamma.html
+
+		double invgamma = 1.0 / level;
+
+		for (int i = 0; i < 256; i++)
+			table[i] = (byte)(255.0 * pow(double(i) / 255.0, invgamma));
+	}
+};
 
 static DoomGammaStrategy doomgammastrat;
 static ZDoomGammaStrategy zdoomgammastrat;
 GammaStrategy* gammastrat = &doomgammastrat;
 
-CVAR_FUNC_IMPL(vid_gammatype)
+float V_GetMinimumGammaLevel()
 {
-	if (vid_gammatype == GAMMA_ZDOOM)
-		gammastrat = &zdoomgammastrat;
-	else
-		gammastrat = &doomgammastrat;
-
-	gammalevel.Set(gammalevel);
+	return gammastrat->min();
 }
 
-byte newgamma[256];
-static bool gamma_initialized = false;
+float V_GetMaximumGammaLevel()
+{
+	return gammastrat->max();
+}
 
+void V_IncrementGammaLevel()
+{
+	float level(gammalevel.value());
+	gammalevel.Set(gammastrat->increment(level));
+}
+
+
+//
+// V_GammaAdjustPalette
+//
+static void V_GammaAdjustPalette(palette_t* palette)
+{
+	const argb_t* from = palette->basecolors;
+	argb_t* to = palette->colors;
+
+	for (int i = 0; i < 256; i++)
+		*to++ = V_GammaCorrect(*from++);
+}
+
+
+//
+// V_UpdateGammaLevel
+//
+// Calls the concrete GammaStrategy generateGammaTable function to populate
+// the gammatable array. The palette is also gamma-corrected.
+//
 static void V_UpdateGammaLevel(float level)
 {
 	static float lastgammalevel = 0.0f;
@@ -181,18 +313,42 @@ static void V_UpdateGammaLevel(float level)
 		lastgammalevel = level;
 		lasttype = type;
 
-		gammastrat->generateGammaTable(newgamma, level);
-		GammaAdjustPalette(GetDefaultPalette());
+		gammastrat->generateGammaTable(gammatable, level);
+		V_GammaAdjustPalette(GetDefaultPalette());
 
-		if (!screen)
-			return;
-		if (I_GetVideoBitDepth() == 8)
+		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 			V_ForceBlend(BlendR, BlendG, BlendB, BlendA);
 		else
-			RefreshPalette(GetDefaultPalette());
+			V_RefreshColormaps();
 	}
 }
 
+
+
+//
+// vid_gammatype
+//
+// Changes gammastrat to a new concrete GammaStrategy and forces the palette
+// to be gamma-corrected.
+//
+CVAR_FUNC_IMPL(vid_gammatype)
+{
+	if (vid_gammatype == GAMMA_ZDOOM)
+		gammastrat = &zdoomgammastrat;
+	else
+		gammastrat = &doomgammastrat;
+
+	gammalevel.Set(gammalevel);
+}
+
+
+//
+// gammalevel
+//
+// Specifies the gamma correction level. The level is clamped to the concrete
+// GammaStrategy's minimum and maximum values prior to updating gammatable by
+// calling V_UpdateGammaLevel.
+//
 CVAR_FUNC_IMPL(gammalevel)
 {
 	float sanitized_var = clamp(var.value(), gammastrat->min(), gammastrat->max());
@@ -202,11 +358,17 @@ CVAR_FUNC_IMPL(gammalevel)
 		var.Set(sanitized_var);
 }
 
+
+//
+// bumpgamma
+//
+// Increments gammalevel by a value controlled by the concrete GammaStrategy.
+//
 BEGIN_COMMAND(bumpgamma)
 {
-	gammalevel.Set(gammastrat->increment(gammalevel));
+	V_IncrementGammaLevel();
 
-	if (gammalevel.value() == gammastrat->min())
+	if (gammalevel.value() == 0.0f)
 	    Printf (PRINT_HIGH, "Gamma correction off\n");
 	else
 	    Printf (PRINT_HIGH, "Gamma correction level %g\n", gammalevel.value());
@@ -215,11 +377,13 @@ END_COMMAND(bumpgamma)
 
 
 // [Russell] - Restore original screen palette from current gamma level
-void V_RestoreScreenPalette(void)
+void V_RestoreScreenPalette()
 {
-    if (screen && I_GetVideoBitDepth() == 8)
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 		V_ForceBlend(BlendR, BlendG, BlendB, BlendA);
 }
+
+
 
 /****************************/
 /* Palette management stuff */
@@ -237,61 +401,65 @@ static void V_SetPalette(const byte* data)
 
 	for (int i = 0; i < 256; i++, data += 3)
 	{
-		palette_colors[i].a = alpha;
-		palette_colors[i].r = newgamma[data[0]];
-		palette_colors[i].g = newgamma[data[1]];
-		palette_colors[i].b = newgamma[data[2]];
+		argb_t color(alpha, data[0], data[1], data[2]);
+		palette_colors[i] = V_GammaCorrect(color);
 	}
 
 	I_SetPalette(palette_colors);
 }
 
 
-static void InternalCreatePalette(palette_t* palette, const byte* data)
+//
+// V_InitPalette
+//
+// Initializes the default palette, loading the raw palette lump resource.
+//
+void V_InitPalette(const char* lumpname)
 {
+	strncpy(palette_lumpname, lumpname, 8);
+	palette_lumpname[8] = '\0';
+
+	int lumpnum = W_GetNumForName(palette_lumpname);
+	if (lumpnum < 0)
+		I_FatalError("Could not initialize %s palette", palette_lumpname);
+
+	current_palette_num = -1;
+	current_blend[0] = current_blend[1] = current_blend[2] = current_blend[3] = 255.0f;
+
+	palette_t* palette = GetDefaultPalette();
+	palette->colormapsbase = NULL;
 	palette->maps.colormap = NULL;
 	palette->maps.shademap = NULL;
 
 	const int alpha = 255;
+	const byte* data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
 
 	for (int i = 0; i < 256; i++, data += 3)
-	{
-		argb_t color(alpha, data[0], data[1], data[2]);
-		palette->basecolors[i] = color; 
-		palette->colors[i].a = alpha;
-		palette->colors[i].r = newgamma[color.r];
-		palette->colors[i].g = newgamma[color.g];
-		palette->colors[i].b = newgamma[color.b];
-	}
-}
+		palette->basecolors[i] = argb_t(alpha, data[0], data[1], data[2]);
 
+	V_GammaAdjustPalette(palette);
 
-palette_t* InitPalettes(const char* lumpname)
-{
-	current_palette_num = -1;
-	current_blend[0] = current_blend[1] = current_blend[2] = current_blend[3] = 255.0f;
+	V_ForceBlend(0, 0, 0, 0);
 
-    lu_palette = W_GetNumForName(lumpname);
-	if (lu_palette != -1)
-	{
-		const byte* data = (byte*)W_CacheLumpName(lumpname, PU_CACHE);
-		InternalCreatePalette(&DefPal, data);
-		return &DefPal;
-	}
+	V_RefreshColormaps();
 
-	return NULL;
+	V_ResetPalette();
+
+	assert(palette->maps.colormap != NULL);
+	assert(palette->maps.shademap != NULL);
+	V_Palette = shaderef_t(&palette->maps, 0);
 }
 
 
 palette_t* GetDefaultPalette()
 {
-	return &DefPal;
+	return &default_palette;
 }
 
 
 // This is based (loosely) on the ColorShiftPalette()
 // function from the dcolors.c file in the Doom utilities.
-static void DoBlending(argb_t *from, argb_t *to, int tor, int tog, int tob, int toa)
+static void DoBlending(const argb_t *from, argb_t *to, int tor, int tog, int tob, int toa)
 {
 	if (toa == 0)
 	{
@@ -317,23 +485,6 @@ static void DoBlending(argb_t *from, argb_t *to, int tor, int tog, int tob, int 
 	}
 }
 
-static void DoBlendingWithGamma(argb_t* from, argb_t* to, int tor, int tog, int tob, int toa)
-{
-	for (int i = 0; i < 256; i++, from++, to++)
-	{
-		int r = from->r;
-		int g = from->g;
-		int b = from->b;
-
-		int dr = tor - r;
-		int dg = tog - g;
-		int db = tob - b;
-
-		to->r = newgamma[r + ((dr * toa) >> 8)];
-		to->g = newgamma[g + ((dg * toa) >> 8)];
-		to->b = newgamma[b + ((db * toa) >> 8)];
-	}
-}
 
 static const float lightScale(float a)
 {
@@ -381,8 +532,9 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 			unsigned int b = (palette[c].b * (NUMCOLORMAPS - i) + fadecolor.b * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
+			argb_t color(255, r, g, b);
 			colormap[c] = BestColor(palette, r, g, b, 256);
-			shademap[c] = argb_t(newgamma[r], newgamma[g], newgamma[b]);
+			shademap[c] = V_GammaCorrect(color);
 		}
 	}
 
@@ -394,8 +546,9 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 						 palette[c].g * 0.00229296875f +
 			 			 palette[c].b * 0.0005625f), 0.0f, 1.0f));
 
+		argb_t color(255, grayint, grayint, grayint); 
 		colormap[c] = BestColor(palette, grayint, grayint, grayint, 256);
-		shademap[c] = argb_t(newgamma[grayint], newgamma[grayint], newgamma[grayint]);
+		shademap[c] = V_GammaCorrect(color); 
 	}
 }
 
@@ -422,7 +575,8 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 			unsigned int b = (palette[c].b * (NUMCOLORMAPS - i) + fadecolor.b * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
-			shademap[c] = argb_t(newgamma[r], newgamma[g], newgamma[b]);
+			argb_t color(255, r, g, b);
+			shademap[c] = V_GammaCorrect(color);
 		}
 	}
 
@@ -434,40 +588,33 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 						 palette[c].g * 0.00229296875f +
 			 			 palette[c].b * 0.0005625f), 0.0f, 1.0f));
 
-		shademap[c] = argb_t(newgamma[grayint], newgamma[grayint], newgamma[grayint]);
+		argb_t color(255, grayint, grayint, grayint); 
+		shademap[c] = V_GammaCorrect(color); 
 	}
 }
 
-void RefreshPalette(palette_t* pal)
+
+//
+// V_RefreshColormaps
+//
+void V_RefreshColormaps()
 {
-	if (pal->maps.colormap && pal->maps.colormap - pal->colormapsbase >= 256)
-		M_Free(pal->maps.colormap);
+	palette_t* palette = GetDefaultPalette();
 
-	pal->colormapsbase = (byte*)Realloc(pal->colormapsbase, (NUMCOLORMAPS + 1) * 256 + 255);
-	pal->maps.colormap = (byte*)(((ptrdiff_t)(pal->colormapsbase) + 255) & ~0xff);
-	pal->maps.shademap = (argb_t*)Realloc(pal->maps.shademap, (NUMCOLORMAPS + 1)*256*sizeof(argb_t) + 255);
-
-	BuildDefaultColorAndShademap(pal, pal->maps);
-
-	if (pal == &DefPal)
+	if (palette->maps.colormap && palette->maps.colormap - palette->colormapsbase >= 256)
 	{
-		NormalLight.maps = shaderef_t(&DefPal.maps, 0);
-		NormalLight.color = argb_t(255, 255, 255);
-		NormalLight.fade = level.fadeto;
+		M_Free(palette->maps.colormap);
 	}
-}
 
-void GammaAdjustPalette(palette_t* pal)
-{
-	if (!gamma_initialized)
-		V_UpdateGammaLevel(gammalevel);
+	palette->colormapsbase = (byte*)Realloc(palette->colormapsbase, (NUMCOLORMAPS + 1) * 256 + 255);
+	palette->maps.colormap = (byte*)(((ptrdiff_t)(palette->colormapsbase) + 255) & ~0xff);
+	palette->maps.shademap = (argb_t*)Realloc(palette->maps.shademap, (NUMCOLORMAPS + 1)*256*sizeof(argb_t) + 255);
 
-	for (int i = 0; i < 256; i++)
-	{
-		pal->colors[i].r = newgamma[pal->basecolors[i].r];
-		pal->colors[i].g = newgamma[pal->basecolors[i].g];
-		pal->colors[i].b = newgamma[pal->basecolors[i].b];
-	}
+	BuildDefaultColorAndShademap(palette, palette->maps);
+
+	NormalLight.maps = shaderef_t(&palette->maps, 0);
+	NormalLight.color = argb_t(255, 255, 255);
+	NormalLight.fade = level.fadeto;
 }
 
 
@@ -517,8 +664,11 @@ void V_ForceBlend(int blendr, int blendg, int blendb, int blenda)
 	// in R_RenderPlayerView
 	if (I_GetVideoBitDepth() == 8)
 	{
+		argb_t blend_color(BlendA, BlendR, BlendG, BlendB);
+		blend_color = V_GammaCorrect(blend_color);
+
 		argb_t palette_colors[256];
-		DoBlending(DefPal.colors, palette_colors, newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
+		DoBlending(default_palette.colors, palette_colors, blend_color.r, blend_color.g, blend_color.b, BlendA);
 		I_SetPalette(palette_colors);
 	}
 }
@@ -566,8 +716,8 @@ BEGIN_COMMAND (testfade)
 			color = (argb_t)V_GetColorFromString(NULL, argv[1]);
 
 		level.fadeto = color;
-		RefreshPalette(GetDefaultPalette());
-		NormalLight.maps = shaderef_t(&DefPal.maps, 0);
+		V_RefreshColormaps();
+		NormalLight.maps = shaderef_t(&default_palette.maps, 0);
 	}
 }
 END_COMMAND (testfade)
@@ -650,8 +800,9 @@ void HSVtoRGB (float *r, float *g, float *b, float h, float s, float v)
 // Builds NUMCOLORMAPS colormaps lit with the specified color
 void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g, int b)
 {
-	byte	*color;
-	argb_t  *shade;
+	const argb_t* palette_colors = GetDefaultPalette()->basecolors;
+	byte	*colormap;
+	argb_t  *shademap;
 
 	// The default palette is assumed to contain the maps for white light.
 	if (!maps)
@@ -666,17 +817,16 @@ void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g,
 
 		// Write directly to the shademap for blending:
 		argb_t* colors = maps->shademap + 256 * l;
-		DoBlending(DefPal.basecolors, colors, r, g, b, a);
+		DoBlending(palette_colors, colors, r, g, b, a);
 
 		// Build the colormap and shademap:
-		color = maps->colormap + 256*l;
-		shade = maps->shademap + 256*l;
+		colormap = maps->colormap + 256*l;
+		shademap = maps->shademap + 256*l;
 		for (unsigned int c = 0; c < 256; c++)
 		{
-			shade[c].r = newgamma[colors[c].r * lr / 255];
-			shade[c].g = newgamma[colors[c].g * lg / 255];
-			shade[c].b = newgamma[colors[c].b * lb / 255];
-			color[c] = BestColor(DefPal.basecolors, shade[c].r, shade[c].g, shade[c].b, 256);
+			argb_t color(255, colors[c].r * lr / 255, colors[c].g * lg / 255, colors[c].b * lb / 255);
+			shademap[c] = V_GammaCorrect(color);
+			colormap[c] = BestColor(palette_colors, color.r, color.g, color.b, 256);
 		}
 	}
 }
@@ -794,7 +944,7 @@ void V_DoPaletteEffects()
 		if (palette_num != current_palette_num)
 		{
 			current_palette_num = palette_num;
-			const byte* data = (byte*)W_CacheLumpNum(lu_palette, PU_CACHE) + palette_num * 768;
+			const byte* data = (byte*)W_CacheLumpName(palette_lumpname, PU_CACHE) + palette_num * 768;
 			V_SetPalette(data);
 		}
 	}

@@ -98,9 +98,6 @@
 
 extern size_t got_heapsize;
 
-//extern void M_RestoreMode (void); // [Toke - Menu]
-void V_InitPalette (void);
-
 void D_CheckNetGame (void);
 void D_ProcessEvents (void);
 void D_DoAdvanceDemo (void);
@@ -620,9 +617,7 @@ void D_NewWadInit()
 
 	HU_Init ();
 
-	if (!(InitPalettes("PLAYPAL")))
-		I_Error("Could not reinitialize palette");
-	V_InitPalette();
+	V_InitPalette("PLAYPAL");
 
 	G_SetLevelStrings ();
 	G_ParseMapInfo ();
