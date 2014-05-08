@@ -559,7 +559,7 @@ void STACK_ARGS C_Close()
 		conback = NULL;
 	}
 
-	delete ConChars;
+	delete [] ConChars;
 	ConChars = NULL;
 }
 
