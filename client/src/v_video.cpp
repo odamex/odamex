@@ -386,28 +386,19 @@ BEGIN_COMMAND (setcolor)
 END_COMMAND (setcolor)
 
 // Build the tables necessary for translucency
-static void BuildTransTable (argb_t *palette)
+static void BuildTransTable(const argb_t* palette_colors)
 {
-	{
-		int r, g, b;
+	// create the small RGB table
+	for (int r = 0; r < 32; r++)
+		for (int g = 0; g < 32; g++)
+			for (int b = 0; b < 32; b++)
+				RGB32k[r][g][b] = V_BestColor(palette_colors, (r<<3)|(r>>2), (g<<3)|(g>>2), (b<<3)|(b>>2));
 
-		// create the small RGB table
-		for (r = 0; r < 32; r++)
-			for (g = 0; g < 32; g++)
-				for (b = 0; b < 32; b++)
-					RGB32k[r][g][b] = BestColor (palette,
-						(r<<3)|(r>>2), (g<<3)|(g>>2), (b<<3)|(b>>2), 256);
-	}
-
-	{
-		int x, y;
-
-		for (x = 0; x < 65; x++)
-			for (y = 0; y < 256; y++)
-				Col2RGB8[x][y] = (((palette[y].r * x) >> 4) << 20)  |
-								  ((palette[y].g * x )>> 4) |
-								 (((palette[y].b * x) >> 4) << 10);
-	}
+	for (int x = 0; x < 65; x++)
+		for (int y = 0; y < 256; y++)
+			Col2RGB8[x][y] = (((palette_colors[y].r * x) >> 4) << 20)  |
+							  ((palette_colors[y].g * x )>> 4) |
+							 (((palette_colors[y].b * x) >> 4) << 10);
 }
 
 CVAR_FUNC_IMPL (vid_widescreen)

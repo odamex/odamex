@@ -1380,7 +1380,7 @@ static void M_PlayerSetupDrawer (void)
 			}
 
 			y--;
-			if (I_GetVideoBitDepth() == 8)
+			if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 			{
 				// 8bpp rendering:
 				     if (CleanXfac == 1) R_RenderFire<1, palindex_t>(x, y);
@@ -1585,23 +1585,12 @@ static void SendNewColor (int red, int green, int blue)
 static void M_SlidePlayerRed(int choice)
 {
 	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
-	int accel = 0;
-
-	if (repeatCount >= 10)
-		accel = 5;
+	int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-	{
-		color.r -= 1 + accel;
-		if (color.r < 0)
-			color.r = 0;
-	}
+		color.r = std::max(0, int(color.r) - 1 - accel);
 	else
-	{
-		color.r += 1 + accel;
-		if (color.r > 255)
-			color.r = 255;
-	}
+		color.r = std::min(255, int(color.r) + 1 + accel);
 
 	SendNewColor(color.r, color.g, color.b);
 }
@@ -1609,23 +1598,12 @@ static void M_SlidePlayerRed(int choice)
 static void M_SlidePlayerGreen (int choice)
 {
 	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
-	int accel = 0;
-
-	if (repeatCount >= 10)
-		accel = 5;
+	int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-	{
-		color.g -= 1 + accel;
-		if (color.g < 0)
-			color.g = 0;
-	}
+		color.g = std::max(0, int(color.g) - 1 - accel);
 	else
-	{
-		color.g += 1 + accel;
-		if (color.g > 255)
-			color.g = 255;
-	}
+		color.g = std::min(255, int(color.g) + 1 + accel);
 
 	SendNewColor(color.r, color.g, color.b);
 }
@@ -1633,23 +1611,12 @@ static void M_SlidePlayerGreen (int choice)
 static void M_SlidePlayerBlue (int choice)
 {
 	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
-	int accel = 0;
-
-	if (repeatCount >= 10)
-		accel = 5;
+	int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-	{
-		color.b -= 1 + accel;
-		if (color.b < 0)
-			color.b = 0;
-	}
+		color.b = std::max(0, int(color.b) - 1 - accel);
 	else
-	{
-		color.b += 1 + accel;
-		if (color.b > 255)
-			color.b = 255;
-	}
+		color.b = std::min(255, int(color.b) + 1 + accel);
 
 	SendNewColor(color.r, color.g, color.b);
 }
@@ -2204,8 +2171,8 @@ void M_Init (void)
 	// [RH] Build a palette translation table for the fire
 	palette_t *pal = V_GetDefaultPalette();
 
-	for (i = 0; i < 255; i++)
-		FireRemap[i] = BestColor(pal->basecolors, i, 0, 0, 256);
+	for (i = 0; i < 256; i++)
+		FireRemap[i] = V_BestColor(pal->basecolors, i, 0, 0);
 }
 
 //

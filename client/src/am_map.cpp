@@ -549,62 +549,62 @@ void AM_initVariables(void)
 }
 
 
-am_color_t AM_GetColorFromString(argb_t *palette, const char *colorstring)
+am_color_t AM_GetColorFromString(const argb_t* palette_colors, const char* colorstring)
 {
 	am_color_t c;
-	c.rgb = (argb_t) V_GetColorFromString(NULL, colorstring);
-	c.index = BestColor2(palette, c.rgb, 256);
+	c.rgb = (argb_t)V_GetColorFromString(NULL, colorstring);
+	c.index = V_BestColor(palette_colors, c.rgb);
 	return c;
 }
 
-am_color_t AM_BestColor(const argb_t *palette, const int r, const int g, const int b)
+am_color_t AM_BestColor(const argb_t* palette_colors, const int r, const int g, const int b)
 {
 	am_color_t c;
 	c.rgb = argb_t(r,g,b);
-	c.index = BestColor2(palette, c.rgb, 256);
+	c.index = V_BestColor(palette_colors, c.rgb);
 	return c;
 }
 
 void AM_initColors (BOOL overlayed)
 {
 	// Look up the colors in the current palette:
-	argb_t *palette = V_GetDefaultPalette()->colors;
+	const argb_t* palette_colors = V_GetDefaultPalette()->colors;
 
 	if (overlayed && !am_ovshare)
 	{
-		YourColor = AM_GetColorFromString (palette, am_ovyourcolor.cstring());
+		YourColor = AM_GetColorFromString (palette_colors, am_ovyourcolor.cstring());
 		SecretWallColor =
-			WallColor= AM_GetColorFromString (palette, am_ovwallcolor.cstring());
-		TSWallColor = AM_GetColorFromString (palette, am_ovtswallcolor.cstring());
-		FDWallColor = AM_GetColorFromString (palette, am_ovfdwallcolor.cstring());
-		CDWallColor = AM_GetColorFromString (palette, am_ovcdwallcolor.cstring());
-		ThingColor = AM_GetColorFromString (palette, am_ovthingcolor.cstring());
-		GridColor = AM_GetColorFromString (palette, am_ovgridcolor.cstring());
-		XHairColor = AM_GetColorFromString (palette, am_ovxhaircolor.cstring());
-		NotSeenColor = AM_GetColorFromString (palette, am_ovnotseencolor.cstring());
-		LockedColor = AM_GetColorFromString (palette, am_ovlockedcolor.cstring());
-		ExitColor = AM_GetColorFromString (palette, am_ovexitcolor.cstring());
-		TeleportColor = AM_GetColorFromString (palette, am_ovteleportcolor.cstring());
+			WallColor= AM_GetColorFromString (palette_colors, am_ovwallcolor.cstring());
+		TSWallColor = AM_GetColorFromString (palette_colors, am_ovtswallcolor.cstring());
+		FDWallColor = AM_GetColorFromString (palette_colors, am_ovfdwallcolor.cstring());
+		CDWallColor = AM_GetColorFromString (palette_colors, am_ovcdwallcolor.cstring());
+		ThingColor = AM_GetColorFromString (palette_colors, am_ovthingcolor.cstring());
+		GridColor = AM_GetColorFromString (palette_colors, am_ovgridcolor.cstring());
+		XHairColor = AM_GetColorFromString (palette_colors, am_ovxhaircolor.cstring());
+		NotSeenColor = AM_GetColorFromString (palette_colors, am_ovnotseencolor.cstring());
+		LockedColor = AM_GetColorFromString (palette_colors, am_ovlockedcolor.cstring());
+		ExitColor = AM_GetColorFromString (palette_colors, am_ovexitcolor.cstring());
+		TeleportColor = AM_GetColorFromString (palette_colors, am_ovteleportcolor.cstring());
 	}
 	else if (am_usecustomcolors || (overlayed && am_ovshare))
 	{
 		/* Use the custom colors in the am_* cvars */
-		Background = AM_GetColorFromString(palette, am_backcolor.cstring());
-		YourColor = AM_GetColorFromString(palette, am_yourcolor.cstring());
+		Background = AM_GetColorFromString(palette_colors, am_backcolor.cstring());
+		YourColor = AM_GetColorFromString(palette_colors, am_yourcolor.cstring());
 		SecretWallColor =
-			WallColor = AM_GetColorFromString(palette, am_wallcolor.cstring());
-		TSWallColor = AM_GetColorFromString(palette, am_tswallcolor.cstring());
-		FDWallColor = AM_GetColorFromString(palette, am_fdwallcolor.cstring());
-		CDWallColor = AM_GetColorFromString(palette, am_cdwallcolor.cstring());
-		ThingColor = AM_GetColorFromString(palette, am_thingcolor.cstring());
-		GridColor = AM_GetColorFromString(palette, am_gridcolor.cstring());
-		XHairColor = AM_GetColorFromString(palette, am_xhaircolor.cstring());
-		NotSeenColor = AM_GetColorFromString(palette, am_notseencolor.cstring());
-		LockedColor = AM_GetColorFromString(palette, am_lockedcolor.cstring());
-		ExitColor = AM_GetColorFromString(palette, am_exitcolor.cstring());
-		TeleportColor = AM_GetColorFromString(palette, am_teleportcolor.cstring());
+			WallColor = AM_GetColorFromString(palette_colors, am_wallcolor.cstring());
+		TSWallColor = AM_GetColorFromString(palette_colors, am_tswallcolor.cstring());
+		FDWallColor = AM_GetColorFromString(palette_colors, am_fdwallcolor.cstring());
+		CDWallColor = AM_GetColorFromString(palette_colors, am_cdwallcolor.cstring());
+		ThingColor = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
+		GridColor = AM_GetColorFromString(palette_colors, am_gridcolor.cstring());
+		XHairColor = AM_GetColorFromString(palette_colors, am_xhaircolor.cstring());
+		NotSeenColor = AM_GetColorFromString(palette_colors, am_notseencolor.cstring());
+		LockedColor = AM_GetColorFromString(palette_colors, am_lockedcolor.cstring());
+		ExitColor = AM_GetColorFromString(palette_colors, am_exitcolor.cstring());
+		TeleportColor = AM_GetColorFromString(palette_colors, am_teleportcolor.cstring());
 		{
-			argb_t ba = AM_GetColorFromString(palette, am_backcolor.cstring()).rgb;
+			argb_t ba = AM_GetColorFromString(palette_colors, am_backcolor.cstring()).rgb;
 			if (ba.r < 16)
 				ba.r += 32;
 			if (ba.g < 16)
@@ -613,25 +613,24 @@ void AM_initColors (BOOL overlayed)
 				ba.b += 32;
 
 			AlmostBackground.rgb = argb_t(ba.r - 16, ba.g - 16, ba.b - 16);
-			AlmostBackground.index = BestColor2(palette, AlmostBackground.rgb, 256);
+			AlmostBackground.index = V_BestColor(palette_colors, AlmostBackground.rgb);
 		}
 	}
 	else
 	{
 		/* Use colors corresponding to the original Doom's */
-		Background = AM_GetColorFromString(palette, "00 00 00");
-		YourColor = AM_GetColorFromString(palette, "FF FF FF");
-		AlmostBackground = AM_GetColorFromString(palette, "10 10 10");
-		SecretWallColor =
-			WallColor = AM_GetColorFromString(palette, "fc 00 00");
-		TSWallColor = AM_GetColorFromString(palette, "80 80 80");
-		FDWallColor = AM_GetColorFromString(palette, "bc 78 48");
-		LockedColor = AM_GetColorFromString(palette, "fc fc 00");
-		CDWallColor = AM_GetColorFromString(palette, "fc fc 00");
-		ThingColor = AM_GetColorFromString(palette, "74 fc 6c");
-		GridColor = AM_GetColorFromString(palette, "4c 4c 4c");
-		XHairColor = AM_GetColorFromString(palette, "80 80 80");
-		NotSeenColor = AM_GetColorFromString(palette, "6c 6c 6c");
+		Background = AM_GetColorFromString(palette_colors, "00 00 00");
+		YourColor = AM_GetColorFromString(palette_colors, "FF FF FF");
+		AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
+		SecretWallColor = WallColor = AM_GetColorFromString(palette_colors, "fc 00 00");
+		TSWallColor = AM_GetColorFromString(palette_colors, "80 80 80");
+		FDWallColor = AM_GetColorFromString(palette_colors, "bc 78 48");
+		LockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+		CDWallColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+		ThingColor = AM_GetColorFromString(palette_colors, "74 fc 6c");
+		GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
+		XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
+		NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
 	}
 }
 
@@ -1551,8 +1550,11 @@ void AM_drawPlayers(void)
 		}
 
 		if (p->powers[pw_invisibility])
+		{
 			color = AlmostBackground;
-		else if (demoplayback && democlassic) {
+		}
+		else if (demoplayback && democlassic)
+		{
 			switch (it->id) {
 				case 1: color = AM_GetColorFromString (palette, "00 FF 00"); break;
 				case 2: color = AM_GetColorFromString (palette, "60 60 B0"); break;
@@ -1560,11 +1562,12 @@ void AM_drawPlayers(void)
 				case 4: color = AM_GetColorFromString (palette, "C0 00 00"); break;
 				default: break;
 			}
-		} else {
+		}
+		else
+		{
 			int playercolor = CL_GetPlayerColor(p);
 			color.rgb = (argb_t)playercolor;
-			color.index = BestColor(V_GetDefaultPalette()->basecolors,
-							color.rgb.r, color.rgb.g, color.rgb.b, 256);
+			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 
 		pt.x = p->mo->x;

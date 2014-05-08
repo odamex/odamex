@@ -870,38 +870,47 @@ void DCanvas::GetTransposedBlock(int x, int y, int width, int height, byte* dest
 				x, y, width, height, mSurface->getPitchInPixels());
 }
 
-int V_GetColorFromString (const argb_t *palette, const char *cstr)
+int V_GetColorFromString(const argb_t* palette_colors, const char* cstr)
 {
 	int c[3], i, p;
 	char val[5];
 	const char *s, *g;
 
 	val[4] = 0;
-	for (s = cstr, i = 0; i < 3; i++) {
+	for (s = cstr, i = 0; i < 3; i++)
+	{
 		c[i] = 0;
+
 		while ((*s <= ' ') && (*s != 0))
 			s++;
-		if (*s) {
+
+		if (*s)
+		{
 			p = 0;
-			while (*s > ' ') {
-				if (p < 4) {
+
+			while (*s > ' ')
+			{
+				if (p < 4)
 					val[p++] = *s;
-				}
+
 				s++;
 			}
+
 			g = val;
-			while (p < 4) {
+
+			while (p < 4)
 				val[p++] = *g++;
-			}
-			c[i] = ParseHex (val);
+
+			c[i] = ParseHex(val);
 		}
 	}
-	if (palette)
-		return BestColor (palette, c[0]>>8, c[1]>>8, c[2]>>8, 256);
+
+	argb_t color(c[0] >> 8, c[1] >> 8, c[2] >> 8);
+
+	if (palette_colors)
+		return V_BestColor(palette_colors, color);
 	else
-		return ((c[0] << 8) & 0xff0000) |
-			   ((c[1])      & 0x00ff00) |
-			   ((c[2] >> 8));
+		return color;		
 }
 
 VERSION_CONTROL (v_draw_cpp, "$Id$")

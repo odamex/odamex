@@ -363,7 +363,7 @@ void R_BuildPlayerTranslation(int player, argb_t dest_color)
 		// Set up RGB values for 32bpp translation:
 		argb_t color(r * 255.0f, g * 255.0f, b * 255.0f);
 		translationRGB[player][i - 0x70] = color;
-		table[i] = BestColor(pal->basecolors, color.r, color.g, color.b, 256);
+		table[i] = V_BestColor(pal->basecolors, color);
 
 		s += sdelta;
 		if (s > 1.0f)

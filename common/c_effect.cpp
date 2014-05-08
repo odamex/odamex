@@ -83,14 +83,14 @@ static const struct ColorList {
 };
 
 
-void P_InitEffects (void)
+void P_InitEffects()
 {
-	const struct ColorList *color = Colors;
-	const argb_t* palette = V_GetDefaultPalette()->basecolors;
+	const struct ColorList* color = Colors;
+	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 
 	while (color->color)
 	{
-		*(color->color) = BestColor(palette, color->r, color->g, color->b, 256);
+		*(color->color) = V_BestColor(palette_colors, color->r, color->g, color->b);
 		color++;
 	}
 }

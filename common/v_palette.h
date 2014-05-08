@@ -55,6 +55,10 @@ static inline argb_t V_GammaCorrect(const argb_t value)
 	return argb_t(value.a, gammatable[value.r], gammatable[value.g], gammatable[value.b]);
 }
 
+
+palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b);
+palindex_t V_BestColor(const argb_t *palette_colors, argb_t color);
+
 // Alpha blend between two RGB colors with only dest alpha value
 // 0 <=   toa <= 256
 argb_t alphablend1a(const argb_t from, const argb_t to, const int toa);

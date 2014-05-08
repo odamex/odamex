@@ -460,9 +460,6 @@ extern shaderef_t V_Palette;
 
 void V_MarkRect (int x, int y, int width, int height);
 
-// BestColor
-byte BestColor (const argb_t *palette, const int r, const int g, const int b, const int numcolors);
-byte BestColor2 (const argb_t *palette, const argb_t color, const int numcolors);
 // Returns the closest color to the one desired. String
 // should be of the form "rr gg bb".
 int V_GetColorFromString (const argb_t *palette, const char *colorstring);

@@ -421,8 +421,8 @@ void CTF_DrawHud (void)
 
 		if (tintColor != 0)
 		{
-			if (I_GetVideoBitDepth() == 8)
-				TintScreen(BestColor2(pal->basecolors, tintColor, 256));
+			if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+				TintScreen(V_BestColor(pal->basecolors, tintColor));
 			else
 				TintScreen(tintColor);
 		}

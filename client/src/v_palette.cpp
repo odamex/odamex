@@ -381,6 +381,42 @@ void V_RestoreScreenPalette()
 }
 
 
+//
+// V_BestColor
+//
+// (borrowed from Quake2 source: utils3/qdata/images.c)
+// [SL] Also nearly identical to BestColor in dcolors.c in Doom utilites
+//
+palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
+{
+	int bestdistortion = MAXINT;
+	int bestcolor = 0;		/// let any color go to 0 as a last resort
+
+	for (int i = 0; i < 256; i++)
+	{
+		int dr = r - palette_colors[i].r;
+		int dg = g - palette_colors[i].g;
+		int db = b - palette_colors[i].b;
+		int distortion = dr*dr + dg*dg + db*db;
+		if (distortion < bestdistortion)
+		{
+			if (distortion == 0)
+				return i;		// perfect match
+
+			bestdistortion = distortion;
+			bestcolor = i;
+		}
+	}
+
+	return bestcolor;
+}
+
+palindex_t V_BestColor(const argb_t *palette_colors, argb_t color)
+{
+	return V_BestColor(palette_colors, color.r, color.g, color.b);
+}
+
+
 
 /****************************/
 /* Palette management stuff */
@@ -536,7 +572,7 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
 			argb_t color(255, r, g, b);
-			colormap[c] = BestColor(palette, r, g, b, 256);
+			colormap[c] = V_BestColor(palette, color);
 			shademap[c] = V_GammaCorrect(color);
 		}
 	}
@@ -550,7 +586,7 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 			 			 palette[c].b * 0.0005625f), 0.0f, 1.0f));
 
 		argb_t color(255, grayint, grayint, grayint); 
-		colormap[c] = BestColor(palette, grayint, grayint, grayint, 256);
+		colormap[c] = V_BestColor(palette, color);
 		shademap[c] = V_GammaCorrect(color); 
 	}
 }
@@ -830,7 +866,7 @@ void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g,
 		{
 			argb_t color(255, colors[c].r * lr / 255, colors[c].g * lg / 255, colors[c].b * lb / 255);
 			shademap[c] = V_GammaCorrect(color);
-			colormap[c] = BestColor(palette_colors, color.r, color.g, color.b, 256);
+			colormap[c] = V_BestColor(palette_colors, color);
 		}
 	}
 }
