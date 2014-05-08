@@ -613,7 +613,7 @@ void F_DrawPatchColD(int x, const patch_t *patch, int col)
 	argb_t* desttop = (argb_t *)surface->getBuffer() + x;
 	int pitch = surface->getPitchInPixels();
 
-	shaderef_t pal = shaderef_t(&GetDefaultPalette()->maps, 0);
+	shaderef_t pal = shaderef_t(&V_GetDefaultPalette()->maps, 0);
 
 	// step through the posts in a column
 	while (!post->end())

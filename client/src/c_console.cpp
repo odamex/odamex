@@ -672,7 +672,7 @@ void C_InitConsole(int width, int height)
 		const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
 
 		background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
-		background_surface->setPalette(GetDefaultPalette()->colors);
+		background_surface->setPalette(V_GetDefaultPalette()->colors);
 
 		background_surface->lock();
 		background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);

@@ -65,10 +65,8 @@ argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const i
 
 void V_InitPalette(const char* lumpname);
 
-// GetDefaultPalette()
-//
-//	Returns the palette created through InitPalettes()
-palette_t* GetDefaultPalette();
+
+palette_t* V_GetDefaultPalette();
 
 //
 // V_RestoreScreenPalette

@@ -41,7 +41,7 @@ palette_t DefPal;
 /****************************/
 /* Palette management stuff */
 /****************************/
-palette_t *GetDefaultPalette (void)
+palette_t *V_GetDefaultPalette (void)
 {
 	static bool initialized = false;
 	if (!initialized)

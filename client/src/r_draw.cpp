@@ -267,7 +267,7 @@ void R_InitTranslationTables (void)
 		translationtables[i] = i;
 
 	// Set up default translationRGB tables:
-	palette_t *pal = GetDefaultPalette();
+	palette_t *pal = V_GetDefaultPalette();
 	for (int i = 0; i < MAXPLAYERS; ++i)
 	{
 		for (int j = 0x70; j < 0x80; ++j)
@@ -300,7 +300,7 @@ void R_FreeTranslationTables (void)
 // [Nes] Vanilla player translation table.
 void R_BuildClassicPlayerTranslation (int player, int color)
 {
-	palette_t *pal = GetDefaultPalette();
+	palette_t *pal = V_GetDefaultPalette();
 	int i;
 	
 	if (color == 1) // Indigo
@@ -336,7 +336,7 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 //		a given mid-range color.
 void R_BuildPlayerTranslation(int player, argb_t dest_color)
 {
-	const palette_t *pal = GetDefaultPalette();
+	const palette_t *pal = V_GetDefaultPalette();
 	byte *table = &translationtables[player * 256];
 	float r = float(dest_color.r) / 255.0f;
 	float g = float(dest_color.g) / 255.0f;
@@ -819,7 +819,7 @@ class PaletteFuzzyFunc
 {
 public:
 	PaletteFuzzyFunc(const drawcolumn_t& drawcolum) :
-			colormap(&GetDefaultPalette()->maps, 6) { }
+			colormap(&V_GetDefaultPalette()->maps, 6) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{

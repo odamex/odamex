@@ -254,7 +254,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		fixed_t amount = (fixed_t)(famount * 64.0f);
 		argb_t *fg2rgb = Col2RGB8[amount];
 		argb_t *bg2rgb = Col2RGB8[64-amount];
-		unsigned int fg = fg2rgb[V_GetColorFromString(GetDefaultPalette()->basecolors, color_str)];
+		unsigned int fg = fg2rgb[V_GetColorFromString(V_GetDefaultPalette()->basecolors, color_str)];
 
 		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + y1 * surface_pitch_pixels + x1;
 		int advance = surface_pitch_pixels - w;
@@ -605,7 +605,7 @@ void V_Init()
 
 	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
-	BuildTransTable(GetDefaultPalette()->basecolors);
+	BuildTransTable(V_GetDefaultPalette()->basecolors);
 }
 
 

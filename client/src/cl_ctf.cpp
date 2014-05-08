@@ -393,7 +393,7 @@ void CTF_DrawHud (void)
 		return;
 
 	if (hasflag) {
-		palette_t *pal = GetDefaultPalette();
+		palette_t *pal = V_GetDefaultPalette();
 
 		if (tintglow < 15)
 			tintglowtype = tintglow;

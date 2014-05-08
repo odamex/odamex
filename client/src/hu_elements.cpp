@@ -658,7 +658,7 @@ void EAPlayerColors(int x, int y,
 
 			if (I_GetVideoBitDepth() == 8)
 			{
-				palindex_t colorindex = BestColor(GetDefaultPalette()->basecolors,
+				palindex_t colorindex = BestColor(V_GetDefaultPalette()->basecolors,
 			                      				playercolor.r, playercolor.g, playercolor.b, 256);
 				hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, colorindex);
 			}
@@ -696,7 +696,7 @@ void EATeamPlayerColors(int x, int y,
 
 			if (I_GetVideoBitDepth() == 8)
 			{
-				palindex_t colorindex = BestColor(GetDefaultPalette()->basecolors,
+				palindex_t colorindex = BestColor(V_GetDefaultPalette()->basecolors,
 			                      				playercolor.r, playercolor.g, playercolor.b, 256);
 				hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, colorindex);
 			}

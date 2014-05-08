@@ -89,7 +89,7 @@ static byte crosshair_trans[256];
 static int crosshair_color_custom = 0xb0;
 CVAR_FUNC_IMPL (hud_crosshaircolor)
 {
-	const argb_t* palette = GetDefaultPalette()->colors;
+	const argb_t* palette = V_GetDefaultPalette()->colors;
 	crosshair_color_custom = V_GetColorFromString(palette, hud_crosshaircolor.cstring());
 }
 

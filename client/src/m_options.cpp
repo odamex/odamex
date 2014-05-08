@@ -1271,7 +1271,7 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + (int)(dist * 78.0), y);
 
-	V_ColorFill = BestColor(GetDefaultPalette()->basecolors,
+	V_ColorFill = BestColor(V_GetDefaultPalette()->basecolors,
 	                        color.r, color.g, color.b, 256);
 
 	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);

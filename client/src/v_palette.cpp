@@ -66,8 +66,6 @@ static char palette_lumpname[9];
 static int current_palette_num;
 static float current_blend[4];
 
-static palette_t default_palette;
-
 /* Current color blending values */
 int		BlendR, BlendG, BlendB, BlendA;
 
@@ -124,8 +122,7 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_co
 		// Detect if the colormap is dynamic:
 		m_dyncolormap = NULL;
 
-		extern palette_t default_palette;
-		if (m_colors != &(default_palette.maps))
+		if (m_colors != &(V_GetDefaultPalette()->maps))
 		{
 			// Find the dynamic colormap by the `m_colors` pointer:
 			extern dyncolormap_t NormalLight;
@@ -314,7 +311,7 @@ static void V_UpdateGammaLevel(float level)
 		lasttype = type;
 
 		gammastrat->generateGammaTable(gammatable, level);
-		V_GammaAdjustPalette(GetDefaultPalette());
+		V_GammaAdjustPalette(V_GetDefaultPalette());
 
 		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 			V_ForceBlend(BlendR, BlendG, BlendB, BlendA);
@@ -426,7 +423,7 @@ void V_InitPalette(const char* lumpname)
 	current_palette_num = -1;
 	current_blend[0] = current_blend[1] = current_blend[2] = current_blend[3] = 255.0f;
 
-	palette_t* palette = GetDefaultPalette();
+	palette_t* palette = V_GetDefaultPalette();
 	palette->colormapsbase = NULL;
 	palette->maps.colormap = NULL;
 	palette->maps.shademap = NULL;
@@ -451,8 +448,14 @@ void V_InitPalette(const char* lumpname)
 }
 
 
-palette_t* GetDefaultPalette()
+//
+// V_GetDefaultPalette
+//
+// Returns a pointer to the default game palette.
+//
+palette_t* V_GetDefaultPalette()
 {
+	static palette_t default_palette;
 	return &default_palette;
 }
 
@@ -599,7 +602,7 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 //
 void V_RefreshColormaps()
 {
-	palette_t* palette = GetDefaultPalette();
+	palette_t* palette = V_GetDefaultPalette();
 
 	if (palette->maps.colormap && palette->maps.colormap - palette->colormapsbase >= 256)
 	{
@@ -668,7 +671,8 @@ void V_ForceBlend(int blendr, int blendg, int blendb, int blenda)
 		blend_color = V_GammaCorrect(blend_color);
 
 		argb_t palette_colors[256];
-		DoBlending(default_palette.colors, palette_colors, blend_color.r, blend_color.g, blend_color.b, BlendA);
+		DoBlending(V_GetDefaultPalette()->colors, palette_colors,
+					blend_color.r, blend_color.g, blend_color.b, BlendA);
 		I_SetPalette(palette_colors);
 	}
 }
@@ -717,7 +721,7 @@ BEGIN_COMMAND (testfade)
 
 		level.fadeto = color;
 		V_RefreshColormaps();
-		NormalLight.maps = shaderef_t(&default_palette.maps, 0);
+		NormalLight.maps = shaderef_t(&V_GetDefaultPalette()->maps, 0);
 	}
 }
 END_COMMAND (testfade)
@@ -800,7 +804,7 @@ void HSVtoRGB (float *r, float *g, float *b, float h, float s, float v)
 // Builds NUMCOLORMAPS colormaps lit with the specified color
 void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g, int b)
 {
-	const argb_t* palette_colors = GetDefaultPalette()->basecolors;
+	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 	byte	*colormap;
 	argb_t  *shademap;
 
@@ -1021,7 +1025,7 @@ void V_ResetPalette()
 {
 	if (I_VideoInitialized())
 	{
-		const palette_t* palette = GetDefaultPalette();
+		const palette_t* palette = V_GetDefaultPalette();
 		I_SetPalette(palette->colors);
 	}
 }
