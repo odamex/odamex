@@ -93,7 +93,7 @@ int V_GetTextColor(const char* str)
 		table['J'] = table['j'] = CR_WHITE;
 		table['K'] = table['k'] = CR_YELLOW;
 		table['M'] = table['m'] = CR_BLACK;
-		table['n'] = table['n'] = CR_LIGHTBLUE;
+		table['N'] = table['n'] = CR_LIGHTBLUE;
 		table['O'] = table['o'] = CR_CREAM;
 		table['P'] = table['p'] = CR_OLIVE;
 		table['Q'] = table['q'] = CR_DARKGREEN;

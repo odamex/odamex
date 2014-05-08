@@ -613,4 +613,22 @@ void ReplaceString (const char **ptr, const char *str)
 	rst.add(*ptr);
 }
 
+
+//
+// StripColorCodes
+//
+// Removes any color code markup from the given string.
+//
+void StripColorCodes(std::string& str)
+{
+	size_t pos = 0;
+	while (pos < str.length())
+	{
+		if (str.c_str()[pos] == '\\' && str.c_str()[pos + 1] == 'c' && str.c_str()[pos + 2] != '\0')
+			str.erase(pos, 3);
+		else
+			pos++;
+	}
+}
+
 VERSION_CONTROL (cmdlib_cpp, "$Id$")

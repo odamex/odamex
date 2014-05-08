@@ -300,10 +300,10 @@ CVAR(				cl_netgraph, "0", "Show a graph of network related statistics",
 // ------------------
 
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
-CVAR(				cl_name, "Xbox Player", "",
+CVAR_FUNC_DECL(		cl_name, "Xbox Player", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #else
-CVAR(				cl_name, "Player", "",
+CVAR_FUNC_DECL(		cl_name, "Player", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
 
