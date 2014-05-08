@@ -899,18 +899,27 @@ EXTERN_CVAR (msglevel)
 
 static value_t TextColors[] =
 {
-	{ 0.0, "brick" },
-	{ 1.0, "tan" },
-	{ 2.0, "gray" },
-	{ 3.0, "green" },
-	{ 4.0, "brown" },
-	{ 5.0, "gold" },
-	{ 6.0, "red" },
-	{ 7.0, "blue" },
-	{ 8.0, "orange" },
-	{ 9.0, "white" },
-//	[SL] remove yellow until the color translation can be fixed
-//	{ 10.0, "yellow" }
+	{ CR_BRICK,		"brick" },
+	{ CR_TAN,		"tan" },
+	{ CR_GRAY,		"gray" },
+	{ CR_GREEN,		"green" },
+	{ CR_BROWN,		"brown" },
+	{ CR_GOLD, 		"gold" },
+	{ CR_RED,		"red" },
+	{ CR_BLUE,		"blue" },
+	{ CR_ORANGE,	"orange" },
+	{ CR_WHITE,		"white" },
+	{ CR_YELLOW,	"yellow" },
+	{ CR_BLACK,		"black" },
+	{ CR_LIGHTBLUE,	"light blue" },
+	{ CR_CREAM,		"cream" },
+	{ CR_OLIVE,		"olive" },
+	{ CR_DARKGREEN,	"dark green" },
+	{ CR_DARKRED,	"dark red" },
+	{ CR_DARKBROWN,	"dark brown" },
+	{ CR_PURPLE,	"purple" },
+	{ CR_DARKGRAY,	"dark gray" },
+	{ CR_CYAN,		"cyan" }
 };
 
 static value_t MessageLevels[] = {
@@ -936,12 +945,12 @@ static menuitem_t MessagesItems[] = {
 	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Obituaries",			{&msg1color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Chat Messages",		{&msg3color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Team Messages",		{&msg4color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Centered Messages",	{&msgmidcolor},			{10.0}, {0.0},	{0.0}, {TextColors} }
+	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Obituaries",			{&msg1color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Chat Messages",		{&msg3color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Team Messages",		{&msg4color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Centered Messages",	{&msgmidcolor},			{21.0}, {0.0},	{0.0}, {TextColors} }
 };
 
 menu_t MessagesMenu = {

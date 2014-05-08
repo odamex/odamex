@@ -44,6 +44,7 @@
 #include "st_stuff.h"
 
 #include "gi.h"
+#include "v_text.h"
 
 #undef RANGECHECK
 
@@ -222,6 +223,38 @@ argb_t translationRGB[MAXPLAYERS+1][16];
 byte *Ranges;
 static byte *translationtablesmem = NULL;
 
+
+static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
+{
+	const palindex_t start_index = 0xB0;
+	const palindex_t end_index = 0xBF;
+	const int index_range = end_index - start_index + 1;
+
+	palindex_t* dest = (palindex_t*)Ranges + color_num * 256;
+
+	for (int index = 0; index < start_index; index++)
+		dest[index] = index;
+	for (int index = end_index + 1; index < 256; index++)
+		dest[index] = index;	
+
+	int r_diff = RPART(end_color) - RPART(start_color);
+	int g_diff = GPART(end_color) - GPART(start_color);
+	int b_diff = BPART(end_color) - BPART(start_color);
+
+	for (palindex_t index = start_index; index <= end_index; index++)
+	{
+		int i = index - start_index;
+
+		int r = RPART(start_color) + i * r_diff / index_range;
+		int g = GPART(start_color) + i * g_diff / index_range;
+		int b = BPART(start_color) + i * b_diff / index_range;
+
+		dest[index] = BestColor(GetDefaultPalette()->basecolors, r, g, b, 256);
+	}
+
+	dest[0x2C] = dest[0x2D] = dest[0x2F] = dest[end_index];
+}
+
 //
 // R_InitTranslationTables
 //
@@ -230,33 +263,8 @@ static byte *translationtablesmem = NULL;
 // Assumes a given structure of the PLAYPAL.
 // Could be read from a lump instead.
 //
-void R_InitTranslationTables (void)
+void R_InitTranslationTables()
 {
-	static const char ranges[23][8] = {
-		"CRBRICK",
-		"CRTAN",
-		"CRGRAY",
-		"CRGREEN",
-		"CRBROWN",
-		"CRGOLD",
-		"CRRED",
-		"CRBLUE2",
-		{ 'C','R','O','R','A','N','G','E' },
-		"CRGRAY", // "White"
-		{ 'C','R','Y','E','L','L','O','W' },
-		"CRRED", // "Untranslated"
-		"CRGRAY", // "Black"
-		"CRBLUE",
-		"CRTAN", // "Cream"
-		"CRGREEN", // "Olive"
-		"CRGREEN", // "Dark Green"
-		"CRRED", // "Dark Red"
-		"CRBROWN", // "Dark Brown"
-		"CRRED", // "Purple"
-		"CRGRAY", // "Dark Gray"
-		"CRBLUE" // "Cyan"
-	};
-	
     R_FreeTranslationTables();
 	
 	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?
@@ -294,9 +302,28 @@ void R_InitTranslationTables (void)
 	}
 
 	Ranges = translationtables + (MAXPLAYERS+3)*256;
-	for (int i = 0; i < 22; i++)
-		W_ReadLump (W_GetNumForName (ranges[i]), Ranges + 256 * i);
 
+	R_BuildFontTranslation(CR_BRICK,	MAKERGB(0xFF, 0xB8, 0xB8), MAKERGB(0x47, 0x00, 0x00));
+	R_BuildFontTranslation(CR_TAN,		MAKERGB(0xFF, 0xEB, 0xDF), MAKERGB(0x33, 0x2B, 0x13));	
+	R_BuildFontTranslation(CR_GRAY,		MAKERGB(0xEF, 0xEF, 0xEF), MAKERGB(0x27, 0x27, 0x27));	
+	R_BuildFontTranslation(CR_GREEN,	MAKERGB(0x77, 0xFF, 0x6F), MAKERGB(0x0B, 0x17, 0x07));	
+	R_BuildFontTranslation(CR_BROWN,	MAKERGB(0xBF, 0xA7, 0x8F), MAKERGB(0x53, 0x3F, 0x2F));	
+	R_BuildFontTranslation(CR_GOLD,		MAKERGB(0xFF, 0xFF, 0x73), MAKERGB(0x73, 0x2B, 0x00));	
+	R_BuildFontTranslation(CR_RED,		MAKERGB(0xFF, 0x00, 0x00), MAKERGB(0x3F, 0x00, 0x00));
+	R_BuildFontTranslation(CR_BLUE,		MAKERGB(0x00, 0x00, 0xFF), MAKERGB(0x00, 0x00, 0x27));	
+	R_BuildFontTranslation(CR_ORANGE,	MAKERGB(0xFF, 0x80, 0x00), MAKERGB(0x20, 0x00, 0x00));	
+	R_BuildFontTranslation(CR_WHITE,	MAKERGB(0xFF, 0xFF, 0xFF), MAKERGB(0x24, 0x24, 0x24));	
+	R_BuildFontTranslation(CR_YELLOW,	MAKERGB(0xFC, 0xD0, 0x43), MAKERGB(0x27, 0x27, 0x27));
+	R_BuildFontTranslation(CR_BLACK,	MAKERGB(0x50, 0x50, 0x50), MAKERGB(0x13, 0x13, 0x13));
+	R_BuildFontTranslation(CR_LIGHTBLUE,MAKERGB(0xB4, 0xB4, 0xFF), MAKERGB(0x00, 0x00, 0x73));
+	R_BuildFontTranslation(CR_CREAM,	MAKERGB(0xFF, 0xD7, 0xBB), MAKERGB(0xCF, 0x83, 0x53));
+	R_BuildFontTranslation(CR_OLIVE,	MAKERGB(0x7B, 0x7F, 0x50), MAKERGB(0x2F, 0x37, 0x1F));
+	R_BuildFontTranslation(CR_DARKGREEN,MAKERGB(0x43, 0x93, 0x37), MAKERGB(0x0B, 0x17, 0x07));
+	R_BuildFontTranslation(CR_DARKRED,	MAKERGB(0xAF, 0x2B, 0x2B), MAKERGB(0x2B, 0x00, 0x00));
+	R_BuildFontTranslation(CR_DARKBROWN,MAKERGB(0xA3, 0x6B, 0x3F), MAKERGB(0x1F, 0x17, 0x0B));
+	R_BuildFontTranslation(CR_PURPLE,	MAKERGB(0xCF, 0x00, 0xCF), MAKERGB(0x23, 0x00, 0x23));
+	R_BuildFontTranslation(CR_DARKGRAY,	MAKERGB(0x8B, 0x8B, 0x8B), MAKERGB(0x23, 0x23, 0x23));
+	R_BuildFontTranslation(CR_CYAN,		MAKERGB(0x00, 0xF0, 0xF0), MAKERGB(0x00, 0x1F, 0x1F));
 }
 
 void R_FreeTranslationTables (void)
