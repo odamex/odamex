@@ -116,6 +116,7 @@ BOOL 			usergame;				// ok to save / end game
 BOOL			sendcenterview;			// send a center view event next tic
 
 bool			timingdemo; 			// if true, exit with report on completion
+bool			longtics;				// don't quantize yaw for classic vanilla demos
 bool 			nodrawers;				// for comparative timing purposes
 bool 			noblit; 				// for comparative timing purposes
 
@@ -361,34 +362,20 @@ extern constate_e ConsoleState;
 // or reads it from the demo buffer.
 // If recording a demo, write it out
 //
-void G_BuildTiccmd (ticcmd_t *cmd)
+void G_BuildTiccmd(ticcmd_t *cmd)
 {
-	int 		strafe;
-	int 		speed;
-	int 		tspeed;
-	int 		forward;
-	int 		side;
-	int			look;
-	int			fly;
+	ticcmd_t* base = I_BaseTiccmd();	// empty or external driver
+	memcpy(cmd, base, sizeof(*cmd));
 
-	ticcmd_t	*base;
-
-	base = I_BaseTiccmd (); 			// empty, or external driver
-
-	memcpy (cmd,base,sizeof(*cmd));
-
-	strafe = Actions[ACTION_STRAFE];
-	speed = Actions[ACTION_SPEED];
+	int strafe = Actions[ACTION_STRAFE];
+	int speed = Actions[ACTION_SPEED];
 	if (cl_run)
 		speed ^= 1;
 
-	forward = side = look = fly = 0;
+	int forward = 0, side = 0, look = 0, fly = 0;
 
-	// GhostlyDeath -- USE takes us out of spectator mode
 	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
-	{
 		AddCommandString("join");
-	}
 
 	// [RH] only use two stage accelerative turning on the keyboard
 	//		and not the joystick, since we treat the joystick as
@@ -398,10 +385,9 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	else
 		turnheld = 0;
 
+	int tspeed = speed;
 	if (turnheld < SLOWTURNTICS)
 		tspeed = 2; 			// slow turn
-	else
-		tspeed = speed;
 
 	// let movement keys cancel each other out
 	if (strafe)
@@ -512,20 +498,15 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 
 	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook))
 	{
-		int val;
-
-		val = (int)((float)(mousey * 16) * m_pitch);
+		int val = (int)(float(mousey) * 16.0f * m_pitch);
 		if (invertmouse)
 			look -= val;
 		else
 			look += val;
 	}
-	else
+	else if (novert == 0)		// [Toke - Mouse] acts like novert.exe
 	{
-		if (novert == 0) // [Toke - Mouse] acts like novert.exe
-		{
-			forward += (int)((float)mousey * m_forward);
-		}
+		forward += (int)(float(mousey) * m_forward);
 	}
 
 	if (sendcenterview)
@@ -535,16 +516,13 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	}
 	else
 	{
-		if (look > 32767)
-			look = 32767;
-		else if (look < -32767)
-			look = -32767;
+		look = clamp(look, -32767, 32767);
 	}
 
 	if (strafe || lookstrafe)
-		side += (int)((float)mousex * m_side);
+		side += (int)(float(mousex) * m_side);
 	else
-		cmd->yaw -= (int)((float)(mousex*0x8) * m_yaw) / ticdup;
+		cmd->yaw -= (int)(float(mousex) * 8.0f * m_yaw);
 
 	mousex = mousey = 0;
 
@@ -579,10 +557,14 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	cmd->sidemove <<= 8;
 
 	// [RH] 180-degree turn overrides all other yaws
-	if (turntick) {
+	if (turntick)
+	{
 		turntick--;
 		cmd->yaw = (ANG180 / TURN180_TICKS) >> 16;
 	}
+
+	if (!longtics)
+		cmd->yaw &= 0xFF00;
 }
 
 
@@ -1735,7 +1717,6 @@ void G_WriteDemoTiccmd ()
 		else
 		{
 			*demo_p++ = it->cmd.yaw >> 8;
-			it->cmd.yaw = ((unsigned char)*(demo_p - 1)) << 8;
 		}
 
 		*demo_p++ = it->cmd.buttons;
@@ -1770,6 +1751,12 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
     usergame = false;
     demorecording = true;
     demostartgametic = gametic;
+
+	
+	if (longtics)
+		demoversion = LMP_DOOM_1_9_1;
+	else
+		demoversion = LMP_DOOM_1_9;
 
 	players.clear();
 	players.push_back(player_t());
@@ -1858,6 +1845,7 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 	if (argc > 2)
 	{
 		demoversion = ver;
+		longtics = (demoversion == LMP_DOOM_1_9_1);
 
 		if (gamestate != GS_STARTUP)
 		{
@@ -2152,8 +2140,12 @@ void G_CleanupDemo()
 
 		demorecording = false;
 		Printf(PRINT_HIGH, "Demo %s recorded\n", demoname);
+
+		// reset longtics after demo recording
+		longtics = !(Args.CheckParm("-shorttics"));
 	}
 }
+
 
 /*
 ===================
