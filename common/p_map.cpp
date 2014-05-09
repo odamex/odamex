@@ -2303,8 +2303,8 @@ BOOL PTR_RailTraverse (intercept_t *in)
 			goto hitline;
 
 		// shot continues
-		if (li->special)
-			P_ShootSpecialLine (shootthing, li);
+
+		// TODO: handle SPAC_PCROSS specials
 
 		return true;
 
@@ -2344,10 +2344,9 @@ BOOL PTR_RailTraverse (intercept_t *in)
 			x = trace.x + FixedMul(trace.dx, frac);
 			y = trace.y + FixedMul(trace.dy, frac);
 
-			if (!co_fixweaponimpacts && li->special) {
-				// Shot actually hit a wall. It might be set up for shoot activation
+			// Shot actually hit a wall. It might be set up for shoot activation
+			if (li->special)
 				P_ShootSpecialLine(shootthing, li);
-			}
 		}
 
 		// Save final position of rail shot.
