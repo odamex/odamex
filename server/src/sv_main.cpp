@@ -149,7 +149,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 
 			if (normalcount > var)
 			{
-				for (Players::iterator pit = players.begin();it != players.end();++it)
+				for (Players::iterator pit = players.begin();pit != players.end();++pit)
 				{
 					MSG_WriteMarker (&(pit->client.reliablebuf), svc_spectate);
 					MSG_WriteByte (&(pit->client.reliablebuf), it->id);
