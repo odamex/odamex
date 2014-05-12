@@ -37,13 +37,12 @@
 #include "i_system.h"
 #include "md5.h"
 #include "p_ctf.h"
+#include "version.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
 EXTERN_CVAR(join_password)
 EXTERN_CVAR(sv_timelimit)
-
-extern unsigned int last_revision;
 
 struct CvarField_t
 {
@@ -92,7 +91,7 @@ static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
 	MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
 
 	// Built revision of server
-	MSG_WriteLong(&ml_message, last_revision);
+	MSG_WriteLong(&ml_message, GetRevision());
 
 	cvar_t* var = GetFirstCvar();
 

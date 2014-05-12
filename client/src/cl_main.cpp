@@ -143,9 +143,6 @@ std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 EXTERN_CVAR (sv_weaponstay)
 
-EXTERN_CVAR (cl_name)
-EXTERN_CVAR (cl_color)
-EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_predictsectors)
 
 EXTERN_CVAR (mute_spectators)

@@ -9,6 +9,8 @@ if(NOT MSVC)
 			endif()
 		endif()
 	endif()
+else()
+  set(CMAKE_CXX_FLAGS_RELEASE "/Ox /Oi /arch:SSE2") 
 endif()
 
 

@@ -79,11 +79,15 @@ void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
-int PrintString (int printlevel, char const *outline)
+int PrintString(int printlevel, char const* str)
 {
-	int ret = printf("%s", outline);
+	std::string sanitized_str(str);
+	StripColorCodes(sanitized_str);
+
+	printf("%s", sanitized_str.c_str());
 	fflush(stdout);
-	return ret;
+
+	return sanitized_str.length();
 }
 
 #ifdef _WIN32

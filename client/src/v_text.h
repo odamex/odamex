@@ -48,7 +48,6 @@ enum EColorRange
 	CR_WHITE,
 	CR_YELLOW,
 
-	// [AM] Extended ZDoom colors.  Not all of these actually work yet.
 	CR_UNTRANSLATED,
 	CR_BLACK,
 	CR_LIGHTBLUE,
@@ -77,7 +76,6 @@ enum EColorRange
 #define TEXTCOLOR_WHITE			"\\cj"
 #define TEXTCOLOR_YELLOW		"\\ck"
 
-// [AM] Extended ZDoom colors.  Not all of these actually work yet.
 #define TEXTCOLOR_UNTRANSLATED	"\\cl"
 #define TEXTCOLOR_BLACK			"\\cm"
 #define TEXTCOLOR_LIGHTBLUE		"\\cn"

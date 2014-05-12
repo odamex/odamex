@@ -222,11 +222,6 @@ EXTERN_CVAR (mouse_sensitivity) // removeme // ?
 //	as well as tracking projectiles etc.
 extern int				skyflatnum;
 
-// Netgame stuff (buffers and pointers, i.e. indices).
-extern	int 			maketic;
-extern	int 			ticdup;
-
-
 // ---- [RH] ----
 EXTERN_CVAR (developer) // removeme
 

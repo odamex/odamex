@@ -452,7 +452,7 @@ void ConsoleHistory::resetPosition()
 void ConsoleHistory::addString(const std::string& str)
 {
 	// only add the string if it's different from the most recent in history
-	if (!str.empty() && str.compare(history.back()) != 0)
+	if (!str.empty() && (history.empty() || str.compare(history.back()) != 0))
 	{
 		while (history.size() >= MAX_HISTORY_ITEMS)
 			history.pop_front();
@@ -558,7 +558,7 @@ void STACK_ARGS C_Close()
 		background_surface = NULL;
 	}
 
-	delete ConChars;
+	delete [] ConChars;
 	ConChars = NULL;
 }
 
@@ -804,22 +804,13 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 //
 static int C_PrintStringStdOut(const char* str)
 {
-	// strip away any color escape codes from outline and store in tempstr
-	char tempstr[MAX_LINE_LENGTH + 1];
-	int len = 0;
-	while (*str)
-	{
-		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
-			str += 3;
-		else
-			tempstr[len++] = *str++;
-	}
-	tempstr[len] = '\0';
+	std::string sanitized_str(str);
+	StripColorCodes(sanitized_str);
 
-	printf("%s", tempstr);
+	printf("%s", sanitized_str.c_str());
 	fflush(stdout);
 
-	return len;
+	return sanitized_str.length();
 }
 
 

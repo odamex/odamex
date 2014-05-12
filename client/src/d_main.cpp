@@ -745,6 +745,10 @@ void D_DoomMain (void)
 	if (devparm)
 		vid_ticker.SetDefault("1");
  
+	// shorttics (quantize yaw like recording a vanilla demo)
+	extern bool longtics;
+	longtics = !(Args.CheckParm("-shorttics"));
+
 	// Record a vanilla demo
 	p = Args.CheckParm ("-record");
 	if (p)
@@ -752,6 +756,9 @@ void D_DoomMain (void)
 		autorecord = true;
 		autostart = true;
 		demorecordfile = Args.GetArg (p+1);
+
+		// extended vanilla demo format
+		longtics = Args.CheckParm("-longtics");
 	}
 
 	// get skill / episode / map from parms
