@@ -453,7 +453,7 @@ void ConsoleHistory::resetPosition()
 void ConsoleHistory::addString(const std::string& str)
 {
 	// only add the string if it's different from the most recent in history
-	if (!str.empty() && str.compare(history.back()) != 0)
+	if (!str.empty() && (history.empty() || str.compare(history.back()) != 0))
 	{
 		while (history.size() >= MAX_HISTORY_ITEMS)
 			history.pop_front();
