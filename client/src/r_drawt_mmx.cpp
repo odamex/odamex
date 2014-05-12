@@ -182,7 +182,7 @@ void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, i
 
 	int invAlpha = 256 - alpha;
 
-	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
+	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
 
 	int batches = w / 2;
 	int remainder = w & 1;
