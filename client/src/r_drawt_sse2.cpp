@@ -395,7 +395,7 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 {
 	int surface_pitch_pixels = surface->getPitchInPixels();
 
-	argb_t* line = (argb_t*)(ylookup[y1] + columnofs[0]);
+	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
 
 	int invAlpha = 256 - alpha;
 

@@ -1077,10 +1077,12 @@ void R_RenderPlayerView(player_t *player)
 
 	// NOTE(jsd): Full-screen status color blending:
 	extern int BlendA, BlendR, BlendG, BlendB;
-	if (BlendA != 0)
+	if (surface->getBitsPerPixel() == 32 && BlendA != 0)
 	{
-		argb_t blend_color = argb_t(gammatable[BlendR], gammatable[BlendG], gammatable[BlendB]);
-		r_dimpatchD(surface, blend_color, BlendA, 0, 0, surface->getWidth(), surface->getHeight());
+		argb_t blend_color = argb_t(BlendR, BlendG, BlendB);
+		blend_color = V_GammaCorrect(blend_color);
+
+		r_dimpatchD(surface, blend_color, BlendA, viewwindowx, viewwindowy, viewwidth, viewheight);
 	}
 
 	R_EndInterpolation();
