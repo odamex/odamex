@@ -468,7 +468,7 @@ int ST_StatusBarWidth(int surface_width, int surface_height)
 	if (I_IsProtectedResolution(surface_width, surface_height))
 		return 10 * ST_StatusBarHeight(surface_width, surface_height);
 	else
-		return 4 * surface_width / 3;
+		return 4 * surface_height / 3;
 }
 
 int ST_StatusBarX(int surface_width, int surface_height)

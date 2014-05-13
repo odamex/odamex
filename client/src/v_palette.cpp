@@ -69,33 +69,39 @@ static float current_blend[4];
 /* Current color blending values */
 int		BlendR, BlendG, BlendB, BlendA;
 
-translationref_t::translationref_t() : m_table(NULL), m_player_id(-1)
+translationref_t::translationref_t() :
+	m_table(NULL), m_player_id(-1)
 {
 }
 
-translationref_t::translationref_t(const translationref_t &other) : m_table(other.m_table), m_player_id(other.m_player_id)
+translationref_t::translationref_t(const translationref_t &other) :
+	m_table(other.m_table), m_player_id(other.m_player_id)
 {
 }
 
-translationref_t::translationref_t(const byte *table) : m_table(table), m_player_id(-1)
+translationref_t::translationref_t(const byte *table) :
+	m_table(table), m_player_id(-1)
 {
 }
 
-translationref_t::translationref_t(const byte *table, const int player_id) : m_table(table), m_player_id(player_id)
+translationref_t::translationref_t(const byte *table, const int player_id) :
+	m_table(table), m_player_id(player_id)
 {
 }
 
-shaderef_t::shaderef_t() : m_colors(NULL), m_mapnum(-1), m_colormap(NULL), m_shademap(NULL)
+shaderef_t::shaderef_t() :
+	m_colors(NULL), m_mapnum(-1), m_colormap(NULL), m_shademap(NULL)
 {
 }
 
-shaderef_t::shaderef_t(const shaderef_t &other)
-	: m_colors(other.m_colors), m_mapnum(other.m_mapnum),
-	  m_colormap(other.m_colormap), m_shademap(other.m_shademap), m_dyncolormap(other.m_dyncolormap)
+shaderef_t::shaderef_t(const shaderef_t &other) :
+	m_colors(other.m_colors), m_mapnum(other.m_mapnum),
+	m_colormap(other.m_colormap), m_shademap(other.m_shademap), m_dyncolormap(other.m_dyncolormap)
 {
 }
 
-shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_colors(colors), m_mapnum(mapnum)
+shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) :
+	m_colors(colors), m_mapnum(mapnum)
 {
 #if DEBUG
 	// NOTE(jsd): Arbitrary value picked here because we don't record the max number of colormaps for dynamic ones... or do we?
