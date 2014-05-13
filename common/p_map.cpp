@@ -3728,8 +3728,7 @@ void P_CopySector(sector_t *dest, sector_t *src)
 	dest->gravity				= src->gravity;
 	dest->damage				= src->damage;
 	dest->mod					= src->mod;
-	dest->floorcolormap			= src->floorcolormap;
-	dest->ceilingcolormap		= src->ceilingcolormap;
+	dest->colormap				= src->colormap;
 	dest->alwaysfake			= src->alwaysfake;
 	dest->waterzone				= src->waterzone;
 	dest->MoreFlags				= src->MoreFlags;

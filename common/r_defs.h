@@ -219,8 +219,7 @@ struct sector_s
 	float gravity;		// [RH] Sector gravity (1.0 is normal)
 	short damage;		// [RH] Damage to do while standing on floor
 	short mod;			// [RH] Means-of-death for applied damage
-	struct dyncolormap_s *floorcolormap;	// [RH] Per-sector colormap
-	struct dyncolormap_s *ceilingcolormap;
+	struct dyncolormap_s *colormap;	// [RH] Per-sector colormap
 
 	bool alwaysfake;	// [RH] Always apply heightsec modifications?
 	byte waterzone;		// [RH] Sector is underwater?

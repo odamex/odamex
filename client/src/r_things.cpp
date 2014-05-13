@@ -980,10 +980,10 @@ void R_DrawPlayerSprites (void)
 		&ceilinglight, false);
 
 	// [RH] set foggy flag
-	foggy = (level.fadeto || sec->floorcolormap->fade);
+	foggy = (level.fadeto || sec->colormap->fade);
 
 	// [RH] set basecolormap
-	basecolormap = sec->floorcolormap->maps;
+	basecolormap = sec->colormap->maps;
 
 	// get light level
 	lightnum = ((floorlight + ceilinglight) >> (LIGHTSEGSHIFT+1))
@@ -1317,9 +1317,9 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		shaderef_t map;
 
 		if (vis->heightsec == NULL || vis->FakeFlat == FAKED_Center)
-			map = sector->floorcolormap->maps;
+			map = sector->colormap->maps;
 		else
-			map = vis->heightsec->floorcolormap->maps;
+			map = vis->heightsec->colormap->maps;
 
 		if (fixedlightlev)
 		{

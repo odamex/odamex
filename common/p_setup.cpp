@@ -363,11 +363,11 @@ void P_LoadSectors (int lump)
 		// [RH] Sectors default to white light with the default fade.
 		//		If they are outside (have a sky ceiling), they use the outside fog.
 		if (level.outsidefog != 0xff000000 && ss->ceilingpic == skyflatnum)
-			ss->ceilingcolormap = ss->floorcolormap =
-				GetSpecialLights(255, 255, 255, level.outsidefog.r, level.outsidefog.g, level.outsidefog.b);
+			ss->colormap = GetSpecialLights(255, 255, 255,
+									level.outsidefog.r, level.outsidefog.g, level.outsidefog.b);
 		else
-			ss->ceilingcolormap = ss->floorcolormap =
-				GetSpecialLights(255, 255, 255, level.fadeto.r, level.fadeto.g, level.fadeto.b);
+			ss->colormap = GetSpecialLights(255, 255, 255,
+									level.fadeto.r, level.fadeto.g, level.fadeto.b);
 
 		ss->sky = 0;
 
@@ -954,8 +954,7 @@ void P_LoadSideDefs2 (int lump)
 					for (int s = 0; s < numsectors; s++)
 					{
 						if (sectors[s].tag == sd->tag)
-							sectors[s].ceilingcolormap =
-								sectors[s].floorcolormap = colormap;
+							sectors[s].colormap = colormap;
 					}
 				}
 			}

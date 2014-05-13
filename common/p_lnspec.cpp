@@ -1418,14 +1418,10 @@ FUNC(LS_Sector_SetColor)
 	{
 		while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
 		{
-			sectors[secnum].floorcolormap = GetSpecialLights(arg1, arg2, arg3,
-					sectors[secnum].floorcolormap->fade.r,
-					sectors[secnum].floorcolormap->fade.g,
-					sectors[secnum].floorcolormap->fade.b);
-			sectors[secnum].ceilingcolormap = GetSpecialLights(arg1, arg2, arg3,
-					sectors[secnum].ceilingcolormap->fade.r,
-					sectors[secnum].ceilingcolormap->fade.g,
-					sectors[secnum].ceilingcolormap->fade.b);
+			sectors[secnum].colormap = GetSpecialLights(arg1, arg2, arg3,
+					sectors[secnum].colormap->fade.r,
+					sectors[secnum].colormap->fade.g,
+					sectors[secnum].colormap->fade.b);
 		}
 	}
 	return true;
@@ -1440,15 +1436,10 @@ FUNC(LS_Sector_SetFade)
 	{
 		while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
 		{
-			sectors[secnum].floorcolormap = GetSpecialLights(
-					sectors[secnum].floorcolormap->color.r,
-					sectors[secnum].floorcolormap->color.g,
-					sectors[secnum].floorcolormap->color.b,
-					arg1, arg2, arg3);
-			sectors[secnum].ceilingcolormap = GetSpecialLights(
-					sectors[secnum].ceilingcolormap->color.r,
-					sectors[secnum].ceilingcolormap->color.g,
-					sectors[secnum].ceilingcolormap->color.b,
+			sectors[secnum].colormap = GetSpecialLights(
+					sectors[secnum].colormap->color.r,
+					sectors[secnum].colormap->color.g,
+					sectors[secnum].colormap->color.b,
 					arg1, arg2, arg3);
 		}
 	}
