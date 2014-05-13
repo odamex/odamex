@@ -49,15 +49,15 @@ public:
 
 	virtual byte* getBuffer()
 	{
-//		if (mLocks == 0)
-//			return NULL;
+		if (mLocks == 0)
+			return NULL;
 		return mSurfaceBuffer;
 	}
 
 	virtual const byte* getBuffer() const
 	{
-//		if (mLocks == 0)
-//			return NULL;
+		if (mLocks == 0)
+			return NULL;
 		return mSurfaceBuffer;
 	}
 

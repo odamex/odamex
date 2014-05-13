@@ -556,14 +556,14 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 	if (!I_VideoInitialized())
 		return;
 
+	window->getPrimarySurface()->lock();
+
 	// Set up the primary and emulated surfaces
 	primary_surface = window->getPrimarySurface();
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
 
 	// clear window's surface to all black
-	primary_surface->lock();
 	primary_surface->getDefaultCanvas()->Clear(0, 0, surface_width, surface_height, argb_t(0, 0, 0));
-	primary_surface->unlock();
 
 	// [SL] Determine the size of the matted surface.
 	// A matted surface will be used if pillar-boxing or letter-boxing are used, or
@@ -620,6 +620,8 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 	}
 
 	screen = primary_surface->getDefaultCanvas();
+
+	window->getPrimarySurface()->unlock();
 }
 
 
@@ -880,7 +882,7 @@ void I_BeginUpdate()
 {
 	if (I_VideoInitialized())
 	{
-		primary_surface->lock();
+		window->getPrimarySurface()->lock();
 
 		if (matted_surface)
 			matted_surface->lock();
@@ -933,7 +935,7 @@ void I_FinishUpdate()
 		if (matted_surface)
 			matted_surface->unlock();
 
-		primary_surface->unlock();
+		window->getPrimarySurface()->unlock();
 
 		if (noblit == false)
 			window->refresh();
