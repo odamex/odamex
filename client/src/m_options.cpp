@@ -1028,12 +1028,15 @@ EXTERN_CVAR (vid_32bpp)
 static value_t Depths[22];
 
 #ifdef _XBOX
-static char VMEnterText[] = "Press A to set mode";
-static char VMTestText[] = "Press X to test mode for 5 seconds";
+static const char VMEnterText[] = "Press A to set mode";
+static const char VMTestText[] = "Press X to test mode for 5 seconds";
 #else
-static char VMEnterText[] = "Press ENTER to set mode";
-static char VMTestText[] = "Press T to test mode for 5 seconds";
+static const char VMEnterText[] = "Press ENTER to set mode";
+static const char VMTestText[] = "Press T to test mode for 5 seconds";
 #endif
+
+static const char VMTestWaitText[] = "Please wait 5 seconds...";
+static const char VMTestBlankText[] = " ";
 
 static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
@@ -1062,16 +1065,16 @@ static menuitem_t ModesItems[] = {
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,  VMEnterText,			{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ redtext,  " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,  VMTestText,				{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ redtext,  " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} }
 };
 
 #define VM_DEPTHITEM	0
 #define VM_RESSTART		6
-#define VM_ENTERLINE	16
-#define VM_TESTLINE		18
+#define VM_ENTERLINE	14
+#define VM_TESTLINE		16
 
 menu_t ModesMenu = {
 	"M_VIDMOD",
@@ -1083,6 +1086,125 @@ menu_t ModesMenu = {
 	0,
 	NULL
 };
+
+static void BuildModesList(int hiwidth, int hiheight, int hi_bits)
+{
+    const char** str = NULL;
+
+	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
+	IVideoModeList::const_iterator mode_it = modes->begin();
+
+	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
+	{
+		ModesItems[i].e.highlight = -1;
+		for (int col = 0; col < 3; col++)
+		{
+			if (col == 0)
+				str = &ModesItems[i].b.res1;
+			else if (col == 1)
+				str = &ModesItems[i].c.res2;
+			else if (col == 2)
+				str = &ModesItems[i].d.res3;
+
+			if (mode_it != modes->end())
+			{
+				int width = mode_it->getWidth();
+				int height = mode_it->getHeight();
+				++mode_it;
+
+				if (width == hiwidth && height == hiheight)
+					ModesItems[i].e.highlight = ModesItems[i].a.selmode = col;
+
+				char strtemp[32];
+				sprintf(strtemp, "%dx%d", width, height);
+				ReplaceString(str, strtemp);
+			}
+			else
+			{
+				*str = NULL;
+			}
+		}
+	}
+}
+
+void M_RefreshModesList()
+{
+	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
+}
+
+static bool GetSelectedSize(int line, int* width, int* height)
+{
+	if (ModesItems[line].type != screenres)
+		return false;
+
+	int mode_num = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode;
+
+	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
+	IVideoModeList::const_iterator mode_it = modes->begin() + mode_num;
+
+	if (mode_it == modes->end())
+		return false;
+
+	*width = mode_it->getWidth();
+	*height = mode_it->getHeight();
+
+	return true;
+}
+
+static void SetModesMenu(int w, int h, int bits)
+{
+	if (!testingmode)
+	{
+		ModesItems[VM_ENTERLINE].label = VMEnterText;
+		ModesItems[VM_TESTLINE].label = VMTestText;
+	}
+	else
+	{
+		static char enter_text[64];
+		sprintf(enter_text, "TESTING %dx%dx%d", w, h, bits);
+
+		ModesItems[VM_ENTERLINE].label = enter_text; 
+		ModesItems[VM_TESTLINE].label = VMTestWaitText;
+	}
+
+	BuildModesList(w, h, bits);
+}
+
+//
+// M_ModeFlashTestText
+//
+// Flashes the video mode testing text
+//
+void M_ModeFlashTestText()
+{
+    if (ModesItems[VM_TESTLINE].label[0] == ' ')
+		ModesItems[VM_TESTLINE].label = VMTestWaitText;
+	else
+		ModesItems[VM_TESTLINE].label = VMTestBlankText; 
+}
+
+void M_RestoreMode (void)
+{
+	NewWidth = OldWidth;
+	NewHeight = OldHeight;
+	NewBits = OldBits;
+	setmodeneeded = true;
+	testingmode = 0;
+	SetModesMenu(OldWidth, OldHeight, OldBits);
+}
+
+static void SetVidMode()
+{
+	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
+	if (ModesMenu.items[ModesMenu.lastOn].type == screenres)
+	{
+		if (ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)
+			ModesMenu.items[ModesMenu.lastOn].a.selmode++;
+	}
+	M_SwitchMenu(&ModesMenu);
+}
+
+
 
 static cvar_t *flagsvar;
 
@@ -2234,120 +2356,6 @@ BEGIN_COMMAND (menu_display)
 }
 END_COMMAND (menu_display)
 
-static void BuildModesList(int hiwidth, int hiheight, int hi_bits)
-{
-    const char** str = NULL;
-
-	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
-	IVideoModeList::const_iterator mode_it = modes->begin();
-
-	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
-	{
-		ModesItems[i].e.highlight = -1;
-		for (int col = 0; col < 3; col++)
-		{
-			if (col == 0)
-				str = &ModesItems[i].b.res1;
-			else if (col == 1)
-				str = &ModesItems[i].c.res2;
-			else if (col == 2)
-				str = &ModesItems[i].d.res3;
-
-			if (mode_it != modes->end())
-			{
-				int width = mode_it->getWidth();
-				int height = mode_it->getHeight();
-				++mode_it;
-
-				if (width == hiwidth && height == hiheight)
-					ModesItems[i].e.highlight = ModesItems[i].a.selmode = col;
-
-				char strtemp[32];
-				sprintf(strtemp, "%dx%d", width, height);
-				ReplaceString(str, strtemp);
-			}
-			else
-			{
-				*str = NULL;
-			}
-		}
-	}
-}
-
-void M_RefreshModesList()
-{
-	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
-}
-
-static bool GetSelectedSize(int line, int* width, int* height)
-{
-	if (ModesItems[line].type != screenres)
-		return false;
-
-	int mode_num = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode;
-
-	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
-	IVideoModeList::const_iterator mode_it = modes->begin() + mode_num;
-
-	if (mode_it == modes->end())
-		return false;
-
-	*width = mode_it->getWidth();
-	*height = mode_it->getHeight();
-
-	return true;
-}
-
-static void SetModesMenu(int w, int h, int bits)
-{
-	if (!testingmode)
-	{
-		ModesItems[VM_ENTERLINE].label = VMEnterText;
-		ModesItems[VM_TESTLINE].label = VMTestText;
-	}
-	else
-	{
-		char strtemp[64];
-		sprintf(strtemp, "TESTING %dx%dx%d", w, h, bits);
-		ModesItems[VM_ENTERLINE].label = copystring(strtemp);
-		ModesItems[VM_TESTLINE].label = "Please wait 5 seconds...";
-	}
-
-	BuildModesList(w, h, bits);
-}
-
-//
-// void M_ModeFlashTestText (void)
-//
-// Flashes the video mode testing text
-void M_ModeFlashTestText()
-{
-    if (ModesItems[VM_TESTLINE].label[0] == ' ')
-		ModesItems[VM_TESTLINE].label = "Please wait 5 seconds...";
-	else
-		ModesItems[VM_TESTLINE].label = " ";
-}
-
-void M_RestoreMode (void)
-{
-	NewWidth = OldWidth;
-	NewHeight = OldHeight;
-	NewBits = OldBits;
-	setmodeneeded = true;
-	testingmode = 0;
-	SetModesMenu (OldWidth, OldHeight, OldBits);
-}
-
-static void SetVidMode()
-{
-	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
-	if (ModesMenu.items[ModesMenu.lastOn].type == screenres)
-	{
-		if (ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)
-			ModesMenu.items[ModesMenu.lastOn].a.selmode++;
-	}
-	M_SwitchMenu (&ModesMenu);
-}
 
 BEGIN_COMMAND (menu_video)
 {
