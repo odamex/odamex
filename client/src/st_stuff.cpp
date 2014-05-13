@@ -1359,11 +1359,6 @@ void ST_Drawer()
 		stbar_surface->lock();
 		stnum_surface->lock();
 
-		// update the palette prior to blitting surfaces
-		const argb_t* palette_colors = R_GetRenderingSurface()->getPalette();
-		stbar_surface->setPalette(palette_colors);
-		stnum_surface->setPalette(palette_colors);	
-
 		if (st_needrefresh)
 		{
 			// draw status bar background to off-screen buffer then blit to surface
@@ -1517,9 +1512,9 @@ void ST_loadGraphics(void)
 	faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
 }
 
-void ST_loadData (void)
+void ST_loadData()
 {
-    lu_palette = W_GetNumForName ("PLAYPAL");
+    lu_palette = W_GetNumForName("PLAYPAL");
 	ST_loadGraphics();
 }
 

@@ -274,7 +274,7 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	int destbits = getBitsPerPixel();
 	int srcpitchpixels = source_surface->getPitchInPixels();
 	int destpitchpixels = getPitchInPixels();
-	const argb_t* palette = source_surface->getPalette();
+	const argb_t* palette = V_GetDefaultPalette()->colors;
 
 	if (srcbits == 8 && destbits == 8)
 	{
@@ -521,8 +521,6 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 	matted_surface = NULL;
 	I_FreeSurface(emulated_surface);
 	emulated_surface = NULL;
-//	I_FreeSurface(primary_surface);
-//	primary_surface = NULL;
 
 	if (Args.CheckParm("-novideo"))
 	{
@@ -620,9 +618,12 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 //
 static void I_CheckVideoModeMessage(int width, int height, int bpp, bool fullscreen)
 {
+	if (Args.CheckParm("-novideo"))
+		return;
+
 	if (I_GetVideoWidth() != width || I_GetVideoHeight() != height)
-		Printf(PRINT_HIGH, "Could not set resolution to %dx%dx%d %s. Using resolution \
-							%dx%dx%d %s instead.\n",
+		Printf(PRINT_HIGH, "Could not set resolution to %dx%dx%d %s. Using resolution " \
+							"%dx%dx%d %s instead.\n",
 							width, height, bpp, (fullscreen ? "FULLSCREEN" : "WINDOWED"),
 							I_GetVideoWidth(), I_GetVideoHeight(), I_GetWindow()->getBitsPerPixel(),
 							I_GetWindow()->isFullScreen() ? "FULLSCREEN" : "WINDOWED");

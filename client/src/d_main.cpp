@@ -549,7 +549,6 @@ void D_DoAdvanceDemo (void)
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
 			page_surface = I_AllocateSurface(320, 200, 8);
-			page_surface->setPalette(V_GetDefaultPalette()->colors);
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
@@ -559,7 +558,6 @@ void D_DoAdvanceDemo (void)
 		else
 		{
 			page_surface = I_AllocateSurface(patch->width(), patch->height(), 8);
-			page_surface->setPalette(V_GetDefaultPalette()->colors);
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
