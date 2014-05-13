@@ -153,7 +153,7 @@ int DCanvas::getCleanX(int x) const
 //
 int DCanvas::getCleanY(int y) const
 {
-	return (y - 200) * CleanYfac + mSurface->getHeight() / 2;
+	return (y - 100) * CleanYfac + mSurface->getHeight() / 2;
 }
 
 
