@@ -294,6 +294,8 @@ void D_Display()
 			if (!gametic)
 				break;
 
+			V_DoPaletteEffects();
+
 			// Drawn to R_GetRenderingSurface()
 			if (viewactive)
 				R_RenderPlayerView(&displayplayer());
@@ -310,7 +312,6 @@ void D_Display()
 			C_DrawGMid();
 			CTF_DrawHud();
 			HU_Drawer();
-			V_DoPaletteEffects();
 			break;
 
 		case GS_INTERMISSION:
