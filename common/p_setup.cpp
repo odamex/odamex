@@ -61,6 +61,7 @@ static void P_SetupSlopes();
 void P_InvertPlane(plane_t *plane);
 
 extern unsigned int R_OldBlend;
+extern dyncolormap_t NormalLight;
 
 //
 // MAP related Lookup tables.
@@ -366,8 +367,7 @@ void P_LoadSectors (int lump)
 			ss->colormap = GetSpecialLights(255, 255, 255,
 									level.outsidefog.r, level.outsidefog.g, level.outsidefog.b);
 		else
-			ss->colormap = GetSpecialLights(255, 255, 255,
-									level.fadeto.r, level.fadeto.g, level.fadeto.b);
+			ss->colormap = &NormalLight;
 
 		ss->sky = 0;
 
@@ -1576,7 +1576,6 @@ void P_AllocStarts(void)
 //
 // P_SetupLevel
 //
-extern dyncolormap_t NormalLight;
 extern polyblock_t **PolyBlockMap;
 
 // [RH] position indicates the start spot to spawn at
