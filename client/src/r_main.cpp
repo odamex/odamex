@@ -823,8 +823,8 @@ void R_SetupFrame (player_t *player)
 		newblend = viewz < P_FloorHeight(viewx, viewy, s) ? s->bottommap : 
 					viewz > P_CeilingHeight(viewx, viewy, s) ? s->topmap : s->midmap;
 
-		if (!I_GetVideoBitDepth() == 8)
-			newblend = R_BlendForColormap(newblend);
+		if (I_GetPrimarySurface()->getBitsPerPixel() != 8)
+			newblend = R_BlendForColormap (newblend);
 		else if (newblend.a == 0 && newblend >= numfakecmaps)
 			newblend = 0;
 	}

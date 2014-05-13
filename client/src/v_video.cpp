@@ -425,10 +425,11 @@ static void BuildTransTable(const argb_t* palette_colors)
 
 CVAR_FUNC_IMPL (vid_widescreen)
 {
-	static bool last_value = !var;	// force setmodeneeded when loading cvar
-	if (last_value != var)
+	bool enabled = (var != 0.0f);
+	static bool last_value = !enabled;	// force setmodeneeded when loading cvar
+	if (last_value != enabled)
 		setmodeneeded = true;
-	last_value = var;
+	last_value = enabled;
 }
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
@@ -518,7 +519,10 @@ bool V_UseWidescreen()
 //
 bool V_SetResolution(int width, int height, int bpp)
 {
-	I_SetVideoMode(width, height, bpp, vid_fullscreen, vid_vsync);
+	bool fullscreen = (vid_fullscreen != 0.0f);
+	bool vsync = (vid_vsync != 0.0f);
+
+	I_SetVideoMode(width, height, bpp, fullscreen, vsync);
 	if (!I_VideoInitialized())
 		return false;
 
