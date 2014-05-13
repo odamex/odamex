@@ -581,9 +581,6 @@ CVAR_RANGE_FUNC_DECL(vid_gammatype, "0", "Select between Doom and ZDoom gamma co
 CVAR_RANGE_FUNC_DECL(hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
 
-CVAR_RANGE_FUNC_DECL(r_detail, "0", "Detail level (affects performance)",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
-
 CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
 				CVARTYPE_BOOL, CVAR_NULL)
 
@@ -654,7 +651,7 @@ CVAR(			vid_defbits, "8", "",
 CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen video modes",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			vid_autoadjust, "1", "Force video mode",
+CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest availible video mode.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			vid_displayfps, "0", "Display frames per second",
@@ -680,6 +677,12 @@ CVAR_FUNC_DECL(	vid_fullscreen, "0", "Full screen video mode",
 CVAR_FUNC_DECL(	vid_32bpp, "0", "Enable 32-bit color rendering",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR_FUNC_DECL(	vid_320x200, "0", "Enable 320x200 video emulation",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_FUNC_DECL(	vid_640x400, "0", "Enable 640x400 video emulation",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 // Optimize rendering functions based on CPU vectorization support
 // Can be of "detect" or "none" or "mmx","sse2","altivec" depending on availability; case-insensitive.
 CVAR_FUNC_DECL(	r_optimize, "detect", "Rendering optimizations",
@@ -688,10 +691,7 @@ CVAR_FUNC_DECL(	r_optimize, "detect", "Rendering optimizations",
 CVAR_RANGE_FUNC_DECL(screenblocks, "10", "Selects the size of the visible window",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 3.0f, 12.0f)
 
-CVAR_RANGE_FUNC_DECL(vid_winscale, "1.0", "Resizes the window by a scale factor",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
-
-CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan",
+CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan matting (as a percentage of the screen area)",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.5f, 1.0f)
 
 

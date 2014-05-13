@@ -20,20 +20,21 @@
 //
 //-----------------------------------------------------------------------------
 
-#include	"doomstat.h"
-#include	"c_console.h"
-#include	"c_dispatch.h"
-#include	"cl_main.h"
-#include	"w_wad.h"
-#include	"z_zone.h"
-#include	"v_video.h"
-#include	"p_local.h"
-#include	"p_inter.h"
-#include	"p_ctf.h"
-#include	"p_mobj.h"
-#include    "st_stuff.h"
-#include	"s_sound.h"
-#include	"v_text.h"
+#include "doomstat.h"
+#include "c_console.h"
+#include "c_dispatch.h"
+#include "cl_main.h"
+#include "w_wad.h"
+#include "z_zone.h"
+#include "i_video.h"
+#include "v_video.h"
+#include "p_local.h"
+#include "p_inter.h"
+#include "p_ctf.h"
+#include "p_mobj.h"
+#include "st_stuff.h"
+#include "s_sound.h"
+#include "v_text.h"
 
 flagdata CTFdata[NUMFLAGS];
 int TEAMpoints[NUMFLAGS];
@@ -53,7 +54,6 @@ static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 };
 
 EXTERN_CVAR (screenblocks)
-EXTERN_CVAR (st_scale)
 EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_heldflag)
 
@@ -272,62 +272,46 @@ void CTF_MoveFlags ()
 	}
 }
 
-void TintScreen(int color)
+static void TintScreen(argb_t color)
 {
 	// draw border around the screen excluding the status bar
 	// NOTE: status bar is not currently drawn when spectating
-	if (screenblocks < 11 && !consoleplayer().spectator)
+	if (R_StatusBarVisible())
 	{
-			screen->Clear (0,
-						   0,
-						   screen->width / 100,
-						   screen->height - ST_HEIGHT,
+			screen->Clear (0, 0,
+						   I_GetSurfaceWidth() / 100, I_GetSurfaceHeight() - ST_HEIGHT,
 						   color);
 
-			screen->Clear (0,
-						   0,
-						   screen->width,
-						   screen->height / 100,
+			screen->Clear (0, 0,
+						   I_GetSurfaceWidth(), I_GetSurfaceHeight() / 100,
 						   color);
 
-			screen->Clear (screen->width - (screen->width / 100),
-						   0,
-						   screen->width,
-						   screen->height - ST_HEIGHT,
+			screen->Clear (I_GetSurfaceWidth() - (I_GetSurfaceWidth() / 100), 0,
+						   I_GetSurfaceWidth(), I_GetSurfaceHeight() - ST_HEIGHT,
 						   color);
 
-			screen->Clear (0,
-						   (screen->height - ST_HEIGHT) - (screen->height / 100),
-						   screen->width,
-						   screen->height - ST_HEIGHT,
+			screen->Clear (0, (I_GetSurfaceHeight() - ST_HEIGHT) - (I_GetSurfaceHeight() / 100),
+						   I_GetSurfaceWidth(), I_GetSurfaceHeight() - ST_HEIGHT,
 						   color);
 	}
 
 	// if there's no status bar, draw border around the full screen
 	else
 	{
-			screen->Clear (0,
-						   0,
-						   screen->width / 100,
-						   screen->height,
+			screen->Clear (0, 0,
+						   I_GetSurfaceWidth() / 100, I_GetSurfaceHeight(),
 						   color);
 
-			screen->Clear (0,
-						   0,
-						   screen->width,
-						   screen->height / 100,
+			screen->Clear (0, 0,
+						   I_GetSurfaceWidth(), I_GetSurfaceHeight() / 100,
 						   color);
 
-			screen->Clear (screen->width - (screen->width / 100),
-						   0,
-						   screen->width,
-						   screen->height,
+			screen->Clear (I_GetSurfaceWidth() - (I_GetSurfaceWidth() / 100), 0,
+						   I_GetSurfaceWidth(), I_GetSurfaceHeight(),
 						   color);
 
-			screen->Clear (0,
-						   (screen->height) - (screen->height / 100),
-						   screen->width,
-						   screen->height,
+			screen->Clear (0, (I_GetSurfaceHeight()) - (I_GetSurfaceHeight() / 100),
+						   I_GetSurfaceWidth(), I_GetSurfaceHeight(),
 						   color);
 	}
 }
@@ -392,9 +376,8 @@ void CTF_DrawHud (void)
 	if (!hud_heldflag)
 		return;
 
-	if (hasflag) {
-		palette_t *pal = GetDefaultPalette();
-
+	if (hasflag)
+	{
 		if (tintglow < 15)
 			tintglowtype = tintglow;
 		else if (tintglow < 30)
@@ -406,26 +389,21 @@ void CTF_DrawHud (void)
 		else
 			tintglowtype = 0;
 
-		DWORD tintColor = 0;
+		argb_t tintColor = 0;
 		if (hasflags[0] && hasflags[1])
 		{
 			if (tintglow < 15 || tintglow > 60)
-				tintColor = MAKERGB((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
+				tintColor = argb_t((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
 			else
-				tintColor = MAKERGB(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
+				tintColor = argb_t(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
 		}
 		else if (hasflags[0])
-			tintColor = MAKERGB((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
+			tintColor = argb_t((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
 		else if (hasflags[1])
-			tintColor = MAKERGB(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
+			tintColor = argb_t(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
 
 		if (tintColor != 0)
-		{
-			if (screen->is8bit())
-				TintScreen(BestColor2(pal->basecolors, tintColor, pal->numcolors));
-			else
-				TintScreen(tintColor);
-		}
+			TintScreen(tintColor);
 	}
 }
 

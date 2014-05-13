@@ -46,6 +46,7 @@
 #include "r_sky.h"
 
 #include "m_alloc.h"
+#include "i_video.h"
 #include "v_video.h"
 
 #include "m_vectors.h"
@@ -276,8 +277,8 @@ static visplane_t *new_visplane(unsigned hash)
 
 	if (!check)
 	{
-		check = (visplane_t *)Calloc (1, sizeof(*check) + sizeof(*check->top)*(screen->width*2));
-		check->bottom = &check->top[screen->width+2];
+		check = (visplane_t *)Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetSurfaceWidth());
+		check->bottom = &check->top[I_GetSurfaceWidth() + 2];
 	}
 	else
 		if (!(freetail = freetail->next))
@@ -523,7 +524,7 @@ void R_DrawSlopedPlane(visplane_t *pl)
 
 	angle_t fovang = ANG(consoleplayer().fov / 2.0f);
 	float slopetan = FIXED2FLOAT(finetangent[fovang >> ANGLETOFINESHIFT]);
-	float slopevis = 8.0 * slopetan * 16.0 * 320.0 / float(screen->width);
+	float slopevis = 8.0 * slopetan * 16.0 * 320.0 / float(I_GetSurfaceWidth());
 	
 	plight = (slopevis * ixscale * iyscale) / (zat - viewpos.z);
 	shade = 256.0 * 2.0 - (pl->lightlevel + 16.0) * 256.0 / 128.0;
@@ -677,10 +678,10 @@ void R_DrawPlanes (void)
 //
 // R_PlaneInitData
 //
-BOOL R_PlaneInitData (void)
+bool R_PlaneInitData(IWindowSurface* surface)
 {
-	int i;
-	visplane_t *pl;
+	int surface_width = surface->getWidth();
+	int surface_height = surface->getHeight();
 
 	delete[] floorclip;
 	delete[] ceilingclip;
@@ -689,24 +690,22 @@ BOOL R_PlaneInitData (void)
 	delete[] spanstart;
 	delete[] yslope;
 
-	floorclip = new int[screen->width];
-	ceilingclip = new int[screen->width];
+	floorclip = new int[surface_width];
+	ceilingclip = new int[surface_width];
+	floorclipinitial = new int[surface_width];
+	ceilingclipinitial = new int[surface_width];
 
-	floorclipinitial = new int[screen->width];
-	ceilingclipinitial = new int[screen->width];
-
-	for (int i = 0; i < screen->width; i++)
+	for (int i = 0; i < surface_width; i++)
 	{
 		ceilingclipinitial[i] = -1;
 		floorclipinitial[i] = viewheight;
 	}
 
-	spanstart = new int[screen->height];
-
-	yslope = new fixed_t[screen->height];
+	spanstart = new int[surface_height];
+	yslope = new fixed_t[surface_height];
 
 	// Free all visplanes and let them be re-allocated as needed.
-	pl = freetail;
+	visplane_t* pl = freetail;
 
 	while (pl)
 	{
@@ -717,7 +716,7 @@ BOOL R_PlaneInitData (void)
 	freetail = NULL;
 	freehead = &freetail;
 
-	for (i = 0; i < MAXVISPLANES; i++)
+	for (int i = 0; i < MAXVISPLANES; i++)
 	{
 		pl = visplanes[i];
 		visplanes[i] = NULL;

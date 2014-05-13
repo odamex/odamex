@@ -119,10 +119,10 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec->gravity
 				<< sec->damage
 				<< sec->mod
-				<< sec->floorcolormap->color
-				<< sec->floorcolormap->fade
-				<< sec->ceilingcolormap->color
-				<< sec->ceilingcolormap->fade
+				<< sec->colormap->color
+				<< sec->colormap->fade
+				<< sec->colormap->color		// [SL] TODO: remove in the future
+				<< sec->colormap->fade		// (removal breaks netdemo/saved game compat)
 				<< sec->alwaysfake
 				<< sec->waterzone
 				<< sec->SecActTarget
@@ -158,8 +158,6 @@ void P_SerializeWorld (FArchive &arc)
 		// do sectors
 		for (i = 0, sec = sectors; i < numsectors; i++, sec++)
 		{
-
-			unsigned int color=0, fade=0;
 			AActor* SecActTarget;
 
 			arc >> sec->floorheight
@@ -199,16 +197,18 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec->bottommap >> sec->midmap >> sec->topmap
 				>> sec->gravity
 				>> sec->damage
-				>> sec->mod
-                >> color
-				>> fade;
-			sec->floorcolormap = GetSpecialLights (
-				RPART(color), GPART(color), BPART(color),
-				RPART(fade), GPART(fade), BPART(fade));
-			arc >> color >> fade;
-			sec->ceilingcolormap = GetSpecialLights (
-				RPART(color), GPART(color), BPART(color),
-				RPART(fade), GPART(fade), BPART(fade));
+				>> sec->mod;
+
+			unsigned int colortemp, fadetemp;
+			argb_t color, fade;
+
+			arc >> colortemp >> fadetemp;
+			color = colortemp, fade = fadetemp;
+			sec->colormap = GetSpecialLights(color.r, color.g, color.b, fade.r, fade.g, fade.b);
+
+			// [SL] TODO: remove later
+			arc >> colortemp >> fadetemp;
+
 			arc >> sec->alwaysfake
 				>> sec->waterzone
 				>> SecActTarget

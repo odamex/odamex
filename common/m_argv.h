@@ -74,6 +74,7 @@ private:
 extern DArgs Args;
 
 void M_FindResponseFile(void);
+int M_GetParmValue(const char* name);
 
 extern bool DefaultsLoaded; 
 

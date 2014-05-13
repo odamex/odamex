@@ -36,37 +36,39 @@
 
 dyncolormap_t NormalLight;
 
-palette_t DefPal;
-
 /****************************/
 /* Palette management stuff */
 /****************************/
-palette_t *GetDefaultPalette (void)
+
+palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
 {
+	return 0;
+}
+
+palindex_t V_BestColor(const argb_t *palette_colors, argb_t color)
+{
+	return 0;
+}
+
+
+palette_t* V_GetDefaultPalette()
+{
+	static palette_t default_palette;
 	static bool initialized = false;
+
 	if (!initialized)
 	{
-		const int numcolors = 256;
-		palette_t* palette = &DefPal;
+		// construct a valid palette_t so we don't get crashes
+		memset(default_palette.basecolors, 0, 256 * sizeof(*default_palette.basecolors));
+		memset(default_palette.colors, 0, 256 * sizeof(*default_palette.colors));
 
-		strncpy(palette->name.name, "PLAYPAL", 8);
-		palette->flags = 0;
-		palette->usecount = 1;
-		palette->maps.colormap = NULL;
-		palette->maps.shademap = NULL;
-
-		palette->basecolors = (argb_t *)Malloc(numcolors * 2 * sizeof(argb_t));
-		palette->colors = palette->basecolors + numcolors;
-		palette->numcolors = numcolors;
-		palette->shadeshift = 8;
-
-		memset(palette->basecolors, 0, numcolors * sizeof(*palette->basecolors));
-		memset(palette->colors, 0, numcolors * sizeof(*palette->colors));
+		default_palette.maps.colormap = NULL;
+		default_palette.maps.shademap = NULL;
 
 		initialized = true;
 	}
 
-	return &DefPal;
+	return &default_palette;
 }
 
 
@@ -123,8 +125,7 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_co
 		// Detect if the colormap is dynamic:
 		m_dyncolormap = NULL;
 
-		extern palette_t DefPal;
-		if (m_colors != &(DefPal.maps))
+		if (m_colors != &(V_GetDefaultPalette()->maps))
 		{
 			// Find the dynamic colormap by the `m_colors` pointer:
 			extern dyncolormap_t NormalLight;
@@ -231,8 +232,8 @@ void BuildDefaultShademap (palette_t *pal, shademap_t &maps)
 
 dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 {
-	unsigned int color = MAKERGB (lr, lg, lb);
-	unsigned int fade = MAKERGB (fr, fg, fb);
+	argb_t color(lr, lg, lb);
+	argb_t fade(fr, fg, fb);
 	dyncolormap_t *colormap = &NormalLight;
 
 	// Bah! Simple linear search because I want to get this done.
@@ -262,6 +263,7 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 
 	return colormap;
 }
+
 
 VERSION_CONTROL (v_palette_cpp, "$Id$")
 

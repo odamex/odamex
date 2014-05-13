@@ -35,11 +35,8 @@
 //
 // [RH] Status bar is another screen allocated
 // by status bar code instead of video code.
-extern DCanvas *stbarscreen;
-extern DCanvas *stnumscreen;
-#define BG (stbarscreen)
-#define FG (screen)
-
+extern IWindowSurface* stbar_surface;
+extern IWindowSurface* stnum_surface;
 
 
 //
@@ -55,8 +52,7 @@ struct st_number_s
 	int 		x;
 	int 		y;
 
-	// max # of digits in number
-	int width;
+	int			maxdigits;
 
 	// last number value
 	int 		oldnum;
@@ -168,7 +164,7 @@ STlib_initNum
   patch_t** 			pl,
   int*					num,
   bool*				on,
-  int					width );
+  int					maxdigits );
 
 void
 STlib_updateNum
@@ -225,8 +221,8 @@ STlib_updateBinIcon
 ( st_binicon_t* 		bi,
   bool				refresh );
   
-void STlib_drawNum (st_number_t *n, bool refresh);
-void ST_DrawNum (int x, int y, DCanvas *scrn, int num);
+void STlib_drawNum(st_number_t *n, bool refresh);
+void ST_DrawNum(int x, int y, DCanvas *scrn, int num);
 
 #endif
 

@@ -52,7 +52,10 @@
 #include "r_draw.h"
 #include "r_main.h"
 #include "r_things.h"
-#include "v_video.h"
+#include "i_video.h"
+
+extern byte** ylookup;
+extern int* columnofs;
 
 // With MMX we can process 4 16-bit words at a time.
 
@@ -173,14 +176,13 @@ void rtv_lucent4cols_MMX(byte *source, palindex_t *dest, int bga, int fga)
 	}
 }
 
-void r_dimpatchD_MMX(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h)
+void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	int x, y, i;
-	argb_t *line;
+	int surface_pitch_pixels = surface->getPitchInPixels();
+
 	int invAlpha = 256 - alpha;
 
-	int dpitch = cvs->pitch / sizeof(DWORD);
-	line = (argb_t *)cvs->buffer + y1 * dpitch;
+	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
 
 	int batches = w / 2;
 	int remainder = w & 1;
@@ -189,40 +191,41 @@ void r_dimpatchD_MMX(const DCanvas *const cvs, argb_t color, int alpha, int x1, 
 	const __m64 upper8mask = _mm_set_pi16(0, 0xff, 0xff, 0xff);
 	const __m64 blendAlpha = _mm_set_pi16(0, alpha, alpha, alpha);
 	const __m64 blendInvAlpha = _mm_set_pi16(0, invAlpha, invAlpha, invAlpha);
-	const __m64 blendColor = _mm_set_pi16(0, RPART(color), GPART(color), BPART(color));
+	const __m64 blendColor = _mm_set_pi16(0, color.r, color.g, color.b);
 	const __m64 blendMult = _mm_mullo_pi16(blendColor, blendAlpha);
 
-	for (y = y1; y < y1 + h; y++)
+	for (int y = y1; y < y1 + h; y++)
 	{
+		int x = x1;
+
 		// MMX optimize the bulk in batches of 2 colors:
-		for (i = 0, x = x1; i < batches; ++i, x += 2)
+		for (int i = 0; i < batches; ++i, x += 2)
 		{
-#if 1
+			#if 1
 			const __m64 input = _mm_setr_pi32(line[x + 0], line[x + 1]);
-#else
+			#else
 			// NOTE(jsd): No guarantee of 64-bit alignment; cannot use.
 			const __m64 input = *((__m64 *)line[x]);
-#endif
+			#endif
+
 			const __m64 output = blend2vs1_mmx(input, blendMult, blendInvAlpha, upper8mask);
-#if 1
+			#if 1
 			line[x+0] = _mm_cvtsi64_si32(_mm_srli_si64(output, 32*0));
 			line[x+1] = _mm_cvtsi64_si32(_mm_srli_si64(output, 32*1));
-#else
+			#else
 			// NOTE(jsd): No guarantee of 64-bit alignment; cannot use.
 			*((__m64 *)line[x]) = output;
-#endif
+			#endif
 		}
 
 		if (remainder)
 		{
 			// Pick up the remainder:
 			for (; x < x1 + w; x++)
-			{
 				line[x] = alphablend1a(line[x], color, alpha);
-			}
 		}
 
-		line += dpitch;
+		line += surface_pitch_pixels;
 	}
 
 	// Required to reset FP:

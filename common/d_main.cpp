@@ -692,7 +692,7 @@ static void D_ConfigureGameInfo(const std::string& iwad_filename)
 //
 // Returns the proper name of the game currently loaded into gameinfo & gamemission
 //
-static std::string D_GetTitleString()
+std::string D_GetTitleString()
 {
 	if (gamemission == pack_tnt)
 		return "DOOM 2: TNT - Evilution";

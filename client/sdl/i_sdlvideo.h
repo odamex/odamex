@@ -26,91 +26,152 @@
 
 #include <SDL.h>
 #include <list>
-#include "hardware.h"
 #include "i_video.h"
 #include "c_console.h"
 
-class SDLVideo : public IVideo
+// ============================================================================
+//
+// ISDL12WindowSurface class interface
+//
+// Wraps the raw device surface and provides methods to access the raw surface
+// buffer.
+//
+// ============================================================================
+
+class ISDL12WindowSurface : public IWindowSurface
 {
-   public:
-	SDLVideo(int parm);
-	virtual ~SDLVideo (void) {};
+public:
+	ISDL12WindowSurface(IWindow* window, int width, int height, int bpp);
 
-	virtual std::string GetVideoDriverName();
+	ISDL12WindowSurface(IWindow* window, SDL_Surface* sdlsurface);
 
-	virtual bool CanBlit (void) {return false;}
-	virtual EDisplayType GetDisplayType (void) {return DISPLAY_Both;}
+	virtual ~ISDL12WindowSurface();
 
-	virtual bool FullscreenChanged (bool fs);
-	virtual void SetWindowedScale (float scale);
-	virtual bool SetOverscan (float scale);
+	virtual byte* getBuffer()
+	{
+		if (mLocks == 0)
+			return NULL;
+		return mSurfaceBuffer;
+	}
 
-	virtual int GetWidth() const { return screenw; }
-	virtual int GetHeight() const { return screenh; }
-	virtual int GetBitDepth() const { return screenbits; }
+	virtual const byte* getBuffer() const
+	{
+		if (mLocks == 0)
+			return NULL;
+		return mSurfaceBuffer;
+	}
 
-	virtual bool SetMode (int width, int height, int bits, bool fs);
-	virtual void SetPalette (DWORD *palette);
+	virtual void lock();
+	virtual void unlock();
 
-	/* 12/3/06: HACK - Add SetOldPalette to accomodate classic redscreen - ML*/
-	virtual void SetOldPalette (byte *doompalette);
+	virtual int getWidth() const
+	{	return mWidth;	}
 
-	virtual void UpdateScreen (DCanvas *canvas);
-	virtual void ReadScreen (byte *block);
+	virtual int getHeight() const
+	{	return mHeight;	}
 
-	virtual int GetModeCount (void);
-	virtual void StartModeIterator ();
-	virtual bool NextMode (int *width, int *height);
+	virtual int getPitch() const
+	{	return mPitch;	}
 
-	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false);
-	virtual void ReleaseSurface (DCanvas *scrn);
-	virtual void LockSurface (DCanvas *scrn);
-	virtual void UnlockSurface (DCanvas *scrn);
-	virtual bool Blit (DCanvas *src, int sx, int sy, int sw, int sh,
-					   DCanvas *dst, int dx, int dy, int dw, int dh);
+	virtual int getPitchInPixels() const
+	{	return mPitchInPixels;	}
 
-   protected:
+	virtual int getBitsPerPixel() const
+	{	return mBitsPerPixel;	}
 
-   struct vidMode_t
-   {
-		int width, height;
+	virtual int getBytesPerPixel() const
+	{	return mBytesPerPixel;	}
 
-      bool operator<(const vidMode_t& right) const
-      {
-            if (width < right.width)
-               return true;
-            else if (width == right.width && height < right.height)
-               return true;
-         return false;
-      }
+	virtual void setPalette(const argb_t* palette);
+	virtual const argb_t* getPalette() const;
 
-      bool operator>(const vidMode_t& right) const
-      {
-            if (width > right.width)
-               return true;
-			else if (width == right.width && height > right.height)
-               return true;
-         return false;
-      }
+private:
+	// disable copy constructor and assignment operator
+	ISDL12WindowSurface(const ISDL12WindowSurface&);
+	ISDL12WindowSurface& operator=(const ISDL12WindowSurface&);
 
-      bool operator==(const vidMode_t& right) const
-      {
-         return (width == right.width &&
-					height == right.height);
-      }
-   };
+	void initializeFromSDLSurface(SDL_Surface* sdlsurface);
 
-   std::vector<vidMode_t> vidModeList;
-   size_t vidModeIterator;
+	SDL_Surface*		mSDLSurface;
+	byte*				mSurfaceBuffer;
 
-   SDL_Surface *sdlScreen;
-   bool infullscreen;
-   int screenw, screenh;
-   int screenbits;
+	argb_t				mPalette[256];
 
-   SDL_Color newPalette[256];
-   SDL_Color palette[256];
-   bool palettechanged;
+	int					mWidth;
+	int					mHeight;
+	int					mPitch;
+	int					mPitchInPixels;
+	int					mBitsPerPixel;
+	int					mBytesPerPixel;		// optimization: pre-calculate
+
+	int					mLocks;
+	bool				mFreeSDLSurface;
 };
+
+
+
+// ============================================================================
+//
+// ISDL12Window class interface
+//
+// ============================================================================
+
+class ISDL12Window : public IWindow
+{
+public:
+	ISDL12Window(int width, int height, int bpp, bool fullscreen, bool vsync);
+
+	virtual ~ISDL12Window();
+
+	virtual const IVideoModeList* getSupportedVideoModes() const
+	{	return &mVideoModes;	}
+
+	virtual const EDisplayType getDisplayType() const
+	{	return DISPLAY_Both;	}
+
+	virtual IWindowSurface* getPrimarySurface()
+	{	return mPrimarySurface;	}
+
+	virtual const IWindowSurface* getPrimarySurface() const
+	{	return mPrimarySurface;	}
+
+	virtual int getWidth() const
+	{	return mWidth;	}
+
+	virtual int getHeight() const
+	{	return mHeight;	}
+
+	virtual int getBitsPerPixel() const
+	{	return mBitsPerPixel;	}
+
+	virtual bool setMode(int width, int height, int bpp, bool fullscreen, bool vsync);
+
+	virtual bool isFullScreen() const
+	{	return mIsFullScreen;	}
+
+	virtual void refresh();
+
+	virtual void setWindowTitle(const std::string& str = "");
+
+	virtual std::string getVideoDriverName() const;
+
+private:
+	// disable copy constructor and assignment operator
+	ISDL12Window(const ISDL12Window&);
+	ISDL12Window& operator=(const ISDL12Window&);
+
+	void buildVideoModeList();
+
+	IVideoModeList		mVideoModes;
+	IWindowSurface*		mPrimarySurface;
+
+	int					mWidth;
+	int					mHeight;
+	int					mBitsPerPixel;
+
+	bool				mIsFullScreen;
+	bool				mUseVSync;
+};
+
 #endif
 

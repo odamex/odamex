@@ -156,28 +156,28 @@ EXTERN_CVAR(cl_interp)
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
-static int enemycolor = 0, teamcolor = 0;
+static argb_t enemycolor = 0, teamcolor = 0;
 
 int CL_GetPlayerColor(player_t *player)
 {
 	if (!player)
 		return 0;
 
-	int color = player->userinfo.color;
+	argb_t color = player->userinfo.color;
 
 	// Adjust the shade of color for team games
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		int red = RPART(player->userinfo.color);
-		int green = GPART(player->userinfo.color);
-		int blue = BPART(player->userinfo.color);
+		int red = player->userinfo.color.r;
+		int green = player->userinfo.color.g;
+		int blue = player->userinfo.color.b;
 
 		int intensity = MAX(MAX(red, green), blue) / 3;
 
 		if (player->userinfo.team == TEAM_BLUE)
-			color = MAKERGB(0, 0,  0xAA + intensity);
+			color = argb_t(0, 0,  0xAA + intensity);
 		else if (player->userinfo.team == TEAM_RED)
-			color = MAKERGB(0xAA + intensity, 0, 0);
+			color = argb_t(0xAA + intensity, 0, 0);
 	}
 
 	// apply r_teamcolor & r_enemycolor overrides
@@ -315,8 +315,6 @@ gender_t D_GenderByName (const char *gender);
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 void AM_Stop();
 
-void ST_AdjustStatusBarScale(bool scale);
-
 //
 // CL_CalculateWorldIndexSync
 //
@@ -417,32 +415,7 @@ void CL_QuitNetGame(void)
 		netdemo.stopPlaying();
 
 	// Reset the palette to default
-	if (I_HardwareInitialized())
-	{
-		int lu_palette = W_GetNumForName("PLAYPAL");
-		if (lu_palette != -1)
-		{
-			byte *pal = (byte *)W_CacheLumpNum(lu_palette, PU_CACHE);
-			if (pal)
-			{
-				I_SetOldPalette(pal);
-			}
-		}
-	}
-
-	// Reset the palette to default
-	if (I_HardwareInitialized())
-	{
-		int lu_palette = W_GetNumForName("PLAYPAL");
-		if (lu_palette != -1)
-		{
-			byte *pal = (byte *)W_CacheLumpNum(lu_palette, PU_CACHE);
-			if (pal)
-			{
-				I_SetOldPalette(pal);
-			}
-		}
-	}
+	V_ResetPalette();
 
 	cvar_t::C_RestoreCVars();
 }
@@ -522,7 +495,7 @@ void CL_CheckDisplayPlayer()
 		MSG_WriteByte(&net_buffer, newid);
 		displayplayer_id = newid;
 
-		ST_AdjustStatusBarScale(st_scale != 0);
+		ST_ForceRefresh();
 	}
 
 	previd = newid;
@@ -537,8 +510,6 @@ void CL_CheckDisplayPlayer()
 template<class Iterator>
 void CL_SpyCycle(Iterator begin, Iterator end)
 {
-	extern bool st_firsttime;
-
 	// Make sure we have players to iterate over
 	if (players.empty())
 		return;
@@ -582,7 +553,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 			if (demoplayback)
 			{
 				consoleplayer_id = player.id;
-				st_firsttime = true;
+				ST_ForceRefresh();
 			}
 
 			return;
@@ -1402,8 +1373,7 @@ void CL_SetupUserInfo(void)
 	int color = CL_GetPlayerColor(p);
 	R_BuildPlayerTranslation (p->id, color);
 
-	extern bool st_firsttime;
-	st_firsttime = true;
+	ST_ForceRefresh();
 }
 
 
@@ -3061,7 +3031,7 @@ void CL_GetServerSettings(void)
 	R_InitSkyMap ();
 
 	// [AM] - Adhere to sv_allowwidescreen setting.
-	ST_AdjustStatusBarScale(st_scale != 0);
+	ST_ForceRefresh();
 	setsizeneeded = true;
 }
 
@@ -3438,13 +3408,18 @@ void CL_Spectate()
 		player.playerstate = PST_REBORN;
 	}
 
-	if (&player == &consoleplayer()) {
-		st_scale.Callback (); // refresh status bar size
-		if (player.spectator) {
+	if (&player == &consoleplayer())
+	{
+		ST_ForceRefresh();
+
+		if (player.spectator)
+		{
 			player.playerstate = PST_LIVE; // resurrect dead spectators
 			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
 			player.deltaviewheight = 1000 << FRACBITS;
-		} else {
+		}
+		else
+		{
 			displayplayer_id = consoleplayer_id; // get out of spynext
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}

@@ -776,10 +776,8 @@ void G_DoReborn (player_t &player)
 }
 
 
-void G_ScreenShot (char *filename)
+void G_ScreenShot(const char *filename)
 {
-//	shotfile = filename;
-//	gameaction = ga_screenshot;
 }
 
 
@@ -788,8 +786,7 @@ void G_ScreenShot (char *filename)
 // G_InitFromSavegame
 // Can be called by the startup code or the menu task.
 //
-extern BOOL setsizeneeded;
-void R_ExecuteSetViewSize (void);
+void R_ExecuteSetViewSize(void);
 
 char savename[256];
 

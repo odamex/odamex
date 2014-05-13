@@ -112,7 +112,7 @@ static void maybedrawnow (void)
 {
 }
 
-void C_InitConsole (int width, int height, BOOL ingame)
+void C_InitConsole(int width, int height)
 {
 	int row;
 	char *zap;

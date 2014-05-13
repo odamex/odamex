@@ -70,7 +70,6 @@
 
 #include <sys/stat.h>
 
-#include "hardware.h"
 #include "errors.h"
 #include <math.h>
 
@@ -82,6 +81,7 @@
 #include "m_argv.h"
 #include "m_misc.h"
 #include "i_video.h"
+#include "v_video.h"
 #include "i_sound.h"
 
 #include "d_main.h"
@@ -202,31 +202,10 @@ void *I_ZoneBase (size_t *size)
 	return zone;
 }
 
-void I_BeginRead(void)
+void I_BeginRead()
 {
-	// NOTE(jsd): This is called before V_Palette is set causing crash in 32bpp mode.
-	// [SL] Check that V_Palette has been properly initalized to work around this
-
-	if (r_loadicon && V_Palette.isValid())
-	{
-		patch_t *diskpatch = W_CachePatch("STDISK");
-
-		if (!screen || !diskpatch || in_endoom)
-			return;
-
-		screen->Lock();
-
-		int scale = MIN(CleanXfac, CleanYfac);
-		int w = diskpatch->width() * scale;
-		int h = diskpatch->height() * scale;
-		// offset x and y for the lower right corner of the screen
-		int ofsx = screen->width - w + (scale * diskpatch->leftoffset());
-		int ofsy = screen->height - h + (scale * diskpatch->topoffset());
-
-		screen->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
-
-		screen->Unlock();
-	}
+	if (r_loadicon)
+		I_DrawLoadingIcon();
 }
 
 void I_EndRead(void)
@@ -656,7 +635,7 @@ void I_Endoom(void)
 
 	TXT_Init();
 
-    I_SetWindowCaption();
+	I_SetWindowCaption(D_GetTitleString());
     I_SetWindowIcon();
 
 	// Write the data to the screen memory

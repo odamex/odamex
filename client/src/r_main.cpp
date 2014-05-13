@@ -64,6 +64,8 @@ extern bool r_fakingunderwater;
 EXTERN_CVAR (r_flashhom)
 EXTERN_CVAR (r_viewsize)
 EXTERN_CVAR (sv_allowwidescreen)
+EXTERN_CVAR (vid_320x200)
+EXTERN_CVAR (vid_640x400)
 
 static float	LastFOV = 0.0f;
 fixed_t			FocalLengthX;
@@ -84,7 +86,7 @@ int				fixedlightlev;
 shaderef_t		fixedcolormap;
 
 int 			centerx;
-extern "C" {int	centery; }
+int				centery;
 
 fixed_t 		centerxfrac;
 fixed_t 		centeryfrac;
@@ -110,11 +112,6 @@ AActor			*camera;	// [RH] camera to draw from. doesn't have to be a player
 // precalculated math tables
 //
 
-// The xtoviewangleangle[] table maps a screen pixel
-// to the lowest viewangle that maps back to x ranges
-// from clipangle to -clipangle.
-angle_t 		*xtoviewangle;
-
 const fixed_t	*finecosine = &finesine[FINEANGLES/4];
 
 int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
@@ -131,8 +128,8 @@ int 			extralight;
 // [RH] ignore extralight and fullbright
 BOOL			foggy;
 
-BOOL			setsizeneeded;
-int				setblocks, setdetail = -1;
+bool			setsizeneeded;
+int				setblocks;
 
 fixed_t			freelookviewheight;
 
@@ -151,6 +148,26 @@ int FieldOfView = 2048;
 int CorrectFieldOfView = 2048;
 
 fixed_t			render_lerp_amount;
+
+
+byte**			ylookup;
+int* 			columnofs;
+
+
+
+//
+// R_GetRenderingSurface
+//
+// Returns a pointer to the surface that the rendered scene is drawn on.
+//
+IWindowSurface* R_GetRenderingSurface()
+{
+	if ((vid_320x200 || vid_640x400) && I_GetEmulatedSurface() != NULL)
+		return I_GetEmulatedSurface();
+	else
+		return I_GetPrimarySurface();
+}
+
 
 //
 //
@@ -188,7 +205,7 @@ int R_PointOnSide(fixed_t x, fixed_t y, const node_t *node)
 // killough 5/2/98: reformatted
 // [SL] 2013-02-06 - Changed to use cross product a la ZDoom
 //
-int R_PointOnSegSide (fixed_t x, fixed_t y, const seg_t *line)
+int R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 {
 	return R_PointOnSide(x, y, line->v1->x, line->v1->y, line->v2->x, line->v2->y);
 }
@@ -560,42 +577,6 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 }
 
 
-//
-//
-// R_InitTextureMapping
-//
-//
-
-void R_InitTextureMapping (void)
-{
-	const fixed_t hitan = finetangent[FINEANGLES/4+CorrectFieldOfView/2];
-	fovtan = hitan; 
-
-	// Calc focallength so FieldOfView angles covers viewwidth.
-	FocalLengthX = FixedDiv(centerxfrac, hitan);
-	FocalLengthY = FixedDiv(FixedMul(centerxfrac, yaspectmul), hitan);
-	xfoc = FIXED2FLOAT(FocalLengthX);
-	yfoc = FIXED2FLOAT(FocalLengthY);
-
-	focratio = yfoc / xfoc;
-	ifocratio = xfoc / yfoc;
-
-	// Now generate xtoviewangle for sky texture mapping.
-	// [RH] Do not generate viewangletox, because texture mapping is no
-	// longer done with trig, so it's not needed.
-	const int t = MIN<int>((FocalLengthX >> FRACBITS) + centerx, viewwidth);
-	const fixed_t slopestep = hitan / centerx;
-	const fixed_t dfocus = FocalLengthX >> DBITS;
-
-	for (int i = centerx, slope = 0; i <= t; i++, slope += slopestep)
-		xtoviewangle[i] = (angle_t)-(signed)tantoangle[slope >> DBITS];
-
-	for (int i = t + 1; i <= viewwidth; i++)
-		xtoviewangle[i] = ANG270+tantoangle[dfocus / (i - centerx)];
-
-	for (int i = 0; i < centerx; i++)
-		xtoviewangle[i] = (angle_t)(-(signed)xtoviewangle[viewwidth-i-1]);
-}
 
 //
 // R_SetFOV
@@ -614,7 +595,7 @@ void R_SetFOV(float fov, bool force = false)
 
 	if (V_UseWidescreen() || V_UseLetterBox())
 	{
-		float am = float(screen->width) / float(screen->height) / (4.0f / 3.0f);
+		float am = float(I_GetSurfaceWidth()) / float(I_GetSurfaceHeight()) / (4.0f / 3.0f);
 		float radfov = fov * PI / 180.0f;
 		float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
 		CorrectFieldOfView = int(widefov * FINEANGLES / 360.0f);
@@ -640,49 +621,6 @@ float R_GetFOV (void)
 	return LastFOV;
 }
 
-//
-//
-// R_InitLightTables
-//
-// Only inits the zlight table, because the scalelight table changes with
-// view size.
-//
-// [RH] This now sets up indices into a colormap rather than pointers into
-// the colormap, because the colormap can vary by sector, but the indices
-// into it don't.
-//
-//
-
-void R_InitLightTables (void)
-{
-	int i;
-	int j;
-	int level;
-	int startmap;
-	int scale;
-
-	// Calculate the light levels to use
-	//	for each level / distance combination.
-	for (i = 0; i < LIGHTLEVELS; i++)
-	{
-		startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
-		for (j=0 ; j<MAXLIGHTZ ; j++)
-		{
-			scale = FixedDiv (160*FRACUNIT, (j+1)<<LIGHTZSHIFT);
-			scale >>= LIGHTSCALESHIFT-LIGHTSCALEMULBITS;
-			level = startmap - scale/DISTMAP;
-
-			if (level < 0)
-				level = 0;
-			else if (level >= NUMCOLORMAPS)
-				level = NUMCOLORMAPS-1;
-
-			zlight[i][j] = level;
-		}
-	}
-
-	lightscalexmul = ((320<<detailyshift) * (1<<LIGHTSCALEMULBITS)) / screen->width;
-}
 
 //
 //
@@ -693,157 +631,12 @@ void R_InitLightTables (void)
 //
 //
 
-void R_SetViewSize (int blocks)
+void R_SetViewSize(int blocks)
 {
 	setsizeneeded = true;
 	setblocks = blocks;
 }
 
-
-
-//
-//
-// CVAR r_detail
-//
-// Selects a pixel doubling mode
-//
-//
-
-CVAR_FUNC_IMPL(r_detail)
-{
-	static BOOL badrecovery = false;
-
-	if (badrecovery)
-	{
-		badrecovery = false;
-		return;
-	}
-
-	if (var < 0.0 || var > 3.0)
-	{
-		Printf (PRINT_HIGH, "Bad detail mode. (Use 0-3)\n");
-		badrecovery = true;
-		var.Set((float)((detailyshift << 1) | detailxshift));
-		return;
-	}
-
-	setdetail = (int)var;
-	setsizeneeded = true;
-}
-
-//
-//
-// R_ExecuteSetViewSize
-//
-//
-
-void R_ExecuteSetViewSize (void)
-{
-	int i, j;
-	int level;
-	int startmap;
-
-	setsizeneeded = false;
-
-	if (setdetail >= 0)
-	{
-		detailxshift = setdetail & 1;
-		detailyshift = (setdetail >> 1) & 1;
-		setdetail = -1;
-	}
-
-	if (setblocks == 11 || setblocks == 12)
-	{
-		realviewwidth = screen->width;
-		freelookviewheight = realviewheight = screen->height;
-	}
-	else if (setblocks == 10)
-	{
-		realviewwidth = screen->width;
-		realviewheight = ST_Y;
-		freelookviewheight = screen->height;
-	}
-	else
-	{
-		realviewwidth = ((setblocks*screen->width)/10) & (~(15>>(screen->is8bit() ? 0 : 2)));
-		realviewheight = ((setblocks*ST_Y)/10)&~7;
-		freelookviewheight = ((setblocks*screen->height)/10)&~7;
-	}
-
-	viewwidth = realviewwidth >> detailxshift;
-	viewheight = realviewheight >> detailyshift;
-	freelookviewheight >>= detailyshift;
-
-	{
-		char temp[16];
-
-		sprintf (temp, "%d x %d", viewwidth, viewheight);
-		r_viewsize.ForceSet (temp);
-	}
-
-	centery = viewheight/2;
-	centerx = viewwidth/2;
-	centerxfrac = centerx<<FRACBITS;
-	centeryfrac = centery<<FRACBITS;
-
-	// calculate the vertical stretching factor to emulate 320x200
-	// it's a 5:4 ratio = (320 / 200) / (4 / 3)
-	// also take r_detail into account
-	yaspectmul = (320.0f / 200.0f) / (4.0f / 3.0f) * ((FRACUNIT << detailxshift) >> detailyshift);
-
-	for (int i = 0; i < screen->width; i++)
-	{
-		negonearray[i] = -1;
-		viewheightarray[i] = (int)viewheight;
-	}
-
-	R_InitBuffer (viewwidth, viewheight);
-	R_InitTextureMapping ();
-
-	// psprite scales
-	// [AM] Using centerxfrac will make our sprite too fat, so we
-	//      generate a corrected 4:3 screen width based on our
-	//      height, then generate the x-scale based on that.
-	int cswidth, crvwidth;
-	cswidth = (4 * screen->height) / 3;
-	if (setblocks < 10)
-		crvwidth = ((setblocks * cswidth) / 10) & (~(15 >> (screen->is8bit() ? 0 : 2)));
-	else
-		crvwidth = cswidth;
-	pspritexscale = (((crvwidth >> detailxshift) / 2) << FRACBITS) / 160;
-
-	pspriteyscale = FixedMul(pspritexscale, yaspectmul);
-	pspritexiscale = FixedDiv(FRACUNIT, pspritexscale);
-
-	// [RH] Sky height fix for screens not 200 (or 240) pixels tall
-	R_InitSkyMap ();
-
-	// allocate for the array that indicates if a screen column is fully solid
-	delete [] solidcol;
-	solidcol = new byte[viewwidth];
-
-	R_PlaneInitData ();
-
-	// Calculate the light levels to use for each level / scale combination.
-	// [RH] This just stores indices into the colormap rather than pointers to a specific one.
-	for (i = 0; i < LIGHTLEVELS; i++)
-	{
-		startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
-		for (j = 0; j < MAXLIGHTSCALE; j++)
-		{
-			level = startmap - (j*(screen->width>>detailxshift))/((viewwidth*DISTMAP));
-			if (level < 0)
-				level = 0;
-			else if (level >= NUMCOLORMAPS)
-				level = NUMCOLORMAPS-1;
-
-			scalelight[i][j] = level;
-		}
-	}
-
-	// [RH] Initialize z-light tables here
-	R_InitLightTables ();
-}
 
 //
 //
@@ -853,35 +646,38 @@ void R_ExecuteSetViewSize (void)
 //
 //
 
-CVAR_FUNC_IMPL (screenblocks)
+CVAR_FUNC_IMPL(screenblocks)
 {
 	R_SetViewSize((int)var);
 }
 
-//
+
 //
 // R_Init
 //
 //
-
-void R_Init (void)
+void R_Init()
 {
-	R_InitData ();
-	R_SetViewSize ((int)screenblocks);
-	R_InitPlanes ();
-	R_InitLightTables ();
-	R_InitTranslationTables ();
+	R_InitData();
+	R_SetViewSize((int)screenblocks);
+	R_InitPlanes();
+	R_InitTranslationTables();
 
-	R_InitParticles ();	// [RH] Setup particle engine
+	R_InitParticles();	// [RH] Setup particle engine
 
 	framecount = 0;
 }
 
+
 // R_Shutdown
-void STACK_ARGS R_Shutdown (void)
+void STACK_ARGS R_Shutdown()
 {
     R_FreeTranslationTables();
+
+	delete [] ylookup;
+	delete [] columnofs;
 }
+
 
 //
 //
@@ -973,8 +769,6 @@ static void R_ViewShear(angle_t pitch)
 //
 void R_SetupFrame (player_t *player)
 {
-	unsigned int newblend;
-
 	camera = player->camera;	// [RH] Use camera instead of viewplayer
 
 	if (!camera || !camera->subsector)
@@ -1020,6 +814,8 @@ void R_SetupFrame (player_t *player)
 
 	// killough 3/20/98, 4/4/98: select colormap based on player status
 	// [RH] Can also select a blend
+	argb_t newblend;
+
 	if (camera->subsector->sector->heightsec &&
 		!(camera->subsector->sector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
@@ -1027,9 +823,9 @@ void R_SetupFrame (player_t *player)
 		newblend = viewz < P_FloorHeight(viewx, viewy, s) ? s->bottommap : 
 					viewz > P_CeilingHeight(viewx, viewy, s) ? s->topmap : s->midmap;
 
-		if (!screen->is8bit())
+		if (I_GetPrimarySurface()->getBitsPerPixel() != 8)
 			newblend = R_BlendForColormap (newblend);
-		else if (APART(newblend) == 0 && newblend >= numfakecmaps)
+		else if (newblend.a == 0 && newblend >= numfakecmaps)
 			newblend = 0;
 	}
 	else
@@ -1043,12 +839,12 @@ void R_SetupFrame (player_t *player)
 	if (R_OldBlend != newblend)
 	{
 		R_OldBlend = newblend;
-		if (APART(newblend))
+		if (newblend.a != 0)
 		{
-			BaseBlendR = RPART(newblend);
-			BaseBlendG = GPART(newblend);
-			BaseBlendB = BPART(newblend);
-			BaseBlendA = APART(newblend) / 255.0f;
+			BaseBlendR = newblend.r;
+			BaseBlendG = newblend.g;
+			BaseBlendB = newblend.b;
+			BaseBlendA = float(newblend.a) / 255.0f;
 			NormalLight.maps = shaderef_t(&realcolormaps, 0);
 		}
 		else
@@ -1061,7 +857,7 @@ void R_SetupFrame (player_t *player)
 
 	fixedcolormap = shaderef_t();
 	fixedlightlev = 0;
-	palette_t *pal = GetDefaultPalette();
+	palette_t *pal = V_GetDefaultPalette();
 
 	if (camera == player->mo && player->fixedcolormap)
 	{
@@ -1227,39 +1023,33 @@ void R_SetTranslatedLucentDrawFuncs()
 	}
 }
 
-//
-//
-// R_RenderView
-//
-//
 
-void R_RenderPlayerView (player_t *player)
+//
+// R_RenderPlayerView
+//
+void R_RenderPlayerView(player_t *player)
 {
-	R_SetupFrame (player);
+	IWindowSurface* surface = R_GetRenderingSurface();
+
+	R_SetupFrame(player);
 
 	// Clear buffers.
-	R_ClearClipSegs ();
-	R_ClearDrawSegs ();
+	R_ClearClipSegs();
+	R_ClearDrawSegs();
 	R_ClearOpenings();
-	R_ClearPlanes ();
-	R_ClearSprites ();
+	R_ClearPlanes();
+	R_ClearSprites();
 
 	R_ResetDrawFuncs();
 
 	// [SL] fill the screen with a blinking solid color to make HOM more visible
 	if (r_flashhom)
 	{
-		int color = gametic & 8 ? 0 : 200;
+		argb_t color = gametic & 8 ? argb_t(0, 0, 0) : argb_t(0, 0, 255);
+		int x1 = viewwindowx, y1 = viewwindowy;
+		int x2 = viewwindowx + viewwidth - 1, y2 = viewwindowy + viewheight - 1; 
 
-		int x1 = viewwindowx;
-		int y1 = viewwindowy;
-		int x2 = viewwindowx + viewwidth - 1;
-		int y2 = viewwindowy + viewheight - 1; 
-
-		if (screen->is8bit())
-			screen->Clear(x1, y1, x2, y2, color);
-		else
-			screen->Clear(x1, y1, x2, y2, basecolormap.shade(color));
+		surface->getDefaultCanvas()->Clear(x1, y1, x2, y2, color);
 	}
 
 	R_BeginInterpolation(render_lerp_amount);
@@ -1279,52 +1069,210 @@ void R_RenderPlayerView (player_t *player)
 	else
 		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
 
-	R_DrawPlanes ();
+	R_DrawPlanes();
 
-	R_DrawMasked ();
-
-	// [RH] Apply detail mode doubling
-	R_DetailDouble ();
+	R_DrawMasked();
 
 	// NOTE(jsd): Full-screen status color blending:
 	extern int BlendA, BlendR, BlendG, BlendB;
-	if (BlendA != 0)
+	if (surface->getBitsPerPixel() == 32 && BlendA != 0)
 	{
-		unsigned int blend_rgb = MAKERGB(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]);
-		r_dimpatchD(screen, blend_rgb, BlendA, 0, 0, screen->width, screen->height);
+		argb_t blend_color = argb_t(BlendR, BlendG, BlendB);
+		blend_color = V_GammaCorrect(blend_color);
+
+		r_dimpatchD(surface, blend_color, BlendA, viewwindowx, viewwindowy, viewwidth, viewheight);
 	}
 
 	R_EndInterpolation();
 }
 
-//
-//
-// R_MultiresInit
-//
-// Called from V_SetResolution()
-//
-//
 
-void R_MultiresInit (void)
+//
+// R_InitLightTables
+//
+// Calculates the values for the scalelight and the zlight tables for seg
+// and plane lighting.
+//
+static void R_InitLightTables(int surface_width, int surface_height)
 {
-	// in r_draw.c
-	extern byte **ylookup;
-	extern int *columnofs;
+	// Calculate the light levels to use for each level / scale combination.
+	// [RH] This just stores indices into the colormap rather than pointers to a specific one.
+	for (int i = 0; i < LIGHTLEVELS; i++)
+	{
+		int startmap = ((LIGHTLEVELS-1-i)*2) * NUMCOLORMAPS/LIGHTLEVELS;
+		for (int j = 0; j < MAXLIGHTSCALE; j++)
+		{
+			int level = startmap - (j * surface_width) / ((viewwidth * DISTMAP));
+			scalelight[i][j] = clamp(level, 0, NUMCOLORMAPS - 1);
+		}
+	}
 
-	// [Russell] - Possible bug, ylookup is 2 star.
-    M_Free(ylookup);
-    M_Free(columnofs);
-    M_Free(xtoviewangle);
+	// Calculate the light levels to use for each level / distance combination.
+	for (int i = 0; i < LIGHTLEVELS; i++)
+	{
+		int startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
+		for (int j=0 ; j<MAXLIGHTZ ; j++)
+		{
+			int scale = FixedDiv(160*FRACUNIT, (j+1) << LIGHTZSHIFT);
+			scale >>= LIGHTSCALESHIFT-LIGHTSCALEMULBITS;
+			zlight[i][j] = clamp(startmap - scale/DISTMAP, 0, NUMCOLORMAPS - 1);
+		}
+	}
 
-	ylookup = (byte **)M_Malloc (screen->height * sizeof(byte *));
-	columnofs = (int *)M_Malloc (screen->width * sizeof(int));
+	lightscalexmul = (320 * (1 << LIGHTSCALEMULBITS)) / surface_height;
+}
 
-	// These get set in R_ExecuteSetViewSize()
-	xtoviewangle = (angle_t *)M_Malloc (sizeof(angle_t) * (screen->width + 1));
 
-	R_InitFuzzTable ();
+//
+// R_InitViewWindow
+//
+// Initializes the renderer variables and tables that are dependent upon
+// the surface dimensions and/or the size of the viewing window.
+//
+// This replaces R_ExecuteSetViewSize and R_MultiresInit.
+//
+void R_InitViewWindow()
+{
+	IWindowSurface* surface = R_GetRenderingSurface();
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+
+	// using a 320x200/640x400 surface or video mode
+	bool protected_res = vid_320x200 || vid_640x400
+					|| I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight());
+
+	surface->lock();
+
+	// Calculate viewwidth & viewheight based on the amount of window border 
+	if (setblocks == 11 || setblocks == 12)
+	{
+		viewwidth = surface_width; 
+		viewheight = surface_height;
+		freelookviewheight = surface_height; 
+		viewwindowx = (surface_width - viewwidth) / 2;
+		viewwindowy = 0;
+	}
+	else if (setblocks == 10)
+	{
+		viewwidth = surface_width;
+		viewheight = ST_StatusBarY(surface_width, surface_height);
+		freelookviewheight = surface_height;
+		viewwindowx = (surface_width - viewwidth) / 2;
+		viewwindowy = 0;
+	}
+	else
+	{
+		viewwidth = (setblocks * surface_width / 10) & ~15;
+		viewheight = (setblocks * ST_StatusBarY(surface_width, surface_height) / 10) & ~7;
+		freelookviewheight = ((setblocks * surface_height) / 10) & ~7;
+		viewwindowx = (surface_width - viewwidth) / 2;
+		viewwindowy = (ST_StatusBarY(surface_width, surface_height) - viewheight) / 2;
+	}
+
+	centerx = viewwidth / 2;
+	centery = viewheight / 2;
+	centerxfrac = (viewwidth << FRACBITS) / 2;
+	centeryfrac = (viewheight << FRACBITS) / 2;
+
+	// calculate the vertical stretching factor to emulate 320x200
+	// it's a 5:4 ratio = (320 / 200) / (4 / 3)
+	if (protected_res)
+		yaspectmul = FRACUNIT;
+	else
+		yaspectmul = 320 * 3 * FRACUNIT / (200 * 4);
+
+	// Calculate focal length so FieldOfView angles covers viewwidth.
+	fovtan = finetangent[FINEANGLES/4 + CorrectFieldOfView/2];
+	FocalLengthX = FixedDiv(centerxfrac, fovtan);
+	FocalLengthY = FixedDiv(FixedMul(centerxfrac, yaspectmul), fovtan);
+	xfoc = FIXED2FLOAT(FocalLengthX);
+	yfoc = FIXED2FLOAT(FocalLengthY);
+
+	focratio = yfoc / xfoc;
+	ifocratio = xfoc / yfoc;
+
+	// psprite scales
+	// [AM] Using centerxfrac will make our sprite too fat, so we
+	//      generate a corrected 4:3 screen width based on our
+	//      height, then generate the x-scale based on that.
+	int cswidth, crvwidth;
+	if (protected_res)
+		cswidth = 320 * surface_height / 200;
+	else
+		cswidth = 4 * surface_height / 3;
+
+	if (setblocks < 10)
+		crvwidth = ((setblocks * cswidth) / 10) & ~15;
+	else
+		crvwidth = cswidth;
+
+	pspritexscale = ((crvwidth / 2) * FRACUNIT) / 160;
+	pspriteyscale = FixedMul(pspritexscale, yaspectmul);
+	pspritexiscale = FixedDiv(FRACUNIT, pspritexscale);
+
+	delete [] ylookup;
+	delete [] columnofs;
+
+	ylookup = new byte*[surface_height];
+	columnofs = new int[surface_width];
+
+	// Column offset. For windows
+	for (int i = 0; i < viewwidth; i++)
+		columnofs[i] = (viewwindowx + i) * surface->getBytesPerPixel();
+
+	// Precalculate all row offsets.
+	for (int i = 0; i < viewheight; i++)
+		ylookup[i] = surface->getBuffer() + (viewwindowy + i) * surface->getPitch();
+
+	for (int i = 0; i < surface_width; i++)
+	{
+		negonearray[i] = -1;
+		viewheightarray[i] = (int)viewheight;
+	}
+
+	R_InitLightTables(surface_width, surface_height);
+
+	R_PlaneInitData(surface);
+	R_InitSkyMap();
+
+	R_InitFuzzTable();
+
+	dcol.pitch = surface->getPitch();
+	dspan.colsize = 1;
+
+	surface->unlock();
+
+	char temp_str[16];
+	sprintf(temp_str, "%d x %d", viewwidth, viewheight);
+	r_viewsize.ForceSet(temp_str);
+
 	R_OldBlend = ~0;
 }
+
+
+bool AM_ClassicAutomapVisible();
+
+//
+// R_BorderVisible
+//
+// Returns true if the border surrounding the view window should be drawn.
+//
+bool R_BorderVisible()
+{
+	return setblocks < 10 && !AM_ClassicAutomapVisible();
+}
+
+
+//
+// R_StatusBarVisible
+//
+// Returns true if the status bar should be drawn below the view window.
+//
+bool R_StatusBarVisible()
+{
+	return setblocks <= 10 || AM_ClassicAutomapVisible();
+}
+
+
 
 VERSION_CONTROL (r_main_cpp, "$Id$")
 

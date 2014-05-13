@@ -51,7 +51,10 @@
 #include "r_draw.h"
 #include "r_main.h"
 #include "r_things.h"
-#include "v_video.h"
+#include "i_video.h"
+
+extern byte** ylookup;
+extern int* columnofs;
 
 // SSE2 alpha-blending functions.
 // NOTE(jsd): We can only blend two colors per 128-bit register because we need 16-bit resolution for multiplication.
@@ -149,9 +152,9 @@ void R_DrawSpanD_SSE2 (void)
 
 #ifdef RANGECHECK
 	if (dspan.x2 < dspan.x1
-		|| dspan.x1<0
-		|| dspan.x2>=screen->width
-		|| dspan.y>screen->height)
+		|| dspan.x1 < 0
+		|| dspan.x2 >= I_GetSurfaceWidth()
+		|| dspan.y >= I_GetSurfaceHeight())
 	{
 		I_Error ("R_DrawSpan: %i to %i at %i",
 				 dspan.x1, dspan.x2, dspan.y);
@@ -249,9 +252,9 @@ void R_DrawSlopeSpanD_SSE2 (void)
 
 #ifdef RANGECHECK 
 	if (dspan.x2 < dspan.x1
-		|| dspan.x1<0
-		|| dspan.x2>=screen->width
-		|| dspan.y>screen->height)
+		|| dspan.x1 < 0
+		|| dspan.x2 >= I_GetSurfaceWidth()
+		|| dspan.y >= I_GetSurfaceHeight())
 	{
 		I_Error ("R_DrawSlopeSpan: %i to %i at %i",
 				 dspan.x1, dspan.x2, dspan.y);
@@ -387,14 +390,13 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	}
 }
 
-void r_dimpatchD_SSE2(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h)
+void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	int x, y, i;
-	argb_t *line;
-	int invAlpha = 256 - alpha;
+	int surface_pitch_pixels = surface->getPitchInPixels();
 
-	int dpitch = cvs->pitch / sizeof(argb_t);
-	line = (argb_t *)cvs->buffer + y1 * dpitch;
+	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
+
+	int invAlpha = 256 - alpha;
 
 	int batches = w / 4;
 	int remainder = w & 3;
@@ -403,13 +405,15 @@ void r_dimpatchD_SSE2(const DCanvas *const cvs, argb_t color, int alpha, int x1,
 	const __m128i upper8mask = _mm_set_epi16(0, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff);
 	const __m128i blendAlpha = _mm_set_epi16(0, alpha, alpha, alpha, 0, alpha, alpha, alpha);
 	const __m128i blendInvAlpha = _mm_set_epi16(0, invAlpha, invAlpha, invAlpha, 0, invAlpha, invAlpha, invAlpha);
-	const __m128i blendColor = _mm_set_epi16(0, RPART(color), GPART(color), BPART(color), 0, RPART(color), GPART(color), BPART(color));
+	const __m128i blendColor = _mm_set_epi16(0, color.r, color.g, color.b, 0, color.r, color.g, color.b);
 	const __m128i blendMult = _mm_mullo_epi16(blendColor, blendAlpha);
 
-	for (y = y1; y < y1 + h; y++)
+	for (int y = y1; y < y1 + h; y++)
 	{
+		int x = x1;
+
 		// SSE2 optimize the bulk in batches of 4 colors:
-		for (i = 0, x = x1; i < batches; ++i, x += 4)
+		for (int i = 0; i < batches; ++i, x += 4)
 		{
 			const __m128i input = _mm_setr_epi32(line[x + 0], line[x + 1], line[x + 2], line[x + 3]);
 			_mm_storeu_si128((__m128i *)&line[x], blend4vs1_sse2(input, blendMult, blendInvAlpha, upper8mask));
@@ -419,12 +423,10 @@ void r_dimpatchD_SSE2(const DCanvas *const cvs, argb_t color, int alpha, int x1,
 		{
 			// Pick up the remainder:
 			for (; x < x1 + w; x++)
-			{
 				line[x] = alphablend1a(line[x], color, alpha);
-			}
 		}
 
-		line += dpitch;
+		line += surface_pitch_pixels;
 	}
 }
 

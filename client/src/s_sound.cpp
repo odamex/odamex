@@ -40,6 +40,7 @@
 #include "p_local.h"
 #include "doomstat.h"
 #include "cmdlib.h"
+#include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
 #include "m_vectors.h"
@@ -158,7 +159,7 @@ void S_NoiseDebug (void)
 	screen->DrawText (CR_GREY, 280, y, "chan");
 	y += 8;
 
-	for (i = 0;((i < numChannels) && (y < screen->height - 16)); i++, y += 8)
+	for (i = 0;((i < numChannels) && (y < I_GetVideoHeight() - 16)); i++, y += 8)
 	{
 		if (Channel[i].sfxinfo)
 		{

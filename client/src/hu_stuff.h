@@ -42,10 +42,20 @@ void HU_Init (void);
 BOOL HU_Responder (event_t* ev);
 void HU_Drawer (void);
 
+enum chatmode_t
+{
+	CHAT_INACTIVE,
+	CHAT_NORMAL,
+	CHAT_TEAM
+};
+
+chatmode_t HU_ChatMode();
+void HU_SetChatMode();
+void HU_SetTeamChatMode();
+void HU_UnsetChatMode();
+
 
 void OdamexEffect (int xa, int ya, int xb, int yb);
-
-extern int headsupactive;
 
 // [RH] Draw deathmatch scores
 

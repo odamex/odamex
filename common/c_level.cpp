@@ -243,8 +243,8 @@ static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 {
 	memset (levelinfo, 0, sizeof(*levelinfo));
 	levelinfo->snapshot = NULL;
-	levelinfo->outsidefog = 0xff000000;
-	strncpy (levelinfo->fadetable, "COLORMAP", 8);
+	levelinfo->outsidefog = argb_t(255, 0, 0, 0);
+	strncpy(levelinfo->fadetable, "COLORMAP", 8);
 }
 
 //
@@ -876,9 +876,14 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 	else
 	{
 		unsigned int playernum;
-		arc >> level.flags
-			>> level.fadeto
-			>> level.found_secrets
+		arc >> level.flags;
+
+		// [SL] can't read argb_t directly so read as unsigned and then convert
+		unsigned int tempfade;
+		arc >> tempfade;
+		level.fadeto = tempfade;
+
+		arc >> level.found_secrets
 			>> level.found_items
 			>> level.killed_monsters
 			>> level.gravity
@@ -1099,27 +1104,24 @@ void G_InitLevelLocals ()
 		info = (level_info_t *)pinfo;
 		strncpy (level.skypic2, pinfo->skypic2, 8);
 		level.fadeto = pinfo->fadeto;
-		if (level.fadeto) {
-			NormalLight.maps = shaderef_t(&GetDefaultPalette()->maps, 0);
-		} else {
-			R_ForceDefaultColormap (pinfo->fadetable);
-		}
+		if (level.fadeto)
+			NormalLight.maps = shaderef_t(&V_GetDefaultPalette()->maps, 0);
+		else
+			R_ForceDefaultColormap(pinfo->fadetable);
 		level.outsidefog = pinfo->outsidefog;
 		level.flags |= LEVEL_DEFINEDINMAPINFO;
 		if (pinfo->gravity != 0.f)
-		{
 			level.gravity = pinfo->gravity;
-		}
 		if (pinfo->aircontrol != 0.f)
-		{
 			level.aircontrol = (fixed_t)(pinfo->aircontrol * 65536.f);
-		}
-	} else {
-		info = FindDefLevelInfo (level.mapname);
+	}
+	else
+	{
+		info = FindDefLevelInfo(level.mapname);
 		level.info = info;
 		level.skypic2[0] = 0;
-		level.fadeto = 0;
-		level.outsidefog = 0xff000000;	// 0xff000000 signals not to handle it special
+		level.fadeto = argb_t(0, 0, 0, 0);
+		level.outsidefog = argb_t(255, 0, 0, 0);	// 0xff000000 signals not to handle it special
 		R_ForceDefaultColormap ("COLORMAP");
 	}
 
@@ -1136,7 +1138,9 @@ void G_InitLevelLocals ()
 		strncpy (level.skypic, info->skypic, 8);
 		if (!level.skypic2[0])
 			strncpy(level.skypic2, level.skypic, 8);
-	} else {
+	}
+	else
+	{
 		level.partime = level.cluster = 0;
 		strcpy (level.level_name, "Unnamed");
 		level.nextmap[0] =
@@ -1151,7 +1155,7 @@ void G_InitLevelLocals ()
 //	memset (level.vars, 0, sizeof(level.vars));
 
 	if (oldfade != level.fadeto)
-		RefreshPalettes ();
+		V_RefreshColormaps();
 
 	movingsectors.clear();
 }

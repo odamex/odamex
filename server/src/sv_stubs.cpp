@@ -28,10 +28,6 @@
 #include "v_palette.h"
 #include "v_video.h"
 
-IMPLEMENT_CLASS (DCanvas, DObject)
-DCanvas _screen;
-DCanvas* screen = &_screen;
-
 float BaseBlendA;
 bool r_underwater;
 
@@ -41,12 +37,12 @@ void D_DoServerInfoChange (byte **stream) {}
 void D_WriteUserInfoStrings (int i, byte **stream, bool compact) {} 
 void D_ReadUserInfoStrings (int i, byte **stream, bool update) {}
 
-std::string V_GetColorStringByName (const char *name) 
+std::string V_GetColorStringByName(const char *name) 
 { 
     return ""; 
 }
 
-int V_GetColorFromString (const DWORD *palette, const char *colorstring) 
+int V_GetColorFromString(const argb_t* palette_colors, const char *colorstring) 
 {
     return 0;
 }
@@ -57,6 +53,8 @@ void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon) {}
 void AM_Stop(void) {}
 
 void RefreshPalettes (void) {}
+
+void V_RefreshColormaps() {}
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {

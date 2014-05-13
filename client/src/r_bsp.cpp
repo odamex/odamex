@@ -72,7 +72,7 @@ unsigned		maxdrawsegs;
 // Instead of clipsegs, let's try using an array with one entry for each column,
 // indicating whether it's blocked by a solid wall yet or not.
 // e6y: resolution limitation is removed
-byte *solidcol;
+byte			solidcol[MAXWIDTH];
 
 //
 // R_ClearClipSegs
@@ -240,8 +240,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		{
 			if (underwater)
 			{
-				tempsec->floorcolormap = s->floorcolormap;
-				tempsec->ceilingcolormap = s->ceilingcolormap;
+				tempsec->colormap = s->colormap;
 
 				if (!(s->MoreFlags & SECF_NOFAKELIGHT))
 				{
@@ -316,8 +315,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		tempsec->ceilingplane = s->floorplane;
 		P_InvertPlane(&tempsec->ceilingplane);
 		P_ChangeCeilingHeight(tempsec, -1);
-		tempsec->floorcolormap = s->floorcolormap;
-		tempsec->ceilingcolormap = s->ceilingcolormap;
+		tempsec->colormap = s->colormap;
 	}
 
 	// killough 11/98: prevent sudden light changes from non-water sectors:
@@ -387,8 +385,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		P_InvertPlane(&tempsec->floorplane);
 		P_ChangeFloorHeight(tempsec, +1);
 
-		tempsec->ceilingcolormap	= s->ceilingcolormap;
-		tempsec->floorcolormap		= s->floorcolormap;
+		tempsec->colormap			= s->colormap;
 
 		tempsec->ceilingpic = diffTex ? sec->ceilingpic : s->ceilingpic;
 		tempsec->floorpic											= s->ceilingpic;
@@ -533,8 +530,7 @@ void R_AddLine (seg_t *line)
 		&& backsector->ceilinglightsec == frontsector->ceilinglightsec
 
 		// [RH] Also consider colormaps
-		&& backsector->floorcolormap == frontsector->floorcolormap
-		&& backsector->ceilingcolormap == frontsector->ceilingcolormap
+		&& backsector->colormap == frontsector->colormap
 
 		// [RH] and scaling
 		&& backsector->floor_xscale == frontsector->floor_xscale
@@ -672,7 +668,7 @@ void R_Subsector (int num)
 	frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,
 						   &ceilinglightlevel, false);	// killough 4/11/98
 
-	basecolormap = frontsector->ceilingcolormap->maps;
+	basecolormap = frontsector->colormap->maps;
 
 	ceilingplane = P_CeilingHeight(camera) > viewz ||
 		frontsector->ceilingpic == skyflatnum ||
@@ -690,8 +686,6 @@ void R_Subsector (int num)
 					frontsector->ceiling_yscale,
 					frontsector->ceiling_angle + frontsector->base_ceiling_angle
 					) : NULL;
-
-	basecolormap = frontsector->floorcolormap->maps;	// [RH] set basecolormap
 
 	// killough 3/7/98: Add (x,y) offsets to flats, add deep water check
 	// killough 3/16/98: add floorlightlevel
@@ -713,8 +707,7 @@ void R_Subsector (int num)
 					) : NULL;
 
 	// [RH] set foggy flag
-	foggy = level.fadeto || frontsector->floorcolormap->fade
-						 || frontsector->ceilingcolormap->fade;
+	foggy = level.fadeto || frontsector->colormap->fade;
 
 	// killough 9/18/98: Fix underwater slowdown, by passing real sector
 	// instead of fake one. Improve sprite lighting by basing sprite

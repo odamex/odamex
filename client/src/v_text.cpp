@@ -134,28 +134,26 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 
 	translationref_t trans = translationref_t(Ranges + default_color * 256);
 
-	if (!buffer)
-		return;
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
 
-	if (y > (height - 8) || y < 0)
+	if (y > (surface_height - 8) || y < 0)
 		return;
 
 	if (x < 0)
 	{
-		int skip;
-
-		skip = -(x - 7) / 8;
+		int skip = -(x - 7) / 8;
 		x += skip * 8;
-		if (strlen(str) <= skip)
+		if ((int)strlen(str) <= skip)
 			return;
 
 		str += skip;
 	}
 
 	x &= ~3;
-	byte* destline = buffer + y * pitch;
+	byte* destline = mSurface->getBuffer() + y * mSurface->getPitch();
 
-	while (*str && x <= (width - 8))
+	while (*str && x <= (surface_width - 8))
 	{
 	    // john - tab 4 spaces
 	    if (*str == '\t')
@@ -180,10 +178,10 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 
 		int c = *(byte*)str;
 
-		if (is8bit())
+		if (mSurface->getBitsPerPixel() == 8)
 		{
 			const byte* source = (byte*)&ConChars[c * 128];
-			palindex_t* dest = (palindex_t*)(destline + x);
+			palindex_t* dest = (palindex_t*)destline + x;
 			for (int z = 0; z < 8; z++)
 			{
 				for (int a = 0; a < 8; a++)
@@ -193,14 +191,14 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 					dest[a] = (dest[a] & mask) ^ color;
 				}
 
-				dest += pitch;
+				dest += surface_pitch; 
 				source += 16;
 			}
 		}
 		else
 		{
 			byte* source = (byte*)&ConChars[c * 128];
-			argb_t* dest = (argb_t*)(destline + (x << 2));
+			argb_t* dest = (argb_t*)destline + x;
 			for (int z = 0; z < 8; z++)
 			{
 				for (int a = 0; a < 8; a++)
@@ -212,7 +210,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 					dest[a] = (dest[a] & mask) ^ color; 
 				}
 
-				dest += pitch >> 2;
+				dest += surface_pitch >> 2; 
 				source += 16;
 			}
 		}
@@ -282,7 +280,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		}
 
 		int w = hu_font[c]->width() * scalex;
-		if (cx + w > width)
+		if (cx + w > I_GetSurfaceWidth())
 			break;
 
         DrawSWrapper(drawer, hu_font[c], cx, cy,

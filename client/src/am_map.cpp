@@ -41,6 +41,7 @@
 #include "cl_demo.h"
 
 // Needs access to LFB.
+#include "i_video.h"
 #include "v_video.h"
 
 #include "v_text.h"
@@ -358,6 +359,17 @@ extern NetDemo netdemo;
 
 void AM_rotatePoint (fixed_t *x, fixed_t *y);
 
+bool AM_ClassicAutomapVisible()
+{
+	return automapactive && !viewactive;
+}
+
+bool AM_OverlayAutomapVisible()
+{
+	return automapactive && viewactive;
+}
+
+
 //
 //
 //
@@ -450,11 +462,11 @@ void AM_findMinMaxBoundaries(void)
 	min_w = 2*PLAYERRADIUS; // const? never changed?
 	min_h = 2*PLAYERRADIUS;
 
-	a = FixedDiv((screen->width)<<FRACBITS, max_w);
-	b = FixedDiv((screen->height)<<FRACBITS, max_h);
+	a = FixedDiv((I_GetSurfaceWidth())<<FRACBITS, max_w);
+	b = FixedDiv((I_GetSurfaceHeight())<<FRACBITS, max_h);
 
 	min_scale_mtof = a < b ? a : b;
-	max_scale_mtof = FixedDiv((screen->height)<<FRACBITS, 2*PLAYERRADIUS);
+	max_scale_mtof = FixedDiv((I_GetSurfaceHeight())<<FRACBITS, 2*PLAYERRADIUS);
 }
 
 
@@ -502,8 +514,8 @@ void AM_initVariables(void)
 	ftom_zoommul = FRACUNIT;
 	mtof_zoommul = FRACUNIT;
 
-	m_w = FTOM(screen->width);
-	m_h = FTOM(screen->height);
+	m_w = FTOM(I_GetSurfaceWidth());
+	m_h = FTOM(I_GetSurfaceHeight());
 
 	// find player to center on initially
 	player_t *pl = &displayplayer();
@@ -537,88 +549,88 @@ void AM_initVariables(void)
 }
 
 
-am_color_t AM_GetColorFromString(argb_t *palette, const char *colorstring)
+am_color_t AM_GetColorFromString(const argb_t* palette_colors, const char* colorstring)
 {
 	am_color_t c;
-	c.rgb = (argb_t) V_GetColorFromString(NULL, colorstring);
-	c.index = BestColor2(palette, c.rgb, 256);
+	c.rgb = (argb_t)V_GetColorFromString(NULL, colorstring);
+	c.index = V_BestColor(palette_colors, c.rgb);
 	return c;
 }
 
-am_color_t AM_BestColor(argb_t *palette, const int r, const int g, const int b, const int numcolors)
+am_color_t AM_BestColor(const argb_t* palette_colors, const int r, const int g, const int b)
 {
 	am_color_t c;
-	c.rgb = MAKERGB(r,g,b);
-	c.index = BestColor2(palette, c.rgb, 256);
+	c.rgb = argb_t(r,g,b);
+	c.index = V_BestColor(palette_colors, c.rgb);
 	return c;
 }
 
 void AM_initColors (BOOL overlayed)
 {
 	// Look up the colors in the current palette:
-	argb_t *palette = GetDefaultPalette()->colors;
+	const argb_t* palette_colors = V_GetDefaultPalette()->colors;
 
 	if (overlayed && !am_ovshare)
 	{
-		YourColor = AM_GetColorFromString (palette, am_ovyourcolor.cstring());
+		YourColor = AM_GetColorFromString (palette_colors, am_ovyourcolor.cstring());
 		SecretWallColor =
-			WallColor= AM_GetColorFromString (palette, am_ovwallcolor.cstring());
-		TSWallColor = AM_GetColorFromString (palette, am_ovtswallcolor.cstring());
-		FDWallColor = AM_GetColorFromString (palette, am_ovfdwallcolor.cstring());
-		CDWallColor = AM_GetColorFromString (palette, am_ovcdwallcolor.cstring());
-		ThingColor = AM_GetColorFromString (palette, am_ovthingcolor.cstring());
-		GridColor = AM_GetColorFromString (palette, am_ovgridcolor.cstring());
-		XHairColor = AM_GetColorFromString (palette, am_ovxhaircolor.cstring());
-		NotSeenColor = AM_GetColorFromString (palette, am_ovnotseencolor.cstring());
-		LockedColor = AM_GetColorFromString (palette, am_ovlockedcolor.cstring());
-		ExitColor = AM_GetColorFromString (palette, am_ovexitcolor.cstring());
-		TeleportColor = AM_GetColorFromString (palette, am_ovteleportcolor.cstring());
+			WallColor= AM_GetColorFromString (palette_colors, am_ovwallcolor.cstring());
+		TSWallColor = AM_GetColorFromString (palette_colors, am_ovtswallcolor.cstring());
+		FDWallColor = AM_GetColorFromString (palette_colors, am_ovfdwallcolor.cstring());
+		CDWallColor = AM_GetColorFromString (palette_colors, am_ovcdwallcolor.cstring());
+		ThingColor = AM_GetColorFromString (palette_colors, am_ovthingcolor.cstring());
+		GridColor = AM_GetColorFromString (palette_colors, am_ovgridcolor.cstring());
+		XHairColor = AM_GetColorFromString (palette_colors, am_ovxhaircolor.cstring());
+		NotSeenColor = AM_GetColorFromString (palette_colors, am_ovnotseencolor.cstring());
+		LockedColor = AM_GetColorFromString (palette_colors, am_ovlockedcolor.cstring());
+		ExitColor = AM_GetColorFromString (palette_colors, am_ovexitcolor.cstring());
+		TeleportColor = AM_GetColorFromString (palette_colors, am_ovteleportcolor.cstring());
 	}
 	else if (am_usecustomcolors || (overlayed && am_ovshare))
 	{
 		/* Use the custom colors in the am_* cvars */
-		Background = AM_GetColorFromString(palette, am_backcolor.cstring());
-		YourColor = AM_GetColorFromString(palette, am_yourcolor.cstring());
+		Background = AM_GetColorFromString(palette_colors, am_backcolor.cstring());
+		YourColor = AM_GetColorFromString(palette_colors, am_yourcolor.cstring());
 		SecretWallColor =
-			WallColor = AM_GetColorFromString(palette, am_wallcolor.cstring());
-		TSWallColor = AM_GetColorFromString(palette, am_tswallcolor.cstring());
-		FDWallColor = AM_GetColorFromString(palette, am_fdwallcolor.cstring());
-		CDWallColor = AM_GetColorFromString(palette, am_cdwallcolor.cstring());
-		ThingColor = AM_GetColorFromString(palette, am_thingcolor.cstring());
-		GridColor = AM_GetColorFromString(palette, am_gridcolor.cstring());
-		XHairColor = AM_GetColorFromString(palette, am_xhaircolor.cstring());
-		NotSeenColor = AM_GetColorFromString(palette, am_notseencolor.cstring());
-		LockedColor = AM_GetColorFromString(palette, am_lockedcolor.cstring());
-		ExitColor = AM_GetColorFromString(palette, am_exitcolor.cstring());
-		TeleportColor = AM_GetColorFromString(palette, am_teleportcolor.cstring());
+			WallColor = AM_GetColorFromString(palette_colors, am_wallcolor.cstring());
+		TSWallColor = AM_GetColorFromString(palette_colors, am_tswallcolor.cstring());
+		FDWallColor = AM_GetColorFromString(palette_colors, am_fdwallcolor.cstring());
+		CDWallColor = AM_GetColorFromString(palette_colors, am_cdwallcolor.cstring());
+		ThingColor = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
+		GridColor = AM_GetColorFromString(palette_colors, am_gridcolor.cstring());
+		XHairColor = AM_GetColorFromString(palette_colors, am_xhaircolor.cstring());
+		NotSeenColor = AM_GetColorFromString(palette_colors, am_notseencolor.cstring());
+		LockedColor = AM_GetColorFromString(palette_colors, am_lockedcolor.cstring());
+		ExitColor = AM_GetColorFromString(palette_colors, am_exitcolor.cstring());
+		TeleportColor = AM_GetColorFromString(palette_colors, am_teleportcolor.cstring());
 		{
-			argb_t ba = AM_GetColorFromString(palette, am_backcolor.cstring()).rgb;
-			int r = RPART(ba) - 16;
-			int g = GPART(ba) - 16;
-			int b = BPART(ba) - 16;
-			if (r < 0) r += 32;
-			if (g < 0) g += 32;
-			if (b < 0) b += 32;
-			AlmostBackground.rgb = MAKERGB(r,g,b);
-			AlmostBackground.index = BestColor2(palette, AlmostBackground.rgb, 256);
+			argb_t ba = AM_GetColorFromString(palette_colors, am_backcolor.cstring()).rgb;
+			if (ba.r < 16)
+				ba.r += 32;
+			if (ba.g < 16)
+				ba.g += 32;
+			if (ba.b < 16)
+				ba.b += 32;
+
+			AlmostBackground.rgb = argb_t(ba.r - 16, ba.g - 16, ba.b - 16);
+			AlmostBackground.index = V_BestColor(palette_colors, AlmostBackground.rgb);
 		}
 	}
 	else
 	{
 		/* Use colors corresponding to the original Doom's */
-		Background = AM_GetColorFromString(palette, "00 00 00");
-		YourColor = AM_GetColorFromString(palette, "FF FF FF");
-		AlmostBackground = AM_GetColorFromString(palette, "10 10 10");
-		SecretWallColor =
-			WallColor = AM_GetColorFromString(palette, "fc 00 00");
-		TSWallColor = AM_GetColorFromString(palette, "80 80 80");
-		FDWallColor = AM_GetColorFromString(palette, "bc 78 48");
-		LockedColor = AM_GetColorFromString(palette, "fc fc 00");
-		CDWallColor = AM_GetColorFromString(palette, "fc fc 00");
-		ThingColor = AM_GetColorFromString(palette, "74 fc 6c");
-		GridColor = AM_GetColorFromString(palette, "4c 4c 4c");
-		XHairColor = AM_GetColorFromString(palette, "80 80 80");
-		NotSeenColor = AM_GetColorFromString(palette, "6c 6c 6c");
+		Background = AM_GetColorFromString(palette_colors, "00 00 00");
+		YourColor = AM_GetColorFromString(palette_colors, "FF FF FF");
+		AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
+		SecretWallColor = WallColor = AM_GetColorFromString(palette_colors, "fc 00 00");
+		TSWallColor = AM_GetColorFromString(palette_colors, "80 80 80");
+		FDWallColor = AM_GetColorFromString(palette_colors, "bc 78 48");
+		LockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+		CDWallColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+		ThingColor = AM_GetColorFromString(palette_colors, "74 fc 6c");
+		GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
+		XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
+		NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
 	}
 }
 
@@ -683,18 +695,17 @@ void AM_LevelInit(void)
 //
 //
 //
-void AM_Stop (void)
+void AM_Stop()
 {
-	static event_t st_notify = { ev_keyup, AM_MSGEXITED, 0, 0 };
-
     if (!automapactive)
-    {
         return;
-    }
 
 	AM_unloadPics ();
 	automapactive = false;
-	ST_Responder (&st_notify);
+
+	static event_t st_notify = { ev_keyup, AM_MSGEXITED, 0, 0 };
+	ST_Responder(&st_notify);
+
 	stopped = true;
 	viewactive = true;
 }
@@ -702,17 +713,20 @@ void AM_Stop (void)
 //
 //
 //
-void AM_Start (void)
+void AM_Start()
 {
-	static char lastmap[8] = "";
+	if (!stopped)
+		AM_Stop();
 
-	if (!stopped) AM_Stop();
 	stopped = false;
-	if (strncmp (lastmap, level.mapname, 8))
+
+	static char lastmap[8] = "";
+	if (strncmp(lastmap, level.mapname, 8))
 	{
 		AM_LevelInit();
-		strncpy (lastmap, level.mapname, 8);
+		strncpy(lastmap, level.mapname, 8);
 	}
+
 	AM_initVariables();
 	AM_loadPics();
 }
@@ -743,26 +757,19 @@ BEGIN_COMMAND (togglemap)
 
 	if (!automapactive)
 	{
-		AM_Start ();
-		if (am_overlay)
-			viewactive = true;
-		else
-			viewactive = false;
+		AM_Start();
+		viewactive = am_overlay != 0;
 	}
 	else
 	{
 		if (am_overlay > 0 && am_overlay < 3 && viewactive)
-		{
 			viewactive = false;
-		}
 		else
-		{
-			AM_Stop ();
-		}
+			AM_Stop();
 	}
 
 	if (automapactive)
-		AM_initColors (viewactive);
+		AM_initColors(viewactive);
 }
 END_COMMAND (togglemap)
 
@@ -956,23 +963,22 @@ void AM_Ticker (void)
 //
 void AM_clearFB (am_color_t color)
 {
-	int y;
-
-	if (screen->is8bit()) {
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	{
 		if (f_w == f_p)
-			memset (fb, color.index, f_w*f_h);
+			memset(fb, color.index, f_w*f_h);
 		else
-			for (y = 0; y < f_h; y++)
-				memset (fb + y * f_p, color.index, f_w);
-	} else {
-		int x;
-		argb_t *line;
+			for (int y = 0; y < f_h; y++)
+				memset(fb + y * f_p, color.index, f_w);
+	}
+	else
+	{
+		argb_t* line = (argb_t*)fb;
 
-		line = (argb_t *)(fb);
-		for (y = 0; y < f_h; y++) {
-			for (x = 0; x < f_w; x++) {
+		for (int y = 0; y < f_h; y++)
+		{
+			for (int x = 0; x < f_w; x++)
 				line[x] = color.rgb;
-			}
 			line += f_p >> 2;
 		}
 	}
@@ -1242,7 +1248,7 @@ void AM_drawMline (mline_t* ml, am_color_t color)
 	if (AM_clipMline(ml, &fl))
 	{
 		// draws it on frame buffer using fb coords
-		if (screen->is8bit())
+		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 			AM_drawFlineP(&fl, color.index);
 		else
 			AM_drawFlineD(&fl, color.rgb);
@@ -1310,7 +1316,7 @@ void AM_drawWalls(void)
 	int i, r, g, b;
 	static mline_t l;
 	float rdif, gdif, bdif;
-	palette_t *pal = GetDefaultPalette();
+	palette_t *pal = V_GetDefaultPalette();
 
 
 	for (i=0;i<numlines;i++) {
@@ -1363,9 +1369,10 @@ void AM_drawWalls(void)
 				else if (lines[i].special == Door_LockedRaise)
 				{
 				    // NES - Locked doors glow from a predefined color to either blue, yellow, or red.
-                    r = RPART(LockedColor.rgb), g = GPART(LockedColor.rgb), b = BPART(LockedColor.rgb);
+                    r = LockedColor.rgb.r, g = LockedColor.rgb.g, b = LockedColor.rgb.b;
 
-                    if (am_usecustomcolors) {
+                    if (am_usecustomcolors)
+					{
                         if (lines[i].args[3] == (BCard | CardIsSkull)) {
                             rdif = (0 - r)/30;
                             gdif = (0 - g)/30;
@@ -1380,22 +1387,21 @@ void AM_drawWalls(void)
                             bdif = (0 - b)/30;
                         }
 
-                        if (lockglow < 30) {
-                            AM_drawMline (&l, AM_BestColor (pal->basecolors, r + ((int)rdif*lockglow),
-                                          g + ((int)gdif*lockglow), b + ((int)bdif*lockglow),
-                                          pal->numcolors));
-                        } else if (lockglow < 60) {
-                            AM_drawMline (&l, AM_BestColor (pal->basecolors, r + ((int)rdif*(60-lockglow)),
-                                          g + ((int)gdif*(60-lockglow)), b + ((int)bdif*(60-lockglow)),
-                                          pal->numcolors));
-                        } else {
-                            AM_drawMline (&l, AM_BestColor (pal->basecolors, r, g, b,
-                                          pal->numcolors));
-                        }
-				    } else {
-                        AM_drawMline (&l, AM_BestColor (pal->basecolors, r, g, b,
-                                      pal->numcolors));
-                    }
+						if (lockglow < 30)
+						{
+							r += (int)rdif * lockglow;
+							g += (int)gdif * lockglow;
+							b += (int)bdif * lockglow;
+						}
+						else if (lockglow < 60)
+						{
+							r += (int)rdif * (60 - lockglow);
+							g += (int)gdif * (60 - lockglow);
+							b += (int)bdif * (60 - lockglow);
+						}
+				    }
+
+					AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
                 }
 				else if (lines[i].backsector->floorheight
 					  != lines[i].frontsector->floorheight)
@@ -1507,7 +1513,7 @@ void AM_drawPlayers(void)
 	angle_t angle;
 	player_t &conplayer = displayplayer();
 	argb_t *palette;
-	palette = GetDefaultPalette()->colors;
+	palette = V_GetDefaultPalette()->colors;
 
 	if (!multiplayer)
 	{
@@ -1543,8 +1549,11 @@ void AM_drawPlayers(void)
 		}
 
 		if (p->powers[pw_invisibility])
+		{
 			color = AlmostBackground;
-		else if (demoplayback && democlassic) {
+		}
+		else if (demoplayback && democlassic)
+		{
 			switch (it->id) {
 				case 1: color = AM_GetColorFromString (palette, "00 FF 00"); break;
 				case 2: color = AM_GetColorFromString (palette, "60 60 B0"); break;
@@ -1552,14 +1561,12 @@ void AM_drawPlayers(void)
 				case 4: color = AM_GetColorFromString (palette, "C0 00 00"); break;
 				default: break;
 			}
-		} else {
+		}
+		else
+		{
 			int playercolor = CL_GetPlayerColor(p);
 			color.rgb = (argb_t)playercolor;
-			color.index = BestColor (GetDefaultPalette()->basecolors,
-							   RPART(playercolor),
-							   GPART(playercolor),
-							   BPART(playercolor),
-							   GetDefaultPalette()->numcolors);
+			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 
 		pt.x = p->mo->x;
@@ -1638,14 +1645,10 @@ void AM_drawMarks (void)
 void AM_drawCrosshair (am_color_t color)
 {
 	// single point for now
-	if (screen->is8bit())
-	{
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 		PUTDOTP(f_w/2, (f_h+1)/2, (byte)color.index);
-	}
 	else
-	{
 		PUTDOTD(f_w/2, (f_h+1)/2, color.rgb);
-	}
 }
 
 void AM_Drawer (void)
@@ -1653,15 +1656,19 @@ void AM_Drawer (void)
 	if (!automapactive)
 		return;
 
-	fb = screen->buffer;
+	IWindowSurface* surface = I_GetPrimarySurface();
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+
+	fb = surface->getBuffer();
+
 	if (!viewactive)
 	{
 		// [RH] Set f_? here now to handle automap overlaying
 		// and view size adjustments.
 		f_x = f_y = 0;
-		f_w = screen->width;
-		f_h = ST_Y;
-		f_p = screen->pitch;
+		f_w = surface_width;
+		f_h = ST_StatusBarY(surface_width, surface_height);
+		f_p = surface->getPitch();
 
 		AM_clearFB(Background);
 	}
@@ -1669,9 +1676,9 @@ void AM_Drawer (void)
 	{
 		f_x = viewwindowx;
 		f_y = viewwindowy;
-		f_w = realviewwidth;
-		f_h = realviewheight;
-		f_p = screen->pitch;
+		f_w = viewwidth;
+		f_h = viewheight;
+		f_p = surface->getPitch();
 	}
 	AM_activateNewScale();
 
@@ -1688,13 +1695,13 @@ void AM_Drawer (void)
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2)) {
-
+	if (!(viewactive && am_overlay < 2))
+	{
 		char line[64+10];
-		int OV_Y, time = level.time / TICRATE, height;
+		int time = level.time / TICRATE;
 
-		height = (hu_font[0]->height() + 1) * CleanYfac;
-		OV_Y = screen->height - ((32 * screen->height) / 200);
+		int text_height = (hu_font[0]->height() + 1) * CleanYfac;
+		int OV_Y = surface_height - (surface_height * 32 / 200);
 
 		if (sv_gametype == GM_COOP)
 		{
@@ -1703,13 +1710,16 @@ void AM_Drawer (void)
 				sprintf(line, TEXTCOLOR_RED "MONSTERS:"
 								TEXTCOLOR_NORMAL " %d / %d",
 								level.killed_monsters, level.total_monsters);
-				if (viewactive && screenblocks == 11)
-					FB->DrawTextClean(CR_GREY, screen->width - V_StringWidth(line) * CleanXfac,
-							OV_Y - (height * 4) + 1, line);
-				else if (viewactive && screenblocks == 12)
-					FB->DrawTextClean(CR_GREY, 0, screen->height - (height * 2) + 1, line);
+
+				int x, y;
+				int text_width = V_StringWidth(line) * CleanXfac;
+
+				if (AM_OverlayAutomapVisible())
+					x = surface_width - text_width, y = OV_Y - (text_height * 4) + 1;
 				else
-					FB->DrawTextClean(CR_GREY, 0, ST_Y - (height * 2) + 1, line);
+					x = 0, y = OV_Y - (text_height * 2) + 1;
+	 
+				FB->DrawTextClean(CR_GREY, x, y, line);
 			}
 
 			if (am_showsecrets)
@@ -1717,15 +1727,15 @@ void AM_Drawer (void)
 				sprintf(line, TEXTCOLOR_RED "SECRETS:"
 								TEXTCOLOR_NORMAL " %d / %d",
 								level.found_secrets, level.total_secrets);
-                if (viewactive && screenblocks == 11)
-                    FB->DrawTextClean(CR_GREY, screen->width - V_StringWidth(line) * CleanXfac,
-							OV_Y - (height * 3) + 1, line);
-                else if (viewactive && screenblocks == 12)
-                    FB->DrawTextClean(CR_GREY, screen->width - V_StringWidth(line) * CleanXfac,
-							screen->height - (height * 2) + 1, line);
-                else
-                    FB->DrawTextClean(CR_GREY, screen->width - V_StringWidth(line) * CleanXfac,
-							ST_Y - (height * 2) + 1, line);
+				int x, y;
+				int text_width = V_StringWidth(line) * CleanXfac;
+
+				if (AM_OverlayAutomapVisible())
+					x = surface_width - text_width, y = OV_Y - (text_height * 3) + 1;
+				else
+					x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
+
+				FB->DrawTextClean(CR_GREY, x, y, line);
 			}
 		}
 
@@ -1736,28 +1746,31 @@ void AM_Drawer (void)
 			switch (gamemission)
 			{
 				case doom2:
-				firstmap = HUSTR_1;
-				break;
+					firstmap = HUSTR_1;
+					break;
 				case pack_plut:
-				firstmap = PHUSTR_1;
-				break;
+					firstmap = PHUSTR_1;
+					break;
 				case pack_tnt:
-				firstmap = THUSTR_1;
-				break;
+					firstmap = THUSTR_1;
+					break;
 				default:
-				firstmap = HUSTR_E1M1;
-				mapoffset = level.cluster; // Episodes skip map numbers.
-				break;
+					firstmap = HUSTR_E1M1;
+					mapoffset = level.cluster; // Episodes skip map numbers.
+					break;
 			}
+
 			strcpy(line, GStrings(firstmap + level.levelnum - mapoffset));
 
-			if (viewactive && screenblocks == 11)
-				FB->DrawTextClean(CR_RED, screen->width - V_StringWidth(line) * CleanXfac,
-						OV_Y - (height * 1) + 1, line);
-			else if (viewactive && screenblocks == 12)
-				FB->DrawTextClean(CR_RED, 0, screen->height - (height * 1) + 1, line);
+			int x, y;
+			int text_width = V_StringWidth(line) * CleanXfac;
+
+			if (AM_OverlayAutomapVisible())
+				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
 			else
-				FB->DrawTextClean(CR_RED, 0, ST_Y - (height * 1) + 1, line);
+				x = 0, y = OV_Y - (text_height * 1) + 1;
+
+			FB->DrawTextClean(CR_RED, x, y, line);
 		}
 		else
 		{
@@ -1770,31 +1783,33 @@ void AM_Drawer (void)
 			strcpy(line + pos, TEXTCOLOR_NORMAL);
 			pos = strlen(line);
 			line[pos++] = ' ';
-
 			strcpy(&line[pos], level.level_name);
-			if (viewactive && screenblocks == 11)
-				FB->DrawTextClean(CR_GREY, screen->width - V_StringWidth(line) * CleanXfac,
-						OV_Y - (height * 1) + 1, line);
-			else if (viewactive && screenblocks == 12)
-				FB->DrawTextClean(CR_GREY, 0, screen->height - (height * 1) + 1, line);
+
+			int x, y;
+			int text_width = V_StringWidth(line) * CleanXfac;
+
+			if (AM_OverlayAutomapVisible())
+				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
 			else
-				FB->DrawTextClean(CR_GREY, 0, ST_Y - (height * 1) + 1, line);
+				x = 0, y = OV_Y - (text_height * 1) + 1;
+
+			FB->DrawTextClean(CR_GREY, x, y, line);
 		}
 
 		if (am_showtime)
 		{
 			sprintf(line, " %02d:%02d:%02d", time/3600, (time%3600)/60, time%60);	// Time
-			if (viewactive && screenblocks == 11)
-				FB->DrawTextClean(CR_RED, screen->width - V_StringWidth(line) * CleanXfac,
-						OV_Y - (height * 2) + 1, line);
-			else if (viewactive && screenblocks == 12)
-				FB->DrawTextClean(CR_RED, screen->width - V_StringWidth(line) * CleanXfac,
-						screen->height - (height * 1) + 1, line);
-			else
-				FB->DrawTextClean(CR_RED, screen->width - V_StringWidth (line) * CleanXfac,
-						ST_Y - (height * 1) + 1, line);
-		}
 
+			int x, y;
+			int text_width = V_StringWidth(line) * CleanXfac;
+
+			if (AM_OverlayAutomapVisible())
+				x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
+			else
+				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
+
+			FB->DrawTextClean(CR_GREY, x, y, line);
+		}
 	}
 }
 

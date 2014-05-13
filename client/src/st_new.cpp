@@ -36,6 +36,7 @@
 #include "doomstat.h"
 #include "cl_demo.h"
 #include "d_items.h"
+#include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
 #include "w_wad.h"
@@ -396,7 +397,7 @@ void ST_voteDraw (int y) {
 	}
 
 	size_t x1, x2;
-	x1 = (screen->width - V_StringWidth(result_string.c_str()) * xscale) >> 1;
+	x1 = (I_GetSurfaceWidth() - V_StringWidth(result_string.c_str()) * xscale) >> 1;
 	if (hud_scale) {
 		screen->DrawTextClean(result_color, x1, y, result_string.c_str());
 	} else {
@@ -410,7 +411,7 @@ void ST_voteDraw (int y) {
 			break;
 		}
 
-		x2 = (screen->width - votestring[i].width * xscale) >> 1;
+		x2 = (I_GetSurfaceWidth() - votestring[i].width * xscale) >> 1;
 		y += yscale * 8;
 
 		if (hud_scale) {
@@ -429,10 +430,10 @@ void ST_voteDraw (int y) {
 	y += yscale * 8;
 
 	ST_DrawBar(CR_RED, vote_state.no, vote_state.no_needed,
-			   (screen->width >> 1) - xscale * 40, y, xscale * 40,
+			   (I_GetSurfaceWidth() >> 1) - xscale * 40, y, xscale * 40,
 			   true, false, true);
 	ST_DrawBar(CR_GREEN, vote_state.yes, vote_state.yes_needed,
-			   (screen->width >> 1), y, xscale * 40, false, true);
+			   (I_GetSurfaceWidth() >> 1), y, xscale * 40, false, true);
 }
 
 namespace hud {
@@ -514,9 +515,9 @@ void drawCTF() {
 	}
 
 	// Draw team scores
-	ST_DrawNumRight(screen->width - 24 * xscale, screen->height - (62 + 16) * yscale,
+	ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (62 + 16) * yscale,
 	                screen, TEAMpoints[TEAM_BLUE]);
-	ST_DrawNumRight(screen->width - 24 * xscale, screen->height - (44 + 16) * yscale,
+	ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (44 + 16) * yscale,
 	                screen, TEAMpoints[TEAM_RED]);
 }
 
@@ -550,7 +551,7 @@ void drawNetdemo() {
 		color = CR_GREEN;
 	}
 	ST_DrawBar(color, netdemo.calculateTimeElapsed(), netdemo.calculateTotalTime(),
-	           2 * xscale, screen->height - 46 * yscale, 72 * xscale);
+	           2 * xscale, I_GetSurfaceHeight() - 46 * yscale, 72 * xscale);
 }
 
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
@@ -562,7 +563,7 @@ void OdamexHUD() {
 	unsigned int y, xscale, yscale;
 	xscale = hud_scale ? CleanXfac : 1;
 	yscale = hud_scale ? CleanYfac : 1;
-	y = screen->height - (numheight + 4) * yscale;
+	y = I_GetSurfaceHeight() - (numheight + 4) * yscale;
 
 	// Draw Armor if the player has any
 	if (plyr->armortype && plyr->armorpoints) {
@@ -616,7 +617,7 @@ void OdamexHUD() {
 			               hud::X_CENTER, hud::Y_MIDDLE,
 			               ammopatch);
 		}
-		ST_DrawNumRight(screen->width - 24 * xscale, y, screen, plyr->ammo[ammotype]);
+		ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
 	int color;
@@ -738,14 +739,14 @@ void ZDoomHUD() {
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
 
-	y = screen->height - (numheight + 4) * yscale;
+	y = I_GetSurfaceHeight() - (numheight + 4) * yscale;
 
 	// Draw health
 	if (hud_scale)
 		screen->DrawLucentPatchCleanNoMove (medi, 20 * CleanXfac,
-									  screen->height - 2*CleanYfac);
+									  I_GetSurfaceHeight() - 2*CleanYfac);
 	else
-		screen->DrawLucentPatch (medi, 20, screen->height - 2);
+		screen->DrawLucentPatch (medi, 20, I_GetSurfaceHeight() - 2);
 	ST_DrawNum (40 * xscale, y, screen, plyr->health);
 
 	// Draw armor
@@ -772,14 +773,12 @@ void ZDoomHUD() {
 		const patch_t *ammopatch = ammos[weaponinfo[plyr->readyweapon].ammotype];
 
 		if (hud_scale)
-			screen->DrawLucentPatchCleanNoMove (ammopatch,
-										  screen->width - 14 * CleanXfac,
-										  screen->height - 4 * CleanYfac);
+			screen->DrawLucentPatchCleanNoMove(ammopatch,
+							I_GetSurfaceWidth() - 14 * CleanXfac, I_GetSurfaceHeight() - 4 * CleanYfac);
 		else
-			screen->DrawLucentPatch (ammopatch, screen->width - 14,
-							   screen->height - 4);
-		ST_DrawNumRight (screen->width - 25 * xscale, y, screen,
-						 plyr->ammo[ammotype]);
+			screen->DrawLucentPatch(ammopatch, I_GetSurfaceWidth() - 14, I_GetSurfaceHeight() - 4);
+
+		ST_DrawNumRight(I_GetSurfaceWidth() - 25 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
 	// Draw top-right info. (Keys/Frags/Score)
@@ -790,7 +789,7 @@ void ZDoomHUD() {
 	else if (sv_gametype != GM_COOP)
 	{
 		// Draw frags (in DM)
-		ST_DrawNumRight (screen->width - (2 * xscale), 2 * yscale, screen, plyr->fragcount);
+		ST_DrawNumRight(I_GetSurfaceWidth() - (2 * xscale), 2 * yscale, screen, plyr->fragcount);
 	}
 	else
 	{
@@ -801,9 +800,10 @@ void ZDoomHUD() {
 			if (plyr->cards[i])
 			{
 				if (hud_scale)
-					screen->DrawLucentPatchCleanNoMove (keys[i], screen->width - 10*CleanXfac, y);
+					screen->DrawLucentPatchCleanNoMove(keys[i], I_GetSurfaceWidth() - 10*CleanXfac, y);
 				else
-					screen->DrawLucentPatch (keys[i], screen->width - 10, y);
+					screen->DrawLucentPatch(keys[i], I_GetSurfaceWidth() - 10, y);
+
 				y += (8 + (i < 3 ? 0 : 2)) * yscale;
 			}
 		}
@@ -853,9 +853,9 @@ void DoomHUD() {
 	// status bar.  We need to convert this into scaled pixels as best we can.
 	int st_y;
 	if (hud_scale) {
-		st_y = (screen->height - ST_Y) / CleanYfac;
+		st_y = (I_GetSurfaceHeight() - ST_Y) / CleanYfac;
 	} else {
-		st_y = screen->height - ST_Y;
+		st_y = I_GetSurfaceHeight() - ST_Y;
 	}
 
 	// Draw warmup state or timer

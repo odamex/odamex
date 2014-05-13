@@ -29,28 +29,15 @@
 #include <string>
 
 #include "doomtype.h"
-
 #include "v_palette.h"
-
 #include "doomdef.h"
 
 // Needed because we are refering to patches.
 #include "r_data.h"
 
+class IWindowSurface;
+
 extern int CleanXfac, CleanYfac;
-
-extern BOOL    gotconback;
-
-extern int DisplayWidth, DisplayHeight, DisplayBits;
-extern int SquareWidth;
-
-#define APART(c)				(screen->alphaPart(c))
-#define RPART(c)				(screen->redPart(c))
-#define GPART(c)				(screen->greenPart(c))
-#define BPART(c)				(screen->bluePart(c))
-
-#define MAKERGB(r, g, b)		(screen->makeRGB(r, g, b))
-#define MAKEARGB(a, r, g, b)	(screen->makeARGB(a, r, g, b))
 
 //
 // VIDEO
@@ -80,81 +67,18 @@ public:
 		EWrapper_ColoredLucent = 5	// Mixes a solid color in the patch area with the background
 	};
 
-	DCanvas() :
-		buffer(NULL), m_LockCount(0), m_Private(NULL),
-		ashift(24), rshift(16), gshift(8), bshift(0)
+	DCanvas(IWindowSurface* surface) :
+		mSurface(surface)
 	{ }
 
 	virtual ~DCanvas ()
 	{ }
 
-	int bits;
-	byte *buffer;
-	int width;
-	int height;
-	int pitch;
-	inline bool is8bit() const { return bits == 8; }
+	IWindowSurface* getSurface()
+	{	return mSurface;	}
 
-	// [ML] If this is 320x200 or 640x400, the resolutions
-	// "protected" from aspect ratio correction.
-	inline bool isProtectedRes() const
-	{
-		return (width == 320 && height == 200) || (width == 640 && height == 400);
-	}
-
-	inline void setAlphaShift(byte n)
-	{	ashift = n;	}
-
-	inline void setRedShift(byte n)
-	{	rshift = n;	}
-
-	inline void setGreenShift(byte n)
-	{	gshift = n;	}
-
-	inline void setBlueShift(byte n)
-	{	bshift = n;	}
-
-	inline byte getAlphaShift() const
-	{	return ashift;	}
-
-	inline byte getRedShift() const
-	{	return rshift;	}
-
-	inline byte getGreenShift() const
-	{	return gshift;	}
-
-	inline byte getBlueShift() const
-	{	return bshift;	}
-
-	inline argb_t alphaPart(argb_t color) const
-	{	return (color >> ashift) & 0xFF;	}
-
-	inline argb_t redPart(argb_t color) const
-	{	return (color >> rshift) & 0xFF;	}
-
-	inline argb_t greenPart(argb_t color) const
-	{	return (color >> gshift) & 0xFF;	}
-
-	inline argb_t bluePart(argb_t color) const
-	{	return (color >> bshift) & 0xFF;	}
-
-	inline argb_t makeRGB(unsigned int r, unsigned int g, unsigned int b) const
-	{
-		return (r << rshift) | (g << gshift) | (b << bshift);
-	}
-
-	inline argb_t makeARGB(unsigned int a, unsigned int r, unsigned int g, unsigned int b) const
-	{
-		return (a << ashift) | (r << rshift) | (g << gshift) | (b << bshift);
-	}
-
-	int m_LockCount;
-	palette_t *m_Palette;
-	void *m_Private;
-
-	// Copy blocks from one canvas to another
-	void Blit (int srcx, int srcy, int srcwidth, int srcheight, DCanvas *dest, int destx, int desty, int destwidth, int destheight);
-	void CopyRect (int srcx, int srcy, int width, int height, int destx, int desty, DCanvas *destscrn);
+	const IWindowSurface* getSurface() const
+	{	return mSurface;	}
 
 	// Draw a linear block of pixels into the view buffer.
 	void DrawBlock (int x, int y, int width, int height, const byte *src) const;
@@ -173,15 +97,7 @@ public:
 	void FlatFill (int left, int top, int right, int bottom, const byte *src) const;
 
 	// Set an area to a specified color
-	void Clear (int left, int top, int right, int bottom, int color) const;
-
-	// Access control
-	void Lock ();
-	void Unlock ();
-
-	// Palette control (unused)
-	void AttachPalette (palette_t *pal);
-	void DetachPalette ();
+	void Clear(int left, int top, int right, int bottom, argb_t color) const;
 
 	// Text drawing functions
 	// Output a line of text using the console font
@@ -301,10 +217,11 @@ protected:
 	static vdrawfunc *m_Drawfuncs;
 	static vdrawsfunc *m_Drawsfuncs;
 
-	byte ashift;
-	byte rshift;
-	byte gshift;
-	byte bshift;
+private:
+	IWindowSurface*			mSurface;
+
+	int getCleanX(int x) const;
+	int getCleanY(int y) const;
 };
 
 inline void DCanvas::DrawText (int normalcolor, int x, int y, const byte *string) const
@@ -325,10 +242,7 @@ inline void DCanvas::DrawTextCleanLuc (int normalcolor, int x, int y, const byte
 }
 inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const byte *string) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor,
-		(x - 160) * CleanXfac + width / 2,
-		(y - 100) * CleanYfac + height / 2,
-		string);
+	TextSWrapper (EWrapper_Translated, normalcolor, getCleanX(x), getCleanY(y), string);
 }
 inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const
 {
@@ -358,10 +272,7 @@ inline void DCanvas::DrawTextCleanLuc (int normalcolor, int x, int y, const char
 }
 inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const char *string) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor,
-		(x - 160) * CleanXfac + width / 2,
-		(y - 100) * CleanYfac + height / 2,
-		(const byte *)string);
+	TextSWrapper (EWrapper_Translated, normalcolor, getCleanX(x), getCleanY(y), (const byte*)string);
 }
 inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
 {
@@ -545,9 +456,6 @@ extern shaderef_t V_Palette;
 
 void V_MarkRect (int x, int y, int width, int height);
 
-// BestColor
-byte BestColor (const argb_t *palette, const int r, const int g, const int b, const int numcolors);
-byte BestColor2 (const argb_t *palette, const argb_t color, const int numcolors);
 // Returns the closest color to the one desired. String
 // should be of the form "rr gg bb".
 int V_GetColorFromString (const argb_t *palette, const char *colorstring);
@@ -583,19 +491,18 @@ bool V_UseWidescreen();
 // 0 <=   toa <= 255
 forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int toa)
 {
-	const int fr = RPART(from);
-	const int fg = GPART(from);
-	const int fb = BPART(from);
+	const int fr = from.r;
+	const int fg = from.g;
+	const int fb = from.b;
 
-	const int dr = RPART(to) - fr;
-	const int dg = GPART(to) - fg;
-	const int db = BPART(to) - fb;
+	const int dr = to.r - fr;
+	const int dg = to.g - fg;
+	const int db = to.b - fb;
 
-	return MAKERGB(
+	return argb_t(
 		fr + ((dr * toa) >> 8),
 		fg + ((dg * toa) >> 8),
-		fb + ((db * toa) >> 8)
-	);
+		fb + ((db * toa) >> 8));
 }
 
 // Alpha blend between two RGB colors with two alpha values
@@ -603,11 +510,10 @@ forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int to
 // 0 <=   toa <= 255
 forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa)
 {
-	return MAKERGB(
-		(RPART(from) * froma + RPART(to) * toa) >> 8,
-		(GPART(from) * froma + GPART(to) * toa) >> 8,
-		(BPART(from) * froma + BPART(to) * toa) >> 8
-	);
+	return argb_t(
+		(from.r * froma + to.r * toa) >> 8,
+		(from.g * froma + to.g * toa) >> 8,
+		(from.b * froma + to.b * toa) >> 8);
 }
 
 void V_DrawFPSWidget();

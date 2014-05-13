@@ -2,7 +2,6 @@
 #define __CL_PCH__
 
 // system
-#include "hardware.h"
 #include "i_input.h"
 #include "i_music.h"
 #include "i_sdlvideo.h"

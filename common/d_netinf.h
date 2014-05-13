@@ -62,17 +62,17 @@ enum weaponswitch_t
 
 struct UserInfo
 {
-	int             next_change_time;
-	std::string     netname;
-	team_t          team; // [Toke - Teams]
-	fixed_t         aimdist;
-	bool            unlag;
-	bool            predict_weapons;
-	byte            update_rate;
-	int             color;
-	gender_t        gender;
-	weaponswitch_t  switchweapon;
-	byte            weapon_prefs[NUMWEAPONS];
+	int				next_change_time;
+	std::string		netname;
+	team_t			team; // [Toke - Teams]
+	fixed_t			aimdist;
+	bool			unlag;
+	bool			predict_weapons;
+	byte			update_rate;
+	argb_t			color;
+	gender_t		gender;
+	weaponswitch_t	switchweapon;
+	byte			weapon_prefs[NUMWEAPONS];
 
 	static const byte weapon_prefs_default[NUMWEAPONS];
 

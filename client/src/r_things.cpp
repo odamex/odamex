@@ -55,24 +55,6 @@ extern fixed_t FocalLengthX, FocalLengthY;
 //void R_DrawColumn (void);
 //void R_DrawFuzzColumn (void);
 
-static int crosshair_lump;
-
-static void R_InitCrosshair();
-static byte crosshair_trans[256];
-
-static int crosshair_color_custom = 0xb0;
-CVAR_FUNC_IMPL (hud_crosshaircolor)
-{
-	DWORD *palette = GetDefaultPalette()->colors;
-	crosshair_color_custom = V_GetColorFromString(palette, hud_crosshaircolor.cstring());
-}
-
-
-EXTERN_CVAR (hud_crosshairhealth)
-CVAR_FUNC_IMPL(hud_crosshair)
-{
-	R_InitCrosshair();
-}
 
 //
 // Sprite rotation 0 is facing the viewer,
@@ -92,9 +74,6 @@ int*			spritelights;
 
 EXTERN_CVAR (r_drawplayersprites)
 EXTERN_CVAR (r_particles)
-
-EXTERN_CVAR (hud_crosshairdim)
-EXTERN_CVAR (hud_crosshairscale)
 
 //
 // INITIALIZATION FUNCTIONS
@@ -297,30 +276,6 @@ void R_InitSpriteDefs (const char **namelist)
 }
 
 
-static void R_InitCrosshair()
-{
-	int xhairnum = (int)hud_crosshair;
-
-	if (xhairnum)
-	{
-		char xhairname[16];
-		int xhair;
-
-		sprintf (xhairname, "XHAIR%d", xhairnum);
-
-		if ((xhair = W_CheckNumForName (xhairname)) == -1)
-			xhair = W_CheckNumForName ("XHAIR1");
-
-		if(xhair != -1)
-			crosshair_lump = xhair;
-	}
-
-	// set up translation table for the crosshair's color
-	// initialize to default colors
-	for (size_t i = 0; i < 256; i++)
-		crosshair_trans[i] = i;
-}
-
 //
 // GAME FUNCTIONS
 //
@@ -344,9 +299,6 @@ void R_InitSprites (const char **namelist)
 	lastvissprite = &vissprites[MaxVisSprites];
 
 	R_InitSpriteDefs (namelist);
-
-	// set up the crosshair
-	R_InitCrosshair();
 }
 
 
@@ -527,7 +479,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		colfrac += vis->xiscale;
 	}
 
-	bool rend_multiple_columns = r_columnmethod && !fuzz_effect && !detailxshift;
+	bool rend_multiple_columns = r_columnmethod && !fuzz_effect;
 
 	// TODO: change from negonearray to actual top of sprite
 	R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray,
@@ -1028,10 +980,10 @@ void R_DrawPlayerSprites (void)
 		&ceilinglight, false);
 
 	// [RH] set foggy flag
-	foggy = (level.fadeto || sec->floorcolormap->fade);
+	foggy = (level.fadeto || sec->colormap->fade);
 
 	// [RH] set basecolormap
-	basecolormap = sec->floorcolormap->maps;
+	basecolormap = sec->colormap->maps;
 
 	// get light level
 	lightnum = ((floorlight + ceilinglight) >> (LIGHTSEGSHIFT+1))
@@ -1245,62 +1197,6 @@ void R_DrawSprite (vissprite_t *spr)
 
 
 
-static void R_DrawCrosshair (void)
-{
-	if(!camera)
-		return;
-
-	// Don't draw the crosshair in chasecam mode
-	if (camera->player && (camera->player->cheats & CF_CHASECAM))
-		return;
-
-    // Don't draw the crosshair in overlay mode
-    if (automapactive && viewactive)
-        return;
-
-	// Don't draw the crosshair in spectator mode
-	if (camera->player && camera->player->spectator)
-		return;
-
-	if(hud_crosshair && crosshair_lump)
-	{
-		static const byte crosshair_color = 0xB0;
-		if (hud_crosshairhealth)
-		{
-			byte health_colors[4] = { 0xB0, 0xDF, 0xE7, 0x77 };
-
-			if (camera->health > 75)
-				crosshair_trans[crosshair_color] = health_colors[3];
-			else if (camera->health > 50)
-				crosshair_trans[crosshair_color] = health_colors[2];
-			else if (camera->health > 25)
-				crosshair_trans[crosshair_color] = health_colors[1];
-			else
-				crosshair_trans[crosshair_color] = health_colors[0];
-		}
-		else
-			crosshair_trans[crosshair_color] = crosshair_color_custom;
-
-		V_ColorMap = translationref_t(crosshair_trans);
-
-		if (hud_crosshairdim && hud_crosshairscale)
-			screen->DrawTranslatedLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
-				realviewwidth / 2 + viewwindowx,
-				realviewheight / 2 + viewwindowy);
-        else if (hud_crosshairscale)
-			screen->DrawTranslatedPatchCleanNoMove (W_CachePatch (crosshair_lump),
-				realviewwidth / 2 + viewwindowx,
-				realviewheight / 2 + viewwindowy);
-        else if (hud_crosshairdim)
-			screen->DrawTranslatedLucentPatch (W_CachePatch (crosshair_lump),
-				realviewwidth / 2 + viewwindowx,
-				realviewheight / 2 + viewwindowy);
-		else
-			screen->DrawTranslatedPatch (W_CachePatch (crosshair_lump),
-				realviewwidth / 2 + viewwindowx,
-				realviewheight / 2 + viewwindowy);
-	}
-}
 
 //
 // R_DrawMasked
@@ -1331,8 +1227,7 @@ void R_DrawMasked (void)
 	if (!viewangleoffset)
 	{
 		R_DrawPlayerSprites ();
-		R_DrawCrosshair (); // [RH] Draw crosshair (if active)
-	}						// Ch0wW: Crosshair is always the last element drawn on the screen.
+	}
 }
 
 void R_InitParticles (void)
@@ -1422,9 +1317,9 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		shaderef_t map;
 
 		if (vis->heightsec == NULL || vis->FakeFlat == FAKED_Center)
-			map = sector->floorcolormap->maps;
+			map = sector->colormap->maps;
 		else
-			map = vis->heightsec->floorcolormap->maps;
+			map = vis->heightsec->colormap->maps;
 
 		if (fixedlightlev)
 		{

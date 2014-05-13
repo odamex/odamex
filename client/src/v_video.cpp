@@ -27,11 +27,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "minilzo.h"
-// [RH] Output buffer size for LZO compression.
-//		Extra space in case uncompressable.
-#define OUT_LEN(a)		((a) + (a) / 64 + 16 + 3)
-
 #include "m_alloc.h"
 
 #include "i_system.h"
@@ -66,9 +61,6 @@
 
 IMPLEMENT_CLASS (DCanvas, DObject)
 
-int DisplayWidth, DisplayHeight, DisplayBits;
-int SquareWidth;
-
 argb_t Col2RGB8[65][256];
 palindex_t RGB32k[32][32][32];
 
@@ -83,8 +75,13 @@ DBoundingBox dirtybox;
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_32bpp)
+EXTERN_CVAR (vid_vsync)
+EXTERN_CVAR (vid_fullscreen)
+EXTERN_CVAR (vid_320x200)
+EXTERN_CVAR (vid_640x400)
 EXTERN_CVAR (vid_autoadjust)
 EXTERN_CVAR (vid_overscan)
+EXTERN_CVAR (vid_ticker)
 
 CVAR_FUNC_IMPL (vid_maxfps)
 {
@@ -109,7 +106,7 @@ EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (ui_dimcolor)
 
 // [RH] Set true when vid_setmode command has been executed
-BOOL	setmodeneeded = false;
+bool	setmodeneeded = false;
 // [RH] Resolution to change to when setmodeneeded is true
 int		NewWidth, NewHeight, NewBits;
 
@@ -131,87 +128,70 @@ CVAR_FUNC_IMPL (vid_32bpp)
 //
 // V_MarkRect
 //
-void V_MarkRect (int x, int y, int width, int height)
+void V_MarkRect(int x, int y, int width, int height)
 {
-	dirtybox.AddToBox (x, y);
-	dirtybox.AddToBox (x+width-1, y+height-1);
+	dirtybox.AddToBox(x, y);
+	dirtybox.AddToBox(x + width - 1, y + height - 1);
+}
+
+
+//
+// DCanvas::getCleanX
+//
+// Returns the real screen x coordinate given the virtual 320x200 x coordinate.
+//
+int DCanvas::getCleanX(int x) const
+{
+	return (x - 160) * CleanXfac + mSurface->getWidth() / 2;
+}
+
+
+//
+// DCanvas::getCleanY
+//
+// Returns the real screen y coordinate given the virtual 320x200 y coordinate.
+//
+int DCanvas::getCleanY(int y) const
+{
+	return (y - 100) * CleanYfac + mSurface->getHeight() / 2;
 }
 
 
 // [RH] Fill an area with a 64x64 flat texture
 //		right and bottom are one pixel *past* the boundaries they describe.
-void DCanvas::FlatFill (int left, int top, int right, int bottom, const byte *src) const
+void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src) const
 {
-	int x, y;
-	int advance;
-	int width;
+	int surface_advance = mSurface->getPitchInPixels() - right + left;
 
-	width = right - left;
-	right = width >> 6;
-
-	if (is8bit())
+	if (mSurface->getBitsPerPixel() == 8)
 	{
-		byte *dest;
+		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + top * mSurface->getPitchInPixels() + left;
 
-		advance = pitch - width;
-		dest = buffer + top * pitch + left;
-
-		for (y = top; y < bottom; y++)
+		for (int y = top; y < bottom; y++)
 		{
-			for (x = 0; x < right; x++)
+			int x = left;
+			while (x < right)
 			{
-				memcpy (dest, src + ((y&63)<<6), 64);
-				dest += 64;
+				int amount = std::min(64 - (x & 63), right - x);
+				memcpy(dest, src + ((y & 63) << 6) + (x & 63), amount);
+				dest += amount;
+				x += amount;
 			}
 
-			if (width & 63)
-			{
-				memcpy (dest, src + ((y&63)<<6), width & 63);
-				dest += width & 63;
-			}
-			dest += advance;
+			dest += surface_advance;
 		}
 	}
 	else
 	{
-		unsigned int *dest;
-		int z;
-		const byte *l;
+		argb_t* dest = (argb_t*)mSurface->getBuffer() + top * mSurface->getPitchInPixels() + left;
 
-		advance = (pitch - (width << 2)) >> 2;
-		dest = (unsigned int *)(buffer + top * pitch + (left << 2));
-
-		for (y = top; y < bottom; y++)
+		for (int y = top; y < bottom; y++)
 		{
-			l = src + ((y&63)<<6);
-			for (x = 0; x < right; x++)
-			{
-				for (z = 0; z < 64; z += 4, dest += 4)
-				{
-					// Try and let the optimizer pair this on a Pentium
-					// (even though VC++ doesn't anyway)
-					dest[0] = V_Palette.shade(l[z+0]);
-					dest[1] = V_Palette.shade(l[z+1]);
-					dest[2] = V_Palette.shade(l[z+2]);
-					dest[3] = V_Palette.shade(l[z+3]);
-				}
-			}
+			const byte* src_line = src + ((y & 63) << 6);
+			for (int x = left; x < right; x++)
+				*dest++ = V_Palette.shade(src_line[x & 63]);
 
-			if (width & 63)
-			{
-				// Do any odd pixel left over
-				if (width & 1)
-					*dest++ = V_Palette.shade(l[0]);
-
-				// Do the rest of the pixels
-				for (z = 1; z < (width & 63); z += 2, dest += 2)
-				{
-					dest[0] = V_Palette.shade(l[z+0]);
-					dest[1] = V_Palette.shade(l[z+1]);
-				}
-			}
-
-			dest += advance;
+			dest += surface_advance;
 		}
 	}
 }
@@ -221,9 +201,10 @@ void DCanvas::FlatFill (int left, int top, int right, int bottom, const byte *sr
 // aspect ratio. Pillarboxing is used in widescreen resolutions.
 void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 {
-	Clear(0, 0, width, height, 0);
+	int width = mSurface->getWidth(), height = mSurface->getHeight();
+	Clear(0, 0, width, height, argb_t(0, 0, 0));
 
-	if (isProtectedRes())
+	if (width == 320 && height == 200)
 	{
 		DrawPatch(patch, 0, 0);
 	}
@@ -243,36 +224,32 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 
 
 // [RH] Set an area to a specified color
-void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
+void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) const
 {
-	int x, y;
+	int surface_pitch_pixels = mSurface->getPitchInPixels();
 
-	if (is8bit())
+	if (mSurface->getBitsPerPixel() == 8)
 	{
-		byte *dest;
+		palindex_t color_index = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + top * surface_pitch_pixels + left;
 
-		dest = buffer + top * pitch + left;
-		x = right - left;
-		for (y = top; y < bottom; y++)
+		int line_length = (right - left) * sizeof(palindex_t);
+		for (int y = top; y < bottom; y++)
 		{
-			memset (dest, color, x);
-			dest += pitch;
+			memset(dest, color_index, line_length);
+			dest += surface_pitch_pixels;
 		}
 	}
 	else
 	{
-		unsigned int *dest;
+		color = V_GammaCorrect(color);
+		argb_t* dest = (argb_t*)mSurface->getBuffer() + top * surface_pitch_pixels + left;
 
-		dest = (unsigned int *)(buffer + top * pitch + (left << 2));
-		right -= left;
-
-		for (y = top; y < bottom; y++)
+		for (int y = top; y < bottom; y++)
 		{
-			for (x = 0; x < right; x++)
-			{
+			for (int x = 0; x < right - left; x++)
 				dest[x] = color;
-			}
-			dest += pitch >> 2;
+			dest += surface_pitch_pixels;
 		}
 	}
 }
@@ -280,10 +257,10 @@ void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
 
 void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float famount) const
 {
-	if (!buffer)
-		return;
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch_pixels = mSurface->getPitchInPixels();
 
-	if (x1 < 0 || x1 + w > width || y1 < 0 || y1 + h > height)
+	if (x1 < 0 || x1 + w > surface_width || y1 < 0 || y1 + h > surface_height)
 		return;
 
 	if (famount <= 0.0f)
@@ -291,7 +268,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 	else if (famount > 1.0f)
 		famount = 1.0f;
 
-	if (is8bit())
+	if (mSurface->getBitsPerPixel() == 8)
 	{
 		int bg;
 		int x, y;
@@ -299,10 +276,10 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		fixed_t amount = (fixed_t)(famount * 64.0f);
 		argb_t *fg2rgb = Col2RGB8[amount];
 		argb_t *bg2rgb = Col2RGB8[64-amount];
-		unsigned int fg = fg2rgb[V_GetColorFromString(GetDefaultPalette()->basecolors, color_str)];
+		unsigned int fg = fg2rgb[V_GetColorFromString(V_GetDefaultPalette()->basecolors, color_str)];
 
-		byte *dest = buffer + y1 * pitch + x1;
-		int gap = pitch - w;
+		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + y1 * surface_pitch_pixels + x1;
+		int advance = surface_pitch_pixels - w;
 
 		int xcount = w / 4;
 		int xcount_remainder = w % 4;
@@ -335,14 +312,15 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 				bg = (fg+bg) | 0x1f07c1f;
 				*dest++ = RGB32k[0][0][bg&(bg>>15)];
 			}
-			dest += gap;
+			dest += advance;
 		}
 	}
 	else
 	{
-		argb_t color = V_GetColorFromString(NULL, color_str);
-		color = MAKERGB(newgamma[RPART(color)], newgamma[GPART(color)], newgamma[BPART(color)]);
-		r_dimpatchD(this, color, (int)(famount * 256.0f), x1, y1, w, h);
+		argb_t color = (argb_t)V_GetColorFromString(NULL, color_str);
+		color = V_GammaCorrect(color);
+
+		r_dimpatchD(mSurface, color, (int)(famount * 256.0f), x1, y1, w, h);
 	}
 }
 
@@ -430,72 +408,28 @@ BEGIN_COMMAND (setcolor)
 END_COMMAND (setcolor)
 
 // Build the tables necessary for translucency
-static void BuildTransTable (argb_t *palette)
+static void BuildTransTable(const argb_t* palette_colors)
 {
-	{
-		int r, g, b;
+	// create the small RGB table
+	for (int r = 0; r < 32; r++)
+		for (int g = 0; g < 32; g++)
+			for (int b = 0; b < 32; b++)
+				RGB32k[r][g][b] = V_BestColor(palette_colors, (r<<3)|(r>>2), (g<<3)|(g>>2), (b<<3)|(b>>2));
 
-		// create the small RGB table
-		for (r = 0; r < 32; r++)
-			for (g = 0; g < 32; g++)
-				for (b = 0; b < 32; b++)
-					RGB32k[r][g][b] = BestColor (palette,
-						(r<<3)|(r>>2), (g<<3)|(g>>2), (b<<3)|(b>>2), 256);
-	}
-
-	{
-		int x, y;
-
-		for (x = 0; x < 65; x++)
-			for (y = 0; y < 256; y++)
-				Col2RGB8[x][y] = (((RPART(palette[y])*x)>>4)<<20)  |
-								  ((GPART(palette[y])*x)>>4) |
-								 (((BPART(palette[y])*x)>>4)<<10);
-	}
-}
-
-void DCanvas::Lock ()
-{
-	m_LockCount++;
-	if (m_LockCount == 1)
-	{
-		I_LockScreen (this);
-
-		if (this == screen)
-		{
-			if (dcol.pitch != pitch << detailyshift)
-			{
-				dcol.pitch = pitch << detailyshift;
-				R_InitFuzzTable ();
-			}
-
-			if (1 << detailxshift != dspan.colsize)
-			{
-				dspan.colsize = 1 << detailxshift;
-			}
-		}
-	}
-}
-
-void DCanvas::Unlock ()
-{
-	if (m_LockCount)
-		if (--m_LockCount == 0)
-			I_UnlockScreen (this);
-}
-
-void DCanvas::Blit (int srcx, int srcy, int srcwidth, int srcheight,
-			 DCanvas *dest, int destx, int desty, int destwidth, int destheight)
-{
-	I_Blit (this, srcx, srcy, srcwidth, srcheight, dest, destx, desty, destwidth, destheight);
+	for (int x = 0; x < 65; x++)
+		for (int y = 0; y < 256; y++)
+			Col2RGB8[x][y] = (((palette_colors[y].r * x) >> 4) << 20)  |
+							  ((palette_colors[y].g * x )>> 4) |
+							 (((palette_colors[y].b * x) >> 4) << 10);
 }
 
 CVAR_FUNC_IMPL (vid_widescreen)
 {
-	static bool last_value = !var;	// force setmodeneeded when loading cvar
-	if (last_value != var)
+	bool enabled = (var != 0.0f);
+	static bool last_value = !enabled;	// force setmodeneeded when loading cvar
+	if (last_value != enabled)
 		setmodeneeded = true;
-	last_value = var;
+	last_value = enabled;
 }
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
@@ -519,16 +453,19 @@ CVAR_FUNC_IMPL (sv_allowwidescreen)
 //
 bool V_UsePillarBox()
 {
-	if (I_GetVideoWidth() == 0 || I_GetVideoHeight() == 0)
+	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+
+	if (width == 0 || height == 0)
 		return false;
 
-	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+	if (I_IsProtectedResolution(width, height))
 		return false;
-	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
-		return false;
+
+	if (vid_320x200 || vid_640x400)
+		return 3 * width > 4 * height;
 
 	return (!vid_widescreen || (!serverside && !sv_allowwidescreen))
-		&& (3 * I_GetVideoWidth() > 4 * I_GetVideoHeight());
+		&& (3 * width > 4 * height);
 }
 
 //
@@ -540,16 +477,19 @@ bool V_UsePillarBox()
 //
 bool V_UseLetterBox()
 {
-	if (I_GetVideoWidth() == 0 || I_GetVideoHeight() == 0)
+	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+
+	if (width == 0 || height == 0)
 		return false;
 
-	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+	if (I_IsProtectedResolution(width, height))
 		return false;
-	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
-		return false;
+
+	if (vid_320x200 || vid_640x400)
+		return 3 * width <= 4 * height;
 
 	return (vid_widescreen && (serverside || sv_allowwidescreen))
-		&& (3 * I_GetVideoWidth() <= 4 * I_GetVideoHeight());
+		&& (3 * width <= 4 * height);
 }
 
 //
@@ -558,149 +498,51 @@ bool V_UseLetterBox()
 //
 bool V_UseWidescreen()
 {
-	if (I_GetVideoWidth() == 0 || I_GetVideoHeight() == 0)
+	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+
+	if (width == 0 || height == 0)
 		return false;
 
-	if (I_GetVideoWidth() == 320 && I_GetVideoHeight() == 200)
+	if (I_IsProtectedResolution(width, height))
 		return false;
-	if (I_GetVideoWidth() == 640 && I_GetVideoHeight() == 400)
-		return false;
+
+	if (vid_320x200 || vid_640x400)
+		return 3 * width > 4 * height;
 
 	return (vid_widescreen && (serverside || sv_allowwidescreen))
-		&& (3 * I_GetVideoWidth() > 4 * I_GetVideoHeight());
+		&& (3 * width > 4 * height);
 }
+
 
 //
 // V_SetResolution
 //
-static bool V_DoModeSetup(int width, int height, int bits)
+bool V_SetResolution(int width, int height, int bpp)
 {
-	int basew = 320, baseh = 200;
+	bool fullscreen = (vid_fullscreen != 0.0f);
+	bool vsync = (vid_vsync != 0.0f);
 
-	// Free the virtual framebuffer
-	if (screen)
-	{
-		I_FreeScreen(screen);
-		screen = NULL;
-	}
-
-	if (!I_SetMode(width, height, bits))
+	I_SetVideoMode(width, height, bpp, fullscreen, vsync);
+	if (!I_VideoInitialized())
 		return false;
 
-	I_SetOverscan (vid_overscan);
-
-	if (V_UsePillarBox())
-		width = (4 * height) / 3;
-	else if (V_UseLetterBox())
-		height = (9 * width) / 16;
-
-	// This uses the smaller of the two results. It's still not ideal but at least
-	// this allows con_scaletext to have some purpose...
-
-    CleanXfac = width / basew;
-    CleanYfac = height / baseh;
-
-	if (CleanXfac == 0 || CleanYfac == 0)
-		CleanXfac = CleanYfac = 1;
-	else
-	{
-		if (CleanXfac < CleanYfac)
-			CleanYfac = CleanXfac;
-		else
-			CleanXfac = CleanYfac;
-	}
-
-	DisplayWidth = width;
-	DisplayHeight = height;
-	DisplayBits = bits;
-
-	SquareWidth = (4 * DisplayHeight) / 3;
-
-	if (SquareWidth > DisplayWidth)
-        SquareWidth = DisplayWidth;
-
-	// Allocate a new virtual framebuffer
-	bool primary = (vid_fullscreen == 0);
-
-	// [SL] Add a bit to the screen width if it's a power-of-two to avoid
-	// cache thrashing
-	int cache_fudge = (width % 256) == 0 ? 4 : 0;
-
-	screen = I_AllocateScreen(width + cache_fudge, height, bits, primary);
-
-	V_ForceBlend (0,0,0,0);
-	GammaAdjustPalettes ();
-		RefreshPalettes ();
-	R_ReinitColormap ();
-
-	R_InitColumnDrawers();
-	R_MultiresInit();
-
-	// [SL] 2011-11-30 - Prevent the player's view angle from moving
-	I_FlushInput();
-
-    gotconback = false;
+	V_Init();
 
 	return true;
 }
 
-bool V_SetResolution(int width, int height, int bits)
+BEGIN_COMMAND(vid_setmode)
 {
-	int oldwidth, oldheight, oldbits;
-
-	if (screen)
-	{
-		oldwidth = I_GetVideoWidth();
-		oldheight = I_GetVideoHeight();
-		oldbits = I_GetVideoBitDepth();
-	}
-	else
-	{
-		// Harmless if screen wasn't allocated
-		oldwidth = width;
-		oldheight = height;
-		oldbits = bits;
-	}
-
-	// Make sure we don't set the resolution smaller than Doom's original 320x200
-	// resolution. Bad things might happen.
-	width = clamp(width, 320, MAXWIDTH);
-	height = clamp(height, 200, MAXHEIGHT);
-
-	if ((int)(vid_autoadjust))
-	{
-		if (vid_fullscreen)
-		{
-			// Fullscreen needs to check for a valid resolution.
-			I_ClosestResolution(&width, &height);
-		}
-
-		// Try specified resolution
-		if (!I_CheckResolution(width, height))
-		{
-			// Try the previous resolution (if any)
-			if (!I_CheckResolution(oldwidth, oldheight))
-		   		return false;
-
-			width = oldwidth;
-			height = oldheight;
-			bits = oldbits;
-		}
-	}
-
-	return V_DoModeSetup(width, height, bits);
-}
-
-BEGIN_COMMAND (vid_setmode)
-{
-	int		width = 0, height = 0;
-	int		bits = DisplayBits;
+	int width = 0, height = 0;
+	int bpp = (int)vid_32bpp ? 32 : 8;
 
 	// No arguments
-	if (argc == 1) {
+	if (argc == 1)
+	{
 		Printf(PRINT_HIGH, "Usage: vid_setmode <width> <height>\n");
 		return;
 	}
+
 	// Width
 	if (argc > 1)
 		width = atoi(argv[1]);
@@ -711,30 +553,20 @@ BEGIN_COMMAND (vid_setmode)
 	if (height == 0)
 		height = I_GetVideoHeight();
 
-	// Bits
-	bits = (int)vid_32bpp ? 32 : 8;
-
 	if (width < 320 || height < 200)
 		Printf(PRINT_HIGH, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
 
 	if (width > MAXWIDTH || height > MAXHEIGHT)
 		Printf(PRINT_HIGH, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
 
-	if (I_CheckResolution(width, height))
+	// The actual change of resolution will take place
+	// near the beginning of D_Display().
+	if (gamestate != GS_STARTUP)
 	{
-		// The actual change of resolution will take place
-		// near the beginning of D_Display().
-		if (gamestate != GS_STARTUP)
-		{
-			setmodeneeded = true;
-			NewWidth = width;
-			NewHeight = height;
-			NewBits = bits;
-		}
-	}
-	else
-	{
-		Printf(PRINT_HIGH, "Unknown resolution %dx%d\n", width, height);
+		setmodeneeded = true;
+		NewWidth = width;
+		NewHeight = height;
+		NewBits = bpp;
 	}
 }
 END_COMMAND (vid_setmode)
@@ -747,130 +579,50 @@ BEGIN_COMMAND (checkres)
 }
 END_COMMAND (checkres)
 
-//
-// V_InitPalette
-//
-
-void V_InitPalette (void)
-{
-	// [RH] Initialize palette subsystem
-	if (!(InitPalettes ("PLAYPAL")))
-		I_FatalError ("Could not initialize palette");
-
-	BuildTransTable(GetDefaultPalette()->basecolors);
-
-	V_ForceBlend (0, 0, 0, 0);
-
-	RefreshPalettes ();
-
-	assert(GetDefaultPalette()->maps.colormap != NULL);
-	assert(GetDefaultPalette()->maps.shademap != NULL);
-	V_Palette = shaderef_t(&GetDefaultPalette()->maps, 0); // (unsigned int *)DefaultPalette->colors;
-}
 
 //
 // V_Close
 //
-//
 void STACK_ARGS V_Close()
 {
-	if(screen)
-	{
-		I_FreeScreen(screen);
+	// screen is automatically free'd by the primary surface
+	if (screen)
 		screen = NULL;
-	}
 }
+
 
 //
 // V_Init
 //
-
-void V_Init (void)
+void V_Init()
 {
-	int width, height, bits;
-
 	bool firstTime = true;
-	if(firstTime)
-		atterm (V_Close);
+	if (firstTime)
+		atterm(V_Close);
 
-	width = height = bits = 0;
+	if (!I_VideoInitialized())
+		I_FatalError("Failed to initialize display");
 
-	const char *w = Args.CheckValue ("-width");
-	const char *h = Args.CheckValue ("-height");
-	const char *b = Args.CheckValue ("-bits");
+	V_InitPalette("PLAYPAL");
+	R_ReinitColormap();
 
-	if (w)
-		width = atoi (w);
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
-	if (h)
-		height = atoi (h);
+	// This uses the smaller of the two results. It's still not ideal but at least
+	// this allows hud_scaletext to have some purpose...
+	CleanXfac = CleanYfac = std::max(1, std::min(surface_width / 320, surface_height / 200));
 
-	if (b)
-	{
-		bits = atoi (b);
-		bits = (bits < 32 ? 8 : 32);
+	R_InitColumnDrawers();
 
-		std::string bppcmd = "vid_32bpp ";
-		bppcmd += (bits == 32 ? "1":"0");
+	// [SL] 2011-11-30 - Prevent the player's view angle from moving
+	I_FlushInput();
 
-		AddCommandString(bppcmd);
-	}
+	I_SetWindowCaption();
+	I_SetWindowIcon();
 
-	if (width == 0)
-	{
-		if (height == 0)
-		{
-			width = (int)(vid_defwidth);
-			height = (int)(vid_defheight);
-		}
-		else
-		{
-			width = (height * 8) / 6;
-		}
-	}
-	else if (height == 0)
-	{
-		height = (width * 6) / 8;
-	}
+	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
-	if (bits == 0)
-	{
-		bits = (int)vid_32bpp ? 32 : 8;
-	}
-
-    if ((int)(vid_autoadjust))
-        I_ClosestResolution (&width, &height);
-
-	if (!V_SetResolution (width, height, bits))
-		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,
-            (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"));
-	else
-        AddCommandString("checkres");
-
-	V_InitPalette ();
-
-	C_InitConsole (screen->width, screen->height, true);
-}
-
-void DCanvas::AttachPalette (palette_t *pal)
-{
-	if (m_Palette == pal)
-		return;
-
-	DetachPalette ();
-
-	pal->usecount++;
-	m_Palette = pal;
-}
-
-
-void DCanvas::DetachPalette ()
-{
-	if (m_Palette)
-	{
-		FreePalette (m_Palette);
-		m_Palette = NULL;
-	}
+	BuildTransTable(V_GetDefaultPalette()->basecolors);
 }
 
 
@@ -897,8 +649,8 @@ void V_DrawFPSWidget()
 
 		double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
 		int len = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
-		screen->Clear(0, screen->height - 8, len * 8, screen->height, 0);
-		screen->PrintStr(0, screen->height - 8, fpsbuff, CR_GRAY);
+		screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), argb_t(0, 0, 0));
+		screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, CR_GRAY);
 
 		time_accum += delta_time;
 
@@ -918,16 +670,41 @@ void V_DrawFPSWidget()
 //
 void V_DrawFPSTicker()
 {
-	static QWORD lasttic = 0;
-	QWORD i = I_MSTime() * TICRATE / 1000;
-	QWORD tics = i - lasttic;
-	lasttic = i;
-	if (tics > 20) tics = 20;
+	int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
+	static int last_tic = current_tic;
+	
+	int tics = clamp(current_tic - last_tic, 0, 20);
+	last_tic = current_tic;
 
-	for (i = 0; i < tics*2; i += 2)
-		screen->buffer[(screen->height - 1) * screen->pitch + i] = 0xff;
-	for ( ; i < 20*2; i += 2)
-		screen->buffer[(screen->height - 1) * screen->pitch + i] = 0x0;
+	IWindowSurface* surface = I_GetPrimarySurface();
+	int surface_height = surface->getHeight();
+	int surface_pitch = surface->getPitch();
+
+	if (surface->getBitsPerPixel() == 8)
+	{
+		const palindex_t oncolor = 255;
+		const palindex_t offcolor = 0;
+		palindex_t* dest = (palindex_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
+
+		int i = 0;
+		for (i = 0; i < tics*2; i += 2)
+			dest[i] = oncolor;
+		for ( ; i < 20*2; i += 2)
+			dest[i] = offcolor;
+	}
+	else
+	{
+		const argb_t oncolor(255, 255, 255);
+		const argb_t offcolor(0, 0, 0);
+
+		argb_t* dest = (argb_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
+
+		int i = 0;
+		for (i = 0; i < tics*2; i += 2)
+			dest[i] = oncolor;
+		for ( ; i < 20*2; i += 2)
+			dest[i] = offcolor;
+	}
 }
 
 VERSION_CONTROL (v_video_cpp, "$Id$")

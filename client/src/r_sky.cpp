@@ -40,6 +40,8 @@
 #include "w_wad.h"
 
 extern int *texturewidthmask;
+extern fixed_t FocalLengthX;
+extern fixed_t freelookviewheight;
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(cl_mouselook)
@@ -60,6 +62,11 @@ int			sky1shift,		sky2shift;
 fixed_t		sky1pos=0,		sky1speed=0;
 fixed_t		sky2pos=0,		sky2speed=0;
 
+// The xtoviewangleangle[] table maps a screen pixel
+// to the lowest viewangle that maps back to x ranges
+// from clipangle to -clipangle.
+static angle_t xtoviewangle[MAXWIDTH + 1];
+
 CVAR_FUNC_IMPL(r_stretchsky)
 {
 	R_InitSkyMap ();
@@ -67,10 +74,50 @@ CVAR_FUNC_IMPL(r_stretchsky)
 
 char SKYFLATNAME[8] = "F_SKY1";
 
-extern "C" int detailxshift, detailyshift;
-extern fixed_t freelookviewheight;
 
 static tallpost_t* skyposts[MAXWIDTH];
+
+
+//
+// R_InitXToViewAngle
+//
+// Now generate xtoviewangle for sky texture mapping.
+// [RH] Do not generate viewangletox, because texture mapping is no
+// longer done with trig, so it's not needed.
+//
+static void R_InitXToViewAngle()
+{
+	static int last_viewwidth = -1;
+	static fixed_t last_focx = -1;
+
+	if (viewwidth != last_viewwidth || FocalLengthX != last_focx)
+	{
+		if (centerx > 0)
+		{
+			const fixed_t hitan = finetangent[FINEANGLES/4+CorrectFieldOfView/2];
+			const int t = std::min<int>((FocalLengthX >> FRACBITS) + centerx, viewwidth);
+			const fixed_t slopestep = hitan / centerx;
+			const fixed_t dfocus = FocalLengthX >> DBITS;
+
+			for (int i = centerx, slope = 0; i <= t; i++, slope += slopestep)
+				xtoviewangle[i] = (angle_t)-(signed)tantoangle[slope >> DBITS];
+
+			for (int i = t + 1; i <= viewwidth; i++)
+				xtoviewangle[i] = ANG270+tantoangle[dfocus / (i - centerx)];
+
+			for (int i = 0; i < centerx; i++)
+				xtoviewangle[i] = (angle_t)(-(signed)xtoviewangle[viewwidth-i-1]);
+		}
+		else
+		{
+			memset(xtoviewangle, 0, sizeof(angle_t) * viewwidth + 1);
+		}
+
+		last_viewwidth = viewwidth;
+		last_focx = FocalLengthX;
+	}
+}
+
 
 //
 //
@@ -81,12 +128,8 @@ static tallpost_t* skyposts[MAXWIDTH];
 // [ML] 5/11/06 - Remove sky2 stuffs
 // [ML] 3/16/10 - Bring it back!
 
-void R_InitSkyMap ()
+void R_InitSkyMap()
 {
-	texpatch_t *texpatch;
-	patch_t *wpatch;
-	int p_height, t_height,i,count;
-
 	if (textureheight == NULL)
 		return;
 
@@ -100,18 +143,18 @@ void R_InitSkyMap ()
 		sky2texture = sky1texture;
 	}
 
-	t_height = textures[sky1texture]->height;
-	p_height = 0;
+	int t_height = textures[sky1texture]->height;
+	int p_height = 0;
 
-	count = textures[sky1texture]->patchcount;
-	texpatch = &(textures[sky1texture]->patches[0]);
+	int count = textures[sky1texture]->patchcount;
+	const texpatch_t* texpatch = &(textures[sky1texture]->patches[0]);
 	
 	// Find the tallest patch in the texture
-	for(i = 0; i < count; i++, texpatch++)
+	for (int i = 0; i < count; i++, texpatch++)
 	{
-		wpatch = W_CachePatch(texpatch->patch);
-		if(wpatch->height() > p_height)
-			p_height = SAFESHORT(wpatch->height());
+		const patch_t* wpatch = W_CachePatch(texpatch->patch);
+		if (wpatch->height() > p_height)
+			p_height = wpatch->height();
 	}
 
 	textures[sky1texture]->height = MAX(t_height,p_height);
@@ -131,11 +174,11 @@ void R_InitSkyMap ()
 	
 	if (viewwidth && viewheight)
 	{
-		skyiscale = (200*FRACUNIT) / (((freelookviewheight<<detailxshift) * viewwidth) / (viewwidth<<detailxshift));
-		skyscale = ((((freelookviewheight<<detailxshift) * viewwidth) / (viewwidth<<detailxshift)) << FRACBITS) /(200);
+		skyiscale = (200*FRACUNIT) / ((freelookviewheight * viewwidth) / viewwidth);
+		skyscale = (((freelookviewheight * viewwidth) / viewwidth) << FRACBITS) /(200);
 
-		skyiscale = FixedMul (skyiscale, FixedDiv (FieldOfView, 2048));
-		skyscale = FixedMul (skyscale, FixedDiv (2048, FieldOfView));
+		skyiscale = FixedMul(skyiscale, FixedDiv(FieldOfView, 2048));
+		skyscale = FixedMul(skyscale, FixedDiv(2048, FieldOfView));
 	}
 
 	// The DOOM sky map is 256*128*4 maps.
@@ -146,7 +189,10 @@ void R_InitSkyMap ()
 		sky1shift -= skystretch;
 	if (texturewidthmask[sky2texture] >= 127)
 		sky2shift -= skystretch;
+
+	R_InitXToViewAngle();
 }
+
 
 //
 // R_BlastSkyColumn
@@ -230,7 +276,7 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	R_ResetDrawFuncs();
 
-	palette_t *pal = GetDefaultPalette();
+	palette_t *pal = V_GetDefaultPalette();
 
 	dcol.iscale = skyiscale >> skystretch;
 	dcol.texturemid = skytexturemid;

@@ -38,7 +38,7 @@ extern BOOL			skymap;
 extern drawseg_t	*drawsegs;
 extern drawseg_t*	ds_p;
 
-extern byte *solidcol;
+extern byte			solidcol[MAXWIDTH];
 
 typedef void (*drawfunc_t) (int start, int stop);
 

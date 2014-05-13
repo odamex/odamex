@@ -440,7 +440,7 @@ BOOL C_DoKey (event_t *ev)
 	if (!binding->length())
 		binding = &Bindings[ev->data1];
 
-	if (binding->length() && (headsupactive == 0 || ev->data1 < 256))
+	if (binding->length() && (HU_ChatMode() == CHAT_INACTIVE || ev->data1 < 256))
 	{
 		if (ev->type == ev_keydown)
 		{

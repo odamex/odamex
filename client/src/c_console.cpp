@@ -63,7 +63,7 @@ std::string DownloadStr;
 static void C_TabComplete();
 static bool TabbedLast;		// Last key pressed was tab
 
-static DCanvas* conback;
+static IWindowSurface* background_surface;
 
 extern int		gametic;
 extern BOOL		automapactive;	// in AM_map.c
@@ -71,7 +71,6 @@ extern BOOL		advancedemo;
 
 unsigned int	ConRows, ConCols, PhysRows;
 
-BOOL			vidactive = false, gotconback = false;
 BOOL			cursoron = false;
 int				ConBottom;
 unsigned int	RowAdjust;
@@ -553,10 +552,10 @@ EXTERN_CVAR(con_scrlock)
 //
 void STACK_ARGS C_Close()
 {
-	if (conback)
+	if (background_surface)
 	{
-		I_FreeScreen(conback);
-		conback = NULL;
+		I_FreeSurface(background_surface);
+		background_surface = NULL;
 	}
 
 	delete [] ConChars;
@@ -576,27 +575,25 @@ void C_InitConCharsFont()
 
 	// Load the CONCHARS lump and convert it from patch_t format
 	// to a raw linear byte buffer with a background color of 'transcolor'
-	DCanvas* temp_screen = I_AllocateScreen(128, 128, 8);
-
-	patch_t* chars_patch = W_CachePatch("CONCHARS");
-	temp_screen->Lock();
+	IWindowSurface* temp_surface = I_AllocateSurface(128, 128, 8);
+	temp_surface->lock();
 
 	// fill with color 'transcolor'
 	for (int y = 0; y < 128; y++)
-		memset(temp_screen->buffer + temp_screen->pitch * y, transcolor, 128);
+		memset(temp_surface->getBuffer() + y * temp_surface->getPitchInPixels(), transcolor, 128);
 
 	// paste the patch into the linear byte bufer
-	temp_screen->DrawPatch(chars_patch, 0, 0);
+	DCanvas* canvas = temp_surface->getDefaultCanvas();
+	canvas->DrawPatch(W_CachePatch("CONCHARS"), 0, 0);
 
 	ConChars = new byte[256*8*8*2];
-
 	byte* dest = ConChars;	
 
 	for (int y = 0; y < 16; y++)
 	{
 		for (int x = 0; x < 16; x++)
 		{
-			const byte* source = temp_screen->buffer + x * 8 + (y * 8 * temp_screen->pitch);
+			const byte* source = temp_surface->getBuffer() + x * 8 + (y * 8 * temp_surface->getPitch());
 			for (int z = 0; z < 8; z++)
 			{
 				for (int a = 0; a < 8; a++)
@@ -622,14 +619,13 @@ void C_InitConCharsFont()
 				}
 
 				dest += 16;
-				source += temp_screen->pitch;
+				source += temp_surface->getPitch();
 			}
 		}
 	}
 
-	temp_screen->Unlock();
-
-	I_FreeScreen(temp_screen);
+	temp_surface->unlock();
+	I_FreeSurface(temp_surface);
 }
 
 
@@ -662,29 +658,23 @@ static int C_StringWidth(const char* str)
 //
 // C_InitConsole
 //
-void C_InitConsole(int width, int height, BOOL ingame)
+void C_InitConsole(int width, int height)
 {
 	bool firstTime = true;
 	if (firstTime)
 		atterm(C_Close);
 
-	vidactive = ingame;
+	if (background_surface)
+		I_FreeSurface(background_surface);
 
-	if (ingame)
+	if (I_VideoInitialized())
 	{
-		if (!gotconback)
-		{
-			patch_t* bg = W_CachePatch(W_GetNumForName("CONBACK"));
+		const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
 
-			delete conback;
-			conback = I_AllocateScreen(screen->width, screen->height, 8);
-
-			conback->Lock();
-			conback->DrawPatch(bg, (screen->width/2)-(bg->width()/2), (screen->height/2)-(bg->height()/2));
-			conback->Unlock();
-
-			gotconback = true;
-		}
+		background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+		background_surface->lock();
+		background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
+		background_surface->unlock();
 
 		delete ConChars;
 		C_InitConCharsFont();
@@ -725,7 +715,7 @@ void C_InitConsole(int width, int height, BOOL ingame)
 
 	C_FlushDisplay();
 
-	if (ingame && gamestate == GS_STARTUP)
+	if (I_VideoInitialized() && gamestate == GS_STARTUP)
 		C_FullConsole();
 }
 
@@ -737,7 +727,6 @@ static void setmsgcolor(int index, const char *color)
 	PrintColors[index] = i;
 }
 
-extern int DisplayWidth;
 
 //
 // C_AddNotifyString
@@ -763,7 +752,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
 		return;
 
-	int width = DisplayWidth / V_TextScaleXAmount();
+	int width = I_GetSurfaceWidth() / V_TextScaleXAmount();
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
 	{
@@ -834,7 +823,7 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	if (printlevel < (int)msglevel)
 		return 0;
 
-	if (vidactive && !midprinting)
+	if (I_VideoInitialized() && !midprinting)
 		C_AddNotifyString(printlevel, color_code, outline);
 
 	const char* line_start = outline;
@@ -938,7 +927,9 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	if (print_stdout && gamestate != GS_FORCEWIPE)
 		C_PrintStringStdOut(outline);
 
-	return C_PrintString(printlevel, color_code, outline);
+	C_PrintString(printlevel, color_code, outline);
+
+	return len;
 }
 
 int STACK_ARGS Printf(int printlevel, const char *format, ...)
@@ -986,21 +977,24 @@ void C_FlushDisplay()
 
 void C_AdjustBottom()
 {
+	int surface_height = I_GetSurfaceHeight();
 	if (gamestate == GS_FULLCONSOLE || gamestate == GS_STARTUP)
-		ConBottom = screen->height;
-	else if (ConBottom > screen->height / 2 || ConsoleState == c_down)
-		ConBottom = screen->height / 2;
+		ConBottom = surface_height; 
+	else if (ConBottom > surface_height / 2 || ConsoleState == c_down)
+		ConBottom = surface_height / 2;
 }
 
 void C_NewModeAdjust()
 {
-	C_InitConsole(screen->width, screen->height, true);
+	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight());
 	C_FlushDisplay();
 	C_AdjustBottom();
 }
 
 void C_Ticker()
 {
+	int surface_height = I_GetSurfaceHeight();
+
 	static int lasttic = 0;
 
 	if (lasttic == 0)
@@ -1021,25 +1015,25 @@ void C_Ticker()
 
 		if (ConsoleState == c_falling)
 		{
-			ConBottom += (gametic - lasttic) * (screen->height*2/25);
-			if (ConBottom >= screen->height / 2)
+			ConBottom += (gametic - lasttic) * (surface_height*2/25);
+			if (ConBottom >= surface_height / 2)
 			{
-				ConBottom = screen->height / 2;
+				ConBottom = surface_height / 2;
 				ConsoleState = c_down;
 			}
 		}
 		else if (ConsoleState == c_fallfull)
 		{
-			ConBottom += (gametic - lasttic) * (screen->height*2/15);
-			if (ConBottom >= screen->height)
+			ConBottom += (gametic - lasttic) * (surface_height*2/15);
+			if (ConBottom >= surface_height)
 			{
-				ConBottom = screen->height;
+				ConBottom = surface_height;
 				ConsoleState = c_down;
 			}
 		}
 		else if (ConsoleState == c_rising)
 		{
-			ConBottom -= (gametic - lasttic) * (screen->height*2/25);
+			ConBottom -= (gametic - lasttic) * (surface_height*2/25);
 			if (ConBottom <= 0)
 			{
 				ConsoleState = c_up;
@@ -1048,7 +1042,7 @@ void C_Ticker()
 		}
 		else if (ConsoleState == c_risefull)
 		{
-			ConBottom -= (gametic - lasttic) * (screen->height*2/15);
+			ConBottom -= (gametic - lasttic) * (surface_height*2/15);
 			if (ConBottom <= 0)
 			{
 				ConsoleState = c_up;
@@ -1117,6 +1111,10 @@ void C_SetTicker(unsigned int at)
 
 void C_DrawConsole()
 {
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	int primary_surface_width = primary_surface->getWidth();
+	int primary_surface_height = primary_surface->getHeight();
+
 	int left = 8;
 	int lines = (ConBottom - 12) / 8;
 
@@ -1133,17 +1131,28 @@ void C_DrawConsole()
 	}
 
 	if (gamestate == GS_LEVEL || gamestate == GS_DEMOSCREEN || gamestate == GS_INTERMISSION)
-		screen->Dim(0, 0, screen->width, ConBottom);
+	{
+		// Non-fullscreen console. Overlay a translucent background.
+		screen->Dim(0, 0, primary_surface_width, ConBottom);
+	}
 	else
-		conback->Blit(0, 0, conback->width, conback->height,
-					screen, 0, 0, screen->width, screen->height);
+	{
+		// Fullscreen console. Blit the image in the center of a black background.
+		screen->Clear(0, 0, primary_surface_width, primary_surface_height, argb_t(0, 0, 0));
+
+		int x = (primary_surface_width - background_surface->getWidth()) / 2;
+		int y = (primary_surface_height - background_surface->getHeight()) / 2;
+		primary_surface->blit(background_surface, 0, 0,
+				background_surface->getWidth(), background_surface->getHeight(),
+				x, y, background_surface->getWidth(), background_surface->getHeight());
+	}
 
 	if (ConBottom >= 12)
 	{
 		// print the Odamex version in gold in the bottom right corner of console
 		char version_str[16];
 		sprintf(version_str, "%s.%u", DOTVERSIONSTR, GetRevision());
-		screen->PrintStr(screen->width - 8 - C_StringWidth(version_str),
+		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(version_str),
 					ConBottom - 12, version_str, CR_ORANGE);
 
 		// Download progress bar hack
@@ -1156,7 +1165,7 @@ void C_DrawConsole()
 		if (TickerMax)
 		{
 			char tickstr[256];
-			unsigned int i, tickend = ConCols - screen->width / 90 - 6;
+			unsigned int i, tickend = ConCols - primary_surface_width / 90 - 6;
 			unsigned int tickbegin = 0;
 
 			if (TickerLabel)
@@ -1265,7 +1274,8 @@ void C_FullConsole()
 
 void C_ToggleConsole()
 {
-	if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull))
+	if (HU_ChatMode() == CHAT_INACTIVE &&
+		(ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull))
 	{
 		if (gamestate == GS_CONNECTING)
 			ConsoleState = c_fallfull;
@@ -1277,7 +1287,7 @@ void C_ToggleConsole()
 	else if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP
             && gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
 	{
-		if (ConBottom == screen->height)
+		if (ConBottom == I_GetSurfaceHeight())
 			ConsoleState = c_risefull;
 		else
 			ConsoleState = c_rising;
@@ -1305,7 +1315,7 @@ void C_HideConsole()
 // Setup the server disconnect effect.
 void C_ServerDisconnectEffect()
 {
-   screen->Dim(0, 0, screen->width, screen->height);
+   screen->Dim(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 }
 
 
@@ -1574,7 +1584,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 		Printf(PRINT_HIGH, "%s\n", newmsg);
 		midprinting = false;
 
-		if ( (MidMsg = V_BreakLines(screen->width / V_TextScaleXAmount(), (byte *)newmsg)) )
+		if ( (MidMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
 			MidTicker = (int)(msgtime * TICRATE) + gametic;
 
@@ -1600,7 +1610,7 @@ void C_DrawMid()
 		yscale = V_TextScaleYAmount();
 
 		y = 8 * yscale;
-		x = screen->width >> 1;
+		x = I_GetSurfaceWidth() / 2;
 		for (i = 0, line = (ST_Y * 3) / 8 - MidLines * 4 * yscale; i < MidLines; i++, line += y)
 		{
 			screen->DrawTextStretched(PrintColors[PRINTLEVELS],
@@ -1647,7 +1657,7 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 
 		char *newmsg = strdup(str.c_str());
 
-		if ((GameMsg = V_BreakLines(screen->width / V_TextScaleXAmount(), (byte *)newmsg)) )
+		if ((GameMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
 			GameTicker = (int)(msgtime * TICRATE) + gametic;
 
@@ -1677,7 +1687,7 @@ void C_DrawGMid()
 		yscale = V_TextScaleYAmount();
 
 		y = 8 * yscale;
-		x = screen->width >> 1;
+		x = I_GetSurfaceWidth() / 2;
 		for (i = 0, line = (ST_Y * 2) / 8 - GameLines * 4 * yscale;i < GameLines; i++, line += y)
 		{
 			screen->DrawTextStretched(GameColor,

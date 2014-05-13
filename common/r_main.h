@@ -55,7 +55,7 @@ extern bool				r_fakingunderwater;
 extern bool				r_underwater;
 
 extern int				centerx;
-extern "C" int			centery;
+extern int				centery;
 
 extern fixed_t			centerxfrac;
 extern fixed_t			centeryfrac;
@@ -104,11 +104,6 @@ extern int				lightscaleymul;
 // Number of diminishing brightness levels.
 // There a 0-31, i.e. 32 LUT in the COLORMAP lump.
 #define NUMCOLORMAPS			32
-
-
-// [RH] New detail modes
-extern "C" int			detailxshift;
-extern "C" int			detailyshift;
 
 
 //
@@ -189,16 +184,22 @@ int R_GetWidescreen(void);
 void R_RenderPlayerView (player_t *player);
 
 // Called by startup code.
-void R_Init (void);
+void R_Init();
 
 // Called by exit code.
-void STACK_ARGS R_Shutdown (void);
+void STACK_ARGS R_Shutdown();
 
 // Called by M_Responder.
-void R_SetViewSize (int blocks);
+void R_SetViewSize(int blocks);
 
-// [RH] Initialize multires stuff for renderer
-void R_MultiresInit (void);
+class IWindowSurface;
+IWindowSurface* R_GetRenderingSurface();
+
+bool R_BorderVisible();
+bool R_StatusBarVisible();
+
+// Initialize multires stuff for renderer
+void R_InitViewWindow();
 
 void R_ResetDrawFuncs();
 void R_SetFuzzDrawFuncs();
@@ -237,7 +238,7 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 		return shade(c);
 
 	// Default to white light:
-	argb_t lightcolor = MAKERGB(255, 255, 255);
+	argb_t lightcolor = argb_t(255, 255, 255);
 	argb_t fadecolor = level.fadeto; 
 
 	// Use the dynamic lighting's light color if we have one:
@@ -250,14 +251,14 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	// Find the shading for the custom player colors:
 	argb_t trancolor = translationRGB[pid][c - range_start];
 
-	unsigned int r = (RPART(trancolor) * RPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
-					+ RPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
-	unsigned int g = (GPART(trancolor) * GPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
-					+ GPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
-	unsigned int b = (BPART(trancolor) * BPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
-					+ BPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
+	unsigned int r = (trancolor.r * lightcolor.r * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.r * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int g = (trancolor.g * lightcolor.g * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.g * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int b = (trancolor.b * lightcolor.b * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.b * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
 
-	return MAKERGB(newgamma[r], newgamma[g], newgamma[b]);
+	return argb_t(gammatable[r], gammatable[g], gammatable[b]);
 }
 
 

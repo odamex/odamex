@@ -38,6 +38,13 @@ extern int ST_WIDTH;
 extern int ST_X;
 extern int ST_Y;
 
+int ST_StatusBarWidth(int surface_width, int surface_height);
+int ST_StatusBarHeight(int surface_width, int surface_height);
+int ST_StatusBarX(int surface_width, int surface_height);
+int ST_StatusBarY(int surface_width, int surface_height);
+
+void ST_ForceRefresh();
+
 //
 // STATUS BAR
 //

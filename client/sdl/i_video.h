@@ -22,71 +22,14 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __I_VIDEO_H__
 #define __I_VIDEO_H__
 
 #include "doomtype.h"
-#include "v_video.h"
+#include "m_swap.h"
 
-// [RH] True if the display is not in a window
-extern BOOL Fullscreen;
-
-int I_GetVideoWidth();
-int I_GetVideoHeight();
-int I_GetVideoBitDepth();
-
-// [RH] Set the display mode
-bool I_SetMode (int &width, int &height, int &bits);
-
-// Returns true if the Video object has been set up and not yet destroyed
-bool I_HardwareInitialized();
-
-// Takes full 8 bit values.
-void I_SetPalette (argb_t *palette);
-
-/*
-    12/3/06: Old Timey Palette method, used for red screen only as of
-             this writing.  It accepts a byte instead of a DWORD.  It
-             is restricted only to the red screen because of that.
-*/
-void I_SetOldPalette (byte *doompalette);
-
-void I_BeginUpdate (void);		// [RH] Locks screen[0]
-void I_FinishUpdate (void);
-void I_FinishUpdateNoBlit (void);
-void I_TempUpdate (void);
-
-// Wait for vertical retrace or pause a bit.
-void I_WaitVBL(int count);
-
-void I_ReadScreen (byte *scr);
-
-void I_BeginRead (void);
-void I_EndRead (void);
-
-void I_SetWindowCaption(const std::string& caption);
-void I_SetWindowCaption(void);
-void I_SetWindowIcon(void);
-
-bool I_CheckResolution (int width, int height);
-void I_ClosestResolution (int *width, int *height);
-//bool I_SetResolution (int width, int height, int bpp);
-
-bool I_CheckVideoDriver (const char *name);
-
-bool I_SetOverscan (float scale);
-
-void I_StartModeIterator ();
-bool I_NextMode (int *width, int *height);
-
-DCanvas *I_AllocateScreen (int width, int height, int bits, bool primary = false);
-void I_FreeScreen (DCanvas *canvas);
-
-void I_LockScreen (DCanvas *canvas);
-void I_UnlockScreen (DCanvas *canvas);
-void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
-			 DCanvas *dest, int destx, int desty, int destwidth, int destheight);
+#include <string>
+#include <vector>
 
 enum EDisplayType
 {
@@ -95,7 +38,336 @@ enum EDisplayType
 	DISPLAY_Both
 };
 
-EDisplayType I_DisplayType ();
+// forward definitions
+class DCanvas;
+class IWindow;
+class IWindowSurface;
+
+void I_InitHardware();
+void STACK_ARGS I_ShutdownHardware();
+bool I_VideoInitialized();
+
+void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync);
+void I_SetWindowSize(int width, int height);
+
+IWindow* I_GetWindow();
+IWindowSurface* I_GetPrimarySurface();
+DCanvas* I_GetPrimaryCanvas();
+
+IWindowSurface* I_GetEmulatedSurface();
+void I_BlitEmulatedSurface();
+
+IWindowSurface* I_AllocateSurface(int width, int height, int bpp);
+void I_FreeSurface(IWindowSurface* surface);
+
+int I_GetVideoWidth();
+int I_GetVideoHeight();
+int I_GetVideoBitDepth();
+
+int I_GetSurfaceWidth();
+int I_GetSurfaceHeight();
+
+bool I_IsProtectedResolution(const IWindowSurface* surface = I_GetPrimarySurface());
+bool I_IsProtectedResolution(int width, int height);
+
+void I_SetPalette(const argb_t* palette);
+
+void I_BeginUpdate();
+void I_FinishUpdate();
+
+void I_WaitVBL(int count);
+
+void I_SetWindowCaption(const std::string& caption = "");
+void I_SetWindowIcon();
+
+std::string I_GetVideoDriverName();
+
+EDisplayType I_DisplayType();
+
+void I_DrawLoadingIcon();
+
+
+// ****************************************************************************
+
+// ============================================================================
+//
+// IWindowSurface abstract base class interface
+//
+// Wraps the raw device surface and provides methods to access the raw surface
+// buffer.
+//
+// ============================================================================
+
+class IWindowSurface
+{
+public:
+	IWindowSurface(IWindow* window);
+	virtual ~IWindowSurface();
+
+	IWindow* getWindow()
+	{	return mWindow;	}
+
+	const IWindow* getWindow() const
+	{	return mWindow;	}
+
+	DCanvas* getDefaultCanvas();
+	DCanvas* createCanvas();
+	void releaseCanvas(DCanvas* canvas);
+
+	virtual byte* getBuffer() = 0;
+	virtual const byte* getBuffer() const = 0;
+
+	virtual void lock() { }
+	virtual void unlock() { } 
+
+	virtual int getWidth() const = 0;
+	virtual int getHeight() const = 0;
+	virtual int getPitch() const = 0;
+
+	virtual int getPitchInPixels() const
+	{	return getPitch() / getBytesPerPixel();	}
+
+	virtual int getBitsPerPixel() const = 0;
+
+	virtual int getBytesPerPixel() const
+	{	return getBitsPerPixel() / 8;	}
+
+	virtual void setPalette(const argb_t* palette) = 0;
+	virtual const argb_t* getPalette() const = 0;
+
+	virtual void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
+			int destx, int desty, int destw, int desth);
+
+	virtual void clear();
+
+private:
+	IWindow*			mWindow;
+
+	// Storage for all DCanvas objects allocated by this surface
+	typedef std::vector<DCanvas*> DCanvasCollection;
+	DCanvasCollection	mCanvasStore;
+
+	DCanvas*			mCanvas;
+};
+
+
+// ============================================================================
+//
+// IGenericWindowSurface class interface
+//
+// Implementation of IWindowSurface that is useful for headless clients. The
+// contents of the buffer are never used.
+//
+// ============================================================================
+
+class IGenericWindowSurface : public IWindowSurface
+{
+public:
+	IGenericWindowSurface(IWindow* window, int width, int height, int bpp);
+
+	IGenericWindowSurface(IWindowSurface* base_surface, int width, int height);
+
+	virtual ~IGenericWindowSurface();
+
+	virtual byte* getBuffer()
+	{	return mSurfaceBuffer;	}
+
+	virtual const byte* getBuffer() const
+	{	return mSurfaceBuffer;	}
+
+	virtual int getWidth() const
+	{	return mWidth;	}
+
+	virtual int getHeight() const
+	{	return mHeight;	}
+
+	virtual int getPitch() const
+	{	return mPitch;	}
+
+	virtual int getBitsPerPixel() const
+	{	return mBitsPerPixel;	}
+
+	virtual void setPalette(const argb_t* palette)
+	{	mPalette = palette;	}
+
+	virtual const argb_t* getPalette() const
+	{	return mPalette;	}	
+
+private:
+	// disable copy constructor and assignment operator
+	IGenericWindowSurface(const IGenericWindowSurface&);
+	IGenericWindowSurface& operator=(const IGenericWindowSurface&);
+
+	byte*			mSurfaceBuffer;
+	bool			mAllocatedSurfaceBuffer;
+
+	const argb_t*	mPalette;
+
+	int				mWidth;
+	int				mHeight;
+	int				mBitsPerPixel;
+	int				mPitch;
+};
+
+
+// ****************************************************************************
+
+// ============================================================================
+//
+// IVideoMode class interface
+//
+// ============================================================================
+
+class IVideoMode
+{
+public:
+	IVideoMode(int width, int height) :
+		mWidth(width), mHeight(height)
+	{ }
+
+	int getWidth() const
+	{	return mWidth;	}
+
+	int getHeight() const
+	{	return mHeight;	}
+
+	bool operator<(const IVideoMode& other) const
+	{
+		if (mWidth != other.mWidth)
+			return mWidth < other.mWidth;
+		if (mHeight != other.mHeight)
+			return mHeight < other.mHeight;
+		return false;
+	}
+
+	bool operator>(const IVideoMode& other) const
+	{
+		if (mWidth != other.mWidth)
+			return mWidth > other.mWidth;
+		if (mHeight != other.mHeight)
+			return mHeight > other.mHeight;
+		return false;
+	}
+
+	bool operator==(const IVideoMode& other) const
+	{
+		return mWidth == other.mWidth && mHeight == other.mHeight;
+	}
+	
+private:
+	int mWidth;
+	int mHeight;
+};
+
+typedef std::vector<IVideoMode> IVideoModeList;
+
+
+// ****************************************************************************
+
+// ============================================================================
+//
+// IWindow abstract base class interface
+//
+// Defines an interface for video windows (including both windowed and
+// full-screen modes).
+// ============================================================================
+
+class IWindow
+{
+public:
+	virtual ~IWindow()
+	{ }
+
+	virtual const IVideoModeList* getSupportedVideoModes() const = 0;
+	virtual const EDisplayType getDisplayType() const = 0;
+
+	virtual IVideoMode getClosestMode(int width, int height);
+
+	virtual IWindowSurface* getPrimarySurface() = 0;
+	virtual const IWindowSurface* getPrimarySurface() const = 0;
+
+	virtual int getWidth() const = 0;
+	virtual int getHeight() const = 0;
+	virtual int getBitsPerPixel() const = 0;
+
+	virtual int getBytesPerPixel() const
+	{	return getBitsPerPixel() / 8;	}
+
+	virtual bool isFullScreen() const = 0;
+
+	virtual bool setMode(int width, int height, int bpp, bool fullscreen, bool vsync) = 0;
+
+	virtual void refresh() { }
+
+	virtual void setWindowTitle(const std::string& caption = "") { }
+
+	virtual std::string getVideoDriverName() const
+	{	return "";	}
+
+	virtual void setPalette(const argb_t* palette)
+	{	getPrimarySurface()->setPalette(palette);	}
+
+	virtual const argb_t* getPalette() const
+	{	return getPrimarySurface()->getPalette();	}	
+};
+
+
+// ============================================================================
+//
+// IDummyWindow abstract base class interface
+//
+// denis - here is a blank implementation of IWindow that allows the client
+// to run without actual video output (e.g. script-controlled demo testing)
+//
+// ============================================================================
+
+class IDummyWindow : public IWindow
+{
+public:
+	IDummyWindow() : IWindow()
+	{	mPrimarySurface = new IGenericWindowSurface(this, 320, 200, 8); }
+
+	virtual ~IDummyWindow()
+	{	delete mPrimarySurface;	}
+
+	virtual const IVideoModeList* getSupportedVideoModes() const
+	{	return &mVideoModes;	}
+
+	virtual const EDisplayType getDisplayType() const
+	{	return DISPLAY_Both;	}
+
+	virtual IWindowSurface* getPrimarySurface()
+	{	return mPrimarySurface;	}
+
+	virtual const IWindowSurface* getPrimarySurface() const
+	{	return mPrimarySurface;	}
+
+	virtual int getWidth() const
+	{	return 0;	}
+
+	virtual int getHeight() const
+	{	return 0;	}
+
+	virtual int getBitsPerPixel() const
+	{	return 8;	}
+
+	virtual int getBytesPerPixel() const
+	{	return 1;	}
+
+	virtual bool setMode(int width, int height, int bpp, bool fullscreen, bool vsync)
+	{	return true;	}
+
+	virtual bool isFullScreen() const
+	{	return true;	}
+
+private:
+	// disable copy constructor and assignment operator
+	IDummyWindow(const IDummyWindow&);
+	IDummyWindow& operator=(const IDummyWindow&);
+
+	IVideoModeList		mVideoModes;
+	IWindowSurface*		mPrimarySurface;
+};
 
 
 #endif // __I_VIDEO_H__

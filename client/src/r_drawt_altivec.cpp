@@ -49,7 +49,10 @@
 #include "r_draw.h"
 #include "r_main.h"
 #include "r_things.h"
-#include "v_video.h"
+#include "i_video.h"
+
+extern byte** ylookup;
+extern int* columnofs;
 
 // Useful vector shorthand typedefs:
 typedef vector signed char vs8;
@@ -80,14 +83,14 @@ typedef vector unsigned int vu32;
 
 // Direct rendering (32-bit) functions for ALTIVEC optimization:
 
-void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h)
+void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	int x, y, i;
-	argb_t *line;
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	int surface_pitch_pixels = surface->getPitchInPixels();
+
 	int invAlpha = 256 - alpha;
 
-	int dpitch = cvs->pitch / sizeof(argb_t);
-	line = (argb_t *)cvs->buffer + y1 * dpitch;
+	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
 
 	int batches = w / 4;
 	int remainder = w & 3;
@@ -97,13 +100,15 @@ void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, argb_t color, int alpha, int 
 	const vu16 upper8mask = {0, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff};
 	const vu16 blendAlpha = {0, alpha, alpha, alpha, 0, alpha, alpha, alpha};
 	const vu16 blendInvAlpha = {0, invAlpha, invAlpha, invAlpha, 0, invAlpha, invAlpha, invAlpha};
-	const vu16 blendColor = {0, RPART(color), GPART(color), BPART(color), 0, RPART(color), GPART(color), BPART(color)};
+	const vu16 blendColor = {0, color.r, color.g, color.b, 0, color.r, color.g, color.b};
 	const vu16 blendMult = vec_mladd(blendColor, blendAlpha, zero);
 
-	for (y = y1; y < y1 + h; y++)
+	for (int y = y1; y < y1 + h; y++)
 	{
+		int x = x1;
+
 		// AltiVec optimize the bulk in batches of 4 colors:
-		for (i = 0, x = x1; i < batches; ++i, x += 4)
+		for (int i = 0; i < batches; ++i, x += 4)
 		{
 			const vu32 input = {line[x + 0], line[x + 1], line[x + 2], line[x + 3]};
 			const vu32 output = (vu32)blend4vs1_altivec(input, blendMult, blendInvAlpha, upper8mask);
@@ -117,12 +122,10 @@ void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, argb_t color, int alpha, int 
 		{
 			// Pick up the remainder:
 			for (; x < x1 + w; x++)
-			{
 				line[x] = alphablend1a(line[x], color, alpha);
-			}
 		}
 
-		line += dpitch;
+		line += surface_pitch_pixels;
 	}
 }
 

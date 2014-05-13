@@ -98,10 +98,6 @@
 
 extern size_t got_heapsize;
 
-//extern void M_RestoreMode (void); // [Toke - Menu]
-extern void R_ExecuteSetViewSize (void);
-void V_InitPalette (void);
-
 void D_CheckNetGame (void);
 void D_ProcessEvents (void);
 void D_DoAdvanceDemo (void);
@@ -109,9 +105,9 @@ void D_DoAdvanceDemo (void);
 void D_DoomLoop (void);
 
 extern QWORD testingmode;
-extern BOOL setsizeneeded;
-extern BOOL setmodeneeded;
-extern int NewWidth, NewHeight, NewBits, DisplayBits;
+extern bool setsizeneeded;
+extern bool setmodeneeded;
+extern int NewWidth, NewHeight, NewBits;
 EXTERN_CVAR (st_scale)
 extern BOOL gameisdead;
 extern BOOL demorecording;
@@ -133,8 +129,9 @@ event_t events[MAXEVENTS];
 int eventhead;
 int eventtail;
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
-DCanvas *page;
 bool demotest;
+
+IWindowSurface* page_surface;
 
 static int demosequence;
 static int pagetic;
@@ -148,6 +145,13 @@ EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
 EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
+
+EXTERN_CVAR (vid_ticker)
+EXTERN_CVAR (vid_defwidth)
+EXTERN_CVAR (vid_defheight)
+EXTERN_CVAR (vid_32bpp)
+EXTERN_CVAR (vid_fullscreen)
+EXTERN_CVAR (vid_vsync)
 
 const char *LOG_FILE;
 
@@ -213,7 +217,7 @@ void D_DisplayTicker()
 // D_Display
 //  draw current display, possibly wiping it from the previous
 //
-void D_Display (void)
+void D_Display()
 {
 	if (nodrawers)
 		return; 				// for comparative timing / profiling
@@ -233,15 +237,15 @@ void D_Display (void)
 		}
 
 		// Change screen mode.
-		if (!V_SetResolution (NewWidth, NewHeight, NewBits))
-			I_FatalError ("Could not change screen mode");
+		if (!V_SetResolution(NewWidth, NewHeight, NewBits))
+			I_FatalError("Could not change screen mode");
 
 		// Recalculate various view parameters.
 		setsizeneeded = true;
 		// Trick status bar into rethinking its position
-		st_scale.Callback ();
+		st_scale.Callback();
 		// Refresh the console.
-		C_NewModeAdjust ();
+		C_NewModeAdjust();
 	}
 
 	// [AM] Moved to below setmodeneeded so we have accurate screen size info.
@@ -256,11 +260,11 @@ void D_Display (void)
 	// change the view size if needed
 	if (setsizeneeded)
 	{
-		R_ExecuteSetViewSize ();
+		R_InitViewWindow();
 		setmodeneeded = false;
 	}
 
-	I_BeginUpdate ();
+	I_BeginUpdate();
 
 	// [RH] Allow temporarily disabling wipes
 	if (NoWipe)
@@ -281,45 +285,50 @@ void D_Display (void)
 		case GS_DOWNLOAD:
 		case GS_CONNECTING:
         case GS_CONNECTED:
-			C_DrawConsole ();
-			M_Drawer ();
-			I_FinishUpdate ();
+			C_DrawConsole();
+			M_Drawer();
+			I_FinishUpdate();
 			return;
 
 		case GS_LEVEL:
 			if (!gametic)
 				break;
 
-			// denis - freshen the borders (ffs..)
-			R_DrawViewBorder ();    // erase old menu stuff
-
-			if (viewactive)
-				R_RenderPlayerView (&displayplayer());
-			if (automapactive)
-				AM_Drawer ();
-			C_DrawMid ();
-			C_DrawGMid();
-			CTF_DrawHud ();
-			ST_Drawer ();
-			HU_Drawer ();
 			V_DoPaletteEffects();
+
+			// Drawn to R_GetRenderingSurface()
+			if (viewactive)
+				R_RenderPlayerView(&displayplayer());
+			R_DrawViewBorder();
+			ST_Drawer();
+
+			if (I_GetEmulatedSurface())
+				I_BlitEmulatedSurface();
+
+			if (automapactive)
+				AM_Drawer();
+
+			C_DrawMid();
+			C_DrawGMid();
+			CTF_DrawHud();
+			HU_Drawer();
 			break;
 
 		case GS_INTERMISSION:
 			if (viewactive)
-				R_RenderPlayerView (&displayplayer());
-			C_DrawMid ();
-			CTF_DrawHud ();
-			WI_Drawer ();
-			HU_Drawer ();
+				R_RenderPlayerView(&displayplayer());
+			C_DrawMid();
+			CTF_DrawHud();
+			WI_Drawer();
+			HU_Drawer();
 			break;
 
 		case GS_FINALE:
-			F_Drawer ();
+			F_Drawer();
 			break;
 
 		case GS_DEMOSCREEN:
-			D_PageDrawer ();
+			D_PageDrawer();
 			break;
 
 	default:
@@ -333,7 +342,7 @@ void D_Display (void)
 		int y;
 
 		y = (automapactive && !viewactive) ? 4 : viewwindowy + 4;
-		screen->DrawPatchCleanNoMove (pause, (screen->width-(pause->width())*CleanXfac)/2, y);
+		screen->DrawPatchCleanNoMove (pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
 	}
 
 	// [RH] Draw icon, if any
@@ -402,17 +411,29 @@ void D_PageTicker (void)
 //
 // D_PageDrawer
 //
-void D_PageDrawer (void)
+void D_PageDrawer()
 {
-	if (page)
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	primary_surface->clear();		// ensure black background in matted modes
+
+	if (page_surface)
 	{
-		page->Blit (0, 0, page->width, page->height,
-			screen, 0, 0, screen->width, screen->height);
-	}
-	else
-	{
-		screen->Clear (0, 0, screen->width, screen->height, 0);
-		//screen->PrintStr(0, 0, "Page graphic goes here", 22, CR_GRAY);
+		int destw, desth;
+
+		if (primary_surface->getWidth() * 3 >= primary_surface->getHeight() * 4)
+		{
+			desth = primary_surface->getHeight();
+			destw = desth * 8 / 6;
+		}
+		else
+		{
+			destw = primary_surface->getWidth();
+			desth = destw * 6 / 8;
+		}
+
+		primary_surface->blit(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
+				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
+				destw, desth);
 	}
 }
 
@@ -515,33 +536,32 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		const int width = 320, height = 200;
-		patch_t *data;
+		const patch_t* patch = W_CachePatch(pagename);
 
-		if (page && (page->width != screen->width || page->height != screen->height))
+		if (page_surface)
 		{
-			I_FreeScreen(page);
-			page = NULL;
+			I_FreeSurface(page_surface);
+			page_surface = NULL;
 		}
 
-		data = W_CachePatch (pagename);
-
-		if (page == NULL)
-        {
-            if (screen->isProtectedRes())
-                page = I_AllocateScreen(data->width(), data->height(), 8);
-            else
-                page = I_AllocateScreen(screen->width, screen->height, 8);
-        }
-
-		page->Lock ();
-
 		if (gameinfo.flags & GI_PAGESARERAW)
-            page->DrawBlock (0, 0, width, height, (byte *)data);
-		else
-			page->DrawPatchFullScreen(data);
+		{
+			page_surface = I_AllocateSurface(320, 200, 8);
+			DCanvas* canvas = page_surface->getDefaultCanvas();
 
-		page->Unlock ();
+			page_surface->lock();
+            canvas->DrawBlock(0, 0, 320, 200, (byte*)patch);
+			page_surface->unlock();
+		}
+		else
+		{
+			page_surface = I_AllocateSurface(patch->width(), patch->height(), 8);
+			DCanvas* canvas = page_surface->getDefaultCanvas();
+
+			page_surface->lock();
+			canvas->DrawPatchFullScreen(patch);
+			page_surface->unlock();
+		}
 	}
 }
 
@@ -550,10 +570,10 @@ void D_DoAdvanceDemo (void)
 //
 void STACK_ARGS D_Close (void)
 {
-	if(page)
+	if (page_surface)
 	{
-		I_FreeScreen(page);
-		page = NULL;
+		I_FreeSurface(page_surface);
+		page_surface = NULL;
 	}
 
 	D_ClearTaskSchedulers();
@@ -593,9 +613,7 @@ void D_NewWadInit()
 
 	HU_Init ();
 
-	if (!(InitPalettes("PLAYPAL")))
-		I_Error("Could not reinitialize palette");
-	V_InitPalette();
+	V_InitPalette("PLAYPAL");
 
 	G_SetLevelStrings ();
 	G_ParseMapInfo ();
@@ -609,6 +627,8 @@ void D_NewWadInit()
 
 	S_Init (snd_sfxvolume, snd_musicvolume);
 	ST_Init();
+
+	I_SetWindowCaption(D_GetTitleString());
 }
 
 void CL_NetDemoRecord(const std::string &filename);
@@ -635,8 +655,8 @@ void D_DoomMain (void)
 
 	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
 
-	M_LoadDefaults ();					// load before initing other systems
-	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
+	M_LoadDefaults();					// load before initing other systems
+	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	const char* iwad = Args.CheckValue("-iwad");
 	if (!iwad)
@@ -649,21 +669,54 @@ void D_DoomMain (void)
 
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
-	// [RH] Initialize configurable strings.
-	//D_InitStrings ();
+	int video_width = M_GetParmValue("-width");
+	int video_height = M_GetParmValue("-height");
+	int video_bpp = M_GetParmValue("-bits");
+
+	// ensure the width & height cvars are sane
+	if (vid_defwidth.asInt() <= 0 || vid_defheight.asInt() <= 0)
+	{
+		vid_defwidth.RestoreDefault();
+		vid_defheight.RestoreDefault();
+	}
+	
+	if (video_width == 0 && video_height == 0)
+	{
+		video_width = vid_defwidth.asInt();
+		video_height = vid_defheight.asInt();
+	}
+	else if (video_width == 0)
+	{
+		video_width = video_height * 4 / 3;
+	}
+	else if (video_height == 0)
+	{
+		video_height = video_width * 3 / 4;
+	}
+
+	if (video_bpp == 0 || (video_bpp != 8 && video_bpp != 32))
+		video_bpp = vid_32bpp ? 32 : 8;
 
 	// [RH] Moved these up here so that we can do most of our
 	//		startup output in a fullscreen console.
 
-	HU_Init ();
-	I_Init ();
-	V_Init ();
+	I_Init();
+	I_SetVideoMode(video_width, video_height, video_bpp, vid_fullscreen, vid_vsync);
+
+	std::string video_driver = I_GetVideoDriverName();
+	if (!video_driver.empty())
+		Printf(PRINT_HIGH, "Using %s video driver.\n", video_driver.c_str());
+
+	V_Init();
+	HU_Init();
 
     // SDL needs video mode set up first before input code can be used
     I_InitInput();
 
+	I_SetWindowCaption(D_GetTitleString());
+
 	// Base systems have been inited; enable cvar callbacks
-	cvar_t::EnableCallbacks ();
+	cvar_t::EnableCallbacks();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
 	if (GStrings(STARTUP1)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP1));
@@ -682,8 +735,12 @@ void D_DoomMain (void)
 	sv_fastmonsters = Args.CheckParm("-fast");
 
     // developer mode
-	devparm = Args.CheckParm ("-devparm");
-
+	devparm = Args.CheckParm("-devparm");
+ 
+	// set the default value for vid_ticker based on the presence of -devparm
+	if (devparm)
+		vid_ticker.SetDefault("1");
+ 
 	// shorttics (quantize yaw like recording a vanilla demo)
 	extern bool longtics;
 	longtics = !(Args.CheckParm("-shorttics"));
@@ -778,11 +835,6 @@ void D_DoomMain (void)
 	// Check for -file in shareware
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_Error ("You cannot -file with the shareware version. Register!");
-
-#ifdef _WIN32
-	const char *sdlv = getenv("SDL_VIDEODRIVER");
-	Printf (PRINT_HIGH, "Using %s video driver.\n",sdlv);
-#endif
 
 	Printf (PRINT_HIGH, "M_Init: Init miscellaneous info.\n");
 	M_Init ();

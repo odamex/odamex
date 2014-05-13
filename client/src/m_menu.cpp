@@ -101,8 +101,6 @@ BOOL 				menuactive;
 int                 repeatKey;
 int                 repeatCount;
 
-extern bool st_firsttime;
-
 extern bool			sendpause;
 char				savegamestrings[10][SAVESTRINGSIZE];
 
@@ -184,9 +182,9 @@ static void M_ChangeGender (int choice);
 static void M_ChangeAutoAim (int choice);
 bool M_DemoNoPlay;
 
-static DCanvas *FireScreen;
-
-EXTERN_CVAR (hud_targetnames)
+static IWindowSurface* fire_surface;
+static const int fire_surface_width = 72;
+static const int fire_surface_height = 77;
 
 //
 // DOOM MENU
@@ -1205,24 +1203,19 @@ EXTERN_CVAR (cl_autoaim)
 void M_PlayerSetup (int choice)
 {
 	choice = 0;
-	strcpy (savegamestrings[0], cl_name.cstring());
-//	strcpy (savegamestrings[1], team.cstring());	if (t = 1) // [Toke - Teams]
-	//M_DemoNoPlay = true;
-	//if (demoplayback)
-	//	G_CheckDemoStatus ();
+	strcpy(savegamestrings[0], cl_name.cstring());
 	M_SetupNextMenu (&PSetupDef);
 	PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
 	PlayerTics = PlayerState->tics;
-	if (FireScreen == NULL)
-		FireScreen = I_AllocateScreen (72, 72+5, 8);
+
+	if (fire_surface == NULL)
+		fire_surface = I_AllocateSurface(fire_surface_width, fire_surface_height, 8);
 
 	// [Nes] Intialize the player preview color.
-	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
+	R_BuildPlayerTranslation(0, V_GetColorFromString(NULL, cl_color.cstring()));
 
 	if (consoleplayer().ingame())
-	{
 		R_CopyTranslationRGB (0, consoleplayer_id);
-	}
 }
 
 static void M_PlayerSetupTicker (void)
@@ -1239,8 +1232,8 @@ static void M_PlayerSetupTicker (void)
 	PlayerTics = PlayerState->tics;
 }
 
-template<typename pixel_t>
-static forceinline pixel_t R_FirePixel(const byte c);
+template<typename PIXEL_T>
+static forceinline PIXEL_T R_FirePixel(const byte c);
 
 template<>
 forceinline byte R_FirePixel<byte>(const byte c)
@@ -1251,29 +1244,27 @@ forceinline byte R_FirePixel<byte>(const byte c)
 template<>
 forceinline argb_t R_FirePixel<argb_t>(const byte c)
 {
-	return MAKERGB(c, 0, 0);
+	return V_GammaCorrect(argb_t(c, 0, 0));
 }
 
-template<int xscale, typename pixel_t>
+template<int xscale, typename PIXEL_T>
 static forceinline void R_RenderFire(int x, int y)
 {
-	int pitch = screen->pitch / sizeof(pixel_t);
+	IWindowSurface* surface = I_GetPrimarySurface();
+	int surface_pitch = surface->getPitchInPixels();
 
-	for (int b = 0; b < FireScreen->height; b++)
+	for (int b = 0; b < fire_surface_height; b++)
 	{
-		pixel_t *to = (pixel_t *)(screen->buffer + y * screen->pitch + x * sizeof(pixel_t));
-		byte *from = FireScreen->buffer + b * FireScreen->pitch;
+		PIXEL_T* to = (PIXEL_T*)surface->getBuffer() + y * surface_pitch + x;
+		const palindex_t* from = (palindex_t*)fire_surface->getBuffer() + b * fire_surface->getPitch();
 		y += CleanYfac;
 
-		for (int a = 0; a < FireScreen->width; a++, to += xscale, from++)
+		for (int a = 0; a < fire_surface_width; a++, to += xscale, from++)
 		{
-			int c;
-			for (c = CleanYfac; c; c--)
+			for (int c = CleanYfac; c; c--)
 			{
 				for (int i = 0; i < xscale; ++i)
-				{
-					*(to + pitch*c + i) = R_FirePixel<pixel_t>(*from);
-				}
+					*(to + surface_pitch * c + i) = R_FirePixel<PIXEL_T>(*from);
 			}
 		}
 	}
@@ -1283,11 +1274,11 @@ static void M_PlayerSetupDrawer (void)
 {
 	int x1,x2,y1,y2;
 
-	x1 = (screen->width / 2)-(160*CleanXfac);
-	y1 = (screen->height / 2)-(100*CleanYfac);
+	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
+	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
 
-    x2 = (screen->width / 2)+(160*CleanXfac);
-	y2 = (screen->height / 2)+(100*CleanYfac);
+    x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
+	y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
@@ -1307,61 +1298,53 @@ static void M_PlayerSetupDrawer (void)
 	M_DrawSaveLoadBorder (PSetupDef.x + 56, PSetupDef.y, MAXPLAYERNAME+1);
 	screen->DrawTextCleanMove (CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
 
-	// Draw player team box
-//	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Team");	if (t = 1) // [Toke - Teams]
-//	screen->DrawTextCleanMove (CR_RED, PSetupDef.x + 56, PSetupDef.y + LINEHEIGHT, savegamestrings[1]);
-
-
 	// Draw cursor for either of the above
 	if (genStringEnter)
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x + V_StringWidth(savegamestrings[saveSlot]) + 56, PSetupDef.y + ((saveSlot == 0) ? 0 : LINEHEIGHT), "_");
+		screen->DrawTextCleanMove(CR_RED, PSetupDef.x + V_StringWidth(savegamestrings[saveSlot]) + 56,
+							PSetupDef.y + ((saveSlot == 0) ? 0 : LINEHEIGHT), "_");
 
 	// Draw player character
 	{
 		int x = 320 - 88 - 32, y = PSetupDef.y + LINEHEIGHT*3 - 14;
 
-		x = (x-160)*CleanXfac+(screen->width>>1);
-		y = (y-100)*CleanYfac+(screen->height>>1);
-		if (!FireScreen)
+		x = (x-160)*CleanXfac+(I_GetSurfaceWidth() / 2);
+		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
+		if (!fire_surface)
 		{
-			screen->Clear (x, y, x + 72 * CleanXfac, y + 72 * CleanYfac, 34);
+			argb_t color = V_GetDefaultPalette()->basecolors[34];
+			screen->Clear(x, y, x + fire_surface_width * CleanXfac, y + fire_surface_height * CleanYfac, color);
 		}
 		else
 		{
 			// [RH] The following fire code is based on the PTC fire demo
 			int a, b;
-			byte *from;
-			int width, height, pitch;
 
-			FireScreen->Lock ();
+			fire_surface->lock();
+			int pitch = fire_surface->getPitch();
 
-			width = FireScreen->width;
-			height = FireScreen->height;
-			pitch = FireScreen->pitch;
-
-			from = FireScreen->buffer + (height - 3) * pitch;
-			for (a = 0; a < width; a++, from++)
-			{
+			palindex_t* from = (palindex_t*)fire_surface->getBuffer() + (fire_surface_height - 3) * pitch;
+			for (a = 0; a < fire_surface_width; a++, from++)
 				*from = *(from + (pitch << 1)) = M_Random();
-			}
 
-			from = FireScreen->buffer;
-			for (b = 0; b < FireScreen->height - 4; b += 2)
+			from = (palindex_t*)fire_surface->getBuffer();
+			for (b = 0; b < fire_surface_height - 4; b += 2)
 			{
-				byte *pixel = from;
+				palindex_t* pixel = from;
 
 				// special case: first pixel on line
-				byte *p = pixel + (pitch << 1);
-				unsigned int top = *p + *(p + width - 1) + *(p + 1);
+				palindex_t* p = pixel + (pitch << 1);
+
+				unsigned int top = *p + *(p + fire_surface_width - 1) + *(p + 1);
 				unsigned int bottom = *(pixel + (pitch << 2));
 				unsigned int c1 = (top + bottom) >> 2;
-				if (c1 > 1) c1--;
+				if (c1 > 1)
+					c1--;
 				*pixel = c1;
 				*(pixel + pitch) = (c1 + bottom) >> 1;
 				pixel++;
 
 				// main line loop
-				for (a = 1; a < width-1; a++)
+				for (a = 1; a < fire_surface_width - 1; a++)
 				{
 					// sum top pixels
 					p = pixel + (pitch << 1);
@@ -1372,7 +1355,8 @@ static void M_PlayerSetupDrawer (void)
 
 					// combine pixels
 					c1 = (top + bottom) >> 2;
-					if (c1 > 1) c1--;
+					if (c1 > 1)
+						c1--;
 
 					// store pixels
 					*pixel = c1;
@@ -1384,10 +1368,11 @@ static void M_PlayerSetupDrawer (void)
 
 				// special case: last pixel on line
 				p = pixel + (pitch << 1);
-				top = *p + *(p - 1) + *(p - width + 1);
+				top = *p + *(p - 1) + *(p - fire_surface_width + 1);
 				bottom = *(pixel + (pitch << 2));
 				c1 = (top + bottom) >> 2;
-				if (c1 > 1) c1--;
+				if (c1 > 1)
+					c1--;
 				*pixel = c1;
 				*(pixel + pitch) = (c1 + bottom) >> 1;
 
@@ -1396,25 +1381,26 @@ static void M_PlayerSetupDrawer (void)
 			}
 
 			y--;
-			if (screen->is8bit())
-				{
+			if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+			{
 				// 8bpp rendering:
-				     if (CleanXfac == 1) R_RenderFire<1, byte>(x, y);
-				else if (CleanXfac == 2) R_RenderFire<2, byte>(x, y);
-				else if (CleanXfac == 3) R_RenderFire<3, byte>(x, y);
-				else if (CleanXfac == 4) R_RenderFire<4, byte>(x, y);
-				else if (CleanXfac == 5) R_RenderFire<5, byte>(x, y);
-					}
-			else
-							{
-				// 32bpp rendering:
-				     if (CleanXfac == 1) R_RenderFire<1, DWORD>(x, y);
-				else if (CleanXfac == 2) R_RenderFire<2, DWORD>(x, y);
-				else if (CleanXfac == 3) R_RenderFire<3, DWORD>(x, y);
-				else if (CleanXfac == 4) R_RenderFire<4, DWORD>(x, y);
-				else if (CleanXfac == 5) R_RenderFire<5, DWORD>(x, y);
+				     if (CleanXfac == 1) R_RenderFire<1, palindex_t>(x, y);
+				else if (CleanXfac == 2) R_RenderFire<2, palindex_t>(x, y);
+				else if (CleanXfac == 3) R_RenderFire<3, palindex_t>(x, y);
+				else if (CleanXfac == 4) R_RenderFire<4, palindex_t>(x, y);
+				else if (CleanXfac == 5) R_RenderFire<5, palindex_t>(x, y);
 			}
-			FireScreen->Unlock ();
+			else
+			{
+				// 32bpp rendering:
+				     if (CleanXfac == 1) R_RenderFire<1, argb_t>(x, y);
+				else if (CleanXfac == 2) R_RenderFire<2, argb_t>(x, y);
+				else if (CleanXfac == 3) R_RenderFire<3, argb_t>(x, y);
+				else if (CleanXfac == 4) R_RenderFire<4, argb_t>(x, y);
+				else if (CleanXfac == 5) R_RenderFire<5, argb_t>(x, y);
+			}
+
+			fire_surface->unlock();
 		}
 	}
 	{
@@ -1442,12 +1428,12 @@ static void M_PlayerSetupDrawer (void)
 	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Blue");
 
 	{
-		int x = V_StringWidth ("Green") + 8 + PSetupDef.x;
-		int color = V_GetColorFromString(NULL, cl_color.cstring());
+		int x = V_StringWidth("Green") + 8 + PSetupDef.x;
+		argb_t playercolor = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
 
-		M_DrawSlider (x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, RPART(color));
-		M_DrawSlider (x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, GPART(color));
-		M_DrawSlider (x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, BPART(color));
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.r);
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.g);
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, playercolor.b);
 	}
 
 	// Draw team setting
@@ -1594,75 +1580,46 @@ static void SendNewColor (int red, int green, int blue)
 	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
 
 	if (consoleplayer().ingame())
-	{
-		R_CopyTranslationRGB (0, consoleplayer_id);
-	}
+		R_CopyTranslationRGB(0, consoleplayer_id);
 }
 
-static void M_SlidePlayerRed (int choice)
+static void M_SlidePlayerRed(int choice)
 {
-	int color = V_GetColorFromString(NULL, cl_color.cstring());
-	int red = RPART(color);
-	int accel = 0;
+	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
+	int accel = repeatCount < 10 ? 0 : 5;
 
-	if(repeatCount >= 10)
-		accel = 5;
+	if (choice == 0)
+		color.r = std::max(0, int(color.r) - 1 - accel);
+	else
+		color.r = std::min(255, int(color.r) + 1 + accel);
 
-	if (choice == 0) {
-		red -= 1 + accel;
-		if (red < 0)
-			red = 0;
-	} else {
-		red += 1 + accel;
-		if (red > 255)
-			red = 255;
-	}
-
-	SendNewColor (red, GPART(color), BPART(color));
+	SendNewColor(color.r, color.g, color.b);
 }
 
 static void M_SlidePlayerGreen (int choice)
 {
-	int color = V_GetColorFromString(NULL, cl_color.cstring());
-	int green = GPART(color);
-	int accel = 0;
+	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
+	int accel = repeatCount < 10 ? 0 : 5;
 
-	if(repeatCount >= 10)
-		accel = 5;
+	if (choice == 0)
+		color.g = std::max(0, int(color.g) - 1 - accel);
+	else
+		color.g = std::min(255, int(color.g) + 1 + accel);
 
-	if (choice == 0) {
-		green -= 1 + accel;
-		if (green < 0)
-			green = 0;
-	} else {
-		green += 1 + accel;
-		if (green > 255)
-			green = 255;
-	}
-
-	SendNewColor (RPART(color), green, BPART(color));
+	SendNewColor(color.r, color.g, color.b);
 }
 
 static void M_SlidePlayerBlue (int choice)
 {
-	int color = V_GetColorFromString(NULL, cl_color.cstring());
-	int blue = BPART(color);
-	int accel = 0;
+	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
+	int accel = repeatCount < 10 ? 0 : 5;
 
-	if(repeatCount >= 10)
-		accel = 5;
+	if (choice == 0)
+		color.b = std::max(0, int(color.b) - 1 - accel);
+	else
+		color.b = std::min(255, int(color.b) + 1 + accel);
 
-	if (choice == 0) {
-		blue -= 1 + accel;
-		if (blue < 0)
-			blue = 0;
-	} else {
-		blue += 1 + accel;
-		if (blue > 255)
-			blue = 255;
-	}
-
-	SendNewColor (RPART(color), GPART(color), blue);
+	SendNewColor(color.r, color.g, color.b);
 }
 
 
@@ -1764,7 +1721,7 @@ bool M_Responder (event_t* ev)
 		ch2 = ev->data2;		// ASCII
 	}
 
-	if (ch == -1 || headsupactive)
+	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
 		return false;
 
 	if (menuactive && OptionsActive) {
@@ -2029,11 +1986,14 @@ void M_StartControlPanel (void)
 // Called after the view has been rendered,
 // but before it has been blitted.
 //
-void M_Drawer (void)
+void M_Drawer()
 {
 	int i, x, y, max;
 
-	st_firsttime = true;
+	// [SL] force the status bar to be redrawn in case the menu
+	// draws over a portion of the status bar background
+	ST_ForceRefresh();
+
 	//screen->Dim (); // denis - removed, see bug 388
 
 	// Horiz. & Vertically center string and print it.
@@ -2093,10 +2053,10 @@ void M_Drawer (void)
 //
 void M_ClearMenus (void)
 {
-	if (FireScreen)
+	if (fire_surface)
 	{
-		I_FreeScreen(FireScreen);
-		FireScreen = NULL;
+		I_FreeSurface(fire_surface);
+		fire_surface = NULL;
 	}
 	MenuStackDepth = 0;
 	menuactive = false;
@@ -2210,10 +2170,10 @@ void M_Init (void)
 	M_OptInit ();
 
 	// [RH] Build a palette translation table for the fire
-	palette_t *pal = GetDefaultPalette();
+	palette_t *pal = V_GetDefaultPalette();
 
-	for (i = 0; i < 255; i++)
-		FireRemap[i] = BestColor(pal->basecolors, i, 0, 0, pal->numcolors);
+	for (i = 0; i < 256; i++)
+		FireRemap[i] = V_BestColor(pal->basecolors, i, 0, 0);
 }
 
 //

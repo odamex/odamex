@@ -39,6 +39,7 @@
 #include "z_zone.h"
 #include "w_wad.h"
 #include "r_local.h"
+#include "i_video.h"
 #include "v_video.h"
 #include "doomstat.h"
 #include "st_stuff.h"
@@ -66,25 +67,19 @@ drawcolumn_t dcol;
 drawspan_t dspan;
 }
 
-
-
 byte*			viewimage;
+
 extern "C" {
 int 			viewwidth;
 int 			viewheight;
 }
+
 int 			scaledviewwidth;
 int 			viewwindowx;
 int 			viewwindowy;
-byte**			ylookup;
-int* 			columnofs;
 
-extern "C" {
-int				realviewwidth;		// [RH] Physical width of view window
-int				realviewheight;		// [RH] Physical height of view window
-int				detailxshift;		// [RH] X shift for horizontal detail level
-int				detailyshift;		// [RH] Y shift for vertical detail level
-}
+extern byte** ylookup;
+extern int* columnofs;
 
 // [RH] Pointers to the different column drawers.
 //		These get changed depending on the current
@@ -113,7 +108,7 @@ void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
 // Possibly vectorized functions:
 void (*R_DrawSpanD)(void);
 void (*R_DrawSlopeSpanD)(void);
-void (*r_dimpatchD)(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
+void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 // ============================================================================
 //
@@ -129,7 +124,6 @@ void (*r_dimpatchD)(const DCanvas *const cvs, argb_t color, int alpha, int x1, i
 // ============================================================================
 
 #define FUZZTABLE	64		// [RH] FUZZTABLE changed from 50 to 64
-#define FUZZOFF		(screen->pitch)
 
 static int fuzzoffset[FUZZTABLE];
 static int fuzzpos = 0;
@@ -147,14 +141,10 @@ static const signed char fuzzinit[FUZZTABLE] = {
 
 void R_InitFuzzTable (void)
 {
-	int i;
-	int fuzzoff;
+	IWindowSurface* surface = I_GetPrimarySurface();
+	int fuzzoff = surface->getPitch();
 
-	screen->Lock ();
-	fuzzoff = FUZZOFF << detailyshift;
-	screen->Unlock ();
-
-	for (i = 0; i < FUZZTABLE; i++)
+	for (int i = 0; i < FUZZTABLE; i++)
 		fuzzoffset[i] = fuzzinit[i] * fuzzoff;
 }
 
@@ -237,19 +227,19 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 	for (int index = end_index + 1; index < 256; index++)
 		dest[index] = index;	
 
-	int r_diff = RPART(end_color) - RPART(start_color);
-	int g_diff = GPART(end_color) - GPART(start_color);
-	int b_diff = BPART(end_color) - BPART(start_color);
+	int r_diff = end_color.r - start_color.r;
+	int g_diff = end_color.g - start_color.g;
+	int b_diff = end_color.b - start_color.b;
 
 	for (palindex_t index = start_index; index <= end_index; index++)
 	{
 		int i = index - start_index;
 
-		int r = RPART(start_color) + i * r_diff / index_range;
-		int g = GPART(start_color) + i * g_diff / index_range;
-		int b = BPART(start_color) + i * b_diff / index_range;
+		int r = start_color.r + i * r_diff / index_range;
+		int g = start_color.g + i * g_diff / index_range;
+		int b = start_color.b + i * b_diff / index_range;
 
-		dest[index] = BestColor(GetDefaultPalette()->basecolors, r, g, b, 256);
+		dest[index] = V_BestColor(V_GetDefaultPalette()->basecolors, r, g, b);
 	}
 
 	dest[0x2C] = dest[0x2D] = dest[0x2F] = dest[end_index];
@@ -283,7 +273,7 @@ void R_InitTranslationTables()
 		translationtables[i] = i;
 
 	// Set up default translationRGB tables:
-	palette_t *pal = GetDefaultPalette();
+	palette_t *pal = V_GetDefaultPalette();
 	for (int i = 0; i < MAXPLAYERS; ++i)
 	{
 		for (int j = 0x70; j < 0x80; ++j)
@@ -303,27 +293,27 @@ void R_InitTranslationTables()
 
 	Ranges = translationtables + (MAXPLAYERS+3)*256;
 
-	R_BuildFontTranslation(CR_BRICK,	MAKERGB(0xFF, 0xB8, 0xB8), MAKERGB(0x47, 0x00, 0x00));
-	R_BuildFontTranslation(CR_TAN,		MAKERGB(0xFF, 0xEB, 0xDF), MAKERGB(0x33, 0x2B, 0x13));	
-	R_BuildFontTranslation(CR_GRAY,		MAKERGB(0xEF, 0xEF, 0xEF), MAKERGB(0x27, 0x27, 0x27));	
-	R_BuildFontTranslation(CR_GREEN,	MAKERGB(0x77, 0xFF, 0x6F), MAKERGB(0x0B, 0x17, 0x07));	
-	R_BuildFontTranslation(CR_BROWN,	MAKERGB(0xBF, 0xA7, 0x8F), MAKERGB(0x53, 0x3F, 0x2F));	
-	R_BuildFontTranslation(CR_GOLD,		MAKERGB(0xFF, 0xFF, 0x73), MAKERGB(0x73, 0x2B, 0x00));	
-	R_BuildFontTranslation(CR_RED,		MAKERGB(0xFF, 0x00, 0x00), MAKERGB(0x3F, 0x00, 0x00));
-	R_BuildFontTranslation(CR_BLUE,		MAKERGB(0x00, 0x00, 0xFF), MAKERGB(0x00, 0x00, 0x27));	
-	R_BuildFontTranslation(CR_ORANGE,	MAKERGB(0xFF, 0x80, 0x00), MAKERGB(0x20, 0x00, 0x00));	
-	R_BuildFontTranslation(CR_WHITE,	MAKERGB(0xFF, 0xFF, 0xFF), MAKERGB(0x24, 0x24, 0x24));	
-	R_BuildFontTranslation(CR_YELLOW,	MAKERGB(0xFC, 0xD0, 0x43), MAKERGB(0x27, 0x27, 0x27));
-	R_BuildFontTranslation(CR_BLACK,	MAKERGB(0x50, 0x50, 0x50), MAKERGB(0x13, 0x13, 0x13));
-	R_BuildFontTranslation(CR_LIGHTBLUE,MAKERGB(0xB4, 0xB4, 0xFF), MAKERGB(0x00, 0x00, 0x73));
-	R_BuildFontTranslation(CR_CREAM,	MAKERGB(0xFF, 0xD7, 0xBB), MAKERGB(0xCF, 0x83, 0x53));
-	R_BuildFontTranslation(CR_OLIVE,	MAKERGB(0x7B, 0x7F, 0x50), MAKERGB(0x2F, 0x37, 0x1F));
-	R_BuildFontTranslation(CR_DARKGREEN,MAKERGB(0x43, 0x93, 0x37), MAKERGB(0x0B, 0x17, 0x07));
-	R_BuildFontTranslation(CR_DARKRED,	MAKERGB(0xAF, 0x2B, 0x2B), MAKERGB(0x2B, 0x00, 0x00));
-	R_BuildFontTranslation(CR_DARKBROWN,MAKERGB(0xA3, 0x6B, 0x3F), MAKERGB(0x1F, 0x17, 0x0B));
-	R_BuildFontTranslation(CR_PURPLE,	MAKERGB(0xCF, 0x00, 0xCF), MAKERGB(0x23, 0x00, 0x23));
-	R_BuildFontTranslation(CR_DARKGRAY,	MAKERGB(0x8B, 0x8B, 0x8B), MAKERGB(0x23, 0x23, 0x23));
-	R_BuildFontTranslation(CR_CYAN,		MAKERGB(0x00, 0xF0, 0xF0), MAKERGB(0x00, 0x1F, 0x1F));
+	R_BuildFontTranslation(CR_BRICK,	argb_t(0xFF, 0xB8, 0xB8), argb_t(0x47, 0x00, 0x00));
+	R_BuildFontTranslation(CR_TAN,		argb_t(0xFF, 0xEB, 0xDF), argb_t(0x33, 0x2B, 0x13));	
+	R_BuildFontTranslation(CR_GRAY,		argb_t(0xEF, 0xEF, 0xEF), argb_t(0x27, 0x27, 0x27));	
+	R_BuildFontTranslation(CR_GREEN,	argb_t(0x77, 0xFF, 0x6F), argb_t(0x0B, 0x17, 0x07));	
+	R_BuildFontTranslation(CR_BROWN,	argb_t(0xBF, 0xA7, 0x8F), argb_t(0x53, 0x3F, 0x2F));	
+	R_BuildFontTranslation(CR_GOLD,		argb_t(0xFF, 0xFF, 0x73), argb_t(0x73, 0x2B, 0x00));	
+	R_BuildFontTranslation(CR_RED,		argb_t(0xFF, 0x00, 0x00), argb_t(0x3F, 0x00, 0x00));
+	R_BuildFontTranslation(CR_BLUE,		argb_t(0x00, 0x00, 0xFF), argb_t(0x00, 0x00, 0x27));	
+	R_BuildFontTranslation(CR_ORANGE,	argb_t(0xFF, 0x80, 0x00), argb_t(0x20, 0x00, 0x00));	
+	R_BuildFontTranslation(CR_WHITE,	argb_t(0xFF, 0xFF, 0xFF), argb_t(0x24, 0x24, 0x24));	
+	R_BuildFontTranslation(CR_YELLOW,	argb_t(0xFC, 0xD0, 0x43), argb_t(0x27, 0x27, 0x27));
+	R_BuildFontTranslation(CR_BLACK,	argb_t(0x50, 0x50, 0x50), argb_t(0x13, 0x13, 0x13));
+	R_BuildFontTranslation(CR_LIGHTBLUE,argb_t(0xB4, 0xB4, 0xFF), argb_t(0x00, 0x00, 0x73));
+	R_BuildFontTranslation(CR_CREAM,	argb_t(0xFF, 0xD7, 0xBB), argb_t(0xCF, 0x83, 0x53));
+	R_BuildFontTranslation(CR_OLIVE,	argb_t(0x7B, 0x7F, 0x50), argb_t(0x2F, 0x37, 0x1F));
+	R_BuildFontTranslation(CR_DARKGREEN,argb_t(0x43, 0x93, 0x37), argb_t(0x0B, 0x17, 0x07));
+	R_BuildFontTranslation(CR_DARKRED,	argb_t(0xAF, 0x2B, 0x2B), argb_t(0x2B, 0x00, 0x00));
+	R_BuildFontTranslation(CR_DARKBROWN,argb_t(0xA3, 0x6B, 0x3F), argb_t(0x1F, 0x17, 0x0B));
+	R_BuildFontTranslation(CR_PURPLE,	argb_t(0xCF, 0x00, 0xCF), argb_t(0x23, 0x00, 0x23));
+	R_BuildFontTranslation(CR_DARKGRAY,	argb_t(0x8B, 0x8B, 0x8B), argb_t(0x23, 0x23, 0x23));
+	R_BuildFontTranslation(CR_CYAN,		argb_t(0x00, 0xF0, 0xF0), argb_t(0x00, 0x1F, 0x1F));
 }
 
 void R_FreeTranslationTables (void)
@@ -335,7 +325,7 @@ void R_FreeTranslationTables (void)
 // [Nes] Vanilla player translation table.
 void R_BuildClassicPlayerTranslation (int player, int color)
 {
-	palette_t *pal = GetDefaultPalette();
+	palette_t *pal = V_GetDefaultPalette();
 	int i;
 	
 	if (color == 1) // Indigo
@@ -369,14 +359,13 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 
 // [RH] Create a player's translation table based on
 //		a given mid-range color.
-void R_BuildPlayerTranslation (int player, int color)
+void R_BuildPlayerTranslation(int player, argb_t dest_color)
 {
-	palette_t *pal = GetDefaultPalette();
+	const palette_t *pal = V_GetDefaultPalette();
 	byte *table = &translationtables[player * 256];
-	int i;
-	float r = (float)RPART(color) / 255.0f;
-	float g = (float)GPART(color) / 255.0f;
-	float b = (float)BPART(color) / 255.0f;
+	float r = float(dest_color.r) / 255.0f;
+	float g = float(dest_color.g) / 255.0f;
+	float b = float(dest_color.b) / 255.0f;
 	float h, s, v;
 	float sdelta, vdelta;
 
@@ -392,29 +381,25 @@ void R_BuildPlayerTranslation (int player, int color)
 		v = 1.0f;
 	vdelta = -0.05882f;
 
-	for (i = 0x70; i < 0x80; i++) {
+	for (int i = 0x70; i < 0x80; i++)
+	{
 		HSVtoRGB (&r, &g, &b, h, s, v);
 
 		// Set up RGB values for 32bpp translation:
-		translationRGB[player][i - 0x70] = MAKERGB(
-			(int)(r * 255.0f),
-			(int)(g * 255.0f),
-			(int)(b * 255.0f)
-		);
+		argb_t color(r * 255.0f, g * 255.0f, b * 255.0f);
+		translationRGB[player][i - 0x70] = color;
+		table[i] = V_BestColor(pal->basecolors, color);
 
-		table[i] = BestColor (pal->basecolors,
-							  (int)(r * 255.0f),
-							  (int)(g * 255.0f),
-							  (int)(b * 255.0f),
-							  pal->numcolors);
 		s += sdelta;
-		if (s > 1.0f) {
+		if (s > 1.0f)
+		{
 			s = 1.0f;
 			sdelta = 0.0f;
 		}
 
 		v += vdelta;
-		if (v < 0.0f) {
+		if (v < 0.0f)
+		{
 			v = 0.0f;
 			vdelta = 0.0f;
 		}
@@ -478,7 +463,7 @@ template<typename PIXEL_T, typename COLORFUNC>
 static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
 #ifdef RANGECHECK 
-	if (drawcolumn.x >= screen->width || drawcolumn.yl < 0 || drawcolumn.yh >= screen->height)
+	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
 	{
 		Printf (PRINT_HIGH, "R_FillColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
 		return;
@@ -517,7 +502,7 @@ template<typename PIXEL_T, typename COLORFUNC>
 static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
 #ifdef RANGECHECK 
-	if (drawcolumn.x >= screen->width || drawcolumn.yl < 0 || drawcolumn.yh >= screen->height)
+	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
 	{
 		Printf (PRINT_HIGH, "R_DrawColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
 		return;
@@ -859,7 +844,7 @@ class PaletteFuzzyFunc
 {
 public:
 	PaletteFuzzyFunc(const drawcolumn_t& drawcolum) :
-			colormap(&GetDefaultPalette()->maps, 6) { }
+			colormap(&V_GetDefaultPalette()->maps, 6) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
@@ -1454,66 +1439,21 @@ void R_DrawSlopeSpanD_c()
 
 /****************************************************/
 
-//
-// R_InitBuffer 
-// Creats lookup tables that avoid
-//  multiplies and other hazzles
-//  for getting the framebuffer address
-//  of a pixel to draw.
-//
-void R_InitBuffer(int width, int height) 
-{ 
-	int 		i;
-	byte		*buffer;
-	int			pitch;
-	int			xshift;
 
-	int windowwidth = width << detailxshift;
-	int windowheight = height << detailyshift;
-
-	// Handle resize,
-	//	e.g. smaller view windows
-	//	with border and/or status bar.
-	viewwindowx = (screen->width - windowwidth) >> 1;
-
-	// [RH] Adjust column offset according to bytes per pixel
-	//		and detail mode
-	xshift = detailxshift + (screen->is8bit() ? 0 : 2);
-
-	// Column offset. For windows
-	for (i = 0; i < width; i++)
-		columnofs[i] = (viewwindowx + i) << xshift;
-
-	// Same with base row offset.
-	if (windowwidth == screen->width)
-		viewwindowy = 0;
-	else
-		viewwindowy = (ST_Y - windowheight) >> 1;
-
-	screen->Lock();
-	buffer = screen->buffer;
-	pitch = screen->pitch;
-	screen->Unlock();
-
-	// Precalculate all row offsets.
-	for (i = 0; i < height; i++)
-		ylookup[i] = buffer + ((i << detailyshift) + viewwindowy) * pitch;
-}
-
-
-void R_DrawBorder (int x1, int y1, int x2, int y2)
+void R_DrawBorder(int x1, int y1, int x2, int y2)
 {
-	int lump;
+	IWindowSurface* surface = R_GetRenderingSurface();
+	DCanvas* canvas = surface->getDefaultCanvas();
 
-	lump = W_CheckNumForName (gameinfo.borderFlat, ns_flats);
-	if (lump >= 0)
+	int lumpnum = W_CheckNumForName(gameinfo.borderFlat, ns_flats);
+	if (lumpnum >= 0)
 	{
-		screen->FlatFill (x1 & ~63, y1, x2, y2,
-			(byte *)W_CacheLumpNum (lump, PU_CACHE));
+		const byte* patch_data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+		canvas->FlatFill(x1, y1, x2, y2, patch_data);
 	}
 	else
 	{
-		screen->Clear (x1, y1, x2, y2, 0);
+		canvas->Clear(x1, y1, x2, y2, argb_t(0, 0, 0));
 	}
 }
 
@@ -1525,136 +1465,51 @@ void R_DrawBorder (int x1, int y1, int x2, int y2)
 //
 void V_MarkRect (int x, int y, int width, int height);
 
-void R_DrawViewBorder (void)
+void R_DrawViewBorder()
 {
-	int x, y;
-	int offset, size;
-	gameborder_t *border;
-
-	if (realviewwidth == screen->width) {
+	if (!R_BorderVisible())
 		return;
-	}
 
-	border = gameinfo.border;
-	offset = border->offset;
-	size = border->size;
+	IWindowSurface* surface = R_GetRenderingSurface();
+	DCanvas* canvas = surface->getDefaultCanvas();
+	int surface_width = surface->getWidth();
 
-	R_DrawBorder (0, 0, screen->width, viewwindowy);
-	R_DrawBorder (0, viewwindowy, viewwindowx, realviewheight + viewwindowy);
-	R_DrawBorder (viewwindowx + realviewwidth, viewwindowy, screen->width, realviewheight + viewwindowy);
-	R_DrawBorder (0, viewwindowy + realviewheight, screen->width, ST_Y);
+	const gameborder_t* border = gameinfo.border;
+	const int offset = border->offset;
+	const int size = border->size;
 
-	for (x = viewwindowx; x < viewwindowx + realviewwidth; x += size)
+	// draw top border
+	R_DrawBorder(0, 0, surface_width, viewwindowy);
+	// draw bottom border
+	R_DrawBorder(0, viewwindowy + viewheight, surface_width, ST_Y);
+	// draw left border
+	R_DrawBorder(0, viewwindowy, viewwindowx, viewwindowy + viewheight);
+	// draw right border
+	R_DrawBorder(viewwindowx + viewwidth, viewwindowy, surface_width, viewwindowy + viewheight);
+
+	// draw beveled edge for the viewing window's top and bottom edges
+	for (int x = viewwindowx; x < viewwindowx + viewwidth; x += size)
 	{
-		screen->DrawPatch (W_CachePatch (border->t),
-			x, viewwindowy - offset);
-		screen->DrawPatch (W_CachePatch (border->b),
-			x, viewwindowy + realviewheight);
+		canvas->DrawPatch(W_CachePatch(border->t), x, viewwindowy - offset);
+		canvas->DrawPatch(W_CachePatch(border->b), x, viewwindowy + viewheight);
 	}
-	for (y = viewwindowy; y < viewwindowy + realviewheight; y += size)
-	{
-		screen->DrawPatch (W_CachePatch (border->l),
-			viewwindowx - offset, y);
-		screen->DrawPatch (W_CachePatch (border->r),
-			viewwindowx + realviewwidth, y);
-	}
-	// Draw beveled edge.
-	screen->DrawPatch (W_CachePatch (border->tl),
-		viewwindowx-offset, viewwindowy-offset);
-	
-	screen->DrawPatch (W_CachePatch (border->tr),
-		viewwindowx+realviewwidth, viewwindowy-offset);
-	
-	screen->DrawPatch (W_CachePatch (border->bl),
-		viewwindowx-offset, viewwindowy+realviewheight);
-	
-	screen->DrawPatch (W_CachePatch (border->br),
-		viewwindowx+realviewwidth, viewwindowy+realviewheight);
 
-	V_MarkRect (0, 0, screen->width, ST_Y);
+	// draw beveled edge for the viewing window's left and right edges
+	for (int y = viewwindowy; y < viewwindowy + viewheight; y += size)
+	{
+		canvas->DrawPatch(W_CachePatch(border->l), viewwindowx - offset, y);
+		canvas->DrawPatch(W_CachePatch(border->r), viewwindowx + viewwidth, y);
+	}
+
+	// draw beveled edge for the viewing window's corners
+	canvas->DrawPatch(W_CachePatch(border->tl), viewwindowx - offset, viewwindowy - offset);
+	canvas->DrawPatch(W_CachePatch(border->tr), viewwindowx + viewwidth, viewwindowy - offset);
+	canvas->DrawPatch(W_CachePatch(border->bl), viewwindowx - offset, viewwindowy + viewheight);
+	canvas->DrawPatch(W_CachePatch(border->br), viewwindowx + viewwidth, viewwindowy + viewheight);
+
+	V_MarkRect(0, 0, surface_width, ST_Y);
 }
 
-// ============================================================================
-//
-// Horizontal and vertical pixel doubling functions
-//
-// ============================================================================
-
-static void R_DoubleX8()
-{
-	int rowsize = realviewwidth >> 2;
-	int pitch = screen->pitch >> (2 - detailyshift);
-
-	unsigned int* line = (unsigned int*)(screen->buffer + viewwindowy * screen->pitch + viewwindowx);
-	for (int y = 0; y < viewheight; y++, line += pitch)
-	{
-		for (int x = 0; x < rowsize; x += 2)
-		{
-			unsigned int a = line[x + 0];
-			unsigned int b = line[x + 1];
-			a &= 0x00ff00ff;
-			b &= 0x00ff00ff;
-			line[x + 0] = a | (a << 8);
-			line[x + 1] = b | (b << 8);
-		}
-	}
-}
-
-static void R_DoubleX32()
-{
-	int rowsize = realviewwidth;
-	int pitch = screen->pitch >> (2 - detailyshift);
-
-	argb_t* line = (argb_t*)(screen->buffer + viewwindowy * screen->pitch + viewwindowx);
-	for (int y = 0; y < viewheight; y++, line += pitch)
-	{
-		for (int x = 0; x < rowsize; x += 2)
-			line[x + 1] = line[x];
-	}
-}
-
-static void R_DoubleY8()
-{
-	int rowsize = realviewwidth;
-	int pitch = screen->pitch;
-
-	byte* line = screen->buffer + viewwindowy * pitch + viewwindowx;
-
-	for (int y = 0; y < viewheight; y++, line += pitch << 1)
-		memcpy(line + pitch, line, rowsize);
-}
-
-static void R_DoubleY32()
-{
-	int rowsize = realviewwidth << 2;
-	int pitch = screen->pitch;
-
-	byte* line = screen->buffer + viewwindowy * pitch + viewwindowx;
-
-	for (int y = 0; y < viewheight; y++, line += pitch << 1)
-		memcpy(line + pitch, line, rowsize);
-}
-
-
-// [RH] Double pixels in the view window horizontally
-//		and/or vertically (or not at all).
-void R_DetailDouble (void)
-{
-	if (screen->is8bit())
-	{
-		if (detailxshift)
-			R_DoubleX8();
-		if (detailyshift)
-			R_DoubleY8();
-	}
-	else
-	{
-		if (detailxshift)
-			R_DoubleX32();
-		if (detailyshift)
-			R_DoubleY32();
-	}
-}
 
 
 enum r_optimize_kind {
@@ -1854,7 +1709,7 @@ void R_InitColumnDrawers ()
 	// NOTE(jsd): It's okay to use R_DrawColumnHorizP because it renders to a temp buffer first.
 	R_DrawColumnHoriz		= R_DrawColumnHorizP;
 
-	if (screen->is8bit())
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
 		R_DrawColumn			= R_DrawColumnP;
 		R_DrawFuzzColumn		= R_DrawFuzzColumnP;

@@ -23,6 +23,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <cassert>
+
 #include <algorithm>
 #include <functional>
 #include <string>
@@ -36,6 +38,9 @@
     #include "resource.h"
 #endif // WIN32
 
+#include "i_video.h"
+#include "v_video.h"
+
 #include "v_palette.h"
 #include "i_sdlvideo.h"
 #include "i_system.h"
@@ -47,21 +52,183 @@
 #endif
 
 EXTERN_CVAR (vid_autoadjust)
-EXTERN_CVAR (vid_vsync)
-EXTERN_CVAR (vid_displayfps)
-EXTERN_CVAR (vid_ticker)
+EXTERN_CVAR (vid_fullscreen)
 
-CVAR_FUNC_IMPL(vid_vsync)
+
+// ****************************************************************************
+
+
+// ============================================================================
+//
+// ISDL12WindowSurface class implementation
+//
+// Abstraction for SDL 1.2 drawing surfaces, wrapping the SDL_Surface struct.
+//
+// ============================================================================
+
+//
+// ISDL12WindowSurface::ISDL12WindowSurface
+//
+ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, int width, int height, int bpp) :
+	IWindowSurface(window), mSDLSurface(NULL), mLocks(0)
 {
-	setmodeneeded = true;
+	Uint32 flags = SDL_SWSURFACE;
+	SDL_Surface* sdlsurface = SDL_CreateRGBSurface(flags, width, height, bpp, 0, 0, 0, 0);
+
+	initializeFromSDLSurface(sdlsurface);
+	mFreeSDLSurface = true;
+
+	memset(mPalette, 255, 256 * sizeof(*mPalette));
 }
 
-SDLVideo::SDLVideo(int parm)
-{
-	const SDL_version *SDLVersion = SDL_Linked_Version();
 
-	if(SDLVersion->major != SDL_MAJOR_VERSION
-		|| SDLVersion->minor != SDL_MINOR_VERSION)
+//
+// ISDL12WindowSurface::ISDL12WindowSurface
+//
+// Constructs the surface using an existing SDL_Surface handle.
+//
+ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, SDL_Surface* sdlsurface) :
+	IWindowSurface(window), mSDLSurface(NULL), mLocks(0)
+{
+	initializeFromSDLSurface(sdlsurface);
+
+	// shouldn't free sdlsurface if it was obtained from SDL_SetVideoMode
+	mFreeSDLSurface = false;
+
+	memset(mPalette, 255, 256 * sizeof(*mPalette));
+}
+
+
+//
+// ISDL12WindowSurface::initializeFromSDLSurface
+//
+// Private helper function for the constructors.
+//
+void ISDL12WindowSurface::initializeFromSDLSurface(SDL_Surface* sdlsurface)
+{
+	if (mSDLSurface)
+		SDL_FreeSurface(mSDLSurface);
+
+	mSDLSurface = sdlsurface;
+
+	lock();
+	mSurfaceBuffer = (byte*)mSDLSurface->pixels;
+	mWidth = mSDLSurface->w;
+	mHeight = mSDLSurface->h;
+	mBitsPerPixel = mSDLSurface->format->BitsPerPixel;
+	mBytesPerPixel = mBitsPerPixel / 8;
+	mPitch = mSDLSurface->pitch;
+	mPitchInPixels = mPitch / mBytesPerPixel;
+	unlock();
+
+	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
+	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
+	assert(mBitsPerPixel == 8 || mBitsPerPixel == 32);
+}
+
+
+//
+// ISDL12WindowSurface::~ISDL12WindowSurface
+//
+// Frees the SDL_Surface handle.
+//
+ISDL12WindowSurface::~ISDL12WindowSurface()
+{
+	if (mSDLSurface && mFreeSDLSurface)
+		SDL_FreeSurface(mSDLSurface);
+}
+
+
+//
+// ISDL12WindowSurface::lock
+//
+// Locks the surface for direct pixel access. This must be called prior to
+// accessing mSurfaceBuffer.
+//
+void ISDL12WindowSurface::lock()
+{
+	if (++mLocks == 1)
+		SDL_LockSurface(mSDLSurface);
+
+	assert(mLocks >= 1 && mLocks < 100);
+}
+
+
+//
+// ISDL12WindowSurface::unlock
+//
+// Unlocks the surface after direct pixel access. This must be called after
+// accessing mSurfaceBuffer.
+//
+void ISDL12WindowSurface::unlock()
+{
+	if (--mLocks == 0)
+		SDL_UnlockSurface(mSDLSurface);
+
+	assert(mLocks >= 0 && mLocks < 100);
+}
+
+
+//
+// ISDL12WindowSurface::setPalette
+//
+// Accepts an array of 256 argb_t values.
+//
+void ISDL12WindowSurface::setPalette(const argb_t* palette)
+{
+	memcpy(mPalette, palette, 256 * sizeof(*mPalette));
+
+	if (mBitsPerPixel == 8)
+	{
+		lock();
+
+		assert(mSDLSurface->format->palette != NULL);
+		assert(mSDLSurface->format->palette->ncolors == 256);
+		SDL_Color* sdlcolors = mSDLSurface->format->palette->colors;
+		for (int c = 0; c < 256; c++)
+		{
+			sdlcolors[c].r = mPalette[c].r;
+			sdlcolors[c].g = mPalette[c].g;
+			sdlcolors[c].b = mPalette[c].b;
+		}
+
+		unlock();
+	}
+}
+
+
+//
+// ISDLWindowSurface::getPalette
+//
+const argb_t* ISDL12WindowSurface::getPalette() const
+{
+	return mPalette;
+}
+
+
+// ****************************************************************************
+
+// ============================================================================
+//
+// ISDL12Window class implementation
+//
+// ============================================================================
+
+
+//
+// ISDL12Window::ISDL12Window
+//
+// Constructs a new application window using SDL 1.2.
+// A ISDL12WindowSurface object is instantiated for frame rendering.
+//
+ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool vsync) :
+	IWindow(),
+	mPrimarySurface(NULL),
+	mIsFullScreen(fullscreen), mUseVSync(vsync)
+{
+	const SDL_version* SDLVersion = SDL_Linked_Version();
+
+	if (SDLVersion->major != SDL_MAJOR_VERSION || SDLVersion->minor != SDL_MINOR_VERSION)
 	{
 		I_FatalError("SDL version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
 			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
@@ -69,160 +236,143 @@ SDLVideo::SDLVideo(int parm)
 		return;
 	}
 
-	if (SDL_InitSubSystem (SDL_INIT_VIDEO) == -1)
-	{
-		I_FatalError("Could not initialize SDL video.\n");
-		return;
-	}
-
-	if(SDLVersion->patch != SDL_PATCHLEVEL)
+	if (SDLVersion->patch != SDL_PATCHLEVEL)
 	{
 		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
 			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
 			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
 	}
 
-    // [Russell] - Just for windows, display the icon in the system menu and
-    // alt-tab display
-    #if WIN32 && !_XBOX
-    HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
-
-    if (hIcon)
-    {
-        HWND WindowHandle;
-
-        SDL_SysWMinfo wminfo;
-        SDL_VERSION(&wminfo.version)
-        SDL_GetWMInfo(&wminfo);
-
-        WindowHandle = wminfo.window;
-
-        SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-        SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-    }
-    #endif
-
-    I_SetWindowCaption();
-
-   sdlScreen = NULL;
-   infullscreen = false;
-   screenw = screenh = screenbits = 0;
-   palettechanged = false;
-
-   // Get Video modes
-   vidModeIterator = 0;
-   vidModeList.clear();
-
-	// NOTE(jsd): We only support 32-bit and 8-bit color modes. No 24-bit or 16-bit.
-
-	// Fetch the list of fullscreen modes for this bpp setting:
-	SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_SWSURFACE);
-
-   if(!sdllist)
-   {
-	  // no fullscreen modes, but we could still try windowed
-		Printf(PRINT_HIGH, "No fullscreen video modes are available.\n");
-	  return;
-   }
-   else if(sdllist == (SDL_Rect **)-1)
-   {
-      I_FatalError("SDL_ListModes returned -1. Internal error.\n");
-      return;
-   }
-   else
-   {
-      vidMode_t CustomVidModes[] =
-      {
-			 { 640, 480 }
-			,{ 640, 400 }
-			,{ 320, 240 }
-			,{ 320, 200 }
-      };
-
-      // Add in generic video modes reported by SDL
-      for(int i = 0; sdllist[i]; ++i)
-      {
-        vidMode_t vm;
-
-        vm.width = sdllist[i]->w;
-        vm.height = sdllist[i]->h;
-
-        vidModeList.push_back(vm);
-      }
-
-      // Now custom video modes to be added
-      for (size_t i = 0; i < STACKARRAY_LENGTH(CustomVidModes); ++i)
-        vidModeList.push_back(CustomVidModes[i]);
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) == -1)
+	{
+		I_FatalError("Could not initialize SDL video.\n");
+		return;
 	}
 
-      // Reverse sort the modes
-      std::sort(vidModeList.begin(), vidModeList.end(), std::greater<vidMode_t>());
+	// Set SDL video centering
+	SDL_putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
+	SDL_putenv((char*)"SDL_VIDEO_CENTERED=1");
 
-      // Get rid of any duplicates (SDL some times reports duplicates as well)
-      vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end()), vidModeList.end());
-   }
+	#if defined _WIN32 && !defined _XBOX
+	// From the SDL 1.2.10 release notes:
+	//
+	// > The "windib" video driver is the default now, to prevent
+	// > problems with certain laptops, 64-bit Windows, and Windows
+	// > Vista.
+	//
+	// The hell with that.
 
-std::string SDLVideo::GetVideoDriverName()
-{
-  char driver[128];
+	// SoM: the gdi interface is much faster for windowed modes which are more
+	// commonly used. Thus, GDI is default.
+	//
+	// GDI mouse issues fill many users with great sadness. We are going back
+	// to directx as defulat for now and the people will rejoice. --Hyper_Eye
+	if (Args.CheckParm ("-gdi"))
+		SDL_putenv((char*)"SDL_VIDEODRIVER=windib");
+	else if (SDL_getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-directx") > 0)
+		SDL_putenv((char*)"SDL_VIDEODRIVER=directx");
+	#endif	// _WIN32 && !_XBOX
 
-  if((SDL_VideoDriverName(driver, 128)) == NULL)
-  {
-    char *pdrv; // Don't modify or free this
+	buildVideoModeList();
 
-    if((pdrv = getenv("SDL_VIDEODRIVER")) == NULL)
-      return ""; // Can't determine driver
+	setMode(width, height, bpp, fullscreen, vsync);
 
-    return std::string(pdrv); // Return the environment variable
-  }
-
-  return std::string(driver); // Return the name as provided by SDL
+	// fill the primary surface with black
+	mPrimarySurface->lock();
+	DCanvas* canvas = mPrimarySurface->getDefaultCanvas();
+	canvas->Clear(0, 0, mPrimarySurface->getWidth(), mPrimarySurface->getHeight(), argb_t(0, 0, 0));
+	mPrimarySurface->unlock();
 }
 
 
-bool SDLVideo::FullscreenChanged (bool fs)
+//
+// ISDL12Window::~ISDL12Window
+//
+ISDL12Window::~ISDL12Window()
 {
-   if(fs != infullscreen)
-      return true;
-
-   return false;
+	delete mPrimarySurface;
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-void SDLVideo::SetWindowedScale (float scale)
+
+//
+// ISDL12Window::refresh
+//
+void ISDL12Window::refresh()
 {
-   /// HAHA FIXME
+	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
+
+	if (mBitsPerPixel == 8)
+	{
+		Uint32 flags = SDL_LOGPAL | SDL_PHYSPAL;
+		SDL_Color* sdlcolors = sdlsurface->format->palette->colors;
+		SDL_SetPalette(sdlsurface, flags, sdlcolors, 0, 256);
+	}
+
+	if (mUseVSync)
+		SDL_Flip(sdlsurface);
+	else
+		SDL_UpdateRect(sdlsurface, 0, 0, 0, 0);
 }
 
-bool SDLVideo::SetOverscan (float scale)
+
+//
+// ISDL12Window::setWindowTitle
+//
+// Sets the title caption of the window.
+//
+void ISDL12Window::setWindowTitle(const std::string& str)
 {
-	int   ret = 0;
-
-	if(scale > 1.0)
-		return false;
-
-#ifdef _XBOX
-	if(xbox_SetScreenStretch( -(screenw - (screenw * scale)), -(screenh - (screenh * scale))) )
-		ret = -1;
-	if(xbox_SetScreenPosition( (screenw - (screenw * scale)) / 2, (screenh - (screenh * scale)) / 2) )
-		ret = -1;
-#endif
-
-	if(ret)
-		return false;
-
-	return true;
+	SDL_WM_SetCaption(str.c_str(), str.c_str());
 }
 
-bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
-{
-	Uint32 flags = (vid_vsync ? SDL_HWSURFACE | SDL_DOUBLEBUF : SDL_SWSURFACE);
 
-	if (fullscreen && !vidModeList.empty())
+//
+// ISDL12Window::getVideoDriverName
+//
+// Returns the name of the video driver that SDL is currently
+// configured to use.
+//
+std::string ISDL12Window::getVideoDriverName() const
+{
+	char driver[128];
+
+	if ((SDL_VideoDriverName(driver, 128)) == NULL)
+	{
+		const char* pdrv = getenv("SDL_VIDEODRIVER");
+
+		if (pdrv == NULL)
+			return "";
+		return std::string(pdrv);
+	}
+
+	return std::string(driver);
+}
+
+
+//
+// ISDL12Window::setMode
+//
+// Sets the window size to the specified size and frees the existing primary
+// surface before instantiating a new primary surface.
+// 
+bool ISDL12Window::setMode(int width, int height, int bpp, bool fullscreen, bool vsync)
+{
+	assert(width <= MAXWIDTH);
+	assert(height <= MAXHEIGHT);
+	assert(bpp == 8 || bpp == 32);
+
+	delete mPrimarySurface;
+	mPrimarySurface = NULL;
+
+	uint32_t flags = vsync ? SDL_HWSURFACE | SDL_DOUBLEBUF : SDL_SWSURFACE;
+
+	if (fullscreen && !mVideoModes.empty())
 		flags |= SDL_FULLSCREEN;
 	else
 		flags |= SDL_RESIZABLE;
 
-	if (fullscreen && bits == 8)
+	if (fullscreen && bpp == 8)
 		flags |= SDL_HWPALETTE;
 
 	// TODO: check for multicore
@@ -233,7 +383,7 @@ bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 	// disable them prior to reinitalizing DirectInput...
 	I_PauseMouse();
 
-	int sbits = bits;
+	int sbits = bpp;
 
 	#ifdef _WIN32
 	// fullscreen directx requires a 32-bit mode to fix broken palette
@@ -242,235 +392,98 @@ bool SDLVideo::SetMode(int width, int height, int bits, bool fullscreen)
 		sbits = 32;
 	#endif
 
-#ifdef SDL_GL_SWAP_CONTROL
-	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vid_vsync);
-#endif
+	#ifdef SDL_GL_SWAP_CONTROL
+	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
+	#endif
 
-	if (!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
+	// Make sure we don't set the resolution smaller than Doom's original 320x200
+	// resolution. Bad things might happen.
+	width = clamp(width, 320, MAXWIDTH);
+	height = clamp(height, 200, MAXHEIGHT);
+
+	// find the closest fullscreen mode to the desired dimensions
+	if (vid_autoadjust && fullscreen)
+	{
+		IVideoMode closest_mode = getClosestMode(width, height);
+		width = closest_mode.getWidth();
+		height = closest_mode.getHeight();
+	}
+
+	if (width == 0 || height == 0)
 		return false;
+
+	SDL_Surface* sdlsurface = SDL_SetVideoMode(width, height, sbits, flags);
 
 	// [SL] ...and re-enable RawWin32Mouse's input handlers after
 	// DirectInput is reinitalized.
 	I_ResumeMouse();
 
-	screenw = width;
-	screenh = height;
-	screenbits = bits;
-
-	return true;
-}
-
-
-void SDLVideo::SetPalette(argb_t *palette)
-{
-	for (size_t i = 0; i < sizeof(newPalette)/sizeof(SDL_Color); i++)
-	{
-		newPalette[i].r = RPART(palette[i]);
-		newPalette[i].g = GPART(palette[i]);
-		newPalette[i].b = BPART(palette[i]);
-	}
-	palettechanged = true;
-}
-
-void SDLVideo::SetOldPalette(byte *doompalette)
-{
-	for (int i = 0; i < 256; ++i)
-	{
-		newPalette[i].r = newgamma[*doompalette++];
-		newPalette[i].g = newgamma[*doompalette++];
-		newPalette[i].b = newgamma[*doompalette++];
-	}
-	palettechanged = true;
-}
-
-void SDLVideo::UpdateScreen(DCanvas *canvas)
-{
-	// Draws frame time and cumulative fps
-	if (vid_displayfps)
-		V_DrawFPSWidget();
-
-    // draws little dots on the bottom of the screen
-    if (vid_ticker)
-		V_DrawFPSTicker();
-
-	if (palettechanged)
-	{
-		// m_Private may or may not be the primary surface (sdlScreen)
-		SDL_SetPalette((SDL_Surface*)canvas->m_Private, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
-		SDL_SetPalette(sdlScreen, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
-		palettechanged = false;
-	}
-
-	// If not writing directly to the screen blit to the primary surface
-	if (canvas->m_Private != sdlScreen)
-	{
-		short w = (screenw - canvas->width) >> 1;
-		short h = (screenh - canvas->height) >> 1;
-		SDL_Rect dstrect = { w, h };
-		SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, &dstrect);
-	}
-
-	if (vid_vsync)
-		SDL_Flip(sdlScreen);
-	else
-		SDL_UpdateRect(sdlScreen, 0, 0, 0, 0);
-}
-
-
-void SDLVideo::ReadScreen (byte *block)
-{
-   // SoM: forget lastCanvas, let's just read from the screen, y0
-   if(!sdlScreen)
-      return;
-
-   int y;
-   byte *source;
-   bool unlock = false;
-
-   if(SDL_MUSTLOCK(sdlScreen))
-   {
-      unlock = true;
-      SDL_LockSurface(sdlScreen);
-   }
-
-   source = (byte *)sdlScreen->pixels;
-
-   for (y = 0; y < sdlScreen->h; y++)
-   {
-      memcpy (block, source, sdlScreen->w);
-      block += sdlScreen->w;
-      source += sdlScreen->pitch;
-   }
-
-   if(unlock)
-      SDL_UnlockSurface(sdlScreen);
-}
-
-
-int SDLVideo::GetModeCount ()
-{
-   return vidModeList.size();
-}
-
-
-void SDLVideo::StartModeIterator ()
-{
-   vidModeIterator = 0;
-}
-
-bool SDLVideo::NextMode (int *width, int *height)
-{
-	std::vector<vidMode_t>::iterator it;
-
-	it = vidModeList.begin() + vidModeIterator;
-	if (it == vidModeList.end())
+	if (sdlsurface == NULL)
 		return false;
 
-	vidMode_t vm = *it;
+	mWidth = width;
+	mHeight = height;
+	mBitsPerPixel = bpp;
+	mIsFullScreen = fullscreen;
+	mUseVSync = vsync;
 
-	*width = vm.width;
-	*height = vm.height;
-	vidModeIterator++;
+	// create a new IWindowSurface for the SDL_Surface handle that
+	// was returned by SDL_SetVideoMode
+	mPrimarySurface = new ISDL12WindowSurface(this, sdlsurface);	
+
 	return true;
 }
 
 
-DCanvas *SDLVideo::AllocateSurface(int width, int height, int bits, bool primary)
+//
+// ISDL12Window::buildVideoModeList
+//
+// Queries SDL for the supported full screen video modes and populates
+// the mVideoModes list.
+//
+void ISDL12Window::buildVideoModeList()
 {
-	DCanvas *scrn = new DCanvas;
+	mVideoModes.clear();
 
-	scrn->width = width;
-	scrn->height = height;
-	scrn->bits = bits;
-	scrn->m_LockCount = 0;
-	scrn->m_Palette = NULL;
-	scrn->buffer = NULL;
+	// Fetch the list of fullscreen modes for this bpp setting:
+	SDL_Rect** sdlmodes = SDL_ListModes(NULL, SDL_FULLSCREEN | SDL_SWSURFACE);
 
-	SDL_Surface* new_surface;
-	Uint32 flags = SDL_SWSURFACE;
-
-	new_surface = SDL_CreateRGBSurface(flags, width, height, bits, 0, 0, 0, 0);
-
-	if (!new_surface)
-		I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
-
-	if (new_surface->pitch != (width * (bits / 8)) && vid_autoadjust)
-		DPrintf("Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
-
-	// determine format of 32bpp pixels
-	if (bits == 32)
+	if (sdlmodes == NULL)
 	{
-		SDL_PixelFormat* fmt = new_surface->format;
-		// find which byte is not used and use it for alpha (SDL always reports 0 for alpha)
-		scrn->setAlphaShift(48 - (fmt->Rshift + fmt->Gshift + fmt->Bshift));
-		scrn->setRedShift(fmt->Rshift);
-		scrn->setGreenShift(fmt->Gshift);
-		scrn->setBlueShift(fmt->Bshift);
-	}
-	else
-	{
-		scrn->setAlphaShift(24);
-		scrn->setRedShift(16);
-		scrn->setGreenShift(8);
-		scrn->setBlueShift(0);
-	}
-
-	scrn->m_Private = new_surface;
-	scrn->pitch = new_surface->pitch;
-
-	return scrn;
-}
-
-
-
-void SDLVideo::ReleaseSurface(DCanvas *scrn)
-{
-	if(scrn->m_Private == sdlScreen) // primary stays
+		// no fullscreen modes, but we could still try windowed
+		Printf(PRINT_HIGH, "No fullscreen video modes are available.\n");
 		return;
-
-	if (scrn->m_LockCount)
-		scrn->Unlock();
-
-	if (scrn->m_Private)
+	}
+	else if (sdlmodes == (SDL_Rect**)-1)
 	{
-		SDL_FreeSurface((SDL_Surface *)scrn->m_Private);
-		scrn->m_Private = NULL;
+		// SDL 1.2 documentation indicates the following
+		// "-1: Any dimension is okay for the given format"
+		// Shouldn't happen with SDL_FULLSCREEN flag though
+
+		I_FatalError("SDL_ListModes returned -1. Internal error.\n");
+		return;
 	}
 
-	scrn->DetachPalette ();
+	// always add the following modes
+	mVideoModes.push_back(IVideoMode(320, 200));
+	mVideoModes.push_back(IVideoMode(320, 240));
+	mVideoModes.push_back(IVideoMode(640, 400));
+	mVideoModes.push_back(IVideoMode(640, 480));
 
-	delete scrn;
-}
+	// add the full screen video modes reported by SDL	
+	while (*sdlmodes)
+	{
+		int width = (*sdlmodes)->w, height = (*sdlmodes)->h;
+		if (width > 0 && width <= MAXWIDTH && height > 0 && height <= MAXHEIGHT)
+			mVideoModes.push_back(IVideoMode(width, height));
+		++sdlmodes;
+	}
 
+	// reverse sort the modes
+	std::sort(mVideoModes.begin(), mVideoModes.end(), std::greater<IVideoMode>());
 
-void SDLVideo::LockSurface (DCanvas *scrn)
-{
-   SDL_Surface *s = (SDL_Surface *)scrn->m_Private;
-
-   if(SDL_MUSTLOCK(s))
-   {
-      if(SDL_LockSurface(s) == -1)
-         I_FatalError("SDLVideo::LockSurface failed to lock a surface that required it...\n");
-
-      scrn->m_LockCount ++;
-   }
-
-   scrn->buffer = (byte*)s->pixels;
-}
-
-
-void SDLVideo::UnlockSurface (DCanvas *scrn)
-{
-   if(!scrn->m_Private)
-      return;
-
-   SDL_UnlockSurface((SDL_Surface *)scrn->m_Private);
-   scrn->buffer = NULL;
-}
-
-bool SDLVideo::Blit (DCanvas *src, int sx, int sy, int sw, int sh, DCanvas *dst, int dx, int dy, int dw, int dh)
-{
-   return false;
+	// get rid of any duplicates (SDL some times reports duplicates)
+	mVideoModes.erase(std::unique(mVideoModes.begin(), mVideoModes.end()), mVideoModes.end());
 }
 
 VERSION_CONTROL (i_sdlvideo_cpp, "$Id$")

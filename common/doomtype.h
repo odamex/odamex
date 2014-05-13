@@ -153,11 +153,6 @@ typedef signed __int64		SQWORD;
 
 typedef DWORD				BITFIELD;
 
-// 8bpp palette index
-typedef byte                palindex_t;
-// 32bpp ARGB color (A is usually 0)
-typedef DWORD               argb_t;
-
 typedef uint64_t			dtime_t;
 
 #ifdef _WIN32
@@ -196,13 +191,11 @@ extern std::ifstream CON;
 #define forceinline inline
 #endif
 
-//==========================================================================
 //
 // MIN
 //
 // Returns the minimum of a and b.
-//==========================================================================
-
+//
 #ifdef MIN
 #undef MIN
 #endif
@@ -212,13 +205,11 @@ forceinline const T MIN (const T a, const T b)
 	return a < b ? a : b;
 }
 
-//==========================================================================
 //
 // MAX
 //
 // Returns the maximum of a and b.
-//==========================================================================
-
+//
 #ifdef MAX
 #undef MAX
 #endif
@@ -231,12 +222,11 @@ forceinline const T MAX (const T a, const T b)
 
 
 
-//==========================================================================
 //
 // clamp
 //
-// Clamps in to the range [min,max].
-//==========================================================================
+// Clamps the value of in to the range min, max
+//
 #ifdef clamp
 #undef clamp
 #endif
@@ -245,6 +235,98 @@ forceinline T clamp (const T in, const T min, const T max)
 {
 	return in <= min ? min : in >= max ? max : in;
 }
+
+
+
+// ----------------------------------------------------------------------------
+//
+// Color Management Types
+//
+// ----------------------------------------------------------------------------
+
+// 8-bit palette index
+typedef uint8_t				palindex_t;
+
+//
+// argb_t class
+//
+// Allows ARGB8888 values to be accessed as a packed 32-bit integer or accessed
+// by its individual 8-bit color and alpha channels.
+//
+struct argb_t
+{
+	union
+	{
+		struct
+		{
+		#ifdef __BIG_ENDIAN__		
+			uint8_t a, r, g, b;
+		#else
+			uint8_t	b, g, r, a;
+		#endif
+		};
+
+		uint32_t value;
+	};
+
+	argb_t() { }
+	argb_t(uint32_t _value) : value(_value) { }
+
+	#ifdef __BIG_ENDIAN__
+	argb_t(uint8_t _r, uint8_t _g, uint8_t _b)				: a(0), r(_r), g(_g), b(_b) { }
+	argb_t(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)	: a(_a), r(_r), g(_g), b(_b) { }
+	#else
+	argb_t(uint8_t _r, uint8_t _g, uint8_t _b)				: b(_b), g(_g), r(_r), a(0) { }
+	argb_t(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)	: b(_b), g(_g), r(_r), a(_a) { }
+	#endif
+
+	inline operator uint32_t () const { return value; }
+};
+
+
+//
+// ahsv_t class
+//
+// Allows AHSV8888 values to be accessed as a packed 32-bit integer or accessed
+// by its individual 8-bit components.
+//
+struct ahsv_t
+{
+	union
+	{
+		struct
+		{
+		#ifdef __BIG_ENDIAN__		
+			uint8_t a, h, s, v;
+		#else
+			uint8_t	v, s, h, a;
+		#endif
+		};
+
+		uint32_t value;
+	};
+
+	ahsv_t() { }
+	ahsv_t(uint32_t _value) : value(_value) { }
+
+	#ifdef __BIG_ENDIAN__
+	ahsv_t(uint8_t _h, uint8_t _s, uint8_t _v)				: a(0), h(_h), s(_s), v(_v) { }
+	ahsv_t(uint8_t _a, uint8_t _h, uint8_t _s, uint8_t _v)	: a(_a), h(_h), s(_s), v(_v) { }
+	#else
+	ahsv_t(uint8_t _h, uint8_t _s, uint8_t _v)				: v(_v), s(_s), h(_h), a(0) { }
+	ahsv_t(uint8_t _a, uint8_t _h, uint8_t _s, uint8_t _v)	: v(_v), s(_s), h(_h), a(_a) { }
+	#endif
+
+	inline operator uint32_t () const { return value; }
+};
+
+
+// ----------------------------------------------------------------------------
+//
+// Color Mapping classes
+//
+// ----------------------------------------------------------------------------
+
 
 class translationref_t
 {

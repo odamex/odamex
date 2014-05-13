@@ -59,7 +59,7 @@ int 			viewangleoffset;
 int 			validcount = 1;
 
 int 			centerx;
-extern "C" {int	centery; }
+int				centery;
 
 fixed_t 		centerxfrac;
 fixed_t 		centeryfrac;

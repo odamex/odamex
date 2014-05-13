@@ -782,7 +782,7 @@ void R_ForceDefaultColormap(const char *name)
 		for (int c = 0; c < 256; ++c)
 			realcolormaps.shademap[m*256+c] = V_Palette.shade(realcolormaps.colormap[m*256+c]);
 #else
-	BuildDefaultShademap (GetDefaultPalette(), realcolormaps);
+	BuildDefaultShademap (V_GetDefaultPalette(), realcolormaps);
 #endif
 
 	strncpy (fakecmaps[0].name, name, 9); // denis - todo - string limit?
@@ -841,53 +841,46 @@ void R_InitColormaps (void)
 
 	if (numfakecmaps > 1)
 	{
-		int i;
-		size_t j;
-		palette_t *pal = GetDefaultPalette ();
+		palette_t *pal = V_GetDefaultPalette();
 		shaderef_t defpal = shaderef_t(&pal->maps, 0);
 
-		for (i = ++firstfakecmap, j = 1; j < numfakecmaps; i++, j++)
+		for (unsigned i = ++firstfakecmap, j = 1; j < numfakecmaps; i++, j++)
 		{
-			if (W_LumpLength (i) >= (NUMCOLORMAPS+1)*256)
+			if (W_LumpLength(i) >= (NUMCOLORMAPS+1)*256)
 			{
-				int k, r, g, b;
-				byte *map = (byte *)W_CacheLumpNum (i, PU_CACHE);
-
-				byte  *colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*j;
-				argb_t *shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
+				byte* map = (byte*)W_CacheLumpNum(i, PU_CACHE);
+				byte* colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*j;
+				argb_t* shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
 
 				// Copy colormap data:
-				memcpy (colormap, map, (NUMCOLORMAPS+1)*256);
+				memcpy(colormap, map, (NUMCOLORMAPS+1)*256);
 
-				if(pal->basecolors)
+				if (pal->basecolors)
 				{
-					r = RPART(pal->basecolors[*map]);
-					g = GPART(pal->basecolors[*map]);
-					b = BPART(pal->basecolors[*map]);
+					int r = pal->basecolors[*map].r;
+					int g = pal->basecolors[*map].g;
+					int b = pal->basecolors[*map].b;
 
 					W_GetLumpName (fakecmaps[j].name, i);
-					for (k = 1; k < 256; k++) {
-						r = (r + RPART(pal->basecolors[map[k]])) >> 1;
-						g = (g + GPART(pal->basecolors[map[k]])) >> 1;
-						b = (b + BPART(pal->basecolors[map[k]])) >> 1;
+					for (int k = 1; k < 256; k++)
+					{
+						r = (r + pal->basecolors[map[k]].r) >> 1;
+						g = (g + pal->basecolors[map[k]].g) >> 1;
+						b = (b + pal->basecolors[map[k]].b) >> 1;
 					}
 					// NOTE(jsd): This alpha value is used for 32bpp in water areas.
-					fakecmaps[j].blend = MAKEARGB (64, r, g, b);
+					argb_t color = argb_t(64, r, g, b);
+					fakecmaps[j].blend = color;
 
 					// Set up shademap for the colormap:
-					for (k = 0; k < 256; ++k)
-					{
-						argb_t c = pal->basecolors[map[0]];
-						shademap[k] = alphablend1a(c, MAKERGB(r,g,b), j * (256 / numfakecmaps));
-					}
+					for (int k = 0; k < 256; ++k)
+						shademap[k] = alphablend1a(pal->basecolors[map[0]], color, j * (256 / numfakecmaps));
 				}
 				else
 				{
 					// Set up shademap for the colormap:
-					for (k = 0; k < 256; ++k)
-					{
+					for (int k = 0; k < 256; ++k)
 						shademap[k] = defpal.shade(colormap[k]);
-					}
 				}
 			}
 		}
@@ -906,16 +899,22 @@ int R_ColormapNumForName (const char *name)
 		if (-1 != (lump = W_CheckNumForName (name, ns_colormaps)) )
 			blend = lump - firstfakecmap + 1;
 		else if (!strnicmp (name, "WATERMAP", 8))
-			blend = MAKEARGB (128,0,0x4f,0xa5);
+			blend = argb_t(128, 0, 0x4f, 0xa5);
 	}
 
 	return blend;
 }
 
-unsigned int R_BlendForColormap (int map)
+unsigned int R_BlendForColormap(int map)
 {
-	return APART(map) ? map :
-		   (unsigned)map < numfakecmaps ? fakecmaps[map].blend : 0;
+	argb_t color(map);
+	if (color.a != 0)
+		return map;
+
+	if ((unsigned)map < numfakecmaps)
+		return fakecmaps[map].blend;
+
+	return 0;
 }
 
 //
@@ -1118,51 +1117,6 @@ unsigned int SlopeDiv (unsigned int num, unsigned int den)
 	ans = (num << 3) / (den >> 8);
 
 	return ans <= SLOPERANGE ? ans : SLOPERANGE;
-}
-
-// [ML] 11/4/06: Moved here from v_video.cpp
-// [ML] 12/6/11: Moved from v_draw.cpp, not sure where to put it now...
-/*
-===============
-BestColor
-(borrowed from Quake2 source: utils3/qdata/images.c)
-===============
-*/
-byte BestColor (const argb_t *palette, const int r, const int g, const int b, const int numcolors)
-{
-	int		i;
-	int		dr, dg, db;
-	int		bestdistortion, distortion;
-	int		bestcolor;
-
-//
-// let any color go to 0 as a last resort
-//
-	bestdistortion = 256*256*4;
-	bestcolor = 0;
-
-	for (i = 0; i < numcolors; i++)
-	{
-		dr = r - RPART(palette[i]);
-		dg = g - GPART(palette[i]);
-		db = b - BPART(palette[i]);
-		distortion = dr*dr + dg*dg + db*db;
-		if (distortion < bestdistortion)
-		{
-			if (!distortion)
-				return i;		// perfect match
-
-			bestdistortion = distortion;
-			bestcolor = i;
-		}
-	}
-
-	return bestcolor;
-}
-
-byte BestColor2 (const argb_t *palette, const argb_t color, const int numcolors)
-{
-	return BestColor(palette, RPART(color), GPART(color), BPART(color), numcolors);
 }
 
 VERSION_CONTROL (r_data_cpp, "$Id$")

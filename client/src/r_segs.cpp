@@ -668,7 +668,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 		int64_t(dcol.texturemid - texheight) * ds->scale2 > topscreenclip)
 		return;
 
-	basecolormap = frontsector->floorcolormap->maps;	// [RH] Set basecolormap
+	basecolormap = frontsector->colormap->maps;	// [RH] Set basecolormap
 
 	// killough 4/13/98: get correct lightlevel for 2s normal textures
 	lightnum = (R_FakeFlat(frontsector, &tempsec, NULL, NULL, false)
@@ -694,7 +694,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	// draw the columns
 	// TODO: change negonearray to the actual top/bottom
-	bool render_multiple_columns = r_columnmethod && !detailxshift;
+	bool render_multiple_columns = r_columnmethod;
 
 	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts,
 			MaskedColumnBlaster, MaskedHColumnBlaster, true, render_multiple_columns);
@@ -963,7 +963,7 @@ void R_StoreWallRange(int start, int stop)
 				|| backsector->floorlightsec != frontsector->floorlightsec
 
 				// [RH] Add checks for colormaps
-				|| backsector->floorcolormap != frontsector->floorcolormap
+				|| backsector->colormap != frontsector->colormap
 
 				|| backsector->floor_xscale != frontsector->floor_xscale
 				|| backsector->floor_yscale != frontsector->floor_yscale
@@ -990,7 +990,7 @@ void R_StoreWallRange(int start, int stop)
 				|| backsector->ceilinglightsec != frontsector->ceilinglightsec
 
 				// [RH] Add check for colormaps
-				|| backsector->ceilingcolormap != frontsector->ceilingcolormap
+				|| backsector->colormap != frontsector->colormap
 
 				|| backsector->ceiling_xscale != frontsector->ceiling_xscale
 				|| backsector->ceiling_yscale != frontsector->ceiling_yscale

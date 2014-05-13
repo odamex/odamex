@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "hu_drawers.h"
+#include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
 
@@ -58,13 +59,13 @@ void calculateOrigin(int& x, int& y,
 		x = x * x_scale;
 		break;
 	case X_CENTER:
-		x = (screen->width >> 1) + (x * x_scale);
+		x = (I_GetSurfaceWidth() >> 1) + (x * x_scale);
 		break;
 	case X_RIGHT:
-		x = screen->width - (x * x_scale);
+		x = I_GetSurfaceWidth() - (x * x_scale);
 		break;
 	case X_ABSOLUTE:
-		x = (x * screen->width) / (320 * x_scale);
+		x = (x * I_GetSurfaceWidth()) / (320 * x_scale);
 		break;
 	}
 
@@ -73,13 +74,13 @@ void calculateOrigin(int& x, int& y,
 		y = y * y_scale;
 		break;
 	case Y_MIDDLE:
-		y = (screen->height >> 1) + (y * y_scale);
+		y = (I_GetSurfaceHeight() >> 1) + (y * y_scale);
 		break;
 	case Y_BOTTOM:
-		y = screen->height - (y * y_scale);
+		y = I_GetSurfaceHeight() - (y * y_scale);
 		break;
 	case Y_ABSOLUTE:
-		y = (y * screen->height) / (200 * y_scale);
+		y = (y * I_GetSurfaceHeight()) / (200 * y_scale);
 		break;
 	}
 
@@ -124,7 +125,7 @@ int XSize(const float scale) {
 	if (x_scale < 1) {
 		x_scale = 1;
 	}
-	return screen->width / x_scale;
+	return I_GetSurfaceWidth() / x_scale;
 }
 
 // Return the number of scaled available horizontal pixels to draw on.
@@ -133,7 +134,7 @@ int YSize(const float scale) {
 	if (y_scale < 1) {
 		y_scale = 1;
 	}
-	return screen->height / y_scale;
+	return I_GetSurfaceHeight() / y_scale;
 }
 
 // Fill an area with a solid color.
@@ -142,7 +143,8 @@ void Clear(int x, int y,
            const float scale,
            const x_align_t x_align, const y_align_t y_align,
            const x_align_t x_origin, const y_align_t y_origin,
-           const int color) {
+           const argb_t color)
+{
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale,
