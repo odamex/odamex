@@ -142,9 +142,7 @@ static const signed char fuzzinit[FUZZTABLE] = {
 void R_InitFuzzTable (void)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
-	surface->lock();
 	int fuzzoff = surface->getPitch();
-	surface->unlock();
 
 	for (int i = 0; i < FUZZTABLE; i++)
 		fuzzoffset[i] = fuzzinit[i] * fuzzoff;
@@ -1476,8 +1474,6 @@ void R_DrawViewBorder()
 	DCanvas* canvas = surface->getDefaultCanvas();
 	int surface_width = surface->getWidth();
 
-	surface->lock();
-
 	const gameborder_t* border = gameinfo.border;
 	const int offset = border->offset;
 	const int size = border->size;
@@ -1512,8 +1508,6 @@ void R_DrawViewBorder()
 	canvas->DrawPatch(W_CachePatch(border->br), viewwindowx + viewwidth, viewwindowy + viewheight);
 
 	V_MarkRect(0, 0, surface_width, ST_Y);
-
-	surface->unlock();
 }
 
 

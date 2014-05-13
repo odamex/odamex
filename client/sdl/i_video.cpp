@@ -869,7 +869,14 @@ bool I_IsProtectedResolution(const IWindowSurface* surface)
 void I_BeginUpdate()
 {
 	if (I_VideoInitialized())
-		I_GetPrimarySurface()->lock();
+	{
+		primary_surface->lock();
+
+		if (matted_surface)
+			matted_surface->lock();
+		if (emulated_surface)
+			emulated_surface->lock();
+	}
 }
 
 
@@ -881,10 +888,7 @@ void I_BeginUpdate()
 //
 void I_FinishUpdate()
 {
-	if (!I_VideoInitialized())
-		return;
-
-	if (noblit == false)
+	if (I_VideoInitialized())
 	{
 		// Draws frame time and cumulative fps
 		if (vid_displayfps)
@@ -894,10 +898,16 @@ void I_FinishUpdate()
 		if (vid_ticker)
 			V_DrawFPSTicker();
 
-		window->refresh();
-	}
+		if (emulated_surface)
+			emulated_surface->unlock();
+		if (matted_surface)
+			matted_surface->unlock();
 
-	I_GetPrimarySurface()->unlock();
+		primary_surface->unlock();
+
+		if (noblit == false)
+			window->refresh();
+	}
 }
 
 
@@ -910,8 +920,8 @@ void I_SetPalette(const argb_t* palette)
 	{
 		window->setPalette(palette);
 
-		if (primary_surface)
-			primary_surface->setPalette(palette);
+		primary_surface->setPalette(palette);
+
 		if (matted_surface)
 			matted_surface->setPalette(palette);
 		if (emulated_surface)
