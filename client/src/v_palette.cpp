@@ -55,9 +55,8 @@ EXTERN_CVAR(vid_gammatype)
 EXTERN_CVAR(r_painintensity)
 EXTERN_CVAR(sv_allowredscreen)
 
-void BuildColoredLights (byte *maps, int lr, int lg, int lb, int fr, int fg, int fb);
 static void DoBlending(const argb_t *from, argb_t *to, int tor, int tog, int tob, int toa);
-void V_ForceBlend (int blendr, int blendg, int blendb, int blenda);
+void V_ForceBlend(int blendr, int blendg, int blendb, int blenda);
 
 dyncolormap_t NormalLight;
 
@@ -100,7 +99,7 @@ shaderef_t::shaderef_t(const shaderef_t &other) :
 {
 }
 
-shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) :
+shaderef_t::shaderef_t(const shademap_t* const colors, const int mapnum) :
 	m_colors(colors), m_mapnum(mapnum)
 {
 #if DEBUG
@@ -131,7 +130,7 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) :
 		if (m_colors != &(V_GetDefaultPalette()->maps))
 		{
 			// Find the dynamic colormap by the `m_colors` pointer:
-			dyncolormap_t *colormap = &NormalLight;
+			dyncolormap_t* colormap = &NormalLight;
 
 			do
 			{
@@ -324,7 +323,6 @@ static void V_UpdateGammaLevel(float level)
 			V_RefreshColormaps();
 	}
 }
-
 
 
 //

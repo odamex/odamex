@@ -103,8 +103,8 @@ extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
 
 extern int testingmode;
-extern BOOL setsizeneeded;
-extern BOOL setmodeneeded;
+extern bool setsizeneeded;
+extern bool setmodeneeded;
 extern BOOL netdemo;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 EXTERN_CVAR (st_scale) // removeme

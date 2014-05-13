@@ -59,13 +59,11 @@ palette_t* V_GetDefaultPalette()
 	if (!initialized)
 	{
 		// construct a valid palette_t so we don't get crashes
-		memset(palette->basecolors, 0, 256 * sizeof(*palette->basecolors));
-		memset(palette->colors, 0, 256 * sizeof(*palette->colors));
+		memset(default_palette.basecolors, 0, 256 * sizeof(*default_palette.basecolors));
+		memset(default_palette.colors, 0, 256 * sizeof(*default_palette.colors));
 
-		static byte colormapsbase[(NUMCOLORMAPS + 1) * 256 + 255];
-		palette->colormapsbase = colormapsbase;
-		palette->maps.colormap = NULL;
-		palette->maps.shademap = NULL;
+		default_palette.maps.colormap = NULL;
+		default_palette.maps.shademap = NULL;
 
 		initialized = true;
 	}

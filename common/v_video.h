@@ -29,7 +29,6 @@
 #include <string>
 
 #include "doomtype.h"
-#include "i_video.h"
 #include "v_palette.h"
 #include "doomdef.h"
 
@@ -220,6 +219,9 @@ protected:
 
 private:
 	IWindowSurface*			mSurface;
+
+	int getCleanX(int x) const;
+	int getCleanY(int y) const;
 };
 
 inline void DCanvas::DrawText (int normalcolor, int x, int y, const byte *string) const
@@ -240,10 +242,7 @@ inline void DCanvas::DrawTextCleanLuc (int normalcolor, int x, int y, const byte
 }
 inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const byte *string) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor,
-		(x - 160) * CleanXfac + mSurface->getWidth()/ 2,
-		(y - 100) * CleanYfac + mSurface->getHeight() / 2,
-		string);
+	TextSWrapper (EWrapper_Translated, normalcolor, getCleanX(x), getCleanY(y), string);
 }
 inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const
 {
@@ -273,10 +272,7 @@ inline void DCanvas::DrawTextCleanLuc (int normalcolor, int x, int y, const char
 }
 inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const char *string) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor,
-		(x - 160) * CleanXfac + mSurface->getWidth()/ 2,
-		(y - 100) * CleanYfac + mSurface->getHeight()/ 2,
-		(const byte *)string);
+	TextSWrapper (EWrapper_Translated, normalcolor, getCleanX(x), getCleanY(y), (const byte*)string);
 }
 inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
 {

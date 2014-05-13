@@ -31,6 +31,7 @@
 
 #include "z_zone.h"
 #include "v_video.h"
+#include "i_video.h"
 
 #include "m_swap.h"
 

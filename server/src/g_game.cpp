@@ -786,8 +786,7 @@ void G_ScreenShot(const char *filename)
 // G_InitFromSavegame
 // Can be called by the startup code or the menu task.
 //
-extern BOOL setsizeneeded;
-void R_ExecuteSetViewSize (void);
+void R_ExecuteSetViewSize(void);
 
 char savename[256];
 

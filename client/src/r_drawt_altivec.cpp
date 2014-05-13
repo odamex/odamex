@@ -49,7 +49,7 @@
 #include "r_draw.h"
 #include "r_main.h"
 #include "r_things.h"
-#include "v_video.h"
+#include "i_video.h"
 
 extern byte** ylookup;
 extern int* columnofs;

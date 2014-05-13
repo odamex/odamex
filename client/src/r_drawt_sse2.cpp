@@ -52,7 +52,6 @@
 #include "r_main.h"
 #include "r_things.h"
 #include "i_video.h"
-#include "v_video.h"
 
 extern byte** ylookup;
 extern int* columnofs;

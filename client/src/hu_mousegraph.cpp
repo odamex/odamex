@@ -26,6 +26,7 @@
 
 #include "v_text.h"
 #include "v_video.h"
+#include "i_video.h"
 
 MouseGraph mousegraph;
 

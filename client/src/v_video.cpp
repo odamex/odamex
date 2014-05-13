@@ -135,6 +135,28 @@ void V_MarkRect(int x, int y, int width, int height)
 }
 
 
+//
+// DCanvas::getCleanX
+//
+// Returns the real screen x coordinate given the virtual 320x200 x coordinate.
+//
+int DCanvas::getCleanX(int x) const
+{
+	return (x - 160) * CleanXfac + mSurface->getWidth() / 2;
+}
+
+
+//
+// DCanvas::getCleanY
+//
+// Returns the real screen y coordinate given the virtual 320x200 y coordinate.
+//
+int DCanvas::getCleanY(int y) const
+{
+	return (y - 200) * CleanYfac + mSurface->getHeight() / 2;
+}
+
+
 // [RH] Fill an area with a 64x64 flat texture
 //		right and bottom are one pixel *past* the boundaries they describe.
 void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src) const
