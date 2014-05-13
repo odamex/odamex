@@ -963,23 +963,22 @@ void AM_Ticker (void)
 //
 void AM_clearFB (am_color_t color)
 {
-	int y;
-
-	if (I_GetVideoBitDepth() == 8) {
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	{
 		if (f_w == f_p)
-			memset (fb, color.index, f_w*f_h);
+			memset(fb, color.index, f_w*f_h);
 		else
-			for (y = 0; y < f_h; y++)
-				memset (fb + y * f_p, color.index, f_w);
-	} else {
-		int x;
-		argb_t *line;
+			for (int y = 0; y < f_h; y++)
+				memset(fb + y * f_p, color.index, f_w);
+	}
+	else
+	{
+		argb_t* line = (argb_t*)fb;
 
-		line = (argb_t *)(fb);
-		for (y = 0; y < f_h; y++) {
-			for (x = 0; x < f_w; x++) {
+		for (int y = 0; y < f_h; y++)
+		{
+			for (int x = 0; x < f_w; x++)
 				line[x] = color.rgb;
-			}
 			line += f_p >> 2;
 		}
 	}
@@ -1249,7 +1248,7 @@ void AM_drawMline (mline_t* ml, am_color_t color)
 	if (AM_clipMline(ml, &fl))
 	{
 		// draws it on frame buffer using fb coords
-		if (I_GetVideoBitDepth() == 8)
+		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 			AM_drawFlineP(&fl, color.index);
 		else
 			AM_drawFlineD(&fl, color.rgb);
@@ -1646,14 +1645,10 @@ void AM_drawMarks (void)
 void AM_drawCrosshair (am_color_t color)
 {
 	// single point for now
-	if (I_GetVideoBitDepth() == 8)
-	{
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 		PUTDOTP(f_w/2, (f_h+1)/2, (byte)color.index);
-	}
 	else
-	{
 		PUTDOTD(f_w/2, (f_h+1)/2, color.rgb);
-	}
 }
 
 void AM_Drawer (void)

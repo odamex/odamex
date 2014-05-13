@@ -1709,7 +1709,7 @@ void R_InitColumnDrawers ()
 	// NOTE(jsd): It's okay to use R_DrawColumnHorizP because it renders to a temp buffer first.
 	R_DrawColumnHoriz		= R_DrawColumnHorizP;
 
-	if (I_GetVideoBitDepth() == 8)
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
 		R_DrawColumn			= R_DrawColumnP;
 		R_DrawFuzzColumn		= R_DrawFuzzColumnP;

@@ -699,7 +699,7 @@ void V_ForceBlend(int blendr, int blendg, int blendb, int blenda)
 	// shademap_t::shade takes care of blending
 	// [SL] actually, an alpha overlay is drawn on top of the rendered screen
 	// in R_RenderPlayerView
-	if (I_GetVideoBitDepth() == 8)
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
 		argb_t blend_color(BlendA, BlendR, BlendG, BlendB);
 		blend_color = V_GammaCorrect(blend_color);

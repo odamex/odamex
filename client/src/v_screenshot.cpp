@@ -160,8 +160,8 @@ static void V_SetPNGComments(png_struct *png_ptr, png_info *info_ptr, time_t* no
 	text_line++;
 	
 	pngtext[text_line].key = (png_charp)"In-Game Video Mode";
-	pngtext[text_line].text =
-		(I_GetVideoBitDepth() == 8) ? (png_charp)"8bpp" : (png_charp)"32bpp";
+	pngtext[text_line].text = (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+				? (png_charp)"8bpp" : (png_charp)"32bpp";
 	text_line++;
 	
 	char gammabuf[20];	// large enough to not overflow with three digits of precision

@@ -701,7 +701,7 @@ void F_BunnyScroll (void)
 	if (scrolled < 0)
 		scrolled = 0;
 
-	if (I_GetVideoBitDepth() == 8)
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
 		for ( x=0 ; x<320 ; x++)
 		{

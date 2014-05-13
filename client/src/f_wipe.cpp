@@ -459,7 +459,7 @@ void Wipe_Start()
 	}	
 
 	//  allocate data for the temporary screens
-	int pixel_size = I_GetVideoBitDepth() == 8 ? sizeof(palindex_t) : sizeof(argb_t);
+	int pixel_size = I_GetPrimarySurface()->getBytesPerPixel();
 	wipe_screen = new byte[I_GetSurfaceWidth() * I_GetSurfaceHeight() * pixel_size];
 	
 	in_progress = true;
