@@ -278,8 +278,10 @@ ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool
 	setMode(width, height, bpp, fullscreen, vsync);
 
 	// fill the primary surface with black
+	mPrimarySurface->lock();
 	DCanvas* canvas = mPrimarySurface->getDefaultCanvas();
 	canvas->Clear(0, 0, mPrimarySurface->getWidth(), mPrimarySurface->getHeight(), argb_t(0, 0, 0));
+	mPrimarySurface->unlock();
 }
 
 

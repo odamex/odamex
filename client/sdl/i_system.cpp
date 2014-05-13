@@ -202,35 +202,10 @@ void *I_ZoneBase (size_t *size)
 	return zone;
 }
 
-void I_BeginRead(void)
+void I_BeginRead()
 {
-	// NOTE(jsd): This is called before V_Palette is set causing crash in 32bpp mode.
-	// [SL] Check that V_Palette has been properly initalized to work around this
-
-	if (r_loadicon && V_Palette.isValid())
-	{
-		patch_t *diskpatch = W_CachePatch("STDISK");
-
-		if (!I_VideoInitialized())
-			return;
-
-		if (!diskpatch || in_endoom)
-			return;
-
-		IWindowSurface* surface = I_GetPrimarySurface();
-		surface->lock();
-
-		int scale = std::min(CleanXfac, CleanYfac);
-		int w = diskpatch->width() * scale;
-		int h = diskpatch->height() * scale;
-		// offset x and y for the lower right corner of the screen
-		int ofsx = surface->getWidth() - w + (scale * diskpatch->leftoffset());
-		int ofsy = surface->getHeight() - h + (scale * diskpatch->topoffset());
-
-		screen->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
-
-		surface->unlock();
-	}
+	if (r_loadicon)
+		I_DrawLoadingIcon();
 }
 
 void I_EndRead(void)

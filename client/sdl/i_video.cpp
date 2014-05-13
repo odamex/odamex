@@ -37,6 +37,8 @@
 #include "i_sdlvideo.h"
 #include "m_fileio.h"
 
+#include "w_wad.h"
+
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
 #if defined(_WIN32) && !defined(_XBOX)
@@ -61,6 +63,8 @@ static IWindowSurface* matted_surface = NULL;
 static IWindowSurface* emulated_surface = NULL;
 
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
+
+static int loading_icon_expire = -1;
 
 EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_vsync)
@@ -557,7 +561,9 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
 
 	// clear window's surface to all black
+	primary_surface->lock();
 	primary_surface->getDefaultCanvas()->Clear(0, 0, surface_width, surface_height, argb_t(0, 0, 0));
+	primary_surface->unlock();
 
 	// [SL] Determine the size of the matted surface.
 	// A matted surface will be used if pillar-boxing or letter-boxing are used, or
@@ -600,13 +606,17 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 	{
 		int bpp = primary_surface->getBitsPerPixel();
 		emulated_surface = new IGenericWindowSurface(I_GetWindow(), 320, 200, bpp);
+		emulated_surface->lock();
 		emulated_surface->getDefaultCanvas()->Clear(0, 0, 320, 200, argb_t(0, 0, 0));
+		emulated_surface->unlock();
 	}
 	else if (vid_640x400)
 	{
 		int bpp = primary_surface->getBitsPerPixel();
 		emulated_surface = new IGenericWindowSurface(I_GetWindow(), 640, 400, bpp);
+		emulated_surface->lock();
 		emulated_surface->getDefaultCanvas()->Clear(0, 0, 640, 400, argb_t(0, 0, 0));
+		emulated_surface->unlock();
 	}
 
 	screen = primary_surface->getDefaultCanvas();
@@ -898,6 +908,26 @@ void I_FinishUpdate()
 		if (vid_ticker)
 			V_DrawFPSTicker();
 
+		// draws a disk loading icon in the lower right corner
+		if (gametic <= loading_icon_expire)
+		{
+			const patch_t* diskpatch = W_CachePatch("STDISK");
+			IWindowSurface* surface = I_GetPrimarySurface();
+
+			int scale = std::min(CleanXfac, CleanYfac);
+			int w = diskpatch->width() * scale;
+			int h = diskpatch->height() * scale;
+
+			int x = surface->getWidth();
+			int y = surface->getHeight();
+
+			// offset x and y for the lower right corner of the screen
+			int ofsx = x - w + (scale * diskpatch->leftoffset());
+			int ofsy = y - h + (scale * diskpatch->topoffset());
+
+			surface->getDefaultCanvas()->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
+		}
+
 		if (emulated_surface)
 			emulated_surface->unlock();
 		if (matted_surface)
@@ -1013,6 +1043,17 @@ std::string I_GetVideoDriverName()
 		return I_GetWindow()->getVideoDriverName();
 	return std::string();
 }
+
+
+//
+// I_DrawLoadingIcon
+//
+void I_DrawLoadingIcon()
+{
+	loading_icon_expire = gametic;
+}
+
+
 
 VERSION_CONTROL (i_video_cpp, "$Id$")
 

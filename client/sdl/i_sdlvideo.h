@@ -48,10 +48,18 @@ public:
 	virtual ~ISDL12WindowSurface();
 
 	virtual byte* getBuffer()
-	{	return mSurfaceBuffer;	}
+	{
+//		if (mLocks == 0)
+//			return NULL;
+		return mSurfaceBuffer;
+	}
 
 	virtual const byte* getBuffer() const
-	{	return mSurfaceBuffer;	}
+	{
+//		if (mLocks == 0)
+//			return NULL;
+		return mSurfaceBuffer;
+	}
 
 	virtual void lock();
 	virtual void unlock();
