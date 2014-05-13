@@ -162,11 +162,12 @@ int* 			columnofs;
 //
 IWindowSurface* R_GetRenderingSurface()
 {
-	if (vid_320x200 || vid_640x400)
+	if ((vid_320x200 || vid_640x400) && I_GetEmulatedSurface() != NULL)
 		return I_GetEmulatedSurface();
 	else
 		return I_GetPrimarySurface();
 }
+
 
 //
 //

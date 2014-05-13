@@ -658,8 +658,8 @@ void D_DoomMain (void)
 
 	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
 
-	M_LoadDefaults ();					// load before initing other systems
-	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
+	M_LoadDefaults();					// load before initing other systems
+	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	const char* iwad = Args.CheckValue("-iwad");
 	if (!iwad)
@@ -719,7 +719,7 @@ void D_DoomMain (void)
 	I_SetWindowCaption(D_GetTitleString());
 
 	// Base systems have been inited; enable cvar callbacks
-	cvar_t::EnableCallbacks ();
+	cvar_t::EnableCallbacks();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
 	if (GStrings(STARTUP1)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP1));
