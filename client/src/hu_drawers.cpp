@@ -143,7 +143,8 @@ void Clear(int x, int y,
            const float scale,
            const x_align_t x_align, const y_align_t y_align,
            const x_align_t x_origin, const y_align_t y_origin,
-           const int color) {
+           const argb_t color)
+{
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale,

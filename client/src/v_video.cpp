@@ -202,7 +202,7 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 {
 	int width = mSurface->getWidth(), height = mSurface->getHeight();
-	Clear(0, 0, width, height, 0);
+	Clear(0, 0, width, height, argb_t(0, 0, 0));
 
 	if (width == 320 && height == 200)
 	{
@@ -224,26 +224,25 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 
 
 // [RH] Set an area to a specified color
-void DCanvas::Clear(int left, int top, int right, int bottom, int color) const
+void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) const
 {
 	int surface_pitch_pixels = mSurface->getPitchInPixels();
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
-		palindex_t* dest = (palindex_t*)mSurface->getBuffer()
-					+ top * surface_pitch_pixels + left;
+		palindex_t color_index = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + top * surface_pitch_pixels + left;
 
 		int line_length = (right - left) * sizeof(palindex_t);
 		for (int y = top; y < bottom; y++)
 		{
-			memset(dest, color, line_length);
+			memset(dest, color_index, line_length);
 			dest += surface_pitch_pixels;
 		}
 	}
 	else
 	{
-		argb_t* dest = (argb_t*)mSurface->getBuffer()
-					+ top * surface_pitch_pixels + left;
+		argb_t* dest = (argb_t*)mSurface->getBuffer() + top * surface_pitch_pixels + left;
 
 		for (int y = top; y < bottom; y++)
 		{
@@ -645,7 +644,7 @@ void V_DrawFPSWidget()
 
 		double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
 		int len = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
-		screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), 0);
+		screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), argb_t(0, 0, 0));
 		screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, CR_GRAY);
 
 		time_accum += delta_time;

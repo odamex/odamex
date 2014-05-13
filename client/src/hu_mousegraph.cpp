@@ -60,7 +60,7 @@ void MouseGraph::draw(int type)
 
 void MouseGraph::drawPlot(int x1, int y1)
 {
-	int scaledx, scaledy, in, color;
+	int scaledx, scaledy, in;
 	int limit = 128;
 
 	int x2 = x1 + MAX_HISTORY_TICS;
@@ -69,10 +69,13 @@ void MouseGraph::drawPlot(int x1, int y1)
 	int yc = ((y2 - y1) / 2) + y1;
 
 	// Draw the background
-	screen->Clear(xc - 1, y1, xc, y2, 187);
-	screen->Clear(x1, yc - 1, x2, yc, 207);
+	const argb_t bgcolor1(V_GetDefaultPalette()->basecolors[187]);
+	const argb_t bgcolor2(V_GetDefaultPalette()->basecolors[207]);
 
-	for (int i = MAX_HISTORY_TICS - 1;i >= 0;i--)
+	screen->Clear(xc - 1, y1, xc, y2, bgcolor1);
+	screen->Clear(x1, yc - 1, x2, yc, bgcolor2);
+
+	for (int i = MAX_HISTORY_TICS - 1; i >= 0; i--)
 	{
 		in = (MAX_HISTORY_TICS + this->index - i) % MAX_HISTORY_TICS;
 
@@ -84,10 +87,12 @@ void MouseGraph::drawPlot(int x1, int y1)
 		scaledx = (mousex[in] * (MAX_HISTORY_TICS / 2)) / limit;
 		scaledy = (mousey[in] * (MAX_HISTORY_TICS / 2)) / limit;
 
+		argb_t color;
+		
 		if (i == 0)
-			color = 160;
+			color = V_GetDefaultPalette()->basecolors[160];
 		else
-			color = 80 + (i / 2);
+			color = V_GetDefaultPalette()->basecolors[80 + i/2];
 
 		screen->Clear(xc + scaledx - 1, yc - scaledy - 1, xc + scaledx, yc - scaledy, color);
 	}
@@ -104,8 +109,14 @@ void MouseGraph::drawLine(int x1, int y1)
 	int yc = ((y2 - y1) / 2) + y1;
 
 	// Draw the background
-	screen->Clear(xc - 1, y1, xc, y2, 187);
-	screen->Clear(x1, yc - 1, x2, yc, 207);
+	const argb_t bgcolor1(V_GetDefaultPalette()->basecolors[187]);
+	const argb_t bgcolor2(V_GetDefaultPalette()->basecolors[207]);
+
+	const argb_t color1(V_GetDefaultPalette()->basecolors[200]);
+	const argb_t color2(V_GetDefaultPalette()->basecolors[176]);
+
+	screen->Clear(xc - 1, y1, xc, y2, bgcolor1);
+	screen->Clear(x1, yc - 1, x2, yc, bgcolor2);
 
 	for (int i = MAX_HISTORY_TICS - 1;i >= 0;i--)
 	{
@@ -119,7 +130,7 @@ void MouseGraph::drawLine(int x1, int y1)
 		scaledx = (mousex[in] * (MAX_HISTORY_TICS / 2)) / limit;
 		scaledy = (mousey[in] * (MAX_HISTORY_TICS / 2)) / limit;
 
-		screen->Clear(x1 + i - 1, yc - scaledy - 1, x1 + i, yc - scaledy, 200);
-		screen->Clear(xc + scaledx - 1, y2 - i - 1, xc + scaledx, y2 - i, 176);
+		screen->Clear(x1 + i - 1, yc - scaledy - 1, x1 + i, yc - scaledy, color1);
+		screen->Clear(xc + scaledx - 1, y2 - i - 1, xc + scaledx, y2 - i, color2);
 	}
 }

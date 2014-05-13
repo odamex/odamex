@@ -1044,14 +1044,11 @@ void R_RenderPlayerView(player_t *player)
 	// [SL] fill the screen with a blinking solid color to make HOM more visible
 	if (r_flashhom)
 	{
-		int color = gametic & 8 ? 0 : 200;
+		argb_t color = gametic & 8 ? argb_t(0, 0, 0) : argb_t(0, 0, 255);
 		int x1 = viewwindowx, y1 = viewwindowy;
 		int x2 = viewwindowx + viewwidth - 1, y2 = viewwindowy + viewheight - 1; 
 
-		if (surface->getBitsPerPixel() == 8)
-			surface->getDefaultCanvas()->Clear(x1, y1, x2, y2, color);
-		else
-			surface->getDefaultCanvas()->Clear(x1, y1, x2, y2, basecolormap.shade(color));
+		surface->getDefaultCanvas()->Clear(x1, y1, x2, y2, color);
 	}
 
 	R_BeginInterpolation(render_lerp_amount);

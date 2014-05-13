@@ -1455,7 +1455,7 @@ void R_DrawBorder(int x1, int y1, int x2, int y2)
 	}
 	else
 	{
-		canvas->Clear(x1, y1, x2, y2, 0);
+		canvas->Clear(x1, y1, x2, y2, argb_t(0, 0, 0));
 	}
 }
 

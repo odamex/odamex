@@ -97,7 +97,7 @@ public:
 	void FlatFill (int left, int top, int right, int bottom, const byte *src) const;
 
 	// Set an area to a specified color
-	void Clear (int left, int top, int right, int bottom, int color) const;
+	void Clear(int left, int top, int right, int bottom, argb_t color) const;
 
 	// Text drawing functions
 	// Output a line of text using the console font

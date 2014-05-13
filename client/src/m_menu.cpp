@@ -1311,7 +1311,8 @@ static void M_PlayerSetupDrawer (void)
 		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
 		if (!fire_surface)
 		{
-			screen->Clear(x, y, x + fire_surface_width * CleanXfac, y + fire_surface_height * CleanYfac, 34);
+			argb_t color = V_GetDefaultPalette()->basecolors[34];
+			screen->Clear(x, y, x + fire_surface_width * CleanXfac, y + fire_surface_height * CleanYfac, color);
 		}
 		else
 		{

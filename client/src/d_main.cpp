@@ -435,7 +435,7 @@ void D_PageDrawer()
 	}
 	else
 	{
-		screen->Clear(0, 0, primary_surface->getWidth(), primary_surface->getHeight(), 0);
+		screen->Clear(0, 0, primary_surface->getWidth(), primary_surface->getHeight(), argb_t(0, 0, 0));
 	}
 }
 

@@ -1138,7 +1138,7 @@ void C_DrawConsole()
 	else
 	{
 		// Fullscreen console. Blit the image in the center of a black background.
-		screen->Clear(0, 0, primary_surface_width, primary_surface_height, 0);
+		screen->Clear(0, 0, primary_surface_width, primary_surface_height, argb_t(0, 0, 0));
 
 		int x = (primary_surface_width - background_surface->getWidth()) / 2;
 		int y = (primary_surface_height - background_surface->getHeight()) / 2;

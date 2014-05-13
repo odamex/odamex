@@ -185,18 +185,12 @@ void F_TextWrite (void)
 	int 		cy;
 
 	// erase the entire screen to a tiled background
-	{
-		int lump = W_CheckNumForName (finaleflat, ns_flats);
-		if (lump >= 0)
-		{
-			screen->FlatFill (0,0, I_GetSurfaceWidth(), I_GetSurfaceHeight(),
-						(byte *)W_CacheLumpNum (lump, PU_CACHE));
-		}
-		else
-		{
-			screen->Clear (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), 0);
-		}
-	}
+	int lump = W_CheckNumForName (finaleflat, ns_flats);
+	if (lump >= 0)
+		screen->FlatFill(0,0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), (byte*)W_CacheLumpNum(lump, PU_CACHE));
+	else
+		screen->Clear(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), argb_t(0, 0, 0));
+
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
 	// draw some of the text onto the screen

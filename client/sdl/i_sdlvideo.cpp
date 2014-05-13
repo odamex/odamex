@@ -53,7 +53,6 @@
 
 EXTERN_CVAR (vid_autoadjust)
 EXTERN_CVAR (vid_fullscreen)
-EXTERN_CVAR (vid_vsync)
 
 
 // ****************************************************************************
@@ -280,7 +279,7 @@ ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool
 
 	// fill the primary surface with black
 	DCanvas* canvas = mPrimarySurface->getDefaultCanvas();
-	canvas->Clear(0, 0, mPrimarySurface->getWidth(), mPrimarySurface->getHeight(), 0);
+	canvas->Clear(0, 0, mPrimarySurface->getWidth(), mPrimarySurface->getHeight(), argb_t(0, 0, 0));
 }
 
 
