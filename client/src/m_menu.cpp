@@ -1244,7 +1244,7 @@ forceinline byte R_FirePixel<byte>(const byte c)
 template<>
 forceinline argb_t R_FirePixel<argb_t>(const byte c)
 {
-	return argb_t(c, 0, 0);
+	return V_GammaCorrect(argb_t(c, 0, 0));
 }
 
 template<int xscale, typename PIXEL_T>
