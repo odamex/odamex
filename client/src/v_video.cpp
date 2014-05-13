@@ -242,6 +242,7 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
 	}
 	else
 	{
+		color = V_GammaCorrect(color);
 		argb_t* dest = (argb_t*)mSurface->getBuffer() + top * surface_pitch_pixels + left;
 
 		for (int y = top; y < bottom; y++)

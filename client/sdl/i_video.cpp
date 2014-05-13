@@ -313,6 +313,45 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 
 
 //
+// IWindowSurface::clear
+//
+// Clears the surface to black.
+//
+void IWindowSurface::clear()
+{
+	const argb_t color(255, 0, 0, 0);
+
+	lock();
+
+	if (getBitsPerPixel() == 8)
+	{
+		palindex_t color_index = V_BestColor(getPalette(), color);
+		palindex_t* dest = (palindex_t*)getBuffer();
+
+		for (int y = 0; y < getHeight(); y++)
+		{
+			memset(dest, color_index, getWidth());
+			dest += getPitchInPixels();
+		}
+	}
+	else
+	{
+		argb_t* dest = (argb_t*)getBuffer();
+
+		for (int y = 0; y < getHeight(); y++)
+		{
+			for (int x = 0; x < getWidth(); x++)
+				dest[x] = color;
+
+			dest += getPitchInPixels();
+		}
+	}
+
+	unlock();
+}
+
+
+//
 // IWindowSurface::createCanvas
 //
 // Generic factory function to instantiate a DCanvas object capable of drawing
@@ -563,7 +602,7 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
 
 	// clear window's surface to all black
-	primary_surface->getDefaultCanvas()->Clear(0, 0, surface_width, surface_height, argb_t(0, 0, 0));
+	primary_surface->clear();
 
 	// [SL] Determine the size of the matted surface.
 	// A matted surface will be used if pillar-boxing or letter-boxing are used, or
@@ -606,17 +645,13 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 	{
 		int bpp = primary_surface->getBitsPerPixel();
 		emulated_surface = new IGenericWindowSurface(I_GetWindow(), 320, 200, bpp);
-		emulated_surface->lock();
-		emulated_surface->getDefaultCanvas()->Clear(0, 0, 320, 200, argb_t(0, 0, 0));
-		emulated_surface->unlock();
+		emulated_surface->clear();
 	}
 	else if (vid_640x400)
 	{
 		int bpp = primary_surface->getBitsPerPixel();
 		emulated_surface = new IGenericWindowSurface(I_GetWindow(), 640, 400, bpp);
-		emulated_surface->lock();
-		emulated_surface->getDefaultCanvas()->Clear(0, 0, 640, 400, argb_t(0, 0, 0));
-		emulated_surface->unlock();
+		emulated_surface->clear();
 	}
 
 	screen = primary_surface->getDefaultCanvas();

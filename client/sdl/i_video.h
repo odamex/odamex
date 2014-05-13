@@ -138,6 +138,8 @@ public:
 	virtual void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
 			int destx, int desty, int destw, int desth);
 
+	virtual void clear();
+
 private:
 	IWindow*			mWindow;
 

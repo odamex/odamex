@@ -414,6 +414,7 @@ void D_PageTicker (void)
 void D_PageDrawer()
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	primary_surface->clear();		// ensure black background in matted modes
 
 	if (page_surface)
 	{
@@ -433,10 +434,6 @@ void D_PageDrawer()
 		primary_surface->blit(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
 				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
 				destw, desth);
-	}
-	else
-	{
-		screen->Clear(0, 0, primary_surface->getWidth(), primary_surface->getHeight(), argb_t(0, 0, 0));
 	}
 }
 
