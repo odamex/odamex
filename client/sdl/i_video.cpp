@@ -325,7 +325,8 @@ void IWindowSurface::clear()
 
 	if (getBitsPerPixel() == 8)
 	{
-		palindex_t color_index = V_BestColor(getPalette(), color);
+		const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
+		palindex_t color_index = V_BestColor(palette_colors, color);
 		palindex_t* dest = (palindex_t*)getBuffer();
 
 		for (int y = 0; y < getHeight(); y++)
