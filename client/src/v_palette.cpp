@@ -650,6 +650,8 @@ void V_RefreshColormaps()
 	NormalLight.maps = shaderef_t(&palette->maps, 0);
 	NormalLight.color = argb_t(255, 255, 255, 255);
 	NormalLight.fade = level.fadeto;
+
+	R_ReinitColormap();
 }
 
 
