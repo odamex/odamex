@@ -131,7 +131,6 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) :
 		if (m_colors != &(V_GetDefaultPalette()->maps))
 		{
 			// Find the dynamic colormap by the `m_colors` pointer:
-			extern dyncolormap_t NormalLight;
 			dyncolormap_t *colormap = &NormalLight;
 
 			do
@@ -417,7 +416,7 @@ palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
 	return bestcolor;
 }
 
-palindex_t V_BestColor(const argb_t *palette_colors, argb_t color)
+palindex_t V_BestColor(const argb_t* palette_colors, argb_t color)
 {
 	return V_BestColor(palette_colors, color.r, color.g, color.b);
 }
@@ -435,12 +434,11 @@ palindex_t V_BestColor(const argb_t *palette_colors, argb_t color)
 //
 static void V_SetPalette(const byte* data)
 {
-	const int alpha = 255;
 	argb_t palette_colors[256];
 
 	for (int i = 0; i < 256; i++, data += 3)
 	{
-		argb_t color(alpha, data[0], data[1], data[2]);
+		argb_t color(255, data[0], data[1], data[2]);
 		palette_colors[i] = V_GammaCorrect(color);
 	}
 
@@ -466,15 +464,19 @@ void V_InitPalette(const char* lumpname)
 	current_blend[0] = current_blend[1] = current_blend[2] = current_blend[3] = 255.0f;
 
 	palette_t* palette = V_GetDefaultPalette();
-	palette->colormapsbase = NULL;
-	palette->maps.colormap = NULL;
-	palette->maps.shademap = NULL;
 
-	const int alpha = 255;
+	if (palette->maps.colormap)
+		delete [] palette->maps.colormap;
+	if (palette->maps.shademap)
+		delete [] palette->maps.shademap;
+
+	palette->maps.colormap = new palindex_t[(NUMCOLORMAPS + 1) * 256];
+	palette->maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
+
 	const byte* data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
 
 	for (int i = 0; i < 256; i++, data += 3)
-		palette->basecolors[i] = argb_t(alpha, data[0], data[1], data[2]);
+		palette->basecolors[i] = argb_t(255, data[0], data[1], data[2]);
 
 	V_GammaAdjustPalette(palette);
 
@@ -645,20 +647,10 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 void V_RefreshColormaps()
 {
 	palette_t* palette = V_GetDefaultPalette();
-
-	if (palette->maps.colormap && palette->maps.colormap - palette->colormapsbase >= 256)
-	{
-		M_Free(palette->maps.colormap);
-	}
-
-	palette->colormapsbase = (byte*)Realloc(palette->colormapsbase, (NUMCOLORMAPS + 1) * 256 + 255);
-	palette->maps.colormap = (byte*)(((ptrdiff_t)(palette->colormapsbase) + 255) & ~0xff);
-	palette->maps.shademap = (argb_t*)Realloc(palette->maps.shademap, (NUMCOLORMAPS + 1)*256*sizeof(argb_t) + 255);
-
 	BuildDefaultColorAndShademap(palette, palette->maps);
 
 	NormalLight.maps = shaderef_t(&palette->maps, 0);
-	NormalLight.color = argb_t(255, 255, 255);
+	NormalLight.color = argb_t(255, 255, 255, 255);
 	NormalLight.fade = level.fadeto;
 }
 
@@ -844,17 +836,15 @@ void HSVtoRGB (float *r, float *g, float *b, float h, float s, float v)
 /****** Colored Lighting Stuffs (Sorry, 8-bit only) ******/
 
 // Builds NUMCOLORMAPS colormaps lit with the specified color
-void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g, int b)
+void BuildColoredLights(shademap_t* maps, int lr, int lg, int lb, int r, int g, int b)
 {
-	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
-	byte	*colormap;
-	argb_t  *shademap;
-
 	// The default palette is assumed to contain the maps for white light.
 	if (!maps)
 		return;
 
 	BuildLightRamp(*maps);
+
+	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 
 	// build normal (but colored) light mappings
 	for (unsigned int l = 0; l < NUMCOLORMAPS; l++)
@@ -866,8 +856,8 @@ void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g,
 		DoBlending(palette_colors, colors, r, g, b, a);
 
 		// Build the colormap and shademap:
-		colormap = maps->colormap + 256*l;
-		shademap = maps->shademap + 256*l;
+		palindex_t* colormap = maps->colormap + 256*l;
+		argb_t* shademap = maps->shademap + 256*l;
 		for (unsigned int c = 0; c < 256; c++)
 		{
 			argb_t color(255, colors[c].r * lr / 255, colors[c].g * lg / 255, colors[c].b * lb / 255);
@@ -877,28 +867,28 @@ void BuildColoredLights (shademap_t *maps, int lr, int lg, int lb, int r, int g,
 	}
 }
 
-dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
+dyncolormap_t* GetSpecialLights(int lr, int lg, int lb, int fr, int fg, int fb)
 {
-	argb_t color(lr, lg, lb);
-	argb_t fade(fr, fg, fb);
-	dyncolormap_t *colormap = &NormalLight;
+	argb_t color(255, lr, lg, lb);
+	argb_t fade(255, fr, fg, fb);
+	dyncolormap_t* colormap = &NormalLight;
 
 	// Bah! Simple linear search because I want to get this done.
 	while (colormap)
 	{
-		if (color == colormap->color && fade == colormap->fade)
+		if (color.r == colormap->color.r && color.g == colormap->color.g && color.b == colormap->color.b &&
+			fade.r == colormap->fade.r && fade.g == colormap->fade.g && fade.b == colormap->fade.b)
 			return colormap;
 		else
 			colormap = colormap->next;
 	}
 
 	// Not found. Create it.
-	colormap = (dyncolormap_t *)Z_Malloc (sizeof(*colormap), PU_LEVEL, 0);
-	shademap_t *maps = new shademap_t();
-	maps->colormap = (byte *)Z_Malloc (NUMCOLORMAPS*256*sizeof(byte)+3+255, PU_LEVEL, 0);
-	maps->colormap = (byte *)(((ptrdiff_t)maps->colormap + 255) & ~0xff);
-	maps->shademap = (argb_t *)Z_Malloc (NUMCOLORMAPS*256*sizeof(argb_t)+3+255, PU_LEVEL, 0);
-	maps->shademap = (argb_t *)(((ptrdiff_t)maps->shademap + 255) & ~0xff);
+	colormap = (dyncolormap_t*)Z_Malloc(sizeof(*colormap), PU_LEVEL, 0);
+
+	shademap_t* maps = new shademap_t();
+	maps->colormap = (palindex_t*)Z_Malloc(NUMCOLORMAPS * 256 * sizeof(palindex_t), PU_LEVEL, 0);
+	maps->shademap = (argb_t*)Z_Malloc(NUMCOLORMAPS * 256 * sizeof(argb_t), PU_LEVEL, 0);
 
 	colormap->maps = shaderef_t(maps, 0);
 	colormap->color = color;
@@ -906,7 +896,7 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 	colormap->next = NormalLight.next;
 	NormalLight.next = colormap;
 
-	BuildColoredLights (maps, lr, lg, lb, fr, fg, fb);
+	BuildColoredLights(maps, lr, lg, lb, fr, fg, fb);
 
 	return colormap;
 }

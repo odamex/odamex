@@ -320,40 +320,6 @@ struct ahsv_t
 	inline operator uint32_t () const { return value; }
 };
 
-#if 0
-//
-// Helper functions for compatibility with older code
-//	
-static inline argb_t MAKERGB(int r, int g, int b)
-{
-	return argb_t(r, g, b);
-}
-
-static inline argb_t MAKEARGB(int a, int r, int g, int b)
-{
-	return argb_t(a, r, g, b);
-}
-
-static inline int APART(const argb_t color)
-{
-	return color.a;
-}
-
-static inline int RPART(const argb_t color)
-{
-	return color.r;
-}
-
-static inline int GPART(const argb_t color)
-{
-	return color.g;
-}
-
-static inline int BPART(const argb_t color)
-{
-	return color.b;
-}
-#endif
 
 // ----------------------------------------------------------------------------
 //

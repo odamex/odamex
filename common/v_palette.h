@@ -33,7 +33,6 @@ struct palette_t
 	argb_t			colors[256];			// gamma corrected colors
 
 	shademap_t      maps;
-	byte*			colormapsbase;
 };
 
 struct dyncolormap_s {
