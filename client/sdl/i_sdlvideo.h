@@ -155,6 +155,8 @@ public:
 
 	virtual std::string getVideoDriverName() const;
 
+	virtual void setPalette(const argb_t* palette);
+
 private:
 	// disable copy constructor and assignment operator
 	ISDL12Window(const ISDL12Window&);
@@ -171,6 +173,8 @@ private:
 
 	bool				mIsFullScreen;
 	bool				mUseVSync;
+
+	bool				mNeedPaletteRefresh;
 };
 
 #endif

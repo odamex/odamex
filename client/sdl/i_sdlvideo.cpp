@@ -178,7 +178,7 @@ void ISDL12WindowSurface::setPalette(const argb_t* palette)
 {
 	memcpy(mPalette, palette, 256 * sizeof(*mPalette));
 
-	if (mBitsPerPixel == 8)
+	if (mSDLSurface->format->BitsPerPixel == 8)
 	{
 		lock();
 
@@ -224,7 +224,7 @@ const argb_t* ISDL12WindowSurface::getPalette() const
 ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool vsync) :
 	IWindow(),
 	mPrimarySurface(NULL),
-	mIsFullScreen(fullscreen), mUseVSync(vsync)
+	mIsFullScreen(fullscreen), mUseVSync(vsync), mNeedPaletteRefresh(true)
 {
 	const SDL_version* SDLVersion = SDL_Linked_Version();
 
@@ -276,12 +276,6 @@ ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool
 	buildVideoModeList();
 
 	setMode(width, height, bpp, fullscreen, vsync);
-
-	// fill the primary surface with black
-	mPrimarySurface->lock();
-	DCanvas* canvas = mPrimarySurface->getDefaultCanvas();
-	canvas->Clear(0, 0, mPrimarySurface->getWidth(), mPrimarySurface->getHeight(), argb_t(0, 0, 0));
-	mPrimarySurface->unlock();
 }
 
 
@@ -302,12 +296,14 @@ void ISDL12Window::refresh()
 {
 	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
 
-	if (sdlsurface->format->BitsPerPixel == 8)
+	if (mNeedPaletteRefresh && sdlsurface->format->BitsPerPixel == 8)
 	{
 		Uint32 flags = SDL_LOGPAL | SDL_PHYSPAL;
 		SDL_Color* sdlcolors = sdlsurface->format->palette->colors;
 		SDL_SetPalette(sdlsurface, flags, sdlcolors, 0, 256);
 	}
+
+	mNeedPaletteRefresh = false;
 
 	if (mUseVSync)
 		SDL_Flip(sdlsurface);
@@ -347,6 +343,18 @@ std::string ISDL12Window::getVideoDriverName() const
 	}
 
 	return std::string(driver);
+}
+
+
+//
+// ISDL12Window::setPalette
+//
+// Saves the given palette and updates it during refresh.
+//
+void ISDL12Window::setPalette(const argb_t* palette)
+{
+	getPrimarySurface()->setPalette(palette);
+	mNeedPaletteRefresh = true;
 }
 
 
