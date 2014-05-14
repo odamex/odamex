@@ -302,7 +302,7 @@ void ISDL12Window::refresh()
 {
 	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
 
-	if (mBitsPerPixel == 8)
+	if (sdlsurface->format->BitsPerPixel == 8)
 	{
 		Uint32 flags = SDL_LOGPAL | SDL_PHYSPAL;
 		SDL_Color* sdlcolors = sdlsurface->format->palette->colors;
