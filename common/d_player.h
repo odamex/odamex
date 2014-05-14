@@ -234,6 +234,7 @@ public:
 
 	byte spying;				// [SL] id of player being spynext'd by this player
 	bool spectator;             // [GhostlyDeath] spectating?
+	bool deadspectator;			// [tm512] spectating as a dead player?
 	int joinafterspectatortime; // Nes - Join after spectator time.
 	int timeout_callvote;       // [AM] Tic when a vote last finished.
 	int timeout_vote;           // [AM] Tic when a player last voted.
