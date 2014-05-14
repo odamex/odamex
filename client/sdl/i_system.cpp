@@ -785,7 +785,7 @@ void I_SetTitleString (const char *title)
 // by Denis Lukianov - 20 Mar 2006
 // Cross-platform clipboard functionality
 //
-std::string I_GetClipboardText (void)
+std::string I_GetClipboardText()
 {
 #ifdef X11
 	std::string ret;
@@ -913,12 +913,13 @@ std::string I_GetClipboardText (void)
 #endif
 
 #ifdef OSX
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050 
 	ScrapRef scrap;
 	Size size;
 
 	int err = GetCurrentScrap(&scrap);
 
-	if(err)
+	if (err)
 	{
 		Printf(PRINT_HIGH, "GetCurrentScrap error: %d", err);
 		return "";
@@ -926,13 +927,13 @@ std::string I_GetClipboardText (void)
 
 	err = GetScrapFlavorSize(scrap, FOUR_CHAR_CODE('TEXT'), &size);
 
-	if(err)
+	if (err)
 	{
 		Printf(PRINT_HIGH, "GetScrapFlavorSize error: %d", err);
 		return "";
 	}
 
-	char *data = new char[size+1];
+	char* data = new char[size+1];
 
 	err = GetScrapFlavorData(scrap, FOUR_CHAR_CODE('TEXT'), &size, data);
 	data[size] = 0;
@@ -947,10 +948,17 @@ std::string I_GetClipboardText (void)
 
 	std::string ret(data);
 
-	delete[] data;
+	delete [] data;
 
 	return ret;
+
+#elif MAC_OS_X_VERSION_MIN_REQUIRED >= 1050
+
+	// TODO: Not currently supported
+	return "";
+
 #endif
+#endif	// OSX
 
 	return "";
 }
