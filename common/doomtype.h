@@ -28,6 +28,8 @@
 
 #include "version.h"
 
+#include "m_swap.h"			// for __BIG_ENDIAN__ macro
+
 #ifdef GEKKO
 #include <gctypes.h>
 #endif

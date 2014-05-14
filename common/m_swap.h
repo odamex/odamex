@@ -27,13 +27,19 @@
 
 #ifdef TARGET_CPU_X86
 #ifdef __BIG_ENDIAN__
-#undef __BIG_ENDIAN__
+	#undef __BIG_ENDIAN__
+#endif
+#ifndef __LITTLE_ENDIAN__
+	#define __LITTLE_ENDIAN__
 #endif
 #endif
 
 #ifdef TARGET_CPU_PPC
 #ifndef __BIG_ENDIAN__
-#define __BIG_ENDIAN__
+	#define __BIG_ENDIAN__
+#endif
+#ifdef __LITTLE_ENDIAN__
+	#undef __LITTLE_ENDIAN__
 #endif
 #endif
 

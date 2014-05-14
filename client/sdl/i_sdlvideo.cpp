@@ -373,9 +373,41 @@ bool ISDL12Window::setMode(int width, int height, int bpp, bool fullscreen, bool
 	delete mPrimarySurface;
 	mPrimarySurface = NULL;
 
-	uint32_t flags = vsync ? SDL_HWSURFACE | SDL_DOUBLEBUF : SDL_SWSURFACE;
+	// ensure there is an availible fullscreen mode
+	if (mVideoModes.empty())
+		fullscreen = false;
 
-	if (fullscreen && !mVideoModes.empty())
+	// find the closest fullscreen mode to the desired dimensions
+	if (fullscreen && vid_autoadjust)
+	{
+		IVideoMode closest_mode = getClosestMode(width, height);
+		width = closest_mode.getWidth();
+		height = closest_mode.getHeight();
+	}
+
+	if (width == 0 || height == 0)
+		return false;
+
+	// Make sure we don't set the resolution smaller than Doom's original 320x200
+	// resolution. Bad things might happen.
+	width = clamp(width, 320, MAXWIDTH);
+	height = clamp(height, 200, MAXHEIGHT);
+
+	#ifdef _WIN32
+	// fullscreen directx requires a 32-bit mode to fix broken palette
+	// [Russell] - Use for gdi as well, fixes d2 map02 water
+	if (fullscreen)
+		bpp = 32;
+	#endif
+
+	uint32_t flags = 0;
+
+	if (vsync)
+		flags |= SDL_HWSURFACE | SDL_DOUBLEBUF;
+	else
+		flags |= SDL_SWSURFACE;
+
+	if (fullscreen)
 		flags |= SDL_FULLSCREEN;
 	else
 		flags |= SDL_RESIZABLE;
@@ -391,36 +423,11 @@ bool ISDL12Window::setMode(int width, int height, int bpp, bool fullscreen, bool
 	// disable them prior to reinitalizing DirectInput...
 	I_PauseMouse();
 
-	int sbits = bpp;
-
-	#ifdef _WIN32
-	// fullscreen directx requires a 32-bit mode to fix broken palette
-	// [Russell] - Use for gdi as well, fixes d2 map02 water
-	if (fullscreen)
-		sbits = 32;
-	#endif
-
 	#ifdef SDL_GL_SWAP_CONTROL
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
 	#endif
 
-	// Make sure we don't set the resolution smaller than Doom's original 320x200
-	// resolution. Bad things might happen.
-	width = clamp(width, 320, MAXWIDTH);
-	height = clamp(height, 200, MAXHEIGHT);
-
-	// find the closest fullscreen mode to the desired dimensions
-	if (vid_autoadjust && fullscreen)
-	{
-		IVideoMode closest_mode = getClosestMode(width, height);
-		width = closest_mode.getWidth();
-		height = closest_mode.getHeight();
-	}
-
-	if (width == 0 || height == 0)
-		return false;
-
-	SDL_Surface* sdlsurface = SDL_SetVideoMode(width, height, sbits, flags);
+	SDL_Surface* sdlsurface = SDL_SetVideoMode(width, height, bpp, flags);
 
 	// [SL] ...and re-enable RawWin32Mouse's input handlers after
 	// DirectInput is reinitalized.
@@ -428,6 +435,17 @@ bool ISDL12Window::setMode(int width, int height, int bpp, bool fullscreen, bool
 
 	if (sdlsurface == NULL)
 		return false;
+
+	const SDL_PixelFormat* fmt = sdlsurface->format;
+	#ifdef __BIG_ENDIAN__
+	if (fmt->Rshift != 8 || fmt->Gshift != 16 || fmt->Bshift != 24)
+		Printf(PRINT_HIGH, "ISDL12Window::setMode: unexpected primary surface pixel format! " \
+					"r = %i, g = %i, b = %i\n", fmt->Rshift, fmt->Gshift, fmt->Bshift);
+	#else
+	if (fmt->Rshift != 16 || fmt->Gshift != 8 || fmt->Bshift != 0)
+		Printf(PRINT_HIGH, "ISDL12Window::setMode: unexpected primary surface pixel format! " \
+					"r = %i, g = %i, b = %i\n", fmt->Rshift, fmt->Gshift, fmt->Bshift);
+	#endif
 
 	mWidth = width;
 	mHeight = height;
