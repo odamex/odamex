@@ -255,13 +255,35 @@ typedef uint8_t				palindex_t;
 // Allows ARGB8888 values to be accessed as a packed 32-bit integer or accessed
 // by its individual 8-bit color and alpha channels.
 //
+// NOTE: [SL] This fails on platforms whose channel byte-order is dependent
+// on settings that can only be determined at runtime (eg, OSX).
+//
+// see SDL_QuartzVideo.m:
+//
+//                amask = 0x00000000;
+//                if ( (!isLion) && (flags & SDL_FULLSCREEN) ) {
+//                    rmask = 0x00FF0000;
+//                    gmask = 0x0000FF00;
+//                    bmask = 0x000000FF;
+//                } else {
+//#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+//                    rmask = 0x0000FF00;
+//                    gmask = 0x00FF0000;
+//                    bmask = 0xFF000000;
+//#else
+//                    rmask = 0x00FF0000;
+//                    gmask = 0x0000FF00;
+//                    bmask = 0x000000FF;
+//#endif
+
+
 struct argb_t
 {
 	union
 	{
 		struct
 		{
-		#ifdef __BIG_ENDIAN__		
+		#ifdef __BIG_ENDIAN__
 			uint8_t a, r, g, b;
 		#else
 			uint8_t	b, g, r, a;
