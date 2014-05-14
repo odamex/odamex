@@ -16,9 +16,31 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Music player classes for the supported music libraries
+//
+// Music player classes for the supported music libraries
 //
 //-----------------------------------------------------------------------------
+
+/*
+native_midi_macosx: Native Midi support on Mac OS X for the SDL_mixer library
+Copyright (C) 2009 Ryan C. Gordon <icculus@icculus.org>
+
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+claim that you wrote the original software. If you use this software
+in a product, an acknowledgment in the product documentation would be
+appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+*/
 
 #include <string>
 #include <math.h>
@@ -399,7 +421,11 @@ AuMusicSystem::AuMusicSystem() :
 		return;
 	}
 
+	#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050	/* this is deprecated, but works back to 10.0 */
 	if (AUGraphGetNodeInfo(mGraph, mOutput, NULL, NULL, NULL, &mUnit) != noErr)
+	#else		/* not deprecated, but requires 10.5 or later */
+	if (AUGraphNodeInfo(mGraph, mOutput, NULL, &mUnit) != noErr)
+	#endif
 	{
 		Printf(PRINT_HIGH, "I_InitMusic: AUGraphGetNodeInfo failed\n");
 		return;
@@ -623,13 +649,27 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 
 	mCfd = CFDataCreate(NULL, (const Uint8 *)regdata, reglength);
 
-	if(!mCfd)
+	if (!mCfd)
 	{
 		DisposeMusicSequence(mSequence);
 		return;
 	}
 
+
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+	/* MusicSequenceLoadSMFData() (avail. in 10.2, no 64 bit) is
+	 * equivalent to calling MusicSequenceLoadSMFDataWithFlags()
+	 * with a flags value of 0 (avail. in 10.3, avail. 64 bit).
+	 * So, we use MusicSequenceLoadSMFData() for powerpc versions
+	 * but the *WithFlags() on intel which require 10.4 anyway. */
+	# if defined(__ppc__) || defined(__POWERPC__)
 	if (MusicSequenceLoadSMFData(mSequence, (CFDataRef)mCfd) != noErr)
+	# else
+	if (MusicSequenceLoadSMFDataWithFlags(mSequence, (CFDataRef)mCfd, 0) != noErr)
+	# endif
+#else		/* MusicSequenceFileLoadData() requires 10.5 or later. */
+	if (MusicSequenceFileLoadData(mSequence, (CFDataRef)mCfd, 0, 0) != noErr)
+#endif
 	{
 		DisposeMusicSequence(mSequence);
 		CFRelease(mCfd);
