@@ -822,7 +822,8 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname.c_str());
 	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
-	Printf (PRINT_HIGH, " userinfo.color       - #%06x \n",	player->userinfo.color);
+	Printf (PRINT_HIGH, " userinfo.color       - #%02x%02x%02x\n",
+			player->userinfo.color.r, player->userinfo.color.g, player->userinfo.color.b);
 	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);
 	Printf (PRINT_HIGH, " spectator            - %d \n",	player->spectator);
 	Printf (PRINT_HIGH, " time                 - %d \n",	player->GameTime);
