@@ -606,14 +606,7 @@ void C_InitConCharsFont()
 					}
 					else
 					{
-						// [SL] translate the gray range (0x50 - 0x5F) into red (0x80 - 0x8F)
-						const int range_source = 80;
-						const int range_dest = 176;
-						if (val >= range_source && val < range_source + 16)
-							dest[a] = (int)val - range_source + range_dest;
-						else
-							dest[a] = val;
-
+						dest[a] = val;
 						dest[a + 8] = 0x00;
 					}
 				}
