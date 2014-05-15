@@ -1039,25 +1039,7 @@ void I_SetWindowCaption(const std::string& caption)
 //
 void I_SetWindowIcon()
 {
-	// [Russell] - Just for windows, display the icon in the system menu and
-	// alt-tab display
-	#if WIN32 && !_XBOX
-	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
-
-	if (hIcon)
-	{
-		HWND WindowHandle;
-
-		SDL_SysWMinfo wminfo;
-		SDL_VERSION(&wminfo.version)
-		SDL_GetWMInfo(&wminfo);
-
-		WindowHandle = wminfo.window;
-
-		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-	}
-	#endif
+	window->setWindowIcon();
 }
 
 

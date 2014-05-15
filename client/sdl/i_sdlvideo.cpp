@@ -46,6 +46,7 @@
 #include "i_system.h"
 #include "m_argv.h"
 #include "m_memio.h"
+#include "w_wad.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -320,6 +321,64 @@ void ISDL12Window::refresh()
 void ISDL12Window::setWindowTitle(const std::string& str)
 {
 	SDL_WM_SetCaption(str.c_str(), str.c_str());
+}
+
+
+//
+// ISDL12Window::setWindowIcon
+//
+// Sets the icon for the application window, which will appear in the
+// window manager's task list.
+//
+void ISDL12Window::setWindowIcon()
+{
+	#if WIN32 && !_XBOX
+	// [SL] Use Win32-specific code to make use of multiple-icon sizes
+	// stored in the executable resources. SDL 1.2 only allows a fixed
+	// 32x32 px icon.
+	//
+	// [Russell] - Just for windows, display the icon in the system menu and
+	// alt-tab display
+
+	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+
+	if (hIcon)
+	{
+		HWND WindowHandle;
+
+		SDL_SysWMinfo wminfo;
+		SDL_VERSION(&wminfo.version)
+		SDL_GetWMInfo(&wminfo);
+
+		WindowHandle = wminfo.window;
+
+		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+	}
+
+	#else
+
+	// [SL] Load a flat from odamex.wad to use for the icon
+	palindex_t* image = (palindex_t*)W_CacheLumpNum(W_CheckNumForName("-NOFLAT-", ns_flats), PU_STATIC);
+
+	SDL_Surface* icon_sdlsurface = SDL_CreateRGBSurfaceFrom(image, 64, 64, 8, 64, 0, 0, 0, 0);
+
+	// set the surface palette
+	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
+	SDL_Color* sdlcolors = icon_sdlsurface->format->palette->colors;
+	for (int c = 0; c < 256; c++)
+	{
+		sdlcolors[c].r = palette_colors[c].r;
+		sdlcolors[c].g = palette_colors[c].g;
+		sdlcolors[c].b = palette_colors[c].b;
+	}
+
+	SDL_WM_SetIcon(icon_sdlsurface, NULL);
+
+	SDL_FreeSurface(icon_sdlsurface);
+	Z_Free(image);
+
+	#endif
 }
 
 

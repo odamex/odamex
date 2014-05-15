@@ -300,6 +300,7 @@ public:
 	virtual void refresh() { }
 
 	virtual void setWindowTitle(const std::string& caption = "") { }
+	virtual void setWindowIcon() { }
 
 	virtual std::string getVideoDriverName() const
 	{	return "";	}

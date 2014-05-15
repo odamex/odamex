@@ -152,6 +152,7 @@ public:
 	virtual void refresh();
 
 	virtual void setWindowTitle(const std::string& str = "");
+	virtual void setWindowIcon();
 
 	virtual std::string getVideoDriverName() const;
 
