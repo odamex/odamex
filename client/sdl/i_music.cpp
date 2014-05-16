@@ -186,7 +186,7 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 	I_ShutdownMusic();
 	I_ResetMidiVolume();
 
-	if(Args.CheckParm("-nosound") || Args.CheckParm("-nomusic") || snd_musicsystem == MS_NONE)
+	if (I_IsHeadless() || Args.CheckParm("-nosound") || Args.CheckParm("-nomusic") || snd_musicsystem == MS_NONE)
 	{
 		// User has chosen to disable music
 		musicsystem = new SilentMusicSystem();

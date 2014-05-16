@@ -1100,5 +1100,25 @@ std::string I_ConsoleInput (void)
 }
 #endif
 
+
+//
+// I_IsHeadless
+//
+// Returns true if no application window will be created.
+//
+bool I_IsHeadless()
+{
+	static bool headless;
+	static bool initialized = false;
+	if (!initialized)
+	{
+		headless = Args.CheckParm("-novideo") || Args.CheckParm("+demotest");
+		initialized = true;
+	}
+
+	return headless;
+}
+
+
 VERSION_CONTROL (i_system_cpp, "$Id$")
 

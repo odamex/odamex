@@ -566,7 +566,7 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 	I_FreeSurface(emulated_surface);
 	emulated_surface = NULL;
 
-	if (Args.CheckParm("-novideo"))
+	if (I_IsHeadless())
 	{
 		delete window;
 		window = new IDummyWindow();
@@ -666,7 +666,7 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 //
 static void I_CheckVideoModeMessage(int width, int height, int bpp, bool fullscreen)
 {
-	if (Args.CheckParm("-novideo"))
+	if (I_IsHeadless())
 		return;
 
 	if (I_GetVideoWidth() != width || I_GetVideoHeight() != height)

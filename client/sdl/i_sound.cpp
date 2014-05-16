@@ -369,9 +369,9 @@ void I_LoadSound (struct sfxinfo_struct *sfx)
 	}
 }
 
-void I_InitSound (void)
+void I_InitSound()
 {
-	if(Args.CheckParm("-nosound"))
+	if (I_IsHeadless() || Args.CheckParm("-nosound"))
 		return;
 
 	const char *driver = getenv("SDL_AUDIODRIVER");

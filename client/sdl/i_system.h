@@ -130,6 +130,9 @@ std::string I_ConsoleInput (void);
 void I_PauseMouse (void);
 void I_ResumeMouse (void);
 
+// Returns true if there will be no application window
+bool I_IsHeadless();
+
 // [RH] Returns millisecond-accurate time
 dtime_t I_MSTime (void);
 
