@@ -371,6 +371,9 @@ static void HU_DrawCrosshair()
 		int x = I_GetSurfaceWidth() / 2;
 		int y = I_GetSurfaceHeight() / 2;
 
+		if (R_StatusBarVisible())
+			y = ST_StatusBarY(I_GetSurfaceWidth(), I_GetSurfaceHeight()) / 2;
+
 		if (hud_crosshairdim && hud_crosshairscale)
 			screen->DrawTranslatedLucentPatchCleanNoMove(W_CachePatch(crosshair_lump), x, y);
         else if (hud_crosshairscale)
