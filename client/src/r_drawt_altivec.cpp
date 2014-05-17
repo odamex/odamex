@@ -51,9 +51,6 @@
 #include "r_things.h"
 #include "i_video.h"
 
-extern byte** ylookup;
-extern int* columnofs;
-
 // Useful vector shorthand typedefs:
 typedef vector signed char vs8;
 typedef vector unsigned char vu8;

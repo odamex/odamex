@@ -78,9 +78,6 @@ int 			scaledviewwidth;
 int 			viewwindowx;
 int 			viewwindowy;
 
-extern byte** ylookup;
-extern int* columnofs;
-
 // [RH] Pointers to the different column drawers.
 //		These get changed depending on the current
 //		screen depth.

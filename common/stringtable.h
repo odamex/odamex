@@ -47,7 +47,9 @@ public:
 		Strings(NULL),
 		CompactBase(NULL),
 		CompactSize(0),
-		LumpNum (-1) {}
+		LumpNum(-1),
+		LumpData(NULL) {}
+
 	~FStringTable () { FreeData (); }
 
 	void LoadStrings(int lumpnum, int expectedSize, bool enuOnly);
@@ -59,8 +61,10 @@ public:
 	int FindString(const char* stringName) const;
 	int MatchString(const char* string) const;
 
-	void SetString(int index, const char *newString);
+	void SetString(int index, const char* newString);
 	void Compact();
+
+	void FreeData();
 
 	const char *operator() (int index)
 	{
@@ -76,20 +80,20 @@ public:
 private:
 	struct Header;
 
-	BYTE *StringStatus;
+	byte* StringStatus;
 	int NumStrings;
-	mutable BYTE *Names;
-	char **Strings;
-	char *CompactBase;
+	mutable byte* Names;
+	char** Strings;
+	char* CompactBase;
 	size_t CompactSize;
 	int LumpNum;
+	byte* LumpData;
 
-	void FreeData ();
-	void FreeStrings ();
-	void FreeStandardStrings ();
-	int SumStringSizes () const;
-	int LoadLanguage (DWORD code, bool exactMatch, BYTE *startPos, BYTE *endPos);
-	void DoneLoading (BYTE *startPos, BYTE *endPos);
+	void FreeStrings();
+	void FreeStandardStrings();
+	int SumStringSizes() const;
+	int LoadLanguage(uint32_t code, bool exactMatch, byte* startPos, byte* endPos);
+	void DoneLoading(byte* startPos, byte* endPos);
 };
 
 #endif //__STRINGTABLE_H__

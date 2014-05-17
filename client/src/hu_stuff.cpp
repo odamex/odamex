@@ -212,6 +212,18 @@ void HU_Init()
 	HU_InitCrosshair();
 }
 
+
+//
+// HU_Shutdown
+//
+// Frees any memory allocated specifically for the HUD.
+//
+void STACK_ARGS HU_Shutdown()
+{
+	Z_Free(sbline);
+}
+
+
 //
 // HU_Responder
 //
@@ -292,19 +304,19 @@ BOOL HU_Responder (event_t *ev)
 
 static void HU_InitCrosshair()
 {
-	int xhairnum = (int)hud_crosshair;
+	int xhairnum = hud_crosshair.asInt();
 
 	if (xhairnum)
 	{
 		char xhairname[16];
 		int xhair;
 
-		sprintf (xhairname, "XHAIR%d", xhairnum);
+		sprintf(xhairname, "XHAIR%d", xhairnum);
 
-		if ((xhair = W_CheckNumForName (xhairname)) == -1)
-			xhair = W_CheckNumForName ("XHAIR1");
+		if ((xhair = W_CheckNumForName(xhairname)) == -1)
+			xhair = W_CheckNumForName("XHAIR1");
 
-		if(xhair != -1)
+		if (xhair != -1)
 			crosshair_lump = xhair;
 	}
 
@@ -320,7 +332,7 @@ static void HU_InitCrosshair()
 //
 static void HU_DrawCrosshair()
 {
-	if(!camera)
+	if (!camera)
 		return;
 
 	// Don't draw the crosshair in chasecam mode

@@ -54,9 +54,6 @@
 #include "r_things.h"
 #include "i_video.h"
 
-extern byte** ylookup;
-extern int* columnofs;
-
 // With MMX we can process 4 16-bit words at a time.
 
 // Blend 2 colors against 1 color using MMX:

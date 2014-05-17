@@ -100,6 +100,16 @@ void F_StartFinale (char *music, char *flat, const char *text)
 
 
 
+//
+// F_ShutdownFinale
+//
+// Frees any memory allocated specifically for the finale
+//
+void STACK_ARGS F_ShutdownFinale()
+{
+}
+
+
 BOOL F_Responder (event_t *event)
 {
 	if (finalestage == 2)

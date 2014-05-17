@@ -39,9 +39,6 @@
 #include "r_things.h"
 #include "i_video.h"
 
-extern byte** ylookup;
-extern int* columnofs;
-
 void (*rtv_lucent4colsP)(byte *source, palindex_t *dest, int bga, int fga) = NULL;
 void (*rtv_lucent4colsD)(byte *source, argb_t *dest, int bga, int fga) = NULL;
 

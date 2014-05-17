@@ -86,6 +86,9 @@ void D_AddDehCommandLineFiles(std::vector<std::string>& filenames);
 
 std::string D_GetTitleString();
 
+void D_Init();
+void STACK_ARGS D_Shutdown();
+
 #endif
 
 

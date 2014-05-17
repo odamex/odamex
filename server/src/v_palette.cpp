@@ -54,22 +54,28 @@ palindex_t V_BestColor(const argb_t *palette_colors, argb_t color)
 palette_t* V_GetDefaultPalette()
 {
 	static palette_t default_palette;
+	return &default_palette;
+}
+
+void V_InitPalette(const char* lumpname)
+{
 	static bool initialized = false;
 
 	if (!initialized)
 	{
-		// construct a valid palette_t so we don't get crashes
-		memset(default_palette.basecolors, 0, 256 * sizeof(*default_palette.basecolors));
-		memset(default_palette.colors, 0, 256 * sizeof(*default_palette.colors));
+		palette_t* default_palette = V_GetDefaultPalette();
 
-		default_palette.maps.colormap = NULL;
-		default_palette.maps.shademap = NULL;
+		// construct a valid palette_t so we don't get crashes
+		memset(default_palette->basecolors, 0, 256 * sizeof(*default_palette->basecolors));
+		memset(default_palette->colors, 0, 256 * sizeof(*default_palette->colors));
+
+		default_palette->maps.colormap = NULL;
+		default_palette->maps.shademap = NULL;
 
 		initialized = true;
 	}
-
-	return &default_palette;
 }
+
 
 
 translationref_t::translationref_t() : m_table(NULL), m_player_id(-1)

@@ -585,9 +585,7 @@ END_COMMAND (checkres)
 //
 void STACK_ARGS V_Close()
 {
-	// screen is automatically free'd by the primary surface
-	if (screen)
-		screen = NULL;
+	R_ShutdownColormaps();
 }
 
 
@@ -596,15 +594,12 @@ void STACK_ARGS V_Close()
 //
 void V_Init()
 {
-	bool firstTime = true;
-	if (firstTime)
-		atterm(V_Close);
-
 	if (!I_VideoInitialized())
 		I_FatalError("Failed to initialize display");
 
 	V_InitPalette("PLAYPAL");
-	R_ReinitColormap();
+
+	R_InitColormaps();
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
@@ -617,10 +612,11 @@ void V_Init()
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
 	I_FlushInput();
 
-	I_SetWindowCaption();
+	I_SetWindowCaption(D_GetTitleString());
 	I_SetWindowIcon();
 
-	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight());
+	// notify the console of changes in the screen resolution
+	C_NewModeAdjust();
 
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
 }

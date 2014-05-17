@@ -69,11 +69,11 @@ extern int		gametic;
 extern BOOL		automapactive;	// in AM_map.c
 extern BOOL		advancedemo;
 
-unsigned int	ConRows, ConCols, PhysRows;
+static unsigned int		ConRows, ConCols, PhysRows;
 
-BOOL			cursoron = false;
-int				ConBottom;
-unsigned int	RowAdjust;
+static bool				cursoron = false;
+static int				ConBottom = 0;
+static unsigned int		RowAdjust = 0;
 
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
@@ -414,6 +414,8 @@ class ConsoleHistory
 public:
 	ConsoleHistory();
 
+	void clear();
+
 	void resetPosition();
 
 	void addString(const std::string& str);
@@ -441,6 +443,12 @@ private:
 
 ConsoleHistory::ConsoleHistory()
 {
+	resetPosition();
+}
+
+void ConsoleHistory::clear()
+{
+	history.clear();
 	resetPosition();
 }
 
@@ -547,21 +555,6 @@ CVAR_FUNC_IMPL(msgmidcolor)
 // con_scrlock 2 = Nothing brings scroll to the bottom.
 EXTERN_CVAR(con_scrlock)
 
-//
-// C_Close
-//
-void STACK_ARGS C_Close()
-{
-	if (background_surface)
-	{
-		I_FreeSurface(background_surface);
-		background_surface = NULL;
-	}
-
-	delete [] ConChars;
-	ConChars = NULL;
-}
-
 
 //
 // C_InitConCharsFont
@@ -623,6 +616,15 @@ void C_InitConCharsFont()
 
 
 //
+// C_ShutdownConCharsFont
+//
+void STACK_ARGS C_ShutdownConCharsFont()
+{
+	delete [] ConChars;
+	ConChars = NULL;
+}
+
+//
 // C_StringWidth
 //
 // Determines the width of a string in the CONCHARS font
@@ -649,67 +651,99 @@ static int C_StringWidth(const char* str)
 
 
 //
-// C_InitConsole
+// C_InitConsoleBackground
 //
-void C_InitConsole(int width, int height)
+// Allocates background surface and draws the appropriate background patch
+//
+void C_InitConsoleBackground()
 {
-	bool firstTime = true;
-	if (firstTime)
-		atterm(C_Close);
+	const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
 
+	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+	background_surface->lock();
+	background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
+	background_surface->unlock();
+}
+
+
+//
+// C_ShutdownConsoleBackground
+//
+// Frees the background_surface
+//
+void STACK_ARGS C_ShutdownConsoleBackground()
+{
 	if (background_surface)
 		I_FreeSurface(background_surface);
+}
 
-	if (I_VideoInitialized())
+
+//
+// C_ShutdownConsole
+//
+void STACK_ARGS C_ShutdownConsole()
+{
+	Lines.clear();
+	History.clear();
+	CmdLine.clear();
+}
+
+
+//
+// C_InitConsole
+//
+void C_InitConsole()
+{
+	C_NewModeAdjust();
+	C_FullConsole();
+}
+
+
+//
+// C_SetConsoleDimensions
+//
+static void C_SetConsoleDimensions(int width, int height)
+{
+	static int old_width = -1, old_height = -1;
+
+	if (width != old_width || height != old_height)
 	{
-		const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
+		ConCols = width / 8 - 2;
+		PhysRows = height / 8;
 
-		background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
-		background_surface->lock();
-		background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
-		background_surface->unlock();
-
-		delete ConChars;
-		C_InitConCharsFont();
-	}
-
-	ConCols = width / 8 - 2;
-	PhysRows = height / 8;
-
-	// ConCols has changed so any lines of text that are currently wrapped
-	// need to be adjusted.
-	for (ConsoleLineList::iterator current_line_it = Lines.begin();
-		current_line_it != Lines.end(); ++current_line_it)
-	{
-		if (current_line_it->wrapped)
+		// ConCols has changed so any lines of text that are currently wrapped
+		// need to be adjusted.
+		for (ConsoleLineList::iterator current_line_it = Lines.begin();
+			current_line_it != Lines.end(); ++current_line_it)
 		{
-			// The current line has wrapped around to the next line. Append the
-			// next line to the current line for now.
-
-			ConsoleLineList::iterator next_line_it = current_line_it;
-			++next_line_it;
-
-			if (next_line_it != Lines.end())
+			if (current_line_it->wrapped)
 			{
-				current_line_it->join(*next_line_it);
-				Lines.erase(next_line_it);
+				// The current line has wrapped around to the next line. Append the
+				// next line to the current line for now.
+
+				ConsoleLineList::iterator next_line_it = current_line_it;
+				++next_line_it;
+
+				if (next_line_it != Lines.end())
+				{
+					current_line_it->join(*next_line_it);
+					Lines.erase(next_line_it);
+				}
+			}
+
+			if (C_StringWidth(current_line_it->text.c_str()) > ConCols*8)
+			{
+				ConsoleLineList::iterator next_line_it = current_line_it;
+				++next_line_it;
+
+				ConsoleLine new_line = current_line_it->split(ConCols*8);
+				Lines.insert(next_line_it, new_line);
 			}
 		}
 
-		if (C_StringWidth(current_line_it->text.c_str()) > ConCols*8)
-		{
-			ConsoleLineList::iterator next_line_it = current_line_it;
-			++next_line_it;
-
-			ConsoleLine new_line = current_line_it->split(ConCols*8);
-			Lines.insert(next_line_it, new_line);
-		}
+		old_width = width;
+		old_height = height;
 	}
-
-	C_FlushDisplay();
-
-	if (I_VideoInitialized() && gamestate == GS_STARTUP)
-		C_FullConsole();
 }
 
 static void setmsgcolor(int index, const char *color)
@@ -979,10 +1013,22 @@ void C_AdjustBottom()
 
 void C_NewModeAdjust()
 {
-	C_InitConsole(I_GetSurfaceWidth(), I_GetSurfaceHeight());
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+
+	if (I_VideoInitialized())
+		C_SetConsoleDimensions(surface_width, surface_height);
+	else
+		C_SetConsoleDimensions(80 * 8, 25 * 8);
+
+	// clear HUD notify text
 	C_FlushDisplay();
-	C_AdjustBottom();
+
+	if (gamestate == GS_FULLCONSOLE)
+		ConBottom = surface_height; 
+	else if (ConBottom > surface_height / 2 || ConsoleState == c_down)
+		ConBottom = surface_height / 2;
 }
+
 
 void C_Ticker()
 {

@@ -112,57 +112,13 @@ static void maybedrawnow (void)
 {
 }
 
-void C_InitConsole(int width, int height)
+
+void C_ShutdownConsole()
 {
-	int row;
-	char *zap;
-	char *old;
-	int cols, rows;
+}
 
-	cols = ConCols;
-	rows = ConRows;
-
-	ConCols = width / 8 - 2;
-	PhysRows = height / 8;
-	ConRows = PhysRows * 10;
-
-	old = Lines;
-	Lines = (char *)Malloc (ConRows * (ConCols + 2) + 1);
-
-	for (row = 0, zap = Lines; row < ConRows; row++, zap += ConCols + 2)
-	{
-		zap[0] = 0;
-		zap[1] = 0;
-	}
-
-	Last = Lines + (ConRows - 1) * (ConCols + 2);
-
-	if (old)
-	{
-		char string[256];
-		gamestate_t oldstate = gamestate;	// Don't print during reformatting
-
-		gamestate = GS_FORCEWIPE;
-
-		for (row = 0, zap = old; row < rows; row++, zap += cols + 2)
-		{
-			memcpy (string, &zap[2], zap[1]);
-			if (!zap[0])
-			{
-				string[(int)zap[1]] = '\n';
-				string[zap[1]+1] = 0;
-			}
-			else
-			{
-				string[(int)zap[1]] = 0;
-			}
-			Printf (PRINT_HIGH, "%s", string);
-		}
-		M_Free (old);
-		C_FlushDisplay ();
-
-		gamestate = oldstate;
-	}
+void C_InitConsole()
+{
 }
 
 EXTERN_CVAR (log_fulltimestamps)
@@ -209,7 +165,7 @@ extern int PrintString (int printlevel, const char *outline);
 
 extern BOOL gameisdead;
 
-int VPrintf (int printlevel, const char *format, va_list parms)
+int VPrintf(int printlevel, const char* format, va_list parms)
 {
 	char outline[8192];
 
@@ -220,29 +176,28 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	size_t len = strlen(outline);
-	size_t i;
-	for(i = 0; i < len; i++)
-		if(outline[i] == 0x07)
+	for(size_t i = 0; i < len; i++)
+		if (outline[i] == 0x07)
 			outline[i] = '.';
 
 	std::string str(TimeStamp());
 	str.append(" ");
 	str.append(outline);
 
-	if(str[str.length()-1] != '\n')
+	if (str[str.length() - 1] != '\n')
 		str += '\n';
 
 	// send to any rcon players
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t* cl = &(it->client);
 
-		if(!(cl->allow_rcon))
-			continue;
-
-		MSG_WriteMarker (&cl->reliablebuf, svc_print);
-		MSG_WriteByte (&cl->reliablebuf, PRINT_MEDIUM);
-		MSG_WriteString (&cl->reliablebuf, (char *)str.c_str());
+		if (cl->allow_rcon)
+		{
+			MSG_WriteMarker(&cl->reliablebuf, svc_print);
+			MSG_WriteByte(&cl->reliablebuf, PRINT_MEDIUM);
+			MSG_WriteString(&cl->reliablebuf, (char*)str.c_str());
+		}
 	}
 
 	if (LOG.is_open()) {
@@ -250,7 +205,7 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		LOG.flush();
 	}
 
-	return PrintString (printlevel, str.c_str());
+	return PrintString(printlevel, str.c_str());
 }
 
 int STACK_ARGS Printf (int printlevel, const char *format, ...)
@@ -337,33 +292,7 @@ void C_SetTicker (unsigned int at)
 	TickerAt = at > TickerMax ? TickerMax : at;
 	maybedrawnow ();
 }
-/*
-static void makestartposgood (void)
-{
-	int n;
-	int pos = CmdLine[259];
-	int curs = CmdLine[1];
-	int len = CmdLine[0];
 
-	n = pos;
-
-	if (pos >= len)
-	{ // Start of visible line is beyond end of line
-		n = curs - ConCols + 2;
-	}
-	if ((curs - pos) >= ConCols - 2)
-	{ // The cursor is beyond the visible part of the line
-		n = curs - ConCols + 2;
-	}
-	if (pos > curs)
-	{ // The cursor is in front of the visible part of the line
-		n = curs;
-	}
-	if (n < 0)
-		n = 0;
-	CmdLine[259] = n;
-}
-*/
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 {
 	return true;

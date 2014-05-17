@@ -112,6 +112,9 @@ int R_CheckTextureNumForName (const char *name);
 inline int R_TextureNumForName (const byte *name) { return R_TextureNumForName ((const char *)name); }
 inline int R_CheckTextureNumForName (const byte *name) { return R_CheckTextureNumForName ((const char *)name); }
 
+void R_InitColormaps();
+void R_ShutdownColormaps();
+
 int R_ColormapNumForName(const char *name);		// killough 4/4/98
 void R_ReinitColormap();
 void R_ForceDefaultColormap (const char *name);

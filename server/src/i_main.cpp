@@ -154,9 +154,9 @@ int __cdecl main(int argc, char *argv[])
 		progdir = I_GetBinaryDir();
 		startdir = I_GetCWD();
 
-		C_InitConsole(80*8, 25*8);
+		C_InitConsole();
 
-		D_DoomMain ();
+		D_DoomMain();
     }
     catch (CDoomError &error)
     {
@@ -278,9 +278,9 @@ int main (int argc, char **argv)
 
 		progdir = I_GetBinaryDir();
 
-		C_InitConsole(80*8, 25*8);
+		C_InitConsole();
 
-		D_DoomMain ();
+		D_DoomMain();
     }
     catch (CDoomError &error)
     {

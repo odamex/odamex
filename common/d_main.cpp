@@ -1049,35 +1049,7 @@ bool D_DoomWadReboot(
 
 	lastWadRebootSuccess = false;
 
-	if (gamestate == GS_LEVEL)
-		G_ExitLevel(0, 0);
-
-	S_Stop();
-
-	DThinker::DestroyAllThinkers();
-
-	// Close all open WAD files
-	W_Close();
-
-	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
-	for (size_t i = 0; i < wadlevelinfos.size(); i++)
-	{
-		if (wadlevelinfos[i].snapshot)
-		{
-			delete wadlevelinfos[i].snapshot;
-			wadlevelinfos[i].snapshot = NULL;
-		}
-	}
-
-	wadlevelinfos.clear();
-	wadclusterinfos.clear();
-
-	UndoDehPatch();
-
-	// Restart the memory manager
-	Z_Init();
-
-	SetLanguageIDs ();
+	D_Shutdown();
 
 	gamestate_t oldgamestate = gamestate;
 	gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
@@ -1088,7 +1060,7 @@ bool D_DoomWadReboot(
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
-	D_NewWadInit();
+	D_Init();
 
 	// preserve state
 	lastWadRebootSuccess = missingfiles.empty();

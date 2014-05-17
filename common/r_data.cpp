@@ -761,20 +761,21 @@ void R_InitSpriteLumps (void)
 }
 
 
-static struct FakeCmap {
+static struct FakeCmap
+{
 	char name[9];
 	unsigned int blend;
 } *fakecmaps;
+
 size_t numfakecmaps;
 int firstfakecmap;
 shademap_t realcolormaps;
-int lastusedcolormap;
 
-void R_ForceDefaultColormap(const char *name)
+
+void R_ForceDefaultColormap(const char* name)
 {
-	byte *data = (byte *)W_CacheLumpName (name, PU_CACHE);
-
-	memcpy (realcolormaps.colormap, data, (NUMCOLORMAPS+1)*256);
+	const byte* data = (byte*)W_CacheLumpName(name, PU_CACHE);
+	memcpy(realcolormaps.colormap, data, (NUMCOLORMAPS+1)*256);
 
 #if 0
 	// Setup shademap to mirror colormapped colors:
@@ -782,20 +783,18 @@ void R_ForceDefaultColormap(const char *name)
 		for (int c = 0; c < 256; ++c)
 			realcolormaps.shademap[m*256+c] = V_Palette.shade(realcolormaps.colormap[m*256+c]);
 #else
-	BuildDefaultShademap (V_GetDefaultPalette(), realcolormaps);
+	BuildDefaultShademap(V_GetDefaultPalette(), realcolormaps);
 #endif
 
-	strncpy (fakecmaps[0].name, name, 9); // denis - todo - string limit?
+	strncpy(fakecmaps[0].name, name, 9); // denis - todo - string limit?
 	std::transform(fakecmaps[0].name, fakecmaps[0].name + strlen(fakecmaps[0].name), fakecmaps[0].name, toupper);
 	fakecmaps[0].blend = 0;
 }
 
-void R_SetDefaultColormap (const char *name)
+void R_SetDefaultColormap(const char* name)
 {
-	if (strnicmp (fakecmaps[0].name, name, 8))
-	{
+	if (strnicmp(fakecmaps[0].name, name, 8) != 0)
 		R_ForceDefaultColormap(name);
-	}
 }
 
 void R_ReinitColormap()
@@ -803,7 +802,7 @@ void R_ReinitColormap()
 	if (fakecmaps == NULL)
 		return;
 
-	const char *name = fakecmaps[0].name;
+	const char* name = fakecmaps[0].name;
 
 	if (name[0] == 0)
 		name = "COLORMAP";
@@ -811,33 +810,61 @@ void R_ReinitColormap()
 	R_ForceDefaultColormap(name);
 }
 
+
+//
+// R_ShutdownColormaps
+//
+// Frees the memory allocated specifically for the colormaps.
+//
+void R_ShutdownColormaps()
+{
+	if (realcolormaps.colormap)
+	{
+		Z_Free(realcolormaps.colormap);
+		realcolormaps.colormap = NULL;
+	}
+
+	if (realcolormaps.shademap)
+	{
+		Z_Free(realcolormaps.shademap);
+		realcolormaps.shademap = NULL;
+	}
+
+	if (fakecmaps)
+	{
+		Z_Free(fakecmaps);
+		fakecmaps = NULL;
+	}
+
+}
+
 //
 // R_InitColormaps
 //
-void R_InitColormaps (void)
+void R_InitColormaps()
 {
 	// [RH] Try and convert BOOM colormaps into blending values.
 	//		This is a really rough hack, but it's better than
 	//		not doing anything with them at all (right?)
-	int lastfakecmap = W_CheckNumForName ("C_END");
-	firstfakecmap = W_CheckNumForName ("C_START");
+	int lastfakecmap = W_CheckNumForName("C_END");
+	firstfakecmap = W_CheckNumForName("C_START");
 
 	if (firstfakecmap == -1 || lastfakecmap == -1)
 		numfakecmaps = 1;
 	else
 	{
-		if(firstfakecmap > lastfakecmap)
+		if (firstfakecmap > lastfakecmap)
 			I_Error("no fake cmaps");
 
 		numfakecmaps = lastfakecmap - firstfakecmap;
 	}
 
-	realcolormaps.colormap = (byte *)Z_Malloc (256*(NUMCOLORMAPS+1)*numfakecmaps,PU_STATIC,0);
-	realcolormaps.shademap = (argb_t *)Z_Malloc (256*sizeof(argb_t)*(NUMCOLORMAPS+1)*numfakecmaps,PU_STATIC,0);
-	fakecmaps = (FakeCmap *)Z_Malloc (sizeof(*fakecmaps) * numfakecmaps, PU_STATIC, 0);
+	realcolormaps.colormap = (byte*)Z_Malloc(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
+	realcolormaps.shademap = (argb_t*)Z_Malloc(256*sizeof(argb_t)*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
+	fakecmaps = (FakeCmap*)Z_Malloc(sizeof(*fakecmaps) * numfakecmaps, PU_STATIC, 0);
 
 	fakecmaps[0].name[0] = 0;
-	R_ForceDefaultColormap ("COLORMAP");
+	R_ForceDefaultColormap("COLORMAP");
 
 	if (numfakecmaps > 1)
 	{
@@ -855,37 +882,29 @@ void R_InitColormaps (void)
 				// Copy colormap data:
 				memcpy(colormap, map, (NUMCOLORMAPS+1)*256);
 
-				if (pal->basecolors)
-				{
-					int r = pal->basecolors[*map].r;
-					int g = pal->basecolors[*map].g;
-					int b = pal->basecolors[*map].b;
+				int r = pal->basecolors[*map].r;
+				int g = pal->basecolors[*map].g;
+				int b = pal->basecolors[*map].b;
 
-					W_GetLumpName (fakecmaps[j].name, i);
-					for (int k = 1; k < 256; k++)
-					{
-						r = (r + pal->basecolors[map[k]].r) >> 1;
-						g = (g + pal->basecolors[map[k]].g) >> 1;
-						b = (b + pal->basecolors[map[k]].b) >> 1;
-					}
-					// NOTE(jsd): This alpha value is used for 32bpp in water areas.
-					argb_t color = argb_t(64, r, g, b);
-					fakecmaps[j].blend = color;
-
-					// Set up shademap for the colormap:
-					for (int k = 0; k < 256; ++k)
-						shademap[k] = alphablend1a(pal->basecolors[map[0]], color, j * (256 / numfakecmaps));
-				}
-				else
+				W_GetLumpName (fakecmaps[j].name, i);
+				for (int k = 1; k < 256; k++)
 				{
-					// Set up shademap for the colormap:
-					for (int k = 0; k < 256; ++k)
-						shademap[k] = defpal.shade(colormap[k]);
+					r = (r + pal->basecolors[map[k]].r) >> 1;
+					g = (g + pal->basecolors[map[k]].g) >> 1;
+					b = (b + pal->basecolors[map[k]].b) >> 1;
 				}
+				// NOTE(jsd): This alpha value is used for 32bpp in water areas.
+				argb_t color = argb_t(64, r, g, b);
+				fakecmaps[j].blend = color;
+
+				// Set up shademap for the colormap:
+				for (int k = 0; k < 256; ++k)
+					shademap[k] = alphablend1a(pal->basecolors[map[0]], color, j * (256 / numfakecmaps));
 			}
 		}
 	}
 }
+
 
 // [RH] Returns an index into realcolormaps. Multiply it by
 //		256*(NUMCOLORMAPS+1) to find the start of the colormap to use.
@@ -923,15 +942,14 @@ unsigned int R_BlendForColormap(int map)
 //	that will be used by all views
 // Must be called after W_Init.
 //
-void R_InitData (void)
+void R_InitData()
 {
-	R_InitColormaps ();
-	R_InitTextures ();
-	R_InitFlats ();
-	R_InitSpriteLumps ();
+	R_InitTextures();
+	R_InitFlats();
+	R_InitSpriteLumps();
 
 	// haleyjd 01/28/10: also initialize tantoangle_acc table
-	Table_InitTanToAngle ();
+	Table_InitTanToAngle();
 }
 
 

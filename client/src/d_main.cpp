@@ -602,58 +602,179 @@ bool HashOk(std::string &required, std::string &available)
 	return required == available;
 }
 
-//
-// D_NewWadInit
-//
-// Client code that should be reset every time a new set of WADs are loaded
-//
-void D_NewWadInit()
-{
-	AM_Stop();
-
-	HU_Init ();
-
-	V_InitPalette("PLAYPAL");
-
-	G_SetLevelStrings ();
-	G_ParseMapInfo ();
-	G_ParseMusInfo ();
-	S_ParseSndInfo();
-
-	M_Init();
-	R_Init();
-	P_InitEffects();	// [ML] Do this here so we don't have to put particle crap in server
-	P_Init();
-
-	S_Init (snd_sfxvolume, snd_musicvolume);
-	ST_Init();
-
-	I_SetWindowCaption(D_GetTitleString());
-}
 
 void CL_NetDemoRecord(const std::string &filename);
 void CL_NetDemoPlay(const std::string &filename);
 
+
 //
-// D_DoomMain
+// D_Init
 //
-void D_DoomMain (void)
+// Called to initialize subsystems when loading a new set of WAD resource
+// files.
+//
+void D_Init()
 {
-	unsigned p;
-	extern std::string defdemoname;
+	// only print init messages during startup, not when changing WADs
+	static bool first_time = true;
+
+	SetLanguageIDs();
 
 	M_ClearRandom();
 
+	// start the Zone memory manager
+	Z_Init();
+	if (first_time)
+		Printf(PRINT_HIGH, "Z_Init: Heapsize: %u megabytes\n", got_heapsize);
+
+	// Load palette and set up colormaps
+	V_Init();
+
+//	if (first_time)
+//		Printf(PRINT_HIGH, "R_InitTextureManager: Init image resource management.\n");
+//	R_InitTextureManager();
+
+	// [RH] Initialize localizable strings.
+	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.Compact();
+
+	// init the renderer
+	if (first_time)
+		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
+	R_Init();
+
+//	V_LoadFonts();
+
+	C_InitConsoleBackground();
+
+	C_InitConCharsFont();
+
+	HU_Init();
+
+	G_SetLevelStrings();
+	G_ParseMapInfo();
+	G_ParseMusInfo();
+	S_ParseSndInfo();
+
+	// init the menu subsystem
+	if (first_time)
+		Printf(PRINT_HIGH, "M_Init: Init miscellaneous info.\n");
+	M_Init();
+
+	if (first_time)
+		Printf(PRINT_HIGH, "P_Init: Init Playloop state.\n");
+	P_InitEffects();
+	P_Init();
+
+	// init sound and music
+	if (first_time)
+	{
+		Printf (PRINT_HIGH, "S_Init: Setting up sound.\n");
+		Printf (PRINT_HIGH, "S_Init: default sfx volume is %g\n", (float)snd_sfxvolume);
+		Printf (PRINT_HIGH, "S_Init: default music volume is %g\n", (float)snd_musicvolume);
+	}
+	S_Init(snd_sfxvolume, snd_musicvolume);
+
+//	R_InitViewBorder();
+
+	// init the status bar
+	if (first_time)
+		Printf(PRINT_HIGH, "ST_Init: Init status bar.\n");
+	ST_Init();
+
+	first_time = false;
+}
+
+
+//
+// D_Shutdown
+//
+// Called to shutdown subsystems when unloading a set of WAD resource files.
+// Should be called prior to D_Init when loading a new set of WADs.
+//
+void STACK_ARGS D_Shutdown()
+{
+	if (gamestate == GS_LEVEL)
+		G_ExitLevel(0, 0);
+
+	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
+	for (size_t i = 0; i < wadlevelinfos.size(); i++)
+	{
+		if (wadlevelinfos[i].snapshot)
+		{
+			delete wadlevelinfos[i].snapshot;
+			wadlevelinfos[i].snapshot = NULL;
+		}
+	}
+
+	wadlevelinfos.clear();
+	wadclusterinfos.clear();
+
+	F_ShutdownFinale();
+
+	ST_Shutdown();
+
+//	R_ShutdownViewBorder();
+
+	// stop sound effects and music
+	S_Stop();
+	
+	// shutdown automap
+	AM_Stop();
+
+	DThinker::DestroyAllThinkers();
+
+	UndoDehPatch();
+
+	// close all open WAD files
+	W_Close();
+
+//	V_UnloadFonts();
+
+	HU_Shutdown();
+
+	C_ShutdownConCharsFont();
+
+	C_ShutdownConsoleBackground();
+
+	R_Shutdown();
+
+	GStrings.FreeData();
+
+
+//	R_ShutdownTextureManager();
+
+//	R_ShutdownColormaps();
+
+	V_Close();
+
+	// reset the Zone memory manager
+	Z_Close();
+}
+
+
+//
+// D_DoomMain
+//
+void D_DoomMain()
+{
+	unsigned int p;
+
 	gamestate = GS_STARTUP;
-	SetLanguageIDs ();
+
+	// init console so it can capture all of the startup messages
+	C_InitConsole();
+	atterm(C_ShutdownConsole);
+
+	// [RH] Initialize items. Still only used for the give command. :-(
+	InitItems();
+
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
-	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
-		I_FatalError ("Could not initialize LZO routines");
+	if (lzo_init() != LZO_E_OK)	// [RH] Initialize the minilzo package.
+		I_FatalError("Could not initialize LZO routines");
 
-    C_ExecCmdLineParams (false, true);	// [Nes] test for +logfile command
-
-	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
+    C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
 	M_LoadDefaults();					// load before initing other systems
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
@@ -697,34 +818,50 @@ void D_DoomMain (void)
 	if (video_bpp == 0 || (video_bpp != 8 && video_bpp != 32))
 		video_bpp = vid_32bpp ? 32 : 8;
 
-	// [RH] Moved these up here so that we can do most of our
-	//		startup output in a fullscreen console.
-
+	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	I_Init();
+	Printf(PRINT_HIGH, "I_SetVideoMode: %ix%ix%i %s\n", video_width, video_height, video_bpp,
+			vid_fullscreen != 0.0f ? "FULLSCREEN" : "WINDOWED");
 	I_SetVideoMode(video_width, video_height, video_bpp, vid_fullscreen, vid_vsync);
 
 	std::string video_driver = I_GetVideoDriverName();
 	if (!video_driver.empty())
-		Printf(PRINT_HIGH, "Using %s video driver.\n", video_driver.c_str());
-
-	V_Init();
-	HU_Init();
+		Printf(PRINT_HIGH, "I_SetVideoMode: Using %s video driver.\n", video_driver.c_str());
 
     // SDL needs video mode set up first before input code can be used
     I_InitInput();
 
-	I_SetWindowCaption(D_GetTitleString());
+	// [SL] Call init routines that need to be reinitialized every time WAD changes
+	D_Init();
+	atterm(D_Shutdown);
+
+	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks();
 
-	// [RH] User-configurable startup strings. Because BOOM does.
-	if (GStrings(STARTUP1)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP1));
-	if (GStrings(STARTUP2)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP2));
-	if (GStrings(STARTUP3)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP3));
-	if (GStrings(STARTUP4)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP4));
-	if (GStrings(STARTUP5)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP5));
+	Printf(PRINT_HIGH, "S_Init: Setting up sound.\n");
+	Printf(PRINT_HIGH, "S_Init: default sfx volume is %g\n", (float)snd_sfxvolume);
+	Printf(PRINT_HIGH, "S_Init: default music volume is %g\n", (float)snd_musicvolume);
+	S_Init(snd_sfxvolume, snd_musicvolume);
 
+	// [RH] User-configurable startup strings. Because BOOM does.
+	if (GStrings(STARTUP1)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP1));
+	if (GStrings(STARTUP2)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP2));
+	if (GStrings(STARTUP3)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP3));
+	if (GStrings(STARTUP4)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP4));
+	if (GStrings(STARTUP5)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP5));
+
+    // developer mode
+	devparm = Args.CheckParm("-devparm");
+
+	if (devparm)
+		Printf(PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
+ 
+	// set the default value for vid_ticker based on the presence of -devparm
+	if (devparm)
+		vid_ticker.SetDefault("1");
+ 
 	// Nomonsters
 	sv_nomonsters = Args.CheckParm("-nomonsters");
 
@@ -734,44 +871,91 @@ void D_DoomMain (void)
 	// Fast
 	sv_fastmonsters = Args.CheckParm("-fast");
 
-    // developer mode
-	devparm = Args.CheckParm("-devparm");
- 
-	// set the default value for vid_ticker based on the presence of -devparm
-	if (devparm)
-		vid_ticker.SetDefault("1");
- 
+	// get skill / episode / map from parms
+	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+
+	const char* val = Args.CheckValue("-skill");
+	if (val)
+		sv_skill.Set(val[0]-'0');
+
+	p = Args.CheckParm("-warp");
+	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
+	{
+		int ep, map;
+
+		if (gameinfo.flags & GI_MAPxx)
+		{
+			ep = 1;
+			map = atoi(Args.GetArg(p+1));
+		}
+		else
+		{
+			ep = Args.GetArg(p+1)[0]-'0';
+			map = Args.GetArg(p+2)[0]-'0';
+		}
+
+		strncpy(startmap, CalcMapName(ep, map), 8);
+		autostart = true;
+	}
+
+	// [RH] Hack to handle +map
+	p = Args.CheckParm("+map");
+	if (p && p < Args.NumArgs()-1)
+	{
+		strncpy(startmap, Args.GetArg(p+1), 8);
+		((char *)Args.GetArg(p))[0] = '-';
+		autostart = true;
+	}
+
+	// NOTE(jsd): Set up local player color
+	EXTERN_CVAR(cl_color);
+	R_BuildPlayerTranslation(0, V_GetColorFromString(NULL, cl_color.cstring()));
+
+	I_FinishClockCalibration();
+
+	Printf(PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
+	D_CheckNetGame();
+
+	// [RH] Lock any cvars that should be locked now that we're
+	// about to begin the game.
+	cvar_t::EnableNoSet();
+
+	// [RH] Now that all game subsystems have been initialized,
+	// do all commands on the command line other than +set
+	C_ExecCmdLineParams(false, false);
+
+	// --- process vanilla demo cli switches ---
+
 	// shorttics (quantize yaw like recording a vanilla demo)
 	extern bool longtics;
 	longtics = !(Args.CheckParm("-shorttics"));
 
 	// Record a vanilla demo
-	p = Args.CheckParm ("-record");
-	if (p)
+	p = Args.CheckParm("-record");
+	if (p && p < Args.NumArgs() - 1)
 	{
 		autorecord = true;
 		autostart = true;
-		demorecordfile = Args.GetArg (p+1);
+		demorecordfile = Args.GetArg(p + 1);
 
 		// extended vanilla demo format
 		longtics = Args.CheckParm("-longtics");
 	}
 
-	// get skill / episode / map from parms
-	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
-
 	// Check for -playdemo, play a single demo then quit.
-	p = Args.CheckParm ("-playdemo");
+	p = Args.CheckParm("-playdemo");
 	// Hack to check for +playdemo command, since if you just add it normally
 	// it won't run because it's attempting to run a demo and still set up the
 	// first map as normal.
 	if (!p)
-		p = Args.CheckParm ("+playdemo");
-	if (p && p < Args.NumArgs()-1)
+		p = Args.CheckParm("+playdemo");
+	if (p && p < Args.NumArgs() - 1)
 	{
-		Printf (PRINT_HIGH, "Playdemo parameter found on command line.\n");
+		Printf(PRINT_HIGH, "Playdemo parameter found on command line.\n");
 		singledemo = true;
-		defdemoname = Args.GetArg (p+1);
+
+		extern std::string defdemoname;
+		defdemoname = Args.GetArg(p+1);
 	}
 
 	// [SL] check for -timedemo (was removed at some point)
@@ -782,133 +966,39 @@ void D_DoomMain (void)
 		G_TimeDemo(Args.GetArg(p + 1));
 	}
 
-	const char *val = Args.CheckValue ("-skill");
-	if (val)
-	{
-		sv_skill.Set (val[0]-'0');
-	}
 
-	p = Args.CheckParm ("-warp");
-	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
-	{
-		int ep, map;
-
-		if (gameinfo.flags & GI_MAPxx)
-		{
-			ep = 1;
-			map = atoi (Args.GetArg(p+1));
-		}
-		else
-		{
-			ep = Args.GetArg(p+1)[0]-'0';
-			map = Args.GetArg(p+2)[0]-'0';
-		}
-
-		strncpy (startmap, CalcMapName (ep, map), 8);
-		autostart = true;
-	}
-
-	// [RH] Hack to handle +map
-	p = Args.CheckParm ("+map");
-	if (p && p < Args.NumArgs()-1)
-	{
-		strncpy (startmap, Args.GetArg (p+1), 8);
-		((char *)Args.GetArg (p))[0] = '-';
-		autostart = true;
-	}
-	if (devparm)
-		Printf (PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
-
-	// [RH] Now that all text strings are set up,
-	// insert them into the level and cluster data.
-	G_SetLevelStrings ();
-
-	// [RH] Parse through all loaded mapinfo lumps
-	G_ParseMapInfo ();
-
-	// [ML] Parse musinfo lump
-	G_ParseMusInfo ();
-
-	// [RH] Parse any SNDINFO lumps
-	S_ParseSndInfo();
-
-	// Check for -file in shareware
-	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
-		I_Error ("You cannot -file with the shareware version. Register!");
-
-	Printf (PRINT_HIGH, "M_Init: Init miscellaneous info.\n");
-	M_Init ();
-
-	Printf (PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
-	R_Init ();
-
-	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
-	P_InitEffects();	// [ML] Do this here so we don't have to put particle crap in server
-	P_Init ();
-
-	// NOTE(jsd): Set up local player color
-	EXTERN_CVAR(cl_color);
-	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
-
-	Printf (PRINT_HIGH, "S_Init: Setting up sound.\n");
-	Printf (PRINT_HIGH, "S_Init: default sfx volume is %g\n", (float)snd_sfxvolume);
-	Printf (PRINT_HIGH, "S_Init: default music volume is %g\n", (float)snd_musicvolume);
-	S_Init (snd_sfxvolume, snd_musicvolume);
-
-	I_FinishClockCalibration ();
-
-	Printf (PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
-	D_CheckNetGame ();
-
-	Printf (PRINT_HIGH, "ST_Init: Init status bar.\n");
-	ST_Init ();
-
-	// [RH] Initialize items. Still only used for the give command. :-(
-	InitItems ();
-
-	// [RH] Lock any cvars that should be locked now that we're
-	// about to begin the game.
-	cvar_t::EnableNoSet ();
-
-	// [RH] Now that all game subsystems have been initialized,
-	// do all commands on the command line other than +set
-	C_ExecCmdLineParams (false, false);
-
-	Printf_Bold("\n\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
-	if(gamestate != GS_CONNECTING)
-		Printf(PRINT_HIGH, "Type connect <address> or use the Odamex Launcher to connect to a game.\n");
-    Printf(PRINT_HIGH, "\n");
-
-	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
-    //gamestate = GS_FULLCONSOLE;
+	// --- process network demo cli switches ---
 
 	// [SL] allow the user to pass the name of a netdemo as the first argument.
 	// This allows easy launching of netdemos from Windows Explorer or other GUIs.
-
+	//
 	// [Xyltol]
 	if (Args.GetArg(1))
 	{
 		std::string demoarg = Args.GetArg(1);
-		if (demoarg.find(".odd") != std::string::npos)
+		const std::string demoext(".odd");
+
+		// does demoarg have a .odd extensions?
+		if (demoarg.find(".odd") == demoarg.length() - demoext.length())
 			CL_NetDemoPlay(demoarg);
 	}
 
 	p = Args.CheckParm("-netplay");
-	if (p)
+	if (p && p < Args.NumArgs() - 1)
 	{
-		if (Args.GetArg(p + 1))
-		{
-			std::string filename = Args.GetArg(p + 1);
-			CL_NetDemoPlay(filename);
-		}
-		else
-		{
-			Printf(PRINT_HIGH, "No netdemo filename specified.\n");
-		}
+		std::string filename = Args.GetArg(p + 1);
+		CL_NetDemoPlay(filename);
 	}
 
+
+	Printf_Bold("\n\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
+	if (gamestate != GS_CONNECTING)
+		Printf(PRINT_HIGH, "Type connect <address> or use the Odamex Launcher to connect to a game.\n");
+    Printf(PRINT_HIGH, "\n");
+
+
 	// denis - bring back the demos
-    if ( gameaction != ga_loadgame )
+    if (gameaction != ga_loadgame)
     {
 		if (autostart || netgame || singledemo)
 		{
@@ -916,7 +1006,7 @@ void D_DoomMain (void)
 				G_DoPlayDemo();
 			else
 			{
-				if(autostart)
+				if (autostart)
 				{
 					// single player warp (like in g_level)
 					serverside = true;
@@ -932,7 +1022,7 @@ void D_DoomMain (void)
 					consoleplayer_id = displayplayer_id = players.back().id = 1;
 				}
 
-				G_InitNew (startmap);
+				G_InitNew(startmap);
 				if (autorecord)
 					G_RecordDemo(startmap, demorecordfile);
 			}
@@ -947,30 +1037,32 @@ void D_DoomMain (void)
 			if (gamemode == commercial_bfg) // DOOM 2 BFG Edtion
                 AddCommandString("menu_main");
 
-			D_StartTitle (); // start up intro loop
+			D_StartTitle(); // start up intro loop
 		}
     }
 
 	// denis - this will run a demo and quit
-	p = Args.CheckParm ("+demotest");
-	if (p && p < Args.NumArgs()-1)
+	p = Args.CheckParm("+demotest");
+	if (p && p < Args.NumArgs() - 1)
 	{
 		demotest = 1;
-		defdemoname = Args.GetArg (p+1);
+
+		extern std::string defdemoname;
+		defdemoname = Args.GetArg(p + 1);
 		G_DoPlayDemo();
 
-		while(demoplayback)
+		while (demoplayback)
 		{
-			DObject::BeginFrame ();
+			DObject::BeginFrame();
 			G_Ticker();
-			DObject::EndFrame ();
+			DObject::EndFrame();
 			gametic++;
 		}
 	}
 	else
 	{
 		demotest = 0;
-		D_DoomLoop ();		// never returns
+		D_DoomLoop();		// never returns
 	}
 }
 

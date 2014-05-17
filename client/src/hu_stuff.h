@@ -37,8 +37,9 @@
 // Calculate # of glyphs in font.
 #define HU_FONTSIZE 	(HU_FONTEND - HU_FONTSTART + 1) 
 
-// Chat routines
-void HU_Init (void);
+void HU_Init();
+void STACK_ARGS HU_Shutdown();
+
 BOOL HU_Responder (event_t* ev);
 void HU_Drawer (void);
 

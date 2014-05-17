@@ -59,10 +59,12 @@ void ST_Ticker (void);
 void ST_Drawer (void);
 
 // Called when the console player is spawned on each level.
-void ST_Start (void);
+void ST_Start();
 
 // Called by startup code.
-void ST_Init (void);
+void ST_Init();
+
+void STACK_ARGS ST_Shutdown();
 
 // Draw the HUD (only if old status bar is not drawn)
 void ST_newDraw (void);

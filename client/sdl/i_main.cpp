@@ -198,9 +198,7 @@ int main(int argc, char *argv[])
 //		#ifndef _WIN32
 //		atexit (call_terms);
 //		#endif
-		Z_Init ();					// 1/18/98 killough: start up memory stuff first
 
-        atterm (R_Shutdown);
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
@@ -208,10 +206,7 @@ int main(int argc, char *argv[])
 		progdir = I_GetBinaryDir();
 		startdir = I_GetCWD();
 
-		// init console
-		C_InitConsole (80 * 8, 25 * 8);
-
-		D_DoomMain (); // Usually does not return
+		D_DoomMain(); // Usually does not return
 
 		// If D_DoomMain does return (as is the case with the +demotest parameter)
 		// proper termination needs to occur -- Hyper_Eye
@@ -255,6 +250,5 @@ int main(int argc, char *argv[])
 #endif
 	return 0;
 }
-
 
 VERSION_CONTROL (i_main_cpp, "$Id$")

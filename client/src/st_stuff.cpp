@@ -1781,7 +1781,7 @@ void ST_Stop()
 	st_stopped = true;
 }
 
-void ST_Init (void)
+void ST_Init()
 {
 	if (stbar_surface == NULL)
 		stbar_surface = I_AllocateSurface(320, 32, 8);
@@ -1790,6 +1790,23 @@ void ST_Init (void)
 
 	ST_loadData();
 }
+
+
+void STACK_ARGS ST_Shutdown()
+{
+	if (stbar_surface)
+	{
+		I_FreeSurface(stbar_surface);
+		stbar_surface = NULL;
+	}
+
+	if (stnum_surface)
+	{
+		I_FreeSurface(stnum_surface);
+		stnum_surface = NULL;
+	}
+}
+
 
 VERSION_CONTROL (st_stuff_cpp, "$Id$")
 

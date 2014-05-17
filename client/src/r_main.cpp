@@ -149,10 +149,8 @@ int CorrectFieldOfView = 2048;
 
 fixed_t			render_lerp_amount;
 
-
-byte**			ylookup;
-int* 			columnofs;
-
+byte*			ylookup[MAXHEIGHT];
+int				columnofs[MAXWIDTH];
 
 
 //
@@ -669,13 +667,12 @@ void R_Init()
 }
 
 
+//
 // R_Shutdown
+//
 void STACK_ARGS R_Shutdown()
 {
     R_FreeTranslationTables();
-
-	delete [] ylookup;
-	delete [] columnofs;
 }
 
 
@@ -1208,12 +1205,6 @@ void R_InitViewWindow()
 	pspritexscale = ((crvwidth / 2) * FRACUNIT) / 160;
 	pspriteyscale = FixedMul(pspritexscale, yaspectmul);
 	pspritexiscale = FixedDiv(FRACUNIT, pspritexscale);
-
-	delete [] ylookup;
-	delete [] columnofs;
-
-	ylookup = new byte*[surface_height];
-	columnofs = new int[surface_width];
 
 	// Column offset. For windows
 	for (int i = 0; i < viewwidth; i++)
