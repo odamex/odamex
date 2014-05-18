@@ -30,6 +30,7 @@
 #include "m_random.h"
 #include "w_wad.h"
 #include "sc_man.h"
+#include "m_memio.h"
 #include "cmdlib.h"
 
 #include <cstring>
@@ -38,6 +39,48 @@
 
 #include "res_texture.h"
 #include "v_video.h"
+
+#ifdef USE_PNG
+	#define PNG_SKIP_SETJMP_CHECK
+	#include <setjmp.h>		// used for error handling by libpng
+
+	#include <zlib.h>
+	#include <png.h>
+
+	#if (PNG_LIBPNG_VER < 10400)
+		// [SL] add data types to support versions of libpng prior to 1.4.0
+
+		/* png_alloc_size_t is guaranteed to be no smaller than png_size_t,
+		 * and no smaller than png_uint_32.  Casts from png_size_t or png_uint_32
+		 * to png_alloc_size_t are not necessary; in fact, it is recommended
+		 * not to use them at all so that the compiler can complain when something
+		 * turns out to be problematic.
+		 * Casts in the other direction (from png_alloc_size_t to png_size_t or
+		 * png_uint_32) should be explicitly applied; however, we do not expect
+		 * to encounter practical situations that require such conversions.
+		 */
+
+		#if defined(__TURBOC__) && !defined(__FLAT__)
+		   typedef unsigned long png_alloc_size_t;
+		#else
+		#  if defined(_MSC_VER) && defined(MAXSEG_64K)
+			 typedef unsigned long    png_alloc_size_t;
+		#  else
+			 /* This is an attempt to detect an old Windows system where (int) is
+			  * actually 16 bits, in that case png_malloc must have an argument with a
+			  * bigger size to accomodate the requirements of the library.
+			  */
+		#    if (defined(_Windows) || defined(_WINDOWS) || defined(_WINDOWS_)) && \
+				(!defined(INT_MAX) || INT_MAX <= 0x7ffffffeL)
+			   typedef DWORD         png_alloc_size_t;
+		#    else
+			   typedef png_size_t    png_alloc_size_t;
+		#    endif
+		#  endif
+		#endif
+	#endif	// PNG_LIBPNG_VER < 10400
+#endif	// USE_PNG
+
 
 TextureManager texturemanager;
 
@@ -739,6 +782,7 @@ void TextureManager::updateAnimatedTextures()
 	}
 }
 
+
 //
 // TextureManager::generateNotFoundTexture
 //
@@ -1268,6 +1312,136 @@ void TextureManager::cacheRawTexture(texhandle_t handle)
 	
 
 //
+// TextureManager::getPNGTextureHandle
+//
+// Returns the handle for the PNG format image with the given WAD lump number.
+//
+texhandle_t TextureManager::getPNGTextureHandle(unsigned int lumpnum)
+{
+	if (lumpnum >= numlumps)
+		return NOT_FOUND_TEXTURE_HANDLE;
+
+	if (W_LumpLength(lumpnum) == 0)
+		return NOT_FOUND_TEXTURE_HANDLE;
+	return (texhandle_t)lumpnum | PNG_HANDLE_MASK;
+}
+
+
+texhandle_t TextureManager::getPNGTextureHandle(const OString& name)
+{
+	int lumpnum = W_CheckNumForName(name.c_str());
+	if (lumpnum >= 0)
+		return getPNGTextureHandle(lumpnum);
+	return NOT_FOUND_TEXTURE_HANDLE;
+}
+
+
+//
+// Res_ReadPNGCallback
+//
+// Callback function required for reading PNG format images stored in
+// a memory buffer.
+//
+#ifdef CLIENT_APP
+static void Res_ReadPNGCallback(png_struct* png_ptr, png_byte* dest, png_size_t length)
+{
+	MEMFILE* mfp = (MEMFILE*)png_get_io_ptr(png_ptr);
+	mem_fread(dest, sizeof(byte), length, mfp);
+}
+#endif
+
+
+//
+// TextureManager::cachePNGTexture
+//
+// Converts a linear PNG format image into a Texture.
+//
+void TextureManager::cachePNGTexture(texhandle_t handle)
+{
+#ifdef CLIENT_APP
+	unsigned int lumpnum = (handle & ~PNG_HANDLE_MASK);
+	unsigned int lumplen = W_LumpLength(lumpnum);
+
+	char lumpname[9];
+	W_GetLumpName(lumpname, lumpnum);
+
+	byte* lumpdata = new byte[lumplen];
+	W_ReadLump(lumpnum, lumpdata);
+
+	if (!png_check_sig(lumpdata, 8))
+	{
+		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", lumpname);
+		delete [] lumpdata;
+		return;
+	}
+
+	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (!png_ptr)
+	{
+		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", lumpname);
+		delete [] lumpdata;
+		return;	
+	}
+  
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+	if (!info_ptr)
+	{
+		png_destroy_read_struct(&png_ptr, NULL, NULL);
+		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", lumpname);
+		delete [] lumpdata;
+		return;
+    }
+
+	// tell libpng to retrieve image data from memory buffer instead of a disk file
+	MEMFILE* mfp = mem_fopen_read(lumpdata, lumplen);
+	png_set_read_fn(png_ptr, mfp, Res_ReadPNGCallback);
+
+	png_read_info(png_ptr, info_ptr);
+
+	// read the png header
+	png_uint_32 width = 0, height = 0;
+	int bitsperpixel = 0, colortype = -1;
+	png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, NULL, NULL, NULL);
+
+	if (ret != 1)
+	{
+		mem_fclose(mfp);
+		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", lumpname);
+		delete [] lumpdata;
+		return;
+	}
+
+	Texture* texture = createTexture(handle, width, height);
+
+#if 0
+	if (clientside)
+	{
+		// convert the row-major flat lump to into column-major
+		byte* dest = texture->mData;
+
+		for (unsigned int x = 0; x < width; x++)
+		{
+			const byte* source = lumpdata + x;
+			
+			for (unsigned int y = 0; y < height; y++)
+			{
+				*dest = *source;
+				source += width;
+				dest++;
+			}
+		}
+		
+	}
+#endif
+
+	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+	mem_fclose(mfp);
+	delete [] lumpdata;
+#endif	// CLIENT_APP
+}
+
+
+//
 // TextureManager::getHandle
 //
 // Returns the handle for the texture that matches the supplied name.
@@ -1293,6 +1467,8 @@ texhandle_t TextureManager::getHandle(const OString& name, Texture::TextureSourc
 		handle = getSpriteHandle(uname);
 	else if (type == Texture::TEX_RAW)
 		handle = getRawTextureHandle(uname);
+	else if (type == Texture::TEX_PNG)
+		handle = getPNGTextureHandle(uname);
 
 	// not found? check elsewhere
 	if (handle == NOT_FOUND_TEXTURE_HANDLE && type != Texture::TEX_FLAT)
@@ -1330,6 +1506,8 @@ texhandle_t TextureManager::getHandle(unsigned int lumpnum, Texture::TextureSour
 		handle = getSpriteHandle(lumpnum);
 	else if (type == Texture::TEX_RAW)
 		handle = getRawTextureHandle(lumpnum);
+	else if (type == Texture::TEX_PNG)
+		handle = getPNGTextureHandle(lumpnum);
 
 	// not found? check elsewhere
 	if (handle == NOT_FOUND_TEXTURE_HANDLE && type != Texture::TEX_FLAT)
@@ -1362,6 +1540,8 @@ const Texture* TextureManager::getTexture(texhandle_t handle)
 			cacheSprite(handle);
 		else if (handle & RAW_HANDLE_MASK)
 			cacheRawTexture(handle);
+		else if (handle & PNG_HANDLE_MASK)
+			cachePNGTexture(handle);
 
 		texture = mHandleMap[handle];
 	}

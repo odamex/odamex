@@ -45,53 +45,13 @@
 #include "i_sdlvideo.h"
 #include "i_system.h"
 #include "m_argv.h"
-#include "m_memio.h"
 #include "w_wad.h"
+
+#include "res_texture.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif
-
-#ifdef USE_PNG
-	#define PNG_SKIP_SETJMP_CHECK
-	#include <setjmp.h>		// used for error handling by libpng
-
-	#include <zlib.h>
-	#include <png.h>
-
-	#if (PNG_LIBPNG_VER < 10400)
-		// [SL] add data types to support versions of libpng prior to 1.4.0
-
-		/* png_alloc_size_t is guaranteed to be no smaller than png_size_t,
-		 * and no smaller than png_uint_32.  Casts from png_size_t or png_uint_32
-		 * to png_alloc_size_t are not necessary; in fact, it is recommended
-		 * not to use them at all so that the compiler can complain when something
-		 * turns out to be problematic.
-		 * Casts in the other direction (from png_alloc_size_t to png_size_t or
-		 * png_uint_32) should be explicitly applied; however, we do not expect
-		 * to encounter practical situations that require such conversions.
-		 */
-
-		#if defined(__TURBOC__) && !defined(__FLAT__)
-		   typedef unsigned long png_alloc_size_t;
-		#else
-		#  if defined(_MSC_VER) && defined(MAXSEG_64K)
-			 typedef unsigned long    png_alloc_size_t;
-		#  else
-			 /* This is an attempt to detect an old Windows system where (int) is
-			  * actually 16 bits, in that case png_malloc must have an argument with a
-			  * bigger size to accomodate the requirements of the library.
-			  */
-		#    if (defined(_Windows) || defined(_WINDOWS) || defined(_WINDOWS_)) && \
-				(!defined(INT_MAX) || INT_MAX <= 0x7ffffffeL)
-			   typedef DWORD         png_alloc_size_t;
-		#    else
-			   typedef png_size_t    png_alloc_size_t;
-		#    endif
-		#  endif
-		#endif
-	#endif	// PNG_LIBPNG_VER < 10400
-#endif	// USE_PNG
 
 EXTERN_CVAR (vid_autoadjust)
 EXTERN_CVAR (vid_fullscreen)
@@ -399,31 +359,9 @@ void ISDL12Window::setWindowIcon()
 
 	#else
 
-	#if 0
-	byte* png_file = (byte*)W_CacheLumpNum(W_GetNumForName("ICON"), PU_STATIC);
-	if (!png_check_sig(png_file, 8))
-	{
-		Printf(PRINT_HIGH, "Bad PNG header reading ICON.\n");
-		return;
-	}
 
-	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if (!png_ptr)
-	{
-		Printf(PRINT_HIGH, "PNG out of memory.\n");
-		return;	
-	}
-  
-	png_infop info_ptr = png_create_info_struct(png_ptr);
-	if (!info_ptr)
-	{
-		png_destroy_read_struct(&png_ptr, NULL, NULL);
-		Printf(PRINT_HIGH, "PNG out of memory.\n");
-		return;
-    }
-
-	// tell libpng to retrieve image data from memory buffer instead of a disk file
-	#endif
+	texhandle_t iconhandle = texturemanager.getHandle("ICON", Texture::TEX_PNG);
+	const Texture* icontexture = texturemanager.getTexture(iconhandle);
 
 	// [SL] Load a flat from odamex.wad to use for the icon
 	palindex_t* image = (palindex_t*)W_CacheLumpNum(W_CheckNumForName("-NOFLAT-", ns_flats), PU_STATIC);
