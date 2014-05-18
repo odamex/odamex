@@ -74,6 +74,8 @@
 #include "sv_main.h"
 #include "sv_banlist.h"
 
+#include "res_texture.h"
+
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_monstersrespawn)
@@ -274,6 +276,10 @@ void D_Init()
 	V_InitPalette("PLAYPAL");
 	R_InitColormaps();
 
+	if (first_time)
+		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
+	Res_InitTextureManager();
+
 	// [RH] Initialize localizable strings.
 	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
 	GStrings.Compact();
@@ -332,6 +338,8 @@ void STACK_ARGS D_Shutdown()
 
 	// close all open WAD files
 	W_Close();
+
+	Res_ShutdownTextureManager();
 
 	R_ShutdownColormaps();
 

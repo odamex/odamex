@@ -88,6 +88,8 @@
 #include "p_ctf.h"
 #include "cl_main.h"
 
+#include "res_texture.h"
+
 #ifdef GEKKO
 #include "i_wii.h"
 #endif
@@ -630,9 +632,9 @@ void D_Init()
 	// Load palette and set up colormaps
 	V_Init();
 
-//	if (first_time)
-//		Printf(PRINT_HIGH, "R_InitTextureManager: Init image resource management.\n");
-//	R_InitTextureManager();
+	if (first_time)
+		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
+	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
 	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
@@ -742,7 +744,7 @@ void STACK_ARGS D_Shutdown()
 	GStrings.FreeData();
 
 
-//	R_ShutdownTextureManager();
+	Res_ShutdownTextureManager();
 
 //	R_ShutdownColormaps();
 
