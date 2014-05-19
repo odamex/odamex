@@ -206,6 +206,27 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 
 
 //
+// Res_TransposeImage
+//
+// Converts an image buffer from row-major format to column-major format.
+//
+void Res_TransposeImage(byte* dest, const byte* source, int width, int height)
+{
+	for (int x = 0; x < width; x++)
+	{
+		const byte* source_column = source + x;
+		
+		for (int y = 0; y < height; y++)
+		{
+			*dest = *source_column;
+			source_column += width;
+			dest++;
+		}
+	}
+}
+
+
+//
 // Res_LoadTexture
 //
 const Texture* Res_LoadTexture(const char* name)
@@ -1154,19 +1175,7 @@ void TextureManager::cacheFlat(texhandle_t handle)
 		W_ReadLump(lumpnum, lumpdata);
 
 		// convert the row-major flat lump to into column-major
-		byte* dest = texture->mData;
-
-		for (int x = 0; x < width; x++)
-		{
-			const byte* source = lumpdata + x;
-			
-			for (int y = 0; y < height; y++)
-			{
-				*dest = *source;
-				source += width;
-				dest++;
-			}
-		}
+		Res_TransposeImage(texture->mData, lumpdata, width, height);
 		
 		delete [] lumpdata;
 	}
@@ -1288,24 +1297,12 @@ void TextureManager::cacheRawTexture(texhandle_t handle)
 		unsigned int lumpnum = (handle & ~RAW_HANDLE_MASK);
 		unsigned int lumplen = W_LumpLength(lumpnum);
 
-		byte *lumpdata = new byte[lumplen];
+		byte* lumpdata = new byte[lumplen];
 		W_ReadLump(lumpnum, lumpdata);
 
 		// convert the row-major flat lump to into column-major
-		byte* dest = texture->mData;
+		Res_TransposeImage(texture->mData, lumpdata, width, height);
 
-		for (int x = 0; x < width; x++)
-		{
-			const byte* source = lumpdata + x;
-			
-			for (int y = 0; y < height; y++)
-			{
-				*dest = *source;
-				source += width;
-				dest++;
-			}
-		}
-		
 		delete [] lumpdata;
 	}
 }
@@ -1352,6 +1349,33 @@ static void Res_ReadPNGCallback(png_struct* png_ptr, png_byte* dest, png_size_t 
 
 
 //
+// Res_PNGCleanup
+//
+// Helper function for TextureManager::cachePNGTexture which takes care of
+// freeing the memory allocated for reading a PNG image using libpng. This
+// can be called in the event of success or failure when reading the image.
+//
+#ifdef CLIENT_APP
+static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lumpdata,
+							png_byte** row_data, MEMFILE** mfp)
+{
+	png_destroy_read_struct(png_ptr, info_ptr, NULL);
+	*png_ptr = NULL;
+	*info_ptr = NULL;
+
+	delete [] *lumpdata;
+	*lumpdata = NULL;
+	delete [] *row_data;
+	*row_data = NULL;
+
+	if (*mfp)
+		mem_fclose(*mfp);
+	*mfp = NULL;
+}
+#endif
+
+
+//
 // TextureManager::cachePNGTexture
 //
 // Converts a linear PNG format image into a Texture.
@@ -1359,41 +1383,46 @@ static void Res_ReadPNGCallback(png_struct* png_ptr, png_byte* dest, png_size_t 
 void TextureManager::cachePNGTexture(texhandle_t handle)
 {
 #ifdef CLIENT_APP
+	png_struct* png_ptr = NULL;
+	png_info* info_ptr = NULL;
+	byte* lumpdata = NULL;
+	png_byte* row_data = NULL;
+	MEMFILE* mfp = NULL;
+	
 	unsigned int lumpnum = (handle & ~PNG_HANDLE_MASK);
 	unsigned int lumplen = W_LumpLength(lumpnum);
 
 	char lumpname[9];
 	W_GetLumpName(lumpname, lumpnum);
 
-	byte* lumpdata = new byte[lumplen];
+	lumpdata = new byte[lumplen];
 	W_ReadLump(lumpnum, lumpdata);
 
 	if (!png_check_sig(lumpdata, 8))
 	{
 		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", lumpname);
-		delete [] lumpdata;
+		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
 		return;
 	}
 
-	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (!png_ptr)
 	{
 		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", lumpname);
-		delete [] lumpdata;
+		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
 		return;	
 	}
   
-	png_infop info_ptr = png_create_info_struct(png_ptr);
+	info_ptr = png_create_info_struct(png_ptr);
 	if (!info_ptr)
 	{
-		png_destroy_read_struct(&png_ptr, NULL, NULL);
 		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", lumpname);
-		delete [] lumpdata;
+		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
 		return;
     }
 
 	// tell libpng to retrieve image data from memory buffer instead of a disk file
-	MEMFILE* mfp = mem_fopen_read(lumpdata, lumplen);
+	mfp = mem_fopen_read(lumpdata, lumplen);
 	png_set_read_fn(png_ptr, mfp, Res_ReadPNGCallback);
 
 	png_read_info(png_ptr, info_ptr);
@@ -1405,38 +1434,60 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 
 	if (ret != 1)
 	{
-		mem_fclose(mfp);
 		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", lumpname);
-		delete [] lumpdata;
+		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
 		return;
 	}
 
 	Texture* texture = createTexture(handle, width, height);
 
-#if 0
-	if (clientside)
-	{
-		// convert the row-major flat lump to into column-major
-		byte* dest = texture->mData;
+	// convert the PNG image to a convenient format
 
+	// convert transparency to full alpha
+	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+		png_set_tRNS_to_alpha(png_ptr);
+ 
+	// convert grayscale, if needed.
+	if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
+		png_set_expand_gray_1_2_4_to_8(png_ptr);
+ 
+	// convert paletted images to RGB
+	if (colortype == PNG_COLOR_TYPE_PALETTE)
+		png_set_palette_to_rgb(png_ptr);
+ 
+	// convert from RGB to ARGB
+	if (colortype == PNG_COLOR_TYPE_PALETTE || colortype == PNG_COLOR_TYPE_RGB)
+	   png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
+ 
+	// process the above transformations
+	png_read_update_info(png_ptr, info_ptr);
+
+	// Read the new color type after updates have been made.
+	colortype = png_get_color_type(png_ptr, info_ptr);
+
+	// read the image and store in temp_image
+	const png_size_t row_size = png_get_rowbytes(png_ptr, info_ptr);
+
+	row_data = new png_byte[row_size];
+	for (unsigned int y = 0; y < height; y++)
+	{
+		png_read_row(png_ptr, row_data, NULL);
+		byte* dest = texture->mData + y;
+		
 		for (unsigned int x = 0; x < width; x++)
 		{
-			const byte* source = lumpdata + x;
-			
-			for (unsigned int y = 0; y < height; y++)
-			{
-				*dest = *source;
-				source += width;
-				dest++;
-			}
-		}
-		
-	}
-#endif
+			argb_t color;
+			color.r = row_data[(x << 2) + 0];
+			color.g = row_data[(x << 2) + 1];
+			color.b = row_data[(x << 2) + 2];
+			color.a = row_data[(x << 2) + 3];
 
-	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-	mem_fclose(mfp);
-	delete [] lumpdata;
+			*dest = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+			dest += height;
+		}
+	}
+
+	Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
 #endif	// CLIENT_APP
 }
 

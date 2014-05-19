@@ -47,6 +47,7 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 	int dx1, int dy1, int dx2, int dy2,
 	int sx1, int sy1, int sx2, int sy2);
 
+void Res_TransposeImage(byte* dest, const byte* source, int width, int height);
 
 // ============================================================================
 //
