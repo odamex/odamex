@@ -1440,6 +1440,8 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	}
 
 	Texture* texture = createTexture(handle, width, height);
+	memset(texture->mData, 0, width * height);
+	memset(texture->mMask, 0, width * height);
 
 	// convert the PNG image to a convenient format
 
@@ -1473,21 +1475,26 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	{
 		png_read_row(png_ptr, row_data, NULL);
 		byte* dest = texture->mData + y;
+		byte* mask = texture->mMask + y;
 		
 		for (unsigned int x = 0; x < width; x++)
 		{
-			argb_t color;
-			color.r = row_data[(x << 2) + 0];
-			color.g = row_data[(x << 2) + 1];
-			color.b = row_data[(x << 2) + 2];
-			color.a = row_data[(x << 2) + 3];
+			argb_t color(row_data[(x << 2) + 3], row_data[(x << 2) + 0],
+						row_data[(x << 2) + 1], row_data[(x << 2) + 2]);
 
-			*dest = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+			*mask = color.a != 0;
+			if (*mask)
+				*dest = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+
 			dest += height;
+			mask += height;
 		}
 	}
 
+	texture->mHasMask = (memchr(texture->mMask, 0, width * height) != NULL);
+
 	Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
+
 #endif	// CLIENT_APP
 }
 

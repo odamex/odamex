@@ -359,15 +359,14 @@ void ISDL12Window::setWindowIcon()
 
 	#else
 
-
 	texhandle_t icon_handle = texturemanager.getHandle("ICON", Texture::TEX_PNG);
 	const Texture* icon_texture = texturemanager.getTexture(icon_handle);
 	const int icon_width = icon_texture->getWidth(), icon_height = icon_texture->getHeight();
 
-	SDL_Surface* icon_sdlsurface =
-			SDL_CreateRGBSurface(0, icon_width, icon_height, 8, 0, 0, 0, 0);
-
+	SDL_Surface* icon_sdlsurface = SDL_CreateRGBSurface(0, icon_width, icon_height, 8, 0, 0, 0, 0);
 	Res_TransposeImage((byte*)icon_sdlsurface->pixels, icon_texture->getData(), icon_width, icon_height);
+
+	SDL_SetColorKey(icon_sdlsurface, SDL_SRCCOLORKEY, 0);
 
 	// set the surface palette
 	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
@@ -380,8 +379,9 @@ void ISDL12Window::setWindowIcon()
 	}
 
 	SDL_WM_SetIcon(icon_sdlsurface, NULL);
-
 	SDL_FreeSurface(icon_sdlsurface);
+
+	delete [] mask;
 
 	#endif
 }
