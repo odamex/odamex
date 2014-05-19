@@ -819,17 +819,20 @@ void TextureManager::generateNotFoundTexture()
 
 	if (clientside)
 	{
-		const byte color1 = 0x40, color2 = 0x80;
+		const argb_t color1(0, 0, 255);		// blue
+		const argb_t color2(0, 255, 255);	// yellow
+		const palindex_t color1_index = V_BestColor(V_GetDefaultPalette()->basecolors, color1);
+		const palindex_t color2_index = V_BestColor(V_GetDefaultPalette()->basecolors, color2);
 
-		for (int y = 0; y < height / 2; y++)
+		for (int x = 0; x < width / 2; x++)
 		{
-			memset(texture->mData + y * width + 0, color1, width / 2);
-			memset(texture->mData + y * width + width / 2, color2, width / 2);
+			memset(texture->mData + x * height + 0, color1_index, height / 2);
+			memset(texture->mData + x * height + height / 2, color2_index, height / 2);
 		}
-		for (int y = height / 2; y < height; y++)
+		for (int x = width / 2; x < width; x++)
 		{
-			memset(texture->mData + y * width + 0, color2, width / 2);
-			memset(texture->mData + y * width + width / 2, color1, width / 2);
+			memset(texture->mData + x * height + 0, color2_index, height / 2);
+			memset(texture->mData + x * height + height / 2, color1_index, height / 2);
 		}
 	}
 }

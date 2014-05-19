@@ -381,8 +381,6 @@ void ISDL12Window::setWindowIcon()
 	SDL_WM_SetIcon(icon_sdlsurface, NULL);
 	SDL_FreeSurface(icon_sdlsurface);
 
-	delete [] mask;
-
 	#endif
 }
 
