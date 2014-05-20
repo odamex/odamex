@@ -596,10 +596,10 @@ CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",
 #endif
 
 CVAR(			r_drawplayersprites, "1", "Draw player sprites (weapons)",
-				CVARTYPE_BOOL, CVAR_NULL)
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			r_particles, "1", "Draw particles",
-				CVARTYPE_BOOL, CVAR_NULL)
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE_FUNC_DECL(r_stretchsky, "2", "Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
