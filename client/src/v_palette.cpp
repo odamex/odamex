@@ -420,6 +420,43 @@ palindex_t V_BestColor(const argb_t* palette_colors, argb_t color)
 }
 
 
+//
+// V_ClosestColors
+//
+// Sets color1 and color2 to the palette indicies of the pair of colors that
+// are the closest amongst the colors of the given palette. This is an N^2
+// algorithm so use sparingly.
+//
+void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_t& color2)
+{
+	int bestdistortion = MAXINT;
+
+	color1 = color2 = 0;	// go to color 0 as a last resort
+
+	for (int x = 0; x < 256; x++)
+	{
+		for (int y = 0; y < 256 - x; y++)
+		{
+			// don't compare a color with itself
+			if (x == y)
+				continue;
+
+			int dr = (int)palette_colors[y].r - (int)palette_colors[x].r;
+			int dg = (int)palette_colors[y].g - (int)palette_colors[x].g;
+			int db = (int)palette_colors[y].b - (int)palette_colors[x].b;
+			int distortion = dr*dr + dg*dg + db*db;
+			if (distortion < bestdistortion)
+			{
+				color1 = x, color2 = y;
+				bestdistortion = distortion;
+				if (bestdistortion == 0)
+					return;				// perfect match
+			}
+		}
+	}
+}
+
+
 
 /****************************/
 /* Palette management stuff */
@@ -487,6 +524,9 @@ void V_InitPalette(const char* lumpname)
 	assert(palette->maps.colormap != NULL);
 	assert(palette->maps.shademap != NULL);
 	V_Palette = shaderef_t(&palette->maps, 0);
+
+	palindex_t color1, color2;
+	V_ClosestColors(palette->basecolors, color1, color2);
 }
 
 
