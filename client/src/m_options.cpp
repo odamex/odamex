@@ -1478,10 +1478,9 @@ void M_OptDrawer (void)
 				}
 			}
 
-			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey)) || WaitingForAxis || testingmode))
-			{
+			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey))
+				|| WaitingForAxis || testingmode))
 				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
-			}
 		}
 		else
 		{
@@ -1528,18 +1527,19 @@ void M_OptDrawer (void)
 				int v, vals;
 
 				vals = (int)item->b.leftval;
-				v = M_FindCurVal (item->a.cvar->value(), item->e.values, vals);
+				v = M_FindCurVal(item->a.cvar->value(), item->e.values, vals);
 
 				if (v == vals)
 				{
-					screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, "Unknown");
+					screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, "Unknown");
 				}
 				else
 				{
+					int color_num = CR_GREY;
 					if (item->type == cdiscrete)
-						screen->DrawTextCleanMove (v, CurrentMenu->indent + 14, y, item->e.values[v].name);
-					else
-						screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, item->e.values[v].name);
+						color_num = item->a.cvar->asInt();
+
+					screen->DrawTextCleanMove(color_num, CurrentMenu->indent + 14, y, item->e.values[v].name);
 				}
 
 			}
