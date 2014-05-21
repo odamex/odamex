@@ -65,6 +65,7 @@ static IWindowSurface* emulated_surface = NULL;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 
 static int loading_icon_expire = -1;
+static IWindowSurface* loading_icon_background_surface = NULL;
 
 EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_vsync)
@@ -728,6 +729,10 @@ void STACK_ARGS I_ShutdownHardware()
 {
 	delete window;
 	window = NULL;
+
+	if (loading_icon_background_surface)
+		I_FreeSurface(loading_icon_background_surface);
+	loading_icon_background_surface = NULL;
 }
 
 
@@ -907,6 +912,76 @@ bool I_IsProtectedResolution(const IWindowSurface* surface)
 }
 
 
+//
+// I_DrawLoadingIcon
+//
+// Sets a flag to indicate that I_FinishUpdate should draw the loading (disk)
+// icon in the lower right corner of the screen.
+//
+void I_DrawLoadingIcon()
+{
+	loading_icon_expire = gametic;
+}
+
+
+//
+// I_BlitLoadingIcon
+//
+// Takes care of the actual drawing of the loading icon.
+//
+static void I_BlitLoadingIcon()
+{
+	const patch_t* diskpatch = W_CachePatch("STDISK");
+	IWindowSurface* surface = I_GetPrimarySurface();
+	int bpp = surface->getBitsPerPixel();
+
+	int scale = std::min(CleanXfac, CleanYfac);
+	int w = diskpatch->width() * scale;
+	int h = diskpatch->height() * scale;
+	int x = surface->getWidth() - w;
+	int y = surface->getHeight() - h;
+
+	// offset x and y for the lower right corner of the screen
+	int ofsx = x + (scale * diskpatch->leftoffset());
+	int ofsy = y + (scale * diskpatch->topoffset());
+
+	// save the area where the icon will be drawn to an off-screen surface
+	// so that it can be restored after the frame is blitted
+	if (!loading_icon_background_surface ||
+		loading_icon_background_surface->getWidth() != w ||
+		loading_icon_background_surface->getHeight() != h ||
+		loading_icon_background_surface->getBitsPerPixel() != bpp)
+	{
+		if (loading_icon_background_surface)
+			I_FreeSurface(loading_icon_background_surface);
+
+		loading_icon_background_surface = I_AllocateSurface(w, h, bpp);
+	}
+
+	loading_icon_background_surface->blit(surface, x, y, w, h, 0, 0, w, h);
+
+	surface->getDefaultCanvas()->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
+}
+
+
+//
+// I_RestoreLoadingIcon
+//
+// Restores the background area that was saved prior to blitting the
+// loading icon.
+//
+static void I_RestoreLoadingIcon()
+{
+	IWindowSurface* surface = I_GetPrimarySurface();
+
+	int w = loading_icon_background_surface->getWidth();
+	int h = loading_icon_background_surface->getHeight();
+	int x = surface->getWidth() - w;
+	int y = surface->getHeight() - h;
+
+	surface->blit(loading_icon_background_surface, 0, 0, w, h, x, y, w, h);
+}
+
 
 //
 // I_BeginUpdate
@@ -948,23 +1023,7 @@ void I_FinishUpdate()
 
 		// draws a disk loading icon in the lower right corner
 		if (gametic <= loading_icon_expire)
-		{
-			const patch_t* diskpatch = W_CachePatch("STDISK");
-			IWindowSurface* surface = I_GetPrimarySurface();
-
-			int scale = std::min(CleanXfac, CleanYfac);
-			int w = diskpatch->width() * scale;
-			int h = diskpatch->height() * scale;
-
-			int x = surface->getWidth();
-			int y = surface->getHeight();
-
-			// offset x and y for the lower right corner of the screen
-			int ofsx = x - w + (scale * diskpatch->leftoffset());
-			int ofsy = y - h + (scale * diskpatch->topoffset());
-
-			surface->getDefaultCanvas()->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
-		}
+			I_BlitLoadingIcon();
 
 		if (emulated_surface)
 			emulated_surface->unlock();
@@ -975,6 +1034,14 @@ void I_FinishUpdate()
 
 		if (noblit == false)
 			window->refresh();
+
+		// restores the background underneath the disk loading icon in the lower right corner
+		if (gametic <= loading_icon_expire)
+		{
+			window->getPrimarySurface()->lock();
+			I_RestoreLoadingIcon();
+			window->getPrimarySurface()->unlock();
+		}
 	}
 }
 
@@ -1062,15 +1129,6 @@ std::string I_GetVideoDriverName()
 	if (I_VideoInitialized())
 		return I_GetWindow()->getVideoDriverName();
 	return std::string();
-}
-
-
-//
-// I_DrawLoadingIcon
-//
-void I_DrawLoadingIcon()
-{
-	loading_icon_expire = gametic;
 }
 
 
