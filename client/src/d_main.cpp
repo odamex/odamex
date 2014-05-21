@@ -434,6 +434,9 @@ void D_PageDrawer()
 			desth = destw * 6 / 8;
 		}
 
+		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+			destw = primary_surface->getWidth(), desth = primary_surface->getHeight();
+
 		primary_surface->blit(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
 				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
 				destw, desth);

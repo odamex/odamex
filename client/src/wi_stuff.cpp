@@ -254,8 +254,6 @@ static char names[NUMEPISODES][NUMMAPS][8] = {
 //
 // Locally used stuff.
 //
-#define FB (screen)
-
 
 // in seconds
 #define SHOWNEXTLOCDELAY		4
@@ -371,18 +369,57 @@ EXTERN_CVAR (cl_autoscreenshot)
 // CODE
 //
 
+
+//
+// WI_GetWidth
+//
+// Returns the width of the area that the intermission screen will be
+// drawn to. The intermisison screen should be 4:3, except in 320x200 mode.
+//
+static int WI_GetWidth()
+{
+	int surface_width = I_GetPrimarySurface()->getWidth();
+	int surface_height = I_GetPrimarySurface()->getHeight();
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		return surface_width;
+
+	if (surface_width * 3 >= surface_height * 4)
+		return surface_height * 4 / 3;
+	else
+		return surface_width;
+}
+
+static int WI_GetHeight()
+{
+	int surface_width = I_GetPrimarySurface()->getWidth();
+	int surface_height = I_GetPrimarySurface()->getHeight();
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		return surface_height;
+
+	if (surface_width * 3 >= surface_height * 4)
+		return surface_height;
+	else
+		return surface_width * 3 / 4;
+}
+
+
 // slam background
 // UNUSED static unsigned char *background=0;
-
 
 void WI_slamBackground (void)
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	primary_surface->clear();		// ensure black background in matted modes
 
 	background_surface->lock();
 
+	int destw = WI_GetWidth(), desth = WI_GetHeight();
+
 	primary_surface->blit(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
-				0, 0, primary_surface->getWidth(), primary_surface->getHeight());
+				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
+				destw, desth);
 
 	background_surface->unlock();
 }
@@ -400,7 +437,7 @@ static int WI_DrawName (const char *str, int x, int y)
 		if (lump != -1)
 		{
 			p = W_CachePatch (lump);
-			FB->DrawPatchClean (p, x, y);
+			screen->DrawPatchClean (p, x, y);
 			x += p->width() - 1;
 		}
 		else
@@ -429,7 +466,7 @@ void WI_drawLF (void)
 	if (lnames[0])
 	{
 		// draw <LevelName>
-		FB->DrawPatchClean (lnames[0], (320 - lnames[0]->width())/2, y);
+		screen->DrawPatchClean (lnames[0], (320 - lnames[0]->width())/2, y);
 		y += (5*lnames[0]->height())/4;
 	}
 	else
@@ -440,7 +477,7 @@ void WI_drawLF (void)
 
 	// draw "Finished!"
 	//if (!multiplayer || sv_maxplayers <= 1)
-		FB->DrawPatchClean (finished, (320 - finished->width())/2, y);  // (Removed) Dan - Causes GUI Issues |FIX-ME|
+		screen->DrawPatchClean (finished, (320 - finished->width())/2, y);  // (Removed) Dan - Causes GUI Issues |FIX-ME|
 }
 
 
@@ -456,7 +493,7 @@ void WI_drawEL (void)
 	y = WI_TITLEY;
 
 	// draw "Entering"
-	FB->DrawPatchClean (entering, (320 - entering->width())/2, y);
+	screen->DrawPatchClean (entering, (320 - entering->width())/2, y);
 
 	// [RH] Changed to adjust by height of entering patch instead of title
 	y += (5*entering->height())/4;
@@ -464,7 +501,7 @@ void WI_drawEL (void)
 	if (lnames[1])
 	{
 		// draw level
-		FB->DrawPatchClean (lnames[1], (320 - lnames[1]->width())/2, y);
+		screen->DrawPatchClean (lnames[1], (320 - lnames[1]->width())/2, y);
 	}
 	else
 	{
@@ -516,8 +553,8 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 		right = left + c[i]->width();
 		bottom = top + c[i]->height();
 
-		if (left >= 0 && right < I_GetSurfaceWidth() &&
-            top >= 0 && bottom < I_GetSurfaceHeight())
+		if (left >= 0 && right < WI_GetWidth() &&
+            top >= 0 && bottom < WI_GetHeight())
 		{
 			fits = true;
 		}
@@ -529,7 +566,7 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 
 	if (fits && i < numpatches) // haleyjd: bug fix
 	{
-		FB->DrawPatchIndirect(c[i], lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
+		screen->DrawPatchIndirect(c[i], lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
 	}
 	else
 	{
