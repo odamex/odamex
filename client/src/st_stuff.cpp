@@ -510,7 +510,6 @@ void ST_ForceRefresh()
 	ST_X = ST_StatusBarX(surface_width, surface_height);
 	ST_Y = ST_StatusBarY(surface_width, surface_height);
 
-	setsizeneeded = true;
 	st_needrefresh = true;
 	st_statusbaron = R_StatusBarVisible();
 }
