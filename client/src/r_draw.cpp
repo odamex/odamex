@@ -112,37 +112,69 @@ void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, in
 // Fuzz Table
 //
 // Framebuffer postprocessing.
-// Creates a fuzzy image by copying pixels
-// from adjacent ones to left and right.
-// Used with an all black colormap, this
-// could create the SHADOW effect,
+// Creates a fuzzy image by copying pixels from adjacent ones to left and right.
+// Used with an all black colormap, this could create the SHADOW effect,
 // i.e. spectres and invisible players.
 //
 // ============================================================================
 
-#define FUZZTABLE	64		// [RH] FUZZTABLE changed from 50 to 64
+class FuzzTable
+{
+public:
+	FuzzTable()
+	{
+		refresh();
+	}	
 
-static int fuzzoffset[FUZZTABLE];
-static int fuzzpos = 0;
+	void refresh()
+	{
+		if (I_VideoInitialized())
+		{
+			static const signed char initial_table[FuzzTable::size] = {
+				1,-1, 1,-1, 1, 1,-1, 1,
+				1,-1, 1, 1, 1,-1, 1, 1,
+				1,-1,-1,-1,-1, 1,-1,-1,
+				1, 1, 1, 1,-1, 1,-1, 1,
+				1,-1,-1, 1, 1,-1,-1,-1,
+			   -1, 1, 1, 1, 1,-1, 1, 1,
+			   -1, 1, 1, 1,-1, 1, 1, 1,
+			   -1, 1, 1,-1, 1, 1,-1, 1 };
 
-static const signed char fuzzinit[FUZZTABLE] = {
-	1,-1, 1,-1, 1, 1,-1, 1,
-	1,-1, 1, 1, 1,-1, 1, 1,
-	1,-1,-1,-1,-1, 1,-1,-1,
-	1, 1, 1, 1,-1, 1,-1, 1,
-	1,-1,-1, 1, 1,-1,-1,-1,
-   -1, 1, 1, 1, 1,-1, 1, 1,
-   -1, 1, 1, 1,-1, 1, 1, 1,
-   -1, 1, 1,-1, 1, 1,-1, 1
+			int pitch = I_GetPrimarySurface()->getPitchInPixels();
+			for (size_t i = 0; i < FuzzTable::size; i++)
+				table[i] = initial_table[i] * pitch;
+		}
+
+		pos = 0;
+	}
+
+	void incrementRow()
+	{
+		pos = (pos + 1) % FuzzTable::size;
+	}
+
+	void incrementColumn()
+	{
+		pos = (pos + 3) % FuzzTable::size;
+	}
+
+	int getValue() const
+	{
+		return table[pos];
+	}
+
+private:
+	static const size_t size = 64;
+
+	int table[FuzzTable::size];
+	int pos;
 };
 
-void R_InitFuzzTable (void)
-{
-	IWindowSurface* surface = I_GetPrimarySurface();
-	int fuzzoff = surface->getPitch();
+static FuzzTable fuzztable;
 
-	for (int i = 0; i < FUZZTABLE; i++)
-		fuzzoffset[i] = fuzzinit[i] * fuzzoff;
+void R_InitFuzzTable()
+{
+	fuzztable.refresh();
 }
 
 
@@ -845,8 +877,8 @@ public:
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
-		*dest = colormap.index(dest[fuzzoffset[fuzzpos]]);
-		fuzzpos = (fuzzpos + 1) & (FUZZTABLE - 1);
+		*dest = colormap.index(dest[fuzztable.getValue()]);
+		fuzztable.incrementRow();
 	}
 
 private:
@@ -993,8 +1025,7 @@ void R_DrawFuzzColumnP()
 		dcol.yh = viewheight - 2;
 
 	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>(FB_COLDEST_P, dcol);
-
-	fuzzpos = (fuzzpos + 3) & (FUZZTABLE - 1);
+	fuzztable.incrementColumn();
 }
 
 //
@@ -1202,9 +1233,9 @@ public:
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		argb_t work = dest[fuzzoffset[fuzzpos] >> 2];
+		argb_t work = dest[fuzztable.getValue()];
 		*dest = work - ((work >> 2) & 0x3f3f3f);
-		fuzzpos = (fuzzpos + 1) & (FUZZTABLE - 1);
+		fuzztable.incrementRow();
 	}
 };
 
@@ -1336,8 +1367,7 @@ void R_DrawFuzzColumnD()
 		dcol.yh = viewheight - 2;
 
 	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>(FB_COLDEST_D, dcol);
-
-	fuzzpos = (fuzzpos + 3) & (FUZZTABLE - 1);
+	fuzztable.incrementColumn();
 }
 
 //
