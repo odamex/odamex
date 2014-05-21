@@ -440,7 +440,7 @@ CVAR_FUNC_IMPL (sv_allowwidescreen)
 	static bool last_value = !wide_fov;
 
 	if (last_value != wide_fov)
-		setmodeneeded = true;
+		setmodeneeded = setsizeneeded = true;
 	last_value = wide_fov;
 }
 

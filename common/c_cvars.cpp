@@ -200,13 +200,13 @@ void cvar_t::ForceSet(const char* valstr)
 
 		m_Value = valf;
 
+		if (m_UseCallback)
+			Callback();
+
 		if (m_Flags & CVAR_USERINFO)
 			D_UserInfoChanged(this);
 		if (m_Flags & CVAR_SERVERINFO)
 			D_SendServerInfoChange(this, m_String.c_str());
-
-		if (m_UseCallback)
-			Callback();
 	}
 
 	m_Flags &= ~CVAR_ISDEFAULT;

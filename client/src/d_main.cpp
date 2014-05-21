@@ -244,8 +244,7 @@ void D_Display()
 
 		// Recalculate various view parameters.
 		setsizeneeded = true;
-		// Trick status bar into rethinking its position
-		st_scale.Callback();
+
 		// Refresh the console.
 		C_NewModeAdjust();
 	}
@@ -261,7 +260,10 @@ void D_Display()
 
 	// change the view size if needed
 	if (setsizeneeded)
+	{
 		R_InitViewWindow();
+		ST_ForceRefresh();
+	}
 
 	setmodeneeded = setsizeneeded = false;
 
