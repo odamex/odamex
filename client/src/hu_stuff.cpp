@@ -332,6 +332,9 @@ static void HU_InitCrosshair()
 //
 static void HU_DrawCrosshair()
 {
+	if (gamestate != GS_LEVEL)
+		return;
+
 	if (!camera)
 		return;
 
