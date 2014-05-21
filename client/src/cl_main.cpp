@@ -3007,7 +3007,7 @@ void CL_GetServerSettings(void)
 		std::string CvarName = MSG_ReadString();
 		std::string CvarValue = MSG_ReadString();
 
-		var = cvar_t::FindCVar (CvarName.c_str(), &prev);
+		var = cvar_t::FindCVar(CvarName.c_str(), &prev);
 
 		// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it
 		if (var)
@@ -3029,11 +3029,7 @@ void CL_GetServerSettings(void)
 	}
 
 	// Nes - update the skies in case sv_freelook is changed.
-	R_InitSkyMap ();
-
-	// [AM] - Adhere to sv_allowwidescreen setting.
-	ST_ForceRefresh();
-	setsizeneeded = true;
+	R_InitSkyMap();
 }
 
 //

@@ -1988,26 +1988,18 @@ void M_StartControlPanel (void)
 //
 void M_Drawer()
 {
-	int i, x, y, max;
-
-	// [SL] force the status bar to be redrawn in case the menu
-	// draws over a portion of the status bar background
-	ST_ForceRefresh();
-
-	//screen->Dim (); // denis - removed, see bug 388
-
-	// Horiz. & Vertically center string and print it.
 	if (messageToPrint)
 	{
+		// Horiz. & Vertically center string and print it.
 		brokenlines_t *lines = V_BreakLines (320, messageString);
-		y = 100;
+		int y = 100;
 
-		for (i = 0; lines[i].width != -1; i++)
+		for (int i = 0; lines[i].width != -1; i++)
 			y -= hu_font[0]->height() / 2;
 
-		for (i = 0; lines[i].width != -1; i++)
+		for (int i = 0; lines[i].width != -1; i++)
 		{
-			screen->DrawTextCleanMove (CR_RED, 160 - lines[i].width/2, y, lines[i].string);
+			screen->DrawTextCleanMove(CR_RED, 160 - lines[i].width/2, y, lines[i].string);
 			y += hu_font[0]->height();
 		}
 
@@ -2017,7 +2009,7 @@ void M_Drawer()
 	{
 		if (OptionsActive)
 		{
-			M_OptDrawer ();
+			M_OptDrawer();
 		}
 		else
 		{
@@ -2025,11 +2017,11 @@ void M_Drawer()
 				currentMenu->routine(); 		// call Draw routine
 
 			// DRAW MENU
-			x = currentMenu->x;
-			y = currentMenu->y;
-			max = currentMenu->numitems;
+			int x = currentMenu->x;
+			int y = currentMenu->y;
+			int max = currentMenu->numitems;
 
-			for (i = 0; i < max; i++)
+			for (int i = 0; i < max; i++)
 			{
 				if (currentMenu->menuitems[i].name[0])
 					screen->DrawPatchClean (W_CachePatch(currentMenu->menuitems[i].name), x, y);
@@ -2040,11 +2032,16 @@ void M_Drawer()
 			// DRAW SKULL
 			if (drawSkull)
 			{
-				screen->DrawPatchClean (W_CachePatch(skullName[whichSkull]),
+				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
 					x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
 			}
 		}
 	}
+
+	// [SL] force the status bar to be redrawn in case the menu
+	// draws over a portion of the status bar background
+	if (R_StatusBarVisible() && (menuactive || messageToPrint))
+		ST_ForceRefresh();
 }
 
 

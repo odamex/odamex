@@ -56,9 +56,7 @@ void RefreshPalettes (void) {}
 
 void V_RefreshColormaps() {}
 
-CVAR_FUNC_IMPL (sv_allowwidescreen)
-{
-}
+CVAR_FUNC_IMPL (sv_allowwidescreen) {}
 
 VERSION_CONTROL (sv_stubs_cpp, "$Id: sv_stubs.cpp $")
 

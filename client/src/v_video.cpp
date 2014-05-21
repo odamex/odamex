@@ -425,23 +425,12 @@ static void BuildTransTable(const argb_t* palette_colors)
 
 CVAR_FUNC_IMPL (vid_widescreen)
 {
-	bool enabled = (var != 0.0f);
-	static bool last_value = !enabled;	// force setmodeneeded when loading cvar
-	if (last_value != enabled)
-		setmodeneeded = true;
-	last_value = enabled;
+	setmodeneeded = true;
 }
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {
-	// change setmodeneeded when the value of sv_allowwidescreen
-	// changes our ability to use wide-fov
-	bool wide_fov = V_UseWidescreen() || V_UseLetterBox();
-	static bool last_value = !wide_fov;
-
-	if (last_value != wide_fov)
-		setmodeneeded = setsizeneeded = true;
-	last_value = wide_fov;
+	setmodeneeded = true;
 }
 
 //
