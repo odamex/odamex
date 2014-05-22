@@ -390,6 +390,13 @@ static int WI_GetWidth()
 		return surface_width;
 }
 
+
+//
+// WI_GetHeight
+//
+// Returns the height of the area that the intermission screen will be
+// drawn to. The intermisison screen should be 4:3, except in 320x200 mode.
+//
 static int WI_GetHeight()
 {
 	int surface_width = I_GetPrimarySurface()->getWidth();
@@ -674,56 +681,54 @@ void WI_drawAnimatedBack()
 	WI_slamBackground();
 }
 
-int WI_drawNum (int n, int x, int y, int digits)
+int WI_drawNum(int n, int x, int y, int digits)
 {
-
     int		fontwidth = num[0]->width();
     int		neg;
     int		temp;
 
-    if (digits < 0)
-    {
-	if (!n)
+	if (digits < 0)
 	{
-	    // make variable-length zeros 1 digit long
-	    digits = 1;
+		if (n == 0)
+		{
+			// make variable-length zeros 1 digit long
+			digits = 1;
+		}
+		else
+		{
+			// figure out # of digits in #
+			digits = 0;
+			temp = n;
+
+			while (temp)
+			{
+				temp /= 10;
+				digits++;
+			}
+		}
 	}
-	else
+
+	neg = n < 0;
+    if (neg)
+		n = -n;
+
+	// if non-number, do not draw it
+	if (n == 1994)
+		return 0;
+
+	// draw the new number
+	while (digits--)
 	{
-	    // figure out # of digits in #
-	    digits = 0;
-	    temp = n;
-
-	    while (temp)
-	    {
-		temp /= 10;
-		digits++;
-	    }
+		x -= fontwidth;
+		screen->DrawPatchClean(num[ n % 10 ], x, y);
+		n /= 10;
 	}
-    }
 
-    neg = n < 0;
-    if (neg)
-	n = -n;
+	// draw a minus sign if necessary
+	if (neg)
+		screen->DrawPatchClean(wiminus, x -= 8, y);
 
-    // if non-number, do not draw it
-    if (n == 1994)
-	return 0;
-
-    // draw the new number
-    while (digits--)
-    {
-	x -= fontwidth;
-	screen->DrawPatchClean(num[ n % 10 ], x, y);
-	n /= 10;
-    }
-
-    // draw a minus sign if necessary
-    if (neg)
-	screen->DrawPatchClean(wiminus, x-=8, y);
-
-    return x;
-
+	return x;
 }
 
 #include "hu_stuff.h"

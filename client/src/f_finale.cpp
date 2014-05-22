@@ -42,6 +42,8 @@
 
 #include "gi.h"
 
+static IWindowSurface* cast_surface = NULL;
+
 // Stage of animation:
 //	0 = text, 1 = art screen, 2 = character cast
 unsigned int	finalestage;
@@ -58,6 +60,49 @@ void	F_StartCast (void);
 void	F_CastTicker (void);
 BOOL	F_CastResponder (event_t *ev);
 void	F_CastDrawer (void);
+
+
+//
+// F_GetWidth
+//
+// Returns the width of the area that the intermission screen will be
+// drawn to. The intermisison screen should be 4:3, except in 320x200 mode.
+//
+static int F_GetWidth()
+{
+	int surface_width = I_GetPrimarySurface()->getWidth();
+	int surface_height = I_GetPrimarySurface()->getHeight();
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		return surface_width;
+
+	if (surface_width * 3 >= surface_height * 4)
+		return surface_height * 4 / 3;
+	else
+		return surface_width;
+}
+
+
+//
+// F_GetHeight
+//
+// Returns the height of the area that the intermission screen will be
+// drawn to. The intermisison screen should be 4:3, except in 320x200 mode.
+//
+static int F_GetHeight()
+{
+	int surface_width = I_GetPrimarySurface()->getWidth();
+	int surface_height = I_GetPrimarySurface()->getHeight();
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		return surface_height;
+
+	if (surface_width * 3 >= surface_height * 4)
+		return surface_height;
+	else
+		return surface_width * 3 / 4;
+}
+
 
 //
 // F_StartFinale
@@ -107,6 +152,9 @@ void F_StartFinale (char *music, char *flat, const char *text)
 //
 void STACK_ARGS F_ShutdownFinale()
 {
+	if (cast_surface)
+		I_FreeSurface(cast_surface);
+	cast_surface = NULL;
 }
 
 
@@ -187,34 +235,32 @@ extern patch_t *hu_font[HU_FONTSIZE];
 
 void F_TextWrite (void)
 {
-	int 		w;
-	int 		count;
-	const char*		ch;
-	int 		c;
-	int 		cx;
-	int 		cy;
-
 	// erase the entire screen to a tiled background
-	int lump = W_CheckNumForName (finaleflat, ns_flats);
-	if (lump >= 0)
-		screen->FlatFill(0,0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), (byte*)W_CacheLumpNum(lump, PU_CACHE));
-	else
-		screen->Clear(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), argb_t(0, 0, 0));
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	primary_surface->clear();		// ensure black background in matted modes
 
-	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
+	int width = F_GetWidth();
+	int height = F_GetHeight();
+	int x = (primary_surface->getWidth() - width) / 2;
+	int y = (primary_surface->getHeight() - height) / 2;
+
+	int lump = W_CheckNumForName(finaleflat, ns_flats);
+	if (lump >= 0)
+		screen->FlatFill(x, y, width + x, height + y, (byte*)W_CacheLumpNum(lump, PU_CACHE));
+
+	V_MarkRect(x, y, width, height);
 
 	// draw some of the text onto the screen
-	cx = 10;
-	cy = 10;
-	ch = finaletext;
+	int cx = 10, cy = 10;
+	const char* ch = finaletext;
 
 	if (finalecount < 11)
 		return;
 
-	count = (finalecount - 10)/TEXTSPEED;
+	int count = (finalecount - 10) / TEXTSPEED;
 	for ( ; count ; count-- )
 	{
-		c = *ch++;
+		int c = *ch++;
 		if (!c)
 			break;
 		if (c == '\n')
@@ -225,17 +271,17 @@ void F_TextWrite (void)
 		}
 
 		c = toupper(c) - HU_FONTSTART;
-		if (c < 0 || c> HU_FONTSIZE)
+		if (c < 0 || c > HU_FONTSIZE)
 		{
 			cx += 4;
 			continue;
 		}
 
-		w = hu_font[c]->width();
-		if (cx+w > I_GetSurfaceWidth())
+		int w = hu_font[c]->width();
+		if (cx + w > width)
 			break;
-		screen->DrawPatchClean (hu_font[c], cx, cy);
-		cx+=w;
+		screen->DrawPatchClean(hu_font[c], cx, cy);
+		cx += w;
 	}
 
 }
@@ -321,6 +367,9 @@ void F_StartCast (void)
 	castonmelee = 0;
 	castattacking = false;
 	S_ChangeMusic("d_evil", true);
+
+	if (!cast_surface)
+		cast_surface = I_AllocateSurface(320, 200, 8);
 }
 
 
@@ -464,32 +513,37 @@ BOOL F_CastResponder (event_t* ev)
 //
 // F_CastDrawer
 //
-void F_CastDrawer (void)
+void F_CastDrawer()
 {
-	spritedef_t*		sprdef;
-	spriteframe_t*		sprframe;
-	int 				lump;
-	BOOL	 			flip;
-	patch_t*			patch;
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	primary_surface->clear();		// ensure black background in matted modes
 
-	// erase the entire screen to a background
-	screen->DrawPatchIndirect (W_CachePatch ("BOSSBACK"), 0, 0);
+	const patch_t* background_patch = W_CachePatch("BOSSBACK");
 
-	screen->DrawTextClean (CR_RED,
-		(I_GetSurfaceWidth() - V_StringWidth (castorder[castnum].name) * CleanXfac)/2,
-		(I_GetSurfaceHeight() * 180) / 200, castorder[castnum].name);
+	// draw the background to the surface
+	cast_surface->getDefaultCanvas()->DrawPatch(background_patch, 0, 0);
 
 	// draw the current frame in the middle of the screen
-	sprdef = &sprites[castsprite];
-	sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
-	lump = sprframe->lump[0];
-	flip = (BOOL)sprframe->flip[0];
+	const spritedef_t* sprdef = &sprites[castsprite];
+	const spriteframe_t* sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
 
-	patch = W_CachePatch (lump);
-	if (flip)
-		screen->DrawPatchFlipped (patch, 160, 170);
+	const patch_t* sprite_patch = W_CachePatch(sprframe->lump[0]);
+	if (sprframe->flip[0])
+		cast_surface->getDefaultCanvas()->DrawPatchFlipped(sprite_patch, 160, 170);
 	else
-		screen->DrawPatchIndirect (patch, 160, 170);
+		cast_surface->getDefaultCanvas()->DrawPatch(sprite_patch, 160, 170);
+
+	int width = F_GetWidth();
+	int height = F_GetHeight();
+	int x = (primary_surface->getWidth() - width) / 2;
+	int y = (primary_surface->getHeight() - height) / 2;
+
+	primary_surface->blit(cast_surface, 0, 0, 320, 200, x, y, width, height);
+
+	screen->DrawTextClean(CR_RED,
+		x + (width - CleanXfac * V_StringWidth(castorder[castnum].name)) / 2,
+		y + (height * 180 / 200),
+		castorder[castnum].name);
 }
 
 

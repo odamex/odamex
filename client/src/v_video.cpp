@@ -201,25 +201,32 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 // aspect ratio. Pillarboxing is used in widescreen resolutions.
 void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 {
-	int width = mSurface->getWidth(), height = mSurface->getHeight();
-	Clear(0, 0, width, height, argb_t(0, 0, 0));
+	mSurface->clear();
 
-	if (width == 320 && height == 200)
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+
+	int destw, desth;
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 	{
-		DrawPatch(patch, 0, 0);
+		destw = surface_width; 
+		desth = surface_height; 
 	}
-	else if (width * 3 > height * 4)
+	else if (surface_width * 3 >= surface_height * 4)
 	{
-		// widescreen resolution - draw pic in 4:3 ratio in center of screen
-		int picwidth = 4 * height / 3;
-		int picheight = height;
-		DrawPatchStretched(patch, (width - picwidth) / 2, 0, picwidth, picheight);
+		destw = surface_height * 4 / 3;
+		desth = surface_height;
 	}
 	else
 	{
-		// 4:3 resolution - draw pic to the entire screen
-		DrawPatchStretched(patch, 0, 0, width, height);
+		destw = surface_width;
+		desth = surface_width * 3 / 4;
 	}
+
+	int x = (surface_width - destw) / 2;
+	int y = (surface_height - desth) / 2;
+
+	DrawPatchStretched(patch, x, y, destw, desth);
 }
 
 
