@@ -45,6 +45,7 @@
 #include "i_input.h"
 #include "cl_netgraph.h"
 #include "hu_mousegraph.h"
+#include "am_map.h"
 
 #include "hu_drawers.h"
 #include "hu_elements.h"
@@ -341,8 +342,8 @@ static void HU_DrawCrosshair()
 	if (camera->player && (camera->player->cheats & CF_CHASECAM))
 		return;
 
-    // Don't draw the crosshair in overlay mode
-    if (automapactive && viewactive)
+    // Don't draw the crosshair when automap is visible.
+	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
         return;
 
 	// Don't draw the crosshair in spectator mode

@@ -770,6 +770,9 @@ BEGIN_COMMAND (togglemap)
 
 	if (automapactive)
 		AM_initColors(viewactive);
+
+	// status bar is drawn in classic automap
+	ST_ForceRefresh();
 }
 END_COMMAND (togglemap)
 
@@ -1651,9 +1654,13 @@ void AM_drawCrosshair (am_color_t color)
 		PUTDOTD(f_w/2, (f_h+1)/2, color.rgb);
 }
 
-void AM_Drawer (void)
+
+//
+// AM_Drawer
+//
+void AM_Drawer()
 {
-	if (!automapactive)
+	if (!AM_ClassicAutomapVisible() && !AM_OverlayAutomapVisible())
 		return;
 
 	IWindowSurface* surface = I_GetPrimarySurface();
@@ -1661,10 +1668,8 @@ void AM_Drawer (void)
 
 	fb = surface->getBuffer();
 
-	if (!viewactive)
+	if (AM_ClassicAutomapVisible())
 	{
-		// [RH] Set f_? here now to handle automap overlaying
-		// and view size adjustments.
 		f_x = f_y = 0;
 		f_w = surface_width;
 		f_h = ST_StatusBarY(surface_width, surface_height);
@@ -1674,12 +1679,13 @@ void AM_Drawer (void)
 	}
 	else
 	{
-		f_x = viewwindowx;
-		f_y = viewwindowy;
-		f_w = viewwidth;
-		f_h = viewheight;
+		f_x = R_ViewWindowX(surface_width, surface_height);
+		f_y = R_ViewWindowY(surface_width, surface_height);
+		f_w = R_ViewWidth(surface_width, surface_height);
+		f_h = R_ViewHeight(surface_width, surface_height);
 		f_p = surface->getPitch();
 	}
+
 	AM_activateNewScale();
 
 	if (grid)

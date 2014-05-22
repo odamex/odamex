@@ -43,6 +43,7 @@
 #include "i_video.h"
 #include "m_vectors.h"
 #include "f_wipe.h"
+#include "am_map.h"
 
 void R_BeginInterpolation(fixed_t amount);
 void R_EndInterpolation();
@@ -1121,6 +1122,52 @@ static void R_InitLightTables(int surface_width, int surface_height)
 
 
 //
+// R_ViewWidth
+//
+int R_ViewWidth(int width, int height)
+{
+	if (setblocks == 10 || setblocks == 11 || setblocks == 12)
+		return width;
+	else
+		return (setblocks * width / 10) & ~15;
+}
+
+
+//
+// R_ViewHeight
+//
+int R_ViewHeight(int width, int height)
+{
+	if (setblocks == 11 || setblocks == 12)
+		return height;
+	else if (setblocks == 10)
+		return ST_StatusBarY(width, height);
+	else
+		return (setblocks * ST_StatusBarY(width, height) / 10) & ~7;
+}
+
+
+//
+// R_ViewWindowX
+//
+int R_ViewWindowX(int width, int height)
+{
+	return (width - R_ViewWidth(width, height)) / 2;
+}
+
+
+//
+// R_ViewWindowY
+//
+int R_ViewWindowY(int width, int height)
+{
+	if (setblocks == 10 || setblocks == 11 || setblocks == 12)
+		return 0;
+	else
+		return (ST_StatusBarY(width, height) - R_ViewHeight(width, height)) / 2;
+}
+
+//
 // R_InitViewWindow
 //
 // Initializes the renderer variables and tables that are dependent upon
@@ -1140,30 +1187,15 @@ void R_InitViewWindow()
 	surface->lock();
 
 	// Calculate viewwidth & viewheight based on the amount of window border 
-	if (setblocks == 11 || setblocks == 12)
-	{
-		viewwidth = surface_width; 
-		viewheight = surface_height;
+	viewwidth = R_ViewWidth(surface_width, surface_height);
+	viewheight = R_ViewHeight(surface_width, surface_height);
+	viewwindowx = R_ViewWindowX(surface_width, surface_height);
+	viewwindowy = R_ViewWindowY(surface_width, surface_height);
+
+	if (setblocks == 10 || setblocks == 11 || setblocks == 12)
 		freelookviewheight = surface_height; 
-		viewwindowx = (surface_width - viewwidth) / 2;
-		viewwindowy = 0;
-	}
-	else if (setblocks == 10)
-	{
-		viewwidth = surface_width;
-		viewheight = ST_StatusBarY(surface_width, surface_height);
-		freelookviewheight = surface_height;
-		viewwindowx = (surface_width - viewwidth) / 2;
-		viewwindowy = 0;
-	}
 	else
-	{
-		viewwidth = (setblocks * surface_width / 10) & ~15;
-		viewheight = (setblocks * ST_StatusBarY(surface_width, surface_height) / 10) & ~7;
 		freelookviewheight = ((setblocks * surface_height) / 10) & ~7;
-		viewwindowx = (surface_width - viewwidth) / 2;
-		viewwindowy = (ST_StatusBarY(surface_width, surface_height) - viewheight) / 2;
-	}
 
 	centerx = viewwidth / 2;
 	centery = viewheight / 2;
@@ -1239,8 +1271,6 @@ void R_InitViewWindow()
 	R_OldBlend = ~0;
 }
 
-
-bool AM_ClassicAutomapVisible();
 
 //
 // R_BorderVisible

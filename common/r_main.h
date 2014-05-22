@@ -201,6 +201,12 @@ IWindowSurface* R_GetRenderingSurface();
 bool R_BorderVisible();
 bool R_StatusBarVisible();
 
+int R_ViewWidth(int width, int height);
+int R_ViewHeight(int width, int height);
+int R_ViewWindowX(int width, int height);
+int R_ViewWindowY(int width, int height);
+
+
 // Initialize multires stuff for renderer
 void R_InitViewWindow();
 
