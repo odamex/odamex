@@ -359,6 +359,7 @@ void ISDL12Window::setWindowIcon()
 
 	#else
 
+/*
 	texhandle_t icon_handle = texturemanager.getHandle("ICON", Texture::TEX_PNG);
 	const Texture* icon_texture = texturemanager.getTexture(icon_handle);
 	const int icon_width = icon_texture->getWidth(), icon_height = icon_texture->getHeight();
@@ -380,6 +381,7 @@ void ISDL12Window::setWindowIcon()
 
 	SDL_WM_SetIcon(icon_sdlsurface, NULL);
 	SDL_FreeSurface(icon_sdlsurface);
+*/
 
 	#endif
 }
