@@ -290,12 +290,16 @@ void FStringTable::LoadNames() const
 {
 	if (LumpNum >= 0)
 	{
-		const byte* lumpdata = (byte*)W_CacheLumpNum(LumpNum, PU_CACHE);
+		byte* lumpdata = new byte[W_LumpLength(LumpNum)];
+		W_ReadLump(LumpNum, lumpdata);
+
 		int nameLen = LESHORT(*(uint16_t*)(lumpdata + 6));
 
 		FlushNames();
 		Names = new byte[nameLen + 4*NumStrings];
 		memcpy(Names, lumpdata + 8, nameLen + 4*NumStrings);
+
+		delete [] lumpdata;
 	}
 }
 
