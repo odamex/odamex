@@ -625,12 +625,15 @@ void OdamexHUD() {
 
 	// Draw warmup state or timer
 	str = hud::Warmup(color);
-	if (!str.empty()) {
+	if (!str.empty())
+	{
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
 		              hud::X_CENTER, hud::Y_BOTTOM,
 		              str.c_str(), color);
-	} else if (hud_timer) {
+	}
+	else if (hud_timer)
+	{
 		str = hud::Timer(color);
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
@@ -845,27 +848,28 @@ void ZDoomHUD() {
 }
 
 // [AM] HUD drawn with the Doom Status Bar.
-void DoomHUD() {
-	int color;
-	std::string str;
+void DoomHUD()
+{
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 	// ST_Y is the number of pixels of viewable space, taking into account the
 	// status bar.  We need to convert this into scaled pixels as best we can.
-	int st_y;
-	if (hud_scale) {
-		st_y = (I_GetSurfaceHeight() - ST_Y) / CleanYfac;
-	} else {
-		st_y = I_GetSurfaceHeight() - ST_Y;
-	}
+	int st_y = (surface_height - ST_StatusBarY(surface_width, surface_height)) / CleanYfac;
+
+	int color;
+	std::string str;
 
 	// Draw warmup state or timer
 	str = hud::Warmup(color);
-	if (!str.empty()) {
+	if (!str.empty())
+	{
 		hud::DrawText(0, st_y + 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
 		              hud::X_CENTER, hud::Y_BOTTOM,
 		              str.c_str(), color);
-	} else if (hud_timer) {
+	}
+	else if (hud_timer)
+	{
 		str = hud::Timer(color);
 		hud::DrawText(0, st_y + 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,

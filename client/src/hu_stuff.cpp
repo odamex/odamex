@@ -686,43 +686,45 @@ void drawHeader(player_t *player, int y) {
 
 	// Right
 	std::string timer, fraglimit, scorelimit;
-	if (gamestate == GS_INTERMISSION) {
+	if (gamestate == GS_INTERMISSION)
 		timer = hud::IntermissionTimer();
-	} else {
+	else
 		timer = hud::Timer(color);
-	}
-	if (timer.empty()) {
+
+	if (timer.empty())
 		timer = "N/A";
-	}
+
 	buffer.clear();
-	if (sv_fraglimit.asInt() == 0) {
+	if (sv_fraglimit.asInt() == 0)
 		buffer.str("N/A");
-	} else {
+	else
+	{
 		buffer.str("");
 		buffer << sv_fraglimit.asInt();
 	}
 	fraglimit = buffer.str();
+
 	buffer.clear();
-	if (sv_scorelimit.asInt() == 0) {
+	if (sv_scorelimit.asInt() == 0)
 		buffer.str("N/A");
-	} else {
+	else
+	{
 		buffer.str("");
 		buffer << sv_scorelimit.asInt();
 	}
 	scorelimit = buffer.str();
 
 	int rw = V_StringWidth("00:00");
-	if (sv_timelimit.asInt() == 0 && gamestate != GS_INTERMISSION) {
+	if (sv_timelimit.asInt() == 0 && gamestate != GS_INTERMISSION)
 		rw = V_StringWidth("N/A");
-	} else if (timer.size() > 5) {
+	else if (timer.size() > 5)
 		rw = V_StringWidth("00:00:00");
-	}
-	if (V_StringWidth(fraglimit.c_str()) > rw) {
+
+	if (V_StringWidth(fraglimit.c_str()) > rw)
 		rw = V_StringWidth(fraglimit.c_str());
-	}
-	if (V_StringWidth(scorelimit.c_str()) > rw) {
+
+	if (V_StringWidth(scorelimit.c_str()) > rw)
 		rw = V_StringWidth(scorelimit.c_str());
-	}
 
 	hud::DrawText(236 - rw, y, hud_scalescoreboard,
 	              hud::X_CENTER, hud::Y_MIDDLE,
