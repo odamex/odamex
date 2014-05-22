@@ -106,10 +106,9 @@ CVAR_FUNC_IMPL(hud_crosshair)
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 
-// Chat
-void HU_Init(void);
-void HU_Drawer (void);
-BOOL HU_Responder (event_t *ev);
+void HU_Init();
+void HU_Drawer();
+BOOL HU_Responder(event_t *ev);
 
 patch_t *hu_font[HU_FONTSIZE];
 patch_t* sbline;
@@ -124,9 +123,9 @@ void HU_TeamScores1 (player_t *player);
 void HU_TeamScores2 (player_t *player);
 
 extern bool HasBehavior;
-extern inline int V_StringWidth (const char *str);
+extern inline int V_StringWidth(const char *str);
 size_t P_NumPlayersInGame();
-static void ShoveChatStr (std::string str, byte who);
+static void ShoveChatStr(std::string str, byte who);
 
 static std::string input_text;
 
@@ -194,7 +193,7 @@ void HU_Init()
 	char buffer[12];
 
 	HU_UnsetChatMode();
-	input_text = "";
+	input_text.clear();
 
 	// load the heads-up font
 	int j = HU_FONTSTART;
@@ -269,7 +268,7 @@ BOOL HU_Responder (event_t *ev)
 	}
 	if (ev->data3 == KEY_ENTER)
 	{
-		ShoveChatStr (input_text, HU_ChatMode() - 1);
+		ShoveChatStr(input_text, HU_ChatMode() - 1);
 		I_DisableKeyRepeat();
 		HU_UnsetChatMode();
 		return true;
@@ -282,7 +281,7 @@ BOOL HU_Responder (event_t *ev)
 	}
 	else if (ev->data1 == KEY_BACKSPACE)
 	{
-		if (input_text.length())
+		if (!input_text.empty())
 			input_text.erase(input_text.end() - 1);
 
 		return true;
@@ -292,7 +291,7 @@ BOOL HU_Responder (event_t *ev)
 		if (c < ' ' || c > '~') // ASCII only please
 			return false;
 
-		if(input_text.length() < MAX_CHATSTR_LEN)
+		if (input_text.length() < MAX_CHATSTR_LEN)
 			input_text += c;
 
 		return true;
@@ -407,12 +406,12 @@ static void HU_DrawChatPrompt()
 	if (!viewactive && gamestate != GS_INTERMISSION)
 	{
 		// Fullscreen automap is visible
-		y = ST_StatusBarHeight(surface_width, surface_height) - (20 * scaledyfac);
+		y = ST_StatusBarY(surface_width, surface_height) - (20 * scaledyfac);
 	}
 	else if (viewactive && R_StatusBarVisible())
 	{
 		// Status bar is visible
-		y = ST_StatusBarHeight(surface_width, surface_height) - (10 * scaledyfac);
+		y = ST_StatusBarY(surface_width, surface_height) - (10 * scaledyfac);
 	}
 	else
 	{
@@ -449,10 +448,10 @@ static void HU_DrawChatPrompt()
 	// draw the prompt, text, and cursor
 	std::string show_text = input_text;
 	show_text += '_';
-	screen->DrawTextStretched (	CR_RED, 0, y, prompt,
-								scaledxfac, scaledyfac);
-	screen->DrawTextStretched (	CR_GREY, promptwidth, y, show_text.c_str() + i,
-								scaledxfac, scaledyfac);
+	screen->DrawTextStretched(CR_RED, 0, y, prompt,
+							scaledxfac, scaledyfac);
+	screen->DrawTextStretched(CR_GREY, promptwidth, y, show_text.c_str() + i,
+							scaledxfac, scaledyfac);
 }
 
 
@@ -550,7 +549,7 @@ BEGIN_COMMAND (messagemode)
 	HU_SetChatMode();
 	C_HideConsole ();
 	I_EnableKeyRepeat();
-	input_text = "";
+	input_text.clear();
 	C_ReleaseKeys();
 }
 END_COMMAND (messagemode)
@@ -573,7 +572,7 @@ BEGIN_COMMAND (messagemode2)
 	HU_SetTeamChatMode();
 	C_HideConsole ();
 	I_EnableKeyRepeat();
-	input_text = "";
+	input_text.clear();
 	C_ReleaseKeys();
 }
 END_COMMAND (messagemode2)

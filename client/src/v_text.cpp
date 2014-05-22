@@ -55,12 +55,12 @@ extern byte *Ranges;
 
 int V_TextScaleXAmount()
 {
-	return int(hud_scaletext);
+	return hud_scaletext.asInt();
 }
 
 int V_TextScaleYAmount()
 {
-	return int(hud_scaletext);
+	return hud_scaletext.asInt();
 }
 
 
