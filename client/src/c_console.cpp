@@ -1658,8 +1658,11 @@ void C_DrawMid()
 
 		const int line_height = 8 * yscale;
 
+		int bottom = R_StatusBarVisible()
+			? ST_StatusBarY(surface_width, surface_height) : surface_height;
+
 		int x = surface_width / 2;
-		int y = 3 * ST_StatusBarY(surface_width, surface_height) / 8 - 4 * yscale * MidLines;
+		int y = (bottom - line_height * MidLines) / 2;
 
 		for (int i = 0; i < MidLines; i++, y += line_height)
 		{
