@@ -856,6 +856,14 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	const char* line_start = outline;
 	const char* line_end = line_start;
 
+	// [SL] the user's message color preference overrides the given color_code
+	if (printlevel >= 0 && printlevel < PRINTLEVELS)
+	{
+		static char printlevel_color_code[4];
+		sprintf(printlevel_color_code, "\\c%c", 'a' + PrintColors[printlevel]);
+		color_code = printlevel_color_code;
+	}
+
 	while (*line_start)
 	{
 		// Find the next line-breaking character (\n or \0) and set
