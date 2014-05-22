@@ -1651,18 +1651,21 @@ void C_DrawMid()
 {
 	if (MidMsg)
 	{
-		int i, line, x, y, xscale, yscale;
+		int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
-		xscale = V_TextScaleXAmount();
-		yscale = V_TextScaleYAmount();
+		int xscale = V_TextScaleXAmount();
+		int yscale = V_TextScaleYAmount();
 
-		y = 8 * yscale;
-		x = I_GetSurfaceWidth() / 2;
-		for (i = 0, line = (ST_Y * 3) / 8 - MidLines * 4 * yscale; i < MidLines; i++, line += y)
+		const int line_height = 8 * yscale;
+
+		int x = surface_width / 2;
+		int y = 3 * ST_StatusBarY(surface_width, surface_height) / 8 - 4 * yscale * MidLines;
+
+		for (int i = 0; i < MidLines; i++, y += line_height)
 		{
 			screen->DrawTextStretched(PrintColors[PRINTLEVELS],
-					x - (MidMsg[i].width >> 1) * xscale,
-					line, (byte *)MidMsg[i].string, xscale, yscale);
+					x - xscale * (MidMsg[i].width / 2),
+					y, (byte *)MidMsg[i].string, xscale, yscale);
 		}
 
 		if (gametic >= MidTicker)
