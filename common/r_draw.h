@@ -299,10 +299,6 @@ enum
 const int MAX_ACS_TRANSLATIONS = 32;
 
 
-
-// [RH] Double view pixels by detail mode
-void R_DetailDouble (void);
-
 // Initialize color translation tables,
 //	for player rendering etc.
 void R_InitTranslationTables (void);
@@ -316,13 +312,9 @@ void R_BuildPlayerTranslation(int player, argb_t dest_color);
 // [Nes] Classic player translation table.
 void R_BuildClassicPlayerTranslation(int player, int color);
 
-
 // If the view size is not full screen, draws a border around it.
 void R_DrawViewBorder (void);
 void R_DrawBorder (int x1, int y1, int x2, int y2);
-
-// [RH] Added for muliresolution support
-void R_InitFuzzTable (void);
 
 
 #endif

@@ -1257,8 +1257,6 @@ void R_InitViewWindow()
 	R_PlaneInitData(surface);
 	R_InitSkyMap();
 
-	R_InitFuzzTable();
-
 	dcol.pitch = surface->getPitch();
 	dspan.colsize = 1;
 

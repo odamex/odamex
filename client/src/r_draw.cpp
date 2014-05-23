@@ -121,61 +121,44 @@ void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, in
 class FuzzTable
 {
 public:
-	FuzzTable()
-	{
-		refresh();
-	}	
+	FuzzTable() : pos(0) { }
 
-	void refresh()
-	{
-		if (I_VideoInitialized())
-		{
-			static const signed char initial_table[FuzzTable::size] = {
-				1,-1, 1,-1, 1, 1,-1, 1,
-				1,-1, 1, 1, 1,-1, 1, 1,
-				1,-1,-1,-1,-1, 1,-1,-1,
-				1, 1, 1, 1,-1, 1,-1, 1,
-				1,-1,-1, 1, 1,-1,-1,-1,
-			   -1, 1, 1, 1, 1,-1, 1, 1,
-			   -1, 1, 1, 1,-1, 1, 1, 1,
-			   -1, 1, 1,-1, 1, 1,-1, 1 };
-
-			int pitch = I_GetPrimarySurface()->getPitchInPixels();
-			for (size_t i = 0; i < FuzzTable::size; i++)
-				table[i] = initial_table[i] * pitch;
-		}
-
-		pos = 0;
-	}
-
-	void incrementRow()
+	forceinline void incrementRow()
 	{
 		pos = (pos + 1) % FuzzTable::size;
 	}
 
-	void incrementColumn()
+	forceinline void incrementColumn()
 	{
 		pos = (pos + 3) % FuzzTable::size;
 	}
 
-	int getValue() const
+	forceinline int getValue() const
 	{
-		return table[pos];
+		// [SL] quickly convert the table value (-1 or 1) into (-pitch or pitch).
+		int pitch = R_GetRenderingSurface()->getPitchInPixels();
+		int value = table[pos];
+		return (pitch ^ value) + value;
 	}
 
 private:
 	static const size_t size = 64;
-
-	int table[FuzzTable::size];
+	static const int table[FuzzTable::size];
 	int pos;
 };
 
-static FuzzTable fuzztable;
+const int FuzzTable::table[FuzzTable::size] = {
+		1,-1, 1,-1, 1, 1,-1, 1,
+		1,-1, 1, 1, 1,-1, 1, 1,
+		1,-1,-1,-1,-1, 1,-1,-1,
+		1, 1, 1, 1,-1, 1,-1, 1,
+		1,-1,-1, 1, 1,-1,-1,-1,
+	   -1, 1, 1, 1, 1,-1, 1, 1,
+	   -1, 1, 1, 1,-1, 1, 1, 1,
+	   -1, 1, 1,-1, 1, 1,-1, 1 };
 
-void R_InitFuzzTable()
-{
-	fuzztable.refresh();
-}
+
+static FuzzTable fuzztable;
 
 
 // ============================================================================
