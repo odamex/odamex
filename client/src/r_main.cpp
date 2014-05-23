@@ -1258,7 +1258,6 @@ void R_InitViewWindow()
 	R_InitSkyMap();
 
 	dcol.pitch = surface->getPitch();
-	dspan.colsize = 1;
 
 	surface->unlock();
 

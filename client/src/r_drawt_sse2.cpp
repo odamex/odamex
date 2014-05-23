@@ -141,12 +141,6 @@ void R_DrawSpanD_SSE2 (void)
 	int 				count;
 	int 				spot;
 
-	if (dspan.colsize > 1)
-	{
-		R_DrawSpanD_c();
-		return;
-	}
-
 #ifdef RANGECHECK
 	if (dspan.x2 < dspan.x1
 		|| dspan.x1 < 0
@@ -179,7 +173,7 @@ void R_DrawSpanD_SSE2 (void)
 		// Lookup pixel from flat texture tile,
 		//  re-index using light/colormap.
 		*dest = dspan.colormap.shade(dspan.source[spot]);
-		dest += dspan.colsize;
+		dest++;
 
 		// Next step in u,v.
 		xfrac += xstep;
@@ -226,7 +220,7 @@ void R_DrawSpanD_SSE2 (void)
 			// Lookup pixel from flat texture tile,
 			//  re-index using light/colormap.
 			*dest = dspan.colormap.shade(dspan.source[spot]);
-			dest += dspan.colsize;
+			dest++;
 
 			// Next step in u,v.
 			xfrac += xstep;
@@ -237,12 +231,6 @@ void R_DrawSpanD_SSE2 (void)
 
 void R_DrawSlopeSpanD_SSE2 (void)
 {
-	if (dspan.colsize > 1)
-	{
-		R_DrawSlopeSpanD_c();
-		return;
-	}
-
 	int count = dspan.x2 - dspan.x1 + 1;
 	if (count <= 0)
 		return;
@@ -268,7 +256,6 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	// texture data
 	byte *src = (byte *)dspan.source;
 
-	const int colsize = dspan.colsize;
 	int ltindex = 0;		// index into the lighting table
 
 	// Blit the bulk in batches of SPANJUMP columns:
@@ -300,7 +287,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		{
 			const shaderef_t &colormap = dspan.slopelighting[ltindex++];
 			*dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
-			dest += colsize;
+			dest++;
 			ufrac += ustep;
 			vfrac += vstep;
 			incount--;
@@ -342,7 +329,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 				const shaderef_t &colormap = dspan.slopelighting[ltindex++];
 				const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 				*dest = colormap.shade(src[spot]);
-				dest += colsize;
+				dest++;
 
 				ufrac += ustep;
 				vfrac += vstep;
@@ -380,7 +367,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		{
 			const shaderef_t &colormap = dspan.slopelighting[ltindex++];
 			*dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
-			dest += colsize;
+			dest++;
 			ufrac += ustep;
 			vfrac += vstep;
 		}

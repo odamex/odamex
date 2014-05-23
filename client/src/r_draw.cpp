@@ -630,7 +630,6 @@ static forceinline void R_FillSpanGeneric(PIXEL_T* dest, const drawspan_t& draws
 #endif
 
 	int color = drawspan.color;
-	int colsize = drawspan.colsize;
 	int count = drawspan.x2 - drawspan.x1 + 1;
 	if (count <= 0)
 		return;
@@ -639,7 +638,7 @@ static forceinline void R_FillSpanGeneric(PIXEL_T* dest, const drawspan_t& draws
 
 	do {
 		colorfunc(color, dest);
-		dest += colsize;
+		dest++;
 	} while (--count);
 }
 
@@ -664,7 +663,6 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& 
 #endif
 
 	palindex_t* source = drawspan.source;
-	int colsize = drawspan.colsize;
 	int count = drawspan.x2 - drawspan.x1 + 1;
 	if (count <= 0)
 		return;
@@ -684,7 +682,7 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& 
 		//  re-index using light/colormap.
 
 		colorfunc(source[spot], dest);
-		dest += colsize;
+		dest++;
 
 		// Next step in u,v.
 		xfrac += xstep;
@@ -718,7 +716,6 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 #endif
 
 	palindex_t* source = drawspan.source;
-	int colsize = drawspan.colsize;
 	int count = drawspan.x2 - drawspan.x1 + 1;
 	if (count <= 0)
 		return;
@@ -760,7 +757,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 
 			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 			colorfunc(source[spot], dest);
-			dest += colsize;
+			dest++;
 			ufrac += ustep;
 			vfrac += vstep;
 		}
@@ -796,7 +793,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 
 			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 			colorfunc(source[spot], dest);
-			dest += colsize;
+			dest++;
 			ufrac += ustep;
 			vfrac += vstep;
 		}
@@ -819,7 +816,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 // buffer.
 //
 // The functors are instantiated with a shaderef_t* parameter (typically
-// dcol.colormap or ds_colormap) that will be used to shade the pixel.
+// dcol.colormap or dspan.colormap) that will be used to shade the pixel.
 //
 // ----------------------------------------------------------------------------
 
@@ -1119,7 +1116,7 @@ void R_DrawColumnHorizP()
 // R_FillSpanP
 //
 // Fills a span in the 8bpp palettized screen buffer with a solid color,
-// determined by ds_color. Performs no shading.
+// determined by dspan.color. Performs no shading.
 //
 void R_FillSpanP()
 {
@@ -1130,8 +1127,8 @@ void R_FillSpanP()
 // R_FillTranslucentSpanP
 //
 // Fills a span in the 8bpp palettized screen buffer with a solid color,
-// determined by ds_color using translucency. Shading is performed 
-// using ds_colormap.
+// determined by dspan.color using translucency. Shading is performed 
+// using dspan.colormap.
 //
 void R_FillTranslucentSpanP()
 {
@@ -1142,7 +1139,7 @@ void R_FillTranslucentSpanP()
 // R_DrawSpanP
 //
 // Renders a span for a level plane to the 8bpp palettized screen buffer from
-// the source buffer ds_source. Shading is performed using ds_colormap.
+// the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
 void R_DrawSpanP()
 {
@@ -1153,7 +1150,7 @@ void R_DrawSpanP()
 // R_DrawSlopeSpanP
 //
 // Renders a span for a sloped plane to the 8bpp palettized screen buffer from
-// the source buffer ds_source. Shading is performed using ds_colormap.
+// the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
 void R_DrawSlopeSpanP()
 {
@@ -1176,7 +1173,7 @@ void R_DrawSlopeSpanP()
 // buffer.
 //
 // The functors are instantiated with a shaderef_t* parameter (typically
-// dcol.colormap or ds_colormap) that will be used to shade the pixel.
+// dcol.colormap or dspan.colormap) that will be used to shade the pixel.
 //
 // ----------------------------------------------------------------------------
 
@@ -1405,7 +1402,7 @@ void R_DrawTlatedLucentColumnD()
 // R_FillSpanD
 //
 // Fills a span in the 32bpp ARGB8888 screen buffer with a solid color,
-// determined by ds_color. Performs no shading.
+// determined by dspan.color. Performs no shading.
 //
 void R_FillSpanD()
 {
@@ -1416,8 +1413,8 @@ void R_FillSpanD()
 // R_FillTranslucentSpanD
 //
 // Fills a span in the 32bpp ARGB8888 screen buffer with a solid color,
-// determined by ds_color using translucency. Shading is performed 
-// using ds_colormap.
+// determined by dspan.color using translucency. Shading is performed 
+// using dspan.colormap.
 //
 void R_FillTranslucentSpanD()
 {
@@ -1428,7 +1425,7 @@ void R_FillTranslucentSpanD()
 // R_DrawSpanD
 //
 // Renders a span for a level plane to the 32bpp ARGB8888 screen buffer from
-// the source buffer ds_source. Shading is performed using ds_colormap.
+// the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
 void R_DrawSpanD_c()
 {
@@ -1439,7 +1436,7 @@ void R_DrawSpanD_c()
 // R_DrawSlopeSpanD
 //
 // Renders a span for a sloped plane to the 32bpp ARGB8888 screen buffer from
-// the source buffer ds_source. Shading is performed using ds_colormap.
+// the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
 void R_DrawSlopeSpanD_c()
 {

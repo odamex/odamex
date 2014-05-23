@@ -57,7 +57,6 @@ typedef struct
 	int					y;
 	int					x1;
 	int					x2;
-	int					colsize;
 
 	dsfixed_t			xfrac;
 	dsfixed_t			yfrac;
@@ -250,33 +249,6 @@ extern void (*rtv_lucent4colsD)(byte *source, argb_t *dest, int bga, int fga);
 extern void (*R_DrawSpanD)(void);
 extern void (*R_DrawSlopeSpanD)(void);
 extern void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
-
-extern "C" int				ds_colsize;		// [RH] Distance between columns
-
-extern "C" int				ds_y;
-extern "C" int				ds_x1;
-extern "C" int				ds_x2;
-
-extern "C" shaderef_t		ds_colormap;
-
-extern "C" dsfixed_t		ds_xfrac;
-extern "C" dsfixed_t		ds_yfrac;
-extern "C" dsfixed_t		ds_xstep;
-extern "C" dsfixed_t		ds_ystep;
-
-// start of a 64*64 tile image
-extern "C" byte*			ds_source;
-
-extern "C" int				ds_color;		// [RH] For flat color (no texturing)
-
-// [SL] 2012-03-19 - For sloped planes
-extern "C" float			ds_iu;
-extern "C" float			ds_iv;
-extern "C" float			ds_iustep;
-extern "C" float			ds_ivstep;
-extern "C" float			ds_id;
-extern "C" float			ds_idstep;
-extern "C" shaderef_t		slopelighting[MAXWIDTH];
 
 extern byte*			translationtables;
 extern argb_t           translationRGB[MAXPLAYERS+1][16];
