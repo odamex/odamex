@@ -417,29 +417,22 @@ void D_PageTicker (void)
 void D_PageDrawer()
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
 	primary_surface->clear();		// ensure black background in matted modes
 
 	if (page_surface)
 	{
 		int destw, desth;
 
-		if (primary_surface->getWidth() * 3 >= primary_surface->getHeight() * 4)
-		{
-			desth = primary_surface->getHeight();
-			destw = desth * 8 / 6;
-		}
-		else
-		{
-			destw = primary_surface->getWidth();
-			desth = destw * 6 / 8;
-		}
-
 		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
-			destw = primary_surface->getWidth(), desth = primary_surface->getHeight();
+			destw = surface_width, desth = surface_height;
+		else if (surface_width * 3 >= surface_height * 4)
+			destw = surface_height * 4 / 3, desth = surface_height;
+		else
+			destw = surface_width, desth = surface_width * 3 / 4;
 
 		primary_surface->blit(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
-				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
-				destw, desth);
+				(surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth);
 	}
 }
 
@@ -565,7 +558,7 @@ void D_DoAdvanceDemo (void)
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-			canvas->DrawPatchFullScreen(patch);
+			canvas->DrawPatch(patch, 0, 0);
 			page_surface->unlock();
 		}
 	}

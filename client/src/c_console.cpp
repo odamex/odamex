@@ -1297,12 +1297,14 @@ void C_FullConsole()
 {
 	// SoM: disconnect effect.
 	if (gamestate == GS_LEVEL && ConsoleState == c_up && !menuactive)
-		C_ServerDisconnectEffect();
+		screen->Dim(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
 	if (demoplayback)
 		G_CheckDemoStatus();
 	advancedemo = false;
+
 	ConsoleState = c_down;
+
 	TabbedLast = false;
 	if (gamestate != GS_STARTUP)
 	{
@@ -1356,14 +1358,6 @@ void C_HideConsole()
 	}
 }
 
-
-
-// SoM
-// Setup the server disconnect effect.
-void C_ServerDisconnectEffect()
-{
-   screen->Dim(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
-}
 
 
 static bool C_HandleKey(const event_t* ev)
