@@ -854,7 +854,9 @@ void DoomHUD()
 
 	// ST_Y is the number of pixels of viewable space, taking into account the
 	// status bar.  We need to convert this into scaled pixels as best we can.
-	int st_y = (surface_height - ST_StatusBarY(surface_width, surface_height)) / CleanYfac;
+	int st_y = surface_height - ST_StatusBarY(surface_width, surface_height);
+	if (hud_scale)
+		st_y /= CleanYfac;
 
 	int color;
 	std::string str;
