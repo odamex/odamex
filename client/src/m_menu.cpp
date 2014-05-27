@@ -1193,6 +1193,8 @@ void M_DrawSlider (int x, int y, float min, float max, float cur);
 static const char *genders[3] = { "male", "female", "cyborg" };
 static state_t *PlayerState;
 static int PlayerTics;
+int CL_GetPlayerColor(player_t*);
+
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_team)
@@ -1200,9 +1202,8 @@ EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_autoaim)
 
-void M_PlayerSetup (int choice)
+void M_PlayerSetup(int choice)
 {
-	choice = 0;
 	strcpy(savegamestrings[0], cl_name.cstring());
 	M_SetupNextMenu (&PSetupDef);
 	PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
@@ -1212,10 +1213,8 @@ void M_PlayerSetup (int choice)
 		fire_surface = I_AllocateSurface(fire_surface_width, fire_surface_height, 8);
 
 	// [Nes] Intialize the player preview color.
-	R_BuildPlayerTranslation(0, V_GetColorFromString(NULL, cl_color.cstring()));
-
-	if (consoleplayer().ingame())
-		R_CopyTranslationRGB (0, consoleplayer_id);
+	argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+	R_BuildPlayerTranslation(0, player_color);
 }
 
 static void M_PlayerSetupTicker (void)
@@ -1224,11 +1223,10 @@ static void M_PlayerSetupTicker (void)
 	if (--PlayerTics > 0)
 		return;
 
-	if (PlayerState->tics == -1 || PlayerState->nextstate == S_NULL) {
+	if (PlayerState->tics == -1 || PlayerState->nextstate == S_NULL)
 		PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
-	} else {
+	else
 		PlayerState = &states[PlayerState->nextstate];
-	}
 	PlayerTics = PlayerState->tics;
 }
 
@@ -1409,8 +1407,9 @@ static void M_PlayerSetupDrawer (void)
 
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
+		argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+		R_BuildPlayerTranslation(0, player_color);
 		V_ColorMap = translationref_t(translationtables, 0);
-		//V_ColorMap = translationtables + consoleplayer().id * 256;
 
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
 			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
@@ -1569,18 +1568,23 @@ static void M_PlayerTeamChanged (int choice)
 }
 */
 
-static void SendNewColor (int red, int green, int blue)
+static void SendNewColor(int red, int green, int blue)
 {
 	char command[24];
 
-	sprintf (command, "cl_color \"%02x %02x %02x\"", red, green, blue);
-	AddCommandString (command);
+	sprintf(command, "cl_color \"%02x %02x %02x\"", red, green, blue);
+	AddCommandString(command);
 
-	// [Nes] Change the player preview color.
-	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
+	// [SL] not connected to a server so we don't have to wait for the server
+	// to verify the color choice
+	if (!connected)
+	{
+		// [Nes] Change the player preview color.
+		R_BuildPlayerTranslation(0, V_GetColorFromString (NULL, cl_color.cstring()));
 
-	if (consoleplayer().ingame())
-		R_CopyTranslationRGB(0, consoleplayer_id);
+		if (consoleplayer().ingame())
+			R_CopyTranslationRGB(0, consoleplayer_id);
+	}
 }
 
 static void M_SlidePlayerRed(int choice)

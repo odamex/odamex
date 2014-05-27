@@ -931,15 +931,8 @@ bool SV_SetupUserInfo(player_t &player)
 	if (gender < 0 || gender >= NUMGENDER)
 		gender = GENDER_NEUTER;
 
-	if (aimdist < 0)
-		aimdist = 0;
-	if (aimdist > (fixed_t)(5000 * 16384))
-		aimdist = (fixed_t)(5000 * 16384);
-
-	if (update_rate < 1)
-		update_rate = 1;
-	else if (update_rate > 3)
-		update_rate = 3;
+	aimdist = clamp(aimdist, 0, 5000 * 16384);
+	update_rate = clamp((int)update_rate, 1, 3);
 
 	if (switchweapon >= WPSW_NUMTYPES || switchweapon < 0)
 		switchweapon = WPSW_ALWAYS;
@@ -951,14 +944,6 @@ bool SV_SetupUserInfo(player_t &player)
 	player.userinfo.aimdist			= aimdist;
 	player.userinfo.switchweapon	= switchweapon;
 	memcpy(player.userinfo.weapon_prefs, weapon_prefs, sizeof(weapon_prefs));
-
-	// [SL] 2011-12-02 - Prevent players from spamming certain userinfo updates
-	if (player.userinfo.next_change_time > gametic)
-	{
-		// Send the client's actual userinfo back to them so they can reset it
-		SV_SendUserInfo (player, &player.client);
-		return true;
-	}
 
 	player.userinfo.gender			= gender;
 	player.userinfo.team			= new_team;
@@ -1054,9 +1039,6 @@ bool SV_SetupUserInfo(player_t &player)
 				player.userinfo.netname.c_str(), team_names[new_team]);
 		}
 	}
-
-	// [SL] 2011-12-02 - Player can update all preferences again in 5 seconds
-	player.userinfo.next_change_time = gametic + 5 * TICRATE;
 
 	return true;
 }

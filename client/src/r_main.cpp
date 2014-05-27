@@ -68,7 +68,6 @@ EXTERN_CVAR (sv_allowwidescreen)
 EXTERN_CVAR (vid_320x200)
 EXTERN_CVAR (vid_640x400)
 
-static float	LastFOV = 0.0f;
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
 float			xfoc;		// FIXEDFLOAT(FocalLengthX)
@@ -590,50 +589,6 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 	}
 }
 
-
-
-//
-// R_SetFOV
-//
-// Changes the field of view based on widescreen mode availibility.
-//
-void R_SetFOV(float fov, bool force = false)
-{
-	fov = clamp(fov, 1.0f, 179.0f);
-
-	if (fov == LastFOV && force == false)
-		return;
- 
-	LastFOV = fov;
-	FieldOfView = int(fov * FINEANGLES / 360.0f);
-
-	if (V_UseWidescreen() || V_UseLetterBox())
-	{
-		float am = float(I_GetSurfaceWidth()) / float(I_GetSurfaceHeight()) / (4.0f / 3.0f);
-		float radfov = fov * PI / 180.0f;
-		float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
-		CorrectFieldOfView = int(widefov * FINEANGLES / 360.0f);
-	}
-	else
- 	{
-		CorrectFieldOfView = FieldOfView;
- 	}
-
-	R_ForceViewWindowResize();
-}
-
-//
-//
-// R_GetFOV
-//
-// Returns the current field of view in degrees
-//
-//
-
-float R_GetFOV (void)
-{
-	return LastFOV;
-}
 
 
 //
