@@ -110,7 +110,6 @@ extern QWORD testingmode;
 extern bool setsizeneeded;
 extern bool setmodeneeded;
 extern int NewWidth, NewHeight, NewBits;
-EXTERN_CVAR (st_scale)
 extern BOOL gameisdead;
 extern BOOL demorecording;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
@@ -308,7 +307,7 @@ void D_Display()
 			if (I_GetEmulatedSurface())
 				I_BlitEmulatedSurface();
 
-			if (automapactive)
+			if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
 				AM_Drawer();
 
 			C_DrawMid();
@@ -344,7 +343,7 @@ void D_Display()
 		patch_t *pause = W_CachePatch ("M_PAUSE");
 		int y;
 
-		y = (automapactive && !viewactive) ? 4 : viewwindowy + 4;
+		y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
 		screen->DrawPatchCleanNoMove (pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
 	}
 

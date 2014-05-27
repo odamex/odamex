@@ -276,7 +276,7 @@ static int 	grid = 0;
 
 static int 	leveljuststarted = 1; 	// kluge until AM_LevelInit() is called
 
-BOOL		automapactive = false;
+static bool	automapactive = false;
 
 // location of window on screen
 static int	f_x;

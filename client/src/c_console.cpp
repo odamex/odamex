@@ -66,7 +66,6 @@ static bool TabbedLast;		// Last key pressed was tab
 static IWindowSurface* background_surface;
 
 extern int		gametic;
-extern BOOL		automapactive;	// in AM_map.c
 extern BOOL		advancedemo;
 
 static unsigned int		ConRows, ConCols, PhysRows;
@@ -1728,18 +1727,24 @@ void C_DrawGMid()
 {
 	if (GameMsg)
 	{
-		int i, line, x, y, xscale, yscale;
+		int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
-		xscale = V_TextScaleXAmount();
-		yscale = V_TextScaleYAmount();
+		int xscale = V_TextScaleXAmount();
+		int yscale = V_TextScaleYAmount();
 
-		y = 8 * yscale;
-		x = I_GetSurfaceWidth() / 2;
-		for (i = 0, line = (ST_Y * 2) / 8 - GameLines * 4 * yscale;i < GameLines; i++, line += y)
+		const int line_height = 8 * yscale;
+
+		int bottom = R_StatusBarVisible()
+			? ST_StatusBarY(surface_width, surface_height) : surface_height;
+
+		int x = surface_width / 2;
+		int y = (bottom - line_height * GameLines) / 2;
+
+		for (int i = 0; i < GameLines; i++, y += line_height)
 		{
 			screen->DrawTextStretched(GameColor,
-			                          x - (GameMsg[i].width >> 1) * xscale,
-			                          line, (byte *)GameMsg[i].string, xscale, yscale);
+					x - xscale * (GameMsg[i].width / 2),
+					y, (byte*)GameMsg[i].string, xscale, yscale);
 		}
 
 		if (gametic >= GameTicker)

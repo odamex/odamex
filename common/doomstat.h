@@ -108,7 +108,6 @@ EXTERN_CVAR (sv_gametype)
 //	status bar explicitely.
 extern	BOOL			statusbaractive;
 
-extern	BOOL			automapactive;	// In AutoMap mode?
 extern	BOOL			menuactive; 	// Menu overlayed?
 extern	BOOL			paused; 		// Game Pause?
 

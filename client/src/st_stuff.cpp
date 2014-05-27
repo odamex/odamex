@@ -53,26 +53,23 @@
 #include "p_ctf.h"
 
 
-// ST_Start() has just been called
 static bool st_needrefresh = true;
+
+static bool st_stopped = true;
+
 
 // lump number for PLAYPAL
 static int		lu_palette;
 
-EXTERN_CVAR(idmypos)
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
-
-// [RH] Needed when status bar scale changes
-extern bool setsizeneeded;
-extern BOOL automapactive;
 
 // [RH] Status bar background
 IWindowSurface* stbar_surface;
 IWindowSurface* stnum_surface;
 
 // functions in st_new.c
-void ST_initNew (void);
+void ST_initNew();
 void ST_unloadNew (void);
 void ST_newDraw (void);
 void ST_newDrawCTF (void);
@@ -497,21 +494,10 @@ int ST_StatusBarY(int surface_width, int surface_height)
 //
 // ST_ForceRefresh
 //
-// Recalculate the status bar dimensions and refresh the status bar graphics.
 //
 void ST_ForceRefresh()
 {
-	IWindowSurface* surface = R_GetRenderingSurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
-
-	ST_WIDTH = ST_StatusBarWidth(surface_width, surface_height);
-	ST_HEIGHT = ST_StatusBarHeight(surface_width, surface_height);
-
-	ST_X = ST_StatusBarX(surface_width, surface_height);
-	ST_Y = ST_StatusBarY(surface_width, surface_height);
-
 	st_needrefresh = true;
-	st_statusbaron = R_StatusBarVisible();
 }
 
 
@@ -563,7 +549,7 @@ bool ST_Responder (event_t *ev)
 		{
 		case AM_MSGENTERED:
 			st_gamestate = AutomapState;
-			st_needrefresh = true;
+			ST_ForceRefresh();
 			break;
 
 		case AM_MSGEXITED:
@@ -1302,47 +1288,44 @@ void ST_drawWidgets(bool force_refresh)
 // ST_refreshBackground
 //
 // Draws the status bar background to an off-screen 320x32 buffer.
-///
+//
 static void ST_refreshBackground()
 {
-	if (st_statusbaron)
+	IWindowSurface* surface = R_GetRenderingSurface();
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+
+	// [RH] If screen is wider than the status bar, draw stuff around status bar.
+	if (surface_width > ST_WIDTH)
 	{
-		IWindowSurface* surface = R_GetRenderingSurface();
-		int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+		R_DrawBorder(0, ST_Y, ST_X, surface_height);
+		R_DrawBorder(surface_width - ST_X, ST_Y, surface_width, surface_height);
+	}
 
-		// [RH] If screen is wider than the status bar, draw stuff around status bar.
-		if (surface_width > ST_WIDTH)
+	DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
+	stbar_canvas->DrawPatch(sbar, 0, 0);
+
+	if (sv_gametype == GM_CTF)
+	{
+		stbar_canvas->DrawPatch(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
+		stbar_canvas->DrawPatch(flagbox, ST_FLGBOXX, ST_FLGBOXY);
+	}
+	else if (sv_gametype == GM_COOP)
+	{
+		stbar_canvas->DrawPatch(armsbg, ST_ARMSBGX, ST_ARMSBGY);
+	}
+
+	if (multiplayer)
+	{
+		if (!demoplayback || !democlassic)
 		{
-			R_DrawBorder(0, ST_Y, ST_X, surface_height);
-			R_DrawBorder(surface_width - ST_X, ST_Y, surface_width, surface_height);
+			// [RH] Always draw faceback with the player's color
+			//		using a translation rather than a different patch.
+			V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
+			stbar_canvas->DrawTranslatedPatch(faceback, ST_FX, ST_FY);
 		}
-
-		DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
-		stbar_canvas->DrawPatch(sbar, 0, 0);
-
-		if (sv_gametype == GM_CTF)
+		else
 		{
-			stbar_canvas->DrawPatch(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
-			stbar_canvas->DrawPatch(flagbox, ST_FLGBOXX, ST_FLGBOXY);
-		}
-		else if (sv_gametype == GM_COOP)
-		{
-			stbar_canvas->DrawPatch(armsbg, ST_ARMSBGX, ST_ARMSBGY);
-		}
-
-		if (multiplayer)
-		{
-			if (!demoplayback || !democlassic)
-			{
-				// [RH] Always draw faceback with the player's color
-				//		using a translation rather than a different patch.
-				V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
-				stbar_canvas->DrawTranslatedPatch(faceback, ST_FX, ST_FY);
-			}
-			else
-			{
-				stbar_canvas->DrawPatch(faceclassic[displayplayer_id - 1], ST_FX, ST_FY);
-			}
+			stbar_canvas->DrawPatch(faceclassic[displayplayer_id - 1], ST_FX, ST_FY);
 		}
 	}
 }
@@ -1351,10 +1334,35 @@ static void ST_refreshBackground()
 //
 // ST_Drawer
 //
+// If st_scale is disabled, the status bar is drawn directly to the rendering
+// surface, with stbar_surface (the status bar background) being blitted to the
+// rendering surface without scaling and then all of the widgets being drawn
+// on top of it.
+//
+// If st_scale is enabled, the status bar is drawn to an unscaled 320x32 pixel
+// off-screen surface stnum_surface. First stbar_surface (the status bar
+// background) is blitted to stnum_surface, then the widgets are then drawn
+// on top of it. Finally, stnum_surface is blitted onto the rendering surface
+// using scaling to match the size in 320x200 resolution.
+//
+// Now ST_Drawer recalculates the ST_WIDTH, ST_HEIGHT, ST_X, and ST_Y globals.
+//
 void ST_Drawer()
 {
+	if (st_needrefresh)
+		st_statusbaron = R_StatusBarVisible();
+
 	if (st_statusbaron)
 	{
+		IWindowSurface* surface = R_GetRenderingSurface();
+		int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+
+		ST_WIDTH = ST_StatusBarWidth(surface_width, surface_height);
+		ST_HEIGHT = ST_StatusBarHeight(surface_width, surface_height);
+
+		ST_X = ST_StatusBarX(surface_width, surface_height);
+		ST_Y = ST_StatusBarY(surface_width, surface_height);
+
 		stbar_surface->lock();
 		stnum_surface->lock();
 
@@ -1367,8 +1375,7 @@ void ST_Drawer()
 				stnum_surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
 						0, 0, stnum_surface->getWidth(), stnum_surface->getHeight());
 			else
-				R_GetRenderingSurface()->blit(stbar_surface,
-						0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
+				surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
 						ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 		}
 		
@@ -1376,24 +1383,16 @@ void ST_Drawer()
 		ST_drawWidgets(st_needrefresh);
 
 		if (st_scale)
-			R_GetRenderingSurface()->blit(stnum_surface,
-					0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
+			surface->blit(stnum_surface, 0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
 					ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);	
-
-		st_needrefresh = false;
 
 		stbar_surface->unlock();
 		stnum_surface->unlock();
-	}
 
-	// [RH] Hey, it's somewhere to put the idmypos stuff!
-	if (idmypos)
-		Printf (PRINT_HIGH, "ang=%d;x,y,z=(%d,%d,%d)\n",
-				displayplayer().camera->angle/FRACUNIT,
-				displayplayer().camera->x/FRACUNIT,
-				displayplayer().camera->y/FRACUNIT,
-				displayplayer().camera->z/FRACUNIT);
+		st_needrefresh = false;
+	}
 }
+
 
 static patch_t *LoadFaceGraphic (char *name, int namespc)
 {
@@ -1568,31 +1567,6 @@ void ST_unloadData(void)
 	ST_unloadNew();
 }
 
-void ST_initData(void)
-{
-	st_needrefresh = true;
-
-	st_gamestate = FirstPersonState;
-
-	st_statusbaron = true;
-	st_oldchat = st_chat = false;
-	st_cursoron = false;
-
-	st_faceindex = 0;
-
-	st_oldhealth = -1;
-
-	for (int i = 0; i < NUMWEAPONS; i++)
-		oldweaponsowned[i] = displayplayer().weaponowned[i];
-
-	for (int i = 0; i < 3; i++)
-		keyboxes[i] = -1;
-
-	STlib_init();
-	ST_initNew();
-}
-
-
 
 void ST_createWidgets(void)
 {
@@ -1755,19 +1729,34 @@ void ST_createWidgets(void)
 
 }
 
-static BOOL	st_stopped = true;
-
-
 void ST_Start()
 {
 	if (!st_stopped)
 		ST_Stop();
 
-	ST_initData();
+	ST_ForceRefresh();
+
+	st_gamestate = FirstPersonState;
+
+	st_statusbaron = true;
+	st_oldchat = st_chat = false;
+	st_cursoron = false;
+
+	st_faceindex = 0;
+
+	st_oldhealth = -1;
+
+	for (int i = 0; i < NUMWEAPONS; i++)
+		oldweaponsowned[i] = displayplayer().weaponowned[i];
+
+	for (int i = 0; i < 3; i++)
+		keyboxes[i] = -1;
+
+	STlib_init();
+	ST_initNew();
+
 	ST_createWidgets();
 	st_stopped = false;
-	st_needrefresh = true;
-	st_scale.Set(st_scale.cstring());
 }
 
 void ST_Stop()

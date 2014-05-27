@@ -80,6 +80,7 @@ EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(sv_maxplayers)
 EXTERN_CVAR(noisedebug)
 EXTERN_CVAR(screenblocks)
+EXTERN_CVAR(idmypos)
 
 
 static int crosshair_lump;
@@ -464,24 +465,30 @@ void HU_Drawer()
 	if (noisedebug)
 		S_NoiseDebug();
 
-	bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
-
-	if ((viewactive && !R_StatusBarVisible()) || spechud)
+	if (gamestate == GS_LEVEL)
 	{
-		if (screenblocks < 12)
+		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
+
+		if ((viewactive && !R_StatusBarVisible()) || spechud)
 		{
-			if (spechud)
-				hud::SpectatorHUD();
-			else if (hud_fullhudtype >= 1)
-				hud::OdamexHUD();
-			else
-				hud::ZDoomHUD();
+			if (screenblocks < 12)
+			{
+				if (spechud)
+					hud::SpectatorHUD();
+				else if (hud_fullhudtype >= 1)
+					hud::OdamexHUD();
+				else
+					hud::ZDoomHUD();
+			}
+		}
+		else
+		{
+			hud::DoomHUD();
 		}
 	}
-	else
-	{
-		hud::DoomHUD();
-	}
+
+	// Draw Netdemo info
+	hud::drawNetdemo();
 
 	// [AM] Voting HUD!
 	ST_voteDraw(11 * CleanYfac);
@@ -499,10 +506,7 @@ void HU_Drawer()
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
 	// denis - moved to hu_stuff and uncommented
 	if (noservermsgs && (gamestate == GS_INTERMISSION || gamestate == GS_LEVEL))
-	{
-		patch_t *netlag = W_CachePatch("NET");
-		screen->DrawPatchCleanNoMove (netlag, 50*CleanXfac, CleanYfac);
-	}
+		screen->DrawPatchCleanNoMove(W_CachePatch("NET"), 50 * CleanXfac, 1 * CleanYfac);
 
 	if (cl_netgraph)
 		netgraph.draw();
@@ -510,8 +514,16 @@ void HU_Drawer()
 	if (hud_mousegraph)
 		mousegraph.draw(hud_mousegraph);
 
+	if (idmypos && gamestate == GS_LEVEL)
+		Printf (PRINT_HIGH, "ang=%d;x,y,z=(%d,%d,%d)\n",
+				displayplayer().camera->angle/FRACUNIT,
+				displayplayer().camera->x/FRACUNIT,
+				displayplayer().camera->y/FRACUNIT,
+				displayplayer().camera->z/FRACUNIT);
+
 	// Ch0wW: Crosshair is always the last element drawn on the screen
-	HU_DrawCrosshair();
+	if (gamestate == GS_LEVEL)
+		HU_DrawCrosshair();
 }
 
 static void ShoveChatStr (std::string str, byte who)

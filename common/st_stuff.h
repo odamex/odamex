@@ -77,6 +77,8 @@ void ST_drawStatusBar (void);
 
 namespace hud {
 
+void drawNetdemo();
+
 // [ML] New Odamex fullscreen HUD
 void OdamexHUD(void);
 

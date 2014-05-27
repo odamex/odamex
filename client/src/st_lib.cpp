@@ -47,9 +47,6 @@
 #include "m_swap.h"
 
 
-// in AM_map.c
-extern BOOL			automapactive;
-
 //
 // Hack display negative frags.
 //	Loads and store the stminus lump.

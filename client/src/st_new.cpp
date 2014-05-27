@@ -95,7 +95,6 @@ int V_TextScaleYAmount();
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_timer)
 EXTERN_CVAR (hud_targetcount)
-EXTERN_CVAR (st_scale)
 EXTERN_CVAR (sv_fraglimit)
 
 void ST_unloadNew (void)
@@ -681,9 +680,6 @@ void OdamexHUD() {
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
-
-	// Draw Netdemo info
-	hud::drawNetdemo();
 }
 
 // [AM] Spectator HUD.
@@ -729,9 +725,6 @@ void SpectatorHUD() {
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
-
-	// Draw Netdemo info
-	hud::drawNetdemo();
 }
 
 // [AM] Original ZDoom HUD
@@ -842,9 +835,6 @@ void ZDoomHUD() {
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               1, 0);
-
-	// Draw Netdemo info
-	hud::drawNetdemo();
 }
 
 // [AM] HUD drawn with the Doom Status Bar.
@@ -891,9 +881,6 @@ void DoomHUD()
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               1, hud_targetcount);
-
-	// Draw Netdemo info
-	hud::drawNetdemo();
 }
 
 }

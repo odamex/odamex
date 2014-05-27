@@ -270,7 +270,6 @@ EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (cl_autorecord)
 EXTERN_CVAR (cl_splitnetdemos)
-EXTERN_CVAR (st_scale)
 
 void CL_PlayerTimes (void);
 void CL_GetServerSettings(void);
@@ -3376,8 +3375,6 @@ void CL_Clear()
 	size_t left = MSG_BytesLeft();
 	MSG_ReadChunk(left);
 }
-
-EXTERN_CVAR (st_scale)
 
 void CL_Spectate()
 {
