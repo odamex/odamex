@@ -918,9 +918,12 @@ BEGIN_COMMAND (fov)
 		return;
 
 	if (argc != 2)
-		Printf (PRINT_HIGH, "fov is %g\n", m_Instigator->player->fov);
+		Printf(PRINT_HIGH, "fov is %g\n", m_Instigator->player->fov);
 	else
-		m_Instigator->player->fov = atof (argv[1]);
+	{
+		m_Instigator->player->fov = clamp((float)atof(argv[1]), 45.0f, 135.0f);
+		R_ForceViewWindowResize();
+	}
 }
 END_COMMAND (fov)
 

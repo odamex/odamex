@@ -107,7 +107,6 @@ void D_DoAdvanceDemo (void);
 void D_DoomLoop (void);
 
 extern QWORD testingmode;
-extern bool setsizeneeded;
 extern bool setmodeneeded;
 extern int NewWidth, NewHeight, NewBits;
 extern BOOL gameisdead;
@@ -242,29 +241,13 @@ void D_Display()
 			I_FatalError("Could not change screen mode");
 
 		// Recalculate various view parameters.
-		setsizeneeded = true;
+		R_ForceViewWindowResize();
 
 		// Refresh the console.
 		C_NewModeAdjust();
 	}
 
-	// [AM] Moved to below setmodeneeded so we have accurate screen size info.
-	if (gamestate == GS_LEVEL && viewactive && consoleplayer().camera)
-	{
-		if (consoleplayer().camera->player)
-			R_SetFOV(consoleplayer().camera->player->fov, setmodeneeded || setsizeneeded);
-		else
-			R_SetFOV(90.0f, setmodeneeded || setsizeneeded);
-	}
-
-	// change the view size if needed
-	if (setsizeneeded)
-	{
-		R_InitViewWindow();
-		ST_ForceRefresh();
-	}
-
-	setmodeneeded = setsizeneeded = false;
+	setmodeneeded = false;
 
 	I_BeginUpdate();
 
@@ -299,8 +282,7 @@ void D_Display()
 			V_DoPaletteEffects();
 
 			// Drawn to R_GetRenderingSurface()
-			if (viewactive)
-				R_RenderPlayerView(&displayplayer());
+			R_RenderPlayerView(&displayplayer());
 			R_DrawViewBorder();
 			ST_Drawer();
 
@@ -317,8 +299,6 @@ void D_Display()
 			break;
 
 		case GS_INTERMISSION:
-			if (viewactive)
-				R_RenderPlayerView(&displayplayer());
 			C_DrawMid();
 			CTF_DrawHud();
 			WI_Drawer();

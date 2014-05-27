@@ -207,8 +207,7 @@ int R_ViewWindowX(int width, int height);
 int R_ViewWindowY(int width, int height);
 
 
-// Initialize multires stuff for renderer
-void R_InitViewWindow();
+void R_ForceViewWindowResize();
 
 void R_ResetDrawFuncs();
 void R_SetFuzzDrawFuncs();

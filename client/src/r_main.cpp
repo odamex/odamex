@@ -129,7 +129,7 @@ int 			extralight;
 // [RH] ignore extralight and fullbright
 BOOL			foggy;
 
-bool			setsizeneeded;
+static bool		setsizeneeded = true;
 int				setblocks;
 
 fixed_t			freelookviewheight;
@@ -153,6 +153,7 @@ fixed_t			render_lerp_amount;
 byte*			ylookup[MAXHEIGHT];
 int				columnofs[MAXWIDTH];
 
+static void R_InitViewWindow();
 
 //
 // R_GetRenderingSurface
@@ -604,7 +605,7 @@ void R_SetFOV(float fov, bool force = false)
 		CorrectFieldOfView = FieldOfView;
  	}
 
-	setsizeneeded = true;
+	R_ForceViewWindowResize();
 }
 
 //
@@ -629,10 +630,9 @@ float R_GetFOV (void)
 // of a refresh. The change will take effect next refresh.
 //
 //
-
 void R_SetViewSize(int blocks)
 {
-	setsizeneeded = true;
+	R_ForceViewWindowResize();
 	setblocks = blocks;
 }
 
@@ -1023,11 +1023,33 @@ void R_SetTranslatedLucentDrawFuncs()
 
 
 //
+// R_ForceViewWindowResize
+//
+// Tells the renderer to recalculate all of the viewing window dimensions
+// and any lookup tables dependent on those dimensions prior to rendering
+// the next frame.
+//
+void R_ForceViewWindowResize()
+{
+	setsizeneeded = true;
+}
+
+
+//
 // R_RenderPlayerView
 //
-void R_RenderPlayerView(player_t *player)
+void R_RenderPlayerView(player_t* player)
 {
-	IWindowSurface* surface = R_GetRenderingSurface();
+	// Recalculate the viewing window dimensions, if needed.
+	if (setsizeneeded)
+	{
+		R_InitViewWindow();
+		ST_ForceRefresh();
+		setsizeneeded = false;
+	}
+
+	if (!viewactive)
+		return;
 
 	R_SetupFrame(player);
 
@@ -1039,6 +1061,8 @@ void R_RenderPlayerView(player_t *player)
 	R_ClearSprites();
 
 	R_ResetDrawFuncs();
+
+	IWindowSurface* surface = R_GetRenderingSurface();
 
 	// [SL] fill the screen with a blinking solid color to make HOM more visible
 	if (r_flashhom)
@@ -1167,6 +1191,7 @@ int R_ViewWindowY(int width, int height)
 		return (ST_StatusBarY(width, height) - R_ViewHeight(width, height)) / 2;
 }
 
+
 //
 // R_InitViewWindow
 //
@@ -1175,7 +1200,7 @@ int R_ViewWindowY(int width, int height)
 //
 // This replaces R_ExecuteSetViewSize and R_MultiresInit.
 //
-void R_InitViewWindow()
+static void R_InitViewWindow()
 {
 	IWindowSurface* surface = R_GetRenderingSurface();
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
@@ -1209,7 +1234,26 @@ void R_InitViewWindow()
 	else
 		yaspectmul = 320 * 3 * FRACUNIT / (200 * 4);
 
-	// Calculate focal length so FieldOfView angles covers viewwidth.
+	// Calculate FieldOfView and CorrectFieldOfView
+	float desired_fov = 90.0f;
+	if (consoleplayer().camera && consoleplayer().camera->player)
+		desired_fov = clamp(consoleplayer().camera->player->fov, 45.0f, 135.0f);
+
+	FieldOfView = int(desired_fov * FINEANGLES / 360.0f);
+
+	if (V_UseWidescreen() || V_UseLetterBox())
+	{
+		float am = (3.0f * I_GetSurfaceWidth()) / (4.0f * I_GetSurfaceHeight());
+		float radfov = desired_fov * PI / 180.0f;
+		float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
+		CorrectFieldOfView = int(widefov * FINEANGLES / 360.0f);
+	}
+	else
+ 	{
+		CorrectFieldOfView = FieldOfView;
+ 	}
+
+	// Calculate focal length so CorrectFieldOfView angles covers viewwidth.
 	fovtan = finetangent[FINEANGLES/4 + CorrectFieldOfView/2];
 	FocalLengthX = FixedDiv(centerxfrac, fovtan);
 	FocalLengthY = FixedDiv(FixedMul(centerxfrac, yaspectmul), fovtan);
@@ -1289,7 +1333,6 @@ bool R_StatusBarVisible()
 {
 	return setblocks <= 10 || AM_ClassicAutomapVisible();
 }
-
 
 
 VERSION_CONTROL (r_main_cpp, "$Id$")

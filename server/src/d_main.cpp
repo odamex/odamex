@@ -105,7 +105,6 @@ extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
 
 extern int testingmode;
-extern bool setsizeneeded;
 extern bool setmodeneeded;
 extern BOOL netdemo;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;

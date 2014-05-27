@@ -496,7 +496,7 @@ void CL_CheckDisplayPlayer()
 		// The status bar needs to be refreshed as well because the status bar face
 		// widget background color changes.
 		if (idplayer(newid).spectator != idplayer(previd).spectator)
-			setsizeneeded = true;
+			R_ForceViewWindowResize();
 		ST_ForceRefresh();
 	}
 
@@ -3405,7 +3405,7 @@ void CL_Spectate()
 
 	if (&player == &consoleplayer())
 	{
-		setsizeneeded = true;	// toggline spectator mode affects status bar visibility
+		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
 
 		if (player.spectator)
 		{
