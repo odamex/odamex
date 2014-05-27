@@ -527,16 +527,8 @@ IVideoMode IWindow::getClosestMode(int width, int height)
 //
 static IVideoMode I_ClampVideoMode(int width, int height)
 {
-	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
-	{
-		if (width < 320 || width < 200)
-			width = 320, height = 200;
-	}
-	else
-	{
-		if (width < 320 || height < 240)
-			width = 320, height = 240;
-	}
+	if (width < 320 || height < 200)
+		width = 320, height = 200;
 
 	if (width > MAXWIDTH || height > MAXHEIGHT)
 	{
@@ -633,6 +625,10 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 	// Ensure matted surface dimensions are sane and sanitized.
 	IVideoMode surface_mode = I_ClampVideoMode(surface_width, surface_height);
 	surface_width = surface_mode.getWidth(), surface_height = surface_mode.getHeight();
+
+	if ((surface_width < 320 || surface_height < 240) && 
+		!I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		surface_width = 320, surface_height = 240;
 
 	// Is matting being used? Create matted_surface based on the primary_surface.
 	if (surface_width != primary_surface->getWidth() ||
