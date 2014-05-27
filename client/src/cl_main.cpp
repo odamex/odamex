@@ -491,6 +491,12 @@ void CL_CheckDisplayPlayer()
 		MSG_WriteByte(&net_buffer, newid);
 		displayplayer_id = newid;
 
+		// Changing display player can sometimes affect status bar visibility
+		// since the status bar isn't visible when display player is a spectator.
+		// The status bar needs to be refreshed as well because the status bar face
+		// widget background color changes.
+		if (idplayer(newid).spectator != idplayer(previd).spectator)
+			setsizeneeded = true;
 		ST_ForceRefresh();
 	}
 
@@ -1362,15 +1368,13 @@ void CL_SetupUserInfo(void)
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
 
+	int color = CL_GetPlayerColor(p);
+	R_BuildPlayerTranslation (p->id, color);
+
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?
 	// [SL] 2012-05-24 - Were we spectating a teammate before we changed teams?
 	CL_CheckDisplayPlayer();
-
-	int color = CL_GetPlayerColor(p);
-	R_BuildPlayerTranslation (p->id, color);
-
-	ST_ForceRefresh();
 }
 
 
