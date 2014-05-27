@@ -31,6 +31,7 @@
 #include "c_cvars.h"
 #include "i_music.h"
 #include "r_draw.h"
+#include "st_stuff.h"
 
 //
 //		SCREEN WIPE PACKAGE
@@ -504,6 +505,8 @@ void Wipe_Drawer()
 		if (wipe_draw_func)
 			wipe_draw_func();	
 		V_MarkRect(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
+
+		ST_ForceRefresh();		// wipe draws over the status bar so it needs to be redrawn
 	}
 }
 
