@@ -34,5 +34,7 @@ void Wipe_Start();
 bool Wipe_Ticker();
 void Wipe_Drawer();
 
+extern int NoWipe;
+
 #endif
 

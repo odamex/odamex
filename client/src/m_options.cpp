@@ -1006,7 +1006,6 @@ menu_t AutomapMenu = {
  *
  *=======================================*/
 
-extern bool setmodeneeded;
 extern int NewWidth, NewHeight, NewBits;
 
 QWORD testingmode;		// Holds time to revert to old mode
@@ -1188,7 +1187,7 @@ void M_RestoreMode (void)
 	NewWidth = OldWidth;
 	NewHeight = OldHeight;
 	NewBits = OldBits;
-	setmodeneeded = true;
+	V_ForceVideoModeAdjustment();
 	testingmode = 0;
 	SetModesMenu(OldWidth, OldHeight, OldBits);
 }
@@ -2149,7 +2148,7 @@ void M_OptResponder (event_t *ev)
 					NewHeight = I_GetVideoHeight();
 				}
 				NewBits = (int)vid_32bpp ? 32 : 8;
-				setmodeneeded = true;
+				V_ForceVideoModeAdjustment();
 				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				vid_defwidth.Set ((float)NewWidth);
 				vid_defheight.Set ((float)NewHeight);
@@ -2233,7 +2232,7 @@ void M_OptResponder (event_t *ev)
 					OldHeight = I_GetVideoHeight();
 					OldBits = I_GetVideoBitDepth();
 					NewBits = (int)vid_32bpp ? 32 : 8;
-					setmodeneeded = true;
+					V_ForceVideoModeAdjustment();
 					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
 					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 					SetModesMenu(NewWidth, NewHeight, NewBits);

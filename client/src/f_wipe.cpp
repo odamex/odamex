@@ -48,6 +48,9 @@ typedef enum
 
 static bool in_progress = false;
 
+int NoWipe;			// [RH] Don't wipe when travelling in hubs
+					// [RH] Allow wipe? (Needs to be set each time)
+
 static wipe_type_t current_wipe_type;
 EXTERN_CVAR (r_wipetype)
 
@@ -417,6 +420,8 @@ void Wipe_Stop()
 		delete [] wipe_screen;
 		wipe_screen = NULL;
 	}
+
+	NoWipe = 0;
 }
 
 //

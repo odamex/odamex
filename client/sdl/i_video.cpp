@@ -78,22 +78,22 @@ EXTERN_CVAR(vid_defheight)
 
 CVAR_FUNC_IMPL(vid_overscan)
 {
-	setmodeneeded = true;
+	V_ForceVideoModeAdjustment();
 }
 
 CVAR_FUNC_IMPL(vid_320x200)
 {
-	setmodeneeded = true;
+	V_ForceVideoModeAdjustment();
 }
 
 CVAR_FUNC_IMPL(vid_640x400)
 {
-	setmodeneeded = true;
+	V_ForceVideoModeAdjustment();
 }
 
 CVAR_FUNC_IMPL(vid_vsync)
 {
-	setmodeneeded = true;
+	V_ForceVideoModeAdjustment();
 }
 
 

@@ -445,6 +445,9 @@ extern palindex_t RGB32k[32][32][32];
 void V_Init();
 void STACK_ARGS V_Close();
 
+void V_ForceVideoModeAdjustment();
+void V_AdjustVideoMode();
+
 // The color to fill with for #4 and #5 above
 extern int V_ColorFill;
 

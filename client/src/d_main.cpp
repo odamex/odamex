@@ -107,17 +107,14 @@ void D_DoAdvanceDemo (void);
 void D_DoomLoop (void);
 
 extern QWORD testingmode;
-extern bool setmodeneeded;
 extern int NewWidth, NewHeight, NewBits;
 extern BOOL gameisdead;
 extern BOOL demorecording;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
-extern int NoWipe;			// [RH] Don't wipe when travelling in hubs
 
 BOOL devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
-int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
 static bool wiping_screen = false;
 
 char startmap[8];
@@ -224,30 +221,7 @@ void D_Display()
 
 	BEGIN_STAT(D_Display);
 
-	// [RH] change the screen mode if needed
-	if (setmodeneeded)
-	{
-		// [SL] surface buffer address will be changing
-		// so just end the screen-wipe
-		if (wiping_screen)
-		{
-			Wipe_Stop();
-			wiping_screen = false;
-			NoWipe = 0;
-		}
-
-		// Change screen mode.
-		if (!V_SetResolution(NewWidth, NewHeight, NewBits))
-			I_FatalError("Could not change screen mode");
-
-		// Recalculate various view parameters.
-		R_ForceViewWindowResize();
-
-		// Refresh the console.
-		C_NewModeAdjust();
-	}
-
-	setmodeneeded = false;
+	V_AdjustVideoMode();
 
 	I_BeginUpdate();
 
@@ -812,8 +786,6 @@ void D_DoomMain()
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	D_Init();
 	atterm(D_Shutdown);
-
-	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks();

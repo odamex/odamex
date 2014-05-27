@@ -210,9 +210,6 @@ extern	BOOL	 		precache;
 //	to force a wipe on the next draw
 extern gamestate_t wipegamestate;
 
-// denis - is this from hexen?
-extern bool setmodeneeded;
-
 EXTERN_CVAR (mouse_sensitivity) // removeme // ?
 
 // Needed to store the number of the dummy sky flat.

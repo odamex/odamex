@@ -59,12 +59,32 @@
 #include "c_dispatch.h"
 #include "cmdlib.h"
 
+#include "f_wipe.h"
+
 IMPLEMENT_CLASS (DCanvas, DObject)
 
 argb_t Col2RGB8[65][256];
 palindex_t RGB32k[32][32][32];
 
 void I_FlushInput();
+
+
+// [RH] Set true when vid_setmode command has been executed
+static bool setmodeneeded = false;
+// [RH] Resolution to change to when setmodeneeded is true
+int		NewWidth, NewHeight, NewBits;
+
+//
+//	V_ForceVideoModeAdjustment
+//
+// Tells the video subsystem to change the video mode and recalculate any
+// lookup tables dependent on the video mode prior to drawing the next frame.
+//
+void V_ForceVideoModeAdjustment()
+{
+	setmodeneeded = true;
+}
+
 
 // [RH] The framebuffer is no longer a mere byte array.
 // There's also only one, not four.
@@ -105,14 +125,9 @@ CVAR_FUNC_IMPL (vid_maxfps)
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (ui_dimcolor)
 
-// [RH] Set true when vid_setmode command has been executed
-bool	setmodeneeded = false;
-// [RH] Resolution to change to when setmodeneeded is true
-int		NewWidth, NewHeight, NewBits;
-
 CVAR_FUNC_IMPL (vid_fullscreen)
 {
-	setmodeneeded = true;
+	V_ForceVideoModeAdjustment();
 	NewWidth = I_GetVideoWidth();
 	NewHeight = I_GetVideoHeight();
 	NewBits = I_GetVideoBitDepth();
@@ -120,7 +135,7 @@ CVAR_FUNC_IMPL (vid_fullscreen)
 
 CVAR_FUNC_IMPL (vid_32bpp)
 {
-	setmodeneeded = true;
+	V_ForceVideoModeAdjustment();
 	NewBits = (int)vid_32bpp ? 32 : 8;
 }
 
@@ -432,12 +447,12 @@ static void BuildTransTable(const argb_t* palette_colors)
 
 CVAR_FUNC_IMPL (vid_widescreen)
 {
-	setmodeneeded = true;
+	V_ForceVideoModeAdjustment();
 }
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {
-	setmodeneeded = true;
+	V_ForceVideoModeAdjustment();
 }
 
 //
@@ -559,7 +574,7 @@ BEGIN_COMMAND(vid_setmode)
 	// near the beginning of D_Display().
 	if (gamestate != GS_STARTUP)
 	{
-		setmodeneeded = true;
+		V_ForceVideoModeAdjustment();
 		NewWidth = width;
 		NewHeight = height;
 		NewBits = bpp;
@@ -615,6 +630,36 @@ void V_Init()
 	C_NewModeAdjust();
 
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
+}
+
+
+//
+// V_AdjustVideoMode
+//
+// Checks if the video mode needs to be changed and calls several video mode
+// dependent initialization routines if it does. This should be called at the
+// start of drawing a video frame.
+//
+void V_AdjustVideoMode()
+{
+	if (setmodeneeded)
+	{
+		// [SL] surface buffer address will be changing
+		// so just end the screen-wipe
+		Wipe_Stop();
+
+		// Change screen mode.
+		if (!V_SetResolution(NewWidth, NewHeight, NewBits))
+			I_FatalError("Could not change screen mode");
+
+		// Refresh the console.
+		C_NewModeAdjust();
+
+		// Recalculate various view parameters.
+		R_ForceViewWindowResize();
+
+		setmodeneeded = false;
+	}
 }
 
 

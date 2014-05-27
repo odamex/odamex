@@ -155,6 +155,20 @@ int				columnofs[MAXWIDTH];
 
 static void R_InitViewWindow();
 
+
+//
+// R_ForceViewWindowResize
+//
+// Tells the renderer to recalculate all of the viewing window dimensions
+// and any lookup tables dependent on those dimensions prior to rendering
+// the next frame.
+//
+void R_ForceViewWindowResize()
+{
+	setsizeneeded = true;
+}
+
+
 //
 // R_GetRenderingSurface
 //
@@ -1019,19 +1033,6 @@ void R_SetTranslatedLucentDrawFuncs()
 		hcolfunc_post1 = rt_tlatelucent1col;
 		hcolfunc_post4 = rt_tlatelucent4cols;
 	}
-}
-
-
-//
-// R_ForceViewWindowResize
-//
-// Tells the renderer to recalculate all of the viewing window dimensions
-// and any lookup tables dependent on those dimensions prior to rendering
-// the next frame.
-//
-void R_ForceViewWindowResize()
-{
-	setsizeneeded = true;
 }
 
 
