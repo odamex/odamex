@@ -3401,7 +3401,7 @@ void CL_Spectate()
 
 	if (&player == &consoleplayer())
 	{
-		ST_ForceRefresh();
+		setsizeneeded = true;	// toggline spectator mode affects status bar visibility
 
 		if (player.spectator)
 		{
