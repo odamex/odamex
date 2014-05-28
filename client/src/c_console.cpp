@@ -856,7 +856,8 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	const char* line_end = line_start;
 
 	// [SL] the user's message color preference overrides the given color_code
-	if (printlevel >= 0 && printlevel < PRINTLEVELS)
+	// ...unless it's supposed to be formatted bold.
+	if (color_code && color_code[2] != '+' && printlevel >= 0 && printlevel < PRINTLEVELS)
 	{
 		static char printlevel_color_code[4];
 		sprintf(printlevel_color_code, "\\c%c", 'a' + PrintColors[printlevel]);
