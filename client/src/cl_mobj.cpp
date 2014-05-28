@@ -92,8 +92,17 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 			R_CopyTranslationRGB(0, player.id);
 	}
 
-	mobj->angle = ANG45 * (mthing->angle/45);
-	mobj->pitch = 0;
+	if (player.deadspectator && player.mo)
+	{
+		mobj->angle = player.mo->angle;
+		mobj->pitch = player.mo->pitch;
+	}
+	else
+	{
+		mobj->angle = ANG45 * (mthing->angle/45);
+		mobj->pitch = 0;
+	}
+
 	mobj->player = &player;
 	mobj->health = player.health;
 
