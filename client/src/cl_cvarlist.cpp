@@ -645,9 +645,6 @@ CVAR(			vid_defwidth, "640", "",
 CVAR(			vid_defheight, "480", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(			vid_defbits, "8", "",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
-
 CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen video modes",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
