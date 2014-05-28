@@ -200,7 +200,11 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 	arc.Write(&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Write(&info.gender, sizeof(info.gender));
 
-	arc << info.aimdist << info.color;
+	arc << info.aimdist;
+
+	// [SL] write the color channels independent of byte ordering
+	byte a = 0, r = info.color.r, g = info.color.g, b = info.color.b;
+	arc << b << g << r << a;
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin = 0;
@@ -210,15 +214,15 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 
 	arc.Write(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Write(info.weapon_prefs, sizeof(info.weapon_prefs));
- 	arc << 0;
+
+	int terminator = 0;
+ 	arc << terminator;
 
 	return arc;
 }
 
 FArchive &operator>> (FArchive &arc, UserInfo &info)
 {
-	int dummy;
-
 	char netname[MAXPLAYERNAME+1];
 	arc.Read(netname, sizeof(netname));
 	info.netname = netname;
@@ -228,10 +232,10 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 
 	arc >> info.aimdist;
 
-	// [SL] can't read argb_t directly so read unsigned and convert
-	unsigned int colortemp;
-	arc >> colortemp;
-	info.color = colortemp;
+	// [SL] read the color channels independent of byte ordering
+	byte a, r, g, b;
+	arc >> b >> g >> r >> a;
+	info.color = argb_t(a, r, g, b);
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin;
@@ -241,7 +245,9 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 
 	arc.Read(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Read(info.weapon_prefs, sizeof(info.weapon_prefs));
-	arc >> dummy;
+
+	int terminator;
+	arc >> terminator;	// 0
 
 	return arc;
 }
