@@ -38,6 +38,7 @@
 #include "doomstat.h"
 #include "r_sky.h"
 
+#include "cmdlib.h"
 
 #include "r_data.h"
 
@@ -761,11 +762,13 @@ void R_InitSpriteLumps (void)
 }
 
 
-static struct FakeCmap
+struct FakeCmap
 {
-	char name[9];
+	std::string name;
 	unsigned int blend;
-} *fakecmaps;
+};
+
+static FakeCmap* fakecmaps = NULL;
 
 size_t numfakecmaps;
 int firstfakecmap;
@@ -786,14 +789,13 @@ void R_ForceDefaultColormap(const char* name)
 	BuildDefaultShademap(V_GetDefaultPalette(), realcolormaps);
 #endif
 
-	strncpy(fakecmaps[0].name, name, 9); // denis - todo - string limit?
-	std::transform(fakecmaps[0].name, fakecmaps[0].name + strlen(fakecmaps[0].name), fakecmaps[0].name, toupper);
+	fakecmaps[0].name = StdStringToUpper(name, 8); 	// denis - todo - string limit?
 	fakecmaps[0].blend = 0;
 }
 
 void R_SetDefaultColormap(const char* name)
 {
-	if (strnicmp(fakecmaps[0].name, name, 8) != 0)
+	if (strnicmp(fakecmaps[0].name.c_str(), name, 8) != 0)
 		R_ForceDefaultColormap(name);
 }
 
@@ -802,12 +804,11 @@ void R_ReinitColormap()
 	if (fakecmaps == NULL)
 		return;
 
-	const char* name = fakecmaps[0].name;
-
-	if (name[0] == 0)
+	std::string name = fakecmaps[0].name;
+	if (name.empty())
 		name = "COLORMAP";
 
-	R_ForceDefaultColormap(name);
+	R_ForceDefaultColormap(name.c_str());
 }
 
 
@@ -832,7 +833,7 @@ void R_ShutdownColormaps()
 
 	if (fakecmaps)
 	{
-		Z_Free(fakecmaps);
+		delete [] fakecmaps;
 		fakecmaps = NULL;
 	}
 
@@ -861,9 +862,9 @@ void R_InitColormaps()
 
 	realcolormaps.colormap = (byte*)Z_Malloc(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
 	realcolormaps.shademap = (argb_t*)Z_Malloc(256*sizeof(argb_t)*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
-	fakecmaps = (FakeCmap*)Z_Malloc(sizeof(*fakecmaps) * numfakecmaps, PU_STATIC, 0);
 
-	fakecmaps[0].name[0] = 0;
+	fakecmaps = new FakeCmap[numfakecmaps];
+
 	R_ForceDefaultColormap("COLORMAP");
 
 	if (numfakecmaps > 1)
@@ -886,7 +887,10 @@ void R_InitColormaps()
 				int g = pal->basecolors[*map].g;
 				int b = pal->basecolors[*map].b;
 
-				W_GetLumpName (fakecmaps[j].name, i);
+				char name[9];
+				W_GetLumpName(name, i);
+				fakecmaps[j].name = StdStringToUpper(name, 8);
+
 				for (int k = 1; k < 256; k++)
 				{
 					r = (r + pal->basecolors[map[k]].r) >> 1;
