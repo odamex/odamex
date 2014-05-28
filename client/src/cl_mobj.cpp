@@ -58,107 +58,96 @@ void G_PlayerReborn(player_t &player);
 // Most of the player structure stays unchanged
 //	between levels.
 //
-void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
+void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 {
 	// denis - clients should not control spawning
-	if(!serverside)
+	if (!serverside)
 		return;
 
 	// [RH] Things 4001-? are also multiplayer starts. Just like 1-4.
 	//		To make things simpler, figure out which player is being
 	//		spawned here.
-	player_t *p = &player;
 
 	// not playing?
-	if(!p->ingame())
+	if (!player.ingame())
 		return;
 
-	if (p->playerstate == PST_REBORN || p->playerstate == PST_ENTER)
-		G_PlayerReborn (*p);
+	if (player.playerstate == PST_REBORN || player.playerstate == PST_ENTER)
+		G_PlayerReborn(player);
 
-	AActor *mobj;
-	if (player.deadspectator)
-		mobj = new AActor (p->mo->x, p->mo->y, ONFLOORZ, MT_PLAYER);
+	AActor* mobj;
+	if (player.deadspectator && player.mo)
+		mobj = new AActor(player.mo->x, player.mo->y, ONFLOORZ, MT_PLAYER);
 	else
-		mobj = new AActor (mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
+		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
 
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
-	mobj->translation = translationref_t(translationtables + 256*p->id, p->id);
-	if (p->id == consoleplayer_id)
+	mobj->translation = translationref_t(translationtables + 256 * player.id, player.id);
+	if (player.id == consoleplayer_id)
 	{
 		// NOTE(jsd): Copy the player setup menu's translation to the player_id's:
 		// [SL] don't screw with vanilla demo player colors
 		if (!demoplayback)
-			R_CopyTranslationRGB(0, p->id);
+			R_CopyTranslationRGB(0, player.id);
 	}
 
 	mobj->angle = ANG45 * (mthing->angle/45);
 	mobj->pitch = 0;
-	mobj->player = p;
-	mobj->health = p->health;
+	mobj->player = &player;
+	mobj->health = player.health;
 
-	p->fov = 90.0f;
-	p->mo = p->camera = mobj->ptr();
-	p->playerstate = PST_LIVE;
-	p->refire = 0;
-	p->damagecount = 0;
-	p->bonuscount = 0;
-	p->extralight = 0;
-	p->fixedcolormap = 0;
-	p->viewheight = VIEWHEIGHT;
-	p->xviewshift = 0;
-	p->attacker = AActor::AActorPtr();
+	player.fov = 90.0f;
+	player.mo = player.camera = mobj->ptr();
+	player.playerstate = PST_LIVE;
+	player.refire = 0;
+	player.damagecount = 0;
+	player.bonuscount = 0;
+	player.extralight = 0;
+	player.fixedcolormap = 0;
+	player.viewheight = VIEWHEIGHT;
+	player.xviewshift = 0;
+	player.attacker = AActor::AActorPtr();
 
 	consoleplayer().camera = displayplayer().mo;
 
 	// Set up some special spectator stuff
-	if (p->spectator)
+	if (player.spectator)
 	{
 		mobj->translucency = 0;
-		p->mo->flags |= MF_SPECTATOR;
-		p->mo->flags2 |= MF2_FLY;
-		p->mo->flags &= ~MF_SOLID;
+		player.mo->flags |= MF_SPECTATOR;
+		player.mo->flags2 |= MF2_FLY;
+		player.mo->flags &= ~MF_SOLID;
 	}
 
 	// [RH] Allow chasecam for demo watching
 	if ((demoplayback || demonew) && chasedemo)
-		p->cheats = CF_CHASECAM;
+		player.cheats = CF_CHASECAM;
 
 	// setup gun psprite
-	P_SetupPsprites (p);
+	P_SetupPsprites(&player);
 
 	// give all cards in death match mode
 	if (sv_gametype != GM_COOP)
 	{
 		for (int i = 0; i < NUMCARDS; i++)
-			p->cards[i] = true;
+			player.cards[i] = true;
 	}
 
-	if (consoleplayer().camera == p->mo)
-	{
-		// wake up the status bar
-		ST_Start ();
-	}
+	if (consoleplayer().camera == player.mo)
+		ST_Start();	// wake up the status bar
 
 	// [RH] If someone is in the way, kill them
-	P_TeleportMove (mobj, mobj->x, mobj->y, mobj->z, true);
+	P_TeleportMove(mobj, mobj->x, mobj->y, mobj->z, true);
 
 	// [BC] Do script stuff
-	if (serverside)
-    {
-        if (level.behavior != NULL)
-        {
-            if (p->playerstate == PST_ENTER)
-            {
-                level.behavior->StartTypedScripts (SCRIPT_Enter, p->mo);
-            }
-            else if (p->playerstate == PST_REBORN)
-            {
-                level.behavior->StartTypedScripts (SCRIPT_Respawn, p->mo);
-            }
-        }
-    }
+	if (serverside && level.behavior)
+	{
+		if (player.playerstate == PST_ENTER)
+			level.behavior->StartTypedScripts(SCRIPT_Enter, player.mo);
+		else if (player.playerstate == PST_REBORN)
+			level.behavior->StartTypedScripts(SCRIPT_Respawn, player.mo);
+	}
 }
 
 std::vector<AActor*> spawnfountains;
