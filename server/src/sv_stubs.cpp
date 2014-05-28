@@ -42,7 +42,7 @@ std::string V_GetColorStringByName(const std::string& name)
     return ""; 
 }
 
-argb_t V_GetColorFromString(const std::string& str);
+argb_t V_GetColorFromString(const std::string& str)
 {
     return 0;
 }
