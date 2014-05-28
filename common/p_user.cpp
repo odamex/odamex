@@ -794,6 +794,7 @@ void player_s::Serialize (FArchive &arc)
 		arc << id
 			<< playerstate
 			<< spectator
+			<< deadspectator
 			<< cmd
 			<< userinfo
 			<< viewz
@@ -844,6 +845,7 @@ void player_s::Serialize (FArchive &arc)
 		arc >> id
 			>> playerstate
 			>> spectator
+			>> deadspectator
 			>> cmd
 			>> userinfo // Q: Would it be better to restore the userinfo from the archive?
 			>> viewz
