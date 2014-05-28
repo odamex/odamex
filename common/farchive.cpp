@@ -175,52 +175,56 @@ bool FLZOFile::IsOpen () const
 	return !!m_File;
 }
 
-FFile &FLZOFile::Write (const void *mem, unsigned int len)
+FFile& FLZOFile::Write(const void* mem, unsigned int len)
 {
-	if (m_Mode == EWriting)
+	if (m_Mode != EWriting)
 	{
-		if (m_Pos + len > m_MaxBufferSize)
-		{
-			do
-			{
-				m_MaxBufferSize = m_MaxBufferSize ? m_MaxBufferSize * 2 : 16384;
-			}
-			while (m_Pos + len > m_MaxBufferSize);
-			m_Buffer = (byte *)Realloc (m_Buffer, m_MaxBufferSize);
-		}
-		if (len == 1)
-			m_Buffer[m_Pos] = *(BYTE *)mem;
-		else
-			memcpy (m_Buffer + m_Pos, mem, len);
-		m_Pos += len;
-		if (m_Pos > m_BufferSize)
-			m_BufferSize = m_Pos;
+		I_Error("Tried to write to reading LZO file\n");
+		return *this;
 	}
+
+	if (m_Pos + len > m_MaxBufferSize)
+	{
+		do {
+			m_MaxBufferSize = m_MaxBufferSize ? m_MaxBufferSize * 2 : 16384;
+		} while (m_Pos + len > m_MaxBufferSize);
+
+		m_Buffer = (byte*)Realloc(m_Buffer, m_MaxBufferSize);
+	}
+
+	if (len == 1)
+		m_Buffer[m_Pos] = *(byte*)mem;
 	else
-	{
-		I_Error ("Tried to write to reading LZO file\n");
-	}
+		memcpy(m_Buffer + m_Pos, mem, len);
+
+	m_Pos += len;
+	if (m_Pos > m_BufferSize)
+		m_BufferSize = m_Pos;
+
 	return *this;
 }
 
-FFile &FLZOFile::Read (void *mem, unsigned int len)
+FFile& FLZOFile::Read(void* mem, unsigned int len)
 {
-	if (m_Mode == EReading)
+	if (m_Mode != EReading)
 	{
-		if (m_Pos + len > m_BufferSize)
-		{
-			I_Error ("Attempt to read past end of LZO file\n");
-		}
-		if (len == 1)
-			*(BYTE *)mem = m_Buffer[m_Pos];
-		else
-			memcpy (mem, m_Buffer + m_Pos, len);
-		m_Pos += len;
+		I_Error("Tried to read from writing LZO file\n");
+		return *this;
 	}
+
+	if (m_Pos + len > m_BufferSize)
+	{
+		I_Error("Attempt to read past end of LZO file\n");
+		return *this;
+	}
+
+	if (len == 1)
+		*(byte*)mem = m_Buffer[m_Pos];
 	else
-	{
-		I_Error ("Tried to read from writing LZO file\n");
-	}
+		memcpy(mem, m_Buffer + m_Pos, len);
+
+	m_Pos += len;
+
 	return *this;
 }
 

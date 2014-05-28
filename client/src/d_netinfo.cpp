@@ -194,8 +194,10 @@ void D_UserInfoChanged (cvar_t *cvar)
 
 FArchive &operator<< (FArchive &arc, UserInfo &info)
 {
-	arc.Write(info.netname.c_str(), MAXPLAYERNAME);
-	arc << byte(0);		// ensure the string is properly terminated
+	char netname[MAXPLAYERNAME + 1];
+	memset(netname, 0, MAXPLAYERNAME + 1);
+	strncpy(netname, info.netname.c_str(), MAXPLAYERNAME);
+	arc.Write(netname, MAXPLAYERNAME + 1);
 
 	arc.Write(&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Write(&info.gender, sizeof(info.gender));
@@ -223,8 +225,8 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 
 FArchive &operator>> (FArchive &arc, UserInfo &info)
 {
-	char netname[MAXPLAYERNAME+1];
-	arc.Read(netname, sizeof(netname));
+	char netname[MAXPLAYERNAME + 1];
+	arc.Read(netname, MAXPLAYERNAME + 1);
 	info.netname = netname;
 
 	arc.Read(&info.team, sizeof(info.team));  // [Toke - Teams]
