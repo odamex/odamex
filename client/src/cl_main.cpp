@@ -223,14 +223,14 @@ static void CL_RebuildAllPlayerTranslations()
 CVAR_FUNC_IMPL (r_enemycolor)
 {
 	// cache the color whenever the user changes it
-	enemycolor = V_GetColorFromString(NULL, var.cstring());
+	enemycolor = V_GetColorFromString(var);
 	CL_RebuildAllPlayerTranslations();
 }
 
 CVAR_FUNC_IMPL (r_teamcolor)
 {
 	// cache the color whenever the user changes it
-	teamcolor = V_GetColorFromString(NULL, var.cstring());
+	teamcolor = V_GetColorFromString(var);
 	CL_RebuildAllPlayerTranslations();
 }
 
@@ -308,7 +308,6 @@ void CL_SetMobjSpeedAndAngle(void);
 void P_PlayerLookUpDown (player_t *p);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
-int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 void AM_Stop();
 
 //

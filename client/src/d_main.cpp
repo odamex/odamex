@@ -859,7 +859,7 @@ void D_DoomMain()
 
 	// NOTE(jsd): Set up local player color
 	EXTERN_CVAR(cl_color);
-	R_BuildPlayerTranslation(0, V_GetColorFromString(NULL, cl_color.cstring()));
+	R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color));
 
 	I_FinishClockCalibration();
 

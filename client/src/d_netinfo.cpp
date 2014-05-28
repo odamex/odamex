@@ -163,7 +163,7 @@ void D_SetupUserInfo(void)
 
 	coninfo->netname			= netname;
 	coninfo->team				= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
-	coninfo->color				= V_GetColorFromString (NULL, cl_color.cstring());
+	coninfo->color				= V_GetColorFromString(cl_color);
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->unlag				= (cl_unlag != 0);

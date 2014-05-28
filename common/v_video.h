@@ -461,10 +461,11 @@ void V_MarkRect (int x, int y, int width, int height);
 
 // Returns the closest color to the one desired. String
 // should be of the form "rr gg bb".
-int V_GetColorFromString (const argb_t *palette, const char *colorstring);
+argb_t V_GetColorFromString(const std::string& str);
+
 // Scans through the X11R6RGB lump for a matching color
 // and returns a color string suitable for V_GetColorFromString.
-std::string V_GetColorStringByName (const char *name);
+std::string V_GetColorStringByName(const std::string& name);
 
 
 bool V_SetResolution (int width, int height, int bpp);

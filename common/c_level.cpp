@@ -378,15 +378,9 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 				SC_MustGetString ();
 				std::string string = V_GetColorStringByName (sc_String);
 				if (string.length())
-				{
-					*((DWORD *)(info + handler->data1)) =
-						V_GetColorFromString (NULL, string.c_str());
-				}
+					*((DWORD *)(info + handler->data1)) = V_GetColorFromString(string);
 				else
-				{
-					*((DWORD *)(info + handler->data1)) =
-										V_GetColorFromString (NULL, sc_String);
-				}
+					*((DWORD *)(info + handler->data1)) = V_GetColorFromString(sc_String);
 			}
 			break;
 

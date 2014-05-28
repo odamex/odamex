@@ -552,7 +552,7 @@ void AM_initVariables(void)
 am_color_t AM_GetColorFromString(const argb_t* palette_colors, const char* colorstring)
 {
 	am_color_t c;
-	c.rgb = (argb_t)V_GetColorFromString(NULL, colorstring);
+	c.rgb = V_GetColorFromString(colorstring);
 	c.index = V_BestColor(palette_colors, c.rgb);
 	return c;
 }

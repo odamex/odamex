@@ -295,10 +295,12 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		int bg;
 		int x, y;
 
-		fixed_t amount = (fixed_t)(famount * 64.0f);
+		int amount = (int)(famount * 64.0f);
 		argb_t *fg2rgb = Col2RGB8[amount];
 		argb_t *bg2rgb = Col2RGB8[64-amount];
-		unsigned int fg = fg2rgb[V_GetColorFromString(V_GetDefaultPalette()->basecolors, color_str)];
+
+		argb_t color = V_GetColorFromString(color_str);
+		unsigned int fg = fg2rgb[V_BestColor(V_GetDefaultPalette()->basecolors, color)];
 
 		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + y1 * surface_pitch_pixels + x1;
 		int advance = surface_pitch_pixels - w;
@@ -339,8 +341,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 	}
 	else
 	{
-		argb_t color = (argb_t)V_GetColorFromString(NULL, color_str);
-		color = V_GammaCorrect(color);
+		argb_t color = V_GammaCorrect(V_GetColorFromString(color_str));
 
 		r_dimpatchD(mSurface, color, (int)(famount * 256.0f), x1, y1, w, h);
 	}
@@ -359,49 +360,6 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 	Dim(x1, y1, w, h, ui_dimcolor.cstring(), ui_dimamount);
 }
 
-std::string V_GetColorStringByName (const char *name)
-{
-	/* Note: The X11R6RGB lump used by this function *MUST* end
-	 * with a NULL byte. This is so that COM_Parse is able to
-	 * detect the end of the lump.
-	 */
-	char *rgbNames, *data, descr[5*3];
-	int c[3], step;
-
-	if (!(rgbNames = (char *)W_CacheLumpName ("X11R6RGB", PU_CACHE))) {
-		Printf (PRINT_HIGH, "X11R6RGB lump not found\n");
-		return NULL;
-	}
-
-	// skip past the header line
-	data = strchr (rgbNames, '\n');
-	step = 0;
-
-	while ( (data = COM_Parse (data)) ) {
-		if (step < 3) {
-			c[step++] = atoi (com_token);
-		} else {
-			step = 0;
-			if (*data >= ' ') {		// In case this name contains a space...
-				char *newchar = com_token + strlen(com_token);
-
-				while (*data >= ' ') {
-					*newchar++ = *data++;
-				}
-				*newchar = 0;
-			}
-
-			if (!stricmp (com_token, name)) {
-				sprintf (descr, "%04x %04x %04x",
-						 (c[0] << 8) | c[0],
-						 (c[1] << 8) | c[1],
-						 (c[2] << 8) | c[2]);
-				return descr;
-			}
-		}
-	}
-	return "";
-}
 
 BEGIN_COMMAND (setcolor)
 {

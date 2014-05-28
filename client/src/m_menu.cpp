@@ -1428,7 +1428,7 @@ static void M_PlayerSetupDrawer (void)
 
 	{
 		int x = V_StringWidth("Green") + 8 + PSetupDef.x;
-		argb_t playercolor = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
+		argb_t playercolor = V_GetColorFromString(cl_color);
 
 		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.r);
 		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.g);
@@ -1580,7 +1580,7 @@ static void SendNewColor(int red, int green, int blue)
 	if (!connected)
 	{
 		// [Nes] Change the player preview color.
-		R_BuildPlayerTranslation(0, V_GetColorFromString (NULL, cl_color.cstring()));
+		R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color));
 
 		if (consoleplayer().ingame())
 			R_CopyTranslationRGB(0, consoleplayer_id);
@@ -1589,7 +1589,7 @@ static void SendNewColor(int red, int green, int blue)
 
 static void M_SlidePlayerRed(int choice)
 {
-	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
+	argb_t color = V_GetColorFromString(cl_color);
 	int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
@@ -1602,7 +1602,7 @@ static void M_SlidePlayerRed(int choice)
 
 static void M_SlidePlayerGreen (int choice)
 {
-	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
+	argb_t color = V_GetColorFromString(cl_color);
 	int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
@@ -1615,7 +1615,7 @@ static void M_SlidePlayerGreen (int choice)
 
 static void M_SlidePlayerBlue (int choice)
 {
-	argb_t color = (argb_t)V_GetColorFromString(NULL, cl_color.cstring());
+	argb_t color = V_GetColorFromString(cl_color);
 	int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)

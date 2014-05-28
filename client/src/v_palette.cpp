@@ -36,6 +36,7 @@
 #include "z_zone.h"
 #include "i_video.h"
 #include "c_dispatch.h"
+#include "cmdlib.h"
 #include "g_level.h"
 #include "st_stuff.h"
 
@@ -457,6 +458,110 @@ void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_
 }
 
 
+//
+// V_GetColorFromString
+//
+// Parses a string of up to 6 hexadecimal digits representing an RGB triplet
+// and converts it into an argb_t value.
+//
+argb_t V_GetColorFromString(const std::string& str)
+{
+	const char* cstr = str.c_str();
+
+	int c[3], i, p;
+	char val[5];
+	const char *s, *g;
+
+	val[4] = 0;
+	for (s = cstr, i = 0; i < 3; i++)
+	{
+		c[i] = 0;
+
+		while ((*s <= ' ') && (*s != 0))
+			s++;
+
+		if (*s)
+		{
+			p = 0;
+
+			while (*s > ' ')
+			{
+				if (p < 4)
+					val[p++] = *s;
+
+				s++;
+			}
+
+			g = val;
+
+			while (p < 4)
+				val[p++] = *g++;
+
+			c[i] = ParseHex(val);
+		}
+	}
+
+	return argb_t(c[0] >> 8, c[1] >> 8, c[2] >> 8);
+}
+
+
+//
+// V_GetColorStringByName
+//
+// Returns a string with up to 6 hexadecimal digits suitable for use with
+// V_GetColorFromString. A given colorname is looked up in the X11R6RGB lump
+// and its value is returned.
+//
+std::string V_GetColorStringByName(const std::string& name)
+{
+	/* Note: The X11R6RGB lump used by this function *MUST* end
+	 * with a NULL byte. This is so that COM_Parse is able to
+	 * detect the end of the lump.
+	 */
+	char *rgbNames, *data, descr[5*3];
+	int c[3], step;
+
+	if (!(rgbNames = (char*)W_CacheLumpName("X11R6RGB", PU_CACHE)))
+	{
+		Printf(PRINT_HIGH, "X11R6RGB lump not found\n");
+		return "";
+	}
+
+	// skip past the header line
+	data = strchr(rgbNames, '\n');
+	step = 0;
+
+	while ( (data = COM_Parse (data)) )
+	{
+		if (step < 3)
+		{
+			c[step++] = atoi (com_token);
+		}
+		else
+		{
+			step = 0;
+			if (*data >= ' ')		// In case this name contains a space...
+			{
+				char *newchar = com_token + strlen(com_token);
+
+				while (*data >= ' ')
+					*newchar++ = *data++;
+				*newchar = 0;
+			}
+
+			if (!stricmp(com_token, name.c_str()))
+			{
+				sprintf(descr, "%04x %04x %04x",
+						 (c[0] << 8) | c[0],
+						 (c[1] << 8) | c[1],
+						 (c[2] << 8) | c[2]);
+				return descr;
+			}
+		}
+	}
+	return "";
+}
+
 
 /****************************/
 /* Palette management stuff */
@@ -763,9 +868,9 @@ BEGIN_COMMAND (testblend)
 		argb_t color;
 
 		if (!colorstring.empty())
-			color = (argb_t)V_GetColorFromString(NULL, colorstring.c_str());
+			color = V_GetColorFromString(colorstring);
 		else
-			color = (argb_t)V_GetColorFromString(NULL, argv[1]);
+			color = V_GetColorFromString(argv[1]);
 
 		float amt = clamp((float)atof(argv[2]), 0.0f, 1.0f);
 
@@ -789,9 +894,9 @@ BEGIN_COMMAND (testfade)
 		argb_t color;
 
 		if (!colorstring.empty())
-			color = (argb_t)V_GetColorFromString(NULL, colorstring.c_str());
+			color = V_GetColorFromString(colorstring);
 		else
-			color = (argb_t)V_GetColorFromString(NULL, argv[1]);
+			color = V_GetColorFromString(argv[1]);
 
 		level.fadeto = color;
 		V_RefreshColormaps();
@@ -953,9 +1058,9 @@ BEGIN_COMMAND (testcolor)
 		argb_t color;
 
 		if (!colorstring.empty())
-			color = (argb_t)V_GetColorFromString(NULL, colorstring.c_str());
+			color = V_GetColorFromString(colorstring);
 		else
-			color = (argb_t)V_GetColorFromString(NULL, argv[1]);
+			color = V_GetColorFromString(argv[1]);
 
 		BuildColoredLights((shademap_t*)NormalLight.maps.map(),
 				color.r, color.g, color.b,

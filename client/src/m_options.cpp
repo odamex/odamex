@@ -1220,21 +1220,21 @@ static void M_SendUINewColor (int red, int green, int blue)
 
 static void M_SlideUIRed(int val)
 {
-	argb_t color = (argb_t)V_GetColorFromString(NULL, ui_dimcolor.cstring());
+	argb_t color = V_GetColorFromString(ui_dimcolor);
 	color.r = val;
 	M_SendUINewColor(color.r, color.g, color.b);
 }
 
 static void M_SlideUIGreen (int val)
 {
-	argb_t color = (argb_t)V_GetColorFromString(NULL, ui_dimcolor.cstring());
+	argb_t color = V_GetColorFromString(ui_dimcolor);
 	color.g = val;
 	M_SendUINewColor(color.r, color.g, color.b);
 }
 
 static void M_SlideUIBlue (int val)
 {
-	argb_t color = (argb_t)V_GetColorFromString(NULL, ui_dimcolor.cstring());
+	argb_t color = V_GetColorFromString(ui_dimcolor);
 	color.b = val;
 	M_SendUINewColor(color.r, color.g, color.b);
 }
@@ -1555,19 +1555,19 @@ void M_OptDrawer (void)
 
 			case redslider:
 			{
-				argb_t color = (argb_t)V_GetColorFromString(NULL, item->a.cvar->cstring());
+				argb_t color = V_GetColorFromString(*item->a.cvar);
 				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.r, color);
 			}
 			break;
 			case greenslider:
 			{
-				argb_t color = (argb_t)V_GetColorFromString(NULL, item->a.cvar->cstring());
+				argb_t color = V_GetColorFromString(*item->a.cvar);
 				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.g, color);
 			}
 			break;
 			case blueslider:
 			{
-				argb_t color = (argb_t)V_GetColorFromString(NULL, item->a.cvar->cstring());
+				argb_t color = V_GetColorFromString(*item->a.cvar);
 				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.b, color);
 			}
 			break;
@@ -1907,7 +1907,7 @@ void M_OptResponder (event_t *ev)
 						else
 							memcpy(newcolor, "00 00 00", 9);
 
-						argb_t color = (argb_t)V_GetColorFromString(NULL, oldcolor);
+						argb_t color = V_GetColorFromString(oldcolor);
 						int part = 0;
 
 						if (item->type == redslider)
@@ -2031,7 +2031,7 @@ void M_OptResponder (event_t *ev)
 						else
 							memcpy(newcolor, "00 00 00", 9);
 
-						argb_t color = (argb_t)V_GetColorFromString(NULL, oldcolor);
+						argb_t color = V_GetColorFromString(oldcolor);
 						int part = 0;
 
 						if (item->type == redslider)
