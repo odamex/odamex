@@ -60,10 +60,15 @@
 
 #define MAX(a,b)	((a)<(b)?(a):(b))
 
-// Output buffer size for LZO compression, extra space in case uncompressable
-#define OUT_LEN(a)		((a) + (a) / 16 + 64 + 3)
+static const char LZOSig[4] = { 'F', 'L', 'Z', 'O' };
 
-void FLZOFile::BeEmpty ()
+// Output buffer size for LZO compression, extra space in case uncompressable
+static unsigned int MaxLZOCompressedLength(unsigned int input_len)
+{
+	return input_len + input_len / 16 + 64 + 3;
+}
+
+void FLZOFile::clear()
 {
 	m_Pos = 0;
 	m_BufferSize = 0;
@@ -74,103 +79,108 @@ void FLZOFile::BeEmpty ()
 	m_Mode = ENotOpen;
 }
 
-static const char LZOSig[4] = { 'F', 'L', 'Z', 'O' };
 
-FLZOFile::FLZOFile ()
+FLZOFile::FLZOFile()
 {
-	BeEmpty ();
+	clear();
 }
 
-FLZOFile::FLZOFile (const char *name, EOpenMode mode, bool dontCompress)
+FLZOFile::FLZOFile(const char* name, EOpenMode mode, bool dontCompress)
 {
-	BeEmpty ();
-	Open (name, mode);
+	clear();
 	m_NoCompress = dontCompress;
+
+	Open(name, mode);
 }
 
-FLZOFile::FLZOFile (FILE *file, EOpenMode mode, bool dontCompress)
+FLZOFile::FLZOFile(FILE* file, EOpenMode mode, bool dontCompress)
 {
-	BeEmpty ();
+	clear();
 	m_Mode = mode;
 	m_File = file;
 	m_NoCompress = dontCompress;
-	PostOpen ();
+
+	PostOpen();
 }
 
-FLZOFile::~FLZOFile ()
+FLZOFile::~FLZOFile()
 {
-	Close ();
+	Close();
 }
 
-bool FLZOFile::Open (const char *name, EOpenMode mode)
+bool FLZOFile::Open(const char* name, EOpenMode mode)
 {
-	Close ();
+	Close();
 	if (name == NULL)
 		return false;
 	m_Mode = mode;
-	m_File = fopen (name, mode == EReading ? "rb" : "wb");
-	PostOpen ();
+	m_File = fopen(name, mode == EReading ? "rb" : "wb");
+	PostOpen();
 	return !!m_File;
 }
 
-void FLZOFile::PostOpen ()
+void FLZOFile::PostOpen()
 {
 	if (m_File && m_Mode == EReading)
 	{
 		char sig[4];
-		fread (sig, 4, 1, m_File);
+		fread(sig, 4, 1, m_File);
 		if (sig[0] != LZOSig[0] || sig[1] != LZOSig[1] || sig[2] != LZOSig[2] || sig[3] != LZOSig[3])
 		{
-			fclose (m_File);
+			fclose(m_File);
 			m_File = NULL;
 		}
 		else
 		{
 			DWORD sizes[2];
-			fread (sizes, sizeof(DWORD), 2, m_File);
-			SWAP_DWORD (sizes[0]);
-			SWAP_DWORD (sizes[1]);
+			fread(sizes, sizeof(DWORD), 2, m_File);
+			SWAP_DWORD(sizes[0]);
+			SWAP_DWORD(sizes[1]);
+
 			unsigned int len = sizes[0] == 0 ? sizes[1] : sizes[0];
-			m_Buffer = (byte *)Malloc (len+8);
-			fread (m_Buffer+8, len, 1, m_File);
-			SWAP_DWORD (sizes[0]);
-			SWAP_DWORD (sizes[1]);
-			((DWORD *)m_Buffer)[0] = sizes[0];
-			((DWORD *)m_Buffer)[1] = sizes[1];
-			Explode ();
+			m_Buffer = (byte*)Malloc(len + 8);
+
+			fread(m_Buffer + 8, len, 1, m_File);
+
+			SWAP_DWORD(sizes[0]);
+			SWAP_DWORD(sizes[1]);
+
+			((DWORD*)m_Buffer)[0] = sizes[0];
+			((DWORD*)m_Buffer)[1] = sizes[1];
+			Explode();
 		}
 	}
 }
 
-void FLZOFile::Close ()
+void FLZOFile::Close()
 {
 	if (m_File)
 	{
 		if (m_Mode == EWriting)
 		{
-			Implode ();
-			fwrite (LZOSig, 4, 1, m_File);
-			fwrite (m_Buffer, m_BufferSize + 8, 1, m_File);
+			Implode();
+			fwrite(LZOSig, 4, 1, m_File);
+			fwrite(m_Buffer, m_BufferSize + 8, 1, m_File);
 		}
-		fclose (m_File);
+		fclose(m_File);
 		m_File = NULL;
 	}
 
 	M_Free(m_Buffer);
 
-	BeEmpty ();
+	clear();
 }
 
-void FLZOFile::Flush ()
+void FLZOFile::Flush()
 {
 }
 
-FFile::EOpenMode FLZOFile::Mode () const
+FFile::EOpenMode FLZOFile::Mode() const
 {
 	return m_Mode;
 }
 
-bool FLZOFile::IsOpen () const
+bool FLZOFile::IsOpen() const
 {
 	return !!m_File;
 }
@@ -183,13 +193,13 @@ FFile& FLZOFile::Write(const void* mem, unsigned int len)
 		return *this;
 	}
 
-	if (m_Pos + len > m_MaxBufferSize)
+	if (m_Pos + len > m_BufferSize)
 	{
 		do {
-			m_MaxBufferSize = m_MaxBufferSize ? m_MaxBufferSize * 2 : 16384;
-		} while (m_Pos + len > m_MaxBufferSize);
+			m_BufferSize = m_MaxBufferSize = m_BufferSize ? m_BufferSize * 2 : 16384;
+		} while (m_Pos + len > m_BufferSize);
 
-		m_Buffer = (byte*)Realloc(m_Buffer, m_MaxBufferSize);
+		m_Buffer = (byte*)Realloc(m_Buffer, m_BufferSize);
 	}
 
 	if (len == 1)
@@ -228,12 +238,12 @@ FFile& FLZOFile::Read(void* mem, unsigned int len)
 	return *this;
 }
 
-unsigned int FLZOFile::Tell () const
+unsigned int FLZOFile::Tell() const
 {
 	return m_Pos;
 }
 
-FFile &FLZOFile::Seek (int pos, ESeekPos ofs)
+FFile& FLZOFile::Seek(int pos, ESeekPos ofs)
 {
 	if (ofs == ESeekRelative)
 		pos += m_Pos;
@@ -250,131 +260,117 @@ FFile &FLZOFile::Seek (int pos, ESeekPos ofs)
 	return *this;
 }
 
-void FLZOFile::Implode ()
+void FLZOFile::Implode()
 {
-	lzo_uint outlen = 0;
-	unsigned int len = m_BufferSize;
-	lzo_byte *compressed = NULL;
-	lzo_byte *wrkmem;
-	byte *oldbuf = m_Buffer;
-	int r;
+	unsigned int input_len = m_BufferSize;
+	lzo_uint compressed_len = 0;
+	byte* compressed = NULL;
+
+	byte* oldbuf = m_Buffer;
 
 	if (!m_NoCompress)
 	{
-		compressed = new lzo_byte[OUT_LEN(len)];
-		wrkmem = new lzo_byte[LZO1X_1_MEM_COMPRESS];
-		r = lzo1x_1_compress (m_Buffer, len, compressed, &outlen, wrkmem);
-		delete[] wrkmem;
+		compressed = new lzo_byte[MaxLZOCompressedLength(input_len)];
+
+		lzo_byte* wrkmem = new lzo_byte[LZO1X_1_MEM_COMPRESS];
+		int res = lzo1x_1_compress(m_Buffer, input_len, compressed, &compressed_len, wrkmem);
+		delete [] wrkmem;
 
 		// If the data could not be compressed, store it as-is.
-		if (r != LZO_E_OK || outlen > len)
+		if (res != LZO_E_OK || compressed_len > input_len)
 		{
-			DPrintf ("LZOFile could not be imploded\n");
-			outlen = 0;
+			DPrintf("LZOFile could not be imploded\n");
+			compressed_len = 0;
 		}
 		else
 		{
-			DPrintf ("LZOFile shrunk from %u to %u bytes\n", len, outlen);
+			DPrintf("LZOFile shrunk from %u to %u bytes\n", input_len, compressed_len);
 		}
 	}
-	else
-	{
-		outlen = 0;
-	}
 
-	m_MaxBufferSize = m_BufferSize = ((outlen == 0) ? len : outlen);
-	m_Buffer = (BYTE *)Malloc (m_BufferSize + 8);
+	if (compressed_len == 0 || !compressed)
+		m_BufferSize = m_MaxBufferSize = input_len;
+	else
+		m_BufferSize = m_MaxBufferSize = compressed_len;
+
+	m_Buffer = (byte*)Malloc(m_BufferSize + 8);
 	m_Pos = 0;
 
-	DWORD *lens = (DWORD *)(m_Buffer);
-	lens[0] = BELONG((unsigned int)outlen);
-	lens[1] = BELONG(len);
+	((unsigned int*)m_Buffer)[0] = BELONG((unsigned int)compressed_len);
+	((unsigned int*)m_Buffer)[1] = BELONG((unsigned int)input_len);
 
-	if (outlen == 0)
-		memcpy (m_Buffer + 8, oldbuf, len);
+	if (compressed_len == 0 || !compressed)
+		memcpy(m_Buffer + 8, oldbuf, input_len);
 	else
-		memcpy (m_Buffer + 8, compressed, outlen);
+		memcpy(m_Buffer + 8, compressed, compressed_len);
 
-	delete[] compressed;
+	delete [] compressed;
     compressed = NULL;
     
 	M_Free(oldbuf);
 }
 
-void FLZOFile::Explode ()
+void FLZOFile::Explode()
 {
-	unsigned int expandsize, cprlen;
-	unsigned char *expand;
-
 	if (m_Buffer)
 	{
-		unsigned int *ints = (unsigned int *)(m_Buffer);
-		cprlen = BELONG(ints[0]);
-		expandsize = BELONG(ints[1]);
+		unsigned int compressed_len = BELONG(((unsigned int*)m_Buffer)[0]);
+		unsigned int expanded_len = BELONG(((unsigned int*)m_Buffer)[1]);
 
-		expand = (unsigned char *)Malloc (expandsize);
-		if (cprlen)
+		byte* expanded_buffer = (byte*)Malloc(expanded_len);
+
+		if (compressed_len != 0)
 		{
-			unsigned int r;
-			lzo_uint newlen = expandsize;
+			lzo_uint newlen = expanded_len;
 
-			r = lzo1x_decompress_safe (m_Buffer + 8, cprlen, expand, &newlen, NULL);
-			if (r != LZO_E_OK || newlen != expandsize)
+			int res = lzo1x_decompress_safe(m_Buffer + 8, compressed_len, expanded_buffer, &newlen, NULL);
+			if (res != LZO_E_OK || newlen != expanded_len)
 			{
-				M_Free(expand);
-				I_Error ("Could not decompress LZO file");
+				M_Free(expanded_buffer);
+				I_Error("Could not decompress LZO file");
 			}
 		}
 		else
 		{
-			memcpy (expand, m_Buffer + 8, expandsize);
+			memcpy(expanded_buffer, m_Buffer + 8, expanded_len);
 		}
 
-		if (FreeOnExplode ())
+		if (FreeOnExplode())
 		{
 			M_Free(m_Buffer);			
 		}
 
-		m_Buffer = expand;
-		m_BufferSize = expandsize;
+		m_Buffer = expanded_buffer;
+		m_BufferSize = expanded_len;
 	}
 }
 
-FLZOMemFile::FLZOMemFile () :
+FLZOMemFile::FLZOMemFile() :
 	FLZOFile()
 {
 	m_SourceFromMem = false;
 	m_ImplodedBuffer = NULL;
 }
 
-/*
-FLZOMemFile::FLZOMemFile (const char *name, EOpenMode mode)
-	: FLZOFile (name, mode)
+FLZOMemFile::~FLZOMemFile()
 {
-	m_SourceFromMem = false;
-	m_ImplodedBuffer = NULL;
 }
-*/
 
-bool FLZOMemFile::Open (const char *name, EOpenMode mode)
+bool FLZOMemFile::Open(const char* name, EOpenMode mode)
 {
 	if (mode == EWriting)
 	{
 		if (name)
-		{
-			I_Error ("FLZOMemFile cannot write to disk");
-		}
+			I_Error("FLZOMemFile cannot write to disk");
 		else
-		{
-			return Open ();
-		}
+			return Open();
 	}
 	else
 	{
-		bool res = FLZOFile::Open (name, EReading);
+		bool res = FLZOFile::Open(name, EReading);
 		if (res)
 		{
-			fclose (m_File);
+			fclose(m_File);
 			m_File = NULL;
 		}
 		return res;
@@ -382,29 +378,30 @@ bool FLZOMemFile::Open (const char *name, EOpenMode mode)
 	return false;
 }
 
-bool FLZOMemFile::Open (void *memblock)
+bool FLZOMemFile::Open(void* memblock)
 {
-	Close ();
+	// [SL] TODO: what is m_BufferSize?!?
+	Close();
 	m_Mode = EReading;
-	m_Buffer = (BYTE *)memblock;
+	m_Buffer = (byte*)memblock;
 	m_SourceFromMem = true;
-	Explode ();
+	Explode();
 	m_SourceFromMem = false;
 	return !!m_Buffer;
 }
 
-bool FLZOMemFile::Open ()
+bool FLZOMemFile::Open()
 {
-	Close ();
+	Close();
 	m_Mode = EWriting;
 	m_BufferSize = 0;
 	m_MaxBufferSize = 16384;
-	m_Buffer = (unsigned char *)Malloc (16384);
+	m_Buffer = (unsigned char*)Malloc(16384);
 	m_Pos = 0;
 	return true;
 }
 
-bool FLZOMemFile::Reopen ()
+bool FLZOMemFile::Reopen()
 {
 	if (m_Buffer == NULL && m_ImplodedBuffer)
 	{
@@ -418,64 +415,64 @@ bool FLZOMemFile::Reopen ()
 	return false;
 }
 
-void FLZOMemFile::Close ()
+void FLZOMemFile::Close()
 {
 	if (m_Mode == EWriting)
 	{
-		Implode ();
+		FLZOFile::Implode();
 		m_ImplodedBuffer = m_Buffer;
 		m_Buffer = NULL;
 	}
 }
 
-void FLZOMemFile::Serialize (FArchive &arc)
+void FLZOMemFile::Serialize(FArchive& arc)
 {
-	if (arc.IsStoring ())
+	if (arc.IsStoring())
 	{
 		if (m_ImplodedBuffer == NULL)
 		{
-			I_Error ("FLZOMemFile must be imploded before storing\n");
+			I_Error("FLZOMemFile must be imploded before storing\n");
 			// Q: How do we get here without closing FLZOMemFile first?
-			Close ();
+			Close();
 		}
-		arc.Write (LZOSig, 4);
+		arc.Write(LZOSig, 4);
 
 		DWORD sizes[2];
-		sizes[0] = ((DWORD *)m_ImplodedBuffer)[0];
-		sizes[1] = ((DWORD *)m_ImplodedBuffer)[1];
-		SWAP_DWORD (sizes[0]);
-		SWAP_DWORD (sizes[1]);
-		arc.Write (m_ImplodedBuffer, (sizes[0] ? sizes[0] : sizes[1])+8);
+		sizes[0] = ((DWORD*)m_ImplodedBuffer)[0];
+		sizes[1] = ((DWORD*)m_ImplodedBuffer)[1];
+		SWAP_DWORD(sizes[0]);
+		SWAP_DWORD(sizes[1]);
+		arc.Write(m_ImplodedBuffer, (sizes[0] ? sizes[0] : sizes[1]) + 8);
 	}
 	else
 	{
-		Close ();
+		Close();
 		m_Mode = EReading;
 
 		char sig[4];
 		DWORD sizes[2];
 
-		arc.Read (sig, 4);
+		arc.Read(sig, 4);
 
 		if (sig[0] != LZOSig[0] || sig[1] != LZOSig[1] || sig[2] != LZOSig[2] || sig[3] != LZOSig[3])
-			I_Error ("Expected to extract an LZO-compressed file\n");
+			I_Error("Expected to extract an LZO-compressed file\n");
 
 		arc >> sizes[0] >> sizes[1];
 		DWORD len = sizes[0] == 0 ? sizes[1] : sizes[0];
 
-		m_Buffer = (BYTE *)Malloc (len+8);
-		SWAP_DWORD (sizes[0]);
-		SWAP_DWORD (sizes[1]);
-		((DWORD *)m_Buffer)[0] = sizes[0];
-		((DWORD *)m_Buffer)[1] = sizes[1];
-		arc.Read (m_Buffer+8, len);
+		m_Buffer = (byte*)Malloc(len + 8);
+		SWAP_DWORD(sizes[0]);
+		SWAP_DWORD(sizes[1]);
+		((DWORD*)m_Buffer)[0] = sizes[0];
+		((DWORD*)m_Buffer)[1] = sizes[1];
+		arc.Read(m_Buffer + 8, len);
 		m_ImplodedBuffer = m_Buffer;
 		m_Buffer = NULL;
 		m_Mode = EWriting;
 	}
 }
 
-bool FLZOMemFile::IsOpen () const
+bool FLZOMemFile::IsOpen() const
 {
 	return !!m_Buffer;
 }
@@ -485,18 +482,14 @@ size_t FLZOMemFile::Length() const
 	return m_BufferSize + 8;
 }
 
-void FLZOMemFile::WriteToBuffer(void *buf, size_t length) const
+void FLZOMemFile::WriteToBuffer(void* buf, size_t length) const
 {
 	length = length < (m_BufferSize + 8) ? length : (m_BufferSize + 8);
 	
 	if (m_ImplodedBuffer)
-	{
 		memcpy(buf, m_ImplodedBuffer, length);
-	}
 	else
-	{
 		memcpy(buf, m_Buffer, length);
-	}
 }
 
 //============================================
@@ -505,7 +498,7 @@ void FLZOMemFile::WriteToBuffer(void *buf, size_t length) const
 //
 //============================================
 
-FArchive::FArchive (FFile &file)
+FArchive::FArchive(FFile& file)
 {
 	int i;
 
@@ -513,6 +506,7 @@ FArchive::FArchive (FFile &file)
 	m_File = &file;
 	m_MaxObjectCount = m_ObjectCount = 0;
 	m_ObjectMap = NULL;
+
 	if (file.Mode() == FFile::EReading)
 	{
 		m_Loading = true;
@@ -523,24 +517,27 @@ FArchive::FArchive (FFile &file)
 		m_Loading = false;
 		m_Storing = true;
 	}
+
 	m_Persistent = file.IsPersistent();
-	m_TypeMap = NULL;
+
 	m_TypeMap = new TypeMap[TypeInfo::m_NumTypes];
 	for (i = 0; i < TypeInfo::m_NumTypes; i++)
 	{
 		m_TypeMap[i].toArchive = ~0;
 		m_TypeMap[i].toCurrent = NULL;
 	}
+
 	m_ClassCount = 0;
+
 	for (i = 0; i < EObjectHashSize; i++)
 		m_ObjectHash[i] = ~0;
 }
 
-FArchive::~FArchive ()
+FArchive::~FArchive()
 {
-	Close ();
+	Close();
 	
-	delete[] m_TypeMap;
+	delete [] m_TypeMap;
     m_TypeMap = NULL;
     
 	if (m_ObjectMap)
@@ -549,49 +546,47 @@ FArchive::~FArchive ()
 	}
 }
 
-void FArchive::Write (const void *mem, unsigned int len)
+void FArchive::Write(const void* mem, unsigned int len)
 {
-	m_File->Write (mem, len);
+	m_File->Write(mem, len);
 }
 
-void FArchive::Read (void *mem, unsigned int len)
+void FArchive::Read(void* mem, unsigned int len)
 {
-	m_File->Read (mem, len);
+	m_File->Read(mem, len);
 }
 
-void FArchive::Close ()
+void FArchive::Close()
 {
 	if (m_File)
 	{
-		m_File->Close ();
+		m_File->Close();
 		m_File = NULL;
 	}
 }
 
-void FArchive::WriteCount (DWORD count)
+void FArchive::WriteCount(DWORD count)
 {
-	BYTE out;
-
 	do
 	{
-		out = count & 0x7f;
+		byte out = count & 0x7f;
 		if (count >= 0x80)
 			out |= 0x80;
-		Write (&out, sizeof(BYTE));
+		Write(&out, sizeof(byte));
 		count >>= 7;
 	} while (count);
 
 }
 
-DWORD FArchive::ReadCount ()
+DWORD FArchive::ReadCount()
 {
-	BYTE in;
+	byte in;
 	DWORD count = 0;
 	int ofs = 0;
 
 	do
 	{
-		Read (&in, sizeof(BYTE));
+		Read(&in, sizeof(BYTE));
 		count |= (in & 0x7f) << ofs;
 		ofs += 7;
 	} while (in & 0x80);
