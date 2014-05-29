@@ -157,6 +157,7 @@ public:
 	FArchive& operator<< (QWORD i);
 	FArchive& operator<< (float f);
 	FArchive& operator<< (double d);
+	FArchive& operator<< (argb_t color);
 	FArchive& operator<< (const char* str);
 	FArchive& operator<< (DObject* obj);
 
@@ -180,6 +181,7 @@ public:
 	FArchive& operator>> (QWORD& i);
 	FArchive& operator>> (float& f);
 	FArchive& operator>> (double& d);
+	FArchive& operator>> (argb_t& color);
 	FArchive& operator>> (std::string& s);
 	FArchive& ReadObject(DObject *&obj, TypeInfo* wanttype);
 

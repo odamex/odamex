@@ -708,6 +708,27 @@ FArchive &FArchive::operator>> (double &w)
 	return *this;
 }
 
+FArchive& FArchive::operator<< (argb_t color)
+{
+	byte a = color.a, r = color.r, g = color.g, b = color.b;
+	Write(&b, 1);
+	Write(&g, 1);
+	Write(&r, 1);
+	Write(&a, 1);
+	return *this;
+}
+
+FArchive& FArchive::operator>> (argb_t& color)
+{
+	byte a, r, g, b;
+	Read(&b, 1);
+	Read(&g, 1);
+	Read(&r, 1);
+	Read(&a, 1);
+	color = argb_t(a, r, g, b);
+	return *this;
+}
+
 #define NEW_OBJ				((BYTE)1)
 #define NEW_CLS_OBJ			((BYTE)2)
 #define OLD_OBJ				((BYTE)3)

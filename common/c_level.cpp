@@ -851,13 +851,9 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 	if (arc.IsStoring ())
 	{
 		unsigned int playernum = players.size();
-		arc << level.flags;
-
-		// [SL] write color independent of byte ordering
-		byte a = level.fadeto.a, r = level.fadeto.r, g = level.fadeto.g, b = level.fadeto.b;
-		arc << b << g << r << a;
-
-		arc	<< level.found_secrets
+		arc << level.flags
+			<< level.fadeto
+			<< level.found_secrets
 			<< level.found_items
 			<< level.killed_monsters
 			<< level.gravity
@@ -874,14 +870,9 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 	else
 	{
 		unsigned int playernum;
-		arc >> level.flags;
-
-		// [SL] read color independent of byte ordering
-		byte a, r, g, b;
-		arc >> b >> g >> r >> a;
-		level.fadeto = argb_t(a, r, g, b);
-
-		arc >> level.found_secrets
+		arc >> level.flags
+			>> level.fadeto
+			>> level.found_secrets
 			>> level.found_items
 			>> level.killed_monsters
 			>> level.gravity

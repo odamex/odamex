@@ -203,10 +203,7 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 	arc.Write(&info.gender, sizeof(info.gender));
 
 	arc << info.aimdist;
-
-	// [SL] write the color channels independent of byte ordering
-	byte a = 0, r = info.color.r, g = info.color.g, b = info.color.b;
-	arc << b << g << r << a;
+	arc << info.color;
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin = 0;
@@ -233,11 +230,7 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 	arc.Read(&info.gender, sizeof(info.gender));
 
 	arc >> info.aimdist;
-
-	// [SL] read the color channels independent of byte ordering
-	byte a, r, g, b;
-	arc >> b >> g >> r >> a;
-	info.color = argb_t(a, r, g, b);
+	arc >> info.color;
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin;
