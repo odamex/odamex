@@ -47,14 +47,12 @@
 #define WEAPONBOTTOM			128*FRACUNIT
 #define WEAPONTOP				32*FRACUNIT
 
-void A_FireRailgun(AActor *mo);
+void A_FireRailgun(AActor* mo);
 
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(co_fineautoaim)
-EXTERN_CVAR(cl_movebob)
 
 const char *weaponnames[] =
 {
@@ -76,29 +74,12 @@ enum weaponstate_t
 	downstate,
 	readystate,
 	atkstate,
+	unknownstate
 };
 
-
-//
-// A_BobWeapon
-//
-// Bobs the player's weapon sprite based on movement.  The bobbing amount
-// is scaled according to the player's preference.  To maintain sync with
-// servers and vanilla demos, we also save what the vertical position of
-// the sprite would be if the player used unscaled bobbing.
-static void P_BobWeapon(player_t *player)
-{
-	if (!player)
-		return;
-
-	struct pspdef_s *psp = &player->psprites[player->psprnum];
-	angle_t angle;
-
-	angle = (128 * level.time) & FINEMASK;
-	psp->sx = FRACUNIT + FixedMul(player->bob, finecosine[angle]);
-	angle &= FINEANGLES / 2 - 1;
-	psp->sy = WEAPONTOP + FixedMul(player->bob, finesine[angle]);
-}
+void A_WeaponReady(AActor* mo);
+void A_Raise(AActor* mo);
+void A_Lower(AActor* mo);
 
 
 //
@@ -110,15 +91,18 @@ static weaponstate_t P_GetWeaponState(player_t* player)
 {
 	struct pspdef_s* psp = &player->psprites[player->psprnum];
 
-	if (psp->state == &states[weaponinfo[player->readyweapon].upstate])
-		return upstate;
-	if (psp->state == &states[weaponinfo[player->readyweapon].downstate])
+	if (psp->state == NULL)
+		return unknownstate;
+
+	if (psp->state->action == A_WeaponReady)
+		return readystate;
+	if (psp->state->action == A_Lower)
 		return downstate;
-	if (psp->state == &states[weaponinfo[player->readyweapon].readystate])
-		return readystate;	
-	if (psp->state == &states[weaponinfo[player->readyweapon].atkstate])
-		return atkstate;	
-	return upstate;		// is there a better default?
+	if (psp->state->action == A_Raise)
+		return upstate;
+
+	// must be in one of the many attack states...
+	return atkstate;
 }
 
 
@@ -128,29 +112,24 @@ static weaponstate_t P_GetWeaponState(player_t* player)
 // Returns the player's weapon position in the x-axis after applying movebob
 // scaling.
 //
-fixed_t P_CalculateWeaponBobX(player_t* player)
+fixed_t P_CalculateWeaponBobX(player_t* player, float scale_amount)
 {
-	float scale_amount = 1.0f;
-	if ((clientside && sv_allowmovebob) || (clientside && serverside))
-		scale_amount = cl_movebob;
+	struct pspdef_s* psp = &player->psprites[player->psprnum];
 
 	weaponstate_t weaponstate = P_GetWeaponState(player);
 
+	fixed_t center_sx = FRACUNIT;
+	if (weaponstate != readystate && psp->state && psp->state->misc1)
+		center_sx = psp->state->misc1 << FRACBITS;
+
 	if (weaponstate == readystate)
 	{
-		int angle_idx = (128 * level.time) & FINEMASK;
-		return FRACUNIT + scale_amount * FixedMul(player->bob, finecosine[angle_idx]);
+		unsigned int angle_index = (128 * level.time) & FINEMASK;
+		return center_sx + scale_amount * FixedMul(player->bob, finecosine[angle_index]);
 	}
 
-	// upstate, downstate, or atkstate
-	fixed_t weapon_sx = player->psprites[player->psprnum].sx;
-
 	// scale the weapon's distance away from center
-	struct pspdef_s *psp = &player->psprites[player->psprnum];
-	fixed_t center_sx = psp->state && psp->state->misc1 ?
-			psp->state->misc1 << FRACBITS :
-			FRACUNIT;
-	return center_sx + scale_amount * (weapon_sx - center_sx);
+	return center_sx + scale_amount * (psp->sx - center_sx);
 }
 
 
@@ -160,33 +139,28 @@ fixed_t P_CalculateWeaponBobX(player_t* player)
 // Returns the player's weapon position in the y-axis after applying movebob
 // scaling.
 //
-fixed_t P_CalculateWeaponBobY(player_t* player)
+fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount)
 {
-	float scale_amount = 1.0f;
-	if ((clientside && sv_allowmovebob) || (clientside && serverside))
-		scale_amount = cl_movebob;
+	struct pspdef_s* psp = &player->psprites[player->psprnum];
 
 	weaponstate_t weaponstate = P_GetWeaponState(player);
 
-	if (weaponstate == readystate)
-	{
-		int angle_idx = ((128 * level.time) & FINEMASK) & (FINEANGLES / 2 - 1);
-		return WEAPONTOP + scale_amount * FixedMul(player->bob, finesine[angle_idx]);
-	}
-
-	fixed_t weapon_sy = player->psprites[player->psprnum].sy;
-
 	// return the actual weapon y-position when raising or lowering
 	if (weaponstate == upstate || weaponstate == downstate)
-		return weapon_sy;
+		return psp->sy;
 
-	// atkstate
+	fixed_t center_sy = WEAPONTOP;
+	if (weaponstate != readystate && psp->state && psp->state->misc1)
+		center_sy = psp->state->misc2 << FRACBITS;
+
+	if (weaponstate == readystate)
+	{
+		unsigned int angle_index = ((128 * level.time) & FINEMASK) & (FINEANGLES / 2 - 1);
+		return center_sy + scale_amount * FixedMul(player->bob, finesine[angle_index]);
+	}
+
 	// scale the weapon's distance away from center
-	struct pspdef_s *psp = &player->psprites[player->psprnum];
-	fixed_t center_sy = psp->state && psp->state->misc1 ?
-			psp->state->misc2 << FRACBITS :
-			WEAPONTOP;
-	return center_sy + scale_amount * (weapon_sy - center_sy);
+	return center_sy + scale_amount * (psp->sy - center_sy);
 }
 
 
@@ -196,10 +170,7 @@ fixed_t P_CalculateWeaponBobY(player_t* player)
 //
 void P_SetPsprite(player_t* player, int position, statenum_t stnum)
 {
-	pspdef_t*	psp;
-	state_t*	state;
-
-	psp = &player->psprites[position];
+	pspdef_t* psp = &player->psprites[position];
     player->psprnum = position;
 
 	do
@@ -211,26 +182,25 @@ void P_SetPsprite(player_t* player, int position, statenum_t stnum)
 			break;
 		}
 
-		if(stnum >= NUMSTATES)
+		if (stnum >= NUMSTATES)
 			return;
 
-		state = &states[stnum];
-		psp->state = state;
-		psp->tics = state->tics;		// could be 0
+		psp->state = &states[stnum];
+		psp->tics = psp->state->tics;		// could be 0
 
-		if (state->misc1)
+		if (psp->state->misc1)
 		{
 			// coordinate set
-			psp->sx = state->misc1 << FRACBITS;
-			psp->sy = state->misc2 << FRACBITS;
+			psp->sx = psp->state->misc1 << FRACBITS;
+			psp->sy = psp->state->misc2 << FRACBITS;
 		}
 
 		// Call action routine.
 		// Modified handling.
-		if (state->action)
+		if (psp->state->action)
 		{
-			if(!player->spectator)
-				state->action(player->mo);
+			if (!player->spectator)
+				psp->state->action(player->mo);
 
 			if (!psp->state)
 				break;
@@ -480,8 +450,8 @@ void P_FireWeapon(player_t* player)
 	}
 
 	P_SetMobjState(player->mo, S_PLAY_ATK1);
-	statenum_t newstate = weaponinfo[player->readyweapon].atkstate;
-	P_SetPsprite(player, ps_weapon, newstate);
+	statenum_t newstatenum = weaponinfo[player->readyweapon].atkstate;
+	P_SetPsprite(player, ps_weapon, newstatenum);
 	P_NoiseAlert(player->mo, player->mo);
 }
 
@@ -498,12 +468,11 @@ void P_DropWeapon(player_t* player)
 
 //
 // A_WeaponReady
-// The player can fire the weapon
-// or change to another weapon at this time.
-// Follows after getting weapon up,
-// or after previous attack/fire sequence.
 //
-void A_WeaponReady(AActor *mo)
+// The player can fire the weapon or change to another weapon at this time.
+// Follows after getting weapon up, or after previous attack/fire sequence.
+//
+void A_WeaponReady(AActor* mo)
 {
     player_t* player = mo->player;
     struct pspdef_s* psp = &player->psprites[player->psprnum];
@@ -515,19 +484,16 @@ void A_WeaponReady(AActor *mo)
 	if (player->readyweapon == wp_chainsaw && psp->state == &states[S_SAW])
 		A_FireSound(player, "weapons/sawidle");
 
-	// check for change
-	//	if player is dead, put the weapon away
+	// check for change -  if player is dead, put the weapon away
 	if (player->pendingweapon != wp_nochange || player->health <= 0)
 	{
-		// change weapon
-		//	(pending weapon should already be validated)
-		statenum_t newstate = weaponinfo[player->readyweapon].downstate;
-		P_SetPsprite(player, ps_weapon, newstate);
+		// change weapon (pending weapon should already be validated)
+		statenum_t newstatenum = weaponinfo[player->readyweapon].downstate;
+		P_SetPsprite(player, ps_weapon, newstatenum);
 		return;
 	}
 
-	// check for fire
-	//	the missile launcher and bfg do not auto fire
+	// check for fire - the missile launcher and bfg do not auto fire
 	// [AM] Allow warmup to disallow weapon firing.
 	if (player->cmd.buttons & BT_ATTACK && warmup.checkfireweapon())
 	{
@@ -542,7 +508,8 @@ void A_WeaponReady(AActor *mo)
 		player->attackdown = false;
 
 	// bob the weapon based on movement speed
-	P_BobWeapon(player);
+	psp->sx = P_CalculateWeaponBobX(player, 1.0f);
+	psp->sy = P_CalculateWeaponBobY(player, 1.0f);
 }
 
 //
@@ -550,7 +517,7 @@ void A_WeaponReady(AActor *mo)
 // The player can re-fire the weapon
 // without lowering it entirely.
 //
-void A_ReFire(AActor *mo)
+void A_ReFire(AActor* mo)
 {
     player_t *player = mo->player;
 
@@ -572,16 +539,9 @@ void A_ReFire(AActor *mo)
 }
 
 
-void A_CheckReload(AActor *mo)
+void A_CheckReload(AActor* mo)
 {
-    player_t* player = mo->player;
-
-	P_CheckAmmo(player);
-
-#if 0
-	if (player->ammo[am_shell]<2)
-		P_SetPsprite (player, ps_weapon, S_DSNR1);
-#endif
+	P_CheckAmmo(mo->player);
 }
 
 //
@@ -589,7 +549,7 @@ void A_CheckReload(AActor *mo)
 // Lowers current weapon,
 //  and changes weapon at bottom.
 //
-void A_Lower(AActor *mo)
+void A_Lower(AActor* mo)
 {
     player_t* player = mo->player;
     struct pspdef_s* psp = &player->psprites[player->psprnum];
@@ -626,7 +586,7 @@ void A_Lower(AActor *mo)
 //
 // A_Raise
 //
-void A_Raise(AActor *mo)
+void A_Raise(AActor* mo)
 {
     player_t *player = mo->player;
     struct pspdef_s *psp = &player->psprites[player->psprnum];
@@ -650,7 +610,7 @@ void A_Raise(AActor *mo)
 //
 // A_GunFlash
 //
-void A_GunFlash (AActor *mo)
+void A_GunFlash(AActor* mo)
 {
     player_t *player = mo->player;
 
@@ -667,7 +627,7 @@ void A_GunFlash (AActor *mo)
 //
 // A_Punch
 //
-void A_Punch (AActor *mo)
+void A_Punch(AActor* mo)
 {
 	angle_t 	angle;
 	int 		damage;
@@ -706,7 +666,7 @@ void A_Punch (AActor *mo)
 //
 // A_Saw
 //
-void A_Saw (AActor *mo)
+void A_Saw(AActor* mo)
 {
 	angle_t 	angle;
 	int 		damage;
@@ -761,7 +721,7 @@ void A_Saw (AActor *mo)
 //
 // A_FireMissile
 //
-void A_FireMissile (AActor *mo)
+void A_FireMissile(AActor* mo)
 {
     player_t *player = mo->player;
 
@@ -776,7 +736,7 @@ void A_FireMissile (AActor *mo)
 // A_FireBFG
 //
 
-void A_FireBFG (AActor *mo)
+void A_FireBFG(AActor* mo)
 {
     player_t *player = mo->player;
 
@@ -801,7 +761,7 @@ void A_FireBFG (AActor *mo)
 //
 // A_FirePlasma
 //
-void A_FirePlasma (AActor *mo)
+void A_FirePlasma(AActor* mo)
 {
     player_t *player = mo->player;
 
@@ -820,7 +780,7 @@ void A_FirePlasma (AActor *mo)
 //
 static int RailOffset;
 
-void A_FireRailgun (AActor *mo)
+void A_FireRailgun(AActor* mo)
 {
 	int damage;
 
@@ -849,19 +809,19 @@ void A_FireRailgun (AActor *mo)
 	RailOffset = 0;
 }
 
-void A_FireRailgunRight (AActor *mo)
+void A_FireRailgunRight(AActor* mo)
 {
 	RailOffset = 10;
 	A_FireRailgun (mo);
 }
 
-void A_FireRailgunLeft (AActor *mo)
+void A_FireRailgunLeft(AActor* mo)
 {
 	RailOffset = -10;
 	A_FireRailgun (mo);
 }
 
-void A_RailWait (AActor *mo)
+void A_RailWait(AActor* mo)
 {
 }
 
@@ -871,7 +831,7 @@ void A_RailWait (AActor *mo)
 // the height of the intended target
 //
 
-fixed_t P_BulletSlope(AActor *mo)
+fixed_t P_BulletSlope(AActor* mo)
 {
 	fixed_t pitchslope = finetangent[FINEANGLES/4 - (mo->pitch>>ANGLETOFINESHIFT)];
 	fixed_t bulletslope;
@@ -976,7 +936,7 @@ void P_FireHitscan (player_t *player, size_t quantity, spreadtype_t spread)
 //
 // A_FirePistol
 //
-void A_FirePistol (AActor *mo)
+void A_FirePistol(AActor* mo)
 {
     player_t *player = mo->player;
 
@@ -998,7 +958,7 @@ void A_FirePistol (AActor *mo)
 //
 // A_FireShotgun
 //
-void A_FireShotgun (AActor *mo)
+void A_FireShotgun(AActor* mo)
 {
     player_t *player = mo->player;
 
@@ -1019,7 +979,7 @@ void A_FireShotgun (AActor *mo)
 //
 // A_FireShotgun2
 //
-void A_FireShotgun2 (AActor *mo)
+void A_FireShotgun2(AActor* mo)
 {
     player_t *player = mo->player;
 
@@ -1038,7 +998,7 @@ void A_FireShotgun2 (AActor *mo)
 //
 // A_FireCGun
 //
-void A_FireCGun (AActor *mo)
+void A_FireCGun(AActor* mo)
 {
     player_t *player = mo->player;
     struct pspdef_s *psp = &player->psprites[player->psprnum];
@@ -1065,22 +1025,22 @@ void A_FireCGun (AActor *mo)
 
 
 
-void A_Light0 (AActor *Actor)
+void A_Light0(AActor* mo)
 {
-	if (Actor->player)
-        Actor->player->extralight = 0;
+	if (mo->player)
+        mo->player->extralight = 0;
 }
 
-void A_Light1 (AActor *Actor)
+void A_Light1(AActor* mo)
 {
-	if (Actor->player)
-        Actor->player->extralight = 1;
+	if (mo->player)
+        mo->player->extralight = 1;
 }
 
-void A_Light2 (AActor *Actor)
+void A_Light2(AActor* mo)
 {
-	if (Actor->player)
-        Actor->player->extralight = 2;
+	if (mo->player)
+        mo->player->extralight = 2;
 }
 
 
@@ -1088,7 +1048,7 @@ void A_Light2 (AActor *Actor)
 // A_BFGSpray
 // Spawn a BFG explosion on every monster in view
 //
-void A_BFGSpray (AActor *mo)
+void A_BFGSpray(AActor* mo)
 {
 	int 				i;
 	int 				j;
@@ -1131,11 +1091,9 @@ void A_BFGSpray (AActor *mo)
 //
 // A_BFGsound
 //
-void A_BFGsound (AActor *mo)
+void A_BFGsound(AActor* mo)
 {
-    player_t *player = mo->player;
-
-	A_FireSound(player, "weapons/bfgf");
+	A_FireSound(mo->player, "weapons/bfgf");
 }
 
 
@@ -1143,43 +1101,40 @@ void A_BFGsound (AActor *mo)
 // P_SetupPsprites
 // Called at start of level for each player.
 //
-void P_SetupPsprites (player_t* player)
+void P_SetupPsprites(player_t* player)
 {
-	int i;
-
 	// remove all psprites
-	for (i=0 ; i<NUMPSPRITES ; i++)
+	for (int i = 0; i < NUMPSPRITES; i++)
 		player->psprites[i].state = NULL;
 
 	// spawn the gun
 	player->pendingweapon = player->readyweapon;
-	P_BringUpWeapon (player);
+	P_BringUpWeapon(player);
 }
 
 //
 // P_MovePsprites
+//
 // Called every tic by player thinking routine.
 //
-void P_MovePsprites (player_t* player)
+void P_MovePsprites(player_t* player)
 {
-	int 		i;
-	pspdef_t*	psp;
-	state_t*	state;
-
-	psp = &player->psprites[0];
-	for (i=0 ; i<NUMPSPRITES ; i++, psp++)
+	for (int i = 0; i < NUMPSPRITES; i++)
 	{
+		pspdef_t* psp = &player->psprites[i];
+
 		// a null state means not active
-		if ( (state = psp->state) )
+		if (psp->state)
 		{
 			// drop tic count and possibly change state
-
 			// a -1 tic count never changes
+
 			if (psp->tics != -1)
 			{
 				psp->tics--;
-				if (!psp->tics)
-					P_SetPsprite (player, i, psp->state->nextstate);
+
+				if (psp->tics == 0)
+					P_SetPsprite(player, i, psp->state->nextstate);
 			}
 		}
 	}
@@ -1188,21 +1143,21 @@ void P_MovePsprites (player_t* player)
 	player->psprites[ps_flash].sy = player->psprites[ps_weapon].sy;
 }
 
-void A_OpenShotgun2 (AActor *mo)
+void A_OpenShotgun2(AActor* mo)
 {
     player_t *player = mo->player;
 
 	A_FireSound(player, "weapons/sshoto");
 }
 
-void A_LoadShotgun2 (AActor *mo)
+void A_LoadShotgun2(AActor* mo)
 {
     player_t *player = mo->player;
 
 	A_FireSound(player, "weapons/sshotl");
 }
 
-void A_CloseShotgun2 (AActor *mo)
+void A_CloseShotgun2(AActor* mo)
 {
     player_t *player = mo->player;
 
@@ -1216,7 +1171,7 @@ void A_CloseShotgun2 (AActor *mo)
 //
 // Immediately changes a players weapon to a new weapon and new animation state
 //
-void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic)
+void A_ForceWeaponFire(AActor* mo, weapontype_t weapon, int tic)
 {
 	if (!mo || !mo->player)
 		return;
@@ -1225,8 +1180,6 @@ void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic)
 
 	player->weaponowned[weapon] = true;
 	player->readyweapon = weapon;
-
-	P_BobWeapon(player);
 
 	P_SetPsprite(player, ps_weapon, weaponinfo[player->readyweapon].atkstate);
 

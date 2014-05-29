@@ -824,8 +824,11 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 }
 
 
-fixed_t P_CalculateWeaponBobX(player_t* player);
-fixed_t P_CalculateWeaponBobY(player_t* player);
+EXTERN_CVAR(sv_allowmovebob)
+EXTERN_CVAR(cl_movebob)
+
+fixed_t P_CalculateWeaponBobX(player_t* player, float scale_amount);
+fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount);
 
 //
 // R_DrawPSprite
@@ -842,8 +845,10 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	vissprite_t*		vis;
 	vissprite_t 		avis;
 
-	fixed_t sx = P_CalculateWeaponBobX(&displayplayer());
-	fixed_t sy = P_CalculateWeaponBobY(&displayplayer());
+
+	float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
+	fixed_t sx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
+	fixed_t sy = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
 
 	// decide which patch to use
 #ifdef RANGECHECK
