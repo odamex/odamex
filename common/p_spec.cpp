@@ -397,7 +397,7 @@ static void P_InitAnimDefs ()
 			else if (SC_Compare ("switch"))   // Don't support switchdef yet...
 			{
 				//P_ProcessSwitchDef ();
-				SC_ScriptError("switchdef not supported.");
+//				SC_ScriptError("switchdef not supported.");
 			}
 			else if (SC_Compare ("warp"))
 			{
