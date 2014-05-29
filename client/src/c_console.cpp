@@ -1739,7 +1739,7 @@ void C_DrawGMid()
 			? ST_StatusBarY(surface_width, surface_height) : surface_height;
 
 		int x = surface_width / 2;
-		int y = (bottom - line_height * GameLines) / 2;
+		int y = (bottom / 2 - line_height * GameLines) / 2;
 
 		for (int i = 0; i < GameLines; i++, y += line_height)
 		{
