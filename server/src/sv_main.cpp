@@ -4627,7 +4627,8 @@ BEGIN_COMMAND (playerinfo)
 	Printf(PRINT_HIGH, " userinfo.team    - %d \n",		player->userinfo.team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist);
 	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
-	Printf(PRINT_HIGH, " userinfo.color   - %d \n",		player->userinfo.color);
+	Printf(PRINT_HIGH, " userinfo.color   - #%02x%02x%02x \n",
+			player->userinfo.color.r, player->userinfo.color.g, player->userinfo.color.b);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);
 	Printf(PRINT_HIGH, "--------------------------------------- \n");
