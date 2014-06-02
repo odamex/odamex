@@ -384,8 +384,12 @@ void D_PageDrawer()
 		else
 			destw = surface_width, desth = surface_width * 3 / 4;
 
+		page_surface->lock();
+
 		primary_surface->blit(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
 				(surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth);
+
+		page_surface->unlock();
 	}
 }
 

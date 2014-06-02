@@ -1304,6 +1304,8 @@ static void ST_refreshBackground()
 		R_DrawBorder(surface_width - ST_X, ST_Y, surface_width, surface_height);
 	}
 
+	stbar_surface->lock();
+
 	DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
 	stbar_canvas->DrawPatch(sbar, 0, 0);
 
@@ -1331,6 +1333,8 @@ static void ST_refreshBackground()
 			stbar_canvas->DrawPatch(faceclassic[displayplayer_id - 1], ST_FX, ST_FY);
 		}
 	}
+
+	stbar_surface->unlock();
 }
 
 

@@ -521,6 +521,8 @@ void F_CastDrawer()
 	const patch_t* background_patch = W_CachePatch("BOSSBACK");
 
 	// draw the background to the surface
+	cast_surface->lock();
+
 	cast_surface->getDefaultCanvas()->DrawPatch(background_patch, 0, 0);
 
 	// draw the current frame in the middle of the screen
@@ -539,6 +541,8 @@ void F_CastDrawer()
 	int y = (primary_surface->getHeight() - height) / 2;
 
 	primary_surface->blit(cast_surface, 0, 0, 320, 200, x, y, width, height);
+
+	cast_surface->unlock();
 
 	screen->DrawTextClean(CR_RED,
 		x + (width - CleanXfac * V_StringWidth(castorder[castnum].name)) / 2,

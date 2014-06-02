@@ -1251,6 +1251,8 @@ static forceinline void R_RenderFire(int x, int y)
 	IWindowSurface* surface = I_GetPrimarySurface();
 	int surface_pitch = surface->getPitchInPixels();
 
+	fire_surface->lock();
+
 	for (int b = 0; b < fire_surface_height; b++)
 	{
 		PIXEL_T* to = (PIXEL_T*)surface->getBuffer() + y * surface_pitch + x;
@@ -1266,6 +1268,8 @@ static forceinline void R_RenderFire(int x, int y)
 			}
 		}
 	}
+
+	fire_surface->unlock();
 }
 
 static void M_PlayerSetupDrawer (void)

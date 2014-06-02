@@ -59,157 +59,6 @@ EXTERN_CVAR (vid_fullscreen)
 
 // ****************************************************************************
 
-
-// ============================================================================
-//
-// ISDL12WindowSurface class implementation
-//
-// Abstraction for SDL 1.2 drawing surfaces, wrapping the SDL_Surface struct.
-//
-// ============================================================================
-
-//
-// ISDL12WindowSurface::ISDL12WindowSurface
-//
-ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, int width, int height, int bpp) :
-	IWindowSurface(window), mSDLSurface(NULL), mLocks(0)
-{
-	Uint32 flags = SDL_SWSURFACE;
-	SDL_Surface* sdlsurface = SDL_CreateRGBSurface(flags, width, height, bpp, 0, 0, 0, 0);
-
-	initializeFromSDLSurface(sdlsurface);
-	mFreeSDLSurface = true;
-
-	memset(mPalette, 255, 256 * sizeof(*mPalette));
-}
-
-
-//
-// ISDL12WindowSurface::ISDL12WindowSurface
-//
-// Constructs the surface using an existing SDL_Surface handle.
-//
-ISDL12WindowSurface::ISDL12WindowSurface(IWindow* window, SDL_Surface* sdlsurface) :
-	IWindowSurface(window), mSDLSurface(NULL), mLocks(0)
-{
-	initializeFromSDLSurface(sdlsurface);
-
-	// shouldn't free sdlsurface if it was obtained from SDL_SetVideoMode
-	mFreeSDLSurface = false;
-
-	memset(mPalette, 255, 256 * sizeof(*mPalette));
-}
-
-
-//
-// ISDL12WindowSurface::initializeFromSDLSurface
-//
-// Private helper function for the constructors.
-//
-void ISDL12WindowSurface::initializeFromSDLSurface(SDL_Surface* sdlsurface)
-{
-	if (mSDLSurface)
-		SDL_FreeSurface(mSDLSurface);
-
-	mSDLSurface = sdlsurface;
-
-	lock();
-	mSurfaceBuffer = (byte*)mSDLSurface->pixels;
-	mWidth = mSDLSurface->w;
-	mHeight = mSDLSurface->h;
-	mBitsPerPixel = mSDLSurface->format->BitsPerPixel;
-	mBytesPerPixel = mBitsPerPixel / 8;
-	mPitch = mSDLSurface->pitch;
-	mPitchInPixels = mPitch / mBytesPerPixel;
-	unlock();
-
-	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
-	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
-	assert(mBitsPerPixel == 8 || mBitsPerPixel == 32);
-}
-
-
-//
-// ISDL12WindowSurface::~ISDL12WindowSurface
-//
-// Frees the SDL_Surface handle.
-//
-ISDL12WindowSurface::~ISDL12WindowSurface()
-{
-	if (mSDLSurface && mFreeSDLSurface)
-		SDL_FreeSurface(mSDLSurface);
-}
-
-
-//
-// ISDL12WindowSurface::lock
-//
-// Locks the surface for direct pixel access. This must be called prior to
-// accessing mSurfaceBuffer.
-//
-void ISDL12WindowSurface::lock()
-{
-	if (++mLocks == 1)
-		SDL_LockSurface(mSDLSurface);
-
-	assert(mLocks >= 1 && mLocks < 100);
-}
-
-
-//
-// ISDL12WindowSurface::unlock
-//
-// Unlocks the surface after direct pixel access. This must be called after
-// accessing mSurfaceBuffer.
-//
-void ISDL12WindowSurface::unlock()
-{
-	if (--mLocks == 0)
-		SDL_UnlockSurface(mSDLSurface);
-
-	assert(mLocks >= 0 && mLocks < 100);
-}
-
-
-//
-// ISDL12WindowSurface::setPalette
-//
-// Accepts an array of 256 argb_t values.
-//
-void ISDL12WindowSurface::setPalette(const argb_t* palette)
-{
-	memcpy(mPalette, palette, 256 * sizeof(*mPalette));
-
-	if (mSDLSurface->format->BitsPerPixel == 8)
-	{
-		lock();
-
-		assert(mSDLSurface->format->palette != NULL);
-		assert(mSDLSurface->format->palette->ncolors == 256);
-		SDL_Color* sdlcolors = mSDLSurface->format->palette->colors;
-		for (int c = 0; c < 256; c++)
-		{
-			sdlcolors[c].r = mPalette[c].r;
-			sdlcolors[c].g = mPalette[c].g;
-			sdlcolors[c].b = mPalette[c].b;
-		}
-
-		unlock();
-	}
-}
-
-
-//
-// ISDLWindowSurface::getPalette
-//
-const argb_t* ISDL12WindowSurface::getPalette() const
-{
-	return mPalette;
-}
-
-
-// ****************************************************************************
-
 // ============================================================================
 //
 // ISDL12Window class implementation
@@ -223,10 +72,11 @@ const argb_t* ISDL12WindowSurface::getPalette() const
 // Constructs a new application window using SDL 1.2.
 // A ISDL12WindowSurface object is instantiated for frame rendering.
 //
-ISDL12Window::ISDL12Window(int width, int height, int bpp, bool fullscreen, bool vsync) :
+ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) :
 	IWindow(),
 	mPrimarySurface(NULL),
-	mIsFullScreen(fullscreen), mUseVSync(vsync), mNeedPaletteRefresh(true)
+	mIsFullScreen(fullscreen), mUseVSync(vsync), mNeedPaletteRefresh(true),
+	mLocks(0)
 {
 	const SDL_version* SDLVersion = SDL_Linked_Version();
 
@@ -288,6 +138,36 @@ ISDL12Window::~ISDL12Window()
 {
 	delete mPrimarySurface;
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
+
+
+//
+// ISDL12Window::lockSurface
+//
+// Locks the surface for direct pixel access. This must be called prior to
+// accessing the primary surface's buffer.
+//
+void ISDL12Window::lockSurface()
+{
+	if (++mLocks == 1)
+		SDL_LockSurface(SDL_GetVideoSurface());
+	assert(mLocks >= 1 && mLocks < 100);
+	mPrimarySurface->lock();
+}
+
+
+//
+// ISDL12Window::unlockSurface
+//
+// Unlocks the surface after direct pixel access. This must be called after
+// accessing the primary surface's buffer.
+//
+void ISDL12Window::unlockSurface()
+{
+	if (--mLocks == 0)
+		SDL_UnlockSurface(SDL_GetVideoSurface());
+	assert(mLocks >= 0 && mLocks < 100);
+	mPrimarySurface->unlock();
 }
 
 
@@ -415,9 +295,29 @@ std::string ISDL12Window::getVideoDriverName() const
 //
 // Saves the given palette and updates it during refresh.
 //
-void ISDL12Window::setPalette(const argb_t* palette)
+void ISDL12Window::setPalette(const argb_t* palette_colors)
 {
-	getPrimarySurface()->setPalette(palette);
+	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
+
+	if (sdlsurface->format->BitsPerPixel == 8)
+	{
+		lockSurface();
+
+		assert(sdlsurface->format->palette != NULL);
+		assert(sdlsurface->format->palette->ncolors == 256);
+		SDL_Color* sdlcolors = sdlsurface->format->palette->colors;
+		for (int c = 0; c < 256; c++)
+		{
+			sdlcolors[c].r = palette_colors[c].r;
+			sdlcolors[c].g = palette_colors[c].g;
+			sdlcolors[c].b = palette_colors[c].b;
+		}
+
+		unlockSurface();
+	}
+
+	getPrimarySurface()->setPalette(palette_colors);
+
 	mNeedPaletteRefresh = true;
 }
 
@@ -428,7 +328,7 @@ void ISDL12Window::setPalette(const argb_t* palette)
 // Sets the window size to the specified size and frees the existing primary
 // surface before instantiating a new primary surface.
 // 
-bool ISDL12Window::setMode(int width, int height, int bpp, bool fullscreen, bool vsync)
+bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync)
 {
 	assert(width <= MAXWIDTH);
 	assert(height <= MAXHEIGHT);
@@ -454,8 +354,8 @@ bool ISDL12Window::setMode(int width, int height, int bpp, bool fullscreen, bool
 
 	// Make sure we don't set the resolution smaller than Doom's original 320x200
 	// resolution. Bad things might happen.
-	width = clamp(width, 320, MAXWIDTH);
-	height = clamp(height, 200, MAXHEIGHT);
+	width = clamp<uint16_t>(width, 320, MAXWIDTH);
+	height = clamp<uint16_t>(height, 200, MAXHEIGHT);
 
 	#ifdef _WIN32
 	// fullscreen directx requires a 32-bit mode to fix broken palette
@@ -500,26 +400,34 @@ bool ISDL12Window::setMode(int width, int height, int bpp, bool fullscreen, bool
 	if (sdlsurface == NULL)
 		return false;
 
-	const SDL_PixelFormat* fmt = sdlsurface->format;
-	#ifdef __BIG_ENDIAN__
-	if (fmt->Rshift != 8 || fmt->Gshift != 16 || fmt->Bshift != 24)
-		Printf(PRINT_HIGH, "ISDL12Window::setMode: unexpected primary surface pixel format! " \
-					"r = %i, g = %i, b = %i\n", fmt->Rshift, fmt->Gshift, fmt->Bshift);
-	#else
-	if (fmt->Rshift != 16 || fmt->Gshift != 8 || fmt->Bshift != 0)
-		Printf(PRINT_HIGH, "ISDL12Window::setMode: unexpected primary surface pixel format! " \
-					"r = %i, g = %i, b = %i\n", fmt->Rshift, fmt->Gshift, fmt->Bshift);
-	#endif
-
-	mWidth = width;
-	mHeight = height;
-	mBitsPerPixel = bpp;
-	mIsFullScreen = fullscreen;
+	mWidth = sdlsurface->w;
+	mHeight = sdlsurface->h;
+	mBitsPerPixel = sdlsurface->format->BitsPerPixel;
+	mIsFullScreen = sdlsurface->flags & SDL_FULLSCREEN;
 	mUseVSync = vsync;
+
+	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
+	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
+	assert(mBitsPerPixel == 8 || mBitsPerPixel == 32);
 
 	// create a new IWindowSurface for the SDL_Surface handle that
 	// was returned by SDL_SetVideoMode
-	mPrimarySurface = new ISDL12WindowSurface(this, sdlsurface);	
+
+	SDL_LockSurface(sdlsurface);
+
+	const SDL_PixelFormat* sdlformat = sdlsurface->format;
+
+	// handle SDL not reporting correct Ashift/Aloss
+	uint8_t aloss = sdlformat->BitsPerPixel == 32 ? 0 : 8;
+	uint8_t ashift = 48 - sdlformat->Rshift - sdlformat->Gshift - sdlformat->Bshift;
+
+	PixelFormat format(sdlformat->BitsPerPixel,
+		aloss, sdlformat->Rloss, sdlformat->Gloss, sdlformat->Bloss,
+		ashift, sdlformat->Rshift, sdlformat->Gshift, sdlformat->Bshift);
+
+	mPrimarySurface = new IWindowSurface(mWidth, mHeight, &format, sdlsurface->pixels, sdlsurface->pitch);
+
+	SDL_UnlockSurface(sdlsurface);
 
 	return true;
 }

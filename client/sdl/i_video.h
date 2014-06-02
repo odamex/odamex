@@ -27,9 +27,11 @@
 
 #include "doomtype.h"
 #include "m_swap.h"
+#include "v_pixelformat.h"
 
 #include <string>
 #include <vector>
+#include <cassert>
 
 enum EDisplayType
 {
@@ -84,6 +86,8 @@ std::string I_GetVideoDriverName();
 
 EDisplayType I_DisplayType();
 
+const PixelFormat* I_GetDefaultPixelFormat(int bpp);
+
 void I_DrawLoadingIcon();
 
 
@@ -101,119 +105,124 @@ void I_DrawLoadingIcon();
 class IWindowSurface
 {
 public:
-	IWindowSurface(IWindow* window);
-	virtual ~IWindowSurface();
+	IWindowSurface();
+	IWindowSurface(uint16_t width, uint16_t height, const PixelFormat* format,
+					void* buffer = NULL, uint16_t pitch = 0);
+	IWindowSurface(IWindowSurface* base_surface, uint16_t width, uint16_t height);
 
-	IWindow* getWindow()
-	{	return mWindow;	}
-
-	const IWindow* getWindow() const
-	{	return mWindow;	}
+	~IWindowSurface();
 
 	DCanvas* getDefaultCanvas();
 	DCanvas* createCanvas();
 	void releaseCanvas(DCanvas* canvas);
 
-	virtual byte* getBuffer() = 0;
-	virtual const byte* getBuffer() const = 0;
+	inline uint8_t* getBuffer()
+	{
+		#ifdef DEBUG
+		if (!mLocks)
+			return NULL;
+		#endif
+		return mSurfaceBuffer;
+	}
 
-	virtual byte* getBuffer(int x, int y)
-	{	return getBuffer() + y * getPitch() + x * getBytesPerPixel();	}
+	inline const uint8_t* getBuffer() const
+	{
+		#ifdef DEBUG
+		if (!mLocks)
+			return NULL;
+		#endif
+		return mSurfaceBuffer;
+	}
 
-	virtual const byte* getBuffer(int x, int y) const
-	{	return getBuffer() + y * getPitch() + x * getBytesPerPixel();	}
+	inline uint8_t* getBuffer(uint16_t x, uint16_t y)
+	{
+		#ifdef DEBUG
+		if (!mLocks)
+			return NULL;
+		#endif
+		return mSurfaceBuffer + int(y) * getPitch() + int(x) * getBytesPerPixel();
+	}
 
-	virtual void lock() { }
-	virtual void unlock() { } 
+	inline const uint8_t* getBuffer(uint16_t x, uint16_t y) const
+	{
+		#ifdef DEBUG
+		if (!mLocks)
+			return NULL;
+		#endif
+		return mSurfaceBuffer + int(y) * getPitch() + int(x) * getBytesPerPixel();
+	}
 
-	virtual int getWidth() const = 0;
-	virtual int getHeight() const = 0;
-	virtual int getPitch() const = 0;
+	inline uint16_t getWidth() const
+	{	return mWidth;	}
 
-	virtual int getPitchInPixels() const
-	{	return getPitch() / getBytesPerPixel();	}
+	inline uint16_t getHeight() const
+	{	return mHeight;	}
 
-	virtual int getBitsPerPixel() const = 0;
+	inline uint16_t getPitch() const
+	{	return mPitch;	}
 
-	virtual int getBytesPerPixel() const
-	{	return getBitsPerPixel() / 8;	}
+	inline uint16_t getPitchInPixels() const
+	{	return mPitchInPixels;	}
 
-	virtual void setPalette(const argb_t* palette) = 0;
-	virtual const argb_t* getPalette() const = 0;
+	inline uint8_t getBitsPerPixel() const
+	{	return mPixelFormat.getBitsPerPixel();	}
 
-	virtual void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
+	inline uint8_t getBytesPerPixel() const
+	{	return mPixelFormat.getBytesPerPixel();	}
+
+	inline const PixelFormat* getPixelFormat() const
+	{	return &mPixelFormat;	}
+
+	void setPalette(const argb_t* palette_colors)
+	{	memcpy(mPalette, palette_colors, 256 * sizeof(*mPalette));	}
+
+	const argb_t* getPalette() const
+	{	return mPalette;	}
+
+	void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
 			int destx, int desty, int destw, int desth);
 
-	virtual void clear();
+	void clear();
+
+	inline void lock()
+	{
+		mLocks++;
+		assert(mLocks >= 1 && mLocks < 100);
+	}
+
+	inline void unlock()
+	{
+		mLocks--;
+		assert(mLocks >= 0 && mLocks < 100);
+	}
 
 private:
-	IWindow*			mWindow;
+	// disable copy constructor and assignment operator
+	IWindowSurface(const IWindowSurface&);
+	IWindowSurface& operator=(const IWindowSurface&);
 
 	// Storage for all DCanvas objects allocated by this surface
 	typedef std::vector<DCanvas*> DCanvasCollection;
 	DCanvasCollection	mCanvasStore;
 
 	DCanvas*			mCanvas;
+
+	uint8_t*			mSurfaceBuffer;
+	bool				mOwnsSurfaceBuffer;
+
+	argb_t				mPalette[256];
+
+	PixelFormat			mPixelFormat;
+
+	uint16_t			mWidth;
+	uint16_t			mHeight;
+
+	uint16_t			mPitch;
+	uint16_t			mPitchInPixels;		// mPitch / mPixelFormat.getBytesPerPixel()
+
+	int16_t				mLocks;
 };
 
-
-// ============================================================================
-//
-// IGenericWindowSurface class interface
-//
-// Implementation of IWindowSurface that is useful for headless clients. The
-// contents of the buffer are never used.
-//
-// ============================================================================
-
-class IGenericWindowSurface : public IWindowSurface
-{
-public:
-	IGenericWindowSurface(IWindow* window, int width, int height, int bpp);
-
-	IGenericWindowSurface(IWindowSurface* base_surface, int width, int height);
-
-	virtual ~IGenericWindowSurface();
-
-	virtual byte* getBuffer()
-	{	return mSurfaceBuffer;	}
-
-	virtual const byte* getBuffer() const
-	{	return mSurfaceBuffer;	}
-
-	virtual int getWidth() const
-	{	return mWidth;	}
-
-	virtual int getHeight() const
-	{	return mHeight;	}
-
-	virtual int getPitch() const
-	{	return mPitch;	}
-
-	virtual int getBitsPerPixel() const
-	{	return mBitsPerPixel;	}
-
-	virtual void setPalette(const argb_t* palette)
-	{	mPalette = palette;	}
-
-	virtual const argb_t* getPalette() const
-	{	return mPalette;	}	
-
-private:
-	// disable copy constructor and assignment operator
-	IGenericWindowSurface(const IGenericWindowSurface&);
-	IGenericWindowSurface& operator=(const IGenericWindowSurface&);
-
-	byte*			mSurfaceBuffer;
-	bool			mAllocatedSurfaceBuffer;
-
-	const argb_t*	mPalette;
-
-	int				mWidth;
-	int				mHeight;
-	int				mBitsPerPixel;
-	int				mPitch;
-};
 
 
 // ****************************************************************************
@@ -292,16 +301,27 @@ public:
 	virtual IWindowSurface* getPrimarySurface() = 0;
 	virtual const IWindowSurface* getPrimarySurface() const = 0;
 
-	virtual int getWidth() const = 0;
-	virtual int getHeight() const = 0;
-	virtual int getBitsPerPixel() const = 0;
+	virtual uint16_t getWidth() const
+	{	return getPrimarySurface()->getWidth();	}
+
+	virtual uint16_t getHeight() const
+	{	return getPrimarySurface()->getHeight();	}
+
+	virtual uint8_t getBitsPerPixel() const
+	{	return getPrimarySurface()->getBitsPerPixel();	}
 
 	virtual int getBytesPerPixel() const
-	{	return getBitsPerPixel() / 8;	}
+	{	return getPrimarySurface()->getBytesPerPixel();	}
 
 	virtual bool isFullScreen() const = 0;
 
-	virtual bool setMode(int width, int height, int bpp, bool fullscreen, bool vsync) = 0;
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) = 0;
+
+	virtual void lockSurface()
+	{	getPrimarySurface()->lock();	}
+
+	virtual void unlockSurface()
+	{	getPrimarySurface()->unlock();	}
 
 	virtual void refresh() { }
 
@@ -332,7 +352,9 @@ class IDummyWindow : public IWindow
 {
 public:
 	IDummyWindow() : IWindow()
-	{	mPrimarySurface = new IGenericWindowSurface(this, 320, 200, 8); }
+	{
+		mPrimarySurface = I_AllocateSurface(320, 200, 8);
+	}
 
 	virtual ~IDummyWindow()
 	{	delete mPrimarySurface;	}
@@ -349,19 +371,7 @@ public:
 	virtual const IWindowSurface* getPrimarySurface() const
 	{	return mPrimarySurface;	}
 
-	virtual int getWidth() const
-	{	return 0;	}
-
-	virtual int getHeight() const
-	{	return 0;	}
-
-	virtual int getBitsPerPixel() const
-	{	return 8;	}
-
-	virtual int getBytesPerPixel() const
-	{	return 1;	}
-
-	virtual bool setMode(int width, int height, int bpp, bool fullscreen, bool vsync)
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync)
 	{	return true;	}
 
 	virtual bool isFullScreen() const

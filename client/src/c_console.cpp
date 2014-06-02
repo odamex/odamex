@@ -1189,9 +1189,14 @@ void C_DrawConsole()
 
 		int x = (primary_surface_width - background_surface->getWidth()) / 2;
 		int y = (primary_surface_height - background_surface->getHeight()) / 2;
+
+		background_surface->lock();
+
 		primary_surface->blit(background_surface, 0, 0,
 				background_surface->getWidth(), background_surface->getHeight(),
 				x, y, background_surface->getWidth(), background_surface->getHeight());
+
+		background_surface->unlock();
 	}
 
 	if (ConBottom >= 12)
