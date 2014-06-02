@@ -153,6 +153,18 @@ public:
 	inline uint32_t getBMax() const
 	{	return (1 << getBBits()) - 1;	}
 
+	inline uint8_t getAShift() const
+	{	return mAShift;	}
+
+	inline uint8_t getRShift() const
+	{	return mRShift;	}
+
+	inline uint8_t getGShift() const
+	{	return mGShift;	}
+
+	inline uint8_t getBShift() const
+	{	return mBShift;	}
+
 private:
 	uint8_t		mBitsPerPixel;
 

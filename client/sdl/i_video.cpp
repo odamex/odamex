@@ -125,9 +125,32 @@ END_COMMAND(vid_listmodes)
 //
 BEGIN_COMMAND(vid_currentmode)
 {
-	Printf(PRINT_HIGH, "%dx%dx%d\n",
+	const PixelFormat* format = I_GetWindow()->getPrimarySurface()->getPixelFormat();
+
+	if (format->getBitsPerPixel() == 8)
+	{
+		Printf(PRINT_HIGH, "%dx%d %dbpp indexed\n",
 			I_GetWindow()->getWidth(), I_GetWindow()->getHeight(),
-			I_GetWindow()->getBitsPerPixel());
+			format->getBitsPerPixel());
+	}
+	else
+	{
+		int apos = (24 - format->getAShift()) >> 3;
+		int rpos = (24 - format->getRShift()) >> 3;
+		int gpos = (24 - format->getGShift()) >> 3;
+		int bpos = (24 - format->getBShift()) >> 3;
+
+		char str[9];
+		str[apos] = 'A';	str[apos + 4] = '0' + format->getABits();
+		str[rpos] = 'R';	str[rpos + 4] = '0' + format->getRBits();
+		str[gpos] = 'G';	str[gpos + 4] = '0' + format->getGBits();
+		str[bpos] = 'B';	str[bpos + 4] = '0' + format->getBBits();
+		str[8] = '\0';
+
+		Printf(PRINT_HIGH, "%dx%d %dbpp %s\n",
+			I_GetWindow()->getWidth(), I_GetWindow()->getHeight(),
+			format->getBitsPerPixel(), str);
+	}
 }
 END_COMMAND(vid_currentmode)
 
@@ -1149,9 +1172,9 @@ const PixelFormat* I_GetDefaultPixelFormat(int bpp)
 	if (bpp == 32)
 	{
 		#ifdef __BIG_ENDIAN__
-		static PixelFormat format(32, 0, 0, 0, 0, 24, 16, 8, 0);
-		#else
 		static PixelFormat format(32, 0, 0, 0, 0, 0, 8, 16, 24);
+		#else
+		static PixelFormat format(32, 0, 0, 0, 0, 24, 16, 8, 0);
 		#endif
 
 		return &format;

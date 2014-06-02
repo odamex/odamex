@@ -305,12 +305,14 @@ void ISDL12Window::setPalette(const argb_t* palette_colors)
 
 		assert(sdlsurface->format->palette != NULL);
 		assert(sdlsurface->format->palette->ncolors == 256);
+
 		SDL_Color* sdlcolors = sdlsurface->format->palette->colors;
 		for (int c = 0; c < 256; c++)
 		{
-			sdlcolors[c].r = palette_colors[c].r;
-			sdlcolors[c].g = palette_colors[c].g;
-			sdlcolors[c].b = palette_colors[c].b;
+			argb_t color = palette_colors[c];
+			sdlcolors[c].r = color.r;
+			sdlcolors[c].g = color.g;
+			sdlcolors[c].b = color.b;
 		}
 
 		unlockSurface();
@@ -422,7 +424,7 @@ bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	uint8_t ashift = 48 - sdlformat->Rshift - sdlformat->Gshift - sdlformat->Bshift;
 
 	PixelFormat format(sdlformat->BitsPerPixel,
-		aloss, sdlformat->Rloss, sdlformat->Gloss, sdlformat->Bloss,
+		8 - aloss, 8 - sdlformat->Rloss, 8 - sdlformat->Gloss, 8 - sdlformat->Bloss,
 		ashift, sdlformat->Rshift, sdlformat->Gshift, sdlformat->Bshift);
 
 	mPrimarySurface = new IWindowSurface(mWidth, mHeight, &format, sdlsurface->pixels, sdlsurface->pitch);
