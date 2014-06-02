@@ -100,7 +100,7 @@ static forceinline void rt_copycols(int hx, int sx, int yl, int yh)
 	count++;
 
 	shaderef_t pal = shaderef_t(&realcolormaps, 0);
-	dest = (pixel_t *)(ylookup[yl] + columnofs[sx]);
+	dest = (pixel_t*)ylookup[yl] + sx + viewwindowx;
 	source = &dc_temp[yl*4 + hx];
 	pitch = dcol.pitch / sizeof(pixel_t);
 
@@ -138,7 +138,7 @@ static forceinline void rt_mapcols(int hx, int sx, int yl, int yh)
 		return;
 	count++;
 
-	dest = (pixel_t *)(ylookup[yl] + columnofs[sx]);
+	dest = (pixel_t*)ylookup[yl] + sx + viewwindowx;
 	source = &dc_temp[yl*4 + hx];
 	pitch = dcol.pitch / sizeof(pixel_t);
 
@@ -176,7 +176,7 @@ static forceinline void rt_tlatecols(int hx, int sx, int yl, int yh)
 		return;
 	count++;
 
-	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
+	dest = (pixel_t*)ylookup[yl] + sx + viewwindowx;
 	source = &dc_temp[yl*4 + hx];
 	pitch = dcol.pitch / sizeof(pixel_t);
 	
@@ -223,7 +223,7 @@ static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
 	int fga = (dcol.translevel & ~0x03FF) >> 8;
 	int bga = 255 - fga;
 
-	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
+	dest = (pixel_t*)ylookup[yl] + sx + viewwindowx;
 	source = &dc_temp[yl*4 + hx];
 	pitch = dcol.pitch / sizeof(pixel_t);
 
@@ -265,7 +265,7 @@ static forceinline void rt_tlatelucentcols(int hx, int sx, int yl, int yh)
 	int fga = (dcol.translevel & ~0x03FF) >> 8;
 	int bga = 255 - fga;
 
-	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
+	dest = (pixel_t*)ylookup[yl] + sx + viewwindowx;
 	source = &dc_temp[yl*4 + hx];
 	pitch = dcol.pitch / sizeof(pixel_t);
 

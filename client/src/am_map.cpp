@@ -606,11 +606,11 @@ void AM_initColors (BOOL overlayed)
 		{
 			argb_t ba = AM_GetColorFromString(palette_colors, am_backcolor.cstring()).rgb;
 			if (ba.r < 16)
-				ba.r += 32;
+				ba.r = ba.r + 32;
 			if (ba.g < 16)
-				ba.g += 32;
+				ba.g = ba.g + 32;
 			if (ba.b < 16)
-				ba.b += 32;
+				ba.b = ba.b + 32;
 
 			AlmostBackground.rgb = argb_t(ba.r - 16, ba.g - 16, ba.b - 16);
 			AlmostBackground.index = V_BestColor(palette_colors, AlmostBackground.rgb);

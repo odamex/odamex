@@ -954,7 +954,7 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-#define FB_COLDEST_P ((palindex_t*)(ylookup[dcol.yl] + columnofs[dcol.x]))
+#define FB_COLDEST_P ((palindex_t*)ylookup[dcol.yl] + dcol.x + viewwindowx)
 
 //
 // R_FillColumnP
@@ -1110,7 +1110,7 @@ void R_DrawColumnHorizP()
 //
 // ----------------------------------------------------------------------------
 
-#define FB_SPANDEST_P ((palindex_t*)(ylookup[dspan.y] + columnofs[dspan.x1]))
+#define FB_SPANDEST_P ((palindex_t*)ylookup[dspan.y] + dspan.x1 + viewwindowx)
 
 //
 // R_FillSpanP
@@ -1307,7 +1307,7 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-#define FB_COLDEST_D ((argb_t*)(ylookup[dcol.yl] + columnofs[dcol.x]))
+#define FB_COLDEST_D ((argb_t*)ylookup[dcol.yl] + dcol.x + viewwindowx)
 
 //
 // R_FillColumnD
@@ -1396,7 +1396,7 @@ void R_DrawTlatedLucentColumnD()
 //
 // ----------------------------------------------------------------------------
 
-#define FB_SPANDEST_D ((argb_t*)(ylookup[dspan.y] + columnofs[dspan.x1]))
+#define FB_SPANDEST_D ((argb_t*)ylookup[dspan.y] + dspan.x1 + viewwindowx)
 
 //
 // R_FillSpanD

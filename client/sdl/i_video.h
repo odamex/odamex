@@ -117,6 +117,12 @@ public:
 	virtual byte* getBuffer() = 0;
 	virtual const byte* getBuffer() const = 0;
 
+	virtual byte* getBuffer(int x, int y)
+	{	return getBuffer() + y * getPitch() + x * getBytesPerPixel();	}
+
+	virtual const byte* getBuffer(int x, int y) const
+	{	return getBuffer() + y * getPitch() + x * getBytesPerPixel();	}
+
 	virtual void lock() { }
 	virtual void unlock() { } 
 

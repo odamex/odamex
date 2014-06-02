@@ -156,7 +156,7 @@ void R_DrawSpanD_SSE2 (void)
 	xfrac = dspan.xfrac;
 	yfrac = dspan.yfrac;
 
-	dest = (argb_t *)(ylookup[dspan.y] + columnofs[dspan.x1]);
+	dest = (argb_t*)ylookup[dspan.y] + dspan.x1 + viewwindowx;
 
 	// We do not check for zero spans here?
 	count = dspan.x2 - dspan.x1 + 1;
@@ -251,7 +251,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	float id = dspan.id, ids = dspan.idstep;
 	
 	// framebuffer	
-	argb_t *dest = (argb_t *)( ylookup[dspan.y] + columnofs[dspan.x1] );
+	argb_t* dest = (argb_t*)ylookup[dspan.y] + dspan.x1 + viewwindowx;
 	
 	// texture data
 	byte *src = (byte *)dspan.source;

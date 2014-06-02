@@ -69,7 +69,6 @@ extern int				linecount;
 extern int				loopcount;
 
 extern byte**			ylookup;
-extern int*				columnofs;
 
 extern fixed_t			render_lerp_amount;
 
