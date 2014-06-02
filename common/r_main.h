@@ -68,8 +68,8 @@ extern int				validcount;
 extern int				linecount;
 extern int				loopcount;
 
-extern byte*			ylookup[MAXHEIGHT];
-extern int				columnofs[MAXWIDTH];
+extern byte**			ylookup;
+extern int*				columnofs;
 
 extern fixed_t			render_lerp_amount;
 
