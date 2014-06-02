@@ -216,7 +216,7 @@ void D_DisplayTicker()
 //
 void D_Display()
 {
-	if (nodrawers)
+	if (nodrawers || I_IsHeadless())
 		return; 				// for comparative timing / profiling
 
 	BEGIN_STAT(D_Display);
