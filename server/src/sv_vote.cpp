@@ -408,7 +408,7 @@ public:
 	}
 	bool exec(void)
 	{
-		G_ExitLevel(0, 1);
+		G_ChangeMap();
 		return true;
 	}
 };
