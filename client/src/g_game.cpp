@@ -55,6 +55,7 @@
 #include "w_wad.h"
 #include "p_local.h"
 #include "s_sound.h"
+#include "s_sndseq.h"
 #include "gstrings.h"
 #include "r_data.h"
 #include "r_sky.h"
@@ -885,7 +886,24 @@ void G_Ticker (void)
 			gameaction = ga_nothing;
 			break;
 		case ga_fullconsole:
-			C_FullConsole ();
+			if (demoplayback)
+				G_CheckDemoStatus();
+
+			extern BOOL advancedemo;
+			advancedemo = false;
+
+			if (gamestate != GS_STARTUP)
+			{
+				level.music[0] = '\0';
+				S_Start();
+				SN_StopAllSequences();
+				V_SetBlend(0,0,0,0);
+				I_EnableKeyRepeat();
+			}
+
+			gamestate = GS_FULLCONSOLE;
+			C_FullConsole();
+
 			gameaction = ga_nothing;
 			break;
 		case ga_nothing:
@@ -2112,6 +2130,22 @@ void G_TimeDemo(const char* name)
 	gameaction = ga_playdemo;
 }
 
+
+//
+// G_TestDemo
+//
+void G_TestDemo(const char* name)
+{
+	nodrawers = noblit = true;
+	timingdemo = true;			// don't call I_Sleep in between frames
+	extern bool demotest;
+	demotest = true;
+
+	defdemoname = name;
+	gameaction = ga_playdemo;
+}
+
+
 //
 // G_CleanupDemo
 //
@@ -2174,6 +2208,12 @@ BOOL G_CheckDemoStatus (void)
 				Printf(PRINT_HIGH, "demotest:%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
 			else
 				Printf(PRINT_HIGH, "demotest:no player\n");
+
+			demotest = false;
+
+			// exit the application
+			CL_QuitCommand();
+			return false;
 		}
 
 		if (singledemo || timingdemo)

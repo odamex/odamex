@@ -66,6 +66,7 @@
 #include "g_warmup.h"
 #include "c_level.h"
 #include "v_text.h"
+#include "hu_stuff.h"
 
 #include <string>
 #include <vector>
@@ -615,8 +616,9 @@ void CL_StepTics(unsigned int count)
 		if (advancedemo)
 			D_DoAdvanceDemo();
 
-		C_Ticker ();
-		M_Ticker ();
+		C_Ticker();
+		M_Ticker();
+		HU_Ticker();
 
 		if (P_AtInterval(TICRATE))
 			CL_PlayerTimes();

@@ -126,7 +126,7 @@ event_t events[MAXEVENTS];
 int eventhead;
 int eventtail;
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
-bool demotest;
+bool demotest = false;
 
 IWindowSurface* page_surface;
 
@@ -524,7 +524,7 @@ void D_DoAdvanceDemo (void)
 //
 // D_Close
 //
-void STACK_ARGS D_Close (void)
+void STACK_ARGS D_Close()
 {
 	if (page_surface)
 	{
@@ -541,13 +541,10 @@ void STACK_ARGS D_Close (void)
 void D_StartTitle (void)
 {
 	// CL_QuitNetGame();
-	bool firstTime = true;
-	if(firstTime)
-		atterm (D_Close);
 
 	gameaction = ga_nothing;
 	demosequence = -1;
-	D_AdvanceDemo ();
+	D_AdvanceDemo();
 }
 
 bool HashOk(std::string &required, std::string &available)
@@ -718,6 +715,8 @@ void D_DoomMain()
 
 	gamestate = GS_STARTUP;
 
+	atterm(D_Close);
+
 	// init console so it can capture all of the startup messages
 	C_InitConsole();
 	atterm(C_ShutdownConsole);
@@ -730,7 +729,7 @@ void D_DoomMain()
 	if (lzo_init() != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError("Could not initialize LZO routines");
 
-    C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
+	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
 	M_LoadDefaults();					// load before initing other systems
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
@@ -784,8 +783,8 @@ void D_DoomMain()
 	if (!video_driver.empty())
 		Printf(PRINT_HIGH, "I_SetVideoMode: Using %s video driver.\n", video_driver.c_str());
 
-    // SDL needs video mode set up first before input code can be used
-    I_InitInput();
+	// SDL needs video mode set up first before input code can be used
+	I_InitInput();
 
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	D_Init();
@@ -920,6 +919,14 @@ void D_DoomMain()
 		G_TimeDemo(Args.GetArg(p + 1));
 	}
 
+	// denis - this will run a demo and quit
+	p = Args.CheckParm("+demotest");
+	if (p && p < Args.NumArgs() - 1)
+	{
+		singledemo = true;
+		G_TestDemo(Args.GetArg(p + 1));
+	}
+
 
 	// --- process network demo cli switches ---
 
@@ -944,80 +951,50 @@ void D_DoomMain()
 		CL_NetDemoPlay(filename);
 	}
 
+	// --- initialization complete ---
 
 	Printf_Bold("\n\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
 	if (gamestate != GS_CONNECTING)
 		Printf(PRINT_HIGH, "Type connect <address> or use the Odamex Launcher to connect to a game.\n");
     Printf(PRINT_HIGH, "\n");
 
-
-	// denis - bring back the demos
-    if (gameaction != ga_loadgame)
-    {
-		if (autostart || netgame || singledemo)
+	// Play a demo, start a map, or show the title screen	
+	if (singledemo)
+	{
+		G_DoPlayDemo();
+	}
+	else if (autostart || netgame)
+	{
+		if (autostart)
 		{
-			if (singledemo)
-				G_DoPlayDemo();
-			else
-			{
-				if (autostart)
-				{
-					// single player warp (like in g_level)
-					serverside = true;
-                    sv_allowexit = "1";
-                    sv_freelook = "1";
-                    sv_allowjump = "1";
-                    sv_allowredscreen = "1";
-                    sv_gametype = GM_COOP;
+			// single player warp (like in g_level)
+			serverside = true;
+			sv_allowexit = "1";
+			sv_freelook = "1";
+			sv_allowjump = "1";
+			sv_allowredscreen = "1";
+			sv_gametype = GM_COOP;
 
-					players.clear();
-					players.push_back(player_t());
-					players.back().playerstate = PST_REBORN;
-					consoleplayer_id = displayplayer_id = players.back().id = 1;
-				}
-
-				G_InitNew(startmap);
-				if (autorecord)
-					G_RecordDemo(startmap, demorecordfile);
-			}
+			players.clear();
+			players.push_back(player_t());
+			players.back().playerstate = PST_REBORN;
+			consoleplayer_id = displayplayer_id = players.back().id = 1;
 		}
-        else
-		{
-            if (gamestate != GS_CONNECTING)
-                gamestate = GS_HIDECONSOLE;
 
-			C_HideConsole();
+		G_InitNew(startmap);
+		if (autorecord)
+			G_RecordDemo(startmap, demorecordfile);
+	}
+	else if (gamestate != GS_CONNECTING)
+	{
+		C_HideConsole();
+		D_StartTitle();		// start up intro loop
 
-			if (gamemode == commercial_bfg) // DOOM 2 BFG Edtion
-                AddCommandString("menu_main");
-
-			D_StartTitle(); // start up intro loop
-		}
+		if (gamemode == commercial_bfg) // DOOM 2 BFG Edtion
+			AddCommandString("menu_main");
     }
 
-	// denis - this will run a demo and quit
-	p = Args.CheckParm("+demotest");
-	if (p && p < Args.NumArgs() - 1)
-	{
-		demotest = 1;
-
-		extern std::string defdemoname;
-		defdemoname = Args.GetArg(p + 1);
-		G_DoPlayDemo();
-
-		while (demoplayback)
-		{
-			DObject::BeginFrame();
-			G_Ticker();
-			DObject::EndFrame();
-			gametic++;
-		}
-	}
-	else
-	{
-		demotest = 0;
-		D_DoomLoop();		// never returns
-	}
+	D_DoomLoop();		// never returns
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")

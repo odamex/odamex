@@ -40,6 +40,7 @@
 void HU_Init();
 void STACK_ARGS HU_Shutdown();
 
+void HU_Ticker();
 BOOL HU_Responder (event_t* ev);
 void HU_Drawer (void);
 

@@ -185,7 +185,7 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 	// Not given a pitch? Just base pitch on the given width
 	if (pitch == 0)
 	{
-		// align the pitch
+		// make the pitch a multiple of the alignment value
 		mPitch = (mWidth * mPixelFormat.getBytesPerPixel() + alignment - 1) & ~(alignment - 1);
 		// add a little to the pitch to prevent cache thrashing if it's 512 or 1024
 		if ((mPitch & 511) == 0)
@@ -199,13 +199,13 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 		uint8_t* buffer = new uint8_t[mPitch * mHeight + alignment];
 
 		// calculate the offset from buffer to the next aligned memory address
-		ptrdiff_t offset = (uint8_t*)((uintptr_t)(buffer + alignment) & ~(alignment - 1)) - buffer;
+		ptrdiff_t offset = ((uintptr_t)(buffer + alignment) & ~(alignment - 1)) - (uintptr_t)buffer;
 
 		mSurfaceBuffer = buffer + offset;
 
 		// verify we'll have enough room to store offset immediately
-		// before mSurfaceBuffer's address
-		assert(offset > 0);
+		// before mSurfaceBuffer's address and that offset's value is sane.
+		assert(offset > 0 && offset <= alignment);
 
 		// store mSurfaceBuffer's offset from buffer so that mSurfaceBuffer
 		// can be properly freed later.

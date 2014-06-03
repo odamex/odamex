@@ -226,9 +226,24 @@ void STACK_ARGS HU_Shutdown()
 
 
 //
+// HU_Ticker
+//
+// Perform maintence for the HUD system once per gametic.
+//
+void HU_Ticker()
+{
+	// verify the chat mode status is valid
+	if (ConsoleState != c_up || menuactive || (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION))
+		HU_UnsetChatMode();
+}
+
+
+//
 // HU_Responder
 //
-BOOL HU_Responder (event_t *ev)
+// Chat mode text entry
+//
+BOOL HU_Responder(event_t *ev)
 {
 	if (ev->data1 == KEY_RALT || ev->data1 == KEY_LALT || ev->data1 == KEY_HAT1)
 	{
@@ -239,8 +254,7 @@ BOOL HU_Responder (event_t *ev)
 	{
 		return false;
 	}
-	else if (  (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION)
-		     || ev->type != ev_keydown)
+	else if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || ev->type != ev_keydown)
 	{
 		if (HU_ChatMode() != CHAT_INACTIVE)
             return true;

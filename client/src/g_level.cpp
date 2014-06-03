@@ -483,10 +483,14 @@ void G_DoLoadLevel (int position)
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;
 
-	if(gamestate != GS_DEMOSCREEN && ConsoleState == c_down)
-		C_HideConsole();
+	bool demoscreen = (gamestate == GS_DEMOSCREEN);
 
 	gamestate = GS_LEVEL;
+
+	// [SL] Hide the console unless this is just part of the demo loop
+	// It's annoying to have the console close every time a new demo starts...
+	if (!demoscreen)
+		C_HideConsole();
 
 	// [SL] clear the saved sector data from the last level
 	R_ResetInterpolation();
