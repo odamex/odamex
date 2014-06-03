@@ -180,7 +180,7 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 	mPixelFormat(*format),
 	mWidth(width), mHeight(height), mPitch(pitch), mLocks(0)
 {
-	const uint32_t alignment = 16, alignment_mask = alignment - 1;
+	const uint32_t alignment = 16;
 
 	// Not given a pitch? Just base pitch on the given width
 	if (pitch == 0)
@@ -197,11 +197,19 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 	if (mOwnsSurfaceBuffer)
 	{
 		uint8_t* buffer = new uint8_t[mPitch * mHeight + alignment];
-		mSurfaceBuffer = buffer + ((alignment - ((uintptr_t)buffer & (alignment - 1))) & (alignment - 1));
 
-		// Store the number of bytes mSurfaceBuffer was moved for alignment
-		// purposes so that mSurfaceBuffer can be freed properly later.
-		mSurfaceBuffer[-1] = mSurfaceBuffer - buffer;
+		// calculate the offset from buffer to the next aligned memory address
+		ptrdiff_t offset = (uint8_t*)((uintptr_t)(buffer + alignment) & ~(alignment - 1)) - buffer;
+
+		mSurfaceBuffer = buffer + offset;
+
+		// verify we'll have enough room to store offset immediately
+		// before mSurfaceBuffer's address
+		assert(offset > 0);
+
+		// store mSurfaceBuffer's offset from buffer so that mSurfaceBuffer
+		// can be properly freed later.
+		buffer[offset - 1] = offset;
 	}
 
 	memset(mPalette, 255, 256 * sizeof(*mPalette));
@@ -246,10 +254,12 @@ IWindowSurface::~IWindowSurface()
 	for (DCanvasCollection::iterator it = mCanvasStore.begin(); it != mCanvasStore.end(); ++it)
 		delete *it;
 
-	// If mSurfaceBuffer was created and then moved for alignment purposes,
-	// calculate the buffer's original address when freeing it.
+	// calculate the buffer's original address when freeing mSurfaceBuffer
 	if (mOwnsSurfaceBuffer)
-		delete [] (mSurfaceBuffer - mSurfaceBuffer[-1]);
+	{
+		ptrdiff_t offset = mSurfaceBuffer[-1];
+		delete [] (mSurfaceBuffer - offset);
+	}
 }
 
 
