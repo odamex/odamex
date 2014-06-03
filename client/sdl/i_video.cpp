@@ -180,15 +180,29 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 	mPixelFormat(*format),
 	mWidth(width), mHeight(height), mPitch(pitch), mLocks(0)
 {
+	const uint32_t alignment = 16, alignment_mask = alignment - 1;
+
 	// Not given a pitch? Just base pitch on the given width
 	if (pitch == 0)
-		mPitch = mWidth * mPixelFormat.getBytesPerPixel();
+	{
+		// align the pitch
+		mPitch = (mWidth * mPixelFormat.getBytesPerPixel() + alignment - 1) & ~(alignment - 1);
+		// add a little to the pitch to prevent cache thrashing if it's 512 or 1024
+		if ((mPitch & 511) == 0)
+			mPitch += alignment;
+	}
 
 	mPitchInPixels = mPitch / mPixelFormat.getBytesPerPixel();
 
-	// TODO: make mSurfaceBuffer aligned to 16-byte boundary
 	if (mOwnsSurfaceBuffer)
-		mSurfaceBuffer = new uint8_t[mPitch * mHeight];
+	{
+		uint8_t* buffer = new uint8_t[mPitch * mHeight + alignment];
+		mSurfaceBuffer = buffer + ((alignment - ((uintptr_t)buffer & (alignment - 1))) & (alignment - 1));
+
+		// Store the number of bytes mSurfaceBuffer was moved for alignment
+		// purposes so that mSurfaceBuffer can be freed properly later.
+		mSurfaceBuffer[-1] = mSurfaceBuffer - buffer;
+	}
 
 	memset(mPalette, 255, 256 * sizeof(*mPalette));
 }
@@ -232,8 +246,10 @@ IWindowSurface::~IWindowSurface()
 	for (DCanvasCollection::iterator it = mCanvasStore.begin(); it != mCanvasStore.end(); ++it)
 		delete *it;
 
+	// If mSurfaceBuffer was created and then moved for alignment purposes,
+	// calculate the buffer's original address when freeing it.
 	if (mOwnsSurfaceBuffer)
-		delete [] mSurfaceBuffer;
+		delete [] (mSurfaceBuffer - mSurfaceBuffer[-1]);
 }
 
 
