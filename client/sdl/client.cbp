@@ -420,6 +420,7 @@
 		<Unit filename="../../common/tarray.h" />
 		<Unit filename="../../common/timegm.cpp" />
 		<Unit filename="../../common/v_palette.h" />
+		<Unit filename="../../common/v_pixelformat.h" />
 		<Unit filename="../../common/v_video.h" />
 		<Unit filename="../../common/version.cpp" />
 		<Unit filename="../../common/version.h" />
