@@ -28,10 +28,9 @@
 #include <stdlib.h>
 
 #ifdef OSX
-#include <mach/clock.h>
-#include <mach/mach.h>
-
-#include <Carbon/Carbon.h>
+	#include <mach/clock.h>
+	#include <mach/mach.h>
+	#include <Carbon/Carbon.h>
 #endif
 
 #include "win32inc.h"
@@ -50,16 +49,21 @@
 #endif // WIN32
 
 #ifdef UNIX
-#define HAVE_PWD_H
-// for getuid and geteuid
-#include <unistd.h>
-#include <sys/types.h>
-#include <limits.h>
-#include <time.h>
+	#define HAVE_PWD_H
+	// for getuid and geteuid
+	#include <unistd.h>
+	#include <sys/types.h>
+	#include <limits.h>
+	#include <time.h>
 #endif
 
 #ifdef HAVE_PWD_H
-#include <pwd.h>
+	#include <pwd.h>
+#endif
+
+#ifdef X11
+	#include <X11/Xlib.h>
+	#include <X11/Xatom.h>
 #endif
 
 #include <sstream>
@@ -93,21 +97,21 @@
 #include "cl_main.h"
 
 #ifdef _XBOX
-#include "i_xbox.h"
+	#include "i_xbox.h"
 #endif
 
 #ifdef GEKKO
-#include "i_wii.h"
+	#include "i_wii.h"
 #endif
 
 #ifndef GCONSOLE // I will add this back later -- Hyper_Eye
-// For libtextscreen to link properly
-extern "C"
-{
-#include "txt_main.h"
-}
-#define ENDOOM_W 80
-#define ENDOOM_H 25
+	// For libtextscreen to link properly
+	extern "C"
+	{
+	#include "txt_main.h"
+	}
+	#define ENDOOM_W 80
+	#define ENDOOM_H 25
 #endif // _XBOX
 
 EXTERN_CVAR (r_loadicon)
@@ -773,12 +777,6 @@ void I_SetTitleString (const char *title)
 		DoomStartupTitle[i] = title[i] | 0x80;
 }
 
-#ifdef LINUX
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#define X11
-#endif
-
 //
 // I_GetClipboardText
 //
@@ -793,7 +791,7 @@ std::string I_GetClipboardText()
 	Display *dis = XOpenDisplay(NULL);
 	int screen = DefaultScreen(dis);
 
-	if(!dis)
+	if (!dis)
 	{
 		Printf(PRINT_HIGH, "I_GetClipboardText: XOpenDisplay failed");
 		return "";
@@ -801,11 +799,12 @@ std::string I_GetClipboardText()
 
 	XLockDisplay(dis);
 
-	Window WindowEvents = XCreateSimpleWindow(dis, RootWindow(dis, screen), 0, 0, 1, 1, 0, BlackPixel(dis, screen), BlackPixel(dis, screen));
+	Window WindowEvents = XCreateSimpleWindow(dis, RootWindow(dis, screen), 0, 0, 1, 1, 0,
+										BlackPixel(dis, screen), BlackPixel(dis, screen));
 
-	if(XGetSelectionOwner(dis, XA_PRIMARY) != None)
+	if (XGetSelectionOwner(dis, XA_PRIMARY) != None)
 	{
-		if(!XConvertSelection(dis, XA_PRIMARY, XA_STRING, XA_PRIMARY, WindowEvents, CurrentTime))
+		if (!XConvertSelection(dis, XA_PRIMARY, XA_STRING, XA_PRIMARY, WindowEvents, CurrentTime))
 		{
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
@@ -831,8 +830,9 @@ std::string I_GetClipboardText()
 		u_long len, bytes_left, temp;
 		u_char *data;
 
-		result = XGetWindowProperty(dis, WindowEvents, XA_PRIMARY, 0, 0, False, AnyPropertyType, &type, &format, &len, &bytes_left, &data);
-		if(result != Success)
+		result = XGetWindowProperty(dis, WindowEvents, XA_PRIMARY, 0, 0, False, AnyPropertyType,
+							&type, &format, &len, &bytes_left, &data);
+		if (result != Success)
 		{
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
@@ -841,7 +841,7 @@ std::string I_GetClipboardText()
 			return "";
 		}
 
-		if(!bytes_left)
+		if (!bytes_left)
 		{
 			XDestroyWindow(dis, WindowEvents);
 			DPrintf("I_GetClipboardText: Len was: %d", len);
@@ -850,8 +850,9 @@ std::string I_GetClipboardText()
 			return "";
 		}
 
-		result = XGetWindowProperty(dis, WindowEvents, XA_PRIMARY, 0, bytes_left, False, AnyPropertyType, &type, &format, &len, &temp, &data);
-		if(result != Success)
+		result = XGetWindowProperty(dis, WindowEvents, XA_PRIMARY, 0, bytes_left, False, AnyPropertyType,
+							&type, &format, &len, &temp, &data);
+		if (result != Success)
 		{
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
@@ -860,7 +861,7 @@ std::string I_GetClipboardText()
 			return "";
 		}
 
-		ret = std::string((const char *)data, len);
+		ret = std::string((const char*)data, len);
 		XFree(data);
 	}
 

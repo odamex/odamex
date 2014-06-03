@@ -72,6 +72,13 @@ else()
   message(WARNING "SDL_mixer not found, client application can not be built.")
 endif()
 
+# X11 configuration
+if(UNIX AND NOT APPLE)
+  if(X11_FOUND)
+    include_directories(${X11_INCLUDE_DIRS})
+  endif()
+endif()
+
 # zlib configuration
 find_package(ZLIB QUIET)
 if(NOT ZLIB_FOUND)
@@ -167,6 +174,9 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
 
   if(UNIX AND NOT APPLE)
     target_link_libraries(odamex rt)
+    if(X11_FOUND)
+      target_link_libraries(odamex X11)
+    endif()
   endif()
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})

@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
         }
 #endif
 
-#ifdef LINUX
+#ifdef X11
 		// [SL] 2011-12-21 - Ensure we're getting raw DGA mouse input from X11,
 		// bypassing X11's mouse acceleration
 		putenv((char*)"SDL_VIDEO_X11_DGAMOUSE=1");

@@ -1202,19 +1202,17 @@ void C_FullConsole()
 //
 // C_HideConsole
 //
-// Sets the console's state to hidden. This only has an effect when not in
-// full console mode.
+// Sets the console's state to hidden.
 //
 void C_HideConsole()
 {
-    // [Russell] - Prevent console from going up when downloading files or connecting
-//	if (!C_UseFullConsole())
-	{
-		ConsoleState = c_up;
-		ConBottom = 0;
-		if (!menuactive)
-			I_DisableKeyRepeat();
-	}
+	ConsoleState = c_up;
+	ConBottom = 0;
+	if (!menuactive)
+		I_DisableKeyRepeat();
+
+	CmdLine.clear();
+	History.resetPosition();
 }
 
 
