@@ -86,7 +86,8 @@ std::string I_GetVideoDriverName();
 
 EDisplayType I_DisplayType();
 
-const PixelFormat* I_GetDefaultPixelFormat(int bpp);
+const PixelFormat* I_Get8bppPixelFormat();
+const PixelFormat* I_Get32bppPixelFormat();
 
 void I_DrawLoadingIcon();
 

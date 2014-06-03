@@ -291,20 +291,56 @@ struct argb_t
 		};
 
 		uint32_t value;
+
+		uint8_t channels[4];
 	};
 
 	argb_t() { }
 	argb_t(uint32_t _value) : value(_value) { }
 
-	#ifdef __BIG_ENDIAN__
-	argb_t(uint8_t _r, uint8_t _g, uint8_t _b)				: a(0), r(_r), g(_g), b(_b) { }
-	argb_t(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)	: a(_a), r(_r), g(_g), b(_b) { }
-	#else
-	argb_t(uint8_t _r, uint8_t _g, uint8_t _b)				: b(_b), g(_g), r(_r), a(0) { }
-	argb_t(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)	: b(_b), g(_g), r(_r), a(_a) { }
-	#endif
+	inline uint8_t geta() const
+	{	return channels[a_num];	}
+
+	inline uint8_t getr() const
+	{	return channels[r_num];	}
+
+	inline uint8_t getg() const
+	{	return channels[g_num];	}
+
+	inline uint8_t getb() const
+	{	return channels[b_num];	}
+
+	inline void seta(uint8_t n)
+	{	channels[a_num] = n;	}
+
+	inline void setr(uint8_t n)
+	{	channels[r_num] = n;	}
+
+	inline void setg(uint8_t n)
+	{	channels[g_num] = n;	}
+
+	inline void setb(uint8_t n)
+	{	channels[b_num] = n;	}
+
+	argb_t(uint8_t _r, uint8_t _g, uint8_t _b)
+	{
+		seta(0); setr(_r); setg(_g); setb(_b);
+	}
+
+	argb_t(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)
+	{
+		seta(_a); setr(_r); setg(_g); setb(_b);
+	}
 
 	inline operator uint32_t () const { return value; }
+
+	static void setChannels(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)
+	{
+		a_num = _a; r_num = _r; g_num = _g; b_num = _b;
+	}
+
+private:
+	static uint8_t a_num, r_num, g_num, b_num;
 };
 
 

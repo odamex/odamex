@@ -172,5 +172,11 @@ private:
 	uint8_t		mALoss, mRLoss, mGLoss, mBLoss;
 };
 
+static inline void V_Convert(void* dest, const PixelFormat* destformat, uint16_t destpitch,
+						void* source, const PixelFormat* source_format, uint16_t sourcepitch,
+						uint16_t width, uint16_t height)
+{
+}
+
 
 #endif	// __V_PIXELFORMAT_H__

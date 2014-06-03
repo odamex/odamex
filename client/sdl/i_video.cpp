@@ -47,6 +47,9 @@
     #include "resource.h"
 #endif	// _WIN32
 
+// Declared in doomtype.h as part of argb_t
+uint8_t argb_t::a_num, argb_t::r_num, argb_t::g_num, argb_t::b_num;
+
 // Global IWindow instance for the application window
 static IWindow* window = NULL;
 
@@ -96,7 +99,6 @@ CVAR_FUNC_IMPL(vid_vsync)
 	V_ForceVideoModeAdjustment();
 }
 
-
 //
 // vid_listmodes
 //
@@ -135,17 +137,13 @@ BEGIN_COMMAND(vid_currentmode)
 	}
 	else
 	{
-		int apos = (24 - format->getAShift()) >> 3;
-		int rpos = (24 - format->getRShift()) >> 3;
-		int gpos = (24 - format->getGShift()) >> 3;
-		int bpos = (24 - format->getBShift()) >> 3;
+		char str[9] = { 0 };
+		argb_t* d1 = (argb_t*)str;
+		argb_t* d2 = (argb_t*)str + 1;
 
-		char str[9];
-		str[apos] = 'A';	str[apos + 4] = '0' + format->getABits();
-		str[rpos] = 'R';	str[rpos + 4] = '0' + format->getRBits();
-		str[gpos] = 'G';	str[gpos + 4] = '0' + format->getGBits();
-		str[bpos] = 'B';	str[bpos + 4] = '0' + format->getBBits();
-		str[8] = '\0';
+		d1->seta('A'); d1->setr('R'); d1->setg('G'); d1->setb('B');
+		d2->seta('0' + format->getABits()); d2->setr('0' + format->getRBits());
+		d2->setg('0' + format->getGBits()); d2->setb('0' + format->getBBits());
 
 		Printf(PRINT_HIGH, "%dx%d %dbpp %s\n",
 			I_GetWindow()->getWidth(), I_GetWindow()->getHeight(),
@@ -868,7 +866,10 @@ IWindowSurface* I_AllocateSurface(int width, int height, int bpp)
 	if (I_GetPrimarySurface() && bpp == I_GetPrimarySurface()->getBitsPerPixel())
 		return new IWindowSurface(width, height, I_GetPrimarySurface()->getPixelFormat());
  	
-	return new IWindowSurface(width, height, I_GetDefaultPixelFormat(bpp));
+	if (bpp == 8)	
+		return new IWindowSurface(width, height, I_Get8bppPixelFormat());
+	else
+		return new IWindowSurface(width, height, I_Get32bppPixelFormat());
 }
 
 
@@ -1153,34 +1154,36 @@ std::string I_GetVideoDriverName()
 
 
 //
-// I_GetDefaultPixelFormat
+// I_Get8bppPixelFormat
 //
-// Returns the platform's default PixelFormat for the specified number of
-// bits per pixel.
+// Returns the platform's PixelFormat for 8bpp video modes.
 //
-const PixelFormat* I_GetDefaultPixelFormat(int bpp)
+const PixelFormat* I_Get8bppPixelFormat()
 {
-	if (bpp == 8)
-	{
-		static PixelFormat format(8, 0, 0, 0, 0, 0, 0, 0, 0);
-		return &format;
-	}
+	static PixelFormat format(8, 0, 0, 0, 0, 0, 0, 0, 0);
+	return &format;
+}
 
-	if (I_GetPrimarySurface() && bpp == I_GetPrimarySurface()->getBitsPerPixel())
+
+//
+// I_Get32bppPixelFormat
+//
+// Returns the platform's PixelFormat for 32bpp video modes.
+// This changes on certain platforms depending on the current video mode
+// in use (or fullscreen vs windowed).
+//
+const PixelFormat* I_Get32bppPixelFormat()
+{
+	if (I_GetPrimarySurface() && I_GetPrimarySurface()->getBitsPerPixel() == 32)
 		return I_GetPrimarySurface()->getPixelFormat();
 
-	if (bpp == 32)
-	{
-		#ifdef __BIG_ENDIAN__
-		static PixelFormat format(32, 0, 0, 0, 0, 0, 8, 16, 24);
-		#else
-		static PixelFormat format(32, 0, 0, 0, 0, 24, 16, 8, 0);
-		#endif
+	#ifdef __BIG_ENDIAN__
+	static PixelFormat format(32, 0, 0, 0, 0, 0, 8, 16, 24);
+	#else
+	static PixelFormat format(32, 0, 0, 0, 0, 24, 16, 8, 0);
+	#endif
 
-		return &format;
-	}
-
-	return NULL;
+	return &format;
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")

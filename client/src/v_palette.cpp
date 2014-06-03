@@ -398,9 +398,11 @@ palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
 
 	for (int i = 0; i < 256; i++)
 	{
-		int dr = r - palette_colors[i].r;
-		int dg = g - palette_colors[i].g;
-		int db = b - palette_colors[i].b;
+		argb_t color(palette_colors[i]);
+
+		int dr = r - color.getr();
+		int dg = g - color.getg();
+		int db = b - color.getb();
 		int distortion = dr*dr + dg*dg + db*db;
 		if (distortion < bestdistortion)
 		{
@@ -417,7 +419,7 @@ palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
 
 palindex_t V_BestColor(const argb_t* palette_colors, argb_t color)
 {
-	return V_BestColor(palette_colors, color.r, color.g, color.b);
+	return V_BestColor(palette_colors, color.getr(), color.getg(), color.getb());
 }
 
 
@@ -442,9 +444,9 @@ void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_
 			if (x == y)
 				continue;
 
-			int dr = (int)palette_colors[y].r - (int)palette_colors[x].r;
-			int dg = (int)palette_colors[y].g - (int)palette_colors[x].g;
-			int db = (int)palette_colors[y].b - (int)palette_colors[x].b;
+			int dr = (int)palette_colors[y].getr() - (int)palette_colors[x].getr();
+			int dg = (int)palette_colors[y].getg() - (int)palette_colors[x].getg();
+			int db = (int)palette_colors[y].getb() - (int)palette_colors[x].getb();
 			int distortion = dr*dr + dg*dg + db*db;
 			if (distortion < bestdistortion)
 			{
@@ -715,11 +717,11 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 	{
 		for (int c = 0; c < 256; c++)
 		{
-			unsigned int r = (palette[c].r * (NUMCOLORMAPS - i) + fadecolor.r * i
+			unsigned int r = (palette[c].getr() * (NUMCOLORMAPS - i) + fadecolor.getr() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int g = (palette[c].g * (NUMCOLORMAPS - i) + fadecolor.g * i
+			unsigned int g = (palette[c].getg() * (NUMCOLORMAPS - i) + fadecolor.getg() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int b = (palette[c].b * (NUMCOLORMAPS - i) + fadecolor.b * i
+			unsigned int b = (palette[c].getb() * (NUMCOLORMAPS - i) + fadecolor.getb() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
 			argb_t color(255, r, g, b);
@@ -732,9 +734,9 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 	for (int c = 0; c < 256; c++)
 	{
 		int grayint = (int)(255.0f * clamp(1.0f -
-						(palette[c].r * 0.00116796875f +
-						 palette[c].g * 0.00229296875f +
-			 			 palette[c].b * 0.0005625f), 0.0f, 1.0f));
+						(palette[c].getr() * 0.00116796875f +
+						 palette[c].getg() * 0.00229296875f +
+			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
 
 		argb_t color(255, grayint, grayint, grayint); 
 		colormap[c] = V_BestColor(palette, color);
@@ -758,11 +760,11 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 	{
 		for (int c = 0; c < 256; c++)
 		{
-			unsigned int r = (palette[c].r * (NUMCOLORMAPS - i) + fadecolor.r * i
+			unsigned int r = (palette[c].getr() * (NUMCOLORMAPS - i) + fadecolor.getr() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int g = (palette[c].g * (NUMCOLORMAPS - i) + fadecolor.g * i
+			unsigned int g = (palette[c].getg() * (NUMCOLORMAPS - i) + fadecolor.getg() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int b = (palette[c].b * (NUMCOLORMAPS - i) + fadecolor.b * i
+			unsigned int b = (palette[c].getb() * (NUMCOLORMAPS - i) + fadecolor.getb() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
 			argb_t color(255, r, g, b);
@@ -774,9 +776,9 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 	for (int c = 0; c < 256; c++)
 	{
 		int grayint = (int)(255.0f * clamp(1.0f -
-						(palette[c].r * 0.00116796875f +
-						 palette[c].g * 0.00229296875f +
-			 			 palette[c].b * 0.0005625f), 0.0f, 1.0f));
+						(palette[c].getr() * 0.00116796875f +
+						 palette[c].getg() * 0.00229296875f +
+			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
 
 		argb_t color(255, grayint, grayint, grayint); 
 		shademap[c] = V_GammaCorrect(color); 
@@ -851,7 +853,7 @@ void V_ForceBlend(int blendr, int blendg, int blendb, int blenda)
 
 		argb_t palette_colors[256];
 		DoBlending(V_GetDefaultPalette()->colors, palette_colors,
-					blend_color.r, blend_color.g, blend_color.b, BlendA);
+					blend_color.getr(), blend_color.getg(), blend_color.getb(), BlendA);
 		I_SetPalette(palette_colors);
 	}
 }
@@ -874,9 +876,9 @@ BEGIN_COMMAND (testblend)
 
 		float amt = clamp((float)atof(argv[2]), 0.0f, 1.0f);
 
-		BaseBlendR = color.r;
-		BaseBlendG = color.g;
-		BaseBlendB = color.b;
+		BaseBlendR = color.getr();
+		BaseBlendG = color.getg();
+		BaseBlendB = color.getb();
 		BaseBlendA = amt;
 	}
 }
@@ -1005,7 +1007,8 @@ void BuildColoredLights(shademap_t* maps, int lr, int lg, int lb, int r, int g, 
 		argb_t* shademap = maps->shademap + 256*l;
 		for (unsigned int c = 0; c < 256; c++)
 		{
-			argb_t color(255, colors[c].r * lr / 255, colors[c].g * lg / 255, colors[c].b * lb / 255);
+			argb_t color(255, colors[c].getr() * lr / 255,
+						colors[c].getg() * lg / 255, colors[c].getb() * lb / 255);
 			shademap[c] = V_GammaCorrect(color);
 			colormap[c] = V_BestColor(palette_colors, color);
 		}
@@ -1021,8 +1024,12 @@ dyncolormap_t* GetSpecialLights(int lr, int lg, int lb, int fr, int fg, int fb)
 	// Bah! Simple linear search because I want to get this done.
 	while (colormap)
 	{
-		if (color.r == colormap->color.r && color.g == colormap->color.g && color.b == colormap->color.b &&
-			fade.r == colormap->fade.r && fade.g == colormap->fade.g && fade.b == colormap->fade.b)
+		if (color.getr() == colormap->color.getr() &&
+			color.getg() == colormap->color.getg() &&
+			color.getb() == colormap->color.getb() &&
+			fade.getr() == colormap->fade.getr() &&
+			fade.getg() == colormap->fade.getg() &&
+			fade.getb() == colormap->fade.getb())
 			return colormap;
 		else
 			colormap = colormap->next;
@@ -1063,8 +1070,8 @@ BEGIN_COMMAND (testcolor)
 			color = V_GetColorFromString(argv[1]);
 
 		BuildColoredLights((shademap_t*)NormalLight.maps.map(),
-				color.r, color.g, color.b,
-				level.fadeto.r, level.fadeto.g, level.fadeto.b);
+				color.getr(), color.getg(), color.getb(),
+				level.fadeto.getr(), level.fadeto.getg(), level.fadeto.getb());
 	}
 }
 END_COMMAND (testcolor)

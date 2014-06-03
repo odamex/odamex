@@ -427,6 +427,14 @@ bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 		8 - aloss, 8 - sdlformat->Rloss, 8 - sdlformat->Gloss, 8 - sdlformat->Bloss,
 		ashift, sdlformat->Rshift, sdlformat->Gshift, sdlformat->Bshift);
 
+	if (format.getBitsPerPixel() == 32)
+		argb_t::setChannels(format.getAShift() / 8,
+							format.getRShift() / 8,
+							format.getGShift() / 8,
+							format.getBShift() / 8);
+	else
+		argb_t::setChannels(3, 2, 1, 0);
+
 	mPrimarySurface = new IWindowSurface(mWidth, mHeight, &format, sdlsurface->pixels, sdlsurface->pitch);
 
 	SDL_UnlockSurface(sdlsurface);
