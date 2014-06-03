@@ -794,7 +794,7 @@ void R_SetupFrame (player_t *player)
 
 		if (I_GetPrimarySurface()->getBitsPerPixel() != 8)
 			newblend = R_BlendForColormap (newblend);
-		else if (newblend.a == 0 && newblend >= numfakecmaps)
+		else if (newblend.geta() == 0 && newblend >= numfakecmaps)
 			newblend = 0;
 	}
 	else
@@ -808,12 +808,12 @@ void R_SetupFrame (player_t *player)
 	if (R_OldBlend != newblend)
 	{
 		R_OldBlend = newblend;
-		if (newblend.a != 0)
+		if (newblend.geta() != 0)
 		{
-			BaseBlendR = newblend.r;
-			BaseBlendG = newblend.g;
-			BaseBlendB = newblend.b;
-			BaseBlendA = float(newblend.a) / 255.0f;
+			BaseBlendR = newblend.getr();
+			BaseBlendG = newblend.getg();
+			BaseBlendB = newblend.getb();
+			BaseBlendA = float(newblend.geta()) / 255.0f;
 			NormalLight.maps = shaderef_t(&realcolormaps, 0);
 		}
 		else

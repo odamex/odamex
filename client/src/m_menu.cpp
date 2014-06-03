@@ -1434,9 +1434,9 @@ static void M_PlayerSetupDrawer (void)
 		int x = V_StringWidth("Green") + 8 + PSetupDef.x;
 		argb_t playercolor = V_GetColorFromString(cl_color);
 
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.r);
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.g);
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, playercolor.b);
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.getr());
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.getg());
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, playercolor.getb());
 	}
 
 	// Draw team setting
@@ -1597,11 +1597,11 @@ static void M_SlidePlayerRed(int choice)
 	int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-		color.r = std::max(0, int(color.r) - 1 - accel);
+		color.setr(std::max(0, int(color.getr()) - 1 - accel));
 	else
-		color.r = std::min(255, int(color.r) + 1 + accel);
+		color.setr(std::min(255, int(color.getr()) + 1 + accel));
 
-	SendNewColor(color.r, color.g, color.b);
+	SendNewColor(color.getr(), color.getg(), color.getb());
 }
 
 static void M_SlidePlayerGreen (int choice)
@@ -1610,11 +1610,11 @@ static void M_SlidePlayerGreen (int choice)
 	int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-		color.g = std::max(0, int(color.g) - 1 - accel);
+		color.setg(std::max(0, int(color.getg()) - 1 - accel));
 	else
-		color.g = std::min(255, int(color.g) + 1 + accel);
+		color.setg(std::min(255, int(color.getg()) + 1 + accel));
 
-	SendNewColor(color.r, color.g, color.b);
+	SendNewColor(color.getr(), color.getg(), color.getb());
 }
 
 static void M_SlidePlayerBlue (int choice)
@@ -1623,11 +1623,11 @@ static void M_SlidePlayerBlue (int choice)
 	int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-		color.b = std::max(0, int(color.b) - 1 - accel);
+		color.setb(std::max(0, int(color.getb()) - 1 - accel));
 	else
-		color.b = std::min(255, int(color.b) + 1 + accel);
+		color.setb(std::min(255, int(color.getb()) + 1 + accel));
 
-	SendNewColor(color.r, color.g, color.b);
+	SendNewColor(color.getr(), color.getg(), color.getb());
 }
 
 

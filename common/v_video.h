@@ -495,13 +495,13 @@ bool V_UseWidescreen();
 // 0 <=   toa <= 255
 forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int toa)
 {
-	const int fr = from.r;
-	const int fg = from.g;
-	const int fb = from.b;
+	const int fr = from.getr();
+	const int fg = from.getg();
+	const int fb = from.getb();
 
-	const int dr = to.r - fr;
-	const int dg = to.g - fg;
-	const int db = to.b - fb;
+	const int dr = to.getr() - fr;
+	const int dg = to.getg() - fg;
+	const int db = to.getb() - fb;
 
 	return argb_t(
 		fr + ((dr * toa) >> 8),
@@ -515,9 +515,9 @@ forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int to
 forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa)
 {
 	return argb_t(
-		(from.r * froma + to.r * toa) >> 8,
-		(from.g * froma + to.g * toa) >> 8,
-		(from.b * froma + to.b * toa) >> 8);
+		(from.getr() * froma + to.getr() * toa) >> 8,
+		(from.getg() * froma + to.getg() * toa) >> 8,
+		(from.getb() * froma + to.getb() * toa) >> 8);
 }
 
 void V_DrawFPSWidget();

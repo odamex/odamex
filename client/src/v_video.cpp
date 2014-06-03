@@ -398,9 +398,9 @@ static void BuildTransTable(const argb_t* palette_colors)
 
 	for (int x = 0; x < 65; x++)
 		for (int y = 0; y < 256; y++)
-			Col2RGB8[x][y] = (((palette_colors[y].r * x) >> 4) << 20)  |
-							  ((palette_colors[y].g * x )>> 4) |
-							 (((palette_colors[y].b * x) >> 4) << 10);
+			Col2RGB8[x][y] = (((palette_colors[y].getr() * x) >> 4) << 20)  |
+							  ((palette_colors[y].getg() * x )>> 4) |
+							 (((palette_colors[y].getb() * x) >> 4) << 10);
 }
 
 CVAR_FUNC_IMPL (vid_widescreen)

@@ -365,7 +365,7 @@ void P_LoadSectors (int lump)
 		//		If they are outside (have a sky ceiling), they use the outside fog.
 		if (level.outsidefog != 0xff000000 && ss->ceilingpic == skyflatnum)
 			ss->colormap = GetSpecialLights(255, 255, 255,
-									level.outsidefog.r, level.outsidefog.g, level.outsidefog.b);
+									level.outsidefog.getr(), level.outsidefog.getg(), level.outsidefog.getb());
 		else
 			ss->colormap = &NormalLight;
 
@@ -948,8 +948,8 @@ void P_LoadSideDefs2 (int lump)
 				if (fog != 0x000000 || color != 0xffffff)
 				{
 					dyncolormap_t *colormap = GetSpecialLights(
-						((argb_t)color).r, ((argb_t)color).g, ((argb_t)color).b,
-						((argb_t)fog).r, ((argb_t)fog).g, ((argb_t)fog).b);
+						((argb_t)color).getr(), ((argb_t)color).getg(), ((argb_t)color).getb(),
+						((argb_t)fog).getr(), ((argb_t)fog).getg(), ((argb_t)fog).getb());
 
 					for (int s = 0; s < numsectors; s++)
 					{

@@ -51,7 +51,7 @@ void V_IncrementGammaLevel();
 static inline argb_t V_GammaCorrect(const argb_t value)
 {
 	extern byte gammatable[256];
-	return argb_t(value.a, gammatable[value.r], gammatable[value.g], gammatable[value.b]);
+	return argb_t(value.geta(), gammatable[value.getr()], gammatable[value.getg()], gammatable[value.getb()]);
 }
 
 

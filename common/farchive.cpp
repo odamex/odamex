@@ -710,7 +710,7 @@ FArchive &FArchive::operator>> (double &w)
 
 FArchive& FArchive::operator<< (argb_t color)
 {
-	byte a = color.a, r = color.r, g = color.g, b = color.b;
+	byte a = color.geta(), r = color.getr(), g = color.getg(), b = color.getb();
 	Write(&b, 1);
 	Write(&g, 1);
 	Write(&r, 1);

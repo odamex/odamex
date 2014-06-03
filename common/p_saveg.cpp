@@ -204,7 +204,8 @@ void P_SerializeWorld (FArchive &arc)
 
 			arc >> colortemp >> fadetemp;
 			color = colortemp, fade = fadetemp;
-			sec->colormap = GetSpecialLights(color.r, color.g, color.b, fade.r, fade.g, fade.b);
+			sec->colormap = GetSpecialLights(color.getr(), color.getg(), color.getb(),
+											fade.getr(), fade.getg(), fade.getb());
 
 			// [SL] TODO: remove later
 			arc >> colortemp >> fadetemp;

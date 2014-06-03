@@ -168,9 +168,9 @@ int CL_GetPlayerColor(player_t *player)
 	// Adjust the shade of color for team games
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		int red = player->userinfo.color.r;
-		int green = player->userinfo.color.g;
-		int blue = player->userinfo.color.b;
+		int red = player->userinfo.color.getr();
+		int green = player->userinfo.color.getg();
+		int blue = player->userinfo.color.getb();
 
 		int intensity = MAX(MAX(red, green), blue) / 3;
 
@@ -824,7 +824,7 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname.c_str());
 	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.color       - #%02x%02x%02x\n",
-			player->userinfo.color.r, player->userinfo.color.g, player->userinfo.color.b);
+			player->userinfo.color.getr(), player->userinfo.color.getg(), player->userinfo.color.getb());
 	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);
 	Printf (PRINT_HIGH, " spectator            - %d \n",	player->spectator);
 	Printf (PRINT_HIGH, " time                 - %d \n",	player->GameTime);

@@ -1485,7 +1485,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 			argb_t color(row_data[(x << 2) + 3], row_data[(x << 2) + 0],
 						row_data[(x << 2) + 1], row_data[(x << 2) + 2]);
 
-			*mask = color.a != 0;
+			*mask = color.geta() != 0;
 			if (*mask)
 				*dest = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 

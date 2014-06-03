@@ -605,14 +605,15 @@ void AM_initColors (BOOL overlayed)
 		TeleportColor = AM_GetColorFromString(palette_colors, am_teleportcolor.cstring());
 		{
 			argb_t ba = AM_GetColorFromString(palette_colors, am_backcolor.cstring()).rgb;
-			if (ba.r < 16)
-				ba.r = ba.r + 32;
-			if (ba.g < 16)
-				ba.g = ba.g + 32;
-			if (ba.b < 16)
-				ba.b = ba.b + 32;
 
-			AlmostBackground.rgb = argb_t(ba.r - 16, ba.g - 16, ba.b - 16);
+			if (ba.getr() < 16)
+				ba.setr(ba.getr() + 32);
+			if (ba.getg() < 16)
+				ba.setg(ba.getg() + 32);
+			if (ba.getb() < 16)
+				ba.setb(ba.getb() + 32);
+
+			AlmostBackground.rgb = argb_t(ba.getr() - 16, ba.getg() - 16, ba.getb() - 16);
 			AlmostBackground.index = V_BestColor(palette_colors, AlmostBackground.rgb);
 		}
 	}
@@ -1372,7 +1373,7 @@ void AM_drawWalls(void)
 				else if (lines[i].special == Door_LockedRaise)
 				{
 				    // NES - Locked doors glow from a predefined color to either blue, yellow, or red.
-                    r = LockedColor.rgb.r, g = LockedColor.rgb.g, b = LockedColor.rgb.b;
+                    r = LockedColor.rgb.getr(), g = LockedColor.rgb.getg(), b = LockedColor.rgb.getb();
 
                     if (am_usecustomcolors)
 					{

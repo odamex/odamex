@@ -1221,22 +1221,22 @@ static void M_SendUINewColor (int red, int green, int blue)
 static void M_SlideUIRed(int val)
 {
 	argb_t color = V_GetColorFromString(ui_dimcolor);
-	color.r = val;
-	M_SendUINewColor(color.r, color.g, color.b);
+	color.setr(val);
+	M_SendUINewColor(color.getr(), color.getg(), color.getb());
 }
 
 static void M_SlideUIGreen (int val)
 {
 	argb_t color = V_GetColorFromString(ui_dimcolor);
-	color.g = val;
-	M_SendUINewColor(color.r, color.g, color.b);
+	color.setg(val);
+	M_SendUINewColor(color.getr(), color.getg(), color.getb());
 }
 
 static void M_SlideUIBlue (int val)
 {
 	argb_t color = V_GetColorFromString(ui_dimcolor);
-	color.b = val;
-	M_SendUINewColor(color.r, color.g, color.b);
+	color.setb(val);
+	M_SendUINewColor(color.getr(), color.getg(), color.getb());
 }
 
 
@@ -1556,19 +1556,19 @@ void M_OptDrawer (void)
 			case redslider:
 			{
 				argb_t color = V_GetColorFromString(*item->a.cvar);
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.r, color);
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getr(), color);
 			}
 			break;
 			case greenslider:
 			{
 				argb_t color = V_GetColorFromString(*item->a.cvar);
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.g, color);
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getg(), color);
 			}
 			break;
 			case blueslider:
 			{
 				argb_t color = V_GetColorFromString(*item->a.cvar);
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.b, color);
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getb(), color);
 			}
 			break;
 
@@ -1911,11 +1911,11 @@ void M_OptResponder (event_t *ev)
 						int part = 0;
 
 						if (item->type == redslider)
-							part = color.r;
+							part = color.getr();
 						else if (item->type == greenslider)
-							part = color.g;
+							part = color.getg();
 						else if (item->type == blueslider)
-							part = color.b;
+							part = color.getb();
 
 						if (part > 0x00)
 							part -= 0x11;
@@ -2035,11 +2035,11 @@ void M_OptResponder (event_t *ev)
 						int part = 0;
 
 						if (item->type == redslider)
-							part = color.r;
+							part = color.getr();
 						else if (item->type == greenslider)
-							part = color.g;
+							part = color.getg();
 						else if (item->type == blueslider)
-							part = color.b;
+							part = color.getb();
 
 						if (part < 0xff)
 							part += 0x11;

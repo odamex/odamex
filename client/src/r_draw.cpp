@@ -239,17 +239,17 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 	for (int index = end_index + 1; index < 256; index++)
 		dest[index] = index;	
 
-	int r_diff = end_color.r - start_color.r;
-	int g_diff = end_color.g - start_color.g;
-	int b_diff = end_color.b - start_color.b;
+	int r_diff = end_color.getr() - start_color.getr();
+	int g_diff = end_color.getg() - start_color.getg();
+	int b_diff = end_color.getb() - start_color.getb();
 
 	for (palindex_t index = start_index; index <= end_index; index++)
 	{
 		int i = index - start_index;
 
-		int r = start_color.r + i * r_diff / index_range;
-		int g = start_color.g + i * g_diff / index_range;
-		int b = start_color.b + i * b_diff / index_range;
+		int r = start_color.getr() + i * r_diff / index_range;
+		int g = start_color.getg() + i * g_diff / index_range;
+		int b = start_color.getb() + i * b_diff / index_range;
 
 		dest[index] = V_BestColor(V_GetDefaultPalette()->basecolors, r, g, b);
 	}
@@ -375,9 +375,9 @@ void R_BuildPlayerTranslation(int player, argb_t dest_color)
 {
 	const palette_t *pal = V_GetDefaultPalette();
 	byte *table = &translationtables[player * 256];
-	float r = float(dest_color.r) / 255.0f;
-	float g = float(dest_color.g) / 255.0f;
-	float b = float(dest_color.b) / 255.0f;
+	float r = float(dest_color.getr()) / 255.0f;
+	float g = float(dest_color.getg()) / 255.0f;
+	float b = float(dest_color.getb()) / 255.0f;
 	float h, s, v;
 	float sdelta, vdelta;
 

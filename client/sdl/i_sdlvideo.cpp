@@ -310,9 +310,9 @@ void ISDL12Window::setPalette(const argb_t* palette_colors)
 		for (int c = 0; c < 256; c++)
 		{
 			argb_t color = palette_colors[c];
-			sdlcolors[c].r = color.r;
-			sdlcolors[c].g = color.g;
-			sdlcolors[c].b = color.b;
+			sdlcolors[c].r = color.getr();
+			sdlcolors[c].g = color.getg();
+			sdlcolors[c].b = color.getb();
 		}
 
 		unlockSurface();

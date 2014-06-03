@@ -1419,9 +1419,9 @@ FUNC(LS_Sector_SetColor)
 		while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
 		{
 			sectors[secnum].colormap = GetSpecialLights(arg1, arg2, arg3,
-					sectors[secnum].colormap->fade.r,
-					sectors[secnum].colormap->fade.g,
-					sectors[secnum].colormap->fade.b);
+					sectors[secnum].colormap->fade.getr(),
+					sectors[secnum].colormap->fade.getg(),
+					sectors[secnum].colormap->fade.getb());
 		}
 	}
 	return true;
@@ -1437,9 +1437,9 @@ FUNC(LS_Sector_SetFade)
 		while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
 		{
 			sectors[secnum].colormap = GetSpecialLights(
-					sectors[secnum].colormap->color.r,
-					sectors[secnum].colormap->color.g,
-					sectors[secnum].colormap->color.b,
+					sectors[secnum].colormap->color.getr(),
+					sectors[secnum].colormap->color.getg(),
+					sectors[secnum].colormap->color.getb(),
 					arg1, arg2, arg3);
 		}
 	}

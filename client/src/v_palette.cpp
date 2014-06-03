@@ -662,17 +662,17 @@ static void DoBlending(const argb_t *from, argb_t *to, int tor, int tog, int tob
 	{
 		for (int i = 0; i < 256; i++, from++, to++)
 		{
-			int r = from->r;
-			int g = from->g;
-			int b = from->b;
+			int r = from->getr();
+			int g = from->getg();
+			int b = from->getb();
 
 			int dr = tor - r;
 			int dg = tog - g;
 			int db = tob - b;
 
-			to->r = r + ((dr * toa) >> 8);
-			to->g = g + ((dg * toa) >> 8);
-			to->b = b + ((db * toa) >> 8);
+			to->setr(r + ((dr * toa) >> 8));
+			to->setg(g + ((dg * toa) >> 8));
+			to->setb(b + ((db * toa) >> 8));
 		}
 	}
 }

@@ -258,12 +258,12 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	// Find the shading for the custom player colors:
 	argb_t trancolor = translationRGB[pid][c - range_start];
 
-	unsigned int r = (trancolor.r * lightcolor.r * (NUMCOLORMAPS - m_mapnum) / 255
-					+ fadecolor.r * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
-	unsigned int g = (trancolor.g * lightcolor.g * (NUMCOLORMAPS - m_mapnum) / 255
-					+ fadecolor.g * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
-	unsigned int b = (trancolor.b * lightcolor.b * (NUMCOLORMAPS - m_mapnum) / 255
-					+ fadecolor.b * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int r = (trancolor.getr() * lightcolor.getr() * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.getr() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int g = (trancolor.getg() * lightcolor.getg() * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.getg() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int b = (trancolor.getb() * lightcolor.getb() * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.getb() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
 
 	return argb_t(gammatable[r], gammatable[g], gammatable[b]);
 }

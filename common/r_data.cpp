@@ -883,9 +883,9 @@ void R_InitColormaps()
 				// Copy colormap data:
 				memcpy(colormap, map, (NUMCOLORMAPS+1)*256);
 
-				int r = pal->basecolors[*map].r;
-				int g = pal->basecolors[*map].g;
-				int b = pal->basecolors[*map].b;
+				int r = pal->basecolors[*map].getr();
+				int g = pal->basecolors[*map].getg();
+				int b = pal->basecolors[*map].getb();
 
 				char name[9];
 				W_GetLumpName(name, i);
@@ -893,9 +893,9 @@ void R_InitColormaps()
 
 				for (int k = 1; k < 256; k++)
 				{
-					r = (r + pal->basecolors[map[k]].r) >> 1;
-					g = (g + pal->basecolors[map[k]].g) >> 1;
-					b = (b + pal->basecolors[map[k]].b) >> 1;
+					r = (r + pal->basecolors[map[k]].getr()) >> 1;
+					g = (g + pal->basecolors[map[k]].getg()) >> 1;
+					b = (b + pal->basecolors[map[k]].getb()) >> 1;
 				}
 				// NOTE(jsd): This alpha value is used for 32bpp in water areas.
 				argb_t color = argb_t(64, r, g, b);
@@ -931,7 +931,7 @@ int R_ColormapNumForName (const char *name)
 unsigned int R_BlendForColormap(int map)
 {
 	argb_t color(map);
-	if (color.a != 0)
+	if (color.geta() != 0)
 		return map;
 
 	if ((unsigned)map < numfakecmaps)
