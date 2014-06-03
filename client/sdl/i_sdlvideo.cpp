@@ -360,17 +360,19 @@ void ISDL12Window::setPalette(const argb_t* palette_colors)
 // from an SDL_Surface and uses it to initialize a PixelFormat object.
 // Note: the SDL_Surface should be locked prior to calling this.
 //
-static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, PixelFormat* format)
+static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, PixelFormat* format, bool _8in32 = false)
 {
 	const SDL_PixelFormat* sdlformat = sdlsurface->format;
 
+	int bpp = _8in32 ? 8 : sdlformat->BitsPerPixel;
+
 	// handle SDL not reporting correct Ashift/Aloss
-	uint8_t aloss = sdlformat->BitsPerPixel == 32 ? 0 : 8;
-	uint8_t ashift = 48 - sdlformat->Rshift - sdlformat->Gshift - sdlformat->Bshift;
+	uint8_t aloss = bpp == 32 ? 0 : 8;
+	uint8_t ashift = bpp == 32 ?  48 - sdlformat->Rshift - sdlformat->Gshift - sdlformat->Bshift : 0;
 	
 	// Create the PixelFormat specification
 	*format = PixelFormat(
-			sdlformat->BitsPerPixel,
+			bpp,
 			8 - aloss, 8 - sdlformat->Rloss, 8 - sdlformat->Gloss, 8 - sdlformat->Bloss,
 			ashift, sdlformat->Rshift, sdlformat->Gshift, sdlformat->Bshift);
 }
@@ -424,13 +426,6 @@ bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	width = clamp<uint16_t>(width, 320, MAXWIDTH);
 	height = clamp<uint16_t>(height, 200, MAXHEIGHT);
 
-	#ifdef _WIN32
-	// fullscreen directx requires a 32-bit mode to fix broken palette
-	// [Russell] - Use for gdi as well, fixes d2 map02 water
-	if (fullscreen && bpp == 8)
-		m8in32 = true;
-	#endif
-
 	uint32_t flags = 0;
 
 	if (vsync)
@@ -448,6 +443,13 @@ bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 	// TODO: check for multicore
 	flags |= SDL_ASYNCBLIT;
+
+	#ifdef _WIN32
+	// fullscreen directx requires a 32-bit mode to fix broken palette
+	// [Russell] - Use for gdi as well, fixes d2 map02 water
+	if ((flags & SDL_FULLSCREEN) == SDL_FULLSCREEN && bpp == 8)
+		m8in32 = true;
+	#endif
 
 	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
 	// This interferes with RawWin32Mouse's input handlers so we need to
@@ -473,7 +475,7 @@ bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 		SDL_LockSurface(sdlsurface);		// lock prior to accessing pixel format
 
 	PixelFormat format;
-	I_BuildPixelFormatFromSDLSurface(sdlsurface, &format);
+	I_BuildPixelFormatFromSDLSurface(sdlsurface, &format, m8in32);
 
 	if (use_software_surface)
 	{
