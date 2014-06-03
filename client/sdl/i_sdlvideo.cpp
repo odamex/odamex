@@ -75,7 +75,9 @@ EXTERN_CVAR (vid_fullscreen)
 ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) :
 	IWindow(),
 	mPrimarySurface(NULL),
-	mIsFullScreen(fullscreen), mUseVSync(vsync), mNeedPaletteRefresh(true),
+	mWidth(320), mHeight(200), mBitsPerPixel(8),
+	mIsFullScreen(fullscreen), mUseVSync(vsync),
+	m8in32(false), mSDLSoftwareSurface(NULL), mNeedPaletteRefresh(true),
 	mLocks(0)
 {
 	const SDL_version* SDLVersion = SDL_Linked_Version();
@@ -136,6 +138,8 @@ ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 //
 ISDL12Window::~ISDL12Window()
 {
+	if (mSDLSoftwareSurface)
+		SDL_FreeSurface(mSDLSoftwareSurface);
 	delete mPrimarySurface;
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
@@ -178,19 +182,23 @@ void ISDL12Window::refresh()
 {
 	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
 
-	if (mNeedPaletteRefresh && sdlsurface->format->BitsPerPixel == 8)
+	if (mNeedPaletteRefresh)
 	{
 		Uint32 flags = SDL_LOGPAL | SDL_PHYSPAL;
-		SDL_Color* sdlcolors = sdlsurface->format->palette->colors;
-		SDL_SetPalette(sdlsurface, flags, sdlcolors, 0, 256);
+
+		if (sdlsurface->format->BitsPerPixel == 8)
+			SDL_SetPalette(sdlsurface, flags, sdlsurface->format->palette->colors, 0, 256);
+		if (mSDLSoftwareSurface && mSDLSoftwareSurface->format->BitsPerPixel == 8)
+			SDL_SetPalette(mSDLSoftwareSurface, flags, mSDLSoftwareSurface->format->palette->colors, 0, 256);
 	}
 
 	mNeedPaletteRefresh = false;
 
-	if (mUseVSync)
-		SDL_Flip(sdlsurface);
-	else
-		SDL_UpdateRect(sdlsurface, 0, 0, 0, 0);
+	// handle 8in32 mode
+	if (mSDLSoftwareSurface)
+		SDL_BlitSurface(mSDLSoftwareSurface, NULL, sdlsurface, NULL);
+
+	SDL_Flip(sdlsurface);
 }
 
 
@@ -291,17 +299,15 @@ std::string ISDL12Window::getVideoDriverName() const
 
 
 //
-// ISDL12Window::setPalette
+// I_SetSDL12Palette
 //
-// Saves the given palette and updates it during refresh.
+// Helper function for ISDL12Window::setPalette
 //
-void ISDL12Window::setPalette(const argb_t* palette_colors)
+static void I_SetSDL12Palette(SDL_Surface* sdlsurface, const argb_t* palette_colors)
 {
-	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
-
 	if (sdlsurface->format->BitsPerPixel == 8)
 	{
-		lockSurface();
+		SDL_LockSurface(sdlsurface);
 
 		assert(sdlsurface->format->palette != NULL);
 		assert(sdlsurface->format->palette->ncolors == 256);
@@ -315,12 +321,62 @@ void ISDL12Window::setPalette(const argb_t* palette_colors)
 			sdlcolors[c].b = color.getb();
 		}
 
-		unlockSurface();
+		SDL_UnlockSurface(sdlsurface);
 	}
+}
+
+
+//
+// ISDL12Window::setPalette
+//
+// Saves the given palette and updates it during refresh.
+//
+void ISDL12Window::setPalette(const argb_t* palette_colors)
+{
+	I_SetSDL12Palette(SDL_GetVideoSurface(), palette_colors);
+
+	if (mSDLSoftwareSurface)
+		I_SetSDL12Palette(mSDLSoftwareSurface, palette_colors);
 
 	getPrimarySurface()->setPalette(palette_colors);
 
 	mNeedPaletteRefresh = true;
+}
+
+
+//
+// I_CreateSurfaceFromSDL12Surface
+//
+// Helper function for ISDL12Window::setMode
+// Creates a new IWindowSurface object from an existing SDL_Surface.
+//
+static IWindowSurface* I_CreateSurfaceFromSDL12Surface(SDL_Surface* sdlsurface)
+{
+	SDL_LockSurface(sdlsurface);
+
+	const SDL_PixelFormat* sdlformat = sdlsurface->format;
+
+	// handle SDL not reporting correct Ashift/Aloss
+	uint8_t aloss = sdlformat->BitsPerPixel == 32 ? 0 : 8;
+	uint8_t ashift = 48 - sdlformat->Rshift - sdlformat->Gshift - sdlformat->Bshift;
+	
+	// Create the PixelFormat specification
+	PixelFormat format(sdlformat->BitsPerPixel,
+		8 - aloss, 8 - sdlformat->Rloss, 8 - sdlformat->Gloss, 8 - sdlformat->Bloss,
+		ashift, sdlformat->Rshift, sdlformat->Gshift, sdlformat->Bshift);
+
+	IWindowSurface* newsurface =
+			new IWindowSurface(sdlsurface->w, sdlsurface->h, &format, sdlsurface->pixels, sdlsurface->pitch);
+	
+	if (format.getBitsPerPixel() == 32)
+		argb_t::setChannels(format.getAShift() / 8, format.getRShift() / 8,
+							format.getGShift() / 8, format.getBShift() / 8);
+	else
+		argb_t::setChannels(3, 2, 1, 0);
+
+	SDL_UnlockSurface(sdlsurface);
+
+	return newsurface;
 }
 
 
@@ -330,14 +386,27 @@ void ISDL12Window::setPalette(const argb_t* palette_colors)
 // Sets the window size to the specified size and frees the existing primary
 // surface before instantiating a new primary surface.
 // 
+// Notes:
+// SDL 1.2 has palette issues in 8bpp fullscreen mode on Windows platforms. As
+// a workaround, we force a 32bpp resolution in this case, but create a 8bpp
+// SDL software surface for drawing to. This software surface is then blitted
+// to the screen at the end of the frame, prior to calling SDL_Flip. This sceme
+// is referred to as 8in32.
+//
 bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync)
 {
 	assert(width <= MAXWIDTH);
 	assert(height <= MAXHEIGHT);
 	assert(bpp == 8 || bpp == 32);
 
+	m8in32 = false;
+
 	delete mPrimarySurface;
 	mPrimarySurface = NULL;
+
+	if (mSDLSoftwareSurface)
+		SDL_FreeSurface(mSDLSoftwareSurface);
+	mSDLSoftwareSurface = NULL;
 
 	// ensure there is an availible fullscreen mode
 	if (mVideoModes.empty())
@@ -362,8 +431,8 @@ bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	#ifdef _WIN32
 	// fullscreen directx requires a 32-bit mode to fix broken palette
 	// [Russell] - Use for gdi as well, fixes d2 map02 water
-	if (fullscreen)
-		bpp = 32;
+	if (fullscreen && bpp == 8)
+		m8in32 = true;
 	#endif
 
 	uint32_t flags = 0;
@@ -393,7 +462,7 @@ bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
 	#endif
 
-	SDL_Surface* sdlsurface = SDL_SetVideoMode(width, height, bpp, flags);
+	SDL_Surface* sdlsurface = SDL_SetVideoMode(width, height, m8in32 ? 32 : bpp, flags);
 
 	// [SL] ...and re-enable RawWin32Mouse's input handlers after
 	// DirectInput is reinitalized.
@@ -402,42 +471,26 @@ bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	if (sdlsurface == NULL)
 		return false;
 
-	mWidth = sdlsurface->w;
-	mHeight = sdlsurface->h;
-	mBitsPerPixel = sdlsurface->format->BitsPerPixel;
-	mIsFullScreen = sdlsurface->flags & SDL_FULLSCREEN;
+	if (m8in32)
+	{
+		// create a 8bpp software surface if we're doing 8in32
+		mSDLSoftwareSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0, 0, 0, 0);
+		mPrimarySurface = I_CreateSurfaceFromSDL12Surface(mSDLSoftwareSurface);
+	}
+	else
+	{
+		mPrimarySurface = I_CreateSurfaceFromSDL12Surface(sdlsurface);
+	}
+
+	mWidth = mPrimarySurface->getWidth();
+	mHeight = mPrimarySurface->getHeight();
+	mBitsPerPixel = mPrimarySurface->getBitsPerPixel(); 
+	mIsFullScreen = (sdlsurface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
 	mUseVSync = vsync;
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
 	assert(mBitsPerPixel == 8 || mBitsPerPixel == 32);
-
-	// create a new IWindowSurface for the SDL_Surface handle that
-	// was returned by SDL_SetVideoMode
-
-	SDL_LockSurface(sdlsurface);
-
-	const SDL_PixelFormat* sdlformat = sdlsurface->format;
-
-	// handle SDL not reporting correct Ashift/Aloss
-	uint8_t aloss = sdlformat->BitsPerPixel == 32 ? 0 : 8;
-	uint8_t ashift = 48 - sdlformat->Rshift - sdlformat->Gshift - sdlformat->Bshift;
-
-	PixelFormat format(sdlformat->BitsPerPixel,
-		8 - aloss, 8 - sdlformat->Rloss, 8 - sdlformat->Gloss, 8 - sdlformat->Bloss,
-		ashift, sdlformat->Rshift, sdlformat->Gshift, sdlformat->Bshift);
-
-	if (format.getBitsPerPixel() == 32)
-		argb_t::setChannels(format.getAShift() / 8,
-							format.getRShift() / 8,
-							format.getGShift() / 8,
-							format.getBShift() / 8);
-	else
-		argb_t::setChannels(3, 2, 1, 0);
-
-	mPrimarySurface = new IWindowSurface(mWidth, mHeight, &format, sdlsurface->pixels, sdlsurface->pitch);
-
-	SDL_UnlockSurface(sdlsurface);
 
 	return true;
 }

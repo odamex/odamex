@@ -99,6 +99,9 @@ private:
 	bool				mIsFullScreen;
 	bool				mUseVSync;
 
+	bool				m8in32;
+	SDL_Surface*		mSDLSoftwareSurface;
+
 	bool				mNeedPaletteRefresh;
 
 	int16_t				mLocks;
