@@ -255,12 +255,19 @@ typedef uint8_t				palindex_t;
 // Allows ARGB8888 values to be accessed as a packed 32-bit integer or accessed
 // by its individual 8-bit color and alpha channels.
 //
-
-
-struct argb_t
+class argb_t
 {
+public:
 	argb_t() { }
 	argb_t(uint32_t _value) : value(_value) { }
+
+	argb_t(uint8_t _r, uint8_t _g, uint8_t _b)
+	{	seta(255); setr(_r); setg(_g); setb(_b);	}
+
+	argb_t(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)
+	{	seta(_a); setr(_r); setg(_g); setb(_b);	}
+
+	inline operator uint32_t () const { return value; }
 
 	inline uint8_t geta() const
 	{	return channels[a_num];	}
@@ -286,22 +293,8 @@ struct argb_t
 	inline void setb(uint8_t n)
 	{	channels[b_num] = n;	}
 
-	argb_t(uint8_t _r, uint8_t _g, uint8_t _b)
-	{
-		seta(0); setr(_r); setg(_g); setb(_b);
-	}
-
-	argb_t(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)
-	{
-		seta(_a); setr(_r); setg(_g); setb(_b);
-	}
-
-	inline operator uint32_t () const { return value; }
-
 	static void setChannels(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)
-	{
-		a_num = _a; r_num = _r; g_num = _g; b_num = _b;
-	}
+	{	a_num = _a; r_num = _r; g_num = _g; b_num = _b;	}
 
 private:
 	static uint8_t a_num, r_num, g_num, b_num;
@@ -315,39 +308,56 @@ private:
 
 
 //
-// ahsv_t class
+// fargb_t class
 //
-// Allows AHSV8888 values to be accessed as a packed 32-bit integer or accessed
-// by its individual 8-bit components.
+// Stores ARGB color channels as four floats. This is ideal for color
+// manipulation where precision is important.
 //
-struct ahsv_t
+class fargb_t
 {
-	union
+public:
+	fargb_t() { }
+	fargb_t(const argb_t color)
 	{
-		struct
-		{
-		#ifdef __BIG_ENDIAN__		
-			uint8_t a, h, s, v;
-		#else
-			uint8_t	v, s, h, a;
-		#endif
-		};
+		seta(color.geta() / 255.0f); setr(color.getr() / 255.0f);
+		setg(color.getg() / 255.0f); setb(color.getb() / 255.0f);
+	}
 
-		uint32_t value;
-	};
+	fargb_t(float _r, float _g, float _b)
+	{	seta(1.0f); setr(_r); setg(_g); setb(_b);	}
 
-	ahsv_t() { }
-	ahsv_t(uint32_t _value) : value(_value) { }
+	fargb_t(float _a, float _r, float _g, float _b)
+	{	seta(_a); setr(_r); setg(_g); setb(_b);	}
 
-	#ifdef __BIG_ENDIAN__
-	ahsv_t(uint8_t _h, uint8_t _s, uint8_t _v)				: a(0), h(_h), s(_s), v(_v) { }
-	ahsv_t(uint8_t _a, uint8_t _h, uint8_t _s, uint8_t _v)	: a(_a), h(_h), s(_s), v(_v) { }
-	#else
-	ahsv_t(uint8_t _h, uint8_t _s, uint8_t _v)				: v(_v), s(_s), h(_h), a(0) { }
-	ahsv_t(uint8_t _a, uint8_t _h, uint8_t _s, uint8_t _v)	: v(_v), s(_s), h(_h), a(_a) { }
-	#endif
+	inline operator argb_t () const
+	{	return argb_t(a * 255.0f, r * 255.0f, g * 255.0f, b * 255.0f);	}
 
-	inline operator uint32_t () const { return value; }
+	inline float geta() const
+	{	return a;	}
+
+	inline float getr() const
+	{	return r;	}
+
+	inline float getg() const
+	{	return g;	}
+
+	inline float getb() const
+	{	return b;	}
+
+	inline void seta(float n)
+	{	a = n;	}
+
+	inline void setr(float n)
+	{	r = n;	}
+
+	inline void setg(float n)
+	{	g = n;	}
+
+	inline void setb(float n)
+	{	b = n;	}
+
+private:
+	float a, r, g, b;
 };
 
 
