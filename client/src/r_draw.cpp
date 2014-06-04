@@ -373,32 +373,27 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 //		a given mid-range color.
 void R_BuildPlayerTranslation(int player, argb_t dest_color)
 {
-	const palette_t *pal = V_GetDefaultPalette();
-	byte *table = &translationtables[player * 256];
-	float r = float(dest_color.getr()) / 255.0f;
-	float g = float(dest_color.getg()) / 255.0f;
-	float b = float(dest_color.getb()) / 255.0f;
-	float h, s, v;
-	float sdelta, vdelta;
+	const palette_t* pal = V_GetDefaultPalette();
+	byte* table = &translationtables[player * 256];
 
-	RGBtoHSV (r, g, b, &h, &s, &v);
+	fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
+	float h = hsv_temp.geth(), s = hsv_temp.gets(), v = hsv_temp.getv();
 
 	s -= 0.23f;
 	if (s < 0.0f)
 		s = 0.0f;
-	sdelta = 0.014375f;
+	float sdelta = 0.014375f;
 
 	v += 0.1f;
 	if (v > 1.0f)
 		v = 1.0f;
-	vdelta = -0.05882f;
+	float vdelta = -0.05882f;
 
 	for (int i = 0x70; i < 0x80; i++)
 	{
-		HSVtoRGB (&r, &g, &b, h, s, v);
+		argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
 
 		// Set up RGB values for 32bpp translation:
-		argb_t color(r * 255.0f, g * 255.0f, b * 255.0f);
 		translationRGB[player][i - 0x70] = color;
 		table[i] = V_BestColor(pal->basecolors, color);
 

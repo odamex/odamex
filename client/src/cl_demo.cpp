@@ -46,7 +46,7 @@ extern std::string server_host;
 extern std::string digest;
 extern std::vector<std::string> wadfiles, wadhashes;
 
-int CL_GetPlayerColor(player_t *player);
+argb_t CL_GetPlayerColor(player_t*);
 
 
 NetDemo::NetDemo() :
@@ -1638,10 +1638,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 
 	// restore player colors
 	for (Players::iterator it = players.begin();it != players.end();++it)
-	{
-		int color = CL_GetPlayerColor(&*it);
-		R_BuildPlayerTranslation(it->id, color);
-	}
+		R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it));
 
 	R_CopyTranslationRGB (0, consoleplayer_id);
 

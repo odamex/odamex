@@ -361,6 +361,51 @@ private:
 };
 
 
+//
+// fahsv_t class
+//
+// Stores AHSV color channels as four floats.
+//
+class fahsv_t
+{
+public:
+	fahsv_t() { }
+
+	fahsv_t(float _h, float _s, float _v)
+	{	seta(1.0f); seth(_h); sets(_s); setv(_v);	}
+
+	fahsv_t(float _a, float _h, float _s, float _v)
+	{	seta(_a); seth(_h); sets(_s); setv(_v);	}
+
+	inline float geta() const
+	{	return a;	}
+
+	inline float geth() const
+	{	return h;	}
+
+	inline float gets() const
+	{	return s;	}
+
+	inline float getv() const
+	{	return v;	}
+
+	inline void seta(float n)
+	{	a = n;	}
+
+	inline void seth(float n)
+	{	h = n;	}
+
+	inline void sets(float n)
+	{	s = n;	}
+
+	inline void setv(float n)
+	{	v = n;	}
+
+private:
+	float a, h, s, v;
+};
+
+
 // ----------------------------------------------------------------------------
 //
 // Color Mapping classes

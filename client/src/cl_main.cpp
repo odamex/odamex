@@ -159,7 +159,7 @@ EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
 static argb_t enemycolor = 0, teamcolor = 0;
 
-int CL_GetPlayerColor(player_t *player)
+argb_t CL_GetPlayerColor(player_t *player)
 {
 	if (!player)
 		return 0;
@@ -169,16 +169,14 @@ int CL_GetPlayerColor(player_t *player)
 	// Adjust the shade of color for team games
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		int red = player->userinfo.color.getr();
-		int green = player->userinfo.color.getg();
-		int blue = player->userinfo.color.getb();
-
-		int intensity = MAX(MAX(red, green), blue) / 3;
-
+		const float blue_hue = 240.0f, red_hue = 0.0f;
+		float intensity = 0.6f + 0.4f * V_RGBtoHSV(color).getv();
+		intensity = std::min(intensity, 1.0f);
+		
 		if (player->userinfo.team == TEAM_BLUE)
-			color = argb_t(0, 0,  0xAA + intensity);
+			color = V_HSVtoRGB(fahsv_t(blue_hue, 1.0f, intensity));
 		else if (player->userinfo.team == TEAM_RED)
-			color = argb_t(0xAA + intensity, 0, 0);
+			color = V_HSVtoRGB(fahsv_t(red_hue, 1.0f, intensity));
 	}
 
 	// apply r_teamcolor & r_enemycolor overrides
@@ -215,10 +213,7 @@ static void CL_RebuildAllPlayerTranslations()
 		return;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		int color = CL_GetPlayerColor(&*it);
-		R_BuildPlayerTranslation(it->id, color);
-	}
+		R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it));
 }
 
 CVAR_FUNC_IMPL (r_enemycolor)
@@ -1369,8 +1364,7 @@ void CL_SetupUserInfo(void)
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
 
-	int color = CL_GetPlayerColor(p);
-	R_BuildPlayerTranslation (p->id, color);
+	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?

@@ -57,7 +57,7 @@ extern patch_t *hu_font[];
 
 #include "am_map.h"
 
-int CL_GetPlayerColor(player_t*);
+argb_t CL_GetPlayerColor(player_t*);
 
 // Group palette index and RGB value together:
 typedef struct am_color_s {
@@ -1568,8 +1568,7 @@ void AM_drawPlayers(void)
 		}
 		else
 		{
-			int playercolor = CL_GetPlayerColor(p);
-			color.rgb = (argb_t)playercolor;
+			color.rgb = CL_GetPlayerColor(p);
 			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 

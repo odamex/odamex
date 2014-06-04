@@ -1193,7 +1193,7 @@ void M_DrawSlider (int x, int y, float min, float max, float cur);
 static const char *genders[3] = { "male", "female", "cyborg" };
 static state_t *PlayerState;
 static int PlayerTics;
-int CL_GetPlayerColor(player_t*);
+argb_t CL_GetPlayerColor(player_t*);
 
 
 EXTERN_CVAR (cl_name)
