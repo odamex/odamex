@@ -181,7 +181,7 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 	mPixelFormat(*format),
 	mWidth(width), mHeight(height), mPitch(pitch), mLocks(0)
 {
-	const uint32_t alignment = 16;
+	const uintptr_t alignment = 16;
 
 	// Not given a pitch? Just base pitch on the given width
 	if (pitch == 0)
@@ -200,7 +200,7 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 		uint8_t* buffer = new uint8_t[mPitch * mHeight + alignment];
 
 		// calculate the offset from buffer to the next aligned memory address
-		ptrdiff_t offset = ((uintptr_t)(buffer + alignment) & ~(alignment - 1)) - (uintptr_t)buffer;
+		uintptr_t offset = ((uintptr_t)(buffer + alignment) & ~(alignment - 1)) - (uintptr_t)buffer;
 
 		mSurfaceBuffer = buffer + offset;
 
