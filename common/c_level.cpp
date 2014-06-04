@@ -1063,18 +1063,16 @@ extern dyncolormap_t NormalLight;
 EXTERN_CVAR (sv_gravity)
 EXTERN_CVAR (sv_aircontrol)
 
-extern float BaseBlendA;
-
-void G_InitLevelLocals ()
+void G_InitLevelLocals()
 {
 	unsigned long oldfade = level.fadeto;
 	level_info_t *info;
 	int i;
 
-	BaseBlendA = 0.0f;		// Remove underwater blend effect, if any
+	R_ExitLevel();
+
 	NormalLight.maps = shaderef_t(&realcolormaps, 0);
 	//NormalLight.maps = shaderef_t(&DefaultPalette->maps, 0);
-	r_underwater = false;
 
 	level.gravity = sv_gravity;
 	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
@@ -1083,7 +1081,7 @@ void G_InitLevelLocals ()
 	// clear all ACS variables
 	memset(level.vars, 0, sizeof(level.vars));
 
-	if ((i = FindWadLevelInfo (level.mapname)) > -1)
+	if ((i = FindWadLevelInfo(level.mapname)) > -1)
 	{
 		level_pwad_info_t *pinfo = &wadlevelinfos[i];
 

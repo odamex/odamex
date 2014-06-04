@@ -135,6 +135,12 @@ fixed_t			freelookviewheight;
 
 unsigned int	R_OldBlend = ~0;
 
+// [RH] Base blending values (for e.g. underwater)
+fargb_t base_blend_color(0.0f, 0.0f, 0.0f, 0.0f);
+
+// [SL] Current color blending values (including palette effects)
+fargb_t blend_color(0.0f, 0.0f, 0.0f, 0.0f);
+
 void (*colfunc) (void);
 void (*spanfunc) (void);
 void (*spanslopefunc) (void);
@@ -810,17 +816,18 @@ void R_SetupFrame (player_t *player)
 		R_OldBlend = newblend;
 		if (newblend.geta() != 0)
 		{
-			BaseBlendR = newblend.getr();
-			BaseBlendG = newblend.getg();
-			BaseBlendB = newblend.getb();
-			BaseBlendA = float(newblend.geta()) / 255.0f;
+			base_blend_color = fargb_t(
+					newblend.geta() / 255.0f,
+					newblend.getr() / 255.0f,
+					newblend.getg() / 255.0f,
+					newblend.getb() / 255.0f);
+
 			NormalLight.maps = shaderef_t(&realcolormaps, 0);
 		}
 		else
 		{
 			NormalLight.maps = shaderef_t(&realcolormaps, (NUMCOLORMAPS+1)*newblend);
-			BaseBlendR = BaseBlendG = BaseBlendB = 0;
-			BaseBlendA = 0.0f;
+			base_blend_color = fargb_t(0.0f, 0.0f, 0.0f, 0.0f);
 		}
 	}
 
@@ -1054,13 +1061,11 @@ void R_RenderPlayerView(player_t* player)
 	R_DrawMasked();
 
 	// NOTE(jsd): Full-screen status color blending:
-	extern int BlendA, BlendR, BlendG, BlendB;
-	if (surface->getBitsPerPixel() == 32 && BlendA != 0)
+	int blend_alpha = int(blend_color.geta() * 255.0f);
+	if (surface->getBitsPerPixel() == 32 && blend_alpha > 0)
 	{
-		argb_t blend_color = argb_t(BlendR, BlendG, BlendB);
-		blend_color = V_GammaCorrect(blend_color);
-
-		r_dimpatchD(surface, blend_color, BlendA, viewwindowx, viewwindowy, viewwidth, viewheight);
+		r_dimpatchD(surface, V_GammaCorrect(blend_color), blend_alpha,
+						viewwindowx, viewwindowy, viewwidth, viewheight);
 	}
 
 	R_EndInterpolation();
@@ -1290,6 +1295,22 @@ bool R_StatusBarVisible()
 	return setblocks <= 10 || AM_ClassicAutomapVisible();
 }
 
+
+
+//
+// R_ExitLevel
+//
+// Resets internal renderer variables at the end of a level (or the start of
+// a new level). This includes clearing any sector blends.
+//
+void R_ExitLevel()
+{
+	base_blend_color = fargb_t(0.0f, 0.0f, 0.0f, 0.0f);
+	blend_color = fargb_t(0.0f, 0.0f, 0.0f, 0.0f);
+	V_ForceBlend(blend_color);
+
+	r_underwater = false;
+}
 
 VERSION_CONTROL (r_main_cpp, "$Id$")
 

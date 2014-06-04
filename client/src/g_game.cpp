@@ -897,7 +897,7 @@ void G_Ticker (void)
 				level.music[0] = '\0';
 				S_Start();
 				SN_StopAllSequences();
-				V_SetBlend(0,0,0,0);
+				R_ExitLevel();
 				I_EnableKeyRepeat();
 			}
 

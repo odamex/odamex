@@ -139,7 +139,6 @@ void F_StartFinale (char *music, char *flat, const char *text)
 
 	finalestage = 0;
 	finalecount = 0;
-	V_SetBlend (0,0,0,0);
 	S_StopAllChannels ();
 }
 

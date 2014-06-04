@@ -349,6 +349,7 @@ void G_DoCompleted (void)
 			G_PlayerFinishLevel(*it);
 
 	V_RestoreScreenPalette();
+	R_ExitLevel();
 
 	// [RH] Mark this level as having been visited
 	if (!(level.flags & LEVEL_CHANGEMAPCHEAT))
@@ -630,6 +631,8 @@ void G_WorldDone (void)
 	cluster_info_t *thiscluster;
 
 	gameaction = ga_worlddone;
+
+	R_ExitLevel();
 
 	if (level.flags & LEVEL_CHANGEMAPCHEAT)
 		return;

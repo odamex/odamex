@@ -28,9 +28,7 @@
 #include "v_palette.h"
 #include "v_video.h"
 
-float BaseBlendA;
-bool r_underwater;
-
+void R_InitNewLevel() {}
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {} 
 void D_DoServerInfoChange (byte **stream) {} 

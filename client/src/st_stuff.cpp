@@ -74,10 +74,6 @@ void ST_unloadNew (void);
 void ST_newDraw (void);
 void ST_newDrawCTF (void);
 
-// [RH] Base blending values (for e.g. underwater)
-int BaseBlendR, BaseBlendG, BaseBlendB;
-float BaseBlendA;
-
 extern bool simulated_connection;
 
 //
@@ -1770,8 +1766,6 @@ void ST_Stop()
 {
 	if (st_stopped)
 		return;
-
-	V_SetBlend(0,0,0,0);
 
 	st_stopped = true;
 }

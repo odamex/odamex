@@ -56,18 +56,11 @@ EXTERN_CVAR(vid_gammatype)
 EXTERN_CVAR(r_painintensity)
 EXTERN_CVAR(sv_allowredscreen)
 
-static void DoBlending(const argb_t *from, argb_t *to, int tor, int tog, int tob, int toa);
-void V_ForceBlend(int blendr, int blendg, int blendb, int blenda);
-
 dyncolormap_t NormalLight;
 
 static char palette_lumpname[9];
 
 static int current_palette_num;
-static float current_blend[4];
-
-/* Current color blending values */
-int		BlendR, BlendG, BlendB, BlendA;
 
 translationref_t::translationref_t() :
 	m_table(NULL), m_player_id(-1)
@@ -318,9 +311,9 @@ static void V_UpdateGammaLevel(float level)
 		gammastrat->generateGammaTable(gammatable, level);
 		V_GammaAdjustPalette(V_GetDefaultPalette());
 
-		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-			V_ForceBlend(BlendR, BlendG, BlendB, BlendA);
-		else
+		V_RestoreScreenPalette();
+
+		if (I_GetPrimarySurface()->getBitsPerPixel() == 32)
 			V_RefreshColormaps();
 	}
 }
@@ -381,7 +374,7 @@ END_COMMAND(bumpgamma)
 void V_RestoreScreenPalette()
 {
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-		V_ForceBlend(BlendR, BlendG, BlendB, BlendA);
+		V_ForceBlend(blend_color);
 }
 
 
@@ -603,7 +596,6 @@ void V_InitPalette(const char* lumpname)
 		I_FatalError("Could not initialize %s palette", palette_lumpname);
 
 	current_palette_num = -1;
-	current_blend[0] = current_blend[1] = current_blend[2] = current_blend[3] = 255.0f;
 
 	palette_t* palette = V_GetDefaultPalette();
 
@@ -622,7 +614,7 @@ void V_InitPalette(const char* lumpname)
 
 	V_GammaAdjustPalette(palette);
 
-	V_ForceBlend(0, 0, 0, 0);
+	V_ForceBlend(argb_t(0, 0, 0, 0));
 
 	V_RefreshColormaps();
 
@@ -651,28 +643,37 @@ palette_t* V_GetDefaultPalette()
 
 // This is based (loosely) on the ColorShiftPalette()
 // function from the dcolors.c file in the Doom utilities.
-static void DoBlending(const argb_t *from, argb_t *to, int tor, int tog, int tob, int toa)
+static void V_DoBlending(argb_t* dest, const argb_t* source, argb_t color)
 {
-	if (toa == 0)
+	if (color.geta() == 0)
 	{
-		if (from != to)
-			memcpy(to, from, 256 * sizeof(argb_t));
+		if (source != dest)
+			memcpy(dest, source, 256 * sizeof(argb_t));
 	}
 	else
 	{
-		for (int i = 0; i < 256; i++, from++, to++)
+		for (int i = 0; i < 256; i++, source++, dest++)
 		{
-			int r = from->getr();
-			int g = from->getg();
-			int b = from->getb();
+			int fromr = source->getr();
+			int fromg = source->getg();
+			int fromb = source->getb();
 
-			int dr = tor - r;
-			int dg = tog - g;
-			int db = tob - b;
+			int toa = color.geta();
+			int tor = color.getr();
+			int tog = color.getg();
+			int tob = color.getb();
 
-			to->setr(r + ((dr * toa) >> 8));
-			to->setg(g + ((dg * toa) >> 8));
-			to->setb(b + ((db * toa) >> 8));
+			int dr = tor - fromr;
+			int dg = tog - fromg;
+			int db = tob - fromb;
+
+			argb_t newcolor(
+					source->geta(),
+					fromr + ((dr * toa) >> 8),
+					fromg + ((dg * toa) >> 8),
+					fromb + ((db * toa) >> 8));
+
+			*dest = newcolor;
 		}
 	}
 }
@@ -805,42 +806,36 @@ void V_RefreshColormaps()
 //
 // V_AddBlend
 //
-// [RH] This is from Q2.
+// Blends an ARGB color with an existing ARGB color blend.
 //
-void V_AddBlend(float r, float g, float b, float a, float* v_blend)
+// [RH] This is from Q2.
+// [SL] Modified slightly to use fargb_t types.
+//
+static void V_AddBlend(fargb_t& blend, const fargb_t& newcolor)
 {
-	float a2, a3;
-
-	if (a <= 0.0f)
-		return;
-	a2 = v_blend[3] + (1.0f - v_blend[3]) * a;	// new total alpha
-	a3 = v_blend[3] / a2;		// fraction of color from old
-
-	v_blend[0] = v_blend[0] * a3 + r*(1.0f - a3);
-	v_blend[1] = v_blend[1] * a3 + g*(1.0f - a3);
-	v_blend[2] = v_blend[2] * a3 + b*(1.0f - a3);
-	v_blend[3] = a2;
-}
-
-void V_SetBlend(int blendr, int blendg, int blendb, int blenda)
-{
-	// Don't do anything if the new blend is the same as the old
-	if ((blenda == 0 && BlendA == 0) ||
-		(blendr == BlendR &&
-		 blendg == BlendG &&
-		 blendb == BlendB &&
-		 blenda == BlendA))
+	if (newcolor.geta() <= 0.0f)
 		return;
 
-	V_ForceBlend(blendr, blendg, blendb, blenda);
+	float a = blend.geta() + newcolor.geta() * (1.0f - blend.geta());
+	float old_amount = blend.geta() / a;
+
+	blend.seta(a);
+	blend.setr(blend.getr() * old_amount + newcolor.getr() * (1.0f - old_amount));
+	blend.setg(blend.getg() * old_amount + newcolor.getg() * (1.0f - old_amount));
+	blend.setb(blend.getb() * old_amount + newcolor.getb() * (1.0f - old_amount));
 }
 
-void V_ForceBlend(int blendr, int blendg, int blendb, int blenda)
+
+//
+// V_ForceBlend
+//
+// Normally, V_SetBlend does nothing if the new blend is the
+// same as the old. This function will perform the blending
+// even if the blend hasn't changed.
+//
+void V_ForceBlend(const argb_t color)
 {
-	BlendR = blendr;
-	BlendG = blendg;
-	BlendB = blendb;
-	BlendA = blenda;
+	blend_color = color;
 
 	// blend the palette for 8-bit mode
 	// shademap_t::shade takes care of blending
@@ -848,15 +843,39 @@ void V_ForceBlend(int blendr, int blendg, int blendb, int blenda)
 	// in R_RenderPlayerView
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
-		argb_t blend_color(BlendA, BlendR, BlendG, BlendB);
-		blend_color = V_GammaCorrect(blend_color);
-
 		argb_t palette_colors[256];
-		DoBlending(V_GetDefaultPalette()->colors, palette_colors,
-					blend_color.getr(), blend_color.getg(), blend_color.getb(), BlendA);
+		V_DoBlending(palette_colors, V_GetDefaultPalette()->basecolors, blend_color);
+
+		for (int i = 0; i < 256; i++)
+			palette_colors[i] = V_GammaCorrect(palette_colors[i]);
+
 		I_SetPalette(palette_colors);
 	}
 }
+
+
+//
+// V_SetBlend
+//
+// Sets the global blending color and blends the color with the default
+// palette and passes the palette to the video hardware (in 8bpp mode).
+//
+//
+void V_SetBlend(const argb_t color)
+{
+	// Don't do anything if the new blend is the same as the old
+	if (blend_color.geta() == 0 && color.geta() == 0)
+		return;
+
+	if (blend_color.geta() == color.geta() &&
+		blend_color.getr() == color.getr() &&
+		blend_color.getg() == color.getg() &&
+		blend_color.getb() == color.getb())
+		return;
+
+	V_ForceBlend(color);
+}
+
 
 BEGIN_COMMAND (testblend)
 {
@@ -874,12 +893,11 @@ BEGIN_COMMAND (testblend)
 		else
 			color = V_GetColorFromString(argv[1]);
 
-		float amt = clamp((float)atof(argv[2]), 0.0f, 1.0f);
-
-		BaseBlendR = color.getr();
-		BaseBlendG = color.getg();
-		BaseBlendB = color.getb();
-		BaseBlendA = amt;
+		base_blend_color = fargb_t(
+					clamp(float(atof(argv[2])), 0.0f, 1.0f),
+					color.getr() / 255.0f,
+					color.getg() / 255.0f,
+					color.getb() / 255.0f);
 	}
 }
 END_COMMAND (testblend)
@@ -1007,7 +1025,7 @@ void BuildColoredLights(shademap_t* maps, int lr, int lg, int lb, int r, int g, 
 
 		// Write directly to the shademap for blending:
 		argb_t* colors = maps->shademap + 256 * l;
-		DoBlending(palette_colors, colors, r, g, b, a);
+		V_DoBlending(colors, palette_colors, argb_t(a, r, g, b));
 
 		// Build the colormap and shademap:
 		palindex_t* colormap = maps->colormap + 256*l;
@@ -1086,7 +1104,7 @@ END_COMMAND (testcolor)
 //
 // V_DoPaletteEffects
 //
-// Handles changing the palette or the BlendR/G/B/A globals based on damage
+// Handles changing the palette or the blend_color global based on damage
 // the player has taken, any power-ups, or environment such as deep water.
 //
 void V_DoPaletteEffects()
@@ -1145,10 +1163,10 @@ void V_DoPaletteEffects()
 	}
 	else
 	{
-		float blend[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		fargb_t blend(0.0f, 0.0f, 0.0f, 0.0f);
 
-		V_AddBlend(BaseBlendR / 255.0f, BaseBlendG / 255.0f, BaseBlendB / 255.0f, BaseBlendA, blend);
-		V_AddBlend(plyr->BlendR, plyr->BlendG, plyr->BlendB, plyr->BlendA, blend);
+		V_AddBlend(blend, base_blend_color);
+		V_AddBlend(blend, plyr->blend_color);
 
 		// red tint for pain / berzerk power
 		if (plyr->damagecount || plyr->powers[pw_strength])
@@ -1169,7 +1187,7 @@ void V_DoPaletteEffects()
 				static const float red = 255.0f / 255.0f;
 				static const float green = 0.0f;
 				static const float blue = 0.0f;
-				V_AddBlend(red, green, blue, alpha, blend);
+				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}
 		}
 
@@ -1185,7 +1203,7 @@ void V_DoPaletteEffects()
 				static const float red = 215.0f / 255.0f;
 				static const float green = 186.0f / 255.0f;
 				static const float blue = 69.0f / 255.0f;
-				V_AddBlend(red, green, blue, alpha, blend);
+				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}
 		}
 
@@ -1196,13 +1214,10 @@ void V_DoPaletteEffects()
 			static const float red = 0.0f;
 			static const float green = 255.0f / 255.0f;
 			static const float blue = 0.0f;
-			V_AddBlend(red, green, blue, alpha, blend);
+			V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 		}
 
-		memcpy(current_blend, blend, sizeof(blend));
-
-		V_SetBlend ((int)(blend[0] * 255.0f), (int)(blend[1] * 255.0f),
-					(int)(blend[2] * 255.0f), (int)(blend[3] * 256.0f));
+		V_SetBlend(blend);
 	}
 }
 

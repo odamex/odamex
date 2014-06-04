@@ -970,10 +970,7 @@ player_s::player_s()
 	LastMessage.Time = 0;
 	LastMessage.Message = "";
 
-	BlendR = 0;
-	BlendG = 0;
-	BlendB = 0;
-	BlendA = 0;
+	blend_color = argb_t(0, 0, 0, 0);
 
 	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
 }
@@ -1078,10 +1075,7 @@ player_s &player_s::operator =(const player_s &other)
     LastMessage.Time = other.LastMessage.Time;
 	LastMessage.Message = other.LastMessage.Message;
 
-	BlendR = other.BlendR;
-	BlendG = other.BlendG;
-	BlendB = other.BlendB;
-	BlendA = other.BlendA;
+	blend_color = other.blend_color;
 
 	client = other.client;
 

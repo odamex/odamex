@@ -72,6 +72,13 @@ extern byte**			ylookup;
 
 extern fixed_t			render_lerp_amount;
 
+// [RH] Base blending values (for e.g. underwater)
+extern fargb_t base_blend_color;
+
+// [SL] Current color blending values (including palette effects)
+extern fargb_t blend_color;
+
+
 //
 // Lighting LUT.
 // Used for z-depth cuing per column/row,
@@ -190,6 +197,8 @@ void R_Init();
 
 // Called by exit code.
 void STACK_ARGS R_Shutdown();
+
+void R_ExitLevel();
 
 // Called by M_Responder.
 void R_SetViewSize(int blocks);

@@ -43,6 +43,8 @@ struct dyncolormap_s {
 };
 typedef struct dyncolormap_s dyncolormap_t;
 
+extern fargb_t baseblend;
+
 extern byte gammatable[256];
 float V_GetMinimumGammaLevel();
 float V_GetMaximumGammaLevel();
@@ -94,14 +96,14 @@ void BuildDefaultShademap (palette_t *pal, shademap_t &maps);
 //		   blendb: blue component of blend
 //		   blenda: alpha component of blend
 //
-void V_SetBlend (int blendr, int blendg, int blendb, int blenda);
+void V_SetBlend(const argb_t color);
 
 // V_ForceBlend()
 //
 // Normally, V_SetBlend() does nothing if the new blend is the
 // same as the old. This function will performing the blending
 // even if the blend hasn't changed.
-void V_ForceBlend (int blendr, int blendg, int blendb, int blenda);
+void V_ForceBlend(const argb_t color);
 
 void V_DoPaletteEffects();
 

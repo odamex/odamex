@@ -1028,15 +1028,17 @@ void DFlashFader::RunThink ()
 void DFlashFader::SetBlend (float time)
 {
 	if (ForWho == NULL || ForWho->player == NULL)
-	{
 		return;
-	}
-	player_t *player = ForWho->player;
+	
+	player_t* player = ForWho->player;
+
 	float iT = 1.f - time;
-	player->BlendR = Blends[0][0]*iT + Blends[1][0]*time;
-	player->BlendG = Blends[0][1]*iT + Blends[1][1]*time;
-	player->BlendB = Blends[0][2]*iT + Blends[1][2]*time;
-	player->BlendA = Blends[0][3]*iT + Blends[1][3]*time;
+
+	player->blend_color = fargb_t(
+				Blends[0][3]*iT + Blends[1][3]*time,
+				Blends[0][0]*iT + Blends[1][0]*time,
+				Blends[0][1]*iT + Blends[1][1]*time,
+				Blends[0][2]*iT + Blends[1][2]*time);
 }
 
 void DFlashFader::Cancel ()
@@ -1469,16 +1471,13 @@ static void DoActualFadeRange(player_s* viewer, float ftime, bool fadingFrom,
 {
 	if (ftime <= 0.f)
 	{
-		viewer->BlendR = fr2;
-		viewer->BlendG = fg2;
-		viewer->BlendB = fb2;
-		viewer->BlendA = fa2;
+		viewer->blend_color = fargb_t(fa2, fr2, fg2, fb2);
 	}
 	else
 	{
 		if (!fadingFrom)
 		{
-			if (viewer->BlendA <= 0.f)
+			if (viewer->blend_color.geta() == 0)
 			{
 				fr1 = fr2;
 				fg1 = fg2;
@@ -1487,13 +1486,13 @@ static void DoActualFadeRange(player_s* viewer, float ftime, bool fadingFrom,
 			}
 			else
 			{
-				fr1 = viewer->BlendR;
-				fg1 = viewer->BlendG;
-				fb1 = viewer->BlendB;
-				fa1 = viewer->BlendA;
+				fr1 = viewer->blend_color.geta() / 255.0f;
+				fr1 = viewer->blend_color.getr() / 255.0f;
+				fg1 = viewer->blend_color.getg() / 255.0f;
+				fb1 = viewer->blend_color.getb() / 255.0f;
 			}
 		}
-		new DFlashFader (fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2, ftime, viewer->mo);
+		new DFlashFader(fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2, ftime, viewer->mo);
 	}
 }
 

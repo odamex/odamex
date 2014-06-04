@@ -1639,7 +1639,6 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 	WI_initStats();
 	WI_initNetgameStats();
 
-	V_SetBlend (0,0,0,0);
 	S_StopAllChannels ();
  	SN_StopAllSequences ();
 }
