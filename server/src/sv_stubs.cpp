@@ -28,7 +28,7 @@
 #include "v_palette.h"
 #include "v_video.h"
 
-void R_InitNewLevel() {}
+void R_ExitLevel() {}
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {} 
 void D_DoServerInfoChange (byte **stream) {} 
