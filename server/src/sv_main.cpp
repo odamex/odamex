@@ -3685,9 +3685,9 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		// Instead we respawn the player, move him back, and immediately spectate him afterwards
 		if (player.playerstate == PST_DEAD)
 		{
-			player.deadspectator = true; // prevent teleport fog
+//			player.deadspectator = true; // prevent teleport fog
 			G_DoReborn (player);
-			player.deadspectator = false;
+//			player.deadspectator = false;
 		}
 
 		player.spectator = true;

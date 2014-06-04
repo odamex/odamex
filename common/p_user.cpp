@@ -794,7 +794,7 @@ void player_s::Serialize (FArchive &arc)
 		arc << id
 			<< playerstate
 			<< spectator
-			<< deadspectator
+//			<< deadspectator
 			<< cmd
 			<< userinfo
 			<< viewz
@@ -845,7 +845,7 @@ void player_s::Serialize (FArchive &arc)
 		arc >> id
 			>> playerstate
 			>> spectator
-			>> deadspectator
+//			>> deadspectator
 			>> cmd
 			>> userinfo // Q: Would it be better to restore the userinfo from the archive?
 			>> viewz
@@ -956,7 +956,7 @@ player_s::player_s()
 	tic = 0;
 	spying = id;
 	spectator = false;
-	deadspectator = false;
+//	deadspectator = false;
 
 	joinafterspectatortime = level.time - TICRATE*5;
 	timeout_callvote = 0;
@@ -1062,7 +1062,7 @@ player_s &player_s::operator =(const player_s &other)
 	tic = other.tic;
 	spying = other.spying;
 	spectator = other.spectator;
-	deadspectator = other.deadspectator;
+//	deadspectator = other.deadspectator;
 	joinafterspectatortime = other.joinafterspectatortime;
 	timeout_callvote = other.timeout_callvote;
 	timeout_vote = other.timeout_vote;

@@ -76,10 +76,11 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		G_PlayerReborn(player);
 
 	AActor* mobj;
-	if (player.deadspectator && player.mo)
-		mobj = new AActor(player.mo->x, player.mo->y, ONFLOORZ, MT_PLAYER);
-	else
-		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
+//	if (player.deadspectator && player.mo)
+//		mobj = new AActor(player.mo->x, player.mo->y, ONFLOORZ, MT_PLAYER);
+//	else
+//		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
+	mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
 
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
@@ -92,16 +93,18 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 			R_CopyTranslationRGB(0, player.id);
 	}
 
-	if (player.deadspectator && player.mo)
-	{
-		mobj->angle = player.mo->angle;
-		mobj->pitch = player.mo->pitch;
-	}
-	else
-	{
-		mobj->angle = ANG45 * (mthing->angle/45);
-		mobj->pitch = 0;
-	}
+//	if (player.deadspectator && player.mo)
+//	{
+//		mobj->angle = player.mo->angle;
+//		mobj->pitch = player.mo->pitch;
+//	}
+//	else
+//	{
+//		mobj->angle = ANG45 * (mthing->angle/45);
+//		mobj->pitch = 0;
+//	}
+	mobj->angle = ANG45 * (mthing->angle/45);
+	mobj->pitch = 0;
 
 	mobj->player = &player;
 	mobj->health = player.health;
