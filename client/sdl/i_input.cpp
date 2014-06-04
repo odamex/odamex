@@ -60,6 +60,7 @@ static int mouse_driver_id = -1;
 static MouseInput* mouse_input = NULL;
 
 static bool window_focused = false;
+static bool input_grabbed = false;
 static bool nomouse = false;
 extern bool configuring_controls;
 
@@ -141,27 +142,6 @@ static bool I_CheckFocusState()
 }
 
 //
-// I_InitFocus
-//
-// Sets the initial value of window_focused.
-//
-static void I_InitFocus()
-{
-	window_focused = I_CheckFocusState();
-
-	if (window_focused)
-	{
-		SDL_WM_GrabInput(SDL_GRAB_ON);
-		I_ResumeMouse();
-	}
-	else
-	{
-		SDL_WM_GrabInput(SDL_GRAB_OFF);
-		I_PauseMouse();
-	}
-}
-
-//
 // I_UpdateFocus
 //
 // Update the value of window_focused each tic and in response to SDL
@@ -198,10 +178,77 @@ static void I_UpdateFocus()
 		window_focused = new_window_focused;
 
 		if (mouse_input)
-		{
 			mouse_input->flushEvents();
-		}
 	}
+}
+
+
+//
+// I_CanGrab
+//
+// Returns true if the input (mouse & keyboard) can be grabbed in
+// the current game state.
+//
+static bool I_CanGrab()
+{
+	#ifdef GCONSOLE
+	return true;
+	#endif
+
+	if (!window_focused)
+		return false;
+	else if (I_GetWindow()->isFullScreen())
+		return true;
+	else if (nomouse)
+		return false;
+	else if (configuring_controls)
+		return true;
+	else if (menuactive || ConsoleState == c_down || paused)
+		return false;
+	else if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
+		return true;
+	else
+		return false;
+}
+
+
+//
+// I_GrabInput
+//
+static void I_GrabInput()
+{
+	SDL_WM_GrabInput(SDL_GRAB_ON);
+	input_grabbed = true;
+	I_ResumeMouse();
+}
+
+//
+// I_UngrabInput
+//
+static void I_UngrabInput()
+{
+	SDL_WM_GrabInput(SDL_GRAB_OFF);
+	input_grabbed = false;
+	I_PauseMouse();
+}
+
+
+//
+// I_ForceUpdateGrab
+//
+// Determines if SDL should grab the mouse based on the game window having
+// focus and the status of the menu and console.
+//
+// Should be called whenever the video mode changes.
+//
+void I_ForceUpdateGrab()
+{
+	window_focused = I_CheckFocusState();
+
+	if (I_CanGrab())
+		I_GrabInput();
+	else
+		I_UngrabInput();
 }
 
 
@@ -214,42 +261,30 @@ static void I_UpdateFocus()
 static void I_UpdateGrab()
 {
 #ifndef GCONSOLE
-	bool can_grab = false;
-	bool grabbed = SDL_WM_GrabInput(SDL_GRAB_QUERY);
-
-	if (!window_focused)
-		can_grab = false;
-	else if (vid_fullscreen)
-		can_grab = true;
-	else if (nomouse)
-		can_grab = false;
-	else if (configuring_controls)
-		can_grab = true;
-	else if (menuactive || ConsoleState == c_down || paused)
-		can_grab = false;
-	else if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
-		can_grab = true;
-
 	// force I_ResumeMouse or I_PauseMouse if toggling between fullscreen/windowed
-	static float prev_vid_fullscreen = vid_fullscreen;
-	if (vid_fullscreen != prev_vid_fullscreen)
-		grabbed = !can_grab;
-	prev_vid_fullscreen = vid_fullscreen;
-
-
+	bool fullscreen = I_GetWindow()->isFullScreen();
+	static bool prev_fullscreen = fullscreen;
+	if (fullscreen != prev_fullscreen) 
+		I_ForceUpdateGrab();
+	prev_fullscreen = fullscreen;
 
 	// check if the window focus changed (or menu/console status changed)
-	if (can_grab && !grabbed)
-	{
-		SDL_WM_GrabInput(SDL_GRAB_ON);
-		I_ResumeMouse();
-	}
-	else if (grabbed && !can_grab)
-	{
-		SDL_WM_GrabInput(SDL_GRAB_OFF);
-		I_PauseMouse();
-	}
+	if (!input_grabbed && I_CanGrab())
+		I_GrabInput();
+	else if (input_grabbed && !I_CanGrab())
+		I_UngrabInput();
 #endif
+}
+
+
+//
+// I_InitFocus
+//
+// Sets the initial value of window_focused.
+//
+static void I_InitFocus()
+{
+	I_ForceUpdateGrab();
 }
 
 
@@ -495,7 +530,7 @@ bool I_InitInput (void)
 	if (Args.CheckParm("-nomouse"))
 		nomouse = true;
 
-	atterm (I_ShutdownInput);
+	atterm(I_ShutdownInput);
 
 	SDL_EnableUNICODE(true);
 
@@ -530,9 +565,11 @@ bool I_InitInput (void)
 //
 void STACK_ARGS I_ShutdownInput (void)
 {
+	I_PauseMouse();
+
 	I_ShutdownMouseDriver();
 
-	SDL_WM_GrabInput(SDL_GRAB_OFF);
+	I_UngrabInput();
 	I_ResetKeyRepeat();
 }
 

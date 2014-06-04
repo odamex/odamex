@@ -44,6 +44,8 @@
 #include "v_palette.h"
 #include "i_sdlvideo.h"
 #include "i_system.h"
+#include "i_input.h"
+
 #include "m_argv.h"
 #include "w_wad.h"
 
@@ -451,14 +453,14 @@ bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 		m8in32 = true;
 	#endif
 
+	#ifdef SDL_GL_SWAP_CONTROL
+	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
+	#endif
+
 	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
 	// This interferes with RawWin32Mouse's input handlers so we need to
 	// disable them prior to reinitalizing DirectInput...
 	I_PauseMouse();
-
-	#ifdef SDL_GL_SWAP_CONTROL
-	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
-	#endif
 
 	SDL_Surface* sdlsurface = SDL_SetVideoMode(width, height, m8in32 ? 32 : bpp, flags);
 

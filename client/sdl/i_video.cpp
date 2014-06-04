@@ -35,6 +35,7 @@
 #include "m_argv.h"
 #include "m_misc.h"
 #include "i_sdlvideo.h"
+#include "i_input.h"
 #include "m_fileio.h"
 
 #include "w_wad.h"
@@ -609,11 +610,6 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 //	else if (I_DisplayType() == DISPLAY_FullscreenOnly)
 //		fullscreen = true;
 
-	if (fullscreen)
-		I_ResumeMouse();
-	else
-		I_PauseMouse();
-
 	IVideoMode mode = I_ClampVideoMode(width, height);
 
 	if (window)
@@ -688,6 +684,8 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 	screen = primary_surface->getDefaultCanvas();
 
 	window->getPrimarySurface()->unlock();
+
+	I_ForceUpdateGrab();
 }
 
 
