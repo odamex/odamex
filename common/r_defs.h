@@ -205,7 +205,7 @@ struct sector_s
 	// killough 4/11/98: support for lightlevels coming from another sector
 	struct sector_s *floorlightsec, *ceilinglightsec;
 
-	unsigned int bottommap, midmap, topmap; // killough 4/4/98: dynamic colormaps
+	argb_t bottommap, midmap, topmap; // killough 4/4/98: dynamic colormaps
 											// [RH] these can also be blend values if
 											//		the alpha mask is non-zero
 

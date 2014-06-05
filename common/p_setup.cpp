@@ -60,7 +60,6 @@ static void P_SetupLevelCeilingPlane(sector_t *sector);
 static void P_SetupSlopes();
 void P_InvertPlane(plane_t *plane);
 
-extern unsigned int R_OldBlend;
 extern dyncolormap_t NormalLight;
 
 //
@@ -867,24 +866,95 @@ void P_LoadSideDefs (int lump)
 	memset (sides, 0, numsides*sizeof(side_t));
 }
 
-// [RH] Figure out blends for deep water sectors
-static void SetTexture (short *texture, unsigned int *blend, char *name)
+
+//
+// P_GetColorFromTextureName
+//
+// Converts a texture name to an ARGB8888 value.
+// The texture name should contain 4 hexadecimal byte values
+// in the following order: alpha, red, green, blue.
+//
+static argb_t P_GetColorFromTextureName(const char* name)
 {
-	if ((*blend = R_ColormapNumForName (name)) == 0) {
-		if ((*texture = R_CheckTextureNumForName (name)) == -1) {
-			char name2[9];
-			char *stop;
-			strncpy (name2, name, 8);
-			name2[8] = 0;
-			*blend = strtoul (name2, &stop, 16);
-			*texture = 0;
-		} else {
-			*blend = 0;
+	// work around name not being a properly terminated string
+	char name2[9];
+	strncpy(name2, name, 8);
+	name2[8] = '\0';
+
+	unsigned long value = strtoul(name2, NULL, 16);
+
+	int a = (value >> 24) & 0xFF;
+	int r = (value >> 16) & 0xFF;
+	int g = (value >> 8) & 0xFF;
+	int b = value & 0xFF;
+
+	return argb_t(a, r, g, b);
+}
+
+
+//
+// P_SetTransferHeightBlends
+//
+// Reads the texture name from the mapsidedef for the given side. If the
+// texture name matches the name of a valid Boom colormap lump, the
+// sidedef's texture value is cleared and the colormap's blend color
+// value is used for the appropriate sector blend. If the texture name
+// is an ARGB value in hexadecimal, that value is used for the appropriate
+// sector blend.
+// 
+static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
+{
+	sector_t* sec = &sectors[LESHORT(msd->sector)];
+
+	// for each of the texture tiers (bottom, middle, and top)
+	for (int i = 0; i < 3; i++)
+	{
+		short* texture_num;
+		argb_t* blend_color;
+		const char* texture_name;
+
+		if (i == 0)				// bottom textures
+		{
+			texture_num = &sd->bottomtexture;
+			blend_color = &sec->bottommap;
+			texture_name = msd->bottomtexture;
 		}
-	} else {
-		*texture = 0;
+		else if (i == 1)		// mid textures
+		{
+			texture_num = &sd->midtexture;
+			blend_color = &sec->midmap;
+			texture_name = msd->midtexture;
+		}
+		else					// top textures
+		{
+			texture_num = &sd->toptexture;
+			blend_color = &sec->topmap;
+			texture_name = msd->toptexture;
+		}
+
+		*blend_color = argb_t(0, 255, 255, 255);
+		*texture_num = 0;
+
+		int colormap_index = R_ColormapNumForName(texture_name);
+		if (colormap_index != 0)
+		{
+			*blend_color = R_BlendForColormap(colormap_index);
+		}
+		else
+		{
+			*texture_num = R_CheckTextureNumForName(texture_name);
+			if (*texture_num == -1)
+			{
+				*texture_num = 0;
+				if (strnicmp(texture_name, "WATERMAP", 8) == 0)
+					*blend_color = argb_t(0x80, 0, 0x4F, 0xA5);
+				else
+					*blend_color = P_GetColorFromTextureName(texture_name);
+			}
+		}
 	}
 }
+
 
 static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
 {
@@ -904,24 +974,22 @@ static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
 
 void P_LoadSideDefs2 (int lump)
 {
-	byte *data = (byte *)W_CacheLumpNum(lump,PU_STATIC);
-	int  i;
+	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
 
-	for (i=0; i<numsides; i++)
+	for (int i = 0; i < numsides; i++)
 	{
-		register mapsidedef_t *msd = (mapsidedef_t *) data + i;
-		register side_t *sd = sides + i;
-		register sector_t *sec;
+		register mapsidedef_t* msd = (mapsidedef_t*)data + i;
+		register side_t* sd = sides + i;
 
 		sd->textureoffset = LESHORT(msd->textureoffset)<<FRACBITS;
 		sd->rowoffset = LESHORT(msd->rowoffset)<<FRACBITS;
 		sd->linenum = -1;
+		sd->sector = &sectors[LESHORT(msd->sector)];
 
 		// killough 4/4/98: allow sidedef texture names to be overloaded
 		// killough 4/11/98: refined to allow colormaps to work as wall
 		// textures if invalid as colormaps but valid as textures.
 
-		sd->sector = sec = &sectors[LESHORT(msd->sector)];
 		switch (sd->special)
 		{
 		  case Transfer_Heights:	// variable colormap via 242 linedef
@@ -929,9 +997,7 @@ void P_LoadSideDefs2 (int lump)
 			  //	  but a packed ARGB word for blending, so we also allow
 			  //	  the blend to be specified directly by the texture names
 			  //	  instead of figuring something out from the colormap.
-			SetTexture (&sd->bottomtexture, &sec->bottommap, msd->bottomtexture);
-			SetTexture (&sd->midtexture, &sec->midmap, msd->midtexture);
-			SetTexture (&sd->toptexture, &sec->topmap, msd->toptexture);
+			P_SetTransferHeightBlends(sd, msd);
 			break;
 
 		  case Static_Init:
@@ -1717,8 +1783,6 @@ void P_SetupLevel (char *lumpname, int position)
 
 	// build subsector connect matrix
 	//	UNUSED P_ConnectSubsectors ();
-
-	R_OldBlend = ~0;
 
 	// preload graphics
 	if (clientside && precache)

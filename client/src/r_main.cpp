@@ -133,8 +133,6 @@ int				setblocks;
 
 fixed_t			freelookviewheight;
 
-unsigned int	R_OldBlend = ~0;
-
 // [RH] Base blending values (for e.g. underwater)
 static argb_t sector_blend_color(0, 255, 255, 255);
 
@@ -755,10 +753,10 @@ void R_SetSectorBlend(const argb_t color)
 //
 void R_ClearSectorBlend()
 {
-	sector_blend_color.seta(0.0f);
-	sector_blend_color.setr(255.0f);
-	sector_blend_color.setg(255.0f);
-	sector_blend_color.setb(255.0f);
+	sector_blend_color.seta(0);
+	sector_blend_color.setr(255);
+	sector_blend_color.setg(255);
+	sector_blend_color.setb(255);
 }
 
 
@@ -812,10 +810,8 @@ void R_SetupFrame (player_t *player)
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
 		int intensity = camera->player->xviewshift;
-		viewx += ((M_Random() % (intensity<<2))
-					-(intensity<<1))<<FRACBITS;
-		viewy += ((M_Random()%(intensity<<2))
-					-(intensity<<1))<<FRACBITS;
+		viewx += ((M_Random() % (intensity << 2)) - (intensity << 1)) << FRACBITS;
+		viewy += ((M_Random() % (intensity << 2)) - (intensity << 1)) << FRACBITS;
 	}
 
 	extralight = camera == player->mo ? player->extralight : 0;
@@ -823,38 +819,34 @@ void R_SetupFrame (player_t *player)
 	viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
 	viewcos = finecosine[viewangle>>ANGLETOFINESHIFT];
 
-	// killough 3/20/98, 4/4/98: select colormap based on player status
-	// [RH] Can also select a blend
-	argb_t newblend = 0;
-
+	// [SL] Change to a different sector blend color (or colormap in 8bpp mode)
+	// if entering a heightsec (via TransferHeight line special)
 	if (camera->subsector->sector->heightsec &&
 		!(camera->subsector->sector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
-		const sector_t *s = camera->subsector->sector->heightsec;
-		newblend = viewz < P_FloorHeight(viewx, viewy, s) ? s->bottommap : 
-					viewz > P_CeilingHeight(viewx, viewy, s) ? s->topmap : s->midmap;
+		const sector_t* sec = camera->subsector->sector->heightsec;
 
-		if (I_GetPrimarySurface()->getBitsPerPixel() != 8)
-			newblend = R_BlendForColormap (newblend);
-		else if (newblend.geta() == 0 && newblend >= numfakecmaps)
-			newblend = 0;
-	}
-
-	// [RH] Don't override testblend unless entering a sector with a
-	//		blend different from the previous sector's. Same goes with
-	//		NormalLight's maps pointer.
-	if (R_OldBlend != newblend)
-	{
-		R_OldBlend = newblend;
-		if (newblend.geta() != 0)
-		{
-			R_SetSectorBlend(newblend);
-			NormalLight.maps = shaderef_t(&realcolormaps, 0);
-		}
+		argb_t new_sector_blend_color;
+		if (viewz < P_FloorHeight(viewx, viewy, sec))
+			new_sector_blend_color = sec->bottommap;
+		else if (viewz > P_CeilingHeight(viewx, viewy, sec))
+			new_sector_blend_color = sec->topmap;
 		else
+			new_sector_blend_color = sec->midmap;
+
+		// [RH] Don't override testblend unless entering a sector with a
+		//		blend different from the previous sector's. Same goes with
+		//		NormalLight's maps pointer.
+		if (new_sector_blend_color != R_GetSectorBlend())
 		{
-			R_ClearSectorBlend();
-			NormalLight.maps = shaderef_t(&realcolormaps, (NUMCOLORMAPS+1)*newblend);
+			R_SetSectorBlend(new_sector_blend_color);
+
+			// use colormap lumps in 8bpp mode instead of blends
+			int colormap_num = 0;
+			if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+				colormap_num = R_ColormapForBlend(new_sector_blend_color);
+
+			NormalLight.maps = shaderef_t(&realcolormaps, (NUMCOLORMAPS+1) * colormap_num);
 		}
 	}
 
@@ -1297,7 +1289,8 @@ static void R_InitViewWindow()
 	sprintf(temp_str, "%d x %d", viewwidth, viewheight);
 	r_viewsize.ForceSet(temp_str);
 
-	R_OldBlend = ~0;
+	// [SL] clear many renderer variables
+	R_ExitLevel();
 }
 
 
@@ -1333,6 +1326,8 @@ bool R_StatusBarVisible()
 void R_ExitLevel()
 {
 	R_ClearSectorBlend();
+	NormalLight.maps = shaderef_t(&realcolormaps, 0);
+
 	blend_color = fargb_t(0.0f, 255.0f, 255.0f, 255.0f);
 	V_ForceBlend(blend_color);
 

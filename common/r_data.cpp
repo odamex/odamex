@@ -765,7 +765,7 @@ void R_InitSpriteLumps (void)
 struct FakeCmap
 {
 	std::string name;
-	unsigned int blend;
+	argb_t blend_color;
 };
 
 static FakeCmap* fakecmaps = NULL;
@@ -790,7 +790,7 @@ void R_ForceDefaultColormap(const char* name)
 #endif
 
 	fakecmaps[0].name = StdStringToUpper(name, 8); 	// denis - todo - string limit?
-	fakecmaps[0].blend = 0;
+	fakecmaps[0].blend_color = argb_t(0, 255, 255, 255);
 }
 
 void R_SetDefaultColormap(const char* name)
@@ -899,7 +899,7 @@ void R_InitColormaps()
 				}
 				// NOTE(jsd): This alpha value is used for 32bpp in water areas.
 				argb_t color = argb_t(64, r, g, b);
-				fakecmaps[j].blend = color;
+				fakecmaps[j].blend_color = color;
 
 				// Set up shademap for the colormap:
 				for (int k = 0; k < 256; ++k)
@@ -909,34 +909,53 @@ void R_InitColormaps()
 	}
 }
 
-
+//
+// R_ColormapNumForname
+//
 // [RH] Returns an index into realcolormaps. Multiply it by
 //		256*(NUMCOLORMAPS+1) to find the start of the colormap to use.
-//		WATERMAP is an exception and returns a blending value instead.
-int R_ColormapNumForName (const char *name)
+//
+// COLORMAP always returns 0.
+//
+int R_ColormapNumForName(const char* name)
 {
-	int lump, blend = 0;
-
-	if (strnicmp (name, "COLORMAP", 8))
-	{	// COLORMAP always returns 0
-		if (-1 != (lump = W_CheckNumForName (name, ns_colormaps)) )
-			blend = lump - firstfakecmap + 1;
-		else if (!strnicmp (name, "WATERMAP", 8))
-			blend = argb_t(128, 0, 0x4f, 0xa5);
+	if (strnicmp(name, "COLORMAP", 8) != 0)
+	{
+		int lump = W_CheckNumForName(name, ns_colormaps);
+		
+		if (lump != -1)
+			return lump - firstfakecmap + 1;
 	}
 
-	return blend;
+	return 0;
 }
 
-unsigned int R_BlendForColormap(int map)
+
+//
+// R_BlendForColormap
+//
+// Returns a blend value to approximate the given colormap index number.
+// Invalid values return the color white with 0% opacity.
+//
+argb_t R_BlendForColormap(unsigned int index)
 {
-	argb_t color(map);
-	if (color.geta() != 0)
-		return map;
+	if (index > 0 && index < numfakecmaps)
+		return fakecmaps[index].blend_color;
 
-	if ((unsigned)map < numfakecmaps)
-		return fakecmaps[map].blend;
+	return argb_t(0, 255, 255, 255);
+}
 
+
+//
+// R_ColormapForBlend
+//
+// Returns the colormap index number that has the given blend color value.
+//
+int R_ColormapForBlend(const argb_t blend_color)
+{
+	for (unsigned int i = 1; i < numfakecmaps; i++)
+		if (fakecmaps[i].blend_color == blend_color)
+			return i;
 	return 0;
 }
 

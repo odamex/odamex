@@ -119,7 +119,10 @@ int R_ColormapNumForName(const char *name);		// killough 4/4/98
 void R_ReinitColormap();
 void R_ForceDefaultColormap (const char *name);
 void R_SetDefaultColormap (const char *name);	// [RH] change normal fadetable
-unsigned int R_BlendForColormap (int map);		// [RH] return calculated blend for a colormap
+
+argb_t R_BlendForColormap(unsigned int mapnum);		// [RH] return calculated blend for a colormap
+int R_ColormapForBlend(const argb_t blend_color);	// [SL] return colormap that has the blend color
+
 extern shademap_t realcolormaps;				// [RH] make the colormaps externally visible
 extern size_t numfakecmaps;
 
