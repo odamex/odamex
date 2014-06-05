@@ -374,46 +374,90 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	}
 }
 
+
+//
+// R_GetBytesUntilAligned
+//
+static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
+{
+	uintptr_t mask = alignment - 1;
+	return (alignment - ((uintptr_t)data & mask)) & mask;
+}
+
+
+
 void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
 	int surface_pitch_pixels = surface->getPitchInPixels();
+	int line_inc = surface_pitch_pixels - w;
 
-	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
-
+	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
+	
 	int invAlpha = 256 - alpha;
-
-	int batches = w / 4;
-	int remainder = w & 3;
+	int r = color.getr(), g = color.getg(), b = color.getb();
 
 	// SSE2 temporaries:
-	const __m128i upper8mask = _mm_set_epi16(0, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff);
-	const __m128i blendAlpha = _mm_set_epi16(0, alpha, alpha, alpha, 0, alpha, alpha, alpha);
-	const __m128i blendInvAlpha = _mm_set_epi16(0, invAlpha, invAlpha, invAlpha, 0, invAlpha, invAlpha, invAlpha);
-	const __m128i blendColor = _mm_set_epi16(0, color.getr(), color.getg(), color.getb(),
-											0, color.getr(), color.getg(), color.getb());
-	const __m128i blendMult = _mm_mullo_epi16(blendColor, blendAlpha);
+	const __m128i upper8mask = _mm_set_epi16(	0, 0xff, 0xff, 0xff,
+												0, 0xff, 0xff, 0xff);
+	const __m128i blendAlpha = _mm_set_epi16(	0, alpha, alpha, alpha,
+												0, alpha, alpha, alpha);
+	const __m128i blendInvAlpha = _mm_set_epi16(0, invAlpha, invAlpha, invAlpha,
+												0, invAlpha, invAlpha, invAlpha);
+	const __m128i blendColor = _mm_set_epi16(	0, r, g, b,
+												0, r, g, b);
+	const __m128i blendMult = _mm_mullo_epi16(	blendColor, blendAlpha);
 
-	for (int y = y1; y < y1 + h; y++)
+	for (int rowcount = h; rowcount > 0; --rowcount)
 	{
-		int x = x1;
+		// [SL] Calculate how many pixels of each row need to be drawn before dest is
+		// aligned to a 16-byte boundary.
+		int align = R_GetBytesUntilAligned(dest, 16) / sizeof(argb_t);
+		if (align > w)
+			align = w;
+
+		int batches = (w - align) / 4;
+		int remainder = (w - align) & 3;
+
+		// align the destination buffer to 16-byte boundary
+		while (align--)
+		{
+			*dest = alphablend1a(*dest, color, alpha);
+			dest++;
+		}
 
 		// SSE2 optimize the bulk in batches of 4 colors:
-		for (int i = 0; i < batches; ++i, x += 4)
+		while (batches--)
 		{
-			const __m128i input = _mm_setr_epi32(line[x + 0], line[x + 1], line[x + 2], line[x + 3]);
-			_mm_storeu_si128((__m128i *)&line[x], blend4vs1_sse2(input, blendMult, blendInvAlpha, upper8mask));
+			const __m128i input = _mm_load_si128((__m128i*)dest);
+	
+			// Expand the width of each color channel from 8bits to 16 bits
+			// by splitting input into two 128bit variables, each
+			// containing 2 ARGB values. 16bit color channels are needed to
+			// accomodate multiplication.
+			__m128i lower = _mm_and_si128(_mm_unpacklo_epi8(input, input), upper8mask);
+			__m128i upper = _mm_and_si128(_mm_unpackhi_epi8(input, input), upper8mask);
+
+			// ((input * invAlpha) + (color * Alpha)) >> 8
+			lower = _mm_srli_epi16(_mm_adds_epu16(_mm_mullo_epi16(lower, blendInvAlpha), blendMult), 8);
+			upper = _mm_srli_epi16(_mm_adds_epu16(_mm_mullo_epi16(upper, blendInvAlpha), blendMult), 8);
+
+			// Compress the width of each color channel to 8bits again and store in dest
+			_mm_store_si128((__m128i*)dest, _mm_packus_epi16(lower, upper));
+
+			dest += 4;
 		}
 
-		if (remainder)
+		// Pick up the remainder:
+		while (remainder--)
 		{
-			// Pick up the remainder:
-			for (; x < x1 + w; x++)
-				line[x] = alphablend1a(line[x], color, alpha);
+			*dest = alphablend1a(*dest, color, alpha);
+			dest++;
 		}
 
-		line += surface_pitch_pixels;
+		dest += line_inc;
 	}
 }
+
 
 VERSION_CONTROL (r_drawt_sse2_cpp, "$Id$")
 
