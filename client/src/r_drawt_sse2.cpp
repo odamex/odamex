@@ -391,21 +391,45 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 	int surface_pitch_pixels = surface->getPitchInPixels();
 	int line_inc = surface_pitch_pixels - w;
 
-	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
-	
-	int invAlpha = 256 - alpha;
-	int r = color.getr(), g = color.getg(), b = color.getb();
+	// determine the layout of the color channels in memory
+	const PixelFormat* format = surface->getPixelFormat();
+	int apos = format->getAShift() >> 3;	
+	int rpos = format->getRShift() >> 3;	
+	int gpos = format->getGShift() >> 3;	
+	int bpos = format->getBShift() >> 3;	
+
+	uint16_t upper8mask_array[8];
+	upper8mask_array[apos] = upper8mask_array[apos + 4] = 0;
+	upper8mask_array[rpos] = upper8mask_array[rpos + 4] = 0xFF;
+	upper8mask_array[gpos] = upper8mask_array[gpos + 4] = 0xFF;
+	upper8mask_array[bpos] = upper8mask_array[bpos + 4] = 0xFF;
+
+	uint16_t blendAlpha_array[8];
+	blendAlpha_array[apos] = blendAlpha_array[apos + 4] = 0;
+	blendAlpha_array[rpos] = blendAlpha_array[rpos + 4] = alpha;
+	blendAlpha_array[gpos] = blendAlpha_array[gpos + 4] = alpha;
+	blendAlpha_array[bpos] = blendAlpha_array[bpos + 4] = alpha;
+
+	uint16_t blendInvAlpha_array[8];
+	blendInvAlpha_array[apos] = blendInvAlpha_array[apos + 4] = 0;
+	blendInvAlpha_array[rpos] = blendInvAlpha_array[rpos + 4] = 256 - alpha;
+	blendInvAlpha_array[gpos] = blendInvAlpha_array[gpos + 4] = 256 - alpha;
+	blendInvAlpha_array[bpos] = blendInvAlpha_array[bpos + 4] = 256 - alpha;
+
+	uint16_t blendColor_array[8];
+	blendColor_array[apos] = blendColor_array[apos + 4] = 0;
+	blendColor_array[rpos] = blendColor_array[rpos + 4] = color.getr();
+	blendColor_array[gpos] = blendColor_array[gpos + 4] = color.getg();
+	blendColor_array[bpos] = blendColor_array[bpos + 4] = color.getb();
 
 	// SSE2 temporaries:
-	const __m128i upper8mask = _mm_set_epi16(	0, 0xff, 0xff, 0xff,
-												0, 0xff, 0xff, 0xff);
-	const __m128i blendAlpha = _mm_set_epi16(	0, alpha, alpha, alpha,
-												0, alpha, alpha, alpha);
-	const __m128i blendInvAlpha = _mm_set_epi16(0, invAlpha, invAlpha, invAlpha,
-												0, invAlpha, invAlpha, invAlpha);
-	const __m128i blendColor = _mm_set_epi16(	0, r, g, b,
-												0, r, g, b);
-	const __m128i blendMult = _mm_mullo_epi16(	blendColor, blendAlpha);
+	const __m128i upper8mask	= _mm_loadu_si128((__m128i*)upper8mask_array);
+	const __m128i blendAlpha	= _mm_loadu_si128((__m128i*)blendAlpha_array);
+	const __m128i blendInvAlpha	= _mm_loadu_si128((__m128i*)blendInvAlpha_array);
+	const __m128i blendColor	= _mm_loadu_si128((__m128i*)blendColor_array);
+	const __m128i blendMult		= _mm_mullo_epi16(blendColor, blendAlpha);
+
+	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
 
 	for (int rowcount = h; rowcount > 0; --rowcount)
 	{
