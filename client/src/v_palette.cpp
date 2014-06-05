@@ -614,7 +614,7 @@ void V_InitPalette(const char* lumpname)
 
 	V_GammaAdjustPalette(palette);
 
-	V_ForceBlend(argb_t(0, 0, 0, 0));
+	V_ForceBlend(argb_t(0, 255, 255, 255));
 
 	V_RefreshColormaps();
 
@@ -893,11 +893,8 @@ BEGIN_COMMAND (testblend)
 		else
 			color = V_GetColorFromString(argv[1]);
 
-		base_blend_color = fargb_t(
-					clamp(float(atof(argv[2])), 0.0f, 1.0f),
-					color.getr() / 255.0f,
-					color.getg() / 255.0f,
-					color.getb() / 255.0f);
+		int alpha = 255.0 * clamp(atof(argv[2]), 0.0, 1.0);
+		R_SetSectorBlend(argb_t(alpha, color.getr(), color.getg(), color.getb()));
 	}
 }
 END_COMMAND (testblend)
@@ -1165,7 +1162,7 @@ void V_DoPaletteEffects()
 	{
 		fargb_t blend(0.0f, 0.0f, 0.0f, 0.0f);
 
-		V_AddBlend(blend, base_blend_color);
+		V_AddBlend(blend, R_GetSectorBlend());
 		V_AddBlend(blend, plyr->blend_color);
 
 		// red tint for pain / berzerk power

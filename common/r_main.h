@@ -72,12 +72,12 @@ extern byte**			ylookup;
 
 extern fixed_t			render_lerp_amount;
 
-// [RH] Base blending values (for e.g. underwater)
-extern fargb_t base_blend_color;
-
 // [SL] Current color blending values (including palette effects)
 extern fargb_t blend_color;
 
+void R_SetSectorBlend(const argb_t color);
+void R_ClearSectorBlend();
+argb_t R_GetSectorBlend();
 
 //
 // Lighting LUT.

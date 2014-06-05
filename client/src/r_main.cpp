@@ -136,10 +136,10 @@ fixed_t			freelookviewheight;
 unsigned int	R_OldBlend = ~0;
 
 // [RH] Base blending values (for e.g. underwater)
-fargb_t base_blend_color(0.0f, 0.0f, 0.0f, 0.0f);
+static argb_t sector_blend_color(0, 255, 255, 255);
 
 // [SL] Current color blending values (including palette effects)
-fargb_t blend_color(0.0f, 0.0f, 0.0f, 0.0f);
+fargb_t blend_color(0.0f, 255.0f, 255.0f, 255.0f);
 
 void (*colfunc) (void);
 void (*spanfunc) (void);
@@ -738,6 +738,42 @@ static void R_ViewShear(angle_t pitch)
 
 
 //
+// R_SetSectorBlend
+//
+// Sets the blend color for the camera's current sector to the given color.
+//
+void R_SetSectorBlend(const argb_t color)
+{
+	sector_blend_color = color;
+}
+
+
+//
+// R_ClearSectorBlend
+//
+// Sets the blend color for the camera's current sector to white with 0% opacity.
+//
+void R_ClearSectorBlend()
+{
+	sector_blend_color.seta(0.0f);
+	sector_blend_color.setr(255.0f);
+	sector_blend_color.setg(255.0f);
+	sector_blend_color.setb(255.0f);
+}
+
+
+//
+// R_GetSectorBlend
+//
+// Returns the blend color for the camera's current sector.
+//
+argb_t R_GetSectorBlend()
+{
+	return sector_blend_color;
+}
+
+
+//
 //
 // R_SetupFrame
 //
@@ -789,7 +825,7 @@ void R_SetupFrame (player_t *player)
 
 	// killough 3/20/98, 4/4/98: select colormap based on player status
 	// [RH] Can also select a blend
-	argb_t newblend;
+	argb_t newblend = 0;
 
 	if (camera->subsector->sector->heightsec &&
 		!(camera->subsector->sector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
@@ -803,10 +839,6 @@ void R_SetupFrame (player_t *player)
 		else if (newblend.geta() == 0 && newblend >= numfakecmaps)
 			newblend = 0;
 	}
-	else
-	{
-		newblend = 0;
-	}
 
 	// [RH] Don't override testblend unless entering a sector with a
 	//		blend different from the previous sector's. Same goes with
@@ -816,18 +848,13 @@ void R_SetupFrame (player_t *player)
 		R_OldBlend = newblend;
 		if (newblend.geta() != 0)
 		{
-			base_blend_color = fargb_t(
-					newblend.geta() / 255.0f,
-					newblend.getr() / 255.0f,
-					newblend.getg() / 255.0f,
-					newblend.getb() / 255.0f);
-
+			R_SetSectorBlend(newblend);
 			NormalLight.maps = shaderef_t(&realcolormaps, 0);
 		}
 		else
 		{
+			R_ClearSectorBlend();
 			NormalLight.maps = shaderef_t(&realcolormaps, (NUMCOLORMAPS+1)*newblend);
-			base_blend_color = fargb_t(0.0f, 0.0f, 0.0f, 0.0f);
 		}
 	}
 
@@ -1305,8 +1332,8 @@ bool R_StatusBarVisible()
 //
 void R_ExitLevel()
 {
-	base_blend_color = fargb_t(0.0f, 0.0f, 0.0f, 0.0f);
-	blend_color = fargb_t(0.0f, 0.0f, 0.0f, 0.0f);
+	R_ClearSectorBlend();
+	blend_color = fargb_t(0.0f, 255.0f, 255.0f, 255.0f);
 	V_ForceBlend(blend_color);
 
 	r_underwater = false;
