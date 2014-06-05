@@ -385,48 +385,39 @@ static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
 }
 
 
+//
+// R_SetM128i
+//
+// Sets an __m128i SSE2 register with the given color channel values.
+// The surface is queried for the pixel format and the color channel values
+// are set in the appropriate order for the pixel format.
+//
+static inline __m128i R_SetM128i(const IWindowSurface* surface, int a, int r, int g, int b)
+{
+	// determine the layout of the color channels in memory
+	const PixelFormat* format = surface->getPixelFormat();
+	int apos = (24 - format->getAShift()) >> 3;
+	int rpos = (24 - format->getRShift()) >> 3;
+	int gpos = (24 - format->getGShift()) >> 3;
+	int bpos = (24 - format->getBShift()) >> 3;
+
+	uint16_t values[4];
+	values[apos] = a; values[rpos] = r; values[gpos] = g; values[bpos] = b;
+
+	return _mm_set_epi16(values[0], values[1], values[2], values[3],
+						values[0], values[1], values[2], values[3]);
+}
 
 void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
 	int surface_pitch_pixels = surface->getPitchInPixels();
 	int line_inc = surface_pitch_pixels - w;
 
-	// determine the layout of the color channels in memory
-	const PixelFormat* format = surface->getPixelFormat();
-	int apos = format->getAShift() >> 3;	
-	int rpos = format->getRShift() >> 3;	
-	int gpos = format->getGShift() >> 3;	
-	int bpos = format->getBShift() >> 3;	
-
-	uint16_t upper8mask_array[8];
-	upper8mask_array[apos] = upper8mask_array[apos + 4] = 0;
-	upper8mask_array[rpos] = upper8mask_array[rpos + 4] = 0xFF;
-	upper8mask_array[gpos] = upper8mask_array[gpos + 4] = 0xFF;
-	upper8mask_array[bpos] = upper8mask_array[bpos + 4] = 0xFF;
-
-	uint16_t blendAlpha_array[8];
-	blendAlpha_array[apos] = blendAlpha_array[apos + 4] = 0;
-	blendAlpha_array[rpos] = blendAlpha_array[rpos + 4] = alpha;
-	blendAlpha_array[gpos] = blendAlpha_array[gpos + 4] = alpha;
-	blendAlpha_array[bpos] = blendAlpha_array[bpos + 4] = alpha;
-
-	uint16_t blendInvAlpha_array[8];
-	blendInvAlpha_array[apos] = blendInvAlpha_array[apos + 4] = 0;
-	blendInvAlpha_array[rpos] = blendInvAlpha_array[rpos + 4] = 256 - alpha;
-	blendInvAlpha_array[gpos] = blendInvAlpha_array[gpos + 4] = 256 - alpha;
-	blendInvAlpha_array[bpos] = blendInvAlpha_array[bpos + 4] = 256 - alpha;
-
-	uint16_t blendColor_array[8];
-	blendColor_array[apos] = blendColor_array[apos + 4] = 0;
-	blendColor_array[rpos] = blendColor_array[rpos + 4] = color.getr();
-	blendColor_array[gpos] = blendColor_array[gpos + 4] = color.getg();
-	blendColor_array[bpos] = blendColor_array[bpos + 4] = color.getb();
-
 	// SSE2 temporaries:
-	const __m128i upper8mask	= _mm_loadu_si128((__m128i*)upper8mask_array);
-	const __m128i blendAlpha	= _mm_loadu_si128((__m128i*)blendAlpha_array);
-	const __m128i blendInvAlpha	= _mm_loadu_si128((__m128i*)blendInvAlpha_array);
-	const __m128i blendColor	= _mm_loadu_si128((__m128i*)blendColor_array);
+	const __m128i upper8mask	= R_SetM128i(surface, 0, 0xFF, 0xFF, 0xFF);
+	const __m128i blendAlpha	= R_SetM128i(surface, 0, alpha, alpha, alpha);
+	const __m128i blendInvAlpha	= R_SetM128i(surface, 0, 256 - alpha, 256 - alpha, 256 - alpha);
+	const __m128i blendColor	= R_SetM128i(surface, 0, color.getr(), color.getg(), color.getb()); 
 	const __m128i blendMult		= _mm_mullo_epi16(blendColor, blendAlpha);
 
 	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;

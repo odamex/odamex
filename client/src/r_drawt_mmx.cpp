@@ -173,11 +173,33 @@ void rtv_lucent4cols_MMX(byte *source, palindex_t *dest, int bga, int fga)
 	}
 }
 
+
+//
+// R_SetM64
+//
+// Sets an __m64 MMX register with the given color channel values.
+// The surface is queried for the pixel format and the color channel values
+// are set in the appropriate order for the pixel format.
+//
+static inline __m64 R_SetM64(const IWindowSurface* surface, int a, int r, int g, int b)
+{
+	// determine the layout of the color channels in memory
+	const PixelFormat* format = surface->getPixelFormat();
+	int apos = (24 - format->getAShift()) >> 3;
+	int rpos = (24 - format->getRShift()) >> 3;
+	int gpos = (24 - format->getGShift()) >> 3;
+	int bpos = (24 - format->getBShift()) >> 3;
+
+	uint16_t values[4];
+	values[apos] = a; values[rpos] = r; values[gpos] = g; values[bpos] = b;
+
+	return _mm_set_pi16(values[0], values[1], values[2], values[3]);
+}
+
+
 void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
 	int surface_pitch_pixels = surface->getPitchInPixels();
-
-	int invAlpha = 256 - alpha;
 
 	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
 
@@ -185,11 +207,11 @@ void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, i
 	int remainder = w & 1;
 
 	// MMX temporaries:
-	const __m64 upper8mask = _mm_set_pi16(0, 0xff, 0xff, 0xff);
-	const __m64 blendAlpha = _mm_set_pi16(0, alpha, alpha, alpha);
-	const __m64 blendInvAlpha = _mm_set_pi16(0, invAlpha, invAlpha, invAlpha);
-	const __m64 blendColor = _mm_set_pi16(0, color.getr(), color.getg(), color.getb());
-	const __m64 blendMult = _mm_mullo_pi16(blendColor, blendAlpha);
+	const __m64 upper8mask		= R_SetM64(surface, 0, 0xFF, 0xFF, 0xFF);
+	const __m64 blendAlpha		= R_SetM64(surface, 0, alpha, alpha, alpha);
+	const __m64 blendInvAlpha	= R_SetM64(surface, 0, 256 - alpha, 256 - alpha, 256 - alpha);
+	const __m64 blendColor		= R_SetM64(surface, 0, color.getr(), color.getg(), color.getb()); 
+	const __m64 blendMult		= _mm_mullo_pi16(blendColor, blendAlpha);
 
 	for (int y = y1; y < y1 + h; y++)
 	{
