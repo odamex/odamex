@@ -471,7 +471,7 @@ bool ISDL12Window::setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	if (sdlsurface == NULL)
 		return false;
 
-	bool use_software_surface = m8in32;
+	bool use_software_surface = m8in32 || (sdlsurface->pitch & 511) == 0;
 
 	if (SDL_MUSTLOCK(sdlsurface))
 		SDL_LockSurface(sdlsurface);		// lock prior to accessing pixel format
