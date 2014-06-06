@@ -17,11 +17,6 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Functions for drawing columns into a temporary buffer and then
-//	copying them to the screen. On machines with a decent cache, this
-//	is faster than drawing them directly to the screen. Will I be able
-//	to even understand any of this if I come back to it later? Let's
-//	hope so. :-)
 //
 //-----------------------------------------------------------------------------
 
@@ -48,7 +43,6 @@
 #include "r_defs.h"
 #include "r_draw.h"
 #include "r_main.h"
-#include "r_things.h"
 #include "i_video.h"
 
 // Useful vector shorthand typedefs:

@@ -120,11 +120,6 @@ extern void 			(*colfunc) (void);
 extern void 			(*spanfunc) (void);
 extern void				(*spanslopefunc) (void);
 
-// [RH] Function pointers for the horizontal column drawers.
-extern void (*hcolfunc_pre) (void);
-extern void (*hcolfunc_post1) (int hx, int sx, int yl, int yh);
-extern void (*hcolfunc_post4) (int sx, int yl, int yh);
-
 
 //
 // Utility functions.

@@ -259,19 +259,9 @@ inline void SolidColumnBlaster()
 	R_BlastSolidSegColumn(colfunc);
 }
 
-inline void SolidHColumnBlaster()
-{
-	R_BlastSolidSegColumn(hcolfunc_pre);
-}
-
 inline void MaskedColumnBlaster()
 {
 	R_BlastMaskedSegColumn(colfunc);
-}
-
-inline void MaskedHColumnBlaster()
-{
-	R_BlastMaskedSegColumn(hcolfunc_pre);
 }
 
 inline void R_ColumnSetup(int x, int* top, int* bottom, tallpost_t** posts, bool calc_light)
@@ -326,7 +316,7 @@ static inline int R_ColumnRangeMaximumHeight(int start, int stop, int* bottom)
 //		assembly rendering function.
 //
 void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
-		tallpost_t** posts, void (*colblast)(), void (*hcolblast)(), bool calc_light, int columnmethod)
+		tallpost_t** posts, void (*colblast)(), bool calc_light, int columnmethod)
 {
 	if (start > stop)
 		return;
@@ -356,53 +346,6 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		{
 			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
 			colblast();
-			rw_light += rw_lightstep;
-		}
-	}
-	else if (columnmethod == 1)
-	{
-		dcol.x = start;
-		int blockend = (stop + 1) & ~3;
-
-		// blit until dcol.x is DWORD aligned
-		while ((dcol.x < blockend) && (dcol.x & 3))
-		{
-			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
-			colblast();	
-			dcol.x++;
-			rw_light += rw_lightstep;
-		}
-
-		// blit in DWORD blocks to a temporary buffer horizontally, with
-		// the columns interleaved, eg write to buf[0], buf[4], buf[8]
-		while (dcol.x < blockend)
-		{
-			rt_initcols();
-			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
-			hcolblast();
-			dcol.x++;
-			rw_light += rw_lightstep;
-			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
-			hcolblast();
-			dcol.x++;
-			rw_light += rw_lightstep;
-			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
-			hcolblast();
-			dcol.x++;
-			rw_light += rw_lightstep;
-			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
-			hcolblast();
-			dcol.x++;
-			rw_light += rw_lightstep;
-			rt_draw4cols(dcol.x - 4);
-		}
-
-		// blit any remaining pixels
-		while (dcol.x <= stop)
-		{
-			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
-			colblast();	
-			dcol.x++;
 			rw_light += rw_lightstep;
 		}
 	}
@@ -528,7 +471,7 @@ void R_RenderSolidSegRange(int start, int stop)
 		dcol.texturemid = rw_midtexturemid;
 
 		R_RenderColumnRange(start, stop, walltopf, lower, midposts,
-					SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
+					SolidColumnBlaster, true, columnmethod);
 
 		// indicate that no further drawing can be done in this column
 		memcpy(ceilingclip + start, floorclipinitial + start, count * sizeof(*ceilingclip));
@@ -551,7 +494,7 @@ void R_RenderSolidSegRange(int start, int stop)
 			dcol.texturemid = rw_toptexturemid;
 
 			R_RenderColumnRange(start, stop, walltopf, lower, topposts,
-						SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
+						SolidColumnBlaster, true, columnmethod);
 
 			memcpy(ceilingclip + start, walltopb + start, count * sizeof(*ceilingclip));
 		}
@@ -576,7 +519,7 @@ void R_RenderSolidSegRange(int start, int stop)
 			dcol.texturemid = rw_bottomtexturemid;
 
 			R_RenderColumnRange(start, stop, wallbottomb, lower, bottomposts,
-						SolidColumnBlaster, SolidHColumnBlaster, true, columnmethod);
+						SolidColumnBlaster, true, columnmethod);
 
 			memcpy(floorclip + start, wallbottomb + start, count * sizeof(*floorclip));
 		}
@@ -694,10 +637,8 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	// draw the columns
 	// TODO: change negonearray to the actual top/bottom
-	bool render_multiple_columns = r_columnmethod;
-
 	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts,
-			MaskedColumnBlaster, MaskedHColumnBlaster, true, render_multiple_columns);
+			MaskedColumnBlaster, true, 0);
 }
 
 

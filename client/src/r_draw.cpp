@@ -82,7 +82,6 @@ int 			viewwindowy;
 //		These get changed depending on the current
 //		screen depth.
 void (*R_DrawColumn)(void);
-void (*R_DrawColumnHoriz)(void);
 void (*R_DrawFuzzColumn)(void);
 void (*R_DrawTranslucentColumn)(void);
 void (*R_DrawTranslatedColumn)(void);
@@ -91,16 +90,6 @@ void (*R_DrawSlopeSpan)(void);
 void (*R_FillColumn)(void);
 void (*R_FillSpan)(void);
 void (*R_FillTranslucentSpan)(void);
-void (*rt_copy1col) (int hx, int sx, int yl, int yh);
-void (*rt_copy4cols) (int sx, int yl, int yh);
-void (*rt_map1col) (int hx, int sx, int yl, int yh);
-void (*rt_map4cols) (int sx, int yl, int yh);
-void (*rt_lucent1col) (int hx, int sx, int yl, int yh);
-void (*rt_lucent4cols) (int sx, int yl, int yh);
-void (*rt_tlate1col) (int hx, int sx, int yl, int yh);
-void (*rt_tlate4cols) (int sx, int yl, int yh);
-void (*rt_tlatelucent1col) (int hx, int sx, int yl, int yh);
-void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
 
 // Possibly vectorized functions:
 void (*R_DrawSpanD)(void);
@@ -478,7 +467,7 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 #endif
 
 	int color = drawcolumn.color;
-	int pitch = drawcolumn.pitch / sizeof(PIXEL_T);
+	int pitch = drawcolumn.pitch_in_pixels;
 	int count = drawcolumn.yh - drawcolumn.yl + 1;
 	if (count <= 0)
 		return;
@@ -517,7 +506,7 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 #endif
 
 	palindex_t* source = drawcolumn.source;
-	int pitch = drawcolumn.pitch / sizeof(PIXEL_T);
+	int pitch = drawcolumn.pitch_in_pixels;
 	int count = drawcolumn.yh - drawcolumn.yl + 1;
 	if (count <= 0)
 		return;
@@ -1040,62 +1029,6 @@ void R_DrawTranslatedColumnP()
 void R_DrawTlatedLucentColumnP()
 {
 	R_DrawColumnGeneric<palindex_t, PaletteTranslatedTranslucentColormapFunc>(FB_COLDEST_P, dcol);
-}
-
-//
-// R_FillColumnHorizP
-//
-// Fills a column in an 8bpp palettized buffer dcol.temp with a solid color,
-// determined by dcol.color. Performs no shading.
-//
-void R_FillColumnHorizP()
-{
-	if (dcol.yl > dcol.yh)
-		return;
-
-	const int x = dcol.x & 3;
-	unsigned int **span = &dc_ctspan[x];
-
-	(*span)[0] = dcol.yl;
-	(*span)[1] = dcol.yh;
-	*span += 2;
-	palindex_t* dest = &dc_temp[x + 4*dcol.yl];
-
-	int oldpitch = dcol.pitch;
-	dcol.pitch = 4;
-	
-	R_FillColumnGeneric<palindex_t, PaletteFunc>(dest, dcol);
-
-	dcol.pitch = oldpitch;
-}
-
-//
-// R_DrawColumnHorizP
-//
-// Renders a column to an 8bpp palettized buffer dcol.temp from the source buffer
-// dcol.source and scaled by dcol.iscale. The column is rendered to the buffer in
-// an interleaved format, writing to every 4th byte of the buffer. Performs
-// no shading. 
-//
-void R_DrawColumnHorizP()
-{
-	if (dcol.yl > dcol.yh)
-		return;
-
-	const int x = dcol.x & 3;
-	unsigned int **span = &dc_ctspan[x];
-
-	(*span)[0] = dcol.yl;
-	(*span)[1] = dcol.yh;
-	*span += 2;
-	palindex_t* dest = &dc_temp[x + 4*dcol.yl];
-
-	int oldpitch = dcol.pitch;
-	dcol.pitch = 4;
-
-	R_DrawColumnGeneric<palindex_t, PaletteFunc>(dest, dcol);
-
-	dcol.pitch = oldpitch;
 }
 
 
@@ -1657,8 +1590,6 @@ void R_InitVectorizedDrawers()
 	if (optimize_kind == OPTIMIZE_NONE)
 	{
 		// [SL] set defaults to non-vectorized drawers
-		rtv_lucent4colsP        = rtv_lucent4cols_c;
-		rtv_lucent4colsD        = rtv_lucent4cols_c;
 		R_DrawSpanD				= R_DrawSpanD_c;
 		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;
 		r_dimpatchD             = r_dimpatchD_c;
@@ -1666,8 +1597,6 @@ void R_InitVectorizedDrawers()
 	#ifdef __SSE2__
 	if (optimize_kind == OPTIMIZE_SSE2)
 	{
-		rtv_lucent4colsP        = rtv_lucent4cols_SSE2;
-		rtv_lucent4colsD        = rtv_lucent4cols_SSE2;
 		R_DrawSpanD				= R_DrawSpanD_SSE2;
 		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_SSE2;
 		r_dimpatchD             = r_dimpatchD_SSE2;
@@ -1676,8 +1605,6 @@ void R_InitVectorizedDrawers()
 	#ifdef __MMX__
 	else if (optimize_kind == OPTIMIZE_MMX)
 	{
-		rtv_lucent4colsP        = rtv_lucent4cols_MMX;
-		rtv_lucent4colsD        = rtv_lucent4cols_MMX;
 		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
 		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
 		r_dimpatchD             = r_dimpatchD_MMX;
@@ -1686,8 +1613,6 @@ void R_InitVectorizedDrawers()
 	#ifdef __ALTIVEC__
 	else if (optimize_kind == OPTIMIZE_ALTIVEC)
 	{
-		rtv_lucent4colsP        = rtv_lucent4cols_c;    // TODO
-		rtv_lucent4colsD        = rtv_lucent4cols_c;    // TODO
 		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
 		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
@@ -1695,8 +1620,6 @@ void R_InitVectorizedDrawers()
 	#endif
 
 	// Check that all pointers are definitely assigned!
-	assert(rtv_lucent4colsP != NULL);
-	assert(rtv_lucent4colsD != NULL);
 	assert(R_DrawSpanD != NULL);
 	assert(R_DrawSlopeSpanD != NULL);
 	assert(r_dimpatchD != NULL);
@@ -1705,11 +1628,8 @@ void R_InitVectorizedDrawers()
 // [RH] Initialize the column drawer pointers
 void R_InitColumnDrawers ()
 {
-	if (!screen)
+	if (!I_VideoInitialized())
 		return;
-
-	// NOTE(jsd): It's okay to use R_DrawColumnHorizP because it renders to a temp buffer first.
-	R_DrawColumnHoriz		= R_DrawColumnHorizP;
 
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
@@ -1722,17 +1642,6 @@ void R_InitColumnDrawers ()
 		R_FillColumn			= R_FillColumnP;
 		R_FillSpan				= R_FillSpanP;
 		R_FillTranslucentSpan	= R_FillTranslucentSpanP;
-
-		rt_copy1col				= rt_copy1colP;
-		rt_copy4cols			= rt_copy4colsP;
-		rt_map1col				= rt_map1colP;
-		rt_map4cols				= rt_map4colsP;
-		rt_lucent1col			= rt_lucent1colP;
-		rt_lucent4cols			= rt_lucent4colsP;
-		rt_tlate1col			= rt_tlate1colP;
-		rt_tlate4cols			= rt_tlate4colsP;
-		rt_tlatelucent1col		= rt_tlatelucent1colP;
-		rt_tlatelucent4cols		= rt_tlatelucent4colsP;
 	}
 	else
 	{
@@ -1746,17 +1655,6 @@ void R_InitColumnDrawers ()
 		R_FillColumn			= R_FillColumnD;
 		R_FillSpan				= R_FillSpanD;
 		R_FillTranslucentSpan	= R_FillTranslucentSpanD;
-		
-		rt_copy1col				= rt_copy1colD;
-		rt_copy4cols			= rt_copy4colsD;
-		rt_map1col				= rt_map1colD;
-		rt_map4cols				= rt_map4colsD;
-		rt_lucent1col			= rt_lucent1colD;
-		rt_lucent4cols			= rt_lucent4colsD;
-		rt_tlate1col			= rt_tlate1colD;
-		rt_tlate4cols			= rt_tlate4colsD;
-		rt_tlatelucent1col		= rt_tlatelucent1colD;
-		rt_tlatelucent4cols		= rt_tlatelucent4colsD;
 	}
 }
 

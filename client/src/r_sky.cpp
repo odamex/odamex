@@ -212,11 +212,6 @@ inline void SkyColumnBlaster()
 	R_BlastSkyColumn(colfunc);
 }
 
-inline void SkyHColumnBlaster()
-{
-	R_BlastSkyColumn(hcolfunc_pre);
-}
-
 //
 // R_RenderSkyRange
 //
@@ -308,7 +303,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	}
 
 	R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
-			skyposts, SkyColumnBlaster, SkyHColumnBlaster, false, columnmethod);
+			skyposts, SkyColumnBlaster, false, columnmethod);
 				
 	R_ResetDrawFuncs();
 }

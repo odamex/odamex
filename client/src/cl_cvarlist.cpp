@@ -587,9 +587,6 @@ CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
 CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 				CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(			r_columnmethod, "1", "Deprecated",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",
 				CVARTYPE_BOOL, CVAR_NULL)
