@@ -188,11 +188,9 @@ int				iffdemover;
 byte*			demobuffer;
 byte			*demo_p, *demo_e;
 size_t			maxdemosize;
-byte*			zdemformend;			// end of FORM ZDEM chunk
-byte*			zdembodyend;			// end of ZDEM BODY chunk
 BOOL 			singledemo; 			// quit after playing a demo from cmdline
-int			demostartgametic;
-FILE *recorddemo_fp;
+int				demostartgametic;
+FILE*			recorddemo_fp;
 
 BOOL 			precache = true;		// if true, load all graphics at start
 
@@ -587,18 +585,10 @@ void G_ConvertMouseSettings(int old_type, int new_type)
 	if (old_type == new_type)
 		return;
 
-	if (new_type == MOUSE_ODAMEX)
-		new_type = MOUSE_DOOM;
-
 	// first convert to ZDoom settings
 	if (old_type == MOUSE_DOOM)
 	{
 		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 40.0f);
-		m_pitch.Set(m_pitch * 4.0f);
-	}
-	else if (old_type == MOUSE_ODAMEX)
-	{
-		mouse_sensitivity.Set(mouse_sensitivity / 40.0f);
 		m_pitch.Set(m_pitch * 4.0f);
 	}
 
@@ -606,11 +596,6 @@ void G_ConvertMouseSettings(int old_type, int new_type)
 	if (new_type == MOUSE_DOOM)
 	{
 		mouse_sensitivity.Set((mouse_sensitivity * 40.0f) - 5.0f);
-		m_pitch.Set(m_pitch * 0.25f);
-	}
-	else if (new_type == MOUSE_ODAMEX)
-	{
-		mouse_sensitivity.Set(mouse_sensitivity * 40.0f);
 		m_pitch.Set(m_pitch * 0.25f);
 	}
 }

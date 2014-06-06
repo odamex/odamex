@@ -28,8 +28,7 @@
 #include "win32inc.h"
 
 #define MOUSE_DOOM 0
-#define MOUSE_ODAMEX 1
-#define MOUSE_ZDOOM_DI 2
+#define MOUSE_ZDOOM_DI 1
 
 void I_InitMouseDriver();
 void I_ShutdownMouseDriver();
