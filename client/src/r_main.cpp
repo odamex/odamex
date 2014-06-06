@@ -153,8 +153,6 @@ int CorrectFieldOfView = 2048;
 
 fixed_t			render_lerp_amount;
 
-byte**			ylookup;
-
 static void R_InitViewWindow();
 
 
@@ -501,7 +499,8 @@ bool R_CheckProjectionY(int &y1, int &y2)
 //
 static inline void R_DrawPixel(int x, int y, byte color)
 {
-	*(ylookup[y] + x + viewwindowx) = color;
+	byte* dest = dcol.destination + y * dcol.pitch_in_pixels + x;
+	*dest = color;
 }
 
 
@@ -646,9 +645,6 @@ void R_Init()
 void STACK_ARGS R_Shutdown()
 {
     R_FreeTranslationTables();
-
-	delete [] ylookup;
-	ylookup = NULL;
 }
 
 
@@ -1265,11 +1261,6 @@ static void R_InitViewWindow()
 	pspritexiscale = FixedDiv(FRACUNIT, pspritexscale);
 
 	// Precalculate all row offsets.
-	delete [] ylookup;
-	ylookup = new byte*[surface_height];
-	for (int i = 0; i < viewheight; i++)
-		ylookup[i] = surface->getBuffer(0, i + viewwindowy);
-
 	for (int i = 0; i < surface_width; i++)
 	{
 		negonearray[i] = -1;
@@ -1280,6 +1271,9 @@ static void R_InitViewWindow()
 
 	R_PlaneInitData(surface);
 	R_InitSkyMap();
+
+	dcol.destination = dspan.destination = surface->getBuffer(viewwindowx, viewwindowy);
+	dcol.pitch_in_pixels = dspan.pitch_in_pixels = surface->getPitchInPixels();
 
 	dcol.pitch = surface->getPitch();
 

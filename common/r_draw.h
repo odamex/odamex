@@ -44,6 +44,10 @@ typedef struct
 	fixed_t				translevel;
 
 	byte*				source;
+	byte*				destination;
+
+	int					pitch_in_pixels;
+
 	tallpost_t*			post;
 
 	translationref_t	translation;
@@ -74,6 +78,9 @@ typedef struct
 	float				idstep;
 
 	byte*				source;
+	byte*				destination;
+
+	int					pitch_in_pixels;
 
 	shaderef_t			colormap;
 	shaderef_t			slopelighting[MAXWIDTH];

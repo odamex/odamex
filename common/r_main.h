@@ -68,8 +68,6 @@ extern int				validcount;
 extern int				linecount;
 extern int				loopcount;
 
-extern byte**			ylookup;
-
 extern fixed_t			render_lerp_amount;
 
 // [SL] Current color blending values (including palette effects)

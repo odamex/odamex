@@ -161,7 +161,7 @@ void R_DrawSpanD_SSE2 (void)
 	dsfixed_t vstep = dspan.xstep;
 
 	const byte* source = dspan.source;
-	argb_t* dest = (argb_t*)ylookup[dspan.y] + dspan.x1 + viewwindowx;
+	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
 
 	shaderef_t colormap = dspan.colormap;
 	
@@ -281,7 +281,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	float id = dspan.id, ids = dspan.idstep;
 	
 	// framebuffer	
-	argb_t* dest = (argb_t*)ylookup[dspan.y] + dspan.x1 + viewwindowx;
+	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
 	
 	// texture data
 	byte *src = (byte *)dspan.source;

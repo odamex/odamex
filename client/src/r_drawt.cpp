@@ -70,29 +70,28 @@ void rt_draw4blankcols(int sx, int yl, int yh)
 {
 }
 
-template<typename pixel_t, int columns>
+template<typename PIXEL_T, int columns>
 static forceinline void rt_copycols(int hx, int sx, int yl, int yh);
 
-template<typename pixel_t, int columns>
+template<typename PIXEL_T, int columns>
 static forceinline void rt_mapcols(int hx, int sx, int yl, int yh);
 
-template<typename pixel_t, int columns>
+template<typename PIXEL_T, int columns>
 static forceinline void rt_tlatecols(int hx, int sx, int yl, int yh);
 
-template<typename pixel_t, int columns>
+template<typename PIXEL_T, int columns>
 static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh);
 
-template<typename pixel_t, int columns>
+template<typename PIXEL_T, int columns>
 static forceinline void rt_tlatelucentcols(int hx, int sx, int yl, int yh);
 
 
-template<typename pixel_t, int columns>
+template<typename PIXEL_T, int columns>
 static forceinline void rt_copycols(int hx, int sx, int yl, int yh)
 {
 	byte *source;
-	pixel_t *dest;
+	PIXEL_T *dest;
 	int count;
-	int pitch;
 
 	count = yh-yl;
 	if (count < 0)
@@ -100,14 +99,14 @@ static forceinline void rt_copycols(int hx, int sx, int yl, int yh)
 	count++;
 
 	shaderef_t pal = shaderef_t(&realcolormaps, 0);
-	dest = (pixel_t*)ylookup[yl] + sx + viewwindowx;
+	dest = (PIXEL_T*)dcol.destination + yl * dcol.pitch_in_pixels + sx;
 	source = &dc_temp[yl*4 + hx];
-	pitch = dcol.pitch / sizeof(pixel_t);
+	int pitch = dcol.pitch_in_pixels;
 
 	if (count & 1)
 	{
 		for (int i = 0; i < columns; ++i)
-			dest[pitch*0+i] = rt_rawcolor<pixel_t>(pal, source[0+i]);
+			dest[pitch*0+i] = rt_rawcolor<PIXEL_T>(pal, source[0+i]);
 		source += 4;
 		dest += pitch;
 	}
@@ -117,35 +116,34 @@ static forceinline void rt_copycols(int hx, int sx, int yl, int yh)
 	do
 	{
 		for (int i = 0; i < columns; ++i)
-			dest[pitch*0+i] = rt_rawcolor<pixel_t>(pal, source[0+i]);
+			dest[pitch*0+i] = rt_rawcolor<PIXEL_T>(pal, source[0+i]);
 		for (int i = 0; i < columns; ++i)
-			dest[pitch*1+i] = rt_rawcolor<pixel_t>(pal, source[4+i]);
+			dest[pitch*1+i] = rt_rawcolor<PIXEL_T>(pal, source[4+i]);
 		source += 8;
 		dest += pitch*2;
 	} while (--count);
 }
 
-template<typename pixel_t, int columns>
+template<typename PIXEL_T, int columns>
 static forceinline void rt_mapcols(int hx, int sx, int yl, int yh)
 {
 	byte *source;
-	pixel_t *dest;
+	PIXEL_T *dest;
 	int count;
-	int pitch;
 
 	count = yh-yl;
 	if (count < 0)
 		return;
 	count++;
 
-	dest = (pixel_t*)ylookup[yl] + sx + viewwindowx;
+	dest = (PIXEL_T*)dcol.destination + yl * dcol.pitch_in_pixels + sx;
 	source = &dc_temp[yl*4 + hx];
-	pitch = dcol.pitch / sizeof(pixel_t);
+	int pitch = dcol.pitch_in_pixels;
 
 	if (count & 1)
 	{
 		for (int i = 0; i < columns; ++i)
-			dest[pitch*0+i] = rt_mapcolor<pixel_t>(dcol.colormap, source[0+i]);
+			dest[pitch*0+i] = rt_mapcolor<PIXEL_T>(dcol.colormap, source[0+i]);
 		source += 4;
 		dest += pitch;
 	}
@@ -155,35 +153,34 @@ static forceinline void rt_mapcols(int hx, int sx, int yl, int yh)
 	do
 	{
 		for (int i = 0; i < columns; ++i)
-			dest[pitch*0+i] = rt_mapcolor<pixel_t>(dcol.colormap, source[0+i]);
+			dest[pitch*0+i] = rt_mapcolor<PIXEL_T>(dcol.colormap, source[0+i]);
 		for (int i = 0; i < columns; ++i)
-			dest[pitch*1+i] = rt_mapcolor<pixel_t>(dcol.colormap, source[4+i]);
+			dest[pitch*1+i] = rt_mapcolor<PIXEL_T>(dcol.colormap, source[4+i]);
 		source += 8;
 		dest += pitch*2;
 	} while (--count);
 }
 
-template<typename pixel_t, int columns>
+template<typename PIXEL_T, int columns>
 static forceinline void rt_tlatecols(int hx, int sx, int yl, int yh)
 {
 	byte *source;
-	pixel_t *dest;
+	PIXEL_T *dest;
 	int count;
-	int pitch;
 
 	count = yh-yl;
 	if (count < 0)
 		return;
 	count++;
 
-	dest = (pixel_t*)ylookup[yl] + sx + viewwindowx;
+	dest = (PIXEL_T*)dcol.destination + yl * dcol.pitch_in_pixels + sx;
 	source = &dc_temp[yl*4 + hx];
-	pitch = dcol.pitch / sizeof(pixel_t);
+	int pitch = dcol.pitch_in_pixels;
 	
 	do
 	{
 		for (int i = 0; i < columns; ++i)
-			dest[i] = rt_tlatecolor<pixel_t>(dcol.colormap, dcol.translation, source[i]);
+			dest[i] = rt_tlatecolor<PIXEL_T>(dcol.colormap, dcol.translation, source[i]);
 		source += 4;
 		dest += pitch;
 	} while (--count);
@@ -191,8 +188,8 @@ static forceinline void rt_tlatecols(int hx, int sx, int yl, int yh)
 
 
 
-template<typename pixel_t>
-static forceinline void rtv_lucent4cols(byte *source, pixel_t *dest, int bga, int fga);
+template<typename PIXEL_T>
+static forceinline void rtv_lucent4cols(byte *source, PIXEL_T *dest, int bga, int fga);
 
 template<>
 forceinline void rtv_lucent4cols(byte *source, palindex_t *dest, int bga, int fga)
@@ -207,13 +204,12 @@ forceinline void rtv_lucent4cols(byte *source, argb_t *dest, int bga, int fga)
 }
 
 
-template<typename pixel_t, int columns>
+template<typename PIXEL_T, int columns>
 static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
 {
 	byte *source;
-	pixel_t *dest;
+	PIXEL_T *dest;
 	int count;
-	int pitch;
 
 	count = yh-yl;
 	if (count < 0)
@@ -223,24 +219,24 @@ static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
 	int fga = (dcol.translevel & ~0x03FF) >> 8;
 	int bga = 255 - fga;
 
-	dest = (pixel_t*)ylookup[yl] + sx + viewwindowx;
+	dest = (PIXEL_T*)dcol.destination + yl * dcol.pitch_in_pixels + sx;
 	source = &dc_temp[yl*4 + hx];
-	pitch = dcol.pitch / sizeof(pixel_t);
+	int pitch = dcol.pitch_in_pixels;
 
 	do
 	{
 		if (columns == 4)
 		{
-			rtv_lucent4cols<pixel_t>(source, dest, bga, fga);
+			rtv_lucent4cols<PIXEL_T>(source, dest, bga, fga);
 		}
 		else
 		{
 			for (int i = 0; i < columns; ++i)
 			{
-				const pixel_t fg = rt_mapcolor<pixel_t>(dcol.colormap, source[i]);
-				const pixel_t bg = dest[i];
+				const PIXEL_T fg = rt_mapcolor<PIXEL_T>(dcol.colormap, source[i]);
+				const PIXEL_T bg = dest[i];
 
-				dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
+				dest[i] = rt_blend2<PIXEL_T>(bg, bga, fg, fga);
 			}
 		}
 	
@@ -249,13 +245,12 @@ static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
 	} while (--count);
 }
 
-template<typename pixel_t, int columns>
+template<typename PIXEL_T, int columns>
 static forceinline void rt_tlatelucentcols(int hx, int sx, int yl, int yh)
 {
 	byte *source;
-	pixel_t *dest;
+	PIXEL_T *dest;
 	int count;
-	int pitch;
 
 	count = yh-yl;
 	if (count < 0)
@@ -265,18 +260,18 @@ static forceinline void rt_tlatelucentcols(int hx, int sx, int yl, int yh)
 	int fga = (dcol.translevel & ~0x03FF) >> 8;
 	int bga = 255 - fga;
 
-	dest = (pixel_t*)ylookup[yl] + sx + viewwindowx;
+	dest = (PIXEL_T*)dcol.destination + yl * dcol.pitch_in_pixels + sx;
 	source = &dc_temp[yl*4 + hx];
-	pitch = dcol.pitch / sizeof(pixel_t);
+	int pitch = dcol.pitch_in_pixels; 
 
 	do
 	{
 		for (int i = 0; i < columns; ++i)
 		{
-			const pixel_t fg = rt_tlatecolor<pixel_t>(dcol.colormap, dcol.translation, source[i]);
-			const pixel_t bg = dest[i];
+			const PIXEL_T fg = rt_tlatecolor<PIXEL_T>(dcol.colormap, dcol.translation, source[i]);
+			const PIXEL_T bg = dest[i];
 
-			dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
+			dest[i] = rt_blend2<PIXEL_T>(bg, bga, fg, fga);
 		}
 
 		source += 4;
