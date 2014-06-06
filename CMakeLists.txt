@@ -75,12 +75,6 @@ if (USE_MINIUPNP)
   add_subdirectory(libraries/libminiupnpc)
 endif()
 
-# PortMidi
-cmake_dependent_option(USE_INTREE_PORTMIDI "Compile with the version of PortMidi included in the source tree." ON "WIN32" OFF)
-if(USE_INTREE_PORTMIDI)
-  add_subdirectory(libraries/portmidi)
-endif()
-
 # Subdirectories for Odamex projects
 add_subdirectory(client)
 add_subdirectory(server)
