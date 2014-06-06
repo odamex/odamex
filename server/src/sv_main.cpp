@@ -4714,14 +4714,9 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 // [RH]
 // ClientObituary: Show a message when a player dies
 //
-void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
+void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 {
-	int	 mod;
-	const char *message;
-	int messagenum;
 	char gendermessage[1024];
-	BOOL friendly;
-	int  gender;
 
 	if (!self || !self->player)
 		return;
@@ -4730,7 +4725,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	if (shotclock || gamestate != GS_LEVEL)
 		return;
 
-	gender = self->player->userinfo.gender;
+	int gender = self->player->userinfo.gender;
 
 	// Treat voodoo dolls as unknown deaths
 	if (inflictor && inflictor->player == self->player)
@@ -4744,10 +4739,10 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 		self->player->userinfo.team == attacker->player->userinfo.team)
 		MeansOfDeath |= MOD_FRIENDLY_FIRE;
 
-	friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
-	mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
-	message = NULL;
-	messagenum = 0;
+	bool friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
+	int mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
+	const char* message = NULL;
+	int messagenum = 0;
 
 	switch (mod)
 	{
@@ -4765,7 +4760,8 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	if (messagenum)
 		message = GStrings(messagenum);
 
-	if (attacker && message == NULL) {
+	if (attacker && message == NULL)
+	{
 		if (attacker == self)
 		{
 			switch (mod)
@@ -4776,9 +4772,12 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 			}
 			message = GStrings(messagenum);
 		}
-		else if (!attacker->player) {
-			if (mod == MOD_HIT) {
-				switch (attacker->type) {
+		else if (!attacker->player)
+		{
+			if (mod == MOD_HIT)
+			{
+				switch (attacker->type)
+				{
 					case MT_UNDEAD:
 						messagenum = OB_UNDEADHIT;
 						break;
@@ -4803,8 +4802,11 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 					default:
 						break;
 				}
-			} else {
-				switch (attacker->type) {
+			}
+			else
+			{
+				switch (attacker->type)
+				{
 					case MT_POSSESSED:	messagenum = OB_ZOMBIE;		break;
 					case MT_SHOTGUY:	messagenum = OB_SHOTGUY;	break;
 					case MT_VILE:		messagenum = OB_VILE;		break;
@@ -4826,25 +4828,26 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 
 			if (messagenum)
 				message = GStrings(messagenum);
-			}
+		}
 	}
 
-	if (message) {
-		SexMessage (message, gendermessage, gender,
-			self->player->userinfo.netname.c_str(), self->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
+	if (message)
+	{
+		SexMessage(message, gendermessage, gender,
+				self->player->userinfo.netname.c_str(), self->player->userinfo.netname.c_str());
+		SV_BroadcastPrintf(PRINT_MEDIUM, "%s\n", gendermessage);
 		return;
 	}
 
-	if (attacker && attacker->player) {
-		if (friendly) {
-			int rnum = P_Random ();
-
-			self = attacker;
-			gender = self->player->userinfo.gender;
-			messagenum = OB_FRIENDLY1 + (rnum & 3);
-
-		} else {
+	if (attacker && attacker->player)
+	{
+		if (friendly)
+		{
+			gender = attacker->player->userinfo.gender;
+			messagenum = OB_FRIENDLY1 + (P_Random() & 3);
+		}
+		else
+		{
 			switch (mod)
 			{
 				case MOD_FIST:			messagenum = OB_MPFIST;			break;
@@ -4868,15 +4871,15 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 
 	if (message && attacker && attacker->player)
 	{
-		SexMessage (message, gendermessage, gender,
-			self->player->userinfo.netname.c_str(), attacker->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
+		SexMessage(message, gendermessage, gender,
+				self->player->userinfo.netname.c_str(), attacker->player->userinfo.netname.c_str());
+		SV_BroadcastPrintf(PRINT_MEDIUM, "%s\n", gendermessage);
 		return;
 	}
 
-	SexMessage (GStrings(OB_DEFAULT), gendermessage, gender,
-		self->player->userinfo.netname.c_str(), self->player->userinfo.netname.c_str());
-	SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
+	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
+			self->player->userinfo.netname.c_str(), self->player->userinfo.netname.c_str());
+	SV_BroadcastPrintf(PRINT_MEDIUM, "%s\n", gendermessage);
 }
 
 void SV_SendDamagePlayer(player_t *player, int damage)
