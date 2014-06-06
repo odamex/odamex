@@ -131,101 +131,131 @@ void rtv_lucent4cols_SSE2(byte *source, palindex_t *dest, int bga, int fga)
 	}
 }
 
+//
+// R_GetBytesUntilAligned
+//
+static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
+{
+	uintptr_t mask = alignment - 1;
+	return (alignment - ((uintptr_t)data & mask)) & mask;
+}
+
+
 void R_DrawSpanD_SSE2 (void)
 {
-	dsfixed_t			xfrac;
-	dsfixed_t			yfrac;
-	dsfixed_t			xstep;
-	dsfixed_t			ystep;
-	argb_t*             dest;
-	int 				count;
-	int 				spot;
-
 #ifdef RANGECHECK
-	if (dspan.x2 < dspan.x1
-		|| dspan.x1 < 0
-		|| dspan.x2 >= I_GetSurfaceWidth()
-		|| dspan.y >= I_GetSurfaceHeight())
+	if (dspan.x2 < dspan.x1 || dspan.x1 < 0 || dspan.x2 >= viewwidth ||
+		dspan.y >= viewheight || dspan.y < 0)
 	{
-		I_Error ("R_DrawSpan: %i to %i at %i",
-				 dspan.x1, dspan.x2, dspan.y);
+		Printf(PRINT_HIGH, "R_DrawLevelSpan: %i to %i at %i", dspan.x1, dspan.x2, dspan.y);
+		return;
 	}
-//		dscount++;
 #endif
 
-	xfrac = dspan.xfrac;
-	yfrac = dspan.yfrac;
+	const int width = dspan.x2 - dspan.x1 + 1;
 
-	dest = (argb_t*)ylookup[dspan.y] + dspan.x1 + viewwindowx;
+	// TODO: store flats in column-major format and swap u and v
+	dsfixed_t ufrac = dspan.yfrac;
+	dsfixed_t vfrac = dspan.xfrac;
+	dsfixed_t ustep = dspan.ystep;
+	dsfixed_t vstep = dspan.xstep;
 
-	// We do not check for zero spans here?
-	count = dspan.x2 - dspan.x1 + 1;
+	const byte* source = dspan.source;
+	argb_t* dest = (argb_t*)ylookup[dspan.y] + dspan.x1 + viewwindowx;
 
-	xstep = dspan.xstep;
-	ystep = dspan.ystep;
+	shaderef_t colormap = dspan.colormap;
+	
+	const int texture_width_bits = 6, texture_height_bits = 6;
+
+	const unsigned int umask = ((1 << texture_width_bits) - 1) << texture_height_bits;
+	const unsigned int vmask = (1 << texture_height_bits) - 1;
+	// TODO: don't shift the values of ufrac and vfrac by 10 in R_MapLevelPlane
+	const int ushift = FRACBITS - texture_height_bits + 10;
+	const int vshift = FRACBITS + 10;
+
+	int align = R_GetBytesUntilAligned(dest, 16) / sizeof(argb_t);
+	if (align > width)
+		align = width;
+
+	int batches = (width - align) / 4;
+	int remainder = (width - align) & 3;
 
 	// Blit until we align ourselves with a 16-byte offset for SSE2:
-	while (((size_t)dest) & 15)
+	while (align--)
 	{
 		// Current texture index in u,v.
-		spot = ((yfrac>>(32-6-6))&(63*64)) + (xfrac>>(32-6));
+		const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
 
 		// Lookup pixel from flat texture tile,
 		//  re-index using light/colormap.
-		*dest = dspan.colormap.shade(dspan.source[spot]);
+		*dest = colormap.shade(source[spot]);
 		dest++;
 
 		// Next step in u,v.
-		xfrac += xstep;
-		yfrac += ystep;
-
-		--count;
+		ufrac += ustep;
+		vfrac += vstep;
 	}
 
-	const int rounds = count / 4;
-	if (rounds > 0)
+	// SSE2 optimized and aligned stores for quicker memory writes:
+	const __m128i mumask = _mm_set1_epi32(umask);
+	const __m128i mvmask = _mm_set1_epi32(vmask);
+
+	__m128i mufrac = _mm_setr_epi32(ufrac+ustep*0, ufrac+ustep*1, ufrac+ustep*2, ufrac+ustep*3);
+	const __m128i mufracinc = _mm_set1_epi32(ustep*4);
+	__m128i mvfrac = _mm_setr_epi32(vfrac+vstep*0, vfrac+vstep*1, vfrac+vstep*2, vfrac+vstep*3);
+	const __m128i mvfracinc = _mm_set1_epi32(vstep*4);
+
+	while (batches--)
 	{
-		// SSE2 optimized and aligned stores for quicker memory writes:
-		for (int i = 0; i < rounds; ++i, count -= 4)
-		{
-			// TODO(jsd): Consider SSE2 bit twiddling here!
-			const int spot0 = (((yfrac+ystep*0)>>(32-6-6))&(63*64)) + ((xfrac+xstep*0)>>(32-6));
-			const int spot1 = (((yfrac+ystep*1)>>(32-6-6))&(63*64)) + ((xfrac+xstep*1)>>(32-6));
-			const int spot2 = (((yfrac+ystep*2)>>(32-6-6))&(63*64)) + ((xfrac+xstep*2)>>(32-6));
-			const int spot3 = (((yfrac+ystep*3)>>(32-6-6))&(63*64)) + ((xfrac+xstep*3)>>(32-6));
+//		[SL] The below SSE2 intrinsics are equivalent to the following block:
+//		const int spot0 = (((ufrac + ustep*0) >> ushift) & umask) | (((vfrac + vstep*0) >> vshift) & vmask); 
+//		const int spot1 = (((ufrac + ustep*1) >> ushift) & umask) | (((vfrac + vstep*1) >> vshift) & vmask); 
+//		const int spot2 = (((ufrac + ustep*2) >> ushift) & umask) | (((vfrac + vstep*2) >> vshift) & vmask); 
+//		const int spot3 = (((ufrac + ustep*3) >> ushift) & umask) | (((vfrac + vstep*3) >> vshift) & vmask); 
 
-			const __m128i finalColors = _mm_setr_epi32(
-				dspan.colormap.shade(dspan.source[spot0]),
-				dspan.colormap.shade(dspan.source[spot1]),
-				dspan.colormap.shade(dspan.source[spot2]),
-				dspan.colormap.shade(dspan.source[spot3])
-			);
-			_mm_store_si128((__m128i *)dest, finalColors);
-			dest += 4;
+		__m128i u = _mm_and_si128(_mm_srli_epi32(mufrac, ushift), mumask);
+		__m128i v = _mm_and_si128(_mm_srli_epi32(mvfrac, vshift), mvmask);
+		__m128i mspots = _mm_or_si128(u, v);
+		unsigned int* spots = (unsigned int*)&mspots;
 
-			// Next step in u,v.
-			xfrac += xstep*4;
-			yfrac += ystep*4;
-		}
+		// get the color of the pixels at each of the spots
+		byte pixel0 = source[spots[0]];
+		byte pixel1 = source[spots[1]];
+		byte pixel2 = source[spots[2]];
+		byte pixel3 = source[spots[3]];
+
+		const __m128i finalColors = _mm_setr_epi32(
+			colormap.shade(pixel0),
+			colormap.shade(pixel1),
+			colormap.shade(pixel2),
+			colormap.shade(pixel3)
+		);
+
+		_mm_store_si128((__m128i*)dest, finalColors);
+
+		dest += 4;
+
+		mufrac = _mm_add_epi32(mufrac, mufracinc);
+		mvfrac = _mm_add_epi32(mvfrac, mvfracinc);
 	}
 
-	if (count > 0)
+	ufrac = (dsfixed_t)((dsfixed_t*)&mufrac)[0];
+	vfrac = (dsfixed_t)((dsfixed_t*)&mvfrac)[0];
+
+	// blit the remaining 0 - 3 pixels
+	while (remainder--)
 	{
-		// Blit the last remainder:
-		while (count--)
-		{
-			// Current texture index in u,v.
-			spot = ((yfrac>>(32-6-6))&(63*64)) + (xfrac>>(32-6));
+		// Current texture index in u,v.
+		const int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
 
-			// Lookup pixel from flat texture tile,
-			//  re-index using light/colormap.
-			*dest = dspan.colormap.shade(dspan.source[spot]);
-			dest++;
+		// Lookup pixel from flat texture tile,
+		//  re-index using light/colormap.
+		*dest = colormap.shade(source[spot]);
+		dest++;
 
-			// Next step in u,v.
-			xfrac += xstep;
-			yfrac += ystep;
-		}
+		// Next step in u,v.
+		ufrac += ustep;
+		vfrac += vstep;
 	}
 }
 
@@ -372,16 +402,6 @@ void R_DrawSlopeSpanD_SSE2 (void)
 			vfrac += vstep;
 		}
 	}
-}
-
-
-//
-// R_GetBytesUntilAligned
-//
-static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
-{
-	uintptr_t mask = alignment - 1;
-	return (alignment - ((uintptr_t)data & mask)) & mask;
 }
 
 
