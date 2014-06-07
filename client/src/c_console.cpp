@@ -728,7 +728,7 @@ static void C_SetConsoleDimensions(int width, int height)
 				}
 			}
 
-			if (C_StringWidth(current_line_it->text.c_str()) > ConCols*8)
+			if ((unsigned)C_StringWidth(current_line_it->text.c_str()) > ConCols*8)
 			{
 				ConsoleLineList::iterator next_line_it = current_line_it;
 				++next_line_it;
@@ -887,7 +887,7 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 			Lines.push_back(new_line);
  
 		// Wrap the current line if it's too long.
-		int line_width = C_StringWidth(Lines.back().text.c_str());
+		unsigned int line_width = C_StringWidth(Lines.back().text.c_str());
 		if (line_width > ConCols*8)
 		{
 			new_line = Lines.back().split(ConCols*8);
