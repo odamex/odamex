@@ -978,7 +978,8 @@ void R_DrawPlayerSprites (void)
 		&ceilinglight, false);
 
 	// [RH] set foggy flag
-	foggy = (level.fadeto || sec->colormap->fade);
+	foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3]
+				|| sec->colormap->fade;
 
 	// [RH] set basecolormap
 	basecolormap = sec->colormap->maps;

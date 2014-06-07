@@ -362,9 +362,13 @@ void P_LoadSectors (int lump)
 
 		// [RH] Sectors default to white light with the default fade.
 		//		If they are outside (have a sky ceiling), they use the outside fog.
-		if (level.outsidefog != 0xff000000 && ss->ceilingpic == skyflatnum)
+		// [SL] no fog is indicated by outsidefog_color == 0xFF, 0, 0, 0
+		bool fog = level.outsidefog_color[0] != 0xFF || level.outsidefog_color[1] != 0 ||
+					level.outsidefog_color[2] != 0 || level.outsidefog_color[3] != 0;
+
+		if (fog && ss->ceilingpic == skyflatnum)
 			ss->colormap = GetSpecialLights(255, 255, 255,
-									level.outsidefog.getr(), level.outsidefog.getg(), level.outsidefog.getb());
+									level.outsidefog_color[1], level.outsidefog_color[2], level.outsidefog_color[3]);
 		else
 			ss->colormap = &NormalLight;
 

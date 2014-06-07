@@ -707,7 +707,8 @@ void R_Subsector (int num)
 					) : NULL;
 
 	// [RH] set foggy flag
-	foggy = level.fadeto || frontsector->colormap->fade;
+	foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3]
+				|| frontsector->colormap->fade;
 
 	// killough 9/18/98: Fix underwater slowdown, by passing real sector
 	// instead of fake one. Improve sprite lighting by basing sprite

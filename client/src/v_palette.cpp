@@ -709,7 +709,7 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 	// from Doom Utilities. Now accomodates fading to non-black colors.
 
 	const argb_t* palette = pal->basecolors;
-	argb_t fadecolor = level.fadeto;
+	argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
 	
 	palindex_t* colormap = maps.colormap;
 	argb_t* shademap = maps.shademap;
@@ -753,7 +753,7 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 	// from Doom Utilities. Now accomodates fading to non-black colors.
 
 	const argb_t* palette = pal->basecolors;
-	argb_t fadecolor = level.fadeto;
+	argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
 	
 	argb_t* shademap = maps.shademap;
 
@@ -797,7 +797,8 @@ void V_RefreshColormaps()
 
 	NormalLight.maps = shaderef_t(&palette->maps, 0);
 	NormalLight.color = argb_t(255, 255, 255, 255);
-	NormalLight.fade = level.fadeto;
+	NormalLight.fade = argb_t(level.fadeto_color[0], level.fadeto_color[1],
+							level.fadeto_color[2], level.fadeto_color[3]);
 
 	R_ReinitColormap();
 }
@@ -915,7 +916,11 @@ BEGIN_COMMAND (testfade)
 		else
 			color = V_GetColorFromString(argv[1]);
 
-		level.fadeto = color;
+		level.fadeto_color[0] = color.geta();
+		level.fadeto_color[1] = color.getr();
+		level.fadeto_color[2] = color.getg();
+		level.fadeto_color[3] = color.getb();
+
 		V_RefreshColormaps();
 		NormalLight.maps = shaderef_t(&V_GetDefaultPalette()->maps, 0);
 	}
@@ -1093,7 +1098,7 @@ BEGIN_COMMAND (testcolor)
 
 		BuildColoredLights((shademap_t*)NormalLight.maps.map(),
 				color.getr(), color.getg(), color.getb(),
-				level.fadeto.getr(), level.fadeto.getg(), level.fadeto.getb());
+				level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
 	}
 }
 END_COMMAND (testcolor)

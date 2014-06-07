@@ -69,104 +69,111 @@
 struct acsdefered_s;
 class FBehavior;
 
-struct level_info_s {
-	char		mapname[9];
-	int			levelnum;
-	const char	*level_name;
-	char		pname[9];
-	char		nextmap[9];
-	char		secretmap[9];
-	int			partime;
-	char		skypic[9];
-	char		music[9];
-	DWORD		flags;
-	int			cluster;
-	FLZOMemFile	*snapshot;
-	struct acsdefered_s *defered;
+struct level_info_t {
+	char			mapname[9];
+	int				levelnum;
+	const char*		level_name;
+	char			pname[9];
+	char			nextmap[9];
+	char			secretmap[9];
+	int				partime;
+	char			skypic[9];
+	char			music[9];
+	DWORD			flags;
+	int				cluster;
+	FLZOMemFile*	snapshot;
+	acsdefered_s*	defered;
 };
-typedef struct level_info_s level_info_t;
 
-struct level_pwad_info_s
+struct level_pwad_info_t
 {
-	// level_info_s
-	char		mapname[9];
-	int			levelnum;
-	const char	*level_name;
-	char		pname[9];
-	char		nextmap[9];
-	char		secretmap[9];
-	int			partime;
-	char		skypic[9];
-	char		music[9];
-	DWORD		flags;
-	int			cluster;
-	FLZOMemFile	*snapshot;
-	struct acsdefered_s *defered;
+	// level_info_t
+	char			mapname[9];
+	int				levelnum;
+	const char*		level_name;
+	char			pname[9];
+	char			nextmap[9];
+	char			secretmap[9];
+	int				partime;
+	char			skypic[9];
+	char			music[9];
+	DWORD			flags;
+	int				cluster;
+	FLZOMemFile*	snapshot;
+	acsdefered_s*	defered;
 
-	// level_pwad_info_s				[ML] 5/11/06 Removed sky scrolling/sky2
-	char		skypic2[9];
-	argb_t		fadeto;
-	char		fadetable[8];
-	argb_t		outsidefog;
-	float		gravity;
-	float		aircontrol;
+	// level_pwad_info_t
+
+	// [SL] use 4 bytes for color types instead of argb_t so that the struct
+	// can consist of only plain-old-data types. It is also important to have
+	// the channel layout be platform neutral in case the pixel format changes
+	// after the level has been loaded (eg, toggling full-screen on certain OSX version).
+	// The color channels are ordered: A, R, G, B
+	byte			fadeto_color[4];
+	byte			outsidefog_color[4];
+
+	char			fadetable[8];
+	char			skypic2[9];
+	float			gravity;
+	float			aircontrol;
 };
-typedef struct level_pwad_info_s level_pwad_info_t;
 
 
-struct level_locals_s {
-	int			time;
-	int			starttime;
-	int			partime;
-	int			timeleft;
+struct level_locals_t {
+	int				time;
+	int				starttime;
+	int				partime;
+	int				timeleft;
 	unsigned int	inttimeleft;
 
-	level_info_t *info;
-	int			cluster;
-	int			levelnum;
-	char		level_name[64];			// the descriptive name (Outer Base, etc)
-	char		mapname[8];				// the server name (base1, etc)
-	char		nextmap[8];				// go here when sv_fraglimit is hit
-	char		secretmap[8];			// map to go to when used secret exit
+	level_info_t*	info;
+	int				cluster;
+	int				levelnum;
+	char			level_name[64];			// the descriptive name (Outer Base, etc)
+	char			mapname[8];				// the server name (base1, etc)
+	char			nextmap[8];				// go here when sv_fraglimit is hit
+	char			secretmap[8];			// map to go to when used secret exit
 
-	DWORD		flags;
+	DWORD			flags;
 
-	argb_t		fadeto;					// The color the palette fades to (usually black)
-	argb_t		outsidefog;				// The fog for sectors with sky ceilings
+	// [SL] use 4 bytes for color types instead of argb_t so that the struct
+	// can consist of only plain-old-data types. It is also important to have
+	// the channel layout be platform neutral in case the pixel format changes
+	// after the level has been loaded (eg, toggling full-screen on certain OSX version).
+	// The color channels are ordered: A, R, G, B
+	byte			fadeto_color[4];		// The color the palette fades to (usually black)
+	byte			outsidefog_color[4];	// The fog for sectors with sky ceilings
 
-	char		music[8];
-	char		skypic[8];
-	char		skypic2[8];
+	char			music[8];
+	char			skypic[8];
+	char			skypic2[8];
 
-	int			total_secrets;
-	int			found_secrets;
+	int				total_secrets;
+	int				found_secrets;
 
-	int			total_items;
-	int			found_items;
+	int				total_items;
+	int				found_items;
 
-	int			total_monsters;
-	int			killed_monsters;
+	int				total_monsters;
+	int				killed_monsters;
 
-	float		gravity;
-	fixed_t		aircontrol;
-	fixed_t		airfriction;
+	float			gravity;
+	fixed_t			aircontrol;
+	fixed_t			airfriction;
 
 	// The following are all used for ACS scripting
-	FBehavior	*behavior;
-	SDWORD		vars[NUM_MAPVARS];
+	FBehavior*		behavior;
+	SDWORD			vars[NUM_MAPVARS];
 };
-typedef struct level_locals_s level_locals_t;
 
-struct cluster_info_s {
-	int			cluster;
-	char		messagemusic[9];
-	// [Russell] - Naturally, this should have an extra byte for the null terminator
-	char		finaleflat[9];
-	const char		*exittext;
-	const char		*entertext;
-	int			flags;
+struct cluster_info_t {
+	int				cluster;
+	char			messagemusic[9];
+	char			finaleflat[9];
+	const char*		exittext;
+	const char*		entertext;
+	int				flags;
 };
-typedef struct cluster_info_s cluster_info_t;
 
 // Only one cluster flag right now
 #define CLUSTER_HUB		0x00000001

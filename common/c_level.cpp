@@ -153,14 +153,14 @@ struct MapInfoHandler
 }
 MapHandlers[] =
 {
-	{ MITYPE_INT,		lioffset(levelnum), 0 }, // denis - fixme - lioffset, offsetof will generate warnings unless given a POD struct - but "level_pwad_info_s : public level_info_s" isn't a POD!
+	{ MITYPE_INT,		lioffset(levelnum), 0 },
 	{ MITYPE_MAPNAME,	lioffset(nextmap), 0 },
 	{ MITYPE_MAPNAME,	lioffset(secretmap), 0 },
 	{ MITYPE_CLUSTER,	lioffset(cluster), 0 },
-	{ MITYPE_SKY,		lioffset(skypic), 0 },				//[ML] 5/11/06 - Remove sky scrolling
+	{ MITYPE_SKY,		lioffset(skypic), 0 },
 	{ MITYPE_SKY,		lioffset(skypic2), 0 },
-	{ MITYPE_COLOR,		lioffset(fadeto), 0 },
-	{ MITYPE_COLOR,		lioffset(outsidefog), 0 },
+	{ MITYPE_COLOR,		lioffset(fadeto_color), 0 },
+	{ MITYPE_COLOR,		lioffset(outsidefog_color), 0 },
 	{ MITYPE_LUMPNAME,	lioffset(pname), 0 },
 	{ MITYPE_INT,		lioffset(partime), 0 },
 	{ MITYPE_LUMPNAME,	lioffset(music), 0 },
@@ -243,7 +243,10 @@ static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 {
 	memset (levelinfo, 0, sizeof(*levelinfo));
 	levelinfo->snapshot = NULL;
-	levelinfo->outsidefog = argb_t(255, 0, 0, 0);
+	levelinfo->outsidefog_color[0] = 255; 
+	levelinfo->outsidefog_color[1] = 0; 
+	levelinfo->outsidefog_color[2] = 0; 
+	levelinfo->outsidefog_color[3] = 0; 
 	strncpy(levelinfo->fadetable, "COLORMAP", 8);
 }
 
@@ -339,70 +342,72 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 							   cluster_info_t *clusterinfo,
 							   DWORD flags)
 {
-	int entry;
 	MapInfoHandler *handler;
-	byte *info;
 
-	info = levelinfo ? (byte *)levelinfo : (byte *)clusterinfo;
+	byte* info = levelinfo ? (byte*)levelinfo : (byte*)clusterinfo;
 
-	while (SC_GetString ())
+	while (SC_GetString())
 	{
-		if (SC_MatchString (MapInfoTopLevel) != -1)
+		if (SC_MatchString(MapInfoTopLevel) != -1)
 		{
-			SC_UnGet ();
+			SC_UnGet();
 			break;
 		}
-		entry = SC_MustMatchString (strings);
+
+		int entry = SC_MustMatchString(strings);
 		handler = handlers + entry;
+
 		switch (handler->type)
 		{
 		case MITYPE_IGNORE:
 			break;
 
 		case MITYPE_EATNEXT:
-			SC_MustGetString ();
+			SC_MustGetString();
 			break;
 
 		case MITYPE_INT:
-			SC_MustGetNumber ();
-			*((int *)(info + handler->data1)) = sc_Number;
+			SC_MustGetNumber();
+			*((int*)(info + handler->data1)) = sc_Number;
 			break;
 
 		case MITYPE_FLOAT:
-			SC_MustGetFloat ();
-			*((float *)(info + handler->data1)) = sc_Float;
+			SC_MustGetFloat();
+			*((float*)(info + handler->data1)) = sc_Float;
 			break;
 
 		case MITYPE_COLOR:
 			{
-				SC_MustGetString ();
-				std::string string = V_GetColorStringByName (sc_String);
-				if (string.length())
-					*((DWORD *)(info + handler->data1)) = V_GetColorFromString(string);
-				else
-					*((DWORD *)(info + handler->data1)) = V_GetColorFromString(sc_String);
+				SC_MustGetString();
+				std::string string = V_GetColorStringByName(sc_String);
+				if (string.empty())
+					string = sc_String;
+
+				uint8_t* ptr = (uint8_t*)(info + handler->data1);
+				argb_t color(V_GetColorFromString(string));
+				ptr[0] = color.geta(); ptr[1] = color.getr(); ptr[2] = color.getg(); ptr[3] = color.getb();
 			}
 			break;
 
 		case MITYPE_MAPNAME:
-			SC_MustGetString ();
-			if (IsNum (sc_String))
+			SC_MustGetString();
+			if (IsNum(sc_String))
 			{
-				int map = atoi (sc_String);
-				sprintf (sc_String, "MAP%02d", map);
+				int map = atoi(sc_String);
+				sprintf(sc_String, "MAP%02d", map);
 			}
-			strncpy ((char *)(info + handler->data1), sc_String, 8);
+			strncpy((char*)(info + handler->data1), sc_String, 8);
 			break;
 
 		case MITYPE_LUMPNAME:
-			SC_MustGetString ();
-			uppercopy ((char *)(info + handler->data1), sc_String);
+			SC_MustGetString();
+			uppercopy((char*)(info + handler->data1), sc_String);
 			break;
 
 		case MITYPE_SKY:
-			SC_MustGetString ();	// get texture name;
-			uppercopy ((char *)(info + handler->data1), sc_String);
-			SC_MustGetFloat ();		// get scroll speed
+			SC_MustGetString();	// get texture name;
+			uppercopy((char*)(info + handler->data1), sc_String);
+			SC_MustGetFloat();		// get scroll speed
 			//if (HexenHack)
 			//{
 			//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
@@ -422,28 +427,29 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			break;
 
 		case MITYPE_CLUSTER:
-			SC_MustGetNumber ();
-			*((int *)(info + handler->data1)) = sc_Number;
+			SC_MustGetNumber();
+			*((int*)(info + handler->data1)) = sc_Number;
 			if (HexenHack)
 			{
-				cluster_info_t *clusterH = FindClusterInfo (sc_Number);
+				cluster_info_t* clusterH = FindClusterInfo(sc_Number);
 				if (clusterH)
 					clusterH->flags |= CLUSTER_HUB;
 			}
 			break;
 
 		case MITYPE_STRING:
-			SC_MustGetString ();
-			ReplaceString ((const char **)(info + handler->data1), sc_String);
+			SC_MustGetString();
+			ReplaceString((const char**)(info + handler->data1), sc_String);
 			break;
 
 		case MITYPE_CSTRING:
-			SC_MustGetString ();
-			strncpy ((char *)(info + handler->data1), sc_String, handler->data2);
-			*((char *)(info + handler->data1 + handler->data2)) = '\0';
+			SC_MustGetString();
+			strncpy((char*)(info + handler->data1), sc_String, handler->data2);
+			*((char*)(info + handler->data1 + handler->data2)) = '\0';
 			break;
 		}
 	}
+
 	if (levelinfo)
 		levelinfo->flags = flags;
 	else
@@ -852,7 +858,7 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 	{
 		unsigned int playernum = players.size();
 		arc << level.flags
-			<< level.fadeto
+			<< level.fadeto_color[0] << level.fadeto_color[1] << level.fadeto_color[2] << level.fadeto_color[3]
 			<< level.found_secrets
 			<< level.found_items
 			<< level.killed_monsters
@@ -871,7 +877,7 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 	{
 		unsigned int playernum;
 		arc >> level.flags
-			>> level.fadeto
+			>> level.fadeto_color[0] >> level.fadeto_color[1] >> level.fadeto_color[2] >> level.fadeto_color[3]
 			>> level.found_secrets
 			>> level.found_items
 			>> level.killed_monsters
@@ -957,17 +963,15 @@ static void writeSnapShot (FArchive &arc, level_info_t *i)
 
 void G_SerializeSnapshots (FArchive &arc)
 {
-	if (arc.IsStoring ())
+	if (arc.IsStoring())
 	{
-		size_t i;
-
-		for (i = 0; i < wadlevelinfos.size(); i++)
+		for (size_t i = 0; i < wadlevelinfos.size(); i++)
 			if (wadlevelinfos[i].snapshot)
-				writeSnapShot (arc, (level_info_s *)&wadlevelinfos[i]);
+				writeSnapShot(arc, (level_info_t*)&wadlevelinfos[i]);
 
-		for (i = 0; LevelInfos[i].level_name; i++)
+		for (size_t i = 0; LevelInfos[i].level_name; i++)
 			if (LevelInfos[i].snapshot)
-				writeSnapShot (arc, &LevelInfos[i]);
+				writeSnapShot(arc, &LevelInfos[i]);
 
 		// Signal end of snapshots
 		arc << (char)0;
@@ -981,10 +985,10 @@ void G_SerializeSnapshots (FArchive &arc)
 		arc >> mapname[0];
 		while (mapname[0])
 		{
-			arc.Read (&mapname[1], 7);
-			level_info_t *i = FindLevelInfo (mapname);
+			arc.Read(&mapname[1], 7);
+			level_info_t* i = FindLevelInfo(mapname);
 			i->snapshot = new FLZOMemFile;
-			i->snapshot->Serialize (arc);
+			i->snapshot->Serialize(arc);
 			arc >> mapname[0];
 		}
 	}
@@ -996,42 +1000,39 @@ static void writeDefereds (FArchive &arc, level_info_t *i)
 	arc << i->defered;
 }
 
-void P_SerializeACSDefereds (FArchive &arc)
+void P_SerializeACSDefereds(FArchive &arc)
 {
-	if (arc.IsStoring ())
+	if (arc.IsStoring())
 	{
-		unsigned int i;
-
-		for (i = 0; i < wadlevelinfos.size(); i++)
+		for (size_t i = 0; i < wadlevelinfos.size(); i++)
 			if (wadlevelinfos[i].defered)
-				writeDefereds (arc, (level_info_s *)&wadlevelinfos[i]);
+				writeDefereds(arc, (level_info_t*)&wadlevelinfos[i]);
 
-		for (i = 0; LevelInfos[i].level_name; i++)
+		for (size_t i = 0; LevelInfos[i].level_name; i++)
 			if (LevelInfos[i].defered)
-				writeDefereds (arc, &LevelInfos[i]);
+				writeDefereds(arc, &LevelInfos[i]);
 
 		// Signal end of defereds
-		BYTE zero = 0;
-		arc << zero;
+		arc << (byte)0;
 	}
 	else
 	{
 		char mapname[8];
 
-		P_RemoveDefereds ();
+		P_RemoveDefereds();
 
 		arc >> mapname[0];
 		while (mapname[0])
 		{
-			arc.Read (&mapname[1], 7);
-			level_info_t *i = FindLevelInfo (mapname);
+			arc.Read(&mapname[1], 7);
+			level_info_t* i = FindLevelInfo(mapname);
 			if (i == NULL)
 			{
 				char name[9];
 
-				strncpy (name, mapname, 8);
+				strncpy(name, mapname, 8);
 				name[8] = 0;
-				I_Error ("Unknown map '%s' in savegame", name);
+				I_Error("Unknown map '%s' in savegame", name);
 			}
 			arc >> i->defered;
 			arc >> mapname[0];
@@ -1065,7 +1066,9 @@ EXTERN_CVAR (sv_aircontrol)
 
 void G_InitLevelLocals()
 {
-	unsigned long oldfade = level.fadeto;
+	byte old_fadeto_color[4];
+	memcpy(old_fadeto_color, level.fadeto_color, 4);
+
 	level_info_t *info;
 	int i;
 
@@ -1083,19 +1086,23 @@ void G_InitLevelLocals()
 
 	if ((i = FindWadLevelInfo(level.mapname)) > -1)
 	{
-		level_pwad_info_t *pinfo = &wadlevelinfos[i];
+		level_pwad_info_t* pinfo = &wadlevelinfos[i];
 
 		// [ML] 5/11/06 - Remove sky scrolling and sky2
 		// [SL] 2012-03-19 - Add sky2 back
-		level.info = (level_info_t *)pinfo;
-		info = (level_info_t *)pinfo;
+		level.info = (level_info_t*)pinfo;
+		info = (level_info_t*)pinfo;
 		strncpy (level.skypic2, pinfo->skypic2, 8);
-		level.fadeto = pinfo->fadeto;
-		if (level.fadeto)
+
+		memcpy(level.fadeto_color, pinfo->fadeto_color, 4);
+	
+		if (level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3])
 			NormalLight.maps = shaderef_t(&V_GetDefaultPalette()->maps, 0);
 		else
 			R_ForceDefaultColormap(pinfo->fadetable);
-		level.outsidefog = pinfo->outsidefog;
+
+		memcpy(level.outsidefog_color, pinfo->outsidefog_color, 4);
+
 		level.flags |= LEVEL_DEFINEDINMAPINFO;
 		if (pinfo->gravity != 0.f)
 			level.gravity = pinfo->gravity;
@@ -1107,41 +1114,47 @@ void G_InitLevelLocals()
 		info = FindDefLevelInfo(level.mapname);
 		level.info = info;
 		level.skypic2[0] = 0;
-		level.fadeto = argb_t(0, 0, 0, 0);
-		level.outsidefog = argb_t(255, 0, 0, 0);	// 0xff000000 signals not to handle it special
+
+		level.fadeto_color[0] = 0;
+		level.fadeto_color[1] = 0;
+		level.fadeto_color[2] = 0;
+		level.fadeto_color[3] = 0;
+		level.outsidefog_color[0] = 255;	// 0xFF000000 == special token signaling to not handle it specially
+		level.outsidefog_color[1] = 0;
+		level.outsidefog_color[2] = 0;
+		level.outsidefog_color[3] = 0;
 		R_ForceDefaultColormap ("COLORMAP");
 	}
 
-	if (info->level_name) {
+	if (info->level_name)
+	{
 		level.partime = info->partime;
 		level.cluster = info->cluster;
 		level.flags = info->flags;
 		level.levelnum = info->levelnum;
 
-		strncpy (level.level_name, info->level_name, 63);
-		strncpy (level.nextmap, info->nextmap, 8);
-		strncpy (level.secretmap, info->secretmap, 8);
-		strncpy (level.music, info->music, 8);
-		strncpy (level.skypic, info->skypic, 8);
+		strncpy(level.level_name, info->level_name, 63);
+		strncpy(level.nextmap, info->nextmap, 8);
+		strncpy(level.secretmap, info->secretmap, 8);
+		strncpy(level.music, info->music, 8);
+		strncpy(level.skypic, info->skypic, 8);
 		if (!level.skypic2[0])
 			strncpy(level.skypic2, level.skypic, 8);
 	}
 	else
 	{
 		level.partime = level.cluster = 0;
-		strcpy (level.level_name, "Unnamed");
-		level.nextmap[0] =
-			level.secretmap[0] =
-			level.music[0] = 0;
-		strncpy (level.skypic, "SKY1", 8);
-		strncpy (level.skypic2, "SKY1", 8);
+		strcpy(level.level_name, "Unnamed");
+		level.nextmap[0] = level.secretmap[0] = level.music[0] = 0;
+		strncpy(level.skypic, "SKY1", 8);
+		strncpy(level.skypic2, "SKY1", 8);
 		level.flags = 0;
 		level.levelnum = 1;
 	}
 
 //	memset (level.vars, 0, sizeof(level.vars));
 
-	if (oldfade != level.fadeto)
+	if (memcmp(level.fadeto_color, old_fadeto_color, 4) != 0)
 		V_RefreshColormaps();
 
 	movingsectors.clear();

@@ -248,7 +248,7 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 
 	// Default to white light:
 	argb_t lightcolor = argb_t(255, 255, 255);
-	argb_t fadecolor = level.fadeto; 
+	argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
 
 	// Use the dynamic lighting's light color if we have one:
 	if (m_dyncolormap != NULL)
