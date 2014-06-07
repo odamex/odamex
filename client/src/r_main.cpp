@@ -841,6 +841,10 @@ void R_SetupFrame (player_t *player)
 			NormalLight.maps = shaderef_t(&realcolormaps, (NUMCOLORMAPS+1) * colormap_num);
 		}
 	}
+	else
+	{
+		R_ClearSectorBlend();
+	}
 
 	fixedcolormap = shaderef_t();
 	fixedlightlev = 0;
