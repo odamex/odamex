@@ -157,14 +157,16 @@ EXTERN_CVAR(cl_interp)
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
-static argb_t enemycolor = 0, teamcolor = 0;
+static byte enemycolor[4];
+static byte teamcolor[4];
 
 argb_t CL_GetPlayerColor(player_t *player)
 {
 	if (!player)
 		return 0;
 
-	argb_t color = player->userinfo.color;
+	argb_t color(player->userinfo.color[0], player->userinfo.color[1],
+				player->userinfo.color[2], player->userinfo.color[3]);
 
 	// Adjust the shade of color for team games
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
@@ -185,21 +187,21 @@ argb_t CL_GetPlayerColor(player_t *player)
 		if (sv_gametype == GM_COOP)
 		{
 			if (r_forceteamcolor && player->id != consoleplayer_id)
-				color = teamcolor;
+				color = argb_t(teamcolor[0], teamcolor[1], teamcolor[2], teamcolor[3]);
 		}
 		else if (sv_gametype == GM_DM)
 		{
 			if (r_forceenemycolor && player->id != consoleplayer_id)
-				color = enemycolor;
+				color = argb_t(enemycolor[0], enemycolor[1], enemycolor[2], enemycolor[3]);
 		}
 		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		{
 			if (r_forceteamcolor &&
 					(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
-				color = teamcolor;
+				color = argb_t(teamcolor[0], teamcolor[1], teamcolor[2], teamcolor[3]);
 			if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
 					player->id != consoleplayer_id)
-				color = enemycolor;
+				color = argb_t(enemycolor[0], enemycolor[1], enemycolor[2], enemycolor[3]);
 		}
 	}
 
@@ -219,14 +221,22 @@ static void CL_RebuildAllPlayerTranslations()
 CVAR_FUNC_IMPL (r_enemycolor)
 {
 	// cache the color whenever the user changes it
-	enemycolor = V_GetColorFromString(var);
+	argb_t color(V_GetColorFromString(var));
+	enemycolor[0] = color.geta();
+	enemycolor[1] = color.getr();
+	enemycolor[2] = color.getg();
+	enemycolor[3] = color.getb();
 	CL_RebuildAllPlayerTranslations();
 }
 
 CVAR_FUNC_IMPL (r_teamcolor)
 {
 	// cache the color whenever the user changes it
-	teamcolor = V_GetColorFromString(var);
+	argb_t color(V_GetColorFromString(var));
+	teamcolor[0] = color.geta();
+	teamcolor[1] = color.getr();
+	teamcolor[2] = color.getg();
+	teamcolor[3] = color.getb();
 	CL_RebuildAllPlayerTranslations();
 }
 
@@ -821,7 +831,7 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname.c_str());
 	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.color       - #%02x%02x%02x\n",
-			player->userinfo.color.getr(), player->userinfo.color.getg(), player->userinfo.color.getb());
+			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);
 	Printf (PRINT_HIGH, " spectator            - %d \n",	player->spectator);
 	Printf (PRINT_HIGH, " time                 - %d \n",	player->GameTime);
@@ -1305,7 +1315,9 @@ void CL_SendUserInfo(void)
 	MSG_WriteString	(&net_buffer, coninfo->netname.c_str());
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
 	MSG_WriteLong	(&net_buffer, coninfo->gender);
-	MSG_WriteLong	(&net_buffer, coninfo->color);
+
+	for (int i = 3; i >= 0; i--)
+		MSG_WriteByte(&net_buffer, coninfo->color[i]);
 
 	// [SL] place holder for deprecated skins
 	MSG_WriteString	(&net_buffer, "");
@@ -1354,7 +1366,9 @@ void CL_SetupUserInfo(void)
 	p->userinfo.netname = MSG_ReadString();
 	p->userinfo.team	= (team_t)MSG_ReadByte();
 	p->userinfo.gender	= (gender_t)MSG_ReadLong();
-	p->userinfo.color	= MSG_ReadLong();
+
+	for (int i = 3; i >= 0; i--)
+		p->userinfo.color[i] = MSG_ReadByte();
 
 	// [SL] place holder for deprecated skins
 	MSG_ReadString();

@@ -311,7 +311,7 @@ void G_DoNewGame (void)
 		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 			SV_CheckTeam(*it);
 		else
-			it->userinfo.color = it->prefcolor;
+			memcpy(it->userinfo.color, it->prefcolor, 4);
 
 		SV_ClientFullUpdate(*it);
 	}

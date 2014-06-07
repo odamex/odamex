@@ -68,7 +68,7 @@ struct UserInfo
 	bool			unlag;
 	bool			predict_weapons;
 	byte			update_rate;
-	argb_t			color;
+	byte			color[4];
 	gender_t		gender;
 	weaponswitch_t	switchweapon;
 	byte			weapon_prefs[NUMWEAPONS];
@@ -76,11 +76,12 @@ struct UserInfo
 	static const byte weapon_prefs_default[NUMWEAPONS];
 
 	UserInfo() : team(TEAM_NONE), aimdist(0),
-	             unlag(true), predict_weapons(true), update_rate(2), color(0),
+	             unlag(true), predict_weapons(true), update_rate(2),
 	             gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
 	{
 		// default doom weapon ordering when player runs out of ammo
 		memcpy(weapon_prefs, UserInfo::weapon_prefs_default, sizeof(weapon_prefs));
+		memset(color, 0, 4);
 	}
 };
 

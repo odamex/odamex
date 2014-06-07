@@ -858,7 +858,9 @@ void SV_SendUserInfo (player_t &player, client_t* cl)
 	MSG_WriteString (&cl->reliablebuf, p->userinfo.netname.c_str());
 	MSG_WriteByte	(&cl->reliablebuf, p->userinfo.team);
 	MSG_WriteLong	(&cl->reliablebuf, p->userinfo.gender);
-	MSG_WriteLong	(&cl->reliablebuf, p->userinfo.color);
+
+	for (int i = 3; i >= 0; i--)
+		MSG_WriteByte(&cl->reliablebuf, p->userinfo.color[i]);
 
 	// [SL] place holder for deprecated skins
 	MSG_WriteString	(&cl->reliablebuf, "");
@@ -882,9 +884,8 @@ void SV_BroadcastUserInfo(player_t &player)
 bool SV_SetupUserInfo(player_t &player)
 {
 	// read in userinfo from packet
-	std::string		old_netname(player.userinfo.netname);
-
-	std::string		new_netname(MSG_ReadString());
+	std::string old_netname(player.userinfo.netname);
+	std::string new_netname(MSG_ReadString());
 	StripColorCodes(new_netname);
 
 	if (new_netname.length() > MAXPLAYERNAME)
@@ -896,27 +897,32 @@ bool SV_SetupUserInfo(player_t &player)
 		return false;
 	}
 
-	team_t			old_team = static_cast<team_t>(player.userinfo.team);
-	team_t			new_team = static_cast<team_t>(MSG_ReadByte());
+	team_t old_team = static_cast<team_t>(player.userinfo.team);
+	team_t new_team = static_cast<team_t>(MSG_ReadByte());
 
-	if ((new_team >= NUMTEAMS && new_team != TEAM_NONE) || new_team < 0) {
+	if ((new_team >= NUMTEAMS && new_team != TEAM_NONE) || new_team < 0)
+	{
 		SV_InvalidateClient(player, "Team preference is invalid");
 		return false;
 	}
 
-	gender_t		gender = static_cast<gender_t>(MSG_ReadLong());
-	int				color = MSG_ReadLong();
+	gender_t gender = static_cast<gender_t>(MSG_ReadLong());
+
+	byte color[4];
+	for (int i = 3; i >= 0; i--)
+		color[i] = MSG_ReadByte();
 
 	// [SL] place holder for deprecated skins
 	MSG_ReadString();
 
-	fixed_t			aimdist = MSG_ReadLong();
-	bool			unlag = MSG_ReadBool();
-	bool			predict_weapons = MSG_ReadBool();
-	byte			update_rate = MSG_ReadByte();
-	weaponswitch_t	switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
+	fixed_t aimdist = MSG_ReadLong();
+	bool unlag = MSG_ReadBool();
+	bool predict_weapons = MSG_ReadBool();
+	byte update_rate = MSG_ReadByte();
 
-	byte			weapon_prefs[NUMWEAPONS];
+	weaponswitch_t switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
+
+	byte weapon_prefs[NUMWEAPONS];
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
 		// sanitize the weapon preference input
@@ -947,8 +953,9 @@ bool SV_SetupUserInfo(player_t &player)
 
 	player.userinfo.gender			= gender;
 	player.userinfo.team			= new_team;
-	player.userinfo.color			= color;
-	player.prefcolor				= color;
+
+	memcpy(player.userinfo.color, color, 4);
+	memcpy(player.prefcolor, color, 4);
 
 	// sanitize the client's name
 	new_netname = TrimString(new_netname);
@@ -4628,7 +4635,7 @@ BEGIN_COMMAND (playerinfo)
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist);
 	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - #%02x%02x%02x \n",
-			player->userinfo.color.getr(), player->userinfo.color.getg(), player->userinfo.color.getb());
+			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);
 	Printf(PRINT_HIGH, "--------------------------------------- \n");

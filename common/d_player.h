@@ -228,23 +228,23 @@ public:
     int         ping;                   // [Fly] guess what :)
 	int         last_received;
 
-	int         tic;                  // gametic last update for player was received
+	int         tic;					// gametic last update for player was received
 	
 	PlayerSnapshotManager snapshots;	// Previous player positions
 
-	byte spying;				// [SL] id of player being spynext'd by this player
-	bool spectator;             // [GhostlyDeath] spectating?
-//	bool deadspectator;			// [tm512] spectating as a dead player?
-	int joinafterspectatortime; // Nes - Join after spectator time.
-	int timeout_callvote;       // [AM] Tic when a vote last finished.
-	int timeout_vote;           // [AM] Tic when a player last voted.
+	byte		spying;					// [SL] id of player being spynext'd by this player
+	bool		spectator;				// [GhostlyDeath] spectating?
+//	bool		deadspectator;			// [tm512] spectating as a dead player?
+	int			joinafterspectatortime; // Nes - Join after spectator time.
+	int			timeout_callvote;       // [AM] Tic when a vote last finished.
+	int			timeout_vote;           // [AM] Tic when a player last voted.
 
-	bool ready;                 // [AM] Player is ready.
-	int timeout_ready;          // [AM] Tic when a player last toggled his ready state.
+	bool		ready;					// [AM] Player is ready.
+	int			timeout_ready;          // [AM] Tic when a player last toggled his ready state.
 
-    int			prefcolor;			// Nes - Preferred color. Server only.
+    byte		prefcolor[4];			// Nes - Preferred color. Server only.
 
-	argb_t		blend_color;		// blend color for the sector the player is in
+	argb_t		blend_color;			// blend color for the sector the player is in
 
     // For flood protection
     struct LastMessage_s

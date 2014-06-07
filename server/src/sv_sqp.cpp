@@ -228,7 +228,8 @@ next:
 	{
 		MSG_WriteString(&ml_message, it->userinfo.netname.c_str());
 
-		MSG_WriteLong(&ml_message, it->userinfo.color);
+		for (int i = 3; i >= 0; i--)
+			MSG_WriteByte(&ml_message, it->userinfo.color[i]);
 
 		if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 			MSG_WriteByte(&ml_message, it->userinfo.team);

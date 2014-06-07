@@ -1135,7 +1135,10 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteString	(netbuffer, consoleplayer().userinfo.netname.c_str());
 	MSG_WriteByte	(netbuffer, consoleplayer().userinfo.team);
 	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.gender);
-	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.color);
+
+	for (int i = 3; i >= 0; i--)
+		MSG_WriteByte(netbuffer, consoleplayer().userinfo.color[i]);
+
 	MSG_WriteString	(netbuffer, "");	// [SL] place holder for deprecated skins
 	MSG_WriteShort	(netbuffer, consoleplayer().GameTime);
 	

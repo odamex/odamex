@@ -965,7 +965,7 @@ player_s::player_s()
 	ready = false;
 	timeout_ready = 0;
 
-	prefcolor = 0;
+	memset(prefcolor, 0, 4);
 
 	LastMessage.Time = 0;
 	LastMessage.Message = "";
@@ -1067,7 +1067,7 @@ player_s &player_s::operator =(const player_s &other)
 	ready = other.ready;
 	timeout_ready = other.timeout_ready;
 
-	prefcolor = other.prefcolor;
+	memcpy(prefcolor, other.prefcolor, 4);
 
 	for(i = 0; i < BACKUPTICS; i++)
 		netcmds[i] = other.netcmds[i];

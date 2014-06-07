@@ -163,7 +163,6 @@ void D_SetupUserInfo(void)
 
 	coninfo->netname			= netname;
 	coninfo->team				= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
-	coninfo->color				= V_GetColorFromString(cl_color);
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->unlag				= (cl_unlag != 0);
@@ -178,9 +177,16 @@ void D_SetupUserInfo(void)
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
 	D_PrepareWeaponPreferenceUserInfo();
 
+	// set the color in a pixel-format neutral way
+	argb_t color = V_GetColorFromString(cl_color);
+	coninfo->color[0] = color.geta();
+	coninfo->color[1] = color.getr();
+	coninfo->color[2] = color.getg(); 
+	coninfo->color[3] = color.getb(); 
+
 	// update color translation
 	if (!demoplayback && !connected)
-		R_BuildPlayerTranslation(consoleplayer_id, coninfo->color);
+		R_BuildPlayerTranslation(consoleplayer_id, color);
 }
 
 void D_UserInfoChanged (cvar_t *cvar)
@@ -203,7 +209,7 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 	arc.Write(&info.gender, sizeof(info.gender));
 
 	arc << info.aimdist;
-	arc << info.color;
+	arc << info.color[0] << info.color[1] << info.color[2] << info.color[3];
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin = 0;
@@ -230,7 +236,7 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 	arc.Read(&info.gender, sizeof(info.gender));
 
 	arc >> info.aimdist;
-	arc >> info.color;
+	arc >> info.color[0] >> info.color[1] >> info.color[2] >> info.color[3];
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin;

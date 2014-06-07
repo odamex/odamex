@@ -2087,7 +2087,12 @@ void G_DoPlayDemo(bool justStreamInput)
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			R_BuildClassicPlayerTranslation(it->id, it->id - 1);
-			it->userinfo.color = translationRGB[it->id][0];
+			argb_t color(translationRGB[it->id][0]);
+
+			it->userinfo.color[0] = color.geta();
+			it->userinfo.color[1] = color.getr();
+			it->userinfo.color[2] = color.getg();
+			it->userinfo.color[3] = color.getb();
 
 			char tmpname[16];
 			sprintf(tmpname, "Player %i", it->id);
