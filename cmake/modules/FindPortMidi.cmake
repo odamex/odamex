@@ -9,12 +9,12 @@
 # See documentation on how to write CMake scripts at
 # http://www.cmake.org/Wiki/CMake:How_To_Find_Libraries
 
-find_path(PORTMIDI_INCLUDE_DIR portmidi.h
+find_library(PORTMIDI_LIBRARY portmidi
   HINTS
   $ENV{PORTMIDI_DIR}
 )
 
-find_library(PORTMIDI_LIBRARY portmidi
+find_path(PORTMIDI_INCLUDE_DIR portmidi.h
   HINTS
   $ENV{PORTMIDI_DIR}
 )
@@ -22,7 +22,6 @@ find_library(PORTMIDI_LIBRARY portmidi
 set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(PortMidi
-  REQUIRED_VARS PORTMIDI_INCLUDE_DIR PORTMIDI_LIBRARIES)
+find_package_handle_standard_args(PortMidi REQUIRED_VARS PORTMIDI_LIBRARIES PORTMIDI_INCLUDE_DIR)
 
 mark_as_advanced(PORTMIDI_LIBRARY)

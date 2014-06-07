@@ -80,7 +80,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 # zlib configuration
-find_package(ZLIB QUIET)
+find_package(ZLIB)
 if(NOT ZLIB_FOUND)
   set(USE_INTREE_ZLIB)
   set(ZLIB_LIBRARY "z")
@@ -98,7 +98,7 @@ endif()
 include_directories(${ZLIB_INCLUDE_DIRS})
 
 # libpng configuration
-find_package(PNG QUIET)
+find_package(PNG)
 if(NOT PNG_FOUND)
   set(USE_INTREE_LIBPNG)
   set(PNG_LIBRARY "png")
@@ -120,13 +120,13 @@ add_definitions(-DUSE_PNG)
 # PortMidi configuration
 
 # PortMidi
-find_package(PORTMIDI QUIET)
+find_package(PortMidi)
 if(NOT PORTMIDI_FOUND)
   # build the PortMidi library
   set(PORTMIDI_LIBRARY "portmidi")
-  set(PORTMIDI_LIBRARY ${PORTMIDI_LIBRARY})
+  set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
   set(PORTMIDI_DIR ../libraries/portmidi)
-  set(PORTMIDI_INCLUDE_DIRS ${PORTMIDI_DIR}/pm_common/ ${PORTMIDI_DIR}/porttime/)  
+  set(PORTMIDI_INCLUDE_DIR ${PORTMIDI_DIR}/pm_common/ ${PORTMIDI_DIR}/porttime/)  
 
   if(APPLE)
     set(CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.5.sdk CACHE PATH "-isysroot parameter for compiler" FORCE)
@@ -169,7 +169,7 @@ if(NOT PORTMIDI_FOUND)
 endif()
 
 add_definitions(-DPORTMIDI)
-include_directories(${PORTMIDI_INCLUDE_DIRS})
+include_directories(${PORTMIDI_INCLUDE_DIR})
 
 # Find Mac frameworks
 if(APPLE)
@@ -198,7 +198,6 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
   target_link_libraries(odamex ${ZLIB_LIBRARY})
   target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY})
 
-#  target_link_libraries(odamex ${PORTMIDI_LIBRARY} ${PORTTIME_LIBRARY})
   target_link_libraries(odamex ${PORTMIDI_LIBRARY})
 
   if(WIN32)
