@@ -28,6 +28,43 @@
 #include <SDL.h>
 #include "i_video.h"
 
+
+// ============================================================================
+//
+// ISDL12VideoCapabilities class interface
+//
+// Defines an interface for querying video capabilities. This includes listing
+// availible video modes and supported operations.
+//
+// ============================================================================
+
+class ISDL12VideoCapabilities : public IVideoCapabilities
+{
+public:
+	ISDL12VideoCapabilities();
+	virtual ~ISDL12VideoCapabilities() { }
+
+	virtual const IVideoModeList* getSupportedVideoModes() const
+	{	return &mModeList;	}
+
+	virtual const EDisplayType getDisplayType() const
+	{
+		#ifdef GCONSOLE
+		return DISPLAY_FullscreenOnly;
+		#else
+		return DISPLAY_Both;
+		#endif
+	}
+
+	virtual const IVideoMode* getNativeMode() const
+	{	return &mNativeMode;	}
+
+private:
+	IVideoModeList		mModeList;
+	IVideoMode			mNativeMode;
+};
+
+
 // ============================================================================
 //
 // ISDL12Window class interface
@@ -40,12 +77,6 @@ public:
 	ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
 
 	virtual ~ISDL12Window();
-
-	virtual const IVideoModeList* getSupportedVideoModes() const
-	{	return &mVideoModes;	}
-
-	virtual const EDisplayType getDisplayType() const
-	{	return DISPLAY_Both;	}
 
 	virtual IWindowSurface* getPrimarySurface()
 	{	return mPrimarySurface;	}
@@ -64,6 +95,9 @@ public:
 
 	virtual int getBytesPerPixel() const
 	{	return mBitsPerPixel >> 3;	}
+
+	virtual const IVideoMode* getVideoMode() const
+	{	return &mVideoMode;	}
 
 	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
 
@@ -87,25 +121,57 @@ private:
 	ISDL12Window(const ISDL12Window&);
 	ISDL12Window& operator=(const ISDL12Window&);
 
-	void buildVideoModeList();
-
-	IVideoModeList		mVideoModes;
 	IWindowSurface*		mPrimarySurface;
 
 	uint16_t			mWidth;
 	uint16_t			mHeight;
 	uint8_t				mBitsPerPixel;
 
+	IVideoMode			mVideoMode;
+
 	bool				mIsFullScreen;
 	bool				mUseVSync;
 
-	bool				m8in32;
 	SDL_Surface*		mSDLSoftwareSurface;
 
 	bool				mNeedPaletteRefresh;
 
 	int16_t				mLocks;
 };
+
+// ****************************************************************************
+
+// ============================================================================
+//
+// ISDL12VideoSubsystem class interface
+//
+// Provides intialization and shutdown mechanics for the video subsystem.
+// This is really an abstract factory pattern as it instantiates a family
+// of concrete types.
+//
+// ============================================================================
+
+class ISDL12VideoSubsystem : public IVideoSubsystem
+{
+public:
+	ISDL12VideoSubsystem();
+	virtual ~ISDL12VideoSubsystem();
+
+	virtual const IVideoCapabilities* getVideoCapabilities() const
+	{	return mVideoCapabilities;	}
+
+	virtual IWindow* getWindow()
+	{	return mWindow;	}
+
+	virtual const IWindow* getWindow() const
+	{	return mWindow;	}
+
+private:
+	const IVideoCapabilities*		mVideoCapabilities;
+
+	IWindow*						mWindow;
+};
+
 
 #endif	// __I_SDLVIDEO_H__
 

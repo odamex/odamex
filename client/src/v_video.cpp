@@ -542,9 +542,7 @@ END_COMMAND (vid_setmode)
 
 BEGIN_COMMAND (checkres)
 {
-    Printf (PRINT_HIGH, "Resolution: %d x %d x %d (%s)\n",
-			I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth(),
-        	(vid_fullscreen ? "FULLSCREEN" : "WINDOWED")); // NES - Simple resolution checker.
+	AddCommandString("vid_currentmode");
 }
 END_COMMAND (checkres)
 

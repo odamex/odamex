@@ -1090,8 +1090,8 @@ static void BuildModesList(int hiwidth, int hiheight, int hi_bits)
 {
     const char** str = NULL;
 
-	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
-	IVideoModeList::const_iterator mode_it = modes->begin();
+	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+	IVideoModeList::const_iterator mode_it = modelist->begin();
 
 	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
 	{
@@ -1105,7 +1105,7 @@ static void BuildModesList(int hiwidth, int hiheight, int hi_bits)
 			else if (col == 2)
 				str = &ModesItems[i].d.res3;
 
-			if (mode_it != modes->end())
+			if (mode_it != modelist->end())
 			{
 				int width = mode_it->getWidth();
 				int height = mode_it->getHeight();
@@ -1138,10 +1138,10 @@ static bool GetSelectedSize(int line, int* width, int* height)
 
 	int mode_num = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode;
 
-	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
-	IVideoModeList::const_iterator mode_it = modes->begin() + mode_num;
+	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+	IVideoModeList::const_iterator mode_it = modelist->begin() + mode_num;
 
-	if (mode_it == modes->end())
+	if (mode_it == modelist->end())
 		return false;
 
 	*width = mode_it->getWidth();
@@ -1248,16 +1248,16 @@ void M_OptInit (void)
 {
 	int currval = 0;
 
-	const IVideoModeList* modes = I_GetWindow()->getSupportedVideoModes();
+	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
 
-	for (IVideoModeList::const_iterator it = modes->begin(); it != modes->end(); ++it)
+	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
 	{
 		Depths[currval].value = currval;
 		Depths[currval].name = NULL;
 		currval++;
 	}
 
-	switch (I_DisplayType ())
+	switch (I_GetVideoCapabilities()->getDisplayType())
 	{
 	case DISPLAY_FullscreenOnly:
 		ModesItems[2].type = nochoice;

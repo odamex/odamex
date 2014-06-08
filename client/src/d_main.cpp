@@ -745,6 +745,10 @@ void D_DoomMain()
 
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
+	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
+	atterm(I_ShutdownHardware);
+	I_Init();
+
 	int video_width = M_GetParmValue("-width");
 	int video_height = M_GetParmValue("-height");
 	int video_bpp = M_GetParmValue("-bits");
@@ -773,22 +777,14 @@ void D_DoomMain()
 	if (video_bpp == 0 || (video_bpp != 8 && video_bpp != 32))
 		video_bpp = vid_32bpp ? 32 : 8;
 
-	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
-	I_Init();
-	Printf(PRINT_HIGH, "I_SetVideoMode: %ix%ix%i %s\n", video_width, video_height, video_bpp,
-			vid_fullscreen != 0.0f ? "FULLSCREEN" : "WINDOWED");
 	I_SetVideoMode(video_width, video_height, video_bpp, vid_fullscreen, vid_vsync);
-
-	std::string video_driver = I_GetVideoDriverName();
-	if (!video_driver.empty())
-		Printf(PRINT_HIGH, "I_SetVideoMode: Using %s video driver.\n", video_driver.c_str());
 
 	// SDL needs video mode set up first before input code can be used
 	I_InitInput();
 
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
-	D_Init();
 	atterm(D_Shutdown);
+	D_Init();
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks();
