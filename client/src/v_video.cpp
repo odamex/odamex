@@ -360,33 +360,6 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 	Dim(x1, y1, w, h, ui_dimcolor.cstring(), ui_dimamount);
 }
 
-
-BEGIN_COMMAND (setcolor)
-{
-	if (argc < 3)
-	{
-		Printf (PRINT_HIGH, "Usage: setcolor <cvar> <color>\n");
-		return;
-	}
-
-	std::string name = C_ArgCombine(argc - 2, (const char **)(argv + 2));
-	if (name.length())
-	{
-		std::string desc = V_GetColorStringByName (name.c_str());
-
-		if (desc.length())
-		{
-			std::string setcmd = "set ";
-			setcmd += argv[1];
-			setcmd += " \"";
-			setcmd += desc;
-			setcmd += "\"";
-			AddCommandString (setcmd);
-		}
-	}
-}
-END_COMMAND (setcolor)
-
 // Build the tables necessary for translucency
 static void BuildTransTable(const argb_t* palette_colors)
 {

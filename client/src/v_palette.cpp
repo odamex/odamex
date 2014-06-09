@@ -454,60 +454,13 @@ void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_
 
 
 //
-// V_GetColorFromString
-//
-// Parses a string of up to 6 hexadecimal digits representing an RGB triplet
-// and converts it into an argb_t value.
-//
-argb_t V_GetColorFromString(const std::string& str)
-{
-	const char* cstr = str.c_str();
-
-	int c[3], i, p;
-	char val[5];
-	const char *s, *g;
-
-	val[4] = 0;
-	for (s = cstr, i = 0; i < 3; i++)
-	{
-		c[i] = 0;
-
-		while ((*s <= ' ') && (*s != 0))
-			s++;
-
-		if (*s)
-		{
-			p = 0;
-
-			while (*s > ' ')
-			{
-				if (p < 4)
-					val[p++] = *s;
-
-				s++;
-			}
-
-			g = val;
-
-			while (p < 4)
-				val[p++] = *g++;
-
-			c[i] = ParseHex(val);
-		}
-	}
-
-	return argb_t(c[0] >> 8, c[1] >> 8, c[2] >> 8);
-}
-
-
-//
 // V_GetColorStringByName
 //
-// Returns a string with up to 6 hexadecimal digits suitable for use with
+// Returns a string with 6 hexadecimal digits suitable for use with
 // V_GetColorFromString. A given colorname is looked up in the X11R6RGB lump
 // and its value is returned.
 //
-std::string V_GetColorStringByName(const std::string& name)
+static std::string V_GetColorStringByName(const std::string& name)
 {
 	/* Note: The X11R6RGB lump used by this function *MUST* end
 	 * with a NULL byte. This is so that COM_Parse is able to
@@ -555,6 +508,60 @@ std::string V_GetColorStringByName(const std::string& name)
 		}
 	}
 	return "";
+}
+
+
+//
+// V_GetColorFromString
+//
+// Parses a string of 6 hexadecimal digits representing an RGB triplet
+// and converts it into an argb_t value. It will also accept the name of a
+// color, as defined in the X11R6RGB lump, using V_GetColorStringByName
+// to look up the RGB triplet value.
+//
+argb_t V_GetColorFromString(const std::string& input_string)
+{
+	// first check if str is the name of a color
+	const char* str = V_GetColorStringByName(input_string).c_str();
+
+	// not a valid color name? try to parse the color channel values
+	if (strlen(str) == 0)
+		str = input_string.c_str();
+
+	int c[3], i, p;
+	char val[5];
+	const char *s, *g;
+
+	val[4] = 0;
+	for (s = str, i = 0; i < 3; i++)
+	{
+		c[i] = 0;
+
+		while ((*s <= ' ') && (*s != 0))
+			s++;
+
+		if (*s)
+		{
+			p = 0;
+
+			while (*s > ' ')
+			{
+				if (p < 4)
+					val[p++] = *s;
+
+				s++;
+			}
+
+			g = val;
+
+			while (p < 4)
+				val[p++] = *g++;
+
+			c[i] = ParseHex(val);
+		}
+	}
+
+	return argb_t(c[0] >> 8, c[1] >> 8, c[2] >> 8);
 }
 
 
@@ -886,13 +893,7 @@ BEGIN_COMMAND (testblend)
 	}
 	else
 	{
-		std::string colorstring = V_GetColorStringByName(argv[1]);
-		argb_t color;
-
-		if (!colorstring.empty())
-			color = V_GetColorFromString(colorstring);
-		else
-			color = V_GetColorFromString(argv[1]);
+		argb_t color(V_GetColorFromString(argv[1]));
 
 		int alpha = 255.0 * clamp(atof(argv[2]), 0.0, 1.0);
 		R_SetSectorBlend(argb_t(alpha, color.getr(), color.getg(), color.getb()));
@@ -908,13 +909,7 @@ BEGIN_COMMAND (testfade)
 	}
 	else
 	{
-		std::string colorstring = V_GetColorStringByName(argv[1]);
-		argb_t color;
-
-		if (!colorstring.empty())
-			color = V_GetColorFromString(colorstring);
-		else
-			color = V_GetColorFromString(argv[1]);
+		argb_t color(V_GetColorFromString(argv[1]));
 
 		level.fadeto_color[0] = color.geta();
 		level.fadeto_color[1] = color.getr();
@@ -1088,13 +1083,7 @@ BEGIN_COMMAND (testcolor)
 	}
 	else
 	{
-		std::string colorstring = V_GetColorStringByName(argv[1]);
-		argb_t color;
-
-		if (!colorstring.empty())
-			color = V_GetColorFromString(colorstring);
-		else
-			color = V_GetColorFromString(argv[1]);
+		argb_t color(V_GetColorFromString(argv[1]));
 
 		BuildColoredLights((shademap_t*)NormalLight.maps.map(),
 				color.getr(), color.getg(), color.getb(),

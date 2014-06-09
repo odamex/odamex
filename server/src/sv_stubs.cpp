@@ -35,11 +35,6 @@ void D_DoServerInfoChange (byte **stream) {}
 void D_WriteUserInfoStrings (int i, byte **stream, bool compact) {} 
 void D_ReadUserInfoStrings (int i, byte **stream, bool update) {}
 
-std::string V_GetColorStringByName(const std::string& name)
-{ 
-    return ""; 
-}
-
 argb_t V_GetColorFromString(const std::string& str)
 {
     return 0;

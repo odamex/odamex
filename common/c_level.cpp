@@ -379,12 +379,9 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 		case MITYPE_COLOR:
 			{
 				SC_MustGetString();
-				std::string string = V_GetColorStringByName(sc_String);
-				if (string.empty())
-					string = sc_String;
 
+				argb_t color(V_GetColorFromString(sc_String));
 				uint8_t* ptr = (uint8_t*)(info + handler->data1);
-				argb_t color(V_GetColorFromString(string));
 				ptr[0] = color.geta(); ptr[1] = color.getr(); ptr[2] = color.getg(); ptr[3] = color.getb();
 			}
 			break;
