@@ -21,8 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <climits>
 #include <string>
 
 #include "i_video.h"
@@ -77,69 +78,13 @@ EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_overscan)
 EXTERN_CVAR(vid_320x200)
 EXTERN_CVAR(vid_640x400)
+EXTERN_CVAR(vid_autoadjust)
 EXTERN_CVAR(vid_displayfps)
 EXTERN_CVAR(vid_ticker)
 
 
 // ****************************************************************************
 
-// ============================================================================
-//
-// IVideoCapabilities class implementation
-//
-// ============================================================================
-
-//
-// IVideoCapabilities::getClosestMode
-//
-// Returns the closest supported video mode to the given desired video mode.
-//
-const IVideoMode* IVideoCapabilities::getClosestMode(const IVideoMode* desired_mode) const
-{
-	const IVideoModeList* modelist = getSupportedVideoModes();
-
-	int desired_width = desired_mode->getWidth(), desired_height = desired_mode->getHeight();
-
-	unsigned int closest_dist = MAXWIDTH * MAXWIDTH + MAXHEIGHT * MAXHEIGHT;
-	const IVideoMode* closest_mode = NULL;
-
-	for (int iteration = 0; iteration < 2; iteration++)
-	{
-		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
-		{
-			if (*it == *desired_mode)		// perfect match?
-				return &(*it);
-
-			if (it->getBitsPerPixel() == desired_mode->getBitsPerPixel() &&
-				it->isFullScreen() == desired_mode->isFullScreen())
-			{
-				if (iteration == 0 && (it->getWidth() < desired_width || it->getHeight() < desired_height))
-					continue;
-
-				unsigned int dist = (it->getWidth() - desired_width) * (it->getWidth() - desired_width)
-						+ (it->getHeight() - desired_height) * (it->getHeight() - desired_height);
-				
-				if (dist < closest_dist)
-				{
-					closest_dist = dist;
-					closest_mode = &(*it);
-				}
-			}
-		}
-	
-		if (closest_mode != NULL)
-			return closest_mode;
-	}
-
-	if (closest_mode != NULL)
-		return closest_mode;
-	
-	static IVideoMode invalid_mode(0, 0, 0, false);
-	return &invalid_mode;
-}
-
-
-// ****************************************************************************
 
 // ============================================================================
 //
@@ -490,40 +435,96 @@ void IWindowSurface::releaseCanvas(DCanvas* canvas)
 // ****************************************************************************
 
 //
-// I_ClampVideoMode
+// I_GetVideoModeString
 //
-// Sanitizes the given video mode dimensions, preventing them from being smaller
-// than 320x200 and larger than MAXWIDTH, MAXHEIGHT.
+// Returns a string with a text description of the given video mode.
 //
-static IVideoMode I_ClampVideoMode(int width, int height, int bpp, bool fullscreen)
+std::string I_GetVideoModeString(const IVideoMode* mode)
 {
-	if (width < 320 || height < 200)
-		width = 320, height = 200;
+	char str[50];
+	sprintf(str, "%dx%d %dbpp (%s)", mode->getWidth(), mode->getHeight(), mode->getBitsPerPixel(),
+			mode->isFullScreen() ? "fullscreen" : "windowed");
 
-	if (width > MAXWIDTH || height > MAXHEIGHT)
-	{
-		bool widescreen = width * 3 > height * 4;
-		if (widescreen && MAXHEIGHT * 16 / 9 <= MAXWIDTH)
-			width = MAXHEIGHT * 9 / 16, height = MAXHEIGHT;
-		else if (widescreen && MAXWIDTH * 9 / 16 <= MAXHEIGHT)
-			width = MAXWIDTH, height = MAXWIDTH * 9 / 16;
-		else if (!widescreen && MAXHEIGHT * 4 / 3 <= MAXWIDTH)
-			width = MAXHEIGHT * 4 / 3, height = MAXHEIGHT;
-		else if (!widescreen && MAXWIDTH * 3 / 4 <= MAXHEIGHT)
-			width = MAXWIDTH, height = MAXWIDTH * 3 / 4;
-	}
-
-	return IVideoMode(width, height, bpp, fullscreen);
+	return std::string(str);
 }
 
 
 //
-// I_DoSetVideoMode
+// I_ValidateVideoMode
 //
-// Helper function for I_SetVideoMode.
+// Transforms the given video mode into a mode that is valid for the current
+// video hardware capabilities.
 //
-static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
+static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 {
+	uint16_t desired_width = mode->getWidth(), desired_height = mode->getHeight();
+	uint8_t desired_bpp = mode->getBitsPerPixel();
+	bool desired_fullscreen = mode->isFullScreen();
+
+	// Ensure the display type is adhered to
+	if (I_GetVideoCapabilities()->supportsFullScreen() == false)
+		desired_fullscreen = false;
+	else if (I_GetVideoCapabilities()->supportsWindowed() == false)
+		desired_fullscreen = true;
+
+	if (I_GetVideoCapabilities()->supports8bpp() == false)
+		desired_bpp = 32;
+	else if (I_GetVideoCapabilities()->supports32bpp() == false)
+		desired_bpp = 8;
+
+	desired_width = clamp<uint16_t>(desired_width, 320, MAXWIDTH);
+	desired_height = clamp<uint16_t>(desired_height, 200, MAXHEIGHT);
+
+	IVideoMode desired_mode(desired_width, desired_height, desired_bpp, desired_fullscreen);
+
+	if (!desired_fullscreen || !vid_autoadjust)
+		return desired_mode;
+
+	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+
+	unsigned int closest_dist = UINT_MAX;
+	const IVideoMode* closest_mode = NULL;
+
+	for (int iteration = 0; iteration < 2; iteration++)
+	{
+		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
+		{
+			if (*it == desired_mode)		// perfect match?
+				return *it;
+
+			if (it->getBitsPerPixel() == desired_bpp && it->isFullScreen() == desired_fullscreen)
+			{
+				if (iteration == 0 && (it->getWidth() < desired_width || it->getHeight() < desired_height))
+					continue;
+
+				unsigned int dist = (it->getWidth() - desired_width) * (it->getWidth() - desired_width)
+						+ (it->getHeight() - desired_height) * (it->getHeight() - desired_height);
+				
+				if (dist < closest_dist)
+				{
+					closest_dist = dist;
+					closest_mode = &(*it);
+				}
+			}
+		}
+	
+		if (closest_mode != NULL)
+			return *closest_mode;
+	}
+
+	return IVideoMode(0, 0, 0, false);		// return an invalid video mode
+}
+
+
+//
+// I_SetVideoMode
+//
+// Main function to set the video mode at the hardware level.
+//
+void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
+{
+	IWindow* window = I_GetWindow();
+
 	I_FreeSurface(matted_surface);
 	matted_surface = NULL;
 	I_FreeSurface(emulated_surface);
@@ -531,38 +532,26 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 
 	if (I_IsHeadless())
 	{
-		primary_surface = I_GetWindow()->getPrimarySurface();
+		primary_surface = window->getPrimarySurface();
 		screen = primary_surface->getDefaultCanvas();
+		assert(I_VideoInitialized());
 		return;
 	}
 
-	// Ensure the display type is adhered to
-	if (I_GetVideoCapabilities()->getDisplayType() == DISPLAY_WindowOnly)
-		fullscreen = false;
-	else if (I_GetVideoCapabilities()->getDisplayType() == DISPLAY_FullscreenOnly)
-		fullscreen = true;
+	IVideoMode desired_mode(width, height, bpp, fullscreen);
 
-	IVideoMode mode = I_ClampVideoMode(width, height, bpp, fullscreen);
+	IVideoMode mode = I_ValidateVideoMode(&desired_mode);
+	assert(mode.isValid());
 
-	// only try to change video mode if it is actually different from the current one
-	// [SL] TODO: also check for vsync change!
-	if (mode != *I_GetWindow()->getVideoMode())
-	{
-		I_GetWindow()->setMode(mode.getWidth(), mode.getHeight(), bpp, fullscreen, vsync);
+	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
 
-		if (!I_VideoInitialized())
-			return;
-
-		Printf(PRINT_HIGH, "I_SetVideoMode: setting video mode to %s (%s video driver)\n",
-					I_GetVideoModeString(I_GetWindow()->getVideoMode()).c_str(),
-					I_GetVideoDriverName().c_str());
-	}
-
-	I_GetWindow()->getPrimarySurface()->lock();
+	window->getPrimarySurface()->lock();
 
 	// Set up the primary and emulated surfaces
-	primary_surface = I_GetWindow()->getPrimarySurface();
+	primary_surface = window->getPrimarySurface();
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
+
+	primary_surface->lock();
 
 	// clear window's surface to all black
 	primary_surface->clear();
@@ -592,12 +581,8 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 	}
 
 	// Ensure matted surface dimensions are sane and sanitized.
-	IVideoMode surface_mode = I_ClampVideoMode(surface_width, surface_height, bpp, fullscreen);
-	surface_width = surface_mode.getWidth(), surface_height = surface_mode.getHeight();
-
-	if ((surface_width < 320 || surface_height < 240) && 
-		!I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
-		surface_width = 320, surface_height = 240;
+	surface_width = clamp<uint16_t>(surface_width, 320, MAXWIDTH);
+	surface_height = clamp<uint16_t>(surface_height, 200, MAXHEIGHT);
 
 	// Is matting being used? Create matted_surface based on the primary_surface.
 	if (surface_width != primary_surface->getWidth() ||
@@ -621,71 +606,19 @@ static void I_DoSetVideoMode(int width, int height, int bpp, bool fullscreen, bo
 
 	screen = primary_surface->getDefaultCanvas();
 
-	I_GetWindow()->getPrimarySurface()->unlock();
+	window->getPrimarySurface()->unlock();
 
 	I_ForceUpdateGrab();
-}
 
+	assert(I_VideoInitialized());
 
-//
-// I_GetVideoModeString
-//
-// Returns a string with a text description of the given video mode.
-//
-std::string I_GetVideoModeString(const IVideoMode* mode)
-{
-	char str[30];
-	sprintf(str, "%dx%d %dbpp (%s)", mode->getWidth(), mode->getHeight(), mode->getBitsPerPixel(),
-			mode->isFullScreen() ? "fullscreen" : "windowed");
-
-	return std::string(str);
-}
-
-
-//
-// I_CheckVideoModeMessage
-//
-static void I_CheckVideoModeMessage(int width, int height, int bpp, bool fullscreen)
-{
-	if (I_IsHeadless())
-		return;
-
-	IVideoMode desired_mode(width, height, bpp, fullscreen);
-	
-	if (*I_GetWindow()->getVideoMode() != desired_mode)
-		Printf(PRINT_HIGH, "Could not set resolution to %s. Using resolution %s instead.\n",
-					I_GetVideoModeString(&desired_mode).c_str(),
-					I_GetVideoModeString(I_GetWindow()->getVideoMode()).c_str());
-}
-
-
-//
-// I_SetVideoMode
-//
-// Main function to set the video mode at the hardware level.
-//
-void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
-{
-	int temp_bpp = bpp;
-
-	I_DoSetVideoMode(width, height, temp_bpp, fullscreen, vsync);
-	if (I_VideoInitialized())
-	{
-		I_CheckVideoModeMessage(width, height, bpp, fullscreen);
-		return;
-	}
-
-	// Try the opposite bit mode:
-	temp_bpp = bpp == 32 ? 8 : 32;
-	I_DoSetVideoMode(width, height, temp_bpp, fullscreen, vsync);
-	if (I_VideoInitialized())
-	{
-		I_CheckVideoModeMessage(width, height, bpp, fullscreen);
-		return;
-	}
-
-	// Couldn't find a suitable resolution
-	I_ShutdownHardware();		// ensure I_VideoInitialized returns false
+	if (*window->getVideoMode() != desired_mode)
+			Printf(PRINT_HIGH, "I_SetVideoMode: could not set video mode to %s. Using %s instead.\n",
+						I_GetVideoModeString(&desired_mode).c_str(),
+						I_GetVideoModeString(window->getVideoMode()).c_str());
+	else
+		Printf(PRINT_HIGH, "I_SetVideoMode: set video mode to %s\n",
+					I_GetVideoModeString(window->getVideoMode()).c_str());
 }
 
 
@@ -729,6 +662,8 @@ void I_InitHardware()
 	{
 		video_subsystem = new ISDL12VideoSubsystem();
 	
+		Printf(PRINT_HIGH, "I_InitHardware: using %s video driver.\n", I_GetVideoDriverName().c_str());
+
 		const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
 		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());
 	}

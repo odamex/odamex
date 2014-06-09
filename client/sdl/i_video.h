@@ -169,6 +169,11 @@ public:
 		return operator>(other) || operator==(other);
 	}
 
+	bool isValid() const
+	{
+		return mWidth > 0 && mHeight > 0 && (mBitsPerPixel == 8 || mBitsPerPixel == 32);
+	}
+
 	bool isWideScreen() const
 	{
 		if ((mWidth == 320 && mHeight == 200) || (mWidth == 640 && mHeight == 400))
@@ -220,9 +225,36 @@ public:
 	virtual ~IVideoCapabilities() { }
 
 	virtual const IVideoModeList* getSupportedVideoModes() const = 0;
+
+	virtual bool supportsFullScreen() const
+	{	return getDisplayType() == DISPLAY_FullscreenOnly || getDisplayType() == DISPLAY_Both;	}
+
+	virtual bool supportsWindowed() const
+	{	return getDisplayType() == DISPLAY_WindowOnly || getDisplayType() == DISPLAY_Both;	}
+
 	virtual const EDisplayType getDisplayType() const = 0;
 
-	virtual const IVideoMode* getClosestMode(const IVideoMode* mode) const;
+	virtual bool supports8bpp() const
+	{
+		const IVideoModeList* modelist = getSupportedVideoModes();
+		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
+		{
+			if (it->getBitsPerPixel() == 8)
+				return true;
+		}
+		return false;
+	}
+
+	virtual bool supports32bpp() const
+	{
+		const IVideoModeList* modelist = getSupportedVideoModes();
+		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
+		{
+			if (it->getBitsPerPixel() == 32)
+				return true;
+		}
+		return false;
+	}
 
 	virtual const IVideoMode* getNativeMode() const = 0;
 };
@@ -249,9 +281,6 @@ public:
 
 	virtual const EDisplayType getDisplayType() const
 	{	return DISPLAY_WindowOnly;	}
-
-	virtual const IVideoMode* getClosestMode(const IVideoMode* mode) const
-	{	return &mVideoMode;	}
 
 	virtual const IVideoMode* getNativeMode() const
 	{	return &mVideoMode;	}
@@ -433,6 +462,9 @@ public:
 
 	virtual bool isFullScreen() const
 	{	return getVideoMode()->isFullScreen();	}
+
+	virtual bool usingVSync() const
+	{	return false;	}
 
 	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) = 0;
 

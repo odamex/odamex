@@ -147,6 +147,7 @@ EXTERN_CVAR (vid_ticker)
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_32bpp)
+EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
 
@@ -776,6 +777,7 @@ void D_DoomMain()
 
 	if (video_bpp == 0 || (video_bpp != 8 && video_bpp != 32))
 		video_bpp = vid_32bpp ? 32 : 8;
+	vid_32bpp.Set(video_bpp == 32);
 
 	I_SetVideoMode(video_width, video_height, video_bpp, vid_fullscreen, vid_vsync);
 

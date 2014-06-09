@@ -55,8 +55,7 @@
 #include "i_xbox.h"
 #endif
 
-EXTERN_CVAR (vid_autoadjust)
-EXTERN_CVAR (vid_fullscreen)
+EXTERN_CVAR(vid_32bpp)
 
 
 // ****************************************************************************
@@ -79,7 +78,7 @@ static void I_AddSDL12VideoModes(IVideoModeList* modelist, int bpp)
 	memset(&format, 0, sizeof(format));
 	format.BitsPerPixel = bpp;
 
-	SDL_Rect** sdlmodes = SDL_ListModes(&format, SDL_FULLSCREEN | SDL_SWSURFACE);
+	SDL_Rect** sdlmodes = SDL_ListModes(&format, SDL_ANYFORMAT |SDL_FULLSCREEN | SDL_SWSURFACE);
 
 	if (sdlmodes)
 	{
@@ -96,7 +95,6 @@ static void I_AddSDL12VideoModes(IVideoModeList* modelist, int bpp)
 		while (*sdlmodes)
 		{
 			int width = (*sdlmodes)->w, height = (*sdlmodes)->h;
-			int bpp = format.BitsPerPixel;
 			if (width > 0 && width <= MAXWIDTH && height > 0 && height <= MAXHEIGHT)
 			{
 				// add this video mode to the list (both fullscreen & windowed)
@@ -108,6 +106,11 @@ static void I_AddSDL12VideoModes(IVideoModeList* modelist, int bpp)
 	}
 }
 
+#ifdef _WIN32
+static bool Is8bppFullScreen(const IVideoMode& mode)
+{	return mode.getBitsPerPixel() == 8 && mode.isFullScreen();	}
+#endif
+
 
 //
 // ISDL12VideoCapabilities::ISDL12VideoCapabilities
@@ -118,6 +121,10 @@ static void I_AddSDL12VideoModes(IVideoModeList* modelist, int bpp)
 // NOTE: discovering the native desktop resolution only works if this is called
 // prior to the first SDL_SetVideoMode call!
 //
+// NOTE: SDL has palette issues in 8bpp fullscreen mode on Windows platforms. As
+// a workaround, we force a 32bpp resolution in this case by removing all
+// fullscreen 8bpp video modes on Windows platforms.
+//
 ISDL12VideoCapabilities::ISDL12VideoCapabilities() :
 	IVideoCapabilities(),
 	mNativeMode(SDL_GetVideoInfo()->current_w, SDL_GetVideoInfo()->current_h,
@@ -127,23 +134,39 @@ ISDL12VideoCapabilities::ISDL12VideoCapabilities() :
 	I_AddSDL12VideoModes(&mModeList, 32);
 
 	// always add the following windowed modes (if windowed modes are supported)
-	if (getDisplayType() == DISPLAY_Both || getDisplayType() == DISPLAY_WindowOnly)
+	if (supportsWindowed())
 	{
-		mModeList.push_back(IVideoMode(320, 200, 8, false));
-		mModeList.push_back(IVideoMode(320, 200, 32, false));
-		mModeList.push_back(IVideoMode(320, 240, 8, false));
-		mModeList.push_back(IVideoMode(320, 240, 32, false));
-		mModeList.push_back(IVideoMode(640, 400, 8, false));
-		mModeList.push_back(IVideoMode(640, 400, 32, false));
-		mModeList.push_back(IVideoMode(640, 480, 8, false));
-		mModeList.push_back(IVideoMode(640, 480, 32, false));
+		if (supports8bpp())
+		{
+			mModeList.push_back(IVideoMode(320, 200, 8, false));
+			mModeList.push_back(IVideoMode(320, 240, 8, false));
+			mModeList.push_back(IVideoMode(640, 400, 8, false));
+			mModeList.push_back(IVideoMode(640, 480, 8, false));
+		}
+		if (supports32bpp())
+		{
+			mModeList.push_back(IVideoMode(320, 200, 32, false));
+			mModeList.push_back(IVideoMode(320, 240, 32, false));
+			mModeList.push_back(IVideoMode(640, 400, 32, false));
+			mModeList.push_back(IVideoMode(640, 480, 32, false));
+		}
 	}
 
 	// reverse sort the modes
 	std::sort(mModeList.begin(), mModeList.end(), std::greater<IVideoMode>());
 
-	// get rid of any duplicates (SDL some times reports duplicates)
+	// get rid of any duplicates (SDL sometimes reports duplicates)
 	mModeList.erase(std::unique(mModeList.begin(), mModeList.end()), mModeList.end());
+
+	#ifdef _WIN32
+	// fullscreen directx requires a 32-bit mode to fix broken palette
+	// [Russell] - Use for gdi as well, fixes d2 map02 water
+	// [SL] remove all fullscreen 8bpp modes
+	mModeList.erase(std::remove_if(mModeList.begin(), mModeList.end(), Is8bppFullScreen), mModeList.end());
+	#endif
+
+	assert(supportsWindowed() || supportsFullScreen());
+	assert(supports8bpp() || supports32bpp());
 }
 
 
@@ -421,53 +444,23 @@ static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, Pixe
 // ISDL12Window::setMode
 //
 // Sets the window size to the specified size and frees the existing primary
-// surface before instantiating a new primary surface.
+// surface before instantiating a new primary surface. This function performs
+// no sanity checks on the desired video mode.
 // 
-// Notes:
-// SDL 1.2 has palette issues in 8bpp fullscreen mode on Windows platforms. As
-// a workaround, we force a 32bpp resolution in this case, but create a 8bpp
-// SDL software surface for drawing to. This software surface is then blitted
-// to the screen at the end of the frame, prior to calling SDL_Flip. This sceme
-// is referred to as 8in32.
+// NOTE: If there is a bit-depth mismatch, where the requested bpp doesn't
+// match the vid_32bpp CVAR, a SDL software surface will be created and used
+// for drawing video frames. This software surface is then blitted to the
+// screen at the end of the frame, prior to calling SDL_Flip.
 //
-bool ISDL12Window::setMode(uint16_t desired_width, uint16_t desired_height, uint8_t desired_bpp,
-							bool desired_fullscreen, bool vsync)
+bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t video_bpp,
+							bool video_fullscreen, bool vsync)
 {
-	assert(desired_width <= MAXWIDTH);
-	assert(desired_height <= MAXHEIGHT);
-	assert(desired_bpp == 8 || desired_bpp == 32);
-
 	delete mPrimarySurface;
 	mPrimarySurface = NULL;
 
 	if (mSDLSoftwareSurface)
 		SDL_FreeSurface(mSDLSoftwareSurface);
 	mSDLSoftwareSurface = NULL;
-
-	// find the closest fullscreen mode to the desired dimensions
-	IVideoMode desired_mode(desired_width, desired_height, desired_bpp, desired_fullscreen);
-	const IVideoMode* closest_mode = I_GetVideoCapabilities()->getClosestMode(&desired_mode);
-
-	// the video capabilities override the user's preference for fullscreen and bitdepth
-	bool fullscreen = closest_mode->isFullScreen();
-	uint8_t bpp = closest_mode->getBitsPerPixel();
-
-	uint16_t width = desired_width, height = desired_height;
-
-	// override the user's preference for width and height if vid_autoadjust is enabled
-	if (fullscreen && vid_autoadjust)
-	{
-		width = closest_mode->getWidth();
-		height = closest_mode->getHeight();
-	}
-
-	if (width == 0 || height == 0)
-		return false;
-
-	// Make sure we don't set the resolution smaller than Doom's original 320x200
-	// resolution. Bad things might happen.
-	width = clamp<uint16_t>(width, 320, MAXWIDTH);
-	height = clamp<uint16_t>(height, 200, MAXHEIGHT);
 
 	uint32_t flags = 0;
 
@@ -476,23 +469,16 @@ bool ISDL12Window::setMode(uint16_t desired_width, uint16_t desired_height, uint
 	else
 		flags |= SDL_SWSURFACE;
 
-	if (fullscreen)
+	if (video_fullscreen)
 		flags |= SDL_FULLSCREEN;
 	else
 		flags |= SDL_RESIZABLE;
 
-	if (fullscreen && bpp == 8)
+	if (video_fullscreen && video_bpp == 8)
 		flags |= SDL_HWPALETTE;
 
 	// TODO: check for multicore
 	flags |= SDL_ASYNCBLIT;
-
-	#ifdef _WIN32
-	// fullscreen directx requires a 32-bit mode to fix broken palette
-	// [Russell] - Use for gdi as well, fixes d2 map02 water
-	if ((flags & SDL_FULLSCREEN) == SDL_FULLSCREEN && desired_bpp == 8)
-		bpp = 32;
-	#endif
 
 	#ifdef SDL_GL_SWAP_CONTROL
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
@@ -503,7 +489,7 @@ bool ISDL12Window::setMode(uint16_t desired_width, uint16_t desired_height, uint
 	// disable them prior to reinitalizing DirectInput...
 	I_PauseMouse();
 
-	SDL_Surface* sdlsurface = SDL_SetVideoMode(width, height, bpp, flags);
+	SDL_Surface* sdlsurface = SDL_SetVideoMode(video_width, video_height, video_bpp, flags);
 
 	// [SL] ...and re-enable RawWin32Mouse's input handlers after
 	// DirectInput is reinitalized.
@@ -512,14 +498,16 @@ bool ISDL12Window::setMode(uint16_t desired_width, uint16_t desired_height, uint
 	if (sdlsurface == NULL)
 		return false;
 
-	// check for 8in32 mode or surface pitch being a multiple of 512 (results in cache thrashing)
-	bool use_software_surface = (desired_bpp == 8 && bpp == 32) || (sdlsurface->pitch & 511) == 0;
+	uint8_t surface_bpp = vid_32bpp ? 32 : 8;
+	bool use_software_surface = 
+					(video_bpp != surface_bpp) ||		// bit-depth mismatch
+					((sdlsurface->pitch & 511) == 0);	// pitch is a multiple of 512 (thrashes the cache)
 
 	if (SDL_MUSTLOCK(sdlsurface))
 		SDL_LockSurface(sdlsurface);		// lock prior to accessing pixel format
 
 	PixelFormat format;
-	I_BuildPixelFormatFromSDLSurface(sdlsurface, &format, desired_bpp);
+	I_BuildPixelFormatFromSDLSurface(sdlsurface, &format, surface_bpp);
 
 	if (use_software_surface)
 	{
@@ -544,7 +532,7 @@ bool ISDL12Window::setMode(uint16_t desired_width, uint16_t desired_height, uint
 	mIsFullScreen = (sdlsurface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
 	mUseVSync = vsync;
 
-	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, mIsFullScreen);
+	mVideoMode = IVideoMode(video_width, video_height, video_bpp, video_fullscreen);
 
 	if (SDL_MUSTLOCK(sdlsurface))
 		SDL_UnlockSurface(sdlsurface);

@@ -104,6 +104,9 @@ public:
 	virtual bool isFullScreen() const
 	{	return mIsFullScreen;	}
 
+	virtual bool usingVSync() const
+	{	return mUseVSync;	}
+
 	virtual void refresh();
 
 	virtual void lockSurface();
