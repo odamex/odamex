@@ -521,12 +521,13 @@ static std::string V_GetColorStringByName(const std::string& name)
 //
 argb_t V_GetColorFromString(const std::string& input_string)
 {
-	// first check if str is the name of a color
-	const char* str = V_GetColorStringByName(input_string).c_str();
+	// first check if input_string is the name of a color
+	const std::string color_name_string = V_GetColorStringByName(input_string);
 
-	// not a valid color name? try to parse the color channel values
-	if (strlen(str) == 0)
-		str = input_string.c_str();
+	// if not a valid color name, try to parse the color channel values
+	const char* str = color_name_string.empty() == false ?
+					color_name_string.c_str() :
+					input_string.c_str();
 
 	int c[3], i, p;
 	char val[5];

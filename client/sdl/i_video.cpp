@@ -71,85 +71,14 @@ extern int NewWidth, NewHeight, NewBits, DisplayBits;
 static int loading_icon_expire = -1;
 static IWindowSurface* loading_icon_background_surface = NULL;
 
+EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_overscan)
+EXTERN_CVAR(vid_320x200)
+EXTERN_CVAR(vid_640x400)
 EXTERN_CVAR(vid_displayfps)
 EXTERN_CVAR(vid_ticker)
-EXTERN_CVAR(vid_32bpp)
-EXTERN_CVAR(vid_defwidth)
-EXTERN_CVAR(vid_defheight)
-
-CVAR_FUNC_IMPL(vid_overscan)
-{
-	V_ForceVideoModeAdjustment();
-}
-
-CVAR_FUNC_IMPL(vid_320x200)
-{
-	V_ForceVideoModeAdjustment();
-}
-
-CVAR_FUNC_IMPL(vid_640x400)
-{
-	V_ForceVideoModeAdjustment();
-}
-
-CVAR_FUNC_IMPL(vid_vsync)
-{
-	V_ForceVideoModeAdjustment();
-}
-
-//
-// vid_listmodes
-//
-// Prints a list of all supported video modes, highlighting the current
-// video mode. Requires I_VideoInitialized() to be true.
-//
-BEGIN_COMMAND(vid_listmodes)
-{
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-
-	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
-	{
-		if (*it == *I_GetWindow()->getVideoMode())
-			Printf_Bold("%s\n", I_GetVideoModeString(&(*it)).c_str());
-		else
-			Printf(PRINT_HIGH, "%s\n", I_GetVideoModeString(&(*it)).c_str());
-	}
-}
-END_COMMAND(vid_listmodes)
-
-
-//
-// vid_currentmode
-//
-// Prints the current video mode. Requires I_VideoInitialized() to be true.
-//
-BEGIN_COMMAND(vid_currentmode)
-{
-	const PixelFormat* format = I_GetWindow()->getPrimarySurface()->getPixelFormat();
-
-	if (format->getBitsPerPixel() == 8)
-	{
-		Printf(PRINT_HIGH, "%s indexed\n",
-			I_GetVideoModeString(I_GetWindow()->getVideoMode()).c_str());
-	}
-	else
-	{
-		char pixel_str[9] = { 0 };
-		argb_t* d1 = (argb_t*)pixel_str;
-		argb_t* d2 = (argb_t*)pixel_str + 1;
-
-		d1->seta('A'); d1->setr('R'); d1->setg('G'); d1->setb('B');
-		d2->seta('0' + format->getABits()); d2->setr('0' + format->getRBits());
-		d2->setg('0' + format->getGBits()); d2->setb('0' + format->getBBits());
-
-		Printf(PRINT_HIGH, "%s %s\n",
-			I_GetVideoModeString(I_GetWindow()->getVideoMode()).c_str(), pixel_str);
-	}
-}
-END_COMMAND(vid_currentmode)
 
 
 // ****************************************************************************

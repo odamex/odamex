@@ -66,6 +66,12 @@ IMPLEMENT_CLASS (DCanvas, DObject)
 argb_t Col2RGB8[65][256];
 palindex_t RGB32k[32][32][32];
 
+// [RH] The framebuffer is no longer a mere byte array.
+// There's also only one, not four.
+DCanvas *screen;
+
+DBoundingBox dirtybox;
+
 void I_FlushInput();
 
 
@@ -85,25 +91,98 @@ void V_ForceVideoModeAdjustment()
 	setmodeneeded = true;
 }
 
+CVAR_FUNC_IMPL(vid_fullscreen)
+{
+	V_ForceVideoModeAdjustment();
+	NewWidth = I_GetVideoWidth();
+	NewHeight = I_GetVideoHeight();
+	NewBits = I_GetVideoBitDepth();
+}
 
-// [RH] The framebuffer is no longer a mere byte array.
-// There's also only one, not four.
-DCanvas *screen;
+CVAR_FUNC_IMPL(vid_32bpp)
+{
+	V_ForceVideoModeAdjustment();
+	NewBits = (int)vid_32bpp ? 32 : 8;
+}
 
-DBoundingBox dirtybox;
+CVAR_FUNC_IMPL(vid_vsync)
+{
+	V_ForceVideoModeAdjustment();
+}
 
-EXTERN_CVAR (vid_defwidth)
-EXTERN_CVAR (vid_defheight)
-EXTERN_CVAR (vid_32bpp)
-EXTERN_CVAR (vid_vsync)
-EXTERN_CVAR (vid_fullscreen)
-EXTERN_CVAR (vid_320x200)
-EXTERN_CVAR (vid_640x400)
-EXTERN_CVAR (vid_autoadjust)
-EXTERN_CVAR (vid_overscan)
-EXTERN_CVAR (vid_ticker)
+CVAR_FUNC_IMPL(vid_overscan)
+{
+	V_ForceVideoModeAdjustment();
+}
 
-CVAR_FUNC_IMPL (vid_maxfps)
+CVAR_FUNC_IMPL(vid_320x200)
+{
+	V_ForceVideoModeAdjustment();
+}
+
+CVAR_FUNC_IMPL(vid_640x400)
+{
+	V_ForceVideoModeAdjustment();
+}
+
+
+//
+// vid_listmodes
+//
+// Prints a list of all supported video modes, highlighting the current
+// video mode. Requires I_VideoInitialized() to be true.
+//
+BEGIN_COMMAND(vid_listmodes)
+{
+	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+
+	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
+	{
+		if (*it == *I_GetWindow()->getVideoMode())
+			Printf_Bold("%s\n", I_GetVideoModeString(&(*it)).c_str());
+		else
+			Printf(PRINT_HIGH, "%s\n", I_GetVideoModeString(&(*it)).c_str());
+	}
+}
+END_COMMAND(vid_listmodes)
+
+
+//
+// vid_currentmode
+//
+// Prints the current video mode. Requires I_VideoInitialized() to be true.
+//
+BEGIN_COMMAND(vid_currentmode)
+{
+	const PixelFormat* format = I_GetWindow()->getPrimarySurface()->getPixelFormat();
+
+	if (format->getBitsPerPixel() == 8)
+	{
+		Printf(PRINT_HIGH, "%s indexed\n",
+			I_GetVideoModeString(I_GetWindow()->getVideoMode()).c_str());
+	}
+	else
+	{
+		char pixel_str[9] = { 0 };
+		argb_t* d1 = (argb_t*)pixel_str;
+		argb_t* d2 = (argb_t*)pixel_str + 1;
+
+		d1->seta('A'); d1->setr('R'); d1->setg('G'); d1->setb('B');
+		d2->seta('0' + format->getABits()); d2->setr('0' + format->getRBits());
+		d2->setg('0' + format->getGBits()); d2->setb('0' + format->getBBits());
+
+		Printf(PRINT_HIGH, "%s %s\n",
+			I_GetVideoModeString(I_GetWindow()->getVideoMode()).c_str(), pixel_str);
+	}
+}
+END_COMMAND(vid_currentmode)
+
+EXTERN_CVAR(vid_defwidth)
+EXTERN_CVAR(vid_defheight)
+EXTERN_CVAR(vid_autoadjust)
+EXTERN_CVAR(vid_ticker)
+
+CVAR_FUNC_IMPL(vid_maxfps)
 {
 	if (var == 0)
 	{
@@ -124,20 +203,6 @@ CVAR_FUNC_IMPL (vid_maxfps)
 
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (ui_dimcolor)
-
-CVAR_FUNC_IMPL (vid_fullscreen)
-{
-	V_ForceVideoModeAdjustment();
-	NewWidth = I_GetVideoWidth();
-	NewHeight = I_GetVideoHeight();
-	NewBits = I_GetVideoBitDepth();
-}
-
-CVAR_FUNC_IMPL (vid_32bpp)
-{
-	V_ForceVideoModeAdjustment();
-	NewBits = (int)vid_32bpp ? 32 : 8;
-}
 
 
 //
