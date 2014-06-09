@@ -1088,10 +1088,22 @@ menu_t ModesMenu = {
 
 static void BuildModesList(int hiwidth, int hiheight, int hi_bits)
 {
-    const char** str = NULL;
+	// gathers a list of unique resolutions availible for the current
+	// screen mode (windowed or fullscreen)
+	bool fullscreen = I_GetWindow()->getVideoMode()->isFullScreen();
 
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-	IVideoModeList::const_iterator mode_it = modelist->begin();
+	typedef std::vector< std::pair<uint16_t, uint16_t> > MenuModeList;
+	MenuModeList menumodelist;
+
+	const IVideoModeList* videomodelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+	for (IVideoModeList::const_iterator it = videomodelist->begin(); it != videomodelist->end(); ++it)
+		if (it->isFullScreen() == fullscreen)
+			menumodelist.push_back(std::make_pair(it->getWidth(), it->getHeight()));
+	menumodelist.erase(std::unique(menumodelist.begin(), menumodelist.end()), menumodelist.end());
+	
+	MenuModeList::const_iterator mode_it = menumodelist.begin();
+	
+    const char** str = NULL;
 
 	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
 	{
@@ -1105,10 +1117,10 @@ static void BuildModesList(int hiwidth, int hiheight, int hi_bits)
 			else if (col == 2)
 				str = &ModesItems[i].d.res3;
 
-			if (mode_it != modelist->end())
+			if (mode_it != menumodelist.end())
 			{
-				int width = mode_it->getWidth();
-				int height = mode_it->getHeight();
+				int width = mode_it->first;
+				int height = mode_it->second;
 				++mode_it;
 
 				if (width == hiwidth && height == hiheight)
@@ -1138,14 +1150,29 @@ static bool GetSelectedSize(int line, int* width, int* height)
 
 	int mode_num = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode;
 
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-	IVideoModeList::const_iterator mode_it = modelist->begin() + mode_num;
+	const char* resolution_str = NULL;
 
-	if (mode_it == modelist->end())
+	if (mode_num % 3 == 0)
+		resolution_str = ModesItems[line].b.res1;
+	else if (mode_num % 3 == 1)
+		resolution_str = ModesItems[line].c.res2;
+	else if (mode_num % 3 == 2)
+		resolution_str = ModesItems[line].d.res3;
+
+	if (!resolution_str)
 		return false;
 
-	*width = mode_it->getWidth();
-	*height = mode_it->getHeight();
+	size_t xpos = 0;
+	for (const char* s = resolution_str; s; s++, xpos++)
+		if (*s == 'x' || *s == 'X')
+			break;
+
+	char width_str[5] = { 0 }, height_str[5] = { 0 };
+	strncpy(width_str, resolution_str, xpos);
+	strncpy(height_str, resolution_str + xpos + 1, 4);
+
+	*width = atoi(width_str);
+	*height = atoi(height_str);
 
 	return true;
 }
@@ -1246,15 +1273,10 @@ static void M_SlideUIBlue (int val)
 
 void M_OptInit (void)
 {
-	int currval = 0;
-
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-
-	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
+	for (int i = 0; i < 22; i++)
 	{
-		Depths[currval].value = currval;
-		Depths[currval].name = NULL;
-		currval++;
+		Depths[i].value = i;
+		Depths[i].name = NULL;
 	}
 
 	switch (I_GetVideoCapabilities()->getDisplayType())
