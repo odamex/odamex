@@ -450,6 +450,24 @@ std::string I_GetVideoModeString(const IVideoMode* mode)
 
 
 //
+// I_IsModeSupported
+//
+// Helper function for I_ValidateVideoMode. Returns true if there is a video
+// mode availible with the desired bpp and screen mode.
+//
+static bool I_IsModeSupported(uint8_t bpp, bool fullscreen)
+{
+	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+
+	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
+		if (it->isFullScreen() == fullscreen && it->getBitsPerPixel() == bpp)
+			return true;
+	
+	return false;
+}
+
+
+//
 // I_ValidateVideoMode
 //
 // Transforms the given video mode into a mode that is valid for the current
@@ -457,6 +475,8 @@ std::string I_GetVideoModeString(const IVideoMode* mode)
 //
 static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 {
+	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+
 	uint16_t desired_width = mode->getWidth(), desired_height = mode->getHeight();
 	uint8_t desired_bpp = mode->getBitsPerPixel();
 	bool desired_fullscreen = mode->isFullScreen();
@@ -467,10 +487,15 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 	else if (I_GetVideoCapabilities()->supportsWindowed() == false)
 		desired_fullscreen = true;
 
-	if (I_GetVideoCapabilities()->supports8bpp() == false)
-		desired_bpp = 32;
-	else if (I_GetVideoCapabilities()->supports32bpp() == false)
-		desired_bpp = 8;
+	// check if the given bit-depth is supported
+	if (!I_IsModeSupported(desired_bpp, desired_fullscreen))
+	{
+		desired_bpp = desired_bpp ^ (32 | 8);			// toggle bpp between 8 and 32
+
+		// check if the new bit-depth is supported
+		if (!I_IsModeSupported(desired_bpp, desired_fullscreen))
+			return IVideoMode(0, 0, 0, false);		// return an invalid video mode
+	}
 
 	desired_width = clamp<uint16_t>(desired_width, 320, MAXWIDTH);
 	desired_height = clamp<uint16_t>(desired_height, 200, MAXHEIGHT);
@@ -479,8 +504,6 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 
 	if (!desired_fullscreen || !vid_autoadjust)
 		return desired_mode;
-
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
 
 	unsigned int closest_dist = UINT_MAX;
 	const IVideoMode* closest_mode = NULL;
