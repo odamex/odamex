@@ -154,26 +154,29 @@ END_COMMAND(vid_listmodes)
 //
 BEGIN_COMMAND(vid_currentmode)
 {
-	const PixelFormat* format = I_GetWindow()->getPrimarySurface()->getPixelFormat();
+	std::string pixel_string;
 
+	const PixelFormat* format = I_GetWindow()->getPrimarySurface()->getPixelFormat();
 	if (format->getBitsPerPixel() == 8)
 	{
-		Printf(PRINT_HIGH, "%s indexed\n",
-			I_GetVideoModeString(I_GetWindow()->getVideoMode()).c_str());
+		pixel_string = "indexed";
 	}
 	else
 	{
-		char pixel_str[9] = { 0 };
-		argb_t* d1 = (argb_t*)pixel_str;
-		argb_t* d2 = (argb_t*)pixel_str + 1;
+		char temp_str[9] = { 0 };
+		argb_t* d1 = (argb_t*)temp_str;
+		argb_t* d2 = (argb_t*)temp_str + 1;
 
 		d1->seta('A'); d1->setr('R'); d1->setg('G'); d1->setb('B');
 		d2->seta('0' + format->getABits()); d2->setr('0' + format->getRBits());
 		d2->setg('0' + format->getGBits()); d2->setb('0' + format->getBBits());
 
-		Printf(PRINT_HIGH, "%s %s\n",
-			I_GetVideoModeString(I_GetWindow()->getVideoMode()).c_str(), pixel_str);
+		pixel_string = std::string(temp_str);
 	}
+
+	const IVideoMode* mode = I_GetWindow()->getVideoMode();
+	Printf(PRINT_HIGH, "%s %s surface\n",
+			I_GetVideoModeString(mode).c_str(), pixel_string.c_str());
 }
 END_COMMAND(vid_currentmode)
 
