@@ -685,8 +685,6 @@ void I_InitHardware()
 	{
 		video_subsystem = new ISDL12VideoSubsystem();
 	
-		Printf(PRINT_HIGH, "I_InitHardware: using %s video driver.\n", I_GetVideoDriverName().c_str());
-
 		const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
 		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());
 	}

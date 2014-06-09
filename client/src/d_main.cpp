@@ -780,6 +780,8 @@ void D_DoomMain()
 	vid_32bpp.Set(video_bpp == 32);
 
 	I_SetVideoMode(video_width, video_height, video_bpp, vid_fullscreen, vid_vsync);
+	Printf(PRINT_HIGH, "I_InitHardware: using %s video driver.\n", I_GetVideoDriverName().c_str());
+
 
 	// SDL needs video mode set up first before input code can be used
 	I_InitInput();
