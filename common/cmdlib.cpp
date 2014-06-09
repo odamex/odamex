@@ -153,13 +153,10 @@ skipwhite:
 //
 // ParseNum / ParseHex
 //
-int ParseHex (char *hex)
+int ParseHex(const char* hex)
 {
-	char *str;
-	int num;
-
-	num = 0;
-	str = hex;
+	int num = 0;
+	const char* str = hex;
 
 	while (*str)
 	{
@@ -171,7 +168,7 @@ int ParseHex (char *hex)
 		else if (*str >= 'A' && *str <= 'F')
 			num += 10 + *str-'A';
 		else {
-			Printf (PRINT_HIGH, "Bad hex number: %s\n",hex);
+			DPrintf("Bad hex number: %s\n",hex);
 			return 0;
 		}
 		str++;
@@ -183,13 +180,13 @@ int ParseHex (char *hex)
 //
 // ParseNum
 //
-int ParseNum (char *str)
+int ParseNum(const char* str)
 {
 	if (str[0] == '$')
-		return ParseHex (str+1);
+		return ParseHex(str+1);
 	if (str[0] == '0' && str[1] == 'x')
-		return ParseHex (str+2);
-	return atol (str);
+		return ParseHex(str+2);
+	return atol(str);
 }
 
 

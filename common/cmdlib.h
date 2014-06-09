@@ -54,8 +54,8 @@ extern std::string progdir, startdir;
 
 void	FixPathSeparator (std::string &path);
 
-int		ParseHex (char *str);
-int 	ParseNum (char *str);
+int		ParseHex(const char *str);
+int 	ParseNum(const char *str);
 bool	IsNum(const char* str);		// [RH] added
 bool	IsRealNum(const char* str);
 
