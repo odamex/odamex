@@ -153,6 +153,7 @@ EXTERN_CVAR(cl_autoaim)
 
 EXTERN_CVAR(cl_updaterate)
 EXTERN_CVAR(cl_interp)
+EXTERN_CVAR(cl_forcedownload)
 
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
@@ -1640,16 +1641,25 @@ bool CL_PrepareConnect(void)
     // TODO: Allow deh/bex file downloads
 	D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
 
-	if (!missingfiles.empty())
+	if (!missingfiles.empty() || (developer && cl_forcedownload))
 	{
 		// denis - download files
-		missing_file = missingfiles[0];
-		missing_hash = missinghashes[0];
+		if (missingfiles.empty())
+		{
+			missing_file = newwadfiles.back();
+			missing_hash = newwadhashes.back();
+		}
+		else
+		{
+			missing_file = missingfiles[0];
+			missing_hash = missinghashes[0];
+		}
 
 		if (netdemo.isPlaying())
 		{
 			// Playing a netdemo and unable to download from the server
-			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n", missing_file.c_str());
+			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
+								missing_file.c_str());
 			CL_QuitNetGame();
 			return false;
 		}
@@ -1679,7 +1689,7 @@ bool CL_Connect(void)
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
 
-	if(gamestate == GS_DOWNLOAD && missing_file.length())
+	if (gamestate == GS_DOWNLOAD && missing_file.length())
 	{
 		// denis - do not download commercial wads
 		if (W_IsIWADCommercial(missing_file, missing_hash))

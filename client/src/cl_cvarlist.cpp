@@ -296,6 +296,11 @@ CVAR(				cl_predictweapons, "1", "Draw weapon effects immediately",
 CVAR(				cl_netgraph, "0", "Show a graph of network related statistics",
 					CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file when connecting " \
+											"to a server, even if the client already has that file " \
+											"(requires developer 1).",
+					CVARTYPE_BOOL, CVAR_NULL)
+
 // Client Preferences
 // ------------------
 
