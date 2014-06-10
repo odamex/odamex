@@ -143,22 +143,24 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (!(it->spectator))
+		bool spectator = it->spectator || !it->ingame();
+
+		if (!spectator)
 		{
 			normalcount++;
 
 			if (normalcount > var)
 			{
-				for (Players::iterator pit = players.begin();pit != players.end();++pit)
+				for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 				{
-					MSG_WriteMarker (&(pit->client.reliablebuf), svc_spectate);
-					MSG_WriteByte (&(pit->client.reliablebuf), it->id);
-					MSG_WriteByte (&(pit->client.reliablebuf), true);
+					MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
+					MSG_WriteByte(&pit->client.reliablebuf, it->id);
+					MSG_WriteByte(&pit->client.reliablebuf, true);
 				}
 				SV_BroadcastPrintf (PRINT_HIGH, "%s became a spectator.\n", it->userinfo.netname.c_str());
-				MSG_WriteMarker (&(it->client.reliablebuf), svc_print);
-				MSG_WriteByte (&(it->client.reliablebuf), PRINT_CHAT);
-				MSG_WriteString (&(it->client.reliablebuf),
+				MSG_WriteMarker(&it->client.reliablebuf, svc_print);
+				MSG_WriteByte(&it->client.reliablebuf, PRINT_CHAT);
+				MSG_WriteString(&it->client.reliablebuf,
 								"Active player limit reduced. You are now a spectator!\n");
 				it->spectator = true;
 				it->playerstate = PST_LIVE;
@@ -176,7 +178,8 @@ CVAR_FUNC_IMPL (sv_maxplayersperteam)
 		int normalcount = 0;
 		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
-			if (it->userinfo.team == i && it->ingame() && !(it->spectator))
+			bool spectator = it->spectator || !it->ingame();
+			if (it->userinfo.team == i && it->ingame() && !spectator)
 			{
 				normalcount++;
 
@@ -1985,8 +1988,7 @@ void SV_ConnectClient()
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_print);
 		MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString(&cl->reliablebuf,
-				"Server is passworded, no password specified or bad password\n");
+		MSG_WriteString(&cl->reliablebuf, "Server is passworded, no password specified or bad password\n");
 
 		SV_SendPacket(*it);
 		SV_DropClient(*it);
@@ -2002,22 +2004,24 @@ void SV_ConnectClient()
 	// [Toke] send server settings
 	SV_SendServerSettings(*it);
 
+	cl->displaydisconnect = true;
+	SV_BroadcastUserInfo(*it);
+	it->playerstate = PST_REBORN;
+
 	cl->download.name = "";
 	if (connection_type == 1)
 	{
 		if (sv_waddownload)
 		{
-			it->client.displaydisconnect = true;
-			SV_BroadcastPrintf(PRINT_HIGH, "%s has connected (downloading).\n", it->userinfo.netname.c_str());
-
 			it->playerstate = PST_DOWNLOAD;
-			for (Players::iterator pit = players.begin();pit != players.end();++pit)
-			{
-				if (it->id == it->id)
-					continue;
+			SV_BroadcastPrintf(PRINT_HIGH, "%s has connected. (downloading)\n", it->userinfo.netname.c_str());
 
-				// [SL] 2011-07-30 - Other players should treat downloaders
-				// as spectators
+			// send the client the scores and list of other clients
+			SV_ClientFullUpdate(*it);
+
+			for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
+			{
+				// [SL] 2011-07-30 - clients should consider downloaders as spectators
 				MSG_WriteMarker(&(pit->client.reliablebuf), svc_spectate);
 				MSG_WriteByte(&(pit->client.reliablebuf), it->id);
 				MSG_WriteByte(&(pit->client.reliablebuf), true);
@@ -2026,28 +2030,15 @@ void SV_ConnectClient()
 
 		return;
 	}
-#if 0
-	// [SL] 2012-03-16 - This is currently unused so do no treat this
-	// connection type differently
-	else if(connection_type == 2)
-	{
-		players[n].playerstate = PST_SPECTATE;
-		return;
-	}
-#endif
-	else
-		it->playerstate = PST_REBORN;
-
-	cl->displaydisconnect = true;
-	SV_BroadcastUserInfo(*it);
 
 	it->fragcount = 0;
 	it->killcount = 0;
 	it->points = 0;
 
-	if (!step_mode) {
+	if (!step_mode)
+	{
 		it->spectator = true;
-		for (Players::iterator pit = players.begin();pit != players.end();++pit)
+		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 		{
 			MSG_WriteMarker(&(pit->client.reliablebuf), svc_spectate);
 			MSG_WriteByte(&(pit->client.reliablebuf), it->id);
@@ -2071,10 +2062,10 @@ void SV_ConnectClient()
 	SV_BroadcastPrintf(PRINT_HIGH, "%s has connected.\n", it->userinfo.netname.c_str());
 
 	// tell others clients about it
-	for (Players::iterator pit = players.begin();pit != players.end();++pit)
+	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 	{
-		MSG_WriteMarker(&(pit->client.reliablebuf), svc_connectclient);
-		MSG_WriteByte(&(pit->client.reliablebuf), it->id);
+		MSG_WriteMarker(&pit->client.reliablebuf, svc_connectclient);
+		MSG_WriteByte(&pit->client.reliablebuf, it->id);
 	}
 
 	SV_MidPrint((char *)sv_motd.cstring(), (player_t *)&*it, 6);
@@ -2095,10 +2086,9 @@ void SV_DisconnectClient(player_t &who)
 		return;
 
 	// tell others clients about it
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 	   client_t &cl = it->client;
-
 	   MSG_WriteMarker(&cl.reliablebuf, svc_disconnectclient);
 	   MSG_WriteByte(&cl.reliablebuf, who.id);
 	}
@@ -2325,11 +2315,9 @@ void SV_DrawScores()
 	PlayerPtrList sortedspectators;
 
 	for (Players::const_iterator it = players.begin(); it != players.end(); ++it)
-		if (!it->spectator && it->playerstate != PST_CONTACT && it->playerstate != PST_DOWNLOAD)
+		if (!it->spectator && it->ingame())
 			sortedplayers.push_back(&*it);
-
-	for (Players::const_iterator it = players.begin(); it != players.end(); ++it)
-		if (it->spectator && it->playerstate != PST_CONTACT && it->playerstate != PST_DOWNLOAD)
+		else
 			sortedspectators.push_back(&*it);
 
 	Printf(PRINT_HIGH, "\n");
@@ -2577,7 +2565,7 @@ void STACK_ARGS SV_SpectatorPrintf(int level, const char *fmt, ...)
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
-		bool spectator = it->spectator || it->playerstate == PST_DOWNLOAD;
+		bool spectator = it->spectator || !it->ingame();
 		if (spectator)
 		{
 			MSG_WriteMarker(&cl->reliablebuf, svc_print);
@@ -2639,7 +2627,7 @@ void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
 		if (it->userinfo.team != player->userinfo.team)
 			continue;
 
-		bool spectator = it->spectator || it->playerstate == PST_DOWNLOAD;
+		bool spectator = it->spectator || !it->ingame();
 		if (spectator)
 			continue;
 
@@ -2679,7 +2667,7 @@ void SVC_TeamSay(player_t &player, const char* message)
 		if (!validplayer(*it))
 			continue;
 
-		bool spectator = it->spectator || it->playerstate == PST_DOWNLOAD;
+		bool spectator = it->spectator || !it->ingame();
 
 		// Player needs to be on the same team
 		if (spectator || it->userinfo.team != player.userinfo.team)
@@ -2711,7 +2699,7 @@ void SVC_SpecSay(player_t &player, const char* message)
 		if (!validplayer(*it))
 			continue;
 
-		bool spectator = it->spectator || it->playerstate == PST_DOWNLOAD;
+		bool spectator = it->spectator || !it->ingame();
 
 		if (!spectator)
 			continue;
@@ -2819,7 +2807,7 @@ bool SV_Say(player_t &player)
 		player.LastMessage.Message = message;
 	}
 
-	bool spectator = player.spectator || player.playerstate == PST_DOWNLOAD;
+	bool spectator = player.spectator || !player.ingame();
 
 	if (message_visibility == 0)
 	{
@@ -3588,18 +3576,23 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 //
 // SV_Spectate
 //
-void SV_Spectate (player_t &player) {
+void SV_Spectate(player_t &player)
+{
 	// [AM] Code has three possible values; true, false and 5.  True specs the
 	//      player, false unspecs him and 5 updates the server with the spec's
 	//      new position.
 	byte Code = MSG_ReadByte();
 
-	if (Code == 5) {
+	if (!player.ingame())
+		return;
+
+	if (Code == 5)
+	{
 		// GhostlyDeath -- Prevent Cheaters
-		if (!player.spectator || !player.mo) {
-			for (int i = 0; i < 3; i++) {
+		if (!player.spectator || !player.mo)
+		{
+			for (int i = 0; i < 3; i++)
 				MSG_ReadLong();
-			}
 			return;
 		}
 
@@ -3607,7 +3600,9 @@ void SV_Spectate (player_t &player) {
 		player.mo->x = MSG_ReadLong();
 		player.mo->y = MSG_ReadLong();
 		player.mo->z = MSG_ReadLong();
-	} else {
+	}
+	else
+	{
 		SV_SetPlayerSpec(player, Code);
 	}
 }
@@ -3616,33 +3611,34 @@ void SV_Spectate (player_t &player) {
 // param to spec or unspec the player without a broadcasted message.
 void P_SetSpectatorFlags(player_t &player);
 
-void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
+void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
+{
 	// We don't care about spectators during intermission
-	if (gamestate == GS_INTERMISSION) {
+	if (gamestate == GS_INTERMISSION)
 		return;
-	}
 
-	if (!setting && player.spectator) {
+	if (player.ingame() == false)
+		return;
+
+	if (!setting && player.spectator)
+	{
 		// We want to unspectate the player.
 		if ((level.time > player.joinafterspectatortime + TICRATE * 3) ||
-			level.time > player.joinafterspectatortime + TICRATE * 5) {
+			level.time > player.joinafterspectatortime + TICRATE * 5)
+		{
 
 			// Check to see if there is an empty spot on the server
 			int NumPlayers = 0;
-			for (Players::iterator it = players.begin();it != players.end();++it) {
-				if (!(it->spectator) && it->playerstate != PST_CONTACT && it->playerstate != PST_DOWNLOAD) {
-					NumPlayers += 1;
-				}
-			}
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
+				if (it->ingame() && !it->spectator)
+					NumPlayers++;
 
 			// Too many players.
-			if (!(NumPlayers < sv_maxplayers)) {
+			if (!(NumPlayers < sv_maxplayers))
 				return;
-			}
 
 			// Check to make sure we're not exceeding sv_maxplayersperteam.
-			if (sv_maxplayersperteam && (sv_gametype == GM_TEAMDM ||
-			                             sv_gametype == GM_CTF))
+			if (sv_maxplayersperteam && (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF))
 			{
 				if (P_NumPlayersOnTeam(player.userinfo.team) >= sv_maxplayersperteam)
 				{
@@ -3658,25 +3654,25 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 			SV_MidPrint("", &player, 0);
 
 			player.spectator = false;
-			for (Players::iterator it = players.begin();it != players.end();++it)
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{
-				MSG_WriteMarker(&(it->client.reliablebuf), svc_spectate);
-				MSG_WriteByte(&(it->client.reliablebuf), player.id);
-				MSG_WriteByte(&(it->client.reliablebuf), false);
+				MSG_WriteMarker(&it->client.reliablebuf, svc_spectate);
+				MSG_WriteByte(&it->client.reliablebuf, player.id);
+				MSG_WriteByte(&it->client.reliablebuf, false);
 			}
 
-			if (player.mo) {
+			if (player.mo)
 				P_KillMobj(NULL, player.mo, NULL, true);
-			}
+
 			player.playerstate = PST_REBORN;
 
-			if (!silent) {
-				if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF) {
+			if (!silent)
+			{
+				if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
 					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname.c_str());
-				} else {
+				else
 					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
 									   player.userinfo.netname.c_str(), team_names[player.userinfo.team]);
-				}
 			}
 
 			// GhostlyDeath -- Reset Frags, Deaths and Kills
@@ -3692,9 +3688,11 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 				player.timeout_ready = 0;
 			}
 		}
-	} else if (setting && !player.spectator) {
+	}
+	else if (setting && !player.spectator)
+	{
 		// We want to spectate the player
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			MSG_WriteMarker(&(it->client.reliablebuf), svc_spectate);
 			MSG_WriteByte(&(it->client.reliablebuf), player.id);
@@ -3704,9 +3702,8 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		// call CTF_CheckFlags _before_ the player becomes a spectator.
 		// Otherwise a flag carrier will drop his flag at (0,0), which
 		// is often right next to one of the bases...
-		if (sv_gametype == GM_CTF) {
+		if (sv_gametype == GM_CTF)
 			CTF_CheckFlags(player);
-		}
 
 		// [tm512 2014/04/18] Avoid setting spectator flags on a dead player
 		// Instead we respawn the player, move him back, and immediately spectate him afterwards
@@ -3731,9 +3728,8 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 
 		P_SetSpectatorFlags(player);
 
-		if (!silent) {
+		if (!silent)
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname.c_str());
-		}
 	}
 }
 
@@ -4621,8 +4617,7 @@ BEGIN_COMMAND (playerinfo)
 
 	if (argc > 1)
 	{
-		size_t who = atoi(argv[1]);
-		player_t &p = idplayer(who);
+		player_t &p = idplayer(atoi(argv[1]));
 
 		if (!validplayer(p))
 		{

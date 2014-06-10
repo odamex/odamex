@@ -809,10 +809,9 @@ BEGIN_COMMAND (playerinfo)
 
 	if(argc > 1)
 	{
-		size_t who = atoi(argv[1]);
-		player_t &p = idplayer(who);
+		player_t &p = idplayer(atoi(argv[1]));
 
-		if(!validplayer(p))
+		if (!validplayer(p))
 		{
 			Printf (PRINT_HIGH, "Bad player number\n");
 			return;
@@ -821,20 +820,32 @@ BEGIN_COMMAND (playerinfo)
 			player = &p;
 	}
 
-	if(!validplayer(*player))
+	if (!validplayer(*player))
 	{
 		Printf (PRINT_HIGH, "Not a valid player\n");
 		return;
 	}
 
-	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname.c_str());
-	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
-	Printf (PRINT_HIGH, " userinfo.color       - #%02x%02x%02x\n",
+	char color[8];
+	sprintf(color, "#%02X%02X%02X",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
-	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);
-	Printf (PRINT_HIGH, " spectator            - %d \n",	player->spectator);
-	Printf (PRINT_HIGH, " time                 - %d \n",	player->GameTime);
+
+	char team[5] = { 0 };
+	if (player->userinfo.team == TEAM_BLUE)
+		sprintf(team, "BLUE");
+	else if (player->userinfo.team == TEAM_RED)
+		sprintf(team, "RED");
+
+	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
+	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
+	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
+	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
+	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
+	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
+	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
+	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);
+	Printf(PRINT_HIGH, " spectator        - %d \n",		player->spectator);
+	Printf(PRINT_HIGH, " downloader       - %d \n",		player->playerstate == PST_DOWNLOAD);
 	Printf (PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)

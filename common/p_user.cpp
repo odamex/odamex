@@ -114,10 +114,8 @@ size_t P_NumPlayersInGame()
 	size_t num_players = 0;
 
 	for (Players::const_iterator it = players.begin();it != players.end();++it)
-	{
-		if (!(it->spectator) && it->ingame())
-			num_players += 1;
-	}
+		if (it->ingame() && !it->spectator)
+			num_players++;
 
 	return num_players;
 }
@@ -133,10 +131,8 @@ size_t P_NumReadyPlayersInGame()
 	size_t num_players = 0;
 
 	for (Players::const_iterator it = players.begin();it != players.end();++it)
-	{
-		if (!(it->spectator) && it->ingame() && it->ready)
-			num_players += 1;
-	}
+		if (it->ingame() && !it->spectator && it->ready)
+			num_players++;
 
 	return num_players;
 }
@@ -149,10 +145,8 @@ size_t P_NumPlayersOnTeam(team_t team)
 	size_t num_players = 0;
 
 	for (Players::const_iterator it = players.begin();it != players.end();++it)
-	{
-		if (!(it->spectator) && it->ingame() && it->userinfo.team == team)
-			num_players += 1;
-	}
+		if (it->ingame() && !it->spectator && it->userinfo.team == team)
+			num_players++;
 
 	return num_players;
 }
