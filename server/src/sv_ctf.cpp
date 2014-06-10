@@ -83,9 +83,6 @@ void SV_CTFEvent (flag_t f, flag_score_t event, player_t &who)
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (!(it->ingame()))
-			continue;
-
 		client_t *cl = &(it->client);
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_ctfevent);
