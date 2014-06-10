@@ -88,28 +88,27 @@ const gamewadinfo_t doomwadnames[] =
 		  "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
 		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
 		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
-		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
-		},
+		  "E3668912FC37C479B2840516C887018B", "" },	// Freedoom 0.8
 		true
 	},
 
     {	"DOOM2BFG.WAD",
-		{ "C3BEA40570C23E511A7ED3EBCD9865F7" },
+		{ "C3BEA40570C23E511A7ED3EBCD9865F7", "" },
 		true
 	},
 
     {	"PLUTONIA.WAD",
-		{ "75C8CF89566741FA9D22447604053BD7" },
+		{ "75C8CF89566741FA9D22447604053BD7", "" },
 		true
 	},
 
     {	"TNT.WAD",
-		{ "4E158D9953C79CCF97BD0663244CC6B6" },
+		{ "4E158D9953C79CCF97BD0663244CC6B6", "" },
 		true
 	},
 
     {	"DOOMU.WAD",
-		{ "C4FE9FD920207691A9F493668E0A2083" },
+		{ "C4FE9FD920207691A9F493668E0A2083", "" },
 		true
 	},
 
@@ -120,18 +119,17 @@ const gamewadinfo_t doomwadnames[] =
 		  "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
 		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
 		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
-		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
-		},
+		  "30095B256DD3A1566BBC30286F72BC47", "" },	// Ultimate Freedoom 0.8
 		true
 	},
 
     {	"DOOMBFG.WAD",
-		{ "FB35C4A5A9FD49EC29AB6E900572C524" },
+		{ "FB35C4A5A9FD49EC29AB6E900572C524", "" },
 		true
 	},
 
 	{	"DOOM1.WAD",
-		{ "F0CEFCA49926D00903CF57551D901ABE" },
+		{ "F0CEFCA49926D00903CF57551D901ABE", "" },
 		false
 	},
 
@@ -139,8 +137,7 @@ const gamewadinfo_t doomwadnames[] =
 		{ "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
 		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
 		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
-		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
-		},
+		  "30095B256DD3A1566BBC30286F72BC47", "" },	// Ultimate Freedoom 0.8
 		false
 	},
 
@@ -148,8 +145,7 @@ const gamewadinfo_t doomwadnames[] =
 		{ "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
 		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
 		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
-		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
-		},
+		  "30095B256DD3A1566BBC30286F72BC47", "" },	// Ultimate Freedoom 0.8
 		false
 	},
 
@@ -157,8 +153,7 @@ const gamewadinfo_t doomwadnames[] =
 		{ "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
 		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
 		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
-		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
-		},
+		  "E3668912FC37C479B2840516C887018B", "" },	// Freedoom 0.8
 		false
 	},
 
@@ -166,19 +161,17 @@ const gamewadinfo_t doomwadnames[] =
 		{ "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
 		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
 		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
-		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
-		},
+		  "E3668912FC37C479B2840516C887018B", "" },	// Freedoom 0.8
 		false
 	},
 
     {	"FREEDM.WAD",
-		{ "05859098BF191899903EF343AFBA369D"		// FreeDM 0.8
-		},
+		{ "05859098BF191899903EF343AFBA369D", "" },	// FreeDM 0.8
 		false
 	},
 
     {	"CHEX.WAD",
-		{ "25485721882B050AFA96A56E5758DD52" },
+		{ "25485721882B050AFA96A56E5758DD52", "" },
 		true
 	},
 
@@ -246,27 +239,31 @@ static const gamewadinfo_t* W_GetIWADInfo(const std::string& filename, const std
 	if (filename.empty())
 		return NULL;
 
-	// find our match if there is one
-	for (size_t i = 0; !doomwadnames[i].name.empty(); i++)
+	if (!hash.empty())
 	{
-		if (!hash.empty())
+		// check the hash
+		for (size_t i = 0; !doomwadnames[i].name.empty(); i++)
 		{
-			// hash comparison
-			for (size_t j = 0; !doomwadnames[i].hash[j].empty(); j++)
+			for (size_t hash_num = 0; !doomwadnames[i].hash[hash_num].empty(); hash_num++)
 			{
 				// the hash is always right! even if the name is wrong..
-				if (iequals(hash, doomwadnames[i].hash[j]))
+				if (iequals(hash, doomwadnames[i].hash[hash_num]))
 					return &doomwadnames[i];
 			}
 		}
-		else
+	}
+	else
+	{
+		// just check for filename matches
+		std::string base_filename;
+		M_ExtractFileBase(filename, base_filename);
+
+		for (size_t i = 0; !doomwadnames[i].name.empty(); i++)
 		{
-			std::string base_filename, base_iwadname;
-			M_ExtractFileBase(filename, base_filename);
+			std::string base_iwadname;
 			M_ExtractFileBase(doomwadnames[i].name, base_iwadname);
 
-			if (iequals(filename, doomwadnames[i].name) ||
-				iequals(base_filename, base_iwadname))
+			if (iequals(filename, doomwadnames[i].name) || iequals(base_filename, base_iwadname))
 				return &doomwadnames[i];
 		}
 	}
