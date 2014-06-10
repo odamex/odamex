@@ -1672,7 +1672,6 @@ bool CL_Connect(void)
 	{
 		// denis - do not download commercial wads
 		if (W_IsIWADCommercial(missing_file, missing_hash))
-
 		{
 			Printf(PRINT_HIGH, "This is a commercial wad and will not be downloaded.\n");
 			CL_QuitNetGame();
@@ -1844,52 +1843,51 @@ void CL_MidPrint (void)
  */
 void CL_Say()
 {
-	byte who = MSG_ReadByte();
+	byte message_visibility = MSG_ReadByte();
 	byte player_id = MSG_ReadByte();
 	const char* message = MSG_ReadString();
 
 	player_t &player = idplayer(player_id);
-	const char* name;
 
 	if (!validplayer(player))
 		return;
 
+	bool spectator = player.spectator || player.playerstate == PST_DOWNLOAD;
+
 	if (consoleplayer().id != player.id)
 	{
-		if (mute_spectators && player.spectator)
+		if (spectator && mute_spectators)
 			return;
 
-		if (mute_enemies && !player.spectator &&
+		if (mute_enemies && !spectator &&
 		    (sv_gametype == GM_DM ||
 		    ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
 		     player.userinfo.team != consoleplayer().userinfo.team)))
 			return;
 	}
 
-	name = player.userinfo.netname.c_str();
+	const char* name = player.userinfo.netname.c_str();
 
-	switch (who)
+	if (message_visibility == 0)
 	{
-	case 0:
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_CHAT, "\\c** %s %s\n", name, &message[4]);
+			Printf(PRINT_CHAT, "* %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_CHAT, "\\c*%s: %s\n", name, message);
+			Printf(PRINT_CHAT, "%s: %s\n", name, message);
 
 		if (show_messages)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
-		break;
-
-	case 1:
+	}
+	else if (message_visibility == 1)
+	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_TEAMCHAT, "\\c!* %s %s\n", name, &message[4]);
+			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_TEAMCHAT, "\\c!%s: %s\n", name, message);
+			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
+
 		if (show_messages)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
-		break;
 	}
-
 }
 
 //

@@ -246,12 +246,12 @@ public:
 
 	argb_t		blend_color;			// blend color for the sector the player is in
 
-    // For flood protection
-    struct LastMessage_s
-    {
-        QWORD Time;
-        std::string Message;
-    } LastMessage;
+	// For flood protection
+	struct LastMessage_s
+	{
+		dtime_t		Time;
+		std::string	Message;
+	} LastMessage;
 
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
