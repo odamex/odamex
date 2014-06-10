@@ -86,7 +86,7 @@ bool inTeamPlayer(player_t* player, const byte team) {
 
 // Returns true if a player is a spectator
 bool spectatingPlayer(player_t* player) {
-	return (player->ingame() && player->spectator == true);
+	return (!player->ingame() || player->spectator == true);
 }
 
 // Returns a sorted player list.  Calculates at most once a gametic.
@@ -508,11 +508,11 @@ byte CountTeamPlayers(byte team) {
 // Returns the number of spectators on a team
 byte CountSpectators() {
 	byte count = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (size_t i = 0;i < sortedPlayers().size();i++)
+	{
 		player_t* player = sortedPlayers()[i];
-		if (spectatingPlayer(player)) {
+		if (spectatingPlayer(player))
 			count++;
-		}
 	}
 	return count;
 }

@@ -1624,11 +1624,9 @@ void HU_ConsoleScores(player_t *player)
 	PlayerPtrList sortedspectators;
 
 	for (Players::const_iterator it = players.begin(); it != players.end(); ++it)
-		if (!it->spectator && it->playerstate != PST_CONTACT && it->playerstate != PST_DOWNLOAD)
+		if (it->ingame() && !it->spectator)
 			sortedplayers.push_back(&*it);
-
-	for (Players::const_iterator it = players.begin(); it != players.end(); ++it)
-		if (it->spectator && it->playerstate != PST_CONTACT && it->playerstate != PST_DOWNLOAD)
+		else
 			sortedspectators.push_back(&*it);
 
 	// One of these at each end prevents the following from
