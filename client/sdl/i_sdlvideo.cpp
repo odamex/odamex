@@ -479,6 +479,9 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	// TODO: check for multicore
 	flags |= SDL_ASYNCBLIT;
 
+	if (video_fullscreen)
+		flags = ((flags & (~SDL_SWSURFACE)) | SDL_HWSURFACE);
+
 	#ifdef SDL_GL_SWAP_CONTROL
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
 	#endif

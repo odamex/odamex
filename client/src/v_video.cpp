@@ -78,7 +78,7 @@ void I_FlushInput();
 // [RH] Set true when vid_setmode command has been executed
 static bool setmodeneeded = false;
 // [RH] Resolution to change to when setmodeneeded is true
-int		NewWidth, NewHeight, NewBits;
+int		NewWidth, NewHeight;
 
 //
 //	V_ForceVideoModeAdjustment
@@ -96,13 +96,11 @@ CVAR_FUNC_IMPL(vid_fullscreen)
 	V_ForceVideoModeAdjustment();
 	NewWidth = I_GetVideoWidth();
 	NewHeight = I_GetVideoHeight();
-	NewBits = I_GetVideoBitDepth();
 }
 
 CVAR_FUNC_IMPL(vid_32bpp)
 {
 	V_ForceVideoModeAdjustment();
-	NewBits = (int)vid_32bpp ? 32 : 8;
 }
 
 CVAR_FUNC_IMPL(vid_vsync)
@@ -544,7 +542,6 @@ bool V_SetResolution(int width, int height, int bpp)
 BEGIN_COMMAND(vid_setmode)
 {
 	int width = 0, height = 0;
-	int bpp = (int)vid_32bpp ? 32 : 8;
 
 	// No arguments
 	if (argc == 1)
@@ -576,7 +573,6 @@ BEGIN_COMMAND(vid_setmode)
 		V_ForceVideoModeAdjustment();
 		NewWidth = width;
 		NewHeight = height;
-		NewBits = bpp;
 	}
 }
 END_COMMAND (vid_setmode)
@@ -646,7 +642,8 @@ void V_AdjustVideoMode()
 		Wipe_Stop();
 
 		// Change screen mode.
-		if (!V_SetResolution(NewWidth, NewHeight, NewBits))
+		int surface_bpp = vid_32bpp ? 32 : 8;
+		if (!V_SetResolution(NewWidth, NewHeight, surface_bpp))
 			I_FatalError("Could not change screen mode");
 
 		// Refresh the console.

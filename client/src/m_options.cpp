@@ -1006,14 +1006,12 @@ menu_t AutomapMenu = {
  *
  *=======================================*/
 
-extern int NewWidth, NewHeight, NewBits;
+extern int NewWidth, NewHeight;
 
 QWORD testingmode;		// Holds time to revert to old mode
-int OldWidth, OldHeight, OldBits;
+int OldWidth, OldHeight;
 
-static void BuildModesList(int hiwidth, int hiheight, int hi_id);
 static bool GetSelectedSize(int line, int *width, int *height);
-static void SetModesMenu(int w, int h, int bits);
 
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
@@ -1086,7 +1084,7 @@ menu_t ModesMenu = {
 	NULL
 };
 
-static void BuildModesList(int hiwidth, int hiheight, int hi_bits)
+static void BuildModesList(int hiwidth, int hiheight)
 {
 	// gathers a list of unique resolutions availible for the current
 	// screen mode (windowed or fullscreen)
@@ -1140,7 +1138,7 @@ static void BuildModesList(int hiwidth, int hiheight, int hi_bits)
 
 void M_RefreshModesList()
 {
-	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
+	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 }
 
 static bool GetSelectedSize(int line, int* width, int* height)
@@ -1177,7 +1175,7 @@ static bool GetSelectedSize(int line, int* width, int* height)
 	return true;
 }
 
-static void SetModesMenu(int w, int h, int bits)
+static void SetModesMenu(int w, int h)
 {
 	if (!testingmode)
 	{
@@ -1187,13 +1185,13 @@ static void SetModesMenu(int w, int h, int bits)
 	else
 	{
 		static char enter_text[64];
-		sprintf(enter_text, "TESTING %dx%dx%d", w, h, bits);
+		sprintf(enter_text, "TESTING %dx%d", w, h);
 
 		ModesItems[VM_ENTERLINE].label = enter_text; 
 		ModesItems[VM_TESTLINE].label = VMTestWaitText;
 	}
 
-	BuildModesList(w, h, bits);
+	BuildModesList(w, h);
 }
 
 //
@@ -1213,15 +1211,16 @@ void M_RestoreMode (void)
 {
 	NewWidth = OldWidth;
 	NewHeight = OldHeight;
-	NewBits = OldBits;
 	V_ForceVideoModeAdjustment();
 	testingmode = 0;
-	SetModesMenu(OldWidth, OldHeight, OldBits);
+
+	SetModesMenu(OldWidth, OldHeight);
 }
 
 static void SetVidMode()
 {
-	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
+	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight());
+
 	if (ModesMenu.items[ModesMenu.lastOn].type == screenres)
 	{
 		if (ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)
@@ -1973,7 +1972,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -2097,7 +2096,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -2169,12 +2168,11 @@ void M_OptResponder (event_t *ev)
 					NewWidth = I_GetVideoWidth();
 					NewHeight = I_GetVideoHeight();
 				}
-				NewBits = (int)vid_32bpp ? 32 : 8;
 				V_ForceVideoModeAdjustment();
 				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-				vid_defwidth.Set ((float)NewWidth);
-				vid_defheight.Set ((float)NewHeight);
-				SetModesMenu (NewWidth, NewHeight, NewBits);
+				vid_defwidth.Set((float)NewWidth);
+				vid_defheight.Set((float)NewHeight);
+				SetModesMenu(NewWidth, NewHeight);
 			}
 			else if (item->type == more && item->e.mfunc)
 			{
@@ -2196,7 +2194,7 @@ void M_OptResponder (event_t *ev)
 
 				// Hack hack. Rebuild list of resolutions
 				if (item->e.values == Depths)
-					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), I_GetVideoBitDepth());
+					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 
 				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
@@ -2252,12 +2250,10 @@ void M_OptResponder (event_t *ev)
 					}
 					OldWidth = I_GetVideoWidth();
 					OldHeight = I_GetVideoHeight();
-					OldBits = I_GetVideoBitDepth();
-					NewBits = (int)vid_32bpp ? 32 : 8;
 					V_ForceVideoModeAdjustment();
 					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
 					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-					SetModesMenu(NewWidth, NewHeight, NewBits);
+					SetModesMenu(NewWidth, NewHeight);
 				}
 			}
 			break;
