@@ -2662,10 +2662,16 @@ void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
  */
 void SVC_TeamSay(player_t &player, const char* message)
 {
+	char team[5] = { 0 };
+	if (player.userinfo.team == TEAM_BLUE)
+		sprintf(team, "BLUE");
+	else if (player.userinfo.team == TEAM_RED)
+		sprintf(team, "RED");
+
 	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_TEAMCHAT, "<TEAM> * %s %s\n", player.userinfo.netname.c_str(), &message[4]);
+		Printf(PRINT_TEAMCHAT, "<%s TEAM> * %s %s\n", team, player.userinfo.netname.c_str(), &message[4]);
 	else
-		Printf(PRINT_TEAMCHAT, "<TEAM> %s: %s\n", player.userinfo.netname.c_str(), message);
+		Printf(PRINT_TEAMCHAT, "<%s TEAM> %s: %s\n", team, player.userinfo.netname.c_str(), message);
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
