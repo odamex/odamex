@@ -501,22 +501,6 @@ void HU_Drawer()
 		}
 	}
 
-	// Draw Netdemo info
-	hud::drawNetdemo();
-
-	// [AM] Voting HUD!
-	ST_voteDraw(11 * CleanYfac);
-
-	if (HU_ChatMode() != CHAT_INACTIVE)
-		HU_DrawChatPrompt();
-
-	if (multiplayer && consoleplayer().camera && !(demoplayback && democlassic))
-	{
-		if ((Actions[ACTION_SHOWSCORES] && gamestate != GS_INTERMISSION) ||
-		    (displayplayer().health <= 0 && !displayplayer().spectator && gamestate != GS_INTERMISSION))
-			HU_DrawScores(&displayplayer());
-	}
-
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
 	// denis - moved to hu_stuff and uncommented
 	if (noservermsgs && (gamestate == GS_INTERMISSION || gamestate == GS_LEVEL))
@@ -535,9 +519,24 @@ void HU_Drawer()
 				displayplayer().camera->y/FRACUNIT,
 				displayplayer().camera->z/FRACUNIT);
 
-	// Ch0wW: Crosshair is always the last element drawn on the screen
+	// Draw Netdemo info
+	hud::drawNetdemo();
+
+	// [AM] Voting HUD!
+	ST_voteDraw(11 * CleanYfac);
+
+	if (multiplayer && consoleplayer().camera && !(demoplayback && democlassic))
+	{
+		if ((Actions[ACTION_SHOWSCORES] && gamestate != GS_INTERMISSION) ||
+		    (displayplayer().health <= 0 && !displayplayer().spectator && gamestate != GS_INTERMISSION))
+			HU_DrawScores(&displayplayer());
+	}
+
 	if (gamestate == GS_LEVEL)
 		HU_DrawCrosshair();
+
+	if (HU_ChatMode() != CHAT_INACTIVE)
+		HU_DrawChatPrompt();
 }
 
 static void ShoveChatStr (std::string str, byte who)

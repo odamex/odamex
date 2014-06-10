@@ -267,17 +267,17 @@ void D_Display()
 			if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
 				AM_Drawer();
 
-			C_DrawMid();
-			C_DrawGMid();
 			CTF_DrawHud();
 			HU_Drawer();
+			C_DrawMid();
+			C_DrawGMid();
 			break;
 
 		case GS_INTERMISSION:
-			C_DrawMid();
 			CTF_DrawHud();
 			WI_Drawer();
 			HU_Drawer();
+			C_DrawMid();
 			break;
 
 		case GS_FINALE:
