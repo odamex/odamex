@@ -194,7 +194,6 @@ ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	mSDLSoftwareSurface(NULL),
 	mNeedPaletteRefresh(true), mLocks(0)
 {
-//	setMode(width, height, bpp, fullscreen, vsync);
 }
 
 
@@ -498,10 +497,13 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (sdlsurface == NULL)
 		return false;
 
+	bool got_hardware_surface = (sdlsurface->flags & SDL_HWSURFACE) == SDL_HWSURFACE;
+
 	uint8_t surface_bpp = vid_32bpp ? 32 : 8;
-	bool use_software_surface = 
-					(video_bpp != surface_bpp) ||		// bit-depth mismatch
-					((sdlsurface->pitch & 511) == 0);	// pitch is a multiple of 512 (thrashes the cache)
+	bool create_software_surface = 
+					video_bpp != surface_bpp ||			// bit-depth mismatch
+					(sdlsurface->pitch & 511) == 0 ||	// pitch is a multiple of 512 (thrashes the cache)
+					got_hardware_surface;				// drawing directly to hardware surfaces is slower
 
 	if (SDL_MUSTLOCK(sdlsurface))
 		SDL_LockSurface(sdlsurface);		// lock prior to accessing pixel format
@@ -509,7 +511,7 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	PixelFormat format;
 	I_BuildPixelFormatFromSDLSurface(sdlsurface, &format, surface_bpp);
 
-	if (use_software_surface)
+	if (create_software_surface)
 	{
 		// create a new IWindowSurface with its own frame buffer
 		mPrimarySurface = new IWindowSurface(sdlsurface->w, sdlsurface->h, &format);
