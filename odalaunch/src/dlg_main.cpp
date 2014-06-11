@@ -383,6 +383,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     wxFileConfig ConfigInfo;
     wxInt32 ServerTimeout;
     Server tmp_server;
+    odalpapi::BufferedSocket socket;
     wxString server_hash;
     wxString ped_hash;
     wxString ped_result;
@@ -455,6 +456,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     }
 
     // Query the server and try to acquire its password hash
+    tmp_server.SetSocket(&socket);
     tmp_server.SetAddress(wxstr_tostdstr(IPHost), Port);
     tmp_server.Query(ServerTimeout);
 
