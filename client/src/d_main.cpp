@@ -107,7 +107,6 @@ void D_DoAdvanceDemo (void);
 void D_DoomLoop (void);
 
 extern QWORD testingmode;
-extern int NewWidth, NewHeight;
 extern BOOL gameisdead;
 extern BOOL demorecording;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
@@ -748,41 +747,6 @@ void D_DoomMain()
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	atterm(I_ShutdownHardware);
 	I_Init();
-
-	int video_width = M_GetParmValue("-width");
-	int video_height = M_GetParmValue("-height");
-	int video_bpp = M_GetParmValue("-bits");
-
-	// ensure the width & height cvars are sane
-	if (vid_defwidth.asInt() <= 0 || vid_defheight.asInt() <= 0)
-	{
-		vid_defwidth.RestoreDefault();
-		vid_defheight.RestoreDefault();
-	}
-	
-	if (video_width == 0 && video_height == 0)
-	{
-		video_width = vid_defwidth.asInt();
-		video_height = vid_defheight.asInt();
-	}
-	else if (video_width == 0)
-	{
-		video_width = video_height * 4 / 3;
-	}
-	else if (video_height == 0)
-	{
-		video_height = video_width * 3 / 4;
-	}
-
-	if (video_bpp == 0 || (video_bpp != 8 && video_bpp != 32))
-		video_bpp = vid_32bpp ? 32 : 8;
-	vid_32bpp.Set(video_bpp == 32);
-
-	I_SetVideoMode(video_width, video_height, video_bpp, vid_fullscreen, vid_vsync);
-	Printf(PRINT_HIGH, "I_InitHardware: using %s video driver.\n", I_GetVideoDriverName().c_str());
-
-
-	// SDL needs video mode set up first before input code can be used
 	I_InitInput();
 
 	// [SL] Call init routines that need to be reinitialized every time WAD changes

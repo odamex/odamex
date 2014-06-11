@@ -70,15 +70,17 @@ palindex_t RGB32k[32][32][32];
 // There's also only one, not four.
 DCanvas *screen;
 
-DBoundingBox dirtybox;
+static DBoundingBox dirtybox;
 
 void I_FlushInput();
+bool V_DoSetResolution(uint16_t, uint16_t);
+static void BuildTransTable(const argb_t* palette_colors);
 
-
-// [RH] Set true when vid_setmode command has been executed
+// flag to indicate that V_AdjustVideoMode should try to change the video mode
 static bool setmodeneeded = false;
-// [RH] Resolution to change to when setmodeneeded is true
-int		NewWidth, NewHeight;
+
+// video mode that V_DoSetResolution should change to 
+static uint16_t new_video_width, new_video_height;
 
 //
 //	V_ForceVideoModeAdjustment
@@ -91,36 +93,118 @@ void V_ForceVideoModeAdjustment()
 	setmodeneeded = true;
 }
 
+
+//
+// V_AdjustVideoMode
+//
+// Checks if the video mode needs to be changed and calls several video mode
+// dependent initialization routines if it does. This should be called at the
+// start of drawing a video frame.
+//
+void V_AdjustVideoMode()
+{
+	if (setmodeneeded)
+	{
+		// [SL] surface buffer address will be changing
+		// so just end the screen-wipe
+		Wipe_Stop();
+
+		// Change screen mode.
+		if (!V_DoSetResolution(new_video_width, new_video_height))
+			I_FatalError("Could not change screen mode");
+
+		// Refresh the console.
+		C_NewModeAdjust();
+
+		// Recalculate various view parameters.
+		R_ForceViewWindowResize();
+
+		setmodeneeded = false;
+	}
+}
+
+
+CVAR_FUNC_IMPL(vid_defwidth)
+{
+	if (var < 320 || var > MAXWIDTH)
+		var.RestoreDefault();
+	V_SetResolution(var, new_video_height);
+}
+
+
+CVAR_FUNC_IMPL(vid_defheight)
+{
+	if (var < 200 || var > MAXHEIGHT)
+		var.RestoreDefault();
+	V_SetResolution(new_video_width, var);
+}
+
+
 CVAR_FUNC_IMPL(vid_fullscreen)
 {
 	V_ForceVideoModeAdjustment();
-	NewWidth = I_GetVideoWidth();
-	NewHeight = I_GetVideoHeight();
 }
+
 
 CVAR_FUNC_IMPL(vid_32bpp)
 {
 	V_ForceVideoModeAdjustment();
 }
 
+
 CVAR_FUNC_IMPL(vid_vsync)
 {
 	V_ForceVideoModeAdjustment();
 }
+
 
 CVAR_FUNC_IMPL(vid_overscan)
 {
 	V_ForceVideoModeAdjustment();
 }
 
+
 CVAR_FUNC_IMPL(vid_320x200)
 {
 	V_ForceVideoModeAdjustment();
 }
 
+
 CVAR_FUNC_IMPL(vid_640x400)
 {
 	V_ForceVideoModeAdjustment();
+}
+
+
+CVAR_FUNC_IMPL (vid_widescreen)
+{
+	V_ForceVideoModeAdjustment();
+}
+
+
+CVAR_FUNC_IMPL (sv_allowwidescreen)
+{
+	V_ForceVideoModeAdjustment();
+}
+
+
+CVAR_FUNC_IMPL(vid_maxfps)
+{
+	if (var == 0)
+	{
+		capfps = false;
+		maxfps = 99999.0f;
+	}
+	else
+	{
+		if (var < 35.0f)
+			var.Set(35.0f);
+		else
+		{
+			capfps = true;
+			maxfps = var;
+		}
+	}
 }
 
 
@@ -157,7 +241,7 @@ BEGIN_COMMAND(vid_currentmode)
 	const PixelFormat* format = I_GetWindow()->getPrimarySurface()->getPixelFormat();
 	if (format->getBitsPerPixel() == 8)
 	{
-		pixel_string = "indexed";
+		pixel_string = "palettized";
 	}
 	else
 	{
@@ -178,32 +262,252 @@ BEGIN_COMMAND(vid_currentmode)
 }
 END_COMMAND(vid_currentmode)
 
-EXTERN_CVAR(vid_defwidth)
-EXTERN_CVAR(vid_defheight)
-EXTERN_CVAR(vid_autoadjust)
-EXTERN_CVAR(vid_ticker)
 
-CVAR_FUNC_IMPL(vid_maxfps)
+BEGIN_COMMAND(checkres)
 {
-	if (var == 0)
+	Printf(PRINT_HIGH, "%dx%d\n", I_GetVideoWidth(), I_GetVideoHeight());
+}
+END_COMMAND(checkres)
+
+
+//
+// vid_setmode
+//
+// Sets the video mode resolution.
+//
+BEGIN_COMMAND(vid_setmode)
+{
+	int width = 0, height = 0;
+
+	// No arguments
+	if (argc == 1)
 	{
-		capfps = false;
-		maxfps = 99999.0f;
+		Printf(PRINT_HIGH, "Usage: vid_setmode <width> <height>\n");
+		return;
 	}
-	else
+
+	// Width
+	if (argc > 1)
+		width = atoi(argv[1]);
+
+	// Height (optional)
+	if (argc > 2)
+		height = atoi(argv[2]);
+	if (height == 0)
+		height = new_video_height;
+
+	if (width < 320 || height < 200)
 	{
-		if (var < 35.0f)
-			var.Set(35.0f);
-		else
-		{
-			capfps = true;
-			maxfps = var;
-		}
+		Printf(PRINT_HIGH, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
+		return;
 	}
+
+	if (width > MAXWIDTH || height > MAXHEIGHT)
+	{
+		Printf(PRINT_HIGH, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
+		return;
+	}
+
+	vid_defwidth.Set(width);
+	vid_defheight.Set(height);
+
+	// The actual change of resolution will take place
+	// near the beginning of D_Display().
+	if (gamestate != GS_STARTUP)
+		V_SetResolution(width, height);
+}
+END_COMMAND (vid_setmode)
+
+
+//
+// V_UsePillarBox
+//
+// Determines if the display should use pillarboxing. If the resolution is a
+// widescreen mode and either the user or the server doesn't allow
+// widescreen usage, use pillarboxing.
+//
+bool V_UsePillarBox()
+{
+	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+
+	if (width == 0 || height == 0)
+		return false;
+
+	if (I_IsProtectedResolution(width, height))
+		return false;
+
+	if (vid_320x200 || vid_640x400)
+		return 3 * width > 4 * height;
+
+	return (!vid_widescreen || (!serverside && !sv_allowwidescreen))
+		&& (3 * width > 4 * height);
 }
 
-EXTERN_CVAR (ui_dimamount)
-EXTERN_CVAR (ui_dimcolor)
+//
+// V_UseLetterBox
+//
+// Determines if the display should use letterboxing. If the resolution is a
+// standard 4:3 mode and both the user and the server allow widescreen
+// usage, use letterboxing.
+//
+bool V_UseLetterBox()
+{
+	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+
+	if (width == 0 || height == 0)
+		return false;
+
+	if (I_IsProtectedResolution(width, height))
+		return false;
+
+	if (vid_320x200 || vid_640x400)
+		return 3 * width <= 4 * height;
+
+	return (vid_widescreen && (serverside || sv_allowwidescreen))
+		&& (3 * width <= 4 * height);
+}
+
+//
+// V_UseWidescreen
+//
+//
+bool V_UseWidescreen()
+{
+	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+
+	if (width == 0 || height == 0)
+		return false;
+
+	if (I_IsProtectedResolution(width, height))
+		return false;
+
+	if (vid_320x200 || vid_640x400)
+		return 3 * width > 4 * height;
+
+	return (vid_widescreen && (serverside || sv_allowwidescreen))
+		&& (3 * width > 4 * height);
+}
+
+
+//
+// V_SetResolution
+//
+// Prepares to set the resolution to the given width and height at the start
+// of drawing the next frame.
+//
+void V_SetResolution(uint16_t width, uint16_t height)
+{
+	new_video_width = width;
+	new_video_height = height;
+	V_ForceVideoModeAdjustment();
+}
+
+
+//
+// V_DoSetResolution
+//
+// Changes the video resolution to the given dimensions. This should only
+// be called at the begining of drawing a frame (or during startup)!
+//
+bool V_DoSetResolution(uint16_t width, uint16_t height)
+{
+	int surface_bpp = vid_32bpp ? 32 : 8;
+	bool fullscreen = (vid_fullscreen != 0.0f);
+	bool vsync = (vid_vsync != 0.0f);
+
+	I_SetVideoMode(width, height, surface_bpp, fullscreen, vsync);
+	if (!I_VideoInitialized())
+		return false;
+
+	V_Init();
+
+	return true;
+}
+
+
+
+//
+// V_Close
+//
+void STACK_ARGS V_Close()
+{
+	R_ShutdownColormaps();
+}
+
+
+//
+// V_Init
+//
+void V_Init()
+{
+	if (!I_VideoInitialized())
+	{
+		int video_width = M_GetParmValue("-width");
+		int video_height = M_GetParmValue("-height");
+		int video_bpp = M_GetParmValue("-bits");
+
+		// ensure the width & height cvars are sane
+		if (vid_defwidth.asInt() <= 0 || vid_defheight.asInt() <= 0)
+		{
+			vid_defwidth.RestoreDefault();
+			vid_defheight.RestoreDefault();
+		}
+		
+		if (video_width == 0 && video_height == 0)
+		{
+			video_width = vid_defwidth.asInt();
+			video_height = vid_defheight.asInt();
+		}
+		else if (video_width == 0)
+		{
+			video_width = video_height * 4 / 3;
+		}
+		else if (video_height == 0)
+		{
+			video_height = video_width * 3 / 4;
+		}
+
+		vid_defwidth.Set(video_width);
+		vid_defheight.Set(video_height);
+
+		if (video_bpp == 0 || (video_bpp != 8 && video_bpp != 32))
+			video_bpp = vid_32bpp ? 32 : 8;
+		vid_32bpp.Set(video_bpp == 32);
+
+		new_video_width = video_width;
+		new_video_height = video_height;
+
+		V_DoSetResolution(video_width, video_height);
+
+		Printf(PRINT_HIGH, "V_Init: using %s video driver.\n", I_GetVideoDriverName().c_str());
+	}
+
+	if (!I_VideoInitialized())
+		I_FatalError("Failed to initialize display");
+
+	V_InitPalette("PLAYPAL");
+
+	R_InitColormaps();
+
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+
+	// This uses the smaller of the two results. It's still not ideal but at least
+	// this allows hud_scaletext to have some purpose...
+	CleanXfac = CleanYfac = std::max(1, std::min(surface_width / 320, surface_height / 200));
+
+	R_InitColumnDrawers();
+
+	// [SL] 2011-11-30 - Prevent the player's view angle from moving
+	I_FlushInput();
+
+	I_SetWindowCaption(D_GetTitleString());
+	I_SetWindowIcon();
+
+	// notify the console of changes in the screen resolution
+	C_NewModeAdjust();
+
+	BuildTransTable(V_GetDefaultPalette()->basecolors);
+}
 
 
 //
@@ -213,6 +517,88 @@ void V_MarkRect(int x, int y, int width, int height)
 {
 	dirtybox.AddToBox(x, y);
 	dirtybox.AddToBox(x + width - 1, y + height - 1);
+}
+
+
+//
+// V_DrawFPSWidget
+//
+void V_DrawFPSWidget()
+{
+	static const dtime_t ONE_SECOND = I_ConvertTimeFromMs(1000);
+
+	static dtime_t last_time = I_GetTime();
+	static dtime_t time_accum = 0;
+	static unsigned int frame_count = 0;
+
+	dtime_t current_time = I_GetTime();
+	dtime_t delta_time = current_time - last_time;
+	last_time = current_time;
+	frame_count++;
+
+	if (delta_time > 0)
+	{
+		static double last_fps = 0.0;
+		static char fpsbuff[40];
+
+		double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
+		int len = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
+		screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), argb_t(0, 0, 0));
+		screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, CR_GRAY);
+
+		time_accum += delta_time;
+
+		// calculate last_fps every 1000ms
+		if (time_accum > ONE_SECOND)
+		{
+			last_fps = double(ONE_SECOND * frame_count) / time_accum;
+			time_accum = 0;
+			frame_count = 0;
+		}
+	}
+}
+
+
+//
+// V_DrawFPSTicker
+//
+void V_DrawFPSTicker()
+{
+	int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
+	static int last_tic = current_tic;
+	
+	int tics = clamp(current_tic - last_tic, 0, 20);
+	last_tic = current_tic;
+
+	IWindowSurface* surface = I_GetPrimarySurface();
+	int surface_height = surface->getHeight();
+	int surface_pitch = surface->getPitch();
+
+	if (surface->getBitsPerPixel() == 8)
+	{
+		const palindex_t oncolor = 255;
+		const palindex_t offcolor = 0;
+		palindex_t* dest = (palindex_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
+
+		int i = 0;
+		for (i = 0; i < tics*2; i += 2)
+			dest[i] = oncolor;
+		for ( ; i < 20*2; i += 2)
+			dest[i] = offcolor;
+	}
+	else
+	{
+		const argb_t oncolor(255, 255, 255);
+		const argb_t offcolor(0, 0, 0);
+
+		argb_t* dest = (argb_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
+
+		int i = 0;
+		for (i = 0; i < tics*2; i += 2)
+			dest[i] = oncolor;
+		for ( ; i < 20*2; i += 2)
+			dest[i] = offcolor;
+	}
 }
 
 
@@ -343,6 +729,9 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
 }
 
 
+EXTERN_CVAR (ui_dimamount)
+EXTERN_CVAR (ui_dimcolor)
+
 void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float famount) const
 {
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
@@ -442,301 +831,6 @@ static void BuildTransTable(const argb_t* palette_colors)
 							 (((palette_colors[y].getb() * x) >> 4) << 10);
 }
 
-CVAR_FUNC_IMPL (vid_widescreen)
-{
-	V_ForceVideoModeAdjustment();
-}
-
-CVAR_FUNC_IMPL (sv_allowwidescreen)
-{
-	V_ForceVideoModeAdjustment();
-}
-
-//
-// V_UsePillarBox
-//
-// Determines if the display should use pillarboxing. If the resolution is a
-// widescreen mode and either the user or the server doesn't allow
-// widescreen usage, use pillarboxing.
-//
-bool V_UsePillarBox()
-{
-	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
-
-	if (width == 0 || height == 0)
-		return false;
-
-	if (I_IsProtectedResolution(width, height))
-		return false;
-
-	if (vid_320x200 || vid_640x400)
-		return 3 * width > 4 * height;
-
-	return (!vid_widescreen || (!serverside && !sv_allowwidescreen))
-		&& (3 * width > 4 * height);
-}
-
-//
-// V_UseLetterBox
-//
-// Determines if the display should use letterboxing. If the resolution is a
-// standard 4:3 mode and both the user and the server allow widescreen
-// usage, use letterboxing.
-//
-bool V_UseLetterBox()
-{
-	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
-
-	if (width == 0 || height == 0)
-		return false;
-
-	if (I_IsProtectedResolution(width, height))
-		return false;
-
-	if (vid_320x200 || vid_640x400)
-		return 3 * width <= 4 * height;
-
-	return (vid_widescreen && (serverside || sv_allowwidescreen))
-		&& (3 * width <= 4 * height);
-}
-
-//
-// V_UseWidescreen
-//
-//
-bool V_UseWidescreen()
-{
-	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
-
-	if (width == 0 || height == 0)
-		return false;
-
-	if (I_IsProtectedResolution(width, height))
-		return false;
-
-	if (vid_320x200 || vid_640x400)
-		return 3 * width > 4 * height;
-
-	return (vid_widescreen && (serverside || sv_allowwidescreen))
-		&& (3 * width > 4 * height);
-}
-
-
-//
-// V_SetResolution
-//
-bool V_SetResolution(int width, int height, int bpp)
-{
-	bool fullscreen = (vid_fullscreen != 0.0f);
-	bool vsync = (vid_vsync != 0.0f);
-
-	I_SetVideoMode(width, height, bpp, fullscreen, vsync);
-	if (!I_VideoInitialized())
-		return false;
-
-	V_Init();
-
-	return true;
-}
-
-BEGIN_COMMAND(vid_setmode)
-{
-	int width = 0, height = 0;
-
-	// No arguments
-	if (argc == 1)
-	{
-		Printf(PRINT_HIGH, "Usage: vid_setmode <width> <height>\n");
-		return;
-	}
-
-	// Width
-	if (argc > 1)
-		width = atoi(argv[1]);
-
-	// Height (optional)
-	if (argc > 2)
-		height = atoi(argv[2]);
-	if (height == 0)
-		height = I_GetVideoHeight();
-
-	if (width < 320 || height < 200)
-		Printf(PRINT_HIGH, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
-
-	if (width > MAXWIDTH || height > MAXHEIGHT)
-		Printf(PRINT_HIGH, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
-
-	// The actual change of resolution will take place
-	// near the beginning of D_Display().
-	if (gamestate != GS_STARTUP)
-	{
-		V_ForceVideoModeAdjustment();
-		NewWidth = width;
-		NewHeight = height;
-	}
-}
-END_COMMAND (vid_setmode)
-
-BEGIN_COMMAND (checkres)
-{
-	AddCommandString("vid_currentmode");
-}
-END_COMMAND (checkres)
-
-
-//
-// V_Close
-//
-void STACK_ARGS V_Close()
-{
-	R_ShutdownColormaps();
-}
-
-
-//
-// V_Init
-//
-void V_Init()
-{
-	if (!I_VideoInitialized())
-		I_FatalError("Failed to initialize display");
-
-	V_InitPalette("PLAYPAL");
-
-	R_InitColormaps();
-
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-
-	// This uses the smaller of the two results. It's still not ideal but at least
-	// this allows hud_scaletext to have some purpose...
-	CleanXfac = CleanYfac = std::max(1, std::min(surface_width / 320, surface_height / 200));
-
-	R_InitColumnDrawers();
-
-	// [SL] 2011-11-30 - Prevent the player's view angle from moving
-	I_FlushInput();
-
-	I_SetWindowCaption(D_GetTitleString());
-	I_SetWindowIcon();
-
-	// notify the console of changes in the screen resolution
-	C_NewModeAdjust();
-
-	BuildTransTable(V_GetDefaultPalette()->basecolors);
-}
-
-
-//
-// V_AdjustVideoMode
-//
-// Checks if the video mode needs to be changed and calls several video mode
-// dependent initialization routines if it does. This should be called at the
-// start of drawing a video frame.
-//
-void V_AdjustVideoMode()
-{
-	if (setmodeneeded)
-	{
-		// [SL] surface buffer address will be changing
-		// so just end the screen-wipe
-		Wipe_Stop();
-
-		// Change screen mode.
-		int surface_bpp = vid_32bpp ? 32 : 8;
-		if (!V_SetResolution(NewWidth, NewHeight, surface_bpp))
-			I_FatalError("Could not change screen mode");
-
-		// Refresh the console.
-		C_NewModeAdjust();
-
-		// Recalculate various view parameters.
-		R_ForceViewWindowResize();
-
-		setmodeneeded = false;
-	}
-}
-
-
-//
-// V_DrawFPSWidget
-//
-void V_DrawFPSWidget()
-{
-	static const dtime_t ONE_SECOND = I_ConvertTimeFromMs(1000);
-
-	static dtime_t last_time = I_GetTime();
-	static dtime_t time_accum = 0;
-	static unsigned int frame_count = 0;
-
-	dtime_t current_time = I_GetTime();
-	dtime_t delta_time = current_time - last_time;
-	last_time = current_time;
-	frame_count++;
-
-	if (delta_time > 0)
-	{
-		static double last_fps = 0.0;
-		static char fpsbuff[40];
-
-		double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
-		int len = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
-		screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), argb_t(0, 0, 0));
-		screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, CR_GRAY);
-
-		time_accum += delta_time;
-
-		// calculate last_fps every 1000ms
-		if (time_accum > ONE_SECOND)
-		{
-			last_fps = double(ONE_SECOND * frame_count) / time_accum;
-			time_accum = 0;
-			frame_count = 0;
-		}
-	}
-}
-
-
-//
-// V_DrawFPSTicker
-//
-void V_DrawFPSTicker()
-{
-	int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
-	static int last_tic = current_tic;
-	
-	int tics = clamp(current_tic - last_tic, 0, 20);
-	last_tic = current_tic;
-
-	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_height = surface->getHeight();
-	int surface_pitch = surface->getPitch();
-
-	if (surface->getBitsPerPixel() == 8)
-	{
-		const palindex_t oncolor = 255;
-		const palindex_t offcolor = 0;
-		palindex_t* dest = (palindex_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
-
-		int i = 0;
-		for (i = 0; i < tics*2; i += 2)
-			dest[i] = oncolor;
-		for ( ; i < 20*2; i += 2)
-			dest[i] = offcolor;
-	}
-	else
-	{
-		const argb_t oncolor(255, 255, 255);
-		const argb_t offcolor(0, 0, 0);
-
-		argb_t* dest = (argb_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
-
-		int i = 0;
-		for (i = 0; i < tics*2; i += 2)
-			dest[i] = oncolor;
-		for ( ; i < 20*2; i += 2)
-			dest[i] = offcolor;
-	}
-}
 
 VERSION_CONTROL (v_video_cpp, "$Id$")
 

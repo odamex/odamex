@@ -641,10 +641,10 @@ CVAR_RANGE(		r_painintensity, "1", "Intensity of red pain effect",
 CVAR(			r_viewsize, "0", "Set to the current video resolution",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
-CVAR(			vid_defwidth, "640", "",
+CVAR_FUNC_DECL(	vid_defwidth, "640", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(			vid_defheight, "480", "",
+CVAR_FUNC_DECL(	vid_defheight, "480", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen video modes",

@@ -544,7 +544,7 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 //
 // Main function to set the video mode at the hardware level.
 //
-void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
+void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, bool vsync)
 {
 	IWindow* window = I_GetWindow();
 
@@ -561,7 +561,7 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 		return;
 	}
 
-	IVideoMode desired_mode(width, height, bpp, fullscreen);
+	IVideoMode desired_mode(width, height, surface_bpp, fullscreen);
 
 	IVideoMode mode = I_ValidateVideoMode(&desired_mode);
 	assert(mode.isValid());
@@ -636,11 +636,11 @@ void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync)
 	assert(I_VideoInitialized());
 
 	if (*window->getVideoMode() != desired_mode)
-			Printf(PRINT_HIGH, "I_SetVideoMode: could not set video mode to %s. Using %s instead.\n",
+		DPrintf("I_SetVideoMode: could not set video mode to %s. Using %s instead.\n",
 						I_GetVideoModeString(&desired_mode).c_str(),
 						I_GetVideoModeString(window->getVideoMode()).c_str());
 	else
-		Printf(PRINT_HIGH, "I_SetVideoMode: set video mode to %s\n",
+		DPrintf("I_SetVideoMode: set video mode to %s\n",
 					I_GetVideoModeString(window->getVideoMode()).c_str());
 }
 

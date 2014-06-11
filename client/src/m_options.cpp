@@ -1006,8 +1006,6 @@ menu_t AutomapMenu = {
  *
  *=======================================*/
 
-extern int NewWidth, NewHeight;
-
 QWORD testingmode;		// Holds time to revert to old mode
 int OldWidth, OldHeight;
 
@@ -1209,9 +1207,7 @@ void M_ModeFlashTestText()
 
 void M_RestoreMode (void)
 {
-	NewWidth = OldWidth;
-	NewHeight = OldHeight;
-	V_ForceVideoModeAdjustment();
+	V_SetResolution(OldWidth, OldHeight);
 	testingmode = 0;
 
 	SetModesMenu(OldWidth, OldHeight);
@@ -2163,16 +2159,20 @@ void M_OptResponder (event_t *ev)
 		case KEY_ENTER:
 			if (CurrentMenu == &ModesMenu)
 			{
-				if (!(item->type == screenres && GetSelectedSize(CurrentItem, &NewWidth, &NewHeight)))
+				int width, height;
+
+				if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
 				{
-					NewWidth = I_GetVideoWidth();
-					NewHeight = I_GetVideoHeight();
+					width = I_GetVideoWidth();
+					height = I_GetVideoHeight();
 				}
-				V_ForceVideoModeAdjustment();
+
+				vid_defwidth.Set(width);
+				vid_defheight.Set(height);
+
+				V_SetResolution(width, height);
+				SetModesMenu(width, height);
 				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-				vid_defwidth.Set((float)NewWidth);
-				vid_defheight.Set((float)NewHeight);
-				SetModesMenu(NewWidth, NewHeight);
 			}
 			else if (item->type == more && item->e.mfunc)
 			{
@@ -2242,18 +2242,23 @@ void M_OptResponder (event_t *ev)
 				// Test selected resolution
 				if (CurrentMenu == &ModesMenu)
 				{
-					if (!(item->type == screenres &&
-						GetSelectedSize(CurrentItem, &NewWidth, &NewHeight)))
+					int width, height;
+
+					if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
 					{
-						NewWidth = I_GetVideoWidth();
-						NewHeight = I_GetVideoHeight();
+						width = I_GetVideoWidth();
+						height = I_GetVideoHeight();
 					}
+
 					OldWidth = I_GetVideoWidth();
 					OldHeight = I_GetVideoHeight();
-					V_ForceVideoModeAdjustment();
+
+					V_SetResolution(width, height);
+
 					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
+					SetModesMenu(width, height);
+
 					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-					SetModesMenu(NewWidth, NewHeight);
 				}
 			}
 			break;

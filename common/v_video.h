@@ -436,8 +436,6 @@ inline void DCanvas::DrawColoredLucentPatchCleanNoMove (const patch_t *patch, in
 // This is the screen updated by I_FinishUpdate.
 extern	DCanvas *screen;
 
-extern	DBoundingBox 	dirtybox;
-
 // Translucency tables
 extern argb_t Col2RGB8[65][256];
 extern palindex_t RGB32k[32][32][32];
@@ -464,7 +462,7 @@ void V_MarkRect (int x, int y, int width, int height);
 // as defined in the X11R6RGB lump.
 argb_t V_GetColorFromString(const std::string& str);
 
-bool V_SetResolution (int width, int height, int bpp);
+void V_SetResolution(uint16_t width, uint16_t height);
 
 template<>
 forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)
