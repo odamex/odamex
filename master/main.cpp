@@ -365,7 +365,7 @@ void pingServer(SServer &s)
 	}
 
 #ifdef _WIN32
-	s.key_sent = rand() * (int)GetModuleHandle(0) * time(0);
+	s.key_sent = rand() * (intptr_t)GetModuleHandle(0) * time(0);
 #else
 	s.key_sent = rand() * getpid() * time(0);
 #endif
