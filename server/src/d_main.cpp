@@ -385,9 +385,6 @@ void D_DoomMain()
 	Printf(PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
 	SV_InitNetwork();
 
-	// [AM] Initialize banlist
-	SV_InitBanlist();
-
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks();
 
@@ -444,6 +441,9 @@ void D_DoomMain()
 	// [RH] Now that all game subsystems have been initialized,
 	// do all commands on the command line other than +set
 	C_ExecCmdLineParams(false, false);
+
+	// [AM] Initialize banlist
+	SV_InitBanlist();
 
 	Printf(PRINT_HIGH, "========== Odamex Server Initialized ==========\n");
 
