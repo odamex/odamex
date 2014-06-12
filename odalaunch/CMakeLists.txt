@@ -71,7 +71,7 @@ if(wxWidgets_FOUND)
       COMPONENT odalaunch)
   else()
     install(TARGETS odalaunch
-      RUNTIME DESTINATION bin
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       COMPONENT odalaunch)
   endif()
 

@@ -278,7 +278,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
       COMPONENT client)
   else()
     install(TARGETS odamex
-      RUNTIME DESTINATION bin
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       COMPONENT client)
   endif()
 endif()

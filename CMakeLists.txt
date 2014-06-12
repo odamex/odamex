@@ -1,4 +1,5 @@
 include(CMakeDependentOption)
+include(GNUInstallDirs)
 
 project(Odamex)
 cmake_minimum_required(VERSION 2.8)
@@ -117,10 +118,10 @@ if(NOT APPLE)
       set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
   else()
     install(FILES odamex.wad LICENSE README
-      DESTINATION share/odamex
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/odamex
       COMPONENT common)
     install(FILES ${CONFIG_SAMPLES}
-      DESTINATION share/odamex/config-samples
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/odamex/config-samples
       COMPONENT common)
 
     option(ODAMEX_COMPONENT_PACKAGES "Create several rpm/deb packages for repository maintainers." OFF)

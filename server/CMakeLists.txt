@@ -86,6 +86,6 @@ elseif(WIN32)
     COMPONENT server)
 else()
   install(TARGETS odasrv
-    RUNTIME DESTINATION bin
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     COMPONENT server)
 endif()
