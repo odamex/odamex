@@ -1019,8 +1019,6 @@ void D_LoadResourceFiles(
 	D_DoDefDehackedPatch(newpatchfiles);
 }
 
-void D_NewWadInit();
-
 
 //
 // D_DoomWadReboot

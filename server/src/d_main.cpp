@@ -128,7 +128,6 @@ static int demosequence;
 static int pagetic;
 
 const char *LOG_FILE;
-static bool RebootInit;
 
 //
 // D_ProcessEvents
@@ -231,21 +230,6 @@ void D_StartTitle (void)
 	D_AdvanceDemo ();
 }
 
-void D_NewWadInit()
-{
-	if (DefaultsLoaded)	{		// [ML] This is being called while loading defaults,
-		G_SetLevelStrings ();
-		G_ParseMapInfo ();
-		G_ParseMusInfo ();
-		S_ParseSndInfo();
-
-		R_Init();
-		P_Init();
-	} else {					// let DoomMain know it doesn't have to do everything
-		RebootInit = true;
-	}
-}
-
 
 //
 // D_Init
@@ -274,9 +258,9 @@ void D_Init()
 	V_InitPalette("PLAYPAL");
 	R_InitColormaps();
 
-	if (first_time)
-		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
-	Res_InitTextureManager();
+//	if (first_time)
+//		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
+//	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
 	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
@@ -337,7 +321,7 @@ void STACK_ARGS D_Shutdown()
 	// close all open WAD files
 	W_Close();
 
-	Res_ShutdownTextureManager();
+//	Res_ShutdownTextureManager();
 
 	R_ShutdownColormaps();
 
@@ -380,19 +364,16 @@ void D_DoomMain()
 	M_LoadDefaults();			// load before initing other systems
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
-	if (!RebootInit)
-	{
-		const char* iwad = Args.CheckValue("-iwad");
-		if (!iwad)
-			iwad = "";
+	const char* iwad = Args.CheckValue("-iwad");
+	if (!iwad)
+		iwad = "";
 
-		std::vector<std::string> newwadfiles, newpatchfiles;
-		newwadfiles.push_back(iwad);
-		D_AddWadCommandLineFiles(newwadfiles);
-		D_AddDehCommandLineFiles(newpatchfiles);
+	std::vector<std::string> newwadfiles, newpatchfiles;
+	newwadfiles.push_back(iwad);
+	D_AddWadCommandLineFiles(newwadfiles);
+	D_AddDehCommandLineFiles(newpatchfiles);
 
-		D_LoadResourceFiles(newwadfiles, newpatchfiles);
-	}
+	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	I_Init();
@@ -401,8 +382,8 @@ void D_DoomMain()
 	D_Init();
 	atterm(D_Shutdown);
 
-	Printf (PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
-    SV_InitNetwork();
+	Printf(PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
+	SV_InitNetwork();
 
 	// [AM] Initialize banlist
 	SV_InitBanlist();
