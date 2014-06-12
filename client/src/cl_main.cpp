@@ -1641,15 +1641,14 @@ bool CL_PrepareConnect(void)
     // TODO: Allow deh/bex file downloads
 	D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
 
-	if (!missingfiles.empty() || (developer && cl_forcedownload))
+	if (!missingfiles.empty() || cl_forcedownload)
 	{
-		// denis - download files
-		if (missingfiles.empty())
+		if (missingfiles.empty())				// cl_forcedownload
 		{
 			missing_file = newwadfiles.back();
 			missing_hash = newwadhashes.back();
 		}
-		else
+		else									// client is really missing a file
 		{
 			missing_file = missingfiles[0];
 			missing_hash = missinghashes[0];

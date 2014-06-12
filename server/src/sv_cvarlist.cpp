@@ -51,6 +51,9 @@ CVAR(			sv_waddownload,	"0", "Allow downloading of WAD files from this server",
 CVAR(			sv_emptyreset, "0", "Reloads the current map when all players leave",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+CVAR(			sv_emptyfreeze,  "0", "Freezes the game state when there are no players",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
 CVAR(			sv_globalspectatorchat, "1", "Players can see spectator chat",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
@@ -237,8 +240,7 @@ CVAR_RANGE(		sv_countdown, "5", "Number of seconds to wait before starting the g
 // Experimental settings (all categories)
 // =======================================
 
-CVAR(			sv_emptyfreeze,  "0", "Experimental: Does not progress the game when there are no players",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+// None currently
 
 // Hacky abominations that should be purged with fire and brimstone
 // =================================================================

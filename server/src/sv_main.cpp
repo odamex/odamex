@@ -100,6 +100,7 @@ EXTERN_CVAR(sv_website)
 EXTERN_CVAR(sv_waddownload)
 EXTERN_CVAR(sv_maxrate)
 EXTERN_CVAR(sv_emptyreset)
+EXTERN_CVAR(sv_emptyfreeze)
 EXTERN_CVAR(sv_clientcount)
 EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
@@ -1593,9 +1594,6 @@ void SV_ClientFullUpdate(player_t &pl)
 	// send player's info to the client
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (!(it->ingame()))
-			continue;
-
 		if (it->mo)
 			SV_AwarenessUpdate(pl, it->mo);
 
@@ -1612,9 +1610,6 @@ void SV_ClientFullUpdate(player_t &pl)
 	// update frags/points/.tate./ready
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (!(it->ingame()))
-			continue;
-
 		MSG_WriteMarker(&cl->reliablebuf, svc_updatefrags);
 		MSG_WriteByte(&cl->reliablebuf, it->id);
 		if(sv_gametype != GM_COOP)
@@ -4467,8 +4462,6 @@ void SV_IntermissionTimeCheck()
 //
 void SV_GameTics (void)
 {
-	SV_BanlistTics();
-
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics();
 
@@ -4493,7 +4486,6 @@ void SV_GameTics (void)
 		SV_ProcessPlayerCmd(*it);
 
 	SV_WadDownloads();
-	SV_UpdateMaster();
 }
 
 void SV_TouchSpecial(AActor *special, player_t *player)
@@ -4516,45 +4508,63 @@ void SV_PlayerTimes (void)
 	}
 }
 
+
+//
+// SV_Frozen
+//
+// Returns true if the game state should be frozen (not advance).
+//
+bool SV_Frozen()
+{
+	return sv_emptyfreeze && players.empty() && gamestate == GS_LEVEL;
+}
+
+
 //
 // SV_StepTics
 //
 void SV_StepTics(QWORD count)
 {
-	DObject::BeginFrame ();
+	DObject::BeginFrame();
 
 	// run the newtime tics
 	while (count--)
 	{
-		C_Ticker ();
+		SV_BanlistTics();
+		SV_UpdateMaster();
 
-		SV_GameTics ();
+		C_Ticker();
 
-		G_Ticker ();
-
-		SV_WriteCommands();
-		SV_SendPackets();
-		SV_ClearClientsBPS();
-		SV_CheckTimeouts();
-
-		// Since clients are only sent sector updates every 3rd tic, don't destroy
-		// the finished moving sectors until we've sent the clients the update
-		if (P_AtInterval(3))
-			SV_DestroyFinishedMovingSectors();
-
-		// increment player_t::GameTime for all players once a second
-		static int TicCount = 0;
-		// Only do this once a second.
-		if (TicCount++ >= 35)
+		if (!SV_Frozen())
 		{
-			SV_PlayerTimes();
-			TicCount = 0;
-		}
+			SV_GameTics();
 
-		gametic++;
+			G_Ticker();
+
+			SV_WriteCommands();
+			SV_SendPackets();
+			SV_ClearClientsBPS();
+			SV_CheckTimeouts();
+
+			// Since clients are only sent sector updates every 3rd tic, don't destroy
+			// the finished moving sectors until we've sent the clients the update
+			if (P_AtInterval(3))
+				SV_DestroyFinishedMovingSectors();
+
+			// increment player_t::GameTime for all players once a second
+			static int TicCount = 0;
+			// Only do this once a second.
+			if (TicCount++ >= 35)
+			{
+				SV_PlayerTimes();
+				TicCount = 0;
+			}
+
+			gametic++;
+		}
 	}
 
-	DObject::EndFrame ();
+	DObject::EndFrame();
 }
 
 //
