@@ -1,9 +1,20 @@
+# use unquoted #defines
+if(COMMAND cmake_policy)
+  cmake_policy(SET CMP0005 NEW)
+endif(COMMAND cmake_policy)
+
+if(COMMAND cmake_policy)
+  cmake_policy(SET CMP0005 NEW)
+endif(COMMAND cmake_policy)
+
 include(CMakeDependentOption)
 
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
 set(CMAKE_INSTALL_BINDIR "bin")
 set(CMAKE_INSTALL_DATADIR "share")
 include(GNUInstallDirs OPTIONAL)
+
+add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
 
 # options
 option(BUILD_CLIENT "Build client target" 1)
