@@ -1,6 +1,13 @@
 include(CMakeDependentOption)
 include(GNUInstallDirs)
 
+# options
+option(BUILD_CLIENT "Build client target" 1)
+option(BUILD_SERVER "Build server target" 1)
+option(BUILD_MASTER "Build master server target" 1)
+cmake_dependent_option( BUILD_ODALAUNCH "Build odalaunch target" 1 BUILD_CLIENT 0 )
+cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
+
 project(Odamex)
 cmake_minimum_required(VERSION 2.8)
 
@@ -77,10 +84,21 @@ if (USE_MINIUPNP)
 endif()
 
 # Subdirectories for Odamex projects
-add_subdirectory(client)
-add_subdirectory(server)
-add_subdirectory(master)
-add_subdirectory(odalaunch)
+if(BUILD_CLIENT)
+	add_subdirectory(client)
+endif()
+if(BUILD_SERVER)
+	add_subdirectory(server)
+endif()
+if(BUILD_MASTER)
+	add_subdirectory(master)
+endif()
+if(BUILD_ODALAUNCH)
+	add_subdirectory(odalaunch)
+endif()
+if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER)
+	message(FATAL_ERROR "No target chosen, doing nothing.")
+endif()
 
 # Disable the ag-odalaunch target completely: -DNO_AG-ODALAUNCH_TARGET
 # This is only really useful when setting up a universal build.
