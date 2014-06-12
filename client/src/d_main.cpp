@@ -756,11 +756,6 @@ void D_DoomMain()
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks();
 
-	Printf(PRINT_HIGH, "S_Init: Setting up sound.\n");
-	Printf(PRINT_HIGH, "S_Init: default sfx volume is %g\n", (float)snd_sfxvolume);
-	Printf(PRINT_HIGH, "S_Init: default music volume is %g\n", (float)snd_musicvolume);
-	S_Init(snd_sfxvolume, snd_musicvolume);
-
 	// [RH] User-configurable startup strings. Because BOOM does.
 	if (GStrings(STARTUP1)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP1));
 	if (GStrings(STARTUP2)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP2));
