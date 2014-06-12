@@ -42,6 +42,7 @@
 #include <wx/process.h>
 #include <wx/toolbar.h>
 #include <wx/xrc/xmlres.h>
+#include <wx/string.h>
 #include <wx/cmdline.h>
 
 #ifdef __WXMSW__
@@ -207,8 +208,20 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     launchercfg_s.get_list_on_start = 1;
     launchercfg_s.show_blocked_servers = 0;
+
+    #if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
+    const char* datadir_cstr = INSTALL_PREFIX "/" INSTALL_DATADIR;
+    launchercfg_s.wad_paths = wxString::FromAscii(datadir_cstr);
+    #else
     launchercfg_s.wad_paths = wxGetCwd();
+    #endif
+
+    #if defined(INSTALL_PREFIX) && defined(INSTALL_BINDIR)
+    const char* bindir_cstr = INSTALL_PREFIX "/" INSTALL_BINDIR;
+    launchercfg_s.odamex_directory = wxString::FromAscii(bindir_cstr);
+    #else
     launchercfg_s.odamex_directory = wxGetCwd();
+    #endif
 
     m_LstCtrlServers = XRCCTRL(*this, "Id_LstCtrlServers", LstOdaServerList);
     m_LstCtrlPlayers = XRCCTRL(*this, "Id_LstCtrlPlayers", LstOdaPlayerList);

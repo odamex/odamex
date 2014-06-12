@@ -14,6 +14,7 @@ set(CMAKE_INSTALL_BINDIR "bin")
 set(CMAKE_INSTALL_DATADIR "share")
 include(GNUInstallDirs OPTIONAL)
 
+add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
 add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
 
 # options
