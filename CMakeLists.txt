@@ -1,5 +1,11 @@
 include(CMakeDependentOption)
-include(GNUInstallDirs)
+
+if(EXISTS "GNUInstallDirs.cmake")
+  include(GNUInstallDirs)
+else()
+  set(CMAKE_INSTALL_BINDIR "bin")
+  set(CMAKE_INSTALL_DATADIR "share")
+endif()
 
 # options
 option(BUILD_CLIENT "Build client target" 1)
