@@ -41,7 +41,7 @@
 
 // [Russell] - default master list
 // This is here for complete master redundancy, including domain name failure
-const char *def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", NULL };
+static const char* def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", NULL };
 
 class masterserver
 {
@@ -70,30 +70,69 @@ static buf_t ml_message(MAX_UDP_PACKET);
 
 static std::vector<masterserver> masters;
 
-EXTERN_CVAR (sv_usemasters)
-EXTERN_CVAR (sv_natport)
-EXTERN_CVAR (port)
+EXTERN_CVAR(sv_natport)
+EXTERN_CVAR(port)
+
+// Server appears in the server list when true.
+CVAR_FUNC_IMPL(sv_usemasters)
+{
+	if (network_game)
+		SV_InitMasters();
+}
+
+
+BEGIN_COMMAND(addmaster)
+{
+	if (argc > 1)
+		SV_AddMaster(argv[1]);
+}
+END_COMMAND(addmaster)
+
+
+BEGIN_COMMAND(delmaster)
+{
+	if (argc > 1)
+		SV_RemoveMaster(argv[1]);
+}
+END_COMMAND(delmaster)
+
+
+BEGIN_COMMAND(masters)
+{
+	SV_ListMasters();
+}
+END_COMMAND(masters)
+
+
 
 //
 // SV_InitMaster
 //
 void SV_InitMasters(void)
 {
-	if (!sv_usemasters)
-		Printf(PRINT_HIGH, "Masters will not be contacted because sv_usemasters is 0\n");
-    else
-    {
-        // [Russell] - Add some default masters
-        // so we can dump them to the server cfg file if
-        // one does not exist
-        if (masters.empty())
+	static bool previous_sv_usemasters = (sv_usemasters == 0);
+
+	if (previous_sv_usemasters != sv_usemasters)
+	{
+		if (sv_usemasters)
 		{
-			int i = 0;
-            while(def_masterlist[i])
-                SV_AddMaster(def_masterlist[i++]);
+			// [Russell] - Add some default masters
+			// so we can dump them to the server cfg file if one does not exist
+			if (masters.empty())
+			{
+				for (int i = 0; def_masterlist[i] != NULL; i++)
+					SV_AddMaster(def_masterlist[i]);
+			}
 		}
-    }
+		else
+		{
+			Printf(PRINT_HIGH, "Masters will not be contacted because sv_usemasters is 0\n");
+		}
+	}
+
+	previous_sv_usemasters = (sv_usemasters != 0);
 }
+
 
 //
 // SV_AddMaster
@@ -223,37 +262,6 @@ void SV_UpdateMaster(void)
 
 	SV_UpdateMasterServers();
 }
-
-// Server appears in the server list when true.
-CVAR_FUNC_IMPL (sv_usemasters)
-{
-	if (network_game) SV_InitMasters();
-}
-
-BEGIN_COMMAND (addmaster)
-{
-	if (argc > 1)
-	{
-		SV_AddMaster(argv[1]);
-	}
-}
-END_COMMAND (addmaster)
-
-BEGIN_COMMAND (delmaster)
-{
-	if (argc > 1)
-	{
-		SV_RemoveMaster(argv[1]);
-	}
-}
-END_COMMAND (delmaster)
-
-BEGIN_COMMAND (masters)
-{
-	SV_ListMasters();
-}
-END_COMMAND (masters)
-
 
 VERSION_CONTROL (sv_master_cpp, "$Id$")
 
