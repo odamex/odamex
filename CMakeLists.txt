@@ -1,11 +1,9 @@
 include(CMakeDependentOption)
 
-if(EXISTS "GNUInstallDirs.cmake")
-  include(GNUInstallDirs)
-else()
-  set(CMAKE_INSTALL_BINDIR "bin")
-  set(CMAKE_INSTALL_DATADIR "share")
-endif()
+# CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
+set(CMAKE_INSTALL_BINDIR "bin")
+set(CMAKE_INSTALL_DATADIR "share")
+include(GNUInstallDirs OPTIONAL)
 
 # options
 option(BUILD_CLIENT "Build client target" 1)
