@@ -31,105 +31,105 @@
 #include "m_swap.h"			// for __BIG_ENDIAN__ macro
 
 #ifdef GEKKO
-#include <gctypes.h>
+	#include <gctypes.h>
 #endif
 
 #ifndef __BYTEBOOL__
-#define __BYTEBOOL__
-// [RH] Some windows includes already define this
-#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
-typedef int BOOL;
-#endif
-#ifndef __cplusplus
-#define false (0)
-#define true (1)
-#endif
-typedef unsigned char byte;
+	#define __BYTEBOOL__
+	// [RH] Some windows includes already define this
+	#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
+	typedef int BOOL;
+	#endif
+
+	#ifndef __cplusplus
+		#define false (0)
+		#define true (1)
+	#endif
+
+	typedef unsigned char byte;
 #endif
 
 #ifdef __cplusplus
-typedef bool dboolean;
+	typedef bool dboolean;
 #else
-typedef enum {false, true} dboolean;
+	typedef enum {false, true} dboolean;
 #endif
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)
-#define STACK_ARGS __cdecl
+	#define STACK_ARGS __cdecl
 #else
-#define STACK_ARGS
+	#define STACK_ARGS
 #endif
 
 // Predefined with some OS.
-#ifndef UNIX
-#ifndef _WIN32
-#ifndef GEKKO
-#include <values.h>
-#endif
-#endif
+#if !defined(UNIX) && !defined(_WIN32) && !defined(GEKKO)
+	#include <limits.h>
+	#include <float.h>
 #endif
 
 #if defined(__GNUC__) && !defined(OSF1)
-#define __int64 long long
+	#define __int64 long long
 #endif
 
 #ifdef OSF1
-#define __int64 long
+	#define __int64 long
 #endif
 
 #if (defined _XBOX || defined _MSC_VER)
 	typedef signed   __int8   int8_t;
 	typedef signed   __int16  int16_t;
 	typedef signed   __int32  int32_t;
+	typedef signed   __int64  int64_t;
 	typedef unsigned __int8   uint8_t;
 	typedef unsigned __int16  uint16_t;
 	typedef unsigned __int32  uint32_t;
-	typedef signed   __int64  int64_t;
 	typedef unsigned __int64  uint64_t;
 #else
 	#include <stdint.h>
 #endif
 
 #ifdef UNIX
-#define stricmp strcasecmp
-#define strnicmp strncasecmp
+	#define stricmp strcasecmp
+	#define strnicmp strncasecmp
 #endif
 
 #ifndef MAXCHAR
-#define MAXCHAR 		((char)0x7f)
+	#define MAXCHAR 		((char)0x7f)
 #endif
 #ifndef MAXSHORT
-#define MAXSHORT		((short)0x7fff)
+	#define MAXSHORT		((short)0x7fff)
 #endif
 
 // Max pos 32-bit int.
 #ifndef MAXINT
-#define MAXINT			((int)0x7fffffff)
+	#define MAXINT			((int)0x7fffffff)
 #endif
+
 #ifndef MAXLONG
-#ifndef ALPHA
-#define MAXLONG 		((long)0x7fffffff)
-#else
-#define MAXLONG			((long)0x7fffffffffffffff)
-#endif
+	#ifndef ALPHA
+		#define MAXLONG 		((long)0x7fffffff)
+	#else
+		#define MAXLONG			((long)0x7fffffffffffffff)
+	#endif
 #endif
 
 #ifndef MINCHAR
-#define MINCHAR 		((char)0x80)
+	#define MINCHAR 		((char)0x80)
 #endif
 #ifndef MINSHORT
-#define MINSHORT		((short)0x8000)
+	#define MINSHORT		((short)0x8000)
 #endif
 
 // Max negative 32-bit integer.
 #ifndef MININT
-#define MININT			((int)0x80000000)
+	#define MININT			((int)0x80000000)
 #endif
 #ifndef MINLONG
-#ifndef ALPHA
-#define MINLONG 		((long)0x80000000)
-#else
-#define MINLONG			((long)0x8000000000000000)
-#endif
+	#ifndef ALPHA
+		#define MINLONG 		((long)0x80000000)
+	#else
+		#define MINLONG			((long)0x8000000000000000)
+	#endif
 #endif
 
 #define MINFIXED		(signed)(0x80000000)
@@ -158,11 +158,11 @@ typedef DWORD				BITFIELD;
 typedef uint64_t			dtime_t;
 
 #ifdef _WIN32
-#define PATHSEP "\\"
-#define PATHSEPCHAR '\\'
+	#define PATHSEP "\\"
+	#define PATHSEPCHAR '\\'
 #else
-#define PATHSEP "/"
-#define PATHSEPCHAR '/'
+	#define PATHSEP "/"
+	#define PATHSEPCHAR '/'
 #endif
 
 // [RH] This gets used all over; define it here:
@@ -188,9 +188,9 @@ extern std::ifstream CON;
 #define PRINT_TEAMCHAT		4		// chat messages from a teammate
 
 #ifdef __forceinline
-#define forceinline __forceinline
+	#define forceinline __forceinline
 #else
-#define forceinline inline
+	#define forceinline inline
 #endif
 
 //
@@ -199,7 +199,7 @@ extern std::ifstream CON;
 // Returns the minimum of a and b.
 //
 #ifdef MIN
-#undef MIN
+	#undef MIN
 #endif
 template<class T>
 forceinline const T MIN (const T a, const T b)
@@ -213,7 +213,7 @@ forceinline const T MIN (const T a, const T b)
 // Returns the maximum of a and b.
 //
 #ifdef MAX
-#undef MAX
+	#undef MAX
 #endif
 template<class T>
 forceinline const T MAX (const T a, const T b)
@@ -230,7 +230,7 @@ forceinline const T MAX (const T a, const T b)
 // Clamps the value of in to the range min, max
 //
 #ifdef clamp
-#undef clamp
+	#undef clamp
 #endif
 template<class T>
 forceinline T clamp (const T in, const T min, const T max)

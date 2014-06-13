@@ -37,6 +37,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <stdint.h>
+
 #ifdef UNIX
 #include <netinet/in.h>
 #include <unistd.h>
