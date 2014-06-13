@@ -32,6 +32,8 @@
 #include <string>
 #include <vector>
 
+#include "res_main.h"
+
 // [RH] Compare wad header as ints instead of chars
 #define IWAD_ID (('I')|('W'<<8)|('A'<<16)|('D'<<24))
 #define PWAD_ID (('P')|('W'<<8)|('A'<<16)|('D'<<24))

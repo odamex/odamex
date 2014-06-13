@@ -27,18 +27,9 @@
 #include <stdlib.h>
 #include "m_ostring.h"
 #include "hashtable.h"
-
-typedef unsigned int LumpId;
+#include <vector>
 
 class LumpLookupTable;
-
-void Res_OpenResourceFile(const OString& filename);
-void Res_CloseAllResourceFiles();
-LumpId Res_GetLumpId(const OString& lumpname);
-const OString& Res_GetLumpName(const LumpId id);
-bool Res_CheckLump(const LumpId id);
-size_t Res_GetLumpLength(const LumpId id);
-size_t Res_ReadLump(const LumpId id, void* data);
 
 // ****************************************************************************
 
@@ -51,6 +42,13 @@ size_t Res_ReadLump(const LumpId id, void* data);
 class ResourceFile
 {
 public:
+	typedef unsigned int LumpId;
+
+	static const int LUMP_ID_BITS = 20;
+	static const int RESOURCE_FILE_ID_BITS = 32 - LUMP_ID_BITS;
+	static const LumpId LUMP_ID_MASK = (1 << LUMP_ID_BITS) - 1;
+	static const LumpId LUMP_NOT_FOUND = -1;
+
 	ResourceFile() { }
 	virtual ~ResourceFile() { }
 
@@ -58,17 +56,13 @@ public:
 
 	virtual size_t getLumpCount() const = 0;
 
-	virtual bool checkLump(const LumpId id) const = 0;
+	virtual bool checkLump(const ResourceFile::LumpId id) const = 0;
 
-	virtual size_t getLumpLength(const LumpId id) const = 0;
+	virtual size_t getLumpLength(const ResourceFile::LumpId id) const = 0;
 
-	virtual size_t readLump(const LumpId id, void* data) const = 0;
+	virtual size_t readLump(const ResourceFile::LumpId id, void* data) const = 0;
 
-	static const LumpId LUMP_NOT_FOUND = -1;
 
-	static const int LUMP_ID_BITS = 20;
-	static const int RESOURCE_FILE_ID_BITS = 32 - LUMP_ID_BITS;
-	static const LumpId LUMP_ID_MASK = (1 << LUMP_ID_BITS) - 1;
 };
 
 // ****************************************************************************
@@ -138,6 +132,38 @@ private:
 };
 
 
+// ****************************************************************************
+
+void Res_OpenResourceFile(const OString& filename);
+
+void Res_CloseAllResourceFiles();
+
+ResourceFile::LumpId Res_GetLumpId(const OString& lumpname);
+
+const OString& Res_GetLumpName(const ResourceFile::LumpId id);
+
+bool Res_CheckLump(const ResourceFile::LumpId id);
+
+static inline bool Res_CheckLump(const OString& lumpname)
+{
+	return Res_CheckLump(Res_GetLumpId(lumpname));
+}
+
+size_t Res_GetLumpLength(const ResourceFile::LumpId id);
+
+static inline size_t Res_GetLumpLength(const OString& lumpname)
+{
+	return Res_GetLumpLength(Res_GetLumpId(lumpname));
+}
+
+size_t Res_ReadLump(const ResourceFile::LumpId id, void* data);
+
+static inline size_t Res_ReadLump(const OString& lumpname, void* data)
+{
+	return Res_ReadLump(Res_GetLumpId(lumpname), data);
+}
+
+void Res_QueryLumpName(const OString& lumpname, std::vector<ResourceFile::LumpId>& ids);
 
 #endif	// __RES_MAIN_H__
 

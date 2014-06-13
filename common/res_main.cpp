@@ -55,7 +55,7 @@ public:
 		mNextRecord = 0;
 	}
 
-	void addLump(const OString& lumpname, const LumpId id)
+	void addLump(const OString& lumpname, const ResourceFile::LumpId id)
 	{
 		if (mNextRecord >= mRecordPool.size())
 			mRecordPool.resize(mRecordPool.size() * 2);
@@ -77,7 +77,15 @@ public:
 		mIdTable.insert(std::make_pair(id, lumpname));
 	}
 
-	const LumpId lookupByName(const OString& lumpname) const
+
+	//
+	// LumpLookupTable::lookupByName
+	//
+	// Returns the LumpId of the lump matching the given name. If more than
+	// one lumps match, the most recently added resource file is
+	// given precedence. If no matches are found, LUMP_NOT_FOUND is returned.
+	//
+	const ResourceFile::LumpId lookupByName(const OString& lumpname) const
 	{
 		NameLookupTable::const_iterator it = mNameTable.find(lumpname);
 		if (it != mNameTable.end())
@@ -85,7 +93,14 @@ public:
 		return ResourceFile::LUMP_NOT_FOUND;
 	}
 
-	const OString& lookupById(const LumpId id) const
+
+	//
+	// LumpLookuptable::lookupById
+	//
+	// Returns the lump name matching the given LumpId. If no matches are
+	// found, an empty string is returned.
+	//
+	const OString& lookupById(const ResourceFile::LumpId id) const
 	{
 		IdLookupTable::const_iterator it = mIdTable.find(id);
 		if (it != mIdTable.end())
@@ -96,17 +111,39 @@ public:
 	}
 
 
+	//
+	// LumpLookupTable::queryByName
+	//
+	// Fills the supplied vector with the LumpId of any lump whose name
+	// matches the given string. An empty vector indicates that there were
+	// no matches.
+	//
+	void queryByName(const OString& lumpname, std::vector<ResourceFile::LumpId>& ids) const
+	{
+		ids.clear();
+		NameLookupTable::const_iterator it = mNameTable.find(lumpname);
+		if (it != mNameTable.end())
+		{
+			const LumpRecord* rec = it->second;
+			while (rec)
+			{
+				ids.push_back(rec->id);
+				rec = rec->next;
+			}
+		}
+	}
+
 private:
 	static const size_t INITIAL_SIZE = 8192;
 
 	struct LumpRecord
 	{
-		LumpId			id;
-		LumpRecord*		next;	
+		ResourceFile::LumpId	id;
+		LumpRecord*				next;	
 	};
 
 	typedef OHashTable<OString, LumpRecord*> NameLookupTable;
-	typedef OHashTable<LumpId, OString> IdLookupTable;
+	typedef OHashTable<ResourceFile::LumpId, OString> IdLookupTable;
 
 	NameLookupTable				mNameTable;
 	IdLookupTable				mIdTable;
@@ -270,7 +307,7 @@ static std::vector<ResourceFile*> ResourceFiles;
 void Res_OpenResourceFile(const OString& filename)
 {
 	size_t resource_file_id = ResourceFiles.size();
-	LumpId first_id = resource_file_id << ResourceFile::LUMP_ID_BITS;
+	ResourceFile::LumpId first_id = resource_file_id << ResourceFile::LUMP_ID_BITS;
 
 	if (!M_FileExists(filename))
 		return;
@@ -325,7 +362,7 @@ void Res_CloseAllResourceFiles()
 // is returned. A special token of ResourceFile::LUMP_NOT_FOUND is returned if
 // there are no matching lumps.
 //
-LumpId Res_GetLumpId(const OString& lumpname)
+ResourceFile::LumpId Res_GetLumpId(const OString& lumpname)
 {
 	return lump_lookup_table.lookupByName(lumpname);
 }
@@ -337,7 +374,7 @@ LumpId Res_GetLumpId(const OString& lumpname)
 // Looks for the name of the resource lump that matches id. If the lump is not
 // found, an empty string is returned.
 //
-const OString& Res_GetLumpName(const LumpId id)
+const OString& Res_GetLumpName(const ResourceFile::LumpId id)
 {
 	return lump_lookup_table.lookupById(id);
 }
@@ -348,7 +385,7 @@ const OString& Res_GetLumpName(const LumpId id)
 //
 // Verifies that the given LumpId matches a valid resource lump.
 //
-bool Res_CheckLump(const LumpId id)
+bool Res_CheckLump(const ResourceFile::LumpId id)
 {
 	size_t resource_file_id = id >> ResourceFile::LUMP_ID_BITS;
 	return resource_file_id < ResourceFiles.size() &&
@@ -362,7 +399,7 @@ bool Res_CheckLump(const LumpId id)
 // Returns the length of the resource lump that matches id. If the lump is
 // not found, 0 is returned.
 //
-size_t Res_GetLumpLength(const LumpId id)
+size_t Res_GetLumpLength(const ResourceFile::LumpId id)
 {
 	size_t resource_file_id = id >> ResourceFile::LUMP_ID_BITS;
 	if (resource_file_id < ResourceFiles.size())
@@ -379,7 +416,7 @@ size_t Res_GetLumpLength(const LumpId id)
 // is not found. The variable data must be able to hold the size of the lump,
 // as determined by Res_GetLumpLength.
 //
-size_t Res_ReadLump(const LumpId id, void* data)
+size_t Res_ReadLump(const ResourceFile::LumpId id, void* data)
 {
 	size_t resource_file_id = id >> ResourceFile::LUMP_ID_BITS;
 	if (resource_file_id < ResourceFiles.size())
@@ -387,5 +424,16 @@ size_t Res_ReadLump(const LumpId id, void* data)
 	return 0;
 }
 
+
+//
+// Res_QueryLumpName
+//
+// Fills the supplied vector with the LumpId of any lump whose name matches the
+// given string. An empty vector indicates that there were no matches.
+//
+void Res_QueryLumpName(const OString& lumpname, std::vector<ResourceFile::LumpId>& ids)
+{
+	lump_lookup_table.queryByName(lumpname, ids);
+}
 
 VERSION_CONTROL (res_main_cpp, "$Id: res_main.cpp $")
