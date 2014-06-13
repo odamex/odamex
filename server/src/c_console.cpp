@@ -51,8 +51,6 @@
 
 extern int KeyRepeatDelay;
 
-extern int		gametic;
-
 int			ConRows, ConCols, PhysRows;
 char		*Lines, *Last = NULL;
 BOOL		vidactive = false, gotconback = false;
@@ -265,18 +263,11 @@ void C_AdjustBottom (void)
 
 void C_Ticker (void)
 {
-	static int lasttic = 0;
-
-	if (lasttic == 0)
-		lasttic = gametic - 1;
-
 	if (--CursorTicker <= 0)
 	{
 		cursoron ^= 1;
 		CursorTicker = C_BLINKRATE;
 	}
-
-	lasttic = gametic;
 }
 
 void C_InitTicker (const char *label, unsigned int max)

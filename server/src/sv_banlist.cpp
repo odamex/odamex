@@ -28,6 +28,8 @@
 #include "win32time.h"
 #endif
 
+#include "i_system.h"
+
 #include "json/json.h"
 
 #include "c_dispatch.h"
@@ -1065,10 +1067,10 @@ bool SV_BanCheck(client_t* cl)
 // Run every tic to see if we should load the banfile.
 void SV_BanlistTics()
 {
-	int secs = sv_banfile_reload.asInt();
+	const dtime_t min_delta_time = I_ConvertTimeFromMs(1000 * sv_banfile_reload);
 
 	// 0 seconds means not enabled.
-	if (!secs)
+	if (min_delta_time == 0)
 		return;
 
 	const char* banfile = sv_banfile.cstring();
@@ -1077,20 +1079,24 @@ void SV_BanlistTics()
 	if (!banfile)
 		return;
 
-	// Only if we're evenly divisible into the number of seconds to wait.
-	if (!P_AtInterval(secs * TICRATE))
-		return;
+	const dtime_t current_time = I_GetTime();
+	static dtime_t last_reload_time = current_time; 
 
-	// Load the banlist.
-	Json::Value json_bans;
-	if (!M_ReadJSON(json_bans, banfile))
+	if (current_time - last_reload_time >= min_delta_time)
 	{
-		Printf(PRINT_HIGH, "sv_banfile_reload: could not load banlist.\n");
-		return;
-	}
-	if (!banlist.json_replace(json_bans))
-	{
-		Printf(PRINT_HIGH, "sv_banfile_reload: malformed banlist file, ignored.\n");
-		return;
+		last_reload_time = current_time;
+
+		// Load the banlist.
+		Json::Value json_bans;
+		if (!M_ReadJSON(json_bans, banfile))
+		{
+			Printf(PRINT_HIGH, "sv_banfile_reload: could not load banlist.\n");
+			return;
+		}
+		if (!banlist.json_replace(json_bans))
+		{
+			Printf(PRINT_HIGH, "sv_banfile_reload: malformed banlist file, ignored.\n");
+			return;
+		}
 	}
 }

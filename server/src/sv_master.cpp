@@ -246,21 +246,31 @@ void SV_UpdateMaster(void)
 	if (!sv_usemasters)
 		return;
 
+	const dtime_t current_time = I_GetTime();
+
+	static dtime_t last_address_resolution = 0;
+
 	// update master addresses from names every 3 hours
-	if ((gametic % (TICRATE*60*60*3) ) == 0)
+	if (current_time - last_address_resolution >= I_ConvertTimeFromMs(1000 * 60 * 60 * 3))
 	{
-		for(size_t index = 0; index < masters.size(); index++)
+		for (size_t index = 0; index < masters.size(); index++)
 		{
-			NET_StringToAdr (masters[index].masterip.c_str(), &masters[index].masteraddr);
+			NET_StringToAdr(masters[index].masterip.c_str(), &masters[index].masteraddr);
 			I_SetPort(masters[index].masteraddr, MASTERPORT);
 		}
+
+		last_address_resolution = current_time;
 	}
 
-	// Send to masters every 25 seconds
-	if (gametic % (TICRATE*25))
-		return;
+	static dtime_t last_keep_alive = 0;
 
-	SV_UpdateMasterServers();
+	// Send to masters every 25 seconds
+	if (current_time - last_keep_alive >= I_ConvertTimeFromMs(1000 * 25))
+	{
+		SV_UpdateMasterServers();
+
+		last_keep_alive = current_time;
+	}
 }
 
 VERSION_CONTROL (sv_master_cpp, "$Id$")
