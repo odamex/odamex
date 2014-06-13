@@ -69,6 +69,59 @@ public:
 
 // ============================================================================
 //
+// SingleLumpResourceFile abstract base class interface
+//
+// ============================================================================
+
+class SingleLumpResourceFile : public ResourceFile
+{
+public:
+	SingleLumpResourceFile(const OString& filename, const LumpId first_id,
+						LumpLookupTable* lump_lookup_table);
+
+	virtual ~SingleLumpResourceFile();
+
+	virtual const OString& getFileName() const
+	{
+		return mFileName;
+	}
+
+	virtual size_t getLumpCount() const
+	{
+		return mFileLength > 0 ? 1 : 0;
+	}
+
+	virtual bool checkLump(const LumpId id) const
+	{
+		return (id & ResourceFile::LUMP_ID_MASK) == 0;
+	}
+
+	virtual size_t getLumpLength(const LumpId id) const
+	{
+		return mFileLength;
+	}
+
+	virtual size_t readLump(const LumpId id, void* data) const;
+
+private:
+	void cleanup()
+	{
+		if (mFileHandle != NULL)
+			fclose(mFileHandle);
+		mFileHandle = NULL;
+	}
+
+	mutable FILE*			mFileHandle;
+	const OString&			mFileName;
+
+	size_t					mFileLength;
+};
+
+
+// ****************************************************************************
+
+// ============================================================================
+//
 // WadResourceFile abstract base class interface
 //
 // ============================================================================
@@ -91,7 +144,6 @@ public:
 		return mRecordCount;
 	}
 
-
 	virtual bool checkLump(const LumpId id) const;
 
 	virtual size_t getLumpLength(const LumpId id) const;
@@ -107,23 +159,16 @@ private:
 
 		delete [] mRecords;
 		mRecords = NULL;
-
-		delete mNameTable;
-		mNameTable = NULL;
 	}
 
 	struct LumpRecord
 	{
-		OString			name;
 		size_t			offset;
 		size_t			size;
 	};
 
 	LumpRecord*				mRecords;
 	size_t					mRecordCount;
-
-	typedef OHashTable<OString, unsigned int> NameLookupTable;
-	NameLookupTable*		mNameTable;
 
 	const LumpId			mStartingLumpId;
 

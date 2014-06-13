@@ -156,6 +156,55 @@ private:
 
 // ============================================================================
 //
+// SingleLumpResourceFile class implementation
+//
+// ============================================================================
+
+SingleLumpResourceFile::SingleLumpResourceFile(const OString& filename, const LumpId first_id,
+								LumpLookupTable* lump_lookup_table) :
+		mFileHandle(NULL), mFileName(filename),
+		mFileLength(0)
+{
+	mFileHandle = fopen(mFileName.c_str(), "rb");
+	if (mFileHandle == NULL)
+		return;
+
+	mFileLength = M_FileLength(mFileHandle);
+
+	// TODO: trim path and file extension off filename
+	const OString name(filename);
+
+	LumpId id = first_id & ResourceFile::LUMP_ID_MASK;
+	lump_lookup_table->addLump(name, id);
+}
+
+
+SingleLumpResourceFile::~SingleLumpResourceFile()
+{
+	cleanup();
+}
+
+
+size_t SingleLumpResourceFile::readLump(const LumpId id, void* data) const
+{
+	if (checkLump(id) && mFileHandle != NULL)
+	{
+		fseek(mFileHandle, 0, SEEK_SET);
+		size_t read_cnt = fread(data, 1, mFileLength, mFileHandle);
+		return read_cnt;
+	}
+
+	return 0;
+}
+
+
+
+
+// ****************************************************************************
+
+
+// ============================================================================
+//
 // WadResourceFile class implementation
 //
 // ============================================================================
@@ -163,8 +212,7 @@ private:
 WadResourceFile::WadResourceFile(const OString& filename, const LumpId first_id,
 								LumpLookupTable* lump_lookup_table) :
 		mRecords(NULL), mRecordCount(0),
-		mNameTable(NULL),
-		mStartingLumpId(first_id),
+		mStartingLumpId(first_id & ResourceFile::LUMP_ID_MASK),
 		mFileHandle(NULL), mFileName(filename)
 {
 	mFileHandle = fopen(mFileName.c_str(), "rb");
@@ -230,7 +278,6 @@ WadResourceFile::WadResourceFile(const OString& filename, const LumpId first_id,
 	}
 
 	mRecords = new LumpRecord[wad_lump_count];
-	mNameTable = new NameLookupTable(2 * wad_lump_count); 
 
 	for (size_t wad_lump_num = 0; wad_lump_num < (size_t)wad_lump_count; wad_lump_num++)
 	{
@@ -243,7 +290,6 @@ WadResourceFile::WadResourceFile(const OString& filename, const LumpId first_id,
 			const size_t index = mRecordCount++;
 			const OString name(StdStringToUpper(wad_table[wad_lump_num].name, 8));
 
-			mRecords[index].name = name;
 			mRecords[index].offset = offset;
 			mRecords[index].size = size;
 
@@ -298,6 +344,65 @@ size_t WadResourceFile::readLump(const LumpId id, void* data) const
 static LumpLookupTable lump_lookup_table;
 static std::vector<ResourceFile*> ResourceFiles;
 
+//
+// Res_CheckWadFile
+//
+// Checks that the first four bytes of a file are "IWAD" or "PWAD"
+//
+static bool Res_CheckWadFile(const OString& filename)
+{
+	const char* magic_str_iwad = "IWAD";
+	const char* magic_str_pwad = "PWAD";
+
+	FILE* fp = fopen(filename.c_str(), "rb");
+	size_t read_cnt;
+
+	if (fp == NULL)
+		return false;
+
+	char data[4];
+	read_cnt = fread(&data, 1, 4, fp);
+	if (read_cnt != 4)
+	{
+		fclose(fp);
+		return false;
+	}
+
+	fclose(fp);
+
+	return strncmp(data, magic_str_iwad, 4) == 0 || strncmp(data, magic_str_pwad, 4) == 0;
+}
+
+
+//
+// Res_CheckDehackedFile
+//
+// Checks that the first line of the file contains a DeHackEd header.
+//
+static bool Res_CheckDehackedFile(const OString& filename)
+{
+	const char* magic_str = "Patch File for DeHackEd v3.0";
+
+	FILE* fp = fopen(filename.c_str(), "rb");
+	size_t read_cnt;
+
+	if (fp == NULL)
+		return false;
+
+	char data[30];
+	size_t magic_len = strlen(magic_str);
+	read_cnt = fread(&data, 1, magic_len, fp);
+	if (read_cnt != magic_len)
+	{
+		fclose(fp);
+		return false;
+	}
+
+	fclose(fp);
+
+	return strnicmp(data, magic_str, magic_len) == 0;
+}
+
 
 //
 // Res_OpenResourceFile
@@ -312,28 +417,22 @@ void Res_OpenResourceFile(const OString& filename)
 	if (!M_FileExists(filename))
 		return;
 
-	// attempt to determine the type of the resource file
-	FILE* fp = fopen(filename.c_str(), "rb");
-	size_t read_cnt;
+	ResourceFile* res_file = NULL;
 
-	if (fp == NULL)
-		return;
+	if (Res_CheckWadFile(filename))
+		res_file = new WadResourceFile(filename, first_id, &lump_lookup_table);
+	else if (Res_CheckDehackedFile(filename))
+		res_file = new SingleLumpResourceFile(filename, first_id, &lump_lookup_table);
 
-	uint8_t magic[4];
-	read_cnt = fread(&magic, 1, 4, fp);
-	if (read_cnt != 4)
+	// check that the resource file contains valid lumps
+	if (res_file && res_file->getLumpCount() == 0)
 	{
-		fclose(fp);
-		return;
+		delete res_file;
+		res_file = NULL;
 	}
 
-	fclose(fp);
-
-	if (magic[1] == 'W' && magic[2] == 'A' && magic[3] == 'D' && (magic[0] == 'I' || magic[0] == 'P'))
-	{
-		// IWAD or PWAD
-		ResourceFiles.push_back(new WadResourceFile(filename, first_id, &lump_lookup_table));
-	}
+	if (res_file)
+		ResourceFiles.push_back(res_file);
 }
 
 
