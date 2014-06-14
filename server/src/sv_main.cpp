@@ -2000,8 +2000,6 @@ void SV_ConnectClient()
 	SV_SendServerSettings(*it);
 
 	cl->displaydisconnect = true;
-	SV_BroadcastUserInfo(*it);
-	it->playerstate = PST_REBORN;
 
 	cl->download.name = "";
 	if (connection_type == 1)
@@ -2009,6 +2007,7 @@ void SV_ConnectClient()
 		if (sv_waddownload)
 		{
 			it->playerstate = PST_DOWNLOAD;
+			SV_BroadcastUserInfo(*it);
 			SV_BroadcastPrintf(PRINT_HIGH, "%s has connected. (downloading)\n", it->userinfo.netname.c_str());
 
 			// send the client the scores and list of other clients
@@ -2017,14 +2016,33 @@ void SV_ConnectClient()
 			for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 			{
 				// [SL] 2011-07-30 - clients should consider downloaders as spectators
-				MSG_WriteMarker(&(pit->client.reliablebuf), svc_spectate);
-				MSG_WriteByte(&(pit->client.reliablebuf), it->id);
-				MSG_WriteByte(&(pit->client.reliablebuf), true);
+				MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
+				MSG_WriteByte(&pit->client.reliablebuf, it->id);
+				MSG_WriteByte(&pit->client.reliablebuf, true);
 			}
+		}
+		else
+		{
+			// Downloading is not allowed. Just kick the client and don't
+			// bother telling anyone else
+			cl->displaydisconnect = false;
+
+			Printf(PRINT_HIGH, "%s has connected. (downloading)\n", it->userinfo.netname.c_str());
+
+			MSG_WriteMarker(&cl->reliablebuf, svc_print);
+			MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
+			MSG_WriteString(&cl->reliablebuf, "Server: Downloading is disabled.\n");
+
+			SV_DropClient(*it);
+
+			Printf(PRINT_HIGH, "%s disconnected. Downloading is disabled.\n", it->userinfo.netname.c_str());
 		}
 
 		return;
 	}
+
+	SV_BroadcastUserInfo(*it);
+	it->playerstate = PST_REBORN;
 
 	it->fragcount = 0;
 	it->killcount = 0;
