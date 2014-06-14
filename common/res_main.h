@@ -29,6 +29,8 @@
 #include "hashtable.h"
 #include <vector>
 
+#include "w_wad.h"
+
 class LumpLookupTable;
 
 // ****************************************************************************
@@ -43,6 +45,7 @@ class ResourceFile
 {
 public:
 	typedef unsigned int LumpId;
+	typedef unsigned int ResourceFileId;
 
 	static const int LUMP_ID_BITS = 20;
 	static const int RESOURCE_FILE_ID_BITS = 32 - LUMP_ID_BITS;
@@ -52,7 +55,10 @@ public:
 	ResourceFile() { }
 	virtual ~ResourceFile() { }
 
+	virtual const ResourceFile::ResourceFileId getResourceFileId() const = 0;
 	virtual const OString& getFileName() const = 0;
+
+	virtual bool isIWad() const { return false; }
 
 	virtual size_t getLumpCount() const = 0;
 
@@ -61,8 +67,6 @@ public:
 	virtual size_t getLumpLength(const ResourceFile::LumpId id) const = 0;
 
 	virtual size_t readLump(const ResourceFile::LumpId id, void* data) const = 0;
-
-
 };
 
 // ****************************************************************************
@@ -76,10 +80,16 @@ public:
 class SingleLumpResourceFile : public ResourceFile
 {
 public:
-	SingleLumpResourceFile(const OString& filename, const LumpId first_id,
+	SingleLumpResourceFile(const OString& filename,
+						const ResourceFile::ResourceFileId res_id,
 						LumpLookupTable* lump_lookup_table);
 
 	virtual ~SingleLumpResourceFile();
+
+	virtual const ResourceFile::ResourceFileId getResourceFileId() const
+	{
+		return mResourceFileId;
+	}
 
 	virtual const OString& getFileName() const
 	{
@@ -93,7 +103,10 @@ public:
 
 	virtual bool checkLump(const LumpId id) const
 	{
-		return (id & ResourceFile::LUMP_ID_MASK) == 0;
+		ResourceFile::ResourceFileId res_id = id >> ResourceFile::LUMP_ID_BITS;
+		unsigned int wad_lump_num = id & ResourceFile::LUMP_ID_MASK;
+
+		return res_id == getResourceFileId() && wad_lump_num < getLumpCount();
 	}
 
 	virtual size_t getLumpLength(const LumpId id) const
@@ -111,10 +124,11 @@ private:
 		mFileHandle = NULL;
 	}
 
-	mutable FILE*			mFileHandle;
-	const OString&			mFileName;
+	ResourceFile::ResourceFileId	mResourceFileId;
 
-	size_t					mFileLength;
+	mutable FILE*					mFileHandle;
+	const OString&					mFileName;
+	size_t							mFileLength;
 };
 
 
@@ -129,14 +143,25 @@ private:
 class WadResourceFile : public ResourceFile
 {
 public:
-	WadResourceFile(const OString& filename, const LumpId first_id,
+	WadResourceFile(const OString& filename, 
+					const ResourceFile::ResourceFileId res_id,
 					LumpLookupTable* lump_lookup_table);
 	
 	virtual ~WadResourceFile();
 
+	virtual const ResourceFile::ResourceFileId getResourceFileId() const
+	{
+		return mResourceFileId;
+	}
+
 	virtual const OString& getFileName() const
 	{
 		return mFileName;
+	}
+
+	virtual bool isIWad() const
+	{
+		return mIsIWad;
 	}
 
 	virtual size_t getLumpCount() const
@@ -161,19 +186,20 @@ private:
 		mRecords = NULL;
 	}
 
+	ResourceFile::ResourceFileId	mResourceFileId;
+	mutable FILE*					mFileHandle;
+	const OString&					mFileName;
+
 	struct LumpRecord
 	{
 		size_t			offset;
 		size_t			size;
 	};
 
-	LumpRecord*				mRecords;
-	size_t					mRecordCount;
+	LumpRecord*						mRecords;
+	size_t							mRecordCount;
 
-	const LumpId			mStartingLumpId;
-
-	mutable FILE*			mFileHandle;
-	const OString&			mFileName;
+	bool							mIsIWad;
 };
 
 

@@ -160,8 +160,10 @@ private:
 //
 // ============================================================================
 
-SingleLumpResourceFile::SingleLumpResourceFile(const OString& filename, const LumpId first_id,
+SingleLumpResourceFile::SingleLumpResourceFile(const OString& filename,
+								const ResourceFile::ResourceFileId res_id,
 								LumpLookupTable* lump_lookup_table) :
+		mResourceFileId(res_id),
 		mFileHandle(NULL), mFileName(filename),
 		mFileLength(0)
 {
@@ -171,11 +173,14 @@ SingleLumpResourceFile::SingleLumpResourceFile(const OString& filename, const Lu
 
 	mFileLength = M_FileLength(mFileHandle);
 
-	// TODO: trim path and file extension off filename
-	const OString name(filename);
+	if (getLumpCount() > 0)
+	{
+		// TODO: trim path and file extension off filename
+		const OString name(filename);
 
-	LumpId id = first_id & ResourceFile::LUMP_ID_MASK;
-	lump_lookup_table->addLump(name, id);
+		LumpId id = mResourceFileId << ResourceFile::LUMP_ID_BITS; 
+		lump_lookup_table->addLump(name, id);
+	}
 }
 
 
@@ -209,11 +214,13 @@ size_t SingleLumpResourceFile::readLump(const LumpId id, void* data) const
 //
 // ============================================================================
 
-WadResourceFile::WadResourceFile(const OString& filename, const LumpId first_id,
+WadResourceFile::WadResourceFile(const OString& filename,
+								const ResourceFile::ResourceFileId res_id,
 								LumpLookupTable* lump_lookup_table) :
+		mResourceFileId(res_id),
+		mFileHandle(NULL), mFileName(filename),
 		mRecords(NULL), mRecordCount(0),
-		mStartingLumpId(first_id & ResourceFile::LUMP_ID_MASK),
-		mFileHandle(NULL), mFileName(filename)
+		mIsIWad(false)
 {
 	mFileHandle = fopen(mFileName.c_str(), "rb");
 	if (mFileHandle == NULL)
@@ -222,11 +229,13 @@ WadResourceFile::WadResourceFile(const OString& filename, const LumpId first_id,
 	size_t file_length = M_FileLength(mFileHandle);
 	size_t read_cnt;
 
-	uint8_t magic[4];
-	read_cnt = fread(&magic, 1, 4, mFileHandle);
+	const char* magic_str_iwad = "IWAD";
+	const char* magic_str_pwad = "PWAD";
 
+	char identifier[4];
+	read_cnt = fread(&identifier, 1, 4, mFileHandle);
 	if (read_cnt != 4 || feof(mFileHandle) || 
-		magic[1] != 'W' || magic[2] != 'A' || magic[3] != 'D' || (magic[0] != 'I' && magic[0] != 'P'))
+		(strncmp(identifier, magic_str_iwad, 4) != 0 && strncmp(identifier, magic_str_pwad, 4) != 0))
 	{
 		cleanup();
 		return;
@@ -293,12 +302,14 @@ WadResourceFile::WadResourceFile(const OString& filename, const LumpId first_id,
 			mRecords[index].offset = offset;
 			mRecords[index].size = size;
 
-			LumpId id = mStartingLumpId | index;
+			LumpId id = (mResourceFileId << ResourceFile::LUMP_ID_BITS) | index;
 			lump_lookup_table->addLump(name, id);
 		}
 	}
 
 	delete [] wad_table;
+
+	mIsIWad = W_IsIWAD(mFileName, W_MD5(mFileName));
 }
 
 
@@ -310,26 +321,30 @@ WadResourceFile::~WadResourceFile()
 
 bool WadResourceFile::checkLump(const LumpId id) const
 {
+	ResourceFile::ResourceFileId res_id = id >> ResourceFile::LUMP_ID_BITS;
 	unsigned int wad_lump_num = id & ResourceFile::LUMP_ID_MASK;
-	return wad_lump_num < mRecordCount;
+
+	return res_id == getResourceFileId() && wad_lump_num < getLumpCount();
 }
 
 
 size_t WadResourceFile::getLumpLength(const LumpId id) const
 {
-	unsigned int wad_lump_num = id & ResourceFile::LUMP_ID_MASK;
-	if (wad_lump_num < mRecordCount)
+	if (checkLump(id))
+	{
+		unsigned int wad_lump_num = id & ResourceFile::LUMP_ID_MASK;
 		return mRecords[wad_lump_num].size;
+	}
+
 	return 0;
 }
 
 	
 size_t WadResourceFile::readLump(const LumpId id, void* data) const
 {
-	unsigned int wad_lump_num = id & ResourceFile::LUMP_ID_MASK;
-
-	if (wad_lump_num < mRecordCount && mFileHandle != NULL)
+	if (checkLump(id) && mFileHandle != NULL)
 	{
+		unsigned int wad_lump_num = id & ResourceFile::LUMP_ID_MASK;
 		fseek(mFileHandle, mRecords[wad_lump_num].offset, SEEK_SET);
 		size_t read_cnt = fread(data, 1, mRecords[wad_lump_num].size, mFileHandle);
 		return read_cnt;
@@ -411,8 +426,7 @@ static bool Res_CheckDehackedFile(const OString& filename)
 // 
 void Res_OpenResourceFile(const OString& filename)
 {
-	size_t resource_file_id = ResourceFiles.size();
-	ResourceFile::LumpId first_id = resource_file_id << ResourceFile::LUMP_ID_BITS;
+	ResourceFile::ResourceFileId res_id = ResourceFiles.size();
 
 	if (!M_FileExists(filename))
 		return;
@@ -420,9 +434,9 @@ void Res_OpenResourceFile(const OString& filename)
 	ResourceFile* res_file = NULL;
 
 	if (Res_CheckWadFile(filename))
-		res_file = new WadResourceFile(filename, first_id, &lump_lookup_table);
+		res_file = new WadResourceFile(filename, res_id, &lump_lookup_table);
 	else if (Res_CheckDehackedFile(filename))
-		res_file = new SingleLumpResourceFile(filename, first_id, &lump_lookup_table);
+		res_file = new SingleLumpResourceFile(filename, res_id, &lump_lookup_table);
 
 	// check that the resource file contains valid lumps
 	if (res_file && res_file->getLumpCount() == 0)
@@ -486,9 +500,8 @@ const OString& Res_GetLumpName(const ResourceFile::LumpId id)
 //
 bool Res_CheckLump(const ResourceFile::LumpId id)
 {
-	size_t resource_file_id = id >> ResourceFile::LUMP_ID_BITS;
-	return resource_file_id < ResourceFiles.size() &&
-			ResourceFiles[resource_file_id]->checkLump(id);
+	ResourceFile::ResourceFileId res_id = id >> ResourceFile::LUMP_ID_BITS;
+	return res_id < ResourceFiles.size() && ResourceFiles[res_id]->checkLump(id);
 }
 	
 
@@ -500,9 +513,9 @@ bool Res_CheckLump(const ResourceFile::LumpId id)
 //
 size_t Res_GetLumpLength(const ResourceFile::LumpId id)
 {
-	size_t resource_file_id = id >> ResourceFile::LUMP_ID_BITS;
-	if (resource_file_id < ResourceFiles.size())
-		return ResourceFiles[resource_file_id]->getLumpLength(id);
+	ResourceFile::ResourceFileId res_id = id >> ResourceFile::LUMP_ID_BITS;
+	if (res_id < ResourceFiles.size())
+		return ResourceFiles[res_id]->getLumpLength(id);
 	return 0;
 }
 
@@ -517,9 +530,9 @@ size_t Res_GetLumpLength(const ResourceFile::LumpId id)
 //
 size_t Res_ReadLump(const ResourceFile::LumpId id, void* data)
 {
-	size_t resource_file_id = id >> ResourceFile::LUMP_ID_BITS;
-	if (resource_file_id < ResourceFiles.size())
-		return ResourceFiles[resource_file_id]->readLump(id, data);
+	ResourceFile::ResourceFileId res_id = id >> ResourceFile::LUMP_ID_BITS;
+	if (res_id < ResourceFiles.size())
+		return ResourceFiles[res_id]->readLump(id, data);
 	return 0;
 }
 
