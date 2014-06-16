@@ -33,7 +33,17 @@
 
 class LumpLookupTable;
 
+typedef uint32_t ResourceId;
+typedef uint32_t ResourceFileId;
+typedef uint32_t NameSpaceId;
+
+typedef std::vector<OString> NameSpaceTable;
+
+static const OString global_namespace_name("GLOBAL");
+
+
 // ****************************************************************************
+
 
 // ============================================================================
 //
@@ -44,29 +54,23 @@ class LumpLookupTable;
 class ResourceFile
 {
 public:
-	typedef unsigned int LumpId;
-	typedef unsigned int ResourceFileId;
-
-	static const int LUMP_ID_BITS = 20;
-	static const int RESOURCE_FILE_ID_BITS = 32 - LUMP_ID_BITS;
-	static const LumpId LUMP_ID_MASK = (1 << LUMP_ID_BITS) - 1;
-	static const LumpId LUMP_NOT_FOUND = -1;
+	static const ResourceId LUMP_NOT_FOUND = -1;
 
 	ResourceFile() { }
 	virtual ~ResourceFile() { }
 
-	virtual const ResourceFile::ResourceFileId getResourceFileId() const = 0;
+	virtual const ResourceFileId getResourceFileId() const = 0;
 	virtual const OString& getFileName() const = 0;
 
 	virtual bool isIWad() const { return false; }
 
 	virtual size_t getLumpCount() const = 0;
 
-	virtual bool checkLump(const ResourceFile::LumpId id) const = 0;
+	virtual bool checkLump(const ResourceId id) const = 0;
 
-	virtual size_t getLumpLength(const ResourceFile::LumpId id) const = 0;
+	virtual size_t getLumpLength(const ResourceId id) const = 0;
 
-	virtual size_t readLump(const ResourceFile::LumpId id, void* data) const = 0;
+	virtual size_t readLump(const ResourceId id, void* data) const = 0;
 };
 
 // ****************************************************************************
@@ -80,13 +84,11 @@ public:
 class SingleLumpResourceFile : public ResourceFile
 {
 public:
-	SingleLumpResourceFile(const OString& filename,
-						const ResourceFile::ResourceFileId res_id,
-						LumpLookupTable* lump_lookup_table);
+	SingleLumpResourceFile(const OString& filename, const ResourceFileId file_id, LumpLookupTable* lump_lookup_table);
 
 	virtual ~SingleLumpResourceFile();
 
-	virtual const ResourceFile::ResourceFileId getResourceFileId() const
+	virtual const ResourceFileId getResourceFileId() const
 	{
 		return mResourceFileId;
 	}
@@ -101,20 +103,16 @@ public:
 		return mFileLength > 0 ? 1 : 0;
 	}
 
-	virtual bool checkLump(const LumpId id) const
-	{
-		ResourceFile::ResourceFileId res_id = id >> ResourceFile::LUMP_ID_BITS;
-		unsigned int wad_lump_num = id & ResourceFile::LUMP_ID_MASK;
+	virtual bool checkLump(const ResourceId res_id) const;
 
-		return res_id == getResourceFileId() && wad_lump_num < getLumpCount();
+	virtual size_t getLumpLength(const ResourceId res_id) const
+	{
+		if (checkLump(res_id))
+			return mFileLength;
+		return 0;
 	}
 
-	virtual size_t getLumpLength(const LumpId id) const
-	{
-		return mFileLength;
-	}
-
-	virtual size_t readLump(const LumpId id, void* data) const;
+	virtual size_t readLump(const ResourceId res_id, void* data) const;
 
 private:
 	void cleanup()
@@ -124,11 +122,11 @@ private:
 		mFileHandle = NULL;
 	}
 
-	ResourceFile::ResourceFileId	mResourceFileId;
+	ResourceFileId		mResourceFileId;
 
-	mutable FILE*					mFileHandle;
-	const OString&					mFileName;
-	size_t							mFileLength;
+	mutable FILE*		mFileHandle;
+	const OString&		mFileName;
+	size_t				mFileLength;
 };
 
 
@@ -144,12 +142,12 @@ class WadResourceFile : public ResourceFile
 {
 public:
 	WadResourceFile(const OString& filename, 
-					const ResourceFile::ResourceFileId res_id,
+					const ResourceFileId file_id,
 					LumpLookupTable* lump_lookup_table);
 	
 	virtual ~WadResourceFile();
 
-	virtual const ResourceFile::ResourceFileId getResourceFileId() const
+	virtual const ResourceFileId getResourceFileId() const
 	{
 		return mResourceFileId;
 	}
@@ -169,13 +167,20 @@ public:
 		return mRecordCount;
 	}
 
-	virtual bool checkLump(const LumpId id) const;
+	virtual bool checkLump(const ResourceId res_id) const;
 
-	virtual size_t getLumpLength(const LumpId id) const;
+	virtual size_t getLumpLength(const ResourceId res_id) const;
 		
-	virtual size_t readLump(const LumpId id, void* data) const;
+	virtual size_t readLump(const ResourceId res_id, void* data) const;
 
 private:
+	struct wad_lump_record_t
+	{
+		int32_t		offset;
+		int32_t		size;
+		char		name[8];
+	};
+
 	void cleanup()
 	{
 		if (mFileHandle != NULL)
@@ -186,20 +191,22 @@ private:
 		mRecords = NULL;
 	}
 
-	ResourceFile::ResourceFileId	mResourceFileId;
-	mutable FILE*					mFileHandle;
-	const OString&					mFileName;
+	void setupMarkers(const wad_lump_record_t* wad_table, size_t wad_lump_count);
+	bool isLumpFlat(const uint32_t wad_lump_num);
+	bool isLumpSprite(const uint32_t wad_lump_num);
 
-	struct LumpRecord
-	{
-		size_t			offset;
-		size_t			size;
-	};
+	ResourceFileId		mResourceFileId;
+	mutable FILE*		mFileHandle;
+	const OString&		mFileName;
 
-	LumpRecord*						mRecords;
-	size_t							mRecordCount;
+	wad_lump_record_t*	mRecords;
+	size_t				mRecordCount;
 
-	bool							mIsIWad;
+	bool				mIsIWad;
+
+	uint32_t			mFlatStartNum, mFlatEndNum;
+	uint32_t			mColorMapStartNum, mColorMapEndNum;
+	uint32_t			mSpriteStartNum, mSpriteEndNum;
 };
 
 
@@ -209,32 +216,33 @@ void Res_OpenResourceFile(const OString& filename);
 
 void Res_CloseAllResourceFiles();
 
-ResourceFile::LumpId Res_GetLumpId(const OString& lumpname);
+ResourceId Res_GetResourceId(const OString& lumpname, const OString& namespace_name = global_namespace_name);
 
-const OString& Res_GetLumpName(const ResourceFile::LumpId id);
+const OString& Res_GetLumpName(const ResourceId res_id);
 
-bool Res_CheckLump(const ResourceFile::LumpId id);
+bool Res_CheckLump(const ResourceId res_id);
 
 static inline bool Res_CheckLump(const OString& lumpname)
 {
-	return Res_CheckLump(Res_GetLumpId(lumpname));
+	return Res_CheckLump(Res_GetResourceId(lumpname));
 }
 
-size_t Res_GetLumpLength(const ResourceFile::LumpId id);
+size_t Res_GetLumpLength(const ResourceId res_id);
 
 static inline size_t Res_GetLumpLength(const OString& lumpname)
 {
-	return Res_GetLumpLength(Res_GetLumpId(lumpname));
+	return Res_GetLumpLength(Res_GetResourceId(lumpname));
 }
 
-size_t Res_ReadLump(const ResourceFile::LumpId id, void* data);
+size_t Res_ReadLump(const ResourceId id, void* data);
 
 static inline size_t Res_ReadLump(const OString& lumpname, void* data)
 {
-	return Res_ReadLump(Res_GetLumpId(lumpname), data);
+	return Res_ReadLump(Res_GetResourceId(lumpname), data);
 }
 
-void Res_QueryLumpName(const OString& lumpname, std::vector<ResourceFile::LumpId>& ids);
+void Res_QueryLumpName(std::vector<ResourceId>& res_ids,
+					const OString& lumpname, const OString& namespace_name = global_namespace_name);
 
 #endif	// __RES_MAIN_H__
 
