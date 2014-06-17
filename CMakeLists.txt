@@ -3,10 +3,6 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
 
-if(COMMAND cmake_policy)
-  cmake_policy(SET CMP0005 NEW)
-endif(COMMAND cmake_policy)
-
 include(CMakeDependentOption)
 
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
@@ -60,10 +56,13 @@ macro(global_compile_options)
     if(USE_SANITIZE_ADDRESS)
       set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
     endif()
+    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+      add_definitions(-DODAMEX_DEBUG)
+	endif()
   endif()
 endmacro(global_compile_options)
 
-if( ${CMAKE_SYSTEM_NAME} MATCHES SunOS )
+if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )
   set(SOLARIS 1)
 endif()
 
@@ -148,8 +147,8 @@ if(NOT APPLE)
       DESTINATION config-samples
       COMPONENT common)
 
-      # Windows ZIP packages are "tarbombs" by default.
-      set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
+    # Windows ZIP packages are "tarbombs" by default.
+    set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
   else()
     install(FILES odamex.wad LICENSE README
       DESTINATION ${CMAKE_INSTALL_DATADIR}/odamex

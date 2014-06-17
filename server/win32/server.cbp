@@ -50,6 +50,7 @@
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
+					<Add option="-DODAMEX_DEBUG" />
 					<Add option="-DSERVER_APP" />
 					<Add option="-DODA_HAVE_MINIUPNP" />
 					<Add directory="../../libraries/libminiupnpc" />
@@ -155,6 +156,7 @@
 					<Add option="/wd4430" />
 					<Add option="/DWIN32" />
 					<Add option="/D_WINDOWS" />
+					<Add option="/DODAMEX_DEBUG" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DSERVER_APP" />

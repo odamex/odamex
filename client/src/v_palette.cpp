@@ -96,7 +96,7 @@ shaderef_t::shaderef_t(const shaderef_t &other) :
 shaderef_t::shaderef_t(const shademap_t* const colors, const int mapnum) :
 	m_colors(colors), m_mapnum(mapnum)
 {
-#if DEBUG
+	#if ODAMEX_DEBUG
 	// NOTE(jsd): Arbitrary value picked here because we don't record the max number of colormaps for dynamic ones... or do we?
 	if (m_mapnum >= 8192)
 	{
@@ -104,7 +104,7 @@ shaderef_t::shaderef_t(const shademap_t* const colors, const int mapnum) :
 		sprintf_s(tmp, "32bpp: shaderef_t::shaderef_t() called with mapnum = %d, which looks too large", m_mapnum);
 		throw CFatalError(tmp);
 	}
-#endif
+	#endif
 
 	if (m_colors != NULL)
 	{

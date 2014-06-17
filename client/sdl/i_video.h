@@ -318,7 +318,7 @@ public:
 
 	inline uint8_t* getBuffer()
 	{
-		#ifdef DEBUG
+		#ifdef ODAMEX_DEBUG
 		if (!mLocks)
 			return NULL;
 		#endif
@@ -327,7 +327,7 @@ public:
 
 	inline const uint8_t* getBuffer() const
 	{
-		#ifdef DEBUG
+		#ifdef ODAMEX_DEBUG
 		if (!mLocks)
 			return NULL;
 		#endif
@@ -336,7 +336,7 @@ public:
 
 	inline uint8_t* getBuffer(uint16_t x, uint16_t y)
 	{
-		#ifdef DEBUG
+		#ifdef ODAMEX_DEBUG
 		if (!mLocks)
 			return NULL;
 		#endif
@@ -345,7 +345,7 @@ public:
 
 	inline const uint8_t* getBuffer(uint16_t x, uint16_t y) const
 	{
-		#ifdef DEBUG
+		#ifdef ODAMEX_DEBUG
 		if (!mLocks)
 			return NULL;
 		#endif
