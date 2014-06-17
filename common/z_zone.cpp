@@ -107,14 +107,8 @@ void Z_Free2(void* ptr, const char* file, int line)
 	if (block->id != ZONEID)
 		I_FatalError("Z_Free: freed a pointer without ZONEID at %s:%i", file, line);
 
-	if ((intptr_t)block->user > 0x100)
-	{
-		// smaller values are not pointers
-		// Note: OS-dependent?
-		
-		// clear the user's mark
-		*block->user = NULL;
-	}
+	if (block->user != NULL)
+		*block->user = NULL;	// clear the user's mark
 
 	// mark as free
 	block->tag = PU_FREE;
@@ -238,26 +232,19 @@ void* Z_Malloc2(size_t size, int tag, void* user, const char* file, int line)
 		base->size = size;
 	}
 		
+	base->tag = tag;
+	base->user = (void**)user;
+	base->id = ZONEID;
+
 	if (user)
-	{
-		// mark as an in use block
-		base->user = (void**)user;
 		*(void**)user = (void*)((byte*)base + sizeof(memblock_t));
-	}
 	else
-	{
 		if (tag >= PU_PURGELEVEL)
 			I_FatalError("Z_Malloc: an owner is required for purgable blocks at %s:%i", file, line);
-
-		// mark as in use, but unowned
-		base->user = (void**)2;
-	}
-	base->tag = tag;
 
 	// next allocation will start looking here
 	mainzone->rover = base->next;
 
-	base->id = ZONEID;
 
 	#ifdef ODAMEX_DEBUG
 	Z_CheckHeap();
@@ -416,21 +403,19 @@ void Z_DumpHeap(int lowtag, int hightag)
     {
 		char user[30];
 		if (block->user == NULL || block->tag == PU_FREE)
-			sprintf(user, "FREE");
-		else if ((intptr_t)block->user == 2)
-			sprintf(user, "UNOWNED");
+			sprintf(user, "---");
 		else
 			sprintf(user, "%p", block->user);
 
 		char tag[30];
-		if (block->tag == PU_STATIC)
+		if (block->tag == PU_FREE)
+			sprintf(tag, "FREE");
+		else if (block->tag == PU_STATIC)
 			sprintf(tag, "STATIC");
 		else if (block->tag == PU_SOUND)
 			sprintf(tag, "SOUND");
 		else if (block->tag == PU_MUSIC)
 			sprintf(tag, "MUSIC");
-		else if (block->tag == PU_FREE)
-			sprintf(tag, "FREE");
 		else if (block->tag == PU_LEVEL)
 			sprintf(tag, "LEVEL");
 		else if (block->tag == PU_LEVSPEC)
@@ -443,7 +428,7 @@ void Z_DumpHeap(int lowtag, int hightag)
 			sprintf(tag, "UNKNOWN");
 
 		if (block->tag >= lowtag && block->tag <= hightag)
-			Printf(PRINT_HIGH, "block:%p    size:%7i    user:%-9s    tag:%-s\n",
+			Printf(PRINT_HIGH, "block:%p    size:%9i    user:%-9s    tag:%-s\n",
 				block, block->size, user, tag);
 		
 		if (block->next == &mainzone->blocklist)
