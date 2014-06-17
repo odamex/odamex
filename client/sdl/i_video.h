@@ -318,37 +318,21 @@ public:
 
 	inline uint8_t* getBuffer()
 	{
-		#ifdef ODAMEX_DEBUG
-		if (!mLocks)
-			return NULL;
-		#endif
 		return mSurfaceBuffer;
 	}
 
 	inline const uint8_t* getBuffer() const
 	{
-		#ifdef ODAMEX_DEBUG
-		if (!mLocks)
-			return NULL;
-		#endif
 		return mSurfaceBuffer;
 	}
 
 	inline uint8_t* getBuffer(uint16_t x, uint16_t y)
 	{
-		#ifdef ODAMEX_DEBUG
-		if (!mLocks)
-			return NULL;
-		#endif
 		return mSurfaceBuffer + int(y) * getPitch() + int(x) * getBytesPerPixel();
 	}
 
 	inline const uint8_t* getBuffer(uint16_t x, uint16_t y) const
 	{
-		#ifdef ODAMEX_DEBUG
-		if (!mLocks)
-			return NULL;
-		#endif
 		return mSurfaceBuffer + int(y) * getPitch() + int(x) * getBytesPerPixel();
 	}
 
@@ -468,11 +452,8 @@ public:
 
 	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) = 0;
 
-	virtual void lockSurface()
-	{	getPrimarySurface()->lock();	}
-
-	virtual void unlockSurface()
-	{	getPrimarySurface()->unlock();	}
+	virtual void lockSurface() { }
+	virtual void unlockSurface() { }
 
 	virtual void refresh() { }
 
