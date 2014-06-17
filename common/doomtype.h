@@ -27,6 +27,7 @@
 #define __DOOMTYPE__
 
 #include "version.h"
+#include "errors.h"
 
 #include "m_swap.h"			// for __BIG_ENDIAN__ macro
 

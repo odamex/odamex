@@ -114,7 +114,7 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_co
 	if (m_mapnum >= 8192)
 	{
 		char tmp[100];
-		sprintf_s(tmp, "32bpp: shaderef_t::shaderef_t() called with mapnum = %d, which looks too large", m_mapnum);
+		sprintf(tmp, "32bpp: shaderef_t::shaderef_t() called with mapnum = %d, which looks too large", m_mapnum);
 		throw CFatalError(tmp);
 	}
 	#endif
