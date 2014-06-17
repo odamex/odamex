@@ -34,6 +34,7 @@
 #include "m_fileio.h"
 #include "m_misc.h"
 #include "i_system.h"
+#include "z_zone.h"
 #include "version.h"
 #include "sv_main.h"
 #include "sv_master.h"
@@ -148,7 +149,8 @@ void M_LoadDefaults(void)
 // JSON Utility Functions (based on those from EECS)
 
 // Reads a file in JSON format
-bool M_ReadJSON(Json::Value &json, const char* filename){
+bool M_ReadJSON(Json::Value &json, const char* filename)
+{
 	byte* buffer = NULL;
 	std::string data;
 	Json::Reader reader;
@@ -158,20 +160,26 @@ bool M_ReadJSON(Json::Value &json, const char* filename){
 		return false;
 
 	length = M_ReadFile(filename, &buffer);
-	if (!length)
-		return false;
-
-	const char* start = reinterpret_cast<const char*>(buffer);
-	const char* end = reinterpret_cast<const char*>(&buffer[length]);
-
-	if (!reader.parse(start, end, json))
+	if (length > 0 && buffer)
 	{
-		Printf(PRINT_HIGH,"M_ReadJSONFromFile: Error parsing JSON: %s.\n",
-		       reader.getFormattedErrorMessages().c_str());
-		return false;
+		const char* start = reinterpret_cast<const char*>(buffer);
+		const char* end = reinterpret_cast<const char*>(&buffer[length]);
+
+		bool res = reader.parse(start, end, json);
+
+		Z_Free(buffer);
+
+		if (res == false)
+		{
+			Printf(PRINT_HIGH,"M_ReadJSONFromFile: Error parsing JSON: %s.\n",
+				   reader.getFormattedErrorMessages().c_str());
+			return false;
+		}
+
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 // Writes a file in JSON format.  Third param is true if the output
