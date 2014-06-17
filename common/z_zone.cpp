@@ -289,66 +289,6 @@ void Z_FreeTags(int lowtag, int hightag)
 }
 
 //
-// Z_DumpHeap
-// Note: TFileDumpHeap( stdout ) ?
-//
-void Z_DumpHeap(int lowtag, int hightag)
-{
-    memblock_t*	block;
-	
-    Printf(PRINT_HIGH, "zone size: %i  location: %p\n", mainzone->size, mainzone);
-    Printf(PRINT_HIGH, "tag range: %i to %i\n", lowtag, hightag);
-	
-    for (block = mainzone->blocklist.next ; ; block = block->next)
-    {
-		if (block->tag >= lowtag && block->tag <= hightag)
-			Printf(PRINT_HIGH, "block:%p    size:%7i    user:%p    tag:%3i\n",
-				block, block->size, block->user, block->tag);
-		
-		if (block->next == &mainzone->blocklist)
-			break;		// all blocks have been hit
-	
-		if ((byte*)block + block->size != (byte*)block->next)
-			Printf(PRINT_HIGH, "ERROR: block size does not touch the next block\n");
-
-		if (block->next->prev != block)
-			Printf(PRINT_HIGH, "ERROR: next block doesn't have proper back link\n");
-
-		if (block->tag == PU_FREE && block->next->tag == PU_FREE)
-			Printf(PRINT_HIGH, "ERROR: two consecutive free blocks\n");
-    }
-}
-
-//
-// Z_FileDumpHeap
-//
-void Z_FileDumpHeap(FILE* f)
-{
-    memblock_t*	block;
-	
-    fprintf(f,"zone size: %i  location: %p\n", (int)mainzone->size, (void*)mainzone);
-	
-    for (block = mainzone->blocklist.next ; ; block = block->next)
-    {
-		fprintf(f,"block:%p    size:%7i    user:%p    tag:%3i\n",
-			 (void*)block, (int)block->size, (void*)block->user, block->tag);
-			
-		if (block->next == &mainzone->blocklist)
-			break;		// all blocks have been hit
-		
-		if ((byte*)block + block->size != (byte*)block->next)
-			fprintf(f,"ERROR: block size does not touch the next block\n");
-
-		if (block->next->prev != block)
-			fprintf(f,"ERROR: next block doesn't have proper back link\n");
-
-		if (block->tag == PU_FREE && block->next->tag == PU_FREE)
-			fprintf(f,"ERROR: two consecutive free blocks\n");
-    }
-}
-
-
-//
 // Z_CheckHeap
 //
 void Z_CheckHeap()
@@ -446,6 +386,97 @@ size_t Z_FreeMemory()
 	}
 	return pfree + efree;
 }
+
+//
+// Z_DumpHeap
+// Note: TFileDumpHeap( stdout ) ?
+//
+void Z_DumpHeap(int lowtag, int hightag)
+{
+	Z_FreeMemory();
+    memblock_t*	block;
+	
+    Printf(PRINT_HIGH, "zone size: %i  location: %p\n", mainzone->size, mainzone);
+	Printf(PRINT_HIGH, "used: %i  free: %i\n", pfree+lsize, efree);
+    Printf(PRINT_HIGH, "tag range: %i to %i\n", lowtag, hightag);
+	
+    for (block = mainzone->blocklist.next ; ; block = block->next)
+    {
+		char user[30];
+		if (block->user == NULL)
+			sprintf(user, "FREE");
+		else if ((intptr_t)block->user == 2)
+			sprintf(user, "UNOWNED");
+		else
+			sprintf(user, "%p", block->user);
+
+		char tag[30];
+		if (block->tag == PU_STATIC)
+			sprintf(tag, "STATIC");
+		else if (block->tag == PU_SOUND)
+			sprintf(tag, "SOUND");
+		else if (block->tag == PU_MUSIC)
+			sprintf(tag, "MUSIC");
+		else if (block->tag == PU_FREE)
+			sprintf(tag, "FREE");
+		else if (block->tag == PU_LEVEL)
+			sprintf(tag, "LEVEL");
+		else if (block->tag == PU_LEVSPEC)
+			sprintf(tag, "LEVSPEC");
+		else if (block->tag == PU_LEVACS)
+			sprintf(tag, "LEVACS");
+		else if (block->tag == PU_CACHE)
+			sprintf(tag, "CACHE");
+		else
+			sprintf(tag, "UNKNOWN");
+
+		if (block->tag >= lowtag && block->tag <= hightag)
+			Printf(PRINT_HIGH, "block:%p    size:%7i    user:%-9s    tag:%-s\n",
+				block, block->size, user, tag);
+		
+		if (block->next == &mainzone->blocklist)
+			break;		// all blocks have been hit
+	
+		if ((byte*)block + block->size != (byte*)block->next)
+			Printf(PRINT_HIGH, "ERROR: block size does not touch the next block\n");
+
+		if (block->next->prev != block)
+			Printf(PRINT_HIGH, "ERROR: next block doesn't have proper back link\n");
+
+		if (block->tag == PU_FREE && block->next->tag == PU_FREE)
+			Printf(PRINT_HIGH, "ERROR: two consecutive free blocks\n");
+    }
+}
+
+
+//
+// Z_FileDumpHeap
+//
+void Z_FileDumpHeap(FILE* f)
+{
+    memblock_t*	block;
+	
+    fprintf(f,"zone size: %i  location: %p\n", (int)mainzone->size, (void*)mainzone);
+	
+    for (block = mainzone->blocklist.next ; ; block = block->next)
+    {
+		fprintf(f,"block:%p    size:%7i    user:%p    tag:%3i\n",
+			 (void*)block, (int)block->size, (void*)block->user, block->tag);
+			
+		if (block->next == &mainzone->blocklist)
+			break;		// all blocks have been hit
+		
+		if ((byte*)block + block->size != (byte*)block->next)
+			fprintf(f,"ERROR: block size does not touch the next block\n");
+
+		if (block->next->prev != block)
+			fprintf(f,"ERROR: next block doesn't have proper back link\n");
+
+		if (block->tag == PU_FREE && block->next->tag == PU_FREE)
+			fprintf(f,"ERROR: two consecutive free blocks\n");
+    }
+}
+
 
 BEGIN_COMMAND (dumpheap)
 {
