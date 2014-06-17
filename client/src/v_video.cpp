@@ -487,6 +487,11 @@ void V_Init()
 
 	V_InitPalette("PLAYPAL");
 
+	if (realcolormaps.colormap)
+		Z_Free(realcolormaps.colormap);
+	if (realcolormaps.shademap)
+		Z_Free(realcolormaps.shademap);
+
 	R_InitColormaps();
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
