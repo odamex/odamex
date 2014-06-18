@@ -854,7 +854,7 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (sv_allowcheats)
+    if (sv_allowcheats || sv_gametype == GM_COOP)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
         Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
