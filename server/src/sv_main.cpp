@@ -2365,7 +2365,7 @@ void SV_DrawScores()
                 Printf_Bold("---------------------------------------------------RED TEAM");
 			else		// shouldn't happen
                 Printf_Bold("-----------------------------------------------UNKNOWN TEAM");
-				
+
             Printf_Bold("ID  Address          Name            Points Caps Frags Time");
             Printf_Bold("-----------------------------------------------------------");
 
@@ -2438,7 +2438,7 @@ void SV_DrawScores()
 			}
 		}
 	}
-	
+
 	else if (sv_gametype == GM_DM)
 	{
 		compare_player_frags comparison_functor;
@@ -2915,7 +2915,7 @@ void SV_UpdateMissiles(player_t &pl)
 		// Revenant tracers and Mancubus fireballs need to be  updated more often
 		else if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT))
 			continue;
-		
+
 		if(SV_IsPlayerAllowedToSee(pl, mo))
 		{
 			client_t *cl = &pl.client;
@@ -4209,7 +4209,7 @@ void SV_ParseCommands(player_t &player)
 		case clc_kill:
 			if(player.mo &&
                level.time > player.death_time + TICRATE*10 &&
-               (sv_allowcheats || (sv_gametype == GM_COOP && !sv_keepkeys)))
+               sv_allowcheats)
             {
 				SV_Suicide (player);
             }

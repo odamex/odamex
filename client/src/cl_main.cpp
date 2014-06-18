@@ -175,7 +175,7 @@ argb_t CL_GetPlayerColor(player_t *player)
 		const float blue_hue = 240.0f, red_hue = 0.0f;
 		float intensity = 0.6f + 0.4f * V_RGBtoHSV(color).getv();
 		intensity = std::min(intensity, 1.0f);
-		
+
 		if (player->userinfo.team == TEAM_BLUE)
 			color = V_HSVtoRGB(fahsv_t(blue_hue, 1.0f, intensity));
 		else if (player->userinfo.team == TEAM_RED)
@@ -854,7 +854,7 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (sv_allowcheats || (sv_gametype == GM_COOP && !sv_keepkeys))
+    if (sv_allowcheats)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
         Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
