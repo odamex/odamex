@@ -26,6 +26,30 @@ cmake_minimum_required(VERSION 2.8)
 set(PROJECT_VERSION 0.7.0)
 set(PROJECT_COPYRIGHT "2006-2014")
 
+# identify the target CPU
+# adapted from the FindJNI.cmake module included with the CMake distribution
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+  set(target_arch "amd64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^i[3-9]86$")
+  set(target_arch "i386")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^alpha")
+  set(target_arch "alpha")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
+  set(target_arch "arm")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64")
+  set(target_arch "ppc64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)")
+  set(target_arch "ppc")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^sparc")
+  # Both flavors can run on the same processor
+  set(target_arch "${CMAKE_SYSTEM_PROCESSOR}" "sparc" "sparcv9")
+else()
+  set(target_arch "${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
+list(REMOVE_DUPLICATES target_arch)
+message("Using target architecture " ${target_arch})
+
 # Default build type
 if(NOT MSVC)
   if(NOT CMAKE_BUILD_TYPE)
