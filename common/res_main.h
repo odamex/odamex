@@ -199,10 +199,6 @@ private:
 		mRecords = NULL;
 	}
 
-	void setupMarkers(const wad_lump_record_t* wad_table, size_t wad_lump_count);
-	bool isLumpFlat(const uint32_t wad_lump_num);
-	bool isLumpSprite(const uint32_t wad_lump_num);
-
 	ResourceFileId		mResourceFileId;
 	mutable FILE*		mFileHandle;
 	const OString&		mFileName;
@@ -211,10 +207,6 @@ private:
 	size_t				mRecordCount;
 
 	bool				mIsIWad;
-
-	uint32_t			mFlatStartNum, mFlatEndNum;
-	uint32_t			mColorMapStartNum, mColorMapEndNum;
-	uint32_t			mSpriteStartNum, mSpriteEndNum;
 };
 
 

@@ -40,6 +40,7 @@
 #include <vector>
 #include "m_fileio.h"
 #include "cmdlib.h"
+#include "c_dispatch.h"
 
 #include "i_system.h"
 #include "z_zone.h"
@@ -376,6 +377,30 @@ public:
 		std::reverse(res_ids.begin(), res_ids.end());
 	}
 
+
+	void dump()
+	{
+		std::vector<OString> resources;
+
+		for (NameLookupTable::const_iterator it = mNameTable.begin(); it != mNameTable.end(); ++it)
+		{
+			const OString& lump_name = it->first.first;
+			const OString& lump_namespace_name = it->first.second;
+			const LumpRecord* rec = it->second;
+			while (rec)
+			{
+				char str[8192];
+				sprintf(str, "%s/%s (0x%08x)", lump_namespace_name.c_str(), lump_name.c_str(), rec->res_id);
+				resources.push_back(str);
+				rec = rec->next;
+			}
+		}
+
+		std::sort(resources.begin(), resources.end());
+		for (size_t i = 0; i < resources.size(); i++)
+			Printf(PRINT_HIGH, "%s\n", resources[i].c_str());
+	}
+
 private:
 	static const size_t INITIAL_SIZE = 8192;
 
@@ -468,6 +493,76 @@ size_t SingleLumpResourceFile::readLump(const ResourceId res_id, void* data, siz
 
 // ****************************************************************************
 
+// ============================================================================
+//
+// MarkerTable
+//
+// Lookup table for determining if a given lump number is between two marker
+// lumps. This mimics vanilla Doom's behavior in that the start lump need not
+// be present.
+//
+// ============================================================================
+
+
+class MarkerTable
+{
+public:
+	MarkerTable() : mLookup(32)
+	{
+		addMarker("F_START", -1);
+		addMarker("F_END", -1);
+		addMarker("S_START", -1);
+		addMarker("SS_START", -1);
+		addMarker("S_END", -1);
+		addMarker("SS_END", -1);
+		addMarker("P_START", -1);
+		addMarker("PP_START", -1);
+		addMarker("P_END", -1);
+		addMarker("PP_END", -1);
+		addMarker("C_START", -1);
+		addMarker("C_END", -1);
+	}
+
+	bool isMarker(const OString& name)
+	{
+		return mLookup.find(translateMarkerName(name)) != mLookup.end();
+	}
+
+	void addMarker(const OString& name, int wad_lump_num)
+	{
+		mLookup.insert(std::make_pair(translateMarkerName(name), wad_lump_num));
+	}
+	
+	bool betweenMarkers(int wad_lump_num, const OString& name1, const OString& name2)
+	{
+		return getMarkerLumpNumber(name1) < wad_lump_num && wad_lump_num < getMarkerLumpNumber(name2);
+	}
+
+private:
+	int getMarkerLumpNumber(const OString& name)
+	{
+		MarkerLookupTable::const_iterator it = mLookup.find(translateMarkerName(name));
+		if (it != mLookup.end())
+			return it->second;
+		return -1;
+	}
+
+	OString translateMarkerName(const OString& name)
+	{
+		// if first character of marker name is doubled (eg, FF_START), consider it equivalent
+		// to the standard marker name (eg, F_START).
+		// some WADs have FF_START and F_END markers
+		if (name[0] == name[1] && name[2] == '_' &&
+			(name.compare(3, std::string::npos, "START") == 0 || name.compare(3, std::string::npos, "END") == 0))
+			return name.substr(1, std::string::npos);
+		return name;
+	}
+		
+	typedef OHashTable<OString, int> MarkerLookupTable;
+	MarkerLookupTable		mLookup;
+};
+
+
 
 // ============================================================================
 //
@@ -481,9 +576,7 @@ WadResourceFile::WadResourceFile(const OString& filename,
 		mResourceFileId(file_id),
 		mFileHandle(NULL), mFileName(filename),
 		mRecords(NULL), mRecordCount(0),
-		mIsIWad(false),
-		mFlatStartNum(-1), mFlatEndNum(-1), mColorMapStartNum(-1), mColorMapEndNum(-1),
-		mSpriteStartNum(-1), mSpriteEndNum(-1)
+		mIsIWad(false)
 {
 	mFileHandle = fopen(mFileName.c_str(), "rb");
 	if (mFileHandle == NULL)
@@ -543,9 +636,15 @@ WadResourceFile::WadResourceFile(const OString& filename,
 		return;
 	}
 
-	// read the WAD directory and make note of where various markers are
-	setupMarkers(wad_table, wad_lump_count);
-
+	// scan the lump directory and add all of the markers to the marker lookup table
+	MarkerTable markers;
+	for (size_t wad_lump_num = 0; wad_lump_num < (size_t)wad_lump_count; wad_lump_num++)
+	{
+		const OString name(StdStringToUpper(wad_table[wad_lump_num].name, 8));
+		if (markers.isMarker(name))
+			markers.addMarker(name, wad_lump_num);
+	}
+		
 	mRecords = new wad_lump_record_t[wad_lump_count];
 
 	for (size_t wad_lump_num = 0; wad_lump_num < (size_t)wad_lump_count; wad_lump_num++)
@@ -558,15 +657,20 @@ WadResourceFile::WadResourceFile(const OString& filename,
 		{
 			const size_t index = mRecordCount++;
 			const OString name(StdStringToUpper(wad_table[wad_lump_num].name, 8));
+			OString namespace_name(global_namespace_name);
 
 			mRecords[index].offset = offset;
 			mRecords[index].size = size;
 
-			OString namespace_name = global_namespace_name;
-			if (isLumpFlat(index))
-				namespace_name = flats_namespace_name;
-			else if (isLumpSprite(index))
-				namespace_name = sprites_namespace_name; 
+			// add the lump to the appropriate namespace
+			if (markers.betweenMarkers(wad_lump_num, "F_START", "F_END"))
+				namespace_name = "FLATS";
+			if (markers.betweenMarkers(wad_lump_num, "S_START", "S_END"))
+				namespace_name = "SPRITES";
+			if (markers.betweenMarkers(wad_lump_num, "C_START", "C_END"))
+				namespace_name = "COLORMAPS";
+			if (markers.betweenMarkers(wad_lump_num, "P_START", "P_END"))
+				namespace_name = "PATCHES";
 
 			NameSpaceId namespace_id = lump_lookup_table->lookupNameSpaceByName(namespace_name);
 			ResourceId res_id = Res_CreateResourceId(mResourceFileId, namespace_id, index);
@@ -583,54 +687,6 @@ WadResourceFile::WadResourceFile(const OString& filename,
 WadResourceFile::~WadResourceFile()
 {
 	cleanup();
-}
-
-
-void WadResourceFile::setupMarkers(const wad_lump_record_t* wad_table, size_t wad_lump_count)
-{
-	mFlatStartNum = mFlatEndNum = -1;
-	mColorMapStartNum = mColorMapEndNum = -1;
-	mSpriteStartNum = mSpriteEndNum = -1;
-
-	static const OString FlatStartMarker1("F_START");
-	static const OString FlatStartMarker2("FF_START");
-	static const OString FlatEndMarker1("F_END");
-	static const OString FlatEndMarker2("FF_END");
-	static const OString ColorMapStartMarker("C_START");
-	static const OString ColorMapEndMarker("C_END");
-	static const OString SpriteStartMarker1("S_START");
-	static const OString SpriteStartMarker2("SS_START");
-	static const OString SpriteEndMarker1("S_END");
-	static const OString SpriteEndMarker2("SS_END");
-
-	size_t file_length = M_FileLength(mFileHandle);
-
-	for (size_t wad_lump_num = 0, index = 0; wad_lump_num < wad_lump_count; wad_lump_num++)
-	{
-		size_t offset = LELONG(wad_table[wad_lump_num].offset);
-		size_t size = LELONG(wad_table[wad_lump_num].size);
-
-		// check that the lump doesn't extend past the end of the file
-		if (offset + size <= file_length)
-		{
-			const OString name(StdStringToUpper(wad_table[wad_lump_num].name, 8));
-
-			if (name == FlatStartMarker1 || name == FlatStartMarker2)
-				mFlatStartNum = index;
-			else if (name == FlatEndMarker1 || name == FlatEndMarker2)
-				mFlatEndNum = index;
-			else if (name == ColorMapStartMarker) 
-				mColorMapStartNum = index;
-			else if (name == ColorMapEndMarker) 
-				mColorMapEndNum = index;
-			else if (name == SpriteStartMarker1 || name == SpriteStartMarker2)
-				mSpriteStartNum = index;
-			else if (name == SpriteEndMarker1 || name == SpriteEndMarker2)
-				mSpriteEndNum = index;
-
-			index++;
-		}
-	}
 }
 
 
@@ -669,16 +725,6 @@ size_t WadResourceFile::readLump(const ResourceId res_id, void* data, size_t len
 }
 
 
-bool WadResourceFile::isLumpFlat(const uint32_t wad_lump_num)
-{
-	return wad_lump_num > mFlatStartNum && wad_lump_num < mFlatEndNum;
-}
-
-
-bool WadResourceFile::isLumpSprite(const uint32_t wad_lump_num)
-{
-	return wad_lump_num > mSpriteStartNum && wad_lump_num < mSpriteEndNum;
-}
 
 
 // ****************************************************************************
@@ -889,5 +935,12 @@ void* Res_CacheLump(const ResourceId res_id, int tag)
 
 	return data_ptr; 
 }
+
+
+BEGIN_COMMAND(dump_resources)
+{
+	lump_lookup_table.dump();
+}
+END_COMMAND(dump_resources)
 
 VERSION_CONTROL (res_main_cpp, "$Id: res_main.cpp $")
