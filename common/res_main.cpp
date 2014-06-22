@@ -162,8 +162,22 @@ static bool Res_ValidateWad(const void* data, size_t length)
 	static const char pwad_magic_str[] = "PWAD";
 	const char* identifier = (const char*)data;
 
-	return length > 4 && (strncmp(identifier, iwad_magic_str, 4) == 0
+	return length >= 4 && (strncmp(identifier, iwad_magic_str, 4) == 0
 						|| strncmp(identifier, pwad_magic_str, 4) == 0);
+}
+
+
+//
+// Res_ValidateDehacked
+//
+// Returns true if the given lump data appears to be a valid DeHackEd file.
+//
+static bool Res_ValidateDehacked(const void* data, size_t length)
+{
+	const char magic_str[] = "Patch File for DeHackEd v";
+	size_t magic_len = strlen(magic_str);
+
+	return length >= magic_len && strnicmp((const char*)data, magic_str, magic_len) == 0;
 }
 
 
@@ -682,8 +696,7 @@ static CacheTable cache_table;
 //
 static bool Res_CheckWadFile(const OString& filename)
 {
-	const char* magic_str_iwad = "IWAD";
-	const char* magic_str_pwad = "PWAD";
+	const size_t length = 4;	// length of WAD identifier ("IWAD" or "PWAD")
 
 	FILE* fp = fopen(filename.c_str(), "rb");
 	size_t read_cnt;
@@ -691,17 +704,13 @@ static bool Res_CheckWadFile(const OString& filename)
 	if (fp == NULL)
 		return false;
 
-	char data[4];
-	read_cnt = fread(&data, 1, 4, fp);
-	if (read_cnt != 4)
-	{
-		fclose(fp);
-		return false;
-	}
-
+	char* data = new char[length];
+	read_cnt = fread(data, 1, length, fp);
+	bool valid = read_cnt == length && Res_ValidateWad(data, length);
+	delete [] data;
 	fclose(fp);
 
-	return strncmp(data, magic_str_iwad, 4) == 0 || strncmp(data, magic_str_pwad, 4) == 0;
+	return valid;
 }
 
 
@@ -712,7 +721,7 @@ static bool Res_CheckWadFile(const OString& filename)
 //
 static bool Res_CheckDehackedFile(const OString& filename)
 {
-	const char magic_str[] = "Patch File for DeHackEd v3.0";
+	const size_t length = strlen("Patch File for DeHackEd v");	// length of DeHackEd identifier
 
 	FILE* fp = fopen(filename.c_str(), "rb");
 	size_t read_cnt;
@@ -720,18 +729,13 @@ static bool Res_CheckDehackedFile(const OString& filename)
 	if (fp == NULL)
 		return false;
 
-	char data[30];
-	size_t magic_len = strlen(magic_str);
-	read_cnt = fread(&data, 1, magic_len, fp);
-	if (read_cnt != magic_len)
-	{
-		fclose(fp);
-		return false;
-	}
-
+	char* data = new char[length];
+	read_cnt = fread(data, 1, length, fp);
+	bool valid = read_cnt == length && Res_ValidateDehacked(data, length);
+	delete [] data;
 	fclose(fp);
 
-	return strnicmp(data, magic_str, magic_len) == 0;
+	return valid;
 }
 
 
@@ -751,7 +755,7 @@ void Res_OpenResourceFile(const OString& filename)
 
 	if (Res_CheckWadFile(filename))
 		res_file = new WadResourceFile(filename, file_id, &lump_lookup_table);
-	else if (Res_CheckDehackedFile(filename))
+	else
 		res_file = new SingleLumpResourceFile(filename, file_id, &lump_lookup_table);
 
 	// check that the resource file contains valid lumps
