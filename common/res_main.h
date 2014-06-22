@@ -40,6 +40,9 @@ typedef uint32_t NameSpaceId;
 typedef std::vector<OString> NameSpaceTable;
 
 static const OString global_namespace_name("GLOBAL");
+static const OString flats_namespace_name("FLATS");
+static const OString patches_namespace_name("PATCHES");
+static const OString sprites_namespace_name("SPRITES");
 
 
 // ****************************************************************************
@@ -66,11 +69,16 @@ public:
 
 	virtual size_t getLumpCount() const = 0;
 
-	virtual bool checkLump(const ResourceId id) const = 0;
+	virtual bool checkLump(const ResourceId res_id) const = 0;
 
-	virtual size_t getLumpLength(const ResourceId id) const = 0;
+	virtual size_t getLumpLength(const ResourceId res_id) const = 0;
 
-	virtual size_t readLump(const ResourceId id, void* data) const = 0;
+	virtual size_t readLump(const ResourceId res_id, void* data, size_t length) const = 0;
+
+	virtual size_t readLump(const ResourceId res_id, void* data) const
+	{
+		return readLump(res_id, data, getLumpLength(res_id));
+	}
 };
 
 // ****************************************************************************
@@ -112,7 +120,7 @@ public:
 		return 0;
 	}
 
-	virtual size_t readLump(const ResourceId res_id, void* data) const;
+	virtual size_t readLump(const ResourceId res_id, void* data, size_t length) const;
 
 private:
 	void cleanup()
@@ -171,7 +179,7 @@ public:
 
 	virtual size_t getLumpLength(const ResourceId res_id) const;
 		
-	virtual size_t readLump(const ResourceId res_id, void* data) const;
+	virtual size_t readLump(const ResourceId res_id, void* data, size_t length) const;
 
 private:
 	struct wad_lump_record_t
@@ -240,6 +248,14 @@ static inline size_t Res_ReadLump(const OString& lumpname, void* data)
 {
 	return Res_ReadLump(Res_GetResourceId(lumpname), data);
 }
+
+void* Res_CacheLump(const ResourceId res_id, int tag);
+
+static inline void* Res_CacheLump(const OString& name, int tag)
+{
+	return Res_CacheLump(Res_GetResourceId(name), tag);
+}
+
 
 void Res_QueryLumpName(std::vector<ResourceId>& res_ids,
 					const OString& lumpname, const OString& namespace_name = global_namespace_name);

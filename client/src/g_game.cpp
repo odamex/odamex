@@ -1944,11 +1944,11 @@ void G_DoPlayDemo(bool justStreamInput)
 	gameaction = ga_nothing;
 	int bytelen;
 
-	int demolump = W_CheckNumForName(defdemoname.c_str());
-	if (demolump != -1)
+	ResourceId res_id = Res_GetResourceId(defdemoname.c_str(), "GLOBAL");
+	if (res_id != ResourceFile::LUMP_NOT_FOUND)
 	{
-		demobuffer = demo_p = (byte*)W_CacheLumpNum(demolump, PU_STATIC);
-		bytelen = W_LumpLength(demolump);
+		demobuffer = demo_p = (byte*)Res_CacheLump(res_id, PU_STATIC);
+		bytelen = Res_GetLumpLength(res_id);
 	}
 	else
 	{

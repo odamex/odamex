@@ -41,6 +41,9 @@
 #include "m_fileio.h"
 #include "cmdlib.h"
 
+#include "i_system.h"
+#include "z_zone.h"
+
 static bool Res_CheckWadFile(const OString& filename);
 static bool Res_CheckDehackedFile(const OString& filename);
 
@@ -101,13 +104,59 @@ static inline ResourceId Res_CreateResourceId(const ResourceFileId file_id, cons
 }
 
 
+
 //
-// Res_IsLumpWad
+// Res_ValidateFlat
 //
-// Returns true if the given lump data is a WAD file.
+// Returns true if the given lump data appears to be a valid flat.
+//
+static bool Res_ValidateFlat(const void* data, size_t length)
+{
+	return length == 64 * 64 || length == 128 * 128 || length == 256 * 256;
+}
+
+
+//
+// Res_ValidatePatch
+//
+// Returns true if the given lump data appears to be a valid graphic patch.
+//
+static bool Res_ValidatePatch(const void* data, size_t length)
+{
+	if (length > 2 + 2)
+	{
+		// examine the patch header (width & height)
+		int16_t width = LESHORT(*(int16_t*)((uint8_t*)data + 0));
+		int16_t height = LESHORT(*(int16_t*)((uint8_t*)data + 2));
+
+		if (width > 0 && height > 0 && width <= 2048 && height <= 2048 && length > (unsigned)(4 + 4 * width))
+		{
+			// verify all of the entries in the patch's column offset table are valid
+			const int32_t* offset_table = (int32_t*)((uint8_t*)data + 4);
+			const int32_t min_offset = 4 + 4 * width, max_offset = length - 1;
+
+			for (int i = 0; i < width; i++)
+			{
+				int32_t offset = LELONG(offset_table[i]);
+				if (offset < min_offset || offset > max_offset)
+					return false;
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+//
+// Res_ValidateWad
+//
+// Returns true if the given lump data appears to be a valid WAD file.
 // TODO: test more than just identifying string.
 //
-static bool Res_IsLumpWad(const void* data, size_t length)
+static bool Res_ValidateWad(const void* data, size_t length)
 {
 	static const char iwad_magic_str[] = "IWAD";
 	static const char pwad_magic_str[] = "PWAD";
@@ -201,7 +250,6 @@ public:
 		NameSpaceLookupTable::const_iterator it = mNameSpaces.find(namespace_name);
 		if (it != mNameSpaces.end())
 			return it->second;
-		static const OString global_namespace_name("GLOBAL");
 		return lookupNameSpaceByName(global_namespace_name);
 	}
 
@@ -220,7 +268,6 @@ public:
 				return it->first;
 		}
 
-		static const OString global_namespace_name("GLOBAL");
 		return global_namespace_name; 
 	}
 
@@ -311,6 +358,8 @@ public:
 				rec = rec->next;
 			}
 		}
+
+		std::reverse(res_ids.begin(), res_ids.end());
 	}
 
 private:
@@ -336,6 +385,7 @@ private:
 
 
 // ****************************************************************************
+
 
 // ============================================================================
 //
@@ -385,12 +435,14 @@ bool SingleLumpResourceFile::checkLump(const ResourceId res_id) const
 }
 
 
-size_t SingleLumpResourceFile::readLump(const ResourceId res_id, void* data) const
+size_t SingleLumpResourceFile::readLump(const ResourceId res_id, void* data, size_t length) const
 {
+	length = std::min(length, getLumpLength(res_id));
+
 	if (checkLump(res_id) && mFileHandle != NULL)
 	{
 		fseek(mFileHandle, 0, SEEK_SET);
-		size_t read_cnt = fread(data, 1, mFileLength, mFileHandle);
+		size_t read_cnt = fread(data, 1, length, mFileHandle);
 		return read_cnt;
 	}
 
@@ -498,9 +550,9 @@ WadResourceFile::WadResourceFile(const OString& filename,
 
 			OString namespace_name = global_namespace_name;
 			if (isLumpFlat(index))
-				namespace_name = "FLATS";
+				namespace_name = flats_namespace_name;
 			else if (isLumpSprite(index))
-				namespace_name = "SPRITES"; 
+				namespace_name = sprites_namespace_name; 
 
 			NameSpaceId namespace_id = lump_lookup_table->lookupNameSpaceByName(namespace_name);
 			ResourceId res_id = Res_CreateResourceId(mResourceFileId, namespace_id, index);
@@ -550,17 +602,17 @@ void WadResourceFile::setupMarkers(const wad_lump_record_t* wad_table, size_t wa
 			const OString name(StdStringToUpper(wad_table[wad_lump_num].name, 8));
 
 			if (name == FlatStartMarker1 || name == FlatStartMarker2)
-				mFlatStartNum = index + 1;
+				mFlatStartNum = index;
 			else if (name == FlatEndMarker1 || name == FlatEndMarker2)
-				mFlatEndNum = index - 1;
+				mFlatEndNum = index;
 			else if (name == ColorMapStartMarker) 
-				mColorMapStartNum = index + 1;
+				mColorMapStartNum = index;
 			else if (name == ColorMapEndMarker) 
-				mColorMapEndNum = index - 1;
+				mColorMapEndNum = index;
 			else if (name == SpriteStartMarker1 || name == SpriteStartMarker2)
-				mSpriteStartNum = index + 1;
+				mSpriteStartNum = index;
 			else if (name == SpriteEndMarker1 || name == SpriteEndMarker2)
-				mSpriteEndNum = index - 1;
+				mSpriteEndNum = index;
 
 			index++;
 		}
@@ -587,13 +639,15 @@ size_t WadResourceFile::getLumpLength(const ResourceId res_id) const
 }
 
 	
-size_t WadResourceFile::readLump(const ResourceId res_id, void* data) const
+size_t WadResourceFile::readLump(const ResourceId res_id, void* data, size_t length) const
 {
+	length = std::min(length, getLumpLength(res_id));
+
 	if (checkLump(res_id) && mFileHandle != NULL)
 	{
 		const uint32_t wad_lump_num = Res_GetLumpId(res_id);
 		fseek(mFileHandle, mRecords[wad_lump_num].offset, SEEK_SET);
-		size_t read_cnt = fread(data, 1, mRecords[wad_lump_num].size, mFileHandle);
+		size_t read_cnt = fread(data, 1, length, mFileHandle);
 		return read_cnt;
 	}
 
@@ -616,7 +670,10 @@ bool WadResourceFile::isLumpSprite(const uint32_t wad_lump_num)
 // ****************************************************************************
 
 static LumpLookupTable lump_lookup_table;
-static std::vector<ResourceFile*> ResourceFiles;
+static std::vector<ResourceFile*> resource_files;
+
+typedef OHashTable<ResourceId, void*> CacheTable;
+static CacheTable cache_table;
 
 //
 // Res_CheckWadFile
@@ -655,7 +712,7 @@ static bool Res_CheckWadFile(const OString& filename)
 //
 static bool Res_CheckDehackedFile(const OString& filename)
 {
-	const char* magic_str = "Patch File for DeHackEd v3.0";
+	const char magic_str[] = "Patch File for DeHackEd v3.0";
 
 	FILE* fp = fopen(filename.c_str(), "rb");
 	size_t read_cnt;
@@ -685,7 +742,7 @@ static bool Res_CheckDehackedFile(const OString& filename)
 // 
 void Res_OpenResourceFile(const OString& filename)
 {
-	ResourceFileId file_id = ResourceFiles.size();
+	ResourceFileId file_id = resource_files.size();
 
 	if (!M_FileExists(filename))
 		return;
@@ -705,12 +762,12 @@ void Res_OpenResourceFile(const OString& filename)
 	}
 
 	if (res_file)
-		ResourceFiles.push_back(res_file);
+		resource_files.push_back(res_file);
 }
 
 
 //
-// Res_CloseAllResourceFiles
+// Res_CloseAllresource_files
 //
 // Closes all open resource files. This should be called prior to switching
 // to a new set of resource files.
@@ -719,9 +776,9 @@ void Res_CloseAllResourceFiles()
 {
 	lump_lookup_table.clear();
 
-	for (std::vector<ResourceFile*>::iterator it = ResourceFiles.begin(); it != ResourceFiles.end(); ++it)
+	for (std::vector<ResourceFile*>::iterator it = resource_files.begin(); it != resource_files.end(); ++it)
 		delete *it;
-	ResourceFiles.clear();
+	resource_files.clear();
 }
 
 
@@ -773,7 +830,7 @@ const OString& Res_GetLumpName(const ResourceId res_id)
 bool Res_CheckLump(const ResourceId res_id)
 {
 	ResourceFileId file_id = Res_GetResourceFileId(res_id);
-	return file_id < ResourceFiles.size() && ResourceFiles[file_id]->checkLump(res_id);
+	return file_id < resource_files.size() && resource_files[file_id]->checkLump(res_id);
 }
 	
 
@@ -786,8 +843,8 @@ bool Res_CheckLump(const ResourceId res_id)
 size_t Res_GetLumpLength(const ResourceId res_id)
 {
 	ResourceFileId file_id = Res_GetResourceFileId(res_id);
-	if (file_id < ResourceFiles.size())
-		return ResourceFiles[file_id]->getLumpLength(res_id);
+	if (file_id < resource_files.size())
+		return resource_files[file_id]->getLumpLength(res_id);
 	return 0;
 }
 
@@ -803,10 +860,30 @@ size_t Res_GetLumpLength(const ResourceId res_id)
 size_t Res_ReadLump(const ResourceId res_id, void* data)
 {
 	ResourceFileId file_id = Res_GetResourceFileId(res_id);
-	if (file_id < ResourceFiles.size())
-		return ResourceFiles[file_id]->readLump(res_id, data);
+	if (file_id < resource_files.size())
+		return resource_files[file_id]->readLump(res_id, data);
 	return 0;
 }
 
+void* Res_CacheLump(const ResourceId res_id, int tag)
+{
+	void* data_ptr = NULL;
+
+	CacheTable::iterator it = cache_table.find(res_id);
+	if (it != cache_table.end())
+	{
+		data_ptr = it->second;
+		Z_ChangeTag(data_ptr, tag);
+	}
+	else
+	{
+		size_t lump_length = Res_GetLumpLength(res_id);
+		data_ptr = Z_Malloc(lump_length + 1, tag, &cache_table[res_id]);
+		Res_ReadLump(res_id, cache_table[res_id]);
+		((unsigned char*)data_ptr)[lump_length] = 0;
+	}
+
+	return data_ptr; 
+}
 
 VERSION_CONTROL (res_main_cpp, "$Id: res_main.cpp $")

@@ -30,6 +30,7 @@
 #include "m_swap.h"
 
 #include "w_wad.h"
+#include "res_main.h"
 
 #include "doomdef.h"
 #include "r_local.h"
@@ -515,7 +516,7 @@ void R_InitTextures (void)
 
 	// Load the patch names from pnames.lmp.
 	{
-		char *names = (char *)W_CacheLumpName ("PNAMES", PU_STATIC);
+		char *names = (char*)Res_CacheLump("PNAMES", PU_STATIC);
 		char *name_p = names+4;
 
 		nummappatches = LELONG ( *((int *)names) );
@@ -543,16 +544,16 @@ void R_InitTextures (void)
 	// Load the map texture definitions from textures.lmp.
 	// The data is contained in one or two lumps,
 	//	TEXTURE1 for shareware, plus TEXTURE2 for commercial.
-	maptex = maptex1 = (int *)W_CacheLumpName ("TEXTURE1", PU_STATIC);
+	maptex = maptex1 = (int*)Res_CacheLump("TEXTURE1", PU_STATIC);
 	numtextures1 = LELONG(*maptex);
-	maxoff = W_LumpLength (W_GetNumForName ("TEXTURE1"));
+	maxoff = Res_GetLumpLength("TEXTURE1");
 	directory = maptex+1;
 
-	if (W_CheckNumForName ("TEXTURE2") != -1)
+	if (Res_CheckLump("TEXTURE2"))
 	{
-		maptex2 = (int *)W_CacheLumpName ("TEXTURE2", PU_STATIC);
+		maptex2 = (int*)Res_CacheLump("TEXTURE2", PU_STATIC);
 		numtextures2 = LELONG(*maptex2);
-		maxoff2 = W_LumpLength (W_GetNumForName ("TEXTURE2"));
+		maxoff2 = Res_GetLumpLength("TEXTURE2");
 	}
 	else
 	{
@@ -777,7 +778,7 @@ shademap_t realcolormaps;
 
 void R_ForceDefaultColormap(const char* name)
 {
-	const byte* data = (byte*)W_CacheLumpName(name, PU_CACHE);
+	const byte* data = (byte*)Res_CacheLump(name, PU_CACHE);
 	memcpy(realcolormaps.colormap, data, (NUMCOLORMAPS+1)*256);
 
 #if 0

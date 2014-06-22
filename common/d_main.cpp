@@ -69,6 +69,8 @@
 #include "i_xbox.h"
 #endif
 
+#include "res_main.h"
+
 EXTERN_CVAR (waddirs)
 
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
@@ -1007,6 +1009,16 @@ void D_LoadResourceFiles(
 	modifiedgame = (wadfiles.size() > 2) || !newpatchfiles.empty();	// more than odamex.wad and IWAD?
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_Error("\nYou cannot load additional WADs with the shareware version. Register!");
+
+
+	Res_CloseAllResourceFiles();
+	wadhashes.clear();
+
+	for (size_t i = 0; i < wadfiles.size(); i++)
+	{
+		Res_OpenResourceFile(wadfiles[i]);
+		wadhashes.push_back(W_MD5(wadfiles[i]));
+	}
 
 	wadhashes = W_InitMultipleFiles(wadfiles);
 

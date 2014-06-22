@@ -246,7 +246,7 @@ static void S_StopChannel (unsigned int cnum);
 //
 void S_Init (float sfxVolume, float musicVolume)
 {
-	SoundCurve = (byte *)W_CacheLumpNum(W_GetNumForName("SNDCURVE"), PU_STATIC);
+	SoundCurve = (byte*)Res_CacheLump("SNDCURVE", PU_STATIC);
 
 	// [RH] Read in sound sequences
 	NumSequences = 0;
@@ -1062,24 +1062,23 @@ void S_ChangeMusic (std::string musicname, int looping)
 
 	byte* data = NULL;
 	size_t length = 0;
-	int lumpnum;
-	FILE *f;
+	FILE* f;
 
 	if (!(f = fopen (musicname.c_str(), "rb")))
 	{
-		if ((lumpnum = W_CheckNumForName (musicname.c_str())) == -1)
+		ResourceId res_id = Res_GetResourceId(musicname);
+		if (res_id == ResourceFile::LUMP_NOT_FOUND)
 		{
-			Printf (PRINT_HIGH, "Music lump \"%s\" not found\n", musicname.c_str());
+			Printf(PRINT_HIGH, "Music lump \"%s\" not found\n", musicname.c_str());
 			return;
 		}
 
-		data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
-		length = W_LumpLength(lumpnum);
+		data = (byte*)Res_CacheLump(res_id, PU_CACHE);
+		length = Res_GetLumpLength(res_id);
 		I_PlaySong(data, length, (looping != 0));
     }
     else
 	{
-		lumpnum = -1;
 		length = M_FileLength(f);
 		data = static_cast<byte*>(Malloc(length));
 		size_t result = fread(data, length, 1, f);
@@ -1214,20 +1213,24 @@ int S_AddSound (char *logicalname, char *lumpname)
 
 // S_ParseSndInfo
 // Parses all loaded SNDINFO lumps.
-void S_ParseSndInfo (void)
+void S_ParseSndInfo()
 {
 	char *sndinfo;
 	char *data;
 
 	S_ClearSoundLumps ();
 
-	int lump = -1;
-	while ((lump = W_FindLump ("SNDINFO", lump)) != -1)
-	{
-		sndinfo = (char *)W_CacheLumpNum (lump, PU_CACHE);
+	std::vector<ResourceId> res_ids;
+	Res_QueryLumpName(res_ids, "SNDINFO");
 
-		while ( (data = COM_Parse (sndinfo)) ) {
-			if (com_token[0] == ';') {
+	for (size_t i = 0; i < res_ids.size(); i++)
+	{
+		sndinfo = (char*)Res_CacheLump(res_ids[i], PU_CACHE);
+
+		while ( (data = COM_Parse(sndinfo)) )
+		{
+			if (com_token[0] == ';')
+			{
 				// Handle comments from Hexen MAPINFO lumps
 				while (*sndinfo && *sndinfo != ';')
 					sndinfo++;
@@ -1236,103 +1239,123 @@ void S_ParseSndInfo (void)
 				continue;
 			}
 			sndinfo = data;
-			if (com_token[0] == '$') {
+			if (com_token[0] == '$')
+			{
 				// com_token is a command
 
-				if (!stricmp (com_token + 1, "ambient")) {
+				if (stricmp(com_token + 1, "ambient") == 0)
+				{
 					// $ambient <num> <logical name> [point [atten]|surround] <type> [secs] <relative volume>
 					struct AmbientSound *ambient, dummy;
-					int index;
 
-					sndinfo = COM_Parse (sndinfo);
-					index = atoi (com_token);
-					if (index < 0 || index > 255) {
+					sndinfo = COM_Parse(sndinfo);
+					int index = atoi(com_token);
+					if (index < 0 || index > 255)
+					{
 						Printf (PRINT_HIGH, "Bad ambient index (%d)\n", index);
 						ambient = &dummy;
-					} else {
+					}
+					else
+					{
 						ambient = Ambients + index;
 					}
-					memset (ambient, 0, sizeof(struct AmbientSound));
 
-					sndinfo = COM_Parse (sndinfo);
-					strncpy (ambient->sound, com_token, MAX_SNDNAME);
+					memset(ambient, 0, sizeof(struct AmbientSound));
+
+					sndinfo = COM_Parse(sndinfo);
+					strncpy(ambient->sound, com_token, MAX_SNDNAME);
 					ambient->sound[MAX_SNDNAME] = 0;
 					ambient->attenuation = 0;
 
-					sndinfo = COM_Parse (sndinfo);
-					if (!stricmp (com_token, "point")) {
-						float attenuation;
-
+					sndinfo = COM_Parse(sndinfo);
+					if (stricmp(com_token, "point") == 0)
+					{
 						ambient->type = POSITIONAL;
-						sndinfo = COM_Parse (sndinfo);
-						attenuation = (float)atof (com_token);
-						if (attenuation > 0)
+						sndinfo = COM_Parse(sndinfo);
+						float attenuation = (float)atof(com_token);
+						if (attenuation > 0.0f)
 						{
 							ambient->attenuation = attenuation;
-							sndinfo = COM_Parse (sndinfo);
+							sndinfo = COM_Parse(sndinfo);
 						}
 						else
 						{
 							ambient->attenuation = 1;
 						}
-					} else if (!stricmp (com_token, "surround")) {
+					}
+					else if (stricmp(com_token, "surround") == 0)
+					{
 						ambient->type = SURROUND;
-						sndinfo = COM_Parse (sndinfo);
+						sndinfo = COM_Parse(sndinfo);
 						ambient->attenuation = -1;
 					}
 
-					if (!stricmp (com_token, "continuous")) {
+					if (stricmp(com_token, "continuous") == 0)
+					{
 						ambient->type |= CONTINUOUS;
-					} else if (!stricmp (com_token, "random")) {
+					}
+					else if (stricmp(com_token, "random") == 0)
+					{
 						ambient->type |= RANDOM;
-						sndinfo = COM_Parse (sndinfo);
-						ambient->periodmin = (int)(atof (com_token) * TICRATE);
-						sndinfo = COM_Parse (sndinfo);
-						ambient->periodmax = (int)(atof (com_token) * TICRATE);
-					} else if (!stricmp (com_token, "periodic")) {
+						sndinfo = COM_Parse(sndinfo);
+						ambient->periodmin = (int)(atof(com_token) * TICRATE);
+						sndinfo = COM_Parse(sndinfo);
+						ambient->periodmax = (int)(atof(com_token) * TICRATE);
+					}
+					else if (stricmp(com_token, "periodic") == 0)
+					{
 						ambient->type |= PERIODIC;
-						sndinfo = COM_Parse (sndinfo);
-						ambient->periodmin = (int)(atof (com_token) * TICRATE);
-					} else {
-						Printf (PRINT_HIGH, "Unknown ambient type (%s)\n", com_token);
+						sndinfo = COM_Parse(sndinfo);
+						ambient->periodmin = (int)(atof(com_token) * TICRATE);
+					}
+					else
+					{
+						Printf(PRINT_HIGH, "Unknown ambient type (%s)\n", com_token);
 					}
 
-					sndinfo = COM_Parse (sndinfo);
-					ambient->volume = (float)atof (com_token);
+					sndinfo = COM_Parse(sndinfo);
+					ambient->volume = (float)atof(com_token);
 					if (ambient->volume > 1)
 						ambient->volume = 1;
 					else if (ambient->volume < 0)
 						ambient->volume = 0;
-				} else if (!stricmp (com_token + 1, "map")) {
+				}
+				else if (stricmp(com_token + 1, "map") == 0)
+				{
 					// Hexen-style $MAP command
 					level_info_t *info;
 
-					sndinfo = COM_Parse (sndinfo);
-					sprintf (com_token, "MAP%02d", atoi (com_token));
-					info = FindLevelInfo (com_token);
-					sndinfo = COM_Parse (sndinfo);
+					sndinfo = COM_Parse(sndinfo);
+					sprintf(com_token, "MAP%02d", atoi(com_token));
+					info = FindLevelInfo(com_token);
+					sndinfo = COM_Parse(sndinfo);
 					if (info->mapname[0])
 					{
-						strncpy (info->music, com_token, 9); // denis - todo -string limit?
+						strncpy(info->music, com_token, 9); // denis - todo -string limit?
 						std::transform(info->music, info->music + strlen(info->music), info->music, toupper);
 					}
-				} else {
+				}
+				else
+				{
 					Printf (PRINT_HIGH, "Unknown SNDINFO command %s\n", com_token);
 					while (*sndinfo != '\n' && *sndinfo != '\0')
 						sndinfo++;
 				}
-			} else {
+			}
+			else
+			{
 				// com_token is a logical sound mapping
 				char name[MAX_SNDNAME+1];
 
-				strncpy (name, com_token, MAX_SNDNAME);
+				strncpy(name, com_token, MAX_SNDNAME);
 				name[MAX_SNDNAME] = 0;
-				sndinfo = COM_Parse (sndinfo);
-				S_AddSound (name, com_token);
+				sndinfo = COM_Parse(sndinfo);
+				S_AddSound(name, com_token);
 			}
 		}
 	}
-	S_HashSounds ();
+
+	S_HashSounds();
 
 	sfx_empty = W_CheckNumForName ("dsempty");
 	sfx_noway = S_FindSoundByLump (W_CheckNumForName ("dsnoway"));
