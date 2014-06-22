@@ -893,13 +893,13 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 		}
 	}
 
+	if (!hubload && !noStorePlayers)
+		P_SerializePlayers(arc);
+
 	P_SerializeThinkers(arc, hubLoad, noStorePlayers);
 	P_SerializeWorld(arc);
 	P_SerializePolyobjs(arc);
 	P_SerializeSounds(arc);
-
-	if (!(hubLoad || noStorePlayers))
-		P_SerializePlayers(arc);
 }
 
 // Archives the current level
