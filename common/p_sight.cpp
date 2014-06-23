@@ -409,7 +409,8 @@ bool P_CheckSightZDoom(const AActor *t1, const AActor *t2)
 	//
 	// check for trivial rejection
 	//
-	if (!rejectempty && rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
+	if (rejectmatrix && rejectmatrix[pnum >> 3] & (1 << (pnum & 7)))
+	{
 		sightcounts2[0]++;
 		return false;			// can't possibly be connected
 	}
@@ -469,7 +470,8 @@ bool P_CheckSightEdgesZDoom(const AActor *t1, const AActor *t2, float radius_boo
 	//
 	// check for trivial rejection
 	//
-	if (!rejectempty && rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
+	if (rejectmatrix && rejectmatrix[pnum >> 3] & (1 << (pnum & 7)))
+	{
 		sightcounts2[0]++;
 		return false;                   // can't possibly be connected
 	}
@@ -798,11 +800,11 @@ bool P_CheckSightDoom(const AActor* t1, const AActor* t2)
     s1 = (t1->subsector->sector - sectors);
     s2 = (t2->subsector->sector - sectors);
     pnum = s1*numsectors + s2;
-    bytenum = pnum>>3;
-    bitnum = 1 << (pnum&7);
+    bytenum = pnum >> 3;
+    bitnum = 1 << (pnum & 7);
 	
     // Check in REJECT table.
-    if (!rejectempty && rejectmatrix[bytenum]&bitnum)
+    if (rejectmatrix && rejectmatrix[bytenum] & bitnum)
     {
 		sightcounts[0]++;
 		
@@ -853,11 +855,11 @@ static bool P_CheckSightDoom
     s1 = (P_PointInSubsector(x1, y1)->sector - sectors);
     s2 = (P_PointInSubsector(x2, y2)->sector - sectors);
     pnum = s1*numsectors + s2;
-    bytenum = pnum>>3;
-    bitnum = 1 << (pnum&7);
+    bytenum = pnum >> 3;
+    bitnum = 1 << (pnum & 7);
 	
     // Check in REJECT table.
-    if (!rejectempty && rejectmatrix[bytenum]&bitnum)
+    if (rejectmatrix && rejectmatrix[bytenum] & bitnum)
     {
 		sightcounts[0]++;
 		

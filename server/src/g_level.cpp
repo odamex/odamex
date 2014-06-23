@@ -118,9 +118,9 @@ bool isFast = false;
 //
 static char d_mapname[9];
 
-void G_DeferedInitNew (char *mapname)
+void G_DeferedInitNew(const std::string& mapname)
 {
-	strncpy (d_mapname, mapname, 8);
+	strncpy(d_mapname, mapname.c_str(), 8);
 	gameaction = ga_newgame;
 
 	// sv_nextmap cvar may be overridden by a script
@@ -171,14 +171,18 @@ BOOL 			secretexit;
 EXTERN_CVAR(sv_shufflemaplist)
 
 // Returns the next map, assuming there is no maplist.
-std::string G_NextMap(void) {
+std::string G_NextMap(void)
+{
 	std::string next = level.nextmap;
 
-	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || !strlen(next.c_str())) {
+	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || !strlen(next.c_str()))
+	{
 		// if not coop, stay on same level
 		// [ML] 1/25/10: OR if next is empty
 		next = level.mapname;
-	} else if (secretexit && W_CheckNumForName(level.secretmap) != -1) {
+	}
+	else if (secretexit && Res_CheckMap(level.secretmap))
+	{
 		// if we hit a secret exit switch, go there instead.
 		next = level.secretmap;
 	}
@@ -200,15 +204,19 @@ std::string G_NextMap(void) {
 }
 
 // Determine the "next map" and change to it.
-void G_ChangeMap() {
+void G_ChangeMap()
+{
 	unnatural_level_progression = false;
 
 	size_t next_index;
-	if (!Maplist::instance().get_next_index(next_index)) {
+	if (!Maplist::instance().get_next_index(next_index))
+	{
 		// We don't have a maplist, so grab the next 'natural' map lump.
 		std::string next = G_NextMap();
-		G_DeferedInitNew((char *)next.c_str());
-	} else {
+		G_DeferedInitNew(next);
+	}
+	else
+	{
 		maplist_entry_t maplist_entry;
 		Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
@@ -227,9 +235,11 @@ void G_ChangeMap() {
 }
 
 // Change to a map based on a maplist index.
-void G_ChangeMap(size_t index) {
+void G_ChangeMap(size_t index)
+{
 	maplist_entry_t maplist_entry;
-	if (!Maplist::instance().get_map_by_index(index, maplist_entry)) {
+	if (!Maplist::instance().get_map_by_index(index, maplist_entry))
+	{
 		// That maplist index doesn't actually exist
 		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
 		return;
@@ -244,12 +254,13 @@ void G_ChangeMap(size_t index) {
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
-	if(strlen(sv_endmapscript.cstring()))
+	if (strlen(sv_endmapscript.cstring()))
 		AddCommandString(sv_endmapscript.cstring()/*, true*/);
 }
 
 // Restart the current map.
-void G_RestartMap() {
+void G_RestartMap()
+{
 	// Restart the current map.
 	G_DeferedInitNew(level.mapname);
 
@@ -257,7 +268,7 @@ void G_RestartMap() {
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
-	if(strlen(sv_endmapscript.cstring()))
+	if (strlen(sv_endmapscript.cstring()))
 		AddCommandString(sv_endmapscript.cstring()/*, true*/);
 }
 
@@ -293,7 +304,7 @@ void G_DoNewGame (void)
 
 	sv_curmap.ForceSet(d_mapname);
 
-	G_InitNew (d_mapname);
+	G_InitNew(d_mapname);
 	gameaction = ga_nothing;
 
 	// run script at the start of each map
@@ -325,32 +336,30 @@ EXTERN_CVAR (sv_maxplayers)
 void G_PlayerReborn (player_t &player);
 void SV_ServerSettingChange();
 
-void G_InitNew (const char *mapname)
+void G_InitNew(const std::string& mapname)
 {
-	size_t i;
-
 	if (!savegamerestore)
-		G_ClearSnapshots ();
+		G_ClearSnapshots();
 
 	// [RH] Mark all levels as not visited
 	if (!savegamerestore)
 	{
-		for (i = 0; i < wadlevelinfos.size(); i++)
+		for (size_t i = 0; i < wadlevelinfos.size(); i++)
 			wadlevelinfos[i].flags &= ~LEVEL_VISITED;
 
-		for (i = 0; LevelInfos[i].mapname[0]; i++)
+		for (size_t i = 0; LevelInfos[i].mapname[0]; i++)
 			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
 
 	int old_gametype = sv_gametype.asInt();
 
-	cvar_t::UnlatchCVars ();
+	cvar_t::UnlatchCVars();
 
 	if (old_gametype != sv_gametype || sv_gametype != GM_COOP) {
 		unnatural_level_progression = true;
 
 		// Nes - Force all players to be spectators when the sv_gametype is not now or previously co-op.
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			// [SL] 2011-07-30 - Don't force downloading players to become spectators
 			// it stops their downloading
@@ -376,16 +385,11 @@ void G_InitNew (const char *mapname)
 	gamestate = GS_LEVEL;
 	SV_ServerSettingChange();
 
-	if (paused)
-	{
-		paused = false;
-	}
+	paused = false;
 
 	// [RH] If this map doesn't exist, bomb out
-	if (W_CheckNumForName (mapname) == -1)
-	{
-		I_Error ("Could not find map %s\n", mapname);
-	}
+	if (!Res_CheckMap(mapname))
+		I_Error("Could not find map %s\n", mapname.c_str());
 
 	if (sv_skill == sk_nightmare || sv_monstersrespawn)
 		respawnmonsters = true;
@@ -397,7 +401,7 @@ void G_InitNew (const char *mapname)
 	{
 		if (wantFast)
 		{
-			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
+			for (size_t i = S_SARG_RUN1; i <= S_SARG_PAIN2; i++)
 				states[i].tics >>= 1;
 			mobjinfo[MT_BRUISERSHOT].speed = 20*FRACUNIT;
 			mobjinfo[MT_HEADSHOT].speed = 20*FRACUNIT;
@@ -405,7 +409,7 @@ void G_InitNew (const char *mapname)
 		}
 		else
 		{
-			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
+			for (size_t i = S_SARG_RUN1; i <= S_SARG_PAIN2; i++)
 				states[i].tics <<= 1;
 			mobjinfo[MT_BRUISERSHOT].speed = 15*FRACUNIT;
 			mobjinfo[MT_HEADSHOT].speed = 10*FRACUNIT;
@@ -420,14 +424,14 @@ void G_InitNew (const char *mapname)
 	if (!savegamerestore)
 	{
 		M_ClearRandom ();
-		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
-		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
+		memset(ACS_WorldVars, 0, sizeof(ACS_WorldVars));
+		memset(ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
 		level.timeleft = 0;
 		level.inttimeleft = 0;
 
 		// force players to be initialized upon first level load
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			// [SL] 2011-05-11 - Register the players in the reconciliation
 			// system for unlagging
@@ -436,7 +440,8 @@ void G_InitNew (const char *mapname)
 			if(!(it->ingame()))
 				continue;
 
-			// denis - dead players should have their stuff looted, otherwise they'd take their ammo into their afterlife!
+			// denis - dead players should have their stuff looted, otherwise they'd take
+			// their ammo into their afterlife!
 			if (it->playerstate == PST_DEAD)
 				G_PlayerReborn(*it);
 
@@ -455,12 +460,8 @@ void G_InitNew (const char *mapname)
 	viewactive = true;
 	shotclock = 0;
 
-	strncpy (level.mapname, mapname, 8);
-	G_DoLoadLevel (0);
-
-	// denis - hack to fix ctfmode, as it is only known after the map is processed!
-	//if(old_ctfmode != ctfmode)
-	//	SV_ServerSettingChange();
+	strncpy(level.mapname, mapname.c_str(), 8);
+	G_DoLoadLevel(0);
 }
 
 //
@@ -503,8 +504,7 @@ void G_SecretExitLevel (int position, int drawscores)
 	mapchange = TICRATE*intlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	if ( (gameinfo.flags & GI_MAPxx)
-		 && (W_CheckNumForName("map31")<0))
+	if (gameinfo.flags & GI_MAPxx && !Res_CheckMap("MAP31"))
 		secretexit = false;
 	else
 		secretexit = true;

@@ -119,7 +119,6 @@ AActor**		blocklinks;		// for thing chains
 //	used as a PVS lookup as well.
 //
 byte*			rejectmatrix;
-BOOL			rejectempty;
 
 
 // Maintain single and multi player starting spots.
@@ -143,31 +142,34 @@ mapthing2_t		*redteam_p;
 //
 // P_LoadVertexes
 //
-void P_LoadVertexes (int lump)
+// Loads a Doom or Hexen format VERTEXES lump.
+//
+static void P_LoadVertexes(const OString& mapname)
 {
-	byte *data;
-	int i;
+	ResourceId res_id = Res_GetMapResourceId("VERTEXES", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadVertexes: unable to find VERTEXES lump for map %s\n", mapname.c_str());
 
 	// Determine number of vertices:
 	//	total lump length / vertex record length.
-	numvertexes = W_LumpLength (lump) / sizeof(mapvertex_t);
+	numvertexes = Res_GetLumpLength(res_id) / sizeof(mapvertex_t);
 
 	// Allocate zone memory for buffer.
-	vertexes = (vertex_t *)Z_Malloc (numvertexes*sizeof(vertex_t), PU_LEVEL, 0);
+	vertexes = (vertex_t*)Z_Malloc(numvertexes * sizeof(vertex_t), PU_LEVEL, NULL);
 
 	// Load data into cache.
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
 
 	// Copy and convert vertex coordinates,
 	// internal representation as fixed.
-	for (i = 0; i < numvertexes; i++)
+	for (int i = 0; i < numvertexes; i++)
 	{
-		vertexes[i].x = LESHORT(((mapvertex_t *)data)[i].x)<<FRACBITS;
-		vertexes[i].y = LESHORT(((mapvertex_t *)data)[i].y)<<FRACBITS;
+		vertexes[i].x = LESHORT(((mapvertex_t*)data)[i].x) << FRACBITS;
+		vertexes[i].y = LESHORT(((mapvertex_t*)data)[i].y) << FRACBITS;
 	}
 
 	// Free buffer memory.
-	Z_Free (data);
+	Z_Free(data);
 }
 
 
@@ -175,46 +177,48 @@ void P_LoadVertexes (int lump)
 //
 // P_LoadSegs
 //
-// killough 5/3/98: reformatted, cleaned up
-
-void P_LoadSegs (int lump)
+// Loads a Doom or Hexen format SEGS lump.
+//
+static void P_LoadSegs(const OString& mapname)
 {
-	int  i;
-	byte *data;
+	ResourceId res_id = Res_GetMapResourceId("SEGS", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadSegs: unable to find SEGS lump for map %s\n", mapname.c_str());
 
-	numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
-	segs = (seg_t *)Z_Malloc (numsegs*sizeof(seg_t), PU_LEVEL, 0);
-	memset (segs, 0, numsegs*sizeof(seg_t));
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	numsegs = Res_GetLumpLength(res_id) / sizeof(mapseg_t);
+	segs = (seg_t*)Z_Malloc(numsegs * sizeof(seg_t), PU_LEVEL, NULL);
+	memset(segs, 0, numsegs * sizeof(seg_t));
 
-	for (i = 0; i < numsegs; i++)
+	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+
+	for (int i = 0; i < numsegs; i++)
 	{
-		seg_t *li = segs+i;
-		mapseg_t *ml = (mapseg_t *) data + i;
+		seg_t* li = segs + i;
+		mapseg_t* ml = (mapseg_t*)data + i;
 
 		int side, linedef;
 		line_t *ldef;
 
 		unsigned short v = LESHORT(ml->v1);
 
-		if(v >= numvertexes)
+		if (v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex %d", v);
 		else
 			li->v1 = &vertexes[v];
 
 		v = LESHORT(ml->v2);
 
-		if(v >= numvertexes)
+		if (v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex %d", v);
 		else
 			li->v2 = &vertexes[v];
 
-		li->angle = (LESHORT(ml->angle))<<16;
+		li->angle = (LESHORT(ml->angle)) << FRACBITS;
 
-		li->offset = (LESHORT(ml->offset))<<16;
+		li->offset = (LESHORT(ml->offset)) << FRACBITS;
 		linedef = LESHORT(ml->linedef);
 
-		if(linedef < 0 || linedef >= numlines)
+		if (linedef < 0 || linedef >= numlines)
 			I_Error("P_LoadSegs: invalid linedef %d", linedef);
 
 		ldef = &lines[linedef];
@@ -229,8 +233,8 @@ void P_LoadSegs (int lump)
 		li->frontsector = sides[ldef->sidenum[side]].sector;
 
 		// killough 5/3/98: ignore 2s flag if second sidedef missing:
-		if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side^1]!=R_NOSIDE)
-			li->backsector = sides[ldef->sidenum[side^1]].sector;
+		if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side ^ 1] != R_NOSIDE)
+			li->backsector = sides[ldef->sidenum[side ^ 1]].sector;
 		else
 		{
 			li->backsector = 0;
@@ -252,31 +256,34 @@ void P_LoadSegs (int lump)
 		li->length = FLOAT2FIXED(sqrt(dx * dx + dy* dy));
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 
 //
 // P_LoadSubsectors
 //
-void P_LoadSubsectors (int lump)
+// Loads a Doom or Hexen format SSECTORS lump.
+//
+static void P_LoadSubsectors(const OString& mapname)
 {
-	byte *data;
-	int i;
+	ResourceId res_id = Res_GetMapResourceId("SSECTORS", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadSubsectors: unable to find SSECTORS lump for map %s\n", mapname.c_str());
 
-	numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
-	subsectors = (subsector_t *)Z_Malloc (numsubsectors*sizeof(subsector_t),PU_LEVEL,0);
-	data = (byte *)W_CacheLumpNum (lump,PU_STATIC);
+	numsubsectors = Res_GetLumpLength(res_id) / sizeof(mapsubsector_t);
+	subsectors = (subsector_t*)Z_Malloc(numsubsectors * sizeof(subsector_t), PU_LEVEL, NULL);
+	memset(subsectors, 0, numsubsectors * sizeof(subsector_t));
 
-	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
+	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
 
-	for (i = 0; i < numsubsectors; i++)
+	for (int i = 0; i < numsubsectors; i++)
 	{
-		subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].numsegs);
-		subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].firstseg);
+		subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_t*)data)[i].numsegs);
+		subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t*)data)[i].firstseg);
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 
@@ -284,51 +291,48 @@ void P_LoadSubsectors (int lump)
 //
 // P_LoadSectors
 //
-void P_LoadSectors (int lump)
+// Loads a Doom or Hexen format SECTORS lump.
+//
+static void P_LoadSectors(const OString& mapname)
 {
-	byte*				data;
-	int 				i;
-	mapsector_t*		ms;
-	sector_t*			ss;
-	int					defSeqType;
+	ResourceId res_id = Res_GetMapResourceId("SECTORS", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadSectors: unable to find SECTORS lump for map %s\n", mapname.c_str());
 
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
-	delete[] sectors;
+	delete [] sectors;
 
-	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
+	numsectors = Res_GetLumpLength(res_id) / sizeof(mapsector_t);
 
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
-	memset(sectors, 0, sizeof(sector_t)*numsectors);
+	memset(sectors, 0, sizeof(sector_t) * numsectors);
 
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
 
-	if (level.flags & LEVEL_SNDSEQTOTALCTRL)
-		defSeqType = 0;
-	else
-		defSeqType = -1;
+	int defSeqType = (level.flags & LEVEL_SNDSEQTOTALCTRL) ? 0 : -1;
 
-	ms = (mapsector_t *)data;
-	ss = sectors;
-	for (i = 0; i < numsectors; i++, ss++, ms++)
+	mapsector_t* ms = (mapsector_t*)data;
+	sector_t* ss = sectors;
+
+	for (int i = 0; i < numsectors; i++, ss++, ms++)
 	{
-		ss->floorheight = LESHORT(ms->floorheight)<<FRACBITS;
-		ss->ceilingheight = LESHORT(ms->ceilingheight)<<FRACBITS;
+		ss->floorheight = LESHORT(ms->floorheight) << FRACBITS;
+		ss->ceilingheight = LESHORT(ms->ceilingheight) << FRACBITS;
 		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
 		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
 		ss->lightlevel = LESHORT(ms->lightlevel);
 		if (HasBehavior)
 			ss->special = LESHORT(ms->special);
 		else	// [RH] Translate to new sector special
-			ss->special = P_TranslateSectorSpecial (LESHORT(ms->special));
+			ss->special = P_TranslateSectorSpecial(LESHORT(ms->special));
 		ss->tag = LESHORT(ms->tag);
 		ss->thinglist = NULL;
-		ss->touching_thinglist = NULL;		// phares 3/14/98
+		ss->touching_thinglist = NULL;
 		ss->seqType = defSeqType;
 		ss->nextsec = -1;	//jff 2/26/98 add fields to support locking out
 		ss->prevsec = -1;	// stair retriggering until build completes
 
-		// killough 3/7/98:
 		ss->floor_xoffs = 0;
 		ss->floor_yoffs = 0;	// floor and ceiling flats offsets
 		ss->ceiling_xoffs = 0;
@@ -342,12 +346,10 @@ void P_LoadSectors (int lump)
 		ss->floor_angle = 0;	// [RH] floor and ceiling rotation
 		ss->ceiling_angle = 0;
 
-		ss->base_ceiling_angle = ss->base_ceiling_yoffs =
-			ss->base_floor_angle = ss->base_floor_yoffs = 0;
+		ss->base_ceiling_angle = ss->base_ceiling_yoffs = ss->base_floor_angle = ss->base_floor_yoffs = 0;
 
 		ss->heightsec = NULL;	// sector used to get floor and ceiling height
 		ss->floorlightsec = NULL;	// sector used to get floor lighting
-		// killough 3/7/98: end changes
 
 		// killough 4/11/98 sector used to get ceiling lighting:
 		ss->ceilinglightsec = NULL;
@@ -379,86 +381,93 @@ void P_LoadSectors (int lump)
 		ss->movefactor = ORIG_FRICTION_FACTOR;
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 
 //
 // P_LoadNodes
 //
-void P_LoadNodes (int lump)
+// Loads a Doom or Hexen format NODES lump.
+//
+static void P_LoadNodes(const OString& mapname)
 {
-	byte*		data;
-	int 		i;
-	int 		j;
-	int 		k;
-	mapnode_t*	mn;
-	node_t* 	no;
+	ResourceId res_id = Res_GetMapResourceId("NODES", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadNodes: unable to find NODES lump for map %s\n", mapname.c_str());
 
-	numnodes = W_LumpLength (lump) / sizeof(mapnode_t);
-	nodes = (node_t *)Z_Malloc (numnodes*sizeof(node_t), PU_LEVEL, 0);
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	numnodes = Res_GetLumpLength(res_id) / sizeof(mapnode_t);
+	nodes = (node_t*)Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, NULL);
 
-	mn = (mapnode_t *)data;
-	no = nodes;
+	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
 
-	for (i = 0; i < numnodes; i++, no++, mn++)
+	mapnode_t* mn = (mapnode_t*)data;
+	node_t* no = nodes;
+
+	for (int i = 0; i < numnodes; i++, no++, mn++)
 	{
-		no->x = LESHORT(mn->x)<<FRACBITS;
-		no->y = LESHORT(mn->y)<<FRACBITS;
-		no->dx = LESHORT(mn->dx)<<FRACBITS;
-		no->dy = LESHORT(mn->dy)<<FRACBITS;
-		for (j = 0; j < 2; j++)
+		no->x = LESHORT(mn->x) << FRACBITS;
+		no->y = LESHORT(mn->y) << FRACBITS;
+		no->dx = LESHORT(mn->dx) << FRACBITS;
+		no->dy = LESHORT(mn->dy) << FRACBITS;
+
+		for (int j = 0; j < 2; j++)
 		{
 			// account for children's promotion to 32 bits
 			unsigned int child = (unsigned short)LESHORT(mn->children[j]);
 
 			if (child == 0xffff)
-				child = 0xffffffff;
+				child = 0xfffffffful;
 			else if (child & 0x8000)
 				child = (child & ~0x8000) | NF_SUBSECTOR;
 
 			no->children[j] = child;
 
-			for (k = 0; k < 4; k++)
+			for (int k = 0; k < 4; k++)
 				no->bbox[j][k] = LESHORT(mn->bbox[j][k]) << FRACBITS;
 		}
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
+
 //
-// P_LoadXNOD - load ZDBSP extended nodes
-// returns false if nodes are not extended to fall back to original nodes
+// P_LoadXNOD
 //
-bool P_LoadXNOD(int lump)
+// Loads a ZDBSP extended nodes format NODES, SSECTORS and SEGS lumps.
+//
+static void P_LoadXNOD(const OString& mapname)
 {
-	size_t len = W_LumpLength(lump);
-	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+	ResourceId res_id = Res_GetMapResourceId("NODES", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadXNOD: unable to find NODES lump for map %s\n", mapname.c_str());
+
+	size_t len = Res_GetLumpLength(res_id);
+	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
 
 	if (len < 4 || memcmp(data, "XNOD", 4) != 0)
 	{
 		Z_Free(data);
-		return false;
+		return;
 	}
 
-	byte *p = data + 4; // skip the magic number
+	byte* p = data + 4; // skip the magic number
 
 	// Load vertices
-	unsigned int numorgvert = LELONG(*(unsigned int *)p); p += 4;
-	unsigned int numnewvert = LELONG(*(unsigned int *)p); p += 4;
+	unsigned int numorgvert = LELONG(*(unsigned int*)p); p += 4;
+	unsigned int numnewvert = LELONG(*(unsigned int*)p); p += 4;
 
-	vertex_t *newvert = (vertex_t *) Z_Malloc((numorgvert + numnewvert)*sizeof(*newvert), PU_LEVEL, 0);
+	vertex_t* newvert = (vertex_t*)Z_Malloc((numorgvert + numnewvert) * sizeof(*newvert), PU_LEVEL, NULL);
 
-	memcpy(newvert, vertexes, numorgvert*sizeof(*newvert));
+	memcpy(newvert, vertexes, numorgvert * sizeof(*newvert));
 	memset(&newvert[numorgvert], 0, numnewvert * sizeof(*newvert));
 
 	for (unsigned int i = 0; i < numnewvert; i++)
 	{
 		vertex_t *v = &newvert[numorgvert+i];
-		v->x = LELONG(*(int *)p); p += 4;
-		v->y = LELONG(*(int *)p); p += 4;
+		v->x = LELONG(*(int*)p); p += 4;
+		v->y = LELONG(*(int*)p); p += 4;
 	}
 
 	// Adjust linedefs - since we reallocated the vertex array,
@@ -477,7 +486,7 @@ bool P_LoadXNOD(int lump)
 
 	// Load subsectors
 
-	numsubsectors = LELONG(*(unsigned int *)p); p += 4;
+	numsubsectors = LELONG(*(unsigned int*)p); p += 4;
 	subsectors = (subsector_t *) Z_Malloc(numsubsectors * sizeof(*subsectors), PU_LEVEL, 0);
 	memset(subsectors, 0, numsubsectors * sizeof(*subsectors));
 
@@ -486,28 +495,28 @@ bool P_LoadXNOD(int lump)
 	for (int i = 0; i < numsubsectors; i++)
 	{
 		subsectors[i].firstline = first_seg;
-		subsectors[i].numlines = LELONG(*(unsigned int *)p); p += 4;
+		subsectors[i].numlines = LELONG(*(unsigned int*)p); p += 4;
 		first_seg += subsectors[i].numlines;
 	}
 
 	// Load segs
 
-	numsegs = LELONG(*(unsigned int *)p); p += 4;
-	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
+	numsegs = LELONG(*(unsigned int*)p); p += 4;
+	segs = (seg_t*)Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
 	memset(segs, 0, numsegs * sizeof(*segs));
 
 	for (int i = 0; i < numsegs; i++)
 	{
-		unsigned int v1 = LELONG(*(unsigned int *)p); p += 4;
-		unsigned int v2 = LELONG(*(unsigned int *)p); p += 4;
-		unsigned short ld = LESHORT(*(unsigned short *)p); p += 2;
-		unsigned char side = *(unsigned char *)p; p += 1;
+		unsigned int v1 = LELONG(*(unsigned int*)p); p += 4;
+		unsigned int v2 = LELONG(*(unsigned int*)p); p += 4;
+		unsigned short ld = LESHORT(*(unsigned short*)p); p += 2;
+		unsigned char side = *(unsigned char*)p; p += 1;
 
 		if (side != 0 && side != 1)
 			side = 1;
 
-		seg_t *seg = &segs[i];
-		line_t *line = &lines[ld];
+		seg_t* seg = &segs[i];
+		line_t* line = &lines[ld];
 
 		seg->v1 = &vertexes[v1];
 		seg->v2 = &vertexes[v2];
@@ -516,8 +525,8 @@ bool P_LoadXNOD(int lump)
 		seg->sidedef = &sides[line->sidenum[side]];
 
 		seg->frontsector = seg->sidedef->sector;
-		if (line->flags & ML_TWOSIDED && line->sidenum[side^1] != R_NOSIDE)
-			seg->backsector = sides[line->sidenum[side^1]].sector;
+		if (line->flags & ML_TWOSIDED && line->sidenum[side ^ 1] != R_NOSIDE)
+			seg->backsector = sides[line->sidenum[side ^ 1]].sector;
 		else
 			seg->backsector = NULL;
 
@@ -532,47 +541,45 @@ bool P_LoadXNOD(int lump)
 
 	// Load nodes
 
-	numnodes = LELONG(*(unsigned int *)p); p += 4;
-	nodes = (node_t *) Z_Malloc(numnodes * sizeof(*nodes), PU_LEVEL, 0);
+	numnodes = LELONG(*(unsigned int*)p); p += 4;
+	nodes = (node_t*)Z_Malloc(numnodes * sizeof(*nodes), PU_LEVEL, NULL);
 	memset(nodes, 0, numnodes * sizeof(*nodes));
 
 	for (int i = 0; i < numnodes; i++)
 	{
 		node_t *node = &nodes[i];
 
-		node->x = LESHORT(*(short *)p)<<FRACBITS; p += 2;
-		node->y = LESHORT(*(short *)p)<<FRACBITS; p += 2;
-		node->dx = LESHORT(*(short *)p)<<FRACBITS; p += 2;
-		node->dy = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+		node->x = LESHORT(*(short*)p) << FRACBITS; p += 2;
+		node->y = LESHORT(*(short*)p) << FRACBITS; p += 2;
+		node->dx = LESHORT(*(short*)p) << FRACBITS; p += 2;
+		node->dy = LESHORT(*(short*)p) << FRACBITS; p += 2;
 
 		for (int j = 0; j < 2; j++)
 		{
 			for (int k = 0; k < 4; k++)
-			{
-				node->bbox[j][k] = LESHORT(*(short *)p)<<FRACBITS; p += 2;
-			}
+				node->bbox[j][k] = LESHORT(*(short*)p) << FRACBITS; p += 2;
 		}
 
 		for (int j = 0; j < 2; j++)
-		{
-			node->children[j] = LELONG(*(unsigned int *)p); p += 4;
-		}
+			node->children[j] = LELONG(*(unsigned int*)p); p += 4;
 	}
 
 	Z_Free(data);
-
-	return true;
 }
 
+
 //
-// P_LoadThings
+// P_LoadDoomThings
 //
-void P_LoadThings (int lump)
+// Loads a Doom format THINGS lump.
+//
+static void P_LoadDoomThings(const OString& mapname)
 {
-	mapthing2_t mt2;		// [RH] for translation
-	byte *data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-	mapthing_t *mt = (mapthing_t *)data;
-	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
+	ResourceId res_id = Res_GetMapResourceId("THINGS", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadDoomThings: unable to find THINGS lump for map %s\n", mapname.c_str());
+
+	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
 
 	playerstarts.clear();
 	voodoostarts.clear();
@@ -580,7 +587,11 @@ void P_LoadThings (int lump)
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
 	//		referenced, we translate them into a Hexen-style thing.
-	memset (&mt2, 0, sizeof(mt2));
+	mapthing2_t mt2;
+	memset(&mt2, 0, sizeof(mt2));
+
+	mapthing_t* mt = (mapthing_t*)data;
+	mapthing_t* lastmt = (mapthing_t*)(data + Res_GetLumpLength(res_id));
 
 	for ( ; mt < lastmt; mt++)
 	{
@@ -601,28 +612,33 @@ void P_LoadThings (int lump)
 		mt2.angle = LESHORT(mt->angle);
 		mt2.type = LESHORT(mt->type);
 
-		P_SpawnMapThing (&mt2, 0);
+		P_SpawnMapThing(&mt2, 0);
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
-// [RH]
-// P_LoadThings2
+
 //
-// Same as P_LoadThings() except it assumes Things are
-// saved Hexen-style. Position also controls which single-
-// player start spots are spawned by filtering out those
-// whose first parameter don't match position.
+// P_LoadHexenThings
 //
-void P_LoadThings2 (int lump, int position)
+// Loads a Hexen format THINGS lump.
+// [RH] Position also controls which single- player start spots are spawned
+// by filtering out those whose first parameter don't match position.
+//
+static void P_LoadHexenThings(const OString& mapname, int position)
 {
-	byte *data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-	mapthing2_t *mt = (mapthing2_t *)data;
-	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
+	ResourceId res_id = Res_GetMapResourceId("THINGS", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadHexenThings: unable to find THINGS lump for map %s\n", mapname.c_str());
+
+	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
 
 	playerstarts.clear();
 	voodoostarts.clear();
+
+	mapthing2_t* mt = (mapthing2_t*)data;
+	mapthing2_t* lastmt = (mapthing2_t*)(data + Res_GetLumpLength(res_id));
 
 	for ( ; mt < lastmt; mt++)
 	{
@@ -639,11 +655,12 @@ void P_LoadThings2 (int lump, int position)
 		mt->type = LESHORT(mt->type);
 		mt->flags = LESHORT(mt->flags);
 
-		P_SpawnMapThing (mt, position);
+		P_SpawnMapThing(mt, position);
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
+
 
 //
 // P_LoadLineDefs
@@ -717,15 +734,14 @@ void P_AdjustLine (line_t *ld)
 }
 
 // killough 4/4/98: delay using sidedefs until they are loaded
-void P_FinishLoadingLineDefs (void)
+void P_FinishLoadingLineDefs()
 {
-	int i, linenum;
 	register line_t *ld = lines;
 
-	for (i = numlines, linenum = 0; i--; ld++, linenum++)
+	for (int i = numlines, linenum = 0; i--; ld++, linenum++)
 	{
-		ld->frontsector = ld->sidenum[0]!=R_NOSIDE ? sides[ld->sidenum[0]].sector : 0;
-		ld->backsector  = ld->sidenum[1]!=R_NOSIDE ? sides[ld->sidenum[1]].sector : 0;
+		ld->frontsector = (ld->sidenum[0] != R_NOSIDE) ? sides[ld->sidenum[0]].sector : 0;
+		ld->backsector  = (ld->sidenum[1] != R_NOSIDE) ? sides[ld->sidenum[1]].sector : 0;
 		if (ld->sidenum[0] != R_NOSIDE)
 			sides[ld->sidenum[0]].linenum = linenum;
 		if (ld->sidenum[1] != R_NOSIDE)
@@ -733,61 +749,56 @@ void P_FinishLoadingLineDefs (void)
 
 		switch (ld->special)
 		{						// killough 4/11/98: handle special types
-			int j;
-
 			case TranslucentLine:			// killough 4/11/98: translucent 2s textures
-#if 0
-				lump = sides[*ld->sidenum].special;		// translucency from sidedef
-				if (!ld->tag)							// if tag==0,
-					ld->tranlump = lump;				// affect this linedef only
-				else
-					for (j=0;j<numlines;j++)			// if tag!=0,
-						if (lines[j].tag == ld->tag)	// affect all matching linedefs
-							lines[j].tranlump = lump;
-#else
 				// [RH] Second arg controls how opaque it is.
 				if (!ld->args[0])
 					ld->lucency = (byte)ld->args[1];
 				else
-					for (j = 0; j < numlines; j++)
+					for (int j = 0; j < numlines; j++)
 						if (lines[j].id == ld->args[0])
 							lines[j].lucency = (byte)ld->args[1];
-#endif
 				break;
 		}
 	}
 }
 
-void P_LoadLineDefs (int lump)
+
+//
+// P_LoadDoomLineDefs
+//
+// Reads a Doom format LINEDEFS lump.
+//
+static void P_LoadDoomLineDefs(const OString& mapname)
 {
-	byte *data;
-	int i;
-	line_t *ld;
+	ResourceId res_id = Res_GetMapResourceId("LINEDEFS", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadDoomLineDefs: unable to find LINEDEFS lump for map %s\n", mapname.c_str());
 
-	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
-	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL, 0);
-	memset (lines, 0, numlines*sizeof(line_t));
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	numlines = Res_GetLumpLength(res_id) / sizeof(maplinedef_t);
+	lines = (line_t*)Z_Malloc(numlines * sizeof(line_t), PU_LEVEL, NULL);
+	memset(lines, 0, numlines * sizeof(line_t));
+	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
 
-	ld = lines;
-	for (i=0 ; i<numlines ; i++, ld++)
+	line_t* ld = lines;
+
+	for (int i = 0; i < numlines; i++, ld++)
 	{
-		maplinedef_t *mld = ((maplinedef_t *)data) + i;
+		maplinedef_t* mld = ((maplinedef_t*)data) + i;
 
 		// [RH] Translate old linedef special and flags to be
 		//		compatible with the new format.
-		P_TranslateLineDef (ld, mld);
+		P_TranslateLineDef(ld, mld);
 
 		unsigned short v = LESHORT(mld->v1);
 
-		if(v >= numvertexes)
+		if (v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
-		if(v >= numvertexes)
+		if (v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
@@ -795,37 +806,41 @@ void P_LoadLineDefs (int lump)
 		ld->sidenum[0] = LESHORT(mld->sidenum[0]);
 		ld->sidenum[1] = LESHORT(mld->sidenum[1]);
 
-		if(ld->sidenum[0] >= numsides)
+		if (ld->sidenum[0] >= numsides)
 			ld->sidenum[0] = R_NOSIDE;
-		if(ld->sidenum[1] >= numsides)
+		if (ld->sidenum[1] >= numsides)
 			ld->sidenum[1] = R_NOSIDE;
 
-		P_AdjustLine (ld);
+		P_AdjustLine(ld);
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
-// [RH] Same as P_LoadLineDefs() except it uses Hexen-style LineDefs.
-void P_LoadLineDefs2 (int lump)
+
+//
+// P_LoadHexenLineDefs
+//
+// Reads a Hexen format LINEDEFS lump.
+//
+static void P_LoadHexenLineDefs(const OString& mapname)
 {
-	byte*				data;
-	int 				i;
-	maplinedef2_t*		mld;
-	line_t* 			ld;
+	ResourceId res_id = Res_GetMapResourceId("LINEDEFS", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadHexenLineDefs: unable to find LINEDEFS lump for map %s\n", mapname.c_str());
 
-	numlines = W_LumpLength (lump) / sizeof(maplinedef2_t);
-	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL,0 );
-	memset (lines, 0, numlines*sizeof(line_t));
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	numlines = Res_GetLumpLength(res_id) / sizeof(maplinedef2_t);
+	lines = (line_t*)Z_Malloc(numlines * sizeof(line_t), PU_LEVEL, NULL);
+	memset(lines, 0, numlines * sizeof(line_t));
 
-	mld = (maplinedef2_t *)data;
-	ld = lines;
-	for (i = 0; i < numlines; i++, mld++, ld++)
+	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+
+	maplinedef2_t* mld = (maplinedef2_t*)data;
+	line_t* ld = lines;
+
+	for (int i = 0; i < numlines; i++, mld++, ld++)
 	{
-		int j;
-
-		for (j = 0; j < 5; j++)
+		for (int j = 0; j < 5; j++)
 			ld->args[j] = mld->args[j];
 
 		ld->flags = LESHORT(mld->flags);
@@ -833,14 +848,14 @@ void P_LoadLineDefs2 (int lump)
 
 		unsigned short v = LESHORT(mld->v1);
 
-		if(v >= numvertexes)
+		if (v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
-		if(v >= numvertexes)
+		if (v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
@@ -848,26 +863,30 @@ void P_LoadLineDefs2 (int lump)
 		ld->sidenum[0] = LESHORT(mld->sidenum[0]);
 		ld->sidenum[1] = LESHORT(mld->sidenum[1]);
 
-		if(ld->sidenum[0] >= numsides)
+		if (ld->sidenum[0] >= numsides)
 			ld->sidenum[0] = R_NOSIDE;
-		if(ld->sidenum[1] >= numsides)
+		if (ld->sidenum[1] >= numsides)
 			ld->sidenum[1] = R_NOSIDE;
 
-		P_AdjustLine (ld);
+		P_AdjustLine(ld);
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 //
 // P_LoadSideDefs
 //
 // killough 4/4/98: split into two functions
-void P_LoadSideDefs (int lump)
+static void P_LoadSideDefs(const OString& mapname)
 {
-	numsides = W_LumpLength (lump) / sizeof(mapsidedef_t);
-	sides = (side_t *)Z_Malloc (numsides*sizeof(side_t), PU_LEVEL, 0);
-	memset (sides, 0, numsides*sizeof(side_t));
+	ResourceId res_id = Res_GetMapResourceId("SIDEDEFS", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadSideDefs: unable to find SIDEDEFS lump for map %s\n", mapname.c_str());
+
+	numsides = Res_GetLumpLength(res_id) / sizeof(mapsidedef_t);
+	sides = (side_t*)Z_Malloc(numsides * sizeof(side_t), PU_LEVEL, NULL);
+	memset(sides, 0, numsides * sizeof(side_t));
 }
 
 
@@ -972,21 +991,29 @@ static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
 	}
 }
 
+
+//
+// P_LoadSideDefs2
+//
 // killough 4/4/98: delay using texture names until
 // after linedefs are loaded, to allow overloading.
 // killough 5/3/98: reformatted, cleaned up
-
-void P_LoadSideDefs2 (int lump)
+//
+static void P_LoadSideDefs2(const OString& mapname)
 {
-	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
+	ResourceId res_id = Res_GetMapResourceId("SIDEDEFS", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadSideDefs2: unable to find SIDEDEFS lump for map %s\n", mapname.c_str());
+
+	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
 
 	for (int i = 0; i < numsides; i++)
 	{
 		register mapsidedef_t* msd = (mapsidedef_t*)data + i;
 		register side_t* sd = sides + i;
 
-		sd->textureoffset = LESHORT(msd->textureoffset)<<FRACBITS;
-		sd->rowoffset = LESHORT(msd->rowoffset)<<FRACBITS;
+		sd->textureoffset = LESHORT(msd->textureoffset) << FRACBITS;
+		sd->rowoffset = LESHORT(msd->rowoffset) << FRACBITS;
 		sd->linenum = -1;
 		sd->sector = &sectors[LESHORT(msd->sector)];
 
@@ -1030,17 +1057,6 @@ void P_LoadSideDefs2 (int lump)
 			}
 			break;
 
-/*
-		  case TranslucentLine:	// killough 4/11/98: apply translucency to 2s normal texture
-			sd->midtexture = strncasecmp("TRANMAP", msd->midtexture, 8) ?
-				(sd->special = W_CheckNumForName(msd->midtexture)) < 0 ||
-				W_LumpLength(sd->special) != 65536 ?
-				sd->special=0, R_TextureNumForName(msd->midtexture) :
-					(sd->special++, 0) : (sd->special=0);
-			sd->toptexture = R_TextureNumForName(msd->toptexture);
-			sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
-			break;
-*/
 		  default:			// normal cases
 			sd->midtexture = R_TextureNumForName(msd->midtexture);
 			sd->toptexture = R_TextureNumForName(msd->toptexture);
@@ -1048,7 +1064,8 @@ void P_LoadSideDefs2 (int lump)
 			break;
 		}
 	}
-	Z_Free (data);
+
+	Z_Free(data);
 }
 
 
@@ -1377,19 +1394,26 @@ void P_CreateBlockMap()
 //
 // P_LoadBlockMap
 //
+// Loads a Doom or Hexen format BLOCKMAP lump.
 // [RH] Changed this some
 //
-void P_LoadBlockMap (int lump)
+static void P_LoadBlockMap(const OString& mapname)
 {
-	int count;
+	ResourceId res_id = Res_GetMapResourceId("BLOCKMAP", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadBlockMap: unable to find BLOCKMAP lump for map %s\n", mapname.c_str());
 
-	if (Args.CheckParm("-blockmap") || (count = W_LumpLength(lump)/2) >= 0x10000 || count < 4)
+	int count = Res_GetLumpLength(res_id) / sizeof(short);
+
+	if (Args.CheckParm("-blockmap") || count < 4 || count >= 0x10000)
+	{
 		P_CreateBlockMap();
+	}
 	else
 	{
-		short *wadblockmaplump = (short *)W_CacheLumpNum (lump, PU_LEVEL);
-		int i;
-		blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
+		short* wadblockmaplump = (short*)Res_CacheLump(res_id, PU_STATIC);
+
+		blockmaplump = (int*)Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, NULL);
 
 		// killough 3/1/98: Expand wad blockmap into larger internal one,
 		// by treating all offsets except -1 as unsigned and zero-extending
@@ -1401,25 +1425,25 @@ void P_LoadBlockMap (int lump)
 		blockmaplump[2] = (DWORD)(LESHORT(wadblockmaplump[2])) & 0xffff;
 		blockmaplump[3] = (DWORD)(LESHORT(wadblockmaplump[3])) & 0xffff;
 
-		for (i=4 ; i<count ; i++)
+		for (int i = 4; i < count; i++)
 		{
 			short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
-			blockmaplump[i] = t == -1 ? (DWORD)0xffffffff : (DWORD) t & 0xffff;
+			blockmaplump[i] = (t == -1) ? (DWORD)0xffffffff : (DWORD)t & 0xffff;
 		}
 
-		Z_Free (wadblockmaplump);
+		Z_Free(wadblockmaplump);
 	}
 
-	bmaporgx = blockmaplump[0]<<FRACBITS;
-	bmaporgy = blockmaplump[1]<<FRACBITS;
+	bmaporgx = blockmaplump[0] << FRACBITS;
+	bmaporgy = blockmaplump[1] << FRACBITS;
 	bmapwidth = blockmaplump[2];
 	bmapheight = blockmaplump[3];
 
 	// clear out mobj chains
-	count = sizeof(*blocklinks) * bmapwidth*bmapheight;
-	blocklinks = (AActor **)Z_Malloc (count, PU_LEVEL, 0);
-	memset (blocklinks, 0, count);
-	blockmap = blockmaplump+4;
+	count = sizeof(*blocklinks) * bmapwidth * bmapheight;
+	blocklinks = (AActor**)Z_Malloc(count, PU_LEVEL, NULL);
+	memset(blocklinks, 0, count);
+	blockmap = blockmaplump + 4;
 }
 
 
@@ -1599,21 +1623,52 @@ static void P_RemoveSlimeTrails()
 	Z_Free(hit);
 }
 
+
+//
+// P_LoadReject
+//
+// Loads a Doom or Hexen format REJECT lump.
+//
+static void P_LoadReject(const OString& mapname)
+{
+	ResourceId res_id = Res_GetMapResourceId("REJECT", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadReject: unable to find REJECT lump for map %s\n", mapname.c_str());
+
+	rejectmatrix = NULL;
+
+	// [SL] 2011-07-01 - Check to see if the reject table is of the proper size.
+	// If it's too short, the reject table should be ignored when calling P_CheckSight.
+	if (Res_GetLumpLength(res_id) < (unsigned)numsectors * (unsigned)numsectors + 7 / 8)
+		DPrintf("Reject matrix is not valid and will be ignored.\n");
+	else
+		rejectmatrix = (byte*)Res_CacheLump(res_id, PU_LEVEL);
+}
+
+
 //
 // [RH] P_LoadBehavior
 //
-void P_LoadBehavior (int lumpnum)
+// Loads a Hexen BEHAVIOR lump.
+//
+static void P_LoadBehavior(const OString& mapname)
 {
-	byte *behavior = (byte *)W_CacheLumpNum (lumpnum, PU_LEVEL);
+	ResourceId res_id = Res_GetMapResourceId("BEHAVIOR", mapname);
+	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+		I_Error("P_LoadBehavior: unable to find BEHAVIOR lump for map %s\n", mapname.c_str());
 
-	level.behavior = new FBehavior (behavior, lumpinfo[lumpnum].size);
+	size_t length = Res_GetLumpLength(res_id);
+	byte* data = (byte*)Res_CacheLump(res_id, PU_LEVEL);
 
-	if (!level.behavior->IsGood ())
+	level.behavior = new FBehavior(data, length);
+
+	if (!level.behavior->IsGood())
 	{
 		delete level.behavior;
 		level.behavior = NULL;
 	}
 }
+
 
 //
 // P_AllocStarts
@@ -1646,13 +1701,11 @@ void P_AllocStarts(void)
 //
 // P_SetupLevel
 //
-extern polyblock_t **PolyBlockMap;
-
+// Loads the specified level.
 // [RH] position indicates the start spot to spawn at
-void P_SetupLevel (char *lumpname, int position)
+//
+void P_SetupLevel(const OString& mapname, int position)
 {
-	size_t lumpnum;
-
 	level.total_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
@@ -1661,85 +1714,78 @@ void P_SetupLevel (char *lumpname, int position)
 	if (!savegamerestore)
 	{
 		for (Players::iterator it = players.begin();it != players.end();++it)
-		{
 			it->killcount = it->secretcount = it->itemcount = 0;
-		}
 	}
 
 	// Initial height of PointOfView will be set by player think.
 	consoleplayer().viewz = 1;
 
 	// Make sure all sounds are stopped before Z_FreeTags.
-	S_Start ();
+	S_Start();
 
 	// [RH] Clear all ThingID hash chains.
-	AActor::ClearTIDHashes ();
+	AActor::ClearTIDHashes();
 
 	// [RH] clear out the mid-screen message
-	C_MidPrint (NULL);
+	C_MidPrint(NULL);
 
+	extern polyblock_t** PolyBlockMap;
 	PolyBlockMap = NULL;
 
-	DThinker::DestroyAllThinkers ();
-	Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
+	DThinker::DestroyAllThinkers();
+	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
 
-	// UNUSED W_Profile ();
+    level.time = 0;
 
-	// find map num
-	lumpnum = W_GetNumForName (lumpname);
+	delete level.behavior;
+	level.behavior = NULL;
 
 	// [RH] Check if this map is Hexen-style.
 	//		LINEDEFS and THINGS need to be handled accordingly.
 	//		If it is, we also need to distinguish between projectile cross and hit
-	HasBehavior = W_CheckLumpName (lumpnum+ML_BEHAVIOR, "BEHAVIOR");
-	//oldshootactivation = !HasBehavior;
+	HasBehavior = Res_GetMapResourceId("BEHAVIOR", mapname) != ResourceFile::LUMP_NOT_FOUND;
 
 	// note: most of this ordering is important
 
-	// [RH] Load in the BEHAVIOR lump
-	if (level.behavior != NULL)
-	{
-		delete level.behavior;
-		level.behavior = NULL;
-	}
 	if (HasBehavior)
-	{
-		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
-	}
+		P_LoadBehavior(mapname);
 
-    level.time = 0;
+	P_LoadVertexes(mapname);
+	P_LoadSectors(mapname);
 
-	P_LoadVertexes (lumpnum+ML_VERTEXES);
-	P_LoadSectors (lumpnum+ML_SECTORS);
-	P_LoadSideDefs (lumpnum+ML_SIDEDEFS);
-	if (!HasBehavior)
-		P_LoadLineDefs (lumpnum+ML_LINEDEFS);
+	P_LoadSideDefs(mapname);
+
+	if (HasBehavior)
+		P_LoadHexenLineDefs(mapname);
 	else
-		P_LoadLineDefs2 (lumpnum+ML_LINEDEFS);	// [RH] Load Hexen-style linedefs
-	P_LoadSideDefs2 (lumpnum+ML_SIDEDEFS);
-	P_FinishLoadingLineDefs ();
-	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
+		P_LoadDoomLineDefs(mapname);
 
-	if (!P_LoadXNOD(lumpnum+ML_NODES))
-	{
-		P_LoadSubsectors (lumpnum+ML_SSECTORS);
-		P_LoadNodes (lumpnum+ML_NODES);
-		P_LoadSegs (lumpnum+ML_SEGS);
-	}
+	P_LoadSideDefs2(mapname);
+	P_FinishLoadingLineDefs();
+	P_LoadBlockMap(mapname);
 
-	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
+	ResourceId nodes_res_id = Res_GetMapResourceId("NODES", mapname);
+	if (Res_GetLumpLength(nodes_res_id) >= 4)
 	{
-		// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
-		// If it's too short, the reject table should be ignored when
-		// calling P_CheckSight
-		if (W_LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
+		byte* data = (byte*)Res_CacheLump(nodes_res_id, PU_LEVEL);
+		if (memcmp(data, "XNOD", 4) != 0)
 		{
-			DPrintf("Reject matrix is not valid and will be ignored.\n");
-			rejectempty = true;
+			// load standard format subsectors, nodes, and segs
+			P_LoadSubsectors(mapname);
+			P_LoadNodes(mapname);
+			P_LoadSegs(mapname);
+		}
+		else
+		{
+			// load XNOD format subsectors, nodes, and segs
+			P_LoadXNOD(mapname);
 		}
 	}
-	P_GroupLines ();
+
+	P_LoadReject(mapname);
+
+	P_GroupLines();
 
 	// [SL] don't move seg vertices if compatibility is cruical
 	if (!demoplayback && !demorecording)
@@ -1751,15 +1797,15 @@ void P_SetupLevel (char *lumpname, int position)
 
 	P_AllocStarts();
 
-	if (!HasBehavior)
-		P_LoadThings (lumpnum+ML_THINGS);
+	if (HasBehavior)
+		P_LoadHexenThings(mapname, position);
 	else
-		P_LoadThings2 (lumpnum+ML_THINGS, position);	// [RH] Load Hexen-style things
+		P_LoadDoomThings(mapname);
 
 	if (!HasBehavior)
-		P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
+		P_TranslateTeleportThings();	// [RH] Assign teleport destination TIDs
 
-    PO_Init ();
+    PO_Init();
 
     if (serverside)
     {

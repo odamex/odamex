@@ -69,7 +69,6 @@
 #include <sstream>
 #include <vector>
 
-extern void G_DeferedInitNew (char *mapname);
 extern level_locals_t level;
 
 // Unnatural Level Progression.  True if we've used 'map' or another command
@@ -624,12 +623,9 @@ void SV_GetPackets()
 
 	// [SL] 2011-05-18 - Handle sv_emptyreset
 	static size_t last_player_count = players.size();
-	if (sv_emptyreset && players.empty() &&
-			last_player_count > 0 && gamestate == GS_LEVEL)
-	{
-		// The last player just disconnected so reset the level
+	if (sv_emptyreset && players.empty() && last_player_count > 0 && gamestate == GS_LEVEL)
 		G_DeferedInitNew(level.mapname);
-	}
+
 	last_player_count = players.size();
 }
 

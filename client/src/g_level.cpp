@@ -106,10 +106,10 @@ bool isFast = false;
 //
 static char d_mapname[9];
 
-void G_DeferedInitNew (char *mapname)
+void G_DeferedInitNew(const std::string& mapname)
 {
 	G_CleanupDemo();
-	strncpy (d_mapname, mapname, 8);
+	strncpy(d_mapname, mapname.c_str(), 8);
 	gameaction = ga_newgame;
 }
 
@@ -177,14 +177,12 @@ void G_DoNewGame (void)
 	gameaction = ga_nothing;
 }
 
-void G_InitNew (const char *mapname)
+void G_InitNew(const std::string& mapname)
 {
-	size_t i;
-
 	// [RH] Remove all particles
-	R_ClearParticles ();
+	R_ClearParticles();
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		it->mo = AActor::AActorPtr();
 		it->camera = AActor::AActorPtr();
@@ -192,15 +190,15 @@ void G_InitNew (const char *mapname)
 	}
 
 	if (!savegamerestore)
-		G_ClearSnapshots ();
+		G_ClearSnapshots();
 
 	// [RH] Mark all levels as not visited
 	if (!savegamerestore)
 	{
-		for (i = 0; i < wadlevelinfos.size(); i++)
+		for (size_t i = 0; i < wadlevelinfos.size(); i++)
 			wadlevelinfos[i].flags &= ~LEVEL_VISITED;
 
-		for (i = 0; LevelInfos[i].mapname[0]; i++)
+		for (size_t i = 0; LevelInfos[i].mapname[0]; i++)
 			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
 
@@ -220,16 +218,12 @@ void G_InitNew (const char *mapname)
 	}
 
 	// If were in chasecam mode, clear out // [Toke - fix]
-	if ((consoleplayer().cheats & CF_CHASECAM))
-	{
+	if (consoleplayer().cheats & CF_CHASECAM)
 		consoleplayer().cheats &= ~CF_CHASECAM;
-	}
 
 	// [RH] If this map doesn't exist, bomb out
-	if (W_CheckNumForName (mapname) == -1)
-	{
-		I_Error ("Could not find map %s\n", mapname);
-	}
+	if (!Res_CheckMap(mapname))
+		I_Error("Could not find map %s\n", mapname.c_str());
 
 	if (sv_skill == sk_nightmare || sv_monstersrespawn)
 		respawnmonsters = true;
@@ -241,7 +235,7 @@ void G_InitNew (const char *mapname)
 	{
 		if (wantFast)
 		{
-			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
+			for (size_t i = S_SARG_RUN1; i <= S_SARG_PAIN2; i++)
 				states[i].tics >>= 1;
 			mobjinfo[MT_BRUISERSHOT].speed = 20*FRACUNIT;
 			mobjinfo[MT_HEADSHOT].speed = 20*FRACUNIT;
@@ -249,7 +243,7 @@ void G_InitNew (const char *mapname)
 		}
 		else
 		{
-			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
+			for (size_t i = S_SARG_RUN1; i <= S_SARG_PAIN2; i++)
 				states[i].tics <<= 1;
 			mobjinfo[MT_BRUISERSHOT].speed = 15*FRACUNIT;
 			mobjinfo[MT_HEADSHOT].speed = 10*FRACUNIT;
@@ -261,14 +255,14 @@ void G_InitNew (const char *mapname)
 	if (!savegamerestore)
 	{
 		M_ClearRandom ();
-		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
-		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
+		memset(ACS_WorldVars, 0, sizeof(ACS_WorldVars));
+		memset(ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
 		level.timeleft = 0;
 		level.inttimeleft = 0;
 
 		// force players to be initialized upon first level load
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			it->playerstate = PST_ENTER; // [BC]
 	}
 
@@ -282,8 +276,8 @@ void G_InitNew (const char *mapname)
 
 	D_SetupUserInfo();
 	
-	strncpy (level.mapname, mapname, 8);
-	G_DoLoadLevel (0);
+	strncpy(level.mapname, mapname.c_str(), 8);
+	G_DoLoadLevel(0);
 }
 
 //
@@ -326,8 +320,7 @@ void G_ExitLevel (int position, int drawscores)
 void G_SecretExitLevel (int position, int drawscores)
 {
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	if ( (gameinfo.flags & GI_MAPxx)
-		 && (W_CheckNumForName("map31")<0))
+	if ((gameinfo.flags & GI_MAPxx) && !Res_CheckMap("MAP31"))
 		secretexit = false;
 	else
 		secretexit = true;
@@ -368,23 +361,30 @@ void G_DoCompleted (void)
 	strncpy (wminfo.lname0, level.info->pname, 8);
 	strncpy (wminfo.current, level.mapname, 8);
 
-	if (sv_gametype != GM_COOP &&
-		!(level.flags & LEVEL_CHANGEMAPCHEAT)) {
-		strncpy (wminfo.next, level.mapname, 8);
-		strncpy (wminfo.lname1, level.info->pname, 8);
-	} else {
+	if (sv_gametype != GM_COOP && !(level.flags & LEVEL_CHANGEMAPCHEAT))
+	{
+		strncpy(wminfo.next, level.mapname, 8);
+		strncpy(wminfo.lname1, level.info->pname, 8);
+	}
+	else
+	{
 		wminfo.next[0] = 0;
-		if (secretexit) {
-			if (W_CheckNumForName (level.secretmap) != -1) {
-				strncpy (wminfo.next, level.secretmap, 8);
-				strncpy (wminfo.lname1, FindLevelInfo (level.secretmap)->pname, 8);
-			} else {
+		if (secretexit)
+		{
+			if (Res_CheckMap(level.secretmap))
+			{
+				strncpy(wminfo.next, level.secretmap, 8);
+				strncpy(wminfo.lname1, FindLevelInfo (level.secretmap)->pname, 8);
+			}
+			else
+			{
 				secretexit = false;
 			}
 		}
-		if (!wminfo.next[0]) {
-			strncpy (wminfo.next, level.nextmap, 8);
-			strncpy (wminfo.lname1, FindLevelInfo (level.nextmap)->pname, 8);
+		if (!wminfo.next[0])
+		{
+			strncpy(wminfo.next, level.nextmap, 8);
+			strncpy(wminfo.lname1, FindLevelInfo (level.nextmap)->pname, 8);
 		}
 	}
 

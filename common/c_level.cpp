@@ -570,7 +570,7 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 	}
 
 	if (mapname.length())
-		G_DeferedInitNew((char *)mapname.c_str());
+		G_DeferedInitNew(mapname);
 	else
 		G_DeferedInitNew(startmap);
 
@@ -622,59 +622,51 @@ bool G_LoadWad(const std::string &str, const std::string &mapname)
 }
 
 
-BEGIN_COMMAND (map)
+BEGIN_COMMAND(map)
 {
 	if (argc > 1)
 	{
-		// [Dash|RD] -- We can make a safe assumption that the user might not specify
-		//              the whole lumpname for the level, and might opt for just the
-		//              number. This makes sense, so why isn't there any code for it?
-		if (W_CheckNumForName (argv[1]) == -1 && isdigit(argv[1][0]))
-		{ // The map name isn't valid, so lets try to make some assumptions for the user.
-			char mapname[32];
+		OString mapname(StdStringToUpper(argv[1]));
+
+		if (!Res_CheckMap(mapname) && isdigit(argv[1][0]))
+		{
+			// The map name isn't valid, so lets try to make some assumptions for the user.
+			// [Dash|RD] -- We can make a safe assumption that the user might not specify
+			//              the whole lumpname for the level, and might opt for just the
+			//              number. This makes sense, so why isn't there any code for it?
+
+			char str[32];
 
 			// If argc is 2, we assume Doom 2/Final Doom. If it's 3, Ultimate Doom.
-            // [Russell] - gamemode is always the better option compared to above
-			if ( argc == 2 )
+			// [Russell] - gamemode is always the better option compared to above
+			if (argc == 2)
 			{
 				if ((gameinfo.flags & GI_MAPxx))
-                    sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
-                else
-                    sprintf( mapname, "E%cM%c", argv[1][0], argv[1][1]);
-
+					sprintf(str, "MAP%02i", atoi(argv[1]));
+				else
+					sprintf(str, "E%cM%c", argv[1][0], argv[1][1]);
 			}
 
-			if (W_CheckNumForName (mapname) == -1)
-			{ // Still no luck, oh well.
-				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
-			}
-			else
-			{ // Success
-				unnatural_level_progression = true;
-				G_DeferedInitNew (mapname);
-			}
+			mapname = StdStringToUpper(str);
+		}
 
+		if (Res_CheckMap(mapname))
+		{
+			unnatural_level_progression = true;
+			G_DeferedInitNew(mapname);
 		}
 		else
 		{
-			// Ch0wW - Map was still not found, so don't bother trying loading the map.
-			if (W_CheckNumForName (argv[1]) == -1)
-			{
-				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
-			}
-			else
-			{
-				unnatural_level_progression = true;
-				G_DeferedInitNew (argv[1]);
-			}
+			Printf(PRINT_HIGH, "Map %s not found.\n", argv[1]);
 		}
 	}
 	else
 	{
-		Printf (PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname, level.level_name);
+		Printf(PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname, level.level_name);
 	}
 }
-END_COMMAND (map)
+END_COMMAND(map)
+
 
 char *CalcMapName (int episode, int level)
 {
@@ -718,22 +710,17 @@ level_info_t *FindLevelInfo (char *mapname)
 		return FindDefLevelInfo (mapname);
 }
 
-level_info_t *FindLevelByNum (int num)
+level_info_t *FindLevelByNum(int num)
 {
-	{
-		for (size_t i = 0; i < wadlevelinfos.size(); i++)
-			if (wadlevelinfos[i].levelnum == num)
-				return (level_info_t *)(&wadlevelinfos[i]);
-	}
-	{
-		level_info_t *i = LevelInfos;
-		while (i->level_name) {
-			if (i->levelnum == num && W_CheckNumForName (i->mapname) != -1)
-				return i;
-			i++;
-		}
-		return NULL;
-	}
+	for (size_t i = 0; i < wadlevelinfos.size(); i++)
+		if (wadlevelinfos[i].levelnum == num)
+			return (level_info_t*)(&wadlevelinfos[i]);
+
+	for (level_info_t* i = LevelInfos; i->level_name; i++)
+		if (i->levelnum == num && Res_CheckMap(i->mapname))
+			return i;
+
+	return NULL;
 }
 
 cluster_info_t *FindDefClusterInfo (int cluster)

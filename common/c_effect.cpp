@@ -290,9 +290,9 @@ void P_RunEffects (void)
 		{
 			// Only run the effect if the mobj is potentially visible
 			//int rnum = pnum + (actor->subsector->sector - sectors);
-			//if (rejectempty || !(rejectmatrix[rnum>>3] & (1 << (rnum & 7))))
+			//if (!rejectmatrix || !(rejectmatrix[rnum >> 3] & (1 << (rnum & 7))))
 			{
-				P_RunEffect (actor, actor->effects);
+				P_RunEffect(actor, actor->effects);
 			}
 		}
 	}

@@ -727,19 +727,17 @@ WadResourceFile::WadResourceFile(const OString& filename,
 			mRecords[index].offset = offset;
 			mRecords[index].size = length;
 
-			// [SL] Determine if this is a map (by checking if a map-related lump such as
+			// [SL] Determine if this is a map marker (by checking if a map-related lump such as
 			// SEGS follows this one). If so, move all of the subsequent map lumps into
 			// this map's namespace.
-			if (wad_lump_num + 1 < (size_t)wad_lump_count &&
-				Res_IsMapLumpName(StdStringToUpper(wad_table[wad_lump_num + 1].name, 8)))
-			{
-				if (map_namespace_name.empty())
-					map_namespace_name = name;
-			}
-			else
-			{
+			bool map_lump = Res_IsMapLumpName(name);
+			bool map_marker = !map_lump && wad_lump_num + 1 < (size_t)wad_lump_count &&
+							Res_IsMapLumpName(StdStringToUpper(wad_table[wad_lump_num + 1].name, 8));
+
+			if (map_marker)
+				map_namespace_name = name;
+			else if (!map_lump)
 				map_namespace_name.clear();
-			}
 
 			// add the lump to the appropriate namespace
 			if (!map_namespace_name.empty())
@@ -830,7 +828,7 @@ static LumpLookupTable lump_lookup_table;
 static std::vector<ResourceFile*> resource_files;
 
 typedef OHashTable<ResourceId, void*> CacheTable;
-static CacheTable cache_table;
+static CacheTable cache_table(4096);
 
 //
 // Res_CheckWadFile
@@ -1017,7 +1015,7 @@ void* Res_CacheLump(const ResourceId res_id, int tag)
 	void* data_ptr = NULL;
 
 	CacheTable::iterator it = cache_table.find(res_id);
-	if (it != cache_table.end())
+	if (it != cache_table.end() && it->second != NULL)
 	{
 		data_ptr = it->second;
 		Z_ChangeTag(data_ptr, tag);

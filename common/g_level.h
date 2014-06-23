@@ -188,7 +188,7 @@ extern int ACS_GlobalVars[NUM_GLOBALVARS];
 extern BOOL savegamerestore;
 extern BOOL HexenHack;		// Semi-Hexen-compatibility mode
 
-void G_InitNew (const char *mapname);
+void G_InitNew(const std::string& mapname);
 void G_ChangeMap (void);
 void G_ChangeMap (size_t index);
 void G_RestartMap (void);
@@ -196,7 +196,7 @@ void G_RestartMap (void);
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,
 // but a warp test can start elsewhere
-void G_DeferedInitNew (char *mapname);
+void G_DeferedInitNew(const std::string& mapname);
 
 // Map reset functions
 void G_DeferedFullReset();

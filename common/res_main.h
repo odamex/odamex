@@ -222,16 +222,16 @@ const OString& Res_GetLumpName(const ResourceId res_id);
 
 bool Res_CheckLump(const ResourceId res_id);
 
-static inline bool Res_CheckLump(const OString& lumpname)
+static inline bool Res_CheckLump(const OString& lumpname, const OString& namespace_name = global_namespace_name)
 {
-	return Res_CheckLump(Res_GetResourceId(lumpname));
+	return Res_CheckLump(Res_GetResourceId(lumpname, namespace_name));
 }
 
 size_t Res_GetLumpLength(const ResourceId res_id);
 
-static inline size_t Res_GetLumpLength(const OString& lumpname)
+static inline size_t Res_GetLumpLength(const OString& lumpname, const OString& namespace_name = global_namespace_name)
 {
-	return Res_GetLumpLength(Res_GetResourceId(lumpname));
+	return Res_GetLumpLength(Res_GetResourceId(lumpname, namespace_name));
 }
 
 size_t Res_ReadLump(const ResourceId id, void* data);
@@ -251,6 +251,31 @@ static inline void* Res_CacheLump(const OString& name, int tag)
 
 void Res_QueryLumpName(std::vector<ResourceId>& res_ids,
 					const OString& lumpname, const OString& namespace_name = global_namespace_name);
+
+
+//
+// Res_CheckMap
+//
+// Checks if a given map name exists in the resource files. Internally, map
+// names are stored as marker lumps and put into their own namespace.
+//
+static inline bool Res_CheckMap(const OString& mapname)
+{
+	return Res_CheckLump(Res_GetResourceId(mapname, mapname));
+}
+
+
+//
+// Res_GetMapResourceId
+//
+// Returns the ResourceId of a lump belonging to the given map. Internally, the
+// lumps for a particular map are stored in that map's namespace.
+//
+static inline ResourceId Res_GetMapResourceId(const OString& lumpname, const OString& mapname)
+{
+	return Res_GetResourceId(lumpname, mapname);
+}
+
 
 #endif	// __RES_MAIN_H__
 
