@@ -893,7 +893,7 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 		}
 	}
 
-	if (!hubload && !noStorePlayers)
+	if (!hubLoad && !noStorePlayers)
 		P_SerializePlayers(arc);
 
 	P_SerializeThinkers(arc, hubLoad, noStorePlayers);
