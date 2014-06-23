@@ -182,6 +182,39 @@ static bool Res_ValidateDehacked(const void* data, size_t length)
 }
 
 
+//
+// Res_ValidatePCSpeakerSound
+//
+// Returns true if the given lump data appears to be a valid PC speaker
+// sound effect. The lump starts with a 4 byte header indicating the length
+// of the sound effect in bytes and then is followed by that number of bytes
+// of sound data.
+//
+static bool Res_ValidatePCSpeakerSound(const void* data, size_t length)
+{
+	int16_t* magic = (int16_t*)((uint8_t*)data + 0);
+	int16_t* sample_length = (int16_t*)((uint8_t*)data + 2);
+	return length >= 4 && LESHORT(*magic) == 0 && LESHORT(*sample_length) + 4 == (int16_t)length;
+}
+
+
+//
+// Res_ValidateSound
+//
+// Returns true if the given lump data appears to be a valid DMX sound effect.
+// The lump starts with a two byte version number (0x0003).
+//
+// User-created tools to convert to the DMX sound effect format typically
+// do not use the correct number of padding bytes in the header and as such
+// cannot be used to validate a sound lump.
+//
+static bool Res_ValidateSound(const void* data, size_t length)
+{
+	uint16_t* magic = (uint16_t*)((uint8_t*)data + 0);
+	return length >= 2 && LESHORT(*magic) == 3;
+}
+
+
 
 // ****************************************************************************
 
@@ -378,6 +411,11 @@ public:
 	}
 
 
+	//
+	// LumpLookupTable::dump
+	//
+	// Prints a sorted list of the availible resource lumps to the console.
+	//
 	void dump()
 	{
 		std::vector<OString> resources;
@@ -650,27 +688,44 @@ WadResourceFile::WadResourceFile(const OString& filename,
 	for (size_t wad_lump_num = 0; wad_lump_num < (size_t)wad_lump_count; wad_lump_num++)
 	{
 		size_t offset = LELONG(wad_table[wad_lump_num].offset);
-		size_t size = LELONG(wad_table[wad_lump_num].size);
+		size_t length = LELONG(wad_table[wad_lump_num].size);
 
 		// check that the lump doesn't extend past the end of the file
-		if (offset + size <= file_length)
+		if (offset + length <= file_length)
 		{
 			const size_t index = mRecordCount++;
 			const OString name(StdStringToUpper(wad_table[wad_lump_num].name, 8));
 			OString namespace_name(global_namespace_name);
 
 			mRecords[index].offset = offset;
-			mRecords[index].size = size;
+			mRecords[index].size = length;
 
 			// add the lump to the appropriate namespace
 			if (markers.betweenMarkers(wad_lump_num, "F_START", "F_END"))
 				namespace_name = "FLATS";
-			if (markers.betweenMarkers(wad_lump_num, "S_START", "S_END"))
+			else if (markers.betweenMarkers(wad_lump_num, "S_START", "S_END"))
 				namespace_name = "SPRITES";
-			if (markers.betweenMarkers(wad_lump_num, "C_START", "C_END"))
+			else if (markers.betweenMarkers(wad_lump_num, "C_START", "C_END"))
 				namespace_name = "COLORMAPS";
-			if (markers.betweenMarkers(wad_lump_num, "P_START", "P_END"))
+			else if (markers.betweenMarkers(wad_lump_num, "P_START", "P_END"))
 				namespace_name = "PATCHES";
+
+			if (namespace_name == global_namespace_name)
+			{
+				uint8_t* data = new uint8_t[length];
+				fseek(mFileHandle, mRecords[wad_lump_num].offset, SEEK_SET);
+				size_t read_cnt = fread(data, 1, length, mFileHandle);
+				if (read_cnt == length)
+				{
+					if (name.compare(0, 2, "DP") == 0 && Res_ValidatePCSpeakerSound(data, length))
+						namespace_name = "SOUNDS";
+					else if (name.compare(0, 2, "DS") == 0 && Res_ValidateSound(data, length))
+						namespace_name = "SOUNDS";
+				}
+
+				delete [] data;
+			}
+			
 
 			NameSpaceId namespace_id = lump_lookup_table->lookupNameSpaceByName(namespace_name);
 			ResourceId res_id = Res_CreateResourceId(mResourceFileId, namespace_id, index);
