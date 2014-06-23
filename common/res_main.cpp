@@ -982,7 +982,7 @@ bool Res_CheckLump(const ResourceId res_id)
 //
 // Res_GetLumpLength
 //
-// Returns the length of the resource lump that matches id. If the lump is
+// Returns the length of the resource lump that matches res_id. If the lump is
 // not found, 0 is returned.
 //
 size_t Res_GetLumpLength(const ResourceId res_id)
@@ -997,7 +997,7 @@ size_t Res_GetLumpLength(const ResourceId res_id)
 //
 // Res_ReadLump
 //
-// Reads the resource lump that matches id and copies its contents into data.
+// Reads the resource lump that matches res_id and copies its contents into data.
 // The number of bytes read is returned, or 0 is returned if the lump
 // is not found. The variable data must be able to hold the size of the lump,
 // as determined by Res_GetLumpLength.
@@ -1010,6 +1010,18 @@ size_t Res_ReadLump(const ResourceId res_id, void* data)
 	return 0;
 }
 
+
+//
+// Res_CacheLump
+//
+// Allocates space on the zone heap for the resource lump that matches res_id
+// and reads it into the newly allocated memory. An entry in the resource
+// cache table is added so that the next time this resource is read, it can
+// be fetched from the cache table instead of from the resource file.
+//
+// The tag parameter is used to specify the allocation tag type to pass
+// to Z_Malloc.
+//
 void* Res_CacheLump(const ResourceId res_id, int tag)
 {
 	void* data_ptr = NULL;
@@ -1023,13 +1035,57 @@ void* Res_CacheLump(const ResourceId res_id, int tag)
 	else
 	{
 		size_t lump_length = Res_GetLumpLength(res_id);
-		data_ptr = Z_Malloc(lump_length + 1, tag, &cache_table[res_id]);
-		Res_ReadLump(res_id, cache_table[res_id]);
-		((unsigned char*)data_ptr)[lump_length] = 0;
+		void** owner_ptr = &it->second;
+		data_ptr = Z_Malloc(lump_length + 1, tag, owner_ptr);
+		Res_ReadLump(res_id, data_ptr);
+
+		uint8_t* terminator = (uint8_t*)data_ptr + lump_length;
+		*terminator = 0;
 	}
 
 	return data_ptr; 
 }
+
+
+//
+// Res_CheckMap
+//
+// Checks if a given map name exists in the resource files. Internally, map
+// names are stored as marker lumps and put into their own namespace.
+//
+bool Res_CheckMap(const OString& mapname)
+{
+	return Res_CheckLump(Res_GetResourceId(mapname, mapname));
+}
+
+
+//
+// Res_GetMapResourceId
+//
+// Returns the ResourceId of a lump belonging to the given map. Internally, the
+// lumps for a particular map are stored in that map's namespace and
+// only the map lumps from the same resource file as the map marker
+// should be used.
+//
+ResourceId Res_GetMapResourceId(const OString& lumpname, const OString& mapname)
+{
+	ResourceId res_id = Res_GetResourceId(lumpname, mapname);
+
+	// determine which resource file the map marker is in
+	ResourceFileId map_file_id = Res_GetResourceFileId(Res_GetResourceId(mapname, mapname));
+
+	// determin which resource file this lump is in
+	ResourceFileId lump_file_id = Res_GetResourceFileId(res_id);
+
+	// [SL] Ensure this lump is from the same resource file as the marker.
+	// This is needed when a map without a BEHAVIOR lump is loaded and
+	// there exists another map with the same name that has a BEHAVIOR lump.
+	if (map_file_id == lump_file_id)
+		return res_id;
+
+	return ResourceFile::LUMP_NOT_FOUND;
+}
+
 
 
 BEGIN_COMMAND(dump_resources)

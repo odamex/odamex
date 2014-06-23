@@ -99,17 +99,18 @@ extern BOOL sendpause, sendsave, sendcenterview;
 
 bool isFast = false;
 
+static std::string d_mapname;
+
 //
 // G_InitNew
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayer, should be set.
 //
-static char d_mapname[9];
 
 void G_DeferedInitNew(const std::string& mapname)
 {
 	G_CleanupDemo();
-	strncpy(d_mapname, mapname.c_str(), 8);
+	d_mapname = mapname;
 	gameaction = ga_newgame;
 }
 
@@ -173,7 +174,7 @@ void G_DoNewGame (void)
 	players.back().playerstate = PST_REBORN;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
 
-	G_InitNew (d_mapname);
+	G_InitNew(d_mapname);
 	gameaction = ga_nothing;
 }
 

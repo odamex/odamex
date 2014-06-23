@@ -552,11 +552,12 @@ void TextureManager::readPNamesDirectory()
 //
 void TextureManager::readAnimDefLump()
 {
-	int lump = -1;
-	
-	while ((lump = W_FindLump("ANIMDEFS", lump)) != -1)
+	std::vector<ResourceId> res_ids;
+	Res_QueryLumpName(res_ids, "ANIMDEFS");
+
+	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		SC_OpenLumpNum(lump, "ANIMDEFS");
+		SC_OpenResourceLump(res_ids[i]);
 
 		while (SC_GetString())
 		{

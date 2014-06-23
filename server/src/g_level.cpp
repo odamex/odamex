@@ -111,20 +111,20 @@ extern BOOL sendpause, sendsave, sendcenterview;
 
 bool isFast = false;
 
+static std::string d_mapname;
 //
 // G_InitNew
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayer, should be set.
 //
-static char d_mapname[9];
 
 void G_DeferedInitNew(const std::string& mapname)
 {
-	strncpy(d_mapname, mapname.c_str(), 8);
+	d_mapname = mapname;
 	gameaction = ga_newgame;
 
 	// sv_nextmap cvar may be overridden by a script
-	sv_nextmap.ForceSet(d_mapname);
+	sv_nextmap.ForceSet(d_mapname.c_str());
 }
 
 void G_DeferedFullReset()
@@ -299,10 +299,10 @@ void G_DoNewGame (void)
 		if(!(it->ingame()))
 			continue;
 
-		SV_SendLoadMap(wadfiles, patchfiles, d_mapname, &*it);
+		SV_SendLoadMap(wadfiles, patchfiles, d_mapname.c_str(), &*it);
 	}
 
-	sv_curmap.ForceSet(d_mapname);
+	sv_curmap.ForceSet(d_mapname.c_str());
 
 	G_InitNew(d_mapname);
 	gameaction = ga_nothing;

@@ -413,18 +413,18 @@ void S_ParseSndSeq (void)
 	ScriptTemp = (unsigned int *)Malloc (MAX_SEQSIZE * sizeof(*ScriptTemp));
 	ScriptTempSize = MAX_SEQSIZE;
 
-	int lump = -1;
-	while ((lump = W_FindLump("SNDSEQ", lump)) != -1)
+	std::vector<ResourceId> res_ids;
+	Res_QueryLumpName(res_ids, "SNDSEQ");
+
+	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		SC_OpenLumpNum (lump, "SNDSEQ");
-		while (SC_GetString ())
+		SC_OpenResourceLump(res_ids[i]);
+		while (SC_GetString())
 		{
 			if (*sc_String == ':')
 			{
 				if (curseq != -1)
-				{
 					SC_ScriptError ("S_ParseSndSeq: Nested Script Error");
-				}
 				strncpy (name, sc_String + 1, MAX_SNDNAME);
 				for (curseq = 0; curseq < NumSequences; curseq++)
 				{

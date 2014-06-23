@@ -252,87 +252,94 @@ static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 
 //
 // G_ParseMapInfo
+//
 // Parses the MAPINFO lumps of all loaded WADs and generates
 // data for wadlevelinfos and wadclusterinfos.
 //
-void G_ParseMapInfo (void)
+void G_ParseMapInfo()
 {
 	level_pwad_info_t defaultinfo;
-	level_pwad_info_t *levelinfo;
+	level_pwad_info_t* levelinfo;
 	int levelindex;
-	cluster_info_t *clusterinfo;
+	cluster_info_t* clusterinfo;
 	int clusterindex;
 	DWORD levelflags;
 
-	int lump = -1;
-	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
-	{
-		SetLevelDefaults (&defaultinfo);
-		SC_OpenLumpNum (lump, "MAPINFO");
+	std::vector<ResourceId> res_ids;
+	Res_QueryLumpName(res_ids, "MAPINFO");
 
-		while (SC_GetString ())
+	for (size_t i = 0; i < res_ids.size(); i++)
+	{
+		SetLevelDefaults(&defaultinfo);
+		SC_OpenResourceLump(res_ids[i]);
+
+		while (SC_GetString())
 		{
-			switch (SC_MustMatchString (MapInfoTopLevel))
+			switch (SC_MustMatchString(MapInfoTopLevel))
 			{
 			case MITL_DEFAULTMAP:
-				SetLevelDefaults (&defaultinfo);
-				ParseMapInfoLower (MapHandlers, MapInfoMapLevel, &defaultinfo, NULL, 0);
+				SetLevelDefaults(&defaultinfo);
+				ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &defaultinfo, NULL, 0);
 				break;
 
 			case MITL_MAP:		// map <MAPNAME> <Nice Name>
 				levelflags = defaultinfo.flags;
-				SC_MustGetString ();
-				if (IsNum (sc_String))
-				{	// MAPNAME is a number, assume a Hexen wad
-					int map = atoi (sc_String);
-					sprintf (sc_String, "MAP%02d", map);
+				SC_MustGetString();
+				if (IsNum(sc_String))
+				{
+					// MAPNAME is a number, assume a Hexen wad
+					int map = atoi(sc_String);
+					sprintf(sc_String, "MAP%02d", map);
 					SKYFLATNAME[5] = 0;
 					HexenHack = true;
 					// Hexen levels are automatically nointermission
 					// and even lighting and no auto sound sequences
-					levelflags |= LEVEL_NOINTERMISSION
-								| LEVEL_EVENLIGHTING
-								| LEVEL_SNDSEQTOTALCTRL;
+					levelflags |= LEVEL_NOINTERMISSION | LEVEL_EVENLIGHTING | LEVEL_SNDSEQTOTALCTRL;
 				}
-				levelindex = FindWadLevelInfo (sc_String);
+
+				levelindex = FindWadLevelInfo(sc_String);
 				if (levelindex == -1)
 				{
 					wadlevelinfos.push_back(level_pwad_info_t());
 					levelindex = wadlevelinfos.size() - 1;
 				}
+
 				levelinfo = &wadlevelinfos[levelindex];
-				memcpy (levelinfo, &defaultinfo, sizeof(level_pwad_info_t));
-				uppercopy (levelinfo->mapname, sc_String);
-				SC_MustGetString ();
-				ReplaceString (&levelinfo->level_name, sc_String);
+				memcpy(levelinfo, &defaultinfo, sizeof(level_pwad_info_t));
+				uppercopy(levelinfo->mapname, sc_String);
+				SC_MustGetString();
+				ReplaceString(&levelinfo->level_name, sc_String);
+
 				// Set up levelnum now so that the Teleport_NewMap specials
 				// in hexen.wad work without modification.
-				if (!strnicmp (levelinfo->mapname, "MAP", 3) && levelinfo->mapname[5] == 0)
+				if (strnicmp(levelinfo->mapname, "MAP", 3) == 0 && levelinfo->mapname[5] == 0)
 				{
-					int mapnum = atoi (levelinfo->mapname + 3);
-
+					int mapnum = atoi(levelinfo->mapname + 3);
 					if (mapnum >= 1 && mapnum <= 99)
 						levelinfo->levelnum = mapnum;
 				}
-				ParseMapInfoLower (MapHandlers, MapInfoMapLevel, levelinfo, NULL, levelflags);
+
+				ParseMapInfoLower(MapHandlers, MapInfoMapLevel, levelinfo, NULL, levelflags);
 				break;
 
 			case MITL_CLUSTERDEF:	// clusterdef <clusternum>
-				SC_MustGetNumber ();
-				clusterindex = FindWadClusterInfo (sc_Number);
+				SC_MustGetNumber();
+				clusterindex = FindWadClusterInfo(sc_Number);
 				if (clusterindex == -1)
 				{
 					wadclusterinfos.push_back(cluster_info_t());
 					clusterindex = wadclusterinfos.size() - 1;
 					memset(&wadclusterinfos[clusterindex], 0, sizeof(cluster_info_t));
 				}
+
 				clusterinfo = &wadclusterinfos[clusterindex];
 				clusterinfo->cluster = sc_Number;
-				ParseMapInfoLower (ClusterHandlers, MapInfoClusterLevel, NULL, clusterinfo, 0);
+				ParseMapInfoLower(ClusterHandlers, MapInfoClusterLevel, NULL, clusterinfo, 0);
 				break;
 			}
 		}
-		SC_Close ();
+
+		SC_Close();
 	}
 }
 

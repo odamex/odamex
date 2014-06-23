@@ -253,29 +253,9 @@ void Res_QueryLumpName(std::vector<ResourceId>& res_ids,
 					const OString& lumpname, const OString& namespace_name = global_namespace_name);
 
 
-//
-// Res_CheckMap
-//
-// Checks if a given map name exists in the resource files. Internally, map
-// names are stored as marker lumps and put into their own namespace.
-//
-static inline bool Res_CheckMap(const OString& mapname)
-{
-	return Res_CheckLump(Res_GetResourceId(mapname, mapname));
-}
+bool Res_CheckMap(const OString& mapname);
 
-
-//
-// Res_GetMapResourceId
-//
-// Returns the ResourceId of a lump belonging to the given map. Internally, the
-// lumps for a particular map are stored in that map's namespace.
-//
-static inline ResourceId Res_GetMapResourceId(const OString& lumpname, const OString& mapname)
-{
-	return Res_GetResourceId(lumpname, mapname);
-}
-
+ResourceId Res_GetMapResourceId(const OString& lumpname, const OString& mapname);
 
 #endif	// __RES_MAIN_H__
 

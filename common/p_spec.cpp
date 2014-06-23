@@ -378,13 +378,14 @@ static void ParseAnim (byte istex);
 //
 static void P_InitAnimDefs ()
 {
-	int lump = -1;
+	std::vector<ResourceId> res_ids;
+	Res_QueryLumpName(res_ids, "ANIMDEFS");
 
-	while ((lump = W_FindLump ("ANIMDEFS", lump)) != -1)
+	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		SC_OpenLumpNum (lump, "ANIMDEFS");
+		SC_OpenResourceLump(res_ids[i]);
 
-		while (SC_GetString ())
+		while (SC_GetString())
 		{
 			if (SC_Compare ("flat"))
 			{
