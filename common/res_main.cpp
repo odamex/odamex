@@ -215,6 +215,32 @@ static bool Res_ValidateSound(const void* data, size_t length)
 }
 
 
+//
+// Res_IsMapLumpName
+//
+// Returns true if the given lump name is a name reserved for map lumps.
+//
+static bool Res_IsMapLumpName(const OString& name)
+{
+	static const OString things_lump_name("THINGS");
+	static const OString linedefs_lump_name("LINEDEFS");
+	static const OString sidedefs_lump_name("SIDEDEFS");
+	static const OString vertexes_lump_name("VERTEXES");
+	static const OString segs_lump_name("SEGS");
+	static const OString ssectors_lump_name("SSECTORS");
+	static const OString nodes_lump_name("NODES");
+	static const OString sectors_lump_name("SECTORS");
+	static const OString reject_lump_name("REJECT");
+	static const OString blockmap_lump_name("BLOCKMAP");
+	static const OString behavior_lump_name("BEHAVIOR");
+
+	return name == things_lump_name || name == linedefs_lump_name || name == sidedefs_lump_name ||
+		name == vertexes_lump_name || name == segs_lump_name || name == ssectors_lump_name ||
+		name == nodes_lump_name || name == sectors_lump_name || name == reject_lump_name ||
+		name == blockmap_lump_name || name == behavior_lump_name;
+}
+
+
 
 // ****************************************************************************
 
@@ -684,6 +710,7 @@ WadResourceFile::WadResourceFile(const OString& filename,
 	}
 		
 	mRecords = new wad_lump_record_t[wad_lump_count];
+	OString map_namespace_name;
 
 	for (size_t wad_lump_num = 0; wad_lump_num < (size_t)wad_lump_count; wad_lump_num++)
 	{
@@ -700,8 +727,24 @@ WadResourceFile::WadResourceFile(const OString& filename,
 			mRecords[index].offset = offset;
 			mRecords[index].size = length;
 
+			// [SL] Determine if this is a map (by checking if a map-related lump such as
+			// SEGS follows this one). If so, move all of the subsequent map lumps into
+			// this map's namespace.
+			if (wad_lump_num + 1 < (size_t)wad_lump_count &&
+				Res_IsMapLumpName(StdStringToUpper(wad_table[wad_lump_num + 1].name, 8)))
+			{
+				if (map_namespace_name.empty())
+					map_namespace_name = name;
+			}
+			else
+			{
+				map_namespace_name.clear();
+			}
+
 			// add the lump to the appropriate namespace
-			if (markers.betweenMarkers(wad_lump_num, "F_START", "F_END"))
+			if (!map_namespace_name.empty())
+				namespace_name = map_namespace_name;
+			else if (markers.betweenMarkers(wad_lump_num, "F_START", "F_END"))
 				namespace_name = "FLATS";
 			else if (markers.betweenMarkers(wad_lump_num, "S_START", "S_END"))
 				namespace_name = "SPRITES";
@@ -709,8 +752,7 @@ WadResourceFile::WadResourceFile(const OString& filename,
 				namespace_name = "COLORMAPS";
 			else if (markers.betweenMarkers(wad_lump_num, "P_START", "P_END"))
 				namespace_name = "PATCHES";
-
-			if (namespace_name == global_namespace_name)
+			else
 			{
 				uint8_t* data = new uint8_t[length];
 				fseek(mFileHandle, mRecords[wad_lump_num].offset, SEEK_SET);
@@ -726,7 +768,6 @@ WadResourceFile::WadResourceFile(const OString& filename,
 				delete [] data;
 			}
 			
-
 			NameSpaceId namespace_id = lump_lookup_table->lookupNameSpaceByName(namespace_name);
 			ResourceId res_id = Res_CreateResourceId(mResourceFileId, namespace_id, index);
 			lump_lookup_table->addLump(res_id, name, namespace_name);
@@ -743,6 +784,7 @@ WadResourceFile::~WadResourceFile()
 {
 	cleanup();
 }
+
 
 
 bool WadResourceFile::checkLump(const ResourceId res_id) const
