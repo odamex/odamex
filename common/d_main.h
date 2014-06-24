@@ -40,17 +40,13 @@
 void D_DoomMain(void);
 
 void D_LoadResourceFiles(
-	const std::vector<std::string>& newwadfiles,
-	const std::vector<std::string>& newpatchfiles,
-	const std::vector<std::string>& newwadhashes = std::vector<std::string>(),
-	const std::vector<std::string>& newpatchhashes = std::vector<std::string>()
+	const std::vector<std::string>& new_resource_files,
+	const std::vector<std::string>& new_resource_hashes = std::vector<std::string>()
 );
 
 bool D_DoomWadReboot(
-	const std::vector<std::string>& newwadfiles,
-	const std::vector<std::string>& newpatchfiles,
-	const std::vector<std::string>& newwadhashes = std::vector<std::string>(),
-	const std::vector<std::string>& newpatchhashes = std::vector<std::string>()
+	const std::vector<std::string>& new_resource_files,
+	const std::vector<std::string>& new_resource_hashes = std::vector<std::string>()
 );
 
 // Called by IO functions when input is detected.
@@ -69,7 +65,6 @@ void D_DisplayTicker(void);
 extern const char *D_DrawIcon;
 
 void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator);
-void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files = std::vector<std::string>());
 std::string D_CleanseFileName(const std::string &filename, const std::string &ext = "");
 
 extern std::vector<std::string> wadfiles, wadhashes;
@@ -81,8 +76,7 @@ extern float maxfps;
 void STACK_ARGS D_ClearTaskSchedulers();
 void D_RunTics(void (*sim_func)(), void(*display_func)());
 
-void D_AddWadCommandLineFiles(std::vector<std::string>& filenames);
-void D_AddDehCommandLineFiles(std::vector<std::string>& filenames);
+void D_AddResourceFilesFromArgs(std::vector<std::string>& filenames);
 
 std::string D_GetTitleString();
 

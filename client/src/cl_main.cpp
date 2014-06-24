@@ -1149,7 +1149,7 @@ void CL_NetDemoPlay(const std::string &filename)
 		std::string ext;
 		M_ExtractFileExtension(newfilename, ext);
 		if (!iequals(ext, ".odd"))
-			M_AppendExtension(newfilename, ".odd", false);
+			newfilename = M_AppendExtension(newfilename, ".odd", false);
 	}
 
 	netdemo.startPlaying(newfilename);
@@ -1525,7 +1525,6 @@ bool CL_PrepareConnect(void)
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
-	size_t i;
 	DWORD server_token = MSG_ReadLong();
 	server_host = MSG_ReadString();
 
@@ -1536,22 +1535,23 @@ bool CL_PrepareConnect(void)
 	MSG_ReadByte(); // max_players
 
 	std::string server_map = MSG_ReadString();
-	byte server_wads = MSG_ReadByte();
+
+	size_t resource_file_count = MSG_ReadByte();
 
 	Printf(PRINT_HIGH, "\n");
 	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
-	std::vector<std::string> newwadfiles(server_wads);
-	for(i = 0; i < server_wads; i++)
-		newwadfiles[i] = MSG_ReadString();
+	std::vector<std::string> new_resource_files(resource_file_count);
+	for(size_t i = 0; i < resource_file_count; i++)
+		new_resource_files[i] = MSG_ReadString();
 
 	MSG_ReadBool();							// deathmatch
 	MSG_ReadByte();							// skill
 	recv_teamplay_stats |= MSG_ReadBool();	// teamplay
 	recv_teamplay_stats |= MSG_ReadBool();	// ctf
 
-	for(i = 0; i < playercount; i++)
+	for (size_t i = 0; i < playercount; i++)
 	{
 		MSG_ReadString();
 		MSG_ReadShort();
@@ -1559,11 +1559,11 @@ bool CL_PrepareConnect(void)
 		MSG_ReadByte();
 	}
 
-	std::vector<std::string> newwadhashes(server_wads);
-	for(i = 0; i < server_wads; i++)
+	std::vector<std::string> new_resource_hashes(resource_file_count);
+	for(size_t i = 0; i < resource_file_count; i++)
 	{
-		newwadhashes[i] = MSG_ReadString();
-		Printf(PRINT_HIGH, "> %s\n   %s\n", newwadfiles[i].c_str(), newwadhashes[i].c_str());
+		new_resource_hashes[i] = MSG_ReadString();
+		Printf(PRINT_HIGH, "> %s\n   %s\n", new_resource_files[i].c_str(), new_resource_hashes[i].c_str());
 	}
 
 	MSG_ReadString();
@@ -1573,11 +1573,9 @@ bool CL_PrepareConnect(void)
 	{
 		MSG_ReadLong();
 
-		for(size_t i = 0; i < NUMTEAMS; i++)
+		for (size_t i = 0; i < NUMTEAMS; i++)
 		{
-			bool enabled = MSG_ReadBool();
-
-			if (enabled)
+			if (MSG_ReadBool() == true)
 				MSG_ReadLong();
 		}
 	}
@@ -1594,14 +1592,13 @@ bool CL_PrepareConnect(void)
 	/* GhostlyDeath -- Need the actual version info */
 	if (version == 65)
 	{
-		size_t l;
 		MSG_ReadString();
 
-		for (l = 0; l < 3; l++)
+		for (size_t i = 0; i < 3; i++)
 			MSG_ReadShort();
-		for (l = 0; l < 14; l++)
+		for (size_t i = 0; i < 14; i++)
 			MSG_ReadBool();
-		for (l = 0; l < playercount; l++)
+		for (size_t i = 0; i < playercount; i++)
 		{
 			MSG_ReadShort();
 			MSG_ReadShort();
@@ -1611,7 +1608,7 @@ bool CL_PrepareConnect(void)
 		MSG_ReadLong();
 		MSG_ReadShort();
 
-		for (l = 0; l < playercount; l++)
+		for (size_t i = 0; i < playercount; i++)
 			MSG_ReadBool();
 
 		MSG_ReadLong();
@@ -1626,27 +1623,26 @@ bool CL_PrepareConnect(void)
 			gameversiontosend = 40;
 		}
 
-		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
+		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256,
+						(gameversion % 256) / 10, (gameversion % 256) % 10);
 	}
 
     Printf(PRINT_HIGH, "\n");
 
-    // DEH/BEX Patch files
-    size_t patch_count = MSG_ReadByte();
-	std::vector<std::string> newpatchfiles(patch_count);
+	// [SL] DEH/BEX patch file names used to be sent separately.
+	// Read and ignore them (dummy should be zero anyways).
+	byte dummy = MSG_ReadByte();
+	while (dummy--)
+		MSG_ReadString();
 
-    for (i = 0; i < patch_count; ++i)
-        newpatchfiles[i] = MSG_ReadString();
-
-    // TODO: Allow deh/bex file downloads
-	D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
+	D_DoomWadReboot(new_resource_files, new_resource_hashes);
 
 	if (!missingfiles.empty() || cl_forcedownload)
 	{
 		if (missingfiles.empty())				// cl_forcedownload
 		{
-			missing_file = newwadfiles.back();
-			missing_hash = newwadhashes.back();
+			missing_file = new_resource_files.back();
+			missing_hash = new_resource_hashes.back();
 		}
 		else									// client is really missing a file
 		{
@@ -1657,14 +1653,14 @@ bool CL_PrepareConnect(void)
 		if (netdemo.isPlaying())
 		{
 			// Playing a netdemo and unable to download from the server
-			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
+			Printf(PRINT_HIGH, "Unable to find resource file \"%s\".  Cannot download while playing a netdemo.\n",
 								missing_file.c_str());
 			CL_QuitNetGame();
 			return false;
 		}
 
 		gamestate = GS_DOWNLOAD;
-		Printf(PRINT_HIGH, "Will download \"%s\" from server\n", missing_file.c_str());
+		Printf(PRINT_HIGH, "Will download resource file \"%s\" from server\n", missing_file.c_str());
 	}
 
 	recv_full_update = false;
@@ -3266,24 +3262,27 @@ void CL_LoadMap(void)
 	if (splitnetdemo)
 		netdemo.stopRecording();
 
-	std::vector<std::string> newwadfiles, newwadhashes;
-	std::vector<std::string> newpatchfiles, newpatchhashes;
+	size_t resource_file_count = MSG_ReadByte();
 
-	int wadcount = (byte)MSG_ReadByte();
-	while (wadcount--)
+	std::vector<std::string> new_resource_files(resource_file_count);
+	std::vector<std::string> new_resource_hashes(resource_file_count);
+
+	while (resource_file_count--)
 	{
-		newwadfiles.push_back(MSG_ReadString());
-		newwadhashes.push_back(MSG_ReadString());
+		new_resource_files.push_back(MSG_ReadString());
+		new_resource_hashes.push_back(MSG_ReadString());
 	}
 
-	int patchcount = (byte)MSG_ReadByte();
-	while (patchcount--)
-	{
-		newpatchfiles.push_back(MSG_ReadString());
-		newpatchhashes.push_back(MSG_ReadString());
+	// [SL] DEH/BEX patch file names used to be sent separately.
+	// Read and ignore them (dummy should be zero anyways).
+	byte dummy = MSG_ReadByte();
+	while (dummy--)
+	{	
+		MSG_ReadString();
+		MSG_ReadString();
 	}
 
-	const char *mapname = MSG_ReadString ();
+	const char* mapname = MSG_ReadString();
 
 	if (gamestate == GS_DOWNLOAD)
 	{
@@ -3293,7 +3292,7 @@ void CL_LoadMap(void)
 
 	// Load the specified WAD and DEH files and change the level.
 	// if any WADs are missing, reconnect to begin downloading.
-	G_LoadWad(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+	G_LoadWad(new_resource_files, new_resource_hashes);
 
 	if (!missingfiles.empty())
 	{

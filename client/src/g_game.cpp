@@ -1954,7 +1954,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	{
 		// [RH] Allow for demos not loaded as lumps
 		FixPathSeparator(defdemoname);
-		M_AppendExtension(defdemoname, ".lmp");
+		defdemoname = M_AppendExtension(defdemoname, ".lmp");
 		bytelen = M_ReadFile(defdemoname, &demobuffer);
 		demo_p = demobuffer;
 	}

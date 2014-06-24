@@ -780,59 +780,6 @@ static void D_PrintIWADIdentity()
 }
 
 
-//
-// D_DoDefDehackedPatch
-//
-// [Russell] - Change the meaning, this will load multiple patch files if
-//             specified
-void D_DoDefDehackedPatch(const std::vector<std::string> &newpatchfiles)
-{
-	bool use_default = true;
-
-	if (!newpatchfiles.empty())
-	{
-		for (size_t i = 0; i < newpatchfiles.size(); i++)
-		{
-			std::string ext;
-
-			if (M_ExtractFileExtension(newpatchfiles[i], ext))
-			{
-				std::string f = BaseFileSearch(newpatchfiles[i], ext);
-				if (f.length())
-				{
-					if (DoDehPatch(f.c_str(), false))
-					{
-						std::string Filename;
-						M_ExtractFileName(f, Filename);
-						patchfiles.push_back(Filename);
-					}
-
-					use_default = false;
-				}
-			}
-		}
-	}
-
-    // try default patches
-    if (use_default)
-        DoDehPatch(NULL, true);		// See if there's a patch in a PWAD
-
-	for (size_t i = 0; i < patchfiles.size(); i++)
-		patchhashes.push_back(W_MD5(patchfiles[i]));
-
-	// check for ChexQuest
-	bool chexLoaded = false;
-	for (size_t i = 0; i < patchfiles.size(); i++)
-	{
-		std::string base_filename;
-		M_ExtractFileName(patchfiles[i], base_filename);
-		if (iequals(base_filename, "chex.deh"))
-			chexLoaded = true;
-	}
-
-	if (gamemode == retail_chex && !multiplayer && !chexLoaded)
-		Printf(PRINT_HIGH,"Warning: chex.deh not loaded, experience may differ from the original!\n");
-}
 
 //
 // D_CleanseFileName
@@ -845,7 +792,7 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 
 	FixPathSeparator(newname);
 	if (ext.length())
-		M_AppendExtension(newname, "." + ext);
+		newname = M_AppendExtension(newname, "." + ext);
 
 	size_t slash = newname.find_last_of(PATHSEPCHAR);
 
@@ -856,6 +803,7 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 
 	return newname;
 }
+
 
 //
 // D_VerifyFile
@@ -923,31 +871,28 @@ static bool D_VerifyFile(
 // applicable.
 //
 void D_LoadResourceFiles(
-	const std::vector<std::string> &newwadfiles,
-	const std::vector<std::string> &newpatchfiles,
-	const std::vector<std::string> &newwadhashes,
-	const std::vector<std::string> &newpatchhashes
-)
+	const std::vector<std::string> &new_resource_files,
+	const std::vector<std::string> &new_resource_hashes)
 {
-	bool hashcheck = (newwadfiles.size() == newwadhashes.size());
+	bool hashcheck = (new_resource_files.size() == new_resource_hashes.size());
 	bool iwad_provided = false;
 
 	missingfiles.clear();
 	missinghashes.clear();
 
 	// [SL] 2012-12-06 - If we weren't provided with a new IWAD filename in
-	// newwadfiles, use the previous IWAD.
+	// new_resource_files, use the previous IWAD.
 	std::string iwad_filename, iwad_hash;
-	if ((newwadfiles.empty() || !W_IsIWAD(newwadfiles[0])) && (wadfiles.size() >= 2))
+	if ((new_resource_files.empty() || !W_IsIWAD(new_resource_files[0])) && (wadfiles.size() >= 2))
 	{
 		iwad_filename = wadfiles[1];
 		iwad_hash = wadhashes[1];
 	}
-	else if (!newwadfiles.empty())
+	else if (!new_resource_files.empty())
 	{
 		iwad_provided = true;
-		iwad_filename = newwadfiles[0];
-		iwad_hash = hashcheck ? newwadhashes[0] : "";
+		iwad_filename = new_resource_files[0];
+		iwad_hash = hashcheck ? new_resource_hashes[0] : "";
 	}
 
 	wadfiles.clear();
@@ -981,35 +926,34 @@ void D_LoadResourceFiles(
 
 	if (!D_VerifyFile(iwad_filename, base_filename, full_filename, iwad_hash))
 	{
-		Printf(PRINT_HIGH, "could not find WAD: %s\n", base_filename.c_str());
+		Printf(PRINT_HIGH, "could not find resource file: %s\n", base_filename.c_str());
 		missingfiles.push_back(base_filename);
 		if (hashcheck)
 			missinghashes.push_back(iwad_hash);
 	}
 
-	for (size_t i = 0; i < newwadfiles.size(); i++)
+	for (size_t i = 0; i < new_resource_files.size(); i++)
 	{
-		std::string hash = hashcheck ? newwadhashes[i] : "";
+		std::string hash = hashcheck ? new_resource_hashes[i] : "";
 
 		// already added the IWAD 
 		if (i == 0 && iwad_provided)
 			continue;
 
-		if (D_VerifyFile(newwadfiles[i], base_filename, full_filename, hash))
+		if (D_VerifyFile(new_resource_files[i], base_filename, full_filename, hash))
 			wadfiles.push_back(full_filename);
 		else
 		{
-			Printf(PRINT_HIGH, "could not find WAD: %s\n", base_filename.c_str());
+			Printf(PRINT_HIGH, "could not find resource file: %s\n", base_filename.c_str());
 			missingfiles.push_back(base_filename);
 			if (hashcheck)
-				missinghashes.push_back(newwadhashes[i]);
+				missinghashes.push_back(new_resource_hashes[i]);
 		}
 	}
 
-	modifiedgame = (wadfiles.size() > 2) || !newpatchfiles.empty();	// more than odamex.wad and IWAD?
+	modifiedgame = (wadfiles.size() > 2);	// more than odamex.wad and IWAD?
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_Error("\nYou cannot load additional WADs with the shareware version. Register!");
-
 
 	Res_CloseAllResourceFiles();
 	wadhashes.clear();
@@ -1035,7 +979,27 @@ void D_LoadResourceFiles(
 
 	delete [] language_data;
 
-	D_DoDefDehackedPatch(newpatchfiles);
+	std::vector<ResourceId> dehacked_res_ids;
+	Res_QueryLumpName(dehacked_res_ids, "DEHACKED");
+
+	for (size_t i = 0; i < dehacked_res_ids.size(); i++)
+		D_LoadDehLump(dehacked_res_ids[i]);
+
+	// check for ChexQuest
+	if (gamemode == retail_chex)
+	{
+		bool chex_deh_loaded = false;
+		for (size_t i = 0; i < wadfiles.size(); i++)
+		{
+			std::string base_filename;
+			M_ExtractFileName(wadfiles[i], base_filename);
+			if (iequals(base_filename, "chex.deh"))
+				chex_deh_loaded = true;
+		}
+	
+		if (!chex_deh_loaded)
+			Printf(PRINT_HIGH, "Warning: chex.deh not loaded, experience may differ from the original!\n");
+	}
 }
 
 
@@ -1046,21 +1010,17 @@ void D_LoadResourceFiles(
 // vector
 //
 // [SL] passing an IWAD as newwadfiles[0] is now optional
-// TODO: hash checking for patchfiles
 //
 bool D_DoomWadReboot(
-	const std::vector<std::string> &newwadfiles,
-	const std::vector<std::string> &newpatchfiles,
-	const std::vector<std::string> &newwadhashes,
-	const std::vector<std::string> &newpatchhashes
-)
+	const std::vector<std::string> &new_resource_files,
+	const std::vector<std::string> &new_resource_hashes)
 {
 	// already loaded these?
 	if (lastWadRebootSuccess &&	!wadhashes.empty() &&
-		newwadhashes == std::vector<std::string>(wadhashes.begin()+1, wadhashes.end()))
+		new_resource_hashes == std::vector<std::string>(wadhashes.begin()+1, wadhashes.end()))
 	{
 		// fast track if files have not been changed // denis - todo - actually check the file timestamps
-		Printf (PRINT_HIGH, "Currently loaded WADs match server checksum\n\n");
+		Printf(PRINT_HIGH, "Currently loaded resource file match server checksum\n\n");
 		return true;
 	}
 
@@ -1072,7 +1032,7 @@ bool D_DoomWadReboot(
 	gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
 
 	// Load all the WAD and DEH/BEX files
-	D_LoadResourceFiles(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes); 
+	D_LoadResourceFiles(new_resource_files, new_resource_hashes); 
 
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
@@ -1089,51 +1049,43 @@ bool D_DoomWadReboot(
 
 
 //
-// D_AddCommandLineOptionFiles
+// D_AddResourceFileFromArgs
 //
-// Adds the full path of all the file names following the given command line
-// option parameter (eg, "-file") matching the specified extension to the
-// filenames vector.
+// Adds the full path of all the file names given on the command line
+// following the "-file" or "-deh" parameters.
 //
-static void D_AddCommandLineOptionFiles(
-	std::vector<std::string>& filenames,
-	const std::string& option, const std::string& ext)
+void D_AddResourceFilesFromArgs(std::vector<std::string>& filenames)
 {
-	DArgs files = Args.GatherFiles(option.c_str(), ext.c_str(), true);
-	for (size_t i = 0; i < files.NumArgs(); i++)
+	size_t arg_count = Args.NumArgs();
+
+	// [SL] the first parameter should be treated as a file name and
+	// doesn't need to be preceeded by -file
+	bool is_filename = true;
+
+	for (size_t i = 1; i < arg_count; i++)
 	{
-		std::string filename(files.GetArg(i));
-		M_AppendExtension(filename, ext, true);
+		const char* arg_value = Args.GetArg(i);
 
-		std::string base_filename, full_filename;
-		if (D_VerifyFile(filename, base_filename, full_filename))
-			filenames.push_back(full_filename);
+		if (arg_value[0] == '-' || arg_value[0] == '+')
+		{
+			is_filename = (stricmp(arg_value, "-file") == 0 || stricmp(arg_value, "-deh") == 0);
+		}
+		else if (is_filename)
+		{
+			std::string filename(arg_value), base_filename, full_filename;
+
+			if (D_VerifyFile(filename, base_filename, full_filename))
+				filenames.push_back(full_filename);
+			else if (D_VerifyFile(M_AppendExtension(filename, ".wad"), base_filename, full_filename))
+				filenames.push_back(full_filename);
+			else if (D_VerifyFile(M_AppendExtension(filename, ".deh"), base_filename, full_filename))
+				filenames.push_back(full_filename);
+			else if (D_VerifyFile(M_AppendExtension(filename, ".bex"), base_filename, full_filename))
+				filenames.push_back(full_filename);
+			else
+				Printf(PRINT_HIGH, "Unable to add resource file %s\n", filename.c_str());
+		}
 	}
-
-	files.FlushArgs();
-}
-
-//
-// D_AddWadCommandLineFiles
-//
-// Add the WAD files specified with -file.
-// Call this from D_DoomMain
-//
-void D_AddWadCommandLineFiles(std::vector<std::string>& filenames)
-{
-	D_AddCommandLineOptionFiles(filenames, "-file", ".WAD");
-}
-
-//
-// D_AddDehCommandLineFiles
-//
-// Adds the DEH/BEX files specified with -deh.
-// Call this from D_DoomMain
-//
-void D_AddDehCommandLineFiles(std::vector<std::string>& filenames)
-{
-	D_AddCommandLineOptionFiles(filenames, "-deh", ".DEH");
-	D_AddCommandLineOptionFiles(filenames, "-deh", ".BEX");
 }
 
 

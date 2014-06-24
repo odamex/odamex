@@ -257,10 +257,10 @@ typedef std::pair<OString, OString> LumpName;
 // hashing function for OHashTable to use the LumpName typedef
 template <> struct hashfunc<LumpName>
 {
-	size_t operator()(const LumpName& lumpname) const
+	size_t operator()(const LumpName& lump_name) const
 	{
 		const hashfunc<OString> func;
-		return func(lumpname.first) ^ func(lumpname.second);
+		return func(lump_name.first) ^ func(lump_name.second);
 	}
 };
 
@@ -360,15 +360,15 @@ public:
 		rec->res_id = res_id;
 		rec->next = NULL;
 
-		LumpName lumpname(name, namespace_name);
+		LumpName lump_name(name, namespace_name);
 
 		// if there is already a record with this name, add it to this record's linked list
-		NameLookupTable::iterator it = mNameTable.find(lumpname);
+		NameLookupTable::iterator it = mNameTable.find(lump_name);
 		if (it != mNameTable.end())
 			rec->next = it->second;
 
 		// add the record to the name lookup table
-		mNameTable.insert(std::make_pair(lumpname, rec));
+		mNameTable.insert(std::make_pair(lump_name, rec));
 
 		// add an entry to the id lookup table
 		// don't have to worry about duplicate keys for ResourceIds
@@ -385,8 +385,8 @@ public:
 	//
 	const ResourceId lookupByName(const OString& name, const OString& namespace_name) const
 	{
-		const LumpName lumpname(name, namespace_name);
-		NameLookupTable::const_iterator it = mNameTable.find(lumpname);
+		const LumpName lump_name(name, namespace_name);
+		NameLookupTable::const_iterator it = mNameTable.find(lump_name);
 		if (it != mNameTable.end())
 			return it->second->res_id;
 		return ResourceFile::LUMP_NOT_FOUND;
@@ -421,8 +421,8 @@ public:
 	{
 		res_ids.clear();
 
-		const LumpName lumpname(name, namespace_name);
-		NameLookupTable::const_iterator it = mNameTable.find(lumpname);
+		const LumpName lump_name(name, namespace_name);
+		NameLookupTable::const_iterator it = mNameTable.find(lump_name);
 		if (it != mNameTable.end())
 		{
 			const LumpRecord* rec = it->second;
@@ -513,14 +513,14 @@ SingleLumpResourceFile::SingleLumpResourceFile(const OString& filename,
 		const NameSpaceId namespace_id = lump_lookup_table->lookupNameSpaceByName(global_namespace_name);
 		ResourceId res_id = Res_CreateResourceId(mResourceFileId, namespace_id, 0);
 
-		// the filename serves as the lumpname
-		OString lumpname = M_ExtractFileName(StdStringToUpper(filename));
+		// the filename serves as the lump_name
+		OString lump_name = M_ExtractFileName(StdStringToUpper(filename));
 
-		// rename lumpname to DEHACKED if it's a DeHackEd file
+		// rename lump_name to DEHACKED if it's a DeHackEd file
 		if (Res_CheckDehackedFile(mFileName))
-			lumpname = "DEHACKED";
+			lump_name = "DEHACKED";
 
-		lump_lookup_table->addLump(res_id, lumpname, global_namespace_name);
+		lump_lookup_table->addLump(res_id, lump_name, global_namespace_name);
 	}
 }
 
@@ -939,9 +939,9 @@ void Res_CloseAllResourceFiles()
 // is returned. A special token of ResourceFile::LUMP_NOT_FOUND is returned if
 // there are no matching lumps.
 //
-ResourceId Res_GetResourceId(const OString& lumpname, const OString& namespace_name)
+ResourceId Res_GetResourceId(const OString& lump_name, const OString& namespace_name)
 {
-	return lump_lookup_table.lookupByName(lumpname, namespace_name);
+	return lump_lookup_table.lookupByName(lump_name, namespace_name);
 }
 
 
@@ -952,9 +952,9 @@ ResourceId Res_GetResourceId(const OString& lumpname, const OString& namespace_n
 // given string. An empty vector indicates that there were no matches.
 //
 void Res_QueryLumpName(std::vector<ResourceId>& res_ids,
-					const OString& lumpname, const OString& namespace_name)
+					const OString& lump_name, const OString& namespace_name)
 {
-	lump_lookup_table.queryByName(res_ids, lumpname, namespace_name);
+	lump_lookup_table.queryByName(res_ids, lump_name, namespace_name);
 }
 
 
@@ -967,6 +967,22 @@ void Res_QueryLumpName(std::vector<ResourceId>& res_ids,
 const OString& Res_GetLumpName(const ResourceId res_id)
 {
 	return lump_lookup_table.lookupById(res_id);
+}
+
+
+//
+// Res_GetResourceFileName
+//
+// Returns the name of the resource file that the given resource belongs to.
+//
+const OString& Res_GetResourceFileName(const ResourceId res_id)
+{
+	ResourceFileId file_id = Res_GetResourceFileId(res_id);
+	if (file_id < resource_files.size())
+		return resource_files[file_id]->getFileName();
+
+	static OString empty_string;
+	return empty_string;
 }
 
 
@@ -1068,9 +1084,9 @@ bool Res_CheckMap(const OString& mapname)
 // only the map lumps from the same resource file as the map marker
 // should be used.
 //
-ResourceId Res_GetMapResourceId(const OString& lumpname, const OString& mapname)
+ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname)
 {
-	ResourceId res_id = Res_GetResourceId(lumpname, mapname);
+	ResourceId res_id = Res_GetResourceId(lump_name, mapname);
 
 	// determine which resource file the map marker is in
 	ResourceFileId map_file_id = Res_GetResourceFileId(Res_GetResourceId(mapname, mapname));

@@ -500,10 +500,8 @@ void G_ParseMusInfo(void)
 // Determines if the vectors of wad & patch filenames differs from the currently
 // loaded ones and calls D_DoomWadReboot if so.
 //
-bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
-				const std::vector<std::string> &newpatchfiles,
-				const std::vector<std::string> &newwadhashes,
-				const std::vector<std::string> &newpatchhashes,
+bool G_LoadWad(	const std::vector<std::string> &new_resource_files,
+				const std::vector<std::string> &new_resource_hashes,
 				const std::string &mapname)
 {
 	bool AddedIWAD = false;
@@ -511,7 +509,7 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 	size_t i, j;
 
 	// Did we pass an IWAD?
-	if (!newwadfiles.empty() && W_IsIWAD(newwadfiles[0]))
+	if (!new_resource_files.empty() && W_IsIWAD(new_resource_files[0]))
 		AddedIWAD = true;
 
 	// Check our environment, if the same WADs are used, ignore this command.
@@ -519,43 +517,23 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 	// Did we switch IWAD files?
 	if (AddedIWAD && !wadfiles.empty())
 	{
-		if (!iequals(M_ExtractFileName(newwadfiles[0]), M_ExtractFileName(wadfiles[1])))
+		if (!iequals(M_ExtractFileName(new_resource_files[0]), M_ExtractFileName(wadfiles[1])))
 			Reboot = true;
 	}
 
 	// Do the sizes of the WAD lists not match up?
 	if (!Reboot)
 	{
-		if (wadfiles.size() - 2 != newwadfiles.size() - (AddedIWAD ? 1 : 0))
+		if (wadfiles.size() - 2 != new_resource_files.size() - (AddedIWAD ? 1 : 0))
 			Reboot = true;
 	}
 
 	// Do our WAD lists match up exactly?
 	if (!Reboot)
 	{
-		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < newwadfiles.size(); i++, j++)
+		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < new_resource_files.size(); i++, j++)
 		{
-			if (!iequals(M_ExtractFileName(newwadfiles[j]), M_ExtractFileName(wadfiles[i])))
-			{
-				Reboot = true;
-				break;
-			}
-		}
-	}
-
-	// Do the sizes of the patch lists not match up?
-	if (!Reboot)
-	{
-		if (patchfiles.size() != newpatchfiles.size())
-			Reboot = true;
-	}
-
-	// Do our patchfile lists match up exactly?
-	if (!Reboot)
-	{
-		for (i = 0, j = 0; i < patchfiles.size() && j < newpatchfiles.size(); i++, j++)
-		{
-			if (!iequals(M_ExtractFileName(newpatchfiles[j]), M_ExtractFileName(patchfiles[i])))
+			if (!iequals(M_ExtractFileName(new_resource_files[j]), M_ExtractFileName(wadfiles[i])))
 			{
 				Reboot = true;
 				break;
@@ -571,7 +549,7 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 		// the zone memory heap and takes the demo data with it.
 		G_CheckDemoStatus();
 
-		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+		D_DoomWadReboot(new_resource_files, new_resource_hashes);
 		if (!missingfiles.empty())
 			return false;
 	}
@@ -595,8 +573,7 @@ const char *ParseString2(const char *data);
 //
 bool G_LoadWad(const std::string &str, const std::string &mapname)
 {
-	std::vector<std::string> newwadfiles;
-	std::vector<std::string> newpatchfiles;
+	std::vector<std::string> new_resource_files;
 	std::vector<std::string> nohashes;	// intentionally empty
 
 	const char *data = str.c_str();
@@ -612,20 +589,16 @@ bool G_LoadWad(const std::string &str, const std::string &mapname)
 
 			// The first argument in the string can be the name of an IWAD
 			// with the WAD extension omitted
-			M_AppendExtension(iwad_name, ".wad");
-
-			newwadfiles.push_back(iwad_name);
+			new_resource_files.push_back(M_AppendExtension(iwad_name, ".wad"));
 		}
-		else if (M_ExtractFileExtension(com_token, ext))
+		else
 		{
-			if (iequals(ext, "wad") && !W_IsIWAD(com_token))
-				newwadfiles.push_back(com_token);
-			else if (iequals(ext, "deh") || iequals(ext, "bex"))
-				newpatchfiles.push_back(com_token);		// Patch file
+			if (!W_IsIWAD(com_token))
+				new_resource_files.push_back(com_token);
 		}
 	}
 
-	return G_LoadWad(newwadfiles, newpatchfiles, nohashes, nohashes, mapname);
+	return G_LoadWad(new_resource_files, nohashes, mapname);
 }
 
 

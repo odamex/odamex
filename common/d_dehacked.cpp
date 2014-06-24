@@ -90,7 +90,7 @@ static byte OrgHeights[] = {
 
 #define CHECKKEY(a,b)		if (!stricmp (Line1, (a))) (b) = atoi(Line2);
 
-static char *PatchFile, *PatchPt;
+static char *patch_data, *read_ptr;
 static char *Line1, *Line2;
 static int	 dversion, pversion;
 static BOOL  including, includenotext;
@@ -549,7 +549,7 @@ static const struct {
 	{ "Misc",		PatchMisc },
 	{ "Text",		PatchText },
 	// These appear in .bex files
-	{ "include",	DoInclude },
+/*	{ "include",	DoInclude }, */
 	{ "[STRINGS]",	PatchStrings },
 	{ "[PARS]",		PatchPars },
 	{ "[CODEPTR]",	PatchCodePtrs },
@@ -564,9 +564,9 @@ static BOOL ReadChars (char **stuff, int size);
 static char *igets (void);
 static int GetLine (void);
 
-static int filelen = 0;	// Be quiet, gcc
+static size_t patch_length = 0;	// Be quiet, gcc
 
-#define IS_AT_PATCH_SIZE (((PatchPt - 1) - PatchFile) == filelen)
+#define IS_AT_PATCH_SIZE ((size_t)((read_ptr - 1) - patch_data) == patch_length)
 
 static int HandleMode (const char *mode, int num)
 {
@@ -698,12 +698,12 @@ static BOOL ReadChars (char **stuff, int size)
 
 	do {
 		// Ignore carriage returns
-		if (*PatchPt != '\r')
-			*str++ = *PatchPt;
+		if (*read_ptr != '\r')
+			*str++ = *read_ptr;
 		else
 			size++;
 
-		PatchPt++;
+		read_ptr++;
 	} while (--size);
 
 	*str = 0;
@@ -801,19 +801,19 @@ static char *igets (void)
 {
 	char *line;
 
-	if(!PatchPt || IS_AT_PATCH_SIZE)
+	if(!read_ptr || IS_AT_PATCH_SIZE)
 		return NULL;
 
-	if (*PatchPt == '\0')
+	if (*read_ptr == '\0')
 		return NULL;
 
-	line = PatchPt;
+	line = read_ptr;
 
-	while (*PatchPt != '\n' && *PatchPt != '\0')
-		PatchPt++;
+	while (*read_ptr != '\n' && *read_ptr != '\0')
+		read_ptr++;
 
-	if (*PatchPt == '\n')
-		*PatchPt++ = 0;
+	if (*read_ptr == '\n')
+		*read_ptr++ = 0;
 
 	return line;
 }
@@ -1653,6 +1653,8 @@ static int PatchStrings (int dummy)
 	return result;
 }
 
+
+#if 0
 static int DoInclude (int dummy)
 {
 	char *data;
@@ -1677,17 +1679,17 @@ static int DoInclude (int dummy)
 	}
 
 	DPrintf ("Including %s\n", com_token);
-	savepatchfile = PatchFile;
-	savepatchpt = PatchPt;
+	savepatchfile = patch_data;
+	savepatchpt = read_ptr;
 	savedversion = dversion;
 	savepversion = pversion;
 	including = true;
 
-	DoDehPatch (com_token, false);
+	DoDehPatch(com_token, false);
 
 	DPrintf ("Done with include\n");
-	PatchFile = savepatchfile;
-	PatchPt = savepatchpt;
+	patch_data = savepatchfile;
+	read_ptr = savepatchpt;
 	dversion = savedversion;
 	pversion = savepversion;
 
@@ -1696,106 +1698,60 @@ endinclude:
 	includenotext = false;
 	return GetLine();
 }
+#endif
 
-bool DoDehPatch (const char *patchfile, BOOL autoloading)
+bool D_LoadDehLump(const ResourceId res_id)
 {
-	int cont;
-	int lump;
-	std::string file;
+	const char* lump_name = Res_GetLumpName(res_id).c_str();
+//	const char* file_name = Res_GetResourceFileName(res_id).c_str();
+	const char file_name[] = "";
 
-	BackupData ();
-	PatchFile = NULL;
-
-	lump = W_CheckNumForName ("DEHACKED");
-
-	if (lump >= 0 && autoloading) {
-		// Execute the DEHACKED lump as a patch.
-		filelen = W_LumpLength (lump);
-		if ( (PatchFile = new char[filelen + 1]) ) {
-			W_ReadLump (lump, PatchFile);
-		} else {
-			DPrintf ("Not enough memory to apply patch\n");
-			return false;
-		}
-	} else if (patchfile) {
-		// Try to use patchfile as a patch.
-		FILE *deh;
-
-		file = patchfile;
-		FixPathSeparator (file);
-		M_AppendExtension (file, ".deh");
-
-		if ( !(deh = fopen (file.c_str(), "rb")) ) {
-			file = patchfile;
-			FixPathSeparator (file);
-			M_AppendExtension (file, ".bex");
-			deh = fopen (file.c_str(), "rb");
-		}
-
-		if (deh) {
-			filelen = M_FileLength (deh);
-			if ( (PatchFile = new char[filelen + 1]) ) {
-				fread (PatchFile, 1, filelen, deh);
-				fclose (deh);
-			}
-		}
-
-		if (!PatchFile) {
-			// Couldn't find it on disk, try reading it from a lump
-			file = patchfile;
-			FixPathSeparator (file);
-			M_ExtractFileBase (file, file);
-			file[8] = 0;
-			lump = W_CheckNumForName (file.c_str());
-			if (lump >= 0) {
-				filelen = W_LumpLength (lump);
-				if ( (PatchFile = new char[filelen + 1]) ) {
-					W_ReadLump (lump, PatchFile);
-				} else {
-					DPrintf ("Not enough memory to apply patch\n");
-					return false;
-				}
-			}
-		}
-
-		if (!PatchFile) {
-			Printf (PRINT_HIGH, "Could not open DeHackEd patch \"%s\"\n", file.c_str());
-			return false;
-		}
-	} else {
-		// Nothing to do.
+	if (!Res_CheckLump(res_id))
+	{
+		Printf(PRINT_HIGH, "Could not open DeHackEd patch %s in %s\n", lump_name, file_name);
 		return false;
 	}
+	
+	patch_length = Res_GetLumpLength(res_id);
+	patch_data = new char[patch_length + 1];
+	Res_ReadLump(res_id, patch_data);
 
-	// End file with a NULL for our parser
-	PatchFile[filelen] = 0;
+	// terminate a NULL for our parser
+	patch_data[patch_length] = 0;
+
+	BackupData();
 
 	dversion = pversion = -1;
 
-	cont = 0;
-	if (!strncmp (PatchFile, "Patch File for DeHackEd v", 25)) {
-		PatchPt = strchr (PatchFile, '\n');
-		while ((cont = GetLine()) == 1) {
+	int cont = 0;
+
+	if (!strncmp(patch_data, "Patch File for DeHackEd v", 25))
+	{
+		read_ptr = strchr(patch_data, '\n');
+		while ((cont = GetLine()) == 1)
+		{
 				 CHECKKEY ("Doom version", dversion)
 			else CHECKKEY ("Patch format", pversion)
 		}
-		if (!cont || dversion == -1 || pversion == -1) {
-			delete[] PatchFile;
-			Printf (PRINT_HIGH, "\"%s\" is not a DeHackEd patch file\n", file.c_str());
+
+		if (!cont || dversion == -1 || pversion == -1)
+		{
+			delete [] patch_data;
+			Printf(PRINT_HIGH, "%s is not a DeHackEd patch in file %s\n", lump_name, file_name);
 			return false;
 		}
-	} else {
-		DPrintf ("Patch does not have DeHackEd signature. Assuming .bex\n");
+	}
+	else
+	{
+		DPrintf("Patch does not have DeHackEd signature. Assuming .bex\n");
 		dversion = 19;
 		pversion = 6;
-		PatchPt = PatchFile;
-		while ((cont = GetLine()) == 1)
-			;
+		read_ptr = patch_data;
+		while ((cont = GetLine()) == 1) { }
 	}
 
-	if (pversion != 6) {
-		DPrintf ("DeHackEd patch version is %d.\nUnexpected results may occur.\n", pversion);
-	}
+	if (pversion != 6)
+		DPrintf("DeHackEd patch version is %d.\nUnexpected results may occur.\n", pversion);
 
 	if (dversion == 16)
 		dversion = 0;
@@ -1807,24 +1763,28 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 		dversion = 1;
 	else if (dversion == 21)
 		dversion = 4;
-	else {
-		DPrintf ("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
+	else
+	{
+		DPrintf("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
 		dversion = 3;
 	}
 
-	do {
-		if (cont == 1) {
+	do
+	{
+		if (cont == 1)
+		{
 			DPrintf ("Key %s encountered out of context\n", Line1);
 			cont = 0;
-		} else if (cont == 2)
-			cont = HandleMode (Line1, atoi (Line2));
+		}
+		else if (cont == 2)
+		{
+			cont = HandleMode(Line1, atoi (Line2));
+		}
 	} while (cont);
 
-	delete[] PatchFile;
-	if (autoloading)
-		Printf (PRINT_HIGH, "DeHackEd patch lump installed\n");
-	else
-		Printf (PRINT_HIGH, "DeHackEd patch installed:\n  %s\n", file.c_str());
+	delete [] patch_data;
+
+	Printf (PRINT_HIGH, "DeHackEd patch %s in file %s installed\n", lump_name, file_name);
 
     return true;
 }

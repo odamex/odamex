@@ -25,8 +25,11 @@
 #ifndef __D_DEHACK_H__
 #define __D_DEHACK_H__
 
+#include "res_main.h"
+
 void UndoDehPatch ();
-bool DoDehPatch (const char *patchfile, BOOL autoloading);
+
+bool D_LoadDehLump(const ResourceId res_id);
 
 #endif //__D_DEHACK_H__
 

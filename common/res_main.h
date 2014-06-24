@@ -220,6 +220,8 @@ ResourceId Res_GetResourceId(const OString& lumpname, const OString& namespace_n
 
 const OString& Res_GetLumpName(const ResourceId res_id);
 
+const OString& Res_GetResourceFileName(const ResourceId res_id);
+
 bool Res_CheckLump(const ResourceId res_id);
 
 static inline bool Res_CheckLump(const OString& lumpname, const OString& namespace_name = global_namespace_name)

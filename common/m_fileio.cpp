@@ -141,15 +141,15 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 // if_needed detects if an extension is not present in path, if it isn't, it is
 // added.
 // The extension must contain a . at the beginning
-BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_needed)
+static BOOL M_AppendExtension(std::string &filename, const std::string& ext, bool if_needed)
 {
     FixPathSeparator(filename);
 
     size_t l = filename.find_last_of(PATHSEPCHAR);
-	if(l == filename.length())
+	if (l == filename.length())
 		return false;
 
-    size_t dot = extension.find_first_of('.');
+    size_t dot = ext.find_first_of('.');
     if (dot == std::string::npos)
         return false;
 
@@ -158,14 +158,22 @@ BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_ne
         size_t dot = filename.find_last_of('.');
 
         if (dot == std::string::npos)
-            filename.append(extension);
+            filename.append(ext);
 
         return true;
     }
 
-    filename.append(extension);
+    filename.append(ext);
 
     return true;
+}
+
+
+std::string M_AppendExtension(const std::string& filename, const std::string& ext, bool if_needed)
+{
+	std::string output(filename);
+	M_AppendExtension(output, ext, if_needed);
+	return output;
 }
 
 //
