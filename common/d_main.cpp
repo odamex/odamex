@@ -1025,8 +1025,15 @@ void D_LoadResourceFiles(
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
+	ResourceId language_res_id = Res_GetResourceId("LANGUAGE");
+	size_t language_length = Res_GetLumpLength(language_res_id);
+	byte* language_data = new byte[language_length];
+	Res_ReadLump(language_res_id, language_data);
+
+	GStrings.LoadStrings(language_data, language_length, STRING_TABLE_SIZE, false);
 	GStrings.Compact();
+
+	delete [] language_data;
 
 	D_DoDefDehackedPatch(newpatchfiles);
 }

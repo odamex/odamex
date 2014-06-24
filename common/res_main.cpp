@@ -924,6 +924,9 @@ void Res_CloseAllResourceFiles()
 	for (std::vector<ResourceFile*>::iterator it = resource_files.begin(); it != resource_files.end(); ++it)
 		delete *it;
 	resource_files.clear();
+
+	// free all of the memory used by cached lump data
+	cache_table.clear();
 }
 
 
@@ -1024,19 +1027,17 @@ size_t Res_ReadLump(const ResourceId res_id, void* data)
 //
 void* Res_CacheLump(const ResourceId res_id, int tag)
 {
-	void* data_ptr = NULL;
+	void* data_ptr = cache_table[res_id];
 
-	CacheTable::iterator it = cache_table.find(res_id);
-	if (it != cache_table.end() && it->second != NULL)
+	if (data_ptr)
 	{
-		data_ptr = it->second;
 		Z_ChangeTag(data_ptr, tag);
 	}
 	else
 	{
+		void** owner_ptr = &cache_table[res_id];
 		size_t lump_length = Res_GetLumpLength(res_id);
-		void** owner_ptr = &it->second;
-		data_ptr = Z_Malloc(lump_length + 1, tag, owner_ptr);
+		cache_table[res_id] = data_ptr = Z_Malloc(lump_length + 1, tag, owner_ptr);
 		Res_ReadLump(res_id, data_ptr);
 
 		uint8_t* terminator = (uint8_t*)data_ptr + lump_length;

@@ -588,8 +588,15 @@ void D_Init()
 //	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
+	ResourceId language_res_id = Res_GetResourceId("LANGUAGE");
+	size_t language_length = Res_GetLumpLength(language_res_id);
+	byte* language_data = new byte[language_length];
+	Res_ReadLump(language_res_id, language_data);
+
+	GStrings.LoadStrings(language_data, language_length, STRING_TABLE_SIZE, false);
 	GStrings.Compact();
+
+	delete [] language_data;
 
 	// init the renderer
 	if (first_time)

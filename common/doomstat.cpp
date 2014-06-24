@@ -25,10 +25,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "stringtable.h"
+#include "stringenums.h"
+
 #include "doomstat.h"
 #include "c_cvars.h"
 #include "i_system.h"
 #include "p_acs.h"
+#include "res_main.h"
+
 
 // Localizable strings
 FStringTable	GStrings;
@@ -38,18 +42,23 @@ GameMode_t		gamemode = undetermined;
 GameMission_t	gamemission = doom;
 
 // Language.
-CVAR_FUNC_IMPL (language)
+CVAR_FUNC_IMPL(language)
 {
 	SetLanguageIDs ();
 	if (level.behavior != NULL)
-	{
-		level.behavior->PrepLocale (LanguageIDs[0], LanguageIDs[1],
-			LanguageIDs[2], LanguageIDs[3]);
-	}
+		level.behavior->PrepLocale(LanguageIDs[0], LanguageIDs[1], LanguageIDs[2], LanguageIDs[3]);
 
-	GStrings.ReloadStrings ();
-	GStrings.Compact ();
-	G_SetLevelStrings ();
+	ResourceId language_res_id = Res_GetResourceId("LANGUAGE");
+	size_t language_length = Res_GetLumpLength(language_res_id);
+	byte* language_data = new byte[language_length];
+	Res_ReadLump(language_res_id, language_data);
+
+	GStrings.LoadStrings(language_data, language_length, STRING_TABLE_SIZE, false);
+	GStrings.Compact();
+
+	delete [] language_data;
+
+	G_SetLevelStrings();
 }
 
 // Set if homebrew PWAD stuff has been added.

@@ -52,12 +52,8 @@ public:
 
 	~FStringTable () { FreeData (); }
 
-	void LoadStrings(int lumpnum, int expectedSize, bool enuOnly);
-	void ReloadStrings();
-	void ResetStrings();
+	void LoadStrings(byte* data, size_t length, int expectedSize, bool enuOnly);
 
-	void LoadNames() const;
-	void FlushNames() const;
 	int FindString(const char* stringName) const;
 	int MatchString(const char* string) const;
 
