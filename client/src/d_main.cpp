@@ -221,6 +221,7 @@ void D_Display()
 
 	BEGIN_STAT(D_Display);
 
+	// video mode must be changed before surfaces are locked in I_BeginUpdate
 	V_AdjustVideoMode();
 
 	I_BeginUpdate();

@@ -217,13 +217,16 @@ ISDL12Window::~ISDL12Window()
 //
 void ISDL12Window::lockSurface()
 {
-	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
-
-	if (++mLocks == 1 && SDL_MUSTLOCK(sdlsurface))
-		SDL_LockSurface(sdlsurface);
+	if (++mLocks == 1)
+	{
+		SDL_Surface* sdlsurface = SDL_GetVideoSurface();
+		if (SDL_MUSTLOCK(sdlsurface))
+			SDL_LockSurface(sdlsurface);
+		if (mSDLSoftwareSurface && SDL_MUSTLOCK(mSDLSoftwareSurface))
+			SDL_LockSurface(mSDLSoftwareSurface);
+	}
 
 	assert(mLocks >= 1 && mLocks < 100);
-	mPrimarySurface->lock();
 }
 
 
@@ -235,13 +238,16 @@ void ISDL12Window::lockSurface()
 //
 void ISDL12Window::unlockSurface()
 {
-	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
-
-	if (--mLocks == 0 && SDL_MUSTLOCK(sdlsurface))
-		SDL_UnlockSurface(sdlsurface);
+	if (--mLocks == 0)
+	{
+		SDL_Surface* sdlsurface = SDL_GetVideoSurface();
+		if (SDL_MUSTLOCK(sdlsurface))
+			SDL_UnlockSurface(sdlsurface);
+		if (mSDLSoftwareSurface && SDL_MUSTLOCK(mSDLSoftwareSurface))
+			SDL_UnlockSurface(mSDLSoftwareSurface);
+	}
 
 	assert(mLocks >= 0 && mLocks < 100);
-	mPrimarySurface->unlock();
 }
 
 
@@ -250,6 +256,8 @@ void ISDL12Window::unlockSurface()
 //
 void ISDL12Window::refresh()
 {
+	assert(mLocks == 0);		// window surface shouldn't be locked when blitting
+
 	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
 
 	if (mNeedPaletteRefresh)
@@ -377,9 +385,6 @@ static void I_SetSDL12Palette(SDL_Surface* sdlsurface, const argb_t* palette_col
 {
 	if (sdlsurface->format->BitsPerPixel == 8)
 	{
-		if (SDL_MUSTLOCK(sdlsurface))
-			SDL_LockSurface(sdlsurface);
-
 		assert(sdlsurface->format->palette != NULL);
 		assert(sdlsurface->format->palette->ncolors == 256);
 
@@ -391,9 +396,6 @@ static void I_SetSDL12Palette(SDL_Surface* sdlsurface, const argb_t* palette_col
 			sdlcolors[c].g = color.getg();
 			sdlcolors[c].b = color.getb();
 		}
-
-		if (SDL_MUSTLOCK(sdlsurface))
-			SDL_UnlockSurface(sdlsurface);
 	}
 }
 
@@ -405,6 +407,8 @@ static void I_SetSDL12Palette(SDL_Surface* sdlsurface, const argb_t* palette_col
 //
 void ISDL12Window::setPalette(const argb_t* palette_colors)
 {
+	lockSurface();
+
 	I_SetSDL12Palette(SDL_GetVideoSurface(), palette_colors);
 
 	if (mSDLSoftwareSurface)
@@ -413,6 +417,8 @@ void ISDL12Window::setPalette(const argb_t* palette_colors)
 	getPrimarySurface()->setPalette(palette_colors);
 
 	mNeedPaletteRefresh = true;
+
+	unlockSurface();
 }
 
 
@@ -552,7 +558,6 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 							format.getGShift() / 8, format.getBShift() / 8);
 	else
 		argb_t::setChannels(3, 2, 1, 0);
-
 
 	return true;
 }

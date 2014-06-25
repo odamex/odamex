@@ -878,6 +878,37 @@ bool I_IsProtectedResolution(const IWindowSurface* surface)
 
 
 //
+// I_LockAllSurfaces
+//
+static void I_LockAllSurfaces()
+{
+	if (emulated_surface)
+		emulated_surface->lock();
+	if (matted_surface)
+		matted_surface->lock();
+	primary_surface->lock();
+
+	I_GetWindow()->lockSurface();
+}
+
+
+//
+// I_UnlockAllSurfaces
+//
+static void I_UnlockAllSurfaces()
+{
+	I_GetWindow()->unlockSurface();
+
+	primary_surface->unlock();
+
+	if (matted_surface)
+		matted_surface->unlock();
+	if (emulated_surface)
+		emulated_surface->unlock();
+}
+
+
+//
 // I_DrawLoadingIcon
 //
 // Sets a flag to indicate that I_FinishUpdate should draw the loading (disk)
@@ -969,14 +1000,7 @@ static void I_RestoreLoadingIcon()
 void I_BeginUpdate()
 {
 	if (I_VideoInitialized())
-	{
-		I_GetWindow()->lockSurface();
-
-		if (matted_surface)
-			matted_surface->lock();
-		if (emulated_surface)
-			emulated_surface->lock();
-	}
+		I_LockAllSurfaces();
 }
 
 
@@ -1002,12 +1026,7 @@ void I_FinishUpdate()
 		if (gametic <= loading_icon_expire)
 			I_BlitLoadingIcon();
 
-		if (emulated_surface)
-			emulated_surface->unlock();
-		if (matted_surface)
-			matted_surface->unlock();
-
-		I_GetWindow()->unlockSurface();
+		I_UnlockAllSurfaces();
 
 		if (noblit == false)
 			I_GetWindow()->refresh();

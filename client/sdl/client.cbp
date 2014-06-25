@@ -54,6 +54,7 @@
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
+					<Add option="-DODAMEX_DEBUG" />
 					<Add option="-DCLIENT_APP" />
 					<Add option="-DUSE_PNG" />
 				</Compiler>
@@ -183,6 +184,7 @@
 					<Add option="/DCLIENT_APP" />
 					<Add option="/DPORTMIDI" />
 					<Add option="/DUSE_PNG" />
+					<Add option="/DODAMEX_DEBUG" />
 					<Add directory="." />
 					<Add directory="../src" />
 					<Add directory="../../common" />

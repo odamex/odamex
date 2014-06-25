@@ -3,10 +3,6 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
 
-if(COMMAND cmake_policy)
-  cmake_policy(SET CMP0005 NEW)
-endif(COMMAND cmake_policy)
-
 include(CMakeDependentOption)
 
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
@@ -29,6 +25,30 @@ cmake_minimum_required(VERSION 2.8)
 
 set(PROJECT_VERSION 0.7.0)
 set(PROJECT_COPYRIGHT "2006-2014")
+
+# identify the target CPU
+# adapted from the FindJNI.cmake module included with the CMake distribution
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+  set(target_arch "amd64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^i[3-9]86$")
+  set(target_arch "i386")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^alpha")
+  set(target_arch "alpha")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
+  set(target_arch "arm")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64")
+  set(target_arch "ppc64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)")
+  set(target_arch "ppc")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^sparc")
+  # Both flavors can run on the same processor
+  set(target_arch "${CMAKE_SYSTEM_PROCESSOR}" "sparc" "sparcv9")
+else()
+  set(target_arch "${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
+list(REMOVE_DUPLICATES target_arch)
+message("Using target architecture " ${target_arch})
 
 # Default build type
 if(NOT MSVC)
@@ -60,10 +80,13 @@ macro(global_compile_options)
     if(USE_SANITIZE_ADDRESS)
       set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
     endif()
+    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+      add_definitions(-DODAMEX_DEBUG)
+	endif()
   endif()
 endmacro(global_compile_options)
 
-if( ${CMAKE_SYSTEM_NAME} MATCHES SunOS )
+if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )
   set(SOLARIS 1)
 endif()
 
@@ -148,8 +171,8 @@ if(NOT APPLE)
       DESTINATION config-samples
       COMPONENT common)
 
-      # Windows ZIP packages are "tarbombs" by default.
-      set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
+    # Windows ZIP packages are "tarbombs" by default.
+    set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
   else()
     install(FILES odamex.wad LICENSE README
       DESTINATION ${CMAKE_INSTALL_DATADIR}/odamex
