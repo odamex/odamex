@@ -830,6 +830,32 @@ static std::vector<ResourceFile*> resource_files;
 typedef OHashTable<ResourceId, void*> CacheTable;
 static CacheTable cache_table(4096);
 
+static std::vector<std::string> resource_file_names;
+static std::vector<std::string> resource_file_hashes;
+
+//
+// Res_GetResourceFileNames
+//
+// Returns a vector of file names of the currently open resource files. The
+// file names include the full path.
+//
+const std::vector<std::string>& Res_GetResourceFileNames()
+{
+	return resource_file_names;
+}
+
+//
+// Res_GetResourceFileHashes
+//
+// Returns a vector of string representations of the MD5SUM for each of the
+// currently open resource files. 
+//
+const std::vector<std::string>& Res_GetResourceFileHashes()
+{
+	return resource_file_hashes;
+}
+
+
 //
 // Res_CheckWadFile
 //
@@ -907,7 +933,11 @@ void Res_OpenResourceFile(const OString& filename)
 	}
 
 	if (res_file)
+	{
 		resource_files.push_back(res_file);
+		resource_file_names.push_back(filename);
+		resource_file_hashes.push_back(W_MD5(filename));
+	}
 }
 
 
@@ -927,6 +957,9 @@ void Res_CloseAllResourceFiles()
 
 	// free all of the memory used by cached lump data
 	cache_table.clear();
+
+	resource_file_names.clear();
+	resource_file_hashes.clear();
 }
 
 

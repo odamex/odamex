@@ -41,6 +41,8 @@
 #include "m_fileio.h"
 #include "version.h"
 
+#include "res_main.h"
+
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get
 // put into newer configfiles.
@@ -48,8 +50,6 @@ static CVAR (configver, CONFIGVERSIONSTR, "", CVARTYPE_STRING, CVAR_ARCHIVE | CV
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (sv_maxplayers)
-
-extern std::vector<std::string> wadfiles;
 
 /**
  * Get configuration file path.  This file contains commands to set all
@@ -224,14 +224,15 @@ std::string M_ExpandTokens(const std::string &str)
 				break;
 			}
 			case 'w':
-				if (wadfiles.size() == 2) {
-					// We're playing an IWAD map
-					buffer << M_ExtractFileName(wadfiles[1]);
-				} else if (wadfiles.size() > 2) {
-					// We're playing a PWAD map
-					buffer << M_ExtractFileName(wadfiles[2]);
-				}
+			{
+				const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+
+				if (resource_file_names.size() == 2)		// an IWAD map
+					buffer << M_ExtractFileName(resource_file_names[1]);
+				else if (resource_file_names.size() > 2)	// a PWAD map
+					buffer << M_ExtractFileName(resource_file_names[2]);
 				break;
+			}
 			case 'm':
 				buffer << level.mapname;
 				break;

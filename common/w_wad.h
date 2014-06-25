@@ -38,9 +38,6 @@
 #define IWAD_ID (('I')|('W'<<8)|('A'<<16)|('D'<<24))
 #define PWAD_ID (('P')|('W'<<8)|('A'<<16)|('D'<<24))
 
-// [RH] Remove limit on number of WAD files
-extern std::vector<std::string> wadfiles, wadhashes, patchfiles;
-
 // [SL] List of IWAD names and valid MD5 hashes
 #define MAX_HASHES 10
 

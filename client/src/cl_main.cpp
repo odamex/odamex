@@ -1514,14 +1514,61 @@ void CL_RequestConnectInfo(void)
 	connecttimeout--;
 }
 
+
+static std::string missing_file, missing_hash;
+
+//
+// CL_VerifyResourceFiles
+//
+// Checks for the existence of each file in a list of resource file names.
+// The globals missing_file and missing_hash are set to the file name and
+// MD5SUM of the missing file.
+//
+void CL_VerifyResourceFiles(
+			const std::vector<std::string>& resource_file_names,
+			const std::vector<std::string>& resource_file_hashes)
+{
+	missing_file.clear();
+	missing_hash.clear();
+
+	std::vector<std::string> missing_file_names;
+	D_VerifyResourceFiles(resource_file_names, resource_file_hashes, missing_file_names); 
+
+	// not really missing a file but force the client to download anyways
+	if (developer && cl_forcedownload)
+		missing_file_names.push_back(resource_file_names.back());
+
+	// If any resource files are missing, reconnect to begin downloading.
+	if (!missing_file_names.empty())
+	{
+		missing_file = missing_file_names[0];
+
+		// find the md5 hash for the missing file
+		std::vector<std::string>::const_iterator it =
+					std::find(resource_file_names.begin(), resource_file_names.end(), missing_file);
+		if (it != resource_file_names.end())
+			missing_hash = resource_file_hashes[it - resource_file_names.begin()];
+
+		if (netdemo.isPlaying())
+		{
+			// Playing a netdemo and unable to download from the server
+			Printf(PRINT_HIGH, "Unable to find resource file \"%s\".  Cannot download while playing a netdemo.\n",
+								missing_file.c_str());
+			CL_QuitNetGame();
+			return;
+		}
+	}
+}
+
+
+
 //
 // [denis] CL_PrepareConnect
 // Process server info and switch to the right wads...
 //
-std::string missing_file, missing_hash;
 bool CL_PrepareConnect(void)
 {
-	G_CleanupDemo();	// stop dmeos from playing before D_DoomWadReboot wipes out Zone memory
+	G_CleanupDemo();	// stop demos from playing before wiping out Zone memory
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
@@ -1542,9 +1589,11 @@ bool CL_PrepareConnect(void)
 	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
-	std::vector<std::string> new_resource_files(resource_file_count);
-	for(size_t i = 0; i < resource_file_count; i++)
-		new_resource_files[i] = MSG_ReadString();
+	// store the resource file name list
+	std::vector<std::string> resource_file_names;
+	resource_file_names.push_back("ODAMEX.WAD");		// server omits ODAMEX.WAD
+	for (size_t i = 0; i < resource_file_count; i++)
+		resource_file_names.push_back(MSG_ReadString());
 
 	MSG_ReadBool();							// deathmatch
 	MSG_ReadByte();							// skill
@@ -1559,11 +1608,15 @@ bool CL_PrepareConnect(void)
 		MSG_ReadByte();
 	}
 
-	std::vector<std::string> new_resource_hashes(resource_file_count);
-	for(size_t i = 0; i < resource_file_count; i++)
+	// store the MD5SUMS for the resource file name list
+	std::vector<std::string> resource_file_hashes;
+	resource_file_hashes.push_back(std::string());		// empty hash for ODAMEX.WAD
+	for (size_t i = 0; i < resource_file_count; i++)
 	{
-		new_resource_hashes[i] = MSG_ReadString();
-		Printf(PRINT_HIGH, "> %s\n   %s\n", new_resource_files[i].c_str(), new_resource_hashes[i].c_str());
+		resource_file_hashes.push_back(MSG_ReadString());
+		Printf(PRINT_HIGH, "> %s\n   %s\n",
+					resource_file_names[i + 1].c_str(),
+					resource_file_hashes[i + 1].c_str());
 	}
 
 	MSG_ReadString();
@@ -1635,32 +1688,17 @@ bool CL_PrepareConnect(void)
 	while (dummy--)
 		MSG_ReadString();
 
-	D_DoomWadReboot(new_resource_files, new_resource_hashes);
+	// load the resource files
+	CL_VerifyResourceFiles(resource_file_names, resource_file_hashes);
 
-	if (!missingfiles.empty() || cl_forcedownload)
+	if (!missing_file.empty())
 	{
-		if (missingfiles.empty())				// cl_forcedownload
-		{
-			missing_file = new_resource_files.back();
-			missing_hash = new_resource_hashes.back();
-		}
-		else									// client is really missing a file
-		{
-			missing_file = missingfiles[0];
-			missing_hash = missinghashes[0];
-		}
-
-		if (netdemo.isPlaying())
-		{
-			// Playing a netdemo and unable to download from the server
-			Printf(PRINT_HIGH, "Unable to find resource file \"%s\".  Cannot download while playing a netdemo.\n",
-								missing_file.c_str());
-			CL_QuitNetGame();
-			return false;
-		}
-
 		gamestate = GS_DOWNLOAD;
 		Printf(PRINT_HIGH, "Will download resource file \"%s\" from server\n", missing_file.c_str());
+	}
+	else
+	{
+		D_ReloadResourceFiles(resource_file_names);
 	}
 
 	recv_full_update = false;
@@ -1684,7 +1722,7 @@ bool CL_Connect(void)
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
 
-	if (gamestate == GS_DOWNLOAD && missing_file.length())
+	if (gamestate == GS_DOWNLOAD && !missing_file.empty())
 	{
 		// denis - do not download commercial wads
 		if (W_IsIWADCommercial(missing_file, missing_hash))
@@ -3248,13 +3286,14 @@ void CL_ConsolePlayer(void)
 	digest = MSG_ReadString();
 }
 
+
 //
 // CL_LoadMap
 //
-// Read wad & deh filenames and map name from the server and loads
-// the appropriate wads & map.
+// Read resource files names and map name from the server and loads
+// the appropriate resources.
 //
-void CL_LoadMap(void)
+void CL_LoadMap()
 {
 	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
 	forcenetdemosplit = false;
@@ -3264,13 +3303,15 @@ void CL_LoadMap(void)
 
 	size_t resource_file_count = MSG_ReadByte();
 
-	std::vector<std::string> new_resource_files(resource_file_count);
-	std::vector<std::string> new_resource_hashes(resource_file_count);
+	std::vector<std::string> resource_file_names, resource_file_hashes;
+
+	resource_file_names.push_back("ODAMEX.WAD");		// server omits ODAMEX.WAD
+	resource_file_hashes.push_back(std::string());		// empty hash for ODAMEX.WAD
 
 	while (resource_file_count--)
 	{
-		new_resource_files.push_back(MSG_ReadString());
-		new_resource_hashes.push_back(MSG_ReadString());
+		resource_file_names.push_back(MSG_ReadString());
+		resource_file_hashes.push_back(MSG_ReadString());
 	}
 
 	// [SL] DEH/BEX patch file names used to be sent separately.
@@ -3290,25 +3331,26 @@ void CL_LoadMap(void)
 		return;
 	}
 
-	// Load the specified WAD and DEH files and change the level.
-	// if any WADs are missing, reconnect to begin downloading.
-	G_LoadWad(new_resource_files, new_resource_hashes);
+	// load the resource files
+	CL_VerifyResourceFiles(resource_file_names, resource_file_hashes);
 
-	if (!missingfiles.empty())
+	// If any resource files are missing, reconnect to begin downloading.
+	if (!missing_file.empty())
 	{
-		missing_file = missingfiles[0];
-		missing_hash = missinghashes[0];
-
+		gamestate = GS_DOWNLOAD;
+		Printf(PRINT_HIGH, "Will download resource file \"%s\" from server\n", missing_file.c_str());
 		CL_Reconnect();
 		return;
 	}
+
+	D_ReloadResourceFiles(resource_file_names);
 
 	// [SL] 2012-12-02 - Force the music to stop when the new map uses
 	// the same music lump name that is currently playing. Otherwise,
 	// the music from the old wad continues to play...
 	S_StopMusic();
 
-	G_InitNew (mapname);
+	G_InitNew(mapname);
 
 	movingsectors.clear();
 	teleported_players.clear();

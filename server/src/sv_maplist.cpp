@@ -103,15 +103,19 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 
 	// If we have not been passed custom WAD files,
 	// we need to fill them in on our own.
-	if (maplist_entry.wads.empty()) {
-		if (position == 0) {
+	if (maplist_entry.wads.empty())
+	{
+		if (position == 0)
+		{
 			// Nothing is 'above us' to yoink from, so just use the
 			// currently loaded WAD files.  Add one to the beginning
-			// of wadfiles, since position 0 stores odamex.wad.
-			maplist_entry.wads.resize(wadfiles.size() - 1);
-			std::copy(wadfiles.begin() + 1, wadfiles.end(),
-					  maplist_entry.wads.begin());
-		} else {
+			// of resource files, since position 0 stores odamex.wad.
+			const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+			maplist_entry.wads.resize(resource_file_names.size() - 1);
+			std::copy(resource_file_names.begin() + 1, resource_file_names.end(), maplist_entry.wads.begin());
+		}
+		else
+		{
 			maplist_entry.wads.resize(this->maplist[position - 1].wads.size());
 			std::copy(this->maplist[position - 1].wads.begin(),
 					  this->maplist[position - 1].wads.end(),

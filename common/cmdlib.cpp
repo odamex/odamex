@@ -282,43 +282,49 @@ size_t StdStringRFind(const std::string& haystack, const std::string& needle,
     return StdStringFind(haystack, needle, pos, n, CIS, true);
 }
 
-static std::string& StdStringToLowerBase(std::string& lower, size_t n)
+
+std::string StdStringToLower(const char* str, size_t n)
 {
-	std::string::iterator itend = n >= lower.length() ? lower.end() : lower.begin() + n;
-	std::transform(lower.begin(), itend, lower.begin(), ::tolower);
-	return lower;
+	if (n == std::string::npos)
+		n = strlen(str);
+
+	char* temp_str = new char[n + 1];
+	strncpy(temp_str, str, n);
+	temp_str[n] = '\0';
+
+	std::string output(temp_str);
+	delete [] temp_str;
+
+	std::transform(output.begin(), output.end(), output.begin(), ::tolower);
+	return output;
 }
 
 std::string StdStringToLower(const std::string& str, size_t n)
 {
-	std::string lower(str, 0, n);
-	return StdStringToLowerBase(lower, n);
-}
-
-std::string StdStringToLower(const char* str, size_t n)
-{
-	std::string lower(str, 0, n);
-	return StdStringToLowerBase(lower, n);
-}
-
-static std::string& StdStringToUpperBase(std::string& upper, size_t n)
-{
-	std::string::iterator itend = n >= upper.length() ? upper.end() : upper.begin() + n;
-	std::transform(upper.begin(), itend, upper.begin(), ::toupper);
-	return upper;
-}
-
-std::string StdStringToUpper(const std::string& str, size_t n)
-{
-	std::string upper(str, 0, n);
-	return StdStringToUpperBase(upper, n);
+	return StdStringToLower(str.c_str(), n);
 }
 
 std::string StdStringToUpper(const char* str, size_t n)
 {
-	std::string upper(str, 0, n);
-	return StdStringToUpperBase(upper, n);
+	if (n == std::string::npos)
+		n = strlen(str);
+
+	char* temp_str = new char[n + 1];
+	strncpy(temp_str, str, n);
+	temp_str[n] = '\0';
+
+	std::string output(temp_str);
+	delete [] temp_str;
+
+	std::transform(output.begin(), output.end(), output.begin(), ::toupper);
+	return output;
 }
+
+std::string StdStringToUpper(const std::string& str, size_t n)
+{
+	return StdStringToUpper(str.c_str(), n);
+}
+
 
 // [AM] Convert an argc/argv into a vector of strings.
 std::vector<std::string> VectorArgs(size_t argc, char **argv) {

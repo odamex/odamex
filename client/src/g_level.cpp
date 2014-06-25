@@ -132,18 +132,19 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	if (paused)
 	{
 		paused = false;
-		S_ResumeSound ();
+		S_ResumeSound();
 	}
 
 	C_HideConsole();
-
-	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWad(str);
-
-	D_StartTitle ();
 	CL_QuitNetGame();
-	S_StopMusic();
-	S_StartMusic(gameinfo.titleMusic);
+
+	std::vector<std::string> resource_file_names;
+	D_AddResourceFilesFromString(resource_file_names, JoinStrings(VectorArgs(argc, argv), " "));
+	D_ReloadResourceFiles(resource_file_names);
+
+	G_DeferedInitNew(startmap);
+
+	D_StartTitle();
 }
 END_COMMAND (wad)
 

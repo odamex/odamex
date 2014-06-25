@@ -39,15 +39,22 @@
 //
 void D_DoomMain(void);
 
-void D_LoadResourceFiles(
-	const std::vector<std::string>& new_resource_files,
-	const std::vector<std::string>& new_resource_hashes = std::vector<std::string>()
-);
+bool D_VerifyFile(
+		const std::string &filename,
+		std::string &base_filename,
+		std::string &full_filename,
+		const std::string &hash = "");
 
-bool D_DoomWadReboot(
-	const std::vector<std::string>& new_resource_files,
-	const std::vector<std::string>& new_resource_hashes = std::vector<std::string>()
-);
+void D_LoadResourceFiles(const std::vector<std::string>& resource_file_names);
+void D_ReloadResourceFiles(const std::vector<std::string>& new_resource_file_names);
+
+void D_AddResourceFilesFromArgs(std::vector<std::string>& resource_file_names);
+void D_AddResourceFilesFromString(std::vector<std::string>& resource_file_names, const std::string &str);
+
+void D_VerifyResourceFiles(
+		const std::vector<std::string>& resource_file_names,
+		const std::vector<std::string>& resource_file_hashes,
+		std::vector<std::string>& missing_file_names);
 
 // Called by IO functions when input is detected.
 void D_PostEvent(const event_t* ev);
@@ -67,16 +74,10 @@ extern const char *D_DrawIcon;
 void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator);
 std::string D_CleanseFileName(const std::string &filename, const std::string &ext = "");
 
-extern std::vector<std::string> wadfiles, wadhashes;
-extern std::vector<std::string> patchfiles, patchhashes;
-extern std::vector<std::string> missingfiles, missinghashes;
-
 extern bool capfps;
 extern float maxfps;
 void STACK_ARGS D_ClearTaskSchedulers();
 void D_RunTics(void (*sim_func)(), void(*display_func)());
-
-void D_AddResourceFilesFromArgs(std::vector<std::string>& filenames);
 
 std::string D_GetTitleString();
 

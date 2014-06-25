@@ -73,16 +73,14 @@
 
 EXTERN_CVAR (waddirs)
 
-std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
-std::vector<std::string> patchfiles, patchhashes;	// [RH] remove limit on # of loaded wads
-std::vector<std::string> missingfiles, missinghashes;
-
 extern gameinfo_t SharewareGameInfo;
 extern gameinfo_t RegisteredGameInfo;
 extern gameinfo_t RetailGameInfo;
 extern gameinfo_t CommercialGameInfo;
 extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
+
+const char *ParseString2(const char *data);
 
 bool lastWadRebootSuccess = true;
 extern bool step_mode;
@@ -812,11 +810,11 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 // to the full path of the file. Returns true if the file was found and it
 // matched the supplied hash (or has was empty).
 //
-static bool D_VerifyFile(
-		const std::string &filename,
-		std::string &base_filename,
-		std::string &full_filename,
-		const std::string &hash = "")
+bool D_VerifyFile(
+		const std::string& filename,
+		std::string& base_filename,
+		std::string& full_filename,
+		const std::string& hash)
 {
 	base_filename.clear();
 	full_filename.clear();
@@ -863,108 +861,101 @@ static bool D_VerifyFile(
 
 
 //
+// D_VerifyResourceFiles
+//
+void D_VerifyResourceFiles(
+		const std::vector<std::string>& resource_file_names,
+		const std::vector<std::string>& resource_file_hashes,
+		std::vector<std::string>& missing_file_names)
+{
+	missing_file_names.clear();
+
+	for (size_t i = 0; i < resource_file_names.size(); i++)
+	{
+		std::string base_filename, full_filename;
+		const std::string& file_hash = (resource_file_hashes.size() > i) ?  resource_file_hashes[i] : "";
+
+		if (!D_VerifyFile(resource_file_names[i], base_filename, full_filename, file_hash))
+			missing_file_names.push_back(base_filename);
+	}
+}
+
+
+//
 // D_LoadResourceFiles
 //
-// Performs the grunt work of loading WAD and DEH/BEX files.
-// The global wadfiles and patchfiles vectors are filled with the list
-// of loaded filenames and the missingfiles vector is also filled if
-// applicable.
+// Loads the given set of resource file names. If the file names do not
+// include full paths, the default search paths will be used to find the
+// files.
+// It is expected that resource_file_names[0] be ODAMEX.WAD and
+// resource_file_names[1] be an IWAD.
 //
-void D_LoadResourceFiles(
-	const std::vector<std::string> &new_resource_files,
-	const std::vector<std::string> &new_resource_hashes)
+void D_LoadResourceFiles(const std::vector<std::string>& resource_file_names)
 {
-	bool hashcheck = (new_resource_files.size() == new_resource_hashes.size());
-	bool iwad_provided = false;
+	// If the given files are already loaded, bail out early.
+	if (resource_file_names == Res_GetResourceFileNames())
+		return;
 
-	missingfiles.clear();
-	missinghashes.clear();
+	gamestate_t oldgamestate = gamestate;
+	gamestate = GS_STARTUP;		// prevent console from trying to use nonexistant font
 
-	// [SL] 2012-12-06 - If we weren't provided with a new IWAD filename in
-	// new_resource_files, use the previous IWAD.
-	std::string iwad_filename, iwad_hash;
-	if ((new_resource_files.empty() || !W_IsIWAD(new_resource_files[0])) && (wadfiles.size() >= 2))
-	{
-		iwad_filename = wadfiles[1];
-		iwad_hash = wadhashes[1];
-	}
-	else if (!new_resource_files.empty())
-	{
-		iwad_provided = true;
-		iwad_filename = new_resource_files[0];
-		iwad_hash = hashcheck ? new_resource_hashes[0] : "";
-	}
+	size_t resource_file_count = resource_file_names.size();
 
-	wadfiles.clear();
-    patchfiles.clear();
+	// Require ODAMEX.WAD and an IWAD
+	if (resource_file_count < 2)
+		I_Error("Invalid resource file list: expected ODAMEX.WAD and an IWAD file.\n");
 
-	// add ODAMEX.WAD to wadfiles	
-	std::string odamex_filename = BaseFileSearch("odamex.wad");
-	if (odamex_filename.empty())
-		I_FatalError("Cannot find odamex.wad");
-	wadfiles.push_back(odamex_filename);
+	const std::string odamex_wad_filename = M_ExtractFileName(resource_file_names[0]);
+	if (!iequals(odamex_wad_filename, "ODAMEX.WAD"))
+		I_Error("Invalid resource file list: expected ODAMEX.WAD instead of %s\n", odamex_wad_filename.c_str());
 
-	// add the IWAD to wadfiles
-	std::string titlestring;
-	iwad_filename = D_CheckIWAD(iwad_filename);
-	if (iwad_filename.empty())
-		I_Error("Cannot find IWAD (try -waddir)");
+	std::string iwad_filename = resource_file_names[1], base_filename, full_filename;
+	if (D_VerifyFile(iwad_filename, base_filename, full_filename))
+		iwad_filename = full_filename;
+	else if (D_VerifyFile(M_AppendExtension(iwad_filename, ".WAD"), base_filename, full_filename))
+		iwad_filename = full_filename;
+	else
+		I_Error("Invalid resource file list: expected an IWAD file.\n");
 
-	wadfiles.push_back(iwad_filename);
+	if (!W_IsIWAD(iwad_filename))
+		I_Error("Invalid resource file list: expected an IWAD file instead of %s\n", iwad_filename.c_str());
 
-	// Now scan the contents of the IWAD to determine which one it is
+	// Now scan the contents of the IWAD to determine which one it is.
 	D_ConfigureGameInfo(iwad_filename);
 
-	// print info about the IWAD to the console
+	// Print info about the IWAD to the console.
 	D_PrintIWADIdentity();
 
-	// set the window title based on which IWAD we're using
+	// Set the window title based on which IWAD we're using.
 	I_SetTitleString(D_GetTitleString().c_str());
 
-	// check if the wad files exist and if they match the MD5SUM
-	std::string base_filename, full_filename;
-
-	if (!D_VerifyFile(iwad_filename, base_filename, full_filename, iwad_hash))
+	// Don't load PWADS with the shareware IWAD.
+	if (gameinfo.flags & GI_SHAREWARE && resource_file_count > 2)
 	{
-		Printf(PRINT_HIGH, "could not find resource file: %s\n", base_filename.c_str());
-		missingfiles.push_back(base_filename);
-		if (hashcheck)
-			missinghashes.push_back(iwad_hash);
+		Printf(PRINT_HIGH, "You cannot load additional resource files with the shareware version. Register!\n");
+		resource_file_count = 2;
 	}
 
-	for (size_t i = 0; i < new_resource_files.size(); i++)
+	// Load the resource files
+	for (size_t i = 0; i < resource_file_count; i++)
 	{
-		std::string hash = hashcheck ? new_resource_hashes[i] : "";
-
-		// already added the IWAD 
-		if (i == 0 && iwad_provided)
-			continue;
-
-		if (D_VerifyFile(new_resource_files[i], base_filename, full_filename, hash))
-			wadfiles.push_back(full_filename);
-		else
-		{
-			Printf(PRINT_HIGH, "could not find resource file: %s\n", base_filename.c_str());
-			missingfiles.push_back(base_filename);
-			if (hashcheck)
-				missinghashes.push_back(new_resource_hashes[i]);
-		}
+		std::string base_filename, full_filename;
+		if (D_VerifyFile(resource_file_names[i], base_filename, full_filename))
+			Res_OpenResourceFile(full_filename);
 	}
 
-	modifiedgame = (wadfiles.size() > 2);	// more than odamex.wad and IWAD?
-	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
-		I_Error("\nYou cannot load additional WADs with the shareware version. Register!");
 
-	Res_CloseAllResourceFiles();
-	wadhashes.clear();
-
-	for (size_t i = 0; i < wadfiles.size(); i++)
+	// TODO: delete this section once we're fully migrated to the ResourceFile system
 	{
-		Res_OpenResourceFile(wadfiles[i]);
-		wadhashes.push_back(W_MD5(wadfiles[i]));
+		std::vector<std::string> temp_resource_file_names;
+		for (size_t i = 0; i < resource_file_count; i++)
+			if (D_VerifyFile(resource_file_names[i], base_filename, full_filename))
+				temp_resource_file_names.push_back(full_filename);
+
+		W_InitMultipleFiles(temp_resource_file_names);
 	}
 
-	wadhashes = W_InitMultipleFiles(wadfiles);
+
 
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
@@ -973,15 +964,13 @@ void D_LoadResourceFiles(
 	size_t language_length = Res_GetLumpLength(language_res_id);
 	byte* language_data = new byte[language_length];
 	Res_ReadLump(language_res_id, language_data);
-
 	GStrings.LoadStrings(language_data, language_length, STRING_TABLE_SIZE, false);
 	GStrings.Compact();
-
 	delete [] language_data;
 
+	// Load all DeHackEd files
 	std::vector<ResourceId> dehacked_res_ids;
 	Res_QueryLumpName(dehacked_res_ids, "DEHACKED");
-
 	for (size_t i = 0; i < dehacked_res_ids.size(); i++)
 		D_LoadDehLump(dehacked_res_ids[i]);
 
@@ -989,73 +978,59 @@ void D_LoadResourceFiles(
 	if (gamemode == retail_chex)
 	{
 		bool chex_deh_loaded = false;
-		for (size_t i = 0; i < wadfiles.size(); i++)
-		{
-			std::string base_filename;
-			M_ExtractFileName(wadfiles[i], base_filename);
-			if (iequals(base_filename, "chex.deh"))
+		for (size_t i = 0; i < resource_file_count; i++)
+			if (iequals(M_ExtractFileName(resource_file_names[i]), "CHEX.DEH"))
 				chex_deh_loaded = true;
-		}
 	
 		if (!chex_deh_loaded)
-			Printf(PRINT_HIGH, "Warning: chex.deh not loaded, experience may differ from the original!\n");
+			Printf(PRINT_HIGH, "Warning: CHEX.DEH not loaded, experience may differ from the original!\n");
 	}
-}
-
-
-//
-// D_DoomWadReboot
-// [denis] change wads at runtime
-// Returns false if there are missing files and fills the missingfiles
-// vector
-//
-// [SL] passing an IWAD as newwadfiles[0] is now optional
-//
-bool D_DoomWadReboot(
-	const std::vector<std::string> &new_resource_files,
-	const std::vector<std::string> &new_resource_hashes)
-{
-	// already loaded these?
-	if (lastWadRebootSuccess &&	!wadhashes.empty() &&
-		new_resource_hashes == std::vector<std::string>(wadhashes.begin()+1, wadhashes.end()))
-	{
-		// fast track if files have not been changed // denis - todo - actually check the file timestamps
-		Printf(PRINT_HIGH, "Currently loaded resource file match server checksum\n\n");
-		return true;
-	}
-
-	lastWadRebootSuccess = false;
-
-	D_Shutdown();
-
-	gamestate_t oldgamestate = gamestate;
-	gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
-
-	// Load all the WAD and DEH/BEX files
-	D_LoadResourceFiles(new_resource_files, new_resource_hashes); 
 
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
-	D_Init();
-
 	// preserve state
-	lastWadRebootSuccess = missingfiles.empty();
-
-	gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
-
-	return missingfiles.empty();
+	gamestate = oldgamestate;
 }
 
+					
 
 //
 // D_AddResourceFileFromArgs
 //
 // Adds the full path of all the file names given on the command line
-// following the "-file" or "-deh" parameters.
+// following the "-iwad", "-file", or "-deh" parameters.
 //
-void D_AddResourceFilesFromArgs(std::vector<std::string>& filenames)
+void D_AddResourceFilesFromArgs(std::vector<std::string>& resource_file_names)
 {
+	std::string base_filename, full_filename;
+
+	resource_file_names.clear();
+
+	if (D_VerifyFile("ODAMEX.WAD", base_filename, full_filename))
+		resource_file_names.push_back(full_filename);
+	else
+		return;
+
+	std::string iwad_filename;
+
+	size_t i = Args.CheckParm("-iwad");
+	if (i > 0 && i < Args.NumArgs() - 1)
+	{
+		// Get IWAD file name
+		std::string filename(Args.GetArg(i + 1));
+		if (D_VerifyFile(filename, base_filename, full_filename))
+			iwad_filename = full_filename;
+		else if (D_VerifyFile(M_AppendExtension(filename, ".WAD"), base_filename, full_filename))
+			iwad_filename = full_filename;
+	}
+
+	iwad_filename = D_CheckIWAD(iwad_filename);
+	if (!iwad_filename.empty())
+		resource_file_names.push_back(iwad_filename);
+	else
+		return;
+
 	size_t arg_count = Args.NumArgs();
 
 	// [SL] the first parameter should be treated as a file name and
@@ -1072,19 +1047,96 @@ void D_AddResourceFilesFromArgs(std::vector<std::string>& filenames)
 		}
 		else if (is_filename)
 		{
-			std::string filename(arg_value), base_filename, full_filename;
+			std::string filename(arg_value);
 
 			if (D_VerifyFile(filename, base_filename, full_filename))
-				filenames.push_back(full_filename);
-			else if (D_VerifyFile(M_AppendExtension(filename, ".wad"), base_filename, full_filename))
-				filenames.push_back(full_filename);
-			else if (D_VerifyFile(M_AppendExtension(filename, ".deh"), base_filename, full_filename))
-				filenames.push_back(full_filename);
-			else if (D_VerifyFile(M_AppendExtension(filename, ".bex"), base_filename, full_filename))
-				filenames.push_back(full_filename);
-			else
-				Printf(PRINT_HIGH, "Unable to add resource file %s\n", filename.c_str());
+				resource_file_names.push_back(full_filename);
+			else if (D_VerifyFile(M_AppendExtension(filename, ".WAD"), base_filename, full_filename))
+				resource_file_names.push_back(full_filename);
+			else if (D_VerifyFile(M_AppendExtension(filename, ".DEH"), base_filename, full_filename))
+				resource_file_names.push_back(full_filename);
+			else if (D_VerifyFile(M_AppendExtension(filename, ".BEX"), base_filename, full_filename))
+				resource_file_names.push_back(full_filename);
 		}
+	}
+}
+
+
+//
+// D_AddResourceFilesFromString
+//
+// Parses a string of resource file names (separated by spaces) and
+// validates them.
+//
+// Note: if a file name does not include an extension, this will attempt to
+// find the file using .WAD, .DEH, or .BEX.
+//
+void D_AddResourceFilesFromString(std::vector<std::string>& resource_file_names, const std::string &str)
+{
+	resource_file_names.clear();
+
+	const char* data = str.c_str();
+
+	// this shouldn't ever happen
+	if (Res_GetResourceFileNames().size() < 2)
+		return;
+
+	for (size_t argv = 0; (data = ParseString2(data)); argv++)
+	{
+		std::string filename(com_token), base_filename, full_filename;
+
+		// ODAMEX.WAD wasn't specified so add it
+		if (resource_file_names.size() == 0 && 
+			!iequals(M_ExtractFileName(M_AppendExtension(filename, ".WAD")), "ODAMEX.WAD"))
+			resource_file_names.push_back(Res_GetResourceFileNames()[0]);
+
+		// No IWAD specified so use the currently loaded one.
+		if (resource_file_names.size() == 1 && !W_IsIWAD(M_AppendExtension(filename, ".WAD")))
+			resource_file_names.push_back(Res_GetResourceFileNames()[1]);
+
+		if (D_VerifyFile(filename, base_filename, full_filename))
+			resource_file_names.push_back(full_filename);
+		else if (D_VerifyFile(M_AppendExtension(filename, ".WAD"), base_filename, full_filename))
+			resource_file_names.push_back(full_filename);
+		else if (D_VerifyFile(M_AppendExtension(filename, ".DEH"), base_filename, full_filename))
+			resource_file_names.push_back(full_filename);
+		else if (D_VerifyFile(M_AppendExtension(filename, ".BEX"), base_filename, full_filename))
+			resource_file_names.push_back(full_filename);
+	}
+}
+
+
+//
+// D_ReloadResourceFiles
+//
+// Loads a new set of resource files if they are not currently loaded.
+//
+void D_ReloadResourceFiles(const std::vector<std::string>& new_resource_file_names)
+{
+	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+	bool reload = false;
+
+	if (new_resource_file_names.size() != resource_file_names.size())
+	{
+		reload = true;
+	}
+	else
+	{
+		for (size_t i = 0; i < new_resource_file_names.size(); i++)
+		{
+			if (!iequals(D_CleanseFileName(new_resource_file_names[i]), D_CleanseFileName(resource_file_names[i])))
+			{
+				reload = true;
+				break;
+			}
+		}
+	}
+
+	if (reload)
+	{
+		D_Shutdown();
+		D_LoadResourceFiles(new_resource_file_names);
+		D_Init();
 	}
 }
 

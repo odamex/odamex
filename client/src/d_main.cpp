@@ -364,6 +364,7 @@ void D_PageTicker (void)
 		D_AdvanceDemo ();
 }
 
+
 //
 // D_PageDrawer
 //
@@ -392,6 +393,7 @@ void D_PageDrawer()
 		page_surface->unlock();
 	}
 }
+
 
 //
 // D_AdvanceDemo
@@ -652,6 +654,9 @@ void D_Init()
 //
 void STACK_ARGS D_Shutdown()
 {
+	// [SL] stop any LMP demos that are currently playing
+	G_CheckDemoStatus();
+
 	if (gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
 
@@ -705,6 +710,8 @@ void STACK_ARGS D_Shutdown()
 
 	V_Close();
 
+	Res_CloseAllResourceFiles();
+
 	// reset the Zone memory manager
 	Z_Close();
 }
@@ -738,14 +745,11 @@ void D_DoomMain()
 	M_LoadDefaults();					// load before initing other systems
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
-	const char* iwad = Args.CheckValue("-iwad");
-	if (!iwad)
-		iwad = "";
+	std::vector<std::string> resource_file_names, missing_file_names;
+	D_AddResourceFilesFromArgs(resource_file_names);
+	D_VerifyResourceFiles(resource_file_names, std::vector<std::string>(), missing_file_names);
 
-	std::vector<std::string> new_resource_files;
-	new_resource_files.push_back(iwad);
-	D_AddResourceFilesFromArgs(new_resource_files);
-	D_LoadResourceFiles(new_resource_files);
+	D_LoadResourceFiles(resource_file_names);
 
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	atterm(I_ShutdownHardware);

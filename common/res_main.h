@@ -213,13 +213,13 @@ private:
 // ****************************************************************************
 
 void Res_OpenResourceFile(const OString& filename);
-
 void Res_CloseAllResourceFiles();
 
+const std::vector<std::string>& Res_GetResourceFileNames();
+const std::vector<std::string>& Res_GetResourceFileHashes();
+
 ResourceId Res_GetResourceId(const OString& lumpname, const OString& namespace_name = global_namespace_name);
-
 const OString& Res_GetLumpName(const ResourceId res_id);
-
 const OString& Res_GetResourceFileName(const ResourceId res_id);
 
 bool Res_CheckLump(const ResourceId res_id);

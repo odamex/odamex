@@ -37,10 +37,4 @@ int FindWadClusterInfo (int cluster);
 level_info_t *FindDefLevelInfo (char *mapname);
 cluster_info_t *FindDefClusterInfo (int cluster);
 
-bool G_LoadWad(	const std::vector<std::string> &new_resource_files,
-				const std::vector<std::string> &new_resource_hashes = std::vector<std::string>(),
-				const std::string &mapname = "");
-
-bool G_LoadWad(const std::string &str, const std::string &mapname = "");
-
 #endif // __C_LEVEL_H__

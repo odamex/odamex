@@ -330,6 +330,8 @@ void STACK_ARGS D_Shutdown()
 
 	R_ShutdownColormaps();
 
+	Res_CloseAllResourceFiles();
+
 	// reset the Zone memory manager
 	Z_Close();
 }

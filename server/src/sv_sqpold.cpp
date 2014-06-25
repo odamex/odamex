@@ -37,6 +37,7 @@
 #include "i_system.h"
 #include "md5.h"
 #include "p_ctf.h"
+#include "res_main.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
@@ -171,13 +172,15 @@ void SV_SendServerInfo()
 
 	MSG_WriteString(&ml_message, level.mapname);
 
-	size_t numwads = wadfiles.size();
-	if(numwads > 0xff)numwads = 0xff;
+	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
 
-	MSG_WriteByte(&ml_message, numwads - 1);
+	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
 
-	for (i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
+	MSG_WriteByte(&ml_message, resource_file_count - 1);
+
+	for (i = 1; i < resource_file_count; ++i)
+		MSG_WriteString(&ml_message, D_CleanseFileName(resource_file_names[i]).c_str());
 
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM));
 	MSG_WriteByte(&ml_message, sv_skill.asInt());
@@ -199,8 +202,8 @@ void SV_SendServerInfo()
 		}
 	}
 
-	for (i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, wadhashes[i].c_str());
+	for (i = 1; i < resource_file_count; ++i)
+		MSG_WriteString(&ml_message, resource_file_hashes[i].c_str());
 
 	MSG_WriteString(&ml_message, sv_website.cstring());
 
@@ -278,10 +281,9 @@ void SV_SendServerInfo()
     // GhostlyDeath -- Send Game Version info
     MSG_WriteLong(&ml_message, GAMEVER);
 
-    MSG_WriteByte(&ml_message, patchfiles.size());
-    
-    for (size_t i = 0; i < patchfiles.size(); ++i)
-        MSG_WriteString(&ml_message, D_CleanseFileName(patchfiles[i]).c_str());
+	// [SL] DEH/BEX patch file names used to be sent separately.
+	// Just write 0 now.
+	MSG_WriteByte(&ml_message, 0);
 
 	NET_SendPacket(ml_message, net_from);
 }

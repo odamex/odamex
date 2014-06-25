@@ -161,8 +161,12 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
-	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWad(str);
+	std::vector<std::string> resource_file_names;
+	D_AddResourceFilesFromString(resource_file_names, JoinStrings(VectorArgs(argc, argv), " "));
+	D_ReloadResourceFiles(resource_file_names);
+
+	G_DeferedInitNew(startmap);
+
 }
 END_COMMAND (wad)
 
@@ -220,7 +224,11 @@ void G_ChangeMap()
 		maplist_entry_t maplist_entry;
 		Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-		G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+		std::vector<std::string> resource_file_names;
+		D_AddResourceFilesFromString(resource_file_names, JoinStrings(maplist_entry.wads, " "));
+		D_ReloadResourceFiles(resource_file_names);
+
+		G_DeferedInitNew(maplist_entry.map);
 
 		// Set the new map as the current map
 		Maplist::instance().set_index(next_index);
@@ -245,7 +253,11 @@ void G_ChangeMap(size_t index)
 		return;
 	}
 
-	G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+	std::vector<std::string> resource_file_names;
+	D_AddResourceFilesFromString(resource_file_names, JoinStrings(maplist_entry.wads, " "));
+	D_ReloadResourceFiles(resource_file_names);
+
+	G_DeferedInitNew(maplist_entry.map);
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);
@@ -296,10 +308,10 @@ void G_DoNewGame (void)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if(!(it->ingame()))
+		if (!(it->ingame()))
 			continue;
 
-		SV_SendLoadMap(wadfiles, patchfiles, d_mapname.c_str(), &*it);
+		SV_SendLoadMap(Res_GetResourceFileNames(), Res_GetResourceFileHashes(), d_mapname, &*it);
 	}
 
 	sv_curmap.ForceSet(d_mapname.c_str());

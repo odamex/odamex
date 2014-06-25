@@ -38,13 +38,13 @@
 #include "st_stuff.h"
 #include "p_mobj.h"
 #include "c_level.h"
+#include "res_main.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
 
 extern std::string server_host;
 extern std::string digest;
-extern std::vector<std::string> wadfiles, wadhashes;
 
 argb_t CL_GetPlayerColor(player_t*);
 
@@ -999,24 +999,15 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, 0);				// sv_maxclients
 	MSG_WriteString	(netbuffer, level.mapname);
 
-	// names of all the wadfiles on the server	
-	size_t numwads = wadfiles.size();
-	if (numwads > 0xff)
-		numwads = 0xff;
-	MSG_WriteByte	(netbuffer, numwads - 1);
+	// names of all the resource files on the server	
+	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
 
-	for (size_t n = 1; n < numwads; n++)
-	{
-		std::string tmpname = wadfiles[n];
-		
-		// strip absolute paths, as they present a security risk
-		FixPathSeparator(tmpname);
-		size_t slash = tmpname.find_last_of(PATHSEPCHAR);
-		if (slash != std::string::npos)
-			tmpname = tmpname.substr(slash + 1, tmpname.length() - slash);
+	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
+	MSG_WriteByte	(netbuffer, resource_file_count - 1);
 
-		MSG_WriteString	(netbuffer, tmpname.c_str());
-	}
+	for (size_t i = 1; i < resource_file_count; i++)
+		MSG_WriteString(netbuffer, D_CleanseFileName(resource_file_names[i]).c_str());
 		
 	MSG_WriteBool	(netbuffer, 0);		// deathmatch?
 	MSG_WriteByte	(netbuffer, 0);		// sv_skill
@@ -1035,9 +1026,9 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 		}
 	}
 
-	// MD5 hash sums for all the wadfiles on the server
-	for (size_t n = 1; n < numwads; n++)
-		MSG_WriteString	(netbuffer, wadhashes[n].c_str());
+	// MD5 hash sums for all the resource files on the server
+	for (size_t i = 1; i < resource_file_count; i++)
+		MSG_WriteString(netbuffer, resource_file_hashes[i].c_str());
 
 	MSG_WriteString	(netbuffer, "");	// sv_website.cstring()
 
@@ -1103,12 +1094,9 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 
 	MSG_WriteLong	(netbuffer, GAMEVER);
 
-    // TODO: handle patch files
+	// [SL] DEH/BEX patch file names used to be sent separately.
+	// Just write 0 now.
 	MSG_WriteByte	(netbuffer, 0);  // patchfiles.size()
-//	MSG_WriteByte	(netbuffer, patchfiles.size());
-    
-//	for (size_t n = 0; n < patchfiles.size(); n++)
-//		MSG_WriteString(netbuffer, patchfiles[n].c_str());
 }
 
 
@@ -1165,21 +1153,22 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	// Server sends wads & map name
 	MSG_WriteMarker	(netbuffer, svc_loadmap);
 
-	// send list of wads (skip over wadnames[0] == odamex.wad)  
-	MSG_WriteByte(netbuffer, MIN<size_t>(wadfiles.size() - 1, 255));
-	for (size_t i = 1; i < MIN<size_t>(wadfiles.size(), 256); i++)
+	// send list of wads (skip over resource_file_names[0] == odamex.wad)  
+	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
+
+	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
+	MSG_WriteByte(netbuffer, resource_file_count - 1);
+
+	for (size_t i = 1; i < resource_file_count; i++)
 	{
-		MSG_WriteString(netbuffer, D_CleanseFileName(wadfiles[i], "wad").c_str());
-		MSG_WriteString(netbuffer, wadhashes[i].c_str());
+		MSG_WriteString(netbuffer, D_CleanseFileName(resource_file_names[i]).c_str());
+		MSG_WriteString(netbuffer, resource_file_hashes[i].c_str());
 	}
 
-    // send list of DEH/BEX patches
-    MSG_WriteByte(netbuffer, MIN<size_t>(patchfiles.size(), 255));
-    for (size_t i = 0; i < MIN<size_t>(patchfiles.size(), 255); i++)
-    {
-        MSG_WriteString(netbuffer, D_CleanseFileName(patchfiles[i]).c_str());
-        MSG_WriteString(netbuffer, patchfiles[i].c_str());
-    }
+	// [SL] DEH/BEX patch file names used to be stored separately.
+	// Just output zero now.
+    MSG_WriteByte(netbuffer, 0);
 
 	MSG_WriteString(netbuffer, level.mapname);
 
@@ -1484,10 +1473,13 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	arc.WriteCount(vars_p - vars);
 	arc.Write(vars, vars_p - vars);
 
-	// write wad info
-	arc << (byte)(wadfiles.size() - 1);
-	for (size_t i = 1; i < wadfiles.size(); i++)
-		arc << D_CleanseFileName(wadfiles[i]).c_str();
+	// write resource file info
+	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+
+	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
+	arc << (byte)(resource_file_count - 1);
+	for (size_t i = 1; i < resource_file_count; i++)
+		arc << D_CleanseFileName(resource_file_names[i]).c_str();
 
 	// [SL] DEH/BEX patch file names used to be stored separately.
 	// Just output zero now.
@@ -1568,16 +1560,14 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	arc.Read(vars, len);
 	cvar_t::C_ReadCVars(&vars_p);
 
-	// read wad info
-	std::vector<std::string> new_resource_files;
+	// read resource file info
+	std::vector<std::string> resource_file_names;
 	byte resource_file_count;
-	std::string str;
-
 	arc >> resource_file_count;
 	for (size_t i = 0; i < resource_file_count; i++)
 	{
-		arc >> str;
-		new_resource_files.push_back(D_CleanseFileName(str));
+		arc >> filename;
+		resource_file_names.push_back(filename);	
 	}
 
 	// [SL] DEH/BEX patch file names used to be saved separately.
@@ -1585,7 +1575,10 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	byte dummy;
 	arc >> dummy;
 	while (dummy--)
+	{
+		std::string str;
 		arc >> str;
+	}
 
 	std::string mapname;
 	bool intermission;
@@ -1618,9 +1611,18 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	savegamerestore = true;     // Use the player actors in the savegame
 	serverside = false;
 
-	G_LoadWad(new_resource_files);
+	// load the resource files
+	std::vector<std::string> empty_resource_file_hashes, missing_file_names;
+	D_VerifyResourceFiles(resource_file_names, empty_resource_file_hashes, missing_file_names); 
 
+	if (!missing_file_names.empty())
+		I_Error("Unable to locate resource files %s\n",  JoinStrings(resource_file_names, ", ").c_str());
+
+	D_LoadResourceFiles(resource_file_names);
+
+	// load the map
 	G_InitNew(mapname.c_str());
+
 	displayplayer_id = consoleplayer_id = 1;
 	savegamerestore = false;
 

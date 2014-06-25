@@ -1009,36 +1009,44 @@ void M_StartGame(int choice)
 	sv_skill.Set ((float)(choice+1));
 	sv_gametype = GM_COOP;
 
-    if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
-    {
-        std::string str = "nerve.wad";
+	if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
+	{
+		const std::string str("NERVE.WAD");
+		if (epi)
+		{
+			// Load No Rest for The Living Externally
+			epi = 0;
 
-        if (epi)
-        {
-            // Load No Rest for The Living Externally
-            epi = 0;
-            G_LoadWad(str);
-        }
-        else
-        {
-            // Check for nerve.wad, if it's loaded re-load with just iwad (DOOM 2 BFG)
-            for (unsigned int i = 2; i < wadfiles.size(); i++)
+			std::vector<std::string> new_resource_file_names;
+			D_AddResourceFilesFromString(new_resource_file_names, str);
+			D_LoadResourceFiles(new_resource_file_names);
+
+			G_DeferedInitNew(startmap);
+		}
+		else
+		{
+			// Check for nerve.wad, if it's loaded re-load with just iwad (DOOM 2 BFG)
+			const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+
+			for (size_t i = 2; i < resource_file_names.size(); i++)
             {
-                if (iequals(str, M_ExtractFileName(wadfiles[i])))
-                {
-                    G_LoadWad(wadfiles[1]);
-                }
+				if (iequals(str, M_ExtractFileName(resource_file_names[i])))
+				{
+					std::vector<std::string> new_resource_file_names;
+					D_AddResourceFilesFromString(new_resource_file_names, resource_file_names[1]);
+					D_LoadResourceFiles(new_resource_file_names);
+				}
             }
 
-            G_DeferedInitNew (CalcMapName (epi+1, 1));
-        }
-    }
-    else
-    {
-        G_DeferedInitNew (CalcMapName (epi+1, 1));
-    }
+			G_DeferedInitNew(CalcMapName(epi + 1, 1));
+		}
+	}
+	else
+	{
+		G_DeferedInitNew(CalcMapName(epi + 1, 1));
+	}
 
-    M_ClearMenus ();
+	M_ClearMenus();
 }
 
 void M_ChooseSkill(int choice)
