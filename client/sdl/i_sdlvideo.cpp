@@ -492,16 +492,24 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
 	#endif
 
-	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
-	// This interferes with RawWin32Mouse's input handlers so we need to
-	// disable them prior to reinitalizing DirectInput...
-	I_PauseMouse();
+	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
 
-	SDL_Surface* sdlsurface = SDL_SetVideoMode(video_width, video_height, video_bpp, flags);
+	// [SL] Set the video mode if it is different than the current mode
+	if (sdlsurface == NULL || sdlsurface->w != video_width || sdlsurface->h != video_height ||
+		sdlsurface->format->BitsPerPixel != video_bpp ||
+		((sdlsurface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN) != video_fullscreen)
+	{
+		// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
+		// This interferes with RawWin32Mouse's input handlers so we need to
+		// disable them prior to reinitalizing DirectInput...
+		I_PauseMouse();
 
-	// [SL] ...and re-enable RawWin32Mouse's input handlers after
-	// DirectInput is reinitalized.
-	I_ResumeMouse();
+		sdlsurface = SDL_SetVideoMode(video_width, video_height, video_bpp, flags);
+
+		// [SL] ...and re-enable RawWin32Mouse's input handlers after
+		// DirectInput is reinitalized.
+		I_ResumeMouse();
+	}
 
 	if (sdlsurface == NULL)
 		return false;
