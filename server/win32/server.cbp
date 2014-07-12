@@ -17,6 +17,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-m32" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -26,12 +27,16 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-m32" />
 					<Add library="..\..\lib\libminiupnpc.a" />
 					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="iphlpapi" />
 					<Add directory="../../lib" />
 				</Linker>
+				<Environment>
+					<Variable name="RCFLAGS" value="windres.exe -F pe-i386" />
+				</Environment>
 			</Target>
 			<Target title="Win Debug (GCC)">
 				<Option platforms="Windows;" />
@@ -47,6 +52,7 @@
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fno-inline" />
+					<Add option="-m32" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -56,12 +62,16 @@
 					<Add directory="../../libraries/libminiupnpc" />
 				</Compiler>
 				<Linker>
+					<Add option="-m32" />
 					<Add library="..\..\lib\libminiupnpc-dbg.a" />
 					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="iphlpapi" />
 					<Add directory="../../lib" />
 				</Linker>
+				<Environment>
+					<Variable name="RCFLAGS" value="windres.exe -F pe-i386" />
+				</Environment>
 			</Target>
 			<Target title="Win Release (VC)">
 				<Option platforms="Windows;" />
@@ -192,6 +202,70 @@
 				<ExtraCommands>
 					<Add after="mt -nologo -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);#1" />
 				</ExtraCommands>
+			</Target>
+			<Target title="Win Release (GCC64)">
+				<Option platforms="Windows;" />
+				<Option output="../../odasrv.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/server/gcc64/release/" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-DNDEBUG" />
+					<Add option="-DSERVER_APP" />
+					<Add option="-DODA_HAVE_MINIUPNP" />
+					<Add directory="../../libraries/libminiupnpc" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="..\..\lib\libminiupnpc64.a" />
+					<Add library="winmm" />
+					<Add library="ws2_32" />
+					<Add library="iphlpapi" />
+					<Add directory="../../lib" />
+				</Linker>
+				<Environment>
+					<Variable name="RCFLAGS" value="windres.exe" />
+				</Environment>
+			</Target>
+			<Target title="Win Debug (GCC64)">
+				<Option platforms="Windows;" />
+				<Option output="../../odasrv-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/server/gcc64/debug/" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_DEBUG" />
+					<Add option="-DODAMEX_DEBUG" />
+					<Add option="-DSERVER_APP" />
+					<Add option="-DODA_HAVE_MINIUPNP" />
+					<Add directory="../../libraries/libminiupnpc" />
+				</Compiler>
+				<Linker>
+					<Add library="..\..\lib\libminiupnpc-dbg64.a" />
+					<Add library="winmm" />
+					<Add library="ws2_32" />
+					<Add library="iphlpapi" />
+					<Add directory="../../lib" />
+				</Linker>
+				<Environment>
+					<Variable name="RCFLAGS" value="windres.exe" />
+				</Environment>
 			</Target>
 		</Build>
 		<VirtualTargets>
@@ -427,6 +501,7 @@
 		<Unit filename="resource.h" />
 		<Unit filename="server.rc">
 			<Option compilerVar="WINDRES" />
+			<Option compiler="gcc" use="1" buildCommand="$rcflags $res_includes -J rc -O coff -i $file -o $resource_output" />
 		</Unit>
 		<Extensions>
 			<code_completion />
