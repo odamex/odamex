@@ -1662,6 +1662,8 @@ void SV_ClientFullUpdate(player_t &pl)
 		}
 	}
 
+	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
+
 	SV_SendPacket(pl);
 }
 
@@ -1910,7 +1912,8 @@ void SV_ConnectClient()
 		return;
 	}
 
-	client_t* cl = &(it->client);
+	player_t* player = &(*it);
+	client_t* cl = &(player->client);
 
 	// clear client network info
 	cl->address = net_from;
@@ -1928,7 +1931,7 @@ void SV_ConnectClient()
 	cl->digest = MD5SUM(ss.str());
 
 	// Set player time
-	it->JoinTime = time(NULL);
+	player->JoinTime = time(NULL);
 
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
@@ -1947,11 +1950,11 @@ void SV_ConnectClient()
 
 	// [SL] 2011-05-11 - Register the player with the reconciliation system
 	// for unlagging
-	Unlag::getInstance().registerPlayer(it->id);
+	Unlag::getInstance().registerPlayer(player->id);
 
 	if (!SV_CheckClientVersion(cl, it))
 	{
-		SV_DropClient(*it);
+		SV_DropClient(*player);
 		return;
 	}
 
@@ -1959,11 +1962,11 @@ void SV_ConnectClient()
 	clc_t userinfo = (clc_t)MSG_ReadByte();
 	if (userinfo != clc_userinfo)
 	{
-		SV_InvalidateClient(*it, "Client didn't send any userinfo");
+		SV_InvalidateClient(*player, "Client didn't send any userinfo");
 		return;
 	}
 
-	if (!SV_SetupUserInfo(*it))
+	if (!SV_SetupUserInfo(*player))
 		return;
 
 	// get rate value
@@ -1972,7 +1975,7 @@ void SV_ConnectClient()
 	if (SV_BanCheck(cl))
 	{
 		cl->displaydisconnect = false;
-		SV_DropClient(*it);
+		SV_DropClient(*player);
 		return;
 	}
 
@@ -1985,19 +1988,19 @@ void SV_ConnectClient()
 		MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
 		MSG_WriteString(&cl->reliablebuf, "Server is passworded, no password specified or bad password\n");
 
-		SV_SendPacket(*it);
-		SV_DropClient(*it);
+		SV_SendPacket(*player);
+		SV_DropClient(*player);
 		return;
 	}
 
 	// send consoleplayer number
 	MSG_WriteMarker(&cl->reliablebuf, svc_consoleplayer);
-	MSG_WriteByte(&cl->reliablebuf, it->id);
+	MSG_WriteByte(&cl->reliablebuf, player->id);
 	MSG_WriteString(&cl->reliablebuf, cl->digest.c_str());
-	SV_SendPacket(*it);
+	SV_SendPacket(*player);
 
 	// [Toke] send server settings
-	SV_SendServerSettings(*it);
+	SV_SendServerSettings(*player);
 
 	cl->displaydisconnect = true;
 
@@ -2006,18 +2009,18 @@ void SV_ConnectClient()
 	{
 		if (sv_waddownload)
 		{
-			it->playerstate = PST_DOWNLOAD;
-			SV_BroadcastUserInfo(*it);
-			SV_BroadcastPrintf(PRINT_HIGH, "%s has connected. (downloading)\n", it->userinfo.netname.c_str());
+			player->playerstate = PST_DOWNLOAD;
+			SV_BroadcastUserInfo(*player);
+			SV_BroadcastPrintf(PRINT_HIGH, "%s has connected. (downloading)\n", player->userinfo.netname.c_str());
 
 			// send the client the scores and list of other clients
-			SV_ClientFullUpdate(*it);
+			SV_ClientFullUpdate(*player);
 
 			for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 			{
 				// [SL] 2011-07-30 - clients should consider downloaders as spectators
 				MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
-				MSG_WriteByte(&pit->client.reliablebuf, it->id);
+				MSG_WriteByte(&pit->client.reliablebuf, player->id);
 				MSG_WriteByte(&pit->client.reliablebuf, true);
 			}
 		}
@@ -2027,61 +2030,58 @@ void SV_ConnectClient()
 			// bother telling anyone else
 			cl->displaydisconnect = false;
 
-			Printf(PRINT_HIGH, "%s has connected. (downloading)\n", it->userinfo.netname.c_str());
+			Printf(PRINT_HIGH, "%s has connected. (downloading)\n", player->userinfo.netname.c_str());
 
 			MSG_WriteMarker(&cl->reliablebuf, svc_print);
 			MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
 			MSG_WriteString(&cl->reliablebuf, "Server: Downloading is disabled.\n");
 
-			SV_DropClient(*it);
+			SV_DropClient(*player);
 
-			Printf(PRINT_HIGH, "%s disconnected. Downloading is disabled.\n", it->userinfo.netname.c_str());
+			Printf(PRINT_HIGH, "%s disconnected. Downloading is disabled.\n", player->userinfo.netname.c_str());
 		}
 
 		return;
 	}
 
-	SV_BroadcastUserInfo(*it);
-	it->playerstate = PST_REBORN;
+	SV_BroadcastUserInfo(*player);
+	player->playerstate = PST_REBORN;
 
-	it->fragcount = 0;
-	it->killcount = 0;
-	it->points = 0;
+	player->fragcount = 0;
+	player->killcount = 0;
+	player->points = 0;
 
 	if (!step_mode)
 	{
-		it->spectator = true;
+		player->spectator = true;
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 		{
-			MSG_WriteMarker(&(pit->client.reliablebuf), svc_spectate);
-			MSG_WriteByte(&(pit->client.reliablebuf), it->id);
-			MSG_WriteByte(&(pit->client.reliablebuf), true);
+			MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
+			MSG_WriteByte(&pit->client.reliablebuf, player->id);
+			MSG_WriteByte(&pit->client.reliablebuf, true);
 		}
 	}
 
 	// send a map name
-	SV_SendLoadMap(wadfiles, patchfiles, level.mapname, &*it);
+	SV_SendLoadMap(wadfiles, patchfiles, level.mapname, player);
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
 		MSG_WriteMarker(&cl->reliablebuf, svc_exitlevel);
 
-	G_DoReborn(*it);
-	SV_ClientFullUpdate(*it);
+	G_DoReborn(*player);
+	SV_ClientFullUpdate(*player);
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
-	SV_SendPacket(*it);
-
-	SV_BroadcastPrintf(PRINT_HIGH, "%s has connected.\n", it->userinfo.netname.c_str());
+	SV_BroadcastPrintf(PRINT_HIGH, "%s has connected.\n", player->userinfo.netname.c_str());
 
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 	{
 		MSG_WriteMarker(&pit->client.reliablebuf, svc_connectclient);
-		MSG_WriteByte(&pit->client.reliablebuf, it->id);
+		MSG_WriteByte(&pit->client.reliablebuf, player->id);
 	}
 
-	SV_MidPrint((char *)sv_motd.cstring(), (player_t *)&*it, 6);
+	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
 }
 
 extern bool singleplayerjustdied;
