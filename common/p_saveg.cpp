@@ -119,10 +119,21 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec->gravity
 				<< sec->damage
 				<< sec->mod
-				<< sec->colormap->color
-				<< sec->colormap->fade
-				<< sec->colormap->color		// [SL] TODO: remove in the future
-				<< sec->colormap->fade		// (removal breaks netdemo/saved game compat)
+
+				<< sec->colormap->color.geta() << sec->colormap->color.getr()
+				<< sec->colormap->color.getg() << sec->colormap->color.getb()
+				<< sec->colormap->fade.geta() << sec->colormap->fade.getr()
+				<< sec->colormap->fade.getg() << sec->colormap->fade.getb()
+
+				// [SL] TODO: Remove the extra set of light and fade color serialization.
+				// These are left over from when Odamex had separate colormaps for a sector's
+				// floor and ceiling. Now a sector only has one colormap but we keep these
+				// here for now for netdemo compatibility.
+				<< sec->colormap->color.geta() << sec->colormap->color.getr()
+				<< sec->colormap->color.getg() << sec->colormap->color.getb()
+				<< sec->colormap->fade.geta() << sec->colormap->fade.getr()
+				<< sec->colormap->fade.getg() << sec->colormap->fade.getb()
+
 				<< sec->alwaysfake
 				<< sec->waterzone
 				<< sec->SecActTarget
@@ -199,16 +210,24 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec->damage
 				>> sec->mod;
 
-			unsigned int colortemp, fadetemp;
-			argb_t color, fade;
+			byte color_values[4];
+			argb_t lightcolor, fadecolor;
 
-			arc >> colortemp >> fadetemp;
-			color = colortemp, fade = fadetemp;
-			sec->colormap = GetSpecialLights(color.getr(), color.getg(), color.getb(),
-											fade.getr(), fade.getg(), fade.getb());
+			arc >> color_values[0] >> color_values[1] >> color_values[2] >> color_values[3];
+			lightcolor = argb_t(color_values[0], color_values[1], color_values[2], color_values[3]);
 
-			// [SL] TODO: remove later
-			arc >> colortemp >> fadetemp;
+			arc >> color_values[0] >> color_values[1] >> color_values[2] >> color_values[3];
+			fadecolor = argb_t(color_values[0], color_values[1], color_values[2], color_values[3]);
+
+			sec->colormap = GetSpecialLights(lightcolor.getr(), lightcolor.getg(), lightcolor.getb(),
+											fadecolor.getr(), fadecolor.getg(), fadecolor.getb());
+
+			// [SL] TODO: Remove the extra set of light and fade color deserialization.
+			// These are left over from when Odamex had separate colormaps for a sector's
+			// floor and ceiling. Now a sector only has one colormap but we keep these
+			// here for now for netdemo compatibility.
+			arc >> color_values[0] >> color_values[1] >> color_values[2] >> color_values[3];
+			arc >> color_values[0] >> color_values[1] >> color_values[2] >> color_values[3];
 
 			arc >> sec->alwaysfake
 				>> sec->waterzone
