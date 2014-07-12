@@ -33,7 +33,7 @@
 #include "m_ostring.h"
 #include "hashtable.h"
 
-typedef unsigned int texhandle_t;
+typedef unsigned int TextureId;
 
 class Texture;
 class TextureManager;
@@ -79,8 +79,8 @@ public:
 	static const unsigned int MAX_TEXTURE_WIDTH			= 2048;
 	static const unsigned int MAX_TEXTURE_HEIGHT		= 2048;
 
-	texhandle_t getHandle() const
-	{	return mHandle;	}
+	TextureId getTextureId() const
+	{	return mTextureId;	}
 
 	byte* getData() const
 	{	return mData;	}
@@ -126,7 +126,7 @@ private:
 	static size_t calculateSize(int width, int height);
 	void init(int width, int height);
 
-	texhandle_t			mHandle;
+	TextureId			mTextureId;
 
 	fixed_t				mScaleX;
 	fixed_t				mScaleY;
@@ -160,19 +160,19 @@ private:
 // format graphic lumps to be used interchangeably, for example, allowing
 // flats to be used as wall textures.
 //
-// A handle to a texture is retrieved by calling getHandle() with the name
-// of the texture and a texture source type. The name can be either the name
-// of a lump in the WAD (in the case of a flat, sprite, or patch) or it can
-// be the name of an entry in one of the TEXTURE* lumps. The texture source
-// type parameter is used to indicate where to initially search for the
+// A TextureId for a texture is retrieved by calling getTextureId() with the
+// name of the texture and a texture source type. The name can be either the
+// name of a lump in resource file (in the case of a flat, sprite, or patch)
+// or it can be the name of an entry in one of the TEXTURE* lumps. The texture
+// source type parameter is used to indicate where to initially search for the
 // texture. For example, if the type is TEX_WALLTEXTURE, the TEXTURE* lumps
 // will be searched for a matching name first, followed by flats, patches,
 // and sprites.
 //
-// A pointer to a Texture object can be retrieved by passing a texture
-// handle to getTexture(). The allocation and freeing of Texture objects is
+// A pointer to a Texture object can be retrieved by passing a TextureId
+// to getTexture(). The allocation and freeing of Texture objects is
 // managed internally by TextureManager and as such, users should not store
-// Texture pointers but instead store the texture handle and use getTexture
+// Texture pointers but instead store the TextureId and use getTexture()
 // when a Texture object is needed.
 //
 // TODO: properly load Heretic skies where the texture definition reports
@@ -193,29 +193,28 @@ public:
 
 	void updateAnimatedTextures();
 
-	texhandle_t getHandle(const char* name, Texture::TextureSourceType type);
-	texhandle_t getHandle(const OString& name, Texture::TextureSourceType type);
-	texhandle_t getHandle(unsigned int lumpnum, Texture::TextureSourceType type);
-	const Texture* getTexture(texhandle_t handle);
+	TextureId getTextureId(const char* name, Texture::TextureSourceType type);
+	TextureId getTextureId(const OString& name, Texture::TextureSourceType type);
+	const Texture* getTexture(const TextureId tex_id);
 
-	Texture* createTexture(texhandle_t handle, int width, int height);
-	void freeTexture(texhandle_t handle);
+	Texture* createTexture(const TextureId tex_id, int width, int height);
+	void freeTexture(const TextureId tex_id);
 
-	texhandle_t createCustomHandle();
-	void freeCustomHandle(texhandle_t texhandle);
+	TextureId createCustomTextureId();
+	void freeCustomTextureId(const TextureId tex_id);
 
-	static const texhandle_t NO_TEXTURE_HANDLE			= 0x0;
-	static const texhandle_t NOT_FOUND_TEXTURE_HANDLE	= 0x1;
-	static const texhandle_t GARBAGE_TEXTURE_HANDLE;
+	static const TextureId NO_TEXTURE_ID			= 0x0;
+	static const TextureId NOT_FOUND_TEXTURE_ID		= 0x1;
+	static const TextureId GARBAGE_TEXTURE_ID;
 
 private:
-	static const unsigned int FLAT_HANDLE_MASK			= 0x00010000ul;
-	static const unsigned int PATCH_HANDLE_MASK			= 0x00020000ul;
-	static const unsigned int SPRITE_HANDLE_MASK		= 0x00040000ul;
-	static const unsigned int WALLTEXTURE_HANDLE_MASK	= 0x00080000ul;
-	static const unsigned int RAW_HANDLE_MASK			= 0x000A0000ul;
-	static const unsigned int PNG_HANDLE_MASK			= 0x00100000ul;
-	static const unsigned int CUSTOM_HANDLE_MASK		= 0x01000000ul;
+	static const unsigned int FLAT_TEXTURE_ID_MASK		= 0x00010000ul;
+	static const unsigned int PATCH_TEXTURE_ID_MASK		= 0x00020000ul;
+	static const unsigned int SPRITE_TEXTURE_ID_MASK	= 0x00040000ul;
+	static const unsigned int WALLTEXTURE_ID_MASK		= 0x00080000ul;
+	static const unsigned int RAW_TEXTURE_ID_MASK		= 0x000A0000ul;
+	static const unsigned int PNG_TEXTURE_ID_MASK		= 0x00100000ul;
+	static const unsigned int CUSTOM_TEXTURE_ID_MASK	= 0x01000000ul;
 
 	// initialization routines
 	void clear();
@@ -226,39 +225,39 @@ private:
 	void readAnimatedLump();
 
 	// patches
-	texhandle_t getPatchHandle(unsigned int lumpnum);
-	texhandle_t getPatchHandle(const OString& name);
-	void cachePatch(texhandle_t handle);
+	TextureId getPatchTextureId(unsigned int lumpnum);
+	TextureId getPatchTextureId(const OString& name);
+	void cachePatch(TextureId tex_id);
 
 	// sprites
-	texhandle_t getSpriteHandle(unsigned int lumpnum);
-	texhandle_t getSpriteHandle(const OString& name);
-	void cacheSprite(texhandle_t handle);
+	TextureId getSpriteTextureId(unsigned int lumpnum);
+	TextureId getSpriteTextureId(const OString& name);
+	void cacheSprite(TextureId tex_id);
 
 	// flats
-	texhandle_t getFlatHandle(unsigned int lumpnum);
-	texhandle_t getFlatHandle(const OString& name);
-	void cacheFlat(texhandle_t handle);
+	TextureId getFlatTextureId(unsigned int lumpnum);
+	TextureId getFlatTextureId(const OString& name);
+	void cacheFlat(TextureId tex_id);
 
 	// wall textures
-	texhandle_t getWallTextureHandle(unsigned int lumpnum);
-	texhandle_t getWallTextureHandle(const OString& name);
-	void cacheWallTexture(texhandle_t handle);
+	TextureId getWallTextureTextureId(unsigned int lumpnum);
+	TextureId getWallTextureTextureId(const OString& name);
+	void cacheWallTexture(TextureId tex_id);
 
 	// raw images
-	texhandle_t getRawTextureHandle(unsigned int lumpnum);
-	texhandle_t getRawTextureHandle(const OString& name);
-	void cacheRawTexture(texhandle_t handle);
+	TextureId getRawTextureTextureId(unsigned int lumpnum);
+	TextureId getRawTextureTextureId(const OString& name);
+	void cacheRawTexture(TextureId tex_id);
 
 	// PNG images
-	texhandle_t getPNGTextureHandle(unsigned int lumpnum);
-	texhandle_t getPNGTextureHandle(const OString& name);
-	void cachePNGTexture(texhandle_t handle);
+	TextureId getPNGTextureTextureId(unsigned int lumpnum);
+	TextureId getPNGTextureTextureId(const OString& name);
+	void cachePNGTexture(TextureId tex_id);
 
-	// maps texture handles to Texture*
-	typedef OHashTable<texhandle_t, Texture*> HandleMap;
-	typedef std::pair<texhandle_t, Texture*> HandleMapPair;
-	HandleMap					mHandleMap;
+	// maps texture tex_ids to Texture*
+	typedef OHashTable<TextureId, Texture*> TextureIdMap;
+	typedef std::pair<TextureId, Texture*> TextureIdMapPair;
+	TextureIdMap					mTextureIdMap;
 
 	// lookup table to translate flatnum to mTextures index
 	unsigned int				mFirstFlatLumpNum;
@@ -290,23 +289,23 @@ private:
 	typedef OHashTable<OString, unsigned int> TextureNameTranslationMap;
 	TextureNameTranslationMap	mTextureNameTranslationMap;
 
-	// handle management for the creation of new handles
-	static const unsigned int MAX_CUSTOM_HANDLES = 1024;
-	unsigned int				mFreeCustomHandlesHead;
-	unsigned int				mFreeCustomHandlesTail;
-	texhandle_t					mFreeCustomHandles[MAX_CUSTOM_HANDLES];
+	// management for the creation of new TextureIds
+	static const unsigned int MAX_CUSTOM_TEXTURE_IDS = 1024;
+	unsigned int				mFreeCustomTextureIdsHead;
+	unsigned int				mFreeCustomTextureIdsTail;
+	TextureId					mFreeCustomTextureIds[MAX_CUSTOM_TEXTURE_IDS];
 
 	// animated textures
 	struct anim_t
 	{
 		static const unsigned int MAX_ANIM_FRAMES = 32;
-		texhandle_t		basepic;
+		TextureId		basepic;
 		short			numframes;
 		byte			countdown;
 		byte			curframe;
 		byte 			speedmin[MAX_ANIM_FRAMES];
 		byte			speedmax[MAX_ANIM_FRAMES];
-		texhandle_t		framepic[MAX_ANIM_FRAMES];
+		TextureId		framepic[MAX_ANIM_FRAMES];
 	};
 
 	std::vector<anim_t>			mAnimDefs;

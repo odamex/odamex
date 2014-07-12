@@ -121,7 +121,7 @@ static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lumpdata, int
 			int posttopdelta = *(post + 0);
 			int postlength = *(post + 1);
 
-			// handle DeePsea tall patches where topdelta is treated as a relative
+			// tex_id DeePsea tall patches where topdelta is treated as a relative
 			// offset instead of an absolute offset
 			if (posttopdelta <= abstopdelta)
 				abstopdelta += posttopdelta;
@@ -231,8 +231,8 @@ void Res_TransposeImage(byte* dest, const byte* source, int width, int height)
 //
 const Texture* Res_LoadTexture(const char* name)
 {
-	texhandle_t texhandle = texturemanager.getHandle(name, Texture::TEX_PATCH);
-	return texturemanager.getTexture(texhandle);
+	TextureId tex_id = texturemanager.getTextureId(name, Texture::TEX_PATCH);
+	return texturemanager.getTexture(tex_id);
 }
 
 
@@ -327,7 +327,7 @@ static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture
 // ============================================================================
 
 Texture::Texture() :
-	mHandle(TextureManager::NO_TEXTURE_HANDLE)
+	mTextureId(TextureManager::NO_TEXTURE_ID)
 {
 	init(0, 0);
 }
@@ -380,15 +380,15 @@ void Texture::init(int width, int height)
 //
 // ============================================================================
 
-// define GARBAGE_TEXTURE_HANDLE to be the first wall texture (AASTINKY)
-const texhandle_t TextureManager::GARBAGE_TEXTURE_HANDLE = TextureManager::WALLTEXTURE_HANDLE_MASK;
+// define GARBAGE_TEXTURE_ID to be the first wall texture (AASTINKY)
+const TextureId TextureManager::GARBAGE_TEXTURE_ID = TextureManager::WALLTEXTURE_ID_MASK;
 
 TextureManager::TextureManager() :
-	mHandleMap(2048),
+	mTextureIdMap(2048),
 	mPNameLookup(NULL),
 	mTextureNameTranslationMap(512),
-	mFreeCustomHandlesHead(0),
-	mFreeCustomHandlesTail(TextureManager::MAX_CUSTOM_HANDLES)
+	mFreeCustomTextureIdsHead(0),
+	mFreeCustomTextureIdsTail(TextureManager::MAX_CUSTOM_TEXTURE_IDS)
 {
 }
 
@@ -407,17 +407,17 @@ TextureManager::~TextureManager()
 void TextureManager::clear()
 {
 	// free normal textures
-	for (HandleMap::iterator it = mHandleMap.begin(); it != mHandleMap.end(); ++it)
+	for (TextureIdMap::iterator it = mTextureIdMap.begin(); it != mTextureIdMap.end(); ++it)
 		if (it->second)
 			Z_Free((void*)it->second);
 
-	mHandleMap.clear();
+	mTextureIdMap.clear();
 
-	// free all custom texture handles
-	mFreeCustomHandlesHead = 0;
-	mFreeCustomHandlesTail = TextureManager::MAX_CUSTOM_HANDLES - 1;
-	for (unsigned int i = mFreeCustomHandlesHead; i <= mFreeCustomHandlesTail; i++)
-		mFreeCustomHandles[i] = CUSTOM_HANDLE_MASK | i;
+	// free all custom texture tex_ids
+	mFreeCustomTextureIdsHead = 0;
+	mFreeCustomTextureIdsTail = TextureManager::MAX_CUSTOM_TEXTURE_IDS - 1;
+	for (unsigned int i = mFreeCustomTextureIdsHead; i <= mFreeCustomTextureIdsTail; i++)
+		mFreeCustomTextureIds[i] = CUSTOM_TEXTURE_ID_MASK | i;
 
 	delete [] mPNameLookup;
 	mPNameLookup = NULL;
@@ -430,7 +430,7 @@ void TextureManager::clear()
 
 	mAnimDefs.clear();
 
-	// free warping original texture (not stored in mHandleMap)
+	// free warping original texture (not stored in mTextureIdMap)
 	for (size_t i = 0; i < mWarpDefs.size(); i++)
 		if (mWarpDefs[i].original_texture)
 			Z_Free((void*)mWarpDefs[i].original_texture);
@@ -503,8 +503,8 @@ void TextureManager::precache()
 	// precache all the floor/ceiling textures
 	for (int i = 0; i < numsectors; i++)
 	{
-		getTexture(sectors[i].ceiling_texhandle);
-		getTexture(sectors[i].floor_texhandle);
+		getTexture(sectors[i].ceiling_tex_id);
+		getTexture(sectors[i].floor_tex_id);
 	}
 #endif
 }
@@ -570,7 +570,7 @@ void TextureManager::readAnimDefLump()
 					texture_type = Texture::TEX_FLAT;
 
 				SC_MustGetString();
-				anim.basepic = texturemanager.getHandle(sc_String, texture_type);
+				anim.basepic = texturemanager.getTextureId(sc_String, texture_type);
 
 				anim.curframe = 0;
 				anim.numframes = 0;
@@ -621,8 +621,8 @@ void TextureManager::readAnimDefLump()
 
 				anim.countdown = anim.speedmin[0];
 
-				if (anim.basepic != TextureManager::NOT_FOUND_TEXTURE_HANDLE &&
-					anim.basepic != TextureManager::NO_TEXTURE_HANDLE)
+				if (anim.basepic != TextureManager::NOT_FOUND_TEXTURE_ID &&
+					anim.basepic != TextureManager::NO_TEXTURE_ID)
 					mAnimDefs.push_back(anim);
 			}
 			else if (SC_Compare ("switch"))   // Don't support switchdef yet...
@@ -642,21 +642,21 @@ void TextureManager::readAnimDefLump()
 
 					SC_MustGetString();
 
-					texhandle_t texhandle = texturemanager.getHandle(sc_String, texture_type);
-					if (texhandle == TextureManager::NOT_FOUND_TEXTURE_HANDLE ||
-						texhandle == TextureManager::NO_TEXTURE_HANDLE)
+					TextureId tex_id = texturemanager.getTextureId(sc_String, texture_type);
+					if (tex_id == TextureManager::NOT_FOUND_TEXTURE_ID ||
+						tex_id == TextureManager::NO_TEXTURE_ID)
 						continue;
 
 					warp_t warp;
 
 					// backup the original texture
-					warp.original_texture = getTexture(texhandle);
+					warp.original_texture = getTexture(tex_id);
 
 					int width = 1 << warp.original_texture->getWidthBits();
 					int height = 1 << warp.original_texture->getHeightBits();
 
 					// create a new texture of the same size for the warped image
-					warp.warped_texture = createTexture(texhandle, width, height);
+					warp.warped_texture = createTexture(tex_id, width, height);
 
 					mWarpDefs.push_back(warp);
 				}
@@ -720,19 +720,19 @@ void TextureManager::readAnimatedLump()
 		const char* startname = (const char*)(ptr + 10);
 		const char* endname = (const char*)(ptr + 1);
 
-		texhandle_t start_texhandle =
-				texturemanager.getHandle(startname, texture_type);
-		texhandle_t end_texhandle =
-				texturemanager.getHandle(endname, texture_type);
+		TextureId start_tex_id =
+				texturemanager.getTextureId(startname, texture_type);
+		TextureId end_tex_id =
+				texturemanager.getTextureId(endname, texture_type);
 
-		if (start_texhandle == TextureManager::NOT_FOUND_TEXTURE_HANDLE ||
-			start_texhandle == TextureManager::NO_TEXTURE_HANDLE ||
-			end_texhandle == TextureManager::NOT_FOUND_TEXTURE_HANDLE ||
-			end_texhandle == TextureManager::NO_TEXTURE_HANDLE)
+		if (start_tex_id == TextureManager::NOT_FOUND_TEXTURE_ID ||
+			start_tex_id == TextureManager::NO_TEXTURE_ID ||
+			end_tex_id == TextureManager::NOT_FOUND_TEXTURE_ID ||
+			end_tex_id == TextureManager::NO_TEXTURE_ID)
 			continue;
 
-		anim.basepic = start_texhandle;
-		anim.numframes = end_texhandle - start_texhandle + 1;
+		anim.basepic = start_tex_id;
+		anim.numframes = end_tex_id - start_tex_id + 1;
 
 		if (anim.numframes <= 0)
 			continue;
@@ -757,7 +757,7 @@ void TextureManager::readAnimatedLump()
 //
 // TextureManager::updateAnimatedTextures
 //
-// Handles ticking the animated textures and cyles the Textures within an
+// TextureIds ticking the animated textures and cyles the Textures within an
 // animation definition.
 //
 void TextureManager::updateAnimatedTextures()
@@ -782,16 +782,16 @@ void TextureManager::updateAnimatedTextures()
 
 			// cycle the Textures
 			getTexture(anim->framepic[0]);	// ensure Texture is still cached
-			Texture* first_texture = mHandleMap[anim->framepic[0]];
+			Texture* first_texture = mTextureIdMap[anim->framepic[0]];
 
 			for (int frame1 = 0; frame1 < anim->numframes - 1; frame1++)
 			{
 				int frame2 = (frame1 + 1) % anim->numframes;
 				getTexture(anim->framepic[frame2]);	// ensure Texture is still cached
-				mHandleMap[anim->framepic[frame1]] = mHandleMap[anim->framepic[frame2]]; 
+				mTextureIdMap[anim->framepic[frame1]] = mTextureIdMap[anim->framepic[frame2]]; 
 			}
 			
-			mHandleMap[anim->framepic[anim->numframes - 1]] = first_texture;
+			mTextureIdMap[anim->framepic[anim->numframes - 1]] = first_texture;
 		}
 	}
 
@@ -815,8 +815,8 @@ void TextureManager::generateNotFoundTexture()
 {
 	const int width = 64, height = 64;
 
-	const texhandle_t handle = NOT_FOUND_TEXTURE_HANDLE;
-	Texture* texture = createTexture(handle, width, height);
+	const TextureId tex_id = NOT_FOUND_TEXTURE_ID;
+	Texture* texture = createTexture(tex_id, width, height);
 
 	if (clientside)
 	{
@@ -905,7 +905,7 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 		OString uname(StdStringToUpper(mtexdef->name, 8));
 
 		// [SL] If there are duplicated texture names, the first instance takes precedence.
-		// Are there any ports besides ZDoom that handle duplicated texture names?
+		// Are there any ports besides ZDoom that tex_id duplicated texture names?
 		if (mTextureNameTranslationMap.find(uname) == mTextureNameTranslationMap.end())
 		{
 			size_t texdefsize = sizeof(texdef_t) + sizeof(texdefpatch_t) * (SAFESHORT(mtexdef->patchcount) - 1);
@@ -939,26 +939,26 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 
 
 //
-// TextureManager::createCustomHandle
+// TextureManager::createCustomTextureId
 //
-// Generates a valid handle that can be used by the engine to denote certain
+// Generates a valid tex_id that can be used by the engine to denote certain
 // properties for a wall or ceiling or floor. For instance, a special use
-// handle can be used to denote that a ceiling should be rendered with SKY2.
+// tex_id can be used to denote that a ceiling should be rendered with SKY2.
 //
-texhandle_t TextureManager::createCustomHandle()
+TextureId TextureManager::createCustomTextureId()
 {
-	if (mFreeCustomHandlesTail <= mFreeCustomHandlesHead)
-		return TextureManager::NOT_FOUND_TEXTURE_HANDLE;
-	return mFreeCustomHandles[mFreeCustomHandlesHead++ % MAX_CUSTOM_HANDLES];
+	if (mFreeCustomTextureIdsTail <= mFreeCustomTextureIdsHead)
+		return TextureManager::NOT_FOUND_TEXTURE_ID;
+	return mFreeCustomTextureIds[mFreeCustomTextureIdsHead++ % MAX_CUSTOM_TEXTURE_IDS];
 }
 
 
 //
-// TextureManager::freeCustomHandle
+// TextureManager::freeCustomTextureId
 //
-void TextureManager::freeCustomHandle(texhandle_t texhandle)
+void TextureManager::freeCustomTextureId(const TextureId tex_id)
 {
-	mFreeCustomHandles[mFreeCustomHandlesTail++ % MAX_CUSTOM_HANDLES] = texhandle;
+	mFreeCustomTextureIds[mFreeCustomTextureIdsTail++ % MAX_CUSTOM_TEXTURE_IDS] = tex_id;
 }
 
 
@@ -966,9 +966,9 @@ void TextureManager::freeCustomHandle(texhandle_t texhandle)
 // TextureManager::createTexture
 //
 // Allocates memory for a new texture and returns a pointer to it. The texture
-// is inserted into mHandlesMap for future retrieval.
+// is inserted into mTextureIdsMap for future retrieval.
 //
-Texture* TextureManager::createTexture(texhandle_t texhandle, int width, int height)
+Texture* TextureManager::createTexture(const TextureId tex_id, int width, int height)
 {
 	width = std::min<int>(width, Texture::MAX_TEXTURE_WIDTH);
 	height = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT);
@@ -980,9 +980,9 @@ Texture* TextureManager::createTexture(texhandle_t texhandle, int width, int hei
 	Texture* texture = (Texture*)Z_Malloc(texture_size, PU_STATIC, NULL);
 	texture->init(width, height);
 
-	texture->mHandle = texhandle;
+	texture->mTextureId = tex_id;
 
-	mHandleMap.insert(HandleMapPair(texhandle, texture));
+	mTextureIdMap.insert(TextureIdMapPair(tex_id, texture));
 
 	return texture;
 }
@@ -992,62 +992,65 @@ Texture* TextureManager::createTexture(texhandle_t texhandle, int width, int hei
 // TextureManager::freeTexture
 //
 // Frees the memory used by the specified texture and removes it
-// from mHandlesMap.
+// from mTextureIdsMap.
 //
-void TextureManager::freeTexture(texhandle_t texhandle)
+void TextureManager::freeTexture(const TextureId tex_id)
 {
-	if (texhandle == TextureManager::NOT_FOUND_TEXTURE_HANDLE ||
-		texhandle == TextureManager::NO_TEXTURE_HANDLE)
+	if (tex_id == TextureManager::NOT_FOUND_TEXTURE_ID ||
+		tex_id == TextureManager::NO_TEXTURE_ID)
 		return;
 
-	HandleMap::iterator it = mHandleMap.find(texhandle);
-	if (it != mHandleMap.end())
+	TextureIdMap::iterator it = mTextureIdMap.find(tex_id);
+	if (it != mTextureIdMap.end())
 	{
 		const Texture* texture = it->second;
 		if (texture != NULL)
 		{
 			Z_Free((void*)texture);
-			if (texhandle & CUSTOM_HANDLE_MASK)
-				freeCustomHandle(texhandle);
+			if (tex_id & CUSTOM_TEXTURE_ID_MASK)
+				freeCustomTextureId(tex_id);
 		}
 		
-		mHandleMap.erase(it);
+		mTextureIdMap.erase(it);
 	}
 }
 
 
 //
-// TextureManager::getPatchHandle
+// TextureManager::getPatchTextureId
 //
-// Returns the handle for the patch with the given WAD lump number.
+// Returns the tex_id for the patch with the given WAD lump number.
 //
-texhandle_t TextureManager::getPatchHandle(unsigned int lumpnum)
+TextureId TextureManager::getPatchTextureId(unsigned int lumpnum)
 {
 	if (lumpnum >= numlumps)
-		return NOT_FOUND_TEXTURE_HANDLE;
+		return NOT_FOUND_TEXTURE_ID;
 
 	if (W_LumpLength(lumpnum) == 0)
-		return NOT_FOUND_TEXTURE_HANDLE;
+		return NOT_FOUND_TEXTURE_ID;
 
-	return (texhandle_t)lumpnum | PATCH_HANDLE_MASK;
+	return (TextureId)lumpnum | PATCH_TEXTURE_ID_MASK;
 }
 
 
-texhandle_t TextureManager::getPatchHandle(const OString& name)
+TextureId TextureManager::getPatchTextureId(const OString& name)
 {
+	static const OString patches_namespace_name("PATCHES");
+	ResourceId res_id = Res_GetResourceId(name, patches_namespace_name);
+ 
 	int lumpnum = W_CheckNumForName(name.c_str());
 	if (lumpnum >= 0)
-		return getPatchHandle(lumpnum);
-	return NOT_FOUND_TEXTURE_HANDLE;
+		return getPatchTextureId(lumpnum);
+	return NOT_FOUND_TEXTURE_ID;
 }
 
 
 //
 // TextureManger::cachePatch
 //
-void TextureManager::cachePatch(texhandle_t handle)
+void TextureManager::cachePatch(TextureId tex_id)
 {
-	unsigned int lumpnum = handle & ~(PATCH_HANDLE_MASK | SPRITE_HANDLE_MASK);
+	unsigned int lumpnum = tex_id & ~(PATCH_TEXTURE_ID_MASK | SPRITE_TEXTURE_ID_MASK);
 
 	unsigned int lumplen = W_LumpLength(lumpnum);
 	byte* lumpdata = new byte[lumplen];
@@ -1058,7 +1061,7 @@ void TextureManager::cachePatch(texhandle_t handle)
 	int offsetx = LESHORT(*(short*)(lumpdata + 4));
 	int offsety = LESHORT(*(short*)(lumpdata + 6));
 
-	Texture* texture = createTexture(handle, width, height);
+	Texture* texture = createTexture(tex_id, width, height);
 	texture->mOffsetX = offsetx;
 	texture->mOffsetY = offsety;
 
@@ -1080,84 +1083,84 @@ void TextureManager::cachePatch(texhandle_t handle)
 
 
 //
-// TextureManager::getSpriteHandle
+// TextureManager::getSpriteTextureId
 //
-// Returns the handle for the sprite with the given WAD lump number.
+// Returns the tex_id for the sprite with the given WAD lump number.
 //
-texhandle_t TextureManager::getSpriteHandle(unsigned int lumpnum)
+TextureId TextureManager::getSpriteTextureId(unsigned int lumpnum)
 {
 	if (lumpnum >= numlumps)
-		return NOT_FOUND_TEXTURE_HANDLE;
+		return NOT_FOUND_TEXTURE_ID;
 
 	if (W_LumpLength(lumpnum) == 0)
-		return NOT_FOUND_TEXTURE_HANDLE;
+		return NOT_FOUND_TEXTURE_ID;
 
-	return (texhandle_t)lumpnum | SPRITE_HANDLE_MASK;
+	return (TextureId)lumpnum | SPRITE_TEXTURE_ID_MASK;
 }
 
 
-texhandle_t TextureManager::getSpriteHandle(const OString& name)
+TextureId TextureManager::getSpriteTextureId(const OString& name)
 {
 	int lumpnum = W_CheckNumForName(name.c_str(), ns_sprites);
 	if (lumpnum >= 0)
-		return getSpriteHandle(lumpnum);
+		return getSpriteTextureId(lumpnum);
 	lumpnum = W_CheckNumForName(name.c_str());
 	if (lumpnum >= 0)
-		return getSpriteHandle(lumpnum);
-	return NOT_FOUND_TEXTURE_HANDLE;
+		return getSpriteTextureId(lumpnum);
+	return NOT_FOUND_TEXTURE_ID;
 }
 
 
 //
 // TextureManger::cacheSprite
 //
-void TextureManager::cacheSprite(texhandle_t handle)
+void TextureManager::cacheSprite(TextureId tex_id)
 {
-	cachePatch(handle);
+	cachePatch(tex_id);
 }
 
 
 //
-// TextureManager::getFlatHandle
+// TextureManager::getFlatTextureId
 //
-// Returns the handle for the flat with the given WAD lump number.
+// Returns the tex_id for the flat with the given WAD lump number.
 //
-texhandle_t TextureManager::getFlatHandle(unsigned int lumpnum)
+TextureId TextureManager::getFlatTextureId(unsigned int lumpnum)
 {
 	const unsigned int flatcount = mLastFlatLumpNum - mFirstFlatLumpNum + 1;
 	const unsigned int flatnum = lumpnum - mFirstFlatLumpNum;
 
 	// flatnum > number of flats in the WAD file?
 	if (flatnum >= flatcount)
-		return NOT_FOUND_TEXTURE_HANDLE;
+		return NOT_FOUND_TEXTURE_ID;
 
 	if (W_LumpLength(lumpnum) == 0)
-		return NOT_FOUND_TEXTURE_HANDLE;
+		return NOT_FOUND_TEXTURE_ID;
 
-	return (texhandle_t)flatnum | FLAT_HANDLE_MASK;
+	return (TextureId)flatnum | FLAT_TEXTURE_ID_MASK;
 }
 
 
-texhandle_t TextureManager::getFlatHandle(const OString& name)
+TextureId TextureManager::getFlatTextureId(const OString& name)
 {
 	int lumpnum = W_CheckNumForName(name.c_str(), ns_flats);
 	if (lumpnum >= 0)
-		return getFlatHandle(lumpnum);
-	return NOT_FOUND_TEXTURE_HANDLE;
+		return getFlatTextureId(lumpnum);
+	return NOT_FOUND_TEXTURE_ID;
 }
 
 
 //
 // TextureManager::cacheFlat
 //
-// Loads a flat with the specified handle from the WAD file and composes
+// Loads a flat with the specified tex_id from the WAD file and composes
 // a Texture object.
 //
-void TextureManager::cacheFlat(texhandle_t handle)
+void TextureManager::cacheFlat(TextureId tex_id)
 {
-	// should we check that the handle is valid for a flat?
+	// should we check that the tex_id is valid for a flat?
 
-	unsigned int lumpnum = (handle & ~FLAT_HANDLE_MASK) + mFirstFlatLumpNum;
+	unsigned int lumpnum = (tex_id & ~FLAT_TEXTURE_ID_MASK) + mFirstFlatLumpNum;
 	unsigned int lumplen = W_LumpLength(lumpnum);
 
 	int width, height;	
@@ -1171,7 +1174,7 @@ void TextureManager::cacheFlat(texhandle_t handle)
 	else
 		width = height = Log2(sqrt(lumplen));	// probably not pretty... 
 
-	Texture* texture = createTexture(handle, width, height);
+	Texture* texture = createTexture(tex_id, width, height);
 
 	if (clientside)
 	{
@@ -1187,26 +1190,26 @@ void TextureManager::cacheFlat(texhandle_t handle)
 
 
 //
-// TextureManager::getWallTextureHandle
+// TextureManager::getWallTextureTextureId
 //
-// Returns the handle for the wall texture with the given WAD lump number.
+// Returns the tex_id for the wall texture with the given WAD lump number.
 //
-texhandle_t TextureManager::getWallTextureHandle(unsigned int texdef_handle)
+TextureId TextureManager::getWallTextureTextureId(unsigned int texdef_tex_id)
 {
-	// texdef_handle > number of wall textures in the WAD file?
-	if (texdef_handle >= mTextureDefinitions.size())
-		return NOT_FOUND_TEXTURE_HANDLE;
+	// texdef_tex_id > number of wall textures in the WAD file?
+	if (texdef_tex_id >= mTextureDefinitions.size())
+		return NOT_FOUND_TEXTURE_ID;
 
-	return (texhandle_t)texdef_handle | WALLTEXTURE_HANDLE_MASK;
+	return (TextureId)texdef_tex_id | WALLTEXTURE_ID_MASK;
 }
 
 
-texhandle_t TextureManager::getWallTextureHandle(const OString& name)
+TextureId TextureManager::getWallTextureTextureId(const OString& name)
 {
 	TextureNameTranslationMap::const_iterator it = mTextureNameTranslationMap.find(name);
 	if (it != mTextureNameTranslationMap.end())
-		return getWallTextureHandle(it->second);
-	return NOT_FOUND_TEXTURE_HANDLE;
+		return getWallTextureTextureId(it->second);
+	return NOT_FOUND_TEXTURE_ID;
 }
 
 
@@ -1215,16 +1218,16 @@ texhandle_t TextureManager::getWallTextureHandle(const OString& name)
 //
 // Composes a wall texture from a set of patches loaded from the WAD file.
 //
-void TextureManager::cacheWallTexture(texhandle_t handle)
+void TextureManager::cacheWallTexture(TextureId tex_id)
 {
-	// should we check that the handle is valid for a wall texture?
+	// should we check that the tex_id is valid for a wall texture?
 
-	texdef_t* texdef = mTextureDefinitions[handle & ~WALLTEXTURE_HANDLE_MASK];
+	texdef_t* texdef = mTextureDefinitions[tex_id & ~WALLTEXTURE_ID_MASK];
 
 	int width = texdef->width;
 	int height = texdef->height;
 
-	Texture* texture = createTexture(handle, width, height);
+	Texture* texture = createTexture(tex_id, width, height);
 	if (texdef->scalex)
 		texture->mScaleX = texdef->scalex << (FRACBITS - 3);
 	if (texdef->scaley)
@@ -1260,27 +1263,27 @@ void TextureManager::cacheWallTexture(texhandle_t handle)
 
 
 //
-// TextureManager::getRawTextureHandle
+// TextureManager::getRawTextureTextureId
 //
-// Returns the handle for the raw image with the given WAD lump number.
+// Returns the tex_id for the raw image with the given WAD lump number.
 //
-texhandle_t TextureManager::getRawTextureHandle(unsigned int lumpnum)
+TextureId TextureManager::getRawTextureTextureId(unsigned int lumpnum)
 {
 	if (lumpnum >= numlumps)
-		return NOT_FOUND_TEXTURE_HANDLE;
+		return NOT_FOUND_TEXTURE_ID;
 
 	if (W_LumpLength(lumpnum) == 0)
-		return NOT_FOUND_TEXTURE_HANDLE;
-	return (texhandle_t)lumpnum | RAW_HANDLE_MASK;
+		return NOT_FOUND_TEXTURE_ID;
+	return (TextureId)lumpnum | RAW_TEXTURE_ID_MASK;
 }
 
 
-texhandle_t TextureManager::getRawTextureHandle(const OString& name)
+TextureId TextureManager::getRawTextureTextureId(const OString& name)
 {
 	int lumpnum = W_CheckNumForName(name.c_str());
 	if (lumpnum >= 0)
-		return getRawTextureHandle(lumpnum);
-	return NOT_FOUND_TEXTURE_HANDLE;
+		return getRawTextureTextureId(lumpnum);
+	return NOT_FOUND_TEXTURE_ID;
 }
 
 
@@ -1289,16 +1292,16 @@ texhandle_t TextureManager::getRawTextureHandle(const OString& name)
 //
 // Converts a linear 320x200 block of pixels into a Texture 
 //
-void TextureManager::cacheRawTexture(texhandle_t handle)
+void TextureManager::cacheRawTexture(TextureId tex_id)
 {
 	const int width = 320;
 	const int height = 200;
 
-	Texture* texture = createTexture(handle, width, height);
+	Texture* texture = createTexture(tex_id, width, height);
 
 	if (clientside)
 	{
-		unsigned int lumpnum = (handle & ~RAW_HANDLE_MASK);
+		unsigned int lumpnum = (tex_id & ~RAW_TEXTURE_ID_MASK);
 		unsigned int lumplen = W_LumpLength(lumpnum);
 
 		byte* lumpdata = new byte[lumplen];
@@ -1313,27 +1316,27 @@ void TextureManager::cacheRawTexture(texhandle_t handle)
 	
 
 //
-// TextureManager::getPNGTextureHandle
+// TextureManager::getPNGTextureTextureId
 //
-// Returns the handle for the PNG format image with the given WAD lump number.
+// Returns the tex_id for the PNG format image with the given WAD lump number.
 //
-texhandle_t TextureManager::getPNGTextureHandle(unsigned int lumpnum)
+TextureId TextureManager::getPNGTextureTextureId(unsigned int lumpnum)
 {
 	if (lumpnum >= numlumps)
-		return NOT_FOUND_TEXTURE_HANDLE;
+		return NOT_FOUND_TEXTURE_ID;
 
 	if (W_LumpLength(lumpnum) == 0)
-		return NOT_FOUND_TEXTURE_HANDLE;
-	return (texhandle_t)lumpnum | PNG_HANDLE_MASK;
+		return NOT_FOUND_TEXTURE_ID;
+	return (TextureId)lumpnum | PNG_TEXTURE_ID_MASK;
 }
 
 
-texhandle_t TextureManager::getPNGTextureHandle(const OString& name)
+TextureId TextureManager::getPNGTextureTextureId(const OString& name)
 {
 	int lumpnum = W_CheckNumForName(name.c_str());
 	if (lumpnum >= 0)
-		return getPNGTextureHandle(lumpnum);
-	return NOT_FOUND_TEXTURE_HANDLE;
+		return getPNGTextureTextureId(lumpnum);
+	return NOT_FOUND_TEXTURE_ID;
 }
 
 
@@ -1384,7 +1387,7 @@ static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lum
 //
 // Converts a linear PNG format image into a Texture.
 //
-void TextureManager::cachePNGTexture(texhandle_t handle)
+void TextureManager::cachePNGTexture(TextureId tex_id)
 {
 #ifdef CLIENT_APP
 	png_struct* png_ptr = NULL;
@@ -1393,7 +1396,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	png_byte* row_data = NULL;
 	MEMFILE* mfp = NULL;
 	
-	unsigned int lumpnum = (handle & ~PNG_HANDLE_MASK);
+	unsigned int lumpnum = (tex_id & ~PNG_TEXTURE_ID_MASK);
 	unsigned int lumplen = W_LumpLength(lumpnum);
 
 	char lumpname[9];
@@ -1443,7 +1446,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 		return;
 	}
 
-	Texture* texture = createTexture(handle, width, height);
+	Texture* texture = createTexture(tex_id, width, height);
 	memset(texture->mData, 0, width * height);
 	memset(texture->mMask, 0, width * height);
 
@@ -1504,108 +1507,83 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 
 
 //
-// TextureManager::getHandle
+// TextureManager::getTextureId
 //
-// Returns the handle for the texture that matches the supplied name.
+// Returns the tex_id for the texture that matches the supplied name.
 //
-texhandle_t TextureManager::getHandle(const OString& name, Texture::TextureSourceType type)
+TextureId TextureManager::getTextureId(const OString& name, Texture::TextureSourceType type)
 {
 	OString uname(StdStringToUpper(name));
 
 	// sidedefs with the '-' texture indicate there should be no texture used
 	if (uname[0] == '-' && type == Texture::TEX_WALLTEXTURE)
-		return NO_TEXTURE_HANDLE;
+		return NO_TEXTURE_ID;
 
-	texhandle_t handle = NOT_FOUND_TEXTURE_HANDLE;
+	TextureId tex_id = NOT_FOUND_TEXTURE_ID;
 
 	// check for the texture in the default location specified by type
 	if (type == Texture::TEX_FLAT)
-		handle = getFlatHandle(uname);
+		tex_id = getFlatTextureId(uname);
 	else if (type == Texture::TEX_WALLTEXTURE)
-		handle = getWallTextureHandle(uname);
+		tex_id = getWallTextureTextureId(uname);
 	else if (type == Texture::TEX_PATCH)
-		handle = getPatchHandle(uname);
+		tex_id = getPatchTextureId(uname);
 	else if (type == Texture::TEX_SPRITE)
-		handle = getSpriteHandle(uname);
+		tex_id = getSpriteTextureId(uname);
 	else if (type == Texture::TEX_RAW)
-		handle = getRawTextureHandle(uname);
+		tex_id = getRawTextureTextureId(uname);
 	else if (type == Texture::TEX_PNG)
-		handle = getPNGTextureHandle(uname);
+		tex_id = getPNGTextureTextureId(uname);
 
 	// not found? check elsewhere
-	if (handle == NOT_FOUND_TEXTURE_HANDLE && type != Texture::TEX_FLAT)
-		handle = getFlatHandle(uname);
-	if (handle == NOT_FOUND_TEXTURE_HANDLE && type != Texture::TEX_WALLTEXTURE)
-		handle = getWallTextureHandle(uname);
+	if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_FLAT)
+		tex_id = getFlatTextureId(uname);
+	if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_WALLTEXTURE)
+		tex_id = getWallTextureTextureId(uname);
 
-	return handle;
+	return tex_id;
 }
 
 
 //
-// TextureManager::getHandle
+// TextureManager::getTextureId
 //
-// Returns the handle for the texture that matches the supplied name.
+// Returns the tex_id for the texture that matches the supplied name.
 // [SL] This version will accept WAD lump names that are not properly
 // zero terminated (max 8 characters).
 //
-texhandle_t TextureManager::getHandle(const char* name, Texture::TextureSourceType type)
+TextureId TextureManager::getTextureId(const char* name, Texture::TextureSourceType type)
 {
 	OString uname(StdStringToUpper(name, 8));
-	return getHandle(uname, type);
-}
-
-
-texhandle_t TextureManager::getHandle(unsigned int lumpnum, Texture::TextureSourceType type)
-{
-	texhandle_t handle = NOT_FOUND_TEXTURE_HANDLE;
-
-	if (type == Texture::TEX_FLAT)
-		handle = getFlatHandle(lumpnum);
-	else if (type == Texture::TEX_PATCH)
-		handle = getPatchHandle(lumpnum);
-	else if (type == Texture::TEX_SPRITE)
-		handle = getSpriteHandle(lumpnum);
-	else if (type == Texture::TEX_RAW)
-		handle = getRawTextureHandle(lumpnum);
-	else if (type == Texture::TEX_PNG)
-		handle = getPNGTextureHandle(lumpnum);
-
-	// not found? check elsewhere
-	if (handle == NOT_FOUND_TEXTURE_HANDLE && type != Texture::TEX_FLAT)
-		handle = getFlatHandle(lumpnum);
-	if (handle == NOT_FOUND_TEXTURE_HANDLE && type != Texture::TEX_WALLTEXTURE)
-		handle = getWallTextureHandle(lumpnum);
-
-	return handle;
+	return getTextureId(uname, type);
 }
 
 
 //
 // TextureManager::getTexture
 //
-// Returns the Texture for the appropriate handle. If the Texture is not
+// Returns the Texture for the appropriate tex_id. If the Texture is not
 // currently cached, it will be loaded from the disk and cached.
 //
-const Texture* TextureManager::getTexture(texhandle_t handle) 
+const Texture* TextureManager::getTexture(const TextureId tex_id) 
 {
-	Texture* texture = mHandleMap[handle];
+	Texture* texture = mTextureIdMap[tex_id];
 	if (!texture)
 	{
-		if (handle & FLAT_HANDLE_MASK)
-			cacheFlat(handle);
-		else if (handle & WALLTEXTURE_HANDLE_MASK)
-			cacheWallTexture(handle);
-		else if (handle & PATCH_HANDLE_MASK)
-			cachePatch(handle);
-		else if (handle & SPRITE_HANDLE_MASK)
-			cacheSprite(handle);
-		else if (handle & RAW_HANDLE_MASK)
-			cacheRawTexture(handle);
-		else if (handle & PNG_HANDLE_MASK)
-			cachePNGTexture(handle);
+		if (tex_id & FLAT_TEXTURE_ID_MASK)
+			cacheFlat(tex_id);
+		else if (tex_id & WALLTEXTURE_ID_MASK)
+			cacheWallTexture(tex_id);
+		else if (tex_id & PATCH_TEXTURE_ID_MASK)
+			cachePatch(tex_id);
+		else if (tex_id & SPRITE_TEXTURE_ID_MASK)
+			cacheSprite(tex_id);
+		else if (tex_id & RAW_TEXTURE_ID_MASK)
+			cacheRawTexture(tex_id);
+		else if (tex_id & PNG_TEXTURE_ID_MASK)
+			cachePNGTexture(tex_id);
 
-		texture = mHandleMap[handle];
+		texture = mTextureIdMap[tex_id];
 	}
 
 	return texture;

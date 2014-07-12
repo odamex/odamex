@@ -372,7 +372,7 @@ public:
 
 		// add an entry to the id lookup table
 		// don't have to worry about duplicate keys for ResourceIds
-		mIdTable.insert(std::make_pair(res_id, name));
+		mIdTable.insert(std::make_pair(res_id, lump_name));
 	}
 
 
@@ -403,7 +403,7 @@ public:
 	{
 		IdLookupTable::const_iterator it = mIdTable.find(res_id);
 		if (it != mIdTable.end())
-			return it->second;
+			return it->second.first;
 
 		static OString empty_string;
 		return empty_string;
@@ -475,7 +475,7 @@ private:
 	};
 
 	typedef OHashTable<LumpName, LumpRecord*> NameLookupTable;
-	typedef OHashTable<ResourceId, OString> IdLookupTable;
+	typedef OHashTable<ResourceId, LumpName> IdLookupTable;
 	typedef OHashTable<OString, NameSpaceId> NameSpaceLookupTable;
 
 	NameLookupTable				mNameTable;
