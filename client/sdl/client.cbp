@@ -17,6 +17,7 @@
 				<Compiler>
 					<Add option="-O3" />
 					<Add option="-march=native" />
+					<Add option="-m32" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -25,6 +26,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-m32" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libtextscreen" />
@@ -35,6 +37,9 @@
 					<Add library="shlwapi" />
 					<Add directory="../../lib" />
 				</Linker>
+				<Environment>
+					<Variable name="RCFLAGS" value="-F pe-i386" />
+				</Environment>
 			</Target>
 			<Target title="Win Debug (GCC)">
 				<Option platforms="Windows;" />
@@ -51,6 +56,7 @@
 					<Add option="-O0" />
 					<Add option="-march=native" />
 					<Add option="-fno-inline" />
+					<Add option="-m32" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -59,6 +65,7 @@
 					<Add option="-DUSE_PNG" />
 				</Compiler>
 				<Linker>
+					<Add option="-m32" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libtextscreen-dbg" />
@@ -69,6 +76,9 @@
 					<Add library="shlwapi" />
 					<Add directory="../../lib" />
 				</Linker>
+				<Environment>
+					<Variable name="RCFLAGS" value="-F pe-i386" />
+				</Environment>
 			</Target>
 			<Target title="Win Release (VC)">
 				<Option platforms="Windows;" />
@@ -235,9 +245,84 @@
 					<Add after="mt -nologo -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);#1" />
 				</ExtraCommands>
 			</Target>
+			<Target title="Win Release (GCC64)">
+				<Option platforms="Windows;" />
+				<Option output="../../odamex.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/client/gcc64/release" />
+				<Option deps_output="../../deps" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-march=native" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-DNDEBUG" />
+					<Add option="-DCLIENT_APP" />
+					<Add option="-DUSE_PNG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="mingw32" />
+					<Add library="ws2_32" />
+					<Add library="libtextscreen64" />
+					<Add library="libportmidi64" />
+					<Add library="libpng64" />
+					<Add library="z64" />
+					<Add library="winmm" />
+					<Add library="shlwapi" />
+					<Add library="SDL64" />
+					<Add library="SDL64_mixer" />
+					<Add directory="../../lib" />
+				</Linker>
+				<Environment>
+					<Variable name="RCFLAGS" value="" />
+				</Environment>
+			</Target>
+			<Target title="Win Debug (GCC64)">
+				<Option platforms="Windows;" />
+				<Option output="../../odamex-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../" />
+				<Option object_output="../../obj/client/gcc64/debug" />
+				<Option deps_output="../../deps" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-O0" />
+					<Add option="-march=native" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_DEBUG" />
+					<Add option="-DODAMEX_DEBUG" />
+					<Add option="-DCLIENT_APP" />
+					<Add option="-DUSE_PNG" />
+				</Compiler>
+				<Linker>
+					<Add library="mingw32" />
+					<Add library="ws2_32" />
+					<Add library="libtextscreen-dbg64" />
+					<Add library="libportmidi-dbg64" />
+					<Add library="libpng-dbg64" />
+					<Add library="z-dbg64" />
+					<Add library="winmm" />
+					<Add library="shlwapi" />
+					<Add library="SDL64" />
+					<Add library="SDL64_mixer" />
+					<Add directory="../../lib" />
+				</Linker>
+				<Environment>
+					<Variable name="RCFLAGS" value="" />
+				</Environment>
+			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);Win Release (GCC64);Win Debug (GCC64);" />
 			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
 		</VirtualTargets>
 		<Compiler>
@@ -506,6 +591,7 @@
 		<Unit filename="../src/wi_stuff.h" />
 		<Unit filename="client.rc">
 			<Option compilerVar="WINDRES" />
+			<Option compiler="gcc" use="1" buildCommand="$rescomp $rcflags $res_includes -J rc -O coff -i $file -o $resource_output" />
 		</Unit>
 		<Unit filename="i_input.cpp" />
 		<Unit filename="i_input.h" />

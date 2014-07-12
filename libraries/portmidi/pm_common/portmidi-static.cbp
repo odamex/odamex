@@ -17,6 +17,7 @@
 					<Add option="-W" />
 					<Add option="-O0" />
 					<Add option="-fno-inline" />
+					<Add option="-m32" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -31,6 +32,7 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-m32" />
 				</Linker>
 			</Target>
 			<Target title="Win Release (GCC)">
@@ -44,6 +46,7 @@
 					<Add option="-O2" />
 					<Add option="-W" />
 					<Add option="-fno-inline" />
+					<Add option="-m32" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -55,6 +58,9 @@
 					<Add directory="../pm_common" />
 					<Add directory="../porttime" />
 				</ResourceCompiler>
+				<Linker>
+					<Add option="-m32" />
+				</Linker>
 			</Target>
 			<Target title="Win Debug (VC)">
 				<Option output="../../../lib/libportmidi-dbg" prefix_auto="1" extension_auto="1" />
@@ -91,6 +97,56 @@
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNDEBUG" />
 					<Add option='/DCMAKE_INTDIR=\&quot;Release\&quot;' />
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+				</ResourceCompiler>
+			</Target>
+			<Target title="Win Debug (GCC64)">
+				<Option output="../../../lib/portmidi-dbg64" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../../../obj/libportmidi/gcc64/debug" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-O0" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_DEBUG" />
+					<Add option="-DPM_CHECK_ERRORS=1" />
+					<Add option='-DCMAKE_INTDIR=\&quot;Debug\&quot;' />
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="../pm_common" />
+					<Add directory="../porttime" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Win Release (GCC64)">
+				<Option output="../../../lib/portmidi64" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../../../obj/libportmidi/gcc64/release" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-W" />
+					<Add option="-fno-inline" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-DNDEBUG" />
+					<Add option='-DCMAKE_INTDIR=\&quot;Release\&quot;' />
 					<Add directory="../pm_common" />
 					<Add directory="../porttime" />
 				</Compiler>
