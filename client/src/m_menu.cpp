@@ -48,7 +48,7 @@
 #include "r_sky.h"
 #include "cl_main.h"
 #include "c_bind.h"
-#include "c_level.h"
+#include "g_level.h"
 
 #include "gi.h"
 #include "m_memio.h"

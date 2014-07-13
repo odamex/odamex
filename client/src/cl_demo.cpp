@@ -37,7 +37,7 @@
 #include "version.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
-#include "c_level.h"
+#include "g_level.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)

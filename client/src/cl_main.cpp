@@ -64,7 +64,6 @@
 #include "p_pspr.h"
 #include "d_netcmd.h"
 #include "g_warmup.h"
-#include "c_level.h"
 #include "v_text.h"
 #include "hu_stuff.h"
 

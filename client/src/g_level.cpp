@@ -27,7 +27,6 @@
 #include "am_map.h"
 #include "c_console.h"
 #include "c_dispatch.h"
-#include "c_level.h"
 #include "cl_main.h"
 #include "d_event.h"
 #include "d_main.h"

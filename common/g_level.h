@@ -230,4 +230,21 @@ void G_SerializeSnapshots (FArchive &arc);
 
 void cmd_maplist(const std::vector<std::string> &arguments, std::vector<std::string> &response);
 
+extern bool unnatural_level_progression;
+
+void P_RemoveDefereds (void);
+int FindWadLevelInfo (char *name);
+int FindWadClusterInfo (int cluster);
+
+level_info_t *FindDefLevelInfo (char *mapname);
+cluster_info_t *FindDefClusterInfo (int cluster);
+
+bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
+				const std::vector<std::string> &newpatchfiles,
+				const std::vector<std::string> &newwadhashes = std::vector<std::string>(),
+				const std::vector<std::string> &newpatchhashes = std::vector<std::string>(),
+				const std::string &mapname = "");
+
+bool G_LoadWad(const std::string &str, const std::string &mapname = "");
+
 #endif //__G_LEVEL_H__
