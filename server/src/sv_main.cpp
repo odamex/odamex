@@ -4615,8 +4615,11 @@ void SV_RunTics()
 	if (gamestate == GS_LEVEL && sv_emptyreset && players.empty() &&
 			last_player_count > 0)
 	{
-		// The last player just disconnected so reset the level
-		G_DeferedInitNew(level.mapname);
+		// The last player just disconnected so reset the level.
+		// [SL] Ordinarily we should call G_DeferedInitNew but this is called
+		// at the end of a gametic and the level reset should take place now
+		// rather than at the start of the next gametic.
+		G_InitNew(level.mapname);
 	}
 	last_player_count = players.size();
 }
