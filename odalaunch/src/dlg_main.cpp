@@ -40,7 +40,6 @@
 #include <wx/iconbndl.h>
 #include <wx/regex.h>
 #include <wx/process.h>
-#include <wx/toolbar.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/string.h>
 #include <wx/cmdline.h>
@@ -122,37 +121,6 @@ static const wxCmdLineEntryDesc cmdLineDesc[] =
     { wxCMD_LINE_NONE }
 };
 
-void dlgMain::SetupToolbar()
-{
-    wxBitmap toolLaunch, toolRunOffline, toolRefresh, toolRefreshAll, 
-        toolGetList, toolPreferences, toolAbout, toolExit;
-
-    wxToolBar *ToolBar;
-
-    ToolBar = GetToolBar();
-
-    if (!ToolBar)
-        return;
-
-    toolLaunch = wxXmlResource::Get()->LoadBitmap(wxT("btnlaunch"));
-    toolRunOffline = wxXmlResource::Get()->LoadBitmap(wxT("btnqlaunch"));
-    toolRefresh = wxXmlResource::Get()->LoadBitmap(wxT("btnrefresh"));
-    toolRefreshAll = wxXmlResource::Get()->LoadBitmap(wxT("btnrefresha"));
-    toolGetList = wxXmlResource::Get()->LoadBitmap(wxT("btngetlist"));
-    toolPreferences = wxXmlResource::Get()->LoadBitmap(wxT("btnprefs"));
-    toolAbout = wxXmlResource::Get()->LoadBitmap(wxT("btnabout"));
-    toolExit = wxXmlResource::Get()->LoadBitmap(wxT("btnexit"));
-
-    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmLaunch"), toolLaunch);
-    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmRunOffline"), toolRunOffline);
-    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmRefreshServer"), toolRefresh);
-    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmRefreshAll"), toolRefreshAll);
-    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmGetList"), toolGetList);
-    ToolBar->SetToolNormalBitmap(wxID_PREFERENCES, toolPreferences);
-    ToolBar->SetToolNormalBitmap(wxID_ABOUT, toolAbout);
-    ToolBar->SetToolNormalBitmap(wxID_EXIT, toolExit);
-}
-
 // Main window creation
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
@@ -161,9 +129,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     // Loads the frame from the xml resource file
 	wxXmlResource::Get()->LoadFrame(this, parent, wxT("dlgMain"));
-
-    // Not needed
-    //SetupToolbar();
 
     // Set window icon
     MainIcon = wxXmlResource::Get()->LoadIcon(wxT("mainicon"));
@@ -260,6 +225,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     OdaGet = new frmOdaGet(this, -1, FirstDirectory);
 
+//    InfoBar = new OdaInfoBar(this);
+    
     QServer = NULL;
 
     // Base number of threads on cpu count in the system (including cores)
@@ -289,6 +256,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 dlgMain::~dlgMain()
 {
     // Cleanup
+//    delete InfoBar;
+    
     delete[] QServer;
 
     QServer = NULL;

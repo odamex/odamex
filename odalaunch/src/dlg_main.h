@@ -31,6 +31,7 @@
 #include "dlg_about.h"
 #include "dlg_config.h"
 #include "dlg_servers.h"
+//#include "ctrl_infobar.h"
 #include "frm_odaget.h"
 
 #include <wx/frame.h>
@@ -40,7 +41,7 @@
 #include <wx/stattext.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/splitter.h>
-#include "wx/dynarray.h"
+#include <wx/dynarray.h>
 
 #include <vector>
 
@@ -113,7 +114,6 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnExit(wxCommandEvent& event);
 		
-		void SetupToolbar();
 
 		wxInt32 FindServer(wxString);
 		wxInt32 GetSelectedServerArrayIndex();
@@ -134,6 +134,8 @@ class dlgMain : public wxFrame, wxThreadHelper
         
         wxPanel *m_PnlServerFilter;
         wxTextCtrl *m_SrchCtrlGlobal;
+        
+//        OdaInfoBar *InfoBar;
         
 		wxInt32 TotalPlayers;
         wxInt32 QueriedServers;
