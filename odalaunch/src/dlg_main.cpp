@@ -24,6 +24,7 @@
 
 #include "dlg_main.h"
 #include "query_thread.h"
+#include "plat_utils.h"
 #include "str_utils.h"
 
 #include "md5.h"
@@ -135,13 +136,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     SetIcon(MainIcon);
 
-    #ifdef _WIN32
-    // Hack for windows vista/7 titlebar icon
-    SendMessage((HWND)GetHandle(), WM_SETICON, ICON_SMALL, 
-                (LPARAM)MainIcon.GetHICON());
-    // Uncomment this if it doesn't work under xp            
-    //SendMessage((HWND)GetHandle(), WM_SETICON, ICON_BIG, (LPARAM)MainIcon.GetHICON());
-    #endif
+    // wxMSW: Apply a hack to fix the titlebar icon on windows vista and 7
+    wxMswFixTitlebarIcon(GetHandle(), MainIcon);
 
     // Sets the title of the application with a version string to boot
     Version = wxString::Format(
@@ -150,27 +146,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     SetLabel(Version);
 
-    #ifdef __WXMAC__
-    {
-        // Remove the file menu on Mac as it will be empty
-        wxMenu* fileMenu = GetMenuBar()->Remove(GetMenuBar()->FindMenu(_("File")));
-        if(fileMenu)
-        {
-            wxMenuItem* prefMenuItem = fileMenu->Remove(wxID_PREFERENCES);
-            wxMenu* helpMenu = GetMenuBar()->GetMenu(GetMenuBar()->FindMenu(_("Help")));
-
-            // Before deleting the file menu the preferences menu item must be moved or
-            // it will not work after this even though it has been placed somewhere else.
-            // Attaching it to the help menu is the only way to not duplicate it as Help is
-            // a special menu just as Preferences is a special menu itme.
-            if(helpMenu)
-                helpMenu->Append(prefMenuItem);
-
-            delete fileMenu;
-        }
-    }
-    #endif
-
+    // wxMAC: There is no file menu on OSX platforms
+    wxMacRemoveFileMenu(this);
+    
     launchercfg_s.get_list_on_start = 1;
     launchercfg_s.show_blocked_servers = 0;
 
