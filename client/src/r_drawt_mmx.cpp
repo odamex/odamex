@@ -78,6 +78,16 @@
 // Direct rendering (32-bit) functions for MMX optimization:
 
 //
+// R_GetBytesUntilAligned
+//
+static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
+{
+	uintptr_t mask = alignment - 1;
+	return (alignment - ((uintptr_t)data & mask)) & mask;
+}
+
+
+//
 // R_SetM64
 //
 // Sets an __m64 MMX register with the given color channel values.
@@ -103,11 +113,9 @@ static inline __m64 R_SetM64(const IWindowSurface* surface, int a, int r, int g,
 void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
 	int surface_pitch_pixels = surface->getPitchInPixels();
+	int line_inc = surface_pitch_pixels - w;
 
-	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
-
-	int batches = w / 2;
-	int remainder = w & 1;
+	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
 
 	// MMX temporaries:
 	const __m64 upper8mask		= R_SetM64(surface, 0, 0xFF, 0xFF, 0xFF);
@@ -116,38 +124,43 @@ void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, i
 	const __m64 blendColor		= R_SetM64(surface, 0, color.getr(), color.getg(), color.getb()); 
 	const __m64 blendMult		= _mm_mullo_pi16(blendColor, blendAlpha);
 
-	for (int y = y1; y < y1 + h; y++)
+	for (int rowcount = h; rowcount > 0; --rowcount)
 	{
-		int x = x1;
+		// [SL] Calculate how many pixels of each row need to be drawn before dest is
+		// aligned to a 64-bit boundary.
+		int align = R_GetBytesUntilAligned(dest, 64/8) / sizeof(argb_t);
+		if (align > w)
+			align = w;
+
+		const int batch_size = 2;
+		int batches = (w - align) / batch_size;
+		int remainder = (w - align) & (batch_size - 1);
+
+		// align the destination buffer to 64-bit boundary
+		while (align--)
+		{
+			*dest = alphablend1a(*dest, color, alpha);
+			dest++;
+		}
 
 		// MMX optimize the bulk in batches of 2 colors:
-		for (int i = 0; i < batches; ++i, x += 2)
+		while (batches--)
 		{
-			#if 1
-			const __m64 input = _mm_setr_pi32(line[x + 0], line[x + 1]);
-			#else
-			// NOTE(jsd): No guarantee of 64-bit alignment; cannot use.
-			const __m64 input = *((__m64 *)line[x]);
-			#endif
-
+			const __m64 input = *((__m64*)dest);
 			const __m64 output = blend2vs1_mmx(input, blendMult, blendInvAlpha, upper8mask);
-			#if 1
-			line[x+0] = _mm_cvtsi64_si32(_mm_srli_si64(output, 32*0));
-			line[x+1] = _mm_cvtsi64_si32(_mm_srli_si64(output, 32*1));
-			#else
-			// NOTE(jsd): No guarantee of 64-bit alignment; cannot use.
-			*((__m64 *)line[x]) = output;
-			#endif
+			*((__m64*)dest) = output;
+
+			dest += batch_size;
 		}
 
-		if (remainder)
+		// Pick up the remainder:
+		while (remainder--)
 		{
-			// Pick up the remainder:
-			for (; x < x1 + w; x++)
-				line[x] = alphablend1a(line[x], color, alpha);
+			*dest = alphablend1a(*dest, color, alpha);
+			dest++;
 		}
 
-		line += surface_pitch_pixels;
+		dest += line_inc;
 	}
 
 	// Required to reset FP:
