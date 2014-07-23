@@ -139,7 +139,7 @@ public:
 	{	return 8 - mGLoss;	}
 
 	inline uint8_t getBBits() const
-	{	return 8 - mGLoss;	}
+	{	return 8 - mBLoss;	}
 
 	inline uint32_t getAMax() const
 	{	return (1 << getABits()) - 1;	}

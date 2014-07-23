@@ -538,10 +538,14 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 					mPrimarySurface->getWidth(), mPrimarySurface->getHeight(),
 					mPrimarySurface->getBitsPerPixel(),
 					mPrimarySurface->getPitch(),
-					(0xFF >> (8 - format.getRBits())) << format.getRShift(),
-					(0xFF >> (8 - format.getGBits())) << format.getGShift(),
-					(0xFF >> (8 - format.getBBits())) << format.getBShift(),
-					(0xFF >> (8 - format.getABits())) << format.getAShift());
+					format.getRMax() << format.getRShift(),
+					format.getGMax() << format.getGShift(),
+					format.getBMax() << format.getBShift(),
+					format.getAMax() << format.getAShift());
+
+		assert(mSDLSoftwareSurface->format->Rshift == format.getRShift() &&
+				mSDLSoftwareSurafce->format->Gshift == format.getGShift() &&
+				mSDLSoftwareSurafce->format->Bshift == format.getBShift());
 	}
 	else
 	{
