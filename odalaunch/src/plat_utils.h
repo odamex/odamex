@@ -24,13 +24,13 @@
 #ifndef __PLAT_UTILS__
 #define __PLAT_UTILS__
 
-#include <wx/window.h>
+#include <wx/frame.h>
 #include <wx/icon.h>
 
 // Windows
 void wxMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon);
 
 // OSX
-void wxMacRemoveFileMenu(wxWindow *parent);
+void wxMacRemoveFileMenu(wxFrame *parent);
 
 #endif // __PLAT_UTILS__

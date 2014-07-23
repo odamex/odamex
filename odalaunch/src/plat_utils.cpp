@@ -42,7 +42,7 @@ void wxMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon)
 }
 
 // Remove the file menu on Mac as it will be empty
-void wxMacRemoveFileMenu(wxWindow *parent)
+void wxMacRemoveFileMenu(wxFrame *parent)
 {
     #ifdef __WXMAC__
     wxMenuBar *MenuBar = parent->GetMenuBar();

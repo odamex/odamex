@@ -25,6 +25,7 @@
 
 #include <wx/window.h>
 #include <wx/infobar.h>
+#include <wx/sizer.h>
 #include <wx/string.h>
 #include <wx/utils.h>
 
