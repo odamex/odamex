@@ -537,7 +537,11 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 					mPrimarySurface->getBuffer(),
 					mPrimarySurface->getWidth(), mPrimarySurface->getHeight(),
 					mPrimarySurface->getBitsPerPixel(),
-					mPrimarySurface->getPitch(), 0, 0, 0, 0);
+					mPrimarySurface->getPitch(),
+					(0xFF >> (8 - format.getRBits())) << format.getRShift(),
+					(0xFF >> (8 - format.getGBits())) << format.getGShift(),
+					(0xFF >> (8 - format.getBBits())) << format.getBShift(),
+					(0xFF >> (8 - format.getABits())) << format.getAShift());
 	}
 	else
 	{
