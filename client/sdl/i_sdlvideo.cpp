@@ -544,8 +544,8 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 					format.getAMax() << format.getAShift());
 
 		assert(mSDLSoftwareSurface->format->Rshift == format.getRShift() &&
-				mSDLSoftwareSurafce->format->Gshift == format.getGShift() &&
-				mSDLSoftwareSurafce->format->Bshift == format.getBShift());
+				mSDLSoftwareSurface->format->Gshift == format.getGShift() &&
+				mSDLSoftwareSurface->format->Bshift == format.getBShift());
 	}
 	else
 	{
