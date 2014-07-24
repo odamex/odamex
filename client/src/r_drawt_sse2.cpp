@@ -362,7 +362,7 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 			const __m128i vec_input1 = _mm_load_si128((__m128i*)(dest + 4));
 
 			// Expand the width of each color channel from 8-bits to 16-bits
-			// by splitting input into two 128-bit variables, each
+			// by splitting each input vector into two 128-bit variables, each
 			// containing 2 ARGB values. 16-bit color channels are needed to
 			// accomodate multiplication.
 			__m128i vec_lower0 = _mm_unpacklo_epi8(vec_input0, _mm_setzero_si128());

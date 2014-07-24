@@ -48,32 +48,6 @@
 #include "r_main.h"
 #include "i_video.h"
 
-// With MMX we can process 4 16-bit words at a time.
-
-// Blend 2 colors against 1 color using MMX:
-#define blend2vs1_mmx(input, blendMult, blendInvAlpha, upper8mask) \
-	(_mm_packs_pu16( \
-		_mm_srli_pi16( \
-			_mm_add_pi16( \
-				_mm_mullo_pi16( \
-					_mm_and_si64(_mm_unpacklo_pi8(input, input), upper8mask), \
-					blendInvAlpha \
-				), \
-				blendMult \
-			), \
-			8 \
-		), \
-		_mm_srli_pi16( \
-			_mm_add_pi16( \
-				_mm_mullo_pi16( \
-					_mm_and_si64(_mm_unpackhi_pi8(input, input), upper8mask), \
-					blendInvAlpha \
-				), \
-				blendMult \
-			), \
-			8 \
-		) \
-	))
 
 // Direct rendering (32-bit) functions for MMX optimization:
 
@@ -87,29 +61,6 @@ static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
 }
 
 
-//
-// R_SetM64
-//
-// Sets an __m64 MMX register with the given color channel values.
-// The surface is queried for the pixel format and the color channel values
-// are set in the appropriate order for the pixel format.
-//
-static inline __m64 R_SetM64(const IWindowSurface* surface, int a, int r, int g, int b)
-{
-	// determine the layout of the color channels in memory
-	const PixelFormat* format = surface->getPixelFormat();
-	int apos = (24 - format->getAShift()) >> 3;
-	int rpos = (24 - format->getRShift()) >> 3;
-	int gpos = (24 - format->getGShift()) >> 3;
-	int bpos = (24 - format->getBShift()) >> 3;
-
-	uint16_t values[4];
-	values[apos] = a; values[rpos] = r; values[gpos] = g; values[bpos] = b;
-
-	return _mm_set_pi16(values[0], values[1], values[2], values[3]);
-}
-
-
 void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
 	int surface_pitch_pixels = surface->getPitchInPixels();
@@ -118,11 +69,9 @@ void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, i
 	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
 
 	// MMX temporaries:
-	const __m64 upper8mask		= R_SetM64(surface, 0, 0xFF, 0xFF, 0xFF);
-	const __m64 blendAlpha		= R_SetM64(surface, 0, alpha, alpha, alpha);
-	const __m64 blendInvAlpha	= R_SetM64(surface, 0, 256 - alpha, 256 - alpha, 256 - alpha);
-	const __m64 blendColor		= R_SetM64(surface, 0, color.getr(), color.getg(), color.getb()); 
-	const __m64 blendMult		= _mm_mullo_pi16(blendColor, blendAlpha);
+	const __m64 vec_color		= _mm_unpacklo_pi8(_mm_set1_pi32(color), _mm_setzero_si64());
+	const __m64 vec_alphacolor	= _mm_mullo_pi16(vec_color, _mm_set1_pi16(alpha));
+	const __m64 vec_invalpha	= _mm_set1_pi16(256 - alpha);
 
 	for (int rowcount = h; rowcount > 0; --rowcount)
 	{
@@ -132,7 +81,7 @@ void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, i
 		if (align > w)
 			align = w;
 
-		const int batch_size = 2;
+		const int batch_size = 4;
 		int batches = (w - align) / batch_size;
 		int remainder = (w - align) & (batch_size - 1);
 
@@ -143,12 +92,31 @@ void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, i
 			dest++;
 		}
 
-		// MMX optimize the bulk in batches of 2 colors:
+		// MMX optimize the bulk in batches of 4 pixels:
 		while (batches--)
 		{
-			const __m64 input = *((__m64*)dest);
-			const __m64 output = blend2vs1_mmx(input, blendMult, blendInvAlpha, upper8mask);
-			*((__m64*)dest) = output;
+			// Load 2 pixels into input0 and 2 pixels into input1
+			const __m64 vec_input0 = *((__m64*)(dest + 0));
+			const __m64 vec_input1 = *((__m64*)(dest + 2));
+
+			// Expand the width of each color channel from 8-bits to 16-bits
+			// by splitting each input vector into two 64-bit variables, each
+			// containing 1 ARGB value. 16-bit color channels are needed to
+			// accomodate multiplication.
+			__m64 vec_lower0 = _mm_unpacklo_pi8(vec_input0, _mm_setzero_si64());
+			__m64 vec_upper0 = _mm_unpackhi_pi8(vec_input0, _mm_setzero_si64());
+			__m64 vec_lower1 = _mm_unpacklo_pi8(vec_input1, _mm_setzero_si64());
+			__m64 vec_upper1 = _mm_unpackhi_pi8(vec_input1, _mm_setzero_si64());
+
+			// ((input * invAlpha) + (color * Alpha)) >> 8
+			vec_lower0 = _mm_srli_pi16(_mm_add_pi16(_mm_mullo_pi16(vec_lower0, vec_invalpha), vec_alphacolor), 8); 
+			vec_upper0 = _mm_srli_pi16(_mm_add_pi16(_mm_mullo_pi16(vec_upper0, vec_invalpha), vec_alphacolor), 8); 
+			vec_lower1 = _mm_srli_pi16(_mm_add_pi16(_mm_mullo_pi16(vec_lower1, vec_invalpha), vec_alphacolor), 8); 
+			vec_upper1 = _mm_srli_pi16(_mm_add_pi16(_mm_mullo_pi16(vec_upper1, vec_invalpha), vec_alphacolor), 8); 
+
+			// Compress the width of each color channel to 8-bits again and store in dest
+			*((__m64*)(dest + 0)) = _mm_packs_pu16(vec_lower0, vec_upper0);
+			*((__m64*)(dest + 2)) = _mm_packs_pu16(vec_lower1, vec_upper1);
 
 			dest += batch_size;
 		}
