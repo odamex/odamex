@@ -51,94 +51,87 @@ typedef vector unsigned char vu8;
 typedef vector unsigned short vu16;
 typedef vector unsigned int vu32;
 
-// Blend 4 colors against 1 color with alpha
-#define blend4vs1_altivec(input,blendMult,blendInvAlpha,upper8mask) \
-	((vu8)vec_packsu( \
-		(vu16)vec_sr( \
-			(vu16)vec_mladd( \
-				(vu16)vec_and((vu8)vec_unpackh((vs8)input), (vu8)upper8mask), \
-				(vu16)blendInvAlpha, \
-				(vu16)blendMult \
-			), \
-			(vu16)vec_splat_u16(8) \
-		), \
-		(vu16)vec_sr( \
-			(vu16)vec_mladd( \
-				(vu16)vec_and((vu8)vec_unpackl((vs8)input), (vu8)upper8mask), \
-				(vu16)blendInvAlpha, \
-				(vu16)blendMult \
-			), \
-			(vu16)vec_splat_u16(8) \
-		) \
-	))
-
 // Direct rendering (32-bit) functions for ALTIVEC optimization:
-
-
 
 void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 	int surface_pitch_pixels = surface->getPitchInPixels();
+	int line_inc = surface_pitch_pixels - w;
 
-	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
+	// ALTIVEC temporaries:
+	const vu8 vec_zero				= (vu8)vec_splat_u8(0);
+	const vu16 vec_color			= (vu16)vec_unpackl((vu8)vec_splat_u32(color), vec_zero);
+	const vu16 vec_alphacolor		= (vu16)vec_mladd((vu16)vec_color, (vu16)vec_splat_u16(alpha), (vu16)vec_zero);
+	const vu16 vec_invalpha			= (vu16)vec_splat_u16(256 - alpha);
 
-	int batches = w / 4;
-	int remainder = w & 3;
+	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
 
-	// determine the layout of the color channels in memory
-	const PixelFormat* format = surface->getPixelFormat();
-	int apos = (24 - format->getAShift()) >> 3;
-	int rpos = (24 - format->getRShift()) >> 3;
-	int gpos = (24 - format->getGShift()) >> 3;
-	int bpos = (24 - format->getBShift()) >> 3;
-
-	uint16_t values[4];
-
-	// AltiVec temporaries:
-	const vu16 zero				= { 0, 0, 0, 0, 0, 0, 0, 0 };
-
-	values[apos] = 0; values[rpos] = values[gpos] = values[bpos] = 0xFF;
-	const vu16 upper8mask		= { values[0], values[1], values[2], values[3],
-									values[0], values[1], values[2], values[3] };
-
-	values[apos] = 0; values[rpos] = values[gpos] = values[bpos] = alpha;
-	const vu16 blendAlpha		= { values[0], values[1], values[2], values[3],
-									values[0], values[1], values[2], values[3] };
-
-	values[apos] = 0; values[rpos] = values[gpos] = values[bpos] = 256 - alpha;
-	const vu16 blendInvAlpha		= { values[0], values[1], values[2], values[3],
-									values[0], values[1], values[2], values[3] };
-	
-	values[apos] = 0; values[rpos] = color.getr(), values[gpos] = color.getg(), values[bpos] = color.getb();
-	const vu16 blendColor		= { values[0], values[1], values[2], values[3],
-									values[0], values[1], values[2], values[3] };
-
-	const vu16 blendMult		= vec_mladd(blendColor, blendAlpha, zero);
-
-	for (int y = y1; y < y1 + h; y++)
+	for (int rowcount = h; rowcount > 0; --rowcount)
 	{
-		int x = x1;
+		// [SL] Calculate how many pixels of each row need to be drawn before dest is
+		// aligned to a 128-bit boundary.
+		int align = R_GetBytesUntilAligned(dest, 128/8) / sizeof(argb_t);
+		if (align > w)
+			align = w;
 
-		// AltiVec optimize the bulk in batches of 4 colors:
-		for (int i = 0; i < batches; ++i, x += 4)
+		const int batch_size = 8;
+		int batches = (w - align) / batch_size;
+		int remainder = (w - align) & (batch_size - 1);
+
+		// align the destination buffer to 128-bit boundary
+		while (align--)
 		{
-			const vu32 input = {line[x + 0], line[x + 1], line[x + 2], line[x + 3]};
-			const vu32 output = (vu32)blend4vs1_altivec(input, blendMult, blendInvAlpha, upper8mask);
-			vec_ste(output, 0, &line[x]);
-			vec_ste(output, 4, &line[x]);
-			vec_ste(output, 8, &line[x]);
-			vec_ste(output, 12, &line[x]);
+			*dest = alphablend1a(*dest, color, alpha);
+			dest++;
 		}
 
-		if (remainder)
+		// SSE2 optimize the bulk in batches of 8 pixels:
+		while (batches--)
 		{
-			// Pick up the remainder:
-			for (; x < x1 + w; x++)
-				line[x] = alphablend1a(line[x], color, alpha);
+			// Load 4 pixels into input0 and 4 pixels into input1
+			const vu32 vec_input0 = { dest[0], dest[1], dest[2], dest[3] };
+			const vu32 vec_input1 = { dest[4], dest[5], dest[6], dest[7] };
+
+			// Expand the width of each color channel from 8-bits to 16-bits
+			// by splitting each input vector into two 128-bit variables, each
+			// containing 2 ARGB values. 16-bit color channels are needed to
+			// accomodate multiplication.
+			vu16 vec_lower0 = (vu16)vec_unpackl((vu8)vec_input0, (vu8)vec_zero);
+			vu16 vec_upper0 = (vu16)vec_unpackh((vu8)vec_input0, (vu8)vec_zero);
+			vu16 vec_lower1 = (vu16)vec_unpackl((vu8)vec_input1, (vu8)vec_zero);
+			vu16 vec_upper1 = (vu16)vec_unpackh((vu8)vec_input1, (vu8)vec_zero);
+
+			// ((input * invAlpha) + (color * Alpha)) >> 8
+			vec_lower0 = (vu16)vec_sr(vec_mladd(vec_lower0, vec_invalpha, vec_alphacolor), vec_splat_u16(8));
+			vec_upper0 = (vu16)vec_sr(vec_mladd(vec_upper0, vec_invalpha, vec_alphacolor), vec_splat_u16(8));
+			vec_lower1 = (vu16)vec_sr(vec_mladd(vec_lower1, vec_invalpha, vec_alphacolor), vec_splat_u16(8));
+			vec_upper1 = (vu16)vec_sr(vec_mladd(vec_upper1, vec_invalpha, vec_alphacolor), vec_splat_u16(8));
+
+			// Compress the width of each color channel to 8-bits again
+			vu8 vec_output0 = (vu8)vec_packsu(vec_lower0, vec_upper0);
+			vu8 vec_output1 = (vu8)vec_packsu(vec_lower1, vec_upper1);
+
+			// Store in dest
+			vec_ste(output0, 0, dest + 0);
+			vec_ste(output0, 4, dest + 0);
+			vec_ste(output0, 8, dest + 0);
+			vec_ste(output0, 12, dest + 0);
+			vec_ste(output1, 0, dest + 4);
+			vec_ste(output1, 4, dest + 4);
+			vec_ste(output1, 8, dest + 4);
+			vec_ste(output1, 12, dest + 4);
+
+			dest += batch_size;
 		}
 
-		line += surface_pitch_pixels;
+		// Pick up the remainder:
+		while (remainder--)
+		{
+			*dest = alphablend1a(*dest, color, alpha);
+			dest++;
+		}
+
+		dest += line_inc;
 	}
 }
 
