@@ -46,8 +46,10 @@ class QueryThread : public wxThread
 
         QueryThread(wxEvtHandler *EventHandler);
         ~QueryThread() { delete m_Condition; }
-        inline QueryThreadStatus_t GetStatus() { return m_Status; };
-
+        
+        QueryThreadStatus_t GetStatus();
+        void SetStatus(QueryThreadStatus_t Status);
+        
         void Signal(odalpapi::Server *QueryServer, 
                     const std::string &Address, 
                     const wxUint16 Port, 
@@ -74,6 +76,7 @@ class QueryThread : public wxThread
         QueryThreadStatus_t m_Status;
 
         wxMutex            m_Mutex;
+        wxMutex            m_StatusMutex;
         wxCondition        *m_Condition;
 };
 
