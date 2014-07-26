@@ -28,6 +28,12 @@
 #include <wx/icon.h>
 #include <wx/string.h>
 
+#ifdef __forceinline
+	#define forceinline __forceinline
+#else
+	#define forceinline inline
+#endif
+
 // All
 wxString OdaGetInstallDir();
 wxString OdaGetDataDir();
@@ -37,5 +43,19 @@ void OdaMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon);
 
 // OSX
 void OdaMacRemoveFileMenu(wxFrame *parent);
+
+//
+// clamp
+//
+// Clamps the value of in to the range min, max
+//
+#ifdef clamp
+	#undef clamp
+#endif
+template<class T>
+forceinline T clamp (const T in, const T min, const T max)
+{
+	return in <= min ? min : in >= max ? max : in;
+}
 
 #endif // __PLAT_UTILS__

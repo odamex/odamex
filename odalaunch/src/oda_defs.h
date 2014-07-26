@@ -57,11 +57,8 @@
 // Thread multiplier value (this value * number of cores) for querying
 #define ODA_THRMULVAL 8
 
-// Default number of threads for single processor/core systems
-#define ODA_THRDEFVAL 10 
-
-// TODO: Maximum number of threads
-//#define ODA_THRMAXVAL ...
+// Maximum number of threads
+#define ODA_THRMAXVAL 64
 
 // Network subsystem
 // -----------------

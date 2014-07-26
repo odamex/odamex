@@ -196,15 +196,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     
     QServer = NULL;
 
-    // Base number of threads on cpu count in the system (including cores)
-    // and multiply that by a fixed value
-    NUM_THREADS = wxThread::GetCPUCount();
-
-    if (NUM_THREADS == -1)
-        NUM_THREADS = ODA_THRDEFVAL;
-    else
-        NUM_THREADS *= ODA_THRMULVAL;
-
+    NUM_THREADS = QueryThread::GetIdealThreadCount();
+           
     for (size_t i = 0; i < NUM_THREADS; ++i)
     {
         threadVector.push_back(new QueryThread(this));

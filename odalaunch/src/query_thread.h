@@ -59,6 +59,8 @@ class QueryThread : public wxThread
         
         virtual void *Entry();
 
+        static int GetIdealThreadCount();
+        
     private:
         wxEvtHandler      *m_EventHandler;
         odalpapi::Server  *m_QueryServer;

@@ -24,6 +24,7 @@
 #include <wx/msgdlg.h>
 #include <wx/app.h>
 
+#include "plat_utils.h"
 #include "query_thread.h"
 
 int NUM_THREADS;
@@ -104,4 +105,18 @@ void *QueryThread::Entry()
     }
     
     return NULL;
+}
+
+int QueryThread::GetIdealThreadCount()
+{
+    int ThreadCount;
+    
+    // Base number of threads on cpu count in the system (including cores)
+    // and multiply that by a fixed value
+    ThreadCount = wxThread::GetCPUCount();
+
+    if (ThreadCount != -1)
+        ThreadCount *= ODA_THRMULVAL;
+
+    return clamp(ThreadCount, ODA_THRMULVAL, ODA_THRMAXVAL); 
 }
