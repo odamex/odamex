@@ -350,7 +350,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     wxPasswordEntryDialog ped(this, wxT("Server is password-protected. \n\n"
         "Please enter the password"), wxT("Manual Connect"), wxT(""));
 
-    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, ODA_QRYSERVERTIMEOUT);
 
     // Keep asking for a valid ip/port number
     while (1)
@@ -514,9 +514,9 @@ bool dlgMain::MonThrGetMasterList()
     odalpapi::BufferedSocket Socket;
 
     // Get the masters timeout from the config file
-    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
-    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
-    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
+    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, ODA_QRYMASTERTIMEOUT);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, ODA_QRYGSRETRYCOUNT);
+    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, ODA_QRYUSEBROADCAST);
 
     MServer.SetSocket(&Socket);
 
@@ -566,8 +566,8 @@ void dlgMain::MonThrGetServerList()
         return;
     }
 
-    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
-    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, ODA_QRYSERVERTIMEOUT);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, ODA_QRYGSRETRYCOUNT);
 
     delete[] QServer;
     QServer = new Server [ServerCount];
@@ -638,8 +638,8 @@ void dlgMain::MonThrGetSingleServer()
     if (!MServer.GetServerCount())
         return;
 
-    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
-    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, ODA_QRYSERVERTIMEOUT);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, ODA_QRYGSRETRYCOUNT);
 
     QServer[mtcs_Request.Index].SetRetries(RetryCount);
 

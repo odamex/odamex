@@ -24,6 +24,7 @@
 
 #include "net_packet.h"
 #include "dlg_config.h"
+#include "oda_defs.h"
 
 #include <wx/settings.h>
 #include <wx/menu.h>
@@ -139,11 +140,12 @@ void dlgConfig::Show()
 
     m_DirCtrlChooseOdamexPath->SetPath(cfg_file->odamex_directory);
 
-    wxString MasterTimeout, ServerTimeout, RetryCount, ExtraCmdLineArgs;
+    int MasterTimeout, ServerTimeout, RetryCount;
+    wxString ExtraCmdLineArgs;
 
-    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, wxT("500"));
-    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, wxT("1000"));
-    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, wxT("2"));
+    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, ODA_QRYMASTERTIMEOUT);
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, ODA_QRYSERVERTIMEOUT);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, ODA_QRYGSRETRYCOUNT);
     ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
 
     m_SpnCtrlMasterTimeout->SetValue(MasterTimeout);
@@ -153,9 +155,11 @@ void dlgConfig::Show()
 
     wxInt32 PQGood, PQPlayable, PQLaggy;
 
-    ConfigInfo.Read(wxT("IconPingQualityGood"), &PQGood, 150);
-    ConfigInfo.Read(wxT("IconPingQualityPlayable"), &PQPlayable, 300);
-    ConfigInfo.Read(wxT("IconPingQualityLaggy"), &PQLaggy, 350);
+    ConfigInfo.Read(wxT("IconPingQualityGood"), &PQGood, ODA_UIPINGQUALITYGOOD);
+    ConfigInfo.Read(wxT("IconPingQualityPlayable"), &PQPlayable, 
+                    ODA_UIPINGQUALITYPLAYABLE);
+    ConfigInfo.Read(wxT("IconPingQualityLaggy"), &PQLaggy, 
+                    ODA_UIPINGQUALITYLAGGY);
 
     m_SpnCtrlPQGood->SetValue(PQGood);
     m_SpnCtrlPQPlayable->SetValue(PQPlayable);
@@ -442,7 +446,7 @@ void dlgConfig::LoadSettings()
     // Allow $ in directory names
     ConfigInfo.SetExpandEnvVars(false);
 
-    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
+    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, ODA_QRYUSEBROADCAST);
 
     m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
 

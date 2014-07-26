@@ -32,8 +32,27 @@
 // Show servers that cannot be contacted because of a firewall or bad connection
 #define ODA_UISHOWBLOCKEDSERVERS 0
 
-// Thread system
-// -------------
+// Integer ranges for ping quality, these are displayed as icons in the settings
+// dialog
+#define ODA_UIPINGQUALITYGOOD 150
+#define ODA_UIPINGQUALITYPLAYABLE 300
+#define ODA_UIPINGQUALITYLAGGY 350
+
+
+// Querying system
+// ---------------
+
+// Master server timeout
+#define ODA_QRYMASTERTIMEOUT 500
+
+// Game server timeout
+#define ODA_QRYSERVERTIMEOUT 1000
+
+// Number of retries to query the game server
+#define ODA_QRYGSRETRYCOUNT 2
+
+// Broadcast across all networks for servers
+#define ODA_QRYUSEBROADCAST 0
 
 // Thread multiplier value (this value * number of cores) for querying
 #define ODA_THRMULVAL 8
