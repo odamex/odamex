@@ -24,6 +24,7 @@
 #include "plat_utils.h"
 
 #include <wx/menu.h>
+#include <wx/filefn.h>
 
 #ifdef __WXMSW__
     #include <windows.h>
@@ -31,7 +32,7 @@
 
 // Apply hack for the titlebar under windows vista and 7 so it will display
 // properly
-void wxMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon)
+void OdaMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon)
 {
     #ifdef _WIN32
     SendMessage((HWND)Handle, WM_SETICON, ICON_SMALL, 
@@ -42,7 +43,7 @@ void wxMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon)
 }
 
 // Remove the file menu on Mac as it will be empty
-void wxMacRemoveFileMenu(wxFrame *parent)
+void OdaMacRemoveFileMenu(wxFrame *parent)
 {
     #ifdef __WXMAC__
     wxMenuBar *MenuBar = parent->GetMenuBar();
@@ -65,4 +66,32 @@ void wxMacRemoveFileMenu(wxFrame *parent)
         delete fileMenu;
     }
     #endif
+}
+
+wxString OdaGetInstallDir()
+{
+    wxString InstallDir;
+    
+    #if defined(INSTALL_PREFIX) && defined(INSTALL_BINDIR)
+    const char* bindir_cstr = INSTALL_PREFIX "/" INSTALL_BINDIR;
+    InstallDir = wxString::FromAscii(bindir_cstr);
+    #else
+    InstallDir = wxGetCwd();
+    #endif
+    
+    return InstallDir;
+}
+
+wxString OdaGetDataDir()
+{
+    wxString DataDir;
+    
+    #if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
+    const char* datadir_cstr = INSTALL_PREFIX "/" INSTALL_DATADIR;
+    DataDir = wxString::FromAscii(datadir_cstr);
+    #else
+    DataDir =  wxGetCwd();
+    #endif
+    
+    return DataDir;
 }

@@ -26,6 +26,7 @@
 #include "query_thread.h"
 #include "plat_utils.h"
 #include "str_utils.h"
+#include "oda_defs.h"
 
 #include "md5.h"
 
@@ -137,7 +138,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     SetIcon(MainIcon);
 
     // wxMSW: Apply a hack to fix the titlebar icon on windows vista and 7
-    wxMswFixTitlebarIcon(GetHandle(), MainIcon);
+    OdaMswFixTitlebarIcon(GetHandle(), MainIcon);
 
     // Sets the title of the application with a version string to boot
     Version = wxString::Format(
@@ -147,31 +148,19 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     SetLabel(Version);
 
     // wxMAC: There is no file menu on OSX platforms
-    wxMacRemoveFileMenu(this);
+    OdaMacRemoveFileMenu(this);
     
-    launchercfg_s.get_list_on_start = 1;
-    launchercfg_s.show_blocked_servers = 0;
+    launchercfg_s.get_list_on_start = ODA_UIGETLISTONSTART;
+    launchercfg_s.show_blocked_servers = ODA_UISHOWBLOCKEDSERVERS;
 
-    #if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
-    const char* datadir_cstr = INSTALL_PREFIX "/" INSTALL_DATADIR;
-    launchercfg_s.wad_paths = wxString::FromAscii(datadir_cstr);
-    #else
-    launchercfg_s.wad_paths = wxGetCwd();
-    #endif
-
-    #if defined(INSTALL_PREFIX) && defined(INSTALL_BINDIR)
-    const char* bindir_cstr = INSTALL_PREFIX "/" INSTALL_BINDIR;
-    launchercfg_s.odamex_directory = wxString::FromAscii(bindir_cstr);
-    #else
-    launchercfg_s.odamex_directory = wxGetCwd();
-    #endif
-
+    launchercfg_s.wad_paths = OdaGetDataDir();
+    launchercfg_s.odamex_directory = OdaGetInstallDir();
+    
     m_LstCtrlServers = XRCCTRL(*this, "Id_LstCtrlServers", LstOdaServerList);
     m_LstCtrlPlayers = XRCCTRL(*this, "Id_LstCtrlPlayers", LstOdaPlayerList);
     m_LstOdaSrvDetails = XRCCTRL(*this, "Id_LstCtrlServerDetails", LstOdaSrvDetails);
     m_PnlServerFilter = XRCCTRL(*this, "Id_PnlServerFilter", wxPanel);
     m_SrchCtrlGlobal = XRCCTRL(*this, "Id_SrchCtrlGlobal", wxTextCtrl);
-
 
 	// set up the master server information
 	wxCmdLineParser CmdLineParser(wxTheApp->argc, wxTheApp->argv);

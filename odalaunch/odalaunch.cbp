@@ -363,6 +363,7 @@
 		<Unit filename="src/main.h" />
 		<Unit filename="src/md5.cpp" />
 		<Unit filename="src/md5.h" />
+		<Unit filename="src/oda_defs.h" />
 		<Unit filename="src/plat_utils.cpp" />
 		<Unit filename="src/plat_utils.h" />
 		<Unit filename="src/query_thread.cpp" />

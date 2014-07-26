@@ -29,13 +29,7 @@
 
 #include "net_packet.h"
 
-// Thread multiplier value
-#define ODA_THRMULVAL 8
-
-// Default number of threads for single processor/core systems
-#define ODA_THRDEFVAL 10 
-
-DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1);
+DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1)
 
 typedef enum QueryThreadStatus
 {

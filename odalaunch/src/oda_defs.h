@@ -16,26 +16,32 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  wxWidgets-specific fixes and workarounds that apply to different platforms
-//  that this program runs under
+//	The launchers default settings
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __PLAT_UTILS__
-#define __PLAT_UTILS__
+#ifndef __ODA_DEFS_H__
+#define __ODA_DEFS_H__
 
-#include <wx/frame.h>
-#include <wx/icon.h>
-#include <wx/string.h>
+// User interface
+// --------------
 
-// All
-wxString OdaGetInstallDir();
-wxString OdaGetDataDir();
+// Get a list of servers when the program is first loaded
+#define ODA_UIGETLISTONSTART 1
 
-// Windows
-void OdaMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon);
+// Show servers that cannot be contacted because of a firewall or bad connection
+#define ODA_UISHOWBLOCKEDSERVERS 0
 
-// OSX
-void OdaMacRemoveFileMenu(wxFrame *parent);
+// Thread system
+// -------------
 
-#endif // __PLAT_UTILS__
+// Thread multiplier value (this value * number of cores) for querying
+#define ODA_THRMULVAL 8
+
+// Default number of threads for single processor/core systems
+#define ODA_THRDEFVAL 10 
+
+// TODO: Maximum number of threads
+//#define ODA_THRMAXVAL ...
+
+#endif // __ODA_DEFS_H__

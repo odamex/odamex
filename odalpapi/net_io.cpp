@@ -144,7 +144,7 @@ bool BufferedSocket::CreateSocket()
 void BufferedSocket::SetBroadcast(bool enabled)
 {
     m_Broadcast = enabled;
-};
+}
 
 void BufferedSocket::DestroySocket()
 {
