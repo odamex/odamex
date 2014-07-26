@@ -565,14 +565,6 @@ void dlgMain::MonThrGetServerList()
     delete[] QServer;
     QServer = new Server [ServerCount];
 
-    /*
-        Thread pool manager:
-        Executes a number of threads that contain the same amount of
-        servers, when a thread finishes, it gets deleted and another
-        gets executed with a different server, eventually all the way
-        down to 0 servers.
-    */
-
     size_t thrvec_size = threadVector.size();
 
     while(count < ServerCount)
@@ -580,36 +572,38 @@ void dlgMain::MonThrGetServerList()
         for(size_t i = 0; i < thrvec_size; ++i)
         {
             QueryThread *OdaQT = threadVector[i];
-            
-            if(OdaQT->GetStatus() == QueryThread_Running)
+            QueryThreadStatus Status = OdaQT->GetStatus();
+
+            if (Status == QueryThread_Running)
+            {
+                // Give up some timeslice for this thread so worker thread slots
+                // become available
+                OdaTH->Sleep(15);
+                
                 continue;
+            }
             else
                 ++count;
-            
+
+            // If we got this far, it means a thread has finished and needs more
+            // work, give it a job to do
             if(serverNum < ServerCount)
             {
                 MServer.GetServerAddress(serverNum, Address, Port);
 
-                // Internally sets the arguments, signals the
-                // condition variable and runs the thread with
-                // the args
                 OdaQT->Signal(&QServer[serverNum], Address, Port, serverNum, 
                     ServerTimeout, RetryCount);
 
                 ++serverNum;
             }
-            
-            // We got told to exit, so we should wait for these worker threads
-            // to gracefully exit
+
+            // Check if the user wants us to exit
             if (OdaTH->TestDestroy())
             {
                 return;
             }
         }
-        
-        // Let other threads get some time
-        OdaTH->Sleep(15);
-    }               
+    }
 
     // Wait until all threads have finished before posting an event
     for (size_t i = 0; i < thrvec_size; ++i)
