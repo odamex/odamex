@@ -1000,7 +1000,8 @@ void dlgMain::OnServerListClick(wxListEvent& event)
 void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
     const wxString &waddirs, const wxString &Password)
 {
-    wxFileConfig ConfigInfo;
+    wxFileConfig ConfigInfo;   
+    wxString BinName, CmdLine;
     wxString ExtraCmdLineArgs;
 
     if (ODX_Path.IsEmpty())
@@ -1009,50 +1010,54 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
 
         return;
     }
-
+        
     #ifdef __WXMSW__
-      wxString binname = ODX_Path + wxT('\\') + wxT("odamex");
+      BinName = ODX_Path + wxT('\\') + wxT("odamex");
     #elif __WXMAC__
-      wxString binname = ODX_Path + wxT("/odamex.app/Contents/MacOS/odamex");
+      BinName = ODX_Path + wxT("/odamex.app/Contents/MacOS/odamex");
     #else
-      wxString binname = ODX_Path + wxT("/odamex");
+      BinName = ODX_Path + wxT("/odamex");
     #endif
-
-    wxString cmdline = wxT("");
-
-    wxString dirs = waddirs.Mid(0, waddirs.Length());
-
-    cmdline += wxString::Format(wxT("%s"), binname.c_str());
-
+    
+    CmdLine = BinName;
+    
     if (!Address.IsEmpty())
-		cmdline += wxString::Format(wxT(" -connect %s"),
-									Address.c_str());
-
+    {
+		CmdLine += wxT(" -connect ");
+        CmdLine += Address;
+    }
+    
 	if (!Password.IsEmpty())
-        cmdline += wxString::Format(wxT(" %s"),
-									Password.c_str());
+    {
+        CmdLine += wxT(" ");
+        CmdLine += Password;
+    }
 
-	// this is so the client won't mess up parsing
-	if (!dirs.IsEmpty())
-        cmdline += wxString::Format(wxT(" -waddir \"%s\""),
-                                    dirs.c_str());
+	if (!waddirs.IsEmpty())
+    {
+        CmdLine += wxT(" -waddir \"");
+        CmdLine += waddirs;
+        CmdLine += wxT("\"");
+    }
 
     // Check for any user command line arguments
     ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
 
     if (!ExtraCmdLineArgs.IsEmpty())
-        cmdline += wxString::Format(wxT(" %s"),
-                                    ExtraCmdLineArgs.c_str());
-
+    {
+        CmdLine += wxT(" ");
+        CmdLine += ExtraCmdLineArgs;
+    }
+        
     // wxWidgets likes to spit out its own message box on msw after our one
     #ifndef __WXMSW__
 	wxProcess *process = new wxProcess(wxPROCESS_REDIRECT);
 
 	if (wxExecute(cmdline, wxEXEC_ASYNC, process) <= 0)
         wxMessageBox(wxString::Format(wxT("Could not start %s!"),
-                                        binname.c_str()));
+                                        BinName.c_str()));
     #else
-    wxExecute(cmdline, wxEXEC_ASYNC, NULL);
+    wxExecute(CmdLine, wxEXEC_ASYNC, NULL);
     #endif
 }
 

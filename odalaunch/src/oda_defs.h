@@ -63,4 +63,7 @@
 // TODO: Maximum number of threads
 //#define ODA_THRMAXVAL ...
 
+// Network subsystem
+// -----------------
+
 #endif // __ODA_DEFS_H__
