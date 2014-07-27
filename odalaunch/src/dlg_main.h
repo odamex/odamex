@@ -129,7 +129,7 @@ class dlgMain : public wxFrame, wxThreadHelper
         dlgConfig *config_dlg;
         dlgServers *server_dlg;
         dlgAbout *AboutDialog;
-        frmOdaGet *OdaGet;
+        //frmOdaGet *OdaGet;
         
         wxPanel *m_PnlServerFilter;
         wxTextCtrl *m_SrchCtrlGlobal;

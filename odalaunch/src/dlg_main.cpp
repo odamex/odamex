@@ -230,8 +230,8 @@ dlgMain::~dlgMain()
     if (server_dlg != NULL)
         server_dlg->Destroy();
 
-    if (OdaGet != NULL)
-        OdaGet->Destroy();
+//    if (OdaGet != NULL)
+  //      OdaGet->Destroy();
 }
 
 void dlgMain::OnWindowCreate(wxWindowCreateEvent &event)
@@ -853,8 +853,8 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
 
 void dlgMain::OnOpenOdaGet(wxCommandEvent &event)
 {
-    if (OdaGet)
-        OdaGet->Show();
+//    if (OdaGet)
+  //      OdaGet->Show();
 }
 
 // Quick-Launch button click
