@@ -57,15 +57,6 @@
 #define PATH_DELIMITER ':'
 #endif
 
-// configuration file structure
-struct launchercfg_t
-{
-    bool     get_list_on_start;
-    bool     show_blocked_servers;
-    wxString    wad_paths;
-    wxString    odamex_directory;
-};
-
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
 #define NUM_ENVVARS 2
@@ -75,7 +66,7 @@ class dlgConfig: public wxDialog
 {
 	public:
 
-		dlgConfig(launchercfg_t *cfg, wxWindow* parent, wxWindowID id = -1);
+		dlgConfig(wxWindow* parent, wxWindowID id = -1);
 		virtual ~dlgConfig();
 
         void LoadSettings();
@@ -128,8 +119,6 @@ class dlgConfig: public wxDialog
 
         wxFileConfig ConfigInfo;
 
-        launchercfg_t *cfg_file;
-        
         bool UserChangedSetting;
 
 	private:

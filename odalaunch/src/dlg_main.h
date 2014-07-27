@@ -81,8 +81,7 @@ class dlgMain : public wxFrame, wxThreadHelper
         odalpapi::Server         NullServer;
         odalpapi::Server        *QServer;
         odalpapi::MasterServer   MServer;
-        
-        launchercfg_t launchercfg_s;
+
 	protected:
         void OnMenuServers(wxCommandEvent& event);
         void OnManualConnect(wxCommandEvent& event);

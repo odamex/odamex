@@ -128,7 +128,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
     wxString Version;
     wxIcon MainIcon;
-
+    bool GetListOnStart;
+    
     // Loads the frame from the xml resource file
 	wxXmlResource::Get()->LoadFrame(this, parent, wxT("dlgMain"));
 
@@ -149,13 +150,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     // wxMAC: There is no file menu on OSX platforms
     OdaMacRemoveFileMenu(this);
-    
-    launchercfg_s.get_list_on_start = ODA_UIGETLISTONSTART;
-    launchercfg_s.show_blocked_servers = ODA_UISHOWBLOCKEDSERVERS;
 
-    launchercfg_s.wad_paths = OdaGetDataDir();
-    launchercfg_s.odamex_directory = OdaGetInstallDir();
-    
     m_LstCtrlServers = XRCCTRL(*this, "Id_LstCtrlServers", LstOdaServerList);
     m_LstCtrlPlayers = XRCCTRL(*this, "Id_LstCtrlPlayers", LstOdaPlayerList);
     m_LstOdaSrvDetails = XRCCTRL(*this, "Id_LstCtrlServerDetails", LstOdaSrvDetails);
@@ -182,15 +177,16 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     }
     
     /* Init sub dialogs and load settings */
-    config_dlg = new dlgConfig(&launchercfg_s, this);
+    config_dlg = new dlgConfig(this);
     server_dlg = new dlgServers(&MServer, this);
     AboutDialog = new dlgAbout(this);
 
     /* Get the first directory for wad downloading */
+    /*
     wxInt32 Pos = launchercfg_s.wad_paths.Find(wxT(PATH_DELIMITER), false);
     wxString FirstDirectory = launchercfg_s.wad_paths.Mid(0, Pos);
 
-    OdaGet = new frmOdaGet(this, -1, FirstDirectory);
+    OdaGet = new frmOdaGet(this, -1, FirstDirectory);*/
 
 //    InfoBar = new OdaInfoBar(this);
     
@@ -202,9 +198,15 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     {
         threadVector.push_back(new QueryThread(this));
     }
+   
+    {
+        wxFileConfig ConfigInfo;
+           
+        ConfigInfo.Read(wxT(GETLISTONSTART), &GetListOnStart);
+    }
 
     // get master list on application start
-    if (launchercfg_s.get_list_on_start)
+    if (GetListOnStart)
     {
         wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmGetList);
 
@@ -448,9 +450,16 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
         }
     }
 
+	wxString OdamexDirectory, DelimWadPaths;
 
-    LaunchGame(ted_result, launchercfg_s.odamex_directory,
-        launchercfg_s.wad_paths, ped_result);
+    {
+        ConfigInfo.Read(wxT(ODAMEX_DIRECTORY), &OdamexDirectory, 
+                        OdaGetInstallDir());
+
+        ConfigInfo.Read(wxT(DELIMWADPATHS), &DelimWadPaths, OdaGetDataDir());
+    }
+
+    LaunchGame(ted_result, OdamexDirectory, DelimWadPaths, ped_result);
 }
 
 // Posts a message from the main thread to the monitor thread
@@ -714,13 +723,22 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 
         case mtrs_server_singletimeout:
         {
+            bool ShowBlockedServers;
+            
             i = m_LstCtrlServers->FindServer(stdstr_towxstr(QServer[Result->Index].GetAddress()));
 
             m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
 
             QServer[Result->Index].ResetData();
-
-            if (launchercfg_s.show_blocked_servers == false)
+            
+            {
+                wxFileConfig ConfigInfo;
+            
+                ConfigInfo.Read(wxT(SHOWBLOCKEDSERVERS), &ShowBlockedServers, 
+                                ODA_UISHOWBLOCKEDSERVERS);
+            }
+            
+            if (ShowBlockedServers == false)
                 break;
 
             if (i == -1)
@@ -772,13 +790,22 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
     {
         case 0: // server query timed out
         {
+            bool ShowBlockedServers;
+            
             i = m_LstCtrlServers->FindServer(stdstr_towxstr(QServer[event.GetInt()].GetAddress()));
 
             m_LstCtrlPlayers->DeleteAllItems();
 
             QServer[event.GetInt()].ResetData();
 
-            if (launchercfg_s.show_blocked_servers == false)
+            {
+                wxFileConfig ConfigInfo;
+            
+                ConfigInfo.Read(wxT(SHOWBLOCKEDSERVERS), &ShowBlockedServers, 
+                                ODA_UISHOWBLOCKEDSERVERS);
+            }
+            
+            if (ShowBlockedServers == false)
                 break;
 
             if (i == -1)
@@ -833,9 +860,17 @@ void dlgMain::OnOpenOdaGet(wxCommandEvent &event)
 // Quick-Launch button click
 void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 {
-	LaunchGame(_T(""),
-				launchercfg_s.odamex_directory,
-				launchercfg_s.wad_paths);
+	wxString OdamexDirectory, DelimWadPaths;
+
+	{
+        wxFileConfig ConfigInfo;
+	
+        ConfigInfo.Read(wxT(ODAMEX_DIRECTORY), &OdamexDirectory, 
+                        OdaGetInstallDir());
+        ConfigInfo.Read(wxT(DELIMWADPATHS), &DelimWadPaths, OdaGetDataDir());
+	}
+	
+	LaunchGame(wxT(""), OdamexDirectory, DelimWadPaths);
 
 }
 
@@ -900,8 +935,18 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
         }
     }
 
-    LaunchGame(stdstr_towxstr(QServer[i].GetAddress()), launchercfg_s.odamex_directory,
-        launchercfg_s.wad_paths, Password);
+	wxString OdamexDirectory, DelimWadPaths;
+
+	{
+        wxFileConfig ConfigInfo;
+	
+        ConfigInfo.Read(wxT(ODAMEX_DIRECTORY), &OdamexDirectory, 
+                        OdaGetInstallDir());
+        ConfigInfo.Read(wxT(DELIMWADPATHS), &DelimWadPaths, OdaGetDataDir());
+	}
+    
+    LaunchGame(stdstr_towxstr(QServer[i].GetAddress()), OdamexDirectory,
+        DelimWadPaths, Password);
 }
 
 // Get Master List button click
