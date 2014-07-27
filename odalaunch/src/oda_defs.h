@@ -60,7 +60,35 @@
 // Maximum number of threads
 #define ODA_THRMAXVAL 64
 
+
 // Network subsystem
 // -----------------
+
+
+// File system
+// -----------
+
+// Configuration file key names
+// Do not modify unless breaking our users config files is necessary
+#define GETLISTONSTART      "GET_LIST_ON_START"
+#define SHOWBLOCKEDSERVERS  "SHOW_BLOCKED_SERVERS"
+#define DELIMWADPATHS       "DELIMITED_WAD_PATHS"
+#define ODAMEX_DIRECTORY    "ODAMEX_DIRECTORY"
+#define EXTRACMDLINEARGS    "ExtraCommandLineArguments"
+#define MASTERTIMEOUT       "MasterTimeout"
+#define SERVERTIMEOUT       "ServerTimeout"
+#define USEBROADCAST        "UseBroadcast"
+#define RETRYCOUNT          "RetryCount"
+
+// Path separator
+#ifdef __WXMSW__
+#define PATH_DELIMITER ';'
+#else
+#define PATH_DELIMITER ':'
+#endif
+
+// Miscellaneous
+// -------------
+
 
 #endif // __ODA_DEFS_H__
