@@ -754,6 +754,8 @@ void D_DoomMain()
 	atterm(D_Shutdown);
 	D_Init();
 
+	atterm(I_Endoom);
+
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks();
 
