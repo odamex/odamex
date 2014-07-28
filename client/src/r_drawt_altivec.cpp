@@ -105,8 +105,8 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 		while (batches--)
 		{
 			// Load 4 pixels into input0 and 4 pixels into input1
-			const vu32 vec_input0 = { dest[0], dest[1], dest[2], dest[3] };
-			const vu32 vec_input1 = { dest[4], dest[5], dest[6], dest[7] };
+			const vu32 vec_input0 = vec_ld(0, dest);
+			const vu32 vec_input1 = vec_ld(16, dest);
 
 			// Expand the width of each color channel from 8-bits to 16-bits
 			// by splitting each input vector into two 128-bit variables, each
@@ -128,8 +128,8 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 			vu32 vec_output1 = (vu32)vec_packsu(vec_upper1, vec_lower1);
 
 			// Store in dest
-			vec_st(vec_output0, 0, dest + 0);
-			vec_st(vec_output1, 0, dest + 4);
+			vec_st(vec_output0, 0, dest);
+			vec_st(vec_output1, 16, dest);
 
 			dest += batch_size;
 		}
