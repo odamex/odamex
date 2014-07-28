@@ -571,8 +571,7 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 
 	// Tell argb_t the pixel format
 	if (format.getBitsPerPixel() == 32)
-		argb_t::setChannels(format.getAShift() / 8, format.getRShift() / 8,
-							format.getGShift() / 8, format.getBShift() / 8);
+		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
 	else
 		argb_t::setChannels(3, 2, 1, 0);
 
