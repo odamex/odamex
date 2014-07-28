@@ -31,12 +31,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if !defined(__APPLE_ALTIVEC__)
-#include <altivec.h>
-#endif
-
-#define ALTIVEC_ALIGNED(x) x __attribute__((aligned(16)))
-
 #include "doomtype.h"
 #include "doomdef.h"
 #include "i_system.h"
@@ -44,6 +38,12 @@
 #include "r_draw.h"
 #include "r_main.h"
 #include "i_video.h"
+
+#if !defined(__APPLE_ALTIVEC__)
+#include <altivec.h>
+#endif
+
+#define ALTIVEC_ALIGNED(x) x __attribute__((aligned(16)))
 
 // Useful vector shorthand typedefs:
 typedef vector signed char vs8;
@@ -105,8 +105,8 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 		while (batches--)
 		{
 			// Load 4 pixels into input0 and 4 pixels into input1
-			const vu32 vec_input0 = vec_ld(0, dest);
-			const vu32 vec_input1 = vec_ld(16, dest);
+			const vu32 vec_input0 = vec_ld(0, (uint32_t*)dest);
+			const vu32 vec_input1 = vec_ld(16, (uint32_t*)dest);
 
 			// Expand the width of each color channel from 8-bits to 16-bits
 			// by splitting each input vector into two 128-bit variables, each
@@ -128,8 +128,8 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 			vu32 vec_output1 = (vu32)vec_packsu(vec_upper1, vec_lower1);
 
 			// Store in dest
-			vec_st(vec_output0, 0, dest);
-			vec_st(vec_output1, 16, dest);
+			vec_st(vec_output0, 0, (uint32_t*)dest);
+			vec_st(vec_output1, 16, (uint32_t*)dest);
 
 			dest += batch_size;
 		}
