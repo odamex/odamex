@@ -533,19 +533,20 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 		// create a new IWindowSurface with its own frame buffer
 		mPrimarySurface = new IWindowSurface(sdlsurface->w, sdlsurface->h, &format);
 		
+		uint32_t rmask = uint32_t(format.getRMax()) << format.getRShift();
+		uint32_t gmask = uint32_t(format.getGMax()) << format.getGShift();
+		uint32_t bmask = uint32_t(format.getBMax()) << format.getBShift();
+
 		mSDLSoftwareSurface = SDL_CreateRGBSurfaceFrom(
 					mPrimarySurface->getBuffer(),
 					mPrimarySurface->getWidth(), mPrimarySurface->getHeight(),
 					mPrimarySurface->getBitsPerPixel(),
 					mPrimarySurface->getPitch(),
-					format.getRMax() << format.getRShift(),
-					format.getGMax() << format.getGShift(),
-					format.getBMax() << format.getBShift(),
-					format.getAMax() << format.getAShift());
+					rmask, gmask, bmask, 0);
 
-		assert(mSDLSoftwareSurface->format->Rshift == format.getRShift() &&
-				mSDLSoftwareSurface->format->Gshift == format.getGShift() &&
-				mSDLSoftwareSurface->format->Bshift == format.getBShift());
+		assert(mSDLSoftwareSurface->format->Rmask == sdlsurface->format->Rmask &&
+				mSDLSoftwareSurface->format->Gmask == sdlsurface->format->Gmask &&
+				mSDLSoftwareSurface->format->Bmask == sdlsurface->format->Bmask);
 	}
 	else
 	{

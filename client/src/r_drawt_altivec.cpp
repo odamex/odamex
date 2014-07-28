@@ -51,6 +51,16 @@ typedef vector unsigned char vu8;
 typedef vector unsigned short vu16;
 typedef vector unsigned int vu32;
 
+//
+// R_GetBytesUntilAligned
+//
+static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
+{
+	uintptr_t mask = alignment - 1;
+	return (alignment - ((uintptr_t)data & mask)) & mask;
+}
+
+
 // Direct rendering (32-bit) functions for ALTIVEC optimization:
 
 void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
@@ -59,10 +69,16 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 	int line_inc = surface_pitch_pixels - w;
 
 	// ALTIVEC temporaries:
-	const vu8 vec_zero				= (vu8)vec_splat_u8(0);
-	const vu16 vec_color			= (vu16)vec_unpackl((vu8)vec_splat_u32(color), vec_zero);
-	const vu16 vec_alphacolor		= (vu16)vec_mladd((vu16)vec_color, (vu16)vec_splat_u16(alpha), (vu16)vec_zero);
-	const vu16 vec_invalpha			= (vu16)vec_splat_u16(256 - alpha);
+	const vu8 vec_mask = { 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF };
+	const vu16 vec_eight = vec_splat_u16(8);
+
+	const vu32 vec_color_temp = { color, color, color, color };
+	const vu16 vec_color = (vu16)vec_and((vu8)vec_unpackl((vs8)vec_color_temp), vec_mask);
+	const vu16 vec_alpha = { alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha };
+	const vu16 vec_alphacolor = (vu16)vec_mladd(vec_alpha, vec_color, vec_splat_u16(0));
+
+	const uint16_t invalpha = 256 - alpha;
+	const vu16 vec_invalpha = { invalpha, invalpha, invalpha, invalpha, invalpha, invalpha, invalpha, invalpha };
 
 	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
 
@@ -85,7 +101,7 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 			dest++;
 		}
 
-		// SSE2 optimize the bulk in batches of 8 pixels:
+		// ALTIVEC optimize the bulk in batches of 8 pixels:
 		while (batches--)
 		{
 			// Load 4 pixels into input0 and 4 pixels into input1
@@ -96,30 +112,24 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 			// by splitting each input vector into two 128-bit variables, each
 			// containing 2 ARGB values. 16-bit color channels are needed to
 			// accomodate multiplication.
-			vu16 vec_lower0 = (vu16)vec_unpackl((vu8)vec_input0, (vu8)vec_zero);
-			vu16 vec_upper0 = (vu16)vec_unpackh((vu8)vec_input0, (vu8)vec_zero);
-			vu16 vec_lower1 = (vu16)vec_unpackl((vu8)vec_input1, (vu8)vec_zero);
-			vu16 vec_upper1 = (vu16)vec_unpackh((vu8)vec_input1, (vu8)vec_zero);
+			vu16 vec_upper0 = (vu16)vec_and((vu8)vec_unpackh((vs8)vec_input0), vec_mask);
+			vu16 vec_lower0 = (vu16)vec_and((vu8)vec_unpackl((vs8)vec_input0), vec_mask);
+			vu16 vec_upper1 = (vu16)vec_and((vu8)vec_unpackh((vs8)vec_input1), vec_mask);
+			vu16 vec_lower1 = (vu16)vec_and((vu8)vec_unpackl((vs8)vec_input1), vec_mask);
 
 			// ((input * invAlpha) + (color * Alpha)) >> 8
-			vec_lower0 = (vu16)vec_sr(vec_mladd(vec_lower0, vec_invalpha, vec_alphacolor), vec_splat_u16(8));
-			vec_upper0 = (vu16)vec_sr(vec_mladd(vec_upper0, vec_invalpha, vec_alphacolor), vec_splat_u16(8));
-			vec_lower1 = (vu16)vec_sr(vec_mladd(vec_lower1, vec_invalpha, vec_alphacolor), vec_splat_u16(8));
-			vec_upper1 = (vu16)vec_sr(vec_mladd(vec_upper1, vec_invalpha, vec_alphacolor), vec_splat_u16(8));
+			vec_upper0 = (vu16)vec_sr(vec_mladd(vec_upper0, vec_invalpha, vec_alphacolor), vec_eight);
+			vec_lower0 = (vu16)vec_sr(vec_mladd(vec_lower0, vec_invalpha, vec_alphacolor), vec_eight);
+			vec_upper1 = (vu16)vec_sr(vec_mladd(vec_upper1, vec_invalpha, vec_alphacolor), vec_eight);
+			vec_lower1 = (vu16)vec_sr(vec_mladd(vec_lower1, vec_invalpha, vec_alphacolor), vec_eight);
 
 			// Compress the width of each color channel to 8-bits again
-			vu8 vec_output0 = (vu8)vec_packsu(vec_lower0, vec_upper0);
-			vu8 vec_output1 = (vu8)vec_packsu(vec_lower1, vec_upper1);
+			vu32 vec_output0 = (vu32)vec_packsu(vec_upper0, vec_lower0);
+			vu32 vec_output1 = (vu32)vec_packsu(vec_upper1, vec_lower1);
 
 			// Store in dest
-			vec_ste(output0, 0, dest + 0);
-			vec_ste(output0, 4, dest + 0);
-			vec_ste(output0, 8, dest + 0);
-			vec_ste(output0, 12, dest + 0);
-			vec_ste(output1, 0, dest + 4);
-			vec_ste(output1, 4, dest + 4);
-			vec_ste(output1, 8, dest + 4);
-			vec_ste(output1, 12, dest + 4);
+			vec_st(vec_output0, 0, dest + 0);
+			vec_st(vec_output1, 0, dest + 4);
 
 			dest += batch_size;
 		}
