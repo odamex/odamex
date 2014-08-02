@@ -134,6 +134,8 @@ class dlgMain : public wxFrame, wxThreadHelper
         wxPanel *m_PnlServerFilter;
         wxTextCtrl *m_SrchCtrlGlobal;
         
+        wxStatusBar *m_StatusBar;
+        
 //        OdaInfoBar *InfoBar;
         
 		wxInt32 TotalPlayers;

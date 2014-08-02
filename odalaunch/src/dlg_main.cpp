@@ -156,7 +156,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_LstOdaSrvDetails = XRCCTRL(*this, "Id_LstCtrlServerDetails", LstOdaSrvDetails);
     m_PnlServerFilter = XRCCTRL(*this, "Id_PnlServerFilter", wxPanel);
     m_SrchCtrlGlobal = XRCCTRL(*this, "Id_SrchCtrlGlobal", wxTextCtrl);
-
+    m_StatusBar = GetStatusBar();
+    
 	// set up the master server information
 	wxCmdLineParser CmdLineParser(wxTheApp->argc, wxTheApp->argv);
     wxString MasterAddress;
@@ -202,7 +203,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     {
         wxFileConfig ConfigInfo;
            
-        ConfigInfo.Read(wxT(GETLISTONSTART), &GetListOnStart);
+        ConfigInfo.Read(wxT(GETLISTONSTART), &GetListOnStart, 
+            ODA_UIGETLISTONSTART);
     }
 
     // get master list on application start
@@ -229,7 +231,11 @@ dlgMain::~dlgMain()
 
     if (server_dlg != NULL)
         server_dlg->Destroy();
-
+    
+    //wxFileConfig FileConfig;
+    
+    //FileConfig.DeleteAll();
+    
 //    if (OdaGet != NULL)
   //      OdaGet->Destroy();
 }
@@ -776,8 +782,10 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             break;
     }
 
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), (wxInt32)MServer.GetPing()), 1);
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), (wxInt32)TotalPlayers), 3);
+    m_StatusBar->SetStatusText(wxString::Format(_T("Master Ping: %d"), 
+        (wxInt32)MServer.GetPing()), 1);
+    m_StatusBar->SetStatusText(wxString::Format(_T("Total Players: %d"), 
+        (wxInt32)TotalPlayers), 3);
 
     delete Result;
 }
@@ -827,14 +835,10 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 
     ++QueriedServers;
 
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Queried Server %d of %d"),
-                                                   (wxInt32)QueriedServers,
-                                                   (wxInt32)MServer.GetServerCount()),
-                                                   2);
-
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"),
-                                                   (wxInt32)TotalPlayers),
-                                                   3);
+    m_StatusBar->SetStatusText(wxString::Format(_T("Queried Server %d of %d"),
+        (wxInt32)QueriedServers, (wxInt32)MServer.GetServerCount()), 2);
+    m_StatusBar->SetStatusText(wxString::Format(_T("Total Players: %d"),
+        (wxInt32)TotalPlayers), 3);
 }
 
 // Custom Servers menu item
