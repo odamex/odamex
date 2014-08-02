@@ -70,15 +70,18 @@
 
 // Configuration file key names
 // Do not modify unless breaking our users config files is necessary
-#define GETLISTONSTART      "GET_LIST_ON_START"
-#define SHOWBLOCKEDSERVERS  "SHOW_BLOCKED_SERVERS"
-#define DELIMWADPATHS       "DELIMITED_WAD_PATHS"
-#define ODAMEX_DIRECTORY    "ODAMEX_DIRECTORY"
+#define GETLISTONSTART      "GetListOnStart"
+#define SHOWBLOCKEDSERVERS  "ShowBlockedServers"
+#define DELIMWADPATHS       "DelimWadPaths"
+#define ODAMEX_DIRECTORY    "OdamexDirectory"
 #define EXTRACMDLINEARGS    "ExtraCommandLineArguments"
 #define MASTERTIMEOUT       "MasterTimeout"
 #define SERVERTIMEOUT       "ServerTimeout"
 #define USEBROADCAST        "UseBroadcast"
 #define RETRYCOUNT          "RetryCount"
+#define ICONPINGQGOOD       "IconPingQualityGood"
+#define ICONPINGQPLAYABLE   "IconPingQualityPlayable"
+#define ICONPINGQLAGGY      "IconPingQualityLaggy"
 
 // Path separator
 #ifdef __WXMSW__

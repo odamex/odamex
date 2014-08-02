@@ -398,11 +398,10 @@ void dlgConfig::LoadSettings()
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, ODA_QRYSERVERTIMEOUT);
     ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, ODA_QRYGSRETRYCOUNT);
     ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
-    ConfigInfo.Read(wxT("IconPingQualityGood"), &PQGood, ODA_UIPINGQUALITYGOOD);
-    ConfigInfo.Read(wxT("IconPingQualityPlayable"), &PQPlayable, 
-                    ODA_UIPINGQUALITYPLAYABLE);
-    ConfigInfo.Read(wxT("IconPingQualityLaggy"), &PQLaggy, 
-                    ODA_UIPINGQUALITYLAGGY);
+    ConfigInfo.Read(wxT(ICONPINGQGOOD), &PQGood, ODA_UIPINGQUALITYGOOD);
+    ConfigInfo.Read(wxT(ICONPINGQPLAYABLE), &PQPlayable, 
+        ODA_UIPINGQUALITYPLAYABLE);
+    ConfigInfo.Read(wxT(ICONPINGQLAGGY), &PQLaggy, ODA_UIPINGQUALITYLAGGY);
         
     m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
     m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
@@ -454,9 +453,9 @@ void dlgConfig::SaveSettings()
 	ConfigInfo.Write(wxT(SHOWBLOCKEDSERVERS), m_ChkCtrlShowBlockedServers->GetValue());
 	ConfigInfo.Write(wxT(DELIMWADPATHS), DelimWadPaths);
     ConfigInfo.Write(wxT(ODAMEX_DIRECTORY), m_DirCtrlChooseOdamexPath->GetPath());
-    ConfigInfo.Write(wxT("IconPingQualityGood"), m_SpnCtrlPQGood->GetValue());
-    ConfigInfo.Write(wxT("IconPingQualityPlayable"), m_SpnCtrlPQPlayable->GetValue());
-    ConfigInfo.Write(wxT("IconPingQualityLaggy"), m_SpnCtrlPQLaggy->GetValue());
+    ConfigInfo.Write(wxT(ICONPINGQGOOD), m_SpnCtrlPQGood->GetValue());
+    ConfigInfo.Write(wxT(ICONPINGQPLAYABLE), m_SpnCtrlPQPlayable->GetValue());
+    ConfigInfo.Write(wxT(ICONPINGQLAGGY), m_SpnCtrlPQLaggy->GetValue());
     ConfigInfo.Write(wxT(USEBROADCAST), m_ChkCtrlEnableBroadcasts->GetValue());
 
 	ConfigInfo.Flush();

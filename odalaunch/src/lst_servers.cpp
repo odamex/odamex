@@ -453,11 +453,10 @@ void LstOdaServerList::AddServerToList(const Server &s,
     // Allows us to sort by passworded servers as well
     SetItemData(li.m_itemId, (IsPasswordEmpty ? 0 : 1));
     
-    ConfigInfo.Read(wxT("IconPingQualityGood"), &PQGood, ODA_UIPINGQUALITYGOOD);
-    ConfigInfo.Read(wxT("IconPingQualityPlayable"), &PQPlayable, 
-                    ODA_UIPINGQUALITYPLAYABLE);
-    ConfigInfo.Read(wxT("IconPingQualityLaggy"), &PQLaggy, 
-                    ODA_UIPINGQUALITYLAGGY);
+    ConfigInfo.Read(wxT(ICONPINGQGOOD), &PQGood, ODA_UIPINGQUALITYGOOD);
+    ConfigInfo.Read(wxT(ICONPINGQPLAYABLE), &PQPlayable, 
+        ODA_UIPINGQUALITYPLAYABLE);
+    ConfigInfo.Read(wxT(ICONPINGQLAGGY), &PQLaggy, ODA_UIPINGQUALITYLAGGY);
     
     // Coloured bullets for ping quality
     if (Ping < PQGood)
