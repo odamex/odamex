@@ -586,7 +586,8 @@ private:
 	inline void removeString()
 	{
 		// shouldn't be removing strings before any have been added
-		assert(mInitialized);
+		if (!mInitialized)
+			return;
 
 		if (mId == mEmptyStringId)
 			return;
