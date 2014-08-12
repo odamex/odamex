@@ -483,13 +483,8 @@ public:
 class IDummyWindow : public IWindow
 {
 public:
-	IDummyWindow() : IWindow(), mVideoMode(320, 200, 8, true)
-	{
-		int width = getVideoMode()->getWidth();
-		int height = getVideoMode()->getHeight();
-		int bpp = getVideoMode()->getBitsPerPixel();
-		mPrimarySurface = I_AllocateSurface(width, height, bpp);
-	}
+	IDummyWindow() : IWindow(), mPrimarySurface(NULL), mVideoMode(320, 200, 8, true)
+	{ }
 
 	virtual ~IDummyWindow()
 	{	delete mPrimarySurface;	}
@@ -504,17 +499,33 @@ public:
 	{	return &mVideoMode;	}
 
 	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync)
-	{	return true;	}
+	{
+		if (mPrimarySurface == NULL)
+		{
+			// ignore the requested mode and setup the hardcoded mode
+			width = mVideoMode.getWidth();
+			height = mVideoMode.getHeight();
+			bpp = mVideoMode.getBitsPerPixel();
+			mPrimarySurface = I_AllocateSurface(width, height, bpp);
+		}
+		return mPrimarySurface != NULL;
+	}
 
 	virtual bool isFullScreen() const
-	{	return true;	}
+	{	return mVideoMode.isFullScreen();	}
+
+
+	virtual std::string getVideoDriverName() const
+	{
+		static const std::string driver_name("headless");
+		return driver_name;
+	}
 
 private:
 	// disable copy constructor and assignment operator
 	IDummyWindow(const IDummyWindow&);
 	IDummyWindow& operator=(const IDummyWindow&);
 
-	IVideoModeList		mVideoModes;
 	IWindowSurface*		mPrimarySurface;
 
 	IVideoMode			mVideoMode;
