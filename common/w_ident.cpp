@@ -505,8 +505,7 @@ void W_ConfigureGameInfo(const std::string& iwad_filename)
 //
 bool W_IsIWAD(const std::string& filename)
 {
-	const OString md5sum = W_MD5(filename);
-	return identtab.isIWAD(md5sum);
+	return identtab.isIWAD(filename);
 }
 
 
