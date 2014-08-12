@@ -60,6 +60,7 @@
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "gi.h"
+#include "w_ident.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -74,13 +75,6 @@ EXTERN_CVAR (waddirs)
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
 std::vector<std::string> patchfiles, patchhashes;	// [RH] remove limit on # of loaded wads
 std::vector<std::string> missingfiles, missinghashes;
-
-extern gameinfo_t SharewareGameInfo;
-extern gameinfo_t RegisteredGameInfo;
-extern gameinfo_t RetailGameInfo;
-extern gameinfo_t CommercialGameInfo;
-extern gameinfo_t RetailBFGGameInfo;
-extern gameinfo_t CommercialBFGGameInfo;
 
 bool lastWadRebootSuccess = true;
 extern bool step_mode;
@@ -535,159 +529,6 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 
 
 //
-// D_ConfigureGameInfo
-//
-// Opens the specified file name and sets gameinfo, gamemission, and gamemode
-// to the appropriate values for the IWAD file.
-//
-// gamemode will be set to undetermined if the file is not a valid IWAD.
-//
-static void D_ConfigureGameInfo(const std::string& iwad_filename)
-{
-	gamemode = undetermined;
-
-	static const int NUM_CHECKLUMPS = 11;
-	static const char checklumps[NUM_CHECKLUMPS][8] = {
-		{ 'E','1','M','1' },					// 0
-		{ 'E','2','M','1' },					// 1
-		{ 'E','4','M','1' },					// 2
-		{ 'M','A','P','0','1' },				// 3
-		{ 'A','N','I','M','D','E','F','S' },	// 4
-		{ 'F','I','N','A','L','2' },			// 5
-		{ 'R','E','D','T','N','T','2' },		// 6
-		{ 'C','A','M','O','1' },				// 7
-		{ 'E','X','T','E','N','D','E','D' },	// 8
-		{ 'D','M','E','N','U','P','I','C' },	// 9
-		{ 'F','R','E','E','D','O','O','M' }		// 10
-	};
-
-	int lumpsfound[NUM_CHECKLUMPS] = { 0 };
-
-	FILE* fp = fopen(iwad_filename.c_str(), "rb");
-	if (fp)
-	{
-		wadinfo_t header;
-		fread(&header, sizeof(header), 1, fp);
-
-		// [SL] Allow both IWAD & PWAD identifiers since chex.wad is a PWAD
-		header.identification = LELONG(header.identification);
-		if (header.identification == IWAD_ID ||
-			header.identification == PWAD_ID)
-		{
-			header.numlumps = LELONG(header.numlumps);
-			if (0 == fseek(fp, LELONG(header.infotableofs), SEEK_SET))
-			{
-				for (int i = 0; i < header.numlumps; i++)
-				{
-					filelump_t lump;
-
-					if (0 == fread(&lump, sizeof(lump), 1, fp))
-						break;
-					for (int j = 0; j < NUM_CHECKLUMPS; j++)
-						if (!strnicmp(lump.name, checklumps[j], 8))
-							lumpsfound[j]++;
-				}
-			}
-		}
-		fclose(fp);
-		fp = NULL;
-	}
-
-	// [SL] Check for FreeDoom / Ultimate FreeDoom
-	if (lumpsfound[10])
-	{
-		if (lumpsfound[0])
-		{
-			gamemode = retail;
-			gameinfo = RetailGameInfo;
-			gamemission = retail_freedoom;
-		}
-		else
-		{
-			gamemode = commercial;
-			gameinfo = CommercialGameInfo;
-			gamemission = commercial_freedoom;
-		}
-		return;
-	}
-
-	// Check for Doom 2 or TNT / Plutonia
-	if (lumpsfound[3])
-	{
-		if (lumpsfound[9])
-		{
-			gameinfo = CommercialBFGGameInfo;
-			gamemode = commercial_bfg;
-		}
-		else
-		{
-			gameinfo = CommercialGameInfo;
-			gamemode = commercial;
-		}
-
-		if (lumpsfound[6])
-			gamemission = pack_tnt;
-		else if (lumpsfound[7])
-			gamemission = pack_plut;
-		else
-			gamemission = doom2;
-
-		return;
-	}
-
-	// Check for Registered Doom / Ultimate Doom / Chex Quest / Shareware Doom
-	if (lumpsfound[0])
-	{
-		gamemission = doom;
-		if (lumpsfound[1])
-		{
-			if (lumpsfound[2])
-			{
-				// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
-				// iwad.  It's ultimate doom with their stuff replacing most things.
-				std::string base_filename;
-				M_ExtractFileName(iwad_filename, base_filename);
-				if (iequals(base_filename, "chex.wad"))
-				{
-					gamemission = chex;
-					gamemode = retail_chex;
-					gameinfo = RetailGameInfo;
-				}
-				else
-				{
-					if (lumpsfound[9])
-					{
-						gamemode = retail_bfg;
-						gameinfo = RetailBFGGameInfo;
-					}
-					else
-					{
-						gamemode = retail;
-						gameinfo = RetailGameInfo;
-					}
-				}
-			}
-			else
-			{
-				gamemode = registered;
-				gameinfo = RegisteredGameInfo;
-			}
-		}
-		else
-		{
-			gamemode = shareware;
-			gameinfo = SharewareGameInfo;
-		}
-
-		return;
-	}
-
-	if (gamemode == undetermined)
-		gameinfo = SharewareGameInfo;
-}
-
-
-//
 // D_GetTitleString
 //
 // Returns the proper name of the game currently loaded into gameinfo & gamemission
@@ -966,7 +807,7 @@ void D_LoadResourceFiles(
 	wadfiles.push_back(iwad_filename);
 
 	// Now scan the contents of the IWAD to determine which one it is
-	D_ConfigureGameInfo(iwad_filename);
+	W_ConfigureGameInfo(iwad_filename);
 
 	// print info about the IWAD to the console
 	D_PrintIWADIdentity();

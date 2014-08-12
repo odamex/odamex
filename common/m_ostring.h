@@ -519,12 +519,11 @@ private:
 	// Adds a string entry to the string table.
 	// ------------------------------------------------------------------------
 
-	inline void addString(const char* s)
+	inline void addString(const char* s = "")
 	{
 		// ensure the string table is properly initalized
 		if (!mInitialized)
 			startup();
-
 		assert(mInitialized);
 
 		if (s[0] == '\0')
@@ -557,6 +556,11 @@ private:
 
 	inline void addString(const OString& other)
 	{
+		// ensure the string table is properly initalized
+		if (!mInitialized)
+			startup();
+		assert(mInitialized);
+
 		mId = other.mId;
 		if (mId != mEmptyStringId)
 		{

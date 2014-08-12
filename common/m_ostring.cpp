@@ -83,7 +83,7 @@ void OString::printStringTable()
 
 OString::OString()
 {
-	addString("");
+	addString();
 }
 
 OString::OString(const OString& other)

@@ -75,6 +75,7 @@
 #include "sv_banlist.h"
 
 #include "res_texture.h"
+#include "w_ident.h"
 
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
@@ -346,6 +347,8 @@ void D_DoomMain()
 	// init console so it can capture all of the startup messages
 	C_InitConsole();
 	atterm(C_ShutdownConsole);
+
+	W_SetupFileIdentifiers();
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
