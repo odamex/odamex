@@ -55,6 +55,7 @@
 #include "sc_man.h"
 #include "v_video.h"
 #include "w_wad.h"
+#include "w_ident.h"
 #include "z_zone.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)

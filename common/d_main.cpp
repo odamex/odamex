@@ -578,9 +578,10 @@ static std::string D_CheckIWAD(const std::string& suggestion)
 	if (iwad.empty())
 	{
 		// Search for a pre-defined IWAD from the list above
-		for (int i = 0; !doomwadnames[i].name.empty(); i++)
+		std::vector<OString> filenames = W_GetIWADFilenames();
+		for (size_t i = 0; i < filenames.size(); i++)
 		{
-			std::string found = BaseFileSearch(doomwadnames[i].name);
+			std::string found = BaseFileSearch(filenames[i]);
 
 			if (!found.empty())
 			{
@@ -745,8 +746,7 @@ static bool D_VerifyFile(
 		return false;
 
 	// if it's an IWAD, check if we have a valid alternative hash
-	std::string found_hash = W_MD5(full_filename);
-	if (W_IsIWAD(base_filename, found_hash))
+	if (W_IsIWAD(base_filename))
 		return true;
 
 	return false;

@@ -46,6 +46,7 @@
 #include "p_ctf.h"
 #include "m_random.h"
 #include "w_wad.h"
+#include "w_ident.h"
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
@@ -1688,17 +1689,7 @@ bool CL_Connect(void)
 	MSG_WriteLong(&net_buffer, 0);
 
 	if (gamestate == GS_DOWNLOAD && missing_file.length())
-	{
-		// denis - do not download commercial wads
-		if (W_IsIWADCommercial(missing_file, missing_hash))
-		{
-			Printf(PRINT_HIGH, "This is a commercial wad and will not be downloaded.\n");
-			CL_QuitNetGame();
-			return false;
-		}
-
 		CL_RequestDownload(missing_file, missing_hash);
-	}
 
 	compressor.reset();
 

@@ -56,6 +56,7 @@
 #include "m_vectors.h"
 #include "p_ctf.h"
 #include "w_wad.h"
+#include "w_ident.h"
 #include "md5.h"
 #include "p_mobj.h"
 #include "p_unlag.h"
@@ -4070,11 +4071,14 @@ void SV_WantWad(player_t &player)
 	}
 
 	// denis - do not download commercial wads
-	if (W_IsIWAD(wadfiles[i], wadhashes[i]))
+	if (W_IsIWAD(wadfiles[i]))
 	{
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString (&cl->reliablebuf, "Server: This is a commercial wad and will not be downloaded\n");
+		char message[256];	
+		sprintf(message, "Server: %s is a commercial wad and will not be downloaded\n",
+				D_CleanseFileName(wadfiles[i]).c_str());
+		MSG_WriteString(&cl->reliablebuf, message);
 
 		SV_DropClient(player);
 		return;

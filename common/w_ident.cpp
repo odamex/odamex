@@ -35,6 +35,7 @@
 #include "gi.h"
 
 #include <string>
+#include <vector>
 #include <stdio.h>
 
 
@@ -59,25 +60,87 @@ public:
 	//
 	void addFile(
 		const OString& idname, const OString& filename,
-		const OString& hash, const OString& group, bool commercial)
+		const OString& hash, const OString& group, bool commercial, bool iwad = true)
 	{
 		IdType id = mIdentifiers.insert(); 
 		FileIdentifier* file = &mIdentifiers.get(id);
 
 		file->mIdName = OStringToUpper(idname);
-		file->mFileName = OStringToUpper(filename);
+		file->mFilename = OStringToUpper(filename);
 		file->mMd5Sum = OStringToUpper(hash);
-		file->mIsCommercial = commercial;
 		file->mGroupName = OStringToUpper(group);
+		file->mIsCommercial = commercial;
+		file->mIsIWAD = iwad;
 
 		mMd5SumLookup.insert(std::make_pair(OStringToUpper(file->mMd5Sum), id));
-		mFileNameLookup.insert(std::make_pair(OStringToUpper(file->mFileName), id));
+		mFilenameLookup.insert(std::make_pair(OStringToUpper(file->mFilename), id));
+	}
+
+	std::vector<OString> getFilenames() const
+	{
+		std::vector<OString> filenames;
+		for (IdentifierTable::const_iterator it = mIdentifiers.begin(); it != mIdentifiers.end(); ++it)
+			filenames.push_back(it->mFilename);
+		return filenames;
 	}
 
 	bool isCommercial(const OString& hash) const
 	{
 		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsCommercial;
+	}
+
+	bool isIWAD(const OString& filename) const
+	{
+		const OString md5sum = W_MD5(filename);
+		const FileIdentifier* file = lookupByMd5Sum(md5sum);
+		if (file)
+			return file->mIsIWAD;
+		
+		// [SL] not an offical IWAD.
+		// Check for lumps that are required by vanilla Doom.
+		static const int NUM_CHECKLUMPS = 5;
+		static const char checklumps[NUM_CHECKLUMPS][8] = {
+			{ 'P','L','A','Y','P','A','L' },		// 0
+			{ 'C','O','L','O','R','M','A','P' },	// 1
+			{ 'F','_','S','T','A','R','T' },		// 2
+			{ 'S','_','S','T','A','R','T' },		// 3
+			{ 'T','E','X','T','U','R','E','1' }		// 4
+		};
+
+		bool is_iwad = false;
+
+		FILE* fp = fopen(filename.c_str(), "rb");
+		if (fp)
+		{
+			wadinfo_t header;
+			fread(&header, sizeof(header), 1, fp);
+
+			header.identification = LELONG(header.identification);
+			if (header.identification == IWAD_ID || header.identification == PWAD_ID)
+			{
+				header.numlumps = LELONG(header.numlumps);
+				if (0 == fseek(fp, LELONG(header.infotableofs), SEEK_SET))
+				{
+					for (int i = 0; i < header.numlumps; i++)
+					{
+						filelump_t lump;
+
+						if (0 == fread(&lump, sizeof(lump), 1, fp))
+							break;
+
+						is_iwad = true;
+						for (int j = 0; j < NUM_CHECKLUMPS; j++)
+							if (strnicmp(lump.name, checklumps[j], 8) != 0)
+								is_iwad = false;
+					}
+				}
+			}
+			fclose(fp);
+			fp = NULL;
+		}
+
+		return is_iwad;
 	}
 
 	bool areCompatible(const OString& hash1, const OString& hash2) const
@@ -207,17 +270,18 @@ public:
 	void dump() const
 	{
 		for (IdentifierTable::const_iterator it = mIdentifiers.begin(); it != mIdentifiers.end(); ++it) 
-			Printf(PRINT_HIGH, "%s %s %s\n", it->mGroupName.c_str(), it->mFileName.c_str(), it->mMd5Sum.c_str());
+			Printf(PRINT_HIGH, "%s %s %s\n", it->mGroupName.c_str(), it->mFilename.c_str(), it->mMd5Sum.c_str());
 	}
 
 private:
 	struct FileIdentifier
 	{
 		OString				mIdName;
-		OString				mFileName;
+		OString				mFilename;
 		OString				mMd5Sum;
 		OString				mGroupName;
 		bool				mIsCommercial;
+		bool				mIsIWAD;
 	};
 
 	const FileIdentifier* lookupByMd5Sum(const OString& md5sum) const
@@ -228,10 +292,10 @@ private:
 		return NULL;
 	}
 
-	const FileIdentifier* lookupByFileName(const OString& filename) const
+	const FileIdentifier* lookupByFilename(const OString& filename) const
 	{
-		FileNameLookupTable::const_iterator it = mFileNameLookup.find(OStringToUpper(filename));
-		if (it != mFileNameLookup.end())
+		FilenameLookupTable::const_iterator it = mFilenameLookup.find(OStringToUpper(filename));
+		if (it != mFilenameLookup.end())
 			return &mIdentifiers.get(it->second);
 		return NULL;
 	}
@@ -244,8 +308,8 @@ private:
 	typedef OHashTable<OString, IdType> Md5SumLookupTable;
 	Md5SumLookupTable		mMd5SumLookup;
 
-	typedef OHashTable<OString, IdType> FileNameLookupTable;
-	FileNameLookupTable		mFileNameLookup;
+	typedef OHashTable<OString, IdType> FilenameLookupTable;
+	FilenameLookupTable		mFilenameLookup;
 };
 
 
@@ -261,70 +325,70 @@ void W_SetupFileIdentifiers()
 {
 	identtab.addFile(
 		"Doom 2 v1.9",						// mIdName
-		"DOOM2.WAD",						// mFileName
+		"DOOM2.WAD",						// mFilename
 		"25E1459CA71D321525F84628F45CA8CD",	// mMd5Sum
 		"Doom2 v1.9",						// mGroupName
 		true);								// mIsCommercial
 	
 	identtab.addFile(
 		"Doom 2 BFG",						// mIdName
-    	"DOOM2BFG.WAD",						// mFileName
+    	"DOOM2BFG.WAD",						// mFilename
 		"C3BEA40570C23E511A7ED3EBCD9865F7",	// mMd5Sum
 		"Doom2 v1.9",						// mGroupName
 		true);								// mIsCommercial
 	
 	identtab.addFile(
 		"Doom Shareware v1.9",				// mIdName
-		"DOOM1.WAD",						// mFileName
+		"DOOM1.WAD",						// mFilename
 		"F0CEFCA49926D00903CF57551D901ABE",	// mMd5Sum
 		"Doom Shareware v1.9",				// mGroupName
 		false);								// mIsCommercial
 
 	identtab.addFile(
 		"Plutonia v1.9",					// mIdName
-		"PLUTONIA.WAD",						// mFileName
+		"PLUTONIA.WAD",						// mFilename
 		"75C8CF89566741FA9D22447604053BD7",	// mMd5Sum
 		"Plutonia v1.9",					// mGroupName
 		true);								// mIsCommercial
 
 	identtab.addFile(
 		"TNT Evilution v1.9",				// mIdName
-		"TNT.WAD",							// mFileName
+		"TNT.WAD",							// mFilename
 		"4E158D9953C79CCF97BD0663244CC6B6",	// mMd5Sum
 		"TNT Evilution v1.9",				// mGroupName
 		true);								// mIsCommercial
 
 	identtab.addFile(
 		"Ultimate Doom v1.9",				// mIdName
-		"DOOM.WAD",							// mFileName
+		"DOOM.WAD",							// mFilename
 		"C4FE9FD920207691A9F493668E0A2083",	// mMd5Sum
 		"Ultimate Doom v1.9",				// mGroupName
 		true);								// mIsCommercial
 
 	identtab.addFile(
 		"Ultimate Doom BFG",				// mIdName
-		"DOOMBFG.WAD",						// mFileName
+		"DOOMBFG.WAD",						// mFilename
 		"FB35C4A5A9FD49EC29AB6E900572C524",	// mMd5Sum
 		"Ultimate Doom v1.9",				// mGroupName
 		true);								// mIsCommercial
 
 	identtab.addFile(
 		"Ultimate Freedoom v0.8",			// mIdName
-		"FREEDOOM1.WAD",					// mFileName
+		"FREEDOOM1.WAD",					// mFilename
 		"30095B256DD3A1566BBC30286F72BC47",	// mMd5Sum
 		"Ultimate Doom v1.9",				// mGroupName
 		false);								// mIsCommercial
 
 	identtab.addFile(
 		"Freedoom v0.8",					// mIdName
-		"FREEDOOM2.WAD",					// mFileName
+		"FREEDOOM2.WAD",					// mFilename
 		"E3668912FC37C479B2840516C887018B",	// mMd5Sum
 		"Doom 2 v1.9",						// mGroupName
 		false);								// mIsCommercial
 
 	identtab.addFile(
 		"FreeDM v0.8",						// mIdName
-		"FREEDM.WAD",						// mFileName
+		"FREEDM.WAD",						// mFilename
 		"05859098BF191899903EF343AFBA369D",	// mMd5Sum
 		"Doom 2 v1.9",						// mGroupName
 		false);								// mIsCommercial
@@ -433,5 +497,34 @@ void W_ConfigureGameInfo(const std::string& iwad_filename)
 	}
 }
 
+
+//
+// W_IsIWAD
+//
+// Returns true if the given file is a known IWAD file.
+//
+bool W_IsIWAD(const std::string& filename)
+{
+	const OString md5sum = W_MD5(filename);
+	return identtab.isIWAD(md5sum);
+}
+
+
+//
+// W_IsIWADCommercial
+//
+// Checks to see whether a given file is an IWAD flagged as "commercial"
+//
+bool W_IsIWADCommercial(const std::string& filename)
+{
+	const OString md5sum = W_MD5(filename);
+	return identtab.isCommercial(md5sum);
+}
+
+
+std::vector<OString> W_GetIWADFilenames()
+{
+	return identtab.getFilenames();
+}
 
 VERSION_CONTROL (w_ident_cpp, "$Id: w_ident.cpp 4985 2014-06-10 16:46:51Z dr_sean $")

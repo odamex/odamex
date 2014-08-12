@@ -24,10 +24,13 @@
 #ifndef __W_IDENT_H__
 #define  __W_IDENT_H__
 
+#include "m_ostring.h"
 #include <string>
 
 void W_SetupFileIdentifiers();
 void W_ConfigureGameInfo(const std::string& iwad_filename);
-
+bool W_IsIWAD(const std::string& filename);
+bool W_IsIWADCommercial(const std::string& filename);
+std::vector<OString> W_GetIWADFilenames();
 
 #endif	// __W_IDENT_H__
