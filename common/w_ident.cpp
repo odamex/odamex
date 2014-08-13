@@ -57,18 +57,22 @@ public:
 		if (fp)
 		{
 			wadinfo_t header;
-			fread(&header, sizeof(header), 1, fp);
-
-			header.identification = LELONG(header.identification);
-			header.infotableofs = LELONG(header.infotableofs);
-
-			if (header.identification == IWAD_ID || header.identification == PWAD_ID)
+			if (fread(&header, sizeof(header), 1, fp) == 1)
 			{
-				mNumLumps = LELONG(header.numlumps);
-				mLumps = new filelump_t[mNumLumps];
+				header.identification = LELONG(header.identification);
+				header.infotableofs = LELONG(header.infotableofs);
 
-				fseek(fp, header.infotableofs, SEEK_SET);
-				fread(mLumps, mNumLumps * sizeof(*mLumps), 1, fp);
+				if (header.identification == IWAD_ID || header.identification == PWAD_ID)
+				{
+					if (fseek(fp, header.infotableofs, SEEK_SET) == 0)
+					{
+						mNumLumps = LELONG(header.numlumps);
+						mLumps = new filelump_t[mNumLumps];
+
+						if (fread(mLumps, mNumLumps * sizeof(*mLumps), 1, fp) != 1)
+							mNumLumps = 0;
+					}
+				}
 			}
 
 			fclose(fp);
