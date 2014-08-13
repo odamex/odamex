@@ -56,6 +56,15 @@ struct HashMismatch
 // global list of which filenames failed hash checking
 static std::vector<HashMismatch> hash_mismatches;
 
+// global list of filename extensions for use when an extension isn't supplied to Res_FindResourceFile
+static const char* const IWAD_EXTLIST[] = { ".WAD" };
+static const char* const WAD_EXTLIST[] = { ".WAD", ".ZIP", ".PK3" };
+static const char* const DEH_EXTLIST[] = { ".DEH", ".BEX" };
+static const char* const ALL_EXTLIST[] = { ".WAD", ".ZIP", ".PK3", ".DEH", ".BEX" };
+
+// extern functions
+const char* ParseString2(const char* data);
+
 
 //
 // Res_CleanseFilename
@@ -533,9 +542,11 @@ std::string Res_FindResourceFile(const std::string& filename, const std::string&
 // 
 std::string Res_FindResourceFile(
 		const std::string& filename,
-		const char* const extlist[], size_t extlist_size,
+		const char* const extlist[], 
 		const std::string& hash = "")
 {
+	const size_t extlist_size = sizeof(extlist) / sizeof(*extlist);
+
 	// Check for the filename without adding any extensions
 	std::string full_filename = Res_FindResourceFile(filename, hash);
 	if (!full_filename.empty())
@@ -557,5 +568,176 @@ std::string Res_FindResourceFile(
 	return std::string();	// not found with any supplied extension
 }
 
+
+//
+// Res_FindIWAD
+//
+// Tries to find an IWAD from a set of known IWAD file names.
+//
+std::string Res_FindIWAD(const std::string& suggestion = "")
+{
+	if (!suggestion.empty())
+	{
+		std::string full_filename = Res_FindResourceFile(suggestion, IWAD_EXTLIST);
+		if (!full_filename.empty() && W_IsIWAD(full_filename))
+			return full_filename;
+	}
+
+	// Search for a pre-defined IWAD from the list above
+	// [SL] TODO: uncomment W_GetIWADFilenames when merge is complete
+//	std::vector<OString> filenames = W_GetIWADFilenames();
+	std::vector<std::string> filenames;  filenames.push_back("DOOM2.WAD");
+	for (size_t i = 0; i < filenames.size(); i++)
+	{
+		std::string full_filename = Res_FindResourceFile(filenames[i]);
+		if (!full_filename.empty() && W_IsIWAD(full_filename))
+			return full_filename;
+	}
+
+	return std::string();
+}
+
+
+//
+// Res_GatherResourceFilesFromString
+//
+// Adds the full path of all of the resource filenames in a given string
+// (separated by spaces).
+//
+std::vector<std::string> Res_GatherResourceFilesFromString(const std::string& str)
+{
+	std::vector<std::string> resource_filenames;
+
+	const char* data = str.c_str();
+
+	for (size_t argv = 0; (data = ParseString2(data)); argv++)
+	{
+		std::string filename(com_token);
+		std::string full_filename(Res_FindResourceFile(filename, ALL_EXTLIST));
+
+		// [SL] TODO: properly handle missing files
+		if (!full_filename.empty())
+			resource_filenames.push_back(full_filename);
+//		else
+//			missing_files.push_back(filename);
+	}
+
+	return resource_filenames;
+}
+
+
+//
+// Res_GatherResourceFileFromArgs
+//
+// Adds the full path of all the resource filenames given on the command line
+// following the "-iwad", "-file", or "-deh" parameters.
+//
+std::vector<std::string> Res_GatherResourceFilesFromArgs()
+{
+	std::vector<std::string> resource_filenames;
+
+	// Note: this only adds the first filename specified with the -iwad parameter
+	size_t i = Args.CheckParm("-iwad");
+	if (i > 0 && i < Args.NumArgs() - 1)
+	{
+		std::string filename(Args.GetArg(i + 1));
+		std::string full_filename(Res_FindResourceFile(filename, IWAD_EXTLIST));
+
+		// [SL] TODO: properly handle missing files
+		if (!full_filename.empty())
+			resource_filenames.push_back(full_filename);
+//		else
+//			missing_files.push_back(filename);
+	}
+
+	// [SL] the first parameter should be treated as a file name and
+	// doesn't need to be preceeded by -file
+	bool is_filename = true;
+	const char* const* extlist = ALL_EXTLIST;
+
+	for (size_t i = 1; i < Args.NumArgs(); i++)
+	{
+		const char* arg_value = Args.GetArg(i);
+		if (arg_value[0] == '-' || arg_value[0] == '+')
+		{
+			if (stricmp(arg_value, "-file") == 0)
+				is_filename = true, extlist = ALL_EXTLIST;
+			else if (stricmp(arg_value, "-deh") == 0)
+				is_filename = true, extlist = DEH_EXTLIST;
+			else
+				is_filename = false;
+		}
+		else if (is_filename)
+		{
+			std::string filename(arg_value);
+			std::string full_filename(Res_FindResourceFile(filename, extlist));
+
+			// [SL] TODO: properly handle missing files
+			if (!full_filename.empty())
+				resource_filenames.push_back(full_filename);
+//			else
+//				missing_files.push_back(filename);
+		}
+	}
+
+	return resource_filenames;
+}
+
+
+//
+// Res_ValidateResourceFiles
+//
+// Validates a list of resource filenames.
+// Ensures that the list contains a valid ODAMEX.WAD resource file and a valid
+// IWAD resource file, adding them if they weren't in the original list.
+//
+std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string>& resource_filenames)
+{
+	std::vector<std::string> new_resource_filenames;
+
+	const size_t invalid_position = (size_t)-1;
+	size_t odamex_wad_position = invalid_position;
+	size_t iwad_position = invalid_position;
+
+	if (resource_filenames.size() >= 1 && iequals(Res_CleanseFilename(resource_filenames[0]), "ODAMEX.WAD"))
+		odamex_wad_position = 0;
+	
+	if (odamex_wad_position == invalid_position && resource_filenames.size() >= 1 && W_IsIWAD(resource_filenames[0]))
+		iwad_position = 0;
+
+	if (odamex_wad_position == 0 && resource_filenames.size() >= 2 && W_IsIWAD(resource_filenames[1]))
+		iwad_position = 1;
+
+	std::string full_filename;
+
+	std::string odamex_wad_filename;
+	if (odamex_wad_position == invalid_position)
+		odamex_wad_filename = "ODAMEX.WAD";
+	else
+		odamex_wad_filename = resource_filenames[odamex_wad_position];
+	full_filename = Res_FindResourceFile(odamex_wad_filename);
+	if (full_filename.empty())
+		I_FatalError("Unable to locate ODAMEX.WAD resource file.");
+	else
+		new_resource_filenames.push_back(full_filename);
+
+	std::string iwad_filename;
+	if (iwad_position == invalid_position)
+		iwad_filename = Res_FindIWAD();
+	else
+		iwad_filename = resource_filenames[iwad_position];
+	full_filename = Res_FindResourceFile(iwad_filename);
+	if (full_filename.empty())
+		I_FatalError("Unable to locate any IWAD resource files.");
+	else
+		new_resource_filenames.push_back(full_filename);
+
+	size_t start_position = std::max<int>(odamex_wad_position, iwad_position) + 1;
+
+	for (size_t i = start_position; i < resource_filenames.size(); i++)
+		new_resource_filenames.push_back(resource_filenames[i]);
+
+	return new_resource_filenames;
+}
 
 VERSION_CONTROL (res_filelib_cpp, "$Id: res_filelib.cpp 3426 2012-11-19 17:25:28Z dr_sean $")

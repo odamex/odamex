@@ -32,7 +32,11 @@ std::string Res_FindResourceFile(const std::string& filename, const std::string&
 
 std::string Res_FindResourceFile(
 		const std::string& filename,
-		const char* const extlist[], size_t extlist_size,
+		const char* const extlist[],
 		const std::string& hash = "");
+
+std::vector<std::string> Res_GatherResourceFilesFromArgs();
+std::vector<std::string> Res_GatherResourceFilesFromString(const std::string& str);
+std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string>& resource_filenames);
 
 #endif	// __RES_FILELIB_H__
