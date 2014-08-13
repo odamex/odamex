@@ -41,6 +41,63 @@
 
 // ============================================================================
 //
+// WadFileLumpFinder
+//
+// Opens a WAD file and checks for the existence of specified lumps. 
+//
+// ============================================================================
+
+class WadFileLumpFinder
+{
+public:
+	WadFileLumpFinder(const std::string& filename) :
+		mNumLumps(0), mLumps(NULL)
+	{
+		FILE* fp = fopen(filename.c_str(), "rb");
+		if (fp)
+		{
+			wadinfo_t header;
+			fread(&header, sizeof(header), 1, fp);
+
+			header.identification = LELONG(header.identification);
+			header.infotableofs = LELONG(header.infotableofs);
+
+			if (header.identification == IWAD_ID || header.identification == PWAD_ID)
+			{
+				mNumLumps = LELONG(header.numlumps);
+				mLumps = new filelump_t[mNumLumps];
+
+				fseek(fp, header.infotableofs, SEEK_SET);
+				fread(mLumps, mNumLumps * sizeof(*mLumps), 1, fp);
+			}
+
+			fclose(fp);
+		}
+	}
+
+	~WadFileLumpFinder()
+	{
+		if (mLumps)
+			delete [] mLumps;
+	}
+
+	bool exists(const std::string& lumpname)
+	{
+		for (size_t i = 0; i < mNumLumps; i++)
+			if (iequals(lumpname, std::string(mLumps[i].name, 8)))
+				return true;
+		return false;
+	}
+
+private:
+	size_t		mNumLumps;
+	filelump_t*	mLumps;
+};
+
+
+
+// ============================================================================
+//
 // FileIdentificationManager
 //
 // Class to identify known IWAD/PWAD resource files
@@ -108,39 +165,11 @@ public:
 			{ 'T','E','X','T','U','R','E','1' }		// 4
 		};
 
-		bool is_iwad = false;
-
-		FILE* fp = fopen(filename.c_str(), "rb");
-		if (fp)
-		{
-			wadinfo_t header;
-			fread(&header, sizeof(header), 1, fp);
-
-			header.identification = LELONG(header.identification);
-			if (header.identification == IWAD_ID || header.identification == PWAD_ID)
-			{
-				header.numlumps = LELONG(header.numlumps);
-				if (0 == fseek(fp, LELONG(header.infotableofs), SEEK_SET))
-				{
-					for (int i = 0; i < header.numlumps; i++)
-					{
-						filelump_t lump;
-
-						if (0 == fread(&lump, sizeof(lump), 1, fp))
-							break;
-
-						is_iwad = true;
-						for (int j = 0; j < NUM_CHECKLUMPS; j++)
-							if (strnicmp(lump.name, checklumps[j], 8) != 0)
-								is_iwad = false;
-					}
-				}
-			}
-			fclose(fp);
-			fp = NULL;
-		}
-
-		return is_iwad;
+		WadFileLumpFinder lumps(filename);
+		for (int i = 0; i < NUM_CHECKLUMPS; i++)
+			if (!lumps.exists(std::string(checklumps[i], 8)))
+				return false;
+		return true;
 	}
 
 	bool areCompatible(const OString& hash1, const OString& hash2) const
@@ -180,35 +209,12 @@ public:
 			{ 'F','R','E','E','D','O','O','M' }		// 10
 		};
 
-		int lumpsfound[NUM_CHECKLUMPS] = { 0 };
+		bool lumpsfound[NUM_CHECKLUMPS] = { 0 };
 
-		FILE* fp = fopen(filename.c_str(), "rb");
-		if (fp)
-		{
-			wadinfo_t header;
-			fread(&header, sizeof(header), 1, fp);
-
-			header.identification = LELONG(header.identification);
-			if (header.identification == IWAD_ID || header.identification == PWAD_ID)
-			{
-				header.numlumps = LELONG(header.numlumps);
-				if (0 == fseek(fp, LELONG(header.infotableofs), SEEK_SET))
-				{
-					for (int i = 0; i < header.numlumps; i++)
-					{
-						filelump_t lump;
-
-						if (0 == fread(&lump, sizeof(lump), 1, fp))
-							break;
-						for (int j = 0; j < NUM_CHECKLUMPS; j++)
-							if (!strnicmp(lump.name, checklumps[j], 8))
-								lumpsfound[j]++;
-					}
-				}
-			}
-			fclose(fp);
-			fp = NULL;
-		}
+		WadFileLumpFinder lumps(filename);
+		for (int i = 0; i < NUM_CHECKLUMPS; i++)
+			if (lumps.exists(std::string(checklumps[i], 8)))
+				lumpsfound[i] = true;
 
 		// [SL] Check for FreeDoom / Ultimate FreeDoom
 		if (lumpsfound[10])
