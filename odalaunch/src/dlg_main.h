@@ -31,6 +31,7 @@
 #include "dlg_about.h"
 #include "dlg_config.h"
 #include "dlg_servers.h"
+//#include "ctrl_infobar.h"
 #include "frm_odaget.h"
 
 #include <wx/frame.h>
@@ -40,7 +41,7 @@
 #include <wx/stattext.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/splitter.h>
-#include "wx/dynarray.h"
+#include <wx/dynarray.h>
 
 #include <vector>
 
@@ -80,8 +81,7 @@ class dlgMain : public wxFrame, wxThreadHelper
         odalpapi::Server         NullServer;
         odalpapi::Server        *QServer;
         odalpapi::MasterServer   MServer;
-        
-        launchercfg_t launchercfg_s;
+
 	protected:
         void OnMenuServers(wxCommandEvent& event);
         void OnManualConnect(wxCommandEvent& event);
@@ -113,7 +113,6 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnExit(wxCommandEvent& event);
 		
-		void SetupToolbar();
 
 		wxInt32 FindServer(wxString);
 		wxInt32 GetSelectedServerArrayIndex();
@@ -130,10 +129,14 @@ class dlgMain : public wxFrame, wxThreadHelper
         dlgConfig *config_dlg;
         dlgServers *server_dlg;
         dlgAbout *AboutDialog;
-        frmOdaGet *OdaGet;
+        //frmOdaGet *OdaGet;
         
         wxPanel *m_PnlServerFilter;
         wxTextCtrl *m_SrchCtrlGlobal;
+        
+        wxStatusBar *m_StatusBar;
+        
+//        OdaInfoBar *InfoBar;
         
 		wxInt32 TotalPlayers;
         wxInt32 QueriedServers;

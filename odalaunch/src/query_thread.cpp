@@ -24,6 +24,7 @@
 #include <wx/msgdlg.h>
 #include <wx/app.h>
 
+#include "plat_utils.h"
 #include "query_thread.h"
 
 int NUM_THREADS;
@@ -44,14 +45,32 @@ QueryThread::QueryThread(wxEvtHandler *EventHandler) : wxThread(wxTHREAD_JOINABL
     Run();
 }
 
+void QueryThread::SetStatus(QueryThreadStatus_t Status) 
+{ 
+    wxMutexLocker MutexLocker(m_StatusMutex);
+    
+    m_Status = Status;
+}
+
+QueryThreadStatus_t QueryThread::GetStatus() 
+{
+    QueryThreadStatus_t Status;
+    
+    wxMutexLocker MutexLocker(m_StatusMutex);
+    
+    Status = m_Status;
+    
+    return Status; 
+}
+
 void QueryThread::GracefulExit()
 {
     // Allow threads to acquire a wait state
-    while (m_Status != QueryThread_Waiting)
+    while (GetStatus() != QueryThread_Waiting)
         Sleep(5);
 
     // Set the exit code and signal thread to exit
-    m_Status = QueryThread_Exiting;
+    SetStatus(QueryThread_Exiting);
 
     m_Condition->Signal();
 
@@ -80,7 +99,7 @@ void *QueryThread::Entry()
     // killing itself/creating itself overhead
     while (1)
     {
-        m_Status = QueryThread_Waiting;
+        SetStatus(QueryThread_Waiting);
 
         m_Mutex.Lock();
 
@@ -88,10 +107,10 @@ void *QueryThread::Entry()
         m_Condition->Wait();
 
         // We got signaled to do some work, so lets do it
-        if (m_Status == QueryThread_Exiting)
+        if (GetStatus() == QueryThread_Exiting)
             break;
 
-        m_Status = QueryThread_Running;
+        SetStatus(QueryThread_Running);
 
         m_QueryServer->SetSocket(&Socket);
         m_QueryServer->SetAddress(m_Address, m_Port);
@@ -104,4 +123,18 @@ void *QueryThread::Entry()
     }
     
     return NULL;
+}
+
+int QueryThread::GetIdealThreadCount()
+{
+    int ThreadCount;
+    
+    // Base number of threads on cpu count in the system (including cores)
+    // and multiply that by a fixed value
+    ThreadCount = wxThread::GetCPUCount();
+
+    if (ThreadCount != -1)
+        ThreadCount *= ODA_THRMULVAL;
+
+    return clamp(ThreadCount, ODA_THRMULVAL, ODA_THRMAXVAL); 
 }

@@ -737,6 +737,7 @@ BEGIN_COMMAND(insertmap) {
 BEGIN_COMMAND(delmap) {
 	if (argc < 2) {
 		Printf(PRINT_HIGH, "Usage: delmap <maplist index>\n");
+		return;
 	}
 
 	std::vector<std::string> arguments = VectorArgs(argc, argv);

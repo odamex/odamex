@@ -101,7 +101,6 @@
 		</object>
 		<object class="wxToolBar" name="61">
 			<font>
-				
 				<style>normal</style>
 				<weight>normal</weight>
 				<underlined>0</underlined>
@@ -166,7 +165,7 @@
 				<label>Server Filter</label>
 				<tooltip>Server filter not available yet</tooltip>
 				<longhelp>Server filter not available yet</longhelp>
-				<bitmap>./icons/btnfilter.png</bitmap>
+				<bitmap>.\icons\btnfilter.png</bitmap>
 				<toggle>1</toggle>
 			</object>
 			<object class="wxTextCtrl" name="Id_SrchCtrlGlobal">
@@ -930,7 +929,7 @@
 																				<object class="wxBitmapButton" name="Id_BtnCtrlAddDir">
 																					<style>wxBU_AUTODRAW</style>
 																					<tooltip>Add path to list</tooltip>
-																					<bitmap stock_id="wxART_FOLDER_OPEN" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																					<bitmap stock_id="wxART_FILE_OPEN" stock_client="wxART_BUTTON">undefined.png</bitmap>
 																					<default>0</default>
 																				</object>
 																			</object>
@@ -941,7 +940,7 @@
 																				<object class="wxBitmapButton" name="Id_BtnCtrlReplaceDir">
 																					<style>wxBU_AUTODRAW</style>
 																					<tooltip>Replace selected path in list</tooltip>
-																					<bitmap stock_id="wxART_UNDO" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																					<bitmap stock_id="wxART_REDO" stock_client="wxART_BUTTON">undefined.png</bitmap>
 																					<default>0</default>
 																				</object>
 																			</object>
@@ -952,7 +951,7 @@
 																				<object class="wxBitmapButton" name="Id_BtnCtrlDeleteDir">
 																					<style>wxBU_AUTODRAW</style>
 																					<tooltip>Delete path from list</tooltip>
-																					<bitmap stock_id="wxART_DELETE" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																					<bitmap stock_id="wxART_CROSS_MARK" stock_client="wxART_BUTTON">undefined.png</bitmap>
 																					<default>0</default>
 																				</object>
 																			</object>
@@ -1092,12 +1091,12 @@
 			<orient>wxVERTICAL</orient>
 			<object class="sizeritem">
 				<option>0</option>
-				<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+				<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
 				<border>5</border>
 				<object class="wxBoxSizer">
 					<orient>wxHORIZONTAL</orient>
 					<object class="sizeritem">
-						<option>0</option>
+						<option>1</option>
 						<flag>wxALL|wxEXPAND|wxFIXED_MINSIZE</flag>
 						<border>5</border>
 						<object class="wxListBox" name="ID_SERVERLIST">
@@ -1106,7 +1105,7 @@
 					</object>
 					<object class="sizeritem">
 						<option>0</option>
-						<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL</flag>
 						<border>5</border>
 						<object class="wxBoxSizer">
 							<orient>wxVERTICAL</orient>
@@ -1114,8 +1113,9 @@
 								<option>0</option>
 								<flag>wxALL</flag>
 								<border>5</border>
-								<object class="wxButton" name="ID_BTNADDSERVER">
-									<label>Add</label>
+								<object class="wxBitmapButton" name="ID_BTNADDSERVER">
+									<style>wxBU_AUTODRAW</style>
+									<bitmap stock_id="wxART_FILE_OPEN" stock_client="wxART_BUTTON">undefined.png</bitmap>
 									<default>0</default>
 								</object>
 							</object>
@@ -1123,8 +1123,9 @@
 								<option>0</option>
 								<flag>wxALL</flag>
 								<border>5</border>
-								<object class="wxButton" name="ID_BTNREPLACESERVER">
-									<label>Replace</label>
+								<object class="wxBitmapButton" name="ID_BTNREPLACESERVER">
+									<style>wxBU_AUTODRAW</style>
+									<bitmap stock_id="wxART_REDO" stock_client="wxART_BUTTON">undefined.png</bitmap>
 									<default>0</default>
 								</object>
 							</object>
@@ -1132,8 +1133,9 @@
 								<option>0</option>
 								<flag>wxALL</flag>
 								<border>5</border>
-								<object class="wxButton" name="ID_BTNDELETESERVER">
-									<label>Delete</label>
+								<object class="wxBitmapButton" name="ID_BTNDELETESERVER">
+									<style>wxBU_AUTODRAW</style>
+									<bitmap stock_id="wxART_CROSS_MARK" stock_client="wxART_BUTTON">undefined.png</bitmap>
 									<default>0</default>
 								</object>
 							</object>
@@ -1150,8 +1152,9 @@
 								<option>0</option>
 								<flag>wxALL</flag>
 								<border>5</border>
-								<object class="wxButton" name="ID_MOVEUP">
-									<label>Move Up</label>
+								<object class="wxBitmapButton" name="ID_MOVEUP">
+									<style>wxBU_AUTODRAW</style>
+									<bitmap stock_id="wxART_GO_UP" stock_client="wxART_BUTTON">undefined.png</bitmap>
 									<default>0</default>
 								</object>
 							</object>
@@ -1159,8 +1162,9 @@
 								<option>0</option>
 								<flag>wxALL</flag>
 								<border>5</border>
-								<object class="wxButton" name="ID_MOVEDOWN">
-									<label>Move Down</label>
+								<object class="wxBitmapButton" name="ID_MOVEDOWN">
+									<style>wxBU_AUTODRAW</style>
+									<bitmap stock_id="wxART_GO_DOWN" stock_client="wxART_BUTTON">undefined.png</bitmap>
 									<default>0</default>
 								</object>
 							</object>
@@ -1169,7 +1173,7 @@
 				</object>
 			</object>
 			<object class="sizeritem">
-				<option>0</option>
+				<option>1</option>
 				<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 				<border>5</border>
 				<object class="wxStaticBoxSizer">
@@ -1177,48 +1181,40 @@
 					<label>Selected Server Details:</label>
 					<object class="sizeritem">
 						<option>0</option>
+						<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
+						<object class="wxCheckBox" name="ID_CHKSUBSTITUTE">
+							<enabled>0</enabled>
+							<tooltip>Allows you to substitute a server from the master list for a custom server</tooltip>
+							<label>Custom server replaces this address</label>
+							<checked>0</checked>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
 						<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 						<border>5</border>
 						<object class="wxBoxSizer">
-							<orient>wxVERTICAL</orient>
+							<orient>wxHORIZONTAL</orient>
 							<object class="sizeritem">
 								<option>0</option>
-								<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
-								<object class="wxCheckBox" name="ID_CHKSUBSTITUTE">
-									<enabled>0</enabled>
-									<tooltip>Allows you to substitute a server from the master list for a custom server</tooltip>
-									<label>Custom server replaces this address:</label>
-									<checked>0</checked>
+								<object class="wxStaticText" name="ID_STATICTEXT2">
+									<label>IP Address:Port</label>
+									<wrap>-1</wrap>
 								</object>
 							</object>
 							<object class="sizeritem">
 								<option>0</option>
 								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
-								<object class="wxBoxSizer">
-									<orient>wxHORIZONTAL</orient>
-									<object class="sizeritem">
-										<option>0</option>
-										<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-										<border>5</border>
-										<object class="wxStaticText" name="ID_STATICTEXT2">
-											<label>IP Address:Port</label>
-											<wrap>-1</wrap>
-										</object>
-									</object>
-									<object class="sizeritem">
-										<option>0</option>
-										<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-										<border>5</border>
-										<object class="wxTextCtrl" name="ID_TXTSUBIPPORT">
-											<size>130,20</size>
-											<enabled>0</enabled>
-											<tooltip>IP Address and port of server to replace</tooltip>
-											<value>0.0.0.0:0</value>
-											<maxlength>0</maxlength>
-										</object>
-									</object>
+								<object class="wxTextCtrl" name="ID_TXTSUBIPPORT">
+									<size>130,20</size>
+									<enabled>0</enabled>
+									<tooltip>IP Address and port of server to replace</tooltip>
+									<value>0.0.0.0:0</value>
+									<maxlength>0</maxlength>
 								</object>
 							</object>
 						</object>
@@ -1227,29 +1223,21 @@
 			</object>
 			<object class="sizeritem">
 				<option>0</option>
-				<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+				<flag>wxALL|wxEXPAND</flag>
 				<border>5</border>
-				<object class="wxBoxSizer">
-					<orient>wxHORIZONTAL</orient>
-					<object class="sizeritem">
-						<option>1</option>
-						<flag>wxEXPAND</flag>
+				<object class="wxStdDialogButtonSizer">
+					<object class="button">
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
 						<border>5</border>
-						<object class="wxStdDialogButtonSizer">
-							<object class="button">
-								<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
-								<border>5</border>
-								<object class="wxButton" name="wxID_OK">
-									<label>&amp;OK</label>
-								</object>
-							</object>
-							<object class="button">
-								<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
-								<border>5</border>
-								<object class="wxButton" name="wxID_CANCEL">
-									<label>&amp;Cancel</label>
-								</object>
-							</object>
+						<object class="wxButton" name="wxID_OK">
+							<label>&amp;OK</label>
+						</object>
+					</object>
+					<object class="button">
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxButton" name="wxID_CANCEL">
+							<label>&amp;Cancel</label>
 						</object>
 					</object>
 				</object>
@@ -1364,7 +1352,7 @@
 						<vgap>0</vgap>
 						<hgap>0</hgap>
 						<growablecols>0</growablecols>
-						<growablerows>2,3</growablerows>
+						<growablerows>0,1,2,3</growablerows>
 						<object class="sizeritem">
 							<option>1</option>
 							<flag>wxEXPAND</flag>
@@ -1392,7 +1380,6 @@
 											<object class="wxStaticText" name="1">
 												<font>
 													<size>14</size>
-													
 													<style>normal</style>
 													<weight>bold</weight>
 													<underlined>0</underlined>
@@ -1406,7 +1393,7 @@
 											<flag>wxALIGN_CENTER|wxALL</flag>
 											<border>5</border>
 											<object class="wxStaticText" name="Id_StcTxtCopyright">
-												<label>Copyright (C) 2006-2013 The Odamex Team</label>
+												<label>Copyright (C) 2006-2014 The Odamex Team</label>
 												<wrap>-1</wrap>
 											</object>
 										</object>
@@ -1447,7 +1434,6 @@
 									<object class="wxStaticText">
 										<font>
 											<size>10</size>
-											
 											<style>italic</style>
 											<weight>normal</weight>
 											<underlined>0</underlined>
@@ -1466,7 +1452,6 @@
 										<style>wxHL_DEFAULT_STYLE</style>
 										<font>
 											<size>10</size>
-											
 											<style>italic</style>
 											<weight>normal</weight>
 											<underlined>0</underlined>
@@ -1480,7 +1465,6 @@
 									<object class="wxStaticText" name="Id_StcTxtWxVer">
 										<font>
 											<size>10</size>
-											
 											<style>italic</style>
 											<weight>normal</weight>
 											<underlined>0</underlined>
@@ -1500,9 +1484,8 @@
 								<label>Developed by</label>
 								<object class="sizeritem">
 									<option>1</option>
-									<flag>wxALL|wxEXPAND|wxFIXED_MINSIZE</flag>
+									<flag>wxALL|wxEXPAND</flag>
 									<border>5</border>
-									<minsize>75</minsize>
 									<object class="wxTextCtrl" name="Id_TxtCtrlDevelopers">
 										<style>wxTE_AUTO_URL|wxTE_CENTRE|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2</style>
 										<value>Russell Rice (mailto:russell@odamex.net)\nMichael Wood (mailto:mwoodj@huntsvegas.org)\nJohn D Corrado</value>
@@ -1520,9 +1503,8 @@
 								<label>License</label>
 								<object class="sizeritem">
 									<option>1</option>
-									<flag>wxALL|wxEXPAND|wxFIXED_MINSIZE</flag>
+									<flag>wxALL|wxEXPAND</flag>
 									<border>5</border>
-									<minsize>100</minsize>
 									<object class="wxTextCtrl" name="Id_TxtCtrlLicense">
 										<style>wxTE_AUTO_URL|wxTE_CENTRE|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2</style>
 										<value>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.</value>

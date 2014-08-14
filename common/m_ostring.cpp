@@ -61,13 +61,29 @@ void OString::shutdown()
 	mInitialized = false;
 }
 
+
+// ------------------------------------------------------------------------
+// debugging functions
+// ------------------------------------------------------------------------
+
+void OString::printStringTable()
+{
+	printf("OString Table\n");
+	printf("=============\n");
+	for (StringTable::const_iterator it = mStrings->begin(); it != mStrings->end(); ++it)
+		printf("id 0x%08x hash 0x%08x (%u): %s\n", mStrings->getId(*it), hash(it->mString.c_str()),
+					it->mRefCount, it->mString.c_str());
+	printf("\n");
+}
+
+
 // ------------------------------------------------------------------------
 // OString Constructors 
 // ------------------------------------------------------------------------
 
 OString::OString()
 {
-	addString("");
+	addString();
 }
 
 OString::OString(const OString& other)

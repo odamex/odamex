@@ -553,14 +553,6 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	I_FreeSurface(emulated_surface);
 	emulated_surface = NULL;
 
-	if (I_IsHeadless())
-	{
-		primary_surface = window->getPrimarySurface();
-		screen = primary_surface->getDefaultCanvas();
-		assert(I_VideoInitialized());
-		return;
-	}
-
 	IVideoMode desired_mode(width, height, surface_bpp, fullscreen);
 
 	IVideoMode mode = I_ValidateVideoMode(&desired_mode);

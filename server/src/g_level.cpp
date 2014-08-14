@@ -31,7 +31,6 @@
 
 #include "c_console.h"
 #include "c_dispatch.h"
-#include "c_level.h"
 #include "d_event.h"
 #include "d_main.h"
 #include "doomstat.h"

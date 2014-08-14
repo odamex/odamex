@@ -89,6 +89,8 @@
 #include "cl_main.h"
 
 #include "res_texture.h"
+#include "res_filelib.h"
+#include "w_ident.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -733,6 +735,8 @@ void D_DoomMain()
 	C_InitConsole();
 	atterm(C_ShutdownConsole);
 
+	W_SetupFileIdentifiers();
+
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
 
@@ -746,11 +750,9 @@ void D_DoomMain()
 	M_LoadDefaults();					// load before initing other systems
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
-	std::vector<std::string> resource_file_names, missing_file_names;
-	D_AddResourceFilesFromArgs(resource_file_names);
-	D_VerifyResourceFiles(resource_file_names, std::vector<std::string>(), missing_file_names);
-
-	D_LoadResourceFiles(resource_file_names);
+	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromArgs();
+	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+	D_LoadResourceFiles(resource_filenames);
 
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	atterm(I_ShutdownHardware);
@@ -760,6 +762,8 @@ void D_DoomMain()
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	atterm(D_Shutdown);
 	D_Init();
+
+	atterm(I_Endoom);
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks();

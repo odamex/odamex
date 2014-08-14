@@ -39,4 +39,6 @@ std::vector<std::string> Res_GatherResourceFilesFromArgs();
 std::vector<std::string> Res_GatherResourceFilesFromString(const std::string& str);
 std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string>& resource_filenames);
 
+void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir, const char separator);
+
 #endif	// __RES_FILELIB_H__

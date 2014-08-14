@@ -56,6 +56,7 @@
 #include "m_vectors.h"
 #include "p_ctf.h"
 #include "w_wad.h"
+#include "w_ident.h"
 #include "md5.h"
 #include "p_mobj.h"
 #include "p_unlag.h"
@@ -612,21 +613,6 @@ void SV_GetPackets()
 			}
 		}
 	}
-
-	for (Players::iterator it = players.begin();it != players.end();)
-	{
-		if (it->playerstate == PST_DISCONNECT)
-			it = SV_RemoveDisconnectedPlayer(it);
-		else
-			++it;
-	}
-
-	// [SL] 2011-05-18 - Handle sv_emptyreset
-	static size_t last_player_count = players.size();
-	if (sv_emptyreset && players.empty() && last_player_count > 0 && gamestate == GS_LEVEL)
-		G_DeferedInitNew(level.mapname);
-
-	last_player_count = players.size();
 }
 
 
@@ -4083,11 +4069,14 @@ void SV_WantWad(player_t &player)
 	}
 
 	// denis - do not download commercial wads
-	if (W_IsIWAD(resource_file_names[i], resource_file_hashes[i]))
+	if (W_IsIWAD(resource_file_names[i]))
 	{
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString (&cl->reliablebuf, "Server: This is a commercial wad and will not be downloaded\n");
+		char message[256];	
+		sprintf(message, "Server: %s is a commercial wad and will not be downloaded\n",
+				D_CleanseFileName(wadfiles[i]).c_str());
+		MSG_WriteString(&cl->reliablebuf, message);
 
 		SV_DropClient(player);
 		return;
@@ -4543,38 +4532,30 @@ void SV_StepTics(QWORD count)
 	// run the newtime tics
 	while (count--)
 	{
-		SV_BanlistTics();
-		SV_UpdateMaster();
+		SV_GameTics();
 
-		C_Ticker();
+		G_Ticker();
 
-		if (!SV_Frozen())
+		SV_WriteCommands();
+		SV_SendPackets();
+		SV_ClearClientsBPS();
+		SV_CheckTimeouts();
+
+		// Since clients are only sent sector updates every 3rd tic, don't destroy
+		// the finished moving sectors until we've sent the clients the update
+		if (P_AtInterval(3))
+			SV_DestroyFinishedMovingSectors();
+
+		// increment player_t::GameTime for all players once a second
+		static int TicCount = 0;
+		// Only do this once a second.
+		if (TicCount++ >= 35)
 		{
-			SV_GameTics();
-
-			G_Ticker();
-
-			SV_WriteCommands();
-			SV_SendPackets();
-			SV_ClearClientsBPS();
-			SV_CheckTimeouts();
-
-			// Since clients are only sent sector updates every 3rd tic, don't destroy
-			// the finished moving sectors until we've sent the clients the update
-			if (P_AtInterval(3))
-				SV_DestroyFinishedMovingSectors();
-
-			// increment player_t::GameTime for all players once a second
-			static int TicCount = 0;
-			// Only do this once a second.
-			if (TicCount++ >= 35)
-			{
-				SV_PlayerTimes();
-				TicCount = 0;
-			}
-
-			gametic++;
+			SV_PlayerTimes();
+			TicCount = 0;
 		}
+
+		gametic++;
 	}
 
 	DObject::EndFrame();
@@ -4612,9 +4593,39 @@ void SV_RunTics()
 		}
 	}
 
-	if (!step_mode)
+	SV_BanlistTics();
+	SV_UpdateMaster();
+
+	C_Ticker();
+
+	// only run game-related tickers if the server isn't frozen
+	// (sv_emptyfreeze enabled and no clients)
+	if (!step_mode && !SV_Frozen())
 		SV_StepTics(1);
+
+	// Remove any recently disconnected clients
+	for (Players::iterator it = players.begin(); it != players.end();)
+	{
+		if (it->playerstate == PST_DISCONNECT)
+			it = SV_RemoveDisconnectedPlayer(it);
+		else
+			++it;
+	}
+
+	// [SL] 2011-05-18 - Handle sv_emptyreset
+	static size_t last_player_count = players.size();
+	if (gamestate == GS_LEVEL && sv_emptyreset && players.empty() &&
+			last_player_count > 0)
+	{
+		// The last player just disconnected so reset the level.
+		// [SL] Ordinarily we should call G_DeferedInitNew but this is called
+		// at the end of a gametic and the level reset should take place now
+		// rather than at the start of the next gametic.
+		G_InitNew(level.mapname);
+	}
+	last_player_count = players.size();
 }
+
 
 BEGIN_COMMAND(step)
 {

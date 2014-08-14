@@ -37,8 +37,9 @@
 #include "version.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
-#include "c_level.h"
+#include "g_level.h"
 #include "res_main.h"
+#include "res_filelib.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -1007,7 +1008,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, resource_file_count - 1);
 
 	for (size_t i = 1; i < resource_file_count; i++)
-		MSG_WriteString(netbuffer, D_CleanseFileName(resource_file_names[i]).c_str());
+		MSG_WriteString(netbuffer, Res_CleanseFilename(resource_file_names[i]).c_str());
 		
 	MSG_WriteBool	(netbuffer, 0);		// deathmatch?
 	MSG_WriteByte	(netbuffer, 0);		// sv_skill
@@ -1162,7 +1163,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 
 	for (size_t i = 1; i < resource_file_count; i++)
 	{
-		MSG_WriteString(netbuffer, D_CleanseFileName(resource_file_names[i]).c_str());
+		MSG_WriteString(netbuffer, Res_CleanseFilename(resource_file_names[i]).c_str());
 		MSG_WriteString(netbuffer, resource_file_hashes[i].c_str());
 	}
 
@@ -1479,7 +1480,7 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
 	arc << (byte)(resource_file_count - 1);
 	for (size_t i = 1; i < resource_file_count; i++)
-		arc << D_CleanseFileName(resource_file_names[i]).c_str();
+		arc << Res_CleanseFilename(resource_file_names[i]).c_str();
 
 	// [SL] DEH/BEX patch file names used to be stored separately.
 	// Just output zero now.
@@ -1613,7 +1614,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 
 	// load the resource files
 	std::vector<std::string> empty_resource_file_hashes, missing_file_names;
-	D_VerifyResourceFiles(resource_file_names, empty_resource_file_hashes, missing_file_names); 
+//	D_VerifyResourceFiles(resource_file_names, empty_resource_file_hashes, missing_file_names); 
 
 	if (!missing_file_names.empty())
 		I_Error("Unable to locate resource files %s\n",  JoinStrings(resource_file_names, ", ").c_str());

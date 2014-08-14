@@ -26,6 +26,7 @@
 #include "m_fileio.h"
 #include "i_system.h"
 #include "w_wad.h"
+#include "w_ident.h"
 #include "m_argv.h"
 #include "c_cvars.h"
 
@@ -91,7 +92,7 @@ std::string Res_CleanseFilename(const std::string& filename)
 //
 // denis - Split a new directory string using the separator and append results to the output
 //
-static void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir, const char separator)
+void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir, const char separator)
 {
 	if (!dir || dir[0] == '\0')
 		return;
@@ -577,9 +578,7 @@ std::string Res_FindIWAD(const std::string& suggestion = "")
 	}
 
 	// Search for a pre-defined IWAD from the list above
-	// [SL] TODO: uncomment W_GetIWADFilenames when merge is complete
-//	std::vector<OString> filenames = W_GetIWADFilenames();
-	std::vector<std::string> filenames;  filenames.push_back("DOOM2.WAD");
+	std::vector<OString> filenames = W_GetIWADFilenames();
 	for (size_t i = 0; i < filenames.size(); i++)
 	{
 		std::string full_filename = Res_FindResourceFile(filenames[i]);

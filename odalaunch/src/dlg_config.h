@@ -40,32 +40,6 @@
 #include <wx/spinctrl.h>
 #include <wx/statbmp.h>
 
-// config file value names
-#define GETLISTONSTART      "GET_LIST_ON_START"
-#define SHOWBLOCKEDSERVERS  "SHOW_BLOCKED_SERVERS"
-#define DELIMWADPATHS       "DELIMITED_WAD_PATHS"
-#define ODAMEX_DIRECTORY    "ODAMEX_DIRECTORY"
-#define EXTRACMDLINEARGS    "ExtraCommandLineArguments"
-#define MASTERTIMEOUT       "MasterTimeout"
-#define SERVERTIMEOUT       "ServerTimeout"
-#define USEBROADCAST        "UseBroadcast"
-#define RETRYCOUNT          "RetryCount"
-
-#ifdef __WXMSW__
-#define PATH_DELIMITER ';'
-#else
-#define PATH_DELIMITER ':'
-#endif
-
-// configuration file structure
-struct launchercfg_t
-{
-    bool     get_list_on_start;
-    bool     show_blocked_servers;
-    wxString    wad_paths;
-    wxString    odamex_directory;
-};
-
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
 #define NUM_ENVVARS 2
@@ -75,7 +49,7 @@ class dlgConfig: public wxDialog
 {
 	public:
 
-		dlgConfig(launchercfg_t *cfg, wxWindow* parent, wxWindowID id = -1);
+		dlgConfig(wxWindow* parent, wxWindowID id = -1);
 		virtual ~dlgConfig();
 
         void LoadSettings();
@@ -128,8 +102,6 @@ class dlgConfig: public wxDialog
 
         wxFileConfig ConfigInfo;
 
-        launchercfg_t *cfg_file;
-        
         bool UserChangedSetting;
 
 	private:

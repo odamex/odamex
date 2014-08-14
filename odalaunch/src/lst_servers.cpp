@@ -23,6 +23,7 @@
 #include "lst_servers.h"
 
 #include "str_utils.h"
+#include "oda_defs.h"
 
 #include <wx/fileconf.h>
 #include <wx/xrc/xmlres.h>
@@ -452,9 +453,10 @@ void LstOdaServerList::AddServerToList(const Server &s,
     // Allows us to sort by passworded servers as well
     SetItemData(li.m_itemId, (IsPasswordEmpty ? 0 : 1));
     
-    ConfigInfo.Read(wxT("IconPingQualityGood"), &PQGood, 150);
-    ConfigInfo.Read(wxT("IconPingQualityPlayable"), &PQPlayable, 300);
-    ConfigInfo.Read(wxT("IconPingQualityLaggy"), &PQLaggy, 350);
+    ConfigInfo.Read(wxT(ICONPINGQGOOD), &PQGood, ODA_UIPINGQUALITYGOOD);
+    ConfigInfo.Read(wxT(ICONPINGQPLAYABLE), &PQPlayable, 
+        ODA_UIPINGQUALITYPLAYABLE);
+    ConfigInfo.Read(wxT(ICONPINGQLAGGY), &PQLaggy, ODA_UIPINGQUALITYLAGGY);
     
     // Coloured bullets for ping quality
     if (Ping < PQGood)

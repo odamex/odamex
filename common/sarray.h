@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <cassert>
 
 // ============================================================================
 //
@@ -319,10 +320,13 @@ private:
 		delete [] mItemRecords;
 		mSize = newsize;
 		mItemRecords = newitemrecords;
+		assert(mItemRecords != NULL);
+		assert(mSize <= 65536);
 	}
 
 	inline unsigned int getSlot(const SArrayId id) const
 	{
+		assert((id & 0xFFFF) < mSize);
 		if (mItemRecords[id & 0xFFFF].mId == id)
 			return id & 0xFFFF;
 		return SArray::NOT_FOUND;
@@ -335,6 +339,7 @@ private:
 
 	inline const SArrayId generateId(unsigned int slot)
 	{
+		assert(slot < mSize);
 		SArrayId id = (mIdKey << 16) | slot;
 		mIdKey++;
 		if (mIdKey > SArray::MAX_KEY)
@@ -351,6 +356,7 @@ private:
 	{
 		while (slot < mNextUnused && !slotUsed(slot))
 			slot++;
+		assert(slot < mSize);
 		return (slot < mNextUnused) ? slot : SArray::NOT_FOUND;
 	}
 
@@ -371,6 +377,7 @@ private:
 		else
 			slot = mNextUnused++;
 		
+		assert(slot < mSize);
 		mItemRecords[slot].mId = generateId(slot);
 		mUsed++;
 		return slot;
@@ -378,6 +385,7 @@ private:
 
 	inline void eraseSlot(unsigned int slot)
 	{
+		assert(slot < mSize);
 		if (slotUsed(slot))
 		{
 			mItemRecords[slot].mId = mFreeHead;

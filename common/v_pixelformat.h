@@ -139,7 +139,7 @@ public:
 	{	return 8 - mGLoss;	}
 
 	inline uint8_t getBBits() const
-	{	return 8 - mGLoss;	}
+	{	return 8 - mBLoss;	}
 
 	inline uint32_t getAMax() const
 	{	return (1 << getABits()) - 1;	}
@@ -164,6 +164,42 @@ public:
 
 	inline uint8_t getBShift() const
 	{	return mBShift;	}
+
+	inline uint8_t getAPos() const
+	{
+		#ifdef __BIG_ENDIAN__
+		return (24 - mAShift) >> 3;
+		#else
+		return mAShift >> 3;
+		#endif
+	}
+
+	inline uint8_t getRPos() const
+	{
+		#ifdef __BIG_ENDIAN__
+		return (24 - mRShift) >> 3;
+		#else
+		return mRShift >> 3;
+		#endif
+	}
+
+	inline uint8_t getGPos() const
+	{
+		#ifdef __BIG_ENDIAN__
+		return (24 - mGShift) >> 3;
+		#else
+		return mGShift >> 3;
+		#endif
+	}
+
+	inline uint8_t getBPos() const
+	{
+		#ifdef __BIG_ENDIAN__
+		return (24 - mBShift) >> 3;
+		#else
+		return mBShift >> 3;
+		#endif
+	}
 
 private:
 	uint8_t		mBitsPerPixel;

@@ -1,10 +1,8 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2014 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -18,23 +16,21 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Common level routines
+//
+// Resource file identification
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __C_LEVEL_H__
-#define __C_LEVEL_H__
+#ifndef __W_IDENT_H__
+#define  __W_IDENT_H__
 
-#include <vector>
-#include "g_level.h"
+#include "m_ostring.h"
+#include <string>
 
-extern bool unnatural_level_progression;
+void W_SetupFileIdentifiers();
+void W_ConfigureGameInfo(const std::string& iwad_filename);
+bool W_IsIWAD(const std::string& filename);
+bool W_IsIWADCommercial(const std::string& filename);
+std::vector<OString> W_GetIWADFilenames();
 
-void P_RemoveDefereds (void);
-int FindWadLevelInfo (char *name);
-int FindWadClusterInfo (int cluster);
-
-level_info_t *FindDefLevelInfo (char *mapname);
-cluster_info_t *FindDefClusterInfo (int cluster);
-
-#endif // __C_LEVEL_H__
+#endif	// __W_IDENT_H__

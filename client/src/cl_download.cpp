@@ -33,6 +33,7 @@
 #include "md5.h"
 #include "m_argv.h"
 #include "m_fileio.h"
+#include "res_filelib.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -164,10 +165,10 @@ void IntDownloadComplete(void)
     size_t i;
 
     // Try to save to the wad paths in this order -- Hyper_Eye
-    D_AddSearchDir(dirs, Args.CheckValue("-waddir"), SEARCHPATHSEPCHAR);
-    D_AddSearchDir(dirs, getenv("DOOMWADDIR"), SEARCHPATHSEPCHAR);
-    D_AddSearchDir(dirs, getenv("DOOMWADPATH"), SEARCHPATHSEPCHAR);
-    D_AddSearchDir(dirs, waddirs.cstring(), SEARCHPATHSEPCHAR);
+    Res_AddSearchDir(dirs, Args.CheckValue("-waddir"), SEARCHPATHSEPCHAR);
+    Res_AddSearchDir(dirs, getenv("DOOMWADDIR"), SEARCHPATHSEPCHAR);
+    Res_AddSearchDir(dirs, getenv("DOOMWADPATH"), SEARCHPATHSEPCHAR);
+    Res_AddSearchDir(dirs, waddirs.cstring(), SEARCHPATHSEPCHAR);
     dirs.push_back(startdir);
     dirs.push_back(progdir);
 

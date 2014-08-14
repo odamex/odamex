@@ -41,6 +41,7 @@
 #include "m_fileio.h"
 #include "cmdlib.h"
 #include "c_dispatch.h"
+#include "w_ident.h"
 
 #include "i_system.h"
 #include "z_zone.h"
@@ -774,7 +775,7 @@ WadResourceFile::WadResourceFile(const OString& filename,
 
 	delete [] wad_table;
 
-	mIsIWad = W_IsIWAD(mFileName, W_MD5(mFileName));
+	mIsIWad = W_IsIWAD(mFileName);
 }
 
 

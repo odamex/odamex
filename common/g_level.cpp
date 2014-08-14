@@ -22,13 +22,12 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "c_level.h"
+#include "g_level.h"
 
 #include <set>
 
 #include "c_console.h"
 #include "c_dispatch.h"
-#include "c_level.h"
 #include "d_event.h"
 #include "d_main.h"
 #include "doomstat.h"
@@ -56,6 +55,7 @@
 #include "sc_man.h"
 #include "v_video.h"
 #include "w_wad.h"
+#include "w_ident.h"
 #include "z_zone.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
@@ -2126,4 +2126,4 @@ cluster_info_t ClusterInfos[] = {
 };
 
 
-VERSION_CONTROL (c_level_cpp, "$Id$")
+VERSION_CONTROL (g_level_cpp, "$Id$")

@@ -360,7 +360,7 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 			continue;
 		}
 
-		int c = *str++;
+		int c = toupper(*str++);
 
 		if (isspace(c))
 		{
@@ -375,14 +375,12 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 			lastWasSpace = false;
 		}
 
-		c = toupper(c & 0x7F) - HU_FONTSTART;
-
-		if (c < 0 || c >= HU_FONTSIZE)
+		if (c < HU_FONTSTART || c >= HU_FONTSTART + HU_FONTSIZE)
 			nw = 4;
 		else
-			nw = hu_font[c]->width();
+			nw = hu_font[c - HU_FONTSTART]->width();
 
-		if (w + nw > maxwidth || c == '\n' - HU_FONTSTART)
+		if (w + nw > maxwidth || c == '\n')
 		{
 			// Time to break the line
 			if (!space)

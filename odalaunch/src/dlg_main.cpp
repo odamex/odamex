@@ -24,7 +24,9 @@
 
 #include "dlg_main.h"
 #include "query_thread.h"
+#include "plat_utils.h"
 #include "str_utils.h"
+#include "oda_defs.h"
 
 #include "md5.h"
 
@@ -40,7 +42,6 @@
 #include <wx/iconbndl.h>
 #include <wx/regex.h>
 #include <wx/process.h>
-#include <wx/toolbar.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/string.h>
 #include <wx/cmdline.h>
@@ -122,61 +123,23 @@ static const wxCmdLineEntryDesc cmdLineDesc[] =
     { wxCMD_LINE_NONE }
 };
 
-void dlgMain::SetupToolbar()
-{
-    wxBitmap toolLaunch, toolRunOffline, toolRefresh, toolRefreshAll, 
-        toolGetList, toolPreferences, toolAbout, toolExit;
-
-    wxToolBar *ToolBar;
-
-    ToolBar = GetToolBar();
-
-    if (!ToolBar)
-        return;
-
-    toolLaunch = wxXmlResource::Get()->LoadBitmap(wxT("btnlaunch"));
-    toolRunOffline = wxXmlResource::Get()->LoadBitmap(wxT("btnqlaunch"));
-    toolRefresh = wxXmlResource::Get()->LoadBitmap(wxT("btnrefresh"));
-    toolRefreshAll = wxXmlResource::Get()->LoadBitmap(wxT("btnrefresha"));
-    toolGetList = wxXmlResource::Get()->LoadBitmap(wxT("btngetlist"));
-    toolPreferences = wxXmlResource::Get()->LoadBitmap(wxT("btnprefs"));
-    toolAbout = wxXmlResource::Get()->LoadBitmap(wxT("btnabout"));
-    toolExit = wxXmlResource::Get()->LoadBitmap(wxT("btnexit"));
-
-    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmLaunch"), toolLaunch);
-    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmRunOffline"), toolRunOffline);
-    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmRefreshServer"), toolRefresh);
-    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmRefreshAll"), toolRefreshAll);
-    ToolBar->SetToolNormalBitmap(XRCID("Id_MnuItmGetList"), toolGetList);
-    ToolBar->SetToolNormalBitmap(wxID_PREFERENCES, toolPreferences);
-    ToolBar->SetToolNormalBitmap(wxID_ABOUT, toolAbout);
-    ToolBar->SetToolNormalBitmap(wxID_EXIT, toolExit);
-}
-
 // Main window creation
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
     wxString Version;
     wxIcon MainIcon;
-
+    bool GetListOnStart;
+    
     // Loads the frame from the xml resource file
 	wxXmlResource::Get()->LoadFrame(this, parent, wxT("dlgMain"));
-
-    // Not needed
-    //SetupToolbar();
 
     // Set window icon
     MainIcon = wxXmlResource::Get()->LoadIcon(wxT("mainicon"));
 
     SetIcon(MainIcon);
 
-    #ifdef _WIN32
-    // Hack for windows vista/7 titlebar icon
-    SendMessage((HWND)GetHandle(), WM_SETICON, ICON_SMALL, 
-                (LPARAM)MainIcon.GetHICON());
-    // Uncomment this if it doesn't work under xp            
-    //SendMessage((HWND)GetHandle(), WM_SETICON, ICON_BIG, (LPARAM)MainIcon.GetHICON());
-    #endif
+    // wxMSW: Apply a hack to fix the titlebar icon on windows vista and 7
+    OdaMswFixTitlebarIcon(GetHandle(), MainIcon);
 
     // Sets the title of the application with a version string to boot
     Version = wxString::Format(
@@ -185,51 +148,16 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     SetLabel(Version);
 
-    #ifdef __WXMAC__
-    {
-        // Remove the file menu on Mac as it will be empty
-        wxMenu* fileMenu = GetMenuBar()->Remove(GetMenuBar()->FindMenu(_("File")));
-        if(fileMenu)
-        {
-            wxMenuItem* prefMenuItem = fileMenu->Remove(wxID_PREFERENCES);
-            wxMenu* helpMenu = GetMenuBar()->GetMenu(GetMenuBar()->FindMenu(_("Help")));
-
-            // Before deleting the file menu the preferences menu item must be moved or
-            // it will not work after this even though it has been placed somewhere else.
-            // Attaching it to the help menu is the only way to not duplicate it as Help is
-            // a special menu just as Preferences is a special menu itme.
-            if(helpMenu)
-                helpMenu->Append(prefMenuItem);
-
-            delete fileMenu;
-        }
-    }
-    #endif
-
-    launchercfg_s.get_list_on_start = 1;
-    launchercfg_s.show_blocked_servers = 0;
-
-    #if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
-    const char* datadir_cstr = INSTALL_PREFIX "/" INSTALL_DATADIR;
-    launchercfg_s.wad_paths = wxString::FromAscii(datadir_cstr);
-    #else
-    launchercfg_s.wad_paths = wxGetCwd();
-    #endif
-
-    #if defined(INSTALL_PREFIX) && defined(INSTALL_BINDIR)
-    const char* bindir_cstr = INSTALL_PREFIX "/" INSTALL_BINDIR;
-    launchercfg_s.odamex_directory = wxString::FromAscii(bindir_cstr);
-    #else
-    launchercfg_s.odamex_directory = wxGetCwd();
-    #endif
+    // wxMAC: There is no file menu on OSX platforms
+    OdaMacRemoveFileMenu(this);
 
     m_LstCtrlServers = XRCCTRL(*this, "Id_LstCtrlServers", LstOdaServerList);
     m_LstCtrlPlayers = XRCCTRL(*this, "Id_LstCtrlPlayers", LstOdaPlayerList);
     m_LstOdaSrvDetails = XRCCTRL(*this, "Id_LstCtrlServerDetails", LstOdaSrvDetails);
     m_PnlServerFilter = XRCCTRL(*this, "Id_PnlServerFilter", wxPanel);
     m_SrchCtrlGlobal = XRCCTRL(*this, "Id_SrchCtrlGlobal", wxTextCtrl);
-
-
+    m_StatusBar = GetStatusBar();
+    
 	// set up the master server information
 	wxCmdLineParser CmdLineParser(wxTheApp->argc, wxTheApp->argv);
     wxString MasterAddress;
@@ -250,34 +178,37 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     }
     
     /* Init sub dialogs and load settings */
-    config_dlg = new dlgConfig(&launchercfg_s, this);
+    config_dlg = new dlgConfig(this);
     server_dlg = new dlgServers(&MServer, this);
     AboutDialog = new dlgAbout(this);
 
     /* Get the first directory for wad downloading */
+    /*
     wxInt32 Pos = launchercfg_s.wad_paths.Find(wxT(PATH_DELIMITER), false);
     wxString FirstDirectory = launchercfg_s.wad_paths.Mid(0, Pos);
 
-    OdaGet = new frmOdaGet(this, -1, FirstDirectory);
+    OdaGet = new frmOdaGet(this, -1, FirstDirectory);*/
 
+//    InfoBar = new OdaInfoBar(this);
+    
     QServer = NULL;
 
-    // Base number of threads on cpu count in the system (including cores)
-    // and multiply that by a fixed value
-    NUM_THREADS = wxThread::GetCPUCount();
-
-    if (NUM_THREADS == -1)
-        NUM_THREADS = ODA_THRDEFVAL;
-    else
-        NUM_THREADS *= ODA_THRMULVAL;
-
+    NUM_THREADS = QueryThread::GetIdealThreadCount();
+           
     for (size_t i = 0; i < NUM_THREADS; ++i)
     {
         threadVector.push_back(new QueryThread(this));
     }
+   
+    {
+        wxFileConfig ConfigInfo;
+           
+        ConfigInfo.Read(wxT(GETLISTONSTART), &GetListOnStart, 
+            ODA_UIGETLISTONSTART);
+    }
 
     // get master list on application start
-    if (launchercfg_s.get_list_on_start)
+    if (GetListOnStart)
     {
         wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmGetList);
 
@@ -289,6 +220,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 dlgMain::~dlgMain()
 {
     // Cleanup
+//    delete InfoBar;
+    
     delete[] QServer;
 
     QServer = NULL;
@@ -298,9 +231,13 @@ dlgMain::~dlgMain()
 
     if (server_dlg != NULL)
         server_dlg->Destroy();
-
-    if (OdaGet != NULL)
-        OdaGet->Destroy();
+    
+    //wxFileConfig FileConfig;
+    
+    //FileConfig.DeleteAll();
+    
+//    if (OdaGet != NULL)
+  //      OdaGet->Destroy();
 }
 
 void dlgMain::OnWindowCreate(wxWindowCreateEvent &event)
@@ -414,7 +351,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     wxPasswordEntryDialog ped(this, wxT("Server is password-protected. \n\n"
         "Please enter the password"), wxT("Manual Connect"), wxT(""));
 
-    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, ODA_QRYSERVERTIMEOUT);
 
     // Keep asking for a valid ip/port number
     while (1)
@@ -519,9 +456,16 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
         }
     }
 
+	wxString OdamexDirectory, DelimWadPaths;
 
-    LaunchGame(ted_result, launchercfg_s.odamex_directory,
-        launchercfg_s.wad_paths, ped_result);
+    {
+        ConfigInfo.Read(wxT(ODAMEX_DIRECTORY), &OdamexDirectory, 
+                        OdaGetInstallDir());
+
+        ConfigInfo.Read(wxT(DELIMWADPATHS), &DelimWadPaths, OdaGetDataDir());
+    }
+
+    LaunchGame(ted_result, OdamexDirectory, DelimWadPaths, ped_result);
 }
 
 // Posts a message from the main thread to the monitor thread
@@ -578,9 +522,9 @@ bool dlgMain::MonThrGetMasterList()
     odalpapi::BufferedSocket Socket;
 
     // Get the masters timeout from the config file
-    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
-    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
-    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
+    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, ODA_QRYMASTERTIMEOUT);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, ODA_QRYGSRETRYCOUNT);
+    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, ODA_QRYUSEBROADCAST);
 
     MServer.SetSocket(&Socket);
 
@@ -630,19 +574,11 @@ void dlgMain::MonThrGetServerList()
         return;
     }
 
-    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
-    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, ODA_QRYSERVERTIMEOUT);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, ODA_QRYGSRETRYCOUNT);
 
     delete[] QServer;
     QServer = new Server [ServerCount];
-
-    /*
-        Thread pool manager:
-        Executes a number of threads that contain the same amount of
-        servers, when a thread finishes, it gets deleted and another
-        gets executed with a different server, eventually all the way
-        down to 0 servers.
-    */
 
     size_t thrvec_size = threadVector.size();
 
@@ -651,36 +587,38 @@ void dlgMain::MonThrGetServerList()
         for(size_t i = 0; i < thrvec_size; ++i)
         {
             QueryThread *OdaQT = threadVector[i];
-            
-            if(OdaQT->GetStatus() == QueryThread_Running)
+            QueryThreadStatus Status = OdaQT->GetStatus();
+
+            if (Status == QueryThread_Running)
+            {
+                // Give up some timeslice for this thread so worker thread slots
+                // become available
+                OdaTH->Sleep(15);
+                
                 continue;
+            }
             else
                 ++count;
-            
+
+            // If we got this far, it means a thread has finished and needs more
+            // work, give it a job to do
             if(serverNum < ServerCount)
             {
                 MServer.GetServerAddress(serverNum, Address, Port);
 
-                // Internally sets the arguments, signals the
-                // condition variable and runs the thread with
-                // the args
                 OdaQT->Signal(&QServer[serverNum], Address, Port, serverNum, 
                     ServerTimeout, RetryCount);
 
                 ++serverNum;
             }
-            
-            // We got told to exit, so we should wait for these worker threads
-            // to gracefully exit
+
+            // Check if the user wants us to exit
             if (OdaTH->TestDestroy())
             {
                 return;
             }
         }
-        
-        // Let other threads get some time
-        OdaTH->Sleep(15);
-    }               
+    }
 
     // Wait until all threads have finished before posting an event
     for (size_t i = 0; i < thrvec_size; ++i)
@@ -702,8 +640,8 @@ void dlgMain::MonThrGetSingleServer()
     if (!MServer.GetServerCount())
         return;
 
-    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
-    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, ODA_QRYSERVERTIMEOUT);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, ODA_QRYGSRETRYCOUNT);
 
     QServer[mtcs_Request.Index].SetRetries(RetryCount);
 
@@ -791,13 +729,22 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 
         case mtrs_server_singletimeout:
         {
+            bool ShowBlockedServers;
+            
             i = m_LstCtrlServers->FindServer(stdstr_towxstr(QServer[Result->Index].GetAddress()));
 
             m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
 
             QServer[Result->Index].ResetData();
-
-            if (launchercfg_s.show_blocked_servers == false)
+            
+            {
+                wxFileConfig ConfigInfo;
+            
+                ConfigInfo.Read(wxT(SHOWBLOCKEDSERVERS), &ShowBlockedServers, 
+                                ODA_UISHOWBLOCKEDSERVERS);
+            }
+            
+            if (ShowBlockedServers == false)
                 break;
 
             if (i == -1)
@@ -835,8 +782,10 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             break;
     }
 
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), (wxInt32)MServer.GetPing()), 1);
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), (wxInt32)TotalPlayers), 3);
+    m_StatusBar->SetStatusText(wxString::Format(_T("Master Ping: %d"), 
+        (wxInt32)MServer.GetPing()), 1);
+    m_StatusBar->SetStatusText(wxString::Format(_T("Total Players: %d"), 
+        (wxInt32)TotalPlayers), 3);
 
     delete Result;
 }
@@ -849,13 +798,22 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
     {
         case 0: // server query timed out
         {
+            bool ShowBlockedServers;
+            
             i = m_LstCtrlServers->FindServer(stdstr_towxstr(QServer[event.GetInt()].GetAddress()));
 
             m_LstCtrlPlayers->DeleteAllItems();
 
             QServer[event.GetInt()].ResetData();
 
-            if (launchercfg_s.show_blocked_servers == false)
+            {
+                wxFileConfig ConfigInfo;
+            
+                ConfigInfo.Read(wxT(SHOWBLOCKEDSERVERS), &ShowBlockedServers, 
+                                ODA_UISHOWBLOCKEDSERVERS);
+            }
+            
+            if (ShowBlockedServers == false)
                 break;
 
             if (i == -1)
@@ -877,14 +835,10 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 
     ++QueriedServers;
 
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Queried Server %d of %d"),
-                                                   (wxInt32)QueriedServers,
-                                                   (wxInt32)MServer.GetServerCount()),
-                                                   2);
-
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"),
-                                                   (wxInt32)TotalPlayers),
-                                                   3);
+    m_StatusBar->SetStatusText(wxString::Format(_T("Queried Server %d of %d"),
+        (wxInt32)QueriedServers, (wxInt32)MServer.GetServerCount()), 2);
+    m_StatusBar->SetStatusText(wxString::Format(_T("Total Players: %d"),
+        (wxInt32)TotalPlayers), 3);
 }
 
 // Custom Servers menu item
@@ -903,16 +857,24 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
 
 void dlgMain::OnOpenOdaGet(wxCommandEvent &event)
 {
-    if (OdaGet)
-        OdaGet->Show();
+//    if (OdaGet)
+  //      OdaGet->Show();
 }
 
 // Quick-Launch button click
 void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 {
-	LaunchGame(_T(""),
-				launchercfg_s.odamex_directory,
-				launchercfg_s.wad_paths);
+	wxString OdamexDirectory, DelimWadPaths;
+
+	{
+        wxFileConfig ConfigInfo;
+	
+        ConfigInfo.Read(wxT(ODAMEX_DIRECTORY), &OdamexDirectory, 
+                        OdaGetInstallDir());
+        ConfigInfo.Read(wxT(DELIMWADPATHS), &DelimWadPaths, OdaGetDataDir());
+	}
+	
+	LaunchGame(wxT(""), OdamexDirectory, DelimWadPaths);
 
 }
 
@@ -977,8 +939,18 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
         }
     }
 
-    LaunchGame(stdstr_towxstr(QServer[i].GetAddress()), launchercfg_s.odamex_directory,
-        launchercfg_s.wad_paths, Password);
+	wxString OdamexDirectory, DelimWadPaths;
+
+	{
+        wxFileConfig ConfigInfo;
+	
+        ConfigInfo.Read(wxT(ODAMEX_DIRECTORY), &OdamexDirectory, 
+                        OdaGetInstallDir());
+        ConfigInfo.Read(wxT(DELIMWADPATHS), &DelimWadPaths, OdaGetDataDir());
+	}
+    
+    LaunchGame(stdstr_towxstr(QServer[i].GetAddress()), OdamexDirectory,
+        DelimWadPaths, Password);
 }
 
 // Get Master List button click
@@ -1064,7 +1036,8 @@ void dlgMain::OnServerListClick(wxListEvent& event)
 void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
     const wxString &waddirs, const wxString &Password)
 {
-    wxFileConfig ConfigInfo;
+    wxFileConfig ConfigInfo;   
+    wxString BinName, CmdLine;
     wxString ExtraCmdLineArgs;
 
     if (ODX_Path.IsEmpty())
@@ -1073,50 +1046,54 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
 
         return;
     }
-
+        
     #ifdef __WXMSW__
-      wxString binname = ODX_Path + wxT('\\') + wxT("odamex");
+      BinName = ODX_Path + wxT('\\') + wxT("odamex");
     #elif __WXMAC__
-      wxString binname = ODX_Path + wxT("/odamex.app/Contents/MacOS/odamex");
+      BinName = ODX_Path + wxT("/odamex.app/Contents/MacOS/odamex");
     #else
-      wxString binname = ODX_Path + wxT("/odamex");
+      BinName = ODX_Path + wxT("/odamex");
     #endif
-
-    wxString cmdline = wxT("");
-
-    wxString dirs = waddirs.Mid(0, waddirs.Length());
-
-    cmdline += wxString::Format(wxT("%s"), binname.c_str());
-
+    
+    CmdLine = BinName;
+    
     if (!Address.IsEmpty())
-		cmdline += wxString::Format(wxT(" -connect %s"),
-									Address.c_str());
-
+    {
+		CmdLine += wxT(" -connect ");
+        CmdLine += Address;
+    }
+    
 	if (!Password.IsEmpty())
-        cmdline += wxString::Format(wxT(" %s"),
-									Password.c_str());
+    {
+        CmdLine += wxT(" ");
+        CmdLine += Password;
+    }
 
-	// this is so the client won't mess up parsing
-	if (!dirs.IsEmpty())
-        cmdline += wxString::Format(wxT(" -waddir \"%s\""),
-                                    dirs.c_str());
+	if (!waddirs.IsEmpty())
+    {
+        CmdLine += wxT(" -waddir \"");
+        CmdLine += waddirs;
+        CmdLine += wxT("\"");
+    }
 
     // Check for any user command line arguments
     ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
 
     if (!ExtraCmdLineArgs.IsEmpty())
-        cmdline += wxString::Format(wxT(" %s"),
-                                    ExtraCmdLineArgs.c_str());
-
+    {
+        CmdLine += wxT(" ");
+        CmdLine += ExtraCmdLineArgs;
+    }
+        
     // wxWidgets likes to spit out its own message box on msw after our one
     #ifndef __WXMSW__
 	wxProcess *process = new wxProcess(wxPROCESS_REDIRECT);
 
 	if (wxExecute(cmdline, wxEXEC_ASYNC, process) <= 0)
         wxMessageBox(wxString::Format(wxT("Could not start %s!"),
-                                        binname.c_str()));
+                                        BinName.c_str()));
     #else
-    wxExecute(cmdline, wxEXEC_ASYNC, NULL);
+    wxExecute(CmdLine, wxEXEC_ASYNC, NULL);
     #endif
 }
 

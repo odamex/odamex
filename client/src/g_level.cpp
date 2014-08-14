@@ -27,7 +27,6 @@
 #include "am_map.h"
 #include "c_console.h"
 #include "c_dispatch.h"
-#include "c_level.h"
 #include "cl_main.h"
 #include "d_event.h"
 #include "d_main.h"
@@ -62,6 +61,7 @@
 #include "w_wad.h"
 #include "wi_stuff.h"
 #include "z_zone.h"
+#include "res_filelib.h"
 
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
@@ -138,9 +138,10 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	C_HideConsole();
 	CL_QuitNetGame();
 
-	std::vector<std::string> resource_file_names;
-	D_AddResourceFilesFromString(resource_file_names, JoinStrings(VectorArgs(argc, argv), " "));
-	D_ReloadResourceFiles(resource_file_names);
+	std::vector<std::string> resource_filenames =
+		Res_GatherResourceFilesFromString(JoinStrings(VectorArgs(argc, argv), " "));
+	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+	D_ReloadResourceFiles(resource_filenames);
 
 	G_DeferedInitNew(startmap);
 

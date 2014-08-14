@@ -48,7 +48,8 @@
 #include "r_sky.h"
 #include "cl_main.h"
 #include "c_bind.h"
-#include "c_level.h"
+#include "g_level.h"
+#include "res_filelib.h"
 
 #include "gi.h"
 #include "m_memio.h"
@@ -1017,9 +1018,9 @@ void M_StartGame(int choice)
 			// Load No Rest for The Living Externally
 			epi = 0;
 
-			std::vector<std::string> new_resource_file_names;
-			D_AddResourceFilesFromString(new_resource_file_names, str);
-			D_LoadResourceFiles(new_resource_file_names);
+			std::vector<std::string> new_resource_filenames = Res_GatherResourceFilesFromString(str);
+			new_resource_filenames = Res_ValidateResourceFiles(new_resource_filenames);
+			D_LoadResourceFiles(new_resource_filenames);
 
 			G_DeferedInitNew(startmap);
 		}
@@ -1032,9 +1033,10 @@ void M_StartGame(int choice)
             {
 				if (iequals(str, M_ExtractFileName(resource_file_names[i])))
 				{
-					std::vector<std::string> new_resource_file_names;
-					D_AddResourceFilesFromString(new_resource_file_names, resource_file_names[1]);
-					D_LoadResourceFiles(new_resource_file_names);
+					std::vector<std::string> new_resource_filenames =
+							Res_GatherResourceFilesFromString(resource_file_names[1]);
+					new_resource_filenames = Res_ValidateResourceFiles(new_resource_filenames);
+					D_LoadResourceFiles(new_resource_filenames);
 				}
             }
 

@@ -29,13 +29,7 @@
 
 #include "net_packet.h"
 
-// Thread multiplier value
-#define ODA_THRMULVAL 8
-
-// Default number of threads for single processor/core systems
-#define ODA_THRDEFVAL 10 
-
-DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1);
+DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1)
 
 typedef enum QueryThreadStatus
 {
@@ -52,8 +46,10 @@ class QueryThread : public wxThread
 
         QueryThread(wxEvtHandler *EventHandler);
         ~QueryThread() { delete m_Condition; }
-        inline QueryThreadStatus_t GetStatus() { return m_Status; };
-
+        
+        QueryThreadStatus_t GetStatus();
+        void SetStatus(QueryThreadStatus_t Status);
+        
         void Signal(odalpapi::Server *QueryServer, 
                     const std::string &Address, 
                     const wxUint16 Port, 
@@ -65,6 +61,8 @@ class QueryThread : public wxThread
         
         virtual void *Entry();
 
+        static int GetIdealThreadCount();
+        
     private:
         wxEvtHandler      *m_EventHandler;
         odalpapi::Server  *m_QueryServer;
@@ -78,6 +76,7 @@ class QueryThread : public wxThread
         QueryThreadStatus_t m_Status;
 
         wxMutex            m_Mutex;
+        wxMutex            m_StatusMutex;
         wxCondition        *m_Condition;
 };
 

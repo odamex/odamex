@@ -51,6 +51,7 @@ void I_EndRead (void);
 
 // Called by DoomMain.
 void I_Init (void);
+void I_Endoom(void);
 std::string I_GetCWD();
 std::string I_GetBinaryDir();
 std::string I_GetUserFileName (const char *file);

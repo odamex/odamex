@@ -46,6 +46,7 @@
 #include "p_ctf.h"
 #include "m_random.h"
 #include "w_wad.h"
+#include "w_ident.h"
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
@@ -64,7 +65,6 @@
 #include "p_pspr.h"
 #include "d_netcmd.h"
 #include "g_warmup.h"
-#include "c_level.h"
 #include "v_text.h"
 #include "hu_stuff.h"
 
@@ -1532,7 +1532,7 @@ void CL_VerifyResourceFiles(
 	missing_hash.clear();
 
 	std::vector<std::string> missing_file_names;
-	D_VerifyResourceFiles(resource_file_names, resource_file_hashes, missing_file_names); 
+//	D_VerifyResourceFiles(resource_file_names, resource_file_hashes, missing_file_names); 
 
 	// not really missing a file but force the client to download anyways
 	if (developer && cl_forcedownload)
@@ -1723,17 +1723,7 @@ bool CL_Connect(void)
 	MSG_WriteLong(&net_buffer, 0);
 
 	if (gamestate == GS_DOWNLOAD && !missing_file.empty())
-	{
-		// denis - do not download commercial wads
-		if (W_IsIWADCommercial(missing_file, missing_hash))
-		{
-			Printf(PRINT_HIGH, "This is a commercial wad and will not be downloaded.\n");
-			CL_QuitNetGame();
-			return false;
-		}
-
 		CL_RequestDownload(missing_file, missing_hash);
-	}
 
 	compressor.reset();
 

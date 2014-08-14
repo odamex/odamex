@@ -5,7 +5,7 @@
 		<Option title="launcher" />
 		<Option default_target="Debug" />
 		<Option compiler="gcc" />
-		<Option virtualFolders="dialogs\;odalpapi\;" />
+		<Option virtualFolders="dialogs\;odalpapi\;controls\;" />
 		<Build>
 			<Target title="Win Release (GCC)">
 				<Option platforms="Windows;" />
@@ -299,6 +299,12 @@
 		<Unit filename="res/resource.h" />
 		<Unit filename="res/xrc_resource.h" />
 		<Unit filename="res/xrc_resource.xrc" />
+		<Unit filename="src/ctrl_infobar.cpp">
+			<Option virtualFolder="controls/" />
+		</Unit>
+		<Unit filename="src/ctrl_infobar.h">
+			<Option virtualFolder="controls/" />
+		</Unit>
 		<Unit filename="src/dlg_about.cpp">
 			<Option virtualFolder="dialogs/" />
 		</Unit>
@@ -329,18 +335,37 @@
 		<Unit filename="src/frm_odaget.h">
 			<Option virtualFolder="dialogs/" />
 		</Unit>
-		<Unit filename="src/lst_custom.cpp" />
-		<Unit filename="src/lst_custom.h" />
-		<Unit filename="src/lst_players.cpp" />
-		<Unit filename="src/lst_players.h" />
-		<Unit filename="src/lst_servers.cpp" />
-		<Unit filename="src/lst_servers.h" />
-		<Unit filename="src/lst_srvdetails.cpp" />
-		<Unit filename="src/lst_srvdetails.h" />
+		<Unit filename="src/lst_custom.cpp">
+			<Option virtualFolder="controls/" />
+		</Unit>
+		<Unit filename="src/lst_custom.h">
+			<Option virtualFolder="controls/" />
+		</Unit>
+		<Unit filename="src/lst_players.cpp">
+			<Option virtualFolder="controls/" />
+		</Unit>
+		<Unit filename="src/lst_players.h">
+			<Option virtualFolder="controls/" />
+		</Unit>
+		<Unit filename="src/lst_servers.cpp">
+			<Option virtualFolder="controls/" />
+		</Unit>
+		<Unit filename="src/lst_servers.h">
+			<Option virtualFolder="controls/" />
+		</Unit>
+		<Unit filename="src/lst_srvdetails.cpp">
+			<Option virtualFolder="controls/" />
+		</Unit>
+		<Unit filename="src/lst_srvdetails.h">
+			<Option virtualFolder="controls/" />
+		</Unit>
 		<Unit filename="src/main.cpp" />
 		<Unit filename="src/main.h" />
 		<Unit filename="src/md5.cpp" />
 		<Unit filename="src/md5.h" />
+		<Unit filename="src/oda_defs.h" />
+		<Unit filename="src/plat_utils.cpp" />
+		<Unit filename="src/plat_utils.h" />
 		<Unit filename="src/query_thread.cpp" />
 		<Unit filename="src/query_thread.h" />
 		<Unit filename="src/str_utils.cpp" />

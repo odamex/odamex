@@ -338,15 +338,16 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 	for (int rowcount = h; rowcount > 0; --rowcount)
 	{
 		// [SL] Calculate how many pixels of each row need to be drawn before dest is
-		// aligned to a 16-byte boundary.
-		int align = R_GetBytesUntilAligned(dest, 16) / sizeof(argb_t);
+		// aligned to a 128-bit boundary.
+		int align = R_GetBytesUntilAligned(dest, 128/8) / sizeof(argb_t);
 		if (align > w)
 			align = w;
 
-		int batches = (w - align) / 8;
-		int remainder = (w - align) & (8 - 1);
+		const int batch_size = 8;
+		int batches = (w - align) / batch_size;
+		int remainder = (w - align) & (batch_size - 1);
 
-		// align the destination buffer to 16-byte boundary
+		// align the destination buffer to 128-bit boundary
 		while (align--)
 		{
 			*dest = alphablend1a(*dest, color, alpha);
@@ -360,9 +361,9 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 			const __m128i vec_input0 = _mm_load_si128((__m128i*)(dest + 0));
 			const __m128i vec_input1 = _mm_load_si128((__m128i*)(dest + 4));
 
-			// Expand the width of each color channel from 8bits to 16 bits
-			// by splitting input into two 128bit variables, each
-			// containing 2 ARGB values. 16bit color channels are needed to
+			// Expand the width of each color channel from 8-bits to 16-bits
+			// by splitting each input vector into two 128-bit variables, each
+			// containing 2 ARGB values. 16-bit color channels are needed to
 			// accomodate multiplication.
 			__m128i vec_lower0 = _mm_unpacklo_epi8(vec_input0, _mm_setzero_si128());
 			__m128i vec_upper0 = _mm_unpackhi_epi8(vec_input0, _mm_setzero_si128());
@@ -375,11 +376,11 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 			vec_lower1 = _mm_srli_epi16(_mm_add_epi16(_mm_mullo_epi16(vec_lower1, vec_invalpha), vec_alphacolor), 8); 
 			vec_upper1 = _mm_srli_epi16(_mm_add_epi16(_mm_mullo_epi16(vec_upper1, vec_invalpha), vec_alphacolor), 8); 
 
-			// Compress the width of each color channel to 8bits again and store in dest
+			// Compress the width of each color channel to 8-bits again and store in dest
 			_mm_store_si128((__m128i*)(dest + 0), _mm_packus_epi16(vec_lower0, vec_upper0));
 			_mm_store_si128((__m128i*)(dest + 4), _mm_packus_epi16(vec_lower1, vec_upper1));
 
-			dest += 8;
+			dest += batch_size;
 		}
 
 		// Pick up the remainder:

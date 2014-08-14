@@ -75,6 +75,7 @@
 #include "sv_banlist.h"
 
 #include "res_texture.h"
+#include "w_ident.h"
 
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
@@ -354,6 +355,8 @@ void D_DoomMain()
 	C_InitConsole();
 	atterm(C_ShutdownConsole);
 
+	W_SetupFileIdentifiers();
+
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
 
@@ -371,9 +374,7 @@ void D_DoomMain()
 	M_LoadDefaults();			// load before initing other systems
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
-	const char* iwad = Args.CheckValue("-iwad");
-	if (!iwad)
-		iwad = "";
+	std::vector<std::string> newwadfiles, newpatchfiles;
 
 	std::vector<std::string> new_resource_files;
 	new_resource_files.push_back(iwad);

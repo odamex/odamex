@@ -625,6 +625,9 @@ void I_Endoom(void)
 	int y;
 	int indent;
 
+    if (!r_showendoom || Args.CheckParm ("-novideo"))
+        return;
+
     // Hack to stop crash with disk icon
     in_endoom = true;
 
@@ -689,16 +692,6 @@ void STACK_ARGS I_Quit (void)
     CloseNetwork();
 
 	DConsoleAlias::DestroyAll();
-
-	try
-	{
-		if (r_showendoom && !Args.CheckParm ("-novideo"))
-			I_Endoom();
-	}
-	catch (CRecoverableError &error)
-	{
-		// [AM] ENDOOM does not exist, but at this point we don't care.
-	}
 }
 
 

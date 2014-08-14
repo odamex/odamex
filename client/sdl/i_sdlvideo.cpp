@@ -533,11 +533,20 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 		// create a new IWindowSurface with its own frame buffer
 		mPrimarySurface = new IWindowSurface(sdlsurface->w, sdlsurface->h, &format);
 		
+		uint32_t rmask = uint32_t(format.getRMax()) << format.getRShift();
+		uint32_t gmask = uint32_t(format.getGMax()) << format.getGShift();
+		uint32_t bmask = uint32_t(format.getBMax()) << format.getBShift();
+
 		mSDLSoftwareSurface = SDL_CreateRGBSurfaceFrom(
 					mPrimarySurface->getBuffer(),
 					mPrimarySurface->getWidth(), mPrimarySurface->getHeight(),
 					mPrimarySurface->getBitsPerPixel(),
-					mPrimarySurface->getPitch(), 0, 0, 0, 0);
+					mPrimarySurface->getPitch(),
+					rmask, gmask, bmask, 0);
+
+		assert(mSDLSoftwareSurface->format->Rmask == sdlsurface->format->Rmask &&
+				mSDLSoftwareSurface->format->Gmask == sdlsurface->format->Gmask &&
+				mSDLSoftwareSurface->format->Bmask == sdlsurface->format->Bmask);
 	}
 	else
 	{
@@ -562,8 +571,7 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 
 	// Tell argb_t the pixel format
 	if (format.getBitsPerPixel() == 32)
-		argb_t::setChannels(format.getAShift() / 8, format.getRShift() / 8,
-							format.getGShift() / 8, format.getBShift() / 8);
+		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
 	else
 		argb_t::setChannels(3, 2, 1, 0);
 

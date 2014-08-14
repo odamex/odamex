@@ -24,6 +24,8 @@
 
 #include "net_packet.h"
 #include "dlg_config.h"
+#include "oda_defs.h"
+#include "plat_utils.h"
 
 #include <wx/settings.h>
 #include <wx/menu.h>
@@ -69,7 +71,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 END_EVENT_TABLE()
 
 // Window constructor
-dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
+dlgConfig::dlgConfig(wxWindow *parent, wxWindowID id)
 {
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgConfig"));
@@ -102,10 +104,8 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
     m_StcBmpPQLaggy->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")));
     m_StcBmpPQBad->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_gray")));
 
-    // Load current configuration from global configuration structure
-    cfg_file = cfg;
-
-    LoadSettings();
+    // Allow $ in directory names
+    ConfigInfo.SetExpandEnvVars(false);
 }
 
 // Window destructor
@@ -116,51 +116,8 @@ dlgConfig::~dlgConfig()
 
 void dlgConfig::Show()
 {
-    m_ChkCtrlGetListOnStart->SetValue(cfg_file->get_list_on_start);
-    m_ChkCtrlShowBlockedServers->SetValue(cfg_file->show_blocked_servers);
-
-    // Load wad path list
-    m_LstCtrlWadDirectories->Clear();
-
-    wxStringTokenizer wadlist(cfg_file->wad_paths, _T(PATH_DELIMITER));
-
-    while (wadlist.HasMoreTokens())
-    {
-        wxString path = wadlist.GetNextToken();
-
-        #ifdef __WXMSW__
-        path.Replace(_T("\\\\"),_T("\\"), true);
-        #else
-        path.Replace(_T("////"),_T("//"), true);
-        #endif
-
-        m_LstCtrlWadDirectories->AppendString(path);
-    }
-
-    m_DirCtrlChooseOdamexPath->SetPath(cfg_file->odamex_directory);
-
-    wxString MasterTimeout, ServerTimeout, RetryCount, ExtraCmdLineArgs;
-
-    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, wxT("500"));
-    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, wxT("1000"));
-    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, wxT("2"));
-    ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
-
-    m_SpnCtrlMasterTimeout->SetValue(MasterTimeout);
-    m_SpnCtrlServerTimeout->SetValue(ServerTimeout);
-    m_SpnCtrlRetry->SetValue(RetryCount);
-    m_TxtCtrlExtraCmdLineArgs->SetValue(ExtraCmdLineArgs);
-
-    wxInt32 PQGood, PQPlayable, PQLaggy;
-
-    ConfigInfo.Read(wxT("IconPingQualityGood"), &PQGood, 150);
-    ConfigInfo.Read(wxT("IconPingQualityPlayable"), &PQPlayable, 300);
-    ConfigInfo.Read(wxT("IconPingQualityLaggy"), &PQLaggy, 350);
-
-    m_SpnCtrlPQGood->SetValue(PQGood);
-    m_SpnCtrlPQPlayable->SetValue(PQPlayable);
-    m_SpnCtrlPQLaggy->SetValue(PQLaggy);
-
+    LoadSettings();
+    
     UserChangedSetting = false;
 
     ShowModal();
@@ -234,18 +191,6 @@ void dlgConfig::OnOK(wxCommandEvent &event)
     {
         // reset 'dirty' flag
         UserChangedSetting = false;
-
-        // Store data into global launcher configuration structure
-        cfg_file->get_list_on_start = m_ChkCtrlGetListOnStart->GetValue();
-        cfg_file->show_blocked_servers = m_ChkCtrlShowBlockedServers->GetValue();
-
-        cfg_file->wad_paths = _T("");
-
-        if (m_LstCtrlWadDirectories->GetCount() > 0)
-            for (wxUint32 i = 0; i < m_LstCtrlWadDirectories->GetCount(); i++)
-                cfg_file->wad_paths.Append(m_LstCtrlWadDirectories->GetString(i) + _T(PATH_DELIMITER));
-
-        cfg_file->odamex_directory = m_DirCtrlChooseOdamexPath->GetPath();
 
         // Save settings to configuration file
         SaveSettings();
@@ -438,34 +383,79 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
 void dlgConfig::LoadSettings()
 {
     bool UseBroadcast;
+    bool GetListOnStart, ShowBlockedServers;
+    int MasterTimeout, ServerTimeout, RetryCount;
+    wxString DelimWadPaths, OdamexDirectory, ExtraCmdLineArgs;
+    wxInt32 PQGood, PQPlayable, PQLaggy;
 
-    // Allow $ in directory names
-    ConfigInfo.SetExpandEnvVars(false);
-
-    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
-
+    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, ODA_QRYUSEBROADCAST);
+    ConfigInfo.Read(wxT(GETLISTONSTART), &GetListOnStart, ODA_UIGETLISTONSTART);
+    ConfigInfo.Read(wxT(SHOWBLOCKEDSERVERS), &ShowBlockedServers, 
+                    ODA_UISHOWBLOCKEDSERVERS);
+    ConfigInfo.Read(wxT(DELIMWADPATHS), &DelimWadPaths, OdaGetDataDir());
+    ConfigInfo.Read(wxT(ODAMEX_DIRECTORY), &OdamexDirectory, OdaGetInstallDir());
+    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, ODA_QRYMASTERTIMEOUT);
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, ODA_QRYSERVERTIMEOUT);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, ODA_QRYGSRETRYCOUNT);
+    ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
+    ConfigInfo.Read(wxT(ICONPINGQGOOD), &PQGood, ODA_UIPINGQUALITYGOOD);
+    ConfigInfo.Read(wxT(ICONPINGQPLAYABLE), &PQPlayable, 
+        ODA_UIPINGQUALITYPLAYABLE);
+    ConfigInfo.Read(wxT(ICONPINGQLAGGY), &PQLaggy, ODA_UIPINGQUALITYLAGGY);
+        
     m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
+    m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
+    m_ChkCtrlShowBlockedServers->SetValue(ShowBlockedServers);
+    m_DirCtrlChooseOdamexPath->SetPath(OdamexDirectory);
 
-    ConfigInfo.Read(_T(GETLISTONSTART), &cfg_file->get_list_on_start, 1);
-    ConfigInfo.Read(_T(SHOWBLOCKEDSERVERS), &cfg_file->show_blocked_servers, cfg_file->show_blocked_servers);
-	cfg_file->wad_paths = ConfigInfo.Read(_T(DELIMWADPATHS), cfg_file->wad_paths);
-	cfg_file->odamex_directory = ConfigInfo.Read(_T(ODAMEX_DIRECTORY), cfg_file->odamex_directory);
+    // Load wad path list
+    m_LstCtrlWadDirectories->Clear();
+
+    wxStringTokenizer wadlist(DelimWadPaths, _T(PATH_DELIMITER));
+
+    while (wadlist.HasMoreTokens())
+    {
+        wxString path = wadlist.GetNextToken();
+
+        #ifdef __WXMSW__
+        path.Replace(_T("\\\\"),_T("\\"), true);
+        #else
+        path.Replace(_T("////"),_T("//"), true);
+        #endif
+
+        m_LstCtrlWadDirectories->AppendString(path);
+    }
+    
+    m_SpnCtrlMasterTimeout->SetValue(MasterTimeout);
+    m_SpnCtrlServerTimeout->SetValue(ServerTimeout);
+    m_SpnCtrlRetry->SetValue(RetryCount);
+    m_TxtCtrlExtraCmdLineArgs->SetValue(ExtraCmdLineArgs);
+
+    m_SpnCtrlPQGood->SetValue(PQGood);
+    m_SpnCtrlPQPlayable->SetValue(PQPlayable);
+    m_SpnCtrlPQLaggy->SetValue(PQLaggy);
+
 }
 
 // Save settings to configuration file
 void dlgConfig::SaveSettings()
 {
+    wxString DelimWadPaths;
+    
+    for (unsigned int i = 0; i < m_LstCtrlWadDirectories->GetCount(); i++)
+        DelimWadPaths.Append(m_LstCtrlWadDirectories->GetString(i) + wxT(PATH_DELIMITER));
+   
     ConfigInfo.Write(wxT(MASTERTIMEOUT), m_SpnCtrlMasterTimeout->GetValue());
     ConfigInfo.Write(wxT(SERVERTIMEOUT), m_SpnCtrlServerTimeout->GetValue());
     ConfigInfo.Write(wxT(RETRYCOUNT), m_SpnCtrlRetry->GetValue());
     ConfigInfo.Write(wxT(EXTRACMDLINEARGS), m_TxtCtrlExtraCmdLineArgs->GetValue());
-    ConfigInfo.Write(wxT(GETLISTONSTART), cfg_file->get_list_on_start);
-	ConfigInfo.Write(wxT(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);
-	ConfigInfo.Write(wxT(DELIMWADPATHS), cfg_file->wad_paths);
-    ConfigInfo.Write(wxT(ODAMEX_DIRECTORY), cfg_file->odamex_directory);
-    ConfigInfo.Write(wxT("IconPingQualityGood"), m_SpnCtrlPQGood->GetValue());
-    ConfigInfo.Write(wxT("IconPingQualityPlayable"), m_SpnCtrlPQPlayable->GetValue());
-    ConfigInfo.Write(wxT("IconPingQualityLaggy"), m_SpnCtrlPQLaggy->GetValue());
+    ConfigInfo.Write(wxT(GETLISTONSTART), m_ChkCtrlGetListOnStart->GetValue());
+	ConfigInfo.Write(wxT(SHOWBLOCKEDSERVERS), m_ChkCtrlShowBlockedServers->GetValue());
+	ConfigInfo.Write(wxT(DELIMWADPATHS), DelimWadPaths);
+    ConfigInfo.Write(wxT(ODAMEX_DIRECTORY), m_DirCtrlChooseOdamexPath->GetPath());
+    ConfigInfo.Write(wxT(ICONPINGQGOOD), m_SpnCtrlPQGood->GetValue());
+    ConfigInfo.Write(wxT(ICONPINGQPLAYABLE), m_SpnCtrlPQPlayable->GetValue());
+    ConfigInfo.Write(wxT(ICONPINGQLAGGY), m_SpnCtrlPQLaggy->GetValue());
     ConfigInfo.Write(wxT(USEBROADCAST), m_ChkCtrlEnableBroadcasts->GetValue());
 
 	ConfigInfo.Flush();

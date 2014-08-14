@@ -33,7 +33,6 @@
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "d_items.h"
-#include "c_level.h"
 #include "g_level.h"
 #include "m_cheat.h"
 #include "cmdlib.h"
