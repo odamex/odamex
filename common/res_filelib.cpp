@@ -253,7 +253,6 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 {
 #if defined(_WIN32) && !defined(_XBOX)
 	#define arrlen(array) (sizeof(array) / sizeof(*array))
-	const char separator = ';';
 
 	// Doom 95
 	{
@@ -272,8 +271,8 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 			{
 				char* path = unstr + strlen(uninstaller_string);
 //				const char* cpath = path;
-//				Res_AddSearchDir(search_dirs, cpath, separator);
-				Res_AddSearchDir(search_dirs, path, separator);
+//				Res_AddSearchDir(search_dirs, cpath, SEARCHPATHSEPCHAR);
+				Res_AddSearchDir(search_dirs, path, SEARCHPATHSEPCHAR);
 			}
 		}
 	}
@@ -291,8 +290,8 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 				sprintf(subpath, "%s\\%s", install_path, collectors_edition_subdirs[i]);
 
 //				const char* csubpath = subpath;
-//				Res_AddSearchDir(search_dirs, csubpath, separator);
-				Res_AddSearchDir(search_dirs, subpath, separator);
+//				Res_AddSearchDir(search_dirs, csubpath, SEARCHPATHSEPCHAR);
+				Res_AddSearchDir(search_dirs, subpath, SEARCHPATHSEPCHAR);
 			}
 
 			free(install_path);
@@ -311,8 +310,8 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 				sprintf(subpath, "%s\\%s", install_path, steam_install_subdirs[i]);
 
 //				const char* csubpath = subpath;
-//				Res_AddSearchDir(search_dirs, csubpath, separator);
-				Res_AddSearchDir(search_dirs, subpath, separator);
+//				Res_AddSearchDir(search_dirs, csubpath, SEARCHPATHSEPCHAR);
+				Res_AddSearchDir(search_dirs, subpath, SEARCHPATHSEPCHAR);
 			}
 
 			free(install_path);
@@ -320,26 +319,24 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 	}
 
 	// DOS Doom via DEICE
-	Res_AddSearchDir(search_dirs, "\\doom2", separator);    // Doom II
-	Res_AddSearchDir(search_dirs, "\\plutonia", separator); // Final Doom
-	Res_AddSearchDir(search_dirs, "\\tnt", separator);
-	Res_AddSearchDir(search_dirs, "\\doom_se", separator);  // Ultimate Doom
-	Res_AddSearchDir(search_dirs, "\\doom", separator);     // Shareware / Registered Doom
-	Res_AddSearchDir(search_dirs, "\\dooms", separator);    // Shareware versions
-	Res_AddSearchDir(search_dirs, "\\doomsw", separator);
+	Res_AddSearchDir(search_dirs, "\\doom2", SEARCHPATHSEPCHAR);    // Doom II
+	Res_AddSearchDir(search_dirs, "\\plutonia", SEARCHPATHSEPCHAR); // Final Doom
+	Res_AddSearchDir(search_dirs, "\\tnt", SEARCHPATHSEPCHAR);
+	Res_AddSearchDir(search_dirs, "\\doom_se", SEARCHPATHSEPCHAR);  // Ultimate Doom
+	Res_AddSearchDir(search_dirs, "\\doom", SEARCHPATHSEPCHAR);     // Shareware / Registered Doom
+	Res_AddSearchDir(search_dirs, "\\dooms", SEARCHPATHSEPCHAR);    // Shareware versions
+	Res_AddSearchDir(search_dirs, "\\doomsw", SEARCHPATHSEPCHAR);
 #endif	// _WIN32 && !_XBOX
 
 #ifdef UNIX
-	const char separator = ':';
-
 	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR) 
-	Res_AddSearchDir(search_dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", separator);
-	Res_AddSearchDir(search_dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator);
+	Res_AddSearchDir(search_dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", SEARCHPATHSEPCHAR);
+	Res_AddSearchDir(search_dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", SEARCHPATHSEPCHAR);
 	#endif
 
-	Res_AddSearchDir(search_dirs, "/usr/share/games/doom", separator);
-	Res_AddSearchDir(search_dirs, "/usr/local/share/games/doom", separator);
-	Res_AddSearchDir(search_dirs, "/usr/local/share/doom", separator);
+	Res_AddSearchDir(search_dirs, "/usr/share/games/doom", SEARCHPATHSEPCHAR);
+	Res_AddSearchDir(search_dirs, "/usr/local/share/games/doom", SEARCHPATHSEPCHAR);
+	Res_AddSearchDir(search_dirs, "/usr/local/share/doom", SEARCHPATHSEPCHAR);
 #endif	// UNIX
 }
 
@@ -466,15 +463,11 @@ static std::string Res_BaseFileSearch(const std::string& filename, const std::st
 	std::string absolute_dir;
 
 	#ifdef _WIN32
-		const char separator = ';';
-
 		if (filename.find(':') != std::string::npos)			// absolute path?
 			M_ExtractFilePath(filename, absolute_dir);
 	#endif	// _WIN32
 	
 	#ifdef UNIX
-		const char separator = ':';
-
 		if (filename[0] == PATHSEPCHAR || filename[0] == '~')	// absolute path?
 			M_ExtractFilePath(filename, absolute_dir);
 	#endif	// UNIX
@@ -493,15 +486,15 @@ static std::string Res_BaseFileSearch(const std::string& filename, const std::st
 	search_dirs.push_back(startdir);
 	search_dirs.push_back(progdir);
 
-	Res_AddSearchDir(search_dirs, Args.CheckValue("-waddir"), separator);
-	Res_AddSearchDir(search_dirs, getenv("DOOMWADDIR"), separator);
-	Res_AddSearchDir(search_dirs, getenv("DOOMWADPATH"), separator);
-	Res_AddSearchDir(search_dirs, getenv("HOME"), separator);
+	Res_AddSearchDir(search_dirs, Args.CheckValue("-waddir"), SEARCHPATHSEPCHAR);
+	Res_AddSearchDir(search_dirs, getenv("DOOMWADDIR"), SEARCHPATHSEPCHAR);
+	Res_AddSearchDir(search_dirs, getenv("DOOMWADPATH"), SEARCHPATHSEPCHAR);
+	Res_AddSearchDir(search_dirs, getenv("HOME"), SEARCHPATHSEPCHAR);
 
 	// [AM] Search additional paths based on platform
 	Res_AddPlatformSearchDirs(search_dirs);
 
-	Res_AddSearchDir(search_dirs, waddirs.cstring(), separator);
+	Res_AddSearchDir(search_dirs, waddirs.cstring(), SEARCHPATHSEPCHAR);
 
 	search_dirs.erase(std::unique(search_dirs.begin(), search_dirs.end()), search_dirs.end());
 

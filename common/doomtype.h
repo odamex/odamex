@@ -161,9 +161,13 @@ typedef uint64_t			dtime_t;
 #ifdef _WIN32
 	#define PATHSEP "\\"
 	#define PATHSEPCHAR '\\'
+	#define SEARCHPATHSEP ";"
+	#define SEARCHPATHSEPCHAR ';'
 #else
 	#define PATHSEP "/"
 	#define PATHSEPCHAR '/'
+	#define SEARCHPATHSEP ":"
+	#define SEARCHPATHSEPCHAR ':'
 #endif
 
 // [RH] This gets used all over; define it here:

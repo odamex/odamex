@@ -503,7 +503,7 @@ std::string I_GetBinaryDir()
 
 			while(ss)
 			{
-				std::getline(ss, segment, ':');
+				std::getline(ss, segment, SEARCHPATHSEPCHAR);
 
 				if(!segment.length())
 					continue;
