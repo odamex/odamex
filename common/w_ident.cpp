@@ -121,7 +121,7 @@ public:
 	//
 	void addFile(
 		const OString& idname, const OString& filename,
-		const OString& hash, const OString& group, bool commercial, bool iwad = true)
+		const OString& hash, const OString& group, bool commercial, bool iwad = true, bool deprecated = false)
 	{
 		IdType id = mIdentifiers.insert(); 
 		FileIdentifier* file = &mIdentifiers.get(id);
@@ -132,6 +132,7 @@ public:
 		file->mGroupName = OStringToUpper(group);
 		file->mIsCommercial = commercial;
 		file->mIsIWAD = iwad;
+		file->mIsDeprecated = deprecated;
 
 		mMd5SumLookup.insert(std::make_pair(OStringToUpper(file->mMd5Sum), id));
 		mFilenameLookup.insert(std::make_pair(OStringToUpper(file->mFilename), id));
@@ -149,6 +150,12 @@ public:
 	{
 		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsCommercial;
+	}
+
+	bool isDeprecated(const OString& hash) const
+	{
+		const FileIdentifier* file = lookupByMd5Sum(hash);
+		return file && file->mIsDeprecated;
 	}
 
 	bool isIWAD(const OString& filename) const
@@ -292,6 +299,7 @@ private:
 		OString				mGroupName;
 		bool				mIsCommercial;
 		bool				mIsIWAD;
+		bool				mIsDeprecated;
 	};
 
 	const FileIdentifier* lookupByMd5Sum(const OString& md5sum) const
@@ -338,77 +346,99 @@ void W_SetupFileIdentifiers()
 		"DOOM2.WAD",						// mFilename
 		"25E1459CA71D321525F84628F45CA8CD",	// mMd5Sum
 		"Doom2 v1.9",						// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 	
 	identtab.addFile(
 		"Doom 2 BFG",						// mIdName
     	"DOOM2BFG.WAD",						// mFilename
 		"C3BEA40570C23E511A7ED3EBCD9865F7",	// mMd5Sum
 		"Doom2 v1.9",						// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 	
 	identtab.addFile(
 		"Doom Shareware v1.9",				// mIdName
 		"DOOM1.WAD",						// mFilename
 		"F0CEFCA49926D00903CF57551D901ABE",	// mMd5Sum
 		"Doom Shareware v1.9",				// mGroupName
-		false);								// mIsCommercial
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"Plutonia v1.9",					// mIdName
 		"PLUTONIA.WAD",						// mFilename
 		"75C8CF89566741FA9D22447604053BD7",	// mMd5Sum
 		"Plutonia v1.9",					// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"TNT Evilution v1.9",				// mIdName
 		"TNT.WAD",							// mFilename
 		"4E158D9953C79CCF97BD0663244CC6B6",	// mMd5Sum
 		"TNT Evilution v1.9",				// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"Ultimate Doom v1.9",				// mIdName
 		"DOOM.WAD",							// mFilename
 		"C4FE9FD920207691A9F493668E0A2083",	// mMd5Sum
 		"Ultimate Doom v1.9",				// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"Ultimate Doom BFG",				// mIdName
 		"DOOMBFG.WAD",						// mFilename
 		"FB35C4A5A9FD49EC29AB6E900572C524",	// mMd5Sum
 		"Ultimate Doom v1.9",				// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"Ultimate Freedoom v0.8",			// mIdName
 		"FREEDOOM1.WAD",					// mFilename
 		"30095B256DD3A1566BBC30286F72BC47",	// mMd5Sum
 		"Ultimate Doom v1.9",				// mGroupName
-		false);								// mIsCommercial
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"Freedoom v0.8",					// mIdName
 		"FREEDOOM2.WAD",					// mFilename
 		"E3668912FC37C479B2840516C887018B",	// mMd5Sum
 		"Doom 2 v1.9",						// mGroupName
-		false);								// mIsCommercial
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"FreeDM v0.8",						// mIdName
 		"FREEDM.WAD",						// mFilename
 		"05859098BF191899903EF343AFBA369D",	// mMd5Sum
 		"Doom 2 v1.9",						// mGroupName
-		false);								// mIsCommercial
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"Chex Quest",						// mIdName
 		"CHEX.WAD",							// mFilename
 		"25485721882B050AFA96A56E5758DD52",	// mMd5Sum
 		"Chex Quest",						// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 }
 
 
@@ -528,6 +558,18 @@ bool W_IsIWADCommercial(const std::string& filename)
 {
 	const OString md5sum = W_MD5(filename);
 	return identtab.isCommercial(md5sum);
+}
+
+
+//
+// W_IsIWADDeprecated
+//
+// Checks to see whether a given file is an IWAD flagged as "deprecated" 
+//
+bool W_IsIWADDeprecated(const std::string& filename)
+{
+	const OString md5sum = W_MD5(filename);
+	return identtab.isDeprecated(md5sum);
 }
 
 
