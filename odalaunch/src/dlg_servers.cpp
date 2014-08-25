@@ -371,13 +371,15 @@ void dlgServers::LoadSettings()
 
 void dlgServers::LoadServersIn()
 {
-    MServer->DeleteAllCustomServers();
+    MServer->DeleteServers(true);
 
-    if (SERVER_LIST->GetCount())
+    if (!SERVER_LIST->GetCount())
+        return;
+    
     for (size_t i = 0; i < SERVER_LIST->GetCount(); i++)
     {
         CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
 
-        MServer->AddCustomServer(wxstr_tostdstr(cs->Address), cs->Port);
+        MServer->AddServer(wxstr_tostdstr(cs->Address), cs->Port, true);
     }
 }

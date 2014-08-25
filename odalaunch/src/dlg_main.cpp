@@ -114,15 +114,6 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     EVT_LIST_ITEM_ACTIVATED(XRCID("Id_LstCtrlServers"), dlgMain::OnServerListDoubleClick)
 END_EVENT_TABLE()
 
-static const wxCmdLineEntryDesc cmdLineDesc[] =
-{
-    { 	wxCMD_LINE_OPTION,  wxTRANSLATE("m"), wxTRANSLATE("master"), 
-		wxTRANSLATE("set alternate master server, example: /m 127.0.0.1:12345"),
-		wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_NEEDS_SEPARATOR },
-
-    { wxCMD_LINE_NONE }
-};
-
 // Main window creation
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
@@ -157,30 +148,13 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_PnlServerFilter = XRCCTRL(*this, "Id_PnlServerFilter", wxPanel);
     m_SrchCtrlGlobal = XRCCTRL(*this, "Id_SrchCtrlGlobal", wxTextCtrl);
     m_StatusBar = GetStatusBar();
-    
-	// set up the master server information
-	wxCmdLineParser CmdLineParser(wxTheApp->argc, wxTheApp->argv);
-    wxString MasterAddress;
-    
-    CmdLineParser.SetDesc(cmdLineDesc);
-    
-    CmdLineParser.Parse();
-    
-    if (CmdLineParser.Found(cmdLineDesc[0].shortName, &MasterAddress) || 
-        CmdLineParser.Found(cmdLineDesc[0].longName, &MasterAddress))
-    {
-        MServer.AddMaster(wxstr_tostdstr(MasterAddress));
-    }
-    else
-    {
-        MServer.AddMaster("master1.odamex.net", 15000);
-        MServer.AddMaster("voxelsoft.com", 15000);
-    }
-    
+
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(this);
     server_dlg = new dlgServers(&MServer, this);
     AboutDialog = new dlgAbout(this);
+
+    LoadMasterServers();
 
     /* Get the first directory for wad downloading */
     /*
@@ -318,6 +292,59 @@ void dlgMain::OnClose(wxCloseEvent &event)
 void dlgMain::OnShow(wxShowEvent &event)
 {
 
+}
+
+// Master server setup
+static const wxCmdLineEntryDesc cmdLineDesc[] =
+{
+    { 	wxCMD_LINE_OPTION,  wxTRANSLATE("m"), wxTRANSLATE("master"), 
+		wxTRANSLATE("Override all master servers with this one, example: /m 127.0.0.1:12345"),
+		wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_NEEDS_SEPARATOR },
+
+    { wxCMD_LINE_NONE }
+};
+
+void dlgMain::LoadMasterServers()
+{
+	// set up the master server information
+	wxCmdLineParser CmdLineParser(wxTheApp->argc, wxTheApp->argv);
+    wxString MasterAddress;
+    wxFileConfig ConfigInfo;
+    int i = 0;
+    wxString Key, Val;
+    
+    CmdLineParser.SetDesc(cmdLineDesc);
+    
+    CmdLineParser.Parse();
+    
+    if (CmdLineParser.Found(cmdLineDesc[0].shortName, &MasterAddress) || 
+        CmdLineParser.Found(cmdLineDesc[0].longName, &MasterAddress))
+    {
+        MServer.AddMaster(wxstr_tostdstr(MasterAddress));
+        
+        return;
+    }
+       
+    // Add default master servers
+    while (def_masterlist[i] != NULL)
+    {
+        MServer.AddMaster(def_masterlist[i]);
+        ++i;
+    }
+
+    // Add secondary master servers from the config file    
+    i = 0;
+    
+    Key = wxString::Format(wxT("%s%d"), wxT(MASTERSERVER_ID), i);
+
+    while (ConfigInfo.Read(Key, &Val, wxT("")))
+    {   
+        MServer.AddMaster(wxstr_tostdstr(Val));
+
+        ++i;
+        
+        Key = wxString::Format(wxT("%s%d"), wxT(MASTERSERVER_ID), i);
+    }
 }
 
 void dlgMain::OnShowServerFilter(wxCommandEvent &event)

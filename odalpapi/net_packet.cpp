@@ -151,21 +151,8 @@ int32_t MasterServer::Parse()
 
 			address.custom = false;
 
-			size_t j = 0;
-
 			// Don't add the same address more than once.
-			for(j = 0; j < addresses.size(); ++j)
-			{
-				if(addresses[j].ip == address.ip &&
-				        addresses[j].port == address.port)
-				{
-					break;
-				}
-			}
-
-			// didn't find it, so add it
-			if(j == addresses.size())
-				addresses.push_back(address);
+            AddServer(address);
 		}
 
 	if(Socket->BadRead())
@@ -673,25 +660,12 @@ void MasterServer::QueryBC(const uint32_t& Timeout)
 	while(BCSocket.GetData(Timeout) > 0)
 	{
 		addr_t address = { "", 0, false};
-		size_t j = 0;
 
 		address.custom = false;
 
 		BCSocket.GetRemoteAddress(address.ip, address.port);
 
-		// Don't add the same address more than once.
-		for(; j < addresses.size(); ++j)
-		{
-			if(addresses[j].ip == address.ip &&
-			        addresses[j].port == address.port)
-			{
-				break;
-			}
-		}
-
-		// didn't find it, so add it
-		if(j == addresses.size())
-			addresses.push_back(address);
+        AddServer(address);
 	}
 }
 

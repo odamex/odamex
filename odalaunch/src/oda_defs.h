@@ -42,6 +42,14 @@
 // Querying system
 // ---------------
 
+// Default list of master servers, usually official ones
+static char *def_masterlist[] = 
+{ 
+     "master1.odamex.net:15000"
+    ,"voxelsoft.com:15000"
+    ,NULL
+};
+
 // Master server timeout
 #define ODA_QRYMASTERTIMEOUT 500
 
@@ -82,6 +90,12 @@
 #define ICONPINGQGOOD       "IconPingQualityGood"
 #define ICONPINGQPLAYABLE   "IconPingQualityPlayable"
 #define ICONPINGQLAGGY      "IconPingQualityLaggy"
+
+// Master server ids, eg:
+// MasterServer1 "127.0.0.1:15000"
+// MasterServer2 "192.168.1.1:15000"
+// etc..
+#define MASTERSERVER_ID     "MasterServer" 
 
 // Path separator
 #ifdef __WXMSW__

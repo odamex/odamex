@@ -113,7 +113,8 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnExit(wxCommandEvent& event);
 		
-
+		void LoadMasterServers();
+		
 		wxInt32 FindServer(wxString);
 		wxInt32 GetSelectedServerArrayIndex();
 

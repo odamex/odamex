@@ -328,7 +328,7 @@ public:
 	void QueryMasters(const uint32_t &Timeout, const bool &Broadcast, 
             const int8_t &Retries)
 	{           
-		DeleteAllNormalServers();
+		DeleteServers();
 
         m_RetryCount = Retries;
 
@@ -346,33 +346,22 @@ public:
 
 	size_t GetMasterCount() { return masteraddresses.size(); }
 
-	void DeleteAllNormalServers()
-	{
-		size_t i = 0;
-
-		// don't delete our custom servers!
-		while (i < addresses.size())
-		{       
-			if (addresses[i].custom == false)
-			{
-				addresses.erase(addresses.begin() + i);
-				continue;
-			}
-
-			++i;
-		}            
-	}
-
-	void AddCustomServer(const std::string &Address, const uint16_t &Port)
+	void AddServer(const std::string &Address, const uint16_t &Port, 
+                const bool &Custom = false)
 	{
 		addr_t cs;
 
 		cs.ip = Address;
 		cs.port = Port;
-		cs.custom = true;
+		cs.custom = Custom;
 
+        AddServer(cs);
+	}
+
+	void AddServer(const addr_t &cs)
+	{
 		// Don't add the same address more than once.
-		for (uint32_t i = 0; i < addresses.size(); ++i)
+		for (size_t i = 0; i < addresses.size(); ++i)
 		{
 			if (addresses[i].ip == cs.ip && 
 					addresses[i].port == cs.port &&
@@ -384,33 +373,29 @@ public:
 
 		addresses.push_back(cs);
 	}
-
-	bool DeleteCustomServer(const size_t &Index)
+	
+	bool DeleteServer(const size_t &Index)
 	{
 		if (Index < addresses.size())
 		{
-			if (addresses[Index].custom)
-			{
-				addresses.erase(addresses.begin() + Index);
-
-				return true;
-			}
-			else
-				return false;
+            addresses.erase(addresses.begin() + Index);
 		}
 
 		return false;
 	}
 
-	void DeleteAllCustomServers()
+	void DeleteServers(const bool &Custom = false)
 	{
 		size_t i = 0;
 
 		while (i < addresses.size())
 		{       
-			if (DeleteCustomServer(i))
-				continue;
-
+			if (addresses[i].custom == Custom && 
+                DeleteServer(i))
+            {
+                continue;
+            }
+            
 			++i;
 		}       
 	}
