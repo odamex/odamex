@@ -594,10 +594,32 @@ bool P_AreTeammates(player_t &a, player_t &b)
 
 bool P_CanSpy(player_t &viewer, player_t &other)
 {
-	if (other.spectator || !other.mo)
+	// first of all, you can never spectate someone with no mobj
+	if (!other.mo)
+ 		return false;
+ 
+	// you can always spectate anyone in a demo
+	if (demoplayback)
+		return true;
+
+	// you can always spectate yourself (even if P_AreTeammates returns false)
+	if (viewer.id == other.id)
+		return true;
+
+	// do not allow spectators to spectate other spectators
+	if (other.spectator)
 		return false;
 
-	return (viewer.spectator || P_AreTeammates(viewer, other) || demoplayback);
+	// otherwise, spectators can view anybody
+	if (viewer.spectator)
+		return true;
+
+	// teammates can view each other
+	if (P_AreTeammates(viewer, other))
+		return true;
+
+	// otherwise keep your eyes to yourself
+	return false;
 }
 
 void SV_SendPlayerInfo(player_t &);
