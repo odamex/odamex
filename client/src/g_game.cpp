@@ -1744,7 +1744,7 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
         recorddemo_fp = NULL;
     }
 
-    recorddemo_fp = fopen(demoname.c_str(), "w");
+    recorddemo_fp = fopen(demoname.c_str(), "wb");
 
     if (!recorddemo_fp)
     {
