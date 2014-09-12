@@ -546,30 +546,33 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 //
 void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, bool vsync)
 {
-	IWindow* window = I_GetWindow();
-
-	I_FreeSurface(matted_surface);
-	matted_surface = NULL;
-	I_FreeSurface(emulated_surface);
-	emulated_surface = NULL;
-
+	// ensure the requested mode is valid
 	IVideoMode desired_mode(width, height, surface_bpp, fullscreen);
-
 	IVideoMode mode = I_ValidateVideoMode(&desired_mode);
 	assert(mode.isValid());
 
-	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
+	IWindow* window = I_GetWindow();
 
-	window->getPrimarySurface()->lock();
+	static bool initialized = false;
+	if (!initialized || *window->getVideoMode() != mode)
+	{
+		window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
+		I_ForceUpdateGrab();
+		initialized = true;
+	}
 
 	// Set up the primary and emulated surfaces
 	primary_surface = window->getPrimarySurface();
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
 
 	primary_surface->lock();
+	primary_surface->clear();		// clear window's surface to all black
+	primary_surface->unlock();
 
-	// clear window's surface to all black
-	primary_surface->clear();
+	I_FreeSurface(matted_surface);
+	matted_surface = NULL;
+	I_FreeSurface(emulated_surface);
+	emulated_surface = NULL;
 
 	// [SL] Determine the size of the matted surface.
 	// A matted surface will be used if pillar-boxing or letter-boxing are used, or
@@ -620,10 +623,6 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	}
 
 	screen = primary_surface->getDefaultCanvas();
-
-	window->getPrimarySurface()->unlock();
-
-	I_ForceUpdateGrab();
 
 	assert(I_VideoInitialized());
 
