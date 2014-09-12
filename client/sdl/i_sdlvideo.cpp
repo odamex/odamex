@@ -55,8 +55,6 @@
 #include "i_xbox.h"
 #endif
 
-EXTERN_CVAR(vid_32bpp)
-
 
 // ****************************************************************************
 
@@ -452,10 +450,11 @@ static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, Pixe
 // surface before instantiating a new primary surface. This function performs
 // no sanity checks on the desired video mode.
 // 
-// NOTE: If there is a bit-depth mismatch, where the requested bpp doesn't
-// match the vid_32bpp CVAR, a SDL software surface will be created and used
-// for drawing video frames. This software surface is then blitted to the
-// screen at the end of the frame, prior to calling SDL_Flip.
+// NOTE: If a hardware surface is obtained or the surface's screen pitch
+// will create cache thrashing (tested by pitch & 511 == 0), a SDL software
+// surface will be created and used for drawing video frames. This software
+// surface is then blitted to the screen at the end of the frame, prior to
+// calling SDL_Flip.
 //
 bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t video_bpp,
 							bool video_fullscreen, bool vsync)
@@ -494,31 +493,23 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 
 	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
 
-	// [SL] Set the video mode if it is different than the current mode
-	if (sdlsurface == NULL || sdlsurface->w != video_width || sdlsurface->h != video_height ||
-		sdlsurface->format->BitsPerPixel != video_bpp ||
-		((sdlsurface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN) != video_fullscreen)
-	{
-		// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
-		// This interferes with RawWin32Mouse's input handlers so we need to
-		// disable them prior to reinitalizing DirectInput...
-		I_PauseMouse();
+	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
+	// This interferes with RawWin32Mouse's input handlers so we need to
+	// disable them prior to reinitalizing DirectInput...
+	I_PauseMouse();
 
-		sdlsurface = SDL_SetVideoMode(video_width, video_height, video_bpp, flags);
+	sdlsurface = SDL_SetVideoMode(video_width, video_height, video_bpp, flags);
 
-		// [SL] ...and re-enable RawWin32Mouse's input handlers after
-		// DirectInput is reinitalized.
-		I_ResumeMouse();
-	}
+	// [SL] ...and re-enable RawWin32Mouse's input handlers after
+	// DirectInput is reinitalized.
+	I_ResumeMouse();
 
 	if (sdlsurface == NULL)
 		return false;
 
 	bool got_hardware_surface = (sdlsurface->flags & SDL_HWSURFACE) == SDL_HWSURFACE;
 
-	uint8_t surface_bpp = vid_32bpp ? 32 : 8;
 	bool create_software_surface = 
-					video_bpp != surface_bpp ||			// bit-depth mismatch
 					(sdlsurface->pitch & 511) == 0 ||	// pitch is a multiple of 512 (thrashes the cache)
 					got_hardware_surface;				// drawing directly to hardware surfaces is slower
 
@@ -526,7 +517,7 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 		SDL_LockSurface(sdlsurface);		// lock prior to accessing pixel format
 
 	PixelFormat format;
-	I_BuildPixelFormatFromSDLSurface(sdlsurface, &format, surface_bpp);
+	I_BuildPixelFormatFromSDLSurface(sdlsurface, &format, video_bpp);
 
 	if (create_software_surface)
 	{

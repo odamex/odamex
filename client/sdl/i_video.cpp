@@ -58,6 +58,9 @@ static IVideoSubsystem* video_subsystem = NULL;
 // Global IWindowSurface instance for the application window
 static IWindowSurface* primary_surface = NULL;
 
+// Global IWindowSurface instance for converting 8bpp data to a 32bpp surface
+static IWindowSurface* converted_surface = NULL;
+
 // Global IWindowSurface instance constructed from primary_surface.
 // Used when matting is required (letter-boxing/pillar-boxing)
 static IWindowSurface* matted_surface = NULL;
@@ -565,14 +568,25 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	primary_surface = window->getPrimarySurface();
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
 
-	primary_surface->lock();
-	primary_surface->clear();		// clear window's surface to all black
-	primary_surface->unlock();
-
+	I_FreeSurface(converted_surface);
+	converted_surface = NULL;
 	I_FreeSurface(matted_surface);
 	matted_surface = NULL;
 	I_FreeSurface(emulated_surface);
 	emulated_surface = NULL;
+
+	// Handle a requested 8bpp surface when the video capabilities only support 32bpp
+	if (surface_bpp != mode.getBitsPerPixel())
+	{
+		const PixelFormat* format = surface_bpp == 8 ? I_Get8bppPixelFormat() : I_Get32bppPixelFormat();
+		converted_surface = new IWindowSurface(surface_width, surface_height, format);
+		primary_surface = converted_surface;
+	}
+
+	// clear window's surface to all black;
+	primary_surface->lock();
+	primary_surface->clear();
+	primary_surface->unlock();
 
 	// [SL] Determine the size of the matted surface.
 	// A matted surface will be used if pillar-boxing or letter-boxing are used, or
@@ -877,6 +891,8 @@ static void I_LockAllSurfaces()
 		emulated_surface->lock();
 	if (matted_surface)
 		matted_surface->lock();
+	if (converted_surface)
+		converted_surface->lock();
 	primary_surface->lock();
 
 	I_GetWindow()->lockSurface();
@@ -892,6 +908,8 @@ static void I_UnlockAllSurfaces()
 
 	primary_surface->unlock();
 
+	if (converted_surface)
+		converted_surface->unlock();
 	if (matted_surface)
 		matted_surface->unlock();
 	if (emulated_surface)
@@ -1016,6 +1034,15 @@ void I_FinishUpdate()
 		// draws a disk loading icon in the lower right corner
 		if (gametic <= loading_icon_expire)
 			I_BlitLoadingIcon();
+
+		// Handle blitting our 8bpp surface to the 32bpp video window surface
+		if (converted_surface)
+		{
+			IWindowSurface* real_primary_surface = I_GetWindow()->getPrimarySurface();
+			real_primary_surface->blit(converted_surface,
+					0, 0, converted_surface->getWidth(), converted_surface->getHeight(),
+					0, 0, real_primary_surface->getWidth(), real_primary_surface->getHeight());
+		}
 
 		I_UnlockAllSurfaces();
 
