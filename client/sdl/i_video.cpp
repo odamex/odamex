@@ -561,6 +561,10 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	{
 		window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
 		I_ForceUpdateGrab();
+
+		// [SL] 2011-11-30 - Prevent the player's view angle from moving
+		I_FlushInput();
+
 		initialized = true;
 	}
 
