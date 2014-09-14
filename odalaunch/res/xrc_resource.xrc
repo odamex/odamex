@@ -154,6 +154,12 @@
 				<bitmap>./icons/btnabout.png</bitmap>
 			</object>
 			<object class="separator" />
+			<object class="tool" name="Id_MnuItmOpenChat">
+				<label>tool</label>
+				<tooltip>Connect to IRC</tooltip>
+				<longhelp>Connect to IRC</longhelp>
+				<bitmap>.\icons\btnchat.png</bitmap>
+			</object>
 			<object class="tool" name="wxID_EXIT">
 				<label>Exit</label>
 				<tooltip>Exit the launcher</tooltip>

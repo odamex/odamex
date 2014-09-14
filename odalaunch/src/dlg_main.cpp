@@ -96,7 +96,8 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     EVT_MENU(XRCID("Id_MnuItmViewChangelog"), dlgMain::OnOpenChangeLog)
     EVT_MENU(XRCID("Id_MnuItmSubmitBugReport"), dlgMain::OnOpenReportBug)
 	EVT_MENU(wxID_ABOUT, dlgMain::OnAbout)
-
+    EVT_MENU(XRCID("Id_MnuItmOpenChat"), dlgMain::OnConnectToIRC)
+	
     EVT_MENU(XRCID("Id_MnuItmServerFilter"), dlgMain::OnShowServerFilter)
     EVT_TEXT(XRCID("Id_SrchCtrlGlobal"), dlgMain::OnTextSearch)
 
@@ -1280,4 +1281,27 @@ void dlgMain::OnOpenChangeLog(wxCommandEvent &event)
 void dlgMain::OnOpenReportBug(wxCommandEvent &event)
 {
     wxLaunchDefaultBrowser(_T("http://odamex.net/bugs/enter_bug.cgi"));
+}
+
+void dlgMain::OnConnectToIRC(wxCommandEvent &event)
+{
+    bool ok;
+    
+    ok = wxLaunchDefaultBrowser(wxT("irc://irc.quakenet.org/odaplayers"));
+    
+    // Ask user if they would like to get an irc client
+    if (!ok)
+    {
+        int ret;
+        wxMessageDialog Message(this, wxT(""), wxT("IRC client not found"), 
+                                wxYES_NO | wxICON_INFORMATION);
+        
+        Message.SetMessage(wxT("No IRC client found! HexChat is recommend\n\n"
+                               "Would you like to visit the HexChat website?"));
+        
+        ret = Message.ShowModal();
+        
+        if (ret == wxID_YES)
+            wxLaunchDefaultBrowser(wxT("http://hexchat.github.io/"));
+    }
 }

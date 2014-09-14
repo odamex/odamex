@@ -94,6 +94,7 @@ class dlgMain : public wxFrame, wxThreadHelper
         void OnOpenChangeLog(wxCommandEvent& event);
         void OnOpenReportBug(wxCommandEvent &event);
 		void OnAbout(wxCommandEvent& event);
+		void OnConnectToIRC(wxCommandEvent &event);
 		
 		void OnTextSearch(wxCommandEvent& event);
 
