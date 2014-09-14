@@ -156,8 +156,8 @@
 			<object class="separator" />
 			<object class="tool" name="Id_MnuItmOpenChat">
 				<label>tool</label>
-				<tooltip>Connect to IRC</tooltip>
-				<longhelp>Connect to IRC</longhelp>
+				<tooltip>Chat with other players on IRC</tooltip>
+				<longhelp>Chat with other players on IRC</longhelp>
 				<bitmap>.\icons\btnchat.png</bitmap>
 			</object>
 			<object class="tool" name="wxID_EXIT">

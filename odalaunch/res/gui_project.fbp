@@ -679,8 +679,8 @@
                     <property name="label">tool</property>
                     <property name="name">Id_MnuItmOpenChat</property>
                     <property name="permission">protected</property>
-                    <property name="statusbar">Connect to IRC</property>
-                    <property name="tooltip">Connect to IRC</property>
+                    <property name="statusbar">Chat with other players on IRC</property>
+                    <property name="tooltip">Chat with other players on IRC</property>
                     <event name="OnAuiToolBarBeginDrag"></event>
                     <event name="OnAuiToolBarMiddleClick"></event>
                     <event name="OnAuiToolBarOverflowClick"></event>
