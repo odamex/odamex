@@ -81,7 +81,8 @@ class dlgConfig: public wxDialog
         wxCheckBox *m_ChkCtrlGetListOnStart;
         wxCheckBox *m_ChkCtrlShowBlockedServers;
         wxCheckBox *m_ChkCtrlEnableBroadcasts;
-
+        wxCheckBox *m_ChkCtrlLoadChatOnLS;
+        
         wxListBox *m_LstCtrlWadDirectories;
 
         wxDirPickerCtrl *m_DirCtrlChooseOdamexPath;
@@ -99,8 +100,6 @@ class dlgConfig: public wxDialog
         wxStaticBitmap *m_StcBmpPQPlayable;
         wxStaticBitmap *m_StcBmpPQLaggy;
         wxStaticBitmap *m_StcBmpPQBad;
-
-        wxFileConfig ConfigInfo;
 
         bool UserChangedSetting;
 

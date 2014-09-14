@@ -34,6 +34,7 @@
 #include <wx/menu.h>
 #include <wx/statusbr.h>
 #include <wx/msgdlg.h>
+#include <wx/richmsgdlg.h>
 #include <wx/utils.h>
 #include <wx/tipwin.h>
 #include <wx/app.h>
@@ -66,6 +67,7 @@ extern int NUM_THREADS;
 
 static wxInt32 Id_MnuItmLaunch = XRCID("Id_MnuItmLaunch");
 static wxInt32 Id_MnuItmGetList = XRCID("Id_MnuItmGetList");
+static wxInt32 Id_MnuItmOpenChat = XRCID("Id_MnuItmOpenChat");
 
 // custom events
 DEFINE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL)
@@ -96,7 +98,7 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     EVT_MENU(XRCID("Id_MnuItmViewChangelog"), dlgMain::OnOpenChangeLog)
     EVT_MENU(XRCID("Id_MnuItmSubmitBugReport"), dlgMain::OnOpenReportBug)
 	EVT_MENU(wxID_ABOUT, dlgMain::OnAbout)
-    EVT_MENU(XRCID("Id_MnuItmOpenChat"), dlgMain::OnConnectToIRC)
+    EVT_MENU(Id_MnuItmOpenChat, dlgMain::OnConnectToIRC)
 	
     EVT_MENU(XRCID("Id_MnuItmServerFilter"), dlgMain::OnShowServerFilter)
     EVT_TEXT(XRCID("Id_SrchCtrlGlobal"), dlgMain::OnTextSearch)
@@ -120,7 +122,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
     wxString Version;
     wxIcon MainIcon;
-    bool GetListOnStart;
+    bool GetListOnStart, LoadChatOnLS;
     
     // Loads the frame from the xml resource file
 	wxXmlResource::Get()->LoadFrame(this, parent, wxT("dlgMain"));
@@ -180,12 +182,23 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
            
         ConfigInfo.Read(wxT(GETLISTONSTART), &GetListOnStart, 
             ODA_UIGETLISTONSTART);
+        
+        ConfigInfo.Read(wxT(LOADCHATONLS), &LoadChatOnLS, 
+            ODA_UILOADCHATCLIENTONLS);
     }
 
     // get master list on application start
     if (GetListOnStart)
     {
         wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmGetList);
+
+        wxPostEvent(this, event);
+    }
+    
+    // load chat client when launcher starts
+    if (LoadChatOnLS)
+    {
+        wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmOpenChat);
 
         wxPostEvent(this, event);
     }
@@ -1286,22 +1299,37 @@ void dlgMain::OnOpenReportBug(wxCommandEvent &event)
 void dlgMain::OnConnectToIRC(wxCommandEvent &event)
 {
     bool ok;
+    // Used to disable annoying message under MSW if url cannot be opened
+    wxLogNull NoLog;
     
     ok = wxLaunchDefaultBrowser(wxT("irc://irc.quakenet.org/odaplayers"));
     
     // Ask user if they would like to get an irc client
     if (!ok)
     {
+        wxFileConfig ConfigInfo;
         int ret;
-        wxMessageDialog Message(this, wxT(""), wxT("IRC client not found"), 
-                                wxYES_NO | wxICON_INFORMATION);
+        wxRichMessageDialog Message(this, wxT(""), wxT("IRC client not found"), 
+                                wxYES_NO | wxICON_INFORMATION | wxCANCEL);
+        
+        Message.ShowCheckBox("Load chat client when launcher starts", true);
         
         Message.SetMessage(wxT("No IRC client found! HexChat is recommend\n\n"
                                "Would you like to visit the HexChat website?"));
         
         ret = Message.ShowModal();
+
+        if (ret == wxID_CANCEL)
+            return;
         
         if (ret == wxID_YES)
-            wxLaunchDefaultBrowser(wxT("http://hexchat.github.io/"));
+            wxLaunchDefaultBrowser(wxT("http://hexchat.github.io/"));                      
+
+        // Write out selection if user wants to load client when the
+        // launcher is run
+        ConfigInfo.Write(wxT(LOADCHATONLS), Message.IsCheckBoxChecked());
+        
+        // Ensures setting is reflected in configuration dialog
+        ConfigInfo.Flush();
     }
 }

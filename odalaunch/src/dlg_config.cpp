@@ -57,7 +57,8 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlGetListOnStart"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlShowBlockedServers"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlEnableBroadcasts"), dlgConfig::OnCheckedBox)
-
+    EVT_CHECKBOX(XRCID("Id_ChkCtrlLoadChatOnStart"), dlgConfig::OnCheckedBox)
+	
 	EVT_TEXT(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnTextChange)
 	EVT_TEXT(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnTextChange)
 	EVT_TEXT(XRCID("Id_SpnCtrlRetry"), dlgConfig::OnTextChange)
@@ -79,7 +80,8 @@ dlgConfig::dlgConfig(wxWindow *parent, wxWindowID id)
     m_ChkCtrlGetListOnStart = XRCCTRL(*this, "Id_ChkCtrlGetListOnStart", wxCheckBox);
     m_ChkCtrlShowBlockedServers = XRCCTRL(*this, "Id_ChkCtrlShowBlockedServers", wxCheckBox);
     m_ChkCtrlEnableBroadcasts = XRCCTRL(*this, "Id_ChkCtrlEnableBroadcasts", wxCheckBox);
-
+    m_ChkCtrlLoadChatOnLS = XRCCTRL(*this, "Id_ChkCtrlLoadChatOnStart", wxCheckBox);
+    
     m_LstCtrlWadDirectories = XRCCTRL(*this, "Id_LstCtrlWadDirectories", wxListBox);
 
     m_DirCtrlChooseOdamexPath = XRCCTRL(*this, "Id_DirCtrlChooseOdamexPath", wxDirPickerCtrl);
@@ -103,9 +105,6 @@ dlgConfig::dlgConfig(wxWindow *parent, wxWindowID id)
     m_StcBmpPQPlayable->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_orange")));
     m_StcBmpPQLaggy->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")));
     m_StcBmpPQBad->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_gray")));
-
-    // Allow $ in directory names
-    ConfigInfo.SetExpandEnvVars(false);
 }
 
 // Window destructor
@@ -382,8 +381,13 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
 // Load settings from configuration file
 void dlgConfig::LoadSettings()
 {
+    wxFileConfig ConfigInfo;
+
+    // Allow $ in directory names
+    ConfigInfo.SetExpandEnvVars(false);
+    
     bool UseBroadcast;
-    bool GetListOnStart, ShowBlockedServers;
+    bool GetListOnStart, ShowBlockedServers, LoadChatOnLS;
     int MasterTimeout, ServerTimeout, RetryCount;
     wxString DelimWadPaths, OdamexDirectory, ExtraCmdLineArgs;
     wxInt32 PQGood, PQPlayable, PQLaggy;
@@ -402,10 +406,13 @@ void dlgConfig::LoadSettings()
     ConfigInfo.Read(wxT(ICONPINGQPLAYABLE), &PQPlayable, 
         ODA_UIPINGQUALITYPLAYABLE);
     ConfigInfo.Read(wxT(ICONPINGQLAGGY), &PQLaggy, ODA_UIPINGQUALITYLAGGY);
-        
+    ConfigInfo.Read(wxT(LOADCHATONLS), &LoadChatOnLS, ODA_UILOADCHATCLIENTONLS);
+    
     m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
     m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
     m_ChkCtrlShowBlockedServers->SetValue(ShowBlockedServers);
+    m_ChkCtrlLoadChatOnLS->SetValue(LoadChatOnLS);
+    
     m_DirCtrlChooseOdamexPath->SetPath(OdamexDirectory);
 
     // Load wad path list
@@ -440,6 +447,11 @@ void dlgConfig::LoadSettings()
 // Save settings to configuration file
 void dlgConfig::SaveSettings()
 {
+    wxFileConfig ConfigInfo;
+
+    // Allow $ in directory names
+    ConfigInfo.SetExpandEnvVars(false);
+    
     wxString DelimWadPaths;
     
     for (unsigned int i = 0; i < m_LstCtrlWadDirectories->GetCount(); i++)
@@ -457,6 +469,7 @@ void dlgConfig::SaveSettings()
     ConfigInfo.Write(wxT(ICONPINGQPLAYABLE), m_SpnCtrlPQPlayable->GetValue());
     ConfigInfo.Write(wxT(ICONPINGQLAGGY), m_SpnCtrlPQLaggy->GetValue());
     ConfigInfo.Write(wxT(USEBROADCAST), m_ChkCtrlEnableBroadcasts->GetValue());
-
+    ConfigInfo.Write(wxT(LOADCHATONLS), m_ChkCtrlLoadChatOnLS->GetValue());
+    
 	ConfigInfo.Flush();
 }

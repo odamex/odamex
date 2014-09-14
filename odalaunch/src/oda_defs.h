@@ -32,6 +32,9 @@
 // Show servers that cannot be contacted because of a firewall or bad connection
 #define ODA_UISHOWBLOCKEDSERVERS 0
 
+// Load chat client when the launcher is run
+#define ODA_UILOADCHATCLIENTONLS 0
+
 // Integer ranges for ping quality, these are displayed as icons in the settings
 // dialog
 #define ODA_UIPINGQUALITYGOOD 150
@@ -90,6 +93,7 @@ static char *def_masterlist[] =
 #define ICONPINGQGOOD       "IconPingQualityGood"
 #define ICONPINGQPLAYABLE   "IconPingQualityPlayable"
 #define ICONPINGQLAGGY      "IconPingQualityLaggy"
+#define LOADCHATONLS        "LoadChatOnLauncherStart"
 
 // Master server ids, eg:
 // MasterServer1 "127.0.0.1:15000"
