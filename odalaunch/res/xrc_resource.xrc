@@ -173,13 +173,6 @@
 				<bitmap>./icons/btnexit.png</bitmap>
 			</object>
 			<object class="separator" />
-			<object class="tool" name="Id_MnuItmServerFilter1">
-				<label>Server Filter</label>
-				<tooltip>Server filter not available yet</tooltip>
-				<longhelp>Server filter not available yet</longhelp>
-				<bitmap>.\icons\btnfilter.png</bitmap>
-				<toggle>1</toggle>
-			</object>
 			<object class="wxTextCtrl" name="Id_SrchCtrlGlobal">
 				<tooltip>Search</tooltip>
 				<value></value>
@@ -1027,26 +1020,7 @@
 											<vgap>0</vgap>
 											<hgap>0</hgap>
 											<growablecols>0</growablecols>
-											<growablerows>1</growablerows>
-											<object class="sizeritem">
-												<option>1</option>
-												<flag>wxEXPAND</flag>
-												<border>5</border>
-												<object class="wxStaticBoxSizer">
-													<orient>wxVERTICAL</orient>
-													<label>Advanced</label>
-													<object class="sizeritem">
-														<option>0</option>
-														<flag>wxALL</flag>
-														<border>5</border>
-														<object class="wxCheckBox" name="Id_ChkCtrlDisplayQueryErrors">
-															<tooltip>Displays querying errors in the servers name field</tooltip>
-															<label>Show querying errors</label>
-															<checked>0</checked>
-														</object>
-													</object>
-												</object>
-											</object>
+											<growablerows>0</growablerows>
 											<object class="sizeritem">
 												<option>1</option>
 												<flag>wxEXPAND</flag>
@@ -1057,7 +1031,7 @@
 													<object class="sizeritem">
 														<option>1</option>
 														<flag>wxALL|wxEXPAND</flag>
-														<border>5</border>
+														<border>0</border>
 														<object class="wxTextCtrl" name="Id_TxtCtrlExtraCmdLineArgs">
 															<value></value>
 															<maxlength>0</maxlength>
