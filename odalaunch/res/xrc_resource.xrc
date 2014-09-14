@@ -42,6 +42,11 @@
 					<label>Get List</label>
 					<help>Get a new list of servers</help>
 				</object>
+				<object class="separator" />
+				<object class="wxMenuItem" name="Id_MnuItmOpenChat">
+					<label>Open Chat</label>
+					<help>Chat with other players on IRC</help>
+				</object>
 			</object>
 			<object class="wxMenu" name="2">
 				<label>Tools</label>
@@ -141,6 +146,13 @@
 				<bitmap>./icons/btngetlist.png</bitmap>
 			</object>
 			<object class="separator" />
+			<object class="tool" name="Id_MnuItmOpenChat">
+				<label>tool</label>
+				<tooltip>Chat with other players on IRC</tooltip>
+				<longhelp>Chat with other players on IRC</longhelp>
+				<bitmap>.\icons\btnchat.png</bitmap>
+			</object>
+			<object class="separator" />
 			<object class="tool" name="wxID_PREFERENCES">
 				<label>Settings</label>
 				<tooltip>Configure the launcher</tooltip>
@@ -154,12 +166,6 @@
 				<bitmap>./icons/btnabout.png</bitmap>
 			</object>
 			<object class="separator" />
-			<object class="tool" name="Id_MnuItmOpenChat">
-				<label>tool</label>
-				<tooltip>Chat with other players on IRC</tooltip>
-				<longhelp>Chat with other players on IRC</longhelp>
-				<bitmap>.\icons\btnchat.png</bitmap>
-			</object>
 			<object class="tool" name="wxID_EXIT">
 				<label>Exit</label>
 				<tooltip>Exit the launcher</tooltip>

@@ -255,6 +255,25 @@
                         <event name="OnMenuSelection"></event>
                         <event name="OnUpdateUI"></event>
                     </object>
+                    <object class="separator" expanded="0">
+                        <property name="name">m_separator5</property>
+                        <property name="permission">none</property>
+                    </object>
+                    <object class="wxMenuItem" expanded="0">
+                        <property name="bitmap"></property>
+                        <property name="checked">0</property>
+                        <property name="enabled">1</property>
+                        <property name="help">Chat with other players on IRC</property>
+                        <property name="id">wxID_ANY</property>
+                        <property name="kind">wxITEM_NORMAL</property>
+                        <property name="label">Open Chat</property>
+                        <property name="name">Id_MnuItmOpenChat</property>
+                        <property name="permission">none</property>
+                        <property name="shortcut"></property>
+                        <property name="unchecked_bitmap"></property>
+                        <event name="OnMenuSelection"></event>
+                        <event name="OnUpdateUI"></event>
+                    </object>
                 </object>
                 <object class="wxMenu" expanded="0">
                     <property name="label">Tools</property>
@@ -627,6 +646,30 @@
                     <property name="permission">protected</property>
                 </object>
                 <object class="tool" expanded="0">
+                    <property name="bitmap">Load From File; .\icons\btnchat.png</property>
+                    <property name="context_menu">0</property>
+                    <property name="id">wxID_ANY</property>
+                    <property name="kind">wxITEM_NORMAL</property>
+                    <property name="label">tool</property>
+                    <property name="name">Id_MnuItmOpenChat</property>
+                    <property name="permission">protected</property>
+                    <property name="statusbar">Chat with other players on IRC</property>
+                    <property name="tooltip">Chat with other players on IRC</property>
+                    <event name="OnAuiToolBarBeginDrag"></event>
+                    <event name="OnAuiToolBarMiddleClick"></event>
+                    <event name="OnAuiToolBarOverflowClick"></event>
+                    <event name="OnAuiToolBarRightClick"></event>
+                    <event name="OnAuiToolBarToolDropDown"></event>
+                    <event name="OnMenuSelection"></event>
+                    <event name="OnToolClicked"></event>
+                    <event name="OnToolEnter"></event>
+                    <event name="OnToolRClicked"></event>
+                    <event name="OnUpdateUI"></event>
+                </object>
+                <object class="toolSeparator" expanded="0">
+                    <property name="permission">protected</property>
+                </object>
+                <object class="tool" expanded="0">
                     <property name="bitmap">Load From File; ./icons/btnprefs.png</property>
                     <property name="context_menu">0</property>
                     <property name="id">ID_MNUSETTINGS</property>
@@ -670,27 +713,6 @@
                 </object>
                 <object class="toolSeparator" expanded="0">
                     <property name="permission">protected</property>
-                </object>
-                <object class="tool" expanded="0">
-                    <property name="bitmap">Load From File; .\icons\btnchat.png</property>
-                    <property name="context_menu">0</property>
-                    <property name="id">wxID_ANY</property>
-                    <property name="kind">wxITEM_NORMAL</property>
-                    <property name="label">tool</property>
-                    <property name="name">Id_MnuItmOpenChat</property>
-                    <property name="permission">protected</property>
-                    <property name="statusbar">Chat with other players on IRC</property>
-                    <property name="tooltip">Chat with other players on IRC</property>
-                    <event name="OnAuiToolBarBeginDrag"></event>
-                    <event name="OnAuiToolBarMiddleClick"></event>
-                    <event name="OnAuiToolBarOverflowClick"></event>
-                    <event name="OnAuiToolBarRightClick"></event>
-                    <event name="OnAuiToolBarToolDropDown"></event>
-                    <event name="OnMenuSelection"></event>
-                    <event name="OnToolClicked"></event>
-                    <event name="OnToolEnter"></event>
-                    <event name="OnToolRClicked"></event>
-                    <event name="OnUpdateUI"></event>
                 </object>
                 <object class="tool" expanded="0">
                     <property name="bitmap">Load From File; ./icons/btnexit.png</property>
