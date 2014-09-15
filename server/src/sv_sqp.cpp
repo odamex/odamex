@@ -56,7 +56,7 @@ struct CvarField_t
 #define TAG_ID 0xAD0
 
 // When a change to the protocol is made, this value must be incremented
-#define PROTOCOL_VERSION 5
+#define PROTOCOL_VERSION 6
 
 /*
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
@@ -173,9 +173,18 @@ next:
 
 	if(timeleft < 0)
 		timeleft = 0;
-
-	MSG_WriteShort(&ml_message, timeleft);
-
+    
+    // TODO: Remove guard on next release and reset protocol version
+    // TODO: Incorporate code above into block
+    // Only send timeleft if sv_timelimit has been set
+    QRYNEWINFO(6)
+    {
+        if (sv_timelimit.asInt())
+            MSG_WriteShort(&ml_message, timeleft);
+    }
+    else
+        MSG_WriteShort(&ml_message, timeleft);
+    
 	// Teams
 	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{

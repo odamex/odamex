@@ -55,7 +55,7 @@
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
 #define VERSION (0*256+70)
-#define PROTOCOL_VERSION 5
+#define PROTOCOL_VERSION 6
 
 #define TAG_ID 0xAD0
 
@@ -158,6 +158,7 @@ struct ServerInfo_t
 	uint32_t                 VersionRealProtocol;
 	uint32_t                 PTime;
 	uint16_t                 ScoreLimit; // Launcher specific: Score limit
+	uint16_t                 TimeLimit;
 	uint16_t                 TimeLeft;
 	uint8_t                  VersionMajor; // Launcher specific: Version fields
 	uint8_t                  VersionMinor;
