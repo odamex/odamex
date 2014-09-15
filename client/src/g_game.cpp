@@ -1777,7 +1777,8 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 	bool monstersrespawn = sv_monstersrespawn.asInt();
 	bool fastmonsters = sv_fastmonsters.asInt();
 	bool nomonsters = sv_nomonsters.asInt();
-
+    int skill = sv_skill.asInt();
+	
 	// [SL] 2014-01-07 - Backup any cvars that need to be set to default to
 	// ensure demo compatibility. CVAR_SERVERINFO cvars is a handy superset
 	// of those cvars
@@ -1787,7 +1788,8 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 	sv_monstersrespawn.Set(monstersrespawn);
 	sv_fastmonsters.Set(fastmonsters);
 	sv_nomonsters.Set(nomonsters);
-
+    sv_skill.Set(skill);
+    
 	G_InitNew(mapname.c_str());
 
     byte demo_tmp[32];
