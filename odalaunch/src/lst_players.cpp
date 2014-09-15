@@ -86,7 +86,7 @@ void LstOdaPlayerList::SetupPlayerListColumns()
     ConfigInfo.Read(wxT("PlayerListWidthKDRCount"), &WidthKDRCount, 85);
     ConfigInfo.Read(wxT("PlayerListWidthKillCount"), &WidthKillCount, 85);
     ConfigInfo.Read(wxT("PlayerListWidthDeathCount"), &WidthDeathCount, 100);
-    ConfigInfo.Read(wxT("PlayerListWidthTime"), &WidthTime, 65);
+    ConfigInfo.Read(wxT("PlayerListWidthTime"), &WidthTime, 150);
     ConfigInfo.Read(wxT("PlayerListWidthTeam"), &WidthTeam, 65);
     ConfigInfo.Read(wxT("PlayerListWidthTeamScore"), &WidthTeamScore, 100);
     
@@ -130,7 +130,7 @@ void LstOdaPlayerList::SetupPlayerListColumns()
                 WidthDeathCount);
 
     InsertColumn(playerlist_field_timeingame,
-                wxT("Time"),
+                wxT("Time (HH:MM)"),
                 wxLIST_FORMAT_LEFT,
                 WidthTime);
     
@@ -219,7 +219,8 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
         wxListItem li;
         
         float kdr;
-
+        wxString Time;
+        
         li.m_itemId = ALCInsertItem();
         
         li.SetMask(wxLIST_MASK_TEXT);
@@ -266,9 +267,11 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
         
         SetItem(li);
 
+        Time = wxString::Format(wxT("%.2d:%.2d"), 
+                s.Info.Players[i].Time / 60, s.Info.Players[i].Time % 60);
+        
         li.SetColumn(playerlist_field_timeingame);        
-        li.SetText(wxString::Format(_T("%d"),
-                                    s.Info.Players[i].Time));
+        li.SetText(Time);
         
         SetItem(li);
         

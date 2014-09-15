@@ -114,6 +114,8 @@ static bool CvarCompare(const Cvar_t &a, const Cvar_t &b)
 
 void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
 {   
+    wxString TimeLeft;
+    
     DeleteAllItems();
     DeleteAllColumns();
     
@@ -139,7 +141,10 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     InsertLine(wxT(""), wxT(""));                            
     InsertHeader(wxT("Game Status"));
     
-    InsertLine(wxT("Time left"), wxString::Format(wxT("%u"), In.Info.TimeLeft));
+    TimeLeft = wxString::Format(wxT("%.2d:%.2d"), 
+                                In.Info.TimeLeft / 60, In.Info.TimeLeft % 60);
+    
+    InsertLine(wxT("Time left (HH:MM)"), TimeLeft);
     
     if (In.Info.GameType == GT_TeamDeathmatch || 
         In.Info.GameType == GT_CaptureTheFlag)
