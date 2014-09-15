@@ -141,8 +141,13 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     InsertLine(wxT(""), wxT(""));                            
     InsertHeader(wxT("Game Status"));
     
-    TimeLeft = wxString::Format(wxT("%.2d:%.2d"), 
+    if (In.Info.TimeLeft)
+    {
+        TimeLeft = wxString::Format(wxT("%.2d:%.2d"), 
                                 In.Info.TimeLeft / 60, In.Info.TimeLeft % 60);
+    }
+    else
+        TimeLeft = wxT("00:00");
     
     InsertLine(wxT("Time left (HH:MM)"), TimeLeft);
     

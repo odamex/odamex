@@ -266,9 +266,15 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
                                     s.Info.Players[i].Deaths));
         
         SetItem(li);
-
-        Time = wxString::Format(wxT("%.2d:%.2d"), 
-                s.Info.Players[i].Time / 60, s.Info.Players[i].Time % 60);
+        
+        
+        if (s.Info.Players[i].Time)
+        {
+            Time = wxString::Format(wxT("%.2d:%.2d"), 
+                    s.Info.Players[i].Time / 60, s.Info.Players[i].Time % 60);
+        }
+        else
+            Time = wxT("00:00");
         
         li.SetColumn(playerlist_field_timeingame);        
         li.SetText(Time);
