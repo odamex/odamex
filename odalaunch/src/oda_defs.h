@@ -46,7 +46,7 @@
 // ---------------
 
 // Default list of master servers, usually official ones
-static char *def_masterlist[] = 
+static const char *def_masterlist[] = 
 { 
      "master1.odamex.net:15000"
     ,"voxelsoft.com:15000"

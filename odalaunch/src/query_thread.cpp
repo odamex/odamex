@@ -26,6 +26,7 @@
 
 #include "plat_utils.h"
 #include "query_thread.h"
+#include "oda_defs.h"
 
 int NUM_THREADS;
 
