@@ -332,9 +332,12 @@ void CL_Download()
 		CL_QuitNetGame();
 		return;
 	}
-
+	
+	if (offset < download.got_bytes)
+        return;
+	
 	// check for missing packet, re-request
-	if(offset < download.got_bytes || offset > download.got_bytes)
+	if(offset > download.got_bytes)
 	{
 		DPrintf("Missed a packet after/before %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
 		MSG_WriteMarker(&net_buffer, clc_wantwad);
