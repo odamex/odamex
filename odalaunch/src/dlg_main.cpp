@@ -1078,8 +1078,17 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
     const wxString &waddirs, const wxString &Password)
 {
     wxFileConfig ConfigInfo;   
+    wxProcess *process = NULL;
+
+    // Supresses wx error popup under windows, regardless if wxExecute fails or
+    // not
+    wxLogNull NoLog;
+
     wxString BinName, CmdLine;
     wxString ExtraCmdLineArgs;
+    wxString MsgStr = wxT("Could not start %s\n\nPlease check that Settings->"
+                          "File Locations->Odamex Path points to your "
+                          "installed Odamex directory");
 
     if (ODX_Path.IsEmpty())
     {
@@ -1125,17 +1134,14 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
         CmdLine += wxT(" ");
         CmdLine += ExtraCmdLineArgs;
     }
-        
-    // wxWidgets likes to spit out its own message box on msw after our one
-    #ifndef __WXMSW__
-	wxProcess *process = new wxProcess(wxPROCESS_REDIRECT);
 
-	if (wxExecute(cmdline, wxEXEC_ASYNC, process) <= 0)
-        wxMessageBox(wxString::Format(wxT("Could not start %s!"),
-                                        BinName.c_str()));
-    #else
-    wxExecute(CmdLine, wxEXEC_ASYNC, NULL);
+    // Redirect I/O of child process under non-windows platforms
+    #ifndef __WXMSW__
+	process = new wxProcess(wxPROCESS_REDIRECT);
     #endif
+
+	if (wxExecute(CmdLine, wxEXEC_ASYNC, process) <= 0)
+        wxMessageBox(wxString::Format(MsgStr, BinName.c_str()));
 }
 
 
