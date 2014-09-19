@@ -33,7 +33,7 @@ class LstOdaSrvDetails : public wxListCtrl
         LstOdaSrvDetails();
         virtual ~LstOdaSrvDetails() { };
         
-        void LoadDetailsFromServer(odalpapi::Server &);
+        void LoadDetailsFromServer(const odalpapi::Server &);
         
         //wxEvent *Clone(void);
     protected:
@@ -43,6 +43,8 @@ class LstOdaSrvDetails : public wxListCtrl
         void InsertHeader(const wxString &Name, 
                           wxColor NameColor = wxNullColour,
                           wxColor NameBGColor = wxNullColour);
+        
+        void ToggleGameStatusSection(const odalpapi::Server &);
         
         wxColour BGItemAlternator;
         

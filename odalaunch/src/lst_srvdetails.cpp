@@ -112,18 +112,56 @@ static bool CvarCompare(const Cvar_t &a, const Cvar_t &b)
     return a.Name < b.Name;
 }
 
-void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
-{   
+void LstOdaSrvDetails::ToggleGameStatusSection(const Server &In)
+{
     wxString TimeLeft;
-    
+    bool addtime = false;
+    bool addsl = false;
+
+    if (In.Info.TimeLimit)
+    {
+        if (In.Info.TimeLeft)
+        {
+            TimeLeft = wxString::Format(wxT("%.2d:%.2d"), 
+                            In.Info.TimeLeft / 60, In.Info.TimeLeft % 60);
+        }
+        else
+            TimeLeft = wxT("00:00");
+                
+        addtime = true;
+    }
+
+    if (In.Info.GameType == GT_TeamDeathmatch || 
+        In.Info.GameType == GT_CaptureTheFlag)
+    {
+        addsl = true;
+    }
+
+    if (addtime || addsl)
+    {
+        InsertLine(wxT(""), wxT(""));                            
+        InsertHeader(wxT("Game Status"));
+
+        if (addtime)
+            InsertLine(wxT("Time left (HH:MM)"), TimeLeft);
+            
+        if (addsl)
+        {
+            InsertLine(wxT("Score Limit"), wxString::Format(wxT("%u"), 
+                In.Info.ScoreLimit));
+        }
+    }
+}
+
+void LstOdaSrvDetails::LoadDetailsFromServer(const Server &In)
+{   
     DeleteAllItems();
     DeleteAllColumns();
     
     if (In.GotResponse() == false)
         return;
     
-    // Begin adding data to the control   
-    
+    // Begin adding data to the control
     InsertColumn(srvdetails_field_name, wxT(""), wxLIST_FORMAT_LEFT, 150);
     InsertColumn(srvdetails_field_value, wxT(""), wxLIST_FORMAT_LEFT, 150);
     
@@ -137,35 +175,14 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     InsertLine(wxT("QP Version"), wxString::Format(wxT("%u"), 
         In.Info.VersionProtocol));
 
-    // Status of the game 
-    InsertLine(wxT(""), wxT(""));                            
-    InsertHeader(wxT("Game Status"));
-    
-    if (In.Info.TimeLimit)
-    {
-        if (In.Info.TimeLeft)
-        {
-            TimeLeft = wxString::Format(wxT("%.2d:%.2d"), 
-                                In.Info.TimeLeft / 60, In.Info.TimeLeft % 60);
-        }
-        else
-            TimeLeft = wxT("00:00");
-    
-        InsertLine(wxT("Time left (HH:MM)"), TimeLeft);
-    }
-    
-    if (In.Info.GameType == GT_TeamDeathmatch || 
-        In.Info.GameType == GT_CaptureTheFlag)
-    {
-        InsertLine(wxT("Score Limit"), wxString::Format(wxT("%u"), 
-            In.Info.ScoreLimit));
-    }
-    
+    // Add this section only if its needed
+    ToggleGameStatusSection(In);
+        
     // Patch (BEX/DEH) files
     InsertLine(wxT(""), wxT(""));                            
     InsertHeader(wxT("BEX/DEH Files"));
     
-    if (In.Info.Patches.size() == 0)
+    if (In.Info.Patches.empty())
     {
         InsertLine(wxT("None"), wxT(""));
     }
@@ -196,33 +213,35 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     }
 
     // Sort cvars ascending
-    sort(In.Info.Cvars.begin(), In.Info.Cvars.end(), CvarCompare);
+    std::vector<Cvar_t> Cvars = In.Info.Cvars;
+    
+    sort(Cvars.begin(), Cvars.end(), CvarCompare);
 
     // Cvars that are enabled
     InsertLine(wxT(""), wxT(""));
     InsertHeader(wxT("Cvars Enabled"));
 
-    for (size_t i = 0; i < In.Info.Cvars.size(); ++i)
+    for (size_t i = 0; i < Cvars.size(); ++i)
     {
-        if (In.Info.Cvars[i].Type == CVARTYPE_BOOL)
-            InsertLine(stdstr_towxstr(In.Info.Cvars[i].Name), wxT(""));
+        if (Cvars[i].Type == CVARTYPE_BOOL)
+            InsertLine(stdstr_towxstr(Cvars[i].Name), wxT(""));
     }
 
     // Gameplay settings
     InsertLine(wxT(""), wxT(""));
     InsertHeader(wxT("Gameplay Variables"));
 
-    for (size_t i = 0; i < In.Info.Cvars.size(); ++i)
+    for (size_t i = 0; i < Cvars.size(); ++i)
     {
-        wxString Name = stdstr_towxstr(In.Info.Cvars[i].Name);
+        wxString Name = stdstr_towxstr(Cvars[i].Name);
         
-        switch (In.Info.Cvars[i].Type)
+        switch (Cvars[i].Type)
         {
             case CVARTYPE_BYTE:
             {
                 wxString Value;
                 
-                Value = wxString::Format(wxT("%d"), In.Info.Cvars[i].i8);
+                Value = wxString::Format(wxT("%d"), Cvars[i].i8);
                 
                 InsertLine(Name, Value);
             }
@@ -232,7 +251,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
             {
                 wxString Value;
                         
-                Value = wxString::Format(wxT("%d"), In.Info.Cvars[i].i16);
+                Value = wxString::Format(wxT("%d"), Cvars[i].i16);
                 
                 InsertLine(Name, Value);
             }
@@ -242,7 +261,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
             {
                 wxString Value;
                         
-                Value = wxString::Format(wxT("%d"), In.Info.Cvars[i].i32);
+                Value = wxString::Format(wxT("%d"), Cvars[i].i32);
                 
                 InsertLine(Name, Value);
             }
@@ -251,7 +270,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
             case CVARTYPE_FLOAT:
             case CVARTYPE_STRING:
             {
-                InsertLine(Name, stdstr_towxstr(In.Info.Cvars[i].Value));
+                InsertLine(Name, stdstr_towxstr(Cvars[i].Value));
             }
             break;
 
