@@ -26,6 +26,7 @@
 #define __CL_DOWNLOAD__
 
 void CL_DownloadStart();
+void CL_DownloadTicker();
 void CL_Download();
 
 #endif // __CL_DOWNLOAD__

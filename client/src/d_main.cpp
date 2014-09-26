@@ -244,6 +244,7 @@ void D_Display()
 	{
 		case GS_FULLCONSOLE:
 		case GS_DOWNLOAD:
+		    CL_DownloadTicker();
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();
