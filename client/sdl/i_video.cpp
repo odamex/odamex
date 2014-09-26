@@ -307,7 +307,7 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	int destbits = getBitsPerPixel();
 	int srcpitchpixels = source_surface->getPitchInPixels();
 	int destpitchpixels = getPitchInPixels();
-	const argb_t* palette = V_GetDefaultPalette()->colors;
+	const argb_t* palette = source_surface->getPalette(); 
 
 	if (srcbits == 8 && destbits == 8)
 	{
@@ -1055,11 +1055,7 @@ void I_FinishUpdate()
 
 		// restores the background underneath the disk loading icon in the lower right corner
 		if (gametic <= loading_icon_expire)
-		{
-			I_GetWindow()->lockSurface();
 			I_RestoreLoadingIcon();
-			I_GetWindow()->unlockSurface();
-		}
 	}
 }
 
@@ -1075,6 +1071,8 @@ void I_SetPalette(const argb_t* palette)
 
 		primary_surface->setPalette(palette);
 
+		if (converted_surface)
+			converted_surface->setPalette(palette);
 		if (matted_surface)
 			matted_surface->setPalette(palette);
 		if (emulated_surface)
