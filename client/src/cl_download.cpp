@@ -30,6 +30,7 @@
 #include "cl_main.h"
 #include "d_main.h"
 #include "i_net.h"
+#include "i_system.h"
 #include "md5.h"
 #include "m_argv.h"
 #include "m_fileio.h"
