@@ -64,7 +64,7 @@ struct download_s
 		std::string filename;
 		std::string md5;
 		buf_t *buf;
-		unsigned int got_bytes;
+		size_t got_bytes;
         dtime_t timeout;
 		int retrycount;
 		
@@ -426,8 +426,8 @@ void CL_Download()
 	download.got_bytes += len;
 
 	// calculate percentage for the user
-	static int old_percent = 0;
-	int percent = (download.got_bytes*100)/download.buf->maxsize();
+	static size_t old_percent = 0;
+	size_t percent = (download.got_bytes*100)/download.buf->maxsize();
 	if(percent != old_percent)
 	{
         SetDownloadPercentage(percent);
