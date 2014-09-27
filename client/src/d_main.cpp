@@ -79,6 +79,7 @@
 #include "r_sky.h"
 #include "d_main.h"
 #include "d_dehacked.h"
+#include "cl_download.h"
 #include "cmdlib.h"
 #include "s_sound.h"
 #include "m_swap.h"
