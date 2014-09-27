@@ -317,8 +317,7 @@ void CL_DownloadTicker()
 {
 	dtime_t diff = 0;
 
-	if(gamestate != GS_DOWNLOAD ||
-       (gamestate != GS_DOWNLOAD && !download.filename.empty()))
+	if(gamestate != GS_DOWNLOAD || download.filename.empty())
     {
 		return;
     }
