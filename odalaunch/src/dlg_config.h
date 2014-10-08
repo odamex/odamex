@@ -72,8 +72,8 @@ class dlgConfig: public wxDialog
         
         void OnCheckedBox(wxCommandEvent &event);
         
-        void OnChooseOdamexPath(wxFileDirPickerEvent &event);
-        
+        void OnFileDirChange(wxFileDirPickerEvent &event);
+
         void OnTextChange(wxCommandEvent &event);
 
         void OnSpinValChange(wxSpinEvent &event);
@@ -82,11 +82,15 @@ class dlgConfig: public wxDialog
         wxCheckBox *m_ChkCtrlShowBlockedServers;
         wxCheckBox *m_ChkCtrlEnableBroadcasts;
         wxCheckBox *m_ChkCtrlLoadChatOnLS;
+        wxCheckBox *m_ChkCtrlFlashTaskBar;
+        wxCheckBox *m_ChkCtrlPlaySystemBeep;
+        wxCheckBox *m_ChkCtrlPlaySoundFile;
         
         wxListBox *m_LstCtrlWadDirectories;
 
         wxDirPickerCtrl *m_DirCtrlChooseOdamexPath;
-
+        wxFilePickerCtrl *m_FilePickCtrlSoundFile;
+        
         wxSpinCtrl *m_SpnCtrlMasterTimeout;
         wxSpinCtrl *m_SpnCtrlServerTimeout;
         wxSpinCtrl *m_SpnCtrlRetry;

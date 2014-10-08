@@ -41,6 +41,13 @@
 #define ODA_UIPINGQUALITYPLAYABLE 300
 #define ODA_UIPINGQUALITYLAGGY 350
 
+/* User notification of when players are online */
+// Flashes the taskbar if one is available
+#define ODA_UIPOLFLASHTASKBAR 1
+// Plays the system bell
+#define ODA_UIPOLPLAYSYSTEMBELL 1
+// Plays a sound (wav) file through the sound card
+#define ODA_UIPOLPLAYSOUND 0
 
 // Querying system
 // ---------------
@@ -94,6 +101,10 @@ static const char *def_masterlist[] =
 #define ICONPINGQPLAYABLE   "IconPingQualityPlayable"
 #define ICONPINGQLAGGY      "IconPingQualityLaggy"
 #define LOADCHATONLS        "LoadChatOnLauncherStart"
+#define POLFLASHTBAR        "POLFlashTaskBar"
+#define POLPLAYSYSTEMBELL   "POLPlaySystemBell"
+#define POLPLAYSOUND        "POLPlaySound"
+#define POLPSWAVFILE        "POLPSWavFile"
 
 // Master server ids, eg:
 // MasterServer1 "127.0.0.1:15000"

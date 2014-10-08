@@ -51,13 +51,17 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
 	EVT_BUTTON(wxID_OK, dlgConfig::OnOK)
 
-    EVT_DIRPICKER_CHANGED(XRCID("Id_DirCtrlChooseOdamexPath"), dlgConfig::OnChooseOdamexPath)
-
+    EVT_DIRPICKER_CHANGED(XRCID("Id_DirCtrlChooseOdamexPath"), dlgConfig::OnFileDirChange)
+    EVT_FILEPICKER_CHANGED(XRCID("Id_FilePickSoundFile"), dlgConfig::OnFileDirChange)
+    
 	// Misc events
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlGetListOnStart"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlShowBlockedServers"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlEnableBroadcasts"), dlgConfig::OnCheckedBox)
     EVT_CHECKBOX(XRCID("Id_ChkCtrlLoadChatOnStart"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkFlashTaskbar"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkSystemBeep"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkPlaySound"), dlgConfig::OnCheckedBox)
 	
 	EVT_TEXT(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnTextChange)
 	EVT_TEXT(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnTextChange)
@@ -81,11 +85,15 @@ dlgConfig::dlgConfig(wxWindow *parent, wxWindowID id)
     m_ChkCtrlShowBlockedServers = XRCCTRL(*this, "Id_ChkCtrlShowBlockedServers", wxCheckBox);
     m_ChkCtrlEnableBroadcasts = XRCCTRL(*this, "Id_ChkCtrlEnableBroadcasts", wxCheckBox);
     m_ChkCtrlLoadChatOnLS = XRCCTRL(*this, "Id_ChkCtrlLoadChatOnStart", wxCheckBox);
+    m_ChkCtrlFlashTaskBar = XRCCTRL(*this, "Id_ChkFlashTaskbar", wxCheckBox);
+    m_ChkCtrlPlaySystemBeep = XRCCTRL(*this, "Id_ChkSystemBeep", wxCheckBox);
+    m_ChkCtrlPlaySoundFile = XRCCTRL(*this, "Id_ChkPlaySound", wxCheckBox);
     
     m_LstCtrlWadDirectories = XRCCTRL(*this, "Id_LstCtrlWadDirectories", wxListBox);
 
     m_DirCtrlChooseOdamexPath = XRCCTRL(*this, "Id_DirCtrlChooseOdamexPath", wxDirPickerCtrl);
-
+    m_FilePickCtrlSoundFile = XRCCTRL(*this, "Id_FilePickSoundFile", wxFilePickerCtrl);
+    
     m_SpnCtrlMasterTimeout = XRCCTRL(*this, "Id_SpnCtrlMasterTimeout", wxSpinCtrl);
     m_SpnCtrlServerTimeout = XRCCTRL(*this, "Id_SpnCtrlServerTimeout", wxSpinCtrl);
     m_SpnCtrlRetry = XRCCTRL(*this, "Id_SpnCtrlRetry", wxSpinCtrl);
@@ -127,7 +135,7 @@ void dlgConfig::OnCheckedBox(wxCommandEvent &event)
     UserChangedSetting = true;
 }
 
-void dlgConfig::OnChooseOdamexPath(wxFileDirPickerEvent &event)
+void dlgConfig::OnFileDirChange(wxFileDirPickerEvent &event)
 {
     UserChangedSetting = true;
 }
@@ -388,8 +396,10 @@ void dlgConfig::LoadSettings()
     
     bool UseBroadcast;
     bool GetListOnStart, ShowBlockedServers, LoadChatOnLS;
+    bool FlashTaskBar, PlaySystemBell, PlaySoundFile;
     int MasterTimeout, ServerTimeout, RetryCount;
     wxString DelimWadPaths, OdamexDirectory, ExtraCmdLineArgs;
+    wxString SoundFile;
     wxInt32 PQGood, PQPlayable, PQLaggy;
 
     ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, ODA_QRYUSEBROADCAST);
@@ -407,14 +417,22 @@ void dlgConfig::LoadSettings()
         ODA_UIPINGQUALITYPLAYABLE);
     ConfigInfo.Read(wxT(ICONPINGQLAGGY), &PQLaggy, ODA_UIPINGQUALITYLAGGY);
     ConfigInfo.Read(wxT(LOADCHATONLS), &LoadChatOnLS, ODA_UILOADCHATCLIENTONLS);
+    ConfigInfo.Read(wxT(POLFLASHTBAR), &FlashTaskBar, ODA_UIPOLFLASHTASKBAR);
+    ConfigInfo.Read(wxT(POLPLAYSYSTEMBELL), &PlaySystemBell, ODA_UIPOLPLAYSYSTEMBELL);
+    ConfigInfo.Read(wxT(POLPLAYSOUND), &PlaySoundFile, ODA_UIPOLPLAYSOUND);
+    ConfigInfo.Read(wxT(POLPSWAVFILE), &SoundFile, wxT(""));
     
     m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
     m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
     m_ChkCtrlShowBlockedServers->SetValue(ShowBlockedServers);
     m_ChkCtrlLoadChatOnLS->SetValue(LoadChatOnLS);
+    m_ChkCtrlFlashTaskBar->SetValue(FlashTaskBar);
+    m_ChkCtrlPlaySystemBeep->SetValue(PlaySystemBell);
+    m_ChkCtrlPlaySoundFile->SetValue(PlaySoundFile);
     
     m_DirCtrlChooseOdamexPath->SetPath(OdamexDirectory);
-
+    m_FilePickCtrlSoundFile->SetFileName(SoundFile);
+    
     // Load wad path list
     m_LstCtrlWadDirectories->Clear();
 
@@ -470,6 +488,10 @@ void dlgConfig::SaveSettings()
     ConfigInfo.Write(wxT(ICONPINGQLAGGY), m_SpnCtrlPQLaggy->GetValue());
     ConfigInfo.Write(wxT(USEBROADCAST), m_ChkCtrlEnableBroadcasts->GetValue());
     ConfigInfo.Write(wxT(LOADCHATONLS), m_ChkCtrlLoadChatOnLS->GetValue());
+    ConfigInfo.Write(wxT(POLFLASHTBAR), m_ChkCtrlFlashTaskBar->GetValue());
+    ConfigInfo.Write(wxT(POLPLAYSYSTEMBELL), m_ChkCtrlPlaySystemBeep->GetValue());
+    ConfigInfo.Write(wxT(POLPLAYSOUND), m_ChkCtrlPlaySoundFile->GetValue());
+    ConfigInfo.Write(wxT(POLPSWAVFILE), m_FilePickCtrlSoundFile->GetFileName().GetFullPath());
     
 	ConfigInfo.Flush();
 }

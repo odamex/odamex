@@ -46,6 +46,7 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/string.h>
 #include <wx/cmdline.h>
+#include <wx/sound.h>
 
 #ifdef __WXMSW__
     #include <windows.h>
@@ -809,6 +810,25 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 
         case mtrs_servers_querydone:
         {
+            bool FlashTaskbar;
+            bool PlaySystemBell;
+            wxString SoundFile;
+
+            {
+                wxFileConfig ConfigInfo;
+                bool PS;
+                
+                ConfigInfo.Read(wxT(POLFLASHTBAR), &FlashTaskbar, 
+                    ODA_UIPOLFLASHTASKBAR);
+                ConfigInfo.Read(wxT(POLPLAYSYSTEMBELL), &PlaySystemBell, 
+                    ODA_UIPOLPLAYSYSTEMBELL);
+                ConfigInfo.Read(wxT(POLPLAYSOUND), &PS, 
+                    ODA_UIPOLPLAYSOUND);
+                    
+                if (PS)
+                    ConfigInfo.Read(wxT(POLPSWAVFILE), &SoundFile, wxT(""));
+            }
+
             // Sort server list after everything has been queried
             m_LstCtrlServers->Sort();           
 
@@ -816,6 +836,22 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             m_LstCtrlServers->HeaderUsable(true);
             
             m_SrchCtrlGlobal->Enable(true);
+            
+            // User notification of players online (including spectators)
+            if (TotalPlayers)
+            {
+                // Flashes the taskbar (if any)
+                if (FlashTaskbar)
+                    RequestUserAttention();
+                
+                // Plays the system beep
+                if (PlaySystemBell)
+                    wxBell();
+                
+                // Plays a sound through the sound card (if any)
+                if (!SoundFile.empty())
+                    wxSound::Play(SoundFile, wxSOUND_ASYNC);
+            }
         }
         break;
 
