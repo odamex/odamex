@@ -53,6 +53,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
     EVT_DIRPICKER_CHANGED(XRCID("Id_DirCtrlChooseOdamexPath"), dlgConfig::OnFileDirChange)
     EVT_FILEPICKER_CHANGED(XRCID("Id_FilePickSoundFile"), dlgConfig::OnFileDirChange)
+    EVT_COLOURPICKER_CHANGED(XRCID("Id_ClrPickServerLineHighlighter"), dlgConfig::OnClrPickerChange)
     
 	// Misc events
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlGetListOnStart"), dlgConfig::OnCheckedBox)
@@ -62,6 +63,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_CHECKBOX(XRCID("Id_ChkFlashTaskbar"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkSystemBeep"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkPlaySound"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkColorServerLine"), dlgConfig::OnCheckedBox)
 	
 	EVT_TEXT(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnTextChange)
 	EVT_TEXT(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnTextChange)
@@ -88,11 +90,14 @@ dlgConfig::dlgConfig(wxWindow *parent, wxWindowID id)
     m_ChkCtrlFlashTaskBar = XRCCTRL(*this, "Id_ChkFlashTaskbar", wxCheckBox);
     m_ChkCtrlPlaySystemBeep = XRCCTRL(*this, "Id_ChkSystemBeep", wxCheckBox);
     m_ChkCtrlPlaySoundFile = XRCCTRL(*this, "Id_ChkPlaySound", wxCheckBox);
+    m_ChkCtrlHighlightServerLines = XRCCTRL(*this, "Id_ChkColorServerLine", wxCheckBox);
     
     m_LstCtrlWadDirectories = XRCCTRL(*this, "Id_LstCtrlWadDirectories", wxListBox);
 
     m_DirCtrlChooseOdamexPath = XRCCTRL(*this, "Id_DirCtrlChooseOdamexPath", wxDirPickerCtrl);
     m_FilePickCtrlSoundFile = XRCCTRL(*this, "Id_FilePickSoundFile", wxFilePickerCtrl);
+    m_ClrPickServerLineHighlighter = XRCCTRL(*this, "Id_ClrPickServerLineHighlighter", 
+            wxColourPickerCtrl);
     
     m_SpnCtrlMasterTimeout = XRCCTRL(*this, "Id_SpnCtrlMasterTimeout", wxSpinCtrl);
     m_SpnCtrlServerTimeout = XRCCTRL(*this, "Id_SpnCtrlServerTimeout", wxSpinCtrl);
@@ -136,6 +141,11 @@ void dlgConfig::OnCheckedBox(wxCommandEvent &event)
 }
 
 void dlgConfig::OnFileDirChange(wxFileDirPickerEvent &event)
+{
+    UserChangedSetting = true;
+}
+
+void dlgConfig::OnClrPickerChange(wxColourPickerEvent &event)
 {
     UserChangedSetting = true;
 }
@@ -396,10 +406,10 @@ void dlgConfig::LoadSettings()
     
     bool UseBroadcast;
     bool GetListOnStart, ShowBlockedServers, LoadChatOnLS;
-    bool FlashTaskBar, PlaySystemBell, PlaySoundFile;
+    bool FlashTaskBar, PlaySystemBell, PlaySoundFile, HighlightServers;
     int MasterTimeout, ServerTimeout, RetryCount;
     wxString DelimWadPaths, OdamexDirectory, ExtraCmdLineArgs;
-    wxString SoundFile;
+    wxString SoundFile, HighlightColour;
     wxInt32 PQGood, PQPlayable, PQLaggy;
 
     ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, ODA_QRYUSEBROADCAST);
@@ -421,6 +431,8 @@ void dlgConfig::LoadSettings()
     ConfigInfo.Read(wxT(POLPLAYSYSTEMBELL), &PlaySystemBell, ODA_UIPOLPLAYSYSTEMBELL);
     ConfigInfo.Read(wxT(POLPLAYSOUND), &PlaySoundFile, ODA_UIPOLPLAYSOUND);
     ConfigInfo.Read(wxT(POLPSWAVFILE), &SoundFile, wxT(""));
+    ConfigInfo.Read(wxT(POLHLSERVERS), &HighlightServers, ODA_UIPOLHIGHLIGHTSERVERS);
+    ConfigInfo.Read(wxT(POLHLSCOLOUR), &HighlightColour, ODA_UIPOLHSHIGHLIGHTCOLOUR);
     
     m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
     m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
@@ -429,9 +441,11 @@ void dlgConfig::LoadSettings()
     m_ChkCtrlFlashTaskBar->SetValue(FlashTaskBar);
     m_ChkCtrlPlaySystemBeep->SetValue(PlaySystemBell);
     m_ChkCtrlPlaySoundFile->SetValue(PlaySoundFile);
-    
+    m_ChkCtrlHighlightServerLines->SetValue(HighlightServers);
+       
     m_DirCtrlChooseOdamexPath->SetPath(OdamexDirectory);
     m_FilePickCtrlSoundFile->SetFileName(SoundFile);
+    m_ClrPickServerLineHighlighter->SetColour(HighlightColour);
     
     // Load wad path list
     m_LstCtrlWadDirectories->Clear();
@@ -492,6 +506,8 @@ void dlgConfig::SaveSettings()
     ConfigInfo.Write(wxT(POLPLAYSYSTEMBELL), m_ChkCtrlPlaySystemBeep->GetValue());
     ConfigInfo.Write(wxT(POLPLAYSOUND), m_ChkCtrlPlaySoundFile->GetValue());
     ConfigInfo.Write(wxT(POLPSWAVFILE), m_FilePickCtrlSoundFile->GetFileName().GetFullPath());
+    ConfigInfo.Write(wxT(POLHLSERVERS), m_ChkCtrlHighlightServerLines->GetValue());
+    ConfigInfo.Write(wxT(POLHLSCOLOUR), m_ClrPickServerLineHighlighter->GetColour().GetAsString(wxC2S_HTML_SYNTAX));
     
 	ConfigInfo.Flush();
 }

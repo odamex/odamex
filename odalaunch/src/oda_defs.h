@@ -48,6 +48,10 @@
 #define ODA_UIPOLPLAYSYSTEMBELL 1
 // Plays a sound (wav) file through the sound card
 #define ODA_UIPOLPLAYSOUND 0
+// Highlight the server that has players in it
+#define ODA_UIPOLHIGHLIGHTSERVERS 1
+// Highlight colour
+#define ODA_UIPOLHSHIGHLIGHTCOLOUR "#00C000"
 
 // Querying system
 // ---------------
@@ -105,6 +109,8 @@ static const char *def_masterlist[] =
 #define POLPLAYSYSTEMBELL   "POLPlaySystemBell"
 #define POLPLAYSOUND        "POLPlaySound"
 #define POLPSWAVFILE        "POLPSWavFile"
+#define POLHLSERVERS        "POLHighlightServers"
+#define POLHLSCOLOUR        "POLHighlightColour"
 
 // Master server ids, eg:
 // MasterServer1 "127.0.0.1:15000"

@@ -39,6 +39,7 @@
 #include <wx/filepicker.h>
 #include <wx/spinctrl.h>
 #include <wx/statbmp.h>
+#include <wx/clrpicker.h>
 
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
@@ -74,6 +75,8 @@ class dlgConfig: public wxDialog
         
         void OnFileDirChange(wxFileDirPickerEvent &event);
 
+        void OnClrPickerChange(wxColourPickerEvent &event);
+        
         void OnTextChange(wxCommandEvent &event);
 
         void OnSpinValChange(wxSpinEvent &event);
@@ -85,11 +88,13 @@ class dlgConfig: public wxDialog
         wxCheckBox *m_ChkCtrlFlashTaskBar;
         wxCheckBox *m_ChkCtrlPlaySystemBeep;
         wxCheckBox *m_ChkCtrlPlaySoundFile;
+        wxCheckBox *m_ChkCtrlHighlightServerLines;
         
         wxListBox *m_LstCtrlWadDirectories;
 
         wxDirPickerCtrl *m_DirCtrlChooseOdamexPath;
         wxFilePickerCtrl *m_FilePickCtrlSoundFile;
+        wxColourPickerCtrl *m_ClrPickServerLineHighlighter;
         
         wxSpinCtrl *m_SpnCtrlMasterTimeout;
         wxSpinCtrl *m_SpnCtrlServerTimeout;

@@ -288,6 +288,8 @@ void LstOdaServerList::AddServerToList(const Server &s,
 {
     wxFileConfig ConfigInfo;
     wxInt32 PQGood, PQPlayable, PQLaggy;
+    bool LineHighlight;
+    wxString HighlightColour;
     
     wxInt32 i = 0;
     wxListItem li;
@@ -344,12 +346,21 @@ void LstOdaServerList::AddServerToList(const Server &s,
     li.m_text = wxString::Format(_T("%d/%d"),(wxInt32)s.Info.Players.size(),(wxInt32)s.Info.MaxClients);
     
     // Colour the entire text row if there are players
-    // TODO: Allow the user to select prefered colours
-    if (s.Info.Players.size())
-        SetItemTextColour(li.GetId(), wxColor(0, 192, 0));
-    else
-        SetItemTextColour(li.GetId(), GetTextColour());
-
+    ConfigInfo.Read(wxT(POLHLSERVERS), &LineHighlight, ODA_UIPOLHIGHLIGHTSERVERS);
+    ConfigInfo.Read(wxT(POLHLSCOLOUR), &HighlightColour, ODA_UIPOLHSHIGHLIGHTCOLOUR);
+    
+    if (LineHighlight)
+    {
+        wxColour Colour;
+        
+        Colour.Set(HighlightColour);
+        
+        if (s.Info.Players.size())
+            SetItemTextColour(li.GetId(), Colour);
+        else
+            SetItemTextColour(li.GetId(), GetTextColour());
+    }
+    
     SetItem(li); 
     
     // WAD files column
