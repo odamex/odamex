@@ -43,6 +43,7 @@
 #include <wx/splitter.h>
 #include <wx/dynarray.h>
 #include <wx/timer.h>
+#include <wx/process.h>
 
 #include <vector>
 
@@ -114,6 +115,7 @@ class dlgMain : public wxFrame, wxThreadHelper
 		void OnWindowCreate(wxWindowCreateEvent &event);
 		
 		void OnTimer(wxTimerEvent& event);
+		void OnProcessTerminate(wxProcessEvent &event);
 		
 		void OnExit(wxCommandEvent& event);
 		
@@ -122,6 +124,8 @@ class dlgMain : public wxFrame, wxThreadHelper
 		wxInt32 FindServer(wxString);
 		wxInt32 GetSelectedServerArrayIndex();
 
+		bool ClientIsRunning() { return m_ClientIsRunning; };
+		
 		_oda_iav_err_t IsAddressValid(wxString, wxString &, long &);
 		
 		void LaunchGame(const wxString &Address, const wxString &ODX_Path, 
@@ -140,7 +144,10 @@ class dlgMain : public wxFrame, wxThreadHelper
         wxTextCtrl *m_SrchCtrlGlobal;
         
         wxStatusBar *m_StatusBar;
-        
+        wxProcess *m_Process;
+
+        bool m_ClientIsRunning;
+	
 //        OdaInfoBar *InfoBar;
         
 		wxInt32 TotalPlayers;

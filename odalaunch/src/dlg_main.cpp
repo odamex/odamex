@@ -123,6 +123,9 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     
     // Timers
     EVT_TIMER(TIMER_ID_REFRESH, dlgMain::OnTimer)
+    
+    // Process termination
+    EVT_END_PROCESS(-1, dlgMain::OnProcessTerminate)
 END_EVENT_TABLE()
 
 // Main window creation
@@ -132,6 +135,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     wxIcon MainIcon;
     bool GetListOnStart, LoadChatOnLS, UseRefreshTimer;
     int TimerInterval;
+    
+    // Allows us to auto-refresh the list due to the client not being run
+    m_ClientIsRunning = false;
     
     // Loads the frame from the xml resource file
 	wxXmlResource::Get()->LoadFrame(this, parent, wxT("dlgMain"));
@@ -544,9 +550,21 @@ void dlgMain::OnTimer(wxTimerEvent& event)
     if (GetThread() && GetThread()->IsRunning())
         return;
 
+    // Don't update the list if the client is still running
+    if (ClientIsRunning())
+        return;
+    
     wxCommandEvent ev(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmGetList);
 
     wxPostEvent(this, ev);
+}
+
+// Called when the odamex client process terminates
+void dlgMain::OnProcessTerminate(wxProcessEvent &event)
+{
+    m_ClientIsRunning = false;
+    
+    delete m_Process;
 }
 
 // Posts a message from the main thread to the monitor thread
@@ -1172,7 +1190,6 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
     const wxString &waddirs, const wxString &Password)
 {
     wxFileConfig ConfigInfo;   
-    wxProcess *process = NULL;
 
     // Supresses wx error popup under windows, regardless if wxExecute fails or
     // not
@@ -1230,12 +1247,12 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
     }
 
     // Redirect I/O of child process under non-windows platforms
-    #ifndef __WXMSW__
-	process = new wxProcess(wxPROCESS_REDIRECT);
-    #endif
-
-	if (wxExecute(CmdLine, wxEXEC_ASYNC, process) <= 0)
-        wxMessageBox(wxString::Format(MsgStr, BinName.c_str()));
+	m_Process = new wxProcess(this, wxPROCESS_REDIRECT);
+	
+    m_ClientIsRunning = true;
+	
+	if (wxExecute(CmdLine, wxEXEC_ASYNC, m_Process) <= 0)
+        wxMessageBox(wxString::Format(MsgStr, BinName.c_str()));       
 }
 
 
