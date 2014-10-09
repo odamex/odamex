@@ -64,6 +64,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_CHECKBOX(XRCID("Id_ChkSystemBeep"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkPlaySound"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkColorServerLine"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkAutoRefresh"), dlgConfig::OnCheckedBox)
 	
 	EVT_TEXT(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnTextChange)
 	EVT_TEXT(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnTextChange)
@@ -74,6 +75,8 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQPlayable"), dlgConfig::OnSpinValChange)
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQLaggy"), dlgConfig::OnSpinValChange)
 
+	EVT_SPINCTRL(XRCID("Id_SpnRefreshInterval"), dlgConfig::OnSpinValChange)
+	
 	EVT_LISTBOX_DCLICK(XRCID("Id_LstCtrlWadDirectories"), dlgConfig::OnReplaceDir)
 END_EVENT_TABLE()
 
@@ -91,6 +94,7 @@ dlgConfig::dlgConfig(wxWindow *parent, wxWindowID id)
     m_ChkCtrlPlaySystemBeep = XRCCTRL(*this, "Id_ChkSystemBeep", wxCheckBox);
     m_ChkCtrlPlaySoundFile = XRCCTRL(*this, "Id_ChkPlaySound", wxCheckBox);
     m_ChkCtrlHighlightServerLines = XRCCTRL(*this, "Id_ChkColorServerLine", wxCheckBox);
+    m_ChkCtrlkAutoServerRefresh = XRCCTRL(*this, "Id_ChkAutoRefresh", wxCheckBox);
     
     m_LstCtrlWadDirectories = XRCCTRL(*this, "Id_LstCtrlWadDirectories", wxListBox);
 
@@ -102,6 +106,9 @@ dlgConfig::dlgConfig(wxWindow *parent, wxWindowID id)
     m_SpnCtrlMasterTimeout = XRCCTRL(*this, "Id_SpnCtrlMasterTimeout", wxSpinCtrl);
     m_SpnCtrlServerTimeout = XRCCTRL(*this, "Id_SpnCtrlServerTimeout", wxSpinCtrl);
     m_SpnCtrlRetry = XRCCTRL(*this, "Id_SpnCtrlRetry", wxSpinCtrl);
+    
+    m_SpnRefreshInterval = XRCCTRL(*this, "Id_SpnRefreshInterval", wxSpinCtrl);
+    
     m_TxtCtrlExtraCmdLineArgs = XRCCTRL(*this, "Id_TxtCtrlExtraCmdLineArgs", wxTextCtrl);
 
     m_SpnCtrlPQGood = XRCCTRL(*this, "Id_SpnCtrlPQGood", wxSpinCtrl);
@@ -407,7 +414,8 @@ void dlgConfig::LoadSettings()
     bool UseBroadcast;
     bool GetListOnStart, ShowBlockedServers, LoadChatOnLS;
     bool FlashTaskBar, PlaySystemBell, PlaySoundFile, HighlightServers;
-    int MasterTimeout, ServerTimeout, RetryCount;
+    bool AutoServerRefresh;
+    int MasterTimeout, ServerTimeout, RetryCount, RefreshInterval;
     wxString DelimWadPaths, OdamexDirectory, ExtraCmdLineArgs;
     wxString SoundFile, HighlightColour;
     wxInt32 PQGood, PQPlayable, PQLaggy;
@@ -433,6 +441,11 @@ void dlgConfig::LoadSettings()
     ConfigInfo.Read(wxT(POLPSWAVFILE), &SoundFile, wxT(""));
     ConfigInfo.Read(wxT(POLHLSERVERS), &HighlightServers, ODA_UIPOLHIGHLIGHTSERVERS);
     ConfigInfo.Read(wxT(POLHLSCOLOUR), &HighlightColour, ODA_UIPOLHSHIGHLIGHTCOLOUR);
+    ConfigInfo.Read(wxT(ARTENABLE), &AutoServerRefresh, ODA_UIARTENABLE);
+    ConfigInfo.Read(wxT(ARTREFINTERVAL), &RefreshInterval, ODA_UIARTREFINTERVAL); 
+    
+    // Prevent malicious under-ranged values from causing flooding of our services
+    RefreshInterval = clamp(RefreshInterval, ODA_UIARTREFINTERVAL, ODA_UIARTLISTINTERVAL);
     
     m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
     m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
@@ -442,7 +455,8 @@ void dlgConfig::LoadSettings()
     m_ChkCtrlPlaySystemBeep->SetValue(PlaySystemBell);
     m_ChkCtrlPlaySoundFile->SetValue(PlaySoundFile);
     m_ChkCtrlHighlightServerLines->SetValue(HighlightServers);
-       
+    m_ChkCtrlkAutoServerRefresh->SetValue(AutoServerRefresh);
+    
     m_DirCtrlChooseOdamexPath->SetPath(OdamexDirectory);
     m_FilePickCtrlSoundFile->SetFileName(SoundFile);
     m_ClrPickServerLineHighlighter->SetColour(HighlightColour);
@@ -468,6 +482,9 @@ void dlgConfig::LoadSettings()
     m_SpnCtrlMasterTimeout->SetValue(MasterTimeout);
     m_SpnCtrlServerTimeout->SetValue(ServerTimeout);
     m_SpnCtrlRetry->SetValue(RetryCount);
+    
+    m_SpnRefreshInterval->SetValue(RefreshInterval);
+    
     m_TxtCtrlExtraCmdLineArgs->SetValue(ExtraCmdLineArgs);
 
     m_SpnCtrlPQGood->SetValue(PQGood);
@@ -508,6 +525,8 @@ void dlgConfig::SaveSettings()
     ConfigInfo.Write(wxT(POLPSWAVFILE), m_FilePickCtrlSoundFile->GetFileName().GetFullPath());
     ConfigInfo.Write(wxT(POLHLSERVERS), m_ChkCtrlHighlightServerLines->GetValue());
     ConfigInfo.Write(wxT(POLHLSCOLOUR), m_ClrPickServerLineHighlighter->GetColour().GetAsString(wxC2S_HTML_SYNTAX));
+    ConfigInfo.Write(wxT(ARTENABLE), m_ChkCtrlkAutoServerRefresh->GetValue());
+    ConfigInfo.Write(wxT(ARTREFINTERVAL), m_SpnRefreshInterval->GetValue());    
     
 	ConfigInfo.Flush();
 }

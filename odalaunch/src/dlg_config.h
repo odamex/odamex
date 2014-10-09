@@ -89,6 +89,7 @@ class dlgConfig: public wxDialog
         wxCheckBox *m_ChkCtrlPlaySystemBeep;
         wxCheckBox *m_ChkCtrlPlaySoundFile;
         wxCheckBox *m_ChkCtrlHighlightServerLines;
+        wxCheckBox *m_ChkCtrlkAutoServerRefresh;
         
         wxListBox *m_LstCtrlWadDirectories;
 
@@ -99,6 +100,9 @@ class dlgConfig: public wxDialog
         wxSpinCtrl *m_SpnCtrlMasterTimeout;
         wxSpinCtrl *m_SpnCtrlServerTimeout;
         wxSpinCtrl *m_SpnCtrlRetry;
+        
+        wxSpinCtrl *m_SpnRefreshInterval;
+        
         wxTextCtrl *m_TxtCtrlExtraCmdLineArgs;
 
         wxSpinCtrl *m_SpnCtrlPQGood;

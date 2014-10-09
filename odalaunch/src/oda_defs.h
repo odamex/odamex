@@ -53,6 +53,14 @@
 // Highlight colour
 #define ODA_UIPOLHSHIGHLIGHTCOLOUR "#00C000"
 
+/* Auto server list refresh timer */
+// Enables/disables the timer
+#define ODA_UIARTENABLE 1
+// Server list refresh interval (in ms, default 180s)
+#define ODA_UIARTREFINTERVAL 180000
+// TODO: New list interval (in ms, default 1h)
+#define ODA_UIARTLISTINTERVAL 3600000
+
 // Querying system
 // ---------------
 
@@ -111,6 +119,9 @@ static const char *def_masterlist[] =
 #define POLPSWAVFILE        "POLPSWavFile"
 #define POLHLSERVERS        "POLHighlightServers"
 #define POLHLSCOLOUR        "POLHighlightColour"
+#define ARTENABLE           "UseAutoRefreshTimer"
+#define ARTREFINTERVAL      "AutoRefreshTimerRefreshInterval"
+#define ARTNEWLISTINTERVAL  "AutoRefreshTimerNewListInterval"
 
 // Master server ids, eg:
 // MasterServer1 "127.0.0.1:15000"

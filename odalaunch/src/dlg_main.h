@@ -42,6 +42,7 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/splitter.h>
 #include <wx/dynarray.h>
+#include <wx/timer.h>
 
 #include <vector>
 
@@ -112,6 +113,8 @@ class dlgMain : public wxFrame, wxThreadHelper
 		void OnClose(wxCloseEvent &event);
 		void OnWindowCreate(wxWindowCreateEvent &event);
 		
+		void OnTimer(wxTimerEvent& event);
+		
 		void OnExit(wxCommandEvent& event);
 		
 		void LoadMasterServers();
@@ -142,6 +145,8 @@ class dlgMain : public wxFrame, wxThreadHelper
         
 		wxInt32 TotalPlayers;
         wxInt32 QueriedServers;
+        
+        wxTimer *m_Timer;
         /*
             Our threading system
 

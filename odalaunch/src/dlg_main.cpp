@@ -70,14 +70,23 @@ static wxInt32 Id_MnuItmLaunch = XRCID("Id_MnuItmLaunch");
 static wxInt32 Id_MnuItmGetList = XRCID("Id_MnuItmGetList");
 static wxInt32 Id_MnuItmOpenChat = XRCID("Id_MnuItmOpenChat");
 
+// Timer id definitions
+#define TIMER_ID_REFRESH 1
+
 // custom events
 DEFINE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL)
 DEFINE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL)
 
 // Event handlers
 BEGIN_EVENT_TABLE(dlgMain, wxFrame)
+	// main events
 	EVT_MENU(wxID_EXIT, dlgMain::OnExit)
 
+    EVT_SHOW(dlgMain::OnShow)
+	EVT_CLOSE(dlgMain::OnClose)
+
+    EVT_WINDOW_CREATE(dlgMain::OnWindowCreate)
+	
 	// menu item events
     EVT_MENU(XRCID("Id_MnuItmCustomServers"), dlgMain::OnMenuServers)
     EVT_MENU(XRCID("Id_MnuItmManualConnect"), dlgMain::OnManualConnect)
@@ -104,11 +113,6 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     EVT_MENU(XRCID("Id_MnuItmServerFilter"), dlgMain::OnShowServerFilter)
     EVT_TEXT(XRCID("Id_SrchCtrlGlobal"), dlgMain::OnTextSearch)
 
-	EVT_SHOW(dlgMain::OnShow)
-	EVT_CLOSE(dlgMain::OnClose)
-
-    EVT_WINDOW_CREATE(dlgMain::OnWindowCreate)
-
     // thread events
     EVT_COMMAND(-1, wxEVT_THREAD_MONITOR_SIGNAL, dlgMain::OnMonitorSignal)
     EVT_COMMAND(-1, wxEVT_THREAD_WORKER_SIGNAL, dlgMain::OnWorkerSignal)
@@ -116,6 +120,9 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     // misc events
     EVT_LIST_ITEM_SELECTED(XRCID("Id_LstCtrlServers"), dlgMain::OnServerListClick)
     EVT_LIST_ITEM_ACTIVATED(XRCID("Id_LstCtrlServers"), dlgMain::OnServerListDoubleClick)
+    
+    // Timers
+    EVT_TIMER(TIMER_ID_REFRESH, dlgMain::OnTimer)
 END_EVENT_TABLE()
 
 // Main window creation
@@ -123,7 +130,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
     wxString Version;
     wxIcon MainIcon;
-    bool GetListOnStart, LoadChatOnLS;
+    bool GetListOnStart, LoadChatOnLS, UseRefreshTimer;
+    int TimerInterval;
     
     // Loads the frame from the xml resource file
 	wxXmlResource::Get()->LoadFrame(this, parent, wxT("dlgMain"));
@@ -158,6 +166,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     server_dlg = new dlgServers(&MServer, this);
     AboutDialog = new dlgAbout(this);
 
+    // Init ART
+    m_Timer = new wxTimer(this, TIMER_ID_REFRESH);
+    
     LoadMasterServers();
 
     /* Get the first directory for wad downloading */
@@ -186,6 +197,12 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
         
         ConfigInfo.Read(wxT(LOADCHATONLS), &LoadChatOnLS, 
             ODA_UILOADCHATCLIENTONLS);
+            
+        ConfigInfo.Read(wxT(ARTENABLE), &UseRefreshTimer, 
+            ODA_UIARTENABLE);
+
+        ConfigInfo.Read(wxT(ARTREFINTERVAL), &TimerInterval, 
+            ODA_UIARTREFINTERVAL);
     }
 
     // get master list on application start
@@ -202,6 +219,12 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
         wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmOpenChat);
 
         wxPostEvent(this, event);
+    }
+    
+    // Enable the auto refresh timer
+    if (UseRefreshTimer)
+    {
+        m_Timer->Start(TimerInterval);
     }
 }
 
@@ -220,6 +243,8 @@ dlgMain::~dlgMain()
 
     if (server_dlg != NULL)
         server_dlg->Destroy();
+    
+    delete m_Timer;
     
     //wxFileConfig FileConfig;
     
@@ -268,6 +293,8 @@ void dlgMain::OnWindowCreate(wxWindowCreateEvent &event)
 // Called when the menu exit item or exit button is clicked
 void dlgMain::OnExit(wxCommandEvent& event)
 {
+    m_Timer->Stop();
+    
     Close();
 }
 
@@ -508,6 +535,18 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     }
 
     LaunchGame(ted_result, OdamexDirectory, DelimWadPaths, ped_result);
+}
+
+// Various timers
+void dlgMain::OnTimer(wxTimerEvent& event)
+{
+    // Don't wipe the server list if a refresh is already running
+    if (GetThread() && GetThread()->IsRunning())
+        return;
+
+    wxCommandEvent ev(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmGetList);
+
+    wxPostEvent(this, ev);
 }
 
 // Posts a message from the main thread to the monitor thread
@@ -930,6 +969,25 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
 {
     if (config_dlg)
         config_dlg->Show();
+
+    // Restart the ART
+    bool UseRefreshTimer;
+    int RefreshInterval;
+    
+    {
+        wxFileConfig ConfigInfo;
+    
+        ConfigInfo.Read(wxT(ARTENABLE), &UseRefreshTimer, 
+            ODA_UIARTENABLE);
+           
+        ConfigInfo.Read(wxT(ARTREFINTERVAL), &RefreshInterval, 
+            ODA_UIARTREFINTERVAL);        
+    }
+        
+    if (!UseRefreshTimer)
+        m_Timer->Stop();
+    else
+        m_Timer->Start(RefreshInterval);
 }
 
 void dlgMain::OnOpenOdaGet(wxCommandEvent &event)
