@@ -380,6 +380,8 @@ public:
 		if (Index < addresses.size())
 		{
             addresses.erase(addresses.begin() + Index);
+            
+            return true;
 		}
 
 		return false;
