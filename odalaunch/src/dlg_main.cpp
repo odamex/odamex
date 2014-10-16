@@ -909,6 +909,12 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
                 if (!SoundFile.empty())
                     wxSound::Play(SoundFile, wxSOUND_ASYNC);
             }
+            else
+            {
+                // Stop flashing the taskbar on windows
+                if (FlashTaskbar)
+                    OdaMswStopFlashingWindow(GetHandle());
+            }
         }
         break;
 

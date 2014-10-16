@@ -40,6 +40,7 @@ wxString OdaGetDataDir();
 
 // Windows
 void OdaMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon);
+void OdaMswStopFlashingWindow(WXWidget Handle);
 
 // OSX
 void OdaMacRemoveFileMenu(wxFrame *parent);

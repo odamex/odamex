@@ -42,6 +42,24 @@ void OdaMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon)
     #endif
 }
 
+// Stops flashing the window, wxWidgets does not have a function to do this on
+// windows
+void OdaMswStopFlashingWindow(WXWidget Handle)
+{
+    #ifdef _WIN32
+    FLASHWINFO fwi;
+    
+    fwi.cbSize = sizeof(fwi);
+    fwi.hwnd = (HWND)Handle;
+    fwi.dwFlags = FLASHW_STOP;
+    fwi.uCount = 0;
+    fwi.dwTimeout = 0;
+    
+    FlashWindowEx(&fwi);
+    
+    #endif // _WIN32
+}
+
 // Remove the file menu on Mac as it will be empty
 void OdaMacRemoveFileMenu(wxFrame *parent)
 {
