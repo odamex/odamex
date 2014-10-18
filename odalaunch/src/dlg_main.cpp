@@ -133,8 +133,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
     wxString Version;
     wxIcon MainIcon;
-    bool GetListOnStart, LoadChatOnLS, UseRefreshTimer;
-    int TimerInterval;
+    bool GetListOnStart, LoadChatOnLS;
     
     // Allows us to auto-refresh the list due to the client not being run
     m_ClientIsRunning = false;
@@ -204,10 +203,10 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
         ConfigInfo.Read(wxT(LOADCHATONLS), &LoadChatOnLS, 
             ODA_UILOADCHATCLIENTONLS);
             
-        ConfigInfo.Read(wxT(ARTENABLE), &UseRefreshTimer, 
+        ConfigInfo.Read(wxT(ARTENABLE), &m_UseRefreshTimer, 
             ODA_UIARTENABLE);
 
-        ConfigInfo.Read(wxT(ARTREFINTERVAL), &TimerInterval, 
+        ConfigInfo.Read(wxT(ARTREFINTERVAL), &m_RefreshInterval, 
             ODA_UIARTREFINTERVAL);
     }
 
@@ -228,9 +227,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     }
     
     // Enable the auto refresh timer
-    if (UseRefreshTimer)
+    if (m_UseRefreshTimer)
     {
-        m_Timer->Start(TimerInterval);
+        m_Timer->Start(m_RefreshInterval);
     }
 }
 
@@ -554,9 +553,8 @@ void dlgMain::OnTimer(wxTimerEvent& event)
     if (ClientIsRunning())
         return;
     
-    wxCommandEvent ev(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmGetList);
-
-    wxPostEvent(this, ev);
+    // Get a new list of servers
+    DoGetList();
 }
 
 // Called when the odamex client process terminates
@@ -995,23 +993,20 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
         config_dlg->Show();
 
     // Restart the ART
-    bool UseRefreshTimer;
-    int RefreshInterval;
-    
     {
         wxFileConfig ConfigInfo;
     
-        ConfigInfo.Read(wxT(ARTENABLE), &UseRefreshTimer, 
+        ConfigInfo.Read(wxT(ARTENABLE), &m_UseRefreshTimer, 
             ODA_UIARTENABLE);
            
-        ConfigInfo.Read(wxT(ARTREFINTERVAL), &RefreshInterval, 
+        ConfigInfo.Read(wxT(ARTREFINTERVAL), &m_RefreshInterval, 
             ODA_UIARTREFINTERVAL);        
     }
         
-    if (!UseRefreshTimer)
+    if (!m_UseRefreshTimer)
         m_Timer->Stop();
     else
-        m_Timer->Start(RefreshInterval);
+        m_Timer->Start(m_RefreshInterval);
 }
 
 void dlgMain::OnOpenOdaGet(wxCommandEvent &event)
@@ -1112,8 +1107,8 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
         DelimWadPaths, Password);
 }
 
-// Get Master List button click
-void dlgMain::OnGetList(wxCommandEvent &event)
+// Update program state and get a new list of servers
+void dlgMain::DoGetList()
 {
     // Reset search results
     m_SrchCtrlGlobal->SetValue(wxT(""));
@@ -1128,7 +1123,16 @@ void dlgMain::OnGetList(wxCommandEvent &event)
     // Disable sorting of items by user during a query
     m_LstCtrlServers->HeaderUsable(false);
 
-    MainThrPostEvent(mtcs_getmaster);
+    MainThrPostEvent(mtcs_getmaster);    
+}
+
+// Get Master List button click
+void dlgMain::OnGetList(wxCommandEvent &event)
+{
+    if (m_UseRefreshTimer)
+        m_Timer->Start(m_RefreshInterval);
+    
+    DoGetList();
 }
 
 void dlgMain::OnRefreshServer(wxCommandEvent &event)

@@ -119,6 +119,8 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnExit(wxCommandEvent& event);
 		
+		void DoGetList();
+		
 		void LoadMasterServers();
 		
 		wxInt32 FindServer(wxString);
@@ -153,7 +155,14 @@ class dlgMain : public wxFrame, wxThreadHelper
 		wxInt32 TotalPlayers;
         wxInt32 QueriedServers;
         
+        /* ART - Automatic Refresh Timer */
+        // Timers interval (in ms)
+        int m_RefreshInterval;
+        // State of timer usage
+        bool m_UseRefreshTimer;
+        // The timer itself
         wxTimer *m_Timer;
+        
         /*
             Our threading system
 
