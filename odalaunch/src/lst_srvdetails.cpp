@@ -81,6 +81,8 @@ void LstOdaSrvDetails::InsertHeader(const wxString &Name,
 
 void LstOdaSrvDetails::InsertLine(const wxString &Name, const wxString &Value)
 {
+    size_t i = 0;
+    wxString Str;
     wxListItem ListItem;
     
     ListItem.SetMask(wxLIST_MASK_TEXT);
@@ -100,11 +102,43 @@ void LstOdaSrvDetails::InsertLine(const wxString &Name, const wxString &Value)
     ListItem.SetBackgroundColour(BGItemAlternator);
     
     SetItem(ListItem);
-    
+
     // Value Column
-    ListItem.SetText(Value);    
-    ListItem.SetColumn(srvdetails_field_value);
-    SetItem(ListItem);
+    // Detect newlines and break on them
+    while (i < Value.Length())
+    {
+        // Insert new line
+        if (Value[i] == wxT('\\') && 
+            (i + 1 < Value.Length() && Value[i+1] == wxT('n')))
+        {
+            ListItem.SetColumn(srvdetails_field_value);
+            ListItem.SetText(Str);
+            SetItem(ListItem);
+
+            ListItem.SetColumn(srvdetails_field_name);
+            ListItem.SetId(InsertItem(GetItemCount(), wxT("")));
+            ListItem.SetText(wxT(""));
+            SetItem(ListItem);
+
+            Str.Clear();
+
+            ++i;
+            ++i;
+
+            continue;
+        }
+
+        Str += Value[i];
+
+        ++i;
+    }
+
+    if (i == Value.Length())
+    {
+        ListItem.SetColumn(srvdetails_field_value);
+        ListItem.SetText(Str);
+        SetItem(ListItem);
+    }
 }
 
 static bool CvarCompare(const Cvar_t &a, const Cvar_t &b)
