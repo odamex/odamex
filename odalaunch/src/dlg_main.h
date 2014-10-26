@@ -119,7 +119,7 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnExit(wxCommandEvent& event);
 		
-		void DoGetList();
+		void DoGetList(bool IsARTRefresh = false);
 		
 		void LoadMasterServers();
 		
@@ -160,6 +160,8 @@ class dlgMain : public wxFrame, wxThreadHelper
         int m_RefreshInterval;
         // State of timer usage
         bool m_UseRefreshTimer;
+        // This particular refresh was by the timer
+        bool m_WasARTRefresh;
         // The timer itself
         wxTimer *m_Timer;
         

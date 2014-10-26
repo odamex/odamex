@@ -47,6 +47,7 @@
 #include <wx/string.h>
 #include <wx/cmdline.h>
 #include <wx/sound.h>
+#include <wx/msgout.h>
 
 #ifdef __WXMSW__
     #include <windows.h>
@@ -554,7 +555,7 @@ void dlgMain::OnTimer(wxTimerEvent& event)
         return;
     
     // Get a new list of servers
-    DoGetList();
+    DoGetList(true);
 }
 
 // Called when the odamex client process terminates
@@ -806,8 +807,16 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             // working, atleast we can get some useful data
             if (!MServer.GetServerCount())
             {
-                wxMessageBox(wxT("No master servers could be contacted"),
-                    wxT("Error"), wxOK | wxICON_ERROR);
+                // Report ART failures to stderr instead
+                if (m_WasARTRefresh)
+                {
+                    wxMessageOutputStderr err;
+
+                    err.Printf("No master servers could be contacted\n");
+                }
+                else
+                    wxMessageBox(wxT("No master servers could be contacted"),
+                        wxT("Error"), wxOK | wxICON_ERROR);
 
                 break;
             }
@@ -817,8 +826,16 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             break;
         case mtrs_server_noservers:
         {
-            wxMessageBox(wxT("There are no servers to query"),
-                wxT("Error"), wxOK | wxICON_ERROR);
+             // Report ART failures to stderr instead
+            if (m_WasARTRefresh)
+            {
+                wxMessageOutputStderr err;
+
+                err.Printf("There are no servers to query\n");
+            }
+            else
+                wxMessageBox(wxT("There are no servers to query"),
+                    wxT("Error"), wxOK | wxICON_ERROR);
             
             m_SrchCtrlGlobal->Enable(true);
         }
@@ -1108,7 +1125,7 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
 }
 
 // Update program state and get a new list of servers
-void dlgMain::DoGetList()
+void dlgMain::DoGetList(bool IsARTRefresh)
 {
     // Reset search results
     m_SrchCtrlGlobal->SetValue(wxT(""));
@@ -1123,16 +1140,19 @@ void dlgMain::DoGetList()
     // Disable sorting of items by user during a query
     m_LstCtrlServers->HeaderUsable(false);
 
+    m_WasARTRefresh = IsARTRefresh;
+    
     MainThrPostEvent(mtcs_getmaster);    
 }
 
 // Get Master List button click
 void dlgMain::OnGetList(wxCommandEvent &event)
 {
+    // Restart the timer since the user clicked this button
     if (m_UseRefreshTimer)
         m_Timer->Start(m_RefreshInterval);
     
-    DoGetList();
+    DoGetList(false);
 }
 
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
