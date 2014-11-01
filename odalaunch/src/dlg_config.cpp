@@ -458,7 +458,7 @@ void dlgConfig::LoadSettings()
     m_ChkCtrlkAutoServerRefresh->SetValue(AutoServerRefresh);
     
     m_DirCtrlChooseOdamexPath->SetPath(OdamexDirectory);
-    m_FilePickCtrlSoundFile->SetFileName(SoundFile);
+    m_FilePickCtrlSoundFile->SetPath(SoundFile);
     m_ClrPickServerLineHighlighter->SetColour(HighlightColour);
     
     // Load wad path list
@@ -522,7 +522,7 @@ void dlgConfig::SaveSettings()
     ConfigInfo.Write(wxT(POLFLASHTBAR), m_ChkCtrlFlashTaskBar->GetValue());
     ConfigInfo.Write(wxT(POLPLAYSYSTEMBELL), m_ChkCtrlPlaySystemBeep->GetValue());
     ConfigInfo.Write(wxT(POLPLAYSOUND), m_ChkCtrlPlaySoundFile->GetValue());
-    ConfigInfo.Write(wxT(POLPSWAVFILE), m_FilePickCtrlSoundFile->GetFileName().GetFullPath());
+    ConfigInfo.Write(wxT(POLPSWAVFILE), m_FilePickCtrlSoundFile->GetPath());
     ConfigInfo.Write(wxT(POLHLSERVERS), m_ChkCtrlHighlightServerLines->GetValue());
     ConfigInfo.Write(wxT(POLHLSCOLOUR), m_ClrPickServerLineHighlighter->GetColour().GetAsString(wxC2S_HTML_SYNTAX));
     ConfigInfo.Write(wxT(ARTENABLE), m_ChkCtrlkAutoServerRefresh->GetValue());

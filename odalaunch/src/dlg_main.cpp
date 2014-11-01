@@ -1229,7 +1229,7 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
     wxString ExtraCmdLineArgs;
     wxString MsgStr = wxT("Could not start %s\n\nPlease check that Settings->"
                           "File Locations->Odamex Path points to your "
-                          "installed Odamex directory");
+                          "Odamex directory");
 
     if (ODX_Path.IsEmpty())
     {
