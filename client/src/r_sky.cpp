@@ -128,6 +128,8 @@ static void R_InitXToViewAngle()
 // [ML] 5/11/06 - Remove sky2 stuffs
 // [ML] 3/16/10 - Bring it back!
 
+void R_GenerateLookup(int texnum, int *const errors); // from r_data.cpp
+
 void R_InitSkyMap()
 {
 	if (textureheight == NULL)
@@ -157,7 +159,16 @@ void R_InitSkyMap()
 			p_height = wpatch->height();
 	}
 
-	textures[sky1texture]->height = MAX(t_height,p_height);
+	if (p_height > t_height)
+	{
+		textures[sky1texture]->height = p_height;
+
+		// if the height changed the precaching has to be redone, so that the
+		// precalculated allocation size in texturecompositesize[] is correct
+		int errors;
+		R_GenerateLookup(sky1texture, &errors);
+	}
+
 	textureheight[sky1texture] = textures[sky1texture]->height << FRACBITS;
 	
 	skystretch = 0;
