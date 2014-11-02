@@ -22,6 +22,7 @@
 
 #include <wx/fileconf.h>
 #include <wx/xrc/xmlres.h>
+#include <wx/log.h>
 
 #include "lst_players.h"
 #include "str_utils.h"
@@ -58,6 +59,25 @@ static int ImageList_BlueBullet = -1;
 // Special case
 static wxInt32 WidthTeam, WidthTeamScore;
 
+bool LstOdaPlayerList::CreatePlayerIcon(const wxColour &In, wxBitmap &Out)
+{
+    wxMemoryDC DC;
+    wxPoint Point(0,0);
+    wxSize Size = Out.GetSize();
+
+    if (!In.IsOk() || !Out.IsOk())
+        return false;
+
+    DC.SelectObject(Out);
+    DC.SetBackground(*wxBLACK_BRUSH);
+    DC.Clear();
+
+    DC.SetBrush(*wxTheBrushList->FindOrCreateBrush(In, wxSOLID));
+    DC.DrawRectangle(Point, Size);
+
+    return true;
+}
+
 void LstOdaPlayerList::OnCreateControl(wxWindowCreateEvent &event)
 {
     SetupPlayerListColumns();
@@ -70,7 +90,8 @@ void LstOdaPlayerList::SetupPlayerListColumns()
 {
     DeleteAllItems();
 	DeleteAllColumns();
-
+    ClearImageList();
+	
 	wxFileConfig ConfigInfo;
     wxInt32 PlayerListSortOrder, PlayerListSortColumn;
 
@@ -281,6 +302,7 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
         
         SetItem(li);
         
+        // Draw an icon for the players selected colour
         wxUint32 PlayerColour = s.Info.Players[i].Colour;
         wxUint8 PC_Red = 0, PC_Green = 0, PC_Blue = 0;
 
@@ -288,9 +310,16 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
         PC_Green = ((PlayerColour >> 8) & 0x0000FFFF);
         PC_Blue = (PlayerColour & 0x000000FF);
 
-        li.SetTextColour(wxColour(PC_Red, PC_Green, PC_Blue));
+        wxBitmap Out(16,16);
+        wxColour In(PC_Red, PC_Green, PC_Blue);
 
-        SetItem(li);
+        if (!CreatePlayerIcon(In, Out))
+            wxLogError("Player list icon drawing failed");
+
+        int idx = AddImageSmall(Out.ConvertToImage());
+
+        SetItemColumnImage(li.m_itemId, playerlist_field_name,
+                        idx);
 
         if (s.Info.GameType == GT_TeamDeathmatch || 
             s.Info.GameType == GT_CaptureTheFlag)

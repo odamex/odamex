@@ -101,6 +101,21 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
     return -1;
 }
 
+// Removes all images from the image list, except for the ones the control has
+// created internally
+void wxAdvancedListCtrl::ClearImageList()
+{
+    wxImageList *ImageList = GetImageList(wxIMAGE_LIST_SMALL);
+
+    if (!ImageList)
+        return;
+
+    // Hack: The start of this classes non-added images begin after the sort
+    // arrow
+    for (int i = ImageList_SortArrowUp + 1; i < ImageList->GetImageCount(); ++i)
+        ImageList->Remove(i);
+}
+
 // [Russell] - These are 2 heavily modified routines of the javascript natural 
 // compare by Kristof Coomans (it was easier to follow than the original C 
 // version by Martin Pool), their versions were under the ZLIB license (which 

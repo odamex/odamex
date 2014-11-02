@@ -23,6 +23,9 @@
 #ifndef __LST_PLAYERS_H__
 #define __LST_PLAYERS_H__
 
+#include <wx/colour.h>
+#include <wx/bitmap.h>
+
 #include "net_packet.h"
 #include "lst_custom.h"
 
@@ -38,6 +41,7 @@ class LstOdaPlayerList : public wxAdvancedListCtrl
 
         void SetupPlayerListColumns();        
         void OnCreateControl(wxWindowCreateEvent &event);
+        bool CreatePlayerIcon(const wxColour &In, wxBitmap &Out);
         
         DECLARE_DYNAMIC_CLASS(LstOdaPlayerList)
 

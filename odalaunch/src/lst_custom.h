@@ -68,6 +68,7 @@ class wxAdvancedListCtrl : public wxListView
         void Sort();
                 
         int AddImageSmall(wxImage Image);
+        void ClearImageList();
         long ALCInsertItem(const wxString &Text = wxT(""));
         
         void ApplyFilter(wxString Filter = wxEmptyString);
