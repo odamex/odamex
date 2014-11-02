@@ -164,7 +164,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_LstCtrlPlayers = XRCCTRL(*this, "Id_LstCtrlPlayers", LstOdaPlayerList);
     m_LstOdaSrvDetails = XRCCTRL(*this, "Id_LstCtrlServerDetails", LstOdaSrvDetails);
     m_PnlServerFilter = XRCCTRL(*this, "Id_PnlServerFilter", wxPanel);
-    m_SrchCtrlGlobal = XRCCTRL(*this, "Id_SrchCtrlGlobal", wxTextCtrl);
+    m_SrchCtrlGlobal = XRCCTRL(*this, "Id_SrchCtrlGlobal", wxSearchCtrl);
     m_StatusBar = GetStatusBar();
 
     /* Init sub dialogs and load settings */

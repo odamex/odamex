@@ -44,6 +44,7 @@
 #include <wx/dynarray.h>
 #include <wx/timer.h>
 #include <wx/process.h>
+#include <wx/srchctrl.h>
 
 #include <vector>
 
@@ -143,7 +144,7 @@ class dlgMain : public wxFrame, wxThreadHelper
         //frmOdaGet *OdaGet;
         
         wxPanel *m_PnlServerFilter;
-        wxTextCtrl *m_SrchCtrlGlobal;
+        wxSearchCtrl *m_SrchCtrlGlobal;
         
         wxStatusBar *m_StatusBar;
         wxProcess *m_Process;

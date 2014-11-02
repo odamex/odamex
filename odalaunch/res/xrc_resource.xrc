@@ -173,14 +173,8 @@
 				<bitmap>./icons/btnexit.png</bitmap>
 			</object>
 			<object class="separator" />
-			<object class="wxTextCtrl" name="Id_SrchCtrlGlobal">
-				<tooltip>Search</tooltip>
+			<object class="wxSearchCtrl" name="Id_SrchCtrlGlobal">
 				<value></value>
-				<maxlength>0</maxlength>
-			</object>
-			<object class="wxStaticBitmap" name="m_bitmap6">
-				<tooltip>Search</tooltip>
-				<bitmap stock_id="wxART_FIND" stock_client="wxART_OTHER">undefined.png</bitmap>
 			</object>
 		</object>
 		<object class="wxFlexGridSizer">
