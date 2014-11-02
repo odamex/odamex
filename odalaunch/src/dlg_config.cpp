@@ -444,9 +444,6 @@ void dlgConfig::LoadSettings()
     ConfigInfo.Read(wxT(ARTENABLE), &AutoServerRefresh, ODA_UIARTENABLE);
     ConfigInfo.Read(wxT(ARTREFINTERVAL), &RefreshInterval, ODA_UIARTREFINTERVAL); 
     
-    // Prevent malicious under-ranged values from causing flooding of our services
-    RefreshInterval = clamp(RefreshInterval, ODA_UIARTREFINTERVAL, ODA_UIARTLISTINTERVAL);
-    
     m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
     m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
     m_ChkCtrlShowBlockedServers->SetValue(ShowBlockedServers);

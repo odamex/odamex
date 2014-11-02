@@ -5546,7 +5546,7 @@
                                                                                 <property name="gripper">0</property>
                                                                                 <property name="hidden">0</property>
                                                                                 <property name="id">wxID_ANY</property>
-                                                                                <property name="label">Refresh list every (ms):</property>
+                                                                                <property name="label">Refresh list every (min):</property>
                                                                                 <property name="max_size"></property>
                                                                                 <property name="maximize_button">0</property>
                                                                                 <property name="maximum_size"></property>
@@ -5633,12 +5633,12 @@
                                                                                 <property name="gripper">0</property>
                                                                                 <property name="hidden">0</property>
                                                                                 <property name="id">wxID_ANY</property>
-                                                                                <property name="initial">180000</property>
-                                                                                <property name="max">3600000</property>
+                                                                                <property name="initial">3</property>
+                                                                                <property name="max">60</property>
                                                                                 <property name="max_size"></property>
                                                                                 <property name="maximize_button">0</property>
                                                                                 <property name="maximum_size"></property>
-                                                                                <property name="min">180000</property>
+                                                                                <property name="min">3</property>
                                                                                 <property name="min_size"></property>
                                                                                 <property name="minimize_button">0</property>
                                                                                 <property name="minimum_size"></property>

@@ -56,7 +56,7 @@
 /* Auto server list refresh timer */
 // Enables/disables the timer
 #define ODA_UIARTENABLE 1
-// Server list refresh interval (in ms, default 180s)
+// Server list refresh interval (in ms, def 3m)
 #define ODA_UIARTREFINTERVAL 180000
 // TODO: New list interval (in ms, default 1h)
 #define ODA_UIARTLISTINTERVAL 3600000

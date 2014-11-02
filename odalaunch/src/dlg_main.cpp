@@ -209,6 +209,15 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
         ConfigInfo.Read(wxT(ARTREFINTERVAL), &m_RefreshInterval, 
             ODA_UIARTREFINTERVAL);
+
+        // Calculate refresh interval from minutes to milliseconds
+        m_RefreshInterval = m_RefreshInterval * 60 * 1000;
+
+        // Prevent malicious under-ranged values from causing flooding of our 
+        // services
+        m_RefreshInterval = clamp(m_RefreshInterval, 
+                                  ODA_UIARTREFINTERVAL, 
+                                  ODA_UIARTLISTINTERVAL);
     }
 
     // get master list on application start
@@ -1017,7 +1026,16 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
             ODA_UIARTENABLE);
            
         ConfigInfo.Read(wxT(ARTREFINTERVAL), &m_RefreshInterval, 
-            ODA_UIARTREFINTERVAL);        
+            ODA_UIARTREFINTERVAL);
+
+        // Calculate refresh interval from minutes to milliseconds
+        m_RefreshInterval = m_RefreshInterval * 60 * 1000;
+
+        // Prevent malicious under-ranged values from causing flooding of our 
+        // services
+        m_RefreshInterval = clamp(m_RefreshInterval, 
+                                  ODA_UIARTREFINTERVAL, 
+                                  ODA_UIARTLISTINTERVAL);
     }
         
     if (!m_UseRefreshTimer)
