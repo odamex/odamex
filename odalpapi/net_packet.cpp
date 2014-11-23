@@ -152,7 +152,7 @@ int32_t MasterServer::Parse()
 			address.custom = false;
 
 			// Don't add the same address more than once.
-            AddServer(address);
+			AddServer(address);
 		}
 
 	if(Socket->BadRead())
@@ -206,8 +206,8 @@ void Server::ResetData()
 	Info.PasswordHash = "";
 	Info.CurrentMap = "";
 	Info.TimeLeft = 0;
-    Info.TimeLimit = 0;
-	
+	Info.TimeLimit = 0;
+
 	Ping = 0;
 }
 
@@ -321,7 +321,7 @@ bool Server::ReadCvars()
 			// Add this to the cvar list as well
 			Info.TimeLimit = Cvar.ui16;
 		}
-		
+
 		Info.Cvars.push_back(Cvar);
 	}
 
@@ -351,16 +351,16 @@ void Server::ReadInformation()
 	Socket->ReadHexString(Info.PasswordHash);
 
 	Socket->ReadString(Info.CurrentMap);
-	
+
 	// TODO: Remove guard for next release and update protocol version
 	QRYNEWINFO(6)
 	{
-        if (Info.TimeLimit)
-            Socket->Read16(Info.TimeLeft);
+		if(Info.TimeLimit)
+			Socket->Read16(Info.TimeLeft);
 	}
 	else
-        Socket->Read16(Info.TimeLeft);
-    
+		Socket->Read16(Info.TimeLeft);
+
 	// Teams
 	if(Info.GameType == GT_TeamDeathmatch ||
 	        Info.GameType == GT_CaptureTheFlag)
@@ -679,7 +679,7 @@ void MasterServer::QueryBC(const uint32_t& Timeout)
 
 		BCSocket.GetRemoteAddress(address.ip, address.port);
 
-        AddServer(address);
+		AddServer(address);
 	}
 }
 

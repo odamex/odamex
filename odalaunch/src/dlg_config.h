@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -16,8 +16,8 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Config dialog
-//  AUTHOR:	Russell Rice, John D Corrado
+//  Config dialog
+//  AUTHOR: Russell Rice, John D Corrado
 //
 //-----------------------------------------------------------------------------
 
@@ -48,77 +48,77 @@ const wxString env_vars[NUM_ENVVARS] = { _T("DOOMWADDIR"), _T("DOOMWADPATH") };
 
 class dlgConfig: public wxDialog
 {
-	public:
+public:
 
-		dlgConfig(wxWindow* parent, wxWindowID id = -1);
-		virtual ~dlgConfig();
+	dlgConfig(wxWindow* parent, wxWindowID id = -1);
+	virtual ~dlgConfig();
 
-        void LoadSettings();
-        void SaveSettings();
+	void LoadSettings();
+	void SaveSettings();
 
-        void Show();
+	void Show();
 
-	protected:
-        void OnOK(wxCommandEvent &event);
-        
-        void OnChooseDir(wxFileDirPickerEvent &event);
-        void OnAddDir(wxCommandEvent &event);
-        void OnReplaceDir(wxCommandEvent &event);
-        void OnDeleteDir(wxCommandEvent &event);
-        
-        void OnUpClick(wxCommandEvent &event);
-        void OnDownClick(wxCommandEvent &event);
-        
-        void OnGetEnvClick(wxCommandEvent &event);
-        
-        void OnCheckedBox(wxCommandEvent &event);
-        
-        void OnFileDirChange(wxFileDirPickerEvent &event);
+protected:
+	void OnOK(wxCommandEvent& event);
 
-        void OnClrPickerChange(wxColourPickerEvent &event);
-        
-        void OnTextChange(wxCommandEvent &event);
+	void OnChooseDir(wxFileDirPickerEvent& event);
+	void OnAddDir(wxCommandEvent& event);
+	void OnReplaceDir(wxCommandEvent& event);
+	void OnDeleteDir(wxCommandEvent& event);
 
-        void OnSpinValChange(wxSpinEvent &event);
-        
-        wxCheckBox *m_ChkCtrlGetListOnStart;
-        wxCheckBox *m_ChkCtrlShowBlockedServers;
-        wxCheckBox *m_ChkCtrlEnableBroadcasts;
-        wxCheckBox *m_ChkCtrlLoadChatOnLS;
-        wxCheckBox *m_ChkCtrlFlashTaskBar;
-        wxCheckBox *m_ChkCtrlPlaySystemBeep;
-        wxCheckBox *m_ChkCtrlPlaySoundFile;
-        wxCheckBox *m_ChkCtrlHighlightServerLines;
-        wxCheckBox *m_ChkCtrlkAutoServerRefresh;
-        
-        wxListBox *m_LstCtrlWadDirectories;
+	void OnUpClick(wxCommandEvent& event);
+	void OnDownClick(wxCommandEvent& event);
 
-        wxDirPickerCtrl *m_DirCtrlChooseOdamexPath;
-        wxFilePickerCtrl *m_FilePickCtrlSoundFile;
-        wxColourPickerCtrl *m_ClrPickServerLineHighlighter;
-        
-        wxSpinCtrl *m_SpnCtrlMasterTimeout;
-        wxSpinCtrl *m_SpnCtrlServerTimeout;
-        wxSpinCtrl *m_SpnCtrlRetry;
-        
-        wxSpinCtrl *m_SpnRefreshInterval;
-        
-        wxTextCtrl *m_TxtCtrlExtraCmdLineArgs;
+	void OnGetEnvClick(wxCommandEvent& event);
 
-        wxSpinCtrl *m_SpnCtrlPQGood;
-        wxSpinCtrl *m_SpnCtrlPQPlayable;
-        wxSpinCtrl *m_SpnCtrlPQLaggy;
+	void OnCheckedBox(wxCommandEvent& event);
 
-        wxStaticBitmap *m_StcBmpPQGood;
-        wxStaticBitmap *m_StcBmpPQPlayable;
-        wxStaticBitmap *m_StcBmpPQLaggy;
-        wxStaticBitmap *m_StcBmpPQBad;
+	void OnFileDirChange(wxFileDirPickerEvent& event);
 
-        bool UserChangedSetting;
+	void OnClrPickerChange(wxColourPickerEvent& event);
 
-	private:
+	void OnTextChange(wxCommandEvent& event);
 
-		DECLARE_EVENT_TABLE()
+	void OnSpinValChange(wxSpinEvent& event);
+
+	wxCheckBox* m_ChkCtrlGetListOnStart;
+	wxCheckBox* m_ChkCtrlShowBlockedServers;
+	wxCheckBox* m_ChkCtrlEnableBroadcasts;
+	wxCheckBox* m_ChkCtrlLoadChatOnLS;
+	wxCheckBox* m_ChkCtrlFlashTaskBar;
+	wxCheckBox* m_ChkCtrlPlaySystemBeep;
+	wxCheckBox* m_ChkCtrlPlaySoundFile;
+	wxCheckBox* m_ChkCtrlHighlightServerLines;
+	wxCheckBox* m_ChkCtrlkAutoServerRefresh;
+
+	wxListBox* m_LstCtrlWadDirectories;
+
+	wxDirPickerCtrl* m_DirCtrlChooseOdamexPath;
+	wxFilePickerCtrl* m_FilePickCtrlSoundFile;
+	wxColourPickerCtrl* m_ClrPickServerLineHighlighter;
+
+	wxSpinCtrl* m_SpnCtrlMasterTimeout;
+	wxSpinCtrl* m_SpnCtrlServerTimeout;
+	wxSpinCtrl* m_SpnCtrlRetry;
+
+	wxSpinCtrl* m_SpnRefreshInterval;
+
+	wxTextCtrl* m_TxtCtrlExtraCmdLineArgs;
+
+	wxSpinCtrl* m_SpnCtrlPQGood;
+	wxSpinCtrl* m_SpnCtrlPQPlayable;
+	wxSpinCtrl* m_SpnCtrlPQLaggy;
+
+	wxStaticBitmap* m_StcBmpPQGood;
+	wxStaticBitmap* m_StcBmpPQPlayable;
+	wxStaticBitmap* m_StcBmpPQLaggy;
+	wxStaticBitmap* m_StcBmpPQBad;
+
+	bool UserChangedSetting;
+
+private:
+
+	DECLARE_EVENT_TABLE()
 };
 
 #endif

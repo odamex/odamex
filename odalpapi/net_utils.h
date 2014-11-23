@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -16,9 +16,9 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Utility functions
+//  Utility functions
 //
-// AUTHORS: 
+// AUTHORS:
 //  Russell Rice (russell at odamex dot net)
 //  Michael Wood (mwoodj at knology dot net)
 //
@@ -35,7 +35,8 @@
  * All code for the odamex launcher protocol api is contained within the odalpapi
  * namespace.
  */
-namespace odalpapi {
+namespace odalpapi
+{
 
 uint64_t GetMillisNow();
 

@@ -29,9 +29,9 @@
 #include <wx/string.h>
 
 #ifdef __forceinline
-	#define forceinline __forceinline
+#define forceinline __forceinline
 #else
-	#define forceinline inline
+#define forceinline inline
 #endif
 
 // All
@@ -43,7 +43,7 @@ void OdaMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon);
 void OdaMswStopFlashingWindow(WXWidget Handle);
 
 // OSX
-void OdaMacRemoveFileMenu(wxFrame *parent);
+void OdaMacRemoveFileMenu(wxFrame* parent);
 
 //
 // clamp
@@ -51,10 +51,10 @@ void OdaMacRemoveFileMenu(wxFrame *parent);
 // Clamps the value of in to the range min, max
 //
 #ifdef clamp
-	#undef clamp
+#undef clamp
 #endif
 template<class T>
-forceinline T clamp (const T in, const T min, const T max)
+forceinline T clamp(const T in, const T min, const T max)
 {
 	return in <= min ? min : in >= max ? max : in;
 }

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -16,10 +16,10 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	 Type Definitions
+//   Type Definitions
 //
 // AUTHORS:
-//	 Michael Wood (mwoodj at huntsvegas dot org)
+//   Michael Wood (mwoodj at huntsvegas dot org)
 //
 //-----------------------------------------------------------------------------
 
@@ -32,23 +32,24 @@
  * All code for the odamex launcher protocol api is contained within the odalpapi
  * namespace.
  */
-namespace odalpapi {
+namespace odalpapi
+{
 
 #ifdef _MSC_VER
-	typedef signed   __int8   int8_t;
-	typedef signed   __int16  int16_t;
-	typedef signed   __int32  int32_t;
-	typedef unsigned __int8   uint8_t;
-	typedef unsigned __int16  uint16_t;
-	typedef unsigned __int32  uint32_t;
-	typedef signed   __int64  int64_t;
-	typedef unsigned __int64  uint64_t;
+typedef signed   __int8   int8_t;
+typedef signed   __int16  int16_t;
+typedef signed   __int32  int32_t;
+typedef unsigned __int8   uint8_t;
+typedef unsigned __int16  uint16_t;
+typedef unsigned __int32  uint32_t;
+typedef signed   __int64  int64_t;
+typedef unsigned __int64  uint64_t;
 #else
-	#include <stdint.h>
+#include <stdint.h>
 
-    #ifndef _WIN32
-	typedef unsigned int DWORD;
-	#endif
+#ifndef _WIN32
+typedef unsigned int DWORD;
+#endif
 #endif
 
 } // namespace

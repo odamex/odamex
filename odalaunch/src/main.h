@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -15,10 +15,10 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// DESCRIPTION:    
-//	Main application sequence
+// DESCRIPTION:
+//  Main application sequence
 //
-// AUTHORS: 
+// AUTHORS:
 //  John Corrado
 //  Russell Rice (russell at odamex dot net)
 //  Michael Wood (mwoodj at huntsvegas dot org)
@@ -35,11 +35,11 @@
 
 class Application : public wxApp
 {
-	public:
-		bool OnInit();
-        wxInt32 OnExit();
-        
-		dlgMain* MAIN_DIALOG;
+public:
+	bool OnInit();
+	wxInt32 OnExit();
+
+	dlgMain* MAIN_DIALOG;
 };
 
 #endif

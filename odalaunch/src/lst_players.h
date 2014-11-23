@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -31,22 +31,22 @@
 
 class LstOdaPlayerList : public wxAdvancedListCtrl
 {
-    public:
-        LstOdaPlayerList() { };
-        virtual ~LstOdaPlayerList();
+public:
+	LstOdaPlayerList() { };
+	virtual ~LstOdaPlayerList();
 
-        void AddPlayersToList(const odalpapi::Server &s);
+	void AddPlayersToList(const odalpapi::Server& s);
 
-    protected:
+protected:
 
-        void SetupPlayerListColumns();        
-        void OnCreateControl(wxWindowCreateEvent &event);
-        bool CreatePlayerIcon(const wxColour &In, wxBitmap &Out);
-        
-        DECLARE_DYNAMIC_CLASS(LstOdaPlayerList)
+	void SetupPlayerListColumns();
+	void OnCreateControl(wxWindowCreateEvent& event);
+	bool CreatePlayerIcon(const wxColour& In, wxBitmap& Out);
 
-    private:
-        DECLARE_EVENT_TABLE()
+	DECLARE_DYNAMIC_CLASS(LstOdaPlayerList)
+
+private:
+	DECLARE_EVENT_TABLE()
 };
 
 #endif // __LST_PLAYERS_H__

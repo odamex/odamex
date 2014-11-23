@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	The launchers default settings
+//  The launchers default settings
 //
 //-----------------------------------------------------------------------------
 
@@ -65,11 +65,11 @@
 // ---------------
 
 // Default list of master servers, usually official ones
-static const char *def_masterlist[] = 
-{ 
-     "master1.odamex.net:15000"
-    ,"voxelsoft.com:15000"
-    ,NULL
+static const char* def_masterlist[] =
+{
+	"master1.odamex.net:15000"
+	,"voxelsoft.com:15000"
+	,NULL
 };
 
 // Master server timeout
@@ -127,7 +127,7 @@ static const char *def_masterlist[] =
 // MasterServer1 "127.0.0.1:15000"
 // MasterServer2 "192.168.1.1:15000"
 // etc..
-#define MASTERSERVER_ID     "MasterServer" 
+#define MASTERSERVER_ID     "MasterServer"
 
 // Path separator
 #ifdef __WXMSW__
