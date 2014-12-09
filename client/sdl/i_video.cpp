@@ -67,7 +67,7 @@ static IWindowSurface* matted_surface = NULL;
 
 // Global IWindowSurface instance of size 320x200 or 640x400.
 // Emulates low-resolution video modes by rendering to a small surface
-// and then stretch it to the primary surface after rendering is complete. 
+// and then stretch it to the primary surface after rendering is complete.
 static IWindowSurface* emulated_surface = NULL;
 
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
@@ -157,14 +157,14 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 // inside the existing surface.
 //
 IWindowSurface::IWindowSurface(IWindowSurface* base_surface, uint16_t width, uint16_t height) :
-	mCanvas(NULL), mOwnsSurfaceBuffer(false), 
+	mCanvas(NULL), mOwnsSurfaceBuffer(false),
 	mPixelFormat(*base_surface->getPixelFormat()),
 	mPitch(base_surface->getPitch()), mPitchInPixels(base_surface->getPitchInPixels()),
 	mLocks(0)
 {
 	mWidth = std::min(base_surface->getWidth(), width);
 	mHeight = std::min(base_surface->getHeight(), height);
-	
+
 	// adjust mSurfaceBuffer so that the new surface is centered in base_surface
 	uint16_t x = (base_surface->getWidth() - mWidth) / 2;
 	uint16_t y = (base_surface->getHeight() - mHeight) / 2;
@@ -242,7 +242,7 @@ static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 
 		dest += destpitchpixels;
 		yfrac += ystep;
-		
+
 		source += srcpitchpixels * (yfrac >> FRACBITS);
 		yfrac &= (FRACUNIT - 1);
 	}
@@ -307,7 +307,7 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	int destbits = getBitsPerPixel();
 	int srcpitchpixels = source_surface->getPitchInPixels();
 	int destpitchpixels = getPitchInPixels();
-	const argb_t* palette = source_surface->getPalette(); 
+	const argb_t* palette = V_GetDefaultPalette()->colors;
 
 	if (srcbits == 8 && destbits == 8)
 	{
@@ -421,7 +421,7 @@ DCanvas* IWindowSurface::getDefaultCanvas()
 void IWindowSurface::releaseCanvas(DCanvas* canvas)
 {
 	if (canvas->getSurface() != this)
-		I_Error("IWindowSurface::releaseCanvas: releasing canvas not owned by this surface\n");	
+		I_Error("IWindowSurface::releaseCanvas: releasing canvas not owned by this surface\n");
 
 	// Remove the DCanvas pointer from the surface's list of allocated canvases
 	DCanvasCollection::iterator it = std::find(mCanvasStore.begin(), mCanvasStore.end(), canvas);
@@ -465,7 +465,7 @@ static bool I_IsModeSupported(uint8_t bpp, bool fullscreen)
 	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
 		if (it->isFullScreen() == fullscreen && it->getBitsPerPixel() == bpp)
 			return true;
-	
+
 	return false;
 }
 
@@ -525,7 +525,7 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 
 				unsigned int dist = (it->getWidth() - desired_width) * (it->getWidth() - desired_width)
 						+ (it->getHeight() - desired_height) * (it->getHeight() - desired_height);
-				
+
 				if (dist < closest_dist)
 				{
 					closest_dist = dist;
@@ -533,7 +533,7 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 				}
 			}
 		}
-	
+
 		if (closest_mode != NULL)
 			return *closest_mode;
 	}
@@ -611,7 +611,7 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 		if (vid_320x200 || vid_640x400)
 			surface_width = surface_height * 4 / 3;
 		else if (V_UsePillarBox())
-			surface_width = surface_height * 4 / 3; 
+			surface_width = surface_height * 4 / 3;
 		else if (V_UseLetterBox())
 			surface_height = surface_width * 9 / 16;
 	}
@@ -693,7 +693,7 @@ void I_InitHardware()
 	else
 	{
 		video_subsystem = new ISDL12VideoSubsystem();
-	
+
 		const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
 		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());
 	}
@@ -834,7 +834,7 @@ IWindowSurface* I_AllocateSurface(int width, int height, int bpp)
 	else
 		format = I_Get32bppPixelFormat();
 
-	return new IWindowSurface(width, height, format); 
+	return new IWindowSurface(width, height, format);
 }
 
 
@@ -1107,7 +1107,7 @@ void I_SetWindowCaption(const std::string& caption)
 
 	std::string title("Odamex ");
 	title += DOTVERSIONSTR;
-		
+
 	if (!caption.empty())
 		title += " - " + caption;
 
