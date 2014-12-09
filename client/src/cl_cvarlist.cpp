@@ -597,8 +597,8 @@ CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",
 				CVARTYPE_BOOL, CVAR_NULL)
 #endif
 
-CVAR(			r_drawplayersprites, "1", "Draw player sprites (weapons)",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR_RANGE(		r_drawplayersprites, "1", "Weapon Transparency",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR(			r_particles, "1", "Draw particles",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

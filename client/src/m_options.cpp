@@ -755,6 +755,7 @@ EXTERN_CVAR (st_scale)
 EXTERN_CVAR (r_stretchsky)
 EXTERN_CVAR (r_skypalette)
 EXTERN_CVAR (r_wipetype)
+EXTERN_CVAR (r_drawplayersprites)
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (r_loadicon)
@@ -825,8 +826,9 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
-	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},  {NULL} },
 	{ discrete, "HUD Timer Visibility",     {&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
+	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
+	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},  {NULL} },
 	{ discrete, "Held Flag Border",         {&hud_heldflag},        {2.0}, {0.0},   {0.0},  {OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
@@ -1096,9 +1098,9 @@ static void BuildModesList(int hiwidth, int hiheight)
 		if (it->isFullScreen() == fullscreen)
 			menumodelist.push_back(std::make_pair(it->getWidth(), it->getHeight()));
 	menumodelist.erase(std::unique(menumodelist.begin(), menumodelist.end()), menumodelist.end());
-	
+
 	MenuModeList::const_iterator mode_it = menumodelist.begin();
-	
+
     const char** str = NULL;
 
 	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
@@ -1185,7 +1187,7 @@ static void SetModesMenu(int w, int h)
 		static char enter_text[64];
 		sprintf(enter_text, "TESTING %dx%d", w, h);
 
-		ModesItems[VM_ENTERLINE].label = enter_text; 
+		ModesItems[VM_ENTERLINE].label = enter_text;
 		ModesItems[VM_TESTLINE].label = VMTestWaitText;
 	}
 
@@ -1202,7 +1204,7 @@ void M_ModeFlashTestText()
     if (ModesItems[VM_TESTLINE].label[0] == ' ')
 		ModesItems[VM_TESTLINE].label = VMTestWaitText;
 	else
-		ModesItems[VM_TESTLINE].label = VMTestBlankText; 
+		ModesItems[VM_TESTLINE].label = VMTestBlankText;
 }
 
 void M_RestoreMode (void)
