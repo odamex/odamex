@@ -43,7 +43,7 @@
 //
 // WadFileLumpFinder
 //
-// Opens a WAD file and checks for the existence of specified lumps. 
+// Opens a WAD file and checks for the existence of specified lumps.
 //
 // ============================================================================
 
@@ -123,7 +123,7 @@ public:
 		const OString& idname, const OString& filename,
 		const OString& hash, const OString& group, bool commercial, bool iwad = true, bool deprecated = false)
 	{
-		IdType id = mIdentifiers.insert(); 
+		IdType id = mIdentifiers.insert();
 		FileIdentifier* file = &mIdentifiers.get(id);
 
 		file->mIdName = OStringToUpper(idname);
@@ -164,7 +164,7 @@ public:
 		const FileIdentifier* file = lookupByMd5Sum(md5sum);
 		if (file)
 			return file->mIsIWAD;
-		
+
 		// [SL] not an offical IWAD.
 		// Check for lumps that are required by vanilla Doom.
 		static const int NUM_CHECKLUMPS = 5;
@@ -286,7 +286,7 @@ public:
 
 	void dump() const
 	{
-		for (IdentifierTable::const_iterator it = mIdentifiers.begin(); it != mIdentifiers.end(); ++it) 
+		for (IdentifierTable::const_iterator it = mIdentifiers.begin(); it != mIdentifiers.end(); ++it)
 			Printf(PRINT_HIGH, "%s %s %s\n", it->mGroupName.c_str(), it->mFilename.c_str(), it->mMd5Sum.c_str());
 	}
 
@@ -346,7 +346,7 @@ void W_SetupFileIdentifiers()
 		true,								// mIsCommercial
 		true,								// mIsIWAD
 		false);								// mIsDeprecated
-	
+
 	identtab.addFile(
 		"Doom 2 BFG",						// mIdName
     	"DOOM2BFG.WAD",						// mFilename
@@ -391,7 +391,7 @@ void W_SetupFileIdentifiers()
 		true,								// mIsCommercial
 		true,								// mIsIWAD
 		true);								// mIsDeprecated
-	
+
 	identtab.addFile(
 		"Doom 2 v1.7",						// mIdName
 		"DOOM2.WAD",						// mFilename
@@ -719,6 +719,12 @@ void W_ConfigureGameInfo(const std::string& iwad_filename)
 		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
 	}
+	else if (idname.find("FREEDOOM2") == 0)
+	{
+		gamemode = commercial;
+		gameinfo = CommercialGameInfo;
+		gamemission = commercial_freedoom;
+	}
 	else if (idname.find("DOOM SHAREWARE") == 0)
 	{
 		gamemode = shareware;
@@ -790,7 +796,7 @@ bool W_IsIWADCommercial(const std::string& filename)
 //
 // W_IsIWADDeprecated
 //
-// Checks to see whether a given file is an IWAD flagged as "deprecated" 
+// Checks to see whether a given file is an IWAD flagged as "deprecated"
 //
 bool W_IsIWADDeprecated(const std::string& filename)
 {
