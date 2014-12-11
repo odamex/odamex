@@ -1156,6 +1156,9 @@ void M_QuitResponse(int ch)
 		return;
 	}
 
+	// Stop the music so we do not get stuck notes
+	I_StopSong();
+	
 	if (!multiplayer)
 	{
 		if (gameinfo.quitSounds)
