@@ -1826,12 +1826,14 @@ void CL_Print (void)
 		Printf(level, "\\c*%s", str);
 	else if (level == PRINT_TEAMCHAT)
 		Printf(level, "\\c!%s", str);
+	else if (level == PRINT_SERVERCHAT)
+		Printf(level, "\\ck%s", str);
 	else
 		Printf(level, "%s", str);
 
 	if (show_messages)
 	{
-		if (level == PRINT_CHAT)
+		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 		else if (level == PRINT_TEAMCHAT)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);

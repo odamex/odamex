@@ -410,7 +410,7 @@ BEGIN_COMMAND (say)
 	if (argc > 1)
 	{
 		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
-		SV_BroadcastPrintf(PRINT_CHAT, "[console]: %s\n", chat.c_str());
+		SV_BroadcastPrintf(PRINT_SERVERCHAT, "[console]: %s\n", chat.c_str());
 	}
 }
 END_COMMAND (say)
