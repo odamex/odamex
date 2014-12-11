@@ -98,7 +98,8 @@ enum GameMission_t
   pack_plut,			// Plutonia pack
   chex,					// Chex Quest
   retail_freedoom,
-  commercial_freedoom,
+  commercial_freedoom,	// FreeDoom
+  commercial_hacx,		// HACX
   none
 };
 

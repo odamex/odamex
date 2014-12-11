@@ -1753,6 +1753,7 @@ void AM_Drawer()
 			{
 				case doom2:
 				case commercial_freedoom:
+				case commercial_hacx:
 					firstmap = HUSTR_1;
 					break;
 				case pack_plut:

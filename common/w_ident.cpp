@@ -217,7 +217,8 @@ public:
 			{ 'C','A','M','O','1' },				// 7
 			{ 'E','X','T','E','N','D','E','D' },	// 8
 			{ 'D','M','E','N','U','P','I','C' },	// 9
-			{ 'F','R','E','E','D','O','O','M' }		// 10
+			{ 'F','R','E','E','D','O','O','M' },	// 10
+			{ 'H','A','C','X','-','R'}				// 11
 		};
 
 		bool lumpsfound[NUM_CHECKLUMPS] = { 0 };
@@ -226,6 +227,12 @@ public:
 		for (int i = 0; i < NUM_CHECKLUMPS; i++)
 			if (lumps.exists(std::string(checklumps[i], 8)))
 				lumpsfound[i] = true;
+				
+		// [ML] Check for HACX 1.2
+		if (lumpsfound[11])
+		{
+			return "HACX UNKNOWN";
+		}
 
 		// [SL] Check for FreeDoom / Ultimate FreeDoom
 		if (lumpsfound[10])
@@ -692,6 +699,21 @@ void W_SetupFileIdentifiers()
 		true,								// mIsCommercial
 		true,								// mIsIWAD
 		false);								// mIsDeprecated
+
+
+	// ------------------------------------------------------------------------
+	// HACX.WAD
+	// ------------------------------------------------------------------------
+
+	identtab.addFile(
+		"HACX 1.2",						// mIdName
+		"HACX.WAD",							// mFilename
+		"65ED74D522BDF6649C2831B13B9E02B4",	// mMd5Sum
+		"Doom 2 v1.9",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
 }
 
 
@@ -716,7 +738,14 @@ void W_ConfigureGameInfo(const std::string& iwad_filename)
 
 	const OString idname = identtab.identify(iwad_filename);
 
-	if (idname.find("PLUTONIA") == 0)
+
+	if (idname.find("HACX") == 0)
+	{
+		gameinfo = CommercialGameInfo;
+		gamemode = commercial;
+		gamemission = commercial_hacx;
+	}
+	else if (idname.find("PLUTONIA") == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
