@@ -205,7 +205,7 @@ public:
 		// Not a registered file.
 		// Try to identify if it's compatible with known IWADs.
 
-		static const int NUM_CHECKLUMPS = 11;
+		static const int NUM_CHECKLUMPS = 12;
 		static const char checklumps[NUM_CHECKLUMPS][8] = {
 			{ 'E','1','M','1' },					// 0
 			{ 'E','2','M','1' },					// 1
