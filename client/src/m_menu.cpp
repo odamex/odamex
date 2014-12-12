@@ -27,6 +27,7 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "d_main.h"
+#include "i_music.h"
 #include "i_system.h"
 #include "i_video.h"
 #include "i_input.h"
