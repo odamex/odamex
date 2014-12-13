@@ -1601,9 +1601,10 @@ void WI_Drawer (void)
 		case StatCount:
 			if (multiplayer && sv_maxplayers > 1)
 			{
-				if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
-					WI_drawNetgameStats();
-				else
+				// TODO: Fix classic coop scoreboard
+				//if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
+					//WI_drawNetgameStats();
+				//else
 					WI_drawDeathmatchStats();
 			}
 			else
