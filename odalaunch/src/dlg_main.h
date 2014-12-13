@@ -121,6 +121,7 @@ protected:
 	void OnExit(wxCommandEvent& event);
 
 	void DoGetList(bool IsARTRefresh = false);
+	void DoRefreshList(bool IsARTRefresh = false);
 
 	void LoadMasterServers();
 
@@ -162,12 +163,15 @@ protected:
 	/* ART - Automatic Refresh Timer */
 	// Timers interval (in ms)
 	int m_RefreshInterval;
+	int m_NewListInterval;
 	// State of timer usage
 	bool m_UseRefreshTimer;
 	// This particular refresh was by the timer
 	bool m_WasARTRefresh;
-	// The timer itself
-	wxTimer* m_Timer;
+
+	// Timers
+	wxTimer* m_TimerRefresh;
+	wxTimer* m_TimerNewList;
 
 	/*
 	    Our threading system

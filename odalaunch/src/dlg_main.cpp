@@ -73,6 +73,7 @@ static wxInt32 Id_MnuItmOpenChat = XRCID("Id_MnuItmOpenChat");
 
 // Timer id definitions
 #define TIMER_ID_REFRESH 1
+#define TIMER_ID_NEWLIST 2
 
 // custom events
 DEFINE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL)
@@ -124,6 +125,7 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 
 	// Timers
 	EVT_TIMER(TIMER_ID_REFRESH, dlgMain::OnTimer)
+	EVT_TIMER(TIMER_ID_NEWLIST, dlgMain::OnTimer)
 
 	// Process termination
 	EVT_END_PROCESS(-1, dlgMain::OnProcessTerminate)
@@ -172,8 +174,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	server_dlg = new dlgServers(&MServer, this);
 	AboutDialog = new dlgAbout(this);
 
-	// Init ART
-	m_Timer = new wxTimer(this, TIMER_ID_REFRESH);
+	// Init timers
+	m_TimerRefresh = new wxTimer(this, TIMER_ID_REFRESH);
+	m_TimerNewList = new wxTimer(this, TIMER_ID_NEWLIST);
 
 	LoadMasterServers();
 
@@ -210,14 +213,30 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 		ConfigInfo.Read(wxT(ARTREFINTERVAL), &m_RefreshInterval,
 		                ODA_UIARTREFINTERVAL);
 
-		// Calculate refresh interval from minutes to milliseconds
+		ConfigInfo.Read(wxT(ARTNEWLISTINTERVAL), &m_NewListInterval,
+		                ODA_UIARTLISTINTERVAL);
+
+
+		// Calculate intervals from minutes to milliseconds
 		m_RefreshInterval = m_RefreshInterval * 60 * 1000;
+		m_NewListInterval = m_NewListInterval * 60 * 1000;
 
 		// Prevent malicious under-ranged values from causing flooding of our
 		// services
 		m_RefreshInterval = clamp(m_RefreshInterval,
 		                          ODA_UIARTREFINTERVAL,
-		                          ODA_UIARTLISTINTERVAL);
+		                          ODA_UIARTREFMAX);
+
+		m_NewListInterval = clamp(m_NewListInterval,
+		                          ODA_UIARTLISTINTERVAL,
+		                          ODA_UIARTLISTMAX);
+
+		// Make sure time intervals do not clash
+		if((m_RefreshInterval % m_NewListInterval) == 0)
+		{
+			// If they do, reduce the master interval by 5 minutes
+			m_NewListInterval -= ODA_UIARTLISTRED;
+		}
 	}
 
 	// get master list on application start
@@ -239,7 +258,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	// Enable the auto refresh timer
 	if(m_UseRefreshTimer)
 	{
-		m_Timer->Start(m_RefreshInterval);
+		m_TimerNewList->Start(m_NewListInterval);
+		m_TimerRefresh->Start(m_RefreshInterval);
 	}
 }
 
@@ -259,7 +279,8 @@ dlgMain::~dlgMain()
 	if(server_dlg != NULL)
 		server_dlg->Destroy();
 
-	delete m_Timer;
+	delete m_TimerRefresh;
+	delete m_TimerNewList;
 
 	//wxFileConfig FileConfig;
 
@@ -308,7 +329,9 @@ void dlgMain::OnWindowCreate(wxWindowCreateEvent& event)
 // Called when the menu exit item or exit button is clicked
 void dlgMain::OnExit(wxCommandEvent& event)
 {
-	m_Timer->Stop();
+	// Stop all timers
+	m_TimerNewList->Stop();
+	m_TimerRefresh->Stop();
 
 	Close();
 }
@@ -565,8 +588,23 @@ void dlgMain::OnTimer(wxTimerEvent& event)
 	if(ClientIsRunning())
 		return;
 
-	// Get a new list of servers
-	DoGetList(true);
+	// What timer generated this event and what actions to perform
+	switch(event.GetId())
+	{
+
+	case TIMER_ID_NEWLIST:
+	{
+		DoGetList(true);
+	}
+	break;
+
+	case TIMER_ID_REFRESH:
+	{
+		DoRefreshList(true);
+	}
+	break;
+
+	}
 }
 
 // Called when the odamex client process terminates
@@ -1033,20 +1071,42 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent& event)
 		ConfigInfo.Read(wxT(ARTREFINTERVAL), &m_RefreshInterval,
 		                ODA_UIARTREFINTERVAL);
 
-		// Calculate refresh interval from minutes to milliseconds
+		ConfigInfo.Read(wxT(ARTNEWLISTINTERVAL), &m_NewListInterval,
+		                ODA_UIARTLISTINTERVAL);
+
+
+		// Calculate intervals from minutes to milliseconds
 		m_RefreshInterval = m_RefreshInterval * 60 * 1000;
+		m_NewListInterval = m_NewListInterval * 60 * 1000;
 
 		// Prevent malicious under-ranged values from causing flooding of our
 		// services
 		m_RefreshInterval = clamp(m_RefreshInterval,
 		                          ODA_UIARTREFINTERVAL,
-		                          ODA_UIARTLISTINTERVAL);
+		                          ODA_UIARTREFMAX);
+
+		m_NewListInterval = clamp(m_NewListInterval,
+		                          ODA_UIARTLISTINTERVAL,
+		                          ODA_UIARTLISTMAX);
+
+		// Make sure time intervals do not clash
+		if((m_RefreshInterval % m_NewListInterval) == 0)
+		{
+			// If they do, reduce the master interval by 5 minutes
+			m_NewListInterval -= ODA_UIARTLISTRED;
+		}
 	}
 
 	if(!m_UseRefreshTimer)
-		m_Timer->Stop();
+	{
+		m_TimerNewList->Stop();
+		m_TimerRefresh->Stop();
+	}
 	else
-		m_Timer->Start(m_RefreshInterval);
+	{
+		m_TimerNewList->Start(m_NewListInterval);
+		m_TimerRefresh->Start(m_RefreshInterval);
+	}
 }
 
 void dlgMain::OnOpenOdaGet(wxCommandEvent& event)
@@ -1168,14 +1228,54 @@ void dlgMain::DoGetList(bool IsARTRefresh)
 	MainThrPostEvent(mtcs_getmaster);
 }
 
+// Update program state and refresh existing servers in the list
+void dlgMain::DoRefreshList(bool IsARTRefresh)
+{
+	if(!MServer.GetServerCount())
+		return;
+
+	// Reset search results
+	m_SrchCtrlGlobal->SetValue(wxT(""));
+	m_SrchCtrlGlobal->Enable(false);
+
+	m_LstCtrlServers->DeleteAllItems();
+	m_LstCtrlPlayers->DeleteAllItems();
+
+	QueriedServers = 0;
+	TotalPlayers = 0;
+
+	// Disable sorting of items by user during a query
+	m_LstCtrlServers->HeaderUsable(false);
+
+	m_WasARTRefresh = IsARTRefresh;
+
+	MainThrPostEvent(mtcs_getservers, -1, -1);
+}
+
 // Get Master List button click
 void dlgMain::OnGetList(wxCommandEvent& event)
 {
-	// Restart the timer since the user clicked this button
+	// Restart all ARTs since the user clicked this button
 	if(m_UseRefreshTimer)
-		m_Timer->Start(m_RefreshInterval);
+	{
+		m_TimerNewList->Start(m_NewListInterval);
+		m_TimerRefresh->Start(m_RefreshInterval);
+	}
 
 	DoGetList(false);
+}
+
+// Refresh All/List button click
+void dlgMain::OnRefreshAll(wxCommandEvent& event)
+{
+    // Restart all ARTs since the user clicked this button
+	if(m_UseRefreshTimer)
+	{
+		m_TimerNewList->Start(m_NewListInterval);
+		m_TimerRefresh->Start(m_RefreshInterval);
+	}
+
+	DoRefreshList(false);
 }
 
 void dlgMain::OnRefreshServer(wxCommandEvent& event)
@@ -1196,27 +1296,6 @@ void dlgMain::OnRefreshServer(wxCommandEvent& event)
 	TotalPlayers -= QServer[ai].Info.Players.size();
 
 	MainThrPostEvent(mtcs_getsingleserver, ai, li);
-}
-
-void dlgMain::OnRefreshAll(wxCommandEvent& event)
-{
-	if(!MServer.GetServerCount())
-		return;
-
-	// Reset search results
-	m_SrchCtrlGlobal->SetValue(wxT(""));
-	m_SrchCtrlGlobal->Enable(false);
-
-	m_LstCtrlServers->DeleteAllItems();
-	m_LstCtrlPlayers->DeleteAllItems();
-
-	QueriedServers = 0;
-	TotalPlayers = 0;
-
-	// Disable sorting of items by user during a query
-	m_LstCtrlServers->HeaderUsable(false);
-
-	MainThrPostEvent(mtcs_getservers, -1, -1);
 }
 
 // when the user clicks on the server list

@@ -58,8 +58,14 @@
 #define ODA_UIARTENABLE 1
 // Server list refresh interval (in ms, def 3m)
 #define ODA_UIARTREFINTERVAL 180000
-// TODO: New list interval (in ms, default 1h)
+// Server list refresh interval max (in ms, def 45m)
+#define ODA_UIARTREFMAX 2700000
+// New list interval (in ms, def 1h)
 #define ODA_UIARTLISTINTERVAL 3600000
+// New list interval max (in ms, def 6h)
+#define ODA_UIARTLISTMAX 21600000
+// New list interval reduction value (in ms, def 5m)
+#define ODA_UIARTLISTRED 300000
 
 // Querying system
 // ---------------

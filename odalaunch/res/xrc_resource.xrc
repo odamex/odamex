@@ -538,7 +538,7 @@
 							<object class="wxNotebook" name="m_notebook1">
 								<object class="notebookpage">
 									<label>File Locations</label>
-									<selected>1</selected>
+									<selected>0</selected>
 									<object class="wxPanel" name="m_panel10">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxFlexGridSizer">
@@ -702,7 +702,7 @@
 								</object>
 								<object class="notebookpage">
 									<label>Network Options</label>
-									<selected>0</selected>
+									<selected>1</selected>
 									<object class="wxPanel" name="m_panel91">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxBoxSizer">
@@ -872,7 +872,7 @@
 																			<style>wxSP_ARROW_KEYS</style>
 																			<value>3</value>
 																			<min>3</min>
-																			<max>60</max>
+																			<max>45</max>
 																		</object>
 																	</object>
 																</object>

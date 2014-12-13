@@ -3522,7 +3522,7 @@
                                     <object class="notebookpage" expanded="0">
                                         <property name="bitmap"></property>
                                         <property name="label">File Locations</property>
-                                        <property name="select">1</property>
+                                        <property name="select">0</property>
                                         <object class="wxPanel" expanded="0">
                                             <property name="BottomDockable">1</property>
                                             <property name="LeftDockable">1</property>
@@ -4579,7 +4579,7 @@
                                     <object class="notebookpage" expanded="0">
                                         <property name="bitmap"></property>
                                         <property name="label">Network Options</property>
-                                        <property name="select">0</property>
+                                        <property name="select">1</property>
                                         <object class="wxPanel" expanded="0">
                                             <property name="BottomDockable">1</property>
                                             <property name="LeftDockable">1</property>
@@ -5634,7 +5634,7 @@
                                                                                 <property name="hidden">0</property>
                                                                                 <property name="id">wxID_ANY</property>
                                                                                 <property name="initial">3</property>
-                                                                                <property name="max">60</property>
+                                                                                <property name="max">45</property>
                                                                                 <property name="max_size"></property>
                                                                                 <property name="maximize_button">0</property>
                                                                                 <property name="maximum_size"></property>
