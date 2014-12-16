@@ -753,18 +753,13 @@ void M_SaveSelect (int choice)
 	saveSlot = choice;
 	strcpy(saveOldString,savegamestrings[choice]);
 
-	strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
+	// If on a game console, auto-fill with date and time to save name
+
+	if (!LoadMenu[choice].status)
+		strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
 
 	saveCharIndex = strlen(savegamestrings[choice]);
 }
-
-/*
-void M_SaveGame (int choice)
-{
-    M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
-                   "continue)\n", M_LoadSaveResponse, false);
-}
-*/
 
 //
 // Selected from DOOM menu
