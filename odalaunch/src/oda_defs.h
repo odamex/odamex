@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	The launchers default settings
+//  The launchers default settings
 //
 //-----------------------------------------------------------------------------
 
@@ -32,15 +32,51 @@
 // Show servers that cannot be contacted because of a firewall or bad connection
 #define ODA_UISHOWBLOCKEDSERVERS 0
 
+// Load chat client when the launcher is run
+#define ODA_UILOADCHATCLIENTONLS 0
+
 // Integer ranges for ping quality, these are displayed as icons in the settings
 // dialog
 #define ODA_UIPINGQUALITYGOOD 150
 #define ODA_UIPINGQUALITYPLAYABLE 300
 #define ODA_UIPINGQUALITYLAGGY 350
 
+/* User notification of when players are online */
+// Flashes the taskbar if one is available
+#define ODA_UIPOLFLASHTASKBAR 1
+// Plays the system bell
+#define ODA_UIPOLPLAYSYSTEMBELL 1
+// Plays a sound (wav) file through the sound card
+#define ODA_UIPOLPLAYSOUND 0
+// Highlight the server that has players in it
+#define ODA_UIPOLHIGHLIGHTSERVERS 1
+// Highlight colour
+#define ODA_UIPOLHSHIGHLIGHTCOLOUR "#00C000"
+
+/* Auto server list refresh timer */
+// Enables/disables the timer
+#define ODA_UIARTENABLE 1
+// Server list refresh interval (in ms, def 3m)
+#define ODA_UIARTREFINTERVAL 180000
+// Server list refresh interval max (in ms, def 45m)
+#define ODA_UIARTREFMAX 2700000
+// New list interval (in ms, def 1h)
+#define ODA_UIARTLISTINTERVAL 3600000
+// New list interval max (in ms, def 6h)
+#define ODA_UIARTLISTMAX 21600000
+// New list interval reduction value (in ms, def 5m)
+#define ODA_UIARTLISTRED 300000
 
 // Querying system
 // ---------------
+
+// Default list of master servers, usually official ones
+static const char* def_masterlist[] =
+{
+	"master1.odamex.net:15000"
+	,"voxelsoft.com:15000"
+	,NULL
+};
 
 // Master server timeout
 #define ODA_QRYMASTERTIMEOUT 500
@@ -82,6 +118,22 @@
 #define ICONPINGQGOOD       "IconPingQualityGood"
 #define ICONPINGQPLAYABLE   "IconPingQualityPlayable"
 #define ICONPINGQLAGGY      "IconPingQualityLaggy"
+#define LOADCHATONLS        "LoadChatOnLauncherStart"
+#define POLFLASHTBAR        "POLFlashTaskBar"
+#define POLPLAYSYSTEMBELL   "POLPlaySystemBell"
+#define POLPLAYSOUND        "POLPlaySound"
+#define POLPSWAVFILE        "POLPSWavFile"
+#define POLHLSERVERS        "POLHighlightServers"
+#define POLHLSCOLOUR        "POLHighlightColour"
+#define ARTENABLE           "UseAutoRefreshTimer"
+#define ARTREFINTERVAL      "AutoRefreshTimerRefreshInterval"
+#define ARTNEWLISTINTERVAL  "AutoRefreshTimerNewListInterval"
+
+// Master server ids, eg:
+// MasterServer1 "127.0.0.1:15000"
+// MasterServer2 "192.168.1.1:15000"
+// etc..
+#define MASTERSERVER_ID     "MasterServer"
 
 // Path separator
 #ifdef __WXMSW__

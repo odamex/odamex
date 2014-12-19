@@ -58,13 +58,16 @@ static IVideoSubsystem* video_subsystem = NULL;
 // Global IWindowSurface instance for the application window
 static IWindowSurface* primary_surface = NULL;
 
+// Global IWindowSurface instance for converting 8bpp data to a 32bpp surface
+static IWindowSurface* converted_surface = NULL;
+
 // Global IWindowSurface instance constructed from primary_surface.
 // Used when matting is required (letter-boxing/pillar-boxing)
 static IWindowSurface* matted_surface = NULL;
 
 // Global IWindowSurface instance of size 320x200 or 640x400.
 // Emulates low-resolution video modes by rendering to a small surface
-// and then stretch it to the primary surface after rendering is complete. 
+// and then stretch it to the primary surface after rendering is complete.
 static IWindowSurface* emulated_surface = NULL;
 
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
@@ -154,14 +157,14 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 // inside the existing surface.
 //
 IWindowSurface::IWindowSurface(IWindowSurface* base_surface, uint16_t width, uint16_t height) :
-	mCanvas(NULL), mOwnsSurfaceBuffer(false), 
+	mCanvas(NULL), mOwnsSurfaceBuffer(false),
 	mPixelFormat(*base_surface->getPixelFormat()),
 	mPitch(base_surface->getPitch()), mPitchInPixels(base_surface->getPitchInPixels()),
 	mLocks(0)
 {
 	mWidth = std::min(base_surface->getWidth(), width);
 	mHeight = std::min(base_surface->getHeight(), height);
-	
+
 	// adjust mSurfaceBuffer so that the new surface is centered in base_surface
 	uint16_t x = (base_surface->getWidth() - mWidth) / 2;
 	uint16_t y = (base_surface->getHeight() - mHeight) / 2;
@@ -239,7 +242,7 @@ static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 
 		dest += destpitchpixels;
 		yfrac += ystep;
-		
+
 		source += srcpitchpixels * (yfrac >> FRACBITS);
 		yfrac &= (FRACUNIT - 1);
 	}
@@ -418,7 +421,7 @@ DCanvas* IWindowSurface::getDefaultCanvas()
 void IWindowSurface::releaseCanvas(DCanvas* canvas)
 {
 	if (canvas->getSurface() != this)
-		I_Error("IWindowSurface::releaseCanvas: releasing canvas not owned by this surface\n");	
+		I_Error("IWindowSurface::releaseCanvas: releasing canvas not owned by this surface\n");
 
 	// Remove the DCanvas pointer from the surface's list of allocated canvases
 	DCanvasCollection::iterator it = std::find(mCanvasStore.begin(), mCanvasStore.end(), canvas);
@@ -462,7 +465,7 @@ static bool I_IsModeSupported(uint8_t bpp, bool fullscreen)
 	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
 		if (it->isFullScreen() == fullscreen && it->getBitsPerPixel() == bpp)
 			return true;
-	
+
 	return false;
 }
 
@@ -522,7 +525,7 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 
 				unsigned int dist = (it->getWidth() - desired_width) * (it->getWidth() - desired_width)
 						+ (it->getHeight() - desired_height) * (it->getHeight() - desired_height);
-				
+
 				if (dist < closest_dist)
 				{
 					closest_dist = dist;
@@ -530,7 +533,7 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 				}
 			}
 		}
-	
+
 		if (closest_mode != NULL)
 			return *closest_mode;
 	}
@@ -546,30 +549,47 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 //
 void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, bool vsync)
 {
-	IWindow* window = I_GetWindow();
-
-	I_FreeSurface(matted_surface);
-	matted_surface = NULL;
-	I_FreeSurface(emulated_surface);
-	emulated_surface = NULL;
-
+	// ensure the requested mode is valid
 	IVideoMode desired_mode(width, height, surface_bpp, fullscreen);
-
 	IVideoMode mode = I_ValidateVideoMode(&desired_mode);
 	assert(mode.isValid());
 
-	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
+	IWindow* window = I_GetWindow();
 
-	window->getPrimarySurface()->lock();
+	static bool initialized = false;
+
+	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
+	I_ForceUpdateGrab();
+
+	// [SL] 2011-11-30 - Prevent the player's view angle from moving
+	I_FlushInput();
+		
+	if (!initialized)
+		initialized = true;
 
 	// Set up the primary and emulated surfaces
 	primary_surface = window->getPrimarySurface();
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
 
-	primary_surface->lock();
+	I_FreeSurface(converted_surface);
+	converted_surface = NULL;
+	I_FreeSurface(matted_surface);
+	matted_surface = NULL;
+	I_FreeSurface(emulated_surface);
+	emulated_surface = NULL;
 
-	// clear window's surface to all black
+	// Handle a requested 8bpp surface when the video capabilities only support 32bpp
+	if (surface_bpp != mode.getBitsPerPixel())
+	{
+		const PixelFormat* format = surface_bpp == 8 ? I_Get8bppPixelFormat() : I_Get32bppPixelFormat();
+		converted_surface = new IWindowSurface(surface_width, surface_height, format);
+		primary_surface = converted_surface;
+	}
+
+	// clear window's surface to all black;
+	primary_surface->lock();
 	primary_surface->clear();
+	primary_surface->unlock();
 
 	// [SL] Determine the size of the matted surface.
 	// A matted surface will be used if pillar-boxing or letter-boxing are used, or
@@ -590,7 +610,7 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 		if (vid_320x200 || vid_640x400)
 			surface_width = surface_height * 4 / 3;
 		else if (V_UsePillarBox())
-			surface_width = surface_height * 4 / 3; 
+			surface_width = surface_height * 4 / 3;
 		else if (V_UseLetterBox())
 			surface_height = surface_width * 9 / 16;
 	}
@@ -620,10 +640,6 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	}
 
 	screen = primary_surface->getDefaultCanvas();
-
-	window->getPrimarySurface()->unlock();
-
-	I_ForceUpdateGrab();
 
 	assert(I_VideoInitialized());
 
@@ -676,7 +692,7 @@ void I_InitHardware()
 	else
 	{
 		video_subsystem = new ISDL12VideoSubsystem();
-	
+
 		const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
 		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());
 	}
@@ -817,7 +833,7 @@ IWindowSurface* I_AllocateSurface(int width, int height, int bpp)
 	else
 		format = I_Get32bppPixelFormat();
 
-	return new IWindowSurface(width, height, format); 
+	return new IWindowSurface(width, height, format);
 }
 
 
@@ -878,6 +894,8 @@ static void I_LockAllSurfaces()
 		emulated_surface->lock();
 	if (matted_surface)
 		matted_surface->lock();
+	if (converted_surface)
+		converted_surface->lock();
 	primary_surface->lock();
 
 	I_GetWindow()->lockSurface();
@@ -893,6 +911,8 @@ static void I_UnlockAllSurfaces()
 
 	primary_surface->unlock();
 
+	if (converted_surface)
+		converted_surface->unlock();
 	if (matted_surface)
 		matted_surface->unlock();
 	if (emulated_surface)
@@ -1018,6 +1038,15 @@ void I_FinishUpdate()
 		if (gametic <= loading_icon_expire)
 			I_BlitLoadingIcon();
 
+		// Handle blitting our 8bpp surface to the 32bpp video window surface
+		if (converted_surface)
+		{
+			IWindowSurface* real_primary_surface = I_GetWindow()->getPrimarySurface();
+			real_primary_surface->blit(converted_surface,
+					0, 0, converted_surface->getWidth(), converted_surface->getHeight(),
+					0, 0, real_primary_surface->getWidth(), real_primary_surface->getHeight());
+		}
+
 		I_UnlockAllSurfaces();
 
 		if (noblit == false)
@@ -1025,11 +1054,7 @@ void I_FinishUpdate()
 
 		// restores the background underneath the disk loading icon in the lower right corner
 		if (gametic <= loading_icon_expire)
-		{
-			I_GetWindow()->lockSurface();
 			I_RestoreLoadingIcon();
-			I_GetWindow()->unlockSurface();
-		}
 	}
 }
 
@@ -1045,6 +1070,8 @@ void I_SetPalette(const argb_t* palette)
 
 		primary_surface->setPalette(palette);
 
+		if (converted_surface)
+			converted_surface->setPalette(palette);
 		if (matted_surface)
 			matted_surface->setPalette(palette);
 		if (emulated_surface)
@@ -1079,7 +1106,7 @@ void I_SetWindowCaption(const std::string& caption)
 
 	std::string title("Odamex ");
 	title += DOTVERSIONSTR;
-		
+
 	if (!caption.empty())
 		title += " - " + caption;
 

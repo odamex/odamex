@@ -217,13 +217,13 @@ static const char* steam_install_subdirs[] =
 
 static char* GetRegistryString(registry_value_t *reg_val)
 {
-	// Open the key (directory where the value is stored)
-	if (RegOpenKeyEx(reg_val->root, reg_val->path, 0, KEY_READ, &key) != ERROR_SUCCESS)
-		return NULL;
-
 	char* result = NULL;
 	HKEY key;
 	DWORD len, valtype;
+
+	// Open the key (directory where the value is stored)
+	if (RegOpenKeyEx(reg_val->root, reg_val->path, 0, KEY_READ, &key) != ERROR_SUCCESS)
+		return NULL;
 
 	// Find the type and length of the string, and only accept strings.
 	if (RegQueryValueEx(key, reg_val->value, NULL, &valtype, NULL, &len) == ERROR_SUCCESS && valtype == REG_SZ)
@@ -418,7 +418,7 @@ static std::string Res_BaseFileSearchDir(
 	HANDLE hFind = FindFirstFile(all_ext.c_str(), &FindFileData);
 
 	if (hFind == INVALID_HANDLE_VALUE)
-		return std:string();
+		return std::string();
 
 	do
 	{

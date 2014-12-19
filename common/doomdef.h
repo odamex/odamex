@@ -98,7 +98,8 @@ enum GameMission_t
   pack_plut,			// Plutonia pack
   chex,					// Chex Quest
   retail_freedoom,
-  commercial_freedoom,
+  commercial_freedoom,	// FreeDoom
+  commercial_hacx,		// HACX
   none
 };
 
@@ -152,7 +153,8 @@ enum gamestate_t
 
 enum skill_t
 {
-	sk_baby = 1,
+	sk_ntm = 0, // no things mode
+	sk_baby,
 	sk_easy,
 	sk_medium,
 	sk_hard,

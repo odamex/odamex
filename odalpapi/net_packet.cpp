@@ -151,21 +151,8 @@ int32_t MasterServer::Parse()
 
 			address.custom = false;
 
-			size_t j = 0;
-
 			// Don't add the same address more than once.
-			for(j = 0; j < addresses.size(); ++j)
-			{
-				if(addresses[j].ip == address.ip &&
-				        addresses[j].port == address.port)
-				{
-					break;
-				}
-			}
-
-			// didn't find it, so add it
-			if(j == addresses.size())
-				addresses.push_back(address);
+			AddServer(address);
 		}
 
 	if(Socket->BadRead())
@@ -219,6 +206,7 @@ void Server::ResetData()
 	Info.PasswordHash = "";
 	Info.CurrentMap = "";
 	Info.TimeLeft = 0;
+	Info.TimeLimit = 0;
 
 	Ping = 0;
 }
@@ -328,6 +316,11 @@ bool Server::ReadCvars()
 
 			continue;
 		}
+		else if(Cvar.Name == "sv_timelimit")
+		{
+			// Add this to the cvar list as well
+			Info.TimeLimit = Cvar.ui16;
+		}
 
 		Info.Cvars.push_back(Cvar);
 	}
@@ -358,7 +351,15 @@ void Server::ReadInformation()
 	Socket->ReadHexString(Info.PasswordHash);
 
 	Socket->ReadString(Info.CurrentMap);
-	Socket->Read16(Info.TimeLeft);
+
+	// TODO: Remove guard for next release and update protocol version
+	QRYNEWINFO(6)
+	{
+		if(Info.TimeLimit)
+			Socket->Read16(Info.TimeLeft);
+	}
+	else
+		Socket->Read16(Info.TimeLeft);
 
 	// Teams
 	if(Info.GameType == GT_TeamDeathmatch ||
@@ -673,25 +674,12 @@ void MasterServer::QueryBC(const uint32_t& Timeout)
 	while(BCSocket.GetData(Timeout) > 0)
 	{
 		addr_t address = { "", 0, false};
-		size_t j = 0;
 
 		address.custom = false;
 
 		BCSocket.GetRemoteAddress(address.ip, address.port);
 
-		// Don't add the same address more than once.
-		for(; j < addresses.size(); ++j)
-		{
-			if(addresses[j].ip == address.ip &&
-			        addresses[j].port == address.port)
-			{
-				break;
-			}
-		}
-
-		// didn't find it, so add it
-		if(j == addresses.size())
-			addresses.push_back(address);
+		AddServer(address);
 	}
 }
 

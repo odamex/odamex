@@ -27,71 +27,90 @@
 #include <wx/filefn.h>
 
 #ifdef __WXMSW__
-    #include <windows.h>
+#include <windows.h>
 #endif
 
 // Apply hack for the titlebar under windows vista and 7 so it will display
 // properly
 void OdaMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon)
 {
-    #ifdef _WIN32
-    SendMessage((HWND)Handle, WM_SETICON, ICON_SMALL, 
-                (LPARAM)MainIcon.GetHICON());
-    // Uncomment this if it doesn't work under xp            
-    //SendMessage((HWND)GetHandle(), WM_SETICON, ICON_BIG, (LPARAM)MainIcon.GetHICON());
-    #endif
+#ifdef _WIN32
+	SendMessage((HWND)Handle, WM_SETICON, ICON_SMALL,
+	            (LPARAM)MainIcon.GetHICON());
+	// Uncomment this if it doesn't work under xp
+	//SendMessage((HWND)GetHandle(), WM_SETICON, ICON_BIG, (LPARAM)MainIcon.GetHICON());
+#endif
+}
+
+// Stops flashing the window, wxWidgets does not have a function to do this on
+// windows
+void OdaMswStopFlashingWindow(WXWidget Handle)
+{
+#ifdef _WIN32
+	FLASHWINFO fwi;
+
+	fwi.cbSize = sizeof(fwi);
+	fwi.hwnd = (HWND)Handle;
+	fwi.dwFlags = FLASHW_STOP;
+	fwi.uCount = 0;
+	fwi.dwTimeout = 0;
+
+	FlashWindowEx(&fwi);
+
+#endif // _WIN32
 }
 
 // Remove the file menu on Mac as it will be empty
-void OdaMacRemoveFileMenu(wxFrame *parent)
+void OdaMacRemoveFileMenu(wxFrame* parent)
 {
-    #ifdef __WXMAC__
-    wxMenuBar *MenuBar = parent->GetMenuBar();
-    
-    // Remove the file menu on Mac as it will be empty
-    wxMenu* fileMenu = MenuBar->Remove(MenuBar->FindMenu(_("File")));
+#ifdef __WXMAC__
+	wxMenuBar* MenuBar = parent->GetMenuBar();
 
-    if(fileMenu)
-    {
-        wxMenuItem* prefMenuItem = fileMenu->Remove(wxID_PREFERENCES);
-        wxMenu* helpMenu = MenuBar->GetMenu(MenuBar->FindMenu(_("Help")));
+	// Remove the file menu on Mac as it will be empty
+	wxMenu* fileMenu = MenuBar->Remove(MenuBar->FindMenu(_("File")));
 
-        // Before deleting the file menu the preferences menu item must be moved or
-        // it will not work after this even though it has been placed somewhere else.
-        // Attaching it to the help menu is the only way to not duplicate it as Help is
-        // a special menu just as Preferences is a special menu itme.
-        if(helpMenu)
-            helpMenu->Append(prefMenuItem);
+	if(fileMenu)
+	{
+		wxMenuItem* prefMenuItem = fileMenu->Remove(wxID_PREFERENCES);
+		wxMenu* helpMenu = MenuBar->GetMenu(MenuBar->FindMenu(_("Help")));
 
-        delete fileMenu;
-    }
-    #endif
+		// Before deleting the file menu the preferences menu item must be moved or
+		// it will not work after this even though it has been placed somewhere else.
+		// Attaching it to the help menu is the only way to not duplicate it as Help is
+		// a special menu just as Preferences is a special menu itme.
+		if(helpMenu)
+			helpMenu->Append(prefMenuItem);
+
+		delete fileMenu;
+	}
+
+#endif
 }
 
 wxString OdaGetInstallDir()
 {
-    wxString InstallDir;
-    
-    #if defined(INSTALL_PREFIX) && defined(INSTALL_BINDIR)
-    const char* bindir_cstr = INSTALL_PREFIX "/" INSTALL_BINDIR;
-    InstallDir = wxString::FromAscii(bindir_cstr);
-    #else
-    InstallDir = wxGetCwd();
-    #endif
-    
-    return InstallDir;
+	wxString InstallDir;
+
+#if defined(INSTALL_PREFIX) && defined(INSTALL_BINDIR)
+	const char* bindir_cstr = INSTALL_PREFIX "/" INSTALL_BINDIR;
+	InstallDir = wxString::FromAscii(bindir_cstr);
+#else
+	InstallDir = wxGetCwd();
+#endif
+
+	return InstallDir;
 }
 
 wxString OdaGetDataDir()
 {
-    wxString DataDir;
-    
-    #if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
-    const char* datadir_cstr = INSTALL_PREFIX "/" INSTALL_DATADIR;
-    DataDir = wxString::FromAscii(datadir_cstr);
-    #else
-    DataDir =  wxGetCwd();
-    #endif
-    
-    return DataDir;
+	wxString DataDir;
+
+#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
+	const char* datadir_cstr = INSTALL_PREFIX "/" INSTALL_DATADIR;
+	DataDir = wxString::FromAscii(datadir_cstr);
+#else
+	DataDir =  wxGetCwd();
+#endif
+
+	return DataDir;
 }

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id: str_utils.cpp 2302 2011-06-27 03:17:21Z hypereye $
@@ -26,22 +26,22 @@
 
 using namespace std;
 
-string stdstr_toupper(const string &s)
+string stdstr_toupper(const string& s)
 {
-    string upper(s);
+	string upper(s);
 
-    transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
-    
-    return s;
+	transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+
+	return s;
 }
 
 // These can be removed for wx 2.9/3
-string wxstr_tostdstr(const wxString &s)
+string wxstr_tostdstr(const wxString& s)
 {
 	return string(s.mb_str());
 }
 
-wxString stdstr_towxstr(const string &s)
+wxString stdstr_towxstr(const string& s)
 {
 	return wxString(s.c_str(), wxConvUTF8);
 }

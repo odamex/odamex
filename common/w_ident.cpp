@@ -43,7 +43,7 @@
 //
 // WadFileLumpFinder
 //
-// Opens a WAD file and checks for the existence of specified lumps. 
+// Opens a WAD file and checks for the existence of specified lumps.
 //
 // ============================================================================
 
@@ -121,9 +121,9 @@ public:
 	//
 	void addFile(
 		const OString& idname, const OString& filename,
-		const OString& hash, const OString& group, bool commercial, bool iwad = true)
+		const OString& hash, const OString& group, bool commercial, bool iwad = true, bool deprecated = false)
 	{
-		IdType id = mIdentifiers.insert(); 
+		IdType id = mIdentifiers.insert();
 		FileIdentifier* file = &mIdentifiers.get(id);
 
 		file->mIdName = OStringToUpper(idname);
@@ -132,17 +132,18 @@ public:
 		file->mGroupName = OStringToUpper(group);
 		file->mIsCommercial = commercial;
 		file->mIsIWAD = iwad;
+		file->mIsDeprecated = deprecated;
 
 		mMd5SumLookup.insert(std::make_pair(OStringToUpper(file->mMd5Sum), id));
-		mFilenameLookup.insert(std::make_pair(OStringToUpper(file->mFilename), id));
+
+		// add the filename to the IWAD search list if it's not already in there
+		if (std::find(mIWADSearchOrder.begin(), mIWADSearchOrder.end(), file->mFilename) == mIWADSearchOrder.end())
+			mIWADSearchOrder.push_back(file->mFilename);
 	}
 
 	std::vector<OString> getFilenames() const
 	{
-		std::vector<OString> filenames;
-		for (IdentifierTable::const_iterator it = mIdentifiers.begin(); it != mIdentifiers.end(); ++it)
-			filenames.push_back(it->mFilename);
-		return filenames;
+		return mIWADSearchOrder;
 	}
 
 	bool isCommercial(const OString& hash) const
@@ -151,13 +152,19 @@ public:
 		return file && file->mIsCommercial;
 	}
 
+	bool isDeprecated(const OString& hash) const
+	{
+		const FileIdentifier* file = lookupByMd5Sum(hash);
+		return file && file->mIsDeprecated;
+	}
+
 	bool isIWAD(const OString& filename) const
 	{
 		const OString md5sum = W_MD5(filename);
 		const FileIdentifier* file = lookupByMd5Sum(md5sum);
 		if (file)
 			return file->mIsIWAD;
-		
+
 		// [SL] not an offical IWAD.
 		// Check for lumps that are required by vanilla Doom.
 		static const int NUM_CHECKLUMPS = 5;
@@ -198,7 +205,7 @@ public:
 		// Not a registered file.
 		// Try to identify if it's compatible with known IWADs.
 
-		static const int NUM_CHECKLUMPS = 11;
+		static const int NUM_CHECKLUMPS = 12;
 		static const char checklumps[NUM_CHECKLUMPS][8] = {
 			{ 'E','1','M','1' },					// 0
 			{ 'E','2','M','1' },					// 1
@@ -210,7 +217,8 @@ public:
 			{ 'C','A','M','O','1' },				// 7
 			{ 'E','X','T','E','N','D','E','D' },	// 8
 			{ 'D','M','E','N','U','P','I','C' },	// 9
-			{ 'F','R','E','E','D','O','O','M' }		// 10
+			{ 'F','R','E','E','D','O','O','M' },	// 10
+			{ 'H','A','C','X','-','R'}				// 11
 		};
 
 		bool lumpsfound[NUM_CHECKLUMPS] = { 0 };
@@ -219,6 +227,12 @@ public:
 		for (int i = 0; i < NUM_CHECKLUMPS; i++)
 			if (lumps.exists(std::string(checklumps[i], 8)))
 				lumpsfound[i] = true;
+				
+		// [ML] Check for HACX 1.2
+		if (lumpsfound[11])
+		{
+			return "HACX UNKNOWN";
+		}
 
 		// [SL] Check for FreeDoom / Ultimate FreeDoom
 		if (lumpsfound[10])
@@ -279,7 +293,7 @@ public:
 
 	void dump() const
 	{
-		for (IdentifierTable::const_iterator it = mIdentifiers.begin(); it != mIdentifiers.end(); ++it) 
+		for (IdentifierTable::const_iterator it = mIdentifiers.begin(); it != mIdentifiers.end(); ++it)
 			Printf(PRINT_HIGH, "%s %s %s\n", it->mGroupName.c_str(), it->mFilename.c_str(), it->mMd5Sum.c_str());
 	}
 
@@ -292,20 +306,13 @@ private:
 		OString				mGroupName;
 		bool				mIsCommercial;
 		bool				mIsIWAD;
+		bool				mIsDeprecated;
 	};
 
 	const FileIdentifier* lookupByMd5Sum(const OString& md5sum) const
 	{
 		Md5SumLookupTable::const_iterator it = mMd5SumLookup.find(OStringToUpper(md5sum));
 		if (it != mMd5SumLookup.end())
-			return &mIdentifiers.get(it->second);
-		return NULL;
-	}
-
-	const FileIdentifier* lookupByFilename(const OString& filename) const
-	{
-		FilenameLookupTable::const_iterator it = mFilenameLookup.find(OStringToUpper(filename));
-		if (it != mFilenameLookup.end())
 			return &mIdentifiers.get(it->second);
 		return NULL;
 	}
@@ -318,8 +325,8 @@ private:
 	typedef OHashTable<OString, IdType> Md5SumLookupTable;
 	Md5SumLookupTable		mMd5SumLookup;
 
-	typedef OHashTable<OString, IdType> FilenameLookupTable;
-	FilenameLookupTable		mFilenameLookup;
+	typedef std::vector<OString> FilenameArray;
+	FilenameArray			mIWADSearchOrder;
 };
 
 
@@ -330,85 +337,383 @@ static FileIdentificationManager identtab;
 // W_SetupFileIdentifiers
 //
 // Initializes the list of file identifiers with a set of known IWAD files.
+// Based on information from http://doomwiki.org/wiki/Doom_files
 //
 void W_SetupFileIdentifiers()
 {
+	// ------------------------------------------------------------------------
+	// DOOM2.WAD
+	// ------------------------------------------------------------------------
+
 	identtab.addFile(
 		"Doom 2 v1.9",						// mIdName
 		"DOOM2.WAD",						// mFilename
 		"25E1459CA71D321525F84628F45CA8CD",	// mMd5Sum
 		"Doom2 v1.9",						// mGroupName
-		true);								// mIsCommercial
-	
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
 	identtab.addFile(
 		"Doom 2 BFG",						// mIdName
     	"DOOM2BFG.WAD",						// mFilename
 		"C3BEA40570C23E511A7ED3EBCD9865F7",	// mMd5Sum
 		"Doom2 v1.9",						// mGroupName
-		true);								// mIsCommercial
-	
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
 	identtab.addFile(
-		"Doom Shareware v1.9",				// mIdName
-		"DOOM1.WAD",						// mFilename
-		"F0CEFCA49926D00903CF57551D901ABE",	// mMd5Sum
-		"Doom Shareware v1.9",				// mGroupName
-		false);								// mIsCommercial
+		"Doom 2 BFG",						// mIdName
+    	"BFGDOOM2.WAD",						// mFilename
+		"C3BEA40570C23E511A7ED3EBCD9865F7",	// mMd5Sum
+		"Doom2 v1.9",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom 2 v1.8",						// mIdName
+		"DOOM2.WAD",						// mFilename
+		"C236745BB01D89BBB866C8FED81B6F8C",	// mMd5Sum
+		"Doom2 v1.8",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom 2 v1.8 French",				// mIdName
+		"DOOM2F.WAD",						// mFilename
+		"3CB02349B3DF649C86290907EED64E7B",	// mMd5Sum
+		"Doom2 v1.8",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom 2 v1.7a",						// mIdName
+		"DOOM2.WAD",						// mFilename
+		"D7A07E5D3F4625074312BC299D7ED33F",	// mMd5Sum
+		"Doom2 v1.7a",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom 2 v1.7",						// mIdName
+		"DOOM2.WAD",						// mFilename
+		"EA74A47A791FDEF2E9F2EA8B8A9DA13B",	// mMd5Sum
+		"Doom2 v1.7",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom 2 v1.666",					// mIdName
+		"DOOM2.WAD",						// mFilename
+		"30E3C2D0350B67BFBF47271970B74B2F",	// mMd5Sum
+		"Doom2 v1.666",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom 2 v1.666 German",				// mIdName
+		"DOOM2.WAD",						// mFilename
+		"D9153CED9FD5B898B36CC5844E35B520",	// mMd5Sum
+		"Doom2 v1.666",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+
+	// ------------------------------------------------------------------------
+	// PLUTONIA.WAD
+	// ------------------------------------------------------------------------
 
 	identtab.addFile(
 		"Plutonia v1.9",					// mIdName
 		"PLUTONIA.WAD",						// mFilename
 		"75C8CF89566741FA9D22447604053BD7",	// mMd5Sum
 		"Plutonia v1.9",					// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+
+	// ------------------------------------------------------------------------
+	// TNT.WAD
+	// ------------------------------------------------------------------------
 
 	identtab.addFile(
 		"TNT Evilution v1.9",				// mIdName
 		"TNT.WAD",							// mFilename
 		"4E158D9953C79CCF97BD0663244CC6B6",	// mMd5Sum
 		"TNT Evilution v1.9",				// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+
+	// ------------------------------------------------------------------------
+	// DOOM.WAD
+	// ------------------------------------------------------------------------
+
+	identtab.addFile(
+		"Ultimate Doom v1.9",				// mIdName
+		"DOOMU.WAD",						// mFilename
+		"C4FE9FD920207691A9F493668E0A2083",	// mMd5Sum
+		"Ultimate Doom v1.9",				// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"Ultimate Doom v1.9",				// mIdName
 		"DOOM.WAD",							// mFilename
 		"C4FE9FD920207691A9F493668E0A2083",	// mMd5Sum
 		"Ultimate Doom v1.9",				// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom v1.9",						// mIdName
+		"DOOM.WAD",							// mFilename
+		"1CD63C5DDFF1BF8CE844237F580E9CF3",	// mMd5Sum
+		"Doom v1.9",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"Ultimate Doom BFG",				// mIdName
 		"DOOMBFG.WAD",						// mFilename
 		"FB35C4A5A9FD49EC29AB6E900572C524",	// mMd5Sum
 		"Ultimate Doom v1.9",				// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+	identtab.addFile(
+		"Ultimate Doom BFG",				// mIdName
+		"BFGDOOM.WAD",						// mFilename
+		"FB35C4A5A9FD49EC29AB6E900572C524",	// mMd5Sum
+		"Ultimate Doom v1.9",				// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom v1.8",						// mIdName
+		"DOOM.WAD",							// mFilename
+		"11E1CD216801EA2657723ABC86ECB01F",	// mMd5Sum
+		"Doom v1.8",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom v1.666",						// mIdName
+		"DOOM.WAD",							// mFilename
+		"54978D12DE87F162B9BCC011676CB3C0",	// mMd5Sum
+		"Doom v1.666",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom v1.2",						// mIdName
+		"DOOM.WAD",							// mFilename
+		"792FD1FEA023D61210857089A7C1E351",	// mMd5Sum
+		"Doom v1.2",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom v1.1",						// mIdName
+		"DOOM.WAD",							// mFilename
+		"981B03E6D1DC033301AA3095ACC437CE",	// mMd5Sum
+		"Doom v1.1",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+
+	// ------------------------------------------------------------------------
+	// DOOM1.WAD
+	// ------------------------------------------------------------------------
+
+	identtab.addFile(
+		"Doom Shareware v1.9",				// mIdName
+		"DOOM1.WAD",						// mFilename
+		"F0CEFCA49926D00903CF57551D901ABE",	// mMd5Sum
+		"Doom Shareware v1.9",				// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom Shareware v1.8",				// mIdName
+		"DOOM1.WAD",						// mFilename
+		"5F4EB849B1AF12887DEC04A2A12E5E62",	// mMd5Sum
+		"Doom Shareware v1.8",				// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom Shareware v1.6",				// mIdName
+		"DOOM1.WAD",						// mFilename
+		"762FD6D4B960D4B759730F01387A50A1",	// mMd5Sum
+		"Doom Shareware v1.6",				// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom Shareware v1.5",				// mIdName
+		"DOOM1.WAD",						// mFilename
+		"E280233D533DCC28C1ACD6CCDC7742D4",	// mMd5Sum
+		"Doom Shareware v1.5",				// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom Shareware v1.4",				// mIdName
+		"DOOM1.WAD",						// mFilename
+		"A21AE40C388CB6F2C3CC1B95589EE693",	// mMd5Sum
+		"Doom Shareware v1.4",				// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom Shareware v1.2",				// mIdName
+		"DOOM1.WAD",						// mFilename
+		"30AA5BEB9E5EBFBBE1E1765561C08F38",	// mMd5Sum
+		"Doom Shareware v1.2",				// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom Shareware v1.1",				// mIdName
+		"DOOM1.WAD",						// mFilename
+		"52CBC8882F445573CE421FA5453513C1",	// mMd5Sum
+		"Doom Shareware v1.1",				// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+	identtab.addFile(
+		"Doom Shareware v1.0",				// mIdName
+		"DOOM1.WAD",						// mFilename
+		"90FACAB21EEDE7981BE10790E3F82DA2",	// mMd5Sum
+		"Doom Shareware v1.0",				// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		true);								// mIsDeprecated
+
+
+	// ------------------------------------------------------------------------
+	// FREEDOOM1.WAD
+	// ------------------------------------------------------------------------
+
+	identtab.addFile(
+		"Ultimate Freedoom v0.9",			// mIdName
+		"FREEDOOM1.WAD",					// mFilename
+		"ACA90CF5AC36E996EDC58BD0329B979A",	// mMd5Sum
+		"Ultimate Doom v1.9",				// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"Ultimate Freedoom v0.8",			// mIdName
 		"FREEDOOM1.WAD",					// mFilename
 		"30095B256DD3A1566BBC30286F72BC47",	// mMd5Sum
 		"Ultimate Doom v1.9",				// mGroupName
-		false);								// mIsCommercial
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+
+	// ------------------------------------------------------------------------
+	// FREEDOOM2.WAD
+	// ------------------------------------------------------------------------
+
+	identtab.addFile(
+		"Freedoom v0.9",					// mIdName
+		"FREEDOOM2.WAD",					// mFilename
+		"8FA57DBC7687F84528EBA39DDE3A20E0",	// mMd5Sum
+		"Doom 2 v1.9",						// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"Freedoom v0.8",					// mIdName
 		"FREEDOOM2.WAD",					// mFilename
 		"E3668912FC37C479B2840516C887018B",	// mMd5Sum
 		"Doom 2 v1.9",						// mGroupName
-		false);								// mIsCommercial
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+
+	// ------------------------------------------------------------------------
+	// FREEDM.WAD
+	// ------------------------------------------------------------------------
+
+	identtab.addFile(
+		"FreeDM v0.9",						// mIdName
+		"FREEDM.WAD",						// mFilename
+		"CBB27C5F3C2C44D34843CF63DAA627F6",	// mMd5Sum
+		"Doom 2 v1.9",						// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"FreeDM v0.8",						// mIdName
 		"FREEDM.WAD",						// mFilename
 		"05859098BF191899903EF343AFBA369D",	// mMd5Sum
 		"Doom 2 v1.9",						// mGroupName
-		false);								// mIsCommercial
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+
+	// ------------------------------------------------------------------------
+	// CHEX.WAD
+	// ------------------------------------------------------------------------
 
 	identtab.addFile(
 		"Chex Quest",						// mIdName
 		"CHEX.WAD",							// mFilename
 		"25485721882B050AFA96A56E5758DD52",	// mMd5Sum
 		"Chex Quest",						// mGroupName
-		true);								// mIsCommercial
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+
+	// ------------------------------------------------------------------------
+	// HACX.WAD
+	// ------------------------------------------------------------------------
+
+	identtab.addFile(
+		"HACX 1.2",						// mIdName
+		"HACX.WAD",							// mFilename
+		"65ED74D522BDF6649C2831B13B9E02B4",	// mMd5Sum
+		"Doom 2 v1.9",						// mGroupName
+		true,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
 }
 
 
@@ -433,7 +738,14 @@ void W_ConfigureGameInfo(const std::string& iwad_filename)
 
 	const OString idname = identtab.identify(iwad_filename);
 
-	if (idname.find("PLUTONIA") == 0)
+
+	if (idname.find("HACX") == 0)
+	{
+		gameinfo = CommercialGameInfo;
+		gamemode = commercial;
+		gamemission = commercial_hacx;
+	}
+	else if (idname.find("PLUTONIA") == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
@@ -458,6 +770,12 @@ void W_ConfigureGameInfo(const std::string& iwad_filename)
 		gamemission = retail_freedoom;
 	}
 	else if (idname.find("FREEDOOM") == 0)
+	{
+		gamemode = commercial;
+		gameinfo = CommercialGameInfo;
+		gamemission = commercial_freedoom;
+	}
+	else if (idname.find("FREEDOOM2") == 0)
 	{
 		gamemode = commercial;
 		gameinfo = CommercialGameInfo;
@@ -528,6 +846,18 @@ bool W_IsIWADCommercial(const std::string& filename)
 {
 	const OString md5sum = W_MD5(filename);
 	return identtab.isCommercial(md5sum);
+}
+
+
+//
+// W_IsIWADDeprecated
+//
+// Checks to see whether a given file is an IWAD flagged as "deprecated"
+//
+bool W_IsIWADDeprecated(const std::string& filename)
+{
+	const OString md5sum = W_MD5(filename);
+	return identtab.isDeprecated(md5sum);
 }
 
 

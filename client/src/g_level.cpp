@@ -207,13 +207,6 @@ void G_InitNew(const std::string& mapname)
 
 	cvar_t::UnlatchCVars ();
 
-	if (sv_skill > sk_nightmare)
-		sv_skill.Set (sk_nightmare);
-	else if (sv_skill < sk_baby)
-		sv_skill.Set (sk_baby);
-
-	cvar_t::UnlatchCVars ();
-
 	if (paused)
 	{
 		paused = false;

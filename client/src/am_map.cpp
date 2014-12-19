@@ -1724,7 +1724,7 @@ void AM_Drawer()
 					x = surface_width - text_width, y = OV_Y - (text_height * 4) + 1;
 				else
 					x = 0, y = OV_Y - (text_height * 2) + 1;
-	 
+
 				FB->DrawTextClean(CR_GREY, x, y, line);
 			}
 
@@ -1752,6 +1752,8 @@ void AM_Drawer()
 			switch (gamemission)
 			{
 				case doom2:
+				case commercial_freedoom:
+				case commercial_hacx:
 					firstmap = HUSTR_1;
 					break;
 				case pack_plut:

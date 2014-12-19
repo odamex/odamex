@@ -34,7 +34,7 @@ OdaInfoBar::OdaInfoBar(wxWindow* parent) : m_Parent(parent)
 	m_InfoBar = new wxInfoBar(m_Parent);
 
 	m_Parent->GetSizer()->Prepend(m_InfoBar,
-            wxSizerFlags().Expand().Border(0, 0).Proportion(0));
+	                              wxSizerFlags().Expand().Border(0, 0).Proportion(0));
 
 	// Always add an ignore button
 	m_InfoBar->AddButton(wxID_EXIT, wxT("Ignore"));
@@ -98,9 +98,9 @@ void OdaInfoBar::ShowMessage(const wxString& Message)
 
 // Test code for dlg_main
 /*
-    InfoBar->ShowMessage(wxT("An update to Odamex is available"), 
-            XRCID("Id_MnuItmVisitWebsite"), 
-            wxCommandEventHandler(dlgMain::OnOpenWebsite), 
+    InfoBar->ShowMessage(wxT("An update to Odamex is available"),
+            XRCID("Id_MnuItmVisitWebsite"),
+            wxCommandEventHandler(dlgMain::OnOpenWebsite),
             wxT("Visit Website"));
 
 */

@@ -79,6 +79,7 @@
 #include "r_sky.h"
 #include "d_main.h"
 #include "d_dehacked.h"
+#include "cl_download.h"
 #include "cmdlib.h"
 #include "s_sound.h"
 #include "m_swap.h"
@@ -245,6 +246,7 @@ void D_Display()
 	{
 		case GS_FULLCONSOLE:
 		case GS_DOWNLOAD:
+		    CL_DownloadTicker();
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();

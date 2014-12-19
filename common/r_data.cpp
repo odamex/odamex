@@ -337,7 +337,7 @@ void R_GenerateComposite (int texnum)
 // Rewritten by Lee Killough for performance and to fix Medusa bug
 //
 
-static void R_GenerateLookup(int texnum, int *const errors)
+void R_GenerateLookup(int texnum, int *const errors)
 {
 	const texture_t *texture = textures[texnum];
 

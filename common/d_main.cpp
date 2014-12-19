@@ -98,6 +98,8 @@ std::string D_GetTitleString()
 		return "Ultimate FreeDoom";
 	if (gamemission == commercial_freedoom)
 		return "FreeDoom";
+	if (gamemission == commercial_hacx)
+		return "HACX";
 
 	return gameinfo.titleString;
 }

@@ -399,6 +399,7 @@
 		<Unit filename="../../common/gi.cpp" />
 		<Unit filename="../../common/gi.h" />
 		<Unit filename="../../common/gstrings.h" />
+		<Unit filename="../../common/hashtable.h" />
 		<Unit filename="../../common/huffman.cpp" />
 		<Unit filename="../../common/huffman.h" />
 		<Unit filename="../../common/i_net.cpp" />
@@ -420,6 +421,7 @@
 		<Unit filename="../../common/m_fixed.h" />
 		<Unit filename="../../common/m_memio.cpp" />
 		<Unit filename="../../common/m_memio.h" />
+		<Unit filename="../../common/m_mempool.h" />
 		<Unit filename="../../common/m_misc.h" />
 		<Unit filename="../../common/m_ostring.cpp" />
 		<Unit filename="../../common/m_ostring.h" />
@@ -474,11 +476,13 @@
 		<Unit filename="../../common/p_user.cpp" />
 		<Unit filename="../../common/p_xlat.cpp" />
 		<Unit filename="../../common/po_man.cpp" />
+		<Unit filename="../../common/qsort.h" />
 		<Unit filename="../../common/r_bsp.h" />
 		<Unit filename="../../common/r_data.cpp" />
 		<Unit filename="../../common/r_data.h" />
 		<Unit filename="../../common/r_defs.h" />
 		<Unit filename="../../common/r_draw.h" />
+		<Unit filename="../../common/r_intrin.h" />
 		<Unit filename="../../common/r_local.h" />
 		<Unit filename="../../common/r_main.h" />
 		<Unit filename="../../common/r_plane.h" />
@@ -491,6 +495,7 @@
 		<Unit filename="../../common/s_sndseq.cpp" />
 		<Unit filename="../../common/s_sndseq.h" />
 		<Unit filename="../../common/s_sound.h" />
+		<Unit filename="../../common/sarray.h" />
 		<Unit filename="../../common/sc_man.cpp" />
 		<Unit filename="../../common/sc_man.h" />
 		<Unit filename="../../common/st_stuff.h" />
@@ -510,8 +515,11 @@
 		<Unit filename="../../common/v_video.h" />
 		<Unit filename="../../common/version.cpp" />
 		<Unit filename="../../common/version.h" />
+		<Unit filename="../../common/w_ident.cpp" />
+		<Unit filename="../../common/w_ident.h" />
 		<Unit filename="../../common/w_wad.cpp" />
 		<Unit filename="../../common/w_wad.h" />
+		<Unit filename="../../common/win32inc.h" />
 		<Unit filename="../../common/win32time.h" />
 		<Unit filename="../../common/z_zone.cpp" />
 		<Unit filename="../../common/z_zone.h" />
@@ -523,6 +531,7 @@
 		<Unit filename="../src/cl_ctf.cpp" />
 		<Unit filename="../src/cl_cvarlist.cpp" />
 		<Unit filename="../src/cl_demo.cpp" />
+		<Unit filename="../src/cl_demo.h" />
 		<Unit filename="../src/cl_download.cpp" />
 		<Unit filename="../src/cl_download.h" />
 		<Unit filename="../src/cl_main.cpp" />
@@ -562,6 +571,7 @@
 		<Unit filename="../src/m_menu.h" />
 		<Unit filename="../src/m_misc.cpp" />
 		<Unit filename="../src/m_options.cpp" />
+		<Unit filename="../src/p_effect.cpp" />
 		<Unit filename="../src/r_bsp.cpp" />
 		<Unit filename="../src/r_draw.cpp" />
 		<Unit filename="../src/r_drawt.cpp" />

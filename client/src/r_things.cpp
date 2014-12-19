@@ -899,7 +899,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	vis->xscale = pspritexscale;
 	vis->yscale = pspriteyscale;
 	vis->translation = translationref_t();		// [RH] Use default colors
-	vis->translucency = FRACUNIT;
+	vis->translucency = r_drawplayersprites * FRACUNIT;
 	vis->mo = NULL;
 
 	if (flip)

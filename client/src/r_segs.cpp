@@ -44,7 +44,8 @@
 #include "p_lnspec.h"
 
 // a pool of bytes allocated for sprite clipping arrays
-MemoryPool openings(32768);
+Pool<tallpost_t*> masked_midposts_pool(4096);
+Pool<int> sprclip_pool(4096);
 
 // OPTIMIZE: closed two sided lines as single sided
 
@@ -991,7 +992,7 @@ void R_StoreWallRange(int start, int stop)
 		{
 			// masked midtexture
 			maskedtexture = texturetranslation[sidedef->midtexture];
-			ds_p->midposts = masked_midposts = openings.alloc<tallpost_t*>(count) - start;
+			ds_p->midposts = masked_midposts = masked_midposts_pool.alloc(count) - start;
 		}
 
 		// [SL] additional fix for sky hack
@@ -1070,13 +1071,13 @@ void R_StoreWallRange(int start, int stop)
     // save sprite clipping info
 	if ((ds_p->silhouette & SIL_TOP) && ds_p->sprtopclip == NULL)
 	{
-		ds_p->sprtopclip = openings.alloc<int>(count) - start;
+		ds_p->sprtopclip = sprclip_pool.alloc(count) - start;
 		memcpy(ds_p->sprtopclip + start, ceilingclip + start, count * sizeof(*ds_p->sprtopclip));
 	}
 
 	if ((ds_p->silhouette & SIL_BOTTOM) && ds_p->sprbottomclip == NULL)
 	{
-		ds_p->sprbottomclip = openings.alloc<int>(count) - start;
+		ds_p->sprbottomclip = sprclip_pool.alloc(count) - start;
 		memcpy(ds_p->sprbottomclip + start, floorclip + start, count * sizeof(*ds_p->sprbottomclip));
 	}
 
@@ -1086,7 +1087,8 @@ void R_StoreWallRange(int start, int stop)
 
 void R_ClearOpenings()
 {
-	openings.clear();
+	masked_midposts_pool.clear();
+	sprclip_pool.clear();
 }
 
 VERSION_CONTROL (r_segs_cpp, "$Id$")
