@@ -484,27 +484,25 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	// TODO: check for multicore
 	flags |= SDL_ASYNCBLIT;
 
-	if (video_fullscreen)
-		flags = ((flags & (~SDL_SWSURFACE)) | SDL_HWSURFACE);
+	//if (video_fullscreen)
+	//	flags = ((flags & (~SDL_SWSURFACE)) | SDL_HWSURFACE);
 
 	#ifdef SDL_GL_SWAP_CONTROL
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
 	#endif
-
-	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
 
 	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
 	// This interferes with RawWin32Mouse's input handlers so we need to
 	// disable them prior to reinitalizing DirectInput...
 	I_PauseMouse();
 
-	sdlsurface = SDL_SetVideoMode(video_width, video_height, video_bpp, flags);
+	SDL_Surface* sdlsurface = SDL_SetVideoMode(video_width, video_height, video_bpp, flags);
 
 	// [SL] ...and re-enable RawWin32Mouse's input handlers after
 	// DirectInput is reinitalized.
 	I_ResumeMouse();
 
-	if (sdlsurface == NULL)
+	if (!sdlsurface)
 		return false;
 
 	bool got_hardware_surface = (sdlsurface->flags & SDL_HWSURFACE) == SDL_HWSURFACE;
@@ -608,30 +606,6 @@ ISDL12VideoSubsystem::ISDL12VideoSubsystem() : IVideoSubsystem()
 		I_FatalError("Could not initialize SDL video.\n");
 		return;
 	}
-
-	// Set SDL video centering
-	SDL_putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
-	SDL_putenv((char*)"SDL_VIDEO_CENTERED=1");
-
-	#if defined _WIN32 && !defined _XBOX
-	// From the SDL 1.2.10 release notes:
-	//
-	// > The "windib" video driver is the default now, to prevent
-	// > problems with certain laptops, 64-bit Windows, and Windows
-	// > Vista.
-	//
-	// The hell with that.
-
-	// SoM: the gdi interface is much faster for windowed modes which are more
-	// commonly used. Thus, GDI is default.
-	//
-	// GDI mouse issues fill many users with great sadness. We are going back
-	// to directx as defulat for now and the people will rejoice. --Hyper_Eye
-	if (Args.CheckParm ("-gdi"))
-		SDL_putenv((char*)"SDL_VIDEODRIVER=windib");
-	else if (SDL_getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-directx") > 0)
-		SDL_putenv((char*)"SDL_VIDEODRIVER=directx");
-	#endif	// _WIN32 && !_XBOX
 
 	mVideoCapabilities = new ISDL12VideoCapabilities();
 	

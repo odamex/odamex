@@ -557,16 +557,15 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	IWindow* window = I_GetWindow();
 
 	static bool initialized = false;
-	if (!initialized || *window->getVideoMode() != mode)
-	{
-		window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
-		I_ForceUpdateGrab();
 
-		// [SL] 2011-11-30 - Prevent the player's view angle from moving
-		I_FlushInput();
+	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
+	I_ForceUpdateGrab();
 
+	// [SL] 2011-11-30 - Prevent the player's view angle from moving
+	I_FlushInput();
+		
+	if (!initialized)
 		initialized = true;
-	}
 
 	// Set up the primary and emulated surfaces
 	primary_surface = window->getPrimarySurface();
