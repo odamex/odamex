@@ -675,8 +675,6 @@ void MasterServer::QueryBC(const uint32_t& Timeout)
 	{
 		addr_t address = { "", 0, false};
 
-		address.custom = false;
-
 		BCSocket.GetRemoteAddress(address.ip, address.port);
 
 		AddServer(address);

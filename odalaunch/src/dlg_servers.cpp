@@ -81,13 +81,12 @@ dlgServers::dlgServers(MasterServer* ms, wxWindow* parent, wxWindowID id)
 dlgServers::~dlgServers()
 {
 	// clean up client data.
-	if(SERVER_LIST->GetCount())
-		for(size_t i = 0; i < SERVER_LIST->GetCount(); i++)
-		{
-			CustomServer_t* cs = (CustomServer_t*)SERVER_LIST->GetClientData(i);
+    for(unsigned int i = 0; i < SERVER_LIST->GetCount(); i++)
+    {
+        CustomServer_t* cs = (CustomServer_t*)SERVER_LIST->GetClientData(i);
 
-			delete cs;
-		}
+        delete cs;
+    }
 }
 
 // Triggers a wxEVT_COMMAND_CHECKBOX_CLICKED event when used. wxWidgets doesn't
@@ -114,15 +113,13 @@ void dlgServers::OnButtonOK(wxCommandEvent& event)
 
 	if(msgdlg.ShowModal() == wxID_YES)
 	{
-		// reset 'dirty' flag
-		UserChangedSetting = false;
-
-		LoadServersIn();
-
 		SaveSettings();
+		
+		LoadServersIn();
 	}
-	else
-		UserChangedSetting = false;
+    
+    // reset 'dirty' flag
+    UserChangedSetting = false;
 
 	Close();
 }
@@ -373,10 +370,7 @@ void dlgServers::LoadServersIn()
 {
 	MServer->DeleteServers(true);
 
-	if(!SERVER_LIST->GetCount())
-		return;
-
-	for(size_t i = 0; i < SERVER_LIST->GetCount(); i++)
+	for(unsigned int i = 0; i < SERVER_LIST->GetCount(); i++)
 	{
 		CustomServer_t* cs = (CustomServer_t*)SERVER_LIST->GetClientData(i);
 
