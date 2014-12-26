@@ -781,6 +781,13 @@ void W_ConfigureGameInfo(const std::string& iwad_filename)
 		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
 	}
+
+	else if (idname.find("FREEDM") == 0)
+	{
+		gamemode = commercial;
+		gameinfo = CommercialGameInfo;
+		gamemission = commercial_freedoom;
+	}	
 	else if (idname.find("DOOM SHAREWARE") == 0)
 	{
 		gamemode = shareware;
