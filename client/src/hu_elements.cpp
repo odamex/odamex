@@ -252,7 +252,7 @@ std::string Timer(int& color)
 	timeleft -= minutes * TICRATE * 60;
 	int seconds = timeleft / TICRATE;
 
-	if (minutes <= 0)
+	if (hours == 0 && minutes < 1)
 		color = CR_BRICK;
 
 	char str[9];
