@@ -264,6 +264,7 @@ void D_Init()
 //	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
+	GStrings.FreeData();
 	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
 	GStrings.Compact();
 

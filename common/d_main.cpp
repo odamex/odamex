@@ -828,6 +828,7 @@ void D_LoadResourceFiles(
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
+	GStrings.FreeData();
 	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
 	GStrings.Compact();
 

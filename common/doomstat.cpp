@@ -46,8 +46,8 @@ CVAR_FUNC_IMPL (language)
 		level.behavior->PrepLocale (LanguageIDs[0], LanguageIDs[1],
 			LanguageIDs[2], LanguageIDs[3]);
 	}
-
-	GStrings.ReloadStrings ();
+    
+	GStrings.ResetStrings ();
 	GStrings.Compact ();
 	G_SetLevelStrings ();
 }
