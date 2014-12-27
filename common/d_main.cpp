@@ -431,6 +431,8 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 				const char* csubpath = subpath;
 				D_AddSearchDir(dirs, csubpath, separator);
+				
+				free(subpath);
 			}
 
 			free(install_path);
