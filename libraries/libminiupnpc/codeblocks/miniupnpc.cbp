@@ -21,7 +21,7 @@
 					<Add option="/ZI" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DWIN32" />
-					<Add option="/DSTATICLIB" />
+					<Add option="/DMINIUPNP_STATICLIB" />
 					<Add directory="../../libminiupnpc" />
 				</Compiler>
 			</Target>
@@ -40,7 +40,7 @@
 					<Add option="/Zi" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DWIN32" />
-					<Add option="/DSTATICLIB" />
+					<Add option="/DMINIUPNP_STATICLIB" />
 					<Add directory="../../libminiupnpc" />
 				</Compiler>
 				<Linker>
@@ -60,7 +60,7 @@
 					<Add option="-fno-inline" />
 					<Add option="-m32" />
 					<Add option="-DWIN32" />
-					<Add option="-DSTATICLIB" />
+					<Add option="-DMINIUPNP_STATICLIB" />
 					<Add option="-D_WIN32_WINNT=0x501" />
 					<Add directory="../../libminiupnpc" />
 				</Compiler>
@@ -80,7 +80,7 @@
 					<Add option="-O2" />
 					<Add option="-m32" />
 					<Add option="-DWIN32" />
-					<Add option="-DSTATICLIB" />
+					<Add option="-DMINIUPNP_STATICLIB" />
 					<Add option="-D_WIN32_WINNT=0x501" />
 					<Add directory="../../libminiupnpc" />
 				</Compiler>
@@ -100,7 +100,7 @@
 					<Add option="-g" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
-					<Add option="-DSTATICLIB" />
+					<Add option="-DMINIUPNP_STATICLIB" />
 					<Add option="-D_WIN32_WINNT=0x501" />
 					<Add directory="../../libminiupnpc" />
 				</Compiler>
@@ -116,7 +116,7 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-DWIN32" />
-					<Add option="-DSTATICLIB" />
+					<Add option="-DMINIUPNP_STATICLIB" />
 					<Add option="-D_WIN32_WINNT=0x501" />
 					<Add directory="../../libminiupnpc" />
 				</Compiler>
