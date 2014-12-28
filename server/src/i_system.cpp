@@ -657,82 +657,42 @@ int I_FindAttr (findstate_t *fileinfo)
     return 0;
 }
 
+#ifdef _WIN32
+int ShutdownNow();
+#endif // _WIN32
+
+static bool KeyboardHit()
+{
+    #ifndef _WIN32
+    fd_set fdr;
+    FD_ZERO(&fdr);
+    FD_SET(0, &fdr);
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;    
+
+    return (select(1, &fdr, NULL, NULL, &tv) > 0) ? true : false;
+    #else
+    return kbhit() ? true : false;
+    #endif
+}
+
 //
 // I_ConsoleInput
 //
-#ifdef _WIN32
-int ShutdownNow();
-
-std::string I_ConsoleInput (void)
-{
-	// denis - todo - implement this properly!!!
-    static char     text[1024] = {0};
-    static char     buffer[1024] = {0};
-    unsigned int    len = strlen(buffer);
-
-    if (ShutdownNow())
-        return "quit";
-
-	while(kbhit() && len < sizeof(text))
-	{
-		char ch = (char)getch();
-
-		// input the character
-		if(ch == '\b' && len)
-		{
-			buffer[--len] = 0;
-			// john - backspace hack
-			fwrite(&ch, 1, 1, stdout);
-			ch = ' ';
-			fwrite(&ch, 1, 1, stdout);
-			ch = '\b';
-		}
-		else
-			buffer[len++] = ch;
-		buffer[len] = 0;
-
-		// recalculate length
-		len = strlen(buffer);
-
-		// echo character back to user
-		fwrite(&ch, 1, 1, stdout);
-		fflush(stdout);
-	}
-
-	if(len && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r'))
-	{
-		// echo newline back to user
-		char ch = '\n';
-		fwrite(&ch, 1, 1, stdout);
-		fflush(stdout);
-
-		strcpy(text, buffer);
-		text[len-1] = 0; // rip off the /n and terminate
-		buffer[0] = 0;
-		len = 0;
-
-		return text;
-	}
-
-	return "";
-}
-
-#else
-
 std::string I_ConsoleInput (void)
 {
 	std::string ret;
     static char     text[1024] = {0};
     int             len;
 
-    fd_set fdr;
-    FD_ZERO(&fdr);
-    FD_SET(0, &fdr);
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 0;
-
-    if (select(1, &fdr, NULL, NULL, &tv) <= 0)
+    #ifdef _WIN32
+    // Hack to handle exit events under windows
+    if (ShutdownNow())
+        return "quit";
+    #endif // _WIN32
+    
+    if (!KeyboardHit())
         return "";
 
     len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
@@ -763,7 +723,6 @@ std::string I_ConsoleInput (void)
 
     return "";
 }
-#endif
 
 VERSION_CONTROL (i_system_cpp, "$Id$")
 
