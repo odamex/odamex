@@ -145,6 +145,8 @@ CVAR_RANGE(			con_midtime, "3", "Number of seconds to display messages in the mi
 CVAR_RANGE(			con_scrlock, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
+CVAR_RANGE(			con_buffersize, "1024", "Size of console scroll-back buffer",
+					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 512.0f, 65536.0f)
 
 CVAR_RANGE_FUNC_DECL(msg0color, "6", "",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
