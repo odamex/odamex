@@ -307,7 +307,9 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	int destbits = getBitsPerPixel();
 	int srcpitchpixels = source_surface->getPitchInPixels();
 	int destpitchpixels = getPitchInPixels();
-	const argb_t* palette = V_GetDefaultPalette()->colors;
+	
+	// [ML] GROSS HACK - different behavior occurs here between 8 and 32 bit color
+	const argb_t* palette = (srcbits == 8 ? source_surface->getPalette() : V_GetDefaultPalette()->colors);
 
 	if (srcbits == 8 && destbits == 8)
 	{
