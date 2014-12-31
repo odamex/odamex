@@ -566,7 +566,10 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 
 		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
 		if (!missingfiles.empty())
+		{
+			G_DeferedInitNew(startmap);
 			return false;
+		}
 	}
 
 	if (mapname.length())
