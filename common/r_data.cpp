@@ -863,6 +863,7 @@ void R_InitColormaps()
 	realcolormaps.colormap = (byte*)Z_Malloc(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
 	realcolormaps.shademap = (argb_t*)Z_Malloc(256*sizeof(argb_t)*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
 
+	delete[] fakecmaps;
 	fakecmaps = new FakeCmap[numfakecmaps];
 
 	R_ForceDefaultColormap("COLORMAP");

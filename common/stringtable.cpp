@@ -105,6 +105,7 @@ void FStringTable::LoadStrings(int lumpnum, int expectedSize, bool enuOnly)
 	}
 
 	// [SL] read and store the lump data into LumpData
+	delete[] LumpData;
 	LumpData = new byte[W_LumpLength(lumpnum)];
 	W_ReadLump(lumpnum, LumpData);
 
