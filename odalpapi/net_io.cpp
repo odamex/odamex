@@ -303,9 +303,11 @@ int32_t BufferedSocket::GetData(const int32_t& Timeout)
 	{
 		m_BadRead = false;
 
-		// return bytes received
+#ifdef ODAMEX_DEBUG
 		NET_ReportError("bytes received: %d", m_BufferSize);
+#endif
 
+		// return bytes received
 		return m_BufferSize;
 	}
 
