@@ -1,6 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
 
-project (miniupnpc C)
 set (MINIUPNPC_VERSION 1.9)
 set (MINIUPNPC_API_VERSION 12)
 
@@ -30,7 +29,7 @@ endif (NO_GETADDRINFO)
 
 if (NOT WIN32)
   add_definitions (-DMINIUPNPC_SET_SOCKET_TIMEOUT)
-  add_definitions (-D_BSD_SOURCE -D_POSIX_C_SOURCE=200112L)
+  add_definitions (-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200112L)
 else (NOT WIN32)
   add_definitions (-D_WIN32_WINNT=0x0501) # XP or higher for getnameinfo and friends
 endif (NOT WIN32)
@@ -62,7 +61,7 @@ if (CMAKE_COMPILER_IS_GNUC)
   endif (NOT CONFIGURED)
 endif ()
 
-configure_file (${CMAKE_SOURCE_DIR}/miniupnpcstrings.h.cmake ${CMAKE_BINARY_DIR}/miniupnpcstrings.h)
+configure_file (miniupnpcstrings.h.cmake miniupnpcstrings.h)
 include_directories (${CMAKE_BINARY_DIR})
 
 set (MINIUPNPC_SOURCES
