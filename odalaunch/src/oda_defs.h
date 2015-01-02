@@ -91,10 +91,10 @@ static const char* def_masterlist[] =
 #define ODA_QRYUSEBROADCAST 0
 
 // Thread multiplier value (this value * number of cores) for querying
-#define ODA_THRMULVAL 8
+#define ODA_THRMULVAL 12
 
 // Maximum number of threads
-#define ODA_THRMAXVAL 64
+#define ODA_THRMAXVAL 48
 
 
 // Network subsystem
