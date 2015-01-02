@@ -1077,7 +1077,7 @@
 																<border>5</border>
 																<object class="wxSpinCtrl" name="Id_SpnCtrlThreadMul">
 																	<style>wxSP_ARROW_KEYS</style>
-																	<tooltip>Thread multi, changing this requires launcher restart</tooltip>
+																	<tooltip>This value multiplies the thread count by cpus and/or cores on this system, requires launcher restart</tooltip>
 																	<value>12</value>
 																	<min>1</min>
 																	<max>255</max>
@@ -1167,7 +1167,7 @@
 																<border>5</border>
 																<object class="wxSpinCtrl" name="Id_SpnCtrlServerTimeout">
 																	<style>wxSP_ARROW_KEYS</style>
-																	<tooltip>Timeout for all servers</tooltip>
+																	<tooltip>Timeout for the game servers</tooltip>
 																	<value>1000</value>
 																	<min>0</min>
 																	<max>5000</max>

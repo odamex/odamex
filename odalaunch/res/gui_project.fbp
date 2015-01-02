@@ -6816,7 +6816,7 @@
                                                                         <property name="style">wxSP_ARROW_KEYS</property>
                                                                         <property name="subclass"></property>
                                                                         <property name="toolbar_pane">0</property>
-                                                                        <property name="tooltip">Thread multi, changing this requires launcher restart</property>
+                                                                        <property name="tooltip">This value multiplies the thread count by cpus and/or cores on this system, requires launcher restart</property>
                                                                         <property name="value"></property>
                                                                         <property name="window_extra_style"></property>
                                                                         <property name="window_name"></property>
@@ -7362,7 +7362,7 @@
                                                                         <property name="style">wxSP_ARROW_KEYS</property>
                                                                         <property name="subclass"></property>
                                                                         <property name="toolbar_pane">0</property>
-                                                                        <property name="tooltip">Timeout for all servers</property>
+                                                                        <property name="tooltip">Timeout for the game servers</property>
                                                                         <property name="value"></property>
                                                                         <property name="window_extra_style"></property>
                                                                         <property name="window_name"></property>
