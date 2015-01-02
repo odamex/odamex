@@ -23,6 +23,7 @@
 
 #include <wx/msgdlg.h>
 #include <wx/app.h>
+#include <wx/fileconf.h>
 
 #include "plat_utils.h"
 #include "query_thread.h"
