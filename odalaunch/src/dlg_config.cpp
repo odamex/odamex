@@ -66,9 +66,12 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_CHECKBOX(XRCID("Id_ChkColorServerLine"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkAutoRefresh"), dlgConfig::OnCheckedBox)
 
-	EVT_TEXT(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnTextChange)
-	EVT_TEXT(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnTextChange)
-	EVT_TEXT(XRCID("Id_SpnCtrlRetry"), dlgConfig::OnTextChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlRetry"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlThreadMul"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlThreadMax"), dlgConfig::OnSpinValChange)
+
 	EVT_TEXT(XRCID("Id_TxtCtrlExtraCmdLineArgs"), dlgConfig::OnTextChange)
 
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQGood"), dlgConfig::OnSpinValChange)
@@ -103,6 +106,8 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id)
 	m_ClrPickServerLineHighlighter = XRCCTRL(*this, "Id_ClrPickServerLineHighlighter",
 	                                 wxColourPickerCtrl);
 
+    m_SpnCtrlThreadMul = XRCCTRL(*this, "Id_SpnCtrlThreadMul", wxSpinCtrl);
+    m_SpnCtrlThreadMax = XRCCTRL(*this, "Id_SpnCtrlThreadMax", wxSpinCtrl);
 	m_SpnCtrlMasterTimeout = XRCCTRL(*this, "Id_SpnCtrlMasterTimeout", wxSpinCtrl);
 	m_SpnCtrlServerTimeout = XRCCTRL(*this, "Id_SpnCtrlServerTimeout", wxSpinCtrl);
 	m_SpnCtrlRetry = XRCCTRL(*this, "Id_SpnCtrlRetry", wxSpinCtrl);
@@ -416,7 +421,8 @@ void dlgConfig::LoadSettings()
 	bool GetListOnStart, ShowBlockedServers, LoadChatOnLS;
 	bool FlashTaskBar, PlaySystemBell, PlaySoundFile, HighlightServers;
 	bool AutoServerRefresh;
-	int MasterTimeout, ServerTimeout, RetryCount, RefreshInterval;
+	int ThreadMul, ThreadMax, MasterTimeout, ServerTimeout, RetryCount;
+    int RefreshInterval;
 	wxString DelimWadPaths, OdamexDirectory, ExtraCmdLineArgs;
 	wxString SoundFile, HighlightColour;
 	wxInt32 PQGood, PQPlayable, PQLaggy;
@@ -444,6 +450,8 @@ void dlgConfig::LoadSettings()
 	ConfigInfo.Read(wxT(POLHLSCOLOUR), &HighlightColour, ODA_UIPOLHSHIGHLIGHTCOLOUR);
 	ConfigInfo.Read(wxT(ARTENABLE), &AutoServerRefresh, ODA_UIARTENABLE);
 	ConfigInfo.Read(wxT(ARTREFINTERVAL), &RefreshInterval, ODA_UIARTREFINTERVAL);
+    ConfigInfo.Read(wxT(QRYTHREADMULTIPLIER), &ThreadMul, ODA_THRMULVAL);
+    ConfigInfo.Read(wxT(QRYTHREADMAXIMUM), &ThreadMax, ODA_THRMAXVAL);
 
 	m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
 	m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
@@ -477,6 +485,8 @@ void dlgConfig::LoadSettings()
 		m_LstCtrlWadDirectories->AppendString(path);
 	}
 
+    m_SpnCtrlThreadMul->SetValue(ThreadMul);
+    m_SpnCtrlThreadMax->SetValue(ThreadMax);
 	m_SpnCtrlMasterTimeout->SetValue(MasterTimeout);
 	m_SpnCtrlServerTimeout->SetValue(ServerTimeout);
 	m_SpnCtrlRetry->SetValue(RetryCount);
@@ -525,6 +535,8 @@ void dlgConfig::SaveSettings()
 	ConfigInfo.Write(wxT(POLHLSCOLOUR), m_ClrPickServerLineHighlighter->GetColour().GetAsString(wxC2S_HTML_SYNTAX));
 	ConfigInfo.Write(wxT(ARTENABLE), m_ChkCtrlkAutoServerRefresh->GetValue());
 	ConfigInfo.Write(wxT(ARTREFINTERVAL), m_SpnRefreshInterval->GetValue());
-
+    ConfigInfo.Write(wxT(QRYTHREADMULTIPLIER), m_SpnCtrlThreadMul->GetValue());
+    ConfigInfo.Write(wxT(QRYTHREADMAXIMUM),  m_SpnCtrlThreadMax->GetValue());
+	
 	ConfigInfo.Flush();
 }

@@ -129,13 +129,22 @@ void* QueryThread::Entry()
 int QueryThread::GetIdealThreadCount()
 {
 	int ThreadCount;
+    int ThreadMul, ThreadMax;
+
+	// TODO: Replace with a better system
+	{
+        wxFileConfig ConfigInfo;
+
+        ConfigInfo.Read(wxT(QRYTHREADMULTIPLIER), &ThreadMul, ODA_THRMULVAL);
+        ConfigInfo.Read(wxT(QRYTHREADMAXIMUM), &ThreadMax, ODA_THRMAXVAL);
+	}
 
 	// Base number of threads on cpu count in the system (including cores)
 	// and multiply that by a fixed value
 	ThreadCount = wxThread::GetCPUCount();
 
 	if(ThreadCount != -1)
-		ThreadCount *= ODA_THRMULVAL;
+		ThreadCount *= ThreadMul;
 
-	return clamp(ThreadCount, ODA_THRMULVAL, ODA_THRMAXVAL);
+	return clamp(ThreadCount, ThreadMul, ThreadMax);
 }

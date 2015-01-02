@@ -128,6 +128,8 @@ static const char* def_masterlist[] =
 #define ARTENABLE           "UseAutoRefreshTimer"
 #define ARTREFINTERVAL      "AutoRefreshTimerRefreshInterval"
 #define ARTNEWLISTINTERVAL  "AutoRefreshTimerNewListInterval"
+#define QRYTHREADMULTIPLIER "QryThreadMultiplier"
+#define QRYTHREADMAXIMUM    "QryThreadMaximum"
 
 // Master server ids, eg:
 // MasterServer1 "127.0.0.1:15000"

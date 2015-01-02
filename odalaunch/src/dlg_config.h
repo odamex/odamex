@@ -100,6 +100,8 @@ protected:
 	wxSpinCtrl* m_SpnCtrlMasterTimeout;
 	wxSpinCtrl* m_SpnCtrlServerTimeout;
 	wxSpinCtrl* m_SpnCtrlRetry;
+    wxSpinCtrl* m_SpnCtrlThreadMul;
+    wxSpinCtrl* m_SpnCtrlThreadMax;
 
 	wxSpinCtrl* m_SpnRefreshInterval;
 
