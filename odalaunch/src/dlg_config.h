@@ -89,6 +89,7 @@ protected:
 	wxCheckBox* m_ChkCtrlPlaySystemBeep;
 	wxCheckBox* m_ChkCtrlPlaySoundFile;
 	wxCheckBox* m_ChkCtrlHighlightServerLines;
+	wxCheckBox* m_ChkCtrlHighlightCustomServers;
 	wxCheckBox* m_ChkCtrlkAutoServerRefresh;
 
 	wxListBox* m_LstCtrlWadDirectories;
@@ -96,6 +97,7 @@ protected:
 	wxDirPickerCtrl* m_DirCtrlChooseOdamexPath;
 	wxFilePickerCtrl* m_FilePickCtrlSoundFile;
 	wxColourPickerCtrl* m_ClrPickServerLineHighlighter;
+	wxColourPickerCtrl* m_ClrPickCustomServerHighlight;
 
 	wxSpinCtrl* m_SpnCtrlMasterTimeout;
 	wxSpinCtrl* m_SpnCtrlServerTimeout;

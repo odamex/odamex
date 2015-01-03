@@ -555,60 +555,114 @@
 														<border>5</border>
 														<object class="wxStaticBoxSizer">
 															<orient>wxVERTICAL</orient>
-															<label>Masters and Servers</label>
+															<label>Server List</label>
 															<object class="sizeritem">
 																<option>0</option>
-																<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+																<flag>wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALL</flag>
 																<border>5</border>
-																<object class="wxBoxSizer">
-																	<orient>wxVERTICAL</orient>
-																	<object class="sizeritem">
-																		<option>0</option>
-																		<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-																		<border>5</border>
-																		<object class="wxCheckBox" name="Id_ChkCtrlGetListOnStart">
-																			<pos>0,76</pos>
-																			<label>Get Master List on application start</label>
-																			<checked>0</checked>
-																		</object>
-																	</object>
-																	<object class="sizeritem">
-																		<option>0</option>
-																		<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-																		<border>5</border>
-																		<object class="wxCheckBox" name="Id_ChkCtrlShowBlockedServers">
-																			<pos>0,114</pos>
-																			<label>Show blocked servers</label>
-																			<checked>0</checked>
-																		</object>
-																	</object>
+																<object class="wxCheckBox" name="Id_ChkCtrlGetListOnStart">
+																	<pos>0,76</pos>
+																	<label>Get list on application start</label>
+																	<checked>0</checked>
 																</object>
 															</object>
 															<object class="sizeritem">
 																<option>0</option>
-																<flag></flag>
+																<flag>wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALL</flag>
 																<border>5</border>
-																<object class="wxStaticBoxSizer">
+																<object class="wxCheckBox" name="Id_ChkCtrlShowBlockedServers">
+																	<pos>0,114</pos>
+																	<label>Show blocked servers</label>
+																	<checked>0</checked>
+																</object>
+															</object>
+															<object class="sizeritem">
+																<option>0</option>
+																<flag>wxEXPAND</flag>
+																<border>5</border>
+																<object class="wxBoxSizer">
 																	<orient>wxHORIZONTAL</orient>
-																	<label>Automatic Refresh</label>
 																	<object class="sizeritem">
 																		<option>0</option>
 																		<flag>wxALL</flag>
 																		<border>5</border>
 																		<object class="wxCheckBox" name="Id_ChkAutoRefresh">
-																			<label>Refresh list every (min):</label>
+																			<label>Refresh list every (min)</label>
 																			<checked>0</checked>
 																		</object>
 																	</object>
 																	<object class="sizeritem">
 																		<option>0</option>
-																		<flag></flag>
+																		<flag>wxEXPAND</flag>
 																		<border>5</border>
 																		<object class="wxSpinCtrl" name="Id_SpnRefreshInterval">
 																			<style>wxSP_ARROW_KEYS</style>
 																			<value>3</value>
 																			<min>3</min>
 																			<max>45</max>
+																		</object>
+																	</object>
+																</object>
+															</object>
+															<object class="sizeritem">
+																<option>1</option>
+																<flag>wxALL</flag>
+																<border>5</border>
+																<object class="wxStaticBoxSizer">
+																	<orient>wxVERTICAL</orient>
+																	<label>Server Highlighting</label>
+																	<object class="sizeritem">
+																		<option>1</option>
+																		<flag>wxEXPAND</flag>
+																		<border>5</border>
+																		<object class="wxBoxSizer">
+																			<orient>wxHORIZONTAL</orient>
+																			<object class="sizeritem">
+																				<option>1</option>
+																				<flag>wxALL|wxEXPAND</flag>
+																				<border>5</border>
+																				<object class="wxCheckBox" name="Id_ChkColorServerLine">
+																					<tooltip>Colours the server in the list if it has players in it</tooltip>
+																					<label>Active servers</label>
+																					<checked>0</checked>
+																				</object>
+																			</object>
+																			<object class="sizeritem">
+																				<option>0</option>
+																				<flag>wxALL</flag>
+																				<border>5</border>
+																				<object class="wxColourPickerCtrl" name="Id_ClrPickServerLineHighlighter">
+																					<value>#ffffff</value>
+																					<style>wxCLRP_DEFAULT_STYLE|wxCLRP_SHOW_LABEL</style>
+																				</object>
+																			</object>
+																		</object>
+																	</object>
+																	<object class="sizeritem">
+																		<option>1</option>
+																		<flag>wxEXPAND</flag>
+																		<border>5</border>
+																		<object class="wxBoxSizer">
+																			<orient>wxHORIZONTAL</orient>
+																			<object class="sizeritem">
+																				<option>1</option>
+																				<flag>wxALL|wxEXPAND</flag>
+																				<border>5</border>
+																				<object class="wxCheckBox" name="Id_ChkColorCustomServers">
+																					<tooltip>Custom servers are highlighted with this colour</tooltip>
+																					<label>Custom servers</label>
+																					<checked>0</checked>
+																				</object>
+																			</object>
+																			<object class="sizeritem">
+																				<option>0</option>
+																				<flag>wxALL</flag>
+																				<border>5</border>
+																				<object class="wxColourPickerCtrl" name="Id_ClrPickCustomServerHighlight">
+																					<value>#ffffff</value>
+																					<style>wxCLRP_DEFAULT_STYLE|wxCLRP_SHOW_LABEL</style>
+																				</object>
+																			</object>
 																		</object>
 																	</object>
 																</object>
@@ -660,40 +714,13 @@
 																	</object>
 																	<object class="sizeritem">
 																		<option>1</option>
-																		<flag>wxALL</flag>
+																		<flag></flag>
 																		<border>5</border>
 																		<object class="wxFilePickerCtrl" name="Id_FilePickSoundFile">
 																			<value></value>
 																			<message>Select a WAV file</message>
 																			<wildcard>*.wav</wildcard>
 																			<style>wxFLP_DEFAULT_STYLE</style>
-																		</object>
-																	</object>
-																</object>
-															</object>
-															<object class="sizeritem">
-																<option>1</option>
-																<flag>wxEXPAND</flag>
-																<border>5</border>
-																<object class="wxBoxSizer">
-																	<orient>wxHORIZONTAL</orient>
-																	<object class="sizeritem">
-																		<option>0</option>
-																		<flag>wxALL</flag>
-																		<border>5</border>
-																		<object class="wxCheckBox" name="Id_ChkColorServerLine">
-																			<tooltip>Colours the server in the list if it has players in it</tooltip>
-																			<label>Highlight active servers with:</label>
-																			<checked>0</checked>
-																		</object>
-																	</object>
-																	<object class="sizeritem">
-																		<option>0</option>
-																		<flag>wxALL</flag>
-																		<border>5</border>
-																		<object class="wxColourPickerCtrl" name="Id_ClrPickServerLineHighlighter">
-																			<value>#ffffff</value>
-																			<style>wxCLRP_DEFAULT_STYLE|wxCLRP_SHOW_LABEL</style>
 																		</object>
 																	</object>
 																</object>

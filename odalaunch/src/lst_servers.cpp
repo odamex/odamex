@@ -284,7 +284,8 @@ void LstOdaServerList::ClearItemCells(long item)
 */
 void LstOdaServerList::AddServerToList(const Server& s,
                                        wxInt32 index,
-                                       bool insert)
+                                       bool insert,
+                                       bool IsCustomServer)
 {
 	wxFileConfig ConfigInfo;
 	wxInt32 PQGood, PQPlayable, PQLaggy;
@@ -321,6 +322,22 @@ void LstOdaServerList::AddServerToList(const Server& s,
 
 	SetItem(li);
 
+	// Custom server highlighting
+	if (IsCustomServer)
+    {
+        wxColour Colour;
+
+        ConfigInfo.Read(wxT(CSHLSERVERS), &LineHighlight, ODA_UICSHIGHTLIGHTSERVERS);
+        ConfigInfo.Read(wxT(CSHLCOLOUR), &HighlightColour, ODA_UICSHSHIGHLIGHTCOLOUR);
+
+		Colour.Set(HighlightColour);
+        
+        if (LineHighlight)
+            SetItemTextColour(li.GetId(), Colour);
+        else
+            SetItemTextColour(li.GetId(), GetTextColour());
+    }
+
 	// break here so atleast we have an ip address to go by
 	if(s.GotResponse() == false)
 		return;
@@ -345,11 +362,12 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	li.m_col = serverlist_field_players;
 	li.m_text = wxString::Format(_T("%d/%d"),(wxInt32)s.Info.Players.size(),(wxInt32)s.Info.MaxClients);
 
-	// Colour the entire text row if there are players
+	// Colour the entire text row if there are players, exclude custom servers
+	// as they have their own row highlighting
 	ConfigInfo.Read(wxT(POLHLSERVERS), &LineHighlight, ODA_UIPOLHIGHLIGHTSERVERS);
 	ConfigInfo.Read(wxT(POLHLSCOLOUR), &HighlightColour, ODA_UIPOLHSHIGHLIGHTCOLOUR);
 
-	if(LineHighlight)
+	if(IsCustomServer == false && LineHighlight)
 	{
 		wxColour Colour;
 

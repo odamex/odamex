@@ -51,9 +51,11 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
 	EVT_BUTTON(wxID_OK, dlgConfig::OnOK)
 
+	// Picker events
 	EVT_DIRPICKER_CHANGED(XRCID("Id_DirCtrlChooseOdamexPath"), dlgConfig::OnFileDirChange)
 	EVT_FILEPICKER_CHANGED(XRCID("Id_FilePickSoundFile"), dlgConfig::OnFileDirChange)
 	EVT_COLOURPICKER_CHANGED(XRCID("Id_ClrPickServerLineHighlighter"), dlgConfig::OnClrPickerChange)
+    EVT_COLOURPICKER_CHANGED(XRCID("Id_ClrPickCustomServerHighlight"), dlgConfig::OnClrPickerChange)
 
 	// Misc events
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlGetListOnStart"), dlgConfig::OnCheckedBox)
@@ -64,6 +66,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_CHECKBOX(XRCID("Id_ChkSystemBeep"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkPlaySound"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkColorServerLine"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkColorCustomServers"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkAutoRefresh"), dlgConfig::OnCheckedBox)
 
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnSpinValChange)
@@ -97,6 +100,7 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id)
 	m_ChkCtrlPlaySystemBeep = XRCCTRL(*this, "Id_ChkSystemBeep", wxCheckBox);
 	m_ChkCtrlPlaySoundFile = XRCCTRL(*this, "Id_ChkPlaySound", wxCheckBox);
 	m_ChkCtrlHighlightServerLines = XRCCTRL(*this, "Id_ChkColorServerLine", wxCheckBox);
+	m_ChkCtrlHighlightCustomServers = XRCCTRL(*this, "Id_ChkColorCustomServers", wxCheckBox);
 	m_ChkCtrlkAutoServerRefresh = XRCCTRL(*this, "Id_ChkAutoRefresh", wxCheckBox);
 
 	m_LstCtrlWadDirectories = XRCCTRL(*this, "Id_LstCtrlWadDirectories", wxListBox);
@@ -104,6 +108,8 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id)
 	m_DirCtrlChooseOdamexPath = XRCCTRL(*this, "Id_DirCtrlChooseOdamexPath", wxDirPickerCtrl);
 	m_FilePickCtrlSoundFile = XRCCTRL(*this, "Id_FilePickSoundFile", wxFilePickerCtrl);
 	m_ClrPickServerLineHighlighter = XRCCTRL(*this, "Id_ClrPickServerLineHighlighter",
+	                                 wxColourPickerCtrl);
+    m_ClrPickCustomServerHighlight = XRCCTRL(*this, "Id_ClrPickCustomServerHighlight",
 	                                 wxColourPickerCtrl);
 
     m_SpnCtrlThreadMul = XRCCTRL(*this, "Id_SpnCtrlThreadMul", wxSpinCtrl);
@@ -409,6 +415,8 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
 
 }
 
+// TODO: Design a cleaner system for loading/saving these settings
+
 // Load settings from configuration file
 void dlgConfig::LoadSettings()
 {
@@ -420,11 +428,13 @@ void dlgConfig::LoadSettings()
 	bool UseBroadcast;
 	bool GetListOnStart, ShowBlockedServers, LoadChatOnLS;
 	bool FlashTaskBar, PlaySystemBell, PlaySoundFile, HighlightServers;
+	bool CustomServersHighlight;
+
 	bool AutoServerRefresh;
 	int ThreadMul, ThreadMax, MasterTimeout, ServerTimeout, RetryCount;
     int RefreshInterval;
 	wxString DelimWadPaths, OdamexDirectory, ExtraCmdLineArgs;
-	wxString SoundFile, HighlightColour;
+	wxString SoundFile, HighlightColour, CustomServerColour;
 	wxInt32 PQGood, PQPlayable, PQLaggy;
 
 	ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, ODA_QRYUSEBROADCAST);
@@ -452,6 +462,8 @@ void dlgConfig::LoadSettings()
 	ConfigInfo.Read(wxT(ARTREFINTERVAL), &RefreshInterval, ODA_UIARTREFINTERVAL);
     ConfigInfo.Read(wxT(QRYTHREADMULTIPLIER), &ThreadMul, ODA_THRMULVAL);
     ConfigInfo.Read(wxT(QRYTHREADMAXIMUM), &ThreadMax, ODA_THRMAXVAL);
+	ConfigInfo.Read(wxT(CSHLSERVERS), &CustomServersHighlight, ODA_UICSHIGHTLIGHTSERVERS);
+	ConfigInfo.Read(wxT(CSHLCOLOUR), &CustomServerColour, ODA_UICSHSHIGHLIGHTCOLOUR);
 
 	m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
 	m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
@@ -461,11 +473,13 @@ void dlgConfig::LoadSettings()
 	m_ChkCtrlPlaySystemBeep->SetValue(PlaySystemBell);
 	m_ChkCtrlPlaySoundFile->SetValue(PlaySoundFile);
 	m_ChkCtrlHighlightServerLines->SetValue(HighlightServers);
+	m_ChkCtrlHighlightCustomServers->SetValue(CustomServersHighlight);
 	m_ChkCtrlkAutoServerRefresh->SetValue(AutoServerRefresh);
 
 	m_DirCtrlChooseOdamexPath->SetPath(OdamexDirectory);
 	m_FilePickCtrlSoundFile->SetPath(SoundFile);
 	m_ClrPickServerLineHighlighter->SetColour(HighlightColour);
+    m_ClrPickCustomServerHighlight->SetColour(CustomServerColour);
 
 	// Load wad path list
 	m_LstCtrlWadDirectories->Clear();
@@ -537,6 +551,8 @@ void dlgConfig::SaveSettings()
 	ConfigInfo.Write(wxT(ARTREFINTERVAL), m_SpnRefreshInterval->GetValue());
     ConfigInfo.Write(wxT(QRYTHREADMULTIPLIER), m_SpnCtrlThreadMul->GetValue());
     ConfigInfo.Write(wxT(QRYTHREADMAXIMUM),  m_SpnCtrlThreadMax->GetValue());
-	
+	ConfigInfo.Write(wxT(CSHLSERVERS), m_ChkCtrlHighlightCustomServers->GetValue());
+	ConfigInfo.Write(wxT(CSHLCOLOUR), m_ClrPickCustomServerHighlight->GetColour().GetAsString(wxC2S_HTML_SYNTAX));
+
 	ConfigInfo.Flush();
 }

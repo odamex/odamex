@@ -894,12 +894,14 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 	case mtrs_server_singletimeout:
 	{
 		bool ShowBlockedServers;
+		Server &ThisServer = QServer[Result->Index];
+        std::string Address = ThisServer.GetAddress();
 
-		i = m_LstCtrlServers->FindServer(stdstr_towxstr(QServer[Result->Index].GetAddress()));
+		i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
 
 		m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
 
-		QServer[Result->Index].ResetData();
+		ThisServer.ResetData();
 
 		{
 			wxFileConfig ConfigInfo;
@@ -911,22 +913,29 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 		if(ShowBlockedServers == false)
 			break;
 
+        bool cs = MServer.IsCustomServer(Address);
+
 		if(i == -1)
-			m_LstCtrlServers->AddServerToList(QServer[Result->Index], Result->Index);
+			m_LstCtrlServers->AddServerToList(ThisServer, Result->Index, true, cs);
 		else
-			m_LstCtrlServers->AddServerToList(QServer[Result->Index], i, false);
+			m_LstCtrlServers->AddServerToList(ThisServer, i, false, cs);
 	}
 	break;
 
 	case mtrs_server_singlesuccess:
 	{
-		m_LstCtrlServers->AddServerToList(QServer[Result->Index], Result->ServerListIndex, false);
+		Server &ThisServer = QServer[Result->Index];
 
-		m_LstCtrlPlayers->AddPlayersToList(QServer[Result->Index]);
+		bool cs = MServer.IsCustomServer(ThisServer.GetAddress());
 
-		m_LstOdaSrvDetails->LoadDetailsFromServer(QServer[Result->Index]);
+		m_LstCtrlServers->AddServerToList(ThisServer, Result->ServerListIndex, 
+                                    false, cs);
 
-		TotalPlayers += QServer[Result->Index].Info.Players.size();
+		m_LstCtrlPlayers->AddPlayersToList(ThisServer);
+
+		m_LstOdaSrvDetails->LoadDetailsFromServer(ThisServer);
+
+		TotalPlayers += ThisServer.Info.Players.size();
 	}
 	break;
 
@@ -1005,12 +1014,15 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 	case 0: // server query timed out
 	{
 		bool ShowBlockedServers;
+        int ServerIndex = event.GetInt();
+		Server &ThisServer = QServer[ServerIndex];
+        std::string Address = ThisServer.GetAddress();
 
-		i = m_LstCtrlServers->FindServer(stdstr_towxstr(QServer[event.GetInt()].GetAddress()));
+		i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
 
 		m_LstCtrlPlayers->DeleteAllItems();
 
-		QServer[event.GetInt()].ResetData();
+		ThisServer.ResetData();
 
 		{
 			wxFileConfig ConfigInfo;
@@ -1022,19 +1034,26 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 		if(ShowBlockedServers == false)
 			break;
 
+        bool cs = MServer.IsCustomServer(Address);
+
 		if(i == -1)
-			m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], event.GetInt());
+			m_LstCtrlServers->AddServerToList(ThisServer, ServerIndex, true, cs);
 		else
-			m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], i, false);
+			m_LstCtrlServers->AddServerToList(ThisServer, i, false, cs);
 
 		break;
 	}
 
 	case 1: // server queried successfully
 	{
-		m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], event.GetInt());
+        int ServerIndex = event.GetInt();
+		Server &ThisServer = QServer[ServerIndex];
 
-		TotalPlayers += QServer[event.GetInt()].Info.Players.size();
+		bool cs = MServer.IsCustomServer(ThisServer.GetAddress());
+
+		m_LstCtrlServers->AddServerToList(ThisServer, ServerIndex, true, cs);
+
+		TotalPlayers += ThisServer.Info.Players.size();
 
 		break;
 	}

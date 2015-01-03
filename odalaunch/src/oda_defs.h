@@ -52,6 +52,10 @@
 #define ODA_UIPOLHIGHLIGHTSERVERS 1
 // Highlight colour
 #define ODA_UIPOLHSHIGHLIGHTCOLOUR "#00C000"
+// Highlight the server that has players in it
+#define ODA_UICSHIGHTLIGHTSERVERS 1
+// Highlight colour
+#define ODA_UICSHSHIGHLIGHTCOLOUR "#0094FF"
 
 /* Auto server list refresh timer */
 // Enables/disables the timer
@@ -125,6 +129,8 @@ static const char* def_masterlist[] =
 #define POLPSWAVFILE        "POLPSWavFile"
 #define POLHLSERVERS        "POLHighlightServers"
 #define POLHLSCOLOUR        "POLHighlightColour"
+#define CSHLSERVERS         "CSHighlightServers"
+#define CSHLCOLOUR          "CSHighlightColour"
 #define ARTENABLE           "UseAutoRefreshTimer"
 #define ARTREFINTERVAL      "AutoRefreshTimerRefreshInterval"
 #define ARTNEWLISTINTERVAL  "AutoRefreshTimerNewListInterval"

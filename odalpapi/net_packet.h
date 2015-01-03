@@ -293,6 +293,23 @@ private:
 
 	void QueryBC(const uint32_t& Timeout);
 
+	// Translates a string address to an addr_t structure
+	// Only modifies ip and port
+	bool StrAddrToAddrT(const std::string &In, addr_t &Out)
+	{
+		size_t colon = In.find(':');
+
+		if(colon == std::string::npos)
+			return false;
+
+		if(colon + 1 >= In.length())
+			return false;
+
+		Out.port = atoi(In.substr(colon + 1).c_str());
+		Out.ip = In.substr(0, colon);
+		
+		return true;
+	}
 public:
 	MasterServer()
 	{
@@ -325,28 +342,22 @@ public:
 		return false;
 	}
 
-	void AddMaster(const std::string& Address, const uint16_t& Port)
+	void AddMaster(const addr_t Master)
 	{
-		addr_t Master = { Address, Port, true };
-
 		if((Master.ip.size()) && (Master.port != 0))
 			masteraddresses.push_back(Master);
 	}
 
 	bool AddMaster(std::string Address)
 	{
-		size_t colon = Address.find(':');
-
-		if(colon == std::string::npos)
-			return false;
-
-		if(colon + 1 >= Address.length())
-			return false;
-
-		uint16_t Port = atoi(Address.substr(colon + 1).c_str());
-		std::string HostIP = Address.substr(0, colon);
-
-		AddMaster(HostIP, Port);
+        addr_t Master;
+		
+		if (!StrAddrToAddrT(Address, Master))
+            return false;
+		
+		Master.custom = true;
+		
+		AddMaster(Master);
 
 		return true;
 	}
@@ -375,6 +386,37 @@ public:
 		return masteraddresses.size();
 	}
 
+	bool IsCustomServer(size_t &Index)
+	{
+        if(Index < addresses.size())
+		{
+		    return addresses[Index].custom;
+		}
+		
+		return false;
+	}
+	
+	bool IsCustomServer(const std::string &Address)
+	{
+	    std::vector<addr_t>::const_iterator i;
+	    addr_t ServerAddr;
+
+	    if (!StrAddrToAddrT(Address, ServerAddr))
+            return false;
+
+        for (i = addresses.begin(); i != addresses.end(); ++i)
+        {
+            if (i->ip == ServerAddr.ip && 
+                i->port == ServerAddr.port)
+            {
+                if (i->custom)
+                    return true;
+            }
+        }
+        
+        return false;
+	}
+	
 	void AddServer(const std::string& Address, const uint16_t& Port,
 	               const bool& Custom = false)
 	{
