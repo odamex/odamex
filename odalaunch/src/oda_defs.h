@@ -100,6 +100,8 @@ static const char* def_masterlist[] =
 // Maximum number of threads
 #define ODA_THRMAXVAL 48
 
+// Message for unresponsive servers
+#define ODA_QRYNORESPONSE " << NO RESPONSE >> "
 
 // Network subsystem
 // -----------------

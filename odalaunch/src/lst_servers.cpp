@@ -277,6 +277,29 @@ void LstOdaServerList::ClearItemCells(long item)
 	}
 }
 
+void LstOdaServerList::SetBlockedInfo(long item)
+{
+	wxListItem ListItem;
+    wxString Msg;
+
+    Msg = ODA_QRYNORESPONSE;
+
+    // Set ping icon to gray
+    SetItemColumnImage(item, serverlist_field_ping, ImageList_PingGray);
+
+	ListItem.m_itemId = item;
+	ListItem.m_mask = wxLIST_MASK_TEXT;
+	ListItem.m_text = Msg;
+
+	ListItem.m_col = serverlist_field_name;
+	SetItem(ListItem);
+
+	// A malicious server can change its name to Msg, so do this for the wad
+	// column too
+	ListItem.m_col = serverlist_field_wads;
+	SetItem(ListItem);
+}
+
 /*
     Takes a server structure and adds it to the list control
     if insert is 1, then add an item to the list, otherwise it will
@@ -340,7 +363,11 @@ void LstOdaServerList::AddServerToList(const Server& s,
 
 	// break here so atleast we have an ip address to go by
 	if(s.GotResponse() == false)
+	{
+        SetBlockedInfo(li.GetId());
+
 		return;
+	}
 
 	// Server name column
 	li.m_col = serverlist_field_name;

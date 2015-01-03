@@ -57,6 +57,8 @@ public:
 
 protected:
 
+    void SetBlockedInfo(long item);
+
 	void ClearItemCells(long item);
 
 	void OnOpenContextMenu(wxContextMenuEvent& event);
