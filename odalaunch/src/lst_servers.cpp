@@ -389,12 +389,11 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	li.m_col = serverlist_field_players;
 	li.m_text = wxString::Format(_T("%d/%d"),(wxInt32)s.Info.Players.size(),(wxInt32)s.Info.MaxClients);
 
-	// Colour the entire text row if there are players, exclude custom servers
-	// as they have their own row highlighting
+	// Colour the entire text row if there are players
 	ConfigInfo.Read(wxT(POLHLSERVERS), &LineHighlight, ODA_UIPOLHIGHLIGHTSERVERS);
 	ConfigInfo.Read(wxT(POLHLSCOLOUR), &HighlightColour, ODA_UIPOLHSHIGHLIGHTCOLOUR);
 
-	if(IsCustomServer == false && LineHighlight)
+	if(LineHighlight)
 	{
 		wxColour Colour;
 
