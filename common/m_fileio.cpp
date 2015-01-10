@@ -252,7 +252,7 @@ void M_ExtractFileName (std::string filename, std::string &dest)
         dest = filename.substr(l);
 }
 
-std::string M_ExtractFileName(const std::string filename) {
+std::string M_ExtractFileName(const std::string &filename) {
 	std::string result;
 	M_ExtractFileName(filename, result);
 	return result;

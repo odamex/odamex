@@ -826,13 +826,15 @@ static int GetLine (void)
 			if (line[0] != '#')		// Skip comment lines
 				break;
 
-		if (!line)
-			return 0;
 
 		Line1 = skipwhite (line);
 	} while (Line1 && *Line1 == 0);	// Loop until we get a line with
 									// more than just whitespace.
-	line = strchr (Line1, '=');
+
+	if (!Line1)
+        return 0;
+
+    line = strchr (Line1, '=');
 
 	if (line) {					// We have an '=' in the input line
 		line2 = line;
