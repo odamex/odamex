@@ -1360,7 +1360,7 @@ void dlgMain::LaunchGame(const wxString& Address, const wxString& ODX_Path,
 	}
 
 #ifdef __WXMSW__
-	BinName = ODX_Path + wxT('\\') + wxT("odamex");
+	BinName = ODX_Path + wxT('\\') + wxT("odamex.exe");
 #elif __WXMAC__
 	BinName = ODX_Path + wxT("/odamex.app/Contents/MacOS/odamex");
 #else
