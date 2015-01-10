@@ -625,8 +625,8 @@ bool dlgMain::MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index,
 	// Create monitor thread
 	if(this->wxThreadHelper::CreateThread() != wxTHREAD_NO_ERROR)
 	{
-		wxMessageBox(_T("Could not create monitor thread!"),
-		             _T("Error"),
+		wxMessageBox("Could not create monitor thread!",
+		             "Error",
 		             wxOK | wxICON_ERROR);
 
 		wxExit();
@@ -996,9 +996,9 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 		break;
 	}
 
-	m_StatusBar->SetStatusText(wxString::Format(_T("Master Ping: %d"),
+	m_StatusBar->SetStatusText(wxString::Format("Master Ping: %d",
 	                           (wxInt32)MServer.GetPing()), 1);
-	m_StatusBar->SetStatusText(wxString::Format(_T("Total Players: %d"),
+	m_StatusBar->SetStatusText(wxString::Format("Total Players: %d",
 	                           (wxInt32)TotalPlayers), 3);
 
 	delete Result;
@@ -1061,9 +1061,9 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 
 	++QueriedServers;
 
-	m_StatusBar->SetStatusText(wxString::Format(_T("Queried Server %d of %d"),
+	m_StatusBar->SetStatusText(wxString::Format("Queried Server %d of %d",
 	                           (wxInt32)QueriedServers, (wxInt32)MServer.GetServerCount()), 2);
-	m_StatusBar->SetStatusText(wxString::Format(_T("Total Players: %d"),
+	m_StatusBar->SetStatusText(wxString::Format("Total Players: %d",
 	                           (wxInt32)TotalPlayers), 3);
 }
 
@@ -1541,27 +1541,27 @@ void dlgMain::OnAbout(wxCommandEvent& event)
 
 void dlgMain::OnOpenWebsite(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser(_T("http://odamex.net"));
+	wxLaunchDefaultBrowser("http://odamex.net");
 }
 
 void dlgMain::OnOpenForum(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser(_T("http://odamex.net/boards"));
+	wxLaunchDefaultBrowser("http://odamex.net/boards");
 }
 
 void dlgMain::OnOpenWiki(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser(_T("http://odamex.net/wiki"));
+	wxLaunchDefaultBrowser("http://odamex.net/wiki");
 }
 
 void dlgMain::OnOpenChangeLog(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser(_T("http://odamex.net/changelog"));
+	wxLaunchDefaultBrowser("http://odamex.net/changelog");
 }
 
 void dlgMain::OnOpenReportBug(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser(_T("http://odamex.net/bugs/enter_bug.cgi"));
+	wxLaunchDefaultBrowser("http://odamex.net/bugs/enter_bug.cgi");
 }
 
 void dlgMain::OnConnectToIRC(wxCommandEvent& event)

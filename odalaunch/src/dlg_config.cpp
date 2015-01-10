@@ -90,7 +90,7 @@ END_EVENT_TABLE()
 dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id)
 {
 	// Set up the dialog and its widgets
-	wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgConfig"));
+	wxXmlResource::Get()->LoadDialog(this, parent, "dlgConfig");
 
 	m_ChkCtrlGetListOnStart = XRCCTRL(*this, "Id_ChkCtrlGetListOnStart", wxCheckBox);
 	m_ChkCtrlShowBlockedServers = XRCCTRL(*this, "Id_ChkCtrlShowBlockedServers", wxCheckBox);
@@ -213,7 +213,7 @@ void dlgConfig::OnSpinValChange(wxSpinEvent& event)
 // User pressed ok button
 void dlgConfig::OnOK(wxCommandEvent& event)
 {
-	wxMessageDialog msgdlg(this, _T("Save settings?"), _T("Save settings?"),
+	wxMessageDialog msgdlg(this, "Save settings?", "Save settings?",
 	                       wxYES_NO | wxICON_QUESTION | wxSTAY_ON_TOP);
 
 	if(UserChangedSetting == false)
@@ -272,7 +272,7 @@ void dlgConfig::OnAddDir(wxCommandEvent& event)
 		}
 	}
 	else
-		wxMessageBox(wxString::Format(_T("Directory %s not found"),
+		wxMessageBox(wxString::Format("Directory %s not found",
 		                              WadDirectory.c_str()));
 }
 
@@ -285,7 +285,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent& event)
 
 	if(i == wxNOT_FOUND)
 	{
-		wxMessageBox(_T("Select a directory from the list to replace"));
+		wxMessageBox("Select a directory from the list to replace");
 
 		return;
 	}
@@ -310,7 +310,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent& event)
 		UserChangedSetting = true;
 	}
 	else
-		wxMessageBox(wxString::Format(_T("Directory %s not found"),
+		wxMessageBox(wxString::Format("Directory %s not found",
 		                              WadDirectory.c_str()));
 }
 
@@ -328,7 +328,7 @@ void dlgConfig::OnDeleteDir(wxCommandEvent& event)
 		UserChangedSetting = true;
 	}
 	else
-		wxMessageBox(_T("Select a directory from the list to delete"));
+		wxMessageBox("Select a directory from the list to delete");
 }
 
 // Move directory in list up 1 item
@@ -374,7 +374,7 @@ void dlgConfig::OnDownClick(wxCommandEvent& event)
 // Get the environment variables
 void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
 {
-	wxString doomwaddir = _T("");
+	wxString doomwaddir = "";
 	wxString env_paths[NUM_ENVVARS];
 	wxInt32 i = 0;
 
@@ -406,12 +406,12 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
 
 	if(path_count)
 	{
-		wxMessageBox(_T("Environment variables import successful"));
+		wxMessageBox("Environment variables import successful");
 
 		UserChangedSetting = true;
 	}
 	else
-		wxMessageBox(_T("Environment variables contains paths that have been already imported."));
+		wxMessageBox("Environment variables contains paths that have been already imported.");
 
 }
 
@@ -491,9 +491,9 @@ void dlgConfig::LoadSettings()
 		wxString path = wadlist.GetNextToken();
 
 #ifdef __WXMSW__
-		path.Replace(_T("\\\\"),_T("\\"), true);
+		path.Replace("\\\\","\\", true);
 #else
-		path.Replace(_T("////"),_T("//"), true);
+		path.Replace("////","//", true);
 #endif
 
 		m_LstCtrlWadDirectories->AppendString(path);

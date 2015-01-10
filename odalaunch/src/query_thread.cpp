@@ -35,8 +35,8 @@ QueryThread::QueryThread(wxEvtHandler* EventHandler) : wxThread(wxTHREAD_JOINABL
 {
 	if(Create() != wxTHREAD_NO_ERROR)
 	{
-		wxMessageBox(_T("Could not create worker thread!"),
-		             _T("Error"),
+		wxMessageBox("Could not create worker thread!",
+		             "Error",
 		             wxOK | wxICON_ERROR);
 
 		wxExit();

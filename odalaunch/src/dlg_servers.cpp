@@ -64,7 +64,7 @@ END_EVENT_TABLE()
 dlgServers::dlgServers(MasterServer* ms, wxWindow* parent, wxWindowID id)
 {
 	// Set up the dialog and its widgets
-	wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgServers"));
+	wxXmlResource::Get()->LoadDialog(this, parent, "dlgServers");
 
 	SERVER_LIST = XRCCTRL(*this, "ID_SERVERLIST", wxListBox);
 	CHECK_SUBSTITUTE = XRCCTRL(*this, "ID_CHKSUBSTITUTE", wxCheckBox);
@@ -102,7 +102,7 @@ void dlgServers::ChkSetValueEx(wxInt32 XrcId, wxCheckBox* CheckBox, bool checked
 // OK button
 void dlgServers::OnButtonOK(wxCommandEvent& event)
 {
-	wxMessageDialog msgdlg(this, _T("Save settings?"), _T("Save settings?"),
+	wxMessageDialog msgdlg(this, "Save settings?", "Save settings?",
 	                       wxYES_NO | wxICON_QUESTION | wxSTAY_ON_TOP);
 
 	if(UserChangedSetting == false)
@@ -157,14 +157,14 @@ void dlgServers::OnButtonAddServer(wxCommandEvent& event)
 	wxUint16 tedport_res;
 
 	wxTextEntryDialog tedAddress(this,
-	                             _T("Please enter an IP Address"),
-	                             _T("Please enter an IP Address"),
-	                             _T("127.0.0.1"));
+	                             "Please enter an IP Address",
+	                             "Please enter an IP Address",
+	                             "127.0.0.1");
 
 	wxTextEntryDialog tedPort(this,
-	                          _T("Please enter a Port number"),
-	                          _T("Please enter a Port number"),
-	                          _T("10666"));
+	                          "Please enter a Port number",
+	                          "Please enter a Port number",
+	                          "10666");
 
 	// Show it
 	tedAddress.ShowModal();
@@ -174,7 +174,7 @@ void dlgServers::OnButtonAddServer(wxCommandEvent& event)
 	tedport_res = wxAtoi(tedPort.GetValue().c_str());
 
 	// Make a 0.0.0.0:0 address string
-	wxString addr_portfmt = wxString::Format(_T("%s:%d"),
+	wxString addr_portfmt = wxString::Format("%s:%d",
 	                        tedaddr_res.c_str(),
 	                        tedport_res);
 
@@ -202,21 +202,21 @@ void dlgServers::OnButtonReplaceServer(wxCommandEvent& event)
 
 	if(i == wxNOT_FOUND)
 	{
-		wxMessageBox(_T("Select an item to replace!"));
+		wxMessageBox("Select an item to replace!");
 		return;
 	}
 
 	CustomServer_t* cs = (CustomServer_t*)SERVER_LIST->GetClientData(i);
 
 	wxTextEntryDialog tedAddress(this,
-	                             _T("Please enter an IP Address"),
-	                             _T("Please enter an IP Address"),
+	                             "Please enter an IP Address",
+	                             "Please enter an IP Address",
 	                             cs->Address);
 
 	wxTextEntryDialog tedPort(this,
-	                          _T("Please enter a Port number"),
-	                          _T("Please enter a Port number"),
-	                          wxString::Format(_T("%d"), cs->Port));
+	                          "Please enter a Port number",
+	                          "Please enter a Port number",
+	                          wxString::Format("%d", cs->Port));
 
 	// Show it
 	tedAddress.ShowModal();
@@ -226,7 +226,7 @@ void dlgServers::OnButtonReplaceServer(wxCommandEvent& event)
 	tedport_res = wxAtoi(tedPort.GetValue().c_str());
 
 	// Make a 0.0.0.0:0 address string
-	wxString addr_portfmt = wxString::Format(_T("%s:%d"),
+	wxString addr_portfmt = wxString::Format("%s:%d",
 	                        tedaddr_res.c_str(),
 	                        tedport_res);
 
@@ -302,29 +302,29 @@ void dlgServers::SaveSettings()
 {
 	wxFileConfig fc;
 
-	fc.SetPath(_T("/CustomServers"));
-	fc.Write(_T("NumberOfServers"), (wxInt32)SERVER_LIST->GetCount());
+	fc.SetPath("/CustomServers");
+	fc.Write("NumberOfServers", (wxInt32)SERVER_LIST->GetCount());
 
 	for(wxInt32 i = 0; i < SERVER_LIST->GetCount(); i++)
 	{
 		// Jump to/create path for current server to be written
-		fc.SetPath(wxString::Format(_T("%d"), i));
+		fc.SetPath(wxString::Format("%d", i));
 
 		CustomServer_t* cs = (CustomServer_t*)SERVER_LIST->GetClientData(i);
 
-		fc.Write(_T("Address"), cs->Address);
-		fc.Write(_T("Port"), cs->Port);
+		fc.Write("Address", cs->Address);
+		fc.Write("Port", cs->Port);
 
-		fc.SetPath(_T("Substitute"));
+		fc.SetPath("Substitute");
 
-		fc.Write(_T("Enabled"), cs->Subst.Enabled);
-		fc.Write(_T("Address"), cs->Subst.Address);
-		fc.Write(_T("Port"), cs->Subst.Port);
+		fc.Write("Enabled", cs->Subst.Enabled);
+		fc.Write("Address", cs->Subst.Address);
+		fc.Write("Port", cs->Subst.Port);
 
-		fc.SetPath(_T("../"));
+		fc.SetPath("../");
 
 		// Traverse back down to "/CustomServers"
-		fc.SetPath(_T("../"));
+		fc.SetPath("../");
 	}
 
 	// Save settings to configuration file
@@ -335,34 +335,34 @@ void dlgServers::LoadSettings()
 {
 	wxFileConfig fc;
 
-	fc.SetPath(_T("/CustomServers"));
+	fc.SetPath("/CustomServers");
 
-	wxInt32 NumberOfServers = fc.Read(_T("NumberOfServers"), 0L);
+	wxInt32 NumberOfServers = fc.Read("NumberOfServers", 0L);
 
 	for(wxInt32 i = 0; i < NumberOfServers; i++)
 	{
 		// Jump to/create path for current server to be written
-		fc.SetPath(wxString::Format(_T("%d"), i));
+		fc.SetPath(wxString::Format("%d", i));
 
 		CustomServer_t* cs = new CustomServer_t;
 
-		cs->Address = fc.Read(_T("Address"), _T(""));
-		cs->Port = fc.Read(_T("Port"), 0L);
+		cs->Address = fc.Read("Address", "");
+		cs->Port = fc.Read("Port", 0L);
 
-		fc.SetPath(_T("Substitute"));
+		fc.SetPath("Substitute");
 
-		fc.Read(_T("Enabled"), cs->Subst.Enabled);
-		cs->Subst.Address = fc.Read(_T("Address"), _T(""));
-		cs->Subst.Port = fc.Read(_T("Port"), 0L);
+		fc.Read("Enabled", cs->Subst.Enabled);
+		cs->Subst.Address = fc.Read("Address", "");
+		cs->Subst.Port = fc.Read("Port", 0L);
 
-		SERVER_LIST->Append(wxString::Format(_T("%s:%d"),
+		SERVER_LIST->Append(wxString::Format("%s:%d",
 		                                     cs->Address.c_str(),
 		                                     cs->Port), (void*)(cs));
 
-		fc.SetPath(_T("../"));
+		fc.SetPath("../");
 
 		// Traverse back down to "/CustomServers"
-		fc.SetPath(_T("../"));
+		fc.SetPath("../");
 	}
 }
 

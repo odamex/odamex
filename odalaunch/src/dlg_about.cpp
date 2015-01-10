@@ -39,7 +39,7 @@ dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
 {
 	wxString Text, Version, wxWidgetsVersion;
 
-	wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgAbout"));
+	wxXmlResource::Get()->LoadDialog(this, parent, "dlgAbout");
 
 	m_StcTxtCopyright = XRCCTRL(*this, "Id_StcTxtCopyright",
 	                            wxStaticText);

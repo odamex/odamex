@@ -221,12 +221,12 @@ void LstOdaPlayerList::AddPlayersToList(const Server& s)
 	        s.Info.GameType == GT_CaptureTheFlag)
 	{
 		InsertColumn(playerlist_field_team,
-		             _T("Team"),
+		             "Team",
 		             wxLIST_FORMAT_LEFT,
 		             WidthTeam);
 
 		InsertColumn(playerlist_field_teamscore,
-		             _T("Team Score"),
+		             "Team Score",
 		             wxLIST_FORMAT_LEFT,
 		             WidthTeamScore);
 	}
@@ -254,13 +254,13 @@ void LstOdaPlayerList::AddPlayersToList(const Server& s)
 
 		li.SetColumn(playerlist_field_ping);
 
-		li.SetText(wxString::Format(_T("%d"),
+		li.SetText(wxString::Format("%d",
 		                            s.Info.Players[i].Ping));
 
 		SetItem(li);
 
 		li.SetColumn(playerlist_field_frags);
-		li.SetText(wxString::Format(_T("%d"),
+		li.SetText(wxString::Format("%d",
 		                            s.Info.Players[i].Frags));
 
 		SetItem(li);
@@ -273,18 +273,18 @@ void LstOdaPlayerList::AddPlayersToList(const Server& s)
 			kdr = (float)s.Info.Players[i].Frags / (float)s.Info.Players[i].Deaths;
 
 		li.SetColumn(playerlist_field_kdrcount);
-		li.SetText(wxString::Format(_T("%2.1f"), kdr));
+		li.SetText(wxString::Format("%2.1f", kdr));
 
 		SetItem(li);
 
 		li.SetColumn(playerlist_field_killcount);
-		li.SetText(wxString::Format(_T("%d"),
+		li.SetText(wxString::Format("%d",
 		                            s.Info.Players[i].Kills));
 
 		SetItem(li);
 
 		li.SetColumn(playerlist_field_deathcount);
-		li.SetText(wxString::Format(_T("%d"),
+		li.SetText(wxString::Format("%d",
 		                            s.Info.Players[i].Deaths));
 
 		SetItem(li);
