@@ -99,17 +99,16 @@ ok:
 
 /*
    Read a packet received from a master server
-
-   If this already contains server addresses
-   it will be freed and reinitialized (horrible I know)
    */
 int32_t MasterServer::Parse()
 {
-
-	// begin reading
-
+    ostringstream ipfmt;
+    addr_t address = { "", 0, false };
 	uint32_t temp_response;
+	int16_t server_count;
+    uint8_t ip1, ip2, ip3, ip4;
 
+	// Make sure we have a valid response from the master server
 	Socket->Read32(temp_response);
 
 	if(temp_response != response)
@@ -119,8 +118,7 @@ int32_t MasterServer::Parse()
 		return 0;
 	}
 
-	int16_t server_count;
-
+	// Get the total amount of servers that this master server has registered
 	Socket->Read16(server_count);
 
 	if(!server_count)
@@ -130,31 +128,30 @@ int32_t MasterServer::Parse()
 		return 0;
 	}
 
-	// Add on to any servers already in the list
-	if(server_count)
-		for(int16_t i = 0; i < server_count; i++)
-		{
-			addr_t address;
-			uint8_t ip1, ip2, ip3, ip4;
+	// Begin processing the list of server addresses that we have received
+	for(int16_t i = 0; i < server_count; i++)
+	{
+        // Get the IP address and port number from the receive buffer
+		Socket->Read8(ip1);
+		Socket->Read8(ip2);
+		Socket->Read8(ip3);
+		Socket->Read8(ip4);
+		Socket->Read16(address.port);
 
-			Socket->Read8(ip1);
-			Socket->Read8(ip2);
-			Socket->Read8(ip3);
-			Socket->Read8(ip4);
+		// Format the IP address into dot notation and copy it into the address
+		// structure
+		ipfmt << (int)ip1 << "." << (int)ip2 << "." << (int)ip3 << "." << (int)ip4;
+		address.ip = ipfmt.str();
 
-			ostringstream stream;
+		// Finally add the server address to the list and clear out the string 
+		// stream object for further use in the next iteration
+        AddServer(address);
 
-			stream << (int)ip1 << "." << (int)ip2 << "." << (int)ip3 << "." << (int)ip4;
-			address.ip = stream.str();
+		ipfmt.str("");
+		ipfmt.clear();
+	}
 
-			Socket->Read16(address.port);
-
-			address.custom = false;
-
-			// Don't add the same address more than once.
-			AddServer(address);
-		}
-
+	// Check previous reading operations that may have failed
 	if(Socket->BadRead())
 	{
 		Socket->ClearBuffer();

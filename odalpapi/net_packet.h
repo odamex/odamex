@@ -95,13 +95,13 @@ struct Cvar_t
 
 	union
 	{
-		bool b;
-		int8_t i8;
-		uint8_t ui8;
-		int16_t i16;
-		uint16_t ui16;
 		int32_t i32;
 		uint32_t ui32;
+		int16_t i16;
+        uint16_t ui16;
+		int8_t i8;
+		uint8_t ui8;
+		bool b;
 	};
 
 	uint8_t Type;
@@ -136,7 +136,7 @@ struct Player_t
 enum GameType_t
 {
 	GT_Cooperative = 0
-	                 ,GT_Deathmatch
+    ,GT_Deathmatch
 	,GT_TeamDeathmatch
 	,GT_CaptureTheFlag
 	,GT_Max
@@ -171,18 +171,20 @@ struct ServerInfo_t
 class ServerBase  // [Russell] - Defines an abstract class for all packets
 {
 protected:
-	BufferedSocket* Socket;
-	// Magic numbers
-	uint32_t challenge;
-	uint32_t response;
+	std::string m_Address;
 
 	// The time in milliseconds a packet was received
 	uint64_t Ping;
 
-	uint8_t m_RetryCount;
+	BufferedSocket* Socket;
 
-	std::string m_Address;
+	// Magic numbers
+	uint32_t challenge;
+	uint32_t response;
+
 	uint16_t m_Port;
+
+	uint8_t m_RetryCount;
 
 	//  AG_Mutex m_Mutex;
 public:
