@@ -55,23 +55,23 @@ dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
 	// wxWidgets Bug: wxTE_AUTO_URL appears to get set AFTER SetValue() has been
 	// called, this causes urls to not get recognized (msw XRC handler problem?)
 	Text = m_TxtCtrlDevelopers->GetValue();
-	m_TxtCtrlDevelopers->SetValue(wxT(""));
+	m_TxtCtrlDevelopers->SetValue("");
 	m_TxtCtrlDevelopers->WriteText(Text);
 
 	// Set (protocol) version info on desired text control
 	Version = wxString::Format(
-	              wxT("Version %d.%d.%d - Protocol Version %d"),
+	              "Version %d.%d.%d - Protocol Version %d",
 	              VERSIONMAJOR(VERSION), VERSIONMINOR(VERSION), VERSIONPATCH(VERSION),
 	              PROTOCOL_VERSION);
 
 	m_StcTxtVersion->SetLabel(Version);
 
 	// Set the copyright and year
-	m_StcTxtCopyright->SetLabel(wxT(_ODA_COPYRIGHT_));
+	m_StcTxtCopyright->SetLabel(_ODA_COPYRIGHT_);
 
 	// Set launcher built version
 	wxWidgetsVersion = wxString::Format(
-	                       wxT(", Version %d.%d.%d-%d"),
+	                       ", Version %d.%d.%d-%d",
 	                       wxMAJOR_VERSION, wxMINOR_VERSION, wxRELEASE_NUMBER,
 	                       wxSUBRELEASE_NUMBER);
 

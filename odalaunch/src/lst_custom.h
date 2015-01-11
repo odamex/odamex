@@ -72,7 +72,7 @@ public:
 
 	int AddImageSmall(wxImage Image);
 	void ClearImageList();
-	long ALCInsertItem(const wxString& Text = wxT(""));
+	long ALCInsertItem(const wxString& Text = "");
 
 	void ApplyFilter(wxString Filter = wxEmptyString);
 

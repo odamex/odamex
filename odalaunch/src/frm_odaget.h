@@ -46,8 +46,8 @@ class URIHandler
 {
 public:
 	URIHandler(const wxString& File) :
-		m_User(wxT("")), m_Password(wxT("")), m_Server(wxT("")), m_Port(0),
-		m_Path(wxT("")), m_Directory(wxT("")),  m_File(File)
+		m_User(""), m_Password(""), m_Server(""), m_Port(0),
+		m_Path(""), m_Directory(""),  m_File(File)
 	{
 
 	}
@@ -116,7 +116,7 @@ enum FTPEvent
 class FTPThread : public wxThread
 {
 public:
-	FTPThread(wxEvtHandler* EventHandler, wxString URL, wxString SaveLocation, wxString File = wxT("")) :
+	FTPThread(wxEvtHandler* EventHandler, wxString URL, wxString SaveLocation, wxString File = "") :
 		wxThread(wxTHREAD_JOINABLE), m_EventHandler(EventHandler), m_URL(URL), m_SaveLocation(SaveLocation)
 	{
 		m_File = File;
@@ -165,13 +165,13 @@ enum HTTPEvent
 class HTTPThread : public wxThread
 {
 public:
-	HTTPThread(wxEvtHandler* EventHandler, wxString URL, wxString SaveLocation, wxString File = wxT("")) :
+	HTTPThread(wxEvtHandler* EventHandler, wxString URL, wxString SaveLocation, wxString File = "") :
 		wxThread(wxTHREAD_JOINABLE), m_EventHandler(EventHandler), m_URL(URL), m_SaveLocation(SaveLocation)
 	{
 		m_File = File;
 
-		m_HTTP.SetHeader(wxT("Accept"), wxT("text/*"));
-		m_HTTP.SetHeader(wxT("User-Agent"), wxT("OdaGet 0.1"));
+		m_HTTP.SetHeader("Accept", "text/*");
+		m_HTTP.SetHeader("User-Agent", "OdaGet 0.1");
 
 		m_HTTP.SetTimeout(60);
 	}
@@ -198,7 +198,7 @@ private:
 class frmOdaGet : public wxFrame
 {
 public:
-	frmOdaGet(wxTopLevelWindow* parent, wxWindowID id = -1, wxString SaveLocation = wxT(""));
+	frmOdaGet(wxTopLevelWindow* parent, wxWindowID id = -1, wxString SaveLocation = "");
 	virtual ~frmOdaGet();
 private:
 	void OnClose(wxCloseEvent& event);

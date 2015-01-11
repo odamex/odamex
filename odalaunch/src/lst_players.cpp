@@ -100,20 +100,20 @@ void LstOdaPlayerList::SetupPlayerListColumns()
 	wxInt32 WidthAttr, WidthName, WidthPing, WidthFrags, WidthKDRCount,
 	        WidthKillCount, WidthDeathCount, WidthTime;
 
-	//ConfigInfo.Read(wxT("PlayerListWidthName"), &WidthName, 150);
+	//ConfigInfo.Read("PlayerListWidthName"), &WidthName, 150);
 	WidthAttr = 24; // fixed column size
-	ConfigInfo.Read(wxT("PlayerListWidthName"), &WidthName, 150);
-	ConfigInfo.Read(wxT("PlayerListWidthPing"), &WidthPing, 60);
-	ConfigInfo.Read(wxT("PlayerListWidthFrags"), &WidthFrags, 70);
-	ConfigInfo.Read(wxT("PlayerListWidthKDRCount"), &WidthKDRCount, 85);
-	ConfigInfo.Read(wxT("PlayerListWidthKillCount"), &WidthKillCount, 85);
-	ConfigInfo.Read(wxT("PlayerListWidthDeathCount"), &WidthDeathCount, 100);
-	ConfigInfo.Read(wxT("PlayerListWidthTime"), &WidthTime, 150);
-	ConfigInfo.Read(wxT("PlayerListWidthTeam"), &WidthTeam, 65);
-	ConfigInfo.Read(wxT("PlayerListWidthTeamScore"), &WidthTeamScore, 100);
+	ConfigInfo.Read("PlayerListWidthName", &WidthName, 150);
+	ConfigInfo.Read("PlayerListWidthPing", &WidthPing, 60);
+	ConfigInfo.Read("PlayerListWidthFrags", &WidthFrags, 70);
+	ConfigInfo.Read("PlayerListWidthKDRCount", &WidthKDRCount, 85);
+	ConfigInfo.Read("PlayerListWidthKillCount", &WidthKillCount, 85);
+	ConfigInfo.Read("PlayerListWidthDeathCount", &WidthDeathCount, 100);
+	ConfigInfo.Read("PlayerListWidthTime", &WidthTime, 150);
+	ConfigInfo.Read("PlayerListWidthTeam", &WidthTeam, 65);
+	ConfigInfo.Read("PlayerListWidthTeamScore", &WidthTeamScore, 100);
 
 	InsertColumn(playerlist_field_attr,
-	             wxT(""),
+	             "",
 	             wxLIST_FORMAT_LEFT,
 	             WidthAttr);
 
@@ -122,49 +122,49 @@ void LstOdaPlayerList::SetupPlayerListColumns()
 	SetSortColumnIsSpecial((wxInt32)playerlist_field_attr);
 
 	InsertColumn(playerlist_field_name,
-	             wxT("Player name"),
+	             "Player name",
 	             wxLIST_FORMAT_LEFT,
 	             WidthName);
 
 	InsertColumn(playerlist_field_ping,
-	             wxT("Ping"),
+	             "Ping",
 	             wxLIST_FORMAT_LEFT,
 	             WidthPing);
 
 	InsertColumn(playerlist_field_frags,
-	             wxT("Frags"),
+	             "Frags",
 	             wxLIST_FORMAT_LEFT,
 	             WidthFrags);
 
 	InsertColumn(playerlist_field_killcount,
-	             wxT("K/D Ratio"),
+	             "K/D Ratio",
 	             wxLIST_FORMAT_LEFT,
 	             WidthKDRCount);
 
 	InsertColumn(playerlist_field_killcount,
-	             wxT("Kill count"),
+	             "Kill count",
 	             wxLIST_FORMAT_LEFT,
 	             WidthKillCount);
 
 	InsertColumn(playerlist_field_deathcount,
-	             wxT("Death count"),
+	             "Death count",
 	             wxLIST_FORMAT_LEFT,
 	             WidthDeathCount);
 
 	InsertColumn(playerlist_field_timeingame,
-	             wxT("Time (HH:MM)"),
+	             "Time (HH:MM)",
 	             wxLIST_FORMAT_LEFT,
 	             WidthTime);
 
 	// Sorting info
-	ConfigInfo.Read(wxT("PlayerListSortOrder"), &PlayerListSortOrder, 1);
-	ConfigInfo.Read(wxT("PlayerListSortColumn"), &PlayerListSortColumn, 0);
+	ConfigInfo.Read("PlayerListSortOrder", &PlayerListSortOrder, 1);
+	ConfigInfo.Read("PlayerListSortColumn", &PlayerListSortColumn, 0);
 
 	SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
 
-	ImageList_Spectator = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("spectator")).ConvertToImage());
-	ImageList_BlueBullet = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_blue")).ConvertToImage());
-	ImageList_RedBullet = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")).ConvertToImage());
+	ImageList_Spectator = AddImageSmall(wxXmlResource::Get()->LoadBitmap("spectator").ConvertToImage());
+	ImageList_BlueBullet = AddImageSmall(wxXmlResource::Get()->LoadBitmap("bullet_blue").ConvertToImage());
+	ImageList_RedBullet = AddImageSmall(wxXmlResource::Get()->LoadBitmap("bullet_red").ConvertToImage());
 }
 
 LstOdaPlayerList::~LstOdaPlayerList()
@@ -178,8 +178,8 @@ LstOdaPlayerList::~LstOdaPlayerList()
 	// Sorting info
 	GetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
 
-	ConfigInfo.Write(wxT("PlayerListSortOrder"), PlayerListSortOrder);
-	ConfigInfo.Write(wxT("PlayerListSortColumn"), PlayerListSortColumn);
+	ConfigInfo.Write("PlayerListSortOrder", PlayerListSortOrder);
+	ConfigInfo.Write("PlayerListSortColumn", PlayerListSortColumn);
 
 	wxInt32 WidthName, WidthPing, WidthFrags, WidthKillCount, WidthDeathCount,
 	        WidthTime;
@@ -191,12 +191,12 @@ LstOdaPlayerList::~LstOdaPlayerList()
 	WidthDeathCount = GetColumnWidth(playerlist_field_deathcount);
 	WidthTime = GetColumnWidth(playerlist_field_timeingame);
 
-	ConfigInfo.Write(wxT("PlayerListWidthName"), WidthName);
-	ConfigInfo.Write(wxT("PlayerListWidthPing"), WidthPing);
-	ConfigInfo.Write(wxT("PlayerListWidthFrags"), WidthFrags);
-	ConfigInfo.Write(wxT("PlayerListWidthKillCount"), WidthKillCount);
-	ConfigInfo.Write(wxT("PlayerListWidthDeathCount"), WidthDeathCount);
-	ConfigInfo.Write(wxT("PlayerListWidthTime"), WidthTime);
+	ConfigInfo.Write("PlayerListWidthName", WidthName);
+	ConfigInfo.Write("PlayerListWidthPing", WidthPing);
+	ConfigInfo.Write("PlayerListWidthFrags", WidthFrags);
+	ConfigInfo.Write("PlayerListWidthKillCount", WidthKillCount);
+	ConfigInfo.Write("PlayerListWidthDeathCount", WidthDeathCount);
+	ConfigInfo.Write("PlayerListWidthTime", WidthTime);
 
 	// Team and Team Scores are shown dynamically, so handle the case of them
 	// not existing
@@ -209,8 +209,8 @@ LstOdaPlayerList::~LstOdaPlayerList()
 	WidthTeam = GetColumnWidth(playerlist_field_team);
 	WidthTeamScore = GetColumnWidth(playerlist_field_teamscore);
 
-	ConfigInfo.Write(wxT("PlayerListWidthTeam"), WidthTeam);
-	ConfigInfo.Write(wxT("PlayerListWidthTeamScore"), WidthTeamScore);
+	ConfigInfo.Write("PlayerListWidthTeam", WidthTeam);
+	ConfigInfo.Write("PlayerListWidthTeamScore", WidthTeamScore);
 }
 
 void LstOdaPlayerList::AddPlayersToList(const Server& s)
@@ -292,11 +292,11 @@ void LstOdaPlayerList::AddPlayersToList(const Server& s)
 
 		if(s.Info.Players[i].Time)
 		{
-			Time = wxString::Format(wxT("%.2d:%.2d"),
+			Time = wxString::Format("%.2d:%.2d",
 			                        s.Info.Players[i].Time / 60, s.Info.Players[i].Time % 60);
 		}
 		else
-			Time = wxT("00:00");
+			Time = "00:00";
 
 		li.SetColumn(playerlist_field_timeingame);
 		li.SetText(Time);
@@ -326,7 +326,7 @@ void LstOdaPlayerList::AddPlayersToList(const Server& s)
 		        s.Info.GameType == GT_CaptureTheFlag)
 		{
 			wxUint8 TeamId;
-			wxString TeamName = wxT("Unknown");
+			wxString TeamName = "Unknown";
 			wxUint32 TeamColour = 0;
 			wxInt16 TeamScore = 0;
 
@@ -386,7 +386,7 @@ void LstOdaPlayerList::AddPlayersToList(const Server& s)
 
 			li.SetColumn(playerlist_field_teamscore);
 
-			li.SetText(wxString::Format(wxT("%d"), TeamScore));
+			li.SetText(wxString::Format("%d", TeamScore));
 
 			SetItem(li);
 		}

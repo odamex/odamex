@@ -136,8 +136,8 @@ int QueryThread::GetIdealThreadCount()
 	{
         wxFileConfig ConfigInfo;
 
-        ConfigInfo.Read(wxT(QRYTHREADMULTIPLIER), &ThreadMul, ODA_THRMULVAL);
-        ConfigInfo.Read(wxT(QRYTHREADMAXIMUM), &ThreadMax, ODA_THRMAXVAL);
+        ConfigInfo.Read(QRYTHREADMULTIPLIER, &ThreadMul, ODA_THRMULVAL);
+        ConfigInfo.Read(QRYTHREADMAXIMUM, &ThreadMax, ODA_THRMAXVAL);
 	}
 
 	// Base number of threads on cpu count in the system (including cores)

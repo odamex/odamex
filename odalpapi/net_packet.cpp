@@ -452,7 +452,7 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 	// It isn't a response
 	if(TagQRId != 2)
 	{
-		//wxLogDebug(wxT("Query/Response Id is not valid"));
+		//wxLogDebug("Query/Response Id is not valid"));
 
 		return 0;
 	}
@@ -462,7 +462,7 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 	// Enquirer
 	case 1:
 	{
-		//wxLogDebug(wxT("Application is Enquirer"));
+		//wxLogDebug("Application is Enquirer"));
 
 		return 0;
 	}
@@ -471,7 +471,7 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 	// Client
 	case 2:
 	{
-		//wxLogDebug(wxT("Application is Client"));
+		//wxLogDebug("Application is Client"));
 
 		return 0;
 	}
@@ -480,14 +480,14 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 	// Server
 	case 3:
 	{
-		//wxLogDebug(wxT("Application is Server"));
+		//wxLogDebug("Application is Server"));
 	}
 	break;
 
 	// Master Server
 	case 4:
 	{
-		//wxLogDebug(wxT("Application is Master Server"));
+		//wxLogDebug("Application is Master Server"));
 
 		return 0;
 	}
@@ -496,7 +496,7 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 	// Unknown
 	default:
 	{
-		//wxLogDebug(wxT("Application is Unknown"));
+		//wxLogDebug("Application is Unknown"));
 
 		return 0;
 	}

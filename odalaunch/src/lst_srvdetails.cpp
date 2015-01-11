@@ -108,16 +108,16 @@ void LstOdaSrvDetails::InsertLine(const wxString& Name, const wxString& Value)
 	while(i < Value.Length())
 	{
 		// Insert new line
-		if(Value[i] == wxT('\\') &&
-		        (i + 1 < Value.Length() && Value[i+1] == wxT('n')))
+		if(Value[i] == '\\' &&
+		        (i + 1 < Value.Length() && Value[i+1] == 'n'))
 		{
 			ListItem.SetColumn(srvdetails_field_value);
 			ListItem.SetText(Str);
 			SetItem(ListItem);
 
 			ListItem.SetColumn(srvdetails_field_name);
-			ListItem.SetId(InsertItem(GetItemCount(), wxT("")));
-			ListItem.SetText(wxT(""));
+			ListItem.SetId(InsertItem(GetItemCount(), ""));
+			ListItem.SetText("");
 			SetItem(ListItem);
 
 			Str.Clear();
@@ -156,11 +156,11 @@ void LstOdaSrvDetails::ToggleGameStatusSection(const Server& In)
 	{
 		if(In.Info.TimeLeft)
 		{
-			TimeLeft = wxString::Format(wxT("%.2d:%.2d"),
+			TimeLeft = wxString::Format("%.2d:%.2d",
 			                            In.Info.TimeLeft / 60, In.Info.TimeLeft % 60);
 		}
 		else
-			TimeLeft = wxT("00:00");
+			TimeLeft = "00:00";
 
 		addtime = true;
 	}
@@ -173,15 +173,15 @@ void LstOdaSrvDetails::ToggleGameStatusSection(const Server& In)
 
 	if(addtime || addsl)
 	{
-		InsertLine(wxT(""), wxT(""));
-		InsertHeader(wxT("Game Status"));
+		InsertLine("", "");
+		InsertHeader("Game Status");
 
 		if(addtime)
-			InsertLine(wxT("Time left (HH:MM)"), TimeLeft);
+			InsertLine("Time left (HH:MM)", TimeLeft);
 
 		if(addsl)
 		{
-			InsertLine(wxT("Score Limit"), wxString::Format(wxT("%u"),
+			InsertLine("Score Limit", wxString::Format("%u",
 			           In.Info.ScoreLimit));
 		}
 	}
@@ -196,29 +196,29 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 		return;
 
 	// Begin adding data to the control
-	InsertColumn(srvdetails_field_name, wxT(""), wxLIST_FORMAT_LEFT, 150);
-	InsertColumn(srvdetails_field_value, wxT(""), wxLIST_FORMAT_LEFT, 150);
+	InsertColumn(srvdetails_field_name, "", wxLIST_FORMAT_LEFT, 150);
+	InsertColumn(srvdetails_field_value, "", wxLIST_FORMAT_LEFT, 150);
 
 	// Version
-	InsertLine(wxT("Version"), wxString::Format(wxT("%u.%u.%u-r%u"),
+	InsertLine("Version", wxString::Format("%u.%u.%u-r%u",
 	           In.Info.VersionMajor,
 	           In.Info.VersionMinor,
 	           In.Info.VersionPatch,
 	           In.Info.VersionRevision));
 
-	InsertLine(wxT("QP Version"), wxString::Format(wxT("%u"),
+	InsertLine("QP Version", wxString::Format("%u",
 	           In.Info.VersionProtocol));
 
 	// Add this section only if its needed
 	ToggleGameStatusSection(In);
 
 	// Patch (BEX/DEH) files
-	InsertLine(wxT(""), wxT(""));
-	InsertHeader(wxT("BEX/DEH Files"));
+	InsertLine("", "");
+	InsertHeader("BEX/DEH Files");
 
 	if(In.Info.Patches.empty())
 	{
-		InsertLine(wxT("None"), wxT(""));
+		InsertLine("None", "");
 	}
 	else
 	{
@@ -241,8 +241,8 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 
 			InsertLine(Current, Next);
 
-			Current = wxT("");
-			Next = wxT("");
+			Current = "";
+			Next = "";
 		}
 	}
 
@@ -252,18 +252,18 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 	sort(Cvars.begin(), Cvars.end(), CvarCompare);
 
 	// Cvars that are enabled
-	InsertLine(wxT(""), wxT(""));
-	InsertHeader(wxT("Cvars Enabled"));
+	InsertLine("", "");
+	InsertHeader("Cvars Enabled");
 
 	for(size_t i = 0; i < Cvars.size(); ++i)
 	{
 		if(Cvars[i].Type == CVARTYPE_BOOL)
-			InsertLine(stdstr_towxstr(Cvars[i].Name), wxT(""));
+			InsertLine(stdstr_towxstr(Cvars[i].Name), "");
 	}
 
 	// Gameplay settings
-	InsertLine(wxT(""), wxT(""));
-	InsertHeader(wxT("Gameplay Variables"));
+	InsertLine("", "");
+	InsertHeader("Gameplay Variables");
 
 	for(size_t i = 0; i < Cvars.size(); ++i)
 	{
@@ -275,7 +275,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 		{
 			wxString Value;
 
-			Value = wxString::Format(wxT("%d"), Cvars[i].i8);
+			Value = wxString::Format("%d", Cvars[i].i8);
 
 			InsertLine(Name, Value);
 		}
@@ -285,7 +285,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 		{
 			wxString Value;
 
-			Value = wxString::Format(wxT("%d"), Cvars[i].i16);
+			Value = wxString::Format("%d", Cvars[i].i16);
 
 			InsertLine(Name, Value);
 		}
@@ -295,7 +295,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 		{
 			wxString Value;
 
-			Value = wxString::Format(wxT("%d"), Cvars[i].i32);
+			Value = wxString::Format("%d", Cvars[i].i32);
 
 			InsertLine(Name, Value);
 		}

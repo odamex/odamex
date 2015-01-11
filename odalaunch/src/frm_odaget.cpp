@@ -100,7 +100,7 @@ private:
 frmOdaGet::frmOdaGet(wxTopLevelWindow* parent, wxWindowID id, wxString SaveLocation)
 	: m_SaveLocation(SaveLocation)
 {
-	wxXmlResource::Get()->LoadFrame(this, parent, wxT("frmOdaGet"));
+	wxXmlResource::Get()->LoadFrame(this, parent, "frmOdaGet");
 
 	if(parent)
 	{
@@ -173,7 +173,7 @@ void frmOdaGet::OnDownload(wxCommandEvent& event)
 
 	DeleteThreads();
 
-	if(URL != wxT(""))
+	if(URL != "")
 	{
 		wxURI URI(m_DownloadURL->GetValue());
 		wxString Scheme;
@@ -182,7 +182,7 @@ void frmOdaGet::OnDownload(wxCommandEvent& event)
 		if(URI.HasScheme())
 			Scheme = URI.GetScheme();
 
-		if(Scheme == wxT("http"))
+		if(Scheme == "http")
 		{
 			m_HTTPThread = new HTTPThread(this,
 			                              m_DownloadURL->GetValue(),
@@ -191,7 +191,7 @@ void frmOdaGet::OnDownload(wxCommandEvent& event)
 			m_HTTPThread->Run();
 		}
 
-		if(Scheme == wxT("ftp"))
+		if(Scheme == "ftp")
 		{
 			m_FTPThread = new FTPThread(this,
 			                            m_DownloadURL->GetValue(),
@@ -214,7 +214,7 @@ void frmOdaGet::OnFtpThreadMessage(wxCommandEvent& event)
 	{
 	case FTP_BADURL:
 	{
-		String = wxString::Format(wxT("Invalid URL: %s\n"),
+		String = wxString::Format("Invalid URL: %s\n",
 		                          event.GetString().c_str());
 
 		m_LocationDisplay->AppendText(String);
@@ -223,7 +223,7 @@ void frmOdaGet::OnFtpThreadMessage(wxCommandEvent& event)
 
 	case FTP_CONNECTED:
 	{
-		String = wxString::Format(wxT("Connected to %s:%u\n"),
+		String = wxString::Format("Connected to %s:%u\n",
 		                          event.GetString().c_str(),
 		                          event.GetInt());
 
@@ -233,7 +233,7 @@ void frmOdaGet::OnFtpThreadMessage(wxCommandEvent& event)
 
 	case FTP_DISCONNECTED:
 	{
-		String = wxString::Format(wxT("Failed to connect to %s:%u\n"),
+		String = wxString::Format("Failed to connect to %s:%u\n",
 		                          event.GetString().c_str(),
 		                          event.GetInt());
 
@@ -247,14 +247,14 @@ void frmOdaGet::OnFtpThreadMessage(wxCommandEvent& event)
 
 		if(m_FileSize > 0)
 		{
-			String = wxString::Format(wxT("File size is %d\n"),
+			String = wxString::Format("File size is %d\n",
 			                          m_FileSize);
 
 			m_DownloadGauge->SetRange(event.GetInt());
 		}
 		else
 		{
-			String = wxT("File size not available\n");
+			String = "File size not available\n";
 
 			m_DownloadGauge->SetRange(10);
 		}
@@ -265,7 +265,7 @@ void frmOdaGet::OnFtpThreadMessage(wxCommandEvent& event)
 
 	case FTP_DOWNLOADING:
 	{
-		String = wxString::Format(wxT("Now downloading file to %s\n"),
+		String = wxString::Format("Now downloading file to %s\n",
 		                          event.GetString().c_str());
 
 		m_LocationDisplay->AppendText(String);
@@ -274,7 +274,7 @@ void frmOdaGet::OnFtpThreadMessage(wxCommandEvent& event)
 
 	case FTP_DOWNLOADERROR:
 	{
-		String = wxString::Format(wxT("Download of file %s failed\n"),
+		String = wxString::Format("Download of file %s failed\n",
 		                          event.GetString().c_str());
 
 		m_LocationDisplay->AppendText(String);
@@ -283,7 +283,7 @@ void frmOdaGet::OnFtpThreadMessage(wxCommandEvent& event)
 
 	case FTP_DOWNLOADTERMINATED:
 	{
-		String = wxT("User stopped download\n");
+		String = "User stopped download\n";
 
 		m_LocationDisplay->AppendText(String);
 	}
@@ -307,7 +307,7 @@ void frmOdaGet::OnFtpThreadMessage(wxCommandEvent& event)
 
 	case FTP_DOWNLOADCOMPLETE:
 	{
-		String = wxT("Download complete\n");
+		String = "Download complete\n";
 
 		m_LocationDisplay->AppendText(String);
 	}
@@ -330,7 +330,7 @@ void frmOdaGet::OnHttpThreadMessage(wxCommandEvent& event)
 	{
 	case HTTP_BADURL:
 	{
-		String = wxString::Format(wxT("Invalid URL: %s\n"),
+		String = wxString::Format("Invalid URL: %s\n",
 		                          event.GetString().c_str());
 
 		m_LocationDisplay->AppendText(String);
@@ -339,7 +339,7 @@ void frmOdaGet::OnHttpThreadMessage(wxCommandEvent& event)
 
 	case HTTP_CONNECTED:
 	{
-		String = wxString::Format(wxT("Connected to %s:%u\n"),
+		String = wxString::Format("Connected to %s:%u\n",
 		                          event.GetString().c_str(),
 		                          event.GetInt());
 
@@ -349,7 +349,7 @@ void frmOdaGet::OnHttpThreadMessage(wxCommandEvent& event)
 
 	case HTTP_DISCONNECTED:
 	{
-		String = wxString::Format(wxT("Failed to connect to %s:%u\n"),
+		String = wxString::Format("Failed to connect to %s:%u\n",
 		                          event.GetString().c_str(),
 		                          event.GetInt());
 
@@ -359,7 +359,7 @@ void frmOdaGet::OnHttpThreadMessage(wxCommandEvent& event)
 
 	case HTTP_GOTFILEINFO:
 	{
-		String = wxString::Format(wxT("File size is %llu\n"),
+		String = wxString::Format("File size is %llu\n",
 		                          (size_t)event.GetInt());
 
 		m_DownloadGauge->SetRange((size_t)event.GetInt());
@@ -370,7 +370,7 @@ void frmOdaGet::OnHttpThreadMessage(wxCommandEvent& event)
 
 	case HTTP_DOWNLOADING:
 	{
-		String = wxString::Format(wxT("Now downloading file to %s\n"),
+		String = wxString::Format("Now downloading file to %s\n",
 		                          event.GetString().c_str());
 
 		m_LocationDisplay->AppendText(String);
@@ -379,7 +379,7 @@ void frmOdaGet::OnHttpThreadMessage(wxCommandEvent& event)
 
 	case HTTP_DOWNLOADERROR:
 	{
-		String = wxString::Format(wxT("Download of file %s failed\n"),
+		String = wxString::Format("Download of file %s failed\n",
 		                          event.GetString().c_str());
 
 		m_LocationDisplay->AppendText(String);
@@ -388,7 +388,7 @@ void frmOdaGet::OnHttpThreadMessage(wxCommandEvent& event)
 
 	case HTTP_DOWNLOADTERMINATED:
 	{
-		String = wxT("User stopped download\n");
+		String = "User stopped download\n";
 
 		m_LocationDisplay->AppendText(String);
 	}
@@ -404,7 +404,7 @@ void frmOdaGet::OnHttpThreadMessage(wxCommandEvent& event)
 
 	case HTTP_DOWNLOADCOMPLETE:
 	{
-		String = wxT("Download complete\n");
+		String = "Download complete\n";
 
 		m_LocationDisplay->AppendText(String);
 	}
@@ -434,18 +434,18 @@ URIResult URIHandler::ParseURL(const wxString& URL)
 	m_Path = URI.GetPath();
 
 	// We support searching directories for files, this will be used later on
-	wxInt32 FilePosition = (m_Path.Find(wxT('/'), true) + 1);
+	wxInt32 FilePosition = (m_Path.Find('/', true) + 1);
 
 	if(FilePosition >= m_Path.Length())
 	{
-		if(m_File == wxT(""))
+		if(m_File == "")
 			return URI_BADFILE;
 	}
 
 	// Save the directory as well
 	m_Directory = m_Path.Mid(0, FilePosition - 1);
 
-	if(m_File == wxT(""))
+	if(m_File == "")
 		m_File = m_Path.Mid(FilePosition);
 
 	if(URI.HasPort())
@@ -458,7 +458,7 @@ URIResult URIHandler::ParseURL(const wxString& URL)
 		// These are deprecated as of RFC 1396
 		m_User = URI.GetUser();
 
-		if(UserInfo.Find(wxT(':'), false) != -1)
+		if(UserInfo.Find(':', false) != -1)
 			m_Password = URI.GetPassword();
 	}
 
@@ -513,7 +513,7 @@ void* FTPThread::Entry()
 	case URI_BADDOMAIN:
 	{
 		Event.SetId(FTP_BADURL);
-		Event.SetString(wxT("No domain specified"));
+		Event.SetString("No domain specified");
 		wxQueueEvent(m_EventHandler, Event.Clone());
 
 		return NULL;
@@ -523,7 +523,7 @@ void* FTPThread::Entry()
 	case URI_BADPATH:
 	{
 		Event.SetId(FTP_BADURL);
-		Event.SetString(wxT("Path to file not specified"));
+		Event.SetString("Path to file not specified");
 		wxQueueEvent(m_EventHandler, Event.Clone());
 
 		return NULL;
@@ -533,7 +533,7 @@ void* FTPThread::Entry()
 	case URI_BADFILE:
 	{
 		Event.SetId(FTP_BADURL);
-		Event.SetString(wxT("This is a directory, not a file"));
+		Event.SetString("This is a directory, not a file");
 		wxQueueEvent(m_EventHandler, Event.Clone());
 
 		return NULL;
@@ -558,10 +558,10 @@ void* FTPThread::Entry()
 	wxString User = URI.GetUser();
 	wxString Password = URI.GetPassword();
 
-	if(User != wxT(""))
+	if(User != "")
 		m_FTP.SetUser(User);
 
-	if(Password != wxT(""))
+	if(Password != "")
 		m_FTP.SetPassword(Password);
 
 	wxIPV4address IPV4address;
@@ -619,13 +619,13 @@ void* FTPThread::Entry()
 	int statuscode;
 	wxString Command;
 
-	Command.Printf(wxT("SIZE %s"), m_File);
+	Command.Printf("SIZE %s", m_File);
 
 	char ret = m_FTP.SendCommand(Command);
 
 	if(ret == '2')
 	{
-		if(wxSscanf(m_FTP.GetLastResult().c_str(), wxT("%i %i"),
+		if(wxSscanf(m_FTP.GetLastResult().c_str(), "%i %i",
 		            &statuscode, &FileSize) != 2)
 		{
 			// Try wx's version
@@ -712,7 +712,7 @@ void* HTTPThread::Entry()
 	case URI_BADDOMAIN:
 	{
 		Event.SetId(HTTP_BADURL);
-		Event.SetString(wxT("No domain specified"));
+		Event.SetString("No domain specified");
 		wxQueueEvent(m_EventHandler, Event.Clone());
 
 		return NULL;
@@ -722,7 +722,7 @@ void* HTTPThread::Entry()
 	case URI_BADPATH:
 	{
 		Event.SetId(HTTP_BADURL);
-		Event.SetString(wxT("Path to file not specified"));
+		Event.SetString("Path to file not specified");
 		wxQueueEvent(m_EventHandler, Event.Clone());
 
 		return NULL;
@@ -732,7 +732,7 @@ void* HTTPThread::Entry()
 	case URI_BADFILE:
 	{
 		Event.SetId(HTTP_BADURL);
-		Event.SetString(wxT("This is a directory, not a file"));
+		Event.SetString("This is a directory, not a file");
 		wxQueueEvent(m_EventHandler, Event.Clone());
 
 		return NULL;

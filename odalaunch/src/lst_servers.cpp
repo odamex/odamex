@@ -51,7 +51,7 @@ static int ImageList_PingGray = -1;
 
 LstOdaServerList::LstOdaServerList()
 {
-	m_mnuPopup = wxXmlResource::Get()->LoadMenu(wxT("Id_mnuServersPopup"));
+	m_mnuPopup = wxXmlResource::Get()->LoadMenu("Id_mnuServersPopup");
 }
 
 void LstOdaServerList::OnCreateControl(wxWindowCreateEvent& event)
@@ -143,20 +143,20 @@ void LstOdaServerList::SetupServerListColumns()
 	DeleteAllColumns();
 
 	// Read in the column widths
-	//ConfigInfo.Read(wxT("ServerListWidthAttr"), &WidthAttr, 40);
+	//ConfigInfo.Read("ServerListWidthAttr"), &WidthAttr, 40);
 	WidthAttr = 24; // fixed column size
-	ConfigInfo.Read(wxT("ServerListWidthName"), &WidthName, 150);
-	ConfigInfo.Read(wxT("ServerListWidthPing"), &WidthPing, 60);
-	ConfigInfo.Read(wxT("ServerListWidthPlayers"), &WidthPlayers, 80);
-	ConfigInfo.Read(wxT("ServerListWidthWads"), &WidthWads, 150);
-	ConfigInfo.Read(wxT("ServerListWidthMap"), &WidthMap, 60);
-	ConfigInfo.Read(wxT("ServerListWidthType"), &WidthType, 80);
-	ConfigInfo.Read(wxT("ServerListWidthIwad"), &WidthIwad, 100);
-	ConfigInfo.Read(wxT("ServerListWidthAddress"), &WidthAddress, 130);
+	ConfigInfo.Read("ServerListWidthName", &WidthName, 150);
+	ConfigInfo.Read("ServerListWidthPing", &WidthPing, 60);
+	ConfigInfo.Read("ServerListWidthPlayers", &WidthPlayers, 80);
+	ConfigInfo.Read("ServerListWidthWads", &WidthWads, 150);
+	ConfigInfo.Read("ServerListWidthMap", &WidthMap, 60);
+	ConfigInfo.Read("ServerListWidthType", &WidthType, 80);
+	ConfigInfo.Read("ServerListWidthIwad", &WidthIwad, 100);
+	ConfigInfo.Read("ServerListWidthAddress", &WidthAddress, 130);
 
 	// set up the list columns
 	InsertColumn(serverlist_field_attr,
-	             wxT(""),
+	             "",
 	             wxLIST_FORMAT_LEFT,
 	             WidthAttr);
 
@@ -165,57 +165,57 @@ void LstOdaServerList::SetupServerListColumns()
 	SetSortColumnIsSpecial((wxInt32)serverlist_field_attr);
 
 	InsertColumn(serverlist_field_name,
-	             wxT("Server name"),
+	             "Server name",
 	             wxLIST_FORMAT_LEFT,
 	             WidthName);
 
 	InsertColumn(serverlist_field_ping,
-	             wxT("Ping"),
+	             "Ping",
 	             wxLIST_FORMAT_LEFT,
 	             WidthPing);
 
 	InsertColumn(serverlist_field_players,
-	             wxT("Players"),
+	             "Players",
 	             wxLIST_FORMAT_LEFT,
 	             WidthPlayers);
 
 	InsertColumn(serverlist_field_wads,
-	             wxT("WADs"),
+	             "WADs",
 	             wxLIST_FORMAT_LEFT,
 	             WidthWads);
 
 	InsertColumn(serverlist_field_map,
-	             wxT("Map"),
+	             "Map",
 	             wxLIST_FORMAT_LEFT,
 	             WidthMap);
 
 	InsertColumn(serverlist_field_type,
-	             wxT("Type"),
+	             "Type",
 	             wxLIST_FORMAT_LEFT,
 	             WidthType);
 
 	InsertColumn(serverlist_field_iwad,
-	             wxT("Game IWAD"),
+	             "Game IWAD",
 	             wxLIST_FORMAT_LEFT,
 	             WidthIwad);
 
 	InsertColumn(serverlist_field_address,
-	             wxT("Address : Port"),
+	             "Address : Port",
 	             wxLIST_FORMAT_LEFT,
 	             WidthAddress);
 
 	// Passworded server icon
-	ImageList_Padlock = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("locked_server")).ConvertToImage());
-	ImageList_PingGreen = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_green")).ConvertToImage());
-	ImageList_PingOrange = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_orange")).ConvertToImage());
-	ImageList_PingRed = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")).ConvertToImage());
-	ImageList_PingGray = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_gray")).ConvertToImage());
+	ImageList_Padlock = AddImageSmall(wxXmlResource::Get()->LoadBitmap("locked_server").ConvertToImage());
+	ImageList_PingGreen = AddImageSmall(wxXmlResource::Get()->LoadBitmap("bullet_green").ConvertToImage());
+	ImageList_PingOrange = AddImageSmall(wxXmlResource::Get()->LoadBitmap("bullet_orange").ConvertToImage());
+	ImageList_PingRed = AddImageSmall(wxXmlResource::Get()->LoadBitmap("bullet_red").ConvertToImage());
+	ImageList_PingGray = AddImageSmall(wxXmlResource::Get()->LoadBitmap("bullet_gray").ConvertToImage());
 
 	// Sorting info
 	wxInt32 ServerListSortOrder, ServerListSortColumn;
 
-	ConfigInfo.Read(wxT("ServerListSortOrder"), &ServerListSortOrder, 1);
-	ConfigInfo.Read(wxT("ServerListSortColumn"), &ServerListSortColumn, (int)serverlist_field_name);
+	ConfigInfo.Read("ServerListSortOrder", &ServerListSortOrder, 1);
+	ConfigInfo.Read("ServerListSortColumn", &ServerListSortColumn, (int)serverlist_field_name);
 
 	SetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
 }
@@ -236,23 +236,23 @@ LstOdaServerList::~LstOdaServerList()
 	WidthIwad = GetColumnWidth(serverlist_field_iwad);
 	WidthAddress = GetColumnWidth(serverlist_field_address);
 
-	//ConfigInfo.Write(wxT("ServerListWidthAttr"), WidthAttr);
-	ConfigInfo.Write(wxT("ServerListWidthName"), WidthName);
-	ConfigInfo.Write(wxT("ServerListWidthPing"), WidthPing);
-	ConfigInfo.Write(wxT("ServerListWidthPlayers"), WidthPlayers);
-	ConfigInfo.Write(wxT("ServerListWidthWads"), WidthWads);
-	ConfigInfo.Write(wxT("ServerListWidthMap"), WidthMap);
-	ConfigInfo.Write(wxT("ServerListWidthType"), WidthType);
-	ConfigInfo.Write(wxT("ServerListWidthIwad"), WidthIwad);
-	ConfigInfo.Write(wxT("ServerListWidthAddress"), WidthAddress);
+	//ConfigInfo.Write("ServerListWidthAttr"), WidthAttr);
+	ConfigInfo.Write("ServerListWidthName", WidthName);
+	ConfigInfo.Write("ServerListWidthPing", WidthPing);
+	ConfigInfo.Write("ServerListWidthPlayers", WidthPlayers);
+	ConfigInfo.Write("ServerListWidthWads", WidthWads);
+	ConfigInfo.Write("ServerListWidthMap", WidthMap);
+	ConfigInfo.Write("ServerListWidthType", WidthType);
+	ConfigInfo.Write("ServerListWidthIwad", WidthIwad);
+	ConfigInfo.Write("ServerListWidthAddress", WidthAddress);
 
 	// Sorting info
 	wxInt32 ServerListSortOrder, ServerListSortColumn;
 
 	GetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
 
-	ConfigInfo.Write(wxT("ServerListSortOrder"), ServerListSortOrder);
-	ConfigInfo.Write(wxT("ServerListSortColumn"), ServerListSortColumn);
+	ConfigInfo.Write("ServerListSortOrder", ServerListSortOrder);
+	ConfigInfo.Write("ServerListSortColumn", ServerListSortColumn);
 }
 
 // Clears text and images located in all cells of a particular item
@@ -263,7 +263,7 @@ void LstOdaServerList::ClearItemCells(long item)
 
 	ListItem.m_itemId = item;
 	ListItem.m_mask = wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE;
-	ListItem.m_text = wxT("");
+	ListItem.m_text = "";
 	ListItem.m_image = -1;
 
 	ColumnCount = GetColumnCount();
@@ -319,7 +319,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	wxListItem li;
 
 	wxUint64 Ping = 0;
-	wxString GameType = wxT("");
+	wxString GameType = "";
 	size_t WadCount = 0;
 
 	li.m_mask = wxLIST_MASK_TEXT;
@@ -350,8 +350,8 @@ void LstOdaServerList::AddServerToList(const Server& s,
     {
         wxColour Colour;
 
-        ConfigInfo.Read(wxT(CSHLSERVERS), &LineHighlight, ODA_UICSHIGHTLIGHTSERVERS);
-        ConfigInfo.Read(wxT(CSHLCOLOUR), &HighlightColour, ODA_UICSHSHIGHLIGHTCOLOUR);
+        ConfigInfo.Read(CSHLSERVERS, &LineHighlight, ODA_UICSHIGHTLIGHTSERVERS);
+        ConfigInfo.Read(CSHLCOLOUR, &HighlightColour, ODA_UICSHSHIGHLIGHTCOLOUR);
 
 		Colour.Set(HighlightColour);
         
@@ -390,8 +390,8 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	li.m_text = wxString::Format("%d/%d",(wxInt32)s.Info.Players.size(),(wxInt32)s.Info.MaxClients);
 
 	// Colour the entire text row if there are players
-	ConfigInfo.Read(wxT(POLHLSERVERS), &LineHighlight, ODA_UIPOLHIGHLIGHTSERVERS);
-	ConfigInfo.Read(wxT(POLHLSCOLOUR), &HighlightColour, ODA_UIPOLHSHIGHLIGHTCOLOUR);
+	ConfigInfo.Read(POLHLSERVERS, &LineHighlight, ODA_UIPOLHIGHLIGHTSERVERS);
+	ConfigInfo.Read(POLHLSCOLOUR, &HighlightColour, ODA_UIPOLHSHIGHLIGHTCOLOUR);
 
 	if(LineHighlight)
 	{
@@ -444,9 +444,9 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	{
 		// Detect a single player server
 		if(s.Info.MaxPlayers > 1)
-			GameType = wxT("Cooperative");
+			GameType = "Cooperative";
 		else
-			GameType = wxT("Single Player");
+			GameType = "Single Player";
 	}
 	break;
 
@@ -454,27 +454,27 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	{
 		// Detect a 'duel' server
 		if(s.Info.MaxPlayers < 3)
-			GameType = wxT("Duel");
+			GameType = "Duel";
 		else
-			GameType = wxT("Deathmatch");
+			GameType = "Deathmatch";
 	}
 	break;
 
 	case GT_TeamDeathmatch:
 	{
-		GameType = wxT("Team Deathmatch");
+		GameType = "Team Deathmatch";
 	}
 	break;
 
 	case GT_CaptureTheFlag:
 	{
-		GameType = wxT("Capture The Flag");
+		GameType = "Capture The Flag";
 	}
 	break;
 
 	default:
 	{
-		GameType = wxT("Unknown");
+		GameType = "Unknown";
 	}
 	break;
 	}
@@ -508,10 +508,10 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	// Allows us to sort by passworded servers as well
 	SetItemData(li.m_itemId, (IsPasswordEmpty ? 0 : 1));
 
-	ConfigInfo.Read(wxT(ICONPINGQGOOD), &PQGood, ODA_UIPINGQUALITYGOOD);
-	ConfigInfo.Read(wxT(ICONPINGQPLAYABLE), &PQPlayable,
+	ConfigInfo.Read(ICONPINGQGOOD, &PQGood, ODA_UIPINGQUALITYGOOD);
+	ConfigInfo.Read(ICONPINGQPLAYABLE, &PQPlayable,
 	                ODA_UIPINGQUALITYPLAYABLE);
-	ConfigInfo.Read(wxT(ICONPINGQLAGGY), &PQLaggy, ODA_UIPINGQUALITYLAGGY);
+	ConfigInfo.Read(ICONPINGQLAGGY, &PQLaggy, ODA_UIPINGQUALITYLAGGY);
 
 	// Coloured bullets for ping quality
 	if(Ping < PQGood)
