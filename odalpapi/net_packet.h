@@ -465,9 +465,10 @@ public:
 
 		while(i < addresses.size())
 		{
-			if(addresses[i].custom == Custom &&
-			        DeleteServer(i))
+			if(addresses[i].custom == Custom)
 			{
+				DeleteServer(i);
+
 				continue;
 			}
 
