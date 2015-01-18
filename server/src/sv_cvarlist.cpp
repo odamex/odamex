@@ -240,7 +240,9 @@ CVAR_RANGE(		sv_countdown, "5", "Number of seconds to wait before starting the g
 // Experimental settings (all categories)
 // =======================================
 
-// None currently
+CVAR(			sv_dmfarspawn, "0", "EXPERIMENTAL: When enabled in DM, players will spawn at the farthest point" \ 
+                "from each other.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
 // Hacky abominations that should be purged with fire and brimstone
 // =================================================================
