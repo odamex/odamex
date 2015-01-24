@@ -97,13 +97,13 @@ void* QueryThread::Entry()
 	wxCommandEvent newEvent(wxEVT_THREAD_WORKER_SIGNAL, wxID_ANY);
 	odalpapi::BufferedSocket Socket;
 
+    m_Mutex.Lock();
+
 	// Keeps the thread alive, it will wait for commands instead of the
 	// killing itself/creating itself overhead
 	while(1)
 	{
 		SetStatus(QueryThread_Waiting);
-
-		m_Mutex.Lock();
 
 		// Put the thread to sleep and wait for a signal
 		m_Condition->Wait();
