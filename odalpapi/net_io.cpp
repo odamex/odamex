@@ -252,7 +252,7 @@ int32_t BufferedSocket::GetData(const int32_t& Timeout)
 	socklen_t        fromlen;
 
 	// Wait for read with timeout
-	if(Timeout >= 0)
+	if(Timeout > 0)
 	{
 		FD_ZERO(&readfds);
 		FD_SET(m_Socket, &readfds);

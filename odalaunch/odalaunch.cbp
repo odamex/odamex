@@ -48,6 +48,7 @@
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
 					<Add option="-DwxUSE_UNICODE" />
+					<Add option="-DODAMEX_DEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32 -lws2_32" />
@@ -174,6 +175,7 @@
 					<Add option="/D__WXMSW__" />
 					<Add option="/D__WXDEBUG__" />
 					<Add option="/DwxUSE_UNICODE" />
+					<Add option="/DODAMEX_DEBUG" />
 					<Add directory="$(#WX.include)" />
 					<Add directory="$(#WX.lib)/vc_$(WX_LIB)/$(WX_PLAT)$(WX_CFG)" />
 					<Add directory="$(#WX)/contrib/include" />

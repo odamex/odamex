@@ -736,6 +736,12 @@ void dlgMain::MonThrGetServerList()
 			QueryThread* OdaQT = threadVector[i];
 			QueryThreadStatus Status = OdaQT->GetStatus();
 
+			// Check if the user wants us to exit
+			if(OdaTH->TestDestroy())
+			{
+				return;
+			}
+			
 			if(Status == QueryThread_Running)
 			{
 				// Give up some timeslice for this thread so worker thread slots
@@ -757,12 +763,6 @@ void dlgMain::MonThrGetServerList()
 				              ServerTimeout, RetryCount);
 
 				++serverNum;
-			}
-
-			// Check if the user wants us to exit
-			if(OdaTH->TestDestroy())
-			{
-				return;
 			}
 		}
 	}

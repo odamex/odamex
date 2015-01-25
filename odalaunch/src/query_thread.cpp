@@ -42,8 +42,6 @@ QueryThread::QueryThread(wxEvtHandler* EventHandler) : wxThread(wxTHREAD_JOINABL
 		wxExit();
 	}
 
-	m_Condition = new wxCondition(m_Mutex);
-
 	Run();
 }
 
@@ -74,7 +72,7 @@ void QueryThread::GracefulExit()
 	// Set the exit code and signal thread to exit
 	SetStatus(QueryThread_Exiting);
 
-	m_Condition->Signal();
+	m_Semaphore.Post();
 
 	// Wait until the thread has closed completely
 	Wait();
@@ -89,15 +87,13 @@ void QueryThread::Signal(odalpapi::Server* QueryServer, const std::string& Addre
 	m_Address = Address;
 	m_Port = Port;
 
-	m_Condition->Signal();
+    m_Semaphore.Post();
 }
 
 void* QueryThread::Entry()
 {
 	wxCommandEvent newEvent(wxEVT_THREAD_WORKER_SIGNAL, wxID_ANY);
 	odalpapi::BufferedSocket Socket;
-
-    m_Mutex.Lock();
 
 	// Keeps the thread alive, it will wait for commands instead of the
 	// killing itself/creating itself overhead
@@ -106,12 +102,12 @@ void* QueryThread::Entry()
 		SetStatus(QueryThread_Waiting);
 
 		// Put the thread to sleep and wait for a signal
-		m_Condition->Wait();
+		m_Semaphore.Wait();
 
-		// We got signaled to do some work, so lets do it
-		if(GetStatus() == QueryThread_Exiting)
+        if(GetStatus() == QueryThread_Exiting)
 			break;
 
+		// We got signaled to do some work, so lets do it
 		SetStatus(QueryThread_Running);
 
 		m_QueryServer->SetSocket(&Socket);
