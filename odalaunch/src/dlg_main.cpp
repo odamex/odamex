@@ -442,7 +442,7 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 	wxFileConfig ConfigInfo;
 	wxInt32 ServerTimeout;
 	Server tmp_server;
-	odalpapi::BufferedSocket socket;
+	odalpapi::BufferedSocket Socket;
 	wxString server_hash;
 	wxString ped_hash;
 	wxString ped_result;
@@ -515,7 +515,7 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 	}
 
 	// Query the server and try to acquire its password hash
-	tmp_server.SetSocket(&socket);
+	tmp_server.SetSocket(&Socket);
 	tmp_server.SetAddress(wxstr_tostdstr(IPHost), Port);
 	tmp_server.Query(ServerTimeout);
 
@@ -783,6 +783,8 @@ void dlgMain::MonThrGetSingleServer()
 	wxFileConfig ConfigInfo;
 	wxInt32 ServerTimeout;
 	wxInt32 RetryCount;
+    odalpapi::BufferedSocket Socket;
+	Server &ThisServer = QServer[mtcs_Request.Index];
 
 	if(!MServer.GetServerCount())
 		return;
@@ -790,9 +792,10 @@ void dlgMain::MonThrGetSingleServer()
 	ConfigInfo.Read(SERVERTIMEOUT, &ServerTimeout, ODA_QRYSERVERTIMEOUT);
 	ConfigInfo.Read(RETRYCOUNT, &RetryCount, ODA_QRYGSRETRYCOUNT);
 
-	QServer[mtcs_Request.Index].SetRetries(RetryCount);
+	ThisServer.SetSocket(&Socket);
+	ThisServer.SetRetries(RetryCount);
 
-	if(QServer[mtcs_Request.Index].Query(ServerTimeout))
+	if(ThisServer.Query(ServerTimeout))
 	{
 		MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1,
 		                mtrs_server_singlesuccess, mtcs_Request.Index,
