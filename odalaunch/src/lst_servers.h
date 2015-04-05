@@ -47,12 +47,17 @@ public:
 	LstOdaServerList();
 	virtual ~LstOdaServerList();
 
-	void AddServerToList(const odalpapi::Server& s, wxInt32 index, bool insert = true);
+	void AddServerToList(const odalpapi::Server& s, 
+                      wxInt32 index, 
+                      bool insert = true, 
+                      bool IsCustomServer = false);
 
 	wxInt32 FindServer(wxString Address);
 	wxInt32 GetSelectedServerIndex();
 
 protected:
+
+    void SetBlockedInfo(long item);
 
 	void ClearItemCells(long item);
 

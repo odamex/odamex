@@ -544,18 +544,21 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 // [RH] Returns the distance of the closest player to the given mapthing2_t.
 // denis - todo - should this be used somewhere?
-/*static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
+// [Russell] This code is horrible because it does no position checking, even 
+// zdoom 2.x still has it!
+static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
 {
+	Players::iterator it;
 	fixed_t closest = MAXINT;
 	fixed_t distance;
 
-	for (size_t i = 0; i < players.size(); i++)
+	for (it = players.begin(); it != players.end(); ++it)
 	{
-		if (!players[i].ingame() || !players[i].mo || players[i].health <= 0)
+		if (!it->ingame() || !it->mo || it->health <= 0)
 			continue;
 
-		distance = P_AproxDistance (players[i].mo->x - spot->x * FRACUNIT,
-									players[i].mo->y - spot->y * FRACUNIT);
+		distance = P_AproxDistance (it->mo->x - spot->x * FRACUNIT,
+									it->mo->y - spot->y * FRACUNIT);
 
 		if (distance < closest)
 			closest = distance;
@@ -584,8 +587,6 @@ static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
 
 	return bestspot;
 }
-
-*/
 
 // [RH] Select a deathmatch spawn spot at random (original mechanism)
 static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections)
@@ -686,6 +687,8 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 	P_SpawnPlayer (player, spot);
 }
 
+EXTERN_CVAR (sv_dmfarspawn)
+
 void G_DeathMatchSpawnPlayer (player_t &player)
 {
 	int selections;
@@ -706,7 +709,12 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 		I_Error ("No deathmatch starts");
 
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-	spot = SelectRandomDeathmatchSpot (player, selections);
+	// [Russell] - Readded, makes modern dm more interesting
+	// NOTE - Might also be useful for other game modes
+	if ((sv_dmfarspawn) && player.mo)
+        spot = SelectFarthestDeathmatchSpot(selections);
+    else
+        spot = SelectRandomDeathmatchSpot (player, selections);
 
 	if (!spot && !playerstarts.empty())
 	{

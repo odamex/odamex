@@ -1,5 +1,33 @@
-$Id: Changelog.txt,v 1.193 2014/02/05 17:26:45 nanard Exp $
+$Id: Changelog.txt,v 1.202 2014/11/17 19:10:28 nanard Exp $
 miniUPnP client Changelog.
+
+2014/11/17:
+  search all :
+    upnpDiscoverDevices() / upnpDiscoverAll() functions
+    listdevices executable
+  increment API_VERSION to 12
+  validate igd_desc_parse
+
+2014/11/13:
+  increment API_VERSION to 11
+
+2014/11/05:
+  simplified function GetUPNPUrls()
+
+2014/09/11:
+  use remoteHost arg of DeletePortMapping
+
+2014/09/06:
+  Fix python3 build
+
+2014/07/01:
+  Fix parsing of IGD2 root descriptions
+
+2014/06/10:
+  rename LIBSPEC to MINIUPNP_LIBSPEC
+
+2014/05/15:
+  Add support for IGD2 AddAnyPortMapping and DeletePortMappingRange
 
 2014/02/05:
   handle EINPROGRESS after connect()

@@ -594,7 +594,7 @@ bool P_AreTeammates(player_t &a, player_t &b)
 
 bool P_CanSpy(player_t &viewer, player_t &other)
 {
-	if (other.spectator || !other.mo)
+	if ((other.id != consoleplayer_id && other.spectator) || !other.mo)
 		return false;
 
 	return (viewer.spectator || P_AreTeammates(viewer, other) || demoplayback);

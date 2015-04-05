@@ -461,7 +461,7 @@ void wxAdvancedListCtrl::BackupList()
 // Reloads everything into the current row
 void wxAdvancedListCtrl::DoRestoreRow(size_t row)
 {
-	long id = InsertItem(row, wxT(""));
+	long id = InsertItem(row, "");
 
 	for(size_t y = 0; y < BackupItems[row].size(); ++y)
 	{
@@ -479,17 +479,17 @@ wxString CreateFilter(wxString s)
 	size_t i;
 
 	if(s.IsEmpty())
-		return wxT("");
+		return "";
 
-	s.Prepend(wxT("*"));
+	s.Prepend("*");
 
 	// Uppercase
 	s = s.Upper();
 
 	// Replace whitespace with kleene stars for better matching
-	s.Replace(wxT(' '), wxT('*'));
+	s.Replace(' ', '*');
 
-	s += wxT("*");
+	s += "*";
 
 	return s;
 }
@@ -513,7 +513,7 @@ void wxAdvancedListCtrl::DoApplyFilter(const wxString& Filter)
 		{
 			// Creates a tokenized list of all the strings in individual columns
 			FlatColumn += BackupItems[x][y].GetText().Upper().Trim(false).Trim(true);
-			FlatColumn += wxT(' ');
+			FlatColumn += ' ';
 		}
 
 		if(FlatColumn.Matches(Filter))
@@ -535,7 +535,7 @@ void wxAdvancedListCtrl::RestoreList()
 
 	for(size_t x = 0; x < BackupItems.size(); ++x)
 	{
-		InsertItem(x, wxT(""));
+		InsertItem(x, "");
 
 		for(size_t y = 0; y < BackupItems[x].size(); ++y)
 		{

@@ -44,7 +44,7 @@
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
 #define NUM_ENVVARS 2
-const wxString env_vars[NUM_ENVVARS] = { _T("DOOMWADDIR"), _T("DOOMWADPATH") };
+const wxString env_vars[NUM_ENVVARS] = { "DOOMWADDIR", "DOOMWADPATH" };
 
 class dlgConfig: public wxDialog
 {
@@ -89,6 +89,7 @@ protected:
 	wxCheckBox* m_ChkCtrlPlaySystemBeep;
 	wxCheckBox* m_ChkCtrlPlaySoundFile;
 	wxCheckBox* m_ChkCtrlHighlightServerLines;
+	wxCheckBox* m_ChkCtrlHighlightCustomServers;
 	wxCheckBox* m_ChkCtrlkAutoServerRefresh;
 
 	wxListBox* m_LstCtrlWadDirectories;
@@ -96,10 +97,13 @@ protected:
 	wxDirPickerCtrl* m_DirCtrlChooseOdamexPath;
 	wxFilePickerCtrl* m_FilePickCtrlSoundFile;
 	wxColourPickerCtrl* m_ClrPickServerLineHighlighter;
+	wxColourPickerCtrl* m_ClrPickCustomServerHighlight;
 
 	wxSpinCtrl* m_SpnCtrlMasterTimeout;
 	wxSpinCtrl* m_SpnCtrlServerTimeout;
 	wxSpinCtrl* m_SpnCtrlRetry;
+    wxSpinCtrl* m_SpnCtrlThreadMul;
+    wxSpinCtrl* m_SpnCtrlThreadMax;
 
 	wxSpinCtrl* m_SpnRefreshInterval;
 

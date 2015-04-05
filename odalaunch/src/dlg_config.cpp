@@ -51,9 +51,11 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
 	EVT_BUTTON(wxID_OK, dlgConfig::OnOK)
 
+	// Picker events
 	EVT_DIRPICKER_CHANGED(XRCID("Id_DirCtrlChooseOdamexPath"), dlgConfig::OnFileDirChange)
 	EVT_FILEPICKER_CHANGED(XRCID("Id_FilePickSoundFile"), dlgConfig::OnFileDirChange)
 	EVT_COLOURPICKER_CHANGED(XRCID("Id_ClrPickServerLineHighlighter"), dlgConfig::OnClrPickerChange)
+    EVT_COLOURPICKER_CHANGED(XRCID("Id_ClrPickCustomServerHighlight"), dlgConfig::OnClrPickerChange)
 
 	// Misc events
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlGetListOnStart"), dlgConfig::OnCheckedBox)
@@ -64,11 +66,15 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_CHECKBOX(XRCID("Id_ChkSystemBeep"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkPlaySound"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkColorServerLine"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkColorCustomServers"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkAutoRefresh"), dlgConfig::OnCheckedBox)
 
-	EVT_TEXT(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnTextChange)
-	EVT_TEXT(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnTextChange)
-	EVT_TEXT(XRCID("Id_SpnCtrlRetry"), dlgConfig::OnTextChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlRetry"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlThreadMul"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlThreadMax"), dlgConfig::OnSpinValChange)
+
 	EVT_TEXT(XRCID("Id_TxtCtrlExtraCmdLineArgs"), dlgConfig::OnTextChange)
 
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQGood"), dlgConfig::OnSpinValChange)
@@ -84,7 +90,7 @@ END_EVENT_TABLE()
 dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id)
 {
 	// Set up the dialog and its widgets
-	wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgConfig"));
+	wxXmlResource::Get()->LoadDialog(this, parent, "dlgConfig");
 
 	m_ChkCtrlGetListOnStart = XRCCTRL(*this, "Id_ChkCtrlGetListOnStart", wxCheckBox);
 	m_ChkCtrlShowBlockedServers = XRCCTRL(*this, "Id_ChkCtrlShowBlockedServers", wxCheckBox);
@@ -94,6 +100,7 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id)
 	m_ChkCtrlPlaySystemBeep = XRCCTRL(*this, "Id_ChkSystemBeep", wxCheckBox);
 	m_ChkCtrlPlaySoundFile = XRCCTRL(*this, "Id_ChkPlaySound", wxCheckBox);
 	m_ChkCtrlHighlightServerLines = XRCCTRL(*this, "Id_ChkColorServerLine", wxCheckBox);
+	m_ChkCtrlHighlightCustomServers = XRCCTRL(*this, "Id_ChkColorCustomServers", wxCheckBox);
 	m_ChkCtrlkAutoServerRefresh = XRCCTRL(*this, "Id_ChkAutoRefresh", wxCheckBox);
 
 	m_LstCtrlWadDirectories = XRCCTRL(*this, "Id_LstCtrlWadDirectories", wxListBox);
@@ -102,7 +109,11 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id)
 	m_FilePickCtrlSoundFile = XRCCTRL(*this, "Id_FilePickSoundFile", wxFilePickerCtrl);
 	m_ClrPickServerLineHighlighter = XRCCTRL(*this, "Id_ClrPickServerLineHighlighter",
 	                                 wxColourPickerCtrl);
+    m_ClrPickCustomServerHighlight = XRCCTRL(*this, "Id_ClrPickCustomServerHighlight",
+	                                 wxColourPickerCtrl);
 
+    m_SpnCtrlThreadMul = XRCCTRL(*this, "Id_SpnCtrlThreadMul", wxSpinCtrl);
+    m_SpnCtrlThreadMax = XRCCTRL(*this, "Id_SpnCtrlThreadMax", wxSpinCtrl);
 	m_SpnCtrlMasterTimeout = XRCCTRL(*this, "Id_SpnCtrlMasterTimeout", wxSpinCtrl);
 	m_SpnCtrlServerTimeout = XRCCTRL(*this, "Id_SpnCtrlServerTimeout", wxSpinCtrl);
 	m_SpnCtrlRetry = XRCCTRL(*this, "Id_SpnCtrlRetry", wxSpinCtrl);
@@ -121,10 +132,10 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id)
 	m_StcBmpPQBad = XRCCTRL(*this, "Id_StcBmpPQBad", wxStaticBitmap);
 
 	// Ping quality icons
-	m_StcBmpPQGood->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_green")));
-	m_StcBmpPQPlayable->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_orange")));
-	m_StcBmpPQLaggy->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")));
-	m_StcBmpPQBad->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_gray")));
+	m_StcBmpPQGood->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_green"));
+	m_StcBmpPQPlayable->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_orange"));
+	m_StcBmpPQLaggy->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_red"));
+	m_StcBmpPQBad->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_gray"));
 }
 
 // Window destructor
@@ -202,7 +213,7 @@ void dlgConfig::OnSpinValChange(wxSpinEvent& event)
 // User pressed ok button
 void dlgConfig::OnOK(wxCommandEvent& event)
 {
-	wxMessageDialog msgdlg(this, _T("Save settings?"), _T("Save settings?"),
+	wxMessageDialog msgdlg(this, "Save settings?", "Save settings?",
 	                       wxYES_NO | wxICON_QUESTION | wxSTAY_ON_TOP);
 
 	if(UserChangedSetting == false)
@@ -242,7 +253,7 @@ void dlgConfig::OnAddDir(wxCommandEvent& event)
 	wxString WadDirectory;
 
 	wxDirDialog ChooseWadDialog(this,
-	                            wxT("Select a directory containing WAD files"));
+	                            "Select a directory containing WAD files");
 
 	if(ChooseWadDialog.ShowModal() != wxID_OK)
 		return;
@@ -261,7 +272,7 @@ void dlgConfig::OnAddDir(wxCommandEvent& event)
 		}
 	}
 	else
-		wxMessageBox(wxString::Format(_T("Directory %s not found"),
+		wxMessageBox(wxString::Format("Directory %s not found",
 		                              WadDirectory.c_str()));
 }
 
@@ -274,7 +285,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent& event)
 
 	if(i == wxNOT_FOUND)
 	{
-		wxMessageBox(_T("Select a directory from the list to replace"));
+		wxMessageBox("Select a directory from the list to replace");
 
 		return;
 	}
@@ -282,7 +293,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent& event)
 	WadDirectory = m_LstCtrlWadDirectories->GetStringSelection();
 
 	wxDirDialog ChooseWadDialog(this,
-	                            wxT("Replace selected directory with.."),
+	                            "Replace selected directory with..",
 	                            WadDirectory);
 
 	if(ChooseWadDialog.ShowModal() != wxID_OK)
@@ -299,7 +310,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent& event)
 		UserChangedSetting = true;
 	}
 	else
-		wxMessageBox(wxString::Format(_T("Directory %s not found"),
+		wxMessageBox(wxString::Format("Directory %s not found",
 		                              WadDirectory.c_str()));
 }
 
@@ -317,7 +328,7 @@ void dlgConfig::OnDeleteDir(wxCommandEvent& event)
 		UserChangedSetting = true;
 	}
 	else
-		wxMessageBox(_T("Select a directory from the list to delete"));
+		wxMessageBox("Select a directory from the list to delete");
 }
 
 // Move directory in list up 1 item
@@ -363,7 +374,7 @@ void dlgConfig::OnDownClick(wxCommandEvent& event)
 // Get the environment variables
 void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
 {
-	wxString doomwaddir = _T("");
+	wxString doomwaddir = "";
 	wxString env_paths[NUM_ENVVARS];
 	wxInt32 i = 0;
 
@@ -395,14 +406,16 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
 
 	if(path_count)
 	{
-		wxMessageBox(_T("Environment variables import successful"));
+		wxMessageBox("Environment variables import successful");
 
 		UserChangedSetting = true;
 	}
 	else
-		wxMessageBox(_T("Environment variables contains paths that have been already imported."));
+		wxMessageBox("Environment variables contains paths that have been already imported.");
 
 }
+
+// TODO: Design a cleaner system for loading/saving these settings
 
 // Load settings from configuration file
 void dlgConfig::LoadSettings()
@@ -415,35 +428,42 @@ void dlgConfig::LoadSettings()
 	bool UseBroadcast;
 	bool GetListOnStart, ShowBlockedServers, LoadChatOnLS;
 	bool FlashTaskBar, PlaySystemBell, PlaySoundFile, HighlightServers;
+	bool CustomServersHighlight;
+
 	bool AutoServerRefresh;
-	int MasterTimeout, ServerTimeout, RetryCount, RefreshInterval;
+	int ThreadMul, ThreadMax, MasterTimeout, ServerTimeout, RetryCount;
+    int RefreshInterval;
 	wxString DelimWadPaths, OdamexDirectory, ExtraCmdLineArgs;
-	wxString SoundFile, HighlightColour;
+	wxString SoundFile, HighlightColour, CustomServerColour;
 	wxInt32 PQGood, PQPlayable, PQLaggy;
 
-	ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, ODA_QRYUSEBROADCAST);
-	ConfigInfo.Read(wxT(GETLISTONSTART), &GetListOnStart, ODA_UIGETLISTONSTART);
-	ConfigInfo.Read(wxT(SHOWBLOCKEDSERVERS), &ShowBlockedServers,
+	ConfigInfo.Read(USEBROADCAST, &UseBroadcast, ODA_QRYUSEBROADCAST);
+	ConfigInfo.Read(GETLISTONSTART, &GetListOnStart, ODA_UIGETLISTONSTART);
+	ConfigInfo.Read(SHOWBLOCKEDSERVERS, &ShowBlockedServers,
 	                ODA_UISHOWBLOCKEDSERVERS);
-	ConfigInfo.Read(wxT(DELIMWADPATHS), &DelimWadPaths, OdaGetDataDir());
-	ConfigInfo.Read(wxT(ODAMEX_DIRECTORY), &OdamexDirectory, OdaGetInstallDir());
-	ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, ODA_QRYMASTERTIMEOUT);
-	ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, ODA_QRYSERVERTIMEOUT);
-	ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, ODA_QRYGSRETRYCOUNT);
-	ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
-	ConfigInfo.Read(wxT(ICONPINGQGOOD), &PQGood, ODA_UIPINGQUALITYGOOD);
-	ConfigInfo.Read(wxT(ICONPINGQPLAYABLE), &PQPlayable,
+	ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
+	ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory, OdaGetInstallDir());
+	ConfigInfo.Read(MASTERTIMEOUT, &MasterTimeout, ODA_QRYMASTERTIMEOUT);
+	ConfigInfo.Read(SERVERTIMEOUT, &ServerTimeout, ODA_QRYSERVERTIMEOUT);
+	ConfigInfo.Read(RETRYCOUNT, &RetryCount, ODA_QRYGSRETRYCOUNT);
+	ConfigInfo.Read(EXTRACMDLINEARGS, &ExtraCmdLineArgs, "");
+	ConfigInfo.Read(ICONPINGQGOOD, &PQGood, ODA_UIPINGQUALITYGOOD);
+	ConfigInfo.Read(ICONPINGQPLAYABLE, &PQPlayable,
 	                ODA_UIPINGQUALITYPLAYABLE);
-	ConfigInfo.Read(wxT(ICONPINGQLAGGY), &PQLaggy, ODA_UIPINGQUALITYLAGGY);
-	ConfigInfo.Read(wxT(LOADCHATONLS), &LoadChatOnLS, ODA_UILOADCHATCLIENTONLS);
-	ConfigInfo.Read(wxT(POLFLASHTBAR), &FlashTaskBar, ODA_UIPOLFLASHTASKBAR);
-	ConfigInfo.Read(wxT(POLPLAYSYSTEMBELL), &PlaySystemBell, ODA_UIPOLPLAYSYSTEMBELL);
-	ConfigInfo.Read(wxT(POLPLAYSOUND), &PlaySoundFile, ODA_UIPOLPLAYSOUND);
-	ConfigInfo.Read(wxT(POLPSWAVFILE), &SoundFile, wxT(""));
-	ConfigInfo.Read(wxT(POLHLSERVERS), &HighlightServers, ODA_UIPOLHIGHLIGHTSERVERS);
-	ConfigInfo.Read(wxT(POLHLSCOLOUR), &HighlightColour, ODA_UIPOLHSHIGHLIGHTCOLOUR);
-	ConfigInfo.Read(wxT(ARTENABLE), &AutoServerRefresh, ODA_UIARTENABLE);
-	ConfigInfo.Read(wxT(ARTREFINTERVAL), &RefreshInterval, ODA_UIARTREFINTERVAL);
+	ConfigInfo.Read(ICONPINGQLAGGY, &PQLaggy, ODA_UIPINGQUALITYLAGGY);
+	ConfigInfo.Read(LOADCHATONLS, &LoadChatOnLS, ODA_UILOADCHATCLIENTONLS);
+	ConfigInfo.Read(POLFLASHTBAR, &FlashTaskBar, ODA_UIPOLFLASHTASKBAR);
+	ConfigInfo.Read(POLPLAYSYSTEMBELL, &PlaySystemBell, ODA_UIPOLPLAYSYSTEMBELL);
+	ConfigInfo.Read(POLPLAYSOUND, &PlaySoundFile, ODA_UIPOLPLAYSOUND);
+	ConfigInfo.Read(POLPSWAVFILE, &SoundFile, "");
+	ConfigInfo.Read(POLHLSERVERS, &HighlightServers, ODA_UIPOLHIGHLIGHTSERVERS);
+	ConfigInfo.Read(POLHLSCOLOUR, &HighlightColour, ODA_UIPOLHSHIGHLIGHTCOLOUR);
+	ConfigInfo.Read(ARTENABLE, &AutoServerRefresh, ODA_UIARTENABLE);
+	ConfigInfo.Read(ARTREFINTERVAL, &RefreshInterval, ODA_UIARTREFINTERVAL);
+    ConfigInfo.Read(QRYTHREADMULTIPLIER, &ThreadMul, ODA_THRMULVAL);
+    ConfigInfo.Read(QRYTHREADMAXIMUM, &ThreadMax, ODA_THRMAXVAL);
+	ConfigInfo.Read(CSHLSERVERS, &CustomServersHighlight, ODA_UICSHIGHTLIGHTSERVERS);
+	ConfigInfo.Read(CSHLCOLOUR, &CustomServerColour, ODA_UICSHSHIGHLIGHTCOLOUR);
 
 	m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
 	m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
@@ -453,11 +473,13 @@ void dlgConfig::LoadSettings()
 	m_ChkCtrlPlaySystemBeep->SetValue(PlaySystemBell);
 	m_ChkCtrlPlaySoundFile->SetValue(PlaySoundFile);
 	m_ChkCtrlHighlightServerLines->SetValue(HighlightServers);
+	m_ChkCtrlHighlightCustomServers->SetValue(CustomServersHighlight);
 	m_ChkCtrlkAutoServerRefresh->SetValue(AutoServerRefresh);
 
 	m_DirCtrlChooseOdamexPath->SetPath(OdamexDirectory);
 	m_FilePickCtrlSoundFile->SetPath(SoundFile);
 	m_ClrPickServerLineHighlighter->SetColour(HighlightColour);
+    m_ClrPickCustomServerHighlight->SetColour(CustomServerColour);
 
 	// Load wad path list
 	m_LstCtrlWadDirectories->Clear();
@@ -469,14 +491,16 @@ void dlgConfig::LoadSettings()
 		wxString path = wadlist.GetNextToken();
 
 #ifdef __WXMSW__
-		path.Replace(_T("\\\\"),_T("\\"), true);
+		path.Replace("\\\\","\\", true);
 #else
-		path.Replace(_T("////"),_T("//"), true);
+		path.Replace("////","//", true);
 #endif
 
 		m_LstCtrlWadDirectories->AppendString(path);
 	}
 
+    m_SpnCtrlThreadMul->SetValue(ThreadMul);
+    m_SpnCtrlThreadMax->SetValue(ThreadMax);
 	m_SpnCtrlMasterTimeout->SetValue(MasterTimeout);
 	m_SpnCtrlServerTimeout->SetValue(ServerTimeout);
 	m_SpnCtrlRetry->SetValue(RetryCount);
@@ -502,29 +526,33 @@ void dlgConfig::SaveSettings()
 	wxString DelimWadPaths;
 
 	for(unsigned int i = 0; i < m_LstCtrlWadDirectories->GetCount(); i++)
-		DelimWadPaths.Append(m_LstCtrlWadDirectories->GetString(i) + wxT(PATH_DELIMITER));
+		DelimWadPaths.Append(m_LstCtrlWadDirectories->GetString(i) + PATH_DELIMITER);
 
-	ConfigInfo.Write(wxT(MASTERTIMEOUT), m_SpnCtrlMasterTimeout->GetValue());
-	ConfigInfo.Write(wxT(SERVERTIMEOUT), m_SpnCtrlServerTimeout->GetValue());
-	ConfigInfo.Write(wxT(RETRYCOUNT), m_SpnCtrlRetry->GetValue());
-	ConfigInfo.Write(wxT(EXTRACMDLINEARGS), m_TxtCtrlExtraCmdLineArgs->GetValue());
-	ConfigInfo.Write(wxT(GETLISTONSTART), m_ChkCtrlGetListOnStart->GetValue());
-	ConfigInfo.Write(wxT(SHOWBLOCKEDSERVERS), m_ChkCtrlShowBlockedServers->GetValue());
-	ConfigInfo.Write(wxT(DELIMWADPATHS), DelimWadPaths);
-	ConfigInfo.Write(wxT(ODAMEX_DIRECTORY), m_DirCtrlChooseOdamexPath->GetPath());
-	ConfigInfo.Write(wxT(ICONPINGQGOOD), m_SpnCtrlPQGood->GetValue());
-	ConfigInfo.Write(wxT(ICONPINGQPLAYABLE), m_SpnCtrlPQPlayable->GetValue());
-	ConfigInfo.Write(wxT(ICONPINGQLAGGY), m_SpnCtrlPQLaggy->GetValue());
-	ConfigInfo.Write(wxT(USEBROADCAST), m_ChkCtrlEnableBroadcasts->GetValue());
-	ConfigInfo.Write(wxT(LOADCHATONLS), m_ChkCtrlLoadChatOnLS->GetValue());
-	ConfigInfo.Write(wxT(POLFLASHTBAR), m_ChkCtrlFlashTaskBar->GetValue());
-	ConfigInfo.Write(wxT(POLPLAYSYSTEMBELL), m_ChkCtrlPlaySystemBeep->GetValue());
-	ConfigInfo.Write(wxT(POLPLAYSOUND), m_ChkCtrlPlaySoundFile->GetValue());
-	ConfigInfo.Write(wxT(POLPSWAVFILE), m_FilePickCtrlSoundFile->GetPath());
-	ConfigInfo.Write(wxT(POLHLSERVERS), m_ChkCtrlHighlightServerLines->GetValue());
-	ConfigInfo.Write(wxT(POLHLSCOLOUR), m_ClrPickServerLineHighlighter->GetColour().GetAsString(wxC2S_HTML_SYNTAX));
-	ConfigInfo.Write(wxT(ARTENABLE), m_ChkCtrlkAutoServerRefresh->GetValue());
-	ConfigInfo.Write(wxT(ARTREFINTERVAL), m_SpnRefreshInterval->GetValue());
+	ConfigInfo.Write(MASTERTIMEOUT, m_SpnCtrlMasterTimeout->GetValue());
+	ConfigInfo.Write(SERVERTIMEOUT, m_SpnCtrlServerTimeout->GetValue());
+	ConfigInfo.Write(RETRYCOUNT, m_SpnCtrlRetry->GetValue());
+	ConfigInfo.Write(EXTRACMDLINEARGS, m_TxtCtrlExtraCmdLineArgs->GetValue());
+	ConfigInfo.Write(GETLISTONSTART, m_ChkCtrlGetListOnStart->GetValue());
+	ConfigInfo.Write(SHOWBLOCKEDSERVERS, m_ChkCtrlShowBlockedServers->GetValue());
+	ConfigInfo.Write(DELIMWADPATHS, DelimWadPaths);
+	ConfigInfo.Write(ODAMEX_DIRECTORY, m_DirCtrlChooseOdamexPath->GetPath());
+	ConfigInfo.Write(ICONPINGQGOOD, m_SpnCtrlPQGood->GetValue());
+	ConfigInfo.Write(ICONPINGQPLAYABLE, m_SpnCtrlPQPlayable->GetValue());
+	ConfigInfo.Write(ICONPINGQLAGGY, m_SpnCtrlPQLaggy->GetValue());
+	ConfigInfo.Write(USEBROADCAST, m_ChkCtrlEnableBroadcasts->GetValue());
+	ConfigInfo.Write(LOADCHATONLS, m_ChkCtrlLoadChatOnLS->GetValue());
+	ConfigInfo.Write(POLFLASHTBAR, m_ChkCtrlFlashTaskBar->GetValue());
+	ConfigInfo.Write(POLPLAYSYSTEMBELL, m_ChkCtrlPlaySystemBeep->GetValue());
+	ConfigInfo.Write(POLPLAYSOUND, m_ChkCtrlPlaySoundFile->GetValue());
+	ConfigInfo.Write(POLPSWAVFILE, m_FilePickCtrlSoundFile->GetPath());
+	ConfigInfo.Write(POLHLSERVERS, m_ChkCtrlHighlightServerLines->GetValue());
+	ConfigInfo.Write(POLHLSCOLOUR, m_ClrPickServerLineHighlighter->GetColour().GetAsString(wxC2S_HTML_SYNTAX));
+	ConfigInfo.Write(ARTENABLE, m_ChkCtrlkAutoServerRefresh->GetValue());
+	ConfigInfo.Write(ARTREFINTERVAL, m_SpnRefreshInterval->GetValue());
+    ConfigInfo.Write(QRYTHREADMULTIPLIER, m_SpnCtrlThreadMul->GetValue());
+    ConfigInfo.Write(QRYTHREADMAXIMUM,  m_SpnCtrlThreadMax->GetValue());
+	ConfigInfo.Write(CSHLSERVERS, m_ChkCtrlHighlightCustomServers->GetValue());
+	ConfigInfo.Write(CSHLCOLOUR, m_ClrPickCustomServerHighlight->GetColour().GetAsString(wxC2S_HTML_SYNTAX));
 
 	ConfigInfo.Flush();
 }

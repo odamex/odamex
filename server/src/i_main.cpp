@@ -109,11 +109,11 @@ int __cdecl main(int argc, char *argv[])
     try
     {
         // Handle ctrl-c, close box, shutdown and logoff events
-        if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE))
-            throw CDoomError("Could not set console control handler!\n");
-
         if (!(hEvent = CreateEvent(NULL, FALSE, FALSE, NULL)))
             throw CDoomError("Could not create console control event!\n");
+
+        if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE))
+            throw CDoomError("Could not set console control handler!\n");
 
         #ifdef _WIN32
         // Fixes icon not showing in titlebar and alt-tab menu under windows 7

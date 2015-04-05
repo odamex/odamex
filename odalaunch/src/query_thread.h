@@ -47,7 +47,6 @@ public:
 	QueryThread(wxEvtHandler* EventHandler);
 	~QueryThread()
 	{
-		delete m_Condition;
 	}
 
 	QueryThreadStatus_t GetStatus();
@@ -78,9 +77,8 @@ private:
 
 	QueryThreadStatus_t m_Status;
 
-	wxMutex            m_Mutex;
 	wxMutex            m_StatusMutex;
-	wxCondition*        m_Condition;
+	wxSemaphore        m_Semaphore;
 };
 
 #endif // QUERY_THREAD_H_INCLUDED

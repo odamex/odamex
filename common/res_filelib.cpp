@@ -218,8 +218,9 @@ static const char* steam_install_subdirs[] =
 static char* GetRegistryString(registry_value_t *reg_val)
 {
 	char* result = NULL;
-	HKEY key;
-	DWORD len, valtype;
+	HKEY key = 0;
+	DWORD len = 0;
+	DWORD valtype = 0;
 
 	// Open the key (directory where the value is stored)
 	if (RegOpenKeyEx(reg_val->root, reg_val->path, 0, KEY_READ, &key) != ERROR_SUCCESS)
@@ -293,6 +294,8 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 //				const char* csubpath = subpath;
 //				Res_AddSearchDir(search_dirs, csubpath, SEARCHPATHSEPCHAR);
 				Res_AddSearchDir(search_dirs, subpath, SEARCHPATHSEPCHAR);
+
+				free(subpath);
 			}
 
 			free(install_path);
@@ -313,6 +316,8 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 //				const char* csubpath = subpath;
 //				Res_AddSearchDir(search_dirs, csubpath, SEARCHPATHSEPCHAR);
 				Res_AddSearchDir(search_dirs, subpath, SEARCHPATHSEPCHAR);
+
+				free(subpath);
 			}
 
 			free(install_path);

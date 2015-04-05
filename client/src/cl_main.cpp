@@ -552,7 +552,6 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 
 		// spectators only cycle between active players
 		if (P_CanSpy(self, player) ||
-			(player.id == consoleplayer_id && !self.spectator) ||
 			demoplayback || netdemo.isPlaying() || netdemo.isPaused())
 		{
 			displayplayer_id = player.id;

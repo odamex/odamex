@@ -37,7 +37,7 @@ OdaInfoBar::OdaInfoBar(wxWindow* parent) : m_Parent(parent)
 	                              wxSizerFlags().Expand().Border(0, 0).Proportion(0));
 
 	// Always add an ignore button
-	m_InfoBar->AddButton(wxID_EXIT, wxT("Ignore"));
+	m_InfoBar->AddButton(wxID_EXIT, "Ignore");
 
 	m_ButtonId = wxID_ANY;
 }
@@ -72,7 +72,7 @@ void OdaInfoBar::ShowMessage(const wxString& Message, wxWindowID BtnId,
 	if(m_ButtonId == wxID_ANY)
 	{
 		// Always add an ignore button
-		m_InfoBar->AddButton(wxID_EXIT, wxT("Ignore"));
+		m_InfoBar->AddButton(wxID_EXIT, "Ignore");
 
 		m_InfoBar->ShowMessage(Message);
 		return;
@@ -80,7 +80,7 @@ void OdaInfoBar::ShowMessage(const wxString& Message, wxWindowID BtnId,
 
 	m_InfoBar->AddButton(m_ButtonId, BtnTxt);
 	// Always add an ignore button
-	m_InfoBar->AddButton(wxID_EXIT, wxT("Ignore"));
+	m_InfoBar->AddButton(wxID_EXIT, "Ignore");
 
 	// The above code is not enough, since infobars are implemented as generic
 	// and therefore not a native object in wxwidgets, so events do not
@@ -93,14 +93,14 @@ void OdaInfoBar::ShowMessage(const wxString& Message, wxWindowID BtnId,
 
 void OdaInfoBar::ShowMessage(const wxString& Message)
 {
-	ShowMessage(Message, wxID_ANY, NULL, wxT(""));
+	ShowMessage(Message, wxID_ANY, NULL, "");
 }
 
 // Test code for dlg_main
 /*
-    InfoBar->ShowMessage(wxT("An update to Odamex is available"),
+    InfoBar->ShowMessage("An update to Odamex is available"),
             XRCID("Id_MnuItmVisitWebsite"),
             wxCommandEventHandler(dlgMain::OnOpenWebsite),
-            wxT("Visit Website"));
+            "Visit Website"));
 
 */

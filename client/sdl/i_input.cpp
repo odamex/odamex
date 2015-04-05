@@ -719,7 +719,7 @@ void I_GetEvent()
 			// best practices from other ports, the tab key will get trapped for one key press,
 			// only registering an SDL_KEYUP event.  If this is the case, send down another keydown
 			// event.  This issue only occurs when the video driver is set to directx (the default in Odamex).
-			if (event.data1 == SDLK_TAB && tab_keydown == false && I_CheckFocusState())
+			if ((ConsoleState == c_fallfull || ConsoleState == c_down) && event.data1 == SDLK_TAB && tab_keydown == false && I_CheckFocusState())
 			{
 				DPrintf("FOCUS STATUS: %u \n",I_CheckFocusState());
 				DPrintf("GOT IN THE KEYUP TRAP \n");

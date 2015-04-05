@@ -19,6 +19,7 @@ option(BUILD_SERVER "Build server target" 1)
 option(BUILD_MASTER "Build master server target" 1)
 cmake_dependent_option( BUILD_ODALAUNCH "Build odalaunch target" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
+cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
 project(Odamex)
 cmake_minimum_required(VERSION 2.8)
@@ -109,10 +110,6 @@ endmacro(define_platform)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # MiniUPnPc
-if (WIN32 OR APPLE)
-  set(USE_MINIUPNP 1)
-endif()
-# cmake_dependent_option(USE_MINIUPNP "Compile with miniUPnPc included in the source tree." ON "WIN32;APPLE" OFF)
 if (USE_MINIUPNP)
   set(UPNPC_BUILD_STATIC ON CACHE INTERNAL "" FORCE)
   set(UPNPC_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)

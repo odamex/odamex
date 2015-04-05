@@ -1,4 +1,4 @@
-/* $Id: miniupnpc.c,v 1.117 2014/01/31 14:19:13 nanard Exp $ */
+/* $Id: miniupnpc.c,v 1.123 2014/11/27 12:02:25 nanard Exp $ */
 /* Project : miniupnp
  * Web : http://miniupnp.free.fr/
  * Author : Thomas BERNARD
@@ -6,7 +6,7 @@
  * This software is subjet to the conditions detailed in the
  * provided LICENSE file. */
 #define __EXTENSIONS__ 1
-#if !defined(MACOSX) && !defined(__sun)
+#if !defined(__APPLE__) && !defined(__sun)
 #if !defined(_XOPEN_SOURCE) && !defined(__OpenBSD__) && !defined(__NetBSD__)
 #ifndef __cplusplus
 #define _XOPEN_SOURCE 600
@@ -17,7 +17,7 @@
 #endif
 #endif
 
-#if !defined(__DragonFly__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(MACOSX) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(__sun)
+#if !defined(__DragonFly__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(__sun) && !defined(__GNU__) && !defined(__FreeBSD_kernel__)
 #define HAS_IP_MREQN
 #endif
 
@@ -70,6 +70,9 @@
 /* Amiga OS specific stuff */
 #define TIMEVAL struct timeval
 #endif
+#ifdef __GNU__
+#define MAXHOSTNAMELEN 64
+#endif
 
 
 #if defined(HAS_IP_MREQN) && defined(NEED_STRUCT_IP_MREQN)
@@ -91,6 +94,9 @@ struct ip_mreqn
 #include "connecthostport.h"
 #include "receivedata.h"
 
+/* compare the begining of a string with a constant string */
+#define COMPARE(str, cstr) (0==memcmp(str, cstr, sizeof(cstr) - 1))
+
 #ifdef _WIN32
 #define PRINT_SOCKET_ERROR(x)    printf("Socket error: %s, %d\n", x, WSAGetLastError());
 #else
@@ -106,7 +112,7 @@ struct ip_mreqn
 #define SERVICEPREFIX2 'u'
 
 /* root description parsing */
-LIBSPEC void parserootdesc(const char * buffer, int bufsize, struct IGDdatas * data)
+MINIUPNP_LIBSPEC void parserootdesc(const char * buffer, int bufsize, struct IGDdatas * data)
 {
 	struct xmlparser parser;
 	/* xmlparser object */
@@ -330,16 +336,17 @@ parseMSEARCHReply(const char * reply, int size,
 #define UPNP_MCAST_LL_ADDR "FF02::C" /* link-local */
 #define UPNP_MCAST_SL_ADDR "FF05::C" /* site-local */
 
-/* upnpDiscover() :
+/* upnpDiscoverDevices() :
  * return a chained list of all devices found or NULL if
  * no devices was found.
  * It is up to the caller to free the chained list
  * delay is in millisecond (poll) */
-LIBSPEC struct UPNPDev *
-upnpDiscover(int delay, const char * multicastif,
-             const char * minissdpdsock, int sameport,
-             int ipv6,
-             int * error)
+MINIUPNP_LIBSPEC struct UPNPDev *
+upnpDiscoverDevices(const char * const deviceTypes[],
+                    int delay, const char * multicastif,
+                    const char * minissdpdsock, int sameport,
+                    int ipv6,
+                    int * error)
 {
 	struct UPNPDev * tmp;
 	struct UPNPDev * devlist = 0;
@@ -352,18 +359,7 @@ upnpDiscover(int delay, const char * multicastif,
 	"MAN: \"ssdp:discover\"\r\n"
 	"MX: %u\r\n"
 	"\r\n";
-	static const char * const deviceList[] = {
-#if 0
-		"urn:schemas-upnp-org:device:InternetGatewayDevice:2",
-		"urn:schemas-upnp-org:service:WANIPConnection:2",
-#endif
-		"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
-		"urn:schemas-upnp-org:service:WANIPConnection:1",
-		"urn:schemas-upnp-org:service:WANPPPConnection:1",
-		"upnp:rootdevice",
-		0
-	};
-	int deviceIndex = 0;
+	int deviceIndex;
 	char bufr[1536];	/* reception and emission buffer */
 	int sudp;
 	int n;
@@ -386,18 +382,16 @@ upnpDiscover(int delay, const char * multicastif,
 	/* first try to get infos from minissdpd ! */
 	if(!minissdpdsock)
 		minissdpdsock = "/var/run/minissdpd.sock";
-	while(!devlist && deviceList[deviceIndex]) {
-		devlist = getDevicesFromMiniSSDPD(deviceList[deviceIndex],
+	for(deviceIndex = 0; !devlist && deviceTypes[deviceIndex]; deviceIndex++) {
+		devlist = getDevicesFromMiniSSDPD(deviceTypes[deviceIndex],
 		                                  minissdpdsock);
 		/* We return what we have found if it was not only a rootdevice */
-		if(devlist && !strstr(deviceList[deviceIndex], "rootdevice")) {
+		if(devlist && !strstr(deviceTypes[deviceIndex], "rootdevice")) {
 			if(error)
 				*error = UPNPDISCOVER_SUCCESS;
 			return devlist;
 		}
-		deviceIndex++;
 	}
-	deviceIndex = 0;
 #endif
 	/* fallback to direct discovery */
 #ifdef _WIN32
@@ -547,15 +541,15 @@ upnpDiscover(int delay, const char * multicastif,
 
 	/* Before sending the packed, we first "bind" in order to be able
 	 * to receive the response */
-    if (bind(sudp, (const struct sockaddr *)&sockudp_r,
+	if (bind(sudp, (const struct sockaddr *)&sockudp_r,
 	         ipv6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in)) != 0)
 	{
 		if(error)
 			*error = UPNPDISCOVER_SOCKET_ERROR;
-        PRINT_SOCKET_ERROR("bind");
+		PRINT_SOCKET_ERROR("bind");
 		closesocket(sudp);
 		return NULL;
-    }
+	}
 
 	if(error)
 		*error = UPNPDISCOVER_SUCCESS;
@@ -566,19 +560,21 @@ upnpDiscover(int delay, const char * multicastif,
 		delay = 1000;
 	}
 	/* receiving SSDP response packet */
-	for(n = 0; deviceList[deviceIndex]; deviceIndex++)
-	{
-	if(n == 0)
-	{
+	for(deviceIndex = 0; deviceTypes[deviceIndex]; deviceIndex++) {
 		/* sending the SSDP M-SEARCH packet */
 		n = snprintf(bufr, sizeof(bufr),
 		             MSearchMsgFmt,
 		             ipv6 ?
 		             (linklocal ? "[" UPNP_MCAST_LL_ADDR "]" :  "[" UPNP_MCAST_SL_ADDR "]")
 		             : UPNP_MCAST_ADDR,
-		             deviceList[deviceIndex], mx);
+		             deviceTypes[deviceIndex], mx);
 #ifdef DEBUG
-		printf("Sending %s", bufr);
+		/*printf("Sending %s", bufr);*/
+		printf("Sending M-SEARCH request to %s with ST: %s\n",
+		       ipv6 ?
+		       (linklocal ? "[" UPNP_MCAST_LL_ADDR "]" :  "[" UPNP_MCAST_SL_ADDR "]")
+		       : UPNP_MCAST_ADDR,
+		       deviceTypes[deviceIndex]);
 #endif
 #ifdef NO_GETADDRINFO
 		/* the following code is not using getaddrinfo */
@@ -597,8 +593,7 @@ upnpDiscover(int delay, const char * multicastif,
 			p->sin_port = htons(PORT);
 			p->sin_addr.s_addr = inet_addr(UPNP_MCAST_ADDR);
 		}
-		n = sendto(sudp, bufr, n, 0,
-		           &sockudp_w,
+		n = sendto(sudp, bufr, n, 0, &sockudp_w,
 		           ipv6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in));
 		if (n < 0) {
 			if(error)
@@ -618,9 +613,9 @@ upnpDiscover(int delay, const char * multicastif,
 			if(error)
 				*error = UPNPDISCOVER_SOCKET_ERROR;
 #ifdef _WIN32
-		    fprintf(stderr, "getaddrinfo() failed: %d\n", rv);
+			fprintf(stderr, "getaddrinfo() failed: %d\n", rv);
 #else
-		    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+			fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 #endif
 			break;
 		}
@@ -630,7 +625,7 @@ upnpDiscover(int delay, const char * multicastif,
 #ifdef DEBUG
 				char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
 				if (getnameinfo(p->ai_addr, p->ai_addrlen, hbuf, sizeof(hbuf), sbuf,
-						sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
+				                sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
 					fprintf(stderr, "host:%s port:%s\n", hbuf, sbuf);
 				}
 #endif
@@ -645,80 +640,138 @@ upnpDiscover(int delay, const char * multicastif,
 			break;
 		}
 #endif /* #ifdef NO_GETADDRINFO */
-	}
-	/* Waiting for SSDP REPLY packet to M-SEARCH */
-	n = receivedata(sudp, bufr, sizeof(bufr), delay, &scope_id);
-	if (n < 0) {
-		/* error */
-		if(error)
-			*error = UPNPDISCOVER_SOCKET_ERROR;
-		break;
-	} else if (n == 0) {
-		/* no data or Time Out */
-		if (devlist) {
-			/* no more device type to look for... */
-			if(error)
-				*error = UPNPDISCOVER_SUCCESS;
-			break;
-		}
-		if(ipv6) {
-			if(linklocal) {
-				linklocal = 0;
-				--deviceIndex;
-			} else {
-				linklocal = 1;
-			}
-		}
-	} else {
-		const char * descURL=NULL;
-		int urlsize=0;
-		const char * st=NULL;
-		int stsize=0;
-        /*printf("%d byte(s) :\n%s\n", n, bufr);*/ /* affichage du message */
-		parseMSEARCHReply(bufr, n, &descURL, &urlsize, &st, &stsize);
-		if(st&&descURL)
-		{
-#ifdef DEBUG
-			printf("M-SEARCH Reply:\nST: %.*s\nLocation: %.*s\n",
-			       stsize, st, urlsize, descURL);
-#endif
-			for(tmp=devlist; tmp; tmp = tmp->pNext) {
-				if(memcmp(tmp->descURL, descURL, urlsize) == 0 &&
-				   tmp->descURL[urlsize] == '\0' &&
-				   memcmp(tmp->st, st, stsize) == 0 &&
-				   tmp->st[stsize] == '\0')
-					break;
-			}
-			/* at the exit of the loop above, tmp is null if
-			 * no duplicate device was found */
-			if(tmp)
-				continue;
-			tmp = (struct UPNPDev *)malloc(sizeof(struct UPNPDev)+urlsize+stsize);
-			if(!tmp) {
-				/* memory allocation error */
+		/* Waiting for SSDP REPLY packet to M-SEARCH */
+		do {
+			n = receivedata(sudp, bufr, sizeof(bufr), delay, &scope_id);
+			if (n < 0) {
+				/* error */
 				if(error)
-					*error = UPNPDISCOVER_MEMORY_ERROR;
-				break;
+					*error = UPNPDISCOVER_SOCKET_ERROR;
+				goto error;
+			} else if (n == 0) {
+				/* no data or Time Out */
+				if (devlist) {
+					/* found some devices, stop now*/
+					if(error)
+						*error = UPNPDISCOVER_SUCCESS;
+					goto error;
+				}
+				if(ipv6) {
+					/* switch linklocal flag */
+					if(linklocal) {
+						linklocal = 0;
+						--deviceIndex;
+					} else {
+						linklocal = 1;
+					}
+				}
+			} else {
+				const char * descURL=NULL;
+				int urlsize=0;
+				const char * st=NULL;
+				int stsize=0;
+				parseMSEARCHReply(bufr, n, &descURL, &urlsize, &st, &stsize);
+				if(st&&descURL) {
+#ifdef DEBUG
+					printf("M-SEARCH Reply:\n  ST: %.*s\n  Location: %.*s\n",
+					       stsize, st, urlsize, descURL);
+#endif
+					for(tmp=devlist; tmp; tmp = tmp->pNext) {
+						if(memcmp(tmp->descURL, descURL, urlsize) == 0 &&
+						   tmp->descURL[urlsize] == '\0' &&
+						   memcmp(tmp->st, st, stsize) == 0 &&
+						   tmp->st[stsize] == '\0')
+							break;
+					}
+					/* at the exit of the loop above, tmp is null if
+					 * no duplicate device was found */
+					if(tmp)
+						continue;
+					tmp = (struct UPNPDev *)malloc(sizeof(struct UPNPDev)+urlsize+stsize);
+					if(!tmp) {
+						/* memory allocation error */
+						if(error)
+							*error = UPNPDISCOVER_MEMORY_ERROR;
+						goto error;
+					}
+					tmp->pNext = devlist;
+					tmp->descURL = tmp->buffer;
+					tmp->st = tmp->buffer + 1 + urlsize;
+					memcpy(tmp->buffer, descURL, urlsize);
+					tmp->buffer[urlsize] = '\0';
+					memcpy(tmp->buffer + urlsize + 1, st, stsize);
+					tmp->buffer[urlsize+1+stsize] = '\0';
+					tmp->scope_id = scope_id;
+					devlist = tmp;
+				}
 			}
-			tmp->pNext = devlist;
-			tmp->descURL = tmp->buffer;
-			tmp->st = tmp->buffer + 1 + urlsize;
-			memcpy(tmp->buffer, descURL, urlsize);
-			tmp->buffer[urlsize] = '\0';
-			memcpy(tmp->buffer + urlsize + 1, st, stsize);
-			tmp->buffer[urlsize+1+stsize] = '\0';
-			tmp->scope_id = scope_id;
-			devlist = tmp;
-		}
+		} while(n > 0);
 	}
-	}
+error:
 	closesocket(sudp);
 	return devlist;
 }
 
+/* upnpDiscover() Discover IGD device */
+MINIUPNP_LIBSPEC struct UPNPDev *
+upnpDiscover(int delay, const char * multicastif,
+             const char * minissdpdsock, int sameport,
+             int ipv6,
+             int * error)
+{
+	static const char * const deviceList[] = {
+#if 0
+		"urn:schemas-upnp-org:device:InternetGatewayDevice:2",
+		"urn:schemas-upnp-org:service:WANIPConnection:2",
+#endif
+		"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+		"urn:schemas-upnp-org:service:WANIPConnection:1",
+		"urn:schemas-upnp-org:service:WANPPPConnection:1",
+		"upnp:rootdevice",
+		/*"ssdp:all",*/
+		0
+	};
+	return upnpDiscoverDevices(deviceList,
+	                           delay, multicastif, minissdpdsock, sameport,
+	                           ipv6, error);
+}
+
+/* upnpDiscoverAll() Discover all UPnP devices */
+MINIUPNP_LIBSPEC struct UPNPDev *
+upnpDiscoverAll(int delay, const char * multicastif,
+                const char * minissdpdsock, int sameport,
+                int ipv6,
+                int * error)
+{
+	static const char * const deviceList[] = {
+		/*"upnp:rootdevice",*/
+		"ssdp:all",
+		0
+	};
+	return upnpDiscoverDevices(deviceList,
+	                           delay, multicastif, minissdpdsock, sameport,
+	                           ipv6, error);
+}
+
+/* upnpDiscoverDevice() Discover a specific device */
+MINIUPNP_LIBSPEC struct UPNPDev *
+upnpDiscoverDevice(const char * device, int delay, const char * multicastif,
+                const char * minissdpdsock, int sameport,
+                int ipv6,
+                int * error)
+{
+	const char * const deviceList[] = {
+		device,
+		0
+	};
+	return upnpDiscoverDevices(deviceList,
+	                           delay, multicastif, minissdpdsock, sameport,
+	                           ipv6, error);
+}
+
 /* freeUPNPDevlist() should be used to
  * free the chained list returned by upnpDiscover() */
-LIBSPEC void freeUPNPDevlist(struct UPNPDev * devlist)
+MINIUPNP_LIBSPEC void freeUPNPDevlist(struct UPNPDev * devlist)
 {
 	struct UPNPDev * next;
 	while(devlist)
@@ -729,122 +782,106 @@ LIBSPEC void freeUPNPDevlist(struct UPNPDev * devlist)
 	}
 }
 
-static void
-url_cpy_or_cat(char * dst, const char * src, int n)
+static char *
+build_absolute_url(const char * baseurl, const char * descURL,
+                   const char * url, unsigned int scope_id)
 {
-	if(  (src[0] == 'h')
-	   &&(src[1] == 't')
-	   &&(src[2] == 't')
-	   &&(src[3] == 'p')
-	   &&(src[4] == ':')
-	   &&(src[5] == '/')
-	   &&(src[6] == '/'))
-	{
-		strncpy(dst, src, n);
-	}
-	else
-	{
-		int l = strlen(dst);
-		if(src[0] != '/')
-			dst[l++] = '/';
-		if(l<=n)
-			strncpy(dst + l, src, n - l);
-	}
-}
-
-/* Prepare the Urls for usage...
- */
-LIBSPEC void
-GetUPNPUrls(struct UPNPUrls * urls, struct IGDdatas * data,
-            const char * descURL, unsigned int scope_id)
-{
+	int l, n;
+	char * s;
+	const char * base;
 	char * p;
-	int n1, n2, n3, n4;
-#ifdef IF_NAMESIZE
+#if defined(IF_NAMESIZE) && !defined(_WIN32)
 	char ifname[IF_NAMESIZE];
-#else
+#else /* defined(IF_NAMESIZE) && !defined(_WIN32) */
 	char scope_str[8];
-#endif
+#endif	/* defined(IF_NAMESIZE) && !defined(_WIN32) */
 
-	n1 = strlen(data->urlbase);
-	if(n1==0)
-		n1 = strlen(descURL);
-	if(scope_id != 0) {
-#ifdef IF_NAMESIZE
-		if(if_indextoname(scope_id, ifname)) {
-			n1 += 3 + strlen(ifname);	/* 3 == strlen(%25) */
-		}
-#else
-	/* under windows, scope is numerical */
-	snprintf(scope_str, sizeof(scope_str), "%u", scope_id);
-#endif
+	if(  (url[0] == 'h')
+	   &&(url[1] == 't')
+	   &&(url[2] == 't')
+	   &&(url[3] == 'p')
+	   &&(url[4] == ':')
+	   &&(url[5] == '/')
+	   &&(url[6] == '/'))
+		return strdup(url);
+	base = (baseurl[0] == '\0') ? descURL : baseurl;
+	n = strlen(base);
+	if(n > 7) {
+		p = strchr(base + 7, '/');
+		if(p)
+			n = p - base;
 	}
-	n1 += 2;	/* 1 byte more for Null terminator, 1 byte for '/' if needed */
-	n2 = n1; n3 = n1; n4 = n1;
-	n1 += strlen(data->first.scpdurl);
-	n2 += strlen(data->first.controlurl);
-	n3 += strlen(data->CIF.controlurl);
-	n4 += strlen(data->IPv6FC.controlurl);
-
-	/* allocate memory to store URLs */
-	urls->ipcondescURL = (char *)malloc(n1);
-	urls->controlURL = (char *)malloc(n2);
-	urls->controlURL_CIF = (char *)malloc(n3);
-	urls->controlURL_6FC = (char *)malloc(n4);
-
-	/* strdup descURL */
-	urls->rootdescURL = strdup(descURL);
-
-	/* get description of WANIPConnection */
-	if(data->urlbase[0] != '\0')
-		strncpy(urls->ipcondescURL, data->urlbase, n1);
-	else
-		strncpy(urls->ipcondescURL, descURL, n1);
-	p = strchr(urls->ipcondescURL+7, '/');
-	if(p) p[0] = '\0';
+	l = n + strlen(url) + 1;
+	if(url[0] != '/')
+		l++;
 	if(scope_id != 0) {
-		if(0 == memcmp(urls->ipcondescURL, "http://[fe80:", 13)) {
+#if defined(IF_NAMESIZE) && !defined(_WIN32)
+		if(if_indextoname(scope_id, ifname)) {
+			l += 3 + strlen(ifname);	/* 3 == strlen(%25) */
+		}
+#else /* defined(IF_NAMESIZE) && !defined(_WIN32) */
+		/* under windows, scope is numerical */
+		l += 3 + snprintf(scope_str, sizeof(scope_str), "%u", scope_id);
+#endif /* defined(IF_NAMESIZE) && !defined(_WIN32) */
+	}
+	s = malloc(l);
+	if(s == NULL) return NULL;
+	memcpy(s, base, n);
+	if(scope_id != 0) {
+		s[n] = '\0';
+		if(0 == memcmp(s, "http://[fe80:", 13)) {
 			/* this is a linklocal IPv6 address */
-			p = strchr(urls->ipcondescURL, ']');
+			p = strchr(s, ']');
 			if(p) {
 				/* insert %25<scope> into URL */
 #ifdef IF_NAMESIZE
 				memmove(p + 3 + strlen(ifname), p, strlen(p) + 1);
 				memcpy(p, "%25", 3);
 				memcpy(p + 3, ifname, strlen(ifname));
+				n += 3 + strlen(ifname);
 #else
 				memmove(p + 3 + strlen(scope_str), p, strlen(p) + 1);
 				memcpy(p, "%25", 3);
 				memcpy(p + 3, scope_str, strlen(scope_str));
+				n += 3 + strlen(scope_str);
 #endif
 			}
 		}
 	}
-	strncpy(urls->controlURL, urls->ipcondescURL, n2);
-	strncpy(urls->controlURL_CIF, urls->ipcondescURL, n3);
-	strncpy(urls->controlURL_6FC, urls->ipcondescURL, n4);
+	if(url[0] != '/')
+		s[n++] = '/';
+	memcpy(s + n, url, l - n);
+	return s;
+}
 
-	url_cpy_or_cat(urls->ipcondescURL, data->first.scpdurl, n1);
+/* Prepare the Urls for usage...
+ */
+MINIUPNP_LIBSPEC void
+GetUPNPUrls(struct UPNPUrls * urls, struct IGDdatas * data,
+            const char * descURL, unsigned int scope_id)
+{
+	/* strdup descURL */
+	urls->rootdescURL = strdup(descURL);
 
-	url_cpy_or_cat(urls->controlURL, data->first.controlurl, n2);
-
-	url_cpy_or_cat(urls->controlURL_CIF, data->CIF.controlurl, n3);
-
-	url_cpy_or_cat(urls->controlURL_6FC, data->IPv6FC.controlurl, n4);
+	/* get description of WANIPConnection */
+	urls->ipcondescURL = build_absolute_url(data->urlbase, descURL,
+	                                        data->first.scpdurl, scope_id);
+	urls->controlURL = build_absolute_url(data->urlbase, descURL,
+	                                      data->first.controlurl, scope_id);
+	urls->controlURL_CIF = build_absolute_url(data->urlbase, descURL,
+	                                          data->CIF.controlurl, scope_id);
+	urls->controlURL_6FC = build_absolute_url(data->urlbase, descURL,
+	                                          data->IPv6FC.controlurl, scope_id);
 
 #ifdef DEBUG
-	printf("urls->ipcondescURL='%s' %u n1=%d\n", urls->ipcondescURL,
-	       (unsigned)strlen(urls->ipcondescURL), n1);
-	printf("urls->controlURL='%s' %u n2=%d\n", urls->controlURL,
-	       (unsigned)strlen(urls->controlURL), n2);
-	printf("urls->controlURL_CIF='%s' %u n3=%d\n", urls->controlURL_CIF,
-	       (unsigned)strlen(urls->controlURL_CIF), n3);
-	printf("urls->controlURL_6FC='%s' %u n4=%d\n", urls->controlURL_6FC,
-	       (unsigned)strlen(urls->controlURL_6FC), n4);
+	printf("urls->ipcondescURL='%s'\n", urls->ipcondescURL);
+	printf("urls->controlURL='%s'\n", urls->controlURL);
+	printf("urls->controlURL_CIF='%s'\n", urls->controlURL_CIF);
+	printf("urls->controlURL_6FC='%s'\n", urls->controlURL_6FC);
 #endif
 }
 
-LIBSPEC void
+MINIUPNP_LIBSPEC void
 FreeUPNPUrls(struct UPNPUrls * urls)
 {
 	if(!urls)
@@ -891,7 +928,7 @@ UPNPIGD_IsConnected(struct UPNPUrls * urls, struct IGDdatas * data)
  * passed as parameters are set. Donc forget to call FreeUPNPUrls(urls) to
  * free allocated memory.
  */
-LIBSPEC int
+MINIUPNP_LIBSPEC int
 UPNP_GetValidIGD(struct UPNPDev * devlist,
                  struct UPNPUrls * urls,
 				 struct IGDdatas * data,
@@ -943,8 +980,8 @@ UPNP_GetValidIGD(struct UPNPDev * devlist,
 			memset(data, 0, sizeof(struct IGDdatas));
 			memset(urls, 0, sizeof(struct UPNPUrls));
 			parserootdesc(desc[i].xml, desc[i].size, data);
-			if(0==strcmp(data->CIF.servicetype,
-			   "urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1"))
+			if(COMPARE(data->CIF.servicetype,
+			           "urn:schemas-upnp-org:service:WANCommonInterfaceConfig:"))
 			{
 				desc[i].is_igd = 1;
 				n_igd++;

@@ -136,7 +136,7 @@ protected:
 	_oda_iav_err_t IsAddressValid(wxString, wxString&, long&);
 
 	void LaunchGame(const wxString& Address, const wxString& ODX_Path,
-	                const wxString& waddirs, const wxString& Password = wxT(""));
+	                const wxString& waddirs, const wxString& Password = "");
 
 	LstOdaServerList* m_LstCtrlServers;
 	LstOdaPlayerList* m_LstCtrlPlayers;

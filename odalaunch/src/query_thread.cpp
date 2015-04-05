@@ -23,6 +23,7 @@
 
 #include <wx/msgdlg.h>
 #include <wx/app.h>
+#include <wx/fileconf.h>
 
 #include "plat_utils.h"
 #include "query_thread.h"
@@ -34,14 +35,12 @@ QueryThread::QueryThread(wxEvtHandler* EventHandler) : wxThread(wxTHREAD_JOINABL
 {
 	if(Create() != wxTHREAD_NO_ERROR)
 	{
-		wxMessageBox(_T("Could not create worker thread!"),
-		             _T("Error"),
+		wxMessageBox("Could not create worker thread!",
+		             "Error",
 		             wxOK | wxICON_ERROR);
 
 		wxExit();
 	}
-
-	m_Condition = new wxCondition(m_Mutex);
 
 	Run();
 }
@@ -73,7 +72,7 @@ void QueryThread::GracefulExit()
 	// Set the exit code and signal thread to exit
 	SetStatus(QueryThread_Exiting);
 
-	m_Condition->Signal();
+	m_Semaphore.Post();
 
 	// Wait until the thread has closed completely
 	Wait();
@@ -88,7 +87,7 @@ void QueryThread::Signal(odalpapi::Server* QueryServer, const std::string& Addre
 	m_Address = Address;
 	m_Port = Port;
 
-	m_Condition->Signal();
+    m_Semaphore.Post();
 }
 
 void* QueryThread::Entry()
@@ -102,15 +101,13 @@ void* QueryThread::Entry()
 	{
 		SetStatus(QueryThread_Waiting);
 
-		m_Mutex.Lock();
-
 		// Put the thread to sleep and wait for a signal
-		m_Condition->Wait();
+		m_Semaphore.Wait();
 
-		// We got signaled to do some work, so lets do it
-		if(GetStatus() == QueryThread_Exiting)
+        if(GetStatus() == QueryThread_Exiting)
 			break;
 
+		// We got signaled to do some work, so lets do it
 		SetStatus(QueryThread_Running);
 
 		m_QueryServer->SetSocket(&Socket);
@@ -129,13 +126,22 @@ void* QueryThread::Entry()
 int QueryThread::GetIdealThreadCount()
 {
 	int ThreadCount;
+    int ThreadMul, ThreadMax;
+
+	// TODO: Replace with a better system
+	{
+        wxFileConfig ConfigInfo;
+
+        ConfigInfo.Read(QRYTHREADMULTIPLIER, &ThreadMul, ODA_THRMULVAL);
+        ConfigInfo.Read(QRYTHREADMAXIMUM, &ThreadMax, ODA_THRMAXVAL);
+	}
 
 	// Base number of threads on cpu count in the system (including cores)
 	// and multiply that by a fixed value
 	ThreadCount = wxThread::GetCPUCount();
 
 	if(ThreadCount != -1)
-		ThreadCount *= ODA_THRMULVAL;
+		ThreadCount *= ThreadMul;
 
-	return clamp(ThreadCount, ODA_THRMULVAL, ODA_THRMAXVAL);
+	return clamp(ThreadCount, ThreadMul, ThreadMax);
 }

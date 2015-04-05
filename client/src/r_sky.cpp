@@ -56,6 +56,7 @@ int 		sky1texture,	sky2texture;
 fixed_t		skytexturemid;
 fixed_t		skyscale;
 int			skystretch;
+fixed_t		skyheight;
 fixed_t		skyiscale;
 
 int			sky1shift,		sky2shift;
@@ -132,6 +133,8 @@ void R_GenerateLookup(int texnum, int *const errors); // from r_data.cpp
 
 void R_InitSkyMap()
 {
+	fixed_t fskyheight;
+
 	if (textureheight == NULL)
 		return;
 
@@ -144,45 +147,21 @@ void R_InitSkyMap()
 		Printf (PRINT_HIGH,"\x1f+Both sky textures must be the same height.\x1f-\n");
 		sky2texture = sky1texture;
 	}
-
-	int t_height = textures[sky1texture]->height;
-	int p_height = 0;
-
-	int count = textures[sky1texture]->patchcount;
-	const texpatch_t* texpatch = &(textures[sky1texture]->patches[0]);
 	
-	// Find the tallest patch in the texture
-	for (int i = 0; i < count; i++, texpatch++)
-	{
-		const patch_t* wpatch = W_CachePatch(texpatch->patch);
-		if (wpatch->height() > p_height)
-			p_height = wpatch->height();
-	}
+	fskyheight = textureheight[sky1texture];
 
-	if (p_height > t_height)
-	{
-		textures[sky1texture]->height = p_height;
-
-		// if the height changed the precaching has to be redone, so that the
-		// precalculated allocation size in texturecompositesize[] is correct
-		int errors;
-		R_GenerateLookup(sky1texture, &errors);
-	}
-
-	textureheight[sky1texture] = textures[sky1texture]->height << FRACBITS;
-	
-	skystretch = 0;
-
-	if (textureheight[sky1texture] <= (128 << FRACBITS))
+	if (fskyheight <= (128 << FRACBITS))
 	{
 		skytexturemid = 200/2*FRACUNIT;
 		skystretch = (r_stretchsky == 1) || (r_stretchsky == 2 && sv_freelook && cl_mouselook);
 	}
 	else
 	{
-		skytexturemid = 199 * FRACUNIT;
+		skytexturemid = 199<<FRACBITS;//textureheight[sky1texture]-1;
+		skystretch = 0;
 	}
-	
+	skyheight = fskyheight << skystretch;
+
 	if (viewwidth && viewheight)
 	{
 		skyiscale = (200*FRACUNIT) / ((freelookviewheight * viewwidth) / viewwidth);

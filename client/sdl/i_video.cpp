@@ -307,7 +307,9 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	int destbits = getBitsPerPixel();
 	int srcpitchpixels = source_surface->getPitchInPixels();
 	int destpitchpixels = getPitchInPixels();
-	const argb_t* palette = V_GetDefaultPalette()->colors;
+	
+	// [ML] GROSS HACK - different behavior occurs here between 8 and 32 bit color
+	const argb_t* palette = (srcbits == 8 ? source_surface->getPalette() : V_GetDefaultPalette()->colors);
 
 	if (srcbits == 8 && destbits == 8)
 	{
@@ -618,6 +620,11 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	// Ensure matted surface dimensions are sane and sanitized.
 	surface_width = clamp<uint16_t>(surface_width, 320, MAXWIDTH);
 	surface_height = clamp<uint16_t>(surface_height, 200, MAXHEIGHT);
+	
+	// Anything wider than 16:9 starts to look more distorted and provides even more advantage, so for now
+	// if the monitor aspect ratio is wider than 16:9, clamp it to that (TODO: Aspect ratio selection)
+	if (surface_width / surface_height > 16 / 9)
+		surface_width = (surface_height * 16) / 9;
 
 	// Is matting being used? Create matted_surface based on the primary_surface.
 	if (surface_width != primary_surface->getWidth() ||

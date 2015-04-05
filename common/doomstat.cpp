@@ -53,6 +53,7 @@ CVAR_FUNC_IMPL(language)
 	byte* language_data = new byte[language_length];
 	Res_ReadLump(language_res_id, language_data);
 
+	GStrings.FreeData();
 	GStrings.LoadStrings(language_data, language_length, STRING_TABLE_SIZE, false);
 	GStrings.Compact();
 
