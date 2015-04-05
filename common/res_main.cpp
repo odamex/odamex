@@ -857,6 +857,30 @@ const std::vector<std::string>& Res_GetResourceFileHashes()
 }
 
 
+
+//
+// Res_CheckFileHelper
+//
+// Helper function that opens a file and reads the first length bytes of
+// the file and then passes the data to the function func and returns the
+// result.
+//
+static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const void*, size_t), size_t length)
+{
+	FILE* fp = fopen(filename.c_str(), "rb");
+	if (fp == NULL)
+		return false;
+
+	char* data = new char[length];
+	size_t read_cnt = fread(data, 1, length, fp);
+	bool valid = read_cnt == length && func(data, length);
+	delete [] data;
+	fclose(fp);
+
+	return valid;
+}
+
+
 //
 // Res_CheckWadFile
 //
@@ -865,20 +889,7 @@ const std::vector<std::string>& Res_GetResourceFileHashes()
 static bool Res_CheckWadFile(const OString& filename)
 {
 	const size_t length = 4;	// length of WAD identifier ("IWAD" or "PWAD")
-
-	FILE* fp = fopen(filename.c_str(), "rb");
-	size_t read_cnt;
-
-	if (fp == NULL)
-		return false;
-
-	char* data = new char[length];
-	read_cnt = fread(data, 1, length, fp);
-	bool valid = read_cnt == length && Res_ValidateWad(data, length);
-	delete [] data;
-	fclose(fp);
-
-	return valid;
+	return Res_CheckFileHelper(filename, &Res_ValidateWad, length);
 }
 
 
@@ -890,20 +901,7 @@ static bool Res_CheckWadFile(const OString& filename)
 static bool Res_CheckDehackedFile(const OString& filename)
 {
 	const size_t length = strlen("Patch File for DeHackEd v");	// length of DeHackEd identifier
-
-	FILE* fp = fopen(filename.c_str(), "rb");
-	size_t read_cnt;
-
-	if (fp == NULL)
-		return false;
-
-	char* data = new char[length];
-	read_cnt = fread(data, 1, length, fp);
-	bool valid = read_cnt == length && Res_ValidateDehacked(data, length);
-	delete [] data;
-	fclose(fp);
-
-	return valid;
+	return Res_CheckFileHelper(filename, &Res_ValidateDehacked, length);
 }
 
 
