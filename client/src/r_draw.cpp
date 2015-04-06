@@ -274,7 +274,7 @@ void R_InitTranslationTables()
 		translationtables[i] = i;
 
 	// Set up default translationRGB tables:
-	palette_t *pal = V_GetDefaultPalette();
+	const palette_t* pal = V_GetDefaultPalette();
 	for (int i = 0; i < MAXPLAYERS; ++i)
 	{
 		for (int j = 0x70; j < 0x80; ++j)
@@ -326,7 +326,7 @@ void R_FreeTranslationTables (void)
 // [Nes] Vanilla player translation table.
 void R_BuildClassicPlayerTranslation (int player, int color)
 {
-	palette_t *pal = V_GetDefaultPalette();
+	const palette_t* pal = V_GetDefaultPalette();
 	int i;
 	
 	if (color == 1) // Indigo
