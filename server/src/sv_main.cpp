@@ -275,8 +275,6 @@ CVAR_FUNC_IMPL (sv_waddownloadcap)
 		var.Set(sv_maxrate);
 }
 
-EXTERN_CVAR (sv_speedhackfix)
-
 client_c clients;
 
 
@@ -3455,7 +3453,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 			player.mo->pitch = 0;
 
 		// Apply this ticcmd using the game logic
-		if (!sv_speedhackfix && gamestate == GS_LEVEL)
+		if (gamestate == GS_LEVEL)
 		{
 			P_PlayerThink(&player);
 			player.mo->RunThink();

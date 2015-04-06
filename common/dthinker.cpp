@@ -204,8 +204,6 @@ void DThinker::DestroyMostThinkers ()
 	DObject::EndFrame ();
 }
 
-EXTERN_CVAR (sv_speedhackfix)
-
 //
 // IndependentThinker
 //
