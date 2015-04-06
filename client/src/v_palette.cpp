@@ -42,6 +42,23 @@
 
 #include "v_palette.h"
 
+
+static palette_t default_palette;
+
+//
+// V_GetDefaultPalette
+//
+// Returns a pointer to the default palette for the video subsystem. The
+// palette returned should be the default palette defined in the PLAYPAL lump with the
+// user's gamma correction setting applied.
+//
+const palette_t* V_GetDefaultPalette()
+{
+	return &default_palette;
+}
+
+
+
 // Palette indices.
 // For damage/bonus red-/gold-shifts
 #define STARTREDPALS		1
@@ -309,7 +326,7 @@ static void V_UpdateGammaLevel(float level)
 		lasttype = type;
 
 		gammastrat->generateGammaTable(gammatable, level);
-		V_GammaAdjustPalette(V_GetDefaultPalette());
+		V_GammaAdjustPalette(&default_palette);
 
 		V_RestoreScreenPalette();
 
@@ -605,22 +622,20 @@ void V_InitPalette(const char* lumpname)
 
 	current_palette_num = -1;
 
-	palette_t* palette = V_GetDefaultPalette();
+	if (default_palette.maps.colormap)
+		delete [] default_palette.maps.colormap;
+	if (default_palette.maps.shademap)
+		delete [] default_palette.maps.shademap;
 
-	if (palette->maps.colormap)
-		delete [] palette->maps.colormap;
-	if (palette->maps.shademap)
-		delete [] palette->maps.shademap;
-
-	palette->maps.colormap = new palindex_t[(NUMCOLORMAPS + 1) * 256];
-	palette->maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
+	default_palette.maps.colormap = new palindex_t[(NUMCOLORMAPS + 1) * 256];
+	default_palette.maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
 
 	const byte* data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
 
 	for (int i = 0; i < 256; i++, data += 3)
-		palette->basecolors[i] = argb_t(255, data[0], data[1], data[2]);
+		default_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
 
-	V_GammaAdjustPalette(palette);
+	V_GammaAdjustPalette(&default_palette);
 
 	V_ForceBlend(argb_t(0, 255, 255, 255));
 
@@ -628,24 +643,12 @@ void V_InitPalette(const char* lumpname)
 
 	V_ResetPalette();
 
-	assert(palette->maps.colormap != NULL);
-	assert(palette->maps.shademap != NULL);
-	V_Palette = shaderef_t(&palette->maps, 0);
+	assert(default_palette.maps.colormap != NULL);
+	assert(default_palette.maps.shademap != NULL);
+	V_Palette = shaderef_t(&default_palette.maps, 0);
 
 	palindex_t color1, color2;
-	V_ClosestColors(palette->basecolors, color1, color2);
-}
-
-
-//
-// V_GetDefaultPalette
-//
-// Returns a pointer to the default game palette.
-//
-palette_t* V_GetDefaultPalette()
-{
-	static palette_t default_palette;
-	return &default_palette;
+	V_ClosestColors(default_palette.basecolors, color1, color2);
 }
 
 
@@ -709,7 +712,7 @@ void BuildLightRamp (shademap_t &maps)
 	}
 }
 
-void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
+void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 {
 	BuildLightRamp(maps);
 
@@ -753,7 +756,7 @@ void BuildDefaultColorAndShademap(palette_t *pal, shademap_t &maps)
 	}
 }
 
-void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
+void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 {
 	BuildLightRamp(maps);
 
@@ -800,10 +803,9 @@ void BuildDefaultShademap(palette_t *pal, shademap_t &maps)
 //
 void V_RefreshColormaps()
 {
-	palette_t* palette = V_GetDefaultPalette();
-	BuildDefaultColorAndShademap(palette, palette->maps);
+	BuildDefaultColorAndShademap(&default_palette, default_palette.maps);
 
-	NormalLight.maps = shaderef_t(&palette->maps, 0);
+	NormalLight.maps = shaderef_t(&default_palette.maps, 0);
 	NormalLight.color = argb_t(255, 255, 255, 255);
 	NormalLight.fade = argb_t(level.fadeto_color[0], level.fadeto_color[1],
 							level.fadeto_color[2], level.fadeto_color[3]);

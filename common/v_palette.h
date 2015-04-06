@@ -71,7 +71,7 @@ argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const i
 void V_InitPalette(const char* lumpname);
 
 
-palette_t* V_GetDefaultPalette();
+const palette_t* V_GetDefaultPalette();
 
 //
 // V_RestoreScreenPalette
@@ -86,9 +86,9 @@ void V_RestoreScreenPalette();
 void V_RefreshColormaps();
 
 // Sets up the default colormaps and shademaps based on the given palette:
-void BuildDefaultColorAndShademap (palette_t *pal, shademap_t &maps);
+void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps);
 // Sets up the default shademaps (no colormaps) based on the given palette:
-void BuildDefaultShademap (palette_t *pal, shademap_t &maps);
+void BuildDefaultShademap(const palette_t* pal, shademap_t& maps);
 
 // V_SetBlend()
 //	input: blendr: red component of blend

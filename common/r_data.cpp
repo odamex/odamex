@@ -870,7 +870,7 @@ void R_InitColormaps()
 
 	if (numfakecmaps > 1)
 	{
-		palette_t *pal = V_GetDefaultPalette();
+		const palette_t* pal = V_GetDefaultPalette();
 		shaderef_t defpal = shaderef_t(&pal->maps, 0);
 
 		for (unsigned i = ++firstfakecmap, j = 1; j < numfakecmaps; i++, j++)
