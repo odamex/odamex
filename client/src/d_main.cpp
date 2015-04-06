@@ -118,8 +118,7 @@ BOOL devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
 
-char startmap[9];
-
+char startmap[8];
 BOOL autostart;
 BOOL autorecord;
 std::string demorecordfile;
@@ -818,9 +817,7 @@ void D_DoomMain()
 			map = Args.GetArg(p+2)[0]-'0';
 		}
 
-		memmove(startmap, CalcMapName(ep, map), 8);
-		startmap[8] = 0;
-
+		strncpy(startmap, CalcMapName(ep, map), 8);
 		autostart = true;
 	}
 
@@ -828,9 +825,7 @@ void D_DoomMain()
 	p = Args.CheckParm("+map");
 	if (p && p < Args.NumArgs()-1)
 	{
-		memmove(startmap, Args.GetArg(p+1), 8);
-		startmap[8] = 0;
-
+		strncpy(startmap, Args.GetArg(p+1), 8);
 		((char *)Args.GetArg(p))[0] = '-';
 		autostart = true;
 	}

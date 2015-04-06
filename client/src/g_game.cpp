@@ -1862,9 +1862,7 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 		}
 		else
 		{
-			memmove(startmap, argv[1], 8);
-			startmap[8] = 0;
-
+			strncpy(startmap, argv[1], 8);
 			demorecordfile = argv[2];
 			autostart = true;
 			autorecord = true;

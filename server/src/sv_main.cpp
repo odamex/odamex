@@ -4614,7 +4614,15 @@ void SV_RunTics()
 		// [SL] Ordinarily we should call G_DeferedInitNew but this is called
 		// at the end of a gametic and the level reset should take place now
 		// rather than at the start of the next gametic.
-		G_InitNew(level.mapname);
+
+		// [SL] create a copy of level.mapname because G_InitNew uses strncpy
+		// to copy the mapname parameter to level.mapname, which is undefined
+		// behavior.
+		char mapname[9];
+		strncpy(mapname, level.mapname, 8);
+		mapname[8] = 0;
+
+		G_InitNew(mapname);
 	}
 	last_player_count = players.size();
 }
