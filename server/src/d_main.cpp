@@ -116,7 +116,7 @@ extern DThinker ThinkerCap;
 BOOL devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
-char startmap[8];
+char startmap[9];
 BOOL autostart;
 BOOL advancedemo;
 event_t events[MAXEVENTS];
@@ -476,7 +476,9 @@ void D_DoomMain()
 			map = Args.GetArg(p+2)[0]-'0';
 		}
 
-		strncpy(startmap, CalcMapName(ep, map), 8);
+		memmove(startmap, CalcMapName(ep, map), 8);
+		startmap[8] = 0;
+
 		autostart = true;
 	}
 
@@ -484,12 +486,15 @@ void D_DoomMain()
 	p = Args.CheckParm("+map");
 	if (p && p < Args.NumArgs() - 1)
 	{
-		strncpy(startmap, Args.GetArg(p + 1), 8);
+		memmove(startmap, Args.GetArg(p + 1), 8);
+		startmap[8] = 0;
+
 		((char*)Args.GetArg(p))[0] = '-';
 		autostart = true;
 	}
 
-	strncpy(level.mapname, startmap, sizeof(level.mapname));
+	memmove(level.mapname, startmap, 8);
+	level.mapname[8] = 0;
 
 	G_ChangeMap();
 

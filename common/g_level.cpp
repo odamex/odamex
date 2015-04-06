@@ -1030,7 +1030,7 @@ void P_SerializeACSDefereds(FArchive &arc)
 			{
 				char name[9];
 
-				strncpy(name, mapname, 8);
+				memmove(name, mapname, 8);
 				name[8] = 0;
 				I_Error("Unknown map '%s' in savegame", name);
 			}
@@ -1050,7 +1050,8 @@ void G_DoWorldDone (void)
 		// just repeat the current one.
 		Printf (PRINT_HIGH, "No next map specified.\n");
 	} else {
-		strncpy (level.mapname, wminfo.next, 8);
+		memmove(level.mapname, wminfo.next, 8);
+		level.mapname[8] = 0;
 	}
 	G_DoLoadLevel (startpos);
 	startpos = 0;

@@ -108,7 +108,10 @@ static char d_mapname[9];
 void G_DeferedInitNew (char *mapname)
 {
 	G_CleanupDemo();
-	strncpy (d_mapname, mapname, 8);
+
+	memmove(d_mapname, mapname, 8);
+	d_mapname[8] = 0;
+
 	gameaction = ga_newgame;
 }
 
@@ -274,7 +277,9 @@ void G_InitNew (const char *mapname)
 
 	D_SetupUserInfo();
 	
-	strncpy (level.mapname, mapname, 8);
+	memmove(level.mapname, mapname, 8);
+	level.mapname[8] = 0;
+
 	G_DoLoadLevel (0);
 }
 

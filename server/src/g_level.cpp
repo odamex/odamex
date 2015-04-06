@@ -119,7 +119,8 @@ static char d_mapname[9];
 
 void G_DeferedInitNew (char *mapname)
 {
-	strncpy (d_mapname, mapname, 8);
+	memmove(d_mapname, mapname, 8);
+	d_mapname[8] = 0;
 	gameaction = ga_newgame;
 
 	// sv_nextmap cvar may be overridden by a script
@@ -454,7 +455,8 @@ void G_InitNew (const char *mapname)
 	viewactive = true;
 	shotclock = 0;
 
-	strncpy (level.mapname, mapname, 8);
+	memmove(level.mapname, mapname, 8);
+	level.mapname[8] = 0;
 	G_DoLoadLevel (0);
 
 	// denis - hack to fix ctfmode, as it is only known after the map is processed!
