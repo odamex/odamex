@@ -109,7 +109,7 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 								void* buffer, uint16_t pitch) :
 	mCanvas(NULL),
 	mSurfaceBuffer((uint8_t*)buffer), mOwnsSurfaceBuffer(buffer == NULL),
-	mPixelFormat(*format),
+	mPalette(V_GetDefaultPalette()->colors), mPixelFormat(*format),
 	mWidth(width), mHeight(height), mPitch(pitch), mLocks(0)
 {
 	const uintptr_t alignment = 16;
@@ -143,8 +143,6 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 		// can be properly freed later.
 		buffer[offset - 1] = offset;
 	}
-
-	memset(mPalette, 255, 256 * sizeof(*mPalette));
 }
 
 
@@ -171,7 +169,7 @@ IWindowSurface::IWindowSurface(IWindowSurface* base_surface, uint16_t width, uin
 
 	mSurfaceBuffer = (uint8_t*)base_surface->getBuffer(x, y);
 
-	memcpy(mPalette, base_surface->mPalette, 256 * sizeof(*mPalette));
+	mPalette = base_surface->mPalette;
 }
 
 
@@ -308,8 +306,7 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	int srcpitchpixels = source_surface->getPitchInPixels();
 	int destpitchpixels = getPitchInPixels();
 	
-	// [ML] GROSS HACK - different behavior occurs here between 8 and 32 bit color
-	const argb_t* palette = (srcbits == 8 ? source_surface->getPalette() : V_GetDefaultPalette()->colors);
+	const argb_t* palette = source_surface->getPalette();
 
 	if (srcbits == 8 && destbits == 8)
 	{
@@ -657,6 +654,14 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	else
 		DPrintf("I_SetVideoMode: set video mode to %s\n",
 					I_GetVideoModeString(window->getVideoMode()).c_str());
+
+	const argb_t* palette = V_GetGamePalette()->colors;
+	if (matted_surface)
+		matted_surface->setPalette(palette);
+	if (emulated_surface)
+		emulated_surface->setPalette(palette);
+	if (converted_surface)
+		converted_surface->setPalette(palette);
 }
 
 
@@ -1072,18 +1077,7 @@ void I_FinishUpdate()
 void I_SetPalette(const argb_t* palette)
 {
 	if (I_VideoInitialized())
-	{
 		I_GetWindow()->setPalette(palette);
-
-		primary_surface->setPalette(palette);
-
-		if (converted_surface)
-			converted_surface->setPalette(palette);
-		if (matted_surface)
-			matted_surface->setPalette(palette);
-		if (emulated_surface)
-			emulated_surface->setPalette(palette);
-	}
 }
 
 

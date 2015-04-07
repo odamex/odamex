@@ -33,6 +33,17 @@ struct palette_t
 	argb_t			colors[256];			// gamma corrected colors
 
 	shademap_t      maps;
+
+	const palette_t& operator=(const palette_t& other)
+	{
+		for (size_t i = 0; i < 256; i++)
+		{
+			colors[i] = other.colors[i];
+			basecolors[i] = other.basecolors[i];
+		}
+		maps = other.maps;
+		return *this;
+	}
 };
 
 struct dyncolormap_s {
@@ -72,6 +83,7 @@ void V_InitPalette(const char* lumpname);
 
 
 const palette_t* V_GetDefaultPalette();
+const palette_t* V_GetGamePalette();
 
 //
 // V_RestoreScreenPalette
