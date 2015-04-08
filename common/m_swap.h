@@ -49,26 +49,44 @@
 
 // Swap 16bit, that is, MSB and LSB byte.
 // No masking with 0xFF should be necessary. 
-short LESHORT (short x);
-unsigned short LESHORT (unsigned short x);
 
-// Swapping 32bit.
-unsigned int LELONG (unsigned int x);
-int LELONG (int x);
+unsigned short LESHORT(unsigned short x);
+short LESHORT(short x);
 
+unsigned int LELONG(unsigned int x);
+int LELONG(int x);
+
+unsigned long LELONG(unsigned long x);
+long LELONG(long x);
+
+unsigned short BESHORT(unsigned short x);
 short BESHORT(short x);
+
+unsigned int BELONG(unsigned int x);
+int BELONG(int x);
+
+unsigned long BELONG(unsigned long x);
 long BELONG(long x);
 
 #else
 
+unsigned short LESHORT(unsigned short x);
 short LESHORT(short x);
+
+unsigned int LELONG(unsigned int x);
+int LELONG(int x);
+
+unsigned long LELONG(unsigned long x);
 long LELONG(long x);
 
-short BESHORT (short x);
-unsigned short BESHORT (unsigned short x);
+unsigned short BESHORT(unsigned short x);
+short BESHORT(short x);
 
-unsigned int BELONG (unsigned int x);
-int BELONG (int x);
+unsigned int BELONG(unsigned int x);
+int BELONG(int x);
+
+unsigned long BELONG(unsigned long x);
+long BELONG(long x);
 
 #endif // __BIG_ENDIAN__
 

@@ -261,7 +261,7 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	R_ResetDrawFuncs();
 
-	palette_t *pal = V_GetDefaultPalette();
+	const palette_t* pal = V_GetDefaultPalette();
 
 	dcol.iscale = skyiscale >> skystretch;
 	dcol.texturemid = skytexturemid;

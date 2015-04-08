@@ -54,9 +54,15 @@ palindex_t V_BestColor(const argb_t *palette_colors, argb_t color)
 }
 
 
-palette_t* V_GetDefaultPalette()
+static palette_t default_palette;
+
+const palette_t* V_GetDefaultPalette()
 {
-	static palette_t default_palette;
+	return &default_palette;
+}
+
+const palette_t* V_GetGamePalette()
+{
 	return &default_palette;
 }
 
@@ -66,14 +72,12 @@ void V_InitPalette(const char* lumpname)
 
 	if (!initialized)
 	{
-		palette_t* default_palette = V_GetDefaultPalette();
-
 		// construct a valid palette_t so we don't get crashes
-		memset(default_palette->basecolors, 0, 256 * sizeof(*default_palette->basecolors));
-		memset(default_palette->colors, 0, 256 * sizeof(*default_palette->colors));
+		memset(default_palette.basecolors, 0, 256 * sizeof(*default_palette.basecolors));
+		memset(default_palette.colors, 0, 256 * sizeof(*default_palette.colors));
 
-		default_palette->maps.colormap = NULL;
-		default_palette->maps.shademap = NULL;
+		default_palette.maps.colormap = NULL;
+		default_palette.maps.shademap = NULL;
 
 		initialized = true;
 	}
@@ -162,7 +166,7 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_co
 
 /****** Colored Lighting Stuffs (Sorry, 8-bit only) ******/
 
-void BuildDefaultShademap (palette_t *pal, shademap_t &maps)
+void BuildDefaultShademap(const palette_t* pal, shademap_t &maps)
 {
 }
 

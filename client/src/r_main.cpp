@@ -849,7 +849,7 @@ void R_SetupFrame (player_t *player)
 
 	fixedcolormap = shaderef_t();
 	fixedlightlev = 0;
-	palette_t *pal = V_GetDefaultPalette();
+	const palette_t* pal = V_GetDefaultPalette();
 
 	if (camera == player->mo && player->fixedcolormap)
 	{

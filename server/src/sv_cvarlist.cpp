@@ -63,9 +63,6 @@ CVAR_RANGE(		sv_maxcorpses, "200", "Maximum corpses to appear on map",
 CVAR(			sv_clientcount,	"0", "Set to the number of connected players (for scripting)",
 				CVARTYPE_BYTE, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
-CVAR(			sv_antiwallhack, "0", "Experimental anti-wallkhack code",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
-
 CVAR_RANGE_FUNC_DECL(sv_maxclients, "4", "Maximum clients that can connect to a server",
 				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
 

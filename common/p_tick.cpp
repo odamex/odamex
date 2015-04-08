@@ -29,8 +29,6 @@
 #include "doomstat.h"
 #include "p_unlag.h"
 
-EXTERN_CVAR (sv_speedhackfix)
-
 //
 // P_AtInterval
 //
@@ -58,7 +56,7 @@ void P_Ticker (void)
 	if (clientside)
 		P_ThinkParticles ();	// [RH] make the particles think
 
-	if((serverside && sv_speedhackfix) || (clientside && serverside))
+	if (clientside && serverside)
 	{
 		for (Players::iterator it = players.begin();it != players.end();++it)
 			if (it->ingame())

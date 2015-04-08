@@ -1320,8 +1320,7 @@ void AM_drawWalls(void)
 	int i, r, g, b;
 	static mline_t l;
 	float rdif, gdif, bdif;
-	palette_t *pal = V_GetDefaultPalette();
-
+	const palette_t* pal = V_GetDefaultPalette();
 
 	for (i=0;i<numlines;i++) {
 		l.a.x = lines[i].v1->x;
@@ -1516,8 +1515,7 @@ void AM_drawPlayers(void)
 {
 	angle_t angle;
 	player_t &conplayer = displayplayer();
-	argb_t *palette;
-	palette = V_GetDefaultPalette()->colors;
+	const argb_t* palette = V_GetDefaultPalette()->colors;
 
 	if (!multiplayer)
 	{
