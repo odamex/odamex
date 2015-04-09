@@ -661,7 +661,7 @@ private:
 // ----------------------------------------------------------------------------
 
 template <> struct hashfunc<OString>
-{   size_t operator()(const OString& str) const { return str.mId; } };
+{   unsigned int operator()(const OString& str) const { return static_cast<unsigned int>(str.mId); } };
 
 
 
