@@ -237,10 +237,6 @@ int main (int argc, char **argv)
 
 	    seteuid (getuid ());
 
-		// ensure OString's string table is properly initialized and shutdown
-		OString::startup();
-		atterm(OString::shutdown);
-
 		Args.SetArgs (argc, argv);
 
 		const char *CON_FILE = Args.CheckValue("-confile");
