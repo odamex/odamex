@@ -29,6 +29,7 @@
 #include "w_ident.h"
 #include "m_argv.h"
 #include "c_cvars.h"
+#include "res_main.h"
 
 #include <string>
 #include <vector>
@@ -696,7 +697,8 @@ std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string
 	size_t odamex_wad_position = invalid_position;
 	size_t iwad_position = invalid_position;
 
-	if (resource_filenames.size() >= 1 && iequals(Res_CleanseFilename(resource_filenames[0]), "ODAMEX.WAD"))
+	const OString& engine_resource_filename(Res_GetEngineResourceFileName());
+	if (resource_filenames.size() >= 1 && iequals(Res_CleanseFilename(resource_filenames[0]), engine_resource_filename))
 		odamex_wad_position = 0;
 	
 	if (odamex_wad_position == invalid_position && resource_filenames.size() >= 1 && W_IsIWAD(resource_filenames[0]))
@@ -709,12 +711,12 @@ std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string
 
 	std::string odamex_wad_filename;
 	if (odamex_wad_position == invalid_position)
-		odamex_wad_filename = "ODAMEX.WAD";
+		odamex_wad_filename = engine_resource_filename;
 	else
 		odamex_wad_filename = resource_filenames[odamex_wad_position];
 	full_filename = Res_FindResourceFile(odamex_wad_filename);
 	if (full_filename.empty())
-		I_FatalError("Unable to locate ODAMEX.WAD resource file.");
+		I_FatalError("Unable to locate %s resource file.", engine_resource_filename.c_str());
 	else
 		new_resource_filenames.push_back(full_filename);
 

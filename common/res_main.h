@@ -212,6 +212,18 @@ private:
 
 // ****************************************************************************
 
+//
+// Res_GetEngineResourceFileName
+//
+// Returns the file name for the engine's resource file. Use this function
+// rather than hard-coding the file name.
+//
+static inline const OString& Res_GetEngineResourceFileName()
+{
+	static const OString& filename("ODAMEX.WAD");
+	return filename;
+}
+
 void Res_OpenResourceFile(const OString& filename);
 void Res_CloseAllResourceFiles();
 

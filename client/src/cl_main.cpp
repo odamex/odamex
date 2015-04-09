@@ -1589,8 +1589,9 @@ bool CL_PrepareConnect(void)
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
 	// store the resource file name list
+	const OString& engine_resource_filename(Res_GetEngineResourceFileName());
 	std::vector<std::string> resource_file_names;
-	resource_file_names.push_back("ODAMEX.WAD");		// server omits ODAMEX.WAD
+	resource_file_names.push_back(engine_resource_filename);		// server omits ODAMEX.WAD
 	for (size_t i = 0; i < resource_file_count; i++)
 		resource_file_names.push_back(MSG_ReadString());
 
@@ -3296,7 +3297,8 @@ void CL_LoadMap()
 
 	std::vector<std::string> resource_file_names, resource_file_hashes;
 
-	resource_file_names.push_back("ODAMEX.WAD");		// server omits ODAMEX.WAD
+	const OString& engine_resource_filename(Res_GetEngineResourceFileName());
+	resource_file_names.push_back(engine_resource_filename);		// server omits ODAMEX.WAD
 	resource_file_hashes.push_back(std::string());		// empty hash for ODAMEX.WAD
 
 	while (resource_file_count--)
