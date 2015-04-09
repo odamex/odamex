@@ -67,6 +67,12 @@ template <> struct hashfunc<unsigned int>
 template <> struct hashfunc<signed int>
 {	unsigned int operator()(signed int val) const { return (unsigned int)val; }		};
 
+template <> struct hashfunc<unsigned long>
+{	unsigned int operator()(unsigned long val) const { return (unsigned int)val; }	};
+
+template <> struct hashfunc<signed long>
+{	unsigned int operator()(signed long val) const { return (unsigned int)val; }		};
+
 template <> struct hashfunc<unsigned long long>
 {	unsigned int operator()(unsigned long long val) const { return (unsigned int)val; }	};
 
