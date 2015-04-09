@@ -583,16 +583,16 @@ private:
 	// Removes a string entry from the string table.
 	// ------------------------------------------------------------------------
 
-	inline void removeString()
+	inline void removeString(const StringIdType& id)
 	{
 		// shouldn't be removing strings before any have been added
 		if (!mInitialized)
 			return;
 
-		if (mId == mEmptyStringId)
+		if (id == mEmptyStringId)
 			return;
 
-		StringTable::iterator it = mStrings->find(mId);
+		StringTable::iterator it = mStrings->find(id);
 		assert(it != mStrings->end());
 
 		StringRecord* rec = &(*it);
@@ -602,7 +602,7 @@ private:
 			HashedStringType hash_value = hash(rec->mString.c_str());
 			mStringLookup->erase(hash_value);
 			rec->mString.clear();	// allow std::string to free unused strings
-			mStrings->erase(mId);
+			mStrings->erase(id);
 		}
 	}
 
