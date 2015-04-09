@@ -38,6 +38,7 @@ typedef uint32_t ResourceFileId;
 typedef uint32_t NameSpaceId;
 
 typedef std::vector<OString> NameSpaceTable;
+typedef std::vector<ResourceId> ResourceIdList;
 
 static const OString global_namespace_name("GLOBAL");
 static const OString flats_namespace_name("FLATS");
@@ -263,8 +264,7 @@ static inline void* Res_CacheLump(const OString& name, int tag)
 }
 
 
-void Res_QueryLumpName(std::vector<ResourceId>& res_ids,
-					const OString& lumpname, const OString& namespace_name = global_namespace_name);
+ResourceIdList Res_GetAllResourceIds(const OString& lumpname, const OString& namespace_name = global_namespace_name);
 
 
 bool Res_CheckMap(const OString& mapname);

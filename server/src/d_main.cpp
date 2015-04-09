@@ -264,7 +264,7 @@ void D_Init()
 //	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
-	ResourceId language_res_id = Res_GetResourceId("LANGUAGE");
+	const ResourceId& language_res_id = Res_GetResourceId("LANGUAGE");
 	size_t language_length = Res_GetLumpLength(language_res_id);
 	byte* language_data = new byte[language_length];
 	Res_ReadLump(language_res_id, language_data);

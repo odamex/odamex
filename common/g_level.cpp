@@ -265,9 +265,7 @@ void G_ParseMapInfo()
 	int clusterindex;
 	DWORD levelflags;
 
-	std::vector<ResourceId> res_ids;
-	Res_QueryLumpName(res_ids, "MAPINFO");
-
+	const ResourceIdList res_ids = Res_GetAllResourceIds("MAPINFO");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
 		SetLevelDefaults(&defaultinfo);

@@ -552,9 +552,7 @@ void TextureManager::readPNamesDirectory()
 //
 void TextureManager::readAnimDefLump()
 {
-	std::vector<ResourceId> res_ids;
-	Res_QueryLumpName(res_ids, "ANIMDEFS");
-
+	const ResourceIdList res_ids = Res_GetAllResourceIds("ANIMDEFS");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
 		SC_OpenResourceLump(res_ids[i]);
@@ -1036,7 +1034,7 @@ TextureId TextureManager::getPatchTextureId(unsigned int lumpnum)
 TextureId TextureManager::getPatchTextureId(const OString& name)
 {
 	static const OString patches_namespace_name("PATCHES");
-	ResourceId res_id = Res_GetResourceId(name, patches_namespace_name);
+	const ResourceId& res_id = Res_GetResourceId(name, patches_namespace_name);
  
 	int lumpnum = W_CheckNumForName(name.c_str());
 	if (lumpnum >= 0)

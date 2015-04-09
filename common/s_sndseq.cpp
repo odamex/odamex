@@ -413,9 +413,7 @@ void S_ParseSndSeq (void)
 	ScriptTemp = (unsigned int *)Malloc (MAX_SEQSIZE * sizeof(*ScriptTemp));
 	ScriptTempSize = MAX_SEQSIZE;
 
-	std::vector<ResourceId> res_ids;
-	Res_QueryLumpName(res_ids, "SNDSEQ");
-
+	const ResourceIdList res_ids = Res_GetAllResourceIds("SNDSEQ");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
 		SC_OpenResourceLump(res_ids[i]);

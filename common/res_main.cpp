@@ -978,15 +978,16 @@ ResourceId Res_GetResourceId(const OString& lump_name, const OString& namespace_
 
 
 //
-// Res_QueryLumpName
+// Res_GetAllResourceIds
 //
 // Fills the supplied vector with the LumpId of any lump whose name matches the
 // given string. An empty vector indicates that there were no matches.
 //
-void Res_QueryLumpName(std::vector<ResourceId>& res_ids,
-					const OString& lump_name, const OString& namespace_name)
+ResourceIdList Res_GetAllResourceIds(const OString& lump_name, const OString& namespace_name)
 {
+	ResourceIdList res_ids;
 	lump_lookup_table.queryByName(res_ids, lump_name, namespace_name);
+	return res_ids;
 }
 
 

@@ -1701,7 +1701,7 @@ endinclude:
 }
 #endif
 
-bool D_LoadDehLump(const ResourceId res_id)
+bool D_LoadDehLump(const ResourceId& res_id)
 {
 	const char* lump_name = Res_GetLumpName(res_id).c_str();
 //	const char* file_name = Res_GetResourceFileName(res_id).c_str();

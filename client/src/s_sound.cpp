@@ -1066,7 +1066,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 
 	if (!(f = fopen (musicname.c_str(), "rb")))
 	{
-		ResourceId res_id = Res_GetResourceId(musicname);
+		const ResourceId& res_id = Res_GetResourceId(musicname);
 		if (res_id == ResourceFile::LUMP_NOT_FOUND)
 		{
 			Printf(PRINT_HIGH, "Music lump \"%s\" not found\n", musicname.c_str());
@@ -1220,9 +1220,7 @@ void S_ParseSndInfo()
 
 	S_ClearSoundLumps ();
 
-	std::vector<ResourceId> res_ids;
-	Res_QueryLumpName(res_ids, "SNDINFO");
-
+	const ResourceIdList res_ids = Res_GetAllResourceIds("SNDINFO");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
 		sndinfo = (char*)Res_CacheLump(res_ids[i], PU_CACHE);

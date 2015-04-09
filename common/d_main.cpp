@@ -203,7 +203,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
-	ResourceId language_res_id = Res_GetResourceId("LANGUAGE");
+	const ResourceId& language_res_id = Res_GetResourceId("LANGUAGE");
 	size_t language_length = Res_GetLumpLength(language_res_id);
 	byte* language_data = new byte[language_length];
 	Res_ReadLump(language_res_id, language_data);
@@ -214,8 +214,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	delete [] language_data;
 
 	// Load all DeHackEd files
-	std::vector<ResourceId> dehacked_res_ids;
-	Res_QueryLumpName(dehacked_res_ids, "DEHACKED");
+	const ResourceIdList dehacked_res_ids = Res_GetAllResourceIds("DEHACKED");
 	for (size_t i = 0; i < dehacked_res_ids.size(); i++)
 		D_LoadDehLump(dehacked_res_ids[i]);
 
