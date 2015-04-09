@@ -109,10 +109,6 @@ int main(int argc, char *argv[])
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif
 
-		// ensure OString's string table is properly initialized and shutdown
-		OString::startup();
-		atterm(OString::shutdown);
-
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		Args.SetArgs (argc, argv);
 

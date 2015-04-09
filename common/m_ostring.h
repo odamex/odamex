@@ -126,8 +126,7 @@ public:
 	OString(const std::string& str);
 	OString(const OString& other, size_t pos, size_t len = npos);
 	OString(const std::string& str, size_t pos, size_t len = npos);
-	OString(const char* s);
-	OString(const char* s, size_t n);
+	OString(const char* s, size_t n = npos);
 	OString(size_t n, char c);
 
 	template <class InputIterator>
@@ -248,14 +247,65 @@ public:
 	// assign
 	// ------------------------------------------------------------------------
 
-	OString& assign(const OString& other);
-	OString& assign(const std::string& str);
-	OString& assign(const char* s);
-	OString& assign(const char* s, size_t n);
-	OString& assign(size_t n, char c);
+	OString& assign(const OString& other)
+	{
+		const StringIdType old_id = mId;
+		mId = mEmptyStringId;
+
+		if (other.mId != mEmptyStringId)
+		{
+			StringRecord* inc_rec = &mStrings->get(other.mId);
+			increaseRefCount(inc_rec);
+			mId = other.mId;
+		}
+
+		if (old_id != mEmptyStringId)
+		{
+			StringRecord* dec_rec = &mStrings->get(old_id);
+			decreaseRefCount(dec_rec);
+			if (dec_rec->mRefCount == 0)
+				removeString(dec_rec);
+		}
+		return *this;
+	}
+
+	OString& assign(const std::string& str)
+	{
+		return assign(str.c_str());
+	}
+
+	OString& assign(const char* s, size_t n = npos)
+	{
+		const StringIdType old_id = mId;
+		mId = mEmptyStringId;
+
+		if (s[0] != 0)		// not empty string
+		{
+			StringRecord* inc_rec = insertString(s, n);
+			increaseRefCount(inc_rec);
+			mId = mStrings->getId(*inc_rec);
+		}
+
+		if (old_id != mEmptyStringId)
+		{
+			StringRecord* dec_rec = &mStrings->get(old_id);
+			decreaseRefCount(dec_rec);
+			if (dec_rec->mRefCount == 0)
+				removeString(dec_rec);
+		}
+		return *this;
+	}
+
+	OString& assign(size_t n, char c)
+	{
+		return assign(std::string(n, c));
+	}
 
 	template <typename InputIterator>
-	OString& assign(InputIterator first, InputIterator last);
+	OString& assign(InputIterator first, InputIterator last)
+	{
+		return assign(std::string(first, last));
+	}
 
 
 	// ------------------------------------------------------------------------
@@ -438,8 +488,8 @@ public:
 
 private:
 	struct StringRecord {
-		StringRecord(const std::string& str = "") :
-			mString(str), mRefCount(0)
+		StringRecord(const std::string& str = "", size_t pos = 0, size_t length = npos) :
+			mString(str, pos, length), mRefCount(0)
 		{ }
 
 		std::string				mString;
@@ -477,103 +527,88 @@ private:
 	// Generates a 32-bit hash value from a string.
 	// ------------------------------------------------------------------------
 
-	inline static HashedStringType hash(const char* s) 
+	inline static HashedStringType hash(const char* s, size_t n = npos) 
 	{
 		HashedStringType val = 0;
-		for (; *s != 0; s++)
+		for (; *s != 0 && n != 0; s++, n--)
 			val = val * 101 + *s;
 		return val;
 	}
 
 
 	// ------------------------------------------------------------------------
-	// lookupByString
+	// lookupByHash
 	//
 	// Checks if a string is already in the string table.
 	// ------------------------------------------------------------------------
 
-	inline StringRecord* lookupByHash(HashedStringType hash_value) 
+	inline StringRecord* lookupByHash(const HashedStringType hash_value) 
 	{
 		StringLookupTable::const_iterator lookupit = mStringLookup->find(hash_value);
 		if (lookupit != mStringLookup->end())
 		{
-			StringIdType id = lookupit->second;
+			const StringIdType id = lookupit->second;
 			StringTable::iterator it = mStrings->find(id);
 			if (it != mStrings->end())
 				return &(*it);
 		}
 		return NULL;	// not_found
 	}
-
-	inline StringRecord* lookupByString(const char* s)
-	{
-		HashedStringType hash_value = hash(s);
-		return lookupByHash(hash_value);
-	}
-
 	
 
 	// ------------------------------------------------------------------------
-	// addString
+	// increaseRefCount
 	//
-	// Adds a string entry to the string table.
+	// Increments the reference counter for the given string record;
 	// ------------------------------------------------------------------------
 
-	inline void addString(const char* s = "")
+	inline void increaseRefCount(StringRecord* rec)
 	{
-		// ensure the string table is properly initalized
-		if (!mInitialized)
-			startup();
-		assert(mInitialized);
+		assert(rec != NULL);
+		assert(rec->mRefCount >= 0);
+		rec->mRefCount++;
+		assert(rec->mRefCount >= 1);
+	}
 
-		if (s[0] == '\0')
-		{
-			mId = mEmptyStringId;
-			return;
-		}
+
+	// ------------------------------------------------------------------------
+	// decreaseRefCount
+	//
+	// Decrements the reference counter for the given string record;
+	// ------------------------------------------------------------------------
+
+	inline void decreaseRefCount(StringRecord* rec)
+	{
+		assert(rec != NULL);
+		assert(rec->mRefCount >= 1);
+		rec->mRefCount--;
+		assert(rec->mRefCount >= 0);
+	}
+
+
+	// ------------------------------------------------------------------------
+	// insertString
+	//
+	// Adds a string entry to the string table and returns a new StringRecord.
+	// If the string already exists in the string table, nothing is added.
+	// ------------------------------------------------------------------------
+
+	inline StringRecord* insertString(const char* str, size_t length = npos)
+	{
+		assert(str != NULL);
 
 		// is this string already in the table?
-		HashedStringType hash_value = hash(s);
+		const HashedStringType hash_value = hash(str, length);
 		StringRecord* rec = lookupByHash(hash_value);
 
-		if (rec)
-		{
-			// verify the string already in the table matches this one
-			assert(rec->mString == s);
-			mId = mStrings->getId(*rec);
-		}
-		else
+		if (!rec)
 		{
 			assert(mStrings->size() < OString::MAX_STRINGS);
-			mId = mStrings->insert(StringRecord(s));
-			rec = &mStrings->get(mId);
-			mStringLookup->insert(std::pair<HashedStringType, StringIdType>(hash_value, mId));
+			const StringIdType id = mStrings->insert(StringRecord(str, 0, length));
+			rec = &mStrings->get(id);
+			mStringLookup->insert(std::pair<HashedStringType, StringIdType>(hash_value, id));
 		}	
-
-		rec->mRefCount++;
-		assert(rec->mRefCount > 0);
-	}
-
-	inline void addString(const OString& other)
-	{
-		// ensure the string table is properly initalized
-		if (!mInitialized)
-			startup();
-		assert(mInitialized);
-
-		mId = other.mId;
-		if (mId != mEmptyStringId)
-		{
-			StringRecord* rec = &mStrings->get(mId);
-			assert(rec != NULL);
-			rec->mRefCount++;
-			assert(rec->mRefCount > 0);
-		}
-	}
-
-	inline void addString(const std::string& str)
-	{
-		addString(str.c_str());
+		return rec;
 	}
 
 	
@@ -583,27 +618,16 @@ private:
 	// Removes a string entry from the string table.
 	// ------------------------------------------------------------------------
 
-	inline void removeString(const StringIdType& id)
+	inline void removeString(StringRecord* rec)
 	{
-		// shouldn't be removing strings before any have been added
-		if (!mInitialized)
-			return;
+		assert(rec != NULL);
+		assert(rec->mRefCount == 0);
 
-		if (id == mEmptyStringId)
-			return;
-
-		StringTable::iterator it = mStrings->find(id);
-		assert(it != mStrings->end());
-
-		StringRecord* rec = &(*it);
-		assert(rec->mRefCount > 0);
-		if (--rec->mRefCount == 0)
-		{
-			HashedStringType hash_value = hash(rec->mString.c_str());
-			mStringLookup->erase(hash_value);
-			rec->mString.clear();	// allow std::string to free unused strings
-			mStrings->erase(id);
-		}
+		const StringIdType old_id = mStrings->getId(*rec);
+		const HashedStringType hash_value = hash(rec->mString.c_str());
+		mStringLookup->erase(hash_value);
+		rec->mString.clear();	// allow std::string to free unused strings
+		mStrings->erase(old_id);
 	}
 
 
