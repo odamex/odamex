@@ -30,7 +30,6 @@
 #include <string.h>
 
 #include "m_ostring.h"
-#include "m_swap.h"
 #include "m_fileio.h"
 
 // ============================================================================
@@ -47,6 +46,8 @@ class FileAccessor
 {
 public:
 	virtual ~FileAccessor() {}
+
+	virtual bool valid() const = 0;
 
 	virtual const OString& getFileName() const = 0;
 
@@ -72,56 +73,23 @@ public:
 
 	virtual bool read(uint16_t* value) const
 	{
-		size_t read_cnt = read(value, sizeof(*value));
-		*value = uint16_swap(*value);
-		return read_cnt == sizeof(*value);
+		return read(value, sizeof(*value)) == sizeof(*value);
 	}
 
 	virtual bool read(int16_t* value) const
 	{
-		size_t read_cnt = read(value, sizeof(*value));
-		*value = int16_swap(*value);
-		return read_cnt == sizeof(*value);
+		return read(value, sizeof(*value)) == sizeof(*value);
 	}
 
 	virtual bool read(uint32_t* value) const
 	{
-		size_t read_cnt = read(value, sizeof(*value));
-		*value = uint32_swap(*value);
-		return read_cnt == sizeof(*value);
+		return read(value, sizeof(*value)) == sizeof(*value);
 	}
 
 	virtual bool read(int32_t* value) const
 	{
-		size_t read_cnt = read(value, sizeof(*value));
-		*value = int32_swap(*value);
-		return read_cnt == sizeof(*value);
+		return read(value, sizeof(*value)) == sizeof(*value);
 	}
-
-protected:
-	void setupEndianness(int endianness)
-	{
-		if (endianness == 1)
-		{
-			uint16_swap = &BESHORT;
-			int16_swap = &BESHORT;
-			uint32_swap = &BELONG;
-			int32_swap = &BELONG;
-		}
-		else
-		{
-			uint16_swap = &LESHORT;
-			int16_swap = &LESHORT;
-			uint32_swap = &LELONG;
-			int32_swap = &LELONG;
-		}
-	}
-
-	// Functions to swap bytes from the file's endian format to the native endian format
-	uint16_t (*uint16_swap)(uint16_t);
-	int16_t (*int16_swap)(int16_t);
-	uint32_t (*uint32_swap)(uint32_t);
-	int32_t (*int32_swap)(int32_t);
 };
 
 
@@ -137,17 +105,21 @@ protected:
 class DiskFileAccessor : public FileAccessor
 {
 public:
-	DiskFileAccessor(const OString& filename, int endianness = 0) :
+	DiskFileAccessor(const OString& filename) :
 		mFileName(filename)
 	{
 		mFileHandle = fopen(mFileName.c_str(), "rb");
-		setupEndianness(endianness);
 	}
 
 	virtual ~DiskFileAccessor()
 	{
 		if (mFileHandle)
 			fclose(mFileHandle);
+	}
+
+	virtual bool valid() const
+	{
+		return mFileHandle != NULL;
 	}
 
 	virtual const OString& getFileName() const
@@ -189,7 +161,7 @@ public:
 
 private:
 	FILE*				mFileHandle;
-	const OString&		mFileName;
+	const OString		mFileName;
 };
 
 
@@ -205,14 +177,17 @@ private:
 class MemoryFileAccessor : public FileAccessor
 {
 public:
-	MemoryFileAccessor(const OString& filename, const void* buffer, size_t length, int endianness = 0) :
+	MemoryFileAccessor(const OString& filename, const void* buffer, size_t length) :
 		mBuffer(static_cast<const uint8_t*>(buffer)),
 		mLength(length), mSeekPos(0), mFileName(filename)
-	{
-		setupEndianness(endianness);
-	}
+	{ }
 
 	virtual ~MemoryFileAccessor() {}
+
+	virtual bool valid() const
+	{
+		return mBuffer != NULL; 
+	}
 
 	virtual const OString& getFileName() const
 	{
@@ -257,7 +232,7 @@ private:
 	const uint8_t*		mBuffer;
 	size_t				mLength;
 	mutable size_t		mSeekPos;
-	const OString&		mFileName;
+	const OString		mFileName;
 };
 
 #endif	// __RES_FILEACCESSOR_H__
