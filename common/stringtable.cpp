@@ -90,9 +90,15 @@ void FStringTable::LoadStrings(byte* data, size_t length, int expectedSize, bool
 	const char lumpname[] = "LANGUAGE";
 
 	// data is not long enough for the expected header
+	if (length < 8)
+	{
+		Printf(PRINT_HIGH, "Warning: unsupported string table %s.\n", lumpname);
+		return;
+	}
+
 	// or the given length doesn't match the lump's header
 	uint32_t header_length = LELONG(*(uint32_t*)(data + 0));
-	if (length < 8 || length != header_length) 
+	if (length != header_length) 
 	{
 		Printf(PRINT_HIGH, "Warning: unsupported string table %s.\n", lumpname);
 		return;
