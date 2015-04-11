@@ -475,7 +475,7 @@ public:
 	// ------------------------------------------------------------------------
 
 	static const size_t npos = -1;
-	static const size_t MAX_STRINGS = 8192;
+	static const size_t MAX_STRINGS = 65536;
 
 
 private:

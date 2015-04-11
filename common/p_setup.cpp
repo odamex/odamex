@@ -147,7 +147,7 @@ mapthing2_t		*redteam_p;
 static void P_LoadVertexes(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("VERTEXES", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadVertexes: unable to find VERTEXES lump for map %s\n", mapname.c_str());
 
 	// Determine number of vertices:
@@ -182,7 +182,7 @@ static void P_LoadVertexes(const OString& mapname)
 static void P_LoadSegs(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("SEGS", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadSegs: unable to find SEGS lump for map %s\n", mapname.c_str());
 
 	numsegs = Res_GetLumpLength(res_id) / sizeof(mapseg_t);
@@ -268,7 +268,7 @@ static void P_LoadSegs(const OString& mapname)
 static void P_LoadSubsectors(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("SSECTORS", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadSubsectors: unable to find SSECTORS lump for map %s\n", mapname.c_str());
 
 	numsubsectors = Res_GetLumpLength(res_id) / sizeof(mapsubsector_t);
@@ -296,7 +296,7 @@ static void P_LoadSubsectors(const OString& mapname)
 static void P_LoadSectors(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("SECTORS", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadSectors: unable to find SECTORS lump for map %s\n", mapname.c_str());
 
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
@@ -393,7 +393,7 @@ static void P_LoadSectors(const OString& mapname)
 static void P_LoadNodes(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("NODES", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadNodes: unable to find NODES lump for map %s\n", mapname.c_str());
 
 	numnodes = Res_GetLumpLength(res_id) / sizeof(mapnode_t);
@@ -440,7 +440,7 @@ static void P_LoadNodes(const OString& mapname)
 static void P_LoadXNOD(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("NODES", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadXNOD: unable to find NODES lump for map %s\n", mapname.c_str());
 
 	size_t len = Res_GetLumpLength(res_id);
@@ -576,7 +576,7 @@ static void P_LoadXNOD(const OString& mapname)
 static void P_LoadDoomThings(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("THINGS", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadDoomThings: unable to find THINGS lump for map %s\n", mapname.c_str());
 
 	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
@@ -629,7 +629,7 @@ static void P_LoadDoomThings(const OString& mapname)
 static void P_LoadHexenThings(const OString& mapname, int position)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("THINGS", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadHexenThings: unable to find THINGS lump for map %s\n", mapname.c_str());
 
 	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
@@ -771,7 +771,7 @@ void P_FinishLoadingLineDefs()
 static void P_LoadDoomLineDefs(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("LINEDEFS", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadDoomLineDefs: unable to find LINEDEFS lump for map %s\n", mapname.c_str());
 
 	numlines = Res_GetLumpLength(res_id) / sizeof(maplinedef_t);
@@ -826,7 +826,7 @@ static void P_LoadDoomLineDefs(const OString& mapname)
 static void P_LoadHexenLineDefs(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("LINEDEFS", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadHexenLineDefs: unable to find LINEDEFS lump for map %s\n", mapname.c_str());
 
 	numlines = Res_GetLumpLength(res_id) / sizeof(maplinedef2_t);
@@ -881,7 +881,7 @@ static void P_LoadHexenLineDefs(const OString& mapname)
 static void P_LoadSideDefs(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("SIDEDEFS", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadSideDefs: unable to find SIDEDEFS lump for map %s\n", mapname.c_str());
 
 	numsides = Res_GetLumpLength(res_id) / sizeof(mapsidedef_t);
@@ -1002,7 +1002,7 @@ static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
 static void P_LoadSideDefs2(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("SIDEDEFS", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadSideDefs2: unable to find SIDEDEFS lump for map %s\n", mapname.c_str());
 
 	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
@@ -1400,7 +1400,7 @@ void P_CreateBlockMap()
 static void P_LoadBlockMap(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("BLOCKMAP", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadBlockMap: unable to find BLOCKMAP lump for map %s\n", mapname.c_str());
 
 	int count = Res_GetLumpLength(res_id) / sizeof(short);
@@ -1632,7 +1632,7 @@ static void P_RemoveSlimeTrails()
 static void P_LoadReject(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("REJECT", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadReject: unable to find REJECT lump for map %s\n", mapname.c_str());
 
 	rejectmatrix = NULL;
@@ -1654,7 +1654,7 @@ static void P_LoadReject(const OString& mapname)
 static void P_LoadBehavior(const OString& mapname)
 {
 	const ResourceId& res_id = Res_GetMapResourceId("BEHAVIOR", mapname);
-	if (res_id == ResourceFile::LUMP_NOT_FOUND)
+	if (!res_id.valid())
 		I_Error("P_LoadBehavior: unable to find BEHAVIOR lump for map %s\n", mapname.c_str());
 
 	size_t length = Res_GetLumpLength(res_id);
@@ -1744,7 +1744,7 @@ void P_SetupLevel(const OString& mapname, int position)
 	// [RH] Check if this map is Hexen-style.
 	//		LINEDEFS and THINGS need to be handled accordingly.
 	//		If it is, we also need to distinguish between projectile cross and hit
-	HasBehavior = Res_GetMapResourceId("BEHAVIOR", mapname) != ResourceFile::LUMP_NOT_FOUND;
+	HasBehavior = Res_GetMapResourceId("BEHAVIOR", mapname).valid();
 
 	// note: most of this ordering is important
 
@@ -1765,7 +1765,7 @@ void P_SetupLevel(const OString& mapname, int position)
 	P_FinishLoadingLineDefs();
 	P_LoadBlockMap(mapname);
 
-	ResourceId nodes_res_id = Res_GetMapResourceId("NODES", mapname);
+	const ResourceId& nodes_res_id = Res_GetMapResourceId("NODES", mapname);
 	if (Res_GetLumpLength(nodes_res_id) >= 4)
 	{
 		byte* data = (byte*)Res_CacheLump(nodes_res_id, PU_LEVEL);

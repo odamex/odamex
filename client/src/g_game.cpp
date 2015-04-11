@@ -1946,8 +1946,8 @@ void G_DoPlayDemo(bool justStreamInput)
 	gameaction = ga_nothing;
 	int bytelen;
 
-	const ResourceId& res_id = Res_GetResourceId(defdemoname.c_str(), "GLOBAL");
-	if (res_id != ResourceFile::LUMP_NOT_FOUND)
+	const ResourceId& res_id = Res_GetResourceId(defdemoname.c_str());
+	if (res_id.valid())
 	{
 		demobuffer = demo_p = (byte*)Res_CacheLump(res_id, PU_STATIC);
 		bytelen = Res_GetLumpLength(res_id);

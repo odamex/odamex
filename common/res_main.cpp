@@ -29,11 +29,10 @@
 //
 //-----------------------------------------------------------------------------
 
-
-
-
-#include "res_main.h"
 #include <stdlib.h>
+#include "res_main.h"
+#include "res_fileaccessor.h"
+#include "res_container.h"
 
 #include "m_ostring.h"
 #include "hashtable.h"
@@ -46,64 +45,21 @@
 #include "i_system.h"
 #include "z_zone.h"
 
+
+// Create a dummy ResourceId instance that will be used to indicate a
+// ResourceId is invalid.
+const ResourceId ResourceManager::RESOURCE_NOT_FOUND = ResourceId();
+
 static bool Res_CheckWadFile(const OString& filename);
 static bool Res_CheckDehackedFile(const OString& filename);
 
-
-static const int RESOURCE_FILE_ID_BITS = 8;
-static const int RESOURCE_FILE_ID_SHIFT = 32 - RESOURCE_FILE_ID_BITS;
-static const int NAMESPACE_ID_BITS = 5;
-static const int NAMESPACE_ID_SHIFT = RESOURCE_FILE_ID_SHIFT - NAMESPACE_ID_BITS;
-static const int LUMP_ID_BITS = 32 - RESOURCE_FILE_ID_BITS - NAMESPACE_ID_BITS;
-static const int LUMP_ID_SHIFT = NAMESPACE_ID_SHIFT - LUMP_ID_BITS; 
+static bool Res_IsMapLumpName(const OString& name);
 
 
-//
-// Res_GetResourceFileId
-//
-// Extracts the ResourceFileId portion of a ResourceId.
-//
-static inline ResourceFileId Res_GetResourceFileId(const ResourceId res_id)
-{
-	return (res_id >> RESOURCE_FILE_ID_SHIFT) & ((1 << RESOURCE_FILE_ID_BITS) - 1); 
-}
+typedef OHashTable<ResourceId, void*> CacheTable;
+static CacheTable cache_table(4096);
 
-
-//
-// Res_GetNameSpaceId
-//
-// Extracts the NameSpaceId portion of a ResourceId.
-//
-static inline NameSpaceId Res_GetNameSpaceId(const ResourceId res_id)
-{
-	return (res_id >> NAMESPACE_ID_SHIFT) & ((1 << NAMESPACE_ID_BITS) - 1);
-}
-
-
-//
-// Res_GetLumpId
-//
-// Extracts the lump identifier portion of a ResourceId.
-//
-static inline uint32_t Res_GetLumpId(const ResourceId res_id)
-{
-	return (res_id >> LUMP_ID_SHIFT) & ((1 << LUMP_ID_BITS) - 1); 
-}
-
-
-//
-// Res_CreateResourceId
-//
-// Creates a ResourceId given the ResourceFileId, NameSpaceId and lump
-// identifier for a resource.
-//
-static inline ResourceId Res_CreateResourceId(const ResourceFileId file_id, const NameSpaceId namespace_id,
-												const uint32_t lump_number)
-{
-	return ((file_id & ((1 << RESOURCE_FILE_ID_BITS) - 1)) << RESOURCE_FILE_ID_SHIFT) |
-			((namespace_id & ((1 << NAMESPACE_ID_BITS) - 1)) << NAMESPACE_ID_SHIFT) |
-			((lump_number & ((1 << LUMP_ID_BITS) - 1)) << LUMP_ID_SHIFT);
-}
+static ResourceManager resource_manager;
 
 
 
@@ -160,12 +116,13 @@ static bool Res_ValidatePatch(const void* data, size_t length)
 //
 static bool Res_ValidateWad(const void* data, size_t length)
 {
-	static const char iwad_magic_str[] = "IWAD";
-	static const char pwad_magic_str[] = "PWAD";
-	const char* identifier = (const char*)data;
-
-	return length >= 4 && (strncmp(identifier, iwad_magic_str, 4) == 0
-						|| strncmp(identifier, pwad_magic_str, 4) == 0);
+	if (length >= 4)
+	{
+		uint32_t magic = LELONG(*(uint32_t*)((uint8_t*)data + 0));
+		return magic == ('I' | ('W' << 8) | ('A' << 16) | ('D' << 24)) ||
+				magic == ('P' | ('W' << 8) | ('A' << 16) | ('D' << 24));
+	}
+	return false;
 }
 
 
@@ -216,623 +173,584 @@ static bool Res_ValidateSound(const void* data, size_t length)
 }
 
 
-//
-// Res_IsMapLumpName
-//
-// Returns true if the given lump name is a name reserved for map lumps.
-//
-static bool Res_IsMapLumpName(const OString& name)
-{
-	static const OString things_lump_name("THINGS");
-	static const OString linedefs_lump_name("LINEDEFS");
-	static const OString sidedefs_lump_name("SIDEDEFS");
-	static const OString vertexes_lump_name("VERTEXES");
-	static const OString segs_lump_name("SEGS");
-	static const OString ssectors_lump_name("SSECTORS");
-	static const OString nodes_lump_name("NODES");
-	static const OString sectors_lump_name("SECTORS");
-	static const OString reject_lump_name("REJECT");
-	static const OString blockmap_lump_name("BLOCKMAP");
-	static const OString behavior_lump_name("BEHAVIOR");
-
-	return name == things_lump_name || name == linedefs_lump_name || name == sidedefs_lump_name ||
-		name == vertexes_lump_name || name == segs_lump_name || name == ssectors_lump_name ||
-		name == nodes_lump_name || name == sectors_lump_name || name == reject_lump_name ||
-		name == blockmap_lump_name || name == behavior_lump_name;
-}
-
-
-
-// ****************************************************************************
-
-// ============================================================================
-//
-// LumpLookupTable class implementation
-//
-// Performs insertion and querying of resource file lump names.
-//
-// ============================================================================
-
-typedef std::pair<OString, OString> LumpName;
-
-// hashing function for OHashTable to use the LumpName typedef
-template <> struct hashfunc<LumpName>
-{
-	size_t operator()(const LumpName& lump_name) const
-	{
-		const hashfunc<OString> func;
-		return func(lump_name.first) ^ func(lump_name.second);
-	}
-};
-
-
-class LumpLookupTable
-{
-public:
-	LumpLookupTable() :
-			mNameTable(INITIAL_SIZE * 2),
-			mIdTable(INITIAL_SIZE * 2),
-			mNameSpaces(64),
-			mRecordPool(INITIAL_SIZE), mNextRecord(0)
-	{
-		clear();
-	}
-
-
-	void clear()
-	{
-		mNameTable.clear();
-		mIdTable.clear();
-		mNextRecord = 0;
-
-		// clear all namespaces and add the default ones
-		mNameSpaces.clear();
-		NameSpaceId namespace_id = 0;
-		mNameSpaces.insert(std::make_pair("GLOBAL", namespace_id++));
-		mNameSpaces.insert(std::make_pair("PATCHES", namespace_id++));
-		mNameSpaces.insert(std::make_pair("GRAPHICS", namespace_id++));
-		mNameSpaces.insert(std::make_pair("FLATS", namespace_id++));
-		mNameSpaces.insert(std::make_pair("SPRITES", namespace_id++));
-		mNameSpaces.insert(std::make_pair("TEXTURES", namespace_id++));
-		mNameSpaces.insert(std::make_pair("HIRES", namespace_id++));
-		mNameSpaces.insert(std::make_pair("SOUNDS", namespace_id++));
-		mNameSpaces.insert(std::make_pair("MUSIC", namespace_id++));
-		mNameSpaces.insert(std::make_pair("COLORMAPS", namespace_id++));
-		mNameSpaces.insert(std::make_pair("ACS", namespace_id++));
-	}
-
-
-	//
-	// LumpLookupTable::addNameSpace
-	//
-	// Inserts a new named namespace into the namespace lookup table,
-	// assigning it the next unused ID number.
-	//
-	void addNameSpace(const OString& namespace_name)
-	{
-		NameSpaceId namespace_id = mNameSpaces.size();
-		mNameSpaces.insert(std::make_pair(namespace_name, namespace_id));
-	}
-
-
-	//
-	// LumpLookupTable::lookupNameSpaceByName
-	//
-	// Returns the namespace ID number for the give named namespace.
-	//
-	NameSpaceId lookupNameSpaceByName(const OString& namespace_name)
-	{
-		NameSpaceLookupTable::const_iterator it = mNameSpaces.find(namespace_name);
-		if (it != mNameSpaces.end())
-			return it->second;
-		return lookupNameSpaceByName(global_namespace_name);
-	}
-
-
-	//
-	// LumpLookupTable::lookupNameSpaceById
-	//
-	// Returns the namespace name for the given namespace ID number.
-	// This uses a linear search so it's speed is not optimal.
-	//
-	const OString& lookupNameSpaceById(const NameSpaceId id)
-	{
-		for (NameSpaceLookupTable::const_iterator it = mNameSpaces.begin(); it != mNameSpaces.end(); ++it)
-		{
-			if (it->second == id)
-				return it->first;
-		}
-
-		return global_namespace_name; 
-	}
-
-
-	//
-	// LumpLookupTable::addLump
-	//
-	// Inserts a lump name entry into the lookup table.
-	//
-	void addLump(const ResourceId res_id, const OString& name, const OString& namespace_name = global_namespace_name) 
-	{
-		if (mNextRecord >= mRecordPool.size())
-			mRecordPool.resize(mRecordPool.size() * 2);
-
-		LumpRecord* rec = &mRecordPool[mNextRecord++];
-		rec->res_id = res_id;
-		rec->next = NULL;
-
-		LumpName lump_name(name, namespace_name);
-
-		// if there is already a record with this name, add it to this record's linked list
-		NameLookupTable::iterator it = mNameTable.find(lump_name);
-		if (it != mNameTable.end())
-			rec->next = it->second;
-
-		// add the record to the name lookup table
-		mNameTable.insert(std::make_pair(lump_name, rec));
-
-		// add an entry to the id lookup table
-		// don't have to worry about duplicate keys for ResourceIds
-		mIdTable.insert(std::make_pair(res_id, lump_name));
-	}
-
-
-	//
-	// LumpLookupTable::lookupByName
-	//
-	// Returns the ResourceId of the lump matching the given name. If more than
-	// one lumps match, the most recently added resource file is
-	// given precedence. If no matches are found, LUMP_NOT_FOUND is returned.
-	//
-	const ResourceId lookupByName(const OString& name, const OString& namespace_name) const
-	{
-		const LumpName lump_name(name, namespace_name);
-		NameLookupTable::const_iterator it = mNameTable.find(lump_name);
-		if (it != mNameTable.end())
-			return it->second->res_id;
-		return ResourceFile::LUMP_NOT_FOUND;
-	}
-
-
-	//
-	// LumpLookuptable::lookupById
-	//
-	// Returns the lump name matching the given ResourceId. If no matches are
-	// found, an empty string is returned.
-	//
-	const OString& lookupById(const ResourceId res_id) const
-	{
-		IdLookupTable::const_iterator it = mIdTable.find(res_id);
-		if (it != mIdTable.end())
-			return it->second.first;
-
-		static OString empty_string;
-		return empty_string;
-	}
-
-
-	//
-	// LumpLookupTable::queryByName
-	//
-	// Fills the supplied vector with the ResourceId of any lump whose name
-	// matches the given string. An empty vector indicates that there were
-	// no matches.
-	//
-	void queryByName(std::vector<ResourceId>& res_ids, const OString& name, const OString& namespace_name) const
-	{
-		res_ids.clear();
-
-		const LumpName lump_name(name, namespace_name);
-		NameLookupTable::const_iterator it = mNameTable.find(lump_name);
-		if (it != mNameTable.end())
-		{
-			const LumpRecord* rec = it->second;
-			while (rec)
-			{
-				res_ids.push_back(rec->res_id);
-				rec = rec->next;
-			}
-		}
-
-		std::reverse(res_ids.begin(), res_ids.end());
-	}
-
-
-	//
-	// LumpLookupTable::dump
-	//
-	// Prints a sorted list of the availible resource lumps to the console.
-	//
-	void dump()
-	{
-		std::vector<OString> resources;
-
-		for (NameLookupTable::const_iterator it = mNameTable.begin(); it != mNameTable.end(); ++it)
-		{
-			const OString& lump_name = it->first.first;
-			const OString& lump_namespace_name = it->first.second;
-			const LumpRecord* rec = it->second;
-			while (rec)
-			{
-				char str[8192];
-				sprintf(str, "%s/%s (0x%08x)", lump_namespace_name.c_str(), lump_name.c_str(), rec->res_id);
-				resources.push_back(str);
-				rec = rec->next;
-			}
-		}
-
-		std::sort(resources.begin(), resources.end());
-		for (size_t i = 0; i < resources.size(); i++)
-			Printf(PRINT_HIGH, "%s\n", resources[i].c_str());
-	}
-
-private:
-	static const size_t INITIAL_SIZE = 8192;
-
-	struct LumpRecord
-	{
-		ResourceId		res_id;
-		LumpRecord*		next;	
-	};
-
-	typedef OHashTable<LumpName, LumpRecord*> NameLookupTable;
-	typedef OHashTable<ResourceId, LumpName> IdLookupTable;
-	typedef OHashTable<OString, NameSpaceId> NameSpaceLookupTable;
-
-	NameLookupTable				mNameTable;
-	IdLookupTable				mIdTable;
-	NameSpaceLookupTable		mNameSpaces;
-
-	std::vector<LumpRecord>		mRecordPool;
-	size_t						mNextRecord;
-};
-
-
 // ****************************************************************************
 
 
 // ============================================================================
 //
-// SingleLumpResourceFile class implementation
+// SingleLumpResourceContainer class implementation
 //
 // ============================================================================
 
-SingleLumpResourceFile::SingleLumpResourceFile(const OString& filename,
-								const ResourceFileId file_id, LumpLookupTable* lump_lookup_table) :
-		mResourceFileId(file_id),
-		mFileHandle(NULL), mFileName(filename),
-		mFileLength(0)
+//
+// SingleLumpResourceContainer::SingleLumpResourceContainer
+//
+// Use the filename as the name of the lump and attempt to determine which
+// directory to insert the lump into.
+//
+SingleLumpResourceContainer::SingleLumpResourceContainer(
+	FileAccessor* file,
+	const ResourceContainerId& container_id,
+	ResourceManager* manager) :
+		mResourceContainerId(container_id), mFile(file)
 {
-	mFileHandle = fopen(mFileName.c_str(), "rb");
-	if (mFileHandle == NULL)
-		return;
-
-	mFileLength = M_FileLength(mFileHandle);
-
 	if (getLumpCount() > 0)
 	{
-		const NameSpaceId namespace_id = lump_lookup_table->lookupNameSpaceByName(global_namespace_name);
-		ResourceId res_id = Res_CreateResourceId(mResourceFileId, namespace_id, 0);
+		const OString& filename = mFile->getFileName();
 
 		// the filename serves as the lump_name
 		OString lump_name = M_ExtractFileName(StdStringToUpper(filename));
 
 		// rename lump_name to DEHACKED if it's a DeHackEd file
-		if (Res_CheckDehackedFile(mFileName))
+		if (Res_CheckDehackedFile(filename))
 			lump_name = "DEHACKED";
 
-		lump_lookup_table->addLump(res_id, lump_name, global_namespace_name);
+		const LumpId lump_id = static_cast<LumpId>(0);
+		ResourcePath path = Res_MakeResourcePath(lump_name, global_directory_name);
+		manager->addResource(path, mResourceContainerId, lump_id);
 	}
 }
 
 
-SingleLumpResourceFile::~SingleLumpResourceFile()
+//
+// SingleLumpResourceContainer::getFileName
+//
+const OString& SingleLumpResourceContainer::getFileName() const
 {
-	cleanup();
+	return mFile->getFileName();
 }
 
 
-bool SingleLumpResourceFile::checkLump(const ResourceId res_id) const
+//
+// SingleLumpResourceContainer::getLumpCount
+//
+size_t SingleLumpResourceContainer::getLumpCount() const
 {
-	return getResourceFileId() == Res_GetResourceFileId(res_id) &&
-			Res_GetLumpId(res_id) < getLumpCount();
+	return mFile->valid() ? 1 : 0;
 }
 
 
-size_t SingleLumpResourceFile::readLump(const ResourceId res_id, void* data, size_t length) const
+//
+// SingleLumpResourceContainer::getLumpLength
+//
+size_t SingleLumpResourceContainer::getLumpLength(const ResourceId& res_id) const
+{
+	if (checkLump(res_id))
+		return mFile->size();
+	return 0;
+}
+
+
+//
+// SingleLumpResourceContainer::readLump
+//
+size_t SingleLumpResourceContainer::readLump(const ResourceId& res_id, void* data, size_t length) const
 {
 	length = std::min(length, getLumpLength(res_id));
-
-	if (checkLump(res_id) && mFileHandle != NULL)
-	{
-		fseek(mFileHandle, 0, SEEK_SET);
-		size_t read_cnt = fread(data, 1, length, mFileHandle);
-		return read_cnt;
-	}
-
+	if (checkLump(res_id))
+		return mFile->read(data, length);
 	return 0;
 }
 
 
 
-
-// ****************************************************************************
-
 // ============================================================================
 //
-// MarkerTable
-//
-// Lookup table for determining if a given lump number is between two marker
-// lumps. This mimics vanilla Doom's behavior in that the start lump need not
-// be present.
+// WadResourceContainer class implementation
 //
 // ============================================================================
 
-
-class MarkerTable
-{
-public:
-	MarkerTable() : mLookup(32)
-	{
-		addMarker("F_START", -1);
-		addMarker("F_END", -1);
-		addMarker("S_START", -1);
-		addMarker("SS_START", -1);
-		addMarker("S_END", -1);
-		addMarker("SS_END", -1);
-		addMarker("P_START", -1);
-		addMarker("PP_START", -1);
-		addMarker("P_END", -1);
-		addMarker("PP_END", -1);
-		addMarker("C_START", -1);
-		addMarker("C_END", -1);
-	}
-
-	bool isMarker(const OString& name)
-	{
-		return mLookup.find(translateMarkerName(name)) != mLookup.end();
-	}
-
-	void addMarker(const OString& name, int wad_lump_num)
-	{
-		mLookup.insert(std::make_pair(translateMarkerName(name), wad_lump_num));
-	}
-	
-	bool betweenMarkers(int wad_lump_num, const OString& name1, const OString& name2)
-	{
-		return getMarkerLumpNumber(name1) < wad_lump_num && wad_lump_num < getMarkerLumpNumber(name2);
-	}
-
-private:
-	int getMarkerLumpNumber(const OString& name)
-	{
-		MarkerLookupTable::const_iterator it = mLookup.find(translateMarkerName(name));
-		if (it != mLookup.end())
-			return it->second;
-		return -1;
-	}
-
-	OString translateMarkerName(const OString& name)
-	{
-		// if first character of marker name is doubled (eg, FF_START), consider it equivalent
-		// to the standard marker name (eg, F_START).
-		// some WADs have FF_START and F_END markers
-		if (name[0] == name[1] && name[2] == '_' &&
-			(name.compare(3, std::string::npos, "START") == 0 || name.compare(3, std::string::npos, "END") == 0))
-			return name.substr(1, std::string::npos);
-		return name;
-	}
-		
-	typedef OHashTable<OString, int> MarkerLookupTable;
-	MarkerLookupTable		mLookup;
-};
-
-
-
-// ============================================================================
 //
-// WadResourceFile class implementation
+// WadResourceContainer::WadResourceContainer
 //
-// ============================================================================
-
-WadResourceFile::WadResourceFile(const OString& filename,
-								const ResourceFileId file_id,
-								LumpLookupTable* lump_lookup_table) :
-		mResourceFileId(file_id),
-		mFileHandle(NULL), mFileName(filename),
-		mRecords(NULL), mRecordCount(0),
+// Reads the lump directory from the WAD file and registers all of the lumps
+// with the ResourceManager. If the WAD file has an invalid directory, no lumps
+// will be registered and getLumpCount() will return 0.
+//
+WadResourceContainer::WadResourceContainer(
+	FileAccessor* file,
+	const ResourceContainerId& container_id,
+	ResourceManager* manager) :
+		mResourceContainerId(container_id),
+		mFile(file),
+		mDirectory(NULL),
 		mIsIWad(false)
 {
-	mFileHandle = fopen(mFileName.c_str(), "rb");
-	if (mFileHandle == NULL)
+	size_t file_length = mFile->size();
+
+	uint32_t magic;
+	if (!mFile->read(&magic))
+	{
+		cleanup();
 		return;
-
-	size_t file_length = M_FileLength(mFileHandle);
-	size_t read_cnt;
-
-	const char* magic_str_iwad = "IWAD";
-	const char* magic_str_pwad = "PWAD";
-
-	char identifier[4];
-	read_cnt = fread(&identifier, 1, 4, mFileHandle);
-	if (read_cnt != 4 || feof(mFileHandle) || 
-		(strncmp(identifier, magic_str_iwad, 4) != 0 && strncmp(identifier, magic_str_pwad, 4) != 0))
+	}
+	magic = LELONG(magic);
+	if (magic != ('I' | ('W' << 8) | ('A' << 16) | ('D' << 24)) && 
+		magic != ('P' | ('W' << 8) | ('A' << 16) | ('D' << 24)))
 	{
 		cleanup();
 		return;
 	}
 
 	int32_t wad_lump_count;
-	read_cnt = fread(&wad_lump_count, sizeof(wad_lump_count), 1, mFileHandle);
+	if (!mFile->read(&wad_lump_count))
+	{
+		cleanup();
+		return;
+	}
 	wad_lump_count = LELONG(wad_lump_count);
-
-	if (read_cnt != 1 || feof(mFileHandle))
+	if (wad_lump_count < 1)
 	{
 		cleanup();
 		return;
 	}
 
 	int32_t wad_table_offset;
-	read_cnt = fread(&wad_table_offset, sizeof(wad_table_offset), 1, mFileHandle);
+	if (!mFile->read(&wad_table_offset) || wad_table_offset < 0)
+	{
+		cleanup();
+		return;
+	}
 	wad_table_offset = LELONG(wad_table_offset);
 
-	if (read_cnt != 1 || feof(mFileHandle))
+	// The layout for a lump entry is:
+	//    int32_t offset
+	//    int32_t length
+	//    char    name[8]
+	const size_t wad_lump_record_length = 4 + 4 + 8;
+
+	size_t wad_table_length = wad_lump_count * wad_lump_record_length;
+	if (wad_table_offset < 12 || wad_table_length + wad_table_offset > file_length)
 	{
 		cleanup();
 		return;
 	}
 
 	// read the WAD lump directory
-	size_t wad_table_length = wad_lump_count * sizeof(wad_lump_record_t);
-	if (wad_table_length + wad_table_offset > file_length)
-	{
-		cleanup();
-		return;
-	}
+	mDirectory = new ContainerDirectory(wad_lump_count);
 
-	wad_lump_record_t* wad_table = new wad_lump_record_t[wad_lump_count];
-	fseek(mFileHandle, wad_table_offset, SEEK_SET);
-	read_cnt = fread(wad_table, wad_table_length, 1, mFileHandle);
-
-	if (read_cnt != 1 || feof(mFileHandle))
-	{
-		delete [] wad_table;
-		cleanup();
-		return;
-	}
-
-	// scan the lump directory and add all of the markers to the marker lookup table
-	MarkerTable markers;
+	mFile->seek(wad_table_offset);
 	for (size_t wad_lump_num = 0; wad_lump_num < (size_t)wad_lump_count; wad_lump_num++)
 	{
-		const OString name(StdStringToUpper(wad_table[wad_lump_num].name, 8));
-		if (markers.isMarker(name))
-			markers.addMarker(name, wad_lump_num);
-	}
-		
-	mRecords = new wad_lump_record_t[wad_lump_count];
-	OString map_namespace_name;
+		int32_t offset, length;
+		mFile->read(&offset);
+		offset = LELONG(offset);
+		mFile->read(&length);
+		length = LELONG(length);
 
+		char name[8];
+		mFile->read(name, 8);
+
+		mDirectory->addEntryInfo(OStringToUpper(OString(name, 8)), length, offset);
+	}
+
+
+	OString map_name;
+
+	// Examine each lump and decide which path it belongs in
+	// and then register it with the resource manager.
 	for (size_t wad_lump_num = 0; wad_lump_num < (size_t)wad_lump_count; wad_lump_num++)
 	{
-		size_t offset = LELONG(wad_table[wad_lump_num].offset);
-		size_t length = LELONG(wad_table[wad_lump_num].size);
+		size_t offset = mDirectory->getOffset(wad_lump_num);
+		size_t length = mDirectory->getLength(wad_lump_num);
+		const OString& name = mDirectory->getName(wad_lump_num);
+		ResourcePath path = global_directory_name;
 
 		// check that the lump doesn't extend past the end of the file
 		if (offset + length <= file_length)
 		{
-			const size_t index = mRecordCount++;
-			const OString name(StdStringToUpper(wad_table[wad_lump_num].name, 8));
-			OString namespace_name(global_namespace_name);
-
-			mRecords[index].offset = offset;
-			mRecords[index].size = length;
-
 			// [SL] Determine if this is a map marker (by checking if a map-related lump such as
 			// SEGS follows this one). If so, move all of the subsequent map lumps into
-			// this map's namespace.
-			bool map_lump = Res_IsMapLumpName(name);
-			bool map_marker = !map_lump && wad_lump_num + 1 < (size_t)wad_lump_count &&
-							Res_IsMapLumpName(StdStringToUpper(wad_table[wad_lump_num + 1].name, 8));
+			// this map's directory.
+			bool is_map_lump = Res_IsMapLumpName(name);
+			bool is_map_marker = !is_map_lump && Res_IsMapLumpName(mDirectory->next(wad_lump_num));
 
-			if (map_marker)
-				map_namespace_name = name;
-			else if (!map_lump)
-				map_namespace_name.clear();
+			if (is_map_marker)
+				map_name = name;
+			else if (!is_map_lump)
+				map_name.clear();
 
 			// add the lump to the appropriate namespace
-			if (!map_namespace_name.empty())
-				namespace_name = map_namespace_name;
-			else if (markers.betweenMarkers(wad_lump_num, "F_START", "F_END"))
-				namespace_name = "FLATS";
-			else if (markers.betweenMarkers(wad_lump_num, "S_START", "S_END"))
-				namespace_name = "SPRITES";
-			else if (markers.betweenMarkers(wad_lump_num, "C_START", "C_END"))
-				namespace_name = "COLORMAPS";
-			else if (markers.betweenMarkers(wad_lump_num, "P_START", "P_END"))
-				namespace_name = "PATCHES";
+			if (!map_name.empty())
+				path = Res_MakeResourcePath(map_name, maps_directory_name);
+			else if (mDirectory->between(wad_lump_num, "F_START", "F_END") ||
+					mDirectory->between(wad_lump_num, "FF_START", "FF_END"))
+				path = flats_directory_name;
+			else if (mDirectory->between(wad_lump_num, "S_START", "S_END") ||
+					mDirectory->between(wad_lump_num, "SS_START", "SS_END"))
+				path = sprites_directory_name;
+			else if (mDirectory->between(wad_lump_num, "P_START", "P_END") ||
+					mDirectory->between(wad_lump_num, "PP_START", "PP_END"))
+				path = patches_directory_name;
+			else if (mDirectory->between(wad_lump_num, "C_START", "C_END"))
+				path = colormaps_directory_name;
+			else if (mDirectory->between(wad_lump_num, "TX_START", "TX_END"))
+				path = textures_directory_name;
+			else if (mDirectory->between(wad_lump_num, "HI_START", "HI_END"))
+				path = hires_directory_name;
 			else
 			{
+				// Examine the lump to identify its type
 				uint8_t* data = new uint8_t[length];
-				fseek(mFileHandle, mRecords[wad_lump_num].offset, SEEK_SET);
-				size_t read_cnt = fread(data, 1, length, mFileHandle);
-				if (read_cnt == length)
+				mFile->seek(offset);
+				if (mFile->read(data, length) == length)
 				{
 					if (name.compare(0, 2, "DP") == 0 && Res_ValidatePCSpeakerSound(data, length))
-						namespace_name = "SOUNDS";
+						path = sounds_directory_name;
 					else if (name.compare(0, 2, "DS") == 0 && Res_ValidateSound(data, length))
-						namespace_name = "SOUNDS";
+						path = sounds_directory_name;
 				}
 
 				delete [] data;
 			}
 			
-			NameSpaceId namespace_id = lump_lookup_table->lookupNameSpaceByName(namespace_name);
-			ResourceId res_id = Res_CreateResourceId(mResourceFileId, namespace_id, index);
-			lump_lookup_table->addLump(res_id, name, namespace_name);
+			path += name;
+			manager->addResource(path, mResourceContainerId, wad_lump_num);
 		}
 	}
 
-	delete [] wad_table;
-
-	mIsIWad = W_IsIWAD(mFileName);
+	mIsIWad = W_IsIWAD(file->getFileName());
 }
 
 
-WadResourceFile::~WadResourceFile()
+//
+// WadResourceContainer::~WadResourceContainer
+//
+WadResourceContainer::~WadResourceContainer()
 {
 	cleanup();
 }
 
 
-
-bool WadResourceFile::checkLump(const ResourceId res_id) const
+//
+// WadResourceContainer::cleanup
+//
+// Frees the memory used by the container.
+//
+void WadResourceContainer::cleanup()
 {
-	return getResourceFileId() == Res_GetResourceFileId(res_id) &&
-			Res_GetLumpId(res_id) < getLumpCount();
+	delete mDirectory;
+	mDirectory = NULL;
+	mIsIWad = false;
 }
 
 
-size_t WadResourceFile::getLumpLength(const ResourceId res_id) const
+//
+// WadResourceContainer::getFileName
+//
+const OString& WadResourceContainer::getFileName() const
+{
+	return mFile->getFileName();
+}
+
+
+//
+// WadResourceContainer::getLumpCount
+//
+// Returns the number of lumps in the WAD file or returns 0 if
+// the WAD file is invalid.
+//
+size_t WadResourceContainer::getLumpCount() const
+{
+	if (mDirectory)
+		return mDirectory->size();
+	return 0;
+}
+
+
+//
+// WadResourceContainer::getLumpLength
+//
+size_t WadResourceContainer::getLumpLength(const ResourceId& res_id) const
 {
 	if (checkLump(res_id))
-	{
-		const uint32_t wad_lump_num = Res_GetLumpId(res_id);
-		return mRecords[wad_lump_num].size;
-	}
-
+		return mDirectory->getLength(res_id.getLumpId());
 	return 0;
 }
 
-	
-size_t WadResourceFile::readLump(const ResourceId res_id, void* data, size_t length) const
+
+//
+// WadResourceContainer::readLump
+//
+size_t WadResourceContainer::readLump(const ResourceId& res_id, void* data, size_t length) const
 {
 	length = std::min(length, getLumpLength(res_id));
-
-	if (checkLump(res_id) && mFileHandle != NULL)
+	if (checkLump(res_id))
 	{
-		const uint32_t wad_lump_num = Res_GetLumpId(res_id);
-		fseek(mFileHandle, mRecords[wad_lump_num].offset, SEEK_SET);
-		size_t read_cnt = fread(data, 1, length, mFileHandle);
-		return read_cnt;
+		size_t offset = mDirectory->getOffset(res_id.getLumpId());
+		mFile->seek(offset);
+		return mFile->read(data, length);
 	}
-
 	return 0;
 }
 
 
 
+// ============================================================================
+//
+// ResourceManager class implementation
+//
+// ============================================================================
 
-// ****************************************************************************
+//
+// ResourceManager::ResourceManager
+//
+// Set up the resource lookup tables.
+//
+static const size_t initial_lump_count = 4096;
 
-static LumpLookupTable lump_lookup_table;
-static std::vector<ResourceFile*> resource_files;
+ResourceManager::ResourceManager() :
+	mResourceIdLookup(2 * initial_lump_count),
+	mResourcePathLookup(2 * initial_lump_count)
+{
+	mResourceIds.reserve(initial_lump_count);
+}
 
-typedef OHashTable<ResourceId, void*> CacheTable;
-static CacheTable cache_table(4096);
 
-static std::vector<std::string> resource_file_names;
-static std::vector<std::string> resource_file_hashes;
+//
+// ResourceManager::~ResourceManager
+//
+ResourceManager::~ResourceManager()
+{
+	closeAllResourceFiles();
+}
+
+
+//
+// ResourceManager::openResourceFile
+//
+// Opens a resource file and caches the directory of lump names for queries.
+// 
+void ResourceManager::openResourceFile(const OString& filename)
+{
+	ResourceContainerId container_id = mContainers.size();
+
+	if (!M_FileExists(filename))
+		return;
+
+	FileAccessor* file = new DiskFileAccessor(filename);
+	ResourceContainer* container = NULL;
+
+	if (Res_CheckWadFile(filename))
+		container = new WadResourceContainer(file, container_id, this);
+	else
+		container = new SingleLumpResourceContainer(file, container_id, this);
+
+	// check that the resource container has valid lumps
+	if (container && container->getLumpCount() == 0)
+	{
+		delete container;
+		container = NULL;
+		delete file;
+		file = NULL;
+	}
+
+	if (container)
+	{
+		mContainers.push_back(container);
+		mAccessors.push_back(file);
+		mResourceFileNames.push_back(filename);
+		mResourceFileHashes.push_back(W_MD5(filename));
+	}
+}
+
+
+//
+// ResourceManager::closeAllResourceFiles
+//
+// Closes all open resource files. This should be called prior to switching
+// to a new set of resource files.
+//
+void ResourceManager::closeAllResourceFiles()
+{
+	mResourcePathLookup.clear();
+	mResourceIds.clear();
+
+	for (std::vector<ResourceContainer*>::iterator it = mContainers.begin(); it != mContainers.end(); ++it)
+		delete *it;
+	mContainers.clear();
+
+	for (std::vector<FileAccessor*>::iterator it = mAccessors.begin(); it != mAccessors.end(); ++it)
+		delete *it;
+	mAccessors.clear();
+
+	mResourceFileNames.clear();
+	mResourceFileHashes.clear();
+}
+
+
+//
+// ResourceManager::addResource
+//
+// Adds a resource lump to the lookup tables and assigns it a new ResourceId.
+//
+const ResourceId& ResourceManager::addResource(
+		const ResourcePath& path,
+		const ResourceContainerId& container_id,
+		const LumpId& lump_id)
+{
+	size_t index = mResourceIds.size();
+	mResourceIds.push_back(ResourceId(path, container_id, lump_id));
+	ResourceId& res_id = mResourceIds[index];
+	res_id.mIndex = index;
+
+	// Add the index to the ResourceIdLookupTable
+	// ResourceIdLookupTable uses a ResourcePath key and value that is a std::vector
+	// of indices to the mResourceIds std::vector.
+	ResourceIdLookupTable::iterator it = mResourceIdLookup.find(path);
+	if (it != mResourceIdLookup.end())
+	{
+		// A resource with the same path already exists. Add this ResourceId
+		// to the end of the list of ResourceIds with a matching path.
+		ResourceIdIndexList& index_list = it->second;
+		assert(!index_list.empty());
+		index_list.push_back(index);
+	}
+	else
+	{
+		// No other resources with the same path exist yet. Create a new list
+		// for ResourceIds with a matching path.
+		ResourceIdIndexList index_list;
+		index_list.push_back(index);
+		mResourceIdLookup.insert(std::make_pair(path, index_list));
+	}
+	
+	// Add the path to the ResourcePathLookupTable
+	mResourcePathLookup.insert(std::make_pair(index, path));
+
+	assert(res_id.valid());
+	assert(getResourceId(path) == res_id);
+	return res_id;
+}
+
+
+//
+// ResourceManager::getResourceId
+//
+// Retrieves the ResourceId for a given resource path name. If more than
+// one ResourceId match the given path name, the ResouceId from the most
+// recently loaded resource file will be returned.
+//
+const ResourceId& ResourceManager::getResourceId(const ResourcePath& path) const
+{
+	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(path);
+	if (it != mResourceIdLookup.end())
+	{
+		const ResourceIdIndexList& index_list = it->second;
+		assert(!index_list.empty());
+		size_t index = index_list.back();
+		if (index < mResourceIds.size())
+			return mResourceIds[index];
+	}
+	
+	return ResourceManager::RESOURCE_NOT_FOUND;
+}
+
+
+//
+// ResourceManager::getAllResourceIds
+//
+// Returns a std::vector of ResourceIds that match a given resource path name.
+// If there are no matches, an empty std::vector will be returned.
+//
+const ResourceIdList ResourceManager::getAllResourceIds(const ResourcePath& path) const
+{
+	ResourceIdList res_ids;
+
+	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(path);
+	if (it != mResourceIdLookup.end())
+	{
+		const ResourceIdIndexList& index_list = it->second;
+		assert(!index_list.empty());
+		for (ResourceIdIndexList::const_iterator it = index_list.begin(); it != index_list.end(); ++it)
+		{
+			size_t index = *it;
+			if (index < mResourceIds.size())
+				res_ids.push_back(mResourceIds[index]);
+		}
+	}
+
+	return res_ids;
+}
+
+
+//
+// ResourceManager::visible
+//
+// Determine if no other resources have overridden this resource by having
+// the same resource path.
+//
+bool ResourceManager::visible(const ResourceId& res_id) const
+{
+	const ResourcePath& path = res_id.getResourcePath();
+	return getResourceId(path) == res_id;
+}
+
+
+//
+// ResourceManager::dump
+//
+// Print information about each resource in all of the open resource
+// files.
+//
+void ResourceManager::dump() const
+{
+	for (std::vector<ResourceId>::const_iterator it = mResourceIds.begin(); it != mResourceIds.end(); ++it)
+	{
+		const ResourceId& res_id = *it;
+		assert(res_id.valid());
+		assert(res_id.mIndex < mResourceIds.size());
+		assert(res_id.mIndex == static_cast<size_t>(&res_id - &mResourceIds[0]));
+
+		const ResourcePath& path = res_id.getResourcePath();
+		assert(!OString(path).empty());
+
+		const ResourceContainerId& container_id = res_id.getResourceContainerId();
+		assert(container_id < mContainers.size());
+		const ResourceContainer* container = mContainers[container_id];
+		assert(container);
+
+		Printf(PRINT_HIGH,"0x%04X %c %s [%u] [%s]\n",
+				(unsigned int)res_id.mIndex,
+				visible(res_id) ? '*' : 'x',
+				OString(path).c_str(),
+				(unsigned int)container->getLumpLength(res_id),
+				container->getFileName().c_str());
+	}
+}
+
+
+// ============================================================================
+//
+// Externally visible functions
+//
+// ============================================================================
+
+//
+// Res_OpenResourceFile
+//
+// Opens a resource file and caches the directory of lump names for queries.
+// 
+void Res_OpenResourceFile(const OString& filename)
+{
+	resource_manager.openResourceFile(filename);
+}
+
+
+//
+// Res_CloseAllResourceFiles
+//
+// Closes all open resource files and clears the cache. This should be called prior to switching
+// to a new set of resource files.
+//
+void Res_CloseAllResourceFiles()
+{
+	resource_manager.closeAllResourceFiles();
+
+	// free all of the memory used by cached lump data
+	cache_table.clear();
+}
+
 
 //
 // Res_GetResourceFileNames
@@ -842,8 +760,9 @@ static std::vector<std::string> resource_file_hashes;
 //
 const std::vector<std::string>& Res_GetResourceFileNames()
 {
-	return resource_file_names;
+	return resource_manager.getResourceFileNames();
 }
+
 
 //
 // Res_GetResourceFileHashes
@@ -853,7 +772,7 @@ const std::vector<std::string>& Res_GetResourceFileNames()
 //
 const std::vector<std::string>& Res_GetResourceFileHashes()
 {
-	return resource_file_hashes;
+	return resource_manager.getResourceFileHashes();
 }
 
 
@@ -906,63 +825,6 @@ static bool Res_CheckDehackedFile(const OString& filename)
 
 
 //
-// Res_OpenResourceFile
-//
-// Opens a resource file and caches the directory of lump names for queries.
-// 
-void Res_OpenResourceFile(const OString& filename)
-{
-	ResourceFileId file_id = resource_files.size();
-
-	if (!M_FileExists(filename))
-		return;
-
-	ResourceFile* res_file = NULL;
-
-	if (Res_CheckWadFile(filename))
-		res_file = new WadResourceFile(filename, file_id, &lump_lookup_table);
-	else
-		res_file = new SingleLumpResourceFile(filename, file_id, &lump_lookup_table);
-
-	// check that the resource file contains valid lumps
-	if (res_file && res_file->getLumpCount() == 0)
-	{
-		delete res_file;
-		res_file = NULL;
-	}
-
-	if (res_file)
-	{
-		resource_files.push_back(res_file);
-		resource_file_names.push_back(filename);
-		resource_file_hashes.push_back(W_MD5(filename));
-	}
-}
-
-
-//
-// Res_CloseAllresource_files
-//
-// Closes all open resource files. This should be called prior to switching
-// to a new set of resource files.
-//
-void Res_CloseAllResourceFiles()
-{
-	lump_lookup_table.clear();
-
-	for (std::vector<ResourceFile*>::iterator it = resource_files.begin(); it != resource_files.end(); ++it)
-		delete *it;
-	resource_files.clear();
-
-	// free all of the memory used by cached lump data
-	cache_table.clear();
-
-	resource_file_names.clear();
-	resource_file_hashes.clear();
-}
-
-
-//
 // Res_GetResourceId
 //
 // Looks for the resource lump that matches id. If there are more than one
@@ -971,23 +833,23 @@ void Res_CloseAllResourceFiles()
 // is returned. A special token of ResourceFile::LUMP_NOT_FOUND is returned if
 // there are no matching lumps.
 //
-ResourceId Res_GetResourceId(const OString& lump_name, const OString& namespace_name)
+const ResourceId& Res_GetResourceId(const OString& name, const OString& directory)
 {
-	return lump_lookup_table.lookupByName(lump_name, namespace_name);
+	const ResourcePath path = Res_MakeResourcePath(name, directory);
+	return resource_manager.getResourceId(path);
 }
 
 
 //
 // Res_GetAllResourceIds
 //
-// Fills the supplied vector with the LumpId of any lump whose name matches the
+// Fills the supplied vector with the ResourceId of any lump whose name matches the
 // given string. An empty vector indicates that there were no matches.
 //
-ResourceIdList Res_GetAllResourceIds(const OString& lump_name, const OString& namespace_name)
+const ResourceIdList Res_GetAllResourceIds(const OString& name, const OString& directory)
 {
-	ResourceIdList res_ids;
-	lump_lookup_table.queryByName(res_ids, lump_name, namespace_name);
-	return res_ids;
+	const ResourcePath path = Res_MakeResourcePath(name, directory);
+	return resource_manager.getAllResourceIds(path);
 }
 
 
@@ -997,9 +859,13 @@ ResourceIdList Res_GetAllResourceIds(const OString& lump_name, const OString& na
 // Looks for the name of the resource lump that matches id. If the lump is not
 // found, an empty string is returned.
 //
-const OString& Res_GetLumpName(const ResourceId res_id)
+const OString& Res_GetLumpName(const ResourceId& res_id)
 {
-	return lump_lookup_table.lookupById(res_id);
+	if (res_id.valid())
+		return res_id.getResourcePath().last();
+	
+	static const OString empty_string;
+	return empty_string;
 }
 
 
@@ -1008,13 +874,16 @@ const OString& Res_GetLumpName(const ResourceId res_id)
 //
 // Returns the name of the resource file that the given resource belongs to.
 //
-const OString& Res_GetResourceFileName(const ResourceId res_id)
+const OString& Res_GetResourceFileName(const ResourceId& res_id)
 {
-	ResourceFileId file_id = Res_GetResourceFileId(res_id);
-	if (file_id < resource_files.size())
-		return resource_files[file_id]->getFileName();
-
-	static OString empty_string;
+	if (res_id.valid())
+	{
+		const ResourceContainerId& container_id = res_id.getResourceContainerId();
+		const ResourceContainer* container = resource_manager.getResourceContainer(container_id);
+		if (container)
+			return container->getFileName();
+	}
+	static const OString empty_string;
 	return empty_string;
 }
 
@@ -1024,10 +893,16 @@ const OString& Res_GetResourceFileName(const ResourceId res_id)
 //
 // Verifies that the given LumpId matches a valid resource lump.
 //
-bool Res_CheckLump(const ResourceId res_id)
+bool Res_CheckLump(const ResourceId& res_id)
 {
-	ResourceFileId file_id = Res_GetResourceFileId(res_id);
-	return file_id < resource_files.size() && resource_files[file_id]->checkLump(res_id);
+	if (res_id.valid())
+	{
+		const ResourceContainerId& container_id = res_id.getResourceContainerId();
+		const ResourceContainer* container = resource_manager.getResourceContainer(container_id);
+		if (container)
+			return container->checkLump(res_id);
+	}
+	return false;
 }
 	
 
@@ -1037,12 +912,77 @@ bool Res_CheckLump(const ResourceId res_id)
 // Returns the length of the resource lump that matches res_id. If the lump is
 // not found, 0 is returned.
 //
-size_t Res_GetLumpLength(const ResourceId res_id)
+size_t Res_GetLumpLength(const ResourceId& res_id)
 {
-	ResourceFileId file_id = Res_GetResourceFileId(res_id);
-	if (file_id < resource_files.size())
-		return resource_files[file_id]->getLumpLength(res_id);
+	if (res_id.valid())
+	{
+		const ResourceContainerId& container_id = res_id.getResourceContainerId();
+		const ResourceContainer* container = resource_manager.getResourceContainer(container_id);
+		if (container)
+			return container->getLumpLength(res_id);
+	}
 	return 0;
+}
+
+
+//
+// Res_IsMapLumpName
+//
+// Returns true if the given lump name is a name reserved for map lumps.
+//
+static bool Res_IsMapLumpName(const OString& name)
+{
+	static const OString things_lump_name("THINGS");
+	static const OString linedefs_lump_name("LINEDEFS");
+	static const OString sidedefs_lump_name("SIDEDEFS");
+	static const OString vertexes_lump_name("VERTEXES");
+	static const OString segs_lump_name("SEGS");
+	static const OString ssectors_lump_name("SSECTORS");
+	static const OString nodes_lump_name("NODES");
+	static const OString sectors_lump_name("SECTORS");
+	static const OString reject_lump_name("REJECT");
+	static const OString blockmap_lump_name("BLOCKMAP");
+	static const OString behavior_lump_name("BEHAVIOR");
+
+	const OString uname = OStringToUpper(name);
+
+	return uname == things_lump_name || uname == linedefs_lump_name || uname == sidedefs_lump_name ||
+		uname == vertexes_lump_name || uname == segs_lump_name || uname == ssectors_lump_name ||
+		uname == nodes_lump_name || uname == sectors_lump_name || uname == reject_lump_name ||
+		uname == blockmap_lump_name || uname == behavior_lump_name;
+}
+
+
+//
+// Res_CheckMap
+//
+// Checks if a given map name exists in the resource files. Internally, map
+// names are stored as marker lumps and put into their own namespace.
+//
+bool Res_CheckMap(const OString& mapname)
+{
+	ResourcePath directory = Res_MakeResourcePath(mapname, maps_directory_name);
+	return Res_GetResourceId(mapname, directory).valid();
+}
+
+
+//
+// Res_GetMapResourceId
+//
+// Returns the ResourceId of a lump belonging to the given map. Internally, the
+// lumps for a particular map are stored in that map's namespace and
+// only the map lumps from the same resource file as the map marker
+// should be used.
+//
+const ResourceId& Res_GetMapResourceId(const OString& lump_name, const OString& mapname)
+{
+	ResourcePath directory = Res_MakeResourcePath(mapname, maps_directory_name);
+	const ResourceId& map_marker_res_id = Res_GetResourceId(mapname, directory);
+	const ResourceId& map_lump_res_id = Res_GetResourceId(lump_name, directory);
+	if (map_lump_res_id.valid() && map_marker_res_id.valid() &&
+		map_lump_res_id.getResourceContainerId() == map_marker_res_id.getResourceContainerId())
+		return map_lump_res_id;
+	return ResourceManager::RESOURCE_NOT_FOUND;
 }
 
 
@@ -1054,11 +994,15 @@ size_t Res_GetLumpLength(const ResourceId res_id)
 // is not found. The variable data must be able to hold the size of the lump,
 // as determined by Res_GetLumpLength.
 //
-size_t Res_ReadLump(const ResourceId res_id, void* data)
+size_t Res_ReadLump(const ResourceId& res_id, void* data)
 {
-	ResourceFileId file_id = Res_GetResourceFileId(res_id);
-	if (file_id < resource_files.size())
-		return resource_files[file_id]->readLump(res_id, data);
+	if (res_id.valid())
+	{
+		const ResourceContainerId& container_id = res_id.getResourceContainerId();
+		const ResourceContainer* container = resource_manager.getResourceContainer(container_id);
+		if (container)
+			return container->readLump(res_id, data, container->getLumpLength(res_id));
+	}
 	return 0;
 }
 
@@ -1074,73 +1018,37 @@ size_t Res_ReadLump(const ResourceId res_id, void* data)
 // The tag parameter is used to specify the allocation tag type to pass
 // to Z_Malloc.
 //
-void* Res_CacheLump(const ResourceId res_id, int tag)
+void* Res_CacheLump(const ResourceId& res_id, int tag)
 {
-	void* data_ptr = cache_table[res_id];
+	void* data_ptr = NULL;
 
-	if (data_ptr)
+	if (res_id.valid())
 	{
-		Z_ChangeTag(data_ptr, tag);
-	}
-	else
-	{
-		void** owner_ptr = &cache_table[res_id];
-		size_t lump_length = Res_GetLumpLength(res_id);
-		cache_table[res_id] = data_ptr = Z_Malloc(lump_length + 1, tag, owner_ptr);
-		Res_ReadLump(res_id, data_ptr);
+		data_ptr = cache_table[res_id];
 
-		uint8_t* terminator = (uint8_t*)data_ptr + lump_length;
-		*terminator = 0;
-	}
+		if (data_ptr)
+		{
+			Z_ChangeTag(data_ptr, tag);
+		}
+		else
+		{
+			void** owner_ptr = &cache_table[res_id];
+			size_t lump_length = Res_GetLumpLength(res_id);
+			cache_table[res_id] = data_ptr = Z_Malloc(lump_length + 1, tag, owner_ptr);
+			Res_ReadLump(res_id, data_ptr);
 
+			uint8_t* terminator = (uint8_t*)data_ptr + lump_length;
+			*terminator = 0;
+		}
+	}
 	return data_ptr; 
-}
-
-
-//
-// Res_CheckMap
-//
-// Checks if a given map name exists in the resource files. Internally, map
-// names are stored as marker lumps and put into their own namespace.
-//
-bool Res_CheckMap(const OString& mapname)
-{
-	return Res_CheckLump(Res_GetResourceId(mapname, mapname));
-}
-
-
-//
-// Res_GetMapResourceId
-//
-// Returns the ResourceId of a lump belonging to the given map. Internally, the
-// lumps for a particular map are stored in that map's namespace and
-// only the map lumps from the same resource file as the map marker
-// should be used.
-//
-ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname)
-{
-	ResourceId res_id = Res_GetResourceId(lump_name, mapname);
-
-	// determine which resource file the map marker is in
-	ResourceFileId map_file_id = Res_GetResourceFileId(Res_GetResourceId(mapname, mapname));
-
-	// determin which resource file this lump is in
-	ResourceFileId lump_file_id = Res_GetResourceFileId(res_id);
-
-	// [SL] Ensure this lump is from the same resource file as the marker.
-	// This is needed when a map without a BEHAVIOR lump is loaded and
-	// there exists another map with the same name that has a BEHAVIOR lump.
-	if (map_file_id == lump_file_id)
-		return res_id;
-
-	return ResourceFile::LUMP_NOT_FOUND;
 }
 
 
 
 BEGIN_COMMAND(dump_resources)
 {
-	lump_lookup_table.dump();
+	resource_manager.dump();
 }
 END_COMMAND(dump_resources)
 
