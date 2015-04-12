@@ -37,6 +37,7 @@ typedef unsigned int TextureId;
 
 class Texture;
 class TextureManager;
+class ResourceId;
 
 void Res_InitTextureManager();
 void Res_ShutdownTextureManager();
@@ -266,9 +267,9 @@ private:
 	// definitions for texture composition
 	struct texdefpatch_t
 	{
-		int 		originx;
-		int 		originy;
-		int 		patch;
+		int 				originx;
+		int 				originy;
+		const ResourceId*	res_id;
 	};
 
 	struct texdef_t
@@ -282,7 +283,7 @@ private:
 		texdefpatch_t	patches[1];
 	};
 
-	int*						mPNameLookup;
+	const ResourceId**			mPNameLookup;
 	std::vector<texdef_t*>		mTextureDefinitions;
 
 	// lookup table to translate texdef_t name to indices in mTextureDefinitions

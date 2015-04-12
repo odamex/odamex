@@ -590,9 +590,9 @@ void D_Init()
 	// Load palette and set up colormaps
 	V_Init();
 
-//	if (first_time)
-//		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
-//	Res_InitTextureManager();
+	if (first_time)
+		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
+	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
 	const ResourceId& language_res_id = Res_GetResourceId("LANGUAGE");
@@ -711,7 +711,7 @@ void STACK_ARGS D_Shutdown()
 
 	GStrings.FreeData();
 
-//	Res_ShutdownTextureManager();
+	Res_ShutdownTextureManager();
 
 //	R_ShutdownColormaps();
 

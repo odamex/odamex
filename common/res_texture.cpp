@@ -515,19 +515,21 @@ void TextureManager::precache()
 //
 void TextureManager::readPNamesDirectory()
 {
-	int lumpnum = W_GetNumForName("PNAMES");
-	size_t lumplen = W_LumpLength(lumpnum);
+	const ResourceId& res_id = Res_GetResourceId("PNAMES");
+	size_t lumplen = Res_GetLumpLength(res_id); 
 
 	byte* lumpdata = new byte[lumplen];
-	W_ReadLump(lumpnum, lumpdata);
+	Res_ReadLump(res_id, lumpdata);
 
-	int num_pname_mappings = LELONG(*((int*)(lumpdata + 0)));
-	mPNameLookup = new int[num_pname_mappings];
+	int32_t num_pname_mappings = LELONG(*((int32_t*)(lumpdata + 0)));
+
+	mPNameLookup = new const ResourceId*[num_pname_mappings];
 
 	for (int i = 0; i < num_pname_mappings; i++)
 	{
-		const char* lumpname = (const char*)(lumpdata + 4 + 8 * i);
-		mPNameLookup[i] = W_CheckNumForName(lumpname);
+		const char* str = (const char*)(lumpdata + 4 + 8 * i);
+		const OString lumpname = OStringToUpper(str, 8);
+		mPNameLookup[i] = &Res_GetResourceId(lumpname, patches_directory_name);
 
 		// killough 4/17/98:
 		// Some wads use sprites as wall patches, so repeat check and
@@ -537,8 +539,8 @@ void TextureManager::readPNamesDirectory()
 		// appear first in a wad. This is a kludgy solution to the wad
 		// lump namespace problem.
 
-		if (mPNameLookup[i] == -1)
-			mPNameLookup[i] = W_CheckNumForName(lumpname, ns_sprites);
+		if (!mPNameLookup[i]->valid())
+			mPNameLookup[i] = &Res_GetResourceId(lumpname, sprites_directory_name);
 	}
 
 	delete [] lumpdata;
@@ -697,16 +699,16 @@ void TextureManager::readAnimDefLump()
 //
 void TextureManager::readAnimatedLump()
 {
-	int lumpnum = W_CheckNumForName("ANIMATED");
-	if (lumpnum == -1)
+	const ResourceId& res_id = Res_GetResourceId("ANIMATED");
+	if (!res_id.valid())
 		return;
 
-	size_t lumplen = W_LumpLength(lumpnum);
+	size_t lumplen = Res_GetLumpLength(res_id);
 	if (lumplen == 0)
 		return;
 
 	byte* lumpdata = new byte[lumplen];
-	W_ReadLump(lumpnum, lumpdata);
+	Res_ReadLump(res_id, lumpdata);
 
 	for (byte* ptr = lumpdata; *ptr != 255; ptr += 23)
 	{
@@ -879,20 +881,20 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 		mappatch_t	patches[1];
 	};
 
-	int lumpnum = W_CheckNumForName(lumpname);
-	if (lumpnum == -1)
+	const ResourceId& res_id = Res_GetResourceId(lumpname);
+	if (!res_id.valid())
 	{
 		if (iequals("TEXTURE1", lumpname))
 			I_Error("Res_InitTextures: TEXTURE1 lump not found");
 		return;
 	}
 
-	size_t lumplen = W_LumpLength(lumpnum);
+	size_t lumplen = Res_GetLumpLength(res_id);
 	if (lumplen == 0)
 		return;
 
 	byte* lumpdata = new byte[lumplen];
-	W_ReadLump(lumpnum, lumpdata);
+	Res_ReadLump(res_id, lumpdata);
 
 	int* texoffs = (int*)(lumpdata + 4);
 
@@ -900,11 +902,11 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 	for (int i = 0; i < count; i++)
 	{
 		maptexture_t* mtexdef = (maptexture_t*)((byte*)lumpdata + LELONG(texoffs[i]));
-		OString uname(StdStringToUpper(mtexdef->name, 8));
+		const OString name = OStringToUpper(mtexdef->name, 8);
 
 		// [SL] If there are duplicated texture names, the first instance takes precedence.
 		// Are there any ports besides ZDoom that tex_id duplicated texture names?
-		if (mTextureNameTranslationMap.find(uname) == mTextureNameTranslationMap.end())
+		if (mTextureNameTranslationMap.find(name) == mTextureNameTranslationMap.end())
 		{
 			size_t texdefsize = sizeof(texdef_t) + sizeof(texdefpatch_t) * (SAFESHORT(mtexdef->patchcount) - 1);
 			texdef_t* texdef = (texdef_t*)(new byte[texdefsize]); 	
@@ -922,13 +924,13 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 			{
 				patch->originx = LESHORT(mpatch->originx);
 				patch->originy = LESHORT(mpatch->originy);
-				patch->patch = mPNameLookup[LESHORT(mpatch->patch)];
-				if (patch->patch == -1)
-					Printf(PRINT_HIGH, "Res_InitTextures: Missing patch in texture %s\n", uname.c_str());
+				patch->res_id = mPNameLookup[LESHORT(mpatch->patch)];
+				if (!patch->res_id->valid())
+					Printf(PRINT_HIGH, "Res_InitTextures: Missing patch in texture %s\n", name.c_str());
 			}
 
 			mTextureDefinitions.push_back(texdef);
-			mTextureNameTranslationMap[uname] = mTextureDefinitions.size() - 1;
+			mTextureNameTranslationMap[name] = mTextureDefinitions.size() - 1;
 		}
 	}
 
@@ -1243,13 +1245,13 @@ void TextureManager::cacheWallTexture(TextureId tex_id)
 		for (int i = 0; i < texdef->patchcount; i++)
 		{
 			texdefpatch_t* texdefpatch = &texdef->patches[i];
+			const ResourceId& res_id = *texdefpatch->res_id;
 			
-			if (texdefpatch->patch == -1)		// not found ?
+			if (!res_id.valid())	// not found?
 				continue;
 
-			unsigned int lumplen = W_LumpLength(texdefpatch->patch);
-			byte* lumpdata = new byte[lumplen];
-			W_ReadLump(texdefpatch->patch, lumpdata);
+			byte* lumpdata = new byte[Res_GetLumpLength(res_id)];
+			Res_ReadLump(res_id, lumpdata);
 			Res_DrawPatchIntoTexture(texture, lumpdata, texdefpatch->originx, texdefpatch->originy);
 
 			delete [] lumpdata;
