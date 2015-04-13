@@ -143,9 +143,161 @@ private:
 
 	bool				mHasMask;
 
+// TODO: make these private
+public:
 	byte*				mMask;
 	byte*				mData;
+};
 
+
+// ============================================================================
+//
+// CompositeTextureDefinition
+//
+// ============================================================================
+//
+// A structure to contain the data for a composite texture definition, which
+// are defined in the TEXTURE1 and TEXTURE2 lumps.
+//
+
+struct CompositeTextureDefinition
+{
+	short			mWidth;
+	short			mHeight;
+	byte			mScaleX;
+	byte			mScaleY;
+
+	struct texdefpatch_t
+	{
+		int 				mOriginX;
+		int 				mOriginY;
+		const ResourceId*	mResId;
+	};
+
+	short			mPatchCount;
+	texdefpatch_t*	mPatches;
+
+	CompositeTextureDefinition() :
+		mWidth(0), mHeight(0), mScaleX(0), mScaleY(0),
+		mPatchCount(0), mPatches(NULL)
+	{ }
+
+	~CompositeTextureDefinition()
+	{
+		delete [] mPatches;
+	}
+
+	CompositeTextureDefinition(const CompositeTextureDefinition& other) :
+		mPatches(NULL)
+	{
+		operator=(other);
+	}
+
+	CompositeTextureDefinition& operator=(const CompositeTextureDefinition& other)
+	{
+		if (this != &other)
+		{
+			mWidth = other.mWidth;
+			mHeight = other.mHeight;
+			mScaleX = other.mScaleX;
+			mScaleY = other.mScaleY;
+
+			delete [] mPatches;
+			mPatchCount = other.mPatchCount;
+			mPatches = new texdefpatch_t[mPatchCount];
+			for (int i = 0; i < mPatchCount; i++)
+			{
+				mPatches[i].mOriginX = other.mPatches[i].mOriginX;
+				mPatches[i].mOriginY = other.mPatches[i].mOriginY;
+				mPatches[i].mResId = other.mPatches[i].mResId;
+			}
+		}
+		return *this;
+	}
+
+};
+
+
+// ============================================================================
+//
+// TextureLoader
+//
+// ============================================================================
+//
+// The TextureLoader classes each load a type of texture resource from the
+// resource files.
+//
+
+// ----------------------------------------------------------------------------
+// TextureLoader abstract base class interface
+// ----------------------------------------------------------------------------
+
+class TextureLoader
+{
+public:
+	virtual ~TextureLoader() {}
+
+	virtual const Texture* load() const = 0;
+};
+
+
+// ----------------------------------------------------------------------------
+// FlatTextureLoader class interface
+//
+// Loads 64x64, 128x128 or 256x256 raw graphic lumps, converting them from
+// row-major to column-major format.
+// ----------------------------------------------------------------------------
+
+class FlatTextureLoader : public TextureLoader
+{
+public:
+	FlatTextureLoader(const ResourceId& res_id);
+	virtual ~FlatTextureLoader() {}
+
+	virtual const Texture* load() const;
+
+private:
+	const ResourceId	mResId;
+};
+
+
+// ----------------------------------------------------------------------------
+// PatchTextureLoader class interface
+//
+// Loads patch_t format graphic lumps. 
+// ----------------------------------------------------------------------------
+
+class PatchTextureLoader : public TextureLoader
+{
+public:
+	PatchTextureLoader(const ResourceId& res_id);
+	virtual ~PatchTextureLoader() {}
+
+	virtual const Texture* load() const;
+
+private:
+	const ResourceId	mResId;
+};
+
+
+// ----------------------------------------------------------------------------
+// CompositeTextureLoader class interface
+//
+// Generates composite textures given a CompositeTextureDefinition from the
+// TEXTURE1 or TEXTURE2 lumps. The texture is composed from one or more
+// patch textures.
+// ----------------------------------------------------------------------------
+
+class CompositeTextureLoader : public TextureLoader
+{
+public:
+	CompositeTextureLoader(const CompositeTextureDefinition& texture_def);
+	virtual ~CompositeTextureLoader() {}
+
+	virtual const Texture* load() const;
+
+private:
+	const CompositeTextureDefinition	mTextureDef;
 };
 
 
@@ -197,6 +349,7 @@ public:
 	TextureId getTextureId(const char* name, Texture::TextureSourceType type);
 	TextureId getTextureId(const OString& name, Texture::TextureSourceType type);
 	const Texture* getTexture(const TextureId tex_id);
+	const Texture* getTexture(const ResourceId& res_id);
 
 	Texture* createTexture(const TextureId tex_id, int width, int height);
 	void freeTexture(const TextureId tex_id);
@@ -220,8 +373,7 @@ private:
 	// initialization routines
 	void clear();
 	void generateNotFoundTexture();
-	void readPNamesDirectory();
-	void addTextureDirectory(const char* lumpname); 
+	void addTextureDirectories(); 
 	void readAnimDefLump();
 	void readAnimatedLump();
 
@@ -255,6 +407,10 @@ private:
 	TextureId getPNGTextureTextureId(const OString& name);
 	void cachePNGTexture(TextureId tex_id);
 
+
+	typedef std::vector<TextureLoader*> TextureLoaderList;
+	TextureLoaderList		mTextureLoaders;
+
 	// maps texture tex_ids to Texture*
 	typedef OHashTable<TextureId, Texture*> TextureIdMap;
 	typedef std::pair<TextureId, Texture*> TextureIdMapPair;
@@ -283,7 +439,6 @@ private:
 		texdefpatch_t	patches[1];
 	};
 
-	const ResourceId**			mPNameLookup;
 	std::vector<texdef_t*>		mTextureDefinitions;
 
 	// lookup table to translate texdef_t name to indices in mTextureDefinitions
