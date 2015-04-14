@@ -305,8 +305,6 @@ public:
 
 	static const ResourceId RESOURCE_NOT_FOUND;
 
-	bool validateResourceId(const ResourceId& res_id) const;
-
 	const std::vector<std::string>& getResourceFileNames() const
 	{
 		return mResourceFileNames;
@@ -350,7 +348,9 @@ public:
 private:
 	ResourceIdList					mResourceIds;
 
+	static const size_t MAX_RESOURCE_CONTAINERS = 255;
 	std::vector<ResourceContainer*>	mContainers;
+
 	std::vector<FileAccessor*>		mAccessors;
 	std::vector<std::string>		mResourceFileNames;
 	std::vector<std::string>		mResourceFileHashes;

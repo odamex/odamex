@@ -523,10 +523,13 @@ ResourceManager::~ResourceManager()
 // 
 void ResourceManager::openResourceFile(const OString& filename)
 {
-	ResourceContainerId container_id = mContainers.size();
+	if (mContainers.size() >= ResourceManager::MAX_RESOURCE_CONTAINERS)
+		return;
 
 	if (!M_FileExists(filename))
 		return;
+
+	ResourceContainerId container_id = mContainers.size();
 
 	FileAccessor* file = new DiskFileAccessor(filename);
 	ResourceContainer* container = NULL;
