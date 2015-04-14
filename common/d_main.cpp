@@ -191,8 +191,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	}
 
 	// Load the resource files
-	for (size_t i = 0; i < resource_file_count; i++)
-		Res_OpenResourceFile(resource_filenames[i]);
+	Res_OpenResourceFiles(resource_filenames);
 
 
 	// TODO: delete this once we're fully migrated to the ResourceFile system

@@ -556,6 +556,19 @@ void ResourceManager::openResourceFile(const OString& filename)
 
 
 //
+// ResourceManager::openResourceFiles
+//
+// Opens a set of resource files and creates a directory of resource path names
+// for queries.
+// 
+void ResourceManager::openResourceFiles(const std::vector<std::string>& filenames)
+{
+	for (std::vector<std::string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it)
+		openResourceFile(*it);
+}
+
+
+//
 // ResourceManager::closeAllResourceFiles
 //
 // Closes all open resource files. This should be called prior to switching
@@ -727,13 +740,14 @@ void ResourceManager::dump() const
 // ============================================================================
 
 //
-// Res_OpenResourceFile
+// Res_OpenResourceFiles
 //
-// Opens a resource file and caches the directory of lump names for queries.
+// Opens a set of resource files and creates a directory of resource path names
+// for queries.
 // 
-void Res_OpenResourceFile(const OString& filename)
+void Res_OpenResourceFiles(const std::vector<std::string>& filenames)
 {
-	resource_manager.openResourceFile(filename);
+	resource_manager.openResourceFiles(filenames);
 }
 
 

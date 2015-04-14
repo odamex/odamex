@@ -307,8 +307,6 @@ public:
 
 	bool validateResourceId(const ResourceId& res_id) const;
 
-	void openResourceFile(const OString& filename);
-
 	const std::vector<std::string>& getResourceFileNames() const
 	{
 		return mResourceFileNames;
@@ -318,6 +316,8 @@ public:
 	{
 		return mResourceFileHashes;
 	}
+
+	void openResourceFiles(const std::vector<std::string>& filenames);
 
 	void closeAllResourceFiles();
 
@@ -365,6 +365,12 @@ private:
 	ResourcePathLookupTable			mResourcePathLookup;
 
 
+	// ---------------------------------------------------------------------------
+	// Private helper functions
+	// ---------------------------------------------------------------------------
+
+	void openResourceFile(const OString& filename);
+
 	bool visible(const ResourceId& res_id) const;
 };
 
@@ -387,7 +393,7 @@ static inline const OString& Res_GetEngineResourceFileName()
 	return filename;
 }
 
-void Res_OpenResourceFile(const OString& filename);
+void Res_OpenResourceFiles(const std::vector<std::string>& filename);
 void Res_CloseAllResourceFiles();
 
 const std::vector<std::string>& Res_GetResourceFileNames();
