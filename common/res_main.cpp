@@ -213,15 +213,6 @@ SingleLumpResourceContainer::SingleLumpResourceContainer(
 
 
 //
-// SingleLumpResourceContainer::getFileName
-//
-const OString& SingleLumpResourceContainer::getFileName() const
-{
-	return mFile->getFileName();
-}
-
-
-//
 // SingleLumpResourceContainer::getLumpCount
 //
 size_t SingleLumpResourceContainer::getLumpCount() const
@@ -432,15 +423,6 @@ void WadResourceContainer::cleanup()
 	delete mDirectory;
 	mDirectory = NULL;
 	mIsIWad = false;
-}
-
-
-//
-// WadResourceContainer::getFileName
-//
-const OString& WadResourceContainer::getFileName() const
-{
-	return mFile->getFileName();
 }
 
 
@@ -691,6 +673,22 @@ const ResourceIdList ResourceManager::getAllResourceIds(const ResourcePath& path
 
 
 //
+// ResourceManager::getResourceContainerFileName
+//
+const std::string& ResourceManager::getResourceContainerFileName(const ResourceId& res_id) const
+{
+	if (res_id.valid())
+	{
+		const ResourceContainerId& container_id = res_id.getResourceContainerId();
+		if (container_id < mResourceFileNames.size())
+			return mResourceFileNames[container_id];
+	}
+	static std::string empty_string;
+	return empty_string;
+}
+
+
+//
 // ResourceManager::visible
 //
 // Determine if no other resources have overridden this resource by having
@@ -731,7 +729,7 @@ void ResourceManager::dump() const
 				visible(res_id) ? '*' : 'x',
 				OString(path).c_str(),
 				(unsigned int)container->getLumpLength(res_id),
-				container->getFileName().c_str());
+				getResourceContainerFileName(res_id).c_str());
 	}
 }
 
@@ -871,6 +869,15 @@ const ResourceIdList Res_GetAllResourceIds(const OString& name, const OString& d
 
 
 //
+// Res_GetResourceContainerFileName
+//
+const std::string& Res_GetResourceContainerFileName(const ResourceId& res_id)
+{
+	return resource_manager.getResourceContainerFileName(res_id);
+}
+
+
+//
 // Res_GetLumpName
 //
 // Looks for the name of the resource lump that matches id. If the lump is not
@@ -881,25 +888,6 @@ const OString& Res_GetLumpName(const ResourceId& res_id)
 	if (res_id.valid())
 		return res_id.getResourcePath().last();
 	
-	static const OString empty_string;
-	return empty_string;
-}
-
-
-//
-// Res_GetResourceFileName
-//
-// Returns the name of the resource file that the given resource belongs to.
-//
-const OString& Res_GetResourceFileName(const ResourceId& res_id)
-{
-	if (res_id.valid())
-	{
-		const ResourceContainerId& container_id = res_id.getResourceContainerId();
-		const ResourceContainer* container = resource_manager.getResourceContainer(container_id);
-		if (container)
-			return container->getFileName();
-	}
 	static const OString empty_string;
 	return empty_string;
 }

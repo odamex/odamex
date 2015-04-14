@@ -190,8 +190,6 @@ public:
 
 	virtual const ResourceContainerId& getResourceContainerId() const = 0;
 
-	virtual const OString& getFileName() const = 0;
-
 	virtual bool isIWad() const { return false; }
 
 	virtual size_t getLumpCount() const = 0;
@@ -228,8 +226,6 @@ public:
 		return mResourceContainerId;
 	}
 
-	virtual const OString& getFileName() const;
-
 	virtual size_t getLumpCount() const;
 
 	virtual size_t getLumpLength(const ResourceId& res_id) const;
@@ -262,8 +258,6 @@ public:
 	{
 		return mResourceContainerId;
 	}
-
-	virtual const OString& getFileName() const;
 
 	virtual bool isIWad() const
 	{
@@ -343,6 +337,8 @@ public:
 		return NULL;
 	}
 
+	const std::string& getResourceContainerFileName(const ResourceId& res_id) const;
+
 	void dump() const;
 
 private:
@@ -406,7 +402,7 @@ const ResourceIdList Res_GetAllResourceIds(const OString& name, const OString& d
 
 const OString& Res_GetLumpName(const ResourceId& res_id);
 
-const OString& Res_GetResourceFileName(const ResourceId& res_id);
+const std::string& Res_GetResourceContainerFileName(const ResourceId& res_id);
 
 // ----------------------------------------------------------------------------
 // Res_CheckLump
