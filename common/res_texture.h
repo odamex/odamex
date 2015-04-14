@@ -119,6 +119,29 @@ public:
 	void setOffsetY(int value)
 	{	mOffsetY = value;	}
 	
+
+	// 
+	// Texture::createTexture
+	//
+	// Factory for creating Texture instances. Allocates memory for a new
+	// Texture, initializes it and then returns a pointer to it.
+	// 
+	static Texture* createTexture(int width, int height) 
+	{ 
+		width = std::min<int>(width, Texture::MAX_TEXTURE_WIDTH); 
+		height = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT); 
+		 
+		// server shouldn't allocate memory for texture data, only the header    
+		size_t texture_size = clientside ? 
+				Texture::calculateSize(width, height) : sizeof(Texture); 
+							      
+		Texture* texture = (Texture*)Z_Malloc(texture_size, PU_STATIC, NULL); 
+		texture->init(width, height); 
+														 
+		return texture; 
+	}
+
+
 private:
 	friend class TextureManager;
 
