@@ -572,9 +572,16 @@ void TextureManager::clear()
 		mFreeCustomTextureIds[i] = CUSTOM_TEXTURE_ID_MASK | i;
 
 
+	// Free all of the TextureLoader instances
 	for (TextureLoaderList::iterator it = mTextureLoaders.begin(); it != mTextureLoaders.end(); ++it)
 		delete *it;
 	mTextureLoaders.clear();	
+
+	// Free all of the Texture instances
+	for (TextureList::iterator it = mTextures.begin(); it != mTextures.end(); ++it)
+		if (*it)
+			Z_Free((void*)*it);
+	mTextures.clear();
 
 
 	for (size_t i = 0; i < mTextureDefinitions.size(); i++)
@@ -1048,6 +1055,8 @@ void TextureManager::addTextureDirectories()
 				// TODO: handle invalid pnames indices
 			}
 
+			mTextures.push_back(NULL);
+
 			// Create a new TextureLoader and add it to the list
 			TextureLoader* loader = new CompositeTextureLoader(texture_def);
 			mTextureLoaders.push_back(loader);
@@ -1104,6 +1113,7 @@ Texture* TextureManager::createTexture(const TextureId tex_id, int width, int he
 
 	texture->mTextureId = tex_id;
 
+	mTextures.push_back(texture);
 	mTextureIdMap.insert(TextureIdMapPair(tex_id, texture));
 
 	return texture;
@@ -1116,54 +1126,15 @@ Texture* TextureManager::createTexture(const TextureId tex_id, int width, int he
 // Frees the memory used by the specified texture and removes it
 // from mTextureIdsMap.
 //
-void TextureManager::freeTexture(const TextureId tex_id)
+void TextureManager::freeTexture(const ResourceId& res_id)
 {
-	if (tex_id == TextureManager::NOT_FOUND_TEXTURE_ID ||
-		tex_id == TextureManager::NO_TEXTURE_ID)
+	if (!res_id.valid())
 		return;
 
-	TextureIdMap::iterator it = mTextureIdMap.find(tex_id);
-	if (it != mTextureIdMap.end())
-	{
-		const Texture* texture = it->second;
-		if (texture != NULL)
-		{
-			Z_Free((void*)texture);
-			if (tex_id & CUSTOM_TEXTURE_ID_MASK)
-				freeCustomTextureId(tex_id);
-		}
-		
-		mTextureIdMap.erase(it);
-	}
-}
-
-
-//
-// TextureManager::getPatchTextureId
-//
-// Returns the tex_id for the patch with the given WAD lump number.
-//
-TextureId TextureManager::getPatchTextureId(unsigned int lumpnum)
-{
-	if (lumpnum >= numlumps)
-		return NOT_FOUND_TEXTURE_ID;
-
-	if (W_LumpLength(lumpnum) == 0)
-		return NOT_FOUND_TEXTURE_ID;
-
-	return (TextureId)lumpnum | PATCH_TEXTURE_ID_MASK;
-}
-
-
-TextureId TextureManager::getPatchTextureId(const OString& name)
-{
-	static const OString patches_namespace_name("PATCHES");
-	const ResourceId& res_id = Res_GetResourceId(name, patches_namespace_name);
- 
-	int lumpnum = W_CheckNumForName(name.c_str());
-	if (lumpnum >= 0)
-		return getPatchTextureId(lumpnum);
-	return NOT_FOUND_TEXTURE_ID;
+	const LumpId& lump_id = res_id.getLumpId();
+	if (mTextures[lump_id])
+		Z_Free((void*)mTextures[lump_id]);
+	mTextures[lump_id] = NULL;
 }
 
 
@@ -1205,70 +1176,11 @@ void TextureManager::cachePatch(TextureId tex_id)
 
 
 //
-// TextureManager::getSpriteTextureId
-//
-// Returns the tex_id for the sprite with the given WAD lump number.
-//
-TextureId TextureManager::getSpriteTextureId(unsigned int lumpnum)
-{
-	if (lumpnum >= numlumps)
-		return NOT_FOUND_TEXTURE_ID;
-
-	if (W_LumpLength(lumpnum) == 0)
-		return NOT_FOUND_TEXTURE_ID;
-
-	return (TextureId)lumpnum | SPRITE_TEXTURE_ID_MASK;
-}
-
-
-TextureId TextureManager::getSpriteTextureId(const OString& name)
-{
-	int lumpnum = W_CheckNumForName(name.c_str(), ns_sprites);
-	if (lumpnum >= 0)
-		return getSpriteTextureId(lumpnum);
-	lumpnum = W_CheckNumForName(name.c_str());
-	if (lumpnum >= 0)
-		return getSpriteTextureId(lumpnum);
-	return NOT_FOUND_TEXTURE_ID;
-}
-
-
-//
 // TextureManger::cacheSprite
 //
 void TextureManager::cacheSprite(TextureId tex_id)
 {
 	cachePatch(tex_id);
-}
-
-
-//
-// TextureManager::getFlatTextureId
-//
-// Returns the tex_id for the flat with the given WAD lump number.
-//
-TextureId TextureManager::getFlatTextureId(unsigned int lumpnum)
-{
-	const unsigned int flatcount = mLastFlatLumpNum - mFirstFlatLumpNum + 1;
-	const unsigned int flatnum = lumpnum - mFirstFlatLumpNum;
-
-	// flatnum > number of flats in the WAD file?
-	if (flatnum >= flatcount)
-		return NOT_FOUND_TEXTURE_ID;
-
-	if (W_LumpLength(lumpnum) == 0)
-		return NOT_FOUND_TEXTURE_ID;
-
-	return (TextureId)flatnum | FLAT_TEXTURE_ID_MASK;
-}
-
-
-TextureId TextureManager::getFlatTextureId(const OString& name)
-{
-	int lumpnum = W_CheckNumForName(name.c_str(), ns_flats);
-	if (lumpnum >= 0)
-		return getFlatTextureId(lumpnum);
-	return NOT_FOUND_TEXTURE_ID;
 }
 
 
@@ -1308,30 +1220,6 @@ void TextureManager::cacheFlat(TextureId tex_id)
 		
 		delete [] lumpdata;
 	}
-}
-
-
-//
-// TextureManager::getWallTextureTextureId
-//
-// Returns the tex_id for the wall texture with the given WAD lump number.
-//
-TextureId TextureManager::getWallTextureTextureId(unsigned int texdef_tex_id)
-{
-	// texdef_tex_id > number of wall textures in the WAD file?
-	if (texdef_tex_id >= mTextureDefinitions.size())
-		return NOT_FOUND_TEXTURE_ID;
-
-	return (TextureId)texdef_tex_id | WALLTEXTURE_ID_MASK;
-}
-
-
-TextureId TextureManager::getWallTextureTextureId(const OString& name)
-{
-	TextureNameTranslationMap::const_iterator it = mTextureNameTranslationMap.find(name);
-	if (it != mTextureNameTranslationMap.end())
-		return getWallTextureTextureId(it->second);
-	return NOT_FOUND_TEXTURE_ID;
 }
 
 
@@ -1385,31 +1273,6 @@ void TextureManager::cacheWallTexture(TextureId tex_id)
 
 
 //
-// TextureManager::getRawTextureTextureId
-//
-// Returns the tex_id for the raw image with the given WAD lump number.
-//
-TextureId TextureManager::getRawTextureTextureId(unsigned int lumpnum)
-{
-	if (lumpnum >= numlumps)
-		return NOT_FOUND_TEXTURE_ID;
-
-	if (W_LumpLength(lumpnum) == 0)
-		return NOT_FOUND_TEXTURE_ID;
-	return (TextureId)lumpnum | RAW_TEXTURE_ID_MASK;
-}
-
-
-TextureId TextureManager::getRawTextureTextureId(const OString& name)
-{
-	int lumpnum = W_CheckNumForName(name.c_str());
-	if (lumpnum >= 0)
-		return getRawTextureTextureId(lumpnum);
-	return NOT_FOUND_TEXTURE_ID;
-}
-
-
-//
 // TextureManager::cacheRawTexture
 //
 // Converts a linear 320x200 block of pixels into a Texture 
@@ -1436,31 +1299,6 @@ void TextureManager::cacheRawTexture(TextureId tex_id)
 	}
 }
 	
-
-//
-// TextureManager::getPNGTextureTextureId
-//
-// Returns the tex_id for the PNG format image with the given WAD lump number.
-//
-TextureId TextureManager::getPNGTextureTextureId(unsigned int lumpnum)
-{
-	if (lumpnum >= numlumps)
-		return NOT_FOUND_TEXTURE_ID;
-
-	if (W_LumpLength(lumpnum) == 0)
-		return NOT_FOUND_TEXTURE_ID;
-	return (TextureId)lumpnum | PNG_TEXTURE_ID_MASK;
-}
-
-
-TextureId TextureManager::getPNGTextureTextureId(const OString& name)
-{
-	int lumpnum = W_CheckNumForName(name.c_str());
-	if (lumpnum >= 0)
-		return getPNGTextureTextureId(lumpnum);
-	return NOT_FOUND_TEXTURE_ID;
-}
-
 
 //
 // Res_ReadPNGCallback
@@ -1643,6 +1481,7 @@ TextureId TextureManager::getTextureId(const OString& name, Texture::TextureSour
 
 	TextureId tex_id = NOT_FOUND_TEXTURE_ID;
 
+/*
 	// check for the texture in the default location specified by type
 	if (type == Texture::TEX_FLAT)
 		tex_id = getFlatTextureId(uname);
@@ -1662,6 +1501,7 @@ TextureId TextureManager::getTextureId(const OString& name, Texture::TextureSour
 		tex_id = getFlatTextureId(uname);
 	if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_WALLTEXTURE)
 		tex_id = getWallTextureTextureId(uname);
+*/
 
 	return tex_id;
 }
@@ -1712,24 +1552,28 @@ const Texture* TextureManager::getTexture(const TextureId tex_id)
 }
 
 
+//
+// TextureManager::getTexture
+//
+// Returns the Texture for the supplied ResourceId. If the Texture is not
+// currently cached, it will be loaded from the disk and cached.
+//
 const Texture* TextureManager::getTexture(const ResourceId& res_id)
 {
+	const Texture* texture = NULL;
 	const LumpId& lump_id = res_id.getLumpId();
-	const Texture* texture = mTextureIdMap[lump_id];
-	if (!texture)
+	if (res_id.valid() && lump_id < mTextures.size())
 	{
+		const Texture* texture = mTextures[lump_id];
 		if (lump_id < mTextureLoaders.size())
 			texture = mTextureLoaders[lump_id]->load();
 		if (texture)
-			mTextureIdMap[lump_id] = (Texture*)texture;
+			mTextures[lump_id] = texture;
 
 		// TODO: set mTextureIdMap[lump_id] to not found texture if null
 	}
-
 	return texture;
 }
 
+
 VERSION_CONTROL (res_texture_cpp, "$Id: res_texture.cpp 3945 2013-07-03 14:32:48Z dr_sean $")
-
-
-

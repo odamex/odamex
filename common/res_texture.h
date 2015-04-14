@@ -313,20 +313,12 @@ private:
 // format graphic lumps to be used interchangeably, for example, allowing
 // flats to be used as wall textures.
 //
-// A TextureId for a texture is retrieved by calling getTextureId() with the
-// name of the texture and a texture source type. The name can be either the
-// name of a lump in resource file (in the case of a flat, sprite, or patch)
-// or it can be the name of an entry in one of the TEXTURE* lumps. The texture
-// source type parameter is used to indicate where to initially search for the
-// texture. For example, if the type is TEX_WALLTEXTURE, the TEXTURE* lumps
-// will be searched for a matching name first, followed by flats, patches,
-// and sprites.
+// The TextureManager will create a TextureLoader instance for each graphic
+// lump in the loaded resource files as well as any composite graphics defined
+// in TEXTURE1 and TEXTURE2. The mLumpId field of a ResourceId identifies the
+// index into the mTextures and mTextureLoaders arrays for the cached texture
+// and its TextureLoader instance.
 //
-// A pointer to a Texture object can be retrieved by passing a TextureId
-// to getTexture(). The allocation and freeing of Texture objects is
-// managed internally by TextureManager and as such, users should not store
-// Texture pointers but instead store the TextureId and use getTexture()
-// when a Texture object is needed.
 //
 // TODO: properly load Heretic skies where the texture definition reports
 // the sky texture is 128 pixels high but uses a 200 pixel high patch.
@@ -352,7 +344,7 @@ public:
 	const Texture* getTexture(const ResourceId& res_id);
 
 	Texture* createTexture(const TextureId tex_id, int width, int height);
-	void freeTexture(const TextureId tex_id);
+	void freeTexture(const ResourceId& res_id);
 
 	TextureId createCustomTextureId();
 	void freeCustomTextureId(const TextureId tex_id);
@@ -378,38 +370,30 @@ private:
 	void readAnimatedLump();
 
 	// patches
-	TextureId getPatchTextureId(unsigned int lumpnum);
-	TextureId getPatchTextureId(const OString& name);
 	void cachePatch(TextureId tex_id);
 
 	// sprites
-	TextureId getSpriteTextureId(unsigned int lumpnum);
-	TextureId getSpriteTextureId(const OString& name);
 	void cacheSprite(TextureId tex_id);
 
 	// flats
-	TextureId getFlatTextureId(unsigned int lumpnum);
-	TextureId getFlatTextureId(const OString& name);
 	void cacheFlat(TextureId tex_id);
 
 	// wall textures
-	TextureId getWallTextureTextureId(unsigned int lumpnum);
-	TextureId getWallTextureTextureId(const OString& name);
 	void cacheWallTexture(TextureId tex_id);
 
 	// raw images
-	TextureId getRawTextureTextureId(unsigned int lumpnum);
-	TextureId getRawTextureTextureId(const OString& name);
 	void cacheRawTexture(TextureId tex_id);
 
 	// PNG images
-	TextureId getPNGTextureTextureId(unsigned int lumpnum);
-	TextureId getPNGTextureTextureId(const OString& name);
 	void cachePNGTexture(TextureId tex_id);
 
 
 	typedef std::vector<TextureLoader*> TextureLoaderList;
 	TextureLoaderList		mTextureLoaders;
+
+	typedef std::vector<const Texture*> TextureList;
+	TextureList				mTextures;
+
 
 	// maps texture tex_ids to Texture*
 	typedef OHashTable<TextureId, Texture*> TextureIdMap;
