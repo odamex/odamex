@@ -212,7 +212,7 @@ public:
 
 	size_t max_size() const
 	{
-		return mSize;
+		return MAX_SIZE;
 	}
 
 	size_t capacity() const
@@ -364,9 +364,7 @@ private:
 	{
 		if (mUsed == mSize)
 		{
-			unsigned int newsize = 2 * mSize;
-			if (newsize > MAX_SIZE)
-				newsize = MAX_SIZE;
+			unsigned int newsize = 2 * mSize > MAX_SIZE ? MAX_SIZE : 2 * mSize;
 			// is it full and not able to be resized?
 			assert(mSize != newsize);
 			if (mSize == newsize)
