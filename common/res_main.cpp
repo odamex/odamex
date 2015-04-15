@@ -33,6 +33,7 @@
 #include "res_main.h"
 #include "res_fileaccessor.h"
 #include "res_container.h"
+#include "res_texture.h"
 
 #include "m_ostring.h"
 #include "hashtable.h"
@@ -550,6 +551,11 @@ void ResourceManager::openResourceFiles(const std::vector<std::string>& filename
 {
 	for (std::vector<std::string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it)
 		openResourceFile(*it);
+	
+	// Add TextureManager to the list of resource containers
+	const ResourceContainerId& texture_manager_container_id = mContainers.size();
+	ResourceContainer* texture_manager_container = new TextureManager(texture_manager_container_id, this);
+	mContainers.push_back(texture_manager_container);
 }
 
 

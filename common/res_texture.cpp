@@ -38,6 +38,7 @@
 #include <math.h>
 
 #include "res_texture.h"
+#include "res_main.h"
 #include "v_video.h"
 
 #ifdef USE_PNG
@@ -80,19 +81,6 @@
 		#endif
 	#endif	// PNG_LIBPNG_VER < 10400
 #endif	// USE_PNG
-
-
-TextureManager texturemanager;
-
-void Res_InitTextureManager()
-{
-	texturemanager.startup();
-}
-
-void Res_ShutdownTextureManager()
-{
-	texturemanager.shutdown();
-}
 
 
 //
@@ -231,8 +219,9 @@ void Res_TransposeImage(byte* dest, const byte* source, int width, int height)
 //
 const Texture* Res_LoadTexture(const char* name)
 {
-	TextureId tex_id = texturemanager.getTextureId(name, Texture::TEX_PATCH);
-	return texturemanager.getTexture(tex_id);
+//	TextureId tex_id = texturemanager.getTextureId(name, Texture::TEX_PATCH);
+//	return texturemanager.getTexture(tex_id);
+	return NULL;
 }
 
 
@@ -406,8 +395,7 @@ const Texture* FlatTextureLoader::load() const
 		else
 			width = height = Log2(sqrt(lump_length));	// probably not pretty... 
 
-		const TextureId tex_id = TextureManager::NOT_FOUND_TEXTURE_ID;
-		Texture* texture = texturemanager.createTexture(tex_id, width, height);
+		Texture* texture = Texture::createTexture(width, height);
 
 		if (clientside)
 		{
@@ -448,8 +436,7 @@ const Texture* PatchTextureLoader::load() const
 		int16_t offsetx = LESHORT(*(int16_t*)(lump_data + 4));
 		int16_t offsety = LESHORT(*(int16_t*)(lump_data + 6));
 
-		const TextureId tex_id = TextureManager::NOT_FOUND_TEXTURE_ID;
-		Texture* texture = texturemanager.createTexture(tex_id, width, height);
+		Texture* texture = Texture::createTexture(width, height);
 //		texture->mOffsetX = offsetx;
 //		texture->mOffsetY = offsety;
 
@@ -485,8 +472,7 @@ CompositeTextureLoader::CompositeTextureLoader(const CompositeTextureDefinition&
 
 const Texture* CompositeTextureLoader::load() const
 {
-	const TextureId tex_id = TextureManager::NOT_FOUND_TEXTURE_ID;
-	Texture* texture = texturemanager.createTexture(tex_id, mTextureDef.mWidth, mTextureDef.mHeight);
+	Texture* texture = Texture::createTexture(mTextureDef.mWidth, mTextureDef.mHeight);
 //	if (mTextureDef.mScaleX)
 //		texture->mScaleX = mTextureDef.mScaleX << (FRACBITS - 3);
 //	if (mTextureDef.mScaleY)
@@ -536,17 +522,33 @@ const Texture* CompositeTextureLoader::load() const
 // define GARBAGE_TEXTURE_ID to be the first wall texture (AASTINKY)
 const TextureId TextureManager::GARBAGE_TEXTURE_ID = TextureManager::WALLTEXTURE_ID_MASK;
 
-TextureManager::TextureManager() :
+TextureManager::TextureManager(const ResourceContainerId& container_id, ResourceManager* manager) :
+	mResourceContainerId(container_id),
 	mTextureIdMap(2048),
 	mTextureNameTranslationMap(512),
 	mFreeCustomTextureIdsHead(0),
 	mFreeCustomTextureIdsTail(TextureManager::MAX_CUSTOM_TEXTURE_IDS)
 {
+	// initialize the FLATS data
+//	mFirstFlatLumpNum = W_GetNumForName("F_START") + 1;
+//	mLastFlatLumpNum = W_GetNumForName("F_END") - 1;
+	
+	// initialize the TEXTURE1 & TEXTURE2 data
+	addTextureDirectories();
+
+	generateNotFoundTexture();
+
+	if (clientside)
+	{	
+		readAnimDefLump();
+		readAnimatedLump();
+	}
 }
 
 
 TextureManager::~TextureManager()
 {
+	clear();
 }
 
 
@@ -675,6 +677,7 @@ void TextureManager::precache()
 //
 void TextureManager::readAnimDefLump()
 {
+	/*
 	const ResourceIdList res_ids = Res_GetAllResourceIds("ANIMDEFS");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
@@ -682,16 +685,19 @@ void TextureManager::readAnimDefLump()
 
 		while (SC_GetString())
 		{
-			if (SC_Compare("flat") || SC_Compare("texture"))
+			ResourcePath path;
+			if (SC_Compare("flat"))
+				path = flats_directory_name;
+			else if (SC_Compare("texture"))
+				path = textures_directory_name;
+
+			if (!path.empty())
 			{
-				anim_t anim;
-
-				Texture::TextureSourceType texture_type = Texture::TEX_WALLTEXTURE;
-				if (SC_Compare("flat"))
-					texture_type = Texture::TEX_FLAT;
-
 				SC_MustGetString();
-				anim.basepic = texturemanager.getTextureId(sc_String, texture_type);
+				const OString lump_name(sc_String);
+
+				anim_t anim;
+				anim.basepic = Res_GetResourceId(lump_name, path);
 
 				anim.curframe = 0;
 				anim.numframes = 0;
@@ -754,18 +760,20 @@ void TextureManager::readAnimDefLump()
 			else if (SC_Compare("warp"))
 			{
 				SC_MustGetString();
-				if (SC_Compare("flat") || SC_Compare("texture"))
+
+				ResourcePath path;
+				if (SC_Compare("flat"))
+					path = flats_directory_name;
+				else if (SC_Compare("texture"))
+					path = textures_directory_name;
+
+				if (!path.empty())
 				{
-
-					Texture::TextureSourceType texture_type = Texture::TEX_WALLTEXTURE;
-					if (SC_Compare("flat"))
-						texture_type = Texture::TEX_FLAT;
-
 					SC_MustGetString();
+					const OString lump_name(sc_String);
 
-					TextureId tex_id = texturemanager.getTextureId(sc_String, texture_type);
-					if (tex_id == TextureManager::NOT_FOUND_TEXTURE_ID ||
-						tex_id == TextureManager::NO_TEXTURE_ID)
+					const ResourceId& res_id = Res_GetResourceId(lump_name, path);
+					if (!res_id.valid())
 						continue;
 
 					warp_t warp;
@@ -777,7 +785,7 @@ void TextureManager::readAnimDefLump()
 					int height = 1 << warp.original_texture->getHeightBits();
 
 					// create a new texture of the same size for the warped image
-					warp.warped_texture = createTexture(tex_id, width, height);
+					warp.warped_texture = Texture::createTexture(width, height);
 
 					mWarpDefs.push_back(warp);
 				}
@@ -789,6 +797,7 @@ void TextureManager::readAnimDefLump()
 		}
 		SC_Close ();
 	}
+	*/
 }
 
 
@@ -833,10 +842,11 @@ void TextureManager::readAnimatedLump()
 
 	for (byte* ptr = lumpdata; *ptr != 255; ptr += 23)
 	{
+		/*
 		anim_t anim;
 
-		Texture::TextureSourceType texture_type = *(ptr + 0) == 1 ?
-					Texture::TEX_WALLTEXTURE : Texture::TEX_FLAT;
+		const ResourcePath& path = *(ptr + 0) == 1 ?
+				textures_directory_name : flats_directory_name;
 
 		const char* startname = (const char*)(ptr + 10);
 		const char* endname = (const char*)(ptr + 1);
@@ -869,6 +879,7 @@ void TextureManager::readAnimatedLump()
 		}
 
 		mAnimDefs.push_back(anim);
+		*/
 	}
 
 	delete [] lumpdata;
@@ -1066,6 +1077,39 @@ void TextureManager::addTextureDirectories()
 	}
 
 	delete [] pnames_lookup;
+}
+
+
+//
+// TextureManager::registerTextureResources
+//
+// Creates a TextureLoader instance for each texture resource in the provided
+// list of ResourceIds.
+//
+void TextureManager::registerTextureResources(const std::vector<ResourceId>& res_ids, ResourceManager* manager)
+{
+	for (std::vector<ResourceId>::const_iterator it = res_ids.begin(); it != res_ids.end(); ++it)
+	{
+		const ResourceId& res_id = *it;
+		if (res_id.valid())
+		{
+			const ResourcePath& path = res_id.getResourcePath();
+			const OString& directory = path.first();
+			TextureLoader* loader = NULL;
+
+			if (directory == flats_directory_name)
+				loader = new FlatTextureLoader(res_id);
+			else if (directory == patches_directory_name)
+				loader = new PatchTextureLoader(res_id);
+
+			if (loader)
+			{
+				const LumpId lump_id = mTextureLoaders.size();
+				mTextureLoaders.push_back(loader);
+				manager->addResource(path, 255, lump_id); 
+			}
+		}
+	}
 }
 
 

@@ -259,10 +259,6 @@ void D_Init()
 	V_InitPalette("PLAYPAL");
 	R_InitColormaps();
 
-//	if (first_time)
-//		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
-//	Res_InitTextureManager();
-
 	// [RH] Initialize localizable strings.
 	const ResourceId& language_res_id = Res_GetResourceId("LANGUAGE");
 	size_t language_length = Res_GetLumpLength(language_res_id);
@@ -328,8 +324,6 @@ void STACK_ARGS D_Shutdown()
 
 	// close all open WAD files
 	W_Close();
-
-//	Res_ShutdownTextureManager();
 
 	R_ShutdownColormaps();
 

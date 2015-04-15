@@ -249,7 +249,7 @@ class WadResourceContainer : public ResourceContainer
 public:
 	WadResourceContainer(
 			FileAccessor* file,
-			const ResourceContainerId& file_id,
+			const ResourceContainerId& container_id,
 			ResourceManager* manager);
 	
 	virtual ~WadResourceContainer();

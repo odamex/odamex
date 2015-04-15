@@ -33,14 +33,14 @@
 #include "m_ostring.h"
 #include "hashtable.h"
 
+#include "res_main.h"
+
 typedef unsigned int TextureId;
 
 class Texture;
 class TextureManager;
 class ResourceId;
-
-void Res_InitTextureManager();
-void Res_ShutdownTextureManager();
+class ResourceManager;
 
 const Texture* Res_LoadTexture(const char* name);
 
@@ -348,11 +348,31 @@ private:
 // The texture height should be adjusted to the height of the tallest
 // patch in the texture.
 //
-class TextureManager
+class TextureManager : public ResourceContainer
 {
 public:
-	TextureManager();
+	TextureManager(const ResourceContainerId& container_id, ResourceManager* manager);
 	~TextureManager();
+
+	virtual const ResourceContainerId& getResourceContainerId() const
+	{
+		return mResourceContainerId;
+	}
+
+	virtual size_t getLumpCount() const
+	{
+		return 0;
+	}
+
+	virtual size_t getLumpLength(const ResourceId& res_id) const
+	{
+		return 0;
+	}
+
+	virtual size_t readLump(const ResourceId& res_id, void* data, size_t length) const
+	{
+		return 0;
+	}
 
 	void startup();
 	void shutdown();
@@ -392,6 +412,8 @@ private:
 	void readAnimDefLump();
 	void readAnimatedLump();
 
+	void registerTextureResources(const std::vector<ResourceId>& res_ids, ResourceManager* manager);
+
 	// patches
 	void cachePatch(TextureId tex_id);
 
@@ -410,6 +432,7 @@ private:
 	// PNG images
 	void cachePNGTexture(TextureId tex_id);
 
+	const ResourceContainerId		mResourceContainerId;
 
 	typedef std::vector<TextureLoader*> TextureLoaderList;
 	TextureLoaderList		mTextureLoaders;
@@ -462,7 +485,7 @@ private:
 	struct anim_t
 	{
 		static const unsigned int MAX_ANIM_FRAMES = 32;
-		TextureId		basepic;
+		ResourceId		basepic;
 		short			numframes;
 		byte			countdown;
 		byte			curframe;
@@ -482,7 +505,5 @@ private:
 
 	std::vector<warp_t>			mWarpDefs;
 };
-
-extern TextureManager texturemanager;
 
 #endif // __RES_TEXTURE_H__
