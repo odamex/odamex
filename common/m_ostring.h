@@ -496,7 +496,7 @@ private:
 	typedef unsigned int StringIdType;
 	typedef unsigned int HashedStringType;
 
-	typedef SArray<StringRecord> StringTable;
+	typedef SArray<StringRecord, 16> StringTable;
 	typedef OHashTable<HashedStringType, StringIdType> StringLookupTable;
 
 
