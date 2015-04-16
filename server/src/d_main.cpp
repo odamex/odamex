@@ -262,17 +262,6 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 	V_InitPalette("PLAYPAL");
 	R_InitColormaps();
 
-	// [RH] Initialize localizable strings.
-	const ResourceId& language_res_id = Res_GetResourceId("LANGUAGE");
-	size_t language_length = Res_GetLumpLength(language_res_id);
-	byte* language_data = new byte[language_length];
-	Res_ReadLump(language_res_id, language_data);
-
-	GStrings.FreeData();
-	GStrings.LoadStrings(language_data, language_length, STRING_TABLE_SIZE, false);
-	GStrings.Compact();
-	delete [] language_data;
-
 	// init the renderer
 	if (first_time)
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
