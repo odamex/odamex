@@ -144,13 +144,12 @@ public:
 			return temp;
 		}
 
+	private:
 		friend class SArray<VT>;
 
 		generic_iterator(unsigned int slot, ISAT* sarray) :
 			mSlot(slot), mSArray(sarray)
 		{ }
-
-	private:
 
 		unsigned int	mSlot;
 		ISAT*			mSArray;
@@ -240,6 +239,11 @@ public:
 		return const_iterator(NOT_FOUND, this);
 	}	
 
+	bool validate(const SArrayId id) const
+	{
+		return getSlot(id) != NOT_FOUND;
+	}
+
 	iterator find(const SArrayId id)
 	{
 		return iterator(getSlot(id), this);
@@ -252,21 +256,36 @@ public:
 
 	VT& get(const SArrayId id)
 	{
-		return mItemRecords[getSlot(id)].mItem;
+		unsigned int slot = getSlot(id);
+		assert(slot != NOT_FOUND);
+		return mItemRecords[slot].mItem;
 	}
 
 	const VT& get(const SArrayId id) const
 	{
-		return mItemRecords[getSlot(id)].mItem;
+		unsigned int slot = getSlot(id);
+		assert(slot != NOT_FOUND);
+		return mItemRecords[slot].mItem;
 	}
 		
 	VT& operator[](const SArrayId id)
 	{
-		return mItemRecords[getSlot(id)].mItem;
+		unsigned int slot = getSlot(id);
+		assert(slot != NOT_FOUND);
+		return mItemRecords[slot].mItem;
+	}
+
+	const VT& operator[](const SArrayId id) const
+	{
+		unsigned int slot = getSlot(id);
+		assert(slot != NOT_FOUND);
+		return mItemRecords[slot].mItem;
 	}
 
 	const SArrayId getId(const VT& item) const
 	{
+		unsigned int slot = getSlot(item);
+		assert(slot != NOT_FOUND);
 		return mItemRecords[getSlot(item)].mId;
 	}
 
@@ -285,16 +304,21 @@ public:
 
 	inline void erase(const SArrayId id)
 	{
-		eraseSlot(getSlot(id));
+		unsigned int slot = getSlot(id);
+		assert(slot != NOT_FOUND);
+		eraseSlot(slot);
 	}
 
 	inline void erase(const VT& item)
 	{
-		eraseSlot(getSlot(item));
+		unsigned int slot = getSlot(item);
+		assert(slot != NOT_FOUND);
+		eraseSlot(slot);
 	}
 
 	inline void erase(iterator it)
 	{
+		assert(it.slot != NOT_FOUND);
 		eraseSlot(it.mSlot);
 	}
 
@@ -326,15 +350,19 @@ private:
 
 	inline unsigned int getSlot(const SArrayId id) const
 	{
-		assert((id & SLOT_MASK) < mSize);
-		if (mItemRecords[id & SLOT_MASK].mId == id)
-			return id & SLOT_MASK;
+		unsigned int slot = id & SLOT_MASK;
+		assert(slot < mSize);
+		if (mItemRecords[slot].mId == id)
+			return slot;
 		return NOT_FOUND;
 	}
 
 	inline unsigned int getSlot(const VT& item) const
 	{
-		return (ItemRecord*)(&item) - mItemRecords;
+		unsigned int slot = (ItemRecord*)(&item) - mItemRecords;
+		if (slot < mSize && slotUsed(slot))
+			return slot;
+		return NOT_FOUND;
 	}
 
 	inline const SArrayId generateId(unsigned int slot)
@@ -362,6 +390,7 @@ private:
 
 	inline unsigned int insertSlot()
 	{
+		// need to resize?
 		if (mUsed == mSize)
 		{
 			unsigned int newsize = 2 * mSize > MAX_SIZE ? MAX_SIZE : 2 * mSize;
