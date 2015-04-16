@@ -44,17 +44,17 @@
 // 
 // Notes:
 //
-// There are a fixed number of slots for the array, between 1 and 65536.
+// There are a fixed number of slots for the array, between 1 and MAX_SIZE.
 // Each slot has an item (of type VT) and an ID field. Unique IDs are
 // delegated to slots upon insertion of a new item and are composed of two
-// separate partitions: The highest 16 bits are from mIdKey, which is
-// incremented each time an item is inserted. The lowest 16 bits are simply
-// the slot number.
+// separate partitions: The highest KEY_BITS bits are from mIdKey, which is
+// incremented each time an item is inserted. The lowest SLOT_BITS bits are
+// simply the slot number.
 //
 // A linked list of slots that have been freed is maintained. For slots
 // that have been freed, a slot's ID field contains the slot number of the
 // next slot in the list of freed slots. A slot can be identified as being
-// freed by having 0x0000 for the key portion of the ID field or by having
+// freed by having 0x0 for the key portion of the ID field or by having
 // its ID equal to NOT_FOUND.
 //
 // To maintain data density for good cache usage, it is preferable to resuse
@@ -71,11 +71,11 @@ typedef unsigned int SArrayId;
 // SArray interface & inline implementation
 // ----------------------------------------------------------------------------
 
-template <typename VT>
+template <typename VT, int N = 16>
 class SArray
 {
 private:
-	typedef SArray<VT> SArrayType;
+	typedef SArray<VT, N> SArrayType;
 
 	struct ItemRecord
 	{
@@ -144,13 +144,12 @@ public:
 			return temp;
 		}
 
+	private:
 		friend class SArray<VT>;
 
 		generic_iterator(unsigned int slot, ISAT* sarray) :
 			mSlot(slot), mSArray(sarray)
 		{ }
-
-	private:
 
 		unsigned int	mSlot;
 		ISAT*			mSArray;
@@ -164,7 +163,7 @@ public:
 
 	SArray(unsigned int size)
 	{
-		mSize = size > 65536 ? 65536 : size;
+		mSize = size > MAX_SIZE ? MAX_SIZE : size;
 		mItemRecords = new ItemRecord[mSize];
 		clear();
 	}
@@ -196,8 +195,8 @@ public:
 	{
 		mUsed = 0;
 		mNextUnused = 0;
-		mFreeHead = SArray::NOT_FOUND;
-		mIdKey = SArray::MIN_KEY;
+		mFreeHead = NOT_FOUND;
+		mIdKey = MIN_KEY;
 	}
 
 	bool empty() const
@@ -212,7 +211,7 @@ public:
 
 	size_t max_size() const
 	{
-		return mSize;
+		return MAX_SIZE;
 	}
 
 	size_t capacity() const
@@ -232,13 +231,18 @@ public:
 
 	iterator end()
 	{
-		return iterator(SArray::NOT_FOUND, this);
+		return iterator(NOT_FOUND, this);
 	}
 
 	const_iterator end() const
 	{
-		return const_iterator(SArray::NOT_FOUND, this);
+		return const_iterator(NOT_FOUND, this);
 	}	
+
+	bool validate(const SArrayId id) const
+	{
+		return getSlot(id) != NOT_FOUND;
+	}
 
 	iterator find(const SArrayId id)
 	{
@@ -252,21 +256,36 @@ public:
 
 	VT& get(const SArrayId id)
 	{
-		return mItemRecords[getSlot(id)].mItem;
+		unsigned int slot = getSlot(id);
+		assert(slot != NOT_FOUND);
+		return mItemRecords[slot].mItem;
 	}
 
 	const VT& get(const SArrayId id) const
 	{
-		return mItemRecords[getSlot(id)].mItem;
+		unsigned int slot = getSlot(id);
+		assert(slot != NOT_FOUND);
+		return mItemRecords[slot].mItem;
 	}
 		
 	VT& operator[](const SArrayId id)
 	{
-		return mItemRecords[getSlot(id)].mItem;
+		unsigned int slot = getSlot(id);
+		assert(slot != NOT_FOUND);
+		return mItemRecords[slot].mItem;
+	}
+
+	const VT& operator[](const SArrayId id) const
+	{
+		unsigned int slot = getSlot(id);
+		assert(slot != NOT_FOUND);
+		return mItemRecords[slot].mItem;
 	}
 
 	const SArrayId getId(const VT& item) const
 	{
+		unsigned int slot = getSlot(item);
+		assert(slot != NOT_FOUND);
 		return mItemRecords[getSlot(item)].mId;
 	}
 
@@ -285,16 +304,21 @@ public:
 
 	inline void erase(const SArrayId id)
 	{
-		eraseSlot(getSlot(id));
+		unsigned int slot = getSlot(id);
+		assert(slot != NOT_FOUND);
+		eraseSlot(slot);
 	}
 
 	inline void erase(const VT& item)
 	{
-		eraseSlot(getSlot(item));
+		unsigned int slot = getSlot(item);
+		assert(slot != NOT_FOUND);
+		eraseSlot(slot);
 	}
 
 	inline void erase(iterator it)
 	{
+		assert(it.slot != NOT_FOUND);
 		eraseSlot(it.mSlot);
 	}
 
@@ -321,35 +345,39 @@ private:
 		mSize = newsize;
 		mItemRecords = newitemrecords;
 		assert(mItemRecords != NULL);
-		assert(mSize <= 65536);
+		assert(mSize <= MAX_SIZE);
 	}
 
 	inline unsigned int getSlot(const SArrayId id) const
 	{
-		assert((id & 0xFFFF) < mSize);
-		if (mItemRecords[id & 0xFFFF].mId == id)
-			return id & 0xFFFF;
-		return SArray::NOT_FOUND;
+		unsigned int slot = id & SLOT_MASK;
+		assert(slot < mSize);
+		if (mItemRecords[slot].mId == id)
+			return slot;
+		return NOT_FOUND;
 	}
 
 	inline unsigned int getSlot(const VT& item) const
 	{
-		return (ItemRecord*)(&item) - mItemRecords;
+		unsigned int slot = (ItemRecord*)(&item) - mItemRecords;
+		if (slot < mSize && slotUsed(slot))
+			return slot;
+		return NOT_FOUND;
 	}
 
 	inline const SArrayId generateId(unsigned int slot)
 	{
 		assert(slot < mSize);
-		SArrayId id = (mIdKey << 16) | slot;
+		SArrayId id = (mIdKey << SLOT_BITS) | slot;
 		mIdKey++;
-		if (mIdKey > SArray::MAX_KEY)
-			mIdKey = SArray::MIN_KEY;
+		if (mIdKey > MAX_KEY)
+			mIdKey = MIN_KEY;
 		return id;
 	}
 
 	inline bool slotUsed(unsigned int slot) const
 	{
-		return ((mItemRecords[slot].mId >> 16) >= SArray::MIN_KEY);
+		return ((mItemRecords[slot].mId >> SLOT_BITS) >= MIN_KEY);
 	}
 
 	inline unsigned int nextUsed(unsigned int slot) const
@@ -357,22 +385,25 @@ private:
 		while (slot < mNextUnused && !slotUsed(slot))
 			slot++;
 		assert(slot < mSize);
-		return (slot < mNextUnused) ? slot : SArray::NOT_FOUND;
+		return (slot < mNextUnused) ? slot : NOT_FOUND;
 	}
 
 	inline unsigned int insertSlot()
 	{
+		// need to resize?
 		if (mUsed == mSize)
 		{
-			unsigned int newsize = std::min<unsigned int>(2 * mSize, 65536);
+			unsigned int newsize = 2 * mSize > MAX_SIZE ? MAX_SIZE : 2 * mSize;
+			// is it full and not able to be resized?
+			assert(mSize != newsize);
 			if (mSize == newsize)
-				return SArray::NOT_FOUND;
+				return NOT_FOUND;
 			else
 				resize(newsize);
 		}
 
 		unsigned int slot = mFreeHead;
-		if (slot != SArray::NOT_FOUND)
+		if (slot != NOT_FOUND)
 			mFreeHead = mItemRecords[slot].mId;
 		else
 			slot = mNextUnused++;
@@ -409,10 +440,18 @@ private:
 		mIdKey = other.mIdKey;
 	}
 
-	static const unsigned int MIN_KEY = 0x0002;
-	static const unsigned int MAX_KEY = 0xFFFF;
+	static const unsigned int SLOT_BITS = N; 
+	static const unsigned int KEY_BITS = 32 - SLOT_BITS;
+	static const unsigned int MAX_SIZE = 1 << SLOT_BITS;
 
-	static const size_t NOT_FOUND = 0x0001FFFF;
+	static const unsigned int MIN_KEY = 2;
+	static const unsigned int MAX_KEY = (1 << KEY_BITS) - 1;
+
+	static const unsigned int MIN_SLOT = 0;
+	static const unsigned int MAX_SLOT = (1 << SLOT_BITS) - 1; 
+	static const unsigned int SLOT_MASK = (1 << SLOT_BITS) - 1;
+
+	static const unsigned int NOT_FOUND = (1 << SLOT_BITS) | MAX_SLOT;
 
 	ItemRecord*		mItemRecords;
 	unsigned int	mSize;
