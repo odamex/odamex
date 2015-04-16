@@ -27,7 +27,7 @@
 
 #include "res_main.h"
 
-void SC_OpenResourceLump(const ResourceId& res_id);
+void SC_OpenResourceLump(const ResourceId res_id);
 void SC_OpenFile(const char *name);
 void SC_OpenMem(const char *name, char *buffer, int size);
 void SC_Close();

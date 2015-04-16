@@ -1066,8 +1066,8 @@ void S_ChangeMusic (std::string musicname, int looping)
 
 	if (!(f = fopen (musicname.c_str(), "rb")))
 	{
-		const ResourceId& res_id = Res_GetResourceId(musicname);
-		if (!res_id.valid())
+		const ResourceId res_id = Res_GetResourceId(musicname);
+		if (!Res_CheckLump(res_id))
 		{
 			Printf(PRINT_HIGH, "Music lump \"%s\" not found\n", musicname.c_str());
 			return;

@@ -48,7 +48,7 @@ CVAR_FUNC_IMPL(language)
 	if (level.behavior != NULL)
 		level.behavior->PrepLocale(LanguageIDs[0], LanguageIDs[1], LanguageIDs[2], LanguageIDs[3]);
 
-	const ResourceId& language_res_id = Res_GetResourceId("LANGUAGE");
+	const ResourceId language_res_id = Res_GetResourceId("LANGUAGE");
 	size_t language_length = Res_GetLumpLength(language_res_id);
 	byte* language_data = new byte[language_length];
 	Res_ReadLump(language_res_id, language_data);

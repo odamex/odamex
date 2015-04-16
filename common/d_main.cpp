@@ -202,7 +202,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
-	const ResourceId& language_res_id = Res_GetResourceId("LANGUAGE");
+	const ResourceId language_res_id = Res_GetResourceId("LANGUAGE");
 	size_t language_length = Res_GetLumpLength(language_res_id);
 	byte* language_data = new byte[language_length];
 	Res_ReadLump(language_res_id, language_data);

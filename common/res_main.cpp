@@ -47,10 +47,6 @@
 #include "z_zone.h"
 
 
-// Create a dummy ResourceId instance that will be used to indicate a
-// ResourceId is invalid.
-const ResourceId ResourceManager::RESOURCE_NOT_FOUND = ResourceId();
-
 static bool Res_CheckWadFile(const OString& filename);
 static bool Res_CheckDehackedFile(const OString& filename);
 
@@ -206,9 +202,9 @@ SingleLumpResourceContainer::SingleLumpResourceContainer(
 		if (Res_CheckDehackedFile(filename))
 			lump_name = "DEHACKED";
 
-		const LumpId lump_id = static_cast<LumpId>(0);
+		const LumpId lump_id = 0;
 		ResourcePath path = Res_MakeResourcePath(lump_name, global_directory_name);
-		manager->addResource(path, mResourceContainerId, lump_id);
+		manager->addResource(path, this, lump_id);
 	}
 }
 
@@ -225,9 +221,9 @@ size_t SingleLumpResourceContainer::getLumpCount() const
 //
 // SingleLumpResourceContainer::getLumpLength
 //
-size_t SingleLumpResourceContainer::getLumpLength(const ResourceId& res_id) const
+size_t SingleLumpResourceContainer::getLumpLength(const LumpId lump_id) const
 {
-	if (checkLump(res_id))
+	if (lump_id < getLumpCount())
 		return mFile->size();
 	return 0;
 }
@@ -236,11 +232,11 @@ size_t SingleLumpResourceContainer::getLumpLength(const ResourceId& res_id) cons
 //
 // SingleLumpResourceContainer::readLump
 //
-size_t SingleLumpResourceContainer::readLump(const ResourceId& res_id, void* data, size_t length) const
+size_t SingleLumpResourceContainer::readLump(const LumpId lump_id, void* data, size_t length) const
 {
-	length = std::min(length, getLumpLength(res_id));
-	if (checkLump(res_id))
-		return mFile->read(data, length);
+	length = std::min(length, getLumpLength(lump_id));
+	if (length > 0)
+		return mFile->read(data, length); 
 	return 0;
 }
 
@@ -397,7 +393,7 @@ WadResourceContainer::WadResourceContainer(
 			}
 			
 			path += name;
-			manager->addResource(path, mResourceContainerId, wad_lump_num);
+			manager->addResource(path, this, wad_lump_num);
 		}
 	}
 
@@ -444,10 +440,10 @@ size_t WadResourceContainer::getLumpCount() const
 //
 // WadResourceContainer::getLumpLength
 //
-size_t WadResourceContainer::getLumpLength(const ResourceId& res_id) const
+size_t WadResourceContainer::getLumpLength(const LumpId lump_id) const
 {
-	if (checkLump(res_id))
-		return mDirectory->getLength(res_id.getLumpId());
+	if (lump_id < getLumpCount())
+		return mDirectory->getLength(lump_id);
 	return 0;
 }
 
@@ -455,14 +451,14 @@ size_t WadResourceContainer::getLumpLength(const ResourceId& res_id) const
 //
 // WadResourceContainer::readLump
 //
-size_t WadResourceContainer::readLump(const ResourceId& res_id, void* data, size_t length) const
+size_t WadResourceContainer::readLump(const LumpId lump_id, void* data, size_t length) const
 {
-	length = std::min(length, getLumpLength(res_id));
-	if (checkLump(res_id))
+	length = std::min(length, getLumpLength(lump_id));
+	if (length > 0)
 	{
-		size_t offset = mDirectory->getOffset(res_id.getLumpId());
+		size_t offset = mDirectory->getOffset(lump_id);
 		mFile->seek(offset);
-		return mFile->read(data, length);
+		return mFile->read(data, length); 
 	}
 	return 0;
 }
@@ -483,11 +479,10 @@ size_t WadResourceContainer::readLump(const ResourceId& res_id, void* data, size
 static const size_t initial_lump_count = 4096;
 
 ResourceManager::ResourceManager() :
-	mResourceIdLookup(2 * initial_lump_count),
-	mResourcePathLookup(2 * initial_lump_count)
-{
-	mResourceIds.reserve(initial_lump_count);
-}
+	mResources(initial_lump_count),
+	mTextureManagerContainerId(static_cast<ResourceContainerId>(-1)),
+	mResourceIdLookup(2 * initial_lump_count)
+{ }
 
 
 //
@@ -553,8 +548,8 @@ void ResourceManager::openResourceFiles(const std::vector<std::string>& filename
 		openResourceFile(*it);
 	
 	// Add TextureManager to the list of resource containers
-	const ResourceContainerId& texture_manager_container_id = mContainers.size();
-	ResourceContainer* texture_manager_container = new TextureManager(texture_manager_container_id, this);
+	mTextureManagerContainerId = mContainers.size();
+	ResourceContainer* texture_manager_container = new TextureManager(mTextureManagerContainerId, this);
 	mContainers.push_back(texture_manager_container);
 }
 
@@ -567,8 +562,7 @@ void ResourceManager::openResourceFiles(const std::vector<std::string>& filename
 //
 void ResourceManager::closeAllResourceFiles()
 {
-	mResourcePathLookup.clear();
-	mResourceIds.clear();
+	mResources.clear();
 
 	for (std::vector<ResourceContainer*>::iterator it = mContainers.begin(); it != mContainers.end(); ++it)
 		delete *it;
@@ -588,42 +582,40 @@ void ResourceManager::closeAllResourceFiles()
 //
 // Adds a resource lump to the lookup tables and assigns it a new ResourceId.
 //
-const ResourceId& ResourceManager::addResource(
+const ResourceId ResourceManager::addResource(
 		const ResourcePath& path,
-		const ResourceContainerId& container_id,
-		const LumpId& lump_id)
+		const ResourceContainer* container,
+		const LumpId lump_id)
 {
-	size_t index = mResourceIds.size();
-	mResourceIds.push_back(ResourceId(path, container_id, lump_id));
-	ResourceId& res_id = mResourceIds[index];
-	res_id.mIndex = index;
+	const ResourceContainerId& container_id = container->getResourceContainerId();
 
-	// Add the index to the ResourceIdLookupTable
+	const ResourceId res_id = mResources.insert();
+	ResourceRecord& res_rec = mResources.get(res_id);
+	res_rec.mPath = path;
+	res_rec.mResourceContainerId = container_id;
+	res_rec.mLumpId = lump_id;
+
+	// Add the ResourceId to the ResourceIdLookupTable
 	// ResourceIdLookupTable uses a ResourcePath key and value that is a std::vector
-	// of indices to the mResourceIds std::vector.
+	// of ResourceIds.
 	ResourceIdLookupTable::iterator it = mResourceIdLookup.find(path);
 	if (it != mResourceIdLookup.end())
 	{
 		// A resource with the same path already exists. Add this ResourceId
 		// to the end of the list of ResourceIds with a matching path.
-		ResourceIdIndexList& index_list = it->second;
-		assert(!index_list.empty());
-		index_list.push_back(index);
+		ResourceIdList& res_id_list = it->second;
+		assert(!res_id_list.empty());
+		res_id_list.push_back(res_id);
 	}
 	else
 	{
 		// No other resources with the same path exist yet. Create a new list
 		// for ResourceIds with a matching path.
-		ResourceIdIndexList index_list;
-		index_list.push_back(index);
-		mResourceIdLookup.insert(std::make_pair(path, index_list));
+		ResourceIdList res_id_list;
+		res_id_list.push_back(res_id);
+		mResourceIdLookup.insert(std::make_pair(path, res_id_list));
 	}
 	
-	// Add the path to the ResourcePathLookupTable
-	mResourcePathLookup.insert(std::make_pair(index, path));
-
-	assert(res_id.valid());
-	assert(getResourceId(path) == res_id);
 	return res_id;
 }
 
@@ -635,16 +627,16 @@ const ResourceId& ResourceManager::addResource(
 // one ResourceId match the given path name, the ResouceId from the most
 // recently loaded resource file will be returned.
 //
-const ResourceId& ResourceManager::getResourceId(const ResourcePath& path) const
+const ResourceId ResourceManager::getResourceId(const ResourcePath& path) const
 {
 	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(path);
 	if (it != mResourceIdLookup.end())
 	{
-		const ResourceIdIndexList& index_list = it->second;
-		assert(!index_list.empty());
-		size_t index = index_list.back();
-		if (index < mResourceIds.size())
-			return mResourceIds[index];
+		const ResourceIdList& res_id_list = it->second;
+		assert(!res_id_list.empty());
+		const ResourceId res_id = res_id_list.back();
+		assert(validateResourceId(res_id));
+		return res_id;
 	}
 	
 	return ResourceManager::RESOURCE_NOT_FOUND;
@@ -659,36 +651,25 @@ const ResourceId& ResourceManager::getResourceId(const ResourcePath& path) const
 //
 const ResourceIdList ResourceManager::getAllResourceIds(const ResourcePath& path) const
 {
-	ResourceIdList res_ids;
-
 	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(path);
 	if (it != mResourceIdLookup.end())
 	{
-		const ResourceIdIndexList& index_list = it->second;
-		assert(!index_list.empty());
-		for (ResourceIdIndexList::const_iterator it = index_list.begin(); it != index_list.end(); ++it)
-		{
-			size_t index = *it;
-			if (index < mResourceIds.size())
-				res_ids.push_back(mResourceIds[index]);
-		}
+		const ResourceIdList& res_id_list = it->second;
+		assert(!res_id_list.empty());
+		return res_id_list;
 	}
-
-	return res_ids;
+	return ResourceIdList();
 }
 
 
 //
 // ResourceManager::getResourceContainerFileName
 //
-const std::string& ResourceManager::getResourceContainerFileName(const ResourceId& res_id) const
+const std::string& ResourceManager::getResourceContainerFileName(const ResourceId res_id) const
 {
-	if (res_id.valid())
-	{
-		const ResourceContainerId& container_id = res_id.getResourceContainerId();
-		if (container_id < mResourceFileNames.size())
-			return mResourceFileNames[container_id];
-	}
+	const ResourceContainerId& container_id = getResourceContainerId(res_id);
+	if (container_id < mResourceFileNames.size())
+		return mResourceFileNames[container_id];
 	static std::string empty_string;
 	return empty_string;
 }
@@ -700,10 +681,50 @@ const std::string& ResourceManager::getResourceContainerFileName(const ResourceI
 // Determine if no other resources have overridden this resource by having
 // the same resource path.
 //
-bool ResourceManager::visible(const ResourceId& res_id) const
+bool ResourceManager::visible(const ResourceId res_id) const
 {
-	const ResourcePath& path = res_id.getResourcePath();
+	const ResourcePath& path = getResourcePath(res_id);
 	return getResourceId(path) == res_id;
+}
+
+
+//
+// ResourceManager::getLumpLength
+//
+size_t ResourceManager::getLumpLength(const ResourceId res_id) const
+{
+	if (validateResourceId(res_id))
+	{
+		const ResourceContainerId& container_id = getResourceContainerId(res_id);
+		assert(container_id < mContainers.size());
+		const ResourceContainer* container = mContainers[container_id];
+		assert(container != NULL);
+		const LumpId lump_id = getLumpId(res_id);
+		assert(lump_id < container->getLumpCount());
+		return container->getLumpLength(lump_id);
+	}
+	return 0;
+}
+
+
+//
+// ResourceManager::readLump
+//
+size_t ResourceManager::readLump(const ResourceId res_id, void* data) const
+{
+	if (validateResourceId(res_id))
+	{
+		const ResourceContainerId& container_id = getResourceContainerId(res_id);
+		assert(container_id < mContainers.size());
+		const ResourceContainer* container = mContainers[container_id];
+		assert(container != NULL);
+		const LumpId lump_id = getLumpId(res_id);
+		assert(lump_id < container->getLumpCount());
+
+		size_t length = container->getLumpLength(lump_id);
+		return container->readLump(lump_id, data, length);
+	}
+	return 0;
 }
 
 
@@ -715,26 +736,24 @@ bool ResourceManager::visible(const ResourceId& res_id) const
 //
 void ResourceManager::dump() const
 {
-	for (std::vector<ResourceId>::const_iterator it = mResourceIds.begin(); it != mResourceIds.end(); ++it)
+	for (ResourceRecordTable::const_iterator it = mResources.begin(); it != mResources.end(); ++it)
 	{
-		const ResourceId& res_id = *it;
-		assert(res_id.valid());
-		assert(res_id.mIndex < mResourceIds.size());
-		assert(res_id.mIndex == static_cast<size_t>(&res_id - &mResourceIds[0]));
+		const ResourceRecord& res_rec = *it;
+		const ResourceId res_id = mResources.getId(res_rec);
 
-		const ResourcePath& path = res_id.getResourcePath();
+		const ResourcePath& path = res_rec.mPath; 
 		assert(!OString(path).empty());
 
-		const ResourceContainerId& container_id = res_id.getResourceContainerId();
+		const ResourceContainerId& container_id = res_rec.mResourceContainerId;
 		assert(container_id < mContainers.size());
 		const ResourceContainer* container = mContainers[container_id];
 		assert(container);
 
-		Printf(PRINT_HIGH,"0x%04X %c %s [%u] [%s]\n",
-				(unsigned int)res_id.mIndex,
+		Printf(PRINT_HIGH,"0x%08X %c %s [%u] [%s]\n",
+				res_id,
 				visible(res_id) ? '*' : 'x',
 				OString(path).c_str(),
-				(unsigned int)container->getLumpLength(res_id),
+				(unsigned int)getLumpLength(res_id),
 				getResourceContainerFileName(res_id).c_str());
 	}
 }
@@ -854,7 +873,7 @@ static bool Res_CheckDehackedFile(const OString& filename)
 // is returned. A special token of ResourceFile::LUMP_NOT_FOUND is returned if
 // there are no matching lumps.
 //
-const ResourceId& Res_GetResourceId(const OString& name, const OString& directory)
+const ResourceId Res_GetResourceId(const OString& name, const OString& directory)
 {
 	const ResourcePath path = Res_MakeResourcePath(name, directory);
 	return resource_manager.getResourceId(path);
@@ -875,9 +894,18 @@ const ResourceIdList Res_GetAllResourceIds(const OString& name, const OString& d
 
 
 //
+// Res_GetResourcePath
+//
+const ResourcePath& Res_GetResourcePath(const ResourceId res_id)
+{
+	return resource_manager.getResourcePath(res_id);
+}
+
+
+//
 // Res_GetResourceContainerFileName
 //
-const std::string& Res_GetResourceContainerFileName(const ResourceId& res_id)
+const std::string& Res_GetResourceContainerFileName(const ResourceId res_id)
 {
 	return resource_manager.getResourceContainerFileName(res_id);
 }
@@ -889,13 +917,9 @@ const std::string& Res_GetResourceContainerFileName(const ResourceId& res_id)
 // Looks for the name of the resource lump that matches id. If the lump is not
 // found, an empty string is returned.
 //
-const OString& Res_GetLumpName(const ResourceId& res_id)
+const OString& Res_GetLumpName(const ResourceId res_id)
 {
-	if (res_id.valid())
-		return res_id.getResourcePath().last();
-	
-	static const OString empty_string;
-	return empty_string;
+	return resource_manager.getResourcePath(res_id).last();
 }
 
 
@@ -904,16 +928,9 @@ const OString& Res_GetLumpName(const ResourceId& res_id)
 //
 // Verifies that the given LumpId matches a valid resource lump.
 //
-bool Res_CheckLump(const ResourceId& res_id)
+bool Res_CheckLump(const ResourceId res_id)
 {
-	if (res_id.valid())
-	{
-		const ResourceContainerId& container_id = res_id.getResourceContainerId();
-		const ResourceContainer* container = resource_manager.getResourceContainer(container_id);
-		if (container)
-			return container->checkLump(res_id);
-	}
-	return false;
+	return resource_manager.validateResourceId(res_id);
 }
 	
 
@@ -923,16 +940,9 @@ bool Res_CheckLump(const ResourceId& res_id)
 // Returns the length of the resource lump that matches res_id. If the lump is
 // not found, 0 is returned.
 //
-size_t Res_GetLumpLength(const ResourceId& res_id)
+size_t Res_GetLumpLength(const ResourceId res_id)
 {
-	if (res_id.valid())
-	{
-		const ResourceContainerId& container_id = res_id.getResourceContainerId();
-		const ResourceContainer* container = resource_manager.getResourceContainer(container_id);
-		if (container)
-			return container->getLumpLength(res_id);
-	}
-	return 0;
+	return resource_manager.getLumpLength(res_id);
 }
 
 
@@ -973,7 +983,8 @@ static bool Res_IsMapLumpName(const OString& name)
 bool Res_CheckMap(const OString& mapname)
 {
 	ResourcePath directory = Res_MakeResourcePath(mapname, maps_directory_name);
-	return Res_GetResourceId(mapname, directory).valid();
+	const ResourceId res_id = Res_GetResourceId(mapname, directory);
+	return resource_manager.validateResourceId(res_id);
 }
 
 
@@ -985,13 +996,16 @@ bool Res_CheckMap(const OString& mapname)
 // only the map lumps from the same resource file as the map marker
 // should be used.
 //
-const ResourceId& Res_GetMapResourceId(const OString& lump_name, const OString& mapname)
+const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname)
 {
 	ResourcePath directory = Res_MakeResourcePath(mapname, maps_directory_name);
-	const ResourceId& map_marker_res_id = Res_GetResourceId(mapname, directory);
-	const ResourceId& map_lump_res_id = Res_GetResourceId(lump_name, directory);
-	if (map_lump_res_id.valid() && map_marker_res_id.valid() &&
-		map_lump_res_id.getResourceContainerId() == map_marker_res_id.getResourceContainerId())
+	const ResourceId map_marker_res_id = Res_GetResourceId(mapname, directory);
+	const ResourceId map_lump_res_id = Res_GetResourceId(lump_name, directory);
+
+	if (resource_manager.validateResourceId(map_lump_res_id) &&
+		resource_manager.validateResourceId(map_marker_res_id) &&
+		resource_manager.getResourceContainerFileName(map_lump_res_id) ==
+		resource_manager.getResourceContainerFileName(map_marker_res_id));
 		return map_lump_res_id;
 	return ResourceManager::RESOURCE_NOT_FOUND;
 }
@@ -1005,16 +1019,9 @@ const ResourceId& Res_GetMapResourceId(const OString& lump_name, const OString& 
 // is not found. The variable data must be able to hold the size of the lump,
 // as determined by Res_GetLumpLength.
 //
-size_t Res_ReadLump(const ResourceId& res_id, void* data)
+size_t Res_ReadLump(const ResourceId res_id, void* data)
 {
-	if (res_id.valid())
-	{
-		const ResourceContainerId& container_id = res_id.getResourceContainerId();
-		const ResourceContainer* container = resource_manager.getResourceContainer(container_id);
-		if (container)
-			return container->readLump(res_id, data, container->getLumpLength(res_id));
-	}
-	return 0;
+	return resource_manager.readLump(res_id, data);
 }
 
 
@@ -1029,11 +1036,11 @@ size_t Res_ReadLump(const ResourceId& res_id, void* data)
 // The tag parameter is used to specify the allocation tag type to pass
 // to Z_Malloc.
 //
-void* Res_CacheLump(const ResourceId& res_id, int tag)
+void* Res_CacheLump(const ResourceId res_id, int tag)
 {
 	void* data_ptr = NULL;
 
-	if (res_id.valid())
+	if (resource_manager.validateResourceId(res_id))
 	{
 		data_ptr = cache_table[res_id];
 

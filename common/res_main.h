@@ -35,9 +35,11 @@
 #include "w_wad.h"
 
 // Typedefs
+typedef uint32_t ResourceId;
 typedef uint32_t ResourceFileId;
 typedef uint32_t ResourceContainerId;
 typedef uint32_t LumpId;
+
 
 // Forward class declarations
 class ResourceManager;
@@ -66,112 +68,6 @@ static const ResourcePath voxels_directory_name("/VOXELS/");
 
 
 
-// ============================================================================
-//
-// ResourceId class interface
-//
-// ============================================================================
-
-//
-// Uniquely identifies a specific game resource loaded from a resource file.
-// This is analogous to a specific lump loaded in a WAD file.
-//
-class ResourceId
-{
-public:
-	ResourceId() :
-		mIndex(static_cast<IndexType>(-1)),
-		mResourceContainerId(static_cast<ResourceContainerId>(-1)),
-		mLumpId(static_cast<LumpId>(-1))
-	{ }
-
-	ResourceId(const ResourceId& other) :
-		mIndex(other.mIndex), mResourcePath(other.mResourcePath),
-		mResourceContainerId(other.mResourceContainerId),
-		mLumpId(other.mLumpId)
-	{ }
-
-	ResourceId(const ResourcePath& path, const ResourceContainerId& container_id, const LumpId& lump_id) :
-		mIndex(static_cast<IndexType>(-1)),
-		mResourcePath(path),
-		mResourceContainerId(container_id),
-		mLumpId(lump_id)
-	{ }
-
-	const ResourcePath& getResourcePath() const
-	{
-		return mResourcePath;
-	}
-
-	const LumpId& getLumpId() const
-	{
-		return mLumpId;
-	}
-
-	const ResourceContainerId& getResourceContainerId() const
-	{
-		return mResourceContainerId;
-	}
-
-	ResourceId& operator=(const ResourceId& other)
-	{
-		if (this == &other)
-			return *this;
-		mIndex = other.mIndex;
-		mResourcePath = other.mResourcePath;
-		mResourceContainerId = other.mResourceContainerId;
-		mLumpId = other.mLumpId;
-		return *this;
-	}
-
-	bool operator==(const ResourceId& other) const
-	{	return mIndex == other.mIndex;	}
-
-	bool operator!=(const ResourceId& other) const
-	{	return mIndex != other.mIndex;	}
-
-	bool operator>(const ResourceId& other) const
-	{	return mIndex > other.mIndex;	}
-
-	bool operator>=(const ResourceId& other) const
-	{	return mIndex >= other.mIndex;	}
-
-	bool operator<(const ResourceId& other) const
-	{	return mIndex < other.mIndex;	}
-
-	bool operator<=(const ResourceId& other) const
-	{	return mIndex <= other.mIndex;	}
-
-	bool valid() const
-	{	return mIndex != static_cast<IndexType>(-1);	}
-
-private:
-	friend class ResourceContainer;
-	friend class ResourceManager;
-
-	typedef size_t IndexType;
-	IndexType				mIndex;
-
-	ResourcePath			mResourcePath;
-
-	ResourceContainerId		mResourceContainerId;
-	LumpId					mLumpId;
-
-	// ------------------------------------------------------------------------
-	// non-member friend functions
-	// ------------------------------------------------------------------------
-
-	friend struct hashfunc<ResourceId>;
-};
-
-// ----------------------------------------------------------------------------
-// hash function for OHashTable class
-// ----------------------------------------------------------------------------
-
-template <> struct hashfunc<ResourceId>
-{	unsigned int operator()(const ResourceId& res_id) const { return static_cast<unsigned int>(res_id.mIndex); } };
-
-
 typedef std::vector<ResourceId> ResourceIdList;
 
 
@@ -194,15 +90,9 @@ public:
 
 	virtual size_t getLumpCount() const = 0;
 
-	virtual bool checkLump(const ResourceId& res_id) const
-	{
-		return res_id.getResourceContainerId() == getResourceContainerId() &&
-			res_id.getLumpId() < getLumpCount();
-	}
+	virtual size_t getLumpLength(const LumpId lump_id) const = 0;
 
-	virtual size_t getLumpLength(const ResourceId& res_id) const = 0;
-
-	virtual size_t readLump(const ResourceId& res_id, void* data, size_t length) const = 0;
+	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const = 0;
 };
 
 // ============================================================================
@@ -228,9 +118,9 @@ public:
 
 	virtual size_t getLumpCount() const;
 
-	virtual size_t getLumpLength(const ResourceId& res_id) const;
+	virtual size_t getLumpLength(const LumpId lump_id) const;
 
-	virtual size_t readLump(const ResourceId& res_id, void* data, size_t length) const;
+	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const;
 
 private:
 	ResourceContainerId		mResourceContainerId;
@@ -266,9 +156,9 @@ public:
 
 	virtual size_t getLumpCount() const;
 
-	virtual size_t getLumpLength(const ResourceId& res_id) const;
+	virtual size_t getLumpLength(const LumpId lump_id) const;
 		
-	virtual size_t readLump(const ResourceId& res_id, void* data, size_t length) const;
+	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const;
 
 private:
 	void cleanup();
@@ -297,7 +187,7 @@ public:
 	ResourceManager();
 	~ResourceManager();
 
-	static const ResourceId RESOURCE_NOT_FOUND;
+	static const ResourceId RESOURCE_NOT_FOUND = 0;
 
 	const std::vector<std::string>& getResourceFileNames() const
 	{
@@ -313,13 +203,18 @@ public:
 
 	void closeAllResourceFiles();
 
-	const ResourceId& addResource(
+	const ResourceId addResource(
 			const ResourcePath& path,
-			const ResourceContainerId& container_id,
-			const LumpId& lump_id);
+			const ResourceContainer* container,
+			const LumpId lump_id);
 
-	const ResourceId& getResourceId(const ResourcePath& path) const;
-	const ResourceId& getResourceId(const OString& name, const OString& directory) const
+	bool validateResourceId(const ResourceId res_id) const
+	{
+		return mResources.validate(res_id);
+	}
+
+	const ResourceId getResourceId(const ResourcePath& path) const;
+	const ResourceId getResourceId(const OString& name, const OString& directory) const
 	{
 		return getResourceId(Res_MakeResourcePath(name, directory));
 	}
@@ -330,6 +225,21 @@ public:
 		return getAllResourceIds(Res_MakeResourcePath(name, directory));
 	}
 
+	const ResourcePath& getResourcePath(const ResourceId res_id) const
+	{
+		const ResourceRecord* res_rec = getResourceRecord(res_id);
+		if (res_rec)
+			return res_rec->mPath;
+
+		static const ResourcePath empty_path;
+		return empty_path;
+	}
+
+	size_t getLumpLength(const ResourceId res_id) const;
+
+	size_t readLump(const ResourceId res_id, void* data) const;
+
+
 	const ResourceContainer* getResourceContainer(const ResourceContainerId& container_id) const
 	{
 		if (container_id < mContainers.size())
@@ -337,28 +247,76 @@ public:
 		return NULL;
 	}
 
-	const std::string& getResourceContainerFileName(const ResourceId& res_id) const;
+	const std::string& getResourceContainerFileName(const ResourceId res_id) const;
 
 	void dump() const;
 
+
 private:
-	ResourceIdList					mResourceIds;
+	struct ResourceRecord
+	{
+		ResourceRecord& operator=(const ResourceRecord& other)
+		{
+			if (&other != this)
+			{
+				mPath = other.mPath;
+				mResourceContainerId = other.mResourceContainerId;
+				mLumpId = other.mLumpId;
+			}
+			return *this;
+		}
+
+		ResourcePath		mPath;
+		ResourceContainerId	mResourceContainerId;
+		LumpId				mLumpId;
+	};
+
+	typedef SArray<ResourceRecord> ResourceRecordTable;
+	ResourceRecordTable		mResources;
+
+	// ---------------------------------------------------------------------------
+	// Private helper functions
+	// ---------------------------------------------------------------------------
+
+	const ResourceRecord* getResourceRecord(const ResourceId res_id) const
+	{
+		if (mResources.validate(res_id))
+			return &mResources.get(res_id);
+		return NULL;
+	}
+
+	const ResourceContainerId& getResourceContainerId(const ResourceId res_id) const
+	{
+		const ResourceRecord* res_rec = getResourceRecord(res_id);
+		if (res_rec)
+			return res_rec->mResourceContainerId;
+
+		static const ResourceContainerId invalid_container_id = -1;
+		return invalid_container_id;
+	}
+
+	const LumpId getLumpId(const ResourceId res_id) const
+	{
+		const ResourceRecord* res_rec = getResourceRecord(res_id);
+		if (res_rec)
+			return res_rec->mLumpId;
+
+		static const LumpId invalid_lump_id = -1;
+		return invalid_lump_id;
+	}
+
 
 	static const size_t MAX_RESOURCE_CONTAINERS = 255;
 	std::vector<ResourceContainer*>	mContainers;
+	ResourceContainerId				mTextureManagerContainerId;
 
 	std::vector<FileAccessor*>		mAccessors;
 	std::vector<std::string>		mResourceFileNames;
 	std::vector<std::string>		mResourceFileHashes;
 
-	// Map resource pathnames to indices into mResourceIds
-	typedef std::vector<size_t> ResourceIdIndexList;
-	typedef OHashTable<ResourcePath, ResourceIdIndexList> ResourceIdLookupTable;
+	// Map resource pathnames to ResourceIds
+	typedef OHashTable<ResourcePath, ResourceIdList> ResourceIdLookupTable;
 	ResourceIdLookupTable			mResourceIdLookup;
-
-	// Map indicies into mResourceIds to resource pathnames
-	typedef OHashTable<size_t, ResourcePath> ResourcePathLookupTable;
-	ResourcePathLookupTable			mResourcePathLookup;
 
 
 	// ---------------------------------------------------------------------------
@@ -367,7 +325,7 @@ private:
 
 	void openResourceFile(const OString& filename);
 
-	bool visible(const ResourceId& res_id) const;
+	bool visible(const ResourceId res_id) const;
 };
 
 
@@ -396,19 +354,22 @@ const std::vector<std::string>& Res_GetResourceFileNames();
 const std::vector<std::string>& Res_GetResourceFileHashes();
 
 
-const ResourceId& Res_GetResourceId(const OString& name, const OString& directory = global_directory_name);
+const ResourceId Res_GetResourceId(const OString& name, const OString& directory = global_directory_name);
 
 const ResourceIdList Res_GetAllResourceIds(const OString& name, const OString& directory = global_directory_name); 
 
-const OString& Res_GetLumpName(const ResourceId& res_id);
+const OString& Res_GetLumpName(const ResourceId res_id);
 
-const std::string& Res_GetResourceContainerFileName(const ResourceId& res_id);
+const std::string& Res_GetResourceContainerFileName(const ResourceId res_id);
+
+
+const ResourcePath& Res_GetResourcePath(const ResourceId res_id);
 
 // ----------------------------------------------------------------------------
 // Res_CheckLump
 // ----------------------------------------------------------------------------
 
-bool Res_CheckLump(const ResourceId& res_id);
+bool Res_CheckLump(const ResourceId res_id);
 
 static inline bool Res_CheckLump(const OString& name, const OString& directory = global_directory_name)
 {
@@ -420,7 +381,7 @@ static inline bool Res_CheckLump(const OString& name, const OString& directory =
 // Res_GetLumpLength
 // ----------------------------------------------------------------------------
 
-size_t Res_GetLumpLength(const ResourceId& res_id);
+size_t Res_GetLumpLength(const ResourceId res_id);
 
 static inline size_t Res_GetLumpLength(const OString& name, const OString& directory = global_directory_name)
 {
@@ -432,7 +393,7 @@ static inline size_t Res_GetLumpLength(const OString& name, const OString& direc
 // Res_ReadLump
 // ----------------------------------------------------------------------------
 
-size_t Res_ReadLump(const ResourceId& res_id, void* data);
+size_t Res_ReadLump(const ResourceId res_id, void* data);
 
 static inline size_t Res_ReadLump(const OString& name, void* data)
 {
@@ -444,7 +405,7 @@ static inline size_t Res_ReadLump(const OString& name, void* data)
 // Res_CacheLump
 // ----------------------------------------------------------------------------
 
-void* Res_CacheLump(const ResourceId& res_id, int tag);
+void* Res_CacheLump(const ResourceId res_id, int tag);
 
 static inline void* Res_CacheLump(const OString& name, int tag)
 {
@@ -452,7 +413,7 @@ static inline void* Res_CacheLump(const OString& name, int tag)
 }
 
 bool Res_CheckMap(const OString& mapname);
-const ResourceId& Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
+const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
 
 
 

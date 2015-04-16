@@ -91,7 +91,7 @@ static int SavedScriptLine;
 //
 // SC_OpenResourceLump
 //
-void SC_OpenResourceLump(const ResourceId& res_id)
+void SC_OpenResourceLump(const ResourceId res_id)
 {
 	SC_Close();
 	ScriptBuffer = (char*)Res_CacheLump(res_id, PU_STATIC);

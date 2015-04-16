@@ -39,7 +39,6 @@ typedef unsigned int TextureId;
 
 class Texture;
 class TextureManager;
-class ResourceId;
 class ResourceManager;
 
 const Texture* Res_LoadTexture(const char* name);
@@ -192,9 +191,9 @@ struct CompositeTextureDefinition
 
 	struct texdefpatch_t
 	{
-		int 				mOriginX;
-		int 				mOriginY;
-		const ResourceId*	mResId;
+		int 		mOriginX;
+		int 		mOriginY;
+		ResourceId	mResId;
 	};
 
 	short			mPatchCount;
@@ -274,7 +273,7 @@ public:
 class FlatTextureLoader : public TextureLoader
 {
 public:
-	FlatTextureLoader(const ResourceId& res_id);
+	FlatTextureLoader(const ResourceId res_id);
 	virtual ~FlatTextureLoader() {}
 
 	virtual const Texture* load() const;
@@ -293,7 +292,7 @@ private:
 class PatchTextureLoader : public TextureLoader
 {
 public:
-	PatchTextureLoader(const ResourceId& res_id);
+	PatchTextureLoader(const ResourceId res_id);
 	virtual ~PatchTextureLoader() {}
 
 	virtual const Texture* load() const;
@@ -364,12 +363,12 @@ public:
 		return 0;
 	}
 
-	virtual size_t getLumpLength(const ResourceId& res_id) const
+	virtual size_t getLumpLength(const LumpId lump_id) const
 	{
 		return 0;
 	}
 
-	virtual size_t readLump(const ResourceId& res_id, void* data, size_t length) const
+	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const
 	{
 		return 0;
 	}
@@ -383,11 +382,10 @@ public:
 
 	TextureId getTextureId(const char* name, Texture::TextureSourceType type);
 	TextureId getTextureId(const OString& name, Texture::TextureSourceType type);
-	const Texture* getTexture(const TextureId tex_id);
-	const Texture* getTexture(const ResourceId& res_id);
+	const Texture* getTexture(const ResourceId res_id);
 
 	Texture* createTexture(const TextureId tex_id, int width, int height);
-	void freeTexture(const ResourceId& res_id);
+	void freeTexture(const LumpId lump_id);
 
 	TextureId createCustomTextureId();
 	void freeCustomTextureId(const TextureId tex_id);

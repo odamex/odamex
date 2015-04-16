@@ -374,41 +374,44 @@ void Texture::init(int width, int height)
 //
 // ----------------------------------------------------------------------------
 
-FlatTextureLoader::FlatTextureLoader(const ResourceId& res_id) :
+FlatTextureLoader::FlatTextureLoader(const ResourceId res_id) :
 	mResId(res_id)
 { }
 
 
 const Texture* FlatTextureLoader::load() const
 {
-	size_t lump_length = Res_GetLumpLength(mResId);
-	if (mResId.valid() && lump_length > 0)
+	if (Res_CheckLump(mResId))
 	{
-		int width, height;	
-
-		if (lump_length == 64 * 64)
-			width = height = 64;
-		else if (lump_length == 128 * 128)
-			width = height = 128;
-		else if (lump_length == 256 * 256)
-			width = height = 256;
-		else
-			width = height = Log2(sqrt(lump_length));	// probably not pretty... 
-
-		Texture* texture = Texture::createTexture(width, height);
-
-		if (clientside)
+		size_t lump_length = Res_GetLumpLength(mResId);
+		if (lump_length > 0)
 		{
-			byte* lump_data = new byte[lump_length];
-			Res_ReadLump(mResId, lump_data);
+			int width, height;	
 
-			// convert the row-major flat lump to into column-major
-			Res_TransposeImage(texture->mData, lump_data, width, height);
-			
-			delete [] lump_data;
+			if (lump_length == 64 * 64)
+				width = height = 64;
+			else if (lump_length == 128 * 128)
+				width = height = 128;
+			else if (lump_length == 256 * 256)
+				width = height = 256;
+			else
+				width = height = Log2(sqrt(lump_length));	// probably not pretty... 
+
+			Texture* texture = Texture::createTexture(width, height);
+
+			if (clientside)
+			{
+				byte* lump_data = new byte[lump_length];
+				Res_ReadLump(mResId, lump_data);
+
+				// convert the row-major flat lump to into column-major
+				Res_TransposeImage(texture->mData, lump_data, width, height);
+				
+				delete [] lump_data;
+			}
+
+			return texture;
 		}
-
-		return texture;
 	}
 	return NULL;
 }
@@ -419,42 +422,45 @@ const Texture* FlatTextureLoader::load() const
 //
 // ----------------------------------------------------------------------------
 
-PatchTextureLoader::PatchTextureLoader(const ResourceId& res_id) :
+PatchTextureLoader::PatchTextureLoader(const ResourceId res_id) :
 	mResId(res_id)
 { }
 
 const Texture* PatchTextureLoader::load() const
 {
-	size_t lump_length = Res_GetLumpLength(mResId);
-	if (mResId.valid() && lump_length > 0)
+	if (Res_CheckLump(mResId))
 	{
-		byte* lump_data = new byte[lump_length];
-		Res_ReadLump(mResId, lump_data);
-
-		int16_t width = LESHORT(*(int16_t*)(lump_data + 0));
-		int16_t height = LESHORT(*(int16_t*)(lump_data + 2));
-		int16_t offsetx = LESHORT(*(int16_t*)(lump_data + 4));
-		int16_t offsety = LESHORT(*(int16_t*)(lump_data + 6));
-
-		Texture* texture = Texture::createTexture(width, height);
-//		texture->mOffsetX = offsetx;
-//		texture->mOffsetY = offsety;
-
-		if (clientside)
+		size_t lump_length = Res_GetLumpLength(mResId);
+		if (lump_length > 0)
 		{
-			// TODO: remove this once proper masking is in place
-			memset(texture->mData, 0, width * height);
+			byte* lump_data = new byte[lump_length];
+			Res_ReadLump(mResId, lump_data);
 
-			// initialize the mask to entirely transparent 
-			memset(texture->mMask, 0, width * height);
+			int16_t width = LESHORT(*(int16_t*)(lump_data + 0));
+			int16_t height = LESHORT(*(int16_t*)(lump_data + 2));
+			int16_t offsetx = LESHORT(*(int16_t*)(lump_data + 4));
+			int16_t offsety = LESHORT(*(int16_t*)(lump_data + 6));
 
-			Res_DrawPatchIntoTexture(texture, lump_data, 0, 0);
-//			texture->mHasMask = (memchr(texture->mMask, 0, width * height) != NULL);
+			Texture* texture = Texture::createTexture(width, height);
+	//		texture->mOffsetX = offsetx;
+	//		texture->mOffsetY = offsety;
+
+			if (clientside)
+			{
+				// TODO: remove this once proper masking is in place
+				memset(texture->mData, 0, width * height);
+
+				// initialize the mask to entirely transparent 
+				memset(texture->mMask, 0, width * height);
+
+				Res_DrawPatchIntoTexture(texture, lump_data, 0, 0);
+	//			texture->mHasMask = (memchr(texture->mMask, 0, width * height) != NULL);
+			}
+
+			delete [] lump_data;
+
+			return texture;
 		}
-
-		delete [] lump_data;
-
-		return texture;
 	}
 	return NULL;
 }
@@ -489,20 +495,21 @@ const Texture* CompositeTextureLoader::load() const
 		// compose the texture out of a set of patches
 		for (int i = 0; i < mTextureDef.mPatchCount; i++)
 		{
-			const ResourceId& res_id = *mTextureDef.mPatches[i].mResId;
+			const ResourceId res_id = mTextureDef.mPatches[i].mResId;
 			
-			if (!res_id.valid())	// not found?
-				continue;
+			if (Res_CheckLump(res_id))
+			{
+				size_t lump_length = Res_GetLumpLength(res_id);
+				byte* lump_data = new byte[lump_length];
+				Res_ReadLump(res_id, lump_data);
+				Res_DrawPatchIntoTexture(
+						texture,
+						lump_data,
+						mTextureDef.mPatches[i].mOriginX,
+						mTextureDef.mPatches[i].mOriginY);
 
-			byte* lump_data = new byte[Res_GetLumpLength(res_id)];
-			Res_ReadLump(res_id, lump_data);
-			Res_DrawPatchIntoTexture(
-					texture,
-					lump_data,
-					mTextureDef.mPatches[i].mOriginX,
-					mTextureDef.mPatches[i].mOriginY);
-
-			delete [] lump_data;
+				delete [] lump_data;
+			}
 		}
 
 //		texture->mHasMask = (memchr(texture->mMask, 0, mTextureDef.mWidth * mTextureDef.mHeight) != NULL);
@@ -772,7 +779,7 @@ void TextureManager::readAnimDefLump()
 					SC_MustGetString();
 					const OString lump_name(sc_String);
 
-					const ResourceId& res_id = Res_GetResourceId(lump_name, path);
+					const ResourceId res_id = Res_GetResourceId(lump_name, path);
 					if (!res_id.valid())
 						continue;
 
@@ -829,8 +836,8 @@ void TextureManager::readAnimDefLump()
 //
 void TextureManager::readAnimatedLump()
 {
-	const ResourceId& res_id = Res_GetResourceId("ANIMATED");
-	if (!res_id.valid())
+	const ResourceId res_id = Res_GetResourceId("ANIMATED");
+	if (!Res_CheckLump(res_id))
 		return;
 
 	size_t lumplen = Res_GetLumpLength(res_id);
@@ -983,10 +990,13 @@ void TextureManager::addTextureDirectories()
 {
 	// Read the PNAMES lump and store the ResourceId of each patch
 	// listed in the lump in the pnames_lookup array.
-	const ResourceId& pnames_res_id = Res_GetResourceId("PNAMES");
-	size_t pnames_lump_length = Res_GetLumpLength(pnames_res_id);
-	if (!pnames_res_id.valid() || pnames_lump_length <= 0)
+	const ResourceId pnames_res_id = Res_GetResourceId("PNAMES");
+	if (!Res_CheckLump(pnames_res_id))
 		I_Error("Res_InitTextures: PNAMES lump not found");
+
+	size_t pnames_lump_length = Res_GetLumpLength(pnames_res_id);
+	if (pnames_lump_length < 4)			// not long enough to store pnames_count
+		I_Error("Res_InitTextures: invalid PNAMES lump");
 
 	byte* pnames_lump_data = new byte[pnames_lump_length];
 	Res_ReadLump(pnames_res_id, pnames_lump_data);
@@ -994,13 +1004,13 @@ void TextureManager::addTextureDirectories()
 	int32_t pnames_count = LELONG(*((int32_t*)(pnames_lump_data + 0)));
 	if ((size_t)pnames_count * 8 + 4 != pnames_lump_length)
 		I_Error("Res_InitTextures: invalid PNAMES lump");
-	const ResourceId** pnames_lookup = new const ResourceId*[pnames_count];
+	ResourceId* pnames_lookup = new ResourceId[pnames_count];
 
 	for (int32_t i = 0; i < pnames_count; i++)
 	{
 		const char* str = (const char*)(pnames_lump_data + 4 + 8 * i);
 		const OString lump_name = OStringToUpper(str, 8);
-		pnames_lookup[i] = &Res_GetResourceId(lump_name, patches_directory_name);
+		pnames_lookup[i] = Res_GetResourceId(lump_name, patches_directory_name);
 
 		// killough 4/17/98:
 		// Some wads use sprites as wall patches, so repeat check and
@@ -1010,8 +1020,8 @@ void TextureManager::addTextureDirectories()
 		// appear first in a wad. This is a kludgy solution to the wad
 		// lump namespace problem.
 
-		if (!pnames_lookup[i]->valid())
-			pnames_lookup[i] = &Res_GetResourceId(lump_name, sprites_directory_name);
+		if (!Res_CheckLump(pnames_lookup[i]))
+			pnames_lookup[i] = Res_GetResourceId(lump_name, sprites_directory_name);
 	}
 
 	delete [] pnames_lump_data;
@@ -1023,9 +1033,8 @@ void TextureManager::addTextureDirectories()
 
 	for (size_t i = 0; texture_definition_lump_names[i][0] != '\0'; i++)
 	{
-		const ResourceId& res_id = Res_GetResourceId(texture_definition_lump_names[i]);
-		size_t lump_length = Res_GetLumpLength(res_id);
-		if (!res_id.valid() || lump_length <= 0)
+		const ResourceId res_id = Res_GetResourceId(texture_definition_lump_names[i]);
+		if (!Res_CheckLump(res_id))
 		{
 			if (i == 0)
 				I_Error("Res_InitTextures: TEXTURE1 lump not found");
@@ -1033,6 +1042,9 @@ void TextureManager::addTextureDirectories()
 				continue;		// skip this lump and go onto the next
 		}
 
+		size_t lump_length = Res_GetLumpLength(res_id);
+		if (lump_length < 4)		// not long enough to store definition_count
+			continue;
 
 		byte* lump_data = new byte[lump_length];
 		Res_ReadLump(res_id, lump_data);
@@ -1040,9 +1052,15 @@ void TextureManager::addTextureDirectories()
 		int32_t definition_count = LELONG(*((int32_t*)(lump_data + 0)));
 		for (int32_t i = 0; i < definition_count; i++)
 		{
+			int32_t def_offset = 4 + 4 * i;
+			if (lump_length < (unsigned int)def_offset)
+				break;
+
 			// Read a texture definition, create a CompositeTextureDefinition,
 			// and add a new CompositeTextureLoader to the list.
-			int32_t tex_offset = LELONG(*((int32_t*)(lump_data + 4 + 4 * i)));
+			int32_t tex_offset = LELONG(*((int32_t*)(lump_data + def_offset)));
+			if (lump_length < (unsigned int)tex_offset + 22)
+				break;
 
 			const char* str = (const char*)(lump_data + tex_offset + 0);
 			const OString name = OStringToUpper(str, 8);
@@ -1058,6 +1076,9 @@ void TextureManager::addTextureDirectories()
 			for (int16_t j = 0; j < texture_def.mPatchCount; j++)
 			{
 				int32_t patch_offset = tex_offset + 22 + 10 * j;		// sizeof(mappatch_t) == 10
+				if (lump_length < (unsigned int)patch_offset + 6)
+					break;
+
 				texture_def.mPatches[j].mOriginX = LESHORT(*((int16_t*)(lump_data + patch_offset + 0))); 
 				texture_def.mPatches[j].mOriginY = LESHORT(*((int16_t*)(lump_data + patch_offset + 2))); 
 				int16_t patch_num = LESHORT(*((int16_t*)(lump_data + patch_offset + 4)));
@@ -1086,14 +1107,14 @@ void TextureManager::addTextureDirectories()
 // Creates a TextureLoader instance for each texture resource in the provided
 // list of ResourceIds.
 //
-void TextureManager::registerTextureResources(const std::vector<ResourceId>& res_ids, ResourceManager* manager)
+void TextureManager::registerTextureResources(const std::vector<ResourceId>& res_id_list, ResourceManager* manager)
 {
-	for (std::vector<ResourceId>::const_iterator it = res_ids.begin(); it != res_ids.end(); ++it)
+	for (std::vector<ResourceId>::const_iterator it = res_id_list.begin(); it != res_id_list.end(); ++it)
 	{
-		const ResourceId& res_id = *it;
-		if (res_id.valid())
+		const ResourceId res_id = *it;
+		if (Res_CheckLump(res_id))
 		{
-			const ResourcePath& path = res_id.getResourcePath();
+			const ResourcePath& path = Res_GetResourcePath(res_id);
 			const OString& directory = path.first();
 			TextureLoader* loader = NULL;
 
@@ -1106,7 +1127,7 @@ void TextureManager::registerTextureResources(const std::vector<ResourceId>& res
 			{
 				const LumpId lump_id = mTextureLoaders.size();
 				mTextureLoaders.push_back(loader);
-				manager->addResource(path, 255, lump_id); 
+				manager->addResource(path, this, lump_id); 
 			}
 		}
 	}
@@ -1170,12 +1191,8 @@ Texture* TextureManager::createTexture(const TextureId tex_id, int width, int he
 // Frees the memory used by the specified texture and removes it
 // from mTextureIdsMap.
 //
-void TextureManager::freeTexture(const ResourceId& res_id)
+void TextureManager::freeTexture(const LumpId lump_id)
 {
-	if (!res_id.valid())
-		return;
-
-	const LumpId& lump_id = res_id.getLumpId();
 	if (mTextures[lump_id])
 		Z_Free((void*)mTextures[lump_id]);
 	mTextures[lump_id] = NULL;
@@ -1299,9 +1316,9 @@ void TextureManager::cacheWallTexture(TextureId tex_id)
 		for (int i = 0; i < texdef->patchcount; i++)
 		{
 			texdefpatch_t* texdefpatch = &texdef->patches[i];
-			const ResourceId& res_id = *texdefpatch->res_id;
+			const ResourceId res_id = *texdefpatch->res_id;
 			
-			if (!res_id.valid())	// not found?
+			if (!Res_CheckLump(res_id))
 				continue;
 
 			byte* lumpdata = new byte[Res_GetLumpLength(res_id)];
@@ -1571,6 +1588,7 @@ TextureId TextureManager::getTextureId(const char* name, Texture::TextureSourceT
 // Returns the Texture for the appropriate tex_id. If the Texture is not
 // currently cached, it will be loaded from the disk and cached.
 //
+/*
 const Texture* TextureManager::getTexture(const TextureId tex_id) 
 {
 	Texture* texture = mTextureIdMap[tex_id];
@@ -1594,6 +1612,7 @@ const Texture* TextureManager::getTexture(const TextureId tex_id)
 
 	return texture;
 }
+*/
 
 
 //
@@ -1602,13 +1621,12 @@ const Texture* TextureManager::getTexture(const TextureId tex_id)
 // Returns the Texture for the supplied ResourceId. If the Texture is not
 // currently cached, it will be loaded from the disk and cached.
 //
-const Texture* TextureManager::getTexture(const ResourceId& res_id)
+const Texture* TextureManager::getTexture(const LumpId lump_id)
 {
 	const Texture* texture = NULL;
-	const LumpId& lump_id = res_id.getLumpId();
-	if (res_id.valid() && lump_id < mTextures.size())
+	if (lump_id < mTextures.size())
 	{
-		const Texture* texture = mTextures[lump_id];
+		texture = mTextures[lump_id];
 		if (lump_id < mTextureLoaders.size())
 			texture = mTextureLoaders[lump_id]->load();
 		if (texture)

@@ -29,7 +29,7 @@
 
 void UndoDehPatch ();
 
-bool D_LoadDehLump(const ResourceId& res_id);
+bool D_LoadDehLump(const ResourceId res_id);
 
 #endif //__D_DEHACK_H__
 
