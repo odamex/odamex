@@ -74,6 +74,7 @@
 #include "sv_main.h"
 #include "sv_banlist.h"
 
+#include "res_filelib.h"
 #include "res_texture.h"
 #include "w_ident.h"
 
@@ -238,7 +239,7 @@ void D_StartTitle (void)
 // Called to initialize subsystems when loading a new set of WAD resource
 // files.
 //
-void D_Init()
+void D_Init(const std::vector<std::string>& resource_file_names)
 {
 	// only print init messages during startup, not when changing WADs
 	static bool first_time = true;
@@ -254,6 +255,8 @@ void D_Init()
 	Z_Init();
 	if (first_time)
 		Printf(PRINT_HIGH, "Z_Init: Heapsize: %u megabytes\n", got_heapsize);
+	
+	D_LoadResourceFiles(resource_file_names);
 
 	// Load palette and set up colormaps
 	V_InitPalette("PLAYPAL");
@@ -351,8 +354,6 @@ void D_DoomMain()
 	C_InitConsole();
 	atterm(C_ShutdownConsole);
 
-	W_SetupFileIdentifiers();
-
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
 
@@ -370,18 +371,16 @@ void D_DoomMain()
 	M_LoadDefaults();			// load before initing other systems
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
-	std::vector<std::string> newwadfiles, newpatchfiles;
-
-	std::vector<std::string> new_resource_files;
-	new_resource_files.push_back(iwad);
-	D_AddResourceFilesFromArgs(new_resource_files);
-	D_LoadResourceFiles(new_resource_files);
-
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	I_Init();
 
+	W_SetupFileIdentifiers();
+
+	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromArgs();
+	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
-	D_Init();
+	D_Init(resource_filenames);
 	atterm(D_Shutdown);
 
 	Printf(PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");

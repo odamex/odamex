@@ -573,7 +573,7 @@ void CL_NetDemoPlay(const std::string &filename);
 // Called to initialize subsystems when loading a new set of WAD resource
 // files.
 //
-void D_Init()
+void D_Init(const std::vector<std::string>& resource_file_names)
 {
 	// only print init messages during startup, not when changing WADs
 	static bool first_time = true;
@@ -586,6 +586,9 @@ void D_Init()
 	Z_Init();
 	if (first_time)
 		Printf(PRINT_HIGH, "Z_Init: Heapsize: %u megabytes\n", got_heapsize);
+
+	// Load the resource files
+	D_LoadResourceFiles(resource_file_names);
 
 	// Load palette and set up colormaps
 	V_Init();
@@ -733,8 +736,6 @@ void D_DoomMain()
 	C_InitConsole();
 	atterm(C_ShutdownConsole);
 
-	W_SetupFileIdentifiers();
-
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
 
@@ -748,18 +749,19 @@ void D_DoomMain()
 	M_LoadDefaults();					// load before initing other systems
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
-	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromArgs();
-	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
-	D_LoadResourceFiles(resource_filenames);
-
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	atterm(I_ShutdownHardware);
 	I_Init();
 	I_InitInput();
 
+	W_SetupFileIdentifiers();
+
+	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromArgs();
+	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	atterm(D_Shutdown);
-	D_Init();
+	D_Init(resource_filenames);
 
 	atterm(I_Endoom);
 

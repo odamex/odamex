@@ -38,6 +38,7 @@
 #include "md5.h"
 #include "p_ctf.h"
 #include "res_main.h"
+#include "res_filelib.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
@@ -180,7 +181,7 @@ void SV_SendServerInfo()
 	MSG_WriteByte(&ml_message, resource_file_count - 1);
 
 	for (i = 1; i < resource_file_count; ++i)
-		MSG_WriteString(&ml_message, D_CleanseFileName(resource_file_names[i]).c_str());
+		MSG_WriteString(&ml_message, Res_CleanseFilename(resource_file_names[i]).c_str());
 
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM));
 	MSG_WriteByte(&ml_message, sv_skill.asInt());

@@ -29,6 +29,7 @@
 #include "sv_pickup.h"
 #include "sv_vote.h"
 #include "d_main.h"
+#include "res_filelib.h"
 
 #include <algorithm>
 #include <cmath>
@@ -370,7 +371,7 @@ public:
 
 		for (std::vector<std::string>::const_iterator it = maplist_entry.wads.begin();
 			it!= maplist_entry.wads.end(); ++it)
-			vsbuffer << D_CleanseFileName(*it) << " ";
+			vsbuffer << Res_CleanseFilename(*it) << " ";
 
 		vsbuffer << maplist_entry.map;
 		this->votestring = vsbuffer.str();

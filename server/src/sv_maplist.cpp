@@ -35,6 +35,7 @@
 #include "sv_main.h"
 #include "sv_vote.h"
 #include "w_wad.h"
+#include "res_filelib.h"
 
 //////// MAPLIST METHODS ////////
 
@@ -539,7 +540,7 @@ void SVC_MaplistUpdate(player_t &player, maplist_status_t status) {
 		MSG_WriteShort(&cl->reliablebuf, it->second->wads.size());
 		for (std::vector<std::string>::iterator itr = it->second->wads.begin(); itr != it->second->wads.end(); ++itr)
 		{
-			std::string filename = D_CleanseFileName(*itr);
+			std::string filename = Res_CleanseFilename(*itr);
 			MSG_WriteString(&cl->reliablebuf, filename.c_str());
 		}
 

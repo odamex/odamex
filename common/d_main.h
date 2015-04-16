@@ -64,9 +64,7 @@ void D_RunTics(void (*sim_func)(), void(*display_func)());
 
 std::string D_GetTitleString();
 
-void D_Init();
+void D_Init(const std::vector<std::string>& resource_file_names);
 void STACK_ARGS D_Shutdown();
 
 #endif
-
-

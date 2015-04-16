@@ -64,7 +64,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "g_warmup.h"
-
+#include "res_filelib.h"
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
@@ -160,9 +160,10 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
-	std::vector<std::string> resource_file_names;
-	D_AddResourceFilesFromString(resource_file_names, JoinStrings(VectorArgs(argc, argv), " "));
-	D_ReloadResourceFiles(resource_file_names);
+	std::vector<std::string> resource_filenames =
+		Res_GatherResourceFilesFromString(JoinStrings(VectorArgs(argc, argv), " "));
+	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+	D_ReloadResourceFiles(resource_filenames);
 
 	G_DeferedInitNew(startmap);
 
@@ -223,9 +224,10 @@ void G_ChangeMap()
 		maplist_entry_t maplist_entry;
 		Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-		std::vector<std::string> resource_file_names;
-		D_AddResourceFilesFromString(resource_file_names, JoinStrings(maplist_entry.wads, " "));
-		D_ReloadResourceFiles(resource_file_names);
+		std::vector<std::string> resource_filenames =
+			Res_GatherResourceFilesFromString(JoinStrings(maplist_entry.wads, " "));
+		resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+		D_ReloadResourceFiles(resource_filenames);
 
 		G_DeferedInitNew(maplist_entry.map);
 
@@ -252,9 +254,10 @@ void G_ChangeMap(size_t index)
 		return;
 	}
 
-	std::vector<std::string> resource_file_names;
-	D_AddResourceFilesFromString(resource_file_names, JoinStrings(maplist_entry.wads, " "));
-	D_ReloadResourceFiles(resource_file_names);
+	std::vector<std::string> resource_filenames =
+		Res_GatherResourceFilesFromString(JoinStrings(maplist_entry.wads, " "));
+	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+	D_ReloadResourceFiles(resource_filenames);
 
 	G_DeferedInitNew(maplist_entry.map);
 

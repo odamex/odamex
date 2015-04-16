@@ -263,8 +263,7 @@ void D_ReloadResourceFiles(const std::vector<std::string>& new_resource_filename
 	if (reload)
 	{
 		D_Shutdown();
-		D_LoadResourceFiles(new_resource_filenames);
-		D_Init();
+		D_Init(new_resource_filenames);
 	}
 }
 

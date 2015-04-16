@@ -65,6 +65,7 @@
 #include "g_warmup.h"
 #include "sv_banlist.h"
 #include "d_main.h"
+#include "res_filelib.h"
 
 #include <algorithm>
 #include <sstream>
@@ -2214,7 +2215,7 @@ void SV_SendLoadMap(const std::vector<std::string>& resource_files,
 	MSG_WriteByte(buf, std::min<size_t>(resource_files.size() - 1, 255));
 	for (size_t i = 1; i < std::min<size_t>(resource_files.size(), 256); i++)
 	{
-		MSG_WriteString(buf, D_CleanseFileName(resource_files[i]).c_str());
+		MSG_WriteString(buf, Res_CleanseFilename(resource_files[i]).c_str());
 		MSG_WriteString(buf, resource_hashes[i].c_str());
 	}
 
@@ -4045,7 +4046,7 @@ void SV_WantWad(player_t &player)
 	std::string filename;
 	for (i = 0; i < resource_file_names.size(); i++)
 	{
-		if (iequals(request, D_CleanseFileName(resource_file_names[i])) &&
+		if (iequals(request, Res_CleanseFilename(resource_file_names[i])) &&
 			(md5.empty() || iequals(md5, resource_file_hashes[i])))
 			break;
 	}
@@ -4066,7 +4067,7 @@ void SV_WantWad(player_t &player)
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
 		char message[256];	
 		sprintf(message, "Server: %s is a commercial wad and will not be downloaded\n",
-				D_CleanseFileName(wadfiles[i]).c_str());
+				Res_CleanseFilename(resource_file_names[i]).c_str());
 		MSG_WriteString(&cl->reliablebuf, message);
 
 		SV_DropClient(player);

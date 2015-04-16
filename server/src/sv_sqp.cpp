@@ -39,6 +39,7 @@
 #include "p_ctf.h"
 #include "version.h"
 #include "res_main.h"
+#include "res_filelib.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
@@ -225,7 +226,7 @@ next:
 	MSG_WriteByte(&ml_message, resource_file_names.size());
 	for(size_t i = 0; i < resource_file_names.size(); i++)
 	{
-		MSG_WriteString(&ml_message, D_CleanseFileName(resource_file_names[i]).c_str());
+		MSG_WriteString(&ml_message, Res_CleanseFilename(resource_file_names[i]).c_str());
 		MSG_WriteHexString(&ml_message, resource_file_hashes[i].c_str());
 	}
 
