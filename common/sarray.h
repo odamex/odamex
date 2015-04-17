@@ -197,6 +197,8 @@ public:
 		mNextUnused = 0;
 		mFreeHead = NOT_FOUND;
 		mIdKey = MIN_KEY;
+		for (unsigned int i = 0; i < mSize; i++)
+			mItemRecords[i].mId = NOT_FOUND;
 	}
 
 	bool empty() const
@@ -340,6 +342,8 @@ private:
 			newitemrecords[i].mItem = mItemRecords[i].mItem;
 			newitemrecords[i].mId = mItemRecords[i].mId;
 		}
+		for (unsigned int i = mNextUnused; i < newsize; i++)
+			newitemrecords[i].mId = NOT_FOUND;
 		
 		delete [] mItemRecords;
 		mSize = newsize;
@@ -352,7 +356,7 @@ private:
 	{
 		unsigned int slot = id & SLOT_MASK;
 		assert(slot < mSize);
-		if (mItemRecords[slot].mId == id)
+		if (slotUsed(slot) && mItemRecords[slot].mId == id)
 			return slot;
 		return NOT_FOUND;
 	}
