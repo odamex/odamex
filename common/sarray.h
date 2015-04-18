@@ -101,19 +101,32 @@ public:
 		typedef generic_iterator<const IVT, const ISAT> ConstThisClass;
 
 	public:
-		generic_iterator() :
-			mSlot(0), mSArray(NULL)
+		generic_iterator(ISAT& sarray) :
+			mSArray(sarray), mSlot(NOT_FOUND)
 		{ }
+
+		generic_iterator(ISAT& sarray, SArrayId id) :
+			mSArray(sarray), mSlot(NOT_FOUND)
+		{
+			if (id != NOT_FOUND)
+				mSlot = mSArray.getSlot(id);
+		}
+
+		generic_iterator(ISAT& sarray, const VT& item) :
+			mSArray(sarray)
+		{
+			mSlot = mSArray.getSlot(item);
+		}
 
 		// allow implicit converstion from iterator to const_iterator
 		operator ConstThisClass() const
 		{
-			return ConstThisClass(mSlot, mSArray);
+			return ConstThisClass(mSArray, mSlot);
 		}
 
 		bool operator== (const ThisClass& other) const
 		{
-			return mSlot == other.mSlot && mSArray == other.mSArray;
+			return &mSArray == &other.mSArray && mSlot == other.mSlot;
 		}
 
 		bool operator!= (const ThisClass& other) const
@@ -123,36 +136,30 @@ public:
 
 		IVT& operator* ()
 		{
-			return mSArray->mItemRecords[mSlot].mItem;
+			return mSArray.mItemRecords[mSlot].mItem;
 		}
 
 		IVT* operator-> ()
 		{
-			return &(mSArray->mItemRecords[mSlot].mItem);
+			return &(mSArray.mItemRecords[mSlot].mItem);
 		}
 
 		ThisClass& operator++ ()
 		{
-			mSlot = mSArray->nextUsed(++mSlot);
+			mSlot = mSArray.nextUsed(++mSlot);
 			return *this;
 		}
 
 		ThisClass operator++ (int)
 		{
 			generic_iterator temp(*this);
-			mSlot = mSArray->nextUsed(++mSlot);
+			mSlot = mSArray.nextUsed(++mSlot);
 			return temp;
 		}
 
 	private:
-		friend class SArray<VT>;
-
-		generic_iterator(unsigned int slot, ISAT* sarray) :
-			mSlot(slot), mSArray(sarray)
-		{ }
-
+		ISAT&			mSArray;
 		unsigned int	mSlot;
-		ISAT*			mSArray;
 	};
 
 
@@ -223,22 +230,26 @@ public:
 
 	iterator begin()
 	{
-		return iterator(nextUsed(0), this);
+		if (empty())
+			return end();
+		return iterator(*this, mItemRecords[nextUsed(0)].mId);
 	}
 
 	const_iterator begin() const
 	{
-		return const_iterator(nextUsed(0), this);
+		if (empty())
+			return end();
+		return const_iterator(*this, mItemRecords[nextUsed(0)].mId);
 	}
 
 	iterator end()
 	{
-		return iterator(NOT_FOUND, this);
+		return iterator(*this, NOT_FOUND);
 	}
 
 	const_iterator end() const
 	{
-		return const_iterator(NOT_FOUND, this);
+		return const_iterator(*this, NOT_FOUND);
 	}	
 
 	bool validate(const SArrayId id) const
@@ -248,12 +259,12 @@ public:
 
 	iterator find(const SArrayId id)
 	{
-		return iterator(getSlot(id), this);
+		return iterator(*this, id);
 	}
 
 	const_iterator find(const SArrayId id) const
 	{
-		return const_iterator(getSlot(id), this);
+		return const_iterator(*this, id);
 	}
 
 	VT& get(const SArrayId id)
