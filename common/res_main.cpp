@@ -73,7 +73,8 @@ static bool Res_ValidateFlat(const void* data, size_t length)
 	// were used to "cheat" with the implementation of scrolling effects. ZDoom
 	// does not need the same hacks to make flats scroll properly, and therefore
 	// ignores the excess pixels in these flats.
-	return length == 64 * 64 || length == 128 * 128 || length == 256 * 256;
+	return length == 64 * 64 || length == 8 * 8 || length == 16 * 16 ||
+			length == 32 * 32 || length == 128 * 128 || length == 256 * 256;
 }
 
 

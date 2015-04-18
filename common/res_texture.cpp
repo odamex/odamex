@@ -390,6 +390,12 @@ const Texture* FlatTextureLoader::load() const
 
 			if (lump_length == 64 * 64)
 				width = height = 64;
+			else if (lump_length == 8 * 8)
+				width = height = 8;
+			else if (lump_length == 16 * 16)
+				width = height = 16;
+			else if (lump_length == 32 * 32)
+				width = height = 32;
 			else if (lump_length == 128 * 128)
 				width = height = 128;
 			else if (lump_length == 256 * 256)
