@@ -540,8 +540,9 @@ TextureManager::TextureManager(const ResourceContainerId& container_id, Resource
 //	mFirstFlatLumpNum = W_GetNumForName("F_START") + 1;
 //	mLastFlatLumpNum = W_GetNumForName("F_END") - 1;
 	
+	registerTextureResources(manager);
 	// initialize the TEXTURE1 & TEXTURE2 data
-	addTextureDirectories();
+	addTextureDirectories(manager);
 
 	generateNotFoundTexture();
 
@@ -607,73 +608,6 @@ void TextureManager::clear()
 			Z_Free((void*)mWarpDefs[i].original_texture);
 
 	mWarpDefs.clear();
-}
-
-
-//
-// TextureManager::startup
-//
-// Frees any existing textures and sets up the lookup structures for flats
-// and wall textures. This should be called at the start of each map, prior
-// to P_SetupLevel.
-//
-void TextureManager::startup()
-{
-	clear();
-
-	// initialize the FLATS data
-	mFirstFlatLumpNum = W_GetNumForName("F_START") + 1;
-	mLastFlatLumpNum = W_GetNumForName("F_END") - 1;
-	
-	// initialize the TEXTURE1 & TEXTURE2 data
-	addTextureDirectories();
-
-	generateNotFoundTexture();
-
-	if (clientside)
-	{	
-		readAnimDefLump();
-		readAnimatedLump();
-	}
-}
-
-
-//
-// TextureManager::shutdown
-//
-void TextureManager::shutdown()
-{
-	clear();
-}
-
-
-//
-// TextureManager::precache
-//
-// Loads all of a level's textures into Zone memory.
-// Requires that init() and P_SetupLevel be called first.
-//
-void TextureManager::precache()
-{
-#if 0
-	// precache all the wall textures
-	for (int i = 0; i < numsides; i++)
-	{
-		if (sides[i].toptexture)
-			getTexture(sides[i].toptexture);
-		if (sides[i].midtexture)
-			getTexture(sides[i].midtexture);
-		if (sides[i].bottomtexture)
-			getTexture(sides[i].bottomtexture);
-	}
-
-	// precache all the floor/ceiling textures
-	for (int i = 0; i < numsectors; i++)
-	{
-		getTexture(sectors[i].ceiling_tex_id);
-		getTexture(sectors[i].floor_tex_id);
-	}
-#endif
 }
 
 
@@ -986,7 +920,7 @@ void TextureManager::generateNotFoundTexture()
 // composing the texture for each definition in the TEXTURE1 and TEXTURE2
 // lumps.
 //
-void TextureManager::addTextureDirectories()
+void TextureManager::addTextureDirectories(ResourceManager* manager)
 {
 	// Read the PNAMES lump and store the ResourceId of each patch
 	// listed in the lump in the pnames_lookup array.
@@ -1029,6 +963,7 @@ void TextureManager::addTextureDirectories()
 
 	// Read each of the TEXTURE definition lumps and create a new
 	// CompositeTextureDefinition for each definition.
+	//
 	static const char* const texture_definition_lump_names[] = { "TEXTURE1", "TEXTURE2", "TEXTURES", "" };
 
 	for (size_t i = 0; texture_definition_lump_names[i][0] != '\0'; i++)
@@ -1064,6 +999,16 @@ void TextureManager::addTextureDirectories()
 
 			const char* str = (const char*)(lump_data + tex_offset + 0);
 			const OString name = OStringToUpper(str, 8);
+			// TODO: check if there is already an entry matching name and if so,
+			// skip adding this texture.
+			//
+			// From ChocolateDoom r_data.c:
+			// Vanilla Doom does a linear search of the texures array
+			// and stops at the first entry it finds.  If there are two
+			// entries with the same name, the first one in the array
+			// wins. The new entry must therefore be added at the end
+			// of the hash chain, so that earlier entries win.
+
 		
 			CompositeTextureDefinition texture_def;
 			texture_def.mScaleX = *(uint8_t*)(lump_data + tex_offset + 10);
@@ -1090,8 +1035,11 @@ void TextureManager::addTextureDirectories()
 			mTextures.push_back(NULL);
 
 			// Create a new TextureLoader and add it to the list
+			const LumpId lump_id = mTextureLoaders.size();
 			TextureLoader* loader = new CompositeTextureLoader(texture_def);
 			mTextureLoaders.push_back(loader);
+			const ResourcePath path(textures_directory_name + name);
+			manager->addResource(path, this, lump_id); 
 		}
 
 		delete [] lump_data;
@@ -1107,28 +1055,31 @@ void TextureManager::addTextureDirectories()
 // Creates a TextureLoader instance for each texture resource in the provided
 // list of ResourceIds.
 //
-void TextureManager::registerTextureResources(const std::vector<ResourceId>& res_id_list, ResourceManager* manager)
+void TextureManager::registerTextureResources(ResourceManager* manager)
 {
+	std::vector<ResourceId> res_id_list = manager->getAllResourceIds();
+
 	for (std::vector<ResourceId>::const_iterator it = res_id_list.begin(); it != res_id_list.end(); ++it)
 	{
 		const ResourceId res_id = *it;
-		if (Res_CheckLump(res_id))
+		assert(Res_CheckLump(res_id));
+
+		const ResourcePath& path = Res_GetResourcePath(res_id);
+		const ResourcePath& directory(path.first());
+		TextureLoader* loader = NULL;
+
+		if (directory == flats_directory_name)
+			loader = new FlatTextureLoader(res_id);
+		else if (directory == patches_directory_name)
+			loader = new PatchTextureLoader(res_id);
+
+		if (loader)
 		{
-			const ResourcePath& path = Res_GetResourcePath(res_id);
-			const OString& directory = path.first();
-			TextureLoader* loader = NULL;
+			mTextures.push_back(NULL);
 
-			if (directory == flats_directory_name)
-				loader = new FlatTextureLoader(res_id);
-			else if (directory == patches_directory_name)
-				loader = new PatchTextureLoader(res_id);
-
-			if (loader)
-			{
-				const LumpId lump_id = mTextureLoaders.size();
-				mTextureLoaders.push_back(loader);
-				manager->addResource(path, this, lump_id); 
-			}
+			const LumpId lump_id = mTextureLoaders.size();
+			mTextureLoaders.push_back(loader);
+			manager->addResource(path, this, lump_id); 
 		}
 	}
 }

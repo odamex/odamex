@@ -67,6 +67,12 @@ static ResourceManager resource_manager;
 //
 static bool Res_ValidateFlat(const void* data, size_t length)
 {
+	// TODO: Handle Heretic and Hexen's oddly formatted flats
+	// From http://zdoom.org/wiki/Flat:
+	// Heretic features a few 64x65 flats, and Hexen a few 64x128 flats. Those
+	// were used to "cheat" with the implementation of scrolling effects. ZDoom
+	// does not need the same hacks to make flats scroll properly, and therefore
+	// ignores the excess pixels in these flats.
 	return length == 64 * 64 || length == 128 * 128 || length == 256 * 256;
 }
 
@@ -544,6 +550,7 @@ void ResourceManager::openResourceFile(const OString& filename)
 // 
 void ResourceManager::openResourceFiles(const std::vector<std::string>& filenames)
 {
+	
 	for (std::vector<std::string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it)
 		openResourceFile(*it);
 	
@@ -588,7 +595,6 @@ const ResourceId ResourceManager::addResource(
 		const LumpId lump_id)
 {
 	const ResourceContainerId& container_id = container->getResourceContainerId();
-
 	const ResourceId res_id = mResources.insert();
 	ResourceRecord& res_rec = mResources.get(res_id);
 	res_rec.mPath = path;
@@ -659,6 +665,89 @@ const ResourceIdList ResourceManager::getAllResourceIds(const ResourcePath& path
 		return res_id_list;
 	}
 	return ResourceIdList();
+}
+
+
+//
+// ResourceManager::getAllResourceIds
+//
+const ResourceIdList ResourceManager::getAllResourceIds() const
+{
+	ResourceIdList res_id_list;
+
+	for (ResourceRecordTable::const_iterator it = mResources.begin(); it != mResources.end(); ++it)
+	{
+		const ResourceId res_id = mResources.getId(*it);
+		res_id_list.push_back(res_id);
+	}
+	
+	return res_id_list;
+}
+
+
+//
+// getTextureHelper
+//
+// Helper function for getTextureResourceId. This will check if the lump name
+// in path is in any directory in a prioritized list.
+//
+static const ResourceId getTextureHelper(const ResourcePath& path, const std::vector<ResourcePath>& priorities)
+{
+	// Couldn't find a match for the lump's name in the directory specified.
+	// Try other directories. 
+	const std::string path_string = OString(path);
+	size_t first_separator = path_string.find_first_of('/');
+	if (first_separator != std::string::npos && first_separator + 1 < path_string.length())
+	{
+		const ResourcePath lump_path(path_string.substr(first_separator + 1));
+
+		for (std::vector<ResourcePath>::const_iterator it = priorities.begin(); it != priorities.end(); ++it)
+		{
+			const ResourcePath& directory = *it;
+			const ResourceId res_id = Res_GetResourceId(directory + lump_path);
+			if (res_id != ResourceManager::RESOURCE_NOT_FOUND)
+				return res_id;
+		}
+	}
+
+	return ResourceManager::RESOURCE_NOT_FOUND; 
+}
+
+
+//
+// ResourceManager::getTextureResourceId
+//
+// Retrieves the ResourceId for the given texture path. If an exact match
+// for the path is not found, other texture directories will be searched for
+// a lump with the same name.
+//
+const ResourceId ResourceManager::getTextureResourceId(const ResourcePath& path) const
+{
+	const OString& directory = path.first();
+	const OString& lump_name = path.last();
+
+	// In vanilla Doom, sidedef texture names starting with '-' indicate there
+	// should be no texture used. However, ZDoom only ignores sidedef textures
+	// whose entire name is "-", allowing "-NOFLAT-", etc. We are adopting the
+	// ZDoom mechanism here until it proves to be a problem.
+	if (lump_name.compare("-") == 0 && directory == textures_directory_name)
+		return ResourceManager::RESOURCE_NOT_FOUND;
+
+	const ResourceId res_id = getResourceId(path);
+	if (res_id != ResourceManager::RESOURCE_NOT_FOUND)
+		return res_id;
+
+	static std::vector<ResourcePath> priorities;
+	if (priorities.empty())
+	{
+		priorities.push_back(hires_directory_name);
+		priorities.push_back(textures_directory_name);
+		priorities.push_back(flats_directory_name);
+		priorities.push_back(patches_directory_name);
+		priorities.push_back(sprites_directory_name);
+		priorities.push_back(graphics_directory_name);
+	}
+	return getTextureHelper(path, priorities);
 }
 
 
@@ -890,6 +979,17 @@ const ResourceIdList Res_GetAllResourceIds(const OString& name, const OString& d
 {
 	const ResourcePath path = Res_MakeResourcePath(name, directory);
 	return resource_manager.getAllResourceIds(path);
+}
+
+
+//
+// Res_GetTextureResourceId
+//
+//
+const ResourceId Res_GetTextureResourceId(const OString& name, const OString& directory)
+{
+	const ResourcePath path = Res_MakeResourcePath(name, directory);
+	return resource_manager.getTextureResourceId(path);
 }
 
 

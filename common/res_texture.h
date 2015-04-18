@@ -360,7 +360,7 @@ public:
 
 	virtual size_t getLumpCount() const
 	{
-		return 0;
+		return mTextureLoaders.size();
 	}
 
 	virtual size_t getLumpLength(const LumpId lump_id) const
@@ -372,11 +372,6 @@ public:
 	{
 		return 0;
 	}
-
-	void startup();
-	void shutdown();
-
-	void precache();
 
 	void updateAnimatedTextures();
 
@@ -406,11 +401,11 @@ private:
 	// initialization routines
 	void clear();
 	void generateNotFoundTexture();
-	void addTextureDirectories(); 
+	void addTextureDirectories(ResourceManager* manager); 
 	void readAnimDefLump();
 	void readAnimatedLump();
 
-	void registerTextureResources(const std::vector<ResourceId>& res_ids, ResourceManager* manager);
+	void registerTextureResources(ResourceManager* manager);
 
 	// patches
 	void cachePatch(TextureId tex_id);

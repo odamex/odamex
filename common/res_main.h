@@ -225,6 +225,14 @@ public:
 		return getAllResourceIds(Res_MakeResourcePath(name, directory));
 	}
 
+	const ResourceIdList getAllResourceIds() const;
+
+	const ResourceId getTextureResourceId(const ResourcePath& path) const;
+	const ResourceId getTextureResourceId(const OString& name, const OString& directory) const
+	{
+		return getTextureResourceId(Res_MakeResourcePath(name, directory));
+	}
+
 	const ResourcePath& getResourcePath(const ResourceId res_id) const
 	{
 		const ResourceRecord* res_rec = getResourceRecord(res_id);
@@ -357,6 +365,8 @@ const std::vector<std::string>& Res_GetResourceFileHashes();
 const ResourceId Res_GetResourceId(const OString& name, const OString& directory = global_directory_name);
 
 const ResourceIdList Res_GetAllResourceIds(const OString& name, const OString& directory = global_directory_name); 
+
+const ResourceId Res_GetTextureResourceId(const OString& name, const OString& directory);
 
 const OString& Res_GetLumpName(const ResourceId res_id);
 
