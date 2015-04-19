@@ -119,38 +119,38 @@ public:
 		}
 
 		// allow implicit converstion from iterator to const_iterator
-		operator ConstThisClass() const
+		inline operator ConstThisClass() const
 		{
 			return ConstThisClass(mSArray, mSlot);
 		}
 
-		bool operator== (const ThisClass& other) const
+		inline bool operator== (const ThisClass& other) const
 		{
 			return &mSArray == &other.mSArray && mSlot == other.mSlot;
 		}
 
-		bool operator!= (const ThisClass& other) const
+		inline bool operator!= (const ThisClass& other) const
 		{
 			return !(operator==(other));
 		}
 
-		IVT& operator* ()
+		inline IVT& operator* ()
 		{
 			return mSArray.mItemRecords[mSlot].mItem;
 		}
 
-		IVT* operator-> ()
+		inline IVT* operator-> ()
 		{
 			return &(mSArray.mItemRecords[mSlot].mItem);
 		}
 
-		ThisClass& operator++ ()
+		inline ThisClass& operator++ ()
 		{
 			mSlot = mSArray.nextUsed(++mSlot);
 			return *this;
 		}
 
-		ThisClass operator++ (int)
+		inline ThisClass operator++ (int)
 		{
 			generic_iterator temp(*this);
 			mSlot = mSArray.nextUsed(++mSlot);
@@ -208,107 +208,107 @@ public:
 			mItemRecords[i].mId = NOT_FOUND;
 	}
 
-	bool empty() const
+	inline bool empty() const
 	{
 		return mUsed == 0;
 	}
 
-	size_t size() const
+	inline size_t size() const
 	{
 		return mUsed;
 	}
 
-	size_t max_size() const
+	inline size_t max_size() const
 	{
 		return MAX_SIZE;
 	}
 
-	size_t capacity() const
+	inline size_t capacity() const
 	{
 		return mSize;
 	}
 
-	iterator begin()
+	inline iterator begin()
 	{
 		if (empty())
 			return end();
 		return iterator(*this, mItemRecords[nextUsed(0)].mId);
 	}
 
-	const_iterator begin() const
+	inline const_iterator begin() const
 	{
 		if (empty())
 			return end();
 		return const_iterator(*this, mItemRecords[nextUsed(0)].mId);
 	}
 
-	iterator end()
+	inline iterator end()
 	{
 		return iterator(*this, NOT_FOUND);
 	}
 
-	const_iterator end() const
+	inline const_iterator end() const
 	{
 		return const_iterator(*this, NOT_FOUND);
 	}	
 
-	bool validate(const SArrayId id) const
+	inline bool validate(const SArrayId id) const
 	{
 		return getSlot(id) != NOT_FOUND;
 	}
 
-	iterator find(const SArrayId id)
+	inline iterator find(const SArrayId id)
 	{
 		return iterator(*this, id);
 	}
 
-	const_iterator find(const SArrayId id) const
+	inline const_iterator find(const SArrayId id) const
 	{
 		return const_iterator(*this, id);
 	}
 
-	VT& get(const SArrayId id)
+	inline VT& get(const SArrayId id)
 	{
 		unsigned int slot = getSlot(id);
 		assert(slot != NOT_FOUND);
 		return mItemRecords[slot].mItem;
 	}
 
-	const VT& get(const SArrayId id) const
+	inline const VT& get(const SArrayId id) const
 	{
 		unsigned int slot = getSlot(id);
 		assert(slot != NOT_FOUND);
 		return mItemRecords[slot].mItem;
 	}
 		
-	VT& operator[](const SArrayId id)
+	inline VT& operator[](const SArrayId id)
 	{
 		unsigned int slot = getSlot(id);
 		assert(slot != NOT_FOUND);
 		return mItemRecords[slot].mItem;
 	}
 
-	const VT& operator[](const SArrayId id) const
+	inline const VT& operator[](const SArrayId id) const
 	{
 		unsigned int slot = getSlot(id);
 		assert(slot != NOT_FOUND);
 		return mItemRecords[slot].mItem;
 	}
 
-	const SArrayId getId(const VT& item) const
+	inline const SArrayId getId(const VT& item) const
 	{
 		unsigned int slot = getSlot(item);
 		assert(slot != NOT_FOUND);
 		return mItemRecords[getSlot(item)].mId;
 	}
 
-	const SArrayId insert()
+	inline const SArrayId insert()
 	{
 		unsigned int slot = insertSlot();
 		return mItemRecords[slot].mId;
 	}
 
-	const SArrayId insert(const VT& item)
+	inline const SArrayId insert(const VT& item)
 	{
 		unsigned int slot = insertSlot();
 		mItemRecords[slot].mItem = item;
@@ -342,6 +342,18 @@ public:
 			erase(it1);
 			++it1;
 		}
+	}
+
+	inline int compare(const SArrayId id1, const SArrayId id2)
+	{
+		assert(validate(id1) && validate(id2));
+		unsigned int slot1 = id1 & SLOT_MASK, slot2 = id2 & SLOT_MASK;
+		if (slot1 < slot2)
+			return -1;
+		else if (slot1 > slot2)
+			return 1;
+		else
+			return 0;
 	}
 
 private:
