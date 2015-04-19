@@ -153,8 +153,50 @@ public:
 		inline ThisClass operator++ (int)
 		{
 			generic_iterator temp(*this);
-			mSlot = mSArray.nextUsed(++mSlot);
-			return temp;
+			return temp.operator++ ();
+		}
+
+		inline ThisClass& operator+= (unsigned int n)
+		{
+			while (n--)
+				operator++ ();
+			return *this;
+		}
+
+		inline ThisClass operator+ (unsigned int n) const
+		{
+			generic_iterator temp(*this);
+			return temp.operator+= (n);
+		}
+
+		inline IVT& operator[] (unsigned int n)
+		{
+			generic_iterator temp(operator+ (n));
+			return temp.operator* ();
+		}
+
+		inline bool operator< (const ThisClass& other) const
+		{
+			assert(&mSArray == &other.mSArray);
+			return mSlot < other.mSlot;
+		}
+
+		inline bool operator<= (const ThisClass& other) const
+		{
+			assert(&mSArray == &other.mSArray);
+			return mSlot <= other.mSlot;
+		}
+
+		inline bool operator> (const ThisClass& other) const
+		{
+			assert(&mSArray == &other.mSArray);
+			return mSlot > other.mSlot;
+		}
+
+		inline bool operator>= (const ThisClass& other) const
+		{
+			assert(&mSArray == &other.mSArray);
+			return mSlot >= other.mSlot;
 		}
 
 	private:
@@ -342,18 +384,6 @@ public:
 			erase(it1);
 			++it1;
 		}
-	}
-
-	inline int compare(const SArrayId id1, const SArrayId id2)
-	{
-		assert(validate(id1) && validate(id2));
-		unsigned int slot1 = id1 & SLOT_MASK, slot2 = id2 & SLOT_MASK;
-		if (slot1 < slot2)
-			return -1;
-		else if (slot1 > slot2)
-			return 1;
-		else
-			return 0;
 	}
 
 private:
