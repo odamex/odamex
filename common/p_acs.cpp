@@ -1611,7 +1611,7 @@ void DLevelScript::RunScript ()
 	int pcd;
 	char work[4096], *workwhere = work;
 	const char *lookup;
-	int optstart = -1;
+//	int optstart = -1;
 	int temp;
 
 	while (state == SCRIPT_Running)
@@ -2458,7 +2458,7 @@ void DLevelScript::RunScript ()
 			}
 			else
 			{
-				optstart = -1;
+//				optstart = -1;
 			}
 			break;
 

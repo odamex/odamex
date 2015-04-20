@@ -1076,7 +1076,7 @@ void WI_updateNetgameStats()
 
 void WI_drawNetgameStats(void)
 {
-	unsigned int i, x, y;
+	unsigned int x, y;
 	short pwidth = percent->width();
 
 	// draw animated background
