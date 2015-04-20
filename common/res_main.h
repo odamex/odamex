@@ -33,6 +33,7 @@
 #include "res_resourcepath.h"
 
 #include "w_wad.h"
+#include "z_zone.h"
 
 // Typedefs
 typedef uint32_t ResourceId;
@@ -247,6 +248,8 @@ public:
 
 	size_t readLump(const ResourceId res_id, void* data) const;
 
+	const void* getData(const ResourceId res_id, int tag = PU_CACHE);
+
 
 	const ResourceContainer* getResourceContainer(const ResourceContainerId& container_id) const
 	{
@@ -270,13 +273,15 @@ private:
 				mPath = other.mPath;
 				mResourceContainerId = other.mResourceContainerId;
 				mLumpId = other.mLumpId;
+				mCachedData = other.mCachedData;
 			}
 			return *this;
 		}
 
-		ResourcePath		mPath;
-		ResourceContainerId	mResourceContainerId;
-		LumpId				mLumpId;
+		ResourcePath			mPath;
+		ResourceContainerId		mResourceContainerId;
+		LumpId					mLumpId;
+		void*					mCachedData;
 	};
 
 	typedef SArray<ResourceRecord> ResourceRecordTable;

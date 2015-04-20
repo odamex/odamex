@@ -53,9 +53,6 @@ static bool Res_CheckDehackedFile(const OString& filename);
 static bool Res_IsMapLumpName(const OString& name);
 
 
-typedef OHashTable<ResourceId, void*> CacheTable;
-static CacheTable cache_table(4096);
-
 static ResourceManager resource_manager;
 
 
@@ -572,6 +569,12 @@ void ResourceManager::openResourceFiles(const std::vector<std::string>& filename
 //
 void ResourceManager::closeAllResourceFiles()
 {
+	for (ResourceRecordTable::iterator it = mResources.begin(); it != mResources.end(); ++it)
+	{
+		if (it->mCachedData)
+			Z_Free(it->mCachedData);
+		it->mCachedData = NULL;
+	}
 	mResources.clear();
 
 	for (std::vector<ResourceContainer*>::iterator it = mContainers.begin(); it != mContainers.end(); ++it)
@@ -603,6 +606,7 @@ const ResourceId ResourceManager::addResource(
 	res_rec.mPath = path;
 	res_rec.mResourceContainerId = container_id;
 	res_rec.mLumpId = lump_id;
+	res_rec.mCachedData = NULL;
 
 	// Add the ResourceId to the ResourceIdLookupTable
 	// ResourceIdLookupTable uses a ResourcePath key and value that is a std::vector
@@ -818,6 +822,49 @@ size_t ResourceManager::readLump(const ResourceId res_id, void* data) const
 
 
 //
+// ResourceManager::getData
+//
+const void* ResourceManager::getData(const ResourceId res_id, int tag)
+{
+	ResourceRecordTable::iterator it = mResources.find(res_id);
+	if (it == mResources.end())
+		return NULL;
+
+	ResourceRecord& res_rec = *it;
+	void** data = &res_rec.mCachedData;
+
+	// Read the data if it's not already in the cache
+	if (*data == NULL)
+	{
+		const OString path_str(getResourcePath(res_id));
+		DPrintf("Resource cache miss for %s\n", path_str.c_str()); 
+
+		const ResourceContainerId& container_id = res_rec.mResourceContainerId;
+		assert(container_id < mContainers.size());
+		const ResourceContainer* container = mContainers[container_id];
+		assert(container != NULL);
+		const LumpId lump_id = res_rec.mLumpId;
+		size_t length = container->getLumpLength(lump_id);
+
+		// Allocate an extra byte so that we can terminate the allocated memory
+		// with a zero. This is a Zone memory system requirement.
+		*data = Z_Malloc(length + 1, tag, data);
+		*((unsigned char*)(*data) + length) = 0;
+
+		if (container->readLump(lump_id, *data, length) != length)
+		{
+			Z_Free(*data);
+			*data = NULL;
+			return NULL;
+		}
+	}
+
+	Z_ChangeTag(*data, tag);	// update the tag (if necessary)
+	return *data;
+}
+
+
+//
 // ResourceManager::dump
 //
 // Print information about each resource in all of the open resource
@@ -838,9 +885,11 @@ void ResourceManager::dump() const
 		const ResourceContainer* container = mContainers[container_id];
 		assert(container);
 
+		bool cached = res_rec.mCachedData != NULL;
+
 		Printf(PRINT_HIGH,"0x%08X %c %s [%u] [%s]\n",
 				res_id,
-				visible(res_id) ? '*' : 'x',
+				cached ? '$' : visible(res_id) ? '*' : '-',
 				OString(path).c_str(),
 				(unsigned int)getLumpLength(res_id),
 				getResourceContainerFileName(res_id).c_str());
@@ -875,9 +924,6 @@ void Res_OpenResourceFiles(const std::vector<std::string>& filenames)
 void Res_CloseAllResourceFiles()
 {
 	resource_manager.closeAllResourceFiles();
-
-	// free all of the memory used by cached lump data
-	cache_table.clear();
 }
 
 
@@ -1138,28 +1184,7 @@ size_t Res_ReadLump(const ResourceId res_id, void* data)
 //
 void* Res_CacheLump(const ResourceId res_id, int tag)
 {
-	void* data_ptr = NULL;
-
-	if (resource_manager.validateResourceId(res_id))
-	{
-		data_ptr = cache_table[res_id];
-
-		if (data_ptr)
-		{
-			Z_ChangeTag(data_ptr, tag);
-		}
-		else
-		{
-			void** owner_ptr = &cache_table[res_id];
-			size_t lump_length = Res_GetLumpLength(res_id);
-			cache_table[res_id] = data_ptr = Z_Malloc(lump_length + 1, tag, owner_ptr);
-			Res_ReadLump(res_id, data_ptr);
-
-			uint8_t* terminator = (uint8_t*)data_ptr + lump_length;
-			*terminator = 0;
-		}
-	}
-	return data_ptr; 
+	return (void*)resource_manager.getData(res_id, tag);
 }
 
 

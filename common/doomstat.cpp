@@ -49,15 +49,10 @@ CVAR_FUNC_IMPL(language)
 		level.behavior->PrepLocale(LanguageIDs[0], LanguageIDs[1], LanguageIDs[2], LanguageIDs[3]);
 
 	const ResourceId language_res_id = Res_GetResourceId("LANGUAGE");
-	size_t language_length = Res_GetLumpLength(language_res_id);
-	byte* language_data = new byte[language_length];
-	Res_ReadLump(language_res_id, language_data);
-
+	byte* language_data = (byte*)Res_CacheLump(language_res_id, PU_CACHE);
 	GStrings.FreeData();
-	GStrings.LoadStrings(language_data, language_length, STRING_TABLE_SIZE, false);
+	GStrings.LoadStrings(language_data, Res_GetLumpLength(language_res_id), STRING_TABLE_SIZE, false);
 	GStrings.Compact();
-
-	delete [] language_data;
 
 	G_SetLevelStrings();
 }
