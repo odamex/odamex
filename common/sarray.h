@@ -76,6 +76,7 @@ class SArray
 {
 private:
 	typedef SArray<VT, N> SArrayType;
+	typedef unsigned int SlotNumber;
 
 	struct ItemRecord
 	{
@@ -201,7 +202,7 @@ public:
 
 	private:
 		ISAT&			mSArray;
-		unsigned int	mSlot;
+		SlotNumber		mSlot;
 	};
 
 
@@ -210,6 +211,11 @@ public:
 	// SArray functions
 	// ------------------------------------------------------------------------
 
+	//
+	// SArray::SArray
+	//
+	// Initializes the container to the specified size.
+	//
 	SArray(unsigned int size)
 	{
 		mSize = size > MAX_SIZE ? MAX_SIZE : size;
@@ -217,17 +223,32 @@ public:
 		clear();
 	}
 
+	//
+	// SArray:SArray
+	//
+	// Initializes the container as a copy of the given SArray
+	//
 	SArray(const SArrayType& other)
 	{
 		mItemRecords = new ItemRecord[other.mSize];
 		copyFrom(other);
 	}
 
+	//
+	// SArray::~SArray
+	//
+	// Frees the memory used by the storage container.
+	//
 	~SArray()
 	{
 		delete [] mItemRecords;
 	}
 
+	//
+	// SArray::operator=
+	//
+	// Copies the contents of the given SArray to this one.
+	//
 	SArray& operator= (const SArrayType& other)
 	{
 		if (mSize != other.mSize)
@@ -240,6 +261,12 @@ public:
 		return *this;
 	}
 
+	//
+	// SArray::clear
+	//
+	// Removes all elements from the container but does leaves the allocated
+	// memory in-tact. Any IDs assigned prior to clearing will be invalidated.
+	//
 	void clear()
 	{
 		mUsed = 0;
@@ -250,26 +277,54 @@ public:
 			mItemRecords[i].mId = NOT_FOUND;
 	}
 
+	//
+	// SArray::empty
+	//
+	// Returns true if the container is empty.
+	//
 	inline bool empty() const
 	{
 		return mUsed == 0;
 	}
 
+	//
+	// SArray::size
+	//
+	// Returns the number of items currently stored in the container.
+	//
 	inline size_t size() const
 	{
 		return mUsed;
 	}
 
+	//
+	// SArray::max_size
+	//
+	// Returns the maximum size that the container can grow to. This number
+	// is directly based on the template parameter N.
+	//
 	inline size_t max_size() const
 	{
 		return MAX_SIZE;
 	}
 
+	//
+	// SArray::capacity
+	//
+	// Returns the current storage container size. This capacity can change as
+	// the storage container is resized to accommodate additional insertions,
+	// up to a maximum capacity dictated by the max_size function.
+	//
 	inline size_t capacity() const
 	{
 		return mSize;
 	}
 
+	//
+	// SArray::begin
+	//
+	// Returns an iterator to the first item stored in the container.
+	//
 	inline iterator begin()
 	{
 		if (empty())
@@ -277,6 +332,9 @@ public:
 		return iterator(*this, mItemRecords[nextUsed(0)].mId);
 	}
 
+	//
+	// SArray::begin
+	//
 	inline const_iterator begin() const
 	{
 		if (empty())
@@ -284,99 +342,177 @@ public:
 		return const_iterator(*this, mItemRecords[nextUsed(0)].mId);
 	}
 
+	//
+	// SArray::end
+	//
 	inline iterator end()
 	{
 		return iterator(*this, NOT_FOUND);
 	}
 
+	//
+	// SArray::end
+	//
 	inline const_iterator end() const
 	{
 		return const_iterator(*this, NOT_FOUND);
 	}	
 
+	//
+	// SArray::validate
+	//
+	// Indicates whether the given ID represents a valid item in the
+	// storage container.
+	//
 	inline bool validate(const SArrayId id) const
 	{
 		return getSlot(id) != NOT_FOUND;
 	}
 
+	//
+	// SArray::find
+	//
+	// Returns an iterator to the item matching the given ID.
+	//
 	inline iterator find(const SArrayId id)
 	{
 		return iterator(*this, id);
 	}
 
+	//
+	// SArray::find
+	//
 	inline const_iterator find(const SArrayId id) const
 	{
 		return const_iterator(*this, id);
 	}
 
+	//
+	// SArray::get
+	//
+	// Returns the item matching the given ID. Note that passing an invalid ID
+	// results in undefined behavior.
+	//
 	inline VT& get(const SArrayId id)
 	{
-		unsigned int slot = getSlot(id);
+		SlotNumber slot = getSlot(id);
 		assert(slot != NOT_FOUND);
 		return mItemRecords[slot].mItem;
 	}
 
+	//
+	// SArray::get
+	//
 	inline const VT& get(const SArrayId id) const
 	{
-		unsigned int slot = getSlot(id);
+		SlotNumber slot = getSlot(id);
 		assert(slot != NOT_FOUND);
 		return mItemRecords[slot].mItem;
 	}
 		
+	//
+	// SArray::operator[]
+	//
+	// Returns the item matching the given ID. Note that passing an invalid ID
+	// results in undefined behavior.
 	inline VT& operator[](const SArrayId id)
 	{
-		unsigned int slot = getSlot(id);
-		assert(slot != NOT_FOUND);
-		return mItemRecords[slot].mItem;
+		return get(id);
 	}
 
 	inline const VT& operator[](const SArrayId id) const
 	{
-		unsigned int slot = getSlot(id);
-		assert(slot != NOT_FOUND);
-		return mItemRecords[slot].mItem;
+		return get(id);
 	}
 
+	//
+	// SArray::getId
+	//
+	// Returns the ID for the given item. Note that passing an item that is not
+	// a reference to an item obtained through the get accessor results in
+	// undefined behavior.
+	//
 	inline const SArrayId getId(const VT& item) const
 	{
-		unsigned int slot = getSlot(item);
+		SlotNumber slot = getSlot(item);
 		assert(slot != NOT_FOUND);
 		return mItemRecords[getSlot(item)].mId;
 	}
 
+	//
+	// SArray::insert
+	//
+	// Inserts an uninitialized item into the container and returns the ID for
+	// the item.
+	//
 	inline const SArrayId insert()
 	{
-		unsigned int slot = insertSlot();
+		SlotNumber slot = insertSlot();
 		return mItemRecords[slot].mId;
 	}
 
+	//
+	// SArray::insert
+	//
+	// Inserts a copy of the given item into the container and returns the ID
+	// for the item.
+	//
 	inline const SArrayId insert(const VT& item)
 	{
-		unsigned int slot = insertSlot();
+		SlotNumber slot = insertSlot();
 		mItemRecords[slot].mItem = item;
 		return mItemRecords[slot].mId;
 	}
 
+	//
+	// SArray::erase
+	//
+	// Removes the item matching the given ID from the container. Note that the
+	// item's destructor will not be called until this SArray instance is
+	// deleted or goes out of scope.
+	//
 	inline void erase(const SArrayId id)
 	{
-		unsigned int slot = getSlot(id);
+		SlotNumber slot = getSlot(id);
 		assert(slot != NOT_FOUND);
 		eraseSlot(slot);
 	}
 
+	//
+	// SArray::erase
+	//
+	// Removes the given item from the container. Note that the item's destructor
+	// will not be called until this SArray instance is deleted or goes out of scope.
+	// Additionally, passing an item that is not a reference to an item obtained
+	// through the get accessor results in undefined behavior.
+	//
 	inline void erase(const VT& item)
 	{
-		unsigned int slot = getSlot(item);
+		SlotNumber slot = getSlot(item);
 		assert(slot != NOT_FOUND);
 		eraseSlot(slot);
 	}
 
+	//
+	// SArray::erase
+	//
+	// Removes the item pointed to by the given iterator. Note that the item's
+	// destructor will not be called until this SArray instance is deleted or
+	// goes out of scope.
+	//
 	inline void erase(iterator it)
 	{
 		assert(it.slot != NOT_FOUND);
 		eraseSlot(it.mSlot);
 	}
 
+	//
+	// SArray::erase
+	//
+	// Remove all of the items between the given iterators, inclusive. Note that
+	// the items' destructors will not be called until this SArray instance is
+	// deleted or goes out of scope.
+	//
 	inline void erase(iterator it1, iterator it2)
 	{
 		while (it1 != it2)
@@ -387,42 +523,67 @@ public:
 	}
 
 private:
+	//
+	// SArray::resize
+	//
+	// Resizes the storage array mItemReocrds to the new specified size.
+	//
 	inline void resize(unsigned int newsize)
 	{
+		assert(newsize > mSize);
+		assert(newsize <= MAX_SIZE);
+
 		ItemRecord* newitemrecords = new ItemRecord[newsize];
-		for (unsigned int i = 0; i < mNextUnused; i++)
+		for (SlotNumber i = 0; i < mNextUnused; i++)
 		{
 			newitemrecords[i].mItem = mItemRecords[i].mItem;
 			newitemrecords[i].mId = mItemRecords[i].mId;
 		}
-		for (unsigned int i = mNextUnused; i < newsize; i++)
+		for (SlotNumber i = mNextUnused; i < newsize; i++)
 			newitemrecords[i].mId = NOT_FOUND;
 		
 		delete [] mItemRecords;
 		mSize = newsize;
 		mItemRecords = newitemrecords;
 		assert(mItemRecords != NULL);
-		assert(mSize <= MAX_SIZE);
 	}
 
-	inline unsigned int getSlot(const SArrayId id) const
+	//
+	// SArray::getSlot
+	//
+	// Returns the slot portion of the given ID, verifying that the key portion
+	// of the ID is correct.
+	//
+	inline SlotNumber getSlot(const SArrayId id) const
 	{
-		unsigned int slot = id & SLOT_MASK;
+		SlotNumber slot = id & SLOT_MASK;
 		assert(slot < mSize);
 		if (slotUsed(slot) && mItemRecords[slot].mId == id)
 			return slot;
 		return NOT_FOUND;
 	}
 
-	inline unsigned int getSlot(const VT& item) const
+	//
+	// SArray::getSlot
+	//
+	// Returns the slot occupied by the given item. The item must be a reference
+	// returned by one of the class's accessor functions.
+	//
+	inline SlotNumber getSlot(const VT& item) const
 	{
-		unsigned int slot = (ItemRecord*)(&item) - mItemRecords;
+		SlotNumber slot = (ItemRecord*)(&item) - mItemRecords;
 		if (slot < mSize && slotUsed(slot))
 			return slot;
 		return NOT_FOUND;
 	}
 
-	inline const SArrayId generateId(unsigned int slot)
+	//
+	// SArray::generateId
+	//
+	// Creates a new ID number from a combination of mIdKey and the
+	// given slot number. mIdKey is then incremented, handling wrap-around.
+	//
+	inline const SArrayId generateId(SlotNumber slot)
 	{
 		assert(slot < mSize);
 		SArrayId id = (mIdKey << SLOT_BITS) | slot;
@@ -432,12 +593,22 @@ private:
 		return id;
 	}
 
-	inline bool slotUsed(unsigned int slot) const
+	//
+	// SArray::slotUsed
+	//
+	// Indicates if the given slot is currently in use.
+	//
+	inline bool slotUsed(SlotNumber slot) const
 	{
 		return ((mItemRecords[slot].mId >> SLOT_BITS) >= MIN_KEY);
 	}
 
-	inline unsigned int nextUsed(unsigned int slot) const
+	//
+	// SArray::nextUsed
+	//
+	// Returns the slot number for the next slot in use following given slot.
+	//
+	inline SlotNumber nextUsed(SlotNumber slot) const
 	{
 		while (slot < mNextUnused && !slotUsed(slot))
 			slot++;
@@ -445,7 +616,29 @@ private:
 		return (slot < mNextUnused) ? slot : NOT_FOUND;
 	}
 
-	inline unsigned int insertSlot()
+	//
+	// SArray::prevUsed
+	//
+	// Returns the slot number for the slot in use that preceeds the given slot.
+	//
+	inline SlotNumber prevUsed(SlotNumber slot) const
+	{
+		while (slot > 0 && !slotUsed(slot))
+			slot--;
+		if (slot == 0 && !slotUsed(slot))
+			return NOT_FOUND;
+		return slot;
+	}
+
+	//
+	// SArray::insertSlot
+	//
+	// Determines the next availible slot for item insertion. If the current
+	// storage array mItemRecords is full, it will be resized if possible.
+	// Tracking variables mFreeHead and mNextUnused are updated as needed.
+	// The number of the slot availible for insertion is returned.
+	//
+	inline SlotNumber insertSlot()
 	{
 		// need to resize?
 		if (mUsed == mSize)
@@ -459,7 +652,7 @@ private:
 				resize(newsize);
 		}
 
-		unsigned int slot = mFreeHead;
+		SlotNumber slot = mFreeHead;
 		if (slot != NOT_FOUND)
 			mFreeHead = mItemRecords[slot].mId;
 		else
@@ -471,7 +664,13 @@ private:
 		return slot;
 	}
 
-	inline void eraseSlot(unsigned int slot)
+	//
+	// SArray::eraseSlot
+	//
+	// Marks the given slot as being unused and updates the tracking variables
+	// mFreeHead and mUsed.
+	//
+	inline void eraseSlot(SlotNumber slot)
 	{
 		assert(slot < mSize);
 		if (slotUsed(slot))
@@ -482,10 +681,16 @@ private:
 		}
 	}
 
+	//
+	// SArray::copyFrom
+	//
+	// Helper function for the assignment operator and copy constructor. Handles
+	// copying the contents of another SArray to this one.
+	//
 	inline void copyFrom(const SArrayType& other)
 	{
 		mSize = other.mSize;
-		for (unsigned int i = 0; i < mNextUnused; i++)
+		for (SlotNumber i = 0; i < mNextUnused; i++)
 		{
 			mItemRecords[i].mItem = other.mItemRecords[i].mItem;
 			mItemRecords[i].mId = other.mItemRecords[i].mId;
@@ -513,8 +718,8 @@ private:
 	ItemRecord*		mItemRecords;
 	unsigned int	mSize;
 	unsigned int	mUsed;
-	unsigned int	mNextUnused;
-	unsigned int	mFreeHead;
+	SlotNumber		mNextUnused;
+	SlotNumber		mFreeHead;
 	unsigned int	mIdKey;
 };
 
