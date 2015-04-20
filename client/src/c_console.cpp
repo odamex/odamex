@@ -952,7 +952,7 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 
 		int newLineCount = std::count(outline, outline + strlen(outline), '\n');
 
-		if (ConRows < con_buffersize.asInt())
+		if (ConRows < (unsigned int)con_buffersize.asInt())
 			ConRows += (newLineCount > 1) ? newLineCount + 1 : 1;
 	}
 
@@ -1066,7 +1066,7 @@ void C_Ticker()
 			}
 		}
 
-		if (RowAdjust + (ConBottom/8) + 1 > con_buffersize.asInt())
+		if (RowAdjust + (ConBottom/8) + 1 > (unsigned int)con_buffersize.asInt())
 			RowAdjust = con_buffersize.asInt() - ConBottom;
 	}
 

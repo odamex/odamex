@@ -175,31 +175,6 @@ std::string W_MD5(std::string filename)
 // LUMP BASED ROUTINES.
 //
 
-
-//
-// Names of lumps that can't be overridden by client-only PWADs
-//
-static const char* NonOverrideNames [] =
-{
-	"THINGS",
-	"LINEDEFS",
-	"SIDEDEFS",
-	"VERTEXES",
-	"SEGS",
-	"SSECTORS",
-	"NODES",
-	"SECTORS",
-	"REJECT",
-	"BLOCKMAP",
-	"BEHAVIOR",
-	"DECORATE",
-	"MAPINFO",
-	"PLAYPAL",
-	"COLORMAP",
-	""
-};
-
-
 //
 // W_AddLumps
 //
