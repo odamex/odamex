@@ -110,75 +110,75 @@ public:
 		entry->length = length;
 		entry->offset = offset;
 
-		size_t index = getIndex(entry);
-		assert(index != INVALID_INDEX);
-		mNameLookup.insert(std::make_pair(name, index));
+		const LumpId lump_id = getLumpId(entry);
+		assert(lump_id != INVALID_LUMP_ID);
+		mNameLookup.insert(std::make_pair(name, lump_id));
 	}
 
-	size_t getLength(size_t index) const
+	size_t getLength(const LumpId lump_id) const
 	{
-		return mEntries[index].length;
+		return mEntries[lump_id].length;
 	}
 
-	size_t getOffset(size_t index) const
+	size_t getOffset(const LumpId lump_id) const
 	{
-		return mEntries[index].offset;
+		return mEntries[lump_id].offset;
 	}
 
-	const OString& getName(size_t index) const
+	const OString& getName(const LumpId lump_id) const
 	{
-		return mEntries[index].name;
+		return mEntries[lump_id].name;
 	}
 
-	bool between(size_t index, const OString& start, const OString& end) const
+	bool between(const LumpId lump_id, const OString& start, const OString& end) const
 	{
-		size_t start_index = getIndex(start);
-		size_t end_index = getIndex(end);
+		LumpId start_lump_id = getLumpId(start);
+		LumpId end_lump_id = getLumpId(end);
 
-		if (index == INVALID_INDEX || start_index == INVALID_INDEX || end_index == INVALID_INDEX)
+		if (lump_id == INVALID_LUMP_ID || start_lump_id == INVALID_LUMP_ID || end_lump_id == INVALID_LUMP_ID)
 			return false;
-		return start_index < index && index < end_index;
+		return start_lump_id < lump_id && lump_id < end_lump_id;
 	}
 
 	bool between(const OString& name, const OString& start, const OString& end) const
 	{
-		return between(getIndex(name), start, end);
+		return between(getLumpId(name), start, end);
 	}
 
-	const OString& next(size_t index) const
+	const OString& next(const LumpId lump_id) const
 	{
-		if (index != INVALID_INDEX && index + 1 < mEntries.size())
-			return mEntries[index + 1].name;
+		if (lump_id != INVALID_LUMP_ID && lump_id + 1 < mEntries.size())
+			return mEntries[lump_id + 1].name;
 		static OString empty_string;
 		return empty_string; 
 	}
 
 	const OString& next(const OString& name) const
 	{
-		return next(getIndex(name));
+		return next(getLumpId(name));
 	}
 
 private:
-	static const size_t INVALID_INDEX = static_cast<size_t>(-1);
+	static const LumpId INVALID_LUMP_ID = static_cast<LumpId>(-1);
 
 	EntryInfoList		mEntries;
 
-	typedef OHashTable<OString, size_t> NameLookupTable;
+	typedef OHashTable<OString, LumpId> NameLookupTable;
 	NameLookupTable		mNameLookup;
 
-	size_t getIndex(const OString& name) const
+	LumpId getLumpId(const OString& name) const
 	{
 		NameLookupTable::const_iterator it = mNameLookup.find(OStringToUpper(name));
 		if (it != mNameLookup.end())
-			return getIndex(&mEntries[it->second]);
-		return INVALID_INDEX;
+			return getLumpId(&mEntries[it->second]);
+		return INVALID_LUMP_ID;
 	}
 
-	size_t getIndex(const EntryInfo* entry) const
+	LumpId getLumpId(const EntryInfo* entry) const
 	{
-		if (!mEntries.empty() && static_cast<size_t>(entry - &mEntries.front()) < mEntries.size())
-			return static_cast<size_t>(entry - &mEntries.front());
-		return INVALID_INDEX;
+		if (!mEntries.empty() && static_cast<LumpId>(entry - &mEntries.front()) < mEntries.size())
+			return static_cast<LumpId>(entry - &mEntries.front());
+		return INVALID_LUMP_ID;
 	}
 };
 
