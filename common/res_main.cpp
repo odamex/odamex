@@ -481,11 +481,15 @@ size_t WadResourceContainer::readLump(const LumpId lump_id, void* data, size_t l
 // ResourceManager::ResourceManager
 //
 // Set up the resource lookup tables.
+// Since the resource data caching scheme relies on the address of mResources's
+// internal storage container not changing, we must make sure that it can not
+// be resized. Thus we initialize mResources to be the largest size possible
+// for that container.
 //
 static const size_t initial_lump_count = 4096;
 
 ResourceManager::ResourceManager() :
-	mResources(initial_lump_count),
+	mResources(ResourceManager::MAX_RESOURCES),
 	mTextureManagerContainerId(static_cast<ResourceContainerId>(-1)),
 	mResourceIdLookup(2 * initial_lump_count)
 { }

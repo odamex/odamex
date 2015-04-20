@@ -264,6 +264,9 @@ public:
 
 
 private:
+	static const size_t MAX_RESOURCES_BITS = 15;
+	static const size_t MAX_RESOURCES = 1 << MAX_RESOURCES_BITS;
+
 	struct ResourceRecord
 	{
 		ResourceRecord& operator=(const ResourceRecord& other)
@@ -284,7 +287,7 @@ private:
 		void*					mCachedData;
 	};
 
-	typedef SArray<ResourceRecord> ResourceRecordTable;
+	typedef SArray<ResourceRecord, MAX_RESOURCES_BITS> ResourceRecordTable;
 	ResourceRecordTable		mResources;
 
 	// ---------------------------------------------------------------------------
