@@ -28,6 +28,9 @@
 #include <iterator>
 #include <cassert>
 
+#include <cstdlib>
+#include <ctime>
+
 // ============================================================================
 //
 // SArray 
@@ -216,11 +219,11 @@ public:
 	//
 	// Initializes the container to the specified size.
 	//
-	SArray(unsigned int size)
+	SArray(unsigned int size) :
+		mItemRecords(NULL), mSize(0)
 	{
-		mSize = size > MAX_SIZE ? MAX_SIZE : size;
-		mItemRecords = new ItemRecord[mSize];
 		clear();
+		resize(size > MAX_SIZE ? MAX_SIZE : size);
 	}
 
 	//
@@ -228,9 +231,11 @@ public:
 	//
 	// Initializes the container as a copy of the given SArray
 	//
-	SArray(const SArrayType& other)
+	SArray(const SArrayType& other) :
+		mItemRecords(NULL), mSize(0)
 	{
-		mItemRecords = new ItemRecord[other.mSize];
+		clear();
+		resize(other.mSize);
 		copyFrom(other);
 	}
 
@@ -272,7 +277,12 @@ public:
 		mUsed = 0;
 		mNextUnused = 0;
 		mFreeHead = NOT_FOUND;
-		mIdKey = MIN_KEY;
+
+		// Set mIdKey to a random value to further help stale IDs handed out
+		// before clear was called.
+		srand(time(NULL));
+		mIdKey = MIN_KEY + (rand() % (MAX_KEY - MIN_KEY));
+
 		for (unsigned int i = 0; i < mSize; i++)
 			mItemRecords[i].mId = NOT_FOUND;
 	}
