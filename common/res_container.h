@@ -30,18 +30,76 @@
 #include <vector>
 #include "m_ostring.h"
 
+// ============================================================================
+//
+// ContainerDirectory class interface & implementation
+//
+// ============================================================================
+//
+// A generic resource container directory for querying information about
+// game resource lumps.
+//
+
 class ContainerDirectory
 {
+private:
+	struct EntryInfo
+	{
+		OString		name;
+		size_t		length;
+		size_t		offset;
+	};
+
+	typedef std::vector<EntryInfo> EntryInfoList;
+
 public:
+	typedef EntryInfoList::iterator iterator;
+	typedef EntryInfoList::const_iterator const_iterator;
+
 	ContainerDirectory(const size_t initial_size = 4096) :
 		mNameLookup(2 * initial_size)
 	{
 		mEntries.reserve(initial_size);
 	}
 
+	iterator begin()
+	{
+		return mEntries.begin();
+	}
+
+	const_iterator begin() const
+	{
+		return mEntries.begin();
+	}
+
+	iterator end()
+	{
+		return mEntries.end();
+	}
+
+	const_iterator end() const
+	{
+		return mEntries.end();
+	}
+
+	const LumpId getLumpId(iterator it) const
+	{
+		return it - begin();
+	}
+
+	const LumpId getLumpId(const_iterator it) const
+	{
+		return it - begin();
+	}
+
 	size_t size() const
 	{
 		return mEntries.size();
+	}
+
+	bool validate(const LumpId lump_id) const
+	{
+		return lump_id < mEntries.size();
 	}
 
 	void addEntryInfo(const OString& name, size_t length, size_t offset = 0)
@@ -100,24 +158,13 @@ public:
 		return next(getIndex(name));
 	}
 
-	void sortByName()
-	{ }
-
 private:
 	static const size_t INVALID_INDEX = static_cast<size_t>(-1);
 
-	struct EntryInfo
-	{
-		OString		name;
-		size_t		length;
-		size_t		offset;
-	};
+	EntryInfoList		mEntries;
 
 	typedef OHashTable<OString, size_t> NameLookupTable;
 	NameLookupTable		mNameLookup;
-
-	typedef std::vector<EntryInfo> EntryInfoList;
-	EntryInfoList		mEntries;
 
 	size_t getIndex(const OString& name) const
 	{

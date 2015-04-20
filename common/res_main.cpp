@@ -344,8 +344,10 @@ WadResourceContainer::WadResourceContainer(
 
 	// Examine each lump and decide which path it belongs in
 	// and then register it with the resource manager.
-	for (size_t wad_lump_num = 0; wad_lump_num < (size_t)wad_lump_count; wad_lump_num++)
+	for (ContainerDirectory::const_iterator it = mDirectory->begin(); it != mDirectory->end(); ++it)
 	{
+		const LumpId wad_lump_num = mDirectory->getLumpId(it);
+
 		size_t offset = mDirectory->getOffset(wad_lump_num);
 		size_t length = mDirectory->getLength(wad_lump_num);
 		const OString& name = mDirectory->getName(wad_lump_num);
@@ -449,7 +451,7 @@ size_t WadResourceContainer::getLumpCount() const
 //
 size_t WadResourceContainer::getLumpLength(const LumpId lump_id) const
 {
-	if (lump_id < getLumpCount())
+	if (mDirectory && mDirectory->validate(lump_id))
 		return mDirectory->getLength(lump_id);
 	return 0;
 }
@@ -790,7 +792,6 @@ size_t ResourceManager::getLumpLength(const ResourceId res_id) const
 		const ResourceContainer* container = mContainers[container_id];
 		assert(container != NULL);
 		const LumpId lump_id = getLumpId(res_id);
-		assert(lump_id < container->getLumpCount());
 		return container->getLumpLength(lump_id);
 	}
 	return 0;
@@ -809,8 +810,6 @@ size_t ResourceManager::readLump(const ResourceId res_id, void* data) const
 		const ResourceContainer* container = mContainers[container_id];
 		assert(container != NULL);
 		const LumpId lump_id = getLumpId(res_id);
-		assert(lump_id < container->getLumpCount());
-
 		size_t length = container->getLumpLength(lump_id);
 		return container->readLump(lump_id, data, length);
 	}
