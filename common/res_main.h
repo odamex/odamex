@@ -31,6 +31,7 @@
 #include <string>
 
 #include "res_resourcepath.h"
+#include "res_container.h"
 
 #include "w_wad.h"
 #include "z_zone.h"
@@ -38,8 +39,6 @@
 // Typedefs
 typedef uint32_t ResourceId;
 typedef uint32_t ResourceFileId;
-typedef uint32_t ResourceContainerId;
-typedef uint32_t LumpId;
 
 
 // Forward class declarations
@@ -72,105 +71,16 @@ static const ResourcePath voxels_directory_name("/VOXELS/");
 typedef std::vector<ResourceId> ResourceIdList;
 
 
+bool Res_ValidateFlatData(const void* data, size_t length);
+bool Res_ValidatePatchData(const void* data, size_t length);
+bool Res_ValidateWadData(const void* data, size_t length);
+bool Res_ValidateDehackedData(const void* data, size_t length);
+bool Res_ValidatePCSpeakerSoundData(const void* data, size_t length);
+bool Res_ValidateSoundData(const void* data, size_t length);
 
-// ============================================================================
-//
-// ResourceContainer abstract base class interface
-//
-// ============================================================================
+bool Res_IsWadFile(const OString& filename);
+bool Res_IsDehackedFile(const OString& filename);
 
-class ResourceContainer
-{
-public:
-	ResourceContainer() { }
-	virtual ~ResourceContainer() { }
-
-	virtual const ResourceContainerId& getResourceContainerId() const = 0;
-
-	virtual bool isIWad() const { return false; }
-
-	virtual size_t getLumpCount() const = 0;
-
-	virtual size_t getLumpLength(const LumpId lump_id) const = 0;
-
-	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const = 0;
-};
-
-// ============================================================================
-//
-// SingleLumpResourceContainer abstract base class interface
-//
-// ============================================================================
-
-class SingleLumpResourceContainer : public ResourceContainer
-{
-public:
-	SingleLumpResourceContainer(
-			FileAccessor* file,
-			const ResourceContainerId& container_id,
-			ResourceManager* manager);
-
-	virtual ~SingleLumpResourceContainer() {}
-
-	virtual const ResourceContainerId& getResourceContainerId() const
-	{
-		return mResourceContainerId;
-	}
-
-	virtual size_t getLumpCount() const;
-
-	virtual size_t getLumpLength(const LumpId lump_id) const;
-
-	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const;
-
-private:
-	ResourceContainerId		mResourceContainerId;
-	FileAccessor*			mFile;
-};
-
-
-// ============================================================================
-//
-// WadResourceContainer abstract base class interface
-//
-// ============================================================================
-
-class WadResourceContainer : public ResourceContainer
-{
-public:
-	WadResourceContainer(
-			FileAccessor* file,
-			const ResourceContainerId& container_id,
-			ResourceManager* manager);
-	
-	virtual ~WadResourceContainer();
-
-	virtual const ResourceContainerId& getResourceContainerId() const
-	{
-		return mResourceContainerId;
-	}
-
-	virtual bool isIWad() const
-	{
-		return mIsIWad;
-	}
-
-	virtual size_t getLumpCount() const;
-
-	virtual size_t getLumpLength(const LumpId lump_id) const;
-		
-	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const;
-
-private:
-	void cleanup();
-
-	ResourceContainerId		mResourceContainerId;
-	FileAccessor*			mFile;
-
-	ContainerDirectory*		mDirectory;
-
-	bool					mIsIWad;
-};
 
 
 // ============================================================================

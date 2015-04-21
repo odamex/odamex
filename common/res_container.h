@@ -17,6 +17,7 @@
 //
 // DESCRIPTION:
 //
+// Game resource file abstractions
 //
 //-----------------------------------------------------------------------------
 
@@ -29,6 +30,15 @@
 
 #include <vector>
 #include "m_ostring.h"
+
+typedef uint32_t ResourceContainerId;
+typedef uint32_t LumpId;
+
+
+// forward declarations
+class FileAccessor;
+class ResourceManager;
+
 
 // ============================================================================
 //
@@ -180,6 +190,106 @@ private:
 			return static_cast<LumpId>(entry - &mEntries.front());
 		return INVALID_LUMP_ID;
 	}
+};
+
+
+// ============================================================================
+//
+// ResourceContainer abstract base class interface
+//
+// ============================================================================
+
+class ResourceContainer
+{
+public:
+	ResourceContainer() { }
+	virtual ~ResourceContainer() { }
+
+	virtual const ResourceContainerId& getResourceContainerId() const = 0;
+
+	virtual bool isIWad() const { return false; }
+
+	virtual size_t getLumpCount() const = 0;
+
+	virtual size_t getLumpLength(const LumpId lump_id) const = 0;
+
+	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const = 0;
+};
+
+// ============================================================================
+//
+// SingleLumpResourceContainer abstract base class interface
+//
+// ============================================================================
+
+class SingleLumpResourceContainer : public ResourceContainer
+{
+public:
+	SingleLumpResourceContainer(
+			FileAccessor* file,
+			const ResourceContainerId& container_id,
+			ResourceManager* manager);
+
+	virtual ~SingleLumpResourceContainer() {}
+
+	virtual const ResourceContainerId& getResourceContainerId() const
+	{
+		return mResourceContainerId;
+	}
+
+	virtual size_t getLumpCount() const;
+
+	virtual size_t getLumpLength(const LumpId lump_id) const;
+
+	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const;
+
+private:
+	ResourceContainerId		mResourceContainerId;
+	FileAccessor*			mFile;
+};
+
+
+// ============================================================================
+//
+// WadResourceContainer abstract base class interface
+//
+// ============================================================================
+
+class WadResourceContainer : public ResourceContainer
+{
+public:
+	WadResourceContainer(
+			FileAccessor* file,
+			const ResourceContainerId& container_id,
+			ResourceManager* manager);
+	
+	virtual ~WadResourceContainer();
+
+	virtual const ResourceContainerId& getResourceContainerId() const
+	{
+		return mResourceContainerId;
+	}
+
+	virtual bool isIWad() const
+	{
+		return mIsIWad;
+	}
+
+	virtual size_t getLumpCount() const;
+
+	virtual size_t getLumpLength(const LumpId lump_id) const;
+		
+	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const;
+
+private:
+	void cleanup();
+
+	ResourceContainerId		mResourceContainerId;
+	FileAccessor*			mFile;
+
+	ContainerDirectory*		mDirectory;
+
+	bool					mIsIWad;
 };
 
 #endif	// __RES_CONTAINER_H__
