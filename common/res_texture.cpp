@@ -87,13 +87,19 @@
 //
 // Draws a lump in patch_t format into a Texture at the given offset.
 //
-static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lumpdata, int xoffs, int yoffs)
+static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lump_data, size_t lump_length, int xoffs, int yoffs)
 {
+	if (lump_length < 12)		// long enough for header data?
+		return;
+
 	int texwidth = texture->getWidth();
 	int texheight = texture->getHeight();
-	int patchwidth = LESHORT(*(short*)(lumpdata + 0));
+	int16_t patchwidth = LESHORT(*(int16_t*)(lump_data + 0));
 
-	const int* colofs = (int*)(lumpdata + 8);
+	const int32_t* colofs = (int32_t*)(lump_data + 8);
+
+	if (lump_length < 12 + patchwidth * sizeof(*colofs))	// long enough for column offset table?
+		return;
 
 	int x1 = MAX(xoffs, 0);
 	int x2 = MIN(xoffs + patchwidth - 1, texwidth - 1);
@@ -102,14 +108,25 @@ static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lumpdata, int
 	{
 		int abstopdelta = 0;
 
-		const byte* post = lumpdata + LELONG(colofs[x - xoffs]);
+		int32_t offset = LELONG(colofs[x - xoffs]);
+		if (lump_length < (size_t)offset + 1)		// long enough for this post's topdelta? 
+			return;
+
+		const byte* post = lump_data + offset; 
 		while (*post != 0xFF)
 		{
+			if (lump_length < (size_t)(post - lump_data) + 2)	// long enough for this post's header?
+				return;
+
 			int posttopdelta = *(post + 0);
 			int postlength = *(post + 1);
 
-			// tex_id DeePsea tall patches where topdelta is treated as a relative
-			// offset instead of an absolute offset
+			if (lump_length < (size_t)(post - lump_data) + 4 + postlength)
+				return;
+
+			// [SL] Handle DeePsea tall patches: topdelta is treated as a relative
+			// offset instead of an absolute offset.
+			// See: http://doomwiki.org/wiki/Picture_format#Tall_patches
 			if (posttopdelta <= abstopdelta)
 				abstopdelta += posttopdelta;
 			else
@@ -441,7 +458,7 @@ const Texture* PatchTextureLoader::load() const
 			// initialize the mask to entirely transparent 
 			memset(texture->mMask, 0, width * height);
 
-			Res_DrawPatchIntoTexture(texture, lump_data, 0, 0);
+			Res_DrawPatchIntoTexture(texture, lump_data, lump_length, 0, 0);
 //			texture->mHasMask = (memchr(texture->mMask, 0, width * height) != NULL);
 			#endif
 
@@ -487,6 +504,7 @@ const Texture* CompositeTextureLoader::load() const
 			Res_DrawPatchIntoTexture(
 					texture,
 					lump_data,
+					Res_GetLumpLength(res_id),
 					mTextureDef.mPatches[i].mOriginX,
 					mTextureDef.mPatches[i].mOriginY);
 		}
