@@ -410,7 +410,7 @@ int16_t FlatTextureLoader::getWidth() const
 		else if (lump_length == 256 * 256)
 			return 256;
 		else
-			return Log2(sqrt(lump_length));	// probably not pretty... 
+			return (int16_t)sqrt(lump_length);	// probably not pretty... 
 	}
 	return 0;
 }
@@ -418,6 +418,15 @@ int16_t FlatTextureLoader::getWidth() const
 int16_t FlatTextureLoader::getHeight() const
 {
 	return getWidth();
+}
+
+
+//
+// FlatTextureLoader::validate
+//
+bool FlatTextureLoader::validate() const
+{
+	return getWidth() > 0 && getHeight() > 0;
 }
 
 
@@ -472,6 +481,30 @@ const Texture* FlatTextureLoader::load() const
 PatchTextureLoader::PatchTextureLoader(const ResourceId res_id) :
 	mResId(res_id)
 { }
+
+
+//
+// PatchTextureLoader::validate
+//
+bool PatchTextureLoader::validate() const
+{
+	uint32_t lump_length = Res_GetLumpLength(mResId);
+	if (lump_length > 8)
+	{
+		byte* lump_data = (byte*)Res_CacheLump(mResId, PU_CACHE);
+		int16_t width = LESHORT(*(int16_t*)(lump_data + 0));
+		int16_t height = LESHORT(*(int16_t*)(lump_data + 2));
+		if (width > 0 && height > 0 && lump_length > 8 + 4 * width)
+		{
+			const int32_t* ofs_ptr = (const int32_t*)(lump_data + 8);
+			for (int i = 0; i < width; i++, ofs_ptr++)
+				if (*ofs_ptr < 8 + 4 * width || lump_length < *ofs_ptr + 4)
+					return false;
+			return true;
+		}
+	}
+	return false;
+}
 
 
 //
@@ -549,6 +582,16 @@ CompositeTextureLoader::CompositeTextureLoader(const CompositeTextureDefinition&
 
 
 //
+// CompositeTextureLoader::validate
+//
+bool CompositeTextureLoader::validate() const
+{
+	// TODO: implement this correctly
+	return true;
+}
+
+
+//
 // CompositeTextureLoader::size
 //
 // Calculates the size of the Texture instance resulting from the given
@@ -614,6 +657,19 @@ RawTextureLoader::RawTextureLoader(const ResourceId res_id) :
 
 
 //
+// RawTextureLoader::validate
+//
+// Verifies that the lump has the appropriate size.
+//
+bool RawTextureLoader::validate() const
+{
+	const int32_t width = 320, height = 200;
+	uint32_t lump_length = Res_GetLumpLength(mResId);
+	return lump_length == width * height;
+}
+
+
+//
 // RawTextureLoader::size
 //
 // Calculates the size of the resulting Texture instance for a 320x200
@@ -621,7 +677,7 @@ RawTextureLoader::RawTextureLoader(const ResourceId res_id) :
 //
 uint32_t RawTextureLoader::size() const
 {
-	const int16_t width = 320, height = 200;
+	const int32_t width = 320, height = 200;
 	return Texture::calculateSize(width, height);
 }
 
@@ -635,7 +691,7 @@ const Texture* RawTextureLoader::load() const
 {
 	if (Res_CheckLump(mResId))
 	{
-		const int16_t width = 320, height = 200;
+		const int32_t width = 320, height = 200;
 		uint32_t lump_length = Res_GetLumpLength(mResId);
 		if (lump_length == width * height)
 		{
@@ -705,6 +761,16 @@ static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lum
 PngTextureLoader::PngTextureLoader(const ResourceId res_id) :
 	mResId(res_id)
 { }
+
+
+//
+// PngTextureLoader::validate
+//
+bool PngTextureLoader::validate() const
+{
+	// TODO: implement this correctly
+	return true;
+}
 
 
 //

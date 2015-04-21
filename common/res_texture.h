@@ -258,6 +258,7 @@ class TextureLoader
 public:
 	virtual ~TextureLoader() {}
 
+	virtual bool validate() const = 0;
 	virtual uint32_t size() const = 0;
 	virtual const Texture* load() const = 0;
 };
@@ -276,6 +277,7 @@ public:
 	FlatTextureLoader(const ResourceId res_id);
 	virtual ~FlatTextureLoader() {}
 
+	virtual bool validate() const;
 	virtual uint32_t size() const;
 	virtual const Texture* load() const;
 
@@ -299,6 +301,7 @@ public:
 	PatchTextureLoader(const ResourceId res_id);
 	virtual ~PatchTextureLoader() {}
 
+	virtual bool validate() const;
 	virtual uint32_t size() const;
 	virtual const Texture* load() const;
 
@@ -335,6 +338,7 @@ public:
 	CompositeTextureLoader(const CompositeTextureDefinition& texture_def);
 	virtual ~CompositeTextureLoader() {}
 
+	virtual bool validate() const;
 	virtual uint32_t size() const;
 	virtual const Texture* load() const;
 
@@ -355,6 +359,7 @@ public:
 	RawTextureLoader(const ResourceId res_id); 
 	virtual ~RawTextureLoader() {}
 
+	virtual bool validate() const;
 	virtual uint32_t size() const;
 	virtual const Texture* load() const;
 
@@ -375,6 +380,7 @@ public:
 	PngTextureLoader(const ResourceId res_id); 
 	virtual ~PngTextureLoader() {}
 
+	virtual bool validate() const;
 	virtual uint32_t size() const;
 	virtual const Texture* load() const;
 
