@@ -465,31 +465,6 @@ private:
 	typedef std::vector<const Texture*> TextureList;
 	TextureList				mTextures;
 
-
-	// maps texture tex_ids to Texture*
-	typedef OHashTable<TextureId, Texture*> TextureIdMap;
-	typedef std::pair<TextureId, Texture*> TextureIdMapPair;
-	TextureIdMap					mTextureIdMap;
-
-	// definitions for texture composition
-	struct texdefpatch_t
-	{
-		int 				originx;
-		int 				originy;
-		const ResourceId*	res_id;
-	};
-
-	struct texdef_t
-	{
-		short			width;
-		short			height;
-		byte			scalex;
-		byte			scaley;
-
-		short			patchcount;
-		texdefpatch_t	patches[1];
-	};
-
 	// management for the creation of new TextureIds
 	static const unsigned int MAX_CUSTOM_TEXTURE_IDS = 1024;
 	unsigned int				mFreeCustomTextureIdsHead;

@@ -734,7 +734,6 @@ const TextureId TextureManager::GARBAGE_TEXTURE_ID = TextureManager::WALLTEXTURE
 
 TextureManager::TextureManager(const ResourceContainerId& container_id, ResourceManager* manager) :
 	mResourceContainerId(container_id),
-	mTextureIdMap(2048),
 	mFreeCustomTextureIdsHead(0),
 	mFreeCustomTextureIdsTail(TextureManager::MAX_CUSTOM_TEXTURE_IDS)
 {
@@ -766,13 +765,6 @@ TextureManager::~TextureManager()
 //
 void TextureManager::clear()
 {
-	// free normal textures
-	for (TextureIdMap::iterator it = mTextureIdMap.begin(); it != mTextureIdMap.end(); ++it)
-		if (it->second)
-			Z_Free((void*)it->second);
-
-	mTextureIdMap.clear();
-
 	// free all custom texture tex_ids
 	mFreeCustomTextureIdsHead = 0;
 	mFreeCustomTextureIdsTail = TextureManager::MAX_CUSTOM_TEXTURE_IDS - 1;
@@ -795,9 +787,9 @@ void TextureManager::clear()
 	mAnimDefs.clear();
 
 	// free warping original texture (not stored in mTextureIdMap)
-	for (size_t i = 0; i < mWarpDefs.size(); i++)
-		if (mWarpDefs[i].original_texture)
-			Z_Free((void*)mWarpDefs[i].original_texture);
+//	for (size_t i = 0; i < mWarpDefs.size(); i++)
+//		if (mWarpDefs[i].original_texture)
+//			Z_Free((void*)mWarpDefs[i].original_texture);
 
 	mWarpDefs.clear();
 }
@@ -962,6 +954,7 @@ void TextureManager::readAnimDefLump()
 //
 void TextureManager::readAnimatedLump()
 {
+	/*
 	const ResourceId res_id = Res_GetResourceId("ANIMATED");
 	if (!Res_CheckLump(res_id))
 		return;
@@ -975,7 +968,6 @@ void TextureManager::readAnimatedLump()
 
 	for (byte* ptr = lumpdata; *ptr != 255; ptr += 23)
 	{
-		/*
 		anim_t anim;
 
 		const ResourcePath& path = *(ptr + 0) == 1 ?
@@ -1012,10 +1004,10 @@ void TextureManager::readAnimatedLump()
 		}
 
 		mAnimDefs.push_back(anim);
-		*/
 	}
 
 	delete [] lumpdata;
+	*/
 }
 
 
@@ -1027,6 +1019,7 @@ void TextureManager::readAnimatedLump()
 //
 void TextureManager::updateAnimatedTextures()
 {
+	/*
 	if (!clientside)
 		return;
 
@@ -1067,6 +1060,7 @@ void TextureManager::updateAnimatedTextures()
 		Texture* warped_texture = mWarpDefs[i].warped_texture;
 		Res_WarpTexture(warped_texture, original_texture);
 	}
+	*/
 }
 
 
@@ -1322,7 +1316,7 @@ Texture* TextureManager::createTexture(const TextureId tex_id, int width, int he
 	texture->mTextureId = tex_id;
 
 	mTextures.push_back(texture);
-	mTextureIdMap.insert(TextureIdMapPair(tex_id, texture));
+//	mTextureIdMap.insert(TextureIdMapPair(tex_id, texture));
 
 	return texture;
 }
