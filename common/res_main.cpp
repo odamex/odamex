@@ -50,58 +50,6 @@
 static ResourceManager resource_manager;
 
 //
-// Res_ValidateFlatData
-//
-// Returns true if the given lump data appears to be a valid flat.
-//
-bool Res_ValidateFlatData(const void* data, uint32_t length)
-{
-	// TODO: Handle Heretic and Hexen's oddly formatted flats
-	// From http://zdoom.org/wiki/Flat:
-	// Heretic features a few 64x65 flats, and Hexen a few 64x128 flats. Those
-	// were used to "cheat" with the implementation of scrolling effects. ZDoom
-	// does not need the same hacks to make flats scroll properly, and therefore
-	// ignores the excess pixels in these flats.
-	return length == 64 * 64 || length == 8 * 8 || length == 16 * 16 ||
-			length == 32 * 32 || length == 128 * 128 || length == 256 * 256;
-}
-
-
-//
-// Res_ValidatePatchData
-//
-// Returns true if the given lump data appears to be a valid graphic patch.
-//
-bool Res_ValidatePatchData(const void* data, uint32_t length)
-{
-	if (length > 2 + 2)
-	{
-		// examine the patch header (width & height)
-		int16_t width = LESHORT(*(int16_t*)((uint8_t*)data + 0));
-		int16_t height = LESHORT(*(int16_t*)((uint8_t*)data + 2));
-
-		if (width > 0 && height > 0 && width <= 2048 && height <= 2048 && length > (unsigned)(4 + 4 * width))
-		{
-			// verify all of the entries in the patch's column offset table are valid
-			const int32_t* offset_table = (int32_t*)((uint8_t*)data + 4);
-			const int32_t min_offset = 4 + 4 * width, max_offset = length - 1;
-
-			for (int i = 0; i < width; i++)
-			{
-				int32_t offset = LELONG(offset_table[i]);
-				if (offset < min_offset || offset > max_offset)
-					return false;
-			}
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
-
-//
 // Res_ValidateWadData
 //
 // Returns true if the given lump data appears to be a valid WAD file.

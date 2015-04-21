@@ -392,6 +392,13 @@ FlatTextureLoader::FlatTextureLoader(const ResourceId res_id) :
 // Returns the width of the FLAT texture. There is no header and the texture is
 // assumed to be a square.
 //
+// TODO: Handle Heretic and Hexen's oddly formatted flats
+// From http://zdoom.org/wiki/Flat:
+// Heretic features a few 64x65 flats, and Hexen a few 64x128 flats. Those
+// were used to "cheat" with the implementation of scrolling effects. ZDoom
+// does not need the same hacks to make flats scroll properly, and therefore
+// ignores the excess pixels in these flats.
+//
 int16_t FlatTextureLoader::getWidth() const
 {
 	uint32_t lump_length = Res_GetLumpLength(mResId);
@@ -492,13 +499,19 @@ bool PatchTextureLoader::validate() const
 	if (lump_length > 8)
 	{
 		byte* lump_data = (byte*)Res_CacheLump(mResId, PU_CACHE);
-		int16_t width = LESHORT(*(int16_t*)(lump_data + 0));
-		int16_t height = LESHORT(*(int16_t*)(lump_data + 2));
-		if (width > 0 && height > 0 && lump_length > 8 + 4 * width)
+		const int16_t width = LESHORT(*(int16_t*)(lump_data + 0));
+		const int16_t height = LESHORT(*(int16_t*)(lump_data + 2));
+		const uint32_t column_table_offset = 8;
+		const uint32_t column_table_length = sizeof(int32_t) * width;
+
+		if (width > 0 && height > 0 && lump_length >= column_table_offset + column_table_length)
 		{
-			const int32_t* ofs_ptr = (const int32_t*)(lump_data + 8);
-			for (int i = 0; i < width; i++, ofs_ptr++)
-				if (*ofs_ptr < 8 + 4 * width || lump_length < *ofs_ptr + 4)
+			const int32_t* column_offset = (const int32_t*)(lump_data + column_table_offset);
+			const int32_t min_column_offset = column_table_offset + column_table_length;
+			const int32_t max_column_offset = lump_length - 4;
+
+			for (int i = 0; i < width; i++, column_offset++)
+				if (*column_offset < min_column_offset || *column_offset > max_column_offset)
 					return false;
 			return true;
 		}
