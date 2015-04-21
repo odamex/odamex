@@ -386,41 +386,79 @@ FlatTextureLoader::FlatTextureLoader(const ResourceId res_id) :
 { }
 
 
+//
+// FlatTextureLoader::getWidth
+//
+// Returns the width of the FLAT texture. There is no header and the texture is
+// assumed to be a square.
+//
+int16_t FlatTextureLoader::getWidth() const
+{
+	uint32_t lump_length = Res_GetLumpLength(mResId);
+	if (lump_length > 0)
+	{
+		if (lump_length == 64 * 64)
+			return 64;
+		else if (lump_length == 8 * 8)
+			return 8;
+		else if (lump_length == 16 * 16)
+			return 16;
+		else if (lump_length == 32 * 32)
+			return 32;
+		else if (lump_length == 128 * 128)
+			return 128;
+		else if (lump_length == 256 * 256)
+			return 256;
+		else
+			return Log2(sqrt(lump_length));	// probably not pretty... 
+	}
+	return 0;
+}
+
+int16_t FlatTextureLoader::getHeight() const
+{
+	return getWidth();
+}
+
+
+//
+// FlatTextureLoader::size
+//
+// Reads the patch_t header and calculates the size of the resulting
+// Texture instance.
+//
+uint32_t FlatTextureLoader::size() const
+{
+	#if CLIENT_APP
+	const int16_t width = getWidth();
+	const int16_t height = width;
+	return Texture::calculateSize(width, height);
+	#endif
+	return sizeof(Texture);
+}
+
+
+//
+// FlatTextureLoader::load
+//
+// Converts the FLAT texture resource to a Texture instance.
+//
 const Texture* FlatTextureLoader::load() const
 {
 	if (Res_CheckLump(mResId))
 	{
-		uint32_t lump_length = Res_GetLumpLength(mResId);
-		if (lump_length > 0)
-		{
-			int width, height;	
+		int16_t width = getWidth();
+		int16_t height = width;
+		Texture* texture = Texture::createTexture(width, height);
 
-			if (lump_length == 64 * 64)
-				width = height = 64;
-			else if (lump_length == 8 * 8)
-				width = height = 8;
-			else if (lump_length == 16 * 16)
-				width = height = 16;
-			else if (lump_length == 32 * 32)
-				width = height = 32;
-			else if (lump_length == 128 * 128)
-				width = height = 128;
-			else if (lump_length == 256 * 256)
-				width = height = 256;
-			else
-				width = height = Log2(sqrt(lump_length));	// probably not pretty... 
+		#if CLIENT_APP
+		byte* lump_data = (byte*)Res_CacheLump(mResId, PU_STATIC);
+		// convert the row-major flat lump to into column-major
+		Res_TransposeImage(texture->mData, lump_data, width, height);
+		Z_Free(lump_data);
+		#endif
 
-			Texture* texture = Texture::createTexture(width, height);
-
-			#if CLIENT_APP
-			byte* lump_data = (byte*)Res_CacheLump(mResId, PU_STATIC);
-			// convert the row-major flat lump to into column-major
-			Res_TransposeImage(texture->mData, lump_data, width, height);
-			Z_Free(lump_data);
-			#endif
-
-			return texture;
-		}
+		return texture;
 	}
 	return NULL;
 }
@@ -435,6 +473,34 @@ PatchTextureLoader::PatchTextureLoader(const ResourceId res_id) :
 	mResId(res_id)
 { }
 
+
+//
+// PatchTextureLoader::size
+//
+// Reads the patch_t header and calculates the size of the resulting
+// Texture instance.
+//
+uint32_t PatchTextureLoader::size() const
+{
+	#if CLIENT_APP
+	uint32_t lump_length = Res_GetLumpLength(mResId);
+	if (lump_length >= 4)
+	{
+		byte* lump_data = (byte*)Res_CacheLump(mResId, PU_CACHE);
+		int16_t width = LESHORT(*(int16_t*)(lump_data + 0));
+		int16_t height = LESHORT(*(int16_t*)(lump_data + 2));
+		return Texture::calculateSize(width, height);
+	}
+	#endif
+	return sizeof(Texture);
+}
+
+
+//
+// PatchTextureLoader::load
+//
+// Converts the PATCH format graphic lump to a Texture instance.
+//
 const Texture* PatchTextureLoader::load() const
 {
 	if (Res_CheckLump(mResId))
@@ -481,6 +547,25 @@ CompositeTextureLoader::CompositeTextureLoader(const CompositeTextureDefinition&
 	mTextureDef(texture_def)
 { }
 
+
+//
+// CompositeTextureLoader::size
+//
+// Calculates the size of the Texture instance resulting from the given
+// CompositeTextureDefinition information.
+//
+uint32_t CompositeTextureLoader::size() const
+{
+	return Texture::calculateSize(mTextureDef.mWidth, mTextureDef.mHeight);
+}
+
+
+//
+// CompositeTextureLoader::load
+//
+// Composes a Texture instance from a set of PATCH format graphic lumps and
+// their accompanying positioning information.
+//
 const Texture* CompositeTextureLoader::load() const
 {
 	Texture* texture = Texture::createTexture(mTextureDef.mWidth, mTextureDef.mHeight);
@@ -527,6 +612,25 @@ RawTextureLoader::RawTextureLoader(const ResourceId res_id) :
 	mResId(res_id)
 { }
 
+
+//
+// RawTextureLoader::size
+//
+// Calculates the size of the resulting Texture instance for a 320x200
+// raw graphic lump.
+//
+uint32_t RawTextureLoader::size() const
+{
+	const int16_t width = 320, height = 200;
+	return Texture::calculateSize(width, height);
+}
+
+
+//
+// RawTextureLoader::load
+//
+// Convert the 320x200 raw graphic lump to a Texture instance.
+//
 const Texture* RawTextureLoader::load() const
 {
 	if (Res_CheckLump(mResId))
@@ -603,6 +707,22 @@ PngTextureLoader::PngTextureLoader(const ResourceId res_id) :
 { }
 
 
+//
+// PngTextureLoader::size
+//
+uint32_t PngTextureLoader::size() const
+{
+	// TODO: implement this correctly
+	return sizeof(Texture);
+}
+
+
+//
+// PngTextureLoader::load
+//
+// Convert the given graphic lump in PNG format to a Texture instance,
+// converting from 32bpp to 8bpp using the default game palette.
+//
 const Texture* PngTextureLoader::load() const
 {
 #ifdef CLIENT_APP

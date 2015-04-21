@@ -138,13 +138,14 @@ public:
 		return texture; 
 	}
 
+	static uint32_t calculateSize(int width, int height);
+
 
 private:
 	friend class TextureManager;
 
 	Texture();
 
-	static uint32_t calculateSize(int width, int height);
 	void init(int width, int height);
 
 	TextureId			mTextureId;
@@ -257,6 +258,7 @@ class TextureLoader
 public:
 	virtual ~TextureLoader() {}
 
+	virtual uint32_t size() const = 0;
 	virtual const Texture* load() const = 0;
 };
 
@@ -274,9 +276,13 @@ public:
 	FlatTextureLoader(const ResourceId res_id);
 	virtual ~FlatTextureLoader() {}
 
+	virtual uint32_t size() const;
 	virtual const Texture* load() const;
 
 private:
+	int16_t getWidth() const;
+	int16_t getHeight() const;
+
 	const ResourceId	mResId;
 };
 
@@ -293,6 +299,7 @@ public:
 	PatchTextureLoader(const ResourceId res_id);
 	virtual ~PatchTextureLoader() {}
 
+	virtual uint32_t size() const;
 	virtual const Texture* load() const;
 
 private:
@@ -328,6 +335,7 @@ public:
 	CompositeTextureLoader(const CompositeTextureDefinition& texture_def);
 	virtual ~CompositeTextureLoader() {}
 
+	virtual uint32_t size() const;
 	virtual const Texture* load() const;
 
 private:
@@ -347,6 +355,7 @@ public:
 	RawTextureLoader(const ResourceId res_id); 
 	virtual ~RawTextureLoader() {}
 
+	virtual uint32_t size() const;
 	virtual const Texture* load() const;
 
 private:
@@ -366,6 +375,7 @@ public:
 	PngTextureLoader(const ResourceId res_id); 
 	virtual ~PngTextureLoader() {}
 
+	virtual uint32_t size() const;
 	virtual const Texture* load() const;
 
 private:
