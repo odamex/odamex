@@ -35,7 +35,7 @@
 #include "c_dispatch.h"
 #include "z_zone.h"
 #include "m_random.h"
-#include "w_wad.h"
+#include "res_main.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "doomstat.h"
@@ -84,7 +84,7 @@ public:
 	}
 };
 
-int sfx_empty;
+ResourceId sfx_empty;
 
 // joek - hack for silent bfg
 int sfx_noway, sfx_oof;
@@ -182,9 +182,11 @@ void S_NoiseDebug (void)
 				oy = Channel[i].y;
 			}
 			color = Channel[i].loop ? CR_BROWN : CR_GREY;
-			strcpy (temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name);
-			temp[8] = 0;
+
+			const OString& lump_name(Res_GetResourcePath(Channel[i].sfxinfo->res_id).last());
+			strcpy(temp, lump_name.c_str());
 			screen->DrawText (color, 0, y, temp);
+
 			sprintf (temp, "%d", ox / FRACUNIT);
 			screen->DrawText (color, 70, y, temp);
 			sprintf (temp, "%d", oy / FRACUNIT);
@@ -579,9 +581,9 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	sfxinfo_t* sfxinfo = &S_sfx[sfx_id];
 
   	// check for bogus sound lump
-	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > (int)numlumps)
+	if (!Res_CheckLump(sfxinfo->res_id))
 	{
-		DPrintf("Bad sfx lump #: %d\n", sfxinfo->lumpnum);
+		DPrintf("Bad sfx lump #: %d\n", sfxinfo->res_id);
 		return;
 	}
 
@@ -605,7 +607,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 			sfxinfo = sfxinfo->link;
 	}
 
-	if (sfxinfo->lumpnum == sfx_empty)
+	if (sfxinfo->res_id == sfx_empty)
 		return;
 
 	if (listenplayer().camera && attenuation != ATTN_NONE)
@@ -1066,6 +1068,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 
 	if (!(f = fopen (musicname.c_str(), "rb")))
 	{
+//		const ResourceId res_id = Res_GetResourceId(musicname, music_directory_name);
 		const ResourceId res_id = Res_GetResourceId(musicname);
 		if (!Res_CheckLump(res_id))
 		{
@@ -1156,19 +1159,18 @@ int S_FindSound (const char *logicalname)
 	return i;
 }
 
-int S_FindSoundByLump (int lump)
+int S_FindSoundByResourceId(const ResourceId res_id)
 {
-	if (lump != -1) {
-		int i;
-
-		for (i = 0; i < numsfx; i++)
-			if (S_sfx[i].lumpnum == lump)
+	if (Res_CheckLump(res_id))
+	{
+		for (int i = 0; i < numsfx; i++)
+			if (S_sfx[i].res_id == res_id)
 				return i;
 	}
 	return -1;
 }
 
-int S_AddSoundLump (char *logicalname, int lump)
+int S_AddSoundLump (char *logicalname, const ResourceId res_id)
 {
 	if (numsfx == maxsfx) {
 		maxsfx = maxsfx ? maxsfx*2 : 128;
@@ -1179,7 +1181,7 @@ int S_AddSoundLump (char *logicalname, int lump)
 	strcpy (S_sfx[numsfx].name, logicalname);
 	S_sfx[numsfx].data = NULL;
 	S_sfx[numsfx].link = NULL;
-	S_sfx[numsfx].lumpnum = lump;
+	S_sfx[numsfx].res_id = res_id;
 	return numsfx++;
 }
 
@@ -1200,13 +1202,13 @@ int S_AddSound (char *logicalname, char *lumpname)
 		if (0 == stricmp (logicalname, S_sfx[sfxid].name))
 			break;
 
-	int lump = W_CheckNumForName (lumpname);
+	const ResourceId res_id = Res_GetResourceId(lumpname, sounds_directory_name);
 
 	// Otherwise, prepare a new one.
 	if (sfxid == numsfx)
-		sfxid = S_AddSoundLump (logicalname, lump);
+		sfxid = S_AddSoundLump(logicalname, res_id);
 	else
-		S_sfx[sfxid].lumpnum = lump;
+		S_sfx[sfxid].res_id = res_id;
 
 	return sfxid;
 }
@@ -1355,9 +1357,9 @@ void S_ParseSndInfo()
 
 	S_HashSounds();
 
-	sfx_empty = W_CheckNumForName ("dsempty");
-	sfx_noway = S_FindSoundByLump (W_CheckNumForName ("dsnoway"));
-	sfx_oof = S_FindSoundByLump (W_CheckNumForName ("dsoof"));
+	sfx_empty = Res_GetResourceId("DSEMPTY", sounds_directory_name);
+	sfx_noway = S_FindSoundByResourceId(Res_GetResourceId("DSNOWAY", sounds_directory_name));
+	sfx_oof = S_FindSoundByResourceId(Res_GetResourceId("DSOOF", sounds_directory_name));
 }
 
 
@@ -1453,18 +1455,16 @@ void S_ActivateAmbient (AActor *origin, int ambient)
 
 BEGIN_COMMAND (snd_soundlist)
 {
-	char lumpname[9];
-	int i;
-
-	lumpname[8] = 0;
-	for (i = 0; i < numsfx; i++)
-		if (S_sfx[i].lumpnum != -1)
+	for (int i = 0; i < numsfx; i++)
+	{
+		if (Res_CheckLump(S_sfx[i].res_id))
 		{
-			strncpy (lumpname, lumpinfo[S_sfx[i].lumpnum].name, 8);
-			Printf (PRINT_HIGH, "%3d. %s (%s)\n", i+1, S_sfx[i].name, lumpname);
+			const OString lump_name(Res_GetResourcePath(S_sfx[i].res_id).last());
+			Printf(PRINT_HIGH, "%3d. %s (%s)\n", i+1, S_sfx[i].name, lump_name.c_str());
 		}
 		else
 			Printf (PRINT_HIGH, "%3d. %s **not present**\n", i+1, S_sfx[i].name);
+	}
 }
 END_COMMAND (snd_soundlist)
 

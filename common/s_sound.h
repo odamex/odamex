@@ -28,6 +28,8 @@
 #include "m_fixed.h"
 #include <string>
 
+#include "res_main.h"
+
 #define MAX_SNDNAME			63
 
 class AActor;
@@ -46,7 +48,8 @@ struct sfxinfo_struct
 
 	struct sfxinfo_struct *link;
 
-	int 		lumpnum;				// lump number of sfx
+	ResourceId	res_id;
+
 	unsigned int ms;					// [RH] length of sfx in milliseconds
 	unsigned int next, index;			// [RH] For hashing
 	unsigned int frequency;				// [RH] Preferred playback rate
@@ -158,9 +161,9 @@ void S_ParseSndInfo (void);
 
 void S_HashSounds (void);
 int S_FindSound (const char *logicalname);
-int S_FindSoundByLump (int lump);
+int S_FindSoundByResourceId(const ResourceId res_id);
 int S_AddSound (char *logicalname, char *lumpname);	// Add sound by lumpname
-int S_AddSoundLump (char *logicalname, int lump);	// Add sound by lump index
+int S_AddSoundLump (char *logicalname, const ResourceId res_id);	// Add sound by ResourceId
 void S_ClearSoundLumps (void);
 
 void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation);

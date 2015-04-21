@@ -36,7 +36,6 @@
 #include "i_music.h"
 #include "m_argv.h"
 #include "m_misc.h"
-#include "w_wad.h"
 #include "v_palette.h"
 
 #include "doomdef.h"
@@ -190,14 +189,13 @@ static void getsfx (struct sfxinfo_struct *sfx)
 {
     Uint32 samplerate;
 	Uint32 length ,expanded_length;
-	Uint8 *data;
 	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
 
-    data = (Uint8 *)W_CacheLumpNum(sfx->lumpnum, PU_STATIC);
+	Uint8* data = (Uint8*)Res_CacheLump(sfx->res_id, PU_STATIC);
     // [Russell] - ICKY QUICKY HACKY SPACKY *I HATE THIS SOUND MANAGEMENT SYSTEM!*
     // get the lump size, shouldn't this be filled in elsewhere?
-    sfx->length = W_LumpLength(sfx->lumpnum);
+	sfx->length = Res_GetLumpLength(sfx->res_id);
 
     // [Russell] is it not a doom sound lump?
     if (((data[1] << 8) | data[0]) != 3)
@@ -364,7 +362,7 @@ void I_LoadSound (struct sfxinfo_struct *sfx)
 	
 	if (!sfx->data)
 	{
-		DPrintf ("loading sound \"%s\" (%d)\n", sfx->name, sfx->lumpnum);
+		DPrintf ("loading sound \"%s\" (0x%X)\n", sfx->name, sfx->res_id);
 		getsfx (sfx);
 	}
 }
