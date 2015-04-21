@@ -404,16 +404,12 @@ const Texture* FlatTextureLoader::load() const
 
 			Texture* texture = Texture::createTexture(width, height);
 
-			if (clientside)
-			{
-				byte* lump_data = new byte[lump_length];
-				Res_ReadLump(mResId, lump_data);
-
-				// convert the row-major flat lump to into column-major
-				Res_TransposeImage(texture->mData, lump_data, width, height);
-				
-				delete [] lump_data;
-			}
+			#if CLIENT_APP
+			byte* lump_data = (byte*)Res_CacheLump(mResId, PU_STATIC);
+			// convert the row-major flat lump to into column-major
+			Res_TransposeImage(texture->mData, lump_data, width, height);
+			Z_Free(lump_data);
+			#endif
 
 			return texture;
 		}
@@ -436,10 +432,9 @@ const Texture* PatchTextureLoader::load() const
 	if (Res_CheckLump(mResId))
 	{
 		size_t lump_length = Res_GetLumpLength(mResId);
-		if (lump_length > 0)
+		if (lump_length >= 8)
 		{
-			byte* lump_data = new byte[lump_length];
-			Res_ReadLump(mResId, lump_data);
+			byte* lump_data = (byte*)Res_CacheLump(mResId, PU_CACHE);
 
 			int16_t width = LESHORT(*(int16_t*)(lump_data + 0));
 			int16_t height = LESHORT(*(int16_t*)(lump_data + 2));
@@ -450,19 +445,16 @@ const Texture* PatchTextureLoader::load() const
 	//		texture->mOffsetX = offsetx;
 	//		texture->mOffsetY = offsety;
 
-			if (clientside)
-			{
-				// TODO: remove this once proper masking is in place
-				memset(texture->mData, 0, width * height);
+			#if CLIENT_APP
+			// TODO: remove this once proper masking is in place
+			memset(texture->mData, 0, width * height);
 
-				// initialize the mask to entirely transparent 
-				memset(texture->mMask, 0, width * height);
+			// initialize the mask to entirely transparent 
+			memset(texture->mMask, 0, width * height);
 
-				Res_DrawPatchIntoTexture(texture, lump_data, 0, 0);
-	//			texture->mHasMask = (memchr(texture->mMask, 0, width * height) != NULL);
-			}
-
-			delete [] lump_data;
+			Res_DrawPatchIntoTexture(texture, lump_data, 0, 0);
+//			texture->mHasMask = (memchr(texture->mMask, 0, width * height) != NULL);
+			#endif
 
 			return texture;
 		}
@@ -489,36 +481,31 @@ const Texture* CompositeTextureLoader::load() const
 //	if (mTextureDef.mScaleY)
 //		texture->mScaleY = mTextureDef.mScaleY << (FRACBITS - 3);
 
-	if (clientside)
+	#if CLIENT_APP
+	// TODO: remove this once proper masking is in place
+	memset(texture->mData, 0, mTextureDef.mWidth * mTextureDef.mHeight);
+
+	// initialize the mask to entirely transparent 
+	memset(texture->mMask, 0, mTextureDef.mWidth * mTextureDef.mHeight);
+
+	// compose the texture out of a set of patches
+	for (int i = 0; i < mTextureDef.mPatchCount; i++)
 	{
-		// TODO: remove this once proper masking is in place
-		memset(texture->mData, 0, mTextureDef.mWidth * mTextureDef.mHeight);
-
-		// initialize the mask to entirely transparent 
-		memset(texture->mMask, 0, mTextureDef.mWidth * mTextureDef.mHeight);
-
-		// compose the texture out of a set of patches
-		for (int i = 0; i < mTextureDef.mPatchCount; i++)
+		const ResourceId res_id = mTextureDef.mPatches[i].mResId;
+		if (Res_CheckLump(res_id))
 		{
-			const ResourceId res_id = mTextureDef.mPatches[i].mResId;
-			
-			if (Res_CheckLump(res_id))
-			{
-				size_t lump_length = Res_GetLumpLength(res_id);
-				byte* lump_data = new byte[lump_length];
-				Res_ReadLump(res_id, lump_data);
-				Res_DrawPatchIntoTexture(
-						texture,
-						lump_data,
-						mTextureDef.mPatches[i].mOriginX,
-						mTextureDef.mPatches[i].mOriginY);
-
-				delete [] lump_data;
-			}
+			byte* lump_data = (byte*)Res_CacheLump(res_id, PU_CACHE);
+			Res_DrawPatchIntoTexture(
+					texture,
+					lump_data,
+					mTextureDef.mPatches[i].mOriginX,
+					mTextureDef.mPatches[i].mOriginY);
 		}
-
-//		texture->mHasMask = (memchr(texture->mMask, 0, mTextureDef.mWidth * mTextureDef.mHeight) != NULL);
 	}
+
+//	texture->mHasMask = (memchr(texture->mMask, 0, mTextureDef.mWidth * mTextureDef.mHeight) != NULL);
+	#endif
+
 	return NULL;
 }
 
@@ -541,16 +528,12 @@ const Texture* RawTextureLoader::load() const
 		{
 			Texture* texture = Texture::createTexture(width, height);
 
-			if (clientside)
-			{
-				byte* lump_data = new byte[lump_length];
-				Res_ReadLump(mResId, lump_data);
-
-				// convert the row-major raw data to into column-major
-				Res_TransposeImage(texture->mData, lump_data, width, height);
-
-				delete [] lump_data;
-			}
+			#if CLIENT_APP
+			byte* lump_data = (byte*)Res_CacheLump(mResId, PU_STATIC);
+			// convert the row-major raw data to into column-major
+			Res_TransposeImage(texture->mData, lump_data, width, height);
+			Z_Free(lump_data);
+			#endif
 
 			return texture;
 		}
