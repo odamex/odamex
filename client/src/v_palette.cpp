@@ -32,7 +32,7 @@
 #include "v_video.h"
 #include "m_alloc.h"
 #include "r_main.h"		// For lighting constants
-#include "w_wad.h"
+#include "res_main.h"
 #include "z_zone.h"
 #include "i_video.h"
 #include "c_dispatch.h"
@@ -89,7 +89,7 @@ EXTERN_CVAR(sv_allowredscreen)
 
 dyncolormap_t NormalLight;
 
-static char palette_lumpname[9];
+static ResourceId palette_res_id;
 
 static int current_palette_num;
 
@@ -497,10 +497,13 @@ static std::string V_GetColorStringByName(const std::string& name)
 	 * with a NULL byte. This is so that COM_Parse is able to
 	 * detect the end of the lump.
 	 */
-	char *rgbNames, *data, descr[5*3];
+	char *data, descr[5*3];
 	int c[3], step;
 
-	if (!(rgbNames = (char*)W_CacheLumpName("X11R6RGB", PU_CACHE)))
+	const ResourceId res_id = Res_GetResourceId("X11R6RGB", global_directory_name);
+	char* rgbNames = (char*)Res_CacheLump(res_id, PU_CACHE);
+
+	if (rgbNames == NULL)
 	{
 		Printf(PRINT_HIGH, "X11R6RGB lump not found\n");
 		return "";
@@ -538,6 +541,7 @@ static std::string V_GetColorStringByName(const std::string& name)
 			}
 		}
 	}
+
 	return "";
 }
 
@@ -608,12 +612,10 @@ argb_t V_GetColorFromString(const std::string& input_string)
 //
 void V_InitPalette(const char* lumpname)
 {
-	strncpy(palette_lumpname, lumpname, 8);
-	palette_lumpname[8] = '\0';
-
-	int lumpnum = W_GetNumForName(palette_lumpname);
-	if (lumpnum < 0)
-		I_FatalError("Could not initialize %s palette", palette_lumpname);
+	const OString palette_lumpname(lumpname, 8);
+	palette_res_id = Res_GetResourceId(palette_lumpname, global_directory_name);
+	if (!Res_CheckLump(palette_res_id))
+		I_FatalError("Could not initialize %s palette", palette_lumpname.c_str());
 
 	current_palette_num = -1;
 
@@ -625,7 +627,7 @@ void V_InitPalette(const char* lumpname)
 	default_palette.maps.colormap = new palindex_t[(NUMCOLORMAPS + 1) * 256];
 	default_palette.maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
 
-	const byte* data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+	const byte* data = (byte*)Res_CacheLump(palette_res_id, PU_CACHE);
 
 	for (int i = 0; i < 256; i++, data += 3)
 		default_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
@@ -1149,7 +1151,7 @@ void V_DoPaletteEffects()
 		{
 			// [SL] Load palette_num from disk and setup game_palette
 			current_palette_num = palette_num;
-			const byte* data = (byte*)W_CacheLumpName(palette_lumpname, PU_CACHE) + palette_num * 768;
+			const byte* data = (byte*)Res_CacheLump(palette_res_id, PU_CACHE) + palette_num * 768;
 
 			for (int i = 0; i < 256; i++, data += 3)
 			{
