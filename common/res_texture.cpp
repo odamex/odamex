@@ -214,17 +214,6 @@ void Res_TransposeImage(byte* dest, const byte* source, int width, int height)
 
 
 //
-// Res_LoadTexture
-//
-const Texture* Res_LoadTexture(const char* name)
-{
-//	TextureId tex_id = texturemanager.getTextureId(name, Texture::TEX_PATCH);
-//	return texturemanager.getTexture(tex_id);
-	return NULL;
-}
-
-
-//
 // Res_WarpTexture
 //
 // Alters the image in source_texture with a warping effect and saves the
@@ -726,14 +715,9 @@ const TextureId TextureManager::GARBAGE_TEXTURE_ID = TextureManager::WALLTEXTURE
 TextureManager::TextureManager(const ResourceContainerId& container_id, ResourceManager* manager) :
 	mResourceContainerId(container_id),
 	mTextureIdMap(2048),
-	mTextureNameTranslationMap(512),
 	mFreeCustomTextureIdsHead(0),
 	mFreeCustomTextureIdsTail(TextureManager::MAX_CUSTOM_TEXTURE_IDS)
 {
-	// initialize the FLATS data
-//	mFirstFlatLumpNum = W_GetNumForName("F_START") + 1;
-//	mLastFlatLumpNum = W_GetNumForName("F_END") - 1;
-	
 	registerTextureResources(manager);
 	// initialize the TEXTURE1 & TEXTURE2 data
 	addTextureDirectories(manager);
@@ -787,12 +771,6 @@ void TextureManager::clear()
 			Z_Free((void*)*it);
 	mTextures.clear();
 
-
-	for (size_t i = 0; i < mTextureDefinitions.size(); i++)
-		delete [] (byte*)mTextureDefinitions[i];
-	mTextureDefinitions.clear();
-
-	mTextureNameTranslationMap.clear();
 
 	mAnimDefs.clear();
 

@@ -41,8 +41,6 @@ class Texture;
 class TextureManager;
 class ResourceManager;
 
-const Texture* Res_LoadTexture(const char* name);
-
 void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 	int dx1, int dy1, int dx2, int dy2,
 	int sx1, int sy1, int sx2, int sy2);
@@ -473,10 +471,6 @@ private:
 	typedef std::pair<TextureId, Texture*> TextureIdMapPair;
 	TextureIdMap					mTextureIdMap;
 
-	// lookup table to translate flatnum to mTextures index
-	unsigned int				mFirstFlatLumpNum;
-	unsigned int				mLastFlatLumpNum;
-
 	// definitions for texture composition
 	struct texdefpatch_t
 	{
@@ -495,12 +489,6 @@ private:
 		short			patchcount;
 		texdefpatch_t	patches[1];
 	};
-
-	std::vector<texdef_t*>		mTextureDefinitions;
-
-	// lookup table to translate texdef_t name to indices in mTextureDefinitions
-	typedef OHashTable<OString, unsigned int> TextureNameTranslationMap;
-	TextureNameTranslationMap	mTextureNameTranslationMap;
 
 	// management for the creation of new TextureIds
 	static const unsigned int MAX_CUSTOM_TEXTURE_IDS = 1024;
