@@ -212,7 +212,8 @@ WadResourceContainer::WadResourceContainer(
 		char name[8];
 		mFile->read(name, 8);
 
-		mDirectory->addEntryInfo(OStringToUpper(OString(name, 8)), length, offset);
+		if (offset >= 12 && length >= 0)
+			mDirectory->addEntryInfo(OStringToUpper(name, 8), length, offset);
 	}
 
 
