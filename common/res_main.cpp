@@ -47,12 +47,7 @@
 #include "z_zone.h"
 
 
-static bool Res_IsMapLumpName(const OString& name);
-
-
 static ResourceManager resource_manager;
-
-
 
 //
 // Res_ValidateFlatData
