@@ -28,7 +28,6 @@
 #include "r_state.h"
 #include "g_level.h"
 #include "m_random.h"
-#include "w_wad.h"
 #include "sc_man.h"
 #include "m_memio.h"
 #include "cmdlib.h"
@@ -523,6 +522,212 @@ const Texture* CompositeTextureLoader::load() const
 	return NULL;
 }
 
+// ----------------------------------------------------------------------------
+// RawTextureLoader class implementation
+//
+// ----------------------------------------------------------------------------
+
+RawTextureLoader::RawTextureLoader(const ResourceId res_id) :
+	mResId(res_id)
+{ }
+
+const Texture* RawTextureLoader::load() const
+{
+	if (Res_CheckLump(mResId))
+	{
+		const int16_t width = 320, height = 200;
+		size_t lump_length = Res_GetLumpLength(mResId);
+		if (lump_length == width * height)
+		{
+			Texture* texture = Texture::createTexture(width, height);
+
+			if (clientside)
+			{
+				byte* lump_data = new byte[lump_length];
+				Res_ReadLump(mResId, lump_data);
+
+				// convert the row-major raw data to into column-major
+				Res_TransposeImage(texture->mData, lump_data, width, height);
+
+				delete [] lump_data;
+			}
+
+			return texture;
+		}
+	}
+	return NULL;
+}
+
+
+// ----------------------------------------------------------------------------
+// PngTextureLoader class implementation
+//
+// ----------------------------------------------------------------------------
+
+//
+// Res_ReadPNGCallback
+//
+// Callback function required for reading PNG format images stored in
+// a memory buffer.
+//
+#ifdef CLIENT_APP
+static void Res_ReadPNGCallback(png_struct* png_ptr, png_byte* dest, png_size_t length)
+{
+	MEMFILE* mfp = (MEMFILE*)png_get_io_ptr(png_ptr);
+	mem_fread(dest, sizeof(byte), length, mfp);
+}
+#endif
+
+
+//
+// Res_PNGCleanup
+//
+// Helper function for TextureManager::cachePNGTexture which takes care of
+// freeing the memory allocated for reading a PNG image using libpng. This
+// can be called in the event of success or failure when reading the image.
+//
+#ifdef CLIENT_APP
+static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lump_data,
+							png_byte** row_data, MEMFILE** mfp)
+{
+	png_destroy_read_struct(png_ptr, info_ptr, NULL);
+	*png_ptr = NULL;
+	*info_ptr = NULL;
+
+	delete [] *lump_data;
+	*lump_data = NULL;
+	delete [] *row_data;
+	*row_data = NULL;
+
+	if (*mfp)
+		mem_fclose(*mfp);
+	*mfp = NULL;
+}
+#endif
+
+
+PngTextureLoader::PngTextureLoader(const ResourceId res_id) :
+	mResId(res_id)
+{ }
+
+
+const Texture* PngTextureLoader::load() const
+{
+#ifdef CLIENT_APP
+	if (Res_CheckLump(mResId))
+	{
+		const char* lump_name = OString(Res_GetResourcePath(mResId)).c_str();
+		size_t lump_length = Res_GetLumpLength(mResId);
+		byte* lump_data = new byte[lump_length];
+		Res_ReadLump(mResId, lump_data);
+
+		png_struct* png_ptr = NULL;
+		png_info* info_ptr = NULL;
+		png_byte* row_data = NULL;
+		MEMFILE* mfp = NULL;
+		
+		if (!png_check_sig(lump_data, 8))
+		{
+			Printf(PRINT_HIGH, "Bad PNG header in %s.\n", lump_name);
+			Res_PNGCleanup(&png_ptr, &info_ptr, &lump_data, &row_data, &mfp);
+			return NULL;
+		}
+
+		png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+		if (!png_ptr)
+		{
+			Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", lump_name);
+			Res_PNGCleanup(&png_ptr, &info_ptr, &lump_data, &row_data, &mfp);
+			return NULL;	
+		}
+	  
+		info_ptr = png_create_info_struct(png_ptr);
+		if (!info_ptr)
+		{
+			Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", lump_name);
+			Res_PNGCleanup(&png_ptr, &info_ptr, &lump_data, &row_data, &mfp);
+			return NULL;
+		}
+
+		// tell libpng to retrieve image data from memory buffer instead of a disk file
+		mfp = mem_fopen_read(lump_data, lump_length);
+		png_set_read_fn(png_ptr, mfp, Res_ReadPNGCallback);
+
+		png_read_info(png_ptr, info_ptr);
+
+		// read the png header
+		png_uint_32 width = 0, height = 0;
+		int bitsperpixel = 0, colortype = -1;
+		png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, NULL, NULL, NULL);
+
+		if (ret != 1)
+		{
+			Printf(PRINT_HIGH, "Bad PNG header in %s.\n", lump_name);
+			Res_PNGCleanup(&png_ptr, &info_ptr, &lump_data, &row_data, &mfp);
+			return NULL;
+		}
+
+		Texture* texture = Texture::createTexture(width, height);
+		memset(texture->mData, 0, width * height);
+		memset(texture->mMask, 0, width * height);
+
+		// convert the PNG image to a convenient format
+
+		// convert transparency to full alpha
+		if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+			png_set_tRNS_to_alpha(png_ptr);
+	 
+		// convert grayscale, if needed.
+		if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
+			png_set_expand_gray_1_2_4_to_8(png_ptr);
+	 
+		// convert paletted images to RGB
+		if (colortype == PNG_COLOR_TYPE_PALETTE)
+			png_set_palette_to_rgb(png_ptr);
+	 
+		// convert from RGB to ARGB
+		if (colortype == PNG_COLOR_TYPE_PALETTE || colortype == PNG_COLOR_TYPE_RGB)
+		   png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
+	 
+		// process the above transformations
+		png_read_update_info(png_ptr, info_ptr);
+
+		// Read the new color type after updates have been made.
+		colortype = png_get_color_type(png_ptr, info_ptr);
+
+		// read the image and store in temp_image
+		const png_size_t row_size = png_get_rowbytes(png_ptr, info_ptr);
+
+		row_data = new png_byte[row_size];
+		for (unsigned int y = 0; y < height; y++)
+		{
+			png_read_row(png_ptr, row_data, NULL);
+			byte* dest = texture->mData + y;
+			byte* mask = texture->mMask + y;
+			
+			for (unsigned int x = 0; x < width; x++)
+			{
+				argb_t color(row_data[(x << 2) + 3], row_data[(x << 2) + 0],
+							row_data[(x << 2) + 1], row_data[(x << 2) + 2]);
+
+				*mask = color.geta() != 0;
+				if (*mask)
+					*dest = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+
+				dest += height;
+				mask += height;
+			}
+		}
+
+//		texture->mHasMask = (memchr(texture->mMask, 0, width * height) != NULL);
+
+		Res_PNGCleanup(&png_ptr, &info_ptr, &lump_data, &row_data, &mfp);
+
+		return texture;
+	}
+#endif	// CLIENT_APP
+	return NULL;
+}
 
 
 
@@ -1155,333 +1360,6 @@ void TextureManager::freeTexture(const LumpId lump_id)
 	mTextures[lump_id] = NULL;
 }
 
-
-//
-// TextureManger::cachePatch
-//
-void TextureManager::cachePatch(TextureId tex_id)
-{
-	unsigned int lumpnum = tex_id & ~(PATCH_TEXTURE_ID_MASK | SPRITE_TEXTURE_ID_MASK);
-
-	unsigned int lumplen = W_LumpLength(lumpnum);
-	byte* lumpdata = new byte[lumplen];
-	W_ReadLump(lumpnum, lumpdata);
-
-	int width = LESHORT(*(short*)(lumpdata + 0));
-	int height = LESHORT(*(short*)(lumpdata + 2));
-	int offsetx = LESHORT(*(short*)(lumpdata + 4));
-	int offsety = LESHORT(*(short*)(lumpdata + 6));
-
-	Texture* texture = createTexture(tex_id, width, height);
-	texture->mOffsetX = offsetx;
-	texture->mOffsetY = offsety;
-
-	if (clientside)
-	{
-		// TODO: remove this once proper masking is in place
-		memset(texture->mData, 0, width * height);
-
-		// initialize the mask to entirely transparent 
-		memset(texture->mMask, 0, width * height);
-
-		Res_DrawPatchIntoTexture(texture, lumpdata, 0, 0);
-		texture->mHasMask = (memchr(texture->mMask, 0, width * height) != NULL);
-	}
-
-	delete [] lumpdata;
-
-}
-
-
-//
-// TextureManger::cacheSprite
-//
-void TextureManager::cacheSprite(TextureId tex_id)
-{
-	cachePatch(tex_id);
-}
-
-
-//
-// TextureManager::cacheFlat
-//
-// Loads a flat with the specified tex_id from the WAD file and composes
-// a Texture object.
-//
-void TextureManager::cacheFlat(TextureId tex_id)
-{
-	// should we check that the tex_id is valid for a flat?
-
-	unsigned int lumpnum = (tex_id & ~FLAT_TEXTURE_ID_MASK) + mFirstFlatLumpNum;
-	unsigned int lumplen = W_LumpLength(lumpnum);
-
-	int width, height;	
-
-	if (lumplen == 64 * 64)
-		width = height = 64;
-	else if (lumplen == 128 * 128)
-		width = height = 128;
-	else if (lumplen == 256 * 256)
-		width = height = 256;
-	else
-		width = height = Log2(sqrt(lumplen));	// probably not pretty... 
-
-	Texture* texture = createTexture(tex_id, width, height);
-
-	if (clientside)
-	{
-		byte *lumpdata = new byte[lumplen];
-		W_ReadLump(lumpnum, lumpdata);
-
-		// convert the row-major flat lump to into column-major
-		Res_TransposeImage(texture->mData, lumpdata, width, height);
-		
-		delete [] lumpdata;
-	}
-}
-
-
-//
-// TextureManager::cacheWallTexture
-//
-// Composes a wall texture from a set of patches loaded from the WAD file.
-//
-void TextureManager::cacheWallTexture(TextureId tex_id)
-{
-	// should we check that the tex_id is valid for a wall texture?
-
-	texdef_t* texdef = mTextureDefinitions[tex_id & ~WALLTEXTURE_ID_MASK];
-
-	int width = texdef->width;
-	int height = texdef->height;
-
-	Texture* texture = createTexture(tex_id, width, height);
-	if (texdef->scalex)
-		texture->mScaleX = texdef->scalex << (FRACBITS - 3);
-	if (texdef->scaley)
-		texture->mScaleY = texdef->scaley << (FRACBITS - 3);
-
-	if (clientside)
-	{
-		// TODO: remove this once proper masking is in place
-		memset(texture->mData, 0, width * height);
-
-		// initialize the mask to entirely transparent 
-		memset(texture->mMask, 0, width * height);
-
-		// compose the texture out of a set of patches
-		for (int i = 0; i < texdef->patchcount; i++)
-		{
-			texdefpatch_t* texdefpatch = &texdef->patches[i];
-			const ResourceId res_id = *texdefpatch->res_id;
-			
-			if (!Res_CheckLump(res_id))
-				continue;
-
-			byte* lumpdata = new byte[Res_GetLumpLength(res_id)];
-			Res_ReadLump(res_id, lumpdata);
-			Res_DrawPatchIntoTexture(texture, lumpdata, texdefpatch->originx, texdefpatch->originy);
-
-			delete [] lumpdata;
-		}
-
-		texture->mHasMask = (memchr(texture->mMask, 0, width * height) != NULL);
-	}
-}
-
-
-//
-// TextureManager::cacheRawTexture
-//
-// Converts a linear 320x200 block of pixels into a Texture 
-//
-void TextureManager::cacheRawTexture(TextureId tex_id)
-{
-	const int width = 320;
-	const int height = 200;
-
-	Texture* texture = createTexture(tex_id, width, height);
-
-	if (clientside)
-	{
-		unsigned int lumpnum = (tex_id & ~RAW_TEXTURE_ID_MASK);
-		unsigned int lumplen = W_LumpLength(lumpnum);
-
-		byte* lumpdata = new byte[lumplen];
-		W_ReadLump(lumpnum, lumpdata);
-
-		// convert the row-major flat lump to into column-major
-		Res_TransposeImage(texture->mData, lumpdata, width, height);
-
-		delete [] lumpdata;
-	}
-}
-	
-
-//
-// Res_ReadPNGCallback
-//
-// Callback function required for reading PNG format images stored in
-// a memory buffer.
-//
-#ifdef CLIENT_APP
-static void Res_ReadPNGCallback(png_struct* png_ptr, png_byte* dest, png_size_t length)
-{
-	MEMFILE* mfp = (MEMFILE*)png_get_io_ptr(png_ptr);
-	mem_fread(dest, sizeof(byte), length, mfp);
-}
-#endif
-
-
-//
-// Res_PNGCleanup
-//
-// Helper function for TextureManager::cachePNGTexture which takes care of
-// freeing the memory allocated for reading a PNG image using libpng. This
-// can be called in the event of success or failure when reading the image.
-//
-#ifdef CLIENT_APP
-static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lumpdata,
-							png_byte** row_data, MEMFILE** mfp)
-{
-	png_destroy_read_struct(png_ptr, info_ptr, NULL);
-	*png_ptr = NULL;
-	*info_ptr = NULL;
-
-	delete [] *lumpdata;
-	*lumpdata = NULL;
-	delete [] *row_data;
-	*row_data = NULL;
-
-	if (*mfp)
-		mem_fclose(*mfp);
-	*mfp = NULL;
-}
-#endif
-
-
-//
-// TextureManager::cachePNGTexture
-//
-// Converts a linear PNG format image into a Texture.
-//
-void TextureManager::cachePNGTexture(TextureId tex_id)
-{
-#ifdef CLIENT_APP
-	png_struct* png_ptr = NULL;
-	png_info* info_ptr = NULL;
-	byte* lumpdata = NULL;
-	png_byte* row_data = NULL;
-	MEMFILE* mfp = NULL;
-	
-	unsigned int lumpnum = (tex_id & ~PNG_TEXTURE_ID_MASK);
-	unsigned int lumplen = W_LumpLength(lumpnum);
-
-	char lumpname[9];
-	W_GetLumpName(lumpname, lumpnum);
-
-	lumpdata = new byte[lumplen];
-	W_ReadLump(lumpnum, lumpdata);
-
-	if (!png_check_sig(lumpdata, 8))
-	{
-		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", lumpname);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
-		return;
-	}
-
-	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if (!png_ptr)
-	{
-		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", lumpname);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
-		return;	
-	}
-  
-	info_ptr = png_create_info_struct(png_ptr);
-	if (!info_ptr)
-	{
-		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", lumpname);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
-		return;
-    }
-
-	// tell libpng to retrieve image data from memory buffer instead of a disk file
-	mfp = mem_fopen_read(lumpdata, lumplen);
-	png_set_read_fn(png_ptr, mfp, Res_ReadPNGCallback);
-
-	png_read_info(png_ptr, info_ptr);
-
-	// read the png header
-	png_uint_32 width = 0, height = 0;
-	int bitsperpixel = 0, colortype = -1;
-	png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, NULL, NULL, NULL);
-
-	if (ret != 1)
-	{
-		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", lumpname);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
-		return;
-	}
-
-	Texture* texture = createTexture(tex_id, width, height);
-	memset(texture->mData, 0, width * height);
-	memset(texture->mMask, 0, width * height);
-
-	// convert the PNG image to a convenient format
-
-	// convert transparency to full alpha
-	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
-		png_set_tRNS_to_alpha(png_ptr);
- 
-	// convert grayscale, if needed.
-	if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
-		png_set_expand_gray_1_2_4_to_8(png_ptr);
- 
-	// convert paletted images to RGB
-	if (colortype == PNG_COLOR_TYPE_PALETTE)
-		png_set_palette_to_rgb(png_ptr);
- 
-	// convert from RGB to ARGB
-	if (colortype == PNG_COLOR_TYPE_PALETTE || colortype == PNG_COLOR_TYPE_RGB)
-	   png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
- 
-	// process the above transformations
-	png_read_update_info(png_ptr, info_ptr);
-
-	// Read the new color type after updates have been made.
-	colortype = png_get_color_type(png_ptr, info_ptr);
-
-	// read the image and store in temp_image
-	const png_size_t row_size = png_get_rowbytes(png_ptr, info_ptr);
-
-	row_data = new png_byte[row_size];
-	for (unsigned int y = 0; y < height; y++)
-	{
-		png_read_row(png_ptr, row_data, NULL);
-		byte* dest = texture->mData + y;
-		byte* mask = texture->mMask + y;
-		
-		for (unsigned int x = 0; x < width; x++)
-		{
-			argb_t color(row_data[(x << 2) + 3], row_data[(x << 2) + 0],
-						row_data[(x << 2) + 1], row_data[(x << 2) + 2]);
-
-			*mask = color.geta() != 0;
-			if (*mask)
-				*dest = V_BestColor(V_GetDefaultPalette()->basecolors, color);
-
-			dest += height;
-			mask += height;
-		}
-	}
-
-	texture->mHasMask = (memchr(texture->mMask, 0, width * height) != NULL);
-
-	Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
-
-#endif	// CLIENT_APP
-}
 
 
 //

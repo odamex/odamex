@@ -303,6 +303,20 @@ private:
 
 
 // ----------------------------------------------------------------------------
+// SpriteTextureLoader class interface
+//
+// Loads patch_t format sprite graphic lumps. 
+// ----------------------------------------------------------------------------
+
+class SpriteTextureLoader : public PatchTextureLoader
+{
+public:
+	SpriteTextureLoader(const ResourceId res_id) : PatchTextureLoader(res_id) {}
+	virtual ~SpriteTextureLoader() {}
+};
+
+
+// ----------------------------------------------------------------------------
 // CompositeTextureLoader class interface
 //
 // Generates composite textures given a CompositeTextureDefinition from the
@@ -320,6 +334,44 @@ public:
 
 private:
 	const CompositeTextureDefinition	mTextureDef;
+};
+
+
+// ----------------------------------------------------------------------------
+// RawTextureLoader class interface
+//
+// Loads raw 320x200 graphic lumps. 
+// ----------------------------------------------------------------------------
+
+class RawTextureLoader : public TextureLoader
+{
+public:
+	RawTextureLoader(const ResourceId res_id); 
+	virtual ~RawTextureLoader() {}
+
+	virtual const Texture* load() const;
+
+private:
+	const ResourceId	mResId;
+};
+
+
+// ----------------------------------------------------------------------------
+// PngTextureLoader class interface
+//
+// Loads PNG format graphic lumps. 
+// ----------------------------------------------------------------------------
+
+class PngTextureLoader : public TextureLoader
+{
+public:
+	PngTextureLoader(const ResourceId res_id); 
+	virtual ~PngTextureLoader() {}
+
+	virtual const Texture* load() const;
+
+private:
+	const ResourceId	mResId;
 };
 
 
@@ -406,24 +458,6 @@ private:
 	void readAnimatedLump();
 
 	void registerTextureResources(ResourceManager* manager);
-
-	// patches
-	void cachePatch(TextureId tex_id);
-
-	// sprites
-	void cacheSprite(TextureId tex_id);
-
-	// flats
-	void cacheFlat(TextureId tex_id);
-
-	// wall textures
-	void cacheWallTexture(TextureId tex_id);
-
-	// raw images
-	void cacheRawTexture(TextureId tex_id);
-
-	// PNG images
-	void cachePNGTexture(TextureId tex_id);
 
 	const ResourceContainerId		mResourceContainerId;
 
