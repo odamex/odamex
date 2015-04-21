@@ -87,7 +87,7 @@
 //
 // Draws a lump in patch_t format into a Texture at the given offset.
 //
-static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lump_data, size_t lump_length, int xoffs, int yoffs)
+static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lump_data, uint32_t lump_length, int xoffs, int yoffs)
 {
 	if (lump_length < 12)		// long enough for header data?
 		return;
@@ -111,19 +111,19 @@ static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lump_data, si
 		int abstopdelta = 0;
 
 		int32_t offset = LELONG(colofs[x - xoffs]);
-		if (offset < 0 || lump_length < (size_t)offset + 1)		// long enough for this post's topdelta? 
+		if (offset < 0 || lump_length < (uint32_t)offset + 1)		// long enough for this post's topdelta? 
 			return;
 
 		const byte* post = lump_data + offset; 
 		while (*post != 0xFF)
 		{
-			if (lump_length < (size_t)(post - lump_data) + 2)	// long enough for this post's header?
+			if (lump_length < (uint32_t)(post - lump_data) + 2)	// long enough for this post's header?
 				return;
 
 			int posttopdelta = *(post + 0);
 			int postlength = *(post + 1);
 
-			if (lump_length < (size_t)(post - lump_data) + 4 + postlength)
+			if (lump_length < (uint32_t)(post - lump_data) + 4 + postlength)
 				return;
 
 			// [SL] Handle DeePsea tall patches: topdelta is treated as a relative
@@ -329,7 +329,7 @@ Texture::Texture() :
 }
 
 
-size_t Texture::calculateSize(int width, int height)
+uint32_t Texture::calculateSize(int width, int height)
 {
 	return sizeof(Texture)						// header
 		+ width * height						// mData
@@ -390,7 +390,7 @@ const Texture* FlatTextureLoader::load() const
 {
 	if (Res_CheckLump(mResId))
 	{
-		size_t lump_length = Res_GetLumpLength(mResId);
+		uint32_t lump_length = Res_GetLumpLength(mResId);
 		if (lump_length > 0)
 		{
 			int width, height;	
@@ -439,7 +439,7 @@ const Texture* PatchTextureLoader::load() const
 {
 	if (Res_CheckLump(mResId))
 	{
-		size_t lump_length = Res_GetLumpLength(mResId);
+		uint32_t lump_length = Res_GetLumpLength(mResId);
 		if (lump_length >= 8)
 		{
 			byte* lump_data = (byte*)Res_CacheLump(mResId, PU_CACHE);
@@ -532,7 +532,7 @@ const Texture* RawTextureLoader::load() const
 	if (Res_CheckLump(mResId))
 	{
 		const int16_t width = 320, height = 200;
-		size_t lump_length = Res_GetLumpLength(mResId);
+		uint32_t lump_length = Res_GetLumpLength(mResId);
 		if (lump_length == width * height)
 		{
 			Texture* texture = Texture::createTexture(width, height);
@@ -609,7 +609,7 @@ const Texture* PngTextureLoader::load() const
 	if (Res_CheckLump(mResId))
 	{
 		const char* lump_name = OString(Res_GetResourcePath(mResId)).c_str();
-		size_t lump_length = Res_GetLumpLength(mResId);
+		uint32_t lump_length = Res_GetLumpLength(mResId);
 		byte* lump_data = new byte[lump_length];
 		Res_ReadLump(mResId, lump_data);
 
@@ -966,7 +966,7 @@ void TextureManager::readAnimatedLump()
 	if (!Res_CheckLump(res_id))
 		return;
 
-	size_t lumplen = Res_GetLumpLength(res_id);
+	uint32_t lumplen = Res_GetLumpLength(res_id);
 	if (lumplen == 0)
 		return;
 
@@ -1120,7 +1120,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 	if (!Res_CheckLump(pnames_res_id))
 		I_Error("Res_InitTextures: PNAMES lump not found");
 
-	size_t pnames_lump_length = Res_GetLumpLength(pnames_res_id);
+	uint32_t pnames_lump_length = Res_GetLumpLength(pnames_res_id);
 	if (pnames_lump_length < 4)			// not long enough to store pnames_count
 		I_Error("Res_InitTextures: invalid PNAMES lump");
 
@@ -1128,7 +1128,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 	Res_ReadLump(pnames_res_id, pnames_lump_data);
 
 	int32_t pnames_count = LELONG(*((int32_t*)(pnames_lump_data + 0)));
-	if ((size_t)pnames_count * 8 + 4 != pnames_lump_length)
+	if ((uint32_t)pnames_count * 8 + 4 != pnames_lump_length)
 		I_Error("Res_InitTextures: invalid PNAMES lump");
 	ResourceId* pnames_lookup = new ResourceId[pnames_count];
 
@@ -1158,7 +1158,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 	//
 	static const char* const texture_definition_lump_names[] = { "TEXTURE1", "TEXTURE2", "TEXTURES", "" };
 
-	for (size_t i = 0; texture_definition_lump_names[i][0] != '\0'; i++)
+	for (uint32_t i = 0; texture_definition_lump_names[i][0] != '\0'; i++)
 	{
 		const ResourceId res_id = Res_GetResourceId(texture_definition_lump_names[i]);
 		if (!Res_CheckLump(res_id))
@@ -1169,7 +1169,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 				continue;		// skip this lump and go onto the next
 		}
 
-		size_t lump_length = Res_GetLumpLength(res_id);
+		uint32_t lump_length = Res_GetLumpLength(res_id);
 		if (lump_length < 4)		// not long enough to store definition_count
 			continue;
 
@@ -1313,7 +1313,7 @@ Texture* TextureManager::createTexture(const TextureId tex_id, int width, int he
 	height = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT);
 
 	// server shouldn't allocate memory for texture data, only the header	
-	size_t texture_size = clientside ?
+	uint32_t texture_size = clientside ?
 			Texture::calculateSize(width, height) : sizeof(Texture);
 	
 	Texture* texture = (Texture*)Z_Malloc(texture_size, PU_STATIC, NULL);

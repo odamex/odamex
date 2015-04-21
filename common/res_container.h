@@ -56,8 +56,8 @@ private:
 	struct EntryInfo
 	{
 		OString		name;
-		size_t		length;
-		size_t		offset;
+		uint32_t	length;
+		uint32_t	offset;
 	};
 
 	typedef std::vector<EntryInfo> EntryInfoList;
@@ -112,7 +112,7 @@ public:
 		return lump_id < mEntries.size();
 	}
 
-	void addEntryInfo(const OString& name, size_t length, size_t offset = 0)
+	void addEntryInfo(const OString& name, uint32_t length, uint32_t offset = 0)
 	{
 		mEntries.push_back(EntryInfo());
 		EntryInfo* entry = &mEntries.back();
@@ -125,12 +125,12 @@ public:
 		mNameLookup.insert(std::make_pair(name, lump_id));
 	}
 
-	size_t getLength(const LumpId lump_id) const
+	uint32_t getLength(const LumpId lump_id) const
 	{
 		return mEntries[lump_id].length;
 	}
 
-	size_t getOffset(const LumpId lump_id) const
+	uint32_t getOffset(const LumpId lump_id) const
 	{
 		return mEntries[lump_id].offset;
 	}
@@ -209,11 +209,11 @@ public:
 
 	virtual bool isIWad() const { return false; }
 
-	virtual size_t getLumpCount() const = 0;
+	virtual uint32_t getLumpCount() const = 0;
 
-	virtual size_t getLumpLength(const LumpId lump_id) const = 0;
+	virtual uint32_t getLumpLength(const LumpId lump_id) const = 0;
 
-	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const = 0;
+	virtual uint32_t readLump(const LumpId lump_id, void* data, uint32_t length) const = 0;
 };
 
 // ============================================================================
@@ -237,11 +237,11 @@ public:
 		return mResourceContainerId;
 	}
 
-	virtual size_t getLumpCount() const;
+	virtual uint32_t getLumpCount() const;
 
-	virtual size_t getLumpLength(const LumpId lump_id) const;
+	virtual uint32_t getLumpLength(const LumpId lump_id) const;
 
-	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const;
+	virtual uint32_t readLump(const LumpId lump_id, void* data, uint32_t length) const;
 
 private:
 	ResourceContainerId		mResourceContainerId;
@@ -275,11 +275,11 @@ public:
 		return mIsIWad;
 	}
 
-	virtual size_t getLumpCount() const;
+	virtual uint32_t getLumpCount() const;
 
-	virtual size_t getLumpLength(const LumpId lump_id) const;
+	virtual uint32_t getLumpLength(const LumpId lump_id) const;
 		
-	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const;
+	virtual uint32_t readLump(const LumpId lump_id, void* data, uint32_t length) const;
 
 private:
 	void cleanup();

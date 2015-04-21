@@ -54,7 +54,7 @@ static ResourceManager resource_manager;
 //
 // Returns true if the given lump data appears to be a valid flat.
 //
-bool Res_ValidateFlatData(const void* data, size_t length)
+bool Res_ValidateFlatData(const void* data, uint32_t length)
 {
 	// TODO: Handle Heretic and Hexen's oddly formatted flats
 	// From http://zdoom.org/wiki/Flat:
@@ -72,7 +72,7 @@ bool Res_ValidateFlatData(const void* data, size_t length)
 //
 // Returns true if the given lump data appears to be a valid graphic patch.
 //
-bool Res_ValidatePatchData(const void* data, size_t length)
+bool Res_ValidatePatchData(const void* data, uint32_t length)
 {
 	if (length > 2 + 2)
 	{
@@ -107,7 +107,7 @@ bool Res_ValidatePatchData(const void* data, size_t length)
 // Returns true if the given lump data appears to be a valid WAD file.
 // TODO: test more than just identifying string.
 //
-bool Res_ValidateWadData(const void* data, size_t length)
+bool Res_ValidateWadData(const void* data, uint32_t length)
 {
 	if (length >= 4)
 	{
@@ -124,10 +124,10 @@ bool Res_ValidateWadData(const void* data, size_t length)
 //
 // Returns true if the given lump data appears to be a valid DeHackEd file.
 //
-bool Res_ValidateDehackedData(const void* data, size_t length)
+bool Res_ValidateDehackedData(const void* data, uint32_t length)
 {
 	const char magic_str[] = "Patch File for DeHackEd v";
-	size_t magic_len = strlen(magic_str);
+	uint32_t magic_len = strlen(magic_str);
 
 	return length >= magic_len && strnicmp((const char*)data, magic_str, magic_len) == 0;
 }
@@ -141,7 +141,7 @@ bool Res_ValidateDehackedData(const void* data, size_t length)
 // of the sound effect in bytes and then is followed by that number of bytes
 // of sound data.
 //
-bool Res_ValidatePCSpeakerSoundData(const void* data, size_t length)
+bool Res_ValidatePCSpeakerSoundData(const void* data, uint32_t length)
 {
 	int16_t* magic = (int16_t*)((uint8_t*)data + 0);
 	int16_t* sample_length = (int16_t*)((uint8_t*)data + 2);
@@ -159,7 +159,7 @@ bool Res_ValidatePCSpeakerSoundData(const void* data, size_t length)
 // do not use the correct number of padding bytes in the header and as such
 // cannot be used to validate a sound lump.
 //
-bool Res_ValidateSoundData(const void* data, size_t length)
+bool Res_ValidateSoundData(const void* data, uint32_t length)
 {
 	uint16_t* magic = (uint16_t*)((uint8_t*)data + 0);
 	return length >= 2 && LESHORT(*magic) == 3;
@@ -173,14 +173,14 @@ bool Res_ValidateSoundData(const void* data, size_t length)
 // the file and then passes the data to the function func and returns the
 // result.
 //
-static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const void*, size_t), size_t length)
+static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const void*, uint32_t), uint32_t length)
 {
 	FILE* fp = fopen(filename.c_str(), "rb");
 	if (fp == NULL)
 		return false;
 
 	char* data = new char[length];
-	size_t read_cnt = fread(data, 1, length, fp);
+	uint32_t read_cnt = fread(data, 1, length, fp);
 	bool valid = read_cnt == length && func(data, length);
 	delete [] data;
 	fclose(fp);
@@ -196,7 +196,7 @@ static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const void
 //
 bool Res_IsWadFile(const OString& filename)
 {
-	const size_t length = 4;	// length of WAD identifier ("IWAD" or "PWAD")
+	const uint32_t length = 4;	// length of WAD identifier ("IWAD" or "PWAD")
 	return Res_CheckFileHelper(filename, &Res_ValidateWadData, length);
 }
 
@@ -208,7 +208,7 @@ bool Res_IsWadFile(const OString& filename)
 //
 bool Res_IsDehackedFile(const OString& filename)
 {
-	const size_t length = strlen("Patch File for DeHackEd v");	// length of DeHackEd identifier
+	const uint32_t length = strlen("Patch File for DeHackEd v");	// length of DeHackEd identifier
 	return Res_CheckFileHelper(filename, &Res_ValidateDehackedData, length);
 }
 
@@ -231,7 +231,7 @@ bool Res_IsDehackedFile(const OString& filename)
 // be resized. Thus we initialize mResources to be the largest size possible
 // for that container.
 //
-static const size_t initial_lump_count = 4096;
+static const uint32_t initial_lump_count = 4096;
 
 ResourceManager::ResourceManager() :
 	mResources(ResourceManager::MAX_RESOURCES),
@@ -536,7 +536,7 @@ bool ResourceManager::visible(const ResourceId res_id) const
 //
 // ResourceManager::getLumpLength
 //
-size_t ResourceManager::getLumpLength(const ResourceId res_id) const
+uint32_t ResourceManager::getLumpLength(const ResourceId res_id) const
 {
 	if (validateResourceId(res_id))
 	{
@@ -554,7 +554,7 @@ size_t ResourceManager::getLumpLength(const ResourceId res_id) const
 //
 // ResourceManager::readLump
 //
-size_t ResourceManager::readLump(const ResourceId res_id, void* data) const
+uint32_t ResourceManager::readLump(const ResourceId res_id, void* data) const
 {
 	if (validateResourceId(res_id))
 	{
@@ -563,7 +563,7 @@ size_t ResourceManager::readLump(const ResourceId res_id, void* data) const
 		const ResourceContainer* container = mContainers[container_id];
 		assert(container != NULL);
 		const LumpId lump_id = getLumpId(res_id);
-		size_t length = container->getLumpLength(lump_id);
+		uint32_t length = container->getLumpLength(lump_id);
 		return container->readLump(lump_id, data, length);
 	}
 	return 0;
@@ -593,7 +593,7 @@ const void* ResourceManager::getData(const ResourceId res_id, int tag)
 		const ResourceContainer* container = mContainers[container_id];
 		assert(container != NULL);
 		const LumpId lump_id = res_rec.mLumpId;
-		size_t length = container->getLumpLength(lump_id);
+		uint32_t length = container->getLumpLength(lump_id);
 
 		// Allocate an extra byte so that we can terminate the allocated memory
 		// with a zero. This is a Zone memory system requirement.
@@ -788,7 +788,7 @@ bool Res_CheckLump(const ResourceId res_id)
 // Returns the length of the resource lump that matches res_id. If the lump is
 // not found, 0 is returned.
 //
-size_t Res_GetLumpLength(const ResourceId res_id)
+uint32_t Res_GetLumpLength(const ResourceId res_id)
 {
 	return resource_manager.getLumpLength(res_id);
 }
@@ -839,7 +839,7 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 // is not found. The variable data must be able to hold the size of the lump,
 // as determined by Res_GetLumpLength.
 //
-size_t Res_ReadLump(const ResourceId res_id, void* data)
+uint32_t Res_ReadLump(const ResourceId res_id, void* data)
 {
 	return resource_manager.readLump(res_id, data);
 }

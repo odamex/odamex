@@ -71,12 +71,12 @@ static const ResourcePath voxels_directory_name("/VOXELS/");
 typedef std::vector<ResourceId> ResourceIdList;
 
 
-bool Res_ValidateFlatData(const void* data, size_t length);
-bool Res_ValidatePatchData(const void* data, size_t length);
-bool Res_ValidateWadData(const void* data, size_t length);
-bool Res_ValidateDehackedData(const void* data, size_t length);
-bool Res_ValidatePCSpeakerSoundData(const void* data, size_t length);
-bool Res_ValidateSoundData(const void* data, size_t length);
+bool Res_ValidateFlatData(const void* data, uint32_t length);
+bool Res_ValidatePatchData(const void* data, uint32_t length);
+bool Res_ValidateWadData(const void* data, uint32_t length);
+bool Res_ValidateDehackedData(const void* data, uint32_t length);
+bool Res_ValidatePCSpeakerSoundData(const void* data, uint32_t length);
+bool Res_ValidateSoundData(const void* data, uint32_t length);
 
 bool Res_IsWadFile(const OString& filename);
 bool Res_IsDehackedFile(const OString& filename);
@@ -154,9 +154,9 @@ public:
 		return empty_path;
 	}
 
-	size_t getLumpLength(const ResourceId res_id) const;
+	uint32_t getLumpLength(const ResourceId res_id) const;
 
-	size_t readLump(const ResourceId res_id, void* data) const;
+	uint32_t readLump(const ResourceId res_id, void* data) const;
 
 	const void* getData(const ResourceId res_id, int tag = PU_CACHE);
 
@@ -309,9 +309,9 @@ static inline bool Res_CheckLump(const OString& name, const OString& directory =
 // Res_GetLumpLength
 // ----------------------------------------------------------------------------
 
-size_t Res_GetLumpLength(const ResourceId res_id);
+uint32_t Res_GetLumpLength(const ResourceId res_id);
 
-static inline size_t Res_GetLumpLength(const OString& name, const OString& directory = global_directory_name)
+static inline uint32_t Res_GetLumpLength(const OString& name, const OString& directory = global_directory_name)
 {
 	return Res_GetLumpLength(Res_GetResourceId(name, directory));
 }
@@ -321,9 +321,9 @@ static inline size_t Res_GetLumpLength(const OString& name, const OString& direc
 // Res_ReadLump
 // ----------------------------------------------------------------------------
 
-size_t Res_ReadLump(const ResourceId res_id, void* data);
+uint32_t Res_ReadLump(const ResourceId res_id, void* data);
 
-static inline size_t Res_ReadLump(const OString& name, void* data)
+static inline uint32_t Res_ReadLump(const OString& name, void* data)
 {
 	return Res_ReadLump(Res_GetResourceId(name), data);
 }

@@ -95,7 +95,7 @@ SingleLumpResourceContainer::SingleLumpResourceContainer(
 //
 // SingleLumpResourceContainer::getLumpCount
 //
-size_t SingleLumpResourceContainer::getLumpCount() const
+uint32_t SingleLumpResourceContainer::getLumpCount() const
 {
 	return mFile->valid() ? 1 : 0;
 }
@@ -104,7 +104,7 @@ size_t SingleLumpResourceContainer::getLumpCount() const
 //
 // SingleLumpResourceContainer::getLumpLength
 //
-size_t SingleLumpResourceContainer::getLumpLength(const LumpId lump_id) const
+uint32_t SingleLumpResourceContainer::getLumpLength(const LumpId lump_id) const
 {
 	if (lump_id < getLumpCount())
 		return mFile->size();
@@ -115,7 +115,7 @@ size_t SingleLumpResourceContainer::getLumpLength(const LumpId lump_id) const
 //
 // SingleLumpResourceContainer::readLump
 //
-size_t SingleLumpResourceContainer::readLump(const LumpId lump_id, void* data, size_t length) const
+uint32_t SingleLumpResourceContainer::readLump(const LumpId lump_id, void* data, uint32_t length) const
 {
 	length = std::min(length, getLumpLength(lump_id));
 	if (length > 0)
@@ -147,7 +147,7 @@ WadResourceContainer::WadResourceContainer(
 		mDirectory(NULL),
 		mIsIWad(false)
 {
-	size_t file_length = mFile->size();
+	uint32_t file_length = mFile->size();
 
 	uint32_t magic;
 	if (!mFile->read(&magic))
@@ -188,9 +188,9 @@ WadResourceContainer::WadResourceContainer(
 	//    int32_t offset
 	//    int32_t length
 	//    char    name[8]
-	const size_t wad_lump_record_length = 4 + 4 + 8;
+	const uint32_t wad_lump_record_length = 4 + 4 + 8;
 
-	size_t wad_table_length = wad_lump_count * wad_lump_record_length;
+	uint32_t wad_table_length = wad_lump_count * wad_lump_record_length;
 	if (wad_table_offset < 12 || wad_table_length + wad_table_offset > file_length)
 	{
 		cleanup();
@@ -201,7 +201,7 @@ WadResourceContainer::WadResourceContainer(
 	mDirectory = new ContainerDirectory(wad_lump_count);
 
 	mFile->seek(wad_table_offset);
-	for (size_t wad_lump_num = 0; wad_lump_num < (size_t)wad_lump_count; wad_lump_num++)
+	for (uint32_t wad_lump_num = 0; wad_lump_num < (uint32_t)wad_lump_count; wad_lump_num++)
 	{
 		int32_t offset, length;
 		mFile->read(&offset);
@@ -225,8 +225,8 @@ WadResourceContainer::WadResourceContainer(
 	{
 		const LumpId wad_lump_num = mDirectory->getLumpId(it);
 
-		size_t offset = mDirectory->getOffset(wad_lump_num);
-		size_t length = mDirectory->getLength(wad_lump_num);
+		uint32_t offset = mDirectory->getOffset(wad_lump_num);
+		uint32_t length = mDirectory->getLength(wad_lump_num);
 		const OString& name = mDirectory->getName(wad_lump_num);
 		ResourcePath path = global_directory_name;
 
@@ -315,7 +315,7 @@ void WadResourceContainer::cleanup()
 // Returns the number of lumps in the WAD file or returns 0 if
 // the WAD file is invalid.
 //
-size_t WadResourceContainer::getLumpCount() const
+uint32_t WadResourceContainer::getLumpCount() const
 {
 	if (mDirectory)
 		return mDirectory->size();
@@ -326,7 +326,7 @@ size_t WadResourceContainer::getLumpCount() const
 //
 // WadResourceContainer::getLumpLength
 //
-size_t WadResourceContainer::getLumpLength(const LumpId lump_id) const
+uint32_t WadResourceContainer::getLumpLength(const LumpId lump_id) const
 {
 	if (mDirectory && mDirectory->validate(lump_id))
 		return mDirectory->getLength(lump_id);
@@ -337,12 +337,12 @@ size_t WadResourceContainer::getLumpLength(const LumpId lump_id) const
 //
 // WadResourceContainer::readLump
 //
-size_t WadResourceContainer::readLump(const LumpId lump_id, void* data, size_t length) const
+uint32_t WadResourceContainer::readLump(const LumpId lump_id, void* data, uint32_t length) const
 {
 	length = std::min(length, getLumpLength(lump_id));
 	if (length > 0)
 	{
-		size_t offset = mDirectory->getOffset(lump_id);
+		uint32_t offset = mDirectory->getOffset(lump_id);
 		mFile->seek(offset);
 		return mFile->read(data, length); 
 	}

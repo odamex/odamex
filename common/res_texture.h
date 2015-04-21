@@ -129,7 +129,7 @@ public:
 		height = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT); 
 		 
 		// server shouldn't allocate memory for texture data, only the header    
-		size_t texture_size = clientside ? 
+		uint32_t texture_size = clientside ? 
 				Texture::calculateSize(width, height) : sizeof(Texture); 
 							      
 		Texture* texture = (Texture*)Z_Malloc(texture_size, PU_STATIC, NULL); 
@@ -144,7 +144,7 @@ private:
 
 	Texture();
 
-	static size_t calculateSize(int width, int height);
+	static uint32_t calculateSize(int width, int height);
 	void init(int width, int height);
 
 	TextureId			mTextureId;
@@ -408,17 +408,17 @@ public:
 		return mResourceContainerId;
 	}
 
-	virtual size_t getLumpCount() const
+	virtual uint32_t getLumpCount() const
 	{
 		return mTextureLoaders.size();
 	}
 
-	virtual size_t getLumpLength(const LumpId lump_id) const
+	virtual uint32_t getLumpLength(const LumpId lump_id) const
 	{
 		return 0;
 	}
 
-	virtual size_t readLump(const LumpId lump_id, void* data, size_t length) const
+	virtual uint32_t readLump(const LumpId lump_id, void* data, uint32_t length) const
 	{
 		return 0;
 	}
