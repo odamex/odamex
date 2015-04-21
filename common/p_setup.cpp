@@ -1639,7 +1639,7 @@ static void P_LoadReject(const OString& mapname)
 
 	// [SL] 2011-07-01 - Check to see if the reject table is of the proper size.
 	// If it's too short, the reject table should be ignored when calling P_CheckSight.
-	if (Res_GetLumpLength(res_id) < (unsigned)numsectors * (unsigned)numsectors + 7 / 8)
+	if (Res_GetLumpLength(res_id) < (unsigned)(numsectors * numsectors + 7) / 8)
 		DPrintf("Reject matrix is not valid and will be ignored.\n");
 	else
 		rejectmatrix = (byte*)Res_CacheLump(res_id, PU_LEVEL);
