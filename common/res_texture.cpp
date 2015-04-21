@@ -331,9 +331,13 @@ Texture::Texture() :
 
 uint32_t Texture::calculateSize(int width, int height)
 {
+	#if CLIENT_APP
 	return sizeof(Texture)						// header
 		+ width * height						// mData
 		+ width * height;						// mMask
+	#else
+	return sizeof(Texture);
+	#endif
 }
 
 
@@ -374,6 +378,67 @@ void Texture::init(int width, int height)
 // TextureLoader class implementations
 //
 // ============================================================================
+
+
+// ----------------------------------------------------------------------------
+// InvalidTextureLoader class implementation
+//
+// ----------------------------------------------------------------------------
+
+InvalidTextureLoader::InvalidTextureLoader()
+{ }
+
+
+//
+// InvalidTextureLoader::validate
+//
+bool InvalidTextureLoader::validate() const
+{
+	return true;
+}
+
+
+//
+// InvalidTextureLoader::size
+//
+// Calculates the size of the resulting Texture instance for the
+// generated texture.
+//
+uint32_t InvalidTextureLoader::size() const
+{
+	return Texture::calculateSize(WIDTH, HEIGHT);
+}
+
+
+//
+// InvalidTextureLoader::load
+//
+// Generate a checkerboard pattern Texture instance.
+//
+const Texture* InvalidTextureLoader::load() const
+{
+	Texture* texture = Texture::createTexture(WIDTH, HEIGHT);
+
+	#if CLIENT_APP
+	const argb_t color1(0, 0, 255);		// blue
+	const argb_t color2(0, 255, 255);	// yellow
+	const palindex_t color1_index = V_BestColor(V_GetDefaultPalette()->basecolors, color1);
+	const palindex_t color2_index = V_BestColor(V_GetDefaultPalette()->basecolors, color2);
+
+	for (int x = 0; x < WIDTH / 2; x++)
+	{
+		memset(texture->mData + x * HEIGHT + 0, color1_index, HEIGHT / 2);
+		memset(texture->mData + x * HEIGHT + HEIGHT / 2, color2_index, HEIGHT / 2);
+	}
+	for (int x = WIDTH / 2; x < WIDTH; x++)
+	{
+		memset(texture->mData + x * HEIGHT + 0, color2_index, HEIGHT / 2);
+		memset(texture->mData + x * HEIGHT + HEIGHT / 2, color1_index, HEIGHT / 2);
+	}
+	#endif
+
+	return texture;
+}
 
 
 // ----------------------------------------------------------------------------
@@ -445,12 +510,9 @@ bool FlatTextureLoader::validate() const
 //
 uint32_t FlatTextureLoader::size() const
 {
-	#if CLIENT_APP
 	const int16_t width = getWidth();
 	const int16_t height = width;
 	return Texture::calculateSize(width, height);
-	#endif
-	return sizeof(Texture);
 }
 
 
@@ -928,9 +990,6 @@ const Texture* PngTextureLoader::load() const
 //
 // ============================================================================
 
-// define GARBAGE_TEXTURE_ID to be the first wall texture (AASTINKY)
-const TextureId TextureManager::GARBAGE_TEXTURE_ID = TextureManager::WALLTEXTURE_ID_MASK;
-
 TextureManager::TextureManager(const ResourceContainerId& container_id, ResourceManager* manager) :
 	mResourceContainerId(container_id),
 	mFreeCustomTextureIdsHead(0),
@@ -939,8 +998,6 @@ TextureManager::TextureManager(const ResourceContainerId& container_id, Resource
 	registerTextureResources(manager);
 	// initialize the TEXTURE1 & TEXTURE2 data
 	addTextureDirectories(manager);
-
-	generateNotFoundTexture();
 
 	if (clientside)
 	{	
@@ -1260,40 +1317,6 @@ void TextureManager::updateAnimatedTextures()
 		Res_WarpTexture(warped_texture, original_texture);
 	}
 	*/
-}
-
-
-//
-// TextureManager::generateNotFoundTexture
-//
-// Generates a checkerboard texture with 32x32 squares. This texture will be
-// used whenever a texture is requested but not found in the WAD file.
-//
-void TextureManager::generateNotFoundTexture()
-{
-	const int width = 64, height = 64;
-
-	const TextureId tex_id = NOT_FOUND_TEXTURE_ID;
-	Texture* texture = createTexture(tex_id, width, height);
-
-	if (clientside)
-	{
-		const argb_t color1(0, 0, 255);		// blue
-		const argb_t color2(0, 255, 255);	// yellow
-		const palindex_t color1_index = V_BestColor(V_GetDefaultPalette()->basecolors, color1);
-		const palindex_t color2_index = V_BestColor(V_GetDefaultPalette()->basecolors, color2);
-
-		for (int x = 0; x < width / 2; x++)
-		{
-			memset(texture->mData + x * height + 0, color1_index, height / 2);
-			memset(texture->mData + x * height + height / 2, color2_index, height / 2);
-		}
-		for (int x = width / 2; x < width; x++)
-		{
-			memset(texture->mData + x * height + 0, color2_index, height / 2);
-			memset(texture->mData + x * height + height / 2, color1_index, height / 2);
-		}
-	}
 }
 
 

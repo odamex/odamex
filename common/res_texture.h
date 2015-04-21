@@ -264,6 +264,29 @@ public:
 };
 
 
+// ---------------------------------------------------------------------------
+// InvalidTextureLoader class interface
+//
+// Creates a Texture instance that can be used when a resource is unavailible
+// or is invalid
+// ---------------------------------------------------------------------------
+
+class InvalidTextureLoader : public TextureLoader
+{
+public:
+	InvalidTextureLoader();
+	virtual ~InvalidTextureLoader() {}
+
+	virtual bool validate() const;
+	virtual uint32_t size() const;
+	virtual const Texture* load() const;
+
+private:
+	static const int16_t WIDTH = 64;
+	static const int16_t HEIGHT = 64;
+};
+
+
 // ----------------------------------------------------------------------------
 // FlatTextureLoader class interface
 //
@@ -453,7 +476,6 @@ public:
 
 	static const TextureId NO_TEXTURE_ID			= 0x0;
 	static const TextureId NOT_FOUND_TEXTURE_ID		= 0x1;
-	static const TextureId GARBAGE_TEXTURE_ID;
 
 private:
 	static const unsigned int FLAT_TEXTURE_ID_MASK		= 0x00010000ul;
@@ -466,7 +488,6 @@ private:
 
 	// initialization routines
 	void clear();
-	void generateNotFoundTexture();
 	void addTextureDirectories(ResourceManager* manager); 
 	void readAnimDefLump();
 	void readAnimatedLump();
