@@ -89,7 +89,7 @@
 //
 static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lump_data, uint32_t lump_length, int xoffs, int yoffs)
 {
-	if (lump_length < 12)		// long enough for header data?
+	if (lump_length < 8)		// long enough for header data?
 		return;
 
 	int texwidth = texture->getWidth();
@@ -100,7 +100,7 @@ static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lump_data, ui
 	const int32_t* colofs = (int32_t*)(lump_data + 8);
 
 	if (patchwidth <= 0 || patchheight <= 0 ||
-		lump_length < 12 + patchwidth * sizeof(*colofs))	// long enough for column offset table?
+		lump_length < 8 + patchwidth * sizeof(*colofs))		// long enough for column offset table?
 		return;
 
 	int x1 = MAX(xoffs, 0);
@@ -117,7 +117,7 @@ static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lump_data, ui
 		const byte* post = lump_data + offset; 
 		while (*post != 0xFF)
 		{
-			if (lump_length < (uint32_t)(post - lump_data) + 2)	// long enough for this post's header?
+			if (lump_length < (uint32_t)(post - lump_data) + 2)		// long enough for this post's header?
 				return;
 
 			int posttopdelta = *(post + 0);
