@@ -727,17 +727,16 @@ patch_t* W_CachePatch(unsigned lumpnum, int tag)
 		if (newlumplen > 0)
 		{
 			// valid patch
-			byte *ptr = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
+			lumpcache[lumpnum] = (byte *)Z_Malloc(newlumplen, tag, &lumpcache[lumpnum]);
 			patch_t *newpatch = (patch_t*)lumpcache[lumpnum];
 
 			R_ConvertPatch(newpatch, rawpatch);
-			ptr[newlumplen] = 0;
 		}
 		else
 		{
 			// invalid patch - just create a header with width = 0, height = 0
-			Z_Malloc(sizeof(patch_t) + 1, tag, &lumpcache[lumpnum]);
-			memset(lumpcache[lumpnum], 0, sizeof(patch_t) + 1);
+			lumpcache[lumpnum] = Z_Malloc(sizeof(patch_t), tag, &lumpcache[lumpnum]);
+			memset(lumpcache[lumpnum], 0, sizeof(patch_t));
 		}
 
 		delete [] rawlumpdata;
