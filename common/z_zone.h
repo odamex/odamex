@@ -45,7 +45,7 @@
 #define PU_CACHE				101
 
 
-void	Z_Init (void);
+void	Z_Init(bool use_zone = true);
 void	Z_Close (void);
 void	Z_FreeTags (int lowtag, int hightag);
 void	Z_DumpHeap (int lowtag, int hightag);

@@ -727,8 +727,9 @@ patch_t* W_CachePatch(unsigned lumpnum, int tag)
 		if (newlumplen > 0)
 		{
 			// valid patch
-			lumpcache[lumpnum] = (byte *)Z_Malloc(newlumplen, tag, &lumpcache[lumpnum]);
+			lumpcache[lumpnum] = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
 			patch_t *newpatch = (patch_t*)lumpcache[lumpnum];
+			*((unsigned char*)lumpcache[lumpnum] + newlumplen) = 0;
 
 			R_ConvertPatch(newpatch, rawpatch);
 		}
