@@ -413,12 +413,14 @@ void Z_CheckHeap()
 //
 // Z_ChangeTag
 //
-void Z_ChangeTag2(void* ptr, int tag)
+void Z_ChangeTag2(void* ptr, int tag, const char* file, int line)
 {
 	if (!use_zone)
 		return;
 
-    memblock_t*	block = (memblock_t*)((byte*)ptr - sizeof(memblock_t));
+	memblock_t*	block = (memblock_t*)((byte*)ptr - sizeof(memblock_t));
+	if (block->id != ZONEID)
+		I_Error("Z_ChangeTag: block does not have a proper ID at %s:%i", file, line);
 
 	if (tag == PU_FREE)
 		I_Error("Z_ChangeTag: cannot change a tag to PU_FREE");
