@@ -496,7 +496,7 @@ private:
 	typedef unsigned int StringIdType;
 	typedef unsigned int HashedStringType;
 
-	typedef SArray<StringRecord, 16> StringTable;
+	typedef SArray<StringRecord> StringTable;
 	typedef OHashTable<HashedStringType, StringIdType> StringLookupTable;
 
 
@@ -661,7 +661,7 @@ private:
 // ----------------------------------------------------------------------------
 
 template <> struct hashfunc<OString>
-{   unsigned int operator()(const OString& str) const { return static_cast<unsigned int>(str.mId); } };
+{   size_t operator()(const OString& str) const { return str.mId; } };
 
 
 
@@ -669,8 +669,10 @@ template <> struct hashfunc<OString>
 // utility functions 
 // ----------------------------------------------------------------------------
 
-OString OStringToUpper(const OString& str, size_t n = OString::npos);
-OString OStringToLower(const OString& str, size_t n = OString::npos);
+OString OStringToUpper(const char* s, size_t n = OString::npos);
+OString OStringToUpper(const OString& str);
+OString OStringToLower(const char* s, size_t n = OString::npos);
+OString OStringToLower(const OString& str);
 
 #endif	// __M_OSTRING_H__
 

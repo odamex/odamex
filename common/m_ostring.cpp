@@ -761,23 +761,35 @@ void swap(::OString& x, ::OString& y)
 // utility functions
 // ----------------------------------------------------------------------------
 
-OString OStringToUpper(const OString& str, size_t n)
+struct UpperFunctor
 {
-	size_t length = std::min(str.length(), n);
+	inline char operator()(const char c) const
+	{	return toupper(c);	}
+};
 
+struct LowerFunctor
+{
+	inline char operator()(const char c) const
+	{	return tolower(c);	}
+};
+
+template <typename FUNC>
+static OString OStringConverter(const char* s, size_t length)
+{
 	char fixed_buf[1024];
 	char* dyn_buf = NULL;
 	char* out;
 
-	const char* in = str.c_str();
+	const char* in = s;
+	FUNC func;		// instance of the conversion functor
 
 	if (length < 1024)
 		out = fixed_buf;
 	else
 		out = dyn_buf = new char[length + 1];
 	
-	for (size_t i = 0; i < length; i++)
-		*out++	= toupper(*in++);
+	for (size_t i = 0; i < length && *in != '\0'; i++)
+		*out++	= func(*in++);
 	*out = '\0';
 
 	if (length < 1024)
@@ -790,33 +802,25 @@ OString OStringToUpper(const OString& str, size_t n)
 	}
 }
 
-OString OStringToLower(const OString& str, size_t n)
+
+OString OStringToUpper(const char* s, size_t length)
 {
-	size_t length = std::min(str.length(), n);
+	return OStringConverter<UpperFunctor>(s, length);
+}
 
-	char fixed_buf[1024];
-	char* dyn_buf = NULL;
-	char* out;
+OString OStringToUpper(const OString& str)
+{
+	return OStringConverter<UpperFunctor>(str.c_str(), str.length());
+}
 
-	const char* in = str.c_str();
+OString OStringToLower(const char* s, size_t length)
+{
+	return OStringConverter<LowerFunctor>(s, length);
+}
 
-	if (length < 1024)
-		out = fixed_buf;
-	else
-		out = dyn_buf = new char[length + 1];
-	
-	for (size_t i = 0; i < length; i++)
-		*out++	= tolower(*in++);
-	*out = '\0';
-
-	if (length < 1024)
-		return OString(fixed_buf);
-	else
-	{
-		OString result(dyn_buf);
-		delete [] dyn_buf;
-		return result;
-	}
+OString OStringToLower(const OString& str)
+{
+	return OStringConverter<LowerFunctor>(str.c_str(), str.length());
 }
 
 VERSION_CONTROL (m_ostring_cpp, "$Id:$")
