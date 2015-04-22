@@ -251,6 +251,11 @@ BOOL SC_GetString (void)
 				sc_Line++;
 				sc_Crossed = true;
 			}
+			if (ScriptPtr >= ScriptEndPtr)
+			{
+				sc_End = true;
+				return false;
+			}
 		}
 		if (ScriptPtr >= ScriptEndPtr)
 		{
