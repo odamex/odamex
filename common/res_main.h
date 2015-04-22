@@ -143,6 +143,9 @@ public:
 
 	static const ResourceId RESOURCE_NOT_FOUND = 0;
 
+	static void* allocateCacheMemory(size_t size, int tag);
+	static void freeCacheMemory(void* data);
+
 	const std::vector<std::string>& getResourceFileNames() const
 	{
 		return mResourceFileNames;

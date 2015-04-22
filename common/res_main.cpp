@@ -208,26 +208,14 @@ void* DefaultResourceLoader::load(const ResourceContainer* container, const Lump
 	assert(container != NULL);
 	const uint32_t lump_length = container->getLumpLength(lump_id);
 
-	// From the C99 Standard:
-	// If the size of the space requested is zero, the behavior is implementation-
-	// deﬁned: either a null pointer is returned, or the behavior is as if the
-	// size were some nonzero value, except that the returned pointer shall not be
-	// used to access an object.
-	//
-	// [SL] return NULL for zero-sized allocations because it is easy to find when
-	// the returned pointer is "used to access an object".
-	if (lump_length == 0)
-		return NULL;
-
-	// Allocate an extra byte so that we can terminate the allocated memory
-	// with a zero. This is a Zone memory system requirement.
-	void* data = Z_Malloc(lump_length + 1, PU_STATIC, NULL);
-	*((uint8_t*)data + lump_length) = 0;
-
-	if (container->readLump(lump_id, data, lump_length) != lump_length)
+	void* data = ResourceManager::allocateCacheMemory(lump_length, PU_STATIC);
+	if (data != NULL)
 	{
-		Z_Free(data);
-		data = NULL;
+		if (container->readLump(lump_id, data, lump_length) != lump_length)
+		{
+			ResourceManager::freeCacheMemory(data);
+			data = NULL;
+		}
 	}
 
 	return data;
@@ -264,6 +252,58 @@ ResourceManager::ResourceManager() :
 ResourceManager::~ResourceManager()
 {
 	closeAllResourceFiles();
+}
+
+
+//
+// ResourceManager::allocateCacheMemory
+//
+// Allocates memory for the resource cache. The source of the memory is
+// determined at compile time. No assumptions should be made about the
+// pointer returned by this function! The caller is responsible for freeing
+// the memory with the freeCacheMemory function.
+//
+void* ResourceManager::allocateCacheMemory(size_t size, int tag)
+{
+	// From the C99 Standard:
+	// If the size of the space requested is zero, the behavior is implementation-
+	// deﬁned: either a null pointer is returned, or the behavior is as if the
+	// size were some nonzero value, except that the returned pointer shall not be
+	// used to access an object.
+	//
+	// [SL] return NULL for zero-sized allocations because it is easy to find when
+	// the returned pointer is "used to access an object".
+	if (size == 0)
+		return NULL;
+
+#ifdef RESOURCE_CACHE_ON_HEAP
+	// Ignore tag
+	return (void*)(new unsigned char[size]);
+#else
+	// Allocate an extra byte so that we can terminate the allocated memory
+	// with a zero. This is a Zone memory system requirement.
+	void* data = Z_Malloc(size + 1, PU_STATIC, NULL);
+	*((unsigned char*)data + size) = 0;
+	return data;
+#endif
+}
+
+
+//
+// ResourceManager::freeCacheMemory
+//
+// Frees the resource cache memory allocated with allocateCacheMemory.
+//
+void ResourceManager::freeCacheMemory(void* data)
+{
+	if (data != NULL)
+	{
+#ifdef RESOURCE_CACHE_ON_HEAP
+		delete [] (unsigned char*)data;
+#else
+		Z_Free(data);
+#endif
+	}
 }
 
 
@@ -627,9 +667,7 @@ void ResourceManager::releaseData(const ResourceId res_id)
 	ResourceRecordTable::iterator it = mResources.find(res_id);
 	if (it != mResources.end())
 	{
-		void* data = it->mCachedData;
-		if (data != NULL)
-			Z_Free(data);
+		ResourceManager::freeCacheMemory(it->mCachedData);
 		it->mCachedData = NULL;
 	}
 }
