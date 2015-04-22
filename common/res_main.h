@@ -80,6 +80,55 @@ bool Res_IsWadFile(const OString& filename);
 bool Res_IsDehackedFile(const OString& filename);
 
 
+// ============================================================================
+//
+// ResourceLoader class interface
+//
+// ============================================================================
+//
+// Loads a resource from a ResourceContainer, performing any necessary data
+// conversion and caching the resulting instance in the Zone memory system.
+//
+
+// ----------------------------------------------------------------------------
+// ResourceLoader abstract base class interface
+// ----------------------------------------------------------------------------
+
+class ResourceLoader
+{
+public:
+	virtual ~ResourceLoader() {}
+
+	virtual bool validate() const = 0;
+	virtual uint32_t size() const = 0;
+	virtual const void* load() const = 0;
+};
+
+
+// ---------------------------------------------------------------------------
+// DefaultResourceLoader class interface
+//
+// Generic resource loading functionality. Simply reads raw data and returns
+// a pointer to the cached data.
+// ---------------------------------------------------------------------------
+
+class DefaultResourceLoader : public ResourceLoader
+{
+public:
+	DefaultResourceLoader(ResourceManager* manager, const ResourceId res_id);
+	virtual ~DefaultResourceLoader() { }
+
+	virtual bool validate() const;
+	virtual uint32_t size() const;
+	virtual const void* load() const;
+
+private:
+	ResourceManager*	mResourceManager;
+	const ResourceId	mResId;
+};
+
+
+
 
 // ============================================================================
 //

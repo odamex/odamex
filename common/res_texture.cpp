@@ -446,8 +446,8 @@ const Texture* InvalidTextureLoader::load() const
 //
 // ----------------------------------------------------------------------------
 
-FlatTextureLoader::FlatTextureLoader(const ResourceId res_id) :
-	mResId(res_id)
+FlatTextureLoader::FlatTextureLoader(ResourceManager* manager, const ResourceId res_id) :
+	mResourceManager(manager), mResId(res_id)
 { }
 
 
@@ -466,7 +466,7 @@ FlatTextureLoader::FlatTextureLoader(const ResourceId res_id) :
 //
 int16_t FlatTextureLoader::getWidth() const
 {
-	uint32_t lump_length = Res_GetLumpLength(mResId);
+	uint32_t lump_length = mResourceManager->getLumpLength(mResId);
 	if (lump_length > 0)
 	{
 		if (lump_length == 64 * 64)
@@ -523,14 +523,14 @@ uint32_t FlatTextureLoader::size() const
 //
 const Texture* FlatTextureLoader::load() const
 {
-	if (Res_CheckLump(mResId))
+	if (mResourceManager->validateResourceId(mResId))
 	{
 		int16_t width = getWidth();
 		int16_t height = width;
 		Texture* texture = Texture::createTexture(width, height);
 
 		#if CLIENT_APP
-		byte* lump_data = (byte*)Res_CacheLump(mResId, PU_STATIC);
+		byte* lump_data = (byte*)mResourceManager->getData(mResId, PU_STATIC);
 		// convert the row-major flat lump to into column-major
 		Res_TransposeImage(texture->mData, lump_data, width, height);
 		Z_Free(lump_data);
@@ -547,8 +547,8 @@ const Texture* FlatTextureLoader::load() const
 //
 // ----------------------------------------------------------------------------
 
-PatchTextureLoader::PatchTextureLoader(const ResourceId res_id) :
-	mResId(res_id)
+PatchTextureLoader::PatchTextureLoader(ResourceManager* manager, const ResourceId res_id) :
+	mResourceManager(manager), mResId(res_id)
 { }
 
 
@@ -557,10 +557,10 @@ PatchTextureLoader::PatchTextureLoader(const ResourceId res_id) :
 //
 bool PatchTextureLoader::validate() const
 {
-	uint32_t lump_length = Res_GetLumpLength(mResId);
+	uint32_t lump_length = mResourceManager->getLumpLength(mResId);
 	if (lump_length > 8)
 	{
-		byte* lump_data = (byte*)Res_CacheLump(mResId, PU_CACHE);
+		byte* lump_data = (byte*)mResourceManager->getData(mResId, PU_CACHE);
 		const int16_t width = LESHORT(*(int16_t*)(lump_data + 0));
 		const int16_t height = LESHORT(*(int16_t*)(lump_data + 2));
 		const uint32_t column_table_offset = 8;
@@ -591,10 +591,10 @@ bool PatchTextureLoader::validate() const
 uint32_t PatchTextureLoader::size() const
 {
 	#if CLIENT_APP
-	uint32_t lump_length = Res_GetLumpLength(mResId);
+	uint32_t lump_length = mResourceManager->getLumpLength(mResId);
 	if (lump_length >= 4)
 	{
-		byte* lump_data = (byte*)Res_CacheLump(mResId, PU_CACHE);
+		byte* lump_data = (byte*)mResourceManager->getData(mResId, PU_CACHE);
 		int16_t width = LESHORT(*(int16_t*)(lump_data + 0));
 		int16_t height = LESHORT(*(int16_t*)(lump_data + 2));
 		return Texture::calculateSize(width, height);
@@ -611,12 +611,12 @@ uint32_t PatchTextureLoader::size() const
 //
 const Texture* PatchTextureLoader::load() const
 {
-	if (Res_CheckLump(mResId))
+	if (mResourceManager->validateResourceId(mResId))
 	{
-		uint32_t lump_length = Res_GetLumpLength(mResId);
+		uint32_t lump_length = mResourceManager->getLumpLength(mResId);
 		if (lump_length >= 8)
 		{
-			byte* lump_data = (byte*)Res_CacheLump(mResId, PU_CACHE);
+			byte* lump_data = (byte*)mResourceManager->getData(mResId, PU_CACHE);
 
 			int16_t width = LESHORT(*(int16_t*)(lump_data + 0));
 			int16_t height = LESHORT(*(int16_t*)(lump_data + 2));
@@ -651,8 +651,8 @@ const Texture* PatchTextureLoader::load() const
 // Generates composite textures given a wall texture definition.
 // ----------------------------------------------------------------------------
 
-CompositeTextureLoader::CompositeTextureLoader(const CompositeTextureDefinition& texture_def) :
-	mTextureDef(texture_def)
+CompositeTextureLoader::CompositeTextureLoader(ResourceManager* manager, const CompositeTextureDefinition& texture_def) :
+	mResourceManager(manager), mTextureDef(texture_def)
 { }
 
 
@@ -703,13 +703,13 @@ const Texture* CompositeTextureLoader::load() const
 	for (int i = 0; i < mTextureDef.mPatchCount; i++)
 	{
 		const ResourceId res_id = mTextureDef.mPatches[i].mResId;
-		if (Res_CheckLump(res_id))
+		if (mResourceManager->validateResourceId(res_id))
 		{
-			byte* lump_data = (byte*)Res_CacheLump(res_id, PU_CACHE);
+			byte* lump_data = (byte*)mResourceManager->getData(res_id, PU_CACHE);
 			Res_DrawPatchIntoTexture(
 					texture,
 					lump_data,
-					Res_GetLumpLength(res_id),
+					mResourceManager->getLumpLength(res_id),
 					mTextureDef.mPatches[i].mOriginX,
 					mTextureDef.mPatches[i].mOriginY);
 		}
@@ -726,8 +726,8 @@ const Texture* CompositeTextureLoader::load() const
 //
 // ----------------------------------------------------------------------------
 
-RawTextureLoader::RawTextureLoader(const ResourceId res_id) :
-	mResId(res_id)
+RawTextureLoader::RawTextureLoader(ResourceManager* manager, const ResourceId res_id) :
+	mResourceManager(manager), mResId(res_id)
 { }
 
 
@@ -739,7 +739,7 @@ RawTextureLoader::RawTextureLoader(const ResourceId res_id) :
 bool RawTextureLoader::validate() const
 {
 	const int32_t width = 320, height = 200;
-	uint32_t lump_length = Res_GetLumpLength(mResId);
+	uint32_t lump_length = mResourceManager->getLumpLength(mResId);
 	return lump_length == width * height;
 }
 
@@ -764,16 +764,16 @@ uint32_t RawTextureLoader::size() const
 //
 const Texture* RawTextureLoader::load() const
 {
-	if (Res_CheckLump(mResId))
+	if (mResourceManager->validateResourceId(mResId))
 	{
 		const int32_t width = 320, height = 200;
-		uint32_t lump_length = Res_GetLumpLength(mResId);
+		uint32_t lump_length = mResourceManager->getLumpLength(mResId);
 		if (lump_length == width * height)
 		{
 			Texture* texture = Texture::createTexture(width, height);
 
 			#if CLIENT_APP
-			byte* lump_data = (byte*)Res_CacheLump(mResId, PU_STATIC);
+			byte* lump_data = (byte*)mResourceManager->getData(mResId, PU_STATIC);
 			// convert the row-major raw data to into column-major
 			Res_TransposeImage(texture->mData, lump_data, width, height);
 			Z_Free(lump_data);
@@ -833,8 +833,8 @@ static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lum
 #endif
 
 
-PngTextureLoader::PngTextureLoader(const ResourceId res_id) :
-	mResId(res_id)
+PngTextureLoader::PngTextureLoader(ResourceManager* manager, const ResourceId res_id) :
+	mResourceManager(manager), mResId(res_id)
 { }
 
 
@@ -867,12 +867,12 @@ uint32_t PngTextureLoader::size() const
 const Texture* PngTextureLoader::load() const
 {
 #ifdef CLIENT_APP
-	if (Res_CheckLump(mResId))
+	if (mResourceManager->validateResourceId(mResId))
 	{
-		const char* lump_name = OString(Res_GetResourcePath(mResId)).c_str();
-		uint32_t lump_length = Res_GetLumpLength(mResId);
+		const char* lump_name = OString(mResourceManager->getResourcePath(mResId)).c_str();
+		uint32_t lump_length = mResourceManager->getLumpLength(mResId);
 		byte* lump_data = new byte[lump_length];
-		Res_ReadLump(mResId, lump_data);
+		mResourceManager->readLump(mResId, lump_data);
 
 		png_struct* png_ptr = NULL;
 		png_info* info_ptr = NULL;
@@ -1444,7 +1444,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 
 			// Create a new TextureLoader and add it to the list
 			const LumpId lump_id = mTextureLoaders.size();
-			TextureLoader* loader = new CompositeTextureLoader(texture_def);
+			TextureLoader* loader = new CompositeTextureLoader(manager, texture_def);
 			mTextureLoaders.push_back(loader);
 			const ResourcePath path(textures_directory_name + name);
 			manager->addResource(path, this, lump_id); 
@@ -1477,9 +1477,9 @@ void TextureManager::registerTextureResources(ResourceManager* manager)
 		TextureLoader* loader = NULL;
 
 		if (directory == flats_directory_name)
-			loader = new FlatTextureLoader(res_id);
+			loader = new FlatTextureLoader(manager, res_id);
 		else if (directory == patches_directory_name)
-			loader = new PatchTextureLoader(res_id);
+			loader = new PatchTextureLoader(manager, res_id);
 
 		if (loader)
 		{

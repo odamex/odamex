@@ -297,7 +297,7 @@ private:
 class FlatTextureLoader : public TextureLoader
 {
 public:
-	FlatTextureLoader(const ResourceId res_id);
+	FlatTextureLoader(ResourceManager* manager, const ResourceId res_id);
 	virtual ~FlatTextureLoader() {}
 
 	virtual bool validate() const;
@@ -308,6 +308,7 @@ private:
 	int16_t getWidth() const;
 	int16_t getHeight() const;
 
+	ResourceManager*	mResourceManager;
 	const ResourceId	mResId;
 };
 
@@ -321,7 +322,7 @@ private:
 class PatchTextureLoader : public TextureLoader
 {
 public:
-	PatchTextureLoader(const ResourceId res_id);
+	PatchTextureLoader(ResourceManager* manager, const ResourceId res_id);
 	virtual ~PatchTextureLoader() {}
 
 	virtual bool validate() const;
@@ -329,6 +330,7 @@ public:
 	virtual const Texture* load() const;
 
 private:
+	ResourceManager*	mResourceManager;
 	const ResourceId	mResId;
 };
 
@@ -342,7 +344,10 @@ private:
 class SpriteTextureLoader : public PatchTextureLoader
 {
 public:
-	SpriteTextureLoader(const ResourceId res_id) : PatchTextureLoader(res_id) {}
+	SpriteTextureLoader(ResourceManager* manager, const ResourceId res_id) :
+		PatchTextureLoader(manager, res_id)
+	{}
+
 	virtual ~SpriteTextureLoader() {}
 };
 
@@ -358,7 +363,7 @@ public:
 class CompositeTextureLoader : public TextureLoader
 {
 public:
-	CompositeTextureLoader(const CompositeTextureDefinition& texture_def);
+	CompositeTextureLoader(ResourceManager* manager, const CompositeTextureDefinition& texture_def);
 	virtual ~CompositeTextureLoader() {}
 
 	virtual bool validate() const;
@@ -366,6 +371,7 @@ public:
 	virtual const Texture* load() const;
 
 private:
+	ResourceManager*					mResourceManager;
 	const CompositeTextureDefinition	mTextureDef;
 };
 
@@ -379,7 +385,7 @@ private:
 class RawTextureLoader : public TextureLoader
 {
 public:
-	RawTextureLoader(const ResourceId res_id); 
+	RawTextureLoader(ResourceManager* manager, const ResourceId res_id); 
 	virtual ~RawTextureLoader() {}
 
 	virtual bool validate() const;
@@ -387,6 +393,7 @@ public:
 	virtual const Texture* load() const;
 
 private:
+	ResourceManager*	mResourceManager;
 	const ResourceId	mResId;
 };
 
@@ -400,7 +407,7 @@ private:
 class PngTextureLoader : public TextureLoader
 {
 public:
-	PngTextureLoader(const ResourceId res_id); 
+	PngTextureLoader(ResourceManager* manager, const ResourceId res_id); 
 	virtual ~PngTextureLoader() {}
 
 	virtual bool validate() const;
@@ -408,6 +415,7 @@ public:
 	virtual const Texture* load() const;
 
 private:
+	ResourceManager*	mResourceManager;
 	const ResourceId	mResId;
 };
 

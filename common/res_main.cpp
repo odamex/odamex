@@ -163,6 +163,50 @@ bool Res_IsDehackedFile(const OString& filename)
 
 // ****************************************************************************
 
+// ============================================================================
+//
+// ResourceLoader class implementations
+//
+// ============================================================================
+
+
+// ----------------------------------------------------------------------------
+// DefaultResourceLoader class implementation
+// ----------------------------------------------------------------------------
+
+DefaultResourceLoader::DefaultResourceLoader(ResourceManager* manager, const ResourceId res_id) :
+	mResourceManager(manager), mResId(res_id)
+{ }
+
+
+//
+// DefaultResourceLoader::validate
+//
+bool DefaultResourceLoader::validate() const
+{
+	return mResourceManager->validateResourceId(mResId);
+}
+
+
+//
+// DefaultResourceLoader::size
+//
+// Returns the size of the raw resource lump
+//
+uint32_t DefaultResourceLoader::size() const
+{
+	return mResourceManager->getLumpLength(mResId);
+}
+
+
+//
+// DefaultResourceLoader::load
+//
+const void* DefaultResourceLoader::load() const
+{
+	return mResourceManager->getData(mResId, PU_CACHE);
+}
+
 
 // ============================================================================
 //
