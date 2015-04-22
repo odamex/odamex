@@ -276,16 +276,25 @@ void* ResourceManager::allocateCacheMemory(size_t size, int tag)
 	if (size == 0)
 		return NULL;
 
+	// [RH] Allocate one byte more than necessary for the
+	//		lump and set the extra byte to zero so that
+	//		various text parsing routines can just call
+	//		Res_CacheLump() and not choke.
+	
+	// TODO: [SL] 2015-04-22 This hack should be removed when the text parsing
+	// routines are fixed.
+
+	size += 1;
+
 #ifdef RESOURCE_CACHE_ON_HEAP
 	// Ignore tag
-	return (void*)(new unsigned char[size]);
+	unsigned char* data = new unsigned char[size];
 #else
-	// Allocate an extra byte so that we can terminate the allocated memory
-	// with a zero. This is a Zone memory system requirement.
-	void* data = Z_Malloc(size + 1, PU_STATIC, NULL);
-	*((unsigned char*)data + size) = 0;
-	return data;
+	unsigned char* data = (unsigned char*)Z_Malloc(size, PU_STATIC, NULL);
 #endif
+
+	data[size - 1] = 0;
+	return (void*)data;
 }
 
 
