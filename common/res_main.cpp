@@ -208,6 +208,17 @@ void* DefaultResourceLoader::load(const ResourceContainer* container, const Lump
 	assert(container != NULL);
 	const uint32_t lump_length = container->getLumpLength(lump_id);
 
+	// From the C99 Standard:
+	// If the size of the space requested is zero, the behavior is implementation-
+	// deﬁned: either a null pointer is returned, or the behavior is as if the
+	// size were some nonzero value, except that the returned pointer shall not be
+	// used to access an object.
+	//
+	// [SL] return NULL for zero-sized allocations because it is easy to find when
+	// the returned pointer is "used to access an object".
+	if (lump_length == 0)
+		return NULL;
+
 	// Allocate an extra byte so that we can terminate the allocated memory
 	// with a zero. This is a Zone memory system requirement.
 	void* data = Z_Malloc(lump_length + 1, PU_STATIC, NULL);
