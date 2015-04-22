@@ -174,17 +174,17 @@ bool Res_IsDehackedFile(const OString& filename)
 // DefaultResourceLoader class implementation
 // ----------------------------------------------------------------------------
 
-DefaultResourceLoader::DefaultResourceLoader(ResourceManager* manager, const ResourceId res_id) :
-	mResourceManager(manager), mResId(res_id)
+DefaultResourceLoader::DefaultResourceLoader()
 { }
 
 
 //
 // DefaultResourceLoader::validate
 //
-bool DefaultResourceLoader::validate() const
+bool DefaultResourceLoader::validate(const ResourceContainer* container, const LumpId lump_id) const
 {
-	return mResourceManager->validateResourceId(mResId);
+	assert(container != NULL);
+	return true;
 }
 
 
@@ -193,18 +193,33 @@ bool DefaultResourceLoader::validate() const
 //
 // Returns the size of the raw resource lump
 //
-uint32_t DefaultResourceLoader::size() const
+uint32_t DefaultResourceLoader::size(const ResourceContainer* container, const LumpId lump_id) const
 {
-	return mResourceManager->getLumpLength(mResId);
+	assert(container != NULL);
+	return container->getLumpLength(lump_id);
 }
 
 
 //
 // DefaultResourceLoader::load
 //
-const void* DefaultResourceLoader::load() const
+void* DefaultResourceLoader::load(const ResourceContainer* container, const LumpId lump_id) const
 {
-	return mResourceManager->getData(mResId, PU_CACHE);
+	assert(container != NULL);
+	const uint32_t lump_length = container->getLumpLength(lump_id);
+
+	// Allocate an extra byte so that we can terminate the allocated memory
+	// with a zero. This is a Zone memory system requirement.
+	void* data = Z_Malloc(lump_length + 1, PU_STATIC, NULL);
+	*((uint8_t*)data + lump_length) = 0;
+
+	if (container->readLump(lump_id, data, lump_length) != lump_length)
+	{
+		Z_Free(data);
+		data = NULL;
+	}
+
+	return data;
 }
 
 
@@ -348,6 +363,9 @@ const ResourceId ResourceManager::addResource(
 	res_rec.mResourceContainerId = container_id;
 	res_rec.mLumpId = lump_id;
 	res_rec.mCachedData = NULL;
+
+	static DefaultResourceLoader default_resource_loader;
+	res_rec.mResourceLoader = &default_resource_loader;
 
 	// Add the ResourceId to the ResourceIdLookupTable
 	// ResourceIdLookupTable uses a ResourcePath key and value that is a std::vector
@@ -530,14 +548,14 @@ bool ResourceManager::visible(const ResourceId res_id) const
 //
 uint32_t ResourceManager::getLumpLength(const ResourceId res_id) const
 {
-	if (validateResourceId(res_id))
+	ResourceRecordTable::const_iterator it = mResources.find(res_id);
+	if (it != mResources.end())
 	{
-		const ResourceContainerId& container_id = getResourceContainerId(res_id);
+		const ResourceContainerId container_id = it->mResourceContainerId;
 		assert(container_id < mContainers.size());
 		const ResourceContainer* container = mContainers[container_id];
 		assert(container != NULL);
-		const LumpId lump_id = getLumpId(res_id);
-		return container->getLumpLength(lump_id);
+		return it->mResourceLoader->size(container, it->mLumpId);
 	}
 	return 0;
 }
@@ -572,10 +590,9 @@ const void* ResourceManager::getData(const ResourceId res_id, int tag)
 		return NULL;
 
 	ResourceRecord& res_rec = *it;
-	void** data = &res_rec.mCachedData;
 
 	// Read the data if it's not already in the cache
-	if (*data == NULL)
+	if (res_rec.mCachedData == NULL)
 	{
 		const OString path_str(getResourcePath(res_id));
 		DPrintf("Resource cache miss for %s\n", path_str.c_str()); 
@@ -584,24 +601,14 @@ const void* ResourceManager::getData(const ResourceId res_id, int tag)
 		assert(container_id < mContainers.size());
 		const ResourceContainer* container = mContainers[container_id];
 		assert(container != NULL);
-		const LumpId lump_id = res_rec.mLumpId;
-		uint32_t length = container->getLumpLength(lump_id);
 
-		// Allocate an extra byte so that we can terminate the allocated memory
-		// with a zero. This is a Zone memory system requirement.
-		*data = Z_Malloc(length + 1, tag, data);
-		*((unsigned char*)(*data) + length) = 0;
+		res_rec.mCachedData = res_rec.mResourceLoader->load(container, res_rec.mLumpId);
 
-		if (container->readLump(lump_id, *data, length) != length)
-		{
-			Z_Free(*data);
-			*data = NULL;
-			return NULL;
-		}
+		// TODO: set owner pointer for the memory allocated with Z_Malloc
+		// TODO: set/update tag properly
 	}
 
-	Z_ChangeTag(*data, tag);	// update the tag (if necessary)
-	return *data;
+	return res_rec.mCachedData;
 }
 
 

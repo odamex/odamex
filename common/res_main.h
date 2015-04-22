@@ -99,9 +99,9 @@ class ResourceLoader
 public:
 	virtual ~ResourceLoader() {}
 
-	virtual bool validate() const = 0;
-	virtual uint32_t size() const = 0;
-	virtual const void* load() const = 0;
+	virtual bool validate(const ResourceContainer* container, const LumpId lump_id) const = 0;
+	virtual uint32_t size(const ResourceContainer* container, const LumpId lump_id) const = 0;
+	virtual void* load(const ResourceContainer* container, const LumpId lump_id) const = 0;
 };
 
 
@@ -115,16 +115,12 @@ public:
 class DefaultResourceLoader : public ResourceLoader
 {
 public:
-	DefaultResourceLoader(ResourceManager* manager, const ResourceId res_id);
+	DefaultResourceLoader();
 	virtual ~DefaultResourceLoader() { }
 
-	virtual bool validate() const;
-	virtual uint32_t size() const;
-	virtual const void* load() const;
-
-private:
-	ResourceManager*	mResourceManager;
-	const ResourceId	mResId;
+	virtual bool validate(const ResourceContainer* container, const LumpId lump_id) const;
+	virtual uint32_t size(const ResourceContainer* container, const LumpId lump_id) const;
+	virtual void* load(const ResourceContainer* container, const LumpId lump_id) const;
 };
 
 
@@ -233,6 +229,7 @@ private:
 				mPath = other.mPath;
 				mResourceContainerId = other.mResourceContainerId;
 				mLumpId = other.mLumpId;
+				mResourceLoader = other.mResourceLoader;
 				mCachedData = other.mCachedData;
 			}
 			return *this;
@@ -241,6 +238,7 @@ private:
 		ResourcePath			mPath;
 		ResourceContainerId		mResourceContainerId;
 		LumpId					mLumpId;
+		ResourceLoader*			mResourceLoader;
 		void*					mCachedData;
 	};
 
