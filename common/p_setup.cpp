@@ -169,7 +169,7 @@ static void P_LoadVertexes(const OString& mapname)
 	}
 
 	// Free buffer memory.
-	Z_Free(data);
+	Res_ReleaseLump(res_id);
 }
 
 
@@ -256,7 +256,7 @@ static void P_LoadSegs(const OString& mapname)
 		li->length = FLOAT2FIXED(sqrt(dx * dx + dy* dy));
 	}
 
-	Z_Free(data);
+	Res_ReleaseLump(res_id);
 }
 
 
@@ -283,7 +283,7 @@ static void P_LoadSubsectors(const OString& mapname)
 		subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t*)data)[i].firstseg);
 	}
 
-	Z_Free(data);
+	Res_ReleaseLump(res_id);
 }
 
 
@@ -381,7 +381,7 @@ static void P_LoadSectors(const OString& mapname)
 		ss->movefactor = ORIG_FRICTION_FACTOR;
 	}
 
-	Z_Free(data);
+	Res_ReleaseLump(res_id);
 }
 
 
@@ -428,7 +428,7 @@ static void P_LoadNodes(const OString& mapname)
 		}
 	}
 
-	Z_Free(data);
+	Res_ReleaseLump(res_id);
 }
 
 
@@ -448,7 +448,7 @@ static void P_LoadXNOD(const OString& mapname)
 
 	if (len < 4 || memcmp(data, "XNOD", 4) != 0)
 	{
-		Z_Free(data);
+		Res_ReleaseLump(res_id);
 		return;
 	}
 
@@ -564,7 +564,7 @@ static void P_LoadXNOD(const OString& mapname)
 			node->children[j] = LELONG(*(unsigned int*)p); p += 4;
 	}
 
-	Z_Free(data);
+	Res_ReleaseLump(res_id);
 }
 
 
@@ -615,7 +615,7 @@ static void P_LoadDoomThings(const OString& mapname)
 		P_SpawnMapThing(&mt2, 0);
 	}
 
-	Z_Free(data);
+	Res_ReleaseLump(res_id);
 }
 
 
@@ -658,7 +658,7 @@ static void P_LoadHexenThings(const OString& mapname, int position)
 		P_SpawnMapThing(mt, position);
 	}
 
-	Z_Free(data);
+	Res_ReleaseLump(res_id);
 }
 
 
@@ -814,7 +814,7 @@ static void P_LoadDoomLineDefs(const OString& mapname)
 		P_AdjustLine(ld);
 	}
 
-	Z_Free(data);
+	Res_ReleaseLump(res_id);
 }
 
 
@@ -871,7 +871,7 @@ static void P_LoadHexenLineDefs(const OString& mapname)
 		P_AdjustLine(ld);
 	}
 
-	Z_Free(data);
+	Res_ReleaseLump(res_id);
 }
 
 //
@@ -1065,7 +1065,7 @@ static void P_LoadSideDefs2(const OString& mapname)
 		}
 	}
 
-	Z_Free(data);
+	Res_ReleaseLump(res_id);
 }
 
 
@@ -1431,7 +1431,7 @@ static void P_LoadBlockMap(const OString& mapname)
 			blockmaplump[i] = (t == -1) ? (DWORD)0xffffffff : (DWORD)t & 0xffff;
 		}
 
-		Z_Free(wadblockmaplump);
+		Res_ReleaseLump(res_id);
 	}
 
 	bmaporgx = blockmaplump[0] << FRACBITS;

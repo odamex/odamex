@@ -516,7 +516,8 @@ void R_InitTextures (void)
 
 	// Load the patch names from pnames.lmp.
 	{
-		char *names = (char*)Res_CacheLump("PNAMES", PU_STATIC);
+		const ResourceId pnames_res_id = Res_GetResourceId("PNAMES");
+		char *names = (char*)Res_CacheLump(pnames_res_id, PU_STATIC);
 		char *name_p = names+4;
 
 		nummappatches = LELONG ( *((int *)names) );
@@ -538,7 +539,8 @@ void R_InitTextures (void)
 				patchlookup[i] = W_CheckNumForName (name_p + i*8, ns_sprites);
 			}
 		}
-		Z_Free (names);
+
+		Res_ReleaseLump(pnames_res_id);
 	}
 
 	// Load the map texture definitions from textures.lmp.
@@ -657,9 +659,8 @@ void R_InitTextures (void)
 	}
 	delete[] patchlookup;
 
-	Z_Free (maptex1);
-	if (maptex2)
-		Z_Free (maptex2);
+	Res_ReleaseLump("TEXTURE1");
+	Res_ReleaseLump("TEXTURE2");
 
 	if (errors)
 		I_FatalError ("%d errors in R_InitTextures.", errors);

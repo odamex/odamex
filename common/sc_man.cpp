@@ -73,6 +73,7 @@ char *sc_ScriptsDir;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+static ResourceId ScriptResId = ResourceManager::RESOURCE_NOT_FOUND;
 static std::string ScriptName;
 static char *ScriptBuffer;
 static char *ScriptPtr;
@@ -94,7 +95,8 @@ static int SavedScriptLine;
 void SC_OpenResourceLump(const ResourceId res_id)
 {
 	SC_Close();
-	ScriptBuffer = (char*)Res_CacheLump(res_id, PU_STATIC);
+	ScriptResId = res_id;
+	ScriptBuffer = (char*)Res_CacheLump(ScriptResId, PU_STATIC);
 	ScriptSize = Res_GetLumpLength(res_id);
 	ScriptName = Res_GetLumpName(res_id);
 	FreeScript = true;
@@ -161,9 +163,11 @@ void SC_Close()
 	if (ScriptOpen)
 	{
 		if (FreeScript && ScriptBuffer)
-			Z_Free(ScriptBuffer);
+			Res_ReleaseLump(ScriptResId);
+		ScriptResId = ResourceManager::RESOURCE_NOT_FOUND;
 		ScriptBuffer = NULL;
 		ScriptOpen = false;
+
 	}
 }
 

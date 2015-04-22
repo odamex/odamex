@@ -203,6 +203,8 @@ public:
 
 	const void* getData(const ResourceId res_id, int tag = PU_CACHE);
 
+	void releaseData(const ResourceId res_id);
+
 
 	const ResourceContainer* getResourceContainer(const ResourceContainerId& container_id) const
 	{
@@ -383,6 +385,18 @@ void* Res_CacheLump(const ResourceId res_id, int tag);
 static inline void* Res_CacheLump(const OString& name, int tag)
 {
 	return Res_CacheLump(Res_GetResourceId(name), tag);
+}
+
+
+// ----------------------------------------------------------------------------
+// Res_ReleaseLump
+// ----------------------------------------------------------------------------
+
+void Res_ReleaseLump(const ResourceId res_id);
+
+static inline void* Res_ReleaseLump(const OString& name)
+{
+	Res_ReleaseLump(Res_GetResourceId(name));
 }
 
 bool Res_CheckMap(const OString& mapname);

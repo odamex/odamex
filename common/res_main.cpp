@@ -337,11 +337,7 @@ void ResourceManager::openResourceFiles(const std::vector<std::string>& filename
 void ResourceManager::closeAllResourceFiles()
 {
 	for (ResourceRecordTable::iterator it = mResources.begin(); it != mResources.end(); ++it)
-	{
-		if (it->mCachedData)
-			Z_Free(it->mCachedData);
-		it->mCachedData = NULL;
-	}
+		releaseData(mResources.getId(*it));
 	mResources.clear();
 
 	for (std::vector<ResourceContainer*>::iterator it = mContainers.begin(); it != mContainers.end(); ++it)
@@ -624,6 +620,22 @@ const void* ResourceManager::getData(const ResourceId res_id, int tag)
 
 
 //
+// ResourceManager::releaseData
+//
+void ResourceManager::releaseData(const ResourceId res_id)
+{
+	ResourceRecordTable::iterator it = mResources.find(res_id);
+	if (it != mResources.end())
+	{
+		void* data = it->mCachedData;
+		if (data != NULL)
+			Z_Free(data);
+		it->mCachedData = NULL;
+	}
+}
+
+
+//
 // ResourceManager::dump
 //
 // Print information about each resource in all of the open resource
@@ -871,6 +883,16 @@ void* Res_CacheLump(const ResourceId res_id, int tag)
 	return (void*)resource_manager.getData(res_id, tag);
 }
 
+
+//
+// Res_ReleaseLump
+//
+// Frees the memory allocated for the lump's cached data.
+//
+void Res_ReleaseLump(const ResourceId res_id)
+{
+	resource_manager.releaseData(res_id);
+}
 
 
 BEGIN_COMMAND(dump_resources)
