@@ -394,7 +394,7 @@ static inline void* Res_CacheLump(const OString& name, int tag)
 
 void Res_ReleaseLump(const ResourceId res_id);
 
-static inline void* Res_ReleaseLump(const OString& name)
+static inline void Res_ReleaseLump(const OString& name)
 {
 	Res_ReleaseLump(Res_GetResourceId(name));
 }
