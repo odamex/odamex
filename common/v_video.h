@@ -39,26 +39,6 @@ class IWindowSurface;
 
 extern int CleanXfac, CleanYfac;
 
-
-// ============================================================================
-//
-// DCanvasDevice base class interface
-//
-// Virtual base class to provide implementation specific data and functions
-// to the DCanvas class.
-//
-// ============================================================================
-
-class DCanvasDevice
-{
-public:
-
-	virtual ~DCanvasDevice() { }
-private:
-
-};
-
-
 //
 // VIDEO
 //
