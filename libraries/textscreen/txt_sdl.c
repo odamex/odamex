@@ -325,6 +325,9 @@ int TXT_Init(void)
 	if (surface == NULL)
 		return 0;
 
+	// apply the palette
+	SDL_SetPaletteColors(surface->format->palette, ega_colors, 0, 16);
+
 #else							// SDL 1.2
     int flags = SDL_SWSURFACE | SDL_HWPALETTE | SDL_DOUBLEBUF;
     surface = SDL_SetVideoMode(screen_width, screen_height, 8, flags);
@@ -338,10 +341,11 @@ int TXT_Init(void)
 
     SDL_EnableUNICODE(1);
 
+	// apply the palette
+	SDL_SetColors(surface, ega_colors, 0, 16);
+
 #endif	// SDL_MAJOR_VERSION
 
-	// apply the palette
-	SDL_SetPaletteColors(surface->format->palette, ega_colors, 0, 16);
 
     character_data = malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
     memset(character_data, 0, TXT_SCREEN_W * TXT_SCREEN_H * 2);

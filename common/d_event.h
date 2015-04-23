@@ -45,12 +45,8 @@ typedef enum
 // Event structure.
 struct event_t
 {
-	event_t() :
-		type(ev_keydown), data1(0), data2(0), data3(0)
-	{ }
-
-	event_t(evtype_t t) :
-		type(t), data1(0), data2(0), data3(0)
+	event_t(evtype_t t = ev_keydown, int d1 = 0, int d2 = 0, int d3 = 0) :
+		type(t), data1(d1), data2(d2), data3(d3)
 	{ }
 
 	evtype_t	type;
