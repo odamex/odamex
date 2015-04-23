@@ -427,13 +427,32 @@ void Z_ChangeTag2(void* ptr, int tag, const char* file, int line)
 	if (tag == PU_FREE)
 		I_Error("Z_ChangeTag: cannot change a tag to PU_FREE");
 
-    if (block->id != ZONEID)
-        I_Error("Z_ChangeTag: freed a pointer without ZONEID");
-
     if (tag >= PU_PURGELEVEL && block->user == NULL)
         I_Error("Z_ChangeTag: an owner is required for purgable blocks");
 
     block->tag = tag;
+}
+
+
+void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line)
+{
+	if (!use_zone)
+		return;
+	
+	memblock_t*	block = (memblock_t*)((byte*)ptr - sizeof(memblock_t));
+	if (block->id != ZONEID)
+		I_Error("Z_ChangeOwner: block does not have a proper ID at %s:%i", file, line);
+
+	if (block->tag >= PU_PURGELEVEL && user == NULL)
+        I_Error("Z_ChangeOwner: an owner is required for purgable blocks at %s:%i", file, line);
+
+	if (block->user)
+		*block->user = NULL;
+	
+	block->user = (void**)user;
+
+	if (block->user)
+		*block->user = (void*)((byte*)block + sizeof(memblock_t));
 }
 
 //

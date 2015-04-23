@@ -56,6 +56,7 @@ size_t 	Z_FreeMemory (void);
 void*   Z_Malloc2 (size_t size, int tag, void *user, const char *file, int line);
 void    Z_Free2 (void *ptr, const char *file, int line);
 void	Z_ChangeTag2 (void *ptr, int tag, const char* file, int line);
+void	Z_ChangeOwner2 (void *ptr, void* user, const char* file, int line);
 
 typedef struct memblock_s
 {
@@ -84,5 +85,6 @@ inline void Z_ChangeTag2(const void *ptr, int tag, const char* file, int line)
 #define Z_Malloc(s,t,p) Z_Malloc2(s,t,p,__FILE__,__LINE__)
 #define Z_Free(p) Z_Free2(p,__FILE__,__LINE__)
 #define Z_ChangeTag(p,t) Z_ChangeTag2(p,t,__FILE__,__LINE__)
+#define Z_ChangeOwner(p,u) Z_ChangeOwner2(p,u,__FILE__,__LINE__)
 
 #endif // __Z_ZONE_H__
