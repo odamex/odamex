@@ -28,6 +28,85 @@
 #include "i_system.h"
 #include "doomdef.h"
 #include "c_dispatch.h"
+#include "hashtable.h"
+
+static bool use_zone = true;
+
+//
+// FauxZone
+//
+// A memory system that mimics a lot of the Zone system's behaviors but is more
+// friendly to memory analysis tools like valgrind.
+//
+// Memory is allocated on the system heap with operator new. When allocating
+// memory, a pointer to the allocated memory is inserted as the key into a hash
+// table, along with a memory block tag and user pointer (both similar to the
+// Zone memory's system).
+//
+// Upon freeing allocated memory, the memory the user pointer points to will be
+// set to NULL, the memory will be freed, and the block will be removed from
+// the hash table.
+//
+class FauxZone
+{
+public:
+	FauxZone() :
+		mMemoryBlockTable(4096)
+	{ }
+
+	~FauxZone()
+	{
+		clear();
+	}
+
+	void clear()
+	{
+		for (MemoryBlockTable::iterator it = mMemoryBlockTable.begin(); it != mMemoryBlockTable.end(); ++it)
+			free(it->first);
+	}
+
+	void* alloc(size_t size, int tag, void* user)
+	{
+		void* ptr = (void*)(new unsigned char[size]);
+
+		MemoryBlockInfo block;
+		block.tag = tag;
+		block.user = (void**)user;
+
+		mMemoryBlockTable.insert(std::make_pair(ptr, block));
+		if (block.user != NULL)
+			*block.user = ptr;
+		return ptr;
+	}
+
+	void free(void* ptr)
+	{
+		if (ptr != NULL)
+		{
+			MemoryBlockTable::iterator it = mMemoryBlockTable.find(ptr);
+			if (it != mMemoryBlockTable.end())
+			{
+				if (it->second.user)
+					*it->second.user = NULL;
+				delete [] (unsigned char*)it->first;
+				mMemoryBlockTable.erase(it);
+			}
+		}
+	}
+
+private:
+	struct MemoryBlockInfo
+	{
+		int tag;
+		void** user;
+	};
+
+	typedef OHashTable<void*, MemoryBlockInfo> MemoryBlockTable;
+	MemoryBlockTable mMemoryBlockTable;
+};
+
+static FauxZone faux_zone;
+
 
 
 //
@@ -64,13 +143,21 @@ static size_t zonesize;
 void STACK_ARGS Z_Close()
 {
 	M_Free(mainzone);
+	faux_zone.clear();
 }
 
 //
 // Z_Init
 //
-void Z_Init()
+void Z_Init(bool _use_zone)
 {
+	use_zone = _use_zone;
+	if (!use_zone)
+	{
+		Z_Close();
+		return;
+	}
+
 	// denis - allow reinitiation of entire memory system
 	if (!mainzone)
 		mainzone = (memzone_t*)I_ZoneBase(&zonesize);
@@ -98,6 +185,12 @@ void Z_Init()
 //
 void Z_Free2(void* ptr, const char* file, int line)
 {
+	if (!use_zone)
+	{
+		faux_zone.free(ptr);
+		return;
+	}
+
 	#ifdef ODAMEX_DEBUG
 	Z_CheckHeap();
 	#endif
@@ -156,6 +249,11 @@ void Z_Free2(void* ptr, const char* file, int line)
 
 void* Z_Malloc2(size_t size, int tag, void* user, const char* file, int line)
 {
+	if (!use_zone)
+	{
+		return faux_zone.alloc(size, tag, user);
+	}
+
 	#ifdef ODAMEX_DEBUG
 	Z_CheckHeap();
 	#endif
@@ -260,6 +358,9 @@ void* Z_Malloc2(size_t size, int tag, void* user, const char* file, int line)
 //
 void Z_FreeTags(int lowtag, int hightag)
 {
+	if (!use_zone)
+		return;
+
 	#ifdef ODAMEX_DEBUG
 	Z_CheckHeap();
 	#endif
@@ -290,6 +391,9 @@ void Z_FreeTags(int lowtag, int hightag)
 //
 void Z_CheckHeap()
 {
+	if (!use_zone)
+		return;
+
     memblock_t*	block;
 	
     for (block = mainzone->blocklist.next ; ; block = block->next)
@@ -311,9 +415,14 @@ void Z_CheckHeap()
 //
 // Z_ChangeTag
 //
-void Z_ChangeTag2(void* ptr, int tag)
+void Z_ChangeTag2(void* ptr, int tag, const char* file, int line)
 {
-    memblock_t*	block = (memblock_t*)((byte*)ptr - sizeof(memblock_t));
+	if (!use_zone)
+		return;
+
+	memblock_t*	block = (memblock_t*)((byte*)ptr - sizeof(memblock_t));
+	if (block->id != ZONEID)
+		I_Error("Z_ChangeTag: block does not have a proper ID at %s:%i", file, line);
 
 	if (tag == PU_FREE)
 		I_Error("Z_ChangeTag: cannot change a tag to PU_FREE");
@@ -337,6 +446,9 @@ static size_t largestlsize, lsize, usedlblocks;	// Locked blocks
 
 size_t Z_FreeMemory()
 {
+	if (!use_zone)
+		return 0;
+
 	#ifdef ODAMEX_DEBUG
 	Z_CheckHeap();
 	#endif
@@ -392,6 +504,9 @@ size_t Z_FreeMemory()
 //
 void Z_DumpHeap(int lowtag, int hightag)
 {
+	if (!use_zone)
+		return;
+
 	Z_FreeMemory();
     memblock_t*	block;
 	

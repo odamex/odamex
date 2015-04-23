@@ -665,24 +665,27 @@ void W_GetLumpName (char *to, unsigned  lump)
 //
 void* W_CacheLumpNum(unsigned int lump, int tag)
 {
-	byte*	ptr;
-
 	if ((unsigned)lump >= numlumps)
 		I_Error ("W_CacheLumpNum: %i >= numlumps",lump);
 
 	if (!lumpcache[lump])
 	{
 		// read the lump in
+		// [RH] Allocate one byte more than necessary for the
+		//		lump and set the extra byte to zero so that
+		//		various text parsing routines can just call
+		//		W_CacheLumpNum() and not choke.
 
-		//printf ("cache miss on lump %i\n",lump);
-		ptr = (byte *)Z_Malloc (W_LumpLength (lump) + 1, tag, &lumpcache[lump]);
-		W_ReadLump (lump, lumpcache[lump]);
-		ptr [W_LumpLength (lump)] = 0;
+		//DPrintf("cache miss on lump %i\n",lump);
+		unsigned int lump_length = W_LumpLength(lump);
+		lumpcache[lump] = (byte *)Z_Malloc(lump_length + 1, tag, &lumpcache[lump]);
+		W_ReadLump(lump, lumpcache[lump]);
+		*((unsigned char*)lumpcache[lump] + lump_length) = 0;
 	}
 	else
 	{
 		//printf ("cache hit on lump %i\n",lump);
-		Z_ChangeTag (lumpcache[lump],tag);
+		Z_ChangeTag(lumpcache[lump],tag);
 	}
 
 	return lumpcache[lump];
@@ -724,17 +727,17 @@ patch_t* W_CachePatch(unsigned lumpnum, int tag)
 		if (newlumplen > 0)
 		{
 			// valid patch
-			byte *ptr = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
+			lumpcache[lumpnum] = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
 			patch_t *newpatch = (patch_t*)lumpcache[lumpnum];
+			*((unsigned char*)lumpcache[lumpnum] + newlumplen) = 0;
 
 			R_ConvertPatch(newpatch, rawpatch);
-			ptr[newlumplen] = 0;
 		}
 		else
 		{
 			// invalid patch - just create a header with width = 0, height = 0
-			Z_Malloc(sizeof(patch_t) + 1, tag, &lumpcache[lumpnum]);
-			memset(lumpcache[lumpnum], 0, sizeof(patch_t) + 1);
+			lumpcache[lumpnum] = Z_Malloc(sizeof(patch_t), tag, &lumpcache[lumpnum]);
+			memset(lumpcache[lumpnum], 0, sizeof(patch_t));
 		}
 
 		delete [] rawlumpdata;

@@ -252,7 +252,8 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 	srand(time(NULL));
 
 	// start the Zone memory manager
-	Z_Init();
+	bool use_zone = !Args.CheckParm("-nozone");
+	Z_Init(use_zone);
 	if (first_time)
 		Printf(PRINT_HIGH, "Z_Init: Heapsize: %u megabytes\n", got_heapsize);
 	
