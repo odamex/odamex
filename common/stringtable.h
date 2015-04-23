@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2011 by Randy Heit (ZDoom 1.23).
-// Copyright (C) 2011-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
