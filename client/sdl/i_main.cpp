@@ -134,14 +134,18 @@ int main(int argc, char *argv[])
 			}
 		}
 
+#if defined(SDL12)
         // [Russell] - No more double-tapping of capslock to enable autorun
         SDL_putenv((char*)"SDL_DISABLE_LOCK_KEYS=1");
 
 		// Set SDL video centering
 		SDL_putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
 		SDL_putenv((char*)"SDL_VIDEO_CENTERED=1");
+#endif
 
 #if defined _WIN32 && !defined _XBOX
+
+	#if defined(SDL12)
     	// From the SDL 1.2.10 release notes:
     	//
     	// > The "windib" video driver is the default now, to prevent
@@ -159,6 +163,7 @@ int main(int argc, char *argv[])
         	putenv((char*)"SDL_VIDEODRIVER=windib");
     	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-directx") > 0)
         	putenv((char*)"SDL_VIDEODRIVER=directx");
+	#endif	// SDL12
 
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in
@@ -178,13 +183,15 @@ int main(int argc, char *argv[])
                     LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;
             }
         }
-#endif
+#endif	// _WIN32 && !_XBOX
 
 #ifdef X11
+	#if defined(SDL12)
 		// [SL] 2011-12-21 - Ensure we're getting raw DGA mouse input from X11,
 		// bypassing X11's mouse acceleration
 		putenv((char*)"SDL_VIDEO_X11_DGAMOUSE=1");
-#endif
+	#endif	// SDL12
+#endif	// X11
 
 		unsigned int sdl_flags = SDL_INIT_TIMER;
 
