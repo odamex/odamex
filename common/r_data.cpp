@@ -248,6 +248,7 @@ void R_GenerateComposite (int texnum)
 {
 	byte *block = (byte *)Z_Malloc (texturecompositesize[texnum], PU_STATIC,
 						   (void **) &texturecomposite[texnum]);
+	texturecomposite[texnum] = block;
 	texture_t *texture = textures[texnum];
 
 	// Composite the columns together.

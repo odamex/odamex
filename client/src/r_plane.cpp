@@ -622,10 +622,17 @@ void R_DrawPlanes (void)
 				// [RH] warp a flat if desired
 				if (flatwarp[useflatnum])
 				{
-					if ((!warpedflats[useflatnum]
-						 && Z_Malloc (64*64, PU_STATIC, &warpedflats[useflatnum]))
-						|| flatwarpedwhen[useflatnum] != level.time)
+					if (warpedflats[useflatnum] && flatwarpedwhen[useflatnum] == level.time)
 					{
+						Z_ChangeTag(dspan.source, PU_CACHE);
+						dspan.source = warpedflats[useflatnum];
+						Z_ChangeTag(dspan.source, PU_STATIC);
+					}
+					else
+					{
+						if (!warpedflats[useflatnum])
+							warpedflats[useflatnum] = (byte*)Z_Malloc(64*64, PU_STATIC, &warpedflats[useflatnum]);
+
 						static byte buffer[64];
 						int timebase = level.time*23;
 
@@ -652,12 +659,6 @@ void R_DrawPlanes (void)
 						}
 						Z_ChangeTag (dspan.source, PU_CACHE);
 						dspan.source = warped;
-					}
-					else
-					{
-						Z_ChangeTag (dspan.source, PU_CACHE);
-						dspan.source = warpedflats[useflatnum];
-						Z_ChangeTag (dspan.source, PU_STATIC);
 					}
 				}
 				
