@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,8 +16,8 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	This file was generated when the project was created 
-//	in CodeBlocks
+//  This file was generated when the project was created
+//  in CodeBlocks
 //
 //-----------------------------------------------------------------------------
 
@@ -26,34 +26,35 @@
 #define WX_PCH_H_INCLUDED
 
 #if ( defined(USE_PCH) && !defined(WX_PRECOMP) )
-	#define WX_PRECOMP
+#define WX_PRECOMP
 #endif // USE_PCH
 
 // basic wxWidgets headers
 #include <wx/wxprec.h>
 
 #ifdef __BORLANDC__
-	#pragma hdrstop
+#pragma hdrstop
 #endif
 
 #ifndef WX_PRECOMP
-	#include <wx/wx.h>
+#include <wx/wx.h>
 #endif
 
 #ifdef USE_PCH
-    #include "net_error.h"
-    #include "net_io.h"
-    #include "net_packet.h"
-    #include "net_utils.h"
-    #include "typedefs.h"
-    
-    #include "lst_custom.h"
-    #include "main.h"
-    #include "md5.h"
-    #include "query_thread.h"
-    #include "resource.h"
-    
-    #include "dlg_about.h"
+#include "net_error.h"
+#include "net_io.h"
+#include "net_packet.h"
+#include "net_utils.h"
+#include "typedefs.h"
+
+#include "oda_defs.h"
+#include "lst_custom.h"
+#include "main.h"
+#include "md5.h"
+#include "query_thread.h"
+#include "resource.h"
+
+#include "dlg_about.h"
 #endif // USE_PCH
 
 #endif // WX_PCH_H_INCLUDED

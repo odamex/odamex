@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,59 +56,89 @@ void OString::startup()
 void OString::shutdown()
 {
 	delete mStrings;
+	mStrings = NULL;
 	delete mStringLookup;
+	mStringLookup = NULL;
 	delete mEmptyString;
+	mEmptyString = NULL;
 	mInitialized = false;
 }
+
+
+// ------------------------------------------------------------------------
+// debugging functions
+// ------------------------------------------------------------------------
+
+void OString::printStringTable()
+{
+	printf("OString Table\n");
+	printf("=============\n");
+	for (StringTable::const_iterator it = mStrings->begin(); it != mStrings->end(); ++it)
+		printf("id 0x%08x hash 0x%08x (%u): %s\n", mStrings->getId(*it), hash(it->mString.c_str()),
+					it->mRefCount, it->mString.c_str());
+	printf("\n");
+}
+
 
 // ------------------------------------------------------------------------
 // OString Constructors 
 // ------------------------------------------------------------------------
 
-OString::OString()
+OString::OString() :
+	mId(mEmptyStringId)
 {
-	addString("");
+	startup();
+	assign("");
 }
 
-OString::OString(const OString& other)
+OString::OString(const OString& other) :
+	mId(mEmptyStringId)
 {
-	addString(other);
+	startup();
+	assign(other);
 }
 
-OString::OString(const std::string& str)
+OString::OString(const std::string& str) :
+	mId(mEmptyStringId)
 {
-	addString(str);
+	startup();
+	assign(str);
 }
 
-OString::OString(const OString& other, size_t pos, size_t len)
+OString::OString(const OString& other, size_t pos, size_t len) :
+	mId(mEmptyStringId)
 {
-	addString(std::string(other.getString(), pos, len));
+	startup();
+	assign(std::string(other.getString(), pos, len));
 }
 
-OString::OString(const std::string& str, size_t pos, size_t len)
+OString::OString(const std::string& str, size_t pos, size_t len) :
+	mId(mEmptyStringId)
 {
-	addString(std::string(str, pos, len));
+	startup();
+	assign(std::string(str, pos, len));
 }
 
-OString::OString(const char* s)
+OString::OString(const char* s, size_t n) :
+	mId(mEmptyStringId)
 {
-	addString(s);
+	startup();
+	assign(s, n);
 }
 
-OString::OString(const char* s, size_t n)
+OString::OString(size_t n, char c) :
+	mId(mEmptyStringId)
 {
-	addString(std::string(s, n));
-}
-
-OString::OString(size_t n, char c)
-{
-	addString(std::string(n, c));
+	startup();
+	assign(std::string(n, c));
 }
 
 template <class InputIterator>
-OString::OString(InputIterator first, InputIterator last)
+OString::OString(InputIterator first, InputIterator last) :
+	mId(mEmptyStringId)
 {
-	addString(std::string(first, last));
+	startup();
+	assign(std::string(first, last));
 }
 
 
@@ -118,7 +148,11 @@ OString::OString(InputIterator first, InputIterator last)
 
 OString::~OString()
 {
-	removeString();
+	clear();
+
+	// Last string was removed so shutdown
+	if (mStrings->empty())
+		shutdown();
 }
 
 // ------------------------------------------------------------------------
@@ -243,8 +277,7 @@ bool OString::empty() const
 
 void OString::clear()
 {
-	removeString();
-	addString("");
+	assign("");
 }
 
 
@@ -265,54 +298,6 @@ const char& OString::operator[] (size_t pos) const
 const char& OString::at(size_t pos) const
 {
 	return getString().at(pos);
-}
-
-
-// ------------------------------------------------------------------------
-// OString::assign
-// ------------------------------------------------------------------------
-
-OString& OString::assign(const OString& other)
-{
-	removeString();
-	addString(other);
-	return *this;
-}
-
-OString& OString::assign(const std::string& str)
-{
-	removeString();
-	addString(str);
-	return *this;
-}
-
-OString& OString::assign(const char* s)
-{
-	removeString();
-	addString(s);
-	return *this;
-}
-
-OString& OString::assign(const char* s, size_t n)
-{
-	removeString();
-	addString(std::string(s, n));
-	return *this;
-}
-
-OString& OString::assign(size_t n, char c)
-{
-	removeString();
-	addString(std::string(n, c));
-	return *this;
-}
-
-template <typename InputIterator>
-OString& OString::assign(InputIterator first, InputIterator last)
-{
-	removeString();
-	addString(std::string(first, last));
-	return *this;
 }
 
 
@@ -776,70 +761,66 @@ void swap(::OString& x, ::OString& y)
 // utility functions
 // ----------------------------------------------------------------------------
 
-OString OStringToUpper(const OString& str, size_t n)
+struct UpperFunctor
 {
-	size_t length = std::min(str.length(), n);
+	inline char operator()(const char c) const
+	{	return toupper(c);	}
+};
+
+struct LowerFunctor
+{
+	inline char operator()(const char c) const
+	{	return tolower(c);	}
+};
+
+template <typename FUNC>
+static OString OStringConverter(const char* s, size_t length)
+{
+	char fixed_buf[1024];
+	char* dyn_buf = NULL;
+	char* out;
+
+	const char* in = s;
+	FUNC func;		// instance of the conversion functor
 
 	if (length < 1024)
-	{
-		char ustr[1024];
-		char* out = ustr;
-		const char* in = str.c_str();
-
-		for (size_t i = 0; i < length; i++)
-			*out++	= toupper(*in++);
-		ustr[length] = 0;
+		out = fixed_buf;
+	else
+		out = dyn_buf = new char[length + 1];
 	
-		return OString(ustr);	
-	}
+	for (size_t i = 0; i < length && *in != '\0'; i++)
+		*out++	= func(*in++);
+	*out = '\0';
+
+	if (length < 1024)
+		return OString(fixed_buf);
 	else
 	{
-		char* ustr = new char[length + 1];
-		char* out = ustr;
-		const char* in = str.c_str();
-
-		for (size_t i = 0; i < length; i++)
-			*out++	= toupper(*in++);
-		ustr[length] = 0;
-
-		OString result(ustr);
-		delete [] ustr;
-
+		OString result(dyn_buf);
+		delete [] dyn_buf;
 		return result;
 	}
 }
 
-OString OStringToLower(const OString& str, size_t n)
+
+OString OStringToUpper(const char* s, size_t length)
 {
-	size_t length = std::min(str.length(), n);
+	return OStringConverter<UpperFunctor>(s, length);
+}
 
-	if (length < 1024)
-	{
-		char ustr[1024];
-		char* out = ustr;
-		const char* in = str.c_str();
+OString OStringToUpper(const OString& str)
+{
+	return OStringConverter<UpperFunctor>(str.c_str(), str.length());
+}
 
-		for (size_t i = 0; i < length; i++)
-			*out++	= tolower(*in++);
-		ustr[length] = 0;
-	
-		return OString(ustr);	
-	}
-	else
-	{
-		char* ustr = new char[length + 1];
-		char* out = ustr;
-		const char* in = str.c_str();
+OString OStringToLower(const char* s, size_t length)
+{
+	return OStringConverter<LowerFunctor>(s, length);
+}
 
-		for (size_t i = 0; i < length; i++)
-			*out++	= tolower(*in++);
-		ustr[length] = 0;
-
-		OString result(ustr);
-		delete [] ustr;
-
-		return result;
-	}
+OString OStringToLower(const OString& str)
+{
+	return OStringConverter<LowerFunctor>(str.c_str(), str.length());
 }
 
 VERSION_CONTROL (m_ostring_cpp, "$Id:$")

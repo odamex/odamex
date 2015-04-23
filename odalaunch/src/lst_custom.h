@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -15,9 +15,9 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// DESCRIPTION:  
-//	Custom list control, featuring sorting
-//	AUTHOR:	Russell Rice
+// DESCRIPTION:
+//  Custom list control, featuring sorting
+//  AUTHOR: Russell Rice
 //
 //-----------------------------------------------------------------------------
 
@@ -34,80 +34,84 @@
 #include <vector>
 
 class wxAdvancedListCtrl : public wxListView
-{      
-    public:
-        wxAdvancedListCtrl();
-        virtual ~wxAdvancedListCtrl() { };
-        
-        void HeaderUsable(bool state) { m_HeaderUsable = state; }
+{
+public:
+	wxAdvancedListCtrl();
+	virtual ~wxAdvancedListCtrl() { };
 
-        void SetSortColumnAndOrder(wxInt32 &Column, wxInt32 &Order)
-        {
-            SortCol = Column;
-            SortOrder = Order;
-            
-            SetSortArrow(SortCol, SortOrder);
-        }
+	void HeaderUsable(bool state)
+	{
+		m_HeaderUsable = state;
+	}
 
-        void GetSortColumnAndOrder(wxInt32 &Column, wxInt32 &Order)
-        {
-            Column = SortCol;
-            Order = SortOrder;
-        }
+	void SetSortColumnAndOrder(wxInt32& Column, wxInt32& Order)
+	{
+		SortCol = Column;
+		SortOrder = Order;
 
-        void SetSortColumnIsSpecial(const wxInt32 &Column)
-        {
-            m_SpecialColumn = Column;
-        }
+		SetSortArrow(SortCol, SortOrder);
+	}
 
-        wxInt32 GetSpecialSortColumn()
-        {
-            return m_SpecialColumn;
-        }
+	void GetSortColumnAndOrder(wxInt32& Column, wxInt32& Order)
+	{
+		Column = SortCol;
+		Order = SortOrder;
+	}
 
-        void Sort();
-                
-        int AddImageSmall(wxImage Image);
-        long ALCInsertItem(const wxString &Text = wxT(""));
-        
-        void ApplyFilter(wxString Filter = wxEmptyString);
+	void SetSortColumnIsSpecial(const wxInt32& Column)
+	{
+		m_SpecialColumn = Column;
+	}
 
-        wxEvent *Clone(void);
+	wxInt32 GetSpecialSortColumn()
+	{
+		return m_SpecialColumn;
+	}
 
-    private:
-        void OnCreateControl(wxWindowCreateEvent &event);
-        void OnHeaderColumnButtonClick(wxListEvent &event);
+	void Sort();
 
-        void ColourList();
-        void ColourListItem(wxListItem &info);
-        void ColourListItem(long item);
+	int AddImageSmall(wxImage Image);
+	void ClearImageList();
+	long ALCInsertItem(const wxString& Text = "");
 
-        void ResetSortArrows(void);
-        void SetSortArrow(wxInt32 Column, wxInt32 ArrowState);
+	void ApplyFilter(wxString Filter = wxEmptyString);
 
-        void FlipRow(long Row, long NextRow);
-        void Sort(wxInt32 Column, wxInt32 Order = 0, wxInt32 Lowest = 0, wxInt32 Highest = -1);
-        
-        // Filtering functions
-        void BackupList();
-        void DoRestoreRow(size_t row);
-        void DoApplyFilter(const wxString &);
-        void RestoreList();
+	wxEvent* Clone(void);
 
-        wxInt32 SortOrder;
-        wxInt32 SortCol;
+private:
+	void OnCreateControl(wxWindowCreateEvent& event);
+	void OnHeaderColumnButtonClick(wxListEvent& event);
 
-        wxColour ItemShade;
-        wxColour BgColor;
+	void ColourList();
+	void ColourListItem(wxListItem& info);
+	void ColourListItem(long item);
 
-        wxInt32 m_SpecialColumn;
+	void ResetSortArrows(void);
+	void SetSortArrow(wxInt32 Column, wxInt32 ArrowState);
 
-        bool m_HeaderUsable;
-        
-        std::vector<std::vector<wxListItem> > BackupItems;
-    protected:               
-        DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
-        DECLARE_EVENT_TABLE()
+	void FlipRow(long Row, long NextRow);
+	void Sort(wxInt32 Column, wxInt32 Order = 0, wxInt32 Lowest = 0, wxInt32 Highest = -1);
+
+	// Filtering functions
+	void BackupList();
+	void DoRestoreRow(size_t row);
+	void DoApplyFilter(const wxString&);
+	void RestoreList();
+
+	wxInt32 SortOrder;
+	wxInt32 SortCol;
+
+	wxColour ItemShade;
+	wxColour BgColor;
+
+	wxInt32 m_SpecialColumn;
+
+	bool m_HeaderUsable;
+
+	std::vector<std::vector<wxListItem> > BackupItems;
+protected:
+	DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
+	DECLARE_EVENT_TABLE()
 };
 
 #endif

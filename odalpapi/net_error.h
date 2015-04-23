@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Error handling
+//  Error handling
 //
 // AUTHORS:
 //  Russell Rice (russell at odamex dot net)
@@ -27,10 +27,11 @@
 #ifndef __NET_ERROR_H__
 #define __NET_ERROR_H__
 
-namespace odalpapi {
+namespace odalpapi
+{
 
-void _ReportError(const char *file, int line, const char *func,
-    const char *fmt, ...);
+void _ReportError(const char* file, int line, const char* func,
+                  const char* fmt, ...);
 #define NET_ReportError(...) \
     _ReportError(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 

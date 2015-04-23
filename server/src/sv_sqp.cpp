@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,13 +37,12 @@
 #include "i_system.h"
 #include "md5.h"
 #include "p_ctf.h"
+#include "version.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
 EXTERN_CVAR(join_password)
 EXTERN_CVAR(sv_timelimit)
-
-extern unsigned int last_revision;
 
 struct CvarField_t
 {
@@ -57,7 +56,7 @@ struct CvarField_t
 #define TAG_ID 0xAD0
 
 // When a change to the protocol is made, this value must be incremented
-#define PROTOCOL_VERSION 5
+#define PROTOCOL_VERSION 6
 
 /*
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
@@ -92,7 +91,7 @@ static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
 	MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
 
 	// Built revision of server
-	MSG_WriteLong(&ml_message, last_revision);
+	MSG_WriteLong(&ml_message, GetRevision());
 
 	cvar_t* var = GetFirstCvar();
 
@@ -174,9 +173,18 @@ next:
 
 	if(timeleft < 0)
 		timeleft = 0;
-
-	MSG_WriteShort(&ml_message, timeleft);
-
+    
+    // TODO: Remove guard on next release and reset protocol version
+    // TODO: Incorporate code above into block
+    // Only send timeleft if sv_timelimit has been set
+    QRYNEWINFO(6)
+    {
+        if (sv_timelimit.asInt())
+            MSG_WriteShort(&ml_message, timeleft);
+    }
+    else
+        MSG_WriteShort(&ml_message, timeleft);
+    
 	// Teams
 	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
@@ -229,7 +237,8 @@ next:
 	{
 		MSG_WriteString(&ml_message, it->userinfo.netname.c_str());
 
-		MSG_WriteLong(&ml_message, it->userinfo.color);
+		for (int i = 3; i >= 0; i--)
+			MSG_WriteByte(&ml_message, it->userinfo.color[i]);
 
 		if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 			MSG_WriteByte(&ml_message, it->userinfo.team);

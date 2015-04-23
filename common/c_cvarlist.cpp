@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -166,9 +166,6 @@ CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players",
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
-CVAR_RANGE(			sv_maxlives, "0", "Prevent a player from respawing into the game if they've died this many times - 0 is infinite",
-					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH, 0.0f, 32768.0f)
-
 
 // Compatibility options
 // ---------------------------------
@@ -270,7 +267,5 @@ CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 // Experimental settings (all categories)
 // =======================================
 
-CVAR(				sv_speedhackfix, "0", "Experimental anti-speedhack code",
-					CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")

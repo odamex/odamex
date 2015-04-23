@@ -1,10 +1,9 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_random.h 3799 2013-04-24 03:12:44Z mike $
+// $Id: m_mempool.h 3799 2013-04-24 03:12:44Z mike $
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,6 +21,7 @@
 //	Memory can only be freed by the clear() function for simplicity. If
 //	the intial memory pool is exhausted, additional pools are allocated. These
 //	are consolodated into one large pool the next time clear() is called.
+//
 //    
 //-----------------------------------------------------------------------------
 
@@ -32,16 +32,17 @@
 #include "doomtype.h"
 #include <cstring>
 
-class MemoryPool
+template <typename T>
+class Pool
 {
 public:
-	MemoryPool(size_t initial_size) :
+	Pool(size_t initial_max_count) :
 		num_blocks(0), block_size(NULL), data_block(NULL), free_block(NULL)
 	{
-		resize(initial_size);
+		resize(initial_max_count);
 	}
 
-	~MemoryPool()
+	~Pool()
 	{
 		free_data();
 	}
@@ -61,11 +62,9 @@ public:
 		resize(new_size);
 	}
 
-	template<typename T>
-	T* alloc(size_t count)
+	T* alloc(size_t count = 1)
 	{
-		while (free_block + count * sizeof(T) > 
-				data_block[num_blocks - 1] + block_size[num_blocks - 1])
+		while (free_block + count * sizeof(T) > data_block[num_blocks - 1] + block_size[num_blocks - 1])
 			resize(2 * block_size[num_blocks - 1]);
 
 		T* ptr = reinterpret_cast<T*>(free_block);
@@ -74,8 +73,10 @@ public:
 	}
 
 private:
-	void resize(size_t new_size)
+	void resize(size_t new_max_count)
 	{
+		uint32_t new_size = new_max_count * sizeof(T);
+
 		if (new_size == 0)
 			return;
 

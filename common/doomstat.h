@@ -4,7 +4,7 @@
 // $Id: doomstat.h 1650 2010-07-12 03:22:33Z russellrice $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -108,7 +108,6 @@ EXTERN_CVAR (sv_gametype)
 //	status bar explicitely.
 extern	BOOL			statusbaractive;
 
-extern	BOOL			automapactive;	// In AutoMap mode?
 extern	BOOL			menuactive; 	// Menu overlayed?
 extern	BOOL			paused; 		// Game Pause?
 
@@ -122,13 +121,6 @@ extern	int 			viewwindowx;
 extern	int 			viewwindowy;
 extern	"C" int 		viewheight;
 extern	"C" int 		viewwidth;
-
-extern	"C" int			realviewwidth;		// [RH] Physical width of view window
-extern	"C" int			realviewheight;		// [RH] Physical height of view window
-extern	"C" int			detailxshift;		// [RH] X shift for horizontal detail level
-extern	"C" int			detailyshift;		// [RH] Y shift for vertical detail level
-
-
 
 
 
@@ -218,21 +210,12 @@ extern	BOOL	 		precache;
 //	to force a wipe on the next draw
 extern gamestate_t wipegamestate;
 
-// denis - is this from hexen?
-extern BOOL setsizeneeded;
-extern BOOL setmodeneeded;
-
 EXTERN_CVAR (mouse_sensitivity) // removeme // ?
 
 // Needed to store the number of the dummy sky flat.
 // Used for rendering,
 //	as well as tracking projectiles etc.
 extern int				skyflatnum;
-
-// Netgame stuff (buffers and pointers, i.e. indices).
-extern	int 			maketic;
-extern	int 			ticdup;
-
 
 // ---- [RH] ----
 EXTERN_CVAR (developer) // removeme

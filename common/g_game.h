@@ -4,7 +4,7 @@
 // $Id: g_game.h 1854 2010-09-05 00:44:20Z ladna $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -53,6 +53,7 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname);
 void G_PlayDemo(char* name);
 void G_DoPlayDemo(bool justStreamInput = false);
 void G_TimeDemo(const char* name);
+void G_TestDemo(const char* name);
 BOOL G_CheckDemoStatus(void);
 void G_CleanupDemo();
 
@@ -61,7 +62,7 @@ void G_WorldDone(void);
 void G_Ticker(void);
 BOOL G_Responder(event_t*	ev);
 
-void G_ScreenShot(char *filename);
+void G_ScreenShot(const char* filename);
 
 void G_PlayerFinishLevel(player_t &player);
 

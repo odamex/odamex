@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -2303,8 +2303,8 @@ BOOL PTR_RailTraverse (intercept_t *in)
 			goto hitline;
 
 		// shot continues
-		if (li->special)
-			P_ShootSpecialLine (shootthing, li);
+
+		// TODO: handle SPAC_PCROSS specials
 
 		return true;
 
@@ -2344,10 +2344,9 @@ BOOL PTR_RailTraverse (intercept_t *in)
 			x = trace.x + FixedMul(trace.dx, frac);
 			y = trace.y + FixedMul(trace.dy, frac);
 
-			if (!co_fixweaponimpacts && li->special) {
-				// Shot actually hit a wall. It might be set up for shoot activation
+			// Shot actually hit a wall. It might be set up for shoot activation
+			if (li->special)
 				P_ShootSpecialLine(shootthing, li);
-			}
 		}
 
 		// Save final position of rail shot.
@@ -3729,8 +3728,7 @@ void P_CopySector(sector_t *dest, sector_t *src)
 	dest->gravity				= src->gravity;
 	dest->damage				= src->damage;
 	dest->mod					= src->mod;
-	dest->floorcolormap			= src->floorcolormap;
-	dest->ceilingcolormap		= src->ceilingcolormap;
+	dest->colormap				= src->colormap;
 	dest->alwaysfake			= src->alwaysfake;
 	dest->waterzone				= src->waterzone;
 	dest->MoreFlags				= src->MoreFlags;

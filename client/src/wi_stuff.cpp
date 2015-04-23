@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -254,8 +254,6 @@ static char names[NUMEPISODES][NUMMAPS][8] = {
 //
 // Locally used stuff.
 //
-#define FB (screen)
-
 
 // in seconds
 #define SHOWNEXTLOCDELAY		4
@@ -360,9 +358,9 @@ static patch_t*			lnames[2];
 
 // [RH] Info to dynamically generate the level name graphics
 static int				lnamewidths[2];
-static const char			*lnametexts[2];
+static const char*		lnametexts[2];
 
-static DCanvas			*background;
+static IWindowSurface*	background_surface;
 
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_newintermission)
@@ -371,14 +369,66 @@ EXTERN_CVAR (cl_autoscreenshot)
 // CODE
 //
 
+
+//
+// WI_GetWidth
+//
+// Returns the width of the area that the intermission screen will be
+// drawn to. The intermisison screen should be 4:3, except in 320x200 mode.
+//
+static int WI_GetWidth()
+{
+	int surface_width = I_GetPrimarySurface()->getWidth();
+	int surface_height = I_GetPrimarySurface()->getHeight();
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		return surface_width;
+
+	if (surface_width * 3 >= surface_height * 4)
+		return surface_height * 4 / 3;
+	else
+		return surface_width;
+}
+
+
+//
+// WI_GetHeight
+//
+// Returns the height of the area that the intermission screen will be
+// drawn to. The intermisison screen should be 4:3, except in 320x200 mode.
+//
+static int WI_GetHeight()
+{
+	int surface_width = I_GetPrimarySurface()->getWidth();
+	int surface_height = I_GetPrimarySurface()->getHeight();
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		return surface_height;
+
+	if (surface_width * 3 >= surface_height * 4)
+		return surface_height;
+	else
+		return surface_width * 3 / 4;
+}
+
+
 // slam background
 // UNUSED static unsigned char *background=0;
 
-
 void WI_slamBackground (void)
 {
-	background->Blit (0, 0, background->width, background->height,
-		FB, 0, 0, FB->width, FB->height);
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	primary_surface->clear();		// ensure black background in matted modes
+
+	background_surface->lock();
+
+	int destw = WI_GetWidth(), desth = WI_GetHeight();
+
+	primary_surface->blit(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
+				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
+				destw, desth);
+
+	background_surface->unlock();
 }
 
 static int WI_DrawName (const char *str, int x, int y)
@@ -394,7 +444,7 @@ static int WI_DrawName (const char *str, int x, int y)
 		if (lump != -1)
 		{
 			p = W_CachePatch (lump);
-			FB->DrawPatchClean (p, x, y);
+			screen->DrawPatchClean (p, x, y);
 			x += p->width() - 1;
 		}
 		else
@@ -423,7 +473,7 @@ void WI_drawLF (void)
 	if (lnames[0])
 	{
 		// draw <LevelName>
-		FB->DrawPatchClean (lnames[0], (320 - lnames[0]->width())/2, y);
+		screen->DrawPatchClean (lnames[0], (320 - lnames[0]->width())/2, y);
 		y += (5*lnames[0]->height())/4;
 	}
 	else
@@ -434,7 +484,7 @@ void WI_drawLF (void)
 
 	// draw "Finished!"
 	//if (!multiplayer || sv_maxplayers <= 1)
-		FB->DrawPatchClean (finished, (320 - finished->width())/2, y);  // (Removed) Dan - Causes GUI Issues |FIX-ME|
+		screen->DrawPatchClean (finished, (320 - finished->width())/2, y);  // (Removed) Dan - Causes GUI Issues |FIX-ME|
 }
 
 
@@ -450,7 +500,7 @@ void WI_drawEL (void)
 	y = WI_TITLEY;
 
 	// draw "Entering"
-	FB->DrawPatchClean (entering, (320 - entering->width())/2, y);
+	screen->DrawPatchClean (entering, (320 - entering->width())/2, y);
 
 	// [RH] Changed to adjust by height of entering patch instead of title
 	y += (5*entering->height())/4;
@@ -458,7 +508,7 @@ void WI_drawEL (void)
 	if (lnames[1])
 	{
 		// draw level
-		FB->DrawPatchClean (lnames[1], (320 - lnames[1]->width())/2, y);
+		screen->DrawPatchClean (lnames[1], (320 - lnames[1]->width())/2, y);
 	}
 	else
 	{
@@ -510,10 +560,8 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 		right = left + c[i]->width();
 		bottom = top + c[i]->height();
 
-		if (left >= 0 &&
-            right < screen->width &&
-            top >= 0 &&
-            bottom < screen->height)
+		if (left >= 0 && right < WI_GetWidth() &&
+            top >= 0 && bottom < WI_GetHeight())
 		{
 			fits = true;
 		}
@@ -525,7 +573,7 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 
 	if (fits && i < numpatches) // haleyjd: bug fix
 	{
-		FB->DrawPatchIndirect (c[i], lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
+		screen->DrawPatchIndirect(c[i], lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
 	}
 	else
 	{
@@ -612,77 +660,75 @@ void WI_updateAnimatedBack (void)
 
 }
 
-void WI_drawAnimatedBack (void)
+void WI_drawAnimatedBack()
 {
-	int i;
-	anim_t *a;
-
-	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2)
+	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2 && NUMANIMS[wbs->epsd] > 0)
 	{
-		background->Lock ();
-		for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
-		{
-			a = &anims[wbs->epsd][i];
+		DCanvas* canvas = background_surface->getDefaultCanvas();
 
+		background_surface->lock();
+
+		for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
+		{
+			anim_t* a = &anims[wbs->epsd][i];
 			if (a->ctr >= 0)
-				background->DrawPatch (a->p[a->ctr], a->loc.x, a->loc.y);
+				canvas->DrawPatch(a->p[a->ctr], a->loc.x, a->loc.y);
 		}
-		background->Unlock ();
+
+		background_surface->unlock();
 	}
 
-	WI_slamBackground ();
+	WI_slamBackground();
 }
 
-int WI_drawNum (int n, int x, int y, int digits)
+int WI_drawNum(int n, int x, int y, int digits)
 {
-
     int		fontwidth = num[0]->width();
     int		neg;
     int		temp;
 
-    if (digits < 0)
-    {
-	if (!n)
+	if (digits < 0)
 	{
-	    // make variable-length zeros 1 digit long
-	    digits = 1;
+		if (n == 0)
+		{
+			// make variable-length zeros 1 digit long
+			digits = 1;
+		}
+		else
+		{
+			// figure out # of digits in #
+			digits = 0;
+			temp = n;
+
+			while (temp)
+			{
+				temp /= 10;
+				digits++;
+			}
+		}
 	}
-	else
+
+	neg = n < 0;
+    if (neg)
+		n = -n;
+
+	// if non-number, do not draw it
+	if (n == 1994)
+		return 0;
+
+	// draw the new number
+	while (digits--)
 	{
-	    // figure out # of digits in #
-	    digits = 0;
-	    temp = n;
-
-	    while (temp)
-	    {
-		temp /= 10;
-		digits++;
-	    }
+		x -= fontwidth;
+		screen->DrawPatchClean(num[ n % 10 ], x, y);
+		n /= 10;
 	}
-    }
 
-    neg = n < 0;
-    if (neg)
-	n = -n;
+	// draw a minus sign if necessary
+	if (neg)
+		screen->DrawPatchClean(wiminus, x -= 8, y);
 
-    // if non-number, do not draw it
-    if (n == 1994)
-	return 0;
-
-    // draw the new number
-    while (digits--)
-    {
-	x -= fontwidth;
-	screen->DrawPatchClean(num[ n % 10 ], x, y);
-	n /= 10;
-    }
-
-    // draw a minus sign if necessary
-    if (neg)
-	screen->DrawPatchClean(wiminus, x-=8, y);
-
-    return x;
-
+	return x;
 }
 
 #include "hu_stuff.h"
@@ -732,14 +778,14 @@ void WI_drawTime (int t, int x, int y)
     }
 }
 
-void WI_End (void)
+void WI_End()
 {
 	WI_unloadData();
 
-	if(background)
+	if (background_surface)
 	{
-		I_FreeScreen(background);
-		background = NULL;
+		I_FreeSurface(background_surface);
+		background_surface = NULL;
 	}
 }
 
@@ -794,7 +840,7 @@ void WI_drawShowNextLoc (void)
 	int i;
 
 	// draw animated background
-	WI_drawAnimatedBack ();
+	WI_drawAnimatedBack();
 
 	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
@@ -1030,7 +1076,7 @@ void WI_updateNetgameStats()
 
 void WI_drawNetgameStats(void)
 {
-	unsigned int i, x, y;
+	unsigned int x, y;
 	short pwidth = percent->width();
 
 	// draw animated background
@@ -1345,20 +1391,20 @@ void WI_loadData (void)
 	int i, j;
 	char name[9];
 	anim_t *a;
-	patch_t *bg;
 
-	if ((gameinfo.flags & GI_MAPxx) ||
-		((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
-		strcpy (name, "INTERPIC");
+	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
+		strcpy(name, "INTERPIC");
 	else
-		sprintf (name, "WIMAP%d", wbs->epsd);
+		sprintf(name, "WIMAP%d", wbs->epsd);
 
 	// background
-	bg = W_CachePatch (name);
-	background = I_AllocateScreen (bg->width(), bg->height(), 8);
-	background->Lock ();
-	background->DrawPatch (bg, 0, 0);
-	background->Unlock ();
+	const patch_t* bg_patch = W_CachePatch(name);
+	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+	DCanvas* canvas = background_surface->getDefaultCanvas();
+
+	background_surface->lock();
+	canvas->DrawPatch(bg_patch, 0, 0);
+	background_surface->unlock();
 
 	for (i = 0; i < 2; i++)
 	{
@@ -1548,16 +1594,17 @@ void WI_Drawer (void)
 {
 	// If the background screen has been freed, then we really shouldn't
 	// be in here. (But it happens anyway.)
-	if (background)
+	if (background_surface)
 	{
 		switch (state)
 		{
 		case StatCount:
 			if (multiplayer && sv_maxplayers > 1)
 			{
-				if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
-					WI_drawNetgameStats();
-				else
+				// TODO: Fix classic coop scoreboard
+				//if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
+					//WI_drawNetgameStats();
+				//else
 					WI_drawDeathmatchStats();
 			}
 			else
@@ -1593,7 +1640,6 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 	WI_initStats();
 	WI_initNetgameStats();
 
-	V_SetBlend (0,0,0,0);
 	S_StopAllChannels ();
  	SN_StopAllSequences ();
 }

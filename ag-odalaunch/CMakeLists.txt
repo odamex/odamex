@@ -19,12 +19,12 @@ endif()
 
 # AG-Odalaunch target
 if(LibAgar_FOUND)
+  add_executable(ag-odalaunch MACOSX_BUNDLE WIN32
+    ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
+  )
   add_custom_command(
     TARGET ag-odalaunch
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/res
-  )
-  add_executable(ag-odalaunch MACOSX_BUNDLE WIN32
-    ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
   )
   target_link_libraries(ag-odalaunch ${LibAgar_LIBRARIES})
 

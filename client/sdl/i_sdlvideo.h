@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,109 +16,165 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	SDL implementation of the IVideo class.
+//
+// SDL 1.2 implementation of the IWindow class
 //
 //-----------------------------------------------------------------------------
 
 
-#ifndef __SDLVIDEO_H__
-#define __SDLVIDEO_H__
+#ifndef __I_SDLVIDEO_H__
+#define __I_SDLVIDEO_H__
 
 #include "i_sdl.h" 
-#include <list>
-#include "hardware.h"
 #include "i_video.h"
-#include "c_console.h"
 
 
-class SDLDevice : public DCanvasDevice
+// ============================================================================
+//
+// ISDL12VideoCapabilities class interface
+//
+// Defines an interface for querying video capabilities. This includes listing
+// availible video modes and supported operations.
+//
+// ============================================================================
+
+class ISDL12VideoCapabilities : public IVideoCapabilities
 {
 public:
-	virtual ~SDLDevice() { }
+	ISDL12VideoCapabilities();
+	virtual ~ISDL12VideoCapabilities() { }
+
+	virtual const IVideoModeList* getSupportedVideoModes() const
+	{	return &mModeList;	}
+
+	virtual const EDisplayType getDisplayType() const
+	{
+		#ifdef GCONSOLE
+		return DISPLAY_FullscreenOnly;
+		#else
+		return DISPLAY_Both;
+		#endif
+	}
+
+	virtual const IVideoMode* getNativeMode() const
+	{	return &mNativeMode;	}
 
 private:
-	#ifdef SDL20
-	SDL_Window*		window;
-	SDL_Renderer*	renderer;
-	SDL_Texture*	texture;
-	SDL_Surface*	surface;
-	#elif defined SDL12
-	SDL_Surface*	surface;
-	#endif	// SDL12
+	IVideoModeList		mModeList;
+	IVideoMode			mNativeMode;
 };
 
-class SDLVideo : public IVideo
+
+// ============================================================================
+//
+// ISDL12Window class interface
+//
+// ============================================================================
+
+class ISDL12Window : public IWindow
 {
 public:
-	SDLVideo(int parm);
-	virtual ~SDLVideo (void) {};
+	ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
 
-	virtual std::string GetVideoDriverName();
+	virtual ~ISDL12Window();
 
-	virtual bool CanBlit (void) {return false;}
-	virtual EDisplayType GetDisplayType (void) {return DISPLAY_Both;}
+	virtual IWindowSurface* getPrimarySurface()
+	{	return mPrimarySurface;	}
 
-	virtual bool FullscreenChanged (bool fs);
-	virtual void SetWindowedScale (float scale);
-	virtual bool SetOverscan (float scale);
+	virtual const IWindowSurface* getPrimarySurface() const
+	{	return mPrimarySurface;	}
 
-	virtual int GetWidth() const { return screenw; }
-	virtual int GetHeight() const { return screenh; }
-	virtual int GetBitDepth() const { return screenbits; }
+	virtual uint16_t getWidth() const
+	{	return mWidth;	}
 
-	virtual bool SetMode (int width, int height, int bits, bool fs);
-	virtual void SetPalette (DWORD *palette);
+	virtual uint16_t getHeight() const
+	{	return mHeight;	}
 
-	/* 12/3/06: HACK - Add SetOldPalette to accomodate classic redscreen - ML*/
-	virtual void SetOldPalette (byte *doompalette);
+	virtual uint8_t getBitsPerPixel() const
+	{	return mBitsPerPixel;	}
 
-	virtual void UpdateScreen (DCanvas *canvas);
-	virtual void ReadScreen (byte *block);
+	virtual int getBytesPerPixel() const
+	{	return mBitsPerPixel >> 3;	}
 
-	virtual int GetModeCount (void);
-	virtual void StartModeIterator ();
-	virtual bool NextMode (int *width, int *height);
+	virtual const IVideoMode* getVideoMode() const
+	{	return &mVideoMode;	}
 
-	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false);
-	virtual void ReleaseSurface (DCanvas *scrn);
-	virtual void LockSurface (DCanvas *scrn);
-	virtual void UnlockSurface (DCanvas *scrn);
-	virtual bool Blit (DCanvas *src, int sx, int sy, int sw, int sh,
-					   DCanvas *dst, int dx, int dy, int dw, int dh);
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
 
-protected:
+	virtual bool isFullScreen() const
+	{	return mIsFullScreen;	}
 
-   struct vidMode_t
-   {
-		int width, height;
+	virtual bool usingVSync() const
+	{	return mUseVSync;	}
 
-		bool operator<(const vidMode_t& other) const
-		{
-			return (width < other.width || (width == other.width && height < other.height));
-		}
+	virtual void refresh();
 
-		bool operator>(const vidMode_t& other) const
-		{
-			return (width > other.width || (width == other.width && height > other.height));
-		}
+	virtual void lockSurface();
+	virtual void unlockSurface();
 
-		bool operator==(const vidMode_t& other) const
-		{
-			return (width == other.width && height == other.height);
-		}
-	};
+	virtual void setWindowTitle(const std::string& str = "");
+	virtual void setWindowIcon();
 
-	std::vector<vidMode_t> vidModeList;
-	size_t vidModeIterator;
+	virtual std::string getVideoDriverName() const;
 
-	bool infullscreen;
-	int screenw, screenh;
-	int screenbits;
+	virtual void setPalette(const argb_t* palette);
 
-	SDL_Color newPalette[256];
-	SDL_Color palette[256];
-	bool palettechanged;
+private:
+	// disable copy constructor and assignment operator
+	ISDL12Window(const ISDL12Window&);
+	ISDL12Window& operator=(const ISDL12Window&);
+
+	IWindowSurface*		mPrimarySurface;
+
+	uint16_t			mWidth;
+	uint16_t			mHeight;
+	uint8_t				mBitsPerPixel;
+
+	IVideoMode			mVideoMode;
+
+	bool				mIsFullScreen;
+	bool				mUseVSync;
+
+	SDL_Surface*		mSDLSoftwareSurface;
+
+	bool				mNeedPaletteRefresh;
+
+	int16_t				mLocks;
 };
 
-#endif
+// ****************************************************************************
+
+// ============================================================================
+//
+// ISDL12VideoSubsystem class interface
+//
+// Provides intialization and shutdown mechanics for the video subsystem.
+// This is really an abstract factory pattern as it instantiates a family
+// of concrete types.
+//
+// ============================================================================
+
+class ISDL12VideoSubsystem : public IVideoSubsystem
+{
+public:
+	ISDL12VideoSubsystem();
+	virtual ~ISDL12VideoSubsystem();
+
+	virtual const IVideoCapabilities* getVideoCapabilities() const
+	{	return mVideoCapabilities;	}
+
+	virtual IWindow* getWindow()
+	{	return mWindow;	}
+
+	virtual const IWindow* getWindow() const
+	{	return mWindow;	}
+
+private:
+	const IVideoCapabilities*		mVideoCapabilities;
+
+	IWindow*						mWindow;
+};
+
+
+#endif	// __I_SDLVIDEO_H__
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -33,11 +33,10 @@
 // ZONE MEMORY
 // PU - purge tags.
 // Tags < 100 are not overwritten until freed.
+#define PU_FREE                 0       // a free block [ML] 12/4/06: Readded from Chocodoom
 #define PU_STATIC				1		// static entire execution time
 #define PU_SOUND				2		// static while playing
 #define PU_MUSIC				3		// static while playing
-#define PU_DAVE 				4		// anything else Dave wants static
-#define PU_FREE                 5       // a free block [ML] 12/4/06: Readded from Chocodoom
 #define PU_LEVEL				50		// static until level exited
 #define PU_LEVSPEC				51		// a special thinker in a level
 #define PU_LEVACS				52		// [RH] An ACS script in a level
@@ -46,17 +45,18 @@
 #define PU_CACHE				101
 
 
-void	Z_Init (void);
+void	Z_Init(bool use_zone = true);
+void	Z_Close (void);
 void	Z_FreeTags (int lowtag, int hightag);
 void	Z_DumpHeap (int lowtag, int hightag);
-void	Z_FileDumpHeap (FILE *f);
 void	Z_CheckHeap (void);
 size_t 	Z_FreeMemory (void);
 
 // Don't use these, use the macros instead!
 void*   Z_Malloc2 (size_t size, int tag, void *user, const char *file, int line);
 void    Z_Free2 (void *ptr, const char *file, int line);
-void	Z_ChangeTag2 (void *ptr, int tag);
+void	Z_ChangeTag2 (void *ptr, int tag, const char* file, int line);
+void	Z_ChangeOwner2 (void *ptr, void* user, const char* file, int line);
 
 typedef struct memblock_s
 {
@@ -68,21 +68,14 @@ typedef struct memblock_s
 	struct memblock_s*	prev;
 } memblock_t;
 
-inline void Z_ChangeTag2 (const void *ptr, int tag)
+inline void Z_ChangeTag2(const void *ptr, int tag, const char* file, int line)
 {
-	Z_ChangeTag2 (const_cast<void *>(ptr), tag);
+	Z_ChangeTag2(const_cast<void *>(ptr), tag, file, line);
 }
 //
 // This is used to get the local FILE:LINE info from CPP
 // prior to really calling the function in question.
 //
-#define Z_ChangeTag(p,t) \
-{ \
-      if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
-	  I_Error("Z_ChangeTag at " __FILE__ ":%i",__LINE__); \
-	  Z_ChangeTag2(p,t); \
-};
-
 #define Z_ChangeTagSafe(p,t) \
 { \
       if (( (memblock_t *)( (char *)(p) - sizeof(memblock_t)))->tag > t) \
@@ -91,5 +84,7 @@ inline void Z_ChangeTag2 (const void *ptr, int tag)
 
 #define Z_Malloc(s,t,p) Z_Malloc2(s,t,p,__FILE__,__LINE__)
 #define Z_Free(p) Z_Free2(p,__FILE__,__LINE__)
+#define Z_ChangeTag(p,t) Z_ChangeTag2(p,t,__FILE__,__LINE__)
+#define Z_ChangeOwner(p,u) Z_ChangeOwner2(p,u,__FILE__,__LINE__)
 
 #endif // __Z_ZONE_H__

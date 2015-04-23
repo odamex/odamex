@@ -35,10 +35,11 @@
 #include "hu_elements.h"
 #include "p_ctf.h"
 #include "v_text.h"
+#include "i_video.h"
 #include "v_video.h"
 
 size_t P_NumPlayersInGame(void);
-int CL_GetPlayerColor(player_t*);
+argb_t CL_GetPlayerColor(player_t*);
 
 extern NetDemo netdemo;
 extern bool HasBehavior;
@@ -85,7 +86,7 @@ bool inTeamPlayer(player_t* player, const byte team) {
 
 // Returns true if a player is a spectator
 bool spectatingPlayer(player_t* player) {
-	return (player->ingame() && player->spectator == true);
+	return (!player->ingame() || player->spectator == true);
 }
 
 // Returns a sorted player list.  Calculates at most once a gametic.
@@ -231,18 +232,17 @@ std::string Warmup(int& color)
 // Return a string that contains the amount of time left in the map,
 // or a blank string if there is no timer needed.  Can also display
 // warmup information if it exists.
-std::string Timer(int& color) {
+std::string Timer(int& color)
+{
 	color = CR_GREY;
 
-	if (!multiplayer || !(sv_timelimit > 0.0f)) {
+	if (!multiplayer || !(sv_timelimit > 0.0f))
 		return "";
-	}
 
 	int timeleft = level.timeleft;
 
-	if (timeleft < 0) {
+	if (timeleft < 0)
 		timeleft = 0;
-	}
 
 	int hours = timeleft / (TICRATE * 3600);
 
@@ -252,30 +252,27 @@ std::string Timer(int& color) {
 	timeleft -= minutes * TICRATE * 60;
 	int seconds = timeleft / TICRATE;
 
-	if (minutes <= 0) {
+	if (hours == 0 && minutes < 1)
 		color = CR_BRICK;
-	}
 
 	char str[9];
-	if (hours) {
+	if (hours)
 		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
-	} else {
+	else
 		sprintf(str, "%02d:%02d", minutes, seconds);
-	}
 
 	return str;
 }
 
-std::string IntermissionTimer() {
-	if (gamestate != GS_INTERMISSION) {
+std::string IntermissionTimer()
+{
+	if (gamestate != GS_INTERMISSION)
 		return "";
-	}
 
 	int timeleft = level.inttimeleft * TICRATE;
 
-	if (timeleft < 0) {
+	if (timeleft < 0)
 		timeleft = 0;
-	}
 
 	int hours = timeleft / (TICRATE * 3600);
 
@@ -286,11 +283,10 @@ std::string IntermissionTimer() {
 	int seconds = timeleft / TICRATE;
 
 	char str[9];
-	if (hours) {
+	if (hours)
 		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
-	} else {
+	else
 		sprintf(str, "%02d:%02d", minutes, seconds);
-	}
 
 	return str;
 }
@@ -512,11 +508,11 @@ byte CountTeamPlayers(byte team) {
 // Returns the number of spectators on a team
 byte CountSpectators() {
 	byte count = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (size_t i = 0;i < sortedPlayers().size();i++)
+	{
 		player_t* player = sortedPlayers()[i];
-		if (spectatingPlayer(player)) {
+		if (spectatingPlayer(player))
 			count++;
-		}
 	}
 	return count;
 }
@@ -641,26 +637,21 @@ void EAPlayerColors(int x, int y,
                     const float scale,
                     const x_align_t x_align, const y_align_t y_align,
                     const x_align_t x_origin, const y_align_t y_origin,
-                    const short padding, const short limit) {
+                    const short padding, const short limit)
+{
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	{
 		// Make sure we're not overrunning our limit.
-		if (limit != 0 && drawn >= limit) {
+		if (limit != 0 && drawn >= limit)
 			break;
-		}
 
 		player_t* player = sortedPlayers()[i];
-		if (ingamePlayer(player)) {
-			int playercolor = CL_GetPlayerColor(player);
-			int color = BestColor(GetDefaultPalette()->basecolors,
-			                      RPART(playercolor),
-			                      GPART(playercolor),
-			                      BPART(playercolor),
-			                      GetDefaultPalette()->numcolors);
+		if (ingamePlayer(player))
+		{
+			argb_t playercolor = CL_GetPlayerColor(player);
+			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
 
-			if (!screen->is8bit()) color = playercolor;
-
-			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
 			y += h + padding;
 			drawn += 1;
 		}
@@ -674,26 +665,21 @@ void EATeamPlayerColors(int x, int y,
                         const x_align_t x_align, const y_align_t y_align,
                         const x_align_t x_origin, const y_align_t y_origin,
                         const short padding, const short limit,
-                        const byte team) {
+                        const byte team)
+{
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	{
 		// Make sure we're not overrunning our limit.
-		if (limit != 0 && drawn >= limit) {
+		if (limit != 0 && drawn >= limit)
 			break;
-		}
 
 		player_t* player = sortedPlayers()[i];
-		if (inTeamPlayer(player, team)) {
-			int playercolor = CL_GetPlayerColor(player);
-			int color = BestColor(GetDefaultPalette()->basecolors,
-			                      RPART(playercolor),
-			                      GPART(playercolor),
-			                      BPART(playercolor),
-			                      GetDefaultPalette()->numcolors);
+		if (inTeamPlayer(player, team))
+		{
+			argb_t playercolor = CL_GetPlayerColor(player);
+			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
 
-			if (!screen->is8bit()) color = playercolor;
-
-			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, color);
 			y += h + padding;
 			drawn += 1;
 		}

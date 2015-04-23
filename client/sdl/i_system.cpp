@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,10 +28,9 @@
 #include <stdlib.h>
 
 #ifdef OSX
-#include <mach/clock.h>
-#include <mach/mach.h>
-
-#include <Carbon/Carbon.h>
+	#include <mach/clock.h>
+	#include <mach/mach.h>
+	#include <Carbon/Carbon.h>
 #endif
 
 #include "win32inc.h"
@@ -50,16 +49,16 @@
 #endif // WIN32
 
 #ifdef UNIX
-#define HAVE_PWD_H
-// for getuid and geteuid
-#include <unistd.h>
-#include <sys/types.h>
-#include <limits.h>
-#include <time.h>
+	#define HAVE_PWD_H
+	// for getuid and geteuid
+	#include <unistd.h>
+	#include <sys/types.h>
+	#include <limits.h>
+	#include <time.h>
 #endif
 
 #ifdef HAVE_PWD_H
-#include <pwd.h>
+	#include <pwd.h>
 #endif
 
 #include <sstream>
@@ -70,7 +69,6 @@
 
 #include <sys/stat.h>
 
-#include "hardware.h"
 #include "errors.h"
 #include <math.h>
 
@@ -82,6 +80,7 @@
 #include "m_argv.h"
 #include "m_misc.h"
 #include "i_video.h"
+#include "v_video.h"
 #include "i_sound.h"
 
 #include "d_main.h"
@@ -93,21 +92,21 @@
 #include "cl_main.h"
 
 #ifdef _XBOX
-#include "i_xbox.h"
+	#include "i_xbox.h"
 #endif
 
 #ifdef GEKKO
-#include "i_wii.h"
+	#include "i_wii.h"
 #endif
 
 #ifndef GCONSOLE // I will add this back later -- Hyper_Eye
-// For libtextscreen to link properly
-extern "C"
-{
-#include "txt_main.h"
-}
-#define ENDOOM_W 80
-#define ENDOOM_H 25
+	// For libtextscreen to link properly
+	extern "C"
+	{
+	#include "txt_main.h"
+	}
+	#define ENDOOM_W 80
+	#define ENDOOM_H 25
 #endif // _XBOX
 
 EXTERN_CVAR (r_loadicon)
@@ -202,31 +201,10 @@ void *I_ZoneBase (size_t *size)
 	return zone;
 }
 
-void I_BeginRead(void)
+void I_BeginRead()
 {
-	// NOTE(jsd): This is called before V_Palette is set causing crash in 32bpp mode.
-	// [SL] Check that V_Palette has been properly initalized to work around this
-
-	if (r_loadicon && V_Palette.isValid())
-	{
-		patch_t *diskpatch = W_CachePatch("STDISK");
-
-		if (!screen || !diskpatch || in_endoom)
-			return;
-
-		screen->Lock();
-
-		int scale = MIN(CleanXfac, CleanYfac);
-		int w = diskpatch->width() * scale;
-		int h = diskpatch->height() * scale;
-		// offset x and y for the lower right corner of the screen
-		int ofsx = screen->width - w + (scale * diskpatch->leftoffset());
-		int ofsy = screen->height - h + (scale * diskpatch->topoffset());
-
-		screen->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
-
-		screen->Unlock();
-	}
+	if (r_loadicon)
+		I_DrawLoadingIcon();
 }
 
 void I_EndRead(void)
@@ -257,24 +235,42 @@ dtime_t I_GetTime()
 
 #elif defined WIN32 && !defined _XBOX
 	static bool initialized = false;
-	static uint64_t initial_count;
+	static LARGE_INTEGER initial_count;
 	static double nanoseconds_per_count;
+	static LARGE_INTEGER last_count;
 
 	if (!initialized)
 	{
-		QueryPerformanceCounter((LARGE_INTEGER*)&initial_count);
+		LARGE_INTEGER freq;
+		QueryPerformanceFrequency(&freq);
+		nanoseconds_per_count = 1000.0 * 1000.0 * 1000.0 / double(freq.QuadPart);
 
-		uint64_t temp;
-		QueryPerformanceFrequency((LARGE_INTEGER*)&temp);
-		nanoseconds_per_count = 1000.0 * 1000.0 * 1000.0 / double(temp);
+        QueryPerformanceCounter(&initial_count);
+        last_count = initial_count;
 
 		initialized = true;
 	}
 
-	uint64_t current_count;
-	QueryPerformanceCounter((LARGE_INTEGER*)&current_count);
+	LARGE_INTEGER current_count;
+	QueryPerformanceCounter(&current_count);
 
-	return nanoseconds_per_count * (current_count - initial_count);
+	// [SL] ensure current_count is a sane value
+	// AMD dual-core CPUs and buggy BIOSes sometimes cause QPC
+	// to return different values from different CPU cores,
+	// which ruins our timing. We check that the new value is
+	// at least equal to the last value and that the new value
+	// isn't too far past the last value (1 frame at 10fps).
+
+	const int64_t min_count = last_count.QuadPart;
+	const int64_t max_count = last_count.QuadPart +
+			nanoseconds_per_count * I_ConvertTimeFromMs(100);
+
+	if (current_count.QuadPart < min_count || current_count.QuadPart > max_count)
+		current_count = last_count;
+
+	last_count = current_count;
+
+	return nanoseconds_per_count * (current_count.QuadPart - initial_count.QuadPart);
 
 #else
 	// [SL] use SDL_GetTicks, but account for the fact that after
@@ -629,6 +625,9 @@ void I_Endoom(void)
 	int y;
 	int indent;
 
+    if (!r_showendoom || Args.CheckParm ("-novideo"))
+        return;
+
     // Hack to stop crash with disk icon
     in_endoom = true;
 
@@ -638,7 +637,7 @@ void I_Endoom(void)
 
 	TXT_Init();
 
-    I_SetWindowCaption();
+	I_SetWindowCaption(D_GetTitleString());
     I_SetWindowIcon();
 
 	// Write the data to the screen memory
@@ -693,16 +692,6 @@ void STACK_ARGS I_Quit (void)
     CloseNetwork();
 
 	DConsoleAlias::DestroyAll();
-
-	try
-	{
-		if (r_showendoom && !Args.CheckParm ("-novideo"))
-			I_Endoom();
-	}
-	catch (CRecoverableError &error)
-	{
-		// [AM] ENDOOM does not exist, but at this point we don't care.
-	}
 }
 
 
@@ -776,10 +765,10 @@ void I_SetTitleString (const char *title)
 		DoomStartupTitle[i] = title[i] | 0x80;
 }
 
-#ifdef LINUX
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#define X11
+
+#ifdef X11
+	#include <X11/Xlib.h>
+	#include <X11/Xatom.h>
 #endif
 
 //
@@ -788,7 +777,7 @@ void I_SetTitleString (const char *title)
 // by Denis Lukianov - 20 Mar 2006
 // Cross-platform clipboard functionality
 //
-std::string I_GetClipboardText (void)
+std::string I_GetClipboardText()
 {
 #ifdef X11
 	std::string ret;
@@ -796,7 +785,7 @@ std::string I_GetClipboardText (void)
 	Display *dis = XOpenDisplay(NULL);
 	int screen = DefaultScreen(dis);
 
-	if(!dis)
+	if (!dis)
 	{
 		Printf(PRINT_HIGH, "I_GetClipboardText: XOpenDisplay failed");
 		return "";
@@ -804,11 +793,12 @@ std::string I_GetClipboardText (void)
 
 	XLockDisplay(dis);
 
-	Window WindowEvents = XCreateSimpleWindow(dis, RootWindow(dis, screen), 0, 0, 1, 1, 0, BlackPixel(dis, screen), BlackPixel(dis, screen));
+	Window WindowEvents = XCreateSimpleWindow(dis, RootWindow(dis, screen), 0, 0, 1, 1, 0,
+										BlackPixel(dis, screen), BlackPixel(dis, screen));
 
-	if(XGetSelectionOwner(dis, XA_PRIMARY) != None)
+	if (XGetSelectionOwner(dis, XA_PRIMARY) != None)
 	{
-		if(!XConvertSelection(dis, XA_PRIMARY, XA_STRING, XA_PRIMARY, WindowEvents, CurrentTime))
+		if (!XConvertSelection(dis, XA_PRIMARY, XA_STRING, XA_PRIMARY, WindowEvents, CurrentTime))
 		{
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
@@ -834,8 +824,9 @@ std::string I_GetClipboardText (void)
 		u_long len, bytes_left, temp;
 		u_char *data;
 
-		result = XGetWindowProperty(dis, WindowEvents, XA_PRIMARY, 0, 0, False, AnyPropertyType, &type, &format, &len, &bytes_left, &data);
-		if(result != Success)
+		result = XGetWindowProperty(dis, WindowEvents, XA_PRIMARY, 0, 0, False, AnyPropertyType,
+							&type, &format, &len, &bytes_left, &data);
+		if (result != Success)
 		{
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
@@ -844,7 +835,7 @@ std::string I_GetClipboardText (void)
 			return "";
 		}
 
-		if(!bytes_left)
+		if (!bytes_left)
 		{
 			XDestroyWindow(dis, WindowEvents);
 			DPrintf("I_GetClipboardText: Len was: %d", len);
@@ -853,8 +844,9 @@ std::string I_GetClipboardText (void)
 			return "";
 		}
 
-		result = XGetWindowProperty(dis, WindowEvents, XA_PRIMARY, 0, bytes_left, False, AnyPropertyType, &type, &format, &len, &temp, &data);
-		if(result != Success)
+		result = XGetWindowProperty(dis, WindowEvents, XA_PRIMARY, 0, bytes_left, False, AnyPropertyType,
+							&type, &format, &len, &temp, &data);
+		if (result != Success)
 		{
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
@@ -863,7 +855,7 @@ std::string I_GetClipboardText (void)
 			return "";
 		}
 
-		ret = std::string((const char *)data, len);
+		ret = std::string((const char*)data, len);
 		XFree(data);
 	}
 
@@ -916,12 +908,13 @@ std::string I_GetClipboardText (void)
 #endif
 
 #ifdef OSX
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050 
 	ScrapRef scrap;
 	Size size;
 
 	int err = GetCurrentScrap(&scrap);
 
-	if(err)
+	if (err)
 	{
 		Printf(PRINT_HIGH, "GetCurrentScrap error: %d", err);
 		return "";
@@ -929,13 +922,13 @@ std::string I_GetClipboardText (void)
 
 	err = GetScrapFlavorSize(scrap, FOUR_CHAR_CODE('TEXT'), &size);
 
-	if(err)
+	if (err)
 	{
 		Printf(PRINT_HIGH, "GetScrapFlavorSize error: %d", err);
 		return "";
 	}
 
-	char *data = new char[size+1];
+	char* data = new char[size+1];
 
 	err = GetScrapFlavorData(scrap, FOUR_CHAR_CODE('TEXT'), &size, data);
 	data[size] = 0;
@@ -950,10 +943,17 @@ std::string I_GetClipboardText (void)
 
 	std::string ret(data);
 
-	delete[] data;
+	delete [] data;
 
 	return ret;
+
+#elif MAC_OS_X_VERSION_MIN_REQUIRED >= 1050
+
+	// TODO: Not currently supported
+	return "";
+
 #endif
+#endif	// OSX
 
 	return "";
 }
@@ -1094,6 +1094,26 @@ std::string I_ConsoleInput (void)
     return "";
 }
 #endif
+
+
+//
+// I_IsHeadless
+//
+// Returns true if no application window will be created.
+//
+bool I_IsHeadless()
+{
+	static bool headless;
+	static bool initialized = false;
+	if (!initialized)
+	{
+		headless = Args.CheckParm("-novideo") || Args.CheckParm("+demotest");
+		initialized = true;
+	}
+
+	return headless;
+}
+
 
 VERSION_CONTROL (i_system_cpp, "$Id$")
 

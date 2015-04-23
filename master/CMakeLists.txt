@@ -14,3 +14,7 @@ if(WIN32)
 elseif(SOLARIS)
   target_link_libraries(odamast socket nsl)
 endif()
+
+if(UNIX)
+	install( TARGETS odamast DESTINATION ${CMAKE_INSTALL_BINDIR} )
+endif()

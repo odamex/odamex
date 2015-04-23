@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,15 +37,27 @@
 // Calculate # of glyphs in font.
 #define HU_FONTSIZE 	(HU_FONTEND - HU_FONTSTART + 1) 
 
-// Chat routines
-void HU_Init (void);
+void HU_Init();
+void STACK_ARGS HU_Shutdown();
+
+void HU_Ticker();
 BOOL HU_Responder (event_t* ev);
 void HU_Drawer (void);
 
+enum chatmode_t
+{
+	CHAT_INACTIVE,
+	CHAT_NORMAL,
+	CHAT_TEAM
+};
+
+chatmode_t HU_ChatMode();
+void HU_SetChatMode();
+void HU_SetTeamChatMode();
+void HU_UnsetChatMode();
+
 
 void OdamexEffect (int xa, int ya, int xb, int yb);
-
-extern int headsupactive;
 
 // [RH] Draw deathmatch scores
 

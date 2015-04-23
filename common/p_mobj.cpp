@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -2268,7 +2268,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mthing->type == 11 || (!sv_teamspawns && mthing->type >= 5080 && mthing->type <= 5082))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
-		if (deathmatch_p >= &deathmatchstarts[10] && (demoplayback || demorecording) && democlassic)
+		if (deathmatch_p >= &deathmatchstarts[10] && democlassic)
 			return;
 
 		if (deathmatch_p == &deathmatchstarts[MaxDeathmatchStarts])

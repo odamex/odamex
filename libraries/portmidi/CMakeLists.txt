@@ -5,6 +5,8 @@
 cmake_minimum_required(VERSION 2.6)
 
 if(UNIX)
+  set(CMAKE_CACHEFILE_DIR ".")
+
   # allow user to set Release or Debug
   set(CMAKE_BUILD_TYPE Release CACHE STRING
       "Semicolon-separate list of supported configuration types")

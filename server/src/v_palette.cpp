@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,40 +34,55 @@
 #include "g_level.h"
 #include "st_stuff.h"
 
-dyncolormap_t NormalLight;
+// Declared in doomtype.h as part of argb_t
+uint8_t argb_t::a_num, argb_t::r_num, argb_t::g_num, argb_t::b_num;
 
-palette_t DefPal;
+dyncolormap_t NormalLight;
 
 /****************************/
 /* Palette management stuff */
 /****************************/
-palette_t *GetDefaultPalette (void)
+
+palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
+{
+	return 0;
+}
+
+palindex_t V_BestColor(const argb_t *palette_colors, argb_t color)
+{
+	return 0;
+}
+
+
+static palette_t default_palette;
+
+const palette_t* V_GetDefaultPalette()
+{
+	return &default_palette;
+}
+
+const palette_t* V_GetGamePalette()
+{
+	return &default_palette;
+}
+
+void V_InitPalette(const char* lumpname)
 {
 	static bool initialized = false;
+
 	if (!initialized)
 	{
-		const int numcolors = 256;
-		palette_t* palette = &DefPal;
+		// construct a valid palette_t so we don't get crashes
+		memset(default_palette.basecolors, 0, 256 * sizeof(*default_palette.basecolors));
+		memset(default_palette.colors, 0, 256 * sizeof(*default_palette.colors));
 
-		strncpy(palette->name.name, "PLAYPAL", 8);
-		palette->flags = 0;
-		palette->usecount = 1;
-		palette->maps.colormap = NULL;
-		palette->maps.shademap = NULL;
-
-		palette->basecolors = (argb_t *)Malloc(numcolors * 2 * sizeof(argb_t));
-		palette->colors = palette->basecolors + numcolors;
-		palette->numcolors = numcolors;
-		palette->shadeshift = 8;
-
-		memset(palette->basecolors, 0, numcolors * sizeof(*palette->basecolors));
-		memset(palette->colors, 0, numcolors * sizeof(*palette->colors));
+		default_palette.maps.colormap = NULL;
+		default_palette.maps.shademap = NULL;
 
 		initialized = true;
 	}
-
-	return &DefPal;
 }
+
 
 
 translationref_t::translationref_t() : m_table(NULL), m_player_id(-1)
@@ -98,15 +113,15 @@ shaderef_t::shaderef_t(const shaderef_t &other)
 
 shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_colors(colors), m_mapnum(mapnum)
 {
-#if DEBUG
+	#if ODAMEX_DEBUG
 	// NOTE(jsd): Arbitrary value picked here because we don't record the max number of colormaps for dynamic ones... or do we?
 	if (m_mapnum >= 8192)
 	{
 		char tmp[100];
-		sprintf_s(tmp, "32bpp: shaderef_t::shaderef_t() called with mapnum = %d, which looks too large", m_mapnum);
+		sprintf(tmp, "32bpp: shaderef_t::shaderef_t() called with mapnum = %d, which looks too large", m_mapnum);
 		throw CFatalError(tmp);
 	}
-#endif
+	#endif
 
 	if (m_colors != NULL)
 	{
@@ -123,8 +138,7 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_co
 		// Detect if the colormap is dynamic:
 		m_dyncolormap = NULL;
 
-		extern palette_t DefPal;
-		if (m_colors != &(DefPal.maps))
+		if (m_colors != &(V_GetDefaultPalette()->maps))
 		{
 			// Find the dynamic colormap by the `m_colors` pointer:
 			extern dyncolormap_t NormalLight;
@@ -149,90 +163,17 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_co
 	}
 }
 
-/****** Colorspace Conversion Functions ******/
-
-// Code from http://www.cs.rit.edu/~yxv4997/t_convert.html
-
-// r,g,b values are from 0 to 1
-// h = [0,360], s = [0,1], v = [0,1]
-//				if s == 0, then h = -1 (undefined)
-
-// Green Doom guy colors:
-// RGB - 0: {    .46  1 .429 } 7: {    .254 .571 .206 } 15: {    .0317 .0794 .0159 }
-// HSV - 0: { 116.743 .571 1 } 7: { 112.110 .639 .571 } 15: { 105.071  .800 .0794 }
-
-void RGBtoHSV (float r, float g, float b, float *h, float *s, float *v)
-{
-	float min, max, delta, foo;
-
-	if (r == g && g == b) {
-		*h = 0;
-		*s = 0;
-		*v = r;
-		return;
-	}
-
-	foo = r < g ? r : g;
-	min = (foo < b) ? foo : b;
-	foo = r > g ? r : g;
-	max = (foo > b) ? foo : b;
-
-	*v = max;									// v
-
-	delta = max - min;
-
-	*s = delta / max;							// s
-
-	if (r == max)
-		*h = (g - b) / delta;					// between yellow & magenta
-	else if (g == max)
-		*h = 2 + (b - r) / delta;				// between cyan & yellow
-	else
-		*h = 4 + (r - g) / delta;				// between magenta & cyan
-
-	*h *= 60;									// degrees
-	if (*h < 0)
-		*h += 360;
-}
-
-void HSVtoRGB (float *r, float *g, float *b, float h, float s, float v)
-{
-	int i;
-	float f, p, q, t;
-
-	if (s == 0) {
-		// achromatic (grey)
-		*r = *g = *b = v;
-		return;
-	}
-
-	h /= 60;									// sector 0 to 5
-	i = (int)floor (h);
-	f = h - i;									// factorial part of h
-	p = v * (1 - s);
-	q = v * (1 - s * f);
-	t = v * (1 - s * (1 - f));
-
-	switch (i) {
-		case 0:		*r = v; *g = t; *b = p; break;
-		case 1:		*r = q; *g = v; *b = p; break;
-		case 2:		*r = p; *g = v; *b = t; break;
-		case 3:		*r = p; *g = q; *b = v; break;
-		case 4:		*r = t; *g = p; *b = v; break;
-		default:	*r = v; *g = p; *b = q; break;
-	}
-}
 
 /****** Colored Lighting Stuffs (Sorry, 8-bit only) ******/
 
-void BuildDefaultShademap (palette_t *pal, shademap_t &maps)
+void BuildDefaultShademap(const palette_t* pal, shademap_t &maps)
 {
 }
 
 dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 {
-	unsigned int color = MAKERGB (lr, lg, lb);
-	unsigned int fade = MAKERGB (fr, fg, fb);
+	argb_t color(lr, lg, lb);
+	argb_t fade(fr, fg, fb);
 	dyncolormap_t *colormap = &NormalLight;
 
 	// Bah! Simple linear search because I want to get this done.
@@ -262,6 +203,7 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 
 	return colormap;
 }
+
 
 VERSION_CONTROL (v_palette_cpp, "$Id$")
 

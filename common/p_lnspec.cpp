@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1416,17 +1416,13 @@ FUNC(LS_Sector_SetColor)
 
 	if (clientside)
 	{
-        while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0)
-        {
-            sectors[secnum].floorcolormap = GetSpecialLights (arg1, arg2, arg3,
-                RPART(sectors[secnum].floorcolormap->fade),
-                GPART(sectors[secnum].floorcolormap->fade),
-                BPART(sectors[secnum].floorcolormap->fade));
-            sectors[secnum].ceilingcolormap = GetSpecialLights (arg1, arg2, arg3,
-                RPART(sectors[secnum].ceilingcolormap->fade),
-                GPART(sectors[secnum].ceilingcolormap->fade),
-                BPART(sectors[secnum].ceilingcolormap->fade));
-        }
+		while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
+		{
+			sectors[secnum].colormap = GetSpecialLights(arg1, arg2, arg3,
+					sectors[secnum].colormap->fade.getr(),
+					sectors[secnum].colormap->fade.getg(),
+					sectors[secnum].colormap->fade.getb());
+		}
 	}
 	return true;
 }
@@ -1438,19 +1434,14 @@ FUNC(LS_Sector_SetFade)
 
 	if (clientside)
 	{
-        while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0)
-        {
-            sectors[secnum].floorcolormap = GetSpecialLights (
-                RPART(sectors[secnum].floorcolormap->color),
-                GPART(sectors[secnum].floorcolormap->color),
-                BPART(sectors[secnum].floorcolormap->color),
-                arg1, arg2, arg3);
-            sectors[secnum].ceilingcolormap = GetSpecialLights (
-                RPART(sectors[secnum].ceilingcolormap->color),
-                GPART(sectors[secnum].ceilingcolormap->color),
-                BPART(sectors[secnum].ceilingcolormap->color),
-                arg1, arg2, arg3);
-        }
+		while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
+		{
+			sectors[secnum].colormap = GetSpecialLights(
+					sectors[secnum].colormap->color.getr(),
+					sectors[secnum].colormap->color.getg(),
+					sectors[secnum].colormap->color.getb(),
+					arg1, arg2, arg3);
+		}
 	}
 	return true;
 }

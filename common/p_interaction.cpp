@@ -4,7 +4,7 @@
 // $Id: p_interaction.cpp 1920 2010-09-16 20:49:17Z ladna $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1319,15 +1319,21 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 // [Toke] This is no longer needed client-side
 void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
+    unsigned	ang;
+	int 		saved;
+	player_t*   splayer; // shorthand for source->player
+	player_t*   tplayer; // shorthand for target->player
+	fixed_t 	thrust;
+
 	if (!serverside)
     {
 		return;
     }
 
-	unsigned	ang;
-	int 		saved;
-	player_t*	player;
-	fixed_t 	thrust;
+    if (source)
+        splayer = source->player;
+
+    tplayer = target->player;
 
 	if (!(target->flags & MF_SHOOTABLE))
     {
@@ -1335,7 +1341,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
     }
 
 	// GhostlyDeath -- Spectators can't get hurt!
-	if (target->player && target->player->spectator)
+	if (tplayer && tplayer->spectator)
     {
 		return;
     }
@@ -1352,26 +1358,22 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		target->momx = target->momy = target->momz = 0;
 	}
 
-	player = target->player;
-
-	if (player && sv_skill == sk_baby)
+	if (tplayer && sv_skill == sk_baby)
     {
 		damage >>= 1;	// take half damage in trainer mode
     }
 
 	// [AM] Weapon and monster damage scaling.
-	if (source && source->player && target)
+	if (source && splayer && target)
 		damage *= sv_weapondamage;
-	else if (source && target && target->player)
+	else if (source && target && tplayer)
 		damage *= sv_monsterdamage;
 
 	// Some close combat weapons should not
 	// inflict thrust and push the victim out of reach,
 	// thus kick away unless using the chainsaw.
 	if (inflictor && !(target->flags & MF_NOCLIP) &&
-        (!source ||
-         !source->player ||
-         source->player->readyweapon != wp_chainsaw))
+        (!source || !splayer || splayer->readyweapon != wp_chainsaw))
 	{
 		ang = P_PointToAngle(inflictor->x, inflictor->y, target->x, target->y);
 
@@ -1393,7 +1395,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	}
 
 	// player specific
-	if (player)
+	if (tplayer)
 	{
 		// end of game hell hack
 		if (sv_gametype == GM_COOP || sv_allowexit)
@@ -1408,27 +1410,27 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		// Below certain threshold,
 		// ignore damage in GOD mode, or with INVUL power.
 		if (damage < 1000 &&
-			((player->cheats & CF_GODMODE) ||
-             player->powers[pw_invulnerability]))
+			((tplayer->cheats & CF_GODMODE) ||
+             tplayer->powers[pw_invulnerability]))
 		{
 			return;
 		}
 
 		// [AM] No damage with sv_friendlyfire (was armor-only)
-		if (!sv_friendlyfire && source && source->player && target != source &&
+		if (!sv_friendlyfire && source && splayer && target != source &&
 			 mod != MOD_TELEFRAG)
 		{
 			if (sv_gametype == GM_COOP ||
 			  ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
-				target->player->userinfo.team == source->player->userinfo.team))
+				tplayer->userinfo.team == splayer->userinfo.team))
 			{
 				damage = 0;
 			}
 		}
 
-		if (player->armortype && !(flags & DMG_NO_ARMOR))
+		if (tplayer->armortype && !(flags & DMG_NO_ARMOR))
 		{
-			if (player->armortype == deh.GreenAC)
+			if (tplayer->armortype == deh.GreenAC)
             {
 				saved = damage / 3;
             }
@@ -1437,31 +1439,31 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 				saved = damage / 2;
             }
 
-			if (player->armorpoints <= saved)
+			if (tplayer->armorpoints <= saved)
 			{
 				// armor is used up
-				saved = player->armorpoints;
-				player->armortype = 0;
+				saved = tplayer->armorpoints;
+				tplayer->armortype = 0;
 			}
-			player->armorpoints -= saved;
+			tplayer->armorpoints -= saved;
 			damage -= saved;
 		}
 
-		player->health -= damage;		// mirror mobj health here for Dave
+		tplayer->health -= damage;		// mirror mobj health here for Dave
 
-		if (player->health <= 0)
+		if (tplayer->health <= 0)
         {
-			player->health = 0;
+			tplayer->health = 0;
         }
 
-		player->attacker = source ? source->ptr() : AActor::AActorPtr();
-		player->damagecount += damage;	// add damage after armor / invuln
+		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
+		tplayer->damagecount += damage;	// add damage after armor / invuln
 
-		if (player->damagecount > 100)
+		if (tplayer->damagecount > 100)
         {
-			player->damagecount = 100;	// teleport stomp does 10k points...
+			tplayer->damagecount = 100;	// teleport stomp does 10k points...
         }
-		SV_SendDamagePlayer(player, target->health - damage);
+		SV_SendDamagePlayer(tplayer, target->health - damage);
 	}
 
 	// do the damage
@@ -1480,13 +1482,13 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	{
 		int pain = P_Random();
 
-		if (!player)
+		if (!tplayer)
 		{
 			SV_SendDamageMobj(target, pain);
 		}
 		if (pain < target->info->painchance &&
 		    !(target->flags & MF_SKULLFLY) &&
-			!(player && !damage))
+			!(tplayer && !damage))
 		{
 			target->flags |= MF_JUSTHIT;	// fight back!
 			P_SetMobjState(target, target->info->painstate);

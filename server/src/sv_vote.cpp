@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2011 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -408,7 +408,7 @@ public:
 	}
 	bool exec(void)
 	{
-		G_ExitLevel(0, 1);
+		G_ChangeMap();
 		return true;
 	}
 };

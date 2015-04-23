@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,8 +16,8 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Custom Servers dialog
-//  AUTHOR:	Russell Rice, John D Corrado
+//  Custom Servers dialog
+//  AUTHOR: Russell Rice, John D Corrado
 //
 //-----------------------------------------------------------------------------
 
@@ -45,71 +45,71 @@
 
 typedef struct
 {
-    bool     Enabled;
-    wxString Address;
-    wxUint16 Port;
+	bool     Enabled;
+	wxString Address;
+	wxUint16 Port;
 } CS_Subst_t;
 
 typedef struct
 {
-    wxString Address;
-    wxUint16 Port;
-    
-    CS_Subst_t Subst;
+	wxString Address;
+	wxUint16 Port;
+
+	CS_Subst_t Subst;
 } CustomServer_t;
 
 class dlgServers: public wxDialog
 {
-	public:
+public:
 
-		dlgServers(odalpapi::MasterServer *ms, wxWindow* parent, wxWindowID id = -1);
-		virtual ~dlgServers();
+	dlgServers(odalpapi::MasterServer* ms, wxWindow* parent, wxWindowID id = -1);
+	virtual ~dlgServers();
 
-        CustomServer_t GetCustomServer(wxUint32);
+	CustomServer_t GetCustomServer(wxUint32);
 
-	protected:
+protected:
 
-        void OnServerList(wxCommandEvent &event);
-        void OnSubstChecked(wxCommandEvent &event);
+	void OnServerList(wxCommandEvent& event);
+	void OnSubstChecked(wxCommandEvent& event);
 
-        void OnButtonOK(wxCommandEvent &event);
-        void OnButtonClose(wxCommandEvent &event);
-        
-        void OnButtonAddServer(wxCommandEvent &event);
-        void OnButtonReplaceServer(wxCommandEvent &event);
-        void OnButtonDeleteServer(wxCommandEvent &event);
-        
-        void OnButtonMoveServerUp(wxCommandEvent &event);
-        void OnButtonMoveServerDown(wxCommandEvent &event);
+	void OnButtonOK(wxCommandEvent& event);
+	void OnButtonClose(wxCommandEvent& event);
 
-        void ChkSetValueEx(wxInt32 XrcId, wxCheckBox *CheckBox, bool checked);
+	void OnButtonAddServer(wxCommandEvent& event);
+	void OnButtonReplaceServer(wxCommandEvent& event);
+	void OnButtonDeleteServer(wxCommandEvent& event);
 
-        wxFileConfig ConfigInfo;
+	void OnButtonMoveServerUp(wxCommandEvent& event);
+	void OnButtonMoveServerDown(wxCommandEvent& event);
 
-        wxListBox *SERVER_LIST;
-        wxTextCtrl *TEXT_SUBSTITUTE;
-        wxCheckBox *CHECK_SUBSTITUTE;
-                
-		wxButton *ADD_SERVER_BUTTON;
-		wxButton *DEL_SERVER_BUTTON;
-        wxButton *UP_SERVER_BUTTON;
-        wxButton *DOWN_SERVER_BUTTON;
+	void ChkSetValueEx(wxInt32 XrcId, wxCheckBox* CheckBox, bool checked);
 
-		wxButton *CLOSE_BUTTON;
-		wxButton *OK_BUTTON;
+	wxFileConfig ConfigInfo;
 
-        void SaveSettings();   
-        void LoadSettings();
-        
-        void LoadServersIn();
+	wxListBox* SERVER_LIST;
+	wxTextCtrl* TEXT_SUBSTITUTE;
+	wxCheckBox* CHECK_SUBSTITUTE;
 
-        bool UserChangedSetting;
+	wxButton* ADD_SERVER_BUTTON;
+	wxButton* DEL_SERVER_BUTTON;
+	wxButton* UP_SERVER_BUTTON;
+	wxButton* DOWN_SERVER_BUTTON;
 
-        odalpapi::MasterServer *MServer;
+	wxButton* CLOSE_BUTTON;
+	wxButton* OK_BUTTON;
 
-	private:
+	void SaveSettings();
+	void LoadSettings();
 
-		DECLARE_EVENT_TABLE()
+	void LoadServersIn();
+
+	bool UserChangedSetting;
+
+	odalpapi::MasterServer* MServer;
+
+private:
+
+	DECLARE_EVENT_TABLE()
 };
 
 #endif

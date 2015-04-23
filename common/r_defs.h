@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -205,7 +205,7 @@ struct sector_s
 	// killough 4/11/98: support for lightlevels coming from another sector
 	struct sector_s *floorlightsec, *ceilinglightsec;
 
-	unsigned int bottommap, midmap, topmap; // killough 4/4/98: dynamic colormaps
+	argb_t bottommap, midmap, topmap; // killough 4/4/98: dynamic colormaps
 											// [RH] these can also be blend values if
 											//		the alpha mask is non-zero
 
@@ -219,8 +219,7 @@ struct sector_s
 	float gravity;		// [RH] Sector gravity (1.0 is normal)
 	short damage;		// [RH] Damage to do while standing on floor
 	short mod;			// [RH] Means-of-death for applied damage
-	struct dyncolormap_s *floorcolormap;	// [RH] Per-sector colormap
-	struct dyncolormap_s *ceilingcolormap;
+	struct dyncolormap_s *colormap;	// [RH] Per-sector colormap
 
 	bool alwaysfake;	// [RH] Always apply heightsec modifications?
 	byte waterzone;		// [RH] Sector is underwater?

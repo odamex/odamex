@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -58,9 +58,6 @@ void NetGraph::setInterpolation(int val)
 {
 	mInterpolation = val;
 }
-
-extern "C" byte **ylookup;
-extern "C" int *columnofs;
 
 static void NetGraphDrawBar(int startx, int starty, int width, int height, int color)
 {

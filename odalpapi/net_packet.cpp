@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -99,17 +99,16 @@ ok:
 
 /*
    Read a packet received from a master server
-
-   If this already contains server addresses
-   it will be freed and reinitialized (horrible I know)
    */
 int32_t MasterServer::Parse()
 {
-
-	// begin reading
-
+    ostringstream ipfmt;
+    addr_t address = { "", 0, false };
 	uint32_t temp_response;
+	int16_t server_count;
+    uint8_t ip1, ip2, ip3, ip4;
 
+	// Make sure we have a valid response from the master server
 	Socket->Read32(temp_response);
 
 	if(temp_response != response)
@@ -119,8 +118,7 @@ int32_t MasterServer::Parse()
 		return 0;
 	}
 
-	int16_t server_count;
-
+	// Get the total amount of servers that this master server has registered
 	Socket->Read16(server_count);
 
 	if(!server_count)
@@ -130,44 +128,30 @@ int32_t MasterServer::Parse()
 		return 0;
 	}
 
-	// Add on to any servers already in the list
-	if(server_count)
-		for(int16_t i = 0; i < server_count; i++)
-		{
-			addr_t address;
-			uint8_t ip1, ip2, ip3, ip4;
+	// Begin processing the list of server addresses that we have received
+	for(int16_t i = 0; i < server_count; i++)
+	{
+        // Get the IP address and port number from the receive buffer
+		Socket->Read8(ip1);
+		Socket->Read8(ip2);
+		Socket->Read8(ip3);
+		Socket->Read8(ip4);
+		Socket->Read16(address.port);
 
-			Socket->Read8(ip1);
-			Socket->Read8(ip2);
-			Socket->Read8(ip3);
-			Socket->Read8(ip4);
+		// Format the IP address into dot notation and copy it into the address
+		// structure
+		ipfmt << (int)ip1 << "." << (int)ip2 << "." << (int)ip3 << "." << (int)ip4;
+		address.ip = ipfmt.str();
 
-			ostringstream stream;
+		// Finally add the server address to the list and clear out the string 
+		// stream object for further use in the next iteration
+        AddServer(address);
 
-			stream << (int)ip1 << "." << (int)ip2 << "." << (int)ip3 << "." << (int)ip4;
-			address.ip = stream.str();
+		ipfmt.str("");
+		ipfmt.clear();
+	}
 
-			Socket->Read16(address.port);
-
-			address.custom = false;
-
-			size_t j = 0;
-
-			// Don't add the same address more than once.
-			for(j = 0; j < addresses.size(); ++j)
-			{
-				if(addresses[j].ip == address.ip &&
-				        addresses[j].port == address.port)
-				{
-					break;
-				}
-			}
-
-			// didn't find it, so add it
-			if(j == addresses.size())
-				addresses.push_back(address);
-		}
-
+	// Check previous reading operations that may have failed
 	if(Socket->BadRead())
 	{
 		Socket->ClearBuffer();
@@ -219,6 +203,7 @@ void Server::ResetData()
 	Info.PasswordHash = "";
 	Info.CurrentMap = "";
 	Info.TimeLeft = 0;
+	Info.TimeLimit = 0;
 
 	Ping = 0;
 }
@@ -328,6 +313,11 @@ bool Server::ReadCvars()
 
 			continue;
 		}
+		else if(Cvar.Name == "sv_timelimit")
+		{
+			// Add this to the cvar list as well
+			Info.TimeLimit = Cvar.ui16;
+		}
 
 		Info.Cvars.push_back(Cvar);
 	}
@@ -358,7 +348,15 @@ void Server::ReadInformation()
 	Socket->ReadHexString(Info.PasswordHash);
 
 	Socket->ReadString(Info.CurrentMap);
-	Socket->Read16(Info.TimeLeft);
+
+	// TODO: Remove guard for next release and update protocol version
+	QRYNEWINFO(6)
+	{
+		if(Info.TimeLimit)
+			Socket->Read16(Info.TimeLeft);
+	}
+	else
+		Socket->Read16(Info.TimeLeft);
 
 	// Teams
 	if(Info.GameType == GT_TeamDeathmatch ||
@@ -451,7 +449,7 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 	// It isn't a response
 	if(TagQRId != 2)
 	{
-		//wxLogDebug(wxT("Query/Response Id is not valid"));
+		//wxLogDebug("Query/Response Id is not valid"));
 
 		return 0;
 	}
@@ -461,7 +459,7 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 	// Enquirer
 	case 1:
 	{
-		//wxLogDebug(wxT("Application is Enquirer"));
+		//wxLogDebug("Application is Enquirer"));
 
 		return 0;
 	}
@@ -470,7 +468,7 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 	// Client
 	case 2:
 	{
-		//wxLogDebug(wxT("Application is Client"));
+		//wxLogDebug("Application is Client"));
 
 		return 0;
 	}
@@ -479,14 +477,14 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 	// Server
 	case 3:
 	{
-		//wxLogDebug(wxT("Application is Server"));
+		//wxLogDebug("Application is Server"));
 	}
 	break;
 
 	// Master Server
 	case 4:
 	{
-		//wxLogDebug(wxT("Application is Master Server"));
+		//wxLogDebug("Application is Master Server"));
 
 		return 0;
 	}
@@ -495,7 +493,7 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 	// Unknown
 	default:
 	{
-		//wxLogDebug(wxT("Application is Unknown"));
+		//wxLogDebug("Application is Unknown"));
 
 		return 0;
 	}
@@ -673,25 +671,10 @@ void MasterServer::QueryBC(const uint32_t& Timeout)
 	while(BCSocket.GetData(Timeout) > 0)
 	{
 		addr_t address = { "", 0, false};
-		size_t j = 0;
-
-		address.custom = false;
 
 		BCSocket.GetRemoteAddress(address.ip, address.port);
 
-		// Don't add the same address more than once.
-		for(; j < addresses.size(); ++j)
-		{
-			if(addresses[j].ip == address.ip &&
-			        addresses[j].port == address.port)
-			{
-				break;
-			}
-		}
-
-		// didn't find it, so add it
-		if(j == addresses.size())
-			addresses.push_back(address);
+		AddServer(address);
 	}
 }
 

@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,7 +37,7 @@
 #include "version.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
-#include "c_level.h"
+#include "g_level.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -46,7 +46,7 @@ extern std::string server_host;
 extern std::string digest;
 extern std::vector<std::string> wadfiles, wadhashes;
 
-int CL_GetPlayerColor(player_t *player);
+argb_t CL_GetPlayerColor(player_t*);
 
 
 NetDemo::NetDemo() :
@@ -1135,7 +1135,10 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteString	(netbuffer, consoleplayer().userinfo.netname.c_str());
 	MSG_WriteByte	(netbuffer, consoleplayer().userinfo.team);
 	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.gender);
-	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.color);
+
+	for (int i = 3; i >= 0; i--)
+		MSG_WriteByte(netbuffer, consoleplayer().userinfo.color[i]);
+
 	MSG_WriteString	(netbuffer, "");	// [SL] place holder for deprecated skins
 	MSG_WriteShort	(netbuffer, consoleplayer().GameTime);
 	
@@ -1638,10 +1641,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 
 	// restore player colors
 	for (Players::iterator it = players.begin();it != players.end();++it)
-	{
-		int color = CL_GetPlayerColor(&*it);
-		R_BuildPlayerTranslation(it->id, color);
-	}
+		R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it));
 
 	R_CopyTranslationRGB (0, consoleplayer_id);
 

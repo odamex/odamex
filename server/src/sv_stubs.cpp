@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,25 +28,14 @@
 #include "v_palette.h"
 #include "v_video.h"
 
-IMPLEMENT_CLASS (DCanvas, DObject)
-DCanvas _screen;
-DCanvas* screen = &_screen;
-
-float BaseBlendA;
-bool r_underwater;
-
+void R_ExitLevel() {}
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {} 
 void D_DoServerInfoChange (byte **stream) {} 
 void D_WriteUserInfoStrings (int i, byte **stream, bool compact) {} 
 void D_ReadUserInfoStrings (int i, byte **stream, bool update) {}
 
-std::string V_GetColorStringByName (const char *name) 
-{ 
-    return ""; 
-}
-
-int V_GetColorFromString (const DWORD *palette, const char *colorstring) 
+argb_t V_GetColorFromString(const std::string& str)
 {
     return 0;
 }
@@ -58,9 +47,9 @@ void AM_Stop(void) {}
 
 void RefreshPalettes (void) {}
 
-CVAR_FUNC_IMPL (sv_allowwidescreen)
-{
-}
+void V_RefreshColormaps() {}
+
+CVAR_FUNC_IMPL (sv_allowwidescreen) {}
 
 VERSION_CONTROL (sv_stubs_cpp, "$Id: sv_stubs.cpp $")
 

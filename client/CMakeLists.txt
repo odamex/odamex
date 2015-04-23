@@ -1,14 +1,25 @@
+# use unquoted #defines
+if(COMMAND cmake_policy)
+  cmake_policy(SET CMP0005 NEW)
+endif(COMMAND cmake_policy)
+
 # Client flags
 if(NOT MSVC)
-	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-		if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
-			set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
-		else(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
-			if(APPLE)
-				set(CMAKE_CXX_FLAGS_RELEASE "-faltivec")
-			endif()
-		endif()
-	endif()
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
+      if(target_arch STREQUAL "i386" OR target_arch STREQUAL "amd64")        
+        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+      else()
+        set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+      endif()
+    else(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
+      if(APPLE)
+        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -faltivec")
+      endif()
+    endif()
+  endif()
+else()
+  set(CMAKE_CXX_FLAGS_RELEASE "/Ox /Oi /arch:SSE2") 
 endif()
 
 
@@ -81,8 +92,15 @@ else()
   endif()
 endif()
 
+# X11 configuration
+if(UNIX AND NOT APPLE)
+  if(X11_FOUND)
+    include_directories(${X11_INCLUDE_DIRS})
+  endif()
+endif()
+
 # zlib configuration
-find_package(ZLIB QUIET)
+find_package(ZLIB)
 if(NOT ZLIB_FOUND)
   set(USE_INTREE_ZLIB)
   set(ZLIB_LIBRARY "z")
@@ -100,7 +118,7 @@ endif()
 include_directories(${ZLIB_INCLUDE_DIRS})
 
 # libpng configuration
-find_package(PNG QUIET)
+find_package(PNG)
 if(NOT PNG_FOUND)
   set(USE_INTREE_LIBPNG)
   set(PNG_LIBRARY "png")
@@ -120,17 +138,55 @@ include_directories(${PNG_INCLUDE_DIRS})
 add_definitions(-DUSE_PNG)
 
 # PortMidi configuration
-if(USE_INTREE_PORTMIDI)
-  include_directories(../libraries/portmidi/pm_common/ ../libraries/portmidi/porttime/)
-  add_definitions(-DPORTMIDI)
-else()
-  find_package(PortMidi QUIET)
-  if(PORTMIDI_FOUND)
-    include_directories(${PORTMIDI_INCLUDE_DIR})
-    add_definitions(-DPORTMIDI)
-  else()
-    message(WARNING "PortMidi not found, client will be built without PortMidi support.")
+
+# PortMidi
+if(ENABLE_PORTMIDI)
+  find_package(PortMidi)
+  if(NOT PORTMIDI_FOUND)
+    # build the PortMidi library
+    set(PORTMIDI_LIBRARY "portmidi")
+    set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
+    set(PORTMIDI_DIR ../libraries/portmidi)
+    set(PORTMIDI_INCLUDE_DIR ${PORTMIDI_DIR}/pm_common/ ${PORTMIDI_DIR}/porttime/)  
+
+    if(APPLE)
+      find_library(COREFOUNDATION_LIBRARY CoreFoundation)
+      find_library(COREAUDIO_LIB CoreAudio)
+      find_library(COREMIDI_LIB CoreMIDI)
+      find_library(CORESERVICES_LIB CoreServices)
+
+      set(PM_NEEDED_LIBS ${COREAUDIO_LIB} ${COREFOUNDATION_LIB} ${COREMIDI_LIB} ${CORESERVICES_LIB} CACHE INTERNAL "")
+      file(GLOB PORTMIDI_PLATFORM_HEADERS ${PORTMIDI_DIR}/pm_mac/*.h)
+      file(GLOB PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/pm_mac/*.c)
+      list(APPEND PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/porttime/ptmacosx_mach.c)
+    elseif(WIN32)
+      set(PM_NEEDED_LIBS winmm.lib)
+      file(GLOB PORTMIDI_PLATFORM_HEADERS ${PORTMIDI_DIR}/pm_win/*.h)
+      file(GLOB PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/pm_win/*.c)
+      list(APPEND PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/porttime/ptwinmm.c)
+    elseif(UNIX)
+      set(LINUX_FLAGS "-DPMALSA")
+      set(PM_NEEDED_LIBS pthread asound)
+      file(GLOB PORTMIDI_PLATFORM_HEADERS ${PORTMIDI_DIR}/pm_linux/*.h)
+      file(GLOB PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/pm_linux/*.c)
+      list(APPEND PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/porttime/ptlinux.c)
+    endif()
+
+    file(GLOB PORTMIDI_HEADERS ${PORTMIDI_DIR}/pm_common/*.h)
+    list(APPEND PORTMIDI_HEADERS ${PORTMIDI_DIR}/porttime/porttime.h)
+    list(APPEND PORTMIDI_HEADERS ${PORTMIDI_PLATFORM_HEADERS})
+
+    file(GLOB PORTMIDI_SOURCES ${PORTMIDI_DIR}/pm_common/*.c)
+    list(APPEND PORTMIDI_SOURCES ${PORTMIDI_DIR}/porttime/porttime.c)
+    list(APPEND PORTMIDI_SOURCES ${PORTMIDI_PLATFORM_SOURCES})
+
+    add_library(${PORTMIDI_LIBRARY} STATIC ${PORTMIDI_SOURCES} ${PORTMIDI_HEADERS})
+    target_link_libraries(${PORTMIDI_LIBRARY} ${PM_NEEDED_LIBS})
+    message(STATUS "portmidi will be built and staticaly linked when compiling the client application.")
   endif()
+
+  add_definitions(-DPORTMIDI)
+  include_directories(${PORTMIDI_INCLUDE_DIR})
 endif()
 
 # Find Mac frameworks
@@ -144,7 +200,7 @@ endif()
 
 # Set up FHS installation path
 if(NOT APPLE AND NOT WIN32)
-  add_definitions("-DINSTALL_PREFIX=\"${CMAKE_INSTALL_PREFIX}\"")
+  add_definitions(-DINSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
 endif()
 
 # Client target
@@ -159,10 +215,8 @@ if(SDL_VERSION)
   target_link_libraries(odamex ${ZLIB_LIBRARY})
   target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY})
 
-  if(USE_INTREE_PORTMIDI)
-    target_link_libraries(odamex portmidi-static)
-  elseif(PORTMIDI_FOUND)
-    target_link_libraries(odamex ${PORTMIDI_LIBRARIES})
+  if(ENABLE_PORTMIDI)
+    target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
 
   if(WIN32)
@@ -175,6 +229,9 @@ if(SDL_VERSION)
 
   if(UNIX AND NOT APPLE)
     target_link_libraries(odamex rt)
+    if(X11_FOUND)
+      target_link_libraries(odamex X11)
+    endif()
   endif()
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
@@ -240,7 +297,7 @@ if(SDL_VERSION)
       COMPONENT client)
   else()
     install(TARGETS odamex
-      RUNTIME DESTINATION bin
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       COMPONENT client)
   endif()
 endif()

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,6 +51,7 @@ void I_EndRead (void);
 
 // Called by DoomMain.
 void I_Init (void);
+void I_Endoom(void);
 std::string I_GetCWD();
 std::string I_GetBinaryDir();
 std::string I_GetUserFileName (const char *file);
@@ -124,11 +125,8 @@ void I_SetTitleString (const char *title);
 
 std::string I_ConsoleInput (void);
 
-// In i_input.c. Used to release control of the
-// mouse to the user when the game is paused in
-// windowed modes.
-void I_PauseMouse (void);
-void I_ResumeMouse (void);
+// Returns true if there will be no application window
+bool I_IsHeadless();
 
 // [RH] Returns millisecond-accurate time
 dtime_t I_MSTime (void);

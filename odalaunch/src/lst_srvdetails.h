@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   List control for handling extra server details 
+//   List control for handling extra server details
 //
 //-----------------------------------------------------------------------------
 
@@ -29,30 +29,32 @@
 
 class LstOdaSrvDetails : public wxListCtrl
 {
-    public:
-        LstOdaSrvDetails();
-        virtual ~LstOdaSrvDetails() { };
-        
-        void LoadDetailsFromServer(odalpapi::Server &);
-        
-        //wxEvent *Clone(void);
-    protected:
-        void ResizeNameValueColumns();
+public:
+	LstOdaSrvDetails();
+	virtual ~LstOdaSrvDetails() { };
 
-        void InsertLine(const wxString &Name, const wxString &Value);
-        void InsertHeader(const wxString &Name, 
-                          wxColor NameColor = wxNullColour,
-                          wxColor NameBGColor = wxNullColour);
-        
-        wxColour BGItemAlternator;
-        
-        wxColour ItemShade;
-        wxColour BgColor;
-        
-        wxColour Header;
-        wxColour HeaderText;
-        
-        DECLARE_DYNAMIC_CLASS(LstOdaSrvDetails)
+	void LoadDetailsFromServer(const odalpapi::Server&);
+
+	//wxEvent *Clone(void);
+protected:
+	void ResizeNameValueColumns();
+
+	void InsertLine(const wxString& Name, const wxString& Value);
+	void InsertHeader(const wxString& Name,
+	                  wxColor NameColor = wxNullColour,
+	                  wxColor NameBGColor = wxNullColour);
+
+	void ToggleGameStatusSection(const odalpapi::Server&);
+
+	wxColour BGItemAlternator;
+
+	wxColour ItemShade;
+	wxColour BgColor;
+
+	wxColour Header;
+	wxColour HeaderText;
+
+	DECLARE_DYNAMIC_CLASS(LstOdaSrvDetails)
 };
 
 #endif // __LST_SRVDETAILS_H__

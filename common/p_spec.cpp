@@ -5,7 +5,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -397,7 +397,7 @@ static void P_InitAnimDefs ()
 			else if (SC_Compare ("switch"))   // Don't support switchdef yet...
 			{
 				//P_ProcessSwitchDef ();
-				SC_ScriptError("switchdef not supported.");
+//				SC_ScriptError("switchdef not supported.");
 			}
 			else if (SC_Compare ("warp"))
 			{

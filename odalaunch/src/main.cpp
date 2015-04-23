@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,9 +16,9 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Main application sequence
+//  Main application sequence
 //
-// AUTHORS: 
+// AUTHORS:
 //  John Corrado
 //  Russell Rice (russell at odamex dot net)
 //  Michael Wood (mwoodj at huntsvegas dot org)
@@ -42,31 +42,31 @@ using namespace odalpapi;
 IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
-{   
-    if (BufferedSocket::InitializeSocketAPI() == false)
-        return false;
-    
-    ::wxInitAllImageHandlers();
+{
+	if(BufferedSocket::InitializeSocketAPI() == false)
+		return false;
+
+	::wxInitAllImageHandlers();
 
 	wxXmlResource::Get()->InitAllHandlers();
 
-    // load resources
-    InitXmlResource();
+	// load resources
+	InitXmlResource();
 
-    // create main window, get size dimensions and show it
-    MAIN_DIALOG = new dlgMain(0L);
-   
-    if (MAIN_DIALOG) 
-        MAIN_DIALOG->Show();
-        
-    SetTopWindow(MAIN_DIALOG);
-        
-    return true;
+	// create main window, get size dimensions and show it
+	MAIN_DIALOG = new dlgMain(0L);
+
+	if(MAIN_DIALOG)
+		MAIN_DIALOG->Show();
+
+	SetTopWindow(MAIN_DIALOG);
+
+	return true;
 }
 
 wxInt32 Application::OnExit()
 {
-    BufferedSocket::ShutdownSocketAPI();
-    
-    return 0;
+	BufferedSocket::ShutdownSocketAPI();
+
+	return 0;
 }

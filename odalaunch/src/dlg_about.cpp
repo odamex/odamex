@@ -3,7 +3,7 @@
 //
 // $Id: dlg_config.cpp 1648 2010-07-11 02:50:26Z russellrice $
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	About Dialog
+//  About Dialog
 //
 //-----------------------------------------------------------------------------
 
@@ -32,71 +32,71 @@
 #define _ODA_COPYRIGHT_ "Copyright (C) 2006-2014 The Odamex Team"
 
 BEGIN_EVENT_TABLE(dlgAbout, wxDialog)
-    EVT_TEXT_URL(XRCID("Id_TxtCtrlDevelopers"), dlgAbout::OnTxtCtrlUrlClick)
+	EVT_TEXT_URL(XRCID("Id_TxtCtrlDevelopers"), dlgAbout::OnTxtCtrlUrlClick)
 END_EVENT_TABLE()
 
 dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
 {
-    wxString Text, Version, wxWidgetsVersion;
+	wxString Text, Version, wxWidgetsVersion;
 
-    wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgAbout"));
+	wxXmlResource::Get()->LoadDialog(this, parent, "dlgAbout");
 
-    m_StcTxtCopyright = XRCCTRL(*this, "Id_StcTxtCopyright",
-        wxStaticText);
+	m_StcTxtCopyright = XRCCTRL(*this, "Id_StcTxtCopyright",
+	                            wxStaticText);
 
-    m_StcTxtVersion = XRCCTRL(*this, "Id_StcTxtVersion",
-        wxStaticText);
+	m_StcTxtVersion = XRCCTRL(*this, "Id_StcTxtVersion",
+	                          wxStaticText);
 
-    m_StcTxtWxVer = XRCCTRL(*this, "Id_StcTxtWxVer", wxStaticText);
+	m_StcTxtWxVer = XRCCTRL(*this, "Id_StcTxtWxVer", wxStaticText);
 
-    m_TxtCtrlDevelopers = XRCCTRL(*this, "Id_TxtCtrlDevelopers",
-        wxTextCtrl);
+	m_TxtCtrlDevelopers = XRCCTRL(*this, "Id_TxtCtrlDevelopers",
+	                              wxTextCtrl);
 
-    // wxWidgets Bug: wxTE_AUTO_URL appears to get set AFTER SetValue() has been
-    // called, this causes urls to not get recognized (msw XRC handler problem?)
-    Text = m_TxtCtrlDevelopers->GetValue();
-    m_TxtCtrlDevelopers->SetValue(wxT(""));
-    m_TxtCtrlDevelopers->WriteText(Text);
+	// wxWidgets Bug: wxTE_AUTO_URL appears to get set AFTER SetValue() has been
+	// called, this causes urls to not get recognized (msw XRC handler problem?)
+	Text = m_TxtCtrlDevelopers->GetValue();
+	m_TxtCtrlDevelopers->SetValue("");
+	m_TxtCtrlDevelopers->WriteText(Text);
 
-    // Set (protocol) version info on desired text control
-    Version = wxString::Format(
-        wxT("Version %d.%d.%d - Protocol Version %d"),
-        VERSIONMAJOR(VERSION), VERSIONMINOR(VERSION), VERSIONPATCH(VERSION),
-        PROTOCOL_VERSION);
+	// Set (protocol) version info on desired text control
+	Version = wxString::Format(
+	              "Version %d.%d.%d - Protocol Version %d",
+	              VERSIONMAJOR(VERSION), VERSIONMINOR(VERSION), VERSIONPATCH(VERSION),
+	              PROTOCOL_VERSION);
 
-    m_StcTxtVersion->SetLabel(Version);
+	m_StcTxtVersion->SetLabel(Version);
 
-    // Set the copyright and year
-    m_StcTxtCopyright->SetLabel(wxT(_ODA_COPYRIGHT_));
+	// Set the copyright and year
+	m_StcTxtCopyright->SetLabel(_ODA_COPYRIGHT_);
 
-    // Set launcher built version
-    wxWidgetsVersion = wxString::Format(
-        wxT(", Version %d.%d.%d-%d"),
-        wxMAJOR_VERSION, wxMINOR_VERSION, wxRELEASE_NUMBER,
-        wxSUBRELEASE_NUMBER);
+	// Set launcher built version
+	wxWidgetsVersion = wxString::Format(
+	                       ", Version %d.%d.%d-%d",
+	                       wxMAJOR_VERSION, wxMINOR_VERSION, wxRELEASE_NUMBER,
+	                       wxSUBRELEASE_NUMBER);
 
-    m_StcTxtWxVer->SetLabel(wxWidgetsVersion);
+	m_StcTxtWxVer->SetLabel(wxWidgetsVersion);
 
 }
 
 // wxTextCtrl doesn't provide a handler for urls, so we use an almost
 // undocumented event handler provided by wx
-void dlgAbout::OnTxtCtrlUrlClick(wxTextUrlEvent &event)
+void dlgAbout::OnTxtCtrlUrlClick(wxTextUrlEvent& event)
 {
-    wxString URL;
-    wxTextCtrl *Control;
-    wxMouseEvent MouseEvent;
+	wxString URL;
+	wxTextCtrl* Control;
+	wxMouseEvent MouseEvent;
 
-    MouseEvent = event.GetMouseEvent();
+	MouseEvent = event.GetMouseEvent();
 
-    if (MouseEvent.LeftDown())
-    {
-        Control = wxDynamicCast(event.GetEventObject(), wxTextCtrl);
+	if(MouseEvent.LeftDown())
+	{
+		Control = wxDynamicCast(event.GetEventObject(), wxTextCtrl);
 
-        URL = Control->GetRange(event.GetURLStart(), event.GetURLEnd());
+		URL = Control->GetRange(event.GetURLStart(), event.GetURLEnd());
 
-        wxLaunchDefaultBrowser(URL);
+		wxLaunchDefaultBrowser(URL);
 
-        event.Skip();
-    }
+		event.Skip();
+	}
 }

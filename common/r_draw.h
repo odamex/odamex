@@ -4,7 +4,7 @@
 // $Id: r_draw.h 1837 2010-09-02 04:21:09Z spleen $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,47 +28,52 @@
 #include "r_intrin.h"
 #include "r_defs.h"
 
-extern "C" byte**		ylookup;
-extern "C" int*			columnofs;
-
 typedef struct 
 {
+	byte*				source;
+	byte*				destination;
+
+	int					pitch_in_pixels;
+
+	tallpost_t*			post;
+
+	shaderef_t			colormap;
+
 	int					x;
 	int					yl;
 	int					yh;
-	int					pitch;
 	
 	fixed_t				iscale;
 	fixed_t				texturemid;
 	fixed_t				texturefrac;
 	fixed_t				textureheight;
 
-	int					color;
 	fixed_t				translevel;
 
-	byte*				source;
-	tallpost_t*			post;
-
 	translationref_t	translation;
-	shaderef_t			colormap;
+
+	palindex_t			color;				// for r_drawflat
 } drawcolumn_t;
 
 extern "C" drawcolumn_t dcol;
 
 typedef struct
 {
+	byte*				source;
+	byte*				destination;
+
+	int					pitch_in_pixels;
+
+	shaderef_t			colormap;
+
 	int					y;
 	int					x1;
 	int					x2;
-	int					colsize;
 
 	dsfixed_t			xfrac;
 	dsfixed_t			yfrac;
 	dsfixed_t			xstep;
 	dsfixed_t			ystep;
-
-	int					color;
-	fixed_t				translevel;
 
 	float				iu;
 	float				iv;
@@ -77,23 +82,20 @@ typedef struct
 	float				ivstep;
 	float				idstep;
 
-	byte*				source;
+	fixed_t				translevel;
 
-	shaderef_t			colormap;
 	shaderef_t			slopelighting[MAXWIDTH];
+
+	palindex_t			color;
 } drawspan_t;
 
 extern "C" drawspan_t dspan;
 
 
 // [RH] Temporary buffer for column drawing
-extern "C" byte			dc_temp[MAXHEIGHT * 4];
-extern "C" unsigned int	dc_tspans[4][256];
-extern "C" unsigned int	*dc_ctspan[4];
-extern "C" unsigned int	horizspans[4];
 
 void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
-		tallpost_t** posts, void (*colblast)(), void (*hcolblast)(), bool calc_light, int columnmethod);
+		tallpost_t** posts, void (*colblast)(), bool calc_light, int columnmethod);
 
 // [RH] Pointers to the different column and span drawers...
 
@@ -122,15 +124,11 @@ extern void (*R_FillColumn)(void);
 extern void (*R_FillSpan)(void);
 extern void (*R_FillTranslucentSpan)(void);
 
-// [RH] Span blit into an interleaved intermediate buffer
-extern void (*R_DrawColumnHoriz)(void);
-
 // [RH] Initialize the above function pointers
 void R_InitColumnDrawers ();
 
 void R_InitVectorizedDrawers();
 
-void	R_DrawColumnHorizP (void);
 void	R_DrawColumnP (void);
 void	R_DrawFuzzColumnP (void);
 void	R_DrawTranslucentColumnP (void);
@@ -150,35 +148,9 @@ void	R_StretchColumnP (void);
 
 void	R_BlankColumn (void);
 void	R_FillColumnP (void);
-void	R_FillColumnHorizP (void);
 void	R_BlankSpan (void);
 void	R_FillSpanP (void);
 void	R_FillSpanD (void);
-
-// [RH] Moves data from the temporary horizontal buffer to the screen.
-void rt_draw1blankcol(int hx, int sx, int yl, int yh);
-void rt_draw4blankcols(int sx, int yl, int yh);
-void rt_copy1colP (int hx, int sx, int yl, int yh);
-void rt_copy4colsP (int sx, int yl, int yh);
-void rt_map1colP (int hx, int sx, int yl, int yh);
-void rt_map4colsP (int sx, int yl, int yh);
-void rt_lucent1colP (int hx, int sx, int yl, int yh);
-void rt_lucent4colsP (int sx, int yl, int yh);
-void rt_tlate1colP (int hx, int sx, int yl, int yh);
-void rt_tlate4colsP (int sx, int yl, int yh);
-void rt_tlatelucent1colP (int hx, int sx, int yl, int yh);
-void rt_tlatelucent4colsP (int sx, int yl, int yh);
-
-void rt_copy1colD (int hx, int sx, int yl, int yh);
-void rt_copy4colsD (int sx, int yl, int yh);
-void rt_map1colD (int hx, int sx, int yl, int yh);
-void rt_map4colsD (int sx, int yl, int yh);
-void rt_lucent1colD (int hx, int sx, int yl, int yh);
-void rt_lucent4colsD (int sx, int yl, int yh);
-void rt_tlate1colD (int hx, int sx, int yl, int yh);
-void rt_tlate4colsD (int sx, int yl, int yh);
-void rt_tlatelucent1colD (int hx, int sx, int yl, int yh);
-void rt_tlatelucent4colsD (int sx, int yl, int yh);
 
 void R_DrawSpanD_c(void);
 void R_DrawSlopeSpanD_c(void);
@@ -186,101 +158,35 @@ void R_DrawSlopeSpanD_c(void);
 #define SPANJUMP 16
 #define INTERPSTEP (0.0625f)
 
-void rt_draw1col (int hx, int sx);
-void rt_draw4cols (int sx);
+class IWindowSurface;
 
-// [RH] Preps the temporary horizontal buffer.
-void rt_initcols (void);
-
-// Vectorizable functions:
-
-template<typename pixel_t>
-void rtv_lucent4cols_c(byte *source, pixel_t *dest, int bga, int fga)
-{
-	for (int i = 0; i < 4; ++i)
-	{
-		const pixel_t fg = rt_mapcolor<pixel_t>(dcol.colormap, source[i]);
-		const pixel_t bg = dest[i];
-
-		dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
-	}
-}
-
-void r_dimpatchD_c(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
+void r_dimpatchD_c(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 #ifdef __SSE2__
-template<typename pixel_t>
-void rtv_lucent4cols_SSE2(byte *source, pixel_t *dest, int bga, int fga);
 void R_DrawSpanD_SSE2(void);
 void R_DrawSlopeSpanD_SSE2(void);
-void r_dimpatchD_SSE2(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
+void r_dimpatchD_SSE2(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
 #ifdef __MMX__
-template<typename pixel_t>
-void rtv_lucent4cols_MMX(byte *source, pixel_t *dest, int bga, int fga);
 void R_DrawSpanD_MMX(void);
 void R_DrawSlopeSpanD_MMX(void);
-void r_dimpatchD_MMX(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
+void r_dimpatchD_MMX(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
 #ifdef __ALTIVEC__
-template<typename pixel_t>
-void rtv_lucent4cols_ALTIVEC(byte *source, pixel_t *dest, int bga, int fga);
 void R_DrawSpanD_ALTIVEC(void);
 void R_DrawSlopeSpanD_ALTIVEC(void);
-void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
+void r_dimpatchD_ALTIVEC(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
-// Palettized (8bpp) vs. Direct (32bpp) switchable function pointers:
-extern void (*rt_copy1col) (int hx, int sx, int yl, int yh);
-extern void (*rt_copy4cols) (int sx, int yl, int yh);
-extern void (*rt_map1col) (int hx, int sx, int yl, int yh);
-extern void (*rt_map4cols) (int sx, int yl, int yh);
-extern void (*rt_lucent1col) (int hx, int sx, int yl, int yh);
-extern void (*rt_lucent4cols) (int sx, int yl, int yh);
-extern void (*rt_tlate1col) (int hx, int sx, int yl, int yh);
-extern void (*rt_tlate4cols) (int sx, int yl, int yh);
-extern void (*rt_tlatelucent1col) (int hx, int sx, int yl, int yh);
-extern void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
-
 // Vectorizable function pointers:
-extern void (*rtv_lucent4colsP)(byte *source, palindex_t *dest, int bga, int fga);
-extern void (*rtv_lucent4colsD)(byte *source, argb_t *dest, int bga, int fga);
 extern void (*R_DrawSpanD)(void);
 extern void (*R_DrawSlopeSpanD)(void);
-extern void (*r_dimpatchD)(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
-
-extern "C" int				ds_colsize;		// [RH] Distance between columns
-
-extern "C" int				ds_y;
-extern "C" int				ds_x1;
-extern "C" int				ds_x2;
-
-extern "C" shaderef_t		ds_colormap;
-
-extern "C" dsfixed_t		ds_xfrac;
-extern "C" dsfixed_t		ds_yfrac;
-extern "C" dsfixed_t		ds_xstep;
-extern "C" dsfixed_t		ds_ystep;
-
-// start of a 64*64 tile image
-extern "C" byte*			ds_source;
-
-extern "C" int				ds_color;		// [RH] For flat color (no texturing)
-
-// [SL] 2012-03-19 - For sloped planes
-extern "C" float			ds_iu;
-extern "C" float			ds_iv;
-extern "C" float			ds_iustep;
-extern "C" float			ds_ivstep;
-extern "C" float			ds_id;
-extern "C" float			ds_idstep;
-extern "C" shaderef_t		slopelighting[MAXWIDTH];
+extern void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 extern byte*			translationtables;
 extern argb_t           translationRGB[MAXPLAYERS+1][16];
-
 
 enum
 {
@@ -299,16 +205,6 @@ enum
 const int MAX_ACS_TRANSLATIONS = 32;
 
 
-
-// [RH] Double view pixels by detail mode
-void R_DetailDouble (void);
-
-void
-R_InitBuffer
-( int		width,
-  int		height );
-
-
 // Initialize color translation tables,
 //	for player rendering etc.
 void R_InitTranslationTables (void);
@@ -317,18 +213,14 @@ void R_FreeTranslationTables (void);
 void R_CopyTranslationRGB (int fromplayer, int toplayer);
 
 // [RH] Actually create a player's translation table.
-void R_BuildPlayerTranslation (int player, int color);
+void R_BuildPlayerTranslation(int player, argb_t dest_color);
 
 // [Nes] Classic player translation table.
-void R_BuildClassicPlayerTranslation (int player, int color);
-
+void R_BuildClassicPlayerTranslation(int player, int color);
 
 // If the view size is not full screen, draws a border around it.
 void R_DrawViewBorder (void);
 void R_DrawBorder (int x1, int y1, int x2, int y2);
-
-// [RH] Added for muliresolution support
-void R_InitFuzzTable (void);
 
 
 #endif

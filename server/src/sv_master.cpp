@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,7 +41,7 @@
 
 // [Russell] - default master list
 // This is here for complete master redundancy, including domain name failure
-const char *def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", NULL };
+static const char* def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", NULL };
 
 class masterserver
 {
@@ -70,30 +70,69 @@ static buf_t ml_message(MAX_UDP_PACKET);
 
 static std::vector<masterserver> masters;
 
-EXTERN_CVAR (sv_usemasters)
-EXTERN_CVAR (sv_natport)
-EXTERN_CVAR (port)
+EXTERN_CVAR(sv_natport)
+EXTERN_CVAR(port)
+
+// Server appears in the server list when true.
+CVAR_FUNC_IMPL(sv_usemasters)
+{
+	if (network_game)
+		SV_InitMasters();
+}
+
+
+BEGIN_COMMAND(addmaster)
+{
+	if (argc > 1)
+		SV_AddMaster(argv[1]);
+}
+END_COMMAND(addmaster)
+
+
+BEGIN_COMMAND(delmaster)
+{
+	if (argc > 1)
+		SV_RemoveMaster(argv[1]);
+}
+END_COMMAND(delmaster)
+
+
+BEGIN_COMMAND(masters)
+{
+	SV_ListMasters();
+}
+END_COMMAND(masters)
+
+
 
 //
 // SV_InitMaster
 //
 void SV_InitMasters(void)
 {
-	if (!sv_usemasters)
-		Printf(PRINT_HIGH, "Masters will not be contacted because sv_usemasters is 0\n");
-    else
-    {
-        // [Russell] - Add some default masters
-        // so we can dump them to the server cfg file if
-        // one does not exist
-        if (masters.empty())
+	static bool previous_sv_usemasters = (sv_usemasters == 0);
+
+	if (previous_sv_usemasters != sv_usemasters)
+	{
+		if (sv_usemasters)
 		{
-			int i = 0;
-            while(def_masterlist[i])
-                SV_AddMaster(def_masterlist[i++]);
+			// [Russell] - Add some default masters
+			// so we can dump them to the server cfg file if one does not exist
+			if (masters.empty())
+			{
+				for (int i = 0; def_masterlist[i] != NULL; i++)
+					SV_AddMaster(def_masterlist[i]);
+			}
 		}
-    }
+		else
+		{
+			Printf(PRINT_HIGH, "Masters will not be contacted because sv_usemasters is 0\n");
+		}
+	}
+
+	previous_sv_usemasters = (sv_usemasters != 0);
 }
+
 
 //
 // SV_AddMaster
@@ -207,53 +246,32 @@ void SV_UpdateMaster(void)
 	if (!sv_usemasters)
 		return;
 
+	const dtime_t current_time = I_GetTime();
+
+	static dtime_t last_address_resolution = 0;
+
 	// update master addresses from names every 3 hours
-	if ((gametic % (TICRATE*60*60*3) ) == 0)
+	if (current_time - last_address_resolution >= I_ConvertTimeFromMs(1000 * 60 * 60 * 3))
 	{
-		for(size_t index = 0; index < masters.size(); index++)
+		for (size_t index = 0; index < masters.size(); index++)
 		{
-			NET_StringToAdr (masters[index].masterip.c_str(), &masters[index].masteraddr);
+			NET_StringToAdr(masters[index].masterip.c_str(), &masters[index].masteraddr);
 			I_SetPort(masters[index].masteraddr, MASTERPORT);
 		}
+
+		last_address_resolution = current_time;
 	}
+
+	static dtime_t last_keep_alive = 0;
 
 	// Send to masters every 25 seconds
-	if (gametic % (TICRATE*25))
-		return;
-
-	SV_UpdateMasterServers();
-}
-
-// Server appears in the server list when true.
-CVAR_FUNC_IMPL (sv_usemasters)
-{
-	if (network_game) SV_InitMasters();
-}
-
-BEGIN_COMMAND (addmaster)
-{
-	if (argc > 1)
+	if (current_time - last_keep_alive >= I_ConvertTimeFromMs(1000 * 25))
 	{
-		SV_AddMaster(argv[1]);
+		SV_UpdateMasterServers();
+
+		last_keep_alive = current_time;
 	}
 }
-END_COMMAND (addmaster)
-
-BEGIN_COMMAND (delmaster)
-{
-	if (argc > 1)
-	{
-		SV_RemoveMaster(argv[1]);
-	}
-}
-END_COMMAND (delmaster)
-
-BEGIN_COMMAND (masters)
-{
-	SV_ListMasters();
-}
-END_COMMAND (masters)
-
 
 VERSION_CONTROL (sv_master_cpp, "$Id$")
 

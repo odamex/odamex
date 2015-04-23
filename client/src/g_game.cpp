@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,7 +37,8 @@
 #include "m_random.h"
 #include "i_system.h"
 #include "i_input.h"
-#include "hardware.h"
+#include "i_video.h"
+#include "v_screenshot.h"
 #include "p_setup.h"
 #include "p_saveg.h"
 #include "p_tick.h"
@@ -54,6 +55,7 @@
 #include "w_wad.h"
 #include "p_local.h"
 #include "s_sound.h"
+#include "s_sndseq.h"
 #include "gstrings.h"
 #include "r_data.h"
 #include "r_sky.h"
@@ -116,6 +118,7 @@ BOOL 			usergame;				// ok to save / end game
 BOOL			sendcenterview;			// send a center view event next tic
 
 bool			timingdemo; 			// if true, exit with report on completion
+bool			longtics;				// don't quantize yaw for classic vanilla demos
 bool 			nodrawers;				// for comparative timing purposes
 bool 			noblit; 				// for comparative timing purposes
 
@@ -185,11 +188,9 @@ int				iffdemover;
 byte*			demobuffer;
 byte			*demo_p, *demo_e;
 size_t			maxdemosize;
-byte*			zdemformend;			// end of FORM ZDEM chunk
-byte*			zdembodyend;			// end of ZDEM BODY chunk
 BOOL 			singledemo; 			// quit after playing a demo from cmdline
-int			demostartgametic;
-FILE *recorddemo_fp;
+int				demostartgametic;
+FILE*			recorddemo_fp;
 
 BOOL 			precache = true;		// if true, load all graphics at start
 
@@ -361,34 +362,20 @@ extern constate_e ConsoleState;
 // or reads it from the demo buffer.
 // If recording a demo, write it out
 //
-void G_BuildTiccmd (ticcmd_t *cmd)
+void G_BuildTiccmd(ticcmd_t *cmd)
 {
-	int 		strafe;
-	int 		speed;
-	int 		tspeed;
-	int 		forward;
-	int 		side;
-	int			look;
-	int			fly;
+	ticcmd_t* base = I_BaseTiccmd();	// empty or external driver
+	memcpy(cmd, base, sizeof(*cmd));
 
-	ticcmd_t	*base;
-
-	base = I_BaseTiccmd (); 			// empty, or external driver
-
-	memcpy (cmd,base,sizeof(*cmd));
-
-	strafe = Actions[ACTION_STRAFE];
-	speed = Actions[ACTION_SPEED];
+	int strafe = Actions[ACTION_STRAFE];
+	int speed = Actions[ACTION_SPEED];
 	if (cl_run)
 		speed ^= 1;
 
-	forward = side = look = fly = 0;
+	int forward = 0, side = 0, look = 0, fly = 0;
 
-	// GhostlyDeath -- USE takes us out of spectator mode
 	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
-	{
 		AddCommandString("join");
-	}
 
 	// [RH] only use two stage accelerative turning on the keyboard
 	//		and not the joystick, since we treat the joystick as
@@ -398,10 +385,9 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	else
 		turnheld = 0;
 
+	int tspeed = speed;
 	if (turnheld < SLOWTURNTICS)
 		tspeed = 2; 			// slow turn
-	else
-		tspeed = speed;
 
 	// let movement keys cancel each other out
 	if (strafe)
@@ -462,7 +448,8 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		side -= sidemove[speed];
 
 	// buttons
-	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && !headsupactive) // john - only add attack when console up
+	// john - only add attack when console up
+	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && HU_ChatMode() == CHAT_INACTIVE)
 		cmd->buttons |= BT_ATTACK;
 
 	if (Actions[ACTION_USE])
@@ -512,20 +499,15 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 
 	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook))
 	{
-		int val;
-
-		val = (int)((float)(mousey * 16) * m_pitch);
+		int val = (int)(float(mousey) * 16.0f * m_pitch);
 		if (invertmouse)
 			look -= val;
 		else
 			look += val;
 	}
-	else
+	else if (novert == 0)		// [Toke - Mouse] acts like novert.exe
 	{
-		if (novert == 0) // [Toke - Mouse] acts like novert.exe
-		{
-			forward += (int)((float)mousey * m_forward);
-		}
+		forward += (int)(float(mousey) * m_forward);
 	}
 
 	if (sendcenterview)
@@ -535,16 +517,13 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	}
 	else
 	{
-		if (look > 32767)
-			look = 32767;
-		else if (look < -32767)
-			look = -32767;
+		look = clamp(look, -32767, 32767);
 	}
 
 	if (strafe || lookstrafe)
-		side += (int)((float)mousex * m_side);
+		side += (int)(float(mousex) * m_side);
 	else
-		cmd->yaw -= (int)((float)(mousex*0x8) * m_yaw) / ticdup;
+		cmd->yaw -= (int)(float(mousex) * 8.0f * m_yaw);
 
 	mousex = mousey = 0;
 
@@ -579,10 +558,14 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	cmd->sidemove <<= 8;
 
 	// [RH] 180-degree turn overrides all other yaws
-	if (turntick) {
+	if (turntick)
+	{
 		turntick--;
 		cmd->yaw = (ANG180 / TURN180_TICKS) >> 16;
 	}
+
+	if (!longtics)
+		cmd->yaw &= 0xFF00;
 }
 
 
@@ -602,18 +585,10 @@ void G_ConvertMouseSettings(int old_type, int new_type)
 	if (old_type == new_type)
 		return;
 
-	if (new_type == MOUSE_ODAMEX)
-		new_type = MOUSE_DOOM;
-
 	// first convert to ZDoom settings
 	if (old_type == MOUSE_DOOM)
 	{
 		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 40.0f);
-		m_pitch.Set(m_pitch * 4.0f);
-	}
-	else if (old_type == MOUSE_ODAMEX)
-	{
-		mouse_sensitivity.Set(mouse_sensitivity / 40.0f);
 		m_pitch.Set(m_pitch * 4.0f);
 	}
 
@@ -621,11 +596,6 @@ void G_ConvertMouseSettings(int old_type, int new_type)
 	if (new_type == MOUSE_DOOM)
 	{
 		mouse_sensitivity.Set((mouse_sensitivity * 40.0f) - 5.0f);
-		m_pitch.Set(m_pitch * 0.25f);
-	}
-	else if (new_type == MOUSE_ODAMEX)
-	{
-		mouse_sensitivity.Set(mouse_sensitivity * 40.0f);
 		m_pitch.Set(m_pitch * 0.25f);
 	}
 }
@@ -897,11 +867,28 @@ void G_Ticker (void)
 			G_DoWorldDone ();
 			break;
 		case ga_screenshot:
-			I_ScreenShot(shotfile);
+			V_ScreenShot(shotfile);
 			gameaction = ga_nothing;
 			break;
 		case ga_fullconsole:
-			C_FullConsole ();
+			if (demoplayback)
+				G_CheckDemoStatus();
+
+			extern BOOL advancedemo;
+			advancedemo = false;
+
+			if (gamestate != GS_STARTUP)
+			{
+				level.music[0] = '\0';
+				S_Start();
+				SN_StopAllSequences();
+				R_ExitLevel();
+				I_EnableKeyRepeat();
+			}
+
+			gamestate = GS_FULLCONSOLE;
+			C_FullConsole();
+
 			gameaction = ga_nothing;
 			break;
 		case ga_nothing:
@@ -1200,6 +1187,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		return false;
 
 	// spawn a teleport fog
+//	if (!player.spectator && !player.deadspectator)	// ONLY IF THEY ARE NOT A SPECTATOR
 	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
 	{
 		// emulate out-of-bounds access to finecosine / finesine tables
@@ -1463,10 +1451,10 @@ void G_DoReborn (player_t &player)
 }
 
 
-void G_ScreenShot (char *filename)
+void G_ScreenShot(const char* filename)
 {
    // SoM: THIS CRASHES A LOT
-   if(filename && *filename)
+   if (filename && *filename)
 	   shotfile = filename;
    else
       shotfile = "";
@@ -1735,7 +1723,6 @@ void G_WriteDemoTiccmd ()
 		else
 		{
 			*demo_p++ = it->cmd.yaw >> 8;
-			it->cmd.yaw = ((unsigned char)*(demo_p - 1)) << 8;
 		}
 
 		*demo_p++ = it->cmd.buttons;
@@ -1757,7 +1744,7 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
         recorddemo_fp = NULL;
     }
 
-    recorddemo_fp = fopen(demoname.c_str(), "w");
+    recorddemo_fp = fopen(demoname.c_str(), "wb");
 
     if (!recorddemo_fp)
     {
@@ -1770,6 +1757,12 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
     usergame = false;
     demorecording = true;
     demostartgametic = gametic;
+
+	
+	if (longtics)
+		demoversion = LMP_DOOM_1_9_1;
+	else
+		demoversion = LMP_DOOM_1_9;
 
 	players.clear();
 	players.push_back(player_t());
@@ -1784,7 +1777,8 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 	bool monstersrespawn = sv_monstersrespawn.asInt();
 	bool fastmonsters = sv_fastmonsters.asInt();
 	bool nomonsters = sv_nomonsters.asInt();
-
+    int skill = sv_skill.asInt();
+	
 	// [SL] 2014-01-07 - Backup any cvars that need to be set to default to
 	// ensure demo compatibility. CVAR_SERVERINFO cvars is a handy superset
 	// of those cvars
@@ -1794,7 +1788,8 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 	sv_monstersrespawn.Set(monstersrespawn);
 	sv_fastmonsters.Set(fastmonsters);
 	sv_nomonsters.Set(nomonsters);
-
+    sv_skill.Set(skill);
+    
 	G_InitNew(mapname.c_str());
 
     byte demo_tmp[32];
@@ -1858,6 +1853,7 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 	if (argc > 2)
 	{
 		demoversion = ver;
+		longtics = (demoversion == LMP_DOOM_1_9_1);
 
 		if (gamestate != GS_STARTUP)
 		{
@@ -2093,7 +2089,12 @@ void G_DoPlayDemo(bool justStreamInput)
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			R_BuildClassicPlayerTranslation(it->id, it->id - 1);
-			it->userinfo.color = translationRGB[it->id][0];
+			argb_t color(translationRGB[it->id][0]);
+
+			it->userinfo.color[0] = color.geta();
+			it->userinfo.color[1] = color.getr();
+			it->userinfo.color[2] = color.getg();
+			it->userinfo.color[3] = color.getb();
 
 			char tmpname[16];
 			sprintf(tmpname, "Player %i", it->id);
@@ -2121,6 +2122,22 @@ void G_TimeDemo(const char* name)
 	defdemoname = name;
 	gameaction = ga_playdemo;
 }
+
+
+//
+// G_TestDemo
+//
+void G_TestDemo(const char* name)
+{
+	nodrawers = noblit = true;
+	timingdemo = true;			// don't call I_Sleep in between frames
+	extern bool demotest;
+	demotest = true;
+
+	defdemoname = name;
+	gameaction = ga_playdemo;
+}
+
 
 //
 // G_CleanupDemo
@@ -2152,8 +2169,12 @@ void G_CleanupDemo()
 
 		demorecording = false;
 		Printf(PRINT_HIGH, "Demo %s recorded\n", demoname);
+
+		// reset longtics after demo recording
+		longtics = !(Args.CheckParm("-shorttics"));
 	}
 }
+
 
 /*
 ===================
@@ -2180,6 +2201,12 @@ BOOL G_CheckDemoStatus (void)
 				Printf(PRINT_HIGH, "demotest:%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
 			else
 				Printf(PRINT_HIGH, "demotest:no player\n");
+
+			demotest = false;
+
+			// exit the application
+			CL_QuitCommand();
+			return false;
 		}
 
 		if (singledemo || timingdemo)

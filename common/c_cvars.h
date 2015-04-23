@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -84,12 +84,13 @@ public:
 	virtual ~cvar_t ();
 
 	const char *cstring() const {return m_String.c_str(); }
-	const std::string str() const { return m_String; }
+	const std::string& str() const { return m_String; }
 	const char *name() const { return m_Name.c_str(); }
 	const char *helptext() const {return m_HelpText.c_str(); }
 	const char *latched() const { return m_LatchedString.c_str(); }
 	float value() const { return m_Value; }
 	operator float () const { return m_Value; }
+	operator const std::string& () const { return m_String; }
 	unsigned int flags() const { return m_Flags; }
     cvartype_t type() const { return m_Type; }
 

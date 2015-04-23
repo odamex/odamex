@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id: str_utils.h 2302 2011-06-27 03:17:21Z hypereye $
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,7 +27,7 @@
 #include <wx/string.h>
 
 std::string stdstr_toupper(const std::string&);
-std::string wxstr_tostdstr(const wxString &s);
+std::string wxstr_tostdstr(const wxString& s);
 wxString stdstr_towxstr(const std::string&);
 
 #endif // __STR_UTILS_H__

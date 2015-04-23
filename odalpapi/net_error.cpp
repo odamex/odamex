@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Error handling
+//  Error handling
 //
 // AUTHORS:
 //  Russell Rice (russell at odamex dot net)
@@ -45,44 +45,45 @@
 #include "xbox_main.h"
 #endif
 
-namespace odalpapi {
+namespace odalpapi
+{
 
 #ifdef _WIN32
 // Russell - bits from msdn:
 static LPSTR _GetFormattedMessage(DWORD errnum)
 {
-    LPSTR pBuffer = NULL;
+	LPSTR pBuffer = NULL;
 
-    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM |
-                  FORMAT_MESSAGE_ALLOCATE_BUFFER,
-                  NULL,
-                  errnum,
-                  0,
-                  (LPSTR)&pBuffer,
-                  0,
-                  NULL);
+	FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM |
+	               FORMAT_MESSAGE_ALLOCATE_BUFFER,
+	               NULL,
+	               errnum,
+	               0,
+	               (LPSTR)&pBuffer,
+	               0,
+	               NULL);
 
-    return pBuffer;
+	return pBuffer;
 }
 #endif
 
-static char *_GetStrError(int errnum)
+static char* _GetStrError(int errnum)
 {
-    #ifdef _WIN32
-    return _GetFormattedMessage(errnum);
-    #else
-    return strerror(errnum);
-    #endif
+#ifdef _WIN32
+	return _GetFormattedMessage(errnum);
+#else
+	return strerror(errnum);
+#endif
 }
 
 // Get error code
 static int _GetErrno()
 {
-    #ifdef _WIN32
-    return GetLastError();
-    #else
-    return errno;
-    #endif
+#ifdef _WIN32
+	return GetLastError();
+#else
+	return errno;
+#endif
 }
 
 // We must lock the stderr stream for multiple thread access
@@ -92,41 +93,41 @@ static bool Init = false;
 
 void InitLockStderr()
 {
-    if (!Init)
-        InitializeCriticalSection(&STDERR_CRITICAL_SECTION);
+	if(!Init)
+		InitializeCriticalSection(&STDERR_CRITICAL_SECTION);
 
-    Init = true;
+	Init = true;
 }
 
 void LockStderr()
 {
-    EnterCriticalSection(&STDERR_CRITICAL_SECTION);
+	EnterCriticalSection(&STDERR_CRITICAL_SECTION);
 }
 
 void UnlockStderr()
 {
-    LeaveCriticalSection(&STDERR_CRITICAL_SECTION);
+	LeaveCriticalSection(&STDERR_CRITICAL_SECTION);
 }
 #endif // _WIN32
 
 // Formatted debug output
-void _ReportError(const char *file, int line, const char *func,
-    const char *fmt, ...)
+void _ReportError(const char* file, int line, const char* func,
+                  const char* fmt, ...)
 {
 	va_list ap;
 
 	if(!func || !fmt)
 		return;
 
-    #if _WIN32 || _XBOX
-    InitLockStderr();
+#if _WIN32 || _XBOX
+	InitLockStderr();
 
-    LockStderr();
-    #else
-    flockfile(stderr);
-    #endif
+	LockStderr();
+#else
+	flockfile(stderr);
+#endif
 
-    char *syserrmsg = _GetStrError(_GetErrno());
+	char* syserrmsg = _GetStrError(_GetErrno());
 
 	va_start(ap, fmt);
 
@@ -144,13 +145,13 @@ void _ReportError(const char *file, int line, const char *func,
 #endif // _XBOX
 
 	va_end(ap);
-	
-    #if _WIN32 || _XBOX
-    LocalFree(syserrmsg);
-    UnlockStderr();
-    #else
-    funlockfile(stderr);
-    #endif
+
+#if _WIN32 || _XBOX
+	LocalFree(syserrmsg);
+	UnlockStderr();
+#else
+	funlockfile(stderr);
+#endif
 }
 
 } // namespace

@@ -10,6 +10,8 @@
 
 #define OS_STRING "MSWindows/5.1.2600"
 #define MINIUPNPC_VERSION_STRING "1.5"
+/* according to "UPnP Device Architecture 1.1" */
+#define UPNP_VERSION_STRING "UPnP/1.1"
 
 #endif
 

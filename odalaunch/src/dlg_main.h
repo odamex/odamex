@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -15,9 +15,9 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// DESCRIPTION:  
-//	User interface
-//	AUTHOR:	Russell Rice, John D Corrado
+// DESCRIPTION:
+//  User interface
+//  AUTHOR: Russell Rice, John D Corrado
 //
 //-----------------------------------------------------------------------------
 
@@ -31,6 +31,7 @@
 #include "dlg_about.h"
 #include "dlg_config.h"
 #include "dlg_servers.h"
+//#include "ctrl_infobar.h"
 #include "frm_odaget.h"
 
 #include <wx/frame.h>
@@ -40,7 +41,10 @@
 #include <wx/stattext.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/splitter.h>
-#include "wx/dynarray.h"
+#include <wx/dynarray.h>
+#include <wx/timer.h>
+#include <wx/process.h>
+#include <wx/srchctrl.h>
 
 #include <vector>
 
@@ -55,201 +59,233 @@ END_DECLARE_EVENT_TYPES()
 
 typedef enum
 {
-     _oda_iav_MIN = 0         // Minimum range
-    
-    ,_oda_iav_SUCCESS         // Address is valid
-    ,_oda_iav_FAILURE         // Unknown error 
-    
-    ,_oda_iav_emptystr        // Empty address parameter
-    ,_oda_iav_interr          // Internal error (regex comp error, bad regex)
-    ,_oda_iav_colerr          // Bad or nonexistant substring after colon
-    
-    ,_oda_iav_NUMERR          // Number of errors (incl min range)
-    
-    ,_oda_iav_MAX             // Maximum range
+	_oda_iav_MIN = 0         // Minimum range
+
+	               ,_oda_iav_SUCCESS         // Address is valid
+	,_oda_iav_FAILURE         // Unknown error
+
+	,_oda_iav_emptystr        // Empty address parameter
+	,_oda_iav_interr          // Internal error (regex comp error, bad regex)
+	,_oda_iav_colerr          // Bad or nonexistant substring after colon
+
+	,_oda_iav_NUMERR          // Number of errors (incl min range)
+
+	,_oda_iav_MAX             // Maximum range
 } _oda_iav_err_t;
 
 
 class dlgMain : public wxFrame, wxThreadHelper
 {
-	public:
+public:
 
-		dlgMain(wxWindow* parent,wxWindowID id = -1);
-		virtual ~dlgMain();
-		
-        odalpapi::Server         NullServer;
-        odalpapi::Server        *QServer;
-        odalpapi::MasterServer   MServer;
-        
-        launchercfg_t launchercfg_s;
-	protected:
-        void OnMenuServers(wxCommandEvent& event);
-        void OnManualConnect(wxCommandEvent& event);
-        
-        void OnOpenSettingsDialog(wxCommandEvent& event);
-        void OnOpenOdaGet(wxCommandEvent &event);
-        void OnOpenWebsite(wxCommandEvent &event);
-        void OnOpenForum(wxCommandEvent &event);
-        void OnOpenWiki(wxCommandEvent &event);
-        void OnOpenChangeLog(wxCommandEvent& event);
-        void OnOpenReportBug(wxCommandEvent &event);
-		void OnAbout(wxCommandEvent& event);
-		
-		void OnTextSearch(wxCommandEvent& event);
+	dlgMain(wxWindow* parent,wxWindowID id = -1);
+	virtual ~dlgMain();
 
-		void OnQuickLaunch(wxCommandEvent &event);
-		void OnLaunch(wxCommandEvent &event);
-		void OnRefreshAll(wxCommandEvent &event);
-		void OnGetList(wxCommandEvent &event);
-		void OnRefreshServer(wxCommandEvent& event);
-		void OnShowServerFilter(wxCommandEvent &event);
-		
-		void OnServerListClick(wxListEvent& event);
-		void OnServerListDoubleClick(wxListEvent& event);
-		
-		void OnShow(wxShowEvent &event);
-		void OnClose(wxCloseEvent &event);
-		void OnWindowCreate(wxWindowCreateEvent &event);
-		
-		void OnExit(wxCommandEvent& event);
-		
-		void SetupToolbar();
+	odalpapi::Server         NullServer;
+	odalpapi::Server*        QServer;
+	odalpapi::MasterServer   MServer;
 
-		wxInt32 FindServer(wxString);
-		wxInt32 GetSelectedServerArrayIndex();
+protected:
+	void OnMenuServers(wxCommandEvent& event);
+	void OnManualConnect(wxCommandEvent& event);
 
-		_oda_iav_err_t IsAddressValid(wxString, wxString &, long &);
-		
-		void LaunchGame(const wxString &Address, const wxString &ODX_Path, 
-            const wxString &waddirs, const wxString &Password = wxT(""));
-		
-		LstOdaServerList *m_LstCtrlServers;
-		LstOdaPlayerList *m_LstCtrlPlayers;
-        LstOdaSrvDetails *m_LstOdaSrvDetails;
-        
-        dlgConfig *config_dlg;
-        dlgServers *server_dlg;
-        dlgAbout *AboutDialog;
-        frmOdaGet *OdaGet;
-        
-        wxPanel *m_PnlServerFilter;
-        wxTextCtrl *m_SrchCtrlGlobal;
-        
-		wxInt32 TotalPlayers;
-        wxInt32 QueriedServers;
-        /*
-            Our threading system
+	void OnOpenSettingsDialog(wxCommandEvent& event);
+	void OnOpenOdaGet(wxCommandEvent& event);
+	void OnOpenWebsite(wxCommandEvent& event);
+	void OnOpenForum(wxCommandEvent& event);
+	void OnOpenWiki(wxCommandEvent& event);
+	void OnOpenChangeLog(wxCommandEvent& event);
+	void OnOpenReportBug(wxCommandEvent& event);
+	void OnAbout(wxCommandEvent& event);
+	void OnConnectToIRC(wxCommandEvent& event);
 
-            Monitor Thread:
-            ---------------
-            Stays in an infinite loop, continually monitoring the RequestSignal
-            variable, if it encounters a signal change it will run the command
-            and then call the OnMonitorSignal callback function with the 
-            appropriate parameters or nothing if it timed out.
-            When I say "infinite loop", its more of a pseudo one obviously,
-            have to terminate it when the user exits ;)
-            
-            Worker Threads:
-            ---------------
-            These get activated by the monitor thread and are controlled by it.
-            They are an array of threads which send signals to the monitor 
-            thread to tell it what the status is.         
-            
-        */
-        
-        // Monitor Thread Command Signals
-        // Sends a signal to the monitoring thread to instruct it to carry out
-        // a command of some sort (get a list of servers for example)
-        typedef enum
-        {
-             mtcs_none
-            ,mtcs_getmaster
-            ,mtcs_getsingleserver
-            ,mtcs_getservers
-            ,mtcs_exit       // Shutdown now!
-                        
-            ,mtcs_max
-        } mtcs_t;
+	void OnTextSearch(wxCommandEvent& event);
 
-        typedef struct
-        {
-            mtcs_t Signal;
-            wxInt32 Index;
-            wxInt32 ServerListIndex;
-        } mtcs_struct_t;
+	void OnQuickLaunch(wxCommandEvent& event);
+	void OnLaunch(wxCommandEvent& event);
+	void OnRefreshAll(wxCommandEvent& event);
+	void OnGetList(wxCommandEvent& event);
+	void OnRefreshServer(wxCommandEvent& event);
+	void OnShowServerFilter(wxCommandEvent& event);
 
-        // Only set these below if you got a response!
-        // [Russell] - iirc, volatile on a struct doesn't work as well as it
-        // should
-        mtcs_struct_t mtcs_Request;        
+	void OnServerListClick(wxListEvent& event);
+	void OnServerListDoubleClick(wxListEvent& event);
 
-        // Monitor Thread Return Signals
-        // The result of the signal sent above, sent to the callback function
-        // below
-        typedef enum
-        {
-             mtrs_master_success          
-            ,mtrs_master_timeout   // Dead
-            
-            ,mtrs_server_singlesuccess // represents a single selected server
-            ,mtrs_server_singletimeout
-            
-            ,mtrs_server_noservers // There are no servers to query!
+	void OnShow(wxShowEvent& event);
+	void OnClose(wxCloseEvent& event);
+	void OnWindowCreate(wxWindowCreateEvent& event);
 
-            ,mtrs_servers_querydone // Query of all servers complete
-            
-            ,mtrs_max
-        } mtrs_t;
+	void OnTimer(wxTimerEvent& event);
+	void OnProcessTerminate(wxProcessEvent& event);
 
-        typedef struct
-        {
-            mtrs_t Signal;
-            wxInt32 Index;
-            wxInt32 ServerListIndex;
-        } mtrs_struct_t;
-        
-        mtrs_struct_t mtrs_Result;
-        
-        typedef enum
-        {
-             wtrs_server_success
-            ,wtrs_server_timeout
-            
-            ,wtrs_max
-        } wtrs_t;
-        
-        typedef struct
-        {
-            wtrs_t Signal;
-            wxInt32 Index;
-            wxInt32 ServerListIndex;
-        } wtrs_struct_t;
-        
-        wtrs_struct_t wtrs_Result;
+	void OnExit(wxCommandEvent& event);
 
-        // Posts a message from the main thread to the monitor thread
-        bool MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index = -1, 
-            wxInt32 ListIndex = -1);
+	void DoGetList(bool IsARTRefresh = false);
+	void DoRefreshList(bool IsARTRefresh = false);
 
-        // Posts a message from a secondary thread to the main thread
-        void MonThrPostEvent(wxEventType EventType, int win_id, mtrs_t Signal, 
-            wxInt32 Index, wxInt32 ListIndex);
-        
-        // Various functions for communicating with masters and servers
-        bool MonThrGetMasterList();
-        void MonThrGetServerList();
-        void MonThrGetSingleServer();
-        
-        void OnMonitorSignal(wxCommandEvent&);
-        void OnWorkerSignal(wxCommandEvent&);
-        // Our monitoring thread entry point, from wxThreadHelper
-        void *Entry();
+	void LoadMasterServers();
 
-        std::vector<QueryThread*> threadVector;
+	wxInt32 FindServer(wxString);
+	wxInt32 GetSelectedServerArrayIndex();
 
-	private:
+	bool ClientIsRunning()
+	{
+		return m_ClientIsRunning;
+	};
 
-		DECLARE_EVENT_TABLE()
+	_oda_iav_err_t IsAddressValid(wxString, wxString&, long&);
+
+	void LaunchGame(const wxString& Address, const wxString& ODX_Path,
+	                const wxString& waddirs, const wxString& Password = "");
+
+	LstOdaServerList* m_LstCtrlServers;
+	LstOdaPlayerList* m_LstCtrlPlayers;
+	LstOdaSrvDetails* m_LstOdaSrvDetails;
+
+	dlgConfig* config_dlg;
+	dlgServers* server_dlg;
+	dlgAbout* AboutDialog;
+	//frmOdaGet *OdaGet;
+
+	wxPanel* m_PnlServerFilter;
+	wxSearchCtrl* m_SrchCtrlGlobal;
+
+	wxStatusBar* m_StatusBar;
+	wxProcess* m_Process;
+
+	bool m_ClientIsRunning;
+
+	//        OdaInfoBar *InfoBar;
+
+	wxInt32 TotalPlayers;
+	wxInt32 QueriedServers;
+
+	/* ART - Automatic Refresh Timer */
+	// Timers interval (in ms)
+	int m_RefreshInterval;
+	int m_NewListInterval;
+	// State of timer usage
+	bool m_UseRefreshTimer;
+	// This particular refresh was by the timer
+	bool m_WasARTRefresh;
+
+	// Timers
+	wxTimer* m_TimerRefresh;
+	wxTimer* m_TimerNewList;
+
+	/*
+	    Our threading system
+
+	    Monitor Thread:
+	    ---------------
+	    Stays in an infinite loop, continually monitoring the RequestSignal
+	    variable, if it encounters a signal change it will run the command
+	    and then call the OnMonitorSignal callback function with the
+	    appropriate parameters or nothing if it timed out.
+	    When I say "infinite loop", its more of a pseudo one obviously,
+	    have to terminate it when the user exits ;)
+
+	    Worker Threads:
+	    ---------------
+	    These get activated by the monitor thread and are controlled by it.
+	    They are an array of threads which send signals to the monitor
+	    thread to tell it what the status is.
+
+	*/
+
+	// Monitor Thread Command Signals
+	// Sends a signal to the monitoring thread to instruct it to carry out
+	// a command of some sort (get a list of servers for example)
+	typedef enum
+	{
+		mtcs_none
+		,mtcs_getmaster
+		,mtcs_getsingleserver
+		,mtcs_getservers
+		,mtcs_exit       // Shutdown now!
+
+		,mtcs_max
+	} mtcs_t;
+
+	typedef struct
+	{
+		mtcs_t Signal;
+		wxInt32 Index;
+		wxInt32 ServerListIndex;
+	} mtcs_struct_t;
+
+	// Only set these below if you got a response!
+	// [Russell] - iirc, volatile on a struct doesn't work as well as it
+	// should
+	mtcs_struct_t mtcs_Request;
+
+	// Monitor Thread Return Signals
+	// The result of the signal sent above, sent to the callback function
+	// below
+	typedef enum
+	{
+		mtrs_master_success
+		,mtrs_master_timeout   // Dead
+
+		,mtrs_server_singlesuccess // represents a single selected server
+		,mtrs_server_singletimeout
+
+		,mtrs_server_noservers // There are no servers to query!
+
+		,mtrs_servers_querydone // Query of all servers complete
+
+		,mtrs_max
+	} mtrs_t;
+
+	typedef struct
+	{
+		mtrs_t Signal;
+		wxInt32 Index;
+		wxInt32 ServerListIndex;
+	} mtrs_struct_t;
+
+	mtrs_struct_t mtrs_Result;
+
+	typedef enum
+	{
+		wtrs_server_success
+		,wtrs_server_timeout
+
+		,wtrs_max
+	} wtrs_t;
+
+	typedef struct
+	{
+		wtrs_t Signal;
+		wxInt32 Index;
+		wxInt32 ServerListIndex;
+	} wtrs_struct_t;
+
+	wtrs_struct_t wtrs_Result;
+
+	// Posts a message from the main thread to the monitor thread
+	bool MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index = -1,
+	                      wxInt32 ListIndex = -1);
+
+	// Posts a message from a secondary thread to the main thread
+	void MonThrPostEvent(wxEventType EventType, int win_id, mtrs_t Signal,
+	                     wxInt32 Index, wxInt32 ListIndex);
+
+	// Various functions for communicating with masters and servers
+	bool MonThrGetMasterList();
+	void MonThrGetServerList();
+	void MonThrGetSingleServer();
+
+	void OnMonitorSignal(wxCommandEvent&);
+	void OnWorkerSignal(wxCommandEvent&);
+	// Our monitoring thread entry point, from wxThreadHelper
+	void* Entry();
+
+	std::vector<QueryThread*> threadVector;
+
+private:
+
+	DECLARE_EVENT_TABLE()
 };
 
 #endif

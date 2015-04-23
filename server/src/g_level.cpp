@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,7 +31,6 @@
 
 #include "c_console.h"
 #include "c_dispatch.h"
-#include "c_level.h"
 #include "d_event.h"
 #include "d_main.h"
 #include "doomstat.h"
@@ -311,7 +310,7 @@ void G_DoNewGame (void)
 		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 			SV_CheckTeam(*it);
 		else
-			it->userinfo.color = it->prefcolor;
+			memcpy(it->userinfo.color, it->prefcolor, 4);
 
 		SV_ClientFullUpdate(*it);
 	}

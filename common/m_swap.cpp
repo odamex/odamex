@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,18 +36,19 @@
 
 // Swap 16bit, that is, MSB and LSB byte.
 // No masking with 0xFF should be necessary.
-short LESHORT (short x)
-{
-	return (short)((((unsigned short)x)>>8) | (((unsigned short)x)<<8));
-}
 
-unsigned short LESHORT (unsigned short x)
+unsigned short LESHORT(unsigned short x)
 {
 	return (unsigned short)((x>>8) | (x<<8));
 }
 
+short LESHORT(short x)
+{
+	return (short)((((unsigned short)x)>>8) | (((unsigned short)x)<<8));
+}
+
 // Swapping 32bit.
-unsigned int LELONG (unsigned int x)
+unsigned int LELONG(unsigned int x)
 {
 	return (unsigned int)(
 		(x>>24)
@@ -56,7 +57,7 @@ unsigned int LELONG (unsigned int x)
 		| (x<<24));
 }
 
-int LELONG (int x)
+int LELONG(int x)
 {
 	return (int)(
 		(((unsigned int)x)>>24)
@@ -65,7 +66,45 @@ int LELONG (int x)
 		| (((unsigned int)x)<<24));
 }
 
+unsigned long LELONG(unsigned long x)
+{
+	return (unsigned long)(
+		(x>>24)
+		| ((x>>8) & 0xff00)
+		| ((x<<8) & 0xff0000)
+		| (x<<24));
+}
+
+long LELONG(long x)
+{
+	return (long)(
+		(((unsigned int)x)>>24)
+		| ((((unsigned int)x)>>8) & 0xff00)
+		| ((((unsigned int)x)<<8) & 0xff0000)
+		| (((unsigned int)x)<<24));
+}
+
+unsigned short BESHORT(unsigned short x)
+{
+	return x;
+}
+
 short BESHORT(short x)
+{
+	return x;
+}
+
+unsigned int BELONG(unsigned int x)
+{
+	return x;
+}
+
+int BELONG(int x)
+{
+	return x;
+}
+
+unsigned long BELONG(unsigned long x)
 {
 	return x;
 }
@@ -77,7 +116,27 @@ long BELONG(long x)
 
 #else
 
+unsigned short LESHORT(unsigned short x)
+{
+	return x;
+}
+
 short LESHORT(short x)
+{
+	return x;
+}
+
+unsigned int LELONG(unsigned int x)
+{
+	return x;
+}
+
+int LELONG(int x)
+{
+	return x;
+}
+
+unsigned long LELONG(unsigned long x)
 {
 	return x;
 }
@@ -87,17 +146,17 @@ long LELONG(long x)
 	return x;
 }
 
-short BESHORT (short x)
-{
-	return (short)((((unsigned short)x)>>8) | (((unsigned short)x)<<8));
-}
-
-unsigned short BESHORT (unsigned short x)
+unsigned short BESHORT(unsigned short x)
 {
 	return (unsigned short)((x>>8) | (x<<8));
 }
 
-unsigned int BELONG (unsigned int x)
+short BESHORT(short x)
+{
+	return (short)((((unsigned short)x)>>8) | (((unsigned short)x)<<8));
+}
+
+unsigned int BELONG(unsigned int x)
 {
 	return (unsigned int)(
 		(x>>24)
@@ -106,9 +165,27 @@ unsigned int BELONG (unsigned int x)
 		| (x<<24));
 }
 
-int BELONG (int x)
+int BELONG(int x)
 {
 	return (int)(
+		(((unsigned int)x)>>24)
+		| ((((unsigned int)x)>>8) & 0xff00)
+		| ((((unsigned int)x)<<8) & 0xff0000)
+		| (((unsigned int)x)<<24));
+}
+
+unsigned long BELONG(unsigned long x)
+{
+	return (unsigned long)(
+		(x>>24)
+		| ((x>>8) & 0xff00)
+		| ((x<<8) & 0xff0000)
+		| (x<<24));
+}
+
+long BELONG(long x)
+{
+	return (long)(
 		(((unsigned int)x)>>24)
 		| ((((unsigned int)x)>>8) & 0xff00)
 		| ((((unsigned int)x)<<8) & 0xff0000)

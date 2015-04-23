@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -52,14 +52,9 @@ extern byte		*demo_p;		// [RH] Special "ticcmds" get recorded in demos
 // NETWORKING
 //
 // gametic is the tic about to (or currently being) run
-// maketic is the tick that hasn't had control made for it yet
-// nettics[] has the maketics for all players 
-//
-// a gametic cannot be run until nettics[] > gametic for all players
-//
+
 int 			lastnettic;
 int 			skiptics;
-int 			ticdup; 		
 
 bool step_mode = false;
 
@@ -88,8 +83,6 @@ void D_CheckNetGame (void)
     CL_InitNetwork ();
 
     D_SetupUserInfo();
-
-    ticdup = 1;
 
     step_mode = ((Args.CheckParm ("-stepmode")) != 0);
 }

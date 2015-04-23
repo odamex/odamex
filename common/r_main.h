@@ -4,7 +4,7 @@
 // $Id: r_main.h 1856 2010-09-05 03:14:13Z ladna $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -55,7 +55,7 @@ extern bool				r_fakingunderwater;
 extern bool				r_underwater;
 
 extern int				centerx;
-extern "C" int			centery;
+extern int				centery;
 
 extern fixed_t			centerxfrac;
 extern fixed_t			centeryfrac;
@@ -69,6 +69,13 @@ extern int				linecount;
 extern int				loopcount;
 
 extern fixed_t			render_lerp_amount;
+
+// [SL] Current color blending values (including palette effects)
+extern fargb_t blend_color;
+
+void R_SetSectorBlend(const argb_t color);
+void R_ClearSectorBlend();
+argb_t R_GetSectorBlend();
 
 //
 // Lighting LUT.
@@ -106,22 +113,12 @@ extern int				lightscaleymul;
 #define NUMCOLORMAPS			32
 
 
-// [RH] New detail modes
-extern "C" int			detailxshift;
-extern "C" int			detailyshift;
-
-
 //
 // Function pointers to switch refresh/drawing functions.
 //
 extern void 			(*colfunc) (void);
 extern void 			(*spanfunc) (void);
 extern void				(*spanslopefunc) (void);
-
-// [RH] Function pointers for the horizontal column drawers.
-extern void (*hcolfunc_pre) (void);
-extern void (*hcolfunc_post1) (int hx, int sx, int yl, int yh);
-extern void (*hcolfunc_post4) (int sx, int yl, int yh);
 
 
 //
@@ -189,16 +186,29 @@ int R_GetWidescreen(void);
 void R_RenderPlayerView (player_t *player);
 
 // Called by startup code.
-void R_Init (void);
+void R_Init();
 
 // Called by exit code.
-void STACK_ARGS R_Shutdown (void);
+void STACK_ARGS R_Shutdown();
+
+void R_ExitLevel();
 
 // Called by M_Responder.
-void R_SetViewSize (int blocks);
+void R_SetViewSize(int blocks);
 
-// [RH] Initialize multires stuff for renderer
-void R_MultiresInit (void);
+class IWindowSurface;
+IWindowSurface* R_GetRenderingSurface();
+
+bool R_BorderVisible();
+bool R_StatusBarVisible();
+
+int R_ViewWidth(int width, int height);
+int R_ViewHeight(int width, int height);
+int R_ViewWindowX(int width, int height);
+int R_ViewWindowY(int width, int height);
+
+
+void R_ForceViewWindowResize();
 
 void R_ResetDrawFuncs();
 void R_SetFuzzDrawFuncs();
@@ -237,8 +247,8 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 		return shade(c);
 
 	// Default to white light:
-	argb_t lightcolor = MAKERGB(255, 255, 255);
-	argb_t fadecolor = level.fadeto; 
+	argb_t lightcolor = argb_t(255, 255, 255);
+	argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
 
 	// Use the dynamic lighting's light color if we have one:
 	if (m_dyncolormap != NULL)
@@ -250,14 +260,14 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	// Find the shading for the custom player colors:
 	argb_t trancolor = translationRGB[pid][c - range_start];
 
-	unsigned int r = (RPART(trancolor) * RPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
-					+ RPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
-	unsigned int g = (GPART(trancolor) * GPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
-					+ GPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
-	unsigned int b = (BPART(trancolor) * BPART(lightcolor) * (NUMCOLORMAPS - m_mapnum) / 255
-					+ BPART(fadecolor) * m_mapnum + NUMCOLORMAPS/2) / NUMCOLORMAPS;
+	unsigned int r = (trancolor.getr() * lightcolor.getr() * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.getr() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int g = (trancolor.getg() * lightcolor.getg() * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.getg() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int b = (trancolor.getb() * lightcolor.getb() * (NUMCOLORMAPS - m_mapnum) / 255
+					+ fadecolor.getb() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
 
-	return MAKERGB(newgamma[r], newgamma[g], newgamma[b]);
+	return argb_t(gammatable[r], gammatable[g], gammatable[b]);
 }
 
 

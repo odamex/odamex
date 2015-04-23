@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -252,7 +252,7 @@ void M_ExtractFileName (std::string filename, std::string &dest)
         dest = filename.substr(l);
 }
 
-std::string M_ExtractFileName(const std::string filename) {
+std::string M_ExtractFileName(const std::string &filename) {
 	std::string result;
 	M_ExtractFileName(filename, result);
 	return result;

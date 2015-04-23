@@ -4,7 +4,7 @@
 // $Id: c_console.h 1847 2010-09-04 05:16:08Z ladna $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,10 +44,14 @@ typedef enum cstate_t {
 extern constate_e	ConsoleState;
 
 // Initialize the console
-void C_InitConsole (int width, int height, BOOL ingame);
+void C_InitConsole();
+void STACK_ARGS C_ShutdownConsole();
 
-// SoM
-void C_ServerDisconnectEffect(void);
+void C_InitConsoleBackground();
+void STACK_ARGS C_ShutdownConsoleBackground();
+
+void C_InitConCharsFont();
+void STACK_ARGS C_ShutdownConCharsFont();
 
 // Adjust the console for a new screen mode
 void C_NewModeAdjust (void);
@@ -55,7 +59,6 @@ void C_NewModeAdjust (void);
 void C_Ticker (void);
 
 int PrintString (int printlevel, const char *string);
-int VPrintf (int printlevel, const char *format, va_list parms);
 int STACK_ARGS Printf_Bold (const char *format, ...);
 
 void C_AddNotifyString (int printlevel, const char *s);

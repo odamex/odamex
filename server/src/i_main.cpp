@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,11 +79,15 @@ void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
-int PrintString (int printlevel, char const *outline)
+int PrintString(int printlevel, char const* str)
 {
-	int ret = printf("%s", outline);
+	std::string sanitized_str(str);
+	StripColorCodes(sanitized_str);
+
+	printf("%s", sanitized_str.c_str());
 	fflush(stdout);
-	return ret;
+
+	return sanitized_str.length();
 }
 
 #ifdef _WIN32
@@ -105,11 +109,11 @@ int __cdecl main(int argc, char *argv[])
     try
     {
         // Handle ctrl-c, close box, shutdown and logoff events
-        if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE))
-            throw CDoomError("Could not set console control handler!\n");
-
         if (!(hEvent = CreateEvent(NULL, FALSE, FALSE, NULL)))
             throw CDoomError("Could not create console control event!\n");
+
+        if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE))
+            throw CDoomError("Could not set console control handler!\n");
 
         #ifdef _WIN32
         // Fixes icon not showing in titlebar and alt-tab menu under windows 7
@@ -150,9 +154,9 @@ int __cdecl main(int argc, char *argv[])
 		progdir = I_GetBinaryDir();
 		startdir = I_GetCWD();
 
-		C_InitConsole (80*8, 25*8, false);
+		C_InitConsole();
 
-		D_DoomMain ();
+		D_DoomMain();
     }
     catch (CDoomError &error)
     {
@@ -233,10 +237,6 @@ int main (int argc, char **argv)
 
 	    seteuid (getuid ());
 
-		// ensure OString's string table is properly initialized and shutdown
-		OString::startup();
-		atterm(OString::shutdown);
-
 		Args.SetArgs (argc, argv);
 
 		const char *CON_FILE = Args.CheckValue("-confile");
@@ -274,9 +274,9 @@ int main (int argc, char **argv)
 
 		progdir = I_GetBinaryDir();
 
-		C_InitConsole (80*8, 25*8, false);
+		C_InitConsole();
 
-		D_DoomMain ();
+		D_DoomMain();
     }
     catch (CDoomError &error)
     {

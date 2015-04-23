@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,7 +56,6 @@
 #include "m_argv.h"
 #include "m_swap.h"
 #include "m_memio.h"
-#include "v_gamma.h"
 
 #include "s_sound.h"
 #include "i_musicsystem.h"
@@ -100,7 +99,6 @@ EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_enemycolor)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (gammalevel)
-EXTERN_CVAR (r_detail)
 EXTERN_CVAR (language)
 
 // [Ralphis - Menu] Compatibility Menu
@@ -734,6 +732,7 @@ EXTERN_CVAR (st_scale)
 EXTERN_CVAR (r_stretchsky)
 EXTERN_CVAR (r_skypalette)
 EXTERN_CVAR (r_wipetype)
+EXTERN_CVAR (r_drawplayersprites)
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (r_loadicon)
@@ -804,8 +803,9 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
-	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},  {NULL} },
 	{ discrete, "HUD Timer Visibility",     {&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
+	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
+	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},  {NULL} },
 	{ discrete, "Held Flag Border",         {&hud_heldflag},        {2.0}, {0.0},   {0.0},  {OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
@@ -844,9 +844,9 @@ static void M_UpdateDisplayOptions()
 	const static size_t gamma_index = M_FindCvarInMenu(gammalevel, VideoItems, menu_length);
 
 	// update the parameters for gammalevel based on vid_gammatype (doom or zdoom gamma)
-	VideoItems[gamma_index].b.leftval = gammastrat->min();
-	VideoItems[gamma_index].c.rightval = gammastrat->max();
-	VideoItems[gamma_index].d.step = gammastrat->increment(gammastrat->min()) - gammastrat->min();
+	VideoItems[gamma_index].b.leftval = V_GetMinimumGammaLevel();
+	VideoItems[gamma_index].c.rightval = V_GetMaximumGammaLevel();
+	VideoItems[gamma_index].d.step = 0.1f;
 }
 
 menu_t VideoMenu = {
@@ -876,18 +876,27 @@ EXTERN_CVAR (msglevel)
 
 static value_t TextColors[] =
 {
-	{ 0.0, "brick" },
-	{ 1.0, "tan" },
-	{ 2.0, "gray" },
-	{ 3.0, "green" },
-	{ 4.0, "brown" },
-	{ 5.0, "gold" },
-	{ 6.0, "red" },
-	{ 7.0, "blue" },
-	{ 8.0, "orange" },
-	{ 9.0, "white" },
-//	[SL] remove yellow until the color translation can be fixed
-//	{ 10.0, "yellow" }
+	{ CR_BRICK,		"brick" },
+	{ CR_TAN,		"tan" },
+	{ CR_GRAY,		"gray" },
+	{ CR_GREEN,		"green" },
+	{ CR_BROWN,		"brown" },
+	{ CR_GOLD, 		"gold" },
+	{ CR_RED,		"red" },
+	{ CR_BLUE,		"blue" },
+	{ CR_ORANGE,	"orange" },
+	{ CR_WHITE,		"white" },
+	{ CR_YELLOW,	"yellow" },
+	{ CR_BLACK,		"black" },
+	{ CR_LIGHTBLUE,	"light blue" },
+	{ CR_CREAM,		"cream" },
+	{ CR_OLIVE,		"olive" },
+	{ CR_DARKGREEN,	"dark green" },
+	{ CR_DARKRED,	"dark red" },
+	{ CR_DARKBROWN,	"dark brown" },
+	{ CR_PURPLE,	"purple" },
+	{ CR_DARKGRAY,	"dark gray" },
+	{ CR_CYAN,		"cyan" }
 };
 
 static value_t MessageLevels[] = {
@@ -913,12 +922,12 @@ static menuitem_t MessagesItems[] = {
 	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Obituaries",			{&msg1color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Chat Messages",		{&msg3color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Team Messages",		{&msg4color},		   	{10.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Centered Messages",	{&msgmidcolor},			{10.0}, {0.0},	{0.0}, {TextColors} }
+	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Obituaries",			{&msg1color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Chat Messages",		{&msg3color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Team Messages",		{&msg4color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
+	{ cdiscrete, "Centered Messages",	{&msgmidcolor},			{21.0}, {0.0},	{0.0}, {TextColors} }
 };
 
 menu_t MessagesMenu = {
@@ -976,16 +985,10 @@ menu_t AutomapMenu = {
  *
  *=======================================*/
 
-extern BOOL setmodeneeded;
-extern int NewWidth, NewHeight, NewBits;
-extern int DisplayBits;
-
 QWORD testingmode;		// Holds time to revert to old mode
-int OldWidth, OldHeight, OldBits;
+int OldWidth, OldHeight;
 
-static void BuildModesList (int hiwidth, int hiheight, int hi_id);
-static BOOL GetSelectedSize (int line, int *width, int *height);
-static void SetModesMenu (int w, int h, int bits);
+static bool GetSelectedSize(int line, int *width, int *height);
 
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
@@ -999,19 +1002,15 @@ EXTERN_CVAR (vid_32bpp)
 static value_t Depths[22];
 
 #ifdef _XBOX
-static char VMEnterText[] = "Press A to set mode";
-static char VMTestText[] = "Press X to test mode for 5 seconds";
+static const char VMEnterText[] = "Press A to set mode";
+static const char VMTestText[] = "Press X to test mode for 5 seconds";
 #else
-static char VMEnterText[] = "Press ENTER to set mode";
-static char VMTestText[] = "Press T to test mode for 5 seconds";
+static const char VMEnterText[] = "Press ENTER to set mode";
+static const char VMTestText[] = "Press T to test mode for 5 seconds";
 #endif
 
-static value_t DetailModes[] = {
-	{ 0.0, "Normal" },
-	{ 1.0, "Double Horizontal" },
-	{ 2.0, "Double Vertical" },
-	{ 3.0, "Double Horiz & Vert" }
-};
+static const char VMTestWaitText[] = "Please wait 5 seconds...";
+static const char VMTestBlankText[] = " ";
 
 static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
@@ -1030,7 +1029,6 @@ static menuitem_t ModesItems[] = {
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
 	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
-	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1041,16 +1039,16 @@ static menuitem_t ModesItems[] = {
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,  VMEnterText,			{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ redtext,  " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,  VMTestText,				{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ redtext,  " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} }
 };
 
 #define VM_DEPTHITEM	0
 #define VM_RESSTART		6
-#define VM_ENTERLINE	16
-#define VM_TESTLINE		18
+#define VM_ENTERLINE	14
+#define VM_TESTLINE		16
 
 menu_t ModesMenu = {
 	"M_VIDMOD",
@@ -1062,6 +1060,151 @@ menu_t ModesMenu = {
 	0,
 	NULL
 };
+
+static void BuildModesList(int hiwidth, int hiheight)
+{
+	// gathers a list of unique resolutions availible for the current
+	// screen mode (windowed or fullscreen)
+	bool fullscreen = I_GetWindow()->getVideoMode()->isFullScreen();
+
+	typedef std::vector< std::pair<uint16_t, uint16_t> > MenuModeList;
+	MenuModeList menumodelist;
+
+	const IVideoModeList* videomodelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+	for (IVideoModeList::const_iterator it = videomodelist->begin(); it != videomodelist->end(); ++it)
+		if (it->isFullScreen() == fullscreen)
+			menumodelist.push_back(std::make_pair(it->getWidth(), it->getHeight()));
+	menumodelist.erase(std::unique(menumodelist.begin(), menumodelist.end()), menumodelist.end());
+
+	MenuModeList::const_iterator mode_it = menumodelist.begin();
+
+    const char** str = NULL;
+
+	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
+	{
+		ModesItems[i].e.highlight = -1;
+		for (int col = 0; col < 3; col++)
+		{
+			if (col == 0)
+				str = &ModesItems[i].b.res1;
+			else if (col == 1)
+				str = &ModesItems[i].c.res2;
+			else if (col == 2)
+				str = &ModesItems[i].d.res3;
+
+			if (mode_it != menumodelist.end())
+			{
+				int width = mode_it->first;
+				int height = mode_it->second;
+				++mode_it;
+
+				if (width == hiwidth && height == hiheight)
+					ModesItems[i].e.highlight = ModesItems[i].a.selmode = col;
+
+				char strtemp[32];
+				sprintf(strtemp, "%dx%d", width, height);
+				ReplaceString(str, strtemp);
+			}
+			else
+			{
+				*str = NULL;
+			}
+		}
+	}
+}
+
+void M_RefreshModesList()
+{
+	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+}
+
+static bool GetSelectedSize(int line, int* width, int* height)
+{
+	if (ModesItems[line].type != screenres)
+		return false;
+
+	int mode_num = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode;
+
+	const char* resolution_str = NULL;
+
+	if (mode_num % 3 == 0)
+		resolution_str = ModesItems[line].b.res1;
+	else if (mode_num % 3 == 1)
+		resolution_str = ModesItems[line].c.res2;
+	else if (mode_num % 3 == 2)
+		resolution_str = ModesItems[line].d.res3;
+
+	if (!resolution_str)
+		return false;
+
+	size_t xpos = 0;
+	for (const char* s = resolution_str; s; s++, xpos++)
+		if (*s == 'x' || *s == 'X')
+			break;
+
+	char width_str[5] = { 0 }, height_str[5] = { 0 };
+	strncpy(width_str, resolution_str, xpos);
+	strncpy(height_str, resolution_str + xpos + 1, 4);
+
+	*width = atoi(width_str);
+	*height = atoi(height_str);
+
+	return true;
+}
+
+static void SetModesMenu(int w, int h)
+{
+	if (!testingmode)
+	{
+		ModesItems[VM_ENTERLINE].label = VMEnterText;
+		ModesItems[VM_TESTLINE].label = VMTestText;
+	}
+	else
+	{
+		static char enter_text[64];
+		sprintf(enter_text, "TESTING %dx%d", w, h);
+
+		ModesItems[VM_ENTERLINE].label = enter_text;
+		ModesItems[VM_TESTLINE].label = VMTestWaitText;
+	}
+
+	BuildModesList(w, h);
+}
+
+//
+// M_ModeFlashTestText
+//
+// Flashes the video mode testing text
+//
+void M_ModeFlashTestText()
+{
+    if (ModesItems[VM_TESTLINE].label[0] == ' ')
+		ModesItems[VM_TESTLINE].label = VMTestWaitText;
+	else
+		ModesItems[VM_TESTLINE].label = VMTestBlankText;
+}
+
+void M_RestoreMode (void)
+{
+	V_SetResolution(OldWidth, OldHeight);
+	testingmode = 0;
+
+	SetModesMenu(OldWidth, OldHeight);
+}
+
+static void SetVidMode()
+{
+	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight());
+
+	if (ModesMenu.items[ModesMenu.lastOn].type == screenres)
+	{
+		if (ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)
+			ModesMenu.items[ModesMenu.lastOn].a.selmode++;
+	}
+	M_SwitchMenu(&ModesMenu);
+}
+
+
 
 static cvar_t *flagsvar;
 
@@ -1076,29 +1219,27 @@ static void M_SendUINewColor (int red, int green, int blue)
 	AddCommandString (command);
 }
 
-static void M_SlideUIRed (int val)
+static void M_SlideUIRed(int val)
 {
-	int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
-	int red = val;
-
-	M_SendUINewColor (red, GPART(color), BPART(color));
+	argb_t color = V_GetColorFromString(ui_dimcolor);
+	color.setr(val);
+	M_SendUINewColor(color.getr(), color.getg(), color.getb());
 }
 
 static void M_SlideUIGreen (int val)
 {
-    int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
-	int green = val;
-
-	M_SendUINewColor (RPART(color), green, BPART(color));
+	argb_t color = V_GetColorFromString(ui_dimcolor);
+	color.setg(val);
+	M_SendUINewColor(color.getr(), color.getg(), color.getb());
 }
 
 static void M_SlideUIBlue (int val)
 {
-    int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
-	int blue = val;
-
-	M_SendUINewColor (RPART(color), GPART(color), blue);
+	argb_t color = V_GetColorFromString(ui_dimcolor);
+	color.setb(val);
+	M_SendUINewColor(color.getr(), color.getg(), color.getb());
 }
+
 
 //
 //		Set some stuff up for the video modes menu
@@ -1106,18 +1247,13 @@ static void M_SlideUIBlue (int val)
 
 void M_OptInit (void)
 {
-	int currval = 0, dummy1, dummy2;
-
-	I_StartModeIterator();
-
-	if (I_NextMode(&dummy1, &dummy2))
+	for (int i = 0; i < 22; i++)
 	{
-		Depths[currval].value = currval;
-		Depths[currval].name = NULL;
-		currval++;
+		Depths[i].value = i;
+		Depths[i].name = NULL;
 	}
 
-	switch (I_DisplayType ())
+	switch (I_GetVideoCapabilities()->getDisplayType())
 	{
 	case DISPLAY_FullscreenOnly:
 		ModesItems[2].type = nochoice;
@@ -1243,7 +1379,7 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
 	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
-void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, int color)
+void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
 {
 	if (leftval < rightval)
 		cur = clamp(cur, leftval, rightval);
@@ -1252,16 +1388,17 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchClean (W_CachePatch ("LSLIDE"), x, y);
+	screen->DrawPatchClean(W_CachePatch ("LSLIDE"), x, y);
+
 	for (int i = 1; i < 11; i++)
 		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
+
 	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
 
 	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + (int)(dist * 78.0), y);
 
-	V_ColorFill = BestColor(GetDefaultPalette()->basecolors,
-	                        RPART(color), GPART(color), BPART(color),
-	                        GetDefaultPalette()->numcolors);
+	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+
 	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
@@ -1285,11 +1422,11 @@ void M_OptDrawer (void)
 	menuitem_t *item;
 	patch_t *title;
 
-	x1 = (screen->width / 2)-(160*CleanXfac);
-	y1 = (screen->height / 2)-(100*CleanYfac);
+	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
+	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
 
-    x2 = (screen->width / 2)+(160*CleanXfac);
-	y2 = (screen->height / 2)+(100*CleanYfac);
+    x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
+	y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
@@ -1336,10 +1473,9 @@ void M_OptDrawer (void)
 				}
 			}
 
-			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey)) || WaitingForAxis || testingmode))
-			{
+			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey))
+				|| WaitingForAxis || testingmode))
 				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
-			}
 		}
 		else
 		{
@@ -1386,18 +1522,19 @@ void M_OptDrawer (void)
 				int v, vals;
 
 				vals = (int)item->b.leftval;
-				v = M_FindCurVal (item->a.cvar->value(), item->e.values, vals);
+				v = M_FindCurVal(item->a.cvar->value(), item->e.values, vals);
 
 				if (v == vals)
 				{
-					screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, "Unknown");
+					screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, "Unknown");
 				}
 				else
 				{
+					int color_num = CR_GREY;
 					if (item->type == cdiscrete)
-						screen->DrawTextCleanMove (v, CurrentMenu->indent + 14, y, item->e.values[v].name);
-					else
-						screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, item->e.values[v].name);
+						color_num = item->a.cvar->asInt();
+
+					screen->DrawTextCleanMove(color_num, CurrentMenu->indent + 14, y, item->e.values[v].name);
 				}
 
 			}
@@ -1414,20 +1551,20 @@ void M_OptDrawer (void)
 
 			case redslider:
 			{
-				int color = V_GetColorFromString(NULL, item->a.cvar->cstring());
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, RPART(color), color);
+				argb_t color = V_GetColorFromString(*item->a.cvar);
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getr(), color);
 			}
 			break;
 			case greenslider:
 			{
-				int color = V_GetColorFromString(NULL, item->a.cvar->cstring());
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, GPART(color), color);
+				argb_t color = V_GetColorFromString(*item->a.cvar);
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getg(), color);
 			}
 			break;
 			case blueslider:
 			{
-				int color = V_GetColorFromString(NULL, item->a.cvar->cstring());
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, BPART(color), color);
+				argb_t color = V_GetColorFromString(*item->a.cvar);
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getb(), color);
 			}
 			break;
 
@@ -1766,15 +1903,15 @@ void M_OptResponder (event_t *ev)
 						else
 							memcpy(newcolor, "00 00 00", 9);
 
-						int color = V_GetColorFromString(NULL, oldcolor);
+						argb_t color = V_GetColorFromString(oldcolor);
 						int part = 0;
 
 						if (item->type == redslider)
-							part = RPART(color);
+							part = color.getr();
 						else if (item->type == greenslider)
-							part = GPART(color);
+							part = color.getg();
 						else if (item->type == blueslider)
-							part = BPART(color);
+							part = color.getb();
 
 						if (part > 0x00)
 							part -= 0x11;
@@ -1810,7 +1947,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -1890,15 +2027,15 @@ void M_OptResponder (event_t *ev)
 						else
 							memcpy(newcolor, "00 00 00", 9);
 
-						int color = V_GetColorFromString(NULL, oldcolor);
+						argb_t color = V_GetColorFromString(oldcolor);
 						int part = 0;
 
 						if (item->type == redslider)
-							part = RPART(color);
+							part = color.getr();
 						else if (item->type == greenslider)
-							part = GPART(color);
+							part = color.getg();
 						else if (item->type == blueslider)
-							part = BPART(color);
+							part = color.getb();
 
 						if (part < 0xff)
 							part += 0x11;
@@ -1934,7 +2071,7 @@ void M_OptResponder (event_t *ev)
 
 						// Hack hack. Rebuild list of resolutions
 						if (item->e.values == Depths)
-							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
@@ -2001,17 +2138,20 @@ void M_OptResponder (event_t *ev)
 		case KEY_ENTER:
 			if (CurrentMenu == &ModesMenu)
 			{
-				if (!(item->type == screenres && GetSelectedSize (CurrentItem, &NewWidth, &NewHeight)))
+				int width, height;
+
+				if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
 				{
-					NewWidth = I_GetVideoWidth();
-					NewHeight = I_GetVideoHeight();
+					width = I_GetVideoWidth();
+					height = I_GetVideoHeight();
 				}
-				NewBits = (int)vid_32bpp ? 32 : 8;
-				setmodeneeded = true;
+
+				vid_defwidth.Set(width);
+				vid_defheight.Set(height);
+
+				V_SetResolution(width, height);
+				SetModesMenu(width, height);
 				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-				vid_defwidth.Set ((float)NewWidth);
-				vid_defheight.Set ((float)NewHeight);
-				SetModesMenu (NewWidth, NewHeight, NewBits);
 			}
 			else if (item->type == more && item->e.mfunc)
 			{
@@ -2033,7 +2173,7 @@ void M_OptResponder (event_t *ev)
 
 				// Hack hack. Rebuild list of resolutions
 				if (item->e.values == Depths)
-					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
+					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 
 				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
@@ -2081,20 +2221,23 @@ void M_OptResponder (event_t *ev)
 				// Test selected resolution
 				if (CurrentMenu == &ModesMenu)
 				{
-					if (!(item->type == screenres &&
-						GetSelectedSize (CurrentItem, &NewWidth, &NewHeight)))
+					int width, height;
+
+					if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
 					{
-						NewWidth = I_GetVideoWidth();
-						NewHeight = I_GetVideoHeight();
+						width = I_GetVideoWidth();
+						height = I_GetVideoHeight();
 					}
+
 					OldWidth = I_GetVideoWidth();
 					OldHeight = I_GetVideoHeight();
-					OldBits = DisplayBits;
-					NewBits = (int)vid_32bpp ? 32 : 8;
-					setmodeneeded = true;
+
+					V_SetResolution(width, height);
+
 					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
+					SetModesMenu(width, height);
+
 					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-					SetModesMenu(NewWidth, NewHeight, NewBits);
 				}
 			}
 			break;
@@ -2214,136 +2357,6 @@ BEGIN_COMMAND (menu_display)
 }
 END_COMMAND (menu_display)
 
-static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
-{
-	char strtemp[32];
-    const char **str = NULL;
-	int	 i, c;
-	int	 width, height;
-
-	I_StartModeIterator ();
-
-	for (i = VM_RESSTART; ModesItems[i].type == screenres; i++)
-	{
-		ModesItems[i].e.highlight = -1;
-		for (c = 0; c < 3; c++)
-		{
-			switch (c)
-			{
-				case 0:
-					str = &ModesItems[i].b.res1;
-					break;
-				case 1:
-					str = &ModesItems[i].c.res2;
-					break;
-				case 2:
-					str = &ModesItems[i].d.res3;
-					break;
-			}
-			if (I_NextMode (&width, &height))
-			{
-				if (width == hiwidth && height == hiheight)
-					ModesItems[i].e.highlight = ModesItems[i].a.selmode = c;
-
-				sprintf (strtemp, "%dx%d", width, height);
-				ReplaceString (str, strtemp);
-			}
-			else
-			{
-				/*if (*str) // denis - ReplaceString is no longer leaky...
-				{
-					free (*str);
-				}*/
-				*str = NULL;
-			}
-		}
-	}
-}
-
-void M_RefreshModesList ()
-{
-	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
-}
-
-static BOOL GetSelectedSize (int line, int *width, int *height)
-{
-	int i, stopat;
-
-	if (ModesItems[line].type != screenres)
-	{
-		return false;
-	}
-	else
-	{
-		I_StartModeIterator ();
-
-		stopat = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode + 1;
-
-		for (i = 0; i < stopat; i++)
-			if (!I_NextMode (width, height))
-				return false;
-	}
-
-	return true;
-}
-
-static void SetModesMenu (int w, int h, int bits)
-{
-	char strtemp[64];
-
-	if (!testingmode)
-	{
-		ModesItems[VM_ENTERLINE].label = VMEnterText;
-		ModesItems[VM_TESTLINE].label = VMTestText;
-	}
-	else
-	{
-		sprintf (strtemp, "TESTING %dx%dx%d", w, h, bits);
-		ModesItems[VM_ENTERLINE].label = copystring (strtemp);
-		ModesItems[VM_TESTLINE].label = "Please wait 5 seconds...";
-	}
-
-	BuildModesList (w, h, bits);
-}
-
-//
-// void M_ModeFlashTestText (void)
-//
-// Flashes the video mode testing text
-void M_ModeFlashTestText (void)
-{
-    if (ModesItems[VM_TESTLINE].label[0] == ' ')
-    {
-		ModesItems[VM_TESTLINE].label = "Please wait 5 seconds...";
-    }
-    else
-    {
-        ModesItems[VM_TESTLINE].label = " ";
-    }
-}
-
-void M_RestoreMode (void)
-{
-	NewWidth = OldWidth;
-	NewHeight = OldHeight;
-	NewBits = OldBits;
-	setmodeneeded = true;
-	testingmode = 0;
-	SetModesMenu (OldWidth, OldHeight, OldBits);
-}
-
-static void SetVidMode (void)
-{
-	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight(), DisplayBits);
-	if (ModesMenu.items[ModesMenu.lastOn].type == screenres)
-	{
-		if (ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)
-		{
-			ModesMenu.items[ModesMenu.lastOn].a.selmode++;
-		}
-	}
-	M_SwitchMenu (&ModesMenu);
-}
 
 BEGIN_COMMAND (menu_video)
 {

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -74,6 +74,9 @@
 #include "sv_main.h"
 #include "sv_banlist.h"
 
+#include "res_texture.h"
+#include "w_ident.h"
+
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_monstersrespawn)
@@ -103,8 +106,6 @@ extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
 
 extern int testingmode;
-extern BOOL setsizeneeded;
-extern BOOL setmodeneeded;
 extern BOOL netdemo;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 EXTERN_CVAR (st_scale) // removeme
@@ -128,7 +129,6 @@ static int demosequence;
 static int pagetic;
 
 const char *LOG_FILE;
-static bool RebootInit;
 
 //
 // D_ProcessEvents
@@ -231,76 +231,184 @@ void D_StartTitle (void)
 	D_AdvanceDemo ();
 }
 
-void D_NewWadInit()
-{
-	if (DefaultsLoaded)	{		// [ML] This is being called while loading defaults,
-		G_SetLevelStrings ();
-		G_ParseMapInfo ();
-		G_ParseMusInfo ();
-		S_ParseSndInfo();
 
-		R_Init();
-		P_Init();
-	} else {					// let DoomMain know it doesn't have to do everything
-		RebootInit = true;
-	}
+//
+// D_Init
+//
+// Called to initialize subsystems when loading a new set of WAD resource
+// files.
+//
+void D_Init()
+{
+	// only print init messages during startup, not when changing WADs
+	static bool first_time = true;
+
+	SetLanguageIDs();
+
+	M_ClearRandom();
+
+	// [AM] Init rand() PRNG, needed for non-deterministic maplist shuffling.
+	srand(time(NULL));
+
+	// start the Zone memory manager
+	bool use_zone = !Args.CheckParm("-nozone");
+	Z_Init(use_zone);
+	if (first_time)
+		Printf(PRINT_HIGH, "Z_Init: Heapsize: %u megabytes\n", got_heapsize);
+
+	// Load palette and set up colormaps
+	V_InitPalette("PLAYPAL");
+	R_InitColormaps();
+
+//	if (first_time)
+//		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
+//	Res_InitTextureManager();
+
+	// [RH] Initialize localizable strings.
+	GStrings.FreeData();
+	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.Compact();
+
+	// init the renderer
+	if (first_time)
+		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
+	R_Init();
+
+	G_SetLevelStrings();
+	G_ParseMapInfo();
+	G_ParseMusInfo();
+	S_ParseSndInfo();
+
+	if (first_time)
+		Printf(PRINT_HIGH, "P_Init: Init Playloop state.\n");
+//	P_InitEffects();
+	P_Init();
+
+	first_time = false;
 }
+
+
+//
+// D_Shutdown
+//
+// Called to shutdown subsystems when unloading a set of WAD resource files.
+// Should be called prior to D_Init when loading a new set of WADs.
+//
+void STACK_ARGS D_Shutdown()
+{
+	if (gamestate == GS_LEVEL)
+		G_ExitLevel(0, 0);
+
+	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
+	for (size_t i = 0; i < wadlevelinfos.size(); i++)
+	{
+		if (wadlevelinfos[i].snapshot)
+		{
+			delete wadlevelinfos[i].snapshot;
+			wadlevelinfos[i].snapshot = NULL;
+		}
+	}
+
+	wadlevelinfos.clear();
+	wadclusterinfos.clear();
+
+	// stop sound effects and music
+	S_Stop();
+	
+	DThinker::DestroyAllThinkers();
+
+	UndoDehPatch();
+
+	GStrings.FreeData();
+
+	// close all open WAD files
+	W_Close();
+
+//	Res_ShutdownTextureManager();
+
+	R_ShutdownColormaps();
+
+	// reset the Zone memory manager
+	Z_Close();
+}
+
+
 
 //
 // D_DoomMain
 //
 // [NightFang] - Cause I cant call ArgsSet from g_level.cpp
 // [ML] 23/1/07 - Add Response file support back in
-int teamplayset;
-
-void D_DoomMain (void)
+//
+void D_DoomMain()
 {
-	M_ClearRandom();
-	// [AM] Init rand() PRNG, needed for non-deterministic maplist shuffling.
-	srand(time(NULL));
+	unsigned int p;
 
 	gamestate = GS_STARTUP;
-	SetLanguageIDs ();
+
+	// init console so it can capture all of the startup messages
+	C_InitConsole();
+	atterm(C_ShutdownConsole);
+
+	W_SetupFileIdentifiers();
+
+	// [RH] Initialize items. Still only used for the give command. :-(
+	InitItems();
+
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
-		I_FatalError ("Could not initialize LZO routines");
+		I_FatalError("Could not initialize LZO routines");
 
-    C_ExecCmdLineParams (false, true);	// [Nes] test for +logfile command
+    C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
 	// Always log by default
     if (!LOG.is_open())
     	C_DoCommand("logfile");
 
-	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
+	M_LoadDefaults();			// load before initing other systems
+	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
-	M_LoadDefaults ();			// load before initing other systems
-	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
+	std::vector<std::string> newwadfiles, newpatchfiles;
 
-	if (!RebootInit) {
-		const char* iwad = Args.CheckValue("-iwad");
-		if (!iwad)
-			iwad = "";
-
-		std::vector<std::string> newwadfiles, newpatchfiles;
-		newwadfiles.push_back(iwad);
-		D_AddWadCommandLineFiles(newwadfiles);
-		D_AddDehCommandLineFiles(newpatchfiles);
-
-		D_LoadResourceFiles(newwadfiles, newpatchfiles);
+	const char* iwad_filename_cstr = Args.CheckValue("-iwad");
+	if (iwad_filename_cstr)
+	{
+		std::string iwad_filename(iwad_filename_cstr);
+		M_AppendExtension(iwad_filename, ".WAD");
+		newwadfiles.push_back(iwad_filename);
 	}
 
-	I_Init ();
+	D_AddWadCommandLineFiles(newwadfiles);
+	D_AddDehCommandLineFiles(newpatchfiles);
+
+	D_LoadResourceFiles(newwadfiles, newpatchfiles);
+
+	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
+	I_Init();
+
+	// [SL] Call init routines that need to be reinitialized every time WAD changes
+	D_Init();
+	atterm(D_Shutdown);
+
+	Printf(PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
+	SV_InitNetwork();
 
 	// Base systems have been inited; enable cvar callbacks
-	cvar_t::EnableCallbacks ();
+	cvar_t::EnableCallbacks();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
-	if (GStrings(STARTUP1)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP1));
-	if (GStrings(STARTUP2)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP2));
-	if (GStrings(STARTUP3)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP3));
-	if (GStrings(STARTUP4)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP4));
-	if (GStrings(STARTUP5)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP5));
+	if (GStrings(STARTUP1)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP1));
+	if (GStrings(STARTUP2)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP2));
+	if (GStrings(STARTUP3)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP3));
+	if (GStrings(STARTUP4)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP4));
+	if (GStrings(STARTUP5)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP5));
+
+	// developer mode
+	devparm = Args.CheckParm("-devparm");
+
+	if (devparm)
+		Printf (PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
 
 	// Nomonsters
 	if (Args.CheckParm("-nomonsters"))
@@ -314,88 +422,46 @@ void D_DoomMain (void)
 	if (Args.CheckParm("-fast"))
 		sv_fastmonsters = 1;
 
-	// developer mode
-	devparm = Args.CheckParm ("-devparm");
-
     // get skill / episode / map from parms
-	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
-	const char *val = Args.CheckValue ("-skill");
+	const char* val = Args.CheckValue("-skill");
 	if (val)
+		sv_skill.Set(val[0] - '0');
+
+	p = Args.CheckParm("-timer");
+	if (p && p < Args.NumArgs() - 1)
 	{
-		sv_skill.Set (val[0]-'0');
+		float time = atof(Args.GetArg(p + 1));
+		Printf(PRINT_HIGH, "Levels will end after %g minute%s.\n", time, time > 1 ? "s" : "");
+		sv_timelimit.Set(time);
 	}
 
-	if (devparm)
-		Printf (PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
-
-	const char *v = Args.CheckValue ("-timer");
-	if (v)
+	if (Args.CheckValue("-avg"))
 	{
-		double time = atof (v);
-		Printf (PRINT_HIGH, "Levels will end after %g minute%s.\n", time, time > 1 ? "s" : "");
-		sv_timelimit.Set ((float)time);
+		Printf(PRINT_HIGH, "Austin Virtual Gaming: Levels will end after 20 minutes\n");
+		sv_timelimit.Set(20);
 	}
 
-	const char *w = Args.CheckValue ("-avg");
-	if (w)
-	{
-		Printf (PRINT_HIGH, "Austin Virtual Gaming: Levels will end after 20 minutes\n");
-		sv_timelimit.Set (20);
-	}
+	// [RH] Lock any cvars that should be locked now that we're
+	// about to begin the game.
+	cvar_t::EnableNoSet();
 
-	// [RH] Now that all text strings are set up,
-	// insert them into the level and cluster data.
-	G_SetLevelStrings ();
-	// [RH] Parse through all loaded mapinfo lumps
-	G_ParseMapInfo ();
-	// [ML] Parse the musinfo lump
-	G_ParseMusInfo ();
-	// [RH] Parse any SNDINFO lumps
-	S_ParseSndInfo();
-
-	// Check for -file in shareware
-	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
-		I_Error ("You cannot -file with the shareware version. Register!");
-
-	Printf (PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
-	R_Init ();
-
-	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
-	P_Init ();
-
-	Printf (PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
-    SV_InitNetwork();
-
-	// [RH] Initialize items. Still only used for the give command. :-(
-	InitItems ();
+	// [RH] Now that all game subsystems have been initialized,
+	// do all commands on the command line other than +set
+	C_ExecCmdLineParams(false, false);
 
 	// [AM] Initialize banlist
 	SV_InitBanlist();
 
-	// [RH] Lock any cvars that should be locked now that we're
-	// about to begin the game.
-	cvar_t::EnableNoSet ();
-
-	// [RH] Now that all game subsystems have been initialized,
-	// do all commands on the command line other than +set
-	C_ExecCmdLineParams (false, false);
-
 	Printf(PRINT_HIGH, "========== Odamex Server Initialized ==========\n");
 
-#ifdef UNIX
+	#ifdef UNIX
 	if (Args.CheckParm("-fork"))
-            daemon_init();
-#endif
+		daemon_init();
+	#endif
 
-	// Use wads mentioned on the commandline to start with
-	//std::vector<std::string> start_wads;
-	//std::string custwad;
-
-	//iwad = Args.CheckValue("-iwad");
-	//D_DoomWadReboot(start_wads);
-
-	unsigned p = Args.CheckParm ("-warp");
+	p = Args.CheckParm("-warp");
 	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
 	{
 		int ep, map;
@@ -403,7 +469,7 @@ void D_DoomMain (void)
 		if (gameinfo.flags & GI_MAPxx)
 		{
 			ep = 1;
-			map = atoi (Args.GetArg(p+1));
+			map = atoi(Args.GetArg(p+1));
 		}
 		else
 		{
@@ -411,24 +477,24 @@ void D_DoomMain (void)
 			map = Args.GetArg(p+2)[0]-'0';
 		}
 
-		strncpy (startmap, CalcMapName (ep, map), 8);
+		strncpy(startmap, CalcMapName(ep, map), 8);
 		autostart = true;
 	}
 
 	// [RH] Hack to handle +map
-	p = Args.CheckParm ("+map");
-	if (p && p < Args.NumArgs()-1)
+	p = Args.CheckParm("+map");
+	if (p && p < Args.NumArgs() - 1)
 	{
-		strncpy (startmap, Args.GetArg (p+1), 8);
-		((char *)Args.GetArg (p))[0] = '-';
+		strncpy(startmap, Args.GetArg(p + 1), 8);
+		((char*)Args.GetArg(p))[0] = '-';
 		autostart = true;
 	}
 
 	strncpy(level.mapname, startmap, sizeof(level.mapname));
 
-	G_ChangeMap ();
+	G_ChangeMap();
 
-	D_DoomLoop (); // never returns
+	D_DoomLoop();	// never returns
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")

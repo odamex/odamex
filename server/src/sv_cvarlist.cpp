@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,6 +51,9 @@ CVAR(			sv_waddownload,	"0", "Allow downloading of WAD files from this server",
 CVAR(			sv_emptyreset, "0", "Reloads the current map when all players leave",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+CVAR(			sv_emptyfreeze,  "0", "Freezes the game state when there are no players",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
 CVAR(			sv_globalspectatorchat, "1", "Players can see spectator chat",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
@@ -59,9 +62,6 @@ CVAR_RANGE(		sv_maxcorpses, "200", "Maximum corpses to appear on map",
 
 CVAR(			sv_clientcount,	"0", "Set to the number of connected players (for scripting)",
 				CVARTYPE_BYTE, CVAR_NOSET | CVAR_NOENABLEDISABLE)
-
-CVAR(			sv_antiwallhack, "0", "Experimental anti-wallkhack code",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
 
 CVAR_RANGE_FUNC_DECL(sv_maxclients, "4", "Maximum clients that can connect to a server",
 				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
@@ -237,8 +237,9 @@ CVAR_RANGE(		sv_countdown, "5", "Number of seconds to wait before starting the g
 // Experimental settings (all categories)
 // =======================================
 
-CVAR(			sv_emptyfreeze,  "0", "Experimental: Does not progress the game when there are no players",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR(			sv_dmfarspawn, "0", "EXPERIMENTAL: When enabled in DM, players will spawn at the farthest point " \
+                "from each other.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
 // Hacky abominations that should be purged with fire and brimstone
 // =================================================================

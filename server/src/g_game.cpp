@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -467,6 +467,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		return false;
 
 	// spawn a teleport fog
+//	if (!player.spectator && !player.deadspectator)	// ONLY IF THEY ARE NOT A SPECTATOR
 	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
 	{
 		// emulate out-of-bounds access to finecosine / finesine tables
@@ -543,18 +544,21 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 // [RH] Returns the distance of the closest player to the given mapthing2_t.
 // denis - todo - should this be used somewhere?
-/*static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
+// [Russell] This code is horrible because it does no position checking, even 
+// zdoom 2.x still has it!
+static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
 {
+	Players::iterator it;
 	fixed_t closest = MAXINT;
 	fixed_t distance;
 
-	for (size_t i = 0; i < players.size(); i++)
+	for (it = players.begin(); it != players.end(); ++it)
 	{
-		if (!players[i].ingame() || !players[i].mo || players[i].health <= 0)
+		if (!it->ingame() || !it->mo || it->health <= 0)
 			continue;
 
-		distance = P_AproxDistance (players[i].mo->x - spot->x * FRACUNIT,
-									players[i].mo->y - spot->y * FRACUNIT);
+		distance = P_AproxDistance (it->mo->x - spot->x * FRACUNIT,
+									it->mo->y - spot->y * FRACUNIT);
 
 		if (distance < closest)
 			closest = distance;
@@ -583,8 +587,6 @@ static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
 
 	return bestspot;
 }
-
-*/
 
 // [RH] Select a deathmatch spawn spot at random (original mechanism)
 static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections)
@@ -685,6 +687,8 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 	P_SpawnPlayer (player, spot);
 }
 
+EXTERN_CVAR (sv_dmfarspawn)
+
 void G_DeathMatchSpawnPlayer (player_t &player)
 {
 	int selections;
@@ -705,7 +709,12 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 		I_Error ("No deathmatch starts");
 
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-	spot = SelectRandomDeathmatchSpot (player, selections);
+	// [Russell] - Readded, makes modern dm more interesting
+	// NOTE - Might also be useful for other game modes
+	if ((sv_dmfarspawn) && player.mo)
+        spot = SelectFarthestDeathmatchSpot(selections);
+    else
+        spot = SelectRandomDeathmatchSpot (player, selections);
 
 	if (!spot && !playerstarts.empty())
 	{
@@ -776,10 +785,8 @@ void G_DoReborn (player_t &player)
 }
 
 
-void G_ScreenShot (char *filename)
+void G_ScreenShot(const char *filename)
 {
-//	shotfile = filename;
-//	gameaction = ga_screenshot;
 }
 
 
@@ -788,8 +795,7 @@ void G_ScreenShot (char *filename)
 // G_InitFromSavegame
 // Can be called by the startup code or the menu task.
 //
-extern BOOL setsizeneeded;
-void R_ExecuteSetViewSize (void);
+void R_ExecuteSetViewSize(void);
 
 char savename[256];
 

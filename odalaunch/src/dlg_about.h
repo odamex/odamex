@@ -3,7 +3,7 @@
 //
 // $Id: dlg_config.cpp 1648 2010-07-11 02:50:26Z russellrice $
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	About Dialog
+//  About Dialog
 //
 //-----------------------------------------------------------------------------
 
@@ -29,23 +29,23 @@
 
 class dlgAbout : public wxDialog
 {
-    public:
-    
-        dlgAbout(wxWindow* parent, wxWindowID id = -1);
-		virtual ~dlgAbout() { }
-    
-    protected:
-        
-        void OnTxtCtrlUrlClick(wxTextUrlEvent &event);
-        
-        wxStaticText *m_StcTxtCopyright;
-        wxStaticText *m_StcTxtVersion;
-        wxStaticText *m_StcTxtWxVer;
-        wxTextCtrl *m_TxtCtrlDevelopers;
-        
-	private:
+public:
 
-		DECLARE_EVENT_TABLE()
+	dlgAbout(wxWindow* parent, wxWindowID id = -1);
+	virtual ~dlgAbout() { }
+
+protected:
+
+	void OnTxtCtrlUrlClick(wxTextUrlEvent& event);
+
+	wxStaticText* m_StcTxtCopyright;
+	wxStaticText* m_StcTxtVersion;
+	wxStaticText* m_StcTxtWxVer;
+	wxTextCtrl* m_TxtCtrlDevelopers;
+
+private:
+
+	DECLARE_EVENT_TABLE()
 };
 
 #endif // __DLG_ABOUT_H__

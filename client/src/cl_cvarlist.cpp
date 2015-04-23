@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -145,24 +145,26 @@ CVAR_RANGE(			con_midtime, "3", "Number of seconds to display messages in the mi
 CVAR_RANGE(			con_scrlock, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
+CVAR_RANGE(			con_buffersize, "1024", "Size of console scroll-back buffer",
+					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 512.0f, 65536.0f)
 
 CVAR_RANGE_FUNC_DECL(msg0color, "6", "",
-					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 9.0f)
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
 CVAR_RANGE_FUNC_DECL(msg1color, "5", "",
-					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 9.0f)
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
 CVAR_RANGE_FUNC_DECL(msg2color, "2", "",
-					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 9.0f)
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
 CVAR_RANGE_FUNC_DECL(msg3color, "3", "",
-					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 9.0f)
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
 CVAR_RANGE_FUNC_DECL(msg4color, "8", "",
-					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 9.0f)
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
 CVAR_RANGE_FUNC_DECL(msgmidcolor, "5", "",
-					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 9.0f)
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
 // Intermission
 // ------------
@@ -296,14 +298,19 @@ CVAR(				cl_predictweapons, "1", "Draw weapon effects immediately",
 CVAR(				cl_netgraph, "0", "Show a graph of network related statistics",
 					CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file when connecting " \
+											"to a server, even if the client already has that file " \
+											"(requires developer 1).",
+					CVARTYPE_BOOL, CVAR_NULL)
+
 // Client Preferences
 // ------------------
 
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
-CVAR(				cl_name, "Xbox Player", "",
+CVAR_FUNC_DECL(		cl_name, "Xbox Player", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #else
-CVAR(				cl_name, "Player", "",
+CVAR_FUNC_DECL(		cl_name, "Player", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
 
@@ -360,7 +367,7 @@ CVAR(				cl_splitnetdemos, "0", "Create separate netdemos for each map",
 // --------------
 
 CVAR_RANGE(		mouse_type, "0", "Use vanilla Doom mouse sensitivity or ZDoom mouse sensitivity",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR_RANGE(		mouse_sensitivity, "35.0", "Overall mouse sensitivity",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
@@ -558,28 +565,22 @@ CVAR_RANGE_FUNC_DECL(vid_gammatype, "0", "Select between Doom and ZDoom gamma co
 CVAR_RANGE_FUNC_DECL(hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
 
-CVAR_RANGE_FUNC_DECL(r_detail, "0", "Detail level (affects performance)",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
-
 CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
 				CVARTYPE_BOOL, CVAR_NULL)
 
 CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 				CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(			r_columnmethod, "1", "Deprecated",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",
 				CVARTYPE_BOOL, CVAR_NULL)
 #endif
 
-CVAR(			r_drawplayersprites, "1", "Draw player sprites (weapons)",
-				CVARTYPE_BOOL, CVAR_NULL)
+CVAR_RANGE(		r_drawplayersprites, "1", "Weapon Transparency",
+				CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR(			r_particles, "1", "Draw particles",
-				CVARTYPE_BOOL, CVAR_NULL)
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE_FUNC_DECL(r_stretchsky, "2", "Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
@@ -619,19 +620,16 @@ CVAR_RANGE(		r_painintensity, "1", "Intensity of red pain effect",
 CVAR(			r_viewsize, "0", "Set to the current video resolution",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
-CVAR(			vid_defwidth, "640", "",
+CVAR_FUNC_DECL(	vid_defwidth, "640", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(			vid_defheight, "480", "",
+CVAR_FUNC_DECL(	vid_defheight, "480", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR(			vid_defbits, "8", "",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen video modes",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			vid_autoadjust, "1", "Force video mode",
+CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest availible video mode.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			vid_displayfps, "0", "Display frames per second",
@@ -657,6 +655,12 @@ CVAR_FUNC_DECL(	vid_fullscreen, "0", "Full screen video mode",
 CVAR_FUNC_DECL(	vid_32bpp, "0", "Enable 32-bit color rendering",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR_FUNC_DECL(	vid_320x200, "0", "Enable 320x200 video emulation",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_FUNC_DECL(	vid_640x400, "0", "Enable 640x400 video emulation",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 // Optimize rendering functions based on CPU vectorization support
 // Can be of "detect" or "none" or "mmx","sse2","altivec" depending on availability; case-insensitive.
 CVAR_FUNC_DECL(	r_optimize, "detect", "Rendering optimizations",
@@ -665,10 +669,7 @@ CVAR_FUNC_DECL(	r_optimize, "detect", "Rendering optimizations",
 CVAR_RANGE_FUNC_DECL(screenblocks, "10", "Selects the size of the visible window",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 3.0f, 12.0f)
 
-CVAR_RANGE_FUNC_DECL(vid_winscale, "1.0", "Resizes the window by a scale factor",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
-
-CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan",
+CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan matting (as a percentage of the screen area)",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.5f, 1.0f)
 
 

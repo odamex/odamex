@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,8 +16,8 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Multi-Threaded Server Queries
-//	AUTHOR:	Michael Wood (mwoodj at huntsvegas dot org)
+//  Multi-Threaded Server Queries
+//  AUTHOR: Michael Wood (mwoodj at huntsvegas dot org)
 //
 //-----------------------------------------------------------------------------
 
@@ -29,56 +29,56 @@
 
 #include "net_packet.h"
 
-// Thread multiplier value
-#define ODA_THRMULVAL 8
-
-// Default number of threads for single processor/core systems
-#define ODA_THRDEFVAL 10 
-
-DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1);
+DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1)
 
 typedef enum QueryThreadStatus
 {
-     QueryThread_MIN = 0
-    ,QueryThread_Running
-    ,QueryThread_Waiting
-    ,QueryThread_Exiting
-    ,QueryThread_MAX
+	QueryThread_MIN = 0
+	                  ,QueryThread_Running
+	,QueryThread_Waiting
+	,QueryThread_Exiting
+	,QueryThread_MAX
 } QueryThreadStatus_t;
 
 class QueryThread : public wxThread
 {
-    public:
+public:
 
-        QueryThread(wxEvtHandler *EventHandler);
-        ~QueryThread() { delete m_Condition; }
-        inline QueryThreadStatus_t GetStatus() { return m_Status; };
+	QueryThread(wxEvtHandler* EventHandler);
+	~QueryThread()
+	{
+	}
 
-        void Signal(odalpapi::Server *QueryServer, 
-                    const std::string &Address, 
-                    const wxUint16 Port, 
-                    wxInt32 ServerIndex, 
-                    wxUint32 ServerTimeout, 
-                    wxInt8 Retries);
+	QueryThreadStatus_t GetStatus();
+	void SetStatus(QueryThreadStatus_t Status);
 
-        void GracefulExit();
-        
-        virtual void *Entry();
+	void Signal(odalpapi::Server* QueryServer,
+	            const std::string& Address,
+	            const wxUint16 Port,
+	            wxInt32 ServerIndex,
+	            wxUint32 ServerTimeout,
+	            wxInt8 Retries);
 
-    private:
-        wxEvtHandler      *m_EventHandler;
-        odalpapi::Server  *m_QueryServer;
-        wxInt32            m_ServerIndex;
-        wxUint32           m_ServerTimeout;
-        wxInt8             m_Retries;
-        std::string        m_Address;
-        wxUint16 m_Port;
+	void GracefulExit();
+
+	virtual void* Entry();
+
+	static int GetIdealThreadCount();
+
+private:
+	wxEvtHandler*      m_EventHandler;
+	odalpapi::Server*  m_QueryServer;
+	wxInt32            m_ServerIndex;
+	wxUint32           m_ServerTimeout;
+	wxInt8             m_Retries;
+	std::string        m_Address;
+	wxUint16 m_Port;
 
 
-        QueryThreadStatus_t m_Status;
+	QueryThreadStatus_t m_Status;
 
-        wxMutex            m_Mutex;
-        wxCondition        *m_Condition;
+	wxMutex            m_StatusMutex;
+	wxSemaphore        m_Semaphore;
 };
 
 #endif // QUERY_THREAD_H_INCLUDED

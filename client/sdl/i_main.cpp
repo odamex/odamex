@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -52,7 +52,6 @@
 #endif // WIN32
 
 #include "errors.h"
-#include "hardware.h"
 
 #include "doomtype.h"
 #include "m_argv.h"
@@ -110,10 +109,6 @@ int main(int argc, char *argv[])
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif
 
-		// ensure OString's string table is properly initialized and shutdown
-		OString::startup();
-		atterm(OString::shutdown);
-
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		Args.SetArgs (argc, argv);
 
@@ -139,12 +134,12 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		// Set SDL video centering
-		putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
-		putenv((char*)"SDL_VIDEO_CENTERED=1");
-
         // [Russell] - No more double-tapping of capslock to enable autorun
-        putenv((char*)"SDL_DISABLE_LOCK_KEYS=1");
+        SDL_putenv((char*)"SDL_DISABLE_LOCK_KEYS=1");
+
+		// Set SDL video centering
+		SDL_putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
+		SDL_putenv((char*)"SDL_VIDEO_CENTERED=1");
 
 #if defined _WIN32 && !defined _XBOX
     	// From the SDL 1.2.10 release notes:
@@ -185,7 +180,7 @@ int main(int argc, char *argv[])
         }
 #endif
 
-#ifdef LINUX
+#ifdef X11
 		// [SL] 2011-12-21 - Ensure we're getting raw DGA mouse input from X11,
 		// bypassing X11's mouse acceleration
 		putenv((char*)"SDL_VIDEO_X11_DGAMOUSE=1");
@@ -221,9 +216,7 @@ int main(int argc, char *argv[])
 //		#ifndef _WIN32
 //		atexit (call_terms);
 //		#endif
-		Z_Init ();					// 1/18/98 killough: start up memory stuff first
 
-        atterm (R_Shutdown);
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
@@ -231,10 +224,7 @@ int main(int argc, char *argv[])
 		progdir = I_GetBinaryDir();
 		startdir = I_GetCWD();
 
-		// init console
-		C_InitConsole (80 * 8, 25 * 8, false);
-
-		D_DoomMain (); // Usually does not return
+		D_DoomMain(); // Usually does not return
 
 		// If D_DoomMain does return (as is the case with the +demotest parameter)
 		// proper termination needs to occur -- Hyper_Eye
@@ -278,6 +268,5 @@ int main(int argc, char *argv[])
 #endif
 	return 0;
 }
-
 
 VERSION_CONTROL (i_main_cpp, "$Id$")

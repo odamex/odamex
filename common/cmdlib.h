@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,8 +54,8 @@ extern std::string progdir, startdir;
 
 void	FixPathSeparator (std::string &path);
 
-int		ParseHex (char *str);
-int 	ParseNum (char *str);
+int		ParseHex(const char *str);
+int 	ParseNum(const char *str);
 bool	IsNum(const char* str);		// [RH] added
 bool	IsRealNum(const char* str);
 
@@ -103,5 +103,10 @@ bool StrToTime(std::string str, time_t &tim);
 
 bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (const char **ptr, const char *str);
+
+void StripColorCodes(std::string& str);
+
+uint32_t CRC32(const uint8_t* buf, uint32_t len);
+uint32_t Log2(uint32_t n);
 
 #endif

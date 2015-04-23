@@ -1,3 +1,8 @@
+# use unquoted #defines
+if(COMMAND cmake_policy)
+  cmake_policy(SET CMP0005 NEW)
+endif(COMMAND cmake_policy)
+
 # Server flags. [AM] TODO: Test -O3 again sometime.
 if(NOT MSVC)
   set(CMAKE_CXX_FLAGS_RELEASE "-O2")
@@ -56,7 +61,7 @@ endif()
 
 # Set up FHS installation path
 if(NOT APPLE AND NOT WIN32)
-  add_definitions("-DINSTALL_PREFIX=\"${CMAKE_INSTALL_PREFIX}\"")
+  add_definitions(-DINSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
 endif()
 
 add_executable(odasrv
@@ -86,6 +91,6 @@ elseif(WIN32)
     COMPONENT server)
 else()
   install(TARGETS odasrv
-    RUNTIME DESTINATION bin
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     COMPONENT server)
 endif()

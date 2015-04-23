@@ -4,7 +4,7 @@
 // $Id$
 //
 // sc_man.c : Heretic 2 : Raven Software, Corp.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -250,6 +250,11 @@ BOOL SC_GetString (void)
 			{
 				sc_Line++;
 				sc_Crossed = true;
+			}
+			if (ScriptPtr >= ScriptEndPtr)
+			{
+				sc_End = true;
+				return false;
 			}
 		}
 		if (ScriptPtr >= ScriptEndPtr)

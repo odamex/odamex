@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -119,10 +119,21 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec->gravity
 				<< sec->damage
 				<< sec->mod
-				<< sec->floorcolormap->color
-				<< sec->floorcolormap->fade
-				<< sec->ceilingcolormap->color
-				<< sec->ceilingcolormap->fade
+
+				<< sec->colormap->color.geta() << sec->colormap->color.getr()
+				<< sec->colormap->color.getg() << sec->colormap->color.getb()
+				<< sec->colormap->fade.geta() << sec->colormap->fade.getr()
+				<< sec->colormap->fade.getg() << sec->colormap->fade.getb()
+
+				// [SL] TODO: Remove the extra set of light and fade color serialization.
+				// These are left over from when Odamex had separate colormaps for a sector's
+				// floor and ceiling. Now a sector only has one colormap but we keep these
+				// here for now for netdemo compatibility.
+				<< sec->colormap->color.geta() << sec->colormap->color.getr()
+				<< sec->colormap->color.getg() << sec->colormap->color.getb()
+				<< sec->colormap->fade.geta() << sec->colormap->fade.getr()
+				<< sec->colormap->fade.getg() << sec->colormap->fade.getb()
+
 				<< sec->alwaysfake
 				<< sec->waterzone
 				<< sec->SecActTarget
@@ -158,8 +169,6 @@ void P_SerializeWorld (FArchive &arc)
 		// do sectors
 		for (i = 0, sec = sectors; i < numsectors; i++, sec++)
 		{
-
-			unsigned int color=0, fade=0;
 			AActor* SecActTarget;
 
 			arc >> sec->floorheight
@@ -199,16 +208,27 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec->bottommap >> sec->midmap >> sec->topmap
 				>> sec->gravity
 				>> sec->damage
-				>> sec->mod
-                >> color
-				>> fade;
-			sec->floorcolormap = GetSpecialLights (
-				RPART(color), GPART(color), BPART(color),
-				RPART(fade), GPART(fade), BPART(fade));
-			arc >> color >> fade;
-			sec->ceilingcolormap = GetSpecialLights (
-				RPART(color), GPART(color), BPART(color),
-				RPART(fade), GPART(fade), BPART(fade));
+				>> sec->mod;
+
+			byte color_values[4];
+			argb_t lightcolor, fadecolor;
+
+			arc >> color_values[0] >> color_values[1] >> color_values[2] >> color_values[3];
+			lightcolor = argb_t(color_values[0], color_values[1], color_values[2], color_values[3]);
+
+			arc >> color_values[0] >> color_values[1] >> color_values[2] >> color_values[3];
+			fadecolor = argb_t(color_values[0], color_values[1], color_values[2], color_values[3]);
+
+			sec->colormap = GetSpecialLights(lightcolor.getr(), lightcolor.getg(), lightcolor.getb(),
+											fadecolor.getr(), fadecolor.getg(), fadecolor.getb());
+
+			// [SL] TODO: Remove the extra set of light and fade color deserialization.
+			// These are left over from when Odamex had separate colormaps for a sector's
+			// floor and ceiling. Now a sector only has one colormap but we keep these
+			// here for now for netdemo compatibility.
+			arc >> color_values[0] >> color_values[1] >> color_values[2] >> color_values[3];
+			arc >> color_values[0] >> color_values[1] >> color_values[2] >> color_values[3];
+
 			arc >> sec->alwaysfake
 				>> sec->waterzone
 				>> SecActTarget

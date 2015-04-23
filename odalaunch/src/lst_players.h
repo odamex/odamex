@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,26 +23,30 @@
 #ifndef __LST_PLAYERS_H__
 #define __LST_PLAYERS_H__
 
+#include <wx/colour.h>
+#include <wx/bitmap.h>
+
 #include "net_packet.h"
 #include "lst_custom.h"
 
 class LstOdaPlayerList : public wxAdvancedListCtrl
 {
-    public:
-        LstOdaPlayerList() { };
-        virtual ~LstOdaPlayerList();
+public:
+	LstOdaPlayerList() { };
+	virtual ~LstOdaPlayerList();
 
-        void AddPlayersToList(const odalpapi::Server &s);
+	void AddPlayersToList(const odalpapi::Server& s);
 
-    protected:
+protected:
 
-        void SetupPlayerListColumns();        
-        void OnCreateControl(wxWindowCreateEvent &event);
-        
-        DECLARE_DYNAMIC_CLASS(LstOdaPlayerList)
+	void SetupPlayerListColumns();
+	void OnCreateControl(wxWindowCreateEvent& event);
+	bool CreatePlayerIcon(const wxColour& In, wxBitmap& Out);
 
-    private:
-        DECLARE_EVENT_TABLE()
+	DECLARE_DYNAMIC_CLASS(LstOdaPlayerList)
+
+private:
+	DECLARE_EVENT_TABLE()
 };
 
 #endif // __LST_PLAYERS_H__

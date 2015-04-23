@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,7 @@
 #include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"
+#include "cmdlib.h"
 #include "d_netinf.h"
 #include "d_net.h"
 #include "v_palette.h"
@@ -85,6 +86,15 @@ enum
     INFO_Unlag
 };
 
+
+CVAR_FUNC_IMPL(cl_name)
+{
+	std::string newname(var.str());
+	StripColorCodes(newname);
+
+	if (var.str().compare(newname) != 0)
+		var.Set(newname.c_str());
+}
 
 
 
@@ -145,13 +155,14 @@ void D_SetupUserInfo(void)
 {
 	UserInfo* coninfo = &consoleplayer().userinfo;
 
-	std::string netname = cl_name.str();
+	std::string netname(cl_name.str());
+	StripColorCodes(netname);
+	
 	if (netname.length() > MAXPLAYERNAME)
 		netname.erase(MAXPLAYERNAME);
 
 	coninfo->netname			= netname;
 	coninfo->team				= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
-	coninfo->color				= V_GetColorFromString (NULL, cl_color.cstring());
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->unlag				= (cl_unlag != 0);
@@ -166,9 +177,16 @@ void D_SetupUserInfo(void)
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
 	D_PrepareWeaponPreferenceUserInfo();
 
+	// set the color in a pixel-format neutral way
+	argb_t color = V_GetColorFromString(cl_color);
+	coninfo->color[0] = color.geta();
+	coninfo->color[1] = color.getr();
+	coninfo->color[2] = color.getg(); 
+	coninfo->color[3] = color.getb(); 
+
 	// update color translation
 	if (!demoplayback && !connected)
-		R_BuildPlayerTranslation(consoleplayer_id, coninfo->color);
+		R_BuildPlayerTranslation(consoleplayer_id, color);
 }
 
 void D_UserInfoChanged (cvar_t *cvar)
@@ -182,13 +200,16 @@ void D_UserInfoChanged (cvar_t *cvar)
 
 FArchive &operator<< (FArchive &arc, UserInfo &info)
 {
-	arc.Write(info.netname.c_str(), MAXPLAYERNAME);
-	arc << byte(0);		// ensure the string is properly terminated
+	char netname[MAXPLAYERNAME + 1];
+	memset(netname, 0, MAXPLAYERNAME + 1);
+	strncpy(netname, info.netname.c_str(), MAXPLAYERNAME);
+	arc.Write(netname, MAXPLAYERNAME + 1);
 
 	arc.Write(&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Write(&info.gender, sizeof(info.gender));
 
-	arc << info.aimdist << info.color;
+	arc << info.aimdist;
+	arc << info.color[0] << info.color[1] << info.color[2] << info.color[3];
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin = 0;
@@ -198,23 +219,24 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 
 	arc.Write(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Write(info.weapon_prefs, sizeof(info.weapon_prefs));
- 	arc << 0;
+
+	int terminator = 0;
+ 	arc << terminator;
 
 	return arc;
 }
 
 FArchive &operator>> (FArchive &arc, UserInfo &info)
 {
-	int dummy;
-
-	char netname[MAXPLAYERNAME+1];
-	arc.Read(netname, sizeof(netname));
+	char netname[MAXPLAYERNAME + 1];
+	arc.Read(netname, MAXPLAYERNAME + 1);
 	info.netname = netname;
 
 	arc.Read(&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Read(&info.gender, sizeof(info.gender));
 
-	arc >> info.aimdist >> info.color;
+	arc >> info.aimdist;
+	arc >> info.color[0] >> info.color[1] >> info.color[2] >> info.color[3];
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin;
@@ -224,7 +246,9 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 
 	arc.Read(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Read(info.weapon_prefs, sizeof(info.weapon_prefs));
-	arc >> dummy;
+
+	int terminator;
+	arc >> terminator;	// 0
 
 	return arc;
 }

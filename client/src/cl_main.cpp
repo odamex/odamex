@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,6 +46,7 @@
 #include "p_ctf.h"
 #include "m_random.h"
 #include "w_wad.h"
+#include "w_ident.h"
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
@@ -64,8 +65,8 @@
 #include "p_pspr.h"
 #include "d_netcmd.h"
 #include "g_warmup.h"
-#include "c_level.h"
 #include "v_text.h"
+#include "hu_stuff.h"
 
 #include <string>
 #include <vector>
@@ -143,9 +144,6 @@ std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 EXTERN_CVAR (sv_weaponstay)
 
-EXTERN_CVAR (cl_name)
-EXTERN_CVAR (cl_color)
-EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_predictsectors)
 
 EXTERN_CVAR (mute_spectators)
@@ -155,32 +153,33 @@ EXTERN_CVAR(cl_autoaim)
 
 EXTERN_CVAR(cl_updaterate)
 EXTERN_CVAR(cl_interp)
+EXTERN_CVAR(cl_forcedownload)
 
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
-static int enemycolor = 0, teamcolor = 0;
+static byte enemycolor[4];
+static byte teamcolor[4];
 
-int CL_GetPlayerColor(player_t *player)
+argb_t CL_GetPlayerColor(player_t *player)
 {
 	if (!player)
 		return 0;
 
-	int color = player->userinfo.color;
+	argb_t color(player->userinfo.color[0], player->userinfo.color[1],
+				player->userinfo.color[2], player->userinfo.color[3]);
 
 	// Adjust the shade of color for team games
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		int red = RPART(player->userinfo.color);
-		int green = GPART(player->userinfo.color);
-		int blue = BPART(player->userinfo.color);
-
-		int intensity = MAX(MAX(red, green), blue) / 3;
+		const float blue_hue = 240.0f, red_hue = 0.0f;
+		float intensity = 0.6f + 0.4f * V_RGBtoHSV(color).getv();
+		intensity = std::min(intensity, 1.0f);
 
 		if (player->userinfo.team == TEAM_BLUE)
-			color = MAKERGB(0, 0,  0xAA + intensity);
+			color = V_HSVtoRGB(fahsv_t(blue_hue, 1.0f, intensity));
 		else if (player->userinfo.team == TEAM_RED)
-			color = MAKERGB(0xAA + intensity, 0, 0);
+			color = V_HSVtoRGB(fahsv_t(red_hue, 1.0f, intensity));
 	}
 
 	// apply r_teamcolor & r_enemycolor overrides
@@ -189,21 +188,21 @@ int CL_GetPlayerColor(player_t *player)
 		if (sv_gametype == GM_COOP)
 		{
 			if (r_forceteamcolor && player->id != consoleplayer_id)
-				color = teamcolor;
+				color = argb_t(teamcolor[0], teamcolor[1], teamcolor[2], teamcolor[3]);
 		}
 		else if (sv_gametype == GM_DM)
 		{
 			if (r_forceenemycolor && player->id != consoleplayer_id)
-				color = enemycolor;
+				color = argb_t(enemycolor[0], enemycolor[1], enemycolor[2], enemycolor[3]);
 		}
 		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		{
 			if (r_forceteamcolor &&
 					(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
-				color = teamcolor;
+				color = argb_t(teamcolor[0], teamcolor[1], teamcolor[2], teamcolor[3]);
 			if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
 					player->id != consoleplayer_id)
-				color = enemycolor;
+				color = argb_t(enemycolor[0], enemycolor[1], enemycolor[2], enemycolor[3]);
 		}
 	}
 
@@ -217,23 +216,28 @@ static void CL_RebuildAllPlayerTranslations()
 		return;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		int color = CL_GetPlayerColor(&*it);
-		R_BuildPlayerTranslation(it->id, color);
-	}
+		R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it));
 }
 
 CVAR_FUNC_IMPL (r_enemycolor)
 {
 	// cache the color whenever the user changes it
-	enemycolor = V_GetColorFromString(NULL, var.cstring());
+	argb_t color(V_GetColorFromString(var));
+	enemycolor[0] = color.geta();
+	enemycolor[1] = color.getr();
+	enemycolor[2] = color.getg();
+	enemycolor[3] = color.getb();
 	CL_RebuildAllPlayerTranslations();
 }
 
 CVAR_FUNC_IMPL (r_teamcolor)
 {
 	// cache the color whenever the user changes it
-	teamcolor = V_GetColorFromString(NULL, var.cstring());
+	argb_t color(V_GetColorFromString(var));
+	teamcolor[0] = color.geta();
+	teamcolor[1] = color.getr();
+	teamcolor[2] = color.getg();
+	teamcolor[3] = color.getb();
 	CL_RebuildAllPlayerTranslations();
 }
 
@@ -255,12 +259,9 @@ CVAR_FUNC_IMPL (cl_team)
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_maxclients)
 EXTERN_CVAR (sv_infiniteammo)
-EXTERN_CVAR (sv_fraglimit)
-EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_allowexit)
-EXTERN_CVAR (sv_fragexitswitch)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (sv_scorelimit)
@@ -276,7 +277,6 @@ EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (cl_autorecord)
 EXTERN_CVAR (cl_splitnetdemos)
-EXTERN_CVAR (st_scale)
 
 void CL_PlayerTimes (void);
 void CL_GetServerSettings(void);
@@ -315,10 +315,7 @@ void CL_SetMobjSpeedAndAngle(void);
 void P_PlayerLookUpDown (player_t *p);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
-int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 void AM_Stop();
-
-void ST_AdjustStatusBarScale(bool scale);
 
 //
 // CL_CalculateWorldIndexSync
@@ -420,32 +417,7 @@ void CL_QuitNetGame(void)
 		netdemo.stopPlaying();
 
 	// Reset the palette to default
-	if (I_HardwareInitialized())
-	{
-		int lu_palette = W_GetNumForName("PLAYPAL");
-		if (lu_palette != -1)
-		{
-			byte *pal = (byte *)W_CacheLumpNum(lu_palette, PU_CACHE);
-			if (pal)
-			{
-				I_SetOldPalette(pal);
-			}
-		}
-	}
-
-	// Reset the palette to default
-	if (I_HardwareInitialized())
-	{
-		int lu_palette = W_GetNumForName("PLAYPAL");
-		if (lu_palette != -1)
-		{
-			byte *pal = (byte *)W_CacheLumpNum(lu_palette, PU_CACHE);
-			if (pal)
-			{
-				I_SetOldPalette(pal);
-			}
-		}
-	}
+	V_ResetPalette();
 
 	cvar_t::C_RestoreCVars();
 }
@@ -525,7 +497,13 @@ void CL_CheckDisplayPlayer()
 		MSG_WriteByte(&net_buffer, newid);
 		displayplayer_id = newid;
 
-		ST_AdjustStatusBarScale(st_scale != 0);
+		// Changing display player can sometimes affect status bar visibility
+		// since the status bar isn't visible when display player is a spectator.
+		// The status bar needs to be refreshed as well because the status bar face
+		// widget background color changes.
+		if (idplayer(newid).spectator != idplayer(previd).spectator)
+			R_ForceViewWindowResize();
+		ST_ForceRefresh();
 	}
 
 	previd = newid;
@@ -540,8 +518,6 @@ void CL_CheckDisplayPlayer()
 template<class Iterator>
 void CL_SpyCycle(Iterator begin, Iterator end)
 {
-	extern bool st_firsttime;
-
 	// Make sure we have players to iterate over
 	if (players.empty())
 		return;
@@ -576,7 +552,6 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 
 		// spectators only cycle between active players
 		if (P_CanSpy(self, player) ||
-			(player.id == consoleplayer_id && !self.spectator) ||
 			demoplayback || netdemo.isPlaying() || netdemo.isPaused())
 		{
 			displayplayer_id = player.id;
@@ -585,7 +560,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 			if (demoplayback)
 			{
 				consoleplayer_id = player.id;
-				st_firsttime = true;
+				ST_ForceRefresh();
 			}
 
 			return;
@@ -646,8 +621,9 @@ void CL_StepTics(unsigned int count)
 		if (advancedemo)
 			D_DoAdvanceDemo();
 
-		C_Ticker ();
-		M_Ticker ();
+		C_Ticker();
+		M_Ticker();
+		HU_Ticker();
 
 		if (P_AtInterval(TICRATE))
 			CL_PlayerTimes();
@@ -833,10 +809,9 @@ BEGIN_COMMAND (playerinfo)
 
 	if(argc > 1)
 	{
-		size_t who = atoi(argv[1]);
-		player_t &p = idplayer(who);
+		player_t &p = idplayer(atoi(argv[1]));
 
-		if(!validplayer(p))
+		if (!validplayer(p))
 		{
 			Printf (PRINT_HIGH, "Bad player number\n");
 			return;
@@ -845,19 +820,32 @@ BEGIN_COMMAND (playerinfo)
 			player = &p;
 	}
 
-	if(!validplayer(*player))
+	if (!validplayer(*player))
 	{
 		Printf (PRINT_HIGH, "Not a valid player\n");
 		return;
 	}
 
+	char color[8];
+	sprintf(color, "#%02X%02X%02X",
+			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
+
+	char team[5] = { 0 };
+	if (player->userinfo.team == TEAM_BLUE)
+		sprintf(team, "BLUE");
+	else if (player->userinfo.team == TEAM_RED)
+		sprintf(team, "RED");
+
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname.c_str());
-	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
-	Printf (PRINT_HIGH, " userinfo.color       - #%06x \n",	player->userinfo.color);
-	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);
-	Printf (PRINT_HIGH, " spectator            - %d \n",	player->spectator);
-	Printf (PRINT_HIGH, " time                 - %d \n",	player->GameTime);
+	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
+	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
+	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
+	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
+	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
+	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
+	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);
+	Printf(PRINT_HIGH, " spectator        - %d \n",		player->spectator);
+	Printf(PRINT_HIGH, " downloader       - %d \n",		player->playerstate == PST_DOWNLOAD);
 	Printf (PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
@@ -865,7 +853,7 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (sv_allowcheats || (sv_gametype == GM_COOP && !sv_keepkeys))
+    if (sv_allowcheats || sv_gametype == GM_COOP)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
         Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
@@ -1338,7 +1326,9 @@ void CL_SendUserInfo(void)
 	MSG_WriteString	(&net_buffer, coninfo->netname.c_str());
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
 	MSG_WriteLong	(&net_buffer, coninfo->gender);
-	MSG_WriteLong	(&net_buffer, coninfo->color);
+
+	for (int i = 3; i >= 0; i--)
+		MSG_WriteByte(&net_buffer, coninfo->color[i]);
 
 	// [SL] place holder for deprecated skins
 	MSG_WriteString	(&net_buffer, "");
@@ -1387,7 +1377,9 @@ void CL_SetupUserInfo(void)
 	p->userinfo.netname = MSG_ReadString();
 	p->userinfo.team	= (team_t)MSG_ReadByte();
 	p->userinfo.gender	= (gender_t)MSG_ReadLong();
-	p->userinfo.color	= MSG_ReadLong();
+
+	for (int i = 3; i >= 0; i--)
+		p->userinfo.color[i] = MSG_ReadByte();
 
 	// [SL] place holder for deprecated skins
 	MSG_ReadString();
@@ -1397,16 +1389,12 @@ void CL_SetupUserInfo(void)
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
 
+	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
+
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?
 	// [SL] 2012-05-24 - Were we spectating a teammate before we changed teams?
 	CL_CheckDisplayPlayer();
-
-	int color = CL_GetPlayerColor(p);
-	R_BuildPlayerTranslation (p->id, color);
-
-	extern bool st_firsttime;
-	st_firsttime = true;
 }
 
 
@@ -1652,16 +1640,24 @@ bool CL_PrepareConnect(void)
     // TODO: Allow deh/bex file downloads
 	D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
 
-	if (!missingfiles.empty())
+	if (!missingfiles.empty() || cl_forcedownload)
 	{
-		// denis - download files
-		missing_file = missingfiles[0];
-		missing_hash = missinghashes[0];
+		if (missingfiles.empty())				// cl_forcedownload
+		{
+			missing_file = newwadfiles.back();
+			missing_hash = newwadhashes.back();
+		}
+		else									// client is really missing a file
+		{
+			missing_file = missingfiles[0];
+			missing_hash = missinghashes[0];
+		}
 
 		if (netdemo.isPlaying())
 		{
 			// Playing a netdemo and unable to download from the server
-			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n", missing_file.c_str());
+			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
+								missing_file.c_str());
 			CL_QuitNetGame();
 			return false;
 		}
@@ -1691,18 +1687,8 @@ bool CL_Connect(void)
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
 
-	if(gamestate == GS_DOWNLOAD && missing_file.length())
-	{
-		// denis - do not download commercial wads
-		if(W_IsIWAD(missing_file, missing_hash))
-		{
-			Printf(PRINT_HIGH, "This is a commercial wad and will not be downloaded.\n");
-			CL_QuitNetGame();
-			return false;
-		}
-
+	if (gamestate == GS_DOWNLOAD && missing_file.length())
 		CL_RequestDownload(missing_file, missing_hash);
-	}
 
 	compressor.reset();
 
@@ -1835,14 +1821,21 @@ void CL_Print (void)
 	byte level = MSG_ReadByte();
 	const char *str = MSG_ReadString();
 
-	Printf (level, "%s", str);
+	if (level == PRINT_CHAT)
+		Printf(level, "\\c*%s", str);
+	else if (level == PRINT_TEAMCHAT)
+		Printf(level, "\\c!%s", str);
+	else if (level == PRINT_SERVERCHAT)
+		Printf(level, "\\ck%s", str);
+	else
+		Printf(level, "%s", str);
 
 	if (show_messages)
 	{
-		if (level == PRINT_CHAT)
-			S_Sound (CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
+			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 		else if (level == PRINT_TEAMCHAT)
-			S_Sound (CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }
 
@@ -1861,50 +1854,51 @@ void CL_MidPrint (void)
  */
 void CL_Say()
 {
-	byte who = MSG_ReadByte();
+	byte message_visibility = MSG_ReadByte();
 	byte player_id = MSG_ReadByte();
 	const char* message = MSG_ReadString();
 
 	player_t &player = idplayer(player_id);
-	const char* name;
 
 	if (!validplayer(player))
 		return;
 
+	bool spectator = player.spectator || player.playerstate == PST_DOWNLOAD;
+
 	if (consoleplayer().id != player.id)
 	{
-		if (mute_spectators && player.spectator)
+		if (spectator && mute_spectators)
 			return;
 
-		if (mute_enemies && !player.spectator &&
+		if (mute_enemies && !spectator &&
 		    (sv_gametype == GM_DM ||
 		    ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
 		     player.userinfo.team != consoleplayer().userinfo.team)))
 			return;
 	}
 
-	name = player.userinfo.netname.c_str();
+	const char* name = player.userinfo.netname.c_str();
 
-	switch (who)
+	if (message_visibility == 0)
 	{
-	case 0:
 		if (strnicmp(message, "/me ", 4) == 0)
 			Printf(PRINT_CHAT, "* %s %s\n", name, &message[4]);
 		else
 			Printf(PRINT_CHAT, "%s: %s\n", name, message);
+
 		if (show_messages)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
-		break;
-	case 1:
+	}
+	else if (message_visibility == 1)
+	{
 		if (strnicmp(message, "/me ", 4) == 0)
 			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
 		else
 			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
+
 		if (show_messages)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
-		break;
 	}
-
 }
 
 //
@@ -3032,7 +3026,7 @@ void CL_GetServerSettings(void)
 		std::string CvarName = MSG_ReadString();
 		std::string CvarValue = MSG_ReadString();
 
-		var = cvar_t::FindCVar (CvarName.c_str(), &prev);
+		var = cvar_t::FindCVar(CvarName.c_str(), &prev);
 
 		// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it
 		if (var)
@@ -3054,11 +3048,7 @@ void CL_GetServerSettings(void)
 	}
 
 	// Nes - update the skies in case sv_freelook is changed.
-	R_InitSkyMap ();
-
-	// [AM] - Adhere to sv_allowwidescreen setting.
-	ST_AdjustStatusBarScale(st_scale != 0);
-	setsizeneeded = true;
+	R_InitSkyMap();
 }
 
 //
@@ -3409,8 +3399,6 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
-EXTERN_CVAR (st_scale)
-
 void CL_Spectate()
 {
 	player_t &player = CL_FindPlayer(MSG_ReadByte());
@@ -3426,7 +3414,7 @@ void CL_Spectate()
 	// that are still targeting the spectating player will cause a stack
 	// overflow in P_SetMobjState.
 
-	if (!player.spectator)
+	if (!player.spectator && !wasalive)
 	{
 		if (player.mo)
 			P_KillMobj(NULL, player.mo, NULL, true);
@@ -3434,13 +3422,18 @@ void CL_Spectate()
 		player.playerstate = PST_REBORN;
 	}
 
-	if (&player == &consoleplayer()) {
-		st_scale.Callback (); // refresh status bar size
-		if (player.spectator) {
+	if (&player == &consoleplayer())
+	{
+		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
+
+		if (player.spectator)
+		{
 			player.playerstate = PST_LIVE; // resurrect dead spectators
 			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
 			player.deltaviewheight = 1000 << FRACBITS;
-		} else {
+		}
+		else
+		{
 			displayplayer_id = consoleplayer_id; // get out of spynext
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}

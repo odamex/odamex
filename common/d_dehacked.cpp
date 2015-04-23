@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,7 +33,6 @@
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "d_items.h"
-#include "c_level.h"
 #include "g_level.h"
 #include "m_cheat.h"
 #include "cmdlib.h"
@@ -827,13 +826,15 @@ static int GetLine (void)
 			if (line[0] != '#')		// Skip comment lines
 				break;
 
-		if (!line)
-			return 0;
 
 		Line1 = skipwhite (line);
 	} while (Line1 && *Line1 == 0);	// Loop until we get a line with
 									// more than just whitespace.
-	line = strchr (Line1, '=');
+
+	if (!Line1)
+        return 0;
+
+    line = strchr (Line1, '=');
 
 	if (line) {					// We have an '=' in the input line
 		line2 = line;

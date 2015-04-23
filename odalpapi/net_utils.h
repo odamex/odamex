@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,9 +16,9 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Utility functions
+//  Utility functions
 //
-// AUTHORS: 
+// AUTHORS:
 //  Russell Rice (russell at odamex dot net)
 //  Michael Wood (mwoodj at knology dot net)
 //
@@ -35,7 +35,8 @@
  * All code for the odamex launcher protocol api is contained within the odalpapi
  * namespace.
  */
-namespace odalpapi {
+namespace odalpapi
+{
 
 uint64_t GetMillisNow();
 

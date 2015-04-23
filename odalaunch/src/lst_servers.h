@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,49 +28,54 @@
 
 typedef enum
 {
-    serverlist_field_attr
-    ,serverlist_field_name
-    ,serverlist_field_ping
-    ,serverlist_field_players
-    ,serverlist_field_wads
-    ,serverlist_field_map
-    ,serverlist_field_type
-    ,serverlist_field_iwad
-    ,serverlist_field_address
-    
-    ,max_serverlist_fields
+	serverlist_field_attr
+	,serverlist_field_name
+	,serverlist_field_ping
+	,serverlist_field_players
+	,serverlist_field_wads
+	,serverlist_field_map
+	,serverlist_field_type
+	,serverlist_field_iwad
+	,serverlist_field_address
+
+	,max_serverlist_fields
 } serverlist_fields_t;
 
 class LstOdaServerList : public wxAdvancedListCtrl
 {
-    public:
-        LstOdaServerList();
-        virtual ~LstOdaServerList();
+public:
+	LstOdaServerList();
+	virtual ~LstOdaServerList();
 
-        void AddServerToList(const odalpapi::Server &s, wxInt32 index, bool insert = true);
+	void AddServerToList(const odalpapi::Server& s, 
+                      wxInt32 index, 
+                      bool insert = true, 
+                      bool IsCustomServer = false);
 
-        wxInt32 FindServer(wxString Address);
-        wxInt32 GetSelectedServerIndex();
+	wxInt32 FindServer(wxString Address);
+	wxInt32 GetSelectedServerIndex();
 
-    protected:
-        
-        void ClearItemCells(long item);
-        
-        void OnOpenContextMenu(wxContextMenuEvent& event);
+protected:
 
-        void OnCopyAddress(wxCommandEvent& event);
+    void SetBlockedInfo(long item);
 
-        void SetupServerListColumns();
+	void ClearItemCells(long item);
 
-        void OnCreateControl(wxWindowCreateEvent &event);
+	void OnOpenContextMenu(wxContextMenuEvent& event);
 
-        DECLARE_DYNAMIC_CLASS(LstOdaServerList)
+	void OnCopyAddress(wxCommandEvent& event);
 
-    private:
+	void SetupServerListColumns();
 
-        wxMenu *m_mnuPopup;
+	void OnCreateControl(wxWindowCreateEvent& event);
 
-        DECLARE_EVENT_TABLE()
+	DECLARE_DYNAMIC_CLASS(LstOdaServerList)
+
+private:
+
+	wxMenu* m_mnuPopup;
+
+	DECLARE_EVENT_TABLE()
 };
 
 #endif // __LST_SERVERS_H__

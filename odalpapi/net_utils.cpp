@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2012 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,9 +16,9 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Utility functions
+//  Utility functions
 //
-// AUTHORS: 
+// AUTHORS:
 //  Russell Rice (russell at odamex dot net)
 //  Michael Wood (mwoodj at knology dot net)
 //
@@ -31,7 +31,8 @@
 
 #include "net_utils.h"
 
-namespace odalpapi {
+namespace odalpapi
+{
 
 // GetMillisNow()
 
@@ -53,16 +54,16 @@ uint64_t _UnwrapTime(uint32_t now32)
 
 int32_t _Millis()
 {
-    struct timeval tp;
-    
-    gettimeofday(&tp, (struct timezone *)NULL);
+	struct timeval tp;
 
-    return (tp.tv_sec * 1000 + (tp.tv_usec / 1000));
+	gettimeofday(&tp, (struct timezone*)NULL);
+
+	return (tp.tv_sec * 1000 + (tp.tv_usec / 1000));
 }
 
 uint64_t GetMillisNow()
 {
-    return _UnwrapTime(_Millis());
+	return _UnwrapTime(_Millis());
 }
 
 } // namespace

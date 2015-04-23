@@ -1,4 +1,25 @@
+# use unquoted #defines
+if(COMMAND cmake_policy)
+  cmake_policy(SET CMP0005 NEW)
+endif(COMMAND cmake_policy)
+
 include(CMakeDependentOption)
+
+# CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
+set(CMAKE_INSTALL_BINDIR "bin")
+set(CMAKE_INSTALL_DATADIR "share")
+include(GNUInstallDirs OPTIONAL)
+
+add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
+add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
+
+# options
+option(BUILD_CLIENT "Build client target" 1)
+option(BUILD_SERVER "Build server target" 1)
+option(BUILD_MASTER "Build master server target" 1)
+cmake_dependent_option( BUILD_ODALAUNCH "Build odalaunch target" 1 BUILD_CLIENT 0 )
+cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
+cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
 project(Odamex)
 cmake_minimum_required(VERSION 2.8)
@@ -6,10 +27,34 @@ cmake_minimum_required(VERSION 2.8)
 set(PROJECT_VERSION 0.7.0)
 set(PROJECT_COPYRIGHT "2006-2014")
 
+# identify the target CPU
+# adapted from the FindJNI.cmake module included with the CMake distribution
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+  set(target_arch "amd64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^i[3-9]86$")
+  set(target_arch "i386")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^alpha")
+  set(target_arch "alpha")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
+  set(target_arch "arm")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64")
+  set(target_arch "ppc64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)")
+  set(target_arch "ppc")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^sparc")
+  # Both flavors can run on the same processor
+  set(target_arch "${CMAKE_SYSTEM_PROCESSOR}" "sparc" "sparcv9")
+else()
+  set(target_arch "${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
+list(REMOVE_DUPLICATES target_arch)
+message("Using target architecture " ${target_arch})
+
 # Default build type
 if(NOT MSVC)
   if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug CACHE STRING
+    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
       FORCE)
   endif()
@@ -36,10 +81,13 @@ macro(global_compile_options)
     if(USE_SANITIZE_ADDRESS)
       set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
     endif()
+    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+      add_definitions(-DODAMEX_DEBUG)
+	endif()
   endif()
 endmacro(global_compile_options)
 
-if( ${CMAKE_SYSTEM_NAME} MATCHES SunOS )
+if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )
   set(SOLARIS 1)
 endif()
 
@@ -52,16 +100,16 @@ macro(define_platform)
     add_definitions(-DSOLARIS -DUNIX -DBSD_COMP -gstabs+)
   elseif(UNIX)
     add_definitions(-DUNIX)
+    find_package(X11)
+    if(X11_FOUND)
+      add_definitions(-DX11)
+    endif()
   endif()
 endmacro(define_platform)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # MiniUPnPc
-if (WIN32 OR APPLE)
-  set(USE_MINIUPNP 1)
-endif()
-# cmake_dependent_option(USE_MINIUPNP "Compile with miniUPnPc included in the source tree." ON "WIN32;APPLE" OFF)
 if (USE_MINIUPNP)
   set(UPNPC_BUILD_STATIC ON CACHE INTERNAL "" FORCE)
   set(UPNPC_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
@@ -71,17 +119,22 @@ if (USE_MINIUPNP)
   add_subdirectory(libraries/libminiupnpc)
 endif()
 
-# PortMidi
-cmake_dependent_option(USE_INTREE_PORTMIDI "Compile with the version of PortMidi included in the source tree." ON "WIN32" OFF)
-if(USE_INTREE_PORTMIDI)
-  add_subdirectory(libraries/portmidi)
-endif()
-
 # Subdirectories for Odamex projects
-add_subdirectory(client)
-add_subdirectory(server)
-add_subdirectory(master)
-add_subdirectory(odalaunch)
+if(BUILD_CLIENT)
+	add_subdirectory(client)
+endif()
+if(BUILD_SERVER)
+	add_subdirectory(server)
+endif()
+if(BUILD_MASTER)
+	add_subdirectory(master)
+endif()
+if(BUILD_ODALAUNCH)
+	add_subdirectory(odalaunch)
+endif()
+if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER)
+	message(FATAL_ERROR "No target chosen, doing nothing.")
+endif()
 
 # Disable the ag-odalaunch target completely: -DNO_AG-ODALAUNCH_TARGET
 # This is only really useful when setting up a universal build.
@@ -115,14 +168,14 @@ if(NOT APPLE)
       DESTINATION config-samples
       COMPONENT common)
 
-      # Windows ZIP packages are "tarbombs" by default.
-      set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
+    # Windows ZIP packages are "tarbombs" by default.
+    set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
   else()
     install(FILES odamex.wad LICENSE README
-      DESTINATION share/odamex
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/odamex
       COMPONENT common)
     install(FILES ${CONFIG_SAMPLES}
-      DESTINATION share/odamex/config-samples
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/odamex/config-samples
       COMPONENT common)
 
     option(ODAMEX_COMPONENT_PACKAGES "Create several rpm/deb packages for repository maintainers." OFF)

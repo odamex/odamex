@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -200,13 +200,13 @@ void cvar_t::ForceSet(const char* valstr)
 
 		m_Value = valf;
 
+		if (m_UseCallback)
+			Callback();
+
 		if (m_Flags & CVAR_USERINFO)
 			D_UserInfoChanged(this);
 		if (m_Flags & CVAR_SERVERINFO)
 			D_SendServerInfoChange(this, m_String.c_str());
-
-		if (m_UseCallback)
-			Callback();
 	}
 
 	m_Flags &= ~CVAR_ISDEFAULT;

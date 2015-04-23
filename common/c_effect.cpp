@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -83,14 +83,14 @@ static const struct ColorList {
 };
 
 
-void P_InitEffects (void)
+void P_InitEffects()
 {
-	const struct ColorList *color = Colors;
-	DWORD *palette = GetDefaultPalette()->basecolors;
-	int numcolors = GetDefaultPalette()->numcolors;
+	const struct ColorList* color = Colors;
+	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 
-	while (color->color) {
-		*(color->color) = BestColor (palette, color->r, color->g, color->b, numcolors);
+	while (color->color)
+	{
+		*(color->color) = V_BestColor(palette_colors, color->r, color->g, color->b);
 		color++;
 	}
 }

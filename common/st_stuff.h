@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,6 +38,13 @@ extern int ST_WIDTH;
 extern int ST_X;
 extern int ST_Y;
 
+int ST_StatusBarWidth(int surface_width, int surface_height);
+int ST_StatusBarHeight(int surface_width, int surface_height);
+int ST_StatusBarX(int surface_width, int surface_height);
+int ST_StatusBarY(int surface_width, int surface_height);
+
+void ST_ForceRefresh();
+
 //
 // STATUS BAR
 //
@@ -52,10 +59,12 @@ void ST_Ticker (void);
 void ST_Drawer (void);
 
 // Called when the console player is spawned on each level.
-void ST_Start (void);
+void ST_Start();
 
 // Called by startup code.
-void ST_Init (void);
+void ST_Init();
+
+void STACK_ARGS ST_Shutdown();
 
 // Draw the HUD (only if old status bar is not drawn)
 void ST_newDraw (void);
@@ -67,6 +76,8 @@ void ST_loadGraphics (void);
 void ST_drawStatusBar (void);
 
 namespace hud {
+
+void drawNetdemo();
 
 // [ML] New Odamex fullscreen HUD
 void OdamexHUD(void);
@@ -91,10 +102,6 @@ typedef enum
 } st_stateenum_t;
 
 bool ST_Responder(event_t* ev);
-
-// [RH] Base blending values (for e.g. underwater)
-extern int BaseBlendR, BaseBlendG, BaseBlendB;
-extern float BaseBlendA;
 
 
 #endif

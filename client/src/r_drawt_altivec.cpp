@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,11 +17,6 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Functions for drawing columns into a temporary buffer and then
-//	copying them to the screen. On machines with a decent cache, this
-//	is faster than drawing them directly to the screen. Will I be able
-//	to even understand any of this if I come back to it later? Let's
-//	hope so. :-)
 //
 //-----------------------------------------------------------------------------
 
@@ -33,20 +28,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if !defined(__APPLE_ALTIVEC__)
-#include <altivec.h>
-#endif
-
-#define ALTIVEC_ALIGNED(x) x __attribute__((aligned(16)))
-
 #include "doomtype.h"
 #include "doomdef.h"
 #include "i_system.h"
 #include "r_defs.h"
 #include "r_draw.h"
 #include "r_main.h"
-#include "r_things.h"
-#include "v_video.h"
+#include "i_video.h"
+
+#if !defined(__APPLE_ALTIVEC__)
+#include <altivec.h>
+#endif
+
+#define ALTIVEC_ALIGNED(x) x __attribute__((aligned(16)))
 
 // Useful vector shorthand typedefs:
 typedef vector signed char vs8;
@@ -54,72 +48,97 @@ typedef vector unsigned char vu8;
 typedef vector unsigned short vu16;
 typedef vector unsigned int vu32;
 
-// Blend 4 colors against 1 color with alpha
-#define blend4vs1_altivec(input,blendMult,blendInvAlpha,upper8mask) \
-	((vu8)vec_packsu( \
-		(vu16)vec_sr( \
-			(vu16)vec_mladd( \
-				(vu16)vec_and((vu8)vec_unpackh((vs8)input), (vu8)upper8mask), \
-				(vu16)blendInvAlpha, \
-				(vu16)blendMult \
-			), \
-			(vu16)vec_splat_u16(8) \
-		), \
-		(vu16)vec_sr( \
-			(vu16)vec_mladd( \
-				(vu16)vec_and((vu8)vec_unpackl((vs8)input), (vu8)upper8mask), \
-				(vu16)blendInvAlpha, \
-				(vu16)blendMult \
-			), \
-			(vu16)vec_splat_u16(8) \
-		) \
-	))
+//
+// R_GetBytesUntilAligned
+//
+static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
+{
+	uintptr_t mask = alignment - 1;
+	return (alignment - ((uintptr_t)data & mask)) & mask;
+}
+
 
 // Direct rendering (32-bit) functions for ALTIVEC optimization:
 
-void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h)
+void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	int x, y, i;
-	argb_t *line;
-	int invAlpha = 256 - alpha;
+	int surface_pitch_pixels = surface->getPitchInPixels();
+	int line_inc = surface_pitch_pixels - w;
 
-	int dpitch = cvs->pitch / sizeof(argb_t);
-	line = (argb_t *)cvs->buffer + y1 * dpitch;
+	// ALTIVEC temporaries:
+	const vu8 vec_mask = { 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF };
+	const vu16 vec_eight = vec_splat_u16(8);
 
-	int batches = w / 4;
-	int remainder = w & 3;
+	const vu32 vec_color_temp = { color, color, color, color };
+	const vu16 vec_color = (vu16)vec_and((vu8)vec_unpackl((vs8)vec_color_temp), vec_mask);
+	const vu16 vec_alpha = { alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha };
+	const vu16 vec_alphacolor = (vu16)vec_mladd(vec_alpha, vec_color, vec_splat_u16(0));
 
-	// AltiVec temporaries:
-	const vu16 zero = {0, 0, 0, 0, 0, 0, 0, 0};
-	const vu16 upper8mask = {0, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff};
-	const vu16 blendAlpha = {0, alpha, alpha, alpha, 0, alpha, alpha, alpha};
-	const vu16 blendInvAlpha = {0, invAlpha, invAlpha, invAlpha, 0, invAlpha, invAlpha, invAlpha};
-	const vu16 blendColor = {0, RPART(color), GPART(color), BPART(color), 0, RPART(color), GPART(color), BPART(color)};
-	const vu16 blendMult = vec_mladd(blendColor, blendAlpha, zero);
+	const uint16_t invalpha = 256 - alpha;
+	const vu16 vec_invalpha = { invalpha, invalpha, invalpha, invalpha, invalpha, invalpha, invalpha, invalpha };
 
-	for (y = y1; y < y1 + h; y++)
+	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
+
+	for (int rowcount = h; rowcount > 0; --rowcount)
 	{
-		// AltiVec optimize the bulk in batches of 4 colors:
-		for (i = 0, x = x1; i < batches; ++i, x += 4)
+		// [SL] Calculate how many pixels of each row need to be drawn before dest is
+		// aligned to a 128-bit boundary.
+		int align = R_GetBytesUntilAligned(dest, 128/8) / sizeof(argb_t);
+		if (align > w)
+			align = w;
+
+		const int batch_size = 8;
+		int batches = (w - align) / batch_size;
+		int remainder = (w - align) & (batch_size - 1);
+
+		// align the destination buffer to 128-bit boundary
+		while (align--)
 		{
-			const vu32 input = {line[x + 0], line[x + 1], line[x + 2], line[x + 3]};
-			const vu32 output = (vu32)blend4vs1_altivec(input, blendMult, blendInvAlpha, upper8mask);
-			vec_ste(output, 0, &line[x]);
-			vec_ste(output, 4, &line[x]);
-			vec_ste(output, 8, &line[x]);
-			vec_ste(output, 12, &line[x]);
+			*dest = alphablend1a(*dest, color, alpha);
+			dest++;
 		}
 
-		if (remainder)
+		// ALTIVEC optimize the bulk in batches of 8 pixels:
+		while (batches--)
 		{
-			// Pick up the remainder:
-			for (; x < x1 + w; x++)
-			{
-				line[x] = alphablend1a(line[x], color, alpha);
-			}
+			// Load 4 pixels into input0 and 4 pixels into input1
+			const vu32 vec_input0 = vec_ld(0, (uint32_t*)dest);
+			const vu32 vec_input1 = vec_ld(16, (uint32_t*)dest);
+
+			// Expand the width of each color channel from 8-bits to 16-bits
+			// by splitting each input vector into two 128-bit variables, each
+			// containing 2 ARGB values. 16-bit color channels are needed to
+			// accomodate multiplication.
+			vu16 vec_upper0 = (vu16)vec_and((vu8)vec_unpackh((vs8)vec_input0), vec_mask);
+			vu16 vec_lower0 = (vu16)vec_and((vu8)vec_unpackl((vs8)vec_input0), vec_mask);
+			vu16 vec_upper1 = (vu16)vec_and((vu8)vec_unpackh((vs8)vec_input1), vec_mask);
+			vu16 vec_lower1 = (vu16)vec_and((vu8)vec_unpackl((vs8)vec_input1), vec_mask);
+
+			// ((input * invAlpha) + (color * Alpha)) >> 8
+			vec_upper0 = (vu16)vec_sr(vec_mladd(vec_upper0, vec_invalpha, vec_alphacolor), vec_eight);
+			vec_lower0 = (vu16)vec_sr(vec_mladd(vec_lower0, vec_invalpha, vec_alphacolor), vec_eight);
+			vec_upper1 = (vu16)vec_sr(vec_mladd(vec_upper1, vec_invalpha, vec_alphacolor), vec_eight);
+			vec_lower1 = (vu16)vec_sr(vec_mladd(vec_lower1, vec_invalpha, vec_alphacolor), vec_eight);
+
+			// Compress the width of each color channel to 8-bits again
+			vu32 vec_output0 = (vu32)vec_packsu(vec_upper0, vec_lower0);
+			vu32 vec_output1 = (vu32)vec_packsu(vec_upper1, vec_lower1);
+
+			// Store in dest
+			vec_st(vec_output0, 0, (uint32_t*)dest);
+			vec_st(vec_output1, 16, (uint32_t*)dest);
+
+			dest += batch_size;
 		}
 
-		line += dpitch;
+		// Pick up the remainder:
+		while (remainder--)
+		{
+			*dest = alphablend1a(*dest, color, alpha);
+			dest++;
+		}
+
+		dest += line_inc;
 	}
 }
 

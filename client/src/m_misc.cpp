@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -49,7 +49,6 @@ static CVAR (configver, CONFIGVERSIONSTR, "", CVARTYPE_STRING, CVAR_ARCHIVE | CV
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (sv_maxplayers)
 
-extern unsigned int last_revision;
 extern std::vector<std::string> wadfiles;
 
 /**
@@ -242,7 +241,7 @@ std::string M_ExpandTokens(const std::string &str)
 				buffer << level.mapname;
 				break;
 			case 'r':
-				buffer << "r" << last_revision;
+				buffer << "r" << GetRevision();
 				break;
 			case '%':
 				// Literal percent

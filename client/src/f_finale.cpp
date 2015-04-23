@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,7 @@
 #include "i_system.h"
 #include "m_swap.h"
 #include "z_zone.h"
+#include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
 #include "w_wad.h"
@@ -40,6 +41,8 @@
 #include "hu_stuff.h"
 
 #include "gi.h"
+
+static IWindowSurface* cast_surface = NULL;
 
 // Stage of animation:
 //	0 = text, 1 = art screen, 2 = character cast
@@ -57,6 +60,49 @@ void	F_StartCast (void);
 void	F_CastTicker (void);
 BOOL	F_CastResponder (event_t *ev);
 void	F_CastDrawer (void);
+
+
+//
+// F_GetWidth
+//
+// Returns the width of the area that the intermission screen will be
+// drawn to. The intermisison screen should be 4:3, except in 320x200 mode.
+//
+static int F_GetWidth()
+{
+	int surface_width = I_GetPrimarySurface()->getWidth();
+	int surface_height = I_GetPrimarySurface()->getHeight();
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		return surface_width;
+
+	if (surface_width * 3 >= surface_height * 4)
+		return surface_height * 4 / 3;
+	else
+		return surface_width;
+}
+
+
+//
+// F_GetHeight
+//
+// Returns the height of the area that the intermission screen will be
+// drawn to. The intermisison screen should be 4:3, except in 320x200 mode.
+//
+static int F_GetHeight()
+{
+	int surface_width = I_GetPrimarySurface()->getWidth();
+	int surface_height = I_GetPrimarySurface()->getHeight();
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		return surface_height;
+
+	if (surface_width * 3 >= surface_height * 4)
+		return surface_height;
+	else
+		return surface_width * 3 / 4;
+}
+
 
 //
 // F_StartFinale
@@ -93,10 +139,22 @@ void F_StartFinale (char *music, char *flat, const char *text)
 
 	finalestage = 0;
 	finalecount = 0;
-	V_SetBlend (0,0,0,0);
 	S_StopAllChannels ();
 }
 
+
+
+//
+// F_ShutdownFinale
+//
+// Frees any memory allocated specifically for the finale
+//
+void STACK_ARGS F_ShutdownFinale()
+{
+	if (cast_surface)
+		I_FreeSurface(cast_surface);
+	cast_surface = NULL;
+}
 
 
 BOOL F_Responder (event_t *event)
@@ -176,40 +234,32 @@ extern patch_t *hu_font[HU_FONTSIZE];
 
 void F_TextWrite (void)
 {
-	int 		w;
-	int 		count;
-	const char*		ch;
-	int 		c;
-	int 		cx;
-	int 		cy;
-
 	// erase the entire screen to a tiled background
-	{
-		int lump = W_CheckNumForName (finaleflat, ns_flats);
-		if (lump >= 0)
-		{
-			screen->FlatFill (0,0, screen->width, screen->height,
-						(byte *)W_CacheLumpNum (lump, PU_CACHE));
-		}
-		else
-		{
-			screen->Clear (0, 0, screen->width, screen->height, 0);
-		}
-	}
-	V_MarkRect (0, 0, screen->width, screen->height);
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	primary_surface->clear();		// ensure black background in matted modes
+
+	int width = F_GetWidth();
+	int height = F_GetHeight();
+	int x = (primary_surface->getWidth() - width) / 2;
+	int y = (primary_surface->getHeight() - height) / 2;
+
+	int lump = W_CheckNumForName(finaleflat, ns_flats);
+	if (lump >= 0)
+		screen->FlatFill(x, y, width + x, height + y, (byte*)W_CacheLumpNum(lump, PU_CACHE));
+
+	V_MarkRect(x, y, width, height);
 
 	// draw some of the text onto the screen
-	cx = 10;
-	cy = 10;
-	ch = finaletext;
+	int cx = 10, cy = 10;
+	const char* ch = finaletext;
 
 	if (finalecount < 11)
 		return;
 
-	count = (finalecount - 10)/TEXTSPEED;
+	int count = (finalecount - 10) / TEXTSPEED;
 	for ( ; count ; count-- )
 	{
-		c = *ch++;
+		int c = *ch++;
 		if (!c)
 			break;
 		if (c == '\n')
@@ -220,17 +270,17 @@ void F_TextWrite (void)
 		}
 
 		c = toupper(c) - HU_FONTSTART;
-		if (c < 0 || c> HU_FONTSIZE)
+		if (c < 0 || c > HU_FONTSIZE)
 		{
 			cx += 4;
 			continue;
 		}
 
-		w = hu_font[c]->width();
-		if (cx+w > screen->width)
+		int w = hu_font[c]->width();
+		if (cx + w > width)
 			break;
-		screen->DrawPatchClean (hu_font[c], cx, cy);
-		cx+=w;
+		screen->DrawPatchClean(hu_font[c], cx, cy);
+		cx += w;
 	}
 
 }
@@ -316,6 +366,9 @@ void F_StartCast (void)
 	castonmelee = 0;
 	castattacking = false;
 	S_ChangeMusic("d_evil", true);
+
+	if (!cast_surface)
+		cast_surface = I_AllocateSurface(320, 200, 8);
 }
 
 
@@ -459,32 +512,41 @@ BOOL F_CastResponder (event_t* ev)
 //
 // F_CastDrawer
 //
-void F_CastDrawer (void)
+void F_CastDrawer()
 {
-	spritedef_t*		sprdef;
-	spriteframe_t*		sprframe;
-	int 				lump;
-	BOOL	 			flip;
-	patch_t*			patch;
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	primary_surface->clear();		// ensure black background in matted modes
 
-	// erase the entire screen to a background
-	screen->DrawPatchIndirect (W_CachePatch ("BOSSBACK"), 0, 0);
+	const patch_t* background_patch = W_CachePatch("BOSSBACK");
 
-	screen->DrawTextClean (CR_RED,
-		(screen->width - V_StringWidth (castorder[castnum].name) * CleanXfac)/2,
-		(screen->height * 180) / 200, castorder[castnum].name);
+	// draw the background to the surface
+	cast_surface->lock();
+
+	cast_surface->getDefaultCanvas()->DrawPatch(background_patch, 0, 0);
 
 	// draw the current frame in the middle of the screen
-	sprdef = &sprites[castsprite];
-	sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
-	lump = sprframe->lump[0];
-	flip = (BOOL)sprframe->flip[0];
+	const spritedef_t* sprdef = &sprites[castsprite];
+	const spriteframe_t* sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
 
-	patch = W_CachePatch (lump);
-	if (flip)
-		screen->DrawPatchFlipped (patch, 160, 170);
+	const patch_t* sprite_patch = W_CachePatch(sprframe->lump[0]);
+	if (sprframe->flip[0])
+		cast_surface->getDefaultCanvas()->DrawPatchFlipped(sprite_patch, 160, 170);
 	else
-		screen->DrawPatchIndirect (patch, 160, 170);
+		cast_surface->getDefaultCanvas()->DrawPatch(sprite_patch, 160, 170);
+
+	int width = F_GetWidth();
+	int height = F_GetHeight();
+	int x = (primary_surface->getWidth() - width) / 2;
+	int y = (primary_surface->getHeight() - height) / 2;
+
+	primary_surface->blit(cast_surface, 0, 0, 320, 200, x, y, width, height);
+
+	cast_surface->unlock();
+
+	screen->DrawTextClean(CR_RED,
+		x + (width - CleanXfac * V_StringWidth(castorder[castnum].name)) / 2,
+		y + (height * 180 / 200),
+		castorder[castnum].name);
 }
 
 
@@ -494,47 +556,39 @@ void F_CastDrawer (void)
 
 // Palettized version 8bpp
 
-void F_DrawPatchColP (int x, const patch_t *patch, int col, const DCanvas *scrn)
+void F_DrawPatchColP(int x, const patch_t *patch, int col)
 {
-	byte*		source;
-	byte*		dest;
-	byte*		desttop;
-	unsigned	count;
-	int			repeat;
-	int			c;
-	unsigned	step;
-	unsigned	invstep;
-	float		mul;
-	float		fx;
-	byte		p;
-	int			pitch;
+	IWindowSurface* surface = I_GetPrimarySurface();
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// [RH] figure out how many times to repeat this column
 	// (for screens wider than 320 pixels)
-	mul = scrn->width / (float)320;
-	fx = (float)x;
-	repeat = (int)(floor (mul*(fx+1)) - floor(mul*fx));
+	float mul = float(surface_width) / 320.0f;
+	float fx = (float)x;
+	int repeat = (int)(floor(mul*(fx+1)) - floor(mul*fx));
 	if (repeat == 0)
 		return;
 
 	// [RH] Remap virtual-x to real-x
-	x = (int)floor (mul*x);
+	x = (int)floor(mul*x);
 
 	// [RH] Figure out per-row fixed-point step
-	step = (200<<16) / scrn->height;
-	invstep = (scrn->height<<16) / 200;
+	unsigned int step = (200<<16) / surface_height;
+	unsigned int invstep = (surface_height<<16) / 200;
 
 	tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
-	desttop = scrn->buffer + x;
-	pitch = scrn->pitch;
+	
+	byte* desttop = surface->getBuffer() + x;
+	int pitch = surface->getPitchInPixels();
 
 	// step through the posts in a column
 	while (!post->end())
 	{
-		source = post->data();
-		dest = desttop + ((post->topdelta*invstep)>>16)*pitch;
-		count = (post->length * invstep) >> 16;
-		c = 0;
+		const byte* source = post->data();
+		byte* dest = desttop + ((post->topdelta * invstep)>>16) * pitch;
+		unsigned int count = (post->length * invstep) >> 16;
+		int c = 0;
+		palindex_t p;
 
 		switch (repeat) {
 			case 1:
@@ -596,49 +650,40 @@ void F_DrawPatchColP (int x, const patch_t *patch, int col, const DCanvas *scrn)
 
 // Direct version 32bpp:
 
-void F_DrawPatchColD (int x, const patch_t *patch, int col, const DCanvas *scrn)
+void F_DrawPatchColD(int x, const patch_t *patch, int col)
 {
-	byte*		source;
-	argb_t*		dest;
-	argb_t*		desttop;
-	unsigned	count;
-	int			repeat;
-	int			c;
-	unsigned	step;
-	unsigned	invstep;
-	float		mul;
-	float		fx;
-	argb_t		p;
-	int			pitch;
+	IWindowSurface* surface = I_GetPrimarySurface();
+	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// [RH] figure out how many times to repeat this column
 	// (for screens wider than 320 pixels)
-	mul = scrn->width / (float)320;
-	fx = (float)x;
-	repeat = (int)(floor (mul*(fx+1)) - floor(mul*fx));
+	float mul = float(surface_width) / 320.0f;
+	float fx = (float)x;
+	int repeat = (int)(floor(mul*(fx+1)) - floor(mul*fx));
 	if (repeat == 0)
 		return;
 
 	// [RH] Remap virtual-x to real-x
-	x = (int)floor (mul*x);
+	x = (int)floor(mul*x);
 
 	// [RH] Figure out per-row fixed-point step
-	step = (200<<16) / scrn->height;
-	invstep = (scrn->height<<16) / 200;
+	unsigned step = (200<<16) / surface_height;
+	unsigned invstep = (surface_height<<16) / 200;
 
 	tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
-	desttop = (argb_t *)scrn->buffer + x;
-	pitch = scrn->pitch / sizeof(argb_t);
+	argb_t* desttop = (argb_t *)surface->getBuffer() + x;
+	int pitch = surface->getPitchInPixels();
 
-	shaderef_t pal = shaderef_t(&GetDefaultPalette()->maps, 0);
+	shaderef_t pal = shaderef_t(&V_GetDefaultPalette()->maps, 0);
 
 	// step through the posts in a column
 	while (!post->end())
 	{
-		source = post->data();
-		dest = desttop + ((post->topdelta*invstep)>>16)*pitch;
-		count = (post->length * invstep) >> 16;
-		c = 0;
+		const byte* source = post->data();
+		argb_t* dest = desttop + ((post->topdelta*invstep)>>16)*pitch;
+		unsigned count = (post->length * invstep) >> 16;
+		int c = 0;
+		argb_t p;
 
 		switch (repeat) {
 			case 1:
@@ -715,7 +760,7 @@ void F_BunnyScroll (void)
 	p1 = W_CachePatch ("PFUB2");
 	p2 = W_CachePatch ("PFUB1");
 
-	V_MarkRect (0, 0, screen->width, screen->height);
+	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
 	scrolled = 320 - (finalecount-230)/2;
 	if (scrolled > 320)
@@ -723,14 +768,14 @@ void F_BunnyScroll (void)
 	if (scrolled < 0)
 		scrolled = 0;
 
-	if (screen->is8bit())
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
 		for ( x=0 ; x<320 ; x++)
 		{
 			if (x+scrolled < 320)
-				F_DrawPatchColP (x, p1, x+scrolled, screen);
+				F_DrawPatchColP(x, p1, x+scrolled);
 			else
-				F_DrawPatchColP (x, p2, x+scrolled - 320, screen);
+				F_DrawPatchColP(x, p2, x+scrolled - 320);
 		}
 	}
 	else
@@ -738,9 +783,9 @@ void F_BunnyScroll (void)
 	for ( x=0 ; x<320 ; x++)
 	{
 		if (x+scrolled < 320)
-				F_DrawPatchColD (x, p1, x+scrolled, screen);
+			F_DrawPatchColD(x, p1, x+scrolled);
 		else
-				F_DrawPatchColD (x, p2, x+scrolled - 320, screen);
+			F_DrawPatchColD(x, p2, x+scrolled - 320);
 		}
 	}
 
@@ -748,8 +793,7 @@ void F_BunnyScroll (void)
 		return;
 	if (finalecount < 1180)
 	{
-		screen->DrawPatchIndirect (W_CachePatch ("END0"),
-			(320-13*8)/2, (200-8*8)/2);
+		screen->DrawPatchIndirect(W_CachePatch("END0"), (320-13*8)/2, (200-8*8)/2);
 		laststage = 0;
 		return;
 	}
@@ -764,8 +808,7 @@ void F_BunnyScroll (void)
 	}
 
 	sprintf (name,"END%i",stage);
-	screen->DrawPatchIndirect (W_CachePatch (name),
-		(320-13*8)/2, (200-8*8)/2);
+	screen->DrawPatchIndirect(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
 }
 
 

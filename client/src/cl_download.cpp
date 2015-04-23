@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,7 @@
 #include "cl_main.h"
 #include "d_main.h"
 #include "i_net.h"
+#include "i_system.h"
 #include "md5.h"
 #include "m_argv.h"
 #include "m_fileio.h"
@@ -63,12 +64,15 @@ struct download_s
 		std::string filename;
 		std::string md5;
 		buf_t *buf;
-		unsigned int got_bytes;
-
+		size_t got_bytes;
+        dtime_t timeout;
+		int retrycount;
+		
 		download_s()
 		{
 			buf = NULL;
 			this->clear();
+			timeout = 0;
 		}
 
 		~download_s()
@@ -80,7 +84,9 @@ struct download_s
 			filename = "";
 			md5 = "";
 			got_bytes = 0;
-
+            timeout = 0;
+            retrycount = 0;
+            
 			if (buf != NULL)
 			{
 				delete buf;
@@ -300,6 +306,67 @@ void CL_DownloadStart()
 	SetDownloadPercentage(0);
 }
 
+// Resets the timeout for a packet retry
+void CL_DownloadTick()
+{
+    download.timeout = 0;
+}
+
+// Checks if we need to ask the server for a re-request of the current download
+// chunk
+void CL_DownloadTicker()
+{
+	dtime_t diff = 0;
+
+	if(gamestate != GS_DOWNLOAD || download.filename.empty())
+    {
+		return;
+    }
+
+    if (download.timeout)
+    {
+        // Calculate how many seconds have elapsed since the last server 
+        // response
+        diff = I_GetTime() - download.timeout;
+
+        if (diff)
+            diff /= I_ConvertTimeFromMs(1000);
+    }
+    else
+    {
+        download.timeout = I_GetTime();
+        return;
+    }
+
+    if (diff >= 3)
+    {
+		DPrintf("No response from server for %d seconds, re-requesting\n", diff);
+		
+		MSG_WriteMarker(&net_buffer, clc_wantwad);
+		MSG_WriteString(&net_buffer, download.filename.c_str());
+		MSG_WriteString(&net_buffer, download.md5.c_str());
+		MSG_WriteLong(&net_buffer, download.got_bytes);
+
+		NET_SendPacket(net_buffer, serveraddr);
+
+		download.timeout = 0;
+
+		++download.retrycount;
+    }
+
+    if (download.retrycount >= 5)
+    {
+        Printf(PRINT_HIGH, "Server hasn't responded to download re-requests, aborting\n");
+
+        download.retrycount = 0;
+        download.timeout = 0;
+
+		CL_QuitNetGame();
+
+		gamestate = GS_STARTUP;
+    }
+}
+
 //
 // CL_Download
 // denis - get a little chunk of the file and store it, much like a hampster. Well, hamster; but hampsters can dance and sing. Also much like Scraps, the Ice Age squirrel thing, stores his acorn. Only with a bit more success. Actually, quite a bit more success, specifically as in that the world doesn't crack apart when we store our chunk and it does when Scraps stores his (or her?) acorn. But when Scraps does it, it is funnier. The rest of Ice Age mostly sucks.
@@ -333,10 +400,16 @@ void CL_Download()
 		return;
 	}
 
+	// Reset retransmission timer
+	CL_DownloadTick();
+	
+	if (offset < download.got_bytes)
+        return;
+	
 	// check for missing packet, re-request
-	if(offset < download.got_bytes || offset > download.got_bytes)
+	if(offset > download.got_bytes)
 	{
-		DPrintf("Missed a packet after/before %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
+		DPrintf("Missed a packet after %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
 		MSG_WriteMarker(&net_buffer, clc_wantwad);
 		MSG_WriteString(&net_buffer, download.filename.c_str());
 		MSG_WriteString(&net_buffer, download.md5.c_str());
@@ -353,8 +426,8 @@ void CL_Download()
 	download.got_bytes += len;
 
 	// calculate percentage for the user
-	static int old_percent = 0;
-	int percent = (download.got_bytes*100)/download.buf->maxsize();
+	static size_t old_percent = 0;
+	size_t percent = (download.got_bytes*100)/download.buf->maxsize();
 	if(percent != old_percent)
 	{
         SetDownloadPercentage(percent);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,11 +36,13 @@
 #include "z_zone.h"
 #include "w_wad.h"
 #include "r_local.h"
+#include "i_video.h"
 #include "v_video.h"
 #include "doomstat.h"
 #include "st_stuff.h"
 
 #include "gi.h"
+#include "v_text.h"
 
 #undef RANGECHECK
 
@@ -62,31 +64,21 @@ drawcolumn_t dcol;
 drawspan_t dspan;
 }
 
-
-
 byte*			viewimage;
+
 extern "C" {
 int 			viewwidth;
 int 			viewheight;
 }
+
 int 			scaledviewwidth;
 int 			viewwindowx;
 int 			viewwindowy;
-byte**			ylookup;
-int* 			columnofs;
-
-extern "C" {
-int				realviewwidth;		// [RH] Physical width of view window
-int				realviewheight;		// [RH] Physical height of view window
-int				detailxshift;		// [RH] X shift for horizontal detail level
-int				detailyshift;		// [RH] Y shift for vertical detail level
-}
 
 // [RH] Pointers to the different column drawers.
 //		These get changed depending on the current
 //		screen depth.
 void (*R_DrawColumn)(void);
-void (*R_DrawColumnHoriz)(void);
 void (*R_DrawFuzzColumn)(void);
 void (*R_DrawTranslucentColumn)(void);
 void (*R_DrawTranslatedColumn)(void);
@@ -95,64 +87,64 @@ void (*R_DrawSlopeSpan)(void);
 void (*R_FillColumn)(void);
 void (*R_FillSpan)(void);
 void (*R_FillTranslucentSpan)(void);
-void (*rt_copy1col) (int hx, int sx, int yl, int yh);
-void (*rt_copy4cols) (int sx, int yl, int yh);
-void (*rt_map1col) (int hx, int sx, int yl, int yh);
-void (*rt_map4cols) (int sx, int yl, int yh);
-void (*rt_lucent1col) (int hx, int sx, int yl, int yh);
-void (*rt_lucent4cols) (int sx, int yl, int yh);
-void (*rt_tlate1col) (int hx, int sx, int yl, int yh);
-void (*rt_tlate4cols) (int sx, int yl, int yh);
-void (*rt_tlatelucent1col) (int hx, int sx, int yl, int yh);
-void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
 
 // Possibly vectorized functions:
 void (*R_DrawSpanD)(void);
 void (*R_DrawSlopeSpanD)(void);
-void (*r_dimpatchD)(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
+void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 // ============================================================================
 //
 // Fuzz Table
 //
 // Framebuffer postprocessing.
-// Creates a fuzzy image by copying pixels
-// from adjacent ones to left and right.
-// Used with an all black colormap, this
-// could create the SHADOW effect,
+// Creates a fuzzy image by copying pixels from adjacent ones to left and right.
+// Used with an all black colormap, this could create the SHADOW effect,
 // i.e. spectres and invisible players.
 //
 // ============================================================================
 
-#define FUZZTABLE	64		// [RH] FUZZTABLE changed from 50 to 64
-#define FUZZOFF		(screen->pitch)
+class FuzzTable
+{
+public:
+	FuzzTable() : pos(0) { }
 
-static int fuzzoffset[FUZZTABLE];
-static int fuzzpos = 0;
+	forceinline void incrementRow()
+	{
+		pos = (pos + 1) % FuzzTable::size;
+	}
 
-static const signed char fuzzinit[FUZZTABLE] = {
-	1,-1, 1,-1, 1, 1,-1, 1,
-	1,-1, 1, 1, 1,-1, 1, 1,
-	1,-1,-1,-1,-1, 1,-1,-1,
-	1, 1, 1, 1,-1, 1,-1, 1,
-	1,-1,-1, 1, 1,-1,-1,-1,
-   -1, 1, 1, 1, 1,-1, 1, 1,
-   -1, 1, 1, 1,-1, 1, 1, 1,
-   -1, 1, 1,-1, 1, 1,-1, 1
+	forceinline void incrementColumn()
+	{
+		pos = (pos + 3) % FuzzTable::size;
+	}
+
+	forceinline int getValue() const
+	{
+		// [SL] quickly convert the table value (-1 or 1) into (-pitch or pitch).
+		int pitch = R_GetRenderingSurface()->getPitchInPixels();
+		int value = table[pos];
+		return (pitch ^ value) + value;
+	}
+
+private:
+	static const size_t size = 64;
+	static const int table[FuzzTable::size];
+	int pos;
 };
 
-void R_InitFuzzTable (void)
-{
-	int i;
-	int fuzzoff;
+const int FuzzTable::table[FuzzTable::size] = {
+		1,-1, 1,-1, 1, 1,-1, 1,
+		1,-1, 1, 1, 1,-1, 1, 1,
+		1,-1,-1,-1,-1, 1,-1,-1,
+		1, 1, 1, 1,-1, 1,-1, 1,
+		1,-1,-1, 1, 1,-1,-1,-1,
+	   -1, 1, 1, 1, 1,-1, 1, 1,
+	   -1, 1, 1, 1,-1, 1, 1, 1,
+	   -1, 1, 1,-1, 1, 1,-1, 1 };
 
-	screen->Lock ();
-	fuzzoff = FUZZOFF << detailyshift;
-	screen->Unlock ();
 
-	for (i = 0; i < FUZZTABLE; i++)
-		fuzzoffset[i] = fuzzinit[i] * fuzzoff;
-}
+static FuzzTable fuzztable;
 
 
 // ============================================================================
@@ -219,6 +211,38 @@ argb_t translationRGB[MAXPLAYERS+1][16];
 byte *Ranges;
 static byte *translationtablesmem = NULL;
 
+
+static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
+{
+	const palindex_t start_index = 0xB0;
+	const palindex_t end_index = 0xBF;
+	const int index_range = end_index - start_index + 1;
+
+	palindex_t* dest = (palindex_t*)Ranges + color_num * 256;
+
+	for (int index = 0; index < start_index; index++)
+		dest[index] = index;
+	for (int index = end_index + 1; index < 256; index++)
+		dest[index] = index;	
+
+	int r_diff = end_color.getr() - start_color.getr();
+	int g_diff = end_color.getg() - start_color.getg();
+	int b_diff = end_color.getb() - start_color.getb();
+
+	for (palindex_t index = start_index; index <= end_index; index++)
+	{
+		int i = index - start_index;
+
+		int r = start_color.getr() + i * r_diff / index_range;
+		int g = start_color.getg() + i * g_diff / index_range;
+		int b = start_color.getb() + i * b_diff / index_range;
+
+		dest[index] = V_BestColor(V_GetDefaultPalette()->basecolors, r, g, b);
+	}
+
+	dest[0x2C] = dest[0x2D] = dest[0x2F] = dest[end_index];
+}
+
 //
 // R_InitTranslationTables
 //
@@ -227,33 +251,8 @@ static byte *translationtablesmem = NULL;
 // Assumes a given structure of the PLAYPAL.
 // Could be read from a lump instead.
 //
-void R_InitTranslationTables (void)
+void R_InitTranslationTables()
 {
-	static const char ranges[23][8] = {
-		"CRBRICK",
-		"CRTAN",
-		"CRGRAY",
-		"CRGREEN",
-		"CRBROWN",
-		"CRGOLD",
-		"CRRED",
-		"CRBLUE2",
-		{ 'C','R','O','R','A','N','G','E' },
-		"CRGRAY", // "White"
-		{ 'C','R','Y','E','L','L','O','W' },
-		"CRRED", // "Untranslated"
-		"CRGRAY", // "Black"
-		"CRBLUE",
-		"CRTAN", // "Cream"
-		"CRGREEN", // "Olive"
-		"CRGREEN", // "Dark Green"
-		"CRRED", // "Dark Red"
-		"CRBROWN", // "Dark Brown"
-		"CRRED", // "Purple"
-		"CRGRAY", // "Dark Gray"
-		"CRBLUE" // "Cyan"
-	};
-	
     R_FreeTranslationTables();
 	
 	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?
@@ -272,7 +271,7 @@ void R_InitTranslationTables (void)
 		translationtables[i] = i;
 
 	// Set up default translationRGB tables:
-	palette_t *pal = GetDefaultPalette();
+	const palette_t* pal = V_GetDefaultPalette();
 	for (int i = 0; i < MAXPLAYERS; ++i)
 	{
 		for (int j = 0x70; j < 0x80; ++j)
@@ -291,9 +290,28 @@ void R_InitTranslationTables (void)
 	}
 
 	Ranges = translationtables + (MAXPLAYERS+3)*256;
-	for (int i = 0; i < 22; i++)
-		W_ReadLump (W_GetNumForName (ranges[i]), Ranges + 256 * i);
 
+	R_BuildFontTranslation(CR_BRICK,	argb_t(0xFF, 0xB8, 0xB8), argb_t(0x47, 0x00, 0x00));
+	R_BuildFontTranslation(CR_TAN,		argb_t(0xFF, 0xEB, 0xDF), argb_t(0x33, 0x2B, 0x13));	
+	R_BuildFontTranslation(CR_GRAY,		argb_t(0xEF, 0xEF, 0xEF), argb_t(0x27, 0x27, 0x27));	
+	R_BuildFontTranslation(CR_GREEN,	argb_t(0x77, 0xFF, 0x6F), argb_t(0x0B, 0x17, 0x07));	
+	R_BuildFontTranslation(CR_BROWN,	argb_t(0xBF, 0xA7, 0x8F), argb_t(0x53, 0x3F, 0x2F));	
+	R_BuildFontTranslation(CR_GOLD,		argb_t(0xFF, 0xFF, 0x73), argb_t(0x73, 0x2B, 0x00));	
+	R_BuildFontTranslation(CR_RED,		argb_t(0xFF, 0x00, 0x00), argb_t(0x3F, 0x00, 0x00));
+	R_BuildFontTranslation(CR_BLUE,		argb_t(0x00, 0x00, 0xFF), argb_t(0x00, 0x00, 0x27));	
+	R_BuildFontTranslation(CR_ORANGE,	argb_t(0xFF, 0x80, 0x00), argb_t(0x20, 0x00, 0x00));	
+	R_BuildFontTranslation(CR_WHITE,	argb_t(0xFF, 0xFF, 0xFF), argb_t(0x24, 0x24, 0x24));	
+	R_BuildFontTranslation(CR_YELLOW,	argb_t(0xFC, 0xD0, 0x43), argb_t(0x27, 0x27, 0x27));
+	R_BuildFontTranslation(CR_BLACK,	argb_t(0x50, 0x50, 0x50), argb_t(0x13, 0x13, 0x13));
+	R_BuildFontTranslation(CR_LIGHTBLUE,argb_t(0xB4, 0xB4, 0xFF), argb_t(0x00, 0x00, 0x73));
+	R_BuildFontTranslation(CR_CREAM,	argb_t(0xFF, 0xD7, 0xBB), argb_t(0xCF, 0x83, 0x53));
+	R_BuildFontTranslation(CR_OLIVE,	argb_t(0x7B, 0x7F, 0x50), argb_t(0x2F, 0x37, 0x1F));
+	R_BuildFontTranslation(CR_DARKGREEN,argb_t(0x43, 0x93, 0x37), argb_t(0x0B, 0x17, 0x07));
+	R_BuildFontTranslation(CR_DARKRED,	argb_t(0xAF, 0x2B, 0x2B), argb_t(0x2B, 0x00, 0x00));
+	R_BuildFontTranslation(CR_DARKBROWN,argb_t(0xA3, 0x6B, 0x3F), argb_t(0x1F, 0x17, 0x0B));
+	R_BuildFontTranslation(CR_PURPLE,	argb_t(0xCF, 0x00, 0xCF), argb_t(0x23, 0x00, 0x23));
+	R_BuildFontTranslation(CR_DARKGRAY,	argb_t(0x8B, 0x8B, 0x8B), argb_t(0x23, 0x23, 0x23));
+	R_BuildFontTranslation(CR_CYAN,		argb_t(0x00, 0xF0, 0xF0), argb_t(0x00, 0x1F, 0x1F));
 }
 
 void R_FreeTranslationTables (void)
@@ -305,7 +323,7 @@ void R_FreeTranslationTables (void)
 // [Nes] Vanilla player translation table.
 void R_BuildClassicPlayerTranslation (int player, int color)
 {
-	palette_t *pal = GetDefaultPalette();
+	const palette_t* pal = V_GetDefaultPalette();
 	int i;
 	
 	if (color == 1) // Indigo
@@ -339,52 +357,42 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 
 // [RH] Create a player's translation table based on
 //		a given mid-range color.
-void R_BuildPlayerTranslation (int player, int color)
+void R_BuildPlayerTranslation(int player, argb_t dest_color)
 {
-	palette_t *pal = GetDefaultPalette();
-	byte *table = &translationtables[player * 256];
-	int i;
-	float r = (float)RPART(color) / 255.0f;
-	float g = (float)GPART(color) / 255.0f;
-	float b = (float)BPART(color) / 255.0f;
-	float h, s, v;
-	float sdelta, vdelta;
+	const palette_t* pal = V_GetDefaultPalette();
+	byte* table = &translationtables[player * 256];
 
-	RGBtoHSV (r, g, b, &h, &s, &v);
+	fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
+	float h = hsv_temp.geth(), s = hsv_temp.gets(), v = hsv_temp.getv();
 
 	s -= 0.23f;
 	if (s < 0.0f)
 		s = 0.0f;
-	sdelta = 0.014375f;
+	float sdelta = 0.014375f;
 
 	v += 0.1f;
 	if (v > 1.0f)
 		v = 1.0f;
-	vdelta = -0.05882f;
+	float vdelta = -0.05882f;
 
-	for (i = 0x70; i < 0x80; i++) {
-		HSVtoRGB (&r, &g, &b, h, s, v);
+	for (int i = 0x70; i < 0x80; i++)
+	{
+		argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
 
 		// Set up RGB values for 32bpp translation:
-		translationRGB[player][i - 0x70] = MAKERGB(
-			(int)(r * 255.0f),
-			(int)(g * 255.0f),
-			(int)(b * 255.0f)
-		);
+		translationRGB[player][i - 0x70] = color;
+		table[i] = V_BestColor(pal->basecolors, color);
 
-		table[i] = BestColor (pal->basecolors,
-							  (int)(r * 255.0f),
-							  (int)(g * 255.0f),
-							  (int)(b * 255.0f),
-							  pal->numcolors);
 		s += sdelta;
-		if (s > 1.0f) {
+		if (s > 1.0f)
+		{
 			s = 1.0f;
 			sdelta = 0.0f;
 		}
 
 		v += vdelta;
-		if (v < 0.0f) {
+		if (v < 0.0f)
+		{
 			v = 0.0f;
 			vdelta = 0.0f;
 		}
@@ -448,7 +456,7 @@ template<typename PIXEL_T, typename COLORFUNC>
 static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
 #ifdef RANGECHECK 
-	if (drawcolumn.x >= screen->width || drawcolumn.yl < 0 || drawcolumn.yh >= screen->height)
+	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
 	{
 		Printf (PRINT_HIGH, "R_FillColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
 		return;
@@ -456,7 +464,7 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 #endif
 
 	int color = drawcolumn.color;
-	int pitch = drawcolumn.pitch / sizeof(PIXEL_T);
+	int pitch = drawcolumn.pitch_in_pixels;
 	int count = drawcolumn.yh - drawcolumn.yl + 1;
 	if (count <= 0)
 		return;
@@ -487,7 +495,7 @@ template<typename PIXEL_T, typename COLORFUNC>
 static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
 #ifdef RANGECHECK 
-	if (drawcolumn.x >= screen->width || drawcolumn.yl < 0 || drawcolumn.yh >= screen->height)
+	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
 	{
 		Printf (PRINT_HIGH, "R_DrawColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
 		return;
@@ -495,7 +503,7 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 #endif
 
 	palindex_t* source = drawcolumn.source;
-	int pitch = drawcolumn.pitch / sizeof(PIXEL_T);
+	int pitch = drawcolumn.pitch_in_pixels;
 	int count = drawcolumn.yh - drawcolumn.yl + 1;
 	if (count <= 0)
 		return;
@@ -603,7 +611,6 @@ static forceinline void R_FillSpanGeneric(PIXEL_T* dest, const drawspan_t& draws
 #endif
 
 	int color = drawspan.color;
-	int colsize = drawspan.colsize;
 	int count = drawspan.x2 - drawspan.x1 + 1;
 	if (count <= 0)
 		return;
@@ -612,7 +619,7 @@ static forceinline void R_FillSpanGeneric(PIXEL_T* dest, const drawspan_t& draws
 
 	do {
 		colorfunc(color, dest);
-		dest += colsize;
+		dest++;
 	} while (--count);
 }
 
@@ -637,7 +644,6 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& 
 #endif
 
 	palindex_t* source = drawspan.source;
-	int colsize = drawspan.colsize;
 	int count = drawspan.x2 - drawspan.x1 + 1;
 	if (count <= 0)
 		return;
@@ -657,7 +663,7 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& 
 		//  re-index using light/colormap.
 
 		colorfunc(source[spot], dest);
-		dest += colsize;
+		dest++;
 
 		// Next step in u,v.
 		xfrac += xstep;
@@ -691,7 +697,6 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 #endif
 
 	palindex_t* source = drawspan.source;
-	int colsize = drawspan.colsize;
 	int count = drawspan.x2 - drawspan.x1 + 1;
 	if (count <= 0)
 		return;
@@ -733,7 +738,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 
 			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 			colorfunc(source[spot], dest);
-			dest += colsize;
+			dest++;
 			ufrac += ustep;
 			vfrac += vstep;
 		}
@@ -769,7 +774,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 
 			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 			colorfunc(source[spot], dest);
-			dest += colsize;
+			dest++;
 			ufrac += ustep;
 			vfrac += vstep;
 		}
@@ -792,7 +797,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 // buffer.
 //
 // The functors are instantiated with a shaderef_t* parameter (typically
-// dcol.colormap or ds_colormap) that will be used to shade the pixel.
+// dcol.colormap or dspan.colormap) that will be used to shade the pixel.
 //
 // ----------------------------------------------------------------------------
 
@@ -829,12 +834,12 @@ class PaletteFuzzyFunc
 {
 public:
 	PaletteFuzzyFunc(const drawcolumn_t& drawcolum) :
-			colormap(&GetDefaultPalette()->maps, 6) { }
+			colormap(&V_GetDefaultPalette()->maps, 6) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
-		*dest = colormap.index(dest[fuzzoffset[fuzzpos]]);
-		fuzzpos = (fuzzpos + 1) & (FUZZTABLE - 1);
+		*dest = colormap.index(dest[fuzztable.getValue()]);
+		fuzztable.incrementRow();
 	}
 
 private:
@@ -930,7 +935,7 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-#define FB_COLDEST_P ((palindex_t*)(ylookup[dcol.yl] + columnofs[dcol.x]))
+#define FB_COLDEST_P ((palindex_t*)dcol.destination + dcol.yl * dcol.pitch_in_pixels + dcol.x)
 
 //
 // R_FillColumnP
@@ -981,8 +986,7 @@ void R_DrawFuzzColumnP()
 		dcol.yh = viewheight - 2;
 
 	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>(FB_COLDEST_P, dcol);
-
-	fuzzpos = (fuzzpos + 3) & (FUZZTABLE - 1);
+	fuzztable.incrementColumn();
 }
 
 //
@@ -1024,62 +1028,6 @@ void R_DrawTlatedLucentColumnP()
 	R_DrawColumnGeneric<palindex_t, PaletteTranslatedTranslucentColormapFunc>(FB_COLDEST_P, dcol);
 }
 
-//
-// R_FillColumnHorizP
-//
-// Fills a column in an 8bpp palettized buffer dcol.temp with a solid color,
-// determined by dcol.color. Performs no shading.
-//
-void R_FillColumnHorizP()
-{
-	if (dcol.yl > dcol.yh)
-		return;
-
-	const int x = dcol.x & 3;
-	unsigned int **span = &dc_ctspan[x];
-
-	(*span)[0] = dcol.yl;
-	(*span)[1] = dcol.yh;
-	*span += 2;
-	palindex_t* dest = &dc_temp[x + 4*dcol.yl];
-
-	int oldpitch = dcol.pitch;
-	dcol.pitch = 4;
-	
-	R_FillColumnGeneric<palindex_t, PaletteFunc>(dest, dcol);
-
-	dcol.pitch = oldpitch;
-}
-
-//
-// R_DrawColumnHorizP
-//
-// Renders a column to an 8bpp palettized buffer dcol.temp from the source buffer
-// dcol.source and scaled by dcol.iscale. The column is rendered to the buffer in
-// an interleaved format, writing to every 4th byte of the buffer. Performs
-// no shading. 
-//
-void R_DrawColumnHorizP()
-{
-	if (dcol.yl > dcol.yh)
-		return;
-
-	const int x = dcol.x & 3;
-	unsigned int **span = &dc_ctspan[x];
-
-	(*span)[0] = dcol.yl;
-	(*span)[1] = dcol.yh;
-	*span += 2;
-	palindex_t* dest = &dc_temp[x + 4*dcol.yl];
-
-	int oldpitch = dcol.pitch;
-	dcol.pitch = 4;
-
-	R_DrawColumnGeneric<palindex_t, PaletteFunc>(dest, dcol);
-
-	dcol.pitch = oldpitch;
-}
-
 
 // ----------------------------------------------------------------------------
 //
@@ -1087,13 +1035,13 @@ void R_DrawColumnHorizP()
 //
 // ----------------------------------------------------------------------------
 
-#define FB_SPANDEST_P ((palindex_t*)(ylookup[dspan.y] + columnofs[dspan.x1]))
+#define FB_SPANDEST_P ((palindex_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1)
 
 //
 // R_FillSpanP
 //
 // Fills a span in the 8bpp palettized screen buffer with a solid color,
-// determined by ds_color. Performs no shading.
+// determined by dspan.color. Performs no shading.
 //
 void R_FillSpanP()
 {
@@ -1104,8 +1052,8 @@ void R_FillSpanP()
 // R_FillTranslucentSpanP
 //
 // Fills a span in the 8bpp palettized screen buffer with a solid color,
-// determined by ds_color using translucency. Shading is performed 
-// using ds_colormap.
+// determined by dspan.color using translucency. Shading is performed 
+// using dspan.colormap.
 //
 void R_FillTranslucentSpanP()
 {
@@ -1116,7 +1064,7 @@ void R_FillTranslucentSpanP()
 // R_DrawSpanP
 //
 // Renders a span for a level plane to the 8bpp palettized screen buffer from
-// the source buffer ds_source. Shading is performed using ds_colormap.
+// the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
 void R_DrawSpanP()
 {
@@ -1127,7 +1075,7 @@ void R_DrawSpanP()
 // R_DrawSlopeSpanP
 //
 // Renders a span for a sloped plane to the 8bpp palettized screen buffer from
-// the source buffer ds_source. Shading is performed using ds_colormap.
+// the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
 void R_DrawSlopeSpanP()
 {
@@ -1150,7 +1098,7 @@ void R_DrawSlopeSpanP()
 // buffer.
 //
 // The functors are instantiated with a shaderef_t* parameter (typically
-// dcol.colormap or ds_colormap) that will be used to shade the pixel.
+// dcol.colormap or dspan.colormap) that will be used to shade the pixel.
 //
 // ----------------------------------------------------------------------------
 
@@ -1190,9 +1138,9 @@ public:
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		argb_t work = dest[fuzzoffset[fuzzpos] >> 2];
+		argb_t work = dest[fuzztable.getValue()];
 		*dest = work - ((work >> 2) & 0x3f3f3f);
-		fuzzpos = (fuzzpos + 1) & (FUZZTABLE - 1);
+		fuzztable.incrementRow();
 	}
 };
 
@@ -1284,7 +1232,7 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-#define FB_COLDEST_D ((argb_t*)(ylookup[dcol.yl] + columnofs[dcol.x]))
+#define FB_COLDEST_D ((argb_t*)dcol.destination + dcol.yl * dcol.pitch_in_pixels + dcol.x)
 
 //
 // R_FillColumnD
@@ -1324,8 +1272,7 @@ void R_DrawFuzzColumnD()
 		dcol.yh = viewheight - 2;
 
 	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>(FB_COLDEST_D, dcol);
-
-	fuzzpos = (fuzzpos + 3) & (FUZZTABLE - 1);
+	fuzztable.incrementColumn();
 }
 
 //
@@ -1374,13 +1321,13 @@ void R_DrawTlatedLucentColumnD()
 //
 // ----------------------------------------------------------------------------
 
-#define FB_SPANDEST_D ((argb_t*)(ylookup[dspan.y] + columnofs[dspan.x1]))
+#define FB_SPANDEST_D ((argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1)
 
 //
 // R_FillSpanD
 //
 // Fills a span in the 32bpp ARGB8888 screen buffer with a solid color,
-// determined by ds_color. Performs no shading.
+// determined by dspan.color. Performs no shading.
 //
 void R_FillSpanD()
 {
@@ -1391,8 +1338,8 @@ void R_FillSpanD()
 // R_FillTranslucentSpanD
 //
 // Fills a span in the 32bpp ARGB8888 screen buffer with a solid color,
-// determined by ds_color using translucency. Shading is performed 
-// using ds_colormap.
+// determined by dspan.color using translucency. Shading is performed 
+// using dspan.colormap.
 //
 void R_FillTranslucentSpanD()
 {
@@ -1403,7 +1350,7 @@ void R_FillTranslucentSpanD()
 // R_DrawSpanD
 //
 // Renders a span for a level plane to the 32bpp ARGB8888 screen buffer from
-// the source buffer ds_source. Shading is performed using ds_colormap.
+// the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
 void R_DrawSpanD_c()
 {
@@ -1414,7 +1361,7 @@ void R_DrawSpanD_c()
 // R_DrawSlopeSpanD
 //
 // Renders a span for a sloped plane to the 32bpp ARGB8888 screen buffer from
-// the source buffer ds_source. Shading is performed using ds_colormap.
+// the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
 void R_DrawSlopeSpanD_c()
 {
@@ -1424,66 +1371,21 @@ void R_DrawSlopeSpanD_c()
 
 /****************************************************/
 
-//
-// R_InitBuffer 
-// Creats lookup tables that avoid
-//  multiplies and other hazzles
-//  for getting the framebuffer address
-//  of a pixel to draw.
-//
-void R_InitBuffer(int width, int height) 
-{ 
-	int 		i;
-	byte		*buffer;
-	int			pitch;
-	int			xshift;
 
-	int windowwidth = width << detailxshift;
-	int windowheight = height << detailyshift;
-
-	// Handle resize,
-	//	e.g. smaller view windows
-	//	with border and/or status bar.
-	viewwindowx = (screen->width - windowwidth) >> 1;
-
-	// [RH] Adjust column offset according to bytes per pixel
-	//		and detail mode
-	xshift = detailxshift + (screen->is8bit() ? 0 : 2);
-
-	// Column offset. For windows
-	for (i = 0; i < width; i++)
-		columnofs[i] = (viewwindowx + i) << xshift;
-
-	// Same with base row offset.
-	if (windowwidth == screen->width)
-		viewwindowy = 0;
-	else
-		viewwindowy = (ST_Y - windowheight) >> 1;
-
-	screen->Lock();
-	buffer = screen->buffer;
-	pitch = screen->pitch;
-	screen->Unlock();
-
-	// Precalculate all row offsets.
-	for (i = 0; i < height; i++)
-		ylookup[i] = buffer + ((i << detailyshift) + viewwindowy) * pitch;
-}
-
-
-void R_DrawBorder (int x1, int y1, int x2, int y2)
+void R_DrawBorder(int x1, int y1, int x2, int y2)
 {
-	int lump;
+	IWindowSurface* surface = R_GetRenderingSurface();
+	DCanvas* canvas = surface->getDefaultCanvas();
 
-	lump = W_CheckNumForName (gameinfo.borderFlat, ns_flats);
-	if (lump >= 0)
+	int lumpnum = W_CheckNumForName(gameinfo.borderFlat, ns_flats);
+	if (lumpnum >= 0)
 	{
-		screen->FlatFill (x1 & ~63, y1, x2, y2,
-			(byte *)W_CacheLumpNum (lump, PU_CACHE));
+		const byte* patch_data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+		canvas->FlatFill(x1, y1, x2, y2, patch_data);
 	}
 	else
 	{
-		screen->Clear (x1, y1, x2, y2, 0);
+		canvas->Clear(x1, y1, x2, y2, argb_t(0, 0, 0));
 	}
 }
 
@@ -1495,136 +1397,51 @@ void R_DrawBorder (int x1, int y1, int x2, int y2)
 //
 void V_MarkRect (int x, int y, int width, int height);
 
-void R_DrawViewBorder (void)
+void R_DrawViewBorder()
 {
-	int x, y;
-	int offset, size;
-	gameborder_t *border;
-
-	if (realviewwidth == screen->width) {
+	if (!R_BorderVisible())
 		return;
-	}
 
-	border = gameinfo.border;
-	offset = border->offset;
-	size = border->size;
+	IWindowSurface* surface = R_GetRenderingSurface();
+	DCanvas* canvas = surface->getDefaultCanvas();
+	int surface_width = surface->getWidth();
 
-	R_DrawBorder (0, 0, screen->width, viewwindowy);
-	R_DrawBorder (0, viewwindowy, viewwindowx, realviewheight + viewwindowy);
-	R_DrawBorder (viewwindowx + realviewwidth, viewwindowy, screen->width, realviewheight + viewwindowy);
-	R_DrawBorder (0, viewwindowy + realviewheight, screen->width, ST_Y);
+	const gameborder_t* border = gameinfo.border;
+	const int offset = border->offset;
+	const int size = border->size;
 
-	for (x = viewwindowx; x < viewwindowx + realviewwidth; x += size)
+	// draw top border
+	R_DrawBorder(0, 0, surface_width, viewwindowy);
+	// draw bottom border
+	R_DrawBorder(0, viewwindowy + viewheight, surface_width, ST_Y);
+	// draw left border
+	R_DrawBorder(0, viewwindowy, viewwindowx, viewwindowy + viewheight);
+	// draw right border
+	R_DrawBorder(viewwindowx + viewwidth, viewwindowy, surface_width, viewwindowy + viewheight);
+
+	// draw beveled edge for the viewing window's top and bottom edges
+	for (int x = viewwindowx; x < viewwindowx + viewwidth; x += size)
 	{
-		screen->DrawPatch (W_CachePatch (border->t),
-			x, viewwindowy - offset);
-		screen->DrawPatch (W_CachePatch (border->b),
-			x, viewwindowy + realviewheight);
+		canvas->DrawPatch(W_CachePatch(border->t), x, viewwindowy - offset);
+		canvas->DrawPatch(W_CachePatch(border->b), x, viewwindowy + viewheight);
 	}
-	for (y = viewwindowy; y < viewwindowy + realviewheight; y += size)
-	{
-		screen->DrawPatch (W_CachePatch (border->l),
-			viewwindowx - offset, y);
-		screen->DrawPatch (W_CachePatch (border->r),
-			viewwindowx + realviewwidth, y);
-	}
-	// Draw beveled edge.
-	screen->DrawPatch (W_CachePatch (border->tl),
-		viewwindowx-offset, viewwindowy-offset);
-	
-	screen->DrawPatch (W_CachePatch (border->tr),
-		viewwindowx+realviewwidth, viewwindowy-offset);
-	
-	screen->DrawPatch (W_CachePatch (border->bl),
-		viewwindowx-offset, viewwindowy+realviewheight);
-	
-	screen->DrawPatch (W_CachePatch (border->br),
-		viewwindowx+realviewwidth, viewwindowy+realviewheight);
 
-	V_MarkRect (0, 0, screen->width, ST_Y);
+	// draw beveled edge for the viewing window's left and right edges
+	for (int y = viewwindowy; y < viewwindowy + viewheight; y += size)
+	{
+		canvas->DrawPatch(W_CachePatch(border->l), viewwindowx - offset, y);
+		canvas->DrawPatch(W_CachePatch(border->r), viewwindowx + viewwidth, y);
+	}
+
+	// draw beveled edge for the viewing window's corners
+	canvas->DrawPatch(W_CachePatch(border->tl), viewwindowx - offset, viewwindowy - offset);
+	canvas->DrawPatch(W_CachePatch(border->tr), viewwindowx + viewwidth, viewwindowy - offset);
+	canvas->DrawPatch(W_CachePatch(border->bl), viewwindowx - offset, viewwindowy + viewheight);
+	canvas->DrawPatch(W_CachePatch(border->br), viewwindowx + viewwidth, viewwindowy + viewheight);
+
+	V_MarkRect(0, 0, surface_width, ST_Y);
 }
 
-// ============================================================================
-//
-// Horizontal and vertical pixel doubling functions
-//
-// ============================================================================
-
-static void R_DoubleX8()
-{
-	int rowsize = realviewwidth >> 2;
-	int pitch = screen->pitch >> (2 - detailyshift);
-
-	unsigned int* line = (unsigned int*)(screen->buffer + viewwindowy * screen->pitch + viewwindowx);
-	for (int y = 0; y < viewheight; y++, line += pitch)
-	{
-		for (int x = 0; x < rowsize; x += 2)
-		{
-			unsigned int a = line[x + 0];
-			unsigned int b = line[x + 1];
-			a &= 0x00ff00ff;
-			b &= 0x00ff00ff;
-			line[x + 0] = a | (a << 8);
-			line[x + 1] = b | (b << 8);
-		}
-	}
-}
-
-static void R_DoubleX32()
-{
-	int rowsize = realviewwidth;
-	int pitch = screen->pitch >> (2 - detailyshift);
-
-	argb_t* line = (argb_t*)(screen->buffer + viewwindowy * screen->pitch + viewwindowx);
-	for (int y = 0; y < viewheight; y++, line += pitch)
-	{
-		for (int x = 0; x < rowsize; x += 2)
-			line[x + 1] = line[x];
-	}
-}
-
-static void R_DoubleY8()
-{
-	int rowsize = realviewwidth;
-	int pitch = screen->pitch;
-
-	byte* line = screen->buffer + viewwindowy * pitch + viewwindowx;
-
-	for (int y = 0; y < viewheight; y++, line += pitch << 1)
-		memcpy(line + pitch, line, rowsize);
-}
-
-static void R_DoubleY32()
-{
-	int rowsize = realviewwidth << 2;
-	int pitch = screen->pitch;
-
-	byte* line = screen->buffer + viewwindowy * pitch + viewwindowx;
-
-	for (int y = 0; y < viewheight; y++, line += pitch << 1)
-		memcpy(line + pitch, line, rowsize);
-}
-
-
-// [RH] Double pixels in the view window horizontally
-//		and/or vertically (or not at all).
-void R_DetailDouble (void)
-{
-	if (screen->is8bit())
-	{
-		if (detailxshift)
-			R_DoubleX8();
-		if (detailyshift)
-			R_DoubleY8();
-	}
-	else
-	{
-		if (detailxshift)
-			R_DoubleX32();
-		if (detailyshift)
-			R_DoubleY32();
-	}
-}
 
 
 enum r_optimize_kind {
@@ -1770,8 +1587,6 @@ void R_InitVectorizedDrawers()
 	if (optimize_kind == OPTIMIZE_NONE)
 	{
 		// [SL] set defaults to non-vectorized drawers
-		rtv_lucent4colsP        = rtv_lucent4cols_c;
-		rtv_lucent4colsD        = rtv_lucent4cols_c;
 		R_DrawSpanD				= R_DrawSpanD_c;
 		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;
 		r_dimpatchD             = r_dimpatchD_c;
@@ -1779,8 +1594,6 @@ void R_InitVectorizedDrawers()
 	#ifdef __SSE2__
 	if (optimize_kind == OPTIMIZE_SSE2)
 	{
-		rtv_lucent4colsP        = rtv_lucent4cols_SSE2;
-		rtv_lucent4colsD        = rtv_lucent4cols_SSE2;
 		R_DrawSpanD				= R_DrawSpanD_SSE2;
 		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_SSE2;
 		r_dimpatchD             = r_dimpatchD_SSE2;
@@ -1789,8 +1602,6 @@ void R_InitVectorizedDrawers()
 	#ifdef __MMX__
 	else if (optimize_kind == OPTIMIZE_MMX)
 	{
-		rtv_lucent4colsP        = rtv_lucent4cols_MMX;
-		rtv_lucent4colsD        = rtv_lucent4cols_MMX;
 		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
 		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
 		r_dimpatchD             = r_dimpatchD_MMX;
@@ -1799,8 +1610,6 @@ void R_InitVectorizedDrawers()
 	#ifdef __ALTIVEC__
 	else if (optimize_kind == OPTIMIZE_ALTIVEC)
 	{
-		rtv_lucent4colsP        = rtv_lucent4cols_c;    // TODO
-		rtv_lucent4colsD        = rtv_lucent4cols_c;    // TODO
 		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
 		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
@@ -1808,8 +1617,6 @@ void R_InitVectorizedDrawers()
 	#endif
 
 	// Check that all pointers are definitely assigned!
-	assert(rtv_lucent4colsP != NULL);
-	assert(rtv_lucent4colsD != NULL);
 	assert(R_DrawSpanD != NULL);
 	assert(R_DrawSlopeSpanD != NULL);
 	assert(r_dimpatchD != NULL);
@@ -1818,13 +1625,10 @@ void R_InitVectorizedDrawers()
 // [RH] Initialize the column drawer pointers
 void R_InitColumnDrawers ()
 {
-	if (!screen)
+	if (!I_VideoInitialized())
 		return;
 
-	// NOTE(jsd): It's okay to use R_DrawColumnHorizP because it renders to a temp buffer first.
-	R_DrawColumnHoriz		= R_DrawColumnHorizP;
-
-	if (screen->is8bit())
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
 		R_DrawColumn			= R_DrawColumnP;
 		R_DrawFuzzColumn		= R_DrawFuzzColumnP;
@@ -1835,17 +1639,6 @@ void R_InitColumnDrawers ()
 		R_FillColumn			= R_FillColumnP;
 		R_FillSpan				= R_FillSpanP;
 		R_FillTranslucentSpan	= R_FillTranslucentSpanP;
-
-		rt_copy1col				= rt_copy1colP;
-		rt_copy4cols			= rt_copy4colsP;
-		rt_map1col				= rt_map1colP;
-		rt_map4cols				= rt_map4colsP;
-		rt_lucent1col			= rt_lucent1colP;
-		rt_lucent4cols			= rt_lucent4colsP;
-		rt_tlate1col			= rt_tlate1colP;
-		rt_tlate4cols			= rt_tlate4colsP;
-		rt_tlatelucent1col		= rt_tlatelucent1colP;
-		rt_tlatelucent4cols		= rt_tlatelucent4colsP;
 	}
 	else
 	{
@@ -1859,17 +1652,6 @@ void R_InitColumnDrawers ()
 		R_FillColumn			= R_FillColumnD;
 		R_FillSpan				= R_FillSpanD;
 		R_FillTranslucentSpan	= R_FillTranslucentSpanD;
-		
-		rt_copy1col				= rt_copy1colD;
-		rt_copy4cols			= rt_copy4colsD;
-		rt_map1col				= rt_map1colD;
-		rt_map4cols				= rt_map4colsD;
-		rt_lucent1col			= rt_lucent1colD;
-		rt_lucent4cols			= rt_lucent4colsD;
-		rt_tlate1col			= rt_tlate1colD;
-		rt_tlate4cols			= rt_tlate4colsD;
-		rt_tlatelucent1col		= rt_tlatelucent1colD;
-		rt_tlatelucent4cols		= rt_tlatelucent4colsD;
 	}
 }
 

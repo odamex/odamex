@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -325,9 +325,9 @@ void AddCommandString(const std::string &str, bool onlycvars)
 		cend = cp - 1;
 
 		// remove leading and trailing whitespace
-		while (*cstart == ' ' && cstart < cend)
+		while (cstart < cend && *cstart == ' ')
 			cstart++;
-		while (*cend == ' ' && cend > cstart)
+		while (cend > cstart && *cend == ' ')
 			cend--;
 
 		size_t clength = cend - cstart + 1;

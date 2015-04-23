@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,11 +17,6 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Functions for drawing columns into a temporary buffer and then
-//	copying them to the screen. On machines with a decent cache, this
-//	is faster than drawing them directly to the screen. Will I be able
-//	to even understand any of this if I come back to it later? Let's
-//	hope so. :-)
 //
 //-----------------------------------------------------------------------------
 
@@ -48,178 +43,89 @@
 #include "r_defs.h"
 #include "r_draw.h"
 #include "r_main.h"
-#include "r_things.h"
-#include "v_video.h"
+#include "i_video.h"
 
-// With MMX we can process 4 16-bit words at a time.
-
-// Blend 2 colors against 1 color using MMX:
-#define blend2vs1_mmx(input, blendMult, blendInvAlpha, upper8mask) \
-	(_mm_packs_pu16( \
-		_mm_srli_pi16( \
-			_mm_add_pi16( \
-				_mm_mullo_pi16( \
-					_mm_and_si64(_mm_unpacklo_pi8(input, input), upper8mask), \
-					blendInvAlpha \
-				), \
-				blendMult \
-			), \
-			8 \
-		), \
-		_mm_srli_pi16( \
-			_mm_add_pi16( \
-				_mm_mullo_pi16( \
-					_mm_and_si64(_mm_unpackhi_pi8(input, input), upper8mask), \
-					blendInvAlpha \
-				), \
-				blendMult \
-			), \
-			8 \
-		) \
-	))
 
 // Direct rendering (32-bit) functions for MMX optimization:
 
-template<>
-void rtv_lucent4cols_MMX(byte *source, argb_t *dest, int bga, int fga)
+//
+// R_GetBytesUntilAligned
+//
+static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
 {
-	// SSE2 temporaries:
-	const __m64 upper8mask = _mm_set_pi16(0, 0xff, 0xff, 0xff);
-	const __m64 fgAlpha = _mm_set_pi16(0, fga, fga, fga);
-	const __m64 bgAlpha = _mm_set_pi16(0, bga, bga, bga);
-
-#if 1
-	const __m64 bgColors01 = _mm_setr_pi32(dest[0], dest[1]);
-#else
-	const __m64 bgColors01 = *((__m64 *)&dest[0]);
-#endif
-	const __m64 fgColors01 = _mm_setr_pi32(
-		rt_mapcolor<argb_t>(dcol.colormap, source[0]),
-		rt_mapcolor<argb_t>(dcol.colormap, source[1])
-	);
-
-	const __m64 finalColors01 = _mm_packs_pu16(
-		_mm_srli_pi16(
-			_mm_adds_pi16(
-				_mm_mullo_pi16(_mm_and_si64(_mm_unpacklo_pi8(bgColors01, bgColors01), upper8mask), bgAlpha),
-				_mm_mullo_pi16(_mm_and_si64(_mm_unpacklo_pi8(fgColors01, fgColors01), upper8mask), fgAlpha)
-			),
-			8
-		),
-		_mm_srli_pi16(
-			_mm_adds_pi16(
-				_mm_mullo_pi16(_mm_and_si64(_mm_unpackhi_pi8(bgColors01, bgColors01), upper8mask), bgAlpha),
-				_mm_mullo_pi16(_mm_and_si64(_mm_unpackhi_pi8(fgColors01, fgColors01), upper8mask), fgAlpha)
-			),
-			8
-		)
-	);
-
-#if 1
-	const __m64 bgColors23 = _mm_setr_pi32(dest[2], dest[3]);
-#else
-	// NOTE(jsd): No guarantee of 64-bit alignment; cannot use.
-	const __m64 bgColors23 = *((__m64 *)&dest[2]);
-#endif
-	const __m64 fgColors23 = _mm_setr_pi32(
-		rt_mapcolor<argb_t>(dcol.colormap, source[2]),
-		rt_mapcolor<argb_t>(dcol.colormap, source[3])
-	);
-
-	const __m64 finalColors23 = _mm_packs_pu16(
-		_mm_srli_pi16(
-			_mm_adds_pi16(
-				_mm_mullo_pi16(_mm_and_si64(_mm_unpacklo_pi8(bgColors23, bgColors23), upper8mask), bgAlpha),
-				_mm_mullo_pi16(_mm_and_si64(_mm_unpacklo_pi8(fgColors23, fgColors23), upper8mask), fgAlpha)
-			),
-			8
-		),
-		_mm_srli_pi16(
-			_mm_adds_pi16(
-				_mm_mullo_pi16(_mm_and_si64(_mm_unpackhi_pi8(bgColors23, bgColors23), upper8mask), bgAlpha),
-				_mm_mullo_pi16(_mm_and_si64(_mm_unpackhi_pi8(fgColors23, fgColors23), upper8mask), fgAlpha)
-			),
-			8
-		)
-	);
-	
-#if 1
-	dest[0] = _mm_cvtsi64_si32(_mm_srli_si64(finalColors01, 32*0));
-	dest[1] = _mm_cvtsi64_si32(_mm_srli_si64(finalColors01, 32*1));
-	dest[2] = _mm_cvtsi64_si32(_mm_srli_si64(finalColors23, 32*0));
-	dest[3] = _mm_cvtsi64_si32(_mm_srli_si64(finalColors23, 32*1));
-#else
-	// NOTE(jsd): No guarantee of 64-bit alignment; cannot use.
-	*((__m64 *)&dest[0]) = finalColors01;
-	*((__m64 *)&dest[2]) = finalColors23;
-#endif
-
-	// Required to reset FP:
-	_mm_empty();
+	uintptr_t mask = alignment - 1;
+	return (alignment - ((uintptr_t)data & mask)) & mask;
 }
 
-template<>
-void rtv_lucent4cols_MMX(byte *source, palindex_t *dest, int bga, int fga)
+
+void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	for (int i = 0; i < 4; ++i)
-	{
-		const palindex_t fg = rt_mapcolor<palindex_t>(dcol.colormap, source[i]);
-		const palindex_t bg = dest[i];
+	int surface_pitch_pixels = surface->getPitchInPixels();
+	int line_inc = surface_pitch_pixels - w;
 
-		dest[i] = rt_blend2<palindex_t>(bg, bga, fg, fga);
-	}
-}
-
-void r_dimpatchD_MMX(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h)
-{
-	int x, y, i;
-	argb_t *line;
-	int invAlpha = 256 - alpha;
-
-	int dpitch = cvs->pitch / sizeof(DWORD);
-	line = (argb_t *)cvs->buffer + y1 * dpitch;
-
-	int batches = w / 2;
-	int remainder = w & 1;
+	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
 
 	// MMX temporaries:
-	const __m64 upper8mask = _mm_set_pi16(0, 0xff, 0xff, 0xff);
-	const __m64 blendAlpha = _mm_set_pi16(0, alpha, alpha, alpha);
-	const __m64 blendInvAlpha = _mm_set_pi16(0, invAlpha, invAlpha, invAlpha);
-	const __m64 blendColor = _mm_set_pi16(0, RPART(color), GPART(color), BPART(color));
-	const __m64 blendMult = _mm_mullo_pi16(blendColor, blendAlpha);
+	const __m64 vec_color		= _mm_unpacklo_pi8(_mm_set1_pi32(color), _mm_setzero_si64());
+	const __m64 vec_alphacolor	= _mm_mullo_pi16(vec_color, _mm_set1_pi16(alpha));
+	const __m64 vec_invalpha	= _mm_set1_pi16(256 - alpha);
 
-	for (y = y1; y < y1 + h; y++)
+	for (int rowcount = h; rowcount > 0; --rowcount)
 	{
-		// MMX optimize the bulk in batches of 2 colors:
-		for (i = 0, x = x1; i < batches; ++i, x += 2)
+		// [SL] Calculate how many pixels of each row need to be drawn before dest is
+		// aligned to a 64-bit boundary.
+		int align = R_GetBytesUntilAligned(dest, 64/8) / sizeof(argb_t);
+		if (align > w)
+			align = w;
+
+		const int batch_size = 4;
+		int batches = (w - align) / batch_size;
+		int remainder = (w - align) & (batch_size - 1);
+
+		// align the destination buffer to 64-bit boundary
+		while (align--)
 		{
-#if 1
-			const __m64 input = _mm_setr_pi32(line[x + 0], line[x + 1]);
-#else
-			// NOTE(jsd): No guarantee of 64-bit alignment; cannot use.
-			const __m64 input = *((__m64 *)line[x]);
-#endif
-			const __m64 output = blend2vs1_mmx(input, blendMult, blendInvAlpha, upper8mask);
-#if 1
-			line[x+0] = _mm_cvtsi64_si32(_mm_srli_si64(output, 32*0));
-			line[x+1] = _mm_cvtsi64_si32(_mm_srli_si64(output, 32*1));
-#else
-			// NOTE(jsd): No guarantee of 64-bit alignment; cannot use.
-			*((__m64 *)line[x]) = output;
-#endif
+			*dest = alphablend1a(*dest, color, alpha);
+			dest++;
 		}
 
-		if (remainder)
+		// MMX optimize the bulk in batches of 4 pixels:
+		while (batches--)
 		{
-			// Pick up the remainder:
-			for (; x < x1 + w; x++)
-			{
-				line[x] = alphablend1a(line[x], color, alpha);
-			}
+			// Load 2 pixels into input0 and 2 pixels into input1
+			const __m64 vec_input0 = *((__m64*)(dest + 0));
+			const __m64 vec_input1 = *((__m64*)(dest + 2));
+
+			// Expand the width of each color channel from 8-bits to 16-bits
+			// by splitting each input vector into two 64-bit variables, each
+			// containing 1 ARGB value. 16-bit color channels are needed to
+			// accomodate multiplication.
+			__m64 vec_lower0 = _mm_unpacklo_pi8(vec_input0, _mm_setzero_si64());
+			__m64 vec_upper0 = _mm_unpackhi_pi8(vec_input0, _mm_setzero_si64());
+			__m64 vec_lower1 = _mm_unpacklo_pi8(vec_input1, _mm_setzero_si64());
+			__m64 vec_upper1 = _mm_unpackhi_pi8(vec_input1, _mm_setzero_si64());
+
+			// ((input * invAlpha) + (color * Alpha)) >> 8
+			vec_lower0 = _mm_srli_pi16(_mm_add_pi16(_mm_mullo_pi16(vec_lower0, vec_invalpha), vec_alphacolor), 8); 
+			vec_upper0 = _mm_srli_pi16(_mm_add_pi16(_mm_mullo_pi16(vec_upper0, vec_invalpha), vec_alphacolor), 8); 
+			vec_lower1 = _mm_srli_pi16(_mm_add_pi16(_mm_mullo_pi16(vec_lower1, vec_invalpha), vec_alphacolor), 8); 
+			vec_upper1 = _mm_srli_pi16(_mm_add_pi16(_mm_mullo_pi16(vec_upper1, vec_invalpha), vec_alphacolor), 8); 
+
+			// Compress the width of each color channel to 8-bits again and store in dest
+			*((__m64*)(dest + 0)) = _mm_packs_pu16(vec_lower0, vec_upper0);
+			*((__m64*)(dest + 2)) = _mm_packs_pu16(vec_lower1, vec_upper1);
+
+			dest += batch_size;
 		}
 
-		line += dpitch;
+		// Pick up the remainder:
+		while (remainder--)
+		{
+			*dest = alphablend1a(*dest, color, alpha);
+			dest++;
+		}
+
+		dest += line_inc;
 	}
 
 	// Required to reset FP:

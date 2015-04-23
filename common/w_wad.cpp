@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -74,118 +74,6 @@ void**			lumpcache;
 
 static unsigned	stdisk_lumpnum;
 
-// Valid IWAD file names
-const gamewadinfo_t doomwadnames[] =
-{
-    { "DOOM2F.WAD", 
-		{ "" },
-		true
-	},
-
-    {	"DOOM2.WAD",
-		{ "25E1459CA71D321525F84628F45CA8CD",		// Doom 2 1.9
-		  "C3BEA40570C23E511A7ED3EBCD9865F7",		// Doom 2 BFG Edition
-		  "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
-		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
-		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
-		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
-		},
-		true
-	},
-
-    {	"DOOM2BFG.WAD",
-		{ "C3BEA40570C23E511A7ED3EBCD9865F7" },
-		true
-	},
-
-    {	"PLUTONIA.WAD",
-		{ "75C8CF89566741FA9D22447604053BD7" },
-		true
-	},
-
-    {	"TNT.WAD",
-		{ "4E158D9953C79CCF97BD0663244CC6B6" },
-		true
-	},
-
-    {	"DOOMU.WAD",
-		{ "C4FE9FD920207691A9F493668E0A2083" },
-		true
-	},
-
-    {	"DOOM.WAD",
-		{ "C4FE9FD920207691A9F493668E0A2083",		// Ultimate Doom 1.9
-		  "1CD63C5DDFF1BF8CE844237F580E9CF3",		// Doom Registered 1.9
-		  "FB35C4A5A9FD49EC29AB6E900572C524",		// Ultimate Doom BFG Edition
-		  "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
-		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
-		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
-		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
-		},
-		true
-	},
-
-    {	"DOOMBFG.WAD",
-		{ "FB35C4A5A9FD49EC29AB6E900572C524" },
-		true
-	},
-
-	{	"DOOM1.WAD",
-		{ "F0CEFCA49926D00903CF57551D901ABE" },
-		false
-	},
-
-	{	"FREEDOOM1.WAD",
-		{ "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
-		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
-		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
-		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
-		},
-		false
-	},
-
-	{	"FREEDOOMU.WAD",							// old alias for FREEDOOM1.WAD
-		{ "2E1AF223CAD142E3487C4327CF0AC8BD",		// Ultimate Freedoom 0.6.4
-		  "7B7720FC9C1A20FB8EBB3E9532C089AF",		// Ultimate Freedoom 0.7
-		  "2A24722C068D3A74CD16F770797FF198",		// Ultimate Freedoom 0.8beta1
-		  "30095B256DD3A1566BBC30286F72BC47"		// Ultimate Freedoom 0.8
-		},
-		false
-	},
-
-    {	"FREEDOOM2.WAD",
-		{ "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
-		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
-		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
-		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
-		},
-		false
-	},
-
-    {	"FREEDOOM.WAD",								// old alias for FREEDOOM2.WAD
-		{ "5292A1275340798ACF9CEE07081718E8",		// Freedoom 0.6.4
-		  "21EA277FA5612267EB7985493B33150E",		// Freedoom 0.7
-		  "0597B0937E9615A9667B98077332597D",		// Freedoom 0.8beta1
-		  "E3668912FC37C479B2840516C887018B"		// Freedoom 0.8
-		},
-		false
-	},
-
-    {	"FREEDM.WAD",
-		{ "05859098BF191899903EF343AFBA369D"		// FreeDM 0.8
-		},
-		false
-	},
-
-    {	"CHEX.WAD",
-		{ "25485721882B050AFA96A56E5758DD52" },
-		true
-	},
-
-	// the entry below is used to indicate the end of the list
-    { "", { "" }, false }
-};
-
 //
 // W_LumpNameHash
 //
@@ -232,69 +120,6 @@ void W_HashLumps(void)
 		lumpinfo[i].next = lumpinfo[j].index;     // Prepend to list
 		lumpinfo[j].index = i;
 	}
-}
-
-//
-// W_GetIWADInfo
-//
-// Helper function that returns a pointer to the appropriate entry of
-// doomwadnames for a given file name if it is an IWAD.
-// Returns NULL if the given file name is not an IWAD.
-//
-static const gamewadinfo_t* W_GetIWADInfo(const std::string& filename, const std::string& hash)
-{
-	if (filename.empty())
-		return NULL;
-
-	// find our match if there is one
-	for (size_t i = 0; !doomwadnames[i].name.empty(); i++)
-	{
-		if (!hash.empty())
-		{
-			// hash comparison
-			for (size_t j = 0; !doomwadnames[i].hash[j].empty(); j++)
-			{
-				// the hash is always right! even if the name is wrong..
-				if (iequals(hash, doomwadnames[i].hash[j]))
-					return &doomwadnames[i];
-			}
-		}
-		else
-		{
-			std::string base_filename, base_iwadname;
-			M_ExtractFileBase(filename, base_filename);
-			M_ExtractFileBase(doomwadnames[i].name, base_iwadname);
-
-			if (iequals(filename, doomwadnames[i].name) ||
-				iequals(base_filename, base_iwadname))
-				return &doomwadnames[i];
-		}
-	}
-
-	return NULL;
-}
-
-//
-// W_IsIWAD
-//
-// Checks to see whether a given filename is an IWAD (Internal WAD), it can take
-// shortened (base name) versions of standard file names (eg doom2, plutonia),
-// it can also do an optional hash comparison against a correct hash list
-// for more "accurate" detection.
-bool W_IsIWAD(const std::string& filename, const std::string& hash)
-{
-	return W_GetIWADInfo(filename, hash) != NULL;
-}
-
-//
-// W_IsIWADCommercial
-//
-// Checks to see whether a given filename is an IWAD flagged as "commercial"
-//
-bool W_IsIWADCommercial(const std::string& filename, const std::string& hash)
-{
-	const gamewadinfo_t* entry = W_GetIWADInfo(filename, hash);
-	return entry && entry->commercial;
 }
 
 
@@ -349,31 +174,6 @@ std::string W_MD5(std::string filename)
 //
 // LUMP BASED ROUTINES.
 //
-
-
-//
-// Names of lumps that can't be overridden by client-only PWADs
-//
-static const char* NonOverrideNames [] =
-{
-	"THINGS",
-	"LINEDEFS",
-	"SIDEDEFS",
-	"VERTEXES",
-	"SEGS",
-	"SSECTORS",
-	"NODES",
-	"SECTORS",
-	"REJECT",
-	"BLOCKMAP",
-	"BEHAVIOR",
-	"DECORATE",
-	"MAPINFO",
-	"PLAYPAL",
-	"COLORMAP",
-	""
-};
-
 
 //
 // W_AddLumps
@@ -865,24 +665,27 @@ void W_GetLumpName (char *to, unsigned  lump)
 //
 void* W_CacheLumpNum(unsigned int lump, int tag)
 {
-	byte*	ptr;
-
 	if ((unsigned)lump >= numlumps)
 		I_Error ("W_CacheLumpNum: %i >= numlumps",lump);
 
 	if (!lumpcache[lump])
 	{
 		// read the lump in
+		// [RH] Allocate one byte more than necessary for the
+		//		lump and set the extra byte to zero so that
+		//		various text parsing routines can just call
+		//		W_CacheLumpNum() and not choke.
 
-		//printf ("cache miss on lump %i\n",lump);
-		ptr = (byte *)Z_Malloc (W_LumpLength (lump) + 1, tag, &lumpcache[lump]);
-		W_ReadLump (lump, lumpcache[lump]);
-		ptr [W_LumpLength (lump)] = 0;
+		//DPrintf("cache miss on lump %i\n",lump);
+		unsigned int lump_length = W_LumpLength(lump);
+		lumpcache[lump] = (byte *)Z_Malloc(lump_length + 1, tag, &lumpcache[lump]);
+		W_ReadLump(lump, lumpcache[lump]);
+		*((unsigned char*)lumpcache[lump] + lump_length) = 0;
 	}
 	else
 	{
 		//printf ("cache hit on lump %i\n",lump);
-		Z_ChangeTag (lumpcache[lump],tag);
+		Z_ChangeTag(lumpcache[lump],tag);
 	}
 
 	return lumpcache[lump];
@@ -924,17 +727,17 @@ patch_t* W_CachePatch(unsigned lumpnum, int tag)
 		if (newlumplen > 0)
 		{
 			// valid patch
-			byte *ptr = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
+			lumpcache[lumpnum] = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
 			patch_t *newpatch = (patch_t*)lumpcache[lumpnum];
+			*((unsigned char*)lumpcache[lumpnum] + newlumplen) = 0;
 
 			R_ConvertPatch(newpatch, rawpatch);
-			ptr[newlumplen] = 0;
 		}
 		else
 		{
 			// invalid patch - just create a header with width = 0, height = 0
-			Z_Malloc(sizeof(patch_t) + 1, tag, &lumpcache[lumpnum]);
-			memset(lumpcache[lumpnum], 0, sizeof(patch_t) + 1);
+			lumpcache[lumpnum] = Z_Malloc(sizeof(patch_t), tag, &lumpcache[lumpnum]);
+			memset(lumpcache[lumpnum], 0, sizeof(patch_t));
 		}
 
 		delete [] rawlumpdata;
