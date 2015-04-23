@@ -74,6 +74,7 @@ public:
 		block.user = (void**)user;
 
 		mMemoryBlockTable.insert(std::make_pair(ptr, block));
+		*block.user = ptr;
 		return ptr;
 	}
 
