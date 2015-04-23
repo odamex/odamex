@@ -3,7 +3,7 @@
 //
 // $Id: res_filelib.cpp 3426 2012-11-19 17:25:28Z dr_sean $
 //
-// Copyright (C) 2006-2014 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
