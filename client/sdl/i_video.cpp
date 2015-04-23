@@ -703,7 +703,9 @@ void I_InitHardware()
 	}
 	else
 	{
+#ifdef SDL12
 		video_subsystem = new ISDL12VideoSubsystem();
+#endif	// SDL12
 
 		const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
 		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());

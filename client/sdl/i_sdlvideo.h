@@ -28,7 +28,7 @@
 #include "i_sdl.h" 
 #include "i_video.h"
 
-
+#ifdef SDL12
 // ============================================================================
 //
 // ISDL12VideoCapabilities class interface
@@ -174,6 +174,7 @@ private:
 
 	IWindow*						mWindow;
 };
+#endif	// SDL12
 
 
 #endif	// __I_SDLVIDEO_H__

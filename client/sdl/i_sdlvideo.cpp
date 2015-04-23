@@ -58,6 +58,7 @@
 
 // ****************************************************************************
 
+#ifdef SDL12
 // ============================================================================
 //
 // ISDL12VideoCapabilities class implementation
@@ -623,7 +624,7 @@ ISDL12VideoSubsystem::~ISDL12VideoSubsystem()
 
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
-
+#endif	// SDL12
 
 VERSION_CONTROL (i_sdlvideo_cpp, "$Id$")
 
