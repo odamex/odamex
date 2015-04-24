@@ -472,6 +472,8 @@ void ISDL12MouseInputDevice::gatherEvents()
 		for (int i = 0; i < num_events; i++)
 			mEvents.push(sdl_events[i]);
 	}
+
+	center();
 }
 
 

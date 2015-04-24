@@ -176,6 +176,12 @@ void D_ProcessEvents (void)
 		return;
 	}
 
+	// [SL] Aggregate all of the mouse movement events into one
+	// single event.
+	event_t mouse_motion_ev;
+	mouse_motion_ev.type = ev_mouse;
+	mouse_motion_ev.data1 = mouse_motion_ev.data2 = mouse_motion_ev.data3 = 0;
+
 	for (; eventtail != eventhead ; eventtail = ++eventtail<MAXEVENTS ? eventtail : 0)
 	{
 		ev = &events[eventtail];
@@ -183,8 +189,20 @@ void D_ProcessEvents (void)
 			continue;				// console ate the event
 		if (M_Responder (ev))
 			continue;				// menu ate the event
-		G_Responder (ev);
+
+		if (ev->type == ev_mouse)
+		{
+			mouse_motion_ev.data2 += ev->data2;		
+			mouse_motion_ev.data3 += ev->data3;		
+		}
+		else
+		{
+			G_Responder (ev);
+		}
 	}
+
+	if (mouse_motion_ev.data2 != 0 || mouse_motion_ev.data3 != 0)
+		G_Responder(&mouse_motion_ev);
 }
 
 //
