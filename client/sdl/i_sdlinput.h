@@ -29,6 +29,43 @@
 
 #include "d_event.h"
 #include <queue>
+#include "hashtable.h"
+
+
+class ISDL12KeyboardInputDevice : public IInputDevice
+{
+public:
+	ISDL12KeyboardInputDevice();
+	virtual ~ISDL12KeyboardInputDevice() { }
+
+	virtual bool paused() const
+	{	return mActive == false;		}
+
+	virtual void pause();
+	virtual void resume();
+	virtual void reset();
+
+	virtual void gatherEvents();
+
+	virtual bool hasEvent() const
+	{	return !mEvents.empty();	}
+
+	virtual void getEvent(event_t* ev);
+
+	virtual void flushEvents();
+
+private:
+	void center();
+
+	bool			mActive;
+
+	typedef std::queue<SDL_Event> EventQueue;
+	EventQueue		mEvents;
+
+	typedef OHashTable<int, int> KeyTranslationTable;
+	KeyTranslationTable		mSDLKeyTransTable;
+	KeyTranslationTable		mShiftTransTable;
+};
 
 
 class ISDL12MouseInputDevice : public IInputDevice

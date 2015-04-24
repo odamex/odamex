@@ -93,178 +93,9 @@ EXTERN_CVAR (mouse_threshold)
 
 extern constate_e ConsoleState;
 
-//
-// I_GetSDL12Key
-//
-// [SL] Create a table to translate from a SDLKey value to an ASCII char. This
-// is used with the "sym" member of a SDL_keysym structure, which is part of
-// a SDL_KeyboardEvent. Previously, The "unicode" member of the SDL_keysym
-// structure was read when trying to discern the ASCII character that the
-// user pressed. However, since SDL 2.0 no longer has a "unicode" member in
-// the SDL_keysym structure, it's best to find other ways to achieve the
-// same end goal.
-//
-char I_GetSDL12Key(const SDL_keysym* keysym)
-{
-	static bool initialized = false;
-	static char keynames[SDLK_LAST - SDLK_FIRST + 1];
-	if (!initialized)
-	{
-		memset(keynames, 0, sizeof(SDLKey) * (SDLK_LAST - SDLK_FIRST + 1)); 
-		keynames[SDLK_BACKSPACE] = '\b';
-		keynames[SDLK_TAB] = '\t'; 
-		keynames[SDLK_RETURN] = '\r'; 
-		keynames[SDLK_SPACE] = ' ';
-		keynames[SDLK_EXCLAIM]  = '!';
-		keynames[SDLK_QUOTEDBL]  = '\"';
-		keynames[SDLK_HASH]  = '#';
-		keynames[SDLK_DOLLAR]  = '$';
-		keynames[SDLK_AMPERSAND]  = '&';
-		keynames[SDLK_QUOTE] = '\'';
-		keynames[SDLK_LEFTPAREN] = '(';
-		keynames[SDLK_RIGHTPAREN] = ')';
-		keynames[SDLK_ASTERISK] = '*';
-		keynames[SDLK_PLUS] = '+';
-		keynames[SDLK_COMMA] = ',';
-		keynames[SDLK_MINUS] = '-';
-		keynames[SDLK_PERIOD] = '.';
-		keynames[SDLK_SLASH] = '/';
-		keynames[SDLK_0] = '0';
-		keynames[SDLK_1] = '1';
-		keynames[SDLK_2] = '2';
-		keynames[SDLK_3] = '3';
-		keynames[SDLK_4] = '4';
-		keynames[SDLK_5] = '5';
-		keynames[SDLK_6] = '6';
-		keynames[SDLK_7] = '7';
-		keynames[SDLK_8] = '8';
-		keynames[SDLK_9] = '9';
-		keynames[SDLK_COLON] = ':';
-		keynames[SDLK_SEMICOLON] = ';';
-		keynames[SDLK_LESS] = '<';
-		keynames[SDLK_EQUALS] = '=';
-		keynames[SDLK_GREATER] = '>';
-		keynames[SDLK_QUESTION] = '?';
-		keynames[SDLK_AT] = '@';
-		keynames[SDLK_LEFTBRACKET] = '[';
-		keynames[SDLK_BACKSLASH] = '\\';
-		keynames[SDLK_RIGHTBRACKET] = ']';
-		keynames[SDLK_CARET] = '^';
-		keynames[SDLK_UNDERSCORE] = '_';
-		keynames[SDLK_BACKQUOTE] = '`';
-		keynames[SDLK_a] = 'a';
-		keynames[SDLK_b] = 'b';
-		keynames[SDLK_c] = 'c';
-		keynames[SDLK_d] = 'd';
-		keynames[SDLK_e] = 'e';
-		keynames[SDLK_f] = 'f';
-		keynames[SDLK_g] = 'g';
-		keynames[SDLK_h] = 'h';
-		keynames[SDLK_i] = 'i';
-		keynames[SDLK_j] = 'j';
-		keynames[SDLK_k] = 'k';
-		keynames[SDLK_l] = 'l';
-		keynames[SDLK_m] = 'm';
-		keynames[SDLK_n] = 'n';
-		keynames[SDLK_o] = 'o';
-		keynames[SDLK_p] = 'p';
-		keynames[SDLK_q] = 'q';
-		keynames[SDLK_r] = 'r';
-		keynames[SDLK_s] = 's';
-		keynames[SDLK_t] = 't';
-		keynames[SDLK_u] = 'u';
-		keynames[SDLK_v] = 'v';
-		keynames[SDLK_w] = 'w';
-		keynames[SDLK_x] = 'x';
-		keynames[SDLK_y] = 'y';
-		keynames[SDLK_z] = 'z';
-
-		keynames[SDLK_KP0] = '0';
-		keynames[SDLK_KP1] = '1';
-		keynames[SDLK_KP2] = '2';
-		keynames[SDLK_KP3] = '3';
-		keynames[SDLK_KP4] = '4';
-		keynames[SDLK_KP5] = '5';
-		keynames[SDLK_KP6] = '6';
-		keynames[SDLK_KP7] = '7';
-		keynames[SDLK_KP8] = '8';
-		keynames[SDLK_KP9] = '9';
-		keynames[SDLK_KP_PERIOD] = '.';
-		keynames[SDLK_KP_DIVIDE] = '/';
-		keynames[SDLK_KP_MULTIPLY] = '*';
-		keynames[SDLK_KP_MINUS] = '-';
-		keynames[SDLK_KP_PLUS] = '+';
-		keynames[SDLK_KP_ENTER] = '\r';
-		keynames[SDLK_KP_EQUALS] = '=';
 
 
-
-		initialized = true;
-	}
-
-	// [SL] From Chocolate Doom: i_video.c
-	// Lookup table for mapping ASCII characters to their equivalent when
-	// shift is pressed on an American layout keyboard:
-	static const char shiftxform[] =
-	{
-		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-		11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-		21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-		31, ' ', '!', '"', '#', '$', '%', '&',
-		'"', // shift-'
-		'(', ')', '*', '+',
-		'<', // shift-,
-		'_', // shift--
-		'>', // shift-.
-		'?', // shift-/
-		')', // shift-0
-		'!', // shift-1
-		'@', // shift-2
-		'#', // shift-3
-		'$', // shift-4
-		'%', // shift-5
-		'^', // shift-6
-		'&', // shift-7
-		'*', // shift-8
-		'(', // shift-9
-		':',
-		':', // shift-;
-		'<',
-		'+', // shift-=
-		'>', '?', '@',
-		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-		'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-		'[', // shift-[
-		'!', // shift-backslash - OH MY GOD DOES WATCOM SUCK
-		']', // shift-]
-		'"', '_',
-		'\'', // shift-`
-		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-		'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-		'{', '|', '}', '~', 127
-	};
-
-	if (keysym->sym >= SDLK_FIRST && keysym->sym <= SDLK_LAST)
-	{
-		int output = keynames[keysym->sym + SDLK_FIRST];
-		if (output >= 0 && output < 127)
-		{
-			// determine if the output should be a capital letter
-			int shift_state = 0;
-			if (keysym->mod & KMOD_LSHIFT)
-				shift_state ^= 1;
-			if (keysym->mod & KMOD_RSHIFT)
-				shift_state ^= 1;
-			if (keysym->mod & KMOD_CAPS)
-				shift_state ^= 1;
-			if (shift_state)
-				output = shiftxform[output];
-		}
-		return output;
-	}
-	return 0;
-}
-
+static ISDL12KeyboardInputDevice* sdl_keyboard_input_device = NULL;
 
 //
 // I_FlushInput
@@ -704,6 +535,9 @@ bool I_InitInput (void)
 	if (Args.CheckParm("-nomouse"))
 		nomouse = true;
 
+	if (sdl_keyboard_input_device == NULL)
+		sdl_keyboard_input_device = new ISDL12KeyboardInputDevice();
+
 	atterm(I_ShutdownInput);
 
 	I_DisableKeyRepeat();
@@ -743,6 +577,9 @@ void STACK_ARGS I_ShutdownInput (void)
 
 	I_UngrabInput();
 	I_ResetKeyRepeat();
+
+	delete sdl_keyboard_input_device;
+	sdl_keyboard_input_device = NULL;
 }
 
 //
@@ -789,11 +626,23 @@ void I_GetEvent()
 	if (mouse_input)
 		mouse_input->processEvents();
 
+
+	sdl_keyboard_input_device->gatherEvents();
+	while (sdl_keyboard_input_device->hasEvent())
+	{
+		event_t event;
+		sdl_keyboard_input_device->getEvent(&event);
+		D_PostEvent(&event);
+	}
+
+
+	const int event_mask = SDL_ALLEVENTS & ~SDL_KEYEVENTMASK & ~SDL_MOUSEEVENTMASK;
+
 	// Force SDL to gather events from input devices. This is called
 	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
 	// process only non-mouse events, SDL_PumpEvents is necessary.
 	SDL_PumpEvents();
-	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, SDL_ALLEVENTS & ~SDL_MOUSEEVENTMASK);
+	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, event_mask);
 
 	for (int i = 0; i < num_events; i++)
 	{
@@ -828,62 +677,6 @@ void I_GetEvent()
 			// pause the mouse when the focus goes away (eg, alt-tab)
 			if (!window_focused)
 				I_PauseMouse();
-			break;
-
-		case SDL_KEYDOWN:
-			event.type = ev_keydown;
-			event.data1 = sdl_ev->key.keysym.sym;
-			event.data2 = event.data3 = I_GetSDL12Key(&sdl_ev->key.keysym);
-
-#ifdef _XBOX
-			// Fix for ENTER key on Xbox
-			if (event.data1 == SDLK_RETURN)
-				event.data2 = event.data3 = '\r';
-#endif
-
-#ifdef _WIN32
-			//HeX9109: Alt+F4 for cheats! Thanks Spleen
-			if (event.data1 == SDLK_F4 && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
-				AddCommandString("quit");
-			// SoM: Ignore the tab portion of alt-tab presses
-			// [AM] Windows 7 seems to preempt this check.
-			if (event.data1 == SDLK_TAB)
-			{
-				if ((vid_fullscreen && num_events > 1) || (SDL_GetModState() & (KMOD_LALT | KMOD_RALT)))
-				{
-					event.data1 = event.data2 = event.data3 = 0;
-				} else {
-
-					tab_keydown = true;
-				}
-			}
-#endif
-			D_PostEvent(&event);
-			break;
-
-		case SDL_KEYUP:
-
-			event.type = ev_keyup;
-			event.data1 = sdl_ev->key.keysym.sym;
-			event.data2 = event.data3 = I_GetSDL12Key(&sdl_ev->key.keysym);
-
-			D_PostEvent(&event);
-
-#ifdef _WIN32
-			// [ML] SDL 1.2 directx dumbness - when returning from alt-tab, even with
-			// best practices from other ports, the tab key will get trapped for one key press,
-			// only registering an SDL_KEYUP event.  If this is the case, send down another keydown
-			// event.  This issue only occurs when the video driver is set to directx (the default in Odamex).
-			if ((ConsoleState == c_fallfull || ConsoleState == c_down) && event.data1 == SDLK_TAB && tab_keydown == false && I_CheckFocusState())
-			{
-				DPrintf("FOCUS STATUS: %u \n",I_CheckFocusState());
-				DPrintf("GOT IN THE KEYUP TRAP \n");
-				event.type = ev_keydown;
-				D_PostEvent(&event);
-			}
-
-			tab_keydown = false;
-#endif
 			break;
 
 		case SDL_JOYBUTTONDOWN:
