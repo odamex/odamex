@@ -93,6 +93,135 @@ EXTERN_CVAR (mouse_threshold)
 extern constate_e ConsoleState;
 
 //
+// I_GetSDL12Key
+//
+// [SL] Create a table to translate from a SDLKey value to an ASCII char. This
+// is used with the "sym" member of a SDL_keysym structure, which is part of
+// a SDL_KeyboardEvent. Previously, The "unicode" member of the SDL_keysym
+// structure was read when trying to discern the ASCII character that the
+// user pressed. However, since SDL 2.0 no longer has a "unicode" member in
+// the SDL_keysym structure, it's best to find other ways to achieve the
+// same end goal.
+//
+char I_GetSDL12Key(const SDL_keysym* keysym)
+{
+	static bool initialized = false;
+	static char keynames[SDLK_LAST - SDLK_FIRST + 1];
+	if (!initialized)
+	{
+		memset(keynames, 0, sizeof(SDLKey) * (SDLK_LAST - SDLK_FIRST + 1)); 
+		keynames[SDLK_BACKSPACE] = '\b';
+		keynames[SDLK_TAB] = '\t'; 
+		keynames[SDLK_RETURN] = '\r'; 
+		keynames[SDLK_SPACE] = ' ';
+		keynames[SDLK_EXCLAIM]  = '!';
+		keynames[SDLK_QUOTEDBL]  = '\"';
+		keynames[SDLK_HASH]  = '#';
+		keynames[SDLK_DOLLAR]  = '$';
+		keynames[SDLK_AMPERSAND]  = '&';
+		keynames[SDLK_QUOTE] = '\'';
+		keynames[SDLK_LEFTPAREN] = '(';
+		keynames[SDLK_RIGHTPAREN] = ')';
+		keynames[SDLK_ASTERISK] = '*';
+		keynames[SDLK_PLUS] = '+';
+		keynames[SDLK_COMMA] = ',';
+		keynames[SDLK_MINUS] = '-';
+		keynames[SDLK_PERIOD] = '.';
+		keynames[SDLK_SLASH] = '/';
+		keynames[SDLK_0] = '0';
+		keynames[SDLK_1] = '1';
+		keynames[SDLK_2] = '2';
+		keynames[SDLK_3] = '3';
+		keynames[SDLK_4] = '4';
+		keynames[SDLK_5] = '5';
+		keynames[SDLK_6] = '6';
+		keynames[SDLK_7] = '7';
+		keynames[SDLK_8] = '8';
+		keynames[SDLK_9] = '9';
+		keynames[SDLK_COLON] = ':';
+		keynames[SDLK_SEMICOLON] = ';';
+		keynames[SDLK_LESS] = '<';
+		keynames[SDLK_EQUALS] = '=';
+		keynames[SDLK_GREATER] = '>';
+		keynames[SDLK_QUESTION] = '?';
+		keynames[SDLK_AT] = '@';
+		keynames[SDLK_LEFTBRACKET] = '[';
+		keynames[SDLK_BACKSLASH] = '\\';
+		keynames[SDLK_RIGHTBRACKET] = ']';
+		keynames[SDLK_CARET] = '^';
+		keynames[SDLK_UNDERSCORE] = '_';
+		keynames[SDLK_BACKQUOTE] = '`';
+		keynames[SDLK_a] = 'a';
+		keynames[SDLK_b] = 'b';
+		keynames[SDLK_c] = 'c';
+		keynames[SDLK_d] = 'd';
+		keynames[SDLK_e] = 'e';
+		keynames[SDLK_f] = 'f';
+		keynames[SDLK_g] = 'g';
+		keynames[SDLK_h] = 'h';
+		keynames[SDLK_i] = 'i';
+		keynames[SDLK_j] = 'j';
+		keynames[SDLK_k] = 'k';
+		keynames[SDLK_l] = 'l';
+		keynames[SDLK_m] = 'm';
+		keynames[SDLK_n] = 'n';
+		keynames[SDLK_o] = 'o';
+		keynames[SDLK_p] = 'p';
+		keynames[SDLK_q] = 'q';
+		keynames[SDLK_r] = 'r';
+		keynames[SDLK_s] = 's';
+		keynames[SDLK_t] = 't';
+		keynames[SDLK_u] = 'u';
+		keynames[SDLK_v] = 'v';
+		keynames[SDLK_w] = 'w';
+		keynames[SDLK_x] = 'x';
+		keynames[SDLK_y] = 'y';
+		keynames[SDLK_z] = 'z';
+
+		keynames[SDLK_KP0] = '0';
+		keynames[SDLK_KP1] = '1';
+		keynames[SDLK_KP2] = '2';
+		keynames[SDLK_KP3] = '3';
+		keynames[SDLK_KP4] = '4';
+		keynames[SDLK_KP5] = '5';
+		keynames[SDLK_KP6] = '6';
+		keynames[SDLK_KP7] = '7';
+		keynames[SDLK_KP8] = '8';
+		keynames[SDLK_KP9] = '9';
+		keynames[SDLK_KP_PERIOD] = '.';
+		keynames[SDLK_KP_DIVIDE] = '/';
+		keynames[SDLK_KP_MULTIPLY] = '*';
+		keynames[SDLK_KP_MINUS] = '-';
+		keynames[SDLK_KP_PLUS] = '+';
+		keynames[SDLK_KP_ENTER] = '\r';
+		keynames[SDLK_KP_EQUALS] = '=';
+
+		initialized = true;
+	}
+
+	if (keysym->sym >= SDLK_FIRST && keysym->sym <= SDLK_LAST)
+	{
+		char output = keynames[keysym->sym + SDLK_FIRST];
+		if (output >= 'a' && output <= 'z')
+		{
+			// determine if the output should be a capital letter
+			int shift_state = 0;
+			if (keysym->mod & KMOD_LSHIFT)
+				shift_state ^= 1;
+			if (keysym->mod & KMOD_RSHIFT)
+				shift_state ^= 1;
+			if (keysym->mod & KMOD_CAPS)
+				shift_state ^= 1;
+			if (shift_state)
+				output += 'A' - 'a';
+		}
+		return output;
+	}
+	return 0;
+}
+
+
+//
 // I_FlushInput
 //
 // Eat all pending input from outside the game
@@ -532,8 +661,6 @@ bool I_InitInput (void)
 
 	atterm(I_ShutdownInput);
 
-	SDL_EnableUNICODE(true);
-
 	I_DisableKeyRepeat();
 
 	// Initialize the joystick subsystem and open a joystick if use_joystick is enabled. -- Hyper_Eye
@@ -663,19 +790,7 @@ void I_GetEvent()
 		case SDL_KEYDOWN:
 			event.type = ev_keydown;
 			event.data1 = sdl_ev->key.keysym.sym;
-
-			if (event.data1 >= SDLK_KP0 && event.data1 <= SDLK_KP9)
-				event.data2 = event.data3 = '0' + (event.data1 - SDLK_KP0);
-			else if (event.data1 == SDLK_KP_PERIOD)
-				event.data2 = event.data3 = '.';
-			else if (event.data1 == SDLK_KP_DIVIDE)
-				event.data2 = event.data3 = '/';
-			else if (event.data1 == SDLK_KP_ENTER)
-				event.data2 = event.data3 = '\r';
-			else if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
-				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
-			else
-				event.data2 = event.data3 = 0;
+			event.data2 = event.data3 = I_GetSDL12Key(&sdl_ev->key.keysym);
 
 #ifdef _XBOX
 			// Fix for ENTER key on Xbox
@@ -707,11 +822,8 @@ void I_GetEvent()
 
 			event.type = ev_keyup;
 			event.data1 = sdl_ev->key.keysym.sym;
+			event.data2 = event.data3 = I_GetSDL12Key(&sdl_ev->key.keysym);
 
-			if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
-				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
-			else
-				event.data2 = event.data3 = 0;
 			D_PostEvent(&event);
 
 #ifdef _WIN32
