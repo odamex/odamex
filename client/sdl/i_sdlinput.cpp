@@ -29,6 +29,7 @@
 #include "d_event.h"
 #include "doomkeys.h"
 #include <queue>
+#include <cassert>
 
 
 //
@@ -66,10 +67,12 @@ void ISDL12MouseInputDevice::center()
 
 	// TODO: if there are more than 1024 events, they won't all be examined...
 	num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEMOTION);
+	assert(num_events < max_events);
 	for (int i = 0; i < num_events; i++)
 	{
 		SDL_Event* sdl_ev = &sdl_events[i];
-		if (sdl_ev->type != SDL_MOUSEMOTION || sdl_ev->motion.x != centerx || sdl_ev->motion.y != centery)
+		assert(sdl_ev->type == SDL_MOUSEMOTION);
+		if (sdl_ev->motion.x != centerx || sdl_ev->motion.y != centery)
 		{
 			// this event is not the event caused by SDL_WarpMouse so add it back
 			// to the event queue
@@ -176,17 +179,21 @@ void ISDL12MouseInputDevice::gatherEvents()
 //
 void ISDL12MouseInputDevice::getEvent(event_t* ev)
 {
+	assert(hasEvent());
+
 	// clear the destination struct
 	ev->type = ev_keydown;
 	ev->data1 = ev->data2 = ev->data3 = 0;
 
 	const SDL_Event& sdl_ev = mEvents.front();
 
+	assert(sdl_ev.type == SDL_MOUSEMOTION || sdl_ev.type == SDL_MOUSEBUTTONDOWN || sv_ev.type == SDL_MOUSEBUTTONUP);
+
 	if (sdl_ev.type == SDL_MOUSEMOTION)
 	{
 		ev->type = ev_mouse;
-		ev->data2 += sdl_ev.motion.xrel;
-		ev->data3 -= sdl_ev.motion.yrel;
+		ev->data2 = sdl_ev.motion.xrel;
+		ev->data3 = -sdl_ev.motion.yrel;
 	}
 	else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN)
 	{
