@@ -33,6 +33,7 @@
 #include "doomstat.h"
 #include "m_argv.h"
 #include "i_input.h"
+#include "i_sdlinput.h"
 #include "i_video.h"
 #include "d_main.h"
 #include "c_bind.h"
@@ -752,7 +753,6 @@ void STACK_ARGS I_ShutdownInput (void)
 //
 void I_PauseMouse()
 {
-	SDL_ShowCursor(true);
 	if (mouse_input)
 		mouse_input->pause();
 }
@@ -765,7 +765,6 @@ void I_PauseMouse()
 //
 void I_ResumeMouse()
 {
-	SDL_ShowCursor(false);
 	if (mouse_input)
 		mouse_input->resume();
 }
@@ -1702,13 +1701,17 @@ void RawWin32Mouse::debug() const
 //
 // ============================================================================
 
+static ISDL12MouseInputDevice* sdl_mouse_input_device = NULL;
+
 //
 // SDLMouse::SDLMouse
 //
 SDLMouse::SDLMouse() :
 	mActive(false)
 {
-	I_ResumeMouse();
+	if (sdl_mouse_input_device == NULL)
+		sdl_mouse_input_device = new ISDL12MouseInputDevice();
+	sdl_mouse_input_device->resume();
 }
 
 //
@@ -1716,7 +1719,9 @@ SDLMouse::SDLMouse() :
 //
 SDLMouse::~SDLMouse()
 {
-	I_PauseMouse();
+	sdl_mouse_input_device->pause();
+	delete sdl_mouse_input_device;
+	sdl_mouse_input_device = NULL;
 }
 
 //
@@ -1734,8 +1739,7 @@ MouseInput* SDLMouse::create()
 
 void SDLMouse::flushEvents()
 {
-	SDL_PumpEvents();
-	SDL_PeepEvents(mEvents, MAX_EVENTS, SDL_GETEVENT, SDL_MOUSEEVENTMASK);
+	sdl_mouse_input_device->flushEvents();
 }
 
 //
@@ -1747,91 +1751,18 @@ void SDLMouse::flushEvents()
 //
 void SDLMouse::processEvents()
 {
-	if (!mActive)
-		return;
+	sdl_mouse_input_device->gatherEvents();
 
-	// [SL] accumulate the total mouse movement over all events polled
-	// and post one aggregate mouse movement event after all are polled.
-	event_t movement_event;
-	movement_event.type = ev_mouse;
-	movement_event.data1 = movement_event.data2 = movement_event.data3 = 0;
-
-	// Force SDL to gather events from input devices. This is called
-	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
-	// process only mouse events, SDL_PumpEvents is necessary.
-	SDL_PumpEvents();
-	int num_events = SDL_PeepEvents(mEvents, MAX_EVENTS, SDL_GETEVENT, SDL_MOUSEEVENTMASK);
-
-	for (int i = 0; i < num_events; i++)
+	event_t event;
+	while (sdl_mouse_input_device->hasEvent())
 	{
-		SDL_Event* sdl_ev = &mEvents[i];
-		switch (sdl_ev->type)
-		{
-		case SDL_MOUSEMOTION:
-		{
-			movement_event.data2 += sdl_ev->motion.xrel;
-			movement_event.data3 -= sdl_ev->motion.yrel;
-			break;
-		}
+		sdl_mouse_input_device->getEvent(&event);
 
-		case SDL_MOUSEBUTTONDOWN:
-		{
-			event_t button_event;
-			button_event.type = ev_keydown;
-			button_event.data1 = button_event.data2 = button_event.data3 = 0;
-
-			if (sdl_ev->button.button == SDL_BUTTON_LEFT)
-				button_event.data1 = KEY_MOUSE1;
-			else if (sdl_ev->button.button == SDL_BUTTON_RIGHT)
-				button_event.data1 = KEY_MOUSE2;
-			else if (sdl_ev->button.button == SDL_BUTTON_MIDDLE)
-				button_event.data1 = KEY_MOUSE3;
-			else if (sdl_ev->button.button == SDL_BUTTON_X1)
-				button_event.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
-			else if (sdl_ev->button.button == SDL_BUTTON_X2)
-				button_event.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
-			else if (sdl_ev->button.button == SDL_BUTTON_WHEELUP)
-				button_event.data1 = KEY_MWHEELUP;
-			else if (sdl_ev->button.button == SDL_BUTTON_WHEELDOWN)
-				button_event.data1 = KEY_MWHEELDOWN;
-
-			if (button_event.data1 != 0)
-				D_PostEvent(&button_event);
-			break;
-		}
-
-		case SDL_MOUSEBUTTONUP:
-		{
-			event_t button_event;
-			button_event.type = ev_keyup;
-			button_event.data1 = button_event.data2 = button_event.data3 = 0;
-
-			if (sdl_ev->button.button == SDL_BUTTON_LEFT)
-				button_event.data1 = KEY_MOUSE1;
-			else if (sdl_ev->button.button == SDL_BUTTON_RIGHT)
-				button_event.data1 = KEY_MOUSE2;
-			else if (sdl_ev->button.button == SDL_BUTTON_MIDDLE)
-				button_event.data1 = KEY_MOUSE3;
-			else if (sdl_ev->button.button == SDL_BUTTON_X1)
-				button_event.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
-			else if (sdl_ev->button.button == SDL_BUTTON_X2)
-				button_event.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
-
-			if (button_event.data1 != 0)
-				D_PostEvent(&button_event);
-			break;
-		}
-		default:
-			// do nothing
-			break;
-		}
+		if (event.data1 || event.data2 || event.data3)
+			D_PostEvent(&event);
 	}
 
-	if (movement_event.data2 || movement_event.data3)
-	{
-		D_PostEvent(&movement_event);
-		center();
-	}
+	sdl_mouse_input_device->reset();
 }
 
 //
@@ -1842,46 +1773,25 @@ void SDLMouse::processEvents()
 //
 void SDLMouse::center()
 {
-	// warp the mouse to the center of the screen
-	SDL_WarpMouse(I_GetVideoWidth() / 2, I_GetVideoHeight() / 2);
-
-	// SDL_WarpMouse inserts a mouse event to warp the cursor to the center of the screen
-	// we need to filter out this event
-	SDL_PumpEvents();
-	int num_events = SDL_PeepEvents(mEvents, MAX_EVENTS, SDL_GETEVENT, SDL_MOUSEMOTIONMASK);
-
-	for (int i = 0; i < num_events; i++)
-	{
-		SDL_Event* sdl_ev = &mEvents[i];
-		if (sdl_ev->type != SDL_MOUSEMOTION ||
-			sdl_ev->motion.x != I_GetVideoWidth() / 2 ||
-			sdl_ev->motion.y != I_GetVideoHeight() / 2)
-		{
-			// this event is not the event caused by SDL_WarpMouse so add it back
-			// to the event queue
-			SDL_PushEvent(sdl_ev);
-		}
-	}
+	sdl_mouse_input_device->reset();
 }
 
 
 bool SDLMouse::paused() const
 {
-	return mActive == false;
+	return sdl_mouse_input_device->paused();
 }
 
 
 void SDLMouse::pause()
 {
-	mActive = false;
-	I_SetSDLIgnoreMouseEvents();
+	sdl_mouse_input_device->pause();
 }
 
 
 void SDLMouse::resume()
 {
-	mActive = true;
-	I_UnsetSDLIgnoreMouseEvents();
+	sdl_mouse_input_device->resume();
 }
 
 

@@ -27,6 +27,8 @@
 #include <SDL.h>
 #include "win32inc.h"
 
+#include "d_event.h"
+
 #define MOUSE_DOOM 0
 #define MOUSE_ZDOOM_DI 1
 
@@ -209,5 +211,61 @@ private:
 	static const int MAX_EVENTS = 256;
 	SDL_Event	mEvents[MAX_EVENTS];
 };
+
+
+class IInputDevice
+{
+public:
+	virtual ~IInputDevice() { }
+
+	virtual bool paused() const = 0;
+	virtual void pause() = 0; 
+	virtual void resume() = 0;
+	virtual void reset() = 0;
+
+	virtual void gatherEvents() = 0;
+	virtual bool hasEvent() const = 0;
+	virtual void getEvent(event_t* ev) = 0;
+
+	virtual void flushEvents()
+	{
+		event_t ev;
+		gatherEvents();
+		while (hasEvent())
+			getEvent(&ev);
+	}
+};
+
+
+class IInputSubsystem
+{
+public:
+	virtual ~IInputSubsystem() { }
+
+	virtual void grabInput() = 0;
+	virtual void releaseInput() = 0;
+
+	virtual void enableKeyRepeat() { }
+	virtual void disableKeyRepeat() { }
+
+	virtual void flushInput();
+
+	virtual void aggregateMouseMovement() = 0;
+
+private:
+
+
+};
+
+
+
+
+
+
+
+
+
+
+
 
 #endif  // __I_INPUT_H__
