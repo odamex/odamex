@@ -464,12 +464,34 @@ void ISDL12MouseInputDevice::gatherEvents()
 	const int max_events = 1024;
 	SDL_Event sdl_events[max_events];
 
+	// All SDL_MOUSEMOTION events are aggregated into this single event
+	SDL_Event motion_event;
+	motion_event.type = SDL_MOUSEMOTION;
+	motion_event.motion.xrel = 0;
+	motion_event.motion.yrel = 0;
+
 	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEEVENTMASK)))
 	{
 		// insert the SDL_Events into our queue
 		for (int i = 0; i < num_events; i++)
-			mEvents.push(sdl_events[i]);
+		{
+			const SDL_Event& sdl_ev = sdl_events[i];
+
+			// handle SDL_MOUSEMOTION events separately
+			if (sdl_ev.type == SDL_MOUSEMOTION)
+			{
+				motion_event.motion.xrel += sdl_ev.motion.xrel;
+				motion_event.motion.yrel += sdl_ev.motion.yrel;
+			}
+			else
+			{
+				mEvents.push(sdl_ev);
+			}
+		}
 	}
+
+	if (motion_event.motion.xrel || motion_event.motion.yrel)
+		mEvents.push(motion_event);
 
 	center();
 }
