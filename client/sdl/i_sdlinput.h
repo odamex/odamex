@@ -38,6 +38,9 @@ public:
 	ISDL12KeyboardInputDevice();
 	virtual ~ISDL12KeyboardInputDevice() { }
 
+	virtual const std::string& getDeviceName() const
+	{	static const std::string name("Keyboard"); return name;	}
+
 	virtual bool paused() const
 	{	return mActive == false;		}
 
@@ -57,10 +60,10 @@ public:
 private:
 	void center();
 
-	bool			mActive;
+	bool					mActive;
 
 	typedef std::queue<SDL_Event> EventQueue;
-	EventQueue		mEvents;
+	EventQueue				mEvents;
 
 	typedef OHashTable<int, int> KeyTranslationTable;
 	KeyTranslationTable		mSDLKeyTransTable;
@@ -74,6 +77,9 @@ public:
 	ISDL12MouseInputDevice();
 	virtual ~ISDL12MouseInputDevice() { }
 
+	virtual const std::string& getDeviceName() const
+	{	static const std::string name("Mouse"); return name;	}
+
 	virtual bool paused() const
 	{	return mActive == false;		}
 
@@ -98,5 +104,45 @@ private:
 	typedef std::queue<SDL_Event> EventQueue;
 	EventQueue		mEvents;
 };
+
+
+class ISDL12JoystickInputDevice : public IInputDevice
+{
+public:
+	ISDL12JoystickInputDevice(int id);
+	virtual ~ISDL12JoystickInputDevice();
+
+	virtual const std::string& getDeviceName() const
+	{	return mDeviceName;	}
+
+	virtual bool paused() const
+	{	return mActive == false;		}
+
+	virtual void pause();
+	virtual void resume();
+	virtual void reset();
+
+	virtual void gatherEvents();
+
+	virtual bool hasEvent() const
+	{	return !mEvents.empty();	}
+
+	virtual void getEvent(event_t* ev);
+
+	virtual void flushEvents();
+
+private:
+	static const int JOY_DEADZONE = 6000;
+
+	std::string		mDeviceName;
+	bool			mActive;
+
+	typedef std::queue<SDL_Event> EventQueue;
+	EventQueue		mEvents;
+
+	int				mJoystickId;
+	SDL_Joystick*	mJoystick;
+};
+
 
 #endif	// __I_SDLINPUT_H__

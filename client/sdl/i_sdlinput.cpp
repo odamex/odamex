@@ -329,8 +329,6 @@ void ISDL12KeyboardInputDevice::getEvent(event_t* ev)
 
 
 
-
-
 // ============================================================================
 //
 // ISDL12MouseInputDevice implementation
@@ -540,5 +538,219 @@ void ISDL12MouseInputDevice::getEvent(event_t* ev)
 	mEvents.pop();
 }
 
+
+// ============================================================================
+//
+// ISDL12JoystickInputDevice implementation
+//
+// ============================================================================
+
+//
+// ISDL12JoystickInputDevice::ISDL12JoystickInputDevice
+//
+ISDL12JoystickInputDevice::ISDL12JoystickInputDevice(int id) :
+	mActive(false), mJoystickId(id), mJoystick(NULL)
+{
+	assert(SDL_WasInit(SDL_INIT_JOYSTICK));
+	assert(mJoystickId >= 0 && mJoystickId < SDL_NumJoysticks());
+
+	const char* name = SDL_JoystickName(mJoystickId);
+	if (name)
+		mDeviceName = name;
+
+	assert(!SDL_JoystickOpened(mJoystickId));
+
+	mJoystick = SDL_JoystickOpen(mJoystickId);
+	assert(mJoystick != NULL);
+
+	if (!SDL_JoystickOpened(mJoystickId))
+		return;
+
+	// This turns on automatic event polling for joysticks so that the state
+	// of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
+	SDL_JoystickEventState(SDL_ENABLE);
+	
+	resume();
+}
+
+
+//
+// ISDL12JoystickInputDevice::~ISDL12JoystickInputDevice
+//
+ISDL12JoystickInputDevice::~ISDL12JoystickInputDevice()
+{
+	pause();
+
+	SDL_JoystickEventState(SDL_IGNORE);
+
+	SDL_JoystickClose(mJoystick);
+
+	assert(!SDL_JoystickOpen(mJoystickId));
+}
+
+
+//
+// ISDL12JoystickInputDevice::flushEvents
+//
+void ISDL12JoystickInputDevice::flushEvents()
+{
+	gatherEvents();
+	while (!mEvents.empty())
+		mEvents.pop();
+}
+
+
+//
+// ISDL12JoystickInputDevice::reset
+//
+void ISDL12JoystickInputDevice::reset()
+{
+	flushEvents();
+}
+
+
+//
+// ISDL12JoystickInputDevice::pause
+//
+// Sets the internal state to ignore all input for this device.
+//
+// NOTE: SDL_EventState clears the SDL event queue so only call this after all
+// SDL events have been processed in all SDL input device instances.
+//
+void ISDL12JoystickInputDevice::pause()
+{
+	mActive = false;
+}
+
+
+//
+// ISDL12JoystickInputDevice::resume
+//
+// Sets the internal state to enable all input for this device.
+//
+// NOTE: SDL_EventState clears the SDL event queue so only call this after all
+// SDL events have been processed in all SDL input device instances.
+//
+void ISDL12JoystickInputDevice::resume()
+{
+	mActive = true;
+	reset();
+}
+
+
+//
+// ISDL12JoystickInputDevice::gatherEvents
+//
+// Pumps the SDL Event queue and retrieves any mouse events and puts them into
+// this instance's event queue.
+//
+void ISDL12JoystickInputDevice::gatherEvents()
+{
+	if (!mActive)
+		return;
+
+	// Force SDL to gather events from input devices. This is called
+	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
+	// process only mouse events, SDL_PumpEvents is necessary.
+	SDL_PumpEvents();
+
+	// Retrieve chunks of up to 1024 events from SDL
+	int num_events = 0;
+	const int max_events = 1024;
+	SDL_Event sdl_events[max_events];
+
+	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_JOYEVENTMASK)))
+	{
+		// insert the SDL_Events into our queue
+		for (int i = 0; i < num_events; i++)
+			mEvents.push(sdl_events[i]);
+	}
+}
+
+
+//
+// ISDL12JoystickInputDevice::getEvent
+//
+// Removes the first event from the queue and translates it to a Doom event_t.
+// This makes no checks to ensure there actually is an event in the queue and
+// if there is not, the behavior is undefined.
+//
+void ISDL12JoystickInputDevice::getEvent(event_t* ev)
+{
+	assert(hasEvent());
+
+	// clear the destination struct
+	ev->type = ev_keydown;
+	ev->data1 = ev->data2 = ev->data3 = 0;
+
+	const SDL_Event& sdl_ev = mEvents.front();
+
+	assert(sdl_ev.type == SDL_JOYBUTTONDOWN || sdl_ev.type == SDL_JOYBUTTONUP ||
+			sdl_ev.type == SDL_JOYAXISMOTION || sdl_ev.type == SDL_JOYHATMOTION ||
+			sdl_ev.type == SDL_JOYBALLMOTION);
+
+	if (sdl_ev.type == SDL_JOYBUTTONDOWN)
+	{
+		if (sdl_ev.jbutton.which == mJoystickId)
+		{
+			ev->type = ev_keydown;
+			ev->data1 = sdl_ev.jbutton.button + KEY_JOY1;
+			ev->data2 = ev->data1;
+
+//			D_PostEvent(ev);
+		}
+	}
+	else if (sdl_ev.type == SDL_JOYBUTTONUP)
+	{
+		if (sdl_ev.jbutton.which == mJoystickId)
+		{
+			ev->type = ev_keyup;
+			ev->data1 = sdl_ev.jbutton.button + KEY_JOY1;
+			ev->data2 = ev->data1;
+
+//			D_PostEvent(ev);
+		}
+	}
+	else if (sdl_ev.type == SDL_JOYAXISMOTION)
+	{
+		if (sdl_ev.jaxis.which == mJoystickId)
+		{
+			ev->type = ev_joystick;
+			ev->data1 = 0;
+			ev->data2 = sdl_ev.jaxis.axis;
+			if ((sdl_ev.jaxis.value < JOY_DEADZONE) && (sdl_ev.jaxis.value > -JOY_DEADZONE))
+				ev->data3 = 0;
+			else
+				ev->data3 = sdl_ev.jaxis.value;
+
+//			D_PostEvent(ev);
+		}
+	}
+	else if (sdl_ev.type == SDL_JOYHATMOTION)
+	{
+		if (sdl_ev.jhat.which == mJoystickId)
+		{
+			// Each of these need to be tested because more than one can be pressed and a
+			// unique event is needed for each
+			/*
+			// TODO: handle this
+			if (sdl_ev.jhat.value & SDL_HAT_UP)
+				RegisterJoystickEvent(sdl_ev, SDL_HAT_UP);
+			if (sdl_ev.jhat.value & SDL_HAT_RIGHT)
+				RegisterJoystickEvent(sdl_ev, SDL_HAT_RIGHT);
+			if (sdl_ev.jhat.value & SDL_HAT_DOWN)
+				RegisterJoystickEvent(sdl_ev, SDL_HAT_DOWN);
+			if (sdl_ev.jhat.value & SDL_HAT_LEFT)
+				RegisterJoystickEvent(sdl_ev, SDL_HAT_LEFT);
+			*/
+		}
+	}
+
+// TODO: handle this
+//	if (use_joystick)
+//		UpdateJoystickEvents();
+
+	mEvents.pop();
+}
 
 VERSION_CONTROL (i_sdlinput_cpp, "$Id: i_sdlinput.cpp 5315 2015-04-24 05:01:36Z dr_sean $")
