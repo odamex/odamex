@@ -288,12 +288,11 @@ void ISDL12KeyboardInputDevice::gatherEvents()
 
 	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_KEYEVENTMASK)))
 	{
-		// insert the SDL_Events into our queue
 		for (int i = 0; i < num_events; i++)
 		{
 			const SDL_Event& sdl_ev = sdl_events[i];
 
-			if (sdl_ev.key.keysym.sym == SDLK_F4 && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
+			if (sdl_ev.key.keysym.sym == SDLK_F4 && sdl_ev.key.keysym.mod & (KMOD_LALT | KMOD_RALT))
 			{
 				// HeX9109: Alt+F4 for cheats! Thanks Spleen
 				// [SL] Don't handle it here but make sure we indicate there was an ALT+F4 event.
@@ -301,6 +300,7 @@ void ISDL12KeyboardInputDevice::gatherEvents()
 			}
 			else
 			{
+				// Normal game keyboard event - insert it into our internal queue
 				mEvents.push(sdl_ev);
 			}
 		}
