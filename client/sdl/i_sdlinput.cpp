@@ -258,11 +258,35 @@ void ISDL12KeyboardInputDevice::gatherEvents()
 	const int max_events = 1024;
 	SDL_Event sdl_events[max_events];
 
+	bool quit_event = false;
+
 	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_KEYEVENTMASK)))
 	{
 		// insert the SDL_Events into our queue
 		for (int i = 0; i < num_events; i++)
-			mEvents.push(sdl_events[i]);
+		{
+			const SDL_Event& sdl_ev = sdl_events[i];
+
+			if (sdl_ev.key.keysym.sym == SDLK_F4 && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
+			{
+				// HeX9109: Alt+F4 for cheats! Thanks Spleen
+				// [SL] Don't handle it here but make sure we indicate there was an ALT+F4 event.
+				quit_event = true;
+			}
+			else
+			{
+				mEvents.push(sdl_ev);
+			}
+		}
+	}
+
+	// Translate the ALT+F4 key combo event into a SDL_QUIT event and push
+	// it back into SDL's event queue so that it can be handled elsewhere.
+	if (quit_event)
+	{
+		SDL_Event sdl_ev;
+		sdl_ev.type = SDL_QUIT;
+		SDL_PushEvent(&sdl_ev);
 	}
 }
 
