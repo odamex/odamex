@@ -157,6 +157,32 @@ ISDL12KeyboardInputDevice::ISDL12KeyboardInputDevice() :
 	mShiftTransTable['x'] = 'X';
 	mShiftTransTable['y'] = 'Y';
 	mShiftTransTable['z'] = 'Z';
+	mShiftTransTable['A'] = 'a';
+	mShiftTransTable['B'] = 'b';
+	mShiftTransTable['C'] = 'c';
+	mShiftTransTable['D'] = 'd';
+	mShiftTransTable['E'] = 'e';
+	mShiftTransTable['F'] = 'f';
+	mShiftTransTable['G'] = 'g';
+	mShiftTransTable['H'] = 'h';
+	mShiftTransTable['I'] = 'i';
+	mShiftTransTable['J'] = 'j';
+	mShiftTransTable['K'] = 'k';
+	mShiftTransTable['L'] = 'l';
+	mShiftTransTable['M'] = 'm';
+	mShiftTransTable['N'] = 'n';
+	mShiftTransTable['O'] = 'o';
+	mShiftTransTable['P'] = 'p';
+	mShiftTransTable['Q'] = 'q';
+	mShiftTransTable['R'] = 'r';
+	mShiftTransTable['S'] = 's';
+	mShiftTransTable['T'] = 't';
+	mShiftTransTable['U'] = 'u';
+	mShiftTransTable['V'] = 'v';
+	mShiftTransTable['W'] = 'w';
+	mShiftTransTable['X'] = 'x';
+	mShiftTransTable['Y'] = 'y';
+	mShiftTransTable['Z'] = 'z';
 	mShiftTransTable['1'] = '!';
 	mShiftTransTable['2'] = '@';
 	mShiftTransTable['3'] = '#';
@@ -328,17 +354,12 @@ void ISDL12KeyboardInputDevice::getEvent(event_t* ev)
 	{
 		int c = sdl_key_it->second;
 
-		// Determine if shift/caps is active 
-		int shift_state = 0;
-		if (sdl_ev.key.keysym.mod & KMOD_LSHIFT)
-			shift_state ^= 1;
-		if (sdl_ev.key.keysym.mod & KMOD_RSHIFT)
-			shift_state ^= 1;
-		if (sdl_ev.key.keysym.mod & KMOD_CAPS)
-			shift_state ^= 1;
+		// handle CAPS LOCK and translate 'a'-'z' to 'A'-'Z'
+		if (c >= 'a' && c <= 'z' && (sdl_ev.key.keysym.mod & KMOD_CAPS))
+			c = mShiftTransTable[c];
 
-		// Translate the key, mimicing the shift key's behavior
-		if (shift_state)
+		// Handle SHIFT keys
+		if (sdl_ev.key.keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT))
 		{
 			KeyTranslationTable::const_iterator shift_key_it = mShiftTransTable.find(c);
 			if (shift_key_it != mShiftTransTable.end())
