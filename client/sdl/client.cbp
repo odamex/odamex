@@ -611,6 +611,8 @@
 		<Unit filename="i_music.h" />
 		<Unit filename="i_musicsystem.cpp" />
 		<Unit filename="i_musicsystem.h" />
+		<Unit filename="i_sdlinput.cpp" />
+		<Unit filename="i_sdlinput.h" />
 		<Unit filename="i_sdlvideo.cpp" />
 		<Unit filename="i_sdlvideo.h" />
 		<Unit filename="i_sound.cpp" />
@@ -619,6 +621,8 @@
 		<Unit filename="i_system.h" />
 		<Unit filename="i_video.cpp" />
 		<Unit filename="i_video.h" />
+		<Unit filename="i_win32input.cpp" />
+		<Unit filename="i_win32input.h" />
 		<Unit filename="mus2midi.cpp" />
 		<Unit filename="mus2midi.h" />
 		<Unit filename="resource.h" />
