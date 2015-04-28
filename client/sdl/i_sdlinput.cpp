@@ -719,7 +719,7 @@ void ISDL12JoystickInputDevice::resume()
 // ISDL12JoystickInputDevice::gatherEvents
 //
 // Pumps the SDL Event queue and retrieves any joystick events and translates
-// them to an event_t instances before putting them into  this instance's
+// them to an event_t instances before putting them into this instance's
 // event queue.
 //
 void ISDL12JoystickInputDevice::gatherEvents()
@@ -747,20 +747,13 @@ void ISDL12JoystickInputDevice::gatherEvents()
 					sdl_ev.type == SDL_JOYAXISMOTION || sdl_ev.type == SDL_JOYHATMOTION ||
 					sdl_ev.type == SDL_JOYBALLMOTION);
 
-			if (sdl_ev.type == SDL_JOYBUTTONDOWN && sdl_ev.jbutton.which == mJoystickId)
+			if ((sdl_ev.type == SDL_JOYBUTTONDOWN || sdl_ev.type == SDL_JOYBUTTONUP) &&
+				sdl_ev.jbutton.which == mJoystickId)
 			{
 				event_t button_event;
-				button_event.type = ev_keydown;
 				button_event.data1 = button_event.data2 = sdl_ev.jbutton.button + KEY_JOY1;
 				button_event.data3 = 0;
-				mEvents.push(button_event);
-			}
-			else if (sdl_ev.type == SDL_JOYBUTTONUP && sdl_ev.jbutton.which == mJoystickId)
-			{
-				event_t button_event;
-				button_event.type = ev_keyup;
-				button_event.data1 = button_event.data2 = sdl_ev.jbutton.button + KEY_JOY1;
-				button_event.data3 = 0;
+				sdl_ev.type == SDL_JOYBUTTONDOWN ? ev_keydown : ev_keyup;
 				mEvents.push(button_event);
 			}
 			else if (sdl_ev.type == SDL_JOYAXISMOTION && sdl_ev.jaxis.which == mJoystickId)
@@ -786,20 +779,19 @@ void ISDL12JoystickInputDevice::gatherEvents()
 				static const int flags[4] = { SDL_HAT_UP, SDL_HAT_RIGHT, SDL_HAT_DOWN, SDL_HAT_LEFT };
 				for (int i = 0; i < 4; i++)
 				{
+					event_t hat_event;
+					hat_event.data1 = hat_event.data2 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
+					hat_event.data3 = 0;
+
+					// determine if the flag's state has changed (ignore it if it hasn't)
 					if (!(old_state & flags[i]) && (new_state & flags[i]))
 					{
-						event_t hat_event;
 						hat_event.type = ev_keydown;
-						hat_event.data1 = hat_event.data2 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
-						hat_event.data3 = 0;
 						mEvents.push(hat_event);
 					}
 					else if ((old_state & flags[i]) && !(new_state & flags[i]))
 					{
-						event_t hat_event;
 						hat_event.type = ev_keyup;
-						hat_event.data1 = hat_event.data2 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
-						hat_event.data3 = 0;
 						mEvents.push(hat_event);
 					}
 				}
