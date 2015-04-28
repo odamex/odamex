@@ -29,6 +29,7 @@
 
 #include "d_event.h"
 #include <queue>
+#include <list>
 #include "hashtable.h"
 
 
@@ -137,11 +138,14 @@ private:
 	std::string		mDeviceName;
 	bool			mActive;
 
-	typedef std::queue<SDL_Event> EventQueue;
+	typedef std::queue<event_t> EventQueue;
 	EventQueue		mEvents;
 
 	int				mJoystickId;
 	SDL_Joystick*	mJoystick;
+
+	int				mNumHats;
+	int*			mHatStates;
 };
 
 

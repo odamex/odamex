@@ -616,7 +616,8 @@ void ISDL12MouseInputDevice::getEvent(event_t* ev)
 // ISDL12JoystickInputDevice::ISDL12JoystickInputDevice
 //
 ISDL12JoystickInputDevice::ISDL12JoystickInputDevice(int id) :
-	mActive(false), mJoystickId(id), mJoystick(NULL)
+	mActive(false), mJoystickId(id), mJoystick(NULL),
+	mNumHats(0), mHatStates(NULL)
 {
 	assert(SDL_WasInit(SDL_INIT_JOYSTICK));
 	assert(mJoystickId >= 0 && mJoystickId < SDL_NumJoysticks());
@@ -632,6 +633,11 @@ ISDL12JoystickInputDevice::ISDL12JoystickInputDevice(int id) :
 
 	if (!SDL_JoystickOpened(mJoystickId))
 		return;
+
+	mNumHats = SDL_JoystickNumHats(mJoystick);
+	mHatStates = new int[mNumHats];
+	for (int i = 0; i < mNumHats; i++)
+		mHatStates[i] = SDL_HAT_CENTERED;
 
 	// This turns on automatic event polling for joysticks so that the state
 	// of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
@@ -653,6 +659,8 @@ ISDL12JoystickInputDevice::~ISDL12JoystickInputDevice()
 	SDL_JoystickClose(mJoystick);
 
 	assert(!SDL_JoystickOpen(mJoystickId));
+
+	delete [] mHatStates;
 }
 
 
@@ -664,6 +672,8 @@ void ISDL12JoystickInputDevice::flushEvents()
 	gatherEvents();
 	while (!mEvents.empty())
 		mEvents.pop();
+	for (int i = 0; i < mNumHats; i++)
+		mHatStates = SDL_HAT_CENTERED;
 }
 
 
@@ -708,8 +718,9 @@ void ISDL12JoystickInputDevice::resume()
 //
 // ISDL12JoystickInputDevice::gatherEvents
 //
-// Pumps the SDL Event queue and retrieves any mouse events and puts them into
-// this instance's event queue.
+// Pumps the SDL Event queue and retrieves any joystick events and translates
+// them to an event_t instances before putting them into  this instance's
+// event queue.
 //
 void ISDL12JoystickInputDevice::gatherEvents()
 {
@@ -728,9 +739,74 @@ void ISDL12JoystickInputDevice::gatherEvents()
 
 	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_JOYEVENTMASK)))
 	{
-		// insert the SDL_Events into our queue
 		for (int i = 0; i < num_events; i++)
-			mEvents.push(sdl_events[i]);
+		{
+			const SDL_Event& sdl_ev = sdl_events[i];
+
+			assert(sdl_ev.type == SDL_JOYBUTTONDOWN || sdl_ev.type == SDL_JOYBUTTONUP ||
+					sdl_ev.type == SDL_JOYAXISMOTION || sdl_ev.type == SDL_JOYHATMOTION ||
+					sdl_ev.type == SDL_JOYBALLMOTION);
+
+			if (sdl_ev.type == SDL_JOYBUTTONDOWN && sdl_ev.jbutton.which == mJoystickId)
+			{
+				event_t button_event;
+				button_event.type = ev_keydown;
+				button_event.data1 = button_event.data2 = sdl_ev.jbutton.button + KEY_JOY1;
+				button_event.data3 = 0;
+				mEvents.push(button_event);
+			}
+			else if (sdl_ev.type == SDL_JOYBUTTONUP && sdl_ev.jbutton.which == mJoystickId)
+			{
+				event_t button_event;
+				button_event.type = ev_keyup;
+				button_event.data1 = button_event.data2 = sdl_ev.jbutton.button + KEY_JOY1;
+				button_event.data3 = 0;
+				mEvents.push(button_event);
+			}
+			else if (sdl_ev.type == SDL_JOYAXISMOTION && sdl_ev.jaxis.which == mJoystickId)
+			{
+				event_t motion_event;
+				motion_event.type = ev_joystick;
+				motion_event.data1 = motion_event.data3 = 0;
+				motion_event.data2 = sdl_ev.jaxis.axis;
+				if ((sdl_ev.jaxis.value >= JOY_DEADZONE) || (sdl_ev.jaxis.value <= -JOY_DEADZONE))
+					motion_event.data3 = sdl_ev.jaxis.value;
+				mEvents.push(motion_event);
+			}
+			else if (sdl_ev.type == SDL_JOYHATMOTION && sdl_ev.jhat.which == mJoystickId)
+			{
+				// [SL] A single SDL joystick hat event indicates on/off for each of the
+				// directional triggers for that hat. We need to create a separate 
+				// ev_keydown or ev_keyup event_t instance for each directional trigger
+				// indicated in this SDL joystick event.
+				assert(sdl_ev.jhat.hat < mNumHats);
+				int new_state = sdl_ev.jhat.value;
+				int old_state = mHatStates[sdl_ev.jhat.hat];
+
+				static const int flags[4] = { SDL_HAT_UP, SDL_HAT_RIGHT, SDL_HAT_DOWN, SDL_HAT_LEFT };
+				for (int i = 0; i < 4; i++)
+				{
+					if (!(old_state & flags[i]) && (new_state & flags[i]))
+					{
+						event_t hat_event;
+						hat_event.type = ev_keydown;
+						hat_event.data1 = hat_event.data2 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
+						hat_event.data3 = 0;
+						mEvents.push(hat_event);
+					}
+					else if ((old_state & flags[i]) && !(new_state & flags[i]))
+					{
+						event_t hat_event;
+						hat_event.type = ev_keyup;
+						hat_event.data1 = hat_event.data2 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
+						hat_event.data3 = 0;
+						mEvents.push(hat_event);
+					}
+				}
+
+				mHatStates[sdl_ev.jhat.hat] = new_state;
+			}
+		}
 	}
 }
 
@@ -738,7 +814,7 @@ void ISDL12JoystickInputDevice::gatherEvents()
 //
 // ISDL12JoystickInputDevice::getEvent
 //
-// Removes the first event from the queue and translates it to a Doom event_t.
+// Removes the first event from the queue and returns it.
 // This makes no checks to ensure there actually is an event in the queue and
 // if there is not, the behavior is undefined.
 //
@@ -746,76 +822,7 @@ void ISDL12JoystickInputDevice::getEvent(event_t* ev)
 {
 	assert(hasEvent());
 
-	// clear the destination struct
-	ev->type = ev_keydown;
-	ev->data1 = ev->data2 = ev->data3 = 0;
-
-	const SDL_Event& sdl_ev = mEvents.front();
-
-	assert(sdl_ev.type == SDL_JOYBUTTONDOWN || sdl_ev.type == SDL_JOYBUTTONUP ||
-			sdl_ev.type == SDL_JOYAXISMOTION || sdl_ev.type == SDL_JOYHATMOTION ||
-			sdl_ev.type == SDL_JOYBALLMOTION);
-
-	if (sdl_ev.type == SDL_JOYBUTTONDOWN)
-	{
-		if (sdl_ev.jbutton.which == mJoystickId)
-		{
-			ev->type = ev_keydown;
-			ev->data1 = sdl_ev.jbutton.button + KEY_JOY1;
-			ev->data2 = ev->data1;
-
-//			D_PostEvent(ev);
-		}
-	}
-	else if (sdl_ev.type == SDL_JOYBUTTONUP)
-	{
-		if (sdl_ev.jbutton.which == mJoystickId)
-		{
-			ev->type = ev_keyup;
-			ev->data1 = sdl_ev.jbutton.button + KEY_JOY1;
-			ev->data2 = ev->data1;
-
-//			D_PostEvent(ev);
-		}
-	}
-	else if (sdl_ev.type == SDL_JOYAXISMOTION)
-	{
-		if (sdl_ev.jaxis.which == mJoystickId)
-		{
-			ev->type = ev_joystick;
-			ev->data1 = 0;
-			ev->data2 = sdl_ev.jaxis.axis;
-			if ((sdl_ev.jaxis.value < JOY_DEADZONE) && (sdl_ev.jaxis.value > -JOY_DEADZONE))
-				ev->data3 = 0;
-			else
-				ev->data3 = sdl_ev.jaxis.value;
-
-//			D_PostEvent(ev);
-		}
-	}
-	else if (sdl_ev.type == SDL_JOYHATMOTION)
-	{
-		if (sdl_ev.jhat.which == mJoystickId)
-		{
-			// Each of these need to be tested because more than one can be pressed and a
-			// unique event is needed for each
-			/*
-			// TODO: handle this
-			if (sdl_ev.jhat.value & SDL_HAT_UP)
-				RegisterJoystickEvent(sdl_ev, SDL_HAT_UP);
-			if (sdl_ev.jhat.value & SDL_HAT_RIGHT)
-				RegisterJoystickEvent(sdl_ev, SDL_HAT_RIGHT);
-			if (sdl_ev.jhat.value & SDL_HAT_DOWN)
-				RegisterJoystickEvent(sdl_ev, SDL_HAT_DOWN);
-			if (sdl_ev.jhat.value & SDL_HAT_LEFT)
-				RegisterJoystickEvent(sdl_ev, SDL_HAT_LEFT);
-			*/
-		}
-	}
-
-// TODO: handle this
-//	if (use_joystick)
-//		UpdateJoystickEvents();
+	memcpy(ev, &mEvents.front(), sizeof(event_t));
 
 	mEvents.pop();
 }
