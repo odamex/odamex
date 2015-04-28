@@ -538,7 +538,7 @@ void ISDL12MouseInputDevice::gatherEvents()
 	if (motion_event.motion.xrel || motion_event.motion.yrel)
 		mEvents.push(motion_event);
 
-	center();
+//	center();
 }
 
 
@@ -559,7 +559,7 @@ void ISDL12MouseInputDevice::getEvent(event_t* ev)
 
 	const SDL_Event& sdl_ev = mEvents.front();
 
-	assert(sdl_ev.type == SDL_MOUSEMOTION || sdl_ev.type == SDL_MOUSEBUTTONDOWN || sv_ev.type == SDL_MOUSEBUTTONUP);
+	assert(sdl_ev.type == SDL_MOUSEMOTION || sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP);
 
 	if (sdl_ev.type == SDL_MOUSEMOTION)
 	{

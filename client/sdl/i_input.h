@@ -60,24 +60,6 @@ void I_DisableKeyRepeat();
 
 class MouseInput;
 
-enum
-{
-	SDL_MOUSE_DRIVER = 0,
-	RAW_WIN32_MOUSE_DRIVER = 1,
-	NUM_MOUSE_DRIVERS = 2
-};
-
-typedef struct
-{
-	int				id;
-	const char*	name;
-	bool 			(*avail_test)();
-	MouseInput*		(*create)();
-} MouseDriverInfo_t;
-
-MouseDriverInfo_t* I_FindMouseDriverInfo(int id);
-extern MouseDriverInfo_t MouseDriverInfo[];
-
 class MouseInput
 {
 public:
@@ -264,6 +246,24 @@ private:
 
 
 
+
+enum
+{
+	SDL_MOUSE_DRIVER = 0,
+	RAW_WIN32_MOUSE_DRIVER = 1,
+	NUM_MOUSE_DRIVERS = 2
+};
+
+typedef struct
+{
+	int				id;
+	const char*		name;
+	bool 			(*avail_test)();
+	IInputDevice*	(*create)();
+} MouseDriverInfo_t;
+
+MouseDriverInfo_t* I_FindMouseDriverInfo(int id);
+extern MouseDriverInfo_t MouseDriverInfo[];
 
 
 
