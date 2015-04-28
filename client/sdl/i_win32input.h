@@ -39,10 +39,16 @@
 
 #ifdef USE_RAW_WIN32_MOUSE
 
+// ============================================================================
+//
+// IRawWin32MouseInputDevice class interface
+//
+// ============================================================================
+
 class IRawWin32MouseInputDevice : public IInputDevice
 {
 public:
-	IRawWin32MouseInputDevice();
+	IRawWin32MouseInputDevice(int id);
 	virtual ~IRawWin32MouseInputDevice();
 
 	virtual const std::string& getDeviceName() const

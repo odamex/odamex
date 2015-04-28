@@ -32,11 +32,16 @@
 #include <list>
 #include "hashtable.h"
 
+// ============================================================================
+//
+// ISDL12KeyboardInputDevice class interface
+//
+// ============================================================================
 
 class ISDL12KeyboardInputDevice : public IInputDevice
 {
 public:
-	ISDL12KeyboardInputDevice();
+	ISDL12KeyboardInputDevice(int id);
 	virtual ~ISDL12KeyboardInputDevice() { }
 
 	virtual const std::string& getDeviceName() const
@@ -72,10 +77,16 @@ private:
 };
 
 
+// ============================================================================
+//
+// ISDL12MouseInputDevice class interface
+//
+// ============================================================================
+
 class ISDL12MouseInputDevice : public IInputDevice
 {
 public:
-	ISDL12MouseInputDevice();
+	ISDL12MouseInputDevice(int id);
 	virtual ~ISDL12MouseInputDevice() { }
 
 	virtual const std::string& getDeviceName() const
@@ -106,6 +117,12 @@ private:
 	EventQueue		mEvents;
 };
 
+
+// ============================================================================
+//
+// ISDL12JoystickInputDevice class interface
+//
+// ============================================================================
 
 class ISDL12JoystickInputDevice : public IInputDevice
 {

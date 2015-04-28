@@ -38,9 +38,9 @@
 // ============================================================================
 
 //
-// ISDL12KeyboardInputDevice::ISDL12MouseInputDevice
+// ISDL12KeyboardInputDevice::ISDL12KeyboardInputDevice
 //
-ISDL12KeyboardInputDevice::ISDL12KeyboardInputDevice() :
+ISDL12KeyboardInputDevice::ISDL12KeyboardInputDevice(int id) :
 	mActive(false),
 	mSDLKeyTransTable(128), mShiftTransTable(128)
 {
@@ -383,7 +383,7 @@ void ISDL12KeyboardInputDevice::getEvent(event_t* ev)
 //
 // ISDL12MouseInputDevice::ISDL12MouseInputDevice
 //
-ISDL12MouseInputDevice::ISDL12MouseInputDevice() :
+ISDL12MouseInputDevice::ISDL12MouseInputDevice(int id) :
 	mActive(false)
 {
 	reset();

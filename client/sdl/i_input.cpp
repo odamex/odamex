@@ -60,6 +60,7 @@ EXTERN_CVAR (vid_defheight)
 
 static int mouse_driver_id = -1;
 static IInputDevice* mouse_input = NULL;
+static ISDL12KeyboardInputDevice* sdl_keyboard_input_device = NULL;
 
 static bool window_focused = false;
 static bool input_grabbed = false;
@@ -94,9 +95,6 @@ EXTERN_CVAR (mouse_threshold)
 
 extern constate_e ConsoleState;
 
-
-
-static ISDL12KeyboardInputDevice* sdl_keyboard_input_device = NULL;
 
 //
 // I_FlushInput
@@ -537,7 +535,7 @@ bool I_InitInput (void)
 		nomouse = true;
 
 	if (sdl_keyboard_input_device == NULL)
-		sdl_keyboard_input_device = new ISDL12KeyboardInputDevice();
+		sdl_keyboard_input_device = new ISDL12KeyboardInputDevice(0);
 
 	atterm(I_ShutdownInput);
 
@@ -777,13 +775,13 @@ static bool I_RawWin32MouseAvailible();
 
 static IInputDevice* I_CreateSDLMouse()
 {
-	return new ISDL12MouseInputDevice();
+	return new ISDL12MouseInputDevice(0);
 }
 
 #ifdef USE_RAW_WIN32_MOUSE
 static IInputDevice* I_CreateRawWin32Mouse()
 {
-	return new IRawWin32MouseInputDevice();
+	return new IRawWin32MouseInputDevice(0);
 }
 #endif
 

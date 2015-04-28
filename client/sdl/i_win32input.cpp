@@ -93,7 +93,7 @@ IRawWin32MouseInputDevice* IRawWin32MouseInputDevice::mInstance = NULL;
 //
 // IRawWin32MouseInputDevice::IRawWin32MouseInputDevice
 //
-IRawWin32MouseInputDevice::IRawWin32MouseInputDevice() :
+IRawWin32MouseInputDevice::IRawWin32MouseInputDevice(int id) :
 	mActive(false), mInitialized(false),
 	mHasBackupDevice(false), mRegisteredMouseDevice(false),
 	mWindow(NULL), mBaseWindowProc(NULL), mRegisteredWindowProc(false),
