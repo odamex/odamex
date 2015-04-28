@@ -48,6 +48,7 @@
 
 #ifdef _WIN32
 #include <SDL_syswm.h>
+#include "i_win32input.h"
 bool tab_keydown = false;	// [ML] Actual status of tab key
 #endif
 
