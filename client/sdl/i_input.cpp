@@ -60,7 +60,9 @@ EXTERN_CVAR (vid_defheight)
 
 static int mouse_driver_id = -1;
 static IInputDevice* mouse_input = NULL;
-static ISDL12KeyboardInputDevice* sdl_keyboard_input_device = NULL;
+static IInputDevice* keyboard_input = NULL;
+static IInputDevice* joystick_input = NULL;
+static SDL_Joystick *openedjoy = NULL;
 
 static bool window_focused = false;
 static bool input_grabbed = false;
@@ -69,16 +71,6 @@ extern bool configuring_controls;
 
 EXTERN_CVAR (use_joystick)
 EXTERN_CVAR (joy_active)
-
-typedef struct
-{
-	SDL_Event	Event;
-	unsigned int RegTick;
-	unsigned int LastTick;
-} JoystickEvent_t;
-
-static SDL_Joystick *openedjoy = NULL;
-static std::list<JoystickEvent_t*> JoyEventList;
 
 // denis - from chocolate doom
 //
@@ -115,6 +107,10 @@ void I_FlushInput()
 
 	if (mouse_input)
 		mouse_input->flushEvents();
+	if (keyboard_input)
+		keyboard_input->flushEvents();
+	if (joystick_input)
+		joystick_input->flushEvents();
 }
 
 void I_EnableKeyRepeat()
@@ -183,6 +179,10 @@ static void I_UpdateFocus()
 
 		if (mouse_input)
 			mouse_input->flushEvents();
+		if (keyboard_input)
+			keyboard_input->flushEvents();
+		if (joystick_input)
+			joystick_input->flushEvents();
 	}
 }
 
@@ -292,119 +292,6 @@ static void I_InitFocus()
 }
 
 
-// Add any joystick event to a list if it will require manual polling
-// to detect release. This includes hat events (mostly due to d-pads not
-// triggering the centered event when released) and analog axis bound
-// as a key/button -- HyperEye
-//
-// RegisterJoystickEvent
-//
-static int RegisterJoystickEvent(SDL_Event *ev, int value)
-{
-	JoystickEvent_t *evc = NULL;
-	event_t		  event;
-
-	if(!ev)
-		return -1;
-
-	if(ev->type == SDL_JOYHATMOTION)
-	{
-		if(!JoyEventList.empty())
-		{
-			std::list<JoystickEvent_t*>::iterator i;
-
-			for(i = JoyEventList.begin(); i != JoyEventList.end(); ++i)
-			{
-				if(((*i)->Event.type == ev->type) && ((*i)->Event.jhat.which == ev->jhat.which)
-							&& ((*i)->Event.jhat.hat == ev->jhat.hat) && ((*i)->Event.jhat.value == value))
-					return 0;
-			}
-		}
-
-		evc = new JoystickEvent_t;
-
-		memcpy(&evc->Event, ev, sizeof(SDL_Event));
-		evc->Event.jhat.value = value;
-		evc->LastTick = evc->RegTick = SDL_GetTicks();
-
-		event.data1 = event.data2 = event.data3 = 0;
-
-		event.type = ev_keydown;
-		if(value == SDL_HAT_UP)
-			event.data1 = (ev->jhat.hat * 4) + KEY_HAT1;
-		else if(value == SDL_HAT_RIGHT)
-			event.data1 = (ev->jhat.hat * 4) + KEY_HAT2;
-		else if(value == SDL_HAT_DOWN)
-			event.data1 = (ev->jhat.hat * 4) + KEY_HAT3;
-		else if(value == SDL_HAT_LEFT)
-			event.data1 = (ev->jhat.hat * 4) + KEY_HAT4;
-
-		event.data2 = event.data1;
-	}
-
-	if(evc)
-	{
-		JoyEventList.push_back(evc);
-		D_PostEvent(&event);
-		return 1;
-	}
-
-	return 0;
-}
-
-void UpdateJoystickEvents()
-{
-	std::list<JoystickEvent_t*>::iterator i;
-	event_t	event;
-
-	if(JoyEventList.empty())
-		return;
-
-	i = JoyEventList.begin();
-	while(i != JoyEventList.end())
-	{
-		if((*i)->Event.type == SDL_JOYHATMOTION)
-		{
-			// Hat position released
-			if(!(SDL_JoystickGetHat(openedjoy, (*i)->Event.jhat.hat) & (*i)->Event.jhat.value))
-				event.type = ev_keyup;
-			// Hat button still held - Repeat at key repeat interval
-			else if((SDL_GetTicks() - (*i)->RegTick >= SDL_DEFAULT_REPEAT_DELAY) &&
-					(SDL_GetTicks() - (*i)->LastTick >= SDL_DEFAULT_REPEAT_INTERVAL*2))
-			{
-				(*i)->LastTick = SDL_GetTicks();
-				event.type = ev_keydown;
-			}
-			else
-			{
-				++i;
-				continue;
-			}
-
-			event.data1 = event.data2 = event.data3 = 0;
-
-			if((*i)->Event.jhat.value == SDL_HAT_UP)
-				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT1;
-			else if((*i)->Event.jhat.value == SDL_HAT_RIGHT)
-				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT2;
-			else if((*i)->Event.jhat.value == SDL_HAT_DOWN)
-				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT3;
-			else if((*i)->Event.jhat.value == SDL_HAT_LEFT)
-				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT4;
-
-			D_PostEvent(&event);
-
-			if(event.type == ev_keyup)
-			{
-				// Delete the released event
-				delete *i;
-				i = JoyEventList.erase(i);
-				continue;
-			}
-		}
-		++i;
-	}
-}
 
 // This turns on automatic event polling for joysticks so that the state
 // of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
@@ -534,8 +421,8 @@ bool I_InitInput (void)
 	if (Args.CheckParm("-nomouse"))
 		nomouse = true;
 
-	if (sdl_keyboard_input_device == NULL)
-		sdl_keyboard_input_device = new ISDL12KeyboardInputDevice(0);
+	if (keyboard_input == NULL)
+		keyboard_input = new ISDL12KeyboardInputDevice(0);
 
 	atterm(I_ShutdownInput);
 
@@ -577,8 +464,8 @@ void STACK_ARGS I_ShutdownInput (void)
 	I_UngrabInput();
 	I_ResetKeyRepeat();
 
-	delete sdl_keyboard_input_device;
-	sdl_keyboard_input_device = NULL;
+	delete keyboard_input;
+	keyboard_input = NULL;
 }
 
 //
@@ -633,12 +520,26 @@ void I_GetEvent()
 		}
 	}
 
-	sdl_keyboard_input_device->gatherEvents();
-	while (sdl_keyboard_input_device->hasEvent())
+	if (keyboard_input)
 	{
-		event_t event;
-		sdl_keyboard_input_device->getEvent(&event);
-		D_PostEvent(&event);
+		keyboard_input->gatherEvents();
+		while (keyboard_input->hasEvent())
+		{
+			event_t event;
+			keyboard_input->getEvent(&event);
+			D_PostEvent(&event);
+		}
+	}
+
+	if (joystick_input)
+	{
+		joystick_input->gatherEvents();
+		while (joystick_input->hasEvent())
+		{
+			event_t event;
+			joystick_input->getEvent(&event);
+			D_PostEvent(&event);
+		}
 	}
 
 
@@ -685,65 +586,8 @@ void I_GetEvent()
 			if (!window_focused)
 				I_PauseMouse();
 			break;
-
-		case SDL_JOYBUTTONDOWN:
-			if (sdl_ev->jbutton.which == joy_active)
-			{
-				event.type = ev_keydown;
-				event.data1 = sdl_ev->jbutton.button + KEY_JOY1;
-				event.data2 = event.data1;
-
-				D_PostEvent(&event);
-				break;
-			}
-
-		case SDL_JOYBUTTONUP:
-			if (sdl_ev->jbutton.which == joy_active)
-			{
-				event.type = ev_keyup;
-				event.data1 = sdl_ev->jbutton.button + KEY_JOY1;
-				event.data2 = event.data1;
-
-				D_PostEvent(&event);
-				break;
-			}
-
-		case SDL_JOYAXISMOTION:
-			if (sdl_ev->jaxis.which == joy_active)
-			{
-				event.type = ev_joystick;
-				event.data1 = 0;
-				event.data2 = sdl_ev->jaxis.axis;
-				if ((sdl_ev->jaxis.value < JOY_DEADZONE) && (sdl_ev->jaxis.value > -JOY_DEADZONE))
-					event.data3 = 0;
-				else
-					event.data3 = sdl_ev->jaxis.value;
-
-				D_PostEvent(&event);
-				break;
-			}
-
-		case SDL_JOYHATMOTION:
-			if (sdl_ev->jhat.which == joy_active)
-			{
-				// Each of these need to be tested because more than one can be pressed and a
-				// unique event is needed for each
-				if (sdl_ev->jhat.value & SDL_HAT_UP)
-					RegisterJoystickEvent(sdl_ev, SDL_HAT_UP);
-				if (sdl_ev->jhat.value & SDL_HAT_RIGHT)
-					RegisterJoystickEvent(sdl_ev, SDL_HAT_RIGHT);
-				if (sdl_ev->jhat.value & SDL_HAT_DOWN)
-					RegisterJoystickEvent(sdl_ev, SDL_HAT_DOWN);
-				if (sdl_ev->jhat.value & SDL_HAT_LEFT)
-					RegisterJoystickEvent(sdl_ev, SDL_HAT_LEFT);
-
-				break;
-			}
 		};
 	}
-
-	if (use_joystick)
-		UpdateJoystickEvents();
 }
 
 //
