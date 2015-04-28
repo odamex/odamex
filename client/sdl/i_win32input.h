@@ -54,7 +54,7 @@ public:
 	virtual const std::string& getDeviceName() const
 	{	static const std::string name("Mouse"); return name;	}
 
-	virtual bool paused() const
+	virtual bool active() const
 	{	return mActive == false;		}
 
 	virtual void pause();

@@ -62,7 +62,6 @@ static int mouse_driver_id = -1;
 static IInputDevice* mouse_input = NULL;
 static IInputDevice* keyboard_input = NULL;
 static IInputDevice* joystick_input = NULL;
-static SDL_Joystick *openedjoy = NULL;
 
 static bool window_focused = false;
 static bool input_grabbed = false;
@@ -293,21 +292,6 @@ static void I_InitFocus()
 
 
 
-// This turns on automatic event polling for joysticks so that the state
-// of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
-//
-// EnableJoystickPolling
-//
-static int EnableJoystickPolling()
-{
-	return SDL_JoystickEventState(SDL_ENABLE);
-}
-
-static int DisableJoystickPolling()
-{
-	return SDL_JoystickEventState(SDL_IGNORE);
-}
-
 CVAR_FUNC_IMPL (use_joystick)
 {
 	if(var <= 0.0)
@@ -318,13 +302,11 @@ CVAR_FUNC_IMPL (use_joystick)
 		use_joystick = 1.0;
 #else
 		I_CloseJoystick();
-		DisableJoystickPolling();
 #endif
 	}
 	else
 	{
 		I_OpenJoystick();
-		EnableJoystickPolling();
 	}
 }
 
@@ -370,23 +352,19 @@ std::string I_GetJoystickNameFromIndex (int index)
 //
 bool I_OpenJoystick()
 {
-	int numjoy;
-
-	numjoy = I_GetJoystickCount();
-
-	if(!numjoy || !use_joystick)
-		return false;
-
-	if((int)joy_active > numjoy)
-		joy_active.Set(0.0);
-
-	if(!SDL_JoystickOpened(joy_active))
-		openedjoy = SDL_JoystickOpen(joy_active);
-
-	if(!SDL_JoystickOpened(joy_active))
-		return false;
-
-	return true;
+	I_CloseJoystick();		// just in case it was left open...
+	
+	if (joy_active > 0)
+	{
+		joystick_input = new ISDL12JoystickInputDevice(joy_active);
+		if (!joystick_input->active())
+		{
+			joy_active.Set(0.0f);
+			return false;
+		}
+		return true;
+	}
+	return false;
 }
 
 //
@@ -394,22 +372,11 @@ bool I_OpenJoystick()
 //
 void I_CloseJoystick()
 {
-	extern int joyforward, joystrafe, joyturn, joylook;
-	int		ndx;
-
-#ifndef _XBOX // This is to avoid a bug in SDLx
-	if(!I_GetJoystickCount() || !openedjoy)
-		return;
-
-	ndx = SDL_JoystickIndex(openedjoy);
-
-	if(SDL_JoystickOpened(ndx))
-		SDL_JoystickClose(openedjoy);
-
-	openedjoy = NULL;
-#endif
+	delete joystick_input;
+	joystick_input = NULL;
 
 	// Reset joy position values. Wouldn't want to get stuck in a turn or something. -- Hyper_Eye
+	extern int joyforward, joystrafe, joyturn, joylook;
 	joyforward = joystrafe = joyturn = joylook = 0;
 }
 
@@ -435,7 +402,6 @@ bool I_InitInput (void)
 	if((int)use_joystick && I_GetJoystickCount())
 	{
 		I_OpenJoystick();
-		EnableJoystickPolling();
 	}
 
 #ifdef _WIN32
@@ -466,6 +432,9 @@ void STACK_ARGS I_ShutdownInput (void)
 
 	delete keyboard_input;
 	keyboard_input = NULL;
+
+	delete joystick_input;
+	joystick_input = NULL;
 }
 
 //

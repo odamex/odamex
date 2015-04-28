@@ -66,7 +66,7 @@ public:
 
 	virtual const std::string& getDeviceName() const = 0;
 
-	virtual bool paused() const = 0;
+	virtual bool active() const = 0;
 	virtual void pause() = 0; 
 	virtual void resume() = 0;
 	virtual void reset() = 0;

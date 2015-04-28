@@ -656,7 +656,10 @@ ISDL12JoystickInputDevice::~ISDL12JoystickInputDevice()
 
 	SDL_JoystickEventState(SDL_IGNORE);
 
-	SDL_JoystickClose(mJoystick);
+#ifndef _XBOX // This is to avoid a bug in SDLx
+	if (SDL_JoystickOpened(mJoystickId))
+		SDL_JoystickClose(mJoystick);
+#endif
 
 	assert(!SDL_JoystickOpen(mJoystickId));
 
