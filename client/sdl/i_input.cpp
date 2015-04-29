@@ -60,7 +60,6 @@ EXTERN_CVAR (vid_defheight)
 
 static int mouse_driver_id = -1;
 static IInputDevice* mouse_input = NULL;
-static IInputDevice* joystick_input = NULL;
 
 static IInputSubsystem* input_subsystem = NULL;
 
@@ -278,14 +277,14 @@ static void I_InitFocus()
 
 
 
-CVAR_FUNC_IMPL (use_joystick)
+CVAR_FUNC_IMPL(use_joystick)
 {
-	if(var <= 0.0)
+	if (var == 0.0f)
 	{
+#ifdef GCONSOLE
 		// Don't let console users disable joystick support because
 		// they won't have any way to reenable through the menu.
-#ifdef GCONSOLE
-		use_joystick = 1.0;
+		var = 1.0f;
 #else
 		I_CloseJoystick();
 #endif
@@ -297,41 +296,50 @@ CVAR_FUNC_IMPL (use_joystick)
 }
 
 
-CVAR_FUNC_IMPL (joy_active)
+CVAR_FUNC_IMPL(joy_active)
 {
-	if( (var < 0.0) || ((int)var > I_GetJoystickCount()) )
-		var = 0.0;
+	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
+	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	{
+		if (it->mId == (int)var)
+		{
+			I_OpenJoystick();
+			return;
+		}
+	}
 
-	I_CloseJoystick();
-
-	I_OpenJoystick();
+#ifdef GCONSOLE	
+	// Don't let console users choose an invalid joystick because
+	// they won't have any way to reenable through the menu.
+	if (!devices.empty())
+		var = devices.front().mId;
+#endif
 }
+
 
 //
 // I_GetJoystickCount
 //
 int I_GetJoystickCount()
 {
-	return SDL_NumJoysticks();
+	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
+	return devices.size();
 }
 
 //
 // I_GetJoystickNameFromIndex
 //
-std::string I_GetJoystickNameFromIndex (int index)
+std::string I_GetJoystickNameFromIndex(int index)
 {
-	const char  *joyname = NULL;
-	std::string  ret;
-
-	joyname = SDL_JoystickName(index);
-
-	if(!joyname)
-		return "";
-
-	ret = joyname;
-
-	return ret;
+	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
+	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	{
+		if (it->mId == index)
+			return it->mDeviceName;
+	}
+	return "";
 }
+
 
 //
 // I_OpenJoystick
@@ -340,15 +348,19 @@ bool I_OpenJoystick()
 {
 	I_CloseJoystick();		// just in case it was left open...
 	
-	if (joy_active > 0)
+	if (use_joystick != 0)
 	{
-		joystick_input = new ISDL12JoystickInputDevice(joy_active);
-		if (!joystick_input->active())
+		// Verify that the joystick ID indicated by the joy_active CVAR
+		// is valid and if so, initialize that joystick
+		const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
+		for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
 		{
-			joy_active.Set(0.0f);
-			return false;
+			if (it->mId == joy_active.asInt())
+			{
+				input_subsystem->initJoystick(it->mId);
+				return true;
+			}
 		}
-		return true;
 	}
 	return false;
 }
@@ -358,8 +370,14 @@ bool I_OpenJoystick()
 //
 void I_CloseJoystick()
 {
-	delete joystick_input;
-	joystick_input = NULL;
+	// Verify that the joystick ID indicated by the joy_active CVAR
+	// is valid and if so, shutdown that joystick
+	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
+	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	{
+		if (it->mId == joy_active.asInt())
+			input_subsystem->shutdownJoystick(it->mId);
+	}
 
 	// Reset joy position values. Wouldn't want to get stuck in a turn or something. -- Hyper_Eye
 	extern int joyforward, joystrafe, joyturn, joylook;
@@ -380,8 +398,7 @@ bool I_InitInput()
 	input_subsystem->initKeyboard(0);
 	if (!nomouse)
 		input_subsystem->initMouse(0);
-	if ((int)use_joystick)
-		input_subsystem->initJoystick(0);
+	I_OpenJoystick();
 
 	I_DisableKeyRepeat();
 
