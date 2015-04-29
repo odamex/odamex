@@ -67,8 +67,6 @@ class IInputDevice
 public:
 	virtual ~IInputDevice() { }
 
-	virtual const std::string& getDeviceName() const = 0;
-
 	virtual bool active() const = 0;
 	virtual void pause() = 0; 
 	virtual void resume() = 0;
@@ -85,6 +83,13 @@ public:
 		while (hasEvent())
 			getEvent(&ev);
 	}
+};
+
+
+struct IInputDeviceInfo
+{
+	std::string		mDeviceName;
+	int				mId;
 };
 
 
@@ -120,16 +125,19 @@ public:
 	virtual void gatherEvents();
 	virtual void getEvent(event_t* ev);
 
+	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const = 0; 
 	virtual void initKeyboard(int id) = 0;
 	virtual void shutdownKeyboard(int id) = 0;
 	virtual void pauseKeyboard() = 0;
 	virtual void resumeKeyboard() = 0;
 
+	virtual std::vector<IInputDeviceInfo> getMouseDevices() const = 0; 
 	virtual void initMouse(int id) = 0;
 	virtual void shutdownMouse(int id) = 0;
 	virtual void pauseMouse() = 0;
 	virtual void resumeMouse() = 0;
 
+	virtual std::vector<IInputDeviceInfo> getJoystickDevices() const = 0; 
 	virtual void initJoystick(int id) = 0;
 	virtual void shutdownJoystick(int id) = 0;
 	virtual void pauseJoystick() = 0;

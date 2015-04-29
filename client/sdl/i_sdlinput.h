@@ -43,9 +43,6 @@ public:
 	ISDL12KeyboardInputDevice(int id);
 	virtual ~ISDL12KeyboardInputDevice() { }
 
-	virtual const std::string& getDeviceName() const
-	{	static const std::string name("Keyboard"); return name;	}
-
 	virtual bool active() const
 	{	return mActive == false;		}
 
@@ -88,9 +85,6 @@ public:
 	ISDL12MouseInputDevice(int id);
 	virtual ~ISDL12MouseInputDevice() { }
 
-	virtual const std::string& getDeviceName() const
-	{	static const std::string name("Mouse"); return name;	}
-
 	virtual bool active() const
 	{	return mActive == false;		}
 
@@ -129,9 +123,6 @@ public:
 	ISDL12JoystickInputDevice(int id);
 	virtual ~ISDL12JoystickInputDevice();
 
-	virtual const std::string& getDeviceName() const
-	{	return mDeviceName;	}
-
 	virtual bool active() const
 	{	return mActive == false;		}
 
@@ -151,7 +142,6 @@ public:
 private:
 	static const int JOY_DEADZONE = 6000;
 
-	std::string		mDeviceName;
 	bool			mActive;
 
 	typedef std::queue<event_t> EventQueue;
@@ -180,6 +170,7 @@ public:
 	virtual void grabInput();
 	virtual void releaseInput();
 
+	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const;
 	virtual void initKeyboard(int id);
 	virtual void shutdownKeyboard(int id);
 
@@ -189,6 +180,7 @@ public:
 	virtual void resumeKeyboard()
 	{	getKeyboardInputDevice()->resume();	}
 
+	virtual std::vector<IInputDeviceInfo> getMouseDevices() const;
 	virtual void initMouse(int id);
 	virtual void shutdownMouse(int id);
 
@@ -198,6 +190,7 @@ public:
 	virtual void resumeMouse()
 	{	getMouseInputDevice()->resume();	}
 
+	virtual std::vector<IInputDeviceInfo> getJoystickDevices() const;
 	virtual void initJoystick(int id);
 	virtual void shutdownJoystick(int id);
 

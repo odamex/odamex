@@ -583,10 +583,6 @@ ISDL12JoystickInputDevice::ISDL12JoystickInputDevice(int id) :
 	assert(SDL_WasInit(SDL_INIT_JOYSTICK));
 	assert(mJoystickId >= 0 && mJoystickId < SDL_NumJoysticks());
 
-	const char* name = SDL_JoystickName(mJoystickId);
-	if (name)
-		mDeviceName = name;
-
 	assert(!SDL_JoystickOpened(mJoystickId));
 
 	mJoystick = SDL_JoystickOpen(mJoystickId);
@@ -817,6 +813,23 @@ ISDL12InputSubsystem::~ISDL12InputSubsystem()
 
 
 //
+// ISDL12InputSubsystem::getKeyboardDevices
+//
+// SDL only allows for one logical keyboard so just return a dummy device
+// description.
+//
+std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getKeyboardDevices() const
+{
+	std::vector<IInputDeviceInfo> devices;
+	devices.push_back(IInputDeviceInfo());
+	IInputDeviceInfo& device_info = devices.back();
+	device_info.mId = 0;
+	device_info.mDeviceName = "SDL 1.2 keyboard";
+	return devices;
+}
+
+
+//
 // ISDL12InputSubsystem::initKeyboard
 //
 void ISDL12InputSubsystem::initKeyboard(int id)
@@ -835,6 +848,23 @@ void ISDL12InputSubsystem::shutdownKeyboard(int id)
 	unregisterInputDevice(getKeyboardInputDevice());
 	delete getKeyboardInputDevice();
 	setKeyboardInputDevice(NULL);
+}
+
+
+//
+// ISDL12InputSubsystem::getMouseDevices
+//
+// SDL only allows for one logical mouse so just return a dummy device
+// description.
+//
+std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getMouseDevices() const
+{
+	std::vector<IInputDeviceInfo> devices;
+	devices.push_back(IInputDeviceInfo());
+	IInputDeviceInfo& device_info = devices.back();
+	device_info.mId = 0;
+	device_info.mDeviceName = "SDL 1.2 mouse";
+	return devices;
 }
 
 
@@ -861,6 +891,28 @@ void ISDL12InputSubsystem::shutdownMouse(int id)
 
 
 //
+//
+// ISDL12InputSubsystem::getJoystickDevices
+//
+//
+std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getJoystickDevices() const
+{
+	// TODO: does the SDL Joystick subsystem need to be initialized?
+	std::vector<IInputDeviceInfo> devices;
+	for (int i = 0; i < SDL_NumJoysticks(); i++)
+	{
+		devices.push_back(IInputDeviceInfo());
+		IInputDeviceInfo& device_info = devices.back();
+		device_info.mId = i;
+		char name[256];
+		sprintf(name, "SDL 1.2 joystick (%s)", SDL_JoystickName(i));
+		device_info.mDeviceName = name;
+	}
+
+	return devices;
+}
+
+
 // ISDL12InputSubsystem::initJoystick
 //
 void ISDL12InputSubsystem::initJoystick(int id)
