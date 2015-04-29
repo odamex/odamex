@@ -68,7 +68,7 @@ private:
 
 	bool					mActive;
 
-	typedef std::queue<SDL_Event> EventQueue;
+	typedef std::queue<event_t> EventQueue;
 	EventQueue				mEvents;
 
 	typedef OHashTable<int, int> KeyTranslationTable;
@@ -113,7 +113,7 @@ private:
 
 	bool			mActive;
 
-	typedef std::queue<SDL_Event> EventQueue;
+	typedef std::queue<event_t> EventQueue;
 	EventQueue		mEvents;
 };
 

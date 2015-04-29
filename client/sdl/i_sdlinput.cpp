@@ -292,6 +292,7 @@ void ISDL12KeyboardInputDevice::gatherEvents()
 		for (int i = 0; i < num_events; i++)
 		{
 			const SDL_Event& sdl_ev = sdl_events[i];
+			assert(sdl_ev.type == SDL_KEYDOWN || sdl_ev.type == SDL_KEYUP);
 
 			if (sdl_ev.key.keysym.sym == SDLK_F4 && sdl_ev.key.keysym.mod & (KMOD_LALT | KMOD_RALT))
 			{
@@ -302,7 +303,38 @@ void ISDL12KeyboardInputDevice::gatherEvents()
 			else
 			{
 				// Normal game keyboard event - insert it into our internal queue
-				mEvents.push(sdl_ev);
+				event_t ev;
+				ev.type = (sdl_ev.type == SDL_KEYDOWN) ? ev_keydown : ev_keyup;
+				ev.data1 = sdl_ev.key.keysym.sym;
+				ev.data2 = ev.data3 = 0;
+
+				// Translate the "sym" member of a SDL_keysym structure, which is part of
+				// a SDL_KeyboardEvent. Previously, The "unicode" member of the SDL_keysym
+				// structure was read when trying to discern the ASCII character that the
+				// user pressed. However, since SDL 2.0 no longer has a "unicode" member in
+				// the SDL_keysym structure, it's best to find other ways to achieve the
+				// same end goal.
+				KeyTranslationTable::const_iterator sdl_key_it = mSDLKeyTransTable.find(sdl_ev.key.keysym.sym);	
+				if (sdl_key_it != mSDLKeyTransTable.end())
+				{
+					int c = sdl_key_it->second;
+
+					// handle CAPS LOCK and translate 'a'-'z' to 'A'-'Z'
+					if (c >= 'a' && c <= 'z' && (sdl_ev.key.keysym.mod & KMOD_CAPS))
+						c = mShiftTransTable[c];
+
+					// Handle SHIFT keys
+					if (sdl_ev.key.keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT))
+					{
+						KeyTranslationTable::const_iterator shift_key_it = mShiftTransTable.find(c);
+						if (shift_key_it != mShiftTransTable.end())
+							c = shift_key_it->second;
+					}
+
+					ev.data2 = ev.data3 = c;
+				}
+
+				mEvents.push(ev);
 			}
 		}
 	}
@@ -321,7 +353,7 @@ void ISDL12KeyboardInputDevice::gatherEvents()
 //
 // ISDL12KeyboardInputDevice::getEvent
 //
-// Removes the first event from the queue and translates it to a Doom event_t.
+// Removes the first event from the queue and returns it.
 // This makes no checks to ensure there actually is an event in the queue and
 // if there is not, the behavior is undefined.
 //
@@ -329,46 +361,7 @@ void ISDL12KeyboardInputDevice::getEvent(event_t* ev)
 {
 	assert(hasEvent());
 
-	// clear the destination struct
-	ev->type = ev_keydown;
-	ev->data1 = ev->data2 = ev->data3 = 0;
-
-	const SDL_Event& sdl_ev = mEvents.front();
-
-	assert(sdl_ev.type == SDL_KEYDOWN || sdl_ev.type == SDL_KEYUP);
-
-	if (sdl_ev.type == SDL_KEYDOWN)
-		ev->type = ev_keydown;
-	else if (sdl_ev.type == SDL_KEYUP)
-		ev->type = ev_keyup;
-
-	ev->data1 = sdl_ev.key.keysym.sym;
-
-	// Translate the "sym" member of a SDL_keysym structure, which is part of
-	// a SDL_KeyboardEvent. Previously, The "unicode" member of the SDL_keysym
-	// structure was read when trying to discern the ASCII character that the
-	// user pressed. However, since SDL 2.0 no longer has a "unicode" member in
-	// the SDL_keysym structure, it's best to find other ways to achieve the
-	// same end goal.
-	KeyTranslationTable::const_iterator sdl_key_it = mSDLKeyTransTable.find(sdl_ev.key.keysym.sym);	
-	if (sdl_key_it != mSDLKeyTransTable.end())
-	{
-		int c = sdl_key_it->second;
-
-		// handle CAPS LOCK and translate 'a'-'z' to 'A'-'Z'
-		if (c >= 'a' && c <= 'z' && (sdl_ev.key.keysym.mod & KMOD_CAPS))
-			c = mShiftTransTable[c];
-
-		// Handle SHIFT keys
-		if (sdl_ev.key.keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT))
-		{
-			KeyTranslationTable::const_iterator shift_key_it = mShiftTransTable.find(c);
-			if (shift_key_it != mShiftTransTable.end())
-				c = shift_key_it->second;
-		}
-
-		ev->data2 = ev->data3 = c;
-	}
+	memcpy(ev, &mEvents.front(), sizeof(event_t));
 
 	mEvents.pop();
 }
@@ -510,34 +503,46 @@ void ISDL12MouseInputDevice::gatherEvents()
 	const int max_events = 1024;
 	SDL_Event sdl_events[max_events];
 
-	// All SDL_MOUSEMOTION events are aggregated into this single event
-	SDL_Event motion_event;
-	motion_event.type = SDL_MOUSEMOTION;
-	motion_event.motion.xrel = 0;
-	motion_event.motion.yrel = 0;
-
 	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEEVENTMASK)))
 	{
 		// insert the SDL_Events into our queue
 		for (int i = 0; i < num_events; i++)
 		{
 			const SDL_Event& sdl_ev = sdl_events[i];
+			assert(sdl_ev.type == SDL_MOUSEMOTION ||
+					sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTOUP);
 
-			// handle SDL_MOUSEMOTION events separately
+			event_t ev;
+			ev.data1 = ev.data2 = ev.data3 = 0;
+
 			if (sdl_ev.type == SDL_MOUSEMOTION)
 			{
-				motion_event.motion.xrel += sdl_ev.motion.xrel;
-				motion_event.motion.yrel += sdl_ev.motion.yrel;
+				ev.type = ev_mouse;
+				ev.data2 = sdl_ev.motion.xrel;
+				ev.data3 = -sdl_ev.motion.yrel;
 			}
-			else
+			else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP)
 			{
-				mEvents.push(sdl_ev);
+				ev.type = (sdl_ev.type == SDL_MOUSEBUTTONDOWN) ? ev_keydown : ev_keyup;
+				if (sdl_ev.button.button == SDL_BUTTON_LEFT)
+					ev.data1 = KEY_MOUSE1;
+				else if (sdl_ev.button.button == SDL_BUTTON_RIGHT)
+					ev.data1 = KEY_MOUSE2;
+				else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
+					ev.data1 = KEY_MOUSE3;
+				else if (sdl_ev.button.button == SDL_BUTTON_X1)
+					ev.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
+				else if (sdl_ev.button.button == SDL_BUTTON_X2)
+					ev.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
+				else if (sdl_ev.button.button == SDL_BUTTON_WHEELUP)
+					ev.data1 = KEY_MWHEELUP;
+				else if (sdl_ev.button.button == SDL_BUTTON_WHEELDOWN)
+					ev.data1 = KEY_MWHEELDOWN;
 			}
+
+			mEvents.push(ev);
 		}
 	}
-
-	if (motion_event.motion.xrel || motion_event.motion.yrel)
-		mEvents.push(motion_event);
 
 //	center();
 }
@@ -546,7 +551,7 @@ void ISDL12MouseInputDevice::gatherEvents()
 //
 // ISDL12MouseInputDevice::getEvent
 //
-// Removes the first event from the queue and translates it to a Doom event_t.
+// Removes the first event from the queue and returns it.
 // This makes no checks to ensure there actually is an event in the queue and
 // if there is not, the behavior is undefined.
 //
@@ -554,57 +559,11 @@ void ISDL12MouseInputDevice::getEvent(event_t* ev)
 {
 	assert(hasEvent());
 
-	// clear the destination struct
-	ev->type = ev_keydown;
-	ev->data1 = ev->data2 = ev->data3 = 0;
-
-	const SDL_Event& sdl_ev = mEvents.front();
-
-	assert(sdl_ev.type == SDL_MOUSEMOTION || sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP);
-
-	if (sdl_ev.type == SDL_MOUSEMOTION)
-	{
-		ev->type = ev_mouse;
-		ev->data2 = sdl_ev.motion.xrel;
-		ev->data3 = -sdl_ev.motion.yrel;
-	}
-	else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN)
-	{
-		ev->type = ev_keydown;
-
-		if (sdl_ev.button.button == SDL_BUTTON_LEFT)
-			ev->data1 = KEY_MOUSE1;
-		else if (sdl_ev.button.button == SDL_BUTTON_RIGHT)
-			ev->data1 = KEY_MOUSE2;
-		else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
-			ev->data1 = KEY_MOUSE3;
-		else if (sdl_ev.button.button == SDL_BUTTON_X1)
-			ev->data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
-		else if (sdl_ev.button.button == SDL_BUTTON_X2)
-			ev->data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
-		else if (sdl_ev.button.button == SDL_BUTTON_WHEELUP)
-			ev->data1 = KEY_MWHEELUP;
-		else if (sdl_ev.button.button == SDL_BUTTON_WHEELDOWN)
-			ev->data1 = KEY_MWHEELDOWN;
-	}
-	else if (sdl_ev.type == SDL_MOUSEBUTTONUP)
-	{
-		ev->type = ev_keyup;
-
-		if (sdl_ev.button.button == SDL_BUTTON_LEFT)
-			ev->data1 = KEY_MOUSE1;
-		else if (sdl_ev.button.button == SDL_BUTTON_RIGHT)
-			ev->data1 = KEY_MOUSE2;
-		else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
-			ev->data1 = KEY_MOUSE3;
-		else if (sdl_ev.button.button == SDL_BUTTON_X1)
-			ev->data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
-		else if (sdl_ev.button.button == SDL_BUTTON_X2)
-			ev->data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
-	}
+	memcpy(ev, &mEvents.front(), sizeof(event_t));
 
 	mEvents.pop();
 }
+
 
 
 // ============================================================================
@@ -758,7 +717,7 @@ void ISDL12JoystickInputDevice::gatherEvents()
 				event_t button_event;
 				button_event.data1 = button_event.data2 = sdl_ev.jbutton.button + KEY_JOY1;
 				button_event.data3 = 0;
-				sdl_ev.type == SDL_JOYBUTTONDOWN ? ev_keydown : ev_keyup;
+				button_event.type = (sdl_ev.type == SDL_JOYBUTTONDOWN) ? ev_keydown : ev_keyup;
 				mEvents.push(button_event);
 			}
 			else if (sdl_ev.type == SDL_JOYAXISMOTION && sdl_ev.jaxis.which == mJoystickId)
