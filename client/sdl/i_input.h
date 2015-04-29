@@ -97,7 +97,8 @@ public:
 class IInputSubsystem
 {
 public:
-	virtual ~IInputSubsystem() { }
+	IInputSubsystem();
+	virtual ~IInputSubsystem();
 
 	virtual void grabInput() = 0;
 	virtual void releaseInput() = 0;
@@ -105,7 +106,13 @@ public:
 	virtual void enableKeyRepeat();
 	virtual void disableKeyRepeat();
 
-	virtual void flushInput() = 0;
+	virtual void flushInput()
+	{
+		event_t dummy_event;
+		gatherEvents();
+		while (hasEvent())
+			getEvent(&dummy_event);
+	}
 
 	virtual bool hasEvent() const
 	{	return mEvents.empty() == false;	}
@@ -113,15 +120,42 @@ public:
 	virtual void gatherEvents();
 	virtual void getEvent(event_t* ev);
 
+	virtual void initKeyboard(int id) = 0;
+	virtual void shutdownKeyboard(int id) = 0;
+
+	virtual void initMouse(int id) = 0;
+	virtual void shutdownMouse(int id) = 0;
+
+	virtual void initJoystick(int id) = 0;
+	virtual void shutdownJoystick(int id) = 0;
+
 protected:
 	void registerInputDevice(IInputDevice* device);
 	void unregisterInputDevice(IInputDevice* device);
 
-private:
-	// Data for key repeating
+	IInputDevice* setKeyboardInputDevice(IInputDevice* device)
+	{	delete mKeyboardInputDevice; mKeyboardInputDevice = device;	}
+
+	IInputDevice* getKeyboardInputDevice()
+	{	return mKeyboardInputDevice;		}
+
+	IInputDevice* setMouseInputDevice(IInputDevice* device)
+	{	delete mMouseInputDevice; mMouseInputDevice = device;	}
+
+	IInputDevice* getMouseInputDevice()
+	{	return mMouseInputDevice;		}
+
+	IInputDevice* setJoystickInputDevice(IInputDevice* device)
+	{	delete mJoystickInputDevice; mJoystickInputDevice = device;	}
+
+	IInputDevice* getJoystickInputDevice()
+	{	return mJoystickInputDevice;		}
+
 	uint64_t			mRepeatDelay;
 	uint64_t			mRepeatInterval;;
 
+private:
+	// Data for key repeating
 	struct EventRepeater
 	{
 		uint64_t	last_time;
@@ -143,6 +177,10 @@ private:
 	// Input device management
 	typedef std::list<IInputDevice*> InputDeviceList;
 	InputDeviceList		mInputDevices;
+
+	IInputDevice*		mKeyboardInputDevice;
+	IInputDevice*		mMouseInputDevice;
+	IInputDevice*		mJoystickInputDevice;
 };
 
 

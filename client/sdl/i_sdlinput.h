@@ -166,4 +166,50 @@ private:
 };
 
 
+// ============================================================================
+//
+// ISDL12InputSubsystem class interface
+//
+// ============================================================================
+
+class ISDL12InputSubsystem : public IInputSubsystem
+{
+public:
+	ISDL12InputSubsystem();
+	virtual ~ISDL12InputSubsystem();
+
+	virtual void grabInput();
+	virtual void releaseInput();
+
+	virtual void initKeyboard(int id);
+	virtual void shutdownKeyboard(int id);
+
+	virtual void pauseKeyboard()
+	{	getKeyboardInputDevice()->pause();	}
+
+	virtual void resumeKeyboard()
+	{	getKeyboardInputDevice()->resume();	}
+
+	virtual void initMouse(int id);
+	virtual void shutdownMouse(int id);
+
+	virtual void pauseMouse()
+	{	getMouseInputDevice()->pause();	}
+
+	virtual void resumeMouse()
+	{	getMouseInputDevice()->resume();	}
+
+	virtual void initJoystick(int id);
+	virtual void shutdownJoystick(int id);
+
+	virtual void pauseJoystick()
+	{	getJoystickInputDevice()->pause();	}
+
+	virtual void resumeJoystick()
+	{	getJoystickInputDevice()->resume();	}
+
+private:
+	bool				mInputGrabbed;
+};
+
 #endif	// __I_SDLINPUT_H__

@@ -27,6 +27,7 @@
 
 #include "i_video.h"
 #include "d_event.h"
+#include "i_system.h"
 #include "doomkeys.h"
 #include <queue>
 #include <cassert>
@@ -619,6 +620,7 @@ ISDL12JoystickInputDevice::ISDL12JoystickInputDevice(int id) :
 	mActive(false), mJoystickId(id), mJoystick(NULL),
 	mNumHats(0), mHatStates(NULL)
 {
+	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
 	assert(SDL_WasInit(SDL_INIT_JOYSTICK));
 	assert(mJoystickId >= 0 && mJoystickId < SDL_NumJoysticks());
 
@@ -820,6 +822,124 @@ void ISDL12JoystickInputDevice::getEvent(event_t* ev)
 	memcpy(ev, &mEvents.front(), sizeof(event_t));
 
 	mEvents.pop();
+}
+
+// ============================================================================
+//
+// ISDL12InputSubsystem implementation
+//
+// ============================================================================
+
+//
+// ISDL12InputSubsystem::ISDL12InputSubsystem
+//
+ISDL12InputSubsystem::ISDL12InputSubsystem() :
+	IInputSubsystem(),
+	mInputGrabbed(false)
+{
+	grabInput();
+	mRepeatDelay = I_ConvertTimeFromMs(SDL_DEFAULT_REPEAT_DELAY / 2);
+	mRepeatInterval = I_ConvertTimeFromMs(SDL_DEFAULT_REPEAT_INTERVAL);
+}
+
+
+//
+// ISDL12InputSubsystem::~ISDL12InputSubsystem
+//
+ISDL12InputSubsystem::~ISDL12InputSubsystem()
+{
+	if (getKeyboardInputDevice())
+		shutdownKeyboard(0);
+	if (getMouseInputDevice())
+		shutdownMouse(0);
+	if (getJoystickInputDevice())
+		shutdownJoystick(0);
+}
+
+
+//
+// ISDL12InputSubsystem::initKeyboard
+//
+void ISDL12InputSubsystem::initKeyboard(int id)
+{
+	setKeyboardInputDevice(new ISDL12KeyboardInputDevice(id));
+	registerInputDevice(getKeyboardInputDevice());
+	getKeyboardInputDevice()->resume();
+}
+
+
+//
+// ISDL12InputSubsystem::shutdownKeyboard
+//
+void ISDL12InputSubsystem::shutdownKeyboard(int id)
+{
+	unregisterInputDevice(getKeyboardInputDevice());
+	delete getKeyboardInputDevice();
+	setKeyboardInputDevice(NULL);
+}
+
+
+//
+// ISDL12InputSubsystem::initMouse
+//
+void ISDL12InputSubsystem::initMouse(int id)
+{
+	setMouseInputDevice(new ISDL12MouseInputDevice(id));
+	registerInputDevice(getMouseInputDevice());
+	getMouseInputDevice()->resume();
+}
+
+
+//
+// ISDL12InputSubsystem::shutdownMouse
+//
+void ISDL12InputSubsystem::shutdownMouse(int id)
+{
+	unregisterInputDevice(getMouseInputDevice());
+	delete getMouseInputDevice();
+	setMouseInputDevice(NULL);
+}
+
+
+//
+// ISDL12InputSubsystem::initJoystick
+//
+void ISDL12InputSubsystem::initJoystick(int id)
+{
+	setJoystickInputDevice(new ISDL12JoystickInputDevice(id));
+	registerInputDevice(getJoystickInputDevice());
+	getJoystickInputDevice()->resume();
+}
+
+
+//
+// ISDL12InputSubsystem::shutdownJoystick
+//
+void ISDL12InputSubsystem::shutdownJoystick(int id)
+{
+	unregisterInputDevice(getJoystickInputDevice());
+	delete getJoystickInputDevice();
+	setJoystickInputDevice(NULL);
+}
+
+
+//
+// ISDL12InputSubsystem::grabInput
+//
+void ISDL12InputSubsystem::grabInput()
+{
+	SDL_WM_GrabInput(SDL_GRAB_ON);
+	mInputGrabbed = true;
+}
+
+
+//
+// ISDL12InputSubsystem::releaseInput
+//
+void ISDL12InputSubsystem::releaseInput()
+{
+	SDL_WM_GrabInput(SDL_GRAB_OFF);
+	mInputGrabbed = false;
 }
 
 VERSION_CONTROL (i_sdlinput_cpp, "$Id: i_sdlinput.cpp 5315 2015-04-24 05:01:36Z dr_sean $")

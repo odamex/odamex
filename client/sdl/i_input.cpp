@@ -63,6 +63,8 @@ static IInputDevice* mouse_input = NULL;
 static IInputDevice* keyboard_input = NULL;
 static IInputDevice* joystick_input = NULL;
 
+static IInputSubsystem* input_subsystem = NULL;
+
 static bool window_focused = false;
 static bool input_grabbed = false;
 static bool nomouse = false;
@@ -104,27 +106,21 @@ void I_FlushInput()
 
 	I_EnableKeyRepeat();
 
-	if (mouse_input)
-		mouse_input->flushEvents();
-	if (keyboard_input)
-		keyboard_input->flushEvents();
-	if (joystick_input)
-		joystick_input->flushEvents();
+	input_subsystem->flushInput();
 }
 
 void I_EnableKeyRepeat()
 {
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY / 2, SDL_DEFAULT_REPEAT_INTERVAL);
+	input_subsystem->enableKeyRepeat();
 }
 
 void I_DisableKeyRepeat()
 {
-	SDL_EnableKeyRepeat(0, 0);
+	input_subsystem->disableKeyRepeat();
 }
 
 void I_ResetKeyRepeat()
 {
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 }
 
 //
@@ -176,12 +172,7 @@ static void I_UpdateFocus()
 
 		window_focused = new_window_focused;
 
-		if (mouse_input)
-			mouse_input->flushEvents();
-		if (keyboard_input)
-			keyboard_input->flushEvents();
-		if (joystick_input)
-			joystick_input->flushEvents();
+		input_subsystem->flushInput();
 	}
 }
 
@@ -383,37 +374,23 @@ void I_CloseJoystick()
 //
 // I_InitInput
 //
-bool I_InitInput (void)
+bool I_InitInput()
 {
 	if (Args.CheckParm("-nomouse"))
 		nomouse = true;
 
-	if (keyboard_input == NULL)
-		keyboard_input = new ISDL12KeyboardInputDevice(0);
-
 	atterm(I_ShutdownInput);
 
-	I_DisableKeyRepeat();
+	input_subsystem = new ISDL12InputSubsystem();
+	input_subsystem->initKeyboard(0);
+	if (!nomouse)
+		input_subsystem->initMouse(0);
+	if ((int)use_joystick)
+		input_subsystem->initJoystick(0);
 
-	// Initialize the joystick subsystem and open a joystick if use_joystick is enabled. -- Hyper_Eye
-	Printf(PRINT_HIGH, "I_InitInput: Initializing SDL's joystick subsystem.\n");
-	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
-
-	if((int)use_joystick && I_GetJoystickCount())
-	{
-		I_OpenJoystick();
-	}
-
-#ifdef _WIN32
-	// denis - in fullscreen, prevent exit on accidental windows key press
-	// [Russell] - Disabled because it screws with the mouse
-	//g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
-#endif
+	input_subsystem->disableKeyRepeat();
 
 	I_InitFocus();
-
-	// [SL] do not intialize mouse driver here since it will be called from
-	// the mouse_driver CVAR callback
 
 	return true;
 }
@@ -421,20 +398,18 @@ bool I_InitInput (void)
 //
 // I_ShutdownInput
 //
-void STACK_ARGS I_ShutdownInput (void)
+void STACK_ARGS I_ShutdownInput()
 {
 	I_PauseMouse();
 
-	I_ShutdownMouseDriver();
-
 	I_UngrabInput();
-	I_ResetKeyRepeat();
 
-	delete keyboard_input;
-	keyboard_input = NULL;
+	input_subsystem->shutdownJoystick(0);
+	input_subsystem->shutdownMouse(0);
+	input_subsystem->shutdownKeyboard(0);
 
-	delete joystick_input;
-	joystick_input = NULL;
+	delete input_subsystem;
+	input_subsystem = NULL;
 }
 
 //
@@ -470,47 +445,22 @@ void I_ResumeMouse()
 //
 void I_GetEvent()
 {
-	const int MAX_EVENTS = 256;
-	static SDL_Event sdl_events[MAX_EVENTS];
-	event_t event;
-
 	I_UpdateFocus();
 	I_UpdateGrab();
 
-	// Process mouse movement and button events
-	if (mouse_input)
+	input_subsystem->gatherEvents();
+	while (input_subsystem->hasEvent())
 	{
-		mouse_input->gatherEvents();
-		while (mouse_input->hasEvent())
-		{
-			event_t event;
-			mouse_input->getEvent(&event);
-			D_PostEvent(&event);
-		}
+		event_t ev;
+		input_subsystem->getEvent(&ev);
+		D_PostEvent(&ev);
 	}
 
-	if (keyboard_input)
-	{
-		keyboard_input->gatherEvents();
-		while (keyboard_input->hasEvent())
-		{
-			event_t event;
-			keyboard_input->getEvent(&event);
-			D_PostEvent(&event);
-		}
-	}
-
-	if (joystick_input)
-	{
-		joystick_input->gatherEvents();
-		while (joystick_input->hasEvent())
-		{
-			event_t event;
-			joystick_input->getEvent(&event);
-			D_PostEvent(&event);
-		}
-	}
-
+	// [SL] Get application window events
+	// TODO: move this to the video subsystem
+	//
+	const int MAX_EVENTS = 256;
+	static SDL_Event sdl_events[MAX_EVENTS];
 
 	// set mask to get all events except keyboard, mouse, and joystick events
 	const int event_mask = SDL_ALLEVENTS & ~SDL_KEYEVENTMASK & ~SDL_MOUSEEVENTMASK & ~SDL_JOYEVENTMASK;
@@ -523,6 +473,7 @@ void I_GetEvent()
 
 	for (int i = 0; i < num_events; i++)
 	{
+		event_t event;
 		event.data1 = event.data2 = event.data3 = 0;
 
 		SDL_Event* sdl_ev = &sdl_events[i];
@@ -792,6 +743,22 @@ static bool I_MouseUnavailible()
 //
 // ============================================================================
 
+//
+// IInputSubsystem::IInputSubsystem
+//
+IInputSubsystem::IInputSubsystem() :
+	mKeyboardInputDevice(NULL), mMouseInputDevice(NULL), mJoystickInputDevice(NULL)
+{ }
+
+
+//
+// IInputSubsystem::~IInputSubsystem
+//
+IInputSubsystem::~IInputSubsystem()
+{
+
+}
+
 
 //
 // IInputSubsystem::registerInputDevice
@@ -953,5 +920,6 @@ void IInputSubsystem::getEvent(event_t* ev)
 
 	mEvents.pop();
 }
+
 
 VERSION_CONTROL (i_input_cpp, "$Id$")
