@@ -28,6 +28,9 @@
 #include "win32inc.h"
 
 #include "d_event.h"
+#include "hashtable.h"
+#include <queue>
+#include <list>
 
 #define MOUSE_DOOM 0
 #define MOUSE_ZDOOM_DI 1
@@ -99,16 +102,47 @@ public:
 	virtual void grabInput() = 0;
 	virtual void releaseInput() = 0;
 
-	virtual void enableKeyRepeat() { }
-	virtual void disableKeyRepeat() { }
+	virtual void enableKeyRepeat();
+	virtual void disableKeyRepeat();
 
-	virtual void flushInput();
+	virtual void flushInput() = 0;
 
-	virtual void aggregateMouseMovement() = 0;
+	virtual bool hasEvent() const
+	{	return mEvents.empty() == false;	}
+
+	virtual void gatherEvents();
+	virtual void getEvent(event_t* ev);
+
+protected:
+	void registerInputDevice(IInputDevice* device);
+	void unregisterInputDevice(IInputDevice* device);
 
 private:
+	// Data for key repeating
+	uint64_t			mRepeatDelay;
+	uint64_t			mRepeatInterval;;
 
+	struct EventRepeater
+	{
+		uint64_t	last_time;
+		bool		repeating;
+		event_t		event;
+	};
 
+	// the EventRepeaterTable hashtable typedef uses
+	// event_t::data1 as its key as there should only be
+	// a single instance with that value in the table.
+	typedef OHashTable<int, EventRepeater> EventRepeaterTable;
+	EventRepeaterTable	mEventRepeaters;
+
+	bool				mRepeating;
+
+	typedef std::queue<event_t> EventQueue;
+	EventQueue			mEvents;
+
+	// Input device management
+	typedef std::list<IInputDevice*> InputDeviceList;
+	InputDeviceList		mInputDevices;
 };
 
 

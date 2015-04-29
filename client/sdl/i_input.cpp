@@ -784,14 +784,174 @@ static bool I_MouseUnavailible()
 	return false;
 }
 
-BEGIN_COMMAND(debugmouse)
-{
-//	if (mouse_input)
-//		mouse_input->debug();
-}
-END_COMMAND(debugmouse)
 
+
+// ============================================================================
+//
+// IInputSubsystem default implementation
+//
+// ============================================================================
+
+
+//
+// IInputSubsystem::registerInputDevice
+//
+void IInputSubsystem::registerInputDevice(IInputDevice* device)
+{
+	assert(device != NULL);
+	InputDeviceList::iterator it = std::find(mInputDevices.begin(), mInputDevices.end(), device);
+	assert(it == mInputDevices.end());
+	if (it == mInputDevices.end())
+		mInputDevices.push_back(device);
+}
+
+
+//
+// IInputSubsystem::unregisterInputDevice
+//
+void IInputSubsystem::unregisterInputDevice(IInputDevice* device)
+{
+	assert(device != NULL);
+	InputDeviceList::iterator it = std::find(mInputDevices.begin(), mInputDevices.end(), device);
+	assert(it != mInputDevices.end());
+	if (it != mInputDevices.end())
+		mInputDevices.erase(it);
+}
+
+
+//
+// I_IsEventRepeatable
+//
+// Returns true if an event should be repeated when the key is held down for
+// a certain length of time. The list of keys to not repeat was based on
+// what SDL_keyboard.c does.
+//
+static bool I_IsEventRepeatable(const event_t* ev)
+{
+	if (ev->type != ev_keydown)
+		return false;
+	
+	int button = ev->data1;
+	return button != 0 && button != KEY_CAPSLOCK && button != KEY_SCRLCK &&
+		button != KEY_LSHIFT && button != KEY_LCTRL && button != KEY_LALT &&
+		button != KEY_RSHIFT && button != KEY_RCTRL && button != KEY_RALT &&
+		!(button >= KEY_MOUSE1 && button <= KEY_MOUSE5) &&
+		!(button >= KEY_JOY1 && button <= KEY_JOY32);
+}
+
+
+//
+// IInputSubsystem::enableKeyRepeat
+//
+void IInputSubsystem::enableKeyRepeat()
+{
+	mRepeating = true;
+}
+
+
+//
+// IInputSubsystem::disableKeyRepeat
+//
+void IInputSubsystem::disableKeyRepeat()
+{
+	mRepeating = false;
+	mEventRepeaters.clear();
+}
+
+
+//
+// IInputSubsystem::gatherEvents
+//
+void IInputSubsystem::gatherEvents()
+{
+	event_t mouse_motion_event;
+	mouse_motion_event.type = ev_mouse;
+	mouse_motion_event.data1 = mouse_motion_event.data2 = mouse_motion_event.data3 = 0;
+
+	for (InputDeviceList::iterator it = mInputDevices.begin(); it != mInputDevices.end(); ++it)
+	{
+		IInputDevice* device = *it;
+		device->gatherEvents();
+		while (device->hasEvent())
+		{
+			event_t ev;
+			device->getEvent(&ev);
+
+			// Check if the event needs to be added/removed from the list of repeatable events
+			if (mRepeating)
+			{
+				int key = ev.data1; 
+				if (I_IsEventRepeatable(&ev) && mEventRepeaters.find(key) == mEventRepeaters.end())
+				{
+					// new repeatable event - add to mEventRepeaters
+					EventRepeater repeater;
+					memcpy(&repeater.event, &ev, sizeof(repeater.event));
+					repeater.last_time = I_GetTime();
+					repeater.repeating = false;		// start off waiting for mRepeatDelay before repeating
+					mEventRepeaters.insert(std::make_pair(key, repeater));
+				}
+				else if (ev.type == ev_keyup && mEventRepeaters.find(key) != mEventRepeaters.end())
+				{
+					// remove the repeatable event from mEventRepeaters
+					mEventRepeaters.erase(key);
+				}
+			}
+
+			if (ev.type == ev_mouse)
+			{
+				// aggregate all mouse motion into a single event, which is enqueued later
+				mouse_motion_event.data2 += ev.data2;
+				mouse_motion_event.data3 += ev.data3;
+			}
+			else
+			{
+				// default behavior for events: just add it to the queue
+				mEvents.push(ev);
+			}
+		}
+	}
+	
+	// manually add the aggregated mouse motion event to the queue
+	if (mouse_motion_event.data2 || mouse_motion_event.data3)
+		mEvents.push(mouse_motion_event);
+
+	// Handle repeatable events
+	if (mRepeating)
+	{
+		for (EventRepeaterTable::iterator it = mEventRepeaters.begin(); it != mEventRepeaters.end(); ++it)
+		{
+			EventRepeater& repeater = it->second;
+			assert(I_IsEventRepeatable(&repeater.event));
+			uint64_t current_time = I_GetTime();
+			uint64_t delta_time = current_time - repeater.last_time;
+
+			if (!repeater.repeating && current_time - repeater.last_time >= mRepeatDelay)
+			{
+				repeater.last_time += mRepeatDelay;
+				repeater.repeating = true;
+			}
+
+			while (repeater.repeating && current_time - repeater.last_time >= mRepeatInterval)
+			{
+				// repeat the event by adding it  to the queue again
+				mEvents.push(repeater.event);
+				repeater.last_time += mRepeatInterval;
+			}
+		}
+	}
+}
+
+
+//
+// IInputSubsystem::getEvent
+//
+void IInputSubsystem::getEvent(event_t* ev)
+{
+	assert(hasEvent());
+
+	memcpy(ev, &mEvents.front(), sizeof(event_t));
+
+	mEvents.pop();
+}
 
 VERSION_CONTROL (i_input_cpp, "$Id$")
-
-
