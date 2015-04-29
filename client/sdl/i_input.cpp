@@ -109,19 +109,28 @@ void I_FlushInput()
 	input_subsystem->flushInput();
 }
 
+
+//
+// I_EnableKeyRepeat
+//
+// Enables key repeat for text entry (console, menu system, and chat).
+//
 void I_EnableKeyRepeat()
 {
 	input_subsystem->enableKeyRepeat();
 }
 
+
+//
+// I_DisableKeyRepeat
+//
+// Disables key repeat for standard game control.
+//
 void I_DisableKeyRepeat()
 {
 	input_subsystem->disableKeyRepeat();
 }
 
-void I_ResetKeyRepeat()
-{
-}
 
 //
 // I_CheckFocusState
