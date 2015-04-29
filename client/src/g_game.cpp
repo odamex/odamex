@@ -628,7 +628,16 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 
 	if (mouse_acceleration > 0.0f)
 	{
-		// apply mouse acceleration (from Chocolate Doom)
+		// denis - from chocolate doom
+		//
+		// Mouse acceleration
+		//
+		// This emulates some of the behavior of DOS mouse drivers by increasing
+		// the speed when the mouse is moved fast.
+		//
+		// The mouse input values are input directly to the game, but when
+		// the values exceed the value of mouse_threshold, they are multiplied
+		// by mouse_acceleration to increase the speed.
 		if (fmousex > mouse_threshold)
 			fmousex = (fmousex - mouse_threshold) * mouse_acceleration + mouse_threshold;
 		else if (fmousex < -mouse_threshold)

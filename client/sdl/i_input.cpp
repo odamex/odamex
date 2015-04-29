@@ -60,7 +60,6 @@ EXTERN_CVAR (vid_defheight)
 
 static int mouse_driver_id = -1;
 static IInputDevice* mouse_input = NULL;
-static IInputDevice* keyboard_input = NULL;
 static IInputDevice* joystick_input = NULL;
 
 static IInputSubsystem* input_subsystem = NULL;
@@ -72,19 +71,6 @@ extern bool configuring_controls;
 
 EXTERN_CVAR (use_joystick)
 EXTERN_CVAR (joy_active)
-
-// denis - from chocolate doom
-//
-// Mouse acceleration
-//
-// This emulates some of the behavior of DOS mouse drivers by increasing
-// the speed when the mouse is moved fast.
-//
-// The mouse input values are input directly to the game, but when
-// the values exceed the value of mouse_threshold, they are multiplied
-// by mouse_acceleration to increase the speed.
-EXTERN_CVAR (mouse_acceleration)
-EXTERN_CVAR (mouse_threshold)
 
 extern constate_e ConsoleState;
 
@@ -397,7 +383,7 @@ bool I_InitInput()
 	if ((int)use_joystick)
 		input_subsystem->initJoystick(0);
 
-	input_subsystem->disableKeyRepeat();
+	I_DisableKeyRepeat();
 
 	I_InitFocus();
 
@@ -429,8 +415,7 @@ void STACK_ARGS I_ShutdownInput()
 //
 void I_PauseMouse()
 {
-	if (mouse_input)
-		mouse_input->pause();
+	input_subsystem->pauseMouse();
 }
 
 //
@@ -441,8 +426,7 @@ void I_PauseMouse()
 //
 void I_ResumeMouse()
 {
-	if (mouse_input)
-		mouse_input->resume();
+	input_subsystem->resumeMouse();
 }
 
 //

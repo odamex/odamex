@@ -122,34 +122,52 @@ public:
 
 	virtual void initKeyboard(int id) = 0;
 	virtual void shutdownKeyboard(int id) = 0;
+	virtual void pauseKeyboard() = 0;
+	virtual void resumeKeyboard() = 0;
 
 	virtual void initMouse(int id) = 0;
 	virtual void shutdownMouse(int id) = 0;
+	virtual void pauseMouse() = 0;
+	virtual void resumeMouse() = 0;
 
 	virtual void initJoystick(int id) = 0;
 	virtual void shutdownJoystick(int id) = 0;
+	virtual void pauseJoystick() = 0;
+	virtual void resumeJoystick() = 0;
 
 protected:
 	void registerInputDevice(IInputDevice* device);
 	void unregisterInputDevice(IInputDevice* device);
 
 	IInputDevice* setKeyboardInputDevice(IInputDevice* device)
-	{	delete mKeyboardInputDevice; mKeyboardInputDevice = device;	}
+	{
+		mKeyboardInputDevice = device;
+	}
 
 	IInputDevice* getKeyboardInputDevice()
-	{	return mKeyboardInputDevice;		}
+	{
+		return mKeyboardInputDevice;
+	}
 
 	IInputDevice* setMouseInputDevice(IInputDevice* device)
-	{	delete mMouseInputDevice; mMouseInputDevice = device;	}
+	{
+		mMouseInputDevice = device;
+	}
 
 	IInputDevice* getMouseInputDevice()
-	{	return mMouseInputDevice;		}
+	{
+		return mMouseInputDevice;
+	}
 
 	IInputDevice* setJoystickInputDevice(IInputDevice* device)
-	{	delete mJoystickInputDevice; mJoystickInputDevice = device;	}
+	{
+		mJoystickInputDevice = device;
+	}
 
 	IInputDevice* getJoystickInputDevice()
-	{	return mJoystickInputDevice;		}
+	{
+		return mJoystickInputDevice;
+	}
 
 	uint64_t			mRepeatDelay;
 	uint64_t			mRepeatInterval;;
