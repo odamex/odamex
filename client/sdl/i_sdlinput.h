@@ -24,7 +24,6 @@
 #define __I_SDLINPUT_H__
 
 #include "doomtype.h"
-#include <SDL.h>
 #include "i_input.h"
 
 #include "d_event.h"

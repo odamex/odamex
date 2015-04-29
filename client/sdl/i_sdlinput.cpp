@@ -797,7 +797,7 @@ ISDL12InputSubsystem::ISDL12InputSubsystem() :
 	mInputGrabbed(false)
 {
 	grabInput();
-	mRepeatDelay = I_ConvertTimeFromMs(SDL_DEFAULT_REPEAT_DELAY / 2);
+	mRepeatDelay = I_ConvertTimeFromMs(SDL_DEFAULT_REPEAT_DELAY);
 	mRepeatInterval = I_ConvertTimeFromMs(SDL_DEFAULT_REPEAT_INTERVAL);
 }
 

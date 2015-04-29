@@ -827,6 +827,49 @@ void IInputSubsystem::disableKeyRepeat()
 
 
 //
+// I_GetEventRepeaterKey
+//
+// Returns a value for use as a hash table key from a given key-press event.
+//
+// If the function returns 0, the event should not be repeated. This is the
+// case for non-key-press events and for special buttons on the keyboard such
+// as Ctrl or CapsLock.
+//
+// All other keyboard events should return a key value of 1. Typically
+// key-repeating only allows one key on the keyboard to be repeating at the
+// same time. This can be accomplished by all keyboard events returning
+// the same value.
+//
+// Joystick hat events also repeat but each directional trigger repeats
+// concurrently as long as they are held down. Thus a unique value is returned
+// for each of them.
+// 
+static int I_GetEventRepeaterKey(const event_t* ev)
+{
+	if (ev->type != ev_keydown && ev->type != ev_keyup)
+		return 0;
+
+	int button = ev->data1;
+	if (button < KEY_MOUSE1)
+	{
+		if (button == KEY_CAPSLOCK || button == KEY_SCRLCK ||
+			button == KEY_LSHIFT || button == KEY_LCTRL || button == KEY_LALT ||
+			button == KEY_RSHIFT || button == KEY_RCTRL || button == KEY_RALT)
+			return 0;
+		return 1;
+	}
+	else if (button >= KEY_HAT1 && button <= KEY_HAT8)
+	{
+		return button;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+
+//
 // IInputSubsystem::gatherEvents
 //
 void IInputSubsystem::gatherEvents()
@@ -847,20 +890,36 @@ void IInputSubsystem::gatherEvents()
 			// Check if the event needs to be added/removed from the list of repeatable events
 			if (mRepeating)
 			{
-				int key = ev.data1; 
-				if (I_IsEventRepeatable(&ev) && mEventRepeaters.find(key) == mEventRepeaters.end())
+				int key = I_GetEventRepeaterKey(&ev); 
+				if (key && ev.type == ev_keydown)
 				{
-					// new repeatable event - add to mEventRepeaters
-					EventRepeater repeater;
-					memcpy(&repeater.event, &ev, sizeof(repeater.event));
-					repeater.last_time = I_GetTime();
-					repeater.repeating = false;		// start off waiting for mRepeatDelay before repeating
-					mEventRepeaters.insert(std::make_pair(key, repeater));
+					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
+					if (it != mEventRepeaters.end())
+					{
+						// update existing repeater with this new event
+						EventRepeater& repeater = it->second;
+						memcpy(&repeater.event, &ev, sizeof(repeater.event));
+					}
+					else
+					{
+						// new repeatable event - add to mEventRepeaters
+						EventRepeater repeater;
+						memcpy(&repeater.event, &ev, sizeof(repeater.event));
+						repeater.last_time = I_GetTime();
+						repeater.repeating = false;		// start off waiting for mRepeatDelay before repeating
+						mEventRepeaters.insert(std::make_pair(key, repeater));
+					}
 				}
-				else if (ev.type == ev_keyup && mEventRepeaters.find(key) != mEventRepeaters.end())
+				else if (key && ev.type == ev_keyup)
 				{
-					// remove the repeatable event from mEventRepeaters
-					mEventRepeaters.erase(key);
+					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
+					if (it != mEventRepeaters.end())
+					{
+						// remove the repeatable event from mEventRepeaters
+						const EventRepeater& repeater = it->second;
+						if (repeater.event.data1 == ev.data1)
+							mEventRepeaters.erase(it);
+					}
 				}
 			}
 
