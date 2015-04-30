@@ -81,15 +81,7 @@ extern constate_e ConsoleState;
 //
 void I_FlushInput()
 {
-	SDL_Event ev;
-
-	I_DisableKeyRepeat();
-
-	while (SDL_PollEvent(&ev)) {}
-
 	C_ReleaseKeys();
-
-	I_EnableKeyRepeat();
 
 	input_subsystem->flushInput();
 }
@@ -118,19 +110,6 @@ void I_DisableKeyRepeat()
 
 
 //
-// I_CheckFocusState
-//
-// Determines if the Odamex window currently has the window manager focus.
-// We should have input (keyboard) focus and be visible (not minimized).
-//
-static bool I_CheckFocusState()
-{
-	SDL_PumpEvents();
-	Uint8 state = SDL_GetAppState();
-	return (state & SDL_APPACTIVE) && (state & SDL_APPINPUTFOCUS);
-}
-
-//
 // I_UpdateFocus
 //
 // Update the value of window_focused each tic and in response to SDL
@@ -143,15 +122,14 @@ static bool I_CheckFocusState()
 //
 static void I_UpdateFocus()
 {
-	SDL_Event  ev;
-	bool new_window_focused = I_CheckFocusState();
+	bool new_window_focused = I_GetWindow()->isFocused();
 
 	// [CG][EE] Handle focus changes, this is all necessary to avoid repeat events.
 	if (window_focused != new_window_focused)
 	{
 		if(new_window_focused)
 		{
-			while(SDL_PollEvent(&ev)) {}
+			input_subsystem->flushInput();
 			I_EnableKeyRepeat();
 		}
 		else
@@ -183,7 +161,9 @@ static bool I_CanGrab()
 	return true;
 	#endif
 
-	if (!window_focused)
+	assert(I_GetWindow() != NULL);
+
+	if (!I_GetWindow()->isFocused())
 		return false;
 	else if (I_GetWindow()->isFullScreen())
 		return true;
@@ -205,7 +185,7 @@ static bool I_CanGrab()
 //
 static void I_GrabInput()
 {
-	SDL_WM_GrabInput(SDL_GRAB_ON);
+	input_subsystem->grabInput();
 	input_grabbed = true;
 	I_ResumeMouse();
 }
@@ -215,7 +195,7 @@ static void I_GrabInput()
 //
 static void I_UngrabInput()
 {
-	SDL_WM_GrabInput(SDL_GRAB_OFF);
+	input_subsystem->releaseInput();
 	input_grabbed = false;
 	I_PauseMouse();
 }
@@ -231,7 +211,7 @@ static void I_UngrabInput()
 //
 void I_ForceUpdateGrab()
 {
-	window_focused = I_CheckFocusState();
+	window_focused = I_GetWindow()->isFocused();
 
 	if (I_CanGrab())
 		I_GrabInput();
@@ -453,19 +433,8 @@ void I_ResumeMouse()
 // Keyboard and joystick events are retreived directly from SDL while mouse
 // movement and buttons are handled by the MouseInput class.
 //
-void I_GetEvent()
+static void I_GetEvents()
 {
-	I_UpdateFocus();
-	I_UpdateGrab();
-
-	input_subsystem->gatherEvents();
-	while (input_subsystem->hasEvent())
-	{
-		event_t ev;
-		input_subsystem->getEvent(&ev);
-		D_PostEvent(&ev);
-	}
-
 	// [SL] Get application window events
 	// TODO: move this to the video subsystem
 	//
@@ -483,11 +452,9 @@ void I_GetEvent()
 
 	for (int i = 0; i < num_events; i++)
 	{
-		event_t event;
-		event.data1 = event.data2 = event.data3 = 0;
+		const SDL_Event& sdl_ev = sdl_events[i];
 
-		SDL_Event* sdl_ev = &sdl_events[i];
-		switch (sdl_ev->type)
+		switch (sdl_ev.type)
 		{
 		case SDL_QUIT:
 			AddCommandString("quit");
@@ -499,16 +466,24 @@ void I_GetEvent()
 			if (!vid_fullscreen)
 			{
 				std::stringstream Command;
-				Command << "vid_setmode " << sdl_ev->resize.w << " " << sdl_ev->resize.h;
+				Command << "vid_setmode " << sdl_ev.resize.w << " " << sdl_ev.resize.h;
 				AddCommandString(Command.str());
 
-				vid_defwidth.Set((float)sdl_ev->resize.w);
-				vid_defheight.Set((float)sdl_ev->resize.h);
+				vid_defwidth.Set((float)sdl_ev.resize.w);
+				vid_defheight.Set((float)sdl_ev.resize.h);
 			}
 			break;
 		}
 
 		case SDL_ACTIVEEVENT:
+			// Debugging messages
+			if (sdl_ev.active.state & SDL_APPMOUSEFOCUS)
+				DPrintf("SDL_ACTIVEEVENT SDL_APPMOUSEFOCUS %s\n", sdl_ev.active.gain ? "gained" : "lost");
+			if (sdl_ev.active.state & SDL_APPINPUTFOCUS)
+				DPrintf("SDL_ACTIVEEVENT SDL_APPINPUTFOCUS %s\n", sdl_ev.active.gain ? "gained" : "lost");
+			if (sdl_ev.active.state & SDL_APPACTIVE)
+				DPrintf("SDL_ACTIVEEVENT SDL_APPACTIVE %s\n", sdl_ev.active.gain ? "gained" : "lost");
+
 			// need to update our focus state
 			I_UpdateFocus();
 			I_UpdateGrab();
@@ -518,6 +493,20 @@ void I_GetEvent()
 			break;
 		};
 	}
+
+
+	I_UpdateFocus();
+	I_UpdateGrab();
+
+
+	// Get all of the events from the keboard, mouse, and joystick
+	input_subsystem->gatherEvents();
+	while (input_subsystem->hasEvent())
+	{
+		event_t ev;
+		input_subsystem->getEvent(&ev);
+		D_PostEvent(&ev);
+	}
 }
 
 //
@@ -525,7 +514,7 @@ void I_GetEvent()
 //
 void I_StartTic (void)
 {
-	I_GetEvent();
+	I_GetEvents();
 }
 
 //
