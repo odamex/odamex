@@ -173,32 +173,20 @@ public:
 	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const;
 	virtual void initKeyboard(int id);
 	virtual void shutdownKeyboard(int id);
-
-	virtual void pauseKeyboard()
-	{	getKeyboardInputDevice()->pause();	}
-
-	virtual void resumeKeyboard()
-	{	getKeyboardInputDevice()->resume();	}
+	virtual void pauseKeyboard();
+	virtual void resumeKeyboard();
 
 	virtual std::vector<IInputDeviceInfo> getMouseDevices() const;
 	virtual void initMouse(int id);
 	virtual void shutdownMouse(int id);
-
-	virtual void pauseMouse()
-	{	getMouseInputDevice()->pause();	}
-
-	virtual void resumeMouse()
-	{	getMouseInputDevice()->resume();	}
+	virtual void pauseMouse();
+	virtual void resumeMouse();
 
 	virtual std::vector<IInputDeviceInfo> getJoystickDevices() const;
 	virtual void initJoystick(int id);
 	virtual void shutdownJoystick(int id);
-
-	virtual void pauseJoystick()
-	{	getJoystickInputDevice()->pause();	}
-
-	virtual void resumeJoystick()
-	{	getJoystickInputDevice()->resume();	}
+	virtual void pauseJoystick();
+	virtual void resumeJoystick();
 
 private:
 	bool				mInputGrabbed;

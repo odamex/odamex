@@ -852,6 +852,28 @@ void ISDL12InputSubsystem::shutdownKeyboard(int id)
 
 
 //
+// ISDL12InputSubsystem::pauseKeyboard
+//
+void ISDL12InputSubsystem::pauseKeyboard()
+{
+	IInputDevice* device = getKeyboardInputDevice();
+	if (device)
+		device->pause();
+}
+
+
+//
+// ISDL12InputSubsystem::resumeKeyboard
+//
+void ISDL12InputSubsystem::resumeKeyboard()
+{
+	IInputDevice* device = getKeyboardInputDevice();
+	if (device)
+		device->resume();
+}
+
+
+//
 // ISDL12InputSubsystem::getMouseDevices
 //
 // SDL only allows for one logical mouse so just return a dummy device
@@ -887,6 +909,28 @@ void ISDL12InputSubsystem::shutdownMouse(int id)
 	unregisterInputDevice(getMouseInputDevice());
 	delete getMouseInputDevice();
 	setMouseInputDevice(NULL);
+}
+
+
+//
+// ISDL12InputSubsystem::pauseMouse
+//
+void ISDL12InputSubsystem::pauseMouse()
+{
+	IInputDevice* device = getMouseInputDevice();
+	if (device)
+		device->pause();
+}
+
+
+//
+// ISDL12InputSubsystem::resumeMouse
+//
+void ISDL12InputSubsystem::resumeMouse()
+{
+	IInputDevice* device = getMouseInputDevice();
+	if (device)
+		device->resume();
 }
 
 
@@ -931,6 +975,28 @@ void ISDL12InputSubsystem::shutdownJoystick(int id)
 	unregisterInputDevice(getJoystickInputDevice());
 	delete getJoystickInputDevice();
 	setJoystickInputDevice(NULL);
+}
+
+
+//
+// ISDL12InputSubsystem::pauseJoystick
+//
+void ISDL12InputSubsystem::pauseJoystick()
+{
+	IInputDevice* device = getJoystickInputDevice();
+	if (device)
+		device->pause();
+}
+
+
+//
+// ISDL12InputSubsystem::resumeJoystick
+//
+void ISDL12InputSubsystem::resumeJoystick()
+{
+	IInputDevice* device = getJoystickInputDevice();
+	if (device)
+		device->resume();
 }
 
 
