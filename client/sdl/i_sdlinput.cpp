@@ -475,10 +475,10 @@ void ISDL12MouseInputDevice::resume()
 {
 	mActive = true;
 	SDL_ShowCursor(false);
+	reset();
 	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
-	reset();
 }
 
 
