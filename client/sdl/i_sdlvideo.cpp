@@ -352,6 +352,19 @@ void ISDL12Window::setWindowIcon()
 
 
 //
+// ISDL12Window::isFocused
+//
+// Returns true if this window has input focus.
+//
+bool ISDL12Window::isFocused() const
+{
+	SDL_PumpEvents();
+	int app_state = SDL_GetAppState();
+	return (app_state & SDL_APPINPUTFOCUS) && (app_state & SDL_APPACTIVE);
+}
+
+
+//
 // ISDL12Window::getVideoDriverName
 //
 // Returns the name of the video driver that SDL is currently
