@@ -396,10 +396,6 @@ void STACK_ARGS I_ShutdownInput()
 
 	I_UngrabInput();
 
-	input_subsystem->shutdownJoystick(0);
-	input_subsystem->shutdownMouse(0);
-	input_subsystem->shutdownKeyboard(0);
-
 	delete input_subsystem;
 	input_subsystem = NULL;
 }
@@ -946,7 +942,6 @@ void IInputSubsystem::gatherEvents()
 			EventRepeater& repeater = it->second;
 			assert(I_IsEventRepeatable(&repeater.event));
 			uint64_t current_time = I_GetTime();
-			uint64_t delta_time = current_time - repeater.last_time;
 
 			if (!repeater.repeating && current_time - repeater.last_time >= mRepeatDelay)
 			{

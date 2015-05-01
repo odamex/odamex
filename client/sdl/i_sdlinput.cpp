@@ -885,8 +885,9 @@ void ISDL12InputSubsystem::initKeyboard(int id)
 //
 void ISDL12InputSubsystem::shutdownKeyboard(int id)
 {
-	unregisterInputDevice(getKeyboardInputDevice());
-	delete getKeyboardInputDevice();
+	IInputDevice* device = getKeyboardInputDevice();
+	unregisterInputDevice(device);
+	delete device;
 	setKeyboardInputDevice(NULL);
 }
 
@@ -956,8 +957,9 @@ void ISDL12InputSubsystem::initMouse(int id)
 //
 void ISDL12InputSubsystem::shutdownMouse(int id)
 {
-	unregisterInputDevice(getMouseInputDevice());
-	delete getMouseInputDevice();
+	IInputDevice* device = getMouseInputDevice();
+	unregisterInputDevice(device);
+	delete device;
 	setMouseInputDevice(NULL);
 }
 
@@ -1032,8 +1034,9 @@ void ISDL12InputSubsystem::initJoystick(int id)
 //
 void ISDL12InputSubsystem::shutdownJoystick(int id)
 {
-	unregisterInputDevice(getJoystickInputDevice());
-	delete getJoystickInputDevice();
+	IInputDevice* device = getJoystickInputDevice();
+	unregisterInputDevice(device);
+	delete device;
 	setJoystickInputDevice(NULL);
 }
 

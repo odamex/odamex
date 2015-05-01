@@ -147,7 +147,7 @@ protected:
 	void registerInputDevice(IInputDevice* device);
 	void unregisterInputDevice(IInputDevice* device);
 
-	IInputDevice* setKeyboardInputDevice(IInputDevice* device)
+	void setKeyboardInputDevice(IInputDevice* device)
 	{
 		mKeyboardInputDevice = device;
 	}
@@ -157,7 +157,7 @@ protected:
 		return mKeyboardInputDevice;
 	}
 
-	IInputDevice* setMouseInputDevice(IInputDevice* device)
+	void setMouseInputDevice(IInputDevice* device)
 	{
 		mMouseInputDevice = device;
 	}
@@ -167,7 +167,7 @@ protected:
 		return mMouseInputDevice;
 	}
 
-	IInputDevice* setJoystickInputDevice(IInputDevice* device)
+	void setJoystickInputDevice(IInputDevice* device)
 	{
 		mJoystickInputDevice = device;
 	}
