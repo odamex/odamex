@@ -41,7 +41,7 @@ class ISDL12KeyboardInputDevice : public IInputDevice
 {
 public:
 	ISDL12KeyboardInputDevice(int id);
-	virtual ~ISDL12KeyboardInputDevice() { }
+	virtual ~ISDL12KeyboardInputDevice();
 
 	virtual bool active() const
 	{	return mActive == false;		}
@@ -83,7 +83,7 @@ class ISDL12MouseInputDevice : public IInputDevice
 {
 public:
 	ISDL12MouseInputDevice(int id);
-	virtual ~ISDL12MouseInputDevice() { }
+	virtual ~ISDL12MouseInputDevice();
 
 	virtual bool active() const
 	{	return mActive == false;		}

@@ -24,6 +24,7 @@
 #include <SDL.h>
 #include "i_input.h"
 #include "i_sdlinput.h"
+#include "i_win32input.h"
 
 #include "i_video.h"
 #include "d_event.h"
@@ -212,6 +213,15 @@ ISDL12KeyboardInputDevice::ISDL12KeyboardInputDevice(int id) :
 
 
 //
+// ISDL12KeyboardInputDevice::~ISDL12KeyboardInputDevice
+//
+ISDL12KeyboardInputDevice::~ISDL12KeyboardInputDevice()
+{
+	pause();
+}
+
+
+//
 // ISDL12KeyboardInputDevice::flushEvents
 //
 void ISDL12KeyboardInputDevice::flushEvents()
@@ -382,6 +392,15 @@ ISDL12MouseInputDevice::ISDL12MouseInputDevice(int id) :
 {
 	reset();
 }
+
+
+//
+// ISDL12MouseInputDevice::~ISDL12MouseInputDevice
+ISDL12MouseInputDevice::~ISDL12MouseInputDevice()
+{
+	pause();
+}
+
 
 //
 // ISDL12MouseInputDevice::center
@@ -824,6 +843,7 @@ ISDL12InputSubsystem::ISDL12InputSubsystem() :
 	SDL_EventState(SDL_JOYBUTTONDOWN, SDL_IGNORE);
 	SDL_EventState(SDL_JOYBUTTONUP, SDL_IGNORE);
 
+	SDL_ShowCursor(false);
 	grabInput();
 }
 
@@ -864,6 +884,8 @@ std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getKeyboardDevices() const
 //
 void ISDL12InputSubsystem::initKeyboard(int id)
 {
+	shutdownKeyboard(0);
+
 	const std::vector<IInputDeviceInfo> devices = getKeyboardDevices();
 	std::string device_name;
 	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
@@ -927,15 +949,15 @@ std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getMouseDevices() const
 {
 	std::vector<IInputDeviceInfo> devices;
 	devices.push_back(IInputDeviceInfo());
-	IInputDeviceInfo& device_info = devices.back();
-	device_info.mId = SDL_MOUSE_DRIVER;
-	device_info.mDeviceName = "SDL 1.2 mouse";
+	IInputDeviceInfo& sdl_device_info = devices.back();
+	sdl_device_info.mId = SDL_MOUSE_DRIVER;
+	sdl_device_info.mDeviceName = "SDL 1.2 mouse";
 
 	#ifdef USE_RAW_WIN32_MOUSE
 	devices.push_back(IInputDeviceInfo());
-	device_info = devices.back();
-	device_info.mId = RAW_WIN32_MOUSE_DRIVER;
-	device_info.mDeviceName = "RawInput mouse";
+	IInputDeviceInfo& raw_device_info = devices.back();
+	raw_device_info.mId = RAW_WIN32_MOUSE_DRIVER;
+	raw_device_info.mDeviceName = "RawInput mouse";
 	#endif
 
 	return devices;
@@ -947,6 +969,8 @@ std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getMouseDevices() const
 //
 void ISDL12InputSubsystem::initMouse(int id)
 {
+	shutdownMouse(0);
+
 	const std::vector<IInputDeviceInfo> devices = getMouseDevices();
 	std::string device_name;
 	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
@@ -1033,6 +1057,8 @@ std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getJoystickDevices() const
 //
 void ISDL12InputSubsystem::initJoystick(int id)
 {
+	shutdownJoystick(0);
+
 	const std::vector<IInputDeviceInfo> devices = getJoystickDevices();
 	std::string device_name;
 	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
