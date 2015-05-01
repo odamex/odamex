@@ -59,7 +59,6 @@ EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 
 static int mouse_driver_id = -1;
-static IInputDevice* mouse_input = NULL;
 
 static IInputSubsystem* input_subsystem = NULL;
 
@@ -364,6 +363,32 @@ void I_CloseJoystick()
 	joyforward = joystrafe = joyturn = joylook = 0;
 }
 
+
+static bool I_IsMouseDriverValid(int id);
+
+//
+// I_CloseMouse()
+//
+void I_CloseMouse()
+{
+	input_subsystem->shutdownMouse(0);
+}
+
+
+//
+// I_OpenMouse
+//
+bool I_OpenMouse()
+{
+	I_CloseMouse();
+
+	// try to initialize the user's preferred mouse driver
+	if (I_IsMouseDriverValid(mouse_driver_id))
+		input_subsystem->initMouse(mouse_driver_id);
+	return true;
+}
+
+
 //
 // I_InitInput
 //
@@ -376,8 +401,10 @@ bool I_InitInput()
 
 	input_subsystem = new ISDL12InputSubsystem();
 	input_subsystem->initKeyboard(0);
+
 	if (!nomouse)
-		input_subsystem->initMouse(0);
+		I_OpenMouse();
+
 	I_OpenJoystick();
 
 	I_DisableKeyRepeat();
@@ -584,7 +611,7 @@ CVAR_FUNC_IMPL(mouse_driver)
 		if (var.asInt() == SDL_MOUSE_DRIVER)
 		{
 			// can't initialize SDL_MOUSE_DRIVER so don't use a mouse
-			I_ShutdownMouseDriver();
+			I_CloseMouse();
 			nomouse = true;
 		}
 		else
@@ -597,77 +624,11 @@ CVAR_FUNC_IMPL(mouse_driver)
 		if (var.asInt() != mouse_driver_id)
 		{
 			mouse_driver_id = var.asInt();
-			I_InitMouseDriver();
+			I_OpenMouse();
 		}
 	}
 }
 
-//
-// I_ShutdownMouseDriver
-//
-// Frees the memory used by mouse_input
-//
-void I_ShutdownMouseDriver()
-{
-	delete mouse_input;
-	mouse_input = NULL;
-}
-
-static void I_SetSDLIgnoreMouseEvents()
-{
-	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
-	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
-	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
-}
-
-static void I_UnsetSDLIgnoreMouseEvents()
-{
-	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
-	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
-	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
-}
-
-//
-// I_InitMouseDriver
-//
-// Instantiates the proper concrete MouseInput object based on the
-// mouse_driver cvar and stores a pointer to the object in mouse_input.
-//
-void I_InitMouseDriver()
-{
-	I_ShutdownMouseDriver();
-
-	// ignore SDL mouse input for now... The mouse driver will change this if needed
-	I_SetSDLIgnoreMouseEvents();
-
-	if (nomouse)
-		return;
-
-	// try to initialize the user's preferred mouse driver
-	MouseDriverInfo_t* info = I_FindMouseDriverInfo(mouse_driver_id);
-	if (info)
-	{
-		if (info->create != NULL)
-			mouse_input = info->create();
-		if (mouse_input != NULL)
-			Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing %s input.\n", info->name);
-		else
-			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initalize %s input.\n", info->name);
-	}
-
-	// fall back on SDLMouse if the preferred driver failed to initialize
-	if (mouse_input == NULL)
-	{
-		mouse_input = I_CreateSDLMouse();
-		if (mouse_input != NULL)
-			Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing SDL Mouse input as a fallback.\n");
-		else
-			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initialize SDL Mouse input as a fallback.\n");
-	}
-
-	I_FlushInput();
-	I_ResumeMouse();
-}
 
 //
 // I_CheckForProc

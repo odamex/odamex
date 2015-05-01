@@ -258,9 +258,9 @@ void ISDL12KeyboardInputDevice::pause()
 void ISDL12KeyboardInputDevice::resume()
 {
 	mActive = true;
+	reset();
 	SDL_EventState(SDL_KEYDOWN, SDL_ENABLE);
 	SDL_EventState(SDL_KEYUP, SDL_ENABLE);
-	reset();
 }
 
 
@@ -886,9 +886,12 @@ void ISDL12InputSubsystem::initKeyboard(int id)
 void ISDL12InputSubsystem::shutdownKeyboard(int id)
 {
 	IInputDevice* device = getKeyboardInputDevice();
-	unregisterInputDevice(device);
-	delete device;
-	setKeyboardInputDevice(NULL);
+	if (device)
+	{
+		unregisterInputDevice(device);
+		delete device;
+		setKeyboardInputDevice(NULL);
+	}
 }
 
 
@@ -925,8 +928,16 @@ std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getMouseDevices() const
 	std::vector<IInputDeviceInfo> devices;
 	devices.push_back(IInputDeviceInfo());
 	IInputDeviceInfo& device_info = devices.back();
-	device_info.mId = 0;
+	device_info.mId = SDL_MOUSE_DRIVER;
 	device_info.mDeviceName = "SDL 1.2 mouse";
+
+	#ifdef USE_RAW_WIN32_MOUSE
+	devices.push_back(IInputDeviceInfo());
+	device_info = devices.back();
+	device_info.mId = RAW_WIN32_MOUSE_DRIVER;
+	device_info.mDeviceName = "RawInput mouse";
+	#endif
+
 	return devices;
 }
 
@@ -946,7 +957,13 @@ void ISDL12InputSubsystem::initMouse(int id)
 
 	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
 
-	setMouseInputDevice(new ISDL12MouseInputDevice(id));
+	if (id == SDL_MOUSE_DRIVER)
+		setMouseInputDevice(new ISDL12MouseInputDevice(id));
+	#ifdef USE_RAW_WIN32_MOUSE
+	else if (id == RAW_WIN32_MOUSE_DRIVER)
+		setMouseInputDevice(new IRawWin32MouseInputDevice(id));
+	#endif
+	assert(getMouseInputDevice() != NULL);
 	registerInputDevice(getMouseInputDevice());
 	getMouseInputDevice()->resume();
 }
@@ -958,9 +975,12 @@ void ISDL12InputSubsystem::initMouse(int id)
 void ISDL12InputSubsystem::shutdownMouse(int id)
 {
 	IInputDevice* device = getMouseInputDevice();
-	unregisterInputDevice(device);
-	delete device;
-	setMouseInputDevice(NULL);
+	if (device)
+	{
+		unregisterInputDevice(device);
+		delete device;
+		setMouseInputDevice(NULL);
+	}
 }
 
 
@@ -1035,9 +1055,12 @@ void ISDL12InputSubsystem::initJoystick(int id)
 void ISDL12InputSubsystem::shutdownJoystick(int id)
 {
 	IInputDevice* device = getJoystickInputDevice();
-	unregisterInputDevice(device);
-	delete device;
-	setJoystickInputDevice(NULL);
+	if (device)
+	{
+		unregisterInputDevice(device);
+		delete device;
+		setJoystickInputDevice(NULL);
+	}
 }
 
 
