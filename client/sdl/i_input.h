@@ -35,9 +35,6 @@
 #define MOUSE_DOOM 0
 #define MOUSE_ZDOOM_DI 1
 
-void I_InitMouseDriver();
-void I_ShutdownMouseDriver();
-
 bool I_InitInput (void);
 void STACK_ARGS I_ShutdownInput (void);
 void I_PauseMouse();
@@ -49,8 +46,6 @@ int I_GetJoystickCount();
 std::string I_GetJoystickNameFromIndex (int index);
 bool I_OpenJoystick();
 void I_CloseJoystick();
-
-void I_GetEvent (void);
 
 void I_EnableKeyRepeat();
 void I_DisableKeyRepeat();
@@ -227,7 +222,6 @@ typedef struct
 	int				id;
 	const char*		name;
 	bool 			(*avail_test)();
-	IInputDevice*	(*create)();
 } MouseDriverInfo_t;
 
 MouseDriverInfo_t* I_FindMouseDriverInfo(int id);

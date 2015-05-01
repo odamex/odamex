@@ -58,8 +58,6 @@ EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 
-static int mouse_driver_id = -1;
-
 static IInputSubsystem* input_subsystem = NULL;
 
 static bool window_focused = false;
@@ -364,7 +362,133 @@ void I_CloseJoystick()
 }
 
 
-static bool I_IsMouseDriverValid(int id);
+
+
+// ============================================================================
+//
+// Mouse Drivers
+//
+// ============================================================================
+
+static bool I_MouseUnavailible();
+static bool I_SDLMouseAvailible();
+#ifdef USE_RAW_WIN32_MOUSE
+static bool I_RawWin32MouseAvailible();
+#endif	// USE_RAW_WIN32_MOUSE
+
+bool I_OpenMouse();
+void I_CloseMouse();
+
+MouseDriverInfo_t MouseDriverInfo[] = {
+	{ SDL_MOUSE_DRIVER,			"SDL Mouse",	&I_SDLMouseAvailible },
+#ifdef USE_RAW_WIN32_MOUSE
+	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_RawWin32MouseAvailible }
+#else
+	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_MouseUnavailible }
+#endif	// USE_WIN32_MOUSE
+};
+
+
+//
+// I_FindMouseDriverInfo
+//
+MouseDriverInfo_t* I_FindMouseDriverInfo(int id)
+{
+	for (int i = 0; i < NUM_MOUSE_DRIVERS; i++)
+	{
+		if (MouseDriverInfo[i].id == id)
+			return &MouseDriverInfo[i];
+	}
+
+	return NULL;
+}
+
+//
+// I_IsMouseDriverValid
+//
+// Returns whether a mouse driver with the given ID is availible to use.
+//
+static bool I_IsMouseDriverValid(int id)
+{
+	MouseDriverInfo_t* info = I_FindMouseDriverInfo(id);
+	return (info && info->avail_test() == true);
+}
+
+CVAR_FUNC_IMPL(mouse_driver)
+{
+	if (!I_IsMouseDriverValid(var.asInt()))
+	{
+		if (var.asInt() == SDL_MOUSE_DRIVER)
+		{
+			// can't initialize SDL_MOUSE_DRIVER so don't use a mouse
+			I_CloseMouse();
+			nomouse = true;
+		}
+		else
+		{
+			var.Set(SDL_MOUSE_DRIVER);
+		}
+	}
+	else
+	{
+		I_OpenMouse();
+	}
+}
+
+
+//
+// I_CheckForProc
+//
+// Checks if a function with the given name is in the given DLL file.
+// This is used to determine if the user's version of Windows has the necessary
+// functions availible.
+//
+#if defined(_WIN32) && !defined(_XBOX)
+static bool I_CheckForProc(const char* dllname, const char* procname)
+{
+	bool avail = false;
+	HMODULE dll = LoadLibrary(TEXT(dllname));
+	if (dll)
+	{
+		avail = (GetProcAddress(dll, procname) != NULL);
+		FreeLibrary(dll);
+	}
+	return avail;
+}
+#endif  // WIN32
+
+//
+// I_RawWin32MouseAvailible
+//
+// Checks if the raw input mouse functions that the RawWin32Mouse
+// class calls are availible on the current system. They require
+// Windows XP or higher.
+//
+#ifdef USE_RAW_WIN32_MOUSE
+static bool I_RawWin32MouseAvailible()
+{
+	return	I_CheckForProc("user32.dll", "RegisterRawInputDevices") &&
+			I_CheckForProc("user32.dll", "GetRegisteredRawInputDevices") &&
+			I_CheckForProc("user32.dll", "GetRawInputData");
+}
+#endif  // USE_RAW_WIN32_MOUSE
+
+//
+// I_SDLMouseAvailible
+//
+// Checks if SDLMouse can be used. Always true since SDL is used as the
+// primary backend for everything.
+//
+static bool I_SDLMouseAvailible()
+{
+	return true;
+}
+
+
+static bool I_MouseUnavailible()
+{
+	return false;
+}
 
 //
 // I_CloseMouse()
@@ -383,9 +507,34 @@ bool I_OpenMouse()
 	I_CloseMouse();
 
 	// try to initialize the user's preferred mouse driver
-	if (I_IsMouseDriverValid(mouse_driver_id))
-		input_subsystem->initMouse(mouse_driver_id);
-	return true;
+	if (I_IsMouseDriverValid(mouse_driver.asInt()))
+	{
+		input_subsystem->initMouse(mouse_driver.asInt());
+		return true;
+	}
+	return false;
+}
+
+//
+// I_PauseMouse
+//
+// Enables the mouse cursor and prevents the game from processing mouse movement
+// or button events
+//
+void I_PauseMouse()
+{
+	input_subsystem->pauseMouse();
+}
+
+//
+// I_ResumeMouse
+//
+// Disables the mouse cursor and allows the game to process mouse movement
+// or button events
+//
+void I_ResumeMouse()
+{
+	input_subsystem->resumeMouse();
 }
 
 
@@ -425,28 +574,6 @@ void STACK_ARGS I_ShutdownInput()
 
 	delete input_subsystem;
 	input_subsystem = NULL;
-}
-
-//
-// I_PauseMouse
-//
-// Enables the mouse cursor and prevents the game from processing mouse movement
-// or button events
-//
-void I_PauseMouse()
-{
-	input_subsystem->pauseMouse();
-}
-
-//
-// I_ResumeMouse
-//
-// Disables the mouse cursor and allows the game to process mouse movement
-// or button events
-//
-void I_ResumeMouse()
-{
-	input_subsystem->resumeMouse();
 }
 
 //
@@ -543,150 +670,6 @@ void I_StartTic (void)
 //
 void I_StartFrame (void)
 {
-}
-
-// ============================================================================
-//
-// Mouse Drivers
-//
-// ============================================================================
-
-static bool I_SDLMouseAvailible();
-static bool I_MouseUnavailible();
-#ifdef USE_RAW_WIN32_MOUSE
-static bool I_RawWin32MouseAvailible();
-#endif	// USE_RAW_WIN32_MOUSE
-
-static IInputDevice* I_CreateSDLMouse()
-{
-	return new ISDL12MouseInputDevice(0);
-}
-
-#ifdef USE_RAW_WIN32_MOUSE
-static IInputDevice* I_CreateRawWin32Mouse()
-{
-	return new IRawWin32MouseInputDevice(0);
-}
-#endif
-
-MouseDriverInfo_t MouseDriverInfo[] = {
-	{ SDL_MOUSE_DRIVER,			"SDL Mouse",	&I_SDLMouseAvailible,		&I_CreateSDLMouse },
-#ifdef USE_RAW_WIN32_MOUSE
-	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_RawWin32MouseAvailible,	&I_CreateRawWin32Mouse }
-#else
-	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_MouseUnavailible,	NULL }
-#endif	// USE_WIN32_MOUSE
-};
-
-
-//
-// I_FindMouseDriverInfo
-//
-MouseDriverInfo_t* I_FindMouseDriverInfo(int id)
-{
-	for (int i = 0; i < NUM_MOUSE_DRIVERS; i++)
-	{
-		if (MouseDriverInfo[i].id == id)
-			return &MouseDriverInfo[i];
-	}
-
-	return NULL;
-}
-
-//
-// I_IsMouseDriverValid
-//
-// Returns whether a mouse driver with the given ID is availible to use.
-//
-static bool I_IsMouseDriverValid(int id)
-{
-	MouseDriverInfo_t* info = I_FindMouseDriverInfo(id);
-	return (info && info->avail_test() == true);
-}
-
-CVAR_FUNC_IMPL(mouse_driver)
-{
-	if (!I_IsMouseDriverValid(var))
-	{
-		if (var.asInt() == SDL_MOUSE_DRIVER)
-		{
-			// can't initialize SDL_MOUSE_DRIVER so don't use a mouse
-			I_CloseMouse();
-			nomouse = true;
-		}
-		else
-		{
-			var.Set(SDL_MOUSE_DRIVER);
-		}
-	}
-	else
-	{
-		if (var.asInt() != mouse_driver_id)
-		{
-			mouse_driver_id = var.asInt();
-			I_OpenMouse();
-		}
-	}
-}
-
-
-//
-// I_CheckForProc
-//
-// Checks if a function with the given name is in the given DLL file.
-// This is used to determine if the user's version of Windows has the necessary
-// functions availible.
-//
-#if defined(_WIN32) && !defined(_XBOX)
-static bool I_CheckForProc(const char* dllname, const char* procname)
-{
-	bool avail = false;
-	HMODULE dll = LoadLibrary(TEXT(dllname));
-	if (dll)
-	{
-		avail = (GetProcAddress(dll, procname) != NULL);
-		FreeLibrary(dll);
-	}
-	return avail;
-}
-#endif  // WIN32
-
-//
-// I_RawWin32MouseAvailible
-//
-// Checks if the raw input mouse functions that the RawWin32Mouse
-// class calls are availible on the current system. They require
-// Windows XP or higher.
-//
-#ifdef USE_RAW_WIN32_MOUSE
-static bool I_RawWin32MouseAvailible()
-{
-	return	I_CheckForProc("user32.dll", "RegisterRawInputDevices") &&
-			I_CheckForProc("user32.dll", "GetRegisteredRawInputDevices") &&
-			I_CheckForProc("user32.dll", "GetRawInputData");
-}
-#endif  // USE_RAW_WIN32_MOUSE
-
-//
-// I_SDLMouseAvailible
-//
-// Checks if SDLMouse can be used. Always true since SDL is used as the
-// primary backend for everything.
-//
-static bool I_SDLMouseAvailible()
-{
-	return true;
-}
-
-//
-// I_MouseUnavailible
-//
-// Generic function to indicate that a particular mouse driver is not availible
-// on this platform.
-//
-static bool I_MouseUnavailible()
-{
-	return false;
 }
 
 
