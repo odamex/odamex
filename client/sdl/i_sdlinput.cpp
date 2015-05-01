@@ -393,6 +393,10 @@ void ISDL12MouseInputDevice::center()
 {
 	const int centerx = I_GetVideoWidth() / 2;
 	const int centery = I_GetVideoHeight() / 2;
+	int prevx, prevy;
+
+	// get the x and y mouse position prior to centering it
+	SDL_GetMouseState(&prevx, &prevy);
 
 	// warp the mouse to the center of the screen
 	SDL_WarpMouse(centerx, centery);
@@ -407,19 +411,21 @@ void ISDL12MouseInputDevice::center()
 	int num_events = 0;
 	SDL_Event sdl_events[max_events];
 
-	// TODO: if there are more than 1024 events, they won't all be examined...
-	num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEMOTION);
+	num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEMOTIONMASK);
 	assert(num_events < max_events);
 	for (int i = 0; i < num_events; i++)
 	{
-		SDL_Event* sdl_ev = &sdl_events[i];
-		assert(sdl_ev->type == SDL_MOUSEMOTION);
-		if (sdl_ev->motion.x != centerx || sdl_ev->motion.y != centery)
-		{
-			// this event is not the event caused by SDL_WarpMouse so add it back
-			// to the event queue
-			SDL_PushEvent(sdl_ev);
-		}
+		SDL_Event& sdl_ev = sdl_events[i];
+		assert(sdl_ev.type == SDL_MOUSEMOTION);
+
+		// drop the events caused by SDL_WarpMouse
+		if (sdl_ev.motion.x == centerx && sdl_ev.motion.y == centery && 
+			sdl_ev.motion.xrel == centerx - prevx && sdl_ev.motion.yrel == centery - prevy)
+			continue;
+
+		// this event is not the event caused by SDL_WarpMouse so add it back
+		// to the event queue
+		SDL_PushEvent(&sdl_ev);
 	}
 }
 
@@ -544,7 +550,7 @@ void ISDL12MouseInputDevice::gatherEvents()
 		}
 	}
 
-//	center();
+	center();
 }
 
 
@@ -593,8 +599,6 @@ ISDL12JoystickInputDevice::ISDL12JoystickInputDevice(int id) :
 
 	mNumHats = SDL_JoystickNumHats(mJoystick);
 	mHatStates = new int[mNumHats];
-	for (int i = 0; i < mNumHats; i++)
-		mHatStates[i] = SDL_HAT_CENTERED;
 
 	// This turns on automatic event polling for joysticks so that the state
 	// of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
@@ -657,6 +661,11 @@ void ISDL12JoystickInputDevice::reset()
 void ISDL12JoystickInputDevice::pause()
 {
 	mActive = false;
+	SDL_EventState(SDL_JOYAXISMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_JOYBALLMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_JOYHATMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_JOYBUTTONDOWN, SDL_IGNORE);
+	SDL_EventState(SDL_JOYBUTTONUP, SDL_IGNORE);
 }
 
 
@@ -672,6 +681,11 @@ void ISDL12JoystickInputDevice::resume()
 {
 	mActive = true;
 	reset();
+	SDL_EventState(SDL_JOYAXISMOTION, SDL_ENABLE);
+	SDL_EventState(SDL_JOYBALLMOTION, SDL_ENABLE);
+	SDL_EventState(SDL_JOYHATMOTION, SDL_ENABLE);
+	SDL_EventState(SDL_JOYBUTTONDOWN, SDL_ENABLE);
+	SDL_EventState(SDL_JOYBUTTONUP, SDL_ENABLE);
 }
 
 
@@ -792,9 +806,25 @@ ISDL12InputSubsystem::ISDL12InputSubsystem() :
 	IInputSubsystem(),
 	mInputGrabbed(false)
 {
-	grabInput();
 	mRepeatDelay = I_ConvertTimeFromMs(SDL_DEFAULT_REPEAT_DELAY);
 	mRepeatInterval = I_ConvertTimeFromMs(SDL_DEFAULT_REPEAT_INTERVAL);
+
+	// Tell SDL to ignore events from the input devices
+	// IInputDevice constructors will enable these events when they're initialized.
+	SDL_EventState(SDL_KEYDOWN, SDL_IGNORE);
+	SDL_EventState(SDL_KEYUP, SDL_IGNORE);
+
+	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
+	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
+
+	SDL_EventState(SDL_JOYAXISMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_JOYBALLMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_JOYHATMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_JOYBUTTONDOWN, SDL_IGNORE);
+	SDL_EventState(SDL_JOYBUTTONUP, SDL_IGNORE);
+
+	grabInput();
 }
 
 
