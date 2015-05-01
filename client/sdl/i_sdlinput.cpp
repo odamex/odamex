@@ -834,6 +834,16 @@ std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getKeyboardDevices() const
 //
 void ISDL12InputSubsystem::initKeyboard(int id)
 {
+	const std::vector<IInputDeviceInfo> devices = getKeyboardDevices();
+	std::string device_name;
+	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	{
+		if (it->mId == id) 
+			device_name = it->mDeviceName;
+	}
+
+	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
+
 	setKeyboardInputDevice(new ISDL12KeyboardInputDevice(id));
 	registerInputDevice(getKeyboardInputDevice());
 	getKeyboardInputDevice()->resume();
@@ -895,6 +905,16 @@ std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getMouseDevices() const
 //
 void ISDL12InputSubsystem::initMouse(int id)
 {
+	const std::vector<IInputDeviceInfo> devices = getMouseDevices();
+	std::string device_name;
+	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	{
+		if (it->mId == id) 
+			device_name = it->mDeviceName;
+	}
+
+	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
+
 	setMouseInputDevice(new ISDL12MouseInputDevice(id));
 	registerInputDevice(getMouseInputDevice());
 	getMouseInputDevice()->resume();
@@ -961,6 +981,16 @@ std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getJoystickDevices() const
 //
 void ISDL12InputSubsystem::initJoystick(int id)
 {
+	const std::vector<IInputDeviceInfo> devices = getJoystickDevices();
+	std::string device_name;
+	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	{
+		if (it->mId == id) 
+			device_name = it->mDeviceName;
+	}
+
+	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
+
 	setJoystickInputDevice(new ISDL12JoystickInputDevice(id));
 	registerInputDevice(getJoystickInputDevice());
 	getJoystickInputDevice()->resume();

@@ -112,7 +112,7 @@ void I_DisableKeyRepeat()
 //
 // I_UpdateFocus
 //
-// Update the value of window_focused each tic and in response to SDL
+// Update the value of window_focused each tic and in response to
 // window manager events.
 //
 // We try to make ourselves be well-behaved: the grab on the mouse
@@ -204,7 +204,7 @@ static void I_UngrabInput()
 //
 // I_ForceUpdateGrab
 //
-// Determines if SDL should grab the mouse based on the game window having
+// Determines if the input should be grabbed based on the game window having
 // focus and the status of the menu and console.
 //
 // Should be called whenever the video mode changes.
@@ -223,7 +223,7 @@ void I_ForceUpdateGrab()
 //
 // I_UpdateGrab
 //
-// Determines if SDL should grab the mouse based on the game window having
+// Determines if the input should be grabbed based on the game window having
 // focus and the status of the menu and console.
 //
 static void I_UpdateGrab()
@@ -429,9 +429,7 @@ void I_ResumeMouse()
 //
 // I_GetEvent
 //
-// Pumps SDL for new input events and posts them to the Doom event queue.
-// Keyboard and joystick events are retreived directly from SDL while mouse
-// movement and buttons are handled by the MouseInput class.
+// Checks for new input events and posts them to the Doom event queue.
 //
 static void I_GetEvents()
 {
