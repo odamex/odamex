@@ -516,7 +516,7 @@ void ISDL12MouseInputDevice::gatherEvents()
 		{
 			const SDL_Event& sdl_ev = sdl_events[i];
 			assert(sdl_ev.type == SDL_MOUSEMOTION ||
-					sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTOUP);
+					sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP);
 
 			event_t ev;
 			ev.data1 = ev.data2 = ev.data3 = 0;
