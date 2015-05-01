@@ -176,6 +176,156 @@ private:
 };
 #endif	// SDL12
 
+#ifdef SDL20
+// ============================================================================
+//
+// ISDL20VideoCapabilities class interface
+//
+// Defines an interface for querying video capabilities. This includes listing
+// availible video modes and supported operations.
+//
+// ============================================================================
+
+class ISDL20VideoCapabilities : public IVideoCapabilities
+{
+public:
+	ISDL20VideoCapabilities();
+	virtual ~ISDL20VideoCapabilities() { }
+
+	virtual const IVideoModeList* getSupportedVideoModes() const
+	{	return &mModeList;	}
+
+	virtual const EDisplayType getDisplayType() const
+	{
+		#ifdef GCONSOLE
+		return DISPLAY_FullscreenOnly;
+		#else
+		return DISPLAY_Both;
+		#endif
+	}
+
+	virtual const IVideoMode* getNativeMode() const
+	{	return &mNativeMode;	}
+
+private:
+	IVideoModeList		mModeList;
+	IVideoMode			mNativeMode;
+};
+
+
+// ============================================================================
+//
+// ISDL20Window class interface
+//
+// ============================================================================
+
+class ISDL20Window : public IWindow
+{
+public:
+	ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+
+	virtual ~ISDL20Window();
+
+	virtual IWindowSurface* getPrimarySurface()
+	{	return mPrimarySurface;	}
+
+	virtual const IWindowSurface* getPrimarySurface() const
+	{	return mPrimarySurface;	}
+
+	virtual uint16_t getWidth() const
+	{	return mWidth;	}
+
+	virtual uint16_t getHeight() const
+	{	return mHeight;	}
+
+	virtual uint8_t getBitsPerPixel() const
+	{	return mBitsPerPixel;	}
+
+	virtual int getBytesPerPixel() const
+	{	return mBitsPerPixel >> 3;	}
+
+	virtual const IVideoMode* getVideoMode() const
+	{	return &mVideoMode;	}
+
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+
+	virtual bool isFullScreen() const
+	{	return mIsFullScreen;	}
+
+	virtual bool usingVSync() const
+	{	return mUseVSync;	}
+
+	virtual void refresh();
+
+	virtual void lockSurface();
+	virtual void unlockSurface();
+
+	virtual void setWindowTitle(const std::string& str = "");
+	virtual void setWindowIcon();
+
+	virtual std::string getVideoDriverName() const;
+
+	virtual void setPalette(const argb_t* palette);
+
+private:
+	// disable copy constructor and assignment operator
+	ISDL20Window(const ISDL20Window&);
+	ISDL20Window& operator=(const ISDL20Window&);
+
+	SDL_Window*			mSDLWindow;
+
+	IWindowSurface*		mPrimarySurface;
+
+	uint16_t			mWidth;
+	uint16_t			mHeight;
+	uint8_t				mBitsPerPixel;
+
+	IVideoMode			mVideoMode;
+
+	bool				mIsFullScreen;
+	bool				mUseVSync;
+
+	SDL_Surface*		mSDLSoftwareSurface;
+
+	bool				mNeedPaletteRefresh;
+
+	int16_t				mLocks;
+};
+
+// ****************************************************************************
+
+// ============================================================================
+//
+// ISDL20VideoSubsystem class interface
+//
+// Provides intialization and shutdown mechanics for the video subsystem.
+// This is really an abstract factory pattern as it instantiates a family
+// of concrete types.
+//
+// ============================================================================
+
+class ISDL20VideoSubsystem : public IVideoSubsystem
+{
+public:
+	ISDL20VideoSubsystem();
+	virtual ~ISDL20VideoSubsystem();
+
+	virtual const IVideoCapabilities* getVideoCapabilities() const
+	{	return mVideoCapabilities;	}
+
+	virtual IWindow* getWindow()
+	{	return mWindow;	}
+
+	virtual const IWindow* getWindow() const
+	{	return mWindow;	}
+
+private:
+	const IVideoCapabilities*		mVideoCapabilities;
+
+	IWindow*						mWindow;
+};
+#endif	// SDL20
+
 
 #endif	// __I_SDLVIDEO_H__
 

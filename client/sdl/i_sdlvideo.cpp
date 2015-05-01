@@ -626,5 +626,526 @@ ISDL12VideoSubsystem::~ISDL12VideoSubsystem()
 }
 #endif	// SDL12
 
+#ifdef SDL20
+// ============================================================================
+//
+// ISDL20VideoCapabilities class implementation
+//
+// ============================================================================
+
+//
+// I_AddSDL20VideoModes
+//
+// Queries SDL to find the supported video modes at the given bit depth
+// and then adds them to modelist.
+//
+static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
+{
+	int display_count = 0, display_index = 0, mode_index = 0;
+	SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
+
+	int display_mode_count = SDL_GetNumVideoDisplays();
+	if (display_mode_count < 1)
+	{
+		I_FatalError("SDL_GetNumDisplayModes failed: %s", SDL_GetError());
+		return;
+	}
+
+	for (int i = 0; i < display_mode_count; i++)
+	{
+		if (SDL_GetDisplayMode(display_index, i, &mode) != 0)
+		{
+			I_FatalError("SDL_GetDisplayMode failed: %s", SDL_GetError());
+			return;
+		}
+
+		int width = mode.w, height = mode.h;
+		// add this video mode to the list (both fullscreen & windowed)
+		modelist->push_back(IVideoMode(width, height, bpp, false));
+		modelist->push_back(IVideoMode(width, height, bpp, true));
+	}
+}
+
+#ifdef _WIN32
+static bool Is8bppFullScreen(const IVideoMode& mode)
+{	return mode.getBitsPerPixel() == 8 && mode.isFullScreen();	}
+#endif
+
+
+//
+// ISDL20VideoCapabilities::ISDL20VideoCapabilities
+//
+// Discovers the native desktop resolution and queries SDL for a list of
+// supported fullscreen video modes.
+//
+// NOTE: discovering the native desktop resolution only works if this is called
+// prior to the first SDL_SetVideoMode call!
+//
+// NOTE: SDL has palette issues in 8bpp fullscreen mode on Windows platforms. As
+// a workaround, we force a 32bpp resolution in this case by removing all
+// fullscreen 8bpp video modes on Windows platforms.
+//
+ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
+	IVideoCapabilities(),
+	mNativeMode(SDL_GetVideoInfo()->current_w, SDL_GetVideoInfo()->current_h,
+				SDL_GetVideoInfo()->vfmt->BitsPerPixel, true)
+{
+	I_AddSDL20VideoModes(&mModeList, 8);
+	I_AddSDL20VideoModes(&mModeList, 32);
+
+	// always add the following windowed modes (if windowed modes are supported)
+	if (supportsWindowed())
+	{
+		if (supports8bpp())
+		{
+			mModeList.push_back(IVideoMode(320, 200, 8, false));
+			mModeList.push_back(IVideoMode(320, 240, 8, false));
+			mModeList.push_back(IVideoMode(640, 400, 8, false));
+			mModeList.push_back(IVideoMode(640, 480, 8, false));
+		}
+		if (supports32bpp())
+		{
+			mModeList.push_back(IVideoMode(320, 200, 32, false));
+			mModeList.push_back(IVideoMode(320, 240, 32, false));
+			mModeList.push_back(IVideoMode(640, 400, 32, false));
+			mModeList.push_back(IVideoMode(640, 480, 32, false));
+		}
+	}
+
+	// reverse sort the modes
+	std::sort(mModeList.begin(), mModeList.end(), std::greater<IVideoMode>());
+
+	// get rid of any duplicates (SDL sometimes reports duplicates)
+	mModeList.erase(std::unique(mModeList.begin(), mModeList.end()), mModeList.end());
+
+	#ifdef _WIN32
+	// fullscreen directx requires a 32-bit mode to fix broken palette
+	// [Russell] - Use for gdi as well, fixes d2 map02 water
+	// [SL] remove all fullscreen 8bpp modes
+	mModeList.erase(std::remove_if(mModeList.begin(), mModeList.end(), Is8bppFullScreen), mModeList.end());
+	#endif
+
+	assert(supportsWindowed() || supportsFullScreen());
+	assert(supports8bpp() || supports32bpp());
+}
+
+
+
+// ****************************************************************************
+
+// ============================================================================
+//
+// ISDL20Window class implementation
+//
+// ============================================================================
+
+
+//
+// ISDL20Window::ISDL20Window (if windowed modes are supported)
+//
+// Constructs a new application window using SDL 1.2.
+// A ISDL20WindowSurface object is instantiated for frame rendering.
+//
+ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) :
+	IWindow(),
+	mSDLWindow(NULL),
+	mPrimarySurface(NULL),
+	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
+	mIsFullScreen(fullscreen), mUseVSync(vsync),
+	mSDLSoftwareSurface(NULL),
+	mNeedPaletteRefresh(true), mLocks(0)
+{
+}
+
+
+//
+// ISDL20Window::~ISDL20Window
+//
+ISDL20Window::~ISDL20Window()
+{
+	if (mSDLSoftwareSurface)
+		SDL_FreeSurface(mSDLSoftwareSurface);
+
+	delete mPrimarySurface;
+
+	if (mSDLWindow)
+		SDL_DestroyWindow(mSDLWindow);
+}
+
+
+//
+// ISDL20Window::lockSurface
+//
+// Locks the surface for direct pixel access. This must be called prior to
+// accessing the primary surface's buffer.
+//
+void ISDL20Window::lockSurface()
+{
+	if (++mLocks == 1)
+	{
+		SDL_Surface* sdlsurface = SDL_GetWindowSurface(mSDLWindow);
+		if (SDL_MUSTLOCK(sdlsurface))
+			SDL_LockSurface(sdlsurface);
+		if (mSDLSoftwareSurface && SDL_MUSTLOCK(mSDLSoftwareSurface))
+			SDL_LockSurface(mSDLSoftwareSurface);
+	}
+
+	assert(mLocks >= 1 && mLocks < 100);
+}
+
+
+//
+// ISDL20Window::unlockSurface
+//
+// Unlocks the surface after direct pixel access. This must be called after
+// accessing the primary surface's buffer.
+//
+void ISDL20Window::unlockSurface()
+{
+	if (--mLocks == 0)
+	{
+		SDL_Surface* sdlsurface = SDL_GetWindowSurface(mSDLWindow);
+		if (SDL_MUSTLOCK(sdlsurface))
+			SDL_UnlockSurface(sdlsurface);
+		if (mSDLSoftwareSurface && SDL_MUSTLOCK(mSDLSoftwareSurface))
+			SDL_UnlockSurface(mSDLSoftwareSurface);
+	}
+
+	assert(mLocks >= 0 && mLocks < 100);
+}
+
+
+//
+// ISDL20Window::refresh
+//
+void ISDL20Window::refresh()
+{
+	assert(mLocks == 0);		// window surface shouldn't be locked when blitting
+
+	SDL_Surface* sdlsurface = SDL_GetWindowSurface(mSDLWindow);
+
+	if (mNeedPaletteRefresh)
+	{
+		Uint32 flags = SDL_LOGPAL | SDL_PHYSPAL;
+
+		if (sdlsurface->format->BitsPerPixel == 8)
+			SDL_SetSurfacePalette(sdlsurface, sdlsurface->format->palette);
+		if (mSDLSoftwareSurface && mSDLSoftwareSurface->format->BitsPerPixel == 8)
+			SDL_SetSurfacePalette(mSDLSoftwareSurface, mSDLSoftwareSurface->format->palette);
+	}
+
+	mNeedPaletteRefresh = false;
+
+	// handle 8in32 mode
+	if (mSDLSoftwareSurface)
+		SDL_BlitSurface(mSDLSoftwareSurface, NULL, sdlsurface, NULL);
+
+	SDL_Flip(sdlsurface);
+}
+
+
+//
+// ISDL20Window::setWindowTitle
+//
+// Sets the title caption of the window.
+//
+void ISDL20Window::setWindowTitle(const std::string& str)
+{
+	SDL_SetWindowTitle(mSDLWindow, str.c_str());
+}
+
+
+//
+// ISDL20Window::setWindowIcon
+//
+// Sets the icon for the application window, which will appear in the
+// window manager's task list.
+//
+void ISDL20Window::setWindowIcon()
+{
+	#if WIN32 && !_XBOX
+	// [SL] Use Win32-specific code to make use of multiple-icon sizes
+	// stored in the executable resources. SDL 1.2 only allows a fixed
+	// 32x32 px icon.
+	//
+	// [Russell] - Just for windows, display the icon in the system menu and
+	// alt-tab display
+
+	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+
+	if (hIcon)
+	{
+		HWND WindowHandle;
+
+		SDL_SysWMinfo wminfo;
+		SDL_VERSION(&wminfo.version)
+		SDL_GetWMInfo(&wminfo);
+
+		WindowHandle = wminfo.window;
+
+		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+	}
+
+	#else
+
+/*
+	texhandle_t icon_handle = texturemanager.getHandle("ICON", Texture::TEX_PNG);
+	const Texture* icon_texture = texturemanager.getTexture(icon_handle);
+	const int icon_width = icon_texture->getWidth(), icon_height = icon_texture->getHeight();
+
+	SDL_Surface* icon_sdlsurface = SDL_CreateRGBSurface(0, icon_width, icon_height, 8, 0, 0, 0, 0);
+	Res_TransposeImage((byte*)icon_sdlsurface->pixels, icon_texture->getData(), icon_width, icon_height);
+
+	SDL_SetColorKey(icon_sdlsurface, SDL_SRCCOLORKEY, 0);
+
+	// set the surface palette
+	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
+	SDL_Color* sdlcolors = icon_sdlsurface->format->palette->colors;
+	for (int c = 0; c < 256; c++)
+	{
+		sdlcolors[c].r = palette_colors[c].r;
+		sdlcolors[c].g = palette_colors[c].g;
+		sdlcolors[c].b = palette_colors[c].b;
+	}
+
+	SDL_WM_SetIcon(icon_sdlsurface, NULL);
+	SDL_FreeSurface(icon_sdlsurface);
+*/
+
+	#endif
+}
+
+
+//
+// ISDL20Window::getVideoDriverName
+//
+// Returns the name of the video driver that SDL is currently
+// configured to use.
+//
+std::string ISDL20Window::getVideoDriverName() const
+{
+	// TODO: replace the 0 parameter with the appropriate index value (if any)
+	const char* driver_name = SDL_GetVideoDriver(0);
+	if (driver_name)
+		return std::string(driver_name);
+
+	return std::string(driver);
+}
+
+
+//
+// I_SetSDL20Palette
+//
+// Helper function for ISDL20Window::setPalette
+//
+static void I_SetSDL20Palette(SDL_Surface* sdlsurface, const argb_t* palette_colors)
+{
+	if (sdlsurface->format->BitsPerPixel == 8)
+	{
+		assert(sdlsurface->format->palette != NULL);
+		assert(sdlsurface->format->palette->ncolors == 256);
+
+		SDL_Color* sdlcolors = sdlsurface->format->palette->colors;
+		for (int c = 0; c < 256; c++)
+		{
+			argb_t color = palette_colors[c];
+			sdlcolors[c].r = color.getr();
+			sdlcolors[c].g = color.getg();
+			sdlcolors[c].b = color.getb();
+		}
+	}
+}
+
+
+//
+// ISDL20Window::setPalette
+//
+// Saves the given palette and updates it during refresh.
+//
+void ISDL20Window::setPalette(const argb_t* palette_colors)
+{
+	lockSurface();
+
+	I_SetSDL20Palette(SDL_GetVideoSurface(), palette_colors);
+
+	if (mSDLSoftwareSurface)
+		I_SetSDL20Palette(mSDLSoftwareSurface, palette_colors);
+
+	getPrimarySurface()->setPalette(palette_colors);
+
+	mNeedPaletteRefresh = true;
+
+	unlockSurface();
+}
+
+
+//
+// I_BuildPixelFormatFromSDLSurface
+//
+// Helper function that extracts information about the pixel format
+// from an SDL_Surface and uses it to initialize a PixelFormat object.
+// Note: the SDL_Surface should be locked prior to calling this.
+//
+static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, PixelFormat* format, uint8_t desired_bpp)
+{
+	const SDL_PixelFormat* sdlformat = sdlsurface->format;
+
+	// handle SDL not reporting correct Ashift/Aloss
+	uint8_t aloss = desired_bpp == 32 ? 0 : 8;
+	uint8_t ashift = desired_bpp == 32 ?  48 - sdlformat->Rshift - sdlformat->Gshift - sdlformat->Bshift : 0;
+	
+	// Create the PixelFormat specification
+	*format = PixelFormat(
+			desired_bpp,
+			8 - aloss, 8 - sdlformat->Rloss, 8 - sdlformat->Gloss, 8 - sdlformat->Bloss,
+			ashift, sdlformat->Rshift, sdlformat->Gshift, sdlformat->Bshift);
+}
+
+
+//
+// ISDL20Window::setMode
+//
+// Sets the window size to the specified size and frees the existing primary
+// surface before instantiating a new primary surface. This function performs
+// no sanity checks on the desired video mode.
+// 
+// NOTE: If a hardware surface is obtained or the surface's screen pitch
+// will create cache thrashing (tested by pitch & 511 == 0), a SDL software
+// surface will be created and used for drawing video frames. This software
+// surface is then blitted to the screen at the end of the frame, prior to
+// calling SDL_Flip.
+//
+bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t video_bpp,
+							bool video_fullscreen, bool vsync)
+{
+	delete mPrimarySurface;
+	mPrimarySurface = NULL;
+
+	if (mSDLSoftwareSurface)
+		SDL_FreeSurface(mSDLSoftwareSurface);
+	mSDLSoftwareSurface = NULL;
+
+	uint32_t flags = 0;
+
+	if (video_fullscreen)
+		flags |= SDL_WINDOW_FULLSCREEN;
+	else
+		flags |= SDL_RESIZABLE;
+
+	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
+	// This interferes with RawWin32Mouse's input handlers so we need to
+	// disable them prior to reinitalizing DirectInput...
+	I_PauseMouse();
+
+	mSDLWindow = SDL_CreateWindow(
+			"",			// Empty title for now - it will be set later
+			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+			video_width, video_height,
+			flags);
+	
+	if (!mSDLWindow)
+		return false;
+
+	SDL_Surface* sdlsurface = SDL_GetWindowSurface(mSDLWindow);
+
+	// [SL] ...and re-enable RawWin32Mouse's input handlers after
+	// DirectInput is reinitalized.
+	I_ResumeMouse();
+
+	if (!sdlsurface)
+		return false;
+
+	if (SDL_MUSTLOCK(sdlsurface))
+		SDL_LockSurface(sdlsurface);		// lock prior to accessing pixel format
+
+	PixelFormat format;
+	I_BuildPixelFormatFromSDLSurface(sdlsurface, &format, video_bpp);
+
+	mPrimarySurface = new IWindowSurface(sdlsurface->w, sdlsurface->h, &format,
+				sdlsurface->pixels, sdlsurface->pitch);
+
+	mWidth = mPrimarySurface->getWidth();
+	mHeight = mPrimarySurface->getHeight();
+	mBitsPerPixel = mPrimarySurface->getBitsPerPixel(); 
+	mIsFullScreen = SDL_GetWindowFlags(mSDLWindow) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
+	mUseVSync = vsync;
+
+	mVideoMode = IVideoMode(video_width, video_height, video_bpp, video_fullscreen);
+
+	if (SDL_MUSTLOCK(sdlsurface))
+		SDL_UnlockSurface(sdlsurface);
+
+	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
+	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
+	assert(mBitsPerPixel == 8 || mBitsPerPixel == 32);
+
+	// Tell argb_t the pixel format
+	if (format.getBitsPerPixel() == 32)
+		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
+	else
+		argb_t::setChannels(3, 2, 1, 0);
+
+	return true;
+}
+
+
+// ****************************************************************************
+
+// ============================================================================
+//
+// ISDL20VideoSubsystem class implementation
+//
+// ============================================================================
+
+
+//
+// ISDL20VideoSubsystem::ISDL20VideoSubsystem
+//
+// Initializes SDL video and sets a few SDL configuration options.
+//
+ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
+{
+	const SDL_version* SDLVersion = SDL_Linked_Version();
+
+	if (SDLVersion->major != SDL_MAJOR_VERSION || SDLVersion->minor != SDL_MINOR_VERSION)
+	{
+		I_FatalError("SDL version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
+			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
+			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
+		return;
+	}
+
+	if (SDLVersion->patch != SDL_PATCHLEVEL)
+	{
+		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
+			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
+	}
+
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) == -1)
+	{
+		I_FatalError("Could not initialize SDL video.\n");
+		return;
+	}
+
+	mVideoCapabilities = new ISDL20VideoCapabilities();
+	
+	mWindow = new ISDL20Window(640, 480, 8, false, false);
+}
+
+
+//
+// ISDL20VideoSubsystem::~ISDL20VideoSubsystem
+//
+ISDL20VideoSubsystem::~ISDL20VideoSubsystem()
+{
+	delete mWindow;
+	delete mVideoCapabilities;
+
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
+#endif	// SDL20
+
 VERSION_CONTROL (i_sdlvideo_cpp, "$Id$")
 
