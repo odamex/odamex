@@ -482,7 +482,7 @@ int16_t FlatTextureLoader::getWidth() const
 		else if (lump_length == 256 * 256)
 			return 256;
 		else
-			return (int16_t)sqrt(lump_length);	// probably not pretty... 
+			return (int16_t)sqrt(double(lump_length));	// probably not pretty... 
 	}
 	return 0;
 }
