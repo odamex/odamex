@@ -126,6 +126,8 @@ private:
 	ISDL12Window(const ISDL12Window&);
 	ISDL12Window& operator=(const ISDL12Window&);
 
+	void getEvents();
+
 	IWindowSurface*		mPrimarySurface;
 
 	uint16_t			mWidth;

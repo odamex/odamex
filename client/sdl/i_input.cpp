@@ -54,10 +54,6 @@ bool tab_keydown = false;	// [ML] Actual status of tab key
 
 #define JOY_DEADZONE 6000
 
-EXTERN_CVAR (vid_fullscreen)
-EXTERN_CVAR (vid_defwidth)
-EXTERN_CVAR (vid_defheight)
-
 static IInputSubsystem* input_subsystem = NULL;
 
 static bool window_focused = false;
@@ -583,69 +579,8 @@ void STACK_ARGS I_ShutdownInput()
 //
 static void I_GetEvents()
 {
-	// [SL] Get application window events
-	// TODO: move this to the video subsystem
-	//
-	const int MAX_EVENTS = 256;
-	static SDL_Event sdl_events[MAX_EVENTS];
-
-	// set mask to get all events except keyboard, mouse, and joystick events
-	const int event_mask = SDL_ALLEVENTS & ~SDL_KEYEVENTMASK & ~SDL_MOUSEEVENTMASK & ~SDL_JOYEVENTMASK;
-
-	// Force SDL to gather events from input devices. This is called
-	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
-	// process only non-mouse events, SDL_PumpEvents is necessary.
-	SDL_PumpEvents();
-	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, event_mask);
-
-	for (int i = 0; i < num_events; i++)
-	{
-		const SDL_Event& sdl_ev = sdl_events[i];
-
-		switch (sdl_ev.type)
-		{
-		case SDL_QUIT:
-			AddCommandString("quit");
-			break;
-
-		case SDL_VIDEORESIZE:
-		{
-			// Resizable window mode resolutions
-			if (!vid_fullscreen)
-			{
-				std::stringstream Command;
-				Command << "vid_setmode " << sdl_ev.resize.w << " " << sdl_ev.resize.h;
-				AddCommandString(Command.str());
-
-				vid_defwidth.Set((float)sdl_ev.resize.w);
-				vid_defheight.Set((float)sdl_ev.resize.h);
-			}
-			break;
-		}
-
-		case SDL_ACTIVEEVENT:
-			// Debugging messages
-			if (sdl_ev.active.state & SDL_APPMOUSEFOCUS)
-				DPrintf("SDL_ACTIVEEVENT SDL_APPMOUSEFOCUS %s\n", sdl_ev.active.gain ? "gained" : "lost");
-			if (sdl_ev.active.state & SDL_APPINPUTFOCUS)
-				DPrintf("SDL_ACTIVEEVENT SDL_APPINPUTFOCUS %s\n", sdl_ev.active.gain ? "gained" : "lost");
-			if (sdl_ev.active.state & SDL_APPACTIVE)
-				DPrintf("SDL_ACTIVEEVENT SDL_APPACTIVE %s\n", sdl_ev.active.gain ? "gained" : "lost");
-
-			// need to update our focus state
-			I_UpdateFocus();
-			I_UpdateGrab();
-			// pause the mouse when the focus goes away (eg, alt-tab)
-			if (!window_focused)
-				I_PauseMouse();
-			break;
-		};
-	}
-
-
 	I_UpdateFocus();
 	I_UpdateGrab();
-
 
 	// Get all of the events from the keboard, mouse, and joystick
 	input_subsystem->gatherEvents();
