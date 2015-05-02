@@ -122,7 +122,7 @@ static void I_UpdateFocus()
 	{
 		if(new_window_focused)
 		{
-			input_subsystem->flushInput();
+			I_FlushInput();
 			I_EnableKeyRepeat();
 		}
 		else
@@ -133,11 +133,9 @@ static void I_UpdateFocus()
 #ifdef _WIN32
 		tab_keydown = false;
 #endif
-		C_ReleaseKeys();
-
 		window_focused = new_window_focused;
 
-		input_subsystem->flushInput();
+		I_FlushInput();
 	}
 }
 
@@ -402,9 +400,10 @@ static bool I_IsMouseDriverValid(int id)
 
 CVAR_FUNC_IMPL(mouse_driver)
 {
-	if (!I_IsMouseDriverValid(var.asInt()))
+	int new_mouse_driver = var.asInt();
+	if (!I_IsMouseDriverValid(new_mouse_driver))
 	{
-		if (var.asInt() == SDL_MOUSE_DRIVER)
+		if (new_mouse_driver == SDL_MOUSE_DRIVER)
 		{
 			// can't initialize SDL_MOUSE_DRIVER so don't use a mouse
 			I_CloseMouse();
@@ -437,16 +436,20 @@ void I_CloseMouse()
 //
 bool I_OpenMouse()
 {
-	if (mouse_driver.asInt() != prev_mouse_driver)
+	if (!nomouse)
 	{
-		I_CloseMouse();
-
-		// try to initialize the user's preferred mouse driver
-		if (I_IsMouseDriverValid(mouse_driver.asInt()))
+		int new_mouse_driver = mouse_driver.asInt();
+		if (new_mouse_driver != prev_mouse_driver)
 		{
-			input_subsystem->initMouse(mouse_driver.asInt());
-			prev_mouse_driver = mouse_driver.asInt();
-			return true;
+			I_CloseMouse();
+
+			// try to initialize the user's preferred mouse driver
+			if (I_IsMouseDriverValid(new_mouse_driver))
+			{
+				input_subsystem->initMouse(new_mouse_driver);
+				prev_mouse_driver = new_mouse_driver;
+				return true;
+			}
 		}
 	}
 	return false;
