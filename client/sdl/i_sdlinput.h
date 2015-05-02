@@ -45,8 +45,7 @@ public:
 	ISDL12KeyboardInputDevice(int id);
 	virtual ~ISDL12KeyboardInputDevice();
 
-	virtual bool active() const
-	{	return mActive == false;		}
+	virtual bool active() const;
 
 	virtual void pause();
 	virtual void resume();
@@ -87,8 +86,7 @@ public:
 	ISDL12MouseInputDevice(int id);
 	virtual ~ISDL12MouseInputDevice();
 
-	virtual bool active() const
-	{	return mActive == false;		}
+	virtual bool active() const;
 
 	virtual void pause();
 	virtual void resume();
@@ -125,8 +123,7 @@ public:
 	ISDL12JoystickInputDevice(int id);
 	virtual ~ISDL12JoystickInputDevice();
 
-	virtual bool active() const
-	{	return mActive == false;		}
+	virtual bool active() const;
 
 	virtual void pause();
 	virtual void resume();

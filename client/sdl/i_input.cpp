@@ -112,24 +112,9 @@ static void I_UpdateFocus()
 
 	// [CG][EE] Handle focus changes, this is all necessary to avoid repeat events.
 	if (window_focused != new_window_focused)
-	{
-		if(new_window_focused)
-		{
-			I_FlushInput();
-			I_EnableKeyRepeat();
-		}
-		else
-		{
-			I_DisableKeyRepeat();
-		}
-
-#ifdef _WIN32
-		tab_keydown = false;
-#endif
-		window_focused = new_window_focused;
-
 		I_FlushInput();
-	}
+
+	window_focused = new_window_focused;
 }
 
 

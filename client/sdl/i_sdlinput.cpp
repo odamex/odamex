@@ -234,6 +234,15 @@ ISDL12KeyboardInputDevice::~ISDL12KeyboardInputDevice()
 
 
 //
+// ISDL12KeyboardInputDevice::active
+//
+bool ISDL12KeyboardInputDevice::active() const
+{
+	return mActive && I_GetWindow()->isFocused();
+}
+
+
+//
 // ISDL12KeyboardInputDevice::flushEvents
 //
 void ISDL12KeyboardInputDevice::flushEvents()
@@ -294,7 +303,7 @@ void ISDL12KeyboardInputDevice::resume()
 //
 void ISDL12KeyboardInputDevice::gatherEvents()
 {
-	if (!mActive)
+	if (!active())
 		return;
 
 	// Force SDL to gather events from input devices. This is called
@@ -419,6 +428,15 @@ ISDL12MouseInputDevice::~ISDL12MouseInputDevice()
 
 
 //
+// ISDL12MouseInputDevice::active
+//
+bool ISDL12MouseInputDevice::active() const
+{
+	return mActive && I_GetWindow()->isFocused();
+}
+
+
+//
 // ISDL12MouseInputDevice::center
 //
 // Moves the mouse to the center of the screen to prevent absolute position
@@ -426,41 +444,43 @@ ISDL12MouseInputDevice::~ISDL12MouseInputDevice()
 //
 void ISDL12MouseInputDevice::center()
 {
-	const int centerx = I_GetVideoWidth() / 2;
-	const int centery = I_GetVideoHeight() / 2;
-	int prevx, prevy;
-
-	// get the x and y mouse position prior to centering it
-	SDL_GetMouseState(&prevx, &prevy);
-
-	// warp the mouse to the center of the screen
-	SDL_WarpMouse(centerx, centery);
-
-	// SDL_WarpMouse inserts a mouse event to warp the cursor to the center of the screen.
-	// Filter out this mouse event by reading all of the mouse events in SDL'S queue and
-	// re-insert any mouse events that were not inserted by SDL_WarpMouse.
-	SDL_PumpEvents();
-
-	// Retrieve chunks of up to 1024 events from SDL
-	const int max_events = 1024;
-	int num_events = 0;
-	SDL_Event sdl_events[max_events];
-
-	num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEMOTIONMASK);
-	assert(num_events < max_events);
-	for (int i = 0; i < num_events; i++)
+	if (active())
 	{
-		SDL_Event& sdl_ev = sdl_events[i];
-		assert(sdl_ev.type == SDL_MOUSEMOTION);
+		const int centerx = I_GetVideoWidth() / 2, centery = I_GetVideoHeight() / 2;
+		int prevx, prevy;
 
-		// drop the events caused by SDL_WarpMouse
-		if (sdl_ev.motion.x == centerx && sdl_ev.motion.y == centery && 
-			sdl_ev.motion.xrel == centerx - prevx && sdl_ev.motion.yrel == centery - prevy)
-			continue;
+		// get the x and y mouse position prior to centering it
+		SDL_GetMouseState(&prevx, &prevy);
 
-		// this event is not the event caused by SDL_WarpMouse so add it back
-		// to the event queue
-		SDL_PushEvent(&sdl_ev);
+		// warp the mouse to the center of the screen
+		SDL_WarpMouse(centerx, centery);
+
+		// SDL_WarpMouse inserts a mouse event to warp the cursor to the center of the screen.
+		// Filter out this mouse event by reading all of the mouse events in SDL'S queue and
+		// re-insert any mouse events that were not inserted by SDL_WarpMouse.
+		SDL_PumpEvents();
+
+		// Retrieve chunks of up to 1024 events from SDL
+		const int max_events = 1024;
+		int num_events = 0;
+		SDL_Event sdl_events[max_events];
+
+		num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEMOTIONMASK);
+		assert(num_events < max_events);
+		for (int i = 0; i < num_events; i++)
+		{
+			SDL_Event& sdl_ev = sdl_events[i];
+			assert(sdl_ev.type == SDL_MOUSEMOTION);
+
+			// drop the events caused by SDL_WarpMouse
+			if (sdl_ev.motion.x == centerx && sdl_ev.motion.y == centery && 
+				sdl_ev.motion.xrel == centerx - prevx && sdl_ev.motion.yrel == centery - prevy)
+				continue;
+
+			// this event is not the event caused by SDL_WarpMouse so add it back
+			// to the event queue
+			SDL_PushEvent(&sdl_ev);
+		}
 	}
 }
 
@@ -531,61 +551,61 @@ void ISDL12MouseInputDevice::resume()
 //
 void ISDL12MouseInputDevice::gatherEvents()
 {
-	if (!mActive)
-		return;
-
-	// Force SDL to gather events from input devices. This is called
-	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
-	// process only mouse events, SDL_PumpEvents is necessary.
-	SDL_PumpEvents();
-
-	// Retrieve chunks of up to 1024 events from SDL
-	int num_events = 0;
-	const int max_events = 1024;
-	SDL_Event sdl_events[max_events];
-
-	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEEVENTMASK)))
+	if (active())
 	{
-		// insert the SDL_Events into our queue
-		for (int i = 0; i < num_events; i++)
+		// Force SDL to gather events from input devices. This is called
+		// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
+		// process only mouse events, SDL_PumpEvents is necessary.
+		SDL_PumpEvents();
+
+		// Retrieve chunks of up to 1024 events from SDL
+		int num_events = 0;
+		const int max_events = 1024;
+		SDL_Event sdl_events[max_events];
+
+		while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEEVENTMASK)))
 		{
-			const SDL_Event& sdl_ev = sdl_events[i];
-			assert(sdl_ev.type == SDL_MOUSEMOTION ||
-					sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP);
-
-			event_t ev;
-			ev.data1 = ev.data2 = ev.data3 = 0;
-
-			if (sdl_ev.type == SDL_MOUSEMOTION)
+			// insert the SDL_Events into our queue
+			for (int i = 0; i < num_events; i++)
 			{
-				ev.type = ev_mouse;
-				ev.data2 = sdl_ev.motion.xrel;
-				ev.data3 = -sdl_ev.motion.yrel;
-			}
-			else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP)
-			{
-				ev.type = (sdl_ev.type == SDL_MOUSEBUTTONDOWN) ? ev_keydown : ev_keyup;
-				if (sdl_ev.button.button == SDL_BUTTON_LEFT)
-					ev.data1 = KEY_MOUSE1;
-				else if (sdl_ev.button.button == SDL_BUTTON_RIGHT)
-					ev.data1 = KEY_MOUSE2;
-				else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
-					ev.data1 = KEY_MOUSE3;
-				else if (sdl_ev.button.button == SDL_BUTTON_X1)
-					ev.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
-				else if (sdl_ev.button.button == SDL_BUTTON_X2)
-					ev.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
-				else if (sdl_ev.button.button == SDL_BUTTON_WHEELUP)
-					ev.data1 = KEY_MWHEELUP;
-				else if (sdl_ev.button.button == SDL_BUTTON_WHEELDOWN)
-					ev.data1 = KEY_MWHEELDOWN;
-			}
+				const SDL_Event& sdl_ev = sdl_events[i];
+				assert(sdl_ev.type == SDL_MOUSEMOTION ||
+						sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP);
 
-			mEvents.push(ev);
+				event_t ev;
+				ev.data1 = ev.data2 = ev.data3 = 0;
+
+				if (sdl_ev.type == SDL_MOUSEMOTION)
+				{
+					ev.type = ev_mouse;
+					ev.data2 = sdl_ev.motion.xrel;
+					ev.data3 = -sdl_ev.motion.yrel;
+				}
+				else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP)
+				{
+					ev.type = (sdl_ev.type == SDL_MOUSEBUTTONDOWN) ? ev_keydown : ev_keyup;
+					if (sdl_ev.button.button == SDL_BUTTON_LEFT)
+						ev.data1 = KEY_MOUSE1;
+					else if (sdl_ev.button.button == SDL_BUTTON_RIGHT)
+						ev.data1 = KEY_MOUSE2;
+					else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
+						ev.data1 = KEY_MOUSE3;
+					else if (sdl_ev.button.button == SDL_BUTTON_X1)
+						ev.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
+					else if (sdl_ev.button.button == SDL_BUTTON_X2)
+						ev.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
+					else if (sdl_ev.button.button == SDL_BUTTON_WHEELUP)
+						ev.data1 = KEY_MWHEELUP;
+					else if (sdl_ev.button.button == SDL_BUTTON_WHEELDOWN)
+						ev.data1 = KEY_MWHEELDOWN;
+				}
+
+				mEvents.push(ev);
+			}
 		}
-	}
 
-	center();
+		center();
+	}
 }
 
 
@@ -664,6 +684,15 @@ ISDL12JoystickInputDevice::~ISDL12JoystickInputDevice()
 
 
 //
+// ISDL12JoystickInputDevice::active
+//
+bool ISDL12JoystickInputDevice::active() const
+{
+	return mActive && I_GetWindow()->isFocused();
+}
+
+
+//
 // ISDL12JoystickInputDevice::flushEvents
 //
 void ISDL12JoystickInputDevice::flushEvents()
@@ -733,7 +762,7 @@ void ISDL12JoystickInputDevice::resume()
 //
 void ISDL12JoystickInputDevice::gatherEvents()
 {
-	if (!mActive)
+	if (!active())
 		return;
 
 	// Force SDL to gather events from input devices. This is called
