@@ -44,6 +44,7 @@
 #define HID_USAGE_GENERIC_MOUSE  ((USHORT) 0x02)
 #endif
 
+
 //
 // getMouseRawInputDevice
 //
@@ -501,5 +502,47 @@ void IRawWin32MouseInputDevice::debug() const
 }
 
 #endif	// USE_RAW_WIN32_MOUSE
+
+
+//
+// I_CheckForProc
+//
+// Checks if a function with the given name is in the given DLL file.
+// This is used to determine if the user's version of Windows has the necessary
+// functions availible.
+//
+#if defined(_WIN32) && !defined(_XBOX)
+static bool I_CheckForProc(const char* dllname, const char* procname)
+{
+	bool avail = false;
+	HMODULE dll = LoadLibrary(TEXT(dllname));
+	if (dll)
+	{
+		avail = (GetProcAddress(dll, procname) != NULL);
+		FreeLibrary(dll);
+	}
+	return avail;
+}
+#endif  // _WIN32
+
+
+//
+// I_RawWin32MouseAvailible
+//
+// Checks if the raw input mouse functions that the RawWin32Mouse
+// class calls are availible on the current system. They require
+// Windows XP or higher.
+//
+bool I_RawWin32MouseAvailible()
+{
+#if defined(_WIN32) && !defined(_XBOX) && defined(USE_RAW_WIN32_MOUSE)
+	return	I_CheckForProc("user32.dll", "RegisterRawInputDevices") &&
+			I_CheckForProc("user32.dll", "GetRegisteredRawInputDevices") &&
+			I_CheckForProc("user32.dll", "GetRawInputData");
+#else
+	return false;
+#endif
+}
+
 
 VERSION_CONTROL (i_win32input_cpp, "$Id: i_win32input.cpp 5171 2014-12-27 00:29:58Z mike $")

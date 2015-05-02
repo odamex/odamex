@@ -31,6 +31,8 @@
 #include <list>
 #include "hashtable.h"
 
+bool I_SDLMouseAvailible();
+
 // ============================================================================
 //
 // ISDL12KeyboardInputDevice class interface

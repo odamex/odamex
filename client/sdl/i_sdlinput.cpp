@@ -33,6 +33,18 @@
 #include <queue>
 #include <cassert>
 
+//
+// I_SDLMouseAvailible
+//
+// Checks if SDLMouse can be used. Always true since SDL is used as the
+// primary backend for everything.
+//
+bool I_SDLMouseAvailible()
+{
+	return true;
+}
+
+
 // ============================================================================
 //
 // ISDL12KeyboardInputDevice implementation

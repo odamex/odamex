@@ -30,12 +30,13 @@
 #include "d_event.h"
 #include <queue>
 
+bool I_RawWin32MouseAvailible();
+
 #if defined _WIN32 && !defined _XBOX
 	#define USE_RAW_WIN32_MOUSE
 #else
 	#undef USE_RAW_WIN32_MOUSE
 #endif
-
 
 #ifdef USE_RAW_WIN32_MOUSE
 

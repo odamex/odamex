@@ -16,7 +16,8 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	SDL input handler
+//
+// Input event handler
 //
 //-----------------------------------------------------------------------------
 
@@ -27,13 +28,13 @@
 #include <list>
 #include <sstream>
 
-#include <SDL.h>
 #include "win32inc.h"
 
 #include "doomstat.h"
 #include "m_argv.h"
 #include "i_input.h"
 #include "i_sdlinput.h"
+#include "i_win32input.h"
 #include "i_video.h"
 #include "d_main.h"
 #include "c_bind.h"
@@ -47,13 +48,12 @@
 #endif
 
 #ifdef _WIN32
-#include <SDL_syswm.h>
-#include "i_win32input.h"
 bool tab_keydown = false;	// [ML] Actual status of tab key
 #endif
 
 #define JOY_DEADZONE 6000
 
+static int prev_mouse_driver = -1;
 static IInputSubsystem* input_subsystem = NULL;
 
 static bool window_focused = false;
@@ -366,22 +366,12 @@ void I_CloseJoystick()
 //
 // ============================================================================
 
-static bool I_MouseUnavailible();
-static bool I_SDLMouseAvailible();
-#ifdef USE_RAW_WIN32_MOUSE
-static bool I_RawWin32MouseAvailible();
-#endif	// USE_RAW_WIN32_MOUSE
-
 bool I_OpenMouse();
 void I_CloseMouse();
 
 MouseDriverInfo_t MouseDriverInfo[] = {
 	{ SDL_MOUSE_DRIVER,			"SDL Mouse",	&I_SDLMouseAvailible },
-#ifdef USE_RAW_WIN32_MOUSE
 	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_RawWin32MouseAvailible }
-#else
-	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_MouseUnavailible }
-#endif	// USE_WIN32_MOUSE
 };
 
 
@@ -433,65 +423,12 @@ CVAR_FUNC_IMPL(mouse_driver)
 
 
 //
-// I_CheckForProc
-//
-// Checks if a function with the given name is in the given DLL file.
-// This is used to determine if the user's version of Windows has the necessary
-// functions availible.
-//
-#if defined(_WIN32) && !defined(_XBOX)
-static bool I_CheckForProc(const char* dllname, const char* procname)
-{
-	bool avail = false;
-	HMODULE dll = LoadLibrary(TEXT(dllname));
-	if (dll)
-	{
-		avail = (GetProcAddress(dll, procname) != NULL);
-		FreeLibrary(dll);
-	}
-	return avail;
-}
-#endif  // WIN32
-
-//
-// I_RawWin32MouseAvailible
-//
-// Checks if the raw input mouse functions that the RawWin32Mouse
-// class calls are availible on the current system. They require
-// Windows XP or higher.
-//
-#ifdef USE_RAW_WIN32_MOUSE
-static bool I_RawWin32MouseAvailible()
-{
-	return	I_CheckForProc("user32.dll", "RegisterRawInputDevices") &&
-			I_CheckForProc("user32.dll", "GetRegisteredRawInputDevices") &&
-			I_CheckForProc("user32.dll", "GetRawInputData");
-}
-#endif  // USE_RAW_WIN32_MOUSE
-
-//
-// I_SDLMouseAvailible
-//
-// Checks if SDLMouse can be used. Always true since SDL is used as the
-// primary backend for everything.
-//
-static bool I_SDLMouseAvailible()
-{
-	return true;
-}
-
-
-static bool I_MouseUnavailible()
-{
-	return false;
-}
-
-//
 // I_CloseMouse()
 //
 void I_CloseMouse()
 {
 	input_subsystem->shutdownMouse(0);
+	prev_mouse_driver = -1;
 }
 
 
@@ -500,16 +437,21 @@ void I_CloseMouse()
 //
 bool I_OpenMouse()
 {
-	I_CloseMouse();
-
-	// try to initialize the user's preferred mouse driver
-	if (I_IsMouseDriverValid(mouse_driver.asInt()))
+	if (mouse_driver.asInt() != prev_mouse_driver)
 	{
-		input_subsystem->initMouse(mouse_driver.asInt());
-		return true;
+		I_CloseMouse();
+
+		// try to initialize the user's preferred mouse driver
+		if (I_IsMouseDriverValid(mouse_driver.asInt()))
+		{
+			input_subsystem->initMouse(mouse_driver.asInt());
+			prev_mouse_driver = mouse_driver.asInt();
+			return true;
+		}
 	}
 	return false;
 }
+
 
 //
 // I_PauseMouse
@@ -521,6 +463,7 @@ void I_PauseMouse()
 {
 	input_subsystem->pauseMouse();
 }
+
 
 //
 // I_ResumeMouse
@@ -559,6 +502,7 @@ bool I_InitInput()
 	return true;
 }
 
+
 //
 // I_ShutdownInput
 //
@@ -572,8 +516,9 @@ void STACK_ARGS I_ShutdownInput()
 	input_subsystem = NULL;
 }
 
+
 //
-// I_GetEvent
+// I_GetEvents
 //
 // Checks for new input events and posts them to the Doom event queue.
 //
@@ -655,27 +600,6 @@ void IInputSubsystem::unregisterInputDevice(IInputDevice* device)
 	assert(it != mInputDevices.end());
 	if (it != mInputDevices.end())
 		mInputDevices.erase(it);
-}
-
-
-//
-// I_IsEventRepeatable
-//
-// Returns true if an event should be repeated when the key is held down for
-// a certain length of time. The list of keys to not repeat was based on
-// what SDL_keyboard.c does.
-//
-static bool I_IsEventRepeatable(const event_t* ev)
-{
-	if (ev->type != ev_keydown)
-		return false;
-	
-	int button = ev->data1;
-	return button != 0 && button != KEY_CAPSLOCK && button != KEY_SCRLCK &&
-		button != KEY_LSHIFT && button != KEY_LCTRL && button != KEY_LALT &&
-		button != KEY_RSHIFT && button != KEY_RCTRL && button != KEY_RALT &&
-		!(button >= KEY_MOUSE1 && button <= KEY_MOUSE5) &&
-		!(button >= KEY_JOY1 && button <= KEY_JOY32);
 }
 
 
@@ -819,7 +743,6 @@ void IInputSubsystem::gatherEvents()
 		for (EventRepeaterTable::iterator it = mEventRepeaters.begin(); it != mEventRepeaters.end(); ++it)
 		{
 			EventRepeater& repeater = it->second;
-			assert(I_IsEventRepeatable(&repeater.event));
 			uint64_t current_time = I_GetTime();
 
 			if (!repeater.repeating && current_time - repeater.last_time >= mRepeatDelay)
