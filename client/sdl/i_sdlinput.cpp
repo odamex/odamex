@@ -322,6 +322,10 @@ void ISDL12KeyboardInputDevice::gatherEvents()
 				// [SL] Don't handle it here but make sure we indicate there was an ALT+F4 event.
 				quit_event = true;
 			}
+			else if (sdl_ev.key.keysym.sym == SDLK_TAB && sdl_ev.key.keysym.mod & (KMOD_LALT | KMOD_RALT))
+			{
+				// do nothing - the event is dropped
+			}
 			else
 			{
 				// Normal game keyboard event - insert it into our internal queue

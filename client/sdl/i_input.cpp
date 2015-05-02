@@ -59,13 +59,6 @@ static IInputSubsystem* input_subsystem = NULL;
 static bool window_focused = false;
 static bool input_grabbed = false;
 static bool nomouse = false;
-extern bool configuring_controls;
-
-EXTERN_CVAR (use_joystick)
-EXTERN_CVAR (joy_active)
-
-extern constate_e ConsoleState;
-
 
 //
 // I_FlushInput
@@ -152,6 +145,9 @@ static bool I_CanGrab()
 	return true;
 	#endif
 
+	extern bool configuring_controls;
+	extern constate_e ConsoleState;
+
 	assert(I_GetWindow() != NULL);
 
 	if (!I_GetWindow()->isFocused())
@@ -234,18 +230,6 @@ static void I_UpdateGrab()
 		I_UngrabInput();
 #endif
 }
-
-
-//
-// I_InitFocus
-//
-// Sets the initial value of window_focused.
-//
-static void I_InitFocus()
-{
-	I_ForceUpdateGrab();
-}
-
 
 
 CVAR_FUNC_IMPL(use_joystick)
@@ -493,14 +477,13 @@ bool I_InitInput()
 	input_subsystem = new ISDL12InputSubsystem();
 	input_subsystem->initKeyboard(0);
 
-	if (!nomouse)
-		I_OpenMouse();
+	I_OpenMouse();
 
 	I_OpenJoystick();
 
 	I_DisableKeyRepeat();
 
-	I_InitFocus();
+	I_ForceUpdateGrab();
 
 	return true;
 }
