@@ -703,9 +703,12 @@ void I_InitHardware()
 	}
 	else
 	{
-#ifdef SDL12
+		#if defined(SDL12)
 		video_subsystem = new ISDL12VideoSubsystem();
-#endif	// SDL12
+		#elif defined(SDL20)
+		video_subsystem = new ISDL20VideoSubsystem();
+		#endif
+		assert(video_subsystem != NULL);
 
 		const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
 		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());
