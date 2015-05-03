@@ -273,6 +273,8 @@ private:
 	ISDL20Window& operator=(const ISDL20Window&);
 
 	SDL_Window*			mSDLWindow;
+	SDL_Renderer*		mSDLRenderer;
+	SDL_Texture*		mSDLTexture;
 
 	IWindowSurface*		mPrimarySurface;
 

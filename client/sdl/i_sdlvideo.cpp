@@ -761,13 +761,28 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 //
 ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) :
 	IWindow(),
-	mSDLWindow(NULL),
+	mSDLWindow(NULL), mSDLRenderer(NULL), mSDLTexture(NULL),
 	mPrimarySurface(NULL),
 	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
 	mIsFullScreen(fullscreen), mUseVSync(vsync),
 	mSDLSoftwareSurface(NULL),
 	mNeedPaletteRefresh(true), mLocks(0)
 {
+	uint32_t window_flags = 0;
+
+	if (fullscreen)
+		window_flags |= SDL_WINDOW_FULLSCREEN;
+	else
+		window_flags |= SDL_WINDOW_RESIZABLE;
+
+	mSDLWindow = SDL_CreateWindow(
+			"",			// Empty title for now - it will be set later
+			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+			mWidth, mHeight,
+			window_flags);
+	
+	if (mSDLWindow == NULL)
+		I_FatalError("I_InitVideo: unable to create window: %s\n", SDL_GetError());
 }
 
 
@@ -780,6 +795,12 @@ ISDL20Window::~ISDL20Window()
 		SDL_FreeSurface(mSDLSoftwareSurface);
 
 	delete mPrimarySurface;
+
+	if (mSDLTexture)
+		SDL_DestroyTexture(mSDLTexture);
+
+	if (mSDLRenderer)
+		SDL_DestroyRenderer(mSDLRenderer);
 
 	if (mSDLWindow)
 		SDL_DestroyWindow(mSDLWindow);
@@ -851,7 +872,10 @@ void ISDL20Window::refresh()
 	if (mSDLSoftwareSurface)
 		SDL_BlitSurface(mSDLSoftwareSurface, NULL, sdlsurface, NULL);
 
-//	SDL_Flip(sdlsurface);
+	SDL_UpdateTexture(mSDLTexture, NULL, mPrimarySurface->getBuffer(), mPrimarySurface->getPitch());
+	SDL_RenderClear(mSDLRenderer);		// TODO: is this necessary?
+	SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
+	SDL_RenderPresent(mSDLRenderer);
 }
 
 
@@ -1029,62 +1053,51 @@ static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, Pixe
 bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t video_bpp,
 							bool video_fullscreen, bool vsync)
 {
-	delete mPrimarySurface;
-	mPrimarySurface = NULL;
-
-	if (mSDLSoftwareSurface)
-		SDL_FreeSurface(mSDLSoftwareSurface);
-	mSDLSoftwareSurface = NULL;
-
-	uint32_t flags = 0;
-
-	if (video_fullscreen)
-		flags |= SDL_WINDOW_FULLSCREEN;
-	else
-		flags |= SDL_WINDOW_RESIZABLE;
-
 	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
 	// This interferes with RawWin32Mouse's input handlers so we need to
 	// disable them prior to reinitalizing DirectInput...
 	I_PauseMouse();
 
-	mSDLWindow = SDL_CreateWindow(
-			"",			// Empty title for now - it will be set later
-			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			video_width, video_height,
-			flags);
-	
-	if (!mSDLWindow)
-		return false;
+	uint32_t fullscreen_flags = 0;
+	if (video_fullscreen)
+		fullscreen_flags |= SDL_WINDOW_FULLSCREEN;
+	SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);
 
-	SDL_Surface* sdlsurface = SDL_GetWindowSurface(mSDLWindow);
+	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
 
-	// [SL] ...and re-enable RawWin32Mouse's input handlers after
-	// DirectInput is reinitalized.
-	I_ResumeMouse();
+	uint32_t renderer_flags = 0;
+	if (vsync)
+		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
 
-	if (!sdlsurface)
-		return false;
+	if (mSDLRenderer)
+		SDL_DestroyRenderer(mSDLRenderer);
+	mSDLRenderer = SDL_CreateRenderer(mSDLWindow, -1, renderer_flags);
 
-	if (SDL_MUSTLOCK(sdlsurface))
-		SDL_LockSurface(sdlsurface);		// lock prior to accessing pixel format
+	if (mSDLRenderer == NULL)
+		I_FatalError("I_InitVideo: unable to create renderer: %s\n", SDL_GetError());
+
+	if (mSDLTexture)
+		SDL_DestroyTexture(mSDLTexture);
+	mSDLTexture = SDL_CreateTexture(
+				mSDLRenderer,
+				SDL_GetWindowPixelFormat(mSDLWindow),
+				SDL_TEXTUREACCESS_STREAMING,
+				video_width, video_height);
 
 	PixelFormat format;
-	I_BuildPixelFormatFromSDLSurface(sdlsurface, &format, video_bpp);
+	I_BuildPixelFormatFromSDLSurface(SDL_GetWindowSurface(mSDLWindow), &format, video_bpp);
 
-	mPrimarySurface = new IWindowSurface(sdlsurface->w, sdlsurface->h, &format,
-				sdlsurface->pixels, sdlsurface->pitch);
+	// create a new IWindowSurface with its own frame buffer
+	delete mPrimarySurface;
+	mPrimarySurface = new IWindowSurface(video_width, video_height, &format);
 
-	mWidth = mPrimarySurface->getWidth();
-	mHeight = mPrimarySurface->getHeight();
+	mWidth = video_width; 
+	mHeight = video_height; 
 	mBitsPerPixel = mPrimarySurface->getBitsPerPixel(); 
 	mIsFullScreen = SDL_GetWindowFlags(mSDLWindow) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
 	mUseVSync = vsync;
 
 	mVideoMode = IVideoMode(video_width, video_height, video_bpp, video_fullscreen);
-
-	if (SDL_MUSTLOCK(sdlsurface))
-		SDL_UnlockSurface(sdlsurface);
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
@@ -1095,6 +1108,10 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
 	else
 		argb_t::setChannels(3, 2, 1, 0);
+
+	// [SL] ...and re-enable RawWin32Mouse's input handlers after
+	// DirectInput is reinitalized.
+	I_ResumeMouse();
 
 	return true;
 }
