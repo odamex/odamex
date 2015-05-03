@@ -48,12 +48,17 @@
 
 #include "m_argv.h"
 #include "w_wad.h"
+#include "c_dispatch.h"
 
 #include "res_texture.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif
+
+EXTERN_CVAR (vid_fullscreen)
+EXTERN_CVAR (vid_defwidth)
+EXTERN_CVAR (vid_defheight)
 
 
 // ****************************************************************************
@@ -641,7 +646,7 @@ ISDL12VideoSubsystem::~ISDL12VideoSubsystem()
 //
 static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 {
-	int display_count = 0, display_index = 0, mode_index = 0;
+	int display_index = 0;
 	SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
 
 	int display_mode_count = SDL_GetNumVideoDisplays();
@@ -687,9 +692,17 @@ static bool Is8bppFullScreen(const IVideoMode& mode)
 //
 ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	IVideoCapabilities(),
-	mNativeMode(SDL_GetVideoInfo()->current_w, SDL_GetVideoInfo()->current_h,
-				SDL_GetVideoInfo()->vfmt->BitsPerPixel, true)
+	mNativeMode(0, 0, 0, false)
 {
+	const int display_index = 0;
+	SDL_DisplayMode sdl_display_mode;
+	if (SDL_GetDesktopDisplayMode(display_index, &sdl_display_mode) != 0)
+	{
+		I_FatalError("SDL_GetDesktopDisplayMode failed: %s", SDL_GetError());
+		return;
+	}
+	mNativeMode = IVideoMode(sdl_display_mode.w, sdl_display_mode.h, SDL_BITSPERPIXEL(sdl_display_mode.format), true);
+
 	I_AddSDL20VideoModes(&mModeList, 8);
 	I_AddSDL20VideoModes(&mModeList, 32);
 
@@ -826,8 +839,6 @@ void ISDL20Window::refresh()
 
 	if (mNeedPaletteRefresh)
 	{
-		Uint32 flags = SDL_LOGPAL | SDL_PHYSPAL;
-
 		if (sdlsurface->format->BitsPerPixel == 8)
 			SDL_SetSurfacePalette(sdlsurface, sdlsurface->format->palette);
 		if (mSDLSoftwareSurface && mSDLSoftwareSurface->format->BitsPerPixel == 8)
@@ -840,7 +851,7 @@ void ISDL20Window::refresh()
 	if (mSDLSoftwareSurface)
 		SDL_BlitSurface(mSDLSoftwareSurface, NULL, sdlsurface, NULL);
 
-	SDL_Flip(sdlsurface);
+//	SDL_Flip(sdlsurface);
 }
 
 
@@ -929,8 +940,7 @@ std::string ISDL20Window::getVideoDriverName() const
 	const char* driver_name = SDL_GetVideoDriver(0);
 	if (driver_name)
 		return std::string(driver_name);
-
-	return std::string(driver);
+	return ""; 
 }
 
 
@@ -967,7 +977,7 @@ void ISDL20Window::setPalette(const argb_t* palette_colors)
 {
 	lockSurface();
 
-	I_SetSDL20Palette(SDL_GetVideoSurface(), palette_colors);
+	I_SetSDL20Palette(SDL_GetWindowSurface(mSDLWindow), palette_colors);
 
 	if (mSDLSoftwareSurface)
 		I_SetSDL20Palette(mSDLSoftwareSurface, palette_colors);
@@ -1031,7 +1041,7 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (video_fullscreen)
 		flags |= SDL_WINDOW_FULLSCREEN;
 	else
-		flags |= SDL_RESIZABLE;
+		flags |= SDL_WINDOW_RESIZABLE;
 
 	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
 	// This interferes with RawWin32Mouse's input handlers so we need to
@@ -1106,21 +1116,23 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 //
 ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 {
-	const SDL_version* SDLVersion = SDL_Linked_Version();
+	SDL_version linked, compiled;
+	SDL_GetVersion(&linked);
+	SDL_VERSION(&compiled);
 
-	if (SDLVersion->major != SDL_MAJOR_VERSION || SDLVersion->minor != SDL_MINOR_VERSION)
+	if (linked.major != compiled.major || linked.minor != compiled.minor)
 	{
 		I_FatalError("SDL version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
-			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
-			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
+			compiled.major, compiled.minor, compiled.patch,
+			linked.major, linked.minor, linked.patch);
 		return;
 	}
 
-	if (SDLVersion->patch != SDL_PATCHLEVEL)
+	if (linked.patch != compiled.patch)
 	{
 		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
-			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
-			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
+			compiled.major, compiled.minor, compiled.patch,
+			linked.major, linked.minor, linked.patch);
 	}
 
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO) == -1)
