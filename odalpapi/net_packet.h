@@ -207,6 +207,10 @@ public:
 	// Destructor
 	virtual ~ServerBase()
 	{
+		if(NULL != m_Mutex)
+		{
+			delete m_Mutex;
+		}
 	}
 
 	// Parse a packet, the parameter is the packet

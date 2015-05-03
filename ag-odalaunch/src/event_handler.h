@@ -96,7 +96,7 @@ public:
 	At destruction all EventHandlers registered through this class instance
 	are automatically deleted.
 	*/
-	virtual ~ODA_EventRegister();
+	~ODA_EventRegister();
 
 protected:
 	/**

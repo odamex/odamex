@@ -25,7 +25,16 @@
 //-----------------------------------------------------------------------------
 
 #include <iostream>
+
+#ifdef _XBOX
+#include "xbox_main.h"
+#else
 #include <sys/time.h>
+#endif
+
+#ifdef max
+	#undef max
+#endif
 
 #include <limits>
 

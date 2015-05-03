@@ -432,7 +432,7 @@ void AGOL_MainWindow::ClearStatusbarTooltip()
 	AG_LabelTextS(MainStatusbar->tooltip, "");
 }
 
-void AGOL_MainWindow::UpdateStatusbarMasterPing(uint32_t ping)
+void AGOL_MainWindow::UpdateStatusbarMasterPing(uint64_t ping)
 {
 	AG_LabelText(MainStatusbar->mping, "Master Ping: %u", ping);
 }
@@ -1180,7 +1180,7 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 				pwads += QServer[i].Info.Wads[j].Name.substr(0, QServer[i].Info.Wads[j].Name.find('.')) + " ";
 
 		// Player Count column
-		plyrCnt << QServer[i].Info.Players.size() << "/" << static_cast<int>(QServer[i].Info.MaxClients);
+		plyrCnt << QServer[i].Info.Players.size() << "/" << static_cast<int>(QServer[i].Info.MaxClients) << '\0';
 
 		// Map column
 		if(QServer[i].Info.CurrentMap.size())
@@ -1221,9 +1221,11 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 		}
 
 		row = AG_TableAddRow(ServerList, "%[FS]:%s:%u:%s:%s:%s:%s:%s:%s", padlockFn, name.c_str(),
-		                                             QServer[i].GetPing(), plyrCnt.str().c_str(),
-		                                             pwads.c_str(), map.c_str(), gametype.c_str(),
+		                                             static_cast<int>(QServer[i].GetPing()),
+													 plyrCnt.str().c_str(), pwads.c_str(),
+													 map.c_str(), gametype.c_str(),
 		                                             iwad.c_str(), sAddr.c_str());
+
 
 		// Set the cell flags
 		SetServerListRowCellFlags(row);
