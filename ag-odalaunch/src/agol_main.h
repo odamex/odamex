@@ -38,6 +38,8 @@
 #include "net_packet.h"
 #include "typedefs.h"
 
+using namespace odalpapi;
+
 /**
 agOdalaunch namespace.
 

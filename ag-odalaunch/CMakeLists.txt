@@ -2,13 +2,22 @@ include(FindLibAgar)
 
 global_compile_options()
 
+if(NOT MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-attributes")
+endif()
+
+# API
+set(API_DIR ../odalpapi)
+file(GLOB API_HEADERS ${API_DIR}/*.h ${API_DIR}/threads/*.h)
+file(GLOB API_SOURCES ${API_DIR}/*.cpp ${API_DIR}/threads/*.cpp)
+
 # Odalaunch
 set(LAUNCH_DIR src)
 file(GLOB LAUNCH_HEADERS src/*.h)
 file(GLOB LAUNCH_SOURCES src/*.cpp)
 
 # AG-Odalaunch definitions
-include_directories(${LAUNCH_DIR})
+include_directories(${API_DIR} ${LAUNCH_DIR})
 
 find_package(LibAgar)
 if(LibAgar_FOUND)
@@ -20,6 +29,7 @@ endif()
 # AG-Odalaunch target
 if(LibAgar_FOUND)
   add_executable(ag-odalaunch MACOSX_BUNDLE WIN32
+    ${API_SOURCES} ${API_HEADERS}
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
   )
   add_custom_command(

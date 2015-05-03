@@ -102,8 +102,8 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::SaveWidgetStates));
 
 	// set up the master server information
-	MServer.AddMaster("master1.odamex.net", 15000);
-	MServer.AddMaster("voxelsoft.com", 15000);
+	MServer.AddMaster("master1.odamex.net:15000");
+	MServer.AddMaster("voxelsoft.com:15000");
 
 	// Don't poll the server list by default
 	StopServerListPoll();
@@ -1130,9 +1130,9 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 	{
 		AG_Surface    *(*padlockFn)(void*,int,int) = NullSurfFn;
 		ostringstream  plyrCnt;
-		string         name = " ";
-		string         iwad = " ";
-		string         sAddr = " "; 
+		string         name;
+		string         iwad;
+		string         sAddr;
 		string         map;
 		string         pwads;
 		string         gametype;
@@ -1188,8 +1188,6 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 			map.resize(QServer[i].Info.CurrentMap.size());
 			transform(QServer[i].Info.CurrentMap.begin(), QServer[i].Info.CurrentMap.end(), map.begin(), ::toupper);
 		}
-		else
-			map = " "; // Required to satisfy the add row format string
 
 		// Game Type
 		switch(QServer[i].Info.GameType)
@@ -1268,6 +1266,7 @@ void AGOL_MainWindow::SaveWidgetStates(AG_Event *event)
 
 void AGOL_MainWindow::ExitWindow(AG_Event *event)
 {
+    std::cout << "Exit window event! Calling SaveWidgetStates!" << std::endl;
 	SaveWidgetStates(NULL);
 
 	WindowExited = true;
@@ -1278,6 +1277,7 @@ void AGOL_MainWindow::ExitWindow(AG_Event *event)
 //*****************//
 void *AGOL_MainWindow::GetMasterList(void *arg)
 {
+	odalpapi::BufferedSocket socket;
 	string       address = "";
 	size_t       serverCount = 0;
 	uint16_t     port = 0;
@@ -1296,8 +1296,10 @@ void *AGOL_MainWindow::GetMasterList(void *arg)
 	// Get the lock
 	MServer.GetLock();
 
+	MServer.SetSocket(&socket);
+
 	// Get a list of servers
-	MServer.QueryMasters(masterTimeout);
+	MServer.QueryMasters(masterTimeout, 1, 2); // TODO: Make broadcast and retry configurable
 
 	serverCount = MServer.GetServerCount();
 
@@ -1342,6 +1344,7 @@ void *AGOL_MainWindow::GetMasterList(void *arg)
 
 int AGOL_MainWindow::QuerySingleServer(Server *server)
 {
+	odalpapi::BufferedSocket socket;
 	unsigned int serverTimeout;
 	int          ret;
 
@@ -1349,6 +1352,7 @@ int AGOL_MainWindow::QuerySingleServer(Server *server)
 		serverTimeout = 500;
 
 	server->GetLock();
+	server->SetSocket(&socket);
 	ret = server->Query(serverTimeout);
 	server->Unlock();
 
