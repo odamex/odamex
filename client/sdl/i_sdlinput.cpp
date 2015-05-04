@@ -640,7 +640,6 @@ ISDL12JoystickInputDevice::ISDL12JoystickInputDevice(int id) :
 	mActive(false), mJoystickId(id), mJoystick(NULL),
 	mNumHats(0), mHatStates(NULL)
 {
-	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
 	assert(SDL_WasInit(SDL_INIT_JOYSTICK));
 	assert(mJoystickId >= 0 && mJoystickId < SDL_NumJoysticks());
 
@@ -873,6 +872,9 @@ ISDL12InputSubsystem::ISDL12InputSubsystem() :
 	mRepeatDelay = I_ConvertTimeFromMs(SDL_DEFAULT_REPEAT_DELAY);
 	mRepeatInterval = I_ConvertTimeFromMs(SDL_DEFAULT_REPEAT_INTERVAL);
 
+	// Initialize the joystick subsystem and open a joystick if use_joystick is enabled. -- Hyper_Eye
+	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+
 	// Tell SDL to ignore events from the input devices
 	// IInputDevice constructors will enable these events when they're initialized.
 	SDL_EventState(SDL_KEYDOWN, SDL_IGNORE);
@@ -904,6 +906,8 @@ ISDL12InputSubsystem::~ISDL12InputSubsystem()
 		shutdownMouse(0);
 	if (getJoystickInputDevice())
 		shutdownJoystick(0);
+
+	SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 }
 
 
