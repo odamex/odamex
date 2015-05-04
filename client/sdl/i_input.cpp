@@ -458,7 +458,12 @@ bool I_InitInput()
 
 	atterm(I_ShutdownInput);
 
+	#if defined(SDL12)
 	input_subsystem = new ISDL12InputSubsystem();
+	#elif defined(SDL20)
+	input_subsystem = new ISDL20InputSubsystem();
+	#endif
+
 	input_subsystem->initKeyboard(0);
 
 	I_OpenMouse();
