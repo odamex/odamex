@@ -172,8 +172,8 @@ protected:
 		return mJoystickInputDevice;
 	}
 
-	uint64_t			mRepeatDelay;
-	uint64_t			mRepeatInterval;;
+	static const uint64_t	mRepeatDelay;
+	static const uint64_t	mRepeatInterval;
 
 private:
 	// Data for key repeating

@@ -869,9 +869,6 @@ ISDL12InputSubsystem::ISDL12InputSubsystem() :
 	IInputSubsystem(),
 	mInputGrabbed(false)
 {
-	mRepeatDelay = I_ConvertTimeFromMs(SDL_DEFAULT_REPEAT_DELAY);
-	mRepeatInterval = I_ConvertTimeFromMs(SDL_DEFAULT_REPEAT_INTERVAL);
-
 	// Initialize the joystick subsystem and open a joystick if use_joystick is enabled. -- Hyper_Eye
 	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
 

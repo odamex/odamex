@@ -531,6 +531,12 @@ void I_StartFrame (void)
 //
 // ============================================================================
 
+// Initialize member constants
+// Key repeat delay and interval times are the default values for SDL 1.2.15
+const uint64_t IInputSubsystem::mRepeatDelay = I_ConvertTimeFromMs(500);
+const uint64_t IInputSubsystem::mRepeatInterval = I_ConvertTimeFromMs(30);
+
+
 //
 // IInputSubsystem::IInputSubsystem
 //
