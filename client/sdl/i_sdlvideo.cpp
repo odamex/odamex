@@ -1025,6 +1025,19 @@ void ISDL20Window::setWindowIcon()
 
 
 //
+// ISDL20Window::isFocused
+//
+// Returns true if this window has input focus.
+//
+bool ISDL20Window::isFocused() const
+{
+	SDL_PumpEvents();
+	uint32_t flags = SDL_GetWindowFlags(mSDLWindow);
+	return (flags & SDL_WINDOW_SHOWN) && (flags & SDL_WINDOW_INPUT_FOCUS);
+}
+
+
+//
 // ISDL20Window::getVideoDriverName
 //
 // Returns the name of the video driver that SDL is currently
