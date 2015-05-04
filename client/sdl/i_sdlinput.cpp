@@ -643,12 +643,8 @@ ISDL12JoystickInputDevice::ISDL12JoystickInputDevice(int id) :
 	assert(SDL_WasInit(SDL_INIT_JOYSTICK));
 	assert(mJoystickId >= 0 && mJoystickId < SDL_NumJoysticks());
 
-	assert(!SDL_JoystickOpened(mJoystickId));
-
 	mJoystick = SDL_JoystickOpen(mJoystickId);
-	assert(mJoystick != NULL);
-
-	if (!SDL_JoystickOpened(mJoystickId))
+	if (mJoystick == NULL)
 		return;
 
 	mNumHats = SDL_JoystickNumHats(mJoystick);
@@ -671,12 +667,10 @@ ISDL12JoystickInputDevice::~ISDL12JoystickInputDevice()
 
 	SDL_JoystickEventState(SDL_IGNORE);
 
-#ifndef _XBOX // This is to avoid a bug in SDLx
-	if (SDL_JoystickOpened(mJoystickId))
+	#ifndef _XBOX // This is to avoid a bug in SDLx
+	if (mJoystick != NULL)
 		SDL_JoystickClose(mJoystick);
-#endif
-
-	assert(!SDL_JoystickOpen(mJoystickId));
+	#endif
 
 	delete [] mHatStates;
 }
@@ -687,7 +681,7 @@ ISDL12JoystickInputDevice::~ISDL12JoystickInputDevice()
 //
 bool ISDL12JoystickInputDevice::active() const
 {
-	return mActive && I_GetWindow()->isFocused();
+	return mJoystick != NULL && mActive && I_GetWindow()->isFocused();
 }
 
 
@@ -1083,7 +1077,6 @@ void ISDL12InputSubsystem::resumeMouse()
 //
 std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getJoystickDevices() const
 {
-	// TODO: does the SDL Joystick subsystem need to be initialized?
 	std::vector<IInputDeviceInfo> devices;
 	for (int i = 0; i < SDL_NumJoysticks(); i++)
 	{
