@@ -278,6 +278,8 @@ private:
 	ISDL20Window(const ISDL20Window&);
 	ISDL20Window& operator=(const ISDL20Window&);
 
+	void getEvents();
+
 	SDL_Window*			mSDLWindow;
 	SDL_Renderer*		mSDLRenderer;
 	SDL_Texture*		mSDLTexture;

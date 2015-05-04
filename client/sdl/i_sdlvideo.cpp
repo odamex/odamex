@@ -256,7 +256,7 @@ void ISDL12Window::unlockSurface()
 
 
 //
-// I_HandleSDL12WindowEvents
+// ISDL12Window::getEvents
 //
 // Retrieves events for the application window and processes them.
 //
@@ -922,11 +922,97 @@ void ISDL20Window::unlockSurface()
 
 
 //
+// ISDL20Window::getEvents
+//
+// Retrieves events for the application window and processes them.
+//
+void ISDL20Window::getEvents()
+{
+	// Force SDL to gather events from input devices. This is called
+	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
+	// process only mouse events, SDL_PumpEvents is necessary.
+	SDL_PumpEvents();
+
+	// Retrieve chunks of up to 1024 events from SDL
+	int num_events = 0;
+	const int max_events = 1024;
+	SDL_Event sdl_events[max_events];
+
+	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_QUIT, SDL_SYSWMEVENT)))
+	{
+		for (int i = 0; i < num_events; i++)
+		{
+			const SDL_Event& sdl_ev = sdl_events[i];
+
+			if (sdl_ev.type == SDL_QUIT ||
+				(sdl_ev.type == SDL_WINDOWEVENT && sdl_ev.window.event == SDL_WINDOWEVENT_CLOSE))
+			{
+				AddCommandString("quit");
+			}
+			else if (sdl_ev.type == SDL_WINDOWEVENT)
+			{
+				if (sdl_ev.window.event == SDL_WINDOWEVENT_SHOWN)
+				{
+					DPrintf("SDL_WINDOWEVENT_SHOWN\n");
+				}
+				else if (sdl_ev.window.event == SDL_WINDOWEVENT_HIDDEN)
+				{
+					DPrintf("SDL_WINDOWEVENT_HIDDEN\n");
+				}
+				else if (sdl_ev.window.event == SDL_WINDOWEVENT_EXPOSED)
+				{
+					DPrintf("SDL_WINDOWEVENT_EXPOSED\n");
+				}
+				else if (sdl_ev.window.event == SDL_WINDOWEVENT_MINIMIZED)
+				{
+					DPrintf("SDL_WINDOWEVENT_MINIMIZED\n");
+				}
+				else if (sdl_ev.window.event == SDL_WINDOWEVENT_MAXIMIZED)
+				{
+					DPrintf("SDL_WINDOWEVENT_MAXIMIZED\n");
+				}
+				else if (sdl_ev.window.event == SDL_WINDOWEVENT_RESTORED)
+				{
+					DPrintf("SDL_WINDOWEVENT_RESTORED\n");
+				}
+				else if (sdl_ev.window.event == SDL_WINDOWEVENT_ENTER)
+				{
+					DPrintf("SDL_WINDOWEVENT_ENTER\n");
+				}
+				else if (sdl_ev.window.event == SDL_WINDOWEVENT_LEAVE)
+				{
+					DPrintf("SDL_WINDOWEVENT_LEAVE\n");
+				}
+				else if (sdl_ev.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
+				{
+					DPrintf("SDL_WINDOWEVENT_FOCUS_GAINED\n");
+				}
+				else if (sdl_ev.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
+				{
+					DPrintf("SDL_WINDOWEVENT_FOCUS_LOST\n");
+				}
+				else if (sdl_ev.window.event == SDL_WINDOWEVENT_RESIZED)
+				{
+					// Resizable window mode resolutions
+					if (!vid_fullscreen)
+					{
+						char tmp[256];
+						sprintf(tmp, "vid_setmode %i %i", sdl_ev.window.data1, sdl_ev.window.data2);
+						AddCommandString(tmp);
+					}
+				}
+			}
+		}
+	}
+}
+//
 // ISDL20Window::refresh
 //
 void ISDL20Window::refresh()
 {
 	assert(mLocks == 0);		// window surface shouldn't be locked when blitting
+
+	getEvents();
 
 	SDL_Surface* sdlsurface = SDL_GetWindowSurface(mSDLWindow);
 
