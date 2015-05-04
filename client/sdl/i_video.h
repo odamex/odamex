@@ -447,6 +447,9 @@ public:
 	virtual bool isFullScreen() const
 	{	return getVideoMode()->isFullScreen();	}
 
+	virtual bool isFocused() const
+	{	return false;	}
+
 	virtual bool usingVSync() const
 	{	return false;	}
 

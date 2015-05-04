@@ -41,6 +41,7 @@
 
 #include "net_io.h"
 #include "typedefs.h"
+#include "threads/mutex_factory.h"
 
 #define ASSEMBLEVERSION(MAJOR,MINOR,PATCH) ((MAJOR) * 256 + (MINOR)(PATCH))
 #define DISECTVERSION(V,MAJOR,MINOR,PATCH) \
@@ -186,7 +187,7 @@ protected:
 
 	uint8_t m_RetryCount;
 
-	//  AG_Mutex m_Mutex;
+	threads::Mutex* m_Mutex;
 public:
 	// Constructor
 	ServerBase()
@@ -200,14 +201,16 @@ public:
 		m_Port = 0;
 
 		Socket = NULL;
-
-		// todo: replace with a generic implementation
-		//      AG_MutexInit(&m_Mutex);
+		m_Mutex = threads::MutexFactory::inst().createMutex();
 	}
 
 	// Destructor
 	virtual ~ServerBase()
 	{
+		if(NULL != m_Mutex)
+		{
+			delete m_Mutex;
+		}
 	}
 
 	// Parse a packet, the parameter is the packet
@@ -254,29 +257,9 @@ public:
 		m_RetryCount = Count;
 	}
 
-#ifdef AG_DEBUG
-	// These funtions will cause termination on error when AG_DEBUG is enabled
-	int GetLock()
-	{
-		AG_MutexLock(&m_Mutex);
-		return 0;
-	}
-	int TryLock()
-	{
-		AG_MutexTrylock(&m_Mutex);
-		return 0;
-	}
-	int Unlock()
-	{
-		AG_MutexUnlock(&m_Mutex);
-		return 0;
-	}
-#else
-	// todo: replace with a generic implementation
-	//int GetLock() { return AG_MutexLock(&m_Mutex); }
-	//int TryLock() { return AG_MutexTrylock(&m_Mutex); }
-	//int Unlock() { return AG_MutexUnlock(&m_Mutex); }
-#endif
+	int GetLock() { return NULL != m_Mutex ? m_Mutex->getLock() : 0; }
+	int TryLock() { return NULL != m_Mutex ? m_Mutex->tryLock() : 0; }
+	int Unlock() { return NULL != m_Mutex ? m_Mutex->unlock() : 0; }
 };
 
 class MasterServer : public ServerBase  // [Russell] - A master server packet

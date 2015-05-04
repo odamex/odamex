@@ -256,11 +256,70 @@ void ISDL12Window::unlockSurface()
 
 
 //
+// I_HandleSDL12WindowEvents
+//
+// Retrieves events for the application window and processes them.
+//
+void ISDL12Window::getEvents()
+{
+	// Force SDL to gather events from input devices. This is called
+	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
+	// process only mouse events, SDL_PumpEvents is necessary.
+	SDL_PumpEvents();
+
+	// Retrieve chunks of up to 1024 events from SDL
+	int num_events = 0;
+	const int max_events = 1024;
+	SDL_Event sdl_events[max_events];
+
+	// set mask to get all events except keyboard, mouse, and joystick events
+	const int event_mask = SDL_ALLEVENTS & ~SDL_KEYEVENTMASK & ~SDL_MOUSEEVENTMASK & ~SDL_JOYEVENTMASK;
+
+	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, event_mask)))
+	{
+		for (int i = 0; i < num_events; i++)
+		{
+			const SDL_Event& sdl_ev = sdl_events[i];
+
+			if (sdl_ev.type == SDL_QUIT)
+			{
+				AddCommandString("quit");
+			}
+			else if (sdl_ev.type == SDL_VIDEORESIZE)
+			{
+				// Resizable window mode resolutions
+				if (!vid_fullscreen)
+				{
+					char tmp[256];
+					sprintf(tmp, "vid_setmode %i %i", sdl_ev.resize.w, sdl_ev.resize.h);
+					AddCommandString(tmp);
+				}
+			}
+			else if (sdl_ev.type == SDL_ACTIVEEVENT)
+			{
+				// Debugging messages
+				if (sdl_ev.active.state & SDL_APPMOUSEFOCUS)
+					DPrintf("SDL_ACTIVEEVENT SDL_APPMOUSEFOCUS %s\n", sdl_ev.active.gain ? "gained" : "lost");
+				if (sdl_ev.active.state & SDL_APPINPUTFOCUS)
+					DPrintf("SDL_ACTIVEEVENT SDL_APPINPUTFOCUS %s\n", sdl_ev.active.gain ? "gained" : "lost");
+				if (sdl_ev.active.state & SDL_APPACTIVE)
+					DPrintf("SDL_ACTIVEEVENT SDL_APPACTIVE %s\n", sdl_ev.active.gain ? "gained" : "lost");
+
+				// TODO: do we need to do anything here anymore?
+			}
+		}
+	}
+}
+
+
+//
 // ISDL12Window::refresh
 //
 void ISDL12Window::refresh()
 {
 	assert(mLocks == 0);		// window surface shouldn't be locked when blitting
+
+	getEvents();
 
 	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
 
@@ -354,6 +413,19 @@ void ISDL12Window::setWindowIcon()
 */
 
 	#endif
+}
+
+
+//
+// ISDL12Window::isFocused
+//
+// Returns true if this window has input focus.
+//
+bool ISDL12Window::isFocused() const
+{
+	SDL_PumpEvents();
+	int app_state = SDL_GetAppState();
+	return (app_state & SDL_APPINPUTFOCUS) && (app_state & SDL_APPACTIVE);
 }
 
 

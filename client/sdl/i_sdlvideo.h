@@ -104,6 +104,8 @@ public:
 	virtual bool isFullScreen() const
 	{	return mIsFullScreen;	}
 
+	virtual bool isFocused() const;
+
 	virtual bool usingVSync() const
 	{	return mUseVSync;	}
 
@@ -123,6 +125,8 @@ private:
 	// disable copy constructor and assignment operator
 	ISDL12Window(const ISDL12Window&);
 	ISDL12Window& operator=(const ISDL12Window&);
+
+	void getEvents();
 
 	IWindowSurface*		mPrimarySurface;
 

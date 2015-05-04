@@ -1168,7 +1168,7 @@ void TextureManager::cacheFlat(texhandle_t handle)
 	else if (lumplen == 256 * 256)
 		width = height = 256;
 	else
-		width = height = Log2(sqrt(lumplen));	// probably not pretty... 
+		width = height = Log2(sqrt((double)lumplen));	// probably not pretty... 
 
 	Texture* texture = createTexture(handle, width, height);
 
