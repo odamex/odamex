@@ -2061,7 +2061,7 @@ std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getKeyboardDevices() const
 	devices.push_back(IInputDeviceInfo());
 	IInputDeviceInfo& device_info = devices.back();
 	device_info.mId = 0;
-	device_info.mDeviceName = "SDL 1.2 keyboard";
+	device_info.mDeviceName = "SDL 2.0 keyboard";
 	return devices;
 }
 
@@ -2138,7 +2138,7 @@ std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getMouseDevices() const
 	devices.push_back(IInputDeviceInfo());
 	IInputDeviceInfo& sdl_device_info = devices.back();
 	sdl_device_info.mId = SDL_MOUSE_DRIVER;
-	sdl_device_info.mDeviceName = "SDL 1.2 mouse";
+	sdl_device_info.mDeviceName = "SDL 2.0 mouse";
 
 	#ifdef USE_RAW_WIN32_MOUSE
 	devices.push_back(IInputDeviceInfo());
@@ -2232,7 +2232,7 @@ std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getJoystickDevices() const
 		IInputDeviceInfo& device_info = devices.back();
 		device_info.mId = i;
 		char name[256];
-		sprintf(name, "SDL 1.2 joystick (%s)", SDL_JoystickNameForIndex(i));
+		sprintf(name, "SDL 2.0 joystick (%s)", SDL_JoystickNameForIndex(i));
 		device_info.mDeviceName = name;
 	}
 
