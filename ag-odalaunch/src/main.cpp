@@ -38,12 +38,15 @@
 #include "agol_main.h"
 #include "net_io.h"
 #include "gui_config.h"
+#include "agar_mutex_factory.h"
+#include "threads/mutex_factory.h"
 
 #ifdef _XBOX
 #include "xbox_main.h"
 #endif
 
 using namespace std;
+using namespace odalpapi;
 
 namespace agOdalaunch {
 
@@ -183,6 +186,7 @@ int main(int argc, char *argv[])
 
 	// Initialize socket API
 	BufferedSocket::InitializeSocketAPI();
+	threads::MutexFactory::inst().setFactory(new AgarMutexFactory);
 
 	// Create the main window
 	mainWindow = new AGOL_MainWindow(width, height);

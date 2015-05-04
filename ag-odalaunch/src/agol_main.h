@@ -38,6 +38,8 @@
 #include "net_packet.h"
 #include "typedefs.h"
 
+using namespace odalpapi;
+
 /**
 agOdalaunch namespace.
 
@@ -92,7 +94,7 @@ The main window.
 
 This class contains the main application window.
 */
-class AGOL_MainWindow : public ODA_ThreadBase, ODA_EventRegister
+class AGOL_MainWindow : public ODA_ThreadBase, public ODA_EventRegister
 {
 public:
 	/**
@@ -137,7 +139,7 @@ private:
 	// Interface Interaction Functions
 	void           UpdateStatusbarTooltip(const char *tip);
 	void           ClearStatusbarTooltip();
-	void           UpdateStatusbarMasterPing(uint32_t ping);
+	void           UpdateStatusbarMasterPing(uint64_t ping);
 	int            GetSelectedServerListRow();
 	int            GetSelectedServerArrayIndex();
 	std::string    GetAddrFromServerListRow(int row);
