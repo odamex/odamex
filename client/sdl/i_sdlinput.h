@@ -64,6 +64,10 @@ public:
 	virtual void flushEvents();
 
 private:
+	void initKeyTranslation();
+	void initKeyTextTranslation();
+	int translateKey(int sym);
+	int translateKeyText(int sym, int mod);
 	void center();
 
 	bool					mActive;
@@ -73,6 +77,7 @@ private:
 
 	typedef OHashTable<int, int> KeyTranslationTable;
 	KeyTranslationTable		mSDLKeyTransTable;
+	KeyTranslationTable		mSDLKeyTextTransTable;
 	KeyTranslationTable		mShiftTransTable;
 };
 

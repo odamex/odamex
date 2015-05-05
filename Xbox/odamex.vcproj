@@ -1155,6 +1155,12 @@
 				RelativePath="..\client\sdl\i_sdlvideo.h">
 			</File>
 			<File
+				RelativePath="..\client\sdl\i_sdlinput.cpp">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_sdlinput.h">
+			</File>
+			<File
 				RelativePath="..\client\sdl\i_sound.cpp">
 			</File>
 			<File
@@ -1171,6 +1177,12 @@
 			</File>
 			<File
 				RelativePath="..\client\sdl\i_video.h">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_win32input.cpp">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_win32input.h">
 			</File>
 			<File
 				RelativePath="..\client\sdl\mus2midi.cpp">

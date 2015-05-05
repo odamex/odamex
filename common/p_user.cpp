@@ -449,8 +449,10 @@ void P_MovePlayer (player_t *player)
 		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
 		{
 			player->mo->momz += 8*FRACUNIT;
-			if(!player->spectator)
-				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
+
+//			[SL] No jumping sound...
+//			if(!player->spectator)
+//				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
 
             player->mo->flags2 &= ~MF2_ONMOBJ;
             player->jumpTics = 18;
