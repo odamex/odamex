@@ -24,6 +24,7 @@
 #include "win32inc.h"
 #include "i_input.h"
 #include "i_win32input.h"
+#include "doomkeys.h"
 
 #include <queue>
 #include <cassert>
