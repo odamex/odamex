@@ -299,6 +299,9 @@ private:
 
 	bool				mNeedPaletteRefresh;
 
+	bool				mMouseFocus;
+	bool				mKeyboardFocus;
+
 	int16_t				mLocks;
 };
 

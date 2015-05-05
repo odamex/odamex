@@ -838,10 +838,11 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
 	mIsFullScreen(fullscreen), mUseVSync(vsync),
 	mSDLSoftwareSurface(NULL),
-	mNeedPaletteRefresh(true), mLocks(0)
+	mNeedPaletteRefresh(true),
+	mMouseFocus(false), mKeyboardFocus(false),
+	mLocks(0)
 {
-	uint32_t window_flags = 0;
-
+	uint32_t window_flags = SDL_WINDOW_SHOWN;
 	if (fullscreen)
 		window_flags |= SDL_WINDOW_FULLSCREEN;
 	else
@@ -855,6 +856,8 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	
 	if (mSDLWindow == NULL)
 		I_FatalError("I_InitVideo: unable to create window: %s\n", SDL_GetError());
+
+	mMouseFocus = mKeyboardFocus = true;
 }
 
 
@@ -978,18 +981,22 @@ void ISDL20Window::getEvents()
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_ENTER)
 				{
 					DPrintf("SDL_WINDOWEVENT_ENTER\n");
+					mMouseFocus = true;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_LEAVE)
 				{
 					DPrintf("SDL_WINDOWEVENT_LEAVE\n");
+					mMouseFocus = false;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
 				{
 					DPrintf("SDL_WINDOWEVENT_FOCUS_GAINED\n");
+					mKeyboardFocus = true;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
 				{
 					DPrintf("SDL_WINDOWEVENT_FOCUS_LOST\n");
+					mKeyboardFocus = false;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_RESIZED)
 				{
@@ -1117,9 +1124,7 @@ void ISDL20Window::setWindowIcon()
 //
 bool ISDL20Window::isFocused() const
 {
-	SDL_PumpEvents();
-	uint32_t flags = SDL_GetWindowFlags(mSDLWindow);
-	return (flags & SDL_WINDOW_SHOWN) && (flags & SDL_WINDOW_INPUT_FOCUS);
+	return mMouseFocus && mKeyboardFocus;
 }
 
 
@@ -1236,7 +1241,7 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 
 	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
 
-	uint32_t renderer_flags = 0;
+	uint32_t renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
 	if (vsync)
 		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
 
