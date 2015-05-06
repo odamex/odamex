@@ -109,7 +109,14 @@ public:
 	virtual bool usingVSync() const
 	{	return mUseVSync;	}
 
-	virtual void refresh();
+	virtual void enableRefresh()
+	{	mBlit = true;		}
+
+	virtual void disableRefresh()
+	{	mBlit = false;		}
+
+	virtual void startRefresh();
+	virtual void finishRefresh();
 
 	virtual void lockSurface();
 	virtual void unlockSurface();
@@ -142,6 +149,7 @@ private:
 	SDL_Surface*		mSDLSoftwareSurface;
 
 	bool				mNeedPaletteRefresh;
+	bool				mBlit;
 
 	int16_t				mLocks;
 };

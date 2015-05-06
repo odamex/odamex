@@ -195,7 +195,7 @@ ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
 	mIsFullScreen(fullscreen), mUseVSync(vsync),
 	mSDLSoftwareSurface(NULL),
-	mNeedPaletteRefresh(true), mLocks(0)
+	mNeedPaletteRefresh(true), mBlit(true), mLocks(0)
 {
 }
 
@@ -312,13 +312,20 @@ void ISDL12Window::getEvents()
 
 
 //
-// ISDL12Window::refresh
+// ISDL12Window::startRefresh
 //
-void ISDL12Window::refresh()
+void ISDL12Window::startRefresh()
+{
+	getEvents();
+}
+
+
+//
+// ISDL12Window::finishRefresh
+//
+void ISDL12Window::finishRefresh()
 {
 	assert(mLocks == 0);		// window surface shouldn't be locked when blitting
-
-	getEvents();
 
 	SDL_Surface* sdlsurface = SDL_GetVideoSurface();
 
@@ -334,11 +341,14 @@ void ISDL12Window::refresh()
 
 	mNeedPaletteRefresh = false;
 
-	// handle 8in32 mode
-	if (mSDLSoftwareSurface)
-		SDL_BlitSurface(mSDLSoftwareSurface, NULL, sdlsurface, NULL);
+	if (mBlit)
+	{
+		// handle 8in32 mode
+		if (mSDLSoftwareSurface)
+			SDL_BlitSurface(mSDLSoftwareSurface, NULL, sdlsurface, NULL);
 
-	SDL_Flip(sdlsurface);
+		SDL_Flip(sdlsurface);
+	}
 }
 
 

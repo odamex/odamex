@@ -555,17 +555,12 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 
 	IWindow* window = I_GetWindow();
 
-	static bool initialized = false;
-
 	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
 	I_ForceUpdateGrab();
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
 	I_FlushInput();
 		
-	if (!initialized)
-		initialized = true;
-
 	// Set up the primary and emulated surfaces
 	primary_surface = window->getPrimarySurface();
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
@@ -662,6 +657,12 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 		emulated_surface->setPalette(palette);
 	if (converted_surface)
 		converted_surface->setPalette(palette);
+
+	// handle the -noblit parameter when playing a LMP demo
+	if (noblit)
+		window->disableRefresh();
+	else
+		window->enableRefresh();
 }
 
 
@@ -1024,7 +1025,11 @@ static void I_RestoreLoadingIcon()
 void I_BeginUpdate()
 {
 	if (I_VideoInitialized())
+	{
+		I_GetWindow()->startRefresh();
+
 		I_LockAllSurfaces();
+	}
 }
 
 
@@ -1061,8 +1066,7 @@ void I_FinishUpdate()
 
 		I_UnlockAllSurfaces();
 
-		if (noblit == false)
-			I_GetWindow()->refresh();
+		I_GetWindow()->finishRefresh();
 
 		// restores the background underneath the disk loading icon in the lower right corner
 		if (gametic <= loading_icon_expire)
