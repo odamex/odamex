@@ -458,7 +458,11 @@ public:
 	virtual void lockSurface() { }
 	virtual void unlockSurface() { }
 
-	virtual void refresh() { }
+	virtual void enableRefresh() { }
+	virtual void disableRefresh() { }
+
+	virtual void startRefresh() { }
+	virtual void finishRefresh() { }
 
 	virtual void setWindowTitle(const std::string& caption = "") { }
 	virtual void setWindowIcon() { }
