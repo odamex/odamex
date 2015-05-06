@@ -848,7 +848,7 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
 	mIsFullScreen(fullscreen), mUseVSync(vsync),
 	mSDLSoftwareSurface(NULL),
-	mNeedPaletteRefresh(true),
+	mNeedPaletteRefresh(true), mBlit(true),
 	mMouseFocus(false), mKeyboardFocus(false),
 	mLocks(0)
 {
@@ -1022,14 +1022,23 @@ void ISDL20Window::getEvents()
 		}
 	}
 }
+
+
 //
-// ISDL20Window::refresh
+// ISDL20Window::startRefresh
 //
-void ISDL20Window::refresh()
+void ISDL20Window::startRefresh()
+{
+	getEvents();
+}
+
+
+//
+// ISDL20Window::finishRefresh
+//
+void ISDL20Window::finishRefresh()
 {
 	assert(mLocks == 0);		// window surface shouldn't be locked when blitting
-
-	getEvents();
 
 	SDL_Surface* sdlsurface = SDL_GetWindowSurface(mSDLWindow);
 
@@ -1043,14 +1052,17 @@ void ISDL20Window::refresh()
 
 	mNeedPaletteRefresh = false;
 
-	// handle 8in32 mode
-	if (mSDLSoftwareSurface)
-		SDL_BlitSurface(mSDLSoftwareSurface, NULL, sdlsurface, NULL);
+	if (mBlit)
+	{
+		// handle 8in32 mode
+		if (mSDLSoftwareSurface)
+			SDL_BlitSurface(mSDLSoftwareSurface, NULL, sdlsurface, NULL);
 
-	SDL_UpdateTexture(mSDLTexture, NULL, mPrimarySurface->getBuffer(), mPrimarySurface->getPitch());
-	SDL_RenderClear(mSDLRenderer);		// TODO: is this necessary?
-	SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
-	SDL_RenderPresent(mSDLRenderer);
+		SDL_UpdateTexture(mSDLTexture, NULL, mPrimarySurface->getBuffer(), mPrimarySurface->getPitch());
+		SDL_RenderClear(mSDLRenderer);		// TODO: is this necessary?
+		SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
+		SDL_RenderPresent(mSDLRenderer);
+	}
 }
 
 
@@ -1261,6 +1273,10 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 
 	if (mSDLRenderer == NULL)
 		I_FatalError("I_InitVideo: unable to create renderer: %s\n", SDL_GetError());
+
+	// Ensure the game window is clear, even if using -noblit
+	SDL_RenderClear(mSDLRenderer);
+	SDL_RenderPresent(mSDLRenderer);
 
 	if (mSDLTexture)
 		SDL_DestroyTexture(mSDLTexture);
