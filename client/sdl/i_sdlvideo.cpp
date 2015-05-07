@@ -734,8 +734,8 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	{
 		I_FatalError("I_SetVideoMode: unable to set video mode %ux%ux%u (%s): %s\n",
 				video_width, video_height, video_bpp, video_fullscreen ? "fullscreen" : "windowed",
-				SDL_Error());
-		return;
+				SDL_GetError());
+		return false;
 	}
 
 	assert(sdl_surface == SDL_GetVideoSurface());
