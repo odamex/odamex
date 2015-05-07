@@ -67,6 +67,76 @@ private:
 
 // ============================================================================
 //
+// ISDL12DirectWindowSurfaceManager
+//
+// Helper class for IWindow to encapsulate the creation of a IWindowSurface
+// primary surface and to assist in using it to refresh the window.
+//
+// This creates a IWindowSurface based on SDL's primary surface.
+//
+// ============================================================================
+
+class ISDL12DirectWindowSurfaceManager : public IWindowSurfaceManager
+{
+public:
+	ISDL12DirectWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format);
+
+	virtual ~ISDL12DirectWindowSurfaceManager();
+
+	virtual IWindowSurface* getWindowSurface()
+	{	return mSurface;	}
+
+	virtual const IWindowSurface* getWindowSurface() const
+	{	return mSurface;	}
+
+	virtual void lockSurface();
+	virtual void unlockSurface();
+
+	virtual void startRefresh();
+	virtual void finishRefresh();
+
+private:
+	IWindowSurface*			mSurface;
+};
+
+
+// ============================================================================
+//
+// ISDL12SoftwareWindowSurfaceManager
+//
+// Helper class for IWindow to encapsulate the creation of a IWindowSurface
+// primary surface and to assist in using it to refresh the window.
+//
+//
+// ============================================================================
+
+class ISDL12SoftwareWindowSurfaceManager : public IWindowSurfaceManager
+{
+public:
+	ISDL12SoftwareWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format);
+
+	virtual ~ISDL12SoftwareWindowSurfaceManager();
+
+	virtual IWindowSurface* getWindowSurface()
+	{	return mSurface;	}
+
+	virtual const IWindowSurface* getWindowSurface() const
+	{	return mSurface;	}
+
+	virtual void lockSurface();
+	virtual void unlockSurface();
+
+	virtual void startRefresh();
+	virtual void finishRefresh();
+
+private:
+	SDL_Surface*			mSDLSoftwareSurface;
+	IWindowSurface*			mSurface;
+};
+
+
+// ============================================================================
+//
 // ISDL12Window class interface
 //
 // ============================================================================
@@ -79,10 +149,18 @@ public:
 	virtual ~ISDL12Window();
 
 	virtual IWindowSurface* getPrimarySurface()
-	{	return mPrimarySurface;	}
+	{
+		if (mSurfaceManager)
+			return mSurfaceManager->getWindowSurface();
+		return NULL;
+	}
 
 	virtual const IWindowSurface* getPrimarySurface() const
-	{	return mPrimarySurface;	}
+	{
+		if (mSurfaceManager)
+			return mSurfaceManager->getWindowSurface();
+		return NULL;
+	}
 
 	virtual uint16_t getWidth() const
 	{	return mWidth;	}
@@ -135,7 +213,7 @@ private:
 
 	void getEvents();
 
-	IWindowSurface*		mPrimarySurface;
+	IWindowSurfaceManager*	mSurfaceManager;
 
 	uint16_t			mWidth;
 	uint16_t			mHeight;
@@ -145,8 +223,6 @@ private:
 
 	bool				mIsFullScreen;
 	bool				mUseVSync;
-
-	SDL_Surface*		mSDLSoftwareSurface;
 
 	bool				mNeedPaletteRefresh;
 	bool				mBlit;

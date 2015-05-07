@@ -178,6 +178,178 @@ ISDL12VideoCapabilities::ISDL12VideoCapabilities() :
 
 // ============================================================================
 //
+// ISDL12DirectWindowSurfaceManager implementation
+//
+// Helper class for IWindow to encapsulate the creation of a IWindowSurface
+// primary surface and to assist in using it to refresh the window.
+//
+// ============================================================================
+
+//
+// ISDL12DirectWindowSurfaceManager::ISDL12DirectWindowSurfaceManager
+//
+ISDL12DirectWindowSurfaceManager::ISDL12DirectWindowSurfaceManager(
+	uint16_t width, uint16_t height, const PixelFormat* format)
+{
+	SDL_Surface* sdl_surface = SDL_GetVideoSurface();
+	assert(sdl_surface != NULL);
+	mSurface = new IWindowSurface(width, height, format, sdl_surface->pixels, sdl_surface->pitch);
+	assert(mSurface != NULL);
+}
+
+
+//
+// ISDL12DirectWindowSurfaceManager::~ISDL12DirectWindowSurfaceManager
+//
+ISDL12DirectWindowSurfaceManager::~ISDL12DirectWindowSurfaceManager()
+{
+	delete mSurface;
+}
+
+
+//
+// ISDL12DirectWindowSurfaceManager::lockSurface
+//
+void ISDL12DirectWindowSurfaceManager::lockSurface()
+{
+	SDL_Surface* sdl_surface = SDL_GetVideoSurface();
+	assert(sdl_surface != NULL);
+	if (SDL_MUSTLOCK(sdl_surface))
+		SDL_LockSurface(sdl_surface);
+}
+
+
+//
+// ISDL12DirectWindowSurfaceManager::unlockSurface
+//
+void ISDL12DirectWindowSurfaceManager::unlockSurface()
+{
+	SDL_Surface* sdl_surface = SDL_GetVideoSurface();
+	assert(sdl_surface != NULL);
+	if (SDL_MUSTLOCK(sdl_surface))
+		SDL_UnlockSurface(sdl_surface);
+}
+
+
+//
+// ISDL12DirectWindowSurfaceManager::startRefresh
+//
+void ISDL12DirectWindowSurfaceManager::startRefresh()
+{ }
+
+
+//
+// ISDL12DirectWindowSurfaceManager::finishRefresh
+//
+void ISDL12DirectWindowSurfaceManager::finishRefresh()
+{
+	SDL_Surface* sdl_surface = SDL_GetVideoSurface();
+	assert(sdl_surface != NULL);
+	SDL_Flip(sdl_surface);
+}
+
+
+// ============================================================================
+//
+// ISDL12SoftwareWindowSurfaceManager implementation
+//
+// Helper class for IWindow to encapsulate the creation of a IWindowSurface
+// primary surface and to assist in using it to refresh the window.
+//
+//
+// ============================================================================
+
+//
+// ISDL12SoftwareWindowSurfaceManager::ISDL12SoftwareWindowSurfaceManager
+//
+ISDL12SoftwareWindowSurfaceManager::ISDL12SoftwareWindowSurfaceManager(
+	uint16_t width, uint16_t height, const PixelFormat* format)
+{
+	mSurface = new IWindowSurface(width, height, format);
+	assert(mSurface != NULL);
+
+	uint32_t rmask = uint32_t(format->getRMax()) << format->getRShift();
+	uint32_t gmask = uint32_t(format->getGMax()) << format->getGShift();
+	uint32_t bmask = uint32_t(format->getBMax()) << format->getBShift();
+
+	mSDLSoftwareSurface = SDL_CreateRGBSurfaceFrom(
+				mSurface->getBuffer(),
+				mSurface->getWidth(), mSurface->getHeight(),
+				mSurface->getBitsPerPixel(),
+				mSurface->getPitch(),
+				rmask, gmask, bmask, 0);
+
+	assert(mSDLSoftwareSurface != NULL);
+
+	SDL_Surface* sdl_surface = SDL_GetVideoSurface();
+	assert(mSDLSoftwareSurface->format->Rmask == sdl_surface->format->Rmask &&
+			mSDLSoftwareSurface->format->Gmask == sdl_surface->format->Gmask &&
+			mSDLSoftwareSurface->format->Bmask == sdl_surface->format->Bmask);
+}
+
+
+//
+// ISDL12SoftwareWindowSurfaceManager::~ISDL12SoftwareWindowSurfaceManager
+//
+ISDL12SoftwareWindowSurfaceManager::~ISDL12SoftwareWindowSurfaceManager()
+{
+	if (mSDLSoftwareSurface)
+		SDL_FreeSurface(mSDLSoftwareSurface);
+
+	delete mSurface;
+}
+
+
+//
+// ISDL12SoftwareWindowSurfaceManager::lockSurface
+//
+void ISDL12SoftwareWindowSurfaceManager::lockSurface()
+{
+	SDL_Surface* sdl_surface = SDL_GetVideoSurface();
+	if (SDL_MUSTLOCK(sdl_surface))
+		SDL_LockSurface(sdl_surface);
+	if (SDL_MUSTLOCK(mSDLSoftwareSurface))
+		SDL_LockSurface(mSDLSoftwareSurface);
+}
+
+
+//
+// ISDL12SoftwareWindowSurfaceManager::unlockSurface
+//
+void ISDL12SoftwareWindowSurfaceManager::unlockSurface()
+{
+	SDL_Surface* sdl_surface = SDL_GetVideoSurface();
+	if (SDL_MUSTLOCK(sdl_surface))
+		SDL_UnlockSurface(sdl_surface);
+	if (SDL_MUSTLOCK(mSDLSoftwareSurface))
+		SDL_UnlockSurface(mSDLSoftwareSurface);
+}
+
+
+//
+// ISDL12SoftwareWindowSurfaceManager::startRefresh
+//
+void ISDL12SoftwareWindowSurfaceManager::startRefresh()
+{
+}
+
+
+//
+// ISDL12SoftwareWindowSurfaceManager::finishRefresh
+//
+void ISDL12SoftwareWindowSurfaceManager::finishRefresh()
+{
+	SDL_Surface* main_sdl_surface = SDL_GetVideoSurface();
+	assert(main_sdl_surface != NULL);
+	SDL_BlitSurface(mSDLSoftwareSurface, NULL, main_sdl_surface, NULL);
+	SDL_Flip(main_sdl_surface);
+}
+
+
+
+
+// ============================================================================
+//
 // ISDL12Window class implementation
 //
 // ============================================================================
@@ -191,13 +363,11 @@ ISDL12VideoCapabilities::ISDL12VideoCapabilities() :
 //
 ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) :
 	IWindow(),
-	mPrimarySurface(NULL),
+	mSurfaceManager(NULL),
 	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
 	mIsFullScreen(fullscreen), mUseVSync(vsync),
-	mSDLSoftwareSurface(NULL),
 	mNeedPaletteRefresh(true), mBlit(true), mLocks(0)
-{
-}
+{ }
 
 
 //
@@ -205,10 +375,7 @@ ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 //
 ISDL12Window::~ISDL12Window()
 {
-	if (mSDLSoftwareSurface)
-		SDL_FreeSurface(mSDLSoftwareSurface);
-
-	delete mPrimarySurface;
+	delete mSurfaceManager;
 }
 
 
@@ -221,13 +388,7 @@ ISDL12Window::~ISDL12Window()
 void ISDL12Window::lockSurface()
 {
 	if (++mLocks == 1)
-	{
-		SDL_Surface* sdlsurface = SDL_GetVideoSurface();
-		if (SDL_MUSTLOCK(sdlsurface))
-			SDL_LockSurface(sdlsurface);
-		if (mSDLSoftwareSurface && SDL_MUSTLOCK(mSDLSoftwareSurface))
-			SDL_LockSurface(mSDLSoftwareSurface);
-	}
+		mSurfaceManager->lockSurface();
 
 	assert(mLocks >= 1 && mLocks < 100);
 }
@@ -242,13 +403,7 @@ void ISDL12Window::lockSurface()
 void ISDL12Window::unlockSurface()
 {
 	if (--mLocks == 0)
-	{
-		SDL_Surface* sdlsurface = SDL_GetVideoSurface();
-		if (SDL_MUSTLOCK(sdlsurface))
-			SDL_UnlockSurface(sdlsurface);
-		if (mSDLSoftwareSurface && SDL_MUSTLOCK(mSDLSoftwareSurface))
-			SDL_UnlockSurface(mSDLSoftwareSurface);
-	}
+		mSurfaceManager->unlockSurface();
 
 	assert(mLocks >= 0 && mLocks < 100);
 }
@@ -317,6 +472,8 @@ void ISDL12Window::getEvents()
 void ISDL12Window::startRefresh()
 {
 	getEvents();
+
+	mSurfaceManager->startRefresh();
 }
 
 
@@ -335,19 +492,15 @@ void ISDL12Window::finishRefresh()
 
 		if (sdlsurface->format->BitsPerPixel == 8)
 			SDL_SetPalette(sdlsurface, flags, sdlsurface->format->palette->colors, 0, 256);
-		if (mSDLSoftwareSurface && mSDLSoftwareSurface->format->BitsPerPixel == 8)
-			SDL_SetPalette(mSDLSoftwareSurface, flags, mSDLSoftwareSurface->format->palette->colors, 0, 256);
+//		if (mSDLSoftwareSurface && mSDLSoftwareSurface->format->BitsPerPixel == 8)
+//			SDL_SetPalette(mSDLSoftwareSurface, flags, mSDLSoftwareSurface->format->palette->colors, 0, 256);
 	}
 
 	mNeedPaletteRefresh = false;
 
 	if (mBlit)
 	{
-		// handle 8in32 mode
-		if (mSDLSoftwareSurface)
-			SDL_BlitSurface(mSDLSoftwareSurface, NULL, sdlsurface, NULL);
-
-		SDL_Flip(sdlsurface);
+		mSurfaceManager->finishRefresh();
 	}
 }
 
@@ -496,8 +649,8 @@ void ISDL12Window::setPalette(const argb_t* palette_colors)
 
 	I_SetSDL12Palette(SDL_GetVideoSurface(), palette_colors);
 
-	if (mSDLSoftwareSurface)
-		I_SetSDL12Palette(mSDLSoftwareSurface, palette_colors);
+//	if (mSDLSoftwareSurface)
+//		I_SetSDL12Palette(mSDLSoftwareSurface, palette_colors);
 
 	getPrimarySurface()->setPalette(palette_colors);
 
@@ -546,13 +699,6 @@ static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, Pixe
 bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t video_bpp,
 							bool video_fullscreen, bool vsync)
 {
-	delete mPrimarySurface;
-	mPrimarySurface = NULL;
-
-	if (mSDLSoftwareSurface)
-		SDL_FreeSurface(mSDLSoftwareSurface);
-	mSDLSoftwareSurface = NULL;
-
 	uint32_t flags = 0;
 
 	if (vsync)
@@ -583,63 +729,54 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	// disable them prior to reinitalizing DirectInput...
 	I_PauseMouse();
 
-	SDL_Surface* sdlsurface = SDL_SetVideoMode(video_width, video_height, video_bpp, flags);
+	SDL_Surface* sdl_surface = SDL_SetVideoMode(video_width, video_height, video_bpp, flags);
+	if (sdl_surface == NULL)
+	{
+		I_FatalError("I_SetVideoMode: unable to set video mode %ux%ux%u (%s): %s\n",
+				video_width, video_height, video_bpp, video_fullscreen ? "fullscreen" : "windowed",
+				SDL_Error());
+		return;
+	}
+
+	assert(sdl_surface == SDL_GetVideoSurface());
 
 	// [SL] ...and re-enable RawWin32Mouse's input handlers after
 	// DirectInput is reinitalized.
 	I_ResumeMouse();
 
-	if (!sdlsurface)
-		return false;
-
-	bool got_hardware_surface = (sdlsurface->flags & SDL_HWSURFACE) == SDL_HWSURFACE;
-
-	bool create_software_surface = 
-					(sdlsurface->pitch & 511) == 0 ||	// pitch is a multiple of 512 (thrashes the cache)
-					got_hardware_surface;				// drawing directly to hardware surfaces is slower
-
-	if (SDL_MUSTLOCK(sdlsurface))
-		SDL_LockSurface(sdlsurface);		// lock prior to accessing pixel format
-
-	PixelFormat format;
-	I_BuildPixelFormatFromSDLSurface(sdlsurface, &format, video_bpp);
-
-	if (create_software_surface)
-	{
-		// create a new IWindowSurface with its own frame buffer
-		mPrimarySurface = new IWindowSurface(sdlsurface->w, sdlsurface->h, &format);
-		
-		uint32_t rmask = uint32_t(format.getRMax()) << format.getRShift();
-		uint32_t gmask = uint32_t(format.getGMax()) << format.getGShift();
-		uint32_t bmask = uint32_t(format.getBMax()) << format.getBShift();
-
-		mSDLSoftwareSurface = SDL_CreateRGBSurfaceFrom(
-					mPrimarySurface->getBuffer(),
-					mPrimarySurface->getWidth(), mPrimarySurface->getHeight(),
-					mPrimarySurface->getBitsPerPixel(),
-					mPrimarySurface->getPitch(),
-					rmask, gmask, bmask, 0);
-
-		assert(mSDLSoftwareSurface->format->Rmask == sdlsurface->format->Rmask &&
-				mSDLSoftwareSurface->format->Gmask == sdlsurface->format->Gmask &&
-				mSDLSoftwareSurface->format->Bmask == sdlsurface->format->Bmask);
-	}
-	else
-	{
-		mPrimarySurface = new IWindowSurface(sdlsurface->w, sdlsurface->h, &format,
-					sdlsurface->pixels, sdlsurface->pitch);
-	}
-
-	mWidth = mPrimarySurface->getWidth();
-	mHeight = mPrimarySurface->getHeight();
-	mBitsPerPixel = mPrimarySurface->getBitsPerPixel(); 
-	mIsFullScreen = (sdlsurface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
+	// just in case SDL couldn't set the exact video mode we asked for...
+	mWidth = sdl_surface->w;
+	mHeight = sdl_surface->h;
+	mBitsPerPixel = sdl_surface->format->BitsPerPixel;
+	mIsFullScreen = (sdl_surface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
 	mUseVSync = vsync;
 
-	mVideoMode = IVideoMode(video_width, video_height, video_bpp, video_fullscreen);
+	if (SDL_MUSTLOCK(sdl_surface))
+		SDL_LockSurface(sdl_surface);		// lock prior to accessing pixel format
 
-	if (SDL_MUSTLOCK(sdlsurface))
-		SDL_UnlockSurface(sdlsurface);
+	PixelFormat format;
+	I_BuildPixelFormatFromSDLSurface(sdl_surface, &format, video_bpp);
+
+	delete mSurfaceManager;
+
+	bool got_hardware_surface = (sdl_surface->flags & SDL_HWSURFACE) == SDL_HWSURFACE;
+
+	bool create_software_surface = 
+					(sdl_surface->pitch & 511) == 0 ||	// pitch is a multiple of 512 (thrashes the cache)
+					got_hardware_surface;				// drawing directly to hardware surfaces is slower
+
+	if (create_software_surface)
+		mSurfaceManager = new ISDL12SoftwareWindowSurfaceManager(mWidth, mHeight, &format);
+	else
+		mSurfaceManager = new ISDL12DirectWindowSurfaceManager(mWidth, mHeight, &format);
+
+	assert(mSurfaceManager != NULL);
+	assert(getPrimarySurface() != NULL);
+
+	if (SDL_MUSTLOCK(sdl_surface))
+		SDL_UnlockSurface(sdl_surface);
+
+	mVideoMode = IVideoMode(mWidth, mHeight, video_bpp, mIsFullScreen);
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
