@@ -227,6 +227,8 @@ private:
 	bool				mNeedPaletteRefresh;
 	bool				mBlit;
 
+	bool				mIgnoreResize;
+
 	int16_t				mLocks;
 };
 

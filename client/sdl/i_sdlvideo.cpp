@@ -366,7 +366,7 @@ ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	mSurfaceManager(NULL),
 	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
 	mIsFullScreen(fullscreen), mUseVSync(vsync),
-	mNeedPaletteRefresh(true), mBlit(true), mLocks(0)
+	mNeedPaletteRefresh(true), mBlit(true), mIgnoreResize(false), mLocks(0)
 { }
 
 
@@ -442,7 +442,7 @@ void ISDL12Window::getEvents()
 			else if (sdl_ev.type == SDL_VIDEORESIZE)
 			{
 				// Resizable window mode resolutions
-				if (!vid_fullscreen)
+				if (!vid_fullscreen && !mIgnoreResize)
 				{
 					char tmp[256];
 					sprintf(tmp, "vid_setmode %i %i", sdl_ev.resize.w, sdl_ev.resize.h);
@@ -463,6 +463,8 @@ void ISDL12Window::getEvents()
 			}
 		}
 	}
+
+	mIgnoreResize = false;
 }
 
 
@@ -787,6 +789,10 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
 	else
 		argb_t::setChannels(3, 2, 1, 0);
+
+	// [SL] SDL can create SDL_VIDEORESIZE events in response to SDL_SetVideoMode
+	// and we need to filter those out.
+	mIgnoreResize = true;
 
 	return true;
 }
