@@ -408,6 +408,68 @@ private:
 };
 
 
+// ============================================================================
+//
+// IWindowSurfaceManager
+//
+// Helper class for IWindow to encapsulate the creation of a IWindowSurface
+// primary surface and to assist in using it to refresh the window.
+//
+// ============================================================================
+
+class IWindowSurfaceManager
+{
+public:
+	virtual ~IWindowSurfaceManager() { }
+
+	virtual IWindowSurface* getWindowSurface() = 0;
+
+	virtual const IWindowSurface* getWindowSurface() const = 0;
+
+	virtual void lockSurface() { }
+	virtual void unlockSurface() { }
+
+	virtual void startRefresh() { }
+	virtual void finishRefresh() { }
+};
+
+
+// ============================================================================
+//
+// IDummyWindowSurfaceManager interface & implementation
+//
+// Blank implementation of IWindowSurfaceManager
+//
+// ============================================================================
+
+class IDummyWindowSurfaceManager : public IWindowSurfaceManager
+{
+public:
+	IDummyWindowSurfaceManager()
+	{	mSurface = I_AllocateSurface(320, 200, 8);	}
+
+	virtual ~IDummyWindowSurfaceManager()
+	{	delete mSurface;	}
+
+	virtual IWindowSurface* getWindowSurface()
+	{	return mSurface;	}
+
+	virtual const IWindowSurface* getWindowSurface() const
+	{	return mSurface;	}
+
+	virtual void lockSurface()
+	{	mSurface->lock();	}
+
+	virtual void unlockSurface()
+	{	mSurface->unlock();	}
+
+	virtual void startRefresh() { }
+	virtual void finishRefresh() { }
+
+private:
+	IWindowSurface*		mSurface;
+};
+
 
 // ****************************************************************************
 

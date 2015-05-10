@@ -734,10 +734,12 @@ void ISDL12MouseInputDevice::gatherEvents()
 						ev.data1 = KEY_MOUSE2;
 					else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
 						ev.data1 = KEY_MOUSE3;
+					#if SDL_VERSION_ATLEAST(1, 2, 14)
 					else if (sdl_ev.button.button == SDL_BUTTON_X1)
 						ev.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
 					else if (sdl_ev.button.button == SDL_BUTTON_X2)
 						ev.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
+					#endif
 					else if (sdl_ev.button.button == SDL_BUTTON_WHEELUP)
 						ev.data1 = KEY_MWHEELUP;
 					else if (sdl_ev.button.button == SDL_BUTTON_WHEELDOWN)
