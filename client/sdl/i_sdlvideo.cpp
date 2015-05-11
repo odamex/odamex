@@ -1364,7 +1364,7 @@ void ISDL20Window::setPalette(const argb_t* palette_colors)
 // from an SDL_PixelFormatEnum value and uses it to initialize a PixelFormat
 // object.
 //
-static void I_BuildPixelFormatFromSDLPixelFormatEnum(uint32_t sdl_fmt, PixelFormat* format, uint8_t desired_bpp)
+static void I_BuildPixelFormatFromSDLPixelFormatEnum(uint32_t sdl_fmt, PixelFormat* format)
 {
 	uint32_t amask, rmask, gmask, bmask;
 	int bpp;
@@ -1383,8 +1383,8 @@ static void I_BuildPixelFormatFromSDLPixelFormatEnum(uint32_t sdl_fmt, PixelForm
 	for (uint32_t n = bmask >> bshift; (n & 1) == 1; n >>= 1, bloss--) { }
 
 	// handle SDL not reporting correct value for amask
-	uint8_t ashift = desired_bpp == 32 ?  48 - rshift - gshift - bshift : 0;
-	uint8_t aloss = desired_bpp == 32 ? 0 : 8;
+	uint8_t ashift = bpp == 32 ?  48 - rshift - gshift - bshift : 0;
+	uint8_t aloss = bpp == 32 ? 0 : 8;
 
 	// Create the PixelFormat specification
 	*format = PixelFormat(bpp, 8 - aloss, 8 - rloss, 8 - gloss, 8 - bloss, ashift, rshift, gshift, bshift);
@@ -1443,7 +1443,7 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 				video_width, video_height);
 
 	PixelFormat format;
-	I_BuildPixelFormatFromSDLPixelFormatEnum(SDL_GetWindowPixelFormat(mSDLWindow), &format, video_bpp);
+	I_BuildPixelFormatFromSDLPixelFormatEnum(SDL_GetWindowPixelFormat(mSDLWindow), &format);
 
 	// create a new IWindowSurface with its own frame buffer
 	delete mPrimarySurface;
@@ -1451,11 +1451,11 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 
 	mWidth = video_width; 
 	mHeight = video_height; 
-	mBitsPerPixel = mPrimarySurface->getBitsPerPixel(); 
+	mBitsPerPixel = format.getBitsPerPixel(); 
 	mIsFullScreen = SDL_GetWindowFlags(mSDLWindow) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
 	mUseVSync = vsync;
 
-	mVideoMode = IVideoMode(video_width, video_height, video_bpp, video_fullscreen);
+	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, mIsFullScreen);
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
