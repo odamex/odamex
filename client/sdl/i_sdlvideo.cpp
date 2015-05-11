@@ -856,6 +856,8 @@ ISDL12VideoSubsystem::~ISDL12VideoSubsystem()
 }
 #endif	// SDL12
 
+
+
 #ifdef SDL20
 // ============================================================================
 //
@@ -1356,25 +1358,36 @@ void ISDL20Window::setPalette(const argb_t* palette_colors)
 
 
 //
-// I_BuildPixelFormatFromSDLSurface
+// I_BuildPixelFormatFromSDLPixelFormatEnum
 //
 // Helper function that extracts information about the pixel format
-// from an SDL_Surface and uses it to initialize a PixelFormat object.
-// Note: the SDL_Surface should be locked prior to calling this.
+// from an SDL_PixelFormatEnum value and uses it to initialize a PixelFormat
+// object.
 //
-static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, PixelFormat* format, uint8_t desired_bpp)
+static void I_BuildPixelFormatFromSDLPixelFormatEnum(uint32_t sdl_fmt, PixelFormat* format, uint8_t desired_bpp)
 {
-	const SDL_PixelFormat* sdlformat = sdlsurface->format;
+	uint32_t amask, rmask, gmask, bmask;
+	int bpp;
+	SDL_PixelFormatEnumToMasks(sdl_fmt, &bpp, &rmask, &gmask, &bmask, &amask);
 
-	// handle SDL not reporting correct Ashift/Aloss
+	uint32_t rshift = 0, rloss = 8;
+	for (uint32_t n = rmask; (n & 1) == 0; n >>= 1, rshift++) { }
+	for (uint32_t n = rmask >> rshift; (n & 1) == 1; n >>= 1, rloss--) { }
+
+	uint32_t gshift = 0, gloss = 8;
+	for (uint32_t n = gmask; (n & 1) == 0; n >>= 1, gshift++) { }
+	for (uint32_t n = gmask >> gshift; (n & 1) == 1; n >>= 1, gloss--) { }
+
+	uint32_t bshift = 0, bloss = 8;
+	for (uint32_t n = bmask; (n & 1) == 0; n >>= 1, bshift++) { }
+	for (uint32_t n = bmask >> bshift; (n & 1) == 1; n >>= 1, bloss--) { }
+
+	// handle SDL not reporting correct value for amask
+	uint8_t ashift = desired_bpp == 32 ?  48 - rshift - gshift - bshift : 0;
 	uint8_t aloss = desired_bpp == 32 ? 0 : 8;
-	uint8_t ashift = desired_bpp == 32 ?  48 - sdlformat->Rshift - sdlformat->Gshift - sdlformat->Bshift : 0;
-	
+
 	// Create the PixelFormat specification
-	*format = PixelFormat(
-			desired_bpp,
-			8 - aloss, 8 - sdlformat->Rloss, 8 - sdlformat->Gloss, 8 - sdlformat->Bloss,
-			ashift, sdlformat->Rshift, sdlformat->Gshift, sdlformat->Bshift);
+	*format = PixelFormat(bpp, 8 - aloss, 8 - rloss, 8 - gloss, 8 - bloss, ashift, rshift, gshift, bshift);
 }
 
 
@@ -1430,7 +1443,7 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 				video_width, video_height);
 
 	PixelFormat format;
-	I_BuildPixelFormatFromSDLSurface(SDL_GetWindowSurface(mSDLWindow), &format, video_bpp);
+	I_BuildPixelFormatFromSDLPixelFormatEnum(SDL_GetWindowPixelFormat(mSDLWindow), &format, video_bpp);
 
 	// create a new IWindowSurface with its own frame buffer
 	delete mPrimarySurface;
