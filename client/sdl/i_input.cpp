@@ -660,10 +660,10 @@ void IInputSubsystem::gatherEvents()
 			device->getEvent(&ev);
 
 			// Check if the event needs to be added/removed from the list of repeatable events
-			if (mRepeating)
+			int key = I_GetEventRepeaterKey(&ev); 
+			if (key != 0)
 			{
-				int key = I_GetEventRepeaterKey(&ev); 
-				if (key && ev.type == ev_keydown)
+				if (mRepeating && ev.type == ev_keydown)
 				{
 					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
 					if (it != mEventRepeaters.end())
@@ -682,7 +682,7 @@ void IInputSubsystem::gatherEvents()
 						mEventRepeaters.insert(std::make_pair(key, repeater));
 					}
 				}
-				else if (key && ev.type == ev_keyup)
+				else if (ev.type == ev_keyup)		// remove events even if mRepeating == false
 				{
 					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
 					if (it != mEventRepeaters.end())
