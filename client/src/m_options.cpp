@@ -166,6 +166,7 @@ EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictpickup)
 EXTERN_CVAR (cl_predictsectors)
 EXTERN_CVAR (cl_predictweapons)
+EXTERN_CVAR (cl_serverdownload)
 
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
@@ -666,7 +667,7 @@ static value_t UpdateRate[] = {
 };
 
 static menuitem_t NetworkItems[] = {
-    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+    { redtext,		" ",							{NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },
 	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Bandwidth",					{&rate},			{4.0},		{0.0},		{0.0},		{BandwidthLevels} },
 	{ discrete,		"Position update freq",			{&cl_updaterate},	{3.0},		{0.0},		{0.0},		{UpdateRate} },
@@ -676,6 +677,8 @@ static menuitem_t NetworkItems[] = {
 	{ discrete,		"Predict weapon pickups",		{&cl_predictpickup},{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ discrete,		"Predict sectors",				{&cl_predictsectors},{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ discrete,		"Predict weapon effects",		{&cl_predictweapons},{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ redtext,		" ",							{NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },
+	{ discrete, 	"Download From Server", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} }
 };
 
 menu_t NetworkMenu = {
