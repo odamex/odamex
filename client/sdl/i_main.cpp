@@ -79,6 +79,8 @@
 #    pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
 #endif
 
+EXTERN_CVAR (r_centerwindow)
+
 DArgs Args;
 
 // functions to be called at shutdown are stored in this stack
@@ -137,10 +139,6 @@ int main(int argc, char *argv[])
         // [Russell] - No more double-tapping of capslock to enable autorun
         SDL_putenv((char*)"SDL_DISABLE_LOCK_KEYS=1");
 
-		// Set SDL video centering
-		SDL_putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
-		SDL_putenv((char*)"SDL_VIDEO_CENTERED=1");
-
 #if defined _WIN32 && !defined _XBOX
     	// From the SDL 1.2.10 release notes:
     	//
@@ -157,8 +155,15 @@ int main(int argc, char *argv[])
 		// to directx as defulat for now and the people will rejoice. --Hyper_Eye
      	if (Args.CheckParm ("-gdi"))
         	putenv((char*)"SDL_VIDEODRIVER=windib");
-    	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-directx") > 0)
+    	else
         	putenv((char*)"SDL_VIDEODRIVER=directx");
+
+		//
+		// Set SDL video centering
+		//
+		DPrintf("Setting window-centering envvars... \n");
+		SDL_putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
+		SDL_putenv((char*)"SDL_VIDEO_CENTERED=1");
 
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in
