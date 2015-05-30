@@ -1455,12 +1455,15 @@ static bool C_HandleKey(const event_t* ev)
 		CmdLine.deleteCharacter();
 		TabbedLast = false;
 		break;
+	case KEY_LALT:
 	case KEY_RALT:
 		// Do nothing
 		break;
 	case KEY_LCTRL:
+	case KEY_RCTRL:
 		KeysCtrl = true;
 		break;
+	case KEY_LSHIFT:
 	case KEY_RSHIFT:
 		// SHIFT was pressed
 		KeysShifted = true;
@@ -1510,18 +1513,18 @@ static bool C_HandleKey(const event_t* ev)
 
 			C_ToggleConsole();
 		}
-		else if (ev->data3 < 32 || ev->data3 > 126)
+		else if (KeysCtrl)		// handle key combinations
 		{
 			// Go to beginning of line
- 			if (KeysCtrl && (ev->data1 == 'a' || ev->data1 == 'A'))
+ 			if (tolower(ev->data3) == 'a')
 				CmdLine.moveCursorHome();
 
 			// Go to end of line
- 			if (KeysCtrl && (ev->data1 == 'e' || ev->data1 == 'E'))
+ 			if (tolower(ev->data3) == 'e')
 				CmdLine.moveCursorEnd();
 
 			// Paste from clipboard - add each character to command line
- 			if (KeysCtrl && (ev->data1 == 'v' || ev->data1 == 'V'))
+ 			if (tolower(ev->data3) == 'v')
 			{
 				CmdLine.insertString(I_GetClipboardText());
 				TabbedLast = false;
@@ -1556,8 +1559,10 @@ BOOL C_Responder(event_t *ev)
 			ScrollState = SCROLLNO;
 			break;
 		case KEY_LCTRL:
+		case KEY_RCTRL:
 			KeysCtrl = false;
 			break;
+		case KEY_LSHIFT:
 		case KEY_RSHIFT:
 			KeysShifted = false;
 			break;
