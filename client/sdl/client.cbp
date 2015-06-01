@@ -130,8 +130,8 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
-					<Add library="SDL.lib" />
-					<Add library="SDL_mixer.lib" />
+					<Add library="SDL2.lib" />
+					<Add library="SDL2_mixer.lib" />
 					<Add library="ws2_32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
@@ -215,8 +215,8 @@
 				<Linker>
 					<Add option="/DEBUG" />
 					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
-					<Add library="SDL.lib" />
-					<Add library="SDL_mixer.lib" />
+					<Add library="SDL2.lib" />
+					<Add library="SDL2_mixer.lib" />
 					<Add library="ws2_32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
@@ -345,8 +345,8 @@
 			<Add directory="../../libraries/libpng" />
 		</Compiler>
 		<Linker>
-			<Add library="SDL" />
-			<Add library="SDL_mixer" />
+			<Add library="SDL2" />
+			<Add library="SDL2_mixer" />
 			<Add directory="../../lib" />
 		</Linker>
 		<Unit filename="../../common/actor.h" />
