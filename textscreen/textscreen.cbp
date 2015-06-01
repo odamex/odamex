@@ -104,7 +104,7 @@
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="-O2" />
-					<Add directory="/usr/include/SDL" />
+					<Add directory="/usr/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -121,7 +121,7 @@
 				<Compiler>
 					<Add option="-W" />
 					<Add option="-gdwarf-2" />
-					<Add directory="/usr/include/SDL" />
+					<Add directory="/usr/include/SDL2" />
 				</Compiler>
 			</Target>
 		</Build>
