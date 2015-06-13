@@ -1561,13 +1561,14 @@
 				<border>5</border>
 				<object class="wxPanel">
 					<style>wxRAISED_BORDER|wxTAB_TRAVERSAL</style>
+					<size>375,450</size>
 					<object class="wxFlexGridSizer">
 						<rows>5</rows>
 						<cols>1</cols>
 						<vgap>0</vgap>
 						<hgap>0</hgap>
 						<growablecols>0</growablecols>
-						<growablerows>0,1,2,3</growablerows>
+						<growablerows>2,3</growablerows>
 						<object class="sizeritem">
 							<option>1</option>
 							<flag>wxEXPAND</flag>
