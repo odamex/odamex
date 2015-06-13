@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: str_utils.h 2302 2011-06-27 03:17:21Z hypereye $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
