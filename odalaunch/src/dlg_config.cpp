@@ -69,6 +69,8 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_CHECKBOX(XRCID("Id_ChkColorCustomServers"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkAutoRefresh"), dlgConfig::OnCheckedBox)
 
+	EVT_NOTEBOOK_PAGE_CHANGED(XRCID("Id_Notebook"), dlgConfig::OnNotebookPageChanged)
+
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnSpinValChange)
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnSpinValChange)
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlRetry"), dlgConfig::OnSpinValChange)
@@ -87,7 +89,8 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 END_EVENT_TABLE()
 
 // Window constructor
-dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id)
+dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id) :
+	m_Notebook(NULL)
 {
 	// Set up the dialog and its widgets
 	wxXmlResource::Get()->LoadDialog(this, parent, "dlgConfig");
@@ -149,6 +152,12 @@ void dlgConfig::Show()
 	LoadSettings();
 
 	UserChangedSetting = false;
+
+	// Queue notebook page changed event
+	m_Notebook = XRCCTRL(*this, "Id_Notebook", wxNotebook);
+	wxBookCtrlEvent* event = new wxBookCtrlEvent(wxEVT_NOTEBOOK_PAGE_CHANGED, m_Notebook->GetId());
+	event->SetSelection(m_Notebook->GetSelection());
+	QueueEvent(event);
 
 	ShowModal();
 }
@@ -413,6 +422,25 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
 	else
 		wxMessageBox("Environment variables contains paths that have been already imported.");
 
+}
+
+void dlgConfig::OnNotebookPageChanged(wxBookCtrlEvent& event)
+{
+	// This is a workaround for notebook layout issues on some platforms
+	if(NULL != m_Notebook)
+	{
+		wxWindowList pages = m_Notebook->GetChildren();
+
+		if(pages.size() > event.GetSelection())
+		{
+			wxPanel* page = dynamic_cast<wxPanel*>(pages[event.GetSelection()]);
+
+			if(NULL != page)
+			{
+				page->Layout();
+			}
+		}
+	}
 }
 
 // TODO: Design a cleaner system for loading/saving these settings

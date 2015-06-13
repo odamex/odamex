@@ -26,6 +26,7 @@
 
 #include <wx/event.h>
 #include <wx/utils.h>
+#include <wx/sizer.h>
 #include <wx/version.h>
 #include <wx/xrc/xmlres.h>
 
@@ -76,7 +77,6 @@ dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
 	                       wxSUBRELEASE_NUMBER);
 
 	m_StcTxtWxVer->SetLabel(wxWidgetsVersion);
-
 }
 
 // wxTextCtrl doesn't provide a handler for urls, so we use an almost

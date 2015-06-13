@@ -40,6 +40,7 @@
 #include <wx/spinctrl.h>
 #include <wx/statbmp.h>
 #include <wx/clrpicker.h>
+#include <wx/notebook.h>
 
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
@@ -81,6 +82,8 @@ protected:
 
 	void OnSpinValChange(wxSpinEvent& event);
 
+	void OnNotebookPageChanged(wxBookCtrlEvent& event);
+
 	wxCheckBox* m_ChkCtrlGetListOnStart;
 	wxCheckBox* m_ChkCtrlShowBlockedServers;
 	wxCheckBox* m_ChkCtrlEnableBroadcasts;
@@ -98,6 +101,8 @@ protected:
 	wxFilePickerCtrl* m_FilePickCtrlSoundFile;
 	wxColourPickerCtrl* m_ClrPickServerLineHighlighter;
 	wxColourPickerCtrl* m_ClrPickCustomServerHighlight;
+
+	wxNotebook* m_Notebook;
 
 	wxSpinCtrl* m_SpnCtrlMasterTimeout;
 	wxSpinCtrl* m_SpnCtrlServerTimeout;

@@ -524,18 +524,19 @@
 				<border>0</border>
 				<object class="wxPanel" name="m_panel9">
 					<style>wxTAB_TRAVERSAL</style>
+					<size>540,525</size>
 					<object class="wxFlexGridSizer">
-						<rows>5</rows>
+						<rows>2</rows>
 						<cols>1</cols>
 						<vgap>0</vgap>
 						<hgap>0</hgap>
-						<growablecols></growablecols>
-						<growablerows></growablerows>
+						<growablecols>0</growablecols>
+						<growablerows>0</growablerows>
 						<object class="sizeritem">
 							<option>1</option>
-							<flag>wxEXPAND | wxALL</flag>
+							<flag>wxALL|wxEXPAND</flag>
 							<border>5</border>
-							<object class="wxNotebook" name="m_notebook1">
+							<object class="wxNotebook" name="Id_Notebook">
 								<object class="notebookpage">
 									<label>User Interface</label>
 									<selected>1</selected>
@@ -593,7 +594,7 @@
 																	</object>
 																	<object class="sizeritem">
 																		<option>0</option>
-																		<flag>wxEXPAND</flag>
+																		<flag>wxALIGN_CENTER</flag>
 																		<border>5</border>
 																		<object class="wxSpinCtrl" name="Id_SpnRefreshInterval">
 																			<style>wxSP_ARROW_KEYS</style>
@@ -606,7 +607,7 @@
 															</object>
 															<object class="sizeritem">
 																<option>1</option>
-																<flag>wxALL</flag>
+																<flag>wxALL|wxEXPAND</flag>
 																<border>5</border>
 																<object class="wxStaticBoxSizer">
 																	<orient>wxVERTICAL</orient>
@@ -671,7 +672,7 @@
 													</object>
 													<object class="sizeritem">
 														<option>0</option>
-														<flag>wxALL</flag>
+														<flag>wxALL|wxEXPAND</flag>
 														<border>5</border>
 														<object class="wxStaticBoxSizer">
 															<orient>wxVERTICAL</orient>
@@ -1064,11 +1065,11 @@
 									<object class="wxPanel" name="m_panel13">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxBoxSizer">
-											<orient>wxVERTICAL</orient>
+											<orient>wxHORIZONTAL</orient>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag>wxALL</flag>
-												<border>5</border>
+												<flag></flag>
+												<border>0</border>
 												<object class="wxStaticBoxSizer">
 													<orient>wxVERTICAL</orient>
 													<label>Querying System</label>
@@ -1261,6 +1262,7 @@
 														<flag>wxALL|wxEXPAND</flag>
 														<border>0</border>
 														<object class="wxTextCtrl" name="Id_TxtCtrlExtraCmdLineArgs">
+															<style>wxTE_MULTILINE</style>
 															<tooltip>Extra arguments to pass to the Odamex client when it is run</tooltip>
 															<value></value>
 															<maxlength>0</maxlength>
@@ -1615,7 +1617,7 @@
 										</object>
 										<object class="sizeritem">
 											<option>1</option>
-											<flag>wxALIGN_CENTER|wxALL|wxEXPAND</flag>
+											<flag>wxALIGN_CENTER|wxALL</flag>
 											<border>5</border>
 											<object class="wxStaticText" name="Id_StcTxtVersion">
 												<style>wxALIGN_CENTRE|wxST_NO_AUTORESIZE</style>
@@ -1625,7 +1627,7 @@
 										</object>
 										<object class="sizeritem">
 											<option>1</option>
-											<flag>wxALIGN_CENTER|wxALL|wxEXPAND</flag>
+											<flag>wxALIGN_CENTER|wxEXPAND</flag>
 											<border>5</border>
 											<object class="wxHyperlinkCtrl" name="Id_HLCtrlWebsite">
 												<label>http://www.odamex.net</label>
