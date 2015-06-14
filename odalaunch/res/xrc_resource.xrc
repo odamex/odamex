@@ -873,7 +873,7 @@
 													</object>
 													<object class="sizeritem">
 														<option>0</option>
-														<flag>wxALL</flag>
+														<flag>wxALL|wxEXPAND</flag>
 														<border>5</border>
 														<object class="wxStaticBoxSizer">
 															<orient>wxVERTICAL</orient>
@@ -884,7 +884,7 @@
 																<border>5</border>
 																<object class="wxCheckBox" name="Id_ChkCtrlLoadChatOnStart">
 																	<tooltip>Runs the chat client and connects to the server when the launcher is loaded</tooltip>
-																	<label>Load when the launcher starts</label>
+																	<label>Load on application start</label>
 																	<checked>0</checked>
 																</object>
 															</object>
@@ -1307,154 +1307,177 @@
 		<object class="wxBoxSizer">
 			<orient>wxVERTICAL</orient>
 			<object class="sizeritem">
-				<option>0</option>
-				<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
-				<border>5</border>
-				<object class="wxBoxSizer">
-					<orient>wxHORIZONTAL</orient>
-					<object class="sizeritem">
-						<option>1</option>
-						<flag>wxALL|wxEXPAND|wxFIXED_MINSIZE</flag>
-						<border>5</border>
-						<object class="wxListBox" name="ID_SERVERLIST">
-							<content />
-						</object>
-					</object>
-					<object class="sizeritem">
-						<option>0</option>
-						<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL</flag>
-						<border>5</border>
-						<object class="wxBoxSizer">
-							<orient>wxVERTICAL</orient>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL</flag>
-								<border>5</border>
-								<object class="wxBitmapButton" name="ID_BTNADDSERVER">
-									<style>wxBU_AUTODRAW</style>
-									<bitmap stock_id="wxART_FILE_OPEN" stock_client="wxART_BUTTON">undefined.png</bitmap>
-									<default>0</default>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL</flag>
-								<border>5</border>
-								<object class="wxBitmapButton" name="ID_BTNREPLACESERVER">
-									<style>wxBU_AUTODRAW</style>
-									<bitmap stock_id="wxART_REDO" stock_client="wxART_BUTTON">undefined.png</bitmap>
-									<default>0</default>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL</flag>
-								<border>5</border>
-								<object class="wxBitmapButton" name="ID_BTNDELETESERVER">
-									<style>wxBU_AUTODRAW</style>
-									<bitmap stock_id="wxART_CROSS_MARK" stock_client="wxART_BUTTON">undefined.png</bitmap>
-									<default>0</default>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-								<border>5</border>
-								<object class="wxStaticLine" name="ID_STATICLINE1">
-									<style>wxLI_HORIZONTAL</style>
-									<size>10,-1</size>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL</flag>
-								<border>5</border>
-								<object class="wxBitmapButton" name="ID_MOVEUP">
-									<style>wxBU_AUTODRAW</style>
-									<bitmap stock_id="wxART_GO_UP" stock_client="wxART_BUTTON">undefined.png</bitmap>
-									<default>0</default>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL</flag>
-								<border>5</border>
-								<object class="wxBitmapButton" name="ID_MOVEDOWN">
-									<style>wxBU_AUTODRAW</style>
-									<bitmap stock_id="wxART_GO_DOWN" stock_client="wxART_BUTTON">undefined.png</bitmap>
-									<default>0</default>
-								</object>
-							</object>
-						</object>
-					</object>
-				</object>
-			</object>
-			<object class="sizeritem">
 				<option>1</option>
-				<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-				<border>5</border>
-				<object class="wxStaticBoxSizer">
-					<orient>wxVERTICAL</orient>
-					<label>Selected Server Details:</label>
-					<object class="sizeritem">
-						<option>0</option>
-						<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-						<border>5</border>
-						<object class="wxCheckBox" name="ID_CHKSUBSTITUTE">
-							<enabled>0</enabled>
-							<tooltip>Allows you to substitute a server from the master list for a custom server</tooltip>
-							<label>Custom server replaces this address</label>
-							<checked>0</checked>
-						</object>
-					</object>
-					<object class="sizeritem">
-						<option>0</option>
-						<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-						<border>5</border>
-						<object class="wxBoxSizer">
-							<orient>wxHORIZONTAL</orient>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-								<border>5</border>
-								<object class="wxStaticText" name="ID_STATICTEXT2">
-									<label>IP Address:Port</label>
-									<wrap>-1</wrap>
+				<flag>wxEXPAND | wxALL</flag>
+				<border>0</border>
+				<object class="wxPanel" name="m_panel14">
+					<style>wxTAB_TRAVERSAL</style>
+					<size>265,368</size>
+					<object class="wxBoxSizer">
+						<orient>wxVERTICAL</orient>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxBoxSizer">
+								<orient>wxHORIZONTAL</orient>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND|wxFIXED_MINSIZE</flag>
+									<border>5</border>
+									<object class="wxListBox" name="ID_SERVERLIST">
+										<content />
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxBoxSizer">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALL</flag>
+											<border>5</border>
+											<object class="wxBitmapButton" name="ID_BTNADDSERVER">
+												<style>wxBU_AUTODRAW</style>
+												<bitmap stock_id="wxART_FILE_OPEN" stock_client="wxART_BUTTON">undefined.png</bitmap>
+												<default>0</default>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALL</flag>
+											<border>5</border>
+											<object class="wxBitmapButton" name="ID_BTNREPLACESERVER">
+												<style>wxBU_AUTODRAW</style>
+												<bitmap stock_id="wxART_REDO" stock_client="wxART_BUTTON">undefined.png</bitmap>
+												<default>0</default>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALL</flag>
+											<border>5</border>
+											<object class="wxBitmapButton" name="ID_BTNDELETESERVER">
+												<style>wxBU_AUTODRAW</style>
+												<bitmap stock_id="wxART_CROSS_MARK" stock_client="wxART_BUTTON">undefined.png</bitmap>
+												<default>0</default>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<object class="wxStaticLine" name="ID_STATICLINE1">
+												<style>wxLI_HORIZONTAL</style>
+												<size>10,-1</size>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALL</flag>
+											<border>5</border>
+											<object class="wxBitmapButton" name="ID_MOVEUP">
+												<style>wxBU_AUTODRAW</style>
+												<bitmap stock_id="wxART_GO_UP" stock_client="wxART_BUTTON">undefined.png</bitmap>
+												<default>0</default>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALL</flag>
+											<border>5</border>
+											<object class="wxBitmapButton" name="ID_MOVEDOWN">
+												<style>wxBU_AUTODRAW</style>
+												<bitmap stock_id="wxART_GO_DOWN" stock_client="wxART_BUTTON">undefined.png</bitmap>
+												<default>0</default>
+											</object>
+										</object>
+									</object>
 								</object>
 							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-								<border>5</border>
-								<object class="wxTextCtrl" name="ID_TXTSUBIPPORT">
-									<size>130,20</size>
-									<enabled>0</enabled>
-									<tooltip>IP Address and port of server to replace</tooltip>
-									<value>0.0.0.0:0</value>
-									<maxlength>0</maxlength>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALL|wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>Selected Server Details:</label>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxEXPAND | wxALL</flag>
+									<border>0</border>
+									<object class="wxPanel" name="m_panel15">
+										<style>wxTAB_TRAVERSAL</style>
+										<object class="wxBoxSizer">
+											<orient>wxVERTICAL</orient>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+												<border>5</border>
+												<object class="wxCheckBox" name="ID_CHKSUBSTITUTE">
+													<enabled>0</enabled>
+													<tooltip>Allows you to substitute a server from the master list for a custom server</tooltip>
+													<label>Custom server replaces this address</label>
+													<checked>0</checked>
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
+												<border>5</border>
+												<object class="wxBoxSizer">
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<option>0</option>
+														<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+														<border>0</border>
+														<object class="wxStaticText" name="ID_STATICTEXT2">
+															<label>IP Address:Port</label>
+															<wrap>-1</wrap>
+														</object>
+													</object>
+													<object class="sizeritem">
+														<option>0</option>
+														<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
+														<border>0</border>
+														<object class="wxTextCtrl" name="ID_TXTSUBIPPORT">
+															<size>140,20</size>
+															<enabled>0</enabled>
+															<tooltip>IP Address and port of server to replace</tooltip>
+															<value>0.0.0.0:0</value>
+															<maxlength>0</maxlength>
+														</object>
+													</object>
+												</object>
+											</object>
+										</object>
+									</object>
 								</object>
 							</object>
 						</object>
-					</object>
-				</object>
-			</object>
-			<object class="sizeritem">
-				<option>0</option>
-				<flag>wxALL|wxEXPAND</flag>
-				<border>5</border>
-				<object class="wxStdDialogButtonSizer">
-					<object class="button">
-						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
-						<border>5</border>
-						<object class="wxButton" name="wxID_OK">
-							<label>&amp;OK</label>
-						</object>
-					</object>
-					<object class="button">
-						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
-						<border>5</border>
-						<object class="wxButton" name="wxID_CANCEL">
-							<label>&amp;Cancel</label>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALIGN_CENTER|wxALL</flag>
+							<border>5</border>
+							<object class="wxStdDialogButtonSizer">
+								<object class="button">
+									<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="wxID_OK">
+										<label>&amp;OK</label>
+									</object>
+								</object>
+								<object class="button">
+									<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="wxID_CANCEL">
+										<label>&amp;Cancel</label>
+									</object>
+								</object>
+							</object>
 						</object>
 					</object>
 				</object>
