@@ -43,10 +43,6 @@
 #include "xbox_main.h"
 #endif
 
-
-namespace odalpapi
-{
-
 #ifdef _WIN32
 #define AI_ALL 0x00000100
 #else
@@ -56,6 +52,9 @@ const int INVALID_SOCKET = -1;
 #endif
 
 using namespace std;
+
+namespace odalpapi
+{
 
 BufferedSocket::BufferedSocket() :  m_BadRead(false), m_BadWrite(false),
 	m_Socket(0), m_SendPing(0), m_ReceivePing(0)
@@ -165,7 +164,20 @@ void BufferedSocket::DestroySocket()
 
 void BufferedSocket::SetRemoteAddress(const string& Address, const uint16_t& Port)
 {
-#ifdef getaddrinfo
+#ifdef _XBOX
+	struct hostent *he;
+
+    if((he = gethostbyname((const char *)Address.c_str())) == NULL)
+    {
+		NET_ReportError(REPERR_NO_ARGS);
+        return;
+    }
+
+    m_RemoteAddress.sin_family = PF_INET;
+    m_RemoteAddress.sin_port = htons(Port);
+    m_RemoteAddress.sin_addr = *((struct in_addr *)he->h_addr);
+    memset(m_RemoteAddress.sin_zero, '\0', sizeof m_RemoteAddress.sin_zero);
+#else
 	addrinfo  hints;
 	addrinfo* result = NULL;
 
@@ -185,19 +197,6 @@ void BufferedSocket::SetRemoteAddress(const string& Address, const uint16_t& Por
 	memset(m_RemoteAddress.sin_zero, '\0', sizeof m_RemoteAddress.sin_zero);
 
 	freeaddrinfo(result);
-#else
-	struct hostent *he;
-
-    if((he = gethostbyname((const char *)Address.c_str())) == NULL)
-    {
-		NET_ReportError(REPERR_NO_ARGS);
-        return;
-    }
-
-    m_RemoteAddress.sin_family = PF_INET;
-    m_RemoteAddress.sin_port = htons(Port);
-    m_RemoteAddress.sin_addr = *((struct in_addr *)he->h_addr);
-    memset(m_RemoteAddress.sin_zero, '\0', sizeof m_RemoteAddress.sin_zero);
 #endif
 }
 
