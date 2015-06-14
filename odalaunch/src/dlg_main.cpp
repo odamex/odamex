@@ -757,6 +757,7 @@ void dlgMain::MonThrGetServerList()
 			// work, give it a job to do
 			if(serverNum < ServerCount)
 			{
+				OdaTH->Sleep(1);
 				MServer.GetServerAddress(serverNum, Address, Port);
 
 				OdaQT->Signal(&QServer[serverNum], Address, Port, serverNum,
