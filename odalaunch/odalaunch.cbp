@@ -291,6 +291,18 @@
 		<Unit filename="../odalpapi/net_utils.h">
 			<Option virtualFolder="odalpapi/" />
 		</Unit>
+		<Unit filename="../odalpapi/threads/abstract_mutex_factory.h">
+			<Option virtualFolder="odalpapi/" />
+		</Unit>
+		<Unit filename="../odalpapi/threads/mutex.h">
+			<Option virtualFolder="odalpapi/" />
+		</Unit>
+		<Unit filename="../odalpapi/threads/mutex_factory.cpp">
+			<Option virtualFolder="odalpapi/" />
+		</Unit>
+		<Unit filename="../odalpapi/threads/mutex_factory.h">
+			<Option virtualFolder="odalpapi/" />
+		</Unit>
 		<Unit filename="../odalpapi/typedefs.h">
 			<Option virtualFolder="odalpapi/" />
 		</Unit>
