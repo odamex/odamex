@@ -42,6 +42,7 @@
 #include "c_cvars.h"
 #include "i_system.h"
 #include "c_dispatch.h"
+#include "hu_stuff.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -92,6 +93,17 @@ void I_EnableKeyRepeat()
 void I_DisableKeyRepeat()
 {
 	input_subsystem->disableKeyRepeat();
+}
+
+
+//
+// I_CanRepeat
+//
+// Returns true if the input (joystick & keyboard) should have their buttons repeated.
+//
+static bool I_CanRepeat()
+{
+	return ConsoleState == c_down || HU_ChatMode() != CHAT_INACTIVE || menuactive;
 }
 
 
@@ -496,6 +508,10 @@ static void I_GetEvents()
 {
 	I_UpdateFocus();
 	I_UpdateGrab();
+	if (I_CanRepeat())
+		I_EnableKeyRepeat();
+	else
+		I_DisableKeyRepeat();
 
 	// Get all of the events from the keboard, mouse, and joystick
 	input_subsystem->gatherEvents();

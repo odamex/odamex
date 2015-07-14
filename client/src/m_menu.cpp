@@ -1984,7 +1984,6 @@ void M_StartControlPanel (void)
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
-	I_EnableKeyRepeat();
 }
 
 
@@ -2066,10 +2065,6 @@ void M_ClearMenus (void)
 	menuactive = false;
 	drawSkull = true;
 	M_DemoNoPlay = false;
-	if (gamestate != GS_FULLCONSOLE)
-	{
-		I_DisableKeyRepeat();
-	}
 }
 
 

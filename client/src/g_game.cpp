@@ -892,7 +892,6 @@ void G_Ticker (void)
 				S_Start();
 				SN_StopAllSequences();
 				R_ExitLevel();
-				I_EnableKeyRepeat();
 			}
 
 			gamestate = GS_FULLCONSOLE;

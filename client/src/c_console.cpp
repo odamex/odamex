@@ -1207,9 +1207,6 @@ void C_HideConsole()
 {
 	ConsoleState = c_up;
 	ConBottom = 0;
-	if (!menuactive)
-		I_DisableKeyRepeat();
-
 	CmdLine.clear();
 	History.resetPosition();
 }
@@ -1237,7 +1234,6 @@ void C_ToggleConsole()
 			ConsoleState = c_falling;
 
 		TabbedLast = false;
-		I_EnableKeyRepeat();
 	}
 	else
 	{
@@ -1247,7 +1243,6 @@ void C_ToggleConsole()
 			ConsoleState = c_rising;
 
 		C_FlushDisplay();
-		I_DisableKeyRepeat();
 	}
 
 	CmdLine.clear();
