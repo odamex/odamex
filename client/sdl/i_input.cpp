@@ -531,13 +531,6 @@ void I_StartTic (void)
 	I_GetEvents();
 }
 
-//
-// I_StartFrame
-//
-void I_StartFrame (void)
-{
-}
-
 
 
 // ============================================================================
