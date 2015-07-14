@@ -79,7 +79,7 @@ void I_FlushInput()
 //
 // Enables key repeat for text entry (console, menu system, and chat).
 //
-void I_EnableKeyRepeat()
+static void I_EnableKeyRepeat()
 {
 	input_subsystem->enableKeyRepeat();
 }
@@ -90,7 +90,7 @@ void I_EnableKeyRepeat()
 //
 // Disables key repeat for standard game control.
 //
-void I_DisableKeyRepeat()
+static void I_DisableKeyRepeat()
 {
 	input_subsystem->disableKeyRepeat();
 }

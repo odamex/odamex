@@ -47,9 +47,6 @@ std::string I_GetJoystickNameFromIndex (int index);
 bool I_OpenJoystick();
 void I_CloseJoystick();
 
-void I_EnableKeyRepeat();
-void I_DisableKeyRepeat();
-
 
 // ============================================================================
 //
