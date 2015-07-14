@@ -173,6 +173,8 @@ protected:
 	static const uint64_t	mRepeatInterval;
 
 private:
+	void addToEventRepeaters(event_t& ev);
+
 	// Data for key repeating
 	struct EventRepeater
 	{

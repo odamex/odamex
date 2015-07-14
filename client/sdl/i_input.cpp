@@ -651,6 +651,51 @@ static int I_GetEventRepeaterKey(const event_t* ev)
 
 
 //
+// IInputSubsystem::addToEventRepeaters
+//
+// NOTE: the caller should check if key-repeating is enabled.
+//
+void IInputSubsystem::addToEventRepeaters(event_t& ev)
+{
+	// Check if the event needs to be added/removed from the list of repeatable events
+	int key = I_GetEventRepeaterKey(&ev);
+	if (key == 0)
+		return;
+
+	if (ev.type == ev_keydown)
+	{
+		EventRepeaterTable::iterator it = mEventRepeaters.find(key);
+		if (it != mEventRepeaters.end())
+		{
+			// update existing repeater with this new event
+			EventRepeater& repeater = it->second;
+			memcpy(&repeater.event, &ev, sizeof(repeater.event));
+		}
+		else
+		{
+			// new repeatable event - add to mEventRepeaters
+			EventRepeater repeater;
+			memcpy(&repeater.event, &ev, sizeof(repeater.event));
+			repeater.last_time = I_GetTime();
+			repeater.repeating = false;		// start off waiting for mRepeatDelay before repeating
+			mEventRepeaters.insert(std::make_pair(key, repeater));
+		}
+	}
+	else if (ev.type == ev_keyup)
+	{
+		EventRepeaterTable::iterator it = mEventRepeaters.find(key);
+		if (it != mEventRepeaters.end())
+		{
+			// remove the repeatable event from mEventRepeaters
+			const EventRepeater& repeater = it->second;
+			if (repeater.event.data1 == ev.data1)
+				mEventRepeaters.erase(it);
+		}
+	}
+}
+
+
+//
 // IInputSubsystem::gatherEvents
 //
 void IInputSubsystem::gatherEvents()
@@ -668,41 +713,8 @@ void IInputSubsystem::gatherEvents()
 			event_t ev;
 			device->getEvent(&ev);
 
-			// Check if the event needs to be added/removed from the list of repeatable events
-			int key = I_GetEventRepeaterKey(&ev); 
-			if (key != 0)
-			{
-				if (mRepeating && ev.type == ev_keydown)
-				{
-					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
-					if (it != mEventRepeaters.end())
-					{
-						// update existing repeater with this new event
-						EventRepeater& repeater = it->second;
-						memcpy(&repeater.event, &ev, sizeof(repeater.event));
-					}
-					else
-					{
-						// new repeatable event - add to mEventRepeaters
-						EventRepeater repeater;
-						memcpy(&repeater.event, &ev, sizeof(repeater.event));
-						repeater.last_time = I_GetTime();
-						repeater.repeating = false;		// start off waiting for mRepeatDelay before repeating
-						mEventRepeaters.insert(std::make_pair(key, repeater));
-					}
-				}
-				else if (ev.type == ev_keyup)		// remove events even if mRepeating == false
-				{
-					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
-					if (it != mEventRepeaters.end())
-					{
-						// remove the repeatable event from mEventRepeaters
-						const EventRepeater& repeater = it->second;
-						if (repeater.event.data1 == ev.data1)
-							mEventRepeaters.erase(it);
-					}
-				}
-			}
+			if (mRepeating)
+				addToEventRepeaters(ev);
 
 			if (ev.type == ev_mouse)
 			{
