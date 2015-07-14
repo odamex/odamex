@@ -696,6 +696,34 @@ void IInputSubsystem::addToEventRepeaters(event_t& ev)
 
 
 //
+// IInputSubsystem::repeatEvents
+//
+// NOTE: the caller should check if key-repeating is enabled.
+//
+void IInputSubsystem::repeatEvents()
+{
+	for (EventRepeaterTable::iterator it = mEventRepeaters.begin(); it != mEventRepeaters.end(); ++it)
+	{
+		EventRepeater& repeater = it->second;
+		uint64_t current_time = I_GetTime();
+
+		if (!repeater.repeating && current_time - repeater.last_time >= mRepeatDelay)
+		{
+			repeater.last_time += mRepeatDelay;
+			repeater.repeating = true;
+		}
+
+		while (repeater.repeating && current_time - repeater.last_time >= mRepeatInterval)
+		{
+			// repeat the event by adding it  to the queue again
+			mEvents.push(repeater.event);
+			repeater.last_time += mRepeatInterval;
+		}
+	}
+}
+
+
+//
 // IInputSubsystem::gatherEvents
 //
 void IInputSubsystem::gatherEvents()
@@ -736,26 +764,7 @@ void IInputSubsystem::gatherEvents()
 
 	// Handle repeatable events
 	if (mRepeating)
-	{
-		for (EventRepeaterTable::iterator it = mEventRepeaters.begin(); it != mEventRepeaters.end(); ++it)
-		{
-			EventRepeater& repeater = it->second;
-			uint64_t current_time = I_GetTime();
-
-			if (!repeater.repeating && current_time - repeater.last_time >= mRepeatDelay)
-			{
-				repeater.last_time += mRepeatDelay;
-				repeater.repeating = true;
-			}
-
-			while (repeater.repeating && current_time - repeater.last_time >= mRepeatInterval)
-			{
-				// repeat the event by adding it  to the queue again
-				mEvents.push(repeater.event);
-				repeater.last_time += mRepeatInterval;
-			}
-		}
-	}
+		repeatEvents();
 }
 
 

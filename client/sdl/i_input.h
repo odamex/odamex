@@ -174,6 +174,7 @@ protected:
 
 private:
 	void addToEventRepeaters(event_t& ev);
+	void repeatEvents();
 
 	// Data for key repeating
 	struct EventRepeater
