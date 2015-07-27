@@ -734,15 +734,15 @@ void dlgMain::MonThrGetServerList()
 		for(size_t i = 0; i < thrvec_size; ++i)
 		{
 			QueryThread* OdaQT = threadVector[i];
-			QueryThreadStatus Status = OdaQT->GetStatus();
+			QueryThread::Status Status = OdaQT->GetStatus();
 
 			// Check if the user wants us to exit
 			if(OdaTH->TestDestroy())
 			{
 				return;
 			}
-			
-			if(Status == QueryThread_Running)
+
+			if(Status == QueryThread::Running)
 			{
 				// Give up some timeslice for this thread so worker thread slots
 				// become available
@@ -771,7 +771,9 @@ void dlgMain::MonThrGetServerList()
 	// Wait until all threads have finished before posting an event
 	for(size_t i = 0; i < thrvec_size; ++i)
 	{
-		while(threadVector[i]->GetStatus() == QueryThread_Running)
+		QueryThread* OdaQT = threadVector[i];
+
+		while(OdaQT->GetStatus() == QueryThread::Running)
 			OdaTH->Sleep(15);
 	}
 
