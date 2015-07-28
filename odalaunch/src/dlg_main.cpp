@@ -20,6 +20,7 @@
 //  AUTHOR: Russell Rice, John D Corrado
 //
 //-----------------------------------------------------------------------------
+#include <algorithm>
 #include <iostream>
 
 #include "dlg_main.h"
@@ -49,6 +50,10 @@
 #include <wx/sound.h>
 #include <wx/msgout.h>
 
+#include <wx/protocol/http.h>
+#include <wx/stream.h>
+#include <wx/sstream.h>
+
 #ifdef __WXMSW__
 #include <windows.h>
 #include <winsock.h>
@@ -70,6 +75,7 @@ extern int NUM_THREADS;
 static wxInt32 Id_MnuItmLaunch = XRCID("Id_MnuItmLaunch");
 static wxInt32 Id_MnuItmGetList = XRCID("Id_MnuItmGetList");
 static wxInt32 Id_MnuItmOpenChat = XRCID("Id_MnuItmOpenChat");
+static wxInt32 Id_MnuItmCheckVersion = XRCID("Id_MnuItmCheckVersion");
 
 // Timer id definitions
 #define TIMER_ID_REFRESH 1
@@ -104,6 +110,7 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 
 	EVT_MENU(wxID_PREFERENCES, dlgMain::OnOpenSettingsDialog)
 
+	EVT_MENU(Id_MnuItmCheckVersion, dlgMain::OnCheckVersion)
 	EVT_MENU(XRCID("Id_MnuItmVisitWebsite"), dlgMain::OnOpenWebsite)
 	EVT_MENU(XRCID("Id_MnuItmVisitForum"), dlgMain::OnOpenForum)
 	EVT_MENU(XRCID("Id_MnuItmVisitWiki"), dlgMain::OnOpenWiki)
@@ -136,7 +143,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
 	wxString Version;
 	wxIcon MainIcon;
-	bool GetListOnStart, LoadChatOnLS;
+	bool GetListOnStart, LoadChatOnLS, CheckForUpdates;
 
 	// Allows us to auto-refresh the list due to the client not being run
 	m_ClientIsRunning = false;
@@ -187,7 +194,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 	OdaGet = new frmOdaGet(this, -1, FirstDirectory);*/
 
-	//    InfoBar = new OdaInfoBar(this);
+    InfoBar = new OdaInfoBar(this);
 
 	QServer = NULL;
 
@@ -207,6 +214,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 		ConfigInfo.Read(LOADCHATONLS, &LoadChatOnLS,
 		                ODA_UILOADCHATCLIENTONLS);
 
+		ConfigInfo.Read(CHECKFORUPDATES, &CheckForUpdates,
+		                ODA_UIAUTOCHECKFORUPDATES);
+		                
 		ConfigInfo.Read(ARTENABLE, &m_UseRefreshTimer,
 		                ODA_UIARTENABLE);
 
@@ -255,6 +265,17 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 		wxPostEvent(this, event);
 	}
 
+	// Check for a new version
+    if(CheckForUpdates)
+	{
+        wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmCheckVersion);
+
+        // Tell command handler that this is an automatic check
+        event.SetClientData((void *)0x1);
+
+        wxPostEvent(this, event);
+	}
+
 	// Enable the auto refresh timer
 	if(m_UseRefreshTimer)
 	{
@@ -267,7 +288,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 dlgMain::~dlgMain()
 {
 	// Cleanup
-	//    delete InfoBar;
+	delete InfoBar;
 
 	delete[] QServer;
 
@@ -374,6 +395,43 @@ void dlgMain::OnShow(wxShowEvent& event)
 
 }
 
+void dlgMain::OnCheckVersion(wxCommandEvent &event)
+{
+    wxString SiteSrc, VerMsg;
+
+    GetWebsitePageSource(SiteSrc);
+    //GetVersionInfoFromWesbite(SiteSrc, VerStr);
+
+    if (SiteSrc.IsEmpty())
+    {
+        InfoBar->ShowMessage("Unable to check for updates");
+        return;
+    }
+
+    VerMsg = wxString::Format("New! Odamex version %s is available", SiteSrc);
+
+    // Remove version separators 
+    SiteSrc.erase(std::remove(SiteSrc.begin(), SiteSrc.end(), '.'), SiteSrc.end());
+
+    // Same or older version
+    if (wxAtoi(SiteSrc) <= VERSION)
+    {
+        // Automatic check?
+        if (event.GetClientData())
+            return;
+
+        // User generated event
+        VerMsg = "No new version available.";
+
+        InfoBar->ShowMessage(VerMsg);
+
+        return;
+    }
+
+    InfoBar->ShowMessage(VerMsg, XRCID("Id_MnuItmVisitWebsite"),
+        wxCommandEventHandler(dlgMain::OnOpenWebsite), "Visit Website");
+}
+
 // Master server setup
 static const wxCmdLineEntryDesc cmdLineDesc[] =
 {
@@ -434,6 +492,49 @@ void dlgMain::OnShowServerFilter(wxCommandEvent& event)
 	m_PnlServerFilter->Show(event.IsChecked());
 
 	Layout();
+}
+
+// Gets the Odamex websites page source for version number extraction,
+// This could have other uses, what those are? we do not know yet..
+void dlgMain::GetWebsitePageSource(wxString &SiteSrc)
+{
+    wxURL Http("http://odamex.net/api/app-version");
+    wxInputStream *inStream;
+
+    // Get the websites source
+    inStream = Http.GetInputStream();
+
+    if (inStream)
+    {
+        wxStringOutputStream out_stream(&SiteSrc);
+        inStream->Read(out_stream);
+    }
+}
+
+// Parses the Odamex websites page source to find the version number, here is
+// hoping that the sites layout doesn't change too much!
+void dlgMain::GetVersionInfoFromWebsite(const wxString &SiteSrc, wxString &ver)
+{  
+    wxString VerStr = "Latest version: ";
+    int Ch;
+    
+    // Extract version number from website source
+    size_t Pos = SiteSrc.find(VerStr);
+    
+    if (Pos == wxNOT_FOUND)
+        return;
+    
+    // Skip past the search string
+    Pos += VerStr.Length();
+    
+    // Find the end of the data we need
+    size_t EndPos = SiteSrc.find("<", Pos);
+    
+    if (EndPos == wxNOT_FOUND)
+        return;
+    
+    // Copy only the version number back out
+    ver = SiteSrc.Mid(Pos, EndPos - Pos);
 }
 
 // manually connect to a server
@@ -757,7 +858,7 @@ void dlgMain::MonThrGetServerList()
 			// work, give it a job to do
 			if(serverNum < ServerCount)
 			{
-				OdaTH->Sleep(1);
+				//OdaTH->Sleep(1);
 				MServer.GetServerAddress(serverNum, Address, Port);
 
 				OdaQT->Signal(&QServer[serverNum], Address, Port, serverNum,

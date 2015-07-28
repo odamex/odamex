@@ -60,6 +60,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	// Misc events
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlGetListOnStart"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlShowBlockedServers"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkCtrlCheckForUpdates"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlEnableBroadcasts"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlLoadChatOnStart"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkFlashTaskbar"), dlgConfig::OnCheckedBox)
@@ -97,6 +98,7 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id) :
 
 	m_ChkCtrlGetListOnStart = XRCCTRL(*this, "Id_ChkCtrlGetListOnStart", wxCheckBox);
 	m_ChkCtrlShowBlockedServers = XRCCTRL(*this, "Id_ChkCtrlShowBlockedServers", wxCheckBox);
+	m_ChkCtrlCheckForUpdates = XRCCTRL(*this, "Id_ChkCtrlCheckForUpdates", wxCheckBox);
 	m_ChkCtrlEnableBroadcasts = XRCCTRL(*this, "Id_ChkCtrlEnableBroadcasts", wxCheckBox);
 	m_ChkCtrlLoadChatOnLS = XRCCTRL(*this, "Id_ChkCtrlLoadChatOnStart", wxCheckBox);
 	m_ChkCtrlFlashTaskBar = XRCCTRL(*this, "Id_ChkFlashTaskbar", wxCheckBox);
@@ -454,7 +456,7 @@ void dlgConfig::LoadSettings()
 	ConfigInfo.SetExpandEnvVars(false);
 
 	bool UseBroadcast;
-	bool GetListOnStart, ShowBlockedServers, LoadChatOnLS;
+	bool GetListOnStart, ShowBlockedServers, LoadChatOnLS, CheckForUpdates;
 	bool FlashTaskBar, PlaySystemBell, PlaySoundFile, HighlightServers;
 	bool CustomServersHighlight;
 
@@ -469,6 +471,8 @@ void dlgConfig::LoadSettings()
 	ConfigInfo.Read(GETLISTONSTART, &GetListOnStart, ODA_UIGETLISTONSTART);
 	ConfigInfo.Read(SHOWBLOCKEDSERVERS, &ShowBlockedServers,
 	                ODA_UISHOWBLOCKEDSERVERS);
+    ConfigInfo.Read(CHECKFORUPDATES, &CheckForUpdates,
+	                ODA_UIAUTOCHECKFORUPDATES);
 	ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
 	ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory, OdaGetInstallDir());
 	ConfigInfo.Read(MASTERTIMEOUT, &MasterTimeout, ODA_QRYMASTERTIMEOUT);
@@ -496,6 +500,7 @@ void dlgConfig::LoadSettings()
 	m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
 	m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
 	m_ChkCtrlShowBlockedServers->SetValue(ShowBlockedServers);
+	m_ChkCtrlCheckForUpdates->SetValue(CheckForUpdates);
 	m_ChkCtrlLoadChatOnLS->SetValue(LoadChatOnLS);
 	m_ChkCtrlFlashTaskBar->SetValue(FlashTaskBar);
 	m_ChkCtrlPlaySystemBeep->SetValue(PlaySystemBell);
@@ -562,6 +567,7 @@ void dlgConfig::SaveSettings()
 	ConfigInfo.Write(EXTRACMDLINEARGS, m_TxtCtrlExtraCmdLineArgs->GetValue());
 	ConfigInfo.Write(GETLISTONSTART, m_ChkCtrlGetListOnStart->GetValue());
 	ConfigInfo.Write(SHOWBLOCKEDSERVERS, m_ChkCtrlShowBlockedServers->GetValue());
+    ConfigInfo.Write(CHECKFORUPDATES, m_ChkCtrlCheckForUpdates->GetValue());
 	ConfigInfo.Write(DELIMWADPATHS, DelimWadPaths);
 	ConfigInfo.Write(ODAMEX_DIRECTORY, m_DirCtrlChooseOdamexPath->GetPath());
 	ConfigInfo.Write(ICONPINGQGOOD, m_SpnCtrlPQGood->GetValue());

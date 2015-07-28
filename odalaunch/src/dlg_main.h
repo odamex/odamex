@@ -31,7 +31,7 @@
 #include "dlg_about.h"
 #include "dlg_config.h"
 #include "dlg_servers.h"
-//#include "ctrl_infobar.h"
+#include "ctrl_infobar.h"
 #include "frm_odaget.h"
 
 #include <wx/frame.h>
@@ -111,6 +111,8 @@ protected:
 	void OnServerListClick(wxListEvent& event);
 	void OnServerListDoubleClick(wxListEvent& event);
 
+	void OnCheckVersion(wxCommandEvent &event);
+
 	void OnShow(wxShowEvent& event);
 	void OnClose(wxCloseEvent& event);
 	void OnWindowCreate(wxWindowCreateEvent& event);
@@ -122,6 +124,9 @@ protected:
 
 	void DoGetList(bool IsARTRefresh = false);
 	void DoRefreshList(bool IsARTRefresh = false);
+
+    void GetWebsitePageSource(wxString &SiteSrc);
+    void GetVersionInfoFromWebsite(const wxString &SiteSrc, wxString &ver);
 
 	void LoadMasterServers();
 
@@ -155,7 +160,7 @@ protected:
 
 	bool m_ClientIsRunning;
 
-	//        OdaInfoBar *InfoBar;
+	OdaInfoBar *InfoBar;
 
 	wxInt32 TotalPlayers;
 	wxInt32 QueriedServers;
