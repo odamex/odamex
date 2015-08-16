@@ -337,6 +337,9 @@ void LstOdaServerList::AddServerToList(const Server& s,
 		ClearItemCells(index);
 
 		li.m_itemId = index;
+		
+        // Reset line text colour to control text colour
+        SetItemTextColour(li.GetId(), GetTextColour());
 	}
 
 	// Address column
@@ -357,8 +360,6 @@ void LstOdaServerList::AddServerToList(const Server& s,
         
         if (LineHighlight)
             SetItemTextColour(li.GetId(), Colour);
-        else
-            SetItemTextColour(li.GetId(), GetTextColour());
     }
 
 	// break here so atleast we have an ip address to go by
@@ -401,8 +402,6 @@ void LstOdaServerList::AddServerToList(const Server& s,
 
 		if(s.Info.Players.size())
 			SetItemTextColour(li.GetId(), Colour);
-		else
-			SetItemTextColour(li.GetId(), GetTextColour());
 	}
 
 	SetItem(li);
