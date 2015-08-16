@@ -548,10 +548,10 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 	wxString ped_hash;
 	wxString ped_result;
 	wxString ted_result;
-	wxString IPHost;
-	long Port;
+	std::string IPHost;
+	uint16_t Port;
 
-	const wxString HelpText = "Please enter an IP Address or Hostname. \n\nAn "
+	const wxString HelpText = "Please enter a Hostname or an IP address. \n\nAn "
 	                              "optional port number can exist for IPs or Hosts\n"
 	                              "by putting a : after the address.";
 
@@ -573,39 +573,29 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 
 		ted_result = ted.GetValue();
 
-		switch(IsAddressValid(ted_result, IPHost, Port))
+		// Remove any whitespace
+		ted_result.Trim(false);
+		ted_result.Trim(true);
+
+		switch(odalpapi::OdaAddrToComponents(wxstr_tostdstr(ted_result), IPHost, Port))
 		{
 		// Correct address
-		case _oda_iav_SUCCESS:
+		case 0:
 		{
 			good = true;
 		}
 		break;
 
 		// Empty string
-		case _oda_iav_emptystr:
+		case 1:
 		{
 			continue;
 		}
 
 		// Colon syntax bad
-		case _oda_iav_colerr:
+		case 2:
 		{
 			wxMessageBox("A number > 0 must exist after the :");
-			continue;
-		}
-
-		// Internal error
-		case _oda_iav_interr:
-		{
-			wxMessageBox("Regex compiler failure, please report this");
-			return;
-		}
-
-		// Unknown error (usually bad regex match)
-		case _oda_iav_FAILURE:
-		{
-			wxMessageBox("Invalid IP address/hostname format");
 			continue;
 		}
 		}
@@ -617,7 +607,7 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 
 	// Query the server and try to acquire its password hash
 	tmp_server.SetSocket(&Socket);
-	tmp_server.SetAddress(wxstr_tostdstr(IPHost), Port);
+	tmp_server.SetAddress(IPHost, Port);
 	tmp_server.Query(ServerTimeout);
 
 	if(tmp_server.GotResponse() == false)
@@ -1552,91 +1542,6 @@ wxInt32 dlgMain::GetSelectedServerArrayIndex()
 	i = FindServer(item.GetText());
 
 	return i;
-}
-
-// Checks whether an odamex-style address format is valid, also gives the
-// separated ip/hostname and port number back to the caller
-_oda_iav_err_t dlgMain::IsAddressValid(wxString Address, wxString& OutIPHost,
-                                       long& OutPort)
-{
-	wxInt32 Colon;
-	wxString RegEx;
-	wxRegEx ReValIP;
-	wxString IPHost;
-	long Port = 10666;
-
-	// Get rid of any whitespace on either side of the string
-	Address.Trim(false);
-	Address.Trim(true);
-
-	// Don't accept nothing
-	if(Address.IsEmpty() == true)
-	{
-		return _oda_iav_emptystr;
-	}
-
-	// Set the regular expression and load it in
-	RegEx = "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4]"
-	            "[0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9]"
-	            "[0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
-
-	ReValIP.Compile(RegEx);
-
-	if(ReValIP.IsValid() == false)
-	{
-		return _oda_iav_interr;
-	}
-
-	// Find the colon that separates the address and the port number
-	Colon = Address.Find(':', true);
-
-	if(Colon != wxNOT_FOUND)
-	{
-		wxString PortStr;
-		bool IsGood;
-
-		// Try to convert the substring after the : to a port number
-		PortStr = Address.Mid(Colon + 1);
-
-		IsGood = PortStr.ToLong(&Port);
-
-		// Check if there is something after the colon and if its actually a
-		// numeric value
-		if((Colon + 1 >= Address.Len()) || (IsGood == false) || (Port <= 0))
-		{
-			return _oda_iav_colerr;
-		}
-
-	}
-
-	// Finally get the address portion from the main string
-	IPHost = Address.Mid(0, Colon);
-
-	// Finally do the comparison
-	if(ReValIP.Matches(IPHost) == true)
-	{
-		OutIPHost = IPHost;
-		OutPort = Port;
-
-		return _oda_iav_SUCCESS;
-	}
-	else
-	{
-		struct hostent* he;
-
-		// Check to see if its a hostname rather than an IP address
-		he = gethostbyname((const char*)IPHost.char_str());
-
-		if(he != NULL)
-		{
-			OutIPHost = IPHost;
-			OutPort = Port;
-
-			return _oda_iav_SUCCESS;
-		}
-		else
-			return _oda_iav_FAILURE;
-	}
 }
 
 // About information
