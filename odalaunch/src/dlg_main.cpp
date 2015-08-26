@@ -28,6 +28,7 @@
 #include "plat_utils.h"
 #include "str_utils.h"
 #include "oda_defs.h"
+#include "net_utils.h"
 
 #include "md5.h"
 

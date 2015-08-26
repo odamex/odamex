@@ -31,6 +31,7 @@
 
 #include "dlg_servers.h"
 #include "str_utils.h"
+#include "net_utils.h"
 
 using namespace odalpapi;
 
