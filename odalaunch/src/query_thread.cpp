@@ -81,7 +81,7 @@ void QueryThread::Signal(odalpapi::Server* QueryServer, const std::string& Addre
 {
 	// Allow threads to acquire a wait state
 	while(GetStatus() != QueryThread::Waiting)
-		::Sleep(5);
+		wxThread::Sleep(5);
 
 	m_QueryServer = QueryServer;
 	m_ServerIndex = ServerIndex;
