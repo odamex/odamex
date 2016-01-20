@@ -466,7 +466,7 @@ FlatTextureLoader::FlatTextureLoader(ResourceManager* manager, const ResourceId 
 //
 int16_t FlatTextureLoader::getWidth() const
 {
-	uint32_t lump_length = mResourceManager->getLumpLength(mResId);
+	uint32_t lump_length = mResourceManager->getResourceSize(mResId);
 	if (lump_length > 0)
 	{
 		if (lump_length == 64 * 64)
@@ -557,7 +557,7 @@ PatchTextureLoader::PatchTextureLoader(ResourceManager* manager, const ResourceI
 //
 bool PatchTextureLoader::validate() const
 {
-	uint32_t lump_length = mResourceManager->getLumpLength(mResId);
+	uint32_t lump_length = mResourceManager->getResourceSize(mResId);
 	if (lump_length > 8)
 	{
 		byte* lump_data = (byte*)mResourceManager->getData(mResId, PU_CACHE);
@@ -591,7 +591,7 @@ bool PatchTextureLoader::validate() const
 uint32_t PatchTextureLoader::size() const
 {
 	#if CLIENT_APP
-	uint32_t lump_length = mResourceManager->getLumpLength(mResId);
+	uint32_t lump_length = mResourceManager->getResourceSize(mResId);
 	if (lump_length >= 4)
 	{
 		byte* lump_data = (byte*)mResourceManager->getData(mResId, PU_CACHE);
@@ -613,7 +613,7 @@ const Texture* PatchTextureLoader::load() const
 {
 	if (mResourceManager->validateResourceId(mResId))
 	{
-		uint32_t lump_length = mResourceManager->getLumpLength(mResId);
+		uint32_t lump_length = mResourceManager->getResourceSize(mResId);
 		if (lump_length >= 8)
 		{
 			byte* lump_data = (byte*)mResourceManager->getData(mResId, PU_CACHE);
@@ -709,7 +709,7 @@ const Texture* CompositeTextureLoader::load() const
 			Res_DrawPatchIntoTexture(
 					texture,
 					lump_data,
-					mResourceManager->getLumpLength(res_id),
+					mResourceManager->getResourceSize(res_id),
 					mTextureDef.mPatches[i].mOriginX,
 					mTextureDef.mPatches[i].mOriginY);
 		}
@@ -739,7 +739,7 @@ RawTextureLoader::RawTextureLoader(ResourceManager* manager, const ResourceId re
 bool RawTextureLoader::validate() const
 {
 	const int32_t width = 320, height = 200;
-	uint32_t lump_length = mResourceManager->getLumpLength(mResId);
+	uint32_t lump_length = mResourceManager->getResourceSize(mResId);
 	return lump_length == width * height;
 }
 
@@ -767,7 +767,7 @@ const Texture* RawTextureLoader::load() const
 	if (mResourceManager->validateResourceId(mResId))
 	{
 		const int32_t width = 320, height = 200;
-		uint32_t lump_length = mResourceManager->getLumpLength(mResId);
+		uint32_t lump_length = mResourceManager->getResourceSize(mResId);
 		if (lump_length == width * height)
 		{
 			Texture* texture = Texture::createTexture(width, height);
@@ -870,9 +870,9 @@ const Texture* PngTextureLoader::load() const
 	if (mResourceManager->validateResourceId(mResId))
 	{
 		const char* lump_name = OString(mResourceManager->getResourcePath(mResId)).c_str();
-		uint32_t lump_length = mResourceManager->getLumpLength(mResId);
+		uint32_t lump_length = mResourceManager->getResourceSize(mResId);
 		byte* lump_data = new byte[lump_length];
-		mResourceManager->readLump(mResId, lump_data);
+		mResourceManager->loadResource(mResId, lump_data);
 
 		png_struct* png_ptr = NULL;
 		png_info* info_ptr = NULL;
@@ -1212,15 +1212,15 @@ void TextureManager::readAnimatedLump()
 {
 	/*
 	const ResourceId res_id = Res_GetResourceId("ANIMATED");
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		return;
 
-	uint32_t lumplen = Res_GetLumpLength(res_id);
+	uint32_t lumplen = Res_GetResourceSize(res_id);
 	if (lumplen == 0)
 		return;
 
 	byte* lumpdata = new byte[lumplen];
-	Res_ReadLump(res_id, lumpdata);
+	Res_LoadResource(res_id, lumpdata);
 
 	for (byte* ptr = lumpdata; *ptr != 255; ptr += 23)
 	{
@@ -1333,15 +1333,15 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 	// Read the PNAMES lump and store the ResourceId of each patch
 	// listed in the lump in the pnames_lookup array.
 	const ResourceId pnames_res_id = Res_GetResourceId("PNAMES");
-	if (!Res_CheckLump(pnames_res_id))
+	if (!Res_CheckResource(pnames_res_id))
 		I_Error("Res_InitTextures: PNAMES lump not found");
 
-	uint32_t pnames_lump_length = Res_GetLumpLength(pnames_res_id);
+	uint32_t pnames_lump_length = Res_GetResourceSize(pnames_res_id);
 	if (pnames_lump_length < 4)			// not long enough to store pnames_count
 		I_Error("Res_InitTextures: invalid PNAMES lump");
 
 	byte* pnames_lump_data = new byte[pnames_lump_length];
-	Res_ReadLump(pnames_res_id, pnames_lump_data);
+	Res_LoadResource(pnames_res_id, pnames_lump_data);
 
 	int32_t pnames_count = LELONG(*((int32_t*)(pnames_lump_data + 0)));
 	if ((uint32_t)pnames_count * 8 + 4 != pnames_lump_length)
@@ -1362,7 +1362,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 		// appear first in a wad. This is a kludgy solution to the wad
 		// lump namespace problem.
 
-		if (!Res_CheckLump(pnames_lookup[i]))
+		if (!Res_CheckResource(pnames_lookup[i]))
 			pnames_lookup[i] = Res_GetResourceId(lump_name, sprites_directory_name);
 	}
 
@@ -1377,7 +1377,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 	for (uint32_t i = 0; texture_definition_lump_names[i][0] != '\0'; i++)
 	{
 		const ResourceId res_id = Res_GetResourceId(texture_definition_lump_names[i]);
-		if (!Res_CheckLump(res_id))
+		if (!Res_CheckResource(res_id))
 		{
 			if (i == 0)
 				I_Error("Res_InitTextures: TEXTURE1 lump not found");
@@ -1385,12 +1385,12 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 				continue;		// skip this lump and go onto the next
 		}
 
-		uint32_t lump_length = Res_GetLumpLength(res_id);
+		uint32_t lump_length = Res_GetResourceSize(res_id);
 		if (lump_length < 4)		// not long enough to store definition_count
 			continue;
 
 		byte* lump_data = new byte[lump_length];
-		Res_ReadLump(res_id, lump_data);
+		Res_LoadResource(res_id, lump_data);
 
 		int32_t definition_count = LELONG(*((int32_t*)(lump_data + 0)));
 		for (int32_t i = 0; i < definition_count; i++)
@@ -1443,11 +1443,12 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 			mTextures.push_back(NULL);
 
 			// Create a new TextureLoader and add it to the list
-			const LumpId lump_id = mTextureLoaders.size();
 			TextureLoader* loader = new CompositeTextureLoader(manager, texture_def);
 			mTextureLoaders.push_back(loader);
 			const ResourcePath path(textures_directory_name + name);
-			manager->addResource(path, this, lump_id); 
+
+			// TODO: save this ResourceId somewhere
+			const ResourceId res_id = manager->addResource(path, this); 
 		}
 
 		delete [] lump_data;
@@ -1470,7 +1471,7 @@ void TextureManager::registerTextureResources(ResourceManager* manager)
 	for (std::vector<ResourceId>::const_iterator it = res_id_list.begin(); it != res_id_list.end(); ++it)
 	{
 		const ResourceId res_id = *it;
-		assert(Res_CheckLump(res_id));
+		assert(Res_CheckResource(res_id));
 
 		const ResourcePath& path = Res_GetResourcePath(res_id);
 		const ResourcePath& directory(path.first());
@@ -1484,10 +1485,9 @@ void TextureManager::registerTextureResources(ResourceManager* manager)
 		if (loader)
 		{
 			mTextures.push_back(NULL);
-
-			const LumpId lump_id = mTextureLoaders.size();
 			mTextureLoaders.push_back(loader);
-			manager->addResource(path, this, lump_id); 
+			// TODO: save this ResourceId somewhere
+			const ResourceId res_id = manager->addResource(path, this); 
 		}
 	}
 }

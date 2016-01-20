@@ -263,7 +263,7 @@ int S_FindSound (const char *logicalname)
 
 int S_FindSoundByResourceId(const ResourceId res_id)
 {
-	if (Res_CheckLump(res_id))
+	if (Res_CheckResource(res_id))
 	{
 		for (int i = 0; i < numsfx; i++)
 			if (S_sfx[i].res_id == res_id)
@@ -327,7 +327,7 @@ void S_ParseSndInfo()
 	const ResourceIdList res_ids = Res_GetAllResourceIds("SNDINFO");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		sndinfo = (char*)Res_CacheLump(res_ids[i], PU_CACHE);
+		sndinfo = (char*)Res_CacheResource(res_ids[i], PU_CACHE);
 
 		while ( (data = COM_Parse(sndinfo)) )
 		{

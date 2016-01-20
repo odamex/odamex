@@ -34,6 +34,7 @@
 #include "res_fileaccessor.h"
 #include "res_container.h"
 #include "res_texture.h"
+#include "res_cache.h"
 
 #include "m_ostring.h"
 #include "hashtable.h"
@@ -174,17 +175,12 @@ bool Res_IsDehackedFile(const OString& filename)
 // DefaultResourceLoader class implementation
 // ----------------------------------------------------------------------------
 
-DefaultResourceLoader::DefaultResourceLoader()
-{ }
-
-
-//
-// DefaultResourceLoader::validate
-//
-bool DefaultResourceLoader::validate(const ResourceContainer* container, const LumpId lump_id) const
+DefaultResourceLoader::DefaultResourceLoader(const ResourceContainer* container, const ResourceId res_id) :
+	mContainer(container),
+	mResourceId(res_id)
 {
-	assert(container != NULL);
-	return true;
+	assert(mContainer != NULL);
+	assert(mResourceId != ResourceManager::RESOURCE_NOT_FOUND);
 }
 
 
@@ -193,32 +189,18 @@ bool DefaultResourceLoader::validate(const ResourceContainer* container, const L
 //
 // Returns the size of the raw resource lump
 //
-uint32_t DefaultResourceLoader::size(const ResourceContainer* container, const LumpId lump_id) const
+uint32_t DefaultResourceLoader::size() const
 {
-	assert(container != NULL);
-	return container->getLumpLength(lump_id);
+	return mContainer->getResourceSize(mResourceId);
 }
 
 
 //
 // DefaultResourceLoader::load
 //
-void* DefaultResourceLoader::load(const ResourceContainer* container, const LumpId lump_id) const
+void DefaultResourceLoader::load(void* data) const
 {
-	assert(container != NULL);
-	const uint32_t lump_length = container->getLumpLength(lump_id);
-
-	void* data = ResourceManager::allocateCacheMemory(lump_length, PU_STATIC);
-	if (data != NULL)
-	{
-		if (container->readLump(lump_id, data, lump_length) != lump_length)
-		{
-			ResourceManager::freeCacheMemory(data);
-			data = NULL;
-		}
-	}
-
-	return data;
+	uint32_t size_read = mContainer->loadResource(mResourceId, data, size());
 }
 
 
@@ -232,17 +214,13 @@ void* DefaultResourceLoader::load(const ResourceContainer* container, const Lump
 // ResourceManager::ResourceManager
 //
 // Set up the resource lookup tables.
-// Since the resource data caching scheme relies on the address of mResources's
-// internal storage container not changing, we must make sure that it can not
-// be resized. Thus we initialize mResources to be the largest size possible
-// for that container.
 //
-static const uint32_t initial_lump_count = 4096;
+static uint32_t default_initial_resource_count = 2048;
 
 ResourceManager::ResourceManager() :
-	mResources(ResourceManager::MAX_RESOURCES),
+	mCache(NULL),
 	mTextureManagerContainerId(static_cast<ResourceContainerId>(-1)),
-	mResourceIdLookup(2 * initial_lump_count)
+	mResourceIdLookup(default_initial_resource_count)
 { }
 
 
@@ -251,81 +229,19 @@ ResourceManager::ResourceManager() :
 //
 ResourceManager::~ResourceManager()
 {
-	closeAllResourceFiles();
+	delete mCache;
+	mCache = NULL;
+	closeAllResourceContainers();
 }
 
 
 //
-// ResourceManager::allocateCacheMemory
-//
-// Allocates memory for the resource cache. The source of the memory is
-// determined at compile time. No assumptions should be made about the
-// pointer returned by this function! The caller is responsible for freeing
-// the memory with the freeCacheMemory function.
-//
-void* ResourceManager::allocateCacheMemory(size_t size, int tag)
-{
-	// From the C99 Standard:
-	// If the size of the space requested is zero, the behavior is implementation-
-	// deﬁned: either a null pointer is returned, or the behavior is as if the
-	// size were some nonzero value, except that the returned pointer shall not be
-	// used to access an object.
-	//
-	// [SL] return NULL for zero-sized allocations because it is easy to find when
-	// the returned pointer is "used to access an object".
-	if (size == 0)
-		return NULL;
-
-	// [RH] Allocate one byte more than necessary for the
-	//		lump and set the extra byte to zero so that
-	//		various text parsing routines can just call
-	//		Res_CacheLump() and not choke.
-	
-	// TODO: [SL] 2015-04-22 This hack should be removed when the text parsing
-	// routines are fixed.
-
-	size += 1;
-
-#ifdef RESOURCE_CACHE_ON_HEAP
-	// Ignore tag
-	unsigned char* data = new unsigned char[size];
-#else
-	unsigned char* data = (unsigned char*)Z_Malloc(size, PU_STATIC, NULL);
-#endif
-
-	data[size - 1] = 0;
-	return (void*)data;
-}
-
-
-//
-// ResourceManager::freeCacheMemory
-//
-// Frees the resource cache memory allocated with allocateCacheMemory.
-//
-void ResourceManager::freeCacheMemory(void* data)
-{
-	if (data != NULL)
-	{
-#ifdef RESOURCE_CACHE_ON_HEAP
-		delete [] (unsigned char*)data;
-#else
-		Z_Free(data);
-#endif
-	}
-}
-
-
-//
-// ResourceManager::openResourceFile
+// ResourceManager::openResourceContainer
 //
 // Opens a resource file and caches the directory of lump names for queries.
 // 
-void ResourceManager::openResourceFile(const OString& filename)
+void ResourceManager::openResourceContainer(const OString& filename)
 {
-	if (mContainers.size() >= ResourceManager::MAX_RESOURCE_CONTAINERS)
-		return;
-
 	if (!M_FileExists(filename))
 		return;
 
@@ -340,7 +256,7 @@ void ResourceManager::openResourceFile(const OString& filename)
 		container = new SingleLumpResourceContainer(file, container_id, this);
 
 	// check that the resource container has valid lumps
-	if (container && container->getLumpCount() == 0)
+	if (container && container->getResourceCount() == 0)
 	{
 		delete container;
 		container = NULL;
@@ -359,34 +275,37 @@ void ResourceManager::openResourceFile(const OString& filename)
 
 
 //
-// ResourceManager::openResourceFiles
+// ResourceManager::openResourceContainers
 //
 // Opens a set of resource files and creates a directory of resource path names
 // for queries.
 // 
-void ResourceManager::openResourceFiles(const std::vector<std::string>& filenames)
+void ResourceManager::openResourceContainers(const std::vector<std::string>& filenames)
 {
 	
 	for (std::vector<std::string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it)
-		openResourceFile(*it);
+		openResourceContainer(*it);
 	
 	// Add TextureManager to the list of resource containers
 	mTextureManagerContainerId = mContainers.size();
 	ResourceContainer* texture_manager_container = new TextureManager(mTextureManagerContainerId, this);
 	mContainers.push_back(texture_manager_container);
+
+	// TODO: Is this the best place to initialize the ResourceCache instance?
+	mCache = new ResourceCache(mResources.size());
 }
 
 
 //
-// ResourceManager::closeAllResourceFiles
+// ResourceManager::closeAllResourceContainers
 //
 // Closes all open resource files. This should be called prior to switching
 // to a new set of resource files.
 //
-void ResourceManager::closeAllResourceFiles()
+void ResourceManager::closeAllResourceContainers()
 {
 	for (ResourceRecordTable::iterator it = mResources.begin(); it != mResources.end(); ++it)
-		releaseData(mResources.getId(*it));
+		releaseData(getResourceId(&(*it)));
 	mResources.clear();
 
 	for (std::vector<ResourceContainer*>::iterator it = mContainers.begin(); it != mContainers.end(); ++it)
@@ -409,40 +328,33 @@ void ResourceManager::closeAllResourceFiles()
 //
 const ResourceId ResourceManager::addResource(
 		const ResourcePath& path,
-		const ResourceContainer* container,
-		const LumpId lump_id)
+		const ResourceContainer* container)
 {
-	const ResourceContainerId& container_id = container->getResourceContainerId();
-	const ResourceId res_id = mResources.insert();
-	ResourceRecord& res_rec = mResources.get(res_id);
-	res_rec.mPath = path;
-	res_rec.mResourceContainerId = container_id;
-	res_rec.mLumpId = lump_id;
-	res_rec.mCachedData = NULL;
+	mResources.push_back(ResourceRecord());
+	ResourceRecord& res_rec = mResources.back();
+	const ResourceId res_id = getResourceId(&res_rec);
 
-	static DefaultResourceLoader default_resource_loader;
-	res_rec.mResourceLoader = &default_resource_loader;
+	res_rec.mPath = path;
+	res_rec.mResourceContainerId = container->getResourceContainerId();
+	res_rec.mResourceLoader = new DefaultResourceLoader(container, res_id);
+	// TODO: delete mResourceLoader at some point
 
 	// Add the ResourceId to the ResourceIdLookupTable
 	// ResourceIdLookupTable uses a ResourcePath key and value that is a std::vector
 	// of ResourceIds.
 	ResourceIdLookupTable::iterator it = mResourceIdLookup.find(path);
-	if (it != mResourceIdLookup.end())
-	{
-		// A resource with the same path already exists. Add this ResourceId
-		// to the end of the list of ResourceIds with a matching path.
-		ResourceIdList& res_id_list = it->second;
-		assert(!res_id_list.empty());
-		res_id_list.push_back(res_id);
-	}
-	else
+	if (it == mResourceIdLookup.end())
 	{
 		// No other resources with the same path exist yet. Create a new list
 		// for ResourceIds with a matching path.
-		ResourceIdList res_id_list;
-		res_id_list.push_back(res_id);
-		mResourceIdLookup.insert(std::make_pair(path, res_id_list));
+		std::pair<ResourceIdLookupTable::iterator, bool> result = mResourceIdLookup.insert(std::make_pair(path, ResourceIdList()));
+		it = result.first;
 	}
+
+	ResourceIdList& res_id_list = it->second;
+	res_id_list.push_back(res_id);
+
+	assert(getResourceId(path) == res_id);
 	
 	return res_id;
 }
@@ -496,80 +408,9 @@ const ResourceIdList ResourceManager::getAllResourceIds(const ResourcePath& path
 const ResourceIdList ResourceManager::getAllResourceIds() const
 {
 	ResourceIdList res_id_list;
-
-	for (ResourceRecordTable::const_iterator it = mResources.begin(); it != mResources.end(); ++it)
-	{
-		const ResourceId res_id = mResources.getId(*it);
+	for (ResourceId res_id = 0; res_id < mResources.size(); res_id++)
 		res_id_list.push_back(res_id);
-	}
-	
 	return res_id_list;
-}
-
-
-//
-// getTextureHelper
-//
-// Helper function for getTextureResourceId. This will check if the lump name
-// in path is in any directory in a prioritized list.
-//
-static const ResourceId getTextureHelper(const ResourcePath& path, const std::vector<ResourcePath>& priorities)
-{
-	// Couldn't find a match for the lump's name in the directory specified.
-	// Try other directories. 
-	const std::string path_string = OString(path);
-	size_t first_separator = path_string.find_first_of('/');
-	if (first_separator != std::string::npos && first_separator + 1 < path_string.length())
-	{
-		const ResourcePath lump_path(path_string.substr(first_separator + 1));
-
-		for (std::vector<ResourcePath>::const_iterator it = priorities.begin(); it != priorities.end(); ++it)
-		{
-			const ResourcePath& directory = *it;
-			const ResourceId res_id = Res_GetResourceId(directory + lump_path);
-			if (res_id != ResourceManager::RESOURCE_NOT_FOUND)
-				return res_id;
-		}
-	}
-
-	return ResourceManager::RESOURCE_NOT_FOUND; 
-}
-
-
-//
-// ResourceManager::getTextureResourceId
-//
-// Retrieves the ResourceId for the given texture path. If an exact match
-// for the path is not found, other texture directories will be searched for
-// a lump with the same name.
-//
-const ResourceId ResourceManager::getTextureResourceId(const ResourcePath& path) const
-{
-	const OString& directory = path.first();
-	const OString& lump_name = path.last();
-
-	// In vanilla Doom, sidedef texture names starting with '-' indicate there
-	// should be no texture used. However, ZDoom only ignores sidedef textures
-	// whose entire name is "-", allowing "-NOFLAT-", etc. We are adopting the
-	// ZDoom mechanism here until it proves to be a problem.
-	if (lump_name.compare("-") == 0 && directory == textures_directory_name)
-		return ResourceManager::RESOURCE_NOT_FOUND;
-
-	const ResourceId res_id = getResourceId(path);
-	if (res_id != ResourceManager::RESOURCE_NOT_FOUND)
-		return res_id;
-
-	static std::vector<ResourcePath> priorities;
-	if (priorities.empty())
-	{
-		priorities.push_back(hires_directory_name);
-		priorities.push_back(textures_directory_name);
-		priorities.push_back(flats_directory_name);
-		priorities.push_back(patches_directory_name);
-		priorities.push_back(sprites_directory_name);
-		priorities.push_back(graphics_directory_name);
-	}
-	return getTextureHelper(path, priorities);
 }
 
 
@@ -600,37 +441,37 @@ bool ResourceManager::visible(const ResourceId res_id) const
 
 
 //
-// ResourceManager::getLumpLength
+// ResourceManager::getResourceSize
 //
-uint32_t ResourceManager::getLumpLength(const ResourceId res_id) const
+uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
 {
-	ResourceRecordTable::const_iterator it = mResources.find(res_id);
-	if (it != mResources.end())
+	const ResourceRecord* res_rec = getResourceRecord(res_id);
+	if (res_rec)
 	{
-		const ResourceContainerId container_id = it->mResourceContainerId;
+		const ResourceContainerId container_id = res_rec->mResourceContainerId;
 		assert(container_id < mContainers.size());
 		const ResourceContainer* container = mContainers[container_id];
 		assert(container != NULL);
-		return it->mResourceLoader->size(container, it->mLumpId);
+		return res_rec->mResourceLoader->size();
 	}
 	return 0;
 }
 
 
 //
-// ResourceManager::readLump
+// ResourceManager::loadResource
 //
-uint32_t ResourceManager::readLump(const ResourceId res_id, void* data) const
+uint32_t ResourceManager::loadResource(const ResourceId res_id, void* data) const
 {
-	if (validateResourceId(res_id))
+	const ResourceRecord* res_rec = getResourceRecord(res_id);
+	if (res_rec)
 	{
 		const ResourceContainerId& container_id = getResourceContainerId(res_id);
 		assert(container_id < mContainers.size());
 		const ResourceContainer* container = mContainers[container_id];
 		assert(container != NULL);
-		const LumpId lump_id = getLumpId(res_id);
-		uint32_t length = container->getLumpLength(lump_id);
-		return container->readLump(lump_id, data, length);
+		uint32_t length = container->getResourceSize(res_id);
+		return container->loadResource(res_id, data, length);
 	}
 	return 0;
 }
@@ -641,30 +482,28 @@ uint32_t ResourceManager::readLump(const ResourceId res_id, void* data) const
 //
 const void* ResourceManager::getData(const ResourceId res_id, int tag)
 {
-	ResourceRecordTable::iterator it = mResources.find(res_id);
-	if (it == mResources.end())
-		return NULL;
-
-	ResourceRecord& res_rec = *it;
-
 	// Read the data if it's not already in the cache
-	if (res_rec.mCachedData == NULL)
+	const void* data = mCache->getData(res_id);
+	if (data == NULL)
 	{
 		const OString path_str(getResourcePath(res_id));
 		DPrintf("Resource cache miss for %s\n", path_str.c_str()); 
 
-		const ResourceContainerId& container_id = res_rec.mResourceContainerId;
-		assert(container_id < mContainers.size());
-		const ResourceContainer* container = mContainers[container_id];
-		assert(container != NULL);
+		const ResourceRecord* res_rec = getResourceRecord(res_id);
+		if (res_rec)
+		{
+			const ResourceContainerId& container_id = res_rec->mResourceContainerId;
+			assert(container_id < mContainers.size());
+			const ResourceContainer* container = mContainers[container_id];
+			assert(container != NULL);
 
-		res_rec.mCachedData = res_rec.mResourceLoader->load(container, res_rec.mLumpId);
-
-		// TODO: set owner pointer for the memory allocated with Z_Malloc
-		// TODO: set/update tag properly
+			mCache->cacheData(res_id, res_rec->mResourceLoader, tag);
+			data = mCache->getData(res_id);
+			// res_rec->mCachedData = res_rec->mResourceLoader->load(container, res_id);
+		}
 	}
 
-	return res_rec.mCachedData;
+	return data;
 }
 
 
@@ -673,12 +512,7 @@ const void* ResourceManager::getData(const ResourceId res_id, int tag)
 //
 void ResourceManager::releaseData(const ResourceId res_id)
 {
-	ResourceRecordTable::iterator it = mResources.find(res_id);
-	if (it != mResources.end())
-	{
-		ResourceManager::freeCacheMemory(it->mCachedData);
-		it->mCachedData = NULL;
-	}
+	mCache->releaseData(res_id);
 }
 
 
@@ -693,7 +527,7 @@ void ResourceManager::dump() const
 	for (ResourceRecordTable::const_iterator it = mResources.begin(); it != mResources.end(); ++it)
 	{
 		const ResourceRecord& res_rec = *it;
-		const ResourceId res_id = mResources.getId(res_rec);
+		const ResourceId res_id = getResourceId(&res_rec);
 
 		const ResourcePath& path = res_rec.mPath; 
 		assert(!OString(path).empty());
@@ -703,13 +537,13 @@ void ResourceManager::dump() const
 		const ResourceContainer* container = mContainers[container_id];
 		assert(container);
 
-		bool cached = res_rec.mCachedData != NULL;
+		bool cached = mCache->getData(res_id) != NULL;
 
 		Printf(PRINT_HIGH,"0x%08X %c %s [%u] [%s]\n",
 				res_id,
 				cached ? '$' : visible(res_id) ? '*' : '-',
 				OString(path).c_str(),
-				(unsigned int)getLumpLength(res_id),
+				(unsigned int)getResourceSize(res_id),
 				getResourceContainerFileName(res_id).c_str());
 	}
 }
@@ -729,7 +563,7 @@ void ResourceManager::dump() const
 // 
 void Res_OpenResourceFiles(const std::vector<std::string>& filenames)
 {
-	resource_manager.openResourceFiles(filenames);
+	resource_manager.openResourceContainers(filenames);
 }
 
 
@@ -741,7 +575,7 @@ void Res_OpenResourceFiles(const std::vector<std::string>& filenames)
 //
 void Res_CloseAllResourceFiles()
 {
-	resource_manager.closeAllResourceFiles();
+	resource_manager.closeAllResourceContainers();
 }
 
 
@@ -800,17 +634,6 @@ const ResourceIdList Res_GetAllResourceIds(const OString& name, const OString& d
 
 
 //
-// Res_GetTextureResourceId
-//
-//
-const ResourceId Res_GetTextureResourceId(const OString& name, const OString& directory)
-{
-	const ResourcePath path = Res_MakeResourcePath(name, directory);
-	return resource_manager.getTextureResourceId(path);
-}
-
-
-//
 // Res_GetResourcePath
 //
 const ResourcePath& Res_GetResourcePath(const ResourceId res_id)
@@ -829,37 +652,37 @@ const std::string& Res_GetResourceContainerFileName(const ResourceId res_id)
 
 
 //
-// Res_GetLumpName
+// Res_GetResourceName
 //
 // Looks for the name of the resource lump that matches id. If the lump is not
 // found, an empty string is returned.
 //
-const OString& Res_GetLumpName(const ResourceId res_id)
+const OString& Res_GetResourceName(const ResourceId res_id)
 {
 	return resource_manager.getResourcePath(res_id).last();
 }
 
 
 //
-// Res_CheckLump
+// Res_CheckResource
 //
-// Verifies that the given LumpId matches a valid resource lump.
+// Verifies that the given ResourceId matches a valid resource lump.
 //
-bool Res_CheckLump(const ResourceId res_id)
+bool Res_CheckResource(const ResourceId res_id)
 {
 	return resource_manager.validateResourceId(res_id);
 }
 	
 
 //
-// Res_GetLumpLength
+// Res_GetResourceSize
 //
 // Returns the length of the resource lump that matches res_id. If the lump is
 // not found, 0 is returned.
 //
-uint32_t Res_GetLumpLength(const ResourceId res_id)
+uint32_t Res_GetResourceSize(const ResourceId res_id)
 {
-	return resource_manager.getLumpLength(res_id);
+	return resource_manager.getResourceSize(res_id);
 }
 
 
@@ -901,21 +724,21 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 
 
 //
-// Res_ReadLump
+// Res_LoadResource
 //
 // Reads the resource lump that matches res_id and copies its contents into data.
 // The number of bytes read is returned, or 0 is returned if the lump
 // is not found. The variable data must be able to hold the size of the lump,
-// as determined by Res_GetLumpLength.
+// as determined by Res_GetResourceSize.
 //
-uint32_t Res_ReadLump(const ResourceId res_id, void* data)
+uint32_t Res_LoadResource(const ResourceId res_id, void* data)
 {
-	return resource_manager.readLump(res_id, data);
+	return resource_manager.loadResource(res_id, data);
 }
 
 
 //
-// Res_CacheLump
+// Res_CacheResource
 //
 // Allocates space on the zone heap for the resource lump that matches res_id
 // and reads it into the newly allocated memory. An entry in the resource
@@ -925,18 +748,18 @@ uint32_t Res_ReadLump(const ResourceId res_id, void* data)
 // The tag parameter is used to specify the allocation tag type to pass
 // to Z_Malloc.
 //
-void* Res_CacheLump(const ResourceId res_id, int tag)
+void* Res_CacheResource(const ResourceId res_id, int tag)
 {
 	return (void*)resource_manager.getData(res_id, tag);
 }
 
 
 //
-// Res_ReleaseLump
+// Res_ReleaseResource
 //
 // Frees the memory allocated for the lump's cached data.
 //
-void Res_ReleaseLump(const ResourceId res_id)
+void Res_ReleaseResource(const ResourceId res_id)
 {
 	resource_manager.releaseData(res_id);
 }

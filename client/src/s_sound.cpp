@@ -248,7 +248,7 @@ static void S_StopChannel (unsigned int cnum);
 //
 void S_Init (float sfxVolume, float musicVolume)
 {
-	SoundCurve = (byte*)Res_CacheLump("SNDCURVE", PU_STATIC);
+	SoundCurve = (byte*)Res_CacheResource("SNDCURVE", PU_STATIC);
 
 	// [RH] Read in sound sequences
 	NumSequences = 0;
@@ -581,7 +581,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	sfxinfo_t* sfxinfo = &S_sfx[sfx_id];
 
   	// check for bogus sound lump
-	if (!Res_CheckLump(sfxinfo->res_id))
+	if (!Res_CheckResource(sfxinfo->res_id))
 	{
 		DPrintf("Bad sfx lump #: %d\n", sfxinfo->res_id);
 		return;
@@ -1070,14 +1070,14 @@ void S_ChangeMusic (std::string musicname, int looping)
 	{
 //		const ResourceId res_id = Res_GetResourceId(musicname, music_directory_name);
 		const ResourceId res_id = Res_GetResourceId(musicname);
-		if (!Res_CheckLump(res_id))
+		if (!Res_CheckResource(res_id))
 		{
 			Printf(PRINT_HIGH, "Music lump \"%s\" not found\n", musicname.c_str());
 			return;
 		}
 
-		data = (byte*)Res_CacheLump(res_id, PU_CACHE);
-		length = Res_GetLumpLength(res_id);
+		data = (byte*)Res_CacheResource(res_id, PU_CACHE);
+		length = Res_GetResourceSize(res_id);
 		I_PlaySong(data, length, (looping != 0));
     }
     else
@@ -1161,7 +1161,7 @@ int S_FindSound (const char *logicalname)
 
 int S_FindSoundByResourceId(const ResourceId res_id)
 {
-	if (Res_CheckLump(res_id))
+	if (Res_CheckResource(res_id))
 	{
 		for (int i = 0; i < numsfx; i++)
 			if (S_sfx[i].res_id == res_id)
@@ -1225,7 +1225,7 @@ void S_ParseSndInfo()
 	const ResourceIdList res_ids = Res_GetAllResourceIds("SNDINFO");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		sndinfo = (char*)Res_CacheLump(res_ids[i], PU_CACHE);
+		sndinfo = (char*)Res_CacheResource(res_ids[i], PU_CACHE);
 
 		while ( (data = COM_Parse(sndinfo)) )
 		{
@@ -1457,7 +1457,7 @@ BEGIN_COMMAND (snd_soundlist)
 {
 	for (int i = 0; i < numsfx; i++)
 	{
-		if (Res_CheckLump(S_sfx[i].res_id))
+		if (Res_CheckResource(S_sfx[i].res_id))
 		{
 			const OString lump_name(Res_GetResourcePath(S_sfx[i].res_id).last());
 			Printf(PRINT_HIGH, "%3d. %s (%s)\n", i+1, S_sfx[i].name, lump_name.c_str());

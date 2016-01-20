@@ -1703,18 +1703,18 @@ endinclude:
 
 bool D_LoadDehLump(const ResourceId res_id)
 {
-	const char* lump_name = Res_GetLumpName(res_id).c_str();
+	const char* lump_name = Res_GetResourceName(res_id).c_str();
 	const char* file_name = Res_GetResourceContainerFileName(res_id).c_str();
 
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 	{
 		Printf(PRINT_HIGH, "Could not open DeHackEd patch %s in %s\n", lump_name, file_name);
 		return false;
 	}
 	
-	patch_length = Res_GetLumpLength(res_id);
+	patch_length = Res_GetResourceSize(res_id);
 	patch_data = new char[patch_length + 1];
-	Res_ReadLump(res_id, patch_data);
+	Res_LoadResource(res_id, patch_data);
 
 	// terminate a NULL for our parser
 	patch_data[patch_length] = 0;

@@ -1948,10 +1948,10 @@ void G_DoPlayDemo(bool justStreamInput)
 	int bytelen;
 
 	demo_res_id = Res_GetResourceId(defdemoname, global_directory_name);
-	if (Res_CheckLump(demo_res_id))
+	if (Res_CheckResource(demo_res_id))
 	{
-		demobuffer = demo_p = (byte*)Res_CacheLump(demo_res_id, PU_STATIC);
-		bytelen = Res_GetLumpLength(demo_res_id);
+		demobuffer = demo_p = (byte*)Res_CacheResource(demo_res_id, PU_STATIC);
+		bytelen = Res_GetResourceSize(demo_res_id);
 	}
 	else
 	{
@@ -1967,7 +1967,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	if (bytelen < 14)
 	{
 		if (bytelen)
-			Res_ReleaseLump(demo_res_id);
+			Res_ReleaseResource(demo_res_id);
 
 		Printf(PRINT_HIGH, "DOOM Demo file too short\n");
 		gameaction = ga_fullconsole;
@@ -2025,7 +2025,7 @@ void G_DoPlayDemo(bool justStreamInput)
 
 			if (!validplayer(con))
 			{
-				Res_ReleaseLump(demo_res_id);
+				Res_ReleaseResource(demo_res_id);
 				Printf(PRINT_HIGH, "DOOM Demo: invalid console player %d of %d\n", who + 1, players.size());
 				gameaction = ga_fullconsole;
 				return;
@@ -2147,7 +2147,7 @@ void G_CleanupDemo()
 {
 	if (demoplayback)
 	{
-		Res_ReleaseLump(demo_res_id);
+		Res_ReleaseResource(demo_res_id);
 		demo_res_id = ResourceManager::RESOURCE_NOT_FOUND;
 
 		demoplayback = false;

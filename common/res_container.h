@@ -30,6 +30,10 @@
 
 #include <vector>
 #include "m_ostring.h"
+#include "hashtable.h"
+
+//#include "res_main.h"
+typedef uint32_t ResourceId;
 
 typedef uint32_t ResourceContainerId;
 typedef uint32_t LumpId;
@@ -159,8 +163,7 @@ public:
 	{
 		if (lump_id != INVALID_LUMP_ID && lump_id + 1 < mEntries.size())
 			return mEntries[lump_id + 1].name;
-		static OString empty_string;
-		return empty_string; 
+		return OString::getEmptyString();
 	}
 
 	const OString& next(const OString& name) const
@@ -209,11 +212,11 @@ public:
 
 	virtual bool isIWad() const { return false; }
 
-	virtual uint32_t getLumpCount() const = 0;
+	virtual uint32_t getResourceCount() const = 0;
 
-	virtual uint32_t getLumpLength(const LumpId lump_id) const = 0;
+	virtual uint32_t getResourceSize(const ResourceId res_id) const = 0;
 
-	virtual uint32_t readLump(const LumpId lump_id, void* data, uint32_t length) const = 0;
+	virtual uint32_t loadResource(const ResourceId res_id, void* data, uint32_t length) const = 0;
 };
 
 // ============================================================================
@@ -237,15 +240,16 @@ public:
 		return mResourceContainerId;
 	}
 
-	virtual uint32_t getLumpCount() const;
+	virtual uint32_t getResourceCount() const;
 
-	virtual uint32_t getLumpLength(const LumpId lump_id) const;
+	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 
-	virtual uint32_t readLump(const LumpId lump_id, void* data, uint32_t length) const;
+	virtual uint32_t loadResource(const ResourceId res_id, void* data, uint32_t length) const;
 
 private:
 	ResourceContainerId		mResourceContainerId;
 	FileAccessor*			mFile;
+	ResourceId				mResourceId;
 };
 
 
@@ -275,11 +279,11 @@ public:
 		return mIsIWad;
 	}
 
-	virtual uint32_t getLumpCount() const;
+	virtual uint32_t getResourceCount() const;
 
-	virtual uint32_t getLumpLength(const LumpId lump_id) const;
+	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 		
-	virtual uint32_t readLump(const LumpId lump_id, void* data, uint32_t length) const;
+	virtual uint32_t loadResource(const ResourceId res_id, void* data, uint32_t length) const;
 
 private:
 	void cleanup();
@@ -289,7 +293,21 @@ private:
 
 	ContainerDirectory*		mDirectory;
 
+	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
+	LumpIdLookupTable		mLumpIdLookup;
+
 	bool					mIsIWad;
+
+	const LumpId getLumpId(const ResourceId res_id) const
+	{
+		LumpIdLookupTable::const_iterator it = mLumpIdLookup.find(res_id);
+		if (it != mLumpIdLookup.end())
+			return it->second;
+		// TODO: change to a static const variable
+		return static_cast<LumpId>(-1);
+	}
+
+	ContainerDirectory* readWadDirectory();
 };
 
 #endif	// __RES_CONTAINER_H__

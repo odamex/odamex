@@ -147,18 +147,18 @@ mapthing2_t		*redteam_p;
 static void P_LoadVertexes(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("VERTEXES", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadVertexes: unable to find VERTEXES lump for map %s\n", mapname.c_str());
 
 	// Determine number of vertices:
 	//	total lump length / vertex record length.
-	numvertexes = Res_GetLumpLength(res_id) / sizeof(mapvertex_t);
+	numvertexes = Res_GetResourceSize(res_id) / sizeof(mapvertex_t);
 
 	// Allocate zone memory for buffer.
 	vertexes = (vertex_t*)Z_Malloc(numvertexes * sizeof(vertex_t), PU_LEVEL, NULL);
 
 	// Load data into cache.
-	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_STATIC);
 
 	// Copy and convert vertex coordinates,
 	// internal representation as fixed.
@@ -169,7 +169,7 @@ static void P_LoadVertexes(const OString& mapname)
 	}
 
 	// Free buffer memory.
-	Res_ReleaseLump(res_id);
+	Res_ReleaseResource(res_id);
 }
 
 
@@ -182,14 +182,14 @@ static void P_LoadVertexes(const OString& mapname)
 static void P_LoadSegs(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("SEGS", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadSegs: unable to find SEGS lump for map %s\n", mapname.c_str());
 
-	numsegs = Res_GetLumpLength(res_id) / sizeof(mapseg_t);
+	numsegs = Res_GetResourceSize(res_id) / sizeof(mapseg_t);
 	segs = (seg_t*)Z_Malloc(numsegs * sizeof(seg_t), PU_LEVEL, NULL);
 	memset(segs, 0, numsegs * sizeof(seg_t));
 
-	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_STATIC);
 
 	for (int i = 0; i < numsegs; i++)
 	{
@@ -256,7 +256,7 @@ static void P_LoadSegs(const OString& mapname)
 		li->length = FLOAT2FIXED(sqrt(dx * dx + dy* dy));
 	}
 
-	Res_ReleaseLump(res_id);
+	Res_ReleaseResource(res_id);
 }
 
 
@@ -268,14 +268,14 @@ static void P_LoadSegs(const OString& mapname)
 static void P_LoadSubsectors(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("SSECTORS", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadSubsectors: unable to find SSECTORS lump for map %s\n", mapname.c_str());
 
-	numsubsectors = Res_GetLumpLength(res_id) / sizeof(mapsubsector_t);
+	numsubsectors = Res_GetResourceSize(res_id) / sizeof(mapsubsector_t);
 	subsectors = (subsector_t*)Z_Malloc(numsubsectors * sizeof(subsector_t), PU_LEVEL, NULL);
 	memset(subsectors, 0, numsubsectors * sizeof(subsector_t));
 
-	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_STATIC);
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
@@ -283,7 +283,7 @@ static void P_LoadSubsectors(const OString& mapname)
 		subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t*)data)[i].firstseg);
 	}
 
-	Res_ReleaseLump(res_id);
+	Res_ReleaseResource(res_id);
 }
 
 
@@ -296,19 +296,19 @@ static void P_LoadSubsectors(const OString& mapname)
 static void P_LoadSectors(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("SECTORS", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadSectors: unable to find SECTORS lump for map %s\n", mapname.c_str());
 
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete [] sectors;
 
-	numsectors = Res_GetLumpLength(res_id) / sizeof(mapsector_t);
+	numsectors = Res_GetResourceSize(res_id) / sizeof(mapsector_t);
 
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 	memset(sectors, 0, sizeof(sector_t) * numsectors);
 
-	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_STATIC);
 
 	int defSeqType = (level.flags & LEVEL_SNDSEQTOTALCTRL) ? 0 : -1;
 
@@ -381,7 +381,7 @@ static void P_LoadSectors(const OString& mapname)
 		ss->movefactor = ORIG_FRICTION_FACTOR;
 	}
 
-	Res_ReleaseLump(res_id);
+	Res_ReleaseResource(res_id);
 }
 
 
@@ -393,13 +393,13 @@ static void P_LoadSectors(const OString& mapname)
 static void P_LoadNodes(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("NODES", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadNodes: unable to find NODES lump for map %s\n", mapname.c_str());
 
-	numnodes = Res_GetLumpLength(res_id) / sizeof(mapnode_t);
+	numnodes = Res_GetResourceSize(res_id) / sizeof(mapnode_t);
 	nodes = (node_t*)Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, NULL);
 
-	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_STATIC);
 
 	mapnode_t* mn = (mapnode_t*)data;
 	node_t* no = nodes;
@@ -428,7 +428,7 @@ static void P_LoadNodes(const OString& mapname)
 		}
 	}
 
-	Res_ReleaseLump(res_id);
+	Res_ReleaseResource(res_id);
 }
 
 
@@ -440,15 +440,15 @@ static void P_LoadNodes(const OString& mapname)
 static void P_LoadXNOD(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("NODES", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadXNOD: unable to find NODES lump for map %s\n", mapname.c_str());
 
-	size_t len = Res_GetLumpLength(res_id);
-	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+	size_t len = Res_GetResourceSize(res_id);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_STATIC);
 
 	if (len < 4 || memcmp(data, "XNOD", 4) != 0)
 	{
-		Res_ReleaseLump(res_id);
+		Res_ReleaseResource(res_id);
 		return;
 	}
 
@@ -564,7 +564,7 @@ static void P_LoadXNOD(const OString& mapname)
 			node->children[j] = LELONG(*(unsigned int*)p); p += 4;
 	}
 
-	Res_ReleaseLump(res_id);
+	Res_ReleaseResource(res_id);
 }
 
 
@@ -576,10 +576,10 @@ static void P_LoadXNOD(const OString& mapname)
 static void P_LoadDoomThings(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("THINGS", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadDoomThings: unable to find THINGS lump for map %s\n", mapname.c_str());
 
-	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_STATIC);
 
 	playerstarts.clear();
 	voodoostarts.clear();
@@ -591,7 +591,7 @@ static void P_LoadDoomThings(const OString& mapname)
 	memset(&mt2, 0, sizeof(mt2));
 
 	mapthing_t* mt = (mapthing_t*)data;
-	mapthing_t* lastmt = (mapthing_t*)(data + Res_GetLumpLength(res_id));
+	mapthing_t* lastmt = (mapthing_t*)(data + Res_GetResourceSize(res_id));
 
 	for ( ; mt < lastmt; mt++)
 	{
@@ -615,7 +615,7 @@ static void P_LoadDoomThings(const OString& mapname)
 		P_SpawnMapThing(&mt2, 0);
 	}
 
-	Res_ReleaseLump(res_id);
+	Res_ReleaseResource(res_id);
 }
 
 
@@ -629,16 +629,16 @@ static void P_LoadDoomThings(const OString& mapname)
 static void P_LoadHexenThings(const OString& mapname, int position)
 {
 	const ResourceId res_id = Res_GetMapResourceId("THINGS", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadHexenThings: unable to find THINGS lump for map %s\n", mapname.c_str());
 
-	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_STATIC);
 
 	playerstarts.clear();
 	voodoostarts.clear();
 
 	mapthing2_t* mt = (mapthing2_t*)data;
-	mapthing2_t* lastmt = (mapthing2_t*)(data + Res_GetLumpLength(res_id));
+	mapthing2_t* lastmt = (mapthing2_t*)(data + Res_GetResourceSize(res_id));
 
 	for ( ; mt < lastmt; mt++)
 	{
@@ -658,7 +658,7 @@ static void P_LoadHexenThings(const OString& mapname, int position)
 		P_SpawnMapThing(mt, position);
 	}
 
-	Res_ReleaseLump(res_id);
+	Res_ReleaseResource(res_id);
 }
 
 
@@ -771,13 +771,13 @@ void P_FinishLoadingLineDefs()
 static void P_LoadDoomLineDefs(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("LINEDEFS", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadDoomLineDefs: unable to find LINEDEFS lump for map %s\n", mapname.c_str());
 
-	numlines = Res_GetLumpLength(res_id) / sizeof(maplinedef_t);
+	numlines = Res_GetResourceSize(res_id) / sizeof(maplinedef_t);
 	lines = (line_t*)Z_Malloc(numlines * sizeof(line_t), PU_LEVEL, NULL);
 	memset(lines, 0, numlines * sizeof(line_t));
-	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_STATIC);
 
 	line_t* ld = lines;
 
@@ -814,7 +814,7 @@ static void P_LoadDoomLineDefs(const OString& mapname)
 		P_AdjustLine(ld);
 	}
 
-	Res_ReleaseLump(res_id);
+	Res_ReleaseResource(res_id);
 }
 
 
@@ -826,14 +826,14 @@ static void P_LoadDoomLineDefs(const OString& mapname)
 static void P_LoadHexenLineDefs(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("LINEDEFS", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadHexenLineDefs: unable to find LINEDEFS lump for map %s\n", mapname.c_str());
 
-	numlines = Res_GetLumpLength(res_id) / sizeof(maplinedef2_t);
+	numlines = Res_GetResourceSize(res_id) / sizeof(maplinedef2_t);
 	lines = (line_t*)Z_Malloc(numlines * sizeof(line_t), PU_LEVEL, NULL);
 	memset(lines, 0, numlines * sizeof(line_t));
 
-	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_STATIC);
 
 	maplinedef2_t* mld = (maplinedef2_t*)data;
 	line_t* ld = lines;
@@ -871,7 +871,7 @@ static void P_LoadHexenLineDefs(const OString& mapname)
 		P_AdjustLine(ld);
 	}
 
-	Res_ReleaseLump(res_id);
+	Res_ReleaseResource(res_id);
 }
 
 //
@@ -881,10 +881,10 @@ static void P_LoadHexenLineDefs(const OString& mapname)
 static void P_LoadSideDefs(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("SIDEDEFS", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadSideDefs: unable to find SIDEDEFS lump for map %s\n", mapname.c_str());
 
-	numsides = Res_GetLumpLength(res_id) / sizeof(mapsidedef_t);
+	numsides = Res_GetResourceSize(res_id) / sizeof(mapsidedef_t);
 	sides = (side_t*)Z_Malloc(numsides * sizeof(side_t), PU_LEVEL, NULL);
 	memset(sides, 0, numsides * sizeof(side_t));
 }
@@ -1002,10 +1002,10 @@ static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
 static void P_LoadSideDefs2(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("SIDEDEFS", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadSideDefs2: unable to find SIDEDEFS lump for map %s\n", mapname.c_str());
 
-	byte* data = (byte*)Res_CacheLump(res_id, PU_STATIC);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_STATIC);
 
 	for (int i = 0; i < numsides; i++)
 	{
@@ -1065,7 +1065,7 @@ static void P_LoadSideDefs2(const OString& mapname)
 		}
 	}
 
-	Res_ReleaseLump(res_id);
+	Res_ReleaseResource(res_id);
 }
 
 
@@ -1400,10 +1400,10 @@ void P_CreateBlockMap()
 static void P_LoadBlockMap(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("BLOCKMAP", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadBlockMap: unable to find BLOCKMAP lump for map %s\n", mapname.c_str());
 
-	int count = Res_GetLumpLength(res_id) / sizeof(short);
+	int count = Res_GetResourceSize(res_id) / sizeof(short);
 
 	if (Args.CheckParm("-blockmap") || count < 4 || count >= 0x10000)
 	{
@@ -1411,7 +1411,7 @@ static void P_LoadBlockMap(const OString& mapname)
 	}
 	else
 	{
-		short* wadblockmaplump = (short*)Res_CacheLump(res_id, PU_STATIC);
+		short* wadblockmaplump = (short*)Res_CacheResource(res_id, PU_STATIC);
 
 		blockmaplump = (int*)Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, NULL);
 
@@ -1431,7 +1431,7 @@ static void P_LoadBlockMap(const OString& mapname)
 			blockmaplump[i] = (t == -1) ? (DWORD)0xffffffff : (DWORD)t & 0xffff;
 		}
 
-		Res_ReleaseLump(res_id);
+		Res_ReleaseResource(res_id);
 	}
 
 	bmaporgx = blockmaplump[0] << FRACBITS;
@@ -1632,17 +1632,17 @@ static void P_RemoveSlimeTrails()
 static void P_LoadReject(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("REJECT", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadReject: unable to find REJECT lump for map %s\n", mapname.c_str());
 
 	rejectmatrix = NULL;
 
 	// [SL] 2011-07-01 - Check to see if the reject table is of the proper size.
 	// If it's too short, the reject table should be ignored when calling P_CheckSight.
-	if (Res_GetLumpLength(res_id) < (unsigned)(numsectors * numsectors + 7) / 8)
+	if (Res_GetResourceSize(res_id) < (unsigned)(numsectors * numsectors + 7) / 8)
 		DPrintf("Reject matrix is not valid and will be ignored.\n");
 	else
-		rejectmatrix = (byte*)Res_CacheLump(res_id, PU_LEVEL);
+		rejectmatrix = (byte*)Res_CacheResource(res_id, PU_LEVEL);
 }
 
 
@@ -1654,11 +1654,11 @@ static void P_LoadReject(const OString& mapname)
 static void P_LoadBehavior(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("BEHAVIOR", mapname);
-	if (!Res_CheckLump(res_id))
+	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadBehavior: unable to find BEHAVIOR lump for map %s\n", mapname.c_str());
 
-	size_t length = Res_GetLumpLength(res_id);
-	byte* data = (byte*)Res_CacheLump(res_id, PU_LEVEL);
+	size_t length = Res_GetResourceSize(res_id);
+	byte* data = (byte*)Res_CacheResource(res_id, PU_LEVEL);
 
 	level.behavior = new FBehavior(data, length);
 
@@ -1744,7 +1744,7 @@ void P_SetupLevel(const OString& mapname, int position)
 	// [RH] Check if this map is Hexen-style.
 	//		LINEDEFS and THINGS need to be handled accordingly.
 	//		If it is, we also need to distinguish between projectile cross and hit
-	HasBehavior = Res_CheckLump(Res_GetMapResourceId("BEHAVIOR", mapname));
+	HasBehavior = Res_CheckResource(Res_GetMapResourceId("BEHAVIOR", mapname));
 
 	// note: most of this ordering is important
 
@@ -1766,9 +1766,9 @@ void P_SetupLevel(const OString& mapname, int position)
 	P_LoadBlockMap(mapname);
 
 	const ResourceId nodes_res_id = Res_GetMapResourceId("NODES", mapname);
-	if (Res_GetLumpLength(nodes_res_id) >= 4)
+	if (Res_GetResourceSize(nodes_res_id) >= 4)
 	{
-		byte* data = (byte*)Res_CacheLump(nodes_res_id, PU_LEVEL);
+		byte* data = (byte*)Res_CacheResource(nodes_res_id, PU_LEVEL);
 		if (memcmp(data, "XNOD", 4) != 0)
 		{
 			// load standard format subsectors, nodes, and segs

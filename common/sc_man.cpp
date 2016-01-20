@@ -96,9 +96,9 @@ void SC_OpenResourceLump(const ResourceId res_id)
 {
 	SC_Close();
 	ScriptResId = res_id;
-	ScriptBuffer = (char*)Res_CacheLump(ScriptResId, PU_STATIC);
-	ScriptSize = Res_GetLumpLength(res_id);
-	ScriptName = Res_GetLumpName(res_id);
+	ScriptBuffer = (char*)Res_CacheResource(ScriptResId, PU_STATIC);
+	ScriptSize = Res_GetResourceSize(res_id);
+	ScriptName = Res_GetResourceName(res_id);
 	FreeScript = true;
 	SC_PrepareScript();
 }
@@ -163,7 +163,7 @@ void SC_Close()
 	if (ScriptOpen)
 	{
 		if (FreeScript && ScriptBuffer)
-			Res_ReleaseLump(ScriptResId);
+			Res_ReleaseResource(ScriptResId);
 		ScriptResId = ResourceManager::RESOURCE_NOT_FOUND;
 		ScriptBuffer = NULL;
 		ScriptOpen = false;

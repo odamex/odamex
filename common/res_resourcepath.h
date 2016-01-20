@@ -61,6 +61,12 @@ public:
 		operator=(other);
 	}
 
+	static ResourcePath& getEmptyResourcePath()
+	{
+		static ResourcePath empty_path;
+		return empty_path;
+	}
+
 	ResourcePath& operator=(const ResourcePath& other)
 	{
 		mAbsolute = other.mAbsolute;

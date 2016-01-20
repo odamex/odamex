@@ -455,17 +455,17 @@ public:
 		return mResourceContainerId;
 	}
 
-	virtual uint32_t getLumpCount() const
+	virtual uint32_t getResourceCount() const
 	{
 		return mTextureLoaders.size();
 	}
 
-	virtual uint32_t getLumpLength(const LumpId lump_id) const
+	virtual uint32_t getResourceSize(const LumpId lump_id) const
 	{
 		return 0;
 	}
 
-	virtual uint32_t readLump(const LumpId lump_id, void* data, uint32_t length) const
+	virtual uint32_t loadResource(const LumpId lump_id, void* data, uint32_t length) const
 	{
 		return 0;
 	}
