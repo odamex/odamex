@@ -200,7 +200,7 @@ uint32_t DefaultResourceLoader::size() const
 //
 void DefaultResourceLoader::load(void* data) const
 {
-	uint32_t size_read = mContainer->loadResource(mResourceId, data, size());
+	uint32_t bytes_read = mContainer->loadResource(mResourceId, data, size());
 }
 
 
@@ -287,9 +287,9 @@ void ResourceManager::openResourceContainers(const std::vector<std::string>& fil
 		openResourceContainer(*it);
 	
 	// Add TextureManager to the list of resource containers
-	mTextureManagerContainerId = mContainers.size();
-	ResourceContainer* texture_manager_container = new TextureManager(mTextureManagerContainerId, this);
-	mContainers.push_back(texture_manager_container);
+	// mTextureManagerContainerId = mContainers.size();
+	// ResourceContainer* texture_manager_container = new TextureManager(mTextureManagerContainerId, this);
+	// mContainers.push_back(texture_manager_container);
 
 	// TODO: Is this the best place to initialize the ResourceCache instance?
 	mCache = new ResourceCache(mResources.size());
@@ -447,62 +447,57 @@ uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
 {
 	const ResourceRecord* res_rec = getResourceRecord(res_id);
 	if (res_rec)
-	{
-		const ResourceContainerId container_id = res_rec->mResourceContainerId;
-		assert(container_id < mContainers.size());
-		const ResourceContainer* container = mContainers[container_id];
-		assert(container != NULL);
 		return res_rec->mResourceLoader->size();
-	}
 	return 0;
 }
 
 
 //
-// ResourceManager::loadResource
+// ResourceManager::loadRawResource
 //
-uint32_t ResourceManager::loadResource(const ResourceId res_id, void* data) const
+// Copies the unprocessed resource data from its container to the given data
+// buffer.
+//
+uint32_t ResourceManager::loadRawResource(const ResourceId res_id, void* data, uint32_t size) const
 {
-	const ResourceRecord* res_rec = getResourceRecord(res_id);
-	if (res_rec)
+	uint32_t bytes_read = 0;
+	if (validateResourceId(res_id))
 	{
 		const ResourceContainerId& container_id = getResourceContainerId(res_id);
-		assert(container_id < mContainers.size());
 		const ResourceContainer* container = mContainers[container_id];
-		assert(container != NULL);
-		uint32_t length = container->getResourceSize(res_id);
-		return container->loadResource(res_id, data, length);
+		if (size)
+			size = std::min<int>(size, container->getResourceSize(res_id));
+		else
+			size = container->getResourceSize(res_id);
+		bytes_read = container->loadResource(res_id, data, size);
 	}
-	return 0;
+	return bytes_read;
 }
 
 
 //
 // ResourceManager::getData
 //
+// Utilizes the resource cache to quickly return resources that have
+// previously been cached. Initially, resource data is loaded from its
+// container and then post-processed. Then the post-processed resource data
+// is cached for re-use.
+//
 const void* ResourceManager::getData(const ResourceId res_id, int tag)
 {
-	// Read the data if it's not already in the cache
-	const void* data = mCache->getData(res_id);
-	if (data == NULL)
+	const void* data = NULL;
+	if (validateResourceId(res_id))
 	{
-		const OString path_str(getResourcePath(res_id));
-		DPrintf("Resource cache miss for %s\n", path_str.c_str()); 
-
-		const ResourceRecord* res_rec = getResourceRecord(res_id);
-		if (res_rec)
+		data = mCache->getData(res_id);
+		if (!data)
 		{
-			const ResourceContainerId& container_id = res_rec->mResourceContainerId;
-			assert(container_id < mContainers.size());
-			const ResourceContainer* container = mContainers[container_id];
-			assert(container != NULL);
-
+			// Read the data if it's not already in the cache
+			DPrintf("Resource cache miss for %s\n", OString(getResourcePath(res_id)).c_str());
+			const ResourceRecord* res_rec = getResourceRecord(res_id);
 			mCache->cacheData(res_id, res_rec->mResourceLoader, tag);
 			data = mCache->getData(res_id);
-			// res_rec->mCachedData = res_rec->mResourceLoader->load(container, res_id);
 		}
 	}
-
 	return data;
 }
 
@@ -512,7 +507,8 @@ const void* ResourceManager::getData(const ResourceId res_id, int tag)
 //
 void ResourceManager::releaseData(const ResourceId res_id)
 {
-	mCache->releaseData(res_id);
+	if (validateResourceId(res_id))
+		mCache->releaseData(res_id);
 }
 
 
@@ -733,7 +729,7 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 //
 uint32_t Res_LoadResource(const ResourceId res_id, void* data)
 {
-	return resource_manager.loadResource(res_id, data);
+	return resource_manager.loadRawResource(res_id, data);
 }
 
 

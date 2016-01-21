@@ -100,6 +100,9 @@ class ResourceLoader
 public:
 	virtual ~ResourceLoader() {}
 
+	virtual bool validate() const
+	{	return true;	}
+
 	virtual uint32_t size() const = 0;
 	virtual void load(void* data) const = 0;
 };
@@ -191,7 +194,7 @@ public:
 
 	uint32_t getResourceSize(const ResourceId res_id) const;
 
-	uint32_t loadResource(const ResourceId res_id, void* data) const;
+	uint32_t loadRawResource(const ResourceId res_id, void* data, uint32_t size=0) const;
 
 	const void* getData(const ResourceId res_id, int tag = PU_CACHE);
 
@@ -241,7 +244,13 @@ private:
 	const ResourceRecord* getResourceRecord(const ResourceId res_id) const
 	{
 		if (validateResourceId(res_id))
-			return &mResources[res_id];
+		{
+			const ResourceRecord* res_rec = &mResources[res_id];
+			assert(res_rec != NULL);
+			assert(res_rec->mResourceContainerId < mContainers.size());
+			assert(mContainers[res_rec->mResourceContainerId] != NULL);
+			return res_rec;
+		}
 		return NULL;
 	}
 

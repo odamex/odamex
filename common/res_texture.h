@@ -77,6 +77,8 @@ public:
 	static const unsigned int MAX_TEXTURE_WIDTH			= 2048;
 	static const unsigned int MAX_TEXTURE_HEIGHT		= 2048;
 
+	void init(int width, int height);
+
 	TextureId getTextureId() const
 	{	return mTextureId;	}
 
@@ -146,8 +148,6 @@ private:
 
 	Texture();
 
-	void init(int width, int height);
-
 	TextureId			mTextureId;
 
 	fixed_t				mScaleX;
@@ -183,10 +183,10 @@ public:
 
 struct CompositeTextureDefinition
 {
-	short			mWidth;
-	short			mHeight;
-	byte			mScaleX;
-	byte			mScaleY;
+	int16_t			mWidth;
+	int16_t			mHeight;
+	uint8_t			mScaleX;
+	uint8_t			mScaleY;
 
 	struct texdefpatch_t
 	{
@@ -195,7 +195,7 @@ struct CompositeTextureDefinition
 		ResourceId	mResId;
 	};
 
-	short			mPatchCount;
+	int16_t			mPatchCount;
 	texdefpatch_t*	mPatches;
 
 	CompositeTextureDefinition() :
@@ -235,7 +235,6 @@ struct CompositeTextureDefinition
 		}
 		return *this;
 	}
-
 };
 
 
@@ -249,18 +248,29 @@ struct CompositeTextureDefinition
 // resource files.
 //
 
-// ----------------------------------------------------------------------------
-// TextureLoader abstract base class interface
-// ----------------------------------------------------------------------------
-
-class TextureLoader
+class TextureLoader : public ResourceLoader
 {
 public:
-	virtual ~TextureLoader() {}
+	virtual uint32_t getTextureSize(uint16_t width, uint16_t height) const
+	{
+		#if CLIENT_APP
+		return sizeof(Texture)						// header
+			+ sizeof(uint8_t) * width * height		// mData
+			+ sizeof(uint8_t) * width * height;		// mMask
+		#else
+		return sizeof(Texture);
+		#endif
+	}
 
-	virtual bool validate() const = 0;
-	virtual uint32_t size() const = 0;
-	virtual const Texture* load() const = 0;
+	virtual Texture* initTexture(void* data, uint16_t width, uint16_t height) const
+	{
+		width = std::min<int>(width, Texture::MAX_TEXTURE_WIDTH);
+		height = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT);
+
+		Texture* texture = static_cast<Texture*>(data);
+		texture->init(width, height);
+		return texture;
+	}
 };
 
 
@@ -277,9 +287,8 @@ public:
 	InvalidTextureLoader();
 	virtual ~InvalidTextureLoader() {}
 
-	virtual bool validate() const;
 	virtual uint32_t size() const;
-	virtual const Texture* load() const;
+	virtual void load(void* data) const;
 
 private:
 	static const int16_t WIDTH = 64;
@@ -300,9 +309,8 @@ public:
 	FlatTextureLoader(ResourceManager* manager, const ResourceId res_id);
 	virtual ~FlatTextureLoader() {}
 
-	virtual bool validate() const;
 	virtual uint32_t size() const;
-	virtual const Texture* load() const;
+	virtual void load(void* data) const;
 
 private:
 	int16_t getWidth() const;
@@ -327,11 +335,13 @@ public:
 
 	virtual bool validate() const;
 	virtual uint32_t size() const;
-	virtual const Texture* load() const;
+	virtual void load(void* data) const;
 
 private:
 	ResourceManager*	mResourceManager;
 	const ResourceId	mResId;
+
+	bool validateHelper(const uint8_t* raw_data, uint32_t raw_size) const;
 };
 
 
@@ -343,12 +353,6 @@ private:
 
 class SpriteTextureLoader : public PatchTextureLoader
 {
-public:
-	SpriteTextureLoader(ResourceManager* manager, const ResourceId res_id) :
-		PatchTextureLoader(manager, res_id)
-	{}
-
-	virtual ~SpriteTextureLoader() {}
 };
 
 
@@ -368,7 +372,7 @@ public:
 
 	virtual bool validate() const;
 	virtual uint32_t size() const;
-	virtual const Texture* load() const;
+	virtual void load(void* data) const;
 
 private:
 	ResourceManager*					mResourceManager;
@@ -390,7 +394,7 @@ public:
 
 	virtual bool validate() const;
 	virtual uint32_t size() const;
-	virtual const Texture* load() const;
+	virtual void load(void* data) const;
 
 private:
 	ResourceManager*	mResourceManager;
@@ -412,7 +416,7 @@ public:
 
 	virtual bool validate() const;
 	virtual uint32_t size() const;
-	virtual const Texture* load() const;
+	virtual void load(void* data) const;
 
 private:
 	ResourceManager*	mResourceManager;
@@ -504,7 +508,7 @@ private:
 
 	const ResourceContainerId		mResourceContainerId;
 
-	typedef std::vector<TextureLoader*> TextureLoaderList;
+	typedef std::vector<ResourceLoader*> TextureLoaderList;
 	TextureLoaderList		mTextureLoaders;
 
 	typedef std::vector<const Texture*> TextureList;
