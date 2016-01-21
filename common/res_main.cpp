@@ -729,7 +729,8 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 //
 uint32_t Res_LoadResource(const ResourceId res_id, void* data)
 {
-	return resource_manager.loadRawResource(res_id, data);
+	uint32_t size = resource_manager.getResourceSize(res_id);
+	return resource_manager.loadRawResource(res_id, data, size);
 }
 
 

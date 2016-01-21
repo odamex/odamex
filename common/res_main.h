@@ -194,7 +194,7 @@ public:
 
 	uint32_t getResourceSize(const ResourceId res_id) const;
 
-	uint32_t loadRawResource(const ResourceId res_id, void* data, uint32_t size=0) const;
+	uint32_t loadRawResource(const ResourceId res_id, void* data, uint32_t size) const;
 
 	const void* getData(const ResourceId res_id, int tag = PU_CACHE);
 

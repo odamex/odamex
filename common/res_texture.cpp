@@ -555,7 +555,7 @@ bool PatchTextureLoader::validateHelper(const uint8_t* raw_data, uint32_t raw_si
 		const int16_t height = LESHORT(*(int16_t*)(raw_data + 2));
 
 		const uint32_t column_table_offset = 8;
-		const uint32_t column_table_length = raw_sizeof(int32_t) * width;
+		const uint32_t column_table_length = sizeof(int32_t) * width;
 
 		if (width > 0 && height > 0 && raw_size >= column_table_offset + column_table_length)
 		{
@@ -842,7 +842,7 @@ void PngTextureLoader::load(void* data) const
 		const char* lump_name = OString(mResourceManager->getResourcePath(mResId)).c_str();
 		uint32_t lump_length = mResourceManager->getResourceSize(mResId);
 		byte* lump_data = new byte[lump_length];
-		mResourceManager->loadRawResource(mResId, lump_data);
+		mResourceManager->loadRawResource(mResId, lump_data, lump_length);
 
 		png_struct* png_ptr = NULL;
 		png_info* info_ptr = NULL;
