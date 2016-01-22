@@ -64,23 +64,10 @@ void Res_TransposeImage(byte* dest, const byte* source, int width, int height);
 class Texture
 {
 public:
-	typedef enum
-	{
-		TEX_FLAT,
-		TEX_PATCH,
-		TEX_SPRITE,
-		TEX_WALLTEXTURE,
-		TEX_RAW,
-		TEX_PNG,
-	} TextureSourceType;
-
 	static const unsigned int MAX_TEXTURE_WIDTH			= 2048;
 	static const unsigned int MAX_TEXTURE_HEIGHT		= 2048;
 
 	void init(int width, int height);
-
-	TextureId getTextureId() const
-	{	return mTextureId;	}
 
 	byte* getData() const
 	{	return mData;	}
@@ -118,37 +105,12 @@ public:
 	void setOffsetY(int value)
 	{	mOffsetY = value;	}
 	
-
-	// 
-	// Texture::createTexture
-	//
-	// Factory for creating Texture instances. Allocates memory for a new
-	// Texture, initializes it and then returns a pointer to it.
-	// 
-	static Texture* createTexture(int width, int height) 
-	{ 
-		width = std::min<int>(width, Texture::MAX_TEXTURE_WIDTH); 
-		height = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT); 
-		 
-		// server shouldn't allocate memory for texture data, only the header    
-		uint32_t texture_size = clientside ? 
-				Texture::calculateSize(width, height) : sizeof(Texture); 
-							      
-		Texture* texture = (Texture*)Z_Malloc(texture_size, PU_STATIC, NULL); 
-		texture->init(width, height); 
-														 
-		return texture; 
-	}
-
 	static uint32_t calculateSize(int width, int height);
-
 
 private:
 	friend class TextureManager;
 
 	Texture();
-
-	TextureId			mTextureId;
 
 	fixed_t				mScaleX;
 	fixed_t				mScaleY;
@@ -424,6 +386,71 @@ private:
 };
 
 
+
+class TextureLoaderFactory
+{
+public:
+	TextureLoaderFactory(ResourceManager* manager, CompositeTextureDefinition* mTextureDef) :
+		mResourceManager(manager)
+	{
+		// TODO: load mTextureDef from mResourceManager	
+	}
+
+	~TextureLoaderFactory() { }
+
+	TextureLoader* createTextureLoader(const ResourcePath& res_path, const ResourceId res_id) const
+	{
+		const OString& directory = res_path.first();
+
+		// Handle omitted wall textures
+		// const OString& name = res_path.last();
+		// if (directory == textures_directory_name && name.size() > 0 && name.c_str()[0] == '-')
+			// return new InvalidTextureLoader();
+
+		if (directory == flats_directory_name)
+		{
+			return new FlatTextureLoader(mResourceManager, res_id);
+		}
+		else if (directory == textures_directory_name)
+		{
+			return new CompositeTextureLoader(mResourceManager, mTextureDef);
+		}
+		else if (directory == patches_directory_name)
+		{
+			return new PatchTextureLoader(mResourceManager, res_id);
+		}
+
+		/*
+		// check for the texture in the default location specified by type
+		if (type == Texture::TEX_FLAT)
+			tex_id = getFlatTextureId(uname);
+		else if (type == Texture::TEX_WALLTEXTURE)
+			tex_id = getWallTextureTextureId(uname);
+		else if (type == Texture::TEX_PATCH)
+			tex_id = getPatchTextureId(uname);
+		else if (type == Texture::TEX_SPRITE)
+			tex_id = getSpriteTextureId(uname);
+		else if (type == Texture::TEX_RAW)
+			tex_id = getRawTextureTextureId(uname);
+		else if (type == Texture::TEX_PNG)
+			tex_id = getPNGTextureTextureId(uname);
+
+		// not found? check elsewhere
+		if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_FLAT)
+			tex_id = getFlatTextureId(uname);
+		if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_WALLTEXTURE)
+			tex_id = getWallTextureTextureId(uname);
+		*/
+
+		return NULL;
+	}
+
+private:
+	ResourceManager*			mResourceManager;
+	CompositeTextureDefinition	mTextureDef;
+};
+
+
 // ============================================================================
 //
 // TextureManager
@@ -461,7 +488,7 @@ public:
 
 	virtual uint32_t getResourceCount() const
 	{
-		return mTextureLoaders.size();
+		return 0; 
 	}
 
 	virtual uint32_t getResourceSize(const LumpId lump_id) const
@@ -476,11 +503,8 @@ public:
 
 	void updateAnimatedTextures();
 
-	TextureId getTextureId(const char* name, Texture::TextureSourceType type);
-	TextureId getTextureId(const OString& name, Texture::TextureSourceType type);
 	const Texture* getTexture(const ResourceId res_id);
 
-	Texture* createTexture(const TextureId tex_id, int width, int height);
 	void freeTexture(const LumpId lump_id);
 
 	TextureId createCustomTextureId();
@@ -507,9 +531,6 @@ private:
 	void registerTextureResources(ResourceManager* manager);
 
 	const ResourceContainerId		mResourceContainerId;
-
-	typedef std::vector<ResourceLoader*> TextureLoaderList;
-	TextureLoaderList		mTextureLoaders;
 
 	typedef std::vector<const Texture*> TextureList;
 	TextureList				mTextures;

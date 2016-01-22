@@ -322,8 +322,7 @@ static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture
 //
 // ============================================================================
 
-Texture::Texture() :
-	mTextureId(TextureManager::NO_TEXTURE_ID)
+Texture::Texture()
 {
 	init(0, 0);
 }
@@ -890,7 +889,7 @@ void PngTextureLoader::load(void* data) const
 			return;
 		}
 
-		Texture* texture = Texture::createTexture(width, height);
+		Texture* texture = initTexture(data, width, height);
 		memset(texture->mData, 0, width * height);
 		memset(texture->mMask, 0, width * height);
 
@@ -997,11 +996,6 @@ void TextureManager::clear()
 	for (unsigned int i = mFreeCustomTextureIdsHead; i <= mFreeCustomTextureIdsTail; i++)
 		mFreeCustomTextureIds[i] = CUSTOM_TEXTURE_ID_MASK | i;
 
-
-	// Free all of the TextureLoader instances
-	for (TextureLoaderList::iterator it = mTextureLoaders.begin(); it != mTextureLoaders.end(); ++it)
-		delete *it;
-	mTextureLoaders.clear();	
 
 	// Free all of the Texture instances
 	for (TextureList::iterator it = mTextures.begin(); it != mTextures.end(); ++it)
@@ -1136,7 +1130,8 @@ void TextureManager::readAnimDefLump()
 					int height = 1 << warp.original_texture->getHeightBits();
 
 					// create a new texture of the same size for the warped image
-					warp.warped_texture = Texture::createTexture(width, height);
+					//warp.warped_texture = initTexture(data, width, height);
+					//warp.warped_texture = Texture::createTexture(width, height);
 
 					mWarpDefs.push_back(warp);
 				}
@@ -1413,8 +1408,8 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 			mTextures.push_back(NULL);
 
 			// Create a new TextureLoader and add it to the list
-			ResourceLoader* loader = new CompositeTextureLoader(manager, texture_def);
-			mTextureLoaders.push_back(loader);
+			// ResourceLoader* loader = new CompositeTextureLoader(manager, texture_def);
+			// mTextureLoaders.push_back(loader);
 			const ResourcePath path(textures_directory_name + name);
 
 			// TODO: save this ResourceId somewhere
@@ -1455,7 +1450,7 @@ void TextureManager::registerTextureResources(ResourceManager* manager)
 		if (loader)
 		{
 			mTextures.push_back(NULL);
-			mTextureLoaders.push_back(loader);
+			// mTextureLoaders.push_back(loader);
 			// TODO: save this ResourceId somewhere
 			const ResourceId res_id = manager->addResource(path, this); 
 		}
@@ -1488,33 +1483,6 @@ void TextureManager::freeCustomTextureId(const TextureId tex_id)
 
 
 //
-// TextureManager::createTexture
-//
-// Allocates memory for a new texture and returns a pointer to it. The texture
-// is inserted into mTextureIdsMap for future retrieval.
-//
-Texture* TextureManager::createTexture(const TextureId tex_id, int width, int height)
-{
-	width = std::min<int>(width, Texture::MAX_TEXTURE_WIDTH);
-	height = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT);
-
-	// server shouldn't allocate memory for texture data, only the header	
-	uint32_t texture_size = clientside ?
-			Texture::calculateSize(width, height) : sizeof(Texture);
-	
-	Texture* texture = (Texture*)Z_Malloc(texture_size, PU_STATIC, NULL);
-	texture->init(width, height);
-
-	texture->mTextureId = tex_id;
-
-	mTextures.push_back(texture);
-//	mTextureIdMap.insert(TextureIdMapPair(tex_id, texture));
-
-	return texture;
-}
-
-
-//
 // TextureManager::freeTexture
 //
 // Frees the memory used by the specified texture and removes it
@@ -1527,61 +1495,6 @@ void TextureManager::freeTexture(const LumpId lump_id)
 	mTextures[lump_id] = NULL;
 }
 
-
-
-//
-// TextureManager::getTextureId
-//
-// Returns the tex_id for the texture that matches the supplied name.
-//
-TextureId TextureManager::getTextureId(const OString& name, Texture::TextureSourceType type)
-{
-	OString uname(StdStringToUpper(name));
-
-	// sidedefs with the '-' texture indicate there should be no texture used
-	if (uname[0] == '-' && type == Texture::TEX_WALLTEXTURE)
-		return NO_TEXTURE_ID;
-
-	TextureId tex_id = NOT_FOUND_TEXTURE_ID;
-
-/*
-	// check for the texture in the default location specified by type
-	if (type == Texture::TEX_FLAT)
-		tex_id = getFlatTextureId(uname);
-	else if (type == Texture::TEX_WALLTEXTURE)
-		tex_id = getWallTextureTextureId(uname);
-	else if (type == Texture::TEX_PATCH)
-		tex_id = getPatchTextureId(uname);
-	else if (type == Texture::TEX_SPRITE)
-		tex_id = getSpriteTextureId(uname);
-	else if (type == Texture::TEX_RAW)
-		tex_id = getRawTextureTextureId(uname);
-	else if (type == Texture::TEX_PNG)
-		tex_id = getPNGTextureTextureId(uname);
-
-	// not found? check elsewhere
-	if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_FLAT)
-		tex_id = getFlatTextureId(uname);
-	if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_WALLTEXTURE)
-		tex_id = getWallTextureTextureId(uname);
-*/
-
-	return tex_id;
-}
-
-
-//
-// TextureManager::getTextureId
-//
-// Returns the tex_id for the texture that matches the supplied name.
-// [SL] This version will accept WAD lump names that are not properly
-// zero terminated (max 8 characters).
-//
-TextureId TextureManager::getTextureId(const char* name, Texture::TextureSourceType type)
-{
-	OString uname(StdStringToUpper(name, 8));
-	return getTextureId(uname, type);
-}
 
 
 //
@@ -1629,8 +1542,6 @@ const Texture* TextureManager::getTexture(const LumpId lump_id)
 	if (lump_id < mTextures.size())
 	{
 		texture = mTextures[lump_id];
-		if (lump_id < mTextureLoaders.size())
-			mTextureLoaders[lump_id]->load((void*)texture);
 		if (texture)
 			mTextures[lump_id] = texture;
 
@@ -1638,6 +1549,60 @@ const Texture* TextureManager::getTexture(const LumpId lump_id)
 	}
 	return texture;
 }
+
+
+
+
+
+
+
+
+
+
+//
+// Res_GetTextureResourceId
+//
+// Returns the ResourceId for the texture that matches the supplied name.
+//
+// TODO: USE THIS LOGIC TO INSTANTIATE A ResourceLoader INSTANCE
+//
+const ResourceId Res_GetTextureResourceId(const ResourcePath& res_path)
+{
+	const OString& directory = res_path.first();
+	const OString& name = res_path.last();
+	if (directory == textures_directory_name && name.size() > 0 && name.c_str()[0] == '-')
+		//return ResourceManager::NO_TEXTURE_RESOURCE_ID;
+		return ResourceManager::RESOURCE_NOT_FOUND;
+
+	ResourceId res_id = ResourceManager::RESOURCE_NOT_FOUND;
+	//ResourceId res_id = ResourceManager::NOT_FOUND_TEXTURE_RESOURCE_ID;
+
+/*
+	// check for the texture in the default location specified by type
+	if (type == Texture::TEX_FLAT)
+		tex_id = getFlatTextureId(uname);
+	else if (type == Texture::TEX_WALLTEXTURE)
+		tex_id = getWallTextureTextureId(uname);
+	else if (type == Texture::TEX_PATCH)
+		tex_id = getPatchTextureId(uname);
+	else if (type == Texture::TEX_SPRITE)
+		tex_id = getSpriteTextureId(uname);
+	else if (type == Texture::TEX_RAW)
+		tex_id = getRawTextureTextureId(uname);
+	else if (type == Texture::TEX_PNG)
+		tex_id = getPNGTextureTextureId(uname);
+
+	// not found? check elsewhere
+	if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_FLAT)
+		tex_id = getFlatTextureId(uname);
+	if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_WALLTEXTURE)
+		tex_id = getWallTextureTextureId(uname);
+*/
+
+	return res_id;
+}
+
+
 
 
 VERSION_CONTROL (res_texture_cpp, "$Id: res_texture.cpp 3945 2013-07-03 14:32:48Z dr_sean $")
