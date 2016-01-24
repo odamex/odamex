@@ -413,7 +413,7 @@ void S_ParseSndSeq (void)
 	ScriptTemp = (unsigned int *)Malloc (MAX_SEQSIZE * sizeof(*ScriptTemp));
 	ScriptTempSize = MAX_SEQSIZE;
 
-	const ResourceIdList res_ids = Res_GetAllResourceIds("SNDSEQ");
+	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("GLOBAL/SNDSEQ"));
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
 		SC_OpenResourceLump(res_ids[i]);

@@ -209,7 +209,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	GStrings.Compact();
 
 	// Load all DeHackEd files
-	const ResourceIdList dehacked_res_ids = Res_GetAllResourceIds("DEHACKED");
+	const ResourceIdList dehacked_res_ids = Res_GetAllResourceIds(ResourcePath("GLOBAL/DEHACKED"));
 	for (size_t i = 0; i < dehacked_res_ids.size(); i++)
 		D_LoadDehLump(dehacked_res_ids[i]);
 

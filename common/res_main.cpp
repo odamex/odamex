@@ -401,7 +401,7 @@ void ResourceManager::openResourceContainers(const std::vector<std::string>& fil
 void ResourceManager::closeAllResourceContainers()
 {
 	for (ResourceRecordTable::iterator it = mResources.begin(); it != mResources.end(); ++it)
-		releaseData(getResourceId(&(*it)));
+		releaseResourceData(getResourceId(&(*it)));
 	mResources.clear();
 
 	for (std::vector<ResourceContainer*>::iterator it = mContainers.begin(); it != mContainers.end(); ++it)
@@ -479,14 +479,14 @@ uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
 
 
 //
-// ResourceManager::getData
+// ResourceManager::loadResourceData
 //
 // Utilizes the resource cache to quickly return resources that have
 // previously been cached. Initially, resource data is loaded from its
 // container and then post-processed. Then the post-processed resource data
 // is cached for re-use.
 //
-const void* ResourceManager::getData(const ResourceId res_id, int tag)
+const void* ResourceManager::loadResourceData(const ResourceId res_id, int tag)
 {
 	const void* data = NULL;
 	if (validateResourceId(res_id))
@@ -506,9 +506,9 @@ const void* ResourceManager::getData(const ResourceId res_id, int tag)
 
 
 //
-// ResourceManager::releaseData
+// ResourceManager::releaseResourceData
 //
-void ResourceManager::releaseData(const ResourceId res_id)
+void ResourceManager::releaseResourceData(const ResourceId res_id)
 {
 	if (validateResourceId(res_id))
 		mCache->releaseData(res_id);
@@ -620,17 +620,16 @@ const ResourceId Res_GetResourceId(const OString& name, const OString& directory
 }
 
 
-//
-// Res_GetAllResourceIds
-//
-// Fills the supplied vector with the ResourceId of any lump whose name matches the
-// given string. An empty vector indicates that there were no matches.
-//
-const ResourceIdList Res_GetAllResourceIds(const OString& name, const OString& directory)
-{
-	const ResourcePath path = Res_MakeResourcePath(name, directory);
+ //
+ // Res_GetAllResourceIds
+ //
+ // Fills the supplied vector with the ResourceId of any lump whose name matches the
+ // given path. An empty vector indicates that there were no matches.
+ //
+ const ResourceIdList Res_GetAllResourceIds(const ResourcePath& path)
+ {
 	return resource_manager.getAllResourceIds(path);
-}
+ }
 
 
 //
@@ -736,7 +735,7 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 //
 void* Res_CacheResource(const ResourceId res_id, int tag)
 {
-	return (void*)resource_manager.getData(res_id, tag);
+	return (void*)resource_manager.loadResourceData(res_id, tag);
 }
 
 
@@ -747,7 +746,7 @@ void* Res_CacheResource(const ResourceId res_id, int tag)
 //
 void Res_ReleaseResource(const ResourceId res_id)
 {
-	resource_manager.releaseData(res_id);
+	resource_manager.releaseResourceData(res_id);
 }
 
 
@@ -756,5 +755,3 @@ BEGIN_COMMAND(dump_resources)
 	resource_manager.dump();
 }
 END_COMMAND(dump_resources)
-
-VERSION_CONTROL (res_main_cpp, "$Id: res_main.cpp $")

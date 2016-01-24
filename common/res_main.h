@@ -148,21 +148,9 @@ public:
 		return mNameTranslator.translate(path);
 	}
 
-	// TODO: Consider removing this method
-	const ResourceId getResourceId(const OString& name, const OString& directory) const
-	{
-		return getResourceId(Res_MakeResourcePath(name, directory));
-	}
-
 	const ResourceIdList getAllResourceIds(const ResourcePath& path) const
 	{
 		return mNameTranslator.getAllTranslations(path);
-	}
-
-	// TODO: Consider removing this method
-	const ResourceIdList getAllResourceIds(const OString& name, const OString& directory) const
-	{
-		return getAllResourceIds(Res_MakeResourcePath(name, directory));
 	}
 
 	const ResourceIdList getAllResourceIds() const;
@@ -175,21 +163,13 @@ public:
 		return ResourcePath::getEmptyResourcePath();
 	}
 
+	const std::string& getResourceContainerFileName(const ResourceId res_id) const;
+
 	uint32_t getResourceSize(const ResourceId res_id) const;
 
-	const void* getData(const ResourceId res_id, int tag = PU_CACHE);
+	const void* loadResourceData(const ResourceId res_id, int tag = PU_CACHE);
 
-	void releaseData(const ResourceId res_id);
-
-
-	const ResourceContainer* getResourceContainer(const ResourceContainerId& container_id) const
-	{
-		if (container_id < mContainers.size())
-			return mContainers[container_id];
-		return NULL;
-	}
-
-	const std::string& getResourceContainerFileName(const ResourceId res_id) const;
+	void releaseResourceData(const ResourceId res_id);
 
 	void dump() const;
 
@@ -384,7 +364,7 @@ const std::vector<std::string>& Res_GetResourceFileHashes();
 
 const ResourceId Res_GetResourceId(const OString& name, const OString& directory = global_directory_name);
 
-const ResourceIdList Res_GetAllResourceIds(const OString& name, const OString& directory = global_directory_name); 
+const ResourceIdList Res_GetAllResourceIds(const ResourcePath& path);
 
 const ResourceId Res_GetTextureResourceId(const OString& name, const OString& directory);
 
@@ -423,7 +403,7 @@ static inline uint32_t Res_GetResourceSize(const OString& name, const OString& d
 // Res_CacheResource
 // ----------------------------------------------------------------------------
 
-void* Res_CacheResource(const ResourceId res_id, int tag);
+void* Res_CacheResource(const ResourceId res_id, int tag = PU_CACHE);
 
 static inline void* Res_CacheResource(const OString& name, int tag)
 {
