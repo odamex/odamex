@@ -216,7 +216,7 @@ public:
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const = 0;
 
-	virtual uint32_t loadResource(const ResourceId res_id, void* data, uint32_t length) const = 0;
+	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const = 0;
 };
 
 // ============================================================================
@@ -244,7 +244,7 @@ public:
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 
-	virtual uint32_t loadResource(const ResourceId res_id, void* data, uint32_t length) const;
+	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
 
 private:
 	ResourceContainerId		mResourceContainerId;
@@ -283,7 +283,7 @@ public:
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 		
-	virtual uint32_t loadResource(const ResourceId res_id, void* data, uint32_t length) const;
+	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
 
 private:
 	void cleanup();

@@ -42,12 +42,13 @@
 #include "m_fileio.h"
 #include "cmdlib.h"
 #include "c_dispatch.h"
+#include "w_wad.h"
 #include "w_ident.h"
 
 #include "i_system.h"
 #include "z_zone.h"
 
-
+static uint32_t default_initial_resource_count = 2048;
 static ResourceManager resource_manager;
 
 //
@@ -175,11 +176,11 @@ bool Res_IsDehackedFile(const OString& filename)
 // DefaultResourceLoader class implementation
 // ----------------------------------------------------------------------------
 
-DefaultResourceLoader::DefaultResourceLoader(const ResourceContainer* container, const ResourceId res_id) :
-	mContainer(container),
+DefaultResourceLoader::DefaultResourceLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id) :
+	mRawResourceAccessor(accessor),
 	mResourceId(res_id)
 {
-	assert(mContainer != NULL);
+	assert(mRawResourceAccessor != NULL);
 	assert(mResourceId != ResourceManager::RESOURCE_NOT_FOUND);
 }
 
@@ -191,7 +192,7 @@ DefaultResourceLoader::DefaultResourceLoader(const ResourceContainer* container,
 //
 uint32_t DefaultResourceLoader::size() const
 {
-	return mContainer->getResourceSize(mResourceId);
+	return mRawResourceAccessor->getResourceSize(mResourceId);
 }
 
 
@@ -200,7 +201,104 @@ uint32_t DefaultResourceLoader::size() const
 //
 void DefaultResourceLoader::load(void* data) const
 {
-	uint32_t bytes_read = mContainer->loadResource(mResourceId, data, size());
+	uint32_t size =  mRawResourceAccessor->getResourceSize(mResourceId);
+	mRawResourceAccessor->loadResource(mResourceId, data, size); 
+}
+
+
+
+// ============================================================================
+//
+// ResourceNameTranslator class implementation
+//
+// ============================================================================
+
+//
+// ResourceNameTranslator::ResourceNameTranslator
+//
+ResourceNameTranslator::ResourceNameTranslator() :
+	mResourceIdLookup(default_initial_resource_count)
+{ }
+
+
+//
+// ResourceNameTranslator::translate
+//
+// Retrieves the ResourceId for a given resource path name. If more than
+// one ResourceId match the given path name, the ResouceId from the most
+// recently loaded resource file will be returned.
+//
+const ResourceId ResourceNameTranslator::translate(const ResourcePath& path) const
+{
+	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(path);
+	if (it != mResourceIdLookup.end())
+	{
+		const ResourceIdList& res_id_list = it->second;
+		assert(!res_id_list.empty());
+		const ResourceId res_id = res_id_list.back();
+		// assert(validateResourceId(res_id));
+		return res_id;
+	}
+	
+	//return ResourceManager::RESOURCE_NOT_FOUND;
+	return static_cast<ResourceId>(-1);
+}
+
+
+//
+// ResourceNameTranslator::getAllTranslations
+//
+// Returns a std::vector of ResourceIds that match a given resource path name.
+// If there are no matches, an empty std::vector will be returned.
+//
+const ResourceIdList ResourceNameTranslator::getAllTranslations(const ResourcePath& path) const
+{
+	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(path);
+	if (it != mResourceIdLookup.end())
+	{
+		const ResourceIdList& res_id_list = it->second;
+		assert(!res_id_list.empty());
+		return res_id_list;
+	}
+	return ResourceIdList();
+}
+
+
+//
+// ResourceNameTranslator::checkNameVisibility
+//
+// Determine if no other resources have overridden this resource by having
+// the same resource path.
+//
+bool ResourceNameTranslator::checkNameVisibility(const ResourcePath& path, const ResourceId res_id) const
+{
+	return translate(path) == res_id;
+}
+
+
+//
+// ResourceNameTranslator::addTranslation
+//
+// Add the ResourceId to the ResourceIdLookupTable
+// ResourceIdLookupTable uses a ResourcePath key and value that is a std::vector
+// of ResourceIds.
+//
+void ResourceNameTranslator::addTranslation(const ResourcePath& path, const ResourceId res_id)
+{
+	ResourceIdLookupTable::iterator it = mResourceIdLookup.find(path);
+	if (it == mResourceIdLookup.end())
+	{
+		// No other resources with the same path exist yet. Create a new list
+		// for ResourceIds with a matching path.
+		std::pair<ResourceIdLookupTable::iterator, bool> result =
+				mResourceIdLookup.insert(std::make_pair(path, ResourceIdList()));
+		it = result.first;
+	}
+
+	ResourceIdList& res_id_list = it->second;
+	res_id_list.push_back(res_id);
+
+	assert(translate(path) == res_id);
 }
 
 
@@ -215,12 +313,11 @@ void DefaultResourceLoader::load(void* data) const
 //
 // Set up the resource lookup tables.
 //
-static uint32_t default_initial_resource_count = 2048;
 
 ResourceManager::ResourceManager() :
 	mCache(NULL),
 	mTextureManagerContainerId(static_cast<ResourceContainerId>(-1)),
-	mResourceIdLookup(default_initial_resource_count)
+	mRawResourceAccessor(this)
 { }
 
 
@@ -336,69 +433,12 @@ const ResourceId ResourceManager::addResource(
 
 	res_rec.mPath = path;
 	res_rec.mResourceContainerId = container->getResourceContainerId();
-	res_rec.mResourceLoader = new DefaultResourceLoader(container, res_id);
+	res_rec.mResourceLoader = new DefaultResourceLoader(&mRawResourceAccessor, res_id);
 	// TODO: delete mResourceLoader at some point
 
-	// Add the ResourceId to the ResourceIdLookupTable
-	// ResourceIdLookupTable uses a ResourcePath key and value that is a std::vector
-	// of ResourceIds.
-	ResourceIdLookupTable::iterator it = mResourceIdLookup.find(path);
-	if (it == mResourceIdLookup.end())
-	{
-		// No other resources with the same path exist yet. Create a new list
-		// for ResourceIds with a matching path.
-		std::pair<ResourceIdLookupTable::iterator, bool> result = mResourceIdLookup.insert(std::make_pair(path, ResourceIdList()));
-		it = result.first;
-	}
-
-	ResourceIdList& res_id_list = it->second;
-	res_id_list.push_back(res_id);
-
-	assert(getResourceId(path) == res_id);
+	mNameTranslator.addTranslation(path, res_id);
 	
 	return res_id;
-}
-
-
-//
-// ResourceManager::getResourceId
-//
-// Retrieves the ResourceId for a given resource path name. If more than
-// one ResourceId match the given path name, the ResouceId from the most
-// recently loaded resource file will be returned.
-//
-const ResourceId ResourceManager::getResourceId(const ResourcePath& path) const
-{
-	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(path);
-	if (it != mResourceIdLookup.end())
-	{
-		const ResourceIdList& res_id_list = it->second;
-		assert(!res_id_list.empty());
-		const ResourceId res_id = res_id_list.back();
-		assert(validateResourceId(res_id));
-		return res_id;
-	}
-	
-	return ResourceManager::RESOURCE_NOT_FOUND;
-}
-
-
-//
-// ResourceManager::getAllResourceIds
-//
-// Returns a std::vector of ResourceIds that match a given resource path name.
-// If there are no matches, an empty std::vector will be returned.
-//
-const ResourceIdList ResourceManager::getAllResourceIds(const ResourcePath& path) const
-{
-	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(path);
-	if (it != mResourceIdLookup.end())
-	{
-		const ResourceIdList& res_id_list = it->second;
-		assert(!res_id_list.empty());
-		return res_id_list;
-	}
-	return ResourceIdList();
 }
 
 
@@ -469,7 +509,7 @@ uint32_t ResourceManager::loadRawResource(const ResourceId res_id, void* data, u
 			size = std::min<int>(size, container->getResourceSize(res_id));
 		else
 			size = container->getResourceSize(res_id);
-		bytes_read = container->loadResource(res_id, data, size);
+		bytes_read = container->loadResource(data, res_id, size);
 	}
 	return bytes_read;
 }

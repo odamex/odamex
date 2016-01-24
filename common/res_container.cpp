@@ -115,11 +115,11 @@ uint32_t SingleLumpResourceContainer::getResourceSize(const ResourceId res_id) c
 //
 // SingleLumpResourceContainer::loadResource
 //
-uint32_t SingleLumpResourceContainer::loadResource(const ResourceId res_id, void* data, uint32_t length) const
+uint32_t SingleLumpResourceContainer::loadResource(void* data, const ResourceId res_id, uint32_t size) const
 {
-	length = std::min(length, getResourceSize(res_id));
-	if (length > 0)
-		return mFile->read(data, length); 
+	size = std::min(size, getResourceSize(res_id));
+	if (size > 0)
+		return mFile->read(data, size); 
 	return 0;
 }
 
@@ -342,15 +342,15 @@ uint32_t WadResourceContainer::getResourceSize(const ResourceId res_id) const
 //
 // WadResourceContainer::loadResource
 //
-uint32_t WadResourceContainer::loadResource(const ResourceId res_id, void* data, uint32_t length) const
+uint32_t WadResourceContainer::loadResource(void* data, const ResourceId res_id, uint32_t size) const
 {
-	length = std::min(length, getResourceSize(res_id));
-	if (length > 0)
+	size = std::min(size, getResourceSize(res_id));
+	if (size > 0)
 	{
 		LumpId lump_id = getLumpId(res_id);
 		uint32_t offset = mDirectory->getOffset(lump_id);
 		mFile->seek(offset);
-		return mFile->read(data, length); 
+		return mFile->read(data, size); 
 	}
 	return 0;
 }

@@ -268,7 +268,7 @@ private:
 class FlatTextureLoader : public TextureLoader
 {
 public:
-	FlatTextureLoader(ResourceManager* manager, const ResourceId res_id);
+	FlatTextureLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id);
 	virtual ~FlatTextureLoader() {}
 
 	virtual uint32_t size() const;
@@ -278,7 +278,7 @@ private:
 	int16_t getWidth() const;
 	int16_t getHeight() const;
 
-	ResourceManager*	mResourceManager;
+	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
 	const ResourceId	mResId;
 };
 
@@ -292,7 +292,7 @@ private:
 class PatchTextureLoader : public TextureLoader
 {
 public:
-	PatchTextureLoader(ResourceManager* manager, const ResourceId res_id);
+	PatchTextureLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id);
 	virtual ~PatchTextureLoader() {}
 
 	virtual bool validate() const;
@@ -300,7 +300,7 @@ public:
 	virtual void load(void* data) const;
 
 private:
-	ResourceManager*	mResourceManager;
+	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
 	const ResourceId	mResId;
 
 	bool validateHelper(const uint8_t* raw_data, uint32_t raw_size) const;
@@ -329,7 +329,7 @@ class SpriteTextureLoader : public PatchTextureLoader
 class CompositeTextureLoader : public TextureLoader
 {
 public:
-	CompositeTextureLoader(ResourceManager* manager, const CompositeTextureDefinition& texture_def);
+	CompositeTextureLoader(const ResourceManager::RawResourceAccessor* accessor, const CompositeTextureDefinition& texture_def);
 	virtual ~CompositeTextureLoader() {}
 
 	virtual bool validate() const;
@@ -337,7 +337,7 @@ public:
 	virtual void load(void* data) const;
 
 private:
-	ResourceManager*					mResourceManager;
+	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
 	const CompositeTextureDefinition	mTextureDef;
 };
 
@@ -351,7 +351,7 @@ private:
 class RawTextureLoader : public TextureLoader
 {
 public:
-	RawTextureLoader(ResourceManager* manager, const ResourceId res_id); 
+	RawTextureLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id); 
 	virtual ~RawTextureLoader() {}
 
 	virtual bool validate() const;
@@ -359,7 +359,7 @@ public:
 	virtual void load(void* data) const;
 
 private:
-	ResourceManager*	mResourceManager;
+	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
 	const ResourceId	mResId;
 };
 
@@ -373,7 +373,7 @@ private:
 class PngTextureLoader : public TextureLoader
 {
 public:
-	PngTextureLoader(ResourceManager* manager, const ResourceId res_id); 
+	PngTextureLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id, const OString& name); 
 	virtual ~PngTextureLoader() {}
 
 	virtual bool validate() const;
@@ -381,8 +381,9 @@ public:
 	virtual void load(void* data) const;
 
 private:
-	ResourceManager*	mResourceManager;
+	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
 	const ResourceId	mResId;
+	const OString&		mResourceName;
 };
 
 
@@ -390,8 +391,8 @@ private:
 class TextureLoaderFactory
 {
 public:
-	TextureLoaderFactory(ResourceManager* manager, CompositeTextureDefinition* mTextureDef) :
-		mResourceManager(manager)
+	TextureLoaderFactory(const ResourceManager::RawResourceAccessor* accessor, CompositeTextureDefinition* mTextureDef) :
+		mRawResourceAccessor(accessor)
 	{
 		// TODO: load mTextureDef from mResourceManager	
 	}
@@ -409,15 +410,15 @@ public:
 
 		if (directory == flats_directory_name)
 		{
-			return new FlatTextureLoader(mResourceManager, res_id);
+			return new FlatTextureLoader(mRawResourceAccessor, res_id);
 		}
 		else if (directory == textures_directory_name)
 		{
-			return new CompositeTextureLoader(mResourceManager, mTextureDef);
+			return new CompositeTextureLoader(mRawResourceAccessor, mTextureDef);
 		}
 		else if (directory == patches_directory_name)
 		{
-			return new PatchTextureLoader(mResourceManager, res_id);
+			return new PatchTextureLoader(mRawResourceAccessor, res_id);
 		}
 
 		/*
@@ -446,7 +447,7 @@ public:
 	}
 
 private:
-	ResourceManager*			mResourceManager;
+	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
 	CompositeTextureDefinition	mTextureDef;
 };
 
@@ -504,8 +505,6 @@ public:
 	void updateAnimatedTextures();
 
 	const Texture* getTexture(const ResourceId res_id);
-
-	void freeTexture(const LumpId lump_id);
 
 	TextureId createCustomTextureId();
 	void freeCustomTextureId(const TextureId tex_id);

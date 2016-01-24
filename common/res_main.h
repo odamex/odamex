@@ -33,13 +33,10 @@
 #include "res_resourcepath.h"
 #include "res_container.h"
 
-#include "w_wad.h"
 #include "z_zone.h"
 
 // Typedefs
 typedef uint32_t ResourceId;
-typedef uint32_t ResourceFileId;
-
 
 // Forward class declarations
 class ResourceManager;
@@ -47,6 +44,7 @@ class ResourceContainer;
 class FileAccessor;
 class ContainerDirectory;
 class ResourceCache;
+class ResourceLoader;
 
 
 // Default directory names for ZDoom zipped resource files.
@@ -83,52 +81,30 @@ bool Res_IsDehackedFile(const OString& filename);
 
 // ============================================================================
 //
-// ResourceLoader class interface
+// ResourceNameTranslator
+//
+// Provides translation from ResourcePaths to ResourceIds
 //
 // ============================================================================
-//
-// Loads a resource from a ResourceContainer, performing any necessary data
-// conversion and caching the resulting instance in the Zone memory system.
-//
 
-// ----------------------------------------------------------------------------
-// ResourceLoader abstract base class interface
-// ----------------------------------------------------------------------------
-
-class ResourceLoader
+class ResourceNameTranslator
 {
 public:
-	virtual ~ResourceLoader() {}
+	ResourceNameTranslator();
 
-	virtual bool validate() const
-	{	return true;	}
+	void addTranslation(const ResourcePath& path, const ResourceId res_id);
 
-	virtual uint32_t size() const = 0;
-	virtual void load(void* data) const = 0;
-};
+	const ResourceId translate(const ResourcePath& path) const;
 
+	const ResourceIdList getAllTranslations(const ResourcePath& path) const;
 
-// ---------------------------------------------------------------------------
-// DefaultResourceLoader class interface
-//
-// Generic resource loading functionality. Simply reads raw data and returns
-// a pointer to the cached data.
-// ---------------------------------------------------------------------------
-
-class DefaultResourceLoader : public ResourceLoader
-{
-public:
-	DefaultResourceLoader(const ResourceContainer* container, const ResourceId res_id);
-	virtual ~DefaultResourceLoader() { }
-
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	bool checkNameVisibility(const ResourcePath& path, const ResourceId res_id) const;
 
 private:
-	const ResourceContainer*	mContainer;
-	const ResourceId			mResourceId;
+	// Map resource pathnames to ResourceIds
+	typedef OHashTable<ResourcePath, ResourceIdList> ResourceIdLookupTable;
+	ResourceIdLookupTable			mResourceIdLookup;
 };
-
 
 
 
@@ -170,13 +146,23 @@ public:
 		return res_id >= 0 && res_id < mResources.size();
 	}
 
-	const ResourceId getResourceId(const ResourcePath& path) const;
+	const ResourceId getResourceId(const ResourcePath& path) const
+	{
+		return mNameTranslator.translate(path);
+	}
+
+	// TODO: Consider removing this method
 	const ResourceId getResourceId(const OString& name, const OString& directory) const
 	{
 		return getResourceId(Res_MakeResourcePath(name, directory));
 	}
 
-	const ResourceIdList getAllResourceIds(const ResourcePath& path) const;
+	const ResourceIdList getAllResourceIds(const ResourcePath& path) const
+	{
+		return mNameTranslator.getAllTranslations(path);
+	}
+
+	// TODO: Consider removing this method
 	const ResourceIdList getAllResourceIds(const OString& name, const OString& directory) const
 	{
 		return getAllResourceIds(Res_MakeResourcePath(name, directory));
@@ -229,7 +215,7 @@ private:
 
 		ResourcePath			mPath;
 		ResourceContainerId		mResourceContainerId;
-		ResourceLoader*			mResourceLoader;
+		const ResourceLoader*	mResourceLoader;
 	};
 
 	typedef std::vector<ResourceRecord> ResourceRecordTable;
@@ -272,6 +258,44 @@ private:
 		return static_cast<ResourceContainerId>(-1);		// an invalid ResourceContainerId
 	}
 
+
+public:
+	//
+	// RawResourceAccessor class
+	//
+	// Provides access to the resources without post-processing. Instances of
+	// this class are typically used by the ResourceLoader hierarchy to read the
+	// raw resource data and then perform their own post-processign.
+	//
+	class RawResourceAccessor
+	{
+	public:
+		RawResourceAccessor(const ResourceManager* manager) :
+			mResourceManager(manager)
+		{ }
+
+		uint32_t getResourceSize(const ResourceId res_id) const
+		{
+			const ResourceContainerId container_id = mResourceManager->getResourceContainerId(res_id);
+			const ResourceContainer* container = mResourceManager->mContainers[container_id];
+			return container->getResourceSize(res_id);
+		}
+
+		void loadResource(const ResourceId res_id, void* data, uint32_t size) const
+		{
+			const ResourceContainerId container_id = mResourceManager->getResourceContainerId(res_id);
+			const ResourceContainer* container = mResourceManager->mContainers[container_id];
+			container->loadResource(data, res_id, size);
+		}
+	
+	private:
+		const ResourceManager*		mResourceManager;
+	};
+
+private:
+	RawResourceAccessor				mRawResourceAccessor;
+
+
 	std::vector<ResourceContainer*>	mContainers;
 	ResourceContainerId				mTextureManagerContainerId;
 
@@ -279,9 +303,13 @@ private:
 	std::vector<std::string>		mResourceFileNames;
 	std::vector<std::string>		mResourceFileHashes;
 
+	ResourceNameTranslator			mNameTranslator;
+
+	/*
 	// Map resource pathnames to ResourceIds
 	typedef OHashTable<ResourcePath, ResourceIdList> ResourceIdLookupTable;
 	ResourceIdLookupTable			mResourceIdLookup;
+	*/
 
 
 	// ---------------------------------------------------------------------------
@@ -292,6 +320,58 @@ private:
 
 	bool visible(const ResourceId res_id) const;
 };
+
+
+
+// ============================================================================
+//
+// ResourceLoader class interface
+//
+// ============================================================================
+//
+// Loads a resource from a ResourceContainer, performing any necessary data
+// conversion and caching the resulting instance in the Zone memory system.
+//
+
+// ----------------------------------------------------------------------------
+// ResourceLoader abstract base class interface
+// ----------------------------------------------------------------------------
+
+class ResourceLoader
+{
+public:
+	virtual ~ResourceLoader() {}
+
+	virtual bool validate() const
+	{	return true;	}
+
+	virtual uint32_t size() const = 0;
+	virtual void load(void* data) const = 0;
+};
+
+
+// ---------------------------------------------------------------------------
+// DefaultResourceLoader class interface
+//
+// Generic resource loading functionality. Simply reads raw data and returns
+// a pointer to the cached data.
+// ---------------------------------------------------------------------------
+
+class DefaultResourceLoader : public ResourceLoader
+{
+public:
+	DefaultResourceLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id);
+	virtual ~DefaultResourceLoader() { }
+
+	virtual uint32_t size() const;
+	virtual void load(void* data) const;
+
+private:
+	const ResourceManager::RawResourceAccessor*	mRawResourceAccessor;
+	const ResourceId			mResourceId;
+};
+
+
 
 
 // ============================================================================

@@ -434,8 +434,10 @@ void InvalidTextureLoader::load(void* data) const
 //
 // ----------------------------------------------------------------------------
 
-FlatTextureLoader::FlatTextureLoader(ResourceManager* manager, const ResourceId res_id) :
-	mResourceManager(manager), mResId(res_id)
+FlatTextureLoader::FlatTextureLoader(
+		const ResourceManager::RawResourceAccessor* accessor,
+		const ResourceId res_id) :
+	mRawResourceAccessor(accessor), mResId(res_id)
 { }
 
 
@@ -454,7 +456,7 @@ FlatTextureLoader::FlatTextureLoader(ResourceManager* manager, const ResourceId 
 //
 int16_t FlatTextureLoader::getWidth() const
 {
-	uint32_t raw_size = mResourceManager->getResourceSize(mResId);
+	uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
 	if (raw_size > 0)
 	{
 		if (raw_size == 64 * 64)
@@ -507,7 +509,7 @@ void FlatTextureLoader::load(void* data) const
 
 	#if CLIENT_APP
 	uint8_t* raw_data = new uint8_t[width * height]; 
-	mResourceManager->loadRawResource(mResId, raw_data, width * height);
+	mRawResourceAccessor->loadResource(mResId, raw_data, width * height);
 
 	// convert the row-major raw data to into column-major
 	Res_TransposeImage(texture->mData, raw_data, width, height);
@@ -521,8 +523,10 @@ void FlatTextureLoader::load(void* data) const
 //
 // ----------------------------------------------------------------------------
 
-PatchTextureLoader::PatchTextureLoader(ResourceManager* manager, const ResourceId res_id) :
-	mResourceManager(manager), mResId(res_id)
+PatchTextureLoader::PatchTextureLoader(
+		const ResourceManager::RawResourceAccessor* accessor,
+		const ResourceId res_id) :
+	mRawResourceAccessor(accessor), mResId(res_id)
 { }
 
 
@@ -531,9 +535,9 @@ PatchTextureLoader::PatchTextureLoader(ResourceManager* manager, const ResourceI
 //
 bool PatchTextureLoader::validate() const
 {
-	uint32_t raw_size = mResourceManager->getResourceSize(mResId);
+	uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
 	uint8_t* raw_data = new uint8_t[raw_size];
-	mResourceManager->loadRawResource(mResId, raw_data, raw_size);
+	mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
 
 	bool valid = validateHelper(raw_data, raw_size);
 
@@ -581,7 +585,7 @@ bool PatchTextureLoader::validateHelper(const uint8_t* raw_data, uint32_t raw_si
 uint32_t PatchTextureLoader::size() const
 {
 	uint8_t raw_data[4];
-	mResourceManager->loadRawResource(mResId, raw_data, 4);
+	mRawResourceAccessor->loadResource(mResId, raw_data, 4);
 	int16_t width = LESHORT(*(int16_t*)(raw_data + 0));
 	int16_t height = LESHORT(*(int16_t*)(raw_data + 2));
 
@@ -596,9 +600,9 @@ uint32_t PatchTextureLoader::size() const
 //
 void PatchTextureLoader::load(void* data) const
 {
-	uint32_t raw_size = mResourceManager->getResourceSize(mResId);
+	uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
 	uint8_t* raw_data = new uint8_t[raw_size]; 
-	mResourceManager->loadRawResource(mResId, raw_data, raw_size);
+	mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
 
 	int16_t width = LESHORT(*(int16_t*)(raw_data + 0));
 	int16_t height = LESHORT(*(int16_t*)(raw_data + 2));
@@ -628,8 +632,10 @@ void PatchTextureLoader::load(void* data) const
 // Generates composite textures given a wall texture definition.
 // ----------------------------------------------------------------------------
 
-CompositeTextureLoader::CompositeTextureLoader(ResourceManager* manager, const CompositeTextureDefinition& texture_def) :
-	mResourceManager(manager), mTextureDef(texture_def)
+CompositeTextureLoader::CompositeTextureLoader(
+		const ResourceManager::RawResourceAccessor* accessor,
+		const CompositeTextureDefinition& texture_def) :
+	mRawResourceAccessor(accessor), mTextureDef(texture_def)
 { }
 
 
@@ -681,12 +687,15 @@ void CompositeTextureLoader::load(void* data) const
 	for (int i = 0; i < mTextureDef.mPatchCount; i++)
 	{
 		const ResourceId res_id = mTextureDef.mPatches[i].mResId;
-		if (mResourceManager->validateResourceId(res_id))
+
+		// TODO: validate the resource id when creating the composite texture definition
+		// if (mResourceManager->validateResourceId(res_id))
+		if (true)
 		{
 			// TODO: The patch data should probably be cached...
-			uint32_t raw_size = mResourceManager->getResourceSize(res_id);
+			uint32_t raw_size = mRawResourceAccessor->getResourceSize(res_id);
 			uint8_t* raw_data = new uint8_t[raw_size]; 
-			mResourceManager->loadRawResource(res_id, raw_data, raw_size);
+			mRawResourceAccessor->loadResource(res_id, raw_data, raw_size);
 
 			Res_DrawPatchIntoTexture(
 					texture,
@@ -706,8 +715,10 @@ void CompositeTextureLoader::load(void* data) const
 //
 // ----------------------------------------------------------------------------
 
-RawTextureLoader::RawTextureLoader(ResourceManager* manager, const ResourceId res_id) :
-	mResourceManager(manager), mResId(res_id)
+RawTextureLoader::RawTextureLoader(
+		const ResourceManager::RawResourceAccessor* accessor,
+		const ResourceId res_id) :
+	mRawResourceAccessor(accessor), mResId(res_id)
 { }
 
 
@@ -718,7 +729,7 @@ RawTextureLoader::RawTextureLoader(ResourceManager* manager, const ResourceId re
 //
 bool RawTextureLoader::validate() const
 {
-	return mResourceManager->getResourceSize(mResId) == 320 * 200 * sizeof(uint8_t);
+	return mRawResourceAccessor->getResourceSize(mResId) == 320 * 200 * sizeof(uint8_t);
 }
 
 
@@ -746,7 +757,7 @@ void RawTextureLoader::load(void* data) const
 
 	#if CLIENT_APP
 	uint8_t* raw_data = new uint8_t[width * height]; 
-	mResourceManager->loadRawResource(mResId, raw_data, width * height);
+	mRawResourceAccessor->loadResource(mResId, raw_data, width * height);
 
 	// convert the row-major raw data to into column-major
 	Res_TransposeImage(texture->mData, raw_data, width, height);
@@ -802,8 +813,11 @@ static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lum
 #endif
 
 
-PngTextureLoader::PngTextureLoader(ResourceManager* manager, const ResourceId res_id) :
-	mResourceManager(manager), mResId(res_id)
+PngTextureLoader::PngTextureLoader(
+		const ResourceManager::RawResourceAccessor* accessor,
+		const ResourceId res_id,
+		const OString& name) :
+	mRawResourceAccessor(accessor), mResId(res_id), mResourceName(name)
 { }
 
 
@@ -836,119 +850,113 @@ uint32_t PngTextureLoader::size() const
 void PngTextureLoader::load(void* data) const
 {
 #ifdef CLIENT_APP
-	if (mResourceManager->validateResourceId(mResId))
+	uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
+	uint8_t* raw_data = new uint8_t[raw_size];
+
+	mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
+
+	png_struct* png_ptr = NULL;
+	png_info* info_ptr = NULL;
+	png_byte* row_data = NULL;
+	MEMFILE* mfp = NULL;
+	
+	if (!png_check_sig(raw_data, 8))
 	{
-		const char* lump_name = OString(mResourceManager->getResourcePath(mResId)).c_str();
-		uint32_t lump_length = mResourceManager->getResourceSize(mResId);
-		byte* lump_data = new byte[lump_length];
-		mResourceManager->loadRawResource(mResId, lump_data, lump_length);
+		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", mResourceName.c_str());
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
+		return;
+	}
 
-		png_struct* png_ptr = NULL;
-		png_info* info_ptr = NULL;
-		png_byte* row_data = NULL;
-		MEMFILE* mfp = NULL;
+	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (!png_ptr)
+	{
+		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", mResourceName.c_str());
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
+		return;	
+	}
+  
+	info_ptr = png_create_info_struct(png_ptr);
+	if (!info_ptr)
+	{
+		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", mResourceName.c_str());
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
+		return;
+	}
+
+	// tell libpng to retrieve image data from memory buffer instead of a disk file
+	mfp = mem_fopen_read(raw_data, raw_size);
+	png_set_read_fn(png_ptr, mfp, Res_ReadPNGCallback);
+
+	png_read_info(png_ptr, info_ptr);
+
+	// read the png header
+	png_uint_32 width = 0, height = 0;
+	int bitsperpixel = 0, colortype = -1;
+	png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, NULL, NULL, NULL);
+
+	if (ret != 1)
+	{
+		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", mResourceName.c_str());
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
+		return;
+	}
+
+	Texture* texture = initTexture(data, width, height);
+	memset(texture->mData, 0, width * height);
+	memset(texture->mMask, 0, width * height);
+
+	// convert the PNG image to a convenient format
+
+	// convert transparency to full alpha
+	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+		png_set_tRNS_to_alpha(png_ptr);
+ 
+	// convert grayscale, if needed.
+	if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
+		png_set_expand_gray_1_2_4_to_8(png_ptr);
+ 
+	// convert paletted images to RGB
+	if (colortype == PNG_COLOR_TYPE_PALETTE)
+		png_set_palette_to_rgb(png_ptr);
+ 
+	// convert from RGB to ARGB
+	if (colortype == PNG_COLOR_TYPE_PALETTE || colortype == PNG_COLOR_TYPE_RGB)
+	   png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
+ 
+	// process the above transformations
+	png_read_update_info(png_ptr, info_ptr);
+
+	// Read the new color type after updates have been made.
+	colortype = png_get_color_type(png_ptr, info_ptr);
+
+	// read the image and store in temp_image
+	const png_size_t row_size = png_get_rowbytes(png_ptr, info_ptr);
+
+	row_data = new png_byte[row_size];
+	for (unsigned int y = 0; y < height; y++)
+	{
+		png_read_row(png_ptr, row_data, NULL);
+		byte* dest = texture->mData + y;
+		byte* mask = texture->mMask + y;
 		
-		if (!png_check_sig(lump_data, 8))
+		for (unsigned int x = 0; x < width; x++)
 		{
-			Printf(PRINT_HIGH, "Bad PNG header in %s.\n", lump_name);
-			Res_PNGCleanup(&png_ptr, &info_ptr, &lump_data, &row_data, &mfp);
-			return;
+			argb_t color(row_data[(x << 2) + 3], row_data[(x << 2) + 0],
+						row_data[(x << 2) + 1], row_data[(x << 2) + 2]);
+
+			*mask = color.geta() != 0;
+			if (*mask)
+				*dest = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+
+			dest += height;
+			mask += height;
 		}
-
-		png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-		if (!png_ptr)
-		{
-			Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", lump_name);
-			Res_PNGCleanup(&png_ptr, &info_ptr, &lump_data, &row_data, &mfp);
-			return;	
-		}
-	  
-		info_ptr = png_create_info_struct(png_ptr);
-		if (!info_ptr)
-		{
-			Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", lump_name);
-			Res_PNGCleanup(&png_ptr, &info_ptr, &lump_data, &row_data, &mfp);
-			return;
-		}
-
-		// tell libpng to retrieve image data from memory buffer instead of a disk file
-		mfp = mem_fopen_read(lump_data, lump_length);
-		png_set_read_fn(png_ptr, mfp, Res_ReadPNGCallback);
-
-		png_read_info(png_ptr, info_ptr);
-
-		// read the png header
-		png_uint_32 width = 0, height = 0;
-		int bitsperpixel = 0, colortype = -1;
-		png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, NULL, NULL, NULL);
-
-		if (ret != 1)
-		{
-			Printf(PRINT_HIGH, "Bad PNG header in %s.\n", lump_name);
-			Res_PNGCleanup(&png_ptr, &info_ptr, &lump_data, &row_data, &mfp);
-			return;
-		}
-
-		Texture* texture = initTexture(data, width, height);
-		memset(texture->mData, 0, width * height);
-		memset(texture->mMask, 0, width * height);
-
-		// convert the PNG image to a convenient format
-
-		// convert transparency to full alpha
-		if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
-			png_set_tRNS_to_alpha(png_ptr);
-	 
-		// convert grayscale, if needed.
-		if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
-			png_set_expand_gray_1_2_4_to_8(png_ptr);
-	 
-		// convert paletted images to RGB
-		if (colortype == PNG_COLOR_TYPE_PALETTE)
-			png_set_palette_to_rgb(png_ptr);
-	 
-		// convert from RGB to ARGB
-		if (colortype == PNG_COLOR_TYPE_PALETTE || colortype == PNG_COLOR_TYPE_RGB)
-		   png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
-	 
-		// process the above transformations
-		png_read_update_info(png_ptr, info_ptr);
-
-		// Read the new color type after updates have been made.
-		colortype = png_get_color_type(png_ptr, info_ptr);
-
-		// read the image and store in temp_image
-		const png_size_t row_size = png_get_rowbytes(png_ptr, info_ptr);
-
-		row_data = new png_byte[row_size];
-		for (unsigned int y = 0; y < height; y++)
-		{
-			png_read_row(png_ptr, row_data, NULL);
-			byte* dest = texture->mData + y;
-			byte* mask = texture->mMask + y;
-			
-			for (unsigned int x = 0; x < width; x++)
-			{
-				argb_t color(row_data[(x << 2) + 3], row_data[(x << 2) + 0],
-							row_data[(x << 2) + 1], row_data[(x << 2) + 2]);
-
-				*mask = color.geta() != 0;
-				if (*mask)
-					*dest = V_BestColor(V_GetDefaultPalette()->basecolors, color);
-
-				dest += height;
-				mask += height;
-			}
-		}
+	}
 
 //		texture->mHasMask = (memchr(texture->mMask, 0, width * height) != NULL);
 
-		Res_PNGCleanup(&png_ptr, &info_ptr, &lump_data, &row_data, &mfp);
-
-		data = static_cast<void*>(texture);
-	}
+	Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
 #endif	// CLIENT_APP
-	data = NULL;
 }
 
 
@@ -1431,6 +1439,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 //
 void TextureManager::registerTextureResources(ResourceManager* manager)
 {
+	/*
 	std::vector<ResourceId> res_id_list = manager->getAllResourceIds();
 
 	for (std::vector<ResourceId>::const_iterator it = res_id_list.begin(); it != res_id_list.end(); ++it)
@@ -1455,6 +1464,7 @@ void TextureManager::registerTextureResources(ResourceManager* manager)
 			const ResourceId res_id = manager->addResource(path, this); 
 		}
 	}
+	*/
 }
 
 
@@ -1480,21 +1490,6 @@ void TextureManager::freeCustomTextureId(const TextureId tex_id)
 {
 	mFreeCustomTextureIds[mFreeCustomTextureIdsTail++ % MAX_CUSTOM_TEXTURE_IDS] = tex_id;
 }
-
-
-//
-// TextureManager::freeTexture
-//
-// Frees the memory used by the specified texture and removes it
-// from mTextureIdsMap.
-//
-void TextureManager::freeTexture(const LumpId lump_id)
-{
-	if (mTextures[lump_id])
-		Z_Free((void*)mTextures[lump_id]);
-	mTextures[lump_id] = NULL;
-}
-
 
 
 //
