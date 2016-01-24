@@ -73,7 +73,7 @@ SingleLumpResourceContainer::SingleLumpResourceContainer(
 	const ResourceContainerId& container_id,
 	ResourceManager* manager) :
 		mResourceContainerId(container_id), mFile(file),
-		mResourceId(ResourceManager::RESOURCE_NOT_FOUND)
+		mResourceId(ResourceId::INVALID_ID)
 {
 	if (mFile->valid())
 	{

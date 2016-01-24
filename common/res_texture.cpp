@@ -1531,8 +1531,9 @@ const Texture* TextureManager::getTexture(const TextureId tex_id)
 // Returns the Texture for the supplied ResourceId. If the Texture is not
 // currently cached, it will be loaded from the disk and cached.
 //
-const Texture* TextureManager::getTexture(const LumpId lump_id)
+const Texture* TextureManager::getTexture(const ResourceId res_id)
 {
+	/*
 	const Texture* texture = NULL;
 	if (lump_id < mTextures.size())
 	{
@@ -1543,6 +1544,8 @@ const Texture* TextureManager::getTexture(const LumpId lump_id)
 		// TODO: set mTextureIdMap[lump_id] to not found texture if null
 	}
 	return texture;
+	*/
+	return NULL;
 }
 
 
@@ -1567,9 +1570,9 @@ const ResourceId Res_GetTextureResourceId(const ResourcePath& res_path)
 	const OString& name = res_path.last();
 	if (directory == textures_directory_name && name.size() > 0 && name.c_str()[0] == '-')
 		//return ResourceManager::NO_TEXTURE_RESOURCE_ID;
-		return ResourceManager::RESOURCE_NOT_FOUND;
+		return ResourceId::INVALID_ID;
 
-	ResourceId res_id = ResourceManager::RESOURCE_NOT_FOUND;
+	ResourceId res_id = ResourceId::INVALID_ID;
 	//ResourceId res_id = ResourceManager::NOT_FOUND_TEXTURE_RESOURCE_ID;
 
 /*

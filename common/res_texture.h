@@ -492,12 +492,12 @@ public:
 		return 0; 
 	}
 
-	virtual uint32_t getResourceSize(const LumpId lump_id) const
+	virtual uint32_t getResourceSize(const ResourceId res_id) const
 	{
 		return 0;
 	}
 
-	virtual uint32_t loadResource(const LumpId lump_id, void* data, uint32_t length) const
+	virtual uint32_t loadResource(const ResourceId res_id, void* data, uint32_t length) const
 	{
 		return 0;
 	}

@@ -1841,7 +1841,7 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 //
 
 std::string defdemoname;
-ResourceId demo_res_id = ResourceManager::RESOURCE_NOT_FOUND;
+ResourceId demo_res_id = ResourceId::INVALID_ID;
 
 void G_DeferedPlayDemo (const char *name)
 {
@@ -2148,7 +2148,7 @@ void G_CleanupDemo()
 	if (demoplayback)
 	{
 		Res_ReleaseResource(demo_res_id);
-		demo_res_id = ResourceManager::RESOURCE_NOT_FOUND;
+		demo_res_id = ResourceId::INVALID_ID;
 
 		demoplayback = false;
 		netgame = false;

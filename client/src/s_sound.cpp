@@ -583,7 +583,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
   	// check for bogus sound lump
 	if (!Res_CheckResource(sfxinfo->res_id))
 	{
-		DPrintf("Bad sfx lump #: %d\n", sfxinfo->res_id);
+		DPrintf("Bad sfx lump #: %d\n", (uint32_t)sfxinfo->res_id);
 		return;
 	}
 

@@ -35,8 +35,7 @@
 
 #include "z_zone.h"
 
-// Typedefs
-typedef uint32_t ResourceId;
+#include "res_resourceid.h"
 
 // Forward class declarations
 class ResourceManager;
@@ -122,8 +121,6 @@ class ResourceManager
 public:
 	ResourceManager();
 	~ResourceManager();
-
-	static const ResourceId RESOURCE_NOT_FOUND = static_cast<ResourceId>(-1);
 
 	const std::vector<std::string>& getResourceFileNames() const
 	{

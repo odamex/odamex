@@ -362,7 +362,7 @@ void I_LoadSound (struct sfxinfo_struct *sfx)
 	
 	if (!sfx->data)
 	{
-		DPrintf ("loading sound \"%s\" (0x%X)\n", sfx->name, sfx->res_id);
+		DPrintf ("loading sound \"%s\" (0x%X)\n", sfx->name, (uint32_t)sfx->res_id);
 		getsfx (sfx);
 	}
 }

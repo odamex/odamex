@@ -73,7 +73,7 @@ char *sc_ScriptsDir;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static ResourceId ScriptResId = ResourceManager::RESOURCE_NOT_FOUND;
+static ResourceId ScriptResId = ResourceId::INVALID_ID;
 static std::string ScriptName;
 static char *ScriptBuffer;
 static char *ScriptPtr;
@@ -164,7 +164,7 @@ void SC_Close()
 	{
 		if (FreeScript && ScriptBuffer)
 			Res_ReleaseResource(ScriptResId);
-		ScriptResId = ResourceManager::RESOURCE_NOT_FOUND;
+		ScriptResId = ResourceId::INVALID_ID;
 		ScriptBuffer = NULL;
 		ScriptOpen = false;
 

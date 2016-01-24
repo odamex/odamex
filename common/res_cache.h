@@ -24,9 +24,8 @@
 #ifndef __res_cache_h__
 #define __res_cache_h__
 
+#include "res_resourceid.h"
 #include "z_zone.h"
-#include "res_main.h"
-
 
 class ResourceCache
 {
@@ -47,13 +46,13 @@ public:
 
 	void clear()
 	{
-		for (ResourceId res_id = 0; res_id < mResourceCount; res_id++)
-			releaseData(res_id);
+		for (size_t i = 0; i < mResourceCount; i++)
+			releaseData(ResourceId(i));
 	}
 
 	void cacheData(const ResourceId res_id, const ResourceLoader* loader, int tag = PU_STATIC)
 	{
-		assert(res_id != ResourceManager::RESOURCE_NOT_FOUND && res_id < mResourceCount);
+		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
 		assert(loader != NULL);
 		mData[res_id] = allocMemory(loader->size(), tag, &(mData[res_id]));
 		loader->load(mData[res_id]);
@@ -61,13 +60,13 @@ public:
 
 	const void* getData(const ResourceId res_id) const
 	{
-		assert(res_id != ResourceManager::RESOURCE_NOT_FOUND && res_id < mResourceCount);
+		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
 		return mData[res_id];
 	}
 
 	void releaseData(const ResourceId res_id)
 	{
-		assert(res_id != ResourceManager::RESOURCE_NOT_FOUND && res_id < mResourceCount);
+		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
 		freeMemory(mData[res_id]);
 		mData[res_id] = NULL;
 	}

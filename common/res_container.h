@@ -32,8 +32,7 @@
 #include "m_ostring.h"
 #include "hashtable.h"
 
-//#include "res_main.h"
-typedef uint32_t ResourceId;
+#include "res_resourceid.h"
 
 typedef uint32_t ResourceContainerId;
 typedef uint32_t LumpId;

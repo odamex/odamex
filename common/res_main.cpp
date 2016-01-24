@@ -181,7 +181,7 @@ DefaultResourceLoader::DefaultResourceLoader(const ResourceManager::RawResourceA
 	mResourceId(res_id)
 {
 	assert(mRawResourceAccessor != NULL);
-	assert(mResourceId != ResourceManager::RESOURCE_NOT_FOUND);
+	assert(mResourceId != ResourceId::INVALID_ID);
 }
 
 
@@ -240,8 +240,7 @@ const ResourceId ResourceNameTranslator::translate(const ResourcePath& path) con
 		return res_id;
 	}
 	
-	//return ResourceManager::RESOURCE_NOT_FOUND;
-	return static_cast<ResourceId>(-1);
+	return ResourceId::INVALID_ID;
 }
 
 
@@ -316,8 +315,8 @@ void ResourceNameTranslator::addTranslation(const ResourcePath& path, const Reso
 
 ResourceManager::ResourceManager() :
 	mCache(NULL),
-	mTextureManagerContainerId(static_cast<ResourceContainerId>(-1)),
-	mRawResourceAccessor(this)
+	mRawResourceAccessor(this),
+	mTextureManagerContainerId(static_cast<ResourceContainerId>(-1))
 { }
 
 
@@ -448,8 +447,8 @@ const ResourceId ResourceManager::addResource(
 const ResourceIdList ResourceManager::getAllResourceIds() const
 {
 	ResourceIdList res_id_list;
-	for (ResourceId res_id = 0; res_id < mResources.size(); res_id++)
-		res_id_list.push_back(res_id);
+	for (size_t i = 0; i < mResources.size(); i++)
+		res_id_list.push_back(ResourceId(i));
 	return res_id_list;
 }
 
@@ -576,10 +575,10 @@ void ResourceManager::dump() const
 		bool cached = mCache->getData(res_id) != NULL;
 
 		Printf(PRINT_HIGH,"0x%08X %c %s [%u] [%s]\n",
-				res_id,
+				(uint32_t)res_id,
 				cached ? '$' : visible(res_id) ? '*' : '-',
 				OString(path).c_str(),
-				(unsigned int)getResourceSize(res_id),
+				(uint32_t)getResourceSize(res_id),
 				getResourceContainerFileName(res_id).c_str());
 	}
 }
@@ -755,7 +754,7 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 		resource_manager.getResourceContainerFileName(map_lump_res_id) ==
 		resource_manager.getResourceContainerFileName(map_marker_res_id));
 		return map_lump_res_id;
-	return ResourceManager::RESOURCE_NOT_FOUND;
+	return ResourceId::INVALID_ID;
 }
 
 
