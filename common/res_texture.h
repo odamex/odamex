@@ -388,14 +388,19 @@ private:
 
 
 
+
+// ============================================================================
+//
+// TextureLoaderFactory
+//
+// Instantiates a TextureLoader instance given a ResourceId and ResourcePath
+//
+// ============================================================================
+
 class TextureLoaderFactory
 {
 public:
-	TextureLoaderFactory(const ResourceManager::RawResourceAccessor* accessor, CompositeTextureDefinition* mTextureDef) :
-		mRawResourceAccessor(accessor)
-	{
-		// TODO: load mTextureDef from mResourceManager	
-	}
+	TextureLoaderFactory(const ResourceManager::RawResourceAccessor* accessor, const ResourceNameTranslator* translator);
 
 	~TextureLoaderFactory() { }
 
@@ -414,7 +419,7 @@ public:
 		}
 		else if (directory == textures_directory_name)
 		{
-			return new CompositeTextureLoader(mRawResourceAccessor, mTextureDef);
+			return new CompositeTextureLoader(mRawResourceAccessor, CompositeTextureDefinition());
 		}
 		else if (directory == patches_directory_name)
 		{
@@ -448,7 +453,12 @@ public:
 
 private:
 	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
-	CompositeTextureDefinition	mTextureDef;
+	const ResourceNameTranslator* mNameTranslator;
+
+	std::vector<CompositeTextureDefinition> mTextureDefs;
+
+	ResourceIdList buildPNamesLookup();
+	void addTexturesFromDefinitionLump(const ResourceId res_id, const ResourceIdList& pnames_lookup);
 };
 
 

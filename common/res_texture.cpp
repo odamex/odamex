@@ -961,6 +961,166 @@ void PngTextureLoader::load(void* data) const
 
 
 
+
+// ============================================================================
+//
+// TextureLoaderFactory
+//
+// ============================================================================
+
+TextureLoaderFactory::TextureLoaderFactory(
+		const ResourceManager::RawResourceAccessor* accessor,
+		const ResourceNameTranslator* translator) :
+	mRawResourceAccessor(accessor),
+	mNameTranslator(translator)
+{
+	ResourceIdList pnames_lookup = buildPNamesLookup();
+
+	if (mNameTranslator->translate(ResourcePath("GLOBAL/TEXTURE1")) == ResourceId::INVALID_ID)
+		I_Error("Res_InitTextures: TEXTURE1 lump not found");
+
+	// Read each of the TEXTURE definition lumps and create a new CompositeTextureDefinition for each definition.
+	static const char* const texture_definition_path_names[] = { "GLOBAL/TEXTURE1", "GLOBAL/TEXTURE2", "GLOBAL/TEXTURES", "" };
+
+	for (size_t i = 0; texture_definition_path_names[i][0] != '\0'; i++)
+	{
+		const ResourcePath path(texture_definition_path_names[i]);
+		const ResourceId res_id = mNameTranslator->translate(path);
+		addTexturesFromDefinitionLump(res_id, pnames_lookup);
+	}
+}
+
+
+//
+// TextureLoaderFactory::buildPNamesLookup
+//
+// Parses the PNAMES resource and creates a lookup table mapping entries in
+// the PNAMES resource lump to ResourceIds.
+//
+ResourceIdList TextureLoaderFactory::buildPNamesLookup()
+{
+	// Read the PNAMES lump and store the ResourceId of each patch
+	// listed in the lump in the pnames_lookup array.
+	const ResourceId pnames_res_id = mNameTranslator->translate(ResourcePath("GLOBAL/PNAMES"));
+	if (pnames_res_id == ResourceId::INVALID_ID)
+		I_Error("Res_InitTextures: PNAMES lump not found");
+
+	uint32_t pnames_size = mRawResourceAccessor->getResourceSize(pnames_res_id);
+	if (pnames_size < 4)			// not long enough to store pnames_count
+		I_Error("Res_InitTextures: invalid PNAMES lump");
+
+	uint8_t* pnames_raw_data = new uint8_t[pnames_size];
+
+	int32_t pnames_count = LELONG(*((int32_t*)(pnames_raw_data + 0)));
+	if ((uint32_t)pnames_count * 8 + 4 != pnames_size)
+		I_Error("Res_InitTextures: invalid PNAMES lump");
+
+	ResourceIdList pnames_lookup;
+
+	for (int32_t i = 0; i < pnames_count; i++)
+	{
+		const char* str = (const char*)(pnames_raw_data + 4 + 8 * i);
+		const OString lump_name = OStringToUpper(str, 8);
+		ResourcePath path(patches_directory_name + "/" + lump_name);
+		ResourceId res_id = mNameTranslator->translate(path);
+
+		// killough 4/17/98:
+		// Some wads use sprites as wall patches, so repeat check and
+		// look for sprites this time, but only if there were no wall
+		// patches found. This is the same as allowing for both, except
+		// that wall patches always win over sprites, even when they
+		// appear first in a wad. This is a kludgy solution to the wad
+		// lump namespace problem.
+
+		if (res_id == ResourceId::INVALID_ID)
+		{
+			path = ResourcePath(sprites_directory_name + "/" + lump_name);
+			res_id = mNameTranslator->translate(path);
+		}
+
+		pnames_lookup.push_back(res_id);
+	}
+
+	delete [] pnames_raw_data;
+
+	return pnames_lookup;
+}
+
+
+//
+// TextureLoaderFactory::addTexturesFromDefinitionLump
+//
+// Creates a CompositeTextureDefinition for each texture defined in the 
+// given TEXTURE lump.
+//
+void TextureLoaderFactory::addTexturesFromDefinitionLump(const ResourceId res_id, const ResourceIdList& pnames_lookup) 
+{
+	if (res_id != ResourceId::INVALID_ID)
+	{
+		uint32_t lump_size = mRawResourceAccessor->getResourceSize(res_id);
+		if (lump_size < 4)		// not long enough to store definition_count
+			return;
+
+		uint8_t* lump_data = new uint8_t[lump_size];
+		mRawResourceAccessor->loadResource(res_id, lump_data, lump_size);
+
+		int32_t definition_count = LELONG(*((int32_t*)(lump_data + 0)));
+		for (int32_t i = 0; i < definition_count; i++)
+		{
+			int32_t def_offset = 4 * i + 4;
+			if (lump_size < (unsigned int)def_offset)
+				break;
+
+			// Read a texture definition, create a CompositeTextureDefinition,
+			// and add a new CompositeTextureLoader to the list.
+			int32_t tex_offset = LELONG(*((int32_t*)(lump_data + def_offset)));
+			if (lump_size < (unsigned int)tex_offset + 22)
+				break;
+
+			const char* str = (const char*)(lump_data + tex_offset + 0);
+			const OString name = OStringToUpper(str, 8);
+			// TODO: check if there is already an entry matching name and if so,
+			// skip adding this texture.
+			//
+			// From ChocolateDoom r_data.c:
+			// Vanilla Doom does a linear search of the texures array
+			// and stops at the first entry it finds.  If there are two
+			// entries with the same name, the first one in the array
+			// wins. The new entry must therefore be added at the end
+			// of the hash chain, so that earlier entries win.
+		
+			CompositeTextureDefinition texture_def;
+			texture_def.mScaleX = *(uint8_t*)(lump_data + tex_offset + 10);
+			texture_def.mScaleY = *(uint8_t*)(lump_data + tex_offset + 11);
+			texture_def.mWidth = LESHORT(*((int16_t*)(lump_data + tex_offset + 12)));
+			texture_def.mHeight = LESHORT(*((int16_t*)(lump_data + tex_offset + 14)));
+
+			texture_def.mPatchCount = LESHORT(*((int16_t*)(lump_data + tex_offset + 20)));
+			texture_def.mPatches = new CompositeTextureDefinition::texdefpatch_t[texture_def.mPatchCount];
+			for (int16_t j = 0; j < texture_def.mPatchCount; j++)
+			{
+				int32_t patch_offset = tex_offset + 22 + 10 * j;		// sizeof(mappatch_t) == 10
+				if (lump_size < (unsigned int)patch_offset + 6)
+					break;
+
+				texture_def.mPatches[j].mOriginX = LESHORT(*((int16_t*)(lump_data + patch_offset + 0))); 
+				texture_def.mPatches[j].mOriginY = LESHORT(*((int16_t*)(lump_data + patch_offset + 2))); 
+				int16_t patch_num = LESHORT(*((int16_t*)(lump_data + patch_offset + 4)));
+				if ((size_t)patch_num < pnames_lookup.size())
+					texture_def.mPatches[j].mResId = pnames_lookup[patch_num];
+				// TODO: handle invalid pnames indices
+			}
+			mTextureDefs.push_back(texture_def);
+		}
+
+		delete [] lump_data;
+	}
+}
+
+
+
+
+
 // ============================================================================
 //
 // TextureManager
@@ -1302,128 +1462,6 @@ void TextureManager::updateAnimatedTextures()
 //
 void TextureManager::addTextureDirectories(ResourceManager* manager)
 {
-	// Read the PNAMES lump and store the ResourceId of each patch
-	// listed in the lump in the pnames_lookup array.
-	const ResourceId pnames_res_id = Res_GetResourceId("PNAMES");
-	if (!Res_CheckResource(pnames_res_id))
-		I_Error("Res_InitTextures: PNAMES lump not found");
-
-	uint32_t pnames_lump_length = Res_GetResourceSize(pnames_res_id);
-	if (pnames_lump_length < 4)			// not long enough to store pnames_count
-		I_Error("Res_InitTextures: invalid PNAMES lump");
-
-	const uint8_t* pnames_lump_data = (uint8_t*)Res_LoadResource(pnames_res_id, PU_STATIC);
-
-	int32_t pnames_count = LELONG(*((int32_t*)(pnames_lump_data + 0)));
-	if ((uint32_t)pnames_count * 8 + 4 != pnames_lump_length)
-		I_Error("Res_InitTextures: invalid PNAMES lump");
-	ResourceId* pnames_lookup = new ResourceId[pnames_count];
-
-	for (int32_t i = 0; i < pnames_count; i++)
-	{
-		const char* str = (const char*)(pnames_lump_data + 4 + 8 * i);
-		const OString lump_name = OStringToUpper(str, 8);
-		pnames_lookup[i] = Res_GetResourceId(lump_name, patches_directory_name);
-
-		// killough 4/17/98:
-		// Some wads use sprites as wall patches, so repeat check and
-		// look for sprites this time, but only if there were no wall
-		// patches found. This is the same as allowing for both, except
-		// that wall patches always win over sprites, even when they
-		// appear first in a wad. This is a kludgy solution to the wad
-		// lump namespace problem.
-
-		if (!Res_CheckResource(pnames_lookup[i]))
-			pnames_lookup[i] = Res_GetResourceId(lump_name, sprites_directory_name);
-	}
-
-	Res_ReleaseResource(pnames_res_id);
-
-	// Read each of the TEXTURE definition lumps and create a new
-	// CompositeTextureDefinition for each definition.
-	//
-	static const char* const texture_definition_lump_names[] = { "TEXTURE1", "TEXTURE2", "TEXTURES", "" };
-
-	for (uint32_t i = 0; texture_definition_lump_names[i][0] != '\0'; i++)
-	{
-		const ResourceId res_id = Res_GetResourceId(texture_definition_lump_names[i]);
-		if (!Res_CheckResource(res_id))
-		{
-			if (i == 0)
-				I_Error("Res_InitTextures: TEXTURE1 lump not found");
-			else
-				continue;		// skip this lump and go onto the next
-		}
-
-		uint32_t lump_length = Res_GetResourceSize(res_id);
-		if (lump_length < 4)		// not long enough to store definition_count
-			continue;
-
-		const uint8_t* lump_data = (uint8_t*)Res_LoadResource(res_id, PU_STATIC);
-
-		int32_t definition_count = LELONG(*((int32_t*)(lump_data + 0)));
-		for (int32_t i = 0; i < definition_count; i++)
-		{
-			int32_t def_offset = 4 + 4 * i;
-			if (lump_length < (unsigned int)def_offset)
-				break;
-
-			// Read a texture definition, create a CompositeTextureDefinition,
-			// and add a new CompositeTextureLoader to the list.
-			int32_t tex_offset = LELONG(*((int32_t*)(lump_data + def_offset)));
-			if (lump_length < (unsigned int)tex_offset + 22)
-				break;
-
-			const char* str = (const char*)(lump_data + tex_offset + 0);
-			const OString name = OStringToUpper(str, 8);
-			// TODO: check if there is already an entry matching name and if so,
-			// skip adding this texture.
-			//
-			// From ChocolateDoom r_data.c:
-			// Vanilla Doom does a linear search of the texures array
-			// and stops at the first entry it finds.  If there are two
-			// entries with the same name, the first one in the array
-			// wins. The new entry must therefore be added at the end
-			// of the hash chain, so that earlier entries win.
-
-		
-			CompositeTextureDefinition texture_def;
-			texture_def.mScaleX = *(uint8_t*)(lump_data + tex_offset + 10);
-			texture_def.mScaleY = *(uint8_t*)(lump_data + tex_offset + 11);
-			texture_def.mWidth = LESHORT(*((int16_t*)(lump_data + tex_offset + 12)));
-			texture_def.mHeight = LESHORT(*((int16_t*)(lump_data + tex_offset + 14)));
-
-			texture_def.mPatchCount = LESHORT(*((int16_t*)(lump_data + tex_offset + 20)));
-			texture_def.mPatches = new CompositeTextureDefinition::texdefpatch_t[texture_def.mPatchCount];
-			for (int16_t j = 0; j < texture_def.mPatchCount; j++)
-			{
-				int32_t patch_offset = tex_offset + 22 + 10 * j;		// sizeof(mappatch_t) == 10
-				if (lump_length < (unsigned int)patch_offset + 6)
-					break;
-
-				texture_def.mPatches[j].mOriginX = LESHORT(*((int16_t*)(lump_data + patch_offset + 0))); 
-				texture_def.mPatches[j].mOriginY = LESHORT(*((int16_t*)(lump_data + patch_offset + 2))); 
-				int16_t patch_num = LESHORT(*((int16_t*)(lump_data + patch_offset + 4)));
-				if (patch_num < pnames_count)
-					texture_def.mPatches[j].mResId = pnames_lookup[patch_num];
-				// TODO: handle invalid pnames indices
-			}
-
-			mTextures.push_back(NULL);
-
-			// Create a new TextureLoader and add it to the list
-			// ResourceLoader* loader = new CompositeTextureLoader(manager, texture_def);
-			// mTextureLoaders.push_back(loader);
-			const ResourcePath path(textures_directory_name + name);
-
-			// TODO: save this ResourceId somewhere
-			const ResourceId res_id = manager->addResource(path, this); 
-		}
-
-		Res_ReleaseResource(res_id);
-	}
-
-	delete [] pnames_lookup;
 }
 
 

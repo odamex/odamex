@@ -24,6 +24,7 @@
 #ifndef __RES_RESOURCEID_H__
 #define __RES_RESOURCEID_H__
 
+#include <vector>
 #include "doomtype.h"
 #include "hashtable.h"
 
@@ -54,6 +55,8 @@ public:
 private:
 	uint32_t mValue;
 };
+
+typedef std::vector<ResourceId> ResourceIdList;
 
 // ----------------------------------------------------------------------------
 // hash function for OHashTable class

@@ -66,8 +66,6 @@ static const ResourcePath voxels_directory_name("/VOXELS/");
 
 
 
-typedef std::vector<ResourceId> ResourceIdList;
-
 
 bool Res_ValidateWadData(const void* data, uint32_t length);
 bool Res_ValidateDehackedData(const void* data, uint32_t length);
