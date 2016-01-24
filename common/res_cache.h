@@ -93,6 +93,9 @@ private:
 		//		various text parsing routines can just call
 		//		Res_CacheResource() and not choke.
 		
+		// [SL]: 2016-01-24 Additionally, D_LoadDehLump() also relies on an extra
+		// byte being allocated.
+
 		// TODO: [SL] 2015-04-22 This hack should be removed when the text parsing
 		// routines are fixed.
 		size += 1;

@@ -30,7 +30,7 @@
 class ResourceId
 {
 public:
-	ResourceId(uint32_t value = static_cast<uint32_t>(-1)) :
+	ResourceId(uint32_t value = -1) :
 		mValue(value)
 	{ }
 
@@ -42,11 +42,6 @@ public:
 	{
 		mValue = other.mValue;
 		return *this;
-	}
-
-	bool operator==(const ResourceId& other) const
-	{
-		return mValue == other.mValue;
 	}
 
 	operator uint32_t() const

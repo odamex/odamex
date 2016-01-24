@@ -314,9 +314,9 @@ void ResourceNameTranslator::addTranslation(const ResourcePath& path, const Reso
 //
 
 ResourceManager::ResourceManager() :
-	mCache(NULL),
+	mTextureManagerContainerId(static_cast<ResourceContainerId>(-1)),
 	mRawResourceAccessor(this),
-	mTextureManagerContainerId(static_cast<ResourceContainerId>(-1))
+	mCache(NULL)
 { }
 
 
@@ -467,19 +467,6 @@ const std::string& ResourceManager::getResourceContainerFileName(const ResourceI
 
 
 //
-// ResourceManager::visible
-//
-// Determine if no other resources have overridden this resource by having
-// the same resource path.
-//
-bool ResourceManager::visible(const ResourceId res_id) const
-{
-	const ResourcePath& path = getResourcePath(res_id);
-	return getResourceId(path) == res_id;
-}
-
-
-//
 // ResourceManager::getResourceSize
 //
 uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
@@ -488,29 +475,6 @@ uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
 	if (res_rec)
 		return res_rec->mResourceLoader->size();
 	return 0;
-}
-
-
-//
-// ResourceManager::loadRawResource
-//
-// Copies the unprocessed resource data from its container to the given data
-// buffer.
-//
-uint32_t ResourceManager::loadRawResource(const ResourceId res_id, void* data, uint32_t size) const
-{
-	uint32_t bytes_read = 0;
-	if (validateResourceId(res_id))
-	{
-		const ResourceContainerId& container_id = getResourceContainerId(res_id);
-		const ResourceContainer* container = mContainers[container_id];
-		if (size)
-			size = std::min<int>(size, container->getResourceSize(res_id));
-		else
-			size = container->getResourceSize(res_id);
-		bytes_read = container->loadResource(data, res_id, size);
-	}
-	return bytes_read;
 }
 
 
@@ -573,10 +537,11 @@ void ResourceManager::dump() const
 		assert(container);
 
 		bool cached = mCache->getData(res_id) != NULL;
+		bool visible = mNameTranslator.checkNameVisibility(path, res_id);
 
 		Printf(PRINT_HIGH,"0x%08X %c %s [%u] [%s]\n",
 				(uint32_t)res_id,
-				cached ? '$' : visible(res_id) ? '*' : '-',
+				cached ? '$' : visible ? '*' : '-',
 				OString(path).c_str(),
 				(uint32_t)getResourceSize(res_id),
 				getResourceContainerFileName(res_id).c_str());
@@ -755,21 +720,6 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 		resource_manager.getResourceContainerFileName(map_marker_res_id));
 		return map_lump_res_id;
 	return ResourceId::INVALID_ID;
-}
-
-
-//
-// Res_LoadResource
-//
-// Reads the resource lump that matches res_id and copies its contents into data.
-// The number of bytes read is returned, or 0 is returned if the lump
-// is not found. The variable data must be able to hold the size of the lump,
-// as determined by Res_GetResourceSize.
-//
-uint32_t Res_LoadResource(const ResourceId res_id, void* data)
-{
-	uint32_t size = resource_manager.getResourceSize(res_id);
-	return resource_manager.loadRawResource(res_id, data, size);
 }
 
 

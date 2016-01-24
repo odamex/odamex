@@ -1713,8 +1713,7 @@ bool D_LoadDehLump(const ResourceId res_id)
 	}
 	
 	patch_length = Res_GetResourceSize(res_id);
-	patch_data = new char[patch_length + 1];
-	Res_LoadResource(res_id, patch_data);
+	patch_data = (char*)Res_CacheResource(res_id, PU_STATIC);
 
 	// terminate a NULL for our parser
 	patch_data[patch_length] = 0;
@@ -1782,7 +1781,8 @@ bool D_LoadDehLump(const ResourceId res_id)
 		}
 	} while (cont);
 
-	delete [] patch_data;
+	Res_ReleaseResource(patch_data);
+	patch_data = NULL;
 
 	Printf (PRINT_HIGH, "DeHackEd patch %s in file %s installed\n", lump_name, file_name);
 

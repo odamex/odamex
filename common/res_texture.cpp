@@ -1192,8 +1192,7 @@ void TextureManager::readAnimatedLump()
 	if (lumplen == 0)
 		return;
 
-	byte* lumpdata = new byte[lumplen];
-	Res_LoadResource(res_id, lumpdata);
+	const uint8_t* lumpdata = (uint8_t*)Res_CacheResource(res_id, PU_STATIC);
 
 	for (byte* ptr = lumpdata; *ptr != 255; ptr += 23)
 	{
@@ -1235,7 +1234,7 @@ void TextureManager::readAnimatedLump()
 		mAnimDefs.push_back(anim);
 	}
 
-	delete [] lumpdata;
+	Res_ReleaseResource(res_id);
 	*/
 }
 
@@ -1313,8 +1312,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 	if (pnames_lump_length < 4)			// not long enough to store pnames_count
 		I_Error("Res_InitTextures: invalid PNAMES lump");
 
-	byte* pnames_lump_data = new byte[pnames_lump_length];
-	Res_LoadResource(pnames_res_id, pnames_lump_data);
+	const uint8_t* pnames_lump_data = (uint8_t*)Res_CacheResource(pnames_res_id, PU_STATIC);
 
 	int32_t pnames_count = LELONG(*((int32_t*)(pnames_lump_data + 0)));
 	if ((uint32_t)pnames_count * 8 + 4 != pnames_lump_length)
@@ -1339,8 +1337,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 			pnames_lookup[i] = Res_GetResourceId(lump_name, sprites_directory_name);
 	}
 
-	delete [] pnames_lump_data;
-
+	Res_ReleaseResource(pnames_res_id);
 
 	// Read each of the TEXTURE definition lumps and create a new
 	// CompositeTextureDefinition for each definition.
@@ -1362,8 +1359,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 		if (lump_length < 4)		// not long enough to store definition_count
 			continue;
 
-		byte* lump_data = new byte[lump_length];
-		Res_LoadResource(res_id, lump_data);
+		const uint8_t* lump_data = (uint8_t*)Res_CacheResource(res_id, PU_STATIC);
 
 		int32_t definition_count = LELONG(*((int32_t*)(lump_data + 0)));
 		for (int32_t i = 0; i < definition_count; i++)
@@ -1424,7 +1420,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 			const ResourceId res_id = manager->addResource(path, this); 
 		}
 
-		delete [] lump_data;
+		Res_ReleaseResource(res_id);
 	}
 
 	delete [] pnames_lookup;

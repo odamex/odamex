@@ -177,8 +177,6 @@ public:
 
 	uint32_t getResourceSize(const ResourceId res_id) const;
 
-	uint32_t loadRawResource(const ResourceId res_id, void* data, uint32_t size) const;
-
 	const void* getData(const ResourceId res_id, int tag = PU_CACHE);
 
 	void releaseData(const ResourceId res_id);
@@ -217,8 +215,6 @@ private:
 
 	typedef std::vector<ResourceRecord> ResourceRecordTable;
 	ResourceRecordTable			mResources;
-
-	ResourceCache*				mCache;
 
 	// ---------------------------------------------------------------------------
 	// Private helper functions
@@ -290,9 +286,6 @@ public:
 	};
 
 private:
-	RawResourceAccessor				mRawResourceAccessor;
-
-
 	std::vector<ResourceContainer*>	mContainers;
 	ResourceContainerId				mTextureManagerContainerId;
 
@@ -301,21 +294,14 @@ private:
 	std::vector<std::string>		mResourceFileHashes;
 
 	ResourceNameTranslator			mNameTranslator;
-
-	/*
-	// Map resource pathnames to ResourceIds
-	typedef OHashTable<ResourcePath, ResourceIdList> ResourceIdLookupTable;
-	ResourceIdLookupTable			mResourceIdLookup;
-	*/
-
+	RawResourceAccessor				mRawResourceAccessor;
+	ResourceCache*					mCache;
 
 	// ---------------------------------------------------------------------------
 	// Private helper functions
 	// ---------------------------------------------------------------------------
 
 	void openResourceContainer(const OString& filename);
-
-	bool visible(const ResourceId res_id) const;
 };
 
 
@@ -430,18 +416,6 @@ uint32_t Res_GetResourceSize(const ResourceId res_id);
 static inline uint32_t Res_GetResourceSize(const OString& name, const OString& directory = global_directory_name)
 {
 	return Res_GetResourceSize(Res_GetResourceId(name, directory));
-}
-
-
-// ----------------------------------------------------------------------------
-// Res_LoadResource
-// ----------------------------------------------------------------------------
-
-uint32_t Res_LoadResource(const ResourceId res_id, void* data);
-
-static inline uint32_t Res_LoadResource(const OString& name, void* data)
-{
-	return Res_LoadResource(Res_GetResourceId(name), data);
 }
 
 
