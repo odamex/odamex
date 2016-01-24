@@ -327,7 +327,7 @@ void S_ParseSndInfo()
 	const ResourceIdList res_ids = Res_GetAllResourceIds("SNDINFO");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		sndinfo = (char*)Res_CacheResource(res_ids[i], PU_CACHE);
+		sndinfo = (char*)Res_LoadResource(res_ids[i], PU_CACHE);
 
 		while ( (data = COM_Parse(sndinfo)) )
 		{

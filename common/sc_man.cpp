@@ -96,7 +96,7 @@ void SC_OpenResourceLump(const ResourceId res_id)
 {
 	SC_Close();
 	ScriptResId = res_id;
-	ScriptBuffer = (char*)Res_CacheResource(ScriptResId, PU_STATIC);
+	ScriptBuffer = (char*)Res_LoadResource(ScriptResId, PU_STATIC);
 	ScriptSize = Res_GetResourceSize(res_id);
 	ScriptName = Res_GetResourceName(res_id);
 	FreeScript = true;

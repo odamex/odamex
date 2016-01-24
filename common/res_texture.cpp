@@ -1192,7 +1192,7 @@ void TextureManager::readAnimatedLump()
 	if (lumplen == 0)
 		return;
 
-	const uint8_t* lumpdata = (uint8_t*)Res_CacheResource(res_id, PU_STATIC);
+	const uint8_t* lumpdata = (uint8_t*)Res_LoadResource(res_id, PU_STATIC);
 
 	for (byte* ptr = lumpdata; *ptr != 255; ptr += 23)
 	{
@@ -1312,7 +1312,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 	if (pnames_lump_length < 4)			// not long enough to store pnames_count
 		I_Error("Res_InitTextures: invalid PNAMES lump");
 
-	const uint8_t* pnames_lump_data = (uint8_t*)Res_CacheResource(pnames_res_id, PU_STATIC);
+	const uint8_t* pnames_lump_data = (uint8_t*)Res_LoadResource(pnames_res_id, PU_STATIC);
 
 	int32_t pnames_count = LELONG(*((int32_t*)(pnames_lump_data + 0)));
 	if ((uint32_t)pnames_count * 8 + 4 != pnames_lump_length)
@@ -1359,7 +1359,7 @@ void TextureManager::addTextureDirectories(ResourceManager* manager)
 		if (lump_length < 4)		// not long enough to store definition_count
 			continue;
 
-		const uint8_t* lump_data = (uint8_t*)Res_CacheResource(res_id, PU_STATIC);
+		const uint8_t* lump_data = (uint8_t*)Res_LoadResource(res_id, PU_STATIC);
 
 		int32_t definition_count = LELONG(*((int32_t*)(lump_data + 0)));
 		for (int32_t i = 0; i < definition_count; i++)

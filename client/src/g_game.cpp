@@ -1950,7 +1950,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	demo_res_id = Res_GetResourceId(defdemoname, global_directory_name);
 	if (Res_CheckResource(demo_res_id))
 	{
-		demobuffer = demo_p = (byte*)Res_CacheResource(demo_res_id, PU_STATIC);
+		demobuffer = demo_p = (byte*)Res_LoadResource(demo_res_id, PU_STATIC);
 		bytelen = Res_GetResourceSize(demo_res_id);
 	}
 	else

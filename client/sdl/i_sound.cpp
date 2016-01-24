@@ -192,7 +192,7 @@ static void getsfx (struct sfxinfo_struct *sfx)
 	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
 
-	Uint8* data = (Uint8*)Res_CacheResource(sfx->res_id, PU_STATIC);
+	Uint8* data = (Uint8*)Res_LoadResource(sfx->res_id, PU_STATIC);
     // [Russell] - ICKY QUICKY HACKY SPACKY *I HATE THIS SOUND MANAGEMENT SYSTEM!*
     // get the lump size, shouldn't this be filled in elsewhere?
 	sfx->length = Res_GetResourceSize(sfx->res_id);

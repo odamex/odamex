@@ -1713,7 +1713,7 @@ bool D_LoadDehLump(const ResourceId res_id)
 	}
 	
 	patch_length = Res_GetResourceSize(res_id);
-	patch_data = (char*)Res_CacheResource(res_id, PU_STATIC);
+	patch_data = (char*)Res_LoadResource(res_id, PU_STATIC);
 
 	// terminate a NULL for our parser
 	patch_data[patch_length] = 0;

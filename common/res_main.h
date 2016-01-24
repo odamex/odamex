@@ -400,14 +400,14 @@ static inline uint32_t Res_GetResourceSize(const OString& name, const OString& d
 
 
 // ----------------------------------------------------------------------------
-// Res_CacheResource
+// Res_LoadResource
 // ----------------------------------------------------------------------------
 
-void* Res_CacheResource(const ResourceId res_id, int tag = PU_CACHE);
+void* Res_LoadResource(const ResourceId res_id, int tag = PU_CACHE);
 
-static inline void* Res_CacheResource(const OString& name, int tag)
+static inline void* Res_LoadResource(const OString& name, int tag = PU_CACHE)
 {
-	return Res_CacheResource(Res_GetResourceId(name), tag);
+	return Res_LoadResource(Res_GetResourceId(name), tag);
 }
 
 

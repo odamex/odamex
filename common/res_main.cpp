@@ -723,7 +723,7 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 
 
 //
-// Res_CacheResource
+// Res_LoadResource
 //
 // Allocates space on the zone heap for the resource lump that matches res_id
 // and reads it into the newly allocated memory. An entry in the resource
@@ -733,7 +733,7 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 // The tag parameter is used to specify the allocation tag type to pass
 // to Z_Malloc.
 //
-void* Res_CacheResource(const ResourceId res_id, int tag)
+void* Res_LoadResource(const ResourceId res_id, int tag)
 {
 	return (void*)resource_manager.loadResourceData(res_id, tag);
 }

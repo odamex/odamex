@@ -203,7 +203,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
 	const ResourceId language_res_id = Res_GetResourceId("LANGUAGE");
-	byte* language_data = (byte*)Res_CacheResource(language_res_id, PU_CACHE);
+	byte* language_data = (byte*)Res_LoadResource(language_res_id, PU_CACHE);
 	GStrings.FreeData();
 	GStrings.LoadStrings(language_data, Res_GetResourceSize(language_res_id), STRING_TABLE_SIZE, false);
 	GStrings.Compact();

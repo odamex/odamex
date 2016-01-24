@@ -518,7 +518,7 @@ void R_InitTextures (void)
 	// Load the patch names from pnames.lmp.
 	{
 		const ResourceId pnames_res_id = Res_GetResourceId("PNAMES");
-		char *names = (char*)Res_CacheResource(pnames_res_id, PU_STATIC);
+		char *names = (char*)Res_LoadResource(pnames_res_id, PU_STATIC);
 		char *name_p = names+4;
 
 		nummappatches = LELONG ( *((int *)names) );
@@ -547,14 +547,14 @@ void R_InitTextures (void)
 	// Load the map texture definitions from textures.lmp.
 	// The data is contained in one or two lumps,
 	//	TEXTURE1 for shareware, plus TEXTURE2 for commercial.
-	maptex = maptex1 = (int*)Res_CacheResource("TEXTURE1", PU_STATIC);
+	maptex = maptex1 = (int*)Res_LoadResource("TEXTURE1", PU_STATIC);
 	numtextures1 = LELONG(*maptex);
 	maxoff = Res_GetResourceSize("TEXTURE1");
 	directory = maptex+1;
 
 	if (Res_CheckResource("TEXTURE2"))
 	{
-		maptex2 = (int*)Res_CacheResource("TEXTURE2", PU_STATIC);
+		maptex2 = (int*)Res_LoadResource("TEXTURE2", PU_STATIC);
 		numtextures2 = LELONG(*maptex2);
 		maxoff2 = Res_GetResourceSize("TEXTURE2");
 	}
@@ -781,7 +781,7 @@ shademap_t realcolormaps;
 
 void R_ForceDefaultColormap(const char* name)
 {
-	const byte* data = (byte*)Res_CacheResource(name, PU_CACHE);
+	const byte* data = (byte*)Res_LoadResource(name, PU_CACHE);
 	memcpy(realcolormaps.colormap, data, (NUMCOLORMAPS+1)*256);
 
 #if 0

@@ -91,7 +91,7 @@ private:
 		// [RH] Allocate one byte more than necessary for the
 		//		lump and set the extra byte to zero so that
 		//		various text parsing routines can just call
-		//		Res_CacheResource() and not choke.
+		//		Res_LoadResource() and not choke.
 		
 		// [SL]: 2016-01-24 Additionally, D_LoadDehLump() also relies on an extra
 		// byte being allocated.

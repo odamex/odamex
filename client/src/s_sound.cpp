@@ -248,7 +248,7 @@ static void S_StopChannel (unsigned int cnum);
 //
 void S_Init (float sfxVolume, float musicVolume)
 {
-	SoundCurve = (byte*)Res_CacheResource("SNDCURVE", PU_STATIC);
+	SoundCurve = (byte*)Res_LoadResource("SNDCURVE", PU_STATIC);
 
 	// [RH] Read in sound sequences
 	NumSequences = 0;
@@ -1076,7 +1076,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 			return;
 		}
 
-		data = (byte*)Res_CacheResource(res_id, PU_CACHE);
+		data = (byte*)Res_LoadResource(res_id, PU_CACHE);
 		length = Res_GetResourceSize(res_id);
 		I_PlaySong(data, length, (looping != 0));
     }
@@ -1225,7 +1225,7 @@ void S_ParseSndInfo()
 	const ResourceIdList res_ids = Res_GetAllResourceIds("SNDINFO");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		sndinfo = (char*)Res_CacheResource(res_ids[i], PU_CACHE);
+		sndinfo = (char*)Res_LoadResource(res_ids[i], PU_CACHE);
 
 		while ( (data = COM_Parse(sndinfo)) )
 		{
