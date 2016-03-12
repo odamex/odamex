@@ -64,9 +64,6 @@ static const ResourcePath acs_directory_name("/ACS/");
 static const ResourcePath voices_directory_name("/VOICES/");
 static const ResourcePath voxels_directory_name("/VOXELS/");
 
-
-
-
 bool Res_ValidateWadData(const void* data, uint32_t length);
 bool Res_ValidateDehackedData(const void* data, uint32_t length);
 bool Res_ValidatePCSpeakerSoundData(const void* data, uint32_t length);
@@ -88,21 +85,42 @@ class ResourceNameTranslator
 {
 public:
 	ResourceNameTranslator();
+	virtual ~ResourceNameTranslator() { }
 
-	void addTranslation(const ResourcePath& path, const ResourceId res_id);
+	virtual void addTranslation(const ResourcePath& path, const ResourceId res_id);
 
-	const ResourceId translate(const ResourcePath& path) const;
+	virtual const ResourceId translate(const ResourcePath& path) const;
 
-	const ResourceIdList getAllTranslations(const ResourcePath& path) const;
+	virtual const ResourceIdList getAllTranslations(const ResourcePath& path) const;
 
-	bool checkNameVisibility(const ResourcePath& path, const ResourceId res_id) const;
+	virtual bool checkNameVisibility(const ResourcePath& path, const ResourceId res_id) const;
 
 private:
-	// Map resource pathnames to ResourceIds
 	typedef OHashTable<ResourcePath, ResourceIdList> ResourceIdLookupTable;
 	ResourceIdLookupTable			mResourceIdLookup;
 };
 
+
+// ============================================================================
+//
+// TextureResourceNameTranslator
+//
+// Provides translation from ResourcePaths to ResourceIds for texture resources.
+//
+// ============================================================================
+
+class TextureResourceNameTranslator : public ResourceNameTranslator
+{
+public:
+	TextureResourceNameTranslator();
+	virtual ~TextureResourceNameTranslator() { }
+
+	virtual const ResourceId translate(const ResourcePath& path) const;
+
+private:
+	typedef std::vector<ResourcePath> ResourcePathList;
+	static ResourcePathList mAlternativeDirectories;
+};
 
 
 // ============================================================================
@@ -265,13 +283,12 @@ public:
 
 private:
 	std::vector<ResourceContainer*>	mContainers;
-	ResourceContainerId				mTextureManagerContainerId;
 
 	std::vector<FileAccessor*>		mAccessors;
 	std::vector<std::string>		mResourceFileNames;
 	std::vector<std::string>		mResourceFileHashes;
 
-	ResourceNameTranslator			mNameTranslator;
+	TextureResourceNameTranslator			mNameTranslator;
 	RawResourceAccessor				mRawResourceAccessor;
 	ResourceCache*					mCache;
 
@@ -363,8 +380,6 @@ const std::vector<std::string>& Res_GetResourceFileHashes();
 const ResourceId Res_GetResourceId(const OString& name, const OString& directory = global_directory_name);
 
 const ResourceIdList Res_GetAllResourceIds(const ResourcePath& path);
-
-const ResourceId Res_GetTextureResourceId(const OString& name, const OString& directory);
 
 const OString& Res_GetResourceName(const ResourceId res_id);
 

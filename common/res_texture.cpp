@@ -964,11 +964,14 @@ void PngTextureLoader::load(void* data) const
 
 // ============================================================================
 //
-// TextureLoaderFactory
+// CompositeTextureDefinitionParser
 //
 // ============================================================================
 
-TextureLoaderFactory::TextureLoaderFactory(
+//
+// CompositeTextureDefinitionParser::CompositeTextureDefinitionParser
+//
+CompositeTextureDefinitionParser::CompositeTextureDefinitionParser(
 		const ResourceManager::RawResourceAccessor* accessor,
 		const ResourceNameTranslator* translator) :
 	mRawResourceAccessor(accessor),
@@ -986,18 +989,19 @@ TextureLoaderFactory::TextureLoaderFactory(
 	{
 		const ResourcePath path(texture_definition_path_names[i]);
 		const ResourceId res_id = mNameTranslator->translate(path);
-		addTexturesFromDefinitionLump(res_id, pnames_lookup);
+		if (res_id != ResourceId::INVALID_ID)
+			addTexturesFromDefinitionLump(res_id, pnames_lookup);
 	}
 }
 
 
 //
-// TextureLoaderFactory::buildPNamesLookup
+// CompositeTextureDefinitionParser::buildPNamesLookup
 //
 // Parses the PNAMES resource and creates a lookup table mapping entries in
 // the PNAMES resource lump to ResourceIds.
 //
-ResourceIdList TextureLoaderFactory::buildPNamesLookup()
+ResourceIdList CompositeTextureDefinitionParser::buildPNamesLookup()
 {
 	// Read the PNAMES lump and store the ResourceId of each patch
 	// listed in the lump in the pnames_lookup array.
@@ -1048,47 +1052,43 @@ ResourceIdList TextureLoaderFactory::buildPNamesLookup()
 
 
 //
-// TextureLoaderFactory::addTexturesFromDefinitionLump
+// CompositeTextureDefinitionParser::addTexturesFromDefinitionLump
 //
 // Creates a CompositeTextureDefinition for each texture defined in the 
 // given TEXTURE lump.
 //
-void TextureLoaderFactory::addTexturesFromDefinitionLump(const ResourceId res_id, const ResourceIdList& pnames_lookup) 
+void CompositeTextureDefinitionParser::addTexturesFromDefinitionLump(const ResourceId res_id, const ResourceIdList& pnames_lookup) 
 {
-	if (res_id != ResourceId::INVALID_ID)
+	uint32_t lump_size = mRawResourceAccessor->getResourceSize(res_id);
+	if (lump_size < 4)		// not long enough to store definition_count
+		return;
+
+	uint8_t* lump_data = new uint8_t[lump_size];
+	mRawResourceAccessor->loadResource(res_id, lump_data, lump_size);
+
+	int32_t definition_count = LELONG(*((int32_t*)(lump_data + 0)));
+	for (int32_t i = 0; i < definition_count; i++)
 	{
-		uint32_t lump_size = mRawResourceAccessor->getResourceSize(res_id);
-		if (lump_size < 4)		// not long enough to store definition_count
-			return;
+		int32_t def_offset = 4 * i + 4;
+		if (lump_size < (unsigned int)def_offset)
+			break;
 
-		uint8_t* lump_data = new uint8_t[lump_size];
-		mRawResourceAccessor->loadResource(res_id, lump_data, lump_size);
+		// Read a texture definition, create a CompositeTextureDefinition,
+		// and add a new CompositeTextureLoader to the list.
+		int32_t tex_offset = LELONG(*((int32_t*)(lump_data + def_offset)));
+		if (lump_size < (unsigned int)tex_offset + 22)
+			break;
 
-		int32_t definition_count = LELONG(*((int32_t*)(lump_data + 0)));
-		for (int32_t i = 0; i < definition_count; i++)
+		const char* str = (const char*)(lump_data + tex_offset + 0);
+		const OString name = OStringToUpper(str, 8);
+
+		// From ChocolateDoom r_data.c:
+		// Vanilla Doom does a linear search of the texures array
+		// and stops at the first entry it finds.  If there are two
+		// entries with the same name, the first one in the array
+		// wins. 
+		if (getByName(name) == NULL)
 		{
-			int32_t def_offset = 4 * i + 4;
-			if (lump_size < (unsigned int)def_offset)
-				break;
-
-			// Read a texture definition, create a CompositeTextureDefinition,
-			// and add a new CompositeTextureLoader to the list.
-			int32_t tex_offset = LELONG(*((int32_t*)(lump_data + def_offset)));
-			if (lump_size < (unsigned int)tex_offset + 22)
-				break;
-
-			const char* str = (const char*)(lump_data + tex_offset + 0);
-			const OString name = OStringToUpper(str, 8);
-			// TODO: check if there is already an entry matching name and if so,
-			// skip adding this texture.
-			//
-			// From ChocolateDoom r_data.c:
-			// Vanilla Doom does a linear search of the texures array
-			// and stops at the first entry it finds.  If there are two
-			// entries with the same name, the first one in the array
-			// wins. The new entry must therefore be added at the end
-			// of the hash chain, so that earlier entries win.
-		
 			CompositeTextureDefinition texture_def;
 			texture_def.mScaleX = *(uint8_t*)(lump_data + tex_offset + 10);
 			texture_def.mScaleY = *(uint8_t*)(lump_data + tex_offset + 11);
@@ -1110,13 +1110,45 @@ void TextureLoaderFactory::addTexturesFromDefinitionLump(const ResourceId res_id
 					texture_def.mPatches[j].mResId = pnames_lookup[patch_num];
 				// TODO: handle invalid pnames indices
 			}
-			mTextureDefs.push_back(texture_def);
-		}
 
-		delete [] lump_data;
+			mTextureDefinitionLookup.insert(std::make_pair(name, texture_def));
+		}
 	}
+
+	delete [] lump_data;
 }
 
+
+//
+// CompositeTextureDefinitionParser::getByName
+//
+const CompositeTextureDefinition* CompositeTextureDefinitionParser::getByName(const OString& name) const
+{
+	TextureDefinitionTable::const_iterator it = mTextureDefinitionLookup.find(name);
+	if (it != mTextureDefinitionLookup.end())
+		return &(it->second);
+	return NULL;
+}
+
+
+
+// ============================================================================
+//
+// TextureLoaderFactory
+//
+// ============================================================================
+
+//
+// TextureLoaderFactory::TextureLoaderFactory
+// 
+TextureLoaderFactory::TextureLoaderFactory(
+		const ResourceManager::RawResourceAccessor* accessor,
+		const ResourceNameTranslator* translator,
+		const CompositeTextureDefinitionParser* texture_definitions) :
+	mRawResourceAccessor(accessor),
+	mNameTranslator(translator),
+	mCompositeTextureDefinitions(texture_definitions)
+{ }
 
 
 

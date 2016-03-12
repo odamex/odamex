@@ -40,6 +40,8 @@
 
 #include "dthinker.h"
 
+#include "res_resourceid.h"
+
 // Silhouette, needed for clipping Segs (mainly)
 // and sprites representing things.
 #define SIL_NONE				0
@@ -141,6 +143,10 @@ struct sector_s
 	fixed_t 	ceilingheight;
 	short		floorpic;
 	short		ceilingpic;
+
+	ResourceId	floor_res_id;
+	ResourceId	ceiling_res_id;
+
 	short		lightlevel;
 	short		special;
 	short		tag;

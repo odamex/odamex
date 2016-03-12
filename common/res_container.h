@@ -69,6 +69,8 @@ public:
 	typedef EntryInfoList::iterator iterator;
 	typedef EntryInfoList::const_iterator const_iterator;
 
+	static const LumpId INVALID_LUMP_ID = static_cast<LumpId>(-1);
+
 	ContainerDirectory(const size_t initial_size = 4096) :
 		mNameLookup(2 * initial_size)
 	{
@@ -171,7 +173,6 @@ public:
 	}
 
 private:
-	static const LumpId INVALID_LUMP_ID = static_cast<LumpId>(-1);
 
 	EntryInfoList		mEntries;
 
@@ -302,8 +303,7 @@ private:
 		LumpIdLookupTable::const_iterator it = mLumpIdLookup.find(res_id);
 		if (it != mLumpIdLookup.end())
 			return it->second;
-		// TODO: change to a static const variable
-		return static_cast<LumpId>(-1);
+		return ContainerDirectory::INVALID_LUMP_ID;
 	}
 
 	ContainerDirectory* readWadDirectory();

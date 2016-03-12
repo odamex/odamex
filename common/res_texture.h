@@ -202,6 +202,37 @@ struct CompositeTextureDefinition
 
 // ============================================================================
 //
+// CompositeTextureDefinitionParser
+//
+// ============================================================================
+
+class CompositeTextureDefinitionParser
+{
+public:
+	CompositeTextureDefinitionParser(
+			const ResourceManager::RawResourceAccessor* accessor,
+			const ResourceNameTranslator* translator);
+
+	const CompositeTextureDefinition* getByName(const OString& name) const;
+
+private:
+	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
+	const ResourceNameTranslator* mNameTranslator;
+
+	typedef OHashTable<OString, CompositeTextureDefinition> TextureDefinitionTable;
+	TextureDefinitionTable mTextureDefinitionLookup;
+
+	ResourceIdList buildPNamesLookup();
+	void addTexturesFromDefinitionLump(const ResourceId res_id, const ResourceIdList& pnames_lookup);
+
+public:
+	typedef TextureDefinitionTable::iterator iterator;
+	typedef TextureDefinitionTable::const_iterator const_iterator;
+};
+
+
+// ============================================================================
+//
 // TextureLoader
 //
 // ============================================================================
@@ -400,9 +431,10 @@ private:
 class TextureLoaderFactory
 {
 public:
-	TextureLoaderFactory(const ResourceManager::RawResourceAccessor* accessor, const ResourceNameTranslator* translator);
-
-	~TextureLoaderFactory() { }
+	TextureLoaderFactory(
+			const ResourceManager::RawResourceAccessor* accessor,
+			const ResourceNameTranslator* translator,
+			const CompositeTextureDefinitionParser* composite_texture_defintions);
 
 	TextureLoader* createTextureLoader(const ResourcePath& res_path, const ResourceId res_id) const
 	{
@@ -454,12 +486,82 @@ public:
 private:
 	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
 	const ResourceNameTranslator* mNameTranslator;
+	const CompositeTextureDefinitionParser* mCompositeTextureDefinitions;
+};
 
-	std::vector<CompositeTextureDefinition> mTextureDefs;
+
+
+
+
+
+
+class CompositeTextureContainer : public ResourceContainer
+{
+public:
+	virtual ~CompositeTextureContainer() {}
+
+	virtual const ResourceContainerId& getResourceContainerId() const
+	{
+		return mResourceContainerId;
+	}
+
+	virtual uint32_t getResourceCount() const
+	{
+		return mTextureDefinitionLookup.size();
+	}
+
+	virtual uint32_t getResourceSize(const ResourceId res_id) const
+	{
+		return sizeof(CompositeTextureDefinition);
+	}
+
+	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const
+	{
+		const CompositeTextureDefinition* texture_def = getByResourceId(res_id);
+		if (texture_def)
+		{
+			size = std::min<uint32_t>(size, sizeof(*texture_def));
+			memcpy(data, (void*)texture_def, size);
+			return size;
+		}
+		return 0;
+	}
+
+private:
+	ResourceContainerId			mResourceContainerId;
+
+	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
+	const ResourceNameTranslator* mNameTranslator;
+
+	typedef OHashTable<OString, CompositeTextureDefinition> TextureDefinitionTable;
+	TextureDefinitionTable mTextureDefinitionLookup;
+
+	typedef OHashTable<ResourceId, OString> TextureNameTable;
+	TextureNameTable mTextureNameLookup;
 
 	ResourceIdList buildPNamesLookup();
 	void addTexturesFromDefinitionLump(const ResourceId res_id, const ResourceIdList& pnames_lookup);
+
+	const CompositeTextureDefinition* getByName(const OString& name) const
+	{
+		TextureDefinitionTable::const_iterator it = mTextureDefinitionLookup.find(name);
+		if (it != mTextureDefinitionLookup.end())
+			return &(it->second);
+		return NULL;
+	}
+
+	const CompositeTextureDefinition* getByResourceId(const ResourceId res_id) const
+	{
+		TextureNameTable::const_iterator it = mTextureNameLookup.find(res_id);
+		if (it != mTextureNameLookup.end())
+			return getByName(it->second);
+		return NULL;
+	}
 };
+
+
+
+
 
 
 // ============================================================================

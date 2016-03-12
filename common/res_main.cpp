@@ -303,6 +303,61 @@ void ResourceNameTranslator::addTranslation(const ResourcePath& path, const Reso
 
 // ============================================================================
 //
+// TextureResourceNameTranslator class implementation
+//
+// ============================================================================
+
+typedef std::vector<ResourcePath> ResourcePathList;
+ResourcePathList TextureResourceNameTranslator::mAlternativeDirectories;
+
+//
+// TextureResourceNameTranslator::TextureResourceNameTranslator
+//
+TextureResourceNameTranslator::TextureResourceNameTranslator() :
+	ResourceNameTranslator()
+{
+	if (mAlternativeDirectories.empty())
+	{
+		mAlternativeDirectories.push_back(textures_directory_name);
+		mAlternativeDirectories.push_back(flats_directory_name);
+		mAlternativeDirectories.push_back(patches_directory_name);
+		mAlternativeDirectories.push_back(sprites_directory_name);
+		mAlternativeDirectories.push_back(graphics_directory_name);
+	}
+}
+
+
+//
+// TextureResourceNameTranslator::translate
+//
+// Retrieves the ResourceId for a given resource path name using a set of
+// rules for retrieving ResourceIds when there is not an exact path match.
+// Alternative directories are searched for resources with a matching name
+// if an exact path match is not found.
+//
+const ResourceId TextureResourceNameTranslator::translate(const ResourcePath& path) const
+{
+	const ResourceId res_id = ResourceNameTranslator::translate(path);
+	if (res_id != ResourceId::INVALID_ID)
+		return res_id;
+
+	// TODO: get the path portion after the initial directory name
+	const ResourcePath base_path(path.last());
+
+	for (ResourcePathList::const_iterator it = mAlternativeDirectories.begin(); it != mAlternativeDirectories.end(); ++it)
+	{
+		const ResourcePath alternative_path = *it + base_path;
+		const ResourceId res_id = ResourceNameTranslator::translate(alternative_path);
+		if (res_id != ResourceId::INVALID_ID)
+			return res_id;
+	}
+
+	return ResourceId::INVALID_ID;
+}
+
+
+// ============================================================================
+//
 // ResourceManager class implementation
 //
 // ============================================================================
@@ -314,7 +369,6 @@ void ResourceNameTranslator::addTranslation(const ResourcePath& path, const Reso
 //
 
 ResourceManager::ResourceManager() :
-	mTextureManagerContainerId(static_cast<ResourceContainerId>(-1)),
 	mRawResourceAccessor(this),
 	mCache(NULL)
 { }
@@ -378,15 +432,9 @@ void ResourceManager::openResourceContainer(const OString& filename)
 // 
 void ResourceManager::openResourceContainers(const std::vector<std::string>& filenames)
 {
-	
 	for (std::vector<std::string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it)
 		openResourceContainer(*it);
 	
-	// Add TextureManager to the list of resource containers
-	// mTextureManagerContainerId = mContainers.size();
-	// ResourceContainer* texture_manager_container = new TextureManager(mTextureManagerContainerId, this);
-	// mContainers.push_back(texture_manager_container);
-
 	// TODO: Is this the best place to initialize the ResourceCache instance?
 	mCache = new ResourceCache(mResources.size());
 }
