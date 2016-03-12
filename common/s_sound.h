@@ -28,7 +28,7 @@
 #include "m_fixed.h"
 #include <string>
 
-#include "res_main.h"
+#include "resources/res_main.h"
 
 #define MAX_SNDNAME			63
 

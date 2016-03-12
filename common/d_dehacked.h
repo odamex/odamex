@@ -25,7 +25,7 @@
 #ifndef __D_DEHACK_H__
 #define __D_DEHACK_H__
 
-#include "res_main.h"
+#include "resources/res_main.h"
 
 void UndoDehPatch ();
 

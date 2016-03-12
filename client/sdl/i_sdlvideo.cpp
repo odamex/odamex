@@ -49,7 +49,7 @@
 #include "m_argv.h"
 #include "w_wad.h"
 
-#include "res_texture.h"
+#include "resources/res_texture.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"

@@ -32,7 +32,7 @@
 #include "doomtype.h"
 #include "i_system.h"
 #include "sc_man.h"
-#include "res_main.h"
+#include "resources/res_main.h"
 #include "z_zone.h"
 #include "cmdlib.h"
 #include "m_fileio.h"

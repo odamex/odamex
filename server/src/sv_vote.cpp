@@ -29,7 +29,7 @@
 #include "sv_pickup.h"
 #include "sv_vote.h"
 #include "d_main.h"
-#include "res_filelib.h"
+#include "resources/res_filelib.h"
 
 #include <algorithm>
 #include <cmath>

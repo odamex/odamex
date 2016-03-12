@@ -36,8 +36,8 @@
 #include <algorithm>
 #include <math.h>
 
-#include "res_texture.h"
-#include "res_main.h"
+#include "resources/res_texture.h"
+#include "resources/res_main.h"
 #include "v_video.h"
 
 #ifdef USE_PNG

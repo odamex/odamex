@@ -89,8 +89,8 @@
 #include "p_ctf.h"
 #include "cl_main.h"
 
-#include "res_texture.h"
-#include "res_filelib.h"
+#include "resources/res_texture.h"
+#include "resources/res_filelib.h"
 #include "w_ident.h"
 
 #ifdef GEKKO

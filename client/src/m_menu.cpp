@@ -50,7 +50,7 @@
 #include "cl_main.h"
 #include "c_bind.h"
 #include "g_level.h"
-#include "res_filelib.h"
+#include "resources/res_filelib.h"
 
 #include "gi.h"
 #include "m_memio.h"

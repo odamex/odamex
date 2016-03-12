@@ -30,11 +30,11 @@
 //-----------------------------------------------------------------------------
 
 #include <stdlib.h>
-#include "res_main.h"
-#include "res_fileaccessor.h"
-#include "res_container.h"
-#include "res_texture.h"
-#include "res_cache.h"
+#include "resources/res_main.h"
+#include "resources/res_fileaccessor.h"
+#include "resources/res_container.h"
+#include "resources/res_texture.h"
+#include "resources/res_cache.h"
 
 #include "m_ostring.h"
 #include "hashtable.h"

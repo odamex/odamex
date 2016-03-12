@@ -33,7 +33,7 @@
 #include "m_ostring.h"
 #include "hashtable.h"
 
-#include "res_main.h"
+#include "resources/res_main.h"
 
 typedef unsigned int TextureId;
 

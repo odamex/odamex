@@ -35,7 +35,7 @@
 #include "sv_main.h"
 #include "sv_vote.h"
 #include "w_wad.h"
-#include "res_filelib.h"
+#include "resources/res_filelib.h"
 
 //////// MAPLIST METHODS ////////
 

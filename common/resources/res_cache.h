@@ -24,7 +24,7 @@
 #ifndef __res_cache_h__
 #define __res_cache_h__
 
-#include "res_resourceid.h"
+#include "resources/res_resourceid.h"
 #include "z_zone.h"
 
 class ResourceCache

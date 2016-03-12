@@ -21,9 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "res_container.h"
-#include "res_main.h"
-#include "res_fileaccessor.h"
+#include "resources/res_container.h"
+#include "resources/res_main.h"
+#include "resources/res_fileaccessor.h"
 
 #include "m_ostring.h"
 #include "w_ident.h"

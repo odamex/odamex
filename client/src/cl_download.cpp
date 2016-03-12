@@ -34,7 +34,7 @@
 #include "md5.h"
 #include "m_argv.h"
 #include "m_fileio.h"
-#include "res_filelib.h"
+#include "resources/res_filelib.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"

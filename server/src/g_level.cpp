@@ -64,7 +64,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "g_warmup.h"
-#include "res_filelib.h"
+#include "resources/res_filelib.h"
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"

@@ -32,7 +32,7 @@
 #include "v_video.h"
 #include "m_alloc.h"
 #include "r_main.h"		// For lighting constants
-#include "res_main.h"
+#include "resources/res_main.h"
 #include "z_zone.h"
 #include "i_video.h"
 #include "c_dispatch.h"

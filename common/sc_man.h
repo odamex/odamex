@@ -25,7 +25,7 @@
 #ifndef __SC_MAN_H__
 #define __SC_MAN_H__
 
-#include "res_main.h"
+#include "resources/res_main.h"
 
 void SC_OpenResourceLump(const ResourceId res_id);
 void SC_OpenFile(const char *name);

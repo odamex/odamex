@@ -30,12 +30,12 @@
 #include <vector>
 #include <string>
 
-#include "res_resourcepath.h"
-#include "res_container.h"
+#include "resources/res_resourcepath.h"
+#include "resources/res_container.h"
 
 #include "z_zone.h"
 
-#include "res_resourceid.h"
+#include "resources/res_resourceid.h"
 
 // Forward class declarations
 class ResourceManager;

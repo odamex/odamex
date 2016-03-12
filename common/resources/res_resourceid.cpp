@@ -21,7 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "res_resourceid.h"
+#include "resources/res_resourceid.h"
 
 // Just initialize static member variables
 const ResourceId ResourceId::INVALID_ID(-1);

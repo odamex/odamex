@@ -35,7 +35,7 @@
 #include "c_dispatch.h"
 #include "z_zone.h"
 #include "m_random.h"
-#include "res_main.h"
+#include "resources/res_main.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "doomstat.h"

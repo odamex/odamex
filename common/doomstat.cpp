@@ -31,7 +31,7 @@
 #include "c_cvars.h"
 #include "i_system.h"
 #include "p_acs.h"
-#include "res_main.h"
+#include "resources/res_main.h"
 
 
 // Localizable strings

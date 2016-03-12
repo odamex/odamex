@@ -38,8 +38,8 @@
 #include "md5.h"
 #include "p_ctf.h"
 #include "version.h"
-#include "res_main.h"
-#include "res_filelib.h"
+#include "resources/res_main.h"
+#include "resources/res_filelib.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 

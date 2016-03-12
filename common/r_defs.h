@@ -40,7 +40,7 @@
 
 #include "dthinker.h"
 
-#include "res_resourceid.h"
+#include "resources/res_resourceid.h"
 
 // Silhouette, needed for clipping Segs (mainly)
 // and sprites representing things.

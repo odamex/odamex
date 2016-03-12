@@ -41,7 +41,7 @@
 #include "m_fileio.h"
 #include "version.h"
 
-#include "res_main.h"
+#include "resources/res_main.h"
 
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get

@@ -61,7 +61,7 @@
 #include "w_wad.h"
 #include "wi_stuff.h"
 #include "z_zone.h"
-#include "res_filelib.h"
+#include "resources/res_filelib.h"
 
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)

@@ -70,8 +70,8 @@
 #include "i_xbox.h"
 #endif
 
-#include "res_main.h"
-#include "res_filelib.h"
+#include "resources/res_main.h"
+#include "resources/res_filelib.h"
 
 bool lastWadRebootSuccess = true;
 extern bool step_mode;

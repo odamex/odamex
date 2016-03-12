@@ -30,7 +30,7 @@
 #include "m_swap.h"
 
 #include "w_wad.h"
-#include "res_main.h"
+#include "resources/res_main.h"
 
 #include "doomdef.h"
 #include "r_local.h"

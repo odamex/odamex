@@ -30,8 +30,8 @@ add_definitions(-DCLIENT_APP)
 
 # Common
 set(COMMON_DIR ../common)
-file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
-file(GLOB COMMON_SOURCES ${COMMON_DIR}/*.cpp)
+file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h ${COMMON_DIR}/resources/*.h)
+file(GLOB COMMON_SOURCES ${COMMON_DIR}/*.cpp ${COMMON_DIR}/resources/*.cpp)
 
 # Client
 set(CLIENT_DIR sdl src)

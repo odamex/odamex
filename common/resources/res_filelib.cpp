@@ -29,7 +29,7 @@
 #include "w_ident.h"
 #include "m_argv.h"
 #include "c_cvars.h"
-#include "res_main.h"
+#include "resources/res_main.h"
 
 #include <string>
 #include <vector>

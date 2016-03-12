@@ -38,8 +38,8 @@
 #include "st_stuff.h"
 #include "p_mobj.h"
 #include "g_level.h"
-#include "res_main.h"
-#include "res_filelib.h"
+#include "resources/res_main.h"
+#include "resources/res_filelib.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)

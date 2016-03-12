@@ -74,8 +74,8 @@
 #include "sv_main.h"
 #include "sv_banlist.h"
 
-#include "res_filelib.h"
-#include "res_texture.h"
+#include "resources/res_filelib.h"
+#include "resources/res_texture.h"
 #include "w_ident.h"
 
 EXTERN_CVAR (sv_timelimit)
