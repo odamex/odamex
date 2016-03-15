@@ -239,7 +239,7 @@ private:
 	std::vector<std::string>		mResourceFileNames;
 	std::vector<std::string>		mResourceFileHashes;
 
-	TextureResourceNameTranslator			mNameTranslator;
+	ResourceNameTranslator			mNameTranslator;
 	RawResourceAccessor				mRawResourceAccessor;
 	ResourceCache*					mCache;
 
