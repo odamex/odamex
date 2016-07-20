@@ -997,7 +997,7 @@ void R_StoreWallRange(int start, int stop)
 		}
 
 		// [SL] additional fix for sky hack
-		if (R_ResourceIdIsSkyFlat(frontsector->ceiling_res_id) || R_ResourceIdIsSkyFlat(backsector->ceiling_res_id))
+		if (R_ResourceIdIsSkyFlat(frontsector->ceiling_res_id) && R_ResourceIdIsSkyFlat(backsector->ceiling_res_id))
 			toptexture = 0;
 	}
 
