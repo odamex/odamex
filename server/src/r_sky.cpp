@@ -28,6 +28,8 @@
 #include <stdio.h>
 
 #include "r_data.h"
+#include "resources/res_resourceid.h"
+#include "resources/res_main.h"
 
 // [ML] 5/11/06 - Remove sky2
 int 		skyflatnum;
@@ -36,6 +38,17 @@ int 		sky1texture, sky2texture;
 fixed_t		sky1pos=0,		sky1speed=0;
 
 char SKYFLATNAME[8] = "F_SKY1";
+
+//
+// R_ResourceIdIsSkyFlat
+//
+// Returns true if the given ResourceId represents the sky.
+//
+bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
+{
+	const ResourceId sky_res_id = Res_GetResourceId(SKYFLATNAME, "/FLATS");
+	return res_id == sky_res_id;
+}
 
 VERSION_CONTROL (r_sky_cpp, "$Id$")
 
