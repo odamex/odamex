@@ -438,7 +438,7 @@ manual_plat:
 		if (change)
 		{
 			if (line)
-				sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
+				sec->floor_res_id = sides[line->sidenum[0]].sector->floor_res_id;
 			if (change == 1)
 				sec->special = 0;	// Stop damage and other stuff, if any
 		}

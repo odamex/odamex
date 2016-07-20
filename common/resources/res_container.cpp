@@ -155,72 +155,9 @@ WadResourceContainer::WadResourceContainer(
 		return;
 	}
 
-	OString map_name;
-
 	// Examine each lump and decide which path it belongs in
 	// and then register it with the resource manager.
-	for (ContainerDirectory::const_iterator it = mDirectory->begin(); it != mDirectory->end(); ++it)
-	{
-		const LumpId lump_id = mDirectory->getLumpId(it);
-
-		uint32_t offset = mDirectory->getOffset(lump_id);
-		uint32_t length = mDirectory->getLength(lump_id);
-		const OString& name = mDirectory->getName(lump_id);
-		ResourcePath path = global_directory_name;
-
-		// check that the lump doesn't extend past the end of the file
-		if (offset + length <= mFile->size())
-		{
-			// [SL] Determine if this is a map marker (by checking if a map-related lump such as
-			// SEGS follows this one). If so, move all of the subsequent map lumps into
-			// this map's directory.
-			bool is_map_lump = Res_IsMapLumpName(name);
-			bool is_map_marker = !is_map_lump && Res_IsMapLumpName(mDirectory->next(lump_id));
-
-			if (is_map_marker)
-				map_name = name;
-			else if (!is_map_lump)
-				map_name.clear();
-
-			// add the lump to the appropriate namespace
-			if (!map_name.empty())
-				path = Res_MakeResourcePath(map_name, maps_directory_name);
-			else if (mDirectory->between(lump_id, "F_START", "F_END") ||
-					mDirectory->between(lump_id, "FF_START", "FF_END"))
-				path = flats_directory_name;
-			else if (mDirectory->between(lump_id, "S_START", "S_END") ||
-					mDirectory->between(lump_id, "SS_START", "SS_END"))
-				path = sprites_directory_name;
-			else if (mDirectory->between(lump_id, "P_START", "P_END") ||
-					mDirectory->between(lump_id, "PP_START", "PP_END"))
-				path = patches_directory_name;
-			else if (mDirectory->between(lump_id, "C_START", "C_END"))
-				path = colormaps_directory_name;
-			else if (mDirectory->between(lump_id, "TX_START", "TX_END"))
-				path = textures_directory_name;
-			else if (mDirectory->between(lump_id, "HI_START", "HI_END"))
-				path = hires_directory_name;
-			else
-			{
-				// Examine the lump to identify its type
-				uint8_t* data = new uint8_t[length];
-				mFile->seek(offset);
-				if (mFile->read(data, length) == length)
-				{
-					if (name.compare(0, 2, "DP") == 0 && Res_ValidatePCSpeakerSoundData(data, length))
-						path = sounds_directory_name;
-					else if (name.compare(0, 2, "DS") == 0 && Res_ValidateSoundData(data, length))
-						path = sounds_directory_name;
-				}
-
-				delete [] data;
-			}
-			
-			path += name;
-			const ResourceId res_id = manager->addResource(path, this);
-			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
-		}
-	}
+	addResourcesToManager(manager);
 
 	mIsIWad = W_IsIWAD(file->getFileName());
 }
@@ -291,8 +228,7 @@ ContainerDirectory* WadResourceContainer::readWadDirectory()
 		char name[8];
 		mFile->read(name, 8);
 
-		if (offset >= 12 && length >= 0)
-			directory->addEntryInfo(OStringToUpper(name, 8), length, offset);
+		directory->addEntryInfo(OStringToUpper(name, 8), length, offset);
 	}
 
 	return directory;
@@ -310,6 +246,78 @@ void WadResourceContainer::cleanup()
 	mDirectory = NULL;
 	mLumpIdLookup.clear();
 	mIsIWad = false;
+}
+
+
+//
+// WadResourceContainer::addResourcesToManager
+//
+void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
+{
+	OString map_name;
+
+	for (ContainerDirectory::const_iterator it = mDirectory->begin(); it != mDirectory->end(); ++it)
+	{
+		const LumpId lump_id = mDirectory->getLumpId(it);
+
+		uint32_t offset = mDirectory->getOffset(lump_id);
+		uint32_t length = mDirectory->getLength(lump_id);
+		const OString& name = mDirectory->getName(lump_id);
+		ResourcePath path = global_directory_name;
+
+		// check that the lump doesn't extend past the end of the file
+		if (offset + length <= mFile->size())
+		{
+			// [SL] Determine if this is a map marker (by checking if a map-related lump such as
+			// SEGS follows this one). If so, move all of the subsequent map lumps into
+			// this map's directory.
+			bool is_map_lump = Res_IsMapLumpName(name);
+			bool is_map_marker = !is_map_lump && Res_IsMapLumpName(mDirectory->next(lump_id));
+
+			if (is_map_marker)
+				map_name = name;
+			else if (!is_map_lump)
+				map_name.clear();
+
+			// add the lump to the appropriate namespace
+			if (!map_name.empty())
+				path = Res_MakeResourcePath(map_name, maps_directory_name);
+			else if (mDirectory->between(lump_id, "F_START", "F_END") ||
+					mDirectory->between(lump_id, "FF_START", "FF_END"))
+				path = flats_directory_name;
+			else if (mDirectory->between(lump_id, "S_START", "S_END") ||
+					mDirectory->between(lump_id, "SS_START", "SS_END"))
+				path = sprites_directory_name;
+			else if (mDirectory->between(lump_id, "P_START", "P_END") ||
+					mDirectory->between(lump_id, "PP_START", "PP_END"))
+				path = patches_directory_name;
+			else if (mDirectory->between(lump_id, "C_START", "C_END"))
+				path = colormaps_directory_name;
+			else if (mDirectory->between(lump_id, "TX_START", "TX_END"))
+				path = textures_directory_name;
+			else if (mDirectory->between(lump_id, "HI_START", "HI_END"))
+				path = hires_directory_name;
+			else
+			{
+				// Examine the lump to identify its type
+				uint8_t* data = new uint8_t[length];
+				mFile->seek(offset);
+				if (mFile->read(data, length) == length)
+				{
+					if (name.compare(0, 2, "DP") == 0 && Res_ValidatePCSpeakerSoundData(data, length))
+						path = sounds_directory_name;
+					else if (name.compare(0, 2, "DS") == 0 && Res_ValidateSoundData(data, length))
+						path = sounds_directory_name;
+				}
+
+				delete [] data;
+			}
+			
+			path += name;
+			const ResourceId res_id = manager->addResource(path, this);
+			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
+		}
+	}
 }
 
 

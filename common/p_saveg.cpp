@@ -91,8 +91,8 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec->ceilingplane.b
 				<< sec->ceilingplane.c
 				<< sec->ceilingplane.d
-				<< sec->floorpic
-				<< sec->ceilingpic
+				<< sec->floor_res_id
+				<< sec->ceiling_res_id
 				<< sec->lightlevel
 				<< sec->special
 				<< sec->tag
@@ -181,8 +181,8 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec->ceilingplane.b
 				>> sec->ceilingplane.c
 				>> sec->ceilingplane.d
-				>> sec->floorpic
-				>> sec->ceilingpic
+				>> sec->floor_res_id
+				>> sec->ceiling_res_id
 				>> sec->lightlevel
 				>> sec->special
 				>> sec->tag

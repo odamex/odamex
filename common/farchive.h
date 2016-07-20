@@ -27,6 +27,7 @@
 
 #include "doomtype.h"
 #include "dobject.h"
+#include "resources/res_resourceid.h"
 
 #include <string>
 
@@ -169,6 +170,7 @@ public:
 	inline	FArchive& operator<< (const unsigned char* str) { return operator<< ((const char* )str); }
 	inline	FArchive& operator<< (const signed char* str) { return operator<< ((const char* )str); }
 	inline	FArchive& operator<< (bool b) { return operator<< ((BYTE)b); }
+	inline	FArchive& operator<< (ResourceId res_id) { return operator<< ((DWORD)res_id); }
 
 	#ifdef _WIN32
 	inline	FArchive& operator<< (int i) { return operator<< ((SDWORD)i); }
@@ -194,6 +196,7 @@ public:
 	//inline	FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
 	inline	FArchive& operator>> (bool& b) { BYTE in; operator>> (in); b = (in != 0); return *this; }
 	inline  FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
+	inline  FArchive& operator>> (ResourceId res_id) { DWORD in; operator>> (in); res_id = (ResourceId)in; return *this; }
 
 	#ifdef _WIN32
 	inline	FArchive& operator>> (int& i) { DWORD in; operator>> (in); i = (int)in; return *this; }

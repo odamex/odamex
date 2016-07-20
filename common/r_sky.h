@@ -26,6 +26,7 @@
 #define __R_SKY_H__
 
 #include "c_cvars.h"
+#include "resources/res_resourceid.h"
 
 // SKY, store the number for name.
 extern char SKYFLATNAME[8];
@@ -47,6 +48,9 @@ EXTERN_CVAR (r_stretchsky)
 void R_InitSkyMap		();
 
 void R_RenderSkyRange(visplane_t* pl);
+
+bool R_ResourceIdIsSkyFlat(const ResourceId res_id);
+
 
 #endif //__R_SKY_H__
 

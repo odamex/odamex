@@ -32,6 +32,7 @@
 #include "p_lnspec.h"
 #include "c_effect.h"
 #include "p_mobj.h"
+#include "r_sky.h"
 
 #include "s_sound.h"
 
@@ -1946,8 +1947,8 @@ bool P_ShootLine(intercept_t* in)
 
 	// definitely hit the solid part of the line
 
-	bool skyceiling1 = sec1->ceilingpic == skyflatnum;
-	bool skyceiling2 = sec2 && sec2->ceilingpic == skyflatnum;
+	bool skyceiling1 = R_ResourceIdIsSkyFlat(sec1->ceiling_res_id);
+	bool skyceiling2 = sec2 && R_ResourceIdIsSkyFlat(sec2->ceiling_res_id);
 
 	// sky wall hack
 	if (skyceiling1 && skyceiling2)
@@ -1961,7 +1962,8 @@ bool P_ShootLine(intercept_t* in)
 		return false;
 
 	// check for shooting sky floors
-	if (precise && sec1->floorpic == skyflatnum && z < floorheight1)
+	bool skyfloor1 = R_ResourceIdIsSkyFlat(sec1->floor_res_id);
+	if (precise && skyfloor1 && z < floorheight1)
 		return false;
 
 	v3fixed_t lineorg, linedir, puffpos;
@@ -2238,7 +2240,7 @@ void P_LineAttack (AActor *t1, angle_t angle, fixed_t distance,
 			y2 = t1->y + FixedMul (y2 - t1->y, frac);
 			updown = 1;
 			if ( (subsector = P_PointInSubsector (x2, y2)) ) {
-				if (subsector->sector->ceilingpic == skyflatnum)
+				if (R_ResourceIdIsSkyFlat(subsector->sector->ceiling_res_id))
 					return;	// disappeared in the clouds
 			} else
 				return;	// outside map
@@ -3692,8 +3694,6 @@ void P_CopySector(sector_t *dest, sector_t *src)
 
 	dest->floorheight			= src->floorheight;
 	dest->ceilingheight			= src->ceilingheight;
-	dest->floorpic				= src->floorpic;
-	dest->ceilingpic			= src->ceilingpic;
 	dest->lightlevel			= src->lightlevel;
 	dest->special				= src->special;
 	dest->tag					= src->tag;

@@ -107,6 +107,21 @@ public:
 		return it - begin();
 	}
 
+	LumpId getLumpId(const OString& name) const
+	{
+		NameLookupTable::const_iterator it = mNameLookup.find(name);
+		if (it != mNameLookup.end())
+			return getLumpId(&mEntries[it->second]);
+		return INVALID_LUMP_ID;
+	}
+
+	LumpId getLumpId(const EntryInfo* entry) const
+	{
+		if (!mEntries.empty() && static_cast<LumpId>(entry - &mEntries.front()) < mEntries.size())
+			return static_cast<LumpId>(entry - &mEntries.front());
+		return INVALID_LUMP_ID;
+	}
+
 	size_t size() const
 	{
 		return mEntries.size();
@@ -173,26 +188,10 @@ public:
 	}
 
 private:
-
 	EntryInfoList		mEntries;
 
 	typedef OHashTable<OString, LumpId> NameLookupTable;
 	NameLookupTable		mNameLookup;
-
-	LumpId getLumpId(const OString& name) const
-	{
-		NameLookupTable::const_iterator it = mNameLookup.find(OStringToUpper(name));
-		if (it != mNameLookup.end())
-			return getLumpId(&mEntries[it->second]);
-		return INVALID_LUMP_ID;
-	}
-
-	LumpId getLumpId(const EntryInfo* entry) const
-	{
-		if (!mEntries.empty() && static_cast<LumpId>(entry - &mEntries.front()) < mEntries.size())
-			return static_cast<LumpId>(entry - &mEntries.front());
-		return INVALID_LUMP_ID;
-	}
 };
 
 
@@ -287,6 +286,7 @@ public:
 
 private:
 	void cleanup();
+	void addResourcesToManager(ResourceManager* manager);
 
 	ResourceContainerId		mResourceContainerId;
 	FileAccessor*			mFile;

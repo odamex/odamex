@@ -37,6 +37,7 @@
 #include "g_game.h"
 #include "p_mobj.h"
 #include "p_ctf.h"
+#include "r_sky.h"
 #include "gi.h"
 
 #define WATER_SINK_FACTOR		3
@@ -1033,8 +1034,8 @@ static bool P_ExplodeMissileAgainstWall(AActor* mo)
 				sec2 = ceilingline->frontsector;
 			}
 
-			bool skyceiling1 = sec1->ceilingpic == skyflatnum;
-			bool skyceiling2 = sec2 && sec2->ceilingpic == skyflatnum;
+			bool skyceiling1 = R_ResourceIdIsSkyFlat(sec1->ceiling_res_id);
+			bool skyceiling2 = sec2 && R_ResourceIdIsSkyFlat(sec2->ceiling_res_id);
 
 			if (skyceiling2)
 			{
@@ -1472,7 +1473,7 @@ static bool P_ClipMovementToFloor(AActor* mo)
 		// Explode missiles
 		if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
 		{
-			if (co_fixweaponimpacts && mo->subsector->sector->floorpic == skyflatnum)
+			if (co_fixweaponimpacts && R_ResourceIdIsSkyFlat(mo->subsector->sector->floor_res_id))
 				mo->Destroy();
 			else if (serverside)
 				P_ExplodeMissile(mo);
@@ -1510,7 +1511,7 @@ static bool P_ClipMovementToCeiling(AActor* mo)
 		// Explode missiles
 		if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
 		{
-			if (co_fixweaponimpacts && mo->subsector->sector->ceilingpic == skyflatnum)
+			if (co_fixweaponimpacts && R_ResourceIdIsSkyFlat(mo->subsector->sector->ceiling_res_id))
 				mo->Destroy();
 			else if (serverside)
 				P_ExplodeMissile(mo);

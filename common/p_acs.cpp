@@ -1351,20 +1351,20 @@ int DLevelScript::ThingCount (int type, int tid)
 
 void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 {
-	int flat, secnum = -1;
-	const char *flatname = level.behavior->LookupString (name);
+	int secnum = -1;
+	const char* flatname = level.behavior->LookupString(name);
 
 	if (flatname == NULL)
 		return;
 
-	flat = R_FlatNumForName (flatname);
+	const ResourceId res_id = Res_GetResourceId(flatname, ResourcePath("/FLATS"));
 
-	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 	{
 		if (floorOrCeiling == false)
-			sectors[secnum].floorpic = flat;
+			sectors[secnum].floor_res_id = res_id;
 		else
-			sectors[secnum].ceilingpic = flat;
+			sectors[secnum].ceiling_res_id = res_id;
 	}
 }
 

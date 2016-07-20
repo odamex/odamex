@@ -17,7 +17,7 @@
 //
 // DESCRIPTION:
 //
-// Provides in-memory cachign of game resources loaded from disk.
+// Provides in-memory caching of game resources loaded from disk.
 //
 //-----------------------------------------------------------------------------
 
@@ -25,6 +25,7 @@
 #define __res_cache_h__
 
 #include "resources/res_resourceid.h"
+#include "resources/res_resourceloader.h"
 #include "z_zone.h"
 
 class ResourceCache

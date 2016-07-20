@@ -35,6 +35,7 @@
 #include "resources/res_container.h"
 #include "resources/res_texture.h"
 #include "resources/res_cache.h"
+#include "resources/res_resourceloader.h"
 
 #include "m_ostring.h"
 #include "hashtable.h"
@@ -164,48 +165,6 @@ bool Res_IsDehackedFile(const OString& filename)
 
 // ****************************************************************************
 
-// ============================================================================
-//
-// ResourceLoader class implementations
-//
-// ============================================================================
-
-
-// ----------------------------------------------------------------------------
-// DefaultResourceLoader class implementation
-// ----------------------------------------------------------------------------
-
-DefaultResourceLoader::DefaultResourceLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id) :
-	mRawResourceAccessor(accessor),
-	mResourceId(res_id)
-{
-	assert(mRawResourceAccessor != NULL);
-	assert(mResourceId != ResourceId::INVALID_ID);
-}
-
-
-//
-// DefaultResourceLoader::size
-//
-// Returns the size of the raw resource lump
-//
-uint32_t DefaultResourceLoader::size() const
-{
-	return mRawResourceAccessor->getResourceSize(mResourceId);
-}
-
-
-//
-// DefaultResourceLoader::load
-//
-void DefaultResourceLoader::load(void* data) const
-{
-	uint32_t size =  mRawResourceAccessor->getResourceSize(mResourceId);
-	mRawResourceAccessor->loadResource(mResourceId, data, size); 
-}
-
-
-
 
 // ============================================================================
 //
@@ -331,8 +290,15 @@ const ResourceId ResourceManager::addResource(
 
 	res_rec.mPath = path;
 	res_rec.mResourceContainerId = container->getResourceContainerId();
-	res_rec.mResourceLoader = new DefaultResourceLoader(&mRawResourceAccessor, res_id);
-	// TODO: delete mResourceLoader at some point
+	if (path.first() == "FLATS")
+	{
+		res_rec.mResourceLoader = new FlatTextureLoader(&mRawResourceAccessor, res_id);
+	}
+	else
+	{
+		res_rec.mResourceLoader = new DefaultResourceLoader(&mRawResourceAccessor, res_id);
+		// TODO: delete mResourceLoader at some point
+	}
 
 	mNameTranslator.addTranslation(path, res_id);
 	

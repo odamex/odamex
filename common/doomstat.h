@@ -212,11 +212,6 @@ extern gamestate_t wipegamestate;
 
 EXTERN_CVAR (mouse_sensitivity) // removeme // ?
 
-// Needed to store the number of the dummy sky flat.
-// Used for rendering,
-//	as well as tracking projectiles etc.
-extern int				skyflatnum;
-
 // ---- [RH] ----
 EXTERN_CVAR (developer) // removeme
 

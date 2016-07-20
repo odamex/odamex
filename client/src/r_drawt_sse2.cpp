@@ -72,18 +72,18 @@ void R_DrawSpanD_SSE2 (void)
 
 	const int width = dspan.x2 - dspan.x1 + 1;
 
-	// TODO: store flats in column-major format and swap u and v
-	dsfixed_t ufrac = dspan.yfrac;
-	dsfixed_t vfrac = dspan.xfrac;
-	dsfixed_t ustep = dspan.ystep;
-	dsfixed_t vstep = dspan.xstep;
+	dsfixed_t ufrac = dspan.ufrac;
+	dsfixed_t vfrac = dspan.vfrac;
+	dsfixed_t ustep = dspan.ustep;
+	dsfixed_t vstep = dspan.vstep;
 
 	const byte* source = dspan.source;
 	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
 
 	shaderef_t colormap = dspan.colormap;
 	
-	const int texture_width_bits = 6, texture_height_bits = 6;
+	const int texture_width_bits = dspan.texture_width_bits;
+	const int texture_height_bits = dspan.texture_height_bits;
 
 	const unsigned int umask = ((1 << texture_width_bits) - 1) << texture_height_bits;
 	const unsigned int vmask = (1 << texture_height_bits) - 1;

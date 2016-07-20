@@ -47,6 +47,12 @@
 #include "c_console.h"
 
 #include "p_setup.h"
+#include "r_sky.h"
+
+
+#include "resources/res_main.h"
+#include "resources/res_resourcepath.h"
+#include "resources/res_texture.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -319,11 +325,9 @@ static void P_LoadSectors(const OString& mapname)
 	{
 		ss->floorheight = LESHORT(ms->floorheight) << FRACBITS;
 		ss->ceilingheight = LESHORT(ms->ceilingheight) << FRACBITS;
-		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
-		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
 
-		ss->floor_res_id = Res_GetResourceId(OString(ss->floorpic, 8), "FLATS");
-		ss->ceiling_res_id = Res_GetResourceId(OString(ss->ceilingpic, 8), "FLATS");
+		ss->floor_res_id = Res_GetResourceId(OString(ms->floorpic, 8), "/FLATS");
+		ss->ceiling_res_id = Res_GetResourceId(OString(ms->ceilingpic, 8), "/FLATS");
 
 		ss->lightlevel = LESHORT(ms->lightlevel);
 		if (HasBehavior)
@@ -372,9 +376,12 @@ static void P_LoadSectors(const OString& mapname)
 		bool fog = level.outsidefog_color[0] != 0xFF || level.outsidefog_color[1] != 0 ||
 					level.outsidefog_color[2] != 0 || level.outsidefog_color[3] != 0;
 
-		if (fog && ss->ceilingpic == skyflatnum)
-			ss->colormap = GetSpecialLights(255, 255, 255,
-									level.outsidefog_color[1], level.outsidefog_color[2], level.outsidefog_color[3]);
+		if (fog && R_ResourceIdIsSkyFlat(ss->ceiling_res_id))
+			ss->colormap = GetSpecialLights(
+									255, 255, 255,
+									level.outsidefog_color[1],
+									level.outsidefog_color[2],
+									level.outsidefog_color[3]);
 		else
 			ss->colormap = &NormalLight;
 

@@ -31,6 +31,7 @@
 #include "r_draw.h"
 #include "r_things.h"
 #include "p_local.h"
+#include "r_sky.h"
 #include "m_vectors.h"
 
 // State.
@@ -235,7 +236,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	if (diffTex)
 	{
 		if (CopyPlaneIfValid (&tempsec->floorplane, &s->floorplane, &sec->ceilingplane))
-			tempsec->floorpic = s->floorpic;
+			tempsec->floor_res_id = s->floor_res_id;
 		else if (s->MoreFlags & SECF_FAKEFLOORONLY)
 		{
 			if (underwater)
@@ -275,7 +276,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		if (diffTex)
 		{
 			if (CopyPlaneIfValid (&tempsec->ceilingplane, &s->ceilingplane, &sec->floorplane))
-				tempsec->ceilingpic = s->ceilingpic;
+				tempsec->ceiling_res_id = s->ceiling_res_id;
 		}
 		else
 		{
@@ -321,7 +322,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	// killough 11/98: prevent sudden light changes from non-water sectors:
 	if ((underwater && !back) || doorunderwater)
 	{					// head-below-floor hack
-		tempsec->floorpic			= diffTex ? sec->floorpic : s->floorpic;
+		tempsec->floor_res_id		= diffTex ? sec->floor_res_id : s->floor_res_id;
 		tempsec->floor_xoffs		= s->floor_xoffs;
 		tempsec->floor_yoffs		= s->floor_yoffs;
 		tempsec->floor_xscale		= s->floor_xscale;
@@ -333,12 +334,12 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		tempsec->ceilingplane		= s->floorplane;
 		P_InvertPlane(&tempsec->ceilingplane);
 		P_ChangeCeilingHeight(tempsec, -1);
-		if (s->ceilingpic == skyflatnum)
+		if (R_ResourceIdIsSkyFlat(s->ceiling_res_id))
 		{
 			tempsec->floorplane			= tempsec->ceilingplane;
 			P_InvertPlane(&tempsec->floorplane);
 			P_ChangeFloorHeight(tempsec, +1);
-			tempsec->ceilingpic			= tempsec->floorpic;
+			tempsec->ceiling_res_id		= tempsec->floor_res_id;
 			tempsec->ceiling_xoffs		= tempsec->floor_xoffs;
 			tempsec->ceiling_yoffs		= tempsec->floor_yoffs;
 			tempsec->ceiling_xscale		= tempsec->floor_xscale;
@@ -349,7 +350,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		}
 		else
 		{
-			tempsec->ceilingpic			= diffTex ? s->floorpic : s->ceilingpic;
+			tempsec->ceiling_res_id		= diffTex ? s->floor_res_id : s->ceiling_res_id;
 			tempsec->ceiling_xoffs		= s->ceiling_xoffs;
 			tempsec->ceiling_yoffs		= s->ceiling_yoffs;
 			tempsec->ceiling_xscale		= s->ceiling_xscale;
@@ -387,8 +388,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 		tempsec->colormap			= s->colormap;
 
-		tempsec->ceilingpic = diffTex ? sec->ceilingpic : s->ceilingpic;
-		tempsec->floorpic											= s->ceilingpic;
+		tempsec->ceiling_res_id = diffTex ? sec->ceiling_res_id : s->ceiling_res_id;
+		tempsec->floor_res_id										= s->ceiling_res_id;
 		tempsec->floor_xoffs		= tempsec->ceiling_xoffs		= s->ceiling_xoffs;
 		tempsec->floor_yoffs		= tempsec->ceiling_yoffs		= s->ceiling_yoffs;
 		tempsec->floor_xscale		= tempsec->ceiling_xscale		= s->ceiling_xscale;
@@ -397,10 +398,10 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		tempsec->base_floor_angle	= tempsec->base_ceiling_angle	= s->base_ceiling_angle;
 		tempsec->base_floor_yoffs	= tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
 
-		if (s->floorpic != skyflatnum)
+		if (!R_ResourceIdIsSkyFlat(s->floor_res_id))
 		{
 			tempsec->ceilingplane	= sec->ceilingplane;
-			tempsec->floorpic		= s->floorpic;
+			tempsec->floor_res_id	= s->floor_res_id;
 			tempsec->floor_xoffs	= s->floor_xoffs;
 			tempsec->floor_yoffs	= s->floor_yoffs;
 			tempsec->floor_xscale	= s->floor_xscale;
@@ -502,7 +503,8 @@ void R_AddLine (seg_t *line)
 		 line->sidedef->bottomtexture) &&
 
 		// properly render skies (consider door "open" if both ceilings are sky):
-		(backsector->ceilingpic !=skyflatnum || frontsector->ceilingpic!=skyflatnum)))
+		(!R_ResourceIdIsSkyFlat(backsector->ceiling_res_id) || 
+		 !R_ResourceIdIsSkyFlat(frontsector->ceiling_res_id))))
 	{
 		doorclosed = true;
 		R_ClipWallSegment(x1, x2, true);
@@ -515,8 +517,8 @@ void R_AddLine (seg_t *line)
 	if (P_IdenticalPlanes(&frontsector->ceilingplane, &backsector->ceilingplane)
 		&& P_IdenticalPlanes(&frontsector->floorplane, &backsector->floorplane)
 		&& backsector->lightlevel == frontsector->lightlevel
-		&& backsector->floorpic == frontsector->floorpic
-		&& backsector->ceilingpic == frontsector->ceilingpic
+		&& backsector->floor_res_id == frontsector->floor_res_id
+		&& backsector->ceiling_res_id == frontsector->ceiling_res_id
 		&& curline->sidedef->midtexture == 0
 
 		// killough 3/7/98: Take flats offsets into account:
@@ -670,15 +672,15 @@ void R_Subsector (int num)
 
 	basecolormap = frontsector->colormap->maps;
 
+
 	ceilingplane = P_CeilingHeight(camera) > viewz ||
-		frontsector->ceilingpic == skyflatnum ||
+		R_ResourceIdIsSkyFlat(frontsector->ceiling_res_id) || 
 		(frontsector->heightsec && 
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) && 
-		frontsector->heightsec->floorpic == skyflatnum) ?
+		R_ResourceIdIsSkyFlat(frontsector->heightsec->floor_res_id)) ?
 		R_FindPlane(frontsector->ceilingplane,		// killough 3/8/98
-					frontsector->ceilingpic == skyflatnum &&  // killough 10/98
-						frontsector->sky & PL_SKYFLAT ? frontsector->sky :
-						frontsector->ceilingpic,
+					frontsector->ceiling_res_id,
+					frontsector->sky,
 					ceilinglightlevel,				// killough 4/11/98
 					frontsector->ceiling_xoffs,		// killough 3/7/98
 					frontsector->ceiling_yoffs + frontsector->base_ceiling_yoffs,
@@ -690,14 +692,14 @@ void R_Subsector (int num)
 	// killough 3/7/98: Add (x,y) offsets to flats, add deep water check
 	// killough 3/16/98: add floorlightlevel
 	// killough 10/98: add support for skies transferred from sidedefs
+
 	floorplane = P_FloorHeight(camera) < viewz || // killough 3/7/98
 		(frontsector->heightsec &&
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
-		frontsector->heightsec->ceilingpic == skyflatnum) ?
+		R_ResourceIdIsSkyFlat(frontsector->heightsec->ceiling_res_id)) ?
 		R_FindPlane(frontsector->floorplane,
-					frontsector->floorpic == skyflatnum &&  // killough 10/98
-						frontsector->sky & PL_SKYFLAT ? frontsector->sky :
-						frontsector->floorpic,
+					frontsector->floor_res_id,
+					frontsector->sky,
 					floorlightlevel,				// killough 3/16/98
 					frontsector->floor_xoffs,		// killough 3/7/98
 					frontsector->floor_yoffs + frontsector->base_floor_yoffs,

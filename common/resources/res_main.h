@@ -33,6 +33,7 @@
 #include "resources/res_resourcepath.h"
 #include "resources/res_nametranslator.h"
 #include "resources/res_container.h"
+#include "resources/res_resourceloader.h"
 
 #include "z_zone.h"
 
@@ -199,39 +200,6 @@ private:
 	}
 
 
-public:
-	//
-	// RawResourceAccessor class
-	//
-	// Provides access to the resources without post-processing. Instances of
-	// this class are typically used by the ResourceLoader hierarchy to read the
-	// raw resource data and then perform their own post-processign.
-	//
-	class RawResourceAccessor
-	{
-	public:
-		RawResourceAccessor(const ResourceManager* manager) :
-			mResourceManager(manager)
-		{ }
-
-		uint32_t getResourceSize(const ResourceId res_id) const
-		{
-			const ResourceContainerId container_id = mResourceManager->getResourceContainerId(res_id);
-			const ResourceContainer* container = mResourceManager->mContainers[container_id];
-			return container->getResourceSize(res_id);
-		}
-
-		void loadResource(const ResourceId res_id, void* data, uint32_t size) const
-		{
-			const ResourceContainerId container_id = mResourceManager->getResourceContainerId(res_id);
-			const ResourceContainer* container = mResourceManager->mContainers[container_id];
-			container->loadResource(data, res_id, size);
-		}
-	
-	private:
-		const ResourceManager*		mResourceManager;
-	};
-
 private:
 	std::vector<ResourceContainer*>	mContainers;
 
@@ -240,7 +208,10 @@ private:
 	std::vector<std::string>		mResourceFileHashes;
 
 	ResourceNameTranslator			mNameTranslator;
+
+	friend class RawResourceAccessor;
 	RawResourceAccessor				mRawResourceAccessor;
+
 	ResourceCache*					mCache;
 
 	// ---------------------------------------------------------------------------
@@ -248,56 +219,6 @@ private:
 	// ---------------------------------------------------------------------------
 
 	void openResourceContainer(const OString& filename);
-};
-
-
-
-// ============================================================================
-//
-// ResourceLoader class interface
-//
-// ============================================================================
-//
-// Loads a resource from a ResourceContainer, performing any necessary data
-// conversion and caching the resulting instance in the Zone memory system.
-//
-
-// ----------------------------------------------------------------------------
-// ResourceLoader abstract base class interface
-// ----------------------------------------------------------------------------
-
-class ResourceLoader
-{
-public:
-	virtual ~ResourceLoader() {}
-
-	virtual bool validate() const
-	{	return true;	}
-
-	virtual uint32_t size() const = 0;
-	virtual void load(void* data) const = 0;
-};
-
-
-// ---------------------------------------------------------------------------
-// DefaultResourceLoader class interface
-//
-// Generic resource loading functionality. Simply reads raw data and returns
-// a pointer to the cached data.
-// ---------------------------------------------------------------------------
-
-class DefaultResourceLoader : public ResourceLoader
-{
-public:
-	DefaultResourceLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id);
-	virtual ~DefaultResourceLoader() { }
-
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
-
-private:
-	const ResourceManager::RawResourceAccessor*	mRawResourceAccessor;
-	const ResourceId			mResourceId;
 };
 
 
@@ -390,6 +311,4 @@ bool Res_CheckMap(const OString& mapname);
 const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
 
 
-
 #endif	// __RES_MAIN_H__
-

@@ -26,6 +26,7 @@
 #define __R_PLANE_H__
 
 #include "r_data.h"
+#include "resources/res_resourceid.h"
 
 // Visplane related.
 extern	int*			lastopening;
@@ -61,15 +62,16 @@ R_MakeSpans
   
 void R_DrawPlanes (void);
 
-visplane_t *R_FindPlane
-( plane_t		secplane,
-  int			picnum,
-  int			lightlevel,
-  fixed_t		xoffs,		// killough 2/28/98: add x-y offsets
-  fixed_t		yoffs,
-  fixed_t		xscale,
-  fixed_t		yscale,
-  angle_t		angle);
+visplane_t* R_FindPlane(
+	plane_t secplane,
+	ResourceId res_id,
+	int sky,
+  	int lightlevel,
+	fixed_t xoffs,		// killough 2/28/98: add x-y offsets
+	fixed_t yoffs,
+	fixed_t xscale,
+	fixed_t yscale,
+	angle_t		angle);
 
 visplane_t *R_CheckPlane (visplane_t *pl, int start, int stop);
 

@@ -40,6 +40,7 @@ typedef unsigned int TextureId;
 class Texture;
 class TextureManager;
 class ResourceManager;
+class RawResourceAccessor;
 
 void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 	int dx1, int dy1, int dx2, int dy2,
@@ -128,8 +129,8 @@ private:
 
 // TODO: make these private
 public:
-	byte*				mMask;
 	byte*				mData;
+	byte*				mMask;
 };
 
 
@@ -210,13 +211,13 @@ class CompositeTextureDefinitionParser
 {
 public:
 	CompositeTextureDefinitionParser(
-			const ResourceManager::RawResourceAccessor* accessor,
+			const RawResourceAccessor* accessor,
 			const ResourceNameTranslator* translator);
 
 	const CompositeTextureDefinition* getByName(const OString& name) const;
 
 private:
-	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
+	const RawResourceAccessor* mRawResourceAccessor;
 	const ResourceNameTranslator* mNameTranslator;
 
 	typedef OHashTable<OString, CompositeTextureDefinition> TextureDefinitionTable;
@@ -229,268 +230,6 @@ public:
 	typedef TextureDefinitionTable::iterator iterator;
 	typedef TextureDefinitionTable::const_iterator const_iterator;
 };
-
-
-// ============================================================================
-//
-// TextureLoader
-//
-// ============================================================================
-//
-// The TextureLoader classes each load a type of texture resource from the
-// resource files.
-//
-
-class TextureLoader : public ResourceLoader
-{
-public:
-	virtual uint32_t getTextureSize(uint16_t width, uint16_t height) const
-	{
-		#if CLIENT_APP
-		return sizeof(Texture)						// header
-			+ sizeof(uint8_t) * width * height		// mData
-			+ sizeof(uint8_t) * width * height;		// mMask
-		#else
-		return sizeof(Texture);
-		#endif
-	}
-
-	virtual Texture* initTexture(void* data, uint16_t width, uint16_t height) const
-	{
-		width = std::min<int>(width, Texture::MAX_TEXTURE_WIDTH);
-		height = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT);
-
-		Texture* texture = static_cast<Texture*>(data);
-		texture->init(width, height);
-		return texture;
-	}
-};
-
-
-// ---------------------------------------------------------------------------
-// InvalidTextureLoader class interface
-//
-// Creates a Texture instance that can be used when a resource is unavailible
-// or is invalid
-// ---------------------------------------------------------------------------
-
-class InvalidTextureLoader : public TextureLoader
-{
-public:
-	InvalidTextureLoader();
-	virtual ~InvalidTextureLoader() {}
-
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
-
-private:
-	static const int16_t WIDTH = 64;
-	static const int16_t HEIGHT = 64;
-};
-
-
-// ----------------------------------------------------------------------------
-// FlatTextureLoader class interface
-//
-// Loads 64x64, 128x128 or 256x256 raw graphic lumps, converting them from
-// row-major to column-major format.
-// ----------------------------------------------------------------------------
-
-class FlatTextureLoader : public TextureLoader
-{
-public:
-	FlatTextureLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id);
-	virtual ~FlatTextureLoader() {}
-
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
-
-private:
-	int16_t getWidth() const;
-	int16_t getHeight() const;
-
-	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
-	const ResourceId	mResId;
-};
-
-
-// ----------------------------------------------------------------------------
-// PatchTextureLoader class interface
-//
-// Loads patch_t format graphic lumps. 
-// ----------------------------------------------------------------------------
-
-class PatchTextureLoader : public TextureLoader
-{
-public:
-	PatchTextureLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id);
-	virtual ~PatchTextureLoader() {}
-
-	virtual bool validate() const;
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
-
-private:
-	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
-	const ResourceId	mResId;
-
-	bool validateHelper(const uint8_t* raw_data, uint32_t raw_size) const;
-};
-
-
-// ----------------------------------------------------------------------------
-// SpriteTextureLoader class interface
-//
-// Loads patch_t format sprite graphic lumps. 
-// ----------------------------------------------------------------------------
-
-class SpriteTextureLoader : public PatchTextureLoader
-{
-};
-
-
-// ----------------------------------------------------------------------------
-// CompositeTextureLoader class interface
-//
-// Generates composite textures given a CompositeTextureDefinition from the
-// TEXTURE1 or TEXTURE2 lumps. The texture is composed from one or more
-// patch textures.
-// ----------------------------------------------------------------------------
-
-class CompositeTextureLoader : public TextureLoader
-{
-public:
-	CompositeTextureLoader(const ResourceManager::RawResourceAccessor* accessor, const CompositeTextureDefinition& texture_def);
-	virtual ~CompositeTextureLoader() {}
-
-	virtual bool validate() const;
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
-
-private:
-	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
-	const CompositeTextureDefinition	mTextureDef;
-};
-
-
-// ----------------------------------------------------------------------------
-// RawTextureLoader class interface
-//
-// Loads raw 320x200 graphic lumps. 
-// ----------------------------------------------------------------------------
-
-class RawTextureLoader : public TextureLoader
-{
-public:
-	RawTextureLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id); 
-	virtual ~RawTextureLoader() {}
-
-	virtual bool validate() const;
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
-
-private:
-	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
-	const ResourceId	mResId;
-};
-
-
-// ----------------------------------------------------------------------------
-// PngTextureLoader class interface
-//
-// Loads PNG format graphic lumps. 
-// ----------------------------------------------------------------------------
-
-class PngTextureLoader : public TextureLoader
-{
-public:
-	PngTextureLoader(const ResourceManager::RawResourceAccessor* accessor, const ResourceId res_id, const OString& name); 
-	virtual ~PngTextureLoader() {}
-
-	virtual bool validate() const;
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
-
-private:
-	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
-	const ResourceId	mResId;
-	const OString&		mResourceName;
-};
-
-
-
-
-// ============================================================================
-//
-// TextureLoaderFactory
-//
-// Instantiates a TextureLoader instance given a ResourceId and ResourcePath
-//
-// ============================================================================
-
-class TextureLoaderFactory
-{
-public:
-	TextureLoaderFactory(
-			const ResourceManager::RawResourceAccessor* accessor,
-			const ResourceNameTranslator* translator,
-			const CompositeTextureDefinitionParser* composite_texture_defintions);
-
-	TextureLoader* createTextureLoader(const ResourcePath& res_path, const ResourceId res_id) const
-	{
-		const OString& directory = res_path.first();
-
-		// Handle omitted wall textures
-		// const OString& name = res_path.last();
-		// if (directory == textures_directory_name && name.size() > 0 && name.c_str()[0] == '-')
-			// return new InvalidTextureLoader();
-
-		if (directory == flats_directory_name)
-		{
-			return new FlatTextureLoader(mRawResourceAccessor, res_id);
-		}
-		else if (directory == textures_directory_name)
-		{
-			return new CompositeTextureLoader(mRawResourceAccessor, CompositeTextureDefinition());
-		}
-		else if (directory == patches_directory_name)
-		{
-			return new PatchTextureLoader(mRawResourceAccessor, res_id);
-		}
-
-		/*
-		// check for the texture in the default location specified by type
-		if (type == Texture::TEX_FLAT)
-			tex_id = getFlatTextureId(uname);
-		else if (type == Texture::TEX_WALLTEXTURE)
-			tex_id = getWallTextureTextureId(uname);
-		else if (type == Texture::TEX_PATCH)
-			tex_id = getPatchTextureId(uname);
-		else if (type == Texture::TEX_SPRITE)
-			tex_id = getSpriteTextureId(uname);
-		else if (type == Texture::TEX_RAW)
-			tex_id = getRawTextureTextureId(uname);
-		else if (type == Texture::TEX_PNG)
-			tex_id = getPNGTextureTextureId(uname);
-
-		// not found? check elsewhere
-		if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_FLAT)
-			tex_id = getFlatTextureId(uname);
-		if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_WALLTEXTURE)
-			tex_id = getWallTextureTextureId(uname);
-		*/
-
-		return NULL;
-	}
-
-private:
-	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
-	const ResourceNameTranslator* mNameTranslator;
-	const CompositeTextureDefinitionParser* mCompositeTextureDefinitions;
-};
-
-
-
 
 
 
@@ -530,7 +269,7 @@ public:
 private:
 	ResourceContainerId			mResourceContainerId;
 
-	const ResourceManager::RawResourceAccessor* mRawResourceAccessor;
+	const RawResourceAccessor* mRawResourceAccessor;
 	const ResourceNameTranslator* mNameTranslator;
 
 	typedef OHashTable<OString, CompositeTextureDefinition> TextureDefinitionTable;

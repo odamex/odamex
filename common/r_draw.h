@@ -70,10 +70,13 @@ typedef struct
 	int					x1;
 	int					x2;
 
-	dsfixed_t			xfrac;
-	dsfixed_t			yfrac;
-	dsfixed_t			xstep;
-	dsfixed_t			ystep;
+	int					texture_width_bits;
+	int					texture_height_bits;
+
+	dsfixed_t			ufrac;
+	dsfixed_t			vfrac;
+	dsfixed_t			ustep;
+	dsfixed_t			vstep;
 
 	float				iu;
 	float				iv;

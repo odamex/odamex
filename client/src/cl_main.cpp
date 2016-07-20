@@ -2797,8 +2797,8 @@ void CL_UpdateSector(void)
 	unsigned short floorheight = MSG_ReadShort();
 	unsigned short ceilingheight = MSG_ReadShort();
 
-	unsigned short fp = MSG_ReadShort();
-	unsigned short cp = MSG_ReadShort();
+	const ResourceId floor_res_id = MSG_ReadShort();
+	const ResourceId ceiling_res_id = MSG_ReadShort();
 
 	if (!sectors || sectornum >= numsectors)
 		return;
@@ -2807,15 +2807,9 @@ void CL_UpdateSector(void)
 	P_SetCeilingHeight(sector, ceilingheight << FRACBITS);
 	P_SetFloorHeight(sector, floorheight << FRACBITS);
 
-	if(fp >= numflats)
-		fp = numflats;
+	sector->floor_res_id = floor_res_id;
 
-	sector->floorpic = fp;
-
-	if(cp >= numflats)
-		cp = numflats;
-
-	sector->ceilingpic = cp;
+	sector->ceiling_res_id = ceiling_res_id;
 	sector->moveable = true;
 
 	P_ChangeSector(sector, false);

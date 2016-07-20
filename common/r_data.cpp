@@ -1086,14 +1086,16 @@ void R_PrecacheLevel (void)
 	}
 
 	// Precache flats.
+	/*
 	memset (hitlist, 0, numflats);
 
 	for (i = numsectors - 1; i >= 0; i--)
-		hitlist[sectors[i].floorpic] = hitlist[sectors[i].ceilingpic] = 1;
+		hitlist[sectors[i].floor_res_id] = hitlist[sectors[i].ceiling_res_id] = 1;
 
 	for (i = numflats - 1; i >= 0; i--)
 		if (hitlist[i])
 			W_CacheLumpNum (firstflat + i, PU_CACHE);
+	*/
 
 	// Precache textures.
 	memset (hitlist, 0, numtextures);

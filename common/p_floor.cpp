@@ -179,7 +179,7 @@ void DFloor::RunThink ()
 					m_Sector->special = m_NewSpecial;
 					//fall thru
 				case genFloorChg:
-					m_Sector->floorpic = m_Texture;
+					m_Sector->floor_res_id = m_Texture;
 					break;
 				default:
 					break;
@@ -195,7 +195,7 @@ void DFloor::RunThink ()
 					m_Sector->special = m_NewSpecial;
 					//fall thru
 				case genFloorChg:
-					m_Sector->floorpic = m_Texture;
+					m_Sector->floor_res_id = m_Texture;
 					break;
 				default:
 					break;
@@ -363,7 +363,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		m_FloorDestHeight = floorheight + height;
 		if (line)
 		{
-			sec->floorpic = line->frontsector->floorpic;
+			sec->floor_res_id = line->frontsector->floor_res_id;
 			sec->special = line->frontsector->special;
 		}
 		break;
@@ -372,7 +372,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		m_Direction = -1;
 		m_FloorDestHeight =
 			P_FindLowestFloorSurrounding (sec);
-		m_Texture = sec->floorpic;
+		m_Texture = sec->floor_res_id;
 		// jff 1/24/98 make sure m_NewSpecial gets initialized
 		// in case no surrounding sector is at floordestheight
 		// --> should not affect compatibility <--
@@ -382,7 +382,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		sec = P_FindModelFloorSector (m_FloorDestHeight,sec-sectors);
 		if (sec)
 		{
-			m_Texture = sec->floorpic;
+			m_Texture = sec->floor_res_id;
 			m_NewSpecial = sec->special;
 		}
 		break;
@@ -412,7 +412,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 				  P_FindModelFloorSector (m_FloorDestHeight, secnum);
 
 			if (sec) {
-				m_Texture = sec->floorpic;
+				m_Texture = sec->floor_res_id;
 				switch (change & 3) {
 					case 1:
 						m_NewSpecial = 0;
@@ -429,7 +429,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 			}
 		} else if (line) {
 			// Trigger model change
-			m_Texture = line->frontsector->floorpic;
+			m_Texture = line->frontsector->floor_res_id;
 
 			switch (change & 3) {
 				case 1:
@@ -529,7 +529,7 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag)
 		{
 		case trigChangeOnly:
 			if (line) { // [RH] if no line, no change
-				sec->floorpic = line->frontsector->floorpic;
+				sec->floor_res_id = line->frontsector->floor_res_id;
 				sec->special = line->frontsector->special;
 			}
 			break;
@@ -537,7 +537,7 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag)
 			secm = P_FindModelFloorSector(P_FloorHeight(sec), secnum);
 			if (secm) // if no model, no change
 			{
-				sec->floorpic = secm->floorpic;
+				sec->floor_res_id = secm->floor_res_id;
 				sec->special = secm->special;
 			}
 			break;
@@ -565,7 +565,7 @@ BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 	int 				height;
 	int 				i;
 	int 				newsecnum = 0;
-	int 				texture;
+	ResourceId			texture;
 	int 				ok;
 	int					persteptime;
 	BOOL 				rtn = false;
@@ -631,7 +631,7 @@ manual_stair:
 		height = floorheight + stairsize * floor->m_Direction;
 		floor->m_FloorDestHeight = height;
 
-		texture = sec->floorpic;
+		texture = sec->floor_res_id;
 		osecnum = secnum;				//jff 3/4/98 preserve loop index
 
 		// Find next sector to raise
@@ -681,7 +681,7 @@ manual_stair:
 					tsec = (sec->lines[i])->backsector;
 					newsecnum = tsec - sectors;
 
-					if (!igntxt && tsec->floorpic != texture)
+					if (!igntxt && tsec->floor_res_id != texture)
 						continue;
 
 					height += floor->m_Direction * stairsize;
@@ -789,7 +789,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			floor->m_Direction = 1;
 			floor->m_Sector = s2;
 			floor->m_Speed = slimespeed;
-			floor->m_Texture = s3->floorpic;
+			floor->m_Texture = s3->floor_res_id;
 			floor->m_NewSpecial = 0;
 			floor->m_FloorDestHeight = P_FloorHeight(s3);
 			floor->m_Change = 0;

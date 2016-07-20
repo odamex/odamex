@@ -52,6 +52,8 @@
 #include "m_vectors.h"
 #include <math.h>
 
+#include "resources/res_texture.h"
+
 planefunction_t 		floorfunc;
 planefunction_t 		ceilingfunc;
 
@@ -219,15 +221,15 @@ void R_MapLevelPlane(int y, int x1, int x2)
 	fixed_t distance = FixedMul(planeheight, yslope[y]);
 	fixed_t slope = (fixed_t)(focratio * FixedDiv(planeheight, abs(centery - y) << FRACBITS));
 
-	dspan.xstep = FixedMul(pl_xstepscale, slope);
-	dspan.ystep = FixedMul(pl_ystepscale, slope);
+	dspan.ustep = FixedMul(pl_xstepscale, slope);
+	dspan.vstep = FixedMul(pl_ystepscale, slope);
 
-	dspan.xfrac = pl_viewxtrans +
+	dspan.ufrac = pl_viewxtrans +
 				FixedMul(FixedMul(pl_viewcos, distance), pl_xscale) + 
-				(x1 - centerx) * dspan.xstep;
-	dspan.yfrac = pl_viewytrans -
+				(x1 - centerx) * dspan.ustep;
+	dspan.vfrac = pl_viewytrans -
 				FixedMul(FixedMul(pl_viewsin, distance), pl_yscale) +
-				(x1 - centerx) * dspan.ystep;
+				(x1 - centerx) * dspan.vstep;
 
 	if (fixedlightlev)
 		dspan.colormap = basecolormap.with(fixedlightlev);
@@ -294,22 +296,31 @@ static visplane_t *new_visplane(unsigned hash)
 //
 // killough 2/28/98: Add offsets
 //
-visplane_t *R_FindPlane (plane_t secplane, int picnum, int lightlevel,
-						 fixed_t xoffs, fixed_t yoffs,
-						 fixed_t xscale, fixed_t yscale, angle_t angle)
+visplane_t* R_FindPlane(
+		plane_t secplane,
+		ResourceId res_id,
+		int sky,
+		int lightlevel,
+		fixed_t xoffs, fixed_t yoffs,
+		fixed_t xscale, fixed_t yscale,
+		angle_t angle)
 {
 	visplane_t *check;
 	unsigned hash;						// killough
 
-	if (picnum == skyflatnum || picnum & PL_SKYFLAT)  // killough 10/98
+
+	if (R_ResourceIdIsSkyFlat(res_id))
+	{
 		lightlevel = 0;		// most skies map together
+	}
 
 	// New visplane algorithm uses hash table -- killough
-	hash = visplane_hash (picnum, lightlevel, secplane);
+	hash = visplane_hash(res_id, lightlevel, secplane);
 
 	for (check = visplanes[hash]; check; check = check->next)	// killough
 		if (P_IdenticalPlanes(&secplane, &check->secplane) &&
-			picnum == check->picnum &&
+			res_id == check->resourceId &&
+			sky == check->sky &&
 			lightlevel == check->lightlevel &&
 			xoffs == check->xoffs &&	// killough 2/28/98: Add offset checks
 			yoffs == check->yoffs &&
@@ -323,7 +334,8 @@ visplane_t *R_FindPlane (plane_t secplane, int picnum, int lightlevel,
 	check = new_visplane (hash);		// killough
 
 	memcpy(&check->secplane, &secplane, sizeof(secplane));
-	check->picnum = picnum;
+	check->resourceId = res_id;
+	check->sky = sky;
 	check->lightlevel = lightlevel;
 	check->xoffs = xoffs;				// killough 2/28/98: Save offsets
 	check->yoffs = yoffs;
@@ -384,11 +396,12 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 	else
 	{
 		// make a new visplane
-		unsigned hash = visplane_hash (pl->picnum, pl->lightlevel, pl->secplane);
+		unsigned hash = visplane_hash (pl->resourceId, pl->lightlevel, pl->secplane);
 		visplane_t *new_pl = new_visplane (hash);
 
 		new_pl->secplane = pl->secplane;
-		new_pl->picnum = pl->picnum;
+		new_pl->resourceId = pl->resourceId;
+		new_pl->sky = pl->sky;
 		new_pl->lightlevel = pl->lightlevel;
 		new_pl->xoffs = pl->xoffs;			// killough 2/28/98
 		new_pl->yoffs = pl->yoffs;
@@ -503,8 +516,8 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	M_SubVec3f(&t, &t, &p);
 	M_SubVec3f(&s, &s, &p);
 	
-	M_CrossProductVec3f(&a, &p, &s);
-	M_CrossProductVec3f(&b, &t, &p);
+	M_CrossProductVec3f(&a, &t, &p);
+	M_CrossProductVec3f(&b, &p, &s);
 	M_CrossProductVec3f(&c, &t, &s);
 
 	M_ScaleVec3f(&a, &a, 0.5f);
@@ -590,35 +603,36 @@ void R_DrawLevelPlane(visplane_t *pl)
 //
 // At the end of each frame.
 //
-void R_DrawPlanes (void)
+void R_DrawPlanes()
 {
-	visplane_t *pl;
-	int i;
-
 	R_ResetDrawFuncs();
-
 	dspan.color = 3;
 	
-	for (i = 0; i < MAXVISPLANES; i++)
+	for (int i = 0; i < MAXVISPLANES; i++)
 	{
-		for (pl = visplanes[i]; pl; pl = pl->next)
+		for (visplane_t* pl = visplanes[i]; pl; pl = pl->next)
 		{
 			if (pl->minx > pl->maxx)
 				continue;
 
-			// sky flat
-			if (pl->picnum == skyflatnum || pl->picnum & PL_SKYFLAT)
+			if (R_ResourceIdIsSkyFlat(pl->resourceId))
 			{
 				R_RenderSkyRange(pl);
 			}
 			else
 			{
 				// regular flat
-				int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
 
 				dspan.color += 4;	// [RH] color if r_drawflat is 1
-				dspan.source = (byte *)W_CacheLumpNum (firstflat + useflatnum, PU_STATIC);
+
+				//int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
+				const Texture* texture = static_cast<const Texture*>(Res_LoadResource(pl->resourceId, PU_STATIC));
+				dspan.source = texture->getData(); 
+				dspan.texture_width_bits = texture->getWidthBits();
+				dspan.texture_height_bits = texture->getHeightBits();
 										   
+				// TODO: Remove "useflatnum" and implement warped flats
+				int useflatnum = 0;
 				// [RH] warp a flat if desired
 				if (flatwarp[useflatnum])
 				{
@@ -670,7 +684,7 @@ void R_DrawPlanes (void)
 				else
 					R_DrawSlopedPlane(pl);
 					
-				Z_ChangeTag (dspan.source, PU_CACHE);
+				Z_ChangeTag((void*)texture, PU_CACHE);
 			}
 		}
 	}

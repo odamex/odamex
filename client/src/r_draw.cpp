@@ -651,26 +651,34 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& 
 	if (count <= 0)
 		return;
 	
-	dsfixed_t xfrac = drawspan.xfrac;
-	dsfixed_t yfrac = drawspan.yfrac;
-	const dsfixed_t xstep = drawspan.xstep;
-	const dsfixed_t ystep = drawspan.ystep;
+	const int texture_width_bits = dspan.texture_width_bits;
+	const int texture_height_bits = dspan.texture_height_bits;
+
+	const unsigned int umask = ((1 << texture_width_bits) - 1) << texture_height_bits;
+	const unsigned int vmask = (1 << texture_height_bits) - 1;
+	// TODO: don't shift the values of ufrac and vfrac by 10 in R_MapLevelPlane
+	const int ushift = FRACBITS - texture_height_bits + 10;
+	const int vshift = FRACBITS + 10;
+
+	dsfixed_t ufrac = dspan.ufrac;
+	dsfixed_t vfrac = dspan.vfrac;
+	dsfixed_t ustep = dspan.ustep;
+	dsfixed_t vstep = dspan.vstep;
 
 	COLORFUNC colorfunc(drawspan);
 
 	do {
 		// Current texture index in u,v.
-		const int spot = ((yfrac >> (32-6-6)) & (63*64)) + (xfrac >> (32-6));
+		const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
 
 		// Lookup pixel from flat texture tile,
 		//  re-index using light/colormap.
-
 		colorfunc(source[spot], dest);
 		dest++;
 
 		// Next step in u,v.
-		xfrac += xstep;
-		yfrac += ystep;
+		ufrac += ustep;
+		vfrac += vstep;
 	} while (--count);
 }
 

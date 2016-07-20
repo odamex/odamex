@@ -141,8 +141,6 @@ struct sector_s
 {
 	fixed_t 	floorheight;
 	fixed_t 	ceilingheight;
-	short		floorpic;
-	short		ceilingpic;
 
 	ResourceId	floor_res_id;
 	ResourceId	ceiling_res_id;
@@ -624,7 +622,9 @@ struct visplane_s
 
 	plane_t		secplane;
 
-	int			picnum;
+	ResourceId	resourceId;
+	short		sky;
+
 	int			lightlevel;
 	fixed_t		xoffs, yoffs;		// killough 2/28/98: Support scrolling flats
 	int			minx;

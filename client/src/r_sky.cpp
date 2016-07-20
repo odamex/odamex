@@ -51,7 +51,6 @@ EXTERN_CVAR(r_skypalette)
 //
 // sky mapping
 //
-int 		skyflatnum;
 int 		sky1texture,	sky2texture;
 fixed_t		skytexturemid;
 fixed_t		skyscale;
@@ -63,6 +62,8 @@ int			sky1shift,		sky2shift;
 fixed_t		sky1pos=0,		sky1speed=0;
 fixed_t		sky2pos=0,		sky2speed=0;
 
+char SKYFLATNAME[8] = "F_SKY1";
+
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
@@ -73,10 +74,21 @@ CVAR_FUNC_IMPL(r_stretchsky)
 	R_InitSkyMap ();
 }
 
-char SKYFLATNAME[8] = "F_SKY1";
 
 
 static tallpost_t* skyposts[MAXWIDTH];
+
+
+//
+// R_ResourceIdIsSkyFlat
+//
+// Returns true if the given ResourceId represents the sky.
+//
+bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
+{
+	const ResourceId sky_res_id = Res_GetResourceId(SKYFLATNAME, "/FLATS");
+	return res_id == sky_res_id;
+}
 
 
 //
@@ -220,43 +232,43 @@ void R_RenderSkyRange(visplane_t* pl)
 	fixed_t front_offset = 0;
 	angle_t skyflip = 0;
 
-	if (pl->picnum == skyflatnum)
+	if (R_ResourceIdIsSkyFlat(pl->resourceId))
 	{
-		// use sky1
-		skytex = sky1texture;
-	}
-	else if (pl->picnum == int(PL_SKYFLAT))
-	{
-		// use sky2
-		skytex = sky2texture;
-	}
-	else
-	{
-		// MBF's linedef-controlled skies
-		short picnum = (pl->picnum & ~PL_SKYFLAT) - 1;
-		const line_t* line = &lines[picnum < numlines ? picnum : 0];
+		if ((pl->sky & PL_SKYFLAT) == 0)
+		{
+			skytex = sky1texture;
+		}
+		else if ((pl->sky & ~PL_SKYFLAT) == 0)
+		{
+			skytex = sky2texture;
+		}
+		else
+		{
+			// MBF's linedef-controlled skies
+			const line_t* line = &lines[(pl->sky & ~PL_SKYFLAT) - 1];
 
-		// Sky transferred from first sidedef
-		const side_t* side = *line->sidenum + sides;
+			// Sky transferred from first sidedef
+			const side_t* side = &sides[line->sidenum[0]];
 
-		// Texture comes from upper texture of reference sidedef
-		skytex = texturetranslation[side->toptexture];
+			// Texture comes from upper texture of reference sidedef
+			skytex = texturetranslation[side->toptexture];
 
-		// Horizontal offset is turned into an angle offset,
-		// to allow sky rotation as well as careful positioning.
-		// However, the offset is scaled very small, so that it
-		// allows a long-period of sky rotation.
-		front_offset = (-side->textureoffset) >> 6;
+			// Horizontal offset is turned into an angle offset,
+			// to allow sky rotation as well as careful positioning.
+			// However, the offset is scaled very small, so that it
+			// allows a long-period of sky rotation.
+			front_offset = (-side->textureoffset) >> 6;
 
-		// Vertical offset allows careful sky positioning.
-		skytexturemid = side->rowoffset - 28*FRACUNIT;
+			// Vertical offset allows careful sky positioning.
+			skytexturemid = side->rowoffset - 28*FRACUNIT;
 
-		// We sometimes flip the picture horizontally.
-		//
-		// Doom always flipped the picture, so we make it optional,
-		// to make it easier to use the new feature, while to still
-		// allow old sky textures to be used.
-		skyflip = line->args[2] ? 0u : ~0u;
+			// We sometimes flip the picture horizontally.
+			//
+			// Doom always flipped the picture, so we make it optional,
+			// to make it easier to use the new feature, while to still
+			// allow old sky textures to be used.
+			skyflip = line->args[2] ? 0u : ~0u;
+		}
 	}
 
 	R_ResetDrawFuncs();
