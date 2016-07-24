@@ -250,6 +250,8 @@ CVAR_RANGE_FUNC_DECL(sv_splashfactor, "1.0", "Rocket explosion thrust effect?",
 					CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
 					0.01f, 100.0f)
 
+CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Misc stuff
 // ----------
