@@ -151,7 +151,7 @@ OString::~OString()
 	clear();
 
 	// Last string was removed so shutdown
-	if (mStrings->empty())
+	if (mStrings && mStrings->empty())
 		shutdown();
 }
 
