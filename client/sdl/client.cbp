@@ -16,8 +16,8 @@
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-O3" />
-					<Add option="-march=native" />
 					<Add option="-m32" />
+					<Add option="-march=native" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -29,7 +29,6 @@
 					<Add option="-m32" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
-					<Add library="libtextscreen" />
 					<Add library="libportmidi" />
 					<Add library="libpng" />
 					<Add library="z" />
@@ -52,11 +51,11 @@
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
+					<Add option="-m32" />
 					<Add option="-g" />
 					<Add option="-O0" />
 					<Add option="-march=native" />
 					<Add option="-fno-inline" />
-					<Add option="-m32" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -68,7 +67,6 @@
 					<Add option="-m32" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
-					<Add library="libtextscreen-dbg" />
 					<Add library="libportmidi-dbg" />
 					<Add library="libpng-dbg" />
 					<Add library="z-dbg" />
@@ -267,14 +265,13 @@
 					<Add option="-s" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
-					<Add library="libtextscreen64" />
 					<Add library="libportmidi64" />
 					<Add library="libpng64" />
 					<Add library="z64" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
-					<Add library="SDL64" />
-					<Add library="SDL64_mixer" />
+					<Add library="SDL2" />
+					<Add library="SDL2_mixer" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -306,14 +303,13 @@
 				<Linker>
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
-					<Add library="libtextscreen-dbg64" />
 					<Add library="libportmidi-dbg64" />
 					<Add library="libpng-dbg64" />
 					<Add library="z-dbg64" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
-					<Add library="SDL64" />
-					<Add library="SDL64_mixer" />
+					<Add library="SDL2" />
+					<Add library="SDL2_mixer" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -335,6 +331,8 @@
 			<Add option="-DCLIENT_APP" />
 			<Add option="-DPORTMIDI" />
 			<Add option="-DUSE_PNG" />
+			<Add directory="$(#sdl)/x86_64-w64-mingw32/include/SDL2" />
+			<Add directory="$(#sdlmixer)/x86_64-w64-mingw32/include/SDL2" />
 			<Add directory="." />
 			<Add directory="../src" />
 			<Add directory="../../common" />
@@ -347,6 +345,8 @@
 		<Linker>
 			<Add library="SDL2" />
 			<Add library="SDL2_mixer" />
+			<Add directory="$(#sdl)/x86_64-w64-mingw32/lib" />
+			<Add directory="$(#sdlmixer)/x86_64-w64-mingw32/lib" />
 			<Add directory="../../lib" />
 		</Linker>
 		<Unit filename="../../common/actor.h" />

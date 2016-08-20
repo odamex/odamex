@@ -534,7 +534,9 @@ void ISDL12Window::setWindowIcon()
 	//
 	// [Russell] - Just for windows, display the icon in the system menu and
 	// alt-tab display
-
+	
+	// TODO: FIXME
+	#if 0
 	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
 
 	if (hIcon)
@@ -550,7 +552,8 @@ void ISDL12Window::setWindowIcon()
 		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 	}
-
+    #endif
+	
 	#else
 
 /*
@@ -1238,6 +1241,8 @@ void ISDL20Window::setWindowIcon()
 	// [Russell] - Just for windows, display the icon in the system menu and
 	// alt-tab display
 
+	// TODO: FIXME
+	#if 0
 	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
 
 	if (hIcon)
@@ -1246,14 +1251,15 @@ void ISDL20Window::setWindowIcon()
 
 		SDL_SysWMinfo wminfo;
 		SDL_VERSION(&wminfo.version)
-		SDL_GetWMInfo(&wminfo);
+		SDL_GetWMInfo(mSDLWindow, &wminfo);
 
 		WindowHandle = wminfo.window;
 
 		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 	}
-
+    #endif
+	
 	#else
 
 /*
