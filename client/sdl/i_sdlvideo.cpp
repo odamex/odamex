@@ -879,7 +879,7 @@ static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 	int display_index = 0;
 	SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
 
-	int display_mode_count = SDL_GetNumVideoDisplays();
+	int display_mode_count = SDL_GetNumDisplayModes(display_index);
 	if (display_mode_count < 1)
 	{
 		I_FatalError("SDL_GetNumDisplayModes failed: %s", SDL_GetError());
