@@ -30,6 +30,7 @@
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libportmidi" />
+					<Add library="libtextscreen" />
 					<Add library="libpng" />
 					<Add library="z" />
 					<Add library="winmm" />
@@ -68,6 +69,7 @@
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libportmidi-dbg" />
+					<Add library="libtextscreen-dbg" />
 					<Add library="libpng-dbg" />
 					<Add library="z-dbg" />
 					<Add library="winmm" />
@@ -266,6 +268,7 @@
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libportmidi64" />
+					<Add library="libtextscreen64" />
 					<Add library="libpng64" />
 					<Add library="z64" />
 					<Add library="winmm" />
@@ -304,6 +307,7 @@
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libportmidi-dbg64" />
+					<Add library="libtextscreen-dbg64" />
 					<Add library="libpng-dbg64" />
 					<Add library="z-dbg64" />
 					<Add library="winmm" />

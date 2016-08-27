@@ -619,9 +619,6 @@ void I_FinishClockCalibration ()
 
 void I_Endoom(void)
 {
-
-// TODO: FIXME
-#if 0
 #ifndef GCONSOLE // I will return to this -- Hyper_Eye
 	unsigned char *endoom_data;
 	unsigned char *screendata;
@@ -676,7 +673,6 @@ void I_Endoom(void)
 
 	in_endoom = false;
 #endif // Hyper_Eye
-#endif
 }
 
 //
