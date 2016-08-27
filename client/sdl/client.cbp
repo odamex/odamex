@@ -625,12 +625,6 @@
 		<Unit filename="i_win32input.h" />
 		<Unit filename="mus2midi.cpp" />
 		<Unit filename="mus2midi.h" />
-		<Unit filename="odamex.exe.manifest">
-			<Option target="Win Release (GCC)" />
-			<Option target="Win Debug (GCC)" />
-			<Option target="Win Release (GCC64)" />
-			<Option target="Win Debug (GCC64)" />
-		</Unit>
 		<Unit filename="resource.h" />
 		<Extensions>
 			<code_completion />

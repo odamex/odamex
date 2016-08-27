@@ -28,7 +28,7 @@
 				<Linker>
 					<Add option="-s" />
 					<Add option="-m32" />
-					<Add library="../../lib/libminiupnpc.a" />
+					<Add library="..\..\lib\libminiupnpc.a" />
 					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="iphlpapi" />
@@ -63,7 +63,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-m32" />
-					<Add library="../../lib/libminiupnpc-dbg.a" />
+					<Add library="..\..\lib\libminiupnpc-dbg.a" />
 					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="iphlpapi" />
@@ -129,7 +129,7 @@
 					<Add library="odbccp32.lib" />
 					<Add library="ws2_32.lib" />
 					<Add library="iphlpapi.lib" />
-					<Add library="../../lib/libminiupnpc.lib" />
+					<Add library="..\..\lib\libminiupnpc.lib" />
 					<Add directory="../../lib" />
 				</Linker>
 				<ExtraCommands>
@@ -196,7 +196,7 @@
 					<Add library="odbccp32.lib" />
 					<Add library="ws2_32.lib" />
 					<Add library="iphlpapi.lib" />
-					<Add library="../../lib/libminiupnpc-dbg.lib" />
+					<Add library="..\..\lib\libminiupnpc-dbg.lib" />
 					<Add directory="../../lib" />
 				</Linker>
 				<ExtraCommands>
@@ -224,7 +224,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="../../lib/libminiupnpc64.a" />
+					<Add library="..\..\lib\libminiupnpc64.a" />
 					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="iphlpapi" />
@@ -257,7 +257,7 @@
 					<Add directory="../../libraries/libminiupnpc" />
 				</Compiler>
 				<Linker>
-					<Add library="../../lib/libminiupnpc-dbg64.a" />
+					<Add library="..\..\lib\libminiupnpc-dbg64.a" />
 					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="iphlpapi" />
@@ -509,12 +509,6 @@
 		<Unit filename="../src/sv_vote.cpp" />
 		<Unit filename="../src/sv_vote.h" />
 		<Unit filename="../src/v_palette.cpp" />
-		<Unit filename="odasrv.exe.manifest">
-			<Option target="Win Release (GCC)" />
-			<Option target="Win Debug (GCC)" />
-			<Option target="Win Release (GCC64)" />
-			<Option target="Win Debug (GCC64)" />
-		</Unit>
 		<Unit filename="resource.h" />
 		<Unit filename="server.rc">
 			<Option compilerVar="WINDRES" />
