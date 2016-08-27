@@ -71,6 +71,7 @@
 #endif
 
 EXTERN_CVAR (waddirs)
+EXTERN_CVAR (cl_waddownloaddir)
 
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
 std::vector<std::string> patchfiles, patchhashes;	// [RH] remove limit on # of loaded wads
@@ -500,6 +501,9 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
 	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
 	D_AddSearchDir(dirs, getenv("HOME"), separator);
+
+	//[cSc] Add cl_waddownloaddir as default path
+	D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), separator);
 
 	// [AM] Search additional paths based on platform
 	D_AddPlatformSearchDirs(dirs);

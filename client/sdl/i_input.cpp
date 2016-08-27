@@ -42,6 +42,7 @@
 #include "c_cvars.h"
 #include "i_system.h"
 #include "c_dispatch.h"
+#include "hu_stuff.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -78,7 +79,7 @@ void I_FlushInput()
 //
 // Enables key repeat for text entry (console, menu system, and chat).
 //
-void I_EnableKeyRepeat()
+static void I_EnableKeyRepeat()
 {
 	input_subsystem->enableKeyRepeat();
 }
@@ -89,9 +90,20 @@ void I_EnableKeyRepeat()
 //
 // Disables key repeat for standard game control.
 //
-void I_DisableKeyRepeat()
+static void I_DisableKeyRepeat()
 {
 	input_subsystem->disableKeyRepeat();
+}
+
+
+//
+// I_CanRepeat
+//
+// Returns true if the input (joystick & keyboard) should have their buttons repeated.
+//
+static bool I_CanRepeat()
+{
+	return ConsoleState == c_down || HU_ChatMode() != CHAT_INACTIVE || menuactive;
 }
 
 
@@ -501,6 +513,10 @@ static void I_GetEvents()
 {
 	I_UpdateFocus();
 	I_UpdateGrab();
+	if (I_CanRepeat())
+		I_EnableKeyRepeat();
+	else
+		I_DisableKeyRepeat();
 
 	// Get all of the events from the keboard, mouse, and joystick
 	input_subsystem->gatherEvents();
@@ -518,13 +534,6 @@ static void I_GetEvents()
 void I_StartTic (void)
 {
 	I_GetEvents();
-}
-
-//
-// I_StartFrame
-//
-void I_StartFrame (void)
-{
 }
 
 
@@ -647,29 +656,19 @@ static int I_GetEventRepeaterKey(const event_t* ev)
 
 
 //
-// IInputSubsystem::gatherEvents
+// IInputSubsystem::addToEventRepeaters
 //
-void IInputSubsystem::gatherEvents()
+// NOTE: the caller should check if key-repeating is enabled.
+//
+void IInputSubsystem::addToEventRepeaters(event_t& ev)
 {
-	event_t mouse_motion_event;
-	mouse_motion_event.type = ev_mouse;
-	mouse_motion_event.data1 = mouse_motion_event.data2 = mouse_motion_event.data3 = 0;
+	// Check if the event needs to be added/removed from the list of repeatable events
+	int key = I_GetEventRepeaterKey(&ev);
+	if (key == 0)
+		return;
 
-	for (InputDeviceList::iterator it = mInputDevices.begin(); it != mInputDevices.end(); ++it)
+	if (ev.type == ev_keydown)
 	{
-		IInputDevice* device = *it;
-		device->gatherEvents();
-		while (device->hasEvent())
-		{
-			event_t ev;
-			device->getEvent(&ev);
-
-			// Check if the event needs to be added/removed from the list of repeatable events
-			if (mRepeating)
-			{
-				int key = I_GetEventRepeaterKey(&ev); 
-				if (key && ev.type == ev_keydown)
-				{
 					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
 					if (it != mEventRepeaters.end())
 					{
@@ -687,7 +686,7 @@ void IInputSubsystem::gatherEvents()
 						mEventRepeaters.insert(std::make_pair(key, repeater));
 					}
 				}
-				else if (key && ev.type == ev_keyup)
+	else if (ev.type == ev_keyup)
 				{
 					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
 					if (it != mEventRepeaters.end())
@@ -698,7 +697,57 @@ void IInputSubsystem::gatherEvents()
 							mEventRepeaters.erase(it);
 					}
 				}
+}
+
+
+//
+// IInputSubsystem::repeatEvents
+//
+// NOTE: the caller should check if key-repeating is enabled.
+//
+void IInputSubsystem::repeatEvents()
+{
+	for (EventRepeaterTable::iterator it = mEventRepeaters.begin(); it != mEventRepeaters.end(); ++it)
+	{
+		EventRepeater& repeater = it->second;
+		uint64_t current_time = I_GetTime();
+
+		if (!repeater.repeating && current_time - repeater.last_time >= mRepeatDelay)
+		{
+			repeater.last_time += mRepeatDelay;
+			repeater.repeating = true;
 			}
+
+		while (repeater.repeating && current_time - repeater.last_time >= mRepeatInterval)
+		{
+			// repeat the event by adding it  to the queue again
+			mEvents.push(repeater.event);
+			repeater.last_time += mRepeatInterval;
+		}
+	}
+}
+
+
+//
+// IInputSubsystem::gatherEvents
+//
+void IInputSubsystem::gatherEvents()
+{
+	event_t mouse_motion_event;
+	mouse_motion_event.type = ev_mouse;
+	mouse_motion_event.data1 = mouse_motion_event.data2 = mouse_motion_event.data3 = 0;
+
+	for (InputDeviceList::iterator it = mInputDevices.begin(); it != mInputDevices.end(); ++it)
+	{
+		IInputDevice* device = *it;
+		device->gatherEvents();
+		while (device->hasEvent())
+		{
+			event_t ev;
+			device->getEvent(&ev);
+
+			if (mRepeating)
+				addToEventRepeaters(ev);
 
 			if (ev.type == ev_mouse)
 			{
@@ -720,26 +769,7 @@ void IInputSubsystem::gatherEvents()
 
 	// Handle repeatable events
 	if (mRepeating)
-	{
-		for (EventRepeaterTable::iterator it = mEventRepeaters.begin(); it != mEventRepeaters.end(); ++it)
-		{
-			EventRepeater& repeater = it->second;
-			uint64_t current_time = I_GetTime();
-
-			if (!repeater.repeating && current_time - repeater.last_time >= mRepeatDelay)
-			{
-				repeater.last_time += mRepeatDelay;
-				repeater.repeating = true;
-			}
-
-			while (repeater.repeating && current_time - repeater.last_time >= mRepeatInterval)
-			{
-				// repeat the event by adding it  to the queue again
-				mEvents.push(repeater.event);
-				repeater.last_time += mRepeatInterval;
-			}
-		}
-	}
+		repeatEvents();
 }
 
 

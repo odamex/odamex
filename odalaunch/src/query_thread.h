@@ -26,31 +26,38 @@
 
 #include <wx/thread.h>
 #include <wx/event.h>
+#include <wx/msgqueue.h>
 
 #include "net_packet.h"
 
 DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1)
 
-typedef enum QueryThreadStatus
-{
-	QueryThread_MIN = 0
-	                  ,QueryThread_Running
-	,QueryThread_Waiting
-	,QueryThread_Exiting
-	,QueryThread_MAX
-} QueryThreadStatus_t;
-
 class QueryThread : public wxThread
 {
 public:
+    typedef enum
+    {
+        Message_MIN = 0
+        ,Run
+        ,Exit
+        ,Message_MAX
+    } Message;
+
+    typedef enum
+    {
+         Status_MIN = 0
+        ,Running  
+        ,Waiting
+        ,Exiting
+        ,Status_MAX
+    } Status;
 
 	QueryThread(wxEvtHandler* EventHandler);
 	~QueryThread()
 	{
 	}
 
-	QueryThreadStatus_t GetStatus();
-	void SetStatus(QueryThreadStatus_t Status);
+	QueryThread::Status GetStatus();
 
 	void Signal(odalpapi::Server* QueryServer,
 	            const std::string& Address,
@@ -65,6 +72,11 @@ public:
 
 	static int GetIdealThreadCount();
 
+protected:
+    void Post(const QueryThread::Message &);
+    void Receive(QueryThread::Message &);
+	void SetStatus(const QueryThread::Status &);
+
 private:
 	wxEvtHandler*      m_EventHandler;
 	odalpapi::Server*  m_QueryServer;
@@ -72,13 +84,12 @@ private:
 	wxUint32           m_ServerTimeout;
 	wxInt8             m_Retries;
 	std::string        m_Address;
-	wxUint16 m_Port;
+	wxUint16           m_Port;
 
+    wxMessageQueue<QueryThread::Message> m_Message;
 
-	QueryThreadStatus_t m_Status;
-
-	wxMutex            m_StatusMutex;
-	wxSemaphore        m_Semaphore;
+    wxMutex m_StatusMutex;
+    QueryThread::Status m_StatusMessage;
 };
 
 #endif // QUERY_THREAD_H_INCLUDED

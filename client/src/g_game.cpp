@@ -892,7 +892,6 @@ void G_Ticker (void)
 				S_Start();
 				SN_StopAllSequences();
 				R_ExitLevel();
-				I_EnableKeyRepeat();
 			}
 
 			gamestate = GS_FULLCONSOLE;
@@ -1522,6 +1521,8 @@ void G_DoLoadGame (void)
 
 	Printf (PRINT_HIGH, "Loading savegame '%s'...\n", savename);
 
+	CL_QuitNetGame();
+
 	FArchive arc (savefile);
 
 	{
@@ -1537,8 +1538,6 @@ void G_DoLoadGame (void)
 	G_SerializeSnapshots (arc);
 	P_SerializeRNGState (arc);
 	P_SerializeACSDefereds (arc);
-
-	CL_QuitNetGame();
 
 	netgame = false;
 	multiplayer = false;

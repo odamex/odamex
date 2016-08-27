@@ -527,7 +527,7 @@ void ISDL12Window::setWindowTitle(const std::string& str)
 //
 void ISDL12Window::setWindowIcon()
 {
-	#if WIN32 && !_XBOX
+	#if defined(_WIN32) && !defined(_XBOX)
 	// [SL] Use Win32-specific code to make use of multiple-icon sizes
 	// stored in the executable resources. SDL 1.2 only allows a fixed
 	// 32x32 px icon.
@@ -673,17 +673,18 @@ void ISDL12Window::setPalette(const argb_t* palette_colors)
 // from an SDL_Surface and uses it to initialize a PixelFormat object.
 // Note: the SDL_Surface should be locked prior to calling this.
 //
-static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, PixelFormat* format, uint8_t desired_bpp)
+static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, PixelFormat* format)
 {
 	const SDL_PixelFormat* sdlformat = sdlsurface->format;
+	uint8_t bpp = sdlformat->BitsPerPixel;
 
 	// handle SDL not reporting correct Ashift/Aloss
-	uint8_t aloss = desired_bpp == 32 ? 0 : 8;
-	uint8_t ashift = desired_bpp == 32 ?  48 - sdlformat->Rshift - sdlformat->Gshift - sdlformat->Bshift : 0;
+	uint8_t aloss = bpp == 32 ? 0 : 8;
+	uint8_t ashift = bpp == 32 ?  48 - sdlformat->Rshift - sdlformat->Gshift - sdlformat->Bshift : 0;
 	
 	// Create the PixelFormat specification
 	*format = PixelFormat(
-			desired_bpp,
+			bpp,
 			8 - aloss, 8 - sdlformat->Rloss, 8 - sdlformat->Gloss, 8 - sdlformat->Bloss,
 			ashift, sdlformat->Rshift, sdlformat->Gshift, sdlformat->Bshift);
 }
@@ -750,18 +751,18 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	// DirectInput is reinitalized.
 	I_ResumeMouse();
 
+	PixelFormat format;
+	I_BuildPixelFormatFromSDLSurface(sdl_surface, &format);
+
 	// just in case SDL couldn't set the exact video mode we asked for...
 	mWidth = sdl_surface->w;
 	mHeight = sdl_surface->h;
-	mBitsPerPixel = sdl_surface->format->BitsPerPixel;
+	mBitsPerPixel = format.getBitsPerPixel();
 	mIsFullScreen = (sdl_surface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
 	mUseVSync = vsync;
 
 	if (SDL_MUSTLOCK(sdl_surface))
 		SDL_LockSurface(sdl_surface);		// lock prior to accessing pixel format
-
-	PixelFormat format;
-	I_BuildPixelFormatFromSDLSurface(sdl_surface, &format, video_bpp);
 
 	delete mSurfaceManager;
 
@@ -782,7 +783,7 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (SDL_MUSTLOCK(sdl_surface))
 		SDL_UnlockSurface(sdl_surface);
 
-	mVideoMode = IVideoMode(mWidth, mHeight, video_bpp, mIsFullScreen);
+	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, mIsFullScreen);
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);

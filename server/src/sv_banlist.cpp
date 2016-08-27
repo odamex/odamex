@@ -24,7 +24,7 @@
 #include <sstream>
 #include <string>
 
-#if WIN32
+#ifdef _WIN32
 #include "win32time.h"
 #endif
 

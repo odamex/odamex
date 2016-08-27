@@ -47,9 +47,6 @@ std::string I_GetJoystickNameFromIndex (int index);
 bool I_OpenJoystick();
 void I_CloseJoystick();
 
-void I_EnableKeyRepeat();
-void I_DisableKeyRepeat();
-
 
 // ============================================================================
 //
@@ -176,6 +173,9 @@ protected:
 	static const uint64_t	mRepeatInterval;
 
 private:
+	void addToEventRepeaters(event_t& ev);
+	void repeatEvents();
+
 	// Data for key repeating
 	struct EventRepeater
 	{

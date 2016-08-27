@@ -31,6 +31,7 @@
 
 #include "dlg_servers.h"
 #include "str_utils.h"
+#include "net_utils.h"
 
 using namespace odalpapi;
 
@@ -153,39 +154,67 @@ void dlgServers::OnSubstChecked(wxCommandEvent& event)
 // Add Server button
 void dlgServers::OnButtonAddServer(wxCommandEvent& event)
 {
-	wxString tedaddr_res;
-	wxUint16 tedport_res;
+	wxString ted_result;
+	std::string IPHost;
+	uint16_t Port = 10666;
 
-	wxTextEntryDialog tedAddress(this,
-	                             "Please enter an IP Address",
-	                             "Please enter an IP Address",
-	                             "127.0.0.1");
+	const wxString HelpText = "Please enter a Hostname or an IP address. \n\nAn "
+	                              "optional port number can exist for IPs or Hosts\n"
+	                              "by putting a : after the address.";
 
-	wxTextEntryDialog tedPort(this,
-	                          "Please enter a Port number",
-	                          "Please enter a Port number",
-	                          "10666");
+	wxTextEntryDialog ted(this, HelpText, "Add custom server", "0.0.0.0:0");
 
-	// Show it
-	tedAddress.ShowModal();
-	tedaddr_res = tedAddress.GetValue();
+	// Keep asking for a valid ip/port number
+	while(1)
+	{
+		bool good = false;
 
-	tedPort.ShowModal();
-	tedport_res = wxAtoi(tedPort.GetValue().c_str());
+		if(ted.ShowModal() == wxID_CANCEL)
+			return;
 
+		ted_result = ted.GetValue();
+		
+		// Remove any whitespace
+		ted_result.Trim(false);
+		ted_result.Trim(true);
+
+		switch(odalpapi::OdaAddrToComponents(wxstr_tostdstr(ted_result), IPHost, Port))
+		{
+		// Correct address
+		case 0:
+		{
+			good = true;
+		}
+		break;
+
+		// Empty string
+		case 1:
+		{
+			continue;
+		}
+
+		// Colon syntax bad
+		case 2:
+		{
+			wxMessageBox("A number > 0 must exist after the :");
+			continue;
+		}
+		}
+
+		// Address is good to use
+		if(good == true)
+			break;
+	}
+	
 	// Make a 0.0.0.0:0 address string
-	wxString addr_portfmt = wxString::Format("%s:%d",
-	                        tedaddr_res.c_str(),
-	                        tedport_res);
+	wxString addr_portfmt = wxString::Format("%s:%d", IPHost.c_str(), Port);
 
-	if(!tedaddr_res.IsEmpty() &&
-	        tedport_res != 0 &&
-	        SERVER_LIST->FindString(addr_portfmt) == wxNOT_FOUND)
+	if (Port > 0 && SERVER_LIST->FindString(addr_portfmt) == wxNOT_FOUND)
 	{
 		CustomServer_t* cs = new CustomServer_t;
 
-		cs->Address = tedaddr_res;
-		cs->Port = tedport_res;
+		cs->Address = IPHost.c_str();
+		cs->Port = Port;
 
 		SERVER_LIST->Append(addr_portfmt, (void*)(cs));
 

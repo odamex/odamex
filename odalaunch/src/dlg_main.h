@@ -31,7 +31,7 @@
 #include "dlg_about.h"
 #include "dlg_config.h"
 #include "dlg_servers.h"
-//#include "ctrl_infobar.h"
+#include "ctrl_infobar.h"
 #include "frm_odaget.h"
 
 #include <wx/frame.h>
@@ -56,23 +56,6 @@ BEGIN_DECLARE_EVENT_TYPES()
 DECLARE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL, -1)
 DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1)
 END_DECLARE_EVENT_TYPES()
-
-typedef enum
-{
-	_oda_iav_MIN = 0         // Minimum range
-
-	               ,_oda_iav_SUCCESS         // Address is valid
-	,_oda_iav_FAILURE         // Unknown error
-
-	,_oda_iav_emptystr        // Empty address parameter
-	,_oda_iav_interr          // Internal error (regex comp error, bad regex)
-	,_oda_iav_colerr          // Bad or nonexistant substring after colon
-
-	,_oda_iav_NUMERR          // Number of errors (incl min range)
-
-	,_oda_iav_MAX             // Maximum range
-} _oda_iav_err_t;
-
 
 class dlgMain : public wxFrame, wxThreadHelper
 {
@@ -111,6 +94,8 @@ protected:
 	void OnServerListClick(wxListEvent& event);
 	void OnServerListDoubleClick(wxListEvent& event);
 
+	void OnCheckVersion(wxCommandEvent &event);
+
 	void OnShow(wxShowEvent& event);
 	void OnClose(wxCloseEvent& event);
 	void OnWindowCreate(wxWindowCreateEvent& event);
@@ -123,6 +108,9 @@ protected:
 	void DoGetList(bool IsARTRefresh = false);
 	void DoRefreshList(bool IsARTRefresh = false);
 
+    void GetWebsitePageSource(wxString &SiteSrc);
+    void GetVersionInfoFromWebsite(const wxString &SiteSrc, wxString &ver);
+
 	void LoadMasterServers();
 
 	wxInt32 FindServer(wxString);
@@ -132,8 +120,6 @@ protected:
 	{
 		return m_ClientIsRunning;
 	};
-
-	_oda_iav_err_t IsAddressValid(wxString, wxString&, long&);
 
 	void LaunchGame(const wxString& Address, const wxString& ODX_Path,
 	                const wxString& waddirs, const wxString& Password = "");
@@ -155,7 +141,7 @@ protected:
 
 	bool m_ClientIsRunning;
 
-	//        OdaInfoBar *InfoBar;
+	OdaInfoBar *InfoBar;
 
 	wxInt32 TotalPlayers;
 	wxInt32 QueriedServers;

@@ -35,10 +35,10 @@ AllowRootDirectory=True
 ChangesAssociations=Yes
 ArchitecturesInstallIn64BitMode=x64
 UninstallDisplaySize=23068672
-UsePreviousAppDir = yes
+UsePreviousAppDir =yes
 ;AppModifyPath={app}\UninsHs.exe /m0=Odamex
 WizardImageFile=..\..\media\wininstall_largeback.bmp
-WizardSmallImageFile=C:\odamex\trunk\media\wininstall_wizardicon.bmp
+WizardSmallImageFile=..\..\media\wininstall_wizardicon.bmp
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -138,17 +138,17 @@ Type: files; Name: {app}\odamex.cfg
 Type: files; Name: {app}\odasrv.cfg
 Type: files; Name: {app}\*.log
 ;Type: filesandordirs; Name: "{localappdata}\odamex"
-Type: dirifempty; Name: "{app}"
+Type: dirifempty; Name: {app}
 
 [Registry]
 Root: HKCR; Subkey: odamex; ValueType: string; ValueData: URL:Odamex Protocol; Flags: uninsdeletekey noerror
 Root: HKCR; Subkey: odamex; ValueType: string; ValueName: Url Protocol; Flags: createvalueifdoesntexist uninsdeletekey noerror
 Root: HKCR; Subkey: odamex\DefaultIcon; ValueData: odamex.exe,1; Flags: createvalueifdoesntexist uninsdeletekey noerror
 Root: HKCR; Subkey: odamex\shell\open\command; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: createvalueifdoesntexist uninsdeletekey noerror; ValueType: string
-Root: HKCR; SubKey: ".odd"; ValueType: string; ValueData: "Odamex Data Demo"; Flags: uninsdeletekey
-Root: HKCR; SubKey: "Odamex Data Demo"; ValueType: string; ValueData: "Odamex Game Demo Format"; Flags: uninsdeletekey
-Root: HKCR; SubKey: "Odamex Data Demo\Shell\Open\Command"; ValueType: string; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletekey
-Root: HKCR; Subkey: "Odamex Data Demo\DefaultIcon"; ValueType: string; ValueData: "{app}\odamex.exe,1"; Flags: uninsdeletevalue
+Root: HKCR; SubKey: .odd; ValueType: string; ValueData: Odamex Data Demo; Flags: uninsdeletekey
+Root: HKCR; SubKey: Odamex Data Demo; ValueType: string; ValueData: Odamex Game Demo Format; Flags: uninsdeletekey
+Root: HKCR; SubKey: Odamex Data Demo\Shell\Open\Command; ValueType: string; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletekey
+Root: HKCR; Subkey: Odamex Data Demo\DefaultIcon; ValueType: string; ValueData: {app}\odamex.exe,1; Flags: uninsdeletevalue
 
 [Code]
 function ShouldSkipPage(CurPage: Integer): Boolean;

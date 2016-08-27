@@ -29,6 +29,9 @@
 
 #include "typedefs.h"
 
+#include <string>
+#include <sstream>
+
 /**
  * odalpapi namespace.
  *
@@ -39,7 +42,8 @@ namespace odalpapi
 {
 
 uint64_t GetMillisNow();
-
+int32_t OdaAddrToComponents(const std::string& HostPort, std::string &AddrOut, 
+                            uint16_t &PortOut);
 } // namespace
 
 #endif // __NET_UTILS_H__

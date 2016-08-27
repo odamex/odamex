@@ -149,11 +149,12 @@ EXTERN_CVAR (cl_predictsectors)
 EXTERN_CVAR (mute_spectators)
 EXTERN_CVAR (mute_enemies)
 
-EXTERN_CVAR(cl_autoaim)
+EXTERN_CVAR (cl_autoaim)
 
-EXTERN_CVAR(cl_updaterate)
-EXTERN_CVAR(cl_interp)
-EXTERN_CVAR(cl_forcedownload)
+EXTERN_CVAR (cl_updaterate)
+EXTERN_CVAR (cl_interp)
+EXTERN_CVAR (cl_serverdownload)
+EXTERN_CVAR (cl_forcedownload)
 
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
@@ -1653,17 +1654,26 @@ bool CL_PrepareConnect(void)
 			missing_hash = missinghashes[0];
 		}
 
-		if (netdemo.isPlaying())
+		if (!cl_serverdownload)
 		{
 			// Playing a netdemo and unable to download from the server
-			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
+			Printf(PRINT_HIGH, "Unable to find \"%s\". Downloading is disabled on your client.  Go to Options > Network Options to enable downloading.\n",
 								missing_file.c_str());
 			CL_QuitNetGame();
 			return false;
 		}
-
+		
+		if (netdemo.isPlaying())
+		{
+			// Downloading is disabled client-side
+			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
+								missing_file.c_str());			
+			CL_QuitNetGame();
+			return false;
+		}
+		
 		gamestate = GS_DOWNLOAD;
-		Printf(PRINT_HIGH, "Will download \"%s\" from server\n", missing_file.c_str());
+		Printf(PRINT_HIGH, "Will download \"%s\" from server\n", missing_file.c_str());	
 	}
 
 	recv_full_update = false;

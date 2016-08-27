@@ -79,6 +79,8 @@
 #    pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
 #endif
 
+EXTERN_CVAR (r_centerwindow)
+
 DArgs Args;
 
 // functions to be called at shutdown are stored in this stack
@@ -161,7 +163,7 @@ int main(int argc, char *argv[])
 		// to directx as defulat for now and the people will rejoice. --Hyper_Eye
      	if (Args.CheckParm ("-gdi"))
         	putenv((char*)"SDL_VIDEODRIVER=windib");
-    	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-directx") > 0)
+    	else
         	putenv((char*)"SDL_VIDEODRIVER=directx");
 	#endif	// SDL12
 

@@ -35,6 +35,9 @@
 // Load chat client when the launcher is run
 #define ODA_UILOADCHATCLIENTONLS 0
 
+// Automatically checks for updates against the launchers version when run
+#define ODA_UIAUTOCHECKFORUPDATES 1
+
 // Integer ranges for ping quality, these are displayed as icons in the settings
 // dialog
 #define ODA_UIPINGQUALITYGOOD 150
@@ -114,6 +117,7 @@ static const char* def_masterlist[] =
 // Do not modify unless breaking our users config files is necessary
 #define GETLISTONSTART      "GetListOnStart"
 #define SHOWBLOCKEDSERVERS  "ShowBlockedServers"
+#define CHECKFORUPDATES     "CheckForUpdates"
 #define DELIMWADPATHS       "DelimWadPaths"
 #define ODAMEX_DIRECTORY    "OdamexDirectory"
 #define EXTRACMDLINEARGS    "ExtraCommandLineArguments"

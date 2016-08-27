@@ -40,6 +40,8 @@
 #endif
 
 EXTERN_CVAR (waddirs)
+EXTERN_CVAR (cl_serverdownload)
+EXTERN_CVAR (cl_waddownloaddir)
 
 void CL_Reconnect(void);
 
@@ -175,6 +177,7 @@ void IntDownloadComplete(void)
 #endif
 
     // Try to save to the wad paths in this order -- Hyper_Eye
+    D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), separator);
     D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
     D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
     D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
@@ -227,35 +230,38 @@ void IntDownloadComplete(void)
 //
 void CL_RequestDownload(std::string filename, std::string filehash)
 {
-    // [Russell] - Allow resumeable downloads
-	if ((download.filename != filename) ||
-        (download.md5 != filehash))
-    {
-        download.filename = filename;
-        download.md5 = filehash;
-        download.got_bytes = 0;
-    }
-
-	// denis todo clear previous downloads
-	MSG_WriteMarker(&net_buffer, clc_wantwad);
-	MSG_WriteString(&net_buffer, filename.c_str());
-	MSG_WriteString(&net_buffer, filehash.c_str());
-	MSG_WriteLong(&net_buffer, download.got_bytes);
-
-	NET_SendPacket(net_buffer, serveraddr);
-
-	Printf(PRINT_HIGH, "Requesting download...\n");
-
-	// check for completion
-	// [Russell] - We go over the boundary, because sometimes the download will
-	// pause at 100% if the server disconnected you previously, you can
-	// reconnect a couple of times and this will let the checksum system do its
-	// work
-
-	if ((download.buf != NULL) &&
-        (download.got_bytes >= download.buf->maxsize()))
+	if (cl_serverdownload)
 	{
-        IntDownloadComplete();
+		// [Russell] - Allow resumeable downloads
+		if ((download.filename != filename) ||
+			(download.md5 != filehash))
+		{
+			download.filename = filename;
+			download.md5 = filehash;
+			download.got_bytes = 0;
+		}
+
+		// denis todo clear previous downloads
+		MSG_WriteMarker(&net_buffer, clc_wantwad);
+		MSG_WriteString(&net_buffer, filename.c_str());
+		MSG_WriteString(&net_buffer, filehash.c_str());
+		MSG_WriteLong(&net_buffer, download.got_bytes);
+
+		NET_SendPacket(net_buffer, serveraddr);
+
+		Printf(PRINT_HIGH, "Requesting download...\n");
+
+		// check for completion
+		// [Russell] - We go over the boundary, because sometimes the download will
+		// pause at 100% if the server disconnected you previously, you can
+		// reconnect a couple of times and this will let the checksum system do its
+		// work
+
+		if ((download.buf != NULL) &&
+			(download.got_bytes >= download.buf->maxsize()))
+		{
+			IntDownloadComplete();
+		}
 	}
 }
 
