@@ -335,8 +335,8 @@
 			<Add option="-DCLIENT_APP" />
 			<Add option="-DPORTMIDI" />
 			<Add option="-DUSE_PNG" />
-			<Add directory="$(#sdl)/x86_64-w64-mingw32/include/SDL2" />
-			<Add directory="$(#sdlmixer)/x86_64-w64-mingw32/include/SDL2" />
+			<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
+			<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/include/SDL2" />
 			<Add directory="." />
 			<Add directory="../src" />
 			<Add directory="../../common" />
@@ -349,8 +349,8 @@
 		<Linker>
 			<Add library="SDL2" />
 			<Add library="SDL2_mixer" />
-			<Add directory="$(#sdl)/x86_64-w64-mingw32/lib" />
-			<Add directory="$(#sdlmixer)/x86_64-w64-mingw32/lib" />
+			<Add directory="$(#sdl2)/x86_64-w64-mingw32/lib" />
+			<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/lib" />
 			<Add directory="../../lib" />
 		</Linker>
 		<Unit filename="../../common/actor.h" />
