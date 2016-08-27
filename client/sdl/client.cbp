@@ -16,8 +16,8 @@
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-O3" />
-					<Add option="-march=native" />
 					<Add option="-m32" />
+					<Add option="-march=native" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -35,6 +35,8 @@
 					<Add library="z" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
+					<Add directory="$(#sdl12)/lib/x86" />
+					<Add directory="$(#sdl12mixer)/lib/x86" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -52,11 +54,11 @@
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
+					<Add option="-m32" />
 					<Add option="-g" />
 					<Add option="-O0" />
 					<Add option="-march=native" />
 					<Add option="-fno-inline" />
-					<Add option="-m32" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -74,6 +76,8 @@
 					<Add library="z-dbg" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
+					<Add directory="$(#sdl12)/lib/x86" />
+					<Add directory="$(#sdl12mixer)/lib/x86" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -275,6 +279,8 @@
 					<Add library="shlwapi" />
 					<Add library="SDL64" />
 					<Add library="SDL64_mixer" />
+					<Add directory="$(#sdl12)/lib/x64" />
+					<Add directory="$(#sdl12mixer)/lib/x64" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -314,6 +320,8 @@
 					<Add library="shlwapi" />
 					<Add library="SDL64" />
 					<Add library="SDL64_mixer" />
+					<Add directory="$(#sdl12)/lib/x64" />
+					<Add directory="$(#sdl12mixer)/lib/x64" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -335,6 +343,8 @@
 			<Add option="-DCLIENT_APP" />
 			<Add option="-DPORTMIDI" />
 			<Add option="-DUSE_PNG" />
+			<Add directory="$(#sdl12)/include" />
+			<Add directory="$(#sdl12mixer)/include" />
 			<Add directory="." />
 			<Add directory="../src" />
 			<Add directory="../../common" />
