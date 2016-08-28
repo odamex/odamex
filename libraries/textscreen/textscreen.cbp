@@ -17,6 +17,7 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-m32" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -32,10 +33,11 @@
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
 				<Compiler>
+					<Add option="-m32" />
 					<Add option="-g" />
 					<Add option="-W" />
 					<Add option="-fno-inline" />
-					<Add option="-m32" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-m32" />
@@ -110,6 +112,7 @@
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -127,6 +130,7 @@
 					<Add option="-g" />
 					<Add option="-W" />
 					<Add option="-fno-inline" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
 				</Compiler>
 			</Target>
 		</Build>
@@ -135,7 +139,6 @@
 			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
 		</VirtualTargets>
 		<Compiler>
-			<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
 			<Add directory="../../common" />
 		</Compiler>
 		<Unit filename="textscreen.h" />

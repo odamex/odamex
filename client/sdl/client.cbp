@@ -23,6 +23,8 @@
 					<Add option="-DNDEBUG" />
 					<Add option="-DCLIENT_APP" />
 					<Add option="-DUSE_PNG" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/include/SDL2" />
+					<Add directory="$(#sdl2mixer)/i686-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -35,6 +37,8 @@
 					<Add library="z" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/lib" />
+					<Add directory="$(#sdl2mixer)/i686-w64-mingw32/lib" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -63,6 +67,8 @@
 					<Add option="-DODAMEX_DEBUG" />
 					<Add option="-DCLIENT_APP" />
 					<Add option="-DUSE_PNG" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/include/SDL2" />
+					<Add directory="$(#sdl2mixer)/i686-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-m32" />
@@ -75,6 +81,8 @@
 					<Add library="winmm" />
 					<Add library="shlwapi" />
 					<Add directory="../../lib" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/lib" />
+					<Add directory="$(#sdl2mixer)/i686-w64-mingw32/lib" />
 				</Linker>
 				<Environment>
 					<Variable name="RCFLAGS" value="-F pe-i386" />
@@ -262,6 +270,8 @@
 					<Add option="-DNDEBUG" />
 					<Add option="-DCLIENT_APP" />
 					<Add option="-DUSE_PNG" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
+					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -275,6 +285,8 @@
 					<Add library="shlwapi" />
 					<Add library="SDL2" />
 					<Add library="SDL2_mixer" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/lib" />
+					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/lib" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -302,6 +314,8 @@
 					<Add option="-DODAMEX_DEBUG" />
 					<Add option="-DCLIENT_APP" />
 					<Add option="-DUSE_PNG" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
+					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add library="mingw32" />
@@ -314,6 +328,8 @@
 					<Add library="shlwapi" />
 					<Add library="SDL2" />
 					<Add library="SDL2_mixer" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/lib" />
+					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/lib" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -335,8 +351,6 @@
 			<Add option="-DCLIENT_APP" />
 			<Add option="-DPORTMIDI" />
 			<Add option="-DUSE_PNG" />
-			<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
-			<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/include/SDL2" />
 			<Add directory="." />
 			<Add directory="../src" />
 			<Add directory="../../common" />
@@ -349,8 +363,6 @@
 		<Linker>
 			<Add library="SDL2" />
 			<Add library="SDL2_mixer" />
-			<Add directory="$(#sdl2)/x86_64-w64-mingw32/lib" />
-			<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/lib" />
 			<Add directory="../../lib" />
 		</Linker>
 		<Unit filename="../../common/actor.h" />
