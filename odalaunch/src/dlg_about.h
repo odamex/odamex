@@ -41,7 +41,6 @@ protected:
 	wxStaticText* m_StcTxtCopyright;
 	wxStaticText* m_StcTxtVersion;
 	wxStaticText* m_StcTxtWxVer;
-	wxTextCtrl* m_TxtCtrlDevelopers;
 
 private:
 

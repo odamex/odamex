@@ -295,6 +295,7 @@
 				<Option deps_output="../../deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option parameters="-gdi" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
