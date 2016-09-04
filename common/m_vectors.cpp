@@ -541,16 +541,16 @@ void M_PerpendicularVec3(v3double_t *dest, const v3double_t *src)
 {
 	// find the smallest component of the vector src
 	v3double_t tempvec;
-	double minelem = src->x;
+	double minelem = fabs(src->x);
 	double *mincomponent = &(tempvec.x);
-	if (abs(src->y) < minelem)
+	if (fabs(src->y) < minelem)
 	{
-		minelem = abs(src->y);
+		minelem = fabs(src->y);
 		mincomponent = &(tempvec.y);
 	}
-	if (abs(src->z) < minelem)
+	if (fabs(src->z) < minelem)
 	{
-		minelem = abs(src->z);
+		minelem = fabs(src->z);
 		mincomponent = &(tempvec.z);
 	}
 	
