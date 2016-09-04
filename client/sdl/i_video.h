@@ -316,24 +316,24 @@ public:
 	DCanvas* createCanvas();
 	void releaseCanvas(DCanvas* canvas);
 
-	inline uint8_t* getBuffer()
-	{
-		return mSurfaceBuffer;
-	}
-
 	inline const uint8_t* getBuffer() const
 	{
 		return mSurfaceBuffer;
 	}
 
-	inline uint8_t* getBuffer(uint16_t x, uint16_t y)
+	inline uint8_t* getBuffer()
 	{
-		return mSurfaceBuffer + int(y) * getPitch() + int(x) * getBytesPerPixel();
+		return const_cast<uint8_t*>(static_cast<const IWindowSurface&>(*this).getBuffer());
 	}
 
 	inline const uint8_t* getBuffer(uint16_t x, uint16_t y) const
 	{
 		return mSurfaceBuffer + int(y) * getPitch() + int(x) * getBytesPerPixel();
+	}
+
+	inline uint8_t* getBuffer(uint16_t x, uint16_t y)
+	{
+		return const_cast<uint8_t*>(static_cast<const IWindowSurface&>(*this).getBuffer(x, y));
 	}
 
 	inline uint16_t getWidth() const
@@ -422,9 +422,12 @@ class IWindowSurfaceManager
 public:
 	virtual ~IWindowSurfaceManager() { }
 
-	virtual IWindowSurface* getWindowSurface() = 0;
-
 	virtual const IWindowSurface* getWindowSurface() const = 0;
+
+	virtual IWindowSurface* getWindowSurface()
+	{
+		return const_cast<IWindowSurface*>(static_cast<const IWindowSurfaceManager&>(*this).getWindowSurface());
+	}
 
 	virtual void lockSurface() { }
 	virtual void unlockSurface() { }
@@ -450,9 +453,6 @@ public:
 
 	virtual ~IDummyWindowSurfaceManager()
 	{	delete mSurface;	}
-
-	virtual IWindowSurface* getWindowSurface()
-	{	return mSurface;	}
 
 	virtual const IWindowSurface* getWindowSurface() const
 	{	return mSurface;	}
@@ -489,8 +489,12 @@ public:
 	virtual ~IWindow()
 	{ }
 
-	virtual IWindowSurface* getPrimarySurface() = 0;
 	virtual const IWindowSurface* getPrimarySurface() const = 0;
+
+	virtual IWindowSurface* getPrimarySurface()
+	{
+		return const_cast<IWindowSurface*>(static_cast<const IWindow&>(*this).getPrimarySurface());
+	}
 
 	virtual uint16_t getWidth() const
 	{	return getPrimarySurface()->getWidth();	}
@@ -558,9 +562,6 @@ public:
 	virtual ~IDummyWindow()
 	{	delete mPrimarySurface;	}
 
-	virtual IWindowSurface* getPrimarySurface()
-	{	return mPrimarySurface;	}
-
 	virtual const IWindowSurface* getPrimarySurface() const
 	{	return mPrimarySurface;	}
 
@@ -620,8 +621,12 @@ public:
 
 	virtual const IVideoCapabilities* getVideoCapabilities() const = 0;
 
-	virtual IWindow* getWindow() = 0;
 	virtual const IWindow* getWindow() const = 0;
+
+	virtual IWindow* getWindow()
+	{
+		return const_cast<IWindow*>(static_cast<const IVideoSubsystem&>(*this).getWindow());
+	}
 };
 
 
@@ -650,9 +655,6 @@ public:
 
 	virtual const IVideoCapabilities* getVideoCapabilities() const
 	{	return mVideoCapabilities;	}
-
-	virtual IWindow* getWindow()
-	{	return mWindow;	}
 
 	virtual const IWindow* getWindow() const
 	{	return mWindow;	}

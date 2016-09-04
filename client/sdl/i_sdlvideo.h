@@ -83,9 +83,6 @@ public:
 
 	virtual ~ISDL12DirectWindowSurfaceManager();
 
-	virtual IWindowSurface* getWindowSurface()
-	{	return mSurface;	}
-
 	virtual const IWindowSurface* getWindowSurface() const
 	{	return mSurface;	}
 
@@ -117,9 +114,6 @@ public:
 
 	virtual ~ISDL12SoftwareWindowSurfaceManager();
 
-	virtual IWindowSurface* getWindowSurface()
-	{	return mSurface;	}
-
 	virtual const IWindowSurface* getWindowSurface() const
 	{	return mSurface;	}
 
@@ -148,18 +142,16 @@ public:
 
 	virtual ~ISDL12Window();
 
-	virtual IWindowSurface* getPrimarySurface()
+	virtual const IWindowSurface* getPrimarySurface() const
 	{
 		if (mSurfaceManager)
 			return mSurfaceManager->getWindowSurface();
 		return NULL;
 	}
 
-	virtual const IWindowSurface* getPrimarySurface() const
+	virtual IWindowSurface* getPrimarySurface()
 	{
-		if (mSurfaceManager)
-			return mSurfaceManager->getWindowSurface();
-		return NULL;
+		return const_cast<IWindowSurface*>(static_cast<const ISDL12Window&>(*this).getPrimarySurface());
 	}
 
 	virtual uint16_t getWidth() const
@@ -253,9 +245,6 @@ public:
 	virtual const IVideoCapabilities* getVideoCapabilities() const
 	{	return mVideoCapabilities;	}
 
-	virtual IWindow* getWindow()
-	{	return mWindow;	}
-
 	virtual const IWindow* getWindow() const
 	{	return mWindow;	}
 
@@ -316,11 +305,13 @@ public:
 
 	virtual ~ISDL20Window();
 
-	virtual IWindowSurface* getPrimarySurface()
-	{	return mPrimarySurface;	}
-
 	virtual const IWindowSurface* getPrimarySurface() const
 	{	return mPrimarySurface;	}
+
+	virtual IWindowSurface* getPrimarySurface()
+	{
+		return const_cast<IWindowSurface*>(static_cast<const ISDL20Window&>(*this).getPrimarySurface());
+	}
 
 	virtual uint16_t getWidth() const
 	{	return mWidth;	}
@@ -420,9 +411,6 @@ public:
 
 	virtual const IVideoCapabilities* getVideoCapabilities() const
 	{	return mVideoCapabilities;	}
-
-	virtual IWindow* getWindow()
-	{	return mWindow;	}
 
 	virtual const IWindow* getWindow() const
 	{	return mWindow;	}
