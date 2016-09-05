@@ -97,6 +97,7 @@
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
 				<Compiler>
+					<Add option="-m64" />
 					<Add option="-g" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
@@ -104,6 +105,9 @@
 					<Add option="-D_WIN32_WINNT=0x501" />
 					<Add directory="../../libminiupnpc" />
 				</Compiler>
+				<Linker>
+					<Add option="-m64" />
+				</Linker>
 			</Target>
 			<Target title="Win Release (GCC64)">
 				<Option platforms="Windows;" />
@@ -115,11 +119,15 @@
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-m64" />
 					<Add option="-DWIN32" />
 					<Add option="-DMINIUPNP_STATICLIB" />
 					<Add option="-D_WIN32_WINNT=0x501" />
 					<Add directory="../../libminiupnpc" />
 				</Compiler>
+				<Linker>
+					<Add option="-m64" />
+				</Linker>
 			</Target>
 		</Build>
 		<VirtualTargets>

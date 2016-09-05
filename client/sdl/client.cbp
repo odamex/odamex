@@ -17,7 +17,6 @@
 				<Compiler>
 					<Add option="-O3" />
 					<Add option="-m32" />
-					<Add option="-march=native" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -57,7 +56,6 @@
 					<Add option="-m32" />
 					<Add option="-g" />
 					<Add option="-O0" />
-					<Add option="-march=native" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
@@ -260,7 +258,7 @@
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
 					<Add option="-O3" />
-					<Add option="-march=native" />
+					<Add option="-m64" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -269,6 +267,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-m64" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libtextscreen64" />
@@ -299,9 +298,9 @@
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
+					<Add option="-m64" />
 					<Add option="-g" />
 					<Add option="-O0" />
-					<Add option="-march=native" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
@@ -311,6 +310,7 @@
 					<Add option="-DUSE_PNG" />
 				</Compiler>
 				<Linker>
+					<Add option="-m64" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libtextscreen-dbg64" />
