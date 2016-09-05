@@ -39,8 +39,6 @@
 					<Add library="shlwapi" />
 					<Add directory="$(#sdl2)/i686-w64-mingw32/lib" />
 					<Add directory="$(#sdl2mixer)/i686-w64-mingw32/lib" />
-					<Add directory="$(#sdl12)/lib/x86" />
-					<Add directory="$(#sdl12mixer)/lib/x86" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -82,8 +80,6 @@
 					<Add library="z-dbg" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
-					<Add directory="$(#sdl12)/lib/x86" />
-					<Add directory="$(#sdl12mixer)/lib/x86" />
 					<Add directory="../../lib" />
 					<Add directory="$(#sdl2)/i686-w64-mingw32/lib" />
 					<Add directory="$(#sdl2mixer)/i686-w64-mingw32/lib" />
@@ -291,8 +287,6 @@
 					<Add library="SDL2_mixer" />
 					<Add directory="$(#sdl2)/x86_64-w64-mingw32/lib" />
 					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/lib" />
-					<Add directory="$(#sdl12)/lib/x64" />
-					<Add directory="$(#sdl12mixer)/lib/x64" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -336,8 +330,6 @@
 					<Add library="SDL2_mixer" />
 					<Add directory="$(#sdl2)/x86_64-w64-mingw32/lib" />
 					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/lib" />
-					<Add directory="$(#sdl12)/lib/x64" />
-					<Add directory="$(#sdl12mixer)/lib/x64" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -359,8 +351,6 @@
 			<Add option="-DCLIENT_APP" />
 			<Add option="-DPORTMIDI" />
 			<Add option="-DUSE_PNG" />
-			<Add directory="$(#sdl12)/include" />
-			<Add directory="$(#sdl12mixer)/include" />
 			<Add directory="." />
 			<Add directory="../src" />
 			<Add directory="../../common" />
