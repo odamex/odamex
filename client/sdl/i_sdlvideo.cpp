@@ -1001,6 +1001,12 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	mMouseFocus(false), mKeyboardFocus(false),
 	mLocks(0)
 {
+    // TODO: bug in sdl 2.0.4 causes various crashes on windows relating to video mode changes with directx
+    // Check https://forums.libsdl.org/viewtopic.php?p=51349&sid=2ba50f4a184b507cea8eb6edaade6bbd for more info
+    #ifdef _WIN32
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+    #endif
+
 	uint32_t window_flags = SDL_WINDOW_SHOWN;
 	if (fullscreen)
 		window_flags |= SDL_WINDOW_FULLSCREEN;
