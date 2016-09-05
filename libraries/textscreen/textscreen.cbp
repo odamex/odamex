@@ -112,10 +112,12 @@
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-m64" />
 					<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-m64" />
 				</Linker>
 			</Target>
 			<Target title="Win Debug (GCC64)">
@@ -127,11 +129,15 @@
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
 				<Compiler>
+					<Add option="-m64" />
 					<Add option="-g" />
 					<Add option="-W" />
 					<Add option="-fno-inline" />
 					<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
 				</Compiler>
+				<Linker>
+					<Add option="-m64" />
+				</Linker>
 			</Target>
 		</Build>
 		<VirtualTargets>

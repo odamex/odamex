@@ -14,10 +14,10 @@
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
 				<Compiler>
+					<Add option="-m32" />
 					<Add option="-W" />
 					<Add option="-O0" />
 					<Add option="-fno-inline" />
-					<Add option="-m32" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -113,6 +113,7 @@
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
 				<Compiler>
+					<Add option="-m64" />
 					<Add option="-W" />
 					<Add option="-O0" />
 					<Add option="-fno-inline" />
@@ -130,6 +131,7 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-m64" />
 				</Linker>
 			</Target>
 			<Target title="Win Release (GCC64)">
@@ -141,6 +143,7 @@
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-m64" />
 					<Add option="-W" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
@@ -154,6 +157,9 @@
 					<Add directory="../pm_common" />
 					<Add directory="../porttime" />
 				</ResourceCompiler>
+				<Linker>
+					<Add option="-m64" />
+				</Linker>
 			</Target>
 		</Build>
 		<VirtualTargets>
