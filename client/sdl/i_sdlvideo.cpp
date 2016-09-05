@@ -1016,12 +1016,15 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	mSDLWindow = SDL_CreateWindow(
 			"",			// Empty title for now - it will be set later
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			mWidth, mHeight,
+			width, height,
 			window_flags);
 	
 	if (mSDLWindow == NULL)
 		I_FatalError("I_InitVideo: unable to create window: %s\n", SDL_GetError());
 
+    mWidth = width;
+    mHeight = height;
+		
 	mMouseFocus = mKeyboardFocus = true;
 }
 
