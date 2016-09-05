@@ -1432,7 +1432,8 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);
 
 	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
-
+    SDL_SetWindowPosition(mSDLWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+	
 	uint32_t renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
 	if (vsync)
 		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
