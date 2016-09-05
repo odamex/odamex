@@ -1248,8 +1248,8 @@ void ISDL20Window::setWindowIcon()
 	// [Russell] - Just for windows, display the icon in the system menu and
 	// alt-tab display
 
-	// TODO: FIXME
-	#if 0
+	// TODO: Add the icon resources to the wad file and load them with the
+	// other code instead
 	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
 
 	if (hIcon)
@@ -1258,14 +1258,13 @@ void ISDL20Window::setWindowIcon()
 
 		SDL_SysWMinfo wminfo;
 		SDL_VERSION(&wminfo.version)
-		SDL_GetWMInfo(mSDLWindow, &wminfo);
+		SDL_GetWindowWMInfo(mSDLWindow, &wminfo);
 
-		WindowHandle = wminfo.window;
+		WindowHandle = wminfo.info.win.window;
 
 		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 	}
-    #endif
 	
 	#else
 
@@ -1316,8 +1315,7 @@ bool ISDL20Window::isFocused() const
 //
 std::string ISDL20Window::getVideoDriverName() const
 {
-	// TODO: replace the 0 parameter with the appropriate index value (if any)
-	const char* driver_name = SDL_GetVideoDriver(0);
+	const char* driver_name = SDL_GetCurrentVideoDriver();
 	if (driver_name)
 		return std::string(driver_name);
 	return ""; 
