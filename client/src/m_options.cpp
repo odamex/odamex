@@ -1808,6 +1808,8 @@ void M_OptResponder (event_t *ev)
 						CurrentItem == CurrentMenu->scrolltop + CurrentMenu->scrollpos)
 					{
 						CurrentMenu->scrollpos--;
+                        if (CurrentMenu->scrollpos < 0)
+                            CurrentMenu->scrollpos = 0;
 					}
 					if (CurrentItem < 0)
 					{
