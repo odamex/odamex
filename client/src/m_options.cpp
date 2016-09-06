@@ -1049,7 +1049,7 @@ static menuitem_t ModesItems[] = {
 };
 
 #define VM_DEPTHITEM	0
-#define VM_RESSTART		6
+#define VM_RESSTART		5
 #define VM_ENTERLINE	14
 #define VM_TESTLINE		16
 
