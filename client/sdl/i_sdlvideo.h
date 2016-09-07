@@ -294,6 +294,51 @@ private:
 
 // ============================================================================
 //
+// ISDL20TextureWindowSurfaceManager
+//
+// Helper class for IWindow to encapsulate the creation of a IWindowSurface
+// primary surface and to assist in using it to refresh the window.
+//
+// This creates a SDL_Renderer instance and a SDL_Texture. An IWindowSurface
+// using the SDL_Texture as a basis is created for direct rendering.
+//
+// ============================================================================
+
+class ISDL20TextureWindowSurfaceManager : public IWindowSurfaceManager
+{
+public:
+	ISDL20TextureWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format, SDL_Window* sdl_window);
+
+	virtual ~ISDL20TextureWindowSurfaceManager();
+
+	virtual IWindowSurface* getWindowSurface()
+	{	return mSurface;	}
+
+	virtual const IWindowSurface* getWindowSurface() const
+	{	return mSurface;	}
+
+	virtual void lockSurface();
+	virtual void unlockSurface();
+
+	virtual void startRefresh();
+	virtual void finishRefresh();
+
+private:
+	SDL_Window*				mSDLWindow;
+	SDL_Renderer*			mSDLRenderer;
+	SDL_Texture*			mSDLTexture;
+
+	IWindowSurface*			mSurface;
+
+	uint16_t				mWidth;
+	uint16_t				mHeight;
+
+	PixelFormat				mFormat;
+};
+
+
+// ============================================================================
+//
 // ISDL20Window class interface
 //
 // ============================================================================

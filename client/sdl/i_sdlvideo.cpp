@@ -979,6 +979,119 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 
 // ============================================================================
 //
+// ISDL20TextureWindowSurfaceManager implementation
+//
+// Helper class for IWindow to encapsulate the creation of a IWindowSurface
+// primary surface and to assist in using it to refresh the window.
+//
+// ============================================================================
+
+//
+// ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager
+//
+ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
+	uint16_t width, uint16_t height, const PixelFormat* format, SDL_Window* sdl_window) :
+		mSDLWindow(sdl_window), mSurface(NULL), mWidth(width), mHeight(height)
+{
+	assert(mSDLWindow != NULL);
+
+	memcpy(&mFormat, format, sizeof(mFormat));
+
+	uint32_t renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
+	// TODO: Verify that SDL_RENDERER_PRESENTVSYNC should always be enabled
+	renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
+
+	mSDLRenderer = SDL_CreateRenderer(mSDLWindow, -1, renderer_flags);
+
+	if (mSDLRenderer == NULL)
+		I_FatalError("I_InitVideo: unable to create renderer: %s\n", SDL_GetError());
+
+	// Ensure the game window is clear, even if using -noblit
+	SDL_RenderClear(mSDLRenderer);
+	SDL_RenderPresent(mSDLRenderer);
+
+	mSDLTexture = SDL_CreateTexture(
+				mSDLRenderer,
+				SDL_GetWindowPixelFormat(mSDLWindow),
+				SDL_TEXTUREACCESS_STREAMING,
+				mWidth, mHeight);
+
+	if (mSDLTexture == NULL)
+		I_FatalError("I_InitVideo: unable to create texture: %s\n", SDL_GetError());
+	
+	// create the surface based on the SDL_Texture;
+	void* buffer;
+	int pitch;
+
+	SDL_LockTexture(mSDLTexture, NULL, &buffer, &pitch);
+	mSurface = new IWindowSurface(mWidth, mHeight, &mFormat, buffer, pitch);
+	SDL_UnlockTexture(mSDLTexture);
+
+	//mSurface->setBuffer(NULL);
+}
+
+
+//
+// ISDL20TextureWindowSurfaceManager::~ISDL20TextureWindowSurfaceManager
+//
+ISDL20TextureWindowSurfaceManager::~ISDL20TextureWindowSurfaceManager()
+{
+	delete mSurface;
+
+	if (mSDLTexture)
+		SDL_DestroyTexture(mSDLTexture);
+	if (mSDLRenderer)
+		SDL_DestroyRenderer(mSDLRenderer);
+}
+
+
+//
+// ISDL20TextureWindowSurfaceManager::lockSurface
+//
+void ISDL20TextureWindowSurfaceManager::lockSurface()
+{
+	void* buffer;
+	int pitch;
+
+	SDL_LockTexture(mSDLTexture, NULL, &buffer, &pitch);
+
+	// TODO: also change pitch as needed
+	//mSurface->setBuffer((uint8_t*)buffer);
+}
+
+
+//
+// ISDL20TextureWindowSurfaceManager::unlockSurface
+//
+void ISDL20TextureWindowSurfaceManager::unlockSurface()
+{
+	SDL_UnlockTexture(mSDLTexture);
+
+	//mSurface->setBuffer(NULL);
+}
+
+
+//
+// ISDL20TextureWindowSurfaceManager::startRefresh
+//
+void ISDL20TextureWindowSurfaceManager::startRefresh()
+{ }
+
+
+//
+// ISDL20TextureWindowSurfaceManager::finishRefresh
+//
+void ISDL20TextureWindowSurfaceManager::finishRefresh()
+{
+	SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
+	SDL_RenderPresent(mSDLRenderer);
+}
+
+
+
+
+// ============================================================================
+//
 // ISDL20Window class implementation
 //
 // ============================================================================
