@@ -32,7 +32,7 @@
 #include "r_state.h"
 #include "tables.h"
 
-EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_boomphys)
 
 extern bool predicting;
 
@@ -461,7 +461,7 @@ BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 	BOOL				manual = false;
 
 	// check if a manual trigger; if so do just the sector on the backside
-	if (co_zdoomphys && tag == 0)
+	if (co_boomphys && tag == 0)
 	{
 		if (!line || !(sec = line->backsector))
 			return rtn;
@@ -479,7 +479,7 @@ manual_floor:
 		// ALREADY MOVING?	IF SO, KEEP GOING...
 		if (sec->floordata)
 		{
-			if (co_zdoomphys && manual)
+			if (co_boomphys && manual)
 				return false;
 			else
 				continue;

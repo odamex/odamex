@@ -551,7 +551,7 @@
 							<object class="wxNotebook" name="Id_Notebook">
 								<object class="notebookpage">
 									<label>User Interface</label>
-									<selected>1</selected>
+									<selected>0</selected>
 									<object class="wxPanel" name="m_panel91">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxBoxSizer">
@@ -571,7 +571,7 @@
 															<label>Server List</label>
 															<object class="sizeritem">
 																<option>0</option>
-																<flag>wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALL</flag>
+																<flag>wxALIGN_LEFT|wxALL</flag>
 																<border>5</border>
 																<object class="wxCheckBox" name="Id_ChkCtrlGetListOnStart">
 																	<pos>0,76</pos>
@@ -581,7 +581,7 @@
 															</object>
 															<object class="sizeritem">
 																<option>0</option>
-																<flag>wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALL</flag>
+																<flag>wxALIGN_LEFT|wxALL</flag>
 																<border>5</border>
 																<object class="wxCheckBox" name="Id_ChkCtrlShowBlockedServers">
 																	<pos>0,114</pos>
@@ -1092,7 +1092,7 @@
 								</object>
 								<object class="notebookpage">
 									<label>Advanced</label>
-									<selected>0</selected>
+									<selected>1</selected>
 									<object class="wxPanel" name="m_panel13">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxBoxSizer">
@@ -1212,7 +1212,7 @@
 															<orient>wxHORIZONTAL</orient>
 															<object class="sizeritem">
 																<option>1</option>
-																<flag>wxALIGN_CENTER|wxALL|wxEXPAND</flag>
+																<flag>wxALL|wxEXPAND</flag>
 																<border>5</border>
 																<object class="wxStaticText" name="6">
 																	<style>wxALIGN_LEFT</style>
@@ -1348,7 +1348,7 @@
 						<orient>wxVERTICAL</orient>
 						<object class="sizeritem">
 							<option>0</option>
-							<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
+							<flag>wxALL|wxEXPAND</flag>
 							<border>5</border>
 							<object class="wxBoxSizer">
 								<orient>wxHORIZONTAL</orient>
@@ -1362,7 +1362,7 @@
 								</object>
 								<object class="sizeritem">
 									<option>0</option>
-									<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 									<border>5</border>
 									<object class="wxBoxSizer">
 										<orient>wxVERTICAL</orient>
@@ -1398,7 +1398,7 @@
 										</object>
 										<object class="sizeritem">
 											<option>0</option>
-											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND</flag>
 											<border>5</border>
 											<object class="wxStaticLine" name="ID_STATICLINE1">
 												<style>wxLI_HORIZONTAL</style>
@@ -1446,7 +1446,7 @@
 											<orient>wxVERTICAL</orient>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag>wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+												<flag>wxALL|wxEXPAND</flag>
 												<border>5</border>
 												<object class="wxCheckBox" name="ID_CHKSUBSTITUTE">
 													<enabled>0</enabled>
@@ -1457,14 +1457,14 @@
 											</object>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
+												<flag>wxALL|wxEXPAND</flag>
 												<border>5</border>
 												<object class="wxBoxSizer">
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<option>0</option>
-														<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL</flag>
-														<border>0</border>
+														<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+														<border>5</border>
 														<object class="wxStaticText" name="ID_STATICTEXT2">
 															<label>IP Address:Port</label>
 															<wrap>-1</wrap>
@@ -1472,7 +1472,7 @@
 													</object>
 													<object class="sizeritem">
 														<option>0</option>
-														<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
+														<flag>wxALL|wxEXPAND</flag>
 														<border>0</border>
 														<object class="wxTextCtrl" name="ID_TXTSUBIPPORT">
 															<size>140,20</size>
@@ -1619,12 +1619,12 @@
 					<style>wxRAISED_BORDER|wxTAB_TRAVERSAL</style>
 					<size>380,450</size>
 					<object class="wxFlexGridSizer">
-						<rows>5</rows>
+						<rows>4</rows>
 						<cols>1</cols>
 						<vgap>0</vgap>
 						<hgap>0</hgap>
 						<growablecols>0</growablecols>
-						<growablerows>2,3</growablerows>
+						<growablerows>2</growablerows>
 						<object class="sizeritem">
 							<option>1</option>
 							<flag>wxEXPAND</flag>
@@ -1665,7 +1665,7 @@
 											<flag>wxALIGN_CENTER|wxALL</flag>
 											<border>5</border>
 											<object class="wxStaticText" name="Id_StcTxtCopyright">
-												<label>Copyright (C) 2006-2014 The Odamex Team</label>
+												<label>Copyright (C) 2006-2016 The Odamex Team</label>
 												<wrap>-1</wrap>
 											</object>
 										</object>
@@ -1681,7 +1681,7 @@
 										</object>
 										<object class="sizeritem">
 											<option>1</option>
-											<flag>wxALIGN_CENTER|wxEXPAND</flag>
+											<flag>wxALIGN_CENTER</flag>
 											<border>5</border>
 											<object class="wxHyperlinkCtrl" name="Id_HLCtrlWebsite">
 												<label>http://www.odamex.net</label>
@@ -1753,25 +1753,6 @@
 							<border>5</border>
 							<object class="wxStaticBoxSizer">
 								<orient>wxVERTICAL</orient>
-								<label>Developed by</label>
-								<object class="sizeritem">
-									<option>1</option>
-									<flag>wxALL|wxEXPAND</flag>
-									<border>5</border>
-									<object class="wxTextCtrl" name="Id_TxtCtrlDevelopers">
-										<style>wxTE_AUTO_URL|wxTE_CENTRE|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2</style>
-										<value>Russell Rice (mailto:russell@odamex.net)\nMichael Wood (mailto:mwoodj@huntsvegas.org)\nJohn D Corrado</value>
-										<maxlength>0</maxlength>
-									</object>
-								</object>
-							</object>
-						</object>
-						<object class="sizeritem">
-							<option>1</option>
-							<flag>wxALIGN_CENTER|wxALL|wxEXPAND</flag>
-							<border>5</border>
-							<object class="wxStaticBoxSizer">
-								<orient>wxVERTICAL</orient>
 								<label>License</label>
 								<object class="sizeritem">
 									<option>1</option>
@@ -1786,7 +1767,7 @@
 							</object>
 						</object>
 						<object class="sizeritem">
-							<option>1</option>
+							<option>0</option>
 							<flag>wxALIGN_CENTER|wxALL</flag>
 							<border>5</border>
 							<object class="wxStdDialogButtonSizer">

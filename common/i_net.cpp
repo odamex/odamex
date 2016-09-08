@@ -151,7 +151,12 @@ void init_upnp (void)
 
 	Printf(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
 
+#if MINIUPNPC_API_VERSION < 14
 	devlist = upnpDiscover(sv_upnp_discovertimeout.asInt(), NULL, NULL, 0, 0, &res);
+#else
+	devlist = upnpDiscover(sv_upnp_discovertimeout.asInt(), NULL, NULL, 0, 0, 2, &res);
+#endif
+
 
 	if (!devlist || res != UPNPDISCOVER_SUCCESS)
     {

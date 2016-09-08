@@ -50,15 +50,6 @@ dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
 
 	m_StcTxtWxVer = XRCCTRL(*this, "Id_StcTxtWxVer", wxStaticText);
 
-	m_TxtCtrlDevelopers = XRCCTRL(*this, "Id_TxtCtrlDevelopers",
-	                              wxTextCtrl);
-
-	// wxWidgets Bug: wxTE_AUTO_URL appears to get set AFTER SetValue() has been
-	// called, this causes urls to not get recognized (msw XRC handler problem?)
-	Text = m_TxtCtrlDevelopers->GetValue();
-	m_TxtCtrlDevelopers->SetValue("");
-	m_TxtCtrlDevelopers->WriteText(Text);
-
 	// Set (protocol) version info on desired text control
 	Version = wxString::Format(
 	              "Version %d.%d.%d - Protocol Version %d",
