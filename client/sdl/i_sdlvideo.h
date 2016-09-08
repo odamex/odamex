@@ -351,7 +351,11 @@ public:
 	virtual ~ISDL20Window();
 
 	virtual const IWindowSurface* getPrimarySurface() const
-	{	return mPrimarySurface;	}
+	{	
+		if (mSurfaceManager)
+			return mSurfaceManager->getWindowSurface();
+		return NULL;
+	}
 
 	virtual IWindowSurface* getPrimarySurface()
 	{
@@ -411,10 +415,8 @@ private:
 	void getEvents();
 
 	SDL_Window*			mSDLWindow;
-	SDL_Renderer*		mSDLRenderer;
-	SDL_Texture*		mSDLTexture;
 
-	IWindowSurface*		mPrimarySurface;
+	IWindowSurfaceManager* mSurfaceManager;
 
 	uint16_t			mWidth;
 	uint16_t			mHeight;
@@ -424,8 +426,6 @@ private:
 
 	bool				mIsFullScreen;
 	bool				mUseVSync;
-
-	SDL_Surface*		mSDLSoftwareSurface;
 
 	bool				mNeedPaletteRefresh;
 	bool				mBlit;
@@ -467,6 +467,4 @@ private:
 };
 #endif	// SDL20
 
-
 #endif	// __I_SDLVIDEO_H__
-

@@ -991,7 +991,9 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 //
 ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	uint16_t width, uint16_t height, const PixelFormat* format, SDL_Window* sdl_window) :
-		mSDLWindow(sdl_window), mSurface(NULL), mWidth(width), mHeight(height)
+		mSDLWindow(sdl_window), 
+		mSDLRenderer(NULL), mSDLTexture(NULL),
+		mSurface(NULL), mWidth(width), mHeight(height)
 {
 	assert(mSDLWindow != NULL);
 
@@ -1004,30 +1006,30 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	mSDLRenderer = SDL_CreateRenderer(mSDLWindow, -1, renderer_flags);
 
 	if (mSDLRenderer == NULL)
-		I_FatalError("I_InitVideo: unable to create renderer: %s\n", SDL_GetError());
+		I_FatalError("I_InitVideo: unable to create SDL2 renderer: %s\n", SDL_GetError());
 
 	// Ensure the game window is clear, even if using -noblit
+	SDL_SetRenderDrawColor(mSDLRenderer, 0, 0, 0, 255);
 	SDL_RenderClear(mSDLRenderer);
 	SDL_RenderPresent(mSDLRenderer);
 
+	uint32_t texture_flags = SDL_TEXTUREACCESS_STREAMING;
+
+	// TODO: build sdl_format based on mFormat
+	uint32_t sdl_format = SDL_PIXELFORMAT_INDEX8;
+	if (mFormat.getBitsPerPixel() == 32)
+		sdl_format = SDL_PIXELFORMAT_ARGB8888;
+
 	mSDLTexture = SDL_CreateTexture(
 				mSDLRenderer,
-				SDL_GetWindowPixelFormat(mSDLWindow),
-				SDL_TEXTUREACCESS_STREAMING,
+				sdl_format,
+				texture_flags,
 				mWidth, mHeight);
 
 	if (mSDLTexture == NULL)
-		I_FatalError("I_InitVideo: unable to create texture: %s\n", SDL_GetError());
+		I_FatalError("I_InitVideo: unable to create SDL2 texture: %s\n", SDL_GetError());
 	
-	// create the surface based on the SDL_Texture;
-	void* buffer;
-	int pitch;
-
-	SDL_LockTexture(mSDLTexture, NULL, &buffer, &pitch);
-	mSurface = new IWindowSurface(mWidth, mHeight, &mFormat, buffer, pitch);
-	SDL_UnlockTexture(mSDLTexture);
-
-	//mSurface->setBuffer(NULL);
+	mSurface = new IWindowSurface(width, height, &mFormat);
 }
 
 
@@ -1049,26 +1051,14 @@ ISDL20TextureWindowSurfaceManager::~ISDL20TextureWindowSurfaceManager()
 // ISDL20TextureWindowSurfaceManager::lockSurface
 //
 void ISDL20TextureWindowSurfaceManager::lockSurface()
-{
-	void* buffer;
-	int pitch;
-
-	SDL_LockTexture(mSDLTexture, NULL, &buffer, &pitch);
-
-	// TODO: also change pitch as needed
-	//mSurface->setBuffer((uint8_t*)buffer);
-}
+{ }
 
 
 //
 // ISDL20TextureWindowSurfaceManager::unlockSurface
 //
 void ISDL20TextureWindowSurfaceManager::unlockSurface()
-{
-	SDL_UnlockTexture(mSDLTexture);
-
-	//mSurface->setBuffer(NULL);
-}
+{ }
 
 
 //
@@ -1083,6 +1073,7 @@ void ISDL20TextureWindowSurfaceManager::startRefresh()
 //
 void ISDL20TextureWindowSurfaceManager::finishRefresh()
 {
+	SDL_UpdateTexture(mSDLTexture, NULL, mSurface->getBuffer(), mSurface->getPitch());
 	SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
 	SDL_RenderPresent(mSDLRenderer);
 }
@@ -1105,11 +1096,9 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 //
 ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) :
 	IWindow(),
-	mSDLWindow(NULL), mSDLRenderer(NULL), mSDLTexture(NULL),
-	mPrimarySurface(NULL),
+	mSDLWindow(NULL), mSurfaceManager(NULL),
 	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
 	mIsFullScreen(fullscreen), mUseVSync(vsync),
-	mSDLSoftwareSurface(NULL),
 	mNeedPaletteRefresh(true), mBlit(true),
 	mMouseFocus(false), mKeyboardFocus(false),
 	mLocks(0)
@@ -1147,16 +1136,7 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 //
 ISDL20Window::~ISDL20Window()
 {
-	if (mSDLSoftwareSurface)
-		SDL_FreeSurface(mSDLSoftwareSurface);
-
-	delete mPrimarySurface;
-
-	if (mSDLTexture)
-		SDL_DestroyTexture(mSDLTexture);
-
-	if (mSDLRenderer)
-		SDL_DestroyRenderer(mSDLRenderer);
+	delete mSurfaceManager;
 
 	if (mSDLWindow)
 		SDL_DestroyWindow(mSDLWindow);
@@ -1172,13 +1152,7 @@ ISDL20Window::~ISDL20Window()
 void ISDL20Window::lockSurface()
 {
 	if (++mLocks == 1)
-	{
-		SDL_Surface* sdlsurface = SDL_GetWindowSurface(mSDLWindow);
-		if (SDL_MUSTLOCK(sdlsurface))
-			SDL_LockSurface(sdlsurface);
-		if (mSDLSoftwareSurface && SDL_MUSTLOCK(mSDLSoftwareSurface))
-			SDL_LockSurface(mSDLSoftwareSurface);
-	}
+		mSurfaceManager->lockSurface();
 
 	assert(mLocks >= 1 && mLocks < 100);
 }
@@ -1193,13 +1167,7 @@ void ISDL20Window::lockSurface()
 void ISDL20Window::unlockSurface()
 {
 	if (--mLocks == 0)
-	{
-		SDL_Surface* sdlsurface = SDL_GetWindowSurface(mSDLWindow);
-		if (SDL_MUSTLOCK(sdlsurface))
-			SDL_UnlockSurface(sdlsurface);
-		if (mSDLSoftwareSurface && SDL_MUSTLOCK(mSDLSoftwareSurface))
-			SDL_UnlockSurface(mSDLSoftwareSurface);
-	}
+		mSurfaceManager->unlockSurface();
 
 	assert(mLocks >= 0 && mLocks < 100);
 }
@@ -1311,29 +1279,16 @@ void ISDL20Window::finishRefresh()
 {
 	assert(mLocks == 0);		// window surface shouldn't be locked when blitting
 
-	SDL_Surface* sdlsurface = SDL_GetWindowSurface(mSDLWindow);
-
 	if (mNeedPaletteRefresh)
 	{
-		if (sdlsurface->format->BitsPerPixel == 8)
-			SDL_SetSurfacePalette(sdlsurface, sdlsurface->format->palette);
-		if (mSDLSoftwareSurface && mSDLSoftwareSurface->format->BitsPerPixel == 8)
-			SDL_SetSurfacePalette(mSDLSoftwareSurface, mSDLSoftwareSurface->format->palette);
+//		if (sdlsurface->format->BitsPerPixel == 8)
+//			SDL_SetSurfacePalette(sdlsurface, sdlsurface->format->palette);
 	}
 
 	mNeedPaletteRefresh = false;
 
 	if (mBlit)
-	{
-		// handle 8in32 mode
-		if (mSDLSoftwareSurface)
-			SDL_BlitSurface(mSDLSoftwareSurface, NULL, sdlsurface, NULL);
-
-		SDL_UpdateTexture(mSDLTexture, NULL, mPrimarySurface->getBuffer(), mPrimarySurface->getPitch());
-		SDL_RenderClear(mSDLRenderer);		// TODO: is this necessary?
-		SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
-		SDL_RenderPresent(mSDLRenderer);
-	}
+		mSurfaceManager->finishRefresh();
 }
 
 
@@ -1473,9 +1428,6 @@ void ISDL20Window::setPalette(const argb_t* palette_colors)
 
 	I_SetSDL20Palette(SDL_GetWindowSurface(mSDLWindow), palette_colors);
 
-	if (mSDLSoftwareSurface)
-		I_SetSDL20Palette(mSDLSoftwareSurface, palette_colors);
-
 	getPrimarySurface()->setPalette(palette_colors);
 
 	mNeedPaletteRefresh = true;
@@ -1547,35 +1499,15 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
     SDL_SetWindowPosition(mSDLWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	
-	uint32_t renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
-	if (vsync)
-		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
-
-	if (mSDLRenderer)
-		SDL_DestroyRenderer(mSDLRenderer);
-	mSDLRenderer = SDL_CreateRenderer(mSDLWindow, -1, renderer_flags);
-
-	if (mSDLRenderer == NULL)
-		I_FatalError("I_InitVideo: unable to create renderer: %s\n", SDL_GetError());
-
-	// Ensure the game window is clear, even if using -noblit
-	SDL_RenderClear(mSDLRenderer);
-	SDL_RenderPresent(mSDLRenderer);
-
-	if (mSDLTexture)
-		SDL_DestroyTexture(mSDLTexture);
-	mSDLTexture = SDL_CreateTexture(
-				mSDLRenderer,
-				SDL_GetWindowPixelFormat(mSDLWindow),
-				SDL_TEXTUREACCESS_STREAMING,
-				video_width, video_height);
-
 	PixelFormat format;
 	I_BuildPixelFormatFromSDLPixelFormatEnum(SDL_GetWindowPixelFormat(mSDLWindow), &format);
 
-	// create a new IWindowSurface with its own frame buffer
-	delete mPrimarySurface;
-	mPrimarySurface = new IWindowSurface(video_width, video_height, &format);
+	delete mSurfaceManager;
+
+	mSurfaceManager = new ISDL20TextureWindowSurfaceManager(
+			video_width, video_height,
+			&format,
+			mSDLWindow);
 
 	mWidth = video_width; 
 	mHeight = video_height; 
