@@ -35,7 +35,7 @@
 #include "r_state.h"
 #include "s_sound.h"
 
-EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_boomphys)
 
 extern bool predicting;
 
@@ -392,7 +392,7 @@ BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 
 	// [RH] If tag is zero, use the sector on the back side
 	//		of the activating line (if any).
-	if (co_zdoomphys && tag == 0)
+	if (co_boomphys && tag == 0)
 	{
 		if (!line || !(sec = line->backsector))
 			return false;
@@ -422,7 +422,7 @@ BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 manual_plat:
 		if (sec->floordata)
 		{
-			if (co_zdoomphys && manual)
+			if (co_boomphys && manual)
 				return false;
 			else
 				continue;
