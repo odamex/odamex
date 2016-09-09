@@ -16,6 +16,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-Wno-deprecated-declarations" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
@@ -44,6 +45,7 @@
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fno-inline" />
+					<Add option="-Wno-deprecated-declarations" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />

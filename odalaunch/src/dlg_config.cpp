@@ -395,12 +395,12 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
 		// only add paths if the variable exists and path isn't blank
 		if(wxGetEnv(env_vars[i], &env_paths[i]))
 			if(!env_paths[i].IsEmpty())
-				doomwaddir += env_paths[i] + _T(PATH_DELIMITER);
+				doomwaddir += env_paths[i] + PATH_DELIMITER;
 	}
 
 	wxInt32 path_count = 0;
 
-	wxStringTokenizer wadlist(doomwaddir, _T(PATH_DELIMITER));
+	wxStringTokenizer wadlist(doomwaddir, PATH_DELIMITER);
 
 	while(wadlist.HasMoreTokens())
 	{
@@ -517,7 +517,7 @@ void dlgConfig::LoadSettings()
 	// Load wad path list
 	m_LstCtrlWadDirectories->Clear();
 
-	wxStringTokenizer wadlist(DelimWadPaths, _T(PATH_DELIMITER));
+	wxStringTokenizer wadlist(DelimWadPaths, PATH_DELIMITER);
 
 	while(wadlist.HasMoreTokens())
 	{
