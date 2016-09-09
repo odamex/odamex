@@ -255,7 +255,7 @@
 				<Option deps_output="../../deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option projectLinkerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-O3" />
 					<Add option="-m64" />
@@ -276,8 +276,6 @@
 					<Add library="z64" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
-					<Add library="SDL64" />
-					<Add library="SDL64_mixer" />
 					<Add directory="$(#sdl12)/lib/x64" />
 					<Add directory="$(#sdl12mixer)/lib/x64" />
 					<Add directory="../../lib" />
@@ -295,7 +293,7 @@
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option parameters="-gdi" />
-				<Option projectLinkerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-m64" />
@@ -319,8 +317,6 @@
 					<Add library="z-dbg64" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
-					<Add library="SDL64" />
-					<Add library="SDL64_mixer" />
 					<Add directory="$(#sdl12)/lib/x64" />
 					<Add directory="$(#sdl12mixer)/lib/x64" />
 					<Add directory="../../lib" />
