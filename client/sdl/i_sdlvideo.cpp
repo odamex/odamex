@@ -926,6 +926,9 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	mNativeMode(0, 0, 0, false)
 {
 	const int display_index = 0;
+	int bpp;
+	Uint32 Rmask,Gmask,Bmask,Amask;
+	
 	SDL_DisplayMode sdl_display_mode;
 	if (SDL_GetDesktopDisplayMode(display_index, &sdl_display_mode) != 0)
 	{
