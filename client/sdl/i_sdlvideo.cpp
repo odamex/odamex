@@ -940,7 +940,7 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	// a 24bpp mode when it is actually 32bpp, this function clears that up
 	SDL_PixelFormatEnumToMasks(sdl_display_mode.format,&bpp,&Rmask,&Gmask,&Bmask,&Amask);
 
-	mNativeMode = IVideoMode(sdl_display_mode.w, sdl_display_mode.h, SDL_BITSPERPIXEL(sdl_display_mode.format), true);
+	mNativeMode = IVideoMode(sdl_display_mode.w, sdl_display_mode.h, bpp, true);
 
 	I_AddSDL20VideoModes(&mModeList, 8);
 	I_AddSDL20VideoModes(&mModeList, 32);
