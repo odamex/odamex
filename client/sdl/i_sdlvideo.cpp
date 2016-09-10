@@ -932,6 +932,11 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 		I_FatalError("SDL_GetDesktopDisplayMode failed: %s", SDL_GetError());
 		return;
 	}
+	
+    // SDL_BITSPERPIXEL appears to not translate the mode properly, sometimes it reports
+	// a 24bpp mode when it is actually 32bpp, this function clears that up
+	SDL_PixelFormatEnumToMasks(sdl_display_mode.format,&bpp,&Rmask,&Gmask,&Bmask,&Amask);
+
 	mNativeMode = IVideoMode(sdl_display_mode.w, sdl_display_mode.h, SDL_BITSPERPIXEL(sdl_display_mode.format), true);
 
 	I_AddSDL20VideoModes(&mModeList, 8);
