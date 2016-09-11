@@ -998,7 +998,7 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 // ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager
 //
 ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
-	uint16_t width, uint16_t height, const PixelFormat* format, SDL_Window* sdl_window) :
+	uint16_t width, uint16_t height, const PixelFormat* format, SDL_Window* sdl_window, bool vsync) :
 		mSDLWindow(sdl_window), 
 		mSDLRenderer(NULL), mSDLTexture(NULL),
 		mSurface(NULL), mWidth(width), mHeight(height)
@@ -1008,8 +1008,8 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	memcpy(&mFormat, format, sizeof(mFormat));
 
 	uint32_t renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
-	// TODO: Verify that SDL_RENDERER_PRESENTVSYNC should always be enabled
-	renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
+	if (vsync)
+		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
 
 	mSDLRenderer = SDL_CreateRenderer(mSDLWindow, -1, renderer_flags);
 
@@ -1515,7 +1515,8 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	mSurfaceManager = new ISDL20TextureWindowSurfaceManager(
 			video_width, video_height,
 			&format,
-			mSDLWindow);
+			mSDLWindow,
+			vsync);
 
 	mWidth = video_width; 
 	mHeight = video_height; 
