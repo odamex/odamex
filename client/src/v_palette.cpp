@@ -895,7 +895,7 @@ BEGIN_COMMAND (testblend)
 	{
 		argb_t color(V_GetColorFromString(argv[1]));
 
-		int alpha = 255.0 * clamp(atof(argv[2]), 0.0, 1.0);
+		int alpha = 255.0 * clamp((float)atof(argv[2]), 0.0f, 1.0f);
 		R_SetSectorBlend(argb_t(alpha, color.getr(), color.getg(), color.getb()));
 	}
 }
