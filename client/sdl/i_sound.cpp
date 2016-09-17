@@ -374,12 +374,7 @@ void I_InitSound()
 	if (I_IsHeadless() || Args.CheckParm("-nosound"))
 		return;
 
-	const char *driver = getenv("SDL_AUDIODRIVER");
-
-	if(!driver)
-		driver = "default";
-
-	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem (%s)\n", driver);
+	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem\n");
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	{
@@ -390,6 +385,8 @@ void I_InitSound()
 		return;
 	}
 
+	Printf(PRINT_HIGH, "I_InitSound: Using SDL audio driver (%s)\n", SDL_GetCurrentAudioDriver());
+	
 	const SDL_version *ver = Mix_Linked_Version();
 
 	if(ver->major != MIX_MAJOR_VERSION
