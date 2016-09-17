@@ -48,6 +48,7 @@ misrepresented as being the original software.
 #include "m_fileio.h"
 #include "cmdlib.h"
 
+#include "i_sdl.h"
 #include "i_music.h"
 #include "i_midi.h"
 #include "mus2midi.h"
