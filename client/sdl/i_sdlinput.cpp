@@ -2122,7 +2122,7 @@ void ISDL20JoystickInputDevice::flushEvents()
 	while (!mEvents.empty())
 		mEvents.pop();
 	for (int i = 0; i < mNumHats; i++)
-		mHatStates = SDL_HAT_CENTERED;
+		mHatStates[i] = SDL_HAT_CENTERED;
 }
 
 
@@ -2196,7 +2196,7 @@ void ISDL20JoystickInputDevice::gatherEvents()
 	const int max_events = 1024;
 	SDL_Event sdl_events[max_events];
 
-	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_JOYAXISMOTION, SDL_JOYDEVICEREMOVED)))
+	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_JOYAXISMOTION, SDL_JOYBUTTONUP)))
 	{
 		for (int i = 0; i < num_events; i++)
 		{
