@@ -573,7 +573,15 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 	}
 
 	if (mapname.length())
-		G_DeferedInitNew((char *)mapname.c_str());
+	{
+		if (W_CheckNumForName(mapname.c_str()) != -1)
+            G_DeferedInitNew((char *)mapname.c_str());
+        else
+        {
+            Printf(PRINT_HIGH, "map %s not found, loading start map instead", mapname.c_str());
+            G_DeferedInitNew(startmap);
+        }
+	}
 	else
 		G_DeferedInitNew(startmap);
 
