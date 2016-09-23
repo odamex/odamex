@@ -259,7 +259,7 @@
 				<Option deps_output="../../deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option projectLinkerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-O3" />
 					<Add option="-m64" />
@@ -300,7 +300,7 @@
 				<Option deps_output="../../deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option projectLinkerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-m64" />

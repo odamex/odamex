@@ -77,13 +77,13 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 
 			// sort arrow up
 			renderer_dc.SelectObject(sort_up);
-			renderer_dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxSOLID));
+			renderer_dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxBRUSHSTYLE_SOLID));
 			renderer_dc.Clear();
 			wxRendererNative::Get().DrawHeaderButtonContents(this, renderer_dc, wxRect(0, 0, 16, 16), 0, wxHDR_SORT_ICON_UP);
 
 			// sort arrow down
 			renderer_dc.SelectObject(sort_down);
-			renderer_dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxSOLID));
+			renderer_dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxBRUSHSTYLE_SOLID));
 			renderer_dc.Clear();
 			wxRendererNative::Get().DrawHeaderButtonContents(this, renderer_dc, wxRect(0, 0, 16, 16), 0, wxHDR_SORT_ICON_DOWN);
 		}

@@ -65,7 +65,10 @@
 
 #include <stdarg.h>
 #include <sys/types.h>
-#include <sys/timeb.h>
+
+#ifndef __OpenBSD__
+	#include <sys/timeb.h>
+#endif
 
 #include <sys/stat.h>
 

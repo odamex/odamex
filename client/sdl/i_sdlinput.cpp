@@ -840,7 +840,7 @@ void ISDL12JoystickInputDevice::flushEvents()
 	while (!mEvents.empty())
 		mEvents.pop();
 	for (int i = 0; i < mNumHats; i++)
-		mHatStates = SDL_HAT_CENTERED;
+		mHatStates[i] = SDL_HAT_CENTERED;
 }
 
 
