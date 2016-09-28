@@ -173,15 +173,25 @@ void ISDL12KeyboardInputDevice::initKeyTranslation()
 	mSDLKeyTransTable[SDLK_F9]				= KEY_F9; 
 	mSDLKeyTransTable[SDLK_F10]				= KEY_F10; 
 	mSDLKeyTransTable[SDLK_F11]				= KEY_F11; 
-	mSDLKeyTransTable[SDLK_F12]				= KEY_F12; 
+	mSDLKeyTransTable[SDLK_F12]				= KEY_F12;
+	mSDLKeyTransTable[SDLK_F13]				= KEY_F13;
+	mSDLKeyTransTable[SDLK_F14]				= KEY_F14;
+	mSDLKeyTransTable[SDLK_F15]				= KEY_F15;
 	mSDLKeyTransTable[SDLK_CAPSLOCK]		= KEY_CAPSLOCK; 
-	mSDLKeyTransTable[SDLK_SCROLLOCK]		= KEY_SCRLCK; 
+	mSDLKeyTransTable[SDLK_SCROLLOCK]		= KEY_SCRLCK;
+	mSDLKeyTransTable[SDLK_NUMLOCK] 		= KEY_NUMLOCK; 
 	mSDLKeyTransTable[SDLK_RSHIFT]			= KEY_RSHIFT; 
 	mSDLKeyTransTable[SDLK_LSHIFT]			= KEY_LSHIFT; 
 	mSDLKeyTransTable[SDLK_RCTRL]			= KEY_RCTRL; 
 	mSDLKeyTransTable[SDLK_LCTRL]			= KEY_LCTRL; 
 	mSDLKeyTransTable[SDLK_RALT]			= KEY_RALT; 
-	mSDLKeyTransTable[SDLK_LALT]			= KEY_LALT; 
+	mSDLKeyTransTable[SDLK_LALT]			= KEY_LALT;
+	mSDLKeyTransTable[SDLK_LSUPER]			= KEY_LWIN;
+	mSDLKeyTransTable[SDLK_RSUPER]			= KEY_RWIN;
+	mSDLKeyTransTable[SDLK_HELP]			= KEY_HELP;
+	mSDLKeyTransTable[SDLK_PRINT]			= KEY_PRINT;
+	mSDLKeyTransTable[SDLK_SYSREQ]			= KEY_SYSRQ;
+	mSDLKeyTransTable[SDLK_BREAK]			= KEY_BREAK;
 }
 
 
