@@ -95,7 +95,7 @@ static void I_AddSDL12VideoModes(IVideoModeList* modelist, int bpp)
 			return;
 		}
 
-		// add the video modes reported by SDL 
+		// add the video modes reported by SDL
 		while (*sdlmodes)
 		{
 			int width = (*sdlmodes)->w, height = (*sdlmodes)->h;
@@ -534,7 +534,7 @@ void ISDL12Window::setWindowIcon()
 	//
 	// [Russell] - Just for windows, display the icon in the system menu and
 	// alt-tab display
-	
+
 	// TODO: FIXME
 	#if 0
 	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
@@ -553,7 +553,7 @@ void ISDL12Window::setWindowIcon()
 		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 	}
     #endif
-	
+
 	#else
 
 /*
@@ -681,7 +681,7 @@ static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, Pixe
 	// handle SDL not reporting correct Ashift/Aloss
 	uint8_t aloss = bpp == 32 ? 0 : 8;
 	uint8_t ashift = bpp == 32 ?  48 - sdlformat->Rshift - sdlformat->Gshift - sdlformat->Bshift : 0;
-	
+
 	// Create the PixelFormat specification
 	*format = PixelFormat(
 			bpp,
@@ -696,7 +696,7 @@ static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, Pixe
 // Sets the window size to the specified size and frees the existing primary
 // surface before instantiating a new primary surface. This function performs
 // no sanity checks on the desired video mode.
-// 
+//
 // NOTE: If a hardware surface is obtained or the surface's screen pitch
 // will create cache thrashing (tested by pitch & 511 == 0), a SDL software
 // surface will be created and used for drawing video frames. This software
@@ -768,7 +768,7 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 
 	bool got_hardware_surface = (sdl_surface->flags & SDL_HWSURFACE) == SDL_HWSURFACE;
 
-	bool create_software_surface = 
+	bool create_software_surface =
 					(sdl_surface->pitch & 511) == 0 ||	// pitch is a multiple of 512 (thrashes the cache)
 					got_hardware_surface;				// drawing directly to hardware surfaces is slower
 
@@ -843,7 +843,7 @@ ISDL12VideoSubsystem::ISDL12VideoSubsystem() : IVideoSubsystem()
 	}
 
 	mVideoCapabilities = new ISDL12VideoCapabilities();
-	
+
 	mWindow = new ISDL12Window(640, 480, 8, false, false);
 }
 
@@ -928,14 +928,14 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	const int display_index = 0;
 	int bpp;
 	Uint32 Rmask,Gmask,Bmask,Amask;
-	
+
 	SDL_DisplayMode sdl_display_mode;
 	if (SDL_GetDesktopDisplayMode(display_index, &sdl_display_mode) != 0)
 	{
 		I_FatalError("SDL_GetDesktopDisplayMode failed: %s", SDL_GetError());
 		return;
 	}
-	
+
     // SDL_BITSPERPIXEL appears to not translate the mode properly, sometimes it reports
 	// a 24bpp mode when it is actually 32bpp, this function clears that up
 	SDL_PixelFormatEnumToMasks(sdl_display_mode.format,&bpp,&Rmask,&Gmask,&Bmask,&Amask);
@@ -999,7 +999,7 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 //
 ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	uint16_t width, uint16_t height, const PixelFormat* format, SDL_Window* sdl_window, bool vsync) :
-		mSDLWindow(sdl_window), 
+		mSDLWindow(sdl_window),
 		mSDLRenderer(NULL), mSDLTexture(NULL),
 		mSurface(NULL), mWidth(width), mHeight(height)
 {
@@ -1036,7 +1036,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	if (mSDLTexture == NULL)
 		I_FatalError("I_InitVideo: unable to create SDL2 texture: %s\n", SDL_GetError());
-	
+
 	mSurface = new IWindowSurface(width, height, &mFormat);
 }
 
@@ -1119,7 +1119,7 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 	uint32_t window_flags = SDL_WINDOW_SHOWN;
 	if (fullscreen)
-		window_flags |= SDL_WINDOW_FULLSCREEN;
+        window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	else
 		window_flags |= SDL_WINDOW_RESIZABLE;
 
@@ -1128,13 +1128,13 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			width, height,
 			window_flags);
-	
+
 	if (mSDLWindow == NULL)
 		I_FatalError("I_InitVideo: unable to create window: %s\n", SDL_GetError());
 
     mWidth = width;
     mHeight = height;
-		
+
 	mMouseFocus = mKeyboardFocus = true;
 }
 
@@ -1344,7 +1344,7 @@ void ISDL20Window::setWindowIcon()
 		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 	}
-	
+
 	#else
 
 /*
@@ -1397,7 +1397,7 @@ std::string ISDL20Window::getVideoDriverName() const
 	const char* driver_name = SDL_GetCurrentVideoDriver();
 	if (driver_name)
 		return std::string(driver_name);
-	return ""; 
+	return "";
 }
 
 
@@ -1484,7 +1484,7 @@ static void I_BuildPixelFormatFromSDLPixelFormatEnum(uint32_t sdl_fmt, PixelForm
 // Sets the window size to the specified size and frees the existing primary
 // surface before instantiating a new primary surface. This function performs
 // no sanity checks on the desired video mode.
-// 
+//
 // NOTE: If a hardware surface is obtained or the surface's screen pitch
 // will create cache thrashing (tested by pitch & 511 == 0), a SDL software
 // surface will be created and used for drawing video frames. This software
@@ -1501,12 +1501,12 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 
 	uint32_t fullscreen_flags = 0;
 	if (video_fullscreen)
-		fullscreen_flags |= SDL_WINDOW_FULLSCREEN;
+		fullscreen_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);
 
 	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
     SDL_SetWindowPosition(mSDLWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-	
+
 	PixelFormat format;
 	I_BuildPixelFormatFromSDLPixelFormatEnum(SDL_GetWindowPixelFormat(mSDLWindow), &format);
 
@@ -1518,9 +1518,9 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 			mSDLWindow,
 			vsync);
 
-	mWidth = video_width; 
-	mHeight = video_height; 
-	mBitsPerPixel = format.getBitsPerPixel(); 
+	mWidth = video_width;
+	mHeight = video_height;
+	mBitsPerPixel = format.getBitsPerPixel();
 	mIsFullScreen = SDL_GetWindowFlags(mSDLWindow) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
 	mUseVSync = vsync;
 
@@ -1586,7 +1586,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 	}
 
 	mVideoCapabilities = new ISDL20VideoCapabilities();
-	
+
 	mWindow = new ISDL20Window(640, 480, 8, false, false);
 }
 
@@ -1604,4 +1604,3 @@ ISDL20VideoSubsystem::~ISDL20VideoSubsystem()
 #endif	// SDL20
 
 VERSION_CONTROL (i_sdlvideo_cpp, "$Id$")
-
