@@ -118,82 +118,6 @@ char DefBindings[] =
 	"bind m changeteams ";
 
 
-// SoM: ok... I hate randy heit I have no idea how to translate between ascii codes to these
-// so I get to re-write the entire system. YES I RE-DID ALL OF THIS BY HAND
-// SoM: note: eat shit and die Randy Heit this uses SDL key codes now!
-const char *KeyNames[NUM_KEYS] = {
-// :: Begin ASCII mapped keycodes
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 00 - 07
-"backspace","tab",   NULL,    NULL,    NULL, "enter",    NULL,    NULL, // 08 - 0F
-   NULL,    NULL,    NULL, "pause",    NULL,    NULL,    NULL,    NULL, // 10 - 17
-   NULL,    NULL,    NULL,"escape",    NULL,    NULL,    NULL,    NULL, // 18 - 1F
-"space",     "!",    "\"",     "#",     "$",    NULL,     "&",     "'", // 20 - 27
-    "(",     ")",     "*",     "+",     ",",     "-",     ".",     "/", // 28 - 2F
-    "0",     "1",     "2",     "3",     "4",     "5",     "6",     "7", // 30 - 37
-    "8",     "9",     ":",     ";",     "<",     "=",     ">",     "?", // 38 - 3F
-    "@",    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 40 - 47
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 48 - 4F
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 50 - 57
-   NULL,    NULL,    NULL,     "[",    "\\",     "]",     "^",     "_", // 58 - 5F
-"grave",     "a",     "b",     "c",     "d",     "e",     "f",     "g", // 60 - 67
-    "h",     "i",     "j",     "k",     "l",     "m",     "n",     "o", // 68 - 6F
-    "p",     "q",     "r",     "s",     "t",     "u",     "v",     "w", // 70 - 77
-    "x",     "y",     "z",    NULL,    NULL,    NULL,    NULL,   "del", // 78 - 7F
-// :: End ASCII mapped keycodes
-// :: Begin World keycodes
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 80 - 87
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 88 - 8F
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 90 - 97
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 98 - 9F
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // A0 - A7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // A8 - AF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // B0 - B7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // B8 - BF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // C0 - C7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // C8 - CF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // D0 - D7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // D8 - DF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // E0 - E7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // E8 - EF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // F0 - F7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // F8 - FF
-// :: End world keycodes
-  "kp0",   "kp1",   "kp2",   "kp3",   "kp4",   "kp5",   "kp6",   "kp7", // 0100 - 0107
-  "kp8",   "kp9",   "kp.",   "kp/",   "kp*",   "kp-",   "kp+", "kpenter", // 0108 - 010F
-  "kp=","uparrow","downarrow","rightarrow","leftarrow","ins","home","end", // 0110 - 0117
- "pgup",  "pgdn",    "f1",    "f2",    "f3",    "f4",    "f5",    "f6", // 0118 - 011F
-   "f7",    "f8",    "f9",   "f10",   "f11",   "f12",   "f13",   "f14", // 0120 - 0127
-  "f15",    NULL,    NULL,    NULL,"numlock","capslock","scroll", "rightshift", // 0128 - 012F
-"leftshift", "rightctrl", "leftctrl", "rightalt", "leftalt",    NULL,    NULL,  "lwin", // 0130 - 0137
- "rwin",    NULL,    NULL,  "help", "print", "sysrq", "break",    NULL,  // 0138 - 013F
-   NULL,    NULL,    NULL,    // 0140 - 0142
-
-	// non-keyboard buttons that can be bound
-   // 0143 - 0146 & 0173
-	"mouse1",	"mouse2",	"mouse3",	"mouse4",			// 5 mouse buttons
-   // 0147 - 014A
-   "mwheelup",	"mwheeldown",NULL,		NULL,			// the wheel and some extra space
-   // 014B - 014E
-	"joy1",		"joy2",		"joy3",		"joy4",			// 32 joystick buttons
-   // 014F - 0152
-	"joy5",		"joy6",		"joy7",		"joy8",
-   // 0153 - 0156
-	"joy9",		"joy10",	"joy11",	"joy12",
-   // 0157 - 015A
-	"joy13",	"joy14",	"joy15",	"joy16",
-   // 015B - 015E
-	"joy17",	"joy18",	"joy19",	"joy20",
-   // 015F - 0162
-	"joy21",	"joy22",	"joy23",	"joy24",
-   // 0163 - 0166
-	"joy25",	"joy26",	"joy27",	"joy28",
-   // 0167 - 016A
-	"joy29",	"joy30",	"joy31",	"joy32",
-  // 016B - 016E
-	"hat1up",	"hat1right","hat1down",	"hat1left",
-  // 016F - 0172
-	"hat2up",	"hat2right","hat2down",	"hat2left", "mouse5"
-};
 
 static std::string Bindings[NUM_KEYS];
 static std::string DoubleBindings[NUM_KEYS];
@@ -318,7 +242,11 @@ static void buildKeyCodeTables()
 	nameToKeyCode.insert(std::make_pair("f10", KEY_F10));
 	nameToKeyCode.insert(std::make_pair("f11", KEY_F11));
 	nameToKeyCode.insert(std::make_pair("f12", KEY_F12));
+	nameToKeyCode.insert(std::make_pair("f13", KEY_F13));
+	nameToKeyCode.insert(std::make_pair("f14", KEY_F14));
+	nameToKeyCode.insert(std::make_pair("f15", KEY_F15));
 	nameToKeyCode.insert(std::make_pair("capslock", KEY_CAPSLOCK));
+	nameToKeyCode.insert(std::make_pair("numlock", KEY_NUMLOCK));
 	nameToKeyCode.insert(std::make_pair("scroll", KEY_SCRLCK));
 	nameToKeyCode.insert(std::make_pair("rightshift", KEY_RSHIFT));
 	nameToKeyCode.insert(std::make_pair("leftshift", KEY_LSHIFT));
@@ -326,9 +254,12 @@ static void buildKeyCodeTables()
 	nameToKeyCode.insert(std::make_pair("leftctrl", KEY_LCTRL));
 	nameToKeyCode.insert(std::make_pair("rightalt", KEY_RALT));
 	nameToKeyCode.insert(std::make_pair("leftalt", KEY_LALT));
-	// TODO: add F13, F14, F15, numlock, lwin, rwin, help, sysrq, break
-	// Those keys do not currently have an enum assigned in doomkeys.h
-
+	nameToKeyCode.insert(std::make_pair("lwin", KEY_LWIN));
+	nameToKeyCode.insert(std::make_pair("rwin", KEY_RWIN));
+	nameToKeyCode.insert(std::make_pair("help", KEY_HELP));
+	nameToKeyCode.insert(std::make_pair("print", KEY_PRINT));
+	nameToKeyCode.insert(std::make_pair("sysrq", KEY_SYSRQ));
+	nameToKeyCode.insert(std::make_pair("break", KEY_BREAK));
 	nameToKeyCode.insert(std::make_pair("mouse1", KEY_MOUSE1));
 	nameToKeyCode.insert(std::make_pair("mouse2", KEY_MOUSE2));
 	nameToKeyCode.insert(std::make_pair("mouse3", KEY_MOUSE3));
