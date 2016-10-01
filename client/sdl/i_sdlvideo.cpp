@@ -1012,6 +1012,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
 
 	mSDLRenderer = SDL_CreateRenderer(mSDLWindow, -1, renderer_flags);
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");	
 
 	if (mSDLRenderer == NULL)
 		I_FatalError("I_InitVideo: unable to create SDL2 renderer: %s\n", SDL_GetError());
