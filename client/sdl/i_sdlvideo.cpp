@@ -1007,12 +1007,20 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	memcpy(&mFormat, format, sizeof(mFormat));
 
-	uint32_t renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
+    // Select the best RENDER_SCALE_QUALITY that is supported
+    const char* scale_hints[] = {"best", "linear", "nearest", ""};
+    for (int i = 0; scale_hints[i][0] != '\0'; i++)
+    {
+        if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scale_hints[i]))
+            break;
+    }
+
+	uint32_t renderer_flags = SDL_RENDERER_ACCELERATED;
 	if (vsync)
 		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
 
 	mSDLRenderer = SDL_CreateRenderer(mSDLWindow, -1, renderer_flags);
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");	
+
 
 	if (mSDLRenderer == NULL)
 		I_FatalError("I_InitVideo: unable to create SDL2 renderer: %s\n", SDL_GetError());
@@ -1112,29 +1120,20 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	mMouseFocus(false), mKeyboardFocus(false),
 	mLocks(0)
 {
-    // TODO: bug in sdl 2.0.4 causes various crashes on windows relating to video mode changes with directx
-    // Check https://forums.libsdl.org/viewtopic.php?p=51349&sid=2ba50f4a184b507cea8eb6edaade6bbd for more info
-    #ifdef _WIN32
-    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
-    #endif
+	setRendererDriver();
+	const char* driver_name = getRendererDriver();
+	Printf(PRINT_HIGH, "V_Init: rendering mode \"%s\"\n", driver_name);
 
 	uint32_t window_flags = SDL_WINDOW_SHOWN;
 
 	// Reduce the flickering on start up for the opengl driver on Windows
 	#ifdef _WIN32
-	std::string sdl_hint;
-    const char *sdl_h;
-
-	sdl_h = SDL_GetHint(SDL_HINT_RENDER_DRIVER);
-
-	sdl_hint = (sdl_h != NULL) ? sdl_h : "";
- 
-    if (sdl_hint == "opengl")
-        window_flags |= SDL_WINDOW_OPENGL;        
+	if (strncmp(driver_name, "opengl", strlen(driver_name) == 0))
+		window_flags |= SDL_WINDOW_OPENGL;
 	#endif
 
 	if (fullscreen)
-        window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	else
 		window_flags |= SDL_WINDOW_RESIZABLE;
 
@@ -1147,8 +1146,8 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	if (mSDLWindow == NULL)
 		I_FatalError("I_InitVideo: unable to create window: %s\n", SDL_GetError());
 
-    mWidth = width;
-    mHeight = height;
+	mWidth = width;
+	mHeight = height;
 
 	mMouseFocus = mKeyboardFocus = true;
 }
@@ -1163,6 +1162,39 @@ ISDL20Window::~ISDL20Window()
 
 	if (mSDLWindow)
 		SDL_DestroyWindow(mSDLWindow);
+}
+
+
+//
+// ISDL20Window::setRendererDriver
+//
+void ISDL20Window::setRendererDriver()
+{
+    // TODO: bug in sdl 2.0.4 causes various crashes on windows relating to video mode changes with directx
+    // Check https://forums.libsdl.org/viewtopic.php?p=51349&sid=2ba50f4a184b507cea8eb6edaade6bbd for more info
+    //
+    // "direct3d" can be added to the drivers list when this bug is resolved
+    const char* drivers[] = {"opengl", "opengles2", "opengles", "software", ""};
+    for (int i = 0; drivers[i][0] != '\0'; i++)
+    {
+        if (SDL_SetHint(SDL_HINT_RENDER_DRIVER, drivers[i]))
+            break;
+    }
+}
+
+
+//
+// ISDL20Window::getRendererDriver
+//
+const char* ISDL20Window::getRendererDriver() const
+{
+    static char driver_name[20];
+    const char* hint_value = SDL_GetHint(SDL_HINT_RENDER_DRIVER);
+    if (hint_value)
+        strncpy(driver_name, hint_value, sizeof(driver_name));
+    else
+        driver_name[0] = '\0';
+    return driver_name;
 }
 
 

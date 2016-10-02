@@ -25,7 +25,7 @@
 #ifndef __I_SDLVIDEO_H__
 #define __I_SDLVIDEO_H__
 
-#include "i_sdl.h" 
+#include "i_sdl.h"
 #include "i_video.h"
 
 #ifdef SDL12
@@ -351,7 +351,7 @@ public:
 	virtual ~ISDL20Window();
 
 	virtual const IWindowSurface* getPrimarySurface() const
-	{	
+	{
 		if (mSurfaceManager)
 			return mSurfaceManager->getWindowSurface();
 		return NULL;
@@ -412,6 +412,8 @@ private:
 	ISDL20Window(const ISDL20Window&);
 	ISDL20Window& operator=(const ISDL20Window&);
 
+	void setRendererDriver();
+	const char* getRendererDriver() const;
 	void getEvents();
 
 	SDL_Window*			mSDLWindow;
