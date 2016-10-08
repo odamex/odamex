@@ -169,6 +169,8 @@ public:
 	virtual const IVideoMode* getVideoMode() const
 	{	return &mVideoMode;	}
 
+	virtual const PixelFormat* getPixelFormat() const;
+
 	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
 
 	virtual bool isFullScreen() const
@@ -255,7 +257,14 @@ private:
 };
 #endif	// SDL12
 
+
+// ----------------------------------------------------------------------------
+
+
 #ifdef SDL20
+
+class ISDL20Window;
+
 // ============================================================================
 //
 // ISDL20VideoCapabilities class interface
@@ -307,7 +316,7 @@ private:
 class ISDL20TextureWindowSurfaceManager : public IWindowSurfaceManager
 {
 public:
-	ISDL20TextureWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format, SDL_Window* sdl_window, bool vsync);
+	ISDL20TextureWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window, bool vsync);
 
 	virtual ~ISDL20TextureWindowSurfaceManager();
 
@@ -324,11 +333,12 @@ public:
 	virtual void finishRefresh();
 
 private:
-	SDL_Window*				mSDLWindow;
+	ISDL20Window*			mWindow;
 	SDL_Renderer*			mSDLRenderer;
 	SDL_Texture*			mSDLTexture;
 
 	IWindowSurface*			mSurface;
+	IWindowSurface*			m8bppTo32BppSurface;
 
 	uint16_t				mWidth;
 	uint16_t				mHeight;
@@ -377,6 +387,9 @@ public:
 	virtual const IVideoMode* getVideoMode() const
 	{	return &mVideoMode;	}
 
+	virtual const PixelFormat* getPixelFormat() const
+	{	return &mPixelFormat;	}
+
 	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
 
 	virtual bool isFullScreen() const
@@ -412,6 +425,9 @@ private:
 	ISDL20Window(const ISDL20Window&);
 	ISDL20Window& operator=(const ISDL20Window&);
 
+	friend class ISDL20TextureWindowSurfaceManager;
+
+	void discoverNativePixelFormat();
 	PixelFormat buildSurfacePixelFormat(uint8_t bpp);
 	void setRendererDriver();
 	const char* getRendererDriver() const;
@@ -426,6 +442,7 @@ private:
 	uint8_t				mBitsPerPixel;
 
 	IVideoMode			mVideoMode;
+	PixelFormat			mPixelFormat;
 
 	bool				mIsFullScreen;
 	bool				mUseVSync;

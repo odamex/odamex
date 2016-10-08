@@ -510,6 +510,8 @@ public:
 
 	virtual const IVideoMode* getVideoMode() const = 0;
 
+	virtual const PixelFormat* getPixelFormat() const = 0;
+
 	virtual bool isFullScreen() const
 	{	return getVideoMode()->isFullScreen();	}
 
@@ -540,7 +542,7 @@ public:
 	{	getPrimarySurface()->setPalette(palette);	}
 
 	virtual const argb_t* getPalette() const
-	{	return getPrimarySurface()->getPalette();	}	
+	{	return getPrimarySurface()->getPalette();	}
 };
 
 
@@ -556,7 +558,9 @@ public:
 class IDummyWindow : public IWindow
 {
 public:
-	IDummyWindow() : IWindow(), mPrimarySurface(NULL), mVideoMode(320, 200, 8, true)
+	IDummyWindow() :
+		IWindow(), mPrimarySurface(NULL), mVideoMode(320, 200, 8, true),
+		mPixelFormat(8, 0, 0, 0, 0, 0, 0, 0, 0)
 	{ }
 
 	virtual ~IDummyWindow()
@@ -567,6 +571,9 @@ public:
 
 	virtual const IVideoMode* getVideoMode() const
 	{	return &mVideoMode;	}
+
+	virtual const PixelFormat* getPixelFormat() const
+	{	return &mPixelFormat;	}
 
 	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync)
 	{
@@ -599,6 +606,7 @@ private:
 	IWindowSurface*		mPrimarySurface;
 
 	IVideoMode			mVideoMode;
+	PixelFormat			mPixelFormat;
 };
 
 
@@ -658,12 +666,12 @@ public:
 
 	virtual const IWindow* getWindow() const
 	{	return mWindow;	}
-	
+
 private:
 	const IVideoCapabilities*		mVideoCapabilities;
 
 	IWindow*						mWindow;
 };
-	
+
 
 #endif // __I_VIDEO_H__

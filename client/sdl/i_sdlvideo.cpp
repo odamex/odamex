@@ -691,6 +691,18 @@ static void I_BuildPixelFormatFromSDLSurface(const SDL_Surface* sdlsurface, Pixe
 
 
 //
+// ISDL12Window::getPixelFormat
+//
+const PixelFormat* ISDL12Window::getPixelFormat() const
+{
+    static PixelFormat format;
+    const SDL_Surface* sdl_surface = SDL_GetVideoSurface();
+	I_BuildPixelFormatFromSDLSurface(sdl_surface, &format);
+    return &format;
+}
+
+
+//
 // ISDL12Window::setMode
 //
 // Sets the window size to the specified size and frees the existing primary
@@ -751,13 +763,12 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	// DirectInput is reinitalized.
 	I_ResumeMouse();
 
-	PixelFormat format;
-	I_BuildPixelFormatFromSDLSurface(sdl_surface, &format);
+	const PixelFormat* format = getPixelFormat();
 
 	// just in case SDL couldn't set the exact video mode we asked for...
 	mWidth = sdl_surface->w;
 	mHeight = sdl_surface->h;
-	mBitsPerPixel = format.getBitsPerPixel();
+	mBitsPerPixel = format->getBitsPerPixel();
 	mIsFullScreen = (sdl_surface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
 	mUseVSync = vsync;
 
@@ -773,9 +784,9 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 					got_hardware_surface;				// drawing directly to hardware surfaces is slower
 
 	if (create_software_surface)
-		mSurfaceManager = new ISDL12SoftwareWindowSurfaceManager(mWidth, mHeight, &format);
+		mSurfaceManager = new ISDL12SoftwareWindowSurfaceManager(mWidth, mHeight, format);
 	else
-		mSurfaceManager = new ISDL12DirectWindowSurfaceManager(mWidth, mHeight, &format);
+		mSurfaceManager = new ISDL12DirectWindowSurfaceManager(mWidth, mHeight, format);
 
 	assert(mSurfaceManager != NULL);
 	assert(getPrimarySurface() != NULL);
@@ -790,8 +801,8 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	assert(mBitsPerPixel == 8 || mBitsPerPixel == 32);
 
 	// Tell argb_t the pixel format
-	if (format.getBitsPerPixel() == 32)
-		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
+	if (format->getBitsPerPixel() == 32)
+		argb_t::setChannels(format->getAPos(), format->getRPos(), format->getGPos(), format->getBPos());
 	else
 		argb_t::setChannels(3, 2, 1, 0);
 
@@ -998,12 +1009,14 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 // ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager
 //
 ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
-	uint16_t width, uint16_t height, const PixelFormat* format, SDL_Window* sdl_window, bool vsync) :
-		mSDLWindow(sdl_window),
+	uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window, bool vsync) :
+		mWindow(window),
 		mSDLRenderer(NULL), mSDLTexture(NULL),
-		mSurface(NULL), mWidth(width), mHeight(height)
+		mSurface(NULL), m8bppTo32BppSurface(NULL),
+        mWidth(width), mHeight(height)
 {
-	assert(mSDLWindow != NULL);
+	assert(mWindow != NULL);
+    assert(mWindow->mSDLWindow != NULL);
 
 	memcpy(&mFormat, format, sizeof(mFormat));
 
@@ -1019,7 +1032,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	if (vsync)
 		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
 
-	mSDLRenderer = SDL_CreateRenderer(mSDLWindow, -1, renderer_flags);
+	mSDLRenderer = SDL_CreateRenderer(mWindow->mSDLWindow, -1, renderer_flags);
 
 	if (mSDLRenderer == NULL)
 		I_FatalError("I_InitVideo: unable to create SDL2 renderer: %s\n", SDL_GetError());
@@ -1032,7 +1045,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	uint32_t texture_flags = SDL_TEXTUREACCESS_STREAMING;
 
     SDL_DisplayMode sdl_mode;
-    SDL_GetDesktopDisplayMode(0, &sdl_mode);
+    SDL_GetWindowDisplayMode(mWindow->mSDLWindow, &sdl_mode);
 
 	mSDLTexture = SDL_CreateTexture(
 				mSDLRenderer,
@@ -1044,6 +1057,8 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 		I_FatalError("I_InitVideo: unable to create SDL2 texture: %s\n", SDL_GetError());
 
 	mSurface = new IWindowSurface(width, height, &mFormat);
+    if (mSurface->getBitsPerPixel() ==8)
+        m8bppTo32BppSurface = new IWindowSurface(width, height, mWindow->getPixelFormat());
 }
 
 
@@ -1052,6 +1067,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 //
 ISDL20TextureWindowSurfaceManager::~ISDL20TextureWindowSurfaceManager()
 {
+    delete m8bppTo32BppSurface;
 	delete mSurface;
 
 	if (mSDLTexture)
@@ -1089,25 +1105,9 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 {
     if (mSurface->getBitsPerPixel() == 8)
     {
-        // TODO: make use of existing routines for pixel conversion and
-        // make temporary buffer a member of the class
-        const argb_t* pal = mSurface->getPalette();
-        static argb_t buf[2048 * 2048];
-
-        argb_t* bufptr = buf;
-        const palindex_t* surfptr = mSurface->getBuffer();
-
-        for (uint16_t y = 0; y < mSurface->getHeight(); y++)
-        {
-            for (uint16_t x = 0; x < mSurface->getWidth(); x++)
-            {
-                bufptr[x] = pal[surfptr[x]];
-            }
-            bufptr += mSurface->getWidth();
-            surfptr += mSurface->getPitchInPixels();
-        }
-
-	    SDL_UpdateTexture(mSDLTexture, NULL, buf, mSurface->getWidth() * sizeof(argb_t));
+        m8bppTo32BppSurface->blit(mSurface, 0, 0, mSurface->getWidth(), mSurface->getHeight(),
+                0, 0, m8bppTo32BppSurface->getWidth(), m8bppTo32BppSurface->getHeight());
+	    SDL_UpdateTexture(mSDLTexture, NULL, m8bppTo32BppSurface->getBuffer(), m8bppTo32BppSurface->getPitch());
     }
     else
     {
@@ -1167,6 +1167,8 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 	if (mSDLWindow == NULL)
 		I_FatalError("I_InitVideo: unable to create window: %s\n", SDL_GetError());
+
+    discoverNativePixelFormat();
 
 	mWidth = width;
 	mHeight = height;
@@ -1548,6 +1550,17 @@ static void I_BuildPixelFormatFromSDLPixelFormatEnum(uint32_t sdl_fmt, PixelForm
 
 
 //
+// ISDL20Window::discoverNativePixelFormat
+//
+void ISDL20Window::discoverNativePixelFormat()
+{
+    SDL_DisplayMode sdl_mode;
+    SDL_GetWindowDisplayMode(mSDLWindow, &sdl_mode);
+    I_BuildPixelFormatFromSDLPixelFormatEnum(sdl_mode.format, &mPixelFormat);
+}
+
+
+//
 // ISDL20Window::buildSurfacePixelFormat
 //
 // Creates a PixelFormat instance based on the user's requested BPP
@@ -1555,29 +1568,14 @@ static void I_BuildPixelFormatFromSDLPixelFormatEnum(uint32_t sdl_fmt, PixelForm
 //
 PixelFormat ISDL20Window::buildSurfacePixelFormat(uint8_t bpp)
 {
-    SDL_DisplayMode sdl_mode;
-    SDL_GetDesktopDisplayMode(0, &sdl_mode);
-    uint8_t native_bpp = 32;
-    if (SDL_BITSPERPIXEL(sdl_mode.format) == 8)
-        native_bpp = 8;
-    else if (SDL_BITSPERPIXEL(sdl_mode.format) != 32 && SDL_BITSPERPIXEL(sdl_mode.format) != 24)
-        I_Error("Invalid native video mode %ibpp", SDL_BYTESPERPIXEL(sdl_mode.format));
-
+    uint8_t native_bpp = getPixelFormat()->getBitsPerPixel();
     if (bpp == 8)
-    {
         return PixelFormat(8, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
     else if (bpp == 32 && native_bpp == 32)
-    {
-        PixelFormat format;
-        I_BuildPixelFormatFromSDLPixelFormatEnum(sdl_mode.format, &format);
-        return format;
-    }
+        return *getPixelFormat();
     else
-    {
-        I_Error("Invalid native video mode %ibpp", SDL_BYTESPERPIXEL(sdl_mode.format));
-        return PixelFormat();   // shush warnings regarding no return value
-    }
+        I_Error("Invalid video surface conversion from %i-bit to %i-bit", bpp, native_bpp);
+    return PixelFormat();   // shush warnings regarding no return value
 }
 
 
@@ -1616,7 +1614,7 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	mSurfaceManager = new ISDL20TextureWindowSurfaceManager(
 			video_width, video_height,
 			&format,
-			mSDLWindow,
+			this,
 			vsync);
 
 	mWidth = video_width;
