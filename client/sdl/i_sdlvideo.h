@@ -412,6 +412,7 @@ private:
 	ISDL20Window(const ISDL20Window&);
 	ISDL20Window& operator=(const ISDL20Window&);
 
+	PixelFormat buildSurfacePixelFormat(uint8_t bpp);
 	void setRendererDriver();
 	const char* getRendererDriver() const;
 	void getEvents();
