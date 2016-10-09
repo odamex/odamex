@@ -1505,8 +1505,6 @@ void ISDL20Window::setPalette(const argb_t* palette_colors)
 {
 	lockSurface();
 
-	I_SetSDL20Palette(SDL_GetWindowSurface(mSDLWindow), palette_colors);
-
 	getPrimarySurface()->setPalette(palette_colors);
 
 	mNeedPaletteRefresh = true;
