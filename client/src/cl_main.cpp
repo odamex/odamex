@@ -930,7 +930,7 @@ BEGIN_COMMAND (rcon)
 		command[255] = '\0';		
 
 		MSG_WriteMarker(&net_buffer, clc_rcon);
-		MSG_WriteString(&net_buffer, args);
+		MSG_WriteString(&net_buffer, command);
 	}
 }
 END_COMMAND (rcon)
