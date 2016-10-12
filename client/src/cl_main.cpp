@@ -926,15 +926,11 @@ BEGIN_COMMAND (rcon)
 	{
 		char  command[256];
 
-		if (argc == 2)
-			sprintf(command, "%s", argv[1]);
-		if (argc == 3)
-			sprintf(command, "%s %s", argv[1], argv[2]);
-		if (argc == 4)
-			sprintf(command, "%s %s %s", argv[1], argv[2], argv[3]);
+		strncpy(command, args, STACKARRAY_LENGTH(command) - 1);
+		command[255] = '\0';		
 
 		MSG_WriteMarker(&net_buffer, clc_rcon);
-		MSG_WriteString(&net_buffer, command);
+		MSG_WriteString(&net_buffer, args);
 	}
 }
 END_COMMAND (rcon)
