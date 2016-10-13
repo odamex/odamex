@@ -1150,7 +1150,7 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 	// Reduce the flickering on start up for the opengl driver on Windows
 	#ifdef _WIN32
-	if (strncmp(driver_name, "opengl", strlen(driver_name) == 0))
+	if (strncmp(driver_name, "opengl", strlen(driver_name)) == 0)
 		window_flags |= SDL_WINDOW_OPENGL;
 	#endif
 
@@ -1217,7 +1217,7 @@ const char* ISDL20Window::getRendererDriver() const
     memset(driver_name, 0, sizeof(driver_name));
     const char* hint_value = SDL_GetHint(SDL_HINT_RENDER_DRIVER);
     if (hint_value)
-        strncpy(driver_name, hint_value, sizeof(driver_name - 1));
+        strncpy(driver_name, hint_value, sizeof(driver_name) - 1);
     return driver_name;
 }
 
