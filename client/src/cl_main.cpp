@@ -45,6 +45,7 @@
 #include "d_main.h"
 #include "p_ctf.h"
 #include "m_random.h"
+#include "m_memio.h"
 #include "w_wad.h"
 #include "w_ident.h"
 #include "md5.h"
