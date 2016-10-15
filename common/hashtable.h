@@ -481,7 +481,7 @@ private:
 	{
 		clear();
 		resize(other.mSize);
-		for (int i = 0; i < mSize; i++)
+		for (size_t i = 0; i < mSize; i++)
 		{
 			mElements[i].order = other.mElements[i].order;
 			mElements[i].pair = other.mElements[i].pair;
