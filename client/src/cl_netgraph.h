@@ -33,12 +33,15 @@ public:
 	void setMisprediction(bool val);
 	void setWorldIndexSync(int val);
 	void setInterpolation(int val);
-
+	void addTrafficIn(int val);
+	void addTrafficOut(int val);
 	void draw();
 
 private:
 	void drawWorldIndexSync(int x, int y);
 	void drawMispredictions(int x, int y);
+	void drawTrafficIn(int x, int y);
+	void drawTrafficOut(int x, int y);
 
 	static const int BAR_HEIGHT_WORLD_INDEX = 4;
 	static const int BAR_WIDTH_WORLD_INDEX = 2;
@@ -57,6 +60,8 @@ private:
 	bool	mMisprediction[NetGraph::MAX_HISTORY_TICS];
 	int		mWorldIndexSync[NetGraph::MAX_HISTORY_TICS];
 	int		mInterpolation;
+	int		mTrafficIn[NetGraph::MAX_HISTORY_TICS];
+	int		mTrafficOut[NetGraph::MAX_HISTORY_TICS];
 };
 
 #endif // __CL_NETGRAPH_H__

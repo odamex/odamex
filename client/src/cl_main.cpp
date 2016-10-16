@@ -3593,6 +3593,8 @@ void CL_ParseCommands(void)
 
 	while(connected)
 	{
+		int byteStart = net_message.BytesRead();
+
 		cmd = (svc_t)MSG_ReadByte();
 		history.push_back(cmd);
 
@@ -3626,6 +3628,11 @@ void CL_ParseCommands(void)
 				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
 		}
 
+		// Measure length of each message, so we can keep track of bandwidth.
+		if (net_message.BytesRead() < byteStart)
+			Printf(PRINT_HIGH, "CL_ParseCommands: end byte (%d) < start byte (%d)\n", net_message.BytesRead(), byteStart);
+
+		netgraph.addTrafficIn(net_message.BytesRead() - byteStart);
 	}
 }
 
@@ -3677,7 +3684,9 @@ void CL_SendCmd(void)
 		netcmd->write(&net_buffer);
 	}
 
-	NET_SendPacket(net_buffer, serveraddr);
+	int bytesWritten = NET_SendPacket(net_buffer, serveraddr);
+	netgraph.addTrafficOut(bytesWritten);
+
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);
 }

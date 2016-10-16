@@ -22,6 +22,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <sstream>
+
 #include "math.h"
 #include "g_game.h"
 #include "v_video.h"
@@ -36,6 +38,8 @@ NetGraph::NetGraph(int x, int y) :
 	{
 		mMisprediction[i] = false;
 		mWorldIndexSync[i] = 0;
+		mTrafficIn[i] = 0;
+		mTrafficOut[i] = 0;
 	}
 }
 
@@ -52,6 +56,28 @@ void NetGraph::setWorldIndexSync(int val)
 		val = NetGraph::MIN_WORLD_INDEX;
 
 	mWorldIndexSync[gametic % NetGraph::MAX_HISTORY_TICS] = val;
+}
+
+void NetGraph::addTrafficIn(int val)
+{
+	static int lastgametic = -1;
+	if (gametic == lastgametic)
+		mTrafficIn[gametic % NetGraph::MAX_HISTORY_TICS] += val;
+	else
+		mTrafficIn[gametic % NetGraph::MAX_HISTORY_TICS] = val;
+
+	lastgametic = gametic;
+}
+
+void NetGraph::addTrafficOut(int val)
+{
+	static int lastgametic = -1;
+	if (gametic == lastgametic)
+		mTrafficOut[gametic % NetGraph::MAX_HISTORY_TICS] += val;
+	else
+		mTrafficOut[gametic % NetGraph::MAX_HISTORY_TICS] = val;
+
+	lastgametic = gametic;
 }
 
 void NetGraph::setInterpolation(int val)
@@ -131,6 +157,46 @@ void NetGraph::drawMispredictions(int x, int y)
 	}
 }
 
+void NetGraph::drawTrafficIn(int x, int y)
+{
+	static const int textcolor = CR_GREY;
+
+	int totalTraffic = 0;
+	for (int i = 0;i < TICRATE;i++)
+	{
+		int backtic = gametic - i;
+		if (backtic < 0) {
+			break;
+		}
+		totalTraffic += mTrafficIn[backtic % NetGraph::MAX_HISTORY_TICS];
+	}
+
+	std::ostringstream buf;
+	buf.precision(2);
+	buf << "Traffic In: " << std::fixed << totalTraffic / 1024.0 << " kb/s";
+	screen->DrawText(textcolor, x, y, buf.str().c_str());
+}
+
+void NetGraph::drawTrafficOut(int x, int y)
+{
+	static const int textcolor = CR_GREY;
+
+	int totalTraffic = 0;
+	for (int i = 0;i < TICRATE;i++)
+	{
+		int backtic = gametic - i;
+		if (backtic < 0) {
+			break;
+		}
+		totalTraffic += mTrafficOut[backtic % NetGraph::MAX_HISTORY_TICS];
+	}
+
+	std::ostringstream buf;
+	buf.precision(2);
+	buf << "Traffic Out: " << std::fixed << totalTraffic / 1024.0 << " kb/s";
+	screen->DrawText(textcolor, x, y, buf.str().c_str());
+}
+
 void NetGraph::draw()
 {
 	static const int textcolor = CR_GREY;
@@ -141,6 +207,9 @@ void NetGraph::draw()
 
     screen->DrawText(textcolor, mX, mY + 64, "Mispredictions");
 	drawMispredictions(mX, mY + 64 + fontheight);
+
+	drawTrafficIn(mX, mY + 128 + fontheight);
+	drawTrafficOut(mX, mY + 128 + fontheight * 3);
 }
 
 VERSION_CONTROL (cl_netgraph_cpp, "$Id$")
