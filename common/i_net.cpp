@@ -485,7 +485,7 @@ int NET_GetPacket (void)
     return ret;
 }
 
-void NET_SendPacket (buf_t &buf, netadr_t &to)
+int NET_SendPacket (buf_t &buf, netadr_t &to)
 {
     int                   ret;
     struct sockaddr_in    addr;
@@ -495,7 +495,7 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
 	if (simulated_connection)
 	{
 		buf.clear();
-		return;
+		return 0;
 	}
 
     NetadrToSockadr (&to, &addr);
@@ -511,15 +511,17 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
 
           // wouldblock is silent
           if (err == WSAEWOULDBLOCK)
-              return;
+              return 0;
 #else
           if (errno == EWOULDBLOCK)
-              return;
+              return 0;
           if (errno == ECONNREFUSED)
-              return;
+              return 0;
           Printf (PRINT_HIGH, "NET_SendPacket: %s\n", strerror(errno));
 #endif
     }
+
+	return ret;
 }
 
 

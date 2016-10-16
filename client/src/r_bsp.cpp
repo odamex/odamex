@@ -92,7 +92,7 @@ void R_ReallocDrawSegs(void)
 	{
 		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
 		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
-		drawsegs = (drawseg_t*)realloc(drawsegs, newmax*sizeof(*drawsegs));
+		drawsegs = (drawseg_t*)Realloc(drawsegs, newmax*sizeof(*drawsegs));
 		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
 		maxdrawsegs = newmax;
 		DPrintf("MaxDrawSegs increased to %d\n", maxdrawsegs);

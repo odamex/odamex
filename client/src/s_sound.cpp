@@ -348,6 +348,8 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 
 	// store priority and volume in a temp channel to use with S_CompareChannels
 	channel_t tempchan;
+	tempchan.clear();
+
 	tempchan.priority = priority;
 	tempchan.volume = volume;
 	tempchan.start_time = gametic;
@@ -1252,12 +1254,16 @@ void S_ParseSndInfo (void)
 					} else {
 						ambient = Ambients + index;
 					}
-					memset (ambient, 0, sizeof(struct AmbientSound));
+                    
+                    ambient->type = 0;
+                    ambient->periodmin = 0;
+                    ambient->periodmax = 0;
+                    ambient->volume = 0.0f;
 
 					sndinfo = COM_Parse (sndinfo);
 					strncpy (ambient->sound, com_token, MAX_SNDNAME);
 					ambient->sound[MAX_SNDNAME] = 0;
-					ambient->attenuation = 0;
+					ambient->attenuation = 0.0f;
 
 					sndinfo = COM_Parse (sndinfo);
 					if (!stricmp (com_token, "point")) {
