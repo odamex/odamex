@@ -280,11 +280,7 @@ void S_Stop (void)
 	for (size_t i = 0; i < numChannels; i++)
 		S_StopChannel(i);
 
-	// start new music for the level
-	mus_paused = 0;
-
-	// [RH] This is a lot simpler now.
-	S_ChangeMusic (std::string(level.music, 8), true);
+	S_StopMusic();
 }
 
 
