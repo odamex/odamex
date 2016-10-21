@@ -1195,11 +1195,7 @@ ISDL20Window::~ISDL20Window()
 //
 void ISDL20Window::setRendererDriver()
 {
-    // TODO: bug in sdl 2.0.4 causes various crashes on windows relating to video mode changes with directx
-    // Check https://forums.libsdl.org/viewtopic.php?p=51349&sid=2ba50f4a184b507cea8eb6edaade6bbd for more info
-    //
-    // "direct3d" can be added to the drivers list when this bug is resolved
-    const char* drivers[] = {"opengl", "opengles2", "opengles", "software", ""};
+    const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
     for (int i = 0; drivers[i][0] != '\0'; i++)
     {
         if (SDL_SetHint(SDL_HINT_RENDER_DRIVER, drivers[i]))
