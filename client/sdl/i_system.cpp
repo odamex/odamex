@@ -717,6 +717,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 
 	if (!alreadyThrown)		// ignore all but the first message -- killough
 	{
+		alreadyThrown = true;
 		char errortext[MAX_ERRORTEXT];
 		va_list argptr;
 		va_start (argptr, error);

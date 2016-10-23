@@ -222,6 +222,7 @@ void HU_Init()
 void STACK_ARGS HU_Shutdown()
 {
 	Z_Free(sbline);
+	sbline = NULL;
 }
 
 

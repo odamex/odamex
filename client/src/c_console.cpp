@@ -669,8 +669,7 @@ void C_InitConsoleBackground()
 //
 void STACK_ARGS C_ShutdownConsoleBackground()
 {
-	if (background_surface)
-		I_FreeSurface(background_surface);
+	I_FreeSurface(background_surface);
 }
 
 

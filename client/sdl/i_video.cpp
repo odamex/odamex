@@ -566,11 +566,8 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
 
 	I_FreeSurface(converted_surface);
-	converted_surface = NULL;
 	I_FreeSurface(matted_surface);
-	matted_surface = NULL;
 	I_FreeSurface(emulated_surface);
-	emulated_surface = NULL;
 
 	// Handle a requested 8bpp surface when the video capabilities only support 32bpp
 	if (surface_bpp != mode.getBitsPerPixel())
@@ -684,9 +681,7 @@ bool I_VideoInitialized()
 //
 void STACK_ARGS I_ShutdownHardware()
 {
-	if (loading_icon_background_surface)
-		I_FreeSurface(loading_icon_background_surface);
-	loading_icon_background_surface = NULL;
+	I_FreeSurface(loading_icon_background_surface);
 
 	delete video_subsystem;
 	video_subsystem = NULL;
@@ -858,9 +853,10 @@ IWindowSurface* I_AllocateSurface(int width, int height, int bpp)
 //
 // I_FreeSurface
 //
-void I_FreeSurface(IWindowSurface* surface)
+void I_FreeSurface(IWindowSurface* &surface)
 {
 	delete surface;
+	surface = NULL;
 }
 
 
@@ -980,8 +976,7 @@ static void I_BlitLoadingIcon()
 		loading_icon_background_surface->getHeight() != h ||
 		loading_icon_background_surface->getBitsPerPixel() != bpp)
 	{
-		if (loading_icon_background_surface)
-			I_FreeSurface(loading_icon_background_surface);
+		I_FreeSurface(loading_icon_background_surface);
 
 		loading_icon_background_surface = I_AllocateSurface(w, h, bpp);
 	}

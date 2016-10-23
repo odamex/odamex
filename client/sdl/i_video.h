@@ -64,7 +64,7 @@ IWindowSurface* I_GetEmulatedSurface();
 void I_BlitEmulatedSurface();
 
 IWindowSurface* I_AllocateSurface(int width, int height, int bpp);
-void I_FreeSurface(IWindowSurface* surface);
+void I_FreeSurface(IWindowSurface* &surface);
 
 int I_GetVideoWidth();
 int I_GetVideoHeight();
