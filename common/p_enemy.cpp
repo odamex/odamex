@@ -1221,7 +1221,7 @@ void A_Tracer (AActor *actor)
 	// spawn a puff of smoke behind the rocket
 	if(serverside)
 	{
-		P_SpawnPuff(actor->x, actor->y, actor->z);
+		P_SpawnTracerPuff(actor->x, actor->y, actor->z);
 
 		AActor* th = new AActor (actor->x - actor->momx,
 						 actor->y - actor->momy,

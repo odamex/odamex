@@ -61,6 +61,7 @@ static void P_SetupSlopes();
 void P_InvertPlane(plane_t *plane);
 
 extern dyncolormap_t NormalLight;
+extern AActor* shootthing;
 
 //
 // MAP related Lookup tables.
@@ -1679,6 +1680,9 @@ void P_SetupLevel (char *lumpname, int position)
 	C_MidPrint (NULL);
 
 	PolyBlockMap = NULL;
+
+	// [AM] So shootthing isn't a wild pointer on map swtich.
+	shootthing = NULL;
 
 	DThinker::DestroyAllThinkers ();
 	Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
