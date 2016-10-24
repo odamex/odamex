@@ -25,6 +25,7 @@
 #include <stdarg.h>
 
 #include "m_alloc.h"
+#include "m_memio.h"
 #include "version.h"
 #include "gstrings.h"
 #include "g_game.h"
@@ -905,19 +906,36 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	return strlen(outline);
 }
 
+// On Windows, vsnprintf() is _vsnprintf().
+#ifdef _WIN32
+#if _MSC_VER < 1400 /* not needed for Visual Studio 2008 */
+#define vsnprintf _vsnprintf
+#endif
+#endif
 
 static int VPrintf(int printlevel, const char* color_code, const char* format, va_list parms)
 {
-	char outline[MAX_LINE_LENGTH + 1], outlinelog[MAX_LINE_LENGTH + 1];
+	char outline[MAX_LINE_LENGTH], outlinelog[MAX_LINE_LENGTH];
+    int outlinelen = STACKARRAY_LENGTH(outline);
+    int result;
 
 	extern BOOL gameisdead;
 	if (gameisdead)
 		return 0;
 
-	// [SL] security TODO: switch to vsnprintf to prevent overruns
-	// and ensure outline is null-terminated.
-	vsprintf(outline, format, parms);
+    // Windows (and other OSes?) has a vsnprintf() that doesn't always
+    // append a trailing \0. So we must do it, and write into a buffer
+    // that is one byte shorter; otherwise this function is unsafe.
+	result = vsnprintf(outline, outlinelen, format, parms);
 
+    // If truncated, change the final char in the buffer to a \0.
+    // A negative result indicates a truncated buffer on Windows.
+    if (result < 0 || result >= outlinelen)
+    {
+        outline[outlinelen - 1] = '\0';
+        result = outlinelen - 1;
+    }
+	
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	int len = strlen(outline);
 	for (int i = 0; i < len; i++)
