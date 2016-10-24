@@ -167,6 +167,17 @@ int main(int argc, char *argv[])
         	putenv((char*)"SDL_VIDEODRIVER=directx");
 	#endif	// SDL12
 
+	
+	#if defined(SDL20)
+        // FIXME: Remove this when SDL gets it shit together, see 
+        // https://bugzilla.libsdl.org/show_bug.cgi?id=2089
+        // ...
+        // Disable thread naming on windows, with SDL 2.0.5 and GDB > 7.8.1
+        // RaiseException will be thrown and will crash under the debugger with symbols
+        // loaded or not
+        SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
+	#endif // SDL20
+
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in
         // SDL_mixer that causes occasional crashes.  Thanks to entryway and fraggle for this.
