@@ -1,7 +1,5 @@
-// Emacs style mode select   -*- C++ -*-
-//-----------------------------------------------------------------------------
 //
-// Copyright(C) 2013 Simon Howard
+// Copyright(C) 2005-2014 Simon Howard
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -13,16 +11,9 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-// 02111-1307, USA.
-//
-//-----------------------------------------------------------------------------
 //
 // Routines for selecting files.
 //
-//-----------------------------------------------------------------------------
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +23,8 @@
 
 #include "txt_fileselect.h"
 #include "txt_inputbox.h"
+#include "txt_gui.h"
+#include "txt_io.h"
 #include "txt_main.h"
 #include "txt_widget.h"
 
@@ -217,6 +210,7 @@ static char *GenerateFilterString(char **extensions)
     unsigned int result_len = 1;
     unsigned int i;
     char *result, *out;
+    size_t out_len, offset;
 
     if (extensions == NULL)
     {
@@ -229,15 +223,18 @@ static char *GenerateFilterString(char **extensions)
     }
 
     result = malloc(result_len);
-    out = result;
+    out = result; out_len = result_len;
 
     for (i = 0; extensions[i] != NULL; ++i)
     {
         // .wad files (*.wad)\0
-        out += 1 + sprintf(out, "%s files (*.%s)",
-                           extensions[i], extensions[i]);
+        offset = TXT_snprintf(out, out_len, "%s files (*.%s)",
+                              extensions[i], extensions[i]);
+        out += offset + 1; out_len -= offset + 1;
+
         // *.wad\0
-        out += 1 + sprintf(out, "*.%s", extensions[i]);
+        offset = TXT_snprintf(out, out_len, "*.%s", extensions[i]);
+        out_len += offset + 1; out_len -= offset + 1;
     }
 
     *out = '\0';
@@ -378,19 +375,19 @@ static char *ExtensionsList(char **extensions)
     }
 
     result = malloc(result_len);
-    strcpy(result, "{");
+    TXT_StringCopy(result, "{", result_len);
 
     for (i = 0; extensions[i] != NULL; ++i)
     {
         escaped = EscapedString(extensions[i]);
-        strcat(result, escaped);
+        TXT_StringConcat(result, escaped, result_len);
         free(escaped);
 
         if (extensions[i + 1] != NULL)
-            strcat(result, ",");
+            TXT_StringConcat(result, ",", result_len);
     }
 
-    strcat(result, "}");
+    TXT_StringConcat(result, "}", result_len);
 
     return result;
 }
@@ -427,19 +424,19 @@ static char *GenerateSelector(char *window_title, char **extensions)
 
     result = malloc(result_len);
 
-    strcpy(result, chooser);
+    TXT_StringCopy(result, chooser, result_len);
 
     if (window_title != NULL)
     {
-        strcat(result, " with prompt ");
-        strcat(result, window_title);
+        TXT_StringConcat(result, " with prompt ", result_len);
+        TXT_StringConcat(result, window_title, result_len);
         free(window_title);
     }
 
     if (ext_list != NULL)
     {
-        strcat(result, "of type ");
-        strcat(result, ext_list);
+        TXT_StringConcat(result, "of type ", result_len);
+        TXT_StringConcat(result, ext_list, result_len);
         free(ext_list);
     }
 
@@ -449,11 +446,13 @@ static char *GenerateSelector(char *window_title, char **extensions)
 static char *GenerateAppleScript(char *window_title, char **extensions)
 {
     char *selector, *result;
+    size_t result_len;
 
     selector = GenerateSelector(window_title, extensions);
 
-    result = malloc(strlen(APPLESCRIPT_WRAPPER) + strlen(selector));
-    sprintf(result, APPLESCRIPT_WRAPPER, selector);
+    result_len = strlen(APPLESCRIPT_WRAPPER) + strlen(selector);
+    result = malloc(result_len);
+    TXT_snprintf(result, result_len, APPLESCRIPT_WRAPPER, selector);
     free(selector);
 
     return result;
@@ -515,6 +514,7 @@ int TXT_CanSelectFiles(void)
 char *TXT_SelectFile(char *window_title, char **extensions)
 {
     unsigned int i;
+    size_t len;
     char *result;
     char **argv;
     int argc;
@@ -531,8 +531,9 @@ char *TXT_SelectFile(char *window_title, char **extensions)
 
     if (window_title != NULL)
     {
-        argv[argc] = malloc(10 + strlen(window_title));
-        sprintf(argv[argc], "--title=%s", window_title);
+        len = 10 + strlen(window_title);
+        argv[argc] = malloc(len);
+        TXT_snprintf(argv[argc], len, "--title=%s", window_title);
         ++argc;
     }
 
@@ -545,9 +546,10 @@ char *TXT_SelectFile(char *window_title, char **extensions)
     {
         for (i = 0; extensions[i] != NULL; ++i)
         {
-            argv[argc] = malloc(30 + strlen(extensions[i]) * 2);
-            sprintf(argv[argc], "--file-filter=.%s | *.%s",
-                    extensions[i], extensions[i]);
+            len = 30 + strlen(extensions[i]) * 2;
+            argv[argc] = malloc(len);
+            TXT_snprintf(argv[argc], len, "--file-filter=.%s | *.%s",
+                         extensions[i], extensions[i]);
             ++argc;
         }
     }
@@ -587,11 +589,14 @@ static void TXT_FileSelectDrawer(TXT_UNCAST_ARG(fileselect))
     // Input box widget inherits all the properties of the
     // file selector.
 
-    fileselect->inputbox->widget.x = fileselect->widget.x;
+    fileselect->inputbox->widget.x = fileselect->widget.x + 2;
     fileselect->inputbox->widget.y = fileselect->widget.y;
-    fileselect->inputbox->widget.w = fileselect->widget.w;
+    fileselect->inputbox->widget.w = fileselect->widget.w - 2;
     fileselect->inputbox->widget.h = fileselect->widget.h;
 
+    // Triple bar symbol gives a distinguishing look to the file selector.
+    TXT_DrawString("\xf0 ");
+    TXT_BGColor(TXT_COLOR_BLACK, 0);
     TXT_DrawWidget(fileselect->inputbox);
 }
 
@@ -666,7 +671,7 @@ static void TXT_FileSelectMousePress(TXT_UNCAST_ARG(fileselect),
         }
     }
 
-    return TXT_WidgetMousePress(fileselect->inputbox, x, y, b);
+    TXT_WidgetMousePress(fileselect->inputbox, x, y, b);
 }
 
 static void TXT_FileSelectFocused(TXT_UNCAST_ARG(fileselect), int focused)

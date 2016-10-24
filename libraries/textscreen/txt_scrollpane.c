@@ -1,7 +1,5 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// Copyright(C) 2009 Simon Howard
+// Copyright(C) 2005-2014 Simon Howard
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -12,11 +10,6 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-// 02111-1307, USA.
 //
 
 #include <ctype.h>
@@ -409,7 +402,8 @@ static int TXT_ScrollPaneKeyPress(TXT_UNCAST_ARG(scrollpane), int key)
 
         if ((key == KEY_UPARROW || key == KEY_DOWNARROW
           || key == KEY_LEFTARROW || key == KEY_RIGHTARROW
-          || key == KEY_PGUP || key == KEY_PGDN)
+          || key == KEY_PGUP || key == KEY_PGDN
+          || key == KEY_TAB)
          && scrollpane->child->widget_class == &txt_table_class)
         {
             if (PageSelectedWidget(scrollpane, key))
@@ -487,7 +481,7 @@ static void TXT_ScrollPaneMousePress(TXT_UNCAST_ARG(scrollpane),
             int range = FullWidth(scrollpane) - scrollpane->w;
             int bar_max = scrollpane->w - 3;
 
-            scrollpane->x = ((rel_x - 1) * range + (bar_max / 2)) / bar_max;
+            scrollpane->x = ((rel_x - 1) * range + bar_max - 1) / bar_max;
         }
 
         return;
@@ -509,7 +503,7 @@ static void TXT_ScrollPaneMousePress(TXT_UNCAST_ARG(scrollpane),
             int range = FullHeight(scrollpane) - scrollpane->h;
             int bar_max = scrollpane->h - 3;
 
-            scrollpane->y = ((rel_y - 1) * range + (bar_max / 2)) / bar_max;
+            scrollpane->y = ((rel_y - 1) * range + bar_max - 1) / bar_max;
         }
 
         return;
