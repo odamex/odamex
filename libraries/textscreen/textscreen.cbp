@@ -147,6 +147,9 @@
 		<Compiler>
 			<Add directory="../../common" />
 		</Compiler>
+		<Unit filename="fonts/large.h" />
+		<Unit filename="fonts/normal.h" />
+		<Unit filename="fonts/small.h" />
 		<Unit filename="textscreen.h" />
 		<Unit filename="txt_button.c">
 			<Option compilerVar="CC" />
@@ -156,6 +159,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_checkbox.h" />
+		<Unit filename="txt_conditional.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="txt_conditional.h" />
 		<Unit filename="txt_desktop.c">
 			<Option compilerVar="CC" />
 		</Unit>

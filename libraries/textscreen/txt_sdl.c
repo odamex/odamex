@@ -71,7 +71,8 @@ static const txt_font_t *font;
 // normal_font otherwise.
 static const txt_font_t highdpi_font = { "normal-highdpi", NULL, 8, 16 };
 
-static const int scancode_translate_table[] = SCANCODE_TO_KEYS_ARRAY;
+// Just for I_Endoom
+//static const int scancode_translate_table[] = SCANCODE_TO_KEYS_ARRAY;
 
 //#define TANGO
 
@@ -535,9 +536,11 @@ static int TranslateKey(SDL_Keysym *sym)
             return KEY_RALT;
 
         default:
-            if (scancode >= 0 && scancode < arrlen(scancode_translate_table))
+            // Just for I_Endoom
+            if (scancode >= 0 /*&& scancode < arrlen(scancode_translate_table)*/)
             {
-                return scancode_translate_table[scancode];
+                return 1;
+                //return scancode_translate_table[scancode];
             }
             else
             {
@@ -742,7 +745,8 @@ static const char *SpecialKeyName(int key)
         case KEY_PGDN:        return "PGDN";
         case KEY_INS:         return "INS";
         case KEY_DEL:         return "DEL";
-        case KEY_PRTSCR:      return "PRTSC";
+        // Just for I_Endoom
+        case KEY_PRINT:       return "PRTSC";
                  /*
         case KEYP_0:          return "PAD0";
         case KEYP_1:          return "PAD1";
