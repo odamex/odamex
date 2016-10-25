@@ -87,7 +87,7 @@ void P_DropWeapon (player_t* player);
 void P_FallingDamage (AActor *ent);
 void P_PlayerThink (player_t *player);
 bool P_AreTeammates(player_t &a, player_t &b);
-bool P_CanSpy(player_t &viewer, player_t &other);
+bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
 
 //
 // P_MOBJ
@@ -108,7 +108,6 @@ void	P_RespawnSpecials (void);
 
 bool	P_SetMobjState (AActor* mobj, statenum_t state, bool cl_update = false);
 
-void	P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z);
 void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage);
 AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 void	P_SpawnPlayerMissile (AActor* source, mobjtype_t type);

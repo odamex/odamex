@@ -1880,6 +1880,37 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 }
 
 //
+// P_SpawnTracerPuff
+//
+// Does not pay any attention to shootthing, because revenants do not 
+// set that pointer, thus any decision-making based on that pointer will
+// be complete nonsense.
+//
+void P_SpawnTracerPuff(fixed_t x, fixed_t y, fixed_t z)
+{
+	if (!serverside)
+		return;
+
+	AActor *puff;
+
+	z += (P_RandomDiff() << 10);
+
+	puff = new AActor(x, y, z, MT_PUFF);
+	puff->momz = FRACUNIT;
+	puff->tics -= P_Random(puff) & 3;
+
+	if (puff->tics < 1)
+		puff->tics = 1;
+
+	// don't make punches spark on the wall
+	if (attackrange == MELEERANGE)
+		P_SetMobjState(puff, S_PUFF3);
+
+	if (serverside)
+		SV_SpawnMobj(puff);
+}
+
+//
 // P_SpawnBlood
 //
 void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage)

@@ -484,8 +484,7 @@ void CL_CheckDisplayPlayer()
 	if (!validplayer(displayplayer()) || !displayplayer().mo)
 		newid = consoleplayer_id;
 
-	if (!(P_CanSpy(consoleplayer(), displayplayer()) ||
-		  netdemo.isPlaying() || netdemo.isPaused()))
+	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isPlaying() || netdemo.isPaused()))
 		newid = consoleplayer_id;
 
 	if (displayplayer().spectator)
@@ -553,8 +552,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 		player_t& player = *it;
 
 		// spectators only cycle between active players
-		if (P_CanSpy(self, player) ||
-			demoplayback || netdemo.isPlaying() || netdemo.isPaused())
+		if (P_CanSpy(self, player, demoplayback || netdemo.isPlaying() || netdemo.isPaused()))
 		{
 			displayplayer_id = player.id;
 			CL_CheckDisplayPlayer();
