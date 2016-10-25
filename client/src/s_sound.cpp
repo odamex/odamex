@@ -130,6 +130,7 @@ static struct mus_playing_t
 	int   handle;
 } mus_playing;
 
+EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (snd_musicsystem)
 
@@ -789,7 +790,7 @@ void S_Sound (int channel, const char *name, float volume, int attenuation)
 
 void S_Sound (AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
-	if(channel == CHAN_ITEM && ent != listenplayer().camera)
+	if(!co_globalsound && channel == CHAN_ITEM && ent != listenplayer().camera)
 		return;
 
 	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, attenuation, false);
