@@ -618,6 +618,8 @@
 			<Option compilerVar="WINDRES" />
 			<Option compiler="gcc" use="1" buildCommand="$rescomp $rcflags $res_includes -J rc -O coff -i $file -o $resource_output" />
 		</Unit>
+		<Unit filename="i_crash.cpp" />
+		<Unit filename="i_crash.h" />
 		<Unit filename="i_input.cpp" />
 		<Unit filename="i_input.h" />
 		<Unit filename="i_main.cpp" />

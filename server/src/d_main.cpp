@@ -112,6 +112,7 @@ EXTERN_CVAR (st_scale) // removeme
 extern BOOL gameisdead;
 extern BOOL demorecording;
 extern DThinker ThinkerCap;
+extern dyncolormap_t NormalLight;
 
 BOOL devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
@@ -330,6 +331,10 @@ void STACK_ARGS D_Shutdown()
 
 	// reset the Zone memory manager
 	Z_Close();
+	
+	// [AM] All of our dyncolormaps are freed, tidy up so we
+	//      don't follow wild pointers.
+	NormalLight.next = NULL;
 }
 
 

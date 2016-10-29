@@ -46,6 +46,7 @@
 #include <iostream>
 
 #include "i_sdl.h" 
+#include "i_crash.h"
 // [Russell] - Don't need SDLmain library
 #ifdef _WIN32
 #undef main
@@ -104,6 +105,9 @@ int I_Main(int argc, char *argv[])
 int main(int argc, char *argv[])
 #endif
 {
+	// [AM] Set crash callbacks, so we get something useful from crashes.
+	I_SetCrashCallbacks();
+
 	try
 	{
 #if defined(UNIX) && !defined(GEKKO)
