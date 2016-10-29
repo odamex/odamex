@@ -24,6 +24,7 @@
 
 #include <cstring>
 #include <cmath>
+#include <exception>
 #include <stdio.h>
 
 #include "cmdlib.h"
@@ -781,5 +782,12 @@ BEGIN_COMMAND (help)
     Printf(PRINT_HIGH, "Help: %s - %s\n", var->name(), var->helptext());
 }
 END_COMMAND (help)
+
+// [AM] Crash Odamex on purpose - with no survivors.  Used for testing crash handlers.
+BEGIN_COMMAND(crashout)
+{
+	std::terminate();
+}
+END_COMMAND(crashout)
 
 VERSION_CONTROL (c_cvars_cpp, "$Id$")
