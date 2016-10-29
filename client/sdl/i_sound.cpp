@@ -24,7 +24,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include <SDL.h>
+#include "i_sdl.h" 
 #include <SDL_mixer.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -373,13 +373,17 @@ void I_InitSound()
 {
 	if (I_IsHeadless() || Args.CheckParm("-nosound"))
 		return;
-
-	const char *driver = getenv("SDL_AUDIODRIVER");
+		
+    #if defined(SDL12)
+    const char *driver = getenv("SDL_AUDIODRIVER");
 
 	if(!driver)
 		driver = "default";
-
-	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem (%s)\n", driver);
+		
+    Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem (%s)\n", driver);
+    #elif defined(SDL20)
+    Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem\n");
+    #endif
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	{
@@ -390,6 +394,10 @@ void I_InitSound()
 		return;
 	}
 
+    #if defined(SDL20)
+	Printf(PRINT_HIGH, "I_InitSound: Using SDL's audio driver (%s)\n", SDL_GetCurrentAudioDriver());
+	#endif
+	
 	const SDL_version *ver = Mix_Linked_Version();
 
 	if(ver->major != MIX_MAJOR_VERSION

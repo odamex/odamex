@@ -1,7 +1,5 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// Copyright(C) 2006 Simon Howard
+// Copyright(C) 2005-2014 Simon Howard
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -12,11 +10,6 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-// 02111-1307, USA.
 //
 
 #include <stdio.h>
@@ -32,6 +25,7 @@
 #include "txt_separator.h"
 #include "txt_window.h"
 
+#define HELP_KEY KEY_F1
 #define MAXWINDOWS 128
 
 static char *desktop_title;
@@ -195,6 +189,37 @@ static void DrawDesktopBackground(const char *title)
     TXT_Puts(title);
 }
 
+static void DrawHelpIndicator(void)
+{
+    char keybuf[10];
+    int fgcolor;
+    int x, y;
+
+    TXT_GetKeyDescription(HELP_KEY, keybuf, sizeof(keybuf));
+
+    TXT_GetMousePosition(&x, &y);
+
+    if (y == 0 && x >= TXT_SCREEN_W - 9)
+    {
+        fgcolor = TXT_COLOR_GREY;
+        TXT_BGColor(TXT_COLOR_BLACK, 0);
+    }
+    else
+    {
+        fgcolor = TXT_COLOR_BLACK;
+        TXT_BGColor(TXT_COLOR_GREY, 0);
+    }
+
+    TXT_GotoXY(TXT_SCREEN_W - 9, 0);
+
+    TXT_FGColor(TXT_COLOR_BRIGHT_WHITE);
+    TXT_DrawString(" ");
+    TXT_DrawString(keybuf);
+
+    TXT_FGColor(fgcolor);
+    TXT_DrawString("=Help ");
+}
+
 void TXT_SetDesktopTitle(char *title)
 {
     free(desktop_title);
@@ -204,8 +229,9 @@ void TXT_SetDesktopTitle(char *title)
 
 void TXT_DrawDesktop(void)
 {
-    int i;
+    txt_window_t *active_window;
     const char *title;
+    int i;
 
     TXT_InitClipArea();
 
@@ -216,6 +242,12 @@ void TXT_DrawDesktop(void)
 
     DrawDesktopBackground(title);
 
+    active_window = TXT_GetActiveWindow();
+    if (active_window != NULL && active_window->help_url != NULL)
+    {
+        DrawHelpIndicator();
+    }
+
     for (i=0; i<num_windows; ++i)
     {
         TXT_DrawWindow(all_windows[i]);
@@ -224,17 +256,53 @@ void TXT_DrawDesktop(void)
     TXT_UpdateScreen();
 }
 
+// Fallback function to handle key/mouse events that are not handled by
+// the active window.
+static void DesktopInputEvent(int c)
+{
+    txt_window_t *active_window;
+    int x, y;
+
+    switch (c)
+    {
+        case TXT_MOUSE_LEFT:
+            TXT_GetMousePosition(&x, &y);
+
+            // Clicking the top-right of the screen is equivalent
+            // to pressing the help key.
+            if (y == 0 && x >= TXT_SCREEN_W - 9)
+            {
+                DesktopInputEvent(HELP_KEY);
+            }
+            break;
+
+        case HELP_KEY:
+            active_window = TXT_GetActiveWindow();
+            if (active_window != NULL)
+            {
+                TXT_OpenWindowHelpURL(active_window);
+            }
+            break;
+
+        default:
+            break;
+    }
+
+
+}
+
 void TXT_DispatchEvents(void)
 {
+    txt_window_t *active_window;
     int c;
 
     while ((c = TXT_GetChar()) > 0)
     {
-        if (num_windows > 0)
-        {
-            // Send the keypress to the top window
+        active_window = TXT_GetActiveWindow();
 
-            TXT_WindowKeyPress(all_windows[num_windows - 1], c);
+        if (active_window != NULL && !TXT_WindowKeyPress(active_window, c))
+        {
+            DesktopInputEvent(c);
         }
     }
 }
@@ -263,7 +331,7 @@ void TXT_DrawASCIITable(void)
             n = y * 16 + x;
 
             TXT_GotoXY(x * 5, y);
-            sprintf(buf, "%02x   ", n);
+            TXT_snprintf(buf, sizeof(buf), "%02x   ", n);
             TXT_Puts(buf);
 
             // Write the character directly to the screen memory buffer:
@@ -297,6 +365,7 @@ void TXT_GUIMainLoop(void)
         if (num_windows <= 0)
         {
             TXT_ExitMainLoop();
+            continue;
         }
 
         TXT_DrawDesktop();

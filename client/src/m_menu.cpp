@@ -2056,11 +2056,7 @@ void M_Drawer()
 //
 void M_ClearMenus (void)
 {
-	if (fire_surface)
-	{
-		I_FreeSurface(fire_surface);
-		fire_surface = NULL;
-	}
+	I_FreeSurface(fire_surface);
 	MenuStackDepth = 0;
 	menuactive = false;
 	drawSkull = true;

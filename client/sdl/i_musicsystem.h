@@ -23,7 +23,7 @@
 #ifndef __I_MUSICSYSTEM_H__
 #define __I_MUSICSYSTEM_H__
 
-#include "SDL_mixer.h"
+#include <SDL_mixer.h>
 #include "i_music.h"
 #include "i_midi.h"
 

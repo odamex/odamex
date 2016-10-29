@@ -43,7 +43,7 @@
 #include "z_zone.h"
 #include "i_system.h"
 
-#include "SDL_mixer.h"
+#include <SDL_mixer.h>
 #include "mus2midi.h"
 #include "i_musicsystem.h"
 

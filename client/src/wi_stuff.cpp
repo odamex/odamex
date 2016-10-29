@@ -782,11 +782,7 @@ void WI_End()
 {
 	WI_unloadData();
 
-	if (background_surface)
-	{
-		I_FreeSurface(background_surface);
-		background_surface = NULL;
-	}
+	I_FreeSurface(background_surface);
 }
 
 void WI_initNoState (void)

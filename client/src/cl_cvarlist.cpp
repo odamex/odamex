@@ -382,10 +382,13 @@ static char *C_GetDefaultMouseDriver()
 
 	int driver_id = SDL_MOUSE_DRIVER;
 
+	// TODO: FIXME?
+	#if 0
 	#ifdef _WIN32
 	driver_id = RAW_WIN32_MOUSE_DRIVER;
 	#endif
-
+    #endif
+	
 	sprintf(str, "%i", driver_id);
 	return str;
 }

@@ -17,6 +17,7 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-m32" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -32,10 +33,11 @@
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
 				<Compiler>
+					<Add option="-m32" />
 					<Add option="-g" />
 					<Add option="-W" />
 					<Add option="-fno-inline" />
-					<Add option="-m32" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-m32" />
@@ -111,6 +113,7 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-m64" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -130,6 +133,7 @@
 					<Add option="-g" />
 					<Add option="-W" />
 					<Add option="-fno-inline" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-m64" />
@@ -141,9 +145,11 @@
 			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
 		</VirtualTargets>
 		<Compiler>
-			<Add directory="$(#sdl12)/include" />
 			<Add directory="../../common" />
 		</Compiler>
+		<Unit filename="fonts/large.h" />
+		<Unit filename="fonts/normal.h" />
+		<Unit filename="fonts/small.h" />
 		<Unit filename="textscreen.h" />
 		<Unit filename="txt_button.c">
 			<Option compilerVar="CC" />
@@ -153,6 +159,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="txt_checkbox.h" />
+		<Unit filename="txt_conditional.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="txt_conditional.h" />
 		<Unit filename="txt_desktop.c">
 			<Option compilerVar="CC" />
 		</Unit>

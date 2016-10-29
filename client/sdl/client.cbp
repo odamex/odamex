@@ -22,20 +22,22 @@
 					<Add option="-DNDEBUG" />
 					<Add option="-DCLIENT_APP" />
 					<Add option="-DUSE_PNG" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/include/SDL2" />
+					<Add directory="$(#sdl2mixer)/i686-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
 					<Add option="-m32" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
-					<Add library="libtextscreen" />
 					<Add library="libportmidi" />
+					<Add library="libtextscreen" />
 					<Add library="libpng" />
 					<Add library="z" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
-					<Add directory="$(#sdl12)/lib/x86" />
-					<Add directory="$(#sdl12mixer)/lib/x86" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/lib" />
+					<Add directory="$(#sdl2mixer)/i686-w64-mingw32/lib" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -63,20 +65,22 @@
 					<Add option="-DODAMEX_DEBUG" />
 					<Add option="-DCLIENT_APP" />
 					<Add option="-DUSE_PNG" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/include/SDL2" />
+					<Add directory="$(#sdl2mixer)/i686-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-m32" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
-					<Add library="libtextscreen-dbg" />
 					<Add library="libportmidi-dbg" />
+					<Add library="libtextscreen-dbg" />
 					<Add library="libpng-dbg" />
 					<Add library="z-dbg" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
-					<Add directory="$(#sdl12)/lib/x86" />
-					<Add directory="$(#sdl12mixer)/lib/x86" />
 					<Add directory="../../lib" />
+					<Add directory="$(#sdl2)/i686-w64-mingw32/lib" />
+					<Add directory="$(#sdl2mixer)/i686-w64-mingw32/lib" />
 				</Linker>
 				<Environment>
 					<Variable name="RCFLAGS" value="-F pe-i386" />
@@ -132,8 +136,8 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
-					<Add library="SDL.lib" />
-					<Add library="SDL_mixer.lib" />
+					<Add library="SDL2.lib" />
+					<Add library="SDL2_mixer.lib" />
 					<Add library="ws2_32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
@@ -217,8 +221,8 @@
 				<Linker>
 					<Add option="/DEBUG" />
 					<Add option="/MANIFESTFILE:$(TARGET_OUTPUT_FILE).manifest /MANIFEST" />
-					<Add library="SDL.lib" />
-					<Add library="SDL_mixer.lib" />
+					<Add library="SDL2.lib" />
+					<Add library="SDL2_mixer.lib" />
 					<Add library="ws2_32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
@@ -264,20 +268,24 @@
 					<Add option="-DNDEBUG" />
 					<Add option="-DCLIENT_APP" />
 					<Add option="-DUSE_PNG" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
+					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
 					<Add option="-m64" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
-					<Add library="libtextscreen64" />
 					<Add library="libportmidi64" />
+					<Add library="libtextscreen64" />
 					<Add library="libpng64" />
 					<Add library="z64" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
-					<Add directory="$(#sdl12)/lib/x64" />
-					<Add directory="$(#sdl12mixer)/lib/x64" />
+					<Add library="SDL2" />
+					<Add library="SDL2_mixer" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/lib" />
+					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/lib" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -292,7 +300,6 @@
 				<Option deps_output="../../deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-gdi" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -306,19 +313,23 @@
 					<Add option="-DODAMEX_DEBUG" />
 					<Add option="-DCLIENT_APP" />
 					<Add option="-DUSE_PNG" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/include/SDL2" />
+					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/include/SDL2" />
 				</Compiler>
 				<Linker>
 					<Add option="-m64" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
-					<Add library="libtextscreen-dbg64" />
 					<Add library="libportmidi-dbg64" />
+					<Add library="libtextscreen-dbg64" />
 					<Add library="libpng-dbg64" />
 					<Add library="z-dbg64" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
-					<Add directory="$(#sdl12)/lib/x64" />
-					<Add directory="$(#sdl12mixer)/lib/x64" />
+					<Add library="SDL2" />
+					<Add library="SDL2_mixer" />
+					<Add directory="$(#sdl2)/x86_64-w64-mingw32/lib" />
+					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/lib" />
 					<Add directory="../../lib" />
 				</Linker>
 				<Environment>
@@ -340,8 +351,6 @@
 			<Add option="-DCLIENT_APP" />
 			<Add option="-DPORTMIDI" />
 			<Add option="-DUSE_PNG" />
-			<Add directory="$(#sdl12)/include" />
-			<Add directory="$(#sdl12mixer)/include" />
 			<Add directory="." />
 			<Add directory="../src" />
 			<Add directory="../../common" />
@@ -352,8 +361,8 @@
 			<Add directory="../../libraries/libpng" />
 		</Compiler>
 		<Linker>
-			<Add library="SDL" />
-			<Add library="SDL_mixer" />
+			<Add library="SDL2" />
+			<Add library="SDL2_mixer" />
 			<Add directory="../../lib" />
 		</Linker>
 		<Unit filename="../../common/actor.h" />
@@ -620,6 +629,7 @@
 		<Unit filename="i_music.h" />
 		<Unit filename="i_musicsystem.cpp" />
 		<Unit filename="i_musicsystem.h" />
+		<Unit filename="i_sdl.h" />
 		<Unit filename="i_sdlinput.cpp" />
 		<Unit filename="i_sdlinput.h" />
 		<Unit filename="i_sdlvideo.cpp" />

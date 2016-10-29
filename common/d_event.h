@@ -43,13 +43,17 @@ typedef enum
 } evtype_t;
 
 // Event structure.
-typedef struct
+struct event_t
 {
+	event_t(evtype_t t = ev_keydown, int d1 = 0, int d2 = 0, int d3 = 0) :
+		type(t), data1(d1), data2(d2), data3(d3)
+	{ }
+
 	evtype_t	type;
 	int 		data1;			// keys / mouse/joystick buttons
 	int 		data2;			// mouse/joystick x move
 	int 		data3;			// mouse/joystick y move
-} event_t;
+};
 
  
 typedef enum

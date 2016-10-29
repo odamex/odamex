@@ -48,12 +48,13 @@ misrepresented as being the original software.
 #include "m_fileio.h"
 #include "cmdlib.h"
 
+#include "i_sdl.h"
 #include "i_music.h"
 #include "i_midi.h"
 #include "mus2midi.h"
 #include "i_musicsystem.h"
 
-#include "SDL_mixer.h"
+#include <SDL_mixer.h>
 
 #ifdef OSX
 #include <AudioToolbox/AudioToolbox.h>
@@ -348,22 +349,28 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	mRegisteredSong.Track = Mix_LoadMUS(TEMP_MIDI);
 	unlink(TEMP_MIDI);	// remove the temporary file
 
+	if (!mRegisteredSong.Track)
+	{
+		Printf(PRINT_HIGH, "Mix_LoadMUSW: %s\n", Mix_GetError());
+		return;
+	}
+
 	#else
+
 	// We can read the midi data directly from memory
+	#ifdef SDL20
+	mRegisteredSong.Track = Mix_LoadMUS_RW(mRegisteredSong.Data, 0);
+	#elif defined SDL12
 	mRegisteredSong.Track = Mix_LoadMUS_RW(mRegisteredSong.Data);
-	
-	#endif	// TEMP_MIDI
+	#endif	// SDL12
 	
 	if (!mRegisteredSong.Track)
 	{
-		#ifdef TEMP_MIDI
-		Printf(PRINT_HIGH, "Mix_LoadMUS: %s\n", Mix_GetError());
-		#else
 		Printf(PRINT_HIGH, "Mix_LoadMUS_RW: %s\n", Mix_GetError());
-		#endif	// TEMP_MIDI
-
 		return;
 	}
+
+	#endif	// TEMP_MIDI
 }
 
 

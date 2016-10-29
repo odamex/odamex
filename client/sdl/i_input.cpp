@@ -470,7 +470,12 @@ bool I_InitInput()
 
 	atterm(I_ShutdownInput);
 
+	#if defined(SDL12)
 	input_subsystem = new ISDL12InputSubsystem();
+	#elif defined(SDL20)
+	input_subsystem = new ISDL20InputSubsystem();
+	#endif
+
 	input_subsystem->initKeyboard(0);
 
 	I_OpenMouse();
@@ -664,34 +669,34 @@ void IInputSubsystem::addToEventRepeaters(event_t& ev)
 
 	if (ev.type == ev_keydown)
 	{
-		EventRepeaterTable::iterator it = mEventRepeaters.find(key);
-		if (it != mEventRepeaters.end())
-		{
-			// update existing repeater with this new event
-			EventRepeater& repeater = it->second;
-			memcpy(&repeater.event, &ev, sizeof(repeater.event));
-		}
-		else
-		{
-			// new repeatable event - add to mEventRepeaters
-			EventRepeater repeater;
-			memcpy(&repeater.event, &ev, sizeof(repeater.event));
-			repeater.last_time = I_GetTime();
-			repeater.repeating = false;		// start off waiting for mRepeatDelay before repeating
-			mEventRepeaters.insert(std::make_pair(key, repeater));
-		}
-	}
+					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
+					if (it != mEventRepeaters.end())
+					{
+						// update existing repeater with this new event
+						EventRepeater& repeater = it->second;
+						memcpy(&repeater.event, &ev, sizeof(repeater.event));
+					}
+					else
+					{
+						// new repeatable event - add to mEventRepeaters
+						EventRepeater repeater;
+						memcpy(&repeater.event, &ev, sizeof(repeater.event));
+						repeater.last_time = I_GetTime();
+						repeater.repeating = false;		// start off waiting for mRepeatDelay before repeating
+						mEventRepeaters.insert(std::make_pair(key, repeater));
+					}
+				}
 	else if (ev.type == ev_keyup)
-	{
-		EventRepeaterTable::iterator it = mEventRepeaters.find(key);
-		if (it != mEventRepeaters.end())
-		{
-			// remove the repeatable event from mEventRepeaters
-			const EventRepeater& repeater = it->second;
-			if (repeater.event.data1 == ev.data1)
-				mEventRepeaters.erase(it);
-		}
-	}
+				{
+					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
+					if (it != mEventRepeaters.end())
+					{
+						// remove the repeatable event from mEventRepeaters
+						const EventRepeater& repeater = it->second;
+						if (repeater.event.data1 == ev.data1)
+							mEventRepeaters.erase(it);
+					}
+				}
 }
 
 
@@ -711,7 +716,7 @@ void IInputSubsystem::repeatEvents()
 		{
 			repeater.last_time += mRepeatDelay;
 			repeater.repeating = true;
-		}
+			}
 
 		while (repeater.repeating && current_time - repeater.last_time >= mRepeatInterval)
 		{

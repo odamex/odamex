@@ -102,11 +102,15 @@ IRawWin32MouseInputDevice::IRawWin32MouseInputDevice(int id) :
 	mAggregateX(0), mAggregateY(0)
 {
 	// get a handle to the window
+
+	// TODO: FIXME
+	#if 0
 	SDL_SysWMinfo wminfo;
 	SDL_VERSION(&wminfo.version)
 	SDL_GetWMInfo(&wminfo);
 	mWindow = wminfo.window;
-
+    #endif
+	
 	mInstance = this;
 
 	mInitialized = true;
@@ -479,6 +483,8 @@ bool IRawWin32MouseInputDevice::unregisterMouseDevice()
 //
 void IRawWin32MouseInputDevice::debug() const
 {
+	// TODO: FIXME
+	#if 0
 	// get a handle to the window
 	SDL_SysWMinfo wminfo;
 	SDL_VERSION(&wminfo.version)
@@ -500,6 +506,8 @@ void IRawWin32MouseInputDevice::debug() const
 	WNDPROC wndproc = (WNDPROC)GetWindowLongPtr(cur_window, GWLP_WNDPROC);
 	Printf(PRINT_HIGH, "IRawWin32MouseInputDevice: windowProcWrapper Address: 0x%x, Current Window WNDPROC Address: 0x%x\n",
 			IRawWin32MouseInputDevice::windowProcWrapper, wndproc);
+			
+    #endif
 }
 
 #endif	// USE_RAW_WIN32_MOUSE

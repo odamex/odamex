@@ -499,11 +499,7 @@ void D_DoAdvanceDemo (void)
 	{
 		const patch_t* patch = W_CachePatch(pagename);
 
-		if (page_surface)
-		{
-			I_FreeSurface(page_surface);
-			page_surface = NULL;
-		}
+		I_FreeSurface(page_surface);
 
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
@@ -531,11 +527,7 @@ void D_DoAdvanceDemo (void)
 //
 void STACK_ARGS D_Close()
 {
-	if (page_surface)
-	{
-		I_FreeSurface(page_surface);
-		page_surface = NULL;
-	}
+	I_FreeSurface(page_surface);
 
 	D_ClearTaskSchedulers();
 }
