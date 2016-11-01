@@ -282,8 +282,6 @@
 					<Add library="z64" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
-					<Add library="SDL2" />
-					<Add library="SDL2_mixer" />
 					<Add directory="$(#sdl2)/x86_64-w64-mingw32/lib" />
 					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/lib" />
 					<Add directory="../../lib" />
@@ -326,8 +324,6 @@
 					<Add library="z-dbg64" />
 					<Add library="winmm" />
 					<Add library="shlwapi" />
-					<Add library="SDL2" />
-					<Add library="SDL2_mixer" />
 					<Add directory="$(#sdl2)/x86_64-w64-mingw32/lib" />
 					<Add directory="$(#sdl2mixer)/x86_64-w64-mingw32/lib" />
 					<Add directory="../../lib" />
