@@ -91,7 +91,7 @@ static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
 	MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
 
 	// Built revision of server
-	MSG_WriteLong(&ml_message, GetRevision());
+	MSG_WriteLong(&ml_message, -1);
 
 	cvar_t* var = GetFirstCvar();
 

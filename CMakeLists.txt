@@ -113,6 +113,10 @@ endmacro(define_platform)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
+# git describe
+include(GetGitRevisionDescription)
+git_describe(GIT_DESCRIBE --tags --always)
+
 # MiniUPnPc
 if (USE_MINIUPNP)
   set(UPNPC_BUILD_STATIC ON CACHE INTERNAL "" FORCE)
