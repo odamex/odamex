@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_sdlinput.cpp 5302 2015-04-23 01:53:13Z dr_sean $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -2611,4 +2611,4 @@ void ISDL20InputSubsystem::releaseInput()
 
 #endif	// SDL20
 
-VERSION_CONTROL (i_sdlinput_cpp, "$Id: i_sdlinput.cpp 5315 2015-04-24 05:01:36Z dr_sean $")
+VERSION_CONTROL (i_sdlinput_cpp, "$Id$")

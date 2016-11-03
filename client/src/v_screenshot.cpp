@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_screenshot.cpp 4740 2014-04-08 16:06:52Z dr_sean $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -463,6 +463,6 @@ void V_ScreenShot(std::string filename)
 }
 
 
-VERSION_CONTROL (v_screenshot_cpp, "$Id: v_screenshot.cpp 4740 2014-04-08 16:06:52Z dr_sean $")
+VERSION_CONTROL (v_screenshot_cpp, "$Id$")
 
 

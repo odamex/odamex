@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: res_texture.cpp 3945 2013-07-03 14:32:48Z dr_sean $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2015 by The Odamex Team.
@@ -1611,7 +1611,7 @@ const Texture* TextureManager::getTexture(texhandle_t handle)
 }
 
 
-VERSION_CONTROL (res_texture_cpp, "$Id: res_texture.cpp 3945 2013-07-03 14:32:48Z dr_sean $")
+VERSION_CONTROL (res_texture_cpp, "$Id$")
 
 
 

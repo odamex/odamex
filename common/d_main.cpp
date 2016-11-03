@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.cpp 3426 2012-11-19 17:25:28Z dr_sean $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2015 by The Odamex Team.
@@ -1126,4 +1126,4 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 	} while (I_GetTime() < MIN(simulation_wake_time, display_wake_time));			
 }
 
-VERSION_CONTROL (d_main_cpp, "$Id: d_main.cpp 3426 2012-11-19 17:25:28Z dr_sean $")
+VERSION_CONTROL (d_main_cpp, "$Id$")

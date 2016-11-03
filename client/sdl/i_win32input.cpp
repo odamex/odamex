@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_win32input.cpp 5171 2014-12-27 00:29:58Z mike $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -554,4 +554,4 @@ bool I_RawWin32MouseAvailible()
 }
 
 
-VERSION_CONTROL (i_win32input_cpp, "$Id: i_win32input.cpp 5171 2014-12-27 00:29:58Z mike $")
+VERSION_CONTROL (i_win32input_cpp, "$Id$")

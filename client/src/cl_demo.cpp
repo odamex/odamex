@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: cl_demo.cpp 2290 2011-06-27 05:05:38Z dr_sean $
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
@@ -1690,4 +1690,4 @@ void NetDemo::writeMapIndexEntry()
 	map_index.push_back(entry);
 }
 
-VERSION_CONTROL (cl_demo_cpp, "$Id: cl_demo.cpp 2290 2011-06-27 05:05:38Z dr_sean $")
+VERSION_CONTROL (cl_demo_cpp, "$Id$")

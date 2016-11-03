@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_muidi.h 1788 2010-08-24 04:42:57Z russellrice $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -503,4 +503,4 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 		mEvents.sort(I_CompareMidiEventTimes);
 }
 
-VERSION_CONTROL (i_midi_cpp, "$Id: i_midi.cpp 2671 2011-12-19 00:20:32Z dr_sean $")
+VERSION_CONTROL (i_midi_cpp, "$Id$")

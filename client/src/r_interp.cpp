@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_interp.cpp 3798 2013-04-24 03:09:33Z dr_sean $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2015 by The Odamex Team.
@@ -174,5 +174,5 @@ void R_InterpolateCamera(fixed_t amount)
 	}
 }
 
-VERSION_CONTROL (r_interp_cpp, "$Id: r_interp.cpp 3798 2013-04-24 03:09:33Z dr_sean $")
+VERSION_CONTROL (r_interp_cpp, "$Id$")
 

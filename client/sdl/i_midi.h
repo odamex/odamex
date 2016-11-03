@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_midi.h 1788 2010-08-24 04:42:57Z russellrice $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //

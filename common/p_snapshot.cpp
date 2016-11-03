@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_snapshot.cpp 2785 2012-02-18 23:22:07Z dr_sean $
+// $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2015 by The Odamex Team.
@@ -1194,6 +1194,6 @@ bool P_FloorSnapshotDone(SectorSnapshot *snap)
 	return false;
 }
 
-VERSION_CONTROL (p_snapshot_cpp, "$Id: p_snapshot.cpp 2785 2012-02-18 23:22:07Z dr_sean $")
+VERSION_CONTROL (p_snapshot_cpp, "$Id$")
 
 

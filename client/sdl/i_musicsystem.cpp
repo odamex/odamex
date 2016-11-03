@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_musicsystem.cpp 2541 2011-10-27 02:36:31Z dr_sean $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -1142,5 +1142,5 @@ void PortMidiMusicSystem::_PlayEvent(MidiEvent *event, int time)
 
 #endif	// PORTMIDI
 
-VERSION_CONTROL (i_musicsystem_cpp, "$Id: i_musicsystem.cpp 2671 2011-12-19 00:20:32Z dr_sean $")
+VERSION_CONTROL (i_musicsystem_cpp, "$Id$")
 	
