@@ -294,6 +294,10 @@ const ResourceId ResourceManager::addResource(
 	{
 		res_rec.mResourceLoader = new FlatTextureLoader(&mRawResourceAccessor, res_id);
 	}
+	else if (path.first() == "PATCHES")
+	{
+		res_rec.mResourceLoader = new PatchTextureLoader(&mRawResourceAccessor, res_id);
+	}
 	else
 	{
 		res_rec.mResourceLoader = new DefaultResourceLoader(&mRawResourceAccessor, res_id);

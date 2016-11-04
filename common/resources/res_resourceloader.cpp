@@ -121,6 +121,15 @@ static void Res_DrawPatchIntoTexture(
 			post += postlength + 4;
 		}
 	}
+
+
+	for (int x = 0; x < texture->getWidth(); x++)
+	{
+		byte* destoffset = (byte*)texture->mCols + x * (texheight + 4);	
+		*(unsigned short*)(destoffset + 0) = 0;
+		*(unsigned short*)(destoffset + 2) = texheight;
+		memcpy(destoffset + 4, texture->mData + x * texheight, texheight);
+	}
 }
 
 

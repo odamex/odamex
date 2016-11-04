@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
+// $Id: 04fe58223cfd13d0fbbe32d5b91930d0a694d0e6 $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2015 by The Odamex Team.
@@ -88,7 +88,7 @@ spriteframe_t	sprtemp[MAX_SPRITE_FRAMES];
 int 			maxframe;
 static const char*		spritename;
 
-static tallpost_t* spriteposts[MAXWIDTH];
+static const tallpost_t* spriteposts[MAXWIDTH];
 
 // [RH] particle globals
 extern int				NumParticles;
@@ -347,7 +347,7 @@ fixed_t 		sprtopscreen;
 
 void R_BlastSpriteColumn(void (*drawfunc)())
 {
-	tallpost_t* post = dcol.post;
+	const tallpost_t* post = dcol.post;
 
 	while (!post->end())
 	{
@@ -1356,4 +1356,4 @@ void R_DrawParticle(vissprite_t* vis)
 		R_FillTranslucentSpan();
 }
 
-VERSION_CONTROL (r_things_cpp, "$Id$")
+VERSION_CONTROL (r_things_cpp, "$Id: 04fe58223cfd13d0fbbe32d5b91930d0a694d0e6 $")

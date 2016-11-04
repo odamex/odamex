@@ -76,7 +76,7 @@ CVAR_FUNC_IMPL(r_stretchsky)
 
 
 
-static tallpost_t* skyposts[MAXWIDTH];
+static const tallpost_t* skyposts[MAXWIDTH];
 
 
 //

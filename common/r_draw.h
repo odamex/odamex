@@ -30,12 +30,12 @@
 
 typedef struct 
 {
-	byte*				source;
+	const byte*			source;
 	byte*				destination;
 
 	int					pitch_in_pixels;
 
-	tallpost_t*			post;
+	const tallpost_t*	post;
 
 	shaderef_t			colormap;
 
@@ -98,7 +98,7 @@ extern "C" drawspan_t dspan;
 // [RH] Temporary buffer for column drawing
 
 void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
-		tallpost_t** posts, void (*colblast)(), bool calc_light, int columnmethod);
+		const tallpost_t** posts, void (*colblast)(), bool calc_light, int columnmethod);
 
 // [RH] Pointers to the different column and span drawers...
 

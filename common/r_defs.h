@@ -257,6 +257,10 @@ struct side_s
 
     // Texture indices.
     // We do not maintain names here.
+	ResourceId	top_res_id;
+	ResourceId	bottom_res_id;
+	ResourceId	mid_res_id;
+
     short	toptexture;
     short	bottomtexture;
     short	midtexture;
@@ -489,7 +493,7 @@ struct drawseg_s
     //  all three adjusted so [x1] is first value.
     int*			sprtopclip;
     int*			sprbottomclip;
-	tallpost_t**	midposts;
+	const tallpost_t**	midposts;
 };
 typedef struct drawseg_s drawseg_t;
 
